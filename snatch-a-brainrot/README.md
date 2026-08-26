@@ -65,10 +65,10 @@ Stealing needs more than one player, and Studio can simulate that:
 2. Make it public: [create.roblox.com](https://create.roblox.com) →
    **Creations** → your game → **Access Settings** → set **Playability**
    to **Public**.
-3. Turn on **saving** (cash + brainrots survive rejoining): on your game's
-   page in create.roblox.com open **Configure/Settings → Security** and
-   enable **Studio Access to API Services**. Without it the game still works,
-   it just doesn't save between visits.
+3. **Saving works automatically** for real players once the game is
+   published — nothing to turn on. If you also want saving to work while YOU
+   test inside Studio, enable **Studio Access to API Services** (Studio →
+   File → Game Settings → Security).
 4. **Important:** the map has **8 bases**, so set your server size to 8:
    your game on create.roblox.com → **Places** → your place → set
    **Maximum Players** to **8**. (Extra players beyond 8 aren't broken —

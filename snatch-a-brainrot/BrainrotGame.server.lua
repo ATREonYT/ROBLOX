@@ -324,6 +324,13 @@ end
 -- BRIGHT CARTOON LIGHTING -- sunny noon, punchy colors, soft bloom
 --==============================================================================
 
+-- Clear the template's own post-effects first, so ours are the only ones.
+for _, effect in ipairs(Lighting:GetChildren()) do
+	if effect:IsA("PostEffect") or effect:IsA("Atmosphere") then
+		effect:Destroy()
+	end
+end
+
 Lighting.ClockTime = 13.5
 Lighting.Brightness = 3
 Lighting.Ambient = Color3.fromRGB(150, 150, 160)
@@ -372,7 +379,7 @@ newPart({
 })
 newPart({
 	Name = "GroundRim", Size = Vector3.new(352, 1.2, 312),
-	Position = Vector3.new(0, -0.6, 0),
+	Position = Vector3.new(0, -0.55, 0),
 	Color = Color3.fromRGB(255, 214, 140),
 	Parent = mapFolder,
 })
@@ -755,11 +762,11 @@ LOOKS.cheese = function(model, c)
 		CFrame = CFrame.new(0, 1.9, 0) * CFrame.Angles(0, math.pi, 0) })
 	wedge.Name = "Tint"
 	charPart(model, wedge)
-	for _, hole in ipairs({ Vector3.new(0.8, 1.5, -1), Vector3.new(-0.7, 1.1, -0.4), Vector3.new(0.2, 2.2, 0.6) }) do
+	for _, hole in ipairs({ Vector3.new(0.8, 1.5, -1), Vector3.new(-0.7, 1.1, -0.4), Vector3.new(0.2, 1.2, 0.6) }) do
 		charPart(model, ball(Vector3.new(0.55, 0.55, 0.55), Color3.fromRGB(230, 170, 40), { Position = hole }))
 	end
-	charPart(model, ball(Vector3.new(0.8, 0.8, 0.3), c.c2, { Name = "Ear", Position = Vector3.new(-0.9, 3.4, 0.6) }))
-	charPart(model, ball(Vector3.new(0.8, 0.8, 0.3), c.c2, { Name = "Ear", Position = Vector3.new(0.9, 3.4, 0.6) }))
+	charPart(model, ball(Vector3.new(0.8, 0.8, 0.3), c.c2, { Name = "Ear", Position = Vector3.new(-0.9, 3.3, -1.2) }))
+	charPart(model, ball(Vector3.new(0.8, 0.8, 0.3), c.c2, { Name = "Ear", Position = Vector3.new(0.9, 3.3, -1.2) }))
 	addEyes(model, 1.9, -1.45, 0.55, 0.6)
 	addFeet(model, 0.8, c.c2)
 	return 3.8
@@ -829,9 +836,9 @@ LOOKS.cup = function(model, c)
 	if c.katana then
 		charPart(model, newPart({ Size = Vector3.new(0.18, 3.4, 0.5), Color = Color3.fromRGB(220, 225, 235),
 			Material = Enum.Material.Metal,
-			CFrame = CFrame.new(1.1, 2.6, 1.5) * CFrame.Angles(0, 0, math.rad(35)) }))
+			CFrame = CFrame.new(1.1, 2.6, 1.5) * CFrame.Angles(0, 0, math.rad(-35)) }))
 		charPart(model, newPart({ Size = Vector3.new(0.3, 0.8, 0.3), Color = Color3.fromRGB(60, 45, 45),
-			CFrame = CFrame.new(0.15, 1.25, 1.5) * CFrame.Angles(0, 0, math.rad(35)) }))
+			CFrame = CFrame.new(0.15, 1.25, 1.5) * CFrame.Angles(0, 0, math.rad(-35)) }))
 	end
 	if c.tutu then
 		charPart(model, tube("Y", 0.5, 4.2, c.c2, { Name = "Tutu", Position = Vector3.new(0, 1.5, 0) }))
@@ -890,6 +897,10 @@ LOOKS.plane = function(model, c)
 		addEyes(model, 3.6, -2.4, 0.6, 0.6)
 	end
 	addFeet(model, 1, c.c2)
+	-- landing-gear legs so the fuselage isn't hovering over its feet
+	for _, x in ipairs({ -1, 1 }) do
+		charPart(model, tube("Y", 1.6, 0.5, c.c2, { Name = "GearLeg", Position = Vector3.new(x, 1.05, 0) }))
+	end
 	return c.goose and 5.4 or 4.6
 end
 
@@ -920,10 +931,12 @@ LOOKS.shark = function(model, c)
 	charPart(model, ball(Vector3.new(0.5, 1.8, 1.2), c.c1, { Name = "Tail", CFrame = CFrame.new(0, 3, 3.3) * CFrame.Angles(math.rad(-20), 0, 0) }))
 	charPart(model, ball(Vector3.new(1.4, 0.5, 0.9), Color3.fromRGB(255, 255, 255), { Name = "Teeth", Position = Vector3.new(0, 2.15, -2.7) }))
 	addEyes(model, 3.4, -2.5, 0.8, 0.55)
-	-- THE THREE SNEAKERS (iconic!)
+	-- THE THREE SNEAKERS (iconic!) with little legs up to the body
 	for _, x in ipairs({ -1.1, 0, 1.1 }) do
-		charPart(model, ball(Vector3.new(1, 0.7, 1.7), c.c2, { Name = "Sneaker", Position = Vector3.new(x, 0.35, x == 0 and 1.4 or -0.5) }))
-		charPart(model, ball(Vector3.new(1.05, 0.3, 1.75), Color3.fromRGB(235, 80, 80), { Name = "SneakerSole", Position = Vector3.new(x, 0.15, x == 0 and 1.4 or -0.5) }))
+		local z = x == 0 and 1.4 or -0.5
+		charPart(model, ball(Vector3.new(1, 0.7, 1.7), c.c2, { Name = "Sneaker", Position = Vector3.new(x, 0.35, z) }))
+		charPart(model, ball(Vector3.new(1.05, 0.3, 1.75), Color3.fromRGB(235, 80, 80), { Name = "SneakerSole", Position = Vector3.new(x, 0.15, z) }))
+		charPart(model, tube("Y", 2, 0.5, c.c1, { Name = "SharkLeg", Position = Vector3.new(x, 1.25, z) }))
 	end
 	return 5.7
 end
@@ -933,12 +946,13 @@ LOOKS.cow = function(model, c)
 	for _, spot in ipairs({ Vector3.new(1.4, 3.4, 1), Vector3.new(-1.3, 2.6, -0.6), Vector3.new(0.6, 2.2, 1.8) }) do
 		charPart(model, ball(Vector3.new(1.1, 1.1, 0.5), Color3.fromRGB(40, 40, 45), { Name = "Spot", Position = spot }))
 	end
-	for _, x in ipairs({ -1.3, 1.3 }) do
-		for _, z in ipairs({ -1.2, 1.5 }) do
-			charPart(model, tube("Y", 1.3, 0.8, c.c1, { Name = "Leg", Position = Vector3.new(x, 0.65, z) }))
+	for _, x in ipairs({ -1.1, 1.1 }) do
+		for _, z in ipairs({ -1, 1.2 }) do
+			charPart(model, tube("Y", 2, 0.8, c.c1, { Name = "Leg", Position = Vector3.new(x, 1, z) }))
 		end
 	end
-	-- SATURN HEAD: an orange planet with a glowing ring
+	-- SATURN HEAD: an orange planet on a neck, with a glowing ring
+	charPart(model, tube("Y", 2, 0.9, c.c1, { Name = "Neck", Position = Vector3.new(0, 4.6, -1.6) }))
 	charPart(model, ball(Vector3.new(2.6, 2.6, 2.6), c.c2, { Name = "Planet", Position = Vector3.new(0, 5.6, -1.8) }))
 	local ring = tube("Y", 0.18, 4.6, Color3.fromRGB(255, 220, 130), {
 		Name = "PlanetRing", Material = Enum.Material.Neon,
@@ -986,7 +1000,7 @@ LOOKS.combo = function(model, c)
 	charPart(model, fin)
 	charPart(model, ball(Vector3.new(1.2, 2.6, 1.3), c.c2, { Name = "BananaArm", CFrame = CFrame.new(-2.1, 3.4, 0) * CFrame.Angles(0, 0, math.rad(-25)) }))
 	local ring = tube("Y", 0.16, 5.4, Color3.fromRGB(186, 104, 255), { Name = "Ring", Material = Enum.Material.Neon })
-	ring.CFrame = CFrame.new(0, 3.4, 0) * CFrame.Angles(math.rad(14), 0, 0)
+	ring.CFrame = CFrame.new(0, 3.4, 0) * CFrame.Angles(math.rad(14), 0, math.rad(90))
 	charPart(model, ring)
 	charPart(model, newPart({ Size = Vector3.new(2.3, 0.55, 0.3), Color = Color3.fromRGB(15, 15, 20), Position = Vector3.new(0, 4.1, -1.5) }))
 	addSmile(model, 3, -1.5, 1.1)
@@ -1657,10 +1671,16 @@ local function restoreOwned(base, ownedList)
 		local name = (type(savedEntry) == "table") and savedEntry.name or savedEntry
 		local mutation = (type(savedEntry) == "table") and savedEntry.mutation or nil
 		local character = charactersByName[name]
-		local slotIndex = findEmptySlot(base)
-		if character and slotIndex then
+		if character then
 			local info = makeInfo(character, mutation)
-			placeBrainrot(base, slotIndex, buildBrainrotModel(info), info)
+			local slotIndex = findEmptySlot(base)
+			if slotIndex then
+				placeBrainrot(base, slotIndex, buildBrainrotModel(info), info)
+			elseif base.owner then
+				-- More saved brainrots than slots (e.g. one was being carried
+				-- by a thief at save time): pay out instead of deleting it.
+				addCash(base.owner, info.price)
+			end
 		end
 	end
 end
@@ -1710,7 +1730,11 @@ Players.PlayerAdded:Connect(function(player)
 	player.CharacterAdded:Connect(onCharacter)
 	if player.Character then task.spawn(onCharacter, player.Character) end
 
-	makeHud(player)
+	-- PlayerGui only exists once the character has spawned, so wait for it.
+	task.spawn(function()
+		player:WaitForChild("PlayerGui", 60)
+		makeHud(player)
+	end)
 
 	-- Load the save BEFORE placing anything.
 	local data = playerData[player]
@@ -1744,6 +1768,16 @@ end)
 Players.PlayerRemoving:Connect(function(player)
 	savePlayer(player)
 	dropCarried(player)
+	-- Anything of theirs still being carried by thieves was just written
+	-- into their save, so remove the live copy -- otherwise the thief could
+	-- secure it and the same brainrot would exist twice.
+	for model, info in pairs(carriedItems) do
+		if info.victim == player then
+			carriedItems[model] = nil
+			setCarrying(info.thief, nil)
+			model:Destroy()
+		end
+	end
 	local data = playerData[player]
 	if data and data.base then
 		local base = data.base
@@ -1761,7 +1795,7 @@ Players.PlayerRemoving:Connect(function(player)
 		-- Hand the freed base to anyone who was waiting.
 		for _, waiting in ipairs(Players:GetPlayers()) do
 			local wData = playerData[waiting]
-			if waiting ~= player and wData and not wData.base and wData.loaded then
+			if waiting ~= player and wData and not wData.base and (wData.loaded or wData.loadFailed) then
 				giveBase(waiting, base)
 				announce(waiting.Name .. " claimed a base!", Color3.fromRGB(190, 255, 190))
 				break
