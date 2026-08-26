@@ -1,71 +1,139 @@
 --==============================================================================
--- PLUS ONE SPEED: KEYBOARD RUN
--- A complete "+1 Speed Keyboard Escape"-style game in ONE script.
+-- PLUS ONE SPEED: CANDY KEYBOARD  (server script, 1 of 2)
 --
--- HOW TO USE:
+-- Our faithful take on the "+1 Speed Keyboard Escape" formula: a candy &
+-- chocolate world built out of giant mechanical keyboard keys that CLICK
+-- and press down under your feet. Every step = +speed. Yellow WIN buttons
+-- end each stage and send you home richer. Digit plates, treadmills,
+-- trails, rebirths -- the whole loop.
+--
+-- HOW TO USE (TWO scripts this time -- the second one is the on-screen GUI):
 --   1. Open Roblox Studio -> new "Baseplate" place
---   2. In the Explorer, find ServerScriptService
---   3. Insert a Script inside it, delete the default code, paste ALL of this
---   4. Press Play. That's the whole setup.
---
--- EVERY STEP you take gives +1 Speed, forever. Run across giant candy
--- keyboard keys, grab the yellow WINS pad at the end of each stage, and buy
--- glowing trails that multiply your speed gain. Rebirth at the statue to
--- trade your speed for a permanent multiplier. Get fast enough and you can
--- RUN straight over gaps you used to have to jump. Watch out for the angry
--- brainrots patrolling the later stages!
+--   2. Explorer -> ServerScriptService -> + -> Script
+--      Delete the default line, paste ALL of THIS file.
+--   3. Explorer -> StarterPlayer -> StarterPlayerScripts -> + -> LocalScript
+--      Delete the default line, paste ALL of PlusOneSpeed.client.lua.
+--   4. Press Play. RUN.
 --==============================================================================
 
 --==============================================================================
 -- CONFIG -- play with these numbers! Nothing here can break the game.
 --==============================================================================
 
-local SPEED_PER_STEP  = 1     -- speed gained per step (multiplied by rebirths/trails)
-local STEP_LENGTH     = 3.5   -- how many studs of walking count as one step
-local BASE_WALKSPEED  = 16    -- Roblox default walking speed (speed adds to this)
-local MAX_WALKSPEED   = 350   -- your legs' limit (the Speed NUMBER keeps growing)
-local TREADMILL_GAIN  = 2     -- free speed per second while on the AFK treadmill
-local LEVEL_SIZE      = 10    -- 1 Level per this much Speed
-local REBIRTH_BONUS   = 0.5   -- each rebirth adds +0.5x to your speed multiplier
-local STAGE_COUNT     = 8     -- how many keyboard stages to build
-local WINS_COOLDOWN   = 8     -- seconds before the same wins pad pays you again
-local GOLDEN_BONUS    = 250   -- wins from the Golden Brainrot at the very end
-local GOLDEN_COOLDOWN = 180   -- seconds between Golden Brainrot claims (per player)
-local SAVE_PROGRESS   = true  -- saves speed + wins + rebirths + trail (needs API access)
+local STEP_LENGTH     = 3.5    -- studs of movement that count as one step
+local BASE_WALKSPEED  = 16     -- Roblox default walk speed (speed adds to this)
+local MAX_WALKSPEED   = 350    -- your legs' limit (the Speed NUMBER keeps growing)
+local LEVEL_SIZE      = 10     -- 1 Level per this much Speed
+local TREADMILL_RATE  = 2      -- automatic steps per second while on a treadmill
+local BOOST_COST      = 2500   -- Wins price of a 10-minute x2 speed boost
+local BOOST_LENGTH    = 600    -- boost duration in seconds
+local FREE_REWARD     = 15000  -- one-time free Speed from the FREE! button
+local GOLDEN_BONUS    = 25000  -- Wins from the Golden Brainrot at the very end
+local GOLDEN_COOLDOWN = 180    -- seconds between Golden claims (per player)
+local SAVE_PROGRESS   = true   -- saves everything (see README about saving)
 
--- Rebirth requirements in LEVELS (the real game's curve: x1.5 multiplier at
--- level 15, then +0.5x per tier). After the list runs out it grows 1.5x each.
-local REBIRTH_LEVELS = { 15, 25, 40, 60, 90, 135, 200, 300 }
-
--- The trail shop: bought with Wins, each is a glowing trail AND a permanent
--- multiplier on every point of speed you gain. They survive rebirths.
-local TRAILS = {
-	{ name = "White Trail",   cost = 50,    bonus = 0.25, color = Color3.fromRGB(255, 255, 255) },
-	{ name = "Blue Trail",    cost = 250,   bonus = 0.5,  color = Color3.fromRGB(100, 181, 246) },
-	{ name = "Purple Trail",  cost = 1000,  bonus = 1,    color = Color3.fromRGB(186, 104, 255) },
-	{ name = "Gold Trail",    cost = 5000,  bonus = 2,    color = Color3.fromRGB(255, 213,  79) },
-	{ name = "RAINBOW Trail", cost = 20000, bonus = 4,    color = nil }, -- nil = cycles all colors!
+-- DIGIT PLATES at spawn: each one permanently raises your speed-per-step.
+-- You buy them in order; the newest plate's bonus replaces the previous.
+local PLATES = {
+	{ bonus = 1,   cost = 0 },      -- plate 1 is free!
+	{ bonus = 2,   cost = 3 },
+	{ bonus = 5,   cost = 15 },
+	{ bonus = 10,  cost = 100 },
+	{ bonus = 25,  cost = 1000 },
+	{ bonus = 50,  cost = 10000 },
+	{ bonus = 100, cost = 25000 },
+	{ bonus = 500, cost = 50000 },
 }
 
+-- REBIRTHS: reset your Speed for a permanent multiplier (Wins, trails,
+-- plates and treadmills all survive). This is the genre's proven curve.
+local REBIRTHS = {
+	{ level = 15,  mult = 1.5 }, { level = 25,  mult = 2 },
+	{ level = 40,  mult = 2.5 }, { level = 60,  mult = 3 },
+	{ level = 75,  mult = 3.5 }, { level = 100, mult = 4 },
+	{ level = 125, mult = 5 },   { level = 150, mult = 6 },
+	{ level = 175, mult = 7 },   { level = 200, mult = 8 },
+	-- after this the game keeps going: +50 levels and +1x per tier
+}
+
+-- TRAIL SHOP: glowing trails that multiply every point of speed you gain.
+-- color = nil means the trail cycles through every color (rainbow!).
+local TRAILS = {
+	{ name = "Green Trail",   cost = 500,      mult = 1.5, color = Color3.fromRGB(120, 220, 120) },
+	{ name = "Blue Trail",    cost = 1500,     mult = 2,   color = Color3.fromRGB(100, 181, 246) },
+	{ name = "Purple Trail",  cost = 5000,     mult = 3,   color = Color3.fromRGB(186, 104, 255) },
+	{ name = "Red Trail",     cost = 25000,    mult = 4,   color = Color3.fromRGB(255, 90, 90) },
+	{ name = "Rainbow Trail", cost = 100000,   mult = 5,   color = nil },
+	{ name = "Comet Trail",   cost = 1000000,  mult = 10,  color = Color3.fromRGB(140, 240, 255) },
+	{ name = "Void Trail",    cost = 10000000, mult = 25,  color = Color3.fromRGB(60, 20, 90) },
+}
+
+-- TREADMILLS: stand on one to bank steps while AFK. Higher tiers run faster.
+local TREADMILLS = {
+	{ name = "Chocolate Treadmill", cost = 0,       mult = 1, color = Color3.fromRGB(121, 85, 61) },
+	{ name = "Golden Treadmill",    cost = 50000,   mult = 3, color = Color3.fromRGB(255, 200, 60) },
+	{ name = "Diamond Treadmill",   cost = 1000000, mult = 9, color = Color3.fromRGB(140, 225, 255) },
+}
+
+-- THE STAGES. Every stage is giant keyboard keys with a candy theme, a
+-- gimmick, and a yellow WIN button at the end that pays out and sends you
+-- back to spawn (teleport back to your checkpoint from the Teleport menu!).
+local STAGES = {
+	{ name = "Gumdrop Gateway",    keys = 8,  gap = 3,   wins = 5,    recLevel = 1,   gimmick = "none",    phrase = "GUMDROP",     capColor = Color3.fromRGB(255, 170, 190), topColor = Color3.fromRGB(255, 215, 225) },
+	{ name = "Candy Cane Crossing", keys = 10, gap = 3.5, wins = 12,  recLevel = 5,   gimmick = "zigzag",  phrase = "CANDYCANE",   capColor = Color3.fromRGB(255, 110, 110), topColor = Color3.fromRGB(255, 240, 240) },
+	{ name = "Jawbreaker Alley",   keys = 11, gap = 3.5, wins = 30,   recLevel = 10,  gimmick = "ball",    phrase = "JAWBREAKER",  capColor = Color3.fromRGB(170, 140, 220), topColor = Color3.fromRGB(225, 210, 250) },
+	{ name = "Choco Tsunami",      keys = 12, gap = 4,   wins = 75,   recLevel = 20,  gimmick = "wave",    phrase = "CHOCOWAVE",   capColor = Color3.fromRGB(140, 95, 65),  topColor = Color3.fromRGB(190, 145, 110) },
+	{ name = "Marshmallow Hop",    keys = 10, gap = 6,   wins = 200,  recLevel = 35,  gimmick = "bouncy",  phrase = "MARSHMALLOW", capColor = Color3.fromRGB(245, 245, 250), topColor = Color3.fromRGB(255, 255, 255) },
+	{ name = "Truffle Gates",      keys = 12, gap = 4,   wins = 500,  recLevel = 55,  gimmick = "gates",   phrase = "TRUFFLE",     capColor = Color3.fromRGB(110, 75, 55),  topColor = Color3.fromRGB(160, 120, 95) },
+	{ name = "Sugar Sprint",       keys = 14, gap = 5.5, wins = 1500, recLevel = 80,  gimmick = "none",    phrase = "SUGARRUSH",   capColor = Color3.fromRGB(255, 225, 130), topColor = Color3.fromRGB(255, 245, 200) },
+	{ name = "Gummy Guardian",     keys = 13, gap = 4,   wins = 5000, recLevel = 120, gimmick = "chasers", phrase = "GUMMYRUN",    capColor = Color3.fromRGB(120, 220, 140), topColor = Color3.fromRGB(190, 250, 200) },
+}
+
+local TELEPORT_COST_PER_STAGE = 2 -- Wins per stage number to teleport there
+
 --==============================================================================
--- SERVICES & HELPERS (same cartoony kit as Snatch a Brainrot)
+-- SERVICES & NETWORK (the GUI LocalScript talks to us through these)
 --==============================================================================
 
-local Players          = game:GetService("Players")
-local RunService       = game:GetService("RunService")
-local Debris           = game:GetService("Debris")
-local Lighting         = game:GetService("Lighting")
-local DataStoreService = game:GetService("DataStoreService")
+local Players           = game:GetService("Players")
+local RunService        = game:GetService("RunService")
+local Debris            = game:GetService("Debris")
+local Lighting          = game:GetService("Lighting")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local DataStoreService  = game:GetService("DataStoreService")
 
 local rng = Random.new()
 
+local net = Instance.new("Folder")
+net.Name = "PlusOneSpeedNet"
+local stateRemote = Instance.new("RemoteEvent")
+stateRemote.Name = "State"
+stateRemote.Parent = net
+local actionRemote = Instance.new("RemoteEvent")
+actionRemote.Name = "Action"
+actionRemote.Parent = net
+net.Parent = ReplicatedStorage
+
 local mapFolder = Instance.new("Folder")
-mapFolder.Name = "SpeedMap"
+mapFolder.Name = "KeyboardMap"
 mapFolder.Parent = workspace
 
+-- Clear out the template: its spawn, its giant baseplate (we float over a
+-- desk instead -- and falling must actually FALL), and its post-effects.
 for _, obj in ipairs(workspace:GetChildren()) do
-	if obj:IsA("SpawnLocation") then obj:Destroy() end
+	if obj:IsA("SpawnLocation") or (obj:IsA("BasePart") and obj.Name == "Baseplate") then
+		obj:Destroy()
+	end
 end
+for _, effect in ipairs(Lighting:GetChildren()) do
+	if effect:IsA("PostEffect") or effect:IsA("Atmosphere") then
+		effect:Destroy()
+	end
+end
+
+--==============================================================================
+-- PART & LABEL HELPERS (the same cartoony kit as our other games)
+--==============================================================================
 
 local function newPart(props)
 	local parent = props.Parent
@@ -112,7 +180,7 @@ local function styleText(label, textSize, color)
 	label.TextSize = textSize
 	label.TextColor3 = color or Color3.new(1, 1, 1)
 	local stroke = Instance.new("UIStroke")
-	stroke.Color = Color3.fromRGB(40, 30, 50)
+	stroke.Color = Color3.fromRGB(60, 35, 30)
 	stroke.Thickness = 2
 	stroke.Parent = label
 	return label
@@ -134,21 +202,23 @@ local function makeLabel(parent, offsetY, text, textColor, textSize, maxDistance
 end
 
 local function formatNum(n)
-	if n >= 1e6 then return string.format("%.1fM", n / 1e6) end
+	if n >= 1e12 then return string.format("%.2fT", n / 1e12) end
+	if n >= 1e9 then return string.format("%.2fB", n / 1e9) end
+	if n >= 1e6 then return string.format("%.2fM", n / 1e6) end
 	if n >= 1e3 then return string.format("%.1fK", n / 1e3) end
 	return tostring(math.floor(n))
 end
 
-local function cashPopup(position, text, color)
+local function worldPopup(position, text, color)
 	local anchor = newPart({
 		Name = "Popup", Size = Vector3.new(0.4, 0.4, 0.4), Transparency = 1,
 		CanCollide = false, CanQuery = false,
 		Position = position, Parent = mapFolder,
 	})
 	local gui = Instance.new("BillboardGui")
-	gui.Size = UDim2.new(0, 200, 0, 40)
+	gui.Size = UDim2.new(0, 220, 0, 44)
 	gui.AlwaysOnTop = true
-	gui.MaxDistance = 120
+	gui.MaxDistance = 140
 	local label = Instance.new("TextLabel")
 	label.Size = UDim2.new(1, 0, 1, 0)
 	label.Text = text
@@ -172,15 +242,15 @@ local function announce(text, color)
 		if gui then
 			local existing = 0
 			for _, child in ipairs(gui:GetChildren()) do
-				if child.Name == "SpeedAnnouncement" then existing += 1 end
+				if child.Name == "KeyboardAnnouncement" then existing += 1 end
 			end
 			local screen = Instance.new("ScreenGui")
-			screen.Name = "SpeedAnnouncement"
+			screen.Name = "KeyboardAnnouncement"
 			screen.ResetOnSpawn = false
 			local label = Instance.new("TextLabel")
 			label.Size = UDim2.new(0.7, 0, 0, 40)
-			label.Position = UDim2.new(0.15, 0, 0.1, existing * 46)
-			label.BackgroundColor3 = Color3.fromRGB(35, 28, 48)
+			label.Position = UDim2.new(0.15, 0, 0.08, existing * 46)
+			label.BackgroundColor3 = Color3.fromRGB(62, 40, 34)
 			label.BackgroundTransparency = 0.2
 			label.Text = text
 			styleText(label, 26, color)
@@ -199,77 +269,195 @@ local function announce(text, color)
 end
 
 --==============================================================================
--- BRIGHT CARTOON LIGHTING
+-- SWEET, CREAMY LIGHTING
 --==============================================================================
 
 Lighting.ClockTime = 13.5
 Lighting.Brightness = 3
-Lighting.Ambient = Color3.fromRGB(150, 150, 160)
-Lighting.OutdoorAmbient = Color3.fromRGB(160, 160, 170)
+Lighting.Ambient = Color3.fromRGB(150, 145, 155)
+Lighting.OutdoorAmbient = Color3.fromRGB(165, 158, 165)
 
 local bloom = Instance.new("BloomEffect")
-bloom.Intensity = 0.6
-bloom.Size = 28
-bloom.Threshold = 1.1
+bloom.Intensity = 0.7
+bloom.Size = 30
+bloom.Threshold = 1.05
 bloom.Parent = Lighting
 
 local colorPunch = Instance.new("ColorCorrectionEffect")
-colorPunch.Saturation = 0.25
-colorPunch.Contrast = 0.06
+colorPunch.Saturation = 0.22
+colorPunch.Contrast = 0.05
+colorPunch.TintColor = Color3.fromRGB(255, 250, 242)
 colorPunch.Parent = Lighting
 
 local atmosphere = Instance.new("Atmosphere")
-atmosphere.Density = 0.25
-atmosphere.Offset = 0.6
-atmosphere.Color = Color3.fromRGB(220, 235, 255)
-atmosphere.Decay = Color3.fromRGB(255, 200, 150)
-atmosphere.Glare = 0.2
-atmosphere.Haze = 1
+atmosphere.Density = 0.22
+atmosphere.Offset = 0.5
+atmosphere.Color = Color3.fromRGB(235, 225, 240)
+atmosphere.Decay = Color3.fromRGB(255, 190, 170)
+atmosphere.Glare = 0.15
+atmosphere.Haze = 0.8
 atmosphere.Parent = Lighting
 
 --==============================================================================
--- MAP: a giant desk with a floating candy-keyboard obby running down it.
--- Spawn plaza at the near end; stages stretch away in a line. Fall off a
--- key and you're teleported back to the start of that stage.
+-- KEYCAPS -- the star of the show. Every key has a pink under-skirt, a
+-- chunky candy-colored cap, and a lighter top plate with a letter printed
+-- on it. The top plate PRESSES DOWN with a click when you step on it.
 --==============================================================================
 
-local OBBY_Y = 6 -- the walking surface height for the whole obby
+local OBBY_Y = 6            -- the walking surface height of the whole obby
+local KEY_SIZE = 8          -- keycap footprint (studs)
+local keyGrid = {}          -- [cellKey] = { key, key, ... } for fast underfoot lookup
+local CELL = 4
 
--- The desk far below (what you see when you fall).
+local function gridCell(x, z)
+	return math.floor(x / CELL) .. ":" .. math.floor(z / CELL)
+end
+
+local function registerKey(key, x, z, half)
+	for cx = math.floor((x - half) / CELL), math.floor((x + half) / CELL) do
+		for cz = math.floor((z - half) / CELL), math.floor((z + half) / CELL) do
+			local cell = cx .. ":" .. cz
+			keyGrid[cell] = keyGrid[cell] or {}
+			table.insert(keyGrid[cell], key)
+		end
+	end
+end
+
+-- Build one keycap whose TOP surface sits at surfaceY.
+local function makeKeycap(x, z, surfaceY, capColor, topColor, letter, bouncy)
+	newPart({
+		Name = "KeySkirt", Size = Vector3.new(KEY_SIZE, 0.7, KEY_SIZE),
+		Position = Vector3.new(x, surfaceY - 2.75, z),
+		Color = Color3.fromRGB(255, 170, 200),
+		Parent = mapFolder,
+	})
+	newPart({
+		Name = "KeyBase", Size = Vector3.new(KEY_SIZE - 0.4, 2, KEY_SIZE - 0.4),
+		Position = Vector3.new(x, surfaceY - 1.4, z),
+		Color = capColor,
+		Parent = mapFolder,
+	})
+	local top = newPart({
+		Name = "KeyTop", Size = Vector3.new(KEY_SIZE - 1.4, 0.8, KEY_SIZE - 1.4),
+		Position = Vector3.new(x, surfaceY - 0.4, z),
+		Color = topColor,
+		Parent = mapFolder,
+	})
+	local gui = Instance.new("SurfaceGui")
+	gui.Face = Enum.NormalId.Top
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(1, 0, 1, 0)
+	label.Rotation = 180
+	label.Text = letter or ""
+	styleText(label, 100, Color3.fromRGB(120, 85, 90))
+	label.TextScaled = true
+	label.Parent = gui
+	gui.Parent = top
+
+	local key = {
+		top = top, restCF = top.CFrame, x = x, z = z, surfaceY = surfaceY,
+		pressGeneration = 0, sound = nil, bouncy = bouncy or false,
+	}
+	registerKey(key, x, z, KEY_SIZE / 2)
+	return key
+end
+
+-- Press animation + the all-important click.
+local function pressKey(key, playbackSpeed)
+	key.pressGeneration += 1
+	local generation = key.pressGeneration
+	key.top.CFrame = key.restCF * CFrame.new(0, -0.35, 0)
+	if not key.sound then
+		local sound = Instance.new("Sound")
+		sound.SoundId = "rbxasset://sounds/clickfast.wav"
+		sound.Volume = 0.5
+		sound.RollOffMaxDistance = 70
+		sound.Parent = key.top
+		key.sound = sound
+	end
+	key.sound.PlaybackSpeed = playbackSpeed or 1
+	key.sound:Play()
+	task.delay(0.16, function()
+		if key.pressGeneration == generation then
+			key.top.CFrame = key.restCF
+		end
+	end)
+end
+
+local function keyUnderPosition(x, z)
+	local bucket = keyGrid[gridCell(x, z)]
+	if not bucket then return nil end
+	for _, key in ipairs(bucket) do
+		if math.abs(x - key.x) < KEY_SIZE / 2 + 0.4 and math.abs(z - key.z) < KEY_SIZE / 2 + 0.4 then
+			return key
+		end
+	end
+	return nil
+end
+
+--==============================================================================
+-- THE DESK far below (what you see while you fall)
+--==============================================================================
+
 newPart({
-	Name = "Desk", Size = Vector3.new(220, 2, 1560),
-	Position = Vector3.new(0, -15, 700),
-	Color = Color3.fromRGB(255, 183, 197),
+	Name = "Desk", Size = Vector3.new(400, 4, 1800),
+	Position = Vector3.new(0, -42, 700),
+	Color = Color3.fromRGB(196, 148, 110), Material = Enum.Material.Wood,
 	Parent = mapFolder,
 })
 newPart({
-	Name = "DeskMat", Size = Vector3.new(150, 0.6, 1500),
-	Position = Vector3.new(0, -13.7, 700),
-	Color = Color3.fromRGB(186, 140, 255),
+	Name = "DeskMat", Size = Vector3.new(220, 1, 1700),
+	Position = Vector3.new(0, -39.5, 700),
+	Color = Color3.fromRGB(150, 110, 220),
 	Parent = mapFolder,
+})
+-- a giant mug of hot chocolate on the desk, because of course
+tube("Y", 40, 44, Color3.fromRGB(255, 120, 150), {
+	Name = "Mug", Position = Vector3.new(-130, -20, 240), Parent = mapFolder,
+})
+tube("Y", 3, 38, Color3.fromRGB(110, 70, 50), {
+	Name = "Cocoa", Position = Vector3.new(-130, -1, 240), Parent = mapFolder,
+})
+tube("Z", 5, 16, Color3.fromRGB(255, 120, 150), {
+	Name = "MugHandle", Position = Vector3.new(-152, -22, 240), Parent = mapFolder,
+})
+-- and a giant pencil
+tube("Z", 160, 8, Color3.fromRGB(255, 200, 80), {
+	Name = "Pencil", Position = Vector3.new(120, -36, 500), Parent = mapFolder,
 })
 
 --==============================================================================
--- SPAWN PLAZA -- spawn, AFK treadmill, trail shop, rebirth statue
+-- THE LOBBY -- a floor of giant clicking keys, with everything around it
 --==============================================================================
 
-local PLAZA_DEPTH = 70
+local LOBBY_PHRASE = "PLUSONESPEEDCANDYKEYBOARDRUNFASTCLICKCLACKZOOMSNACK"
+
+-- Solid slab under the lobby keys so the cracks between them are safe.
 newPart({
-	Name = "Plaza", Size = Vector3.new(64, 1.2, PLAZA_DEPTH),
-	Position = Vector3.new(0, OBBY_Y - 0.6, PLAZA_DEPTH / 2),
-	Color = Color3.fromRGB(255, 244, 200),
+	Name = "LobbyBase", Size = Vector3.new(78, 1, 76),
+	Position = Vector3.new(0, OBBY_Y - 3.35, -36),
+	Color = Color3.fromRGB(120, 80, 60),
 	Parent = mapFolder,
 })
-newPart({
-	Name = "PlazaTrim", Size = Vector3.new(68, 0.8, PLAZA_DEPTH + 4),
-	Position = Vector3.new(0, OBBY_Y - 1.2, PLAZA_DEPTH / 2),
-	Color = Color3.fromRGB(255, 150, 200),
-	Parent = mapFolder,
-})
+
+do
+	local letterIndex = 0
+	for col = -4, 4 do
+		for row = 0, 8 do
+			letterIndex += 1
+			local letter = LOBBY_PHRASE:sub((letterIndex - 1) % #LOBBY_PHRASE + 1, (letterIndex - 1) % #LOBBY_PHRASE + 1)
+			local shade = (col + row) % 2 == 0
+			makeKeycap(col * 8.2, -69 + row * 8.2, OBBY_Y,
+				shade and Color3.fromRGB(150, 100, 75) or Color3.fromRGB(255, 185, 205),
+				shade and Color3.fromRGB(200, 150, 120) or Color3.fromRGB(255, 225, 235),
+				letter)
+		end
+	end
+end
 
 local spawnPad = Instance.new("SpawnLocation")
-spawnPad.Size = Vector3.new(12, 1, 12)
-spawnPad.Position = Vector3.new(0, OBBY_Y + 0.5, 12)
+spawnPad.Size = Vector3.new(10, 1, 10)
+spawnPad.Position = Vector3.new(0, OBBY_Y + 0.5, -36)
 spawnPad.Anchored = true
 spawnPad.Neutral = true
 spawnPad.Color = Color3.fromRGB(255, 255, 255)
@@ -277,99 +465,176 @@ spawnPad.Material = Enum.Material.SmoothPlastic
 spawnPad.TopSurface = Enum.SurfaceType.Smooth
 spawnPad.Duration = 0
 spawnPad.Parent = mapFolder
-local SPAWN_POS = Vector3.new(0, OBBY_Y + 4, 12)
+local SPAWN_POS = Vector3.new(0, OBBY_Y + 4, -36)
 
 local welcomeSign = newPart({
 	Name = "WelcomeSign", Size = Vector3.new(0.5, 0.5, 0.5), Transparency = 1,
 	CanCollide = false, CanQuery = false,
-	Position = Vector3.new(0, OBBY_Y + 16, 6),
+	Position = Vector3.new(0, OBBY_Y + 18, -36),
 	Parent = mapFolder,
 })
-makeLabel(welcomeSign, 1.6, "PLUS ONE SPEED", Color3.fromRGB(255, 110, 180), 34, 500)
-makeLabel(welcomeSign, -1, "Every STEP = +1 Speed! Run the keyboard, grab the WINS pads!", Color3.fromRGB(255, 244, 200), 18, 400)
+makeLabel(welcomeSign, 1.6, "PLUS ONE SPEED: CANDY KEYBOARD", Color3.fromRGB(255, 110, 180), 32, 500)
+makeLabel(welcomeSign, -1, "Every step = +Speed! Follow the keys, smash the yellow WIN buttons!", Color3.fromRGB(255, 244, 220), 18, 400)
 
--- AFK TREADMILL: stand on it to gain speed while doing nothing.
-local treadmill = newPart({
-	Name = "Treadmill", Size = Vector3.new(10, 0.6, 14),
-	Position = Vector3.new(-22, OBBY_Y + 0.3, 16),
-	Color = Color3.fromRGB(70, 70, 85),
-	Parent = mapFolder,
-})
-for z = -5, 5, 2 do
+--==============================================================================
+-- TREADMILLS (west side of the lobby)
+--==============================================================================
+
+local treadmillPads = {} -- [tier] = { pos, prompt or nil }
+for tier, treadmill in ipairs(TREADMILLS) do
+	local pos = Vector3.new(-32, OBBY_Y, -18 - (tier - 1) * 18)
 	newPart({
-		Name = "TreadmillStripe", Size = Vector3.new(8, 0.1, 0.8),
-		Position = treadmill.Position + Vector3.new(0, 0.36, z),
-		Color = Color3.fromRGB(140, 255, 140), Material = Enum.Material.Neon,
-		CanCollide = false, CanQuery = false,
+		Name = "TreadmillFrame", Size = Vector3.new(10, 1, 15),
+		Position = pos + Vector3.new(0, 0.2, 0),
+		Color = Color3.fromRGB(70, 60, 65),
 		Parent = mapFolder,
 	})
+	local belt = newPart({
+		Name = "TreadmillBelt", Size = Vector3.new(8, 0.4, 13),
+		Position = pos + Vector3.new(0, 0.9, 0),
+		Color = treadmill.color,
+		Parent = mapFolder,
+	})
+	for z = -5, 5, 2 do
+		newPart({
+			Name = "BeltStripe", Size = Vector3.new(7, 0.1, 0.7),
+			Position = belt.Position + Vector3.new(0, 0.26, z),
+			Color = Color3.fromRGB(255, 255, 255), Material = Enum.Material.Neon,
+			CanCollide = false, CanQuery = false,
+			Parent = mapFolder,
+		})
+	end
+	makeLabel(belt, 5, treadmill.name, treadmill.color, 20, 140)
+	makeLabel(belt, 3.8, "x" .. treadmill.mult .. " AFK steps" .. (treadmill.cost > 0 and ("  |  " .. formatNum(treadmill.cost) .. " Wins") or "  |  FREE"),
+		Color3.fromRGB(255, 244, 220), 14, 100)
+	local entry = { pos = belt.Position, tier = tier }
+	if treadmill.cost > 0 then
+		local prompt = Instance.new("ProximityPrompt")
+		prompt.ActionText = "Buy"
+		prompt.ObjectText = treadmill.name
+		prompt.HoldDuration = 0.3
+		prompt.MaxActivationDistance = 9
+		prompt.RequiresLineOfSight = false
+		prompt.Parent = belt
+		entry.prompt = prompt
+	end
+	treadmillPads[tier] = entry
 end
-makeLabel(treadmill, 4, "AFK TREADMILL  (+" .. TREADMILL_GAIN .. " speed/s)", Color3.fromRGB(140, 255, 140), 18, 140)
-local TREADMILL_POS = treadmill.Position
 
--- REBIRTH STATUE: a golden runner on a pedestal.
-local statueBase = Vector3.new(22, OBBY_Y, 16)
-tube("Y", 2, 8, Color3.fromRGB(255, 255, 255), {
-	Name = "StatuePedestal", Position = statueBase + Vector3.new(0, 1, 0), Parent = mapFolder,
-})
-local statueBody = ball(Vector3.new(3, 4, 2.6), Color3.fromRGB(255, 200, 80), {
-	Name = "StatueBody", Material = Enum.Material.Metal,
-	Position = statueBase + Vector3.new(0, 4.6, 0),
-	Parent = mapFolder,
-})
-ball(Vector3.new(2, 1.9, 2), Color3.fromRGB(255, 200, 80), {
-	Name = "StatueHead", Material = Enum.Material.Metal,
-	Position = statueBase + Vector3.new(0, 7.4, 0),
-	Parent = mapFolder,
-})
-makeLabel(statueBody, 5.4, "REBIRTH STATUE", Color3.fromRGB(255, 213, 79), 22, 250)
-local _, rebirthInfoLabel = makeLabel(statueBody, 4.2, "", Color3.fromRGB(255, 244, 200), 15, 150)
+--==============================================================================
+-- DIGIT PLATES (east side) -- giant numbered buttons, buy them in order
+--==============================================================================
 
-local rebirthPrompt = Instance.new("ProximityPrompt")
-rebirthPrompt.ActionText = "Rebirth"
-rebirthPrompt.ObjectText = "Reset Speed, permanent multiplier!"
-rebirthPrompt.HoldDuration = 0.5
-rebirthPrompt.MaxActivationDistance = 10
-rebirthPrompt.RequiresLineOfSight = false
-rebirthPrompt.Parent = statueBody
-
--- TRAIL SHOP: five stands along the back of the plaza.
-local trailPrompts = {}
-for i, trail in ipairs(TRAILS) do
-	local x = -28 + (i - 1) * 14
-	local standPos = Vector3.new(x, OBBY_Y, 58)
-	tube("Y", 3.6, 2, Color3.fromRGB(255, 255, 255), {
-		Name = "TrailStand", Position = standPos + Vector3.new(0, 1.8, 0), Parent = mapFolder,
-	})
-	local orb = ball(Vector3.new(2.4, 2.4, 2.4), trail.color or Color3.fromRGB(255, 0, 255), {
-		Name = "TrailOrb" .. i, Material = Enum.Material.Neon,
-		Position = standPos + Vector3.new(0, 4.6, 0),
+local plateParts = {} -- [index] = { part, prompt, costLabel }
+for i, plate in ipairs(PLATES) do
+	local pos = Vector3.new(32, OBBY_Y, -8 - (i - 1) * 8)
+	local hue = 0.32 - (i - 1) * 0.04
+	local button = newPart({
+		Name = "DigitPlate" .. i, Size = Vector3.new(6.5, 1.6, 6.5),
+		Position = pos + Vector3.new(0, 0.5, 0),
+		Color = Color3.fromHSV(math.max(hue, 0), 0.55, 1),
 		Parent = mapFolder,
 	})
-	makeLabel(orb, 2.6, trail.name, trail.color or Color3.fromRGB(255, 120, 255), 17, 90)
-	makeLabel(orb, 1.6, formatNum(trail.cost) .. " Wins  |  +" .. (trail.bonus * 100) .. "% speed gain", Color3.fromRGB(190, 255, 190), 13, 70)
+	local gui = Instance.new("SurfaceGui")
+	gui.Face = Enum.NormalId.Top
+	local digit = Instance.new("TextLabel")
+	digit.Size = UDim2.new(1, 0, 1, 0)
+	digit.Rotation = 180
+	digit.Text = "+" .. plate.bonus
+	styleText(digit, 100, Color3.fromRGB(70, 45, 55))
+	digit.TextScaled = true
+	digit.Parent = gui
+	gui.Parent = button
+	local _, costLabel = makeLabel(button, 3.2,
+		plate.cost == 0 and "FREE - your first plate!" or (formatNum(plate.cost) .. " Wins"),
+		Color3.fromRGB(255, 244, 220), 15, 90)
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ActionText = "Buy"
-	prompt.ObjectText = trail.name
+	prompt.ObjectText = "+" .. plate.bonus .. " Speed per step"
 	prompt.HoldDuration = 0.3
 	prompt.MaxActivationDistance = 8
 	prompt.RequiresLineOfSight = false
-	prompt.Parent = orb
-	trailPrompts[i] = { prompt = prompt, orb = orb }
+	prompt.Enabled = plate.cost > 0
+	prompt.Parent = button
+	plateParts[i] = { part = button, prompt = prompt, costLabel = costLabel }
 end
-makeLabel(newPart({
-	Name = "ShopSign", Size = Vector3.new(0.5, 0.5, 0.5), Transparency = 1,
+local plateSign = newPart({
+	Name = "PlateSign", Size = Vector3.new(0.5, 0.5, 0.5), Transparency = 1,
 	CanCollide = false, CanQuery = false,
-	Position = Vector3.new(0, OBBY_Y + 12, 60), Parent = mapFolder,
-}), 0, "TRAIL SHOP - trails multiply your speed gain forever!", Color3.fromRGB(216, 160, 255), 20, 250)
+	Position = Vector3.new(32, OBBY_Y + 10, -36),
+	Parent = mapFolder,
+})
+makeLabel(plateSign, 0, "DIGIT PLATES - permanently raise your Speed per step!", Color3.fromRGB(140, 255, 160), 20, 220)
 
 --==============================================================================
--- ANGRY BRAINROT BLOBS (they patrol the later stages)
+-- SERVER LEADERBOARD BOARD (back of the lobby)
 --==============================================================================
 
-local function buildChaser()
+local board = newPart({
+	Name = "Leaderboard", Size = Vector3.new(26, 14, 1.2),
+	Position = Vector3.new(0, OBBY_Y + 8, -76),
+	Color = Color3.fromRGB(62, 40, 34),
+	Parent = mapFolder,
+})
+local boardGui = Instance.new("SurfaceGui")
+boardGui.Face = Enum.NormalId.Front
+local boardTitle = Instance.new("TextLabel")
+boardTitle.Size = UDim2.new(1, 0, 0.2, 0)
+boardTitle.Text = "FASTEST ON THE SERVER"
+styleText(boardTitle, 60, Color3.fromRGB(255, 213, 79))
+boardTitle.TextScaled = true
+boardTitle.Parent = boardGui
+local boardList = Instance.new("TextLabel")
+boardList.Size = UDim2.new(1, -40, 0.75, 0)
+boardList.Position = UDim2.new(0, 20, 0.22, 0)
+boardList.Text = ""
+styleText(boardList, 44, Color3.fromRGB(255, 244, 220))
+boardList.TextYAlignment = Enum.TextYAlignment.Top
+boardList.TextXAlignment = Enum.TextXAlignment.Left
+boardList.Parent = boardGui
+boardGui.Parent = board
+
+--==============================================================================
+-- TELEPORT PORTAL + STAGE-ONE ARCHWAY (front of the lobby)
+--==============================================================================
+
+for _, x in ipairs({ -8, 8 }) do
+	tube("Y", 14, 2.2, Color3.fromRGB(255, 110, 180), {
+		Name = "ArchPillar", Position = Vector3.new(x, OBBY_Y + 7, 2), Parent = mapFolder,
+	})
+	ball(Vector3.new(3, 3, 3), Color3.fromRGB(255, 160, 210), {
+		Name = "ArchBall", Position = Vector3.new(x, OBBY_Y + 14.6, 2), Parent = mapFolder,
+	})
+end
+local archTop = tube("X", 18, 2.2, Color3.fromRGB(255, 110, 180), {
+	Name = "ArchTop", Position = Vector3.new(0, OBBY_Y + 14.6, 2), Parent = mapFolder,
+})
+makeLabel(archTop, 3, "STAGE 1: " .. STAGES[1].name .. "  -->", Color3.fromRGB(255, 244, 220), 22, 300)
+
+local portalRing = tube("Z", 1.4, 12, Color3.fromRGB(140, 240, 255), {
+	Name = "TeleportPortal", Material = Enum.Material.Neon,
+	Position = Vector3.new(-24, OBBY_Y + 6.5, 0),
+	Parent = mapFolder,
+})
+makeLabel(portalRing, 8, "TELEPORT", Color3.fromRGB(140, 240, 255), 22, 200)
+makeLabel(portalRing, 6.6, "use the swirl button on your screen!", Color3.fromRGB(255, 244, 220), 14, 150)
+
+--==============================================================================
+-- STAGE CONSTRUCTION -- keys, safe zones, WIN buttons, and gimmicks
+--==============================================================================
+
+local SAFE_ZONES = {}    -- [i] = { pos, size } ; index 1 = lobby, i+1 = after stage i
+local WIN_BUTTONS = {}   -- [i] = { pos, stage, reward, key }
+local STAGE_STARTS = {}  -- [i] = position just before stage i begins
+local gimmicks = {}      -- moving hazards, driven each Heartbeat
+local chaserModels = {}  -- patrolling gummy blobs
+
+table.insert(SAFE_ZONES, { pos = Vector3.new(0, OBBY_Y, -36), size = Vector3.new(78, 0, 76) })
+
+-- A patrolling angry gummy blob.
+local function buildChaser(color)
 	local model = Instance.new("Model")
-	model.Name = "Angry Brainrot"
+	model.Name = "Gummy Guard"
 	local root = newPart({
 		Name = "Root", Size = Vector3.new(0.4, 0.4, 0.4),
 		Transparency = 1, CanCollide = false, CanQuery = false,
@@ -377,150 +642,150 @@ local function buildChaser()
 	})
 	root.Parent = model
 	model.PrimaryPart = root
-
-	local hue = rng:NextNumber(0, 0.12) -- angry reds and oranges
-	local bodyColor = Color3.fromHSV(hue, 0.75, 0.95)
-	local body = ball(Vector3.new(3.4, 3.6, 3), bodyColor, { Name = "Body", Position = Vector3.new(0, 2.2, 0) })
+	local body = ball(Vector3.new(3.6, 3.8, 3.2), color, { Name = "Body", Position = Vector3.new(0, 2.3, 0), Transparency = 0.15 })
 	body.CanCollide = false
 	body.Parent = model
-	for _, x in ipairs({ -0.65, 0.65 }) do
-		local eye = ball(Vector3.new(0.8, 0.8, 0.45), Color3.new(1, 1, 1), { Name = "Eye", Position = Vector3.new(x, 3, -1.3) })
+	for _, x in ipairs({ -0.7, 0.7 }) do
+		local eye = ball(Vector3.new(0.8, 0.8, 0.45), Color3.new(1, 1, 1), { Name = "Eye", Position = Vector3.new(x, 3.1, -1.35) })
 		eye.CanCollide = false
 		eye.Parent = model
-		local pupil = ball(Vector3.new(0.4, 0.4, 0.25), Color3.new(0, 0, 0), { Name = "Pupil", Position = Vector3.new(x, 3, -1.5) })
+		local pupil = ball(Vector3.new(0.4, 0.4, 0.25), Color3.new(0, 0, 0), { Name = "Pupil", Position = Vector3.new(x, 3.1, -1.55) })
 		pupil.CanCollide = false
 		pupil.Parent = model
-		local brow = newPart({ Name = "Brow", Size = Vector3.new(0.9, 0.22, 0.2), Color = Color3.fromRGB(40, 25, 30) })
-		brow.CFrame = CFrame.new(x, 3.6, -1.35) * CFrame.Angles(0, 0, math.rad(x < 0 and -20 or 20))
+		local brow = newPart({ Name = "Brow", Size = Vector3.new(0.95, 0.22, 0.2), Color = Color3.fromRGB(30, 60, 35) })
+		brow.CFrame = CFrame.new(x, 3.7, -1.4) * CFrame.Angles(0, 0, math.rad(x < 0 and -20 or 20))
 		brow.CanCollide = false
 		brow.Parent = model
 	end
-	local mouth = ball(Vector3.new(1.1, 0.7, 0.3), Color3.fromRGB(60, 25, 30), { Name = "Mouth", Position = Vector3.new(0, 2.2, -1.45) })
+	local mouth = ball(Vector3.new(1.2, 0.7, 0.3), Color3.fromRGB(40, 80, 45), { Name = "Mouth", Position = Vector3.new(0, 2.2, -1.5) })
 	mouth.CanCollide = false
 	mouth.Parent = model
-	for _, x in ipairs({ -0.8, 0.8 }) do
-		local foot = ball(Vector3.new(1, 0.6, 1.3), bodyColor, { Name = "Foot", Position = Vector3.new(x, 0.3, 0) })
-		foot.CanCollide = false
-		foot.Parent = model
-	end
 	return model
 end
 
---==============================================================================
--- THE KEYBOARD STAGES
---==============================================================================
-
-local KEY_PHRASES = {
-	"PLUSONESPEED", "RUNFASTER", "CANDYKEYS", "BRAINROT",
-	"ZOOMZOOM", "SKIBIDI", "TOOFAST", "GOLDENRUN",
-}
-
-local SAFE_ZONES = {}  -- { index, pos, size } -- zone 0 is the plaza
-local WINS_PADS = {}   -- { pos, stage, reward }
-local STAGE_CHASERS = {} -- { model, center, range, z, speed, phase }
-
-table.insert(SAFE_ZONES, { index = 0, pos = Vector3.new(0, OBBY_Y, PLAZA_DEPTH / 2), size = Vector3.new(64, 0, PLAZA_DEPTH) })
-
-local cursorZ = PLAZA_DEPTH + 10
+local cursorZ = 12
 local laneOffsets = { -7, 0, 7 }
 
-for stage = 1, STAGE_COUNT do
-	local keyCount = 6 + stage
-	local gap = 2.5 + 0.45 * stage
-	local phrase = KEY_PHRASES[(stage - 1) % #KEY_PHRASES + 1]
-	local lane = 2 -- start each stage in the middle lane
+for stageIndex, stage in ipairs(STAGES) do
+	STAGE_STARTS[stageIndex] = Vector3.new(0, OBBY_Y + 4, cursorZ - 6)
+	local lane = 2
+	local stageStartZ = cursorZ
 
-	for k = 1, keyCount do
-		-- drift one lane at most per key, so jumps are always possible
-		lane = math.clamp(lane + rng:NextInteger(-1, 1), 1, 3)
+	for k = 1, stage.keys do
+		if stage.gimmick == "zigzag" then
+			lane = (k % 2 == 0) and 1 or 3 -- hard left-right weave
+		else
+			lane = math.clamp(lane + rng:NextInteger(-1, 1), 1, 3)
+		end
 		local x = laneOffsets[lane]
-		local z = cursorZ + (k - 1) * (8 + gap)
-		local hue = ((stage * 7 + k * 3) % 20) / 20
-
-		newPart({
-			Name = "Key", Size = Vector3.new(8, 2.8, 8),
-			Position = Vector3.new(x, OBBY_Y - 1.4 - 0.35, z),
-			Color = Color3.fromHSV(hue, 0.35, 1),
-			Parent = mapFolder,
-		})
-		local keyTop = newPart({
-			Name = "KeyTop", Size = Vector3.new(6.8, 0.7, 6.8),
-			Position = Vector3.new(x, OBBY_Y - 0.35, z),
-			Color = Color3.fromHSV(hue, 0.18, 1),
-			Parent = mapFolder,
-		})
-		-- the letter printed on the keycap
-		local gui = Instance.new("SurfaceGui")
-		gui.Face = Enum.NormalId.Top
-		local letter = Instance.new("TextLabel")
-		letter.Size = UDim2.new(1, 0, 1, 0)
-		letter.Rotation = 180
-		letter.Text = phrase:sub((k - 1) % #phrase + 1, (k - 1) % #phrase + 1)
-		styleText(letter, 100, Color3.fromRGB(120, 100, 140))
-		letter.TextScaled = true
-		letter.Parent = gui
-		gui.Parent = keyTop
+		local z = cursorZ + (k - 1) * (KEY_SIZE + stage.gap)
+		local letter = stage.phrase:sub((k - 1) % #stage.phrase + 1, (k - 1) % #stage.phrase + 1)
+		makeKeycap(x, z, OBBY_Y, stage.capColor, stage.topColor, letter, stage.gimmick == "bouncy")
 	end
 
-	local stageEndZ = cursorZ + (keyCount - 1) * (8 + gap)
+	local stageEndZ = cursorZ + (stage.keys - 1) * (KEY_SIZE + stage.gap)
 
-	-- Angry brainrots patrol the later stages, sweeping across the keys.
-	if stage == 4 or stage == 6 or stage == 8 then
+	-- Gimmicks that live on this stage's stretch of keys.
+	if stage.gimmick == "ball" then
+		local jawbreaker = ball(Vector3.new(9, 9, 9), Color3.fromRGB(230, 220, 255), {
+			Name = "Jawbreaker", Position = Vector3.new(0, OBBY_Y + 4.5, stageStartZ),
+			Parent = mapFolder, CanCollide = false,
+		})
+		makeLabel(jawbreaker, 6, "JAWBREAKER!", Color3.fromRGB(200, 170, 255), 18, 160)
+		table.insert(gimmicks, {
+			type = "ball", part = jawbreaker, z0 = stageStartZ, z1 = stageEndZ,
+			speed = 0.35, radius = 6,
+		})
+	elseif stage.gimmick == "wave" then
+		local wave = newPart({
+			Name = "ChocoWave", Size = Vector3.new(26, 16, 4),
+			Position = Vector3.new(0, OBBY_Y + 8, stageEndZ),
+			Color = Color3.fromRGB(110, 70, 50), Transparency = 0.25,
+			CanCollide = false, Material = Enum.Material.SmoothPlastic,
+			Parent = mapFolder,
+		})
+		makeLabel(wave, 9.5, "CHOCO TSUNAMI!", Color3.fromRGB(190, 145, 110), 20, 200)
+		table.insert(gimmicks, {
+			type = "wave", part = wave, z0 = stageStartZ - 6, z1 = stageEndZ + 6,
+			period = 9, travelTime = 3.2,
+		})
+	elseif stage.gimmick == "gates" then
+		for g = 1, 3 do
+			local z = stageStartZ + (stageEndZ - stageStartZ) * (g / 4) + (KEY_SIZE + stage.gap) / 2
+			local gate = newPart({
+				Name = "TruffleGate", Size = Vector3.new(24, 11, 1.5),
+				Position = Vector3.new(0, OBBY_Y + 5.5, z),
+				Color = Color3.fromRGB(90, 55, 40), Transparency = 0.15,
+				Parent = mapFolder,
+			})
+			makeLabel(gate, 6.6, "TIMED GATE", Color3.fromRGB(255, 200, 140), 16, 120)
+			table.insert(gimmicks, {
+				type = "gate", part = gate, openTime = 2.6, closedTime = 2, offset = g * 1.6,
+			})
+		end
+	elseif stage.gimmick == "chasers" then
 		for c = 1, 2 do
-			local chaser = buildChaser()
-			local z = cursorZ + (stageEndZ - cursorZ) * (c / 3)
+			local chaser = buildChaser(Color3.fromRGB(110, 220, 130))
 			chaser.Parent = mapFolder
-			table.insert(STAGE_CHASERS, {
+			local z = stageStartZ + (stageEndZ - stageStartZ) * (c / 3)
+			table.insert(chaserModels, {
 				model = chaser, center = 0, range = 12, z = z,
-				speed = 0.9 + 0.25 * stage / 4, phase = c * 2.1 + stage,
+				speed = 1 + 0.3 * c, phase = c * 2.3,
 			})
 		end
 	end
 
-	-- Safe zone at the end of the stage, with its glowing WINS pad.
-	local zoneZ = stageEndZ + gap + 8 + 13
+	-- SAFE ZONE + the yellow WIN button.
+	local zoneZ = stageEndZ + stage.gap + KEY_SIZE / 2 + 12
 	newPart({
-		Name = "SafeZone" .. stage, Size = Vector3.new(34, 1.2, 26),
+		Name = "SafeZone" .. stageIndex, Size = Vector3.new(36, 1.2, 24),
 		Position = Vector3.new(0, OBBY_Y - 0.6, zoneZ),
-		Color = Color3.fromRGB(196, 255, 200),
+		Color = Color3.fromRGB(255, 236, 200),
 		Parent = mapFolder,
 	})
-	local reward = stage * stage
-	local pad = tube("Y", 0.5, 8, Color3.fromRGB(255, 230, 60), {
-		Name = "WinsPad" .. stage, Material = Enum.Material.Neon,
-		Position = Vector3.new(0, OBBY_Y + 0.25, zoneZ),
+	newPart({
+		Name = "SafeZoneTrim", Size = Vector3.new(39, 0.8, 27),
+		Position = Vector3.new(0, OBBY_Y - 1.2, zoneZ),
+		Color = Color3.fromRGB(255, 150, 200),
 		Parent = mapFolder,
 	})
-	makeLabel(pad, 3, "+" .. reward .. " WINS", Color3.fromRGB(255, 230, 60), 22, 160)
-	table.insert(WINS_PADS, { pos = pad.Position, stage = stage, reward = reward })
-	table.insert(SAFE_ZONES, { index = stage, pos = Vector3.new(0, OBBY_Y, zoneZ), size = Vector3.new(34, 0, 26) })
 
-	local sign = tube("Y", 5, 0.8, Color3.fromRGB(255, 200, 80), {
-		Name = "StageSign", Position = Vector3.new(13, OBBY_Y + 2.5, zoneZ + 8), Parent = mapFolder,
+	-- The WIN button is itself a giant golden keycap that presses down.
+	local winKey = makeKeycap(0, zoneZ, OBBY_Y + 0.4, Color3.fromRGB(255, 190, 40), Color3.fromRGB(255, 230, 90), "WIN")
+	makeLabel(winKey.top, 3.4, "+" .. formatNum(stage.wins) .. " WINS", Color3.fromRGB(255, 230, 60), 24, 200)
+	table.insert(WIN_BUTTONS, { pos = Vector3.new(0, OBBY_Y, zoneZ), stage = stageIndex, reward = stage.wins, key = winKey })
+	table.insert(SAFE_ZONES, { pos = Vector3.new(0, OBBY_Y, zoneZ), size = Vector3.new(36, 0, 24) })
+
+	local signPost = tube("Y", 5, 0.8, Color3.fromRGB(255, 200, 80), {
+		Name = "StageSign", Position = Vector3.new(14, OBBY_Y + 2.5, zoneZ + 6), Parent = mapFolder,
 	})
-	makeLabel(sign, 4, stage < STAGE_COUNT and ("STAGE " .. stage + 1 .. "  -->") or "THE GOLDEN BRAINROT AWAITS...",
-		Color3.fromRGB(255, 244, 200), 20, 160)
+	if stageIndex < #STAGES then
+		makeLabel(signPost, 4.6, "NEXT: " .. STAGES[stageIndex + 1].name, Color3.fromRGB(255, 244, 220), 18, 200)
+		makeLabel(signPost, 3.4, "recommended Level " .. STAGES[stageIndex + 1].recLevel, Color3.fromRGB(255, 213, 79), 14, 150)
+	else
+		makeLabel(signPost, 4.6, "THE GOLDEN BRAINROT AWAITS...", Color3.fromRGB(255, 220, 90), 18, 200)
+	end
 
-	cursorZ = zoneZ + 13 + 10
+	cursorZ = zoneZ + 12 + 10
 end
 
 --==============================================================================
--- THE GOLDEN BRAINROT -- the prize at the very end of the keyboard
+-- THE GOLDEN BRAINROT + the locked World 2 gate
 --==============================================================================
 
-local goldenZ = cursorZ + 10
+local goldenZ = cursorZ + 8
 newPart({
-	Name = "GoldenPlatform", Size = Vector3.new(44, 1.2, 40),
+	Name = "GoldenPlatform", Size = Vector3.new(46, 1.2, 42),
 	Position = Vector3.new(0, OBBY_Y - 0.6, goldenZ),
 	Color = Color3.fromRGB(255, 236, 170),
 	Parent = mapFolder,
 })
 tube("Y", 2, 10, Color3.fromRGB(255, 255, 255), {
-	Name = "GoldenPedestal", Position = Vector3.new(0, OBBY_Y + 1, goldenZ + 8), Parent = mapFolder,
+	Name = "GoldenPedestal", Position = Vector3.new(0, OBBY_Y + 1, goldenZ + 10), Parent = mapFolder,
 })
 local golden = ball(Vector3.new(5, 5.4, 4.6), Color3.fromRGB(255, 200, 60), {
 	Name = "GoldenBrainrot", Material = Enum.Material.Metal,
-	Position = Vector3.new(0, OBBY_Y + 4.8, goldenZ + 8),
+	Position = Vector3.new(0, OBBY_Y + 4.8, goldenZ + 10),
 	Parent = mapFolder,
 })
 for _, x in ipairs({ -1, 1 }) do
@@ -532,7 +797,7 @@ for _, x in ipairs({ -1, 1 }) do
 	})
 end
 makeLabel(golden, 4.6, "THE GOLDEN BRAINROT", Color3.fromRGB(255, 220, 90), 24, 300)
-makeLabel(golden, 3.4, "+" .. GOLDEN_BONUS .. " Wins, every " .. math.floor(GOLDEN_COOLDOWN / 60) .. " min!", Color3.fromRGB(255, 244, 200), 15, 200)
+makeLabel(golden, 3.4, "+" .. formatNum(GOLDEN_BONUS) .. " Wins, every " .. math.floor(GOLDEN_COOLDOWN / 60) .. " min!", Color3.fromRGB(255, 244, 220), 15, 200)
 local goldenGlow = Instance.new("Highlight")
 goldenGlow.FillTransparency = 1
 goldenGlow.OutlineColor = Color3.fromRGB(255, 220, 90)
@@ -546,65 +811,59 @@ goldenPrompt.MaxActivationDistance = 10
 goldenPrompt.RequiresLineOfSight = false
 goldenPrompt.Parent = golden
 
-table.insert(SAFE_ZONES, { index = STAGE_COUNT + 1, pos = Vector3.new(0, OBBY_Y, goldenZ), size = Vector3.new(44, 0, 40) })
+table.insert(SAFE_ZONES, { pos = Vector3.new(0, OBBY_Y, goldenZ), size = Vector3.new(46, 0, 42) })
 
--- Tip signs on the plaza.
-local function tipSign(position, text, color)
-	local post = tube("Y", 5, 0.8, Color3.fromRGB(255, 200, 80), {
-		Name = "TipPost", Position = position + Vector3.new(0, 2.5, 0), Parent = mapFolder,
+-- World 2: a locked candy gate, waiting for us to mod it in.
+local gateZ = goldenZ + 26
+for _, x in ipairs({ -10, 10 }) do
+	tube("Y", 18, 3, Color3.fromRGB(190, 120, 220), {
+		Name = "W2Pillar", Position = Vector3.new(x, OBBY_Y + 9, gateZ), Parent = mapFolder,
 	})
-	makeLabel(post, 4, text, color or Color3.fromRGB(255, 255, 255), 20, 140)
 end
-
-tipSign(Vector3.new(-10, OBBY_Y, 34), "Every step you take = +1 Speed. Just RUN!", Color3.fromRGB(140, 255, 160))
-tipSign(Vector3.new(10, OBBY_Y, 44), "Fall off? You teleport back - your speed is safe!", Color3.fromRGB(255, 220, 120))
-tipSign(Vector3.new(-10, OBBY_Y, 54), "Fast enough and you can RUN over the gaps!", Color3.fromRGB(255, 160, 220))
-
--- Puffy clouds floating around the keyboard.
-for _, spot in ipairs({
-	Vector3.new(-70, 45, 100), Vector3.new(75, 52, 350), Vector3.new(-80, 48, 620),
-	Vector3.new(70, 55, 900), Vector3.new(-75, 50, 1150), Vector3.new(60, 47, 1350),
-}) do
-	for i, offset in ipairs({
-		Vector3.new(0, 0, 0), Vector3.new(7, -1, 2), Vector3.new(-7, -1, -1), Vector3.new(2, 2.5, -2),
-	}) do
-		ball(Vector3.new(14 - i, 8 - i * 0.5, 12 - i), Color3.fromRGB(255, 255, 255), {
-			Name = "Cloud", Position = spot + offset, CanCollide = false, Parent = mapFolder,
-		})
-	end
-end
+local w2gate = newPart({
+	Name = "World2Gate", Size = Vector3.new(17, 15, 1.6),
+	Position = Vector3.new(0, OBBY_Y + 7.5, gateZ),
+	Color = Color3.fromRGB(120, 60, 150), Transparency = 0.2,
+	Parent = mapFolder,
+})
+makeLabel(w2gate, 9.4, "WORLD 2", Color3.fromRGB(220, 160, 255), 28, 300)
+makeLabel(w2gate, 8, "Level 120+  |  coming soon (we'll build it together!)", Color3.fromRGB(255, 244, 220), 15, 250)
 
 --==============================================================================
--- GAME STATE
+-- GAME STATE & MATH
 --==============================================================================
 
-local playerData = {} -- [player] = { speed, rebirths, trailIndex, checkpoint,
-                      --   distAcc, lastPos, padCooldowns, goldenAt, lastHit,
-                      --   loaded, loadFailed, trail, overheadLabel }
+local playerData = {} -- [player] = full per-player state (see PlayerAdded)
 
 local function getStat(player, name)
 	local stats = player:FindFirstChild("leaderstats")
 	return stats and stats:FindFirstChild(name)
 end
 
-local function rebirthLevelNeeded(rebirths)
-	local nextIndex = rebirths + 1
-	if nextIndex <= #REBIRTH_LEVELS then
-		return REBIRTH_LEVELS[nextIndex]
-	end
-	local level = REBIRTH_LEVELS[#REBIRTH_LEVELS]
-	for _ = #REBIRTH_LEVELS + 1, nextIndex do
-		level = math.ceil(level * 1.5)
-	end
-	return level
+local function rebirthMult(rebirths)
+	if rebirths <= 0 then return 1 end
+	if rebirths <= #REBIRTHS then return REBIRTHS[rebirths].mult end
+	return REBIRTHS[#REBIRTHS].mult + (rebirths - #REBIRTHS)
 end
 
-local function gainMultiplier(data)
-	local mult = 1 + REBIRTH_BONUS * data.rebirths
-	if data.trailIndex > 0 then
-		mult *= (1 + TRAILS[data.trailIndex].bonus)
+local function nextRebirthInfo(rebirths)
+	local tier = rebirths + 1
+	if tier <= #REBIRTHS then
+		return REBIRTHS[tier].level, REBIRTHS[tier].mult
 	end
-	return mult
+	local last = REBIRTHS[#REBIRTHS]
+	local extra = tier - #REBIRTHS
+	return last.level + extra * 50, last.mult + extra
+end
+
+local function trailMult(data)
+	if data.trailIndex > 0 then return TRAILS[data.trailIndex].mult end
+	return 1
+end
+
+local function stepValue(data)
+	local boost = (os.clock() < data.boostUntil) and 2 or 1
+	return (1 + PLATES[data.plateIndex].bonus) * rebirthMult(data.rebirths) * trailMult(data) * boost
 end
 
 local function playerLevel(data)
@@ -612,7 +871,7 @@ local function playerLevel(data)
 end
 
 --==============================================================================
--- SPEED & TRAILS
+-- SPEED, TRAILS, OVERHEAD TAGS
 --==============================================================================
 
 local function applySpeed(player)
@@ -633,7 +892,6 @@ local function setupCharacterExtras(player, char)
 	local data = playerData[player]
 	if not data then return end
 
-	-- The glowing trail (enabled once a trail is owned).
 	local a0 = Instance.new("Attachment")
 	a0.Position = Vector3.new(0, 1, 0)
 	a0.Parent = hrp
@@ -652,13 +910,12 @@ local function setupCharacterExtras(player, char)
 	trail.Parent = hrp
 	data.trail = trail
 
-	-- The over-head speed tag everyone can see.
 	local head = char:FindFirstChild("Head") or hrp
 	local gui = Instance.new("BillboardGui")
-	gui.Size = UDim2.new(0, 200, 0, 34)
+	gui.Size = UDim2.new(0, 220, 0, 34)
 	gui.StudsOffset = Vector3.new(0, 2.6, 0)
 	gui.AlwaysOnTop = true
-	gui.MaxDistance = 220
+	gui.MaxDistance = 250
 	local label = Instance.new("TextLabel")
 	label.Size = UDim2.new(1, 0, 1, 0)
 	label.Text = ""
@@ -667,7 +924,8 @@ local function setupCharacterExtras(player, char)
 	gui.Parent = head
 	data.overheadLabel = label
 
-	data.lastPos = nil -- fresh character: don't count the spawn jump as steps
+	data.lastPos = nil
+	data.lastKey = nil
 end
 
 local function updateTrail(player)
@@ -680,97 +938,78 @@ local function updateTrail(player)
 	end
 	trail.Enabled = true
 	local color = TRAILS[data.trailIndex].color
-	if not color then -- RAINBOW: cycle every hue
+	if not color then
 		color = Color3.fromHSV(os.clock() * 0.5 % 1, 0.8, 1)
 	end
 	trail.Color = ColorSequence.new(color)
 end
 
 --==============================================================================
--- HUD
+-- NETWORK: snapshots to the GUI LocalScript
 --==============================================================================
 
-local function makeHud(player)
-	local gui = player:FindFirstChild("PlayerGui")
-	if not gui then return end
-	local old = gui:FindFirstChild("SpeedHud")
-	if old then old:Destroy() end
-
-	local screen = Instance.new("ScreenGui")
-	screen.Name = "SpeedHud"
-	screen.ResetOnSpawn = false
-
-	local frame = Instance.new("Frame")
-	frame.Size = UDim2.new(0, 300, 0, 92)
-	frame.Position = UDim2.new(0.5, -150, 1, -112)
-	frame.BackgroundColor3 = Color3.fromRGB(35, 28, 48)
-	frame.BackgroundTransparency = 0.15
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 18)
-	corner.Parent = frame
-	local stroke = Instance.new("UIStroke")
-	stroke.Color = Color3.fromRGB(255, 213, 79)
-	stroke.Thickness = 3
-	stroke.Parent = frame
-
-	local speedLabel = Instance.new("TextLabel")
-	speedLabel.Name = "SpeedText"
-	speedLabel.Size = UDim2.new(1, -16, 0.44, 0)
-	speedLabel.Position = UDim2.new(0, 8, 0, 2)
-	speedLabel.Text = "SPEED: 0"
-	styleText(speedLabel, 30, Color3.fromRGB(255, 213, 79))
-	speedLabel.Parent = frame
-
-	local winsLabel = Instance.new("TextLabel")
-	winsLabel.Name = "WinsText"
-	winsLabel.Size = UDim2.new(1, -16, 0.26, 0)
-	winsLabel.Position = UDim2.new(0, 8, 0.46, 0)
-	winsLabel.Text = ""
-	styleText(winsLabel, 17, Color3.fromRGB(140, 255, 140))
-	winsLabel.Parent = frame
-
-	local rebirthLabel = Instance.new("TextLabel")
-	rebirthLabel.Name = "RebirthText"
-	rebirthLabel.Size = UDim2.new(1, -16, 0.26, 0)
-	rebirthLabel.Position = UDim2.new(0, 8, 0.72, 0)
-	rebirthLabel.Text = ""
-	styleText(rebirthLabel, 15, Color3.fromRGB(255, 180, 230))
-	rebirthLabel.Parent = frame
-
-	frame.Parent = screen
-	screen.Parent = gui
+local function snapshot(player)
+	local data = playerData[player]
+	local wins = getStat(player, "Wins")
+	if not data then return nil end
+	local nextLevel, nextMult = nextRebirthInfo(data.rebirths)
+	return {
+		speed = math.floor(data.speed),
+		wins = wins and wins.Value or 0,
+		level = playerLevel(data),
+		rebirths = data.rebirths,
+		curMult = rebirthMult(data.rebirths),
+		nextRebirthLevel = nextLevel,
+		nextRebirthMult = nextMult,
+		trailIndex = data.trailIndex,
+		plateIndex = data.plateIndex,
+		treadmillTier = data.treadmillTier,
+		boostRemaining = math.max(0, math.floor(data.boostUntil - os.clock())),
+		checkpointMax = data.checkpointMax,
+		stepValue = stepValue(data),
+		freeClaimed = data.freeClaimed,
+	}
 end
 
-local function updateHud(player)
-	local data = playerData[player]
-	local gui = player:FindFirstChild("PlayerGui")
-	local screen = gui and gui:FindFirstChild("SpeedHud")
-	if not data or not screen then return end
-	local frame = screen:FindFirstChildOfClass("Frame")
-	if not frame then return end
-	local mult = gainMultiplier(data)
-	frame.SpeedText.Text = "SPEED: " .. formatNum(data.speed) .. "  (+" .. string.format("%.2g", SPEED_PER_STEP * mult) .. "/step)"
-	local wins = getStat(player, "Wins")
-	frame.WinsText.Text = "WINS: " .. formatNum(wins and wins.Value or 0)
-		.. "   LEVEL: " .. playerLevel(data)
-		.. (data.trailIndex > 0 and ("   " .. TRAILS[data.trailIndex].name) or "")
-	local needed = rebirthLevelNeeded(data.rebirths)
-	if playerLevel(data) >= needed then
-		frame.RebirthText.Text = "REBIRTH READY! Go to the statue!"
-	else
-		frame.RebirthText.Text = "Rebirth " .. data.rebirths .. " (x" .. (1 + REBIRTH_BONUS * data.rebirths)
-			.. ")  |  next at Level " .. needed
+local function pushState(player)
+	local snap = snapshot(player)
+	if snap then
+		stateRemote:FireClient(player, "state", snap)
 	end
 end
 
+local function sendInit(player)
+	local trails = {}
+	for i, trail in ipairs(TRAILS) do
+		trails[i] = { name = trail.name, cost = trail.cost, mult = trail.mult, color = trail.color }
+	end
+	local plates = {}
+	for i, plate in ipairs(PLATES) do
+		plates[i] = { bonus = plate.bonus, cost = plate.cost }
+	end
+	local treadmills = {}
+	for i, treadmill in ipairs(TREADMILLS) do
+		treadmills[i] = { name = treadmill.name, cost = treadmill.cost, mult = treadmill.mult }
+	end
+	local stages = {}
+	for i, stage in ipairs(STAGES) do
+		stages[i] = { name = stage.name, wins = stage.wins, recLevel = stage.recLevel }
+	end
+	stateRemote:FireClient(player, "init", {
+		trails = trails, plates = plates, treadmills = treadmills, stages = stages,
+		teleportCostPerStage = TELEPORT_COST_PER_STAGE,
+		boostCost = BOOST_COST, boostLength = BOOST_LENGTH, freeReward = FREE_REWARD,
+	})
+end
+
 --==============================================================================
--- SAVING (safe to leave on -- if saving isn't available it just skips)
+-- SAVING (same battle-tested guards as our other games)
 --==============================================================================
 
 local saveStore = nil
 if SAVE_PROGRESS then
 	pcall(function()
-		saveStore = DataStoreService:GetDataStore("PlusOneSpeed_v1")
+		saveStore = DataStoreService:GetDataStore("CandyKeyboard_v1")
 	end)
 end
 
@@ -785,8 +1024,10 @@ local function savePlayer(player)
 	if not data.loaded or data.loadFailed then return end
 	local ok = pcall(function()
 		saveStore:SetAsync("player_" .. player.UserId, {
-			speed = data.speed, wins = wins.Value,
-			rebirths = data.rebirths, trailIndex = data.trailIndex,
+			speed = data.speed, wins = wins.Value, rebirths = data.rebirths,
+			trailIndex = data.trailIndex, plateIndex = data.plateIndex,
+			treadmillTier = data.treadmillTier, freeClaimed = data.freeClaimed,
+			checkpointMax = data.checkpointMax,
 		})
 	end)
 	if ok then alreadySaved[player] = true end
@@ -817,9 +1058,11 @@ Players.PlayerAdded:Connect(function(player)
 	stats.Parent = player
 
 	playerData[player] = {
-		speed = 0, rebirths = 0, trailIndex = 0, checkpoint = 1,
-		distAcc = 0, lastPos = nil, padCooldowns = {}, goldenAt = 0,
-		lastHit = 0, loaded = false, loadFailed = false,
+		speed = 0, rebirths = 0, trailIndex = 0, plateIndex = 1,
+		treadmillTier = 1, boostUntil = 0, checkpointMax = 0,
+		distAcc = 0, lastPos = nil, lastKey = nil, lastKeyAt = 0,
+		onWinButton = false, goldenAt = 0, lastHit = 0, freeClaimed = false,
+		loaded = false, loadFailed = false,
 	}
 
 	local function onCharacter(char)
@@ -829,8 +1072,6 @@ Players.PlayerAdded:Connect(function(player)
 	end
 	player.CharacterAdded:Connect(onCharacter)
 	if player.Character then task.spawn(onCharacter, player.Character) end
-
-	makeHud(player)
 
 	local data = playerData[player]
 	local ok, saved = loadPlayer(player)
@@ -844,6 +1085,10 @@ Players.PlayerAdded:Connect(function(player)
 			data.speed = math.max(saved.speed or 0, 0)
 			data.rebirths = saved.rebirths or 0
 			data.trailIndex = math.clamp(saved.trailIndex or 0, 0, #TRAILS)
+			data.plateIndex = math.clamp(saved.plateIndex or 1, 1, #PLATES)
+			data.treadmillTier = math.clamp(saved.treadmillTier or 1, 1, #TREADMILLS)
+			data.freeClaimed = saved.freeClaimed or false
+			data.checkpointMax = math.clamp(saved.checkpointMax or 0, 0, #STAGES)
 			local wins = getStat(player, "Wins")
 			if wins then wins.Value = saved.wins or 0 end
 			local rebirthStat = getStat(player, "Rebirths")
@@ -852,7 +1097,8 @@ Players.PlayerAdded:Connect(function(player)
 			updateTrail(player)
 		end
 	end
-	updateHud(player)
+	sendInit(player)
+	pushState(player)
 end)
 
 Players.PlayerRemoving:Connect(function(player)
@@ -867,63 +1113,63 @@ game:BindToClose(function()
 end)
 
 --==============================================================================
--- REBIRTH & SHOPS
+-- PURCHASES: digit plates, treadmills, the Golden Brainrot
 --==============================================================================
 
-rebirthInfoLabel.Text = "Level " .. REBIRTH_LEVELS[1] .. " to start  |  each rebirth = +" .. REBIRTH_BONUS .. "x speed gain"
-
-rebirthPrompt.Triggered:Connect(function(player)
-	local data = playerData[player]
-	if not data then return end
-	local needed = rebirthLevelNeeded(data.rebirths)
+local function hrpOf(player)
 	local char = player.Character
-	local hrp = char and char:FindFirstChild("HumanoidRootPart")
-	if playerLevel(data) < needed then
-		if hrp then
-			cashPopup(hrp.Position + Vector3.new(0, 4, 0), "Need Level " .. needed .. "!", Color3.fromRGB(255, 180, 180))
-		end
-		return
-	end
-	data.rebirths += 1
-	data.speed = 0
-	data.distAcc = 0
-	applySpeed(player)
-	local rebirthStat = getStat(player, "Rebirths")
-	if rebirthStat then rebirthStat.Value = data.rebirths end
-	if hrp then
-		cashPopup(hrp.Position + Vector3.new(0, 4, 0), "REBIRTH " .. data.rebirths .. "!", Color3.fromRGB(255, 160, 220))
-	end
-	announce(player.Name .. " rebirthed! They now gain x" .. (1 + REBIRTH_BONUS * data.rebirths) .. " speed per step!",
-		Color3.fromRGB(255, 160, 220))
-	updateHud(player)
-end)
+	return char and char:FindFirstChild("HumanoidRootPart")
+end
 
-for i, stand in ipairs(trailPrompts) do
-	stand.prompt.Triggered:Connect(function(player)
+for i, plate in ipairs(plateParts) do
+	plate.prompt.Triggered:Connect(function(player)
 		local data = playerData[player]
 		local wins = getStat(player, "Wins")
 		if not data or not wins then return end
-		local trail = TRAILS[i]
-		local char = player.Character
-		local hrp = char and char:FindFirstChild("HumanoidRootPart")
-		if data.trailIndex >= i then
-			if hrp then cashPopup(hrp.Position + Vector3.new(0, 4, 0), "Already owned!", Color3.fromRGB(255, 220, 140)) end
+		local hrp = hrpOf(player)
+		if data.plateIndex >= i then
+			if hrp then worldPopup(hrp.Position + Vector3.new(0, 4, 0), "Already owned!", Color3.fromRGB(255, 220, 140)) end
 			return
 		end
-		if wins.Value < trail.cost then
-			if hrp then cashPopup(hrp.Position + Vector3.new(0, 4, 0), "Need " .. formatNum(trail.cost) .. " Wins!", Color3.fromRGB(255, 180, 180)) end
+		if data.plateIndex ~= i - 1 then
+			if hrp then worldPopup(hrp.Position + Vector3.new(0, 4, 0), "Buy plate " .. (data.plateIndex + 1) .. " first!", Color3.fromRGB(255, 180, 180)) end
 			return
 		end
-		wins.Value -= trail.cost
-		data.trailIndex = i
-		updateTrail(player)
-		if hrp then cashPopup(hrp.Position + Vector3.new(0, 4, 0), trail.name .. "!", trail.color or Color3.fromRGB(255, 120, 255)) end
-		if i >= 4 then
-			announce(player.Name .. " bought the " .. trail.name .. "! (+" .. (trail.bonus * 100) .. "% speed gain)",
-				trail.color or Color3.fromRGB(255, 120, 255))
+		if wins.Value < PLATES[i].cost then
+			if hrp then worldPopup(hrp.Position + Vector3.new(0, 4, 0), "Need " .. formatNum(PLATES[i].cost) .. " Wins!", Color3.fromRGB(255, 180, 180)) end
+			return
 		end
-		updateHud(player)
+		wins.Value -= PLATES[i].cost
+		data.plateIndex = i
+		if hrp then worldPopup(hrp.Position + Vector3.new(0, 4, 0), "+" .. PLATES[i].bonus .. " per step!", Color3.fromRGB(140, 255, 160)) end
+		if i == #PLATES then
+			announce(player.Name .. " bought the FINAL digit plate! +" .. PLATES[i].bonus .. " per step!", Color3.fromRGB(140, 255, 160))
+		end
+		pushState(player)
 	end)
+end
+
+for tier, pad in ipairs(treadmillPads) do
+	if pad.prompt then
+		pad.prompt.Triggered:Connect(function(player)
+			local data = playerData[player]
+			local wins = getStat(player, "Wins")
+			if not data or not wins then return end
+			local hrp = hrpOf(player)
+			if data.treadmillTier >= tier then
+				if hrp then worldPopup(hrp.Position + Vector3.new(0, 4, 0), "Already owned!", Color3.fromRGB(255, 220, 140)) end
+				return
+			end
+			if wins.Value < TREADMILLS[tier].cost then
+				if hrp then worldPopup(hrp.Position + Vector3.new(0, 4, 0), "Need " .. formatNum(TREADMILLS[tier].cost) .. " Wins!", Color3.fromRGB(255, 180, 180)) end
+				return
+			end
+			wins.Value -= TREADMILLS[tier].cost
+			data.treadmillTier = tier
+			if hrp then worldPopup(hrp.Position + Vector3.new(0, 4, 0), TREADMILLS[tier].name .. "!", Color3.fromRGB(255, 220, 90)) end
+			pushState(player)
+		end)
+	end
 end
 
 goldenPrompt.Triggered:Connect(function(player)
@@ -931,70 +1177,180 @@ goldenPrompt.Triggered:Connect(function(player)
 	local wins = getStat(player, "Wins")
 	if not data or not wins then return end
 	local now = os.clock()
-	local char = player.Character
-	local hrp = char and char:FindFirstChild("HumanoidRootPart")
+	local hrp = hrpOf(player)
 	if now - data.goldenAt < GOLDEN_COOLDOWN then
-		local wait = math.ceil((GOLDEN_COOLDOWN - (now - data.goldenAt)) / 60)
-		if hrp then cashPopup(hrp.Position + Vector3.new(0, 4, 0), "Come back in ~" .. wait .. " min!", Color3.fromRGB(255, 220, 140)) end
+		local waitMin = math.ceil((GOLDEN_COOLDOWN - (now - data.goldenAt)) / 60)
+		if hrp then worldPopup(hrp.Position + Vector3.new(0, 4, 0), "Come back in ~" .. waitMin .. " min!", Color3.fromRGB(255, 220, 140)) end
 		return
 	end
 	data.goldenAt = now
 	wins.Value += GOLDEN_BONUS
-	if hrp then cashPopup(hrp.Position + Vector3.new(0, 5, 0), "+" .. GOLDEN_BONUS .. " WINS!", Color3.fromRGB(255, 230, 60)) end
-	announce(player.Name .. " reached the GOLDEN BRAINROT! +" .. GOLDEN_BONUS .. " Wins!", Color3.fromRGB(255, 220, 90))
-	updateHud(player)
+	if hrp then worldPopup(hrp.Position + Vector3.new(0, 5, 0), "+" .. formatNum(GOLDEN_BONUS) .. " WINS!", Color3.fromRGB(255, 230, 60)) end
+	announce(player.Name .. " reached the GOLDEN BRAINROT! +" .. formatNum(GOLDEN_BONUS) .. " Wins!", Color3.fromRGB(255, 220, 90))
+	pushState(player)
 end)
 
 --==============================================================================
--- MAIN LOOPS
+-- GUI ACTIONS (rebirth, trails, teleport, boost, free reward)
 --==============================================================================
 
--- Once a second: treadmill gains, HUD, overhead tags, rainbow trails.
+actionRemote.OnServerEvent:Connect(function(player, action)
+	if type(action) ~= "table" then return end
+	local data = playerData[player]
+	local wins = getStat(player, "Wins")
+	if not data or not wins then return end
+	local hrp = hrpOf(player)
+
+	if action.t == "rebirth" then
+		local neededLevel = nextRebirthInfo(data.rebirths)
+		if playerLevel(data) < neededLevel then return end
+		data.rebirths += 1
+		data.speed = 0
+		data.distAcc = 0
+		applySpeed(player)
+		local rebirthStat = getStat(player, "Rebirths")
+		if rebirthStat then rebirthStat.Value = data.rebirths end
+		if hrp then worldPopup(hrp.Position + Vector3.new(0, 4, 0), "REBIRTH " .. data.rebirths .. "!", Color3.fromRGB(255, 160, 220)) end
+		announce(player.Name .. " rebirthed! Permanent x" .. rebirthMult(data.rebirths) .. " speed gain!", Color3.fromRGB(255, 160, 220))
+
+	elseif action.t == "buyTrail" then
+		local i = tonumber(action.i)
+		if not i or not TRAILS[i] then return end
+		if data.trailIndex >= i then return end
+		if i ~= data.trailIndex + 1 then return end -- buy them in order
+		if wins.Value < TRAILS[i].cost then return end
+		wins.Value -= TRAILS[i].cost
+		data.trailIndex = i
+		updateTrail(player)
+		if hrp then worldPopup(hrp.Position + Vector3.new(0, 4, 0), TRAILS[i].name .. "!", TRAILS[i].color or Color3.fromRGB(255, 120, 255)) end
+		if i >= 5 then
+			announce(player.Name .. " unlocked the " .. TRAILS[i].name .. "! (x" .. TRAILS[i].mult .. " speed gain)", TRAILS[i].color or Color3.fromRGB(255, 120, 255))
+		end
+
+	elseif action.t == "teleport" then
+		local stage = tonumber(action.stage)
+		if not stage or stage < 1 or stage > #STAGES then return end
+		if stage > data.checkpointMax + 1 then return end -- only stages you've reached
+		local cost = stage * TELEPORT_COST_PER_STAGE
+		if wins.Value < cost then return end
+		local char = player.Character
+		if not char then return end
+		wins.Value -= cost
+		char:PivotTo(CFrame.new(STAGE_STARTS[stage]))
+		local newHrp = hrpOf(player)
+		if newHrp then newHrp.AssemblyLinearVelocity = Vector3.zero end
+		data.lastPos = nil
+
+	elseif action.t == "boost" then
+		if os.clock() < data.boostUntil then return end
+		if wins.Value < BOOST_COST then return end
+		wins.Value -= BOOST_COST
+		data.boostUntil = os.clock() + BOOST_LENGTH
+		if hrp then worldPopup(hrp.Position + Vector3.new(0, 4, 0), "x2 SPEED BOOST!", Color3.fromRGB(255, 230, 60)) end
+
+	elseif action.t == "free" then
+		if data.freeClaimed then return end
+		data.freeClaimed = true
+		data.speed += FREE_REWARD
+		applySpeed(player)
+		if hrp then worldPopup(hrp.Position + Vector3.new(0, 4, 0), "+" .. formatNum(FREE_REWARD) .. " SPEED!", Color3.fromRGB(140, 255, 160)) end
+	end
+	pushState(player)
+end)
+
+--==============================================================================
+-- ONCE-A-SECOND LOOP: treadmills, tags, trails, leaderboard, state pushes
+--==============================================================================
+
 task.spawn(function()
+	local boardTick = 0
 	while true do
 		task.wait(1)
 		for _, player in ipairs(Players:GetPlayers()) do
 			local data = playerData[player]
 			if data then
-				local char = player.Character
-				local hrp = char and char:FindFirstChild("HumanoidRootPart")
+				local hrp = hrpOf(player)
 				if hrp then
-					local offset = hrp.Position - TREADMILL_POS
-					if math.abs(offset.X) < 5.5 and math.abs(offset.Z) < 7.5 and math.abs(offset.Y) < 8 then
-						data.speed += TREADMILL_GAIN * gainMultiplier(data)
-						applySpeed(player)
+					for tier, pad in ipairs(treadmillPads) do
+						local offset = hrp.Position - pad.pos
+						if math.abs(offset.X) < 4.5 and math.abs(offset.Z) < 7 and math.abs(offset.Y) < 7 then
+							if data.treadmillTier >= tier then
+								data.speed += TREADMILL_RATE * TREADMILLS[tier].mult * stepValue(data)
+								applySpeed(player)
+							end
+							break
+						end
 					end
 				end
 				if data.overheadLabel and data.overheadLabel.Parent then
-					data.overheadLabel.Text = math.floor(data.speed) .. " SPEED"
+					data.overheadLabel.Text = formatNum(data.speed) .. " SPEED  |  Lv " .. playerLevel(data)
 						.. (data.rebirths > 0 and ("  |  R" .. data.rebirths) or "")
 				end
 				updateTrail(player)
-				updateHud(player)
+				pushState(player)
 			end
+		end
+		boardTick += 1
+		if boardTick >= 5 then
+			boardTick = 0
+			local ranked = {}
+			for _, player in ipairs(Players:GetPlayers()) do
+				local data = playerData[player]
+				if data then table.insert(ranked, { name = player.DisplayName, speed = data.speed }) end
+			end
+			table.sort(ranked, function(a, b) return a.speed > b.speed end)
+			local lines = {}
+			for i = 1, math.min(5, #ranked) do
+				table.insert(lines, i .. ".  " .. ranked[i].name .. "  -  " .. formatNum(ranked[i].speed))
+			end
+			boardList.Text = table.concat(lines, "\n")
 		end
 	end
 end)
 
--- Every frame: count steps, catch fallers, track checkpoints, pay wins
--- pads, and move the angry brainrots.
-local padTimer = 0
+--==============================================================================
+-- EVERY-FRAME LOOP: steps, key clicks, falls, win buttons, hazards
+--==============================================================================
+
 RunService.Heartbeat:Connect(function(dt)
 	local clockNow = os.clock()
 
-	-- Patrolling brainrots sweep side to side across the keys.
-	for _, chaser in ipairs(STAGE_CHASERS) do
+	-- Gimmicks move first.
+	for _, gimmick in ipairs(gimmicks) do
+		if gimmick.type == "ball" then
+			local travel = 0.5 + 0.5 * math.sin(clockNow * gimmick.speed * 2)
+			local z = gimmick.z0 + (gimmick.z1 - gimmick.z0) * travel
+			local roll = z / gimmick.radius
+			gimmick.part.CFrame = CFrame.new(0, OBBY_Y + gimmick.radius - 1.5, z) * CFrame.Angles(roll, 0, 0)
+			gimmick.z = z
+		elseif gimmick.type == "wave" then
+			local cycle = clockNow % gimmick.period
+			if cycle < gimmick.travelTime then
+				local z = gimmick.z1 - (gimmick.z1 - gimmick.z0) * (cycle / gimmick.travelTime)
+				gimmick.part.Position = Vector3.new(0, OBBY_Y + 8, z)
+				gimmick.part.Transparency = 0.25
+				gimmick.active = true
+				gimmick.z = z
+			else
+				gimmick.part.Transparency = 0.92
+				gimmick.active = false
+			end
+		elseif gimmick.type == "gate" then
+			local cycle = (clockNow + gimmick.offset) % (gimmick.openTime + gimmick.closedTime)
+			local closed = cycle < gimmick.closedTime
+			gimmick.part.CanCollide = closed
+			gimmick.part.Transparency = closed and 0.15 or 0.85
+		end
+	end
+
+	for i, chaser in ipairs(chaserModels) do
 		local x = chaser.center + math.sin(clockNow * chaser.speed + chaser.phase) * chaser.range
 		local nextX = chaser.center + math.sin(clockNow * chaser.speed + chaser.phase + 0.05) * chaser.range
-		local hop = math.abs(math.sin(clockNow * 7 + chaser.phase)) * 0.5
+		local hop = math.abs(math.sin(clockNow * 7 + i)) * 0.5
 		chaser.model:PivotTo(CFrame.lookAt(
 			Vector3.new(x, OBBY_Y + hop, chaser.z),
 			Vector3.new(nextX >= x and nextX + 0.1 or nextX - 0.1, OBBY_Y + hop, chaser.z)))
 	end
-
-	padTimer += dt
-	local checkPads = padTimer >= 0.1
-	if checkPads then padTimer = 0 end
 
 	for _, player in ipairs(Players:GetPlayers()) do
 		local data = playerData[player]
@@ -1003,73 +1359,124 @@ RunService.Heartbeat:Connect(function(dt)
 		if data and hrp then
 			local pos = hrp.Position
 
-			-- STEP COUNTING: every STEP_LENGTH studs walked = +1 step.
+			-- STEP COUNTING (yes, this is the entire heart of the game).
 			if data.lastPos then
 				local delta = Vector3.new(pos.X - data.lastPos.X, 0, pos.Z - data.lastPos.Z).Magnitude
-				if delta < 30 then -- ignore teleports
+				if delta < 30 then
 					data.distAcc += delta
 					if data.distAcc >= STEP_LENGTH then
 						local steps = math.floor(data.distAcc / STEP_LENGTH)
 						data.distAcc -= steps * STEP_LENGTH
-						data.speed += steps * SPEED_PER_STEP * gainMultiplier(data)
+						data.speed += steps * stepValue(data)
 						applySpeed(player)
 					end
 				end
 			end
 			data.lastPos = pos
 
-			-- FELL OFF: back to your latest safe zone (speed is untouched).
-			if pos.Y < -4 then
-				local zone = SAFE_ZONES[data.checkpoint] or SAFE_ZONES[1]
-				local target = zone.index == 0 and SPAWN_POS or (zone.pos + Vector3.new(0, 4, 0))
-				char:PivotTo(CFrame.new(target))
-				hrp.AssemblyLinearVelocity = Vector3.zero
-				data.lastPos = nil
-			end
-
-			-- CHECKPOINTS: standing in a safe zone remembers it.
-			if checkPads then
-				for zoneIndex, zone in ipairs(SAFE_ZONES) do
-					local offset = pos - zone.pos
-					if math.abs(offset.X) < zone.size.X / 2 and math.abs(offset.Z) < zone.size.Z / 2
-						and offset.Y > -4 and offset.Y < 14 then
-						data.checkpoint = zoneIndex
+			-- KEY PRESSES: click the key under your feet.
+			local key = keyUnderPosition(pos.X, pos.Z)
+			if key and math.abs((pos.Y - 3) - key.surfaceY) < 4 then
+				if key ~= data.lastKey or clockNow - data.lastKeyAt > 0.25 then
+					data.lastKey = key
+					data.lastKeyAt = clockNow
+					pressKey(key, 0.9 + math.min(data.speed, 2000) / 3000 + rng:NextNumber(0, 0.15))
+					if key.bouncy then
+						local velocity = hrp.AssemblyLinearVelocity
+						hrp.AssemblyLinearVelocity = Vector3.new(velocity.X, 85, velocity.Z)
 					end
 				end
+			elseif not key then
+				data.lastKey = nil
+			end
 
-				-- WINS PADS: stand on one to collect (short cooldown each).
-				for padIndex, pad in ipairs(WINS_PADS) do
-					local offset = pos - pad.pos
-					if math.abs(offset.X) < 4.5 and math.abs(offset.Z) < 4.5 and offset.Y > -2 and offset.Y < 10 then
-						local lastClaim = data.padCooldowns[padIndex] or -math.huge
-						if clockNow - lastClaim >= WINS_COOLDOWN then
-							data.padCooldowns[padIndex] = clockNow
-							local wins = getStat(player, "Wins")
-							if wins then wins.Value += pad.reward end
-							cashPopup(pos + Vector3.new(0, 5, 0), "+" .. pad.reward .. " WINS!", Color3.fromRGB(255, 230, 60))
-							updateHud(player)
+			-- FALLING: the classic hard reset back to spawn.
+			if pos.Y < -12 then
+				char:PivotTo(CFrame.new(SPAWN_POS))
+				hrp.AssemblyLinearVelocity = Vector3.zero
+				data.lastPos = nil
+				stateRemote:FireClient(player, "fell")
+			end
+
+			-- SAFE ZONES: remember the furthest stage you've completed.
+			for zoneIndex, zone in ipairs(SAFE_ZONES) do
+				local offset = pos - zone.pos
+				if math.abs(offset.X) < zone.size.X / 2 and math.abs(offset.Z) < zone.size.Z / 2
+					and offset.Y > -2 and offset.Y < 14 then
+					local completedStage = zoneIndex - 1
+					if completedStage > data.checkpointMax and completedStage <= #STAGES then
+						data.checkpointMax = completedStage
+						pushState(player)
+					end
+				end
+			end
+
+			-- WIN BUTTONS: pay on ENTRY, then whoosh back to spawn.
+			local onButton = false
+			for _, button in ipairs(WIN_BUTTONS) do
+				local offset = pos - button.pos
+				if math.abs(offset.X) < 4.5 and math.abs(offset.Z) < 4.5 and offset.Y > -2 and offset.Y < 12 then
+					onButton = true
+					if not data.onWinButton then
+						local wins = getStat(player, "Wins")
+						if wins then wins.Value += button.reward end
+						pressKey(button.key, 0.7)
+						worldPopup(pos + Vector3.new(0, 5, 0), "+" .. formatNum(button.reward) .. " WINS!", Color3.fromRGB(255, 230, 60))
+						stateRemote:FireClient(player, "win", button.stage, button.reward)
+						pushState(player)
+						local victoryStage = button.stage
+						task.delay(1.2, function()
+							local currentChar = player.Character
+							local currentHrp = currentChar and currentChar:FindFirstChild("HumanoidRootPart")
+							if currentHrp and playerData[player] then
+								currentChar:PivotTo(CFrame.new(SPAWN_POS))
+								currentHrp.AssemblyLinearVelocity = Vector3.zero
+								playerData[player].lastPos = nil
+							end
+						end)
+						if victoryStage == #STAGES then
+							announce(player.Name .. " beat " .. STAGES[#STAGES].name .. "! +" .. formatNum(button.reward) .. " Wins!", Color3.fromRGB(140, 255, 160))
+						end
+					end
+					break
+				end
+			end
+			data.onWinButton = onButton
+
+			-- HAZARD HITS (2-second immunity between bonks).
+			if clockNow - data.lastHit > 2 then
+				local hit = nil
+				for _, gimmick in ipairs(gimmicks) do
+					if gimmick.type == "ball" and gimmick.z then
+						local delta = pos - Vector3.new(0, OBBY_Y + 4.5, gimmick.z)
+						if Vector3.new(delta.X, 0, delta.Z).Magnitude < gimmick.radius + 1.5 and math.abs(delta.Y) < 9 then
+							hit = Vector3.new(delta.X, 0, delta.Z)
+						end
+					elseif gimmick.type == "wave" and gimmick.active and gimmick.z then
+						if math.abs(pos.X) < 13 and math.abs(pos.Z - gimmick.z) < 3.5 and pos.Y > OBBY_Y - 2 and pos.Y < OBBY_Y + 16 then
+							hit = Vector3.new(0, 0, -1) -- swept backwards
 						end
 					end
 				end
-
-				-- ANGRY BRAINROTS knock you around (and probably off).
-				if clockNow - data.lastHit > 2 then
-					for _, chaser in ipairs(STAGE_CHASERS) do
+				if not hit then
+					for _, chaser in ipairs(chaserModels) do
 						local chaserPos = chaser.model.PrimaryPart.Position
 						local delta = pos - chaserPos
 						if math.abs(delta.Y) < 8 and Vector3.new(delta.X, 0, delta.Z).Magnitude < 4.5 then
-							data.lastHit = clockNow
-							local flat = Vector3.new(delta.X, 0, delta.Z)
-							local pushDirection = flat.Magnitude > 0.05 and flat.Unit or Vector3.new(0, 0, -1)
-							hrp.AssemblyLinearVelocity = pushDirection * 70 + Vector3.new(0, 40, 0)
-							cashPopup(pos + Vector3.new(0, 5, 0), "BONK!", Color3.fromRGB(255, 130, 130))
+							hit = Vector3.new(delta.X, 0, delta.Z)
 							break
 						end
 					end
+				end
+				if hit then
+					data.lastHit = clockNow
+					local pushDirection = hit.Magnitude > 0.05 and hit.Unit or Vector3.new(0, 0, -1)
+					hrp.AssemblyLinearVelocity = pushDirection * 70 + Vector3.new(0, 40, 0)
+					worldPopup(pos + Vector3.new(0, 5, 0), "BONK!", Color3.fromRGB(255, 130, 130))
 				end
 			end
 		end
 	end
 end)
 
-print("Plus One Speed loaded! Run!")
+print("Plus One Speed: Candy Keyboard loaded! Every step counts :)")

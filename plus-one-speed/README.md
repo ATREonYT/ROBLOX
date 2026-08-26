@@ -1,77 +1,91 @@
-# ⚡ Plus One Speed: Keyboard Run
+# ⌨️ Plus One Speed: Candy Keyboard
 
-Game #2! Our take on **+1 Speed Keyboard Escape** — the current king of the
-hyper-casual genre on Roblox (3.8 billion visits, ~500K concurrent players).
+Game #2, rebuilt properly this time. Our faithful from-scratch take on the
+**+1 Speed Keyboard Escape** formula (the current genre king — billions of
+visits) — a candy & chocolate world made of giant mechanical keyboard keys
+that **click and press down under your feet**, where **every step makes you
+permanently faster**.
 
-The whole game is **one script**: [`PlusOneSpeed.server.lua`](PlusOneSpeed.server.lua).
-It builds the entire keyboard world by itself when you press Play.
+This game is **two scripts** (the second one is the on-screen GUI):
+- [`PlusOneSpeed.server.lua`](PlusOneSpeed.server.lua) — the whole game world
+- [`PlusOneSpeed.client.lua`](PlusOneSpeed.client.lua) — the interface
 
 ## What the game is
 
-- **Every step you take = +1 Speed.** That's it. That's the game. Your
-  character literally gets faster the more you run, forever.
-- Run across a giant obby of **candy keyboard keys** floating over a desk.
-  Gaps get wider stage by stage — jump them at first, and once you're fast
-  enough, **run straight over them** without jumping (the genre's famous
-  power-trip moment).
-- A **yellow WINS pad** at the end of each of the 8 stages pays out Wins
-  (later stages pay way more). Fall off? You teleport back to your latest
-  safe zone — your speed is never lost.
-- **Trail shop**: spend Wins on 5 glowing trails that are both cosmetic AND
-  permanent multipliers on your speed gain (up to +400% for the Rainbow).
-- **Rebirth statue**: reset your speed for a permanent multiplier — x1.5 at
-  Level 15, then +0.5x every tier (the real game's exact curve). Trails and
-  Wins survive rebirths, so every run back is faster.
-- **AFK treadmill** at spawn: stand on it and gain speed while doing nothing.
-- **Angry brainrots** (cameo from game #1!) patrol stages 4, 6 and 8, sweeping
-  across the keys — get bonked and you're probably going off the edge.
-- **The Golden Brainrot** waits at the very end: +250 Wins every 3 minutes
-  for anyone who can make the full run.
-- Everyone's speed floats above their head, so the flexing is automatic.
+- **Every step = +Speed**, multiplied by your digit plates × rebirths ×
+  trails (× the x2 boost). Your speed floats over your head for everyone
+  to envy.
+- **The keys actually work**: every keycap has a pink under-skirt, a candy
+  top, a printed letter — and it **presses down with a click** when you step
+  on it. Faster running = faster click-clack. That's the ASMR magic of the
+  real game.
+- **The lobby is a keyboard**: you spawn on giant clicking keys, with the
+  **treadmill row** on one side (AFK speed — upgrade to Golden/Diamond),
+  the **8 numbered digit plates** on the other (permanently raise your
+  speed-per-step, buy them in order), a **server leaderboard** on the back
+  wall, and the Stage 1 archway ahead.
+- **8 candy stages** in a line, each with its own gimmick:
+  gaps → zigzag → a **rolling jawbreaker** → the **choco tsunami** wave →
+  bouncy marshmallows → **timed truffle gates** → a pure speed-check sprint →
+  the gummy-guarded finale.
+- Each stage ends on a giant **yellow WIN keycap**: smash it, bank the Wins,
+  and get whooshed back to spawn — then pay a few Wins in the **Teleport
+  menu** to jump straight back to your furthest stage. Falling = back to
+  spawn too (the real game's loop!).
+- **GUI like the big games**: big speed counter up top, Wins counter,
+  and a left-side button column — **Shop** (x2 boost), **Trails** (7 tiers,
+  Green ×1.5 up to Void ×25 — each one multiplies ALL your speed gain),
+  **Rebirth** (the genre's real curve: Level 15 → ×1.5, then ×2, ×2.5...
+  with a progress bar), **Teleport**, and a **FREE!** welcome gift.
+  Plus "+X" popups raining as you run.
+- **The Golden Brainrot** waits past stage 8 (+25K Wins every 3 min), and a
+  locked **World 2 gate** is standing there waiting for us to mod it in.
 
-## Setup (5 minutes, no experience needed)
+## Setup (5 minutes — note there are TWO scripts now)
 
-1. **Install Roblox Studio** from [create.roblox.com](https://create.roblox.com)
-   (click "Get Studio"). Log in with your normal Roblox account.
-2. Open Studio → create a new place with the **Baseplate** template.
-3. Find the **Explorer** panel (usually on the right; it's in the View
-   menu/tab if hidden).
-4. In the Explorer, hover over **ServerScriptService** → click the **+** →
-   choose **Script**.
-5. Delete the one line of default code in the window that opens.
-6. Open [`PlusOneSpeed.server.lua`](PlusOneSpeed.server.lua) on GitHub, click
-   the **copy button** (two squares, top-right of the file), and **paste
-   everything** into the empty script.
-7. Press **Play** (F5). Now RUN.
+1. **Install Roblox Studio** from [create.roblox.com](https://create.roblox.com),
+   log in with your Roblox account.
+2. Open Studio → new place with the **Baseplate** template.
+3. In the **Explorer** (View menu if hidden):
+   - Hover **ServerScriptService** → **+** → **Script** → delete the default
+     line → paste ALL of [`PlusOneSpeed.server.lua`](PlusOneSpeed.server.lua).
+   - Expand **StarterPlayer** → hover **StarterPlayerScripts** → **+** →
+     **LocalScript** → delete the default line → paste ALL of
+     [`PlusOneSpeed.client.lua`](PlusOneSpeed.client.lua).
+4. Press **Play** (F5). Walk forward. Hear the clicks. Watch the number.
+
+⚠️ Common mistake: the second script must be a **LocalScript** (not a
+Script), and it goes in **StarterPlayerScripts** — if the GUI doesn't
+appear, that's the first thing to check.
 
 ## Publishing & saving
 
-Same as game #1: **File → Publish to Roblox**, make it Public in your game's
-Access Settings on create.roblox.com, and enable
-**Studio Access to API Services** (Settings → Security) so speed, Wins,
-rebirths and trails save between visits. This game works fine with any
-server size — more runners, more fun.
+**File → Publish to Roblox**, then make it Public in your game's Access
+Settings on create.roblox.com. Saving works automatically for real players
+once published; to also have saving in Studio tests, enable **Studio Access
+to API Services** (File → Game Settings → Security). Public servers in the
+real game run 22 players — set whatever you like.
 
-## Making it yours (easy tweaks!)
+## Making it yours (this is the fun part)
 
-Everything is at the top of the script in the CONFIG section:
+Everything is in the CONFIG section at the top of the server script:
 
-- `SPEED_PER_STEP = 1` → make every step worth more
-- `STAGE_COUNT = 8` → build a longer keyboard (it generates automatically!)
-- `TREADMILL_GAIN = 2` → juicier AFK gains
-- `GOLDEN_BONUS = 250` → a bigger jackpot at the end
-- Add trails to the `TRAILS` list, or new phrases to `KEY_PHRASES` (the
-  letters printed on the keys — make them spell anything you want)
-- Change the rebirth curve in `REBIRTH_LEVELS`
+- `STAGES` — add a stage! Copy a line, pick a name, colors, a `phrase`
+  (the letters printed on its keys) and a `gimmick`: `none`, `zigzag`,
+  `ball`, `wave`, `bouncy`, `gates`, or `chasers`. The map builds itself.
+- `PLATES`, `TRAILS`, `REBIRTHS` — retune the whole economy
+- `GOLDEN_BONUS`, `BOOST_COST`, `FREE_REWARD` — the juicy numbers
+- World 2 is just... more `STAGES` entries plus moving the gate. When you're
+  ready, we build it together.
 
-## Ideas for version 2
+## Ideas for next time
 
-- More worlds (a second keyboard theme past the Golden Brainrot)
-- Pets/eggs bought with Wins
-- Zombie-chase stages (the top clone adds chasing hordes)
-- Keycap click sounds (the real game's ASMR hook)
-- Leaderboard statues for the fastest players ever
+- World 2 (the research says: harsher stages — closing gates, wind, a
+  chasing teddy-bear boss, then a space-candy World 3)
+- Win streaks (consecutive clears multiply payouts)
+- Auras on top of trails, pets, more treadmill tiers
+- Music + richer click sound variety per stage
 
 ---
 
-*Built together with Claude. Game #2 of many.*
+*Built together with Claude. Game #2 of many — this time studied properly.*
