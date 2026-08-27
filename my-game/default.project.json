@@ -1,0 +1,13 @@
+{
+  "name": "MyGame",
+  "tree": {
+    "$className": "DataModel",
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
+        "TrailShop": { "$path": "TrailShop.client.lua" }
+      }
+    }
+  }
+}
