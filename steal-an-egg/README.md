@@ -1,6 +1,6 @@
-# My Game
+# Steal an Egg (rebuild)
 
-Your own game's scripts, synced by Rojo.
+Your Steal an Egg rebuild's scripts, synced by Rojo.
 
 Currently contains:
 

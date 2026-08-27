@@ -1,12 +1,14 @@
 {
-  "name": "MyGame",
+  "name": "StealAnEgg",
   "tree": {
     "$className": "DataModel",
     "StarterPlayer": {
       "$className": "StarterPlayer",
       "StarterPlayerScripts": {
         "$className": "StarterPlayerScripts",
-        "TrailShop": { "$path": "TrailShop.client.lua" }
+        "TrailShop": {
+          "$path": "TrailShop.client.lua"
+        }
       }
     }
   }
