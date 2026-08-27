@@ -428,6 +428,13 @@ local FIELD_Z_FAR  = -310        -- far end, behind the Egg Machine
 local FLOOR_TOP    = 2.1         -- the Y where feet (and eggs) rest
 local POND_CENTER  = Vector3.new(26, FLOOR_TOP, -120) -- the Grove's pond
 
+-- Spots wild eggs must NOT spawn on, so they never appear buried inside
+-- the pyramid, a bush, a tree... Every decor helper registers itself here.
+local NO_SPAWN = { { x = POND_CENTER.X, z = POND_CENTER.Z, r = 17 } }
+local function blockSpawns(x, z, r)
+	table.insert(NO_SPAWN, { x = x, z = z, r = r })
+end
+
 -- Every zone: where it sits along Z, its two checker shades, and the color
 -- of the banner that flashes when you walk in.
 local ZONES = {
@@ -494,6 +501,12 @@ for _, side in ipairs({ -1, 1 }) do
 		Color = Color3.fromRGB(95, 200, 80), Material = Enum.Material.Grass,
 		Parent = mapFolder,
 	})
+	-- Invisible barrier so nobody can hike up the ramp and out of the map.
+	newPart({
+		Name = "InvisibleWall", Size = Vector3.new(1, 90, mapLength + 70),
+		Position = Vector3.new(side * (FIELD_HALF_W + 0.5), 45, mapMidZ),
+		Transparency = 1, CanQuery = false, Parent = mapFolder,
+	})
 end
 do -- the wall behind the spawn end
 	local wall = newPart({
@@ -502,6 +515,14 @@ do -- the wall behind the spawn end
 		Parent = mapFolder,
 	})
 	wall.CFrame = CFrame.new(0, 23, FIELD_Z_NEAR + 17.5)
+end
+-- ...and invisible barriers across both ends of the field.
+for _, endZ in ipairs({ FIELD_Z_NEAR + 0.5, FIELD_Z_FAR - 0.5 }) do
+	newPart({
+		Name = "InvisibleWall", Size = Vector3.new(FIELD_HALF_W * 2 + 2, 90, 1),
+		Position = Vector3.new(0, 45, endZ),
+		Transparency = 1, CanQuery = false, Parent = mapFolder,
+	})
 end
 
 -- THE EGG MACHINE: the huge dark contraption that seals the far end of the
@@ -575,6 +596,7 @@ end
 
 -- Blocky cube bushes, like the real map's.
 local function makeBush(position, size)
+	blockSpawns(position.X, position.Z, 6 * size)
 	newPart({
 		Name = "Bush", Size = Vector3.new(6.5, 4, 5.5) * size,
 		Position = position + Vector3.new(0, 2 * size, 0),
@@ -596,6 +618,7 @@ end
 -- Cartoon trees: brown trunk + a cluster of bright balls (pass snowy
 -- leaf colors for the Snowfields' trees).
 local function makeTree(position, size, leafColors)
+	blockSpawns(position.X, position.Z, 7 * size)
 	tube("Y", 6 * size, 2 * size, Color3.fromRGB(161, 110, 75), {
 		Name = "Trunk", Position = position + Vector3.new(0, 3 * size, 0),
 		Parent = mapFolder,
@@ -616,6 +639,7 @@ end
 
 -- Desert cacti: a fat column with two stubby arms.
 local function makeCactus(position)
+	blockSpawns(position.X, position.Z, 4)
 	tube("Y", 4.6, 1.7, Color3.fromRGB(80, 175, 95), {
 		Name = "Cactus", Position = position + Vector3.new(0, 2.3, 0),
 		Parent = mapFolder,
@@ -636,6 +660,7 @@ end
 
 -- Ice crystals for the Snowfields.
 local function makeCrystal(position, size)
+	blockSpawns(position.X, position.Z, 4 * size)
 	local icy = Color3.fromRGB(180, 225, 255)
 	local shard = ball(Vector3.new(1.6, 5, 1.6) * size, icy, {
 		Name = "Crystal", Material = Enum.Material.Glass,
@@ -664,6 +689,7 @@ end
 -- A sleeping wild bird ("Z z z...") snoozing next to its little nest of
 -- decor eggs -- pure set dressing, straight from the screenshot.
 local function makeSleepyBird(position, bodyColor)
+	blockSpawns(position.X, position.Z, 5)
 	bodyColor = bodyColor or Color3.fromRGB(250, 250, 245)
 	ball(Vector3.new(2.6, 2, 3.2), bodyColor, {
 		Name = "SleepyBird", Position = position + Vector3.new(0, 1, 0),
@@ -693,6 +719,7 @@ local function makeSleepyBird(position, bodyColor)
 end
 
 local function makeDecorNest(position)
+	blockSpawns(position.X, position.Z, 4)
 	tube("Y", 0.5, 3.4, Color3.fromRGB(200, 165, 115), {
 		Name = "DecorNest", Position = position + Vector3.new(0, 0.25, 0),
 		Parent = mapFolder,
@@ -718,6 +745,7 @@ makeDecorNest(Vector3.new(20, FLOOR_TOP, 55))
 -- DESERT: the step pyramid, cacti, and sun-baked rocks.
 do
 	local pyBase = Vector3.new(-34, FLOOR_TOP, -14)
+	blockSpawns(pyBase.X, pyBase.Z, 20)
 	for tier, width in ipairs({ 26, 19, 12, 6 }) do
 		newPart({
 			Name = "Pyramid", Size = Vector3.new(width, 3.2, width),
@@ -730,6 +758,7 @@ for _, spot in ipairs({ { 30, 18 }, { 46, -12 }, { -8, -34 }, { 20, -58 }, { -48
 	makeCactus(Vector3.new(spot[1], FLOOR_TOP, spot[2]))
 end
 for _, spot in ipairs({ { 8, -8, 2.4 }, { -20, -52, 1.7 }, { 42, -44, 2 } }) do
+	blockSpawns(spot[1], spot[2], 5)
 	ball(Vector3.new(spot[3], spot[3] * 0.7, spot[3]) * 1.6, Color3.fromRGB(190, 160, 130), {
 		Name = "DesertRock", Position = Vector3.new(spot[1], FLOOR_TOP + spot[3] * 0.3, spot[2]),
 		Parent = mapFolder,
@@ -812,6 +841,7 @@ makeLabel(welcomeSign, -1, "Wild eggs get RARER the deeper you go - they HATCH i
 
 -- Tutorial signs along the way.
 local function tipSign(position, text, color)
+	blockSpawns(position.X, position.Z, 3)
 	local post = tube("Y", 5, 0.8, Color3.fromRGB(190, 140, 95), {
 		Name = "TipPost", Position = position + Vector3.new(0, 2.5, 0), Parent = mapFolder,
 	})
@@ -938,8 +968,9 @@ local function buildBase(index, centerPos)
 
 	local towardConveyor = (centerPos.X > 0) and -1 or 1
 
-	-- The lock button: a chunky red mushroom button, flush on the floor.
-	local buttonBasePos = centerPos + Vector3.new(towardConveyor * (BASE_W / 2 - 4), 0.5, BASE_D / 2 - 4)
+	-- The lock button: a chunky red mushroom button on the base's front
+	-- edge, clear of the nest grid (nests sit at x = +/-10, z = +/-6).
+	local buttonBasePos = centerPos + Vector3.new(towardConveyor * (BASE_W / 2 - 2.5), 0.5, 0)
 	tube("Y", 1.2, 4.4, Color3.fromRGB(255, 255, 255), {
 		Name = "LockButtonBase", Position = buttonBasePos + Vector3.new(0, 0.6, 0), Parent = folder,
 	})
@@ -1091,7 +1122,9 @@ local function buildEggBody(model, egg)
 			eggPart(model, spot)
 		end
 	elseif egg.pattern == "stripes" then
-		for _, band in ipairs({ { y = 1.1, d = 2.1 }, { y = 1.9, d = 1.9 } }) do
+		-- Bands slightly WIDER than the shell's cross-section at their
+		-- height, so they poke out as rings instead of hiding inside it.
+		for _, band in ipairs({ { y = 1.1, d = 2.35 }, { y = 1.9, d = 2.3 } }) do
 			local stripe = tube("Y", 0.22, band.d, egg.accent, {
 				Name = "Stripe", Position = Vector3.new(0, band.y, 0),
 			})
@@ -1491,6 +1524,12 @@ function setupStealPrompt(base, nestIndex, model, info)
 	prompt.Triggered:Connect(function(player)
 		local data = playerData[player]
 		if not data or not data.base then return end
+		-- Exploiters can fire prompts from across the map, so never trust
+		-- the trigger alone -- re-check the distance on the server.
+		local char = player.Character
+		local hrp = char and char:FindFirstChild("HumanoidRootPart")
+		if not hrp or not model.PrimaryPart then return end
+		if (hrp.Position - model.PrimaryPart.Position).Magnitude > prompt.MaxActivationDistance + 5 then return end
 		if player == base.owner then return end        -- can't steal your own
 		if base.locked then return end                 -- base is shielded
 		if data.carrying then return end               -- one at a time, thief
@@ -1564,13 +1603,18 @@ local function pickWildSpawn()
 	return chosen.zone, pool[rng:NextInteger(1, #pool)]
 end
 
--- A random open spot inside a zone (dodging the Grove's pond).
+-- A random open spot inside a zone, dodging everything in NO_SPAWN (the
+-- pond, the pyramid, bushes, trees...) so eggs never spawn buried.
 local function randomWildPosition(zone)
-	for _ = 1, 8 do
+	for _ = 1, 20 do
 		local x = rng:NextNumber(-(FIELD_HALF_W - 10), FIELD_HALF_W - 10)
 		local z = rng:NextNumber(zone.zMin + 6, zone.zMax - 6)
-		local flat = Vector3.new(POND_CENTER.X - x, 0, POND_CENTER.Z - z)
-		if flat.Magnitude > 17 then
+		local clear = true
+		for _, spot in ipairs(NO_SPAWN) do
+			local dx, dz = spot.x - x, spot.z - z
+			if dx * dx + dz * dz < spot.r * spot.r then clear = false break end
+		end
+		if clear then
 			return Vector3.new(x, FLOOR_TOP, z)
 		end
 	end
@@ -1587,7 +1631,11 @@ local function spawnWildEgg(specialEgg, overridePosition)
 		zone, egg = pickWildSpawn()
 	end
 	if rarityIndex[egg.rarity] >= 4 then lastBigSpawn = os.clock() end
-	local info = makeInfo(egg, specialEgg and nil or rollMutation())
+	-- A plain if, on purpose: `specialEgg and nil or rollMutation()` would
+	-- ALWAYS roll (classic Lua trap), and event eggs must never mutate.
+	local mutation = nil
+	if not specialEgg then mutation = rollMutation() end
+	local info = makeInfo(egg, mutation)
 	local model = buildModelFor(info)
 	local pos = overridePosition or randomWildPosition(zone)
 	model:PivotTo(CFrame.new(pos) * CFrame.Angles(0, math.rad(rng:NextNumber(0, 360)), 0))
@@ -1608,6 +1656,11 @@ local function spawnWildEgg(specialEgg, overridePosition)
 		if item.sold then return end
 		local data = playerData[player]
 		if not data or not data.base then return end
+		-- Same anti-exploit distance check as stealing: no remote buying.
+		local char = player.Character
+		local hrp = char and char:FindFirstChild("HumanoidRootPart")
+		if not hrp or not model.PrimaryPart then return end
+		if (hrp.Position - model.PrimaryPart.Position).Magnitude > prompt.MaxActivationDistance + 5 then return end
 		local cash = getCash(player)
 		if not cash or cash.Value < info.price then return end
 		local nestIndex = findEmptyNest(data.base)
@@ -2000,7 +2053,12 @@ local function savePlayer(player, final)
 		})
 	end)
 	data.saving = false
-	if ok and final then alreadySaved[player] = true end
+	if ok and final then
+		alreadySaved[player] = true
+		-- Forget the flag once it can't matter anymore, so the table
+		-- doesn't slowly collect every player who ever left.
+		task.delay(60, function() alreadySaved[player] = nil end)
+	end
 end
 
 local function loadPlayer(player)
@@ -2141,7 +2199,10 @@ Players.PlayerAdded:Connect(function(player)
 end)
 
 Players.PlayerRemoving:Connect(function(player)
-	savePlayer(player, true)
+	-- task.spawn: the save SNAPSHOT is taken synchronously right now, but
+	-- the slow SetAsync yields -- and the cleanup below must not wait for
+	-- it, or the leaver's eggs sit stealable during the yield.
+	task.spawn(savePlayer, player, true)
 	dropCarried(player)
 	-- Anything of theirs still being carried by thieves was just written
 	-- into their save, so remove the live copy -- otherwise the thief could
