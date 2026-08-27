@@ -1,0 +1,10 @@
+{
+  "name": "SnatchABrainrot",
+  "tree": {
+    "$className": "DataModel",
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "BrainrotGame": { "$path": "BrainrotGame.server.lua" }
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "PlusOneSpeed",
+  "tree": {
+    "$className": "DataModel",
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "PlusOneSpeed": { "$path": "PlusOneSpeed.server.lua" }
+    },
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
+        "PlusOneSpeedGui": { "$path": "PlusOneSpeed.client.lua" }
+      }
+    }
+  }
+}
