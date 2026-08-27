@@ -31,17 +31,33 @@ SAFE ZONE  ->  Meadow  ->  Desert  ->  Grove  ->  Snowfields  ->  THE EGG MACHIN
   can see, and a real speed boost (your getaway upgrade!). Opens at the
   shop stand in the SAFE ZONE (any part named `TrailShopZone`).
 
+## Putting it into your EXISTING place ("Steal an egg rebuild")
+
+The game builds its whole map at Play, so it drops straight into the
+place you already have. One-time cleanup first (make a backup copy of
+the place first: File → Save to File As):
+
+1. Delete the old hand-pasted **TrailShop** LocalScript from
+   StarterPlayerScripts — otherwise two shops fight each other.
+2. Delete your old **TrailShopZone** part — the new map builds its own
+   shop stand in the SAFE ZONE. (If you keep yours, the script skips
+   building the stand and the shop opens at your part instead.)
+3. Your old map parts sit right where the canyon will build. Delete
+   them, or drag them into **ServerStorage** to keep them without them
+   showing up in the world. Deleting the **Baseplate** looks best — the
+   canyon floats over the sky void, just like the real game.
+4. Then add the two scripts (next section) and press Play.
+
 ## Setup
 
-1. Best in a fresh **Baseplate** place — the script builds the whole map
-   at Play (everything lands in one `EggMap` folder; delete it and the
-   built map is gone).
-2. Sync with Rojo (`rojo.exe serve` in this folder, connect the plugin),
-   **or** paste `EggGame.server.lua` into a Script in ServerScriptService
-   and `TrailShop.client.lua` into a LocalScript in StarterPlayerScripts.
-3. ⚠️ If you hand-pasted the old TrailShop before, delete that copy first
-   — two copies will fight each other.
-4. **To make saving work**: publish the place, then in Studio go to
+1. Sync with Rojo (`rojo.exe serve` in this folder, connect the plugin),
+   **or** paste `EggGame.server.lua` into a Script named `EggGame` in
+   ServerScriptService and `TrailShop.client.lua` into a LocalScript
+   named `TrailShop` in StarterPlayerScripts.
+2. Press Play — the whole map builds itself (everything lands in one
+   `EggMap` folder in the workspace; delete it and the built map is
+   gone).
+3. **To make saving work**: publish the place, then in Studio go to
    Game Settings → Security → turn ON "Enable Studio Access to API
    Services". Without it the game still runs fine, it just won't save.
 

@@ -174,8 +174,9 @@ local mapFolder = Instance.new("Folder")
 mapFolder.Name = "EggMap"
 mapFolder.Parent = workspace
 
--- Remove any spawn points the template came with; we place our own.
-for _, obj in ipairs(workspace:GetChildren()) do
+-- Remove any spawn points the place came with (even ones tucked away
+-- inside models), so everyone spawns at OUR pad in the safe zone.
+for _, obj in ipairs(workspace:GetDescendants()) do
 	if obj:IsA("SpawnLocation") then obj:Destroy() end
 end
 
