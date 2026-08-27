@@ -1,24 +1,37 @@
 -- TRAIL SHOP GUI -- a card-style shop like the big games use.
 -- LOCALSCRIPT in StarterPlayer -> StarterPlayerScripts.
 --
--- THE LESSON: everything below is just Frames + UICorner + UIStroke +
--- UIGradient + text, and ONE makeCard() function looped over a table.
--- Change the TRAILS table at the top and the shop rebuilds itself.
+-- THE LESSON: this script only DRAWS the shop. The SERVER (EggGame) owns
+-- the truth: the trail catalog, your cash, what you own, what's equipped.
+-- We ask for the catalog once, show it as cards, and every button press
+-- just sends a polite request -- the server checks your cash, grants the
+-- trail, and tells us to redraw. That's why exploiters can't give
+-- themselves free trails, and why everyone else SEES your trail too.
 
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+
 local player = Players.LocalPlayer
 
 --==============================================================================
--- CONFIG -- the shop's contents. Add a line = a new card appears!
+-- TALKING TO THE SERVER -- the three remotes EggGame created for us
 --==============================================================================
 
-local TRAILS = {
-	{ name = "Grey Trail",   rarity = "Common",    speed = 1.5, price = 100,    color = Color3.fromRGB(190, 190, 195) },
-	{ name = "Green Trail",  rarity = "Uncommon",  speed = 2,   price = 5000,   color = Color3.fromRGB( 80, 200,  90) },
-	{ name = "Blue Trail",   rarity = "Rare",      speed = 2.5, price = 25000,  color = Color3.fromRGB( 60, 140, 255) },
-	{ name = "Purple Trail", rarity = "Epic",      speed = 3,   price = 100000, color = Color3.fromRGB(170,  90, 255) },
-	{ name = "Gold Trail",   rarity = "Legendary", speed = 4,   price = 500000, color = Color3.fromRGB(255, 200,  60) },
-}
+local remotes = ReplicatedStorage:WaitForChild("EggRemotes", 30)
+if not remotes then
+	warn("[TrailShop] Can't find EggRemotes - is EggGame.server.lua in ServerScriptService?")
+	return
+end
+local getTrailData = remotes:WaitForChild("GetTrailData")
+local trailAction = remotes:WaitForChild("TrailAction")
+local trailUpdate = remotes:WaitForChild("TrailUpdate")
+
+-- One InvokeServer call fetches everything: the catalog + what we own.
+local shopData = getTrailData:InvokeServer()
+local TRAILS = shopData.catalog
+local owned = shopData.owned or {}
+local equippedName = shopData.equipped ~= "" and shopData.equipped or nil
 
 local RARITY_COLORS = {
 	Common = Color3.fromRGB(120, 120, 125), Uncommon = Color3.fromRGB(60, 160, 70),
@@ -26,7 +39,16 @@ local RARITY_COLORS = {
 	Legendary = Color3.fromRGB(220, 140, 30),
 }
 
-local DEMO_CASH = 10000 -- pretend money so you can test buying
+-- Real cash comes from leaderstats (the server updates it every second).
+local cashValue = nil
+task.spawn(function()
+	local stats = player:WaitForChild("leaderstats", 30)
+	cashValue = stats and stats:WaitForChild("Cash", 30)
+end)
+
+local function getCash()
+	return cashValue and cashValue.Value or 0
+end
 
 --==============================================================================
 -- LITTLE STYLE HELPERS (these four ARE the whole art style)
@@ -71,32 +93,6 @@ local function text(parent, size, position, str, textSize, color, isButton)
 end
 
 --==============================================================================
--- GIVING THE TRAIL (so equipping actually DOES something)
---==============================================================================
-
-local currentTrail = nil
-
-local function equipTrail(color)
-	if currentTrail then currentTrail:Destroy() currentTrail = nil end
-	if not color then return end
-	local char = player.Character
-	local hrp = char and char:FindFirstChild("HumanoidRootPart")
-	if not hrp then return end
-	local a0 = Instance.new("Attachment") a0.Position = Vector3.new(0, 1, 0) a0.Parent = hrp
-	local a1 = Instance.new("Attachment") a1.Position = Vector3.new(0, -1, 0) a1.Parent = hrp
-	local trail = Instance.new("Trail")
-	trail.Attachment0 = a0
-	trail.Attachment1 = a1
-	trail.Lifetime = 0.4
-	trail.FaceCamera = true
-	trail.LightEmission = 0.6
-	trail.Color = ColorSequence.new(color)
-	trail.Transparency = NumberSequence.new(0.2, 1)
-	trail.Parent = hrp
-	currentTrail = trail
-end
-
---==============================================================================
 -- THE WINDOW
 --==============================================================================
 
@@ -136,7 +132,7 @@ corner(closeButton, 10)
 stroke(closeButton)
 closeButton.Parent = titleBar
 
--- Demo cash display (top-right, under the X).
+-- Cash display (top-right, under the X) -- your REAL cash this time!
 local cashLabel = text(window, UDim2.new(0, 200, 0, 30), UDim2.new(1, -212, 0, 68), "", 20, Color3.fromRGB(140, 255, 140))
 cashLabel.TextXAlignment = Enum.TextXAlignment.Right
 
@@ -161,9 +157,6 @@ layout.Parent = scroller
 -- ONE CARD FUNCTION + A LOOP = THE WHOLE SHOP (this is the big trick!)
 --==============================================================================
 
-local cash = DEMO_CASH
-local ownedTrails = {}   -- [name] = true once bought
-local equippedName = nil
 local refreshAll -- declared here so cards can call it
 
 local function formatCash(n)
@@ -198,7 +191,8 @@ local function makeCard(trail, order)
 	shine(preview, Color3.fromRGB(255, 255, 255), trail.color)
 	preview.Parent = card
 
-	-- the "x2 Speed" chip: dark translucent bar
+	-- the "+2 Speed" chip: dark translucent bar. Trails make you FASTER --
+	-- that's your getaway upgrade when you're carrying a stolen egg!
 	local chip = Instance.new("Frame")
 	chip.Size = UDim2.new(1, -24, 0, 38)
 	chip.Position = UDim2.new(0, 12, 0, 192)
@@ -207,8 +201,8 @@ local function makeCard(trail, order)
 	corner(chip, 10)
 	chip.Parent = card
 	local chipText = text(chip, UDim2.new(1, 0, 1, 0), UDim2.new(0, 0, 0, 0), "", 24)
-	chipText.RichText = true -- lets us color just the "x2" part green
-	chipText.Text = '<font color="#7CFF7C">x' .. trail.speed .. '</font> Speed'
+	chipText.RichText = true -- lets us color just the "+2" part green
+	chipText.Text = '<font color="#7CFF7C">+' .. trail.speed .. '</font> Speed'
 
 	-- the action button: its text/color changes with the trail's state
 	local action = Instance.new("TextButton")
@@ -222,11 +216,11 @@ local function makeCard(trail, order)
 	action.Parent = card
 
 	local function refresh()
-		cashLabel.Text = formatCash(cash)
+		cashLabel.Text = formatCash(getCash())
 		if equippedName == trail.name then
 			action.Text = "Unequip"
 			action.BackgroundColor3 = Color3.fromRGB(110, 190, 110)
-		elseif ownedTrails[trail.name] then
+		elseif owned[trail.name] then
 			action.Text = "Equip"
 			action.BackgroundColor3 = Color3.fromRGB(70, 150, 255)
 		else
@@ -236,29 +230,24 @@ local function makeCard(trail, order)
 	end
 
 	action.Activated:Connect(function()
+		-- Every press is just a REQUEST -- the server has the final say,
+		-- then fires TrailUpdate and refreshAll() redraws every card.
 		if equippedName == trail.name then
-			equippedName = nil
-			equipTrail(nil)
-		elseif ownedTrails[trail.name] then
-			equippedName = trail.name
-			equipTrail(trail.color)
-		elseif cash >= trail.price then
-			cash -= trail.price
-			ownedTrails[trail.name] = true
-			equippedName = trail.name
-			equipTrail(trail.color)
+			trailAction:FireServer("unequip")
+		elseif owned[trail.name] then
+			trailAction:FireServer("equip", trail.name)
+		elseif getCash() >= trail.price then
+			trailAction:FireServer("buy", trail.name)
 		else
 			action.Text = "Too poor!" -- brief feedback, then back to price
 			task.delay(0.7, refresh)
-			return
 		end
-		refreshAll()
 	end)
 
 	return refresh
 end
 
--- Build every card from the table, keep their refresh functions.
+-- Build every card from the server's catalog, keep their refresh functions.
 local refreshers = {}
 for i, trail in ipairs(TRAILS) do
 	table.insert(refreshers, makeCard(trail, i))
@@ -270,6 +259,24 @@ refreshAll()
 
 -- Tell the scroller how wide its content is, so it can actually scroll.
 scroller.CanvasSize = UDim2.new(0, #TRAILS * (210 + 14), 0, 0)
+
+-- The server tells us whenever our trails change (a buy went through, an
+-- equip stuck, or our save loaded) -- we just redraw.
+trailUpdate.OnClientEvent:Connect(function(newOwned, newEquipped)
+	owned = newOwned or {}
+	equippedName = newEquipped ~= "" and newEquipped or nil
+	refreshAll()
+end)
+
+-- Keep the cash label live while the window is open.
+task.spawn(function()
+	while true do
+		task.wait(1)
+		if window.Visible then
+			cashLabel.Text = formatCash(getCash())
+		end
+	end
+end)
 
 --==============================================================================
 -- OPEN / CLOSE
@@ -289,25 +296,17 @@ toggle.Parent = screen
 
 toggle.Activated:Connect(function()
 	window.Visible = not window.Visible
+	if window.Visible then refreshAll() end
 end)
 closeButton.Activated:Connect(function()
 	window.Visible = false
 end)
 
--- Re-give the equipped trail after you respawn.
-player.CharacterAdded:Connect(function()
-	task.wait(0.5)
-	for _, trail in ipairs(TRAILS) do
-		if trail.name == equippedName then equipTrail(trail.color) end
-	end
-end)
-
 --==============================================================================
 -- SHOP ZONE -- step into the area and the shop opens by itself.
--- Needs a part named "TrailShopZone" covering the area.
+-- Needs a part named "TrailShopZone" covering the area (EggGame builds a
+-- shop stand with one in the SAFE ZONE if your map doesn't have one).
 --==============================================================================
-
-local RunService = game:GetService("RunService")
 
 task.spawn(function()
 	local zone = workspace:FindFirstChild("TrailShopZone", true)
@@ -317,12 +316,6 @@ task.spawn(function()
 		waited += 0.2
 		if waited > 5 and waited < 5.4 then
 			warn("[TrailShop] No part named 'TrailShopZone' found! Make one covering your shop area.")
-			warn("[TrailShop] Things I can see in the workspace:")
-			for _, child in ipairs(workspace:GetChildren()) do
-				if child:IsA("BasePart") or child:IsA("Model") then
-					warn("   -> " .. child.Name .. "  (" .. child.ClassName .. ")")
-				end
-			end
 		end
 		zone = workspace:FindFirstChild("TrailShopZone", true)
 	end
@@ -346,6 +339,7 @@ task.spawn(function()
 
 		if inside and not wasInside then
 			window.Visible = true      -- just walked IN -> open the shop
+			refreshAll()
 		elseif not inside and wasInside then
 			window.Visible = false     -- just walked OUT -> close it
 		end
