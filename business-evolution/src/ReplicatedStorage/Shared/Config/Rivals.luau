@@ -91,17 +91,18 @@ local RivalsModule = {}
 
 RivalsModule.ByFloor = Rivals
 
--- Stable id for one placed rival: floor id + slot index ("Mailroom_3").
-function RivalsModule.rivalId(floorId: string, index: number): string
-	return floorId .. "_" .. index
+-- Stable id for one placed rival: floor + ladder slot + copy within the pack
+-- ("Mailroom_3_2" = second Colleague in the Mailroom wing).
+function RivalsModule.rivalId(floorId: string, defIndex: number, copy: number): string
+	return floorId .. "_" .. defIndex .. "_" .. copy
 end
 
-function RivalsModule.parse(rivalId: string): (string?, number?)
-	local floorId, index = rivalId:match("^(%w+)_(%d+)$")
-	if floorId and index then
-		return floorId, tonumber(index)
+function RivalsModule.parse(rivalId: string): (string?, number?, number?)
+	local floorId, defIndex, copy = rivalId:match("^(%w+)_(%d+)_(%d+)$")
+	if floorId and defIndex and copy then
+		return floorId, tonumber(defIndex), tonumber(copy)
 	end
-	return nil, nil
+	return nil, nil, nil
 end
 
 function RivalsModule.get(floorId: string, index: number): RivalDef?

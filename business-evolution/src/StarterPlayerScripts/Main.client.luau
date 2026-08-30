@@ -21,6 +21,7 @@ local controllers: { any } = {
 	require(Controllers:WaitForChild("RivalRenderer")),
 	require(Controllers:WaitForChild("InternRenderer")),
 	require(Controllers:WaitForChild("CameraFx")),
+	require(Controllers:WaitForChild("WorldFxController")),
 	require(Ui:WaitForChild("Theme")),
 	require(Ui:WaitForChild("Hud")),
 	require(Ui:WaitForChild("ShopUi")),

@@ -38,6 +38,22 @@ local Balance = {
 	RivalRespawnSeconds = 8, -- INVENTED
 	BossRespawnSeconds = 20, -- INVENTED
 
+	-- ── Training zones & Payday pads (INVENTED — reference-game conventions) ─
+	-- Standing at a hub workstation auto-earns this many click-equivalents/sec
+	-- per tier. Tier gates keep better desks aspirational.
+	TrainingTierRates = { 1, 2, 4 },
+	TrainingTierMinRank = { 1, 5, 8 },
+	-- Stepping on a wing's PAYDAY pad pays this fraction of the Wins earned in
+	-- the wing this run, times the deepest segment reached. Pure bonus (§5:
+	-- leaving early never loses anything).
+	PaydayBonusFraction = 0.25,
+
+	-- ── Overtime bonus (INVENTED name; the mechanic is the genre's verified
+	-- retention hook: a free auto-clicker unlocks after ~15 minutes in-session,
+	-- matching the genre's observed session length) ──────────────────────────
+	OvertimeAfterMinutes = 15,
+	OvertimeClicksPerSecond = 2, -- free auto-clicks once unlocked (session-only)
+
 	-- ── Interns ─────────────────────────────────────────────────────────────
 	BaseInternSlots = 3, -- §7
 	CoffeeMachineCost = 75, -- Wins per hire (INVENTED)
