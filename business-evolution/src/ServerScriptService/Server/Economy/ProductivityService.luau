@@ -28,6 +28,12 @@ local ProductivityService = {}
 
 local trove = Trove.new()
 
+-- Overtime: the genre's verified retention hook — after ~15 minutes in one
+-- session, a free auto-clicker kicks in (session-only, not saved). Tracked
+-- per join, announced exactly once.
+local sessionStart: { [Player]: number } = {}
+local overtimeAnnounced: { [Player]: boolean } = {}
+
 -- Other agents' services. Resolved in Start (the cross-service phase) instead
 -- of at the top of the file so Main stays free to load services in any order.
 local MapService: any = nil
@@ -121,6 +127,18 @@ local function runIdleTick()
 				earned += Monetization.DelegateClicksPerSecond * clickIncome * Balance.IdleTickSeconds
 			end
 
+			-- Overtime: free auto-clicks once the session is long enough.
+			local started = sessionStart[player]
+			if started and os.clock() - started >= Balance.OvertimeAfterMinutes * 60 then
+				earned += Balance.OvertimeClicksPerSecond * clickIncome * Balance.IdleTickSeconds
+				if not overtimeAnnounced[player] then
+					overtimeAnnounced[player] = true
+					-- Personal Fx so the HUD can toast it; other clients ignore
+					-- kinds they don't handle.
+					Net.sendTo(player, "Fx", { Kind = "Overtime", UserId = player.UserId })
+				end
+			end
+
 			if earned > 0 then
 				DataService.update(player, function(live)
 					live.Productivity += earned
@@ -150,6 +168,17 @@ function ProductivityService:Start()
 	-- 22/s sits just above Balance.MaxClicksPerSecond on purpose: a legit
 	-- player clicking at the cap through jitter never gets silently dropped.
 	Net.bind("RequestClick", 22, 25, t.tuple(), onRequestClick)
+
+	for _, player in Players:GetPlayers() do
+		sessionStart[player] = os.clock()
+	end
+	trove:Connect(Players.PlayerAdded, function(player)
+		sessionStart[player] = os.clock()
+	end)
+	trove:Connect(Players.PlayerRemoving, function(player)
+		sessionStart[player] = nil
+		overtimeAnnounced[player] = nil
+	end)
 
 	trove:Add(task.spawn(function()
 		while true do

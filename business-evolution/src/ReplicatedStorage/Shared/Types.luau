@@ -70,6 +70,7 @@ export type FxKind =
 	| "InternHired"
 	| "Purchase"
 	| "Payday"
+	| "Overtime"
 
 export type ServerService = {
 	Init: (self: any) -> ()?,

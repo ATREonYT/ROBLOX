@@ -359,6 +359,12 @@ end
 
 function RankUpFx:Start()
 	trove:Connect(fxRemote.OnClientEvent, function(payload: FxPayload)
+		-- Overtime is a personal unlock moment, not a ceremony — a toast is
+		-- exactly the right size for it.
+		if payload.Kind == "Overtime" then
+			showToast("🕐 OVERTIME UNLOCKED — free auto-clicks from now on!")
+			return
+		end
 		if payload.Kind ~= "RankUp" then
 			return
 		end
