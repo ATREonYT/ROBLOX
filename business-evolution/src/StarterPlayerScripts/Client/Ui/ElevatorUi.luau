@@ -62,8 +62,40 @@ local function currentFloorId(): string?
 	return bestId
 end
 
+-- A floor opens either by meeting its gate or by owning that floor's skip
+-- gamepass. The server re-checks both on every teleport; this just keeps the
+-- UI from locking a floor the player actually paid for.
+local function canRide(state: StateController.ClientState, floorId: string): (boolean, string?)
+	local allowed, reason = Floors.canEnter(floorId, state.Rank, state.Restructures, state.BossesDefeated)
+	if allowed then
+		return true, nil
+	end
+	if state.OwnedSkips and state.OwnedSkips[floorId] then
+		return true, nil
+	end
+	return false, reason
+end
+
+local function skipKeyFor(state: StateController.ClientState): string
+	local owned: { string } = {}
+	local skips: { [string]: boolean } = state.OwnedSkips or {}
+	for floorId in skips do
+		table.insert(owned, floorId)
+	end
+	table.sort(owned) -- stable order so the key only changes on real changes
+	return table.concat(owned, ",")
+end
+
 local function renderKeyFor(state: StateController.ClientState): string
-	return ("%d:%d:%d:%s"):format(state.Rank, state.Restructures, #state.BossesDefeated, currentFloorId() or "?")
+	-- Skip ownership is part of the key: buying a pass mid-session must
+	-- re-render the list, or the floor stays visually locked.
+	return ("%d:%d:%d:%s:%s"):format(
+		state.Rank,
+		state.Restructures,
+		#state.BossesDefeated,
+		currentFloorId() or "?",
+		skipKeyFor(state)
+	)
 end
 
 -- ── Door transition ─────────────────────────────────────────────────────────
@@ -111,7 +143,7 @@ end
 -- ── Floor rows ──────────────────────────────────────────────────────────────
 
 local function buildRow(parent: ScrollingFrame, state: StateController.ClientState, floor: Floors.Floor, order: number, hereId: string?)
-	local allowed, reason = Floors.canEnter(floor.Id, state.Rank, state.Restructures, state.BossesDefeated)
+	local allowed, reason = canRide(state, floor.Id)
 	local isHere = hereId == floor.Id
 
 	-- Forward-declared so the click handler can wobble its own row (a local
@@ -130,7 +162,7 @@ local function buildRow(parent: ScrollingFrame, state: StateController.ClientSta
 			if not latest then
 				return
 			end
-			local nowAllowed = Floors.canEnter(floor.Id, latest.Rank, latest.Restructures, latest.BossesDefeated)
+			local nowAllowed = canRide(latest, floor.Id)
 			if not nowAllowed or currentFloorId() == floor.Id then
 				if row then
 					Theme.deny(row)

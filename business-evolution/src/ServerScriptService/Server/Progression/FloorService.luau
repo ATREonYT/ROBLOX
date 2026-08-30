@@ -93,6 +93,19 @@ local function ownsSkipFor(player: Player, floorId: string): boolean
 	return owned ~= nil and owned[passKey] == true
 end
 
+-- What the client needs to know: which FLOORS are paid-open for this player.
+-- Keyed by floor id because that is what the elevator UI renders.
+local function ownedSkipFloors(player: Player): { [string]: boolean }
+	local open: { [string]: boolean } = {}
+	for floorId, passKey in SKIP_PASS_BY_FLOOR do
+		local owned = skipOwned[player]
+		if owned and owned[passKey] == true then
+			open[floorId] = true
+		end
+	end
+	return open
+end
+
 -- Ownership is fetched once per join and cached: UserOwnsGamePassAsync is a
 -- yielding web call, far too slow to sit inside a teleport request.
 local function fetchSkipPasses(player: Player)
@@ -106,6 +119,11 @@ local function fetchSkipPasses(player: Player)
 				local cache = skipOwned[player]
 				if ok and owns == true and cache then
 					cache[passKey] = true
+					-- The fetch is async, so the join-time state push has almost
+					-- certainly already gone out without this pass. Re-push, or
+					-- the buyer sees their floor locked until something else
+					-- happens to dirty their state.
+					DataService.pushState(player)
 				end
 			end)
 		end
@@ -202,6 +220,11 @@ end
 function FloorService:Start()
 	Net.bind("RequestTeleport", 1, 2, t.tuple(t.string), onRequestTeleport)
 
+	-- Let the elevator UI see paid floor access. The server still validates
+	-- every teleport in onRequestTeleport; this only stops the client from
+	-- greying out a floor the player legitimately paid to reach.
+	DataService.setSkipProvider(ownedSkipFloors)
+
 	for _, player in Players:GetPlayers() do
 		watchPlayer(player)
 	end
@@ -220,6 +243,7 @@ function FloorService:Start()
 				local cache = skipOwned[player]
 				if cache then
 					cache[passKey] = true
+					DataService.pushState(player)
 				end
 			end
 		end

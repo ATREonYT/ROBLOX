@@ -325,8 +325,14 @@ local function updateIntern(visual: InternVisual, index: number, count: number, 
 	stampFigure(visual, cf, scale)
 end
 
+-- Beyond this range an intern squad is a few pixels tall, so the per-frame
+-- formation math buys nothing. Matches the culling other renderers use.
+local CULL_DISTANCE = 200
+
 local function onRenderStepped(dt: number)
 	local now = os.clock()
+	local camera = workspace.CurrentCamera
+	local eye = if camera then camera.CFrame.Position else Vector3.zero
 	for _, entry in owners do
 		local root = entry.Root
 		if not (root and root.Parent) then
@@ -337,9 +343,20 @@ local function onRenderStepped(dt: number)
 		if not root then
 			continue -- character still assembling; next frame will find it
 		end
+		local far = (root.Position - eye).Magnitude > CULL_DISTANCE
 		local count = #entry.Visuals
 		for index, visual in entry.Visuals do
-			updateIntern(visual, index, count, root, dt, now)
+			if far then
+				-- Park the squad on its slot instead of animating it. Snapping
+				-- rather than smoothing means that when the owner comes back
+				-- into view the interns are already in formation, not chasing
+				-- across the floor from wherever they were left.
+				local rootCf = root.CFrame
+				local slot = (rootCf * CFrame.new(slotOffset(index, count))).Position
+				visual.Position = Vector3.new(slot.X, rootCf.Position.Y - ROOT_TO_GROUND, slot.Z)
+			else
+				updateIntern(visual, index, count, root, dt, now)
+			end
 		end
 	end
 end

@@ -531,8 +531,14 @@ local function setBubbleShown(visual: RivalVisual, shown: boolean)
 end
 
 local function setBodyTransparency(visual: RivalVisual, transparency: number)
+	-- CanQuery follows visibility. A defeated rival's parts stay in the world
+	-- (parked down the aisle after the chair gag, or invisible at their desk on
+	-- a fresh join), and while they are click-testable those invisible bodies
+	-- swallow clicks meant for the world or for a live rival behind them.
+	local clickable = transparency < 1
 	for _, part in visual.AllParts do
 		part.Transparency = transparency
+		part.CanQuery = clickable
 	end
 end
 

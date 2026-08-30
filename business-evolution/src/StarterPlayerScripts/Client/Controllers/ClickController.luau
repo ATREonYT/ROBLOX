@@ -95,9 +95,22 @@ function ClickController:Start()
 		if gameProcessed then
 			return -- the press landed on a GUI; the UI owns it
 		end
-		local inputType = input.UserInputType
-		if inputType == Enum.UserInputType.MouseButton1 or inputType == Enum.UserInputType.Touch then
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
 			handleClick(input.Position.X, input.Position.Y)
+		end
+	end)
+
+	-- Touch goes through TouchTap, not InputBegan: on mobile every camera drag
+	-- and pinch starts with a touch-down, and counting those as clicks would
+	-- make the camera unusable. TouchTap only fires for a tap that ends without
+	-- meaningful movement.
+	trove:Connect(UserInputService.TouchTap, function(touchPositions: { any }, gameProcessed: boolean)
+		if gameProcessed then
+			return
+		end
+		local first = touchPositions[1]
+		if first then
+			handleClick(first.X, first.Y)
 		end
 	end)
 end

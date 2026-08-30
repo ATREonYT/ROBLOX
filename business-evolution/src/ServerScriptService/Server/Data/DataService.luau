@@ -91,6 +91,18 @@ function DataService.passesFor(player: Player): Stack.Passes
 	return passProvider(player)
 end
 
+-- Floor-skip gamepasses live outside Stack.Passes (they buy access, not
+-- income), so FloorService — which owns that ownership cache — registers a
+-- provider here. Without it the client cannot tell a paid-unlocked floor from
+-- a locked one and would grey out a floor the buyer is allowed to enter.
+local skipProvider: (player: Player) -> { [string]: boolean } = function()
+	return {}
+end
+
+function DataService.setSkipProvider(provider: (player: Player) -> { [string]: boolean })
+	skipProvider = provider
+end
+
 function DataService.get(player: Player): ProfileData?
 	local profile = profiles[player]
 	if profile and profile:IsActive() then
@@ -141,6 +153,7 @@ local function buildClientState(player: Player, data: ProfileData)
 		NextRankAt = Ranks.nextRequirement(data.Rank),
 		InternSlots = Stack.internSlots(data, passes),
 		ClickCooldown = Stack.clickCooldown(data),
+		OwnedSkips = skipProvider(player),
 	}
 end
 
@@ -185,7 +198,15 @@ local function onPlayerAdded(player: Player)
 	Migrations.run(profile.Data)
 
 	profile.OnSessionEnd:Connect(function()
-		profiles[player] = nil
+		-- Another server stole the session (crash-rejoin, or a duplicate join).
+		-- Fire the unload signal BEFORE dropping the entry: every service cleans
+		-- up per-player state on PlayerUnloading, and the kick below would
+		-- otherwise reach onPlayerRemoving with nothing left to unload — leaking
+		-- their character connections and losing the leave-time Wins write.
+		if profiles[player] then
+			DataService.PlayerUnloading:Fire(player)
+			profiles[player] = nil
+		end
 		if player.Parent == Players then
 			player:Kick("Your session was opened somewhere else.")
 		end

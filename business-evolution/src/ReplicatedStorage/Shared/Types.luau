@@ -52,6 +52,9 @@ export type ClientState = {
 	RestructureCost: number,
 	NextRankAt: number, -- productivity needed for next rank (math.huge at cap)
 	InternSlots: number,
+	-- Floor ids the player may enter because they bought that floor's skip
+	-- gamepass, regardless of the normal Restructure gate.
+	OwnedSkips: { [string]: boolean },
 }
 
 -- One rival's live state as replicated to clients (compact on purpose).
