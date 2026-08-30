@@ -1,0 +1,47 @@
+{
+  "name": "BusinessEvolution",
+  "tree": {
+    "$className": "DataModel",
+    "$ignoreUnknownInstances": true,
+
+    "ReplicatedStorage": {
+      "$ignoreUnknownInstances": true,
+      "Packages": { "$path": "src/ReplicatedStorage/Packages" },
+      "Shared": { "$path": "src/ReplicatedStorage/Shared" },
+      "Remotes": {
+        "$className": "Folder",
+        "RequestClick": { "$className": "RemoteEvent" },
+        "RequestOutwork": { "$className": "RemoteEvent" },
+        "RequestPurchaseGear": { "$className": "RemoteEvent" },
+        "RequestRestructure": { "$className": "RemoteEvent" },
+        "RequestSeverance": { "$className": "RemoteEvent" },
+        "RequestHireIntern": { "$className": "RemoteEvent" },
+        "RequestEquipIntern": { "$className": "RemoteEvent" },
+        "RequestTeleport": { "$className": "RemoteEvent" },
+        "StateChanged": { "$className": "RemoteEvent" },
+        "RivalState": { "$className": "RemoteEvent" },
+        "ClickResult": { "$className": "RemoteEvent" },
+        "Fx": { "$className": "RemoteEvent" },
+        "InternRollResult": { "$className": "RemoteEvent" }
+      }
+    },
+
+    "ServerScriptService": {
+      "$ignoreUnknownInstances": true,
+      "Main": { "$path": "src/ServerScriptService/Main.server.luau" },
+      "Packages": { "$path": "src/ServerScriptService/Packages" },
+      "Server": { "$path": "src/ServerScriptService/Server" }
+    },
+
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "$ignoreUnknownInstances": true,
+      "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
+        "$ignoreUnknownInstances": true,
+        "Main": { "$path": "src/StarterPlayerScripts/Main.client.luau" },
+        "Client": { "$path": "src/StarterPlayerScripts/Client" }
+      }
+    }
+  }
+}
