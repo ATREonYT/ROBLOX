@@ -85,3 +85,45 @@ Architecture: one server entry (`Main.server.luau`), one client entry
 (`Main.client.luau`), everything else ModuleScripts. Interface contracts in
 `CONTRACTS.md`. Player data shape in `Shared/Types.luau`; all mutation flows
 through `DataService.update`.
+
+## What to look at first in Studio
+
+Press Play and check these in order — they're the things worth judging:
+
+1. **The Mailroom** — you spawn here. One flickering fluorescent, cardboard
+   everywhere, a photocopier that's been out of toner since '19. Click
+   anywhere for +1.
+2. **Stand at a desk** in the west training area — Productivity ticks up on
+   its own. Better desks (tier 2/3) need higher ranks.
+3. **Walk east into the Sorting Wing** — rows of rivals at desks. Click one to
+   out-work it; when its workload hits zero it slumps into a swivel chair and
+   rolls off down the aisle.
+4. **Step on a gold PAYDAY pad** after clearing a segment — banks a bonus and
+   sends you back to the hub.
+5. **Rank up** (100 Productivity gets you to Mail Clerk) — the promotion
+   cinematic plays and your outfit changes. Other players see it too.
+6. **The elevator** (north wall) — the floor list with lock reasons. Floors 12+
+   need Restructures, so they'll show locked on a fresh save.
+
+To see the later floors without grinding, open the Command Bar in Studio and
+give yourself progress, e.g.:
+
+```lua
+-- Server-side (Command Bar, while playtesting):
+local DS = require(game.ServerScriptService.Server.Data.DataService)
+DS.update(game.Players:GetPlayers()[1], function(d) d.Restructures = 30 end)
+```
+
+Then ride the elevator up to the Penthouse and Orbital HQ.
+
+## Offline checks
+
+From this folder, with the Luau CLI installed:
+
+```
+luau tests/run.luau
+```
+
+24 cases: config sanity (odds sum to 100, rank curve monotonic, gear cost
+growth, gate logic, number formatting, save-safety) plus a minute-by-minute
+pacing simulation that asserts the first-session shape from the brief.
