@@ -37,11 +37,11 @@ local Ladders: { Ladder } = {
 		Effect = "Earns Productivity every second, even idle",
 		-- Value = idle Productivity/sec before multipliers (INVENTED)
 		Tiers = {
-			{ Name = "Folding", Value = 1, BaseCost = 40, Color = { 160, 160, 160 } },
-			{ Name = "Task", Value = 4, BaseCost = 150, Color = { 60, 120, 220 } },
-			{ Name = "Ergonomic", Value = 12, BaseCost = 500, Color = { 40, 40, 40 } },
-			{ Name = "Executive", Value = 35, BaseCost = 1600, Color = { 90, 50, 20 } },
-			{ Name = "Throne", Value = 100, BaseCost = 5000, Color = { 255, 200, 0 } },
+			{ Name = "Folding", Value = 2, BaseCost = 40, Color = { 160, 160, 160 } },
+			{ Name = "Task", Value = 6, BaseCost = 150, Color = { 60, 120, 220 } },
+			{ Name = "Ergonomic", Value = 22, BaseCost = 500, Color = { 40, 40, 40 } },
+			{ Name = "Executive", Value = 65, BaseCost = 1400, Color = { 90, 50, 20 } },
+			{ Name = "Throne", Value = 180, BaseCost = 5000, Color = { 255, 200, 0 } },
 		},
 	},
 	{

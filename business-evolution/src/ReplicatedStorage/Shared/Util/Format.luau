@@ -29,8 +29,11 @@ function Format.abbreviate(value: number): string
 	else
 		text = ("%.2f"):format(scaled)
 	end
-	-- "1.50" → "1.5", "2.00" → "2"
-	text = text:gsub("%.?0+$", "")
+	-- "1.50" → "1.5", "2.00" → "2" — but only when a decimal point exists:
+	-- stripping zeros off a whole number would turn 150K into 15K.
+	if text:find(".", 1, true) then
+		text = text:gsub("0+$", ""):gsub("%.$", "")
+	end
 	return text .. SUFFIXES[magnitude + 1]
 end
 

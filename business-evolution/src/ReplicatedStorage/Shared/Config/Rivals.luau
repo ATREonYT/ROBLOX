@@ -27,21 +27,21 @@ end
 
 local Rivals: { [string]: FloorRivals } = {}
 
-Rivals.Mailroom = ladder({ 40, 120, 350, 900, 2000, 4500 }, { 3, 5, 8, 12, 18, 25 })
+Rivals.Mailroom = ladder({ 40, 120, 350, 900, 2000, 4500 }, { 3, 6, 10, 16, 24, 35 })
 table.insert(Rivals.Mailroom, {
 	Title = "Mailroom Manager",
 	Workload = 12000,
-	Wins = 80,
+	Wins = 120,
 	IsBoss = true,
 	BossName = "Gary",
 	BossLine = "The mail stops for NO ONE.",
 })
 
-Rivals.CubicleFarm = ladder({ 6e3, 15e3, 40e3, 90e3, 200e3, 450e3 }, { 30, 45, 65, 90, 120, 160 })
+Rivals.CubicleFarm = ladder({ 6e3, 15e3, 40e3, 90e3, 200e3, 450e3 }, { 40, 60, 85, 120, 165, 220 })
 table.insert(Rivals.CubicleFarm, {
 	Title = "Middle Manager",
 	Workload = 1.2e6,
-	Wins = 450,
+	Wins = 600,
 	IsBoss = true,
 	BossName = "Deborah",
 	BossLine = "Let's take this offline. Permanently.",

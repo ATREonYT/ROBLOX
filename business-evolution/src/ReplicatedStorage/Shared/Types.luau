@@ -62,7 +62,14 @@ export type RivalState = {
 }
 
 -- Fired to all clients for world-visible moments.
-export type FxKind = "RankUp" | "RivalDefeated" | "BossDefeated" | "Restructure" | "InternHired" | "Purchase"
+export type FxKind =
+	"RankUp"
+	| "RivalDefeated"
+	| "BossDefeated"
+	| "Restructure"
+	| "InternHired"
+	| "Purchase"
+	| "Payday"
 
 export type ServerService = {
 	Init: (self: any) -> ()?,
