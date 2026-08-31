@@ -7,6 +7,43 @@
 
 local M = {}
 
+-- Roblox's task library. Scheduled work is RECORDED, not run: services start
+-- `while true do task.wait() end` loops at boot, and running one here would
+-- hang the harness. We are testing that startup completes, not the loops.
+local scheduled = {}
+local taskLib = {
+	spawn = function(fn, ...) table.insert(scheduled, fn) return fn end,
+	defer = function(fn, ...) table.insert(scheduled, fn) return fn end,
+	delay = function(_, fn, ...) table.insert(scheduled, fn) return fn end,
+	wait = function() return 0 end,
+	cancel = function() end,
+	synchronize = function() end,
+	desynchronize = function() end,
+}
+M.task = taskLib
+M.scheduled = scheduled
+
+-- A minimal RBXScriptSignal: connections are recorded so a spec can fire them.
+local function makeSignal()
+	local handlers = {}
+	return {
+		Connect = function(_, fn)
+			table.insert(handlers, fn)
+			return { Disconnect = function() end, Connected = true }
+		end,
+		Once = function(_, fn)
+			table.insert(handlers, fn)
+			return { Disconnect = function() end, Connected = true }
+		end,
+		Wait = function() return nil end,
+		Fire = function(_, ...)
+			for _, fn in handlers do fn(...) end
+		end,
+		_handlers = handlers,
+	}
+end
+M.makeSignal = makeSignal
+
 -- ── Vector3 ────────────────────────────────────────────────────────────────
 local Vector3 = {}
 Vector3.__index = Vector3
@@ -289,6 +326,19 @@ local CLASS_DEFAULTS = {
 	BoolValue = { Value = false },
 	Texture = {},
 	Decal = {},
+	ProximityPrompt = { HoldDuration = 0, MaxActivationDistance = 10, RequiresLineOfSight = true },
+	ColorCorrectionEffect = {},
+	BloomEffect = {},
+	ModuleScript = {},
+	RemoteEvent = {},
+	RemoteFunction = {},
+	DataStoreOptions = {},
+	DataStoreSetOptions = {},
+	DataStoreIncrementOptions = {},
+	Configuration = {},
+	Team = {},
+	Script = {},
+	LocalScript = {},
 	Highlight = {},
 }
 
@@ -298,6 +348,20 @@ function Instance.new(className, parent)
 	local props = { ClassName = className, Name = className, Parent = nil }
 	for k, v in defaults do props[k] = v end
 	local inst = setmetatable({ _props = props, _children = {} }, instanceMt)
+	if className == "Part" or className == "SpawnLocation" or className == "MeshPart" or className == "WedgePart" then
+		props.Touched = makeSignal()
+		props.TouchEnded = makeSignal()
+	end
+	if className == "RemoteEvent" then
+		props.OnServerEvent = makeSignal()
+		props.OnClientEvent = makeSignal()
+		props.FireClient = function(_, _player, ...) end
+		props.FireAllClients = function(_, ...) end
+		props.FireServer = function(_, ...) end
+	elseif className == "RemoteFunction" then
+		props.OnServerInvoke = nil
+		props.InvokeServer = function() end
+	end
 	table.insert(allInstances, inst)
 	if parent ~= nil then inst.Parent = parent end
 	return inst
@@ -350,6 +414,28 @@ function Instance.FindFirstChild(self, name, recursive)
 	return nil
 end
 
+function Instance.FindFirstChildWhichIsA(self, className, recursive)
+	for _, child in rawget(self, "_children") do
+		if Instance.IsA(child, className) then return child end
+	end
+	if recursive then
+		for _, child in rawget(self, "_children") do
+			local found = Instance.FindFirstChildWhichIsA(child, className, true)
+			if found then return found end
+		end
+	end
+	return nil
+end
+
+function Instance.FindFirstAncestorWhichIsA(self, className)
+	local node = rawget(self, "_props").Parent
+	while node ~= nil and isInstance(node) do
+		if Instance.IsA(node, className) then return node end
+		node = rawget(node, "_props").Parent
+	end
+	return nil
+end
+
 function Instance.FindFirstChildOfClass(self, className)
 	for _, child in rawget(self, "_children") do
 		if rawget(child, "_props").ClassName == className then return child end
@@ -386,6 +472,9 @@ function Instance.GetPivot(self)
 	return CFrame.new(0, 0, 0)
 end
 function Instance.SetPrimaryPartCFrame(self, target) rawget(self, "_props").CFrame = target end
+-- DataStoreOptions carries this; harmless to expose on every mock instance.
+function Instance.SetExperimentalFeatures() end
+
 function Instance.GetPropertyChangedSignal()
 	return { Connect = function() return { Disconnect = function() end } end }
 end
@@ -422,15 +511,106 @@ end
 pathStub.__tostring = function(self) return "PathStub(" .. tostring(rawget(self, "_name")) .. ")" end
 
 local services = {}
+-- Workspace and Lighting get real Instance handles: map code parents into them
+-- and searches them, so a path stub would silently swallow the whole map.
+local REAL_SERVICES = { Workspace = true, Lighting = true, ReplicatedStorage = true, ServerStorage = true, ServerScriptService = true }
+
+-- The Remotes folder Rojo declares in the real place. Services WaitForChild
+-- these at boot, so the harness has to provide them or every Net.bind fails.
+local REMOTE_NAMES = { "RequestClick", "RequestOutwork", "RequestPurchaseGear", "RequestRestructure", "RequestSeverance", "RequestHireIntern", "RequestEquipIntern", "RequestTeleport", "StateChanged", "RivalState", "ClickResult", "Fx", "InternRollResult" }
+
+local function populateReplicatedStorage(rs)
+	local folder = Instance.new("Folder")
+	folder.Name = "Remotes"
+	folder.Parent = rs
+	for _, remoteName in REMOTE_NAMES do
+		local r = Instance.new("RemoteEvent")
+		r.Name = remoteName
+		r.Parent = folder
+	end
+end
+
+
+-- Services whose signals/methods get touched during startup.
+local function buildServiceStub(name)
+	local stub = {
+		Name = name,
+		-- Every signal a service might connect at boot.
+		PlayerAdded = makeSignal(),
+		PlayerRemoving = makeSignal(),
+		Heartbeat = makeSignal(),
+		Stepped = makeSignal(),
+		RenderStepped = makeSignal(),
+		PromptGamePassPurchaseFinished = makeSignal(),
+		PromptTriggered = makeSignal(),
+		Changed = makeSignal(),
+		GetPlayers = function() return {} end,
+		IsStudio = function() return true end,
+		IsServer = function() return true end,
+		IsClient = function() return false end,
+		IsRunning = function() return true end,
+		GenerateGUID = function(_, wrapped) return "00000000-0000-0000-0000-000000000000" end,
+		JSONEncode = function(_, v) return "{}" end,
+		JSONDecode = function(_, v) return {} end,
+		UserOwnsGamePassAsync = function() return false end,
+		GetProductInfo = function() return {} end,
+		BindToClose = function() end,
+		GetDataStore = function() return nil end,
+		GetOrderedDataStore = function() error("DataStores are unavailable in the harness", 0) end,
+		SubscribeAsync = function() return { Disconnect = function() end } end,
+		PublishAsync = function() end,
+		Create = function() return { Play = function() end, Completed = makeSignal() } end,
+	}
+	return setmetatable(stub, {
+		-- Anything else a service reaches for becomes a no-op method. Service
+		-- access at boot is overwhelmingly method calls (SetExperimentalFeatures,
+		-- BindToClose...), and an unmocked one must not fake a startup crash.
+		__index = function(_, key)
+			return function() return nil end
+		end,
+	})
+end
+
 local game = {
+	PlaceId = 0,
+	JobId = "harness",
 	GetService = function(_, name)
 		if name == "CollectionService" then return CollectionService end
 		if services[name] == nil then
-			services[name] = setmetatable({ _name = name }, pathStub)
+			if REAL_SERVICES[name] then
+				local inst = Instance.new("Folder")
+				inst.Name = name
+				services[name] = inst
+				if name == "ReplicatedStorage" then
+					populateReplicatedStorage(inst)
+				end
+			else
+				services[name] = buildServiceStub(name)
+			end
 		end
 		return services[name]
 	end,
 }
+
+-- Roblox's typeof(): our datatypes are tables, so the real global would just
+-- say "table" and every typeof() guard in the codebase would misfire.
+local function robloxTypeof(v)
+	local mt = getmetatable(v)
+	if mt == CFrame then return "CFrame" end
+	if mt == Vector3 then return "Vector3" end
+	if mt == Vector2 then return "Vector2" end
+	if mt == Color3 then return "Color3" end
+	if mt == UDim2 then return "UDim2" end
+	if mt == UDim then return "UDim" end
+	if mt == instanceMt then return "Instance" end
+	if type(v) == "table" and rawget(v, "Category") ~= nil and rawget(v, "Name") ~= nil then
+		return "EnumItem"
+	end
+	return type(v)
+end
+
+M.typeof = robloxTypeof
+M.workspace = game:GetService("Workspace")
 
 M.Vector2 = Vector2
 M.Vector3 = Vector3

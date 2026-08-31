@@ -3,44 +3,138 @@
   "tree": {
     "$className": "DataModel",
     "$ignoreUnknownInstances": true,
-
-    "ReplicatedStorage": {
+    "Workspace": {
+      "$className": "Workspace",
       "$ignoreUnknownInstances": true,
-      "Packages": { "$path": "src/ReplicatedStorage/Packages" },
-      "Shared": { "$path": "src/ReplicatedStorage/Shared" },
-      "Remotes": {
-        "$className": "Folder",
-        "RequestClick": { "$className": "RemoteEvent" },
-        "RequestOutwork": { "$className": "RemoteEvent" },
-        "RequestPurchaseGear": { "$className": "RemoteEvent" },
-        "RequestRestructure": { "$className": "RemoteEvent" },
-        "RequestSeverance": { "$className": "RemoteEvent" },
-        "RequestHireIntern": { "$className": "RemoteEvent" },
-        "RequestEquipIntern": { "$className": "RemoteEvent" },
-        "RequestTeleport": { "$className": "RemoteEvent" },
-        "StateChanged": { "$className": "RemoteEvent" },
-        "RivalState": { "$className": "RemoteEvent" },
-        "ClickResult": { "$className": "RemoteEvent" },
-        "Fx": { "$className": "RemoteEvent" },
-        "InternRollResult": { "$className": "RemoteEvent" }
+      "$properties": {
+        "Gravity": 196.2
+      },
+      "Terrain": {
+        "$className": "Terrain",
+        "$ignoreUnknownInstances": true
       }
     },
-
+    "Lighting": {
+      "$className": "Lighting",
+      "$ignoreUnknownInstances": true,
+      "$properties": {
+        "ClockTime": 14,
+        "Brightness": 2.4,
+        "Ambient": [
+          0.47,
+          0.47,
+          0.49
+        ],
+        "OutdoorAmbient": [
+          0.65,
+          0.64,
+          0.62
+        ],
+        "GlobalShadows": true,
+        "EnvironmentDiffuseScale": 0.4,
+        "EnvironmentSpecularScale": 0.3
+      }
+    },
+    "Players": {
+      "$className": "Players",
+      "$ignoreUnknownInstances": true,
+      "$properties": {
+        "CharacterAutoLoads": true
+      }
+    },
+    "StarterGui": {
+      "$className": "StarterGui",
+      "$ignoreUnknownInstances": true,
+      "$properties": {
+        "ResetPlayerGuiOnSpawn": false
+      }
+    },
+    "SoundService": {
+      "$className": "SoundService",
+      "$ignoreUnknownInstances": true,
+      "$properties": {
+        "RespectFilteringEnabled": true
+      }
+    },
+    "StarterPack": {
+      "$className": "StarterPack",
+      "$ignoreUnknownInstances": true
+    },
+    "ReplicatedStorage": {
+      "$ignoreUnknownInstances": true,
+      "Packages": {
+        "$path": "src/ReplicatedStorage/Packages"
+      },
+      "Shared": {
+        "$path": "src/ReplicatedStorage/Shared"
+      },
+      "Remotes": {
+        "$className": "Folder",
+        "RequestClick": {
+          "$className": "RemoteEvent"
+        },
+        "RequestOutwork": {
+          "$className": "RemoteEvent"
+        },
+        "RequestPurchaseGear": {
+          "$className": "RemoteEvent"
+        },
+        "RequestRestructure": {
+          "$className": "RemoteEvent"
+        },
+        "RequestSeverance": {
+          "$className": "RemoteEvent"
+        },
+        "RequestHireIntern": {
+          "$className": "RemoteEvent"
+        },
+        "RequestEquipIntern": {
+          "$className": "RemoteEvent"
+        },
+        "RequestTeleport": {
+          "$className": "RemoteEvent"
+        },
+        "StateChanged": {
+          "$className": "RemoteEvent"
+        },
+        "RivalState": {
+          "$className": "RemoteEvent"
+        },
+        "ClickResult": {
+          "$className": "RemoteEvent"
+        },
+        "Fx": {
+          "$className": "RemoteEvent"
+        },
+        "InternRollResult": {
+          "$className": "RemoteEvent"
+        }
+      }
+    },
     "ServerScriptService": {
       "$ignoreUnknownInstances": true,
-      "Main": { "$path": "src/ServerScriptService/Main.server.luau" },
-      "Packages": { "$path": "src/ServerScriptService/Packages" },
-      "Server": { "$path": "src/ServerScriptService/Server" }
+      "Main": {
+        "$path": "src/ServerScriptService/Main.server.luau"
+      },
+      "Packages": {
+        "$path": "src/ServerScriptService/Packages"
+      },
+      "Server": {
+        "$path": "src/ServerScriptService/Server"
+      }
     },
-
     "StarterPlayer": {
       "$className": "StarterPlayer",
       "$ignoreUnknownInstances": true,
       "StarterPlayerScripts": {
         "$className": "StarterPlayerScripts",
         "$ignoreUnknownInstances": true,
-        "Main": { "$path": "src/StarterPlayerScripts/Main.client.luau" },
-        "Client": { "$path": "src/StarterPlayerScripts/Client" }
+        "Main": {
+          "$path": "src/StarterPlayerScripts/Main.client.luau"
+        },
+        "Client": {
+          "$path": "src/StarterPlayerScripts/Client"
+        }
       }
     }
   }

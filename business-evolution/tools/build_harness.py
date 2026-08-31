@@ -27,10 +27,63 @@ MODULES = {
     "Sanitize":  SRC / "ReplicatedStorage/Shared/Util/Sanitize.luau",
     # The multiplier stack: pure math, no DataModel access, so it runs headless.
     "Stack":     SRC / "ServerScriptService/Server/Economy/Stack.luau",
+    # The startup path itself: builds every floor into workspace.
+    "MapService": SRC / "ServerScriptService/Server/World/MapService.luau",
 }
 FLOOR_IDS = ["Mailroom", "CubicleFarm", "OpenPlan", "Executive", "Penthouse", "OrbitalHQ"]
 for fid in FLOOR_IDS:
     MODULES[fid] = SRC / f"ServerScriptService/Server/World/Floors/{fid}.luau"
+
+
+# Vendored packages + the rest of the server, so the whole boot can run.
+for _name, _rel in {
+    "Trove":       "ReplicatedStorage/Packages/Trove.luau",
+    "Signal":      "ReplicatedStorage/Packages/Signal.luau",
+    "t":           "ReplicatedStorage/Packages/t.luau",
+    "ProfileStore": "ServerScriptService/Packages/ProfileStore.luau",
+    "Types":       "ReplicatedStorage/Shared/Types.luau",
+    "Sounds":      "ReplicatedStorage/Shared/Config/Sounds.luau",
+    "Monetization": "ReplicatedStorage/Shared/Config/Monetization.luau",
+    "Net":         "ServerScriptService/Server/Net/Net.luau",
+    "Migrations":  "ServerScriptService/Server/Data/Migrations.luau",
+    "DataService": "ServerScriptService/Server/Data/DataService.luau",
+    "ProductivityService": "ServerScriptService/Server/Economy/ProductivityService.luau",
+    "ShopService": "ServerScriptService/Server/Economy/ShopService.luau",
+    "RestructureService": "ServerScriptService/Server/Economy/RestructureService.luau",
+    "InternService": "ServerScriptService/Server/Economy/InternService.luau",
+    "MonetizationService": "ServerScriptService/Server/Economy/MonetizationService.luau",
+    "RankService": "ServerScriptService/Server/Progression/RankService.luau",
+    "FloorService": "ServerScriptService/Server/Progression/FloorService.luau",
+    "AppearanceService": "ServerScriptService/Server/Progression/AppearanceService.luau",
+    "RivalService": "ServerScriptService/Server/Rivals/RivalService.luau",
+    "LeaderboardService": "ServerScriptService/Server/Boards/LeaderboardService.luau",
+}.items():
+    MODULES[_name] = SRC / _rel
+
+
+def _instance_tree(root: pathlib.Path, var: str) -> str:
+    """Emit Luau that mirrors a src/ directory as Folders + ModuleScripts.
+
+    Services walk these paths on the way to a require (`ReplicatedStorage.Shared
+    .Config.Balance`). The require itself is rewritten, but the walk still has to
+    resolve, so the shape has to be real rather than a permissive stub.
+    """
+    lines = []
+    counter = [0]
+
+    def walk(directory: pathlib.Path, parent_var: str):
+        for entry in sorted(directory.iterdir()):
+            counter[0] += 1
+            handle = f"n{counter[0]}"
+            if entry.is_dir():
+                lines.append(f'\tlocal {handle} = Instance.new("Folder"); {handle}.Name = "{entry.name}"; {handle}.Parent = {parent_var}')
+                walk(entry, handle)
+            elif entry.suffix == ".luau" and not entry.name.endswith((".server.luau", ".client.luau")):
+                name = entry.name[: -len(".luau")]
+                lines.append(f'\tlocal {handle} = Instance.new("ModuleScript"); {handle}.Name = "{name}"; {handle}.Parent = {parent_var}')
+
+    walk(root, var)
+    return "\n".join(lines)
 
 REQUIRE_RE = re.compile(r"require\(\s*([A-Za-z_][A-Za-z0-9_.]*)\s*\)")
 
@@ -52,12 +105,29 @@ def build(test_body: str) -> str:
     out.append("local __mock = (function()\n%s\nend)()\n" % mock)
     for name in ("Vector2", "Vector3", "CFrame", "Color3", "UDim", "UDim2", "Enum", "Instance"):
         out.append(f"local {name} = __mock.{name}")
-    out.append("local __game = __mock.game\n")
+    out.append("local __game = __mock.game")
+    out.append("local typeof = __mock.typeof")
+    out.append("local workspace = __mock.workspace")
+    out.append("local task = __mock.task")
+    # Vendored code reads bare `game.PlaceId`, not just game:GetService().
+    out.append("local game = __game")
+    # `warn` is a Roblox global; the CLI has no such thing.
+    out.append('local function warn(...) print("[warn]", ...) end\n')
+    out.append("-- Instance trees mirroring the Rojo layout, so path walks resolve.")
+    out.append("do\n\tlocal rs = __game:GetService(\"ReplicatedStorage\")")
+    out.append(_instance_tree(SRC / "ReplicatedStorage", "rs"))
+    out.append("end")
+    out.append("do\n\tlocal sss = __game:GetService(\"ServerScriptService\")")
+    out.append(_instance_tree(SRC / "ServerScriptService", "sss"))
+    out.append("end\n")
 
     out.append("local __registry = {}")
     out.append("local __loaded = {}")
     out.append("""
 local function __require(name)
+	-- Accept a mock ModuleScript as well as a registry key: MapService looks
+	-- its floor modules up as Instances via FindFirstChild.
+	if type(name) == "table" then name = name.Name end
 	if __loaded[name] ~= nil then return __loaded[name] end
 	local factory = __registry[name]
 	if factory == nil then error("harness: no module registered as '" .. name .. "'") end
@@ -65,12 +135,36 @@ local function __require(name)
 	__loaded[name] = result
 	return result
 end
+
+-- Bare `require` (e.g. passed as a value to pcall) resolves through the
+-- registry too, the way it would inside Roblox.
+local require = __require
 """)
+
+    # A minimal instance tree mirroring the Rojo layout, so modules that walk
+    # `script.Parent...` (MapService looking up Server/World/Floors) resolve.
+    out.append("""
+local __scriptTree = {}
+do
+	local world = Instance.new("Folder"); world.Name = "World"
+	local floors = Instance.new("Folder"); floors.Name = "Floors"
+	floors.Parent = world
+	for _, id in { %s } do
+		local m = Instance.new("ModuleScript"); m.Name = id; m.Parent = floors
+	end
+	local mapScript = Instance.new("ModuleScript"); mapScript.Name = "MapService"; mapScript.Parent = world
+	__scriptTree.MapService = mapScript
+end
+local function __scriptFor(name)
+	return __scriptTree[name] or Instance.new("ModuleScript")
+end
+""" % ", ".join('"%s"' % f for f in FLOOR_IDS))
 
     for name, path in MODULES.items():
         if not path.exists():
             sys.exit(f"missing module: {path}")
-        out.append('__registry["%s"] = function()\n%s\nend\n' % (name, rewrite(path.read_text())))
+        out.append('__registry["%s"] = function()\nlocal script = __scriptFor("%s")\n%s\nend\n'
+                   % (name, name, rewrite(path.read_text())))
 
     out.append(test_body)
     return "\n".join(out)

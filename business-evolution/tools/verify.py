@@ -44,7 +44,12 @@ def main():
 
     # 2 & 3. The harnessed suites need bundling first.
     tmp = pathlib.Path(tempfile.mkdtemp(prefix="be-verify-"))
-    for name, spec in (("map geometry", "map_spec.luau"), ("multiplier stack", "stack_spec.luau")):
+    for name, spec in (
+        ("map geometry", "map_spec.luau"),
+        ("multiplier stack", "stack_spec.luau"),
+        ("server startup", "startup_spec.luau"),
+        ("full boot", "boot_spec.luau"),
+    ):
         bundle = tmp / spec.replace("_spec.luau", "_harness.luau")
         bundle.write_text(build_harness.build((TOOLS / spec).read_text()))
         suites.append((name, [args.luau, str(bundle)], ROOT))
