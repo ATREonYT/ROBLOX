@@ -24,7 +24,34 @@ Built to the spec in `CLAUDE.md` (game design brief) and `DESIGN-MAP.md`
   cinematic, comedic rival firings (swivel-chair exit), interns trailing
   behind you.
 
-## Setup (Windows, ~5 minutes, no coding)
+## Fastest way to look at it: open the place file
+
+Ask Claude for a fresh `BusinessEvolution.rbxlx`, or build one yourself with
+Rojo (see below). Then:
+
+1. **Double-click the `.rbxlx`** — it opens in Roblox Studio as its own place.
+2. Press **Play**.
+
+That's it. No Rojo server, no plugin, no syncing. The whole world builds itself
+when the server starts, so the place file contains only code — you'll see an
+empty grey void in edit mode, and the full six-floor tower once you hit Play.
+
+Two Studio settings worth setting once (File → Game Settings):
+- **Avatar → Avatar Type → R15** — required for the better DevEx rate.
+- **Security → Enable Studio Access to API Services → ON** — lets progress save
+  between playtests. Without it the game still runs, it just won't remember.
+
+To rebuild the place file after code changes:
+
+```
+rojo.exe build default.project.json -o BusinessEvolution.rbxlx
+```
+
+⚠️ Rebuilding **overwrites** the file — anything you hand-built in Studio and
+saved into that place is lost. Once you start building by hand, switch to the
+live-sync workflow below, which leaves your own work alone.
+
+## Live sync (for ongoing work — leaves your hand-built stuff alone)
 
 You've done this before with the other games in this repo — same drill:
 
