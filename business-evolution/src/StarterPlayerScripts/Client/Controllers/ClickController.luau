@@ -1,5 +1,5 @@
 --!strict
--- Turns raw clicks/taps into RequestClick / RequestOutwork. The click sound
+-- Turns raw clicks/taps into RequestClick / RequestAttack. The click sound
 -- plays locally on the same frame; the popup and the actual income arrive
 -- later via ClickResult, because the server owns all the math (§14).
 
@@ -17,7 +17,7 @@ local SoundController = require(script.Parent:WaitForChild("SoundController"))
 
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local requestClick = remotes:WaitForChild("RequestClick") :: RemoteEvent
-local requestOutwork = remotes:WaitForChild("RequestOutwork") :: RemoteEvent
+local requestOutwork = remotes:WaitForChild("RequestAttack") :: RemoteEvent
 
 -- Far enough to reach any rival from any camera zoom inside our rooms.
 local RAY_DISTANCE_STUDS = 500
@@ -31,13 +31,13 @@ local clickCooldown = Balance.BaseClickCooldown
 local lastClickAt = 0
 
 -- Rival bodies are client-built by RivalRenderer, which tags each model
--- "RivalModel" and stores its id in a "RivalId" attribute. A raycast hits a
+-- "EnemyModel" and stores its id in a "EnemyId" attribute. A raycast hits a
 -- limb part, so walk up the ancestors to find the tagged model.
-local function rivalIdFromPart(part: BasePart): string?
+local function enemyIdFromPart(part: BasePart): string?
 	local node: Instance? = part
 	while node and node ~= workspace do
-		if CollectionService:HasTag(node, "RivalModel") then
-			local id = node:GetAttribute("RivalId")
+		if CollectionService:HasTag(node, "EnemyModel") then
+			local id = node:GetAttribute("EnemyId")
 			return if typeof(id) == "string" then id else nil
 		end
 		node = node.Parent
@@ -67,10 +67,10 @@ local function handleClick(screenX: number, screenY: number)
 		params.FilterDescendantsInstances = if character then { character } else {}
 		local hit = workspace:Raycast(ray.Origin, ray.Direction * RAY_DISTANCE_STUDS, params)
 		if hit then
-			local rivalId = rivalIdFromPart(hit.Instance)
-			if rivalId then
+			local enemyId = enemyIdFromPart(hit.Instance)
+			if enemyId then
 				-- Server re-validates aliveness and reach; we just aim.
-				requestOutwork:FireServer(rivalId)
+				requestOutwork:FireServer(enemyId)
 				return
 			end
 		end

@@ -18,7 +18,8 @@ local controllers: { any } = {
 	require(Controllers:WaitForChild("SoundController")),
 	require(Controllers:WaitForChild("ClickController")),
 	require(Controllers:WaitForChild("PopupController")),
-	require(Controllers:WaitForChild("RivalRenderer")),
+	require(Controllers:WaitForChild("EnemyRenderer")),
+	require(Controllers:WaitForChild("BarrierController")),
 	require(Controllers:WaitForChild("InternRenderer")),
 	require(Controllers:WaitForChild("CameraFx")),
 	require(Controllers:WaitForChild("WorldFxController")),
@@ -27,7 +28,6 @@ local controllers: { any } = {
 	require(Ui:WaitForChild("ShopUi")),
 	require(Ui:WaitForChild("InternUi")),
 	require(Ui:WaitForChild("RestructureUi")),
-	require(Ui:WaitForChild("ElevatorUi")),
 	require(Ui:WaitForChild("RankUpFx")),
 }
 

@@ -18,7 +18,6 @@ local Theme = require(script.Parent:WaitForChild("Theme"))
 local ShopUi = require(script.Parent:WaitForChild("ShopUi"))
 local InternUi = require(script.Parent:WaitForChild("InternUi"))
 local RestructureUi = require(script.Parent:WaitForChild("RestructureUi"))
-local ElevatorUi = require(script.Parent:WaitForChild("ElevatorUi"))
 
 -- Exponential approach rate for the count-up: ~90% of any gap closes in a
 -- third of a second — fast enough to feel live, slow enough to see it move.
@@ -52,7 +51,6 @@ local PROMPT_TO_PANEL: { [string]: PanelModule } = {
 	OpenShop = ShopUi,
 	OpenCoffee = InternUi,
 	OpenHr = RestructureUi,
-	OpenElevator = ElevatorUi,
 }
 
 -- ── Per-frame count-up ──────────────────────────────────────────────────────
@@ -274,7 +272,6 @@ local function buildLeftStack(gui: ScreenGui)
 
 	makeStackButton(1, "💼 Shop", ShopUi.toggle)
 	makeStackButton(2, "☕ Interns", InternUi.toggle)
-	makeStackButton(3, "🛗 Floors", ElevatorUi.toggle)
 	local button, holderScale = makeStackButton(4, "📉 Restructure", RestructureUi.toggle)
 	restructureButton = button
 	restructureHolderScale = holderScale

@@ -21,15 +21,15 @@ print("═══ FULL SERVER BOOT ═══\n")
 -- Exactly the list and order from Main.server.luau.
 local SERVICE_NAMES = {
 	"DataService",
-	"MapService",
+	"WorldService",
 	"ProductivityService",
+	"TrainingService",
 	"ShopService",
+	"SkinService",
 	"RestructureService",
 	"MonetizationService",
 	"RankService",
-	"FloorService",
-	"AppearanceService",
-	"RivalService",
+	"StageService",
 	"InternService",
 	"LeaderboardService",
 }
@@ -69,8 +69,8 @@ for _, entry in services do
 end
 
 -- The payoff: after a full boot there must be a world.
-local mapFolder = workspace:FindFirstChild("BusinessEvolutionMap")
-check("workspace.BusinessEvolutionMap exists after full boot", mapFolder ~= nil)
+local mapFolder = workspace:FindFirstChild("BusinessEvolutionWorld")
+check("workspace.BusinessEvolutionWorld exists after full boot", mapFolder ~= nil)
 
 local parts = 0
 if mapFolder then
@@ -78,13 +78,13 @@ if mapFolder then
 		if inst:IsA("BasePart") then parts += 1 end
 	end
 end
-check(("the tower is in workspace (%d parts)"):format(parts), parts > 8000,
-	("only %d parts — the map did not build"):format(parts))
+check(("the world is in workspace (%d parts)"):format(parts), parts > 4000,
+	("only %d parts — the world did not build"):format(parts))
 
-local MapService = __require("MapService")
+local WorldService = __require("WorldService")
 local count = 0
-for _ in MapService.allManifests() do count += 1 end
-check("all six floors registered", count == 6, ("got %d"):format(count))
+for _ in WorldService.allStages() do count += 1 end
+check("all eight stages registered", count == 8, ("got %d"):format(count))
 
 check("every service module loaded", allRequired)
 

@@ -21,6 +21,7 @@ local Ranks = require(Config.Ranks)
 local Gear = require(Config.Gear)
 local Interns = require(Config.Interns)
 local Severance = require(Config.Severance)
+local Skins = require(Config.Skins)
 
 local _ = ServerScriptService -- (kept for symmetry; Stack has no service deps)
 
@@ -35,6 +36,7 @@ export type Passes = {
 -- offline pacing simulation can feed plain tables through it.
 export type StackInput = {
 	Rank: number,
+	EquippedSkin: string?,
 	Restructures: number,
 	Gear: { Keyboard: number, Chair: number, Coffee: number },
 	Severance: { string },
@@ -71,8 +73,12 @@ end
 -- Productivity gained by one click (before crit rolls).
 function Stack.clickIncome(data: StackInput, passes: Passes): number
 	local effects = Severance.effects(data.Severance)
+	-- The equipped skin is the biggest visible lever on click income, which is
+	-- what makes the shop wall worth walking to.
+	local skinMultiplier = Skins.multiplierFor(data.EquippedSkin or Skins.DefaultId)
 	local earned = Ranks.multiplierFor(data.Rank)
 		* Gear.keyboardMultiplier(data.Gear.Keyboard)
+		* skinMultiplier
 		* restructureMultiplier(data.Restructures)
 		* (1 + effects.ClickBonus)
 	return Balance.BaseClickGain * earned * robuxMultiplier(passes)
@@ -93,6 +99,7 @@ function Stack.outworkDamage(productivity: number, data: StackInput, passes: Pas
 	local internMult = 1 + 0.1 * #data.EquippedInterns
 	local earned = Ranks.multiplierFor(data.Rank)
 		* Gear.keyboardMultiplier(data.Gear.Keyboard)
+		* Skins.multiplierFor(data.EquippedSkin or Skins.DefaultId)
 		* internMult
 		* restructureMultiplier(data.Restructures)
 	return math.max(1, productivity * earned * robuxMultiplier(passes))

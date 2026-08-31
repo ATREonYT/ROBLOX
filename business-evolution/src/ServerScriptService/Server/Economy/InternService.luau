@@ -20,6 +20,7 @@ local Stack = require(ServerScriptService.Server.Economy.Stack)
 
 local Shared = ReplicatedStorage.Shared
 local Balance = require(Shared.Config.Balance)
+local Eggs = require(ReplicatedStorage.Shared.Config.Eggs)
 local Interns = require(Shared.Config.Interns)
 
 local Trove = require(ReplicatedStorage.Packages.Trove)
@@ -196,11 +197,59 @@ local function unwatchPlayer(player: Player)
 	end
 end
 
+-- Briefcases: the egg stands in the hub. Spend Wins, roll a rarity from that
+-- briefcase's published odds, then a uniform pick inside the rarity. The roll
+-- happens here on the server so a client can never choose its own outcome.
+local function onOpenEgg(player: Player, eggId: string)
+	local data = DataService.get(player)
+	local egg = Eggs.get(eggId)
+	if not (data and egg) then
+		return
+	end
+	if data.Wins < egg.Cost then
+		Net.sendTo(player, "ClickResult", {
+			Amount = 0,
+			Crit = "none",
+			Kind = "locked",
+			Label = ("Need %d Wins"):format(egg.Cost),
+		})
+		return
+	end
+
+	local rarity = Eggs.rollRarity(egg, math.random())
+	local pool = Interns.ofRarity(rarity :: any)
+	if #pool == 0 then
+		return -- a briefcase listing a rarity nothing occupies; nothing to give
+	end
+	local def = pool[math.random(1, #pool)]
+	local uid = HttpService:GenerateGUID(false)
+
+	DataService.update(player, function(live)
+		live.Wins -= egg.Cost
+		table.insert(live.Interns, { Uid = uid, Id = def.Id })
+	end)
+
+	-- Auto-equip while there is room: a pet you cannot see is a pet you did
+	-- not feel like you got.
+	local passes = DataService.passesFor(player)
+	if #data.EquippedInterns < Stack.internSlots(data, passes) then
+		DataService.update(player, function(live)
+			table.insert(live.EquippedInterns, uid)
+		end)
+	end
+	refreshEquippedAttribute(player)
+
+	Net.sendTo(player, "InternRollResult", { InternId = def.Id, Uid = uid, Rarity = rarity })
+	Net.sendAll("Fx", { Kind = "InternHired", UserId = player.UserId })
+	DataService.pushState(player)
+end
+
 function InternService:Init()
 	-- All wiring happens in Start; nothing here may touch other services.
 end
 
 function InternService:Start()
+	Net.bind("RequestOpenEgg", 2, 3, t.tuple(t.string), onOpenEgg)
 	Net.bind("RequestHireIntern", 2, 3, t.tuple(), onRequestHireIntern)
 	Net.bind("RequestEquipIntern", 5, 8, t.tuple(t.string, t.boolean), onRequestEquipIntern)
 

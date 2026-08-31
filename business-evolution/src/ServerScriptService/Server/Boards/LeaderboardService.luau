@@ -10,11 +10,11 @@
 
 local DataStoreService = game:GetService("DataStoreService")
 local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local DataService = require(ServerScriptService.Server.Data.DataService)
-local MapService = require(ServerScriptService.Server.World.MapService)
 
 local Shared = ReplicatedStorage.Shared
 local Ranks = require(Shared.Config.Ranks)
@@ -246,34 +246,67 @@ end
 
 -- ── Board discovery ─────────────────────────────────────────────────────────
 
--- Kit.boardFrame hands floor builders a Model whose PrimaryPart carries the
--- SurfaceGui with an empty "Content" frame under the title bar; the manifest
--- Boards entries are those PrimaryParts. Typed as `any` on the way in because
--- manifests come from other agents' floor modules and are only shape-checked.
-local function contentFrameOf(boardPart: any): Frame?
-	if typeof(boardPart) ~= "Instance" or not boardPart:IsA("BasePart") then
-		return nil
-	end
-	local gui = boardPart:FindFirstChildWhichIsA("SurfaceGui")
-	local content = if gui then gui:FindFirstChild("Content") else nil
-	return if content and content:IsA("Frame") then content else nil
+-- The world builder gives each leaderboard pillar a bare Neon "Screen" part.
+-- This service owns what goes ON it, so it attaches the SurfaceGui itself and
+-- returns the frame rows get parented to.
+local function attachContentFrame(screen: BasePart, title: string): Frame
+	local gui = Instance.new("SurfaceGui")
+	gui.Name = "BoardGui"
+	gui.Face = Enum.NormalId.Front
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	gui.PixelsPerStud = 48
+	gui.LightInfluence = 0
+	gui.Parent = screen
+
+	local header = Instance.new("TextLabel")
+	header.BackgroundTransparency = 1
+	header.Size = UDim2.fromScale(1, 0.12)
+	header.Font = Enum.Font.FredokaOne
+	header.Text = title
+	header.TextColor3 = Color3.fromRGB(255, 236, 180)
+	header.TextScaled = true
+	header.Parent = gui
+
+	local content = Instance.new("Frame")
+	content.Name = "Content"
+	content.BackgroundTransparency = 1
+	content.Position = UDim2.fromScale(0, 0.13)
+	content.Size = UDim2.fromScale(1, 0.87)
+	content.Parent = gui
+
+	local layout = Instance.new("UIListLayout")
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
+	layout.Padding = UDim.new(0, 2)
+	layout.Parent = content
+
+	return content
 end
 
 local function collectBoards()
-	for floorId, manifest in MapService.allManifests() do
-		local boards: any = manifest.Boards
-		local eotm = contentFrameOf(boards.Eotm)
-		if eotm then
-			table.insert(eotmContents, eotm)
-		else
-			warn(("[LeaderboardService] %s has no usable Eotm board"):format(floorId))
+	-- The world builder names every pillar screen; find them by walking the
+	-- world folder rather than through a manifest, so this service does not
+	-- care how the map was assembled.
+	local world = Workspace:FindFirstChild("BusinessEvolutionWorld")
+	if not world then
+		warn("[LeaderboardService] no world folder yet — boards stay blank")
+		return
+	end
+	-- Pillars are built left to right: POWER, RESTRUCTURES, WINS. The first
+	-- feeds the in-server standings, the last the all-time Wins board.
+	local screens: { BasePart } = {}
+	for _, descendant in world:GetDescendants() do
+		if descendant.Name == "Screen" and descendant:IsA("BasePart") then
+			table.insert(screens, descendant)
 		end
-		local wins = contentFrameOf(boards.Wins)
-		if wins then
-			table.insert(winsContents, wins)
-		else
-			warn(("[LeaderboardService] %s has no usable Wins board"):format(floorId))
-		end
+	end
+	table.sort(screens, function(a, b)
+		return a.Position.X < b.Position.X
+	end)
+	if screens[1] then
+		table.insert(eotmContents, attachContentFrame(screens[1], "TOP POWER (SERVER)"))
+	end
+	if screens[3] then
+		table.insert(winsContents, attachContentFrame(screens[3], "TOP WINS (ALL TIME)"))
 	end
 end
 

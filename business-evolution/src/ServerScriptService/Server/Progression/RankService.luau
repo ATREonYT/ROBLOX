@@ -16,7 +16,6 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 local Net = require(ServerScriptService.Server.Net.Net)
 local DataService = require(ServerScriptService.Server.Data.DataService)
-local AppearanceService = require(script.Parent.AppearanceService)
 
 local Ranks = require(ReplicatedStorage.Shared.Config.Ranks)
 local Trove = require(ReplicatedStorage.Packages.Trove)
@@ -37,7 +36,6 @@ local function promote(player: Player, newRank: number)
 	-- Broadcast, not sendTo: promotions are a world-visible moment — RankUpFx
 	-- confettis the promoted player and toasts everyone else.
 	Net.sendAll("Fx", { Kind = "RankUp", UserId = player.UserId, Rank = newRank })
-	AppearanceService.applyFor(player)
 end
 
 local function checkAllPlayers()

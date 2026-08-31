@@ -108,6 +108,24 @@
         },
         "InternRollResult": {
           "$className": "RemoteEvent"
+        },
+        "RequestAttack": {
+          "$className": "RemoteEvent"
+        },
+        "RequestBuySkin": {
+          "$className": "RemoteEvent"
+        },
+        "RequestEquipSkin": {
+          "$className": "RemoteEvent"
+        },
+        "RequestOpenEgg": {
+          "$className": "RemoteEvent"
+        },
+        "RequestTrainingHit": {
+          "$className": "RemoteEvent"
+        },
+        "StageState": {
+          "$className": "RemoteEvent"
         }
       }
     },

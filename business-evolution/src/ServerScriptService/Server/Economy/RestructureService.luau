@@ -11,7 +11,6 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local Net = require(ServerScriptService.Server.Net.Net)
 local DataService = require(ServerScriptService.Server.Data.DataService)
 local Stack = require(ServerScriptService.Server.Economy.Stack)
-local AppearanceService = require(ServerScriptService.Server.Progression.AppearanceService)
 
 local Shared = ReplicatedStorage.Shared
 local Balance = require(Shared.Config.Balance)
@@ -80,7 +79,6 @@ local function onRequestRestructure(player: Player)
 	Net.sendAll("Fx", { Kind = "Restructure", UserId = player.UserId })
 	-- Back to the intern look immediately — the demotion IS the joke, and
 	-- waiting for a respawn would bury the punchline.
-	AppearanceService.applyFor(player)
 	DataService.pushState(player)
 end
 

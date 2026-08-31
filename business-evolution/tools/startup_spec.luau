@@ -1,11 +1,11 @@
 -- ═══════════════════════════════════════════════════════════════════════════
--- STARTUP SPEC — runs MapService:Init() exactly as the server does on boot.
+-- STARTUP SPEC — runs WorldService:Init() exactly as the server does on boot.
 -- The map spec builds floor modules directly; this proves the thing that
 -- ACTUALLY runs when you press Play produces a world.
 -- ═══════════════════════════════════════════════════════════════════════════
 
-local MapService = __require("MapService")
-local FloorsConfig = __require("Floors")
+local WorldService = __require("WorldService")
+local Stages = __require("Stages")
 
 local passed, failed = 0, 0
 local function check(name, condition, detail)
@@ -21,23 +21,23 @@ end
 print("═══ SERVER STARTUP (MapService:Init) ═══\n")
 
 local ok, err = pcall(function()
-	MapService:Init()
+	WorldService:Init()
 end)
-check("MapService:Init() runs without error", ok, tostring(err))
+check("WorldService:Init() runs without error", ok, tostring(err))
 if not ok then
 	error("startup spec: the server would fail to boot", 0)
 end
 
-local mapFolder = workspace:FindFirstChild("BusinessEvolutionMap")
-check("workspace.BusinessEvolutionMap exists", mapFolder ~= nil)
+local mapFolder = workspace:FindFirstChild("BusinessEvolutionWorld")
+check("workspace.BusinessEvolutionWorld exists", mapFolder ~= nil)
 if not mapFolder then
 	error("startup spec: no map folder in workspace", 0)
 end
 
--- Every configured floor must have produced a populated folder.
+-- Hub plus every stage must have produced a populated folder.
 local totalParts = 0
-for _, floorDef in FloorsConfig.List do
-	local folder = mapFolder:FindFirstChild(floorDef.Id)
+for _, stage in Stages.List do
+	local folder = mapFolder:FindFirstChild(if stage.Number == 0 then "Hub" else stage.Id)
 	local parts = 0
 	if folder then
 		for _, inst in folder:GetDescendants() do
@@ -45,33 +45,30 @@ for _, floorDef in FloorsConfig.List do
 		end
 	end
 	totalParts += parts
-	check(("floor %s built into workspace (%d parts)"):format(floorDef.Id, parts),
-		folder ~= nil and parts > 400,
-		if folder == nil then "folder missing — MapService skipped it" else ("only %d parts"):format(parts))
+	check(("%s built into workspace (%d parts)"):format(stage.DisplayName, parts),
+		folder ~= nil and parts > 200,
+		if folder == nil then "folder missing" else ("only %d parts"):format(parts))
 end
-check(("the whole tower is in workspace (%d parts)"):format(totalParts), totalParts > 8000)
+check(("the whole world is in workspace (%d parts)"):format(totalParts), totalParts > 4000)
 
 -- Manifests must be registered, or every gameplay service reads an empty world.
-local manifests = MapService.allManifests()
 local manifestCount = 0
-for _ in manifests do manifestCount += 1 end
-check("all six manifests registered", manifestCount == 6, ("got %d"):format(manifestCount))
+for _ in WorldService.allStages() do manifestCount += 1 end
+check("all eight stage manifests registered", manifestCount == 8, ("got %d"):format(manifestCount))
+check("hub manifest registered", WorldService.hub() ~= nil)
 
 -- The spawn: without it players fall forever.
 local spawn = mapFolder:FindFirstChild("MainSpawn")
 check("a SpawnLocation exists", spawn ~= nil and spawn.ClassName == "SpawnLocation")
 
--- Prompts: the Hud opens every panel off these names.
-local promptNames = {}
-for _, inst in mapFolder:GetDescendants() do
-	if inst.ClassName == "ProximityPrompt" then
-		promptNames[inst.Name] = (promptNames[inst.Name] or 0) + 1
-	end
+-- Every stage needs its barrier and both cash-out pads reachable in world.
+local padsOk, barriersOk = true, true
+for stageNumber, manifest in WorldService.allStages() do
+	if manifest.BigPad == nil or manifest.ReturnPad == nil then padsOk = false end
+	if manifest.Barrier == nil then barriersOk = false end
 end
-for _, wanted in { "OpenShop", "OpenCoffee", "OpenHr", "OpenElevator" } do
-	check(("%s prompt attached on all six floors"):format(wanted),
-		promptNames[wanted] == 6, ("found %d"):format(promptNames[wanted] or 0))
-end
+check("every stage has both cash-out pads", padsOk)
+check("every stage has a barrier", barriersOk)
 
 print("\n═══════════════════════════════════════")
 if failed > 0 then

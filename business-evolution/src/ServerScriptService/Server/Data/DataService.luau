@@ -41,6 +41,11 @@ export type ProfileData = {
 	BossesDefeated: { string },
 	PurchaseLog: { string },
 	FirstJoinTime: number,
+	-- The outdoor world: which skin you wear, which you own, and which stages
+	-- you have cleared (clearing is permanent and survives a Restructure).
+	EquippedSkin: string,
+	OwnedSkins: { string },
+	ClearedStages: { number },
 }
 
 local TEMPLATE: ProfileData = {
@@ -59,6 +64,9 @@ local TEMPLATE: ProfileData = {
 	BossesDefeated = {},
 	PurchaseLog = {},
 	FirstJoinTime = 0,
+	EquippedSkin = "Intern",
+	OwnedSkins = { "Intern" },
+	ClearedStages = {},
 }
 
 local DataService = {}
@@ -154,6 +162,9 @@ local function buildClientState(player: Player, data: ProfileData)
 		InternSlots = Stack.internSlots(data, passes),
 		ClickCooldown = Stack.clickCooldown(data),
 		OwnedSkips = skipProvider(player),
+		EquippedSkin = data.EquippedSkin,
+		OwnedSkins = data.OwnedSkins,
+		ClearedStages = data.ClearedStages,
 	}
 end
 

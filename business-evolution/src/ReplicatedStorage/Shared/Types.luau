@@ -31,6 +31,9 @@ export type ProfileData = {
 	BossesDefeated: { string }, -- floor ids whose boss has been beaten (survives Restructure)
 	PurchaseLog: { string }, -- receipt ids already granted, for idempotent dev products
 	FirstJoinTime: number,
+	EquippedSkin: string,
+	OwnedSkins: { string },
+	ClearedStages: { number }, -- stage numbers beaten; permanent
 }
 
 -- The slice of ProfileData the client is allowed to see, plus derived values
@@ -55,6 +58,9 @@ export type ClientState = {
 	-- Floor ids the player may enter because they bought that floor's skip
 	-- gamepass, regardless of the normal Restructure gate.
 	OwnedSkips: { [string]: boolean },
+	EquippedSkin: string,
+	OwnedSkins: { string },
+	ClearedStages: { number },
 }
 
 -- One rival's live state as replicated to clients (compact on purpose).

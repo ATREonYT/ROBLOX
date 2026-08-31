@@ -15,15 +15,16 @@ local Net = require(Server.Net.Net)
 -- and Start runs after every Init has finished.
 local services: { any } = {
 	require(Server.Data.DataService),
-	require(Server.World.MapService),
+	-- The world has to exist before anything reads a manifest from it.
+	require(Server.World.WorldService),
 	require(Server.Economy.ProductivityService),
+	require(Server.Economy.TrainingService),
 	require(Server.Economy.ShopService),
+	require(Server.Economy.SkinService),
 	require(Server.Economy.RestructureService),
 	require(Server.Economy.MonetizationService),
 	require(Server.Progression.RankService),
-	require(Server.Progression.FloorService),
-	require(Server.Progression.AppearanceService),
-	require(Server.Rivals.RivalService),
+	require(Server.Stages.StageService),
 	require(Server.Economy.InternService),
 	require(Server.Boards.LeaderboardService),
 }
