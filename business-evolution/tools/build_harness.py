@@ -33,6 +33,7 @@ MODULES = {
 FLOOR_IDS = []  # the old indoor floors are gone; kept empty for the script tree
 for _name, _rel in {
     "Stages":       "ReplicatedStorage/Shared/Config/Stages.luau",
+    "Surfaces":     "ReplicatedStorage/Shared/Config/Surfaces.luau",
     "TrainingBags": "ReplicatedStorage/Shared/Config/TrainingBags.luau",
     "Skins":        "ReplicatedStorage/Shared/Config/Skins.luau",
     "Eggs":         "ReplicatedStorage/Shared/Config/Eggs.luau",

@@ -61,6 +61,45 @@ check("hub manifest registered", WorldService.hub() ~= nil)
 local spawn = mapFolder:FindFirstChild("MainSpawn")
 check("a SpawnLocation exists", spawn ~= nil and spawn.ClassName == "SpawnLocation")
 
+-- ── The passes: no gaps in the walkable road ───────────────────────────────
+-- Before these existed you could walk east out of the hub and fall out of the
+-- world, so this checks the ground is genuinely continuous.
+local passes = mapFolder:FindFirstChild("Passes")
+check("connecting passes were built", passes ~= nil)
+if passes then
+	local passParts = 0
+	for _, inst in passes:GetDescendants() do
+		if inst:IsA("BasePart") then passParts += 1 end
+	end
+	check(("passes have geometry (%d parts)"):format(passParts), passParts > 400)
+
+	-- Walk the world west to east and confirm ground exists at every step.
+	local spans = {}
+	for _, inst in mapFolder:GetDescendants() do
+		if inst:IsA("BasePart") and (inst.Name == "Ground" or inst.Name == "PassGround") then
+			local halfX = inst.Size.X / 2
+			table.insert(spans, { inst.CFrame.X - halfX, inst.CFrame.X + halfX })
+		end
+	end
+	local gaps = 0
+	local firstGapAt = nil
+	for x = -150, 3250, 10 do
+		local covered = false
+		for _, span in spans do
+			if x >= span[1] - 0.5 and x <= span[2] + 0.5 then
+				covered = true
+				break
+			end
+		end
+		if not covered then
+			gaps += 1
+			if firstGapAt == nil then firstGapAt = x end
+		end
+	end
+	check("the road is continuous from hub to the last stage", gaps == 0,
+		if firstGapAt then ("first hole in the ground at x=%d (%d sample points uncovered)"):format(firstGapAt, gaps) else "")
+end
+
 -- Every stage needs its barrier and both cash-out pads reachable in world.
 local padsOk, barriersOk = true, true
 for stageNumber, manifest in WorldService.allStages() do

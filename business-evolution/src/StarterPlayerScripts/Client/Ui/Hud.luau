@@ -1,340 +1,406 @@
 --!strict
--- The always-on HUD: big Productivity counter top-centre (animated count-up —
--- a number that snaps reads as a bug in this genre), rank + progress beneath,
--- Wins top-right, the genre-standard left button stack, and the income readout
--- at the bottom. Also routes the world's ProximityPrompts into the panels.
+-- The heads-up display, laid out like the reference screenshots:
+--
+--   ┌──────────────────────────────────────────────────────────┐
+--   │            [ stage banner: STAGE 2 · 3/7 beaten ]        │
+--   │ [shop]                                                   │
+--   │ [wardrobe]                                               │
+--   │ [pets]                                                   │
+--   │ [restructure]                                            │
+--   │ ⚡ 1.2K                                                   │
+--   │ 🏆 240              [ objective: Beat 4 more Temps ]     │
+--   │ 🤝 2                                                     │
+--   └──────────────────────────────────────────────────────────┘
+--
+-- Currencies stack in the bottom-left as icon pills, the current objective
+-- sits bottom-centre, and the buttons run down the left edge.
 
 local Players = game:GetService("Players")
-local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
-local Trove = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Trove"))
-local Format = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Util"):WaitForChild("Format"))
-local Balance = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("Balance"))
-local Ranks = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("Ranks"))
-local StateController = require(script.Parent.Parent:WaitForChild("Controllers"):WaitForChild("StateController"))
 local Theme = require(script.Parent:WaitForChild("Theme"))
-local ShopUi = require(script.Parent:WaitForChild("ShopUi"))
-local InternUi = require(script.Parent:WaitForChild("InternUi"))
-local RestructureUi = require(script.Parent:WaitForChild("RestructureUi"))
+local StateController = require(script.Parent.Parent:WaitForChild("Controllers"):WaitForChild("StateController"))
 
--- Exponential approach rate for the count-up: ~90% of any gap closes in a
--- third of a second — fast enough to feel live, slow enough to see it move.
-local COUNT_UP_SHARPNESS = 7
-local COUNT_SNAP_EPSILON = 0.5
+local Format = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Util"):WaitForChild("Format"))
+local Stages = require(ReplicatedStorage.Shared.Config.Stages)
+local Trove = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Trove"))
 
-type PanelModule = {
-	open: () -> (),
-	toggle: () -> (),
-}
+local stageStateRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("StageState") :: RemoteEvent
 
 local Hud = {}
 
 local trove = Trove.new()
-local productivityLabel: TextLabel? = nil
-local rankTitleLabel: TextLabel? = nil
-local nextRankLabel: TextLabel? = nil
-local rankBar: Theme.ProgressBar? = nil
-local winsLabel: Theme.CurrencyLabel? = nil
-local incomeLabel: TextLabel? = nil
-local restructureHolderScale: UIScale? = nil
-local restructureButton: TextButton? = nil
-local pulseTween: Tween? = nil
+local gui: ScreenGui? = nil
 
--- The displayed number chases the real one every frame instead of jumping.
-local displayedProductivity = 0
-local targetProductivity = 0
-local shownText = ""
+-- Live display values, eased toward their true value so counters roll.
+local shownPower = 0
+local powerLabel: TextLabel? = nil
+local winsLabel: TextLabel? = nil
+local petsLabel: TextLabel? = nil
+local perClickLabel: TextLabel? = nil
+local objectiveLabel: TextLabel? = nil
+local bannerLabel: TextLabel? = nil
+local bannerSub: TextLabel? = nil
 
-local PROMPT_TO_PANEL: { [string]: PanelModule } = {
-	OpenShop = ShopUi,
-	OpenCoffee = InternUi,
-	OpenHr = RestructureUi,
-}
+local stageProgress: { [number]: { Kills: number, Needed: number } } = {}
+local clearedStages: { [number]: boolean } = {}
 
--- ── Per-frame count-up ──────────────────────────────────────────────────────
+-- ── Building blocks ─────────────────────────────────────────────────────────
 
-local function stepCountUp(dt: number)
-	local gap = targetProductivity - displayedProductivity
-	if gap ~= 0 then
-		-- Frame-rate independent exponential chase; snaps only when the
-		-- remaining gap is invisible at display precision.
-		displayedProductivity += gap * (1 - math.exp(-COUNT_UP_SHARPNESS * dt))
-		if math.abs(targetProductivity - displayedProductivity) < COUNT_SNAP_EPSILON then
-			displayedProductivity = targetProductivity
-		end
-	end
-	local label = productivityLabel
-	if label then
-		local text = "💼 " .. Format.abbreviate(displayedProductivity)
-		if text ~= shownText then
-			shownText = text
-			label.Text = text
-		end
-	end
+-- A currency pill: round icon on the left, big number on the right. This is
+-- the shape the reference HUD uses in its bottom-left corner.
+local function currencyPill(parent: Frame, order: number, icon: string, tint: Color3): TextLabel
+	local row = Instance.new("Frame")
+	row.Name = "Pill" .. order
+	row.BackgroundColor3 = Theme.Colors.Panel
+	row.BackgroundTransparency = 0.12
+	row.BorderSizePixel = 0
+	row.Size = UDim2.fromOffset(190, 46)
+	row.LayoutOrder = order
+	row.Parent = parent
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 23)
+	corner.Parent = row
+
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = Theme.Colors.PanelDark
+	stroke.Thickness = 3
+	stroke.Parent = row
+
+	local badge = Instance.new("Frame")
+	badge.BackgroundColor3 = tint
+	badge.BorderSizePixel = 0
+	badge.Position = UDim2.fromOffset(4, 4)
+	badge.Size = UDim2.fromOffset(38, 38)
+	badge.Parent = row
+	local badgeCorner = Instance.new("UICorner")
+	badgeCorner.CornerRadius = UDim.new(1, 0)
+	badgeCorner.Parent = badge
+	local badgeStroke = Instance.new("UIStroke")
+	badgeStroke.Color = Theme.Colors.PanelDark
+	badgeStroke.Thickness = 2
+	badgeStroke.Parent = badge
+
+	local iconLabel = Instance.new("TextLabel")
+	iconLabel.BackgroundTransparency = 1
+	iconLabel.Size = UDim2.fromScale(1, 1)
+	iconLabel.Font = Enum.Font.GothamBold
+	iconLabel.Text = icon
+	iconLabel.TextScaled = true
+	iconLabel.TextColor3 = Theme.Colors.Text
+	iconLabel.Parent = badge
+
+	local value = Instance.new("TextLabel")
+	value.Name = "Value"
+	value.BackgroundTransparency = 1
+	value.Position = UDim2.fromOffset(50, 0)
+	value.Size = UDim2.new(1, -60, 1, 0)
+	value.Font = Enum.Font.FredokaOne
+	value.Text = "0"
+	value.TextColor3 = Theme.Colors.Text
+	value.TextScaled = true
+	value.TextXAlignment = Enum.TextXAlignment.Left
+	value.TextStrokeTransparency = 0.4
+	value.Parent = row
+
+	local sizeLimit = Instance.new("UITextSizeConstraint")
+	sizeLimit.MaxTextSize = 30
+	sizeLimit.Parent = value
+
+	return value
 end
 
--- ── Rank row ────────────────────────────────────────────────────────────────
+-- ── Objective text ──────────────────────────────────────────────────────────
 
-local function updateRank(state: StateController.ClientState)
-	local rankDef = Ranks.List[state.Rank]
-	local title = rankTitleLabel
-	if title and rankDef then
-		title.Text = rankDef.Name
+-- Which stage is the player standing in, judged by world position: the hub is
+-- around x=0 and each stage sits further east.
+local function currentStageNumber(): number
+	local character = Players.LocalPlayer.Character
+	local root = if character then character:FindFirstChild("HumanoidRootPart") else nil
+	if not (root and root:IsA("BasePart")) then
+		return 0
 	end
-
-	local bar = rankBar
-	local nextLabel = nextRankLabel
-	local nextAt = state.NextRankAt
-	-- math.huge marks the rank cap; the bar pins full instead of dividing by ∞.
-	if nextAt == math.huge or nextAt ~= nextAt then
-		if bar then
-			bar.Set(1)
-		end
-		if nextLabel then
-			nextLabel.Text = "Top of the ladder! 👑"
-		end
-		return
-	end
-	local currentRequirement = if rankDef then rankDef.Requirement else 0
-	local span = math.max(nextAt - currentRequirement, 1)
-	if bar then
-		bar.Set(math.clamp((state.Productivity - currentRequirement) / span, 0, 1))
-	end
-	if nextLabel then
-		local nextDef = Ranks.List[state.Rank + 1]
-		nextLabel.Text = ("Next: %s at %s 💼"):format(if nextDef then nextDef.Name else "?", Format.abbreviate(nextAt))
-	end
-end
-
--- ── Restructure pulse ───────────────────────────────────────────────────────
-
-local function setRestructurePulse(on: boolean)
-	local holderScale = restructureHolderScale
-	local button = restructureButton
-	if not holderScale or not button then
-		return
-	end
-	local stroke = button:FindFirstChildOfClass("UIStroke")
-	if on then
-		if pulseTween then
-			return -- already pulsing; restarting resets the phase visibly
-		end
-		button.BackgroundColor3 = Theme.Colors.Gold
-		button.TextColor3 = Theme.Colors.TextOnGold
-		if stroke then
-			stroke.Color = Theme.Colors.GoldDark
-		end
-		-- Infinite reversing breathe on the wrapper scale (the button's own
-		-- UIScale belongs to hover/press juice).
-		local tween = Theme.play(
-			holderScale,
-			TweenInfo.new(0.55, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut, -1, true),
-			{ Scale = 1.07 }
-		)
-		pulseTween = tween
-	else
-		if pulseTween then
-			pulseTween:Cancel()
-			pulseTween = nil
-		end
-		holderScale.Scale = 1
-		button.BackgroundColor3 = Theme.Colors.PanelLight
-		button.TextColor3 = Theme.Colors.Text
-		if stroke then
-			stroke.Color = Theme.Colors.PanelDark
+	local x = root.Position.X
+	local best, bestDistance = 0, math.huge
+	for _, stage in Stages.List do
+		local distance = math.abs(x - stage.Origin[1])
+		if distance < bestDistance then
+			best, bestDistance = stage.Number, distance
 		end
 	end
+	return best
 end
 
--- ── State intake ────────────────────────────────────────────────────────────
-
-local function onState(state: StateController.ClientState)
-	targetProductivity = state.Productivity
-	updateRank(state)
-	local wins = winsLabel
-	if wins then
-		wins.Set(state.Wins)
+-- The single most useful sentence we can put on screen right now.
+local function objectiveText(state: any): string
+	local stageNumber = currentStageNumber()
+	if stageNumber == 0 then
+		if state and state.Wins and state.Wins >= 5 then
+			return "Spend your Wins at the Wardrobe, then head east"
+		end
+		return "Hit a training bag, then follow the arrows east"
 	end
-	local income = incomeLabel
-	if income then
-		income.Text = ("+%s per click · +%s/s idle"):format(
-			Format.abbreviate(state.ClickIncome),
-			Format.abbreviate(state.IdlePerSecond)
-		)
+	local stage = Stages.byNumber(stageNumber)
+	if not stage then
+		return "Follow the arrows"
 	end
-	setRestructurePulse(state.Rank >= Balance.RestructureMinRank and state.Productivity >= state.RestructureCost)
-end
-
--- ── Building ────────────────────────────────────────────────────────────────
-
-local function buildTopCentre(gui: ScreenGui)
-	local cluster = Instance.new("Frame")
-	cluster.Name = "TopCentre"
-	cluster.BackgroundTransparency = 1
-	cluster.AnchorPoint = Vector2.new(0.5, 0)
-	cluster.Position = UDim2.new(0.5, 0, 0, 4)
-	cluster.Size = UDim2.fromOffset(420, 132)
-	Theme.autoScale(cluster, trove)
-
-	productivityLabel = Theme.text({
-		Text = "💼 0",
-		Parent = cluster,
-		Size = UDim2.new(1, 0, 0, 52),
-		Font = Theme.DisplayFont,
-		TextSize = 44,
-		Color = Theme.Colors.Gold,
-		StrokePx = 4,
-		Name = "Productivity",
-	})
-	rankTitleLabel = Theme.text({
-		Text = "…",
-		Parent = cluster,
-		Size = UDim2.new(1, 0, 0, 24),
-		Position = UDim2.new(0, 0, 0, 54),
-		Font = Theme.DisplayFont,
-		TextSize = 20,
-		StrokePx = 3,
-		Name = "RankTitle",
-	})
-	rankBar = Theme.progressBar({
-		Parent = cluster,
-		Size = UDim2.fromOffset(320, 14),
-		Position = UDim2.new(0.5, 0, 0, 84),
-		AnchorPoint = Vector2.new(0.5, 0),
-	})
-	nextRankLabel = Theme.text({
-		Text = "",
-		Parent = cluster,
-		Size = UDim2.new(1, 0, 0, 18),
-		Position = UDim2.new(0, 0, 0, 102),
-		TextSize = 12,
-		Color = Theme.Colors.TextDim,
-		StrokePx = 2,
-		Name = "NextRank",
-	})
-
-	cluster.Parent = gui
-end
-
-local function buildWins(gui: ScreenGui)
-	local label = Theme.currencyLabel({
-		Icon = "🏆",
-		Size = UDim2.fromOffset(176, 46),
-		Position = UDim2.new(1, -12, 0, 8),
-		AnchorPoint = Vector2.new(1, 0),
-		TextSize = 22,
-		Format = Format.abbreviate,
-	})
-	Theme.autoScale(label.Root, trove)
-	label.Root.Parent = gui
-	winsLabel = label
-end
-
-local function buildLeftStack(gui: ScreenGui)
-	local stack = Instance.new("Frame")
-	stack.Name = "LeftStack"
-	stack.BackgroundTransparency = 1
-	stack.AnchorPoint = Vector2.new(0, 0.5)
-	stack.Position = UDim2.new(0, 10, 0.5, 0)
-	stack.Size = UDim2.fromOffset(168, 4 * 72 + 3 * 10)
-	Theme.autoScale(stack, trove)
-
-	local layout = Instance.new("UIListLayout")
-	layout.FillDirection = Enum.FillDirection.Vertical
-	layout.Padding = UDim.new(0, 10)
-	layout.SortOrder = Enum.SortOrder.LayoutOrder
-	layout.Parent = stack
-
-	-- Each button sits in a wrapper Frame whose UIScale we own: the
-	-- restructure pulse (and any future badge bounce) must not fight the
-	-- hover/press UIScale inside Theme.button.
-	local function makeStackButton(order: number, text: string, onClick: () -> ()): (TextButton, UIScale)
-		local holder = Instance.new("Frame")
-		holder.Name = text
-		holder.BackgroundTransparency = 1
-		holder.Size = UDim2.new(1, 0, 0, 72)
-		holder.LayoutOrder = order
-		local holderScale = Instance.new("UIScale")
-		holderScale.Parent = holder
-		local button = Theme.button({
-			Text = text,
-			Variant = "ghost",
-			Size = UDim2.fromScale(1, 1),
-			TextSize = 22,
-			Parent = holder,
-			OnClick = onClick,
-		})
-		holder.Parent = stack
-		return button, holderScale
+	if clearedStages[stageNumber] then
+		return ("Stage %d cleared — touch a WINS pad, or push east"):format(stageNumber)
 	end
-
-	makeStackButton(1, "💼 Shop", ShopUi.toggle)
-	makeStackButton(2, "☕ Interns", InternUi.toggle)
-	local button, holderScale = makeStackButton(4, "📉 Restructure", RestructureUi.toggle)
-	restructureButton = button
-	restructureHolderScale = holderScale
-
-	stack.Parent = gui
+	local progress = stageProgress[stageNumber]
+	local killed = if progress then progress.Kills else 0
+	local needed = stage.EnemyCount
+	return ("Defeat %d more %s"):format(math.max(needed - killed, 0), stage.EnemyName .. "s")
 end
 
-local function buildIncomeReadout(gui: ScreenGui)
-	local holder = Instance.new("Frame")
-	holder.Name = "IncomeReadout"
-	holder.BackgroundTransparency = 1
-	holder.AnchorPoint = Vector2.new(0.5, 1)
-	holder.Position = UDim2.new(0.5, 0, 1, -8)
-	holder.Size = UDim2.fromOffset(380, 30)
-	Theme.autoScale(holder, trove)
-
-	incomeLabel = Theme.text({
-		Text = "+1 per click",
-		Parent = holder,
-		Size = UDim2.fromScale(1, 1),
-		Font = Theme.DisplayFont,
-		TextSize = 19,
-		StrokePx = 3,
-		Name = "Income",
-	})
-	holder.Parent = gui
+local function bannerText(): (string, string)
+	local stageNumber = currentStageNumber()
+	if stageNumber == 0 then
+		local stage = Stages.get("Hub")
+		return "HQ PLAZA", if stage then stage.Blurb else ""
+	end
+	local stage = Stages.byNumber(stageNumber)
+	if not stage then
+		return "", ""
+	end
+	local progress = stageProgress[stageNumber]
+	local killed = if progress then progress.Kills else 0
+	local status = if clearedStages[stageNumber]
+		then "CLEARED ✔"
+		else ("%d / %d defeated"):format(killed, stage.EnemyCount)
+	return ("STAGE %d · %s"):format(stage.Number, stage.DisplayName:upper()),
+		("%s   ·   Recommended Power: %s"):format(status, Format.abbreviate(stage.RecommendedPower))
 end
 
 -- ── Lifecycle ───────────────────────────────────────────────────────────────
 
 function Hud:Init()
-	local gui = Theme.screenGui("Hud", 1, trove)
-	buildTopCentre(gui)
-	buildWins(gui)
-	buildLeftStack(gui)
-	buildIncomeReadout(gui)
+	local screen = Theme.screenGui("Hud", 1, trove, true)
+	gui = screen
+
+	-- Bottom-left currency stack.
+	local stack = Instance.new("Frame")
+	stack.Name = "Currencies"
+	stack.BackgroundTransparency = 1
+	stack.AnchorPoint = Vector2.new(0, 1)
+	stack.Position = UDim2.new(0, 18, 1, -18)
+	stack.Size = UDim2.fromOffset(200, 168)
+	stack.Parent = screen
+
+	local layout = Instance.new("UIListLayout")
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
+	layout.Padding = UDim.new(0, 8)
+	layout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+	layout.Parent = stack
+
+	powerLabel = currencyPill(stack, 1, "⚡", Theme.Colors.Gold)
+	winsLabel = currencyPill(stack, 2, "🏆", Theme.Colors.Green)
+	petsLabel = currencyPill(stack, 3, "🤝", Color3.fromRGB(120, 150, 255))
+
+	-- Per-click readout under the stack.
+	local perClick = Instance.new("TextLabel")
+	perClick.Name = "PerClick"
+	perClick.BackgroundTransparency = 1
+	perClick.AnchorPoint = Vector2.new(0, 1)
+	perClick.Position = UDim2.new(0, 22, 1, -190)
+	perClick.Size = UDim2.fromOffset(280, 24)
+	perClick.Font = Enum.Font.GothamBold
+	perClick.Text = ""
+	perClick.TextColor3 = Theme.Colors.TextDim
+	perClick.TextScaled = true
+	perClick.TextXAlignment = Enum.TextXAlignment.Left
+	perClick.TextStrokeTransparency = 0.5
+	perClick.Parent = screen
+	local perClickLimit = Instance.new("UITextSizeConstraint")
+	perClickLimit.MaxTextSize = 19
+	perClickLimit.Parent = perClick
+	perClickLabel = perClick
+
+	-- Top-centre stage banner.
+	local banner = Instance.new("Frame")
+	banner.Name = "StageBanner"
+	banner.AnchorPoint = Vector2.new(0.5, 0)
+	banner.Position = UDim2.new(0.5, 0, 0, 12)
+	banner.Size = UDim2.fromOffset(460, 66)
+	banner.BackgroundColor3 = Theme.Colors.Panel
+	banner.BackgroundTransparency = 0.15
+	banner.BorderSizePixel = 0
+	banner.Parent = screen
+	local bannerCorner = Instance.new("UICorner")
+	bannerCorner.CornerRadius = UDim.new(0, 16)
+	bannerCorner.Parent = banner
+	local bannerStroke = Instance.new("UIStroke")
+	bannerStroke.Color = Theme.Colors.Gold
+	bannerStroke.Thickness = 3
+	bannerStroke.Parent = banner
+
+	local title = Instance.new("TextLabel")
+	title.BackgroundTransparency = 1
+	title.Position = UDim2.fromScale(0, 0.08)
+	title.Size = UDim2.fromScale(1, 0.5)
+	title.Font = Enum.Font.FredokaOne
+	title.Text = "HQ PLAZA"
+	title.TextColor3 = Theme.Colors.Gold
+	title.TextScaled = true
+	title.TextStrokeTransparency = 0.4
+	title.Parent = banner
+	bannerLabel = title
+
+	local sub = Instance.new("TextLabel")
+	sub.BackgroundTransparency = 1
+	sub.Position = UDim2.fromScale(0, 0.56)
+	sub.Size = UDim2.fromScale(1, 0.36)
+	sub.Font = Enum.Font.GothamBold
+	sub.Text = ""
+	sub.TextColor3 = Theme.Colors.TextDim
+	sub.TextScaled = true
+	sub.Parent = banner
+	local subLimit = Instance.new("UITextSizeConstraint")
+	subLimit.MaxTextSize = 17
+	subLimit.Parent = sub
+	bannerSub = sub
+
+	-- Bottom-centre objective, the tutorial banner from the screenshots.
+	local objective = Instance.new("Frame")
+	objective.Name = "Objective"
+	objective.AnchorPoint = Vector2.new(0.5, 1)
+	objective.Position = UDim2.new(0.5, 0, 1, -22)
+	objective.Size = UDim2.fromOffset(430, 54)
+	objective.BackgroundColor3 = Color3.fromRGB(56, 132, 220)
+	objective.BorderSizePixel = 0
+	objective.Parent = screen
+	local objectiveCorner = Instance.new("UICorner")
+	objectiveCorner.CornerRadius = UDim.new(0, 14)
+	objectiveCorner.Parent = objective
+	local objectiveStroke = Instance.new("UIStroke")
+	objectiveStroke.Color = Color3.fromRGB(22, 44, 88)
+	objectiveStroke.Thickness = 3
+	objectiveStroke.Parent = objective
+	local objectiveGradient = Instance.new("UIGradient")
+	objectiveGradient.Color = ColorSequence.new(Color3.fromRGB(88, 168, 246), Color3.fromRGB(40, 106, 196))
+	objectiveGradient.Rotation = 90
+	objectiveGradient.Parent = objective
+
+	local objectiveText_ = Instance.new("TextLabel")
+	objectiveText_.BackgroundTransparency = 1
+	objectiveText_.Size = UDim2.fromScale(1, 1)
+	objectiveText_.Font = Enum.Font.FredokaOne
+	objectiveText_.Text = ""
+	objectiveText_.TextColor3 = Theme.Colors.Text
+	objectiveText_.TextScaled = true
+	objectiveText_.TextStrokeTransparency = 0.35
+	objectiveText_.Parent = objective
+	local objectiveLimit = Instance.new("UITextSizeConstraint")
+	objectiveLimit.MaxTextSize = 24
+	objectiveLimit.Parent = objectiveText_
+	objectiveLabel = objectiveText_
+
+	Theme.autoScale(stack, trove)
+	Theme.autoScale(banner, trove)
+	Theme.autoScale(objective, trove)
 end
 
 function Hud:Start()
-	-- Cast: sleitnick Signal's typed Connect doesn't unify with Trove's
-	-- SignalLike under the old solver; the runtime shapes match fine.
-	trove:Connect(StateController.Changed :: any, onState)
-	task.spawn(function()
-		-- First paint: seed the count-up at the real value so joining doesn't
-		-- roll up from zero like a fake slot machine.
-		local state = StateController.await()
-		displayedProductivity = state.Productivity
-		onState(state)
-	end)
+	-- Side buttons open the panels. Required late so the panels have loaded.
+	local uiFolder = script.Parent
+	local ShopUi = require(uiFolder:WaitForChild("ShopUi"))
+	local InternUi = require(uiFolder:WaitForChild("InternUi"))
+	local RestructureUi = require(uiFolder:WaitForChild("RestructureUi"))
 
-	trove:Connect(RunService.Heartbeat, stepCountUp)
+	local screen = gui
+	if not screen then
+		return
+	end
 
-	-- World prompts (shop kiosk, coffee machine, HR desk, elevator bank) open
-	-- the same panels as the button stack.
-	trove:Connect(ProximityPromptService.PromptTriggered, function(prompt: ProximityPrompt, player: Player)
-		if player ~= Players.LocalPlayer then
+	local buttons = Instance.new("Frame")
+	buttons.Name = "SideButtons"
+	buttons.BackgroundTransparency = 1
+	buttons.AnchorPoint = Vector2.new(0, 0.5)
+	buttons.Position = UDim2.new(0, 16, 0.5, 0)
+	buttons.Size = UDim2.fromOffset(74, 320)
+	buttons.Parent = screen
+
+	local layout = Instance.new("UIListLayout")
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
+	layout.Padding = UDim.new(0, 10)
+	layout.Parent = buttons
+
+	type SideButton = { Icon: string, Open: () -> () }
+	local entries: { SideButton } = {
+		{ Icon = "💼", Open = function() ShopUi.toggle() end },
+		{ Icon = "☕", Open = function() InternUi.toggle() end },
+		{ Icon = "📉", Open = function() RestructureUi.toggle() end },
+	}
+	for index, entry in entries do
+		Theme.button({
+			Text = entry.Icon,
+			Variant = "primary",
+			Size = UDim2.fromOffset(70, 70),
+			Parent = buttons,
+			LayoutOrder = index,
+			OnClick = entry.Open,
+		})
+	end
+	Theme.autoScale(buttons, trove)
+
+	-- Stage progress arrives on the same remote the enemies use.
+	trove:Connect(stageStateRemote.OnClientEvent, function(payload: any)
+		if type(payload) ~= "table" then
 			return
 		end
-		local target = PROMPT_TO_PANEL[prompt.Name]
-		if target then
-			target.open()
+		if payload.Progress then
+			table.clear(stageProgress)
+			for _, row in payload.Progress do
+				stageProgress[row.Stage] = { Kills = row.Kills, Needed = row.Needed }
+			end
+		end
+		if payload.Cleared then
+			table.clear(clearedStages)
+			for _, stageNumber in payload.Cleared do
+				clearedStages[stageNumber] = true
+			end
 		end
 	end)
+
+	-- One refresh loop drives every readout: counters roll toward their real
+	-- value, and the banner/objective follow whichever stage you are stood in.
+	trove:Add(RunService.RenderStepped:Connect(function(dt: number)
+		local state = StateController.Get()
+		if not state then
+			return
+		end
+		shownPower += (state.Productivity - shownPower) * math.min(1, dt * 6)
+		if math.abs(state.Productivity - shownPower) < 0.5 then
+			shownPower = state.Productivity
+		end
+		if powerLabel then
+			powerLabel.Text = Format.abbreviate(shownPower)
+		end
+		if winsLabel then
+			winsLabel.Text = Format.abbreviate(state.Wins)
+		end
+		if petsLabel then
+			petsLabel.Text = ("%d/%d"):format(#state.EquippedInterns, state.InternSlots)
+		end
+		if perClickLabel then
+			perClickLabel.Text = ("+%s per click  ·  +%s/sec"):format(
+				Format.abbreviate(state.ClickIncome),
+				Format.abbreviate(state.IdlePerSecond)
+			)
+		end
+		if objectiveLabel then
+			objectiveLabel.Text = objectiveText(state)
+		end
+		local title, sub = bannerText()
+		if bannerLabel then
+			bannerLabel.Text = title
+		end
+		if bannerSub then
+			bannerSub.Text = sub
+		end
+	end))
 end
 
 return Hud

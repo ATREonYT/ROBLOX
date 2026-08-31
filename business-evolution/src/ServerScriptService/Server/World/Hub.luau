@@ -18,6 +18,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Kit = require(script.Parent.OutdoorKit)
 local Stages = require(ReplicatedStorage.Shared.Config.Stages)
+local Surfaces = require(ReplicatedStorage.Shared.Config.Surfaces)
 local TrainingBags = require(ReplicatedStorage.Shared.Config.TrainingBags)
 local SkinsConfig = require(ReplicatedStorage.Shared.Config.Skins)
 local Eggs = require(ReplicatedStorage.Shared.Config.Eggs)
@@ -40,6 +41,7 @@ function Hub.build(parent: Folder, origin: Vector3): HubManifest
 	assert(stage, "Hub stage config is missing")
 	local theme = stage.Theme
 	local base = CFrame.new(origin)
+	Kit.setSurfaces(Surfaces.forStage("Hub"))
 
 	local ground = Kit.rgb(theme.Ground)
 	local cliff = Kit.rgb(theme.Cliff)

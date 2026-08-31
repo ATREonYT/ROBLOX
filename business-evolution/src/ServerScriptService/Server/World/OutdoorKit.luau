@@ -33,9 +33,25 @@
 -- OutdoorKit.fence(parent, base, x, z, length, yaw, color) -> Folder  invisible safety wall
 -- =========================================================================
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Surfaces = require(ReplicatedStorage.Shared.Config.Surfaces)
+
 local OutdoorKit = {}
 
 local DISPLAY_FONT = Enum.Font.FredokaOne
+
+-- The active surface set. StageBuilder/Hub call setSurfaces() before building,
+-- so every prop picks up that location's materials without threading an extra
+-- argument through forty call sites.
+local surfaces: Surfaces.SurfaceSet = Surfaces.forStage("Hub")
+
+function OutdoorKit.setSurfaces(set: Surfaces.SurfaceSet)
+	surfaces = set
+end
+
+function OutdoorKit.surfaces(): Surfaces.SurfaceSet
+	return surfaces
+end
 
 local function rgb(c: { number }): Color3
 	return Color3.fromRGB(c[1], c[2], c[3])
@@ -126,8 +142,34 @@ end
 
 -- The ground you stand on. One thick slab so nothing can fall between seams.
 function OutdoorKit.ground(parent: Instance, base: CFrame, cx: number, cz: number, sx: number, sz: number, color: Color3): Part
-	local slab = OutdoorKit.part(parent, base * CFrame.new(cx, -2, cz), Vector3.new(sx, 4, sz), color)
+	local slab = OutdoorKit.part(parent, base * CFrame.new(cx, -2, cz), Vector3.new(sx, 4, sz), color, surfaces.Ground)
 	slab.Name = "Ground"
+	-- Studded top is what gives the reference art its toy-brick read. Only the
+	-- top face gets it; the sides stay smooth so edges do not look chewed.
+	if surfaces.GroundStudded then
+		slab.TopSurface = Enum.SurfaceType.Studs
+	end
+	-- Patchwork: large faint panels of a slightly different shade break up what
+	-- would otherwise be one flat expanse of colour.
+	local cols = math.max(1, math.floor(sx / 60))
+	local rows = math.max(1, math.floor(sz / 60))
+	for ix = 0, cols - 1 do
+		for iz = 0, rows - 1 do
+			if (ix + iz) % 2 == 0 then
+				continue
+			end
+			local px = cx - sx / 2 + (ix + 0.5) * (sx / cols)
+			local pz = cz - sz / 2 + (iz + 0.5) * (sz / rows)
+			local patch = OutdoorKit.decor(
+				parent,
+				base * CFrame.new(px, 0.06, pz),
+				Vector3.new(sx / cols - 6, 0.12, sz / rows - 6),
+				lighten(color, 0.05),
+				surfaces.Ground
+			)
+			patch.Name = "GroundPatch"
+		end
+	end
 	return slab
 end
 
@@ -142,8 +184,16 @@ function OutdoorKit.plaza(
 	color: Color3,
 	accent: Color3
 ): Part
-	local deck = OutdoorKit.part(parent, base * CFrame.new(cx, 0.3, cz), Vector3.new(sx, 1.2, sz), color)
+	local deck = OutdoorKit.part(parent, base * CFrame.new(cx, 0.3, cz), Vector3.new(sx, 1.2, sz), color, surfaces.Plaza)
 	deck.Name = "Plaza"
+	-- A darker inset panel in the middle, the way real paving is laid out.
+	OutdoorKit.decor(
+		parent,
+		base * CFrame.new(cx, 0.93, cz),
+		Vector3.new(math.max(sx - 16, 4), 0.1, math.max(sz - 16, 4)),
+		darken(color, 0.06),
+		surfaces.Plaza
+	)
 	-- Tile seams: thin darker lines across the deck, purely visual.
 	local seams = math.max(1, math.floor(sx / 12))
 	for i = 1, seams do
@@ -187,29 +237,67 @@ function OutdoorKit.cliffWall(
 	model.Name = "Cliff"
 	model.Parent = parent
 
-	-- Three stepped tiers so the wall reads as carved rock, not a flat slab.
-	local tiers = 3
+	-- Four stepped tiers of real brick so the wall reads as carved rock.
+	local tiers = 4
+	local runsLong = sx > sz
 	for tier = 1, tiers do
-		local inset = (tier - 1) * 3
+		local inset = (tier - 1) * 2.5
 		local tierHeight = height / tiers
 		local y = (tier - 1) * tierHeight + tierHeight / 2
-		local shade = if tier % 2 == 0 then lighten(brick, 0.06) else brick
+		local shade = if tier % 2 == 0 then lighten(brick, 0.05) else brick
 		local block = OutdoorKit.part(
 			model,
 			base * CFrame.new(cx, y, cz),
-			Vector3.new(sx - inset * (if sx > sz then 0 else 2), tierHeight, sz - inset * (if sz > sx then 0 else 2)),
-			shade
+			Vector3.new(sx - inset * (if runsLong then 0 else 2), tierHeight, sz - inset * (if runsLong then 2 else 0)),
+			shade,
+			surfaces.Cliff
 		)
 		block.Name = "Tier" .. tier
+		-- Ledge lip on each step, catching the light like a real outcrop.
+		OutdoorKit.decor(
+			model,
+			base * CFrame.new(cx, y + tierHeight / 2, cz),
+			Vector3.new(
+				sx - inset * (if runsLong then 0 else 2) + 1.2,
+				0.7,
+				sz - inset * (if runsLong then 2 else 0) + 1.2
+			),
+			darken(shade, 0.12),
+			surfaces.Cliff
+		)
+	end
+	-- Boulders tumbled along the base, so the wall meets the ground unevenly.
+	local span = if runsLong then sx else sz
+	local count = math.max(2, math.floor(span / 34))
+	for i = 0, count do
+		local t = (i + 0.5) / (count + 1)
+		local along = -span / 2 + t * span
+		local wobble = ((i * 29) % 7) - 3
+		local size = 4 + ((i * 17) % 5)
+		local px = if runsLong then cx + along else cx + (sx / 2) * (if wobble > 0 then 1 else -1)
+		local pz = if runsLong then cz + (sz / 2) * (if wobble > 0 then 1 else -1) else cz + along
+		OutdoorKit.decor(
+			model,
+			base * CFrame.new(px, size / 2 - 0.5, pz),
+			Vector3.new(size, size * 0.8, size),
+			darken(brick, 0.08),
+			surfaces.Cliff
+		)
 	end
 	-- Grass lip on top.
 	local lip = OutdoorKit.part(
 		model,
-		base * CFrame.new(cx, height + 0.6, cz),
-		Vector3.new(sx - (tiers - 1) * (if sx > sz then 0 else 6) + 1, 1.2, sz - (tiers - 1) * (if sz > sx then 0 else 6) + 1),
-		top
+		base * CFrame.new(cx, height + 0.8, cz),
+		Vector3.new(
+			sx - (tiers - 1) * (if runsLong then 0 else 5) + 1,
+			1.6,
+			sz - (tiers - 1) * (if runsLong then 5 else 0) + 1
+		),
+		top,
+		surfaces.CliffTop
 	)
 	lip.Name = "Lip"
+	lip.TopSurface = Enum.SurfaceType.Studs
 	return model
 end
 
@@ -217,16 +305,29 @@ function OutdoorKit.tree(parent: Instance, base: CFrame, x: number, z: number, s
 	local model = Instance.new("Model")
 	model.Name = "Tree"
 	model.Parent = parent
-	OutdoorKit.part(model, base * CFrame.new(x, 3 * scale, z), Vector3.new(1.6 * scale, 6 * scale, 1.6 * scale), trunk)
-	-- Three stacked slabs of foliage: cheap, chunky, unmistakably cartoon.
-	local tiers = { { 9, 2.4, 6.6 }, { 7, 2.2, 8.4 }, { 4.6, 2, 9.9 } }
+	OutdoorKit.part(model, base * CFrame.new(x, 3 * scale, z), Vector3.new(1.8 * scale, 6 * scale, 1.8 * scale), trunk, Enum.Material.Wood)
+	-- Roots flaring where the trunk meets the ground.
+	for i = 0, 3 do
+		local angle = i * math.pi / 2 + 0.4
+		OutdoorKit.decor(
+			model,
+			base * CFrame.new(x + math.cos(angle) * 1.2 * scale, 0.5 * scale, z + math.sin(angle) * 1.2 * scale),
+			Vector3.new(1.2 * scale, 1.2 * scale, 1.2 * scale),
+			darken(trunk, 0.1),
+			Enum.Material.Wood
+		)
+	end
+	-- Four stacked slabs of foliage, widest in the middle so the canopy reads
+	-- as round rather than as a wedding cake.
+	local tiers = { { 8.4, 2.4, 6.4 }, { 9.6, 2.4, 8.4 }, { 7.4, 2.2, 10.4 }, { 4.4, 2, 12 } }
 	for i, tier in tiers do
-		local shade = if i == 2 then lighten(leaf, 0.08) else leaf
+		local shade = if i % 2 == 0 then lighten(leaf, 0.09) else leaf
 		OutdoorKit.decor(
 			model,
 			base * CFrame.new(x, tier[3] * scale, z),
 			Vector3.new(tier[1] * scale, tier[2] * scale, tier[1] * scale),
-			shade
+			shade,
+			Enum.Material.LeafyGrass
 		)
 	end
 	return model
@@ -247,24 +348,59 @@ function OutdoorKit.building(
 	local model = Instance.new("Model")
 	model.Name = "Building"
 	model.Parent = parent
-	OutdoorKit.part(model, base * CFrame.new(x, h / 2, z), Vector3.new(w, h, d), body)
-	-- Parapet + door so it reads as a building rather than a box.
-	OutdoorKit.decor(model, base * CFrame.new(x, h + 0.5, z), Vector3.new(w + 1.2, 1, d + 1.2), accent)
-	OutdoorKit.decor(model, base * CFrame.new(x, 3, z - d / 2 - 0.2), Vector3.new(4, 6, 0.4), darken(body, 0.4))
+
+	OutdoorKit.part(model, base * CFrame.new(x, h / 2, z), Vector3.new(w, h, d), body, surfaces.Building)
+	-- Ground-floor band in a different material: real buildings change texture
+	-- at street level, and it stops the facade being one flat rectangle.
+	OutdoorKit.decor(model, base * CFrame.new(x, 4, z - d / 2 - 0.15), Vector3.new(w + 0.4, 8, 0.5), darken(body, 0.18), surfaces.Plaza)
+	-- Floor bands up the facade.
+	local bands = math.max(1, math.floor(h / 14))
+	for i = 1, bands do
+		OutdoorKit.decor(
+			model,
+			base * CFrame.new(x, i * (h / (bands + 1)) + 4, z),
+			Vector3.new(w + 0.5, 0.8, d + 0.5),
+			darken(body, 0.12),
+			surfaces.Trim
+		)
+	end
+	-- Parapet, roof plant and an aerial: the silhouette is what reads at range.
+	OutdoorKit.decor(model, base * CFrame.new(x, h + 0.7, z), Vector3.new(w + 1.4, 1.4, d + 1.4), accent, surfaces.Trim)
+	OutdoorKit.decor(model, base * CFrame.new(x - w / 4, h + 3, z), Vector3.new(w / 4, 4, d / 3), darken(body, 0.25), surfaces.Building)
+	OutdoorKit.decor(model, base * CFrame.new(x + w / 4, h + 2, z + d / 5), Vector3.new(4, 2.4, 4), Color3.fromRGB(150, 154, 162), Enum.Material.Metal)
+	OutdoorKit.decor(model, base * CFrame.new(x + w / 3, h + 6, z - d / 5), Vector3.new(0.6, 10, 0.6), Color3.fromRGB(180, 184, 190), Enum.Material.Metal)
+	-- Entrance: recessed doors under a canopy.
+	OutdoorKit.decor(model, base * CFrame.new(x, 3.4, z - d / 2 - 0.35), Vector3.new(8, 7, 0.6), darken(body, 0.45), Enum.Material.Glass)
+	OutdoorKit.decor(model, base * CFrame.new(x, 7.4, z - d / 2 - 1.4), Vector3.new(11, 0.6, 3), accent, surfaces.Trim)
+	for _, dx in { -4.2, 4.2 } do
+		OutdoorKit.decor(model, base * CFrame.new(x + dx, 3.4, z - d / 2 - 0.5), Vector3.new(0.7, 7, 0.9), accent, surfaces.Trim)
+	end
+
 	if windows ~= false then
 		local cols = math.max(1, math.floor(w / 6))
-		local rows = math.max(1, math.floor(h / 7))
+		local rows = math.max(1, math.floor(h / 8))
 		for row = 1, rows do
 			for col = 1, cols do
 				local wx = x - w / 2 + col * (w / (cols + 1))
-				local wy = row * (h / (rows + 1)) + 2
-				OutdoorKit.decor(
+				local wy = row * (h / (rows + 1)) + 5
+				if wy > h - 3 then
+					continue
+				end
+				-- Some windows are lit, some are not — an evenly lit facade
+				-- looks like a spreadsheet, not a building.
+				local lit = (row * 7 + col * 3) % 5 ~= 0
+				local pane = OutdoorKit.decor(
 					model,
-					base * CFrame.new(wx, wy, z - d / 2 - 0.25),
-					Vector3.new(2.6, 3, 0.3),
-					lighten(accent, 0.25),
-					Enum.Material.Neon
+					base * CFrame.new(wx, wy, z - d / 2 - 0.28),
+					Vector3.new(3.2, 3.6, 0.4),
+					if lit then lighten(accent, 0.4) else darken(body, 0.3),
+					if lit then Enum.Material.Neon else Enum.Material.Glass
 				)
+				if not lit then
+					pane.Transparency = 0.35
+				end
+				-- Window frame.
+				OutdoorKit.decor(model, base * CFrame.new(wx, wy, z - d / 2 - 0.2), Vector3.new(3.8, 4.2, 0.25), darken(body, 0.35), surfaces.Trim)
 			end
 		end
 	end
@@ -305,11 +441,24 @@ function OutdoorKit.pad(
 	topText: string?,
 	bottomText: string?
 ): Part
-	local pad = OutdoorKit.part(parent, base * CFrame.new(x, 0.35, z), Vector3.new(size, 0.7, size), color, Enum.Material.Neon)
+	local pad = OutdoorKit.part(parent, base * CFrame.new(x, 0.45, z), Vector3.new(size, 0.7, size), color, Enum.Material.Neon)
 	pad.Name = "Pad"
 	pad.CanCollide = false
-	-- Dark rim so a bright pad still reads against bright ground.
-	OutdoorKit.decor(parent, base * CFrame.new(x, 0.2, z), Vector3.new(size + 1.6, 0.5, size + 1.6), darken(color, 0.55))
+	-- Stone kerb, dark rim, then a brighter inner ring: three layers so a pad
+	-- reads as built into the ground rather than dropped on it.
+	OutdoorKit.decor(parent, base * CFrame.new(x, 0.15, z), Vector3.new(size + 3.4, 0.4, size + 3.4), darken(color, 0.7), surfaces.Plaza)
+	OutdoorKit.decor(parent, base * CFrame.new(x, 0.3, z), Vector3.new(size + 1.8, 0.5, size + 1.8), darken(color, 0.45), surfaces.Trim)
+	OutdoorKit.decor(parent, base * CFrame.new(x, 0.83, z), Vector3.new(size - 2.4, 0.14, size - 2.4), lighten(color, 0.45), Enum.Material.Neon)
+	-- Corner studs, the way the reference pads are trimmed.
+	for _, corner in { { -1, -1 }, { 1, -1 }, { -1, 1 }, { 1, 1 } } do
+		OutdoorKit.decor(
+			parent,
+			base * CFrame.new(x + corner[1] * (size / 2 + 0.6), 0.6, z + corner[2] * (size / 2 + 0.6)),
+			Vector3.new(1.6, 1.2, 1.6),
+			lighten(color, 0.25),
+			Enum.Material.Neon
+		)
+	end
 	if topText then
 		OutdoorKit.label(parent, base * CFrame.new(x, 7.4, z), topText, lighten(color, 0.55), 44, 14)
 	end
@@ -334,17 +483,50 @@ function OutdoorKit.punchingBag(
 	model.Name = "TrainingBag_" .. name
 	model.Parent = parent
 
-	local frameColor = darken(color, 0.4)
-	-- Gallows frame: two uprights and a beam, exactly like the reference art.
-	OutdoorKit.part(model, base * CFrame.new(x - 4.2, 6, z), Vector3.new(1.2, 12, 1.2), frameColor)
-	OutdoorKit.part(model, base * CFrame.new(x + 4.2, 6, z), Vector3.new(1.2, 12, 1.2), frameColor)
-	OutdoorKit.decor(model, base * CFrame.new(x, 12.2, z), Vector3.new(10, 1.2, 1.6), frameColor)
-	-- Chain and bag.
-	OutdoorKit.decor(model, base * CFrame.new(x, 10.6, z), Vector3.new(0.5, 2, 0.5), Color3.fromRGB(190, 194, 200))
-	local bag = OutdoorKit.decor(model, base * CFrame.new(x, 7.4, z), Vector3.new(4.4, 6.4, 4.4), color)
+	local frameColor = darken(color, 0.45)
+	-- Gallows frame on footplates, with braces — the reference art's silhouette.
+	for _, dx in { -4.6, 4.6 } do
+		OutdoorKit.part(model, base * CFrame.new(x + dx, 6, z), Vector3.new(1.3, 12, 1.3), frameColor, Enum.Material.Metal)
+		OutdoorKit.decor(model, base * CFrame.new(x + dx, 0.4, z), Vector3.new(3.4, 0.8, 3.4), darken(frameColor, 0.2), Enum.Material.DiamondPlate)
+		-- Diagonal brace up to the beam.
+		OutdoorKit.decor(
+			model,
+			base * CFrame.new(x + dx * 0.72, 10.4, z) * CFrame.Angles(0, 0, math.rad(if dx < 0 then -38 else 38)),
+			Vector3.new(0.7, 4.2, 0.7),
+			frameColor,
+			Enum.Material.Metal
+		)
+	end
+	OutdoorKit.decor(model, base * CFrame.new(x, 12.3, z), Vector3.new(11, 1.3, 1.7), frameColor, Enum.Material.Metal)
+	-- Chain: three visible links rather than one grey stick.
+	for i = 0, 2 do
+		OutdoorKit.decor(
+			model,
+			base * CFrame.new(x, 11.4 - i * 0.8, z) * CFrame.Angles(0, if i % 2 == 0 then 0 else math.rad(90), 0),
+			Vector3.new(0.85, 0.85, 0.4),
+			Color3.fromRGB(196, 200, 206),
+			Enum.Material.Metal
+		)
+	end
+	-- The bag: leather body, stitched seams, capped top and bottom.
+	local bag = OutdoorKit.decor(model, base * CFrame.new(x, 7.2, z), Vector3.new(4.6, 6.6, 4.6), color, Enum.Material.Fabric)
 	bag.Name = "Bag"
-	OutdoorKit.decor(model, base * CFrame.new(x, 10.2, z), Vector3.new(3.4, 1, 3.4), lighten(color, 0.3))
-	OutdoorKit.decor(model, base * CFrame.new(x, 4.4, z), Vector3.new(3.6, 1, 3.6), darken(color, 0.25))
+	for _, seam in { -1.55, 1.55 } do
+		OutdoorKit.decor(model, base * CFrame.new(x + seam, 7.2, z), Vector3.new(0.35, 6.4, 4.7), darken(color, 0.2), Enum.Material.Fabric)
+	end
+	OutdoorKit.decor(model, base * CFrame.new(x, 7.2, z), Vector3.new(4.8, 1, 4.8), darken(color, 0.28), Enum.Material.Fabric)
+	OutdoorKit.decor(model, base * CFrame.new(x, 10.4, z), Vector3.new(3.6, 1.1, 3.6), lighten(color, 0.3), Enum.Material.Metal)
+	OutdoorKit.decor(model, base * CFrame.new(x, 4.1, z), Vector3.new(3.8, 1.1, 3.8), darken(color, 0.3), Enum.Material.Metal)
+	-- Scuff marks where everyone hits it.
+	for i = 0, 2 do
+		OutdoorKit.decor(
+			model,
+			base * CFrame.new(x - 1 + i * 1, 6.4 + (i % 2), z - 2.4),
+			Vector3.new(1.2, 1, 0.2),
+			darken(color, 0.35),
+			Enum.Material.Fabric
+		)
+	end
 
 	-- Stand-on pad: this is the interactive part.
 	local pad = OutdoorKit.pad(model, base, x, z + 5.5, 10, color, valueText, name)
@@ -536,6 +718,96 @@ function OutdoorKit.stairs(
 			Vector3.new(width, rise, run),
 			if i % 2 == 0 then lighten(color, 0.05) else color
 		)
+	end
+	return folder
+end
+
+-- A connecting pass between two areas. Until this existed the stages were
+-- islands with open sky between them — you could walk east out of the hub and
+-- fall out of the world. The pass carries the road, the cliffs and the arrow
+-- trail across the gap, and blends from one location's palette to the next.
+function OutdoorKit.connector(
+	parent: Instance,
+	base: CFrame,
+	fromX: number,
+	toX: number,
+	roadWidth: number,
+	groundA: Color3,
+	groundB: Color3,
+	cliffA: Color3,
+	cliffB: Color3,
+	topA: Color3,
+	topB: Color3,
+	plazaCol: Color3,
+	accent: Color3
+): Folder
+	local folder = Instance.new("Folder")
+	folder.Name = "Connector"
+	folder.Parent = parent
+
+	local length = toX - fromX
+	local centre = (fromX + toX) / 2
+	local depth = roadWidth + 60
+
+	-- Ground is laid in slices that fade from one location's colour to the
+	-- next, so the transition reads as travel rather than a hard seam.
+	local slices = math.max(4, math.floor(length / 18))
+	for i = 0, slices - 1 do
+		local t = (i + 0.5) / slices
+		local sliceLength = length / slices
+		local px = fromX + i * sliceLength + sliceLength / 2
+		local slab = OutdoorKit.part(
+			folder,
+			base * CFrame.new(px, -2, 0),
+			Vector3.new(sliceLength + 0.2, 4, depth),
+			groundA:Lerp(groundB, t),
+			surfaces.Ground
+		)
+		slab.Name = "PassGround"
+		if surfaces.GroundStudded then
+			slab.TopSurface = Enum.SurfaceType.Studs
+		end
+	end
+
+	-- Canyon walls either side, also fading between the two palettes.
+	local wallSlices = math.max(3, math.floor(length / 26))
+	for i = 0, wallSlices - 1 do
+		local t = (i + 0.5) / wallSlices
+		local sliceLength = length / wallSlices
+		local px = fromX + i * sliceLength + sliceLength / 2
+		for _, side in { -1, 1 } do
+			OutdoorKit.cliffWall(
+				folder,
+				base,
+				px,
+				side * (depth / 2 + 12),
+				sliceLength + 0.5,
+				24,
+				38,
+				cliffA:Lerp(cliffB, t),
+				topA:Lerp(topB, t)
+			)
+		end
+	end
+
+	-- The road itself, with a painted centre line and kerbs.
+	OutdoorKit.plaza(folder, base, centre, 0, length, roadWidth, plazaCol, accent)
+	for i = 0, math.floor(length / 10) do
+		OutdoorKit.decor(folder, base * CFrame.new(fromX + 5 + i * 10, 0.98, 0), Vector3.new(5, 0.12, 1.2), Color3.fromRGB(250, 250, 246))
+	end
+	OutdoorKit.arrowTrail(folder, base, fromX + 8, 0, toX - 8, 0, math.max(6, math.floor(length / 14)))
+
+	-- Lamps and safety walls the whole way through.
+	for i = 0, math.floor(length / 34) do
+		local px = fromX + 18 + i * 34
+		for _, side in { -1, 1 } do
+			OutdoorKit.part(folder, base * CFrame.new(px, 10, side * (roadWidth / 2 + 5)), Vector3.new(1, 20, 1), Color3.fromRGB(64, 68, 76), Enum.Material.Metal)
+			OutdoorKit.decor(folder, base * CFrame.new(px, 19.6, side * (roadWidth / 2 + 1)), Vector3.new(1, 0.8, 9), Color3.fromRGB(64, 68, 76), Enum.Material.Metal)
+			OutdoorKit.decor(folder, base * CFrame.new(px, 18.9, side * (roadWidth / 2 - 2.6)), Vector3.new(3, 1, 5), Color3.fromRGB(255, 244, 200), Enum.Material.Neon)
+		end
+	end
+	for _, side in { -1, 1 } do
+		OutdoorKit.fence(folder, base, centre, side * (depth / 2 + 2), length, 90, groundA)
 	end
 	return folder
 end

@@ -15,6 +15,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Kit = require(script.Parent.OutdoorKit)
 local StageDecor = require(script.Parent.StageDecor)
 local Stages = require(ReplicatedStorage.Shared.Config.Stages)
+local Surfaces = require(ReplicatedStorage.Shared.Config.Surfaces)
 local Format = require(ReplicatedStorage.Shared.Util.Format)
 
 export type StageManifest = {
@@ -32,6 +33,7 @@ local StageBuilder = {}
 function StageBuilder.build(parent: Folder, stage: Stages.Stage): StageManifest
 	local theme = stage.Theme
 	local base = CFrame.new(Vector3.new(stage.Origin[1], stage.Origin[2], stage.Origin[3]))
+	Kit.setSurfaces(Surfaces.forStage(stage.Id))
 
 	local ground = Kit.rgb(theme.Ground)
 	local cliff = Kit.rgb(theme.Cliff)
