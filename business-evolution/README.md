@@ -118,12 +118,24 @@ Then ride the elevator up to the Penthouse and Orbital HQ.
 
 ## Offline checks
 
-From this folder, with the Luau CLI installed:
+Everything below runs **without Roblox Studio** — useful before a push, or if
+you ever want to change a balance number and know instantly whether you broke
+something. You need the [Luau CLI](https://github.com/luau-lang/luau/releases)
+and Python 3. From this folder:
 
 ```
-luau tests/run.luau
+python3 tools/verify.py
 ```
 
-24 cases: config sanity (odds sum to 100, rank curve monotonic, gear cost
-growth, gate logic, number formatting, save-safety) plus a minute-by-minute
-pacing simulation that asserts the first-session shape from the brief.
+That runs 196 checks in three suites:
+
+| Suite | What it proves |
+|---|---|
+| **config + pacing** (24) | Intern odds sum to exactly 100, the rank curve only goes up, gear costs follow `1.12^owned`, floor gates work, currency formatting is right, saved data stays JSON-safe — plus a minute-by-minute simulation of a first session that asserts the pacing targets from the brief |
+| **map geometry** (150) | Actually *builds all six floors* against a mock Roblox API: no runtime errors, every part anchored, no NaN positions, correct rival packs, training zones invisible and intangible, payday pads numbered 1–5, prompt and board parts present and parented, nothing escaping its floor's bounds, part counts within a mobile budget |
+| **multiplier stack** (22) | Executes the real income math: rank/gear/restructure multipliers, the Restructure bonus staying *additive* rather than compounding, Wins perks, linear rebirth cost — and the brief's key rule, that a Robux multiplier is exactly 2× for a brand-new and a maxed account alike |
+
+The map suite is the interesting one: `tools/roblox_mock.luau` is a headless
+stand-in for the slice of the Roblox API the map builders use (with real CFrame
+matrix maths), so the floors can be built and inspected outside Studio. It is
+the closest thing to pressing Play that works in CI.
