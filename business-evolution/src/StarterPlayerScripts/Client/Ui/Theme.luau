@@ -44,6 +44,7 @@ Theme.Colors = {
 	Text = Color3.fromRGB(255, 255, 255),
 	TextDim = Color3.fromRGB(184, 189, 204), -- #B8BDCC
 	TextOnGold = Color3.fromRGB(43, 33, 8), -- dark ink so gold buttons stay readable
+	Ink = Color3.fromRGB(22, 18, 40), -- never pure black
 }
 
 -- FredokaOne for anything display-sized, Gotham for body copy. Roblox has no
@@ -65,6 +66,47 @@ Theme.FadeInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.
 local rng = Random.new()
 
 -- ── Small shared builders ───────────────────────────────────────────────────
+
+-- ── The one radius and the one stroke ──────────────────────────────────────
+-- Eleven different corner radii and five stroke thicknesses is the loudest
+-- "amateur" tell in a UI. Everything routes through these three constants;
+-- pills are the single documented exception, because a pill is defined by
+-- being fully rounded.
+Theme.Radius = 8
+Theme.PillRadius = UDim.new(0.5, 0)
+Theme.StrokeThickness = Theme.StrokeThickness
+Theme.StrokeTransparency = 0.2
+
+-- Attach the house corner. `pill` makes it fully round instead.
+function Theme.corner(parent: GuiObject, pill: boolean?): UICorner
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = if pill then Theme.PillRadius else UDim.new(0, Theme.Radius)
+	corner.Parent = parent
+	return corner
+end
+
+-- Attach the house stroke.
+function Theme.stroke(parent: GuiObject, color: Color3?): UIStroke
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = color or Theme.Colors.Ink
+	stroke.Thickness = Theme.StrokeThickness
+	stroke.Transparency = Theme.StrokeTransparency
+	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	stroke.Parent = parent
+	return stroke
+end
+
+-- Text is never allowed to touch a frame edge (the main cramped-UI tell).
+function Theme.padding(parent: GuiObject, all: number?): UIPadding
+	local amount = all or 10
+	local padding = Instance.new("UIPadding")
+	padding.PaddingTop = UDim.new(0, amount)
+	padding.PaddingBottom = UDim.new(0, amount)
+	padding.PaddingLeft = UDim.new(0, math.floor(amount * 1.6))
+	padding.PaddingRight = UDim.new(0, math.floor(amount * 1.6))
+	padding.Parent = parent
+	return padding
+end
 
 function Theme.play(instance: Instance, info: TweenInfo, props: { [string]: any }): Tween
 	local tween = TweenService:Create(instance, info, props)

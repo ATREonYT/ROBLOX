@@ -146,7 +146,7 @@ local function buildConfirm(parent: Frame)
 	overlay.Visible = false
 	overlay.ZIndex = 4
 	local overlayCorner = Instance.new("UICorner")
-	overlayCorner.CornerRadius = UDim.new(0, 16)
+	overlayCorner.CornerRadius = UDim.new(0, Theme.Radius)
 	overlayCorner.Parent = overlay
 
 	local dialog = Theme.card({

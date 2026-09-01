@@ -20,12 +20,13 @@ local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local clickResultRemote = remotes:WaitForChild("ClickResult") :: RemoteEvent
 local fxRemote = remotes:WaitForChild("Fx") :: RemoteEvent
 
--- Contract timing: 0.15s pop-in → 0.25s hold → 0.4s float-out (Quart).
-local IN_SECONDS = 0.15
-local HOLD_SECONDS = 0.25
-local OUT_SECONDS = 0.4
+-- Timing: a quick pop-in, a beat, then rise and fade. Total life 0.5s, which
+-- keeps it under the 0.6s ceiling every tween in this game obeys.
+local IN_SECONDS = 0.1
+local HOLD_SECONDS = 0.05
+local OUT_SECONDS = 0.35
 local JITTER_PIXELS = 20
-local RISE_PIXELS = 46
+local RISE_PIXELS = 50
 
 local BASE_TEXT_SIZE = 32
 local COLOR_NORMAL = Color3.fromRGB(255, 255, 255)
@@ -171,7 +172,7 @@ local function showPopup(text: string, color: Color3, screenPosition: Vector2, s
 	-- disconnect, while pushing that many dead connections into a Trove would
 	-- itself be the leak.
 	task.delay(IN_SECONDS + HOLD_SECONDS, function()
-		local outInfo = TweenInfo.new(OUT_SECONDS, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+		local outInfo = TweenInfo.new(OUT_SECONDS, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 		TweenService:Create(label, outInfo, {
 			Position = UDim2.fromOffset(x, y - RISE_PIXELS),
 			TextTransparency = 1,

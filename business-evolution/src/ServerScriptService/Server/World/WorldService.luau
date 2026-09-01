@@ -25,60 +25,61 @@ local WorldService = {}
 local hubManifest: HubManifest? = nil
 local stageManifests: { [number]: StageManifest } = {}
 
--- Lighting, to ART Part 3 exactly. Every property is set explicitly: Studio's
--- baseplate defaults differ from the class defaults, so "leave it alone" is
--- never the same as "set it to the default".
+-- Lighting. Every property set explicitly — Studio's baseplate defaults differ
+-- from the class defaults, so "leave it alone" is not the same as "default".
 --
--- NOTE on Lighting.Technology: it is GONE (Unified Lighting replaced it with
--- LightingStyle + PrioritizeLightingQuality). Those two are set in the place
--- file via Rojo $properties, since they are not reliably scriptable; the
--- pcall below is a belt-and-braces attempt in case this engine build allows
--- it. Setting the old Technology property here would silently do nothing.
+-- IMPORTANT: Lighting.Technology no longer exists. Unified Lighting replaced it
+-- with LightingStyle + PrioritizeLightingQuality, and the legacy mapping is
+-- Future -> Realistic + true, ShadowMap -> Soft + true. HIGH_QUALITY_LIGHTING
+-- below is the one switch: true is the Future equivalent, false the ShadowMap
+-- fallback. It also ships in the place file, which is where these two are
+-- reliably settable.
+local HIGH_QUALITY_LIGHTING = true
+
 local function configureLighting()
-	Lighting.Ambient = Color3.fromRGB(120, 118, 130) -- high floor = cartoon, not realistic
-	Lighting.OutdoorAmbient = Color3.fromRGB(150, 160, 185) -- cool sky bounce
-	Lighting.Brightness = 2.6
-	Lighting.ExposureCompensation = 0.15
-	Lighting.ColorShift_Top = Color3.fromRGB(255, 236, 200) -- warm sun
-	Lighting.ColorShift_Bottom = Color3.fromRGB(120, 140, 175) -- cool shadow
-	Lighting.EnvironmentDiffuseScale = 0.55
-	Lighting.EnvironmentSpecularScale = 0.25
+	Lighting.Brightness = 2.4 -- inside the requested 2-3
+	Lighting.ExposureCompensation = 0.12 -- inside 0-0.25
+	Lighting.ClockTime = 15 -- afternoon: long shadows, still bright
+	Lighting.GeographicLatitude = 20
+	Lighting.Ambient = Color3.fromRGB(74, 78, 92) -- dark grey-blue, never black
+	Lighting.OutdoorAmbient = Color3.fromRGB(126, 140, 168) -- slightly blue
+	Lighting.EnvironmentDiffuseScale = 0.4
+	Lighting.EnvironmentSpecularScale = 0.3
+	Lighting.ColorShift_Top = Color3.fromRGB(255, 240, 214) -- warm sun
+	Lighting.ColorShift_Bottom = Color3.fromRGB(126, 142, 172) -- cool shadow
 	Lighting.GlobalShadows = true
 	Lighting.ShadowSoftness = 0.35
-	Lighting.ClockTime = 15.2 -- ~45 degree sun: form reads, shadows stay short
-	Lighting.GeographicLatitude = 12
 	Lighting.FogEnd = 100000 -- Atmosphere owns depth; legacy Fog would fight it
 
-	-- Unified Lighting. Soft is documented as the classic Roblox look and is
-	-- the cheapest; PrioritizeLightingQuality false degrades lighting before
-	-- draw distance, which is right when players must see distant stages.
 	pcall(function()
 		local lighting: any = Lighting
-		lighting.LightingStyle = Enum.LightingStyle.Soft
-		lighting.PrioritizeLightingQuality = false
+		lighting.LightingStyle = if HIGH_QUALITY_LIGHTING
+			then Enum.LightingStyle.Realistic
+			else Enum.LightingStyle.Soft
+		lighting.PrioritizeLightingQuality = HIGH_QUALITY_LIGHTING
 	end)
 
 	if not Lighting:FindFirstChildOfClass("Sky") then
 		local sky = Instance.new("Sky")
 		sky.Name = "WorldSky"
 		sky.SunAngularSize = 13
-		sky.MoonAngularSize = 8
 		sky.StarCount = 0
 		sky.Parent = Lighting
 	end
 
+	-- Atmosphere does most of the work here: it is what gives distance.
 	local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
 	if not atmosphere then
 		atmosphere = Instance.new("Atmosphere")
 		atmosphere.Parent = Lighting
 	end
 	atmosphere.Name = "WorldAtmosphere"
-	atmosphere.Density = 0.28 -- above 0.5 fogs the stages out
-	atmosphere.Offset = 0.25
-	atmosphere.Color = Color3.fromRGB(210, 226, 255)
-	atmosphere.Decay = Color3.fromRGB(150, 175, 215)
+	atmosphere.Density = 0.28
+	atmosphere.Offset = 0.15
+	atmosphere.Haze = 1.2
 	atmosphere.Glare = 0.15
-	atmosphere.Haze = 0.9
+	atmosphere.Color = Color3.fromRGB(226, 222, 214) -- light warm grey
+	atmosphere.Decay = Color3.fromRGB(160, 178, 208) -- slightly blue
 
 	local function effect(className: string, name: string): Instance
 		local existing = Lighting:FindFirstChild(name)
@@ -92,23 +93,22 @@ local function configureLighting()
 	end
 
 	local bloom = effect("BloomEffect", "WorldBloom") :: BloomEffect
-	bloom.Intensity = 0.85 -- 0.6-1.0 candy look; above 1.2 smears
-	bloom.Size = 32
-	bloom.Threshold = 0.9
+	bloom.Intensity = 0.6
+	bloom.Size = 20
+	bloom.Threshold = 1.4 -- high enough that only genuinely bright things bloom
 
 	local correction = effect("ColorCorrectionEffect", "WorldGrade") :: ColorCorrectionEffect
-	correction.Saturation = 0.22
-	correction.Contrast = 0.1
-	correction.Brightness = 0.02
-	correction.TintColor = Color3.fromRGB(255, 250, 244)
+	correction.Contrast = 0.08
+	correction.Saturation = 0.08
+	correction.Brightness = 0
+	correction.TintColor = Color3.fromRGB(255, 252, 248) -- very slightly warm
 
-	local sun = effect("SunRaysEffect", "WorldSunRays") :: SunRaysEffect
-	sun.Intensity = 0.12 -- this is not a god-ray game
-	sun.Spread = 0.85
-
-	-- Depth of field belongs in menus, never in gameplay.
+	-- Explicitly NOT wanted: sun rays and depth of field. Remove any that a
+	-- previous pass left behind rather than leaving them switched on.
 	for _, child in Lighting:GetChildren() do
-		if child:IsA("DepthOfFieldEffect") then
+		if child:IsA("SunRaysEffect") then
+			child:Destroy()
+		elseif child:IsA("DepthOfFieldEffect") then
 			child.Enabled = false
 		end
 	end
@@ -116,9 +116,9 @@ local function configureLighting()
 	local terrain = Workspace:FindFirstChildOfClass("Terrain")
 	if terrain and not terrain:FindFirstChildOfClass("Clouds") then
 		local clouds = Instance.new("Clouds")
-		clouds.Cover = 0.6
-		clouds.Density = 0.5
-		clouds.Color = Color3.fromRGB(252, 250, 255) -- PAPER, never pure white
+		clouds.Cover = 0.55
+		clouds.Density = 0.45
+		clouds.Color = Color3.fromRGB(250, 248, 255)
 		clouds.Parent = terrain
 	end
 end

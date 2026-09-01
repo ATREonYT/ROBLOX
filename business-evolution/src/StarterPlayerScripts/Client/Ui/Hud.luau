@@ -20,6 +20,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Theme = require(script.Parent:WaitForChild("Theme"))
+local Icons = require(script.Parent:WaitForChild("Icons"))
 local StateController = require(script.Parent.Parent:WaitForChild("Controllers"):WaitForChild("StateController"))
 
 local Format = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Util"):WaitForChild("Format"))
@@ -50,7 +51,7 @@ local clearedStages: { [number]: boolean } = {}
 
 -- A currency pill: round icon on the left, big number on the right. This is
 -- the shape the reference HUD uses in its bottom-left corner.
-local function currencyPill(parent: Frame, order: number, icon: string, tint: Color3): TextLabel
+local function currencyPill(parent: Frame, order: number, iconName: string, tint: Color3): TextLabel
 	local row = Instance.new("Frame")
 	row.Name = "Pill" .. order
 	row.BackgroundColor3 = Theme.Colors.Panel
@@ -61,12 +62,12 @@ local function currencyPill(parent: Frame, order: number, icon: string, tint: Co
 	row.Parent = parent
 
 	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 23)
+	corner.CornerRadius = UDim.new(0, Theme.Radius)
 	corner.Parent = row
 
 	local stroke = Instance.new("UIStroke")
 	stroke.Color = Theme.Colors.PanelDark
-	stroke.Thickness = 3
+	stroke.Thickness = Theme.StrokeThickness
 	stroke.Parent = row
 
 	local badge = Instance.new("Frame")
@@ -80,17 +81,17 @@ local function currencyPill(parent: Frame, order: number, icon: string, tint: Co
 	badgeCorner.Parent = badge
 	local badgeStroke = Instance.new("UIStroke")
 	badgeStroke.Color = Theme.Colors.PanelDark
-	badgeStroke.Thickness = 2
+	badgeStroke.Thickness = Theme.StrokeThickness
 	badgeStroke.Parent = badge
 
-	local iconLabel = Instance.new("TextLabel")
-	iconLabel.BackgroundTransparency = 1
-	iconLabel.Size = UDim2.fromScale(1, 1)
-	iconLabel.Font = Enum.Font.GothamBold
-	iconLabel.Text = icon
-	iconLabel.TextScaled = true
-	iconLabel.TextColor3 = Theme.Colors.Text
-	iconLabel.Parent = badge
+	-- Drawn, not emoji: platform glyph sets differ and several ignore tinting.
+	local iconHolder = Instance.new("Frame")
+	iconHolder.BackgroundTransparency = 1
+	iconHolder.AnchorPoint = Vector2.new(0.5, 0.5)
+	iconHolder.Position = UDim2.fromScale(0.5, 0.5)
+	iconHolder.Size = UDim2.fromScale(0.66, 0.66)
+	iconHolder.Parent = badge
+	Icons.create(iconHolder, iconName, Theme.Colors.Text, Theme.Colors.Ink)
 
 	local value = Instance.new("TextLabel")
 	value.Name = "Value"
@@ -195,28 +196,46 @@ function Hud:Init()
 	layout.VerticalAlignment = Enum.VerticalAlignment.Bottom
 	layout.Parent = stack
 
-	powerLabel = currencyPill(stack, 1, "⚡", Theme.Colors.Gold)
-	winsLabel = currencyPill(stack, 2, "🏆", Theme.Colors.Green)
-	petsLabel = currencyPill(stack, 3, "🤝", Color3.fromRGB(120, 150, 255))
+	powerLabel = currencyPill(stack, 1, "Bolt", Theme.Colors.Gold)
+	winsLabel = currencyPill(stack, 2, "Trophy", Theme.Colors.Green)
+	petsLabel = currencyPill(stack, 3, "People", Color3.fromRGB(120, 150, 255))
 
 	-- Per-click readout under the stack.
+	-- Rate readout, in a pill so it stays legible over any world behind it.
+	local ratePill = Instance.new("Frame")
+	ratePill.Name = "RatePill"
+	ratePill.AnchorPoint = Vector2.new(0, 1)
+	ratePill.Position = UDim2.new(0, 18, 1, -186)
+	ratePill.Size = UDim2.fromOffset(268, 34)
+	ratePill.BackgroundColor3 = Theme.Colors.Panel
+	ratePill.BackgroundTransparency = 0.12
+	ratePill.BorderSizePixel = 0
+	ratePill.Parent = screen
+	Theme.corner(ratePill, true)
+	Theme.stroke(ratePill, Theme.Colors.PanelDark)
+	Theme.padding(ratePill, 6)
+
 	local perClick = Instance.new("TextLabel")
 	perClick.Name = "PerClick"
 	perClick.BackgroundTransparency = 1
-	perClick.AnchorPoint = Vector2.new(0, 1)
-	perClick.Position = UDim2.new(0, 22, 1, -190)
-	perClick.Size = UDim2.fromOffset(280, 24)
+	perClick.Size = UDim2.fromScale(1, 1)
 	perClick.Font = Enum.Font.GothamBold
 	perClick.Text = ""
-	perClick.TextColor3 = Theme.Colors.TextDim
+	perClick.TextColor3 = Theme.Colors.Text
 	perClick.TextScaled = true
 	perClick.TextXAlignment = Enum.TextXAlignment.Left
-	perClick.TextStrokeTransparency = 0.5
-	perClick.Parent = screen
+	perClick.Parent = ratePill
 	local perClickLimit = Instance.new("UITextSizeConstraint")
-	perClickLimit.MaxTextSize = 19
+	perClickLimit.MaxTextSize = 18
 	perClickLimit.Parent = perClick
+	local perClickStroke = Instance.new("UIStroke")
+	perClickStroke.Color = Theme.Colors.Ink
+	perClickStroke.Thickness = Theme.StrokeThickness
+	perClickStroke.Transparency = Theme.StrokeTransparency
+	perClickStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
+	perClickStroke.Parent = perClick
 	perClickLabel = perClick
+	Theme.autoScale(ratePill, trove)
 
 	-- Top-centre stage banner.
 	local banner = Instance.new("Frame")
@@ -229,11 +248,11 @@ function Hud:Init()
 	banner.BorderSizePixel = 0
 	banner.Parent = screen
 	local bannerCorner = Instance.new("UICorner")
-	bannerCorner.CornerRadius = UDim.new(0, 16)
+	bannerCorner.CornerRadius = UDim.new(0, Theme.Radius)
 	bannerCorner.Parent = banner
 	local bannerStroke = Instance.new("UIStroke")
 	bannerStroke.Color = Theme.Colors.Gold
-	bannerStroke.Thickness = 3
+	bannerStroke.Thickness = Theme.StrokeThickness
 	bannerStroke.Parent = banner
 
 	local title = Instance.new("TextLabel")
@@ -272,11 +291,11 @@ function Hud:Init()
 	objective.BorderSizePixel = 0
 	objective.Parent = screen
 	local objectiveCorner = Instance.new("UICorner")
-	objectiveCorner.CornerRadius = UDim.new(0, 14)
+	objectiveCorner.CornerRadius = UDim.new(0, Theme.Radius)
 	objectiveCorner.Parent = objective
 	local objectiveStroke = Instance.new("UIStroke")
 	objectiveStroke.Color = Color3.fromRGB(22, 44, 88)
-	objectiveStroke.Thickness = 3
+	objectiveStroke.Thickness = Theme.StrokeThickness
 	objectiveStroke.Parent = objective
 	local objectiveGradient = Instance.new("UIGradient")
 	objectiveGradient.Color = ColorSequence.new(Color3.fromRGB(88, 168, 246), Color3.fromRGB(40, 106, 196))
@@ -329,19 +348,26 @@ function Hud:Start()
 
 	type SideButton = { Icon: string, Open: () -> () }
 	local entries: { SideButton } = {
-		{ Icon = "💼", Open = function() ShopUi.toggle() end },
-		{ Icon = "☕", Open = function() InternUi.toggle() end },
-		{ Icon = "📉", Open = function() RestructureUi.toggle() end },
+		{ Icon = "Briefcase", Open = function() ShopUi.toggle() end },
+		{ Icon = "Coffee", Open = function() InternUi.toggle() end },
+		{ Icon = "Chart", Open = function() RestructureUi.toggle() end },
 	}
 	for index, entry in entries do
-		Theme.button({
-			Text = entry.Icon,
+		local button = Theme.button({
+			Text = "",
 			Variant = "primary",
 			Size = UDim2.fromOffset(70, 70),
 			Parent = buttons,
 			LayoutOrder = index,
 			OnClick = entry.Open,
 		})
+		local holder = Instance.new("Frame")
+		holder.BackgroundTransparency = 1
+		holder.AnchorPoint = Vector2.new(0.5, 0.5)
+		holder.Position = UDim2.fromScale(0.5, 0.5)
+		holder.Size = UDim2.fromScale(0.56, 0.56)
+		holder.Parent = button
+		Icons.create(holder, entry.Icon, Theme.Colors.TextOnGold, Theme.Colors.Panel)
 	end
 	Theme.autoScale(buttons, trove)
 

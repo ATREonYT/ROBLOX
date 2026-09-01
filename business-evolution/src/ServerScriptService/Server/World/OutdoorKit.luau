@@ -95,8 +95,15 @@ function OutdoorKit.decor(parent: Instance, cf: CFrame, size: Vector3, color: Co
 	return p
 end
 
--- Floating world text, the way the reference game labels everything. Uses a
--- BillboardGui so it always faces the camera and stays readable at distance.
+-- Floating world text. Built for the proximity rule in WorldFxController:
+--
+--   within 25 studs .... full form (headline + detail line)
+--   25 to 60 studs ..... compact form (headline only)
+--   beyond 60 .......... not drawn at all (MaxDistance)
+--
+-- AlwaysOnTop is FALSE so walls occlude signs properly, LightInfluence is 0 so
+-- text never dims into the background, and the frame clips so a long string
+-- cannot bleed outside its own sign.
 function OutdoorKit.label(
 	parent: Instance,
 	cf: CFrame,
@@ -118,22 +125,27 @@ function OutdoorKit.label(
 	anchor.CastShadow = false
 	anchor.Parent = parent
 
+	local width = studWidth or 12
 	local billboard = Instance.new("BillboardGui")
-	billboard.Name = "Label"
-	billboard.AlwaysOnTop = false
+	billboard.Name = "Sign"
+	billboard.AlwaysOnTop = false -- geometry occludes signs, as it should
 	billboard.LightInfluence = 0
-	billboard.Size = UDim2.fromScale(studWidth or 12, (studWidth or 12) * 0.32)
-	billboard.SizeOffset = Vector2.new(0, 0)
-	-- ART 6.1: 90 on mobile, 140+ on desktop. One value that suits both, and
-	-- WorldFxController culls beyond it anyway.
-	billboard.MaxDistance = 130
+	billboard.MaxDistance = 60
+	billboard.Size = UDim2.fromScale(width, width * (if subText then 0.46 else 0.3))
 	billboard.Parent = anchor
-	-- Tagged so the client can keep only the nearest N enabled: the mobile
-	-- budget is about VISIBLE billboards, and a dense hub blows past 25.
 	CollectionService:AddTag(anchor, "WorldSign")
 
-	local function line(lineText: string, lineColor: Color3, top: number, height: number, maxSize: number)
+	-- Clipping container: a long name can never spill past the sign's box.
+	local frame = Instance.new("Frame")
+	frame.Name = "Body"
+	frame.BackgroundTransparency = 1
+	frame.Size = UDim2.fromScale(1, 1)
+	frame.ClipsDescendants = true
+	frame.Parent = billboard
+
+	local function line(name: string, lineText: string, lineColor: Color3, top: number, height: number, maxSize: number): TextLabel
 		local label = Instance.new("TextLabel")
+		label.Name = name
 		label.BackgroundTransparency = 1
 		label.Position = UDim2.fromScale(0, top)
 		label.Size = UDim2.fromScale(1, height)
@@ -141,29 +153,29 @@ function OutdoorKit.label(
 		label.Text = lineText
 		label.TextColor3 = lineColor
 		label.TextScaled = true
-		label.Parent = billboard
-
-		-- ScaledSize keeps the outline right on a phone AND on a 4K monitor;
-		-- INK rather than pure black, per the palette rule.
-		local stroke = Instance.new("UIStroke")
-		stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
-		stroke.LineJoinMode = Enum.LineJoinMode.Round
-		stroke.Color = INK
-		stroke.StrokeSizingMode = Enum.StrokeSizingMode.ScaledSize
-		stroke.Thickness = 0.14
-		stroke.Parent = label
+		label.Parent = frame
 
 		local constraint = Instance.new("UITextSizeConstraint")
 		constraint.MaxTextSize = maxSize
 		constraint.Parent = label
+
+		-- Dark stroke so text survives any background behind it.
+		local stroke = Instance.new("UIStroke")
+		stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
+		stroke.LineJoinMode = Enum.LineJoinMode.Round
+		stroke.Color = INK
+		stroke.Thickness = 2
+		stroke.Transparency = 0.2
+		stroke.Parent = label
+		return label
 	end
 
 	if subText then
-		billboard.Size = UDim2.fromScale(studWidth or 12, (studWidth or 12) * 0.46)
-		line(text, color, 0, 0.56, textSize or 42)
-		line(subText, PAPER, 0.58, 0.4, math.floor((textSize or 42) * 0.62))
+		line("Headline", text, color, 0, 0.56, textSize or 42)
+		-- Named so the proximity rule can find and fade exactly this one.
+		line("Detail", subText, PAPER, 0.58, 0.4, math.floor((textSize or 42) * 0.62))
 	else
-		line(text, color, 0, 1, textSize or 42)
+		line("Headline", text, color, 0, 1, textSize or 42)
 	end
 
 	return anchor
@@ -537,6 +549,8 @@ function OutdoorKit.punchingBag(
 	-- The bag: leather body, stitched seams, capped top and bottom.
 	local bag = OutdoorKit.decor(model, base * CFrame.new(x, 7.2, z), Vector3.new(4.6, 6.6, 4.6), color, Enum.Material.Fabric)
 	bag.Name = "Bag"
+	-- It hangs from a chain, so idling on the spot is the honest motion.
+	CollectionService:AddTag(bag, "IdleBob")
 	for _, seam in { -1.55, 1.55 } do
 		OutdoorKit.decor(model, base * CFrame.new(x + seam, 7.2, z), Vector3.new(0.35, 6.4, 4.7), darken(color, 0.2), Enum.Material.Fabric)
 	end
@@ -575,10 +589,10 @@ function OutdoorKit.stageArch(
 	model.Name = "StageArch"
 	model.Parent = parent
 	for _, side in { -1, 1 } do
-		OutdoorKit.part(model, base * CFrame.new(x, 11, side * 34), Vector3.new(5, 22, 8), stone)
-		OutdoorKit.decor(model, base * CFrame.new(x, 22.4, side * 34), Vector3.new(6.4, 1.6, 9.4), accent)
+		OutdoorKit.part(model, base * CFrame.new(x, 11, side * 34), Vector3.new(5, 22, 8), stone, Enum.Material.Slate)
+		OutdoorKit.decor(model, base * CFrame.new(x, 22.4, side * 34), Vector3.new(6.4, 1.6, 9.4), accent, Enum.Material.Concrete)
 	end
-	OutdoorKit.decor(model, base * CFrame.new(x, 23.5, 0), Vector3.new(5, 2.2, 68), stone)
+	OutdoorKit.decor(model, base * CFrame.new(x, 23.5, 0), Vector3.new(5, 2.2, 68), stone, Enum.Material.Slate)
 	OutdoorKit.label(parent, base * CFrame.new(x, 30, 0), title, accent, 64, 30)
 	OutdoorKit.label(parent, base * CFrame.new(x, 26.5, 0), subtitle, Color3.fromRGB(255, 255, 255), 34, 28)
 	return model
@@ -632,19 +646,29 @@ function OutdoorKit.dummy(
 	model.Parent = parent
 	local cf = base * CFrame.new(x, 0, z) * CFrame.Angles(0, math.rad(yawDeg), 0)
 	local skinTone = Color3.fromRGB(234, 190, 152)
-	local material = if glow then Enum.Material.Neon else Enum.Material.SmoothPlastic
+	-- Bodies are NEVER Neon. Neon ignores lighting and, with bloom on top,
+	-- turns a character into a white blob with no readable silhouette. A glow
+	-- skin gets a brighter fabric and a Neon *trim* instead.
+	local material = Enum.Material.SmoothPlastic
+	local bodyColor = if glow then lighten(shirt, 0.12) else shirt
 
-	local torso = OutdoorKit.decor(model, cf * CFrame.new(0, 4.6, 0), Vector3.new(3.4, 3.6, 1.8), shirt, material)
+	local torso = OutdoorKit.decor(model, cf * CFrame.new(0, 4.6, 0), Vector3.new(3.4, 3.6, 1.8), bodyColor, material)
 	torso.Name = "Torso"
 	-- Legs
 	OutdoorKit.decor(model, cf * CFrame.new(-0.9, 1.5, 0), Vector3.new(1.4, 3.4, 1.6), trousers)
 	OutdoorKit.decor(model, cf * CFrame.new(0.9, 1.5, 0), Vector3.new(1.4, 3.4, 1.6), trousers)
 	-- Arms
-	OutdoorKit.decor(model, cf * CFrame.new(-2.3, 4.6, 0), Vector3.new(1.2, 3.4, 1.6), shirt, material)
-	OutdoorKit.decor(model, cf * CFrame.new(2.3, 4.6, 0), Vector3.new(1.2, 3.4, 1.6), shirt, material)
+	OutdoorKit.decor(model, cf * CFrame.new(-2.3, 4.6, 0), Vector3.new(1.2, 3.4, 1.6), bodyColor, material)
+	OutdoorKit.decor(model, cf * CFrame.new(2.3, 4.6, 0), Vector3.new(1.2, 3.4, 1.6), bodyColor, material)
 	-- Head + tie
 	OutdoorKit.decor(model, cf * CFrame.new(0, 7.4, 0), Vector3.new(2, 2, 2), skinTone)
+	-- The tie is the only part allowed to glow, and it is small enough that
+	-- bloom reads as a highlight rather than swallowing the figure.
 	OutdoorKit.decor(model, cf * CFrame.new(0, 4.9, -0.95), Vector3.new(0.5, 2.6, 0.2), accent, if glow then Enum.Material.Neon else nil)
+	if glow then
+		-- A thin shoulder trim, so premium still reads at a glance.
+		OutdoorKit.decor(model, cf * CFrame.new(0, 6.5, 0), Vector3.new(3.6, 0.35, 2), accent, Enum.Material.Neon)
+	end
 	model.PrimaryPart = torso
 	return model
 end
@@ -653,14 +677,19 @@ function OutdoorKit.briefcase(parent: Instance, base: CFrame, x: number, z: numb
 	local model = Instance.new("Model")
 	model.Name = "Briefcase"
 	model.Parent = parent
-	local body = OutdoorKit.decor(model, base * CFrame.new(x, 4.4, z), Vector3.new(7, 5, 2.6), color)
-	OutdoorKit.decor(model, base * CFrame.new(x, 4.4, z), Vector3.new(7.3, 0.6, 2.9), darken(color, 0.4))
-	OutdoorKit.decor(model, base * CFrame.new(x, 7.4, z), Vector3.new(2.2, 1.6, 0.6), darken(color, 0.3))
+	local body = OutdoorKit.decor(model, base * CFrame.new(x, 4.4, z), Vector3.new(7, 5, 2.6), color, Enum.Material.Fabric)
+	OutdoorKit.decor(model, base * CFrame.new(x, 4.4, z), Vector3.new(7.3, 0.6, 2.9), darken(color, 0.4), Enum.Material.Metal)
+	OutdoorKit.decor(model, base * CFrame.new(x, 7.4, z), Vector3.new(2.2, 1.6, 0.6), darken(color, 0.3), Enum.Material.Metal)
 	for _, dx in { -1.8, 1.8 } do
 		OutdoorKit.decor(model, base * CFrame.new(x + dx, 5.6, z - 1.4), Vector3.new(1, 0.8, 0.4), lighten(color, 0.4), Enum.Material.Neon)
 	end
 	OutdoorKit.decor(model, base * CFrame.new(x, 1, z), Vector3.new(2, 2, 2), darken(color, 0.5))
 	model.PrimaryPart = body
+	-- Purchasable: turns slowly the way a collectible should. Only the MODEL
+	-- animates — bobbing the body as well would fight the spin for control of
+	-- the same CFrame.
+	model:SetAttribute("SpinSpeed", 0.06)
+	CollectionService:AddTag(model, "SpinY")
 	return model, body
 end
 
@@ -678,8 +707,8 @@ function OutdoorKit.pillar(
 	local model = Instance.new("Model")
 	model.Name = "LeaderPillar"
 	model.Parent = parent
-	OutdoorKit.part(model, base * CFrame.new(x, 1, z), Vector3.new(11, 2, 7), darken(body, 0.2))
-	OutdoorKit.part(model, base * CFrame.new(x, height / 2 + 2, z), Vector3.new(9, height, 4), body)
+	OutdoorKit.part(model, base * CFrame.new(x, 1, z), Vector3.new(11, 2, 7), darken(body, 0.2), Enum.Material.Concrete)
+	OutdoorKit.part(model, base * CFrame.new(x, height / 2 + 2, z), Vector3.new(9, height, 4), body, Enum.Material.Concrete)
 	local screen = OutdoorKit.decor(
 		model,
 		base * CFrame.new(x, height / 2 + 3, z - 2.1),
@@ -688,7 +717,7 @@ function OutdoorKit.pillar(
 		Enum.Material.Neon
 	)
 	screen.Name = "Screen"
-	OutdoorKit.decor(model, base * CFrame.new(x, height + 2.6, z), Vector3.new(10.4, 1.4, 5.4), accent)
+	OutdoorKit.decor(model, base * CFrame.new(x, height + 2.6, z), Vector3.new(10.4, 1.4, 5.4), accent, Enum.Material.Metal)
 	OutdoorKit.label(parent, base * CFrame.new(x, height + 5, z), title, accent, 34, 18)
 	model.PrimaryPart = screen
 	return model
@@ -700,9 +729,9 @@ function OutdoorKit.chest(parent: Instance, base: CFrame, x: number, z: number, 
 	model.Name = "PowerChest"
 	model.Parent = parent
 	local gold = Color3.fromRGB(255, 196, 40)
-	local body = OutdoorKit.part(model, base * CFrame.new(x, 2.6, z), Vector3.new(9, 5, 6), gold)
-	OutdoorKit.decor(model, base * CFrame.new(x, 5.6, z), Vector3.new(9.4, 1.6, 6.4), darken(gold, 0.25))
-	OutdoorKit.decor(model, base * CFrame.new(x, 3.2, z - 3.1), Vector3.new(2, 2.4, 0.5), darken(gold, 0.45))
+	local body = OutdoorKit.part(model, base * CFrame.new(x, 2.6, z), Vector3.new(9, 5, 6), gold, Enum.Material.Foil)
+	OutdoorKit.decor(model, base * CFrame.new(x, 5.6, z), Vector3.new(9.4, 1.6, 6.4), darken(gold, 0.25), Enum.Material.Metal)
+	OutdoorKit.decor(model, base * CFrame.new(x, 3.2, z - 3.1), Vector3.new(2, 2.4, 0.5), darken(gold, 0.45), Enum.Material.Metal)
 	-- Coins spilling out of it.
 	for i = 1, 6 do
 		local angle = i * math.pi / 3
@@ -716,6 +745,7 @@ function OutdoorKit.chest(parent: Instance, base: CFrame, x: number, z: number, 
 	end
 	OutdoorKit.label(parent, base * CFrame.new(x, 8.6, z), "FREE POWER", accent, 40, 16)
 	model.PrimaryPart = body
+	CollectionService:AddTag(body, "IdleBob")
 	return model, body
 end
 
@@ -742,7 +772,8 @@ function OutdoorKit.stairs(
 			folder,
 			base * CFrame.new(x, 0, z) * CFrame.Angles(0, yaw, 0) * CFrame.new(0, height - rise / 2, -depth),
 			Vector3.new(width, rise, run),
-			if i % 2 == 0 then lighten(color, 0.05) else color
+			if i % 2 == 0 then lighten(color, 0.05) else color,
+			surfaces.Plaza
 		)
 	end
 	return folder

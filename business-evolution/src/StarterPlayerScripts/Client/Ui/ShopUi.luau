@@ -270,7 +270,7 @@ local function buildPassStrip(parent: Frame)
 	strip.CanvasSize = UDim2.new()
 	strip.AutomaticCanvasSize = Enum.AutomaticSize.X
 	strip.ScrollingDirection = Enum.ScrollingDirection.X
-	strip.ScrollBarThickness = 6
+	strip.ScrollBarThickness = Theme.StrokeThickness
 	strip.ScrollBarImageColor3 = Theme.Colors.Gold
 	local layout = Instance.new("UIListLayout")
 	layout.FillDirection = Enum.FillDirection.Horizontal

@@ -96,7 +96,7 @@ local function buildMachine(parent: Frame)
 	tank.Position = UDim2.new(0.5, 0, 0, 0)
 	tank.Size = UDim2.fromOffset(150, 42)
 	local tankCorner = Instance.new("UICorner")
-	tankCorner.CornerRadius = UDim.new(0, 10)
+	tankCorner.CornerRadius = UDim.new(0, Theme.Radius)
 	tankCorner.Parent = tank
 	tank.Parent = machine
 
@@ -108,10 +108,10 @@ local function buildMachine(parent: Frame)
 	body.Position = UDim2.new(0.5, 0, 0, 36)
 	body.Size = UDim2.fromOffset(210, 150)
 	local bodyCorner = Instance.new("UICorner")
-	bodyCorner.CornerRadius = UDim.new(0, 14)
+	bodyCorner.CornerRadius = UDim.new(0, Theme.Radius)
 	bodyCorner.Parent = body
 	local bodyStroke = Instance.new("UIStroke")
-	bodyStroke.Thickness = 3
+	bodyStroke.Thickness = Theme.StrokeThickness
 	bodyStroke.Color = Theme.Colors.PanelDark
 	bodyStroke.Parent = body
 	body.Parent = machine
@@ -123,7 +123,7 @@ local function buildMachine(parent: Frame)
 	trim.Position = UDim2.new(0, 8, 0, 10)
 	trim.Size = UDim2.new(1, -16, 0, 8)
 	local trimCorner = Instance.new("UICorner")
-	trimCorner.CornerRadius = UDim.new(0, 4)
+	trimCorner.CornerRadius = UDim.new(0, Theme.Radius)
 	trimCorner.Parent = trim
 	trim.Parent = body
 
@@ -134,7 +134,7 @@ local function buildMachine(parent: Frame)
 	screen.Position = UDim2.new(0, 16, 0, 30)
 	screen.Size = UDim2.fromOffset(70, 40)
 	local screenCorner = Instance.new("UICorner")
-	screenCorner.CornerRadius = UDim.new(0, 8)
+	screenCorner.CornerRadius = UDim.new(0, Theme.Radius)
 	screenCorner.Parent = screen
 	Theme.text({
 		Text = "☕",
@@ -153,7 +153,7 @@ local function buildMachine(parent: Frame)
 	group.Position = UDim2.new(0.5, 30, 1, -36)
 	group.Size = UDim2.fromOffset(64, 26)
 	local groupCorner = Instance.new("UICorner")
-	groupCorner.CornerRadius = UDim.new(0, 6)
+	groupCorner.CornerRadius = UDim.new(0, Theme.Radius)
 	groupCorner.Parent = group
 	group.Parent = body
 
@@ -174,7 +174,7 @@ local function buildMachine(parent: Frame)
 	tray.Position = UDim2.new(0.5, 0, 1, 0)
 	tray.Size = UDim2.fromOffset(232, 22)
 	local trayCorner = Instance.new("UICorner")
-	trayCorner.CornerRadius = UDim.new(0, 8)
+	trayCorner.CornerRadius = UDim.new(0, Theme.Radius)
 	trayCorner.Parent = tray
 	tray.Parent = machine
 
@@ -187,7 +187,7 @@ local function buildMachine(parent: Frame)
 	cup.Size = UDim2.fromOffset(40, 34)
 	cup.Visible = false
 	local cupCorner = Instance.new("UICorner")
-	cupCorner.CornerRadius = UDim.new(0, 8)
+	cupCorner.CornerRadius = UDim.new(0, Theme.Radius)
 	cupCorner.Parent = cup
 	local handle = Instance.new("Frame")
 	handle.Name = "Handle"
@@ -195,11 +195,11 @@ local function buildMachine(parent: Frame)
 	handle.Position = UDim2.new(1, -2, 0, 8)
 	handle.Size = UDim2.fromOffset(12, 18)
 	local handleStroke = Instance.new("UIStroke")
-	handleStroke.Thickness = 3
+	handleStroke.Thickness = Theme.StrokeThickness
 	handleStroke.Color = Theme.Colors.Text
 	handleStroke.Parent = handle
 	local handleCorner = Instance.new("UICorner")
-	handleCorner.CornerRadius = UDim.new(0, 6)
+	handleCorner.CornerRadius = UDim.new(0, Theme.Radius)
 	handleCorner.Parent = handle
 	handle.Parent = cup
 	cup.Parent = machine
@@ -303,7 +303,7 @@ local function buildInternCard(parent: Instance, state: StateController.ClientSt
 	band.BorderSizePixel = 0
 	band.Size = UDim2.new(1, 0, 0, 26)
 	local bandCorner = Instance.new("UICorner")
-	bandCorner.CornerRadius = UDim.new(0, 10)
+	bandCorner.CornerRadius = UDim.new(0, Theme.Radius)
 	bandCorner.Parent = band
 	Theme.text({
 		Text = def.Rarity,
@@ -356,7 +356,7 @@ local function buildInternCard(parent: Instance, state: StateController.ClientSt
 	chip.Position = UDim2.new(0.5, 0, 1, -8)
 	chip.Size = UDim2.fromOffset(116, 26)
 	local chipCorner = Instance.new("UICorner")
-	chipCorner.CornerRadius = UDim.new(0, 13)
+	chipCorner.CornerRadius = UDim.new(0, Theme.Radius)
 	chipCorner.Parent = chip
 	Theme.text({
 		Text = if equipped then "EQUIPPED ✓" else "TAP TO EQUIP",
@@ -529,7 +529,7 @@ local function playReveal(payload: RollPayload)
 		local cardStroke = card:FindFirstChildOfClass("UIStroke")
 		if cardStroke then
 			cardStroke.Color = color
-			cardStroke.Thickness = 4
+			cardStroke.Thickness = Theme.StrokeThickness
 		end
 		local band = Instance.new("Frame")
 		band.BackgroundColor3 = color
@@ -537,7 +537,7 @@ local function playReveal(payload: RollPayload)
 		band.Size = UDim2.new(1, 0, 0, 42)
 		band.ZIndex = 3
 		local bandCorner = Instance.new("UICorner")
-		bandCorner.CornerRadius = UDim.new(0, 10)
+		bandCorner.CornerRadius = UDim.new(0, Theme.Radius)
 		bandCorner.Parent = band
 		Theme.text({
 			Text = def.Rarity .. "!",
@@ -732,7 +732,7 @@ function InternUi:Init()
 	grid.CanvasSize = UDim2.new()
 	grid.AutomaticCanvasSize = Enum.AutomaticSize.Y
 	grid.ScrollingDirection = Enum.ScrollingDirection.Y
-	grid.ScrollBarThickness = 6
+	grid.ScrollBarThickness = Theme.StrokeThickness
 	grid.ScrollBarImageColor3 = Theme.Colors.Gold
 	local gridLayout = Instance.new("UIGridLayout")
 	gridLayout.CellSize = UDim2.fromOffset(148, 178)
@@ -753,7 +753,7 @@ function InternUi:Init()
 	overlay.Visible = false
 	overlay.ZIndex = 3
 	local overlayCorner = Instance.new("UICorner")
-	overlayCorner.CornerRadius = UDim.new(0, 16)
+	overlayCorner.CornerRadius = UDim.new(0, Theme.Radius)
 	overlayCorner.Parent = overlay
 	overlay.Parent = newPanel.Anim
 	revealOverlay = overlay

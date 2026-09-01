@@ -24,9 +24,11 @@ type Visual = {
 	Stage: number,
 	Model: Model,
 	Torso: BasePart,
+	RestCf: CFrame,
 	Fill: Frame,
 	HealthLabel: TextLabel,
 	Position: Vector3,
+	Phase: number, -- so no two enemies breathe in sync
 	Max: number,
 	Health: number,
 	Shown: number, -- interpolated health, so the bar slides instead of jumping
@@ -83,6 +85,7 @@ local function buildVisual(id: string, stageNumber: number, position: Vector3, m
 
 	local torso = decor(model, cf * CFrame.new(0, 4.6, 0), Vector3.new(3.4, 3.6, 1.8), shirt)
 	torso.Name = "Torso"
+	local restCf = torso.CFrame
 	decor(model, cf * CFrame.new(-0.9, 1.5, 0), Vector3.new(1.4, 3.4, 1.6), trousers)
 	decor(model, cf * CFrame.new(0.9, 1.5, 0), Vector3.new(1.4, 3.4, 1.6), trousers)
 	decor(model, cf * CFrame.new(-2.3, 4.6, 0), Vector3.new(1.2, 3.4, 1.6), shirt)
@@ -149,8 +152,10 @@ local function buildVisual(id: string, stageNumber: number, position: Vector3, m
 	return {
 		Id = id,
 		Stage = stageNumber,
+		Phase = (position.X * 0.37 + position.Z * 0.11) % (math.pi * 2),
 		Model = model,
 		Torso = torso,
+		RestCf = restCf,
 		Fill = fill,
 		HealthLabel = healthLabel,
 		Position = position,
@@ -230,14 +235,28 @@ function EnemyRenderer:Start()
 	-- Health bars slide toward their true value rather than snapping, which
 	-- reads as a hit landing instead of a number changing.
 	trove:Add(RunService.RenderStepped:Connect(function(dt: number)
+		local now = os.clock()
 		local camera = workspace.CurrentCamera
 		local eye = if camera then camera.CFrame.Position else Vector3.zero
 		for _, visual in visuals do
 			if visual.Dead then
 				continue
 			end
-			if (visual.Position - eye).Magnitude > 300 then
+			local distance = (visual.Position - eye).Magnitude
+			if distance > 300 then
 				continue -- far enough that nobody can read the bar anyway
+			end
+
+			-- Idle motion. A static NPC reads as a prop; these breathe and
+			-- shift their weight. Procedural rather than an Animation track
+			-- because these models have no Humanoid by design.
+			if distance < 140 then
+				local t = now * 1.6 + visual.Phase
+				local breathe = math.sin(t) * 0.06
+				local sway = math.sin(t * 0.5) * 0.04
+				visual.Torso.CFrame = visual.RestCf
+					* CFrame.new(0, breathe, 0)
+					* CFrame.Angles(0, sway, math.sin(t * 0.33) * 0.02)
 			end
 			if math.abs(visual.Shown - visual.Health) > 0.01 then
 				visual.Shown += (visual.Health - visual.Shown) * math.min(1, dt * 9)

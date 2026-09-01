@@ -9,7 +9,9 @@
 -- WaterShimmer, TickerSign.
 
 local CollectionService = game:GetService("CollectionService")
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local TextService = game:GetService("TextService")
@@ -253,9 +255,15 @@ end
 
 -- ── IdleBob ─────────────────────────────────────────────────────────────────
 
+-- 0.4 studs over a 2 second period (omega = 2*pi/2 = pi), sine, with a random
+-- per-part phase so no two items rise together. Unison bobbing looks worse
+-- than none at all.
+local BOB_STUDS = 0.4
+local BOB_OMEGA = math.pi
+
 local function updateBob(state: BobState, now: number)
-	state.Part.CFrame = (state.OriginalCf * CFrame.Angles(0, math.sin(now * 0.9 + state.Phase) * 0.1, 0))
-		+ Vector3.new(0, math.sin(now * 1.8 + state.Phase) * 0.28, 0)
+	state.Part.CFrame = (state.OriginalCf * CFrame.Angles(0, math.sin(now * 0.55 + state.Phase) * 0.06, 0))
+		+ Vector3.new(0, math.sin(now * BOB_OMEGA + state.Phase) * BOB_STUDS, 0)
 end
 
 local function addBob(instance: Instance)
@@ -369,50 +377,101 @@ local function removeOrbit(instance: Instance)
 	state.Ribbon.LocalTransparencyModifier = 0
 end
 
--- ── WorldSign culling ───────────────────────────────────────────────────────
--- ART Part 11 caps VISIBLE BillboardGuis at 25 on mobile / 60 on desktop. The
--- world has far more signs than that, so keep the nearest N enabled and switch
--- the rest off. Cheap: runs on the existing slow cull pass, not per frame.
+-- ── WorldSign proximity rule ────────────────────────────────────────────────
+-- Signs collide with each other when every one of them draws its full text at
+-- any distance. So: full form up close, headline only further out, nothing
+-- past MaxDistance. Everything fades over 0.15s — never a snapped Visible.
+--
+-- Also caps how many draw at once, because the mobile budget is about VISIBLE
+-- billboards and a dense hub has far more signs than that.
 
-local signAnchors: { [BasePart]: BillboardGui } = {}
+local Juice = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Juice"))
+local SoundController = require(script.Parent:WaitForChild("SoundController"))
 
+local FULL_DETAIL_STUDS = 25
 local SIGN_BUDGET = if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then 22 else 55
+
+type SignEntry = {
+	Gui: BillboardGui,
+	Detail: TextLabel?,
+	DetailShown: boolean,
+}
+
+local signs: { [BasePart]: SignEntry } = {}
 
 local function addSign(instance: Instance)
 	if not instance:IsA("BasePart") then
 		return
 	end
 	local billboard = instance:FindFirstChildOfClass("BillboardGui")
-	if billboard then
-		signAnchors[instance] = billboard
+	if not billboard then
+		return
 	end
+	local body = billboard:FindFirstChild("Body")
+	local detail = if body then body:FindFirstChild("Detail") else nil
+	signs[instance] = {
+		Gui = billboard,
+		Detail = if detail and detail:IsA("TextLabel") then detail else nil,
+		DetailShown = true,
+	}
 end
 
 local function removeSign(instance: Instance)
 	if instance:IsA("BasePart") then
-		signAnchors[instance] = nil
+		signs[instance] = nil
 	end
 end
 
 local function cullSigns(eye: Vector3)
-	-- Collect, sort by distance, enable the closest few.
-	local ranked: { { Anchor: BasePart, Gui: BillboardGui, Distance: number } } = {}
-	for anchor, billboard in signAnchors do
+	local ranked: { { Anchor: BasePart, Entry: SignEntry, Distance: number } } = {}
+	for anchor, entry in signs do
 		if anchor.Parent == nil then
-			signAnchors[anchor] = nil
+			signs[anchor] = nil
 			continue
 		end
-		table.insert(ranked, {
-			Anchor = anchor,
-			Gui = billboard,
-			Distance = (anchor.Position - eye).Magnitude,
-		})
+		table.insert(ranked, { Anchor = anchor, Entry = entry, Distance = (anchor.Position - eye).Magnitude })
 	end
 	table.sort(ranked, function(a, b)
 		return a.Distance < b.Distance
 	end)
-	for index, entry in ranked do
-		entry.Gui.Enabled = index <= SIGN_BUDGET and entry.Distance <= entry.Gui.MaxDistance
+
+	for index, row in ranked do
+		local entry = row.Entry
+		local withinBudget = index <= SIGN_BUDGET and row.Distance <= entry.Gui.MaxDistance
+		entry.Gui.Enabled = withinBudget
+
+		-- The proximity rule: the detail line only exists up close.
+		local detail = entry.Detail
+		if detail then
+			local wantDetail = withinBudget and row.Distance <= FULL_DETAIL_STUDS
+			if wantDetail ~= entry.DetailShown then
+				entry.DetailShown = wantDetail
+				Juice.fadeLabel(detail, wantDetail)
+			end
+		end
+	end
+end
+
+-- ── Purchase punch ──────────────────────────────────────────────────────────
+-- When a purchase lands, the nearest stand gives a short scale punch. Wired
+-- here because this controller already owns the tagged world props.
+
+local function punchNearestStand(position: Vector3)
+	local world = Workspace:FindFirstChild("BusinessEvolutionWorld")
+	if not world then
+		return
+	end
+	local best, bestDistance = nil, 26
+	for _, tagged in CollectionService:GetTagged("IdleBob") do
+		if tagged:IsA("BasePart") then
+			local distance = (tagged.Position - position).Magnitude
+			if distance < bestDistance then
+				best, bestDistance = tagged, distance
+			end
+		end
+	end
+	if best then
+		Juice.punchPart(best)
 	end
 end
 
@@ -695,6 +754,23 @@ function WorldFxController:Start()
 	watchTag("WaterShimmer", addShimmer, removeShimmer)
 	watchTag("TickerSign", addTicker, removeTicker)
 	trove:Connect(RunService.RenderStepped, onRenderStepped)
+
+	-- Purchases punch whatever stand the buyer is next to.
+	local fxRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Fx") :: RemoteEvent
+	trove:Connect(fxRemote.OnClientEvent, function(payload: any)
+		if type(payload) ~= "table" or payload.Kind ~= "Purchase" then
+			return
+		end
+		if payload.UserId ~= Players.LocalPlayer.UserId then
+			return -- somebody else's purchase; their stand, not ours
+		end
+		local character = Players.LocalPlayer.Character
+		local root = if character then character:FindFirstChild("HumanoidRootPart") else nil
+		if root and root:IsA("BasePart") then
+			punchNearestStand(root.Position)
+			SoundController.play("Purchase")
+		end
+	end)
 end
 
 return WorldFxController

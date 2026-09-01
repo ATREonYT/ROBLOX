@@ -46,7 +46,12 @@ local function applySkin(player: Player)
 
 	local shirt = rgb(skin.Shirt)
 	local trousers = rgb(skin.Trousers)
-	local material = if skin.Glow then Enum.Material.Neon else Enum.Material.SmoothPlastic
+	-- Never Neon on a body: it ignores lighting and blooms the character into a
+	-- white blob. Glow skins get brighter fabric and a Neon accent instead.
+	local material = Enum.Material.SmoothPlastic
+	if skin.Glow then
+		shirt = shirt:Lerp(Color3.fromRGB(250, 248, 255), 0.12)
+	end
 	local TORSO_PARTS = { "UpperTorso", "LowerTorso", "Torso", "LeftUpperArm", "RightUpperArm", "LeftLowerArm", "RightLowerArm" }
 	local LEG_PARTS = { "LeftUpperLeg", "RightUpperLeg", "LeftLowerLeg", "RightLowerLeg", "LeftFoot", "RightFoot" }
 
