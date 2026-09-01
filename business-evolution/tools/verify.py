@@ -49,6 +49,7 @@ def main():
         ("multiplier stack", "stack_spec.luau"),
         ("server startup", "startup_spec.luau"),
         ("full boot", "boot_spec.luau"),
+        ("pass 1 gates", "gates_spec.luau"),
     ):
         bundle = tmp / spec.replace("_spec.luau", "_harness.luau")
         bundle.write_text(build_harness.build((TOOLS / spec).read_text()))

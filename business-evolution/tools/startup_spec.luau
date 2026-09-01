@@ -81,9 +81,16 @@ if passes then
 			table.insert(spans, { inst.CFrame.X - halfX, inst.CFrame.X + halfX })
 		end
 	end
+	-- Sample between the real world edges, derived from config, so the range
+	-- follows the map when footprints change.
+	local westEdge, eastEdge = math.huge, -math.huge
+	for _, stage in Stages.List do
+		westEdge = math.min(westEdge, stage.Origin[1] - stage.Size[1] / 2)
+		eastEdge = math.max(eastEdge, stage.Origin[1] + stage.Size[1] / 2)
+	end
 	local gaps = 0
 	local firstGapAt = nil
-	for x = -150, 3250, 10 do
+	for x = westEdge + 5, eastEdge - 5, 10 do
 		local covered = false
 		for _, span in spans do
 			if x >= span[1] - 0.5 and x <= span[2] + 0.5 then

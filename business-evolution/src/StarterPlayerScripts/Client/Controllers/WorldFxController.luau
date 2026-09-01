@@ -5,12 +5,13 @@
 -- loop with a slow cull pass so a six-floor tower of monitors costs almost
 -- nothing when it's off-screen.
 --
--- Tags handled: FlickerLight, GlowScreen, IdleBob, OrbitRibbon, WaterShimmer,
--- TickerSign (see CONTRACTS.md).
+-- Tags handled: SpinY, FlickerLight, GlowScreen, IdleBob, OrbitRibbon,
+-- WaterShimmer, TickerSign.
 
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 local TextService = game:GetService("TextService")
 
 local Trove = require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Trove"))
@@ -368,6 +369,87 @@ local function removeOrbit(instance: Instance)
 	state.Ribbon.LocalTransparencyModifier = 0
 end
 
+-- ── WorldSign culling ───────────────────────────────────────────────────────
+-- ART Part 11 caps VISIBLE BillboardGuis at 25 on mobile / 60 on desktop. The
+-- world has far more signs than that, so keep the nearest N enabled and switch
+-- the rest off. Cheap: runs on the existing slow cull pass, not per frame.
+
+local signAnchors: { [BasePart]: BillboardGui } = {}
+
+local SIGN_BUDGET = if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then 22 else 55
+
+local function addSign(instance: Instance)
+	if not instance:IsA("BasePart") then
+		return
+	end
+	local billboard = instance:FindFirstChildOfClass("BillboardGui")
+	if billboard then
+		signAnchors[instance] = billboard
+	end
+end
+
+local function removeSign(instance: Instance)
+	if instance:IsA("BasePart") then
+		signAnchors[instance] = nil
+	end
+end
+
+local function cullSigns(eye: Vector3)
+	-- Collect, sort by distance, enable the closest few.
+	local ranked: { { Anchor: BasePart, Gui: BillboardGui, Distance: number } } = {}
+	for anchor, billboard in signAnchors do
+		if anchor.Parent == nil then
+			signAnchors[anchor] = nil
+			continue
+		end
+		table.insert(ranked, {
+			Anchor = anchor,
+			Gui = billboard,
+			Distance = (anchor.Position - eye).Magnitude,
+		})
+	end
+	table.sort(ranked, function(a, b)
+		return a.Distance < b.Distance
+	end)
+	for index, entry in ranked do
+		entry.Gui.Enabled = index <= SIGN_BUDGET and entry.Distance <= entry.Gui.MaxDistance
+	end
+end
+
+-- ── SpinY ───────────────────────────────────────────────────────────────────
+-- Continuous Y rotation for the Landmark's logo. The whole point of the
+-- Landmark is that it is never still (ART 4.2 / audit tell #37).
+
+local spinning: { [Model]: { Origin: CFrame, Speed: number } } = {}
+
+local function addSpin(instance: Instance)
+	if not instance:IsA("Model") then
+		return
+	end
+	local pivot = instance:GetPivot()
+	local speed = instance:GetAttribute("SpinSpeed")
+	spinning[instance] = {
+		Origin = pivot,
+		Speed = if typeof(speed) == "number" then speed else 0.4,
+	}
+end
+
+local function removeSpin(instance: Instance)
+	if instance:IsA("Model") then
+		spinning[instance] = nil
+	end
+end
+
+local function stepSpin(now: number)
+	for model, entry in spinning do
+		if model.Parent == nil then
+			spinning[model] = nil
+			continue
+		end
+		model:PivotTo(entry.Origin * CFrame.Angles(0, now * entry.Speed * math.pi * 2, 0))
+	end
+end
+
 -- ── WaterShimmer ────────────────────────────────────────────────────────────
 
 local function updateShimmer(state: ShimmerState, now: number)
@@ -562,9 +644,13 @@ local function onRenderStepped(dt: number)
 	if cullAccumulator >= CULL_PASS_SECONDS then
 		cullAccumulator = 0
 		runCullPass(camera.CFrame.Position)
+		cullSigns(camera.CFrame.Position)
 	end
 
 	local now = os.clock()
+	-- The Landmark spins regardless of distance: it is the thing you navigate
+	-- by, so it must never be caught standing still.
+	stepSpin(now)
 	for _, state in activeFlickers do
 		updateFlicker(state, now)
 	end
@@ -600,6 +686,8 @@ function WorldFxController:Init()
 end
 
 function WorldFxController:Start()
+	watchTag("WorldSign", addSign, removeSign)
+	watchTag("SpinY", addSpin, removeSpin)
 	watchTag("FlickerLight", addFlicker, removeFlicker)
 	watchTag("GlowScreen", addGlow, removeGlow)
 	watchTag("IdleBob", addBob, removeBob)

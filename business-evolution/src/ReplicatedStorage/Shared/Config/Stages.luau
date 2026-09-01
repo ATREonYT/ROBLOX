@@ -6,6 +6,11 @@
 -- Every stage is a visually distinct location so the walk out never reads as
 -- copy-paste: a business park, then downtown, then the financial district...
 --
+-- Footprints follow ART Part 4.1: the starting area is ~90x90 (target 80,
+-- hard cap 100) and stages are tight enough to cross in about ten seconds.
+-- Shrink the ground, never the props — big props in a small space is the
+-- mechanism that makes a world feel dense rather than empty.
+--
 -- Stage rules:
 --   * You may always ENTER stage 1. Entering stage N+1 requires clearing N.
 --   * "Clearing" = defeating the stage's enemy quota once.
@@ -46,7 +51,7 @@ local Stages: { Stage } = {
 		DisplayName = "HQ Plaza",
 		Blurb = "Where every career starts.",
 		Origin = { 0, 0, 0 },
-		Size = { 340, 300 },
+		Size = { 90, 90 },
 		Theme = {
 			Ground = { 124, 196, 84 }, -- bright lawn
 			Cliff = { 176, 106, 68 }, -- warm brick
@@ -67,8 +72,8 @@ local Stages: { Stage } = {
 		Number = 1,
 		DisplayName = "Business Park",
 		Blurb = "Low-rise offices and lower expectations.",
-		Origin = { 430, 0, 0 },
-		Size = { 260, 220 },
+		Origin = { 180, 0, 0 },
+		Size = { 190, 150 },
 		Theme = {
 			Ground = { 132, 200, 90 },
 			Cliff = { 176, 106, 68 },
@@ -89,8 +94,8 @@ local Stages: { Stage } = {
 		Number = 2,
 		DisplayName = "Downtown",
 		Blurb = "Coffee carts, gridlock, and ambition.",
-		Origin = { 800, 0, 0 },
-		Size = { 260, 220 },
+		Origin = { 405, 0, 0 },
+		Size = { 190, 150 },
 		Theme = {
 			Ground = { 96, 98, 104 }, -- asphalt
 			Cliff = { 138, 96, 84 },
@@ -111,8 +116,8 @@ local Stages: { Stage } = {
 		Number = 3,
 		DisplayName = "Financial District",
 		Blurb = "Glass, marble, and other people's money.",
-		Origin = { 1170, 0, 0 },
-		Size = { 270, 230 },
+		Origin = { 635, 0, 0 },
+		Size = { 200, 160 },
 		Theme = {
 			Ground = { 178, 180, 188 }, -- polished stone
 			Cliff = { 120, 128, 148 },
@@ -133,8 +138,8 @@ local Stages: { Stage } = {
 		Number = 4,
 		DisplayName = "Import Docks",
 		Blurb = "Containers, cranes, and creative accounting.",
-		Origin = { 1550, 0, 0 },
-		Size = { 280, 230 },
+		Origin = { 870, 0, 0 },
+		Size = { 200, 160 },
 		Theme = {
 			Ground = { 108, 112, 118 },
 			Cliff = { 92, 100, 110 },
@@ -155,8 +160,8 @@ local Stages: { Stage } = {
 		Number = 5,
 		DisplayName = "Tech Campus",
 		Blurb = "Free snacks. No windows that open.",
-		Origin = { 1940, 0, 0 },
-		Size = { 280, 240 },
+		Origin = { 1105, 0, 0 },
+		Size = { 200, 160 },
 		Theme = {
 			Ground = { 142, 196, 148 },
 			Cliff = { 150, 158, 172 },
@@ -177,8 +182,8 @@ local Stages: { Stage } = {
 		Number = 6,
 		DisplayName = "The Skyline",
 		Blurb = "Rooftops, helipads, and thin air.",
-		Origin = { 2330, 0, 0 },
-		Size = { 280, 240 },
+		Origin = { 1340, 0, 0 },
+		Size = { 200, 160 },
 		Theme = {
 			Ground = { 198, 200, 206 }, -- rooftop gravel
 			Cliff = { 88, 96, 118 },
@@ -199,8 +204,8 @@ local Stages: { Stage } = {
 		Number = 7,
 		DisplayName = "The Boardroom",
 		Blurb = "Nine chairs. Eight of them are taken.",
-		Origin = { 2720, 0, 0 },
-		Size = { 290, 240 },
+		Origin = { 1580, 0, 0 },
+		Size = { 210, 170 },
 		Theme = {
 			Ground = { 74, 52, 38 }, -- deep wood
 			Cliff = { 58, 48, 44 },
@@ -221,8 +226,8 @@ local Stages: { Stage } = {
 		Number = 8,
 		DisplayName = "Orbital HQ",
 		Blurb = "Synergy, at escape velocity.",
-		Origin = { 3120, 0, 0 },
-		Size = { 300, 250 },
+		Origin = { 1820, 0, 0 },
+		Size = { 210, 170 },
 		Theme = {
 			Ground = { 52, 60, 78 },
 			Cliff = { 38, 44, 60 },

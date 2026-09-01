@@ -15,6 +15,7 @@ local Ui = Client:WaitForChild("Ui")
 
 local controllers: { any } = {
 	require(Controllers:WaitForChild("StateController")),
+	require(Controllers:WaitForChild("CameraController")),
 	require(Controllers:WaitForChild("SoundController")),
 	require(Controllers:WaitForChild("ClickController")),
 	require(Controllers:WaitForChild("PopupController")),

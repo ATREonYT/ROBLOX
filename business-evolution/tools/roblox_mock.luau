@@ -190,6 +190,21 @@ function CFrame.PointToObjectSpace(self, point)
 	)
 end
 
+function CFrame.ToEulerAnglesYXZ(self)
+	-- Extract YXZ Euler angles from the rotation matrix.
+	local x = math.asin(math.clamp(-self.R12, -1, 1))
+	local y, z
+	if math.abs(self.R12) < 0.9999 then
+		y = math.atan2(self.R02, self.R22)
+		z = math.atan2(self.R10, self.R11)
+	else
+		y = math.atan2(-self.R20, self.R00)
+		z = 0
+	end
+	return x, y, z
+end
+CFrame.ToOrientation = CFrame.ToEulerAnglesYXZ
+
 function CFrame.ToWorldSpace(self, other) return self * other end
 function CFrame.Lerp(self, other, alpha)
 	return CFrame.new(
@@ -199,12 +214,87 @@ function CFrame.Lerp(self, other, alpha)
 	)
 end
 
+-- ── Sequences (ColorSequence / NumberSequence and their keypoints) ─────────
+local ColorSequenceKeypoint = {}
+ColorSequenceKeypoint.__index = ColorSequenceKeypoint
+function ColorSequenceKeypoint.new(time, value)
+	return setmetatable({ Time = time, Value = value }, ColorSequenceKeypoint)
+end
+
+local ColorSequence = {}
+ColorSequence.__index = ColorSequence
+function ColorSequence.new(a, b)
+	if type(a) == "table" and getmetatable(a) ~= nil and rawget(a, "R") ~= nil then
+		-- Called with one or two Color3s.
+		return setmetatable({ Keypoints = { ColorSequenceKeypoint.new(0, a), ColorSequenceKeypoint.new(1, b or a) } }, ColorSequence)
+	end
+	if type(a) == "table" then
+		return setmetatable({ Keypoints = a }, ColorSequence)
+	end
+	return setmetatable({ Keypoints = {} }, ColorSequence)
+end
+
+local NumberSequenceKeypoint = {}
+NumberSequenceKeypoint.__index = NumberSequenceKeypoint
+function NumberSequenceKeypoint.new(time, value, envelope)
+	return setmetatable({ Time = time, Value = value, Envelope = envelope or 0 }, NumberSequenceKeypoint)
+end
+
+local NumberSequence = {}
+NumberSequence.__index = NumberSequence
+function NumberSequence.new(a, b)
+	if type(a) == "table" then
+		return setmetatable({ Keypoints = a }, NumberSequence)
+	end
+	return setmetatable({ Keypoints = { NumberSequenceKeypoint.new(0, a), NumberSequenceKeypoint.new(1, b or a) } }, NumberSequence)
+end
+
+local NumberRange = {}
+NumberRange.__index = NumberRange
+function NumberRange.new(min, max)
+	return setmetatable({ Min = min, Max = max or min }, NumberRange)
+end
+
 -- ── Color3 ─────────────────────────────────────────────────────────────────
 local Color3 = {}
 Color3.__index = Color3
 local function col(r, g, b) return setmetatable({ R = r, G = g, B = b }, Color3) end
 function Color3.new(r, g, b) return col(r or 0, g or 0, b or 0) end
 function Color3.fromRGB(r, g, b) return col((r or 0) / 255, (g or 0) / 255, (b or 0) / 255) end
+function Color3.ToHSV(self)
+	local r, g, b = self.R, self.G, self.B
+	local max, min = math.max(r, g, b), math.min(r, g, b)
+	local delta = max - min
+	local h = 0
+	if delta > 0 then
+		if max == r then
+			h = ((g - b) / delta) % 6
+		elseif max == g then
+			h = (b - r) / delta + 2
+		else
+			h = (r - g) / delta + 4
+		end
+		h = h / 6
+	end
+	local s = if max == 0 then 0 else delta / max
+	return h, s, max
+end
+
+function Color3.fromHSV(h, s, v)
+	local i = math.floor(h * 6)
+	local f = h * 6 - i
+	local p = v * (1 - s)
+	local q = v * (1 - f * s)
+	local t = v * (1 - (1 - f) * s)
+	local m = i % 6
+	if m == 0 then return col(v, t, p)
+	elseif m == 1 then return col(q, v, p)
+	elseif m == 2 then return col(p, v, t)
+	elseif m == 3 then return col(p, q, v)
+	elseif m == 4 then return col(t, p, v)
+	else return col(v, p, q) end
+end
+
 function Color3.Lerp(self, other, a)
 	return col(self.R + (other.R - self.R) * a, self.G + (other.G - self.G) * a, self.B + (other.B - self.B) * a)
 end
@@ -482,6 +572,21 @@ function Instance.SetPrimaryPartCFrame(self, target) rawget(self, "_props").CFra
 -- DataStoreOptions carries this; harmless to expose on every mock instance.
 function Instance.SetExperimentalFeatures() end
 
+-- Attributes: a plain key/value store, which is all our code needs.
+function Instance.SetAttribute(self, name, value)
+	local attributes = rawget(self, "_attributes")
+	if attributes == nil then
+		attributes = {}
+		rawset(self, "_attributes", attributes)
+	end
+	attributes[name] = value
+end
+
+function Instance.GetAttribute(self, name)
+	local attributes = rawget(self, "_attributes")
+	return if attributes then attributes[name] else nil
+end
+
 function Instance.GetPropertyChangedSignal()
 	return { Connect = function() return { Disconnect = function() end } end }
 end
@@ -619,6 +724,11 @@ end
 M.typeof = robloxTypeof
 M.workspace = game:GetService("Workspace")
 
+M.ColorSequence = ColorSequence
+M.ColorSequenceKeypoint = ColorSequenceKeypoint
+M.NumberSequence = NumberSequence
+M.NumberSequenceKeypoint = NumberSequenceKeypoint
+M.NumberRange = NumberRange
 M.Vector2 = Vector2
 M.Vector3 = Vector3
 M.CFrame = CFrame

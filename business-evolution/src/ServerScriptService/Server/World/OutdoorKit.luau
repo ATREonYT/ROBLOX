@@ -33,12 +33,17 @@
 -- OutdoorKit.fence(parent, base, x, z, length, yaw, color) -> Folder  invisible safety wall
 -- =========================================================================
 
+local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Surfaces = require(ReplicatedStorage.Shared.Config.Surfaces)
 
 local OutdoorKit = {}
 
 local DISPLAY_FONT = Enum.Font.FredokaOne
+
+-- Never pure black, never pure white (ART 5.1).
+local INK = Color3.fromRGB(22, 18, 40)
+local PAPER = Color3.fromRGB(250, 248, 255)
 
 -- The active surface set. StageBuilder/Hub call setSurfaces() before building,
 -- so every prop picks up that location's materials without threading an extra
@@ -98,7 +103,8 @@ function OutdoorKit.label(
 	text: string,
 	color: Color3,
 	textSize: number?,
-	studWidth: number?
+	studWidth: number?,
+	subText: string?
 ): BasePart
 	local anchor = Instance.new("Part")
 	anchor.Name = "LabelAnchor"
@@ -118,24 +124,47 @@ function OutdoorKit.label(
 	billboard.LightInfluence = 0
 	billboard.Size = UDim2.fromScale(studWidth or 12, (studWidth or 12) * 0.32)
 	billboard.SizeOffset = Vector2.new(0, 0)
-	billboard.MaxDistance = 320
+	-- ART 6.1: 90 on mobile, 140+ on desktop. One value that suits both, and
+	-- WorldFxController culls beyond it anyway.
+	billboard.MaxDistance = 130
 	billboard.Parent = anchor
+	-- Tagged so the client can keep only the nearest N enabled: the mobile
+	-- budget is about VISIBLE billboards, and a dense hub blows past 25.
+	CollectionService:AddTag(anchor, "WorldSign")
 
-	local label = Instance.new("TextLabel")
-	label.BackgroundTransparency = 1
-	label.Size = UDim2.fromScale(1, 1)
-	label.Font = DISPLAY_FONT
-	label.Text = text
-	label.TextColor3 = color
-	label.TextScaled = true
-	label.TextStrokeTransparency = 0
-	label.TextStrokeColor3 = Color3.fromRGB(20, 20, 28)
-	label.Parent = label.Parent or billboard
-	label.Parent = billboard
+	local function line(lineText: string, lineColor: Color3, top: number, height: number, maxSize: number)
+		local label = Instance.new("TextLabel")
+		label.BackgroundTransparency = 1
+		label.Position = UDim2.fromScale(0, top)
+		label.Size = UDim2.fromScale(1, height)
+		label.Font = DISPLAY_FONT
+		label.Text = lineText
+		label.TextColor3 = lineColor
+		label.TextScaled = true
+		label.Parent = billboard
 
-	local constraint = Instance.new("UITextSizeConstraint")
-	constraint.MaxTextSize = textSize or 42
-	constraint.Parent = label
+		-- ScaledSize keeps the outline right on a phone AND on a 4K monitor;
+		-- INK rather than pure black, per the palette rule.
+		local stroke = Instance.new("UIStroke")
+		stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
+		stroke.LineJoinMode = Enum.LineJoinMode.Round
+		stroke.Color = INK
+		stroke.StrokeSizingMode = Enum.StrokeSizingMode.ScaledSize
+		stroke.Thickness = 0.14
+		stroke.Parent = label
+
+		local constraint = Instance.new("UITextSizeConstraint")
+		constraint.MaxTextSize = maxSize
+		constraint.Parent = label
+	end
+
+	if subText then
+		billboard.Size = UDim2.fromScale(studWidth or 12, (studWidth or 12) * 0.46)
+		line(text, color, 0, 0.56, textSize or 42)
+		line(subText, PAPER, 0.58, 0.4, math.floor((textSize or 42) * 0.62))
+	else
+		line(text, color, 0, 1, textSize or 42)
+	end
 
 	return anchor
 end
@@ -460,10 +489,7 @@ function OutdoorKit.pad(
 		)
 	end
 	if topText then
-		OutdoorKit.label(parent, base * CFrame.new(x, 7.4, z), topText, lighten(color, 0.55), 44, 14)
-	end
-	if bottomText then
-		OutdoorKit.label(parent, base * CFrame.new(x, 5.4, z), bottomText, Color3.fromRGB(255, 255, 255), 30, 13)
+		OutdoorKit.label(parent, base * CFrame.new(x, 6.8, z), topText, lighten(color, 0.55), 44, 14, bottomText)
 	end
 	return pad
 end
@@ -720,6 +746,152 @@ function OutdoorKit.stairs(
 		)
 	end
 	return folder
+end
+
+-- ── Variance helpers (ART 4.3) ─────────────────────────────────────────────
+-- The meta-tell is uniformity: eight identical props at identical spacing all
+-- facing due north. These make every repeated element differ from its
+-- neighbours. Derived from an index rather than math.random, so every server
+-- builds the same world and the offline tests stay reproducible.
+
+local function hash01(index: number, salt: number): number
+	-- Cheap deterministic hash in [0,1). Two different salts give two
+	-- uncorrelated streams from the same index.
+	local x = math.sin(index * 12.9898 + salt * 78.233) * 43758.5453
+	return x - math.floor(x)
+end
+OutdoorKit.hash01 = hash01
+
+-- Position + rotation wobble. `spread` is studs, `degrees` is the yaw range.
+function OutdoorKit.jitter(cf: CFrame, index: number, spread: number?, degrees: number?): CFrame
+	local reach = spread or 1.4
+	local turn = degrees or 15
+	return cf
+		* CFrame.new((hash01(index, 1) - 0.5) * 2 * reach, 0, (hash01(index, 2) - 0.5) * 2 * reach)
+		* CFrame.Angles(0, math.rad((hash01(index, 3) - 0.5) * 2 * turn), 0)
+end
+
+-- Scale wobble, +/- 8% by default.
+function OutdoorKit.varyScale(index: number, amount: number?): number
+	local spread = amount or 0.08
+	return 1 + (hash01(index, 4) - 0.5) * 2 * spread
+end
+
+-- Spacing wobble: returns the step to use for slot `index` so a row of props
+-- sits at uneven intervals instead of on a perfect grid.
+function OutdoorKit.varySpacing(baseStep: number, index: number, amount: number?): number
+	local spread = amount or 0.18
+	return baseStep * (1 + (hash01(index, 5) - 0.5) * 2 * spread)
+end
+
+-- ── The Landmark (ART 4.2) ─────────────────────────────────────────────────
+-- Exactly one per zone, 40-80 studs tall. Without it every zone feels the same
+-- size and the map cannot be navigated from memory. This is the HQ tower: a
+-- tapered skyscraper with a lit crown, a rotating logo and a scrolling ticker.
+-- The rotating parts are tagged so the client animates them (nothing static).
+function OutdoorKit.landmark(
+	parent: Instance,
+	base: CFrame,
+	x: number,
+	z: number,
+	height: number,
+	body: Color3,
+	accent: Color3,
+	glass: Color3,
+	title: string
+): Model
+	local model = Instance.new("Model")
+	model.Name = "Landmark"
+	model.Parent = parent
+
+	-- Plinth the tower stands on, so it meets the ground with a base rather
+	-- than sprouting out of it.
+	OutdoorKit.part(model, base * CFrame.new(x, 1.2, z), Vector3.new(26, 2.4, 26), darken(body, 0.25), surfaces.Plaza)
+	OutdoorKit.decor(model, base * CFrame.new(x, 2.6, z), Vector3.new(28, 0.8, 28), accent, surfaces.Trim)
+
+	-- Four tapering sections: a straight extrusion reads as a box, a taper
+	-- reads as architecture.
+	local sections = 4
+	local cursor = 2.4
+	for i = 1, sections do
+		local t = (i - 1) / sections
+		local width = 18 - t * 8
+		local sectionHeight = (height - 12) / sections
+		local shade = if i % 2 == 0 then lighten(body, 0.06) else body
+		OutdoorKit.part(
+			model,
+			base * CFrame.new(x, cursor + sectionHeight / 2, z),
+			Vector3.new(width, sectionHeight, width),
+			shade,
+			surfaces.Building
+		)
+		-- Glazing band and a setback ledge at every section break.
+		OutdoorKit.decor(
+			model,
+			base * CFrame.new(x, cursor + sectionHeight * 0.55, z - width / 2 - 0.2),
+			Vector3.new(width - 3, sectionHeight * 0.62, 0.5),
+			glass,
+			Enum.Material.Glass
+		)
+		OutdoorKit.decor(
+			model,
+			base * CFrame.new(x, cursor + sectionHeight, z),
+			Vector3.new(width + 1.6, 1.2, width + 1.6),
+			accent,
+			surfaces.Trim
+		)
+		cursor += sectionHeight
+	end
+
+	-- Crown: a lit ring the whole map can see.
+	OutdoorKit.decor(model, base * CFrame.new(x, cursor + 2, z), Vector3.new(12, 4, 12), darken(body, 0.15), surfaces.Building)
+	local crown = OutdoorKit.decor(model, base * CFrame.new(x, cursor + 4.4, z), Vector3.new(13.5, 1.4, 13.5), accent, Enum.Material.Neon)
+	crown.Name = "Crown"
+	local crownLight = Instance.new("PointLight")
+	crownLight.Color = accent
+	crownLight.Brightness = 2.4
+	crownLight.Range = 46
+	crownLight.Shadows = false -- decorative lights never cast (perf budget)
+	crownLight.Parent = crown
+
+	-- The rotating logo on top: a slab cross the client spins.
+	local mastHeight = 8
+	OutdoorKit.decor(model, base * CFrame.new(x, cursor + 5 + mastHeight / 2, z), Vector3.new(1.2, mastHeight, 1.2), darken(body, 0.3), surfaces.Trim)
+	local logo = Instance.new("Model")
+	logo.Name = "RotatingLogo"
+	logo.Parent = model
+	local hub = OutdoorKit.decor(logo, base * CFrame.new(x, cursor + 5 + mastHeight, z), Vector3.new(3, 3, 3), accent, Enum.Material.Neon)
+	hub.Name = "LogoHub"
+	logo.PrimaryPart = hub
+	for i = 0, 3 do
+		local angle = i * math.pi / 2
+		OutdoorKit.decor(
+			logo,
+			base * CFrame.new(x + math.cos(angle) * 5, cursor + 5 + mastHeight, z + math.sin(angle) * 5),
+			Vector3.new(7, 2.2, 2.2),
+			if i % 2 == 0 then accent else lighten(accent, 0.35),
+			Enum.Material.Neon
+		)
+	end
+	logo:SetAttribute("SpinSpeed", 0.35)
+	CollectionService:AddTag(logo, "SpinY")
+
+	-- Scrolling ticker band around the base, tagged for the client.
+	for _, side in { -1, 1 } do
+		local band = OutdoorKit.decor(
+			model,
+			base * CFrame.new(x, 9, z + side * 9.6),
+			Vector3.new(17, 4, 0.6),
+			darken(body, 0.45),
+			Enum.Material.Metal
+		)
+		band.Name = "TickerBand"
+		CollectionService:AddTag(band, "TickerSign")
+	end
+
+	-- The name, big, on the tower face.
+	OutdoorKit.label(parent, base * CFrame.new(x, height * 0.55, z - 11), title, accent, 60, 26)
+	return model
 end
 
 -- A connecting pass between two areas. Until this existed the stages were
