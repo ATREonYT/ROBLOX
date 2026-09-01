@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "roblox-studio": {
+      "type": "http",
+      "url": "http://localhost:3004"
+    }
+  }
+}
