@@ -199,7 +199,7 @@ main{position:relative}
 #wearable .s3-band{position:absolute;left:0;width:100%;top:50%;height:23.75vw;margin-top:-11.875vw}
 #wearable .s3-win{width:38vw;height:100%;top:0;left:0}
 #wearable .clip{position:absolute;inset:0;clip-path:inset(0);overflow:hidden}
-#wearable .s3-img{position:absolute;top:0;left:0;width:100vw;height:100%;--ph-x:50%;--ph-y:50%}
+#wearable .s3-img{position:absolute;inset:0;--ph-x:50%;--ph-y:46%}
 @media (max-width:767px){
   #wearable .s3-band{height:47.5vw;margin-top:-23.75vw}
   #wearable .s3-label{top:26%}
@@ -363,8 +363,8 @@ footer .mid{font:400 11px/1 var(--mono);color:var(--muted)}
 <!-- scene 3 -->
 <section class="scene" id="wearable" style="height:250vh;height:250svh">
   <div class="stage" style="--z:3">
-    <p class="label pos-tl s3-label mv in">SO PORTABLE,</p>
-    <h2 class="claim claim--giant s3-giant split mv">it’s wearable</h2>
+    <p class="label pos-tl s3-label in">SO PORTABLE,</p>
+    <h2 class="claim claim--giant s3-giant split">it’s wearable</h2>
     <div class="s3-band mv">
       <div class="marquee s3-win mv">
         <div class="clip"><div class="img s3-img mv" data-src="assets/jacket.png"><img class="base" src="assets/jacket.png" alt="The RONDO-1 coaster worn as a lapel pin on a dark wool jacket." loading="lazy"></div></div>
@@ -662,11 +662,9 @@ footer .mid{font:400 11px/1 var(--mono);color:var(--muted)}
   function staticLayout() {
     document.documentElement.classList.add('rm');
     $$('.split').forEach(function (el) { el.style.visibility = 'visible'; });
-    var band = $('#wearable .s3-band'), win = $('#wearable .s3-win'), img = $('#wearable .s3-img');
+    var band = $('#wearable .s3-band'), win = $('#wearable .s3-win');
     var place = function () {
-      var w = win.offsetWidth, x = (vw() - w) / 2;
-      win.style.transform = 'translateX(' + x + 'px)';
-      img.style.transform = 'translateX(' + (-x) + 'px)';
+      win.style.transform = 'translateX(' + ((vw() - win.offsetWidth) / 2) + 'px)';
     };
     place();
     window.addEventListener('resize', place);
@@ -702,6 +700,13 @@ footer .mid{font:400 11px/1 var(--mono);color:var(--muted)}
     var section = $(id), stage = $('.stage', section), cue = $('.cue', stage);
     var api = { section: section, stage: stage, onUpdate: null };
     api.enter = gsap.timeline({ paused: true });
+    var playEnter = function () { if (!api.enter.isActive() && api.enter.progress() < 1) api.enter.play(0); };
+    /* hand-off: the next scene's entrance starts 40 px before it pins, while this stage dissolves */
+    ScrollTrigger.create({
+      trigger: section, start: 'top top+=40', end: 'top top',
+      onEnter: playEnter,
+      onLeaveBack: function () { api.enter.pause(0); }
+    });
     /* ScrollTrigger wraps the pinned stage in a positioned spacer and copies its z-index onto it;
        keep the active scene's spacer on top so the next scene slides in underneath, unseen. */
     var setZ = function (active) {
@@ -717,9 +722,8 @@ footer .mid{font:400 11px/1 var(--mono);color:var(--muted)}
         pin: stage, pinSpacing: false, scrub: 0.6, invalidateOnRefresh: true,
         onToggle: function (self) { setZ(self.isActive); },
         onRefresh: function (self) { setZ(self.isActive); },
-        onEnter: function () { if (!api.enter.isActive() && api.enter.progress() < 1) api.enter.play(0); },
+        onEnter: playEnter,
         onEnterBack: function () { api.enter.progress(1); },
-        onLeaveBack: function () { api.enter.pause(0); },
         onUpdate: function (self) {
           if (cue) cue.classList.toggle('is-hidden', self.progress > 0.05);
           if (api.onUpdate) api.onUpdate(self);
@@ -727,6 +731,8 @@ footer .mid{font:400 11px/1 var(--mono);color:var(--muted)}
       }
     });
     build(api);
+    var f = 40 / section.offsetHeight;
+    api.scroll.to(stage, { opacity: 0, duration: f }, 1 - f);
     api.scroll.set({}, {}, 1);
     return api;
   }
@@ -763,7 +769,7 @@ footer .mid{font:400 11px/1 var(--mono);color:var(--muted)}
   var S3 = { ok: false };
   scene('#wearable', function (s) {
     var label = $('.s3-label', s.stage), h2 = $('.s3-giant', s.stage);
-    var band = $('.s3-band', s.stage), win = $('.s3-win', s.stage), img = $('.s3-img', s.stage);
+    var band = $('.s3-band', s.stage), win = $('.s3-win', s.stage), clip = $('.clip', s.stage);
     var target = $('#product .s4-label'), tLab = $('.lab', target), tGiant = $('.giant', target);
     var words = prime(s.stage, h2);
     gsap.set(label, { opacity: 0 });
@@ -784,7 +790,7 @@ footer .mid{font:400 11px/1 var(--mono);color:var(--muted)}
     measure();
 
     s.scroll.fromTo(win, { x: function () { return -winW(); } }, { x: function () { return vw(); }, duration: 0.8 }, 0.05)
-      .fromTo(img, { x: function () { return winW(); } }, { x: function () { return -vw(); }, duration: 0.8 }, 0.05)
+      .fromTo(clip, { clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0% 0 0)', duration: 0.26 }, 0.14)
       .to(band, { opacity: 0, duration: 0.03 }, 0.85)
       .to(label, { x: function () { return M.lab.x; }, y: function () { return M.lab.y; }, scale: function () { return M.lab.k; }, transformOrigin: '0 0', duration: 0.12, ease: 'power2.inOut' }, 0.86)
       .to(h2, { x: function () { return M.giant.x; }, y: function () { return M.giant.y; }, scale: function () { return M.giant.k; }, transformOrigin: '0 0', duration: 0.12, ease: 'power2.inOut' }, 0.86)
@@ -816,6 +822,8 @@ footer .mid{font:400 11px/1 var(--mono);color:var(--muted)}
     s.enter.call(function () { gsap.set(label, { opacity: S3.ok ? 1 : 0 }); })
       .to(label, { opacity: 1, duration: 0.6, ease: 'power2.out' }, 0.05)
       .to($$('.in', s.stage), BLOCK_IN, 0.3);
+    gsap.fromTo(label, { y: -40 }, { y: 0, ease: 'none', immediateRender: true,
+      scrollTrigger: { trigger: s.section, start: 'top top+=40', end: 'top top', scrub: true, invalidateOnRefresh: true } });
     var cw = function () { return cards[0].offsetWidth; };
     s.scroll.fromTo(strip, { x: function () { return -cw() / 2; } }, { x: function () { return -(cw() / 2 + 5 * (cw() + 24)); }, duration: 0.9 }, 0.05)
       .to([strip, mq, label, fn], { opacity: 0, duration: 0.08 }, 0.92);
@@ -882,7 +890,7 @@ footer .mid{font:400 11px/1 var(--mono);color:var(--muted)}
       .to(words, WORD_IN, 0)
       .to($$('.in', sec), BLOCK_IN, 0.3);
     ScrollTrigger.create({
-      trigger: sec, start: 'top top+=1',
+      trigger: sec, start: 'top top+=40',
       onEnter: function () { tl.play(0); },
       onLeaveBack: function () { tl.pause(0); }
     });
