@@ -1,0 +1,897 @@
+<!--
+  RONDO-1 launch page. One file, no build step.
+
+  IMAGE-GENERATION PROMPTS (assets contract, section 7 of the brief)
+  Every prompt ends with the shared style suffix:
+  "matte black seamless background, single warm key light from upper left, shallow depth of field, 35 mm film grain, editorial product photography, no text, no logos, no watermark"
+
+  01  assets/hero.png      4:3
+      A single round cork coaster, 98 mm across and 6 mm thick, natural Portuguese cork, alone in frame, tilted 20 degrees toward the camera, filling 70 percent of the frame, matte black seamless background, single warm key light from upper left, shallow depth of field, 35 mm film grain, editorial product photography, no text, no logos, no watermark
+
+  02  assets/hand.png      3:4
+      A hand holding a round cork coaster up between thumb and fingers, arm cropped at the wrist, exactly five fingers, coaster face toward the camera, matte black seamless background, single warm key light from upper left, shallow depth of field, 35 mm film grain, editorial product photography, no text, no logos, no watermark
+
+  03  assets/hand-six.png  3:4
+      Identical framing, pose, lighting and crop to hand.png: a hand holding a round cork coaster up between thumb and fingers, arm cropped at the wrist, the hand has six fingers, nothing else changed, matte black seamless background, single warm key light from upper left, shallow depth of field, 35 mm film grain, editorial product photography, no text, no logos, no watermark
+
+  04  assets/jacket.png    16:10
+      A round cork coaster worn as a lapel pin on a dark charcoal wool jacket, chest and lapel only, no face, matte black seamless background, single warm key light from upper left, shallow depth of field, 35 mm film grain, editorial product photography, no text, no logos, no watermark
+
+  05  assets/ed-01.png     3:4
+      A person mid-stretch in dark matte activewear, a round cork coaster resting on the hip, full body, matte black seamless background, single warm key light from upper left, shallow depth of field, 35 mm film grain, editorial product photography, no text, no logos, no watermark
+
+  06  assets/ed-02.png     3:4
+      A person seen from behind wearing an orange cap, a round cork coaster pinned to the shoulder of a dark wool coat, matte black seamless background, single warm key light from upper left, shallow depth of field, 35 mm film grain, editorial product photography, no text, no logos, no watermark
+
+  07  assets/ed-03.png     3:4
+      A round cork coaster centred on a seamless deep red backdrop, the red backdrop replacing the black named in the style suffix, matte black seamless background, single warm key light from upper left, shallow depth of field, 35 mm film grain, editorial product photography, no text, no logos, no watermark
+
+  08  assets/ed-03b.png    3:4
+      Identical framing to ed-03.png: a round cork coaster centred on a seamless deep red backdrop, the coaster wearing a tiny tailored dark wool jacket, the red backdrop replacing the black named in the style suffix, matte black seamless background, single warm key light from upper left, shallow depth of field, 35 mm film grain, editorial product photography, no text, no logos, no watermark
+
+  09  assets/ed-04.png     3:4
+      Extreme macro of natural cork grain, warm tones, a few millimetres of cork filling the frame, matte black seamless background, single warm key light from upper left, shallow depth of field, 35 mm film grain, editorial product photography, no text, no logos, no watermark
+
+  10  assets/ed-05.png     3:4
+      A fashion magazine cover photograph, a hand holding a round cork coaster at chest height, empty dark space above for a masthead to be overlaid later, matte black seamless background, single warm key light from upper left, shallow depth of field, 35 mm film grain, editorial product photography, no text, no logos, no watermark
+
+  11  assets/ed-06.png     3:4
+      A hand in a crisp white shirt cuff holding a round cork coaster up to the eye like a monocle, matte black seamless background, single warm key light from upper left, shallow depth of field, 35 mm film grain, editorial product photography, no text, no logos, no watermark
+
+  12  assets/desk.jpg      16:9
+      An eye-level workshop desk, pegboard wall behind it, a paper takeaway coffee cup resting on a round cork coaster, a green self-healing cutting mat, a game controller hanging on the pegboard, warm late-afternoon light, the desk scene replacing the seamless background named in the style suffix, matte black seamless background, single warm key light from upper left, shallow depth of field, 35 mm film grain, editorial product photography, no text, no logos, no watermark
+
+  13  assets/mat.jpg       16:9
+      Top-down view of a green self-healing cutting mat on a wooden desk, a pencil, three paper clips, a snap-off cutter and an eraser arranged around a round cork coaster centred on the mat, warm light, the desk scene replacing the seamless background named in the style suffix, matte black seamless background, single warm key light from upper left, shallow depth of field, 35 mm film grain, editorial product photography, no text, no logos, no watermark
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RONDO-1. It is a coaster.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<script>document.documentElement.classList.add('js');</script>
+<style>
+/* ---------- tokens ---------- */
+:root{
+  --bg:#070707;--fg:#F3EFE7;--muted:#8A857C;--accent:#E8642B;
+  --display:"Inter Tight",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --m:64px;--top:104px;--cb:64px;
+  --s-hero:112px;--s-giant:180px;--s-sec:56px;
+  --hair:rgba(243,239,231,.15);
+}
+@media (max-width:767px){
+  :root{--m:20px;--top:72px;--cb:132px;--s-hero:47.04px;--s-giant:61.2px;--s-sec:33.6px}
+}
+*,*::before,*::after{box-sizing:border-box}
+html{background:var(--bg);color:var(--fg);-webkit-text-size-adjust:100%}
+html.lenis,html.lenis body{height:auto}
+.lenis.lenis-smooth{scroll-behavior:auto!important}
+.lenis.lenis-stopped{overflow:hidden}
+body{margin:0;font:500 18px/1.45 var(--display);background:var(--bg);color:var(--fg);overflow-x:hidden;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+img{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+h1,h2,h3,p,figure,ul,ol,table{margin:0;padding:0}
+ul,ol{list-style:none}
+table{border-collapse:collapse}
+
+/* ---------- type scale: 11 / 13 / 18 / 28 / 56 / 112 / 180 ---------- */
+.label{font:400 11px/1.4 var(--mono);text-transform:uppercase;letter-spacing:.14em}
+.cap{font:500 13px/1.5 var(--display)}
+.mono13{font:400 13px/1.6 var(--mono)}
+.body{font:500 18px/1.45 var(--display);max-width:34ch}
+.sub{font:500 28px/1.2 var(--display)}
+.claim{font:800 var(--s-sec)/.92 var(--display);text-transform:uppercase;letter-spacing:-.03em;max-width:calc(100vw - var(--m))}
+.claim--hero{font-size:var(--s-hero)}
+.claim--giant{font-size:var(--s-giant);text-transform:lowercase}
+.claim--mixed{text-transform:none;font-weight:700}
+.muted{color:var(--muted)}
+.js .split{visibility:hidden}
+.split .w{display:inline-block;position:relative;white-space:pre}
+
+/* ---------- layout primitives ---------- */
+main{position:relative}
+.scene{position:relative;background:var(--bg)}
+.stage{position:relative;width:100%;height:100vh;height:100svh;overflow:hidden;background:var(--bg);z-index:var(--z,1)}
+.stage.is-pinned{z-index:20}
+.stage.is-pinned .mv{will-change:transform}
+.pos-tl{position:absolute;left:var(--m);top:var(--top)}
+.pos-bl{position:absolute;left:var(--m);bottom:var(--cb)}
+.br-stack{position:absolute;right:var(--m);bottom:var(--m);display:flex;flex-direction:column;align-items:flex-end;gap:18px;text-align:right}
+.footnote{font:400 11px/1.5 var(--mono);color:var(--muted);max-width:34ch;text-align:right}
+.footnote--abs{position:absolute;right:var(--m);bottom:var(--m)}
+@media (max-width:767px){.footnote--abs,.br-stack{bottom:56px}}
+.on-photo{padding:6px 8px;background:rgba(7,7,7,.6)}
+
+/* ---------- texture ---------- */
+.grain{position:fixed;top:-50%;left:-50%;width:200%;height:200%;z-index:31;pointer-events:none;opacity:.05;mix-blend-mode:overlay;will-change:transform;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size:256px 256px;animation:grain 8s steps(4) infinite}
+@keyframes grain{0%{transform:translate(0,0)}25%{transform:translate(-2.5%,1.5%)}50%{transform:translate(1.5%,-3%)}75%{transform:translate(-3%,-1.5%)}100%{transform:translate(2%,2.5%)}}
+.vignette{position:fixed;inset:0;z-index:30;pointer-events:none;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 55%,rgba(0,0,0,.55) 100%)}
+
+/* ---------- nav + progress ---------- */
+.progress{position:fixed;top:0;left:0;width:100%;height:1px;background:var(--accent);z-index:41;transform-origin:0 50%;transform:scaleX(0);pointer-events:none}
+.nav{position:fixed;top:0;left:0;right:0;z-index:40;display:flex;justify-content:space-between;align-items:center;padding:26px var(--m);mix-blend-mode:difference;color:#fff}
+.wordmark{font:800 14px/1 var(--display);text-transform:uppercase;letter-spacing:.06em}
+.nav nav{display:flex;gap:28px}
+.nav nav a{font:500 11px/1 var(--display);text-transform:uppercase;letter-spacing:.14em}
+@media (max-width:767px){.nav{padding:22px var(--m)}.nav nav{gap:16px}}
+
+/* ---------- scroll cue ---------- */
+.cue{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);display:flex;align-items:center;gap:12px;white-space:nowrap;transition:opacity .5s;pointer-events:none}
+.cue.is-hidden{opacity:0}
+.cue-ring{width:28px;height:28px;border:1px solid var(--fg);border-radius:50%;display:grid;place-items:center;flex:none}
+.cue-ring svg{width:10px;height:7px;display:block}
+@media (max-width:767px){.cue{bottom:20px}}
+
+/* ---------- selection-frame marquee ---------- */
+.marquee{position:absolute;pointer-events:none}
+.marquee::before{content:"";position:absolute;inset:0;border:1px dashed rgba(243,239,231,.6);z-index:3}
+.marquee .h{position:absolute;width:6px;height:6px;background:var(--fg);opacity:.6;z-index:4}
+.marquee .h.tl{top:-3px;left:-3px}.marquee .h.tr{top:-3px;right:-3px}.marquee .h.bl{bottom:-3px;left:-3px}.marquee .h.br{bottom:-3px;right:-3px}
+
+/* ---------- image container + fallback ---------- */
+.img{position:relative;overflow:hidden;background:#0E0E0E;--ph-x:50%;--ph-y:55%}
+.img::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 40% 30% at var(--ph-x) var(--ph-y),rgba(201,138,75,.18),rgba(201,138,75,0) 100%)}
+.img::after{content:attr(data-src);position:absolute;left:12px;bottom:10px;font:400 10px/1 var(--mono);color:var(--fg);opacity:.4;z-index:1}
+.img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:2}
+.img.is-missing img.base,.img.is-missing img.alt,.img.is-missing .ch{display:none}
+.glitch .alt,.glitch .ch{opacity:0}
+.glitch .base,.glitch .alt{transition:opacity .2s}
+.glitch.show-alt .alt{opacity:1}
+.glitch.show-alt .base{opacity:0}
+.glitch .ch{mix-blend-mode:screen;pointer-events:none;z-index:3}
+.glitch .ch-r{filter:url(#chR)}
+.glitch .ch-b{filter:url(#chB)}
+.glitch.split-a .ch,.glitch.split-b .ch{opacity:1}
+.glitch.split-a .ch-r{transform:translateX(-3px)}
+.glitch.split-a .ch-b{transform:translateX(3px)}
+.glitch.split-b .ch-r{transform:translateX(2px)}
+.glitch.split-b .ch-b{transform:translateX(-2px)}
+
+/* ---------- scene 1: intro ---------- */
+#intro .hero{position:absolute;left:26vw;top:45%;width:60vw;aspect-ratio:4/3;margin-top:-22.5vw}
+#intro .hero .hero-in{position:absolute;inset:0}
+#intro .hero .img{position:absolute;inset:0;--ph-x:52%;--ph-y:50%}
+#intro .hero-cap{position:absolute;right:var(--m);top:0;bottom:0;display:flex;align-items:center;max-width:22ch;text-align:right;pointer-events:none}
+@media (max-width:767px){
+  #intro .hero{width:86vw;left:7vw;top:44%;margin-top:-32.25vw}
+  #intro .hero-cap{top:var(--top);bottom:auto;display:block}
+}
+
+/* ---------- scene 2: powered by AI ---------- */
+#features .aurora{position:absolute;pointer-events:none;filter:blur(80px);border-radius:50%;opacity:.55;will-change:transform;animation:drift 9s ease-in-out infinite alternate}
+#features .aurora.g{left:-12vw;top:18vh;width:26vw;height:50vh;background:radial-gradient(closest-side,#1FB97A,rgba(31,185,122,0))}
+#features .aurora.v{left:-8vw;bottom:-16vh;width:28vw;height:38vh;background:radial-gradient(closest-side,#7C3AED,rgba(124,58,237,0));animation-delay:-3s}
+#features .aurora.r{right:-12vw;top:28vh;width:26vw;height:48vh;background:radial-gradient(closest-side,#E8452B,rgba(232,69,43,0));animation-delay:-6s}
+@keyframes drift{from{transform:translate(0,0)}to{transform:translate(32px,-24px)}}
+#features .s2-head{position:absolute;left:var(--m);right:var(--m);top:30%;text-align:center}
+#features .s2-head .claim{margin:0 auto}
+#features .model{display:block;margin-top:22px;font:400 11px/1 var(--mono);letter-spacing:.2em;color:var(--accent);text-transform:uppercase}
+#features .hand{position:absolute;left:50%;bottom:0;height:40vh;aspect-ratio:3/4;margin-left:-15vh;cursor:pointer;outline-offset:6px}
+#features .hand .img{position:absolute;inset:0;--ph-y:38%}
+#features .hint{position:absolute;left:var(--m);bottom:var(--m);display:flex;align-items:center;gap:10px}
+#features .hint svg{width:14px;height:16px;display:block}
+#features .s2-cap span{display:block}
+@media (max-width:767px){
+  #features .s2-head{top:27%}
+  #features .hand{height:34vh;margin-left:-12.75vh}
+  #features .hint{bottom:auto;top:var(--top)}
+  #features .br-stack{bottom:auto;top:calc(var(--top) + 34px);gap:12px}
+}
+
+/* ---------- scene 3: it's wearable ---------- */
+#wearable .s3-label{transform-origin:0 0;line-height:1;z-index:3}
+#wearable .s3-giant{position:absolute;left:var(--m);right:var(--m);top:calc(var(--top) + 11px + 28px);transform-origin:0 0;max-width:none}
+#wearable .s3-giant .w::before,#wearable .s3-giant .w::after{content:attr(data-w);position:absolute;left:0;top:0;opacity:0;mix-blend-mode:screen;pointer-events:none}
+#wearable .s3-giant .w::before{color:#ff0000}
+#wearable .s3-giant .w::after{color:#0000ff}
+#wearable .s3-giant .w.scan{transform:skewX(6deg)}
+#wearable .s3-giant .w.scan::before{opacity:1;transform:translateX(-2px)}
+#wearable .s3-giant .w.scan::after{opacity:1;transform:translateX(2px)}
+#wearable .s3-band{position:absolute;left:0;width:100%;top:50%;height:23.75vw;margin-top:-11.875vw}
+#wearable .s3-win{width:38vw;height:100%;top:0;left:0}
+#wearable .clip{position:absolute;inset:0;clip-path:inset(0);overflow:hidden}
+#wearable .s3-img{position:absolute;top:0;left:0;width:100vw;height:100%;--ph-x:50%;--ph-y:50%}
+@media (max-width:767px){
+  #wearable .s3-band{height:47.5vw;margin-top:-23.75vw}
+  #wearable .s3-label{top:26%}
+  #wearable .s3-giant{top:calc(26% + 40px)}
+  #wearable .s3-win{width:76vw}
+}
+
+/* ---------- scene 4: editorial ---------- */
+#product .s4-label{white-space:nowrap;font-size:28px;line-height:1}
+#product .s4-label .lab{display:inline-block;font:400 28px/1 var(--mono);text-transform:uppercase;letter-spacing:.14em}
+#product .s4-label .giant{display:inline-block;font:800 28px/.92 var(--display);letter-spacing:-.03em;text-transform:lowercase;margin-left:.3em}
+#product .s4-strip{position:absolute;left:50%;top:50%;margin-top:-17.3333vw;display:flex;gap:24px}
+#product .card{position:relative;width:26vw;aspect-ratio:3/4;flex:none}
+#product .card .img{position:absolute;inset:0}
+#product .card--01 .img{--ph-x:56%;--ph-y:60%}
+#product .card--02 .img{--ph-x:44%;--ph-y:40%}
+#product .card--03 .img{background:#0E0E0E}
+#product .card--04 .img{--ph-x:50%;--ph-y:50%}
+#product .card--05 .img{--ph-x:50%;--ph-y:58%}
+#product .card--06 .img{--ph-x:50%;--ph-y:42%}
+#product .s4-marquee{left:50%;top:50%;width:26vw;aspect-ratio:3/4;margin-left:-13vw;margin-top:-17.3333vw}
+#product .chat{position:absolute;left:0;right:0;bottom:0;z-index:5;display:flex;align-items:center;gap:12px;padding:12px 14px;background:rgba(7,7,7,.82)}
+#product .chat .label{flex:1;color:var(--fg)}
+#product .pill{flex:none;font:400 11px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;background:var(--accent);color:#070707;padding:8px 12px;border-radius:999px}
+#product .cover{position:absolute;inset:0;z-index:4;pointer-events:none}
+#product .cover .mast{position:absolute;top:22px;left:0;right:0;text-align:center;font:400 56px/1 "Didot","Bodoni 72","Bodoni MT","Times New Roman",Times,serif;letter-spacing:.06em}
+#product .cover .lines{position:absolute;right:14px;bottom:14px;text-align:right}
+#product .cover .lines span{display:block}
+@media (max-width:767px){
+  #product .s4-label{white-space:normal}
+  #product .s4-label .giant{margin-left:0;display:block}
+  #product .card,#product .s4-marquee{width:78vw}
+  #product .s4-strip{margin-top:-52vw}
+  #product .s4-marquee{margin-left:-39vw;margin-top:-52vw}
+  #product .chat .label{font-size:11px}
+}
+
+/* ---------- scene 5: the desk ---------- */
+#desk .s5-img{position:absolute;top:-4%;left:-8%;width:108%;height:108%;--ph-x:56%;--ph-y:62%}
+#desk .sweep{position:absolute;top:0;bottom:0;left:0;width:300px;pointer-events:none;background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.1) 50%,rgba(255,255,255,0))}
+#desk .s5-spec span{display:block}
+
+/* ---------- scene 6: engineering ---------- */
+#engineering .eng{position:absolute;left:var(--m);top:var(--top);bottom:var(--m);width:calc(40% - var(--m));display:flex;flex-direction:column;align-items:flex-start;gap:24px}
+#engineering .eng .claim{white-space:nowrap;max-width:none}
+#engineering .spec{width:100%;max-width:34ch;font:400 13px/1.6 var(--mono)}
+#engineering .spec td{padding:9px 0;border-top:1px solid var(--hair)}
+#engineering .spec tr:last-child td{border-bottom:1px solid var(--hair)}
+#engineering .spec td:last-child{text-align:right;color:var(--fg)}
+#engineering .spec td:first-child{color:var(--muted)}
+#engineering .bp{position:absolute;right:var(--m);top:50%;margin-top:-30vh;width:60vh;max-width:calc(58% - var(--m));aspect-ratio:1}
+#engineering .bp svg{display:block;width:100%;height:100%;overflow:visible}
+#engineering .bp .d{fill:none;stroke:rgba(243,239,231,.7);stroke-width:1;vector-effect:non-scaling-stroke;stroke-dasharray:1;stroke-dashoffset:1}
+#engineering .bp .d.faint{stroke:rgba(243,239,231,.3)}
+#engineering .bp .lbl{font:400 11px var(--mono);fill:rgba(243,239,231,.7)}
+#engineering .counter{position:absolute;left:0;bottom:0;display:flex;align-items:baseline;gap:14px;white-space:nowrap}
+#engineering .counter .num{font:400 var(--s-sec)/1 var(--mono);color:var(--accent);font-variant-numeric:tabular-nums;min-width:4ch;text-align:right}
+@media (max-width:1199px){
+  #engineering .eng{width:auto;right:var(--m)}
+  #engineering .bp{top:auto;margin-top:0;bottom:calc(var(--m) + 88px);width:min(46vh,42vw);max-width:none}
+}
+@media (max-width:767px){
+  #engineering .eng{bottom:auto;gap:16px}
+  #engineering .counter{position:static;margin-top:4px}
+  #engineering .bp{width:40vw;bottom:110px}
+  #desk .pos-bl{bottom:196px}
+}
+
+/* ---------- scene 7: the workbench ---------- */
+#workbench .s7-img{position:absolute;top:0;left:-4%;width:108%;height:100%;--ph-x:50%;--ph-y:50%}
+#workbench .panel{position:absolute;left:0;top:0;bottom:0;width:max(36%,560px);padding:var(--top) 40px var(--m) var(--m);background:rgba(7,7,7,.72);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);display:flex;flex-direction:column;justify-content:flex-end;gap:24px}
+#workbench .panel .claim{max-width:none;white-space:nowrap}
+@media (max-width:1023px){#workbench .panel{width:max(52%,560px)}}
+@media (max-width:767px){#workbench .panel{width:100%;top:auto;height:62%;padding:var(--m) var(--m) var(--cb);gap:16px}}
+
+/* ---------- scene 8: buy + footer ---------- */
+#buy{position:relative;z-index:8;padding:25vh var(--m);display:flex;flex-direction:column;align-items:center;text-align:center;gap:24px}
+#buy .claim{max-width:none}
+#buy .price{font:400 var(--s-sec)/1 var(--mono);margin-top:8px}
+#buy .btn{display:inline-block;margin-top:8px;font:700 14px/1 var(--display);text-transform:uppercase;letter-spacing:.1em;background:var(--accent);color:#070707;padding:18px 28px;border-radius:2px}
+#buy .link{font:400 13px/1 var(--mono);color:var(--muted);text-decoration:underline;text-underline-offset:4px}
+#buy .footnotes{margin-top:25vh;width:100%;max-width:56ch;text-align:left;display:flex;flex-direction:column;gap:14px;font:400 11px/1.5 var(--mono);color:var(--muted)}
+#buy .footnotes .label{color:var(--fg);margin-bottom:6px}
+footer{position:relative;z-index:8;display:flex;justify-content:space-between;align-items:center;gap:24px;padding:32px var(--m);border-top:1px solid var(--hair);background:var(--bg)}
+footer .links{display:flex;gap:24px}
+footer .mid{font:400 11px/1 var(--mono);color:var(--muted)}
+@media (max-width:767px){footer{flex-direction:column;align-items:flex-start;gap:18px}}
+
+/* ---------- reduced motion: stack, unpin, show everything ---------- */
+@media (prefers-reduced-motion:reduce){
+  .grain,#features .aurora{animation:none}
+  .scene{height:auto!important}
+  .stage{height:auto;min-height:100svh}
+  .js .split{visibility:visible}
+  .cue{display:none}
+  #engineering .bp .d{stroke-dashoffset:0}
+  #product .s4-marquee{display:none}
+  #product .s4-strip{position:relative;left:auto;top:auto;margin-top:0;flex-wrap:wrap;justify-content:center;padding:calc(var(--top) + 96px) var(--m) calc(var(--m) + 72px)}
+  #product .card{width:min(26vw,320px)}
+  #wearable .s3-band{top:50%!important}
+}
+</style>
+</head>
+<body>
+<div class="progress" aria-hidden="true"></div>
+<header class="nav">
+  <a class="wordmark" href="#intro">RONDO</a>
+  <nav aria-label="Scenes">
+    <a href="#intro">INTRO</a>
+    <a href="#features">FEATURES</a>
+    <a href="#product">PRODUCT</a>
+    <a href="#buy">BUY</a>
+  </nav>
+</header>
+
+<main>
+
+<!-- scene 1 -->
+<section class="scene" id="intro" style="height:150vh;height:150svh">
+  <div class="stage" style="--z:1">
+    <figure class="hero mv">
+      <div class="hero-in mv">
+        <div class="img" data-src="assets/hero.png">
+          <img class="base" src="assets/hero.png" alt="The RONDO-1 cork coaster, tilted twenty degrees and lit from the upper left.">
+        </div>
+      </div>
+    </figure>
+    <h1 class="claim claim--hero pos-bl split mv">ISN’T JUST<br>A COASTER.</h1>
+    <div class="hero-cap mv"><p class="cap in">RONDO isn’t just a coaster. It’s the result of unprecedented AI* breakthroughs.</p></div>
+    <div class="footnote--abs mv"><p class="footnote in">*AI: Actual Illustration. No breakthroughs were harmed.</p></div>
+    <div class="cue" aria-hidden="true"><span class="cue-ring"><svg viewBox="0 0 12 8"><path d="M1 1.5l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1"/></svg></span><span class="label">SCROLL TO CONTINUE</span></div>
+  </div>
+</section>
+
+<!-- scene 2 -->
+<section class="scene" id="features" style="height:200vh;height:200svh">
+  <div class="stage" style="--z:2">
+    <div class="aurora g" aria-hidden="true"></div>
+    <div class="aurora v" aria-hidden="true"></div>
+    <div class="aurora r" aria-hidden="true"></div>
+    <div class="s2-head mv">
+      <h2 class="claim claim--hero claim--mixed split">Powered by AI*</h2>
+      <span class="model in">RONDO-1</span>
+    </div>
+    <div class="hand mv" tabindex="0" role="img" aria-label="A hand holding the RONDO-1 coaster. Hover, tap or focus to consult AI.">
+      <div class="img glitch" data-src="assets/hand.png">
+        <img class="base" src="assets/hand.png" alt="A hand holding the RONDO-1 coaster between thumb and fingers, cropped at the wrist. Five fingers.">
+        <img class="alt" src="assets/hand-six.png" alt="The same hand holding the RONDO-1 coaster. Six fingers.">
+        <img class="ch ch-r" alt="" aria-hidden="true"><img class="ch ch-b" alt="" aria-hidden="true">
+      </div>
+    </div>
+    <div class="hint mv"><svg viewBox="0 0 14 16" fill="none" stroke="currentColor" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M3.5 8.5V3.6a1 1 0 0 1 2 0V7.5M5.5 7.5V1.6a1 1 0 0 1 2 0V7.5M7.5 7.5V2.6a1 1 0 0 1 2 0V7.5M9.5 7.5V4.1a1 1 0 0 1 2 0v5.4c0 3.1-2 5.5-4.7 5.5-2.2 0-3.6-1.4-4.3-3.2L1.3 9.5a1 1 0 0 1 1.7-1l.5 1"/></svg><span class="label in">TRY TO HOVER THE HAND</span></div>
+    <div class="br-stack mv">
+      <p class="label s2-cap in"><span>AI FILLS IN THE GAPS.</span><span>WE SAID HIGH FIVE.</span><span class="l3">IT HEARD SIX.</span></p>
+      <p class="footnote in">*Artificial Intelligence, consulted briefly and thanked.</p>
+    </div>
+    <div class="cue" aria-hidden="true"><span class="cue-ring"><svg viewBox="0 0 12 8"><path d="M1 1.5l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1"/></svg></span><span class="label">SCROLL TO CONTINUE</span></div>
+  </div>
+</section>
+
+<!-- scene 3 -->
+<section class="scene" id="wearable" style="height:250vh;height:250svh">
+  <div class="stage" style="--z:3">
+    <p class="label pos-tl s3-label mv in">SO PORTABLE,</p>
+    <h2 class="claim claim--giant s3-giant split mv">it’s wearable</h2>
+    <div class="s3-band mv">
+      <div class="marquee s3-win mv">
+        <div class="clip"><div class="img s3-img mv" data-src="assets/jacket.png"><img class="base" src="assets/jacket.png" alt="The RONDO-1 coaster worn as a lapel pin on a dark wool jacket." loading="lazy"></div></div>
+        <i class="h tl"></i><i class="h tr"></i><i class="h bl"></i><i class="h br"></i>
+      </div>
+    </div>
+    <div class="cue" aria-hidden="true"><span class="cue-ring"><svg viewBox="0 0 12 8"><path d="M1 1.5l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1"/></svg></span><span class="label">SCROLL TO CONTINUE</span></div>
+  </div>
+</section>
+
+<!-- scene 4 -->
+<section class="scene" id="product" style="height:300vh;height:300svh">
+  <div class="stage" style="--z:4">
+    <h2 class="s4-label pos-tl mv"><span class="lab">SO PORTABLE,</span><span class="giant">it’s wearable</span></h2>
+    <div class="s4-strip mv">
+      <figure class="card card--01"><div class="img" data-src="assets/ed-01.png"><img class="base" src="assets/ed-01.png" alt="A person stretching in dark activewear, the RONDO-1 coaster resting on the hip." loading="lazy"></div></figure>
+      <figure class="card card--02"><div class="img" data-src="assets/ed-02.png"><img class="base" src="assets/ed-02.png" alt="A person from behind in an orange cap, the RONDO-1 coaster pinned to a wool shoulder." loading="lazy"></div></figure>
+      <figure class="card card--03">
+        <div class="img glitch" data-src="assets/ed-03.png">
+          <img class="base" src="assets/ed-03.png" alt="The RONDO-1 coaster centred on a seamless red backdrop." loading="lazy">
+          <img class="alt" src="assets/ed-03b.png" alt="The RONDO-1 coaster wearing a tiny wool jacket, on the same red backdrop." loading="lazy">
+          <img class="ch ch-r" alt="" aria-hidden="true"><img class="ch ch-b" alt="" aria-hidden="true">
+        </div>
+        <div class="chat"><span class="label">HEY @RONDO, CAN YOU PUT ON A JACKET?</span><button class="pill" type="button">SURE</button></div>
+      </figure>
+      <figure class="card card--04"><div class="img" data-src="assets/ed-04.png"><img class="base" src="assets/ed-04.png" alt="Extreme macro of warm cork grain." loading="lazy"></div></figure>
+      <figure class="card card--05">
+        <div class="img" data-src="assets/ed-05.png"><img class="base" src="assets/ed-05.png" alt="A magazine cover, masthead RISE, a hand holding the RONDO-1 coaster." loading="lazy"></div>
+        <div class="cover" aria-hidden="true"><span class="mast">RISE</span><span class="lines label"><span>PORTUGUESE CORK</span><span>98 MM. 6 MM. 11 G.</span><span>RONDO-1</span></span></div>
+      </figure>
+      <figure class="card card--06"><div class="img" data-src="assets/ed-06.png"><img class="base" src="assets/ed-06.png" alt="A hand in a white cuff holding the RONDO-1 coaster like a monocle." loading="lazy"></div></figure>
+    </div>
+    <div class="marquee s4-marquee" aria-hidden="true"><i class="h tl"></i><i class="h tr"></i><i class="h bl"></i><i class="h br"></i></div>
+    <div class="footnote--abs mv"><p class="footnote in">*Models were not paid. They are illustrations.</p></div>
+    <div class="cue" aria-hidden="true"><span class="cue-ring"><svg viewBox="0 0 12 8"><path d="M1 1.5l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1"/></svg></span><span class="label">SCROLL TO CONTINUE</span></div>
+  </div>
+</section>
+
+<!-- scene 5 -->
+<section class="scene" id="desk" style="height:200vh;height:200svh">
+  <div class="stage" style="--z:5">
+    <div class="img s5-img mv" data-src="assets/desk.jpg"><img class="base" src="assets/desk.jpg" alt="A workshop desk at eye level: pegboard wall, a takeaway cup resting on the RONDO-1 coaster, a green cutting mat, a game controller hung on the wall, afternoon light." loading="lazy"></div>
+    <div class="sweep mv" aria-hidden="true"></div>
+    <h2 class="claim pos-bl split mv">ELEVATE YOUR<br>COFFEE EXPERIENCE.</h2>
+    <div class="br-stack mv">
+      <p class="mono13 s5-spec in on-photo"><span>Δh ≈ 6 mm*</span><span>Constant lift via geometry.</span></p>
+      <p class="footnote in on-photo">*Elevation measured from table surface. Results vary by table.</p>
+    </div>
+  </div>
+</section>
+
+<!-- scene 6 -->
+<section class="scene" id="engineering" style="height:250vh;height:250svh">
+  <div class="stage" style="--z:6">
+    <div class="eng mv">
+      <p class="label in">ENGINEERING</p>
+      <h2 class="claim split">PERFECTLY ROUND,<br>SERIOUSLY.</h2>
+      <p class="body in">Our engineers recalibrated its circumference with disturbing levels of attention to detail.</p>
+      <table class="spec in"><tbody>
+        <tr><td>Diameter</td><td>98 mm</td></tr>
+        <tr><td>Thickness</td><td>6 mm</td></tr>
+        <tr><td>Material</td><td>Portuguese cork</td></tr>
+        <tr><td>Weight</td><td>11 g</td></tr>
+      </tbody></table>
+      <p class="counter in"><span class="label">NOW</span><span class="num">37.9</span><span class="label">MORE CIRCULAR*</span></p>
+    </div>
+    <div class="bp mv" aria-hidden="true">
+      <svg viewBox="0 0 600 620" xmlns="http://www.w3.org/2000/svg">
+        <circle class="d" data-o="1" cx="300" cy="280" r="220" pathLength="1"/>
+        <circle class="d" data-o="2" cx="300" cy="280" r="193.6" pathLength="1"/>
+        <line class="d" data-o="3" x1="520.0" y1="280.0" x2="532.0" y2="280.0" pathLength="1"/>
+        <line class="d" data-o="3" x1="503.3" y1="364.2" x2="514.3" y2="368.8" pathLength="1"/>
+        <line class="d" data-o="3" x1="455.6" y1="435.6" x2="464.0" y2="444.0" pathLength="1"/>
+        <line class="d" data-o="3" x1="384.2" y1="483.3" x2="388.8" y2="494.3" pathLength="1"/>
+        <line class="d" data-o="3" x1="300.0" y1="500.0" x2="300.0" y2="512.0" pathLength="1"/>
+        <line class="d" data-o="3" x1="215.8" y1="483.3" x2="211.2" y2="494.3" pathLength="1"/>
+        <line class="d" data-o="3" x1="144.4" y1="435.6" x2="136.0" y2="444.0" pathLength="1"/>
+        <line class="d" data-o="3" x1="96.7" y1="364.2" x2="85.7" y2="368.8" pathLength="1"/>
+        <line class="d" data-o="3" x1="80.0" y1="280.0" x2="68.0" y2="280.0" pathLength="1"/>
+        <line class="d" data-o="3" x1="96.7" y1="195.8" x2="85.7" y2="191.2" pathLength="1"/>
+        <line class="d" data-o="3" x1="144.4" y1="124.4" x2="136.0" y2="116.0" pathLength="1"/>
+        <line class="d" data-o="3" x1="215.8" y1="76.7" x2="211.2" y2="65.7" pathLength="1"/>
+        <line class="d" data-o="3" x1="300.0" y1="60.0" x2="300.0" y2="48.0" pathLength="1"/>
+        <line class="d" data-o="3" x1="384.2" y1="76.7" x2="388.8" y2="65.7" pathLength="1"/>
+        <line class="d" data-o="3" x1="455.6" y1="124.4" x2="464.0" y2="116.0" pathLength="1"/>
+        <line class="d" data-o="3" x1="503.3" y1="195.8" x2="514.3" y2="191.2" pathLength="1"/>
+        <path class="d faint" data-o="4" d="M284 280h32M300 264v32" pathLength="1"/>
+        <path class="d faint" data-o="5" d="M80 276V44M520 276V44" pathLength="1"/>
+        <path class="d" data-o="5" d="M80 52H520" pathLength="1"/>
+        <path class="d" data-o="5" d="M92 48l-12 4 12 4M508 48l12 4-12 4" pathLength="1"/>
+        <path class="d faint" data-o="6" d="M310 60H560M310 500H560" pathLength="1"/>
+        <path class="d" data-o="6" d="M552 60V500" pathLength="1"/>
+        <path class="d" data-o="6" d="M548 72l4-12 4 12M548 488l4 12 4-12" pathLength="1"/>
+        <path class="d" data-o="7" d="M80 552H520V579H80Z" pathLength="1"/>
+        <path class="d faint" data-o="7" d="M30 579H80M520 579H570" pathLength="1"/>
+        <path class="d faint" data-o="8" d="M526 552H560" pathLength="1"/>
+        <path class="d" data-o="8" d="M552 552V579" pathLength="1"/>
+        <path class="d" data-o="8" d="M548 561l4-9 4 9M548 570l4 9 4-9" pathLength="1"/>
+        <path class="d faint" data-o="9" d="M40 552H74" pathLength="1"/>
+        <path class="d" data-o="9" d="M48 552V579" pathLength="1"/>
+        <path class="d" data-o="9" d="M44 561l4-9 4 9M44 570l4 9 4-9" pathLength="1"/>
+        <text class="lbl" x="300" y="40" text-anchor="middle">Ø 98 mm</text>
+        <text class="lbl" transform="translate(574 280) rotate(-90)" text-anchor="middle">98 mm</text>
+        <text class="lbl" x="568" y="570">6 mm</text>
+        <text class="lbl" x="34" y="570" text-anchor="end">Δh 6 mm</text>
+      </svg>
+    </div>
+    <div class="footnote--abs mv"><p class="footnote in">*Compared with our previous coaster, which was also a circle.</p></div>
+  </div>
+</section>
+
+<!-- scene 7 -->
+<section class="scene" id="workbench" style="height:150vh;height:150svh">
+  <div class="stage" style="--z:7">
+    <div class="img s7-img mv" data-src="assets/mat.jpg"><img class="base" src="assets/mat.jpg" alt="Top-down view of a green cutting mat on a wood desk: a pencil, three paper clips, a snap-off cutter, an eraser and the RONDO-1 coaster in the centre." loading="lazy"></div>
+    <div class="panel mv">
+      <p class="label in">HANDMADE UTILITY</p>
+      <h2 class="claim split">MADE BY HAND.<br>THEN REMADE<br>BY ALGORITHM.*</h2>
+      <p class="body in">100% cork. 0% cloud.</p>
+    </div>
+    <div class="footnote--abs mv"><p class="footnote in on-photo">*The algorithm was mostly a ruler.</p></div>
+  </div>
+</section>
+
+<!-- scene 8 -->
+<section class="scene" id="buy">
+  <h2 class="claim claim--hero split">RONDO.</h2>
+  <p class="sub in">It is a coaster.</p>
+  <p class="price in">€14</p>
+  <a class="btn in" href="#buy">BUY THE COASTER</a>
+  <a class="link in" href="#footnotes">Read the footnotes</a>
+  <div class="footnotes" id="footnotes">
+    <p class="label">FOOTNOTES</p>
+    <ol>
+      <li>*AI: Actual Illustration. No breakthroughs were harmed.</li>
+      <li>*Artificial Intelligence, consulted briefly and thanked.</li>
+      <li>*Models were not paid. They are illustrations.</li>
+      <li>*Elevation measured from table surface. Results vary by table.</li>
+      <li>*Compared with our previous coaster, which was also a circle.</li>
+      <li>*The algorithm was mostly a ruler.</li>
+    </ol>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <a class="wordmark" href="#intro">RONDO</a>
+  <p class="mid">Illustrations generated. Coaster real.</p>
+  <nav class="links" aria-label="Footer"><a class="label" href="#footnotes">FOOTNOTES</a><a class="label" href="#engineering">SPECIFICATIONS</a><a class="label" href="#buy">BUY</a></nav>
+</footer>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+  <filter id="chR" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0"/></filter>
+  <filter id="chB" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0"/></filter>
+</defs></svg>
+<div class="vignette" aria-hidden="true"></div>
+<div class="grain" aria-hidden="true"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(function () {
+  'use strict';
+  var $ = function (s, c) { return (c || document).querySelector(s); };
+  var $$ = function (s, c) { return Array.prototype.slice.call((c || document).querySelectorAll(s)); };
+  var vw = function () { return window.innerWidth; };
+  var vh = function () { return window.innerHeight; };
+  var mobile = function () { return vw() < 768; };
+  var RM = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var HAS_GSAP = !!(window.gsap && window.ScrollTrigger);
+  var CAN_HOVER = window.matchMedia('(hover: hover)').matches;
+
+  /* ---------- image fallback: missing files render as intentional panels ---------- */
+  function watchImage(img) {
+    var box = img.closest('.img');
+    var mark = function () {
+      img.dataset.missing = '1';
+      if (img.classList.contains('base') && !box.classList.contains('show-alt')) box.classList.add('is-missing');
+      if (img.classList.contains('alt') && box.classList.contains('show-alt')) box.classList.add('is-missing');
+    };
+    if (img.complete && img.naturalWidth === 0 && img.getAttribute('src')) mark();
+    img.addEventListener('error', mark);
+  }
+  $$('.img img.base, .img img.alt').forEach(watchImage);
+  $$('.img img.ch').forEach(function (c) {
+    c.addEventListener('error', function () { c.style.visibility = 'hidden'; });
+    c.addEventListener('load', function () { c.style.visibility = ''; });
+  });
+
+  /* ---------- split display claims into words ---------- */
+  function split(el) {
+    var words = [];
+    var nodes = Array.prototype.slice.call(el.childNodes);
+    el.textContent = '';
+    nodes.forEach(function (n) {
+      if (n.nodeType === 3) {
+        var parts = n.textContent.split(/(\s+)/);
+        parts.forEach(function (p) {
+          if (!p) return;
+          if (/^\s+$/.test(p)) { el.appendChild(document.createTextNode(' ')); return; }
+          var w = document.createElement('span');
+          w.className = 'w';
+          w.textContent = p;
+          w.setAttribute('data-w', p);
+          el.appendChild(w);
+          words.push(w);
+        });
+      } else if (n.nodeName === 'BR') {
+        el.appendChild(document.createElement('br'));
+      } else {
+        el.appendChild(n);
+      }
+    });
+    return words;
+  }
+  var WORDS = {};
+  $$('.split').forEach(function (el, i) {
+    el.dataset.split = i;
+    WORDS[i] = split(el);
+  });
+  var wordsOf = function (el) { return WORDS[el.dataset.split] || []; };
+
+  /* ---------- RGB-split glitch (200 ms, two frames) ---------- */
+  function glitchSwap(box, toAlt) {
+    var target = box.querySelector(toAlt ? '.alt' : '.base');
+    var src = target.getAttribute('src');
+    $$('.ch', box).forEach(function (c) { if (c.getAttribute('src') !== src) c.setAttribute('src', src); });
+    box.classList.remove('split-b');
+    box.classList.add('split-a');
+    var later = function (ms, fn) { HAS_GSAP ? gsap.delayedCall(ms / 1000, fn) : setTimeout(fn, ms); };
+    later(100, function () {
+      box.classList.remove('split-a');
+      box.classList.add('split-b');
+      box.classList.toggle('show-alt', toAlt);
+      box.setAttribute('data-src', src);
+      box.classList.toggle('is-missing', target.dataset.missing === '1');
+    });
+    later(200, function () { box.classList.remove('split-b'); });
+  }
+
+  /* ---------- scene 2: the hand ---------- */
+  (function () {
+    var hand = $('#features .hand');
+    var box = $('.glitch', hand);
+    var l3 = $('#features .s2-cap .l3');
+    var six = false;
+    var flick = function () {
+      if (!HAS_GSAP) return;
+      gsap.fromTo(l3, { opacity: 1 }, { opacity: 0.1, duration: 0.07, repeat: 3, yoyo: true, ease: 'none', overwrite: true });
+    };
+    var set = function (on) {
+      if (on === six) return;
+      six = on;
+      glitchSwap(box, on);
+      if (on) flick();
+    };
+    if (CAN_HOVER) {
+      hand.addEventListener('pointerenter', function (e) { if (e.pointerType !== 'touch') set(true); });
+      hand.addEventListener('pointerleave', function (e) { if (e.pointerType !== 'touch') set(false); });
+    }
+    var viaKey = false;
+    hand.addEventListener('click', function () { if (!CAN_HOVER) set(!six); });
+    hand.addEventListener('focus', function () { if (hand.matches(':focus-visible')) { viaKey = true; set(true); } });
+    hand.addEventListener('blur', function () { if (viaKey) { viaKey = false; set(false); } });
+    hand.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); set(!six); } });
+  })();
+
+  /* ---------- scene 4: the chat bar ---------- */
+  (function () {
+    var btn = $('#product .pill');
+    var box = $('#product .card--03 .glitch');
+    btn.addEventListener('click', function () {
+      if (box.classList.contains('show-alt')) return;
+      glitchSwap(box, true);
+      btn.setAttribute('aria-pressed', 'true');
+    });
+  })();
+
+  /* ---------- anchors ---------- */
+  var lenis = null;
+  $$('a[href^="#"]').forEach(function (a) {
+    a.addEventListener('click', function (e) {
+      var id = a.getAttribute('href');
+      var t = id.length > 1 && $(id);
+      if (!t) return;
+      e.preventDefault();
+      if (lenis) lenis.scrollTo(t, { offset: 0, duration: 1.4, easing: function (x) { return 1 - Math.pow(1 - x, 3); } });
+      else t.scrollIntoView();
+    });
+  });
+
+  /* ---------- reduced motion or no GSAP: everything static ---------- */
+  function staticLayout() {
+    document.documentElement.classList.add('rm');
+    $$('.split').forEach(function (el) { el.style.visibility = 'visible'; });
+    var band = $('#wearable .s3-band'), win = $('#wearable .s3-win'), img = $('#wearable .s3-img');
+    var place = function () {
+      var w = win.offsetWidth, x = (vw() - w) / 2;
+      win.style.transform = 'translateX(' + x + 'px)';
+      img.style.transform = 'translateX(' + (-x) + 'px)';
+    };
+    place();
+    window.addEventListener('resize', place);
+    band.style.top = '';
+    $$('#engineering .bp .d').forEach(function (p) { p.style.strokeDashoffset = 0; });
+  }
+  if (RM || !HAS_GSAP) { staticLayout(); return; }
+
+  /* ---------- motion system ---------- */
+  gsap.registerPlugin(ScrollTrigger);
+  gsap.config({ nullTargetWarn: false });
+  ScrollTrigger.config({ ignoreMobileResize: true });
+  gsap.ticker.lagSmoothing(0);
+  lenis = new Lenis({ lerp: 0.08, smoothWheel: true });
+  lenis.on('scroll', ScrollTrigger.update);
+  gsap.ticker.add(function (t) { lenis.raf(t * 1000); });
+
+  var bar = $('.progress');
+  ScrollTrigger.create({ start: 0, end: 'max', onUpdate: function (s) { gsap.set(bar, { scaleX: s.progress }); } });
+
+  var WORD_IN = { y: 0, opacity: 1, duration: 0.5, stagger: 0.06, ease: 'power3.out' };
+  var BLOCK_IN = { opacity: 1, duration: 0.8, stagger: 0.08, ease: 'power2.out' };
+  function prime(stage, h) {
+    var words = wordsOf(h);
+    gsap.set(words, { y: 24, opacity: 0 });
+    gsap.set(h, { visibility: 'visible' });
+    gsap.set($$('.in', stage), { opacity: 0 });
+    return words;
+  }
+
+  /* one pinned scene = one ScrollTrigger (pin, scrub 0.6) + one time-based entrance */
+  function scene(id, build) {
+    var section = $(id), stage = $('.stage', section), cue = $('.cue', stage);
+    var api = { section: section, stage: stage, onUpdate: null };
+    api.enter = gsap.timeline({ paused: true });
+    /* ScrollTrigger wraps the pinned stage in a positioned spacer and copies its z-index onto it;
+       keep the active scene's spacer on top so the next scene slides in underneath, unseen. */
+    var setZ = function (active) {
+      stage.classList.toggle('is-pinned', !!active);
+      var z = active ? 20 : (stage.style.getPropertyValue('--z') || '1').trim();
+      var sp = stage.parentElement;
+      if (sp && sp.classList.contains('pin-spacer')) sp.style.zIndex = z;
+    };
+    api.scroll = gsap.timeline({
+      defaults: { ease: 'none' },
+      scrollTrigger: {
+        trigger: section, start: 'top top', end: 'bottom top',
+        pin: stage, pinSpacing: false, scrub: 0.6, invalidateOnRefresh: true,
+        onToggle: function (self) { setZ(self.isActive); },
+        onRefresh: function (self) { setZ(self.isActive); },
+        onEnter: function () { if (!api.enter.isActive() && api.enter.progress() < 1) api.enter.play(0); },
+        onEnterBack: function () { api.enter.progress(1); },
+        onLeaveBack: function () { api.enter.pause(0); },
+        onUpdate: function (self) {
+          if (cue) cue.classList.toggle('is-hidden', self.progress > 0.05);
+          if (api.onUpdate) api.onUpdate(self);
+        }
+      }
+    });
+    build(api);
+    api.scroll.set({}, {}, 1);
+    return api;
+  }
+
+  /* ---------- scene 1: intro ---------- */
+  scene('#intro', function (s) {
+    var hero = $('.hero', s.stage), heroIn = $('.hero-in', s.stage), h1 = $('h1', s.stage);
+    var cap = $('.hero-cap', s.stage), fn = $('.footnote--abs', s.stage);
+    var words = prime(s.stage, h1);
+    gsap.set(hero, { opacity: 0, scale: 1.04 });
+    s.enter.to(hero, { opacity: 1, scale: 1, duration: 1.6, ease: 'power2.out' }, 0)
+      .to(words, WORD_IN, 0.4)
+      .to($$('.in', s.stage), BLOCK_IN, 1.0);
+    s.scroll.to(heroIn, { rotation: -6, scale: 0.85, duration: 0.7 }, 0)
+      .to(heroIn, { opacity: 0, duration: 0.25 }, 0.6)
+      .to(h1, { y: -60, opacity: 0, duration: 0.4 }, 0.15)
+      .to([cap, fn], { opacity: 0, duration: 0.25 }, 0.55);
+    s.enter.play();
+  });
+
+  /* ---------- scene 2: powered by AI ---------- */
+  scene('#features', function (s) {
+    var head = $('.s2-head', s.stage), h2 = $('h2', s.stage), hand = $('.hand', s.stage);
+    var hint = $('.hint', s.stage), br = $('.br-stack', s.stage);
+    var words = prime(s.stage, h2);
+    gsap.set(hand, { yPercent: 100 });
+    s.enter.to(words, WORD_IN, 0).to($$('.in', s.stage), BLOCK_IN, 0.5);
+    s.scroll.to(hand, { yPercent: 0, duration: 0.3, ease: 'power2.out' }, 0)
+      .to(hand, { scale: 0.85, opacity: 0, duration: 0.14, ease: 'power2.in' }, 0.84)
+      .to([head, hint, br], { opacity: 0, duration: 0.12 }, 0.86);
+  });
+
+  /* ---------- scene 3: it's wearable ---------- */
+  var S3 = { ok: false };
+  scene('#wearable', function (s) {
+    var label = $('.s3-label', s.stage), h2 = $('.s3-giant', s.stage);
+    var band = $('.s3-band', s.stage), win = $('.s3-win', s.stage), img = $('.s3-img', s.stage);
+    var target = $('#product .s4-label'), tLab = $('.lab', target), tGiant = $('.giant', target);
+    var words = prime(s.stage, h2);
+    gsap.set(label, { opacity: 0 });
+    s.enter.to(label, { opacity: 1, duration: 0.6, ease: 'power2.out' }, 0).to(words, WORD_IN, 0.1);
+
+    var winW = function () { return win.offsetWidth; };
+    var M = { lab: { x: 0, y: 0, k: 1 }, giant: { x: 0, y: 0, k: 1 } };
+    var measure = function () {
+      band.style.top = (h2.offsetTop + h2.offsetHeight / 2) + 'px';
+      var fs = parseFloat(getComputedStyle(h2).fontSize);
+      var single = h2.offsetHeight < fs * 1.4 && Math.abs(tLab.offsetTop - tGiant.offsetTop) < 14 && (tLab.offsetLeft + tLab.offsetWidth) < tGiant.offsetLeft;
+      S3.ok = single;
+      if (!single) { M.lab = { x: 0, y: 0, k: 1 }; M.giant = { x: 0, y: 0, k: 1 }; return; }
+      M.lab = { x: target.offsetLeft + tLab.offsetLeft - label.offsetLeft, y: target.offsetTop + tLab.offsetTop - label.offsetTop, k: 28 / 11 };
+      M.giant = { x: target.offsetLeft + tGiant.offsetLeft - h2.offsetLeft, y: target.offsetTop + tGiant.offsetTop - h2.offsetTop, k: 28 / fs };
+    };
+    ScrollTrigger.addEventListener('refreshInit', measure);
+    measure();
+
+    s.scroll.fromTo(win, { x: function () { return -winW(); } }, { x: function () { return vw(); }, duration: 0.8 }, 0.05)
+      .fromTo(img, { x: function () { return winW(); } }, { x: function () { return -vw(); }, duration: 0.8 }, 0.05)
+      .to(band, { opacity: 0, duration: 0.03 }, 0.85)
+      .to(label, { x: function () { return M.lab.x; }, y: function () { return M.lab.y; }, scale: function () { return M.lab.k; }, transformOrigin: '0 0', duration: 0.12, ease: 'power2.inOut' }, 0.86)
+      .to(h2, { x: function () { return M.giant.x; }, y: function () { return M.giant.y; }, scale: function () { return M.giant.k; }, transformOrigin: '0 0', duration: 0.12, ease: 'power2.inOut' }, 0.86)
+      .to([label, h2], { opacity: function () { return S3.ok ? 1 : 0; }, duration: 0.1 }, 0.88);
+
+    /* scan each word as the frame passes it */
+    var fired = words.map(function () { return false; });
+    var scan = function (w) {
+      w.classList.add('scan');
+      gsap.delayedCall(0.12, function () { w.classList.remove('scan'); });
+    };
+    s.onUpdate = function (self) {
+      if (self.progress > 0.85) return;
+      var wx = gsap.getProperty(win, 'x'), lead = wx + winW();
+      words.forEach(function (w, i) {
+        var cx = h2.offsetLeft + w.offsetLeft + w.offsetWidth / 2;
+        var inside = wx < cx && lead > cx;
+        if (inside && !fired[i]) { fired[i] = true; scan(w); }
+        else if (!inside && fired[i]) fired[i] = false;
+      });
+    };
+  });
+
+  /* ---------- scene 4: editorial ---------- */
+  scene('#product', function (s) {
+    var strip = $('.s4-strip', s.stage), cards = $$('.card', s.stage), label = $('.s4-label', s.stage);
+    var fn = $('.footnote--abs', s.stage), mq = $('.s4-marquee', s.stage);
+    gsap.set($$('.in', s.stage), { opacity: 0 });
+    s.enter.call(function () { gsap.set(label, { opacity: S3.ok ? 1 : 0 }); })
+      .to(label, { opacity: 1, duration: 0.6, ease: 'power2.out' }, 0.05)
+      .to($$('.in', s.stage), BLOCK_IN, 0.3);
+    var cw = function () { return cards[0].offsetWidth; };
+    s.scroll.fromTo(strip, { x: function () { return -cw() / 2; } }, { x: function () { return -(cw() / 2 + 5 * (cw() + 24)); }, duration: 0.9 }, 0.05)
+      .to([strip, mq, label, fn], { opacity: 0, duration: 0.08 }, 0.92);
+  });
+
+  /* ---------- scene 5: the desk ---------- */
+  scene('#desk', function (s) {
+    var img = $('.s5-img', s.stage), photo = $('img', img), sweep = $('.sweep', s.stage);
+    var h2 = $('h2', s.stage), br = $('.br-stack', s.stage);
+    var words = prime(s.stage, h2);
+    gsap.set(photo, { opacity: 0 });
+    s.enter.to(photo, { opacity: 1, duration: 1.2, ease: 'power2.out' }, 0)
+      .to(words, WORD_IN, 0.3)
+      .to($$('.in', s.stage), BLOCK_IN, 0.8);
+    s.scroll.fromTo(img, { scale: 1, xPercent: 0 }, { scale: 1.08, xPercent: 6, duration: 1 }, 0)
+      .fromTo(sweep, { x: -300 }, { x: function () { return vw() + 300; }, duration: 0.4 }, 0.3)
+      .to([h2, br], { opacity: 0, duration: 0.08 }, 0.88)
+      .to(img, { opacity: 0, duration: 0.08 }, 0.91);
+  });
+
+  /* ---------- scene 6: engineering ---------- */
+  scene('#engineering', function (s) {
+    var h2 = $('h2', s.stage), eng = $('.eng', s.stage), bp = $('.bp', s.stage), fn = $('.footnote--abs', s.stage);
+    var num = $('.counter .num', s.stage), lbls = $$('.bp .lbl', s.stage), draw = $$('.bp .d', s.stage);
+    var words = prime(s.stage, h2);
+    var groups = {};
+    draw.forEach(function (p) { (groups[p.dataset.o] = groups[p.dataset.o] || []).push(p); });
+    var order = Object.keys(groups).sort(function (a, b) { return a - b; });
+    gsap.set(draw, { strokeDashoffset: 1 });
+    gsap.set(lbls, { opacity: 0 });
+    s.enter.to(words, WORD_IN, 0).to($$('.in', s.stage), BLOCK_IN, 0.4);
+    var step = 0.6 / order.length;
+    order.forEach(function (k, i) {
+      s.scroll.to(groups[k], { strokeDashoffset: 0, duration: step * 1.5 }, 0.04 + i * step);
+    });
+    s.scroll.to(lbls, { opacity: 1, duration: 0.06, stagger: 0.02 }, 0.66);
+    var c = { v: 0 };
+    num.textContent = '0.0';
+    s.scroll.to(c, { v: 37.9, duration: 0.45, ease: 'power2.out', onUpdate: function () { num.textContent = c.v.toFixed(1); } }, 0.5);
+    s.scroll.to([eng, bp, fn], { opacity: 0, duration: 0.08 }, 0.9);
+  });
+
+  /* ---------- scene 7: the workbench ---------- */
+  scene('#workbench', function (s) {
+    var img = $('.s7-img', s.stage), photo = $('img', img), panel = $('.panel', s.stage);
+    var h2 = $('h2', s.stage), fn = $('.footnote--abs', s.stage);
+    var words = prime(s.stage, h2);
+    gsap.set(photo, { opacity: 0 });
+    gsap.set(panel, { opacity: 0 });
+    s.enter.to(photo, { opacity: 1, duration: 1.2, ease: 'power2.out' }, 0)
+      .to(panel, { opacity: 1, duration: 0.8, ease: 'power2.out' }, 0.3)
+      .to(words, WORD_IN, 0.5)
+      .to($$('.in', s.stage), BLOCK_IN, 0.9);
+    s.scroll.fromTo(img, { xPercent: -2 }, { xPercent: 2, duration: 1 }, 0)
+      .to([panel, fn], { opacity: 0, duration: 0.08 }, 0.88)
+      .to(img, { opacity: 0, duration: 0.08 }, 0.91);
+  });
+
+  /* ---------- scene 8: buy (not pinned) ---------- */
+  (function () {
+    var sec = $('#buy'), h2 = $('h2', sec);
+    var words = prime(sec, h2);
+    var tl = gsap.timeline({ paused: true })
+      .to(words, WORD_IN, 0)
+      .to($$('.in', sec), BLOCK_IN, 0.3);
+    ScrollTrigger.create({
+      trigger: sec, start: 'top top+=1',
+      onEnter: function () { tl.play(0); },
+      onLeaveBack: function () { tl.pause(0); }
+    });
+  })();
+
+  /* ---------- refresh once fonts and images settle ---------- */
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { ScrollTrigger.refresh(); });
+  window.addEventListener('load', function () { ScrollTrigger.refresh(); });
+})();
+</script>
+</body>
+</html>
