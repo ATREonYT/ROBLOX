@@ -1,0 +1,1421 @@
+<!--
+  INPUT ATLAS — premium prompts for websites, visuals and content.
+  One file. GSAP 3.12.5 + ScrollTrigger, Lenis 1.3.26, three Google Fonts families. No build step.
+
+  VISUAL DIRECTION
+  Ground: almost-black with a faint blue-black depth field. Type: oversized ivory Instrument Serif for chapter titles and
+  headlines, IBM Plex Sans for reading, IBM Plex Mono for chapter numbers and annotations. Fine hairlines, viewfinder
+  marks in the corners, one accent per chapter: Build electric blue, Imagine warm amber, Express soft coral, Create pale
+  violet. Every chapter is composed like a film frame with one focal object; layers move at different speeds.
+  All artwork is drawn procedurally in the page (no photographs): website previews are live HTML mini-sites that reflow
+  with their frame, images are generated SVG compositions, clearly labelled as prepared examples.
+
+  STORYBOARD
+  00 ORIGIN   a caret, a typed input, a field of fragments; the headline; fragments gather into four destinations and a
+              route line draws between them; the chapter index appears. Skippable, never blocks the store.
+  01 BUILD    a website preview enters at an angle, flips toward the viewer, descends, lands, is selected and dragged
+              into a larger frame by a decorative pointer; the site inside reflows; the product appears beside it.
+  02 IMAGINE  a spatial stack of images; the nearest passes out of view, the next becomes focal, a frame constructs
+              around it, an example input and output appear; three styles swap through a masked wipe.
+  03 EXPRESS  a rough brief reorganizes word by word into a headline, copy and a finished composition; annotation
+              lines draw to tone, audience and structure.
+  04 CREATE   three product panels rotate into alignment, connect through drawn lines and become the bundle.
+  CLOSING     "Your next idea starts here." and the two actions. The store (browse, product, cart) is a hash-routed
+              overlay that shares the same type, rules and accents.
+
+  MOTION DIRECTION for each major sequence is documented above its code in the script ("MOTION" comments).
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Input Atlas</title>
+<meta name="description" content="Input Atlas. Premium prompt systems for ambitious websites, striking visuals and sharper content.">
+<meta name="theme-color" content="#0A0A0C">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%230A0A0C'/%3E%3Ccircle cx='32' cy='32' r='22' fill='none' stroke='%23F2EEE3' stroke-width='2'/%3E%3Ccircle cx='32' cy='32' r='5' fill='%23F2EEE3'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script>document.documentElement.classList.add('js');if(matchMedia('(prefers-reduced-motion: reduce)').matches)document.documentElement.classList.add('rm');</script>
+<style>
+/* ---------- tokens ---------- */
+:root{
+  --bg:#0A0A0C;--bg2:#111116;--ivory:#F2EEE3;--muted:#8E8A80;--dim:#5C5951;--hair:rgba(242,238,227,.14);--hair2:rgba(242,238,227,.3);
+  --blue:#2F6BFF;--amber:#F2A93B;--coral:#F07C6C;--violet:#B9A7FF;--accent:var(--ivory);
+  --display:"Instrument Serif",Georgia,"Times New Roman",serif;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --m:56px;--top:96px;
+  --s-title:128px;--s-hl:150px;--s-h3:56px;
+  --t-press:120ms;--t-ui:220ms;--e-soft:cubic-bezier(.22,.61,.24,1);
+}
+@media (max-width:767px){:root{--m:20px;--top:80px;--s-title:64px;--s-hl:56px;--s-h3:34px}}
+*,*::before,*::after{box-sizing:border-box}
+html{background:var(--bg);color:var(--ivory);-webkit-text-size-adjust:100%}
+html.lenis,html.lenis body{height:auto}
+.lenis.lenis-smooth{scroll-behavior:auto!important}
+.lenis.lenis-stopped{overflow:hidden}
+body{margin:0;font:400 16px/1.55 var(--sans);background:var(--bg);color:var(--ivory);overflow-x:hidden;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+body.store-open,body.menu-open{overflow:hidden}
+img,svg{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+h1,h2,h3,h4,p,figure,ul,ol{margin:0;padding:0}
+ul,ol{list-style:none}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ---------- type ---------- */
+.mono{font:400 11px/1.5 var(--mono);text-transform:uppercase;letter-spacing:.14em;color:var(--muted)}
+.mono.lg{font-size:13px;letter-spacing:.1em;text-transform:none}
+.title{font:400 var(--s-title)/.92 var(--display);letter-spacing:-.02em;color:var(--ivory);text-wrap:balance}
+.title i,.hl i{font-style:italic;color:var(--accent)}
+.hl{font:400 var(--s-hl)/.94 var(--display);letter-spacing:-.025em;text-wrap:balance}
+.h3{font:400 var(--s-h3)/1.02 var(--display);letter-spacing:-.015em;text-wrap:balance}
+.lede{font:400 18px/1.5 var(--sans);color:var(--ivory);max-width:44ch}
+.small{font:400 13px/1.55 var(--sans);color:var(--muted)}
+.mask{display:block;overflow:hidden;padding:.08em 0 .06em;margin:-.08em 0 -.06em}
+.mask .ml{display:block}
+.rule{height:1px;background:var(--ivory);opacity:.3;transform-origin:0 50%}
+
+/* ---------- buttons ---------- */
+.btn{display:inline-flex;align-items:center;gap:10px;font:500 13px/1 var(--sans);letter-spacing:.02em;padding:15px 22px;border-radius:2px;background:var(--ivory);color:#0A0A0C;transition:transform var(--t-press) var(--e-soft),background var(--t-ui),box-shadow var(--t-ui),color var(--t-ui)}
+.btn:hover{background:#fff;transform:translateY(-1px);box-shadow:0 10px 30px rgba(242,238,227,.12)}
+.btn:active{transform:translateY(0) scale(.97);box-shadow:none}
+.btn.ghost{background:transparent;color:var(--ivory);box-shadow:inset 0 0 0 1px var(--hair2)}
+.btn.ghost:hover{background:rgba(242,238,227,.06);box-shadow:inset 0 0 0 1px var(--ivory)}
+.btn.accent{background:var(--accent);color:#0A0A0C}
+.btn.accent:hover{background:var(--accent);filter:brightness(1.1)}
+.btn.sm{padding:10px 14px;font-size:12px}
+.pill{display:inline-flex;align-items:center;font:500 11px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;padding:9px 13px;border-radius:999px;box-shadow:inset 0 0 0 1px var(--hair2);color:var(--ivory);transition:transform var(--t-press) var(--e-soft),background var(--t-ui),box-shadow var(--t-ui)}
+.pill:hover{background:rgba(242,238,227,.08)}
+.pill:active{transform:scale(.96)}
+.pill.on{background:var(--accent);color:#0A0A0C;box-shadow:none}
+
+/* ---------- viewfinder marks + depth field ---------- */
+.marks{position:fixed;inset:0;z-index:30;pointer-events:none}
+.marks i{position:absolute;width:16px;height:16px;border:1px solid var(--hair2);opacity:.7}
+.marks .a{left:16px;top:calc(16px + env(safe-area-inset-top,0px));border-right:0;border-bottom:0}.marks .b{right:16px;top:calc(16px + env(safe-area-inset-top,0px));border-left:0;border-bottom:0}
+.marks .c{left:16px;bottom:16px;border-right:0;border-top:0}.marks .d{right:16px;bottom:16px;border-left:0;border-top:0}
+.depthfield{position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse 70% 60% at 60% 40%,#121218 0%,var(--bg) 70%)}
+.vignette{position:fixed;inset:0;z-index:29;pointer-events:none;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 58%,rgba(0,0,0,.5) 100%)}
+
+/* ---------- navigation ---------- */
+.nav{position:fixed;top:0;left:0;right:0;z-index:60;display:flex;align-items:center;justify-content:space-between;gap:24px;padding:calc(22px + env(safe-area-inset-top,0px)) var(--m) 22px;color:var(--ivory)}
+.nav::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,10,12,.85),rgba(10,10,12,0));pointer-events:none;z-index:-1}
+.brand{display:flex;align-items:center;gap:10px;font:500 12px/1 var(--mono);letter-spacing:.18em;text-transform:uppercase}
+.brand .mk{width:14px;height:14px;border-radius:50%;border:1px solid var(--ivory);position:relative}
+.brand .mk::after{content:"";position:absolute;left:4px;top:4px;width:4px;height:4px;border-radius:50%;background:var(--ivory)}
+.chapters{display:flex;gap:26px;opacity:0;transition:opacity .6s}
+.chapters.is-on{opacity:1}
+.chapters a{display:flex;align-items:baseline;gap:8px;font:400 11px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding:6px 0;position:relative;transition:color var(--t-ui)}
+.chapters a b{font-weight:400;font-size:9px;opacity:.7}
+.chapters a::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:var(--ivory);transform:scaleX(0);transform-origin:0 50%;transition:transform .35s var(--e-soft)}
+.chapters a.is-active{color:var(--ivory)}
+.chapters a.is-active::after{transform:scaleX(1)}
+.nav-r{display:flex;align-items:center;gap:22px}
+.nav-r a,.nav-r button{font:400 11px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ivory);display:flex;align-items:center;gap:8px}
+.cart-n{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--ivory);color:#0A0A0C;font:500 10px/1 var(--mono)}
+.cart-n.zero{background:transparent;box-shadow:inset 0 0 0 1px var(--hair2);color:var(--muted)}
+.menu-btn .bars{width:18px;height:10px;position:relative}
+.menu-btn .bars::before,.menu-btn .bars::after{content:"";position:absolute;left:0;right:0;height:1px;background:var(--ivory);transition:transform .3s var(--e-soft)}
+.menu-btn .bars::before{top:0}.menu-btn .bars::after{bottom:0}
+body.menu-open .menu-btn .bars::before{transform:translateY(4.5px) rotate(45deg)}
+body.menu-open .menu-btn .bars::after{transform:translateY(-4.5px) rotate(-45deg)}
+@media (max-width:1023px){.chapters{display:none}.nav-r .browse-link{display:none}}
+
+/* ---------- full-screen menu ---------- */
+.menu{position:fixed;inset:0;z-index:55;background:rgba(10,10,12,.96);display:grid;grid-template-columns:1fr 1fr;padding:calc(var(--top) + 8px) var(--m) var(--m);gap:40px;visibility:hidden;opacity:0;transition:opacity .35s,visibility 0s .35s}
+body.menu-open .menu{visibility:visible;opacity:1;transition:opacity .35s}
+.menu-list{display:flex;flex-direction:column;justify-content:center;gap:6px}
+.menu-list a{display:flex;align-items:baseline;gap:18px;font:400 clamp(44px,6.4vw,84px)/1.02 var(--display);letter-spacing:-.02em;color:var(--muted);transition:color var(--t-ui),transform .4s var(--e-soft);transform:translateY(12px);opacity:0}
+body.menu-open .menu-list a{transform:none;opacity:1}
+.menu-list a:hover,.menu-list a:focus-visible,.menu-list a.is-hot{color:var(--ivory);outline:none}
+.menu-list a b{font:400 11px/1 var(--mono);letter-spacing:.14em;color:var(--dim);min-width:2.2em}
+.menu-list .sec{margin-top:26px;display:flex;gap:16px;flex-wrap:wrap}
+.menu-list .sec a{font:400 13px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;transform:none;opacity:1;color:var(--ivory);padding:12px 16px;box-shadow:inset 0 0 0 1px var(--hair2);border-radius:2px}
+.menu-prev{position:relative;display:grid;place-items:center}
+.menu-prev .pv{position:absolute;width:min(34vw,520px);aspect-ratio:4/5;overflow:hidden;opacity:0;transition:opacity .45s var(--e-soft),transform .6s var(--e-soft);transform:scale(.96)}
+.menu-prev .pv.is-on{opacity:1;transform:none}
+.menu-prev .pv img{width:100%;height:100%;object-fit:cover}
+.menu-prev .pv .cap{position:absolute;left:14px;bottom:12px}
+.menu-foot{position:absolute;left:var(--m);bottom:var(--m);display:flex;gap:26px;align-items:center}
+.sound{display:flex;align-items:center;gap:10px}
+.sound .sw{width:30px;height:16px;border-radius:999px;box-shadow:inset 0 0 0 1px var(--hair2);position:relative;transition:background var(--t-ui)}
+.sound .sw::after{content:"";position:absolute;left:3px;top:3px;width:10px;height:10px;border-radius:50%;background:var(--muted);transition:transform var(--t-ui),background var(--t-ui)}
+.sound[aria-pressed="true"] .sw{background:var(--ivory)}
+.sound[aria-pressed="true"] .sw::after{transform:translateX(14px);background:#0A0A0C}
+@media (max-width:767px){.menu{grid-template-columns:1fr;gap:16px}.menu-prev{display:none}.menu-foot{position:static;margin-top:auto}}
+
+/* ---------- chapters: common frame ---------- */
+main{position:relative;z-index:1}
+.chapter{position:relative}
+.stage{position:relative;height:100vh;height:100svh;overflow:hidden;z-index:var(--z,1)}
+.stage.is-pinned{z-index:20}
+.stage.is-pinned .mv,.is-moving{will-change:transform}
+#build{--accent:var(--blue)}#imagine{--accent:var(--amber)}#express{--accent:var(--coral)}#create{--accent:var(--violet)}
+.ch-label{position:absolute;left:var(--m);top:var(--top);display:flex;gap:14px;align-items:center;white-space:nowrap}
+.ch-label .n{color:var(--accent)}
+.ch-label .rl{width:40px;height:1px;background:var(--hair2)}
+.ch-title{position:absolute;left:var(--m);top:calc(var(--top) + 36px)}
+.layer{position:absolute;inset:0;pointer-events:none}
+.gridfield{position:absolute;inset:-10%;background-image:linear-gradient(var(--hair) 1px,transparent 1px),linear-gradient(90deg,var(--hair) 1px,transparent 1px);background-size:120px 120px;opacity:.35;mask-image:radial-gradient(ellipse 55% 50% at 55% 45%,#000 20%,transparent 75%);-webkit-mask-image:radial-gradient(ellipse 55% 50% at 55% 45%,#000 20%,transparent 75%)}
+.product-side{position:absolute;right:var(--m);top:50%;transform:translateY(-50%);width:min(340px,calc(100vw - 2 * var(--m)));display:flex;flex-direction:column;gap:12px;padding:22px;box-shadow:inset 0 0 0 1px var(--hair2);background:rgba(10,10,12,.82)}
+.product-side .ps-k{display:flex;justify-content:space-between;gap:12px}
+.product-side .ps-t{font:400 30px/1.02 var(--display);letter-spacing:-.01em}
+.product-side .ps-o{font:400 14px/1.5 var(--sans);color:var(--muted)}
+.product-side .ps-list{display:flex;flex-direction:column;gap:6px;font:400 13px/1.45 var(--sans);color:var(--ivory)}
+.product-side .ps-list li{display:flex;gap:10px}
+.product-side .ps-list li::before{content:"";width:6px;height:1px;background:var(--accent);flex:none;margin-top:10px}
+.product-side .ps-vars{display:flex;flex-wrap:wrap;gap:6px}
+.product-side .ps-vars span{font:400 11px/1 var(--mono);padding:6px 8px;box-shadow:inset 0 0 0 1px var(--hair);color:var(--muted)}
+.product-side .ps-ex{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.product-side .ps-ex i{display:block;aspect-ratio:4/3;background:#111;overflow:hidden}
+.product-side .ps-ex img{width:100%;height:100%;object-fit:cover}
+.product-side .ps-a{display:flex;gap:10px;margin-top:6px}
+.cue{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);display:flex;align-items:center;gap:10px;white-space:nowrap;transition:opacity .5s;pointer-events:none}
+.cue.is-hidden{opacity:0}
+.cue i{width:1px;height:28px;background:var(--hair2)}
+
+/* ---------- 00 origin ---------- */
+#origin .field{position:absolute;inset:0;pointer-events:none}
+#origin .frag{position:absolute;font:400 11px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);white-space:nowrap;opacity:0}
+#origin .frag.sh{width:12px;height:12px;border:1px solid var(--hair2)}
+#origin .frag.ln{width:34px;height:1px;background:var(--hair2)}
+#origin .route{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#origin .route path{fill:none;stroke:var(--ivory);stroke-opacity:.5;stroke-width:1;vector-effect:non-scaling-stroke}
+#origin .nodes{position:absolute;inset:0;pointer-events:none}
+#origin .node{position:absolute;display:flex;flex-direction:column;gap:8px;opacity:0;pointer-events:auto}
+#origin .node i{width:8px;height:8px;border-radius:50%;background:var(--c)}
+#origin .node b{font:400 11px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ivory)}
+#origin .node small{font:400 11px/1.4 var(--sans);color:var(--muted)}
+#origin .input{position:absolute;left:var(--m);top:28%;display:flex;align-items:center;gap:10px;font:400 15px/1 var(--mono);color:var(--ivory);white-space:nowrap}
+#origin .input .ps{color:var(--accent)}
+#origin .caret{width:9px;height:19px;background:var(--ivory);animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+#origin .hl{position:absolute;left:var(--m);top:36%;max-width:12ch}
+#origin .lede{position:absolute;left:var(--m);bottom:calc(var(--m) + 86px)}
+#origin .ctas{position:absolute;left:var(--m);bottom:var(--m);display:flex;gap:12px;flex-wrap:wrap}
+#origin .skip{position:absolute;right:var(--m);bottom:var(--m);padding:10px 0;color:var(--muted);font:400 11px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;transition:color var(--t-ui)}
+#origin .skip:hover{color:var(--ivory)}
+
+/* ---------- 01 build ---------- */
+#build .depth{position:absolute;aspect-ratio:16/10;overflow:hidden;box-shadow:inset 0 0 0 1px var(--hair)}
+#build .d1{left:4%;top:60%;width:15%;opacity:.7}
+#build .d2{right:5%;top:12%;width:17%;opacity:.8}
+#build .d3{left:27%;top:13%;width:11%;opacity:.55}
+#build .panel-wrap{position:absolute;left:26%;top:34%;width:var(--b-we);height:calc(var(--b-we) * .625);perspective:1600px;--b-wc:26vw;--b-we:min(44vw,calc(74vw - 420px))}
+#build .pshadow{position:absolute;left:4%;right:4%;top:70%;height:60%;border-radius:50%;background:radial-gradient(ellipse at 50% 50%,rgba(0,0,0,.85),rgba(0,0,0,0) 62%);pointer-events:none;transform-origin:50% 50%}
+#build .panel-3d{position:absolute;left:0;top:0;width:100%;height:100%;transform-style:preserve-3d}
+#build .frame{position:absolute;left:0;top:0;width:var(--b-wc);height:calc(var(--b-wc) * .625)}
+#build .frame .clip{position:absolute;inset:0;overflow:hidden;background:#0d0d10}
+#build .edge{position:absolute;z-index:3;pointer-events:none}
+#build .et{top:0;left:0;right:0;height:1px;transform-origin:0 50%;background:repeating-linear-gradient(90deg,var(--accent) 0 4px,transparent 4px 8px)}
+#build .er{top:0;bottom:0;right:0;width:1px;transform-origin:50% 0;background:repeating-linear-gradient(180deg,var(--accent) 0 4px,transparent 4px 8px)}
+#build .eb{bottom:0;left:0;right:0;height:1px;transform-origin:100% 50%;background:repeating-linear-gradient(90deg,var(--accent) 0 4px,transparent 4px 8px)}
+#build .el{top:0;bottom:0;left:0;width:1px;transform-origin:50% 100%;background:repeating-linear-gradient(180deg,var(--accent) 0 4px,transparent 4px 8px)}
+.h{position:absolute;width:7px;height:7px;background:var(--accent);z-index:4}
+.h.tl{top:-4px;left:-4px}.h.tr{top:-4px;right:-4px}.h.bl{bottom:-4px;left:-4px}.h.br{bottom:-4px;right:-4px}
+#build button.h.br{cursor:nwse-resize;touch-action:none}
+#build button.h.br::before{content:"";position:absolute;inset:-16px}
+#build .ring{position:absolute;left:100%;top:100%;width:40px;height:40px;margin:-20px 0 0 -20px;border-radius:50%;border:1px solid var(--accent);opacity:0;pointer-events:none;z-index:5}
+#build .size{position:absolute;left:100%;top:100%;margin:12px 0 0 12px;white-space:nowrap;font:400 11px/1 var(--mono);letter-spacing:.06em;color:var(--ivory);background:rgba(10,10,12,.85);padding:5px 7px;opacity:0;pointer-events:none}
+#build .pointer{position:absolute;left:0;top:0;z-index:6;pointer-events:none;opacity:0;filter:drop-shadow(0 2px 3px rgba(0,0,0,.7))}
+#build .pointer svg{width:22px;height:26px}
+#build .toggle{position:absolute;left:26%;bottom:var(--m);opacity:0;pointer-events:none;transition:opacity var(--t-ui)}
+#build .toggle.is-on{opacity:1;pointer-events:auto}
+
+/* live website previews: real HTML that reflows with its container */
+.site{container-type:inline-size;position:absolute;inset:0;background:var(--sbg,#0d0d10);color:var(--sfg,#ece8de);font:400 10px/1.4 var(--sans);overflow:hidden;--sa:var(--accent)}
+.site .sn{display:flex;justify-content:space-between;align-items:center;padding:4% 5% 3%;font:500 7px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;opacity:.75}
+.site .sn span+span{opacity:.7}
+.site .sh{padding:2% 5% 4%}
+.site .sh h4{font:400 24px/.98 var(--display);letter-spacing:-.02em;margin:0 0 6px;text-wrap:balance}
+.site .sh p{opacity:.7;max-width:34ch;font-size:9px}
+.site .sb{display:inline-block;margin-top:8px;padding:5px 9px;background:var(--sfg,#ece8de);color:var(--sbg,#0d0d10);font:500 7px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase}
+.site .sg{display:grid;grid-template-columns:1fr 1fr;gap:3%;padding:0 5% 5%}
+.site .sg i{display:block;aspect-ratio:4/3;background:var(--art1)}
+.site .sg i:nth-child(2){background:var(--art2)}
+.site .sg i:nth-child(3){background:var(--art3);display:none}
+.site .sf{display:flex;gap:12px;padding:0 5% 5%;font:400 7px/1.4 var(--mono);letter-spacing:.1em;text-transform:uppercase;opacity:.55}
+@container (min-width:520px){
+  .site .sh{display:grid;grid-template-columns:1.15fr 1fr;gap:4%;align-items:end}
+  .site .sh h4{font-size:44px}
+  .site .sh p{font-size:11px}
+  .site .sg{grid-template-columns:repeat(3,1fr)}
+  .site .sg i:nth-child(3){display:block}
+}
+.site--maren{--sbg:#0f1114;--sfg:#e9e6dd;--art1:linear-gradient(160deg,#2a3340,#0f1114);--art2:linear-gradient(200deg,#2F6BFF 0%,#12182a 70%);--art3:linear-gradient(20deg,#3a4250,#161a20)}
+.site--ferrous{--sbg:#14100c;--sfg:#efe4d2;--art1:linear-gradient(160deg,#7a4a22,#2a170b);--art2:linear-gradient(200deg,#F2A93B,#4a2a0c 75%);--art3:linear-gradient(20deg,#5a3a1c,#1a120a)}
+.site--orbital{--sbg:#0b0c12;--sfg:#e8ecf5;--art1:linear-gradient(160deg,#20306a,#0b0c12);--art2:radial-gradient(circle at 30% 30%,#2F6BFF,#0b0c12 70%);--art3:linear-gradient(20deg,#1c2a55,#0b0c12)}
+.site--journal{--sbg:#efe9dc;--sfg:#141414;--art1:linear-gradient(160deg,#c9b9a2,#8f7c62);--art2:linear-gradient(200deg,#F07C6C,#7a3a30 80%);--art3:linear-gradient(20deg,#b7a68b,#6f5f4a)}
+
+/* ---------- 02 imagine ---------- */
+#imagine .gal{position:absolute;inset:0}
+#imagine .im{position:absolute;overflow:hidden;background:#111}
+#imagine .im img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#imagine .im .alt{clip-path:inset(0 100% 0 0)}
+#imagine .im1{left:-6%;top:26%;width:40%;aspect-ratio:4/5}
+#imagine .im2{left:40%;top:16%;width:26%;aspect-ratio:4/5}
+#imagine .im3{left:76%;top:34%;width:16%;aspect-ratio:4/5;opacity:.85}
+#imagine .im4{left:62%;top:72%;width:12%;aspect-ratio:1;opacity:.7}
+#imagine .framer{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+#imagine .framer path{fill:none;stroke:var(--accent);stroke-width:1;vector-effect:non-scaling-stroke}
+#imagine .framer text{font:400 11px var(--mono);fill:var(--muted);letter-spacing:.1em}
+#imagine .io{position:absolute;left:var(--m);bottom:calc(var(--m) + 96px);max-width:36ch;display:flex;flex-direction:column;gap:12px}
+#imagine .io .q{font:400 15px/1.6 var(--mono);color:var(--ivory)}
+#imagine .io .q b{font-weight:400;color:var(--accent)}
+#imagine .styles{position:absolute;left:var(--m);bottom:var(--m);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#imagine .styles .lbl{margin-right:6px}
+
+/* ---------- 03 express ---------- */
+#express .brief{position:absolute;left:var(--m);top:40%;width:min(48ch,70vw);font:400 15px/1.75 var(--mono);color:var(--muted)}
+#express .brief .w,#express .final .w{display:inline-block;white-space:pre}
+#express .final{position:absolute;left:var(--m);top:31%;width:min(60ch,62vw)}
+#express .fh{font:400 var(--s-h3)/1.02 var(--display);letter-spacing:-.015em;max-width:14ch}
+#express .fp{font:400 16px/1.55 var(--sans);color:var(--ivory);max-width:44ch;margin-top:18px}
+#express .fc{margin-top:26px;width:min(440px,100%);box-shadow:inset 0 0 0 1px var(--hair);padding:14px 16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;font:400 10px/1.4 var(--sans);color:var(--muted)}
+#express .fc .fcn{grid-column:1/-1;display:flex;justify-content:space-between;font:500 8px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;padding-bottom:10px;border-bottom:1px solid var(--hair)}
+#express .fc .fch{grid-column:1/-1;font:400 22px/1 var(--display);color:var(--ivory)}
+#express .fc .fcb{grid-column:1/-1;justify-self:start;font:500 8px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;padding:6px 9px;background:var(--accent);color:#0A0A0C}
+#express .fc .fcc b{display:block;color:var(--ivory);font-weight:500;margin-bottom:2px}
+#express .flyer{position:absolute;left:0;top:0;white-space:nowrap;pointer-events:none;transform-origin:0 0}
+#express .flyer .a{font:400 15px/1 var(--mono);color:var(--muted)}
+#express .flyer .b{position:absolute;left:0;top:0;opacity:0;font:400 var(--s-h3)/1 var(--display);color:var(--ivory)}
+#express .flyer.p .b{font:400 16px/1 var(--sans)}
+#express .anno{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+#express .anno path{fill:none;stroke:var(--accent);stroke-width:1;vector-effect:non-scaling-stroke}
+#express .anno circle{fill:var(--accent)}
+#express .lab{position:absolute;display:flex;flex-direction:column;gap:5px;max-width:24ch;opacity:0}
+#express .lab .k{color:var(--accent)}
+#express .lab .v{font:400 13px/1.5 var(--sans);color:var(--ivory)}
+#express .l1{left:64%;top:26%}#express .l2{left:70%;top:47%}#express .l3{left:62%;top:68%}
+
+/* ---------- 04 create ---------- */
+#create .bundle{position:absolute;left:var(--m);top:36%;width:calc(100% - 2 * var(--m) - 380px);height:46%;perspective:1500px}
+#create .bpanel{position:absolute;top:0;width:27%;aspect-ratio:4/5;box-shadow:inset 0 0 0 1px var(--hair2);background:#0f0f13;overflow:hidden;transform-style:preserve-3d}
+#create .p1{left:0;--accent:var(--blue)}#create .p2{left:36.5%;--accent:var(--amber)}#create .p3{left:73%;--accent:var(--coral)}
+#create .bpanel .bp-art{position:absolute;left:0;right:0;top:0;height:64%;background:#111;overflow:hidden}
+#create .bpanel .bp-art img{width:100%;height:100%;object-fit:cover}
+#create .bpanel .bp-t{position:absolute;left:14px;right:14px;bottom:14px;display:flex;flex-direction:column;gap:6px}
+#create .bpanel .bp-t b{font:400 20px/1.05 var(--display);font-weight:400}
+#create .links{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+#create .links path{fill:none;stroke:var(--violet);stroke-width:1;vector-effect:non-scaling-stroke}
+#create .bundle-info{position:absolute;right:var(--m);top:var(--top);width:340px;display:flex;flex-direction:column;gap:14px;padding:22px;box-shadow:inset 0 0 0 1px var(--hair2);background:rgba(10,10,12,.82)}
+#create .bundle-info h3{font:400 30px/1.02 var(--display)}
+#create .bi-sec{display:grid;gap:5px;padding-top:12px;border-top:1px solid var(--hair)}
+#create .bi-sec p,#create .bi-sec li{font:400 13px/1.45 var(--sans);color:var(--ivory)}
+#create .bi-sec ul{display:flex;flex-wrap:wrap;gap:6px}
+#create .bi-sec ul li{font:400 11px/1 var(--mono);padding:6px 8px;box-shadow:inset 0 0 0 1px var(--hair);color:var(--muted)}
+#create .bi-price{display:flex;justify-content:space-between;align-items:baseline;padding-top:12px;border-top:1px solid var(--hair)}
+#create .bi-price b{font:400 34px/1 var(--display);font-weight:400}
+
+/* ---------- closing + footer ---------- */
+#closing{position:relative;z-index:8;min-height:80vh;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:30px;padding:18vh var(--m);background:var(--bg)}
+#closing .ctas{display:flex;gap:12px;flex-wrap:wrap}
+footer{position:relative;z-index:8;display:flex;justify-content:space-between;align-items:center;gap:24px;padding:30px var(--m);border-top:1px solid var(--hair);background:var(--bg)}
+footer .links{display:flex;gap:22px;flex-wrap:wrap}
+
+/* ---------- the store: browse, product, cart (a hash-routed overlay) ---------- */
+.store{position:fixed;inset:0;z-index:50;background:var(--bg);overflow:auto;overscroll-behavior:contain;visibility:hidden;opacity:0;transition:opacity .3s,visibility 0s .3s}
+body.store-open .store{visibility:visible;opacity:1;transition:opacity .3s}
+.store-in{max-width:1240px;margin:0 auto;padding:calc(var(--top) + 20px) var(--m) 90px}
+.store-head{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;padding-bottom:22px;border-bottom:1px solid var(--hair);margin-bottom:26px;flex-wrap:wrap}
+.store-head .t{font:400 56px/1 var(--display);letter-spacing:-.02em}
+.crumb{display:flex;gap:10px;align-items:center;margin-bottom:18px}
+.crumb a:hover{color:var(--ivory)}
+.tools{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:26px}
+.search{flex:1;min-width:240px;display:flex;align-items:center;gap:10px;padding:12px 14px;box-shadow:inset 0 0 0 1px var(--hair2);border-radius:2px}
+.search input{flex:1;background:none;border:0;outline:none;font:400 14px/1 var(--sans);color:var(--ivory);min-width:0}
+.search input::placeholder{color:var(--dim)}
+.filters{display:flex;gap:8px;flex-wrap:wrap}
+.count{margin-bottom:18px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:22px}
+.pcard{display:flex;flex-direction:column;gap:12px;padding:16px;box-shadow:inset 0 0 0 1px var(--hair);border-radius:2px;transition:box-shadow var(--t-ui),transform .4s var(--e-soft)}
+.pcard:hover{box-shadow:inset 0 0 0 1px var(--hair2);transform:translateY(-2px)}
+.pcard .art{aspect-ratio:4/3;overflow:hidden;background:#111;position:relative}
+.pcard .art img{width:100%;height:100%;object-fit:cover}
+.pcard .art .site{position:absolute;inset:0}
+.pcard .pk{display:flex;justify-content:space-between;gap:10px}
+.pcard .pt{font:400 26px/1.05 var(--display);letter-spacing:-.01em}
+.pcard .po{font:400 13px/1.5 var(--sans);color:var(--muted)}
+.pcard .pr{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:auto;padding-top:8px}
+.pcard .pr b{font:400 22px/1 var(--display);font-weight:400}
+.pcard .pr .acts{display:flex;gap:8px}
+.empty{padding:70px 0;display:flex;flex-direction:column;gap:14px;align-items:flex-start}
+.empty .t{font:400 40px/1.05 var(--display)}
+.detail{display:grid;grid-template-columns:1.25fr .75fr;gap:48px;align-items:start}
+.detail .dl{display:flex;flex-direction:column;gap:26px;min-width:0}
+.detail .hero-art{aspect-ratio:16/10;overflow:hidden;background:#111;position:relative;box-shadow:inset 0 0 0 1px var(--hair)}
+.detail .hero-art img{width:100%;height:100%;object-fit:cover}
+.detail .hero-art .site{position:absolute;inset:0}
+.detail .dt{font:400 64px/1 var(--display);letter-spacing:-.02em}
+.dsec{display:grid;gap:10px;padding-top:20px;border-top:1px solid var(--hair)}
+.dsec p,.dsec li{font:400 15px/1.55 var(--sans);color:var(--ivory)}
+.dsec ol{counter-reset:s;display:grid;gap:8px}
+.dsec ol li{display:flex;gap:12px}
+.dsec ol li::before{counter-increment:s;content:counter(s,decimal-leading-zero);font:400 11px/1.9 var(--mono);color:var(--accent)}
+.dsec ul.tags{display:flex;flex-wrap:wrap;gap:6px}
+.dsec ul.tags li{font:400 12px/1 var(--mono);padding:7px 9px;box-shadow:inset 0 0 0 1px var(--hair);color:var(--muted)}
+.dsec ul.vars li{display:flex;gap:12px;align-items:baseline}
+.dsec ul.vars code{font:400 12px/1 var(--mono);color:var(--accent)}
+.io-ex{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.io-ex div{padding:14px;box-shadow:inset 0 0 0 1px var(--hair);font:400 13px/1.6 var(--mono);color:var(--ivory);min-width:0}
+.io-ex div .mono{margin-bottom:8px}
+.buy{position:sticky;top:calc(var(--top) + 20px);display:flex;flex-direction:column;gap:14px;padding:22px;box-shadow:inset 0 0 0 1px var(--hair2)}
+.buy .price{font:400 44px/1 var(--display)}
+.buy .row{display:flex;gap:10px;flex-wrap:wrap}
+.cartlist{display:flex;flex-direction:column}
+.line{display:grid;grid-template-columns:1fr auto auto;gap:18px;align-items:center;padding:18px 0;border-top:1px solid var(--hair)}
+.line:last-child{border-bottom:1px solid var(--hair)}
+.line .lt{font:400 22px/1.05 var(--display)}
+.qty{display:flex;align-items:center;gap:6px}
+.qty button{width:30px;height:30px;box-shadow:inset 0 0 0 1px var(--hair2);font:400 14px/1 var(--mono);display:grid;place-items:center}
+.qty span{min-width:2ch;text-align:center;font:400 13px/1 var(--mono)}
+.line .lp{font:400 20px/1 var(--display);min-width:5ch;text-align:right}
+.line .rm-btn{color:var(--muted);font:400 11px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase}
+.cart-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:40px;align-items:start}
+.summary{padding:22px;box-shadow:inset 0 0 0 1px var(--hair2);display:flex;flex-direction:column;gap:12px;position:sticky;top:calc(var(--top) + 20px)}
+.summary .tot{display:flex;justify-content:space-between;align-items:baseline;padding-top:12px;border-top:1px solid var(--hair)}
+.summary .tot b{font:400 34px/1 var(--display);font-weight:400}
+.proto{padding:12px 14px;box-shadow:inset 0 0 0 1px rgba(242,169,59,.5);color:var(--amber);font:400 12px/1.5 var(--mono)}
+.field{display:grid;gap:6px}
+.field input{padding:12px 14px;background:none;border:0;box-shadow:inset 0 0 0 1px var(--hair2);border-radius:2px;font:400 14px/1 var(--sans);color:var(--ivory)}
+.toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);opacity:0;z-index:70;padding:12px 16px;background:var(--ivory);color:#0A0A0C;font:500 12px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;transition:transform .3s var(--e-soft),opacity .3s;pointer-events:none}
+.toast.on{transform:translate(-50%,0);opacity:1}
+
+/* ---------- phones: chapters recompose vertically, nothing pins ---------- */
+@media (max-width:767px){
+  .chapter{height:auto!important}
+  .stage{height:auto;min-height:100svh;display:flex;flex-direction:column;gap:20px;padding:var(--top) var(--m) 48px}
+  .ch-label,.ch-title,.product-side,#origin .input,#origin .hl,#origin .lede,#origin .ctas,#imagine .io,#imagine .styles,#express .final,#express .brief,#express .lab,#create .bundle-info,#build .toggle{position:static;transform:none;width:auto;max-width:none}
+  .product-side{width:100%;background:none;padding:18px}
+  #origin .field{height:38vh;position:relative;order:3}
+  #origin .skip{bottom:auto;top:calc(var(--top) - 34px)}
+  #origin .node{position:absolute}
+  #build .depth{display:none}
+  #build .panel-wrap{position:relative;left:auto;top:auto;--b-wc:68vw;--b-we:calc(100vw - 2 * var(--m));width:var(--b-we);height:calc(var(--b-we) * .625 + 34px)}
+  #imagine .gal{position:relative;height:110vw}
+  #imagine .im1{left:-14%;top:0;width:60%}#imagine .im2{left:36%;top:12%;width:52%}#imagine .im3{display:none}#imagine .im4{left:70%;top:80%;width:22%}
+  #express .brief{margin-top:8px}
+  #express .anno{display:none}
+  #express .lab{opacity:1;padding-top:12px;border-top:1px solid var(--hair)}
+  #create .bundle{position:relative;left:auto;top:auto;width:100%;height:auto;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  #create .bpanel{position:relative;left:auto;width:auto}
+  #create .links{display:none}
+  .detail,.cart-grid{grid-template-columns:1fr}
+  .buy,.summary{position:static}
+  .io-ex{grid-template-columns:1fr}
+  .store-head .t{font-size:40px}
+  .detail .dt{font-size:44px}
+  .cue{display:none}
+}
+
+/* ---------- reduced motion, or no animation library: everything at rest ---------- */
+html.rm .chapter{height:auto!important}
+html.rm .stage{height:auto;min-height:100svh}
+html.rm .cue,html.rm #build .pointer,html.rm #build .ring{display:none}
+html.rm #build .frame{width:var(--b-we);height:calc(var(--b-we) * .625);transition:width .35s var(--e-soft),height .35s var(--e-soft)}
+html.rm #build .frame.is-compact{width:var(--b-wc);height:calc(var(--b-wc) * .625)}
+html.rm #build .toggle,html.rm #build .size{opacity:1;pointer-events:auto}
+html.rm #express .brief{display:none}
+html.rm #express .lab,html.rm #origin .node,html.rm .chapters{opacity:1}
+html.rm #origin .frag{opacity:.6}
+html.rm .menu-list a{transform:none;opacity:1}
+
+/* ---------- late refinements ---------- */
+#create .bp-type{display:grid;place-items:center;padding:12px;background:#121014;color:var(--ivory);font:400 22px/1.05 var(--display);text-align:center;text-wrap:balance}
+#express{--fh:44px}
+#express .fh{font-size:var(--fh);max-width:15ch}
+#express .flyer .b{font-size:var(--fh);letter-spacing:-.015em}
+#express .flyer.p .b{font-size:16px;letter-spacing:0}
+#express .lab{max-width:22ch}
+#express .l1{left:48%;top:24%}#express .l2{left:53%;top:46%}#express .l3{left:47%;top:70%}
+@media (min-width:768px) and (max-width:1100px){
+  .product-side{width:min(300px,28vw)}
+  #build .panel-wrap{--b-we:min(40vw,calc(74vw - 380px))}
+  #express .lab{max-width:18ch}
+}
+@media (max-width:767px){
+  #express{--fh:32px}
+  #origin .node:nth-child(1){left:4%!important;top:6%!important}#origin .node:nth-child(2){left:52%!important;top:18%!important}#origin .node:nth-child(3){left:14%!important;top:54%!important}#origin .node:nth-child(4){left:58%!important;top:66%!important}
+  #imagine .framer{display:none}
+  #express .flyer{display:none}
+  #express .final .w{opacity:1!important;transform:none!important}
+}
+</style>
+</head>
+<body>
+<header class="nav">
+  <a class="brand" href="#origin"><span class="mk" aria-hidden="true"></span>Input Atlas</a>
+  <nav class="chapters" aria-label="Chapters">
+    <a href="#origin" data-ch="origin"><b>00</b>Origin</a>
+    <a href="#build" data-ch="build"><b>01</b>Build</a>
+    <a href="#imagine" data-ch="imagine"><b>02</b>Imagine</a>
+    <a href="#express" data-ch="express"><b>03</b>Express</a>
+    <a href="#create" data-ch="create"><b>04</b>Create</a>
+  </nav>
+  <div class="nav-r">
+    <a class="browse-link" href="#/browse">Browse prompts</a>
+    <a class="cart-link" href="#/cart">Cart <span class="cart-n zero" id="cart-n">0</span></a>
+    <button class="menu-btn" type="button" aria-expanded="false" aria-controls="menu"><span class="bars" aria-hidden="true"></span><span>Menu</span></button>
+  </div>
+</header>
+
+<div class="menu" id="menu" aria-hidden="true">
+  <nav class="menu-list" aria-label="Menu">
+    <a href="#origin" data-pv="origin"><b>00</b>Origin</a>
+    <a href="#build" data-pv="build"><b>01</b>Build</a>
+    <a href="#imagine" data-pv="imagine"><b>02</b>Imagine</a>
+    <a href="#express" data-pv="express"><b>03</b>Express</a>
+    <a href="#create" data-pv="create"><b>04</b>Create</a>
+    <div class="sec"><a href="#/browse">Browse prompts</a><a href="#/cart">Cart</a></div>
+  </nav>
+  <div class="menu-prev" aria-hidden="true">
+    <div class="pv" data-pv="origin"><img alt=""><span class="mono cap">00 — The input</span></div>
+    <div class="pv" data-pv="build"><div class="site site--maren"></div><span class="mono cap">01 — Websites</span></div>
+    <div class="pv" data-pv="imagine"><img alt=""><span class="mono cap">02 — Images</span></div>
+    <div class="pv" data-pv="express"><img alt=""><span class="mono cap">03 — Words</span></div>
+    <div class="pv" data-pv="create"><img alt=""><span class="mono cap">04 — Bundles</span></div>
+  </div>
+  <div class="menu-foot">
+    <button class="sound" type="button" aria-pressed="false"><span class="sw" aria-hidden="true"></span><span class="mono" data-sound-label>Sound off</span></button>
+    <span class="mono">Optional. Never required.</span>
+  </div>
+</div>
+
+<main id="journey">
+
+<!-- 00 ORIGIN -->
+<section class="chapter" id="origin" data-n="00" style="height:160vh;height:160svh">
+  <div class="stage" style="--z:1">
+    <div class="layer gridfield"></div>
+    <div class="field">
+      <svg class="route" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path class="rt" pathLength="1" d="M0 0"/></svg>
+      <div class="nodes"><a class="node" href="#build" style="--c:var(--blue);left:58%;top:24%"><i></i><b>01 Build</b><small>Websites</small></a>
+    <a class="node" href="#imagine" style="--c:var(--amber);left:82%;top:38%"><i></i><b>02 Imagine</b><small>Images</small></a>
+    <a class="node" href="#express" style="--c:var(--coral);left:72%;top:64%"><i></i><b>03 Express</b><small>Words</small></a>
+    <a class="node" href="#create" style="--c:var(--violet);left:50%;top:56%"><i></i><b>04 Create</b><small>Bundles</small></a></div>
+    </div>
+    <div class="input" aria-hidden="true"><span class="ps">›</span><span class="typed"></span><span class="caret"></span></div>
+    <h1 class="hl"><span class="mask"><span class="ml">A few words.</span></span><span class="mask"><span class="ml">Entire worlds.</span></span></h1>
+    <p class="lede">Explore prompt systems for ambitious websites, striking visuals, and sharper content.</p>
+    <div class="ctas"><a class="btn" href="#build">Explore collections</a><a class="btn ghost" href="#/browse">Browse all prompts</a></div>
+    <button class="skip" type="button">Skip intro</button>
+    <div class="cue" aria-hidden="true"><i></i><span class="mono">Scroll</span></div>
+  </div>
+</section>
+
+<!-- 01 BUILD -->
+<section class="chapter" id="build" data-n="01" style="height:260vh;height:260svh">
+  <div class="stage" style="--z:2">
+    <div class="layer gridfield l-far"></div>
+    <p class="ch-label mono"><span class="n">01</span><span class="rl"></span><span>Build</span><span class="rl"></span><span>Prompts for exceptional websites</span></p>
+    <h2 class="ch-title title"><span class="mask"><span class="ml">Build</span></span></h2>
+    <div class="depth d1 l-far" data-site="orbital"></div>
+    <div class="depth d2 l-mid" data-site="journal"></div>
+    <div class="depth d3 l-far" data-site="ferrous"></div>
+    <div class="panel-wrap">
+      <div class="pshadow" aria-hidden="true"></div>
+      <div class="panel-3d">
+        <div class="frame" id="b-frame">
+          <div class="clip" data-site="maren"></div>
+          <i class="edge et"></i><i class="edge er"></i><i class="edge eb"></i><i class="edge el"></i>
+          <i class="h tl"></i><i class="h tr"></i><i class="h bl"></i>
+          <button class="h br" type="button" aria-label="Resize the preview. Drag, or use the arrow keys."></button>
+          <span class="ring" aria-hidden="true"></span>
+          <span class="size" aria-hidden="true">0 × 0</span>
+        </div>
+      </div>
+    </div>
+    <div class="pointer" aria-hidden="true"><svg viewBox="0 0 22 26"><path d="M1.5 1.5v18.6l4.9-4.4 3.4 7.9 4.1-1.8-3.5-7.6h6.6z" fill="#F2EEE3" stroke="#0A0A0C" stroke-width="1.4" stroke-linejoin="round"/></svg></div>
+    <aside class="product-side" data-product="cinematic-website-director"></aside>
+    <button class="pill toggle" type="button" aria-pressed="false">Expand</button>
+    <div class="cue" aria-hidden="true"><i></i><span class="mono">Scroll</span></div>
+  </div>
+</section>
+
+<!-- 02 IMAGINE -->
+<section class="chapter" id="imagine" data-n="02" style="height:260vh;height:260svh">
+  <div class="stage" style="--z:3">
+    <div class="layer gridfield"></div>
+    <p class="ch-label mono"><span class="n">02</span><span class="rl"></span><span>Imagine</span><span class="rl"></span><span>Image and art-direction prompts</span></p>
+    <h2 class="ch-title title"><span class="mask"><span class="ml">Imagine</span></span></h2>
+    <div class="gal">
+      <figure class="im im1 mv" data-art="dune:warm"><img alt="Example output: layered dunes in warm film tones"></figure>
+      <figure class="im im2 mv" data-art="vessel:mono"><img class="base" alt="Example output: a ceramic vessel on a plinth, hard side light"><img class="alt" alt="" aria-hidden="true"></figure>
+      <figure class="im im3 mv" data-art="arch:graphic"><img alt="Example output: repeated arches as a flat graphic field"></figure>
+      <figure class="im im4 mv" data-art="silk:warm"><img alt="Example output: folded silk in warm light"></figure>
+    </div>
+    <svg class="framer" aria-hidden="true"><path class="fr" pathLength="1" d="M0 0"/><text class="ft" x="0" y="0"></text></svg>
+    <div class="io mv">
+      <p class="mono">Example input</p>
+      <p class="q">“<span class="qin">a ceramic vessel on a plinth, hard side light, studio</span>” <b class="qsty">— Studio Mono</b></p>
+      <p class="mono">Example output, prepared in advance. Nothing is generated live.</p>
+    </div>
+    <div class="styles mv" role="group" aria-label="Style"><span class="mono lbl">Style</span><button class="pill on" type="button" data-style="mono" aria-pressed="true">Studio Mono</button><button class="pill" type="button" data-style="warm" aria-pressed="false">Warm Film</button><button class="pill" type="button" data-style="graphic" aria-pressed="false">Graphic Field</button></div>
+    <aside class="product-side" data-product="editorial-image-system"></aside>
+  </div>
+</section>
+
+<!-- 03 EXPRESS -->
+<section class="chapter" id="express" data-n="03" style="height:240vh;height:240svh">
+  <div class="stage" style="--z:4">
+    <div class="layer gridfield"></div>
+    <p class="ch-label mono"><span class="n">03</span><span class="rl"></span><span>Express</span><span class="rl"></span><span>Writing, positioning, and content prompts</span></p>
+    <h2 class="ch-title title"><span class="mask"><span class="ml">Express</span></span></h2>
+    <p class="brief mv" data-words>need copy for our studio site. we do brands + websites for founders. confident, not loud. mention 40 launches shipped.</p>
+    <div class="final mv">
+      <h3 class="fh" data-words>Brands for founders who would rather be clear than loud.</h3>
+      <p class="fp" data-words>Identity and websites, built with confidence and no noise. Forty launches shipped. Yours next.</p>
+      <div class="fc" aria-hidden="true"><div class="fcn"><span>Studio Ordinal</span><span>Work · Approach · Contact</span></div><div class="fch">Clear beats loud.</div><div class="fcb">Start a project</div><div class="fcc"><b>Identity</b>Name, mark, system.</div><div class="fcc"><b>Website</b>Designed and shipped.</div><div class="fcc"><b>Launch</b>Copy, assets, week one.</div></div>
+    </div>
+    <svg class="anno" aria-hidden="true"></svg>
+    <div class="lab l1"><span class="mono k">Tone</span><span class="v">Assured and plain. No superlatives, no exclamation marks.</span></div>
+    <div class="lab l2"><span class="mono k">Audience</span><span class="v">Founders choosing a studio, short on time, allergic to hype.</span></div>
+    <div class="lab l3"><span class="mono k">Structure</span><span class="v">Promise, proof, invitation. Three sentences, in that order.</span></div>
+    <aside class="product-side" data-product="brand-voice-architect"></aside>
+  </div>
+</section>
+
+<!-- 04 CREATE -->
+<section class="chapter" id="create" data-n="04" style="height:200vh;height:200svh">
+  <div class="stage" style="--z:5">
+    <div class="layer gridfield"></div>
+    <p class="ch-label mono"><span class="n">04</span><span class="rl"></span><span>Create</span><span class="rl"></span><span>Complete bundles and repeatable workflows</span></p>
+    <h2 class="ch-title title"><span class="mask"><span class="ml">Create</span></span></h2>
+    <div class="bundle">
+      <div class="bpanel p1 mv"><div class="bp-art" data-site="maren"></div><div class="bp-t"><span class="mono">01 Build</span><b>Cinematic Website Director</b></div></div>
+      <div class="bpanel p2 mv"><div class="bp-art"><img data-art="vessel:warm" alt=""></div><div class="bp-t"><span class="mono">02 Imagine</span><b>Editorial Image System</b></div></div>
+      <div class="bpanel p3 mv"><div class="bp-art bp-type"><span>Clear beats loud.</span></div><div class="bp-t"><span class="mono">03 Express</span><b>Brand Voice Architect</b></div></div>
+      <svg class="links" aria-hidden="true"></svg>
+    </div>
+    <aside class="bundle-info" data-product="atlas-complete-bundle"></aside>
+  </div>
+</section>
+
+<section id="closing">
+  <p class="mono">Where to next</p>
+  <h2 class="hl"><span class="mask"><span class="ml">Your next idea</span></span><span class="mask"><span class="ml">starts here.</span></span></h2>
+  <div class="ctas"><a class="btn" href="#build">Explore collections</a><a class="btn ghost" href="#/browse">Browse all prompts</a></div>
+</section>
+
+</main>
+
+<footer>
+  <a class="brand" href="#origin"><span class="mk" aria-hidden="true"></span>Input Atlas</a>
+  <p class="mono">Prompt systems. Examples are prepared, not generated live.</p>
+  <nav class="links" aria-label="Footer"><a class="mono" href="#/browse">Browse prompts</a><a class="mono" href="#/cart">Cart</a><a class="mono" href="#origin">Top</a></nav>
+</footer>
+
+<div class="store" id="store" aria-hidden="true"><div class="store-in" id="store-in"></div></div>
+<div class="marks" aria-hidden="true"><i class="a"></i><i class="b"></i><i class="c"></i><i class="d"></i></div>
+<div class="depthfield" aria-hidden="true"></div>
+<div class="vignette" aria-hidden="true"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(function () {
+  'use strict';
+  var $ = function (s, c) { return (c || document).querySelector(s); };
+  var $$ = function (s, c) { return Array.prototype.slice.call((c || document).querySelectorAll(s)); };
+  var vw = function () { return window.innerWidth; }, vh = function () { return window.innerHeight; };
+  var mobile = function () { return vw() < 768; };
+  var RM = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var HAS_GSAP = !!(window.gsap && window.ScrollTrigger);
+  var STATIC = RM || !HAS_GSAP;
+  var html = document.documentElement;
+  if (STATIC) html.classList.add('rm');
+  var clamp = function (v, a, b) { return Math.max(a, Math.min(b, v)); };
+  var lerp = function (a, b, t) { return a + (b - a) * t; };
+  var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  var money = function (n) { return '€' + n; };
+  var ACC = { blue: 'var(--blue)', amber: 'var(--amber)', coral: 'var(--coral)', violet: 'var(--violet)', ivory: 'var(--ivory)' };
+
+  /* ---------- catalogue (demonstration data; no reviews, earnings or customer counts) ---------- */
+  var BASE = { tools: ['Claude', 'ChatGPT', 'Gemini'], license: 'Personal and client work. The prompts themselves may not be resold.', usage: ['Open a new conversation and paste the system prompt.', 'Replace every bracketed variable with your project.', 'Run the prompts in the order listed and keep the outputs together.'] };
+  var PRODUCTS = [
+    { slug: 'cinematic-website-director', cat: 'Websites', title: 'Cinematic Website Director', price: 49, accent: 'blue', site: 'maren',
+      outcome: 'A complete website concept: structure, copy, art direction and motion notes, ready to build.',
+      audience: 'Designers, founders and small studios who want a site with a point of view.',
+      input: 'a coastal architecture studio, quiet confidence, four projects, one contact page',
+      output: 'A five-page sitemap, a hero headline with two alternates, a 24-shot art direction list, a scroll choreography for the home page and a tone sheet.',
+      contents: ['Director system prompt', 'Page brief prompts: home, work, about, contact', 'Art direction shot list prompt', 'Motion choreography prompt', 'Handoff checklist'],
+      vars: ['[studio_name]', '[sector]', '[tone]', '[pages]', '[palette]'],
+      usage: ['Paste the director prompt into a new conversation.', 'Fill the bracketed variables with your project.', 'Run the page briefs one at a time and keep the outputs together.', 'Hand the shot list to your image tool or photographer.'] },
+    { slug: 'editorial-image-system', cat: 'Visuals', title: 'Editorial Image System', price: 39, accent: 'amber', art: 'vessel:mono',
+      outcome: 'Consistent, art-directed image sets: light, lens, palette and composition rules that hold across a series.',
+      audience: 'Brands and creators who need a recognisable visual language, not one-off images.',
+      input: 'a ceramic vessel on a plinth, hard side light, studio',
+      output: 'A style card (light, lens, palette, negative space), three composition variants and a locked prompt for each.',
+      contents: ['Style card prompt', 'Series prompt with locked parameters', 'Crop and scale variants prompt', 'Negative prompt library', 'Consistency checklist'],
+      vars: ['[subject]', '[light]', '[palette]', '[mood]', '[ratio]'], tools: ['Midjourney', 'DALL·E', 'Stable Diffusion', 'Firefly'],
+      usage: ['Build the style card once.', 'Generate the series with the locked parameters.', 'Use the variants prompt for crops and scales.', 'Review against the checklist before publishing.'], license: 'Personal and client work. Generated outputs are yours.' },
+    { slug: 'brand-voice-architect', cat: 'Content', title: 'Brand Voice Architect', price: 29, accent: 'coral', art: 'type',
+      outcome: 'A voice you can hand to anyone: tone rules, audience notes, structure patterns and rewritten samples.',
+      audience: 'Founders and marketers who write their own copy and want it sharper.',
+      input: 'need copy for our studio site. we do brands + websites for founders. confident, not loud.',
+      output: 'A headline, supporting copy, a page skeleton and an annotated sheet covering tone, audience and structure.',
+      contents: ['Voice discovery prompt', 'Rewrite prompt with annotations', 'Page skeleton prompt', 'Headline ladder prompt', 'Do and do not sheet'],
+      vars: ['[brand]', '[audience]', '[tone]', '[proof]', '[cta]'],
+      usage: ['Run discovery with three paragraphs of your existing writing.', 'Rewrite one page with the annotated prompt.', 'Keep the do and do not sheet beside every new draft.'] },
+    { slug: 'atlas-complete-bundle', cat: 'Bundles', title: 'Atlas Complete Bundle', price: 89, accent: 'violet', art: 'bundle',
+      outcome: 'The three systems plus the workflow that connects them: from a brief to a launched site with images and copy that agree.',
+      audience: 'Studios and solo builders who ship whole projects.',
+      input: 'a two-person coffee roaster launching online in six weeks',
+      output: 'A launch plan, the site concept, the image series and the copy, produced in order from one shared set of variables.',
+      contents: ['Cinematic Website Director', 'Editorial Image System', 'Brand Voice Architect', 'Launch Week Workflow', 'Shared variables sheet'],
+      includes: ['Cinematic Website Director', 'Editorial Image System', 'Brand Voice Architect', 'Launch Week Workflow'],
+      outcomes: ['A site concept whose copy and imagery agree', 'A repeatable process for the next project', 'One variables sheet feeding every prompt'],
+      vars: ['[brand]', '[audience]', '[tone]', '[palette]', '[deadline]'], tools: ['Claude', 'ChatGPT', 'Gemini', 'Midjourney', 'DALL·E', 'Stable Diffusion'],
+      usage: ['Fill the shared variables once.', 'Run the workflow in order: voice, site, images.', 'Ship with the launch week checklist.'], license: 'Personal and client work. Team licence on request.' },
+    { slug: 'landing-page-composer', cat: 'Websites', title: 'Landing Page Composer', price: 19, accent: 'blue', site: 'orbital', outcome: 'One landing page, section by section, with copy and layout notes that fit a single message.', audience: 'Product teams announcing one thing.', input: 'a dashboard for small logistics teams, one feature, one price', output: 'Seven sections with headlines, supporting lines, a layout note per section and a CTA ladder.', contents: ['Composer system prompt', 'Section prompts', 'CTA ladder prompt'], vars: ['[product]', '[audience]', '[price]'] },
+    { slug: 'portfolio-grid-builder', cat: 'Websites', title: 'Portfolio Grid Builder', price: 19, accent: 'blue', site: 'journal', outcome: 'A portfolio structure with case-study templates and a grid rationale.', audience: 'Designers and photographers.', input: 'twelve projects, two of them large, a slow editorial feel', output: 'A grid plan, case-study skeletons and captions for each project.', contents: ['Grid rationale prompt', 'Case study template prompt', 'Caption prompt'], vars: ['[name]', '[projects]', '[feel]'] },
+    { slug: 'product-photography-prompts', cat: 'Visuals', title: 'Product Photography Prompts', price: 24, accent: 'amber', art: 'vessel:warm', outcome: 'Studio-consistent product images across a catalogue.', audience: 'Small brands with many products and one look.', input: 'hand-thrown mugs, warm light, seamless background', output: 'A lighting and background spec and a per-product prompt.', contents: ['Studio spec prompt', 'Per-product prompt', 'Batch checklist'], vars: ['[product]', '[surface]', '[light]'], tools: ['Midjourney', 'DALL·E', 'Stable Diffusion'] },
+    { slug: 'poster-and-type-studies', cat: 'Visuals', title: 'Poster and Type Studies', price: 19, accent: 'amber', art: 'arch:graphic', outcome: 'Graphic poster series built from one motif.', audience: 'Event and culture teams.', input: 'a season of chamber concerts, arches as the motif', output: 'Six poster directions with palette and type rules.', contents: ['Motif prompt', 'Series prompt', 'Palette prompt'], vars: ['[motif]', '[season]', '[palette]'], tools: ['Midjourney', 'DALL·E', 'Firefly'] },
+    { slug: 'newsletter-voice-kit', cat: 'Content', title: 'Newsletter Voice Kit', price: 15, accent: 'coral', art: 'type', outcome: 'A newsletter people finish reading.', audience: 'Writers and founders sending weekly.', input: 'a weekly note on building a small software company', output: 'An issue template, three opening patterns and an editing pass.', contents: ['Issue template prompt', 'Opening patterns prompt', 'Editing pass prompt'], vars: ['[topic]', '[cadence]', '[length]'] },
+    { slug: 'tagline-forge', cat: 'Content', title: 'Tagline Forge', price: 12, accent: 'coral', art: 'type', outcome: 'Twenty lines, three keepers, one recommendation with reasons.', audience: 'Anyone naming a thing.', input: 'a cork coaster, deadpan, premium', output: 'A ladder of lines from literal to strange, with notes on each.', contents: ['Ladder prompt', 'Shortlist prompt'], vars: ['[product]', '[tone]'] },
+    { slug: 'launch-week-workflow', cat: 'Bundles', title: 'Launch Week Workflow', price: 35, accent: 'violet', art: 'silk:warm', outcome: 'Seven days of prompts, from announcement to follow-up, in order.', audience: 'Small teams shipping on a date.', input: 'a paid template library, launching on a Tuesday', output: 'A day-by-day plan with the copy and image prompts for each step.', contents: ['Plan prompt', 'Daily prompts', 'Follow-up prompt'], vars: ['[launch]', '[date]', '[channels]'] },
+    { slug: 'founder-story-frame', cat: 'Content', title: 'Founder Story Frame', price: 15, accent: 'coral', art: 'type', outcome: 'An about page that explains why without the memoir.', audience: 'Founders who dislike writing about themselves.', input: 'two engineers, a tool we built for ourselves', output: 'A four-part story frame and a finished about page.', contents: ['Story frame prompt', 'About page prompt'], vars: ['[founders]', '[origin]', '[promise]'] }
+  ];
+  PRODUCTS.forEach(function (p) { Object.keys(BASE).forEach(function (k) { if (!p[k]) p[k] = BASE[k]; }); });
+  var byslug = function (s) { for (var i = 0; i < PRODUCTS.length; i++) if (PRODUCTS[i].slug === s) return PRODUCTS[i]; return null; };
+
+  /* ---------- procedural artwork: every image on the page is drawn here, labelled as a prepared example ---------- */
+  var ART = (function () {
+    function el(t, a, inner) { var s = '<' + t; for (var k in a) if (a[k] != null) s += ' ' + k + '="' + a[k] + '"'; return s + (inner == null ? '/>' : '>' + inner + '</' + t + '>'); }
+    var STY = {
+      mono: { bg: '#161616', bg2: '#0b0b0b', hi: '#ece9e1', mid: '#8b8985', lo: '#2b2b2b', acc: '#F2EEE3' },
+      warm: { bg: '#1d1409', bg2: '#0e0904', hi: '#f4dcac', mid: '#c98a4b', lo: '#4d2c10', acc: '#F2A93B' },
+      graphic: { bg: '#F07C6C', bg2: '#d9635a', hi: '#F2EEE3', mid: '#B9A7FF', lo: '#0A0A0C', acc: '#0A0A0C' }
+    };
+    var W = 900, H = 1125, cache = {};
+    function defs(s, seed) {
+      return '<defs>' +
+        el('linearGradient', { id: 'bg', x1: 0, y1: 0, x2: 0.3, y2: 1 }, el('stop', { offset: 0, 'stop-color': s.bg }) + el('stop', { offset: 1, 'stop-color': s.bg2 })) +
+        el('linearGradient', { id: 'side', x1: 0, y1: 0, x2: 1, y2: 0.2 }, el('stop', { offset: 0, 'stop-color': s.hi }) + el('stop', { offset: 0.55, 'stop-color': s.mid }) + el('stop', { offset: 1, 'stop-color': s.lo })) +
+        el('radialGradient', { id: 'glow', cx: '30%', cy: '25%', r: '70%' }, el('stop', { offset: 0, 'stop-color': s.hi, 'stop-opacity': 0.28 }) + el('stop', { offset: 1, 'stop-color': s.hi, 'stop-opacity': 0 })) +
+        el('radialGradient', { id: 'vig' }, el('stop', { offset: 0.55, 'stop-color': '#000', 'stop-opacity': 0 }) + el('stop', { offset: 1, 'stop-color': '#000', 'stop-opacity': 0.55 })) +
+        el('filter', { id: 'grain' }, el('feTurbulence', { type: 'fractalNoise', baseFrequency: 0.8, numOctaves: 2, seed: seed }) + el('feColorMatrix', { type: 'matrix', values: '0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 0 0.5  0.9 0 0 0 -0.35' })) +
+        el('filter', { id: 'silk', x: '-10%', y: '-10%', width: '120%', height: '120%' }, el('feTurbulence', { type: 'fractalNoise', baseFrequency: '0.006 0.02', numOctaves: 3, seed: seed, result: 'n' }) + el('feDisplacementMap', { 'in': 'SourceGraphic', in2: 'n', scale: 140, xChannelSelector: 'R', yChannelSelector: 'G' })) +
+        el('filter', { id: 'soft' }, el('feGaussianBlur', { stdDeviation: 22 })) +
+        '</defs>';
+    }
+    var KINDS = {
+      vessel: function (s, g) {
+        return el('rect', { width: W, height: H, fill: 'url(#bg)' }) + el('rect', { width: W, height: H, fill: 'url(#glow)' }) +
+          el('rect', { x: 120, y: 780, width: 660, height: 260, fill: s.lo }) + el('rect', { x: 120, y: 780, width: 660, height: 6, fill: s.mid, opacity: 0.7 }) +
+          el('ellipse', { cx: 470, cy: 790, rx: 210, ry: 26, fill: '#000', opacity: 0.55, filter: 'url(#soft)' }) +
+          el('path', { d: 'M450 300c-40 0-70 30-70 70v40c-70 60-110 150-110 240 0 90 60 140 180 140s180-50 180-140c0-90-40-180-110-240v-40c0-40-30-70-70-70z', fill: 'url(#side)' }) +
+          el('path', { d: 'M380 410c-60 60-100 140-100 220 0 40 10 70 30 95-6-40-6-90 6-140 14-64 40-124 74-170z', fill: s.hi, opacity: g ? 0 : 0.28 }) +
+          el('ellipse', { cx: 450, cy: 302, rx: 62, ry: 14, fill: s.lo }) + el('ellipse', { cx: 450, cy: 298, rx: 62, ry: 12, fill: s.mid, opacity: 0.6 });
+      },
+      dune: function (s, g) {
+        var out = el('rect', { width: W, height: H, fill: 'url(#bg)' }) + el('circle', { cx: 640, cy: 300, r: 150, fill: s.hi, opacity: g ? 1 : 0.18, filter: g ? null : 'url(#soft)' });
+        var tones = [s.hi, s.mid, s.lo, s.bg2, s.lo];
+        for (var i = 0; i < 5; i++) {
+          var y = 520 + i * 120, a = 60 + i * 24, ph = i * 1.9;
+          var d = 'M0 ' + y;
+          for (var x = 0; x <= W; x += 45) d += ' L' + x + ' ' + (y + Math.sin(x / 190 + ph) * a + Math.cos(x / 70 + ph) * 12).toFixed(1);
+          d += ' L' + W + ' ' + H + ' L0 ' + H + 'Z';
+          out += el('path', { d: d, fill: tones[i], opacity: g ? 1 : 0.9 - i * 0.08 });
+        }
+        return out;
+      },
+      arch: function (s, g) {
+        var out = el('rect', { width: W, height: H, fill: g ? s.bg : 'url(#bg)' });
+        for (var r = 0; r < 4; r++) for (var c = 0; c < 3; c++) {
+          var x = 90 + c * 260, y = 120 + r * 250, w = 200, h = 210, t = (r + c) % 3;
+          out += el('path', { d: 'M' + x + ' ' + (y + h) + 'V' + (y + w / 2) + 'a' + (w / 2) + ' ' + (w / 2) + ' 0 0 1 ' + w + ' 0V' + (y + h) + 'Z', fill: t === 0 ? s.hi : t === 1 ? s.mid : s.lo, opacity: g ? 1 : 0.85 });
+        }
+        return out;
+      },
+      silk: function (s) {
+        var out = el('rect', { width: W, height: H, fill: 'url(#bg)' }), g = '';
+        for (var i = 0; i < 16; i++) g += el('rect', { x: -200, y: i * 84 - 100, width: W + 400, height: 42, fill: i % 2 ? s.mid : s.hi, opacity: 0.85 - (i % 3) * 0.2 });
+        return out + el('g', { filter: 'url(#silk)' }, g) + el('rect', { width: W, height: H, fill: 'url(#glow)' });
+      },
+      type: function (s) {
+        return el('rect', { width: W, height: H, fill: '#F07C6C' }) + el('text', { x: 80, y: 700, 'font-family': 'Georgia, Times New Roman, serif', 'font-size': 640, fill: '#0A0A0C' }, 'A') +
+          el('text', { x: 84, y: 880, 'font-family': 'Menlo, Consolas, monospace', 'font-size': 26, fill: '#0A0A0C', 'letter-spacing': 6 }, 'TONE · AUDIENCE · STRUCTURE') + el('rect', { x: 84, y: 910, width: 600, height: 2, fill: '#0A0A0C' });
+      },
+      bundle: function (s) {
+        var out = el('rect', { width: W, height: H, fill: '#0f0f16' });
+        var pts = [[220, 360], [560, 300], [450, 720]];
+        out += el('path', { d: 'M220 360L560 300L450 720Z', fill: 'none', stroke: '#B9A7FF', 'stroke-width': 2 });
+        pts.forEach(function (p, i) { out += el('rect', { x: p[0] - 90, y: p[1] - 110, width: 180, height: 220, fill: ['#2F6BFF', '#F2A93B', '#F07C6C'][i], opacity: 0.9 }); });
+        return out + el('circle', { cx: 450, cy: 720, r: 14, fill: '#B9A7FF' });
+      },
+      origin: function (s) {
+        var out = el('rect', { width: W, height: H, fill: '#0b0b0e' }), r = 7;
+        for (var i = 0; i < 70; i++) { r = (r * 9301 + 49297) % 233280; var x = 60 + (r / 233280) * 780; r = (r * 9301 + 49297) % 233280; var y = 80 + (r / 233280) * 960; out += el('rect', { x: x, y: y, width: 6, height: 6, fill: '#F2EEE3', opacity: 0.35 }); }
+        return out + el('circle', { cx: 450, cy: 560, r: 60, fill: '#F2EEE3' }) + el('circle', { cx: 450, cy: 560, r: 130, fill: 'none', stroke: '#F2EEE3', 'stroke-opacity': 0.4 });
+      }
+    };
+    return {
+      svg: function (kind, style) {
+        var key = kind + ':' + (style || 'mono');
+        if (cache[key]) return cache[key];
+        var s = STY[style] || STY.mono, seed = key.length * 7;
+        var body = '<svg xmlns="http://www.w3.org/2000/svg" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '">' + defs(s, seed) + KINDS[kind](s, style === 'graphic') +
+          el('rect', { width: W, height: H, fill: 'url(#vig)' }) + el('rect', { width: W, height: H, filter: 'url(#grain)', opacity: 0.14 }) + '</svg>';
+        return (cache[key] = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(body));
+      }
+    };
+  })();
+  var artSrc = function (spec) { var p = (spec || 'vessel:mono').split(':'); return ART.svg(p[0], p[1]); };
+
+  /* ---------- live website previews (real HTML, reflow with their container) ---------- */
+  var SITES = {
+    maren: { cls: 'site--maren', html: '<div class="sn"><span>Maren Studio</span><span>Work · Approach · Contact</span></div><div class="sh"><div><h4>Buildings that keep their quiet.</h4><span class="sb">Selected work</span></div><p>An architecture studio on the coast. Four projects, one conversation, no noise.</p></div><div class="sg"><i></i><i></i><i></i></div><div class="sf"><span>Est. 2016</span><span>Lisbon</span><span>Enquiries open</span></div>' },
+    ferrous: { cls: 'site--ferrous', html: '<div class="sn"><span>Ferrous Roasters</span><span>Beans · Subscribe · Visit</span></div><div class="sh"><div><h4>Roasted twice a week. Shipped the same day.</h4><span class="sb">Start a subscription</span></div><p>Two people, one roaster, a small list of farms we visit.</p></div><div class="sg"><i></i><i></i><i></i></div><div class="sf"><span>Porto</span><span>Since 2019</span></div>' },
+    orbital: { cls: 'site--orbital', html: '<div class="sn"><span>Orbital</span><span>Product · Pricing · Docs</span></div><div class="sh"><div><h4>The dashboard your team will actually open.</h4><span class="sb">Try it free</span></div><p>One screen for the numbers that matter this week. Nothing else.</p></div><div class="sg"><i></i><i></i><i></i></div><div class="sf"><span>SOC 2</span><span>Import in a minute</span></div>' },
+    journal: { cls: 'site--journal', html: '<div class="sn"><span>Meridian Journal</span><span>Issues · Index · About</span></div><div class="sh"><div><h4>Notes on making things slowly.</h4><span class="sb">Read issue 12</span></div><p>Essays, interviews and studio visits, published when they are ready.</p></div><div class="sg"><i></i><i></i><i></i></div><div class="sf"><span>Twelve issues</span><span>Print and web</span></div>' }
+  };
+  function mountSite(el, key) { var s = SITES[key] || SITES.maren; el.innerHTML = '<div class="site ' + s.cls + '" aria-hidden="true">' + s.html + '</div>'; }
+  $$('[data-site]').forEach(function (el) { mountSite(el, el.getAttribute('data-site')); });
+  $$('img[data-art]').forEach(function (im) { im.src = artSrc(im.getAttribute('data-art')); });
+  $$('figure[data-art] img.base, figure[data-art] img:not(.alt):not(.base)').forEach(function (im) { im.src = artSrc(im.closest('figure').getAttribute('data-art')); });
+  $$('.menu-prev .pv img').forEach(function (im) { var k = im.parentElement.getAttribute('data-pv'); im.src = ART.svg({ origin: 'origin', imagine: 'dune', express: 'type', create: 'bundle' }[k] || 'vessel', k === 'imagine' ? 'warm' : 'mono'); });
+
+  /* ---------- product renderers shared by the chapters and the store ---------- */
+  function thumb(p, cls) {
+    if (p.site) return '<div class="' + cls + '" data-site-th="' + p.site + '"></div>';
+    return '<div class="' + cls + '"><img src="' + artSrc(p.art) + '" alt="Example output for ' + esc(p.title) + '"></div>';
+  }
+  function sideHTML(p) {
+    var ex = p.site ? ['maren', 'orbital', 'journal'].map(function (k) { return '<i data-site-th="' + k + '"></i>'; }).join('') : ['mono', 'warm', 'graphic'].map(function (st) { return '<i><img src="' + ART.svg((p.art || 'vessel:mono').split(':')[0], st) + '" alt=""></i>'; }).join('');
+    return '<div class="ps-k mono"><span style="color:var(--accent)">Featured · ' + esc(p.cat) + '</span><span>' + money(p.price) + '</span></div>' +
+      '<h3 class="ps-t">' + esc(p.title) + '</h3><p class="ps-o">' + esc(p.outcome) + '</p>' +
+      '<p class="mono">Example results</p><div class="ps-ex">' + ex + '</div>' +
+      '<p class="mono">Included prompts</p><ul class="ps-list">' + p.contents.slice(0, 3).map(function (c) { return '<li>' + esc(c) + '</li>'; }).join('') + (p.contents.length > 3 ? '<li>' + (p.contents.length - 3) + ' more inside</li>' : '') + '</ul>' +
+      '<p class="mono">Customise</p><div class="ps-vars">' + p.vars.map(function (v) { return '<span>' + esc(v) + '</span>'; }).join('') + '</div>' +
+      '<div class="ps-a"><a class="btn sm accent" href="#/product/' + p.slug + '">Product details</a><button class="btn sm ghost" type="button" data-add="' + p.slug + '">Add to cart</button></div>';
+  }
+  function bundleHTML(p) {
+    return '<p class="mono" style="color:var(--accent)">The bundle · ' + money(p.price) + '</p><h3>' + esc(p.title) + '</h3>' +
+      '<div class="bi-sec"><p class="mono">Includes</p><ul style="display:grid;gap:4px">' + p.includes.map(function (c) { return '<li>' + esc(c) + '</li>'; }).join('') + '</ul></div>' +
+      '<div class="bi-sec"><p class="mono">Outcomes</p>' + p.outcomes.map(function (c) { return '<p>' + esc(c) + '</p>'; }).join('') + '</div>' +
+      '<div class="bi-sec"><p class="mono">Who it is for</p><p>' + esc(p.audience) + '</p></div>' +
+      '<div class="bi-sec"><p class="mono">Supported tools</p><ul>' + p.tools.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul></div>' +
+      '<div class="bi-price"><span class="mono">Price</span><b>' + money(p.price) + '</b></div>' +
+      '<div class="ps-a"><a class="btn sm accent" href="#/product/' + p.slug + '">Product details</a><button class="btn sm ghost" type="button" data-add="' + p.slug + '">Add to cart</button></div>';
+  }
+  function mountThumbs(root) { $$('[data-site-th]', root).forEach(function (el) { mountSite(el, el.getAttribute('data-site-th')); }); }
+  $$('.product-side[data-product]').forEach(function (el) { el.innerHTML = sideHTML(byslug(el.getAttribute('data-product'))); mountThumbs(el); });
+  $$('.bundle-info[data-product]').forEach(function (el) { el.innerHTML = bundleHTML(byslug(el.getAttribute('data-product'))); });
+
+  /* ---------- optional sound: a soft synthesized tick, off by default ---------- */
+  var sound = (function () {
+    var on = false, ctx = null, btn = $('.sound'), lab = $('[data-sound-label]');
+    function tick(f) {
+      if (!on) return;
+      try {
+        ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+        var o = ctx.createOscillator(), g = ctx.createGain(), t = ctx.currentTime;
+        o.type = 'sine'; o.frequency.setValueAtTime(f || 520, t); o.frequency.exponentialRampToValueAtTime((f || 520) * 1.5, t + 0.08);
+        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.045, t + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+        o.connect(g).connect(ctx.destination); o.start(t); o.stop(t + 0.18);
+      } catch (e) {}
+    }
+    if (btn) btn.addEventListener('click', function () { on = !on; btn.setAttribute('aria-pressed', String(on)); lab.textContent = on ? 'Sound on' : 'Sound off'; if (on) tick(440); });
+    return { tick: tick };
+  })();
+
+  /* ---------- cart ---------- */
+  var CART = (function () {
+    var KEY = 'input-atlas-cart', items = {};
+    try { items = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { items = {}; }
+    Object.keys(items).forEach(function (k) { if (!byslug(k) || !(items[k] > 0)) delete items[k]; });
+    var badge = function () { var n = count(), b = $('#cart-n'); b.textContent = n; b.classList.toggle('zero', n === 0); };
+    var save = function () { try { localStorage.setItem(KEY, JSON.stringify(items)); } catch (e) {} badge(); };
+    function count() { var n = 0; for (var k in items) n += items[k]; return n; }
+    function total() { var t = 0; for (var k in items) t += byslug(k).price * items[k]; return t; }
+    badge();
+    return { items: items, count: count, total: total,
+      add: function (s, q) { items[s] = (items[s] || 0) + (q || 1); save(); },
+      set: function (s, q) { if (q <= 0) delete items[s]; else items[s] = q; save(); },
+      clear: function () { Object.keys(items).forEach(function (k) { delete items[k]; }); save(); } };
+  })();
+  var toast = (function () { var el = $('#toast'), t; return function (msg) { el.textContent = msg; el.classList.add('on'); clearTimeout(t); t = setTimeout(function () { el.classList.remove('on'); }, 1800); }; })();
+
+  /* ---------- the store: hash-routed overlay (#/browse, #/product/slug, #/cart) ---------- */
+  var STORE = (function () {
+    var root = $('#store'), inn = $('#store-in'), open = false, state = { q: '', cat: 'All' };
+    var CATS = ['All', 'Websites', 'Visuals', 'Content', 'Bundles'];
+    var PROTO = '<p class="proto">Prototype store. Checkout is a demonstration and takes no payment.</p>';
+    function show(h) { inn.innerHTML = h; mountThumbs(inn); root.scrollTop = 0; var t = $('.store-head .t', inn); if (t) { t.setAttribute('tabindex', '-1'); t.focus({ preventScroll: true }); } }
+    function openStore() { if (open) return; open = true; document.body.classList.add('store-open'); root.setAttribute('aria-hidden', 'false'); if (window.__lenis) window.__lenis.stop(); }
+    function closeStore() { if (!open) return; open = false; document.body.classList.remove('store-open'); root.setAttribute('aria-hidden', 'true'); if (window.__lenis) window.__lenis.start(); }
+    function head(title, crumb) { return (crumb ? '<div class="crumb mono">' + crumb + '</div>' : '') + '<div class="store-head"><h2 class="t">' + title + '</h2><a class="btn ghost sm" href="#journey">Back to the journey</a></div>'; }
+    function card(p) {
+      return '<article class="pcard" style="--accent:' + ACC[p.accent] + '">' + thumb(p, 'art') + '<div class="pk mono"><span style="color:var(--accent)">' + esc(p.cat) + '</span><span>' + p.contents.length + ' prompts</span></div>' +
+        '<h3 class="pt"><a href="#/product/' + p.slug + '">' + esc(p.title) + '</a></h3><p class="po">' + esc(p.outcome) + '</p>' +
+        '<div class="pr"><b>' + money(p.price) + '</b><div class="acts"><a class="btn sm ghost" href="#/product/' + p.slug + '">Details</a><button class="btn sm" type="button" data-add="' + p.slug + '">Add</button></div></div></article>';
+    }
+    function results() {
+      var q = state.q.trim().toLowerCase();
+      var list = PRODUCTS.filter(function (p) { return (state.cat === 'All' || p.cat === state.cat) && (!q || (p.title + ' ' + p.outcome + ' ' + p.cat + ' ' + p.audience).toLowerCase().indexOf(q) >= 0); });
+      var r = $('#results', inn); if (!r) return;
+      r.innerHTML = '<p class="mono count">' + list.length + ' of ' + PRODUCTS.length + ' prompt systems</p>' +
+        (list.length ? '<div class="grid">' + list.map(card).join('') + '</div>' :
+          '<div class="empty"><p class="t">Nothing matches “' + esc(state.q.trim()) + '”' + (state.cat !== 'All' ? ' in ' + state.cat : '') + '.</p><p class="small">Try a broader word, or clear the search and filters.</p><button class="btn sm" type="button" data-clear>Clear search and filters</button></div>');
+      $$('.filters .pill', inn).forEach(function (b) { var on = b.getAttribute('data-cat') === state.cat; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
+      mountThumbs(r);
+    }
+    function browse() {
+      show(head('Browse prompts') +
+        '<div class="tools"><label class="search"><span class="mono">Search</span><input id="q" type="search" placeholder="Websites, images, copy, bundles" value="' + esc(state.q) + '" autocomplete="off" aria-label="Search prompts"></label>' +
+        '<div class="filters" role="group" aria-label="Category">' + CATS.map(function (c) { return '<button class="pill" type="button" data-cat="' + c + '">' + c + '</button>'; }).join('') + '</div></div><div id="results"></div>');
+      results();
+      $('#q', inn).addEventListener('input', function (e) { state.q = e.target.value; results(); });
+    }
+    function detail(slug) {
+      var p = byslug(slug);
+      if (!p) { show(head('Not found', '<a href="#/browse">Browse prompts</a>') + '<div class="empty"><p class="t">That prompt does not exist.</p><a class="btn sm" href="#/browse">Browse prompts</a></div>'); return; }
+      var art = p.site ? '<div class="hero-art" data-site-th="' + p.site + '"></div>' : '<div class="hero-art"><img src="' + artSrc(p.art) + '" alt="Example output for ' + esc(p.title) + '"></div>';
+      show(head(esc(p.cat), '<a href="#/browse">Browse prompts</a><span>›</span><span>' + esc(p.cat) + '</span>') +
+        '<div class="detail" style="--accent:' + ACC[p.accent] + '"><div class="dl">' + art + '<h2 class="dt">' + esc(p.title) + '</h2>' +
+        '<section class="dsec"><p class="mono">Outcome</p><p>' + esc(p.outcome) + '</p><p class="mono">Who it is for</p><p>' + esc(p.audience) + '</p></section>' +
+        '<section class="dsec"><p class="mono">Example input and output</p><div class="io-ex"><div><p class="mono">Input</p>' + esc(p.input) + '</div><div><p class="mono">Output · prepared example</p>' + esc(p.output) + '</div></div></section>' +
+        '<section class="dsec"><p class="mono">What you get</p><ul>' + p.contents.map(function (c) { return '<li>' + esc(c) + '</li>'; }).join('') + '</ul></section>' +
+        '<section class="dsec"><p class="mono">Editable variables</p><ul class="vars">' + p.vars.map(function (v) { return '<li><code>' + esc(v) + '</code><span class="small">replace before running</span></li>'; }).join('') + '</ul></section>' +
+        '<section class="dsec"><p class="mono">Works with</p><ul class="tags">' + p.tools.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul></section>' +
+        '<section class="dsec"><p class="mono">How to use</p><ol>' + p.usage.map(function (u) { return '<li>' + esc(u) + '</li>'; }).join('') + '</ol></section>' +
+        '<section class="dsec"><p class="mono">License</p><p>' + esc(p.license) + '</p></section></div>' +
+        '<aside class="buy"><p class="mono">Price</p><p class="price">' + money(p.price) + '</p><p class="small">One purchase, delivered as a text file with the prompts, variables and instructions.</p>' +
+        '<div class="row"><button class="btn accent" type="button" data-add="' + p.slug + '">Add to cart</button><a class="btn ghost" href="#/cart">View cart</a></div>' + PROTO + '</aside></div>');
+    }
+    function cart(done) {
+      var keys = Object.keys(CART.items);
+      if (done) { show(head('Order noted', '<a href="#/browse">Browse prompts</a>') + '<div class="empty"><p class="t">Demonstration order recorded. Nothing was charged.</p><p class="small">In a connected store the prompt files would arrive by email now.</p><a class="btn sm" href="#/browse">Browse more prompts</a></div>'); return; }
+      if (!keys.length) { show(head('Cart') + '<div class="empty"><p class="t">Your cart is empty.</p><p class="small">Every prompt system comes with its examples, variables and instructions.</p><a class="btn sm" href="#/browse">Browse prompts</a></div>'); return; }
+      show(head('Cart') + '<div class="cart-grid"><div class="cartlist">' + keys.map(function (k) { var p = byslug(k), q = CART.items[k]; return '<div class="line"><div><p class="mono">' + esc(p.cat) + '</p><p class="lt"><a href="#/product/' + p.slug + '">' + esc(p.title) + '</a></p><button class="rm-btn" type="button" data-remove="' + p.slug + '">Remove</button></div><div class="qty"><button type="button" data-qty="' + p.slug + '" data-d="-1" aria-label="Fewer">−</button><span>' + q + '</span><button type="button" data-qty="' + p.slug + '" data-d="1" aria-label="More">+</button></div><p class="lp">' + money(p.price * q) + '</p></div>'; }).join('') + '</div>' +
+        '<aside class="summary"><p class="mono">Summary</p><div class="tot"><span class="mono">Subtotal</span><b>' + money(CART.total()) + '</b></div>' + PROTO +
+        '<form id="checkout" class="field" style="gap:12px"><label class="field"><span class="mono">Name</span><input name="name" required autocomplete="name"></label><label class="field"><span class="mono">Email</span><input name="email" type="email" required autocomplete="email"></label><button class="btn accent" type="submit">Place demonstration order</button></form></aside></div>');
+    }
+    function route() {
+      var h = location.hash || '', m;
+      if (h.indexOf('#/') === 0) {
+        openStore();
+        if ((m = h.match(/^#\/product\/([\w-]+)/))) detail(m[1]);
+        else if (h.indexOf('#/cart') === 0) cart(false);
+        else browse();
+      } else closeStore();
+    }
+    inn.addEventListener('click', function (e) {
+      var t = e.target.closest('[data-cat],[data-clear],[data-qty],[data-remove]'); if (!t) return;
+      if (t.hasAttribute('data-cat')) { state.cat = t.getAttribute('data-cat'); results(); }
+      else if (t.hasAttribute('data-clear')) { state.q = ''; state.cat = 'All'; browse(); }
+      else if (t.hasAttribute('data-qty')) { var s = t.getAttribute('data-qty'); CART.set(s, (CART.items[s] || 0) + (+t.getAttribute('data-d'))); cart(false); }
+      else if (t.hasAttribute('data-remove')) { CART.set(t.getAttribute('data-remove'), 0); cart(false); }
+    });
+    inn.addEventListener('submit', function (e) { if (e.target.id === 'checkout') { e.preventDefault(); CART.clear(); cart(true); toast('Demonstration order noted'); } });
+    window.addEventListener('hashchange', route);
+    return { route: route, close: closeStore, isOpen: function () { return open; } };
+  })();
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-add]'); if (!b) return;
+    var p = byslug(b.getAttribute('data-add')); if (!p) return;
+    CART.add(p.slug, 1); toast(p.title + ' added'); sound.tick(660);
+  });
+
+  /* ---------- chapter links: smooth travel, coherent settle, no native jumps ---------- */
+  var lenis = null;
+  function goChapter(id) {
+    var t = $('#' + id); if (!t) return;
+    STORE.close(); document.body.classList.remove('menu-open'); $('.menu-btn').setAttribute('aria-expanded', 'false'); $('#menu').setAttribute('aria-hidden', 'true');
+    try { history.replaceState(null, '', '#' + id); } catch (e) {}
+    if (lenis) lenis.scrollTo(t, { offset: 0, duration: 1.4, easing: function (x) { return 1 - Math.pow(1 - x, 3); } });
+    else t.scrollIntoView();
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest('a[href^="#"]'); if (!a) return;
+    var h = a.getAttribute('href');
+    if (h.indexOf('#/') === 0) { if (location.hash === h) { e.preventDefault(); STORE.route(); } return; }
+    e.preventDefault();
+    if (h === '#journey' || h === '#') { STORE.close(); try { history.replaceState(null, '', location.pathname); } catch (x) {} return; }
+    goChapter(h.slice(1));
+  });
+  var CH_IDS = ['origin', 'build', 'imagine', 'express', 'create'], activeCh = null;
+  function setActiveChapter(id) {
+    if (id === activeCh) return; activeCh = id;
+    $$('.chapters a').forEach(function (a) { a.classList.toggle('is-active', a.getAttribute('data-ch') === id); });
+    sound.tick(520);
+  }
+
+  /* ---------- full-screen menu ---------- */
+  (function () {
+    var btn = $('.menu-btn'), menu = $('#menu'), links = $$('.menu-list a[data-pv]'), pvs = $$('.menu-prev .pv');
+    var setPv = function (k) { pvs.forEach(function (p) { p.classList.toggle('is-on', p.getAttribute('data-pv') === k); }); links.forEach(function (l) { l.classList.toggle('is-hot', l.getAttribute('data-pv') === k); }); };
+    var openM = function (on) { document.body.classList.toggle('menu-open', on); btn.setAttribute('aria-expanded', String(on)); menu.setAttribute('aria-hidden', String(!on)); if (on) { setPv(activeCh || 'origin'); setTimeout(function () { links[0].focus(); }, 60); } else btn.focus(); };
+    btn.addEventListener('click', function () { openM(!document.body.classList.contains('menu-open')); });
+    links.forEach(function (a) { a.addEventListener('mouseenter', function () { setPv(a.getAttribute('data-pv')); }); a.addEventListener('focus', function () { setPv(a.getAttribute('data-pv')); }); });
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape') return;
+      if (document.body.classList.contains('menu-open')) openM(false);
+      else if (STORE.isOpen()) { STORE.close(); try { history.replaceState(null, '', location.pathname); } catch (x) {} }
+    });
+    menu.addEventListener('click', function (e) { if (e.target.closest('a')) { document.body.classList.remove('menu-open'); btn.setAttribute('aria-expanded', 'false'); menu.setAttribute('aria-hidden', 'true'); } });
+  })();
+
+  /* ---------- origin fragments (shared by the static and animated paths) ---------- */
+  var INPUT_TEXT = 'a coastal studio, quiet confidence';
+  var FR = (function () {
+    var field = $('#origin .field'), words = ['hero', 'grid', 'palette', 'tone', 'headline', 'lens', 'crop', 'spacing', 'audience', 'motion', 'contrast', 'rhythm', 'margin', 'voice', 'shot list', 'sitemap', 'proof', 'caption', 'ratio', 'cta'];
+    var els = [], seed = 11, rnd = function () { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+    for (var i = 0; i < 28; i++) {
+      var e = document.createElement('span'); e.setAttribute('aria-hidden', 'true');
+      var kind = i % 7 === 3 ? 'sh' : i % 7 === 6 ? 'ln' : 'tx';
+      e.className = 'frag ' + (kind === 'tx' ? '' : kind);
+      if (kind === 'tx') e.textContent = words[i % words.length];
+      e._sx = 0.38 + rnd() * 0.56; e._sy = 0.1 + rnd() * 0.8; e._node = i % 4; e._jx = (rnd() - 0.5) * 120; e._jy = (rnd() - 0.5) * 90;
+      field.appendChild(e); els.push(e);
+    }
+    function scatter() {
+      var W = field.clientWidth, H = field.clientHeight, nodes = $$('#origin .node');
+      els.forEach(function (e) {
+        var sx = e._sx * W, sy = e._sy * H; e.style.left = sx + 'px'; e.style.top = sy + 'px';
+        var n = nodes[e._node], nx = n.offsetLeft + 4, ny = n.offsetTop + 4;
+        e._tx = nx + e._jx - sx; e._ty = ny + 30 + e._jy - sy;
+      });
+    }
+    scatter();
+    return { els: els, scatter: scatter };
+  })();
+
+  /* ---------- imagine: style selection (shared) ---------- */
+  var IMG = (function () {
+    var fig = $('#imagine .im2'), base = $('.base', fig), alt = $('.alt', fig), lab = $('#imagine .qsty'), btns = $$('#imagine .styles .pill');
+    var names = { mono: 'Studio Mono', warm: 'Warm Film', graphic: 'Graphic Field' }, cur = 'mono', busy = false;
+    function set(style) {
+      if (style === cur || busy) return;
+      btns.forEach(function (b) { var on = b.getAttribute('data-style') === style; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
+      lab.textContent = '— ' + names[style];
+      var src = ART.svg('vessel', style);
+      if (STATIC) { base.src = src; cur = style; return; }
+      busy = true; alt.src = src;
+      gsap.fromTo(alt, { clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0% 0 0)', duration: 0.7, ease: 'power3.inOut', onComplete: function () { base.src = src; gsap.set(alt, { clipPath: 'inset(0 100% 0 0)' }); busy = false; cur = style; } });
+      sound.tick(600);
+    }
+    btns.forEach(function (b) { b.addEventListener('click', function () { set(b.getAttribute('data-style')); }); });
+    return { set: set };
+  })();
+
+  /* ---------- no animation library, or reduced motion: everything at rest ---------- */
+  if (STATIC) {
+    $('#origin .typed').textContent = INPUT_TEXT;
+    $('.chapters').classList.add('is-on');
+    (function () {
+      var fd = $('#origin .field'), nodes = $$('#origin .node'), W = fd.clientWidth, H = fd.clientHeight;
+      var d = nodes.map(function (n, i) { return (i ? 'L' : 'M') + ((n.offsetLeft + 4) / W * 100).toFixed(2) + ' ' + ((n.offsetTop + 4) / H * 100).toFixed(2); }).join(' ');
+      $('#origin .route .rt').setAttribute('d', d);
+      FR.els.forEach(function (e) { e.style.left = (parseFloat(e.style.left) + e._tx) + 'px'; e.style.top = (parseFloat(e.style.top) + e._ty) + 'px'; });
+      var frame = $('#b-frame'), t = $('#build .toggle');
+      t.textContent = 'Reset'; t.classList.add('is-on');
+      t.addEventListener('click', function () { var c = frame.classList.toggle('is-compact'); t.textContent = c ? 'Expand' : 'Reset'; t.setAttribute('aria-pressed', String(!c)); });
+      if ('IntersectionObserver' in window) {
+        var io = new IntersectionObserver(function (en) { en.forEach(function (x) { if (x.isIntersecting) setActiveChapter(x.target.id); }); }, { threshold: 0.4 });
+        CH_IDS.forEach(function (id) { io.observe($('#' + id)); });
+      }
+    })();
+    STORE.route();
+    if (location.hash && location.hash.indexOf('#/') !== 0 && $(location.hash)) $(location.hash).scrollIntoView();
+    return;
+  }
+
+  /* =====================================================================
+     MOTION SYSTEM
+     time-driven   entrances and landings, started 40 px before a chapter pins (origin, build, create, closing) or on interaction
+     scroll-driven travel between compositions and gradual construction (origin exit, build depth, imagine stack, express words and lines, create parallax)
+     each pinned stage dissolves over its last 40 px while the next chapter's entrance begins; every chapter has three
+     coherent states (zero / playing / done) so reverse scroll, fast scroll, chapter jumps and reloads settle cleanly
+     ===================================================================== */
+  gsap.registerPlugin(ScrollTrigger);
+  gsap.config({ nullTargetWarn: false });
+  ScrollTrigger.config({ ignoreMobileResize: true });
+  gsap.ticker.lagSmoothing(0);
+  lenis = new Lenis({ lerp: 0.085, smoothWheel: true });
+  window.__lenis = lenis;
+  lenis.on('scroll', ScrollTrigger.update);
+  gsap.ticker.add(function (t) { lenis.raf(t * 1000); });
+  var T = { press: 0.12, ui: 0.22, arrive: 0.8, stage: 1.2, stagger: 0.08 };
+  var E = { soft: 'power3.out', out: 'power2.out', inOut: 'power2.inOut', obj: 'back.out(1.4)', settle: 'elastic.out(1, 0.5)', line: 'none' };
+  var WORD_IN = { yPercent: 0, duration: 0.7, ease: E.soft, stagger: 0.09 };
+  var BLOCK_IN = { opacity: 1, duration: 0.55, stagger: 0.08, ease: E.out };
+  function prime(stage) { var lines = $$('.mask .ml', stage); gsap.set(lines, { yPercent: 110 }); gsap.set($$('.in', stage), { opacity: 0 }); return lines; }
+
+  var SCENES = [];
+  function scene(id, build, opts) {
+    opts = opts || {};
+    var section = $(id), stage = $('.stage', section) || section, cue = $('.cue', stage);
+    var api = { id: id, section: section, stage: stage, enter: gsap.timeline({ paused: true }), onUpdate: null, reset: null, complete: null, state: null, keep: !!opts.keep };
+    api.play = function () { if (api.state === 'play' || (api.keep && api.state === 'done')) return; if (api.st && !api.st.isActive && api.st.progress >= 1) { api.done(); return; } api.state = 'play'; if (api.reset) api.reset(); api.enter.restart(); if (api.onPlay) api.onPlay(); };
+    api.done = function () { if (api.state === 'done') return; api.state = 'done'; api.enter.pause(); api.enter.progress(1); if (api.complete) api.complete(); };
+    api.zero = function () { if (api.state === 'zero' || (api.keep && api.state === 'done')) return; api.state = 'zero'; api.enter.pause(0); if (api.reset) api.reset(); };
+    var pinned = opts.pin !== false && !mobile();
+    if (!pinned) {
+      api.flow = ScrollTrigger.create({ trigger: section, start: 'top 72%', end: 'bottom top', onEnter: api.play, onLeaveBack: api.zero, onLeave: api.done, onEnterBack: api.done });
+      build(api, false);
+      SCENES.push(api);
+      return api;
+    }
+    var setZ = function (active) {
+      stage.classList.toggle('is-pinned', !!active);
+      var z = active ? 20 : (stage.style.getPropertyValue('--z') || '1').trim();
+      var sp = stage.parentElement;
+      if (sp && sp.classList.contains('pin-spacer')) sp.style.zIndex = z;
+    };
+    api.early = ScrollTrigger.create({ trigger: section, start: 'top top+=40', end: 'top top', onEnter: api.play, onLeaveBack: api.zero });
+    api.scroll = gsap.timeline({
+      defaults: { ease: 'none' },
+      scrollTrigger: {
+        trigger: section, start: 'top top', end: 'bottom top', pin: stage, pinSpacing: false, scrub: 0.6,
+        onToggle: function (self) { setZ(self.isActive); }, onRefresh: function (self) { setZ(self.isActive); },
+        onEnter: api.play, onEnterBack: api.done, onLeave: api.done,
+        onUpdate: function (self) { if (cue) cue.classList.toggle('is-hidden', self.progress > 0.05); if (api.onUpdate) api.onUpdate(self); }
+      }
+    });
+    api.st = api.scroll.scrollTrigger;
+    build(api, true);
+    var f = 40 / section.offsetHeight;
+    api.scroll.to(stage, { opacity: 0, duration: f }, 1 - f);
+    api.scroll.set({}, {}, 1);
+    SCENES.push(api);
+    return api;
+  }
+  function syncScenes() { SCENES.forEach(function (s) { var st = s.st || s.flow; if (!st) return; if (st.progress >= 1) s.done(); else if (st.isActive) { if (s.state !== 'done') s.play(); } else s.zero(); }); }
+  /* after every ScrollTrigger refresh (load, fonts, resize) each chapter re-measures with the final layout, resets the
+     properties it animates and re-renders both of its timelines at the current position, so nothing drifts */
+  function resync(s) {
+    if (s.measure) s.measure();
+    if (s.resync) { s.resync(); return; }
+    if (s.state === 'play' && !s.enter.paused() && s.enter.progress() < 1) return;
+    var p = s.scroll ? s.scroll.progress() : 0, end = s.state === 'done' || s.state === 'play';
+    if (s.init) s.init();
+    s.enter.pause(); s.enter.invalidate(); s.enter.progress(end ? 1 : 0);
+    if (end && s.complete) s.complete();
+    if (s.scroll) { gsap.set(s.stage, { opacity: 1 }); s.scroll.invalidate(); s.scroll.progress(0).progress(p); }
+  }
+  ScrollTrigger.addEventListener('refresh', function () { SCENES.forEach(resync); syncScenes(); });
+  /* chapter index: the chapter whose top has passed the middle of the viewport */
+  var CH_TOPS = [];
+  function pickChapter() { var y = window.scrollY + vh() * 0.5, id = CH_IDS[0]; for (var i = 0; i < CH_IDS.length; i++) if (CH_TOPS[i] <= y) id = CH_IDS[i]; setActiveChapter(id); }
+  ScrollTrigger.create({ trigger: '#journey', start: 'top bottom', end: 'bottom top', onUpdate: pickChapter, onRefresh: function () { CH_TOPS = CH_IDS.map(function (id) { return $('#' + id).offsetTop; }); pickChapter(); } });
+
+  /* ---------- 00 ORIGIN ----------
+     MOTION  trigger: page load (or Skip). start: caret at an empty input, headline and actions visible, fragments hidden.
+     moving: typed characters; fragments drift in, then converge on four destinations; nodes rise; the route path draws;
+     the chapter index fades in. path: each fragment travels straight to its node with a small offset (power3.inOut).
+     timing: 0–3.6 s. final: fragments clustered, nodes labelled, route drawn, index on. reverse: keeps its finished state.
+     scroll: parallax on grid and field, headline and input exit upward, dissolve. mobile / reduced motion: static composition. */
+  var introDone = false;
+  scene('#origin', function (s, pinned) {
+    var st = s.stage, typed = $('.typed', st), nodes = $$('.node', st), route = $('.route .rt', st), chapters = $('.chapters'), skip = $('.skip', st), frags = FR.els;
+    var lines = prime(st), text = INPUT_TEXT, ty = { n: 0 };
+    var fd = $('.field', st), routeD = function () { var W = fd.clientWidth, H = fd.clientHeight; return nodes.map(function (n, i) { return (i ? 'L' : 'M') + ((n.offsetLeft + 4) / W * 100).toFixed(2) + ' ' + ((n.offsetTop + 4) / H * 100).toFixed(2); }).join(' '); };
+    var place = function () { route.setAttribute('d', routeD()); FR.scatter(); };
+    place(); gsap.set(route, { strokeDasharray: 1 });
+    s.measure = place;
+    s.init = function () { gsap.set(lines, { yPercent: 110 }); gsap.set(route, { strokeDashoffset: 1 }); gsap.set(nodes, { opacity: 0, y: 8 }); gsap.set(frags, { opacity: 0, x: 0, y: 0, scale: 1 }); ty.n = 0; typed.textContent = ''; gsap.set(skip, { opacity: 1 }); gsap.set([$('.gridfield', st), $('.field', st)], { y: 0 }); gsap.set($$('.hl, .input', st), { y: 0, opacity: 1 }); gsap.set($$('.lede, .ctas, .nodes', st), { opacity: 1 }); };
+    s.init();
+    s.enter.to(lines, WORD_IN, 0.1)
+      .to(ty, { n: text.length, duration: 1.2, ease: 'none', onUpdate: function () { typed.textContent = text.slice(0, Math.round(ty.n)); } }, 0.3)
+      .to(frags, { opacity: 0.85, duration: 0.5, stagger: { each: 0.035, from: 'random' } }, 0.5)
+      .to(frags, { x: function (i, el) { return el._tx; }, y: function (i, el) { return el._ty; }, scale: 0.72, opacity: 0.55, duration: 1.0, ease: 'power3.inOut', stagger: { each: 0.02, from: 'random' } }, 1.9)
+      .to(nodes, { opacity: 1, y: 0, duration: 0.5, stagger: 0.08, ease: E.out }, 2.5)
+      .to(route, { strokeDashoffset: 0, duration: 0.9, ease: 'none' }, 2.7)
+      .call(function () { chapters.classList.add('is-on'); introDone = true; }, null, 3.2)
+      .to(skip, { opacity: 0, duration: 0.3, onComplete: function () { skip.style.pointerEvents = 'none'; } }, 3.3);
+    s.complete = function () { chapters.classList.add('is-on'); introDone = true; typed.textContent = text; skip.style.pointerEvents = 'none'; };
+    skip.addEventListener('click', function () { s.done(); });
+    if (pinned) {
+      s.scroll.to($('.gridfield', st), { y: -60, duration: 1 }, 0).to($('.field', st), { y: -140, duration: 1 }, 0)
+        .to($$('.hl, .input', st), { y: -80, opacity: 0, duration: 0.45 }, 0.2)
+        .to($$('.lede, .ctas', st), { opacity: 0, duration: 0.3 }, 0.45)
+        .to($('.nodes', st), { opacity: 0, duration: 0.2 }, 0.78);
+    }
+  }, { keep: true });
+
+  /* ---------- 01 BUILD ----------
+     MOTION  trigger: chapter enters (time-driven, ~6 s). start: panel off-axis (rotateY 38°, rotateX 24°, right and above), transparent;
+     shadow broad and faint; frame compact; outline, handles, pointer and product hidden.
+     moving: .panel-3d (entrance only), .pshadow, outline edges, handles, .pointer, the frame's width and height, .product-side.
+     path: descends with gravity while rotating flat, lands with a small overshoot, settles; outline draws clockwise; the pointer
+     approaches the corner handle, presses, drags diagonally; frame and pointer share one geometry; the site reflows through
+     container queries. final: expanded frame at rest, product beside it, Expand/Reset control live. reverse: leaving upward resets,
+     leaving downward completes. scroll: depth previews and grid move at different speeds. mobile: same demo at phone sizes; reduced
+     motion: expanded frame with the control. */
+  var BUILDS = {};
+  scene('#build', function (s, pinned) {
+    var st = s.stage, wrap = $('.panel-wrap', st), p3 = $('.panel-3d', st), frame = $('#b-frame'), shadow = $('.pshadow', st), pointer = $('.pointer', st), toggle = $('.toggle', st), side = $('.product-side', st);
+    var edges = ['.et', '.er', '.eb', '.el'].map(function (c) { return $(c, frame); }), handles = ['.h.tl', '.h.tr', '.h.bl', '.h.br'].map(function (c) { return $(c, frame); });
+    var br = $('.h.br', frame), ring = $('.ring', frame), readout = $('.size', frame);
+    var lines = prime(st), G = {}, demo = null, mode = 'demo';
+    var W = function () { return frame.offsetWidth; }, H = function () { return frame.offsetHeight; };
+    var measure = function () { var cs = getComputedStyle(wrap); G.wc = parseFloat(cs.getPropertyValue('--b-wc')) * vw() / 100; G.we = wrap.clientWidth; G.hc = G.wc * 0.625; G.he = G.we * 0.625; G.left = wrap.offsetLeft; G.top = wrap.offsetTop; };
+    var placePointer = function () { gsap.set(pointer, { x: G.left + W() + 1, y: G.top + H() + 1 }); };
+    var readoutUp = function () { readout.textContent = Math.round(W()) + ' × ' + Math.round(H()); };
+    var isExpanded = function () { return W() > (G.wc + G.we) / 2; };
+    var showToggle = function (ex) { toggle.classList.add('is-on'); toggle.textContent = ex ? 'Reset' : 'Expand'; toggle.setAttribute('aria-pressed', String(ex)); };
+    var killAll = function () { if (demo) { demo.kill(); demo = null; } gsap.killTweensOf([p3, shadow, frame, pointer, ring, br, readout, side].concat(edges, handles)); };
+    var zeroState = function () {
+      measure(); killAll(); mode = 'demo';
+      gsap.set(p3, { rotateY: 38, rotateX: 24, x: 0.18 * vw(), y: -0.34 * vh(), scale: 0.9, opacity: 0, transformOrigin: '50% 50%' });
+      gsap.set(shadow, { scale: 1.6, opacity: 0.1 });
+      gsap.set(frame, { width: G.wc, height: G.hc });
+      gsap.set(edges, { scale: 0 }); gsap.set(handles, { scale: 0, transformOrigin: '50% 50%' });
+      gsap.set(ring, { scale: 0, opacity: 0 }); gsap.set(pointer, { opacity: 0, scale: 1 }); gsap.set(readout, { opacity: 0 });
+      gsap.set(side, { opacity: 0, x: 40 }); toggle.classList.remove('is-on'); readoutUp();
+    };
+    var restState = function () {
+      measure(); killAll(); mode = 'user';
+      gsap.set(p3, { rotateY: 0, rotateX: 0, x: 0, y: 0, scale: 1, opacity: 1 }); gsap.set(shadow, { scale: 1, opacity: 0.75 });
+      gsap.set(frame, { width: G.we, height: G.he }); gsap.set(edges, { scale: 1 }); gsap.set(handles, { scale: 1 });
+      gsap.set([pointer, ring], { opacity: 0 }); gsap.set(readout, { opacity: 1 }); gsap.set(side, { opacity: 1, x: 0 });
+      readoutUp(); showToggle(true);
+    };
+    var buildDemo = function () {
+      measure();
+      var drag = { t: 0 };
+      var applySize = function () { frame.style.width = lerp(G.wc, G.we, drag.t) + 'px'; frame.style.height = lerp(G.hc, G.he, drag.t) + 'px'; readoutUp(); };
+      var applyDrag = function () { applySize(); placePointer(); };
+      var far = { x: G.left + G.we + 80, y: G.top + G.he + 60 };
+      var tl = gsap.timeline({ paused: true, onComplete: function () { mode = 'user'; showToggle(true); } });
+      tl.to(p3, { opacity: 1, duration: 0.25 }, 0)
+        .to(p3, { rotateY: 0, rotateX: 0, duration: 1.1, ease: 'power1.inOut' }, 0)
+        .to(p3, { x: 0, scale: 1, duration: 1.1, ease: 'power1.out' }, 0)
+        .to(p3, { y: 0, duration: 1.0, ease: 'power2.in' }, 0)
+        .to(shadow, { scale: 1, opacity: 0.75, duration: 1.0, ease: 'power2.in' }, 0)
+        .to(p3, { y: -12, rotateX: -3, duration: 0.14, ease: 'power1.out' }, 1.0)
+        .to(p3, { y: 0, rotateX: 0, duration: 0.55, ease: E.settle }, 1.14)
+        .to(shadow, { opacity: 0.95, duration: 0.14, yoyo: true, repeat: 1 }, 1.0)
+        .call(function () { sound.tick(330); }, null, 1.0)
+        .to(edges[0], { scaleX: 1, duration: 0.24, ease: E.line }, 1.5).to(edges[1], { scaleY: 1, duration: 0.16, ease: E.line }, 1.74)
+        .to(edges[2], { scaleX: 1, duration: 0.24, ease: E.line }, 1.9).to(edges[3], { scaleY: 1, duration: 0.16, ease: E.line }, 2.14)
+        .to(handles, { scale: 1, duration: 0.3, ease: 'back.out(2.2)', stagger: 0.06 }, 2.32)
+        .set(pointer, { x: far.x, y: far.y, scale: 1 }, 2.45).to(pointer, { opacity: 1, duration: 0.2 }, 2.5)
+        .to(pointer, { x: G.left + G.wc + 1, y: G.top + G.hc + 1, duration: 0.75, ease: E.inOut }, 2.55)
+        .to(pointer, { scale: 0.9, duration: 0.1, ease: E.out }, 3.35).to(br, { scale: 0.6, duration: 0.12, ease: E.out }, 3.35)
+        .fromTo(ring, { scale: 0.2, opacity: 0.9 }, { scale: 1, opacity: 0, duration: 0.36, ease: E.out }, 3.37)
+        .to(readout, { opacity: 1, duration: 0.2 }, 3.4)
+        .to(drag, { t: 1, duration: 1.2, ease: E.inOut, onUpdate: applyDrag }, 3.6)
+        .to(br, { scale: 1, duration: 0.15, ease: E.out }, 4.8)
+        .to(pointer, { scale: 1, x: '+=12', y: '+=10', duration: 0.25, ease: E.out }, 4.8).to(pointer, { opacity: 0, duration: 0.35 }, 5.15)
+        .to(drag, { t: 1.025, duration: 0.14, ease: E.out, onUpdate: applySize }, 4.85).to(drag, { t: 1, duration: 0.55, ease: 'elastic.out(1, 0.5)', onUpdate: applySize }, 4.99)
+        .to(side, { opacity: 1, x: 0, duration: 0.7, ease: E.soft }, 5.0);
+      return tl;
+    };
+    var takeControl = function () {
+      if (mode === 'user') return; mode = 'user';
+      var w = W(), h = H(); killAll();
+      gsap.set(p3, { rotateY: 0, rotateX: 0, x: 0, y: 0, scale: 1, opacity: 1 }); gsap.set(shadow, { scale: 1, opacity: 0.75 });
+      gsap.set(frame, { width: w, height: h }); gsap.set(edges, { scale: 1 }); gsap.set(handles, { scale: 1 });
+      gsap.set([pointer, ring], { opacity: 0 }); gsap.set(readout, { opacity: 1 }); gsap.set(side, { opacity: 1, x: 0 });
+      readoutUp(); showToggle(isExpanded());
+    };
+    var dragging = false, kw = null, kh = null;
+    br.addEventListener('pointerdown', function (e) { e.preventDefault(); takeControl(); kw = kh = null; dragging = true; br.setPointerCapture(e.pointerId); gsap.killTweensOf(frame); gsap.to(br, { scale: 0.7, duration: T.press, ease: E.out }); });
+    br.addEventListener('pointermove', function (e) { if (!dragging) return; var r = frame.getBoundingClientRect(); frame.style.width = clamp(e.clientX - r.left, G.wc, G.we) + 'px'; frame.style.height = clamp(e.clientY - r.top, G.hc, G.he) + 'px'; readoutUp(); });
+    var endDrag = function () { if (!dragging) return; dragging = false; gsap.to(br, { scale: 1, duration: T.press, ease: E.out }); showToggle(isExpanded()); };
+    br.addEventListener('pointerup', endDrag); br.addEventListener('pointercancel', endDrag);
+    br.addEventListener('keydown', function (e) {
+      var k = e.key; if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].indexOf(k) < 0) return;
+      e.preventDefault(); takeControl();
+      var dw = k === 'ArrowRight' ? 16 : k === 'ArrowLeft' ? -16 : 0, dh = k === 'ArrowDown' ? 16 : k === 'ArrowUp' ? -16 : 0;
+      kw = clamp((kw == null ? W() : kw) + dw, G.wc, G.we); kh = clamp((kh == null ? H() : kh) + dh, G.hc, G.he); gsap.killTweensOf(frame);
+      gsap.to(frame, { width: kw, height: kh, duration: T.ui, ease: E.out, onUpdate: readoutUp, onComplete: function () { kw = kh = null; showToggle(isExpanded()); } });
+    });
+    toggle.addEventListener('click', function () { takeControl(); kw = kh = null; var ex = !isExpanded(); gsap.to(frame, { width: ex ? G.we : G.wc, height: ex ? G.he : G.hc, duration: 0.65, ease: 'back.out(1.2)', onUpdate: readoutUp }); showToggle(ex); sound.tick(480); });
+    s.enter.to(lines, WORD_IN, 0.05);
+    s.reset = zeroState; s.onPlay = function () { demo = buildDemo(); demo.play(); }; s.complete = restState;
+    var par = [$('.d1', st), $('.d2', st), $('.d3', st), $('.gridfield', st), $('.ch-title', st)];
+    if (pinned) { s.scroll.to(par[0], { y: -90, duration: 1 }, 0).to(par[1], { y: -160, duration: 1 }, 0).to(par[2], { y: -60, duration: 1 }, 0).to(par[3], { y: -40, duration: 1 }, 0).to(par[4], { y: -30, duration: 1 }, 0); }
+    s.resync = function () {
+      if (s.scroll) { var p = s.scroll.progress(); gsap.set(par, { y: 0 }); gsap.set(st, { opacity: 1 }); s.scroll.invalidate(); s.scroll.progress(0).progress(p); }
+      if (mode === 'demo' && demo && demo.isActive()) { s.state = null; s.play(); return; }
+      if (s.state === 'done' || mode === 'user') { var ex = isExpanded(); restState(); if (!ex) { gsap.set(frame, { width: G.wc, height: G.hc }); readoutUp(); showToggle(false); } gsap.set(lines, { yPercent: 0 }); }
+      else { zeroState(); gsap.set(lines, { yPercent: 110 }); }
+    };
+  });
+
+  /* ---------- 02 IMAGINE ----------
+     MOTION  trigger: scroll while the chapter is pinned. start: four prepared images at depths, the nearest on the left.
+     moving: the nearest image passes out left and grows; the next travels to the focal position; the far images drift closer;
+     a framing rectangle draws clockwise around the focal image; the example input, style controls and product slide in.
+     path: straight travel, power1.inOut. timing: 0–42 % travel, 40–58 % framing, 50–72 % reveals. final: focal image framed with
+     controls live. reverse: the same path back. style buttons: prepared outputs swap through a left-to-right mask (0.7 s).
+     mobile: images stacked in a flow layout, entrance only. reduced motion: rest state, buttons swap instantly. */
+  scene('#imagine', function (s, pinned) {
+    var st = s.stage, ims = ['.im1', '.im2', '.im3', '.im4'].map(function (c) { return $(c, st); }), fr = $('.framer .fr', st), ft = $('.framer .ft', st);
+    var io = $('.io', st), styles = $('.styles', st), side = $('.product-side', st), lines = prime(st), geo = { W: 1, H: 1, dx: 0, dy: 0, sc: 1 };
+    var measure = function () {
+      var W = st.clientWidth, H = st.clientHeight, im2 = ims[1], L = im2.offsetLeft, T = im2.offsetTop, w = im2.offsetWidth, h = im2.offsetHeight;
+      var m = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--m')) || 56;
+      var cx = 0.47 * W, cy = 0.52 * H, limit = (W - m - side.offsetWidth - 24 - cx) * 2;
+      var w1 = Math.min(0.30 * W, limit, 0.5 * H), h1 = w1 * (h / w);
+      geo = { W: W, H: H, sc: w1 / w, dx: cx - (L + w / 2), dy: cy - (T + h / 2), l: cx - w1 / 2, t: cy - h1 / 2, w: w1, h: h1 };
+      var p = 14, l = geo.l - p, t = geo.t - p, r = geo.l + geo.w + p, b = geo.t + geo.h + p;
+      fr.setAttribute('d', 'M' + l + ' ' + t + ' H' + r + ' V' + b + ' H' + l + ' Z');
+      ft.setAttribute('x', l); ft.setAttribute('y', t - 12); ft.textContent = 'FOCAL · 4:5 · PREPARED OUTPUT';
+    };
+    measure(); gsap.set(fr, { strokeDasharray: 1 });
+    s.measure = measure;
+    s.init = function () { gsap.set(lines, { yPercent: 110 }); gsap.set(ims, { clearProps: 'transform,opacity' }); gsap.set(fr, { strokeDashoffset: 1 }); gsap.set(ft, { opacity: 0 }); gsap.set([io, styles], { opacity: 0, y: 24 }); gsap.set(side, { opacity: 0, x: 40 }); gsap.set([$('.gridfield', st), $('.ch-title', st)], { y: 0 }); };
+    s.init();
+    s.enter.to(lines, WORD_IN, 0.05)
+      .fromTo(ims, { clipPath: 'inset(100% 0 0 0)' }, { clipPath: 'inset(0% 0 0 0)', duration: 0.9, ease: E.soft, stagger: 0.09 }, 0.1);
+    if (pinned) {
+      s.scroll.to(ims[0], { x: function () { return -0.45 * geo.W; }, y: function () { return -0.1 * geo.H; }, scale: 1.35, opacity: 0, duration: 0.42, ease: 'power1.in' }, 0)
+        .to(ims[1], { x: function () { return geo.dx; }, y: function () { return geo.dy; }, scale: function () { return geo.sc; }, duration: 0.42, ease: 'power1.inOut' }, 0)
+        .to(ims[2], { x: function () { return -0.14 * geo.W; }, y: function () { return -0.06 * geo.H; }, scale: 1.25, opacity: 1, duration: 0.42, ease: 'power1.inOut' }, 0)
+        .to(ims[3], { x: function () { return -0.08 * geo.W; }, y: function () { return -0.14 * geo.H; }, scale: 1.3, opacity: 0.9, duration: 0.42, ease: 'power1.inOut' }, 0)
+        .to($('.gridfield', st), { y: -60, duration: 1 }, 0).to($('.ch-title', st), { y: -30, duration: 1 }, 0)
+        .to(fr, { strokeDashoffset: 0, duration: 0.18 }, 0.4).to(ft, { opacity: 1, duration: 0.05 }, 0.56)
+        .to(io, { opacity: 1, y: 0, duration: 0.1 }, 0.5).to(styles, { opacity: 1, y: 0, duration: 0.1 }, 0.56)
+        .to(side, { opacity: 1, x: 0, duration: 0.12 }, 0.6);
+    } else {
+      s.enter.to([io, styles], { opacity: 1, y: 0, duration: 0.6, stagger: 0.1, ease: E.out }, 0.7).to(side, { opacity: 1, x: 0, duration: 0.6, ease: E.out }, 0.9);
+    }
+  });
+
+  /* ---------- 03 EXPRESS ----------
+     MOTION  trigger: scroll while pinned (time-driven on phones). start: the rough brief in monospace; the finished copy hidden.
+     moving: brief words that survive fly to their place in the headline and copy, changing typeface on the way; the others
+     fade upward; new words settle in; the composition card rises; three annotation lines draw to Tone, Audience and
+     Structure, each label appearing as its line completes. path: straight, power2.inOut per word, staggered. timing:
+     0–47 % words, 42–62 % new words, 50–62 % card, 60–91 % lines. final: finished copy, card and labels. reverse: words
+     return to the brief. mobile: same sequence over 4 s, lines omitted. reduced motion: finished copy only. */
+  scene('#express', function (s, pinned) {
+    var st = s.stage, brief = $('.brief', st), fh = $('.fh', st), fp = $('.fp', st), fc = $('.fc', st), anno = $('.anno', st), side = $('.product-side', st);
+    var labs = ['.l1', '.l2', '.l3'].map(function (c) { return $(c, st); }), lines = prime(st);
+    var split = function (el) { var ws = el.textContent.trim().split(/\s+/); el.innerHTML = ws.map(function (w) { return '<span class="w">' + esc(w) + '</span>'; }).join(' '); return $$('.w', el); };
+    var bw = split(brief), hw = split(fh), pw = split(fp);
+    var norm = function (w) { return w.toLowerCase().replace(/[^a-z0-9]/g, ''); }, ALIAS = { confident: 'confidence', '40': 'forty', not: 'no' };
+    var flyers = [], used = {};
+    var pair = function (fw, isP) {
+      var key = norm(fw.textContent);
+      for (var i = 0; i < bw.length; i++) {
+        if (used[i]) continue;
+        var bk = norm(bw[i].textContent);
+        if (bk === key || ALIAS[bk] === key) {
+          used[i] = true; fw._paired = bw[i]._paired = true;
+          var f = document.createElement('div'); f.className = 'flyer' + (isP ? ' p' : ''); f.setAttribute('aria-hidden', 'true');
+          f.innerHTML = '<span class="a">' + esc(bw[i].textContent) + '</span><span class="b">' + esc(fw.textContent) + '</span>';
+          st.appendChild(f); flyers.push({ el: f, a: $('.a', f), b: $('.b', f), from: bw[i], to: fw, dx: 0, dy: 0, r: 1 });
+          return;
+        }
+      }
+    };
+    hw.forEach(function (w) { pair(w, false); }); pw.forEach(function (w) { pair(w, true); });
+    var loose = bw.filter(function (w) { return !w._paired; }), fresh = hw.concat(pw).filter(function (w) { return !w._paired; });
+    anno.innerHTML = [0, 1, 2].map(function (i) { return '<path pathLength="1" d="M0 0"/><circle r="3"/>'; }).join('');
+    var paths = $$('path', anno), dots = $$('circle', anno);
+    var measure = function () {
+      var R = st.getBoundingClientRect();
+      flyers.forEach(function (f) {
+        var fr = f.from.getBoundingClientRect(), tr = f.to.getBoundingClientRect(), aH = f.a.offsetHeight, bH = f.b.offsetHeight, by = +gsap.getProperty(brief, 'y') || 0;
+        var sx = fr.left - R.left, sy = fr.top - R.top - by + (fr.height - aH) / 2;
+        f.dx = (tr.left - R.left) - sx; f.dy = (tr.top - R.top + (tr.height - bH) / 2) - sy;
+        f.el.style.left = sx + 'px'; f.el.style.top = sy + 'px';
+        f.r = parseFloat(getComputedStyle(f.b).fontSize) / parseFloat(getComputedStyle(f.a).fontSize);
+      });
+      [fh, fp, fc].forEach(function (el, i) {
+        var r = el.getBoundingClientRect(), y0 = +gsap.getProperty(el, 'y') || 0, lr = labs[i].getBoundingClientRect();
+        var sx = r.right - R.left + 18, sy = r.top - R.top + r.height / 2 - y0, dx = lr.left - R.left - 14, dy = lr.top - R.top + 10;
+        paths[i].setAttribute('d', 'M' + sx + ' ' + sy + ' H' + (sx + 26) + ' L' + (dx - 26) + ' ' + dy + ' H' + dx);
+        dots[i].setAttribute('cx', sx); dots[i].setAttribute('cy', sy);
+      });
+    };
+    measure(); gsap.set(paths, { strokeDasharray: 1 });
+    var pairedB = bw.filter(function (w) { return w._paired; }), fels = flyers.map(function (f) { return f.el; });
+    s.measure = measure;
+    s.init = function () {
+      gsap.set(lines, { yPercent: 110 }); gsap.set(hw.concat(pw), { opacity: 0 }); gsap.set(fresh, { y: 8 }); gsap.set(loose, { opacity: 1, y: 0 }); gsap.set(pairedB, { opacity: 0 }); gsap.set(fc, { opacity: 0, y: 30 });
+      gsap.set(paths, { strokeDashoffset: 1 }); gsap.set(dots, { scale: 0, transformOrigin: '50% 50%' }); gsap.set(labs, { opacity: 0 });
+      gsap.set(side, { opacity: 0, x: 40 }); gsap.set(brief, { opacity: 0, y: 10 }); gsap.set(fels, { opacity: 0, x: 0, y: 0 });
+      flyers.forEach(function (f) { gsap.set(f.a, { transformOrigin: '0 0', scale: 1, opacity: 1 }); gsap.set(f.b, { transformOrigin: '0 0', opacity: 0, scale: 1 / f.r }); });
+      gsap.set([$('.gridfield', st), $('.ch-title', st)], { y: 0 });
+    };
+    s.init();
+    var sq = gsap.timeline({ defaults: { ease: 'none' } });
+    sq.to(loose, { opacity: 0, y: -10, duration: 0.12, ease: 'power1.in', stagger: { each: 0.004, from: 'random' } }, 0);
+    flyers.forEach(function (f, i) {
+      var at = 0.06 + i * 0.015;
+      sq.to(f.el, { x: function () { return f.dx; }, y: function () { return f.dy; }, duration: 0.3, ease: 'power2.inOut' }, at)
+        .to(f.a, { scale: function () { return f.r; }, duration: 0.3, ease: 'power2.inOut' }, at).to(f.a, { opacity: 0, duration: 0.14 }, at + 0.08)
+        .to(f.b, { scale: 1, duration: 0.3, ease: 'power2.inOut' }, at).to(f.b, { opacity: 1, duration: 0.12 }, at + 0.14);
+    });
+    sq.to(fresh, { opacity: 1, y: 0, duration: 0.1, ease: E.out, stagger: 0.008 }, 0.42)
+      .to(fc, { opacity: 1, y: 0, duration: 0.12, ease: E.out }, 0.5)
+      .to(side, { opacity: 1, x: 0, duration: 0.12 }, 0.52);
+    [0, 1, 2].forEach(function (i) {
+      var at = 0.6 + i * 0.1;
+      sq.to(dots[i], { scale: 1, duration: 0.02 }, at).to(paths[i], { strokeDashoffset: 0, duration: 0.07 }, at + 0.01).to(labs[i], { opacity: 1, duration: 0.03 }, at + 0.08);
+    });
+    s.enter.to(lines, WORD_IN, 0.05).to(brief, { opacity: 1, y: 0, duration: 0.6, ease: E.out }, 0.3).to(fels, { opacity: 1, duration: 0.6 }, 0.3);
+    if (pinned) { s.scroll.add(sq, 0).to($('.gridfield', st), { y: -50, duration: 1 }, 0).to($('.ch-title', st), { y: -30, duration: 1 }, 0); }
+    else { sq.timeScale(1 / 4.2); s.enter.add(sq, 1.2); }
+  });
+
+  /* ---------- 04 CREATE ----------
+     MOTION  trigger: chapter enters (time-driven, ~2.8 s). start: three product panels turned away at angles, faint.
+     moving: panels rotate into alignment one after another (power3.out, 1.2 s, stagger 0.14 s); two lines draw between them;
+     junction dots pop; the bundle presentation slides in from the right with its rows following. final: aligned panels,
+     drawn links, bundle at rest. reverse: leaving upward resets. scroll: the bundle rises slowly. mobile: panels in a row,
+     lines omitted. reduced motion: rest state. */
+  scene('#create', function (s, pinned) {
+    var st = s.stage, bundle = $('.bundle', st), panels = ['.p1', '.p2', '.p3'].map(function (c) { return $(c, st); }), links = $('.links', st), info = $('.bundle-info', st);
+    var lines = prime(st), kids = $$(':scope > *', info);
+    links.innerHTML = '<path pathLength="1" d="M0 0"/><path pathLength="1" d="M0 0"/><circle r="3"/><circle r="3"/><circle r="3"/><circle r="3"/>';
+    var paths = $$('path', links), dots = $$('circle', links);
+    var measure = function () {
+      var p = panels.map(function (el) { return { l: el.offsetLeft, r: el.offsetLeft + el.offsetWidth, y: el.offsetTop + el.offsetHeight * 0.32 }; });
+      paths[0].setAttribute('d', 'M' + p[0].r + ' ' + p[0].y + ' H' + p[1].l); paths[1].setAttribute('d', 'M' + p[1].r + ' ' + p[1].y + ' H' + p[2].l);
+      [[p[0].r, p[0].y], [p[1].l, p[1].y], [p[1].r, p[1].y], [p[2].l, p[2].y]].forEach(function (c, i) { dots[i].setAttribute('cx', c[0]); dots[i].setAttribute('cy', c[1]); });
+    };
+    measure(); gsap.set(paths, { strokeDasharray: 1 });
+    s.measure = measure;
+    s.init = function () {
+      gsap.set(lines, { yPercent: 110 });
+      gsap.set(panels, { rotateY: function (i) { return [-42, 0, 42][i]; }, rotateX: 12, x: function (i) { return [-60, 0, 60][i]; }, z: -180, opacity: 0, transformOrigin: '50% 50%' });
+      gsap.set(paths, { strokeDashoffset: 1 }); gsap.set(dots, { scale: 0, transformOrigin: '50% 50%' });
+      gsap.set(info, { opacity: 0, x: 40, y: 0 }); gsap.set(kids, { opacity: 0, y: 10 }); gsap.set([bundle, $('.gridfield', st), $('.ch-title', st)], { y: 0 });
+    };
+    s.init();
+    s.enter.to(lines, WORD_IN, 0.05)
+      .to(panels, { rotateY: 0, rotateX: 0, x: 0, z: 0, opacity: 1, duration: 1.2, ease: 'power3.out', stagger: 0.14 }, 0.2)
+      .to(dots[0], { scale: 1, duration: 0.2, ease: 'back.out(2)' }, 1.2).to(paths[0], { strokeDashoffset: 0, duration: 0.4, ease: 'none' }, 1.25).to(dots[1], { scale: 1, duration: 0.2, ease: 'back.out(2)' }, 1.6)
+      .to(dots[2], { scale: 1, duration: 0.2, ease: 'back.out(2)' }, 1.65).to(paths[1], { strokeDashoffset: 0, duration: 0.4, ease: 'none' }, 1.7).to(dots[3], { scale: 1, duration: 0.2, ease: 'back.out(2)' }, 2.05)
+      .to(info, { opacity: 1, x: 0, duration: 0.8, ease: E.soft }, 1.8).to(kids, { opacity: 1, y: 0, duration: 0.5, stagger: 0.05, ease: E.out }, 2.0);
+    if (pinned) { s.scroll.to(bundle, { y: -70, duration: 1 }, 0).to(info, { y: -30, duration: 1 }, 0).to($('.gridfield', st), { y: -50, duration: 1 }, 0).to($('.ch-title', st), { y: -30, duration: 1 }, 0); }
+  });
+
+  /* ---------- closing ---------- */
+  scene('#closing', function (s) {
+    var st = s.stage, lines = prime(st), ctas = $('.ctas', st), lab = $(':scope > .mono', st);
+    s.init = function () { gsap.set(lines, { yPercent: 110 }); gsap.set([lab, ctas], { opacity: 0, y: 12 }); }; s.init();
+    s.enter.to(lab, { opacity: 1, y: 0, duration: 0.5, ease: E.out }, 0).to(lines, WORD_IN, 0.1).to(ctas, { opacity: 1, y: 0, duration: 0.6, ease: E.out }, 0.6);
+  }, { pin: false, keep: true });
+
+  /* ---------- boot: measure, sync every chapter to the scroll position, honour the hash ---------- */
+  ScrollTrigger.addEventListener('refresh', syncScenes);
+  var booted = false;
+  function boot() {
+    if (booted) return; booted = true;
+    ScrollTrigger.refresh();
+    var h = location.hash || '';
+    if (h.indexOf('#/') === 0) STORE.route();
+    else if (h.length > 1 && $(h)) { lenis.scrollTo($(h), { immediate: true, force: true }); ScrollTrigger.update(); syncScenes(); }
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { ScrollTrigger.refresh(); });
+  }
+  if (document.readyState === 'complete') boot(); else window.addEventListener('load', boot);
+})();
+</script>
+</body>
+</html>
