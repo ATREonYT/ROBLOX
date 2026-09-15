@@ -172,7 +172,8 @@ main{position:relative;z-index:1}
 .product-side .ps-vars{display:flex;flex-wrap:wrap;gap:6px}
 .product-side .ps-vars span{font:400 11px/1 var(--mono);padding:6px 8px;box-shadow:inset 0 0 0 1px var(--hair);color:var(--muted)}
 .product-side .ps-ex{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-.product-side .ps-ex i{display:block;aspect-ratio:4/3;background:#111;overflow:hidden}
+.product-side .ps-ex i{display:block;position:relative;aspect-ratio:4/3;background:#111;overflow:hidden}
+.product-side .ps-ex .site{width:250%;height:250%;transform:scale(.4);transform-origin:0 0}
 .product-side .ps-ex img{width:100%;height:100%;object-fit:cover}
 .product-side .ps-a{display:flex;gap:10px;margin-top:6px}
 .cue{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);display:flex;align-items:center;gap:10px;white-space:nowrap;transition:opacity .5s;pointer-events:none}
@@ -205,7 +206,7 @@ main{position:relative;z-index:1}
 #build .depth{position:absolute;aspect-ratio:16/10;overflow:hidden;box-shadow:inset 0 0 0 1px var(--hair)}
 #build .d1{left:4%;top:60%;width:15%;opacity:.7}
 #build .d2{right:5%;top:12%;width:17%;opacity:.8}
-#build .d3{left:27%;top:13%;width:11%;opacity:.55}
+#build .d3{left:31%;top:12%;width:10%;opacity:.55}
 #build .panel-wrap{position:absolute;left:26%;top:34%;width:var(--b-we);height:calc(var(--b-we) * .625);perspective:1600px;--b-wc:26vw;--b-we:min(44vw,calc(74vw - 420px))}
 #build .pshadow{position:absolute;left:4%;right:4%;top:70%;height:60%;border-radius:50%;background:radial-gradient(ellipse at 50% 50%,rgba(0,0,0,.85),rgba(0,0,0,0) 62%);pointer-events:none;transform-origin:50% 50%}
 #build .panel-3d{position:absolute;left:0;top:0;width:100%;height:100%;transform-style:preserve-3d}
@@ -313,7 +314,7 @@ main{position:relative;z-index:1}
 #create .bi-price b{font:400 34px/1 var(--display);font-weight:400}
 
 /* ---------- closing + footer ---------- */
-#closing{position:relative;z-index:8;min-height:80vh;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:30px;padding:18vh var(--m);background:var(--bg)}
+#closing{position:relative;z-index:8;min-height:100vh;min-height:100svh;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:30px;padding:18vh var(--m);background:var(--bg)}
 #closing .ctas{display:flex;gap:12px;flex-wrap:wrap}
 footer{position:relative;z-index:8;display:flex;justify-content:space-between;align-items:center;gap:24px;padding:30px var(--m);border-top:1px solid var(--hair);background:var(--bg)}
 footer .links{display:flex;gap:22px;flex-wrap:wrap}
@@ -443,7 +444,12 @@ html.rm .menu-list a{transform:none;opacity:1}
   #origin .node:nth-child(1){left:4%!important;top:6%!important}#origin .node:nth-child(2){left:52%!important;top:18%!important}#origin .node:nth-child(3){left:14%!important;top:54%!important}#origin .node:nth-child(4){left:58%!important;top:66%!important}
   #imagine .framer{display:none}
   #express .flyer{display:none}
-  #express .final .w{opacity:1!important;transform:none!important}
+  #create .bpanel .bp-art{height:58%}
+  #create .bpanel .bp-t{left:8px;right:8px;bottom:8px;gap:3px}
+  #create .bpanel .bp-t .mono{font-size:9px}
+  #create .bpanel .bp-t b{font-size:13px;line-height:1.1}
+  #create .bp-art .site{width:167%;height:167%;transform:scale(.6);transform-origin:0 0}
+  #create .bp-type{font-size:15px;padding:8px}
 }
 </style>
 </head>
@@ -1313,7 +1319,8 @@ html.rm .menu-list a{transform:none;opacity:1}
       }
     };
     hw.forEach(function (w) { pair(w, false); }); pw.forEach(function (w) { pair(w, true); });
-    var loose = bw.filter(function (w) { return !w._paired; }), fresh = hw.concat(pw).filter(function (w) { return !w._paired; });
+    /* on phones the words do not fly (no room for two compositions), so the whole brief fades and the whole copy settles in */
+    var loose = pinned ? bw.filter(function (w) { return !w._paired; }) : bw, fresh = pinned ? hw.concat(pw).filter(function (w) { return !w._paired; }) : hw.concat(pw);
     anno.innerHTML = [0, 1, 2].map(function (i) { return '<path pathLength="1" d="M0 0"/><circle r="3"/>'; }).join('');
     var paths = $$('path', anno), dots = $$('circle', anno);
     var measure = function () {
@@ -1333,7 +1340,7 @@ html.rm .menu-list a{transform:none;opacity:1}
       });
     };
     measure(); gsap.set(paths, { strokeDasharray: 1 });
-    var pairedB = bw.filter(function (w) { return w._paired; }), fels = flyers.map(function (f) { return f.el; });
+    var pairedB = pinned ? bw.filter(function (w) { return w._paired; }) : [], fels = flyers.map(function (f) { return f.el; });
     s.measure = measure;
     s.init = function () {
       gsap.set(lines, { yPercent: 110 }); gsap.set(hw.concat(pw), { opacity: 0 }); gsap.set(fresh, { y: 8 }); gsap.set(loose, { opacity: 1, y: 0 }); gsap.set(pairedB, { opacity: 0 }); gsap.set(fc, { opacity: 0, y: 30 });
