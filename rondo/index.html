@@ -49,7 +49,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>RONDO-1. It is a coaster.</title>
+<title>RONDO-1</title>
+<meta name="description" content="RONDO-1. It is a coaster. 98 mm of Portuguese cork, 6 mm thick, 11 g.">
+<meta name="theme-color" content="#070707">
+<meta property="og:title" content="RONDO-1">
+<meta property="og:description" content="It is a coaster.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23070707'/%3E%3Ccircle cx='32' cy='32' r='24' fill='%23C98A4B'/%3E%3Ccircle cx='32' cy='32' r='24' fill='none' stroke='%23F3EFE7' stroke-opacity='.45' stroke-width='2'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
@@ -118,11 +123,11 @@ main{position:relative}
 
 /* ---------- nav + progress ---------- */
 .progress{position:fixed;top:0;left:0;width:100%;height:1px;background:var(--accent);z-index:41;transform-origin:0 50%;transform:scaleX(0);pointer-events:none}
-.nav{position:fixed;top:0;left:0;right:0;z-index:40;display:flex;justify-content:space-between;align-items:center;padding:26px var(--m);mix-blend-mode:difference;color:#fff}
+.nav{position:fixed;top:0;left:0;right:0;z-index:40;display:flex;justify-content:space-between;align-items:center;padding:calc(26px + env(safe-area-inset-top,0px)) var(--m) 26px;mix-blend-mode:difference;color:#fff}
 .wordmark{font:800 14px/1 var(--display);text-transform:uppercase;letter-spacing:.06em}
 .nav nav{display:flex;gap:28px}
 .nav nav a{font:500 11px/1 var(--display);text-transform:uppercase;letter-spacing:.14em}
-@media (max-width:767px){.nav{padding:22px var(--m)}.nav nav{gap:16px}}
+@media (max-width:767px){.nav{padding:calc(22px + env(safe-area-inset-top,0px)) var(--m) 22px}.nav nav{gap:16px}}
 
 /* ---------- scroll cue ---------- */
 .cue{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);display:flex;align-items:center;gap:12px;white-space:nowrap;transition:opacity .5s;pointer-events:none}
@@ -143,6 +148,7 @@ main{position:relative}
 .img::after{content:attr(data-src);position:absolute;left:12px;bottom:10px;font:400 10px/1 var(--mono);color:var(--fg);opacity:.4;z-index:1}
 .img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:2}
 .img.is-missing img.base,.img.is-missing img.alt,.img.is-missing .ch{display:none}
+.img.is-generated::after{z-index:3}
 .glitch .alt,.glitch .ch{opacity:0}
 .glitch .base,.glitch .alt{transition:opacity .2s}
 .glitch.show-alt .alt{opacity:1}
@@ -323,7 +329,7 @@ footer .mid{font:400 11px/1 var(--mono);color:var(--muted)}
     <figure class="hero mv">
       <div class="hero-in mv">
         <div class="img" data-src="assets/hero.png">
-          <img class="base" src="assets/hero.png" alt="The RONDO-1 cork coaster, tilted twenty degrees and lit from the upper left.">
+          <img class="base" decoding="async" src="assets/hero.png" alt="The RONDO-1 cork coaster, tilted twenty degrees and lit from the upper left.">
         </div>
       </div>
     </figure>
@@ -344,10 +350,10 @@ footer .mid{font:400 11px/1 var(--mono);color:var(--muted)}
       <h2 class="claim claim--hero claim--mixed split">Powered by AI*</h2>
       <span class="model in">RONDO-1</span>
     </div>
-    <div class="hand mv" tabindex="0" role="img" aria-label="A hand holding the RONDO-1 coaster. Hover, tap or focus to consult AI.">
+    <div class="hand mv" tabindex="0" role="button" aria-pressed="false" aria-label="A hand holding the RONDO-1 coaster. Hover, tap or focus to consult AI.">
       <div class="img glitch" data-src="assets/hand.png">
-        <img class="base" src="assets/hand.png" alt="A hand holding the RONDO-1 coaster between thumb and fingers, cropped at the wrist. Five fingers.">
-        <img class="alt" src="assets/hand-six.png" alt="The same hand holding the RONDO-1 coaster. Six fingers.">
+        <img class="base" decoding="async" src="assets/hand.png" alt="A hand holding the RONDO-1 coaster between thumb and fingers, cropped at the wrist. Five fingers.">
+        <img class="alt" decoding="async" src="assets/hand-six.png" alt="The same hand holding the RONDO-1 coaster. Six fingers.">
         <img class="ch ch-r" alt="" aria-hidden="true"><img class="ch ch-b" alt="" aria-hidden="true">
       </div>
     </div>
@@ -367,7 +373,7 @@ footer .mid{font:400 11px/1 var(--mono);color:var(--muted)}
     <h2 class="claim claim--giant s3-giant split">it’s wearable</h2>
     <div class="s3-band mv">
       <div class="marquee s3-win mv">
-        <div class="clip"><div class="img s3-img mv" data-src="assets/jacket.png"><img class="base" src="assets/jacket.png" alt="The RONDO-1 coaster worn as a lapel pin on a dark wool jacket." loading="lazy"></div></div>
+        <div class="clip"><div class="img s3-img mv" data-src="assets/jacket.png"><img class="base" decoding="async" src="assets/jacket.png" alt="The RONDO-1 coaster worn as a lapel pin on a dark wool jacket." loading="lazy"></div></div>
         <i class="h tl"></i><i class="h tr"></i><i class="h bl"></i><i class="h br"></i>
       </div>
     </div>
@@ -380,22 +386,22 @@ footer .mid{font:400 11px/1 var(--mono);color:var(--muted)}
   <div class="stage" style="--z:4">
     <h2 class="s4-label pos-tl mv"><span class="lab">SO PORTABLE,</span><span class="giant">it’s wearable</span></h2>
     <div class="s4-strip mv">
-      <figure class="card card--01"><div class="img" data-src="assets/ed-01.png"><img class="base" src="assets/ed-01.png" alt="A person stretching in dark activewear, the RONDO-1 coaster resting on the hip." loading="lazy"></div></figure>
-      <figure class="card card--02"><div class="img" data-src="assets/ed-02.png"><img class="base" src="assets/ed-02.png" alt="A person from behind in an orange cap, the RONDO-1 coaster pinned to a wool shoulder." loading="lazy"></div></figure>
+      <figure class="card card--01"><div class="img" data-src="assets/ed-01.png"><img class="base" decoding="async" src="assets/ed-01.png" alt="A person stretching in dark activewear, the RONDO-1 coaster resting on the hip." loading="lazy"></div></figure>
+      <figure class="card card--02"><div class="img" data-src="assets/ed-02.png"><img class="base" decoding="async" src="assets/ed-02.png" alt="A person from behind in an orange cap, the RONDO-1 coaster pinned to a wool shoulder." loading="lazy"></div></figure>
       <figure class="card card--03">
         <div class="img glitch" data-src="assets/ed-03.png">
-          <img class="base" src="assets/ed-03.png" alt="The RONDO-1 coaster centred on a seamless red backdrop." loading="lazy">
-          <img class="alt" src="assets/ed-03b.png" alt="The RONDO-1 coaster wearing a tiny wool jacket, on the same red backdrop." loading="lazy">
+          <img class="base" decoding="async" src="assets/ed-03.png" alt="The RONDO-1 coaster centred on a seamless red backdrop." loading="lazy">
+          <img class="alt" decoding="async" src="assets/ed-03b.png" alt="The RONDO-1 coaster wearing a tiny wool jacket, on the same red backdrop." loading="lazy">
           <img class="ch ch-r" alt="" aria-hidden="true"><img class="ch ch-b" alt="" aria-hidden="true">
         </div>
         <div class="chat"><span class="label">HEY @RONDO, CAN YOU PUT ON A JACKET?</span><button class="pill" type="button">SURE</button></div>
       </figure>
-      <figure class="card card--04"><div class="img" data-src="assets/ed-04.png"><img class="base" src="assets/ed-04.png" alt="Extreme macro of warm cork grain." loading="lazy"></div></figure>
+      <figure class="card card--04"><div class="img" data-src="assets/ed-04.png"><img class="base" decoding="async" src="assets/ed-04.png" alt="Extreme macro of warm cork grain." loading="lazy"></div></figure>
       <figure class="card card--05">
-        <div class="img" data-src="assets/ed-05.png"><img class="base" src="assets/ed-05.png" alt="A magazine cover, masthead RISE, a hand holding the RONDO-1 coaster." loading="lazy"></div>
+        <div class="img" data-src="assets/ed-05.png"><img class="base" decoding="async" src="assets/ed-05.png" alt="A magazine cover, masthead RISE, a hand holding the RONDO-1 coaster." loading="lazy"></div>
         <div class="cover" aria-hidden="true"><span class="mast">RISE</span><span class="lines label"><span>PORTUGUESE CORK</span><span>98 MM. 6 MM. 11 G.</span><span>RONDO-1</span></span></div>
       </figure>
-      <figure class="card card--06"><div class="img" data-src="assets/ed-06.png"><img class="base" src="assets/ed-06.png" alt="A hand in a white cuff holding the RONDO-1 coaster like a monocle." loading="lazy"></div></figure>
+      <figure class="card card--06"><div class="img" data-src="assets/ed-06.png"><img class="base" decoding="async" src="assets/ed-06.png" alt="A hand in a white cuff holding the RONDO-1 coaster like a monocle." loading="lazy"></div></figure>
     </div>
     <div class="marquee s4-marquee" aria-hidden="true"><i class="h tl"></i><i class="h tr"></i><i class="h bl"></i><i class="h br"></i></div>
     <div class="footnote--abs mv"><p class="footnote in">*Models were not paid. They are illustrations.</p></div>
@@ -406,7 +412,7 @@ footer .mid{font:400 11px/1 var(--mono);color:var(--muted)}
 <!-- scene 5 -->
 <section class="scene" id="desk" style="height:200vh;height:200svh">
   <div class="stage" style="--z:5">
-    <div class="img s5-img mv" data-src="assets/desk.jpg"><img class="base" src="assets/desk.jpg" alt="A workshop desk at eye level: pegboard wall, a takeaway cup resting on the RONDO-1 coaster, a green cutting mat, a game controller hung on the wall, afternoon light." loading="lazy"></div>
+    <div class="img s5-img mv" data-src="assets/desk.jpg"><img class="base" decoding="async" src="assets/desk.jpg" alt="A workshop desk at eye level: pegboard wall, a takeaway cup resting on the RONDO-1 coaster, a green cutting mat, a game controller hung on the wall, afternoon light." loading="lazy"></div>
     <div class="sweep mv" aria-hidden="true"></div>
     <h2 class="claim pos-bl split mv">ELEVATE YOUR<br>COFFEE EXPERIENCE.</h2>
     <div class="br-stack mv">
@@ -479,7 +485,7 @@ footer .mid{font:400 11px/1 var(--mono);color:var(--muted)}
 <!-- scene 7 -->
 <section class="scene" id="workbench" style="height:150vh;height:150svh">
   <div class="stage" style="--z:7">
-    <div class="img s7-img mv" data-src="assets/mat.jpg"><img class="base" src="assets/mat.jpg" alt="Top-down view of a green cutting mat on a wood desk: a pencil, three paper clips, a snap-off cutter, an eraser and the RONDO-1 coaster in the centre." loading="lazy"></div>
+    <div class="img s7-img mv" data-src="assets/mat.jpg"><img class="base" decoding="async" src="assets/mat.jpg" alt="Top-down view of a green cutting mat on a wood desk: a pencil, three paper clips, a snap-off cutter, an eraser and the RONDO-1 coaster in the centre." loading="lazy"></div>
     <div class="panel mv">
       <p class="label in">HANDMADE UTILITY</p>
       <h2 class="claim split">MADE BY HAND.<br>THEN REMADE<br>BY ALGORITHM.*</h2>
@@ -539,10 +545,211 @@ footer .mid{font:400 11px/1 var(--mono);color:var(--muted)}
   var HAS_GSAP = !!(window.gsap && window.ScrollTrigger);
   var CAN_HOVER = window.matchMedia('(hover: hover)').matches;
 
-  /* ---------- image fallback: missing files render as intentional panels ---------- */
+  /* ---------- procedural stand-ins: a self-contained SVG for any asset that has not been generated yet ---------- */
+  var RENDER = (function () {
+    function el(tag, a, inner) {
+      var s = '<' + tag;
+      for (var k in a) if (a[k] !== undefined && a[k] !== null) s += ' ' + k + '="' + a[k] + '"';
+      return s + (inner == null ? '/>' : '>' + inner + '</' + tag + '>');
+    }
+    var f = function (n) { return Math.round(n * 10) / 10; };
+    var MONO = 'JetBrains Mono, SF Mono, Menlo, Consolas, monospace';
+
+    function corkFilter(id, base, speck, scale, seed, sp) {
+      return el('filter', { id: id, 'color-interpolation-filters': 'sRGB', x: '-2%', y: '-2%', width: '104%', height: '104%' },
+        el('feTurbulence', { type: 'fractalNoise', baseFrequency: base, numOctaves: 4, seed: seed, result: 'n' }) +
+        el('feColorMatrix', { 'in': 'n', type: 'matrix', values: '0.36 0 0 0 0.50  0.28 0 0 0 0.33  0.16 0 0 0 0.17  0 0 0 0 1', result: 'base' }) +
+        el('feTurbulence', { type: 'fractalNoise', baseFrequency: speck, numOctaves: 2, seed: seed + 3, result: 'n2' }) +
+        el('feColorMatrix', { 'in': 'n2', type: 'matrix', values: sp || '0 0 0 0 0.20  0 0 0 0 0.12  0 0 0 0 0.06  1.9 0 0 0 -0.92', result: 'specks' }) +
+        el('feComposite', { 'in': 'specks', in2: 'base', operator: 'over', result: 'tex' }) +
+        el('feDiffuseLighting', { 'in': 'n', surfaceScale: scale, diffuseConstant: 1.25, 'lighting-color': '#ffffff', result: 'light' }, el('feDistantLight', { azimuth: 225, elevation: 56 })) +
+        el('feComposite', { 'in': 'tex', in2: 'light', operator: 'arithmetic', k1: 1, k2: 0, k3: 0, k4: 0, result: 'lit' }) +
+        el('feComposite', { 'in': 'lit', in2: 'SourceAlpha', operator: 'in' }));
+    }
+    function fabricFilter(id, tone, seed) {
+      return el('filter', { id: id, 'color-interpolation-filters': 'sRGB' },
+        el('feTurbulence', { type: 'fractalNoise', baseFrequency: 0.9, numOctaves: 3, seed: seed, result: 'n' }) +
+        el('feColorMatrix', { 'in': 'n', type: 'matrix', values: '0.10 0 0 0 ' + tone[0] + '  0.10 0 0 0 ' + tone[1] + '  0.10 0 0 0 ' + tone[2] + '  0 0 0 0 1', result: 'base' }) +
+        el('feDiffuseLighting', { 'in': 'n', surfaceScale: 1.4, diffuseConstant: 1.35, 'lighting-color': '#ffffff', result: 'light' }, el('feDistantLight', { azimuth: 225, elevation: 48 })) +
+        el('feComposite', { 'in': 'base', in2: 'light', operator: 'arithmetic', k1: 1, k2: 0, k3: 0, k4: 0, result: 'lit' }) +
+        el('feComposite', { 'in': 'lit', in2: 'SourceAlpha', operator: 'in' }));
+    }
+    function defs(seed) {
+      return '<defs>' +
+        corkFilter('cork', 0.03, 0.14, 2.4, seed) +
+        corkFilter('corkMacro', 0.006, 0.03, 5, seed + 1, '0 0 0 0 0.34  0 0 0 0 0.22  0 0 0 0 0.11  1.6 0 0 0 -0.8') +
+        fabricFilter('wool', [0.13, 0.13, 0.15], seed + 2) +
+        fabricFilter('knit', [0.09, 0.09, 0.10], seed + 4) +
+        el('filter', { id: 'blur', x: '-30%', y: '-30%', width: '160%', height: '160%' }, el('feGaussianBlur', { stdDeviation: 16 })) +
+        el('filter', { id: 'soft', x: '-30%', y: '-30%', width: '160%', height: '160%' }, el('feGaussianBlur', { stdDeviation: 6 })) +
+        el('filter', { id: 'grain' }, el('feTurbulence', { type: 'fractalNoise', baseFrequency: 0.85, numOctaves: 2, seed: seed + 7 }) + el('feColorMatrix', { type: 'matrix', values: '0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 0 0.5  0.9 0 0 0 -0.35' })) +
+        el('radialGradient', { id: 'shade', cx: '34%', cy: '30%', r: '82%' }, el('stop', { offset: 0, 'stop-color': '#fff', 'stop-opacity': 0.14 }) + el('stop', { offset: 0.42, 'stop-color': '#000', 'stop-opacity': 0 }) + el('stop', { offset: 1, 'stop-color': '#000', 'stop-opacity': 0.6 })) +
+        el('radialGradient', { id: 'glow' }, el('stop', { offset: 0, 'stop-color': '#C98A4B', 'stop-opacity': 0.22 }) + el('stop', { offset: 1, 'stop-color': '#C98A4B', 'stop-opacity': 0 })) +
+        el('radialGradient', { id: 'vig' }, el('stop', { offset: 0.55, 'stop-color': '#000', 'stop-opacity': 0 }) + el('stop', { offset: 1, 'stop-color': '#000', 'stop-opacity': 0.62 })) +
+        el('radialGradient', { id: 'red', cx: '38%', cy: '34%', r: '85%' }, el('stop', { offset: 0, 'stop-color': '#c4322a' }) + el('stop', { offset: 0.6, 'stop-color': '#8e1c17' }) + el('stop', { offset: 1, 'stop-color': '#3f0b09' })) +
+        el('linearGradient', { id: 'side', x1: 0, y1: 0, x2: 0, y2: 1 }, el('stop', { offset: 0, 'stop-color': '#6a4b2c' }) + el('stop', { offset: 1, 'stop-color': '#2e1e10' })) +
+        el('linearGradient', { id: 'key', x1: 0, y1: 0, x2: 1, y2: 1 }, el('stop', { offset: 0, 'stop-color': '#E8A050', 'stop-opacity': 0.16 }) + el('stop', { offset: 0.55, 'stop-color': '#E8A050', 'stop-opacity': 0 })) +
+        el('linearGradient', { id: 'cup', x1: 0, y1: 0, x2: 1, y2: 0 }, el('stop', { offset: 0, 'stop-color': '#f1ece2' }) + el('stop', { offset: 0.45, 'stop-color': '#d6cfc3' }) + el('stop', { offset: 1, 'stop-color': '#6f665b' })) +
+        el('linearGradient', { id: 'sleeve', x1: 0, y1: 0, x2: 1, y2: 0 }, el('stop', { offset: 0, 'stop-color': '#b58a56' }) + el('stop', { offset: 0.5, 'stop-color': '#8b6a46' }) + el('stop', { offset: 1, 'stop-color': '#3d2b17' })) +
+        el('linearGradient', { id: 'desk', x1: 0, y1: 0, x2: 0, y2: 1 }, el('stop', { offset: 0, 'stop-color': '#3d2c1c' }) + el('stop', { offset: 1, 'stop-color': '#14100b' })) +
+        el('linearGradient', { id: 'wall', x1: 0, y1: 0, x2: 1, y2: 1 }, el('stop', { offset: 0, 'stop-color': '#2a2622' }) + el('stop', { offset: 1, 'stop-color': '#100f0d' })) +
+        el('pattern', { id: 'peg', width: 46, height: 46, patternUnits: 'userSpaceOnUse' }, el('circle', { cx: 23, cy: 23, r: 5, fill: '#0a0908' }) + el('circle', { cx: 23, cy: 21.5, r: 5, fill: '#000', opacity: 0.5 })) +
+        el('pattern', { id: 'grid', width: 28, height: 28, patternUnits: 'userSpaceOnUse' }, el('path', { d: 'M28 0H0V28', fill: 'none', stroke: '#fff', 'stroke-opacity': 0.09 })) +
+        el('pattern', { id: 'grid5', width: 140, height: 140, patternUnits: 'userSpaceOnUse' }, el('path', { d: 'M140 0H0V140', fill: 'none', stroke: '#fff', 'stroke-opacity': 0.16, 'stroke-width': 1.5 })) +
+        '</defs>';
+    }
+
+    /* the coaster: shadow, visible edge, cork face, shading */
+    function disc(cx, cy, r, ry, t, o) {
+      o = o || {};
+      var s = el('ellipse', { cx: f(cx + r * 0.10), cy: f(cy + ry * 0.28 + t), rx: f(r * 1.02), ry: f(ry * 0.98), fill: '#000', opacity: o.shadow == null ? 0.62 : o.shadow, filter: 'url(#blur)' });
+      if (t > 0) {
+        s += el('ellipse', { cx: cx, cy: f(cy + t), rx: r, ry: ry, fill: '#2e1e10' });
+        s += el('rect', { x: f(cx - r), y: cy, width: f(2 * r), height: t, fill: 'url(#side)' });
+        s += el('path', { d: 'M' + f(cx - r) + ' ' + f(cy + t) + 'A' + r + ' ' + ry + ' 0 0 0 ' + f(cx + r) + ' ' + f(cy + t), fill: 'none', stroke: '#1a1008', 'stroke-width': 1 });
+      }
+      s += el('ellipse', { cx: cx, cy: cy, rx: r, ry: ry, fill: '#8b6a46', filter: 'url(#' + (o.macro ? 'corkMacro' : 'cork') + ')' });
+      s += el('ellipse', { cx: cx, cy: cy, rx: r, ry: ry, fill: 'url(#shade)' });
+      s += el('ellipse', { cx: cx, cy: cy, rx: r, ry: ry, fill: 'none', stroke: '#e0bb86', 'stroke-opacity': 0.3, 'stroke-width': Math.max(1, r * 0.007) });
+      if (o.stamp) s += el('text', { x: cx, y: f(cy + ry * 0.10), 'text-anchor': 'middle', 'font-family': MONO, 'font-size': f(r * 0.22), 'letter-spacing': f(r * 0.07), fill: '#1f1408', 'fill-opacity': 0.62 }, 'RONDO');
+      if (o.jacket) s += jacket(cx, cy, r, ry);
+      return s;
+    }
+
+    /* a tiny tailored jacket, worn by the coaster */
+    function jacket(cx, cy, r, ry) {
+      var R = r * 0.94, RY = ry * 0.94, vx = R * 0.34, vy = RY * 0.36, s = '';
+      s += el('clipPath', { id: 'jc' }, el('ellipse', { cx: cx, cy: cy, rx: R, ry: RY }));
+      var top = f(cy - RY), bottom = f(cy + RY);
+      var body = 'M' + f(cx - R) + ' ' + top + 'H' + f(cx + R) + 'V' + bottom + 'H' + f(cx - R) + 'Z' +
+        'M' + f(cx - vx) + ' ' + top + 'L' + cx + ' ' + f(cy + vy) + 'L' + f(cx + vx) + ' ' + top + 'Z';
+      s += '<g clip-path="url(#jc)">';
+      s += el('path', { d: body, 'fill-rule': 'evenodd', fill: '#20202a', filter: 'url(#wool)' });
+      var lapel = function (dir) {
+        var ax = cx - dir * vx, ay = top, bx = cx, by = cy + vy, ox = cx - dir * (vx + R * 0.30), oy = cy - RY * 0.10;
+        return el('path', { d: 'M' + f(ax) + ' ' + ay + 'L' + bx + ' ' + f(by) + 'L' + f(ox) + ' ' + f(oy) + 'Z', fill: dir > 0 ? '#2d2d38' : '#292933', stroke: '#3c3c48', 'stroke-width': 1.5 }) +
+          el('path', { d: 'M' + f(ax) + ' ' + ay + 'L' + bx + ' ' + f(by), fill: 'none', stroke: '#4a4a58', 'stroke-width': 2 });
+      };
+      s += lapel(1) + lapel(-1);
+      s += el('rect', { x: f(cx - R * 0.42), y: f(cy + RY * 0.02), width: f(R * 0.13), height: f(R * 0.05), fill: '#e9e2d3', transform: 'rotate(-14 ' + f(cx - R * 0.38) + ' ' + f(cy) + ')' });
+      var b1 = f(cy + vy + RY * 0.14), b2 = f(cy + vy + RY * 0.40);
+      s += el('circle', { cx: cx, cy: b1, r: f(R * 0.045), fill: '#5c4a2f', stroke: '#8a7250', 'stroke-width': 1 }) + el('circle', { cx: cx, cy: b2, r: f(R * 0.045), fill: '#5c4a2f', stroke: '#8a7250', 'stroke-width': 1 });
+      s += el('path', { d: 'M' + cx + ' ' + f(cy + vy) + 'V' + bottom, fill: 'none', stroke: '#0e0e12', 'stroke-width': 2, 'stroke-opacity': 0.8 });
+      s += '</g>';
+      s += el('ellipse', { cx: cx, cy: cy, rx: R, ry: RY, fill: 'none', stroke: '#000', 'stroke-opacity': 0.45, 'stroke-width': 3 });
+      return s;
+    }
+
+    function black(w, h, glow) {
+      return el('rect', { width: w, height: h, fill: '#070707' }) +
+        (glow ? el('ellipse', { cx: glow[0], cy: glow[1], rx: glow[2], ry: glow[3], fill: 'url(#glow)' }) : '');
+    }
+    function finish(w, h) {
+      return el('rect', { width: w, height: h, fill: 'url(#vig)' }) +
+        el('rect', { width: w, height: h, filter: 'url(#grain)', opacity: 0.16 });
+    }
+    function fabric(w, h, id) {
+      return el('rect', { width: w, height: h, fill: '#141416', filter: 'url(#' + id + ')' }) + el('rect', { width: w, height: h, fill: 'url(#key)' });
+    }
+    function cup(cx, baseY, w, h) {
+      var tw = w * 1.42, ry = w * 0.15, top = baseY - h, s = '';
+      s += el('ellipse', { cx: f(cx + w * 0.12), cy: f(baseY + 3), rx: f(w * 0.62), ry: f(ry * 1.1), fill: '#000', opacity: 0.55, filter: 'url(#soft)' });
+      s += el('path', { d: 'M' + f(cx - w / 2) + ' ' + baseY + 'L' + f(cx - tw / 2) + ' ' + f(top) + 'A' + f(tw / 2) + ' ' + f(ry * 1.4) + ' 0 0 0 ' + f(cx + tw / 2) + ' ' + f(top) + 'L' + f(cx + w / 2) + ' ' + baseY + 'A' + f(w / 2) + ' ' + f(ry) + ' 0 0 1 ' + f(cx - w / 2) + ' ' + baseY + 'Z', fill: 'url(#cup)' });
+      var sw = w + (tw - w) * 0.36, sw2 = w + (tw - w) * 0.72, sy = baseY - h * 0.36, sy2 = baseY - h * 0.72;
+      s += el('path', { d: 'M' + f(cx - sw / 2) + ' ' + f(sy) + 'L' + f(cx - sw2 / 2) + ' ' + f(sy2) + 'A' + f(sw2 / 2) + ' ' + f(ry * 1.25) + ' 0 0 0 ' + f(cx + sw2 / 2) + ' ' + f(sy2) + 'L' + f(cx + sw / 2) + ' ' + f(sy) + 'A' + f(sw / 2) + ' ' + f(ry * 1.12) + ' 0 0 1 ' + f(cx - sw / 2) + ' ' + f(sy) + 'Z', fill: 'url(#sleeve)' });
+      s += el('ellipse', { cx: cx, cy: f(top), rx: f(tw / 2 + 4), ry: f(ry * 1.55), fill: '#cfc8bd' });
+      s += el('ellipse', { cx: cx, cy: f(top - 4), rx: f(tw / 2 + 4), ry: f(ry * 1.55), fill: '#e6e0d5' });
+      s += el('ellipse', { cx: cx, cy: f(top - 5), rx: f(tw / 2 - 10), ry: f(ry * 1.2), fill: 'none', stroke: '#b8b0a4', 'stroke-width': 2 });
+      return s;
+    }
+    function shadowed(inner, dx, dy, op) {
+      return el('g', { transform: 'translate(' + dx + ' ' + dy + ')', opacity: op || 0.4, filter: 'url(#soft)' }, inner.replace(/fill="[^"]*"/g, 'fill="#000"').replace(/stroke="[^"]*"/g, 'stroke="#000"')) + inner;
+    }
+    function pencil(x, y, a) {
+      var body = el('rect', { x: 0, y: -11, width: 400, height: 22, rx: 2, fill: '#d9a441' }) + el('rect', { x: 0, y: -11, width: 400, height: 7, fill: '#f0c866' }) + el('rect', { x: 0, y: 5, width: 400, height: 6, fill: '#a87a26' }) +
+        el('path', { d: 'M400 -11L446 0L400 11Z', fill: '#e8d5b4' }) + el('path', { d: 'M434 -3L446 0L434 3Z', fill: '#2b2b2b' }) +
+        el('rect', { x: -26, y: -11, width: 26, height: 22, fill: '#b8b8bc' }) + el('rect', { x: -48, y: -10, width: 24, height: 20, rx: 4, fill: '#d98c86' });
+      return el('g', { transform: 'translate(' + x + ' ' + y + ') rotate(' + a + ')' }, shadowed(body, 10, 12, 0.45));
+    }
+    function clip(x, y, a) {
+      var c = el('path', { d: 'M0 6h58a10 10 0 0 1 0 20H12a7 7 0 0 0 0 14h40a5 5 0 0 1 0 10H18', fill: 'none', stroke: '#c3c3c8', 'stroke-width': 3.2, 'stroke-linecap': 'round' });
+      return el('g', { transform: 'translate(' + x + ' ' + y + ') rotate(' + a + ')' }, shadowed(c, 5, 7, 0.4));
+    }
+    function cutter(x, y, a) {
+      var k = el('rect', { x: 0, y: -22, width: 250, height: 44, rx: 6, fill: '#2b2b30' }) + el('rect', { x: 20, y: -6, width: 150, height: 12, rx: 6, fill: '#3a3a41' }) +
+        el('rect', { x: 60, y: -14, width: 26, height: 12, rx: 3, fill: '#E8642B' }) +
+        el('path', { d: 'M250 -14H360L372 -6V10H250Z', fill: '#d5d8dc' }) + el('path', { d: 'M270 -14L286 10M290 -14L306 10M310 -14L326 10M330 -14L346 10', stroke: '#9ba0a6', 'stroke-width': 1.5 }) +
+        el('path', { d: 'M250 10H372L360 12H250Z', fill: '#8f949a' });
+      return el('g', { transform: 'translate(' + x + ' ' + y + ') rotate(' + a + ')' }, shadowed(k, 8, 10, 0.45));
+    }
+    function eraser(x, y, a) {
+      var e = el('rect', { x: 0, y: 0, width: 150, height: 66, rx: 5, fill: '#eeebe4' }) + el('rect', { x: 0, y: 0, width: 66, height: 66, rx: 5, fill: '#33333b' }) + el('rect', { x: 56, y: 0, width: 10, height: 66, fill: '#33333b' });
+      return el('g', { transform: 'translate(' + x + ' ' + y + ') rotate(' + a + ')' }, shadowed(e, 8, 10, 0.4));
+    }
+    function controller(x, y) {
+      var c = el('path', { d: 'M28 0h104a28 28 0 0 1 28 28l10 44a22 22 0 0 1-42 8l-8-20H40l-8 20a22 22 0 0 1-42-8L0 28A28 28 0 0 1 28 0Z', fill: '#26262b' }) +
+        el('circle', { cx: 42, cy: 30, r: 11, fill: '#3a3a42' }) + el('circle', { cx: 118, cy: 30, r: 11, fill: '#3a3a42' }) + el('circle', { cx: 80, cy: 44, r: 9, fill: '#3a3a42' }) +
+        el('path', { d: 'M80 -40V0', stroke: '#6a6a70', 'stroke-width': 3 });
+      return el('g', { transform: 'translate(' + x + ' ' + y + ')' }, shadowed(c, 6, 8, 0.5));
+    }
+
+    var SCENES = {
+      'hero.png': [1200, 900, function () { return black(1200, 900, [620, 480, 560, 400]) + disc(600, 420, 420, 395, 22); }],
+      'hand.png': [900, 1200, function () { return black(900, 1200, [450, 520, 420, 420]) + disc(450, 470, 250, 232, 14); }],
+      'hand-six.png': [900, 1200, function () { return black(900, 1200, [450, 520, 420, 420]) + disc(450, 470, 250, 232, 14); }],
+      'jacket.png': [1200, 750, function () {
+        return fabric(1200, 750, 'wool') +
+          el('path', { d: 'M560 -20L300 780', stroke: '#0c0c0e', 'stroke-width': 6, 'stroke-opacity': 0.8 }) + el('path', { d: 'M572 -20L312 780', stroke: '#2a2a30', 'stroke-width': 3 }) +
+          el('path', { d: 'M640 -20L900 780', stroke: '#0c0c0e', 'stroke-width': 6, 'stroke-opacity': 0.8 }) + el('path', { d: 'M628 -20L888 780', stroke: '#2a2a30', 'stroke-width': 3 }) +
+          disc(430, 330, 96, 92, 7);
+      }],
+      'ed-01.png': [900, 1200, function () { return fabric(900, 1200, 'knit') + el('path', { d: 'M640 -20C560 380 480 620 300 1220', stroke: '#0b0b0d', 'stroke-width': 4, 'stroke-opacity': 0.9, fill: 'none' }) + disc(520, 760, 118, 108, 8); }],
+      'ed-02.png': [900, 1200, function () { return fabric(900, 1200, 'wool') + el('path', { d: 'M-20 470C240 300 560 300 920 470', stroke: '#0b0b0d', 'stroke-width': 5, 'stroke-opacity': 0.9, fill: 'none' }) + el('rect', { x: 0, y: 0, width: 900, height: 470, fill: '#000', opacity: 0.35 }) + disc(400, 420, 112, 104, 9); }],
+      'ed-03.png': [900, 1200, function () { return el('rect', { width: 900, height: 1200, fill: 'url(#red)' }) + disc(450, 600, 300, 290, 10, { shadow: 0.7 }); }],
+      'ed-03b.png': [900, 1200, function () { return el('rect', { width: 900, height: 1200, fill: 'url(#red)' }) + disc(450, 600, 300, 290, 10, { shadow: 0.7, jacket: true }); }],
+      'ed-04.png': [900, 1200, function () { return el('rect', { width: 900, height: 1200, fill: '#8b6a46', filter: 'url(#corkMacro)' }) + el('rect', { width: 900, height: 1200, fill: 'url(#shade)' }); }],
+      'ed-05.png': [900, 1200, function () { return black(900, 1200, [450, 760, 420, 380]) + disc(450, 720, 250, 232, 16); }],
+      'ed-06.png': [900, 1200, function () { return black(900, 1200, [450, 500, 400, 360]) + disc(450, 470, 205, 198, 8); }],
+      'desk.jpg': [1600, 900, function () {
+        return el('rect', { width: 1600, height: 900, fill: 'url(#wall)' }) + el('rect', { width: 1600, height: 560, fill: 'url(#peg)' }) +
+          controller(1230, 150) +
+          el('rect', { x: 0, y: 540, width: 1600, height: 360, fill: 'url(#desk)' }) +
+          el('path', { d: 'M380 600H1500L1600 900H180Z', fill: '#1f4436' }) + el('path', { d: 'M380 600H1500L1600 900H180Z', fill: 'url(#grid5)', opacity: 0.6 }) +
+          el('rect', { x: 0, y: 536, width: 1600, height: 6, fill: '#0a0806' }) +
+          disc(760, 690, 190, 54, 20) + cup(760, 690, 200, 300) +
+          el('rect', { width: 1600, height: 900, fill: 'url(#key)' });
+      }],
+      'mat.jpg': [1600, 900, function () {
+        return el('rect', { width: 1600, height: 900, fill: '#2a5c46' }) + el('rect', { width: 1600, height: 900, fill: 'url(#grid)' }) + el('rect', { width: 1600, height: 900, fill: 'url(#grid5)' }) +
+          el('path', { d: 'M0 0L900 900M1600 0L700 900', stroke: '#fff', 'stroke-opacity': 0.12, 'stroke-width': 1.5 }) +
+          el('rect', { x: 40, y: 40, width: 1520, height: 820, fill: 'none', stroke: '#fff', 'stroke-opacity': 0.2, 'stroke-width': 2 }) +
+          pencil(210, 250, -26) + clip(1190, 250, 20) + clip(1270, 330, -12) + clip(1210, 420, 34) + cutter(300, 690, 8) + eraser(1200, 640, -9) +
+          disc(800, 450, 190, 190, 0, { stamp: true, shadow: 0.5 });
+      }]
+    };
+    return {
+      has: function (file) { return !!SCENES[file]; },
+      svg: function (file) {
+        var sc = SCENES[file]; if (!sc) return null;
+        var w = sc[0], h = sc[1];
+        var body = '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '">' + defs(5) + sc[2]() + finish(w, h) + '</svg>';
+        return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(body);
+      }
+    };
+  })();
+
+  /* ---------- image fallback: a missing file gets its procedural stand-in, or an intentional panel ---------- */
   function watchImage(img) {
     var box = img.closest('.img');
+    img.dataset.file = img.getAttribute('src') || '';
     var mark = function () {
+      var file = img.dataset.file.split('/').pop();
+      if (!img.dataset.gen && RENDER.has(file)) {
+        img.dataset.gen = '1';
+        img.setAttribute('src', RENDER.svg(file));
+        box.classList.add('is-generated');
+        return;
+      }
       img.dataset.missing = '1';
       if (img.classList.contains('base') && !box.classList.contains('show-alt')) box.classList.add('is-missing');
       if (img.classList.contains('alt') && box.classList.contains('show-alt')) box.classList.add('is-missing');
@@ -601,7 +808,7 @@ footer .mid{font:400 11px/1 var(--mono);color:var(--muted)}
       box.classList.remove('split-a');
       box.classList.add('split-b');
       box.classList.toggle('show-alt', toAlt);
-      box.setAttribute('data-src', src);
+      box.setAttribute('data-src', target.dataset.file || src);
       box.classList.toggle('is-missing', target.dataset.missing === '1');
     });
     later(200, function () { box.classList.remove('split-b'); });
@@ -620,6 +827,7 @@ footer .mid{font:400 11px/1 var(--mono);color:var(--muted)}
     var set = function (on) {
       if (on === six) return;
       six = on;
+      hand.setAttribute('aria-pressed', String(on));
       glitchSwap(box, on);
       if (on) flick();
     };
