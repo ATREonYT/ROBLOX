@@ -6,17 +6,32 @@ the courtyard, buildings, train, etc.) lives in your Studio place.
 
 ## What the game does right now
 
-You spawn in **The Block** courtyard and earn **Power** every second.
+You spawn in **The Block** — a walled hood courtyard with rowhouses, a
+court, a food truck and string lights — and earn **Power** every second.
 
-- **15 looks** stand on the 3-tier pedestal, from **Corner Kid** (free,
-  +1/sec) up to **Kingpin** (30,000 Power, +110/sec). Walk up to one and
-  press **E** to wear it once you have enough Power. Your look decides how
-  much Power you earn.
-- **3 gym mats** multiply your Power while you stand on them:
-  Corner Gym **x2** (free), Street Gym **x4** (150 Power),
-  Boss Gym **x8** (1,000 Power).
-- A **server leaderboard** shows the top 5, and Power shows in the
-  player list.
+- **The Drip Shop** holds all **15 looks**, from **Corner Kid** (free,
+  +1/sec) up to **Kingpin** (30,000 Power, +110/sec), on three compact
+  rows. Walk up to one and press **E** to wear it once you have enough
+  Power. Your look decides how much Power you earn.
+- **The Block Boxing Club** has **8 bags**, and the **Champ Ring** sits in
+  the middle of the courtyard. Stand on a mat to multiply your Power:
+
+  | Station | Power needed | Multiplier |
+  |---|---|---|
+  | Tire Bag | free | x2 |
+  | Duct Tape Bag | 50 | x3 |
+  | Street Bag | 150 | x4 |
+  | Heavy Bag | 500 | x6 |
+  | Speed Bag | 1,000 | x8 |
+  | Double-End Bag | 3,000 | x12 |
+  | Pro Bag | 8,000 | x18 |
+  | Gold Bag | 20,000 | x25 |
+  | Champ Ring | 50,000 | x40 |
+
+  Bags you can't use yet show as **black silhouettes**, and the bag you're
+  training on swings.
+- A **server leaderboard** on the courtyard wall shows the top 5, and Power
+  shows in the player list.
 - **Saving** uses ProfileStore. In Studio it runs in *Mock* mode, so
   progress resets when you press Stop — that's on purpose.
 - Already planned in the config but **not built yet**: walls/stages, Cash,
@@ -28,10 +43,10 @@ You spawn in **The Block** courtyard and earn **Power** every second.
 
 | Folder here | In Studio | What's inside |
 |---|---|---|
-| `src/ServerScriptService/HoodServer/` | ServerScriptService → HoodServer | `Bootstrap` (starts everything), `DataService` + `ProfileSchema` (saving), `LobbyService` (Power, looks, gyms, leaderboard), `RateLimiter`, `ServerConfig`, `Vendor/ProfileStore`, `UnitTestRunner` (disabled) |
+| `src/ServerScriptService/HoodServer/` | ServerScriptService → HoodServer | `Bootstrap` (starts everything), `DataService` + `ProfileSchema` (saving), `LobbyService` (Power, looks, training mats, leaderboard), `RateLimiter`, `ServerConfig`, `Vendor/ProfileStore`, `UnitTestRunner` (disabled) |
 | `src/ReplicatedStorage/Shared/` | ReplicatedStorage → Shared | `Net` (remotes), `SkinArt` (builds the outfits), `LobbyRules`, `RepMath`, `Format`, and `Config/` (Skins, Maps, Balance, Crew, Products, MorphTextures) |
-| `src/StarterPlayer/StarterPlayerScripts/HoodClient/` | StarterPlayerScripts → HoodClient | `Lobby` (Power HUD, tips, equip prompts), `BlockEnvironment` (train, sounds, neighbors), `Foundation` (Studio-only test panel) |
-| `src/ServerStorage/` | ServerStorage | `BlockBuilder`, `BlockPolish`, `SimulatorLobby` (edit-time map builders — they never run during play) and `UnitTest/` (tests) |
+| `src/StarterPlayer/StarterPlayerScripts/HoodClient/` | StarterPlayerScripts → HoodClient | `Lobby` (Power HUD, tips, equip prompts, locked-bag silhouettes, swinging bags), `BlockEnvironment` (train, sounds, neighbors), `Foundation` (Studio-only test panel) |
+| `src/ServerStorage/` | ServerStorage | `SimulatorLobby` (builds the lobby), `BlockBuilder`, `BlockPolish` (older map builders) — these only run when you call them from the Command Bar — and `UnitTest/` (tests) |
 
 Left out on purpose: the backup folders in ServerStorage
 (`BeforeCompactStages_…`, `BeforeFriendlyCourtyard_…`) and the two
@@ -44,6 +59,23 @@ Left out on purpose: the backup folders in ServerStorage
 server the game **refuses to start** until `Block` is set to your place's
 ID (the code does this on purpose so it never saves to the wrong place).
 After publishing, put your PlaceId there — Claude can do it for you.
+
+## Building the lobby
+
+The lobby is made by `src/ServerStorage/SimulatorLobby.lua`. After its
+scripts are in Studio (Rojo sync, below), build it once:
+
+1. Open the **Command Bar** (⌘ + Shift + /, type `command bar`).
+2. Paste this and press Enter:
+   ```lua
+   require(game.ServerStorage.SimulatorLobby).Build()
+   ```
+3. The Output window prints how many parts were built and what was moved
+   out of the way. The old lobby and anything that stood inside the new
+   courtyard go into **ServerStorage → BeforeHoodLobby_…**, so nothing is
+   lost — and **Ctrl+Z / ⌘+Z** undoes the whole build in one step.
+
+Run it again any time the lobby code changes; it replaces itself.
 
 ## Syncing with Rojo
 

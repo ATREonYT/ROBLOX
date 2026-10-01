@@ -22,10 +22,18 @@ for i,r in rows do
  table.insert(S.List,{Id=r[1],Name=r[2],Required=r[3],Gain=r[4],Style=r[5],Color=r[6],Accent=r[7],Skin=r[8],Pants=r[9],Hat=r[10],Expression=r[11],Index=i})
 end
 S.ById={};for _,s in S.List do S.ById[s.Id]=s end
+-- Block Boxing Club, in walking order from the entrance. Where each mat sits is read from the built
+-- lobby at runtime (Training_<Id>.TrainingZone), so the gym can be moved in Studio without code edits.
 S.Stations={
- {Id='Starter',Name='Corner Gym',Required=0,Multiplier=2,Color=C(162,171,186),X=-29,Z=66,HalfX=8,HalfZ=8},
- {Id='Street',Name='Street Gym',Required=150,Multiplier=4,Color=C(112,165,199),X=-50,Z=66,HalfX=8,HalfZ=8},
- {Id='Boss',Name='Boss Gym',Required=1000,Multiplier=8,Color=C(218,190,98),X=-40,Z=43,HalfX=8,HalfZ=8},
+ {Id='Starter',Name='Tire Bag',Gear='TireBag',Required=0,Multiplier=2,Color=C(150,156,166)},
+ {Id='Tape',Name='Duct Tape Bag',Gear='TapeBag',Required=50,Multiplier=3,Color=C(196,150,96)},
+ {Id='Street',Name='Street Bag',Gear='StreetBag',Required=150,Multiplier=4,Color=C(84,140,220)},
+ {Id='Heavy',Name='Heavy Bag',Gear='HeavyBag',Required=500,Multiplier=6,Color=C(222,72,72)},
+ {Id='Speed',Name='Speed Bag',Gear='SpeedBag',Required=1000,Multiplier=8,Color=C(246,136,52)},
+ {Id='DoubleEnd',Name='Double-End Bag',Gear='DoubleEndBag',Required=3000,Multiplier=12,Color=C(160,86,226)},
+ {Id='Pro',Name='Pro Bag',Gear='ProBag',Required=8000,Multiplier=18,Color=C(40,190,190)},
+ {Id='Gold',Name='Gold Bag',Gear='GoldBag',Required=20000,Multiplier=25,Color=C(240,192,56)},
+ {Id='Ring',Name='Champ Ring',Gear='Ring',Required=50000,Multiplier=40,Color=C(230,60,140)},
 }
 S.StationById={};for _,s in S.Stations do S.StationById[s.Id]=s end
 function S.available(power,id) local s=S.ById[id];return s~=nil and power>=s.Required end

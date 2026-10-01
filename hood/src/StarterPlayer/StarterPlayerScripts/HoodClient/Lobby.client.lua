@@ -40,6 +40,43 @@ local pointer=label(indicator,'Destination',UDim2.fromScale(1,1),UDim2.fromScale
 local function compact(v)
  if v>=1e6 then return string.format('%.1fM',v/1e6) elseif v>=1000 then return string.format('%.1fK',v/1000) end;return tostring(math.floor(v))
 end
+-- Training stations in the built lobby: mat, sign, gear. Locked gear shows as a black silhouette.
+local stations={}
+for _,s in Skins.Stations do
+ local model=training:FindFirstChild('Training_'..s.Id,true)
+ if model then
+  local entry={Zone=model:FindFirstChild('TrainingZone'),Sign=model:FindFirstChild('Sign',true),Parts={},Swing={}}
+  local gear=model:FindFirstChild('Equipment')
+  if gear then
+   for _,p in gear:GetDescendants() do if p:IsA('BasePart') and p.Transparency<1 then table.insert(entry.Parts,{Part=p,Color=p.Color,Material=p.Material}) end end
+   local hinge=gear:FindFirstChild('Hinge');local swing=gear:FindFirstChild('Swing')
+   if hinge and swing then
+    entry.Hinge=hinge.CFrame
+    for _,p in swing:GetDescendants() do if p:IsA('BasePart') then table.insert(entry.Swing,{Part=p,Offset=hinge.CFrame:ToObjectSpace(p.CFrame)}) end end
+   end
+  end
+  stations[s.Id]=entry
+ end
+end
+local SILHOUETTE=C(18,18,22)
+local function paintStations(n)
+ for _,s in Skins.Stations do
+  local e=stations[s.Id]
+  if e then
+   local locked=n<s.Required
+   if e.Locked~=locked then
+    e.Locked=locked
+    for _,r in e.Parts do r.Part.Color=locked and SILHOUETTE or r.Color;r.Part.Material=locked and Enum.Material.SmoothPlastic or r.Material end
+   end
+   local detail=e.Sign and e.Sign:FindFirstChild('Detail',true)
+   if detail then
+    detail.Text=locked and ('LOCKED • '..compact(s.Required)..' POWER') or (s.Required==0 and 'FREE • TRAIN HERE' or 'UNLOCKED • TRAIN HERE')
+    detail.TextColor3=locked and C(255,128,128) or C(126,255,171)
+   end
+  end
+ end
+end
+local function zoneOf(id) local e=stations[id];return e and e.Zone end
 local lastPower;local previouslyUnlocked={};local pulse
 local function refresh()
  local n=player:GetAttribute('Power');if n==nil then power.Text='Loading...';step.Text='Getting your neighborhood ready';return end
@@ -56,14 +93,15 @@ local function refresh()
   end
   if unlocked then best=s end
  end
+ paintStations(n)
  local nextSkin=Skins.nextSkin(n)
  local bestGym=Skins.Stations[1];for _,g in Skins.Stations do if n>=g.Required then bestGym=g end end
  if station:find('Locked:') then
-  local gym=Skins.StationById[station:sub(8)];step.Text='This gym needs '..compact(gym.Required)..' Power';indicator.Adornee=training.Training_Starter.TrainingZone;pointer.Text='FREE TRAINING ↓'
+  local gym=Skins.StationById[station:sub(8)];step.Text=gym.Name..' needs '..compact(gym.Required)..' Power';indicator.Adornee=zoneOf(bestGym.Id);pointer.Text='TRAIN x'..bestGym.Multiplier..' HERE ↓'
  elseif best.Gain>skin.Gain then
   step.Text='New look unlocked! Equip '..best.Name;indicator.Adornee=morphs['Skin_'..best.Id].Interact;pointer.Text='EQUIP YOUR LOOK ↓'
  elseif station=='' then
-  step.Text='Step onto a gym mat to train faster';indicator.Adornee=training['Training_'..bestGym.Id].TrainingZone;pointer.Text='TRAIN x'..bestGym.Multiplier..' HERE ↓'
+  step.Text='Stand on the '..bestGym.Name..' mat to train faster';indicator.Adornee=zoneOf(bestGym.Id);pointer.Text='TRAIN x'..bestGym.Multiplier..' HERE ↓'
  else
   step.Text='Training x'..Skins.StationById[station].Multiplier..' — walk off to stop';indicator.Adornee=nil
  end
@@ -83,21 +121,16 @@ end
 for _,key in {'Power','EquippedSkin','TrainingStation','PowerRate'} do player:GetAttributeChangedSignal(key):Connect(refresh) end
 refresh()
 
--- Gentle equipment motion is local; only the active gym animates.
-local bags={}
-for _,s in Skins.Stations do
- bags[s.Id]={}
- for _,p in training['Training_'..s.Id]:GetChildren() do
-  if p.Name=='PunchBag' or p.Name=='BagBelt' then table.insert(bags[s.Id],{Part=p,Base=p.CFrame}) end
- end
-end
+-- Only the bag you're training on sways, and only on your screen.
 local lastStation=''
 game:GetService('RunService').Heartbeat:Connect(function()
  local station=player:GetAttribute('TrainingStation') or ''
- if lastStation~=station and bags[lastStation] then for _,b in bags[lastStation] do b.Part.CFrame=b.Base end end
+ local last=stations[lastStation]
+ if lastStation~=station and last and last.Hinge then for _,r in last.Swing do r.Part.CFrame=last.Hinge*r.Offset end end
  lastStation=station
- if bags[station] then
-  local angle=math.sin(os.clock()*3)*.065
-  for _,b in bags[station] do b.Part.CFrame=b.Base*CFrame.Angles(0,0,angle) end
+ local e=stations[station]
+ if e and e.Hinge then
+  local sway=e.Hinge*CFrame.Angles(math.sin(os.clock()*6)*.12,0,0)
+  for _,r in e.Swing do r.Part.CFrame=sway*r.Offset end
  end
 end)

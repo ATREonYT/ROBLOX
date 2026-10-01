@@ -8,6 +8,8 @@ local Net=require(RS.Shared.Net)
 while not RS:GetAttribute('FoundationReady') do task.wait(.1) end
 local map=workspace:FindFirstChild('TheBlock');if not map or not map:FindFirstChild('SimulatorLobby') then return end
 local f=CFrame.Angles(0,map:GetAttribute('MapYaw') or map.MapYawValue.Value,0)
+local zones=Rules.zonesFrom(map.SimulatorLobby,f)
+if #zones<#Skins.Stations then warn('[LobbyService] Only '..#zones..' of '..#Skins.Stations..' training mats found; rebuild the lobby.') end
 local remote=Net.get('EquipSkin');local cooldown={};local applied={}
 local function sync(player,profile,multiplier,station)
  local id=profile.Data.EquippedSkin;local s=Skins.ById[id] or Skins.List[1]
@@ -49,7 +51,7 @@ while task.wait(1) do
   if profile then
    local multiplier,station=1,''
    if root and h and h.Health>0 then
-    multiplier,station=Rules.training(profile.Data.Rep,f:PointToObjectSpace(root.Position))
+    multiplier,station=Rules.training(profile.Data.Rep,f:PointToObjectSpace(root.Position),zones)
     profile.Data.Rep=math.min(1e12,profile.Data.Rep+Skins.gain(profile.Data.EquippedSkin,multiplier))
     if multiplier>1 then profile.Data.Onboarding.Trained=true end
     equipAppearance(player,profile.Data.EquippedSkin)
