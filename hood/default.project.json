@@ -1,0 +1,46 @@
+{
+  "name": "Hood",
+  "tree": {
+    "$className": "DataModel",
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "HoodServer": {
+        "$path": "src/ServerScriptService/HoodServer",
+        "$ignoreUnknownInstances": true
+      }
+    },
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
+      "Shared": {
+        "$path": "src/ReplicatedStorage/Shared",
+        "$ignoreUnknownInstances": true
+      }
+    },
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
+        "HoodClient": {
+          "$path": "src/StarterPlayer/StarterPlayerScripts/HoodClient",
+          "$ignoreUnknownInstances": true
+        }
+      }
+    },
+    "ServerStorage": {
+      "$className": "ServerStorage",
+      "BlockBuilder": {
+        "$path": "src/ServerStorage/BlockBuilder.lua"
+      },
+      "BlockPolish": {
+        "$path": "src/ServerStorage/BlockPolish.lua"
+      },
+      "SimulatorLobby": {
+        "$path": "src/ServerStorage/SimulatorLobby.lua"
+      },
+      "UnitTest": {
+        "$path": "src/ServerStorage/UnitTest",
+        "$ignoreUnknownInstances": true
+      }
+    }
+  }
+}
