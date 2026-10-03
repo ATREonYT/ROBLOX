@@ -60,31 +60,32 @@ The approach that holds up best in 2025–26 is to **author in Offset pixels at 
 - **Recommended HUD scaling pattern for Hood.** Build every HUD element in Offset pixels designed at 1280×720 or 1920×1080. Pin elements to edges with Scale positions plus AnchorPoint, for example top-right `Position = UDim2.new(1,-16,0,16)` with `AnchorPoint = Vector2.new(1,0)`. Then drive one UIScale per ScreenGui. Use `ScreenGui.AbsoluteSize` (which already excludes the insets) rather than `Camera.ViewportSize`, because the inset-adjusted size is what your UI actually occupies.
   ```lua
   -- Responsive UIScale (reference 1280x720, clamped). Run in the HUD LocalScript.
+  -- A transparent root Frame carries the UIScale. The docs define UIScale on a parent GuiObject.
+  -- Community setups also parent UIScale straight into the ScreenGui (unverified in docs).
   local REF = Vector2.new(1280, 720)
-  local function attachAutoScale(screenGui: ScreenGui, minS: number?, maxS: number?)
-      local uiScale = Instance.new("UIScale")
-      uiScale.Parent = screenGui -- UIScale on a ScreenGui is not valid; put it on a full-size root Frame
-      return uiScale
-  end
-  -- Correct version: a root Frame that fills the ScreenGui carries the UIScale.
-  local function makeRoot(screenGui: ScreenGui)
+  local function makeScaledRoot(screenGui: ScreenGui)
       local root = Instance.new("Frame")
       root.Name = "Root"
       root.BackgroundTransparency = 1
-      root.Size = UDim2.fromScale(1, 1)
+      root.AnchorPoint = Vector2.new(0.5, 0.5)
+      root.Position = UDim2.fromScale(0.5, 0.5)
       root.Parent = screenGui
       local s = Instance.new("UIScale"); s.Parent = root
       local function update()
-          local abs = screenGui.AbsoluteSize
-          local k = math.min(abs.X / REF.X, abs.Y / REF.Y)   -- "fit" (letterbox) rule
-          s.Scale = math.clamp(k, 0.55, 1.6)                  -- keep phones legible, TVs sane
+          local abs = screenGui.AbsoluteSize                 -- already inset-adjusted
+          local k = math.clamp(math.min(abs.X / REF.X, abs.Y / REF.Y), 0.55, 1.6) -- "fit" rule + clamp
+          s.Scale = k
+          -- UIScale multiplies AbsoluteSize, so size the root at 1/k of the screen:
+          -- after scaling it exactly fills the ScreenGui, and Scale-positioned children
+          -- (e.g. corner anchors) still land on the real screen edges.
+          root.Size = UDim2.fromScale(1 / k, 1 / k)
       end
       screenGui:GetPropertyChangedSignal("AbsoluteSize"):Connect(update)
       update()
       return root, s
   end
   ```
-  When UIScale < 1, children laid out with Scale inside `root` see a larger logical parent. So with this pattern, give root `Size = UDim2.fromScale(1/k, 1/k)` or keep the HUD in Offset. Most projects use pure Offset under the scaled root, which is why the snippet uses `min()`. The `min(w/refW, h/refH)` "fit" formula and the clamp range are community practice, not a Roblox-documented formula. Treat the numbers as tunable.
+  Children of `root` then use Offset sizes, as designed at 1280×720, plus Scale positions and AnchorPoints for edge pinning. The `min(w/refW, h/refH)` "fit" formula and the clamp range are community practice (compare BetterScale's `screenSize / resolution` clamped to `Range`), not a Roblox-documented formula. Treat the numbers as tunable.
 - **A phone floor.** Phones in landscape typically report a short axis of roughly 360–430 logical px. Roblox's own `minAxis <= 500` check implies this. So 720-reference scaling gives about k≈0.5–0.6 on phones. Clamp the minimum (about 0.55–0.6) or add a per-`ViewportDisplaySize.Small` bonus multiplier, so a 72 px design-size button does not fall below roughly 44 px on device. Mirror Roblox's 70/120 jump-button split as a sanity check for primary action buttons.
 - **Text.** Replace `TextScaled = true` in Hood's HUD with a fixed `TextSize` (e.g. 28–36 at 720p reference) under the scaled root. Where the text length varies, add `AutomaticSize = X` with a min-width `Size`. Keep `TextScaled` only for BillboardGuis, where Roblox explicitly says it is useful.
 - **Insets.** Keep gameplay HUD ScreenGuis on `CoreUISafeInsets`. Use `None` only for full-screen backdrops and vignettes. If something must sit in the top bar row, such as a coin pill next to the Roblox menu, use a separate ScreenGui with `TopbarSafeInsets`.
@@ -396,7 +397,7 @@ These are implementation patterns built on the cited APIs. The durations and eas
       end
   end)
   ```
-  This works because `Offset` (1,0) shifts the gradient by one full width. A GuiObject takes only one UIGradient for its fill, so the shine needs its own overlay frame. The overlay must use matching UICorner radii, or ClipsDescendants inside a rounded parent (note that UICorner clips input but not descendants).
+  This works because `Offset` (1,0) shifts the gradient by one full width. Practitioners treat a GuiObject's fill as taking only one effective UIGradient. The docs do not state this, so verify it; in any case, an overlay frame keeps the shine independent of the fill gradient. The overlay must use matching UICorner radii, or ClipsDescendants inside a rounded parent (note that UICorner clips input but not descendants).
 - **Toast notifications.** Put a UIListLayout (VerticalAlignment Top, Padding 8) inside a top-center container. Each toast is a Frame with an inner content frame. Tween the inner frame's UIScale 0 → 1 with Back Out (about 0.3 s), hold 2–3 s, then fade via the TextTransparency/UIStroke Transparency tween and Destroy. The layout reflows the rest. Animate the inner child, not the layout-controlled frame, because layouts own Position.
 - **Springs vs tweens.**
   - Tweens fit fire-and-forget transitions.
