@@ -9,6 +9,7 @@
 -- Floors and terraces come from one 4-stud grid and are merged into rectangles, so every piece meets its
 -- neighbours edge to edge with nothing overlapping.
 local V2 = {}
+local Props, PROPS_KIT -- ServerStorage.HoodProps and the helpers it borrows, set in Build
 
 local ReplicatedStorage = game:GetService('ReplicatedStorage')
 local V, C = Vector3.new, Color3.fromRGB
@@ -244,7 +245,7 @@ local function planFloors()
 	paint(g, 12, 48, 60, 56, 'path')
 	paint(g, -64, 4, -24, 44, 'club')
 	paint(g, 20, 0, 64, 44, 'path')
-	paint(g, -52, 64, -28, 88, 'path')
+	paint(g, -56, 60, -24, 92, 'path')
 	paint(g, 40, 68, 52, 80, 'pit')
 	return g
 end
@@ -831,7 +832,7 @@ local function buildBoxingClub(ctx, stations)
 			order += 1
 			local s = stations[order]
 			local cf = CFrame.new(cols[c], 0, rows[r].z) * CFrame.Angles(0, rows[r].yaw == 0 and math.pi or 0, 0)
-			buildStation(club:at(cf), s)
+			Props.station(club:at(cf), PROPS_KIT, s, order)
 		end
 	end
 	-- Fence along the street side and cross path, with gaps for the aisle and a gate.
@@ -1218,6 +1219,8 @@ end
 
 ---------------------------------------------------------------------------------------------- build
 function V2.Build()
+	Props = require(game:GetService('ServerStorage').HoodProps)
+	PROPS_KIT = { studs = studs, decor = decor, ghost = ghost, light = light, surface = surface, line = line, billboard = billboard, compact = compact, FONT = FONT }
 	local skins = require(ReplicatedStorage.Shared.Config.Skins)
 	local maps = require(ReplicatedStorage.Shared.Config.Maps)
 	local crew = require(ReplicatedStorage.Shared.Config.Crew)
@@ -1305,8 +1308,9 @@ function V2.Build()
 	-- The Drip Stand's shop building fills its lot back to the terrace walls (x 24..64, z 0..21 in map terms).
 	buildDripStand(ctx:at(CFrame.new(42, 0, 42) * CFrame.Angles(0, math.pi, 0)), skins, art, { x0 = -22, x1 = 18, z1 = 42 })
 	buildBoxingClub(ctx, skins.Stations)
-	buildRing(ctx:at(CFrame.new(-40, 0, 76)), skins.Stations[9])
-	buildCrewStand(ctx:at(CFrame.lookAt(V(-35, 0, 96), V(-34, 0, 96))), crew)
+	local ringStation = skins.Stations[9]
+	Props.ring(ctx:at(CFrame.new(-40, 0, 76)):group('Training_' .. ringStation.Id), PROPS_KIT, ringStation, 9)
+	buildCrewStand(ctx:at(CFrame.lookAt(V(-35, 0, 97), V(-34, 0, 97))), crew)
 	buildStash(ctx:at(CFrame.lookAt(V(20.5, 0, 92), V(10, 0, 92))))
 	buildSubway(ctx)
 	buildBoards(ctx)
@@ -1351,7 +1355,7 @@ function V2.Build()
 	bench(life, V(-14.5, 0, 74), V(1, 0, 0))
 	for k, c in { { 20.6, 101.6, P.blue }, { 22.4, 101.9, P.red } } do crate(life, CFrame.new(c[1], 0, c[2]) * CFrame.Angles(0, k * 0.3, 0), c[3]) end
 	-- Lobby trees; the ones near walls or boards keep their branches out of them.
-	for k, t in { { V(-60, 0, 60), 'z' }, { V(-58, 0, 98), 'none' }, { V(-24, 0, 60) }, { V(28, 0, 100), 'x' }, { V(60, 0, 100), 'none' }, { V(58.5, 0, 51), 'none' } } do
+	for k, t in { { V(-60, 0, 60), 'z' }, { V(-58, 0, 98), 'none' }, { V(-22, 0, 60), 'z' }, { V(28, 0, 100), 'x' }, { V(60, 0, 100), 'none' }, { V(58.5, 0, 51), 'none' } } do
 		tree(life, t[1], k * 13 + 5, 0.9, t[2])
 	end
 	for k, pos in { V(-30, 0, 2), V(-50, 0, 2), V(-62, 0, 47), V(62, 0, 47), V(22, 0, 62), V(22, 0, 82) } do bush(life, pos, k) end
