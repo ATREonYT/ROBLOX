@@ -4,7 +4,10 @@ local player=Players.LocalPlayer;local Skins=require(RS.Shared.Config.Skins);loc
 local ActiveMap=require(RS.Shared.ActiveMap)
 local active=ActiveMap.wait(20);if not active then return end
 local lobby=active.Lobby
-local morphs=ActiveMap.find(lobby,'Morphs',20);if not morphs then return end
+-- A map can go without a morph stand (The Block V2's Hood Evolution layout evolves at the EVOLVE booth):
+-- then the stand prompts and labels are skipped and the HUD and training run as usual.
+local hasStand=active.Root:GetAttribute('MorphStand')~=false
+local morphs=hasStand and ActiveMap.find(lobby,'Morphs',20) or nil;if hasStand and not morphs then return end
 local training=lobby:FindFirstChild('Training') or lobby
 local C=Color3.fromRGB;local gui=Instance.new('ScreenGui');gui.Name='ComeUpHUD';gui.ResetOnSpawn=false;gui.ScreenInsets=Enum.ScreenInsets.CoreUISafeInsets;gui.Parent=player:WaitForChild('PlayerGui')
 local function round(p,r) local c=Instance.new('UICorner');c.CornerRadius=UDim.new(0,r);c.Parent=p end
@@ -32,7 +35,7 @@ Net.get('Notice').OnClientEvent:Connect(function(message)
  task.delay(3,function() if token==noticeToken then notice.Visible=false end end)
 end)
 local prompts={}
-for _,s in Skins.List do
+for _,s in (morphs and Skins.List or {}) do
  local stand=morphs:WaitForChild('Skin_'..s.Id);local target=stand:WaitForChild('Interact')
  local p=Instance.new('ProximityPrompt');p.Name='Equip_'..s.Id;p.MaxActivationDistance=11;p.RequiresLineOfSight=false;p.HoldDuration=0;p.ObjectText=s.Name;p.ActionText='Equip';p.Parent=target
  p.Triggered:Connect(function() Net.get('EquipSkin'):FireServer(s.Id) end)
@@ -87,8 +90,9 @@ local function refresh()
  power.Text=compact(n)..' POWER';rate.Text='+'..gain..' / SECOND'..(station~='' and not station:find('Locked:') and '  •  TRAINING' or '');rate.TextColor3=C(111,238,174);skinLabel.Text=skin.Name
  local best=Skins.List[1]
  for _,s in Skins.List do
-  local unlocked=n>=s.Required;prompts[s.Id].ActionText=(id==s.Id and 'Equipped') or (unlocked and 'Equip  +'..s.Gain..'/sec') or (compact(s.Required)..' Power needed')
-  local anchor=morphs['Skin_'..s.Id]:FindFirstChild('LabelAnchor')
+  local unlocked=n>=s.Required
+  if prompts[s.Id] then prompts[s.Id].ActionText=(id==s.Id and 'Equipped') or (unlocked and 'Equip  +'..s.Gain..'/sec') or (compact(s.Required)..' Power needed') end
+  local anchor=morphs and morphs['Skin_'..s.Id]:FindFirstChild('LabelAnchor')
   local detail=anchor and anchor:FindFirstChild('WorldLabel') and anchor.WorldLabel:FindFirstChild('Detail')
   if detail then
    -- Labels with their own Gain row (The Block V2's stand) keep the price, the action and the gain apart.
@@ -100,10 +104,10 @@ local function refresh()
  end
  paintStations(n)
  local nextSkin=Skins.nextSkin(n)
- local bestGym=Skins.Stations[1];for _,g in Skins.Stations do if n>=g.Required then bestGym=g end end
+ local bestGym=Skins.Stations[1];for _,g in Skins.Stations do if n>=g.Required and stations[g.Id] then bestGym=g end end
  if station:find('Locked:') then
   local gym=Skins.StationById[station:sub(8)];step.Text=gym.Name..' needs '..compact(gym.Required)..' Power';indicator.Adornee=zoneOf(bestGym.Id);pointer.Text='TRAIN x'..bestGym.Multiplier..' HERE ↓'
- elseif best.Gain>skin.Gain then
+ elseif morphs and best.Gain>skin.Gain then
   step.Text='New look unlocked! Equip '..best.Name;indicator.Adornee=morphs['Skin_'..best.Id].Interact;pointer.Text='EQUIP YOUR LOOK ↓'
  elseif station=='' then
   step.Text='Stand on the '..bestGym.Name..' mat to train faster';indicator.Adornee=zoneOf(bestGym.Id);pointer.Text='TRAIN x'..bestGym.Multiplier..' HERE ↓'

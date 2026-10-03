@@ -25,10 +25,14 @@ return function(t)
   for _,i in {3,1,2} do local m=Instance.new('Model');m:SetAttribute('Stage',i);m:SetAttribute('WallId','W'..i);m:SetAttribute('Required',i*10);m:SetAttribute('LineZ',-i*10);table.insert(models,m) end
   local g=R.fromModels(models);t.expect.equal(g[1].Stage,1);t.expect.equal(g[3].WallId,'W3');t.expect.equal(g[2].HalfWidth,20)
  end)
- t.test('every bag has a lobby spot and the Champ Ring waits past the last wall',function()
-  local V2=require(game.ServerStorage.TheBlockV2);local S=require(game.ReplicatedStorage.Shared.Config.Skins);local walls=Maps.ById.Block.Walls
-  t.expect.equal(#V2.Stations,#S.Stations-1)
-  for _,spot in V2.Stations do t.expect.truthy(spot.z>V2.StageZ(1)) end
-  t.expect.truthy(walls[10].RequiredRep<=S.StationById.Ring.Required)
+ t.test('the hood map runs 15 fights in walking order, then the boss',function()
+  local V2=require(game.ServerStorage.TheBlockV2);local S=require(game.ReplicatedStorage.Shared.Config.Skins)
+  t.expect.equal(#V2.Fights,16)
+  for i,f in V2.Fights do
+   t.expect.equal(f.Fight,i)
+   if i>1 then t.expect.truthy(f.Z<=V2.Fights[i-1].Z) end
+  end
+  t.expect.truthy(V2.Fights[16].Boss)
+  for _,b in V2.TrainHere do t.expect.truthy(S.StationById[b.Id]~=nil) end
  end)
 end
