@@ -429,7 +429,7 @@ Policy is now strict:
   - Tiered mutually exclusive Bronze/Silver/Gold is not supported.
   - Don't gate paid benefits behind extra tasks.
   - Battle passes may be sold as subscriptions.
-- The Robux-subscription option was announced at RDC 2025. [SEARCH] — [DevForum: subscriptions in Robux](https://devforum.roblox.com/t/let-your-players-pay-for-subscriptions-within-experiences-in-robux/4552995?page=2)
+- The Robux-subscription option was previewed at RDC 2025 (September 2025). The DevForum launch post looks like early 2026, judging by its thread ID; the exact date is unverified. [SEARCH] — [DevForum: subscriptions in Robux](https://devforum.roblox.com/t/let-your-players-pay-for-subscriptions-within-experiences-in-robux/4552995?page=2)
 
 **Roblox Plus** (launched **2026-04-30** at $4.99/month, replacing Premium for new buyers) [SEARCH] — [Bloxy News on X](https://x.com/Bloxy_News/status/2042646382855754150); [PCGamesN](https://www.pcgamesn.com/roblox/plus-subscription)
 
@@ -489,7 +489,7 @@ Creator-side details [DOC] — [Roblox Plus](https://github.com/Roblox/creator-d
 - PolicyService must gate subscriptions and commerce eligibility, paid random items, trading, and ads.
 - Premium-style perks should be cosmetic or merch, **not a tactical advantage**. [DOC] — [Engagement-based payouts doc, purchase-modal best practices](https://github.com/Roblox/creator-docs/blob/main/content/en-us/production/monetization/engagement-based-payouts.md)
 
-**Roblox Kids and Select** (global rollout began 2026-05-19) [DOC] — [Kids and Select](https://github.com/Roblox/creator-docs/blob/main/content/en-us/production/publishing/kids-and-select.md); [SEARCH] — [Roblox IR](https://ir.roblox.com/news/news-details/2026/Roblox-Kids-and-Roblox-Select-Accounts-Now-Available-Worldwide/default.aspx)
+**Roblox Kids and Select** (rollout began 2026-05-19 in NZ, the Netherlands, Australia and Indonesia, then expanded worldwide) [DOC] — [Kids and Select](https://github.com/Roblox/creator-docs/blob/main/content/en-us/production/publishing/kids-and-select.md); [SEARCH] — [Roblox IR](https://ir.roblox.com/news/news-details/2026/Roblox-Kids-and-Roblox-Select-Accounts-Now-Available-Worldwide/default.aspx)
 - Account tiers:
 
   | Tier | Ages | Content allowed |
@@ -674,7 +674,7 @@ Monetization should be tuned after retention is strong, which is Roblox's own ex
 - Managed Pricing needs dynamic prices. [DOC] — [Managed pricing](https://github.com/Roblox/creator-docs/blob/main/content/en-us/production/monetization/managed-pricing.md)
 - "Non-unique games" (clones) are deprioritized. [DOC] — [Discovery](https://github.com/Roblox/creator-docs/blob/main/content/en-us/discovery.md)
 - Thumbnail personalization improved qPTR by +8.5% on average in Roblox's testing. [DOC] — [Thumbnails](https://github.com/Roblox/creator-docs/blob/main/content/en-us/production/publishing/thumbnails.md)
-- Even the biggest 2025 hits decayed by 95–99% from peak within a year, and Roblox's own metrics show engagement moving to evergreen games. [SEARCH] — [Q2 2026 letter](https://s27.q4cdn.com/984876518/files/doc_financials/2026/q2/Roblox-Q2-2026-Earnings-Shareholder-Letter.pdf); [bloxquiz GaG history](https://www.bloxquiz.gg/stats/grow-a-garden/history)
+- Even the biggest 2025 hits lost more than 99% of peak CCU within about a year. This is my own calculation from tracker figures: GaG went from a 22.3M peak to about 76K average, and SaB from about 25.8M to about 205K. Roblox's own metrics show engagement moving to evergreen games. [SEARCH] — [Q2 2026 letter](https://s27.q4cdn.com/984876518/files/doc_financials/2026/q2/Roblox-Q2-2026-Earnings-Shareholder-Letter.pdf); [bloxquiz GaG history](https://www.bloxquiz.gg/stats/grow-a-garden/history)
 
 ### Inferences: suggested build order for Hood (synthesized recommendations, not sourced facts)
 
