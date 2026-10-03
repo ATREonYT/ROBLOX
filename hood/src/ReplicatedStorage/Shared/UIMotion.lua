@@ -72,17 +72,26 @@ function Motion.button(holder, onClick)
 	return hit
 end
 
--- Popup in: backdrop fades to its dim level while the panel springs up from 0.8.
+-- Popup in: backdrop fades to its dim level while the panel (and its drop shadow, a sibling named
+-- 'Shadow' as UIKit.modal makes it) springs up from 0.8.
 function Motion.open(overlay, panel, dim)
 	overlay.Visible = true
 	overlay.BackgroundTransparency = 1
 	tween(overlay, Motion.Time.open * 0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out, { BackgroundTransparency = dim or 0.5 })
+	local shadow = overlay:FindFirstChild('Shadow')
+	if shadow then
+		local ss = scaleOf(shadow)
+		ss.Scale = 0.8
+		tween(ss, Motion.Time.open, Enum.EasingStyle.Back, Enum.EasingDirection.Out, { Scale = 1 })
+	end
 	local s = scaleOf(panel)
 	s.Scale = 0.8
 	return tween(s, Motion.Time.open, Enum.EasingStyle.Back, Enum.EasingDirection.Out, { Scale = 1 })
 end
 function Motion.close(overlay, panel, onClosed)
 	tween(overlay, Motion.Time.close, Enum.EasingStyle.Quad, Enum.EasingDirection.In, { BackgroundTransparency = 1 })
+	local shadow = overlay:FindFirstChild('Shadow')
+	if shadow then tween(scaleOf(shadow), Motion.Time.close, Enum.EasingStyle.Quad, Enum.EasingDirection.In, { Scale = 0.85 }) end
 	local t = tween(scaleOf(panel), Motion.Time.close, Enum.EasingStyle.Quad, Enum.EasingDirection.In, { Scale = 0.85 })
 	t.Completed:Once(function()
 		overlay.Visible = false
