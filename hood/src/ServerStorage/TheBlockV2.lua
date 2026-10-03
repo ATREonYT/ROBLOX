@@ -473,7 +473,8 @@ local function buildTerraces(ctx, tier)
 		if r.era == 3 then
 			studs(t:box('TerraceGrass', V(r.x0, r.h - 1, r.z0), V(r.x1, r.h, r.z1), P.cap[r.n], M.Plastic), true)
 		else
-			studs(t:box('TerraceRoof', V(r.x0, r.h - 1, r.z0), V(r.x1, r.h, r.z1), P.roof[r.n], M.Plastic), true)
+			-- Roofs take a light tint of their own facade, so the map stays colourful from above.
+			studs(t:box('TerraceRoof', V(r.x0, r.h - 1, r.z0), V(r.x1, r.h, r.z1), palette[r.ci]:Lerp(P.roof[r.n], 0.55), M.Plastic), true)
 		end
 		local i0, j0 = cellOf(r.x0, r.z0)
 		local i1, j1 = cellOf(r.x1 - 1, r.z1 - 1)
@@ -890,7 +891,7 @@ local function buildDripStand(ctx, skins, art, building)
 	studs(st:box('Parapet', V(B.x0, H, B.z1 - 0.8), V(B.x1 - 0.8, H + 1, B.z1), C(150, 82, 62), M.Plastic))
 	studs(st:box('Parapet', V(B.x0, H, backZ + 0.8), V(B.x0 + 0.8, H + 1, B.z1 - 0.8), C(150, 82, 62), M.Plastic))
 	studs(st:box('Roof', V(B.x0 + 0.8, H, backZ + 0.8), V(B.x1 - 0.8, H + 0.3, B.z1 - 0.8), C(78, 80, 88), M.Plastic))
-	st:box('StringCourse', V(B.x0, 7.6, backZ - 0.3), V(B.x1 + 0.3, 8.1, B.z1), P.trim, M.SmoothPlastic)
+	st:box('StringCourse', V(B.x0, 7.6, backZ - 0.3), V(B.x1 + 0.3, 8.1, B.z1 - 0.2), P.trim, M.SmoothPlastic)
 	local sign = st:box('SignBoard', V(-11, 14.2, backZ - 0.3), V(11, 18.6, backZ), P.black, M.SmoothPlastic)
 	local sg = surface(sign, Enum.NormalId.Front)
 	line(sg, 'Name', 'DRIP SHOP', P.yellow, FONT.loud, 0.06, 0.6, C(120, 40, 20), 3)
@@ -1123,7 +1124,7 @@ local function buildGate(ctx, i, wall, padSide)
 	for _, sx in { -1, 1 } do
 		local pillar = studs(g:box('Pillar', V(sx * 16, 0, -2), V(sx * 20, 16, 2), frame, M.Plastic), true)
 		table.insert(pillars, pillar)
-		g:box('PillarBand', V(sx * 15.8, 0, -2.2), V(sx * 20, 1.2, 2.2), trim, M.SmoothPlastic)
+		g:box('PillarBand', V(sx * 15.8, 0, -2.2), V(sx * 19.9, 1.2, 2.2), trim, M.SmoothPlastic)
 		decor(g:box('PillarNeon', V(sx * 15.7, 2, -0.6), V(sx * 16, 14, 0.6), lite, M.Neon))
 		local glow = Instance.new('SurfaceLight')
 		glow.Face = sx < 0 and Enum.NormalId.Right or Enum.NormalId.Left
@@ -1176,7 +1177,7 @@ local function buildGate(ctx, i, wall, padSide)
 	end
 	-- The barrier: a force-field sheet the client makes solid while you're short, with a padlock, a
 	-- per-player status line and a progress bar on both faces.
-	local barrier = g:box('Barrier', V(-16, 0, -0.2), V(16, 16, 0.2), lite, M.ForceField)
+	local barrier = g:box('Barrier', V(-15.7, 0, -0.2), V(15.7, 16, 0.2), lite, M.ForceField)
 	barrier.Transparency = 0.45
 	barrier.CastShadow = false
 	for _, face in { Enum.NormalId.Back, Enum.NormalId.Front } do
@@ -1581,17 +1582,17 @@ local function buildParty(ctx)
 	floorModel:SetAttribute('Hue', 4)
 	floorModel:AddTag('HoodMotion')
 	-- DJ booth against the back wall (local +Z).
-	b:box('Booth', V(-3.5, 0, 7), V(3.5, 3.2, 9), P.iron, M.SmoothPlastic)
-	b:box('BoothFront', V(-3.5, 0.4, 6.9), V(3.5, 2.8, 7), STAGE[8][1], M.SmoothPlastic)
-	for _, x in { -1.6, 1.6 } do b:part('Turntable', V(0.2, 1.8, 1.8), CFrame.new(x, 3.3, 8) * CFrame.Angles(0, 0, math.pi / 2), P.ink, M.SmoothPlastic, Enum.PartType.Cylinder) end
+	b:box('Booth', V(-3.5, 0, 5.4), V(3.5, 3.2, 7.4), P.iron, M.SmoothPlastic)
+	b:box('BoothFront', V(-3.5, 0.4, 5.3), V(3.5, 2.8, 5.4), STAGE[8][1], M.SmoothPlastic)
+	for _, x in { -1.6, 1.6 } do b:part('Turntable', V(0.2, 1.8, 1.8), CFrame.new(x, 3.3, 6.4) * CFrame.Angles(0, 0, math.pi / 2), P.ink, M.SmoothPlastic, Enum.PartType.Cylinder) end
 	for _, x in { -6.5, 6.5 } do
 		for y = 0, 2 do
-			b:box('SpeakerStack', V(x - 1.3, y * 2.6, 6.4), V(x + 1.3, (y + 1) * 2.6, 9), P.iron, M.SmoothPlastic)
-			decor(b:part('Cone', V(0.1, 1.8, 1.8), CFrame.new(x, y * 2.6 + 1.3, 6.35) * CFrame.Angles(0, math.pi / 2, 0), P.ink, M.SmoothPlastic, Enum.PartType.Cylinder))
-			decor(b:part('ConeRing', V(0.08, 2.1, 2.1), CFrame.new(x, y * 2.6 + 1.3, 6.38) * CFrame.Angles(0, math.pi / 2, 0), P.memphis[y + 1], M.Neon, Enum.PartType.Cylinder))
+			b:box('SpeakerStack', V(x - 1.3, y * 2.6, 5.2), V(x + 1.3, (y + 1) * 2.6, 7.8), P.iron, M.SmoothPlastic)
+			decor(b:part('Cone', V(0.1, 1.8, 1.8), CFrame.new(x, y * 2.6 + 1.3, 5.15) * CFrame.Angles(0, math.pi / 2, 0), P.ink, M.SmoothPlastic, Enum.PartType.Cylinder))
+			decor(b:part('ConeRing', V(0.08, 2.1, 2.1), CFrame.new(x, y * 2.6 + 1.3, 5.18) * CFrame.Angles(0, math.pi / 2, 0), P.memphis[y + 1], M.Neon, Enum.PartType.Cylinder))
 		end
 	end
-	local banner = b:box('PartyBanner', V(-7.8, 8.4, 8.6), V(7.8, 11, 8.9), P.ink, M.SmoothPlastic)
+	local banner = b:box('PartyBanner', V(-5, 4.2, 7.7), V(5, 7.4, 8), P.ink, M.SmoothPlastic)
 	line(surface(banner, Enum.NormalId.Front, 30), 'Text', 'BLOCK PARTY', P.win, FONT.loud, 0.1, 0.8, STAGE[8][2], 3)
 	-- Balloon bunches bobbing on strings.
 	for k, x in { -9, 9 } do
@@ -1641,7 +1642,7 @@ local function buildAlcove(ctx, k, skins)
 		buildCourt(a:at(CFrame.new((x0 + x1) / 2 - 31, 0, cz - 88)))
 		mural(back, 24, 7, hue, 'NOTHING BUT NET', k * 7)
 	else
-		buildParty(a:at(CFrame.lookAt(V(s * 28, 0, cz), V(s * 29, 0, cz))))
+		buildParty(a:at(CFrame.lookAt(V(s * 28, 0, cz), V(0, 0, cz))))
 	end
 	-- Edging along the alcove's open side walls (kept off the opening itself).
 	for _, zz in { z0 + 0.6, z1 - 0.6 } do
@@ -1679,17 +1680,18 @@ local function bodega(ctx)
 			local col = ({ P.hotRed, P.awning, P.crate[1], P.crate[2], P.crate[3], P.memphis[4] })[(q + side) % 6 + 1]
 			local bx = cx - 2.1 + (q % 3) * 1.45
 			local by = 1.6 + math.floor(q / 3) * 1.1
-			s:box('Goods', V(bx, by, -0.1), V(bx + 1.1, by + 1.0, 0.4), col, M.SmoothPlastic)
+			s:box('Goods', V(bx, by, 0.02), V(bx + 1.1, by + 1.0, 0.5), col, M.SmoothPlastic)
 		end
 	end
-	local open = decor(s:box('OpenSign', V(2.8, 4.2, -0.35), V(6.6, 5.4, -0.25), P.ink, M.SmoothPlastic))
+	local open = decor(s:box('OpenSign', V(2.8, 4.2, -0.24), V(6.6, 5.4, -0.13), P.ink, M.SmoothPlastic))
 	line(surface(open, Enum.NormalId.Front, 40), 'Open', 'OPEN', P.memphis[1], FONT.loud, 0.08, 0.84)
 	light(open, P.memphis[1], 1, 10)
 	-- Slanted awning with the letters on its valance.
 	local awn = s:at(CFrame.new(0, 7.4, -1.6) * CFrame.Angles(math.rad(-24), 0, 0)):box('Awning', V(-8.4, -0.15, -1.9), V(8.4, 0.15, 1.9), P.awning, M.Fabric)
 	local valance = s:box('AwningValance', V(-8.4, 5.9, -3.4), V(8.4, 6.9, -3.2), P.awning, M.Fabric)
 	line(surface(valance, Enum.NormalId.Front, 40), 'Name', 'DELI • GROCERY • 24/7', P.hotRed, FONT.loud, 0.06, 0.88, P.white, 2)
-	local sign = s:box('Sign', V(-8, 8.6, -0.3), V(8, 10.4, 0), P.hotRed, M.SmoothPlastic)
+	local sign = s:box('Sign', V(-8, 8.0, -0.3), V(8, 9.8, 0), P.hotRed, M.SmoothPlastic)
+	for _, x in { -6, 0, 6 } do s:box('SignStrut', V(x - 0.15, 8.0, 0), V(x + 0.15, 9.5, 1.2), P.iron, M.Metal) end
 	line(surface(sign, Enum.NormalId.Front, 40), 'Name', 'SUNNY SIDE BODEGA', P.white, FONT.loud, 0.08, 0.84, P.ink, 2)
 	-- The bodega cat on a milk crate by the door.
 	crate(s, CFrame.new(3.2, 0, -1.6), P.crate[1])
@@ -1808,7 +1810,7 @@ local function buildFinale(ctx, skins, art)
 	local f = ctx:group('Finale')
 	local zc = (FINALE_Z0 + FINALE_Z1) / 2
 	local ring = skins.Stations[9]
-	Props.ring(f:at(CFrame.new(0, 0, zc + 2)):group('Training_' .. ring.Id), PROPS_KIT, ring, 9)
+	Props.ring(f:at(CFrame.new(0, 0, zc + 2) * CFrame.Angles(0, math.pi, 0)):group('Training_' .. ring.Id), PROPS_KIT, ring, 9)
 	buildStatue(f:at(CFrame.new(-30, 0, zc + 2) * CFrame.Angles(0, math.pi, 0)), skins.ById.Kingpin, art)
 	-- Trophy on a pedestal, spinning slowly.
 	f:post('TrophyPedestal', 4, 3, V(30, 0, zc + 2), C(255, 200, 40), M.Plastic)
@@ -1817,15 +1819,15 @@ local function buildFinale(ctx, skins, art)
 	cup:box('CupBase', V(29, 3.3, zc + 1), V(31, 4.3, zc + 3), C(255, 200, 40), M.SmoothPlastic)
 	cup:post('CupStem', 0.4, 1.6, V(30, 4.3, zc + 2), C(255, 200, 40), M.SmoothPlastic)
 	cup:blob('Cup', V(4, 4, 4), V(30, 7.6, zc + 2), C(255, 200, 40), M.SmoothPlastic)
-	for _, x in { 27.6, 32.4 } do cup:part('Handle', V(0.5, 1.8, 1.8), CFrame.new(x, 8, zc + 2), C(255, 200, 40), M.SmoothPlastic, Enum.PartType.Cylinder) end
+	for _, x in { 27.9, 32.1 } do cup:part('Handle', V(0.5, 1.8, 1.8), CFrame.new(x, 8, zc + 2), C(255, 200, 40), M.SmoothPlastic, Enum.PartType.Cylinder) end
 	cupModel:SetAttribute('Spin', 30)
 	cupModel:AddTag('HoodMotion')
 	cupModel.WorldPivot = f:world(CFrame.new(30, 6, zc + 2))
 	-- Juniper Station on the back wall.
 	local st = f:at(CFrame.lookAt(V(0, 0, FINALE_Z0), V(0, 0, FINALE_Z0 + 1)))
-	st:box('StationStep', V(-14, 0, -2.4), V(14, 0.6, 0), P.cream, M.SmoothPlastic)
+	st:box('StationStep', V(-13.6, 0, -2.4), V(13.6, 0.6, -0.6), P.cream, M.SmoothPlastic)
 	st:box('StationFace', V(-14, 0, -0.6), V(14, 13, 0), C(255, 244, 230), M.SmoothPlastic)
-	st:box('StationStripe', V(-14, 0.6, -0.68), V(14, 1.4, -0.6), P.globe, M.SmoothPlastic)
+	st:box('StationStripe', V(-14, 0.6, -0.66), V(14, 1.4, -0.6), P.globe, M.SmoothPlastic)
 	local portal = decor(st:box('Portal', V(-6, 0.6, -0.7), V(6, 9.6, -0.6), C(90, 220, 150), M.Neon))
 	portal.Transparency = 0.25
 	light(portal, C(120, 240, 160), 2, 18)
@@ -1924,8 +1926,8 @@ local function streetLife(ctx)
 		lamp(life, V(-18.6, 0, z), V(1, 0, 0))
 		lamp(life, V(18.6, 0, z), V(-1, 0, 0))
 	end
-	stringLights(life, V(-18.6, 11.6, 36), V(18.6, 11.6, 36), 2, true)
-	stringLights(life, V(-18.6, 11.6, 12), V(18.6, 11.6, 12), 2, false)
+	stringLights(life, V(-18.6, 11.6, 36), V(18.6, 11.6, 36), 2, false)
+	stringLights(life, V(-18.6, 11.6, 12), V(18.6, 11.6, 12), 2, true)
 	for k, seg in SEGMENTS do
 		local free = -seg.side
 		lamp(life, V(free * 18.6, 0, stageZ(k) - 21), V(-free, 0, 0))
@@ -1996,6 +1998,7 @@ function V2.Build()
 		{ alongX = true, at = 44, a = -18, b = 18 }, -- leaderboards
 		{ alongX = false, at = -44, a = 13, b = 31 }, -- the bodega
 		{ alongX = false, at = 60, a = 4, b = 40 }, { alongX = true, at = 4, a = 44, b = 60 }, { alongX = true, at = 40, a = 44, b = 60 }, -- shop building
+		{ alongX = false, at = 44, a = 0, b = 4 }, { alongX = false, at = 44, a = 40, b = 44 },
 		{ alongX = true, at = FINALE_Z0, a = -16, b = 16 }, -- Juniper Station
 		{ alongX = true, at = 0, a = 23, b = 42 }, -- barbershop
 	}

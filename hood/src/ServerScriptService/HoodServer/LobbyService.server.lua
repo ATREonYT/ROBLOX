@@ -63,7 +63,18 @@ remote.OnServerEvent:Connect(function(player,id)
  equipAppearance(player,id);sync(player,profile,1,'');Data.push(player)
  Net.get('Notice'):FireClient(player,Skins.ById[id].Name..' equipped! +'..Skins.ById[id].Gain..' Power / second.')
 end)
-Players.PlayerRemoving:Connect(function(p) cooldown[p]=nil;applied[p]=nil end)
+-- Punching: while you train on a bag, each click or tap is a punch worth a tenth of your per-second gain
+-- (at least 1), up to about 7 a second. The training mat check is the same one the passive gain uses.
+local RateLimiter=require(script.Parent.RateLimiter)
+local punchLimit=RateLimiter.new(8,7)
+Net.get('Punch').OnServerEvent:Connect(function(player)
+ if not punchLimit.allow(player) then return end
+ local profile=Data.get(player);local station=player:GetAttribute('TrainingStation') or ''
+ if not profile or station=='' or station:find('Locked:') then return end
+ local bonus=math.max(1,math.floor((player:GetAttribute('PowerRate') or 1)*0.1))
+ profile.Data.Rep=math.min(1e12,profile.Data.Rep+bonus)
+end)
+Players.PlayerRemoving:Connect(function(p) cooldown[p]=nil;applied[p]=nil;punchLimit.remove(p) end)
 local boardTime=0
 while task.wait(1) do
  local rows={}

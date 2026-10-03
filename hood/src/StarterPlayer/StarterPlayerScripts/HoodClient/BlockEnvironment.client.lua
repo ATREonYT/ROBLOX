@@ -8,12 +8,16 @@ if not map then return end
 local yawValue=map:FindFirstChild('MapYawValue')
 local f=CFrame.Angles(0,map:GetAttribute('MapYaw') or (yawValue and yawValue.Value) or 0,0)
 local function point(v) return f:PointToWorldSpace(v) end
+-- The spawn camera looks down the active map's street (The Block V2 when it is switched on).
+local ActiveMap=require(game:GetService('ReplicatedStorage').Shared.ActiveMap)
 local function faceArrival(character)
  local hrp=character:WaitForChild('HumanoidRootPart',10)
  if not hrp then return end
  task.wait(0.3)
+ local active=ActiveMap.get()
+ local view=active and active.Id=='V2' and CFrame.new() or f
  local camera=workspace.CurrentCamera
- camera.CFrame=CFrame.lookAt(hrp.Position+f:VectorToWorldSpace(Vector3.new(0,7,15)),hrp.Position+f:VectorToWorldSpace(Vector3.new(0,3,-24)))
+ camera.CFrame=CFrame.lookAt(hrp.Position+view:VectorToWorldSpace(Vector3.new(0,7,15)),hrp.Position+view:VectorToWorldSpace(Vector3.new(0,3,-24)))
 end
 player.CharacterAdded:Connect(faceArrival)
 if player.Character then task.spawn(faceArrival,player.Character) end
