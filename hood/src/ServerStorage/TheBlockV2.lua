@@ -368,7 +368,10 @@ local function buildTerraces(ctx, tier)
 	end, function(k, x0, z0, x1, z1)
 		local n, h = k:match('^(%d+):(%d+)$')
 		n, h = tonumber(n), tonumber(h)
-		studs(t:box('TerraceBlock', V(x0, -1, z0), V(x1, h - 1, z1), P.brick[n], M.Plastic), true)
+		-- Each merged block gets its own slight shade, so long walls read as separate buildings, not one copy.
+		local shade = 1 + ((hash(x0 // 4, z0 // 4) % 9) - 4) * 0.014
+		local b = P.brick[n]
+		studs(t:box('TerraceBlock', V(x0, -1, z0), V(x1, h - 1, z1), Color3.new(math.min(1, b.R * shade), math.min(1, b.G * shade), math.min(1, b.B * shade)), M.Plastic), true)
 		studs(t:box('TerraceGrass', V(x0, h - 1, z0), V(x1, h, z1), P.cap[n], M.Plastic), true)
 	end)
 end
@@ -393,6 +396,12 @@ local function terraceFaces(floors, tier)
 				local ie, je = alongX and e or o, alongX and o or e
 				local ex0, ez0, ex1, ez1 = cellRect(ie, je)
 				local face = { y0 = s.lo, y1 = s.hi, normal = V(-dir[1], 0, -dir[2]) }
+				face.tier = tier[i0 + dir[1]][j0 + dir[2]]
+				if alongX then
+					-- An end is an outside corner when neither cell beyond it rises to this face's top.
+					local function outside(k) return (heightAt(k, o + dir[2]) or -1) < s.hi and (heightAt(k, o) or -1) < s.hi end
+					face.outA, face.outB = outside(s.k - 1), outside(e + 1)
+				end
 				if alongX then
 					face.a, face.b = x0, ex1
 					face.at = dir[2] > 0 and z1 or z0
@@ -418,6 +427,47 @@ local function terraceFaces(floors, tier)
 		end
 	end
 	return faces
+end
+
+-- Grass lip: the cap overhangs each terrace face by 0.6 studs, like the grass on a canyon terrace.
+-- Faces along X carry the corner pieces at outside corners; faces along Z stop at the corner line, so lips
+-- meet without overlapping. Reserved stretches (storefronts, gates, the shop building) are left bare.
+local LIP_OUT, LIP_DROP = 0.6, 1.1
+local function buildLips(ctx, faces, reserved)
+	local lips = ctx:group('TerraceLips')
+	for _, f in faces do
+		local a = f.a - ((f.alongX and f.outA) and LIP_OUT or 0)
+		local b = f.b + ((f.alongX and f.outB) and LIP_OUT or 0)
+		-- Subtract reserved ranges on this face's plane.
+		local spans = { { a, b } }
+		for _, r in reserved do
+			if r.alongX == f.alongX and math.abs(r.at - f.at) < 0.5 then
+				local out = {}
+				for _, sp in spans do
+					if r.b <= sp[1] or r.a >= sp[2] then table.insert(out, sp)
+					else
+						if r.a > sp[1] then table.insert(out, { sp[1], r.a }) end
+						if r.b < sp[2] then table.insert(out, { r.b, sp[2] }) end
+					end
+				end
+				spans = out
+			end
+		end
+		local color = P.cap[f.tier] or P.cap[1]
+		for _, sp in spans do
+			if sp[2] - sp[1] > 0.5 then
+				local out = f.normal * LIP_OUT
+				local lo, hi
+				if f.alongX then
+					lo, hi = V(sp[1], f.y1 - LIP_DROP, f.at), V(sp[2], f.y1, f.at + out.Z)
+				else
+					lo, hi = V(f.at, f.y1 - LIP_DROP, sp[1]), V(f.at + out.X, f.y1, sp[2])
+				end
+				studs(lips:box('GrassLip', lo, hi, color, M.Plastic), true)
+			end
+		end
+	end
+	return lips
 end
 
 ---------------------------------------------------------------------------------------------- facade details
@@ -501,12 +551,15 @@ end
 ---------------------------------------------------------------------------------------------- props
 local function lamp(ctx, pos, facing)
 	local m = ctx:at(CFrame.lookAt(pos, pos + facing)):group('StreetLamp')
-	m:post('Base', 0.55, 0.7, V(0, 0, 0), P.iron)
-	m:post('Pole', 0.2, 11.4, V(0, 0.7, 0), P.iron)
-	m:bar('Arm', V(0, 11.6, 0), V(0, 11.6, -2.4), 0.24, P.iron)
-	m:bar('Brace', V(0, 10.2, 0), V(0, 11.48, -1.2), 0.14, P.iron)
-	m:box('LampHood', V(-0.7, 11.24, -3.1), V(0.7, 11.72, -1.7), P.iron, M.Metal)
-	local bulb = decor(m:box('Lamp', V(-0.5, 10.9, -2.9), V(0.5, 11.24, -1.9), C(255, 230, 170), M.Neon))
+	m:post('Base', 0.8, 0.9, V(0, 0, 0), P.iron)
+	m:post('BaseRing', 0.55, 0.5, V(0, 0.9, 0), P.iron)
+	m:post('Pole', 0.32, 10.6, V(0, 1.4, 0), P.iron)
+	m:post('Collar', 0.42, 0.4, V(0, 8, 0), P.iron)
+	m:box('Arm', V(-0.3, 11.6, -3.2), V(0.3, 12.2, 0.32), P.iron, M.Metal)
+	m:bar('Brace', V(0, 9.9, -0.3), V(0, 11.62, -1.9), 0.26, P.iron)
+	m:box('LampHood', V(-1.1, 11.2, -4.4), V(1.1, 11.6, -2.2), P.iron, M.Metal)
+	m:box('LampHoodTop', V(-0.7, 11.6, -4), V(0.7, 11.95, -2.6), P.iron, M.Metal)
+	local bulb = decor(m:box('Lamp', V(-0.85, 10.8, -4.15), V(0.85, 11.2, -2.45), C(255, 230, 170), M.Neon))
 	light(bulb, C(255, 218, 160), 1, 20)
 	return m
 end
@@ -560,7 +613,8 @@ local function tree(ctx, pos, seed, scale, axis)
 	local sides = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } }
 	local first = r:NextInteger(1, 4)
 	local arms = { sides[first], sides[(first + 1) % 4 + 1] }
-	if axis then arms = axis == 'x' and { sides[1], sides[2] } or { sides[3], sides[4] } end
+	if axis == 'none' then arms = {} -- tight spots next to walls: crown only
+	elseif axis then arms = axis == 'x' and { sides[1], sides[2] } or { sides[3], sides[4] } end
 	local top = 7 * s
 	local crown = 5.2 * s + r:NextNumber(0, 1.2) * s
 	local leaf = P.leaf
@@ -792,6 +846,15 @@ local function buildBoxingClub(ctx, stations)
 	line(g, 'Club', 'BLOCK BOXING', P.yellow, FONT.loud, 0.06, 0.6, C(120, 40, 20), 3)
 	line(g, 'Tag', 'STAND ON A PAD TO TRAIN', P.white, FONT.body, 0.68, 0.26)
 	club:box('ArchCap', V(-25.3, 13, 17.4), V(-22.7, 13.6, 30.6), P.trim, M.SmoothPlastic)
+	-- Landmark: a giant glove on the arch, visible from the spawn and down the street.
+	local glove = club:at(CFrame.lookAt(V(-24, 13.6, 24), V(-23, 13.6, 24))):group('GiantGlove')
+	glove:post('Cuff', 1.7, 1.8, V(0, 0, 0), C(255, 239, 210), M.SmoothPlastic)
+	glove:post('CuffBand', 1.75, 0.45, V(0, 1.35, 0), P.red, M.SmoothPlastic)
+	glove:blob('Mitt', V(4.8, 5.4, 5), V(0, 4.3, -0.2), P.red, M.SmoothPlastic)
+	glove:blob('Knuckles', V(4.2, 3, 2.4), V(0, 5.6, -1.9), P.red, M.SmoothPlastic)
+	glove:blob('Thumb', V(1.7, 3.2, 1.9), V(2.05, 3.5, -1.2), C(214, 40, 52), M.SmoothPlastic)
+	glove:blob('Shine', V(1.1, 1.6, 0.5), V(-1, 5.5, -2.5), C(255, 150, 160), M.SmoothPlastic)
+	for k = 0, 3 do glove:bar('Lace', V(-0.6, 2.4 + k * 0.5, 2.1), V(0.6, 2.6 + k * 0.5, 2.15), 0.18, P.white, M.Fabric) end
 	-- Gym odds and ends.
 	for k = 0, 2 do club:post('TireStack', 1.3, 0.9, V(-61.4, k * 0.9, 28.2), C(36, 36, 38), M.Rubber) end
 	bench(club, V(-62.2, 0, 22), V(1, 0, 0))
@@ -1180,13 +1243,15 @@ function V2.Build()
 		{ alongX = true, at = 104, a = -58, b = -38 }, { alongX = true, at = 104, a = -22, b = 22 }, { alongX = true, at = 104, a = 38, b = 58 },
 		{ alongX = true, at = 0, a = 18, b = 22 }, { alongX = true, at = 0, a = -22, b = -18 },
 		-- The Drip Shop building stands against these two walls.
-		{ alongX = true, at = 0, a = 24, b = 64 }, { alongX = false, at = 64, a = 0, b = 21 },
+		{ alongX = true, at = 0, a = 22, b = 64 }, { alongX = false, at = 64, a = 0, b = 22 },
 	}
 	for i = 1, 10 do
 		for _, x in { -20, 20 } do table.insert(reserved, { alongX = false, at = x, a = stageZ(i) - 2, b = stageZ(i) + 2 }) end
 	end
 	for _, x in { -20, 20 } do table.insert(reserved, { alongX = false, at = x, a = -2.5, b = 2.5 }) end
-	decorateFaces(ctx, terraceFaces(floors, tier), reserved)
+	local faces = terraceFaces(floors, tier)
+	decorateFaces(ctx, faces, reserved)
+	buildLips(ctx, faces, reserved)
 
 	-- Storefronts and the welcome mural on the back wall (z = 104 face, looking toward -Z).
 	local back = function(x) return ctx:at(CFrame.lookAt(V(x, 0, 104), V(x, 0, 103))) end
@@ -1285,7 +1350,10 @@ function V2.Build()
 	trashCan(life, V(14.5, 0, 22))
 	bench(life, V(-14.5, 0, 74), V(1, 0, 0))
 	for k, c in { { 20.6, 101.6, P.blue }, { 22.4, 101.9, P.red } } do crate(life, CFrame.new(c[1], 0, c[2]) * CFrame.Angles(0, k * 0.3, 0), c[3]) end
-	for k, pos in { V(-60, 0, 60), V(-60, 0, 100), V(-24, 0, 60), V(28, 0, 100), V(62, 0, 100), V(62, 0, 54) } do tree(life, pos, k * 13 + 5, 0.9) end
+	-- Lobby trees; the ones near walls or boards keep their branches out of them.
+	for k, t in { { V(-60, 0, 60), 'z' }, { V(-58, 0, 98), 'none' }, { V(-24, 0, 60) }, { V(28, 0, 100), 'x' }, { V(60, 0, 100), 'none' }, { V(58.5, 0, 51), 'none' } } do
+		tree(life, t[1], k * 13 + 5, 0.9, t[2])
+	end
 	for k, pos in { V(-30, 0, 2), V(-50, 0, 2), V(-62, 0, 47), V(62, 0, 47), V(22, 0, 62), V(22, 0, 82) } do bush(life, pos, k) end
 	-- Rooftop life on the terraces, each set on the real roof height under its footprint.
 	local roof = ctx:group('Rooftops')
