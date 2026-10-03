@@ -547,7 +547,8 @@ local function crate(ctx, cf, color)
 end
 
 -- Blocky trees: tapered trunk, two branch arms, and stacked leaf blocks that sit on each other face to face.
-local function tree(ctx, pos, seed, scale)
+-- axis ('x' or 'z') keeps the branch arms along a narrow terrace step instead of across it.
+local function tree(ctx, pos, seed, scale, axis)
 	scale = scale or 1
 	local r = Random.new(seed)
 	local t = ctx:at(CFrame.new(pos) * CFrame.Angles(0, math.rad(r:NextInteger(0, 3) * 90 + r:NextNumber(-8, 8)), 0)):group('Tree')
@@ -559,6 +560,7 @@ local function tree(ctx, pos, seed, scale)
 	local sides = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } }
 	local first = r:NextInteger(1, 4)
 	local arms = { sides[first], sides[(first + 1) % 4 + 1] }
+	if axis then arms = axis == 'x' and { sides[1], sides[2] } or { sides[3], sides[4] } end
 	local top = 7 * s
 	local crown = 5.2 * s + r:NextNumber(0, 1.2) * s
 	local leaf = P.leaf
@@ -1287,16 +1289,24 @@ function V2.Build()
 	for k, pos in { V(-30, 0, 2), V(-50, 0, 2), V(-62, 0, 47), V(62, 0, 47), V(22, 0, 62), V(22, 0, 82) } do bush(life, pos, k) end
 	-- Rooftop life on the terraces, each set on the real roof height under its footprint.
 	local roof = ctx:group('Rooftops')
-	for k, pos in { V(-72, 0, 30), V(-72, 0, 80), V(72, 0, 30), V(72, 0, 80), V(-40, 0, 112), V(40, 0, 112), V(-28, 0, -60), V(28, 0, -140), V(-28, 0, -220), V(28, 0, -40), V(-28, 0, -150), V(28, 0, -250) } do
-		local y = roofTop(tier, pos.X, pos.Z, 3)
-		if y then tree(roof, pos + V(0, y, 0), 100 + k * 7, 1) end
+	-- Each terrace step is 8 studs deep, so props sit on a step's centre line (lobby x = ±68/±76/±84,
+	-- back z = 108/116/124, street x = ±24/±32/±40) with their arms running along it.
+	local trees = {
+		{ V(-68, 0, 30), 'z' }, { V(-68, 0, 80), 'z' }, { V(68, 0, 34), 'z' }, { V(68, 0, 84), 'z' }, { V(-40, 0, 108), 'x' }, { V(30, 0, 108), 'x' },
+		{ V(-76, 0, 56), 'z' }, { V(76, 0, 60), 'z' }, { V(-4, 0, 116), 'x' },
+		{ V(-24, 0, -60), 'z' }, { V(24, 0, -128), 'z' }, { V(-24, 0, -212), 'z' }, { V(24, 0, -270), 'z' },
+		{ V(32, 0, -96), 'z' }, { V(-32, 0, -170), 'z' }, { V(32, 0, -240), 'z' },
+	}
+	for k, t in trees do
+		local y = roofTop(tier, t[1].X, t[1].Z, 3.4)
+		if y then tree(roof, t[1] + V(0, y, 0), 100 + k * 7, 0.95, t[2]) end
 	end
-	for _, pos in { V(-86, 0, 60), V(86, 0, 20), V(0, 0, 126), V(-38, 0, -100), V(38, 0, -200), V(-38, 0, -260), V(38, 0, -60) } do
+	for _, pos in { V(-84, 0, 64), V(84, 0, 20), V(84, 0, 92), V(12, 0, 124), V(-40, 0, -100), V(40, 0, -200), V(-40, 0, -264), V(40, 0, -52), V(-84, 0, 16), V(-52, 0, 124) } do
 		local y = roofTop(tier, pos.X, pos.Z, 2.6)
 		if y then waterTower(roof, pos + V(0, y, 0)) end
 	end
-	for k, pos in { V(-80, 0, 100), V(80, 0, 96), V(-30, 0, -30), V(30, 0, -180), V(-30, 0, -280), V(-60, 0, 120), V(60, 0, 124) } do
-		local y = roofTop(tier, pos.X, pos.Z, 1.2)
+	for k, pos in { V(-76, 0, 96), V(76, 0, 30), V(-32, 0, -30), V(32, 0, -150), V(-32, 0, -280), V(-60, 0, 116), V(56, 0, 116) } do
+		local y = roofTop(tier, pos.X, pos.Z, 1.4)
 		if y then acUnit(roof:at(CFrame.new(pos + V(0, y, 0)) * CFrame.Angles(0, k * math.pi / 2, 0))) end
 	end
 
