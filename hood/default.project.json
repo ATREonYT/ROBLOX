@@ -40,6 +40,9 @@
       "TheBlockV2": {
         "$path": "src/ServerStorage/TheBlockV2.lua"
       },
+      "UIKitDemo": {
+        "$path": "src/ServerStorage/UIKitDemo.lua"
+      },
       "UnitTest": {
         "$path": "src/ServerStorage/UnitTest",
         "$ignoreUnknownInstances": true
