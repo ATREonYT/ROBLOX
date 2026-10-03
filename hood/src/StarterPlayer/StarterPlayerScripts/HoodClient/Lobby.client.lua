@@ -1,8 +1,14 @@
 local Players=game:GetService('Players');local RS=game:GetService('ReplicatedStorage');local Tween=game:GetService('TweenService')
 local player=Players.LocalPlayer;local Skins=require(RS.Shared.Config.Skins);local Net=require(RS.Shared.Net)
-local map=workspace:WaitForChild('TheBlock',20);if not map then return end
-local lobby=map:WaitForChild('SimulatorLobby',15);if not lobby then return end
-local morphs=lobby:WaitForChild('Morphs');local training=lobby:WaitForChild('Training')
+-- Runs on whichever map is active (the original Block's SimulatorLobby, or The Block V2).
+local ActiveMap=require(RS.Shared.ActiveMap)
+local active=ActiveMap.wait(20);if not active then return end
+local lobby=active.Lobby
+-- A map can go without a morph stand (The Block V2's Hood Evolution layout evolves at the EVOLVE booth):
+-- then the stand prompts and labels are skipped and the HUD and training run as usual.
+local hasStand=active.Root:GetAttribute('MorphStand')~=false
+local morphs=hasStand and ActiveMap.find(lobby,'Morphs',20) or nil;if hasStand and not morphs then return end
+local training=lobby:FindFirstChild('Training') or lobby
 local C=Color3.fromRGB;local gui=Instance.new('ScreenGui');gui.Name='ComeUpHUD';gui.ResetOnSpawn=false;gui.ScreenInsets=Enum.ScreenInsets.CoreUISafeInsets;gui.Parent=player:WaitForChild('PlayerGui')
 local function round(p,r) local c=Instance.new('UICorner');c.CornerRadius=UDim.new(0,r);c.Parent=p end
 local function label(parent,name,size,pos,textsize)
@@ -29,17 +35,65 @@ Net.get('Notice').OnClientEvent:Connect(function(message)
  task.delay(3,function() if token==noticeToken then notice.Visible=false end end)
 end)
 local prompts={}
-for _,s in Skins.List do
+for _,s in (morphs and Skins.List or {}) do
  local stand=morphs:WaitForChild('Skin_'..s.Id);local target=stand:WaitForChild('Interact')
  local p=Instance.new('ProximityPrompt');p.Name='Equip_'..s.Id;p.MaxActivationDistance=11;p.RequiresLineOfSight=false;p.HoldDuration=0;p.ObjectText=s.Name;p.ActionText='Equip';p.Parent=target
  p.Triggered:Connect(function() Net.get('EquipSkin'):FireServer(s.Id) end)
  prompts[s.Id]=p
+end
+-- No stand: one prompt at the EVOLVE booth puts on your best unlocked look.
+local evolvePoint=not morphs and ActiveMap.find(lobby,'EvolvePoint',10) or nil
+local evolvePrompt
+if evolvePoint then
+ evolvePrompt=Instance.new('ProximityPrompt');evolvePrompt.Name='Evolve';evolvePrompt.MaxActivationDistance=12;evolvePrompt.RequiresLineOfSight=false;evolvePrompt.HoldDuration=0;evolvePrompt.ObjectText='EVOLVE';evolvePrompt.ActionText='Evolve';evolvePrompt.Parent=evolvePoint
+ evolvePrompt.Triggered:Connect(function()
+  local n=player:GetAttribute('Power') or 0;local best=Skins.List[1]
+  for _,s in Skins.List do if n>=s.Required then best=s end end
+  if best.Id~=(player:GetAttribute('EquippedSkin') or 'CornerKid') then Net.get('EquipSkin'):FireServer(best.Id) end
+ end)
 end
 local indicator=Instance.new('BillboardGui');indicator.Name='NextDestination';indicator.Size=UDim2.fromOffset(170,46);indicator.StudsOffset=Vector3.new(0,7,0);indicator.AlwaysOnTop=true;indicator.MaxDistance=150;indicator.ResetOnSpawn=false;indicator.Parent=player.PlayerGui
 local pointer=label(indicator,'Destination',UDim2.fromScale(1,1),UDim2.fromScale(0,0),19);pointer.TextColor3=C(255,224,80);pointer.TextStrokeColor3=C(25,38,71);pointer.TextStrokeTransparency=0
 local function compact(v)
  if v>=1e6 then return string.format('%.1fM',v/1e6) elseif v>=1000 then return string.format('%.1fK',v/1000) end;return tostring(math.floor(v))
 end
+-- Training stations in the built lobby: mat, sign, gear. Locked gear shows as a black silhouette.
+local stations={}
+for _,s in Skins.Stations do
+ local model=training:FindFirstChild('Training_'..s.Id,true)
+ if model then
+  local entry={Zone=model:FindFirstChild('TrainingZone',true),Sign=model:FindFirstChild('Sign',true) or model:FindFirstChild('Nameplate',true),Parts={},Swing={}}
+  local gear=model:FindFirstChild('Equipment')
+  if gear then
+   for _,p in gear:GetDescendants() do if p:IsA('BasePart') and p.Transparency<1 then table.insert(entry.Parts,{Part=p,Color=p.Color,Material=p.Material}) end end
+   local hinge=gear:FindFirstChild('Hinge');local swing=gear:FindFirstChild('Swing')
+   if hinge and swing then
+    entry.Hinge=hinge.CFrame
+    for _,p in swing:GetDescendants() do if p:IsA('BasePart') then table.insert(entry.Swing,{Part=p,Offset=hinge.CFrame:ToObjectSpace(p.CFrame)}) end end
+   end
+  end
+  stations[s.Id]=entry
+ end
+end
+local SILHOUETTE=C(18,18,22)
+local function paintStations(n)
+ for _,s in Skins.Stations do
+  local e=stations[s.Id]
+  if e then
+   local locked=n<s.Required
+   if e.Locked~=locked then
+    e.Locked=locked
+    for _,r in e.Parts do r.Part.Color=locked and SILHOUETTE or r.Color;r.Part.Material=locked and Enum.Material.SmoothPlastic or r.Material end
+   end
+   local detail=e.Sign and e.Sign:FindFirstChild('Detail',true)
+   if detail then
+    detail.Text=locked and ('LOCKED • '..compact(s.Required)..' POWER') or (s.Required==0 and 'FREE • TRAIN HERE' or 'UNLOCKED • TRAIN HERE')
+    detail.TextColor3=locked and C(255,128,128) or C(126,255,171)
+   end
+  end
+ end
+end
+local function zoneOf(id) local e=stations[id];return e and e.Zone end
 local lastPower;local previouslyUnlocked={};local pulse
 local function refresh()
  local n=player:GetAttribute('Power');if n==nil then power.Text='Loading...';step.Text='Getting your neighborhood ready';return end
@@ -47,23 +101,31 @@ local function refresh()
  power.Text=compact(n)..' POWER';rate.Text='+'..gain..' / SECOND'..(station~='' and not station:find('Locked:') and '  •  TRAINING' or '');rate.TextColor3=C(111,238,174);skinLabel.Text=skin.Name
  local best=Skins.List[1]
  for _,s in Skins.List do
-  local unlocked=n>=s.Required;prompts[s.Id].ActionText=(id==s.Id and 'Equipped') or (unlocked and 'Equip  +'..s.Gain..'/sec') or (compact(s.Required)..' Power needed')
-  local anchor=morphs['Skin_'..s.Id]:FindFirstChild('LabelAnchor')
+  local unlocked=n>=s.Required
+  if prompts[s.Id] then prompts[s.Id].ActionText=(id==s.Id and 'Equipped') or (unlocked and 'Equip  +'..s.Gain..'/sec') or (compact(s.Required)..' Power needed') end
+  local anchor=morphs and morphs['Skin_'..s.Id]:FindFirstChild('LabelAnchor')
   local detail=anchor and anchor:FindFirstChild('WorldLabel') and anchor.WorldLabel:FindFirstChild('Detail')
   if detail then
-   detail.Text=(id==s.Id and 'EQUIPPED' or unlocked and 'EQUIP' or compact(s.Required)..' PWR')..' • +'..s.Gain..'/sec'
+   -- Labels with their own Gain row (The Block V2's stand) keep the price, the action and the gain apart.
+   local split=anchor.WorldLabel:FindFirstChild('Gain')
+   detail.Text=split and (id==s.Id and 'EQUIPPED' or unlocked and 'EQUIP' or 'BUY') or (id==s.Id and 'EQUIPPED' or unlocked and 'EQUIP' or compact(s.Required)..' PWR')..' • +'..s.Gain..'/sec'
    detail.TextColor3=id==s.Id and C(255,126,119) or unlocked and C(109,244,133) or C(255,255,255)
   end
   if unlocked then best=s end
  end
+ paintStations(n)
  local nextSkin=Skins.nextSkin(n)
- local bestGym=Skins.Stations[1];for _,g in Skins.Stations do if n>=g.Required then bestGym=g end end
+ if evolvePrompt then
+  evolvePrompt.ActionText=(best.Id~=id and ('Evolve → '..best.Name..'  +'..best.Gain..'/sec')) or (nextSkin and ('Next: '..nextSkin.Name..' at '..compact(nextSkin.Required)..' Power')) or 'Fully evolved'
+ end
+ local bestGym=Skins.Stations[1];for _,g in Skins.Stations do if n>=g.Required and stations[g.Id] then bestGym=g end end
  if station:find('Locked:') then
-  local gym=Skins.StationById[station:sub(8)];step.Text='This gym needs '..compact(gym.Required)..' Power';indicator.Adornee=training.Training_Starter.TrainingZone;pointer.Text='FREE TRAINING ↓'
- elseif best.Gain>skin.Gain then
-  step.Text='New look unlocked! Equip '..best.Name;indicator.Adornee=morphs['Skin_'..best.Id].Interact;pointer.Text='EQUIP YOUR LOOK ↓'
+  local gym=Skins.StationById[station:sub(8)];step.Text=gym.Name..' needs '..compact(gym.Required)..' Power';indicator.Adornee=zoneOf(bestGym.Id);pointer.Text='TRAIN x'..bestGym.Multiplier..' HERE ↓'
+ elseif (morphs or evolvePoint) and best.Gain>skin.Gain then
+  step.Text=morphs and ('New look unlocked! Equip '..best.Name) or ('New look unlocked! Evolve into '..best.Name..' at the EVOLVE booth')
+  indicator.Adornee=morphs and morphs['Skin_'..best.Id].Interact or evolvePoint;pointer.Text=morphs and 'EQUIP YOUR LOOK ↓' or 'EVOLVE HERE ↓'
  elseif station=='' then
-  step.Text='Step onto a gym mat to train faster';indicator.Adornee=training['Training_'..bestGym.Id].TrainingZone;pointer.Text='TRAIN x'..bestGym.Multiplier..' HERE ↓'
+  step.Text='Stand on the '..bestGym.Name..' mat to train faster';indicator.Adornee=zoneOf(bestGym.Id);pointer.Text='TRAIN x'..bestGym.Multiplier..' HERE ↓'
  else
   step.Text='Training x'..Skins.StationById[station].Multiplier..' — walk off to stop';indicator.Adornee=nil
  end
@@ -83,21 +145,16 @@ end
 for _,key in {'Power','EquippedSkin','TrainingStation','PowerRate'} do player:GetAttributeChangedSignal(key):Connect(refresh) end
 refresh()
 
--- Gentle equipment motion is local; only the active gym animates.
-local bags={}
-for _,s in Skins.Stations do
- bags[s.Id]={}
- for _,p in training['Training_'..s.Id]:GetChildren() do
-  if p.Name=='PunchBag' or p.Name=='BagBelt' then table.insert(bags[s.Id],{Part=p,Base=p.CFrame}) end
- end
-end
+-- Only the bag you're training on sways, and only on your screen.
 local lastStation=''
 game:GetService('RunService').Heartbeat:Connect(function()
  local station=player:GetAttribute('TrainingStation') or ''
- if lastStation~=station and bags[lastStation] then for _,b in bags[lastStation] do b.Part.CFrame=b.Base end end
+ local last=stations[lastStation]
+ if lastStation~=station and last and last.Hinge then for _,r in last.Swing do r.Part.CFrame=last.Hinge*r.Offset end end
  lastStation=station
- if bags[station] then
-  local angle=math.sin(os.clock()*3)*.065
-  for _,b in bags[station] do b.Part.CFrame=b.Base*CFrame.Angles(0,0,angle) end
+ local e=stations[station]
+ if e and e.Hinge then
+  local sway=e.Hinge*CFrame.Angles(math.sin(os.clock()*6)*.12,0,0)
+  for _,r in e.Swing do r.Part.CFrame=sway*r.Offset end
  end
 end)
