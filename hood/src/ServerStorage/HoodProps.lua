@@ -83,9 +83,11 @@ end
 local function chain(c, a, b, link, color, material)
 	local dir = b - a
 	local n = math.max(1, math.floor(dir.Magnitude / link + 0.5))
+	-- A straight-down chain is parallel to the default up vector, which makes lookAt degenerate.
+	local up = math.abs(dir.Unit.Y) > 0.99 and V(1, 0, 0) or V(0, 1, 0)
 	for k = 0, n - 1 do
 		local p0, p1 = a + dir * (k / n), a + dir * ((k + 1) / n)
-		local cf = CFrame.lookAt((p0 + p1) / 2, p1) * CFrame.Angles(0, 0, (k % 2) * math.pi / 2)
+		local cf = CFrame.lookAt((p0 + p1) / 2, p1, up) * CFrame.Angles(0, 0, (k % 2) * math.pi / 2)
 		c:part('ChainLink', V(link * 0.55, link * 0.2, link * 1.15), cf, color, material or M.Metal)
 	end
 end
@@ -229,7 +231,7 @@ function Build.Street(c, kit, s)
 	local blue = Props.Rarity[T]
 	-- Curb-style concrete base with a painted blue edge and a faint ground ring.
 	c:box('Curb', V(-4, 0, -4), V(4, 0.7, 4), C(206, 204, 198), M.Concrete)
-	c:box('CurbStripe', V(-4.05, 0.45, -4.05), V(4.05, 0.7, 4.05), blue, M.SmoothPlastic)
+	c:box('CurbStripe', V(-4.05, 0.45, -4.05), V(4.05, 0.68, 4.05), blue, M.SmoothPlastic)
 	c:box('CurbTop', V(-3.95, 0.7, -3.95), V(3.95, 0.72, 3.95), C(214, 212, 206), M.Concrete)
 	local ring = c:post('GroundRing', 2.6, 0.04, V(0, 0.72, 1.2), blue, M.Neon)
 	ring.Transparency = 0.5
@@ -281,11 +283,11 @@ function Build.Speed(c, kit, s)
 	-- One-step plinth with pink trim.
 	c:box('Plinth', V(-4, 0, -4), V(4, 0.7, 4), C(236, 232, 240), M.SmoothPlastic)
 	c:box('Step', V(-3.2, 0.7, -3.2), V(3.2, 1.2, 3.6), C(222, 216, 228), M.SmoothPlastic)
-	c:box('PlinthTrim', V(-4.06, 0.5, -4.06), V(4.06, 0.7, 4.06), pink, M.Neon)
+	c:box('PlinthTrim', V(-4.06, 0.5, -4.06), V(4.06, 0.68, 4.06), pink, M.Neon)
 	-- Chrome post with a wooden rebound platform.
 	local chrome = C(210, 216, 226)
 	c:post('Post', 0.42, 7.2, V(0, 1.2, 3.4), chrome, M.Metal)
-	c:box('Bracket', V(-0.35, 7.6, 1.0), V(0.35, 8.0, 3.4), chrome, M.Metal)
+	c:box('Bracket', V(-0.35, 7.6, 1.0), V(0.35, 7.97, 3.4), chrome, M.Metal)
 	c:bar('BracketBrace', V(0, 5.8, 3.4), V(0, 7.62, 1.8), 0.32, chrome, M.Metal)
 	c:box('Platform', V(-2.6, 8.0, -1.0), V(2.6, 8.8, 3.2), C(170, 112, 60), M.WoodPlanks)
 	c:box('PlatformRim', V(-2.75, 7.75, -1.15), V(2.75, 8.0, 3.35), C(120, 76, 40), M.Wood)
@@ -372,14 +374,14 @@ function Build.Pro(c, kit, s)
 	c:box('Stage1', V(-4, 0, -4), V(4, 0.6, 4), black, M.SmoothPlastic)
 	c:box('Stage2', V(-3.5, 0.6, -3.2), V(3.5, 1.1, 3.8), C(40, 40, 48), M.SmoothPlastic)
 	c:box('Stage3', V(-3.0, 1.1, -2.4), V(3.0, 1.5, 3.6), C(52, 52, 62), M.SmoothPlastic)
-	c:box('StageEdge', V(-4.06, 0.42, -4.06), V(4.06, 0.6, 4.06), red, M.Neon)
+	c:box('StageEdge', V(-4.06, 0.42, -4.06), V(4.06, 0.58, 4.06), red, M.Neon)
 	for _, x in { -3.6, 3.6 } do
 		c:box('CornerPost', V(x - 0.3, 0.6, -3.9), V(x + 0.3, 2.8, -3.3), black, M.Metal)
 		c:box('CornerCap', V(x - 0.36, 2.8, -3.96), V(x + 0.36, 3.1, -3.24), red, M.Neon)
 	end
 	-- Heavy industrial gallows with red neon strips and gold bolts.
 	local hook = gallows(c, { y0 = 1.5, top = 12.0, width = 1.2, color = black, material = M.Metal, cap = red, capMaterial = M.Neon })
-	c:box('PostStrip', V(-3.66, 2.0, 2.18), V(-3.54, 11.4, 2.3), red, M.Neon)
+	c:box('PostStrip', V(-3.66, 2.0, 2.14), V(-3.54, 11.4, 2.26), red, M.Neon)
 	for _, y in { 3.5, 7, 10.5 } do c:part('Bolt', V(0.16, 0.36, 0.36), CFrame.new(-3, y, 2.16) * CFrame.Angles(0, math.pi / 2, 0), C(255, 200, 60), M.Metal, Enum.PartType.Cylinder) end
 	-- Black pro bag with red and gold bands, a logo plate and gold hardware.
 	local gold = C(255, 196, 50)
@@ -405,7 +407,7 @@ function Build.Pro(c, kit, s)
 		emblem:part('EmblemArm', V(4.6, 0.06, 0.5), CFrame.new(0, 1.53, 1.2) * CFrame.Angles(0, k * math.pi / 4, 0), red, M.Neon)
 	end
 	motion(emblemModel, { Spin = 25 })
-	nameplate(c, kit, s, T, 0.0, 6)
+	nameplate(c, kit, s, T, 0.2, 6)
 	priceTag(c, kit, s, T, 14.5)
 	return { pad = V(8, 1.5, 8) }
 end
@@ -416,12 +418,12 @@ function Build.Gold(c, kit, s)
 	local marble = C(244, 242, 236)
 	-- Round marble dais with gold steps and trim.
 	polygonPlinth(c, 'Dais', V(0, 0, 0.4), 4.0, 0, 0.6, marble, M.Marble, 12)
-	polygonPlinth(c, 'DaisGold', V(0, 0, 0.4), 4.06, 0.45, 0.6, gold, M.Neon, 12)
+	polygonPlinth(c, 'DaisGold', V(0, 0, 0.4), 4.06, 0.45, 0.56, gold, M.Neon, 12)
 	polygonPlinth(c, 'DaisTop', V(0, 0, 0.4), 3.3, 0.6, 1.2, marble, M.Marble, 12)
-	polygonPlinth(c, 'DaisTopGold', V(0, 0, 0.4), 3.36, 1.05, 1.2, gold, M.Neon, 12)
+	polygonPlinth(c, 'DaisTopGold', V(0, 0, 0.4), 3.36, 1.05, 1.16, gold, M.Neon, 12)
 	-- Marble gallows with gold caps and a gold arm.
 	local hook = gallows(c, { y0 = 1.2, top = 12.4, width = 1.1, color = marble, material = M.Marble, cap = gold, capMaterial = M.SmoothPlastic })
-	c:box('ArmGold', V(-2.45, 12.35, 0.6), V(0.65, 12.55, 1.8), gold, M.SmoothPlastic)
+	c:box('ArmGold', V(-2.3, 12.35, 0.6), V(0.65, 12.55, 1.8), gold, M.SmoothPlastic)
 	for _, y in { 2.6, 6.5, 10.4 } do c:box('PostBand', V(-3.63, y, 2.17), V(-2.37, y + 0.35, 3.43), gold, M.SmoothPlastic) end
 	-- The gold bag: foil body, white caps, diamond studs, gold chain.
 	local swivel = bag(c, { bottom = 2.7, radius = 1.55, height = 5.8, body = C(255, 196, 40), highlight = C(255, 232, 130), cap = C(255, 248, 225), seam = C(214, 140, 16), metal = gold })
@@ -497,7 +499,7 @@ function Props.ring(c, kit, s, size)
 	for _, k in corners do
 		local x, z = k[1] * half, k[2] * half
 		eq:post('CornerPost', 0.45, 6, V(x, h, z), C(200, 206, 214), M.Metal)
-		eq:box('CornerPad', V(x - 0.6, h + 1.0, z - 0.6), V(x + 0.6, h + 5.2, z + 0.6), k[3], M.Fabric)
+		eq:box('CornerPad', V(x - 0.6, h + 1.0, z - 0.6), V(x + 0.6, h + 5.35, z + 0.6), k[3], M.Fabric)
 		eq:blob('PostCap', V(1.0, 0.6, 1.0), V(x, h + 6, z), C(255, 200, 60), M.Foil)
 	end
 	-- Hue-cycling neon ropes (the top tier's new channel), four rows.

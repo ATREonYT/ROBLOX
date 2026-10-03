@@ -19,11 +19,17 @@ local S = Enum.SurfaceType
 V2.Origin = CFrame.new(2400, 0, 0)
 
 local P = {
-	lawnA = C(142, 214, 74), lawnB = C(128, 202, 64),
-	pathA = C(234, 236, 240), pathB = C(218, 222, 230), pathRim = C(150, 156, 168),
-	walkA = C(212, 212, 216), walkB = C(198, 198, 204),
+	-- Ground stage (vibrancy research palette P3): light neutrals, 3-tone lime grass, blue-grey asphalt.
+	lawnA = C(122, 217, 87), lawnB = C(94, 198, 75),
+	pathA = C(240, 236, 228), pathB = C(226, 220, 208), pathRim = C(196, 188, 172),
+	walkA = C(237, 230, 218), walkB = C(222, 214, 200),
 	clubA = C(74, 82, 102), clubB = C(64, 72, 92),
-	road = C(66, 68, 76), roadLine = C(255, 210, 64), paint = C(246, 246, 240),
+	road = C(75, 82, 99), roadLine = C(255, 210, 63), paint = C(246, 246, 240),
+	-- Candy rowhouse facades (palette P1); brick-red keeps the "brick row" identity every few blocks.
+	candy = { C(216, 96, 63), C(255, 122, 92), C(255, 216, 110), C(116, 217, 181), C(99, 191, 255), C(180, 155, 255), C(34, 191, 176), C(255, 143, 184) },
+	-- Doors and awnings (palette P2), always contrasting with the wall behind them.
+	accent = { C(255, 63, 127), C(47, 123, 255), C(255, 194, 26), C(25, 179, 107) },
+	flower = { C(255, 46, 154), C(255, 210, 63), C(255, 255, 255), C(99, 191, 255) },
 	brick = { C(204, 108, 72), C(186, 94, 62), C(166, 82, 56) }, cap = { C(132, 210, 70), C(122, 200, 62), C(112, 190, 56) },
 	trim = C(238, 230, 212), iron = C(44, 48, 54), steel = C(118, 128, 138), glass = C(64, 92, 118), glassLit = C(255, 214, 140),
 	white = C(250, 250, 252), black = C(26, 26, 30), navy = C(28, 44, 92), yellow = C(255, 204, 48), cyan = C(64, 228, 242),
@@ -361,20 +367,65 @@ local function roofTop(tier, x, z, r)
 	end
 	return h
 end
+-- Facade colour of the terrace block at a world-plan point (filled by buildTerraces; used for doors).
+local facadeAt = {}
+local function facadeColor(x, z)
+	local i, j = cellOf(x, z)
+	return facadeAt[i .. ',' .. j]
+end
+-- Which colour zone a terrace cell belongs to: each stage segment of the street gets one dominant hue
+-- (a colour-coded "mural gallery"); everything around the lobby is mixed candy colours.
+local function zoneOf(i, j)
+	local x0, z0, x1, z1 = cellRect(i, j)
+	local zc = (z0 + z1) / 2
+	if zc < -24 then return 's' .. math.floor((-zc + 14) / STAGE_GAP) end
+	return 'lobby'
+end
 local function buildTerraces(ctx, tier)
 	local t = ctx:group('Terraces')
+	local rects = {}
 	merge(function(i, j)
 		local h = tierTop(tier, i, j)
-		return h and (tier[i][j] .. ':' .. h)
+		return h and (tier[i][j] .. ':' .. h .. ':' .. zoneOf(i, j))
 	end, function(k, x0, z0, x1, z1)
-		local n, h = k:match('^(%d+):(%d+)$')
-		n, h = tonumber(n), tonumber(h)
-		-- Each merged block gets its own slight shade, so long walls read as separate buildings, not one copy.
-		local shade = 1 + ((hash(x0 // 4, z0 // 4) % 9) - 4) * 0.014
-		local b = P.brick[n]
-		studs(t:box('TerraceBlock', V(x0, -1, z0), V(x1, h - 1, z1), Color3.new(math.min(1, b.R * shade), math.min(1, b.G * shade), math.min(1, b.B * shade)), M.Plastic), true)
-		studs(t:box('TerraceGrass', V(x0, h - 1, z0), V(x1, h, z1), P.cap[n], M.Plastic), true)
+		local n, h, zone = k:match('^(%d+):(%d+):(.+)$')
+		table.insert(rects, { n = tonumber(n), h = tonumber(h), zone = zone, x0 = x0, z0 = z0, x1 = x1, z1 = z1 })
 	end)
+	-- Lobby blocks: greedy colouring so no two touching blocks share a colour; brick-red about every third.
+	local function touches(a, b)
+		local xo = math.min(a.x1, b.x1) - math.max(a.x0, b.x0)
+		local zo = math.min(a.z1, b.z1) - math.max(a.z0, b.z0)
+		return (xo >= 0 and zo > 0) or (zo >= 0 and xo > 0)
+	end
+	local n = 0
+	for idx, r in rects do
+		local color
+		if r.zone == 'lobby' then
+			local used = {}
+			for k = 1, idx - 1 do
+				local o = rects[k]
+				if o.zone == 'lobby' and touches(r, o) then used[o.ci] = true end
+			end
+			n += 1
+			local start = (n % 3 == 0) and 1 or (hash(r.x0 // 4, r.z0 // 4) % #P.candy) + 1
+			for step = 0, #P.candy - 1 do
+				local ci = (start - 1 + step) % #P.candy + 1
+				if not used[ci] then r.ci = ci; break end
+			end
+			r.ci = r.ci or 1
+			color = P.candy[r.ci]
+		else
+			local seg = tonumber(r.zone:sub(2))
+			color = P.candy[(seg + 1) % #P.candy + 1]
+		end
+		-- Higher steps a touch deeper so the terraces still read as separate levels.
+		color = color:Lerp(Color3.new(0, 0, 0), (r.n - 1) * 0.08)
+		studs(t:box('TerraceBlock', V(r.x0, -1, r.z0), V(r.x1, r.h - 1, r.z1), color, M.Plastic), true)
+		studs(t:box('TerraceGrass', V(r.x0, r.h - 1, r.z0), V(r.x1, r.h, r.z1), P.cap[r.n], M.Plastic), true)
+		local i0, j0 = cellOf(r.x0, r.z0)
+		local i1, j1 = cellOf(r.x1 - 1, r.z1 - 1)
+		for i = i0, i1 do for j = j0, j1 do facadeAt[i .. ',' .. j] = color end end
+	end
 end
 
 -- Every visible terrace face, as straight runs: {from, to, a, b (along-axis range), at (face plane), normal, y0, y1}.
@@ -455,7 +506,18 @@ local function buildLips(ctx, faces, reserved)
 			end
 		end
 		local color = P.cap[f.tier] or P.cap[1]
+		-- Lobby walls get a fringe of flowers along the lip (magenta / yellow / white / sky).
+		local lobbyFace = f.tier == 1 and ((f.alongX and (f.at == 0 or f.at == 104) and f.a >= -64 and f.b <= 64) or (not f.alongX and math.abs(f.at) == 64 and f.a >= 0 and f.b <= 104))
 		for _, sp in spans do
+			if lobbyFace and sp[2] - sp[1] > 2 then
+				local k = 0
+				for u = sp[1] + 1.2, sp[2] - 1.2, 2.4 do
+					k += 1
+					local out = f.normal * 0.3
+					local pos = f.alongX and V(u, f.y1 + 0.28, f.at + out.Z) or V(f.at + out.X, f.y1 + 0.28, u)
+					lips:part('LipFlower', V(0.8, 0.8, 0.8), CFrame.new(pos), P.flower[(k + math.floor(u)) % #P.flower + 1], M.SmoothPlastic, Enum.PartType.Ball)
+				end
+			end
 			if sp[2] - sp[1] > 0.5 then
 				local out = f.normal * LIP_OUT
 				local lo, hi
@@ -477,7 +539,14 @@ local function faceFrame(f, along, y)
 	local p = f.alongX and V(along, y, f.at) or V(f.at, y, along)
 	return CFrame.lookAt(p, p + f.normal)
 end
-local function window(ctx, lit)
+local function window(ctx, lit, flowers)
+	if flowers then
+		-- Flower box in front of the sill: a wood trough with four blooms.
+		ctx:box('FlowerBox', V(-1.5, -1.15, -1.25), V(1.5, -0.6, -0.6), P.woodDark, M.WoodPlanks)
+		for k = 0, 3 do
+			ctx:part('Bloom', V(0.55, 0.55, 0.55), CFrame.new(-1.05 + k * 0.7, -0.45, -0.92), P.flower[(flowers + k) % #P.flower + 1], M.SmoothPlastic, Enum.PartType.Ball)
+		end
+	end
 	ctx:box('Glass', V(-1.2, 0, -0.12), V(1.2, 3, 0), lit and P.glassLit or P.glass, M.Glass)
 	ctx:box('Frame', V(-1.45, 3, -0.25), V(1.45, 3.3, 0), P.trim, M.SmoothPlastic)
 	ctx:box('Frame', V(-1.45, -0.3, -0.25), V(1.45, 0, 0), P.trim, M.SmoothPlastic)
@@ -485,6 +554,40 @@ local function window(ctx, lit)
 	ctx:box('Frame', V(1.2, 0, -0.25), V(1.45, 3, 0), P.trim, M.SmoothPlastic)
 	ctx:box('Sill', V(-1.7, -0.6, -0.6), V(1.7, -0.3, 0), P.trim, M.SmoothPlastic)
 	ctx:box('Mullion', V(-0.08, 0, -0.18), V(0.08, 3, -0.12), P.trim, M.SmoothPlastic)
+end
+-- Front door on a ground-floor face: stoop, colour door with panels, trim, striped awning, planter.
+local function hueDistance(a, b)
+	local ha = a:ToHSV()
+	local hb = b:ToHSV()
+	local d = math.abs(ha - hb)
+	return math.min(d, 1 - d)
+end
+local function door(ctx, wall, seed)
+	-- The accent furthest round the colour wheel from the wall.
+	local best, bestD = P.accent[1], -1
+	for _, c in P.accent do
+		local d = hueDistance(c, wall or P.brick[1])
+		if d > bestD then best, bestD = c, d end
+	end
+	ctx:box('Stoop', V(-2.2, 0, -1.4), V(2.2, 0.45, 0), P.trim, M.Concrete)
+	ctx:box('StoopTop', V(-1.9, 0.45, -0.7), V(1.9, 0.9, 0), P.trim, M.Concrete)
+	ctx:box('Door', V(-1.4, 0.9, -0.12), V(1.4, 5.6, 0), best, M.SmoothPlastic)
+	for _, y in { 1.4, 3.5 } do ctx:box('DoorPanel', V(-1.0, y, -0.2), V(1.0, y + 1.6, -0.12), best:Lerp(Color3.new(0, 0, 0), 0.18), M.SmoothPlastic) end
+	ctx:part('Knob', V(0.32, 0.32, 0.32), CFrame.new(1.0, 3.2, -0.3), P.yellow, M.Metal, Enum.PartType.Ball)
+	ctx:box('DoorFrame', V(-1.8, 0.9, -0.3), V(-1.4, 5.6, 0), P.trim, M.SmoothPlastic)
+	ctx:box('DoorFrame', V(1.4, 0.9, -0.3), V(1.8, 5.6, 0), P.trim, M.SmoothPlastic)
+	ctx:box('DoorHead', V(-1.9, 5.6, -0.35), V(1.9, 6.05, 0), P.trim, M.SmoothPlastic)
+	-- Striped awning, tilted out over the stoop.
+	local awn = P.accent[(seed % #P.accent) + 1] == best and P.accent[((seed + 1) % #P.accent) + 1] or P.accent[(seed % #P.accent) + 1]
+	for k = 0, 3 do
+		local stripe = ctx:box('Awning', V(-2.2 + k * 1.1, -0.08, -1.6), V(-1.1 + k * 1.1, 0.08, 0), k % 2 == 0 and awn or P.white, M.Fabric)
+		stripe.CFrame = ctx:world(CFrame.new(-1.65 + k * 1.1, 6.45, -0.75) * CFrame.Angles(math.rad(-22), 0, 0))
+	end
+	ctx:box('AwningValance', V(-2.2, 5.95, -1.62), V(2.2, 6.2, -1.42), awn, M.Fabric)
+	-- Planter beside the stoop.
+	ctx:box('Planter', V(2.4, 0, -0.9), V(3.5, 0.9, 0), P.woodDark, M.WoodPlanks)
+	ctx:part('Shrub', V(1.3, 1.1, 1.0), CFrame.new(2.95, 1.25, -0.45), P.leaf[2], M.SmoothPlastic, Enum.PartType.Ball)
+	for k = 0, 1 do ctx:part('Bloom', V(0.5, 0.5, 0.5), CFrame.new(2.7 + k * 0.5, 1.75, -0.6), P.flower[(seed + k) % #P.flower + 1], M.SmoothPlastic, Enum.PartType.Ball) end
 end
 local function acUnit(ctx)
 	ctx:box('ACUnit', V(-1, 0, -1.2), V(1, 1.2, 0), C(198, 202, 196), M.Metal)
@@ -514,8 +617,14 @@ local function graffiti(ctx, value, color, w, h)
 end
 local TAGS = { { 'BLOCK', P.magenta }, { 'COME UP', P.cyan }, { 'JUNIPER', P.yellow }, { 'NO DAYS OFF', P.orange }, { 'STAY UP', P.cap[1] } }
 -- Windows, AC units and tags along every face, skipping the stretches reserved for storefronts and gates.
-local function decorateFaces(ctx, faces, reserved)
+local function decorateFaces(ctx, faces, reserved, doorAvoid)
 	local d = ctx:group('Facades')
+	local function doorOK(f, a)
+		for _, r in doorAvoid do
+			if r.alongX == f.alongX and math.abs(r.at - f.at) < 0.5 and a + 3.6 > r.a and a - 3.6 < r.b then return false end
+		end
+		return true
+	end
 	local function blocked(f, a)
 		for _, r in reserved do
 			if r.alongX == f.alongX and math.abs(r.at - f.at) < 0.5 and a + 2 > r.a and a - 2 < r.b then return true end
@@ -531,7 +640,10 @@ local function decorateFaces(ctx, faces, reserved)
 				local h = hash(math.floor(a), math.floor(f.at))
 				local base = f.y0 + (f.y0 == 0 and 2.6 or 1.6)
 				if f.y1 - base >= 3.8 then
-					if f.y0 == 0 and h % 9 == 0 then
+					if f.y0 == 0 and f.y1 == TIER_TOP[1] and h % 4 == 2 and doorOK(f, a) then
+						local probe = f.alongX and V(a, 0, f.at - f.normal.Z * 2) or V(f.at - f.normal.X * 2, 0, a)
+						door(d:at(faceFrame(f, a, 0)), facadeColor(probe.X, probe.Z), h)
+					elseif f.y0 == 0 and h % 9 == 0 then
 						local tag = TAGS[h % #TAGS + 1]
 						graffiti(d:at(faceFrame(f, a, 1.2)), tag[1], tag[2], 7.2, 3.6)
 					elseif f.y0 == 0 and f.y1 == TIER_TOP[1] and h % 6 == 1 then
@@ -540,7 +652,10 @@ local function decorateFaces(ctx, faces, reserved)
 					elseif h % 7 == 3 and f.y0 > 0 then
 						acUnit(d:at(faceFrame(f, a, base + 0.4)))
 					else
-						window(d:at(faceFrame(f, a, base)), h % 5 == 0)
+						-- Flower boxes everywhere except street-level corridor walls, where lamps stand close.
+						local corridor = not f.alongX and math.abs(f.at) == 20 and f.y0 == 0
+						local flowers = h % 3 == 0 and not corridor and (f.y0 > 0 or doorOK(f, a))
+						window(d:at(faceFrame(f, a, base)), h % 5 == 0, flowers and h or nil)
 					end
 				end
 			end
@@ -724,6 +839,19 @@ local function buildDripStand(ctx, skins, art, building)
 	side:box('SideDoor', V(backZ + 2.6, 0, -0.15), V(backZ + 5.4, 5.8, 0), P.woodDark, M.Wood)
 	side:box('SideDoorHead', V(backZ + 2.2, 5.8, -0.4), V(backZ + 5.8, 6.2, 0), P.trim, M.SmoothPlastic)
 	fireEscape(side:at(CFrame.new(backZ + 14, 9.4, 0)))
+	-- Neon blade sign on the street corner: dark board, lime + magenta neon frame, stacked letters.
+	local blade = side:at(CFrame.new(backZ + 2.4, 0, 0))
+	local board = blade:box('BladeSign', V(-0.25, 9.5, -2.6), V(0.25, 17.5, -0.4), C(26, 26, 30), M.SmoothPlastic)
+	for _, e in { { V(-0.3, 17.5, -2.75), V(0.3, 17.8, -0.4) }, { V(-0.3, 9.2, -2.75), V(0.3, 9.5, -0.4) }, { V(-0.3, 9.5, -2.75), V(0.3, 17.5, -2.6) } } do
+		decor(blade:box('BladeNeon', e[1], e[2], C(184, 255, 46), M.Neon))
+	end
+	decor(blade:box('BladeNeonInner', V(-0.28, 9.8, -2.45), V(0.28, 10.0, -0.55), C(255, 46, 154), M.Neon))
+	blade:box('BladeBracket', V(-0.15, 16.2, -0.4), V(0.15, 16.6, 0), C(40, 40, 46), M.Metal)
+	blade:box('BladeBracket', V(-0.15, 10.4, -0.4), V(0.15, 10.8, 0), C(40, 40, 46), M.Metal)
+	for _, face in { Enum.NormalId.Left, Enum.NormalId.Right } do
+		local g = surface(board, face, 40)
+		line(g, 'Letters', 'D\nR\nI\nP', C(255, 46, 154), FONT.loud, 0.04, 0.92, C(255, 255, 255), 2)
+	end
 	waterTower(st, V((B.x0 + B.x1) / 2 - 6, H + 0.3, (backZ + B.z1) / 2))
 	acUnit(st:at(CFrame.lookAt(V(B.x1 - 6, H + 0.3, backZ + 4), V(B.x1 - 6, H + 0.3, backZ + 3))))
 	st:box('RoofHatch', V(B.x1 - 7, H + 0.3, B.z1 - 6), V(B.x1 - 4, H + 1.3, B.z1 - 3), P.steel, M.Metal)
@@ -856,6 +984,13 @@ local function buildBoxingClub(ctx, stations)
 	glove:blob('Thumb', V(1.7, 3.2, 1.9), V(2.05, 3.5, -1.2), C(214, 40, 52), M.SmoothPlastic)
 	glove:blob('Shine', V(1.1, 1.6, 0.5), V(-1, 5.5, -2.5), C(255, 150, 160), M.SmoothPlastic)
 	for k = 0, 3 do glove:bar('Lace', V(-0.6, 2.4 + k * 0.5, 2.1), V(0.6, 2.6 + k * 0.5, 2.15), 0.18, P.white, M.Fabric) end
+	for k = 0, 11 do
+		local a = k / 12 * math.pi * 2
+		glove:part('GloveRing', V(0.9, 0.22, 0.3), CFrame.new(math.cos(a) * 2.3, 0.9, math.sin(a) * 2.3) * CFrame.Angles(0, -a + math.pi / 2, 0), C(34, 229, 255), M.Neon)
+	end
+	glove.parent:SetAttribute('Spin', 30)
+	glove.parent.WorldPivot = glove:world(CFrame.new(0, 0, 0))
+	glove.parent:AddTag('HoodMotion')
 	-- Gym odds and ends.
 	for k = 0, 2 do club:post('TireStack', 1.3, 0.9, V(-61.4, k * 0.9, 28.2), C(36, 36, 38), M.Rubber) end
 	bench(club, V(-62.2, 0, 22), V(1, 0, 0))
@@ -1163,6 +1298,21 @@ local function buildStages(ctx, maps)
 			studs(s:box('GatePost', V(side * 18.4, 0, z - 0.8), V(side * 20, 12, z + 0.8), P.white, M.Plastic), true)
 		end
 		studs(s:box('GateBeam', V(-20, 12, z - 0.8), V(20, 13.6, z + 0.8), P.white, M.Plastic), true)
+		-- Marquee bulbs along the beam's lower front edge, and bunting in the stage's colour below it.
+		local hue = P.candy[(i + 1) % #P.candy + 1]
+		for k = 0, 16 do
+			local x = -16 + k * 2
+			decor(s:part('MarqueeBulb', V(0.45, 0.45, 0.45), CFrame.new(x, 12.05, z + 0.95), k % 2 == 0 and C(255, 236, 160) or hue, M.Neon, Enum.PartType.Ball))
+		end
+		local function sagAt(t) return 11.2 - 1.2 * 4 * t * (1 - t) end
+		for k = 0, 13 do
+			local t0, t1 = k / 14, (k + 1) / 14
+			local a, b = V(-18 + 36 * t0, sagAt(t0), z + 1.3), V(-18 + 36 * t1, sagAt(t1), z + 1.3)
+			decor(s:bar('BuntingString', a, b, 0.06, P.iron)).CastShadow = false
+			local mid = (a + b) / 2
+			local flag = decor(s:part('Bunting', V(1.25, 1.25, 0.08), CFrame.new(mid - V(0, 0.75, 0)) * CFrame.Angles(0, 0, math.pi / 4), ({ hue, P.white, P.yellow })[k % 3 + 1], M.Fabric))
+			flag.CastShadow = false
+		end
 		-- The wall itself: white and see-through, with the stage text on both faces.
 		local wall = s:box('StageWall', V(-18.4, 0, z - 0.25), V(18.4, 12, z + 0.25), C(245, 248, 255), M.SmoothPlastic)
 		wall.Transparency = 0.65
@@ -1217,6 +1367,63 @@ local function roadPaint(ctx)
 	return r
 end
 
+
+---------------------------------------------------------------------------------------------- basketball court
+-- Half court on the east lawn (x 24..38, z 78..98): orange floor, blue key, white lines, a full hoop,
+-- a ball, and a few leaves drifting down. A landmark and a thumbnail spot.
+local function buildCourt(ctx)
+	local c = ctx:group('BasketballCourt')
+	local x0, x1, z0, z1 = 24, 38, 78, 98
+	local cx = (x0 + x1) / 2
+	c:box('CourtFloor', V(x0, 0, z0), V(x1, 0.12, z1), C(255, 138, 61), M.SmoothPlastic)
+	c:box('Key', V(cx - 3, 0.12, z1 - 7.5), V(cx + 3, 0.15, z1), C(43, 184, 240), M.SmoothPlastic)
+	local white = C(250, 250, 248)
+	local function lineBox(a, b) c:box('CourtLine', a, b, white, M.SmoothPlastic) end
+	lineBox(V(x0, 0.12, z0), V(x1, 0.17, z0 + 0.3))
+	lineBox(V(x0, 0.12, z0), V(x0 + 0.3, 0.17, z1))
+	lineBox(V(x1 - 0.3, 0.12, z0), V(x1, 0.17, z1))
+	lineBox(V(cx - 3, 0.15, z1 - 7.8), V(cx + 3, 0.18, z1 - 7.5))
+	-- Three-point arc as short bars around the hoop.
+	local hoopZ = z1 - 1.6
+	for k = 0, 10 do
+		local a0, a1 = math.rad(200 + k * 14), math.rad(200 + (k + 1) * 14)
+		local p0 = V(cx + math.cos(a0) * 6.2, 0.15, hoopZ + math.sin(a0) * 6.2)
+		local p1 = V(cx + math.cos(a1) * 6.2, 0.15, hoopZ + math.sin(a1) * 6.2)
+		c:part('ArcLine', V(0.3, 0.05, (p1 - p0).Magnitude + 0.05), CFrame.lookAt((p0 + p1) / 2, p1), white, M.SmoothPlastic)
+	end
+	-- Hoop: pole, arm, backboard with a red square, rim and a short net.
+	c:post('HoopPole', 0.3, 9.4, V(cx, 0, z1 + 0.4), C(40, 44, 52), M.Metal)
+	c:box('HoopArm', V(cx - 0.2, 8.7, z1 - 0.7), V(cx + 0.2, 9.1, z1 + 0.4), C(40, 44, 52), M.Metal)
+	c:box('Backboard', V(cx - 1.9, 8.0, z1 - 0.9), V(cx + 1.9, 10.4, z1 - 0.7), white, M.SmoothPlastic)
+	for _, e in { { V(cx - 0.8, 8.6, z1 - 0.95), V(cx + 0.8, 8.72, z1 - 0.9) }, { V(cx - 0.8, 9.5, z1 - 0.95), V(cx + 0.8, 9.62, z1 - 0.9) }, { V(cx - 0.8, 8.6, z1 - 0.95), V(cx - 0.68, 9.62, z1 - 0.9) }, { V(cx + 0.68, 8.6, z1 - 0.95), V(cx + 0.8, 9.62, z1 - 0.9) } } do
+		c:box('BoardSquare', e[1], e[2], P.red, M.SmoothPlastic)
+	end
+	for k = 0, 7 do
+		local a = k / 8 * math.pi * 2
+		c:part('Rim', V(0.62, 0.1, 0.12), CFrame.new(cx + math.cos(a) * 0.75, 8.55, hoopZ + 0.55 + math.sin(a) * 0.75) * CFrame.Angles(0, -a + math.pi / 2, 0), P.orange, M.Metal)
+		decor(c:bar('Net', V(cx + math.cos(a) * 0.72, 8.5, hoopZ + 0.55 + math.sin(a) * 0.72), V(cx + math.cos(a) * 0.4, 7.5, hoopZ + 0.55 + math.sin(a) * 0.4), 0.06, white, M.Fabric))
+	end
+	c:part('Basketball', V(1.2, 1.2, 1.2), CFrame.new(cx - 2.5, 0.72, z0 + 6), P.orange, M.SmoothPlastic, Enum.PartType.Ball)
+	bench(c, V(x1 + 0.9, 0, z0 + 12), V(-1, 0, 0)) -- clear of the subway railing at z 68..80.5
+	-- Leaves drifting over the court (Rate 3, slow, lit by the sun).
+	local leafHolder = c:part('LeavesFX', V(16, 0.2, 20), CFrame.new(cx, 15, (z0 + z1) / 2), P.white)
+	ghost(leafHolder)
+	local e = Instance.new('ParticleEmitter')
+	e.Name = 'Leaves'
+	e.Texture = 'rbxasset://textures/particles/SquareParticle.png'
+	e:SetAttribute('PreviewTexture', 'confetti')
+	e.Rate, e.Lifetime, e.Speed = 3, NumberRange.new(5, 7), NumberRange.new(0.3, 0.8)
+	e.EmissionDirection = Enum.NormalId.Bottom
+	e.Acceleration = V(0.4, -0.9, 0.2)
+	e.Drag = 0.4
+	e.Size = NumberSequence.new(0.5)
+	e.Color = ColorSequence.new(C(122, 217, 87), C(255, 196, 70))
+	e.RotSpeed, e.Rotation = NumberRange.new(-120, 120), NumberRange.new(0, 360)
+	e.LightInfluence = 1
+	e.Parent = leafHolder
+	return c
+end
+
 ---------------------------------------------------------------------------------------------- build
 function V2.Build()
 	Props = require(game:GetService('ServerStorage').HoodProps)
@@ -1252,8 +1459,22 @@ function V2.Build()
 		for _, x in { -20, 20 } do table.insert(reserved, { alongX = false, at = x, a = stageZ(i) - 2, b = stageZ(i) + 2 }) end
 	end
 	for _, x in { -20, 20 } do table.insert(reserved, { alongX = false, at = x, a = -2.5, b = 2.5 }) end
+	-- Doors (with stoops and planters) and street-level flower boxes keep clear of the club's inside wall,
+	-- the props at stages 3 and 6, the gate posts, the street lamps and the station platform.
+	local doorAvoid = { { alongX = false, at = -64, a = 4, b = 44 } }
+	for i = 1, 10 do
+		local z = stageZ(i)
+		for _, x in { -20, 20 } do
+			table.insert(doorAvoid, { alongX = false, at = x, a = z - 5, b = z + 5 })
+			table.insert(doorAvoid, { alongX = false, at = x, a = z + 14 - 3, b = z + 14 + 3 })
+		end
+		if i == 3 or i == 6 then table.insert(doorAvoid, { alongX = false, at = -20, a = z - 3, b = z + 14 }) end
+	end
+	-- The station platform at the far end covers the bottom 2 studs of the walls around it.
+	for _, x in { -20, 20 } do table.insert(doorAvoid, { alongX = false, at = x, a = -300, b = -296 }) end
+	table.insert(doorAvoid, { alongX = true, at = -300, a = -20, b = 20 })
 	local faces = terraceFaces(floors, tier)
-	decorateFaces(ctx, faces, reserved)
+	decorateFaces(ctx, faces, reserved, doorAvoid)
 	buildLips(ctx, faces, reserved)
 
 	-- Storefronts and the welcome mural on the back wall (z = 104 face, looking toward -Z).
@@ -1315,6 +1536,7 @@ function V2.Build()
 	buildSubway(ctx)
 	buildBoards(ctx)
 	buildStatue(ctx:at(CFrame.new(30, 0, 70)), skins.ById.Kingpin, art)
+	buildCourt(ctx)
 	buildStages(ctx, maps)
 
 	-- Gate into the stages.
@@ -1355,10 +1577,10 @@ function V2.Build()
 	bench(life, V(-14.5, 0, 74), V(1, 0, 0))
 	for k, c in { { 20.6, 101.6, P.blue }, { 22.4, 101.9, P.red } } do crate(life, CFrame.new(c[1], 0, c[2]) * CFrame.Angles(0, k * 0.3, 0), c[3]) end
 	-- Lobby trees; the ones near walls or boards keep their branches out of them.
-	for k, t in { { V(-60, 0, 60), 'z' }, { V(-58, 0, 98), 'none' }, { V(-22, 0, 60), 'z' }, { V(28, 0, 100), 'x' }, { V(60, 0, 100), 'none' }, { V(58.5, 0, 51), 'none' } } do
+	for k, t in { { V(-60, 0, 60), 'z' }, { V(-58, 0, 98), 'none' }, { V(-22, 0, 60), 'z' }, { V(60, 0, 100), 'none' }, { V(58.5, 0, 51), 'none' } } do
 		tree(life, t[1], k * 13 + 5, 0.9, t[2])
 	end
-	for k, pos in { V(-30, 0, 2), V(-50, 0, 2), V(-62, 0, 47), V(62, 0, 47), V(22, 0, 62), V(22, 0, 82) } do bush(life, pos, k) end
+	for k, pos in { V(-62, 0, 47), V(62, 0, 47), V(22, 0, 62), V(22, 0, 82) } do bush(life, pos, k) end
 	-- Rooftop life on the terraces, each set on the real roof height under its footprint.
 	local roof = ctx:group('Rooftops')
 	-- Each terrace step is 8 studs deep, so props sit on a step's centre line (lobby x = ±68/±76/±84,

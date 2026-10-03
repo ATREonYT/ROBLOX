@@ -98,8 +98,9 @@ function Juice.kick(amount)
 end
 
 ---------------------------------------------------------------------------------------------- impact burst
--- Sparks + an expanding ring at a world position. Uses Roblox's default particle texture until custom
--- textures are uploaded. Emitters live on a hidden anchor part and clean themselves up.
+-- Sparks + an expanding ring at a world position. A small pool of hidden anchor parts is reused round-robin
+-- (a fast puncher hits 5-8 times a second; making and destroying parts and emitters per hit adds up).
+-- Particles are in world space, so moving an anchor never drags the previous burst along.
 local function anchorAt(position)
 	local p = Instance.new('Part')
 	p.Name = 'ImpactFX'
@@ -108,52 +109,85 @@ local function anchorAt(position)
 	p.Size = Vector3.new(0.2, 0.2, 0.2)
 	p.CFrame = CFrame.new(position)
 	p.Parent = workspace
-	Debris:AddItem(p, 2)
 	return p
+end
+local pool, nextSlot = {}, 1
+local POOL_SIZE = 6
+local function burstSlot()
+	local slot = pool[nextSlot]
+	if not slot or not slot.part.Parent then
+		local p = anchorAt(Vector3.zero)
+		local sparks = Instance.new('ParticleEmitter')
+		sparks.Name = 'Sparks'
+		sparks.Enabled = false
+		sparks.Texture = 'rbxasset://textures/particles/sparkles_main.dds'
+		sparks.LightEmission = 1
+		sparks.LightInfluence = 0
+		sparks.Lifetime = NumberRange.new(0.2, 0.45)
+		sparks.Speed = NumberRange.new(18, 32)
+		sparks.Drag = 10 -- fast out, then hang: the official burst recipe
+		sparks.SpreadAngle = Vector2.new(180, 180)
+		sparks.Squash = NumberSequence.new(1.2) -- stretched streaks
+		sparks.Parent = p
+		local ring = Instance.new('ParticleEmitter')
+		ring.Name = 'Ring'
+		ring.Enabled = false
+		ring.Texture = 'rbxasset://textures/particles/explosion01_shockwave_main.dds'
+		ring.LightEmission = 1
+		ring.LightInfluence = 0
+		ring.Lifetime = NumberRange.new(0.25)
+		ring.Speed = NumberRange.new(0)
+		ring.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.1), NumberSequenceKeypoint.new(1, 1) })
+		ring.Parent = p
+		slot = { part = p, sparks = sparks, ring = ring }
+		pool[nextSlot] = slot
+	end
+	nextSlot = nextSlot % POOL_SIZE + 1
+	return slot
 end
 function Juice.burst(position, color, power)
 	power = power or 1
-	local p = anchorAt(position)
-	local sparks = Instance.new('ParticleEmitter')
-	sparks.Enabled = false
-	sparks.Color = ColorSequence.new(Color3.new(1, 1, 1), color or Color3.fromRGB(255, 194, 26))
-	sparks.LightEmission = 1
-	sparks.Lifetime = NumberRange.new(0.2, 0.45)
-	sparks.Speed = NumberRange.new(18, 32)
-	sparks.Drag = 10 -- fast out, then hang: the official burst recipe
-	sparks.SpreadAngle = Vector2.new(180, 180)
-	sparks.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.6 * power), NumberSequenceKeypoint.new(1, 0) })
-	sparks.Squash = NumberSequence.new(1.2) -- stretched streaks
-	sparks.Parent = p
-	sparks:Emit(math.floor(10 * power))
-	local ring = Instance.new('ParticleEmitter')
-	ring.Enabled = false
-	ring.Color = ColorSequence.new(Color3.new(1, 1, 1))
-	ring.LightEmission = 1
-	ring.Lifetime = NumberRange.new(0.25)
-	ring.Speed = NumberRange.new(0)
-	ring.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.5), NumberSequenceKeypoint.new(1, 6 * power) })
-	ring.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.1), NumberSequenceKeypoint.new(1, 1) })
-	ring.Parent = p
-	ring:Emit(1)
+	local slot = burstSlot()
+	slot.part.CFrame = CFrame.new(position)
+	slot.sparks.Color = ColorSequence.new(Color3.new(1, 1, 1), color or Color3.fromRGB(255, 194, 26))
+	slot.sparks.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.6 * power), NumberSequenceKeypoint.new(1, 0) })
+	slot.sparks:Emit(math.floor(10 * power))
+	slot.ring.Color = ColorSequence.new(Color3.new(1, 1, 1), color or Color3.new(1, 1, 1))
+	slot.ring.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.5), NumberSequenceKeypoint.new(1, 6 * power) })
+	slot.ring:Emit(1)
 end
 
--- White flash over a model for one beat (uses one of the 255 Highlight slots briefly, then frees it).
+-- White flash over a model for one beat. One Highlight per model, made on first use and switched off
+-- between hits: only enabled Highlights count toward the 255 limit, and nothing is created per punch.
+local flashes = setmetatable({}, { __mode = 'k' })
 function Juice.flash(model)
-	local h = Instance.new('Highlight')
-	h.FillColor = Color3.new(1, 1, 1)
-	h.FillTransparency = 0.3
-	h.OutlineTransparency = 1
-	h.DepthMode = Enum.HighlightDepthMode.Occluded
-	h.Adornee = model
-	h.Parent = model
-	TweenService:Create(h, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { FillTransparency = 1 }):Play()
-	Debris:AddItem(h, 0.15)
+	local f = flashes[model]
+	if not f or not f.h.Parent then
+		local h = Instance.new('Highlight')
+		h.Name = 'HitFlash'
+		h.FillColor = Color3.new(1, 1, 1)
+		h.OutlineTransparency = 1
+		h.DepthMode = Enum.HighlightDepthMode.Occluded
+		h.Enabled = false
+		h.Adornee = model
+		h.Parent = model
+		f = { h = h }
+		flashes[model] = f
+	end
+	if f.tween then f.tween:Cancel() end
+	f.h.FillTransparency = 0.3
+	f.h.Enabled = true
+	f.tween = TweenService:Create(f.h, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { FillTransparency = 1 })
+	f.tween.Completed:Once(function(state)
+		if state == Enum.PlaybackState.Completed then f.h.Enabled = false end
+	end)
+	f.tween:Play()
 end
 
 -- "+123" floating up from a world point: overshoot pop, drift up, fade.
 function Juice.popNumber(position, text, color, fontFace)
 	local p = anchorAt(position)
+	Debris:AddItem(p, 1)
 	local g = Instance.new('BillboardGui')
 	g.Size = UDim2.fromScale(4, 1.6)
 	g.LightInfluence = 0
@@ -182,13 +216,15 @@ function Juice.popNumber(position, text, color, fontFace)
 	TweenService:Create(s, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.In, 0, false, 0.45), { Transparency = 1 }):Play()
 end
 
--- Everything for one punch landing on a bag. `bag` = { sway = Juice.sway(...), model = Model, point = Vector3 }
+-- Everything for one punch landing on a bag. `bag` = { sway = Juice.sway(...), model = Model, point = Vector3,
+-- tier = station tier (1-9, optional), color = rarity colour (optional) }. Better bags hit a little harder:
+-- sparks take the bag's rarity colour and grow about 6% per tier, so the gold bag's hits feel heavier too.
 function Juice.punch(bag, fromPosition, gained, big)
 	local dir = (bag.point - fromPosition) * Vector3.new(1, 0, 1)
 	if dir.Magnitude < 1e-3 then dir = Vector3.new(0, 0, -1) end
-	local power = big and 1.6 or 1
-	bag.sway:hit(dir.Unit, power)
-	Juice.burst(bag.point, nil, power)
+	local power = (big and 1.6 or 1) * (1 + ((bag.tier or 1) - 1) * 0.06)
+	bag.sway:hit(dir.Unit, big and 1.6 or 1)
+	Juice.burst(bag.point, bag.color, power)
 	Juice.flash(bag.model)
 	Juice.kick(big and 0.9 or 0.35)
 	if gained then Juice.popNumber(bag.point + Vector3.new(0, 1.5, 0), '+' .. gained) end

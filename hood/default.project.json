@@ -40,6 +40,9 @@
       "TheBlockV2": {
         "$path": "src/ServerStorage/TheBlockV2.lua"
       },
+      "HoodLighting": {
+        "$path": "src/ServerStorage/HoodLighting.lua"
+      },
       "HoodProps": {
         "$path": "src/ServerStorage/HoodProps.lua"
       },
