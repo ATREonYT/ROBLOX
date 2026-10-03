@@ -37,6 +37,9 @@
       "SimulatorLobby": {
         "$path": "src/ServerStorage/SimulatorLobby.lua"
       },
+      "TheBlockV2": {
+        "$path": "src/ServerStorage/TheBlockV2.lua"
+      },
       "UnitTest": {
         "$path": "src/ServerStorage/UnitTest",
         "$ignoreUnknownInstances": true

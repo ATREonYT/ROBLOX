@@ -46,7 +46,7 @@ court, a food truck and string lights — and earn **Power** every second.
 | `src/ServerScriptService/HoodServer/` | ServerScriptService → HoodServer | `Bootstrap` (starts everything), `DataService` + `ProfileSchema` (saving), `LobbyService` (Power, looks, training mats, leaderboard), `RateLimiter`, `ServerConfig`, `Vendor/ProfileStore`, `UnitTestRunner` (disabled) |
 | `src/ReplicatedStorage/Shared/` | ReplicatedStorage → Shared | `Net` (remotes), `SkinArt` (builds the outfits), `LobbyRules`, `RepMath`, `Format`, and `Config/` (Skins, Maps, Balance, Crew, Products, MorphTextures) |
 | `src/StarterPlayer/StarterPlayerScripts/HoodClient/` | StarterPlayerScripts → HoodClient | `Lobby` (Power HUD, tips, equip prompts, locked-bag silhouettes, swinging bags), `BlockEnvironment` (train, sounds, neighbors), `Foundation` (Studio-only test panel) |
-| `src/ServerStorage/` | ServerStorage | `SimulatorLobby` (builds the lobby), `BlockBuilder`, `BlockPolish` (older map builders) — these only run when you call them from the Command Bar — and `UnitTest/` (tests) |
+| `src/ServerStorage/` | ServerStorage | `SimulatorLobby` (builds the lobby), `TheBlockV2` (builds the second World 1), `BlockBuilder`, `BlockPolish` (older map builders) — these only run when you call them from the Command Bar — and `UnitTest/` (tests) |
 
 Left out on purpose: the backup folders in ServerStorage
 (`BeforeCompactStages_…`, `BeforeFriendlyCourtyard_…`) and the two
@@ -76,6 +76,38 @@ scripts are in Studio (Rojo sync, below), build it once:
    lost — and **Ctrl+Z / ⌘+Z** undoes the whole build in one step.
 
 Run it again any time the lobby code changes; it replaces itself.
+
+## The second World 1 (The Block V2)
+
+`src/ServerStorage/TheBlockV2.lua` builds a **separate, second version of
+World 1** so you can compare it with the first one. It is built far away
+from the original (2,400 studs along X) as its own model,
+`Workspace.TheBlockV2`, and it never touches `TheBlock`, its lobby, the
+lighting or any script.
+
+- **Lobby:** a hood street with a spawn plaza, the **Drip Shop** (a
+  brownstone with all 15 looks on a three-row stoop), the **Block Boxing**
+  gym (8 bag stations), the **Champ Ring**, the **Bodega Box** stall with
+  the 4 Crew pets, a **Free Stash** safe, three **leaderboards**, a
+  **Kingpin** statue, the **Uptown subway** down to the World 2 portal,
+  string lights with sneakers on the wire, and glowing arrows from the
+  spawn to the shop.
+- **Map:** stepped brick-and-grass terraces all around, and a straight
+  street to the **10 stages** — white, see-through walls 28 studs apart,
+  each with its name and recommended Power, ending at Juniper Station.
+- It is **looks only** for now: the game's scripts still run on the first
+  map, and V2's spawn is switched off, so playing still starts in
+  `TheBlock`.
+
+Build it from the Command Bar:
+
+```lua
+require(game.ServerStorage.TheBlockV2).Build()
+```
+
+Then click **TheBlockV2** in the Explorer and press **F** to fly there.
+Running it again replaces only the old V2 (a backup goes to
+`ServerStorage → TheBlockV2_Before_…`), and **⌘+Z** undoes it.
 
 ## Syncing with Rojo
 
