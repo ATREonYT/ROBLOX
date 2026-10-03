@@ -41,6 +41,17 @@ for _,s in (morphs and Skins.List or {}) do
  p.Triggered:Connect(function() Net.get('EquipSkin'):FireServer(s.Id) end)
  prompts[s.Id]=p
 end
+-- No stand: one prompt at the EVOLVE booth puts on your best unlocked look.
+local evolvePoint=not morphs and ActiveMap.find(lobby,'EvolvePoint',10) or nil
+local evolvePrompt
+if evolvePoint then
+ evolvePrompt=Instance.new('ProximityPrompt');evolvePrompt.Name='Evolve';evolvePrompt.MaxActivationDistance=12;evolvePrompt.RequiresLineOfSight=false;evolvePrompt.HoldDuration=0;evolvePrompt.ObjectText='EVOLVE';evolvePrompt.ActionText='Evolve';evolvePrompt.Parent=evolvePoint
+ evolvePrompt.Triggered:Connect(function()
+  local n=player:GetAttribute('Power') or 0;local best=Skins.List[1]
+  for _,s in Skins.List do if n>=s.Required then best=s end end
+  if best.Id~=(player:GetAttribute('EquippedSkin') or 'CornerKid') then Net.get('EquipSkin'):FireServer(best.Id) end
+ end)
+end
 local indicator=Instance.new('BillboardGui');indicator.Name='NextDestination';indicator.Size=UDim2.fromOffset(170,46);indicator.StudsOffset=Vector3.new(0,7,0);indicator.AlwaysOnTop=true;indicator.MaxDistance=150;indicator.ResetOnSpawn=false;indicator.Parent=player.PlayerGui
 local pointer=label(indicator,'Destination',UDim2.fromScale(1,1),UDim2.fromScale(0,0),19);pointer.TextColor3=C(255,224,80);pointer.TextStrokeColor3=C(25,38,71);pointer.TextStrokeTransparency=0
 local function compact(v)
@@ -104,11 +115,15 @@ local function refresh()
  end
  paintStations(n)
  local nextSkin=Skins.nextSkin(n)
+ if evolvePrompt then
+  evolvePrompt.ActionText=(best.Id~=id and ('Evolve → '..best.Name..'  +'..best.Gain..'/sec')) or (nextSkin and ('Next: '..nextSkin.Name..' at '..compact(nextSkin.Required)..' Power')) or 'Fully evolved'
+ end
  local bestGym=Skins.Stations[1];for _,g in Skins.Stations do if n>=g.Required and stations[g.Id] then bestGym=g end end
  if station:find('Locked:') then
   local gym=Skins.StationById[station:sub(8)];step.Text=gym.Name..' needs '..compact(gym.Required)..' Power';indicator.Adornee=zoneOf(bestGym.Id);pointer.Text='TRAIN x'..bestGym.Multiplier..' HERE ↓'
- elseif morphs and best.Gain>skin.Gain then
-  step.Text='New look unlocked! Equip '..best.Name;indicator.Adornee=morphs['Skin_'..best.Id].Interact;pointer.Text='EQUIP YOUR LOOK ↓'
+ elseif (morphs or evolvePoint) and best.Gain>skin.Gain then
+  step.Text=morphs and ('New look unlocked! Equip '..best.Name) or ('New look unlocked! Evolve into '..best.Name..' at the EVOLVE booth')
+  indicator.Adornee=morphs and morphs['Skin_'..best.Id].Interact or evolvePoint;pointer.Text=morphs and 'EQUIP YOUR LOOK ↓' or 'EVOLVE HERE ↓'
  elseif station=='' then
   step.Text='Stand on the '..bestGym.Name..' mat to train faster';indicator.Adornee=zoneOf(bestGym.Id);pointer.Text='TRAIN x'..bestGym.Multiplier..' HERE ↓'
  else

@@ -54,14 +54,16 @@ remote.OnServerEvent:Connect(function(player,id)
  local profile=Data.get(player);local c=player.Character;local root=c and c:FindFirstChild('HumanoidRootPart');local h=c and c:FindFirstChild('Humanoid')
  if not profile or not root or not h or h.Health<=0 then return end
  local morphs=lobby:FindFirstChild('Morphs',true);local stand=morphs and morphs:FindFirstChild('Skin_'..id);local target=stand and stand:FindFirstChild('Interact')
+ -- Maps without a morph stand (The Block V2) evolve at the EVOLVE booth instead.
+ local booth=not target and lobby:FindFirstChild('EvolvePoint',true);target=target or booth
  if not target then return end
  local distance=(root.Position-target.Position).Magnitude
  if not Rules.canEquip(profile.Data.Rep,id,distance) then
-  Net.get('Notice'):FireClient(player,distance>14 and 'Walk to this character display to equip it.' or ('Reach '..Skins.ById[id].Required..' Power to unlock this look.'));return
+  Net.get('Notice'):FireClient(player,distance>14 and (booth and 'Walk to the EVOLVE booth to evolve.' or 'Walk to this character display to equip it.') or ('Reach '..Skins.ById[id].Required..' Power to unlock this look.'));return
  end
  profile.Data.EquippedSkin=id;profile.Data.Onboarding.EquippedSkin=true
  equipAppearance(player,id);sync(player,profile,1,'');Data.push(player)
- Net.get('Notice'):FireClient(player,Skins.ById[id].Name..' equipped! +'..Skins.ById[id].Gain..' Power / second.')
+ Net.get('Notice'):FireClient(player,(booth and 'Evolved into ' or '')..Skins.ById[id].Name..(booth and '!' or ' equipped!')..' +'..Skins.ById[id].Gain..' Power / second.')
 end)
 -- Punching: while you train on a bag, each click or tap is a punch worth a tenth of your per-second gain
 -- (at least 1), up to about 7 a second. The training mat check is the same one the passive gain uses.
