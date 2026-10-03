@@ -1,6 +1,7 @@
 -- Sample screens built with UIKit, to judge the look before wiring anything into the game.
 -- Command Bar (edit mode):  require(game.ServerStorage.UIKitDemo).Show()      -- shows the HUD
 --                           require(game.ServerStorage.UIKitDemo).Show('Shop') -- HUD + Drip Shop
+--                           require(game.ServerStorage.UIKitDemo).Show('Shop', 'Enforcer') -- a locked look selected
 --                           require(game.ServerStorage.UIKitDemo).Hide()
 -- The screens go into CoreGui while editing, so they are never saved into the place or seen by players.
 local Demo = {}
@@ -120,13 +121,42 @@ function Demo.shop(root, which)
 	return panel
 end
 
+-- In Studio the card art is a live ViewportFrame of each look's mannequin (no uploaded images needed).
+function Demo.portraits(gui)
+	local Skins = require(ReplicatedStorage.Shared.Config.Skins)
+	local Art = require(ReplicatedStorage.Shared.SkinArt)
+	for _, d in gui:GetDescendants() do
+		local id = d:IsA('ImageLabel') and d.Name == 'Art' and (d:GetAttribute('PreviewImage') or ''):match('^portrait:(.+)$')
+		local skin = id and Skins.ById[id]
+		if skin then
+			local vp = Instance.new('ViewportFrame')
+			vp.Name = 'Portrait'
+			vp.BackgroundTransparency = 1
+			vp.Size, vp.Position, vp.AnchorPoint, vp.ZIndex = d.Size, d.Position, d.AnchorPoint, d.ZIndex
+			vp.Ambient = Color3.fromRGB(190, 190, 200)
+			vp.LightColor = Color3.new(1, 1, 1)
+			vp.LightDirection = Vector3.new(-0.5, -1, 0.6)
+			Art.mannequin(vp, CFrame.new(), skin, 1) -- the mannequin faces -Z
+			local cam = Instance.new('Camera')
+			cam.FieldOfView = 30
+			cam.CFrame = CFrame.lookAt(Vector3.new(-3.2, 4.6, -13.5), Vector3.new(0, 3.05, 0))
+			cam.Parent = vp
+			vp.CurrentCamera = cam
+			vp.Parent = d.Parent
+		end
+	end
+end
+
 local current
-function Demo.Show(which)
+function Demo.Show(which, look)
 	Demo.Hide()
 	local ok, coreGui = pcall(function() return game:GetService('CoreGui') end)
 	local parent = ok and coreGui or game:GetService('StarterGui')
+	local Kit = require(ReplicatedStorage.Shared.UIKit)
 	local gui, root = Demo.hud(parent)
-	if which == 'Shop' then Demo.shop(root) end
+	if which == 'Shop' then root.Toast.Visible = false; Demo.shop(root, look) end
+	Kit.useFallbacks(gui) -- lettered badges until the icon images are uploaded
+	Demo.portraits(gui)
 	current = gui
 	return gui
 end
