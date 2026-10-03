@@ -42,7 +42,7 @@ end
 
 -- Teleport pads: 'Lobby' (past every gate: back to the block) and 'Furthest' (in the lobby: to the pad past
 -- your furthest cleared gate). Prompts are tagged HoodTeleport by the map builder.
-local spawnPoint = frame * CFrame.new(0, 3, 30)
+local spawnPoint = frame * CFrame.new((active.Root:GetAttribute('LobbySpawn') or Vector3.new(0, 0, 30)) + Vector3.new(0, 3, 0))
 local function teleport(player, target)
 	local character = player.Character
 	local root = character and character:FindFirstChild('HumanoidRootPart')

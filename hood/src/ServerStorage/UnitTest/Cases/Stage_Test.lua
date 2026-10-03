@@ -25,17 +25,10 @@ return function(t)
   for _,i in {3,1,2} do local m=Instance.new('Model');m:SetAttribute('Stage',i);m:SetAttribute('WallId','W'..i);m:SetAttribute('Required',i*10);m:SetAttribute('LineZ',-i*10);table.insert(models,m) end
   local g=R.fromModels(models);t.expect.equal(g[1].Stage,1);t.expect.equal(g[3].WallId,'W3');t.expect.equal(g[2].HalfWidth,20)
  end)
- t.test('each street bag waits just past the gate it matches',function()
+ t.test('every bag has a lobby spot and the Champ Ring waits past the last wall',function()
   local V2=require(game.ServerStorage.TheBlockV2);local S=require(game.ReplicatedStorage.Shared.Config.Skins);local walls=Maps.ById.Block.Walls
-  local placed={Starter=true,Ring=true}
-  for k,seg in V2.Segments do
-   if seg.station then
-    local st=S.StationById[seg.station];placed[seg.station]=true
-    t.expect.truthy(walls[k].RequiredRep<=st.Required)
-    t.expect.truthy(walls[k+1].RequiredRep>st.Required)
-   end
-  end
+  t.expect.equal(#V2.Stations,#S.Stations-1)
+  for _,spot in V2.Stations do t.expect.truthy(spot.z>V2.StageZ(1)) end
   t.expect.truthy(walls[10].RequiredRep<=S.StationById.Ring.Required)
-  for _,st in S.Stations do t.expect.truthy(placed[st.Id]) end
  end)
 end

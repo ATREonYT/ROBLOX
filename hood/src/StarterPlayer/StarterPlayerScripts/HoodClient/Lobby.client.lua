@@ -91,7 +91,9 @@ local function refresh()
   local anchor=morphs['Skin_'..s.Id]:FindFirstChild('LabelAnchor')
   local detail=anchor and anchor:FindFirstChild('WorldLabel') and anchor.WorldLabel:FindFirstChild('Detail')
   if detail then
-   detail.Text=(id==s.Id and 'EQUIPPED' or unlocked and 'EQUIP' or compact(s.Required)..' PWR')..' • +'..s.Gain..'/sec'
+   -- Labels with their own Gain row (The Block V2's stand) keep the price, the action and the gain apart.
+   local split=anchor.WorldLabel:FindFirstChild('Gain')
+   detail.Text=split and (id==s.Id and 'EQUIPPED' or unlocked and 'EQUIP' or 'BUY') or (id==s.Id and 'EQUIPPED' or unlocked and 'EQUIP' or compact(s.Required)..' PWR')..' • +'..s.Gain..'/sec'
    detail.TextColor3=id==s.Id and C(255,126,119) or unlocked and C(109,244,133) or C(255,255,255)
   end
   if unlocked then best=s end

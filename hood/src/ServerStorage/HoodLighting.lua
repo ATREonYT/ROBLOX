@@ -16,7 +16,8 @@ local C = Color3.fromRGB
 local L = {}
 
 L.Presets = {
-	-- Default for every map: high sun behind the camera, cool bright shade, no veil, saturated colour.
+	-- Default for every map: high sun behind the camera, cool bright shade, no veil. Saturation stays low so
+	-- the colour comes from the build (hood_games_maps.md: the brick street must not go candy).
 	FrontPage = {
 		lighting = {
 			LightingStyle = Enum.LightingStyle.Soft, PrioritizeLightingQuality = true,
@@ -26,7 +27,7 @@ L.Presets = {
 			EnvironmentDiffuseScale = 0.5, EnvironmentSpecularScale = 0.15, ShadowSoftness = 0.2, GlobalShadows = true,
 		},
 		atmosphere = { Density = 0.22, Offset = 0.6, Haze = 0.2, Glare = 0, Color = C(196, 228, 255), Decay = C(140, 180, 255) },
-		grade = { Brightness = 0.04, Contrast = 0.12, Saturation = 0.25, TintColor = C(255, 255, 255) },
+		grade = { Brightness = 0.04, Contrast = 0.1, Saturation = 0.08, TintColor = C(255, 255, 255) },
 		bloom = { Intensity = 0.65, Size = 28, Threshold = 1.1 },
 		rays = { Intensity = 0.015, Spread = 0.25 },
 		sky = { SunAngularSize = 16, MoonAngularSize = 11, StarCount = 0, CelestialBodiesShown = true },
