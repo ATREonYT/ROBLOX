@@ -5,12 +5,32 @@ local Skins=require(RS.Shared.Config.Skins)
 local Art=require(RS.Shared.SkinArt)
 local Rules=require(RS.Shared.LobbyRules)
 local Net=require(RS.Shared.Net)
+local ActiveMap=require(RS.Shared.ActiveMap)
 while not RS:GetAttribute('FoundationReady') do task.wait(.1) end
-local map=workspace:FindFirstChild('TheBlock');if not map or not map:FindFirstChild('SimulatorLobby') then return end
-local f=CFrame.Angles(0,map:GetAttribute('MapYaw') or map.MapYawValue.Value,0)
-local zones=Rules.zonesFrom(map.SimulatorLobby,f)
+-- Runs on whichever map is active: the original Block's SimulatorLobby, or The Block V2.
+local active=ActiveMap.get();if not active then return end
+local f=active.Frame;local lobby=active.Lobby
+local zones=Rules.zonesFrom(lobby,f)
 if #zones<#Skins.Stations then warn('[LobbyService] Only '..#zones..' of '..#Skins.Stations..' training mats found; rebuild the lobby.') end
 local remote=Net.get('EquipSkin');local cooldown={};local applied={}
+-- Overhead tag: your look's name over your Power, so everyone on the street sees everyone's progress.
+local Format=require(RS.Shared.Format)
+local TIER_COLORS={Color3.fromRGB(210,218,225),Color3.fromRGB(115,207,153),Color3.fromRGB(87,170,240),Color3.fromRGB(184,125,237),Color3.fromRGB(242,182,50)}
+local function overheadTag(player,skin,power)
+ local c=player.Character;local head=c and c:FindFirstChild('Head')
+ if not head then return end
+ local tag=head:FindFirstChild('HoodTag')
+ if not tag then
+  tag=Instance.new('BillboardGui');tag.Name='HoodTag';tag.Size=UDim2.fromScale(6,1.8);tag.StudsOffset=Vector3.new(0,2.6,0);tag.MaxDistance=120;tag.LightInfluence=0;tag.Parent=head
+  for i,name in {'Title','Power'} do
+   local t=Instance.new('TextLabel');t.Name=name;t.BackgroundTransparency=1;t.Size=UDim2.fromScale(1,i==1 and 0.44 or 0.56);t.Position=UDim2.fromScale(0,i==1 and 0 or 0.44)
+   t.FontFace=Font.new('rbxasset://fonts/families/LuckiestGuy.json');t.TextScaled=true;t.TextColor3=Color3.new(1,1,1)
+   local st=Instance.new('UIStroke');st.Color=Color3.fromRGB(28,24,48);st.Thickness=2;st.Parent=t;t.Parent=tag
+  end
+ end
+ tag.Title.Text=string.upper(skin.Name);tag.Title.TextColor3=TIER_COLORS[math.clamp(math.ceil(skin.Index/3),1,5)]
+ tag.Power.Text='💪 '..Format.compact(power)
+end
 local function sync(player,profile,multiplier,station)
  local id=profile.Data.EquippedSkin;local s=Skins.ById[id] or Skins.List[1]
  player:SetAttribute('Power',profile.Data.Rep);player:SetAttribute('EquippedSkin',s.Id)
@@ -18,6 +38,7 @@ local function sync(player,profile,multiplier,station)
  local stats=player:FindFirstChild('leaderstats')
  if not stats then stats=Instance.new('Folder');stats.Name='leaderstats';stats.Parent=player;local p=Instance.new('NumberValue');p.Name='Power';p.Parent=stats end
  stats.Power.Value=profile.Data.Rep
+ overheadTag(player,s,profile.Data.Rep)
 end
 local function equipAppearance(player,id)
  local c=player.Character
@@ -32,7 +53,7 @@ remote.OnServerEvent:Connect(function(player,id)
  local now=os.clock();if now-(cooldown[player] or 0)<.35 then return end;cooldown[player]=now
  local profile=Data.get(player);local c=player.Character;local root=c and c:FindFirstChild('HumanoidRootPart');local h=c and c:FindFirstChild('Humanoid')
  if not profile or not root or not h or h.Health<=0 then return end
- local stand=map.SimulatorLobby.Morphs:FindFirstChild('Skin_'..id);local target=stand and stand:FindFirstChild('Interact')
+ local morphs=lobby:FindFirstChild('Morphs',true);local stand=morphs and morphs:FindFirstChild('Skin_'..id);local target=stand and stand:FindFirstChild('Interact')
  if not target then return end
  local distance=(root.Position-target.Position).Magnitude
  if not Rules.canEquip(profile.Data.Rep,id,distance) then
@@ -66,6 +87,7 @@ while task.wait(1) do
   local lines={'BLOCK LEADERS','THIS SERVER'}
   for i=1,math.min(#rows,5) do table.insert(lines,string.format('%d. %s  /  %s',i,rows[i].Name,tostring(math.floor(rows[i].Power)))) end
   if #rows==0 then table.insert(lines,'Be the first to train!') end
-  local label=map.SimulatorLobby.Leaderboards.ServerLeaderboard.Signage.TextLabel;label.Text=table.concat(lines,'\n')
+  local board=lobby:FindFirstChild('ServerLeaderboard',true);local label=board and board:FindFirstChild('TextLabel',true)
+  if label then label.Text=table.concat(lines,'\n') end
  end
 end

@@ -1,8 +1,11 @@
 local Players=game:GetService('Players');local RS=game:GetService('ReplicatedStorage');local Tween=game:GetService('TweenService')
 local player=Players.LocalPlayer;local Skins=require(RS.Shared.Config.Skins);local Net=require(RS.Shared.Net)
-local map=workspace:WaitForChild('TheBlock',20);if not map then return end
-local lobby=map:WaitForChild('SimulatorLobby',15);if not lobby then return end
-local morphs=lobby:WaitForChild('Morphs');local training=lobby:WaitForChild('Training')
+-- Runs on whichever map is active (the original Block's SimulatorLobby, or The Block V2).
+local ActiveMap=require(RS.Shared.ActiveMap)
+local active=ActiveMap.wait(20);if not active then return end
+local lobby=active.Lobby
+local morphs=ActiveMap.find(lobby,'Morphs',20);if not morphs then return end
+local training=lobby:FindFirstChild('Training') or lobby
 local C=Color3.fromRGB;local gui=Instance.new('ScreenGui');gui.Name='ComeUpHUD';gui.ResetOnSpawn=false;gui.ScreenInsets=Enum.ScreenInsets.CoreUISafeInsets;gui.Parent=player:WaitForChild('PlayerGui')
 local function round(p,r) local c=Instance.new('UICorner');c.CornerRadius=UDim.new(0,r);c.Parent=p end
 local function label(parent,name,size,pos,textsize)
@@ -45,7 +48,7 @@ local stations={}
 for _,s in Skins.Stations do
  local model=training:FindFirstChild('Training_'..s.Id,true)
  if model then
-  local entry={Zone=model:FindFirstChild('TrainingZone'),Sign=model:FindFirstChild('Sign',true),Parts={},Swing={}}
+  local entry={Zone=model:FindFirstChild('TrainingZone',true),Sign=model:FindFirstChild('Sign',true) or model:FindFirstChild('Nameplate',true),Parts={},Swing={}}
   local gear=model:FindFirstChild('Equipment')
   if gear then
    for _,p in gear:GetDescendants() do if p:IsA('BasePart') and p.Transparency<1 then table.insert(entry.Parts,{Part=p,Color=p.Color,Material=p.Material}) end end

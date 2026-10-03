@@ -1,9 +1,14 @@
--- Lighting presets from the vibrancy research (research_notes/Tiered props VFX and vibrant maps/vibrant_maps.md).
--- Lighting is shared by the whole place, so nothing applies these automatically. In the Command Bar:
---   require(game.ServerStorage.HoodLighting).Apply('Day')        -- "Front-page Day": bright, warm sun, cool shade
---   require(game.ServerStorage.HoodLighting).Apply('BlockParty') -- golden-hour evening with glowing neon
---   require(game.ServerStorage.HoodLighting).Restore()           -- put back exactly what was there before
--- The first Apply saves the current Lighting setup into ServerStorage.HoodLightingBackup; Restore uses it.
+-- Lighting presets (research_notes/Front page feel and gamey stages/lighting_and_gates.md).
+-- Lighting is shared by the whole place. TheBlockV2.Build() applies FrontPage for you; otherwise, in the
+-- Command Bar:
+--   require(game.ServerStorage.HoodLighting).Apply()              -- "Front-page Day": bright, high sun, cool shade
+--   require(game.ServerStorage.HoodLighting).Apply('GoldenBlock') -- hood evening that stays bright (events)
+--   require(game.ServerStorage.HoodLighting).Restore()            -- put back exactly what was there before
+-- The first Apply saves the current Lighting setup (properties, effects, Sky, Clouds, wind) into
+-- ServerStorage.HoodLightingBackup; Restore uses it.
+--
+-- Why the old look read dark: a 17.2 o'clock sun shading most of the street, the Realistic lighting style,
+-- a beige haze at 1.6 with a dimming tint, Bloom too high for Neon to glow, and dark large surfaces.
 local Lighting = game:GetService('Lighting')
 local ServerStorage = game:GetService('ServerStorage')
 local C = Color3.fromRGB
@@ -11,66 +16,120 @@ local C = Color3.fromRGB
 local L = {}
 
 L.Presets = {
-	-- Warm key, cool blue-lavender fill, haze pushed back, saturation up, bloom only on neon.
-	Day = {
+	-- Default for every map: high sun behind the camera, cool bright shade, no veil, saturated colour.
+	FrontPage = {
 		lighting = {
-			ClockTime = 14.5, GeographicLatitude = 35, Brightness = 3, ExposureCompensation = 0.1,
-			Ambient = C(118, 122, 150), OutdoorAmbient = C(150, 158, 192),
-			ColorShift_Top = C(255, 238, 210), ColorShift_Bottom = C(120, 150, 220),
-			EnvironmentDiffuseScale = 0.6, EnvironmentSpecularScale = 0.25, ShadowSoftness = 0.15, GlobalShadows = true,
+			LightingStyle = Enum.LightingStyle.Soft, PrioritizeLightingQuality = true,
+			ClockTime = 13, GeographicLatitude = 30, Brightness = 3, ExposureCompensation = 0.2,
+			Ambient = C(128, 130, 158), OutdoorAmbient = C(162, 168, 200),
+			ColorShift_Top = C(255, 238, 210), ColorShift_Bottom = C(130, 160, 225),
+			EnvironmentDiffuseScale = 0.5, EnvironmentSpecularScale = 0.15, ShadowSoftness = 0.2, GlobalShadows = true,
 		},
-		atmosphere = { Density = 0.26, Offset = 0.55, Haze = 0.25, Glare = 0, Color = C(196, 228, 255), Decay = C(120, 170, 255) },
-		grade = { Saturation = 0.22, Contrast = 0.1, Brightness = 0.03, TintColor = C(255, 252, 246) },
-		bloom = { Intensity = 0.6, Size = 28, Threshold = 1.1 },
-		rays = { Intensity = 0.02, Spread = 0.3 },
+		atmosphere = { Density = 0.22, Offset = 0.6, Haze = 0.2, Glare = 0, Color = C(196, 228, 255), Decay = C(140, 180, 255) },
+		grade = { Brightness = 0.04, Contrast = 0.12, Saturation = 0.25, TintColor = C(255, 255, 255) },
+		bloom = { Intensity = 0.65, Size = 28, Threshold = 1.1 },
+		rays = { Intensity = 0.015, Spread = 0.25 },
+		sky = { SunAngularSize = 16, MoonAngularSize = 11, StarCount = 0, CelestialBodiesShown = true },
+		clouds = { Cover = 0.55, Density = 0.25, Color = C(255, 255, 255) },
+		wind = Vector3.new(8, 0, 4),
 	},
-	-- The hood-at-dusk mood, but vibrant: peach haze instead of beige, purple decay, neon and string lights glow.
-	BlockParty = {
+	-- Evening that stays bright: peach haze instead of beige, violet shade, neon and string lights glow.
+	GoldenBlock = {
 		lighting = {
-			ClockTime = 17.6, GeographicLatitude = 35, Brightness = 2.6, ExposureCompensation = 0.15,
-			Ambient = C(120, 105, 150), OutdoorAmbient = C(156, 136, 176),
-			ColorShift_Top = C(255, 196, 150), ColorShift_Bottom = C(130, 120, 210),
-			EnvironmentDiffuseScale = 0.6, EnvironmentSpecularScale = 0.3, ShadowSoftness = 0.2, GlobalShadows = true,
+			LightingStyle = Enum.LightingStyle.Soft, PrioritizeLightingQuality = true,
+			ClockTime = 16.3, GeographicLatitude = 30, Brightness = 2.8, ExposureCompensation = 0.3,
+			Ambient = C(130, 112, 160), OutdoorAmbient = C(176, 150, 196),
+			ColorShift_Top = C(255, 200, 150), ColorShift_Bottom = C(140, 130, 220),
+			EnvironmentDiffuseScale = 0.5, EnvironmentSpecularScale = 0.2, ShadowSoftness = 0.2, GlobalShadows = true,
 		},
-		atmosphere = { Density = 0.3, Offset = 0.4, Haze = 1, Glare = 0.3, Color = C(255, 190, 160), Decay = C(130, 110, 210) },
-		grade = { Saturation = 0.28, Contrast = 0.12, Brightness = 0.02, TintColor = C(255, 246, 240) },
+		atmosphere = { Density = 0.26, Offset = 0.45, Haze = 0.9, Glare = 0.35, Color = C(255, 196, 170), Decay = C(150, 120, 220) },
+		grade = { Brightness = 0.05, Contrast = 0.12, Saturation = 0.3, TintColor = C(255, 250, 245) },
 		bloom = { Intensity = 0.9, Size = 32, Threshold = 1 },
-		rays = { Intensity = 0.04, Spread = 0.4 },
+		rays = { Intensity = 0.04, Spread = 0.35 },
+		sky = { SunAngularSize = 16, MoonAngularSize = 11, StarCount = 0, CelestialBodiesShown = true },
+		clouds = { Cover = 0.5, Density = 0.3, Color = C(255, 214, 200) },
+		wind = Vector3.new(8, 0, 4),
 	},
 }
+-- Older names still work.
+L.Presets.Day = L.Presets.FrontPage
+L.Presets.BlockParty = L.Presets.GoldenBlock
 
 local EFFECTS = { atmosphere = 'Atmosphere', grade = 'ColorCorrectionEffect', bloom = 'BloomEffect', rays = 'SunRaysEffect' }
-local SAVED_PROPS = { 'ClockTime', 'GeographicLatitude', 'Brightness', 'ExposureCompensation', 'Ambient', 'OutdoorAmbient', 'ColorShift_Top', 'ColorShift_Bottom', 'EnvironmentDiffuseScale', 'EnvironmentSpecularScale', 'ShadowSoftness', 'GlobalShadows' }
+local SAVED_PROPS = {
+	'LightingStyle', 'PrioritizeLightingQuality', 'ClockTime', 'GeographicLatitude', 'Brightness', 'ExposureCompensation',
+	'Ambient', 'OutdoorAmbient', 'ColorShift_Top', 'ColorShift_Bottom', 'EnvironmentDiffuseScale', 'EnvironmentSpecularScale',
+	'ShadowSoftness', 'GlobalShadows',
+}
+-- Some properties are newer than others; a place on an engine without one just skips it.
+local function set(inst, prop, value) pcall(function() inst[prop] = value end) end
+local function get(inst, prop)
+	local ok, value = pcall(function() return inst[prop] end)
+	return ok and value or nil
+end
 
 local function backup()
 	if ServerStorage:FindFirstChild('HoodLightingBackup') then return end
 	local folder = Instance.new('Folder')
 	folder.Name = 'HoodLightingBackup'
-	for _, prop in SAVED_PROPS do folder:SetAttribute(prop, Lighting[prop]) end
-	-- Move the existing effects aside rather than editing them, so Restore is exact.
+	for _, prop in SAVED_PROPS do
+		local v = get(Lighting, prop)
+		if typeof(v) == 'EnumItem' then folder:SetAttribute(prop, v.Name) elseif v ~= nil then folder:SetAttribute(prop, v) end
+	end
+	folder:SetAttribute('GlobalWind', workspace.GlobalWind)
+	-- Move the existing effects, sky and clouds aside rather than editing them, so Restore is exact.
 	for _, child in Lighting:GetChildren() do
-		if child:IsA('Atmosphere') or child:IsA('PostEffect') then child.Parent = folder end
+		if child:IsA('Atmosphere') or child:IsA('PostEffect') or child:IsA('Sky') then child.Parent = folder end
+	end
+	local clouds = workspace.Terrain:FindFirstChildOfClass('Clouds')
+	if clouds then
+		clouds:SetAttribute('HoodFromTerrain', true)
+		clouds.Parent = folder
 	end
 	folder.Parent = ServerStorage
 end
 
-function L.Apply(name)
-	local preset = L.Presets[name or 'Day']
-	assert(preset, 'unknown preset ' .. tostring(name))
-	backup()
-	for prop, value in preset.lighting do Lighting[prop] = value end
+local function clearOurs()
 	for _, child in Lighting:GetChildren() do
 		if child:GetAttribute('HoodLighting') then child:Destroy() end
 	end
-	for key, class in EFFECTS do
-		local fx = Instance.new(class)
-		fx.Name = 'Hood' .. class
-		fx:SetAttribute('HoodLighting', name)
-		for prop, value in preset[key] do fx[prop] = value end
-		fx.Parent = Lighting
+	for _, child in workspace.Terrain:GetChildren() do
+		if child:GetAttribute('HoodLighting') then child:Destroy() end
+	end
+end
+
+local function make(class, name, props, parent)
+	local ok, inst = pcall(Instance.new, class)
+	if not ok then return nil end
+	inst.Name = 'Hood' .. class
+	inst:SetAttribute('HoodLighting', name)
+	for prop, value in props do set(inst, prop, value) end
+	inst.Parent = parent
+	return inst
+end
+
+-- Apply a preset (default FrontPage). If the sun would end up in front of players walking down the
+-- street (toward -Z), the latitude flips so the lit faces of gates and facades face the player.
+function L.Apply(name)
+	name = name or 'FrontPage'
+	local preset = L.Presets[name]
+	assert(preset, 'unknown preset ' .. tostring(name))
+	backup()
+	for prop, value in preset.lighting do set(Lighting, prop, value) end
+	clearOurs()
+	for key, class in EFFECTS do make(class, name, preset[key], Lighting) end
+	-- Default tonemapper ("vivid colours and high contrast"), where the engine has ColorGradingEffect.
+	make('ColorGradingEffect', name, { TonemapperPreset = Enum.TonemapperPreset and Enum.TonemapperPreset.Default or nil }, Lighting)
+	local sky = make('Sky', name, preset.sky, Lighting)
+	if sky then sky:SetAttribute('Spin', 0.5) end -- HoodClient/WorldMotion turns the skybox slowly
+	make('Clouds', name, preset.clouds, workspace.Terrain)
+	workspace.GlobalWind = preset.wind
+	local ok, sun = pcall(function() return Lighting:GetSunDirection() end)
+	if ok and sun.Z < 0 then
+		Lighting.GeographicLatitude = -preset.lighting.GeographicLatitude
 	end
 	pcall(function() game:GetService('ChangeHistoryService'):SetWaypoint('HoodLighting ' .. name) end)
-	print('[HoodLighting] Applied ' .. name .. '. Restore() puts the old lighting back.')
+	print('[HoodLighting] Applied ' .. name .. '. require(game.ServerStorage.HoodLighting).Restore() puts the old lighting back.')
 end
 
 function L.Restore()
@@ -79,14 +138,23 @@ function L.Restore()
 		warn('[HoodLighting] Nothing to restore.')
 		return
 	end
-	for _, child in Lighting:GetChildren() do
-		if child:GetAttribute('HoodLighting') then child:Destroy() end
-	end
+	clearOurs()
 	for _, prop in SAVED_PROPS do
 		local v = folder:GetAttribute(prop)
-		if v ~= nil then Lighting[prop] = v end
+		if v ~= nil then
+			if prop == 'LightingStyle' then set(Lighting, prop, Enum.LightingStyle[v]) else set(Lighting, prop, v) end
+		end
 	end
-	for _, child in folder:GetChildren() do child.Parent = Lighting end
+	local wind = folder:GetAttribute('GlobalWind')
+	if wind then workspace.GlobalWind = wind end
+	for _, child in folder:GetChildren() do
+		if child:GetAttribute('HoodFromTerrain') then
+			child:SetAttribute('HoodFromTerrain', nil)
+			child.Parent = workspace.Terrain
+		else
+			child.Parent = Lighting
+		end
+	end
 	folder:Destroy()
 	pcall(function() game:GetService('ChangeHistoryService'):SetWaypoint('HoodLighting restore') end)
 	print('[HoodLighting] Restored the previous lighting.')
