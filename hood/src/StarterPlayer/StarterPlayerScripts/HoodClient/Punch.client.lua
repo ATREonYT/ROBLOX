@@ -1,7 +1,7 @@
 -- Punching: while you're on a training mat, click (or tap the PUNCH button, or R2 on a gamepad) to throw a
--- punch worth a tenth of your per-second gain (the server checks and pays; LobbyService). The bag answers
--- right away on your screen: sparks in its rarity colour, a "+N" number and a small camera nudge that
--- grows with the bag's tier.
+-- punch worth a tenth of your per-second gain times your gun's multiplier (the server checks and pays;
+-- LobbyService). The bag answers right away on your screen: sparks in its rarity colour, a "+N" number and
+-- a small camera nudge that grows with the bag's tier.
 local Players = game:GetService('Players')
 local UserInputService = game:GetService('UserInputService')
 local TweenService = game:GetService('TweenService')
@@ -41,7 +41,7 @@ local function punch()
 	if not hit then return end
 	local tier = model:GetAttribute('Tier') or (id == 'Ring' and 9) or 1
 	local color = model:GetAttribute('HitColor')
-	local gain = math.max(1, math.floor((player:GetAttribute('PowerRate') or 1) * 0.1))
+	local gain = math.max(1, math.floor((player:GetAttribute('PowerRate') or 1) * 0.1)) * (player:GetAttribute('GunMultiplier') or 1)
 	Juice.burst(hit, color, 0.8 + tier * 0.08)
 	Juice.kick(tier >= 7 and 0.25 or 0.12)
 	Juice.popNumber(hit + Vector3.new((math.random() - 0.5) * 2, 1.5, 0), '+' .. Format.compact(gain), color)

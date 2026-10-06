@@ -9,7 +9,7 @@
 --   * colour means something: yellow = primary/Power, green = buy/Cash, red = close, blue = info
 --   * three fonts at most, a fixed type scale, a fixed spacing and radius scale
 --   * illustrated sticker icons (hood/art/icons), never emoji
--- Not wired into the game yet: UIKitDemo builds sample screens with it.
+-- Used by HoodClient/HUD (the player HUD); UIKitDemo builds sample screens with it.
 local Kit = {}
 
 local function hex(h)
@@ -40,6 +40,7 @@ Kit.Tone = {
 	red = { top = hex('FF8A8A'), base = hex('FF4757'), lip = hex('B01E35'), stroke = hex('4A0B16') },
 	blue = { top = hex('7CCBFF'), base = hex('2F9BFF'), lip = hex('1A5FB4'), stroke = hex('0B2A55') },
 	purple = { top = hex('D7A6FF'), base = hex('A64DFF'), lip = hex('6A22B8'), stroke = hex('2A0B4E') },
+	cyan = { top = hex('9CF6FF'), base = hex('22C7EE'), lip = hex('1484A8'), stroke = hex('083A52') },
 	cardboard = { top = hex('FFF8EA'), base = hex('FFEFD2'), lip = hex('C99A5B'), stroke = hex('5C3A12') },
 	grey = { top = hex('E6E2DC'), base = hex('C4BFB8'), lip = hex('8D877F'), stroke = hex('3A3631') },
 }
@@ -157,6 +158,114 @@ function Kit.useFallbacks(root)
 			d.Parent.Image.Visible = false
 		end
 	end
+end
+
+---------------------------------------------------------------------------------------------- 3D icons
+-- Chunky 3D icons made in Blender live in Shared/Models/IconModels (build(id, scale) -> Model centred on its
+-- origin, front facing -Z; Images[id] = uploaded render id or ''). Kit.icon3d shows, in order of preference:
+-- the uploaded render (an ImageLabel, cheapest), the live model in a ViewportFrame, or an emoji, so screens
+-- work before the module or the uploads exist.
+Kit.IconEmoji = {
+	Shop = '🛍️', Rebirth = '🔄', Rewards = '🎁', PVP = '👊', Evolve = '⬆️', Cash = '💵', Power = '💪', Trophy = '🏆', Gun = '🔫',
+}
+local iconModels -- the module, or false once we know it is missing
+function Kit.iconModels()
+	if iconModels == nil then
+		iconModels = false
+		local folder = script.Parent:FindFirstChild('Models')
+		local module = folder and folder:FindFirstChild('IconModels')
+		if module then
+			local ok, result = pcall(require, module)
+			if ok and type(result) == 'table' then iconModels = result end
+		end
+	end
+	return iconModels or nil
+end
+
+-- Bright, flat-ish cartoon light for ViewportFrames: strong key light from the camera's upper left.
+function Kit.lightViewport(vp, camCFrame)
+	vp.Ambient = Color3.fromRGB(150, 150, 162)
+	vp.LightColor = Color3.fromRGB(255, 250, 238)
+	vp.LightDirection = camCFrame:VectorToWorldSpace(Vector3.new(0.55, -1, -0.75))
+end
+
+-- Points a ViewportFrame camera at model so it just fills the frame: every corner of its bounding box is
+-- projected and the camera backs off until all of them fit (with a small margin).
+-- props: Direction (Vector3 from the model toward the camera) or Yaw / Pitch in degrees (orbit away from the
+-- front view; the front faces -Z), Fov (vertical), Aspect (frame width / height, default 1), Zoom (>1 = closer),
+-- Focus (a Vector3 to aim at instead of the bounding-box centre).
+function Kit.frameModel(vp, model, props)
+	props = props or {}
+	local box, ext = model:GetBoundingBox()
+	local fov = props.Fov or 30
+	local focus = props.Focus or box.Position
+	local orbit = CFrame.Angles(0, math.rad(props.Yaw or 0), 0) * CFrame.Angles(math.rad(props.Pitch or 0), 0, 0)
+	local back = props.Direction and props.Direction.Unit or orbit:VectorToWorldSpace(Vector3.new(0, 0, -1)) -- from the focus toward the camera
+	local up = (Vector3.yAxis - back * back:Dot(Vector3.yAxis)).Unit
+	local right = back:Cross(up)
+	local tanV = math.tan(math.rad(fov / 2))
+	local tanH = tanV * (props.Aspect or 1)
+	local dist = 0
+	for _, sx in { -0.5, 0.5 } do
+		for _, sy in { -0.5, 0.5 } do
+			for _, sz in { -0.5, 0.5 } do
+				local v = box:PointToWorldSpace(ext * Vector3.new(sx, sy, sz)) - focus
+				dist = math.max(dist, v:Dot(back) + math.max(math.abs(v:Dot(right)) / tanH, math.abs(v:Dot(up)) / tanV))
+			end
+		end
+	end
+	dist = dist * 1.06 / (props.Zoom or 1)
+	local cam = vp:FindFirstChildOfClass('Camera') or new('Camera', { Parent = vp })
+	cam.FieldOfView = fov
+	cam.CFrame = CFrame.lookAt(focus + back * dist, focus)
+	vp.CurrentCamera = cam
+	Kit.lightViewport(vp, cam.CFrame)
+	return cam
+end
+
+-- A transparent ViewportFrame showing model (parented into it), framed with Kit.frameModel.
+-- size: a number (square) or a Vector2 (width, height).
+function Kit.viewport(model, size, props)
+	props = table.clone(props or {})
+	local w, h = size, size
+	if typeof(size) == 'Vector2' then w, h = size.X, size.Y end
+	props.Aspect = props.Aspect or w / h
+	local vp = new('ViewportFrame', {
+		Name = props.Name or 'Model3D', BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.fromOffset(w, h),
+		Position = props.Position or UDim2.new(), AnchorPoint = props.AnchorPoint or Vector2.zero, ZIndex = props.ZIndex or 1,
+	})
+	model.Parent = vp
+	Kit.frameModel(vp, model, props)
+	return vp
+end
+
+-- A 3D icon by IconModels id (Shop, Rebirth, Rewards, PVP, Evolve, Cash, Power, Trophy, Gun), seen from the
+-- same side as its Blender render (IconModels.View) so live icons and uploaded images match.
+-- props: Position, AnchorPoint, ZIndex, Yaw / Pitch (instead of the render's view), Zoom, Fallback (text to
+-- show when nothing else exists).
+function Kit.icon3d(id, size, props)
+	props = props or {}
+	local holder = blank({ Name = 'Icon3D_' .. id, Size = UDim2.fromOffset(size, size), Position = props.Position or UDim2.new(), AnchorPoint = props.AnchorPoint or Vector2.zero, ZIndex = props.ZIndex or 1 })
+	holder:SetAttribute('PreviewImage', 'icon3d:' .. id) -- the offline previewer draws the Blender render here
+	local z = props.ZIndex or 1
+	local models = Kit.iconModels()
+	local image = models and type(models.Images) == 'table' and models.Images[id]
+	if type(image) == 'string' and image ~= '' then
+		new('ImageLabel', { Name = 'Image', BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Image = image, ScaleType = Enum.ScaleType.Fit, ZIndex = z, Parent = holder })
+		return holder
+	end
+	if models and type(models.build) == 'function' then
+		local ok, model = pcall(models.build, id, 1)
+		if ok and typeof(model) == 'Instance' then
+			local view = not (props.Yaw or props.Pitch) and typeof(models.View) == 'Vector3' and models.View or nil
+			local vp = Kit.viewport(model, size, { Direction = view, Yaw = props.Yaw or 18, Pitch = props.Pitch or 19, Zoom = props.Zoom, ZIndex = z })
+			vp.Size = UDim2.fromScale(1, 1)
+			vp.Parent = holder
+			return holder
+		end
+	end
+	Kit.text({ Name = 'Fallback', Text = props.Fallback or Kit.IconEmoji[id] or '?', FontFace = Kit.Font.body, TextSize = math.floor(size * 0.8), ZIndex = z, Parent = holder })
+	return holder
 end
 
 ---------------------------------------------------------------------------------------------- screen + scaling

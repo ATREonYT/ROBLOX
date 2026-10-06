@@ -13,28 +13,60 @@ local f=active.Frame;local lobby=active.Lobby
 local zones=Rules.zonesFrom(lobby,f)
 if #zones<#Skins.Stations then warn('[LobbyService] Only '..#zones..' of '..#Skins.Stations..' training mats found; rebuild the lobby.') end
 local remote=Net.get('EquipSkin');local cooldown={};local applied={}
--- Overhead tag: your look's name over your Power, so everyone on the street sees everyone's progress.
+-- Overhead tag, like the reference: "@username" small and grey, your look's name in its tier colour, then
+-- "<Power> POWER" in yellow-green, all in LuckiestGuy with a dark outline. Sized in studs so it shrinks
+-- with distance.
 local Format=require(RS.Shared.Format)
 local TIER_COLORS={Color3.fromRGB(210,218,225),Color3.fromRGB(115,207,153),Color3.fromRGB(87,170,240),Color3.fromRGB(184,125,237),Color3.fromRGB(242,182,50)}
+local TAG_FONT=Font.new('rbxasset://fonts/families/LuckiestGuy.json')
+local TAG_ROWS={
+	{Name='User',Height=0.26,Color=Color3.fromRGB(205,210,220),Stroke=1.5},
+	{Name='Title',Height=0.36,Color=Color3.new(1,1,1),Stroke=2},
+	{Name='Power',Height=0.38,Color=Color3.fromRGB(205,245,70),Stroke=2},
+}
 local function overheadTag(player,skin,power)
- local c=player.Character;local head=c and c:FindFirstChild('Head')
- if not head then return end
- local tag=head:FindFirstChild('HoodTag')
- if not tag then
-  tag=Instance.new('BillboardGui');tag.Name='HoodTag';tag.Size=UDim2.fromScale(6,1.8);tag.StudsOffset=Vector3.new(0,2.6,0);tag.MaxDistance=120;tag.LightInfluence=0;tag.Parent=head
-  for i,name in {'Title','Power'} do
-   local t=Instance.new('TextLabel');t.Name=name;t.BackgroundTransparency=1;t.Size=UDim2.fromScale(1,i==1 and 0.44 or 0.56);t.Position=UDim2.fromScale(0,i==1 and 0 or 0.44)
-   t.FontFace=Font.new('rbxasset://fonts/families/LuckiestGuy.json');t.TextScaled=true;t.TextColor3=Color3.new(1,1,1)
-   local st=Instance.new('UIStroke');st.Color=Color3.fromRGB(28,24,48);st.Thickness=2;st.Parent=t;t.Parent=tag
-  end
- end
- tag.Title.Text=string.upper(skin.Name);tag.Title.TextColor3=TIER_COLORS[math.clamp(math.ceil(skin.Index/3),1,5)]
- tag.Power.Text='💪 '..Format.compact(power)
+	local c=player.Character
+	local head=c and c:FindFirstChild('Head')
+	if not head then return end
+	local tag=head:FindFirstChild('HoodTag')
+	if not tag then
+		tag=Instance.new('BillboardGui')
+		tag.Name='HoodTag'
+		tag.Size=UDim2.fromScale(6,2.3)
+		tag.StudsOffset=Vector3.new(0,3,0)
+		tag.MaxDistance=120
+		tag.LightInfluence=0
+		local y=0
+		for _,row in TAG_ROWS do
+			local t=Instance.new('TextLabel')
+			t.Name=row.Name
+			t.BackgroundTransparency=1
+			t.Position=UDim2.fromScale(0,y)
+			t.Size=UDim2.fromScale(1,row.Height)
+			t.FontFace=TAG_FONT
+			t.TextScaled=true
+			t.TextColor3=row.Color
+			local st=Instance.new('UIStroke')
+			st.Color=Color3.fromRGB(28,24,48)
+			st.Thickness=row.Stroke
+			st.LineJoinMode=Enum.LineJoinMode.Round
+			st.Parent=t
+			t.Parent=tag
+			y+=row.Height
+		end
+		tag.User.Text='@'..player.Name
+		tag.Parent=head
+	end
+	tag.Title.Text=skin.Name
+	tag.Title.TextColor3=TIER_COLORS[math.clamp(math.ceil(skin.Index/3),1,#TIER_COLORS)]
+	tag.Power.Text=Format.compact(power)..' POWER'
 end
 local function sync(player,profile,multiplier,station)
  local id=profile.Data.EquippedSkin;local s=Skins.ById[id] or Skins.List[1]
  player:SetAttribute('Power',profile.Data.Rep);player:SetAttribute('EquippedSkin',s.Id)
  player:SetAttribute('PowerRate',s.Gain*multiplier);player:SetAttribute('TrainingStation',station)
+ -- The HUD's counters read these (and the REBIRTH % badge reads Rebirths).
+ player:SetAttribute('Cash',profile.Data.Cash);player:SetAttribute('Rebirths',profile.Data.Rebirths)
  local stats=player:FindFirstChild('leaderstats')
  if not stats then stats=Instance.new('Folder');stats.Name='leaderstats';stats.Parent=player;local p=Instance.new('NumberValue');p.Name='Power';p.Parent=stats end
  stats.Power.Value=profile.Data.Rep
@@ -66,14 +98,15 @@ remote.OnServerEvent:Connect(function(player,id)
  Net.get('Notice'):FireClient(player,(booth and 'Evolved into ' or '')..Skins.ById[id].Name..(booth and '!' or ' equipped!')..' +'..Skins.ById[id].Gain..' Power / second.')
 end)
 -- Punching: while you train on a bag, each click or tap is a punch worth a tenth of your per-second gain
--- (at least 1), up to about 7 a second. The training mat check is the same one the passive gain uses.
+-- (at least 1) times your gun's multiplier, up to about 7 a second. The training mat check is the same one
+-- the passive gain uses.
 local RateLimiter=require(script.Parent.RateLimiter)
 local punchLimit=RateLimiter.new(8,7)
 Net.get('Punch').OnServerEvent:Connect(function(player)
  if not punchLimit.allow(player) then return end
  local profile=Data.get(player);local station=player:GetAttribute('TrainingStation') or ''
  if not profile or station=='' or station:find('Locked:') then return end
- local bonus=math.max(1,math.floor((player:GetAttribute('PowerRate') or 1)*0.1))
+ local bonus=math.max(1,math.floor((player:GetAttribute('PowerRate') or 1)*0.1))*(player:GetAttribute('GunMultiplier') or 1)
  profile.Data.Rep=math.min(1e12,profile.Data.Rep+bonus)
 end)
 Players.PlayerRemoving:Connect(function(p) cooldown[p]=nil;applied[p]=nil;punchLimit.remove(p) end)
