@@ -9,6 +9,8 @@ Schema.Template={
  UnlockedMaps={Block=true},ClearedWalls={},Crew={owned={},equipped={}},Passes={},
  DailyStreak=0,LastDaily=0,Onboarding={},Settings={Music=true,Sound=true,ReducedMotion=false},
  ProcessedReceipts={},TimePlayed=0,
+ -- Guns from the ARMORY: owned ids and the equipped one (its multiplier scales punch Power).
+ Guns={Owned={Pistol=true},Equipped='Pistol'},
 }
 function Schema.new() return clone(Schema.Template) end
 function Schema.migrate(data)
@@ -28,6 +30,8 @@ function Schema.migrate(data)
   data.EquippedSkin=aliases[data.EquippedSkin] or data.EquippedSkin
  end
  reconcile(data,Schema.Template)
+ -- Guns removed from the config fall away and the pistol stays owned, so a retired gun never locks a profile out.
+ require(game.ReplicatedStorage.Shared.GunRules).sanitize(data.Guns)
  data.SchemaVersion=Schema.Version
  return data
 end
@@ -47,10 +51,14 @@ function Schema.validate(data)
  assert(data.UnlockedMaps.Block==true,'Missing starter map')
  for _,index in pairs(data.Evolution) do assert(type(index)=='number' and index>=1 and index<=5 and index%1==0,'Invalid evolution') end
  for _,enabled in pairs(data.Settings) do assert(type(enabled)=='boolean','Invalid setting') end
+ local guns=require(game.ReplicatedStorage.Shared.Config.Guns)
+ assert(type(data.Guns)=='table' and type(data.Guns.Owned)=='table','Invalid Guns')
+ for id,owned in pairs(data.Guns.Owned) do assert(type(id)=='string' and guns.ById[id] and owned==true,'Invalid owned gun') end
+ assert(type(data.Guns.Equipped)=='string' and data.Guns.Owned[data.Guns.Equipped]==true,'Equipped gun not owned')
  return true
 end
 function Schema.public(data)
  -- Explicit allowlist: receipt ledger and entitlement cache never leave the server.
- return {EquippedSkin=data.EquippedSkin,Rep=data.Rep,Cash=data.Cash,Rebirths=data.Rebirths,Evolution=clone(data.Evolution),HighestMapIndex=data.HighestMapIndex,UnlockedMaps=clone(data.UnlockedMaps),Crew=clone(data.Crew),Settings=clone(data.Settings),Onboarding=clone(data.Onboarding)}
+ return {EquippedSkin=data.EquippedSkin,Rep=data.Rep,Cash=data.Cash,Rebirths=data.Rebirths,Evolution=clone(data.Evolution),HighestMapIndex=data.HighestMapIndex,UnlockedMaps=clone(data.UnlockedMaps),Crew=clone(data.Crew),Settings=clone(data.Settings),Onboarding=clone(data.Onboarding),Guns=clone(data.Guns)}
 end
 return Schema
