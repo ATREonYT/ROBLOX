@@ -18,7 +18,7 @@ shoulder to shoulder down both sides and their fronts facing the middle.
 
 | Stages | Look | What's there |
 |---|---|---|
-| Spawn | Plaza | Blue spawn circle. TRAIN HERE bar with the Tire, Duct Tape and Street bags. EVOLVE booth. Benches, lanterns, hedges, trees |
+| Spawn | Plaza | Blue spawn circle. West: three aura training stations (Tire, Duct Tape, Street) under a TRAIN HERE sign. East: the ARMORY (10 guns on two rows of pedestals). Back: the EVOLVE booth. Benches, lanterns, hedges, trees |
 | 1–3 | The Block | Red brick rows, dumpsters, trash bags, crates on pallets |
 | 4–6 | Shop Street | Barber (turning pole) and Grocery in stage 4, then pizza, sneakers, ice cream, arcade, bakery and phone shops |
 | 7–9 | The Courts | A basketball court across the walk (orange, then blue, then green), with hoops, goals and chain-link fences |
@@ -51,7 +51,8 @@ tune after playtests.
 ## Training along the way
 
 All 9 training bags are on the map. Three are at the spawn, and the next one waits in the stage whose gate
-asks for exactly its Power. Each new bag works the moment you walk in.
+asks for exactly its Power. Each new bag works the moment you walk in. Every bag is an aura station (see
+`reports/Stations, armory, HUD and guns.md`): its effects grow with the tier.
 
 | Bag | Where | Needs | Power per hit |
 |---|---|---|---|
@@ -97,4 +98,4 @@ are listed with ready-to-paste prompts in the Claude Design brief, "Hood Evoluti
   player is stopped at gate 9 and isn't pushed back at earlier gates.
 - **Overlap pass:** a few tiny overlaps are left (roof edges, crate trim, ropes). The banners float on
   purpose.
-- **Size:** about 9,900 parts.
+- **Size:** about 11,100 parts (with the stations and the armory).
