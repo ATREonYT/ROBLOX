@@ -205,7 +205,7 @@ local DEPTH = 28 -- buildings run back to x = ±64
 local WALL_X = 70 -- the low boundary wall
 local SLEN = 64 -- one stage
 local STAGES = 15
-local SPAWN_W, SPAWN_TOP = 40, 76 -- spawn plaza x -40..40, z 0..76
+local SPAWN_W, SPAWN_TOP = 56, 92 -- spawn plaza x -56..56, z 0..92: stations left, armory right, EVOLVE at the back
 local BOSS_TOP = -STAGES * SLEN -- -960
 local BOSS_END = BOSS_TOP - 96 -- the boss yard runs to -1056
 local SPAWN = V(0, 0, 40)
@@ -464,6 +464,561 @@ local function teleportPad(g, name, x, z, color, target, label)
 	prompt.Parent = pad
 	billboard(g, V(x, 3.2, z), 6, 1.4, { { 'Title', label, P.white, FONT.title, 0, 1 } }).WorldLabel.MaxDistance = 50
 	return pad
+end
+---------------------------------------------------------------------------------------------- training stations
+-- Aura-style training stations (the reference's x99 Aura pads, Hood-style): a studded raised platform with a
+-- dark chevron deck and neon edge strips, a gantry with horn tops carrying the big "x2 POWER" sign, three
+-- glowing panels and the station's nameplate, and a low-poly boxing bag hanging from the gantry. Each tier
+-- has its own colour and HoodVFX aura, stronger every tier (green, cyan, blue, purple, pink, red, black and
+-- white, gold; the Champ Ring is tier 9 and stays HoodProps.ring).
+-- Local frame: origin = platform centre on the ground, footprint x -6..6, z -6..6, height <= 22, the front
+-- (step, chevrons, nameplate) faces -Z: you walk up from -Z, stand on the deck and punch toward +Z.
+-- Contract (Lobby.client, Punch.client, LobbyRules): Training_<Id> > TrainingZone (deck top, invisible),
+-- Equipment (Hinge + Swing, painted black while locked), Sign (TextLabel Detail), attributes Tier, HitPoint,
+-- HitColor.
+local Stations = {}
+
+-- Per tier: platform body, glow (neon, sign, VFX), smoke (cloud colour if not the glow) and the bag's look.
+Stations.Tiers = {
+	{ body = C(64, 196, 88), glow = C(90, 235, 110), bag = C(96, 146, 70), cap = C(52, 58, 50), band = C(200, 200, 204), bandMat = M.Foil, bagMat = M.Fabric, patch = true },
+	{ body = C(36, 196, 232), glow = C(70, 225, 255), bag = C(52, 150, 176), cap = C(40, 48, 58), band = C(206, 210, 216), bandMat = M.Foil, bagMat = M.Fabric, tape = true },
+	{ body = C(48, 106, 236), glow = C(80, 140, 255), bag = C(40, 70, 170), cap = C(28, 32, 50), band = C(255, 214, 50), bandMat = M.SmoothPlastic, bagMat = M.Fabric },
+	{ body = C(136, 68, 226), glow = C(180, 100, 255), bag = C(118, 52, 196), cap = C(248, 248, 252), band = C(30, 30, 36), bandMat = M.SmoothPlastic, bagMat = M.SmoothPlastic },
+	{ body = C(240, 84, 190), glow = C(255, 105, 205), bag = C(236, 74, 170), cap = C(250, 250, 252), band = C(250, 250, 252), bandMat = M.SmoothPlastic, bagMat = M.SmoothPlastic },
+	{ body = C(222, 42, 52), glow = C(255, 64, 64), bag = C(206, 36, 44), cap = C(28, 28, 32), band = C(28, 28, 32), bandMat = M.SmoothPlastic, bagMat = M.SmoothPlastic, bungee = true },
+	{ body = C(30, 32, 40), glow = C(235, 240, 255), smoke = C(132, 138, 154), bag = C(28, 28, 34), cap = C(244, 244, 248), band = C(235, 240, 255), bandMat = M.Neon, bagMat = M.SmoothPlastic },
+	{ body = C(248, 186, 40), glow = C(255, 200, 60), bag = C(255, 200, 52), cap = C(252, 250, 244), band = C(255, 236, 140), bandMat = M.Neon, bagMat = M.SmoothPlastic, gem = true },
+}
+Stations.Deck = C(34, 36, 46)
+
+-- Regular octagonal prism (apothem a, y0..y1) from four slabs turned 45 degrees apart: the low-poly round.
+function Stations.octagon(c, name, x, z, a, y0, y1, color, material)
+	local w = 2 * a * math.tan(math.pi / 8)
+	for k = 0, 3 do c:part(name, V(w, y1 - y0, 2 * a), CFrame.new(x, (y0 + y1) / 2, z) * CFrame.Angles(0, k * math.pi / 4, 0), color, material) end
+end
+-- Flat bar lying on the deck from a to b (y = top of the deck).
+function Stations.stripe(c, name, a, b, width, color, material)
+	local mid = (a + b) / 2
+	return decor(c:part(name, V(width, 0.05, (b - a).Magnitude), CFrame.lookAt(mid, mid + (b - a)), color, material))
+end
+
+-- The boxing bag: blocky octagonal sections bulging at the belly, caps, a band, a chain spider up to a swivel,
+-- three chunky chain links up to the hinge. Everything but the hinge goes in Swing, so the client can sway it.
+function Stations.bag(st, tier, x, z, hingeY)
+	local t = Stations.Tiers[tier]
+	local eq = st:group('Equipment')
+	ghost(eq:part('Hinge', V(0.2, 0.2, 0.2), CFrame.new(x, hingeY, z), P.white))
+	local sw = eq:group('Swing')
+	local metal = tier >= 8 and C(255, 214, 90) or C(150, 154, 164)
+	local metalMat = tier >= 8 and M.Foil or M.Metal
+	-- Chain: alternating flat links.
+	for i = 0, 2 do
+		local y = hingeY - 0.25 - i * 0.4
+		sw:part('ChainLink', i % 2 == 0 and V(0.18, 0.5, 0.4) or V(0.4, 0.5, 0.18), CFrame.new(x, y, z), metal, metalMat)
+	end
+	local swivelY = hingeY - 1.35
+	sw:part('Swivel', V(0.6, 0.4, 0.6), CFrame.new(x, swivelY, z), metal, metalMat)
+	local top = 9.0
+	for _, s in { V(1, 0, 1), V(-1, 0, 1), V(1, 0, -1), V(-1, 0, -1) } do
+		sw:bar('Spider', V(x, swivelY, z), V(x, top + 0.2, z) + s * 0.85, 0.14, metal, metalMat)
+	end
+	-- Body, bottom to top (the belly sits at fist height for a player on the deck): cap, lower, belly, upper,
+	-- cap, top plate.
+	local y0 = 2.9
+	Stations.octagon(sw, 'BagBottom', x, z, 1.32, y0, y0 + 0.45, t.cap, M.SmoothPlastic)
+	Stations.octagon(sw, 'BagLower', x, z, 1.6, y0 + 0.45, y0 + 1.7, t.bag, t.bagMat)
+	Stations.octagon(sw, 'BagBelly', x, z, 1.75, y0 + 1.7, y0 + 4.3, t.bag, t.bagMat)
+	Stations.octagon(sw, 'BagUpper', x, z, 1.6, y0 + 4.3, y0 + 5.55, t.bag, t.bagMat)
+	Stations.octagon(sw, 'BagTop', x, z, 1.36, y0 + 5.55, top, t.cap, M.SmoothPlastic)
+	Stations.octagon(sw, 'BagPlate', x, z, 0.9, top, top + 0.2, metal, metalMat)
+	-- Bands at the seams and the belly strap: slightly proud of the body so they read as trim.
+	Stations.octagon(sw, 'BagBand', x, z, 1.82, y0 + 2.75, y0 + 3.3, t.band, t.bandMat)
+	Stations.octagon(sw, 'BagSeam', x, z, 1.68, y0 + 1.58, y0 + 1.82, t.cap, M.SmoothPlastic)
+	Stations.octagon(sw, 'BagSeam', x, z, 1.68, y0 + 4.18, y0 + 4.42, t.cap, M.SmoothPlastic)
+	local front = z - 1.75
+	if t.tape then
+		-- Duct tape: two silver wraps and a loose strip.
+		Stations.octagon(sw, 'Tape', x, z, 1.65, y0 + 0.75, y0 + 1.2, t.band, M.Foil)
+		Stations.octagon(sw, 'Tape', x, z, 1.65, y0 + 4.7, y0 + 5.1, t.band, M.Foil)
+		sw:part('TapeEnd', V(0.5, 0.9, 0.06), CFrame.new(x + 0.6, y0 + 0.4, front + 0.12) * CFrame.Angles(0, 0, 0.25), t.band, M.Foil)
+	end
+	if t.patch then
+		-- Worn canvas: a couple of patches on the front.
+		sw:box('Patch', V(x - 1.0, y0 + 4.55, front - 0.06), V(x - 0.1, y0 + 5.3, front + 0.1), C(150, 120, 80), M.Fabric)
+		sw:box('Patch', V(x + 0.2, y0 + 0.65, front + 0.06), V(x + 1.0, y0 + 1.3, front + 0.2), C(120, 128, 136), M.Fabric)
+	end
+	-- Front emblem: a diamond on the belly (a gem for gold).
+	local ey = y0 + 3.8
+	sw:part('Emblem', V(0.9, 0.9, 0.12), CFrame.new(x, ey, front - 0.04) * CFrame.Angles(0, 0, math.pi / 4), t.gem and C(150, 230, 255) or t.band, t.gem and M.Glass or t.bandMat)
+	if t.gem then sw:part('EmblemShine', V(0.36, 0.36, 0.13), CFrame.new(x - 0.12, ey + 0.12, front - 0.06) * CFrame.Angles(0, 0, math.pi / 4), P.white, M.Neon) end
+	if t.bungee then
+		-- Double-end: a bungee from the bottom cap down to an anchor on the deck.
+		sw:bar('Bungee', V(x, y0, z), V(x, 1.75, z), 0.18, C(30, 30, 34), M.SmoothPlastic)
+	end
+	for _, p in sw.parent:GetDescendants() do
+		if p:IsA('BasePart') then decor(p).CastShadow = true end
+	end
+	return eq
+end
+
+-- Build station `stationId` (a Skins.Stations id; not Ring) in ctx (see the frame above). opts.tier overrides
+-- the tier (default: the station's place in Skins.Stations), opts.vfx = false skips the aura. Colours come from
+-- the tier ladder above (opts.Color is ignored, so every station of a tier matches its aura). Returns the model.
+function Stations.build(ctx, stationId, opts)
+	opts = opts or {}
+	local skins = SKINS or require(ReplicatedStorage.Shared.Config.Skins)
+	local s = assert(skins.StationById[stationId], 'unknown station ' .. tostring(stationId))
+	local tier = opts.tier
+	if not tier then
+		for i, row in skins.Stations do if row.Id == stationId then tier = i end end
+	end
+	tier = math.clamp(tier, 1, #Stations.Tiers)
+	local t = Stations.Tiers[tier]
+	local body, glow = t.body, t.glow
+	local trim = tier == 7 and C(56, 58, 70) or body:Lerp(P.white, 0.3)
+	local dark = body:Lerp(P.black, 0.3)
+	local st, model = ctx:group('Training_' .. stationId)
+
+	-- Platform: studded body, a front step, a raised rim round a dark recessed deck. Everything stays inside
+	-- x/z -6..6: neon trim sits proud of faces that stop at 5.94.
+	local H, X = 1.6, 5.94
+	studs(st:box('Platform', V(-X, 0, -4.8), V(X, H - 0.2, 5.6), body), true)
+	studs(st:box('Step', V(-4.2, 0, -5.94), V(4.2, 0.8, -4.8), dark), true)
+	for _, r in { { V(-X, H - 0.2, -4.8), V(X, H + 0.1, -4) }, { V(-X, H - 0.2, 4.8), V(X, H + 0.1, 5.6) }, { V(-X, H - 0.2, -4), V(-5.2, H + 0.1, 4.8) }, { V(5.2, H - 0.2, -4), V(X, H + 0.1, 4.8) } } do
+		studs(st:box('Rim', r[1], r[2], trim))
+	end
+	local deck = st:box('Deck', V(-5.2, H - 0.2, -4), V(5.2, H, 4.8), Stations.Deck, M.SmoothPlastic)
+	-- Chevrons pointing at the bag, brighter toward it.
+	for i, z in { -3.2, -1.5, 0.2 } do
+		local col = (tier == 7 and P.white or glow):Lerp(Stations.Deck, 0.55 - i * 0.15)
+		for _, sx in { -1, 1 } do Stations.stripe(st, 'Chevron', V(sx * 2.9, H + 0.02, z), V(0, H + 0.02, z + 1.6), 0.75, col, M.SmoothPlastic) end
+	end
+	-- Neon strips on the front and side faces, and on the step.
+	decor(st:box('EdgeNeon', V(-5.4, 0.55, -4.86), V(5.4, 0.9, -4.8), glow, M.Neon))
+	decor(st:box('EdgeNeon', V(-6, 0.55, -4.4), V(-X, 0.9, 5.2), glow, M.Neon))
+	decor(st:box('EdgeNeon', V(X, 0.55, -4.4), V(6, 0.9, 5.2), glow, M.Neon))
+	decor(st:box('StepNeon', V(-3.8, 0.3, -6), V(3.8, 0.5, -5.94), glow, M.Neon))
+	-- Where the player stands to train: the deck in front of the bag.
+	local zone = st:box('TrainingZone', V(-5.2, H - 0.06, -4.8), V(5.2, H, 2.2), P.white)
+	zone.Transparency, zone.CanCollide, zone.CanQuery, zone.CanTouch, zone.CastShadow = 1, false, false, false, false
+
+	-- Gantry: two posts on the back corners, the nameplate beam, three panels, the big sign, horns and a crest.
+	local g = st:group('Gantry')
+	local Z0, Z1 = 3.4, 4.6
+	local zc = (Z0 + Z1) / 2
+	for _, sx in { -1, 1 } do
+		local x0, x1 = math.min(sx * 4.75, sx * 5.9), math.max(sx * 4.75, sx * 5.9)
+		g:box('Post', V(x0, H, Z0), V(x1, 19.4, Z1), body)
+		g:box('PostFoot', V(math.min(sx * 4.5, sx * X), H, Z0 - 0.25), V(math.max(sx * 4.5, sx * X), H + 0.7, Z1 + 0.25), dark)
+		decor(g:box('PostNeon', V((x0 + x1) / 2 - 0.15, H + 1.2, Z0 - 0.06), V((x0 + x1) / 2 + 0.15, 18.8, Z0), glow, M.Neon))
+		-- Horn: a block on the post top leaning outward (kept inside the footprint).
+		local lean = CFrame.new(sx * 4.95, 19.4, zc) * CFrame.Angles(0, 0, -sx * math.rad(15))
+		g:part('Horn', V(1.0, 2.4, 1.0), lean * CFrame.new(0, 0.9, 0), body)
+		decor(g:part('HornTip', V(0.8, 0.4, 0.8), lean * CFrame.new(0, 2.2, 0), glow, M.Neon))
+	end
+	-- Nameplate beam (the station's Sign: the client writes LOCKED/UNLOCKED into Detail).
+	local sign = g:box('Sign', V(-4.75, 11.2, Z0 + 0.1), V(4.75, 12.6, Z1 - 0.1), C(26, 28, 36))
+	decor(g:box('SignTrim', V(-4.75, 11.08, Z0), V(4.75, 11.2, Z1 - 0.1), glow, M.Neon))
+	local sg = surface(sign, Enum.NormalId.Front, 30)
+	local title = line(sg, 'Title', string.upper(s.Name), P.white, FONT.loud, 0.12, 0.76, P.black, 2)
+	title.Position, title.Size = UDim2.fromScale(0.03, 0.12), UDim2.fromScale(0.48, 0.76)
+	local detail = line(sg, 'Detail', s.Required == 0 and 'FREE' or compact(s.Required) .. ' POWER', tier == 7 and P.white or glow, FONT.loud, 0.12, 0.76, P.black, 2)
+	detail.Position, detail.Size = UDim2.fromScale(0.52, 0.12), UDim2.fromScale(0.45, 0.76)
+	-- Three glowing panels.
+	for _, px in { -3.1, 0, 3.1 } do
+		g:box('PanelFrame', V(px - 1.5, 12.85, Z0 + 0.15), V(px + 1.5, 15.15, Z1 - 0.15), dark)
+		local screen = decor(g:box('Panel', V(px - 1.3, 13.05, Z0 + 0.05), V(px + 1.3, 14.95, Z0 + 0.25), glow:Lerp(P.white, 0.2), M.Neon))
+		line(surface(screen, Enum.NormalId.Front, 30), 'Text', 'x' .. s.Multiplier .. '\nPOWER', P.white, FONT.loud, 0.1, 0.8, glow:Lerp(P.black, 0.55), 2)
+	end
+	-- The big sign board between the post tops.
+	local board = g:box('PowerSign', V(-4.75, 15.4, Z0 + 0.1), V(4.75, 19.4, Z1 - 0.1), tier == 7 and C(22, 22, 28) or body)
+	for _, e in { { V(-4.75, 19.1, Z0), V(4.75, 19.4, Z1 - 0.1) }, { V(-4.75, 15.4, Z0), V(4.75, 15.7, Z1 - 0.1) } } do decor(g:box('BoardNeon', e[1], e[2], glow, M.Neon)) end
+	for _, face in { Enum.NormalId.Front, Enum.NormalId.Back } do
+		line(surface(board, face, 24), 'Text', 'x' .. s.Multiplier .. ' POWER', P.white, FONT.loud, 0.12, 0.72, tier == 7 and C(60, 64, 80) or body:Lerp(P.black, 0.55), 4)
+	end
+	-- Crest: a diamond over the middle of the sign.
+	g:part('Crest', V(1.9, 1.9, 0.9), CFrame.new(0, 19.8, zc) * CFrame.Angles(0, 0, math.pi / 4), body)
+	decor(g:part('CrestGem', V(1.0, 1.0, 1.0), CFrame.new(0, 19.9, zc - 0.05) * CFrame.Angles(0, 0, math.pi / 4), glow, M.Neon))
+
+	-- The bag hangs from the nameplate beam, over the back of the deck.
+	local bagZ = zc
+	Stations.bag(st, tier, 0, bagZ, 11.2)
+
+	model:SetAttribute('Tier', tier)
+	model:SetAttribute('HitPoint', st:world(CFrame.new(0, 5.4, bagZ - 1.75)).Position)
+	model:SetAttribute('HitColor', glow)
+	if opts.vfx ~= false then
+		local vfxModule = ReplicatedStorage:FindFirstChild('Shared') and ReplicatedStorage.Shared:FindFirstChild('HoodVFX')
+		local ok, VFX = pcall(require, vfxModule)
+		if ok and VFX then VFX.station(deck, tier, glow, V(10.4, 13, 8.8), { parent = model, smoke = t.smoke }) end
+	end
+	return model
+end
+---------------------------------------------------------------------------------------------- armory
+-- The ARMORY: the gun ladder on hexagonal pedestals, two rows like a tool shop. Guns 1-5 stand in the front
+-- row on the floor, 6-10 on a raised studded step behind, under an ARMORY sign. Each pedestal glows in its
+-- state colour (pink locked, blue owned, green equipped; Armory.client repaints them), has a LOCKED / OWNED /
+-- EQUIPPED strip on its front, the gun floating and turning above it, and a billboard with the name, the
+-- multiplier and the price.
+--
+-- Contract (GunService and HoodClient/Armory): one Model GunSlot_<Id> per gun with attributes GunId, Tier,
+-- Cost, Multiplier, holding
+--   GunPoint_<Id>      invisible part in front of the pedestal: prompt anchor and buy-distance point
+--   StateTop/StateGlow the coloured top (parts, several each), StateStrip (part) with SurfaceGui > TextLabel State
+--   LabelAnchor        BillboardGui GunLabel > TextLabels Name, Multiplier, Price (Glyph attribute = icon text)
+--   Display            Model tagged HoodMotion (Spin, Bob) with the gun inside
+-- Local frame: origin at the centre front of the display on the ground, front faces -Z (players stand at -Z
+-- looking +Z), footprint x -24..24, z -2..18, at most 16 tall.
+local Armory = {}
+
+Armory.Floor = 0.4 -- floor plate top
+Armory.Step = 4.4 -- back platform top: four 1-stud steps up from the floor
+Armory.StepDepth = 0.9
+Armory.Rows = { { z = 3.4, y = 0.4 }, { z = 14, y = 4.4 } }
+Armory.Spacing = 9.4
+Armory.Radius = 3 -- pedestal apothem (centre to a flat side)
+Armory.Spin, Armory.Bob = 40, 0.3
+
+-- Optional modules made by other builders (Shared.HoodVFX, Shared.Models.GunModels / IconModels): nil when
+-- they are not there yet or fail to load.
+function Armory.optional(name)
+	local shared = ReplicatedStorage:FindFirstChild('Shared')
+	local models = shared and shared:FindFirstChild('Models')
+	local m = shared and (shared:FindFirstChild(name) or (models and models:FindFirstChild(name)))
+	if not m then return nil end
+	local ok, result = pcall(require, m)
+	return ok and result or nil
+end
+
+-- Hexagonal plinth: three boxes turned 60 degrees apart (flat sides face +-Z), each width 2r*tan(30).
+function Armory.hex(c, name, x, z, r, y0, y1, color, material)
+	local w = 2 * r * math.tan(math.pi / 6)
+	local parts = {}
+	for k = 0, 2 do
+		table.insert(parts, c:part(name, V(w, y1 - y0, 2 * r), CFrame.new(x, (y0 + y1) / 2, z) * CFrame.Angles(0, k * math.pi / 3, 0), color, material))
+	end
+	return parts
+end
+
+-- Box of a model's visible parts in `frame` space: lo, hi corners.
+function Armory.extents(model, frame)
+	local lo, hi = V(math.huge, math.huge, math.huge), V(-math.huge, -math.huge, -math.huge)
+	for _, p in model:GetDescendants() do
+		if p:IsA('BasePart') and p.Transparency < 1 then
+			local x, y, z, a, b, cc, d, e, f, g, h, i = frame:ToObjectSpace(p.CFrame):GetComponents()
+			local s = p.Size
+			local hx = (math.abs(a) * s.X + math.abs(b) * s.Y + math.abs(cc) * s.Z) / 2
+			local hy = (math.abs(d) * s.X + math.abs(e) * s.Y + math.abs(f) * s.Z) / 2
+			local hz = (math.abs(g) * s.X + math.abs(h) * s.Y + math.abs(i) * s.Z) / 2
+			lo = V(math.min(lo.X, x - hx), math.min(lo.Y, y - hy), math.min(lo.Z, z - hz))
+			hi = V(math.max(hi.X, x + hx), math.max(hi.Y, y + hy), math.max(hi.Z, z + hz))
+		end
+	end
+	if lo.X == math.huge then return V(-0.5, -0.5, -0.5), V(0.5, 0.5, 0.5) end
+	return lo, hi
+end
+
+-- A model's pivot without relying on GetPivot (works the same in Studio and the preview harness).
+function Armory.pivotOf(model)
+	local pp = model.PrimaryPart
+	if pp then return pp.CFrame * pp.PivotOffset end
+	local ok, pivot = pcall(function() return model.WorldPivot end)
+	return ok and pivot or CFrame.new()
+end
+-- Moves every part so the model's pivot lands on `target`.
+function Armory.place(model, target)
+	local delta = target * Armory.pivotOf(model):Inverse()
+	for _, p in model:GetDescendants() do
+		if p:IsA('BasePart') then p.CFrame = delta * p.CFrame end
+	end
+	if not model.PrimaryPart then model.WorldPivot = target end
+end
+
+-- Stand-in gun while GunModels is missing: a chunky blocky gun in the contract's frame (grip at the origin,
+-- muzzle toward -Z, up +Y; a pistol is about 1.6 long). Longer guns get a stock; the colour runs down a stripe.
+function Armory.placeholder(gun, scale)
+	local s = scale or 1
+	local model = Instance.new('Model')
+	model.Name = gun.Id
+	local long = ({ Shotgun = 3.4, Tommy = 3.2, AK = 3.4, Minigun = 3.8, Blaster = 2.8, Diamond = 4 })[gun.Id]
+	local len = long or (gun.Id == 'Uzi' and 2 or gun.Id == 'Deagle' and 1.9 or 1.6)
+	local dark, metal = C(62, 66, 78), C(150, 156, 168)
+	local function add(name, size, cf, color, material, shape)
+		local p = Instance.new('Part')
+		p.Name = name
+		p.Anchored, p.CanCollide, p.CanTouch, p.CanQuery = true, false, false, false
+		p.Size = size * s
+		p.CFrame = CFrame.new(cf.Position * s) * cf.Rotation
+		p.Color = color
+		p.Material = material or M.SmoothPlastic
+		if shape then p.Shape = shape end
+		p.Parent = model
+		return p
+	end
+	local front = -len + 0.35
+	local grip = add('Grip', V(0.3, 0.75, 0.42), CFrame.new(0, -0.22, 0.12) * CFrame.Angles(math.rad(-14), 0, 0), long and C(132, 82, 48) or dark, long and M.Wood or M.SmoothPlastic)
+	add('Body', V(0.34, 0.44, len), CFrame.new(0, 0.32, front / 2 + 0.3), dark)
+	add('Stripe', V(0.36, 0.12, len * 0.7), CFrame.new(0, 0.38, front / 2 + 0.2), gun.Color, M.Neon)
+	add('Barrel', V(0.34, 0.2, 0.2), CFrame.new(0, 0.3, front - 0.12) * CFrame.Angles(0, math.pi / 2, 0), metal, M.Metal, Enum.PartType.Cylinder)
+	add('Guard', V(0.12, 0.22, 0.36), CFrame.new(0, -0.02, -0.22), dark)
+	add('Sight', V(0.1, 0.1, 0.16), CFrame.new(0, 0.58, front + 0.12), metal, M.Metal)
+	if long then
+		add('Stock', V(0.3, 0.5, 0.9), CFrame.new(0, 0.18, 0.8), C(132, 82, 48), M.Wood)
+		add('Mag', V(0.26, 0.6, 0.3), CFrame.new(0, -0.12, front / 2 + 0.2), dark)
+	end
+	model.PrimaryPart = grip
+	grip.PivotOffset = grip.CFrame:Inverse() -- the model's pivot is the origin, as GunModels promises
+	return model
+end
+
+-- The display gun: GunModels.build when it exists (else the stand-in), scaled up for the pedestal. Small guns
+-- are blown up more than big ones (display size ~ natural size^0.55) so a pistol still reads from the street
+-- while the long guns stay longer, and each tier gets 3% more on top, up to 6.6 studs.
+function Armory.gun(gun)
+	local models = Armory.optional('GunModels')
+	local function make(scale)
+		if models and models.build then
+			local ok, model = pcall(models.build, gun.Id, scale)
+			if ok and model then return model end
+		end
+		return Armory.placeholder(gun, scale)
+	end
+	local model = make(1)
+	local lo, hi = Armory.extents(model, Armory.pivotOf(model))
+	local size = hi - lo
+	local longest = math.max(size.X, size.Y, size.Z, 0.1)
+	local length = math.min(6.6, 2.9 * longest ^ 0.55 * (1 + 0.03 * (gun.Tier - 1)))
+	if math.abs(longest - length) > 0.05 then
+		model:Destroy()
+		model = make(length / longest)
+	end
+	for _, p in model:GetDescendants() do
+		if p:IsA('BasePart') then p.Anchored, p.CanCollide, p.CanTouch, p.CanQuery = true, false, false, false end
+	end
+	return model
+end
+
+-- Effects that grow with tier (`part` is a box round the gun, which sizes them). HoodVFX.item when the VFX
+-- module is there; otherwise a light from tier 2,
+-- sparkles from tier 3, rising glow from tier 6 and big star glints for the last two.
+function Armory.effects(part, tier, color)
+	if tier < 2 then return end -- the free pistol stays plain, like the basic tool in the reference
+	local vfx = Armory.optional('HoodVFX')
+	if vfx and vfx.item then
+		local ok = pcall(vfx.item, part, tier, color)
+		if ok then return end
+	end
+	light(part, color, 0.5 + tier * 0.12, 7 + tier * 0.4)
+	local function emitter(name, texture, rate, life, speed, size, transparency)
+		local e = Instance.new('ParticleEmitter')
+		e.Name = name
+		e.Texture = texture
+		e.Rate = rate
+		e.Lifetime = NumberRange.new(life[1], life[2])
+		e.Speed = NumberRange.new(speed[1], speed[2])
+		e.SpreadAngle = Vector2.new(180, 180)
+		e.Size = size
+		e.Transparency = transparency
+		e.Color = ColorSequence.new(color:Lerp(P.white, 0.35), color)
+		e.LightEmission = 1
+		e.LightInfluence = 0
+		e.RotSpeed = NumberRange.new(-90, 90)
+		e.Rotation = NumberRange.new(0, 360)
+		e.Parent = part
+		return e
+	end
+	local fade = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(0.7, 0.4), NumberSequenceKeypoint.new(1, 1) })
+	if tier >= 3 then
+		emitter('Sparkles', 'rbxasset://textures/particles/sparkles_main.dds', 2 + tier * 1.5, { 0.8, 1.5 }, { 0.4, 1.4 },
+			NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2 + tier * 0.03), NumberSequenceKeypoint.new(1, 0) }), fade)
+	end
+	if tier >= 6 then
+		local glow = emitter('Glow', 'rbxasset://textures/particles/fire_main.dds', 3 + tier, { 0.9, 1.6 }, { 0.6, 1.4 },
+			NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.6 + tier * 0.06), NumberSequenceKeypoint.new(1, 0.1) }),
+			NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.55), NumberSequenceKeypoint.new(1, 1) }))
+		glow.EmissionDirection = Enum.NormalId.Top
+		glow.SpreadAngle = Vector2.new(25, 25)
+		glow.Acceleration = V(0, 1.5, 0)
+	end
+	if tier >= 9 then
+		local star = emitter('Glints', 'rbxasset://textures/particles/sparkles_main.dds', 3, { 1.2, 2 }, { 0.2, 0.6 },
+			NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.3, 1.1), NumberSequenceKeypoint.new(1, 0) }),
+			NumberSequence.new(0.1))
+		star:SetAttribute('PreviewTexture', 'star')
+	end
+end
+
+-- The floating label: name in the gun's colour, the multiplier and the price, each row with an icon
+-- (IconModels.Images when uploaded, else a text glyph kept in the label's Glyph attribute).
+function Armory.label(c, pos, gun)
+	local anchor = ghost(c:part('LabelAnchor', V(0.2, 0.2, 0.2), CFrame.new(pos), P.white))
+	local g = Instance.new('BillboardGui')
+	g.Name = 'GunLabel'
+	g.Size = UDim2.fromScale(8, 2.9)
+	g.MaxDistance = 80
+	g.LightInfluence = 0
+	g.Parent = anchor
+	line(g, 'Name', gun.Name, gun.Color:Lerp(P.white, 0.15), FONT.loud, 0, 0.44, C(24, 22, 40), 3)
+	local icons = Armory.optional('IconModels')
+	local images = icons and icons.Images or {}
+	local function row(name, icon, glyph, text, color, y)
+		local image = images[icon]
+		local t = line(g, name, text, color, FONT.loud, y, 0.28, C(24, 22, 40), 2.5)
+		if type(image) == 'string' and image ~= '' then
+			local i = Instance.new('ImageLabel')
+			i.Name = 'Icon'
+			i.BackgroundTransparency = 1
+			i.Image = image
+			i.Position = UDim2.fromScale(0.14, y)
+			i.Size = UDim2.fromScale(0.12, 0.28)
+			-- Icon on the left, the words left-aligned beside it.
+			t.Position = UDim2.fromScale(0.28, y)
+			t.Size = UDim2.fromScale(0.6, 0.28)
+			t.TextXAlignment = Enum.TextXAlignment.Left
+			local a = Instance.new('UIAspectRatioConstraint')
+			a.Parent = i
+			i.Parent = g
+			t:SetAttribute('Glyph', '')
+		else
+			t.Text = glyph .. ' ' .. text
+			t:SetAttribute('Glyph', glyph)
+		end
+		return t
+	end
+	row('Multiplier', 'Power', '💪', 'x' .. gun.Multiplier .. ' POWER', P.white, 0.45)
+	row('Price', 'Cash', '💵', gun.Cost == 0 and 'FREE' or compact(gun.Cost), C(255, 228, 92), 0.73)
+	return anchor
+end
+
+-- One gun on its pedestal. (x, z) is the pedestal centre, y the floor it stands on.
+function Armory.slot(c, gun, x, z, y, colors)
+	local s, model = c:group('GunSlot_' .. gun.Id)
+	-- Streams in as one piece, so a client that sees the slot also sees its point, labels and gun.
+	pcall(function() model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic end)
+	model:SetAttribute('GunId', gun.Id)
+	model:SetAttribute('Tier', gun.Tier)
+	model:SetAttribute('Cost', gun.Cost)
+	model:SetAttribute('Multiplier', gun.Multiplier)
+	local state = gun.Cost == 0 and 'Equipped' or 'Locked' -- a new player's view; the client repaints
+	local look = colors[state]
+	local r = Armory.Radius
+	-- Pale base, the coloured top with a lighter glowing inlay, a dark rim under the top.
+	Armory.hex(s, 'PedestalBase', x, z, r, y, y + 0.6, C(232, 234, 242), M.SmoothPlastic)
+	Armory.hex(s, 'PedestalRim', x, z, r - 0.12, y + 0.6, y + 0.7, C(70, 72, 92), M.SmoothPlastic)
+	Armory.hex(s, 'StateTop', x, z, r - 0.3, y + 0.7, y + 1.0, look.Top, M.SmoothPlastic)
+	local glow = Armory.hex(s, 'StateGlow', x, z, r - 0.95, y + 1.0, y + 1.05, look.Glow, M.Neon)
+	for _, p in glow do decor(p).CastShadow = false end
+	light(glow[1], look.Top, 1.4, 9)
+	-- Soft haze rising off the top in the state colour (the client recolours it with the pedestal).
+	local hazeSource = ghost(s:part('StateHazeSource', V(r * 1.3, 0.2, r * 1.3), CFrame.new(x, y + 1.15, z), look.Glow))
+	hazeSource.CastShadow = false
+	local haze = Instance.new('ParticleEmitter')
+	haze.Name = 'StateHaze'
+	haze.Texture = 'rbxasset://textures/particles/smoke_main.dds'
+	haze.Rate = 5
+	haze.Lifetime = NumberRange.new(1.2, 1.8)
+	haze.Speed = NumberRange.new(0.8, 1.4)
+	haze.SpreadAngle = Vector2.new(8, 8)
+	haze.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1.6), NumberSequenceKeypoint.new(1, 2.6) })
+	haze.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.25, 0.78), NumberSequenceKeypoint.new(1, 1) })
+	haze.Color = ColorSequence.new(look.Top)
+	haze.LightEmission = 1
+	haze.LightInfluence = 0
+	haze.Rotation = NumberRange.new(0, 360)
+	haze.RotSpeed = NumberRange.new(-20, 20)
+	haze.Parent = hazeSource
+	local top = y + 1.05
+	-- Front strip with the state word.
+	local strip = s:box('StateStrip', V(x - 1.55, y + 0.08, z - r - 0.08), V(x + 1.55, y + 0.52, z - r + 0.02), look.Strip, M.SmoothPlastic)
+	local sg = surface(strip, Enum.NormalId.Front, 50)
+	sg.Name = 'StateGui'
+	line(sg, 'State', string.upper(state), P.white, FONT.loud, 0.08, 0.84, look.Strip:Lerp(P.black, 0.45), 2)
+	-- The gun, floating side-on (muzzle to the viewer's right), slowly turning and bobbing.
+	local d, display = s:group('Display')
+	local g = Armory.gun(gun)
+	local pivot = Armory.pivotOf(g)
+	local lo, hi = Armory.extents(g, pivot)
+	local mid = (lo + hi) / 2
+	local length = math.max(hi.X - lo.X, hi.Y - lo.Y, hi.Z - lo.Z)
+	local centre = V(x, top + 1.0 + (hi.Y - lo.Y) / 2, z)
+	local pose = CFrame.new(centre) * CFrame.Angles(0, math.pi / 2, 0) * CFrame.Angles(math.rad(8), 0, 0)
+	Armory.place(g, d:world(pose * CFrame.new(-mid)))
+	g.Name = 'Gun'
+	g.Parent = display
+	display.WorldPivot = d:world(CFrame.new(centre))
+	display:SetAttribute('Spin', Armory.Spin)
+	display:SetAttribute('Bob', Armory.Bob)
+	display:SetAttribute('BobPeriod', 2.4)
+	display:AddTag('HoodMotion')
+	local core = ghost(s:part('FxCore', V(length * 0.55, length * 0.32, length * 0.55), CFrame.new(centre), gun.Color))
+	core.CastShadow = false
+	Armory.effects(core, gun.Tier, gun.Color)
+	local labelY = centre.Y + (hi.Y - lo.Y) / 2 + 1.7
+	Armory.label(s, V(x, labelY, z), gun)
+	-- Where the prompt sits and the server measures buying distance from.
+	local point = ghost(s:box('GunPoint_' .. gun.Id, V(x - 0.5, top + 0.6, z - r - 1.1), V(x + 0.5, top + 1.6, z - r - 0.1), P.white))
+	point.CastShadow = false
+	return model
+end
+
+-- The ARMORY header: a red studded frame on two posts, a dark board with the word in gold.
+function Armory.header(c, y)
+	local h = c:group('ArmorySign')
+	local post = C(150, 156, 172)
+	for _, x in { -14.1, 14.1 } do
+		studs(h:box('SignPost', V(x - 0.8, y, 16.8), V(x + 0.8, 12.8, 18.2), post, M.Plastic), true)
+		h:box('SignFoot', V(x - 1.3, y, 16.3), V(x + 1.3, y + 0.8, 18.6), post:Lerp(P.black, 0.25), M.Plastic)
+	end
+	studs(h:box('SignFrame', V(-16, 12.6, 16.9), V(16, 15.5, 18.1), C(222, 52, 52), M.Plastic))
+	studs(h:box('SignCap', V(-16.4, 15.5, 16.8), V(16.4, 16, 18.2), C(250, 206, 52), M.Plastic))
+	local board = h:box('SignBoard', V(-15.3, 12.85, 16.7), V(15.3, 15.3, 17), C(30, 32, 48), M.SmoothPlastic)
+	local g = surface(board, Enum.NormalId.Front, 20)
+	line(g, 'Title', 'ARMORY', C(255, 210, 60), FONT.loud, 0.02, 0.72, C(120, 30, 20), 5)
+	-- What a gun does, in one line under the name.
+	line(g, 'Subtitle', 'BETTER GUN = MORE POWER PER PUNCH', P.white, FONT.loud, 0.74, 0.22, C(40, 10, 10), 2)
+	for _, x in { -16.2, 16.2 } do
+		decor(h:box('SignLamp', V(x - 0.25, 12.8, 16.6), V(x + 0.25, 15.3, 16.9), C(255, 120, 200), M.Neon)).CastShadow = false
+	end
+	return h
+end
+
+-- The floor, the steps up to the back row and the back platform, all studded.
+function Armory.base(c)
+	local b = c:group('ArmoryBase')
+	local floor, stepColor, edge = C(214, 218, 228), C(196, 201, 214), C(150, 156, 172)
+	studs(b:box('ArmoryFloor', V(-24, 0, -2), V(24, Armory.Floor, 12), floor, M.Plastic))
+	studs(b:box('ArmoryKerb', V(-24, 0, -2), V(24, Armory.Floor + 0.12, -1.2), edge, M.Plastic))
+	local rises = math.round(Armory.Step - Armory.Floor)
+	local z0 = Armory.Rows[2].z - Armory.Radius - 0.8 - (rises - 1) * Armory.StepDepth
+	for i = 1, rises - 1 do
+		local z = z0 + (i - 1) * Armory.StepDepth
+		studs(b:box('ArmoryStep', V(-24, 0, z), V(24, Armory.Floor + i, z + Armory.StepDepth), i % 2 == 1 and stepColor or floor, M.Plastic), true)
+		-- A thin pink neon line under each step nose: reads as a display, and shows the edge at night.
+		decor(b:box('StepGlow', V(-24, Armory.Floor + i - 0.16, z - 0.04), V(24, Armory.Floor + i - 0.06, z), C(255, 120, 200), M.Neon)).CastShadow = false
+	end
+	local zp = z0 + (rises - 1) * Armory.StepDepth
+	studs(b:box('ArmoryPlatform', V(-24, 0, zp), V(24, Armory.Step, 18), floor, M.Plastic), true)
+	decor(b:box('StepGlow', V(-24, Armory.Step - 0.16, zp - 0.04), V(24, Armory.Step - 0.06, zp), C(255, 120, 200), M.Neon)).CastShadow = false
+	return b
+end
+
+-- Builds the whole armory in ctx's frame. opts.guns overrides the gun list (default Config.Guns.List).
+function Armory.build(ctx, opts)
+	opts = opts or {}
+	local guns = opts.guns or require(ReplicatedStorage.Shared.Config.Guns).List
+	local colors = require(ReplicatedStorage.Shared.GunRules).Colors
+	local a, model = ctx:group('Armory')
+	model:AddTag('HoodArmory')
+	Armory.base(a)
+	Armory.header(a, Armory.Step)
+	for i, gun in guns do
+		local row = Armory.Rows[(i - 1) // 5 + 1]
+		if not row then break end
+		local col = (i - 1) % 5
+		-- Gun 1 stands on the viewer's left: their left is +X when they look toward +Z.
+		Armory.slot(a, gun, 2 * Armory.Spacing - col * Armory.Spacing, row.z, row.y, colors)
+	end
+	return model
 end
 ---------------------------------------------------------------------------------------------- buildings
 -- Building frame: origin at the front-left corner on the ground, +X along the walk, +Z out of the facade
@@ -907,6 +1462,7 @@ local function evolveBooth(ctx)
 	model:AddTag('HoodEvolve')
 	return e
 end
+local TRAIN_Z = { 24, 42, 60 } -- the spawn's three stations, front to back
 local function buildSpawn(ctx, skins)
 	local sp = ctx:group('SpawnPlaza')
 	local spawn = Instance.new('SpawnLocation')
@@ -924,26 +1480,38 @@ local function buildSpawn(ctx, skins)
 	decor(sp:part('SpawnRing', V(0.12, 15, 15), CFrame.new(SPAWN + V(0, 0.06, 0)) * CFrame.Angles(0, 0, math.pi / 2), P.spawnBlue, M.Neon, Enum.PartType.Cylinder)).CastShadow = false
 	decor(sp:part('SpawnDisc', V(0.16, 12, 12), CFrame.new(SPAWN + V(0, 0.08, 0)) * CFrame.Angles(0, 0, math.pi / 2), C(110, 206, 255), M.SmoothPlastic, Enum.PartType.Cylinder)).CastShadow = false
 	billboard(sp, SPAWN + V(0, 9, 0), 9, 2.4, { { 'Title', 'SPAWN', P.white, FONT.loud, 0, 1 } }).WorldLabel.MaxDistance = 120
-	trainingBar(sp:at(CFrame.lookAt(V(-22, 0, 38), V(-18, 0, 80))), skins, V2.TrainHere, 'TRAIN HERE', 9)
-	evolveBooth(sp:at(CFrame.lookAt(V(24, 0, 34), V(16, 0, 76))))
-	-- South edge: planters with hedges, benches looking north, lamps.
-	for _, s in { -1, 1 } do
-		hedge(sp, s * 34, s * 12, 70, 1.8)
-		bench(sp, V(s * 20, 0, 64), V(0, 0, -1))
-		bench(sp, V(s * 30, 0, 64), V(0, 0, -1))
-		lantern(sp, V(s * 10, 0, 60))
-		tree(sp, V(s * 35, 0, 58), 300 + s, 1)
-		tree(sp, V(s * 35, 0, 16), 310 + s, 1)
-		-- North edge: hedge planters either side of the way into stage 1.
-		hedge(sp, s * 34, s * 14, 8, 1.8)
-		lantern(sp, V(s * 10, 0, 12))
+	-- West side: the three free-to-start training stations in a row, facing the middle, under a TRAIN HERE
+	-- header. East side: the ARMORY. Back: the EVOLVE booth looking up the street.
+	for k, b in V2.TrainHere do
+		local z = TRAIN_Z[k]
+		local frame = sp:at(CFrame.lookAt(V(-44, 0, z), V(0, 0, z)))
+		if Stations then Stations.build(frame, b.Id, { Color = b.Color }) else trainingBar(frame, skins, { { Id = b.Id, Color = b.Color, Offset = 0 } }, 'TRAIN', 4) end
 	end
-	railing(sp, V(-31, 0, 18), V(-13, 0, 18), 3.2)
+	local header = sp:group('TrainHereHeader')
+	for _, z in { TRAIN_Z[1] - 9, TRAIN_Z[3] + 9 } do
+		header:box('HeaderPost', V(-55.4, 0, z - 0.9), V(-53.6, 27, z + 0.9), C(56, 60, 70), M.Metal)
+	end
+	local sign = header:box('HeaderSign', V(-55, 22, TRAIN_Z[1] - 8), V(-54, 28, TRAIN_Z[3] + 8), C(40, 82, 196), M.SmoothPlastic)
+	decor(header:box('HeaderBorder', V(-55.3, 21.7, TRAIN_Z[1] - 8.3), V(-54.2, 28.3, TRAIN_Z[3] + 8.3), P.white, M.SmoothPlastic))
+	line(surface(sign, Enum.NormalId.Right, 12), 'Text', 'TRAIN HERE', P.white, FONT.loud, 0.1, 0.8, C(16, 30, 80), 4)
+	local armory = sp:at(CFrame.lookAt(V(34, 0, 42), V(0, 0, 42)))
+	if Armory then Armory.build(armory, {}) end
+	evolveBooth(sp:at(CFrame.lookAt(V(0, 0, 74), V(0, 0, 0))))
+	-- Edges: hedge planters either side of the way into stage 1, benches and lamps round the spawn,
+	-- trees in the back corners.
+	for _, s in { -1, 1 } do
+		hedge(sp, s * 52, s * 14, 8, 1.8)
+		lantern(sp, V(s * 10, 0, 12))
+		lantern(sp, V(s * 10, 0, 60))
+		lantern(sp, V(s * 24, 0, 82))
+		bench(sp, V(s * 18, 0, 50), V(0, 0, -1))
+		tree(sp, V(s * 48, 0, 82), 300 + s, 1.1)
+		hedge(sp, s * 14, s * 40, 89, 1.8)
+	end
 	-- Back to where you got to, for returning players.
 	teleportPad(sp, 'FurthestPad', 0, 22, C(255, 222, 40), 'Furthest', 'FURTHEST STAGE')
-	trashCan(sp, V(34, 0, 32))
-	trashCan(sp, V(34, 0, 36))
-	tree(sp, V(-36, 0, 26), 321, 1.05)
+	trashCan(sp, V(30, 0, 78))
+	trashCan(sp, V(31.6, 0, 78))
 	return sp
 end
 
@@ -1047,7 +1615,11 @@ end
 -- The usual kerb dressing, mirrored a little differently each stage so repeats don't line up.
 local function standardDressing(ctx, top, i, extraL, extraR)
 	local flip = i % 2 == 0
-	dressing(ctx, top, -1, { { 'lamp', -14, 7 }, { flip and 'hedge' or 'tree', -26 }, { 'lamp', -44, 7 }, { flip and 'tree' or 'bench', -54, 4 }, table.unpack(extraL or {}) })
+	-- A route training station stands on the west side from -40 to -52; keep that stretch clear.
+	local west = ROUTE_TRAINING[i] and { { 'lamp', -14, 7 }, { flip and 'hedge' or 'tree', -26 } }
+		or { { 'lamp', -14, 7 }, { flip and 'hedge' or 'tree', -26 }, { 'lamp', -44, 7 }, { flip and 'tree' or 'bench', -54, 4 } }
+	for _, extra in extraL or {} do table.insert(west, extra) end
+	dressing(ctx, top, -1, west)
 	dressing(ctx, top, 1, { { 'lamp', -14, 7 }, { flip and 'tree' or 'hedge', -26 }, { 'lamp', -44, 7 }, { flip and 'bench' or 'tree', -56, 4 }, table.unpack(extraR or {}) })
 end
 local function stageCore(ctx, i)
@@ -1063,7 +1635,7 @@ local function stageCore(ctx, i)
 	if station then
 		local s = SKINS.StationById[station]
 		local bar = d:at(CFrame.lookAt(V(-25, 0, top - 46), V(0, 0, top - 46)))
-		trainingBar(bar, SKINS, { { Id = station, Color = s.Color, Offset = 0 } }, 'TRAIN x' .. s.Multiplier, 5)
+		if Stations then Stations.build(bar, station, { Color = s.Color }) else trainingBar(bar, SKINS, { { Id = station, Color = s.Color, Offset = 0 } }, 'TRAIN x' .. s.Multiplier, 5) end
 	end
 	return d, top
 end
@@ -1264,7 +1836,12 @@ local function bossYard(ctx)
 	sideRow(b, 1, BOSS_TOP, { { 96, function(f, w) containerLot(f, w, 3) end } })
 	car(b, CFrame.new(-26, 0, BOSS_TOP - 70) * CFrame.Angles(0, math.rad(80), 0), P.white)
 	local ring = SKINS.StationById.Ring
-	Props.ring(b:at(CFrame.new(0, 0, BOSS_TOP - 34) * CFrame.Angles(0, math.pi, 0)):group('Training_' .. ring.Id), PROPS_KIT, ring, 7)
+	local ringCtx, ringModel = b:at(CFrame.new(0, 0, BOSS_TOP - 34) * CFrame.Angles(0, math.pi, 0)):group('Training_' .. ring.Id)
+	Props.ring(ringCtx, PROPS_KIT, ring, 7)
+	-- The champion aura (tier 9) on the canvas, like the stations along the way.
+	local canvas = ringModel:FindFirstChild('TrainingZone')
+	local vfx = Armory.optional('HoodVFX')
+	if canvas and vfx then vfx.station(canvas, 9, nil, V(14, 12, 14)) end
 	local bz = BOSS_END + 22
 	local _, pad = fightPad(b, 16, V(0, 0, bz), P.padRed, 6, 14, 'BOSS')
 	local model = pad.parent
@@ -1327,7 +1904,7 @@ function V2.Build()
 	end
 	local root = Instance.new('Model')
 	root.Name = 'TheBlockV2'
-	root:SetAttribute('BuildVersion', 'Hood Evolution W1 fifteen stages 1')
+	root:SetAttribute('BuildVersion', 'Hood Evolution W1 stations and armory 1')
 	root:SetAttribute('Origin', V2.Origin.Position)
 	root:SetAttribute('LobbySpawn', SPAWN)
 	root:SetAttribute('MorphStand', false) -- evolving happens at the EVOLVE booth, not on a stand

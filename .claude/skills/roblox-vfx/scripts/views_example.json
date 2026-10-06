@@ -1,0 +1,5 @@
+{"options":{"time":3,"noFog":true,"builtinOnly":false,"focus":[0,0,0]},
+ "views":[
+  {"name":"front","pos":[0,10,-24],"look":[0,6,0],"fov":55},
+  {"name":"three_quarter","pos":[-16,9,-18],"look":[0,6,0],"fov":55},
+  {"name":"high","pos":[0,30,-40],"look":[0,4,0],"fov":50}]}

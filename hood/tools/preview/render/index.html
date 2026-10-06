@@ -1,0 +1,488 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><style>html,body{margin:0;background:#000;overflow:hidden}canvas{display:block}</style></head>
+<body>
+<script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js"}}</script>
+<script type="module">
+import * as THREE from 'three';
+
+const Q = new URLSearchParams(location.search), W = +(Q.get('w') || 1600), H = +(Q.get('h') || 1000);
+const renderer = new THREE.WebGLRenderer({antialias: true, preserveDrawingBuffer: true, alpha: true});
+renderer.setSize(W, H);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x9fcbf2);
+scene.fog = new THREE.Fog(0xb9d8f2, 260, 700);
+
+// ---------- procedural textures (world-scale UVs: 1 texture tile = TILE studs) ----------
+function canvasTex(size, draw) {
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const g = c.getContext('2d'); draw(g, size);
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 8;
+  return t;
+}
+function noise(g, s, n, a) { for (let i = 0; i < n; i++) { const v = Math.random() * 255 | 0; g.fillStyle = `rgba(${v},${v},${v},${a})`; g.fillRect(Math.random() * s, Math.random() * s, 2, 2); } }
+const TEX = {
+  Brick: [4, canvasTex(256, (g, s) => { g.fillStyle = '#fff'; g.fillRect(0, 0, s, s); g.fillStyle = '#b9b9b9';
+    const rows = 8, bw = s / 2; for (let r = 0; r < rows; r++) { const y = r * s / rows; g.fillRect(0, y, s, 4); const off = (r % 2) * bw / 2; for (let x = -bw + off; x < s; x += bw) g.fillRect(x, y, 4, s / rows); }
+    noise(g, s, 1500, .08); })],
+  Concrete: [8, canvasTex(256, (g, s) => { g.fillStyle = '#fff'; g.fillRect(0, 0, s, s); noise(g, s, 5000, .07); })],
+  Pavement: [6, canvasTex(256, (g, s) => { g.fillStyle = '#fff'; g.fillRect(0, 0, s, s); g.fillStyle = '#c4c4c4'; for (let i = 0; i <= 4; i++) { g.fillRect(i * s / 4 - 1, 0, 3, s); g.fillRect(0, i * s / 4 - 1, s, 3); } noise(g, s, 3000, .06); })],
+  Asphalt: [8, canvasTex(256, (g, s) => { g.fillStyle = '#fff'; g.fillRect(0, 0, s, s); noise(g, s, 9000, .12); })],
+  WoodPlanks: [4, canvasTex(256, (g, s) => { g.fillStyle = '#fff'; g.fillRect(0, 0, s, s); g.fillStyle = '#b0b0b0'; for (let i = 0; i < 4; i++) g.fillRect(0, i * s / 4, s, 3); noise(g, s, 2500, .08); })],
+  Wood: [4, canvasTex(256, (g, s) => { g.fillStyle = '#fff'; g.fillRect(0, 0, s, s); g.strokeStyle = 'rgba(0,0,0,.08)'; for (let i = 0; i < 40; i++) { g.beginPath(); g.moveTo(0, i * 7); g.bezierCurveTo(s / 3, i * 7 + 5, 2 * s / 3, i * 7 - 5, s, i * 7); g.stroke(); } })],
+  Grass: [6, canvasTex(256, (g, s) => { g.fillStyle = '#fff'; g.fillRect(0, 0, s, s); noise(g, s, 7000, .12); })],
+  DiamondPlate: [3, canvasTex(128, (g, s) => { g.fillStyle = '#fff'; g.fillRect(0, 0, s, s); g.fillStyle = '#9a9a9a'; for (let x = 0; x < s; x += 16) for (let y = 0; y < s; y += 16) { g.save(); g.translate(x + 8, y + 8); g.rotate(((x + y) / 16) % 2 ? .8 : -.8); g.fillRect(-5, -1.5, 10, 3); g.restore(); } })],
+  Fabric: [3, canvasTex(128, (g, s) => { g.fillStyle = '#fff'; g.fillRect(0, 0, s, s); g.fillStyle = 'rgba(0,0,0,.06)'; for (let i = 0; i < s; i += 4) { g.fillRect(i, 0, 1, s); g.fillRect(0, i, s, 1); } })],
+  Cardboard: [3, canvasTex(128, (g, s) => { g.fillStyle = '#fff'; g.fillRect(0, 0, s, s); noise(g, s, 1500, .1); })],
+  Slate: [6, canvasTex(256, (g, s) => { g.fillStyle = '#fff'; g.fillRect(0, 0, s, s); noise(g, s, 6000, .1); })],
+  Ground: [8, canvasTex(256, (g, s) => { g.fillStyle = '#fff'; g.fillRect(0, 0, s, s); noise(g, s, 8000, .12); })],
+  Rubber: [4, canvasTex(128, (g, s) => { g.fillStyle = '#fff'; g.fillRect(0, 0, s, s); noise(g, s, 1500, .05); })],
+  Studs: [1, canvasTex(64, (g, s) => { g.fillStyle = '#fff'; g.fillRect(0, 0, s, s); g.fillStyle = '#d8d8d8'; g.beginPath(); g.arc(s / 2 + 2, s / 2 + 3, s * .3, 0, 7); g.fill(); g.fillStyle = '#fff'; g.beginPath(); g.arc(s / 2, s / 2, s * .3, 0, 7); g.fill(); g.strokeStyle = '#e6e6e6'; g.lineWidth = 2; g.stroke(); })],
+};
+const ROUGH = {SmoothPlastic: .55, Plastic: .6, Neon: .3, Metal: .38, DiamondPlate: .4, Glass: .08, Foil: .25, CorrodedMetal: .7};
+const METAL = {Metal: .65, DiamondPlate: .6, Foil: .8, CorrodedMetal: .5};
+
+const matCache = new Map();
+function material(p) {
+  const key = [p.c.join(','), p.m, p.t, p.studs ? 1 : 0].join('|');
+  if (matCache.has(key)) return matCache.get(key);
+  const color = new THREE.Color().setRGB(p.c[0], p.c[1], p.c[2], THREE.SRGBColorSpace);
+  const opts = {color, roughness: ROUGH[p.m] ?? .85, metalness: METAL[p.m] ?? 0};
+  const tex = p.studs ? TEX.Studs : TEX[p.m];
+  if (tex) opts.map = tex[1];
+  if (p.m === 'Neon') { opts.emissive = color.clone(); opts.emissiveIntensity = 1.4; }
+  if (p.m === 'Glass') { opts.transparent = true; opts.opacity = Math.min(1, (1 - p.t) * .55 + .15); }
+  if (p.t > 0 && p.m !== 'Glass') { opts.transparent = true; opts.opacity = 1 - p.t; opts.depthWrite = p.t < .5; }
+  const m = new THREE.MeshStandardMaterial(opts);
+  matCache.set(key, m);
+  return m;
+}
+function tileOf(p) { if (p.studs) return 1; const t = TEX[p.m]; return t ? t[0] : 4; }
+
+// Box with world-scaled UVs so bricks/studs keep their real size on any part.
+function boxGeo(sx, sy, sz, tile) {
+  const g = new THREE.BoxGeometry(sx, sy, sz);
+  const uv = g.attributes.uv;
+  const dims = [[sz, sy], [sz, sy], [sx, sz], [sx, sz], [sx, sy], [sx, sy]];
+  for (let f = 0; f < 6; f++) for (let v = 0; v < 4; v++) {
+    const i = f * 4 + v; uv.setXY(i, uv.getX(i) * dims[f][0] / tile, uv.getY(i) * dims[f][1] / tile);
+  }
+  return g;
+}
+function wedgeGeo(sx, sy, sz) {
+  // Roblox wedge: vertical face at the back (+Z), slope rises from the front-bottom edge (-Z) to the back-top edge.
+  const x = sx / 2, y = sy / 2, z = sz / 2;
+  const v = [[-x,-y,-z],[x,-y,-z],[x,-y,z],[-x,-y,z],[-x,y,z],[x,y,z]];
+  const f = [[0,1,2],[0,2,3],[3,2,5],[3,5,4],[0,4,5],[0,5,1],[0,3,4],[1,5,2]];
+  const pos = []; f.forEach(t => t.forEach(i => pos.push(...v[i])));
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.computeVertexNormals(); return g;
+}
+function cornerWedgeGeo(sx, sy, sz) {
+  const x = sx / 2, y = sy / 2, z = sz / 2;
+  const v = [[-x,-y,-z],[x,-y,-z],[x,-y,z],[-x,-y,z],[x,y,-z]];
+  const f = [[0,2,1],[0,3,2],[0,1,4],[1,2,4],[2,3,4],[3,0,4]];
+  const pos = []; f.forEach(t => t.forEach(i => pos.push(...v[i])));
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.computeVertexNormals(); return g;
+}
+
+function textCanvas(lbl, pxW, pxH) {
+  const c = document.createElement('canvas'); c.width = Math.max(8, pxW | 0); c.height = Math.max(8, pxH | 0);
+  const g = c.getContext('2d');
+  for (const L of lbl) {
+    const x = L.px * c.width, y = L.py * c.height, w = L.sx * c.width, h = L.sy * c.height;
+    if (L.bgT < 1) { g.globalAlpha = 1 - L.bgT; g.fillStyle = `rgb(${L.bg.map(v => v * 255 | 0)})`; g.fillRect(x, y, w, h); g.globalAlpha = 1; }
+    const lines = String(L.text).split('\n');
+    let fs = L.scaled ? Math.min(h / lines.length * .9, 999) : L.size;
+    g.font = `900 ${fs}px Arial Black, Arial, sans-serif`;
+    if (L.scaled) { const widest = Math.max(...lines.map(s => g.measureText(s).width)); if (widest > w * .96) fs *= w * .96 / widest; g.font = `900 ${fs}px Arial Black, Arial, sans-serif`; }
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    lines.forEach((s, i) => {
+      const ty = y + h / 2 + (i - (lines.length - 1) / 2) * fs * 1.05;
+      if (L.strokeT < 1) { g.lineWidth = Math.max(2, fs * .12); g.strokeStyle = `rgba(${L.stroke.map(v => v * 255 | 0)},${1 - L.strokeT})`; g.strokeText(s, x + w / 2, ty); }
+      g.fillStyle = `rgba(${L.color.map(v => v * 255 | 0)},${1 - (L.textT || 0)})`; g.fillText(s, x + w / 2, ty);
+    });
+  }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t;
+}
+
+const FACE = {Front: [0, 0, -1], Back: [0, 0, 1], Top: [0, 1, 0], Bottom: [0, -1, 0], Right: [1, 0, 0], Left: [-1, 0, 0]};
+function addSurfaceGui(mesh, p, gui) {
+  const n = FACE[gui.face]; const [sx, sy, sz] = p.s;
+  let w, h, rot = new THREE.Euler(), off;
+  if (gui.face === 'Front') { w = sx; h = sy; rot.set(0, Math.PI, 0); off = [0, 0, -sz / 2 - .02]; }
+  else if (gui.face === 'Back') { w = sx; h = sy; rot.set(0, 0, 0); off = [0, 0, sz / 2 + .02]; }
+  else if (gui.face === 'Right') { w = sz; h = sy; rot.set(0, Math.PI / 2, 0); off = [sx / 2 + .02, 0, 0]; }
+  else if (gui.face === 'Left') { w = sz; h = sy; rot.set(0, -Math.PI / 2, 0); off = [-sx / 2 - .02, 0, 0]; }
+  else if (gui.face === 'Top') { w = sx; h = sz; rot.set(-Math.PI / 2, 0, 0); off = [0, sy / 2 + .02, 0]; }
+  else { w = sx; h = sz; rot.set(Math.PI / 2, 0, 0); off = [0, -sy / 2 - .02, 0]; }
+  const ppu = Math.min(64, 2048 / Math.max(w, h));
+  const tex = textCanvas(gui.labels, w * ppu, h * ppu);
+  const mat = new THREE.MeshBasicMaterial({map: tex, transparent: true, depthWrite: false, toneMapped: false});
+  const plane = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
+  plane.position.set(...off); plane.rotation.copy(rot); mesh.add(plane);
+}
+function addBillboard(pos, gui) {
+  const w = gui.sw, h = gui.sh; if (!(w > 0 && h > 0)) return;
+  const ppu = Math.min(80, 1024 / Math.max(w, h));
+  const tex = textCanvas(gui.labels, w * ppu, h * ppu);
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({map: tex, depthTest: !gui.top, toneMapped: false}));
+  sp.scale.set(w, h, 1); sp.position.set(pos[0] + gui.off[0], pos[1] + gui.off[1], pos[2] + gui.off[2]);
+  scene.add(sp);
+}
+
+
+// ---------------------------------------------------------------- effects: Roblox-like particles and beams
+const texLoader = new THREE.TextureLoader();
+const texCache = {};
+// Roblox built-in particle textures -> our look-alike previews in vfx/.
+const BUILTIN = { sparkles_main: 'sparkle', smoke_main: 'smoke', fire_main: 'flame1', fire_sparks_main: 'sparkle', explosion01_core_main: 'glow', explosion01_shockwave_main: 'ring', explosion01_smoke_main: 'smoke' };
+// Preview textures that are flipbook sheets (HoodVFX names): grid size and how frames are picked.
+// random = FlipbookStartRandom with Framerate 0 (a static random frame per particle), oneshot = frames spread
+// over the particle's life, loop = plays at fps from a random start.
+const FLIP = { aura: { g: 2, mode: 'random' }, arc: { g: 2, mode: 'random' }, wisp: { g: 4, mode: 'oneshot' }, flame: { g: 4, mode: 'loop', fps: 18 } };
+let FX_OPTS = {};
+function fxName(fx) {
+  let name = FX_OPTS.builtinOnly ? null : fx.preview;
+  if (!name) {
+    const tex = String(fx.tex || '');
+    const m = tex.match(/particles\/(\w+)\.dds/);
+    name = m ? (BUILTIN[m[1]] || 'glow') : /glow\.png/.test(tex) ? 'glow' : /SquareParticle/.test(tex) ? 'confetti' : (fx.tex ? 'glow' : (fx.kind === 'beam' ? 'energy' : 'sparkle'));
+  }
+  return name;
+}
+function baseTexture(name) {
+  if (!texCache[name]) { texCache[name] = texLoader.load(`vfx/${name}.png`); texCache[name].colorSpace = THREE.SRGBColorSpace; }
+  return texCache[name];
+}
+function fxTexture(fx) { return baseTexture(fxName(fx)); }
+// One cloned texture per flipbook frame (they share the image; only the UV window differs).
+function frameTexture(name, g, frame) {
+  const key = name + '#' + frame;
+  if (!texCache[key]) {
+    const t = baseTexture(name).clone();
+    t.repeat.set(1 / g, 1 / g);
+    t.offset.set((frame % g) / g, 1 - (Math.floor(frame / g) + 1) / g);
+    t.needsUpdate = true;
+    texCache[key] = t;
+  }
+  return texCache[key];
+}
+const FX_NAMES = ['glow', 'sparkle', 'star', 'ring', 'smoke', 'streak', 'shard', 'confetti', 'pow', 'lightning', 'energy', 'flame1',
+  'aura', 'wisp', 'flame', 'arc', 'mist', 'ray', 'shaft', 'glitter', 'swirl', 'dust', 'softglow'];
+async function preloadFx() {
+  await Promise.all(FX_NAMES.map(async n => { if (!texCache[n]) { try { const t = await texLoader.loadAsync(`vfx/${n}.png`); t.colorSpace = THREE.SRGBColorSpace; texCache[n] = t; } catch (e) { console.error('missing vfx/' + n + '.png'); } } }));
+}
+// Roblox LightEmission blends between normal (0) and additive (1) blending. Premultiplied output does both:
+// colour * alpha is added, and the background is kept by (1 - alpha * (1 - emission)).
+function emissive(mat, e) {
+  mat.blending = THREE.CustomBlending;
+  mat.blendEquation = THREE.AddEquation;
+  mat.blendSrc = THREE.OneFactor;
+  mat.blendDst = THREE.OneMinusSrcAlphaFactor;
+  mat.onBeforeCompile = (shader) => {
+    shader.uniforms.uEmission = { value: e };
+    shader.fragmentShader = 'uniform float uEmission;\n' + shader.fragmentShader.replace('#include <opaque_fragment>',
+      'gl_FragColor = vec4( outgoingLight * diffuseColor.a, diffuseColor.a * ( 1.0 - uEmission ) );');
+  };
+  return mat;
+}
+function rnd(seed) { // deterministic 0..1
+  const x = Math.sin(seed * 12.9898 + 78.233) * 43758.5453; return x - Math.floor(x);
+}
+function seqN(seq, t, r) {
+  for (let i = 0; i < seq.length - 1; i++) {
+    const a = seq[i], b = seq[i + 1];
+    if (t >= a[0] && t <= b[0]) { const f = (t - a[0]) / Math.max(1e-6, b[0] - a[0]); const v = a[1] + (b[1] - a[1]) * f, e = (a[2] || 0) + ((b[2] || 0) - (a[2] || 0)) * f; return v + (r * 2 - 1) * e; }
+  }
+  return seq[seq.length - 1][1];
+}
+function seqC(seq, t) {
+  for (let i = 0; i < seq.length - 1; i++) {
+    const a = seq[i], b = seq[i + 1];
+    if (t >= a[0] && t <= b[0]) { const f = (t - a[0]) / Math.max(1e-6, b[0] - a[0]); return [1, 2, 3].map(j => a[j] + (b[j] - a[j]) * f); }
+  }
+  return seq[seq.length - 1].slice(1);
+}
+const DIRS = { Top: [0, 1, 0], Bottom: [0, -1, 0], Front: [0, 0, -1], Back: [0, 0, 1], Right: [1, 0, 0], Left: [-1, 0, 0] };
+const parallelSprites = [], worldUpQuads = [], zoffItems = [], beams = [];
+const QUAD = new THREE.PlaneGeometry(1, 1);
+function cfMatrix(c) { return new THREE.Matrix4().set(c[3], c[4], c[5], c[0], c[6], c[7], c[8], c[1], c[9], c[10], c[11], c[2], 0, 0, 0, 1); }
+function addParticles(fx, idx, T) {
+  if (fx.enabled === false && !fx.burst) return;
+  const m = cfMatrix(fx.cf), rot = new THREE.Matrix4().extractRotation(m), origin = new THREE.Vector3().setFromMatrixPosition(m);
+  const name = fxName(fx);
+  const flip = FX_OPTS.builtinOnly ? null : FLIP[name];
+  const spawns = [];
+  if (fx.burst) { // "count,age": one burst seen `age` seconds after Emit(count)
+    const [count, age] = String(fx.burst).split(',').map(Number);
+    for (let k = 0; k < count; k++) spawns.push({ k, age });
+  } else {
+    // Particles are numbered by absolute spawn time, so the same particle keeps its seed across frames.
+    const maxLife = fx.life[1] / (fx.timeScale || 1);
+    const n0 = Math.floor(T * fx.rate);
+    for (let j = 0; j <= Math.ceil(maxLife * fx.rate) + 1; j++) { const n = n0 - j; const age = T - n / fx.rate; if (age >= 0 && age <= maxLife) spawns.push({ k: n, age }); }
+  }
+  const e = Math.min(1, Math.max(0, fx.emission || 0));
+  for (const { k, age: realAge } of spawns) {
+    const seed = idx * 1000.13 + k * 7.31;
+    const age = realAge * (fx.timeScale || 1);
+    const life = fx.life[0] + (fx.life[1] - fx.life[0]) * rnd(seed + 1);
+    if (age > life) continue;
+    const f = age / life;
+    // Spawn point.
+    let local = new THREE.Vector3();
+    if (fx.box) {
+      const [bx, by, bz] = fx.box, u = rnd(seed + 2) - 0.5, v = rnd(seed + 3) - 0.5, w = rnd(seed + 4) - 0.5;
+      if (fx.shape === 'Sphere') { const d = new THREE.Vector3(u, v, w).normalize(); local = d.multiplyScalar(Math.min(bx, by, bz) / 2 * (fx.style === 'Surface' ? 1 : Math.cbrt(rnd(seed + 5)))); }
+      else if (fx.shape === 'Disc' || fx.shape === 'Cylinder') { const a = rnd(seed + 2) * Math.PI * 2, r = (fx.style === 'Surface' ? 1 : Math.sqrt(rnd(seed + 3))) * Math.min(bx, bz) / 2; local.set(Math.cos(a) * r, fx.shape === 'Cylinder' ? v * by : 0, Math.sin(a) * r); }
+      else local.set(u * bx, v * by, w * bz);
+    }
+    // Direction with spread.
+    let dir = fx.box && fx.shape === 'Sphere' ? local.clone().normalize() : new THREE.Vector3(...(DIRS[fx.dir] || DIRS.Top));
+    if (fx.inout === 'Inward' && fx.box && fx.shape === 'Sphere') dir.negate();
+    const sx = (fx.spread[0] || 0) * Math.PI / 180, sy = (fx.spread[1] || 0) * Math.PI / 180;
+    if (sx > 0 || sy > 0) {
+      const ax = (rnd(seed + 6) * 2 - 1) * sx, ay = (rnd(seed + 7) * 2 - 1) * sy;
+      const up = Math.abs(dir.y) > 0.9 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 1, 0);
+      const p1 = new THREE.Vector3().crossVectors(dir, up).normalize(), p2 = new THREE.Vector3().crossVectors(dir, p1).normalize();
+      dir.applyAxisAngle(p1, ax).applyAxisAngle(p2, ay).normalize();
+    }
+    const speed = fx.speed[0] + (fx.speed[1] - fx.speed[0]) * rnd(seed + 8);
+    const v0 = dir.clone().applyMatrix4(rot).multiplyScalar(speed);
+    const start = local.applyMatrix4(rot).add(origin);
+    const d = fx.drag || 0, acc = new THREE.Vector3(...fx.acc);
+    const travel = d > 0 ? (1 - Math.exp(-d * age)) / d : age;
+    const pos = start.clone().addScaledVector(v0, travel).addScaledVector(acc, 0.5 * age * age);
+    const vel = v0.clone().multiplyScalar(d > 0 ? Math.exp(-d * age) : 1).addScaledVector(acc, age);
+    const size = Math.max(0, seqN(fx.size, f, rnd(seed + 9)));
+    const alpha = 1 - Math.min(1, Math.max(0, seqN(fx.tr, f, rnd(seed + 10))));
+    if (size <= 0.001 || alpha <= 0.005) continue;
+    const col = seqC(fx.color, f).map(c => Math.min(1, c * (fx.brightness || 1)));
+    let map = baseTexture(name);
+    if (flip) {
+      const n = flip.g * flip.g;
+      let frame;
+      if (flip.mode === 'oneshot') frame = Math.min(n - 1, Math.floor(f * n));
+      else if (flip.mode === 'loop') frame = Math.floor(rnd(seed + 13) * n + age * (flip.fps || 12)) % n;
+      else frame = Math.floor(rnd(seed + 13) * n) % n;
+      map = frameTexture(name, flip.g, frame);
+    }
+    const angle = ((fx.rot[0] + (fx.rot[1] - fx.rot[0]) * rnd(seed + 11)) + (fx.rotSpeed[0] + (fx.rotSpeed[1] - fx.rotSpeed[0]) * rnd(seed + 12)) * age) * Math.PI / 180;
+    const sq = seqN(fx.squash, f, 0);
+    const wq = size * Math.pow(2, -sq / 2), hq = size * Math.pow(2, sq / 2);
+    let obj;
+    if (fx.orient === 'VelocityPerpendicular' || fx.orient === 'FacingCameraWorldUp') {
+      const mat = emissive(new THREE.MeshBasicMaterial({ map, color: new THREE.Color(...col), transparent: true, opacity: alpha, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }), e);
+      obj = new THREE.Mesh(QUAD, mat);
+      obj.scale.set(wq, hq, 1);
+      if (fx.orient === 'VelocityPerpendicular') {
+        // Flat quad whose normal is the velocity (a ground decal when particles move up).
+        const n = vel.lengthSq() > 1e-9 ? vel.clone().normalize() : new THREE.Vector3(0, 1, 0);
+        obj.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), n);
+        obj.rotateZ(angle);
+      } else { obj.userData.angle = angle; worldUpQuads.push(obj); }
+    } else {
+      const mat = emissive(new THREE.SpriteMaterial({ map, color: new THREE.Color(...col), transparent: true, opacity: alpha, depthWrite: false, toneMapped: false }), e);
+      mat.rotation = angle;
+      obj = new THREE.Sprite(mat);
+      obj.scale.set(wq, hq, 1);
+      if (fx.orient === 'VelocityParallel' && vel.lengthSq() > 1e-6) { obj.userData.vel = vel.clone(); obj.userData.base = obj.scale.clone(); parallelSprites.push(obj); }
+    }
+    obj.position.copy(pos);
+    obj.renderOrder = 10;
+    if (fx.zoff) { obj.userData.zoff = fx.zoff; obj.userData.home = pos.clone(); obj.userData.homeScale = obj.scale.clone(); zoffItems.push(obj); }
+    scene.add(obj);
+  }
+}
+function addBeam(fx) { beams.push(fx); }
+function buildBeams(camera) {
+  for (const b of beams) {
+    if (b.mesh) scene.remove(b.mesh);
+    const m0 = cfMatrix(b.p0), m1 = cfMatrix(b.p1);
+    const p0 = new THREE.Vector3().setFromMatrixPosition(m0), p1 = new THREE.Vector3().setFromMatrixPosition(m1);
+    const r0 = new THREE.Vector3(1, 0, 0).applyMatrix4(new THREE.Matrix4().extractRotation(m0)), r1 = new THREE.Vector3(1, 0, 0).applyMatrix4(new THREE.Matrix4().extractRotation(m1));
+    const c0 = p0.clone().addScaledVector(r0, b.curve0 || 0), c1 = p1.clone().addScaledVector(r1, -(b.curve1 || 0));
+    const n = Math.max(2, Math.min(40, b.segments || 10));
+    const pos = [], col = [], uv = [], idx = [];
+    const length = p0.distanceTo(p1);
+    for (let i = 0; i <= n; i++) {
+      const t = i / n, it = 1 - t;
+      const p = p0.clone().multiplyScalar(it * it * it).addScaledVector(c0, 3 * it * it * t).addScaledVector(c1, 3 * it * t * t).addScaledVector(p1, t * t * t);
+      const tn = i < n ? (() => { const t2 = (i + 1) / n, i2 = 1 - t2; return p0.clone().multiplyScalar(i2 * i2 * i2).addScaledVector(c0, 3 * i2 * i2 * t2).addScaledVector(c1, 3 * i2 * t2 * t2).addScaledVector(p1, t2 * t2 * t2).sub(p); })() : p.clone().sub(pos.length ? new THREE.Vector3(pos[pos.length - 6], pos[pos.length - 5], pos[pos.length - 4]) : p0);
+      const toCam = camera.position.clone().sub(p);
+      const side = new THREE.Vector3().crossVectors(tn, toCam).normalize();
+      const w = (b.w0 + (b.w1 - b.w0) * t) / 2;
+      const a = p.clone().addScaledVector(side, w), c = p.clone().addScaledVector(side, -w);
+      pos.push(a.x, a.y, a.z, c.x, c.y, c.z);
+      const cc = seqC(b.color, t).map(v => Math.min(1, v * (b.brightness || 1))), al = 1 - Math.min(1, Math.max(0, seqN(b.tr, t, 0.5)));
+      col.push(...cc, al, ...cc, al);
+      const u = b.texMode === 'Wrap' || b.texMode === 'Static' ? t * length / (b.texLen || 1) : t * (b.texLen || 1);
+      uv.push(u, 1, u, 0);
+      if (i < n) { const k = i * 2; idx.push(k, k + 1, k + 2, k + 1, k + 3, k + 2); }
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute('color', new THREE.Float32BufferAttribute(col, 4));
+    g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+    g.setIndex(idx);
+    const t = fxTexture(b); t.wrapS = THREE.RepeatWrapping;
+    const mat = emissive(new THREE.MeshBasicMaterial({ map: t, vertexColors: true, transparent: true, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }), Math.min(1, Math.max(0, b.emission || 0)));
+    b.mesh = new THREE.Mesh(g, mat); b.mesh.renderOrder = 9;
+    scene.add(b.mesh);
+  }
+}
+// Camera-dependent particle placement: streaks along their motion, upright quads that only yaw, ZOffset.
+function orientParallel(camera) {
+  for (const sp of parallelSprites) {
+    const p = sp.position.clone(), q = p.clone().add(sp.userData.vel.clone().normalize());
+    p.project(camera); q.project(camera);
+    const ang = Math.atan2((q.y - p.y) * H, (q.x - p.x) * W);
+    sp.material.rotation = ang;
+    sp.scale.set(sp.userData.base.y * 2.2, sp.userData.base.x, 1); // long along the motion
+  }
+  for (const o of worldUpQuads) {
+    const to = camera.position.clone().sub(o.userData.home || o.position); to.y = 0;
+    o.rotation.set(0, Math.atan2(to.x, to.z), 0);
+    o.rotateZ(o.userData.angle || 0);
+  }
+  for (const o of zoffItems) {
+    // ZOffset moves the particle toward the camera without changing its size on screen.
+    const home = o.userData.home, dist = camera.position.distanceTo(home), z = Math.min(o.userData.zoff, dist - 0.5);
+    o.position.copy(home).addScaledVector(camera.position.clone().sub(home).normalize(), z);
+    o.scale.copy(o.userData.homeScale).multiplyScalar((dist - z) / dist);
+  }
+}
+// Roblox TrussPart: four corner rails and an X brace on every face of each 2-stud segment.
+function addTruss(p) {
+  const [sx, sy, sz] = p.s, mat = material({...p, studs: false}), grp = new THREE.Group();
+  const r = .32, hx = sx / 2 - r / 2, hz = sz / 2 - r / 2;
+  for (const [x, z] of [[-hx, -hz], [hx, -hz], [-hx, hz], [hx, hz]]) { const m = new THREE.Mesh(new THREE.BoxGeometry(r, sy, r), mat); m.position.set(x, 0, z); grp.add(m); }
+  const n = Math.max(1, Math.round(sy / 2)), seg = sy / n;
+  for (let k = 0; k < n; k++) {
+    const y = -sy / 2 + seg * (k + .5);
+    for (const [ax, face] of [['x', -hz], ['x', hz], ['z', -hx], ['z', hx]]) {
+      const w = ax === 'x' ? sx : sz, len = Math.hypot(w, seg);
+      for (const s of [1, -1]) {
+        const m = new THREE.Mesh(new THREE.BoxGeometry(.22, len, .22), mat);
+        if (ax === 'x') { m.position.set(0, y, face); m.rotation.z = s * Math.atan2(w, seg); }
+        else { m.position.set(face, y, 0); m.rotation.x = s * Math.atan2(w, seg); }
+        grp.add(m);
+      }
+    }
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(sx, .26, sz), mat); bar.position.y = -sy / 2 + seg * k; bar.scale.set(1, 1, 1); grp.add(bar);
+  }
+  grp.children.forEach(m => { m.castShadow = true; m.receiveShadow = true; });
+  const c = p.cf;
+  grp.applyMatrix4(new THREE.Matrix4().set(c[3], c[4], c[5], c[0], c[6], c[7], c[8], c[1], c[9], c[10], c[11], c[2], 0, 0, 0, 1));
+  scene.add(grp);
+}
+window.loadScene = async (data, opts = {}) => {
+  FX_OPTS = opts; // opts.builtinOnly: ignore PreviewTexture and show the textures the game uses before uploads
+  if (data.parts.some(p => p.fx)) await preloadFx();
+  if (opts.transparent) { scene.background = null; scene.fog = null; renderer.setClearColor(0x000000, 0); }
+  const lightBudget = opts.lights ?? 40;
+  let lightsUsed = 0;
+  for (const p of data.parts) {
+    if (p.t >= 1 && !p.guis?.length && !p.fx && !p.lights) continue;
+    if (p.k === 'TrussPart') { addTruss(p); continue; }
+    let geo;
+    const [sx, sy, sz] = p.s;
+    if (p.k === 'WedgePart' || p.mesh === 'Wedge') geo = wedgeGeo(sx, sy, sz);
+    else if (p.k === 'CornerWedgePart') geo = cornerWedgeGeo(sx, sy, sz);
+    else if (p.sh === 'Ball' || p.mesh === 'Sphere') {
+      geo = new THREE.SphereGeometry(.5, 24, 16);
+      if (p.sh === 'Ball' && !p.mesh) { const d = Math.min(sx, sy, sz); geo.scale(d, d, d); } else geo.scale(sx * (p.ms?.[0] ?? 1), sy * (p.ms?.[1] ?? 1), sz * (p.ms?.[2] ?? 1));
+    } else if (p.mesh === 'Head') { geo = new THREE.CylinderGeometry(.5, .5, 1, 24); geo.scale(sx * .95, sy, sz * .95); }
+    else if (p.sh === 'Cylinder') { const d = Math.min(sy, sz); geo = new THREE.CylinderGeometry(d / 2, d / 2, sx, 28); geo.rotateZ(-Math.PI / 2); }
+    else geo = boxGeo(sx, sy, sz, tileOf(p));
+    const mesh = new THREE.Mesh(geo, material(p));
+    const c = p.cf;
+    const m4 = new THREE.Matrix4().set(c[3], c[4], c[5], c[0], c[6], c[7], c[8], c[1], c[9], c[10], c[11], c[2], 0, 0, 0, 1);
+    mesh.applyMatrix4(m4);
+    mesh.castShadow = p.t < .5 && p.m !== 'Neon' && p.shadow !== false;
+    mesh.receiveShadow = true;
+    if (p.t >= 1) { mesh.material = new THREE.MeshBasicMaterial({visible: false}); }
+    scene.add(mesh);
+    for (const gui of p.guis || []) {
+      if (gui.kind === 'surface') addSurfaceGui(mesh, p, gui);
+      else if (gui.kind === 'billboard') addBillboard(gui.adornee || [c[0], c[1], c[2]], gui);
+    }
+    let fxi = 0;
+    for (const f of p.fx || []) { if (f.kind === 'particles') addParticles(f, fxi++ + (p.cf[0] * 3.1 + p.cf[2] * 1.7), opts.time ?? 3); else addBeam(f); }
+    for (const L of p.lights || []) {
+      if (lightsUsed >= lightBudget) break; lightsUsed++;
+      const l = new THREE.PointLight(new THREE.Color(...L.c), L.b * 6, L.r * 1.6, 1.4);
+      l.position.set(c[0], c[1], c[2]); scene.add(l);
+    }
+  }
+  // Optional rough emulation of a Roblox Lighting preset (opts.lighting, values as in HoodLighting).
+  const Lg = opts.lighting;
+  let hemiSky = 0xdfefff, hemiGround = 0x6d6a5f, hemiI = 1.25, sunColor = 0xfff1dc, sunI = 2.6;
+  let sd = opts.sun || [-0.45, 1, 0.35];
+  if (Lg) {
+    const c3 = a => new THREE.Color(a[0] / 255, a[1] / 255, a[2] / 255);
+    const lum = a => (a[0] + a[1] + a[2]) / 3 / 255;
+    const oa = Lg.OutdoorAmbient || [128, 128, 128], am = Lg.Ambient || [70, 70, 70];
+    hemiSky = c3(oa).lerp(new THREE.Color(1, 1, 1), .35); hemiGround = c3(am);
+    hemiI = 1.25 * (lum(oa) / .62);
+    const t = Lg.ClockTime ?? 14, elev = Math.max(.08, Math.sin((t - 6) / 12 * Math.PI));
+    const az = (t - 12) / 12 * Math.PI; // sun swings east to west
+    sd = [Math.sin(az) * .8 - .2, elev * 1.6, .35 + Math.cos(az) * .2];
+    sunColor = c3(Lg.ColorShift_Top || [255, 241, 220]);
+    sunI = 2.6 * ((Lg.Brightness ?? 3) / 3) * (.45 + .55 * elev);
+    renderer.toneMappingExposure = 1.05 * Math.pow(2, Lg.ExposureCompensation ?? 0);
+    if (Lg.atmosphere && !opts.transparent) {
+      const ac = c3(Lg.atmosphere.Color || [199, 199, 199]), haze = Lg.atmosphere.Haze ?? 0, dens = Lg.atmosphere.Density ?? .3;
+      scene.background = new THREE.Color(0x9fcbf2).lerp(ac, Math.min(.7, haze * .3));
+      scene.fog = new THREE.Fog(new THREE.Color(0xb9d8f2).lerp(ac, Math.min(.8, haze * .35)), 120 + (1 - dens) * 260 - haze * 30, 700 - haze * 120);
+    }
+    if (opts.noFog) scene.fog = null;
+    window.__grade = Lg.grade || null;
+  }
+  const hemi = new THREE.HemisphereLight(hemiSky, hemiGround, hemiI); scene.add(hemi);
+  const sun = new THREE.DirectionalLight(sunColor, sunI);
+  const tgt = opts.focus || [0, 0, 70];
+  sun.position.set(tgt[0] + sd[0] * 300, sd[1] * 300, tgt[2] + sd[2] * 300); sun.target.position.set(...tgt);
+  sun.castShadow = true; sun.shadow.mapSize.set(4096, 4096);
+  const sc = sun.shadow.camera; sc.left = -170; sc.right = 170; sc.top = 170; sc.bottom = -170; sc.near = 10; sc.far = 800; sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.04;
+  scene.add(sun); scene.add(sun.target);
+  return {parts: data.parts.length, lights: lightsUsed};
+};
+
+window.shoot = (cam) => {
+  let camera;
+  if (cam.ortho) {
+    const h = cam.ortho, w = h * W / H;
+    camera = new THREE.OrthographicCamera(-w / 2, w / 2, h / 2, -h / 2, .1, 2000);
+  } else camera = new THREE.PerspectiveCamera(cam.fov || 55, W / H, .1, 2000);
+  camera.position.set(...cam.pos);
+  if (cam.up) camera.up.set(...cam.up);
+  camera.lookAt(...cam.look);
+  camera.updateMatrixWorld();
+  buildBeams(camera);
+  orientParallel(camera);
+  renderer.render(scene, camera);
+  const g = window.__grade;
+  if (g) {
+    // ColorCorrection approximation: saturation, contrast, brightness, then a tint multiply.
+    const c = document.createElement('canvas'); c.width = W; c.height = H;
+    const x = c.getContext('2d');
+    x.filter = `saturate(${1 + (g.Saturation || 0)}) contrast(${1 + (g.Contrast || 0)}) brightness(${1 + (g.Brightness || 0)})`;
+    x.drawImage(renderer.domElement, 0, 0);
+    if (g.TintColor) { x.filter = 'none'; x.globalCompositeOperation = 'multiply'; x.fillStyle = `rgb(${g.TintColor.join(',')})`; x.fillRect(0, 0, W, H); }
+    return c.toDataURL('image/png');
+  }
+  return renderer.domElement.toDataURL('image/png');
+};
+window.__debugCount = () => { let s = 0; scene.traverse(o => { if (o.isSprite) s++; }); return s; };
+window.ready = true;
+</script>
+</body></html>
