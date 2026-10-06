@@ -55,8 +55,9 @@ MeshParts with Studio's 3D Importer (settings in `hood/tools/blender/README.md`)
 can be dragged straight into Studio.
 
 ## Not built yet
-SHOP passes and boosts, REBIRTH, REWARDS and PVP open their panels but say "coming soon": those systems come
-later. The EVOLVE button works: it points the arrow at the booth.
+SHOP passes and boosts, REWARDS and PVP say "coming soon". REBIRTH shows your progress toward it, but the
+server's rebirth isn't built yet: confirming gets the reply "This feature arrives in a later build
+milestone." The SHOP's GUNS tab and the EVOLVE button work (EVOLVE points the arrow at the booth).
 
 ## Skills and tools for next time
 - `.claude/skills/roblox-vfx/`: how to build layered, tiered effects that stay cheap, with recipes and budgets.
