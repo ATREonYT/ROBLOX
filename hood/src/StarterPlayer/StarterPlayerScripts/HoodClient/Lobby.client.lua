@@ -1,7 +1,7 @@
 -- World-side guidance and feedback on the active map (the original Block's SimulatorLobby, or The Block V2):
--- look stand / EVOLVE booth prompts, locked training gear painted as black silhouettes with LOCKED signs, the
--- floating arrow over where to go next ("TRAIN x4 HERE", "EVOLVE HERE"), the "+N POWER" pop over your head
--- and the sway of the bag you train on. The screen HUD (Power, LEVEL bar, hint line, notices) is HUD.client.
+-- look stand / EVOLVE booth prompts, Locked/Unlocked on the training stations (the original Block's gym still
+-- shows locked gear as black silhouettes), the floating arrow over where to go next ("TRAIN x4 HERE", "EVOLVE
+-- HERE"), the "+N POWER" pop over your head and the sway of the bag you train on. The screen HUD (Power, LEVEL bar, hint line, notices) is HUD.client.
 local Players = game:GetService('Players')
 local RS = game:GetService('ReplicatedStorage')
 local TweenService = game:GetService('TweenService')
@@ -83,22 +83,26 @@ if evolvePoint then
 	end)
 end
 -- Looks on the stand (Skin_<Id> > Display = the figure, Lock = the padlock, Turntable = the disc, LabelAnchor =
--- the label; effects marked UnlockedOnly or held by a part marked so; all optional):
---   locked     the figure in a dark shade of its band colour, padlock shown, unlock-only effects off, frozen
---   next look  (the first one you can't wear yet) in full colour with its padlock: your goal on show
+-- the label (WorldLabel) and the NextMarker; effects marked UnlockedOnly or held by a part marked so; all
+-- optional):
+--   locked     its own colours pulled halfway to a dark shade of the pad colour (still recognisable, plainly
+--              not yours), padlock shown, unlock-only effects off, frozen
+--   next look  (the first one you can't wear yet) in full colour with its padlock, its pad pulsing: the goal
 --   unlocked   full colour, effects on, breathing (a small HoodMotion bob, phased by column)
 --   worn       the same, turning slowly on its disc
--- A stand with the Showcase attribute (the featured Kingpin) keeps its own colours and motion. On the
--- podium's stands (Look attribute) the full label shows only on your next look and on stands within 14 studs
--- of you on your level or the one above (so the rows behind don't pile their labels over the row in front).
+-- A stand with the Showcase attribute (the featured Kingpin) keeps its own colours and motion.
+-- Labels on the podium's stands (Look attribute): the full label only on stands within 14 studs of you on your
+-- level or the one above; while none is up, your next look shows a bobbing ▼ marker instead.
 local LOOK_SHADOW = C(26, 27, 36)
+local LOCK_TINT = 0.4 -- how far a locked figure's colours move toward the shade
 local LABEL_RANGE, LABEL_RISE = 14, 4.5
+local PULSE = TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
 local looks = {}
 for _, s in (morphs and Skins.List or {}) do
 	local stand = morphs:FindFirstChild('Skin_' .. s.Id)
 	local band = stand and stand:GetAttribute('BandColor')
-	local entry = { Parts = {}, Lock = {}, Fx = {}, Disc = {}, Column = stand and stand:GetAttribute('Column') or 1 }
-	entry.Shadow = typeof(band) == 'Color3' and band:Lerp(Color3.new(0, 0, 0), 0.72) or LOOK_SHADOW
+	local entry = { Parts = {}, Lock = {}, Fx = {}, Disc = {}, Glow = {}, Column = stand and stand:GetAttribute('Column') or 1 }
+	entry.Shadow = typeof(band) == 'Color3' and band:Lerp(Color3.new(0, 0, 0), 0.6) or LOOK_SHADOW
 	entry.Showcase = stand and stand:GetAttribute('Showcase')
 	entry.Display = stand and not entry.Showcase and stand:FindFirstChild('Display')
 	if entry.Display then entry.Pivot = entry.Display:GetPivot() end
@@ -113,23 +117,31 @@ for _, s in (morphs and Skins.List or {}) do
 	end
 	for _, d in (stand and stand:GetDescendants() or {}) do
 		if (d:IsA('ParticleEmitter') or d:IsA('Beam')) and (d:GetAttribute('UnlockedOnly') or d.Parent:GetAttribute('UnlockedOnly')) then table.insert(entry.Fx, d) end
+		-- The pad's inset and rim strips: they pulse while this is your next look.
+		if d:IsA('BasePart') and (d.Name == 'PadGlow' or d.Name == 'PadRimStrip') then table.insert(entry.Glow, d) end
 	end
 	local anchor = stand and stand:GetAttribute('Look') and stand:FindFirstChild('LabelAnchor')
-	entry.Label = anchor and anchor:FindFirstChildWhichIsA('BillboardGui')
+	entry.Label = anchor and anchor:FindFirstChild('WorldLabel')
+	entry.Marker = anchor and anchor:FindFirstChild('NextMarker')
+	if entry.Marker then
+		-- The marker bobs (it only shows on your next look).
+		TweenService:Create(entry.Marker, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), { StudsOffset = entry.Marker.StudsOffset + Vector3.new(0, 0.3, 0) }):Play()
+	end
 	entry.Point = stand and stand:FindFirstChild('Interact')
 	looks[s.Id] = entry
 end
+local pulsing = {}
 local function paintLooks(n, worn)
 	local goal = Skins.nextSkin(n)
 	for _, s in Skins.List do
 		local e = looks[s.Id]
 		local locked = n < s.Required
 		local shaded = locked and goal ~= s
-		local state = (locked and 'L' or 'U') .. (shaded and 'S' or '') .. (worn == s.Id and 'W' or '')
+		local state = (locked and 'L' or 'U') .. (shaded and 'S' or '') .. (worn == s.Id and 'W' or '') .. (goal == s and 'G' or '')
 		if e and e.State ~= state then
 			e.State = state
 			for _, r in e.Parts do
-				r.Part.Color = shaded and e.Shadow or r.Color
+				r.Part.Color = shaded and r.Color:Lerp(e.Shadow, LOCK_TINT) or r.Color
 				r.Part.Material = shaded and Enum.Material.SmoothPlastic or r.Material
 			end
 			for _, p in e.Lock do p.Transparency = locked and 0 or 1 end
@@ -146,6 +158,18 @@ local function paintLooks(n, worn)
 				d:SetAttribute('Spin', worn == s.Id and 12 or nil)
 				d:AddTag('HoodMotion')
 			end
+			-- The goal's pad breathes; any other pad sits still at full glow.
+			for _, t in (pulsing[s.Id] or {}) do t:Cancel() end
+			pulsing[s.Id] = nil
+			for _, p in e.Glow do p.Transparency = 0 end
+			if goal == s then
+				pulsing[s.Id] = {}
+				for _, p in e.Glow do
+					local t = TweenService:Create(p, PULSE, { Transparency = 0.35 })
+					t:Play()
+					table.insert(pulsing[s.Id], t)
+				end
+			end
 		end
 	end
 end
@@ -153,6 +177,7 @@ local function showLabels(n)
 	local c = player.Character
 	local root = c and c:FindFirstChild('HumanoidRootPart')
 	local goal = n and Skins.nextSkin(n)
+	local any = false
 	for _, s in Skins.List do
 		local e = looks[s.Id]
 		if e and e.Label and e.Point then
@@ -161,8 +186,13 @@ local function showLabels(n)
 				local d = e.Point.Position - root.Position
 				near = Vector3.new(d.X, 0, d.Z).Magnitude <= LABEL_RANGE and math.abs(d.Y) <= LABEL_RISE
 			end
-			e.Label.Enabled = goal == s or near
+			e.Label.Enabled = near
+			any = any or near
 		end
+	end
+	for _, s in Skins.List do
+		local e = looks[s.Id]
+		if e and e.Marker then e.Marker.Enabled = goal == s and not any end
 	end
 end
 if morphs then
@@ -187,18 +217,25 @@ indicator.Parent = player.PlayerGui
 local pointer = label(indicator, 'Destination', 22, C(255, 224, 80))
 
 ---------------------------------------------------------------------------------------------- stations
--- Training stations in the built lobby: mat, sign, gear. Locked gear shows as a black silhouette.
+-- Training stations in the built lobby: mat, sign, gear. The bag stations (a label with a Power row) stay in
+-- full colour while locked, like the reference: the label says Locked in red and the station's effects run at
+-- half rate. Older stations without that label (the original Block's gym) still show locked gear as a black
+-- silhouette.
+local okVfx, HoodVFX = pcall(require, RS.Shared.HoodVFX)
+if not okVfx then HoodVFX = nil end
 local stations = {}
 for _, s in Skins.Stations do
 	local model = training:FindFirstChild('Training_' .. s.Id, true)
 	if model then
-		local entry = { Zone = model:FindFirstChild('TrainingZone', true), Sign = model:FindFirstChild('Sign', true) or model:FindFirstChild('Nameplate', true), Parts = {}, Decals = {}, Swing = {} }
+		local sign = model:FindFirstChild('Sign', true) or model:FindFirstChild('Nameplate', true)
+		local entry = { Zone = model:FindFirstChild('TrainingZone', true), Sign = sign, Parts = {}, Swing = {}, Fx = model:FindFirstChild('Theme') }
+		entry.Bag = sign ~= nil and sign:FindFirstChild('Power', true) ~= nil
 		local gear = model:FindFirstChild('Equipment')
 		if gear then
-			for _, p in gear:GetDescendants() do
-				if p:IsA('BasePart') and p.Transparency < 1 then table.insert(entry.Parts, { Part = p, Color = p.Color, Material = p.Material, Transparency = p.Transparency }) end
-				-- Stamped textures (the bag stations' X) vanish while locked so the silhouette stays flat black.
-				if p:IsA('Decal') then table.insert(entry.Decals, { Decal = p, Transparency = p.Transparency }) end
+			if not entry.Bag then
+				for _, p in gear:GetDescendants() do
+					if p:IsA('BasePart') and p.Transparency < 1 then table.insert(entry.Parts, { Part = p, Color = p.Color, Material = p.Material }) end
+				end
 			end
 			local hinge = gear:FindFirstChild('Hinge')
 			local swing = gear:FindFirstChild('Swing')
@@ -214,40 +251,22 @@ for _, s in Skins.Stations do
 end
 local SILHOUETTE = C(18, 18, 22)
 local UNLOCKED, LOCKED = C(20, 235, 70), C(235, 25, 50)
-local FAR_TIERS = 2 -- stations more than this many tiers above your best unlocked one show only "xN Power"
 local function paintStations(n)
-	local best = 0
-	for i, s in Skins.Stations do
-		if n >= s.Required then best = i end
-	end
-	for i, s in Skins.Stations do
+	for _, s in Skins.Stations do
 		local e = stations[s.Id]
 		if e then
 			local locked = n < s.Required
-			-- Far-away goals keep their label short so a row of bags doesn't read as a wall of text.
-			local far = i > best + FAR_TIERS
-			if e.Far ~= far and e.Sign and e.Sign:FindFirstChild('Power', true) then
-				e.Far = far
-				for _, name in { 'Chip', 'Cost', 'Detail' } do
-					local g = e.Sign:FindFirstChild(name, true)
-					if g and g:IsA('GuiObject') then g.Visible = not far end
-				end
-			end
 			if e.Locked ~= locked then
 				e.Locked = locked
-				-- Locked gear (the bag and, on the bag stations, the whole gallows) turns into a solid black
-				-- silhouette; glass parts go opaque so the ice bag reads as one shape too.
 				for _, r in e.Parts do
 					r.Part.Color = locked and SILHOUETTE or r.Color
 					r.Part.Material = locked and Enum.Material.SmoothPlastic or r.Material
-					r.Part.Transparency = locked and 0 or (r.Transparency or 0)
 				end
-				for _, r in e.Decals do r.Decal.Transparency = locked and 1 or r.Transparency end
+				if e.Fx and HoodVFX then HoodVFX.setDensity(e.Fx, locked and 0.5 or 1) end
 				local detail = e.Sign and e.Sign:FindFirstChild('Detail', true)
 				if detail then
-					-- The bag stations' floating label (chip, Unlocked/Locked, "xN Power") has a Power row; older
-					-- signs get the long form.
-					if e.Sign:FindFirstChild('Power', true) then
+					if e.Bag then
+						-- Chip, Locked/Unlocked and "xN Power" all stay up at every distance.
 						detail.Text = locked and 'Locked' or 'Unlocked'
 						detail.TextColor3 = locked and LOCKED or UNLOCKED
 					else
