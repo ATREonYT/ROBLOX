@@ -1096,7 +1096,7 @@ function Looks.Kingpin(W, s)
 	end)
 	-- Royal cape (red velvet, gold lining, a gold crown on the back) and the ermine collar on the torso. The
 	-- cape is knee length, no wider than the shoulders' inner edge, and hangs back from the shoulder line at
-	-- 11 degrees, so the legs and the swinging arms pass in front of and beside it.
+	-- 15 degrees, so the legs and the swinging arms pass in front of and beside it.
 	local capeW, capeH, capeTilt, capeZ = 2.3, 2.75, 15, 0.66
 	local tilt = ANG(rad(-capeTilt), 0, 0)
 	local top = V(0, 4.05, capeZ)
