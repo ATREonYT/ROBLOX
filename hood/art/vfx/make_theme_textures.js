@@ -7,6 +7,9 @@
 //   bubble   256  single               soap/ooze bubble: thin rim, faint fill, a highlight and a crescent
 //   snow     256  single               six-armed snowflake with side branches and a faint halo
 //   tendril 1024  2x2 static variants  a wavy strand of smoke rising, thick at the root, fraying at the tip
+//   comet    256  single (Beam)        a bright head with a fading tail along U, for sweeping arcs
+//   stamp    128  tiling Texture       the reference's stamped X: a square frame and both diagonals (white
+//                                      lines, tinted darker than the block by Texture.Color3); no edge fade
 const zlib = require('zlib');
 const fs = require('fs');
 const path = require('path');
@@ -199,8 +202,40 @@ function tendril(fr, seed) {
   }
 }
 
+// ---------------------------------------------------------------- comet: head + tail along U (Beam texture)
+function comet() {
+  const N = 256, im = img(N);
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const u = x / N, v = y / N - 0.5;
+    const head = Math.exp(-(((u - 0.86) / 0.05) ** 2 + (v / 0.09) ** 2));
+    const t = clamp((u - 0.05) / 0.81); // 0 at the tail's end, 1 at the head
+    const tail = (u < 0.86 ? t * t : Math.exp(-(((u - 0.86) / 0.04) ** 2))) * Math.exp(-((v / (0.025 + 0.06 * t)) ** 2));
+    im.a[y * N + x] = clamp(head + tail * 0.9);
+    im.l[y * N + x] = 0.85 + 0.15 * clamp(head * 2);
+  }
+  return im;
+}
+// ---------------------------------------------------------------- stamp: tiling X (no border fade)
+function stamp() {
+  const N = 128, im = img(N), line = 6 / N, border = 4 / N;
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const u = (x + 0.5) / N, v = (y + 0.5) / N;
+    const d1 = Math.abs(u - v) / Math.SQRT2, d2 = Math.abs(u + v - 1) / Math.SQRT2;
+    const diag = 1 - smooth(line * 0.35, line * 0.65, Math.min(d1, d2));
+    const edge = Math.min(u, v, 1 - u, 1 - v);
+    const frame = 1 - smooth(border * 0.75, border * 1.25, edge);
+    im.a[y * N + x] = clamp(Math.max(diag, frame));
+  }
+  const rgba = Buffer.alloc(N * N * 4);
+  for (let i = 0; i < N * N; i++) { rgba[i * 4] = rgba[i * 4 + 1] = rgba[i * 4 + 2] = 255; rgba[i * 4 + 3] = Math.round(im.a[i] * 255); }
+  writePng(path.join(OUT, 'stamp.png'), N, N, rgba);
+  console.log('wrote stamp', N + 'x' + N);
+}
+
 save('rain', rain());
 save('ember', ember());
 save('bubble', bubble());
 save('snow', snow());
 save('tendril', sheet(2, 512, 16, (f, fr) => tendril(fr, f + 1)));
+save('comet', comet());
+stamp();

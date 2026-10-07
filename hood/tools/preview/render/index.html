@@ -93,6 +93,20 @@ function cornerWedgeGeo(sx, sy, sz) {
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.computeVertexNormals(); return g;
 }
 
+// Fonts the game uses, bundled under fonts/ (OFL). Labels whose Font has no file here draw in Arial Black.
+const FONT_FILES = { FredokaOne: ['Fredoka One', 'fonts/FredokaOne-Regular.woff2', 400] };
+let fontsReady = null;
+function loadFonts() {
+  if (!fontsReady) fontsReady = Promise.all(Object.values(FONT_FILES).map(async ([family, url]) => {
+    try { const buf = await (await fetch(url)).arrayBuffer(); const f = new FontFace(family, buf); await f.load(); document.fonts.add(f); }
+    catch (e) { console.error('font ' + url + ' failed: ' + e); }
+  }));
+  return fontsReady;
+}
+function cssFont(L, fs) {
+  const f = FONT_FILES[L.font];
+  return f ? `${f[2]} ${fs}px '${f[0]}', Arial Black, sans-serif` : `900 ${fs}px Arial Black, Arial, sans-serif`;
+}
 function textCanvas(lbl, pxW, pxH) {
   const c = document.createElement('canvas'); c.width = Math.max(8, pxW | 0); c.height = Math.max(8, pxH | 0);
   const g = c.getContext('2d');
@@ -101,8 +115,8 @@ function textCanvas(lbl, pxW, pxH) {
     if (L.bgT < 1) { g.globalAlpha = 1 - L.bgT; g.fillStyle = `rgb(${L.bg.map(v => v * 255 | 0)})`; g.fillRect(x, y, w, h); g.globalAlpha = 1; }
     const lines = String(L.text).split('\n');
     let fs = L.scaled ? Math.min(h / lines.length * .9, 999) : L.size;
-    g.font = `900 ${fs}px Arial Black, Arial, sans-serif`;
-    if (L.scaled) { const widest = Math.max(...lines.map(s => g.measureText(s).width)); if (widest > w * .96) fs *= w * .96 / widest; g.font = `900 ${fs}px Arial Black, Arial, sans-serif`; }
+    g.font = cssFont(L, fs);
+    if (L.scaled) { const widest = Math.max(...lines.map(s => g.measureText(s).width)); if (widest > w * .96) fs *= w * .96 / widest; g.font = cssFont(L, fs); }
     g.textAlign = 'center'; g.textBaseline = 'middle';
     lines.forEach((s, i) => {
       const ty = y + h / 2 + (i - (lines.length - 1) / 2) * fs * 1.05;
@@ -128,6 +142,31 @@ function addSurfaceGui(mesh, p, gui) {
   const mat = new THREE.MeshBasicMaterial({map: tex, transparent: true, depthWrite: false, toneMapped: false});
   const plane = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
   plane.position.set(...off); plane.rotation.copy(rot); mesh.add(plane);
+}
+// Roblox Texture: an image tiled every StudsPerTileU x StudsPerTileV studs on one face, tinted by Color3 and
+// faded by Transparency (drawn from its PreviewTexture, e.g. the stations' stamped X).
+function addTextures(mesh, p) {
+  const [sx, sy, sz] = p.s;
+  for (const tx of p.textures || []) {
+    // builtinOnly = the look before uploads: a Texture with no id draws nothing in Studio.
+    if (!tx.preview || (FX_OPTS.builtinOnly && !tx.tex)) continue;
+    let w, h, rot = new THREE.Euler(), off;
+    if (tx.face === 'Front') { w = sx; h = sy; rot.set(0, Math.PI, 0); off = [0, 0, -sz / 2 - .012]; }
+    else if (tx.face === 'Back') { w = sx; h = sy; off = [0, 0, sz / 2 + .012]; }
+    else if (tx.face === 'Right') { w = sz; h = sy; rot.set(0, Math.PI / 2, 0); off = [sx / 2 + .012, 0, 0]; }
+    else if (tx.face === 'Left') { w = sz; h = sy; rot.set(0, -Math.PI / 2, 0); off = [-sx / 2 - .012, 0, 0]; }
+    else if (tx.face === 'Top') { w = sx; h = sz; rot.set(-Math.PI / 2, 0, 0); off = [0, sy / 2 + .012, 0]; }
+    else { w = sx; h = sz; rot.set(Math.PI / 2, 0, 0); off = [0, -sy / 2 - .012, 0]; }
+    const map = baseTexture(tx.preview).clone();
+    map.wrapS = map.wrapT = THREE.RepeatWrapping;
+    map.repeat.set(w / (tx.su || 2), h / (tx.sv || 2));
+    map.offset.set((tx.ou || 0) / (tx.su || 2), (tx.ov || 0) / (tx.sv || 2));
+    map.needsUpdate = true;
+    const mat = new THREE.MeshStandardMaterial({ map, color: new THREE.Color().setRGB(tx.c[0], tx.c[1], tx.c[2], THREE.SRGBColorSpace), transparent: true,
+      opacity: 1 - (tx.t || 0), depthWrite: false, roughness: .6, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+    const plane = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
+    plane.position.set(...off); plane.rotation.copy(rot); plane.receiveShadow = true; mesh.add(plane);
+  }
 }
 function addBillboard(pos, gui) {
   const w = gui.sw, h = gui.sh; if (!(w > 0 && h > 0)) return;
@@ -177,7 +216,7 @@ function frameTexture(name, g, frame) {
 }
 const FX_NAMES = ['glow', 'sparkle', 'star', 'ring', 'smoke', 'streak', 'shard', 'confetti', 'pow', 'lightning', 'energy', 'flame1',
   'aura', 'wisp', 'flame', 'arc', 'mist', 'ray', 'shaft', 'glitter', 'swirl', 'dust', 'softglow',
-  'rain', 'ember', 'bubble', 'snow', 'tendril'];
+  'rain', 'ember', 'bubble', 'snow', 'tendril', 'comet', 'stamp'];
 async function preloadFx() {
   await Promise.all(FX_NAMES.map(async n => { if (!texCache[n]) { try { const t = await texLoader.loadAsync(`vfx/${n}.png`); t.colorSpace = THREE.SRGBColorSpace; texCache[n] = t; } catch (e) { console.error('missing vfx/' + n + '.png'); } } }));
 }
@@ -388,7 +427,8 @@ function addTruss(p) {
 }
 window.loadScene = async (data, opts = {}) => {
   FX_OPTS = opts; // opts.builtinOnly: ignore PreviewTexture and show the textures the game uses before uploads
-  if (data.parts.some(p => p.fx)) await preloadFx();
+  if (data.parts.some(p => p.fx || p.textures)) await preloadFx();
+  await loadFonts();
   if (opts.transparent) { scene.background = null; scene.fog = null; renderer.setClearColor(0x000000, 0); }
   const lightBudget = opts.lights ?? 40;
   let lightsUsed = 0;
@@ -413,6 +453,7 @@ window.loadScene = async (data, opts = {}) => {
     mesh.receiveShadow = true;
     if (p.t >= 1) { mesh.material = new THREE.MeshBasicMaterial({visible: false}); }
     scene.add(mesh);
+    addTextures(mesh, p);
     for (const gui of p.guis || []) {
       if (gui.kind === 'surface') addSurfaceGui(mesh, p, gui);
       else if (gui.kind === 'billboard') addBillboard(gui.adornee || [c[0], c[1], c[2]], gui);

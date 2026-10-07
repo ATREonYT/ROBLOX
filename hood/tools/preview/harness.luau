@@ -323,6 +323,7 @@ local function labels(gui)
 				text = l.Text, color = rgb(l.TextColor3), textT = l.TextTransparency, bg = rgb(l.BackgroundColor3), bgT = l.BackgroundTransparency,
 				px = l.Position.X.Scale, py = l.Position.Y.Scale, sx = l.Size.X.Scale, sy = l.Size.Y.Scale,
 				scaled = ok and scaled, size = l.TextSize, stroke = rgb(l.TextStrokeColor3), strokeT = l.TextStrokeTransparency,
+				font = (function() local okF, f = pcall(function() return l.Font.Name end); return okF and f or nil end)(),
 			})
 			local ui = l:FindFirstChildOfClass("UIStroke")
 			if ui then out[#out].stroke = rgb(ui.Color); out[#out].strokeT = ui.Transparency; out[#out].strokeW = ui.Thickness end
@@ -359,6 +360,14 @@ for _, p in workspace:GetDescendants() do
 				table.insert(rec.guis, {
 					kind = "billboard", sw = sz.X.Scale > 0 and sz.X.Scale or sz.X.Offset / 30, sh = sz.Y.Scale > 0 and sz.Y.Scale or sz.Y.Offset / 30,
 					off = { child.StudsOffset.X, child.StudsOffset.Y, child.StudsOffset.Z }, top = child.AlwaysOnTop, labels = labels(child),
+				})
+			elseif child:IsA("Texture") then
+				-- Tiled image on one face (the bag stations' stamped X): drawn by the renderer from PreviewTexture.
+				rec.textures = rec.textures or {}
+				table.insert(rec.textures, {
+					face = child.Face.Name, tex = child.Texture, preview = child:GetAttribute("PreviewTexture"),
+					su = child.StudsPerTileU, sv = child.StudsPerTileV, ou = child.OffsetStudsU, ov = child.OffsetStudsV,
+					t = child.Transparency, c = rgb(child.Color3),
 				})
 			elseif child:IsA("PointLight") or child:IsA("SpotLight") then
 				rec.lights = rec.lights or {}
