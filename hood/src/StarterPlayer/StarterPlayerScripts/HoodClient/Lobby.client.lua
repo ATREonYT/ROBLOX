@@ -82,6 +82,43 @@ if evolvePoint then
 		if best.Id ~= (player:GetAttribute('EquippedSkin') or 'CornerKid') then Net.get('EquipSkin'):FireServer(best.Id) end
 	end)
 end
+-- Looks on the stand: a locked look stands as a dark silhouette behind its gold padlock with its
+-- unlock-only effects off; once your Power reaches it, it shows its colours. (Skin_<Id> > Display = the
+-- figure, Lock = the padlock; effects marked UnlockedOnly, or held by a part marked so; a stand with the
+-- Showcase attribute keeps its colours and only shows the lock. All optional.)
+local LOOK_SHADOW = C(26, 27, 36)
+local looks = {}
+for _, s in (morphs and Skins.List or {}) do
+	local stand = morphs:FindFirstChild('Skin_' .. s.Id)
+	local entry = { Parts = {}, Lock = {}, Fx = {} }
+	local display = stand and not stand:GetAttribute('Showcase') and stand:FindFirstChild('Display')
+	for _, p in (display and display:GetDescendants() or {}) do
+		if p:IsA('BasePart') and p.Transparency < 1 then table.insert(entry.Parts, { Part = p, Color = p.Color, Material = p.Material }) end
+	end
+	local lock = stand and stand:FindFirstChild('Lock')
+	for _, p in (lock and lock:GetDescendants() or {}) do
+		if p:IsA('BasePart') then table.insert(entry.Lock, p) end
+	end
+	for _, d in (stand and stand:GetDescendants() or {}) do
+		if (d:IsA('ParticleEmitter') or d:IsA('Beam')) and (d:GetAttribute('UnlockedOnly') or d.Parent:GetAttribute('UnlockedOnly')) then table.insert(entry.Fx, d) end
+	end
+	looks[s.Id] = entry
+end
+local function paintLooks(n)
+	for _, s in Skins.List do
+		local e = looks[s.Id]
+		local locked = n < s.Required
+		if e and e.Locked ~= locked then
+			e.Locked = locked
+			for _, r in e.Parts do
+				r.Part.Color = locked and LOOK_SHADOW or r.Color
+				r.Part.Material = locked and Enum.Material.SmoothPlastic or r.Material
+			end
+			for _, p in e.Lock do p.Transparency = locked and 0 or 1 end
+			for _, fx in e.Fx do fx.Enabled = not locked end
+		end
+	end
+end
 
 ---------------------------------------------------------------------------------------------- arrow
 local indicator = Instance.new('BillboardGui')
@@ -104,7 +141,7 @@ for _, s in Skins.Stations do
 		local gear = model:FindFirstChild('Equipment')
 		if gear then
 			for _, p in gear:GetDescendants() do
-				if p:IsA('BasePart') and p.Transparency < 1 then table.insert(entry.Parts, { Part = p, Color = p.Color, Material = p.Material }) end
+				if p:IsA('BasePart') and p.Transparency < 1 then table.insert(entry.Parts, { Part = p, Color = p.Color, Material = p.Material, Transparency = p.Transparency }) end
 			end
 			local hinge = gear:FindFirstChild('Hinge')
 			local swing = gear:FindFirstChild('Swing')
@@ -119,6 +156,7 @@ for _, s in Skins.Stations do
 	end
 end
 local SILHOUETTE = C(18, 18, 22)
+local UNLOCKED, LOCKED = C(86, 240, 110), C(255, 72, 86)
 local function paintStations(n)
 	for _, s in Skins.Stations do
 		local e = stations[s.Id]
@@ -126,15 +164,25 @@ local function paintStations(n)
 			local locked = n < s.Required
 			if e.Locked ~= locked then
 				e.Locked = locked
+				-- Locked gear (the bag and, on the bag stations, the whole gallows) turns into a solid black
+				-- silhouette; glass parts go opaque so the ice bag reads as one shape too.
 				for _, r in e.Parts do
 					r.Part.Color = locked and SILHOUETTE or r.Color
 					r.Part.Material = locked and Enum.Material.SmoothPlastic or r.Material
+					r.Part.Transparency = locked and 0 or (r.Transparency or 0)
 				end
-			end
-			local detail = e.Sign and e.Sign:FindFirstChild('Detail', true)
-			if detail then
-				detail.Text = locked and ('LOCKED • ' .. compact(s.Required) .. ' POWER') or (s.Required == 0 and 'FREE • TRAIN HERE' or 'UNLOCKED • TRAIN HERE')
-				detail.TextColor3 = locked and C(255, 128, 128) or C(126, 255, 171)
+				local detail = e.Sign and e.Sign:FindFirstChild('Detail', true)
+				if detail then
+					-- The bag stations' floating label (chip, Unlocked/Locked, "xN Power") has a Power row; older
+					-- signs get the long form.
+					if e.Sign:FindFirstChild('Power', true) then
+						detail.Text = locked and 'Locked' or 'Unlocked'
+						detail.TextColor3 = locked and LOCKED or UNLOCKED
+					else
+						detail.Text = locked and ('LOCKED • ' .. compact(s.Required) .. ' POWER') or (s.Required == 0 and 'FREE • TRAIN HERE' or 'UNLOCKED • TRAIN HERE')
+						detail.TextColor3 = locked and C(255, 128, 128) or C(126, 255, 171)
+					end
+				end
 			end
 		end
 	end
@@ -185,6 +233,7 @@ local function refresh()
 		end
 		if unlocked then best = s end
 	end
+	paintLooks(n)
 	paintStations(n)
 	local nextSkin = Skins.nextSkin(n)
 	if evolvePrompt then

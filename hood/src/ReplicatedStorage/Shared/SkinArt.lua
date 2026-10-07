@@ -218,6 +218,42 @@ function Art.mannequin(parent,cf,s,scale)
  dress(m,b,s,true)
  return m
 end
+-- Display poses for figures on stands (the evolutions podium): degrees per joint. Arms and legs take
+-- {out, forward} (out = away from the body, forward = toward the figure's front, -Z), Head takes a yaw.
+Art.Poses={
+ stand={},
+ easy={LeftArm={5,0},RightArm={5,0},LeftLeg={2,0},RightLeg={2,0}},
+ hips={LeftArm={24,-6},RightArm={24,-6},LeftLeg={5,0},RightLeg={5,0}},
+ wave={LeftArm={5,0},RightArm={150,8},LeftLeg={3,0},RightLeg={3,0},Head=-8},
+ point={LeftArm={5,0},RightArm={75,25},LeftLeg={3,0},RightLeg={3,0},Head=-15},
+ cheer={LeftArm={155,6},RightArm={155,6},LeftLeg={6,0},RightLeg={6,0}},
+ swagger={LeftArm={4,16},RightArm={4,-12},LeftLeg={1,8},RightLeg={1,-8},Head=12},
+ boss={LeftArm={14,-4},RightArm={14,-4},LeftLeg={7,0},RightLeg={7,0}},
+ flex={LeftArm={10,0},RightArm={165,0},LeftLeg={4,0},RightLeg={4,0},Head=10},
+}
+-- Like Art.mannequin, with the limbs turned at the shoulders and hips (pose: a name in Art.Poses or a table
+-- of the same shape). Clothes, cuffs and watches follow the limb they are dressed on.
+function Art.posed(parent,cf,s,scale,pose)
+ scale=scale or 1
+ if type(pose)=='string' then pose=Art.Poses[pose] end
+ pose=pose or {}
+ local m=Instance.new('Model');m.Name=s.Id..'Display';m.Parent=parent
+ local rows={{'Torso',V(2,2,1),V(0,3,0)},{'Head',V(1.55,1.5,1.38),V(0,4.76,0),V(0,4,0)},{'LeftArm',V(1,2,1),V(-1.53,3,0),V(-1.53,3.7,0),-1},{'RightArm',V(1,2,1),V(1.53,3,0),V(1.53,3.7,0),1},{'LeftLeg',V(.98,2,1),V(-.52,1,0),V(-.52,2,0),-1},{'RightLeg',V(.98,2,1),V(.52,1,0),V(.52,2,0),1}}
+ local b={}
+ for _,r in rows do
+  local name,size,centre,joint,side=r[1],r[2],r[3],r[4],r[5]
+  local turn=CFrame.identity
+  local q=pose[name]
+  if name=='Head' and type(q)=='number' then turn=CFrame.Angles(0,math.rad(q),0)
+  elseif type(q)=='table' then turn=CFrame.Angles(0,0,side*math.rad(q[1]))*CFrame.Angles(math.rad(q[2]),0,0) end
+  local at=joint and CFrame.new(joint*scale)*turn*CFrame.new((centre-joint)*scale) or CFrame.new(centre*scale)
+  b[name]=part(m,name,size*scale,cf*at,s.Color,true)
+ end
+ b.LeftShoe=b.LeftLeg;b.RightShoe=b.RightLeg
+ local mesh=Instance.new('SpecialMesh');mesh.MeshType=Enum.MeshType.Head;mesh.Scale=V(.95,.98,.83);mesh.Parent=b.Head
+ dress(m,b,s,true)
+ return m
+end
 function Art.equip(character,s)
  local old=character:FindFirstChild('BlockCostume');if old then old:Destroy() end
  for _,v in character:GetChildren() do if v:IsA('Accessory') or v:IsA('Shirt') or v:IsA('Pants') or v:IsA('ShirtGraphic') then v:Destroy() end end
