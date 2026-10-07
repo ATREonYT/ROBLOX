@@ -6,8 +6,9 @@
 --     UNLOCKED / LOCKED, or your walk speed while you run on it
 --   * alive: idle screens breathe (+-12% at 0.5 Hz); while anyone runs on a treadmill its screen holds bright,
 --     its light doubles and its mist thickens
---   * the x999 (Sprint) sways its smoke lines (Beams SmokeLine1..98) within 70 studs of the camera, and its
---     storm flashes: every 2.5-5 s its StormFlash light jumps to 3-4 for 0.08 s and two or three lines light up
+--   * the x999 (Sprint) sways its smoke lines (Beams SmokeLine1..112) within 70 studs of the camera, and its
+--     storm flashes: every 2.5-5 s its StormFlash light jumps to 3-4 for 0.08 s, the cloud (Aura, Puffs,
+--     PuffsOver) lights up cold with it and two or three lines flare; often a second, shorter pulse follows
 --   * you run: on an unlocked belt your character plays its run animation in place, quicker on Run and Sprint,
 --     and "+3 Speed" pops over the screen every time the server pays you
 -- The belt pattern math is shared with the map builder (Config/Treadmills.chevron).
@@ -25,6 +26,13 @@ local active = ActiveMap.wait(20)
 if not active then return end
 
 local RANGE = 120 -- belts further than this from the camera stop scrolling and breathing
+-- The x999's lightning colour, and a ColorSequence moved `f` of the way toward a colour (its flash tint).
+local FLASH = Color3.fromRGB(170, 235, 255)
+local function toward(seq, c, f)
+	local kps = {}
+	for _, kp in seq.Keypoints do table.insert(kps, ColorSequenceKeypoint.new(kp.Time, kp.Value:Lerp(c, f))) end
+	return ColorSequence.new(kps)
+end
 local UNLOCKED, LOCKED = Color3.fromRGB(20, 235, 70), Color3.fromRGB(235, 25, 50) -- as the bag labels (Lobby.client)
 local WHITE, BLACK = Color3.new(1, 1, 1), Color3.new(0, 0, 0)
 local POP_FONT = Font.new('rbxasset://fonts/families/FredokaOne.json')
@@ -68,6 +76,9 @@ local function record(model)
 			r.light, r.lightBase = d, d.Brightness
 		elseif d:IsA('PointLight') and d.Name == 'StormFlash' then
 			r.flash = d
+		elseif d:IsA('ParticleEmitter') and (d.Name == 'Aura' or d.Name == 'Puffs' or d.Name == 'PuffsOver') then
+			r.cloud = r.cloud or {}
+			table.insert(r.cloud, { emitter = d, emission = d.LightEmission, color = d.Color, flashColor = toward(d.Color, FLASH, 0.35) })
 		elseif d:IsA('Beam') and string.sub(d.Name, 1, 9) == 'SmokeLine' and d.Attachment1 then
 			r.lines = r.lines or {}
 			local a1 = d.Attachment1
@@ -199,24 +210,42 @@ local function sway(r, t)
 	end
 end
 
--- The x999's storm beat: every 2.5-5 s (random) the cloud's StormFlash light jumps to 3-4 for 0.08 s and two
--- or three smoke lines light up at full strength with it (a lightning crawl); then all drops back. Only near the
--- camera; a flash in progress still ends when the camera leaves.
+-- The x999's storm beat: every 2.5-5 s (random) the cloud's StormFlash light jumps to 3-4 for 0.08 s, the cloud's
+-- smoke (Aura, Puffs, PuffsOver: LightInfluence 0, so the light alone can't reach it) turns LightEmission 0.5 and
+-- 35% toward the flash colour, and two or three smoke lines flare at full strength (a lightning crawl). Six times
+-- in ten a second, 0.06 s pulse follows 0.12 s later (a flicker; at most two pulses per 2.5 s). Then everything is
+-- restored. Only near the camera; a flash in progress still ends when the camera leaves.
 local CRAWL = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.1, 0),
 	NumberSequenceKeypoint.new(0.9, 0), NumberSequenceKeypoint.new(1, 1) })
 local rng = Random.new()
+local function lightUp(r, on)
+	r.flash.Brightness = on and rng:NextNumber(3, 4) or 0
+	for _, c in r.cloud or {} do
+		c.emitter.LightEmission = on and 0.5 or c.emission
+		c.emitter.Color = on and c.flashColor or c.color
+	end
+end
 local function storm(r, t, near)
-	if r.flashEnd then
-		if near and t < r.flashEnd then return end
-		r.flash.Brightness = 0
+	if r.stage then
+		if near and t < r.stageEnd then return end
+		if near and r.stage == 1 then
+			lightUp(r, false)
+			r.stage, r.stageEnd = 2, t + 0.12 -- the gap before a second pulse
+			return
+		elseif near and r.stage == 2 and rng:NextNumber() < 0.6 then
+			lightUp(r, true)
+			r.stage, r.stageEnd = 3, t + 0.06
+			return
+		end
+		lightUp(r, false)
 		for beam, tr in r.lit do beam.Transparency = tr end
-		r.flashEnd, r.lit = nil, nil
+		r.stage, r.lit = nil, nil
 		return
 	end
 	if not near then return end
 	r.nextFlash = r.nextFlash or t + rng:NextNumber(2.5, 5)
 	if t < r.nextFlash then return end
-	r.flash.Brightness = rng:NextNumber(3, 4)
+	lightUp(r, true)
 	r.lit = {}
 	local lines = r.lines or {}
 	for _ = 1, math.min(#lines, rng:NextInteger(2, 3)) do
@@ -226,7 +255,7 @@ local function storm(r, t, near)
 			beam.Transparency = CRAWL
 		end
 	end
-	r.flashEnd, r.nextFlash = t + 0.08, t + rng:NextNumber(2.5, 5)
+	r.stage, r.stageEnd, r.nextFlash = 1, t + 0.08, t + rng:NextNumber(2.5, 5)
 end
 
 ---------------------------------------------------------------------------------------------- running
