@@ -43,19 +43,24 @@ return function(t)
   local b=S.new();b.Speed=0/0;t.expect.throws(function() S.validate(b) end)
   local c=S.new();c.Speed='fast';t.expect.throws(function() S.validate(c) end)
  end)
- -- The belt's chevron pieces stay on the belt, repeat every period, and the period is whole slats.
+ -- Every tier's belt: chevron pieces stay on the belt, repeat every period, the period is whole slats and each
+ -- V keeps a dark inside at least 2 studs long.
  t.test('belt chevrons stay on the belt',function()
-  local pat=T.Pattern
-  t.expect.near(pat.Period/pat.Spacing,math.floor(pat.Period/pat.Spacing+0.5))
-  local shown=0
-  for s=0,2*pat.Period,0.05 do
-   local x,w=T.chevron(s,pat)
-   if x then
-    shown+=1
-    t.expect.truthy(x-w/2>=-1e-6 and x+w/2<=pat.HalfWidth+1e-6 and w>0)
-    local x2,w2=T.chevron(s+pat.Period,pat);t.expect.near(x2,x,1e-6);t.expect.near(w2,w,1e-6)
+  for tier=1,#T.List do
+   local pat=T.patternFor(tier)
+   t.expect.near(pat.Period/pat.Spacing,math.floor(pat.Period/pat.Spacing+0.5))
+   t.expect.truthy(pat.Period-pat.Stroke>=2)
+   local shown=0
+   for s=0,2*pat.Period,0.05 do
+    local x,w=T.chevron(s,pat)
+    if x then
+     shown+=1
+     t.expect.truthy(x-w/2>=-1e-6 and x+w/2<=pat.HalfWidth+1e-6 and w>0)
+     local x2,w2=T.chevron(s+pat.Period,pat);t.expect.near(x2,x,1e-6);t.expect.near(w2,w,1e-6)
+    end
    end
+   t.expect.truthy(shown>0)
   end
-  t.expect.truthy(shown>0)
+  t.expect.equal(T.patternFor(3).Period,5.4);t.expect.equal(T.Pattern.Period,3.6) -- patternFor never edits the shared table
  end)
 end

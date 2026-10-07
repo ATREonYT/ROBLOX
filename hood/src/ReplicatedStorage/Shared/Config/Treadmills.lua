@@ -58,7 +58,17 @@ end
 -- Slope studs sideways per stud. The light gaps merge with the white pieces into solid V's. Scroll is the
 -- belt speed per tier, in studs per second.
 Treadmills.Pattern = { Spacing = 0.36, Depth = 0.22, Period = 3.6, Slope = 1.2, Stroke = 1.6, HalfWidth = 2.6 }
+-- Per-tier changes to the pattern: Sprint (the x999) has two big V's on a plain black belt.
+Treadmills.PatternByTier = { [3] = { Period = 5.4, Stroke = 2.4 } }
 Treadmills.Scroll = { 3, 5, 8 }
+
+-- The pattern for a tier (a fresh table; the map builder writes it onto each Belt as attributes, and the client
+-- reads it back from there).
+function Treadmills.patternFor(tier)
+	local p = table.clone(Treadmills.Pattern)
+	for k, v in Treadmills.PatternByTier[tier] or {} do p[k] = v end
+	return p
+end
 
 -- The right-hand white piece on a slat at belt coordinate s (studs along the belt, + toward the console):
 -- its centre x and width, or nil when that slat has no white there. The left piece mirrors it.

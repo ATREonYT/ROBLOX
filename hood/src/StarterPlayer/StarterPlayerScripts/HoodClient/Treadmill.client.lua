@@ -43,12 +43,20 @@ local function record(model)
 		slatY = belt:GetAttribute('SlatY') or 0.15, chevY = belt:GetAttribute('ChevronY') or 0.155,
 		hideY = belt:GetAttribute('HideY') or 0, scroll = belt:GetAttribute('ScrollSpeed') or Treadmills.Scroll[row.Tier] or 4,
 	}
+	-- The belt's own pattern (tiers differ: Sprint has two big V's), as the map builder wrote it.
+	local pat = table.clone(Treadmills.Pattern)
+	pat.Spacing = r.spacing
+	pat.Period = belt:GetAttribute('ChevronPeriod') or pat.Period
+	pat.Stroke = belt:GetAttribute('ChevronStroke') or pat.Stroke
+	pat.Slope = belt:GetAttribute('ChevronSlope') or pat.Slope
+	pat.HalfWidth = belt:GetAttribute('HalfWidth') or pat.HalfWidth
+	r.pattern = pat
 	for _, d in model:GetDescendants() do
 		if d:IsA('BasePart') and type(d:GetAttribute('Z0')) == 'number' then
 			if d.Name == 'Slat' then
 				table.insert(r.slats, { part = d, z0 = d:GetAttribute('Z0') })
 			elseif d.Name == 'Chevron' then
-				table.insert(r.pieces, { part = d, z0 = d:GetAttribute('Z0'), side = d:GetAttribute('Side') or 1, width = d.Size.X })
+				table.insert(r.pieces, { part = d, z0 = d:GetAttribute('Z0'), side = d:GetAttribute('Side') or 1, width = d.Size.X, lift = d:GetAttribute('Lift') or 0 })
 			end
 		elseif d:IsA('BasePart') and (d.Name == 'Screen' or d.Name == 'ScreenSide') then
 			table.insert(r.panels, { part = d, color = d.Color })
@@ -86,7 +94,6 @@ end
 -- Rolls a belt `dt` seconds on. Slats slide back within one slat spacing and hop forward again; a hop hands
 -- every slat the stretch of belt the slat in front of it carried, so the chevron pieces are recomputed only
 -- then (Config/Treadmills.chevron) and the pattern runs smoothly.
-local pattern = table.clone(Treadmills.Pattern)
 local function roll(r, dt, speed)
 	r.travel += speed * dt
 	local step = math.floor(r.travel / r.spacing)
@@ -99,11 +106,10 @@ local function roll(r, dt, speed)
 	end
 	local restep = step ~= r.step
 	r.step = step
-	pattern.Spacing = r.spacing
 	for _, piece in r.pieces do
 		n += 1
 		if restep then
-			local x, w = Treadmills.chevron(piece.z0 + step * r.spacing, pattern)
+			local x, w = Treadmills.chevron(piece.z0 + step * r.spacing, r.pattern)
 			piece.x = x
 			if x and math.abs(w - piece.width) > 1e-3 then
 				piece.width = w
@@ -112,7 +118,7 @@ local function roll(r, dt, speed)
 			end
 		end
 		local x = piece.x
-		r.cfs[n] = base * (x and CFrame.new(piece.side * x, r.chevY, piece.z0 - p) or CFrame.new(piece.side, r.hideY, piece.z0 - p))
+		r.cfs[n] = base * (x and CFrame.new(piece.side * x, r.chevY + piece.lift, piece.z0 - p) or CFrame.new(piece.side, r.hideY, piece.z0 - p))
 	end
 	moveAll(r.parts, r.cfs)
 end
