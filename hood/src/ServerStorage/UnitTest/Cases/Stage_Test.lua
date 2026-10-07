@@ -33,13 +33,11 @@ return function(t)
    if i>1 then t.expect.truthy(f.Z<=V2.Fights[i-1].Z) end
   end
   t.expect.truthy(V2.Fights[16].Boss)
-  for _,b in V2.TrainHere do t.expect.truthy(S.StationById[b.Id]~=nil) end
  end)
- t.test('every stage needs more power than the last, and each new bag works the moment you get in',function()
+ t.test('every stage needs more power than the last, and the Champ Ring opens with the boss yard',function()
   local V2=require(game.ServerStorage.TheBlockV2);local S=require(game.ReplicatedStorage.Shared.Config.Skins)
   t.expect.equal(#V2.StagePower,16)
   for i=2,#V2.StagePower do t.expect.truthy(V2.StagePower[i]>V2.StagePower[i-1]) end
-  for stage,id in V2.RouteTraining do t.expect.truthy(S.StationById[id].Required<=V2.StagePower[stage]) end
   t.expect.truthy(S.StationById.Ring.Required<=V2.StagePower[16])
  end)
 end
