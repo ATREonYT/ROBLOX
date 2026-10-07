@@ -5014,8 +5014,10 @@ function Lobby.dressing(L)
 
 	-- Edges: racks and containers where the reference has its cliffs, clutter in clusters.
 	local tags = { 'HOOD', 'BLOCK RANGE', 'ON THE BLOCK', 'BULLSEYE' }
-	Lobby.container(dr, CFrame.new(-55, 0, N + 4.4) * CFrame.Angles(0, math.pi / 2, 0), Lobby.Colors.containerRed, tags[1], C(255, 220, 60), 'Left')
-	Lobby.container(dr, CFrame.new(-53.5, 8.6, N + 4.6) * CFrame.Angles(0, math.pi / 2 + 0.04, 0), Lobby.Colors.containerBlue)
+	-- North-west corner: blue under green, no tag. Seen from the aisle it sits behind the Gold lane, whose
+	-- crimson backstop and "x25 Power" label need a cool, plain background.
+	Lobby.container(dr, CFrame.new(-55, 0, N + 4.4) * CFrame.Angles(0, math.pi / 2, 0), Lobby.Colors.containerBlue)
+	Lobby.container(dr, CFrame.new(-53.5, 8.6, N + 4.6) * CFrame.Angles(0, math.pi / 2 + 0.04, 0), C(60, 150, 90))
 	Lobby.rack(dr, CFrame.new(-W + 4.4, 0, N + 9) * CFrame.Angles(0, -math.pi / 2, 0), 2, 11)
 	Lobby.rack(dr, CFrame.new(56, 0, N + 4.4) * CFrame.Angles(0, math.pi, 0), 2, 12)
 	Lobby.container(dr, CFrame.new(W - 4.2, 0, 20), C(60, 150, 90), tags[3], P.white, 'Left')
