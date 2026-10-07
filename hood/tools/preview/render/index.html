@@ -147,7 +147,7 @@ const BUILTIN = { sparkles_main: 'sparkle', smoke_main: 'smoke', fire_main: 'fla
 // Preview textures that are flipbook sheets (HoodVFX names): grid size and how frames are picked.
 // random = FlipbookStartRandom with Framerate 0 (a static random frame per particle), oneshot = frames spread
 // over the particle's life, loop = plays at fps from a random start.
-const FLIP = { aura: { g: 2, mode: 'random' }, arc: { g: 2, mode: 'random' }, wisp: { g: 4, mode: 'oneshot' }, flame: { g: 4, mode: 'loop', fps: 18 } };
+const FLIP = { aura: { g: 2, mode: 'random' }, arc: { g: 2, mode: 'random' }, tendril: { g: 2, mode: 'random' }, wisp: { g: 4, mode: 'oneshot' }, flame: { g: 4, mode: 'loop', fps: 18 } };
 let FX_OPTS = {};
 function fxName(fx) {
   let name = FX_OPTS.builtinOnly ? null : fx.preview;
@@ -176,7 +176,8 @@ function frameTexture(name, g, frame) {
   return texCache[key];
 }
 const FX_NAMES = ['glow', 'sparkle', 'star', 'ring', 'smoke', 'streak', 'shard', 'confetti', 'pow', 'lightning', 'energy', 'flame1',
-  'aura', 'wisp', 'flame', 'arc', 'mist', 'ray', 'shaft', 'glitter', 'swirl', 'dust', 'softglow'];
+  'aura', 'wisp', 'flame', 'arc', 'mist', 'ray', 'shaft', 'glitter', 'swirl', 'dust', 'softglow',
+  'rain', 'ember', 'bubble', 'snow', 'tendril'];
 async function preloadFx() {
   await Promise.all(FX_NAMES.map(async n => { if (!texCache[n]) { try { const t = await texLoader.loadAsync(`vfx/${n}.png`); t.colorSpace = THREE.SRGBColorSpace; texCache[n] = t; } catch (e) { console.error('missing vfx/' + n + '.png'); } } }));
 }
@@ -345,8 +346,9 @@ function orientParallel(camera) {
     const p = sp.position.clone(), q = p.clone().add(sp.userData.vel.clone().normalize());
     p.project(camera); q.project(camera);
     const ang = Math.atan2((q.y - p.y) * H, (q.x - p.x) * W);
-    sp.material.rotation = ang;
-    sp.scale.set(sp.userData.base.y * 2.2, sp.userData.base.x, 1); // long along the motion
+    // As in Roblox, the texture's up axis follows the motion (Squash already made it long).
+    sp.material.rotation = ang - Math.PI / 2;
+    sp.scale.set(sp.userData.base.x, sp.userData.base.y, 1);
   }
   for (const o of worldUpQuads) {
     const to = camera.position.clone().sub(o.userData.home || o.position); to.y = 0;
