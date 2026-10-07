@@ -145,6 +145,8 @@ function addSurfaceGui(mesh, p, gui) {
   const mat = new THREE.MeshBasicMaterial({map: tex, transparent: true, depthWrite: false, toneMapped: false});
   const plane = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
   plane.position.set(...off); plane.rotation.copy(rot); mesh.add(plane);
+  // SurfaceGui.MaxDistance: hidden past it, measured from the camera to the part (checked per shot).
+  if (gui.maxd > 0) billboards.push({ sp: plane, at: null, maxd: gui.maxd });
 }
 // Roblox Texture: an image tiled every StudsPerTileU x StudsPerTileV studs on one face, tinted by Color3 and
 // faded by Transparency (drawn from its PreviewTexture, e.g. the stations' stamped X).
@@ -546,7 +548,7 @@ window.shoot = (cam) => {
   camera.updateMatrixWorld();
   buildBeams(camera);
   orientParallel(camera);
-  for (const b of billboards) b.sp.visible = camera.position.distanceTo(b.at) <= b.maxd;
+  for (const b of billboards) b.sp.visible = camera.position.distanceTo(b.at || b.sp.parent.getWorldPosition(new THREE.Vector3())) <= b.maxd;
   // Bloom like Roblox's (Lighting.Bloom): bright neon, fire and glints halo. options.bloom = false turns it off
   // (and it is off for transparent renders, which need the alpha channel).
   renderer.render(scene, camera);

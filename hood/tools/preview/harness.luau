@@ -364,7 +364,7 @@ for _, p in workspace:GetDescendants() do
 			end
 			if child:IsA("SurfaceGui") then
 				rec.guis = rec.guis or {}
-				table.insert(rec.guis, { kind = "surface", face = child.Face.Name, labels = labels(child) })
+				table.insert(rec.guis, { kind = "surface", face = child.Face.Name, labels = labels(child), maxd = child.MaxDistance })
 			elseif child:IsA("BillboardGui") then
 				rec.guis = rec.guis or {}
 				local sz = child.Size
