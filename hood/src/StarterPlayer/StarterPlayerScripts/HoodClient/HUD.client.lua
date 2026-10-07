@@ -1,14 +1,14 @@
 -- Player HUD for +1 Hood Evolution, laid out like the reference simulator HUD:
---   top-left       Rebirths and Cash counters, a wide SHOP button, then REBIRTH / REWARDS / PVP / EVOLVE
+--   top-left       Rebirths, Cash and Speed counters, a wide SHOP button, then REBIRTH / REWARDS / PVP / EVOLVE
 --   top-centre     one hint line: how to train, your gun's Power multiplier and when you can evolve next
 --   bottom-centre  your headshot and "<Power> POWER", over the LEVEL bar (level = your look's place in the
 --                  ladder of looks; the bar fills toward the next look)
 --   panels         SHOP (passes, boosts, guns), REBIRTH, REWARDS and EVOLVE, as UIKit modals
 -- Authored in UIKit's 1280x720 design pixels; Kit.screen's UIScale fits it to any screen.
 -- It only reads state: player attributes the server sets (LobbyService: Power, EquippedSkin, PowerRate,
--- TrainingStation, Cash, Rebirths; GunService: EquippedGun, GunMultiplier, OwnedGuns) and the profile
--- snapshot. The arrow over the next bag or the EVOLVE booth belongs to Lobby.client: the EVOLVE panel asks
--- it for directions through the local GuideEvolve attribute.
+-- TrainingStation, Cash, Rebirths; GunService: EquippedGun, GunMultiplier, OwnedGuns; TreadmillService:
+-- Speed) and the profile snapshot. The arrow over the next bag or the EVOLVE booth belongs to Lobby.client:
+-- the EVOLVE panel asks it for directions through the local GuideEvolve attribute.
 local Players = game:GetService('Players')
 local RS = game:GetService('ReplicatedStorage')
 local MarketplaceService = game:GetService('MarketplaceService')
@@ -46,13 +46,14 @@ local TIER_COLORS = { Color3.fromRGB(210, 218, 225), Color3.fromRGB(115, 207, 15
 local function tierColor(skin) return TIER_COLORS[math.clamp(math.ceil(skin.Index / 3), 1, #TIER_COLORS)] end
 
 ---------------------------------------------------------------------------------------------- state
-local snapshot = {} -- Cash and Rebirths from the profile snapshot, until the attributes arrive
+local snapshot = {} -- Cash, Rebirths and Speed from the profile snapshot, until the attributes arrive
 local function num(name, fallback)
 	local v = player:GetAttribute(name)
 	return type(v) == 'number' and v or fallback
 end
 local function cashNow() return num('Cash', snapshot.Cash or 0) end
 local function rebirthsNow() return num('Rebirths', snapshot.Rebirths or 0) end
+local function speedNow() return num('Speed', snapshot.Speed or 0) end
 local function skinNow() return Skins.ById[player:GetAttribute('EquippedSkin') or ''] or Skins.List[1] end
 local function bestUnlocked(power)
 	local best = Skins.List[1]
@@ -112,17 +113,52 @@ end
 ---------------------------------------------------------------------------------------------- top-left
 -- Reference proportions: the column is as wide as the SHOP button; icons poke out of each button's top.
 local LEFT, COLUMN, GAP, POP = 16, 224, 12, 14
-local column = Kit.new('Frame', { Name = 'Actions', BackgroundTransparency = 1, Position = px(LEFT, 4), Size = px(COLUMN, 416), Parent = root })
+local column = Kit.new('Frame', { Name = 'Actions', BackgroundTransparency = 1, Position = px(LEFT, 4), Size = px(COLUMN, 462), Parent = root })
 
-local function counter(name, iconId, y)
+-- Speed has no Blender icon yet: a chunky 3D lightning bolt (yellow zigzag on an orange rim, a shine line)
+-- in a ViewportFrame like the other counters' icons; the emoji stands in if a viewport can't be made.
+local function boltIcon(size)
+	local ok, vp = pcall(function()
+		local model = Instance.new('Model')
+		local function block(sz, cf, color)
+			local p = Instance.new('Part')
+			p.Anchored, p.Size, p.CFrame, p.Color, p.Material = true, sz, cf, color, Enum.Material.SmoothPlastic
+			p.TopSurface, p.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
+			p.Parent = model
+		end
+		-- Seen from the front (-Z), so +X is screen-left: upper arm top-right, a jog, lower arm down to the left.
+		local yellow, rim, shine = Color3.fromRGB(255, 214, 52), Color3.fromRGB(232, 120, 22), Color3.fromRGB(255, 250, 220)
+		local lean = CFrame.Angles(0, 0, math.rad(22))
+		local zig = {
+			{ Vector3.new(0.6, 1.24, 0.5), CFrame.new(-0.12, 0.6, 0) * lean },
+			{ Vector3.new(0.8, 0.4, 0.5), CFrame.new(-0.075, 0, 0) },
+			{ Vector3.new(0.46, 1.24, 0.5), CFrame.new(-0.02, -0.6, 0) * lean },
+		}
+		for _, z in zig do
+			block(z[1], z[2], yellow)
+			block(z[1] + Vector3.new(0.18, 0.18, 0), z[2] * CFrame.new(-0.06, -0.06, 0.14), rim)
+		end
+		block(Vector3.new(0.11, 0.7, 0.06), zig[1][2] * CFrame.new(0.14, 0.14, -0.27), shine)
+		return Kit.viewport(model, size, { Yaw = 18, Pitch = 12 })
+	end)
+	if ok and vp then
+		vp:SetAttribute('PreviewImage', 'icon3d:Speed') -- the offline previewer's stand-in picture
+		return vp
+	end
+	return Kit.icon3d('Speed', size, { Fallback = '⚡' })
+end
+
+local function counter(name, iconId, y, makeIcon)
 	local row = Kit.new('Frame', { Name = name, BackgroundTransparency = 1, Position = px(0, y), Size = px(COLUMN, 44), Parent = column })
-	local icon = Kit.icon3d(iconId, 52, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, -4, 0.5, 0), ZIndex = 2 })
+	local icon = makeIcon and makeIcon(52) or Kit.icon3d(iconId, 52, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, -4, 0.5, 0), ZIndex = 2 })
+	icon.AnchorPoint, icon.Position, icon.ZIndex = Vector2.new(0, 0.5), UDim2.new(0, -4, 0.5, 0), 2
 	icon.Parent = row
 	local value = Kit.text({ Name = 'Value', Text = '0', TextSize = 34, Stroke = Color.ink, TextXAlignment = Enum.TextXAlignment.Left, Position = px(56, 2), Size = UDim2.new(1, -56, 1, 0), Parent = row })
 	return value, icon
 end
 local rebirthCount, rebirthIcon = counter('Rebirths', 'Rebirth', 0)
 local cashCount, cashIcon = counter('Cash', 'Cash', 46)
+local speedCount, speedIcon = counter('Speed', 'Speed', 92, boltIcon)
 
 -- A raised Kit.button with a 3D icon popping out of its top edge and an outlined caption along the bottom.
 local function actionButton(props)
@@ -147,7 +183,7 @@ local function badge(holder, name)
 	return b
 end
 
-local SHOP_Y, SHOP_H = 104, 84
+local SHOP_Y, SHOP_H = 150, 84
 local GRID_W, GRID_H = (COLUMN - GAP) / 2, 100
 local GRID_Y = SHOP_Y + SHOP_H + GAP + 2
 local actions = {} -- filled with the button callbacks once the panels exist
@@ -656,14 +692,16 @@ local function hintText(power)
 	return 'Click / tap to train  •  ' .. gun .. '  •  ' .. goal
 end
 
-local lastPower, lastIndex, lastCash, lastRebirths
+local lastPower, lastIndex, lastCash, lastRebirths, lastSpeed
 local function refreshCounters()
-	local cash, n = cashNow(), rebirthsNow()
+	local cash, n, speed = cashNow(), rebirthsNow(), speedNow()
 	cashCount.Text = short(cash)
 	rebirthCount.Text = short(n)
+	speedCount.Text = short(speed)
 	if lastCash and cash > lastCash then Motion.pop(cashIcon, 0.3) end
 	if lastRebirths and n > lastRebirths then Motion.pop(rebirthIcon, 0.3) end
-	lastCash, lastRebirths = cash, n
+	if lastSpeed and speed > lastSpeed then Motion.pop(speedIcon, 0.3) end
+	lastCash, lastRebirths, lastSpeed = cash, n, speed
 end
 local function refresh()
 	local power = num('Power', nil)
@@ -707,6 +745,7 @@ for _, key in { 'Cash', 'Rebirths' } do
 		refresh()
 	end)
 end
+player:GetAttributeChangedSignal('Speed'):Connect(refreshCounters)
 
 -- Avatar headshot; if Roblox can't give one (Studio test players), your look's face stands in.
 task.spawn(function()
@@ -726,6 +765,7 @@ local function applyProfile(profile)
 	if type(profile) ~= 'table' then return end
 	snapshot.Cash = type(profile.Cash) == 'number' and profile.Cash or snapshot.Cash
 	snapshot.Rebirths = type(profile.Rebirths) == 'number' and profile.Rebirths or snapshot.Rebirths
+	snapshot.Speed = type(profile.Speed) == 'number' and profile.Speed or snapshot.Speed
 	refreshCounters()
 	refresh()
 end
@@ -755,7 +795,7 @@ local function relayout()
 	local k = Kit.scaleFor(abs)
 	local w, h = abs.X / k, abs.Y / k
 	local phone = math.min(abs.X, abs.Y) <= 500
-	column.Position = px(LEFT, phone and 4 or math.max(4, math.floor(h * 0.46 - 208)))
+	column.Position = px(LEFT, phone and 4 or math.max(4, math.floor(h * 0.46 - 231)))
 	local barWidth = phone and 480 or 560
 	local punchLeft = (abs.X - PUNCH_RIGHT - PUNCH_SIZE) / k
 	local x = math.min(w / 2, punchLeft - 12 - math.max(barWidth, 500) / 2)

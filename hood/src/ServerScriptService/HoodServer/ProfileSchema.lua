@@ -11,6 +11,8 @@ Schema.Template={
  ProcessedReceipts={},TimePlayed=0,
  -- Guns from the ARMORY: owned ids and the equipped one (its multiplier scales punch Power).
  Guns={Owned={Pistol=true},Equipped='Pistol'},
+ -- SPEED from the treadmills (TreadmillService): sets your walk speed through Config/Treadmills.walkSpeed.
+ Speed=0,
 }
 function Schema.new() return clone(Schema.Template) end
 function Schema.migrate(data)
@@ -36,7 +38,7 @@ function Schema.migrate(data)
  return data
 end
 function Schema.validate(data)
- for _,key in ipairs({'Rep','Cash','Rebirths','DailyStreak','LastDaily','TimePlayed'}) do
+ for _,key in ipairs({'Rep','Cash','Rebirths','DailyStreak','LastDaily','TimePlayed','Speed'}) do
   local n=data[key]
   assert(type(n)=='number' and n==n and n>=0 and n<=1e12,'Invalid numeric profile field: '..key)
  end
@@ -59,6 +61,6 @@ function Schema.validate(data)
 end
 function Schema.public(data)
  -- Explicit allowlist: receipt ledger and entitlement cache never leave the server.
- return {EquippedSkin=data.EquippedSkin,Rep=data.Rep,Cash=data.Cash,Rebirths=data.Rebirths,Evolution=clone(data.Evolution),HighestMapIndex=data.HighestMapIndex,UnlockedMaps=clone(data.UnlockedMaps),Crew=clone(data.Crew),Settings=clone(data.Settings),Onboarding=clone(data.Onboarding),Guns=clone(data.Guns)}
+ return {EquippedSkin=data.EquippedSkin,Rep=data.Rep,Cash=data.Cash,Rebirths=data.Rebirths,Evolution=clone(data.Evolution),HighestMapIndex=data.HighestMapIndex,UnlockedMaps=clone(data.UnlockedMaps),Crew=clone(data.Crew),Settings=clone(data.Settings),Onboarding=clone(data.Onboarding),Guns=clone(data.Guns),Speed=data.Speed}
 end
 return Schema
