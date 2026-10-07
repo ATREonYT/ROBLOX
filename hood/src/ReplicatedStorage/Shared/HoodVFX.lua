@@ -8,6 +8,10 @@
 --   HoodVFX.setEnabled(container, on)                 switch every effect under `container` (distance LOD)
 --   HoodVFX.setDensity(container, k)                  scale every emitter's Rate (e.g. 0.5 on low graphics)
 --   HoodVFX.Textures                                  name -> uploaded rbxassetid ('' = use a Roblox built-in)
+--   HoodVFX.applyTexture(emitter, name, opts?)        give any emitter (or Beam) a HoodVFX texture the house
+--                                                     way: uploaded sheet + flipbook, or the tuned built-in
+--                                                     fallback; returns true when the real sheet is in use
+--   HoodVFX.fallbackOk(name)                          false when `name` has no usable stand-in before upload
 --   HoodVFX.TierColors                                the 9-step glow colour ladder (green .. gold, rainbow)
 --
 -- How an aura is layered (skill: .claude/skills/roblox-vfx/SKILL.md). Each tier keeps every layer below it,
@@ -23,8 +27,8 @@
 -- spawn stations (T1-T3) come to ~75 live particles; the route has one station per two stages, so a T6-T8
 -- aura is on screen alone. Clients can thin or cull auras with setDensity / setEnabled.
 --
--- Textures: hood/art/vfx/*.png (make_aura_textures.js; the themes' rain, ember, bubble, snow and tendril come
--- from make_theme_textures.js). Until they are uploaded and pasted into Textures, every layer falls back to a
+-- Textures: hood/art/vfx/*.png (make_aura_textures.js; the themes' rain, ember, bubble, snow, tendril, comet,
+-- firepuff, streakup and the stations' stamp come from make_theme_textures.js). Until they are uploaded and pasted into Textures, every layer falls back to a
 -- texture that ships with Roblox and flipbook layouts stay off (a built-in is one image).
 -- Emitters carry a PreviewTexture attribute so the offline renderer can show the intended look.
 local HoodVFX = {}
@@ -45,6 +49,8 @@ HoodVFX.Textures = {
 	snow = '', -- six-armed snowflake
 	tendril = '', -- 2x2 rising smoke strands (static random frame)
 	comet = '', -- head + fading tail along U (Beam)
+	firepuff = '', -- 4x4 round cartoon fire puff (Loop)
+	streakup = '', -- straight tapered vertical wisp
 	-- Not an effect: the bag stations' stamped X block texture (d2_stations reads it; '' draws nothing).
 	stamp = '',
 }
@@ -58,7 +64,8 @@ local BUILTIN = {
 	swirl = 'rbxasset://textures/particles/explosion01_shockwave_main.dds', ring = 'rbxasset://textures/particles/explosion01_shockwave_main.dds',
 	rain = 'rbxasset://textures/glow.png', ember = 'rbxasset://textures/glow.png', snow = 'rbxasset://textures/particles/sparkles_main.dds',
 	bubble = 'rbxasset://textures/particles/explosion01_shockwave_main.dds', tendril = 'rbxasset://textures/particles/smoke_main.dds',
-	comet = 'rbxasset://textures/glow.png',
+	comet = 'rbxasset://textures/glow.png', firepuff = 'rbxasset://textures/particles/fire_main.dds',
+	streakup = 'rbxasset://textures/particles/smoke_main.dds',
 }
 -- Flipbook settings, applied only when the uploaded sheet is in use.
 local FLIPBOOK = {
@@ -67,15 +74,21 @@ local FLIPBOOK = {
 	wisp = { FlipbookLayout = Enum.ParticleFlipbookLayout.Grid4x4, FlipbookMode = Enum.ParticleFlipbookMode.OneShot },
 	flame = { FlipbookLayout = Enum.ParticleFlipbookLayout.Grid4x4, FlipbookMode = Enum.ParticleFlipbookMode.Loop, FlipbookFramerate = NR(16, 22), FlipbookStartRandom = true },
 	tendril = { FlipbookLayout = Enum.ParticleFlipbookLayout.Grid2x2, FlipbookMode = Enum.ParticleFlipbookMode.Loop, FlipbookFramerate = NR(0), FlipbookStartRandom = true },
+	firepuff = { FlipbookLayout = Enum.ParticleFlipbookLayout.Grid4x4, FlipbookMode = Enum.ParticleFlipbookMode.Loop, FlipbookFramerate = NR(14, 20), FlipbookStartRandom = true },
 }
 
--- Opacity kept when a texture falls back to a built-in (wisps and arcs have no built-in look-alike).
-local FALLBACK_FADE = { wisp = 0.45, arc = 0.6, tendril = 0.5 }
+-- How a texture behaves before it is uploaded. A number keeps that share of the opacity (the built-in is only
+-- a soft stand-in: it supports instead of smothering); false means there is no usable stand-in, so the emitter
+-- starts switched off (attribute NeedsUpload) until the sheet is uploaded. Unlisted names: the built-in reads
+-- well enough on its own. Other builders can add their own names here.
+HoodVFX.Fallback = { wisp = 0.45, arc = 0.6, tendril = 0.5 }
+local FALLBACK_FADE = HoodVFX.Fallback
 -- Extra settings for a built-in stand-in: a soft glow squashed into a streak reads as rain.
 local FALLBACK_PROPS = {
 	rain = { Squash = NumberSequence.new(3), Size = NumberSequence.new(0.7) },
 	-- Smoke squashed tall and thin reads as a rising wisp, not a cloud.
 	tendril = { Squash = NumberSequence.new(2), Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1.5), NumberSequenceKeypoint.new(1, 2.2) }) },
+	streakup = { Squash = NumberSequence.new(2.6), Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1.2), NumberSequenceKeypoint.new(1, 1.8) }) },
 }
 
 -- Glow colours for tiers 1-9: green, cyan, blue, purple, pink, red, white (on black), gold, white (rainbow).
@@ -111,31 +124,52 @@ end
 local function lighten(c, t) return c:Lerp(WHITE, t) end
 local function darken(c, t) return c:Lerp(C(0, 0, 0), t) end
 
+-- True when `name`'s real sheet is uploaded, or its built-in stand-in is usable on its own.
+function HoodVFX.fallbackOk(name)
+	return select(2, texture(name)) or FALLBACK_FADE[name] ~= false
+end
+
+-- Give an emitter (or a Beam) a HoodVFX texture the house way, after its other properties are set: the
+-- uploaded sheet with its flipbook layout, or else the built-in stand-in with its tuned extras (a squash, a
+-- fade, or switched off when there is no stand-in). Always tags PreviewTexture for the offline renderer.
+-- opts.fade: opacity share kept on the fallback (overrides HoodVFX.Fallback[name]; false = switch it off);
+-- opts.fallbackProps: extra properties for the fallback only. Returns true when the real sheet is in use.
+function HoodVFX.applyTexture(e, name, opts)
+	opts = opts or {}
+	local id, uploaded = texture(name)
+	e.Texture = id
+	e:SetAttribute('PreviewTexture', name)
+	if not e:IsA('ParticleEmitter') then return uploaded end
+	if uploaded then
+		for k, v in FLIPBOOK[name] or {} do (e :: any)[k] = v end
+		return true
+	end
+	for k, v in FALLBACK_PROPS[name] or {} do (e :: any)[k] = v end
+	for k, v in opts.fallbackProps or {} do (e :: any)[k] = v end
+	local fade = opts.fade
+	if fade == nil then fade = FALLBACK_FADE[name] end
+	if fade == false then
+		e.Enabled = false
+		e:SetAttribute('NeedsUpload', true)
+	elseif type(fade) == 'number' then
+		local k = {}
+		for _, kp in e.Transparency.Keypoints do table.insert(k, NumberSequenceKeypoint.new(kp.Time, 1 - (1 - kp.Value) * fade, kp.Envelope * fade)) end
+		e.Transparency = NumberSequence.new(k)
+	end
+	return false
+end
+
 -- A ParticleEmitter with everything the engine needs spelled out: LightInfluence 0 (glows stay bright at
--- night; Instance.new gives 0 but Studio insertion gives 1, so never rely on the default), the texture or its
--- built-in fallback, and the flipbook layout only when the real sheet is uploaded.
+-- night; Instance.new gives 0 but Studio insertion gives 1, so never rely on the default), then the texture
+-- through applyTexture (flipbook only with the real sheet, the tuned built-in otherwise).
 local function emitter(parent, name, tex, props)
 	local e = Instance.new('ParticleEmitter')
 	e.Name = name
-	local id, uploaded = texture(tex)
-	e.Texture = id
 	e.LightInfluence = 0
 	e.LightEmission = 0
 	e.Rotation = NR(0, 360)
 	for k, v in props do (e :: any)[k] = v end
-	if uploaded and FLIPBOOK[tex] then
-		for k, v in FLIPBOOK[tex] do (e :: any)[k] = v end
-	end
-	if not uploaded and FALLBACK_PROPS[tex] then
-		for k, v in FALLBACK_PROPS[tex] do (e :: any)[k] = v end
-	end
-	if not uploaded and FALLBACK_FADE[tex] then
-		-- A built-in stand-in is only a soft blob: keep it faint so it supports instead of smothering.
-		local f, k = FALLBACK_FADE[tex], {}
-		for _, kp in e.Transparency.Keypoints do table.insert(k, NumberSequenceKeypoint.new(kp.Time, 1 - (1 - kp.Value) * f, kp.Envelope * f)) end
-		e.Transparency = NumberSequence.new(k)
-	end
-	e:SetAttribute('PreviewTexture', tex)
+	HoodVFX.applyTexture(e, tex)
 	e.Parent = parent
 	return e
 end
@@ -329,8 +363,7 @@ function HoodVFX.station(part, tier, color, size, opts)
 			local b = Instance.new('Beam')
 			b.Name = 'GodRay' .. i
 			b.Attachment0, b.Attachment1 = a0, a1
-			b.Texture = texture('shaft')
-			b:SetAttribute('PreviewTexture', 'shaft')
+			HoodVFX.applyTexture(b, 'shaft')
 			b.TextureMode, b.TextureLength, b.TextureSpeed = Enum.TextureMode.Stretch, 1, 0.15 + 0.1 * i
 			b.Width0, b.Width1 = (1.6 + 0.6 * k) * S, (3.4 + k) * S
 			b.FaceCamera, b.Segments = true, 1
@@ -447,8 +480,9 @@ end
 -- of the swinging bag: lava licks up its sides). Returns the Theme model; every holder part in it is invisible.
 -- The mats are flat saturated colours, so nothing additive lies on them (no floor pools, decals or light
 -- shafts): the material's own particles carry each theme, as in the reference. Live particles (Rate x
--- Lifetime on the 7 x 18 mat):  stone ~12  red ~39  lava ~117  arcane ~35 (+3 comet beams)  frost ~58
--- toxic ~83  shadow ~75  gold ~38 (25 big glints). All eight together ~460: thin them on phones with setDensity.
+-- Lifetime on the 7 x 18 mat):  stone ~12  red ~39  lava ~114  arcane ~35 (+3 comet beams)  frost ~58
+-- toxic ~85  shadow ~75  gold ~38 (25 big glints). All eight together ~456: thin them on phones with setDensity
+-- (the lobby client already halves locked stations).
 HoodVFX.Themes = {}
 local THEME_COLOR = {
 	stone = C(255, 244, 220), red = C(250, 45, 85), lava = C(255, 150, 40), arcane = C(230, 120, 255),
@@ -491,7 +525,7 @@ function HoodVFX.Themes.red(ctx)
 		EmissionDirection = Enum.NormalId.Bottom, Orientation = Enum.ParticleOrientation.VelocityParallel,
 		Rate = 80 * A, Lifetime = NR(0.3, 0.36), Speed = NR(22, 26), SpreadAngle = Vector2.new(3, 3),
 		Size = seq({ { 0, 3 * S }, { 1, 3.2 * S } }), Transparency = seq({ { 0, 1 }, { 0.12, 0 }, { 0.85, 0.05 }, { 1, 1 } }),
-		Color = cseq({ { 0, C(255, 150, 170) }, { 1, C(250, 45, 85) } }), LightEmission = 0.2,
+		Color = cseq({ { 0, C(255, 225, 235) }, { 1, C(255, 150, 175) } }), LightEmission = 0,
 	})
 	emitter(ctx.deck, 'Splash', 'dust', {
 		Orientation = Enum.ParticleOrientation.VelocityParallel, Rate = 16 * A, Lifetime = NR(0.2, 0.35),
@@ -501,38 +535,34 @@ function HoodVFX.Themes.red(ctx)
 	})
 end
 
--- 3 Lava: the whole mat carpeted in short puffy flames, flames licking up the bag's sides, embers rising.
+-- 3 Lava: the whole mat carpeted in round cartoon fire puffs (yellow cores, orange to red-orange edges) right to
+-- the rim, small fires on the bag's flanks, embers rising. Barely additive, so the fire stays saturated on
+-- the orange mat instead of washing to cream.
 function HoodVFX.Themes.lava(ctx)
 	local A, S, w, d = ctx.A, ctx.S, ctx.w, ctx.d
-	local carpet = holder(ctx.theme, 'FlameBed', ctx.top * CFrame.new(0, 0.1, 0), V(w, 0.2, d))
-	local fire = cseq({ { 0, C(255, 230, 80) }, { 0.35, C(255, 190, 30) }, { 1, C(255, 120, 0) } })
-	emitter(carpet, 'FlameCarpet', 'flame', {
-		Orientation = Enum.ParticleOrientation.FacingCameraWorldUp, Rate = 100 * A, Lifetime = NR(0.35, 0.6),
-		Speed = NR(0.5, 1.5), SpreadAngle = Vector2.new(10, 10), Acceleration = V(0, 2, 0), Rotation = NR(-10, 10), ZOffset = 0.2,
-		Size = seq({ { 0, 1.6 * S, 0.2 * S }, { 0.35, 2.5 * S, 0.3 * S }, { 1, 0 } }),
-		Transparency = seq({ { 0, 0.3 }, { 0.15, 0 }, { 0.8, 0.1 }, { 1, 1 } }), Color = fire, LightEmission = 0.7,
-	})
-	-- Low puffs of fire between the tongues, so no bare mat shows (the reference's wall of flame).
-	emitter(carpet, 'FlamePuffs', 'aura', {
-		Rate = 40 * A, Lifetime = NR(0.4, 0.7), Speed = NR(0.3, 0.8), SpreadAngle = Vector2.new(20, 20), Acceleration = V(0, 1, 0),
-		RotSpeed = NR(-30, 30), ZOffset = 0.1, Size = seq({ { 0, 1.8 * S, 0.3 * S }, { 0.5, 2.7 * S, 0.3 * S }, { 1, 1 * S } }),
-		Transparency = seq({ { 0, 0.4 }, { 0.2, 0.05 }, { 0.75, 0.2 }, { 1, 1 } }),
-		Color = cseq({ { 0, C(255, 236, 90) }, { 0.5, C(255, 170, 20) }, { 1, C(255, 110, 0) } }), LightEmission = 0.6,
-	})
+	local fire = cseq({ { 0, C(255, 236, 60) }, { 0.4, C(255, 170, 10) }, { 1, C(240, 90, 15) } })
+	-- Two holders (front and back half) so the aisle end is as dense as the back.
+	for i, zc in { -d / 4, d / 4 } do
+		local half = holder(ctx.theme, 'FireBed' .. i, ctx.top * CFrame.new(0, 0.1, zc), V(w, 0.2, d / 2))
+		emitter(half, 'FireCarpet', 'firepuff', {
+			Rate = 65 * A, Lifetime = NR(0.4, 0.7), Speed = NR(0.3, 1), SpreadAngle = Vector2.new(12, 12), Acceleration = V(0, 1.5, 0),
+			RotSpeed = NR(-20, 20), ZOffset = 0.2, Size = seq({ { 0, 2.6 * S, 0.3 * S }, { 0.4, 3.6 * S, 0.4 * S }, { 1, 0 } }), -- (the puff fills ~55% of its frame)
+			Transparency = seq({ { 0, 0.2 }, { 0.15, 0 }, { 0.8, 0.05 }, { 1, 1 } }), Color = fire, LightEmission = 0.15,
+		})
+	end
 	if ctx.bag then
 		-- Two small fires on the bag's flanks (attachments on a belly slab, so they swing with it).
 		for _, sx in { -1, 1 } do
 			local a = attach(ctx.bag, 'BagFire', V(sx * ctx.bag.Size.Z / 2, -0.3, 0))
-			emitter(a, 'BagFlames', 'flame', {
-				Orientation = Enum.ParticleOrientation.FacingCameraWorldUp, Rate = 8, Lifetime = NR(0.4, 0.7),
-				Speed = NR(1, 2), SpreadAngle = Vector2.new(15, 15), Acceleration = V(0, 2, 0), Rotation = NR(-10, 10), ZOffset = 0.4,
-				Size = seq({ { 0, 0.8 }, { 0.4, 1.2, 0.2 }, { 1, 0 } }), Transparency = seq({ { 0, 0.3 }, { 0.15, 0 }, { 1, 1 } }),
-				Color = fire, LightEmission = 0.7,
+			emitter(a, 'BagFlames', 'firepuff', {
+				Rate = 8, Lifetime = NR(0.4, 0.7), Speed = NR(1, 2), SpreadAngle = Vector2.new(15, 15), Acceleration = V(0, 2, 0), ZOffset = 0.4,
+				RotSpeed = NR(-20, 20), Size = seq({ { 0, 1.4 }, { 0.4, 2.1, 0.3 }, { 1, 0 } }), Transparency = seq({ { 0, 0.2 }, { 0.15, 0 }, { 1, 1 } }),
+				Color = fire, LightEmission = 0.15,
 			})
 		end
 	end
 	emitter(ctx.deck, 'Embers', 'ember', {
-		Rate = 8 * A, Lifetime = NR(1.4, 2.6), Speed = NR(2, 5), SpreadAngle = Vector2.new(25, 25), Acceleration = V(0.6, 1.5, 0.3), Drag = 0.6,
+		Rate = 6 * A, Lifetime = NR(1.4, 2.6), Speed = NR(2, 5), SpreadAngle = Vector2.new(25, 25), Acceleration = V(0.6, 1.5, 0.3), Drag = 0.6,
 		RotSpeed = NR(-40, 40), Size = seq({ { 0, 0.3 * S, 0.1 * S }, { 0.7, 0.2 * S }, { 1, 0 } }),
 		Transparency = seq({ { 0, 0 }, { 0.8, 0.2 }, { 1, 1 } }),
 		Color = cseq({ { 0, C(255, 240, 160) }, { 0.4, C(255, 160, 40) }, { 1, C(255, 70, 20) } }), LightEmission = 1, Brightness = 2, ZOffset = 0.8,
@@ -543,11 +573,11 @@ end
 -- 4 Arcane: pink-white comets sweeping in arcs over the flat purple mat, with pink sparkles.
 function HoodVFX.Themes.arcane(ctx)
 	local A, S, color, w, d = ctx.A, ctx.S, ctx.color, ctx.w, ctx.d
-	-- Arcs (start, end, height of the bend), kept off the bag (it hangs over z +0.2..+4.2 on the 18-deep mat).
+	-- Long thin arcs (head, tail, bend) sweeping 12-16 studs along the mat, 3-6 studs up, past the bag's sides.
 	local arcs = {
-		{ V(-0.42 * w, 1.0, -0.38 * d), V(0.4 * w, 1.6, -0.2 * d), 3.0 },
-		{ V(0.38 * w, 2.2, -0.42 * d), V(-0.35 * w, 1.4, -0.05 * d), 2.4 },
-		{ V(-0.35 * w, 1.6, 0.3 * d), V(0.4 * w, 2.4, 0.46 * d), 2.6 },
+		{ V(-0.38 * w, 3.0, -0.45 * d), V(-0.4 * w, 3.6, 0.38 * d), 4.5 },
+		{ V(0.4 * w, 3.4, 0.42 * d), V(0.36 * w, 2.8, -0.3 * d), 4.0 },
+		{ V(0.1 * w, 2.6, -0.46 * d), V(-0.3 * w, 4.0, 0.2 * d), 5.0 },
 	}
 	for i, arc in arcs do
 		local up = CFrame.Angles(0, 0, math.pi / 2) -- attachment X axis points up: the beam bows upward
@@ -558,15 +588,14 @@ function HoodVFX.Themes.arcane(ctx)
 		local b = Instance.new('Beam')
 		b.Name = 'Comet' .. i
 		b.Attachment0, b.Attachment1 = a0, a1
-		b.Texture = texture('comet')
-		b:SetAttribute('PreviewTexture', 'comet')
-		b.TextureMode, b.TextureLength, b.TextureSpeed = Enum.TextureMode.Stretch, 1, 0.8 + 0.25 * i
+		HoodVFX.applyTexture(b, 'comet')
+		b.TextureMode, b.TextureLength, b.TextureSpeed = Enum.TextureMode.Stretch, 1, 0.5 + 0.2 * i
 		b.CurveSize0, b.CurveSize1 = arc[3], -arc[3]
-		b.Width0, b.Width1 = 0.35 * S, 0.6 * S
-		b.FaceCamera, b.Segments = true, 12
-		b.LightEmission, b.LightInfluence, b.Brightness = 1, 0, 1.5
-		b.Color = ColorSequence.new(C(240, 110, 230), C(255, 230, 255))
-		b.Transparency = seq({ { 0, 0.2 }, { 1, 0 } })
+		b.Width0, b.Width1 = 0.45, 0.05 -- the head (Attachment0) wide, the tail thin
+		b.FaceCamera, b.Segments = true, 16
+		b.LightEmission, b.LightInfluence, b.Brightness = 0.5, 0, 1
+		b.Color = ColorSequence.new(C(255, 150, 235), C(255, 220, 250))
+		b.Transparency = seq({ { 0, 0 }, { 1, 1 } })
 		b.Parent = ctx.deck
 	end
 	emitter(ctx.deck, 'Motes', 'ember', {
@@ -596,16 +625,17 @@ function HoodVFX.Themes.frost(ctx)
 	pointLight(ctx.column, C(170, 230, 255), 0.8, 12)
 end
 
--- 6 Toxic: tall near-black wisps rising all round the pit, ooze bubbles, a faint fume and spores.
+-- 6 Toxic: straight near-black streaks rising all round the neon pit, ooze bubbles, a faint fume and spores.
 function HoodVFX.Themes.toxic(ctx)
 	local A, S, color, w, d = ctx.A, ctx.S, ctx.color, ctx.w, ctx.d
 	for i, edge in edgeHolders(ctx.theme, ctx.top, w, d) do
 		local long = math.max(edge.Size.X, edge.Size.Z)
-		emitter(edge, 'DarkWisps' .. i, 'tendril', {
-			Orientation = Enum.ParticleOrientation.FacingCameraWorldUp, Rate = 0.75 * long, Lifetime = NR(1.4, 2.2),
-			Speed = NR(1.5, 3), SpreadAngle = Vector2.new(5, 5), Acceleration = V(0, 1, 0), Drag = 0.3, Rotation = NR(-5, 5),
-			Size = seq({ { 0, 4 * S, 0.5 * S }, { 1, 6 * S, 0.6 * S } }), Transparency = seq({ { 0, 1 }, { 0.2, 0.05 }, { 0.7, 0.2 }, { 1, 1 } }),
-			Color = cseq({ { 0, C(10, 40, 20) }, { 0.5, C(6, 26, 12) }, { 1, C(2, 6, 4) } }), LightEmission = 0,
+		-- Straight, thin, dark vertical streaks (the reference's), 4-6 studs tall, all round the pit.
+		emitter(edge, 'DarkStreaks' .. i, 'streakup', {
+			Orientation = Enum.ParticleOrientation.FacingCameraWorldUp, Rate = 0.9 * long, Lifetime = NR(1.2, 1.9),
+			Speed = NR(1, 2), SpreadAngle = Vector2.new(2, 2), Acceleration = V(0, 0.8, 0), Drag = 0.3, Rotation = NR(-3, 3),
+			Size = seq({ { 0, 4.5 * S, 0.5 * S }, { 1, 5.5 * S, 0.6 * S } }), Transparency = seq({ { 0, 1 }, { 0.25, 0.3 }, { 0.7, 0.45 }, { 1, 1 } }),
+			Color = cseq({ { 0, C(20, 70, 36) }, { 1, C(4, 16, 8) } }), LightEmission = 0,
 		})
 	end
 	emitter(ctx.deck, 'Bubbles', 'bubble', {
@@ -625,14 +655,14 @@ function HoodVFX.Themes.toxic(ctx)
 	pointLight(ctx.column, color, 1, 14)
 end
 
--- 7 Shadow: black-violet smoke boiling off a flat black pad, dark wisps round it, a few violet sparks.
+-- 7 Shadow: violet smoke boiling off a deep purple pad round the black bag, dark wisps, a few violet sparks.
 function HoodVFX.Themes.shadow(ctx)
 	local A, S, color, w, d = ctx.A, ctx.S, ctx.color, ctx.w, ctx.d
 	emitter(ctx.deck, 'ShadowSmoke', 'aura', {
 		Rate = 3.2 * A, Lifetime = NR(3, 4.2), Speed = NR(1, 2.4), SpreadAngle = Vector2.new(70, 70), Drag = 0.5, Acceleration = V(0, 0.6, 0),
 		RotSpeed = NR(-18, 18), ZOffset = -1.5, Size = seq({ { 0, 3 * S, 0.5 * S }, { 0.45, 5 * S, 0.8 * S }, { 1, 6.5 * S, S } }),
 		Transparency = seq({ { 0, 1 }, { 0.2, 0.3, 0.08 }, { 0.6, 0.45, 0.08 }, { 1, 1 } }),
-		Color = cseq({ { 0, C(60, 44, 96) }, { 0.4, C(30, 22, 48) }, { 1, C(10, 8, 16) } }), LightEmission = 0,
+		Color = cseq({ { 0, C(150, 110, 210) }, { 0.4, C(120, 80, 180) }, { 1, C(70, 44, 110) } }), LightEmission = 0,
 	})
 	for i, edge in edgeHolders(ctx.theme, ctx.top, w, d) do
 		local long = math.max(edge.Size.X, edge.Size.Z)
@@ -640,7 +670,7 @@ function HoodVFX.Themes.shadow(ctx)
 			Orientation = Enum.ParticleOrientation.FacingCameraWorldUp, Rate = 0.6 * long, Lifetime = NR(1.4, 2.2),
 			Speed = NR(2, 3.5), SpreadAngle = Vector2.new(6, 6), Acceleration = V(0, 1, 0), Drag = 0.3, Rotation = NR(-6, 6),
 			Size = seq({ { 0, 3.4 * S, 0.4 * S }, { 1, 5 * S, 0.5 * S } }), Transparency = seq({ { 0, 1 }, { 0.2, 0.2 }, { 0.7, 0.35 }, { 1, 1 } }),
-			Color = cseq({ { 0, C(56, 38, 96) }, { 1, C(8, 6, 14) } }), LightEmission = 0,
+			Color = cseq({ { 0, C(120, 80, 180) }, { 1, C(40, 24, 66) } }), LightEmission = 0,
 		})
 	end
 	emitter(ctx.deck, 'VoidSparks', 'dust', {
@@ -698,7 +728,9 @@ end
 -- than ~120 studs away). Only writes when the value changes: emitter property writes are not free.
 function HoodVFX.setEnabled(container, on)
 	for _, d in container:GetDescendants() do
-		if (d:IsA('ParticleEmitter') or d:IsA('Beam') or d:IsA('Light')) and d.Enabled ~= on then d.Enabled = on end
+		-- (An emitter waiting for its texture upload stays off.)
+		local want = on and not d:GetAttribute('NeedsUpload')
+		if (d:IsA('ParticleEmitter') or d:IsA('Beam') or d:IsA('Light')) and d.Enabled ~= want then d.Enabled = want end
 	end
 end
 

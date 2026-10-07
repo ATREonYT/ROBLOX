@@ -11,8 +11,10 @@ renderer.setSize(W, H);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.05;
+// Calibrated to Roblox's look (see LIGHT below): linear output, no filmic curve. ACES desaturated bright
+// saturated colours (gold went mustard, cyan went grey); linear keeps a lit top face at its Color3.
+renderer.toneMapping = THREE.LinearToneMapping;
+renderer.toneMappingExposure = 1.0;
 document.body.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
@@ -58,7 +60,7 @@ function material(p) {
   const opts = {color, roughness: ROUGH[p.m] ?? .85, metalness: METAL[p.m] ?? 0};
   const tex = p.studs ? TEX.Studs : TEX[p.m];
   if (tex) opts.map = tex[1];
-  if (p.m === 'Neon') { opts.emissive = color.clone(); opts.emissiveIntensity = 1.4; }
+  if (p.m === 'Neon') { opts.emissive = color.clone(); opts.emissiveIntensity = 1.0; }
   if (p.m === 'Glass') { opts.transparent = true; opts.opacity = Math.min(1, (1 - p.t) * .55 + .15); }
   if (p.t > 0 && p.m !== 'Glass') { opts.transparent = true; opts.opacity = 1 - p.t; opts.depthWrite = p.t < .5; }
   const m = new THREE.MeshStandardMaterial(opts);
@@ -186,7 +188,7 @@ const BUILTIN = { sparkles_main: 'sparkle', smoke_main: 'smoke', fire_main: 'fla
 // Preview textures that are flipbook sheets (HoodVFX names): grid size and how frames are picked.
 // random = FlipbookStartRandom with Framerate 0 (a static random frame per particle), oneshot = frames spread
 // over the particle's life, loop = plays at fps from a random start.
-const FLIP = { aura: { g: 2, mode: 'random' }, arc: { g: 2, mode: 'random' }, tendril: { g: 2, mode: 'random' }, wisp: { g: 4, mode: 'oneshot' }, flame: { g: 4, mode: 'loop', fps: 18 } };
+const FLIP = { aura: { g: 2, mode: 'random' }, arc: { g: 2, mode: 'random' }, tendril: { g: 2, mode: 'random' }, firepuff: { g: 4, mode: 'loop', fps: 17 }, wisp: { g: 4, mode: 'oneshot' }, flame: { g: 4, mode: 'loop', fps: 18 } };
 let FX_OPTS = {};
 function fxName(fx) {
   let name = FX_OPTS.builtinOnly ? null : fx.preview;
@@ -216,7 +218,7 @@ function frameTexture(name, g, frame) {
 }
 const FX_NAMES = ['glow', 'sparkle', 'star', 'ring', 'smoke', 'streak', 'shard', 'confetti', 'pow', 'lightning', 'energy', 'flame1',
   'aura', 'wisp', 'flame', 'arc', 'mist', 'ray', 'shaft', 'glitter', 'swirl', 'dust', 'softglow',
-  'rain', 'ember', 'bubble', 'snow', 'tendril', 'comet', 'stamp'];
+  'rain', 'ember', 'bubble', 'snow', 'tendril', 'comet', 'stamp', 'firepuff', 'streakup'];
 async function preloadFx() {
   await Promise.all(FX_NAMES.map(async n => { if (!texCache[n]) { try { const t = await texLoader.loadAsync(`vfx/${n}.png`); t.colorSpace = THREE.SRGBColorSpace; texCache[n] = t; } catch (e) { console.error('missing vfx/' + n + '.png'); } } }));
 }
@@ -320,7 +322,7 @@ function addParticles(fx, idx, T) {
     const wq = size * Math.pow(2, -sq / 2), hq = size * Math.pow(2, sq / 2);
     let obj;
     if (fx.orient === 'VelocityPerpendicular' || fx.orient === 'FacingCameraWorldUp') {
-      const mat = emissive(new THREE.MeshBasicMaterial({ map, color: new THREE.Color(...col), transparent: true, opacity: alpha, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }), e);
+      const mat = emissive(new THREE.MeshBasicMaterial({ map, color: new THREE.Color().setRGB(...col, THREE.SRGBColorSpace), transparent: true, opacity: alpha, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }), e);
       obj = new THREE.Mesh(QUAD, mat);
       obj.scale.set(wq, hq, 1);
       if (fx.orient === 'VelocityPerpendicular') {
@@ -330,7 +332,7 @@ function addParticles(fx, idx, T) {
         obj.rotateZ(angle);
       } else { obj.userData.angle = angle; worldUpQuads.push(obj); }
     } else {
-      const mat = emissive(new THREE.SpriteMaterial({ map, color: new THREE.Color(...col), transparent: true, opacity: alpha, depthWrite: false, toneMapped: false }), e);
+      const mat = emissive(new THREE.SpriteMaterial({ map, color: new THREE.Color().setRGB(...col, THREE.SRGBColorSpace), transparent: true, opacity: alpha, depthWrite: false, toneMapped: false }), e);
       mat.rotation = angle;
       obj = new THREE.Sprite(mat);
       obj.scale.set(wq, hq, 1);
@@ -362,7 +364,8 @@ function buildBeams(camera) {
       const w = (b.w0 + (b.w1 - b.w0) * t) / 2;
       const a = p.clone().addScaledVector(side, w), c = p.clone().addScaledVector(side, -w);
       pos.push(a.x, a.y, a.z, c.x, c.y, c.z);
-      const cc = seqC(b.color, t).map(v => Math.min(1, v * (b.brightness || 1))), al = 1 - Math.min(1, Math.max(0, seqN(b.tr, t, 0.5)));
+      const cs = seqC(b.color, t).map(v => Math.min(1, v * (b.brightness || 1))), al = 1 - Math.min(1, Math.max(0, seqN(b.tr, t, 0.5)));
+      const lc = new THREE.Color().setRGB(cs[0], cs[1], cs[2], THREE.SRGBColorSpace), cc = [lc.r, lc.g, lc.b]; // vertex colours are linear
       col.push(...cc, al, ...cc, al);
       const u = b.texMode === 'Wrap' || b.texMode === 'Static' ? t * length / (b.texLen || 1) : t * (b.texLen || 1);
       uv.push(u, 1, u, 0);
@@ -462,26 +465,30 @@ window.loadScene = async (data, opts = {}) => {
     for (const f of p.fx || []) { if (f.kind === 'particles') addParticles(f, fxi++ + (p.cf[0] * 3.1 + p.cf[2] * 1.7), opts.time ?? 3); else addBeam(f); }
     for (const L of p.lights || []) {
       if (lightsUsed >= lightBudget) break; lightsUsed++;
-      const l = new THREE.PointLight(new THREE.Color(...L.c), L.b * 6, L.r * 1.6, 1.4);
+      const l = new THREE.PointLight(new THREE.Color().setRGB(L.c[0], L.c[1], L.c[2], THREE.SRGBColorSpace), L.b * 6, L.r * 1.6, 1.4);
       l.position.set(c[0], c[1], c[2]); scene.add(l);
     }
   }
   // Optional rough emulation of a Roblox Lighting preset (opts.lighting, values as in HoodLighting).
   const Lg = opts.lighting;
-  let hemiSky = 0xdfefff, hemiGround = 0x6d6a5f, hemiI = 1.25, sunColor = 0xfff1dc, sunI = 2.6;
+  // LIGHT: a bright ambient (white sky, light ground) with a soft sun, like Roblox's outdoor light: a top face
+  // renders at ~1.0x its Color3, an upright face toward the sun at ~0.93x and one in shade at ~0.87x (sRGB),
+  // the face-to-face contrast the reference shows (swatch board: scratchpad/work_bags/calib). Cast shadows
+  // only take the sun's share away.
+  let hemiSky = 0xffffff, hemiGround = 0xeeeeee, hemiI = 2.55, sunColor = 0xfffaf0, sunI = 0.64;
   let sd = opts.sun || [-0.45, 1, 0.35];
   if (Lg) {
     const c3 = a => new THREE.Color(a[0] / 255, a[1] / 255, a[2] / 255);
     const lum = a => (a[0] + a[1] + a[2]) / 3 / 255;
     const oa = Lg.OutdoorAmbient || [128, 128, 128], am = Lg.Ambient || [70, 70, 70];
-    hemiSky = c3(oa).lerp(new THREE.Color(1, 1, 1), .35); hemiGround = c3(am);
-    hemiI = 1.25 * (lum(oa) / .62);
+    hemiSky = c3(oa).lerp(new THREE.Color(1, 1, 1), .6); hemiGround = c3(am).lerp(new THREE.Color(1, 1, 1), .8);
+    hemiI = 2.55 * Math.sqrt(lum(oa) / .62);
     const t = Lg.ClockTime ?? 14, elev = Math.max(.08, Math.sin((t - 6) / 12 * Math.PI));
     const az = (t - 12) / 12 * Math.PI; // sun swings east to west
     sd = [Math.sin(az) * .8 - .2, elev * 1.6, .35 + Math.cos(az) * .2];
     sunColor = c3(Lg.ColorShift_Top || [255, 241, 220]);
-    sunI = 2.6 * ((Lg.Brightness ?? 3) / 3) * (.45 + .55 * elev);
-    renderer.toneMappingExposure = 1.05 * Math.pow(2, Lg.ExposureCompensation ?? 0);
+    sunI = 0.64 * ((Lg.Brightness ?? 3) / 3) * (.45 + .55 * elev);
+    renderer.toneMappingExposure = Math.pow(2, (Lg.ExposureCompensation ?? 0) * .5);
     if (Lg.atmosphere && !opts.transparent) {
       const ac = c3(Lg.atmosphere.Color || [199, 199, 199]), haze = Lg.atmosphere.Haze ?? 0, dens = Lg.atmosphere.Density ?? .3;
       scene.background = new THREE.Color(0x9fcbf2).lerp(ac, Math.min(.7, haze * .3));

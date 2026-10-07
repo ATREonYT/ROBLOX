@@ -2,14 +2,16 @@
 // punching-bag stations (HoodVFX.theme). Pure Node, same toolkit as make_aura_textures.js.
 // Run:  node make_theme_textures.js [outDir]     (default: next to this file)
 // White/grey on transparent (tinted in game by ParticleEmitter.Color); alpha fades to 0 at every border.
-//   rain     256  single               thin vertical streak, bright in the middle (VelocityParallel)
+//   rain     256  single               a thin (~6 px) vertical line, bright in the middle (VelocityParallel)
 //   ember    128  single               hot pin-point with a soft halo
 //   bubble   256  single               soap/ooze bubble: thin rim, faint fill, a highlight and a crescent
 //   snow     256  single               six-armed snowflake with side branches and a faint halo
 //   tendril 1024  2x2 static variants  a wavy strand of smoke rising, thick at the root, fraying at the tip
-//   comet    256  single (Beam)        a bright head with a fading tail along U, for sweeping arcs
-//   stamp    128  tiling Texture       the reference's stamped X: a square frame and both diagonals (white
-//                                      lines, tinted darker than the block by Texture.Color3); no edge fade
+//   comet    256  single (Beam)        a bright head at U ~0.14 with a tail fading toward U = 1 (sweeping arcs)
+//   stamp    128  tiling Texture       the reference's embossed X: both diagonals as a dark groove with a light
+//                                      edge below-right (the PNG carries both; Texture.Color3 stays white)
+//   firepuff 1024 4x4 Loop             a lumpy, round cartoon fire puff with a hot core (no pointed tip)
+//   streakup 256  single               a straight, thin vertical wisp, fading in and out along its length
 const zlib = require('zlib');
 const fs = require('fs');
 const path = require('path');
@@ -116,7 +118,7 @@ function rain() {
   const N = 256, im = img(N);
   for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
     const u = x / N - 0.5, v = y / N;
-    const across = Math.exp(-((u / 0.016) ** 2)) + 0.35 * Math.exp(-((u / 0.05) ** 2));
+    const across = Math.exp(-((u / 0.009) ** 2)) + 0.2 * Math.exp(-((u / 0.02) ** 2));
     const along = smooth(0.04, 0.45, v) * (1 - smooth(0.7, 0.97, v));
     im.a[y * N + x] = clamp(across * along);
   }
@@ -206,7 +208,7 @@ function tendril(fr, seed) {
 function comet() {
   const N = 256, im = img(N);
   for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-    const u = x / N, v = y / N - 0.5;
+    const u = 1 - x / N, v = y / N - 0.5; // head near U = 0 (a Beam's Attachment0 end), tail toward U = 1
     const head = Math.exp(-(((u - 0.86) / 0.05) ** 2 + (v / 0.09) ** 2));
     const t = clamp((u - 0.05) / 0.81); // 0 at the tail's end, 1 at the head
     const tail = (u < 0.86 ? t * t : Math.exp(-(((u - 0.86) / 0.04) ** 2))) * Math.exp(-((v / (0.025 + 0.06 * t)) ** 2));
@@ -215,21 +217,63 @@ function comet() {
   }
   return im;
 }
-// ---------------------------------------------------------------- stamp: tiling X (no border fade)
+// ---------------------------------------------------------------- stamp: embossed X (tiling, no border)
+// Both diagonals cut as a 5 px groove (black, alpha 0.45) with a 2 px highlight 2 px below-right of it (white,
+// alpha 0.30), so one PNG darkens and lights any base colour (gold stays lemon, not olive).
 function stamp() {
-  const N = 128, im = img(N), line = 6 / N, border = 4 / N;
+  const N = 128, rgba = Buffer.alloc(N * N * 4);
+  const diag = (x, y) => { const u = x / N, v = y / N; return Math.min(Math.abs(u - v), Math.abs(u + v - 1)) / Math.SQRT2 * N; }; // px to the X
   for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-    const u = (x + 0.5) / N, v = (y + 0.5) / N;
-    const d1 = Math.abs(u - v) / Math.SQRT2, d2 = Math.abs(u + v - 1) / Math.SQRT2;
-    const diag = 1 - smooth(line * 0.35, line * 0.65, Math.min(d1, d2));
-    const edge = Math.min(u, v, 1 - u, 1 - v);
-    const frame = 1 - smooth(border * 0.75, border * 1.25, edge);
-    im.a[y * N + x] = clamp(Math.max(diag, frame));
+    let groove = 0, hi = 0;
+    for (let sy = 0; sy < 3; sy++) for (let sx = 0; sx < 3; sx++) { // 3x3 supersampling for clean edges
+      const px = x + (sx + 0.5) / 3, py = y + (sy + 0.5) / 3;
+      if (diag(px, py) <= 2.5) groove += 1 / 9;
+      else if (diag(px - 2, py - 2) <= 1) hi += 1 / 9;
+    }
+    const aG = 0.45 * groove, aH = 0.30 * hi, a = aG + aH * (1 - aG);
+    const c = a > 0 ? Math.round(255 * (aH * (1 - aG)) / a) : 255;
+    rgba[(y * N + x) * 4] = rgba[(y * N + x) * 4 + 1] = rgba[(y * N + x) * 4 + 2] = c;
+    rgba[(y * N + x) * 4 + 3] = Math.round(a * 255);
   }
-  const rgba = Buffer.alloc(N * N * 4);
-  for (let i = 0; i < N * N; i++) { rgba[i * 4] = rgba[i * 4 + 1] = rgba[i * 4 + 2] = 255; rgba[i * 4 + 3] = Math.round(im.a[i] * 255); }
   writePng(path.join(OUT, 'stamp.png'), N, N, rgba);
   console.log('wrote stamp', N + 'x' + N);
+}
+// ---------------------------------------------------------------- firepuff: round cartoon fire (4x4 Loop)
+function firepuff(fr, f) {
+  const N = fr.w, n1 = perlin(77), r = rng(91);
+  // A ring of round lobes round a core (cauliflower outline), a couple bulging up more than down.
+  const lobes = [];
+  for (let i = 0; i < 8; i++) {
+    const a = i / 8 * 6.283 + r() * 0.4, up = Math.sin(a) < 0 ? 1.15 : 0.85;
+    lobes.push({ a, d: (0.17 + r() * 0.05) * up, rr: 0.1 + r() * 0.04, ph: r() * 6.283 });
+  }
+  const t = f / 16 * 6.283; // loop phase
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const u = x / N - 0.5, v = y / N - 0.53;
+    let dens = 1 - Math.hypot(u, v) / 0.2; // core (negative outside, so nothing speckles there)
+    for (const L of lobes) {
+      const d = L.d * (1 + 0.12 * Math.sin(t + L.ph)), rr = L.rr * (1 + 0.15 * Math.sin(t * 2 + L.ph));
+      dens = Math.max(dens, 1 - Math.hypot(u - Math.cos(L.a) * d, v - Math.sin(L.a) * d) / rr);
+    }
+    const warp = (fbm(n1, u * 7 + Math.cos(t) * 0.7, v * 7 + Math.sin(t) * 0.7, 3) - 0.5) * 0.3;
+    const a = smooth(0.0, 0.15, dens + warp);
+    const core = 1 - Math.hypot(u, v + 0.02) / 0.26;
+    fr.a[y * N + x] = clamp(a);
+    fr.l[y * N + x] = clamp(0.84 + 0.16 * smooth(0, 0.85, core) + 0.05 * warp); // light edges: the tint, not grey, colours the rim
+  }
+}
+// ---------------------------------------------------------------- streakup: straight tapered wisp
+function streakup() {
+  const N = 256, im = img(N), n1 = perlin(5);
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const u = x / N - 0.5, h = 1 - y / N; // h = 0 at the root (bottom), 1 at the tip
+    const w = 0.022 * (1 - 0.5 * h) + 0.006;
+    const cx = (fbm(n1, h * 2, 0.5, 2) - 0.5) * 0.02;
+    const across = Math.exp(-(((u - cx) / w) ** 2) * 1.6);
+    const along = smooth(0, 0.3, h) * (1 - smooth(0.55, 0.98, h)); // soft at both ends
+    im.a[y * N + x] = clamp(across * along * (0.8 + 0.2 * fbm(n1, u * 20, h * 6, 3)));
+  }
+  return im;
 }
 
 save('rain', rain());
@@ -238,4 +282,6 @@ save('bubble', bubble());
 save('snow', snow());
 save('tendril', sheet(2, 512, 16, (f, fr) => tendril(fr, f + 1)));
 save('comet', comet());
+save('firepuff', sheet(4, 256, 8, (f, fr) => firepuff(fr, f)));
+save('streakup', streakup());
 stamp();
