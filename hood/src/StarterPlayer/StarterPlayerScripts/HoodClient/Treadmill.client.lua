@@ -6,7 +6,7 @@
 --     UNLOCKED / LOCKED, or your walk speed while you run on it
 --   * alive: idle screens breathe (+-12% at 0.5 Hz); while anyone runs on a treadmill its screen holds bright,
 --     its light doubles and its mist thickens
---   * the x999 (Sprint) sways its smoke lines (Beams SmokeLine1..22) within 70 studs of the camera
+--   * the x999 (Sprint) sways its smoke lines (Beams SmokeLine1..98) within 70 studs of the camera
 --   * you run: on an unlocked belt your character plays its run animation in place, quicker on Run and Sprint,
 --     and "+3 Speed" pops over the screen every time the server pays you
 -- The belt pattern math is shared with the map builder (Config/Treadmills.chevron).
@@ -71,7 +71,7 @@ local function record(model)
 			table.insert(r.lines, {
 				beam = d, tip = a1, base = a1.CFrame, baseY = a1:GetAttribute('BaseY') or a1.CFrame.Position.Y,
 				c0 = d:GetAttribute('BaseCurve0') or d.CurveSize0, c1 = d:GetAttribute('BaseCurve1') or d.CurveSize1,
-				period = d:GetAttribute('Period') or 3, phase = d:GetAttribute('Phase') or 0,
+				period = d:GetAttribute('Period') or 3, phase = d:GetAttribute('Phase') or 0, amp = d:GetAttribute('Sway') or 1.2,
 			})
 		end
 	end
@@ -183,16 +183,16 @@ local function glow(r, t)
 	end
 end
 
--- The x999's smoke lines: each S-curve breathes (CurveSize0 +-1.2 over Period, CurveSize1 +-1.0 over 1.3 Period)
--- and its tip bobs +-0.4 stud.
+-- The x999's smoke lines: each curve breathes (CurveSize0 +-Sway over Period, CurveSize1 +-Sway/1.2 over 1.3
+-- Period) and its tip bobs +-Sway/3 stud (Sway 1.2 on the long post lines, 0.35 on the short arcs).
 local TAU = 2 * math.pi
 local function sway(r, t)
 	for _, l in r.lines do
 		local w = TAU * t / l.period + l.phase
-		l.beam.CurveSize0 = l.c0 + 1.2 * math.sin(w)
-		l.beam.CurveSize1 = l.c1 + 1.0 * math.sin(w / 1.3 + 1.7)
+		l.beam.CurveSize0 = l.c0 + l.amp * math.sin(w)
+		l.beam.CurveSize1 = l.c1 + l.amp / 1.2 * math.sin(w / 1.3 + 1.7)
 		local p = l.base.Position
-		l.tip.CFrame = l.base - p + Vector3.new(p.X, l.baseY + 0.4 * math.sin(w * 0.8 + 0.6), p.Z)
+		l.tip.CFrame = l.base - p + Vector3.new(p.X, l.baseY + l.amp / 3 * math.sin(w * 0.8 + 0.6), p.Z)
 	end
 end
 
