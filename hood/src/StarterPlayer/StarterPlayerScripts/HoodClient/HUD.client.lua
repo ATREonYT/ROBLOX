@@ -708,7 +708,19 @@ local function hintText(power)
 		local gym = Skins.StationById[station:sub(8)]
 		return '<font color="#FF8A8A">' .. (gym and gym.Name or 'This range') .. ' needs ' .. short(gym and gym.Required or 0) .. ' Power</font>  •  ' .. goal
 	end
-	if station == '' then return 'Step into a shooting range  •  ' .. gun .. '  •  ' .. goal end
+	if station == '' then
+		-- A brand-new player (under the first look, never reborn) is told which lane to go to, in the yellow of
+		-- Lobby.client's floor guide that leads there: the best lane they can use (the free one).
+		local first = Skins.List[2]
+		if first and power < first.Required and rebirthsNow() == 0 then
+			local lane = Skins.Stations[1]
+			for _, s in Skins.Stations do
+				if power >= s.Required then lane = s end
+			end
+			return 'Go to the <font color="#FFE050">' .. string.upper(lane.Name) .. '</font> range and shoot! (x' .. lane.Multiplier .. ')'
+		end
+		return 'Step into a shooting range  •  ' .. gun .. '  •  ' .. goal
+	end
 	-- In a lane: the range's multiplier (in the lane's colour) and your gun's (white), side by side. A narrow hint
 	-- (phones: under 700 design px) gets the short form, so the line stays big enough to read.
 	local range = Skins.StationById[station]

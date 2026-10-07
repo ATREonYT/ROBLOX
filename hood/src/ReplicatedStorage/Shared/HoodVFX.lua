@@ -51,6 +51,8 @@ HoodVFX.Textures = {
 	comet = '', -- head + fading tail along U (Beam)
 	firepuff = '', -- 4x4 round cartoon fire puff (Loop)
 	streakup = '', -- straight tapered vertical wisp
+	-- Guidance (Lobby.client's floor guide to the free lane): a chevron pointing along +U (Beam, Wrap).
+	chevron = '',
 	-- Not an effect: the bag stations' stamped X block texture (d2_stations reads it; '' draws nothing).
 	stamp = '',
 }
@@ -66,6 +68,7 @@ local BUILTIN = {
 	bubble = 'rbxasset://textures/particles/explosion01_shockwave_main.dds',
 	comet = 'rbxasset://textures/glow.png', firepuff = 'rbxasset://textures/particles/fire_main.dds',
 	streakup = 'rbxasset://textures/particles/smoke_main.dds',
+	chevron = 'rbxasset://textures/glow.png', -- (before upload: a trail of soft glowing dashes)
 }
 -- Flipbook settings, applied only when the uploaded sheet is in use.
 local FLIPBOOK = {

@@ -353,27 +353,42 @@ for _, e in stations do
 		e.Middle = near >= 2
 	end
 end
+-- The lanes whose box is within 25 studs of each lane's box (any direction, any height): their stacks hide while
+-- you stand in that box, so the shooter's view isn't a pile of labels under the HUD hint.
+local NEIGHBOUR = 25
+for _, e in stations do
+	e.Near = {}
+	for id, o in stations do
+		if o ~= e and e.Zone and o.Zone and (o.Zone.CFrame.Position - e.Zone.CFrame.Position).Magnitude < NEIGHBOUR then e.Near[id] = true end
+	end
+end
 local SILHOUETTE = C(18, 18, 22)
 local UNLOCKED, LOCKED = C(20, 235, 70), C(235, 25, 50)
 local function paintStations(n)
-	local goal = nil -- the next station to unlock always shows its stack (lifted clear if it's a middle one)
+	local goal = nil -- the next station to unlock shows its stack from afar (lifted clear if it's a middle one)
 	for _, s in Skins.Stations do
 		if n < s.Required then goal = s break end
 	end
-	-- Your own lane's label hides while you stand in its box: the HUD hint already says its multiplier (or what
-	-- it needs), and from the shooter's spot the stack would sit on the hint and on the signs behind the targets.
+	-- While you're still in the free tier the next lane stays a plain lane (no lift, no long range): lifted, its
+	-- stack landed on the FREE lane's from the side, and the free lane is the one a new player needs.
+	local free = n < (Skins.Stations[2] and Skins.Stations[2].Required or 0)
+	-- Your own lane's label hides while you stand in its box (the HUD hint already says its multiplier, or what it
+	-- needs), and so do your neighbours' (within 25 studs): from the shooter's spot they pile up under the hint.
 	local here = player:GetAttribute('TrainingStation') or ''
+	local hereId = here:gsub('^Locked:', '')
+	local box = stations[hereId]
 	for _, s in Skins.Stations do
 		local e = stations[s.Id]
 		if e and e.Label then
-			local isGoal = goal == s
-			local own = here == s.Id or here == 'Locked:' .. s.Id
-			local state = (e.Middle and 'M' or 'E') .. (isGoal and 'G' or '') .. (own and 'O' or '')
+			local lift = goal == s and not free
+			local own = hereId == s.Id
+			local beside = box ~= nil and not own and not lift and box.Near[s.Id] == true
+			local state = (e.Middle and 'M' or 'E') .. (lift and 'G' or '') .. (own and 'O' or '') .. (beside and 'N' or '')
 			if e.LabelState ~= state then
 				e.LabelState = state
-				e.Label.MaxDistance = (e.Middle and not isGoal) and LABEL_NEAR or LABEL_FAR
-				e.Label.StudsOffset = (e.Middle and isGoal) and NEXT_LIFT or Vector3.zero
-				e.Label.Enabled = not own
+				e.Label.MaxDistance = (e.Middle and not lift) and LABEL_NEAR or LABEL_FAR
+				e.Label.StudsOffset = (e.Middle and lift) and NEXT_LIFT or Vector3.zero
+				e.Label.Enabled = not own and not beside
 			end
 		end
 		if e then
@@ -404,6 +419,148 @@ local function zoneOf(id)
 	local e = stations[id]
 	return e and e.Zone
 end
+
+---------------------------------------------------------------------------------------------- new-player guide
+-- A brand-new player (under the first look's Power, never reborn) who isn't in a shooter's box gets a scrolling
+-- chevron trail from their feet to the box of the lane they can use, and a pulsing frame in that box: it works
+-- from any facing, on any layout and after every respawn, and ends on the box the arrow names. It hands over to
+-- the arrow whenever the evolve guidance is on, hides while you stand in a box, and is gone for good at the first
+-- look's Power (a few seconds of shooting). One beam and four parts, made once per target. While the box is off
+-- screen (behind you at the spawn), a small pointer on an inner ellipse of the screen turns toward it, with the
+-- lane's name, so the first frame shows the way without turning.
+local GUIDE_POWER = Skins.List[2] and Skins.List[2].Required or 25
+local GUIDE_COLOR = C(255, 224, 80)
+local guide, guideWant = {}, nil
+local compass = Instance.new('ScreenGui')
+compass.Name = 'GuideCompass'
+compass.ResetOnSpawn, compass.IgnoreGuiInset, compass.Enabled, compass.DisplayOrder = false, true, false, 2
+compass.Parent = player.PlayerGui
+local needle = Instance.new('Frame')
+needle.Name = 'Pointer'
+needle.AnchorPoint, needle.Size, needle.BackgroundTransparency = Vector2.new(0.5, 0.5), UDim2.fromOffset(150, 96), 1
+needle.Parent = compass
+-- ">>": two chevrons of two bars each, turned toward the box bar by bar (no rotated container, so every UI
+-- renderer draws it the same).
+local bars = {}
+for _, ox in { -11, 11 } do
+	for _, sy in { -1, 1 } do
+		local bar = Instance.new('Frame')
+		bar.Name = 'Chevron'
+		bar.AnchorPoint, bar.Size = Vector2.new(0.5, 0.5), UDim2.fromOffset(30, 11)
+		bar.BackgroundColor3, bar.BorderSizePixel = GUIDE_COLOR, 0
+		local edge = Instance.new('UIStroke')
+		edge.Color, edge.Thickness = INK, 2
+		edge.Parent = bar
+		bar.Parent = needle
+		table.insert(bars, { bar = bar, x = ox - 5, y = sy * 10, r = -sy * 45 }) -- (the upper arm falls to the tip, the lower rises to it)
+	end
+end
+local laneName = label(needle, 'Lane', 18, GUIDE_COLOR)
+laneName.AnchorPoint, laneName.Position, laneName.Size = Vector2.new(0.5, 0), UDim2.fromOffset(75, 62), UDim2.fromOffset(150, 26)
+local compassConn
+local function showCompass(on) -- (the pointer itself hides too, for every UI renderer)
+	compass.Enabled, needle.Visible = on, on
+end
+showCompass(false)
+local function pointCompass()
+	local cam = workspace.CurrentCamera
+	local zone = guide.zone
+	local ok, vp = pcall(function() return cam.ViewportSize end)
+	if not (cam and zone and ok and vp.X > 1) then return showCompass(false) end
+	local rel = cam.CFrame:PointToObjectSpace(zone.CFrame.Position + Vector3.new(0, 1, 0))
+	local ty = math.tan(math.rad(cam.FieldOfView) / 2)
+	local tx = ty * vp.X / vp.Y
+	if rel.Z < 0 and math.abs(rel.X / rel.Z) < tx * 0.85 and math.abs(rel.Y / rel.Z) < ty * 0.85 then
+		return showCompass(false) -- (on screen: the trail, the frame and the arrow show the way)
+	end
+	local dx, dy = rel.X, -rel.Y
+	if rel.Z > 0 then dy = math.max(dy, math.abs(dx) * 0.4 + 0.5) end -- behind you: point down and to its side
+	local a = math.atan2(dy, dx)
+	needle.Position = UDim2.fromOffset(vp.X / 2 + math.cos(a) * vp.X * 0.25, vp.Y / 2 + math.sin(a) * vp.Y * 0.25) -- (clear of the HUD's columns)
+	local ca, sa = math.cos(a), math.sin(a)
+	for _, b in bars do
+		b.bar.Position = UDim2.fromOffset(75 + b.x * ca - b.y * sa, 30 + b.x * sa + b.y * ca)
+		b.bar.Rotation = math.deg(a) + b.r
+	end
+	showCompass(true)
+end
+local function clearGuide()
+	for _, t in guide.tweens or {} do t:Cancel() end
+	for _, k in { 'beam', 'frame', 'from', 'to' } do
+		if guide[k] then guide[k]:Destroy() end
+	end
+	guide = {}
+	if compassConn then compassConn:Disconnect() compassConn = nil end
+	showCompass(false)
+end
+local function showGuide(zone)
+	local c = player.Character
+	local root = c and c:FindFirstChild('HumanoidRootPart')
+	if not (zone and root) then return clearGuide() end
+	if guide.zone == zone and guide.root == root and guide.beam and guide.beam.Parent then return end
+	clearGuide()
+	guide.zone, guide.root, guide.tweens = zone, root, {}
+	-- The trail rides 0.7 over the floor (clear of rims and mats), from the feet to the middle of the box.
+	local h = c:FindFirstChildOfClass('Humanoid')
+	local feet = (h and h.HipHeight or 2) + root.Size.Y / 2
+	guide.from = Instance.new('Attachment')
+	guide.from.Name = 'GuideFrom'
+	guide.from.CFrame = CFrame.new(0, 0.7 - feet, 0)
+	guide.from.Parent = root
+	guide.to = Instance.new('Attachment')
+	guide.to.Name = 'GuideTo'
+	guide.to.CFrame = CFrame.new(0, zone.Size.Y / 2 + 0.7, 0)
+	guide.to.Parent = zone
+	local beam = Instance.new('Beam')
+	beam.Name = 'FloorGuide'
+	beam.Attachment0, beam.Attachment1 = guide.from, guide.to
+	beam.FaceCamera = true -- (a band along the floor from the follow camera, whatever the attachments' axes)
+	beam.Width0, beam.Width1 = 1.2, 1.2
+	beam.Segments = 1
+	beam.Color = ColorSequence.new(GUIDE_COLOR)
+	beam.LightEmission, beam.LightInfluence, beam.Brightness = 0.5, 0, 1
+	beam.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.08, 0.15), NumberSequenceKeypoint.new(0.95, 0.15), NumberSequenceKeypoint.new(1, 0.5) })
+	if HoodVFX and HoodVFX.applyTexture then HoodVFX.applyTexture(beam, 'chevron') else beam.Texture = 'rbxasset://textures/glow.png' end
+	beam.TextureMode, beam.TextureLength, beam.TextureSpeed = Enum.TextureMode.Wrap, 2, 1.5 -- (chevrons point and scroll toward the box)
+	beam.Parent = zone
+	guide.beam = beam
+	-- A pulsing frame just inside the box's edges.
+	local frame = Instance.new('Model')
+	frame.Name = 'GuideFrame'
+	local w, d = zone.Size.X - 0.3, zone.Size.Z - 0.3
+	local top = zone.CFrame * CFrame.new(0, zone.Size.Y / 2 + 0.06, 0)
+	for _, b in { { 0, d / 2, w, 0.25 }, { 0, -d / 2, w, 0.25 }, { w / 2, 0, 0.25, d }, { -w / 2, 0, 0.25, d } } do
+		local p = Instance.new('Part')
+		p.Name = 'GuideEdge'
+		p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch, p.CastShadow = true, false, false, false, false
+		p.Material, p.Color = Enum.Material.Neon, GUIDE_COLOR
+		p.Size = Vector3.new(b[3], 0.1, b[4])
+		p.CFrame = top * CFrame.new(b[1], 0, b[2])
+		p.Transparency = 0.15
+		p.Parent = frame
+		local t = TweenService:Create(p, PULSE, { Transparency = 0.75 })
+		t:Play()
+		table.insert(guide.tweens, t)
+	end
+	frame.Parent = zone.Parent
+	guide.frame = frame
+	compassConn = RunService.PreRender:Connect(pointCompass)
+end
+-- n: Power; station: TrainingStation; evolving: the arrow is on the evolve guidance; zone: the box to go to.
+local function updateGuide(n, station, evolving, zone, laneTitle)
+	guideWant = { n, station, evolving, zone, laneTitle }
+	local new = n < GUIDE_POWER and (player:GetAttribute('Rebirths') or 0) == 0
+	if new and station == '' and not evolving then
+		laneName.Text = laneTitle or ''
+		showGuide(zone)
+	else
+		clearGuide()
+	end
+end
+player.CharacterAdded:Connect(function(c)
+	c:WaitForChild('HumanoidRootPart', 10)
+	if guideWant then updateGuide(table.unpack(guideWant)) end
+end)
 
 ---------------------------------------------------------------------------------------------- refresh
 -- The HUD's EVOLVE panel asks for directions by setting the local GuideEvolve attribute: the arrow then points
@@ -484,6 +641,7 @@ local function refresh()
 	else
 		indicator.Adornee = nil
 	end
+	updateGuide(n, station, guideTo and true or false, zoneOf(bestGym.Id), string.upper(bestGym.Name))
 	-- "+N POWER" over your head whenever Power goes up; not while you shoot on a range (Shoot.client puts each
 	-- shot's "+N" on the target, and a second number over your head would sit right on it).
 	if lastPower and n > lastPower and not require(RS.Shared.ShotRules).counts(station) then

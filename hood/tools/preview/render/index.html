@@ -222,7 +222,7 @@ function frameTexture(name, g, frame) {
 }
 const FX_NAMES = ['glow', 'sparkle', 'star', 'ring', 'smoke', 'streak', 'shard', 'confetti', 'pow', 'lightning', 'energy', 'flame1',
   'aura', 'wisp', 'wispline', 'flame', 'arc', 'mist', 'ray', 'shaft', 'glitter', 'swirl', 'dust', 'softglow',
-  'rain', 'ember', 'bubble', 'snow', 'comet', 'stamp', 'firepuff', 'streakup'];
+  'rain', 'ember', 'bubble', 'snow', 'comet', 'stamp', 'firepuff', 'streakup', 'chevron'];
 async function preloadFx() {
   await Promise.all(FX_NAMES.map(async n => { if (!texCache[n]) { try { const t = await texLoader.loadAsync(`vfx/${n}.png`); t.colorSpace = THREE.SRGBColorSpace; texCache[n] = t; } catch (e) { console.error('missing vfx/' + n + '.png'); } } }));
 }
