@@ -1,7 +1,7 @@
 -- World-side guidance and feedback on the active map (the original Block's SimulatorLobby, or The Block V2):
--- look stand / EVOLVE booth prompts, Locked/Unlocked on the training stations (the original Block's gym still
--- shows locked gear as black silhouettes), the floating arrow over where to go next ("TRAIN x4 HERE", "EVOLVE
--- HERE"), the "+N POWER" pop over your head and the sway of the bag you train on. The screen HUD (Power, LEVEL bar, hint line, notices) is HUD.client.
+-- look stand prompts (where a map has one), Locked/Unlocked on the training stations (the original Block's gym
+-- still shows locked gear as black silhouettes), the floating arrow over where to go next ("TRAIN x4 HERE"), the
+-- "+N POWER" pop over your head and the sway of the bag you train on. Looks equip from the HUD's EVOLVE menu. The screen HUD (Power, LEVEL bar, hint line, notices) is HUD.client.
 local Players = game:GetService('Players')
 local RS = game:GetService('ReplicatedStorage')
 local TweenService = game:GetService('TweenService')
@@ -14,11 +14,13 @@ local player = Players.LocalPlayer
 local active = ActiveMap.wait(20)
 if not active then return end
 local lobby = active.Lobby
--- A map can go without a morph stand (The Block V2 evolves you at the EVOLVE booth): then the stand prompts
--- and labels are skipped and training runs as usual.
-local hasStand = active.Root:GetAttribute('MorphStand') ~= false
-local morphs = hasStand and ActiveMap.find(lobby, 'Morphs', 20) or nil
-if hasStand and not morphs then return end
+-- A map may have a morph stand (`Morphs`, which the original Block's SimulatorLobby builds): its looks get
+-- prompts, labels and locked/unlocked paint. Without one (The Block V2) all of that is skipped and the rest runs
+-- as usual; looks equip from the HUD's EVOLVE menu anywhere. Only the original Block waits for its stand to
+-- stream in, so a map without one never stalls here.
+local morphs = active.Root:GetAttribute('MorphStand') ~= false
+	and (lobby:FindFirstChild('Morphs', true) or (active.Id == 'Block' and ActiveMap.find(lobby, 'Morphs', 20)))
+	or nil
 local training = lobby:FindFirstChild('Training') or lobby
 
 local C = Color3.fromRGB
@@ -46,14 +48,14 @@ local function compact(v)
 end
 
 ---------------------------------------------------------------------------------------------- prompts
--- Each look's own prompt reaches only its standing spot (figures stand 9 studs apart, so neighbours' prompts
--- never show together); the stand's WARDROBE badge has the one big prompt, on its own key, which opens the
--- HUD's EVOLVE panel (every look, equip from there) through the local OpenEvolve attribute.
-local FIGURE_REACH = 5
+-- Each look on a stand has its own Equip prompt (the server equips unlocked looks from anywhere, so the prompt
+-- is only a shortcut).
+local FIGURE_REACH = 11
 local prompts = {}
 for _, s in (morphs and Skins.List or {}) do
-	local stand = morphs:WaitForChild('Skin_' .. s.Id)
-	local target = stand:WaitForChild('Interact')
+	local stand = morphs:WaitForChild('Skin_' .. s.Id, 10)
+	local target = stand and stand:WaitForChild('Interact', 10)
+	if not target then continue end
 	local p = Instance.new('ProximityPrompt')
 	p.Name = 'Equip_' .. s.Id
 	p.MaxActivationDistance = FIGURE_REACH
@@ -64,42 +66,6 @@ for _, s in (morphs and Skins.List or {}) do
 	p.Parent = target
 	p.Triggered:Connect(function() Net.get('EquipSkin'):FireServer(s.Id) end)
 	prompts[s.Id] = p
-end
-local wardrobePoint = morphs and ActiveMap.find(lobby, 'WardrobePoint', 10) or nil
-if wardrobePoint then
-	local p = Instance.new('ProximityPrompt')
-	p.Name = 'Wardrobe'
-	p.MaxActivationDistance = 6 -- (you stand on its ring; every look's standing spot is 8+ studs away)
-	p.RequiresLineOfSight = false
-	p.HoldDuration = 0
-	p.KeyboardKeyCode = Enum.KeyCode.F
-	p.GamepadKeyCode = Enum.KeyCode.ButtonY
-	p.ObjectText = 'WARDROBE'
-	p.ActionText = 'Evolve & change look'
-	p.UIOffset = Vector2.new(0, -24)
-	p.Parent = wardrobePoint
-	p.Triggered:Connect(function() player:SetAttribute('OpenEvolve', os.clock()) end)
-end
--- No stand: one prompt at the EVOLVE booth puts on your best unlocked look.
-local evolvePoint = not morphs and ActiveMap.find(lobby, 'EvolvePoint', 10) or nil
-local evolvePrompt
-if evolvePoint then
-	evolvePrompt = Instance.new('ProximityPrompt')
-	evolvePrompt.Name = 'Evolve'
-	evolvePrompt.MaxActivationDistance = 12
-	evolvePrompt.RequiresLineOfSight = false
-	evolvePrompt.HoldDuration = 0
-	evolvePrompt.ObjectText = 'EVOLVE'
-	evolvePrompt.ActionText = 'Evolve'
-	evolvePrompt.Parent = evolvePoint
-	evolvePrompt.Triggered:Connect(function()
-		local n = player:GetAttribute('Power') or 0
-		local best = Skins.List[1]
-		for _, s in Skins.List do
-			if n >= s.Required then best = s end
-		end
-		if best.Id ~= (player:GetAttribute('EquippedSkin') or 'CornerKid') then Net.get('EquipSkin'):FireServer(best.Id) end
-	end)
 end
 -- Looks on the stand (Skin_<Id> > Display = the figure, Lock = the padlock, Turntable = the disc, LabelAnchor =
 -- the label (WorldLabel) and the NextMarker; effects marked UnlockedOnly or held by a part marked so; all
@@ -563,39 +529,18 @@ player.CharacterAdded:Connect(function(c)
 end)
 
 ---------------------------------------------------------------------------------------------- refresh
--- The HUD's EVOLVE panel asks for directions by setting the local GuideEvolve attribute: the arrow then points
--- at the EVOLVE booth (or the stand's WARDROBE when a better look is ready, else the next look's stand) until
--- you get there or 45 seconds pass.
-local GUIDE_TIME, GUIDE_ARRIVED = 45, 12
-local guideUntil = 0
-local function evolveTarget(skin, best, nextSkin)
-	if morphs then
-		if wardrobePoint and best.Gain > skin.Gain then return wardrobePoint end
-		local s = (best.Gain > skin.Gain and best) or nextSkin
-		local stand = s and morphs:FindFirstChild('Skin_' .. s.Id)
-		return stand and stand:FindFirstChild('Interact')
-	end
-	return evolvePoint
-end
-local function near(part)
-	local c = player.Character
-	local root = c and c:FindFirstChild('HumanoidRootPart')
-	return root ~= nil and (root.Position - part.Position).Magnitude < GUIDE_ARRIVED
-end
-
 local lastPower
 local pulse
 local function refresh()
 	local n = player:GetAttribute('Power')
 	if n == nil then return end
 	local id = player:GetAttribute('EquippedSkin') or 'CornerKid'
-	local skin = Skins.ById[id] or Skins.List[1]
 	local station = player:GetAttribute('TrainingStation') or ''
-	local best = Skins.List[1]
 	for _, s in Skins.List do
 		local unlocked = n >= s.Required
 		if prompts[s.Id] then prompts[s.Id].ActionText = (id == s.Id and 'Equipped') or (unlocked and 'Equip  +' .. s.Gain .. '/sec') or (compact(s.Required) .. ' Power needed') end
-		local anchor = morphs and morphs['Skin_' .. s.Id]:FindFirstChild('LabelAnchor')
+		local stand = morphs and morphs:FindFirstChild('Skin_' .. s.Id)
+		local anchor = stand and stand:FindFirstChild('LabelAnchor')
 		local detail = anchor and anchor:FindFirstChild('WorldLabel') and anchor.WorldLabel:FindFirstChild('Detail')
 		if detail then
 			-- Labels with their own Gain row (The Block V2's stand) keep the price, the action and the gain apart.
@@ -606,42 +551,23 @@ local function refresh()
 			if title and not title.Visible then detail.Text = string.upper(s.Name) .. ' · ' .. detail.Text end
 			detail.TextColor3 = id == s.Id and (split and C(120, 220, 255) or C(255, 126, 119)) or unlocked and C(109, 244, 133) or (split and C(255, 90, 90) or C(255, 255, 255))
 		end
-		if unlocked then best = s end
 	end
 	paintLooks(n, id)
 	showLabels(n)
 	fadeRows()
 	paintStations(n)
-	local nextSkin = Skins.nextSkin(n)
-	if evolvePrompt then
-		evolvePrompt.ActionText = (best.Id ~= id and ('Evolve → ' .. best.Name .. '  +' .. best.Gain .. '/sec')) or (nextSkin and ('Next: ' .. nextSkin.Name .. ' at ' .. compact(nextSkin.Required) .. ' Power')) or 'Fully evolved'
-	end
 	local bestGym = Skins.Stations[1]
 	for _, g in Skins.Stations do
 		if n >= g.Required and stations[g.Id] then bestGym = g end
 	end
-	local guideTo = os.clock() < guideUntil and evolveTarget(skin, best, Skins.List[skin.Index + 1])
-	if guideTo and near(guideTo) then
-		guideUntil = 0
-		guideTo = nil
-	end
-	if guideTo then
-		indicator.Adornee = guideTo
-		pointer.Text = guideTo == wardrobePoint and ('WARDROBE: ' .. best.Name .. ' ↓') or morphs and 'YOUR NEXT LOOK ↓' or 'EVOLVE HERE ↓'
-	elseif station:find('Locked:') then
-		indicator.Adornee = zoneOf(bestGym.Id)
-		pointer.Text = 'TRAIN x' .. bestGym.Multiplier .. ' HERE ↓'
-	elseif (morphs or evolvePoint) and best.Gain > skin.Gain then
-		-- A better look is unlocked: the stand's WARDROBE equips it (what the HUD hint says too).
-		indicator.Adornee = wardrobePoint or (morphs and morphs['Skin_' .. best.Id].Interact) or evolvePoint
-		pointer.Text = wardrobePoint and ('WARDROBE: ' .. best.Name .. ' ↓') or morphs and 'EQUIP YOUR LOOK ↓' or 'EVOLVE HERE ↓'
-	elseif station == '' then
+	-- (A new look unlocked is the HUD's job: its EVOLVE button wears a NEW! badge and the hint says to tap it.)
+	if station == '' or station:find('Locked:') then
 		indicator.Adornee = zoneOf(bestGym.Id)
 		pointer.Text = 'TRAIN x' .. bestGym.Multiplier .. ' HERE ↓'
 	else
 		indicator.Adornee = nil
 	end
-	updateGuide(n, station, guideTo and true or false, zoneOf(bestGym.Id), string.upper(bestGym.Name))
+	updateGuide(n, station, false, zoneOf(bestGym.Id), string.upper(bestGym.Name))
 	-- "+N POWER" over your head whenever Power goes up; not while you shoot on a range (Shoot.client puts each
 	-- shot's "+N" on the target, and a second number over your head would sit right on it).
 	if lastPower and n > lastPower and not require(RS.Shared.ShotRules).counts(station) then
@@ -669,10 +595,6 @@ end
 for _, key in { 'Power', 'EquippedSkin', 'TrainingStation', 'PowerRate' } do
 	player:GetAttributeChangedSignal(key):Connect(refresh)
 end
-player:GetAttributeChangedSignal('GuideEvolve'):Connect(function()
-	guideUntil = os.clock() + GUIDE_TIME
-	refresh()
-end)
 refresh()
 
 -- Only the bag you're training on sways, and only on your screen.

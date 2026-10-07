@@ -1,11 +1,8 @@
 local Skins=require(script.Parent.Config.Skins)
 local Rules={}
--- A look you've unlocked equips at its display (within EquipRange of the stand's Interact point) or from the
--- EVOLVE panel anywhere within WardrobeRange of the stand's WardrobePoint (wardrobeDistance; nil without one).
-Rules.EquipRange,Rules.WardrobeRange=14,30
-local function within(d,range) return type(d)=='number' and d==d and d>=0 and d<=range end
-function Rules.canEquip(power,id,distance,wardrobeDistance)
- return type(id)=='string' and Skins.available(power,id) and (within(distance,Rules.EquipRange) or within(wardrobeDistance,Rules.WardrobeRange))
+-- A look you've unlocked equips from anywhere (the HUD's EVOLVE menu): only a known id and enough Power count.
+function Rules.canEquip(power,id)
+ return type(id)=='string' and type(power)=='number' and power==power and Skins.available(power,id)
 end
 -- Training zones are map-local rectangles: {Station,X,Z,HalfX,HalfZ,Top}. Rules.zonesFrom reads them off the
 -- TrainingZone mats in the built lobby, so the server always trains on the mats players can actually see.

@@ -87,26 +87,19 @@ local function equipAppearance(player,id)
   Art.equip(c,Skins.ById[id] or Skins.List[1]);c:SetAttribute('BlockSkin',id);applied[player]=c
  end
 end
+-- Looks equip from anywhere (the HUD's EVOLVE menu, or a map's own look displays): a known id, one request a
+-- second, and enough Power. Without a character yet, the look is saved and put on by the loop below.
 remote.OnServerEvent:Connect(function(player,id)
  if type(id)~='string' or not Skins.ById[id] then return end
  local now=os.clock();if now-(cooldown[player] or 0)<1 then return end;cooldown[player]=now
- local profile=Data.get(player);local c=player.Character;local root=c and c:FindFirstChild('HumanoidRootPart');local h=c and c:FindFirstChild('Humanoid')
- if not profile or not root or not h or h.Health<=0 then return end
- local morphs=lobby:FindFirstChild('Morphs',true);local stand=morphs and morphs:FindFirstChild('Skin_'..id);local target=stand and stand:FindFirstChild('Interact')
- -- Maps without a morph stand (The Block V2) evolve at the EVOLVE booth instead.
- local booth=not target and lobby:FindFirstChild('EvolvePoint',true);target=target or booth
- -- The stand's WARDROBE: the EVOLVE panel equips any unlocked look within Rules.WardrobeRange of it.
- local wardrobe=morphs and lobby:FindFirstChild('WardrobePoint',true)
- if not target and not wardrobe then return end
- local distance=target and (root.Position-target.Position).Magnitude or math.huge
- local wardrobeDistance=wardrobe and (root.Position-wardrobe.Position).Magnitude or nil
- if not Rules.canEquip(profile.Data.Rep,id,distance,wardrobeDistance) then
-  local far=distance>Rules.EquipRange and not (wardrobeDistance and wardrobeDistance<=Rules.WardrobeRange)
-  Net.get('Notice'):FireClient(player,far and (booth and 'Walk to the EVOLVE booth to evolve.' or wardrobe and 'Walk to the WARDROBE at the EVOLUTIONS stand to change your look.' or 'Walk to this character display to equip it.') or ('Reach '..Skins.ById[id].Required..' Power to unlock this look.'));return
+ local profile=Data.get(player)
+ if not profile then return end
+ if not Rules.canEquip(profile.Data.Rep,id) then
+  Net.get('Notice'):FireClient(player,'Reach '..Skins.ById[id].Required..' Power to unlock this look.');return
  end
  profile.Data.EquippedSkin=id;profile.Data.Onboarding.EquippedSkin=true
  equipAppearance(player,id);sync(player,profile,1,'');Data.push(player)
- Net.get('Notice'):FireClient(player,(booth and 'Evolved into ' or '')..Skins.ById[id].Name..(booth and '!' or ' equipped!')..' +'..Skins.ById[id].Gain..' Power / second.')
+ Net.get('Notice'):FireClient(player,Skins.ById[id].Name..' equipped! +'..Skins.ById[id].Gain..' Power / second.')
 end)
 -- Shooting: while you stand in an unlocked range's shooter's box, each shot (click, tap SHOOT or R2) pays a
 -- tenth of your per-second gain (at least 1) times your gun's multiplier (ShotRules.pay), up to about 7 a
