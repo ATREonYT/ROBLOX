@@ -9,12 +9,13 @@ local C = Color3.fromRGB
 
 local Treadmills = {}
 
--- Ladder order = tier. Color is the tier colour of the "x1 Speed" label, the +Speed pops and the HUD hint
--- (the machines' own colours live with the map builder).
+-- Ladder order = tier. Color is the tier colour (the +Speed pops, the HUD hint); Label is the near-white,
+-- tier-tinted "x1 Speed" over the machine (the colour lerped 45% toward white). The machines' own colours
+-- live with the map builder.
 Treadmills.List = {
-	{ Id = 'Jog', Name = 'Jog', Required = 0, Multiplier = 1, Tier = 1, Color = C(110, 235, 255) },
-	{ Id = 'Run', Name = 'Run', Required = 150, Multiplier = 3, Tier = 2, Color = C(255, 190, 70) },
-	{ Id = 'Sprint', Name = 'Sprint', Required = 1000, Multiplier = 10, Tier = 3, Color = C(235, 120, 255) },
+	{ Id = 'Jog', Name = 'Jog', Required = 0, Multiplier = 1, Tier = 1, Color = C(110, 235, 255), Label = C(180, 244, 255) },
+	{ Id = 'Run', Name = 'Run', Required = 150, Multiplier = 3, Tier = 2, Color = C(255, 190, 70), Label = C(255, 222, 160) },
+	{ Id = 'Sprint', Name = 'Sprint', Required = 1000, Multiplier = 10, Tier = 3, Color = C(235, 120, 255), Label = C(245, 190, 255) },
 }
 Treadmills.ById = {}
 for _, t in Treadmills.List do Treadmills.ById[t.Id] = t end
@@ -68,6 +69,27 @@ function Treadmills.chevron(s, pattern)
 	local a, b = math.max(0, k * (phase - pattern.Stroke)), math.min(k * phase, hw)
 	if b - a < 0.08 then return nil end
 	return (a + b) / 2, b - a
+end
+
+-- The floating label (a BillboardGui with Chip, Cost, Detail and Speed): one line, "x1 Speed", once the
+-- treadmill is yours, like the reference; the price chip and "Locked" over it only while it is locked. The gui
+-- hangs above its anchor (the anchor marks the label's bottom edge), so switching never moves the bottom.
+-- Used by the map builder and Treadmill.client.
+Treadmills.LabelSize = { Width = 4.8, Open = 1.3, Locked = 2.76 }
+function Treadmills.layoutLabel(gui, locked)
+	local s = Treadmills.LabelSize
+	local h = locked and s.Locked or s.Open
+	gui.Size = UDim2.fromScale(s.Width, h)
+	gui.StudsOffset = Vector3.new(0, h / 2, 0)
+	for _, name in { 'Chip', 'Cost', 'Detail' } do
+		local item = gui:FindFirstChild(name)
+		if item then item.Visible = locked end
+	end
+	local speed = gui:FindFirstChild('Speed')
+	if speed then
+		speed.Position = UDim2.fromScale(0, locked and 0.52 or 0)
+		speed.Size = UDim2.fromScale(1, locked and 0.46 or 1)
+	end
 end
 
 return Treadmills

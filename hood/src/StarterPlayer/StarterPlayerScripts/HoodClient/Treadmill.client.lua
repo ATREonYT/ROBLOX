@@ -1,8 +1,9 @@
 -- SPEED treadmills on your screen (TreadmillService pays the Speed):
 --   * belts scroll: every unlocked treadmill near the camera rolls its slats and chevrons back, faster each
 --     tier; a locked one stands still and its screen dims
---   * labels: the floating label's Detail says Unlocked (green) or Locked (red), like the bag stations; the
---     screen's LCD Detail says UNLOCKED / LOCKED, or your walk speed while you run on it
+--   * labels: one line "x1 Speed" over a treadmill you have unlocked, like the reference; the price chip and
+--     "Locked" over it while it is locked (Config/Treadmills.layoutLabel). The screen's faint LCD Detail says
+--     UNLOCKED / LOCKED, or your walk speed while you run on it
 --   * alive: idle screens breathe (+-12% at 0.5 Hz); while anyone runs on a treadmill its screen holds bright,
 --     its light doubles and its mist thickens
 --   * you run: on an unlocked belt your character plays its run animation in place, quicker on Run and Sprint,
@@ -62,8 +63,8 @@ local function record(model)
 	local gui = r.screen and r.screen:FindFirstChildWhichIsA('SurfaceGui')
 	r.detail = gui and gui:FindFirstChild('Detail')
 	local sign = model:FindFirstChild('Sign', true)
-	local label = sign and sign:FindFirstChildWhichIsA('BillboardGui')
-	r.label = label and label:FindFirstChild('Detail')
+	r.labelGui = sign and sign:FindFirstChildWhichIsA('BillboardGui')
+	r.label = r.labelGui and r.labelGui:FindFirstChild('Detail')
 	list[model] = r
 end
 for _, m in CollectionService:GetTagged('HoodTreadmill') do record(m) end
@@ -131,7 +132,8 @@ local current -- the record of the unlocked treadmill you're running on
 local function walkText()
 	return 'WALK SPEED ' .. tostring(player:GetAttribute('WalkSpeed') or Treadmills.walkSpeed(player:GetAttribute('Speed') or 0))
 end
--- Texts: the label's Unlocked/Locked and the screen's LCD line. Screens of locked treadmills dim.
+-- The label (one line once unlocked, chip + Locked while locked) and the screen's LCD line. Screens of locked
+-- treadmills dim.
 local function paint(r)
 	local locked = not Treadmills.unlocked(power(), r.id)
 	local running = current == r
@@ -143,6 +145,7 @@ local function paint(r)
 		r.label.Text = locked and 'Locked' or 'Unlocked'
 		r.label.TextColor3 = locked and LOCKED or UNLOCKED
 	end
+	if r.labelGui then Treadmills.layoutLabel(r.labelGui, locked) end
 	if r.detail then
 		r.detail.Text = locked and ('LOCKED: ' .. Format.compact(r.row.Required) .. ' POWER') or (running and walkText() or 'UNLOCKED')
 	end
