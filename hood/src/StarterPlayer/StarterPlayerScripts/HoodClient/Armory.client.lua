@@ -133,6 +133,8 @@ local function paint(slot, state)
 	end
 	if slot.Price then
 		local glyph = slot.Price:GetAttribute('Glyph') or ''
+		-- (the cash glyph only goes with a price: a tick for OWNED, a star for EQUIPPED)
+		if glyph ~= '' and state ~= 'Locked' then glyph = state == 'Equipped' and '⭐' or '✅' end
 		local word = state == 'Locked' and (slot.Gun.Cost == 0 and 'FREE' or Format.compact(slot.Gun.Cost)) or string.upper(state)
 		slot.Price.Text = (glyph ~= '' and glyph .. ' ' or '') .. word
 		slot.Price.TextColor3 = look.Text
