@@ -102,6 +102,15 @@ def render_look(bb, model, index, out_png, res, samples):
 	bb.setup_render(sc, res, samples)
 	bb.world(sc, 0.85)
 	objs = bb.build(model)
+	# Matte cloth and skin: block faces seen edge-on pick up the rim lights' specular and flare white (the
+	# side of the head on dark skin read as a white panel), so cut the specular on the plastic kind.
+	import bpy
+	for mat in bpy.data.materials:
+		if mat.name.startswith('plastic_') and mat.node_tree:
+			bsdf = mat.node_tree.nodes.get('Principled BSDF')
+			if bsdf:
+				bsdf.inputs['Specular IOR Level'].default_value = 0.0
+				bsdf.inputs['Roughness'].default_value = 0.7
 	pts = bb.scene_bounds(objs)
 	cam, centre, dist = bb.camera_fit(sc, pts, VIEW, 0.9, 70.0)
 	bb.light_rig(sc, cam, centre, dist)

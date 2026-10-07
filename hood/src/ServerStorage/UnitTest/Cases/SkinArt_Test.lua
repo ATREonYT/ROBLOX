@@ -11,7 +11,7 @@ return function(t)
   for _,s in S.List do
    t.expect.truthy(Art.Looks[s.Look or s.Id])
    local r=Art.recipe(s)
-   t.expect.truthy(#r.pieces>=30 and #r.pieces<=80)
+   t.expect.truthy(#r.pieces>=30 and #r.pieces<=85)
    for _,p in r.pieces do t.expect.truthy(Art.Rig[p.seg]);t.expect.truthy(p.size.X>0 and p.size.Y>0 and p.size.Z>0) end
    for seg in Art.Rig do t.expect.truthy(typeof(r.body[seg])=='Color3') end
    t.expect.truthy(type(s.Pose)=='string' and Art.Poses[s.Pose])
@@ -91,5 +91,33 @@ return function(t)
  t.test('a recoloured copy (lobby NPC) keeps its recipe',function()
   local copy=table.clone(S.ById.Crook);copy.Id='SparRed';copy.Color=Color3.new(1,0,0)
   local r=Art.recipe(copy);t.expect.equal(#r.pieces,#Art.recipe(S.ById.Crook).pieces);t.expect.equal(r.body.UpperTorso,Color3.new(1,0,0))
+ end)
+ -- The costume never changes who the player is: their skin tone stays, and unequip gives the avatar back
+ -- (accessories, dynamic-head face, textures, colours).
+ t.test('keeps the player skin tone and unequip restores the avatar',function()
+  local m,parts=rig(true)
+  local tone=Color3.fromRGB(92,58,40)
+  for _,p in m:GetChildren() do if p:IsA('BasePart') then p.Color=tone end end
+  local bc=Instance.new('BodyColors');bc.HeadColor3=tone;bc.Parent=m
+  local head=Instance.new('MeshPart');head.Name='Head';head.Size=Vector3.new(1.2,1.2,1.2);head.CFrame=parts.Head.CFrame;head.TextureID='rbxassetid://1';head.Color=tone
+  local fc=Instance.new('FaceControls');fc.Parent=head;local sa=Instance.new('SurfaceAppearance');sa.Parent=head
+  parts.Head:Destroy();head.Parent=m
+  local acc=m:FindFirstChildOfClass('Accessory')
+  Art.equip(m,S.ById.Kingpin);Art.equip(m,S.ById.TheDon)
+  t.expect.equal(head.Color,tone);t.expect.equal(m.LeftHand.Color,tone)
+  t.expect.falsy(head:FindFirstChildOfClass('FaceControls'));t.expect.falsy(head:FindFirstChildOfClass('SurfaceAppearance'));t.expect.equal(head.TextureID,'')
+  t.expect.falsy(acc.Parent)
+  Art.unequip(m)
+  t.expect.falsy(m:FindFirstChild('BlockCostume'));t.expect.equal(acc.Parent,m);t.expect.equal(fc.Parent,head);t.expect.equal(sa.Parent,head)
+  t.expect.equal(head.TextureID,'rbxassetid://1');t.expect.equal(m.UpperTorso.Color,tone);t.expect.truthy(m:FindFirstChildOfClass('BodyColors'))
+  m:Destroy()
+ end)
+ t.test('only the top tiers carry one small sparkle emitter',function()
+  for _,s in S.List do
+   local m=rig(true);Art.equip(m,s)
+   local n=0;for _,d in m.BlockCostume:GetDescendants() do if d:IsA('ParticleEmitter') then n+=1;t.expect.truthy(d.Rate<=4) end end
+   t.expect.equal(n,s.Glow and 1 or 0);t.expect.equal(s.Glow~=nil,s.Index>=11)
+   m:Destroy()
+  end
  end)
 end
