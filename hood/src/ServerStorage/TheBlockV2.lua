@@ -2307,16 +2307,17 @@ end
 ---------------------------------------------------------------------------------------------- evolutions podium
 -- The EVOLUTIONS podium, the lobby's morph stand, after the reference's east side and laid out for room: a
 -- stepped pyramid of three studded slate-grey tiers (5 / 5 / 4 looks, cheapest at the front and bottom, 9 studs
--- apart, each with its own standing spot on the level in front: the apron, or the 4-stud walk behind the row
--- below), clear corner stairs on every tier, and the Kingpin apart on a red featured tower at the back corner
--- on the walkway side (+X) under a two-leg dock gantry, reached up the open lane beside the tiers.
--- Warehouse dress, kept to a few big pieces: the neon EVOLUTIONS marquee across the first tier with the
--- WARDROBE badge on the apron in front of it (one prompt that opens the EVOLVE panel: every look, equip from
--- there), roller-shutter loading bays behind (light behind the top row, blue on the wings) with DOCK stencils,
--- lamps on the wing caps and one pallet of NEW STOCK on the far back corner.
--- Alive: motes rising off every pad, sparkles on the top tier, chasing marquee bulbs, colour-cycling arrows;
--- the client makes unlocked looks breathe, turns the one you wear and paints locked looks in shadow, and marks
--- your next look with a ▼ over its hat and a NEXT tag on its pad.
+-- apart, row 2 half a pitch over so every figure stands in a gap of the row in front, each look with its own
+-- standing spot on the level in front: the apron, or the 4-stud walk behind the row below). The walkway side
+-- (+X) has the wide stair: 6-wide flights with a yellow nose on every step and a red carpet from the slab edge
+-- up to the Kingpin on his red plinth at tier 2's back corner, before a red velvet panel; a 4-wide flight on the
+-- far side. Warehouse dress, kept to a few big pieces: the neon EVOLUTIONS marquee across the first tier, the
+-- standing WARDROBE on the walkway-side front corner (garment rack, mirror, lightbox; its prompt opens the
+-- EVOLVE board: every look, equip from there), roller-shutter loading bays behind (light behind the top row,
+-- blue on the wings), the DOCK stencil, lamps on the wing caps, a NEW STOCK pallet by the walkway stair.
+-- Alive: motes rising off every pad, sparkles on the top tier, chasing marquee bulbs, colour-cycling arrows,
+-- warm underglow under the tier lips; the client makes unlocked looks breathe, turns the one you wear and paints
+-- locked looks in shadow, and marks your next look with a ▼ over its hat and a NEXT tag on its pad.
 --
 -- Contract (Lobby.client, LobbyService): a Model `Morphs` (Persistent) holding one Model `Skin_<Id>` per look:
 --   Interact     invisible part just in front of the pad: the prompt sits on it (short range, so neighbours'
@@ -2330,34 +2331,44 @@ end
 --   NextTag      a yellow NEXT tag hanging off the pad's front lip, shown on your next look
 -- and attributes Look, Index, Required, Band, BandColor, Column, LockShade (+ Showcase on the Kingpin).
 -- Effects marked UnlockedOnly (or held by a part marked so) are switched off by the client while locked.
--- Beside Morphs: `WardrobePoint` (the WARDROBE badge's prompt part; the server lets you equip any unlocked look
+-- Beside Morphs: `WardrobePoint` (the standing WARDROBE's prompt part; the server lets you equip any unlocked look
 -- from the EVOLVE panel within 30 studs of it). The map root still needs MorphStand = true (g_build).
 -- Local frame: origin = centre of the front edge on the floor, the front faces -Z (players walk up from -Z),
 -- the walkway is on the +X side, footprint x -28..28, z 0..32, at most 20 tall (labels float above).
 local Evolutions = {}
 
 Evolutions.Base = 0.4 -- floor slab top
-Evolutions.Apron = 5 -- front apron depth: row 1's standing spots and the WARDROBE badge
-Evolutions.Rise = 3.6 -- per tier: four 0.9 steps
-Evolutions.Steps = 4
-Evolutions.Flight = 3 -- corner stair width (each tier steps in by this much at its front corners)
+Evolutions.Apron = 5 -- front apron depth: row 1's standing spots
+Evolutions.StepRise = 0.9 -- at most, per step
+Evolutions.Run = 1.1 -- per step (40 degrees)
 Evolutions.Lip = 1 -- tier front to pad front
 Evolutions.Pitch = 9.5 -- tier front to tier front: lip, pad, a 4.1-stud walk behind the pads (the next row's spots)
 Evolutions.Back = 30.5 -- tiers end here, the backdrop stands behind
 Evolutions.Spacing = 9 -- figure to figure along a row
 Evolutions.Pad = 4.4
 Evolutions.PadH = 1.1
--- The tiers stand a little off centre (toward -X), leaving the walkway side a 6.8-stud lane up to the
--- Kingpin's tower: from the walkway camera he stands clear of the rows instead of behind them.
-Evolutions.CX = -3
+-- Rows (x of each look, viewer's left = +X = the walkway side first): row 1 round x = -1, row 2 shifted half a
+-- pitch so each of its figures stands in a gap of row 1, row 3 back on row 1's lines two tiers up; the top tier
+-- leaves tier 2's walkway corner to the Kingpin.
+Evolutions.Columns = { { 17, 8, -1, -10, -19 }, { 12.5, 3.5, -5.5, -14.5, -23.5 }, { 8, -1, -10, -19 } }
+-- Tiers: x0..x1 at their own heights (a tier is a block from the slab up, so its ends can differ), front and
+-- the flights cut into its front edge ({ x0, x1 }); tier 3 has none (its front is a 1-stud lip, nobody climbs
+-- it). The walkway side gets the wide stair: a 6-wide flight up the +X face from the slab (SideFlight), then a
+-- 6-wide flight from tier 1's walk to tier 2 by the Kingpin, carpeted all the way; the far side a 4-wide one.
+-- Tier 2 rises a step more than tier 1 (4.5: row 2's heads clear row 1's from the walkway camera even where
+-- perspective lines a figure up behind one in front); tier 3, which nobody climbs, the rest (2.7).
 Evolutions.Tiers = {}
-for k, hw in { 24.2, 24.2, 19.7 } do
+for k, spec in { { 4.0, -26.2, 22.2, { { -26.2, -22.2 } } }, { 8.5, -26.2, 22.2, { { 16.2, 22.2, walkway = true } } }, { 11.2, -21.7, 10.7, {} } } do
 	local front = Evolutions.Apron + (k - 1) * Evolutions.Pitch
 	Evolutions.Tiers[k] = {
-		top = Evolutions.Base + Evolutions.Rise * k, front = front, hw = hw, cx = Evolutions.CX,
-		x0 = Evolutions.CX - hw, x1 = Evolutions.CX + hw, row = front + Evolutions.Lip + Evolutions.Pad / 2,
+		top = spec[1], front = front, x0 = spec[2], x1 = spec[3], flights = spec[4],
+		row = front + Evolutions.Lip + Evolutions.Pad / 2,
 	}
 end
+-- Steps for a climb of h, and the run of that flight.
+function Evolutions.steps(h) return math.max(1, math.ceil(h / Evolutions.StepRise - 1e-6)) end
+function Evolutions.runFor(h) return Evolutions.steps(h) * Evolutions.Run end
+Evolutions.SideFlight = { z0 = 8.4, z1 = 14.4 } -- slab up to tier 1 along its +X face, climbing toward -X
 -- One pad colour per tier (height is the rarity on the podium; the rarity band stays on the label outline).
 -- `glow` is the Neon inset, about 0.65 of the colour: Neon renders brighter than its Color3 and the full
 -- colour burns out to white (judge in Studio with bloom; drop toward 0.55 if the centre clips). `pale` is the
@@ -2368,9 +2379,6 @@ Evolutions.TierColors = {
 	{ color = C(150, 70, 255), glow = C(80, 8, 176), pale = C(204, 186, 246), shade = 0.6 },
 	{ color = C(255, 180, 0), glow = C(166, 117, 0), pale = C(240, 214, 162), shade = 0.35 },
 }
--- Columns per row, from the stack's centre line (viewer's left = +X first). The top row has four, in the gaps
--- of the row below (so their standing spots on tier 2's walk are free too).
-Evolutions.Columns = { { 18, 9, 0, -9, -18 }, { 18, 9, 0, -9, -18 }, { 13.5, 4.5, -4.5, -13.5 } }
 -- Rarity bands (three looks each, the order the overhead tag uses): the outline of the look's name.
 Evolutions.Bands = {
 	{ name = 'COMMON', color = C(0, 190, 255) },
@@ -2379,18 +2387,12 @@ Evolutions.Bands = {
 	{ name = 'EPIC', color = C(170, 60, 255) },
 	{ name = 'LEGENDARY', color = C(255, 180, 0) },
 }
--- Pose per look (SkinArt.Poses), so neighbours never stand the same way.
-Evolutions.Poses = {
-	CornerKid = 'wave', Pickpocket = 'swagger', Lookout = 'point', Bandit = 'hips', Hustler = 'cheer',
-	Crook = 'swagger', GetawayDriver = 'flex', Enforcer = 'hips', StreetBoss = 'boss', Gangster = 'point',
-	Capo = 'hips', Consigliere = 'easy', Underboss = 'swagger', TheDon = 'flex', Kingpin = 'boss',
-}
--- The featured look: its own red tower at the back corner on the walkway side (where the reference has its
--- featured figure), rising from the lane beside the tiers to tier 2's height plus an upper stage, so he stands
--- the highest on the walkway side; a two-leg portal gantry stands behind him.
+-- The featured look: its red plinth on tier 2's back corner on the walkway side (where the reference has its
+-- featured figure), at the top of the carpeted stair, an upper stage lifting him over the row in front, a red
+-- velvet panel in a gold frame behind him.
 Evolutions.Featured = 'Kingpin'
-Evolutions.FeaturedAt = V(23, 0, 27.2)
-Evolutions.FeaturedRise = 1.4 -- the upper stage
+Evolutions.FeaturedAt = V(19.2, 0, 27.2)
+Evolutions.FeaturedRise = 1.1 -- the upper stage
 Evolutions.FeaturedScale = 1.15
 Evolutions.Scale = 1.12 -- the other figures: a bit over player size, so they fill their pads like the reference
 Evolutions.Colors = {
@@ -2398,6 +2400,7 @@ Evolutions.Colors = {
 	kick = C(90, 100, 124), hazard = C(255, 200, 40), ink = C(26, 26, 32), pad = C(232, 236, 244), shutter = C(126, 134, 152),
 	slat = C(104, 112, 130), galvanised = C(150, 156, 170), plinth = C(210, 40, 60), rim2 = C(200, 240, 255),
 	wing = C(40, 110, 220), wingSlat = C(70, 140, 235), cheek = C(222, 44, 52), yellow = C(255, 200, 40),
+	carpet = C(176, 22, 44), gold = C(255, 196, 60), amber = C(255, 170, 80),
 }
 
 function Evolutions.band(index) return Evolutions.Bands[math.clamp(math.ceil(index / 3), 1, #Evolutions.Bands)] end
@@ -2485,75 +2488,88 @@ function Evolutions.extents(model, frame)
 end
 
 ---------------------------------------------------------------------------------------------- stairs
----------------------------------------------------------------------------------------------- podium
 -- One stair flight climbing toward the frame's +Z, `run` deep, between x0 and x1, from y0 to y1, starting at
--- z0. Studded treads, a darker nose on every step; only the bottom nose is hazard-striped.
-function Evolutions.flight(c, x0, x1, z0, y0, y1, run)
+-- z0: each step a dark riser under a light studded tread with a yellow nose, so every step reads from afar.
+-- carpet = { x0, x1 }: a red runner up the treads (behind the noses).
+function Evolutions.flight(c, x0, x1, z0, y0, y1, run, carpet)
 	local col = Evolutions.Colors
-	local n = Evolutions.Steps
+	local n = Evolutions.steps(y1 - y0)
 	local rise, depth = (y1 - y0) / n, run / n
 	local f = c:group('Stairs')
 	for i = 1, n do
 		local z = z0 + (i - 1) * depth
 		local top = y0 + i * rise
-		studs(f:box('Step', V(x0, y0, z), V(x1, top, z + depth), i % 2 == 0 and col.top or col.cap, M.Plastic))
-		if i == 1 then
-			local w = (x1 - x0) / 5
-			for j = 0, 4 do
-				decor(f:box('HazardNose', V(x0 + j * w, top - 0.14, z - 0.06), V(x0 + (j + 1) * w, top + 0.04, z + 0.3), j % 2 == 0 and col.hazard or col.ink, M.SmoothPlastic))
-			end
-		else
-			decor(f:box('StepNose', V(x0, top - 0.14, z - 0.06), V(x1, top + 0.03, z + 0.3), col.galvanised, M.SmoothPlastic))
+		f:box('Step', V(x0, y0, z), V(x1, top - 0.16, z + depth), col.rim, M.Plastic)
+		studs(f:box('Tread', V(x0, top - 0.16, z), V(x1, top, z + depth), col.top, M.Plastic))
+		decor(f:box('StepNose', V(x0, top - 0.2, z - 0.04), V(x1, top + 0.03, z + 0.3), col.yellow, M.SmoothPlastic))
+		if carpet then
+			decor(f:box('StairCarpet', V(carpet[1], top, z + 0.3), V(carpet[2], top + 0.04, z + depth), col.carpet, M.Fabric))
 		end
 	end
 	return f
 end
 
--- One tier, built about its own centre line (t.cx): slate-blue studded body, light studded cap with a dark
--- studded band along its open edges (the reference's two-tone rim), a dark band under the lip with a yellow
--- safety line, diamond-plate kick plates, steel ribs between the pads, and a flight up each front corner
--- (red cheeks on the inner side).
+-- One tier: slate-blue studded body (split round the flights cut into its front), light studded cap with a
+-- dark studded band along its open edges (the reference's two-tone rim), a dark band under the lip with a
+-- yellow safety line and a warm amber glow under it, diamond-plate kick plates, steel ribs between the pads,
+-- and its flights with a red cheek on their inner side.
 function Evolutions.tier(p, k, t, below)
 	local col = Evolutions.Colors
-	local fl, back = Evolutions.Flight, Evolutions.Back
-	local tier = p:at(CFrame.new(t.cx, 0, 0)):group('Tier' .. k)
-	local inner = t.hw - fl
-	-- Body blocks { x0, x1, z0, z1, outer = side whose outer edge is open }: the middle, and behind each flight.
-	local blocks = { { -inner, inner, t.front, back } }
-	for _, s in { -1, 1 } do
-		table.insert(blocks, { math.min(s * inner, s * t.hw), math.max(s * inner, s * t.hw), t.front + fl, back, outer = s })
+	local back, run = Evolutions.Back, Evolutions.runFor(t.top - below)
+	local tier = p:group('Tier' .. k)
+	-- Split x0..x1 at the flights: { x0, x1, flight }.
+	local cuts = table.clone(t.flights)
+	table.sort(cuts, function(a, b) return a[1] < b[1] end)
+	local segs, x = {}, t.x0
+	for _, f in cuts do
+		if f[1] > x + 0.05 then table.insert(segs, { x, f[1] }) end
+		table.insert(segs, { f[1], f[2], flight = f })
+		x = f[2]
 	end
-	for _, b in blocks do
-		local x0, x1, z0, z1 = b[1], b[2], b[3], b[4]
-		studs(tier:box('Riser', V(x0, below, z0), V(x1, t.top - 0.3, z1), col.riser, M.Plastic), true)
-		local cx0, cx1 = x0, x1
-		if b.outer == 1 then cx1 = x1 - 0.55 elseif b.outer == -1 then cx0 = x0 + 0.55 end
-		studs(tier:box('Cap', V(cx0, t.top - 0.3, z0 + 0.55), V(cx1, t.top, z1), col.top, M.Plastic))
-		-- Dark band along the open front edge and the outer side.
-		studs(tier:box('EdgeRim', V(x0 - (b.outer == -1 and 0.15 or 0), t.top - 0.3, z0 - 0.15), V(x1 + (b.outer == 1 and 0.15 or 0), t.top, z0 + 0.55), col.rim, M.Plastic))
-		if b.outer then
-			local o = b.outer
-			local edge = o * t.hw
-			local r0, r1 = edge - o * 0.55, edge + o * 0.15
-			studs(tier:box('EdgeRim', V(math.min(r0, r1), t.top - 0.3, z0 + 0.55), V(math.max(r0, r1), t.top, z1), col.rim, M.Plastic))
-			studs(tier:box('SideRim', V(math.min(edge + o * 0.1, edge + o * 0.25), t.top - 0.75, z0), V(math.max(edge + o * 0.1, edge + o * 0.25), t.top - 0.3, z1), col.rim, M.Plastic))
-			tier:box('SideKick', V(math.min(edge, edge + o * 0.13), below, z0), V(math.max(edge, edge + o * 0.13), below + 0.5, z1), col.kick, M.DiamondPlate)
+	if t.x1 > x + 0.05 then table.insert(segs, { x, t.x1 }) end
+	for _, s in segs do
+		local x0, x1 = s[1], s[2]
+		local z0 = s.flight and t.front + run or t.front
+		local open0, open1 = math.abs(x0 - t.x0) < 0.05, math.abs(x1 - t.x1) < 0.05
+		studs(tier:box('Riser', V(x0, below, z0), V(x1, t.top - 0.3, back), col.riser, M.Plastic), true)
+		studs(tier:box('Cap', V(open0 and x0 + 0.55 or x0, t.top - 0.3, z0 + 0.55), V(open1 and x1 - 0.55 or x1, t.top, back), col.top, M.Plastic))
+		studs(tier:box('EdgeRim', V(x0 - (open0 and 0.15 or 0), t.top - 0.3, z0 - 0.15), V(x1 + (open1 and 0.15 or 0), t.top, z0 + 0.55), col.rim, M.Plastic))
+		for o, open in { [-1] = open0, [1] = open1 } do
+			if open then
+				local edge = o == 1 and x1 or x0
+				local r0, r1 = edge - o * 0.55, edge + o * 0.15
+				studs(tier:box('EdgeRim', V(math.min(r0, r1), t.top - 0.3, z0 + 0.55), V(math.max(r0, r1), t.top, back), col.rim, M.Plastic))
+				studs(tier:box('SideRim', V(math.min(edge + o * 0.1, edge + o * 0.25), t.top - 0.75, z0), V(math.max(edge + o * 0.1, edge + o * 0.25), t.top - 0.3, back), col.rim, M.Plastic))
+				tier:box('SideKick', V(math.min(edge, edge + o * 0.13), below, z0), V(math.max(edge, edge + o * 0.13), below + 0.5, back), col.kick, M.DiamondPlate)
+			end
+		end
+		if s.flight then
+			local f = s.flight
+			local carpet = f.walkway and { (x0 + x1) / 2 - 1.2, (x0 + x1) / 2 + 1.2 } or nil
+			Evolutions.flight(tier, x0, x1, t.front, below, t.top, run, carpet)
+			-- (the cheek on the side that faces the tier's front wall)
+			for _, cx in { x0, x1 } do
+				if math.abs(cx - t.x0) > 0.05 and math.abs(cx - t.x1) > 0.05 then
+					tier:box('StairCheek', V(cx - 0.2, below, t.front), V(cx + 0.2, t.top - 0.3, t.front + run), col.cheek, M.SmoothPlastic)
+				end
+			end
+		else
+			studs(tier:box('FrontRim', V(x0, t.top - 0.75, t.front - 0.25), V(x1, t.top - 0.3, t.front), col.rim, M.Plastic))
+			decor(tier:box('SafetyLine', V(x0, t.top - 0.22, t.front - 0.2), V(x1, t.top - 0.08, t.front - 0.14), col.hazard, M.SmoothPlastic))
+			local glow = decor(tier:box('Underglow', V(x0 + 0.2, t.top - 0.92, t.front - 0.2), V(x1 - 0.2, t.top - 0.77, t.front - 0.1), col.amber, M.Neon))
+			glow.Transparency, glow.CastShadow = 0.3, false
+			tier:box('KickPlate', V(x0, below, t.front - 0.12), V(x1, below + 0.5, t.front), col.kick, M.DiamondPlate)
 		end
 	end
-	studs(tier:box('FrontRim', V(-inner, t.top - 0.75, t.front - 0.25), V(inner, t.top - 0.3, t.front), col.rim, M.Plastic))
-	decor(tier:box('SafetyLine', V(-inner, t.top - 0.22, t.front - 0.2), V(inner, t.top - 0.08, t.front - 0.14), col.hazard, M.SmoothPlastic))
-	tier:box('KickPlate', V(-inner, below, t.front - 0.12), V(inner, below + 0.5, t.front), col.kick, M.DiamondPlate)
 	-- Steel ribs between the pads (tier 1 carries the sign in the middle instead).
 	local cols = Evolutions.Columns[k]
 	for i = 1, #cols - 1 do
-		local x = (cols[i] + cols[i + 1]) / 2
-		if not (k == 1 and math.abs(x) < 15) then
-			tier:box('Rib', V(x - 0.3, below + 0.5, t.front - 0.18), V(x + 0.3, t.top - 0.75, t.front), col.steel, M.Metal)
+		local rx = (cols[i] + cols[i + 1]) / 2
+		local onFlight = false
+		for _, f in t.flights do onFlight = onFlight or (rx > f[1] - 0.5 and rx < f[2] + 0.5) end
+		if not (k == 1 and math.abs(rx - Evolutions.Columns[1][3]) < 15) and not onFlight then
+			tier:box('Rib', V(rx - 0.3, below + 0.5, t.front - 0.18), V(rx + 0.3, t.top - 0.75, t.front), col.steel, M.Metal)
 		end
-	end
-	for _, s in { -1, 1 } do
-		Evolutions.flight(tier, math.min(s * inner, s * t.hw), math.max(s * inner, s * t.hw), t.front, below, t.top, fl)
-		tier:box('StairCheek', V(s * inner - 0.2, below, t.front), V(s * inner + 0.2, t.top - 0.3, t.front + fl), col.cheek, M.SmoothPlastic)
 	end
 	return tier
 end
@@ -2572,6 +2588,12 @@ function Evolutions.podium(c)
 		Evolutions.tier(p, k, t, below)
 		below = t.top
 	end
+	-- The walkway stair: up tier 1's +X face from the slab, 6 wide, carpeted (its frame's +Z points to -X).
+	local t1, sf = Evolutions.Tiers[1], Evolutions.SideFlight
+	local run = Evolutions.runFor(t1.top - B)
+	local w = (sf.z1 - sf.z0) / 2
+	local f = p:at(CFrame.new(t1.x1 + run, 0, (sf.z0 + sf.z1) / 2) * CFrame.Angles(0, -math.pi / 2, 0))
+	Evolutions.flight(f, -w, w, 0, B, t1.top, run, { -1.2, 1.2 })
 	return p
 end
 
@@ -2751,20 +2773,15 @@ function Evolutions.plinth(c, x, y, z, band)
 		end
 	end
 	-- The glow round its foot, on each level it stands on.
-	for _, g in { { x - h - 0.5, math.min(x + h + 0.5, t2.x1), y }, { math.max(x - h - 0.5, t2.x1), x + h + 0.5, foot } } do
-		if g[2] - g[1] > 0.2 then
+	for i, g in { { x - h - 0.5, math.min(x + h + 0.5, t2.x1), y }, { math.max(x - h - 0.5, t2.x1), x + h + 0.5, foot } } do
+		if g[2] - g[1] > 0.2 and (i == 1 or foot < y) then
 			local halo = decor(c:box('PlinthHalo', V(g[1], g[3], z - h - 0.5), V(g[2], g[3] + 0.05, z + h + 0.5), cyan, M.Neon))
 			halo.Transparency, halo.CastShadow = 0.4, false
 		end
 	end
-	-- KING PIN in gold down the tower's open face.
-	if foot < y then
-		local card = ghost(c:box('TowerSign', V(math.max(x - h, t2.x1) + 0.3, foot + 1.2, z - h - 0.06), V(x + h - 0.3, y - 0.6, z - h - 0.02), P.white))
-		local g = surface(card, Enum.NormalId.Front, 30)
-		line(g, 'King', 'KING', C(255, 206, 60), FONT.loud, 0.06, 0.36, C(120, 20, 30), 3)
-		line(g, 'Pin', 'PIN', C(255, 206, 60), FONT.loud, 0.42, 0.36, C(120, 20, 30), 3)
-		line(g, 'Sub', '★ TOP LOOK ★', P.white, FONT.loud, 0.8, 0.12, C(120, 20, 30), 2)
-	end
+	-- KINGPIN in gold across the frame's front.
+	local card = ghost(c:box('PlinthSign', V(x - h + 0.4, top - 1.45, z - h - 0.06), V(x + h - 0.4, top - 0.35, z - h - 0.02), P.white))
+	line(surface(card, Enum.NormalId.Front, 40), 'Name', 'KINGPIN', C(255, 206, 60), FONT.loud, 0.02, 0.96, C(110, 16, 30), 3)
 	-- The upper stage.
 	local sh, stop = 2.3, top + Evolutions.FeaturedRise
 	studs(c:box('PlinthStage', V(x - sh, top, z - sh), V(x + sh, stop, z + sh), red, M.Plastic), true)
@@ -2849,7 +2866,7 @@ function Evolutions.look(c, s, art, x, y, z, opts)
 	if art then
 		local yaw = math.rad(opts.yaw or 0)
 		local poseFn = art.posed or function(parent, cf, look, k) return art.mannequin(parent, cf, look, k) end
-		local fig = poseFn(st.parent, st:world(CFrame.new(x, feet, z) * CFrame.Angles(0, yaw, 0)), s, scale, Evolutions.Poses[s.Id])
+		local fig = poseFn(st.parent, st:world(CFrame.new(x, feet, z) * CFrame.Angles(0, yaw, 0)), s, scale, nil)
 		fig.Name = 'Display'
 		for _, d in fig:GetDescendants() do
 			if d:IsA('BasePart') then d.CanCollide, d.CanQuery, d.CanTouch = false, false, false end
@@ -2882,10 +2899,9 @@ function Evolutions.look(c, s, art, x, y, z, opts)
 	end
 	Evolutions.label(st, V(x, labelY, z), s, band, hatY + 0.3)
 	Evolutions.tag(st, x, lipY, z - lipHalf)
-	-- Equip point at knee height just in front of the pad (prompt + server distance check); the featured one at
-	-- the foot of its tower's open face, on the lane (opts.floor).
+	-- Equip point at knee height just in front of the pad (prompt + server distance check).
 	local front = z - half - 0.5
-	local ix = featured and (math.max(x - half, Evolutions.Tiers[2].x1) + x + half) / 2 or x
+	local ix = x
 	local fy = opts.floor or y
 	ghost(st:box('Interact', V(ix - 0.6, fy + 0.6, front - 0.6), V(ix + 0.6, fy + 1.8, front + 0.6), P.white)).CastShadow = false
 	return model, feet
@@ -2930,7 +2946,7 @@ function Evolutions.lights(c, targets)
 		})
 	end
 	-- Dust drifting over the podium, caught by the light.
-	local dust = ghost(g:part('StageDust', V(40, 8, 20), CFrame.new(Evolutions.CX, 10, 16), P.white))
+	local dust = ghost(g:part('StageDust', V(40, 8, 20), CFrame.new(Evolutions.Columns[1][3], 10, 16), P.white))
 	Evolutions.emitter(dust, 'Dust', 'dust', {
 		Rate = 6, Lifetime = NumberRange.new(4, 7), Speed = NumberRange.new(0.1, 0.4), SpreadAngle = Vector2.new(180, 180), LightEmission = 0.6,
 		Size = Evolutions.seq({ { 0, 0 }, { 0.3, 0.14, 0.05 }, { 1, 0 } }), Transparency = Evolutions.seq({ { 0, 1 }, { 0.3, 0.45 }, { 1, 1 } }), Color = ColorSequence.new(C(255, 240, 210)),
@@ -2938,44 +2954,31 @@ function Evolutions.lights(c, targets)
 	return g
 end
 
--- A portal gantry behind the featured look ("just delivered"): two safety-yellow legs standing just past the
--- tower's back corners (one on tier 2, one down on the slab; hazard bands on their bottom stud), so both show
--- beside him from any side, a steel beam across them behind and above his head, braces in the top corners and
--- the yellow trolley parked by the +X leg. Nothing hangs over the figure: seen from the front it frames him
--- like a dock door.
-function Evolutions.gantry(c, x, z)
+-- Behind the Kingpin: a red velvet panel in a gold frame standing on his plinth's back edge, gold neon tubes
+-- down its sides and a row of gold studs along its foot (a stage set, not a frame round him: nothing crosses
+-- over his head; its top stays under his crown).
+function Evolutions.kingpinPanel(c, x, z)
 	local col = Evolutions.Colors
-	local g = c:group('Gantry')
-	local t1, t2 = Evolutions.Tiers[1], Evolutions.Tiers[2]
-	local h = 3
-	local beamY, zc = 19.2, z + h - 0.3
-	local steel = C(120, 128, 146)
-	local legs = { x - h - 1.2, x + h + 0.6 }
-	for i, lx in legs do
-		local s = i == 1 and -1 or 1
-		local y0 = lx <= t2.x1 and t2.top or lx <= t1.x1 and t1.top or Evolutions.Base
-		g:box('FootPlate', V(lx - 0.45, y0, zc - 0.45), V(lx + 0.45, y0 + 0.12, zc + 0.45), col.ink, M.SmoothPlastic)
-		g:box('GantryLeg', V(lx - 0.3, y0 + 0.12, zc - 0.3), V(lx + 0.3, beamY, zc + 0.3), col.yellow, M.SmoothPlastic)
-		for _, b in { 0.25, 0.75 } do
-			decor(g:box('LegHazard', V(lx - 0.31, y0 + 0.12 + b - 0.12, zc - 0.31), V(lx + 0.31, y0 + 0.12 + b + 0.12, zc + 0.31), col.ink, M.SmoothPlastic))
-		end
-		-- (a brace in the top corner, pointing in)
-		g:bar('GantryBrace', V(lx, beamY - 1.3, zc), V(lx - s * 1.3, beamY, zc), 0.3, col.yellow, M.SmoothPlastic)
+	local g = c:group('KingpinPanel')
+	local y0, y1 = Evolutions.Tiers[2].top + 1.6, 17.5
+	local x0, x1, zf = x - 3, x + 3, z + 3 - 0.25
+	g:box('Velvet', V(x0, y0, zf), V(x1, y1, zf + 0.2), col.carpet, M.Fabric)
+	for _, e in { { V(x0 - 0.3, y0, zf - 0.05), V(x0, y1 + 0.3, zf + 0.25) }, { V(x1, y0, zf - 0.05), V(x1 + 0.3, y1 + 0.3, zf + 0.25) }, { V(x0, y1, zf - 0.05), V(x1, y1 + 0.3, zf + 0.25) } } do
+		g:box('PanelFrame', e[1], e[2], col.gold, M.SmoothPlastic)
 	end
-	local x0, x1 = legs[1] - 0.6, legs[2] + 0.6
-	g:box('GantryBeam', V(x0, beamY + 0.12, zc - 0.2), V(x1, beamY + 0.68, zc + 0.2), steel, M.SmoothPlastic)
-	for _, y in { beamY, beamY + 0.68 } do g:box('BeamFlange', V(x0, y, zc - 0.3), V(x1, y + 0.12, zc + 0.3), col.galvanised, M.SmoothPlastic) end
-	-- The trolley, parked snug under the beam against the +X brace (no hook, nothing hanging).
-	local tx = legs[2] - 1.6
-	g:box('Trolley', V(tx - 0.45, beamY - 0.5, zc - 0.35), V(tx + 0.45, beamY, zc + 0.35), col.yellow, M.SmoothPlastic)
-	for _, wz in { -0.38, 0.38 } do g:part('TrolleyWheel', V(0.12, 0.3, 0.3), CFrame.new(tx, beamY + 0.15, zc + wz) * CFrame.Angles(0, math.pi / 2, 0), col.ink, M.SmoothPlastic, Enum.PartType.Cylinder) end
+	for _, tx in { x0 + 0.45, x1 - 0.45 } do
+		decor(g:box('PanelTube', V(tx - 0.1, y0 + 0.5, zf - 0.12), V(tx + 0.1, y1 - 0.4, zf - 0.02), col.gold, M.Neon)).CastShadow = false
+	end
+	for sx = x0 + 1.2, x1 - 1.1, 0.95 do
+		decor(g:part('PanelStud', V(0.3, 0.3, 0.3), CFrame.new(sx, y0 + 0.6, zf - 0.12), col.gold, M.Neon, Enum.PartType.Ball)).CastShadow = false
+	end
 	return g
 end
 
 -- The EVOLUTIONS marquee across the front of the first tier: a dark board in a cyan neon frame, yellow
 -- letters outlined pink, and a ring of bulbs round it, every other one cycling colour so the frame chases.
 function Evolutions.sign(c)
-	local g = c:at(CFrame.new(Evolutions.CX, 0, 0)):group('Sign')
+	local g = c:at(CFrame.new(Evolutions.Columns[1][3], 0, 0)):group('Sign')
 	local t = Evolutions.Tiers[1]
 	local w, y0, y1, z = 13.5, Evolutions.Base + 0.6, t.top - 0.95, t.front - 0.32
 	local board = g:box('SignBoard', V(-w, y0, z), V(w, y1, t.front - 0.1), C(24, 24, 36), M.SmoothPlastic)
@@ -3022,8 +3025,8 @@ function Evolutions.backdrop(c)
 	local t1, t2, t3 = Evolutions.Tiers[1], Evolutions.Tiers[2], Evolutions.Tiers[3]
 	local wing = t2.top + 7.4
 	-- { x0, x1, top, where the tiers in front stop hiding it, blue }: behind the top tier, then the wings out to
-	-- the stack's -X edge and, on +X, on behind the Kingpin's tower.
-	local panels = { { t3.x0, t3.x1, 19.4, t3.top }, { t1.x0, t3.x0, wing, t2.top, true }, { t3.x1, 27.4, wing, t2.top, true } }
+	-- the stack's -X edge and, on +X, on behind the Kingpin to the slab's end.
+	local panels = { { t3.x0, t3.x1, 19.4, t3.top }, { t1.x0, t3.x0, wing, t2.top, true }, { t3.x1, 26.8, wing, t2.top, true } }
 	for _, pnl in panels do
 		local x0, x1, top, seen, blue = pnl[1], pnl[2], pnl[3], pnl[4], pnl[5]
 		d:box('Shutter', V(x0, Evolutions.Base, z0 + 0.3), V(x1, top - 0.9, z1), blue and col.wing or col.shutter, M.Plastic)
@@ -3036,12 +3039,12 @@ function Evolutions.backdrop(c)
 	end
 	-- Footlights back-lighting the figures: cyan behind the top tier, violet behind the wings.
 	decor(d:box('Footlight', V(t3.x0, t3.top + 0.1, z0 - 0.1), V(t3.x1, t3.top + 0.4, z0 + 0.1), C(80, 220, 255), M.Neon)).CastShadow = false
-	for _, w in { { t2.x0, t3.x0 }, { t3.x1, Evolutions.FeaturedAt.X - 3 } } do
+	for _, w in { { t2.x0, t3.x0 }, { t3.x1, Evolutions.FeaturedAt.X - 3.8 } } do
 		decor(d:box('Footlight', V(w[1], t2.top + 0.1, z0 - 0.1), V(w[2], t2.top + 0.4, z0 + 0.1), C(186, 96, 255), M.Neon)).CastShadow = false
 	end
 	-- Bay posts: between the top-row figures and at the ends of the middle panel.
-	local cols, cx = Evolutions.Columns[3], Evolutions.CX
-	for i, x in { cx + (cols[1] + cols[2]) / 2, cx + (cols[3] + cols[4]) / 2, t3.x1 - 0.35, t3.x0 + 0.35 } do
+	local cols = Evolutions.Columns[3]
+	for i, x in { (cols[1] + cols[2]) / 2, (cols[3] + cols[4]) / 2, t3.x1 - 0.35, t3.x0 + 0.35 } do
 		d:box('BayPost', V(x - 0.35, t3.top, z0 - 0.3), V(x + 0.35, 19.4, z0 + 0.3), col.galvanised, M.Plastic)
 		decor(d:box('BayPostNeon', V(x - 0.12, t3.top + 0.5, z0 - 0.36), V(x + 0.12, 18.4, z0 - 0.3), i <= 2 and C(186, 96, 255) or C(80, 220, 255), M.Neon)).CastShadow = false
 	end
@@ -3067,13 +3070,13 @@ function Evolutions.backdrop(c)
 	return d
 end
 
--- One delivery on the far back corner of tier 2, beside the top tier's flight (out of every path): a pallet
--- of kraft boxes under shrink-wrap with a NEW STOCK tag, the yellow jack still under it.
+-- One delivery where the walkway sees it: on the slab behind the walkway stair, against tier 1's +X face, a
+-- pallet of kraft boxes under shrink-wrap with a NEW STOCK tag, the yellow jack still under it.
 function Evolutions.props(c)
 	local pr = c:group('Props')
-	local t2, t3 = Evolutions.Tiers[2], Evolutions.Tiers[3]
-	local px = (t2.x0 + t3.x0) / 2
-	local pal = pr:at(CFrame.new(px, t2.top, 27.6) * CFrame.Angles(0, math.rad(6), 0))
+	local t1, sf = Evolutions.Tiers[1], Evolutions.SideFlight
+	local px = t1.x1 + 2.6
+	local pal = pr:at(CFrame.new(px, Evolutions.Base, sf.z1 + 3.2) * CFrame.Angles(0, math.rad(-96), 0))
 	for _, bx in { -1, 0, 1 } do pal:box('PalletBlock', V(bx - 0.15, 0, -1.2), V(bx + 0.15, 0.35, 1.2), C(120, 86, 52), M.Wood) end
 	for pz = -1, 1, 0.5 do pal:box('PalletSlat', V(-1.2, 0.35, pz - 0.2), V(1.2, 0.5, pz + 0.2), C(150, 110, 70), M.WoodPlanks) end
 	for _, b in { { -0.55, -0.5, 1.1 }, { 0.55, -0.45, 1.0 }, { 0, 0.55, 1.2 } } do
@@ -3094,31 +3097,73 @@ function Evolutions.props(c)
 	return pr
 end
 
--- The WARDROBE badge on the apron, in front of the marquee between the middle and next figure (clear of
--- both figures' own spots): a raised dark disc in a gold neon ring, WARDROBE / EVOLVE painted on it, and the
--- WardrobePoint over it, where Lobby.client puts the one big prompt that opens the EVOLVE panel.
+-- The WARDROBE, standing on the walkway side's front corner of the apron (the first thing you reach from the
+-- walkway): a chrome garment rack of suit bags in the tiers' colours on a low dark base, a full-length mirror
+-- ringed with bulbs, a lightbox sign over them (WARDROBE in 1.3-stud letters, CHANGE YOUR LOOK under it), and a
+-- gold ring on the floor in front with the WardrobePoint over it: Lobby.client's one big prompt (it opens the
+-- EVOLVE board; the server equips any unlocked look within 30 studs of it). Kept low enough that the walkway's
+-- sight lines to row 1 pass over the sign.
+-- The Kingpin's carpet: a red runner with gold edges from the slab edge up the walkway stair, across tier 1's
+-- walk and up the tier-2 flight to his plinth (the stair steps carry their own pieces).
 function Evolutions.apron(c)
+	local col = Evolutions.Colors
 	local a = c:group('Wardrobe')
 	local B = Evolutions.Base
-	local x, z, r = Evolutions.CX + Evolutions.Spacing / 2, 2.6, 2.2
-	local gold = Evolutions.GoalColor
-	local up = CFrame.Angles(0, 0, math.pi / 2)
-	decor(a:part('BadgeRing', V(0.12, 2 * r + 0.5, 2 * r + 0.5), CFrame.new(x, B + 0.07, z) * up, gold, M.Neon, Enum.PartType.Cylinder)).CastShadow = false
-	a:part('BadgeDisc', V(0.2, 2 * r, 2 * r), CFrame.new(x, B + 0.1, z) * up, C(70, 34, 130), M.SmoothPlastic, Enum.PartType.Cylinder)
-	-- (the card is turned so the words read from the front)
-	local card = ghost(a:part('BadgeCard', V(2.9, 0.02, 2.9), CFrame.new(x, B + 0.21, z) * CFrame.Angles(0, math.pi, 0), P.white))
-	local g = surface(card, Enum.NormalId.Top, 40)
-	line(g, 'Top', 'WARDROBE', gold, FONT.loud, 0.18, 0.3, C(60, 30, 0), 3)
-	line(g, 'Bottom', '▲ EVOLVE ▲', P.white, FONT.loud, 0.54, 0.24, C(20, 20, 40), 2)
-	light(ghost(a:part('BadgeGlow', V(0.2, 0.2, 0.2), CFrame.new(x, B + 1.2, z), gold)), gold, 0.6, 7)
-	local point = ghost(a:part('WardrobePoint', V(1.2, 1.2, 1.2), CFrame.new(x, B + 1.6, z), P.white))
+	local t1, t2, sf = Evolutions.Tiers[1], Evolutions.Tiers[2], Evolutions.SideFlight
+	local x0, x1 = t1.x1 + 0.9, 27.0 -- 22.6 .. 27.0
+	local zr = 5.9 -- the rack's line
+	local chrome, ink = C(214, 220, 230), C(28, 26, 44)
+	a:box('WardrobeBase', V(x0, B, zr - 0.8), V(x1, B + 0.3, zr + 0.8), ink, M.SmoothPlastic)
+	-- Rack: two posts, a top bar, four suit bags on hangers.
+	for _, px in { x0 + 0.4, x1 - 0.4 } do
+		a:box('RackPost', V(px - 0.1, B + 0.3, zr - 0.1), V(px + 0.1, B + 4.6, zr + 0.1), chrome, M.SmoothPlastic)
+	end
+	a:box('RackBar', V(x0 + 0.3, B + 4.4, zr - 0.08), V(x1 - 0.3, B + 4.56, zr + 0.08), chrome, M.SmoothPlastic)
+	local bags = { Evolutions.TierColors[1].color, Evolutions.TierColors[2].color, Evolutions.TierColors[3].color, col.plinth }
+	local span = (x1 - x0 - 1.4) / #bags
+	for i, bc in bags do
+		local bx = x0 + 0.7 + (i - 0.5) * span
+		a:box('Hanger', V(bx - 0.04, B + 4.1, zr - 0.04), V(bx + 0.04, B + 4.45, zr + 0.04), chrome, M.SmoothPlastic)
+		a:box('SuitBag', V(bx - 0.45, B + 1.5, zr - 0.2), V(bx + 0.45, B + 4.1, zr + 0.2), bc, M.Fabric)
+		a:box('Lapel', V(bx - 0.18, B + 3.2, zr - 0.24), V(bx + 0.18, B + 4.05, zr - 0.2), P.white, M.SmoothPlastic)
+	end
+	-- Mirror at the rack's inner end, turned a little toward the front.
+	local m = a:at(CFrame.new(x0 - 0.2, B, zr - 1.4) * CFrame.Angles(0, math.rad(-25), 0))
+	m:box('MirrorFrame', V(-0.75, 0, -0.12), V(0.75, 4.6, 0.12), col.gold, M.SmoothPlastic)
+	local glass = m:box('MirrorGlass', V(-0.55, 0.25, -0.18), V(0.55, 4.35, -0.12), C(196, 226, 246), M.Glass)
+	glass.Reflectance, glass.Transparency = 0.35, 0.1
+	for _, y in { 0.8, 1.9, 3.0, 4.1 } do
+		for _, bx in { -0.62, 0.62 } do decor(m:part('MirrorBulb', V(0.24, 0.24, 0.24), CFrame.new(bx, y, -0.2), C(255, 236, 190), M.Neon, Enum.PartType.Ball)).CastShadow = false end
+	end
+	-- The lightbox on two legs behind the rack.
+	local sy0, sy1 = B + 4.8, B + 6.8
+	for _, px in { x0 + 0.6, x1 - 0.6 } do a:box('SignLeg', V(px - 0.1, B + 0.3, zr + 0.45), V(px + 0.1, sy0, zr + 0.65), ink, M.SmoothPlastic) end
+	local board = a:box('WardrobeSign', V(x0 - 0.2, sy0, zr + 0.4), V(x1 + 0.1, sy1, zr + 0.7), ink, M.SmoothPlastic)
+	local g = surface(board, Enum.NormalId.Front, 40)
+	line(g, 'Title', 'WARDROBE', Evolutions.GoalColor, Enum.Font.Oswald, 0.02, 0.68, C(90, 40, 0), 3)
+	line(g, 'Sub', 'CHANGE YOUR LOOK', P.white, FONT.loud, 0.7, 0.24, C(20, 20, 40), 2)
+	for _, y in { sy0 - 0.1, sy1 } do decor(a:box('SignTube', V(x0 - 0.3, y, zr + 0.32), V(x1 + 0.2, y + 0.1, zr + 0.42), C(255, 90, 200), M.Neon)).CastShadow = false end
+	light(board, C(255, 210, 120), 0.8, 9)
+	-- The ring and the prompt point in front.
+	local px, pz = (x0 + x1) / 2, 2.6
+	decor(a:part('PromptRing', V(0.1, 3.2, 3.2), CFrame.new(px, B + 0.06, pz) * CFrame.Angles(0, 0, math.pi / 2), Evolutions.GoalColor, M.Neon, Enum.PartType.Cylinder)).CastShadow = false
+	a:part('PromptDisc', V(0.14, 2.7, 2.7), CFrame.new(px, B + 0.08, pz) * CFrame.Angles(0, 0, math.pi / 2), C(40, 40, 52), M.SmoothPlastic, Enum.PartType.Cylinder)
+	local point = ghost(a:part('WardrobePoint', V(1.2, 1.2, 1.2), CFrame.new(px, B + 1.6, pz), P.white))
 	point.CastShadow = false
-	-- The Kingpin's walk: a red carpet with gold edges up the open lane from the apron to his tower.
-	local t1, f = Evolutions.Tiers[1], Evolutions.FeaturedAt
-	local lx, z1 = (t1.x1 + 27.1) / 2, f.Z - 3 - 0.9
-	decor(a:box('Carpet', V(lx - 1.3, B, 1.1), V(lx + 1.3, B + 0.05, z1), C(176, 22, 44), M.Fabric))
-	for _, ex in { lx - 1.45, lx + 1.3 } do
-		decor(a:box('CarpetEdge', V(ex, B, 1.1), V(ex + 0.15, B + 0.06, z1), C(255, 196, 60), M.SmoothPlastic))
+	-- Carpet: slab edge to the stair's foot, tier 1's walk to the tier-2 flight, tier 2 to the plinth.
+	local zc = (sf.z0 + sf.z1) / 2
+	local fl = t2.flights[1]
+	local cx = (fl[1] + fl[2]) / 2
+	local run, run2 = Evolutions.runFor(t1.top - B), Evolutions.runFor(t2.top - t1.top)
+	local f = Evolutions.FeaturedAt
+	local runs = {
+		{ V(t1.x1 + run, B, zc - 1.2), V(27.1, B + 0.05, zc + 1.2) },
+		{ V(cx - 1.2, t1.top, zc - 1.2), V(t1.x1, t1.top + 0.05, zc + 1.2) },
+		{ V(cx - 1.2, t1.top, zc + 1.2), V(cx + 1.2, t1.top + 0.05, t2.front) },
+		{ V(cx - 1.2, t2.top, t2.front + run2), V(cx + 1.2, t2.top + 0.05, f.Z - 3.5) },
+	}
+	for _, r in runs do
+		decor(a:box('Carpet', r[1], r[2], col.carpet, M.Fabric))
 	end
 	return a, point
 end
@@ -3157,12 +3202,11 @@ function Evolutions.build(ctx, opts)
 	wardrobe.Parent = model -- (beside Morphs: the server and the client find it by name)
 	local wobble = { -5, 3, -2, 4, -4 }
 	local placed = { 0, 0, 0 }
-	local cx = Evolutions.CX
 	for _, s in skins.List do
 		if s.Id == Evolutions.Featured then
 			local at = Evolutions.FeaturedAt
-			Evolutions.look(m, s, art, at.X, Evolutions.Tiers[2].top, at.Z, { featured = true, column = 1, floor = Evolutions.Base })
-			Evolutions.gantry(e, at.X, at.Z)
+			Evolutions.look(m, s, art, at.X, Evolutions.Tiers[2].top, at.Z, { featured = true, column = 1 })
+			Evolutions.kingpinPanel(e, at.X, at.Z)
 		else
 			-- Fill the rows in price order: 5, 5, then the rest on the narrow top tier.
 			local row = placed[1] < 5 and 1 or placed[2] < 5 and 2 or 3
@@ -3171,10 +3215,10 @@ function Evolutions.build(ctx, opts)
 			local column = placed[row]
 			local t = Evolutions.Tiers[row]
 			if cols[column] then
-				local stand, feet = Evolutions.look(m, s, art, cx + cols[column], t.top, t.row, {
+				local stand, feet = Evolutions.look(m, s, art, cols[column], t.top, t.row, {
 					column = column, yaw = wobble[(column - 1) % 5 + 1], tint = Evolutions.TierColors[row],
 				})
-				if row == 3 then Evolutions.sparkle(m:into(stand), cx + cols[column], feet, t.row, Evolutions.TierColors[3].color) end
+				if row == 3 then Evolutions.sparkle(m:into(stand), cols[column], feet, t.row, Evolutions.TierColors[3].color) end
 			end
 		end
 	end
@@ -3194,14 +3238,15 @@ function Evolutions.build(ctx, opts)
 		end
 	end
 	-- Spotlights from the wing caps on the two lower rows: the -X wing lights the far half, the +X wing (between
-	-- the top tier and the Kingpin's tower) the walkway half.
+	-- the top tier and the Kingpin's panel) the walkway half.
 	local t1, t2, t3 = Evolutions.Tiers[1], Evolutions.Tiers[2], Evolutions.Tiers[3]
 	local chest = Evolutions.PadH + 3 * Evolutions.Scale
+	local c1, c2 = Evolutions.Columns[1], Evolutions.Columns[2]
 	Evolutions.lights(e, {
-		{ x = t3.x1 + 0.4, at = V(cx + 13.5, t1.top + chest, t1.row) },
-		{ x = t3.x1 + 1.3, at = V(cx + 9, t2.top + chest, t2.row) },
-		{ x = t1.x0 + 0.8, at = V(cx - 13.5, t1.top + chest, t1.row) },
-		{ x = t3.x0 - 0.9, at = V(cx - 9, t2.top + chest, t2.row) },
+		{ x = t3.x1 + 0.9, at = V((c1[1] + c1[2]) / 2, t1.top + chest, t1.row) },
+		{ x = t3.x1 + 2.4, at = V(c2[2], t2.top + chest, t2.row) },
+		{ x = t1.x0 + 0.8, at = V((c1[4] + c1[5]) / 2, t1.top + chest, t1.row) },
+		{ x = t3.x0 - 0.9, at = V(c2[4], t2.top + chest, t2.row) },
 	})
 	Evolutions.fog(e)
 	Evolutions.sign(e)

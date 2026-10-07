@@ -69,7 +69,7 @@ local wardrobePoint = morphs and ActiveMap.find(lobby, 'WardrobePoint', 10) or n
 if wardrobePoint then
 	local p = Instance.new('ProximityPrompt')
 	p.Name = 'Wardrobe'
-	p.MaxActivationDistance = 9
+	p.MaxActivationDistance = 6.5 -- (the stand keeps every look's standing spot at least 7 studs from it)
 	p.RequiresLineOfSight = false
 	p.HoldDuration = 0
 	p.KeyboardKeyCode = Enum.KeyCode.F
@@ -111,11 +111,12 @@ end
 --   unlocked   full colour, effects on, breathing (a small HoodMotion bob, phased by column)
 --   worn       the same, turning slowly on its disc
 -- A stand with the Showcase attribute (the featured Kingpin) keeps its own colours and motion.
--- Labels on the podium's stands (Look attribute): the full label only on stands within 14 studs of you on your
--- level or the one above; while none is up, your next look shows a bobbing ▼ marker instead.
+-- Labels on the podium's stands (Look attribute): the full label only on stands within 7 studs of you whose
+-- equip point is above your feet but within one level (the row you face, never the row behind/below you);
+-- while none is up, your next look shows a bobbing ▼ marker instead.
 local LOOK_SHADOW = C(26, 27, 36)
 local LOCK_TINT = 0.4 -- how far a locked figure's colours move toward the shade
-local LABEL_RANGE, LABEL_RISE = 14, 4.5
+local LABEL_RANGE, LABEL_RISE = 7, 4.5
 local PULSE = TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
 local looks = {}
 for _, s in (morphs and Skins.List or {}) do
@@ -208,7 +209,7 @@ local function showLabels(n)
 			local near = false
 			if root then
 				local d = e.Point.Position - root.Position
-				near = Vector3.new(d.X, 0, d.Z).Magnitude <= LABEL_RANGE and math.abs(d.Y) <= LABEL_RISE
+				near = Vector3.new(d.X, 0, d.Z).Magnitude <= LABEL_RANGE and d.Y > 0 and d.Y <= LABEL_RISE
 			end
 			e.Label.Enabled = near
 			any = any or near
@@ -398,13 +399,14 @@ local function refresh()
 	end
 	if guideTo then
 		indicator.Adornee = guideTo
-		pointer.Text = guideTo == wardrobePoint and 'WARDROBE ↓' or morphs and 'YOUR NEXT LOOK ↓' or 'EVOLVE HERE ↓'
+		pointer.Text = guideTo == wardrobePoint and ('WARDROBE: ' .. best.Name .. ' ↓') or morphs and 'YOUR NEXT LOOK ↓' or 'EVOLVE HERE ↓'
 	elseif station:find('Locked:') then
 		indicator.Adornee = zoneOf(bestGym.Id)
 		pointer.Text = 'TRAIN x' .. bestGym.Multiplier .. ' HERE ↓'
 	elseif (morphs or evolvePoint) and best.Gain > skin.Gain then
-		indicator.Adornee = morphs and morphs['Skin_' .. best.Id].Interact or evolvePoint
-		pointer.Text = morphs and 'EQUIP YOUR LOOK ↓' or 'EVOLVE HERE ↓'
+		-- A better look is unlocked: the stand's WARDROBE equips it (what the HUD hint says too).
+		indicator.Adornee = wardrobePoint or (morphs and morphs['Skin_' .. best.Id].Interact) or evolvePoint
+		pointer.Text = wardrobePoint and ('WARDROBE: ' .. best.Name .. ' ↓') or morphs and 'EQUIP YOUR LOOK ↓' or 'EVOLVE HERE ↓'
 	elseif station == '' then
 		indicator.Adornee = zoneOf(bestGym.Id)
 		pointer.Text = 'TRAIN x' .. bestGym.Multiplier .. ' HERE ↓'
