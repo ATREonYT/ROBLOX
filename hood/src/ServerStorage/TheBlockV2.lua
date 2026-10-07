@@ -4304,7 +4304,7 @@ function Lobby.wallTarget(c, pos)
 	local b, plate = g:group('Plate')
 	for _, dz in { -1.2, 1.2 } do b:box('TargetChain', pos + V(-0.08, 4.4, dz - 0.08), pos + V(0.08, 7.6, dz + 0.08), K.steel, M.SmoothPlastic) end
 	local face = CFrame.new(pos + V(0, 2.6, 0)) * CFrame.Angles(0, 0, 0)
-	for j, e in { { 4.4, K.steel }, { 3.6, K.red }, { 2.4, P.white }, { 1.2, K.red } } do
+	for j, e in { { 4.4, K.gold }, { 3.6, K.red }, { 2.4, P.white }, { 1.2, K.red } } do
 		b:part('TargetRing', V(0.3 + j * 0.05, e[1], e[1]), face * CFrame.new(j * 0.03, 0, 0), e[2], M.SmoothPlastic, Enum.PartType.Cylinder)
 	end
 	return Lobby.motion(plate, CFrame.new(pos + V(0, 4, 0)), nil, 0.3, 1.3)
@@ -4333,9 +4333,9 @@ function Lobby.rewardBase(r, w, d, color, k)
 	end
 end
 Lobby.RewardAt = {
-	DailyCrate = CFrame.new(-27, 0, 19) * CFrame.Angles(0, math.rad(14), 0),
+	DailyCrate = CFrame.new(-27, 0, 19) * CFrame.Angles(0, math.rad(-146), 0), -- hasp toward the spawn
 	LuckyShot = CFrame.new(17, 0, 17),
-	VipSafe = CFrame.new(31, 0, 19) * CFrame.Angles(0, math.rad(-10), 0),
+	VipSafe = CFrame.new(31, 0, 19) * CFrame.Angles(0, math.rad(145), 0), -- door toward the spawn
 }
 function Lobby.rewards(L)
 	local gold = Lobby.Colors.gold
@@ -4476,13 +4476,16 @@ function Lobby.portal(L, cf)
 	return p
 end
 
--- People in the range are SkinArt figures (Art.posed). Poses in SkinArt.Poses' shape: {out, forward} per limb
--- (forward = toward the figure's front).
+-- People in the range are SkinArt figures (Art.posed: block R15 parts, each look carrying its own prop in its
+-- left hand). Poses in SkinArt.Poses' shape: {out, forward, elbow bend, twist} per limb (forward = toward the
+-- figure's front).
 Lobby.Poses = {
 	-- Two-handed aim straight ahead: the right arm level, the left arm crossing in under it.
-	aim = { LeftArm = { -22, 84 }, RightArm = { -4, 90 }, LeftLeg = { 5, 10 }, RightLeg = { 5, -8 } },
+	aim = { LeftArm = { -22, 80, 10 }, RightArm = { -4, 90 }, LeftLeg = { 5, 10 }, RightLeg = { 5, -8 } },
 	-- The kingpin: a gold pistol raised high (the near arm, tilted toward the walkway), the other hand on the hip.
-	kingpin = { LeftArm = { 160, 25 }, RightArm = { 26, -8 }, LeftLeg = { 6, 0 }, RightLeg = { 6, 0 } },
+	kingpin = { LeftArm = { 160, 25 }, RightArm = { 30, -10, 70, 80 }, LeftLeg = { 6, 0 }, RightLeg = { 6, 0 } },
+	-- The range officer: one arm pointing across at the ranges, the other at his side.
+	officer = { LeftArm = { 4, 0 }, RightArm = { 70, 30 }, LeftLeg = { 3, 0 }, RightLeg = { 3, 0 }, Head = -10 },
 }
 function Lobby.figure(parent, cf, skin, scale, pose)
 	local ok, Art = pcall(function() return require(ReplicatedStorage.Shared.SkinArt) end)
@@ -4491,15 +4494,71 @@ function Lobby.figure(parent, cf, skin, scale, pose)
 	if not built or not fig then return nil end
 	return fig
 end
--- A small block pistol in a figure's hand, the muzzle along the arm (cheap: grip, slide, barrel).
-function Lobby.handGun(fig, arm, scale, color)
-	local a = fig:FindFirstChild(arm)
-	if not a then return end
-	local hand = a.CFrame * CFrame.new(0, -1.05 * scale, 0)
+-- A body part by its R15 name, falling back to the old R6 name (nil when neither is there).
+function Lobby.limb(fig, r15, r6)
+	return fig:FindFirstChild(r15) or (r6 and fig:FindFirstChild(r6)) or nil
+end
+-- Remove the look's hand prop (cash stack, sceptre, keys...): every recipe piece on the left hand, plus the known
+-- prop names when the recipe isn't readable.
+function Lobby.stripProp(fig, skin)
+	local names = { CashStack = true, CashBand = true, CashEdge = true }
+	local ok, Art = pcall(function() return require(ReplicatedStorage.Shared.SkinArt) end)
+	if ok and type(Art) == 'table' and Art.recipe then
+		local okR, recipe = pcall(Art.recipe, skin)
+		if okR and recipe and recipe.pieces then
+			for _, pc in recipe.pieces do if pc.seg == 'LeftHand' then names[pc.name] = true end end
+		end
+	end
+	for _, d in fig:GetDescendants() do
+		if d:IsA('BasePart') and (names[d.Name] or d.Name:match('^Sceptre')) then d:Destroy() end
+	end
+end
+-- Recolour a GunModels gun gold (its Foil renders olive indoors): SmoothPlastic body, a deeper grip (and frame,
+-- when frame is given), neon gems.
+function Lobby.goldGun(gun, body, frame)
+	local deep = C(222, 150, 28)
+	for _, d in gun:GetDescendants() do
+		if d:IsA('BasePart') and d.Transparency < 1 then
+			if d.Name == 'Gem' then
+				d.Material = M.Neon
+			elseif d.Name:match('^Grip') or d.Name == 'Hammer' or d.Name == 'Trigger' then
+				d.Material, d.Color = M.SmoothPlastic, deep
+			elseif frame and (d.Name == 'Frame' or d.Name:match('^Guard') or d.Name:match('^Barrel')) then
+				d.Material, d.Color = M.SmoothPlastic, frame
+			elseif d.Name ~= 'Bore' then
+				d.Material, d.Color = M.SmoothPlastic, body
+			end
+		end
+	end
+	return gun
+end
+-- A GunModels pistol in a figure's hand, the muzzle out along the arm; a 3-part block pistol without GunModels.
+-- roll: turn the gun about its barrel (the statue's raised pistol shows its side to the front).
+function Lobby.handGun(fig, side, scale, id, light, roll)
+	local hand = Lobby.limb(fig, side .. 'Hand', side .. 'Arm')
+	if not hand then return nil end
+	local grip = hand.Name:find('Hand') and hand.CFrame or hand.CFrame * CFrame.new(0, -1.05 * scale, 0)
+	-- The gun's -Z (muzzle) along the hand's -Y (out of the fist).
+	local at = grip * CFrame.Angles(-math.pi / 2, 0, 0) * CFrame.Angles(0, 0, roll or 0)
+	local okGun, Guns = pcall(function() return require(ReplicatedStorage.Shared.Models.GunModels) end)
+	if okGun and Guns and Guns.build then
+		local okBuild, gun = pcall(Guns.build, id or 'Pistol', scale)
+		if okBuild and gun then
+			gun:PivotTo(at)
+			if light then
+				for _, d in gun:GetDescendants() do
+					if d:IsA('BasePart') and (d.Name == 'Slide' or d.Name == 'Frame' or d.Name == 'Barrel' or d.Name == 'Serration') then d.Material, d.Color = M.SmoothPlastic, light end
+				end
+			end
+			gun.Parent = fig
+			return gun
+		end
+	end
 	for _, e in { { 'GunGrip', V(0.3, 0.6, 0.3), CFrame.new(0, 0, 0.15) }, { 'GunSlide', V(0.32, 0.3, 1.1), CFrame.new(0, -0.35, -0.3) * CFrame.Angles(math.pi / 2, 0, 0) } } do
-		local q = Lobby.worldPart(fig, e[1], e[2] * scale, hand * CFrame.new(e[3].Position * scale) * (e[3] - e[3].Position), color)
+		local q = Lobby.worldPart(fig, e[1], e[2] * scale, grip * CFrame.new(e[3].Position * scale) * (e[3] - e[3].Position), light or C(200, 204, 212))
 		q.CanCollide, q.CanQuery, q.CanTouch = false, false, false
 	end
+	return nil
 end
 
 -- The KINGPIN: a giant gold figure (SkinArt's top look: crown, suit, chain) holding a gold deagle high, on a
@@ -4524,30 +4583,29 @@ function Lobby.statue(L, cf, skins)
 	local fig = Lobby.figure(model, base, kingpin, scale, Lobby.Poses.kingpin)
 	if fig then
 		fig.Name = 'KingpinFigure'
-		local paleParts = { DressShirt = true, TailoredLapel = true, Tie = true, TieKnot = true, ShirtCuff = true }
-		local face = { EyeWhite = true, Iris = true, Pupil = true, EyeGlint = true, Eyebrow = true, Eyelid = true, Nose = true, Smile = true, SmileTeeth = true,
-			Mouth = true, Moustache = true, Beard = true, SunglassesFrame = true, SunglassesLens = true, LensReflection = true, GlassesBridge = true, RoundSpectacleRim = true }
+		-- No sceptre: the gold deagle goes in that hand.
+		Lobby.stripProp(fig, kingpin)
+		local paleParts = { DressShirt = true, TailoredLapel = true, Tie = true, TieKnot = true, ShirtCuff = true, ShadesGlint = true, EyeGlint = true }
+		-- Face features stay dark so the eyes, shades and smirk read (old and new SkinArt names).
+		local face = { EyeWhite = true, Iris = true, Pupil = true, Eyebrow = true, Eyelid = true, Nose = true, Smile = true, SmileTeeth = true,
+			Mouth = true, Moustache = true, Beard = true, SunglassesFrame = true, SunglassesLens = true, LensReflection = true, GlassesBridge = true, RoundSpectacleRim = true,
+			Eye = true, Brow = true, MouthCorner = true, Teeth = true, ShadesLens = true, ShadesBar = true }
 		for _, d in fig:GetDescendants() do
 			if d:IsA('BasePart') then
 				d.Material = M.SmoothPlastic
-				d.Color = face[d.Name] and ink or paleParts[d.Name] and pale or d.Name == 'Head' and head or suit
+				d.Color = face[d.Name] and ink or paleParts[d.Name] and pale or d.Name:match('^Head') and head or suit
 				d.CastShadow = true
 			elseif d:IsA('Decal') then
 				d.Color3 = ink
 			end
 		end
-		-- The gold deagle (GunModels) in the raised hand, muzzle up along the arm.
-		local arm = fig:FindFirstChild('LeftArm')
-		local okGun, Guns = pcall(function() return require(ReplicatedStorage.Shared.Models.GunModels) end)
-		if arm and okGun and Guns and Guns.build then
-			local okBuild, gun = pcall(Guns.build, 'Deagle', scale)
-			if okBuild and gun then
-				gun.Name = 'GoldDeagle'
-				gun:PivotTo(arm.CFrame * CFrame.new(0, -1.05 * scale, 0) * CFrame.Angles(-math.pi / 2, 0, 0))
-				gun.Parent = model
-			end
-		elseif arm then
-			Lobby.handGun(fig, 'LeftArm', scale, K.gold)
+		-- The gold deagle (GunModels) in the raised hand, muzzle up along the arm, pale gold against the suit.
+		-- (a size up from the hand, so it reads at the statue's scale; pale slide over a bronze frame so it reads
+		-- against both the gold suit and the sky)
+		local gun = Lobby.handGun(fig, 'Left', scale * 1.35, 'Deagle', nil, math.pi / 2)
+		if gun then
+			gun.Name = 'GoldDeagle'
+			Lobby.goldGun(gun, C(255, 232, 150), C(190, 110, 20))
 		end
 	else
 		local function b(name, x0, y0, z0, x1, y1, z1, color) return s:box(name, V(x0, top + y0, z0), V(x1, top + y1, z1), color or head, M.SmoothPlastic) end
@@ -4568,9 +4626,9 @@ function Lobby.statue(L, cf, skins)
 	return s
 end
 
--- People: two regulars on the practice lane in the south-west yard (aiming at bottles, cans and a bullseye
--- board on a plank fence), the range officer in a hi-vis vest and ear defenders at the runner's west end, and
--- a kid hanging out by the Daily Crate, waving at the spawn.
+-- People: two regulars on the practice lane in the south-west yard (aiming pistols at bottles, cans and a
+-- bullseye board on a plank fence), the range officer in hi-vis at the runner's west end, and a kid by the
+-- walkway stairs waving at the spawn. Nobody stands downrange of a lane.
 function Lobby.people(L, skins)
 	local K = Lobby.Colors
 	local g, model = L:group('People')
@@ -4600,29 +4658,47 @@ function Lobby.people(L, skins)
 			g:post('Can', 0.4, 0.8, V(fx, 4, z), cols[k2 % 4 + 1], M.SmoothPlastic)
 		end
 	end
-	local board = CFrame.new(fx - 1.5, 6.2, 134)
+	local board = CFrame.new(fx - 1.5, 6.2, 130.5)
 	for j, e in { { 6, P.white }, { 4.6, K.red }, { 3.2, P.white }, { 1.8, K.red } } do
 		g:part('BoardRing', V(0.3 + j * 0.06, e[1], e[1]), board * CFrame.new(j * 0.03, 0, 0), e[2], M.SmoothPlastic, Enum.PartType.Cylinder)
 	end
-	g:box('BoardLeg', V(fx - 1.9, 0.12, 133.7), V(fx - 1.3, 4, 134.3), C(150, 96, 52), M.Wood)
+	g:box('BoardLeg', V(fx - 1.9, 0.12, 130.2), V(fx - 1.3, 4, 130.8), C(150, 96, 52), M.Wood)
 	for _, z in { 129, 138 } do
-		local fig = person('Shooter' .. z, z == 129 and 'Hustler' or 'GetawayDriver', nil, V(lx + 2.2, 0.12, z), V(fx, 0.12, z), Lobby.Poses.aim)
-		if fig then Lobby.handGun(fig, 'RightArm', 1.1, C(60, 64, 76)) end
+		local id = z == 129 and 'Hustler' or 'GetawayDriver'
+		local fig = person('Shooter' .. z, id, nil, V(lx + 2.2, 0.12, z), V(fx, 0.12, z), Lobby.Poses.aim)
+		if fig then
+			Lobby.stripProp(fig, skins.ById[id] or skins.List[1])
+			Lobby.handGun(fig, 'Right', 1.3, 'Pistol', C(200, 204, 212))
+		end
 	end
-	-- The range officer: hi-vis orange with ear defenders, pointing down the aisle at the targets.
+	-- The range officer: the Runner look (his headphones read as ear defenders) in a lime hi-vis jacket with two
+	-- white reflective bands and a whistle on a lanyard; he smiles and points across at the ranges.
 	local D = Lobby.Deck
-	local officer = person('RangeOfficer', 'Enforcer', C(255, 150, 30), V(-46.5, D, Lobby.CrossZ), V(0, D, Lobby.CrossZ), 'point', 0.12, 2.4)
-	if officer then
-		local head = officer:FindFirstChild('Head')
-		if head then
-			for _, sx in { -1, 1 } do
-				Lobby.worldPart(officer, 'EarCup', V(0.35, 0.8, 0.8) * 1.1, head.CFrame * CFrame.new(sx * 0.82 * 1.1, 0, 0), C(40, 110, 220)).CanCollide = false
+	local base = skins.ById.Pickpocket or skins.List[1]
+	local okc, oskin = pcall(table.clone, base)
+	if okc and oskin then
+		oskin.Id, oskin.Color, oskin.Expression = 'RangeOfficer', C(200, 255, 60), 'happy'
+		local frame = CFrame.lookAt(V(-46.5, D, Lobby.CrossZ), V(0, D, Lobby.CrossZ))
+		local officer = Lobby.figure(model, V2.Origin * frame, oskin, 1.1, Lobby.Poses.officer)
+		if officer then
+			Lobby.stripProp(officer, oskin)
+			local torso = Lobby.limb(officer, 'UpperTorso', 'Torso')
+			if torso then
+				for _, y in { 0.15, -0.35 } do
+					local band = Lobby.worldPart(officer, 'ReflectiveBand', V(2.08, 0.18, 1.08) * 1.1, torso.CFrame * CFrame.new(0, y * 1.1, 0), P.white)
+					band.CanCollide, band.CanQuery, band.CanTouch = false, false, false
+				end
+				local cord = Lobby.worldPart(officer, 'Lanyard', V(0.08, 0.7, 0.06) * 1.1, torso.CFrame * CFrame.new(0, 0.3 * 1.1, -0.53 * 1.1), K.red)
+				cord.CanCollide = false
+				local whistle = Lobby.worldPart(officer, 'Whistle', V(0.3, 0.2, 0.2) * 1.1, torso.CFrame * CFrame.new(0, -0.1 * 1.1, -0.58 * 1.1), K.gold)
+				whistle.CanCollide = false
 			end
-			Lobby.worldPart(officer, 'EarBand', V(1.9, 0.18, 0.3) * 1.1, head.CFrame * CFrame.new(0, 0.82 * 1.1, 0), C(40, 110, 220)).CanCollide = false
+			Lobby.motion(officer, frame, nil, 0.12, 2.4)
 		end
 	end
 	-- A kid hanging out by the Daily Crate, waving at the spawn.
-	person('Waver', 'CornerKid', C(40, 180, 90), V(-12, 0.12, 21), V(0, 0.12, 60), 'wave', 0.15, 1.6)
+	-- (beside the walkway stairs on the north-east turf: in the spawn frame, in no lane's line of fire)
+	person('Waver', 'CornerKid', C(40, 180, 90), V(7.5, 0.12, 25), V(0, 0.12, 60), 'wave', 0.15, 1.6)
 	return g
 end
 
@@ -4710,12 +4786,16 @@ function Lobby.murals(dr)
 	-- pistols crossed.
 	local am = Lobby.onWall(V(0, 25, S - 0.45), V(0, 0, -1))
 	decor(dr:part('MuralBorder', V(29.2, 16.2, 0.2), am * CFrame.new(0, 0, 0.1), C(245, 245, 245), M.SmoothPlastic))
-	Lobby.board(dr, 'Mural', am, 28, 15, C(130, 60, 220), { { 'Title', 'ARMORY', C(255, 214, 60), FONT.loud, 0.04, 0.52, C(150, 20, 90), 6 } }, 12)
+	Lobby.board(dr, 'Mural', am, 28, 15, C(130, 60, 220), { { 'Title', 'ARMORY', C(255, 214, 60), FONT.loud, 0.03, 0.4, C(150, 20, 90), 6 } }, 12)
+	-- Two gold pistols side on, back to back under the word, muzzles out (crossed ones read as an "X").
 	for _, sx in { -1, 1 } do
-		local gun = am * CFrame.new(0, -3.4, -0.3) * CFrame.Angles(0, 0, sx * math.rad(32))
-		decor(dr:part('MuralPistol', V(9, 1.3, 0.2), gun * CFrame.new(sx * 1.2, 0.6, 0), K.gold, M.SmoothPlastic))
-		decor(dr:part('MuralPistol', V(3.4, 1.9, 0.22), gun * CFrame.new(sx * -2.2, 0.2, 0), K.gold, M.SmoothPlastic))
-		decor(dr:part('MuralPistolGrip', V(1.5, 3.2, 0.24), gun * CFrame.new(sx * -3.4, -1.6, 0) * CFrame.Angles(0, 0, sx * -0.3), C(196, 120, 60), M.SmoothPlastic))
+		local function shape(name, size, x, y, tilt, color)
+			decor(dr:part(name, size, am * CFrame.new(sx * x, y, -0.3) * CFrame.Angles(0, 0, sx * (tilt or 0)), color or K.gold, M.SmoothPlastic))
+		end
+		shape('MuralPistol', V(7.4, 1.7, 0.2), 4.7, -2.4)
+		shape('MuralPistolMuzzle', V(0.7, 1.1, 0.22), 8.6, -2.4, 0, C(222, 150, 28))
+		shape('MuralPistolGrip', V(1.7, 3.6, 0.22), 2.2, -4.6, math.rad(14), C(222, 150, 28))
+		shape('MuralPistolGuard', V(1.6, 0.4, 0.22), 3.8, -3.9)
 	end
 	-- TOP OF THE BLOCK (east wall): a blue splash with a white burst, gold letters and a gold crown.
 	local tb = Lobby.onWall(V(W - 0.45, 19, 107.5), V(-1, 0, 0))
@@ -4728,9 +4808,11 @@ function Lobby.murals(dr)
 	end
 	-- BULLSEYE (west wall): a white burst behind a big painted target, gold BULLSEYE! across the top.
 	local pw = Lobby.onWall(V(-W + 0.45, 14, 101.5), V(1, 0, 0))
-	local burst = decor(dr:part('MuralBurst', V(13, 13, 0.1), pw * CFrame.new(0, 0, -0.05), C(245, 245, 245), M.SmoothPlastic))
+	decor(dr:part('MuralBurst', V(13, 13, 0.1), pw * CFrame.new(0, 0, -0.05), C(245, 245, 245), M.SmoothPlastic))
 	decor(dr:part('MuralBurst', V(13, 13, 0.1), pw * CFrame.new(0, 0, -0.08) * CFrame.Angles(0, 0, math.pi / 4), C(245, 245, 245), M.SmoothPlastic))
-	line(surface(burst, Enum.NormalId.Front, 16), 'Hit', 'BULLSEYE!', K.gold, FONT.loud, 0.0, 0.2, K.red, 4)
+	-- The title on its own see-through board in front of both bursts, so neither cuts it.
+	local title = ghost(dr:part('MuralTitle', V(13, 3.4, 0.1), pw * CFrame.new(0, 7.6, -1.6), P.white))
+	line(surface(title, Enum.NormalId.Front, 16), 'Hit', 'BULLSEYE!', K.gold, FONT.loud, 0.0, 1, K.red, 4)
 	for j, e in { { 9, K.red }, { 7, P.white }, { 5, K.red }, { 3, P.white }, { 1.4, K.gold } } do
 		decor(dr:part('MuralRing', V(0.1, e[1], e[1]), pw * CFrame.new(0, -0.8, -0.12 - j * 0.05) * CFrame.Angles(0, math.pi / 2, 0), e[2], M.SmoothPlastic, Enum.PartType.Cylinder)).CastShadow = false
 	end
@@ -4761,7 +4843,7 @@ function Lobby.dressing(L)
 	dr:box('MirrorFrame', V(-W, 2.6, 46.6), V(-W + 0.3, 10.4, 73.4), K.frame, M.SmoothPlastic)
 	-- Posters: target nights, range rules, motivation; slightly crooked, taped.
 	local posters = {
-		{ V(-40, 11, N + 0.45), inN, 5, 7, C(214, 40, 40), { { 'SHARP', P.white, FONT.loud, 0.04, 0.2 }, { 'SHOOTER', C(255, 220, 60), FONT.loud, 0.24, 0.2 }, { 'CUP\n10 LANES\nBIG PRIZES', P.white, FONT.title, 0.48, 0.36 }, { 'SAT 9PM', C(255, 220, 60), FONT.body, 0.86, 0.1 } } },
+		{ V(-40, 11, N + 0.45), inN, 5, 7, C(214, 40, 40), { { 'SHARP', P.white, FONT.loud, 0.04, 0.2 }, { 'SHOOTER', C(255, 220, 60), FONT.loud, 0.24, 0.2 }, { 'CUP\n8 LANES\nBIG PRIZES', P.white, FONT.title, 0.48, 0.36 }, { 'SAT 9PM', C(255, 220, 60), FONT.body, 0.86, 0.1 } } },
 		{ V(-47, 11, N + 0.45), inN, 4.4, 6, C(250, 204, 48), { { 'AIM\nHIGH', P.black, FONT.loud, 0.08, 0.5, P.white }, { 'EVERY SHOT\n+1 POWER', C(160, 30, 30), FONT.title, 0.62, 0.3, P.white } } },
 		{ V(40, 11, N + 0.45), inN, 5, 7, C(40, 80, 200), { { 'WANTED', P.white, FONT.loud, 0.04, 0.2 }, { 'THE\nKINGPIN', C(255, 220, 60), FONT.loud, 0.3, 0.4 }, { 'REWARD 💪 50K', P.white, FONT.body, 0.8, 0.12 } } },
 		{ V(47.5, 10, N + 0.45), inN, 4, 5, P.white, { { 'EARS\n& EYES', C(200, 30, 30), FONT.loud, 0.1, 0.55 }, { 'safety first!', P.black, FONT.tag, 0.7, 0.2 } } },
@@ -4773,13 +4855,13 @@ function Lobby.dressing(L)
 		local cf = Lobby.onWall(p[1], p[2]) * CFrame.Angles(0, 0, math.rad((k % 3 - 1) * 3))
 		Lobby.poster(dr, cf, p[3], p[4], p[5], p[6])
 	end
-	-- The range scoreboard on the north wall, west of the door.
-	Lobby.board(dr, 'Scoreboard', Lobby.onWall(V(-23, 15, N + 0.6), inN), 12, 6, C(24, 36, 84), {
+	-- The range scoreboard on the north wall, east of the door (west of it, it sat behind the Gold lane's label).
+	Lobby.board(dr, 'Scoreboard', Lobby.onWall(V(24, 15, N + 0.6), inN), 12, 6, C(24, 36, 84), {
 		{ 'Round', 'LANE 3', C(255, 220, 60), FONT.loud, 0.04, 0.26, P.black },
 		{ 'Score', 'BEST  9,850 PTS', C(255, 90, 90), FONT.loud, 0.34, 0.34, P.black },
 		{ 'Clock', '2:59', C(80, 255, 120), FONT.body, 0.72, 0.24, P.black },
 	}, 18)
-	Lobby.neonFrame(dr, Lobby.onWall(V(-23, 15, N + 0.6), inN), 12, 6, C(255, 220, 60), 0.25)
+	Lobby.neonFrame(dr, Lobby.onWall(V(24, 15, N + 0.6), inN), 12, 6, C(255, 220, 60), 0.25)
 	Lobby.murals(dr)
 
 	-- Gym-turf yards round the deck (painted lanes and numbers), leaving concrete by the walls and walkway.
@@ -4876,11 +4958,14 @@ function Lobby.dressing(L)
 	-- Wayfinding down the walkway: a blue centre lane with gold chevrons, pointing to the street door north of
 	-- the badge and to the armory south of it.
 	for _, seg in { { 9, 44.5, -1 }, { 67, 116.5, 1 } } do
-		decor(dr:box('WalkLane', V(-1.4, D, seg[1]), V(1.4, D + 0.12, seg[2]), K.blue, M.SmoothPlastic)).CastShadow = false
+		decor(dr:box('WalkLane', V(-2.2, D, seg[1]), V(2.2, D + 0.12, seg[2]), K.blue, M.SmoothPlastic)).CastShadow = false
+		for _, sx in { -1, 1 } do
+			decor(dr:box('WalkEdge', V(sx * 3.1, D, seg[1]), V(sx * 3.7, D + 0.12, seg[2]), K.hazard, M.SmoothPlastic)).CastShadow = false
+		end
 		for z = seg[1] + 4, seg[2] - 2, 8 do
 			for _, sx in { -1, 1 } do
 				local tip = V(0, D + 0.15, z + seg[3] * 0.9)
-				local tail = V(sx * 1.1, D + 0.15, z - seg[3] * 0.4)
+				local tail = V(sx * 1.6, D + 0.15, z - seg[3] * 0.6)
 				decor(dr:part('WalkChevron', V(0.5, 0.06, (tip - tail).Magnitude + 0.3), CFrame.lookAt((tip + tail) / 2, tip), K.gold, M.SmoothPlastic)).CastShadow = false
 			end
 		end
@@ -4919,18 +5004,33 @@ function Lobby.dressing(L)
 			Size = Lobby.seq({ { 0, 0 }, { 0.2, 0.22 }, { 0.8, 0.22 }, { 1, 0 } }), Transparency = Lobby.seq({ { 0, 0.4 }, { 1, 0.6 } }),
 			Color = ColorSequence.new(C(255, 240, 210)), LightEmission = 1, SpreadAngle = Vector2.new(180, 180) })
 	end
-	-- The landmark from the street: a giant gold deagle (GunModels) turning slowly over the north gable; a giant
-	-- bullseye if the gun models aren't there.
-	local gp = V(0, 45.6, N - 0.5)
+	-- The landmark from the street: a giant gold deagle (GunModels, recoloured gold) turning slowly on a red
+	-- turntable mast on the north gable, a cyan neon ring under it, a warm light and glints; a giant bullseye if
+	-- the gun models aren't there.
+	local ridge = Lobby.Ridge + 1.2
+	local mast = dr:group('RoofMast')
+	mast:part('MastPlinth', V(1.2, 6, 6), CFrame.new(0, ridge + 0.6, N - 0.5) * CFrame.Angles(0, 0, math.pi / 2), K.red, M.SmoothPlastic, Enum.PartType.Cylinder)
+	decor(mast:part('MastRing', V(0.3, 6.6, 6.6), CFrame.new(0, ridge + 1.15, N - 0.5) * CFrame.Angles(0, 0, math.pi / 2), K.cool, M.Neon, Enum.PartType.Cylinder)).CastShadow = false
+	mast:post('MastPole', 0.5, 7.2, V(0, ridge + 1.2, N - 0.5), K.red, M.SmoothPlastic)
+	local gp = V(0, ridge + 9.4, N - 0.5)
 	local okGun, Guns = pcall(function() return require(ReplicatedStorage.Shared.Models.GunModels) end)
 	local landmark
 	if okGun and Guns and Guns.build and Guns.Meta and Guns.Meta.Deagle then
-		local scale = 5
+		local scale = 7.5
 		local okBuild, gun = pcall(Guns.build, 'Deagle', scale)
 		if okBuild and gun then
 			gun.Name = 'RoofDeagle'
+			Lobby.goldGun(gun, K.gold)
 			-- Side on to the street (it turns in game; this is how it rests before the client spins it).
 			gun:PivotTo(V2.Origin * CFrame.new(gp) * CFrame.Angles(0, math.pi / 2, 0) * CFrame.new(-Guns.Meta.Deagle.Center * scale))
+			local slide = gun:FindFirstChild('Slide')
+			if slide then
+				-- A thin neon line down each side of the slide.
+				for _, sx in { -1, 1 } do
+					local glow = Lobby.worldPart(gun, 'SlideGlow', V(0.1, 0.3, slide.Size.Z * 0.85), slide.CFrame * CFrame.new(sx * (slide.Size.X / 2 + 0.05), 0, 0), C(255, 236, 140), M.Neon)
+					glow.CanCollide, glow.CanQuery, glow.CanTouch, glow.CastShadow = false, false, false, false
+				end
+			end
 			gun.Parent = dr.parent
 			landmark = gun
 		end
@@ -4943,6 +5043,10 @@ function Lobby.dressing(L)
 		landmark = target
 	end
 	Lobby.motion(landmark, CFrame.new(gp), 20, 0.6, 3)
+	local shine = Lobby.emitBox(mast, 'RoofGunFx', gp + V(-6, -4, -6), gp + V(6, 4, 6))
+	light(shine, C(255, 210, 90), 2, 30)
+	Lobby.fx(shine, 'RoofGunGlints', 'sparkle', { Rate = 6, Lifetime = NumberRange.new(0.6, 1.2), Speed = NumberRange.new(0, 0.5),
+		Size = Lobby.seq({ { 0, 0 }, { 0.4, 1.4 }, { 1, 0 } }), Color = ColorSequence.new(C(255, 240, 200)), LightEmission = 1 })
 	return dr
 end
 
