@@ -775,6 +775,10 @@ local function applyProfile(profile)
 	refreshCounters()
 	refresh()
 end
+-- Lobby props that aren't built yet (reward crates, the WORLD 2 portal) carry a ComingSoon prompt.
+game:GetService('ProximityPromptService').PromptTriggered:Connect(function(prompt)
+	if prompt:GetAttribute('ComingSoon') then toast((prompt.ObjectText ~= '' and prompt.ObjectText or 'This') .. ' is coming soon!', 'blue') end
+end)
 task.spawn(function()
 	Net.get('Notice').OnClientEvent:Connect(function(message) toast(message, noticeTone(tostring(message))) end)
 	Net.get('ProfileUpdated').OnClientEvent:Connect(applyProfile)
