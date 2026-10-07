@@ -509,18 +509,19 @@ function HoodVFX.Themes.stone(ctx)
 	})
 end
 
--- 2 Red: dense pink-red rain dashing down over its own mat only (from 4 studs up, short streaks), tiny
--- splashes where it lands.
+-- 2 Red: dense red rain dashing down over the back half of its own mat (from 4 studs up, short streaks, in
+-- the theme red so nothing looks like a white tracer), tiny splashes where it lands.
 function HoodVFX.Themes.red(ctx)
 	local A, S, w, d = ctx.A, ctx.S, ctx.w, ctx.d
-	local sky = holder(ctx.theme, 'RainSky', ctx.top * CFrame.new(0, 4, 0), V(w * 0.96, 0.2, d * 0.96))
+	local sky = holder(ctx.theme, 'RainSky', ctx.top * CFrame.new(0, 4, d / 4), V(w * 0.96, 0.2, d * 0.48))
 	emitter(sky, 'Rain', 'rain', {
 		EmissionDirection = Enum.NormalId.Bottom, Orientation = Enum.ParticleOrientation.VelocityParallel,
-		Rate = 70 * A, Lifetime = NR(0.2, 0.24), Speed = NR(16, 19), SpreadAngle = Vector2.new(3, 3),
-		Size = seq({ { 0, 1.6 }, { 1, 1.8 } }), Transparency = seq({ { 0, 1 }, { 0.12, 0 }, { 0.85, 0.05 }, { 1, 1 } }),
-		Color = cseq({ { 0, C(255, 225, 235) }, { 1, C(255, 150, 175) } }), LightEmission = 0,
+		Rate = 40 * A, Lifetime = NR(0.2, 0.24), Speed = NR(16, 19), SpreadAngle = Vector2.new(3, 3),
+		Size = seq({ { 0, 1.1 }, { 1, 1.3 } }), Transparency = seq({ { 0, 1 }, { 0.12, 0 }, { 0.85, 0.05 }, { 1, 1 } }),
+		Color = cseq({ { 0, C(255, 120, 150) }, { 1, C(250, 45, 85) } }), LightEmission = 0,
 	})
-	emitter(ctx.deck, 'Splash', 'dust', {
+	local floor = holder(ctx.theme, 'RainFloor', ctx.top * CFrame.new(0, 0.15, d / 4), V(w * 0.9, 0.3, d * 0.45))
+	emitter(floor, 'Splash', 'dust', {
 		Orientation = Enum.ParticleOrientation.VelocityParallel, Rate = 16 * A, Lifetime = NR(0.2, 0.35),
 		Speed = NR(3, 6), SpreadAngle = Vector2.new(55, 55), Acceleration = V(0, -30, 0), Drag = 1,
 		Size = seq({ { 0, 0.22 * S }, { 1, 0 } }), Squash = seq({ { 0, 1.2 }, { 1, 0.5 } }),
@@ -541,11 +542,14 @@ function HoodVFX.Themes.lava(ctx)
 	local core = cseq({ { 0, C(255, 240, 0) }, { 0.5, C(255, 210, 20) }, { 1, C(255, 160, 10) } })
 	local lick = cseq({ { 0, C(255, 200, 60) }, { 1, C(245, 80, 20) } })
 	local uploaded = select(2, texture('firepuff'))
-	-- Two holders (front and back half) so the aisle end is as dense as the back.
+	-- Two holders (front and back half) so the aisle end is as dense as the back. With burning barrels at the
+	-- sides the carpet keeps clear of them (narrower), so their bases stay visible. Before upload the fire_main
+	-- stand-in runs at half rate and the flame licks take over (flames, not flakes).
+	local bedW = ctx.burners and #ctx.burners > 0 and math.min(w, 4.3) or w
 	for i, zc in { -d / 4, d / 4 } do
-		local half = holder(ctx.theme, 'FireBed' .. i, ctx.top * CFrame.new(0, 0.1, zc), V(w, 0.2, d / 2))
+		local half = holder(ctx.theme, 'FireBed' .. i, ctx.top * CFrame.new(0, 0.1, zc), V(bedW, 0.2, d / 2))
 		emitter(half, 'FireCarpet', 'firepuff', {
-			Rate = 60 * A, Lifetime = NR(0.4, 0.7), Speed = NR(0.3, 1), SpreadAngle = Vector2.new(12, 12), Acceleration = V(0, 1.5, 0),
+			Rate = (uploaded and 60 or 30) * A, Lifetime = NR(0.4, 0.7), Speed = NR(0.3, 1), SpreadAngle = Vector2.new(12, 12), Acceleration = V(0, 1.5, 0),
 			RotSpeed = NR(-20, 20), ZOffset = 0.2, -- (the soft puff fills ~45% of its frame)
 			Size = uploaded and seq({ { 0, 3.2 * S, 0.3 * S }, { 0.4, 4.4 * S, 0.4 * S }, { 1, 0 } }) or seq({ { 0, 1.2 * S, 0.15 * S }, { 0.4, 1.7 * S, 0.2 * S }, { 1, 0 } }),
 			Transparency = seq({ { 0, 0.1 }, { 0.5, 0.25 }, { 1, 1 } }), Color = uploaded and body or fire, LightEmission = 0.35,
@@ -558,7 +562,7 @@ function HoodVFX.Themes.lava(ctx)
 			})
 		end
 		emitter(half, 'FlameLicks', 'flame', {
-			Orientation = Enum.ParticleOrientation.FacingCameraWorldUp, Rate = 10, Lifetime = NR(0.5, 0.9), Speed = NR(3, 5),
+			Orientation = Enum.ParticleOrientation.FacingCameraWorldUp, Rate = uploaded and 10 or 16, Lifetime = NR(0.5, 0.9), Speed = NR(3, 5),
 			SpreadAngle = Vector2.new(10, 10), Rotation = NR(-8, 8), ZOffset = 0.3,
 			Size = seq({ { 0, 0.6 * S }, { 0.4, 1.0 * S, 0.2 * S }, { 1, 0 } }), Transparency = seq({ { 0, 0.3 }, { 0.15, 0 }, { 1, 1 } }),
 			Color = lick, LightEmission = 0.5,
@@ -608,11 +612,12 @@ end
 -- 4 Arcane: pink-white comets sweeping in arcs over the flat purple mat, with pink sparkles.
 function HoodVFX.Themes.arcane(ctx)
 	local A, S, color, w, d = ctx.A, ctx.S, ctx.color, ctx.w, ctx.d
-	-- Long thin arcs (head, tail, bend) sweeping 12-16 studs along the mat, 3-6 studs up, past the bag's sides.
+	-- Long thin arcs (head, tail, bend) sweeping across the back of the field, behind and above the targets
+	-- (6-9 studs up, never across the line of fire), in magenta so they never read as a white tracer.
 	local arcs = {
-		{ V(-0.38 * w, 3.0, -0.45 * d), V(-0.4 * w, 3.6, 0.38 * d), 4.5 },
-		{ V(0.4 * w, 3.4, 0.42 * d), V(0.36 * w, 2.8, -0.3 * d), 4.0 },
-		{ V(0.1 * w, 2.6, -0.46 * d), V(-0.3 * w, 4.0, 0.2 * d), 5.0 },
+		{ V(-0.42 * w, 6.2, 0.36 * d), V(0.42 * w, 7.4, 0.44 * d), 2.5 },
+		{ V(0.4 * w, 8.2, 0.3 * d), V(-0.38 * w, 6.8, 0.46 * d), 2.0 },
+		{ V(-0.2 * w, 8.6, 0.42 * d), V(0.3 * w, 6.4, 0.34 * d), 1.8 },
 	}
 	for i, arc in arcs do
 		local up = CFrame.Angles(0, 0, math.pi / 2) -- attachment X axis points up: the beam bows upward
@@ -629,7 +634,7 @@ function HoodVFX.Themes.arcane(ctx)
 		b.Width0, b.Width1 = 0.45, 0.05 -- the head (Attachment0) wide, the tail thin
 		b.FaceCamera, b.Segments = true, 16
 		b.LightEmission, b.LightInfluence, b.Brightness = 0.5, 0, 1
-		b.Color = ColorSequence.new(C(255, 150, 235), C(255, 220, 250))
+		b.Color = ColorSequence.new(C(255, 110, 220), C(255, 190, 245))
 		b.Transparency = seq({ { 0, 0 }, { 1, 1 } })
 		b.Parent = ctx.deck
 	end
@@ -705,7 +710,7 @@ function HoodVFX.Themes.gold(ctx)
 	local A, S, w, d = ctx.A, ctx.S, ctx.w, ctx.d
 	local air = holder(ctx.theme, 'GlintAir', ctx.top * CFrame.new(0, 3, 0), V(w, 6, d))
 	emitter(air, 'Glints', 'glitter', {
-		Rate = 36, Lifetime = NR(0.5, 0.9), Speed = NR(0.05, 0.3), Rotation = NR(0, 20), RotSpeed = NR(-40, 40),
+		Rate = 50, Lifetime = NR(0.5, 0.9), Speed = NR(0.05, 0.3), Rotation = NR(0, 20), RotSpeed = NR(-40, 40),
 		Size = seq({ { 0, 0 }, { 0.35, 0.8, 0.2 }, { 1, 0 } }), Color = cseq({ { 0, WHITE }, { 1, C(255, 246, 200) } }), LightEmission = 1, Brightness = 2.5, ZOffset = 1.2,
 	})
 	emitter(ctx.deck, 'Specks', 'ember', {

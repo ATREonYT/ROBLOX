@@ -1,14 +1,17 @@
 -- Shooting at the ranges: step into a lane's shooter's box and your gun (the gun tool GunService gives you)
 -- comes out; click (or tap SHOOT, or R2) to fire. Each shot is worth a tenth of your per-second gain times your
 -- gun's multiplier (ShotRules; the server checks and pays in LobbyService). Everything you see is local and
--- cheap: a muzzle flash, a tracer to the target, sparks and a "+N" where it lands, the target knocked back (a
--- tipped can, a swinging plate, a spinning disc, a popped balloon), a shell casing and a little recoil.
--- Leaving the lane puts the gun away again (and the hip holster comes back: Armory.client).
+-- cheap: a layered shot sound, a muzzle flash, a tracer to the target, sparks, a hit sound and a "+N" where it
+-- lands, the target knocked back (a can flying off, a bottle shattering, a plate swinging, a disc spinning, a
+-- balloon popping into confetti), a shell casing and a little recoil. Hold the button (or the mouse, or R2) to
+-- keep firing. Leaving the lane puts the gun away again (and the hip holster comes back: Armory.client).
 local Players = game:GetService('Players')
 local UserInputService = game:GetService('UserInputService')
 local TweenService = game:GetService('TweenService')
 local RunService = game:GetService('RunService')
 local RS = game:GetService('ReplicatedStorage')
+local SoundService = game:GetService('SoundService')
+local ContentProvider = game:GetService('ContentProvider')
 local ActiveMap = require(RS.Shared.ActiveMap)
 local Juice = require(RS.Shared.Juice)
 local Format = require(RS.Shared.Format)
@@ -18,8 +21,80 @@ local ShotRules = require(RS.Shared.ShotRules)
 local GunTool = require(RS.Shared.GunTool)
 
 local player = Players.LocalPlayer
--- Paste uploaded sound ids here (rbxassetid://...): Roblox ships no gunshot, so shots are silent until then.
-local SOUNDS = { Shot = '', Hit = '' }
+
+---------------------------------------------------------------------------------------------- sounds
+-- Roblox ships no gunshot, so each sound is a few client built-ins layered and pitched: a shot is a low click
+-- (the crack) over a deep button thud (the body) with a faint high swoosh (the bullet); a hit depends on the
+-- target's Hit attribute: Ding (steel plates, gongs, the spinner) is electronicpingshort pitched up by the lane's
+-- tier, Tock (boards) a thud and a click, Glass and Tin a high ping and click, Pop a snap, Ice a bright ping,
+-- Barrel a dull thud. paintball.wav, glassbreak.wav and snap.wav may not exist in every client (check in
+-- Studio: content/sounds); they are tried first and replaced by their fallback when they fail to load.
+-- Paste uploaded ids into SOUNDS to replace a whole sound. Each layer has a little pool of Sound instances, so
+-- a new shot never restarts the one still playing. Volumes stay modest (clicks are 7 a second).
+local SOUNDS = { Shot = '', Ding = '', Tock = '', Glass = '', Tin = '', Pop = '', Ice = '', Barrel = '' }
+local BUILTIN = 'rbxasset://sounds/'
+-- { file, volume, playback speed, fallback = { file, volume, speed } }
+local LAYERS = {
+	Shot = { { 'paintball.wav', 0.3, 0.9, fallback = { 'clickfast.wav', 0.35, 0.62 } }, { 'button.wav', 0.22, 0.5 }, { 'swoosh.wav', 0.1, 1.8 } },
+	Ding = { { 'electronicpingshort.wav', 0.45, 0.6 } },
+	Tock = { { 'button.wav', 0.4, 0.75 }, { 'clickfast.wav', 0.3, 0.9 } },
+	Glass = { { 'glassbreak.wav', 0.4, 1.1, fallback = { 'electronicpingshort.wav', 0.3, 1.7 } }, { 'clickfast.wav', 0.25, 1.4 } },
+	Tin = { { 'electronicpingshort.wav', 0.3, 1.25 }, { 'clickfast.wav', 0.3, 1.1 } },
+	Pop = { { 'snap.wav', 0.45, 1.0, fallback = { 'button.wav', 0.45, 1.5 } }, { 'swoosh.wav', 0.15, 2.0 } },
+	Ice = { { 'electronicpingshort.wav', 0.35, 1.45 }, { 'clickfast.wav', 0.2, 1.3 } },
+	Barrel = { { 'button.wav', 0.45, 0.55 }, { 'electronicpingshort.wav', 0.2, 0.5 } },
+}
+local soundFolder = Instance.new('Folder')
+soundFolder.Name = 'ShootSounds'
+soundFolder.Parent = SoundService
+local function newSound(id, volume)
+	local sound = Instance.new('Sound')
+	sound.SoundId = id
+	sound.Volume = volume
+	sound.Parent = soundFolder
+	return sound
+end
+-- Each layer starts on its known-good file and switches to the first-choice file once that has loaded.
+for _, layers in LAYERS do
+	for _, layer in layers do
+		local spec = layer.fallback or layer
+		layer.use = { BUILTIN .. spec[1], spec[2], spec[3] }
+		layer.pool, layer.next = {}, 1
+		if layer.fallback then
+			task.spawn(function()
+				local probe = newSound(BUILTIN .. layer[1], 0)
+				local ok = pcall(function() ContentProvider:PreloadAsync({ probe }) end)
+				local loaded = ok and pcall(function() return probe.IsLoaded end) and probe.IsLoaded and probe.TimeLength > 0
+				probe:Destroy()
+				if loaded then
+					layer.use = { BUILTIN .. layer[1], layer[2], layer[3] }
+					layer.pool, layer.next = {}, 1
+				end
+			end)
+		end
+	end
+end
+local overrides = {}
+local function play(kind, pitch)
+	local uploaded = SOUNDS[kind]
+	local layers = LAYERS[kind]
+	if uploaded and uploaded ~= '' then
+		overrides[kind] = overrides[kind] or { { use = { uploaded, 0.45, 1 }, pool = {}, next = 1 } }
+		layers = overrides[kind]
+	end
+	for _, layer in layers or {} do
+		local id, volume, speed = layer.use[1], layer.use[2], layer.use[3]
+		local sound = layer.pool[layer.next]
+		if not sound or sound.SoundId ~= id then
+			if sound then sound:Destroy() end
+			sound = newSound(id, volume)
+			layer.pool[layer.next] = sound
+		end
+		layer.next = layer.next % 3 + 1
+		sound.PlaybackSpeed = speed * (pitch or 1) * (0.95 + math.random() * 0.1)
+		sound:Play()
+	end
+end
 -- An attachment's world frame (the same as WorldCFrame, spelled out so offline checks can run this file).
 local function worldOf(att) return att.Parent.CFrame * att.CFrame end
 local active = ActiveMap.wait(20)
@@ -179,18 +254,8 @@ local function shoot()
 		-- Off a range: a dry shot straight ahead (nothing is paid).
 		to = from + root.CFrame.LookVector * 30
 	end
-	if SOUNDS.Shot ~= '' and rig then
-		local sound = rig.muzzle:FindFirstChild('ShotSound')
-		if not sound then
-			sound = Instance.new('Sound')
-			sound.Name = 'ShotSound'
-			sound.SoundId = SOUNDS.Shot
-			sound.Volume = 0.5
-			sound.Parent = rig.muzzle
-		end
-		sound.PlaybackSpeed = 0.9 + math.random() * 0.2 + (10 - gun.Tier) * 0.02
-		sound:Play()
-	end
+	-- (Bigger guns sound a little deeper.)
+	play('Shot', 1.1 - gun.Tier * 0.04)
 	Juice.muzzle(rig, gun.Color, gunPower)
 	Juice.tracer(from, to, gun.Color, 0.18 + gun.Tier * 0.015)
 	if rig and rig.eject then Juice.casing(worldOf(rig.eject)) end
@@ -200,26 +265,49 @@ local function shoot()
 		local color = s.Model:GetAttribute('HitColor') or gun.Color
 		Juice.burst(to, color, 0.7 + s.Tier * 0.07)
 		if target.Knocker then target.Knocker:hit(1) end
-		if SOUNDS.Hit ~= '' then
-			local hitSound = s.Model:FindFirstChild('HitSound', true)
-			if not hitSound then
-				hitSound = Instance.new('Sound')
-				hitSound.Name = 'HitSound'
-				hitSound.SoundId = SOUNDS.Hit
-				hitSound.Volume = 0.4
-				hitSound.Parent = s.Model:FindFirstChild('Sign', true) or s.Model.PrimaryPart
-			end
-			if hitSound.Parent then hitSound:Play() end
-		end
+		local hit = target.Model:GetAttribute('Hit') or 'Ding'
+		-- A steel ding rises in pitch lane by lane.
+		play(hit, hit == 'Ding' and (1 + 0.1 * s.Tier) or 1)
 		Juice.flash(target.Model)
 		local gain = ShotRules.pay(player:GetAttribute('PowerRate'), player:GetAttribute('GunMultiplier'))
-		Juice.popNumber(to + Vector3.new((math.random() - 0.5) * 1.5, 1.4, 0), '+' .. Format.compact(gain), color)
+		-- White numbers outlined in a dark shade of the lane's colour read on every lane (a yellow "+N" vanished on
+		-- the gold lane); top lanes get bigger ones.
+		Juice.popNumber(to + Vector3.new((math.random() - 0.5) * 1.5, 1.4, 0), '+' .. Format.compact(gain), color, nil, {
+			fill = Color3.new(1, 1, 1), stroke = color:Lerp(Color3.new(0, 0, 0), 0.65), thickness = 3, size = s.Tier >= 5 and Vector2.new(5, 2) or nil,
+		})
 	end
 end
 
+-- Hold to fire: while the mouse, R2 or the SHOOT button is held, shots keep coming at the client cooldown
+-- (the server's rate limit matches it).
+local held, firing = {}, false
+local function startFiring(source)
+	held[source] = true
+	shoot()
+	if firing then return end
+	firing = true
+	task.spawn(function()
+		while next(held) do
+			task.wait(ShotRules.Cooldown)
+			if next(held) then shoot() end
+		end
+		firing = false
+	end)
+end
+local function stopFiring(source) held[source] = nil end
+local function sourceOf(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then return 'mouse' end
+	if input.KeyCode == Enum.KeyCode.ButtonR2 then return 'r2' end
+	return nil
+end
 UserInputService.InputBegan:Connect(function(input, processed)
 	if processed then return end
-	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.KeyCode == Enum.KeyCode.ButtonR2 then shoot() end
+	local source = sourceOf(input)
+	if source then startFiring(source) end
+end)
+UserInputService.InputEnded:Connect(function(input)
+	local source = sourceOf(input)
+	if source then stopFiring(source) end
 end)
 
 -- A big round SHOOT button while you're on a range (the only way to shoot on a phone), where PUNCH used to be.
@@ -279,11 +367,18 @@ for _, bar in { { 2, 34 }, { 34, 2 } } do
 end
 local scale = Instance.new('UIScale')
 scale.Parent = button
-button.Activated:Connect(function()
-	shoot()
+button.InputBegan:Connect(function(input)
+	if input.UserInputType ~= Enum.UserInputType.Touch and input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+	startFiring('button')
 	scale.Scale = 0.88
 	TweenService:Create(scale, TweenInfo.new(0.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
 end)
-local function refresh() button.Visible = training() ~= nil end
+button.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then stopFiring('button') end
+end)
+local function refresh()
+	button.Visible = training() ~= nil
+	if not button.Visible then stopFiring('button') end
+end
 player:GetAttributeChangedSignal('TrainingStation'):Connect(refresh)
 refresh()

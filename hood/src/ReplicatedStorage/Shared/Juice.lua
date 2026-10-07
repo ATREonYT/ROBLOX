@@ -186,11 +186,13 @@ function Juice.flash(model)
 end
 
 -- "+123" floating up from a world point: overshoot pop, drift up, fade.
-function Juice.popNumber(position, text, color, fontFace)
+-- opts (optional): fill (text colour, default `color`), stroke (outline colour), thickness, size (Vector2 studs).
+function Juice.popNumber(position, text, color, fontFace, opts)
+	opts = opts or {}
 	local p = anchorAt(position)
 	Debris:AddItem(p, 1)
 	local g = Instance.new('BillboardGui')
-	g.Size = UDim2.fromScale(4, 1.6)
+	g.Size = opts.size and UDim2.fromScale(opts.size.X, opts.size.Y) or UDim2.fromScale(4, 1.6)
 	g.LightInfluence = 0
 	g.AlwaysOnTop = true
 	g.MaxDistance = 80
@@ -203,10 +205,10 @@ function Juice.popNumber(position, text, color, fontFace)
 	t.Text = text
 	t.TextScaled = true -- BillboardGuis are the one place TextScaled is recommended
 	t.FontFace = fontFace or Font.new('rbxasset://fonts/families/LuckiestGuy.json')
-	t.TextColor3 = color or Color3.fromRGB(255, 194, 26)
+	t.TextColor3 = opts.fill or color or Color3.fromRGB(255, 194, 26)
 	local s = Instance.new('UIStroke')
-	s.Color = Color3.fromRGB(28, 24, 48)
-	s.Thickness = 2.5
+	s.Color = opts.stroke or Color3.fromRGB(28, 24, 48)
+	s.Thickness = opts.thickness or 2.5
 	s.Parent = t
 	scale.Parent = t
 	t.Parent = g
@@ -340,7 +342,8 @@ function Juice.tracer(from, to, color, width)
 	end
 end
 
--- Shell casings: a pool of eight brass cylinders flipped out to the right, falling under gravity for 0.6 s.
+-- Shell casings: a pool of eight chunky brass cylinders (a bright neon tip so they read at play distance)
+-- flipped out to the right, falling under gravity for 0.6 s.
 local casings, casingNext, flying, casingConn = {}, 1, {}, nil
 function Juice.casing(cframe, color)
 	local p = casings[casingNext]
@@ -348,15 +351,24 @@ function Juice.casing(cframe, color)
 		p = Instance.new('Part')
 		p.Name = 'Casing'
 		p.Shape = Enum.PartType.Cylinder
-		p.Size = Vector3.new(0.3, 0.13, 0.13)
+		p.Size = Vector3.new(0.45, 0.2, 0.2)
 		p.Material = Enum.Material.Metal
 		p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch, p.CastShadow = true, false, false, false, false
+		local tip = Instance.new('Part')
+		tip.Name = 'CasingTip'
+		tip.Shape = Enum.PartType.Cylinder
+		tip.Size = Vector3.new(0.06, 0.18, 0.18)
+		tip.Material = Enum.Material.Neon
+		tip.Color = Color3.fromRGB(255, 226, 140)
+		tip.Anchored, tip.CanCollide, tip.CanQuery, tip.CanTouch, tip.CastShadow = true, false, false, false, false
+		tip.Parent = p
 		p.Parent = workspace
 		casings[casingNext] = p
 	end
 	casingNext = casingNext % 8 + 1
 	p.Color = color or Color3.fromRGB(236, 184, 70)
 	p.Transparency = 0
+	p.CasingTip.Transparency = 0
 	local right, up = cframe.RightVector, cframe.UpVector
 	flying[p] = { pos = cframe.Position, vel = right * (5 + math.random() * 2) + up * (6 + math.random() * 2) - cframe.LookVector * 1.5, spin = 0, age = 0 }
 	if not casingConn then
@@ -367,9 +379,13 @@ function Juice.casing(cframe, color)
 				c.pos += c.vel * dt
 				c.spin += dt * 25
 				part.CFrame = CFrame.new(c.pos) * CFrame.Angles(c.spin, c.spin * 0.6, 0)
-				if c.age > 0.45 then part.Transparency = math.min(1, (c.age - 0.45) / 0.15) end
+				part.CasingTip.CFrame = part.CFrame * CFrame.new(0.23, 0, 0)
+				if c.age > 0.45 then
+					part.Transparency = math.min(1, (c.age - 0.45) / 0.15)
+					part.CasingTip.Transparency = part.Transparency
+				end
 				if c.age > 0.6 then
-					part.Transparency = 1
+					part.Transparency, part.CasingTip.Transparency = 1, 1
 					flying[part] = nil
 				end
 			end
@@ -381,19 +397,72 @@ function Juice.casing(cframe, color)
 	end
 end
 
+-- Shards and confetti: a pool of three burst rigs (world-space particles, :Emit only). Bottles shatter into
+-- glints in their colour, balloons pop into confetti in theirs plus white.
+local shardPool, shardNext = {}, 1
+local function shardRig()
+	local slot = shardPool[shardNext]
+	if not slot or not slot.part.Parent then
+		local part = anchorAt(Vector3.zero)
+		part.Name = 'ShardFX'
+		local e = Instance.new('ParticleEmitter')
+		e.Name = 'Shards'
+		e.Enabled = false
+		e.Texture = 'rbxasset://textures/particles/sparkles_main.dds'
+		e.LightInfluence, e.LightEmission, e.Brightness = 0, 0.6, 1.5
+		e.SpreadAngle = Vector2.new(180, 180)
+		e.Rotation, e.RotSpeed = NumberRange.new(0, 360), NumberRange.new(-300, 300)
+		e.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.8, 0.1), NumberSequenceKeypoint.new(1, 1) })
+		e.Parent = part
+		slot = { part = part, e = e }
+		shardPool[shardNext] = slot
+	end
+	shardNext = shardNext % 3 + 1
+	return slot
+end
+-- kind 'glass': 10 shards in `color` (speed 8-14, falling); 'confetti': 12 flat squares in `color` and white.
+function Juice.shards(position, color, kind)
+	local slot = shardRig()
+	slot.part.CFrame = CFrame.new(position)
+	local e = slot.e
+	color = color or Color3.new(1, 1, 1)
+	if kind == 'confetti' then
+		e.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, color), ColorSequenceKeypoint.new(0.5, Color3.new(1, 1, 1)), ColorSequenceKeypoint.new(1, color) })
+		e.Speed, e.Lifetime, e.Acceleration, e.Drag = NumberRange.new(6, 10), NumberRange.new(0.6, 0.9), Vector3.new(0, -25, 0), 2
+		e.Size = NumberSequence.new(0.3)
+		e:Emit(12)
+	else
+		e.Color = ColorSequence.new(color:Lerp(Color3.new(1, 1, 1), 0.35), color)
+		e.Speed, e.Lifetime, e.Acceleration, e.Drag = NumberRange.new(8, 14), NumberRange.new(0.4, 0.6), Vector3.new(0, -40, 0), 1
+		e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.25), NumberSequenceKeypoint.new(1, 0.12) })
+		e:Emit(10)
+	end
+end
+
 -- A knockable target (Equipment > Targets > Target<i>): Hinge is the pivot, everything in Swing moves with it.
--- Knock 'Tip' tips back about the hinge's X axis and springs up again, 'Swing' swings on its hanger, 'Spin'
--- spins about the hinge's Y axis and settles facing front, 'Pop' vanishes and grows back. :hit(strength).
--- Targets also have idle life (k.idle; :pose(t) shows it while nothing knocks them): hanging plates sway a
--- few degrees, spinners turn slowly, balloons bob; standing targets keep still.
+--   Tip     tips back about the hinge's X axis with a little hop and springs up again (boards, plates, barrels)
+--   Swing   swings on its hanger (gongs, hanging plates)
+--   Spin    spins about the hinge's Y axis and settles facing front (the spinner)
+--   Pop     bursts into confetti, grows back (balloons)
+--   Shatter bursts into shards in its colour, grows back (bottles)
+--   Fly     flies up and back spinning, vanishes and pops back (cans)
+-- :hit(strength). Targets also have idle life (k.idle; :pose() shows it while nothing knocks them): hanging
+-- plates sway a few degrees, spinners turn slowly, balloons bob; standing targets keep still. Everything is
+-- local and cheap: a few CFrame writes per frame per knocked target, sleeping when settled.
 local knocking, knockConn = {}, nil
-local KNOCK = { Tip = { 3.2, 0.32, 9 }, Swing = { 1.3, 0.12, -4.5 }, Spin = { 1.2, 0.5, 26 }, Pop = { 4, 0.5, 0 } }
+local KNOCK = { Tip = { 3.2, 0.32, 14 }, Swing = { 1.3, 0.12, -4.5 }, Spin = { 1.2, 0.5, 26 }, Pop = { 4, 0.5, 0 }, Shatter = { 4, 0.5, 0 }, Fly = { 4, 0.5, 0 } }
+local GONE = { Pop = 0.7, Shatter = 0.5, Fly = 0.8 } -- seconds a burst/flown target stays away
+local function backOut(t) -- Back easing (overshoot), 0..1
+	local c = 1.70158
+	t -= 1
+	return 1 + (c + 1) * t * t * t + c * t * t
+end
 function Juice.knocker(target)
 	local hinge = target:FindFirstChild('Hinge')
 	local swing = target:FindFirstChild('Swing')
 	if not hinge or not swing then return nil end
 	local style = target:GetAttribute('Knock') or 'Tip'
-	local k = { target = target, style = style, base = hinge.CFrame, parts = {}, angle = 0, vel = 0, popped = 0 }
+	local k = { target = target, style = style, base = hinge.CFrame, parts = {}, angle = 0, vel = 0, gone = 0, grow = 1, hop = 0, fly = nil }
 	local p0 = hinge.CFrame.Position
 	local phase = (p0.X * 0.37 + p0.Z * 0.61) % (2 * math.pi) -- neighbours never move in step
 	k.idle = (style == 'Swing' and function(t) return 0.05 * math.sin(1.3 * t + phase) end)
@@ -401,13 +470,31 @@ function Juice.knocker(target)
 		or (style == 'Pop' and function(t) return 0.12 * math.sin(2 * t + phase) end)
 		or nil
 	for _, p in swing:GetDescendants() do
-		if p:IsA('BasePart') then table.insert(k.parts, { part = p, offset = hinge.CFrame:ToObjectSpace(p.CFrame), t = p.Transparency }) end
+		if p:IsA('BasePart') then table.insert(k.parts, { part = p, offset = hinge.CFrame:ToObjectSpace(p.CFrame), size = p.Size, t = p.Transparency }) end
+	end
+	local function setHidden(on)
+		for _, r in k.parts do r.part.Transparency = on and 1 or r.t end
 	end
 	local function apply()
 		local a = k.angle + (k.idle and k.idle(os.clock()) or 0)
-		local turn = (style == 'Spin') and CFrame.Angles(0, a, 0) or (style == 'Pop') and CFrame.new(0, a, 0) or CFrame.Angles(a, 0, 0)
+		local turn
+		if style == 'Spin' then turn = CFrame.Angles(0, a, 0)
+		elseif style == 'Pop' then turn = CFrame.new(0, a, 0)
+		elseif style == 'Swing' then turn = CFrame.Angles(a, 0, 0)
+		elseif style == 'Tip' then turn = CFrame.new(0, k.hop, 0) * CFrame.Angles(a, 0, 0)
+		else turn = CFrame.new() end
+		if k.fly then turn = CFrame.new(k.fly.pos) * CFrame.Angles(k.fly.spin, 0, 0) end
 		local at = k.base * turn
-		for _, r in k.parts do r.part.CFrame = at * r.offset end
+		local g = k.grow
+		for _, r in k.parts do
+			if g ~= 1 then
+				r.part.Size = r.size * g
+				r.part.CFrame = at * (r.offset - r.offset.Position + r.offset.Position * g)
+			else
+				if r.part.Size ~= r.size then r.part.Size = r.size end
+				r.part.CFrame = at * r.offset
+			end
+		end
 	end
 	k.apply = apply
 	-- The idle pose (call every frame for targets near the camera that nothing is knocking).
@@ -418,36 +505,76 @@ function Juice.knocker(target)
 			-- Free spin with drag, then a spring pulls it round to the nearest front-facing turn.
 			k.vel *= math.exp(-1.6 * dt)
 			k.angle += k.vel * dt
-		else
+		elseif style == 'Tip' or style == 'Swing' or style == 'Spin' then
 			local goal = style == 'Spin' and math.floor(k.angle / (2 * math.pi) + 0.5) * 2 * math.pi or 0
 			k.angle, k.vel = Juice.springStep(k.angle, k.vel, goal, spec[1], spec[2], dt)
 		end
-		if style == 'Tip' then k.angle = math.clamp(k.angle, -0.3, 1.25) end
-		if k.popped > 0 then
-			k.popped -= dt
-			if k.popped <= 0 then
-				for _, r in k.parts do r.part.Transparency = r.t end
-				k.angle, k.vel = -0.8, 0 -- grows back from a little below
+		if style == 'Tip' then
+			k.angle = math.clamp(k.angle, -0.3, 1.25)
+			k.hopT = (k.hopT or 0) + dt
+			k.hop = k.hopT < 0.2 and 0.15 * math.sin(math.pi * k.hopT / 0.2) or 0
+		end
+		if k.fly then
+			-- Up and back, spinning, then gone.
+			local f = k.fly
+			f.t += dt
+			f.vel += Vector3.new(0, -30, 0) * dt
+			f.pos += f.vel * dt
+			f.spin += 15 * dt
+			if f.t > 0.45 and not f.hidden then
+				f.hidden = true
+				setHidden(true)
+			end
+		end
+		if k.gone > 0 then
+			k.gone -= dt
+			if k.gone <= 0 then
+				-- Back in its place, growing from 60% with a little overshoot.
+				k.fly = nil
+				k.growT = 0
+				k.grow = 0.6
+				setHidden(false)
+			end
+		elseif k.growT then
+			k.growT += dt
+			local f = math.min(1, k.growT / 0.3)
+			k.grow = 0.6 + 0.4 * backOut(f)
+			if f >= 1 then
+				k.grow, k.growT = 1, nil
 			end
 		end
 		apply()
-		local settled = k.popped <= 0 and math.abs(k.vel) < 1e-3 and math.abs(k.angle - (style == 'Spin' and math.floor(k.angle / (2 * math.pi) + 0.5) * 2 * math.pi or 0)) < 1e-3
+		local rest = style == 'Spin' and math.floor(k.angle / (2 * math.pi) + 0.5) * 2 * math.pi or 0
+		local settled = k.gone <= 0 and not k.growT and not k.fly and k.hop == 0 and math.abs(k.vel) < 1e-3 and math.abs(k.angle - rest) < 1e-3
 		if settled then
-			k.angle, k.vel = 0, 0
+			k.angle, k.vel, k.hopT = 0, 0, nil
 			apply()
 			knocking[k] = nil
 		end
 	end
 	k.step = step
-	function k:hit(strength)
+	function k:hit(strength, at)
 		strength = strength or 1
 		local spec = KNOCK[style] or KNOCK.Tip
-		if style == 'Pop' then
-			if self.popped > 0 then return end
-			for _, r in self.parts do r.part.Transparency = 1 end
-			self.popped = 0.7
+		local centre = at or target:GetAttribute('Aim') or hinge.Position
+		if GONE[style] then
+			if self.gone > 0 or self.fly then return end
+			local color = target:GetAttribute('ShardColor')
+			if style == 'Pop' then
+				setHidden(true)
+				Juice.shards(centre, color, 'confetti')
+			elseif style == 'Shatter' then
+				setHidden(true)
+				Juice.shards(centre, color, 'glass')
+			else
+				-- Fly: up 7, back 5 (away from the shooter, the hinge's +Z), spinning.
+				self.fly = { t = 0, pos = Vector3.zero, vel = Vector3.new(0, 7, 5) * strength, spin = 0 }
+			end
+			self.gone = GONE[style]
+			self.grow, self.growT = 1, nil
 		else
 			self.vel += spec[3] * strength
+			if style == 'Tip' then self.hopT = 0 end
 		end
 		knocking[self] = true
 		if not knockConn then

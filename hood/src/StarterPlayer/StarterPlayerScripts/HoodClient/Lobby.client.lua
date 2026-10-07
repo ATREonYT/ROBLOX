@@ -298,15 +298,20 @@ local function paintStations(n)
 	for _, s in Skins.Stations do
 		if n < s.Required then goal = s break end
 	end
+	-- Your own lane's label hides while you stand in its box: the HUD hint already says its multiplier (or what
+	-- it needs), and from the shooter's spot the stack would sit on the hint and on the signs behind the targets.
+	local here = player:GetAttribute('TrainingStation') or ''
 	for _, s in Skins.Stations do
 		local e = stations[s.Id]
 		if e and e.Label then
 			local isGoal = goal == s
-			local state = (e.Middle and 'M' or 'E') .. (isGoal and 'G' or '')
+			local own = here == s.Id or here == 'Locked:' .. s.Id
+			local state = (e.Middle and 'M' or 'E') .. (isGoal and 'G' or '') .. (own and 'O' or '')
 			if e.LabelState ~= state then
 				e.LabelState = state
 				e.Label.MaxDistance = (e.Middle and not isGoal) and LABEL_NEAR or LABEL_FAR
 				e.Label.StudsOffset = (e.Middle and isGoal) and NEXT_LIFT or Vector3.zero
+				e.Label.Enabled = not own
 			end
 		end
 		if e then

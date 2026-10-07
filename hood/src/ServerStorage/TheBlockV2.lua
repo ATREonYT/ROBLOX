@@ -466,21 +466,23 @@ end
 -- firing line; the targets stand in the far half in front of a backstop at the outer end, and from tier 3 a
 -- grooved truss gantry (the old gallows' truss) spans the lane over them. Every tier keeps its theme and its
 -- effects and adds one new thing, so each lane reads as better than the last:
---   1 stone   bottles and cans on a plank fence, a plank backstop with a painted bullseye and sandbags
---   2 red     three bullseye boards on easels, a navy board with red trim (rain over the lane)
+--   1 stone   soda bottles and cans on a plank shelf, a plank backstop with a painted bullseye, bunting
+--   2 red     three bullseye boards on easels, a navy board with red trim (rain behind the boards)
 --   3 lava    hot plates swinging from a truss gantry, burning barrels, a basalt berm with lava cracks (fire)
---   4 arcane  a spinner disc, balloons to pop, a magenta starburst wall (comets)
---   5 shadow  dark plates with violet neon rims, an obsidian wall with a neon ring (violet wisps, fog)
---   6 frost   ice blocks and an ice bullseye, an ice-block wall with icicles (snow, sparkles)
---   7 toxic   toxic barrels and green bottles, a container wall with hazard stripes (dark wisps, bubbles)
---   8 gold    a gold gong, gold bottles, a gold plate, a gold starburst wall, a spinning coin (nuggets, glints)
+--   4 arcane  a spinner disc, balloons to pop, a violet starburst wall (comets above the targets)
+--   5 shadow  dark plates with violet neon rims, neon on the gantry, an obsidian wall with a neon ring
+--   6 frost   ice blocks and an ice bullseye, an ice-block wall with icicles, ice-blue neon (snow, sparkles)
+--   7 toxic   a toxic barrel stack with a target face, green bottles, a container wall with hazard stripes
+--   8 gold    a big gold gong on crimson velvet, golden neon, a turning crown, a velvet VIP bench (glints)
+-- Every main target's centre sits ~5.8 over the mat, above the shooter's head from the follow camera.
 -- Cartoon targets only: bottles, cans, bullseyes, plates, balloons, ice, barrels. Nothing human-shaped.
 -- Local frame: origin = mat centre on the deck, footprint x -4.5..4.5, z -10..10 (rim included). The front
--- (-Z) faces the aisle: players walk on from -Z, stand in the box and shoot toward +Z. Parts reach y ~11,
+-- (-Z) faces the aisle: players walk on from -Z, stand in the box and shoot toward +Z. Parts reach y ~11.5,
 -- labels float to ~16. opts.vfx = false skips effects, opts.tier overrides the tier (opts.side is ignored).
 -- Contract (Lobby.client, Shoot.client, LobbyRules): Training_<Id> > TrainingZone (the shooter's box,
 -- invisible), Equipment > Targets > Target<i> (Hinge = the pivot part, Swing = the parts that move; attributes
--- Knock = Tip | Swing | Spin | Pop, Aim = world centre where shots land, Main on the HitPoint target),
+-- Knock = Tip | Swing | Spin | Pop | Shatter | Fly, Hit = the sound it makes, ShardColor, Aim = world centre
+-- where shots land, Main on the HitPoint target),
 -- Equipment > Gear (stands, fence, gantry), Sign (BillboardGui with Chip + TextLabels Cost, Detail, Power),
 -- attributes Tier, HitPoint (the main target's centre), HitColor. Equipment has no Hinge of its own, so
 -- nothing sways while you stand there: Shoot.client knocks each target back when a shot lands on it.
@@ -506,8 +508,8 @@ Stations.Themes = {
 		groove = C(60, 190, 235), text = C(120, 236, 255), glow = C(150, 236, 255) },
 	{ name = 'toxic', rim = C(10, 170, 44), rimTop = C(20, 255, 60), rimTopMat = M.Neon, mat = C(0, 60, 60), frame = C(20, 255, 60), frameMat = M.Neon,
 		groove = C(5, 150, 35), text = C(130, 255, 90), glow = C(120, 255, 80) },
-	{ name = 'gold', rim = C(230, 180, 0), rimTop = C(255, 236, 60), mat = C(252, 242, 88), frame = C(255, 232, 50), groove = C(240, 195, 0),
-		text = C(255, 222, 50), glow = C(255, 222, 80) },
+	{ name = 'gold', rim = C(230, 180, 0), rimTop = C(255, 236, 60), mat = C(252, 242, 88), frame = C(245, 192, 0), groove = C(205, 140, 0),
+		trim = C(175, 18, 48), text = C(255, 222, 50), glow = C(255, 222, 80) },
 }
 
 Stations.HALF_X, Stations.HALF_Z = 4.5, 10 -- rim outer half sizes (the mat is inset 1 stud)
@@ -616,20 +618,25 @@ function Stations.starburst(c, cf, s, th, color, material)
 	c:part('Burst', V(s, s, th), cf, color, material)
 	c:part('Burst', V(s, s, th + 0.02), cf * CFrame.Angles(0, 0, math.pi / 4), color, material)
 end
--- Glass bottle (a body with a cream label, a shoulder, a neck and a cap) standing on `pos`, scale s (1.5 tall).
-function Stations.bottle(c, pos, s, color, labelColor, material)
-	Stations.can(c, 'Bottle', pos, 0.3 * s, 0.9 * s, color, material)
-	Stations.can(c, 'BottleLabel', pos + V(0, 0.22 * s, 0), 0.315 * s, 0.36 * s, labelColor or C(250, 238, 200))
-	Stations.can(c, 'BottleShoulder', pos + V(0, 0.9 * s, 0), 0.22 * s, 0.16 * s, color, material)
-	Stations.can(c, 'BottleNeck', pos + V(0, 1.06 * s, 0), 0.11 * s, 0.34 * s, color, material)
-	Stations.can(c, 'BottleCap', pos + V(0, 1.4 * s, 0), 0.14 * s, 0.1 * s, C(220, 60, 50))
+-- Soda bottle (a body with a white label and a coloured stripe, a shoulder, a neck and a cap) standing on `pos`,
+-- scale s (1.5 tall). opts: label, stripe, cap colours and the body material.
+function Stations.bottle(c, pos, s, color, opts)
+	opts = opts or {}
+	Stations.can(c, 'Bottle', pos, 0.3 * s, 0.9 * s, color, opts.material)
+	Stations.can(c, 'BottleLabel', pos + V(0, 0.22 * s, 0), 0.315 * s, 0.36 * s, opts.label or C(255, 255, 255))
+	Stations.can(c, 'BottleStripe', pos + V(0, 0.36 * s, 0), 0.325 * s, 0.07 * s, opts.stripe or color)
+	Stations.can(c, 'BottleShoulder', pos + V(0, 0.9 * s, 0), 0.22 * s, 0.16 * s, color, opts.material)
+	Stations.can(c, 'BottleNeck', pos + V(0, 1.06 * s, 0), 0.11 * s, 0.34 * s, color, opts.material)
+	Stations.can(c, 'BottleCap', pos + V(0, 1.4 * s, 0), 0.14 * s, 0.1 * s, opts.cap or C(255, 255, 255))
 	return 1.5 * s
 end
--- Tin can (silver lips, a wide label band) standing on `pos`; r wide, h tall.
-function Stations.tin(c, pos, r, h, color, band)
+-- Soda can (silver lips, a wide white label band) standing on `pos`; r wide, h tall. face: radius of a red and
+-- white bullseye sticker on its front (-Z), for the can you are meant to hit.
+function Stations.tin(c, pos, r, h, color, band, face)
 	Stations.can(c, 'Can', pos, r, h, color)
 	Stations.can(c, 'CanLabel', pos + V(0, h * 0.3, 0), r + 0.015, h * 0.4, band or C(255, 255, 255))
 	for _, y in { 0, h - 0.07 } do Stations.can(c, 'CanLip', pos + V(0, y, 0), r + 0.03, 0.07, C(214, 220, 230), M.Metal) end
+	if face then Stations.bullseye(c, CFrame.new(pos + V(0, h * 0.5, -r - 0.04)), face, { C(230, 50, 50), C(255, 255, 255), C(230, 50, 50) }) end
 end
 -- Drum (two proud bands and a lid) standing on `pos`.
 function Stations.drum(c, pos, r, h, color, band, lid, material)
@@ -642,14 +649,21 @@ function Stations.balloon(c, pos, r, color, foot)
 	c:blob('Balloon', V(2 * r, 2.3 * r, 2 * r), pos, color, M.SmoothPlastic)
 	c:blob('BalloonShine', V(0.5 * r, 0.7 * r, 0.3 * r), pos + V(0.45 * r, 0.5 * r, -0.85 * r), C(255, 255, 255), M.SmoothPlastic)
 	c:part('BalloonKnot', V(0.25 * r, 0.25 * r, 0.25 * r), CFrame.new(pos - V(0, 1.2 * r, 0)) * CFrame.Angles(0, 0, math.pi / 4), color)
-	if foot then c:bar('BalloonString', pos - V(0, 1.25 * r, 0), foot, 0.05, C(250, 250, 250), M.SmoothPlastic) end
+	if foot then c:bar('BalloonString', pos - V(0, 1.25 * r, 0), foot, 0.06, C(250, 250, 250), M.SmoothPlastic) end
 end
--- Easel: two front legs and a back leg under a ledge `y` up that a board stands on (front face toward -Z).
+-- Easel: two chunky front legs and a back leg on darker feet, under a ledge `y` up that a board stands on.
 function Stations.easel(c, x, z, y, w, color)
 	local Y = Stations.MAT_Y
-	for _, sx in { -1, 1 } do c:bar('EaselLeg', V(x + sx * (w / 2 + 0.25), Y, z + 0.2), V(x + sx * w / 3, y + 0.1, z + 0.12), 0.22, color, M.SmoothPlastic) end
-	c:bar('EaselLeg', V(x, Y, z + 1.1), V(x, y + 0.35, z + 0.18), 0.2, color, M.SmoothPlastic)
-	c:box('EaselLedge', V(x - w / 2 - 0.1, y - 0.18, z - 0.12), V(x + w / 2 + 0.1, y, z + 0.32), color)
+	local foot = color:Lerp(C(0, 0, 0), 0.35)
+	for _, sx in { -1, 1 } do
+		local a = V(x + sx * (w / 2 + 0.3), Y + 0.25, z + 0.2)
+		c:bar('EaselLeg', a, V(x + sx * w / 3, y + 0.1, z + 0.12), 0.4, color, M.SmoothPlastic)
+		c:box('EaselFoot', a - V(0.32, 0.25, 0.32), a + V(0.32, 0.05, 0.32), foot)
+	end
+	local back = V(x, Y + 0.25, z + 1.2 + (y - Y) * 0.12)
+	c:bar('EaselLeg', back, V(x, y + 0.35, z + 0.2), 0.36, color, M.SmoothPlastic)
+	c:box('EaselFoot', back - V(0.3, 0.25, 0.3), back + V(0.3, 0.05, 0.3), foot)
+	c:box('EaselLedge', V(x - w / 2 - 0.15, y - 0.25, z - 0.15), V(x + w / 2 + 0.15, y, z + 0.35), color)
 end
 -- Ice cube: pale glassy block, a snow cap and a white diagonal shine on its front.
 function Stations.ice(c, name, cf, s, color)
@@ -688,18 +702,65 @@ function Stations.nugget(c, x, z, s, turn)
 	lump(cf, 1.3 * s, 0.32 * s, 1.0 * s, 0.4 * s)
 	lump(cf * CFrame.new(0, 0.32 * s, 0), 0.75 * s, 0.18 * s, 0.55 * s, 0.25 * s)
 end
+-- A ring of eight slabs (outer apothem a, slab thickness th, height h) standing on `cf` (the base centre).
+function Stations.ring8(c, name, cf, a, th, h, color, material)
+	local w = 2 * a * math.tan(math.pi / 8) + 0.02
+	for k = 0, 7 do c:part(name, V(w, h, th), cf * CFrame.Angles(0, k * math.pi / 4, 0) * CFrame.new(0, h / 2, -a + th / 2), color, material) end
+end
+-- The gold lane's crown on the gantry: a deep-gold band of eight slabs on a white rim, tall and short points
+-- (white tips on the tall ones), ruby and sapphire gems round the band; ~2.8 wide, ~1.9 tall. It turns slowly.
+function Stations.crown(g, at)
+	local cc, crown = g:group('Crown')
+	local body, deep, white = C(245, 190, 0), C(222, 150, 0), C(255, 252, 235)
+	Stations.ring8(cc, 'CrownRim', at, 1.42, 0.3, 0.22, white)
+	Stations.ring8(cc, 'CrownBand', at * CFrame.new(0, 0.2, 0), 1.35, 0.3, 0.75, body)
+	for k = 0, 7 do
+		local face = at * CFrame.Angles(0, k * math.pi / 4, 0)
+		local tall = k % 2 == 0
+		local s = tall and 0.78 or 0.52
+		local cy = 0.95 + s * 0.25
+		cc:part('CrownPoint', V(s, s, 0.24), face * CFrame.new(0, cy, -1.22) * CFrame.Angles(0, 0, math.pi / 4), tall and body or deep)
+		if tall then cc:part('CrownTip', V(0.3, 0.3, 0.3), face * CFrame.new(0, cy + s * 0.71, -1.22), white, M.SmoothPlastic, Enum.PartType.Ball) end
+		cc:part('CrownGem', V(0.3, 0.3, 0.16), face * CFrame.new(0, 0.58, -1.36) * CFrame.Angles(0, 0, math.pi / 4), tall and C(235, 30, 70) or C(50, 110, 255), M.Glass)
+	end
+	for _, p in crown:GetDescendants() do if p:IsA('BasePart') then decor(p) end end
+	crown.WorldPivot = cc:world(at)
+	crown:SetAttribute('Spin', 40)
+	crown:AddTag('HoodMotion')
+	return crown
+end
+-- A blocky painted digit (seven segments, 1.3 x h) lying on the mat at `z0` (its foot, nearest the aisle),
+-- readable from the aisle end: its top points down the lane.
+Stations.DIGITS = { [1] = 'bc', [2] = 'abged', [3] = 'abgcd', [4] = 'fgbc', [5] = 'afgcd', [6] = 'afgedc', [7] = 'abc', [8] = 'abcdefg', [9] = 'abcdfg' }
+function Stations.digit(c, n, z0, h, color)
+	local Y, W, t = Stations.MAT_Y, 1.3, 0.34
+	local seg = {
+		a = { -W / 2, W / 2, h - t, h }, g = { -W / 2, W / 2, h / 2 - t / 2, h / 2 + t / 2 }, d = { -W / 2, W / 2, 0, t },
+		f = { -W / 2, -W / 2 + t, h / 2, h }, e = { -W / 2, -W / 2 + t, 0, h / 2 }, b = { W / 2 - t, W / 2, h / 2, h }, c = { W / 2 - t, W / 2, 0, h / 2 },
+	}
+	for ch in string.gmatch(Stations.DIGITS[n] or '', '.') do
+		local s = seg[ch]
+		-- Digit space (u right, v up) seen from the aisle: u = -x, v = z - z0.
+		local p = decor(c:box('LaneDigit', V(-s[2], Y, z0 + s[3]), V(-s[1], Y + 0.03, z0 + s[4]), color, M.SmoothPlastic))
+		p.CastShadow, p.Transparency = false, 0.15
+	end
+end
 
 ---------------------------------------------------------------------------------------------- targets
 -- A target the client can knock: Equipment > Targets > Target<i> with a Hinge (the pivot, a ghost part at
 -- `pivot`) and a Swing model (build the visible target into the returned context). knock: 'Tip' (tips back about
--- the hinge's X axis), 'Swing' (swings on its hanger), 'Spin' (spins about the hinge's Y axis), 'Pop' (pops and
--- comes back). `aim` is where shots land (local), `main` marks the HitPoint target.
-function Stations.target(k, pivot, aim, knock, main)
+-- the hinge's X axis with a little hop), 'Swing' (swings on its hanger), 'Spin' (spins about the hinge's Y axis),
+-- 'Pop' (bursts into confetti and grows back), 'Shatter' (bursts into shards and grows back), 'Fly' (flies off
+-- spinning and pops back). `aim` is where shots land (local), `main` marks the HitPoint target, `hit` names the
+-- sound it makes (Ding steel, Tock wood, Glass, Tin, Pop, Ice, Barrel), `shard` colours its shards/confetti.
+function Stations.target(k, pivot, aim, knock, main, hit, shard)
 	local n = #k.list + 1
 	local tc, model = k.targets:group('Target' .. n)
 	ghost(tc:part('Hinge', V(0.2, 0.2, 0.2), pivot, P.white))
 	local sw = tc:group('Swing')
 	model:SetAttribute('Knock', knock)
+	model:SetAttribute('Hit', hit or 'Ding')
+	if shard then model:SetAttribute('ShardColor', shard) end
 	model:SetAttribute('Aim', tc:world(CFrame.new(aim)).Position)
 	if main then
 		model:SetAttribute('Main', true)
@@ -739,10 +800,11 @@ function Stations.rim(st, t)
 	end
 end
 
--- The firing line: a white line on the mat, two painted footprints in the box, and a waist-high bench across the
--- lane (a dark kick plate, a stamped front with four X's, a studded top in the lip colour) with an ammo box,
--- a few shells and a pair of ear muffs on it.
-function Stations.bench(st, t)
+-- The shooter's end: a waist-high bench across the lane (a dark kick plate, a stamped front with four X's, a
+-- band in the theme's trim colour, a studded top in the lip colour) with an ammo box, a few shells and ear
+-- muffs on it; in front of it a yellow and black hazard stripe (the firing line); in the box two shoe prints and
+-- the lane's number in big blocky digits, readable from the aisle.
+function Stations.bench(st, t, tier)
 	local Y, z, h = Stations.MAT_Y, Stations.BENCH_Z, Stations.BENCH_H
 	local g = st:group('Bench')
 	local body = t.frame
@@ -752,7 +814,7 @@ function Stations.bench(st, t)
 	g:box('BenchKick', V(-3.45, Y, z - 0.47), V(3.45, Y + 0.32, z + 0.4), kick)
 	local front = g:box('BenchFront', V(-3.4, Y + 0.32, z - 0.42), V(3.4, Y + h - 0.62, z + 0.42), body, mat)
 	Stations.panelX(g, front, CFrame.new(0, Y + 0.32 + (h - 0.94) / 2, z - 0.42), 6.8, h - 0.94, 4, Stations.grooveFor(t, body))
-	g:box('BenchBand', V(-3.42, Y + h - 0.62, z - 0.46), V(3.42, Y + h - 0.3, z + 0.3), t.trim or t.rimTop, t.rimTopMat)
+	g:box('BenchBand', V(-3.42, Y + h - 0.62, z - 0.46), V(3.42, Y + h - 0.3, z + 0.3), t.trim or t.rimTop, t.trim and M.SmoothPlastic or t.rimTopMat)
 	local top = g:box('BenchTop', V(-3.6, Y + h - 0.3, z - 0.62), V(3.6, Y + h, z + 0.5), t.rimTop, t.rimTopMat)
 	if not t.rimTopMat then studs(top) end
 	local d = st:group('BenchProps')
@@ -765,25 +827,34 @@ function Stations.bench(st, t)
 	for i, s in { { 1.45, -0.15, 0.3 }, { 1.7, 0.05, 1.4 }, { 1.25, 0.12, 2.2 } } do
 		decor(d:part('Shell', V(0.32, 0.14, 0.14), CFrame.new(s[1], y + 0.07, z + s[2]) * CFrame.Angles(0, s[3], 0), i == 2 and C(232, 176, 72) or C(244, 194, 80), M.Metal, Enum.PartType.Cylinder))
 	end
-	-- Ear muffs: two red cups on a band.
-	for _, sx in { -1, 1 } do decor(d:blob('EarCup', V(0.36, 0.42, 0.42), V(-2.6 + sx * 0.32, y + 0.21, z - 0.05), C(230, 50, 60), M.SmoothPlastic)) end
-	decor(d:box('EarBand', V(-2.95, y + 0.38, z - 0.1), V(-2.25, y + 0.46, z), C(40, 40, 52)))
-	-- The shooter's box outlined on the mat (white on dark mats, the groove colour on pale ones), the firing line
-	-- and two footprints, all painted.
+	-- Ear muffs: two dark cups under a yellow arch.
+	local yellow = C(255, 210, 50)
+	for _, sx in { -1, 1 } do
+		decor(d:blob('EarCup', V(0.5, 0.55, 0.55), V(-2.6 + sx * 0.42, y + 0.28, z - 0.05), C(50, 52, 60), M.SmoothPlastic))
+		decor(d:box('EarArchSide', V(-2.6 + sx * 0.4 - 0.05, y + 0.5, z - 0.1), V(-2.6 + sx * 0.4 + 0.05, y + 0.84, z), yellow))
+	end
+	decor(d:box('EarArch', V(-3.05, y + 0.76, z - 0.1), V(-2.15, y + 0.86, z), yellow))
+	-- Painted on the mat: the box outline (white on dark mats, the groove colour on pale ones), the hazard
+	-- stripe, two shoe prints and the lane number.
 	local m = t.mat
 	local pale = 0.299 * m.R + 0.587 * m.G + 0.114 * m.B > 0.7
 	local edge = pale and Stations.grooveFor(t, m) or C(250, 250, 245)
-	local x0, x1, b0, b1, w = -3.25, 3.25, -8.75, z - 1.0, 0.14
+	local x0, x1, b0, b1, w = -3.25, 3.25, -8.75, -3.9, 0.14
 	for _, b in { { V(x0, Y, b0), V(x1, Y + 0.03, b0 + w) }, { V(x0, Y, b0), V(x0 + w, Y + 0.03, b1) }, { V(x1 - w, Y, b0), V(x1, Y + 0.03, b1) } } do
 		local p = decor(st:box('BoxLine', b[1], b[2], edge, M.SmoothPlastic))
 		p.CastShadow, p.Transparency = false, 0.2
 	end
-	-- Firing line and footprints, painted on the mat.
-	decor(st:box('FiringLine', V(-3.5, Y, z - 1.0), V(3.5, Y + 0.03, z - 0.82), edge, M.SmoothPlastic)).CastShadow = false
-	for _, sx in { -1, 1 } do
-		decor(st:box('Footprint', V(sx * 0.6 - 0.25, Y, -6.1), V(sx * 0.6 + 0.25, Y + 0.03, -5.3), edge, M.SmoothPlastic)).Transparency = 0.25
-		decor(st:box('Footprint', V(sx * 0.6 - 0.2, Y, -6.55), V(sx * 0.6 + 0.2, Y + 0.03, -6.2), edge, M.SmoothPlastic)).Transparency = 0.25
+	decor(st:box('FiringLine', V(-3.5, Y, -3.9), V(3.5, Y + 0.03, -3.5), C(255, 214, 30), M.SmoothPlastic)).CastShadow = false
+	for i = 0, 8 do
+		decor(st:part('FiringStripe', V(0.24, 0.02, 0.44), CFrame.new(-3.2 + i * 0.8, Y + 0.035, -3.7) * CFrame.Angles(0, math.rad(40), 0), C(30, 30, 36))).CastShadow = false
 	end
+	for _, sx in { -1, 1 } do
+		local x = sx * 0.45
+		local sole = decor(st:box('ShoePrint', V(x - 0.3, Y, -5.1), V(x + 0.3, Y + 0.03, -4.0), edge, M.SmoothPlastic))
+		local heel = decor(st:box('ShoePrint', V(x - 0.25, Y, -5.8), V(x + 0.25, Y + 0.03, -5.35), edge, M.SmoothPlastic))
+		sole.CastShadow, heel.CastShadow, sole.Transparency, heel.Transparency = false, false, 0.25, 0.25
+	end
+	Stations.digit(st, tier, -8.5, 2.3, edge)
 end
 
 -- The backstop's body: a wall across the outer end with a stepped top (two steps each side, like the rim's
@@ -801,10 +872,26 @@ function Stations.wall(c, t, color, material, h)
 	end
 	return base, step, top
 end
+-- Thin lines along the wall's front: up both sides and along the top edge of each step (trim or neon).
+function Stations.wallLines(c, h, color, material, th)
+	local Y, z = Stations.MAT_Y, Stations.BACK_Z
+	th = th or 0.14
+	local lines = {
+		{ V(-4.3, 0.6, z - 0.06), V(-4.3 + th, Y + h, z + 0.05) }, { V(4.3 - th, 0.6, z - 0.06), V(4.3, Y + h, z + 0.05) },
+		{ V(-4.3, Y + h - th, z - 0.06), V(-2.9, Y + h, z + 0.05) }, { V(2.9, Y + h - th, z - 0.06), V(4.3, Y + h, z + 0.05) },
+		{ V(-2.9, Y + h + 0.8 - th, z + 0.09), V(-1.5, Y + h + 0.8, z + 0.2) }, { V(1.5, Y + h + 0.8 - th, z + 0.09), V(2.9, Y + h + 0.8, z + 0.2) },
+		{ V(-1.5, Y + h + 1.4 - th, z + 0.24), V(1.5, Y + h + 1.4, z + 0.35) },
+	}
+	for _, b in lines do
+		local p = decor(c:box('WallLine', b[1], b[2], color, material))
+		if material == M.Neon then p.CastShadow = false end
+	end
+end
 
 -- The truss gantry over the targets: two grooved truss posts on stamped feet at the lane's edges and a grooved
--- truss beam across, capped. Hanging targets hang from its underside (GANTRY_Y) on its centre line.
-function Stations.gantry(g, t)
+-- truss beam across, capped. Hanging targets hang from its underside (GANTRY_Y) on its centre line. neon: lines
+-- on the posts' front edges and under the beam (shadow, gold, frost).
+function Stations.gantry(g, t, neon)
 	local Y, z, y0 = Stations.MAT_Y, Stations.GANTRY_Z, Stations.GANTRY_Y
 	local W = 0.8
 	local frame, fm = t.frame, t.frameMat or M.SmoothPlastic
@@ -817,15 +904,21 @@ function Stations.gantry(g, t)
 		g:box('GantryCap', V(x - 0.55, y0 + W, z - 0.55), V(x + 0.55, y0 + W + 0.25, z + 0.55), fm == M.Neon and t.rim or frame)
 		-- A small gusset under each end of the beam.
 		g:wedge('GantryGusset', V(0.5, 0.8, 0.8), CFrame.new(x - sx * 0.8, y0 - 0.4, z) * CFrame.Angles(0, sx * math.pi / 2, 0), frame, fm)
+		if neon then
+			for _, ex in { 3.5, 4.3 } do
+				decor(g:box('GantryNeon', V(sx * ex - 0.07, Y + 0.8, z - 0.47), V(sx * ex + 0.07, y0 + 0.75, z - 0.33), neon, M.Neon)).CastShadow = false
+			end
+		end
 	end
 	Stations.truss(g, 'GantryBeam', CFrame.new(-4.35, y0 + W / 2, z) * CFrame.Angles(0, 0, -math.pi / 2), 8.7, W, W, frame, groove, 1.45, { '-z' }, fm)
+	if neon then decor(g:box('GantryNeon', V(-3.5, y0 - 0.07, z - 0.47), V(3.5, y0 + 0.07, z - 0.33), neon, M.Neon)).CastShadow = false end
 end
 
 -- Hang a target from the gantry's underside at x: two short chains down to the target's top `top`.
 function Stations.chains(c, x, top, span)
 	local y0 = Stations.GANTRY_Y
 	for _, sx in { -1, 1 } do
-		c:box('Chain', V(x + sx * span - 0.05, top - 0.05, Stations.GANTRY_Z - 0.05), V(x + sx * span + 0.05, y0 + 0.02, Stations.GANTRY_Z + 0.05), C(52, 54, 66))
+		c:box('Chain', V(x + sx * span - 0.08, top - 0.05, Stations.GANTRY_Z - 0.08), V(x + sx * span + 0.08, y0 + 0.02, Stations.GANTRY_Z + 0.08), C(52, 54, 66))
 	end
 	c:box('Hook', V(x - span - 0.15, y0 - 0.14, Stations.GANTRY_Z - 0.15), V(x + span + 0.15, y0, Stations.GANTRY_Z + 0.15), C(52, 54, 66))
 end
@@ -833,88 +926,95 @@ end
 ---------------------------------------------------------------------------------------------- lanes
 -- One builder per theme: the backstop's dressing, the stands and the targets. `k` holds st (the station),
 -- gear (Equipment > Gear), targets (Equipment > Targets), list, t, tier and burners (parts that get flames).
+-- Every main target's centre sits ~5.8 over the mat (local y ~6.2): above the shooter's head from the follow
+-- camera, so the thing you shoot is never hidden behind your own avatar.
 Stations.Lanes = {}
+Stations.SODA = { red = C(235, 55, 60), orange = C(255, 150, 30), blue = C(60, 140, 240), lime = C(130, 220, 60) }
 
--- 1 Stone: bottles and cans on a plank fence; a rough plank backstop with a painted bullseye; sandbags.
+-- 1 Stone: soda bottles and cans on a tall plank shelf; a rough plank backstop with a painted bullseye high up,
+-- sandbags, bunting that flutters; a crate of spare sodas and a tyre stack.
 function Stations.Lanes.stone(k)
 	local t, Y, g = k.t, Stations.MAT_Y, k.gear
-	local wood = t.frame
-	-- Backstop: seven planks of uneven height on two back posts, battens behind.
+	local wood, soda = t.frame, Stations.SODA
+	local z0 = Stations.BACK_Z
 	local back = k.st:group('Backstop')
-	for i, h in { 5.4, 5.9, 5.5, 6.1, 5.6, 5.95, 5.3 } do
+	for i, h in { 7.4, 7.9, 8.25, 8.45, 8.3, 7.95, 7.3 } do
 		local x = -4.2 + (i - 0.5) * 1.2
-		local p = back:box('Plank', V(x - 0.58, 0, Stations.BACK_Z + (i % 2) * 0.05), V(x + 0.58, Y + h, Stations.BACK_Z + 0.45), i % 2 == 0 and wood:Lerp(C(0, 0, 0), 0.12) or wood)
+		local p = back:box('Plank', V(x - 0.58, 0, z0 + (i % 2) * 0.05), V(x + 0.58, Y + h, z0 + 0.45), i % 2 == 0 and wood:Lerp(C(0, 0, 0), 0.12) or wood)
 		Stations.stamp(p, { Enum.NormalId.Front }, 1.16, Y + h, Stations.grooveFor(t, wood), 0.35)
 	end
-	for _, y in { 1.2, 4.6 } do back:box('Batten', V(-4.3, Y + y, Stations.BACK_Z + 0.5), V(4.3, Y + y + 0.45, Stations.BACK_Z + 0.85), wood:Lerp(C(0, 0, 0), 0.2)) end
-	Stations.bullseye(back, CFrame.new(0, Y + 3.6, Stations.BACK_Z - 0.02), 1.85, { C(250, 250, 245), C(230, 50, 50), C(250, 250, 245), C(230, 50, 50) })
+	for _, y in { 1.2, 6.6 } do back:box('Batten', V(-4.3, Y + y, z0 + 0.5), V(4.3, Y + y + 0.45, z0 + 0.85), wood:Lerp(C(0, 0, 0), 0.2)) end
+	Stations.bullseye(back, CFrame.new(0, Y + 6.95, z0 - 0.02), 1.15, { C(250, 250, 245), C(230, 50, 50), C(250, 250, 245), C(230, 50, 50) })
 	for i, s in { { -2.9, 0, 1.9 }, { -0.95, 0, 1.9 }, { 0.95, 0, 1.9 }, { 2.9, 0, 1.9 }, { -1.9, 0.62, 1.8 }, { 1.95, 0.62, 1.8 } } do
-		back:blob('Sandbag', V(s[3], 0.72, 1.05), V(s[1], Y + 0.34 + s[2], Stations.BACK_Z - 0.6), i % 2 == 0 and C(158, 146, 120) or C(140, 130, 106), M.Fabric)
+		back:blob('Sandbag', V(s[3], 0.72, 1.05), V(s[1], Y + 0.34 + s[2], z0 - 0.6), i % 2 == 0 and C(158, 146, 120) or C(140, 130, 106), M.Fabric)
 	end
-	-- The fence: two posts, a low rail and a deep top rail the targets stand on.
-	local fz, top = 5.0, Y + 3.7
-	for _, sx in { -1, 1 } do g:box('FencePost', V(sx * 3.05 - 0.25, Y, fz - 0.25), V(sx * 3.05 + 0.25, top + 0.15, fz + 0.25), wood:Lerp(C(0, 0, 0), 0.15)) end
-	g:box('FenceRail', V(-3.45, Y + 1.25, fz - 0.15), V(3.45, Y + 1.6, fz + 0.15), wood)
-	g:box('FenceShelf', V(-3.5, top - 0.22, fz - 0.45), V(3.5, top, fz + 0.45), wood:Lerp(C(255, 255, 255), 0.08))
-	-- Targets on the shelf, left to right: bottle, can, the big soda can (main), bottle, can.
+	-- Bunting between two poles over the planks: little flags in turn red, yellow, blue, white (they bob).
+	for _, sx in { -1, 1 } do back:box('BuntingPole', V(sx * 4.1 - 0.13, Y, z0 - 0.45), V(sx * 4.1 + 0.13, Y + 9.15, z0 - 0.19), wood:Lerp(C(0, 0, 0), 0.25)) end
+	local flags = { C(235, 55, 60), C(255, 210, 50), C(60, 140, 240), C(250, 250, 245) }
+	local bc, bunting = back:group('Bunting')
+	bc:box('BuntingLine', V(-4.0, Y + 8.92, z0 - 0.35), V(4.0, Y + 8.97, z0 - 0.29), C(250, 250, 245))
+	for i = 0, 9 do
+		local sag = 0.15 * math.sin((i + 0.5) / 10 * math.pi)
+		bc:wedge('Flag', V(0.06, 0.55, 0.62), CFrame.new(-3.6 + i * 0.8, Y + 8.64 - sag, z0 - 0.33) * CFrame.Angles(0, math.pi / 2, 0) * CFrame.Angles(math.pi, 0, 0), flags[i % 4 + 1])
+	end
+	for _, p in bunting:GetDescendants() do if p:IsA('BasePart') then decor(p).CastShadow = false end end
+	bunting.WorldPivot = bc:world(CFrame.new(0, Y + 8.9, z0 - 0.3))
+	bunting:SetAttribute('Bob', 0.08)
+	bunting:SetAttribute('BobPeriod', 1.6)
+	bunting:AddTag('HoodMotion')
+	-- The shelf: two posts, two rails and a deep top rail at chest height the targets stand on.
+	local fz, top = 5.0, Y + 4.4
+	for _, sx in { -1, 1 } do g:box('FencePost', V(sx * 3.05 - 0.28, Y, fz - 0.28), V(sx * 3.05 + 0.28, top + 0.15, fz + 0.28), wood:Lerp(C(0, 0, 0), 0.15)) end
+	for _, ry in { 1.3, 2.9 } do g:box('FenceRail', V(-3.45, Y + ry, fz - 0.15), V(3.45, Y + ry + 0.35, fz + 0.15), wood) end
+	g:box('FenceShelf', V(-3.5, top - 0.25, fz - 0.95), V(3.5, top, fz + 0.95), wood:Lerp(C(255, 255, 255), 0.08))
+	-- Targets, left to right: soda bottle, can, the big cola can with a bullseye (main), can, bottle. Bottles
+	-- shatter, cans fly off.
 	local items = {
-		{ -2.55, 'bottle', C(40, 185, 95), 1.0 }, { -1.35, 'tin', C(235, 60, 60), 0.42, 0.95 }, { 0, 'tin', C(235, 45, 60), 0.68, 1.55, true },
-		{ 1.35, 'bottle', C(175, 105, 40), 0.95 }, { 2.55, 'tin', C(60, 140, 240), 0.42, 0.95 },
+		{ -2.75, 'bottle', soda.orange, 1.25, nil, C(255, 255, 255) }, { -1.5, 'tin', soda.blue, 0.55, 1.25 }, { 0, 'tin', soda.red, 0.88, 2.0, true },
+		{ 1.5, 'tin', soda.lime, 0.55, 1.25 }, { 2.75, 'bottle', soda.blue, 1.25, nil, C(255, 214, 40) },
 	}
 	for _, it in items do
 		local base = V(it[1], top, fz)
 		local h = it[2] == 'bottle' and 1.5 * it[4] or it[5]
-		local sw = Stations.target(k, CFrame.new(base + V(0, 0, 0.2)), base + V(0, h / 2, 0), 'Tip', it[6])
-		if it[2] == 'bottle' then Stations.bottle(sw, base, it[4], it[3])
-		else
-			Stations.tin(sw, base, it[4], it[5], it[3], C(255, 255, 255))
-			-- The big can gets a red stripe round its label and a white star, so it reads as the one to hit.
-			if it[6] then
-				Stations.can(sw, 'CanStripe', base + V(0, it[5] * 0.47, 0), it[4] + 0.03, it[5] * 0.08, it[3])
-				Stations.starburst(sw, CFrame.new(base + V(0, it[5] * 0.36, -it[4] - 0.02)), 0.36, 0.04, C(255, 214, 40))
-			end
-		end
+		local bottle = it[2] == 'bottle'
+		local sw = Stations.target(k, CFrame.new(base + V(0, 0, 0.2)), base + V(0, h / 2, 0), bottle and 'Shatter' or 'Fly', it[6] == true, bottle and 'Glass' or 'Tin', it[3])
+		if bottle then Stations.bottle(sw, base, it[4], it[3], { stripe = it[3], cap = it[6] })
+		else Stations.tin(sw, base, it[4], it[5], it[3], C(255, 255, 255), it[6] and 0.75 or nil) end
 	end
-	-- Story props: a crate of spare bottles, a stack of old tyres, a can that already fell.
+	-- Story props: a crate of spare sodas, a stack of old tyres, a can that already fell.
 	local crate = g:box('Crate', V(-3.3, Y, 1.3), V(-1.7, Y + 1.1, 2.7), C(196, 140, 80))
 	Stations.stamp(crate, Stations.SIDES, 1.6, 1.1, C(150, 98, 52))
-	for i, x in { -2.95, -2.5, -2.05 } do
-		for j, z in { 1.7, 2.3 } do Stations.bottle(g, V(x, Y + 1.1, z), 0.55, (i + j) % 2 == 0 and C(40, 185, 95) or C(175, 105, 40)) end
+	local colors = { soda.red, soda.orange, soda.blue, soda.lime, soda.blue, soda.red }
+	local n = 0
+	for _, x in { -2.95, -2.5, -2.05 } do
+		for _, z in { 1.7, 2.3 } do
+			n += 1
+			Stations.bottle(g, V(x, Y + 1.1, z), 0.55, colors[n])
+		end
 	end
 	for i, y in { 0, 0.5 } do
 		local at = CFrame.new(2.55 + i * 0.12, Y + y + 0.25, 1.9) * CFrame.Angles(0, 0, math.pi / 2)
 		g:part('Tyre', V(0.5, 1.7, 1.7), at, C(36, 36, 42), M.SmoothPlastic, Enum.PartType.Cylinder)
 		g:part('TyreHub', V(0.52, 0.8, 0.8), at, C(150, 156, 166), M.Metal, Enum.PartType.Cylinder)
 	end
-	g:part('FallenCan', V(0.95, 0.84, 0.84), CFrame.new(1.2, Y + 0.42, 3.2) * CFrame.Angles(0, 0.6, 0), C(60, 140, 240), M.SmoothPlastic, Enum.PartType.Cylinder)
-	-- Bunting across the top of the backstop: little flags in turn red, yellow, blue, white.
-	local flags = { C(235, 55, 60), C(255, 210, 50), C(60, 140, 240), C(250, 250, 245) }
-	k.st:box('BuntingLine', V(-4.3, Y + 5.95, Stations.BACK_Z - 0.12), V(4.3, Y + 6.0, Stations.BACK_Z - 0.07), C(250, 250, 245)).CanCollide = false
-	for i = 0, 9 do
-		local x = -3.85 + i * 0.86
-		local sag = 0.25 * math.sin((i + 0.5) / 10 * math.pi)
-		decor(k.st:wedge('Flag', V(0.06, 0.55, 0.62), CFrame.new(x, Y + 5.68 - sag, Stations.BACK_Z - 0.14) * CFrame.Angles(0, math.pi / 2, 0) * CFrame.Angles(math.pi, 0, 0), flags[i % 4 + 1]))
-	end
+	g:part('FallenCan', V(0.95, 0.84, 0.84), CFrame.new(1.2, Y + 0.42, 3.2) * CFrame.Angles(0, 0.6, 0), soda.blue, M.SmoothPlastic, Enum.PartType.Cylinder)
 end
 
--- 2 Red: three bullseye boards on navy easels; a navy board backstop with red trim and a little target sign.
+-- 2 Red: three bullseye boards on navy easels (the main one up high); a navy board backstop with red trim and a
+-- little target sign.
 function Stations.Lanes.red(k)
 	local t, Y, g = k.t, Stations.MAT_Y, k.gear
 	local back = k.st:group('Backstop')
-	local base, step, top = Stations.wall(back, t, t.frame, M.SmoothPlastic, 5.4)
-	-- Red trim round the front face and across the steps.
-	local z = Stations.BACK_Z - 0.03
-	for _, b in { { V(-4.3, 0.6, z), V(-4.0, Y + 5.4, z + 0.1) }, { V(4.0, 0.6, z), V(4.3, Y + 5.4, z + 0.1) }, { V(-4.3, Y + 5.1, z), V(4.3, Y + 5.4, z + 0.1) },
-		{ V(-2.9, Y + 5.95, z + 0.15), V(2.9, Y + 6.2, z + 0.25) }, { V(-1.5, Y + 6.5, z + 0.3), V(1.5, Y + 6.8, z + 0.4) } } do
-		back:box('Trim', b[1], b[2], t.trim)
-	end
-	Stations.bullseye(back, CFrame.new(0, Y + 6.5, Stations.BACK_Z + 0.28), 0.45, { C(250, 250, 245), t.trim, C(250, 250, 245) })
+	local h = 6.6
+	Stations.wall(back, t, t.frame, M.SmoothPlastic, h)
+	Stations.wallLines(back, h, t.trim, M.SmoothPlastic, 0.3)
+	Stations.bullseye(back, CFrame.new(0, Y + h + 1.1, Stations.BACK_Z + 0.28), 0.45, { C(250, 250, 245), t.trim, C(250, 250, 245) })
 	local rings = { C(250, 250, 245), C(235, 35, 60), C(250, 250, 245), C(235, 35, 60), C(255, 214, 40) }
 	-- Boards: big centre (main), two small at the sides, at different depths and heights.
-	for _, b in { { 0, 6.0, 2.6, 1.78, true }, { -2.55, 4.5, 1.5, 1.0 }, { 2.6, 4.1, 2.15, 1.0 } } do
+	for _, b in { { 0, 6.0, 4.0, 1.78, true }, { -2.55, 4.5, 1.5, 1.0 }, { 2.6, 4.1, 2.15, 1.0 } } do
 		local x, bz, ledge, r = b[1], b[2], Y + b[3], b[4]
 		Stations.easel(g, x, bz, ledge, r * 1.6, t.frame)
-		local sw = Stations.target(k, CFrame.new(x, ledge, bz + 0.1), V(x, ledge + r, bz), 'Tip', b[5])
+		local sw = Stations.target(k, CFrame.new(x, ledge, bz + 0.1), V(x, ledge + r, bz), 'Tip', b[5], 'Tock')
 		Stations.disc(sw, 'Board', CFrame.new(x, ledge + r, bz + 0.12), r + 0.12, 0.18, t.frame)
 		Stations.bullseye(sw, CFrame.new(x, ledge + r, bz + 0.03), r, rings)
 	end
@@ -924,7 +1024,8 @@ function Stations.Lanes.red(k)
 	Stations.bullseye(g, lean * CFrame.new(0, 0, -0.08), 0.85, { C(250, 250, 245), C(235, 35, 60), C(250, 250, 245) })
 end
 
--- 3 Lava: hot plates swinging from the gantry, burning barrels at the sides, a basalt berm with lava cracks.
+-- 3 Lava: hot plates swinging from the gantry (a big gong is the main), burning barrels at the sides, a basalt
+-- berm with lava cracks and a hot pool on top, nearly as tall as the gantry.
 function Stations.Lanes.lava(k)
 	local t, Y, g = k.t, Stations.MAT_Y, k.gear
 	Stations.gantry(g, t)
@@ -932,8 +1033,8 @@ function Stations.Lanes.lava(k)
 	local rock, rock2, hot = C(62, 44, 48), C(84, 58, 58), C(255, 110, 20)
 	local z0 = Stations.BACK_Z
 	local blocks = {
-		{ -4.3, -1.5, 0, 2.3, 0.0, rock, 3 }, { -1.6, 1.5, 0, 2.7, -0.15, rock2, -2 }, { 1.4, 4.3, 0, 2.1, 0.05, rock, 4 },
-		{ -3.7, -0.1, 2.3, 4.6, 0.1, rock2, -3 }, { -0.2, 3.8, 2.1, 4.9, -0.05, rock, 2 }, { -1.9, 1.7, 4.6, 6.4, 0.2, rock2, -4 },
+		{ -4.3, -1.5, 0, 3.1, 0.0, rock, 3 }, { -1.6, 1.5, 0, 3.5, -0.15, rock2, -2 }, { 1.4, 4.3, 0, 2.9, 0.05, rock, 4 },
+		{ -3.9, -0.1, 3.0, 6.0, 0.1, rock2, -3 }, { -0.2, 4.0, 2.8, 6.3, -0.05, rock, 2 }, { -2.0, 1.8, 5.9, 7.6, 0.2, rock2, -4 },
 	}
 	for _, b in blocks do
 		local cx, cy = (b[1] + b[2]) / 2, (b[3] + b[4]) / 2 + Y / 2
@@ -941,11 +1042,11 @@ function Stations.Lanes.lava(k)
 			CFrame.new(cx, cy, (z0 + b[5] + Stations.HALF_Z - 0.1) / 2) * CFrame.Angles(0, 0, math.rad(b[7])), b[6], M.Slate)
 	end
 	-- Glowing cracks along the joints and a hot pool on top.
-	for _, c in { { -4.2, 4.2, Y + 2.2 }, { -3.4, 3.6, Y + 4.55 } } do
+	for _, c in { { -4.2, 4.2, Y + 3.05 }, { -3.6, 3.8, Y + 6.0 } } do
 		decor(back:box('LavaCrack', V(c[1], c[3] - 0.08, z0 - 0.3), V(c[2], c[3] + 0.08, z0 + 0.4), hot, M.Neon)).CastShadow = false
 	end
-	for _, x in { -1.5, 1.4 } do decor(back:box('LavaCrack', V(x - 0.08, 0.5, z0 - 0.25), V(x + 0.08, Y + 2.2, z0 + 0.4), hot, M.Neon)).CastShadow = false end
-	decor(back:box('LavaPool', V(-1.6, Y + 6.38, z0 + 0.4), V(1.5, Y + 6.5, Stations.HALF_Z - 0.3), C(255, 170, 30), M.Neon)).CastShadow = false
+	for _, x in { -1.5, 1.4 } do decor(back:box('LavaCrack', V(x - 0.08, 0.5, z0 - 0.25), V(x + 0.08, Y + 3.05, z0 + 0.4), hot, M.Neon)).CastShadow = false end
+	decor(back:box('LavaPool', V(-1.8, Y + 7.38, z0 + 0.4), V(1.7, Y + 7.5, Stations.HALF_Z - 0.3), C(255, 170, 30), M.Neon)).CastShadow = false
 	-- Plates: a big round gong (main) between two square plates, all hanging from the beam.
 	local function gong(sw, x, cy, r)
 		Stations.disc(sw, 'GongRim', CFrame.new(x, cy, Stations.GANTRY_Z), r, 0.25, C(70, 66, 76), M.Metal)
@@ -953,11 +1054,10 @@ function Stations.Lanes.lava(k)
 		Stations.disc(sw, 'GongCore', CFrame.new(x, cy, Stations.GANTRY_Z - 0.1), r * 0.42, 0.34, C(255, 225, 90), M.Neon)
 		Stations.chains(sw, x, cy + r - 0.1, r * 0.45)
 	end
-	local sw = Stations.target(k, CFrame.new(0, Stations.GANTRY_Y, Stations.GANTRY_Z), V(0, 4.8, Stations.GANTRY_Z), 'Swing', true)
-	gong(sw, 0, 4.8, 1.62)
-	k.hot = sw.parent:FindFirstChild('GongHot')
-	for _, p in { { -2.65, 3.4, 1.4 }, { 2.65, 4.0, 1.35 } } do
-		local s2 = Stations.target(k, CFrame.new(p[1], Stations.GANTRY_Y, Stations.GANTRY_Z), V(p[1], p[2], Stations.GANTRY_Z), 'Swing')
+	local sw = Stations.target(k, CFrame.new(0, Stations.GANTRY_Y, Stations.GANTRY_Z), V(0, 6.2, Stations.GANTRY_Z), 'Swing', true, 'Ding')
+	gong(sw, 0, 6.2, 1.62)
+	for _, p in { { -2.65, 4.3, 1.4 }, { 2.65, 4.9, 1.35 } } do
+		local s2 = Stations.target(k, CFrame.new(p[1], Stations.GANTRY_Y, Stations.GANTRY_Z), V(p[1], p[2], Stations.GANTRY_Z), 'Swing', false, 'Ding')
 		Stations.plate(s2, CFrame.new(p[1], p[2], Stations.GANTRY_Z), p[3], C(64, 60, 70), C(255, 120, 20), M.Neon, C(255, 220, 80))
 		Stations.chains(s2, p[1], p[2] + p[3] / 2, p[3] * 0.32)
 	end
@@ -970,31 +1070,32 @@ function Stations.Lanes.lava(k)
 	end
 end
 
--- 4 Arcane: a big spinner disc (main), two balloons to pop, balloon bunches bobbing on the gantry posts, a
--- magenta wall with a pink starburst and white sparkle diamonds.
+-- 4 Arcane: a big spinner disc up high (main), two balloons to pop, balloon bunches bobbing on the gantry posts,
+-- a deep violet wall with a pink starburst behind the spinner and white sparkle diamonds.
 function Stations.Lanes.arcane(k)
 	local t, Y, g = k.t, Stations.MAT_Y, k.gear
 	Stations.gantry(g, t)
 	local back = k.st:group('Backstop')
-	Stations.wall(back, t, t.rim, M.SmoothPlastic, 5.4)
+	local h = 7.0
+	Stations.wall(back, t, C(90, 30, 140), M.SmoothPlastic, h)
+	Stations.wallLines(back, h, t.rimTop, M.SmoothPlastic, 0.18)
 	local z = Stations.BACK_Z
-	Stations.starburst(back, CFrame.new(0, Y + 3.6, z - 0.1), 3.4, 0.16, t.rimTop)
-	Stations.bullseye(back, CFrame.new(0, Y + 3.6, z - 0.2), 0.95, { C(255, 255, 255), C(170, 80, 220), C(255, 255, 255) })
-	for _, s in { { -3.3, 4.9 }, { 3.2, 1.6 }, { -3.1, 1.4 }, { 3.35, 5.0 } } do
+	Stations.starburst(back, CFrame.new(0, Y + 5.8, z - 0.1), 3.7, 0.16, t.rimTop)
+	for _, s in { { -3.3, 6.6 }, { 3.2, 2.0 }, { -3.1, 1.6 }, { 3.35, 6.4 }, { -2.6, 4.0 }, { 2.8, 4.6 } } do
 		decor(back:part('Sparkle', V(0.42, 0.42, 0.1), CFrame.new(s[1], Y + s[2], z - 0.06) * CFrame.Angles(0, 0, math.pi / 4), C(255, 240, 255), M.Neon)).CastShadow = false
 	end
-	-- Spinner: a post with a big ringed disc on a hub; it spins when hit.
+	-- Spinner: a chunky post with a big ringed disc on a hub; it turns slowly and spins when hit.
 	local sz = 6.0
-	g:box('SpinnerPost', V(-0.18, Y, sz + 0.3), V(0.18, Y + 4.8, sz + 0.66), t.frame)
-	g:box('SpinnerFoot', V(-0.7, Y, sz - 0.2), V(0.7, Y + 0.3, sz + 1.1), t.frame:Lerp(C(0, 0, 0), 0.25))
-	local sw = Stations.target(k, CFrame.new(0, Y + 4.4, sz), V(0, Y + 4.4, sz), 'Spin', true)
-	Stations.disc(sw, 'SpinnerBack', CFrame.new(0, Y + 4.4, sz + 0.12), 1.72, 0.16, t.frame)
-	Stations.bullseye(sw, CFrame.new(0, Y + 4.4, sz + 0.03), 1.62, { C(255, 255, 255), C(255, 100, 200), C(255, 255, 255), C(150, 60, 220), C(255, 220, 60) })
+	g:box('SpinnerPost', V(-0.2, Y, sz + 0.3), V(0.2, Y + 5.8, sz + 0.7), t.frame)
+	g:box('SpinnerFoot', V(-0.75, Y, sz - 0.2), V(0.75, Y + 0.35, sz + 1.2), t.frame:Lerp(C(0, 0, 0), 0.25))
+	local sw = Stations.target(k, CFrame.new(0, Y + 5.8, sz), V(0, Y + 5.8, sz), 'Spin', true, 'Ding')
+	Stations.disc(sw, 'SpinnerBack', CFrame.new(0, Y + 5.8, sz + 0.12), 1.72, 0.16, t.frame)
+	Stations.bullseye(sw, CFrame.new(0, Y + 5.8, sz + 0.03), 1.62, { C(255, 255, 255), C(255, 100, 200), C(255, 255, 255), C(150, 60, 220), C(255, 220, 60) })
 	-- Balloons to pop, tied to little weights.
-	for _, b in { { -2.6, 4.4, Y + 3.3, C(255, 90, 170) }, { 2.65, 5.1, Y + 4.0, C(80, 200, 255) } } do
+	for _, b in { { -2.6, 4.4, Y + 4.2, C(255, 90, 170) }, { 2.65, 5.1, Y + 4.9, C(80, 200, 255) } } do
 		local pos = V(b[1], b[3], b[2])
 		g:box('BalloonWeight', V(b[1] - 0.22, Y, b[2] - 0.22), V(b[1] + 0.22, Y + 0.35, b[2] + 0.22), C(255, 214, 60))
-		local s2 = Stations.target(k, CFrame.new(pos), pos, 'Pop')
+		local s2 = Stations.target(k, CFrame.new(pos), pos, 'Pop', false, 'Pop', b[4])
 		Stations.balloon(s2, pos, 0.62, b[4], V(b[1], Y + 0.35, b[2]))
 	end
 	-- Bunches of three on each gantry post (they bob; not targets).
@@ -1013,58 +1114,51 @@ function Stations.Lanes.arcane(k)
 	end
 end
 
--- 5 Shadow: dark plates with violet neon rims (a big hanging one is the main), an obsidian wall with a neon
--- ring, violet neon lines along the gantry's front edges.
+-- 5 Shadow: dark plates with violet neon rims (a big hanging one is the main, haloed by a neon ring on the
+-- obsidian wall), violet neon on the gantry and along the wall's steps.
 function Stations.Lanes.shadow(k)
 	local t, Y, g = k.t, Stations.MAT_Y, k.gear
-	local violet = C(160, 80, 255)
-	Stations.gantry(g, t)
-	for _, sx in { -1, 1 } do
-		for _, ex in { 3.5, 4.3 } do
-			decor(g:box('GantryNeon', V(sx * ex - 0.07, Y + 0.8, Stations.GANTRY_Z - 0.47), V(sx * ex + 0.07, Stations.GANTRY_Y + 0.75, Stations.GANTRY_Z - 0.33), violet, M.Neon)).CastShadow = false
-		end
-	end
-	decor(g:box('GantryNeon', V(-3.5, Stations.GANTRY_Y - 0.07, Stations.GANTRY_Z - 0.47), V(3.5, Stations.GANTRY_Y + 0.07, Stations.GANTRY_Z - 0.33), violet, M.Neon)).CastShadow = false
+	local violet, dark = C(160, 80, 255), C(40, 30, 60)
+	Stations.gantry(g, t, violet)
 	local back = k.st:group('Backstop')
-	local base, step, top = Stations.wall(back, t, C(30, 20, 44), M.SmoothPlastic, 5.4)
+	local h = 7.0
+	Stations.wall(back, t, C(30, 20, 44), M.SmoothPlastic, h)
+	Stations.wallLines(back, h, violet, M.Neon, 0.12)
 	local z = Stations.BACK_Z
-	for _, b in { { V(-4.3, Y + 5.3, z - 0.06), V(-2.9, Y + 5.42, z + 0.05) }, { V(2.9, Y + 5.3, z - 0.06), V(4.3, Y + 5.42, z + 0.05) },
-		{ V(-2.9, Y + 6.1, z + 0.1), V(-1.5, Y + 6.22, z + 0.2) }, { V(1.5, Y + 6.1, z + 0.1), V(2.9, Y + 6.22, z + 0.2) }, { V(-1.5, Y + 6.7, z + 0.25), V(1.5, Y + 6.82, z + 0.35) } } do
-		decor(back:box('WallNeon', b[1], b[2], violet, M.Neon)).CastShadow = false
-	end
-	Stations.bullseye(back, CFrame.new(0, Y + 3.5, z - 0.02), 2.0, { violet, C(20, 14, 30), violet, C(20, 14, 30), violet }, { M.Neon, M.SmoothPlastic, M.Neon, M.SmoothPlastic, M.Neon })
-	-- Main: a round dark plate with a neon rim, hanging from the beam.
-	local sw = Stations.target(k, CFrame.new(0, Stations.GANTRY_Y, Stations.GANTRY_Z), V(0, 4.8, Stations.GANTRY_Z), 'Swing', true)
-	Stations.disc(sw, 'PlateRim', CFrame.new(0, 4.8, Stations.GANTRY_Z + 0.04), 1.72, 0.2, violet, M.Neon)
-	Stations.disc(sw, 'Plate', CFrame.new(0, 4.8, Stations.GANTRY_Z - 0.02), 1.5, 0.26, C(40, 30, 60), M.Metal)
-	Stations.disc(sw, 'PlateRing', CFrame.new(0, 4.8, Stations.GANTRY_Z - 0.06), 0.95, 0.3, violet, M.Neon)
-	Stations.disc(sw, 'PlateInner', CFrame.new(0, 4.8, Stations.GANTRY_Z - 0.1), 0.8, 0.34, C(40, 30, 60), M.Metal)
-	Stations.disc(sw, 'PlateSpot', CFrame.new(0, 4.8, Stations.GANTRY_Z - 0.14), 0.32, 0.38, violet, M.Neon)
-	Stations.chains(sw, 0, 4.8 + 1.62, 0.65)
-	-- Two square plates on posts at the sides.
-	for _, p in { { -2.6, 4.6, 1.9, 1.3 }, { 2.6, 4.1, 2.6, 1.2 } } do
-		g:box('PlatePost', V(p[1] - 0.15, Y, p[2] + 0.15), V(p[1] + 0.15, Y + p[3], p[2] + 0.45), t.frame)
-		local s2 = Stations.target(k, CFrame.new(p[1], Y + p[3], p[2] + 0.1), V(p[1], Y + p[3] + p[4] / 2, p[2]), 'Tip')
-		Stations.plate(s2, CFrame.new(p[1], Y + p[3] + p[4] / 2, p[2]), p[4], C(40, 30, 60), violet, M.Neon, violet)
+	Stations.bullseye(back, CFrame.new(0, Y + 5.8, z - 0.02), 2.5, { violet, C(20, 14, 30), violet, C(20, 14, 30), violet }, { M.Neon, M.SmoothPlastic, M.Neon, M.SmoothPlastic, M.Neon })
+	-- Main: a round dark plate with neon rings, hanging from the beam.
+	local cy = 6.2
+	local sw = Stations.target(k, CFrame.new(0, Stations.GANTRY_Y, Stations.GANTRY_Z), V(0, cy, Stations.GANTRY_Z), 'Swing', true, 'Ding')
+	Stations.disc(sw, 'PlateRim', CFrame.new(0, cy, Stations.GANTRY_Z + 0.04), 1.72, 0.2, violet, M.Neon)
+	Stations.disc(sw, 'Plate', CFrame.new(0, cy, Stations.GANTRY_Z - 0.02), 1.5, 0.26, dark, M.Metal)
+	Stations.disc(sw, 'PlateRing', CFrame.new(0, cy, Stations.GANTRY_Z - 0.06), 0.95, 0.3, violet, M.Neon)
+	Stations.disc(sw, 'PlateInner', CFrame.new(0, cy, Stations.GANTRY_Z - 0.1), 0.8, 0.34, dark, M.Metal)
+	Stations.disc(sw, 'PlateSpot', CFrame.new(0, cy, Stations.GANTRY_Z - 0.14), 0.32, 0.38, violet, M.Neon)
+	Stations.chains(sw, 0, cy + 1.62, 0.65)
+	-- Two square plates on chunky posts at the sides.
+	for _, p in { { -2.6, 4.6, 2.6, 1.3 }, { 2.6, 4.1, 3.2, 1.2 } } do
+		g:box('PlatePost', V(p[1] - 0.2, Y, p[2] + 0.12), V(p[1] + 0.2, Y + p[3], p[2] + 0.52), t.frame)
+		local s2 = Stations.target(k, CFrame.new(p[1], Y + p[3], p[2] + 0.1), V(p[1], Y + p[3] + p[4] / 2, p[2]), 'Tip', false, 'Ding')
+		Stations.plate(s2, CFrame.new(p[1], Y + p[3] + p[4] / 2, p[2]), p[4], dark, violet, M.Neon, violet)
 	end
 end
 
--- 6 Frost: an ice bullseye on an ice pillar (main), small ice blocks on ice pedestals, an ice-block wall with
--- a snow top and icicles, icicles and snow on the gantry.
+-- 6 Frost: an ice bullseye on a tall ice pillar (main), small ice blocks on ice pedestals, a four-course ice
+-- wall with a snow top, icicles and a neon ice line, icicles, snow and a neon line on the gantry.
 function Stations.Lanes.frost(k)
 	local t, Y, g = k.t, Stations.MAT_Y, k.gear
+	local snow, iceA, iceB, glow, deep = C(248, 252, 255), C(150, 225, 250), C(120, 205, 240), C(140, 240, 255), C(25, 120, 235)
 	Stations.gantry(g, t)
-	local snow, iceA, iceB = C(248, 252, 255), C(150, 225, 250), C(120, 205, 240)
 	g:box('BeamSnow', V(-4.4, Stations.GANTRY_Y + 0.8, Stations.GANTRY_Z - 0.45), V(4.4, Stations.GANTRY_Y + 1.0, Stations.GANTRY_Z + 0.45), snow)
+	decor(g:box('BeamGlow', V(-3.5, Stations.GANTRY_Y - 0.06, Stations.GANTRY_Z - 0.42), V(3.5, Stations.GANTRY_Y + 0.06, Stations.GANTRY_Z - 0.3), glow, M.Neon)).CastShadow = false
 	for i = 0, 6 do
-		local x = -3.1 + i * 1.05
 		local len = 0.5 + ((i * 37) % 5) * 0.12
-		Stations.icicle(g, V(x, Stations.GANTRY_Y, Stations.GANTRY_Z - 0.25), len, 0.3)
+		Stations.icicle(g, V(-3.1 + i * 1.05, Stations.GANTRY_Y - 0.06, Stations.GANTRY_Z - 0.2), len, 0.3)
 	end
-	-- Wall: three courses of ice blocks, offset like bricks, a snow top and icicles along its front.
+	-- Wall: four courses of ice blocks, offset like bricks, a snow top with drifts and icicles along its front.
 	local back = k.st:group('Backstop')
 	local z0, z1 = Stations.BACK_Z, Stations.HALF_Z - 0.1
-	for row = 0, 2 do
+	for row = 0, 3 do
 		local y0, y1 = row == 0 and 0 or Y + row * 1.9, Y + (row + 1) * 1.9
 		local xs = row % 2 == 0 and { -4.3, -2.2, -0.1, 2.0, 4.3 } or { -4.3, -3.2, -1.1, 1.0, 3.1, 4.3 }
 		for i = 1, #xs - 1 do
@@ -1072,81 +1166,87 @@ function Stations.Lanes.frost(k)
 			p.Reflectance = 0.15
 		end
 	end
-	local cap = back:box('SnowTop', V(-4.4, Y + 5.7, z0 - 0.1), V(4.4, Y + 6.1, z1), snow)
-	studs(cap)
-	for _, d in { { -2.6, 1.6, 0.5 }, { 0.6, 2.0, 0.7 }, { 2.9, 1.2, 0.4 } } do back:box('SnowDrift', V(d[1] - d[2] / 2, Y + 6.1, z0 + 0.1), V(d[1] + d[2] / 2, Y + 6.1 + d[3], z1 - 0.1), snow) end
+	local top = Y + 7.6
+	studs(back:box('SnowTop', V(-4.4, top, z0 - 0.1), V(4.4, top + 0.4, z1), snow))
+	decor(back:box('SnowGlow', V(-4.4, top - 0.12, z0 - 0.2), V(4.4, top, z0 - 0.08), glow, M.Neon)).CastShadow = false
+	for _, d in { { -2.6, 1.6, 0.5 }, { 0.6, 2.0, 0.7 }, { 2.9, 1.2, 0.4 } } do back:box('SnowDrift', V(d[1] - d[2] / 2, top + 0.4, z0 + 0.1), V(d[1] + d[2] / 2, top + 0.4 + d[3], z1 - 0.1), snow) end
 	for i = 0, 9 do
-		local x = -3.9 + i * 0.86
 		local len = 0.45 + ((i * 53) % 7) * 0.1
-		Stations.icicle(back, V(x, Y + 5.72, z0 - 0.12), len, 0.34)
+		Stations.icicle(back, V(-3.9 + i * 0.86, top - 0.1, z0 - 0.12), len, 0.34)
 	end
-	-- Main: an ice bullseye standing on an ice pillar.
+	-- Main: an ice bullseye (deep blue rings) on a tall ice pillar.
 	local mz = 6.0
-	local pillar = g:box('IcePillar', V(-0.55, Y, mz - 0.3), V(0.55, Y + 2.7, mz + 0.8), iceA)
+	local pillar = g:box('IcePillar', V(-0.55, Y, mz - 0.3), V(0.55, Y + 4.1, mz + 0.8), iceA)
 	pillar.Reflectance = 0.15
 	g:box('IcePillarFoot', V(-0.8, Y, mz - 0.55), V(0.8, Y + 0.4, mz + 1.05), iceB)
-	g:part('IceShine', V(0.12, 1.5, 0.04), CFrame.new(-0.2, Y + 1.3, mz - 0.32) * CFrame.Angles(0, 0, math.rad(35)), C(255, 255, 255)).Transparency = 0.25
-	local sw = Stations.target(k, CFrame.new(0, Y + 2.7, mz), V(0, Y + 4.4, mz), 'Tip', true)
-	Stations.disc(sw, 'IceBoard', CFrame.new(0, Y + 4.4, mz + 0.12), 1.72, 0.18, C(90, 200, 245))
-	Stations.bullseye(sw, CFrame.new(0, Y + 4.4, mz + 0.03), 1.62, { snow, C(60, 190, 240), snow, C(60, 190, 240), C(255, 255, 255) })
+	g:part('IceShine', V(0.12, 2.4, 0.04), CFrame.new(-0.2, Y + 2.2, mz - 0.32) * CFrame.Angles(0, 0, math.rad(35)), C(255, 255, 255)).Transparency = 0.25
+	local sw = Stations.target(k, CFrame.new(0, Y + 4.1, mz), V(0, Y + 5.8, mz), 'Tip', true, 'Ice')
+	Stations.disc(sw, 'IceBoard', CFrame.new(0, Y + 5.8, mz + 0.12), 1.82, 0.18, C(90, 200, 245))
+	Stations.bullseye(sw, CFrame.new(0, Y + 5.8, mz + 0.03), 1.72, { snow, deep, snow, deep, C(255, 255, 255) })
 	-- Ice blocks on pedestals at the sides.
-	for _, b in { { -2.6, 4.5, 1.6, 0.95 }, { 2.6, 5.0, 2.3, 0.9 } } do
+	for _, b in { { -2.6, 4.5, 2.6, 0.95 }, { 2.6, 5.0, 3.2, 0.9 } } do
 		local ped = g:box('IcePedestal', V(b[1] - 0.55, Y, b[2] - 0.55), V(b[1] + 0.55, Y + b[3], b[2] + 0.55), iceB)
 		ped.Reflectance = 0.15
 		g:box('IcePedestalCap', V(b[1] - 0.6, Y + b[3] - 0.08, b[2] - 0.6), V(b[1] + 0.6, Y + b[3], b[2] + 0.6), snow)
 		local cy = Y + b[3] + b[4] / 2
-		local s2 = Stations.target(k, CFrame.new(b[1], Y + b[3], b[2] + 0.2), V(b[1], cy, b[2]), 'Tip')
+		local s2 = Stations.target(k, CFrame.new(b[1], Y + b[3], b[2] + 0.2), V(b[1], cy, b[2]), 'Tip', false, 'Ice')
 		Stations.ice(s2, 'IceBlock', CFrame.new(b[1], cy, b[2]) * CFrame.Angles(0, math.rad(b[1] > 0 and 20 or -15), 0), b[4])
 	end
 end
 
--- 7 Toxic: a toxic barrel on a crate (main), green bottles on a shelf, a second barrel, glowing puddles, a dark
--- container wall with ribs, a hazard-stripe band and a neon drip sign; a hazard sign hangs from the gantry.
+-- 7 Toxic: a big toxic barrel with a target face on a pallet and two crates (main), green bottles on a shelf
+-- under a hanging hazard sign, a second barrel, glowing puddles, a dark container wall with ribs, a hazard
+-- stripe and a neon drip sign.
 function Stations.Lanes.toxic(k)
 	local t, Y, g = k.t, Stations.MAT_Y, k.gear
 	local neon, dark, navy = C(60, 255, 90), C(20, 64, 58), C(24, 30, 70)
 	Stations.gantry(g, t)
 	local back = k.st:group('Backstop')
 	local z = Stations.BACK_Z
-	Stations.wall(back, t, dark, M.SmoothPlastic, 5.4)
+	local h = 7.0
+	Stations.wall(back, t, dark, M.SmoothPlastic, h)
 	for i = 0, 7 do
 		local x = -3.7 + i * 1.06
-		back:box('Rib', V(x - 0.14, 0.6, z - 0.12), V(x + 0.14, Y + 4.7, z + 0.1), dark:Lerp(C(255, 255, 255), 0.12))
+		back:box('Rib', V(x - 0.14, 0.6, z - 0.12), V(x + 0.14, Y + h - 0.75, z + 0.1), dark:Lerp(C(255, 255, 255), 0.12))
 	end
 	-- Hazard band: yellow with black slanted bars.
-	back:box('HazardBand', V(-4.3, Y + 4.75, z - 0.16), V(4.3, Y + 5.35, z + 0.1), C(255, 214, 30))
+	back:box('HazardBand', V(-4.3, Y + h - 0.7, z - 0.16), V(4.3, Y + h - 0.1, z + 0.1), C(255, 214, 30))
 	for i = 0, 7 do
-		decor(back:part('HazardBar', V(0.35, 0.82, 0.05), CFrame.new(-3.75 + i * 1.07, Y + 5.05, z - 0.18) * CFrame.Angles(0, 0, math.rad(40)), C(30, 30, 36)))
+		decor(back:part('HazardBar', V(0.35, 0.82, 0.05), CFrame.new(-3.75 + i * 1.07, Y + h - 0.4, z - 0.18) * CFrame.Angles(0, 0, math.rad(40)), C(30, 30, 36)))
 	end
-	-- The drip sign: a neon drop (a disc and a point) on a dark plate.
-	Stations.disc(back, 'SignPlate', CFrame.new(0, Y + 2.9, z - 0.2), 1.55, 0.14, navy)
-	Stations.disc(back, 'Drip', CFrame.new(0, Y + 2.6, z - 0.32), 0.95, 0.14, neon, M.Neon)
-	decor(back:part('DripTip', V(1.34, 1.34, 0.14), CFrame.new(0, Y + 3.15, z - 0.32) * CFrame.Angles(0, 0, math.pi / 4), neon, M.Neon))
-	Stations.disc(back, 'DripShine', CFrame.new(-0.3, Y + 2.85, z - 0.42), 0.22, 0.08, C(220, 255, 220), M.Neon)
-	-- Hazard diamond hanging from the beam (decor).
-	for _, sx in { -1, 1 } do g:box('SignChain', V(sx * 0.5 - 0.04, Stations.GANTRY_Y - 0.8, Stations.GANTRY_Z - 0.04), V(sx * 0.5 + 0.04, Stations.GANTRY_Y, Stations.GANTRY_Z + 0.04), C(52, 54, 66)) end
-	g:part('HazardSign', V(1.25, 1.25, 0.12), CFrame.new(0, Stations.GANTRY_Y - 1.5, Stations.GANTRY_Z) * CFrame.Angles(0, 0, math.pi / 4), C(255, 214, 30))
-	g:part('HazardSignMark', V(0.22, 0.6, 0.06), CFrame.new(0, Stations.GANTRY_Y - 1.4, Stations.GANTRY_Z - 0.08), C(30, 30, 36))
-	g:part('HazardSignDot', V(0.22, 0.22, 0.06), CFrame.new(0, Stations.GANTRY_Y - 1.9, Stations.GANTRY_Z - 0.08), C(30, 30, 36))
-	-- Main: a toxic barrel standing on a stamped crate.
+	-- The drip sign (a neon drop on a dark plate), off to the right of the barrel stack.
+	local sx, sy = 2.45, Y + 4.4
+	Stations.disc(back, 'SignPlate', CFrame.new(sx, sy, z - 0.2), 1.25, 0.14, navy)
+	Stations.disc(back, 'Drip', CFrame.new(sx, sy - 0.25, z - 0.32), 0.75, 0.14, neon, M.Neon)
+	decor(back:part('DripTip', V(1.06, 1.06, 0.14), CFrame.new(sx, sy + 0.18, z - 0.32) * CFrame.Angles(0, 0, math.pi / 4), neon, M.Neon))
+	Stations.disc(back, 'DripShine', CFrame.new(sx - 0.24, sy - 0.05, z - 0.42), 0.18, 0.08, C(220, 255, 220), M.Neon)
+	-- Hazard diamond hanging from the beam over the bottle shelf (decor).
+	local hx = -2.6
+	for _, ox in { -0.5, 0.5 } do g:box('SignChain', V(hx + ox - 0.08, Stations.GANTRY_Y - 0.8, Stations.GANTRY_Z - 0.08), V(hx + ox + 0.08, Stations.GANTRY_Y, Stations.GANTRY_Z + 0.08), C(52, 54, 66)) end
+	g:part('HazardSign', V(1.25, 1.25, 0.12), CFrame.new(hx, Stations.GANTRY_Y - 1.5, Stations.GANTRY_Z) * CFrame.Angles(0, 0, math.pi / 4), C(255, 214, 30))
+	g:part('HazardSignMark', V(0.22, 0.6, 0.06), CFrame.new(hx, Stations.GANTRY_Y - 1.4, Stations.GANTRY_Z - 0.08), C(30, 30, 36))
+	g:part('HazardSignDot', V(0.22, 0.22, 0.06), CFrame.new(hx, Stations.GANTRY_Y - 1.9, Stations.GANTRY_Z - 0.08), C(30, 30, 36))
+	-- Main: a big toxic barrel with a target face, on a pallet and two stamped crates.
 	local mz = 6.0
-	g:box('Pallet', V(-1.0, Y, mz - 1.0), V(1.0, Y + 0.35, mz + 1.0), C(150, 105, 60))
-	local crate = g:box('Crate', V(-0.9, Y + 0.35, mz - 0.9), V(0.9, Y + 1.95, mz + 0.9), navy)
-	Stations.stamp(crate, Stations.SIDES, 1.8, 1.6, C(5, 150, 35))
-	local crate2 = g:part('Crate', V(1.4, 1.1, 1.4), CFrame.new(0.05, Y + 2.5, mz) * CFrame.Angles(0, math.rad(8), 0), dark)
-	Stations.stamp(crate2, Stations.SIDES, 1.4, 1.1, C(5, 150, 35))
-	local sw = Stations.target(k, CFrame.new(0, Y + 3.05, mz + 0.45), V(0, Y + 4.2, mz), 'Tip', true)
-	Stations.drum(sw, V(0, Y + 3.05, mz), 0.78, 2.3, neon, navy, C(10, 90, 30), M.Neon)
-	-- Green bottles on a little shelf, and a barrel on the floor.
-	local shelf = Y + 2.3
-	for _, sx in { -1, 1 } do g:box('ShelfLeg', V(-2.6 + sx * 0.85 - 0.1, Y, 4.5 - 0.1), V(-2.6 + sx * 0.85 + 0.1, shelf, 4.5 + 0.1), navy) end
-	g:box('Shelf', V(-3.65, shelf - 0.2, 4.15), V(-1.55, shelf, 4.85), navy)
+	g:box('Pallet', V(-1.05, Y, mz - 1.05), V(1.05, Y + 0.35, mz + 1.05), C(150, 105, 60))
+	local crate = g:box('Crate', V(-0.95, Y + 0.35, mz - 0.95), V(0.95, Y + 2.35, mz + 0.95), navy)
+	Stations.stamp(crate, Stations.SIDES, 1.9, 2.0, C(5, 150, 35))
+	local crate2 = g:part('Crate', V(1.6, 1.8, 1.6), CFrame.new(0.05, Y + 3.25, mz) * CFrame.Angles(0, math.rad(8), 0), dark)
+	Stations.stamp(crate2, Stations.SIDES, 1.6, 1.8, C(5, 150, 35))
+	local base = Y + 4.15
+	local sw = Stations.target(k, CFrame.new(0, base, mz + 0.5), V(0, base + 1.25, mz - 1.0), 'Tip', true, 'Barrel')
+	Stations.drum(sw, V(0, base, mz), 0.95, 2.5, neon, navy, C(10, 90, 30), M.Neon)
+	Stations.bullseye(sw, CFrame.new(0, base + 1.25, mz - 1.02), 0.75, { C(255, 255, 255), navy, neon }, { M.SmoothPlastic, M.SmoothPlastic, M.Neon })
+	-- Green bottles on a little shelf (they shatter), and a barrel on the floor.
+	local shelf = Y + 3.0
+	for _, ox in { -1, 1 } do g:box('ShelfLeg', V(-2.6 + ox * 0.85 - 0.18, Y, 4.5 - 0.18), V(-2.6 + ox * 0.85 + 0.18, shelf, 4.5 + 0.18), navy) end
+	g:box('Shelf', V(-3.7, shelf - 0.25, 4.1), V(-1.5, shelf, 4.9), navy)
 	for _, x in { -3.1, -2.1 } do
-		local base = V(x, shelf, 4.5)
-		local s2 = Stations.target(k, CFrame.new(base + V(0, 0, 0.2)), base + V(0, 0.6, 0), 'Tip')
-		Stations.bottle(s2, base, 0.8, C(60, 220, 90), C(24, 30, 70), M.Neon)
+		local b = V(x, shelf, 4.5)
+		local s2 = Stations.target(k, CFrame.new(b + V(0, 0, 0.2)), b + V(0, 0.7, 0), 'Shatter', false, 'Glass', neon)
+		Stations.bottle(s2, b, 0.95, C(60, 220, 90), { label = navy, stripe = neon, material = M.Neon })
 	end
-	local s3 = Stations.target(k, CFrame.new(2.7, Y, 5.0), V(2.7, Y + 0.95, 4.6), 'Tip')
+	local s3 = Stations.target(k, CFrame.new(2.7, Y, 5.0), V(2.7, Y + 0.95, 4.6), 'Tip', false, 'Barrel')
 	Stations.drum(s3, V(2.7, Y, 4.6), 0.66, 1.9, neon, navy, C(10, 90, 30), M.Neon)
 	-- Glowing puddles on the dark mat.
 	for _, p in { { -1.4, 2.0, 1.1 }, { 1.9, 1.1, 0.75 }, { -0.4, 7.6, 0.8 } } do
@@ -1154,60 +1254,48 @@ function Stations.Lanes.toxic(k)
 	end
 end
 
--- 8 Gold: a gold gong (main) on the gantry, gold bottles on a gold shelf, a gold plate on a post, a gold
--- starburst wall with gems and a neon gold top line, a spinning coin on the beam, lemon nuggets on the floor.
+-- 8 Gold, the top lane: a big gold gong (main) on crimson velvet in a deep-gold wall with cream trim and orange
+-- rays, golden neon on the gantry, a turning crown on the beam, gold bottles on a gold shelf, a gold plate on a
+-- post, lemon nuggets on the sand and a velvet band on the bench (a VIP counter).
 function Stations.Lanes.gold(k)
 	local t, Y, g = k.t, Stations.MAT_Y, k.gear
-	local gold, deep, white, ruby = C(255, 222, 40), C(245, 190, 0), C(255, 252, 235), C(235, 30, 70)
-	Stations.gantry(g, t)
-	-- The coin on the beam (it turns slowly: HoodMotion).
-	local cc, coin = g:group('Coin')
-	local at = CFrame.new(0, Stations.GANTRY_Y + 1.85, Stations.GANTRY_Z)
-	Stations.disc(cc, 'CoinRim', at, 0.85, 0.22, deep)
-	Stations.disc(cc, 'CoinFace', at * CFrame.new(0, 0, 0), 0.7, 0.3, gold)
-	Stations.starburst(cc, at * CFrame.new(0, 0, -0.17), 0.62, 0.06, white)
-	Stations.starburst(cc, at * CFrame.new(0, 0, 0.17), 0.62, 0.06, white)
-	g:box('CoinStand', V(-0.12, Stations.GANTRY_Y + 0.8, Stations.GANTRY_Z - 0.12), V(0.12, Stations.GANTRY_Y + 1.05, Stations.GANTRY_Z + 0.12), deep)
-	for _, p in coin:GetDescendants() do if p:IsA('BasePart') then decor(p) end end
-	coin.WorldPivot = cc:world(at)
-	coin:SetAttribute('Spin', 70)
-	coin:AddTag('HoodMotion')
-	-- Wall: lemon gold with a deep-gold starburst, a white ring and a ruby, gems at the corners, neon top line.
+	local gold, deep, white, ruby, cream = C(255, 222, 40), C(245, 190, 0), C(255, 252, 235), C(235, 30, 70), C(255, 248, 220)
+	Stations.gantry(g, t, C(255, 240, 120))
+	g:box('CrownPlinth', V(-0.5, Stations.GANTRY_Y + 0.8, Stations.GANTRY_Z - 0.4), V(0.5, Stations.GANTRY_Y + 0.95, Stations.GANTRY_Z + 0.4), deep)
+	Stations.crown(g, CFrame.new(0, Stations.GANTRY_Y + 0.95, Stations.GANTRY_Z))
+	-- Wall: deep gold with cream trim, orange rays behind a gold-rimmed crimson velvet disc, two gems.
 	local back = k.st:group('Backstop')
 	local z = Stations.BACK_Z
-	Stations.wall(back, t, t.frame, M.SmoothPlastic, 5.4)
-	-- A crimson velvet disc in a gold rim behind the gong (gold on red reads; gold on gold did not), sun rays
-	-- of deep gold round it.
-	Stations.starburst(back, CFrame.new(0, Y + 4.1, z - 0.08), 4.9, 0.12, deep)
-	Stations.disc(back, 'VelvetRim', CFrame.new(0, Y + 4.1, z - 0.2), 2.35, 0.14, C(255, 236, 80))
-	Stations.disc(back, 'Velvet', CFrame.new(0, Y + 4.1, z - 0.26), 2.12, 0.14, C(175, 18, 48))
+	local h = 7.4
+	Stations.wall(back, t, C(240, 180, 0), M.SmoothPlastic, h)
+	Stations.wallLines(back, h, cream, M.SmoothPlastic, 0.3)
+	Stations.starburst(back, CFrame.new(0, Y + 5.8, z - 0.08), 4.2, 0.12, C(255, 150, 0))
+	Stations.disc(back, 'VelvetRim', CFrame.new(0, Y + 5.8, z - 0.2), 2.62, 0.14, C(255, 236, 80))
+	Stations.disc(back, 'Velvet', CFrame.new(0, Y + 5.8, z - 0.26), 2.4, 0.14, C(175, 18, 48))
 	for _, s in { { -3.45, 1.2, C(60, 140, 255) }, { 3.45, 1.2, C(60, 220, 120) } } do
 		back:part('Gem', V(0.42, 0.42, 0.25), CFrame.new(s[1], Y + s[2], z - 0.08) * CFrame.Angles(0, 0, math.pi / 4), s[3], M.Glass)
 	end
-	for _, b in { { V(-4.3, Y + 5.4, z + 0.02), V(-2.9, Y + 5.52, z + 0.2) }, { V(2.9, Y + 5.4, z + 0.02), V(4.3, Y + 5.52, z + 0.2) },
-		{ V(-2.9, Y + 6.2, z + 0.17), V(-1.5, Y + 6.32, z + 0.35) }, { V(1.5, Y + 6.2, z + 0.17), V(2.9, Y + 6.32, z + 0.35) }, { V(-1.5, Y + 6.8, z + 0.32), V(1.5, Y + 6.92, z + 0.5) } } do
-		decor(back:box('GoldNeon', b[1], b[2], C(255, 236, 80), M.Neon)).CastShadow = false
-	end
 	-- Main: the gong.
-	local sw = Stations.target(k, CFrame.new(0, Stations.GANTRY_Y, Stations.GANTRY_Z), V(0, 4.8, Stations.GANTRY_Z), 'Swing', true)
-	Stations.disc(sw, 'GongRim', CFrame.new(0, 4.8, Stations.GANTRY_Z + 0.03), 1.68, 0.22, deep)
-	Stations.disc(sw, 'Gong', CFrame.new(0, 4.8, Stations.GANTRY_Z - 0.02), 1.45, 0.28, gold)
-	Stations.disc(sw, 'GongRing', CFrame.new(0, 4.8, Stations.GANTRY_Z - 0.06), 0.9, 0.32, deep)
-	Stations.disc(sw, 'GongBoss', CFrame.new(0, 4.8, Stations.GANTRY_Z - 0.1), 0.64, 0.36, gold)
-	sw:part('GongRuby', V(0.46, 0.46, 0.3), CFrame.new(0, 4.8, Stations.GANTRY_Z - 0.3) * CFrame.Angles(0, 0, math.pi / 4), ruby, M.Glass)
-	Stations.chains(sw, 0, 4.8 + 1.62, 0.7)
+	local cy = 6.2
+	local sw = Stations.target(k, CFrame.new(0, Stations.GANTRY_Y, Stations.GANTRY_Z), V(0, cy, Stations.GANTRY_Z), 'Swing', true, 'Ding')
+	Stations.disc(sw, 'GongRim', CFrame.new(0, cy, Stations.GANTRY_Z + 0.03), 2.0, 0.22, deep)
+	Stations.disc(sw, 'Gong', CFrame.new(0, cy, Stations.GANTRY_Z - 0.02), 1.75, 0.28, gold)
+	Stations.disc(sw, 'GongRing', CFrame.new(0, cy, Stations.GANTRY_Z - 0.06), 1.08, 0.32, deep)
+	Stations.disc(sw, 'GongBoss', CFrame.new(0, cy, Stations.GANTRY_Z - 0.1), 0.78, 0.36, gold)
+	sw:part('GongRuby', V(0.52, 0.52, 0.3), CFrame.new(0, cy, Stations.GANTRY_Z - 0.3) * CFrame.Angles(0, 0, math.pi / 4), ruby, M.Glass)
+	Stations.chains(sw, 0, cy + 1.9, 0.8)
 	-- Gold bottles on a gold shelf (left) and a gold plate on a post (right).
-	local shelf = Y + 2.2
-	for _, sx in { -1, 1 } do g:box('ShelfLeg', V(-2.6 + sx * 0.85 - 0.1, Y, 4.5 - 0.1), V(-2.6 + sx * 0.85 + 0.1, shelf, 4.5 + 0.1), deep) end
-	g:box('Shelf', V(-3.65, shelf - 0.2, 4.15), V(-1.55, shelf, 4.85), deep)
+	local shelf = Y + 3.0
+	for _, ox in { -1, 1 } do g:box('ShelfLeg', V(-2.6 + ox * 0.85 - 0.18, Y, 4.5 - 0.18), V(-2.6 + ox * 0.85 + 0.18, shelf, 4.5 + 0.18), deep) end
+	g:box('Shelf', V(-3.7, shelf - 0.25, 4.1), V(-1.5, shelf, 4.9), deep)
 	for _, x in { -3.1, -2.1 } do
-		local base = V(x, shelf, 4.5)
-		local s2 = Stations.target(k, CFrame.new(base + V(0, 0, 0.2)), base + V(0, 0.6, 0), 'Tip')
-		Stations.bottle(s2, base, 0.8, gold, white)
+		local b = V(x, shelf, 4.5)
+		local s2 = Stations.target(k, CFrame.new(b + V(0, 0, 0.2)), b + V(0, 0.7, 0), 'Shatter', false, 'Glass', gold)
+		Stations.bottle(s2, b, 0.95, gold, { label = white, stripe = ruby, cap = ruby })
 	end
-	g:box('PlatePost', V(2.45, Y, 5.2), V(2.75, Y + 2.4, 5.5), deep)
-	local s3 = Stations.target(k, CFrame.new(2.6, Y + 2.4, 5.15), V(2.6, Y + 3.05, 5.05), 'Tip')
-	Stations.plate(s3, CFrame.new(2.6, Y + 3.05, 5.05), 1.3, gold, deep, M.SmoothPlastic, white)
+	g:box('PlatePost', V(2.4, Y, 5.15), V(2.8, Y + 3.0, 5.55), deep)
+	local s3 = Stations.target(k, CFrame.new(2.6, Y + 3.0, 5.15), V(2.6, Y + 3.65, 5.05), 'Tip', false, 'Ding')
+	Stations.plate(s3, CFrame.new(2.6, Y + 3.65, 5.05), 1.3, gold, deep, M.SmoothPlastic, white)
 	-- Lemon nuggets on the sand, well apart.
 	local d = g:group('Nuggets')
 	Stations.nugget(d, -1.9, 1.6, 1.0, 0.4)
@@ -1293,7 +1381,7 @@ function Stations.build(ctx, stationId, opts)
 	-- Where the player stands to train: the shooter's box, from the aisle edge to just short of the bench.
 	local zone = st:box('TrainingZone', V(-MX, Y - 0.06, -Stations.HALF_Z), V(MX, Y, Stations.BOX_Z), P.white)
 	zone.Transparency, zone.CanCollide, zone.CanQuery, zone.CanTouch, zone.CastShadow = 1, false, false, false, false
-	Stations.bench(st, t)
+	Stations.bench(st, t, tier)
 
 	-- Equipment: the stands and gantry (Gear) and the knockable targets (Targets).
 	local eq = st:group('Equipment')
