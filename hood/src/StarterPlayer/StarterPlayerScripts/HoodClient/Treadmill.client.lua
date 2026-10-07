@@ -6,6 +6,7 @@
 --     UNLOCKED / LOCKED, or your walk speed while you run on it
 --   * alive: idle screens breathe (+-12% at 0.5 Hz); while anyone runs on a treadmill its screen holds bright,
 --     its light doubles and its mist thickens
+--   * the x999 (Sprint) sways its smoke lines (Beams SmokeLine1..22) within 70 studs of the camera
 --   * you run: on an unlocked belt your character plays its run animation in place, quicker on Run and Sprint,
 --     and "+3 Speed" pops over the screen every time the server pays you
 -- The belt pattern math is shared with the map builder (Config/Treadmills.chevron).
@@ -64,6 +65,14 @@ local function record(model)
 			r.mist, r.mistRate = d, d:GetAttribute('BaseRate') or d.Rate
 		elseif d:IsA('PointLight') and d.Name == 'ScreenLight' then
 			r.light, r.lightBase = d, d.Brightness
+		elseif d:IsA('Beam') and string.sub(d.Name, 1, 9) == 'SmokeLine' and d.Attachment1 then
+			r.lines = r.lines or {}
+			local a1 = d.Attachment1
+			table.insert(r.lines, {
+				beam = d, tip = a1, base = a1.CFrame, baseY = a1:GetAttribute('BaseY') or a1.CFrame.Position.Y,
+				c0 = d:GetAttribute('BaseCurve0') or d.CurveSize0, c1 = d:GetAttribute('BaseCurve1') or d.CurveSize1,
+				period = d:GetAttribute('Period') or 3, phase = d:GetAttribute('Phase') or 0,
+			})
 		end
 	end
 	for _, s in r.slats do table.insert(r.parts, s.part) end
@@ -174,6 +183,19 @@ local function glow(r, t)
 	end
 end
 
+-- The x999's smoke lines: each S-curve breathes (CurveSize0 +-1.2 over Period, CurveSize1 +-1.0 over 1.3 Period)
+-- and its tip bobs +-0.4 stud.
+local TAU = 2 * math.pi
+local function sway(r, t)
+	for _, l in r.lines do
+		local w = TAU * t / l.period + l.phase
+		l.beam.CurveSize0 = l.c0 + 1.2 * math.sin(w)
+		l.beam.CurveSize1 = l.c1 + 1.0 * math.sin(w / 1.3 + 1.7)
+		local p = l.base.Position
+		l.tip.CFrame = l.base - p + Vector3.new(p.X, l.baseY + 0.4 * math.sin(w * 0.8 + 0.6), p.Z)
+	end
+end
+
 ---------------------------------------------------------------------------------------------- running
 -- The character's own run animation (the default Animate script's), or Roblox's stock one for its rig.
 local STOCK_RUN = { R15 = 'rbxassetid://913376220', R6 = 'rbxassetid://180426354' }
@@ -274,10 +296,12 @@ frame:Connect(function(dt)
 			for _, pos in roots do if over(r, pos) then busy = true break end end
 			r.occupied = busy and unlocked
 		end
-		if unlocked and eye and (r.belt.CFrame.Position - eye).Magnitude <= RANGE then
+		local near = eye and (r.belt.CFrame.Position - eye).Magnitude
+		if unlocked and near and near <= RANGE then
 			roll(r, dt, r.scroll)
 			glow(r, clock)
 		end
+		if r.lines and near and near <= 70 then sway(r, clock) end
 	end
 	setRunning(on)
 end)

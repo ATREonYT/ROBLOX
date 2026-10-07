@@ -192,7 +192,7 @@ const BUILTIN = { sparkles_main: 'sparkle', smoke_main: 'smoke', fire_main: 'fla
 // Preview textures that are flipbook sheets (HoodVFX names): grid size and how frames are picked.
 // random = FlipbookStartRandom with Framerate 0 (a static random frame per particle), oneshot = frames spread
 // over the particle's life, loop = plays at fps from a random start.
-const FLIP = { aura: { g: 2, mode: 'random' }, arc: { g: 2, mode: 'random' }, firepuff: { g: 4, mode: 'loop', fps: 17 }, wisp: { g: 4, mode: 'oneshot' }, wispline: { g: 4, mode: 'oneshot' }, flame: { g: 4, mode: 'loop', fps: 18 } };
+const FLIP = { aura: { g: 2, mode: 'random' }, arc: { g: 2, mode: 'random' }, firepuff: { g: 4, mode: 'loop', fps: 17 }, wisp: { g: 4, mode: 'oneshot' }, wispline: { g: 4, mode: 'random' }, flame: { g: 4, mode: 'loop', fps: 18 } };
 let FX_OPTS = {};
 function fxName(fx) {
   let name = FX_OPTS.builtinOnly ? null : fx.preview;
