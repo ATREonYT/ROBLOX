@@ -1,6 +1,7 @@
 -- The ARMORY on your screen: a prompt on every gun pedestal (Buy / Equip / Equipped), pedestals painted in
 -- your state colours (pink locked, blue owned, green equipped) with the strip and price words to match, a
--- small burst when a gun becomes yours, and everyone's equipped gun worn on the right hip (cosmetic only).
+-- small burst when a gun becomes yours, and everyone's equipped gun worn on the right hip while it isn't in
+-- their hand (the held gun tool, Shoot.client, takes its place).
 -- The server decides everything (GunService); this only asks and shows.
 --
 -- Reads the player attributes GunService keeps (OwnedGuns, EquippedGun) and Net 'ProfileUpdated' (Guns).
@@ -28,7 +29,8 @@ end
 
 ---------------------------------------------------------------------------------------------- hip gun
 -- A scaled-down copy of the equipped gun hangs muzzle-down on the right hip of every character, welded and
--- massless, so the street can see who carries what. No Tool: it never changes how punching works.
+-- massless, so the street can see who carries what. While the character holds a Tool (the gun, on a range)
+-- the holster is taken off, and it comes back when the tool is put away.
 local HIP_LENGTH = 1.7
 -- Size of a model's visible parts in its own pivot frame.
 local function extents(model)
@@ -53,6 +55,11 @@ local function holster(plr)
 	if not character then return end
 	local id = plr:GetAttribute('EquippedGun')
 	local old = character:FindFirstChild('HoodHolster')
+	if character:FindFirstChildOfClass('Tool') then
+		-- The gun is in the hand: no second copy on the hip.
+		if old then old:Destroy() end
+		return
+	end
 	if old and old:GetAttribute('GunId') == id then return end
 	if old then old:Destroy() end
 	local models = gunModels()
@@ -88,6 +95,9 @@ end
 local function watchPlayer(plr)
 	plr:GetAttributeChangedSignal('EquippedGun'):Connect(function() holster(plr) end)
 	local function spawned(character)
+		-- Equipping or putting away a tool swaps the hip gun out or back.
+		character.ChildAdded:Connect(function(child) if child:IsA('Tool') then holster(plr) end end)
+		character.ChildRemoved:Connect(function(child) if child:IsA('Tool') then holster(plr) end end)
 		-- Wait for the body (and the hip part) before hanging the gun on it.
 		local hip = character:WaitForChild('LowerTorso', 5) or character:FindFirstChild('Torso')
 		if hip then holster(plr) end

@@ -101,19 +101,23 @@ remote.OnServerEvent:Connect(function(player,id)
  equipAppearance(player,id);sync(player,profile,1,'');Data.push(player)
  Net.get('Notice'):FireClient(player,(booth and 'Evolved into ' or '')..Skins.ById[id].Name..(booth and '!' or ' equipped!')..' +'..Skins.ById[id].Gain..' Power / second.')
 end)
--- Punching: while you train on a bag, each click or tap is a punch worth a tenth of your per-second gain
--- (at least 1) times your gun's multiplier, up to about 7 a second. The training mat check is the same one
--- the passive gain uses.
+-- Shooting: while you stand in an unlocked range's shooter's box, each shot (click, tap SHOOT or R2) pays a
+-- tenth of your per-second gain (at least 1) times your gun's multiplier (ShotRules.pay), up to about 7 a
+-- second. Where you stand is checked now, against the same lane mats the passive gain uses.
 local RateLimiter=require(script.Parent.RateLimiter)
-local punchLimit=RateLimiter.new(8,7)
-Net.get('Punch').OnServerEvent:Connect(function(player)
- if not punchLimit.allow(player) then return end
- local profile=Data.get(player);local station=player:GetAttribute('TrainingStation') or ''
- if not profile or station=='' or station:find('Locked:') then return end
- local bonus=math.max(1,math.floor((player:GetAttribute('PowerRate') or 1)*0.1))*(player:GetAttribute('GunMultiplier') or 1)
- profile.Data.Rep=math.min(1e12,profile.Data.Rep+bonus)
+local ShotRules=require(RS.Shared.ShotRules)
+local shotLimit=RateLimiter.new(ShotRules.Burst,ShotRules.PerSecond)
+Net.get('Shoot').OnServerEvent:Connect(function(player)
+ if not shotLimit.allow(player) then return end
+ local profile=Data.get(player);local c=player.Character;local root=c and c:FindFirstChild('HumanoidRootPart');local h=c and c:FindFirstChildOfClass('Humanoid')
+ if not profile or not root or not h or h.Health<=0 then return end
+ local multiplier,station=Rules.training(profile.Data.Rep,f:PointToObjectSpace(root.Position),zones)
+ if not ShotRules.counts(station) then return end
+ -- (Your per-second gain on this lane, worked out now rather than from last second's PowerRate.)
+ local rate=Skins.gain(profile.Data.EquippedSkin,multiplier)
+ profile.Data.Rep=math.min(1e12,profile.Data.Rep+ShotRules.pay(rate,player:GetAttribute('GunMultiplier')))
 end)
-Players.PlayerRemoving:Connect(function(p) cooldown[p]=nil;applied[p]=nil;punchLimit.remove(p) end)
+Players.PlayerRemoving:Connect(function(p) cooldown[p]=nil;applied[p]=nil;shotLimit.remove(p) end)
 local boardTime=0
 while task.wait(1) do
  local rows={}

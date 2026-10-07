@@ -8,8 +8,8 @@
 //   bubble   256  single               soap/ooze bubble: thin rim, faint fill, a highlight and a crescent
 //   snow     256  single               six-armed snowflake with side branches and a faint halo
 //   comet    256  single (Beam)        a bright head at U ~0.14 with a tail fading toward U = 1 (sweeping arcs)
-//   stamp    128  tiling Texture       the reference's embossed X: both diagonals as a dark groove with a light
-//                                      edge below-right (the PNG carries both; Texture.Color3 stays white)
+//   stamp    128  tiling Texture       the reference's embossed X: both diagonals as a 20 px groove drawn in
+//                                      WHITE; Texture.Color3 tints it per theme (gold stays lemon, not olive)
 //   firepuff 1024 4x4 Loop             a lumpy, round cartoon fire puff with a hot core (no pointed tip)
 //   streakup 256  single               a straight, thin vertical wisp, fading in and out along its length
 const zlib = require('zlib');
@@ -189,23 +189,20 @@ function comet() {
   return im;
 }
 // ---------------------------------------------------------------- stamp: embossed X (tiling, no border)
-// Both diagonals cut as a 12 px groove (black, alpha 0.35) with a 4 px highlight 4 px below-right of it
-// (white, alpha 0.35): chunky enough to read from the player's camera, and one PNG darkens and lights any base
-// colour (gold stays lemon, not olive).
+// Both diagonals cut as one 20 px groove in white (alpha 0.9) with soft 1 px edges. The game tints it per theme
+// through Texture.Color3 (a darker shade of the face, or the theme's own groove colour), so one PNG gives a
+// saturated groove on every base colour: one X per facet per section, chunky enough to read from the aisle.
 function stamp() {
   const N = 128, rgba = Buffer.alloc(N * N * 4);
   const diag = (x, y) => { const u = x / N, v = y / N; return Math.min(Math.abs(u - v), Math.abs(u + v - 1)) / Math.SQRT2 * N; }; // px to the X
   for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-    let groove = 0, hi = 0;
+    let groove = 0;
     for (let sy = 0; sy < 3; sy++) for (let sx = 0; sx < 3; sx++) { // 3x3 supersampling for clean edges
       const px = x + (sx + 0.5) / 3, py = y + (sy + 0.5) / 3;
-      if (diag(px, py) <= 6) groove += 1 / 9;
-      else if (diag(px - 4, py - 4) <= 2) hi += 1 / 9;
+      if (diag(px, py) <= 10) groove += 1 / 9;
     }
-    const aG = 0.35 * groove, aH = 0.35 * hi, a = aG + aH * (1 - aG);
-    const c = a > 0 ? Math.round(255 * (aH * (1 - aG)) / a) : 255;
-    rgba[(y * N + x) * 4] = rgba[(y * N + x) * 4 + 1] = rgba[(y * N + x) * 4 + 2] = c;
-    rgba[(y * N + x) * 4 + 3] = Math.round(a * 255);
+    rgba[(y * N + x) * 4] = rgba[(y * N + x) * 4 + 1] = rgba[(y * N + x) * 4 + 2] = 255;
+    rgba[(y * N + x) * 4 + 3] = Math.round(0.9 * groove * 255);
   }
   writePng(path.join(OUT, 'stamp.png'), N, N, rgba);
   console.log('wrote stamp', N + 'x' + N);
@@ -213,8 +210,8 @@ function stamp() {
 // ---------------------------------------------------------------- firepuff: round cartoon fire (4x4 Loop)
 function firepuff(fr, f) {
   const N = fr.w, n1 = perlin(77), r = rng(91);
-  // A soft lumpy blob: round lobes round a core make the outline, but the alpha is a smooth falloff over the
-  // outer 35% (no hard rim, no drawn lump outlines), with a hot core.
+  // A soft lumpy blob: round lobes round a core make the outline, and the alpha falls off over the outer 20%
+  // only, so a puff keeps a readable flame edge (no hard rim, no drawn lump outlines), with a hot core.
   const lobes = [];
   for (let i = 0; i < 8; i++) {
     const a = i / 8 * 6.283 + r() * 0.4, up = Math.sin(a) < 0 ? 1.15 : 0.85;
@@ -229,7 +226,7 @@ function firepuff(fr, f) {
       dens = Math.max(dens, 1 - Math.hypot(u - Math.cos(L.a) * d, v - Math.sin(L.a) * d) / rr);
     }
     const warp = (fbm(n1, u * 6 + Math.cos(t) * 0.7, v * 6 + Math.sin(t) * 0.7, 3) - 0.5) * 0.25;
-    const a = smooth(0.0, 0.35, dens + warp); // 0 at the outline, full 35% of the way in
+    const a = smooth(0.0, 0.2, dens + warp); // 0 at the outline, full 20% of the way in
     const core = 1 - Math.hypot(u, v + 0.02) / 0.24;
     fr.a[y * N + x] = clamp(a);
     fr.l[y * N + x] = clamp(0.9 + 0.1 * smooth(0, 0.8, core));

@@ -1,5 +1,7 @@
--- The ARMORY: buy guns with Cash and equip one. The equipped gun multiplies the Power each punch pays
--- (LobbyService's punch handler reads the player attribute GunMultiplier).
+-- The ARMORY: buy guns with Cash and equip one. The equipped gun multiplies the Power each shot pays at the
+-- ranges (LobbyService's Shoot handler reads the player attribute GunMultiplier), and it is the gun you hold:
+-- every player carries one gun Tool (Shared/GunTool) of their equipped gun, given on spawn and swapped
+-- (in the hand if it was held) whenever the equipped gun changes. Shoot.client takes it out on a range.
 --
 -- Remotes (Shared/Net): BuyGun(id) and EquipGun(id), both RemoteEvents. Everything is checked here: the id,
 -- a rate limit, that the profile is loaded and the character alive, that you stand within GunRules.Range of
@@ -19,6 +21,7 @@ local ActiveMap = require(RS.Shared.ActiveMap)
 local Format = require(RS.Shared.Format)
 local Guns = require(RS.Shared.Config.Guns)
 local GunRules = require(RS.Shared.GunRules)
+local GunTool = require(RS.Shared.GunTool)
 
 while not RS:GetAttribute('FoundationReady') do task.wait(0.1) end
 -- No armory on this map is fine: attributes still get set (the pistol's x1), and buy requests are refused.
@@ -33,15 +36,25 @@ local function pointFor(id)
 	return p
 end
 
+-- The held gun follows EquippedGun (a failed build never blocks the attributes).
+local function giveTool(player)
+	local id = player:GetAttribute('EquippedGun')
+	if type(id) == 'string' then
+		local ok, err = pcall(GunTool.sync, player, id)
+		if not ok then warn('[GunService] gun tool: ' .. tostring(err)) end
+	end
+end
+
 local function sync(player, profile)
 	local guns = GunRules.sanitize(profile.Data.Guns)
 	player:SetAttribute('EquippedGun', guns.Equipped)
 	player:SetAttribute('GunMultiplier', GunRules.multiplier(guns))
 	player:SetAttribute('OwnedGuns', GunRules.ownedList(guns))
+	giveTool(player)
 end
 
 local function notice(player, text) Net.get('Notice'):FireClient(player, text) end
-local function perPunch(gun) return 'x' .. gun.Multiplier .. ' Power per punch' end
+local function perShot(gun) return 'x' .. gun.Multiplier .. ' Power per shot' end
 
 -- Shared front half of both requests: valid id, under the rate limit, profile loaded, alive, and how far
 -- you stand from the gun. Returns nil when the request should be dropped silently.
@@ -79,7 +92,7 @@ Net.get('BuyGun').OnServerEvent:Connect(function(player, id)
 			-- Already yours (the client was a beat behind): treat it as an equip.
 			if GunRules.canEquip(guns, id, distance) then
 				equip(player, profile, gun)
-				notice(player, 'Equipped ' .. gun.Name .. '! ' .. perPunch(gun))
+				notice(player, 'Equipped ' .. gun.Name .. '! ' .. perShot(gun))
 			end
 		elseif why == 'far' then
 			notice(player, 'Walk up to the gun to buy it')
@@ -91,7 +104,7 @@ Net.get('BuyGun').OnServerEvent:Connect(function(player, id)
 	profile.Data.Cash -= gun.Cost
 	guns.Owned[gun.Id] = true
 	equip(player, profile, gun)
-	notice(player, 'Bought ' .. gun.Name .. '! ' .. perPunch(gun))
+	notice(player, 'Bought ' .. gun.Name .. '! ' .. perShot(gun))
 	-- The top guns are news for the whole server, like big stage clears.
 	if gun.Tier >= 7 then
 		for _, other in Players:GetPlayers() do
@@ -115,7 +128,7 @@ Net.get('EquipGun').OnServerEvent:Connect(function(player, id)
 		return
 	end
 	equip(player, profile, gun)
-	notice(player, 'Equipped ' .. gun.Name .. '! ' .. perPunch(gun))
+	notice(player, 'Equipped ' .. gun.Name .. '! ' .. perShot(gun))
 end)
 
 -- Attributes follow the profile: DataService flips ProfileReady once a profile has loaded.
@@ -126,6 +139,11 @@ local function watch(player)
 	end
 	player:GetAttributeChangedSignal('ProfileReady'):Connect(ready)
 	ready()
+	-- A new character gets a fresh Backpack: hand the gun over again once it exists.
+	player.CharacterAdded:Connect(function()
+		task.wait(0.1) -- (the old Backpack goes away around the spawn)
+		if player:WaitForChild('Backpack', 10) then giveTool(player) end
+	end)
 end
 Players.PlayerAdded:Connect(watch)
 for _, player in Players:GetPlayers() do task.spawn(watch, player) end

@@ -1,4 +1,5 @@
--- Game feel for hits and rewards, client-side only (the server just validates and awards Power).
+-- Game feel for hits and rewards, client-side only (the server just validates and awards Power): punches and
+-- bursts, and (Shoot.client) shots: muzzle flash, tracer, shell casing, target knock-back (section "shooting").
 -- Recipe from the animation research (research_notes/.../animation_and_vfx.md, "impact frame"):
 --   hit-stop 40-60 ms (90-120 ms for big hits) -> bag squashes and swings on an underdamped spring
 --   -> spark burst + ring -> white flash -> small camera bump -> "+Power" number pops up and drifts away.
@@ -228,6 +229,238 @@ function Juice.punch(bag, fromPosition, gained, big)
 	Juice.flash(bag.model)
 	Juice.kick(big and 0.9 or 0.35)
 	if gained then Juice.popNumber(bag.point + Vector3.new(0, 1.5, 0), '+' .. gained) end
+end
+
+
+---------------------------------------------------------------------------------------------- shooting
+-- Everything a shot shows, all client-side and pooled (a fast shooter fires ~7 times a second):
+--   Juice.gunRig(tool)            muzzle flash emitters + a flash light on the tool's Muzzle attachment, made once
+--   Juice.muzzle(rig, color, power) the flash: a hot core, a star, a few forward sparks, a 50 ms light
+--   Juice.tracer(from, to, color, width)  a neon streak (white core in a coloured glow) that fades in ~0.1 s
+--   Juice.casing(cframe, color)   a brass shell flipping out of the Eject attachment, falling and fading
+--   Juice.knocker(target)         a target's knock-back (Target model: Hinge + Swing, attribute Knock)
+local function quickEmitter(parent, name, texture, props)
+	local e = Instance.new('ParticleEmitter')
+	e.Name = name
+	e.Enabled = false
+	e.Texture = texture
+	e.LightInfluence = 0
+	e.LockedToPart = true -- the flash rides the barrel
+	for k, v in props do (e :: any)[k] = v end
+	e.Parent = parent
+	return e
+end
+function Juice.gunRig(tool)
+	local handle = tool and tool:FindFirstChild('Handle')
+	local muzzle = handle and handle:FindFirstChild('Muzzle')
+	if not muzzle then return nil end
+	local rig = muzzle:FindFirstChild('FlashCore') and { muzzle = muzzle } or nil
+	if rig then
+		rig.core, rig.star, rig.sparks, rig.light = muzzle.FlashCore, muzzle.FlashStar, muzzle.FlashSparks, muzzle:FindFirstChild('FlashLight')
+		rig.eject = handle:FindFirstChild('Eject')
+		return rig
+	end
+	rig = { muzzle = muzzle, eject = handle:FindFirstChild('Eject') }
+	rig.core = quickEmitter(muzzle, 'FlashCore', 'rbxasset://textures/particles/sparkles_main.dds', {
+		Lifetime = NumberRange.new(0.05, 0.07), Speed = NumberRange.new(0), LightEmission = 1, Brightness = 3, ZOffset = 1,
+		Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(1, 0.6) }),
+	})
+	rig.star = quickEmitter(muzzle, 'FlashStar', 'rbxasset://textures/particles/explosion01_core_main.dds', {
+		Lifetime = NumberRange.new(0.04, 0.06), Speed = NumberRange.new(0), LightEmission = 1, Brightness = 2, ZOffset = 0.8,
+		Rotation = NumberRange.new(0, 360), Transparency = NumberSequence.new(0.1),
+	})
+	rig.sparks = quickEmitter(muzzle, 'FlashSparks', 'rbxasset://textures/particles/sparkles_main.dds', {
+		Lifetime = NumberRange.new(0.08, 0.14), Speed = NumberRange.new(14, 24), SpreadAngle = Vector2.new(14, 14), Drag = 6,
+		EmissionDirection = Enum.NormalId.Front, Orientation = Enum.ParticleOrientation.VelocityParallel, Squash = NumberSequence.new(1.6),
+		LightEmission = 1, Brightness = 2, LockedToPart = false,
+	})
+	local light = Instance.new('PointLight')
+	light.Name = 'FlashLight'
+	light.Range, light.Brightness, light.Shadows, light.Enabled = 10, 3, false, false
+	light.Parent = muzzle
+	rig.light = light
+	return rig
+end
+-- power ~1 (pistol) .. 2 (top guns): the flash grows with the gun.
+function Juice.muzzle(rig, color, power)
+	if not rig then return end
+	power = power or 1
+	local hot = Color3.fromRGB(255, 244, 200)
+	rig.core.Color = ColorSequence.new(Color3.new(1, 1, 1), hot)
+	rig.core.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1.0 * power), NumberSequenceKeypoint.new(1, 1.6 * power) })
+	rig.core:Emit(1)
+	rig.star.Color = ColorSequence.new(hot, color or hot)
+	rig.star.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1.3 * power), NumberSequenceKeypoint.new(1, 0.4 * power) })
+	rig.star:Emit(1)
+	rig.sparks.Color = ColorSequence.new(hot, color or hot)
+	rig.sparks.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.18 * power), NumberSequenceKeypoint.new(1, 0) })
+	rig.sparks:Emit(math.floor(3 + 2 * power))
+	if rig.light then
+		rig.light.Color = color or hot
+		rig.light.Enabled = true
+		task.delay(0.05, function() rig.light.Enabled = false end)
+	end
+end
+
+-- Tracers: a pool of two-part streaks (a thin white neon core inside a wider coloured glow), anchored, no
+-- collisions, faded by one tween each.
+local tracerPool, tracerNext = {}, 1
+local function tracerPart(name, color, transparency)
+	local p = Instance.new('Part')
+	p.Name = name
+	p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch, p.CastShadow = true, false, false, false, false
+	p.Material = Enum.Material.Neon
+	p.Color = color
+	p.Transparency = 1
+	p:SetAttribute('Rest', transparency)
+	p.Size = Vector3.new(0.1, 0.1, 1)
+	p.Parent = workspace
+	return p
+end
+function Juice.tracer(from, to, color, width)
+	local slot = tracerPool[tracerNext]
+	if not slot or not slot.core.Parent then
+		slot = { core = tracerPart('TracerCore', Color3.new(1, 1, 1), 0), glow = tracerPart('TracerGlow', Color3.new(1, 1, 1), 0.45) }
+		tracerPool[tracerNext] = slot
+	end
+	tracerNext = tracerNext % 4 + 1
+	local length = (to - from).Magnitude
+	if length < 0.05 then return end
+	local cf = CFrame.lookAt((from + to) / 2, to)
+	width = width or 0.2
+	for _, p in { slot.core, slot.glow } do
+		local w = p == slot.core and width * 0.45 or width
+		p.Size = Vector3.new(w, w, length)
+		p.CFrame = cf
+		-- The glow is the gun's colour warmed toward tracer yellow, so a grey pistol still draws a bright line.
+		p.Color = p == slot.glow and (color or Color3.fromRGB(255, 214, 110)):Lerp(Color3.fromRGB(255, 214, 110), 0.5) or Color3.new(1, 1, 1)
+		p.Transparency = p:GetAttribute('Rest')
+		if slot.tween then slot.tween:Cancel() end
+		TweenService:Create(p, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Transparency = 1, Size = Vector3.new(w * 0.2, w * 0.2, length) }):Play()
+	end
+end
+
+-- Shell casings: a pool of eight brass cylinders flipped out to the right, falling under gravity for 0.6 s.
+local casings, casingNext, flying, casingConn = {}, 1, {}, nil
+function Juice.casing(cframe, color)
+	local p = casings[casingNext]
+	if not p or not p.Parent then
+		p = Instance.new('Part')
+		p.Name = 'Casing'
+		p.Shape = Enum.PartType.Cylinder
+		p.Size = Vector3.new(0.3, 0.13, 0.13)
+		p.Material = Enum.Material.Metal
+		p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch, p.CastShadow = true, false, false, false, false
+		p.Parent = workspace
+		casings[casingNext] = p
+	end
+	casingNext = casingNext % 8 + 1
+	p.Color = color or Color3.fromRGB(236, 184, 70)
+	p.Transparency = 0
+	local right, up = cframe.RightVector, cframe.UpVector
+	flying[p] = { pos = cframe.Position, vel = right * (5 + math.random() * 2) + up * (6 + math.random() * 2) - cframe.LookVector * 1.5, spin = 0, age = 0 }
+	if not casingConn then
+		casingConn = RunService.PreRender:Connect(function(dt)
+			for part, c in flying do
+				c.age += dt
+				c.vel += Vector3.new(0, -40, 0) * dt
+				c.pos += c.vel * dt
+				c.spin += dt * 25
+				part.CFrame = CFrame.new(c.pos) * CFrame.Angles(c.spin, c.spin * 0.6, 0)
+				if c.age > 0.45 then part.Transparency = math.min(1, (c.age - 0.45) / 0.15) end
+				if c.age > 0.6 then
+					part.Transparency = 1
+					flying[part] = nil
+				end
+			end
+			if next(flying) == nil then
+				casingConn:Disconnect()
+				casingConn = nil
+			end
+		end)
+	end
+end
+
+-- A knockable target (Equipment > Targets > Target<i>): Hinge is the pivot, everything in Swing moves with it.
+-- Knock 'Tip' tips back about the hinge's X axis and springs up again, 'Swing' swings on its hanger, 'Spin'
+-- spins about the hinge's Y axis and settles facing front, 'Pop' vanishes and grows back. :hit(strength).
+-- Targets also have idle life (k.idle; :pose(t) shows it while nothing knocks them): hanging plates sway a
+-- few degrees, spinners turn slowly, balloons bob; standing targets keep still.
+local knocking, knockConn = {}, nil
+local KNOCK = { Tip = { 3.2, 0.32, 9 }, Swing = { 1.3, 0.12, -4.5 }, Spin = { 1.2, 0.5, 26 }, Pop = { 4, 0.5, 0 } }
+function Juice.knocker(target)
+	local hinge = target:FindFirstChild('Hinge')
+	local swing = target:FindFirstChild('Swing')
+	if not hinge or not swing then return nil end
+	local style = target:GetAttribute('Knock') or 'Tip'
+	local k = { target = target, style = style, base = hinge.CFrame, parts = {}, angle = 0, vel = 0, popped = 0 }
+	local p0 = hinge.CFrame.Position
+	local phase = (p0.X * 0.37 + p0.Z * 0.61) % (2 * math.pi) -- neighbours never move in step
+	k.idle = (style == 'Swing' and function(t) return 0.05 * math.sin(1.3 * t + phase) end)
+		or (style == 'Spin' and function(t) return (0.45 * t + phase) % (2 * math.pi) end)
+		or (style == 'Pop' and function(t) return 0.12 * math.sin(2 * t + phase) end)
+		or nil
+	for _, p in swing:GetDescendants() do
+		if p:IsA('BasePart') then table.insert(k.parts, { part = p, offset = hinge.CFrame:ToObjectSpace(p.CFrame), t = p.Transparency }) end
+	end
+	local function apply()
+		local a = k.angle + (k.idle and k.idle(os.clock()) or 0)
+		local turn = (style == 'Spin') and CFrame.Angles(0, a, 0) or (style == 'Pop') and CFrame.new(0, a, 0) or CFrame.Angles(a, 0, 0)
+		local at = k.base * turn
+		for _, r in k.parts do r.part.CFrame = at * r.offset end
+	end
+	k.apply = apply
+	-- The idle pose (call every frame for targets near the camera that nothing is knocking).
+	function k:pose() if not knocking[self] then apply() end end
+	local function step(dt)
+		local spec = KNOCK[style] or KNOCK.Tip
+		if style == 'Spin' and math.abs(k.vel) > 4 then
+			-- Free spin with drag, then a spring pulls it round to the nearest front-facing turn.
+			k.vel *= math.exp(-1.6 * dt)
+			k.angle += k.vel * dt
+		else
+			local goal = style == 'Spin' and math.floor(k.angle / (2 * math.pi) + 0.5) * 2 * math.pi or 0
+			k.angle, k.vel = Juice.springStep(k.angle, k.vel, goal, spec[1], spec[2], dt)
+		end
+		if style == 'Tip' then k.angle = math.clamp(k.angle, -0.3, 1.25) end
+		if k.popped > 0 then
+			k.popped -= dt
+			if k.popped <= 0 then
+				for _, r in k.parts do r.part.Transparency = r.t end
+				k.angle, k.vel = -0.8, 0 -- grows back from a little below
+			end
+		end
+		apply()
+		local settled = k.popped <= 0 and math.abs(k.vel) < 1e-3 and math.abs(k.angle - (style == 'Spin' and math.floor(k.angle / (2 * math.pi) + 0.5) * 2 * math.pi or 0)) < 1e-3
+		if settled then
+			k.angle, k.vel = 0, 0
+			apply()
+			knocking[k] = nil
+		end
+	end
+	k.step = step
+	function k:hit(strength)
+		strength = strength or 1
+		local spec = KNOCK[style] or KNOCK.Tip
+		if style == 'Pop' then
+			if self.popped > 0 then return end
+			for _, r in self.parts do r.part.Transparency = 1 end
+			self.popped = 0.7
+		else
+			self.vel += spec[3] * strength
+		end
+		knocking[self] = true
+		if not knockConn then
+			knockConn = RunService.PreRender:Connect(function(dt)
+				for item in knocking do item.step(dt) end
+				if next(knocking) == nil then
+					knockConn:Disconnect()
+					knockConn = nil
+				end
+			end)
+		end
+	end
+	return k
 end
 
 return Juice

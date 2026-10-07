@@ -241,7 +241,7 @@ indicator.Parent = player.PlayerGui
 local pointer = label(indicator, 'Destination', 22, C(255, 224, 80))
 
 ---------------------------------------------------------------------------------------------- stations
--- Training stations in the built lobby: mat, sign, gear. The bag stations (a label with a Power row) stay in
+-- Training stations in the built lobby: shooter's box, sign, targets. The range lanes (a label with a Power row) stay in
 -- full colour while locked, like the reference: the label says Locked in red and the station's effects run at
 -- half rate. Older stations without that label (the original Block's gym) still show locked gear as a black
 -- silhouette.
@@ -273,7 +273,7 @@ for _, s in Skins.Stations do
 		stations[s.Id] = entry
 	end
 end
--- Bag-station labels like the reference's spawn view: the stations at the two ends of each row show their
+-- Range-lane labels like the reference's spawn view: the stations at the two ends of each row show their
 -- stack from anywhere, the ones in the middle of a row only up close (22 studs), so a row reads as two clean
 -- stacks instead of a pile of text. A station is in the middle when two others sit within a row pitch of it.
 local LABEL_FAR, LABEL_NEAR, NEXT_LIFT = 250, 22, Vector3.new(0, 6.5, 0)

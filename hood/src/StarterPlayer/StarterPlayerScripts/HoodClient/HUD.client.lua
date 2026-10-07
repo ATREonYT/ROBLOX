@@ -469,7 +469,7 @@ local function fillShop()
 		if child:IsA('GuiObject') then child:Destroy() end
 	end
 	if shopTab == 'Guns' then
-		shopNote.Text = 'Buy guns with Cash at the ARMORY next to spawn. Better guns = more Power per punch!'
+		shopNote.Text = 'Buy guns with Cash at the ARMORY next to spawn. Better gun = more Power per shot!'
 		local guns = GunRules and GunRules.fromAttributes(player:GetAttribute('OwnedGuns'), player:GetAttribute('EquippedGun'))
 		local cash = cashNow()
 		for _, gun in Guns.List do gunCard(gun, guns, cash).Parent = shopGrid end
@@ -732,15 +732,15 @@ local function hintText(power)
 	local gun = '<font color="#FFE76A">x' .. gunMultiplier() .. ' Power</font>'
 	if station:find('Locked:') then
 		local gym = Skins.StationById[station:sub(8)]
-		return '<font color="#FF8A8A">' .. (gym and gym.Name or 'This bag') .. ' needs ' .. short(gym and gym.Required or 0) .. ' Power</font>  •  ' .. goal
+		return '<font color="#FF8A8A">' .. (gym and gym.Name or 'This range') .. ' needs ' .. short(gym and gym.Required or 0) .. ' Power</font>  •  ' .. goal
 	end
 	-- On a treadmill (TreadmillService sets Treadmill while you run on an unlocked belt): its Speed rate.
 	local tread = TreadmillConfig and TreadmillConfig.ById[player:GetAttribute('Treadmill') or '']
 	if station == '' and tread then
 		return 'Run on the belt  •  <font color="#' .. tread.Color:ToHex() .. '">x' .. tread.Multiplier .. ' Speed</font>  •  ' .. goal
 	end
-	if station == '' then return 'Walk onto a bag to train  •  ' .. gun .. '  •  ' .. goal end
-	return 'Click / tap to train  •  ' .. gun .. '  •  ' .. goal
+	if station == '' then return 'Step into a shooting range  •  ' .. gun .. '  •  ' .. goal end
+	return 'Click / tap to shoot  •  ' .. gun .. '  •  ' .. goal
 end
 
 local lastPower, lastIndex, lastCash, lastRebirths, lastSpeed
@@ -838,11 +838,11 @@ task.spawn(function()
 end)
 
 ---------------------------------------------------------------------------------------------- layout
--- Punch.client's round PUNCH button (unscaled real pixels: 112 wide, 150 from the right edge) sits at the
+-- Shoot.client's round SHOOT button (unscaled real pixels: 112 wide, 150 from the right edge) sits at the
 -- bottom right while you train. On narrow screens the Power row and LEVEL bar slide left to stay clear of it.
 -- On bigger screens the button column sits a little lower, like the reference, clear of Roblox's chat window;
 -- phones keep it high, away from the thumbstick.
-local PUNCH_RIGHT, PUNCH_SIZE = 150, 112
+local SHOOT_RIGHT, SHOOT_SIZE = 150, 112
 local function relayout()
 	local abs = gui.AbsoluteSize
 	if abs.X < 1 or abs.Y < 1 then return end
@@ -852,8 +852,8 @@ local function relayout()
 	local phone = math.min(abs.X, abs.Y) <= 500
 	column.Position = px(LEFT, phone and 4 or math.max(4, math.floor(h * 0.46 - 231)))
 	local barWidth = phone and 480 or 560
-	local punchLeft = (abs.X - PUNCH_RIGHT - PUNCH_SIZE) / k
-	local x = math.min(w / 2, punchLeft - 12 - math.max(barWidth, 500) / 2)
+	local shootLeft = (abs.X - SHOOT_RIGHT - SHOOT_SIZE) / k
+	local x = math.min(w / 2, shootLeft - 12 - math.max(barWidth, 500) / 2)
 	status.Position = UDim2.new(0, x, 1, -12)
 	status.Size = px(barWidth, 132)
 	hint.Size = px(math.max(360, math.min(900, w - 2 * (LEFT + COLUMN + 24))), 36)

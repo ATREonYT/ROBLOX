@@ -3,8 +3,9 @@
 --
 --   HoodVFX.station(part, tier, color, size?, opts?)  aura on a training platform; returns the Aura model
 --   HoodVFX.item(part, tier, color, opts?)            glow / sparkles / fire on a displayed item; returns emitters
---   HoodVFX.theme(part, name, size?, opts?)           themed effects on a bag-station mat (lava flames, frost
---                                                     mist, toxic wisps...); returns the Theme model
+--   HoodVFX.theme(part, name, size?, opts?)           themed effects on a range lane's target field (lava
+--                                                     flames and burning barrels, rain, snow, toxic wisps...);
+--                                                     returns the Theme model
 --   HoodVFX.setEnabled(container, on)                 switch every effect under `container` (distance LOD)
 --   HoodVFX.setDensity(container, k)                  scale every emitter's Rate (e.g. 0.5 on low graphics)
 --   HoodVFX.Textures                                  name -> uploaded rbxassetid ('' = use a Roblox built-in)
@@ -79,13 +80,13 @@ local FLIPBOOK = {
 -- a soft stand-in: it supports instead of smothering); false means there is no usable stand-in, so the emitter
 -- starts switched off (attribute NeedsUpload) until the sheet is uploaded. Unlisted names: the built-in reads
 -- well enough on its own. Other builders can add their own names here.
-HoodVFX.Fallback = { wisp = 0.45, arc = 0.6, streakup = 0.7 }
+HoodVFX.Fallback = { wisp = 0.45, arc = 0.6, streakup = 0.5 }
 local FALLBACK_FADE = HoodVFX.Fallback
 -- Extra settings for a built-in stand-in: a soft glow squashed into a streak reads as rain.
 local FALLBACK_PROPS = {
 	rain = { Squash = NumberSequence.new(3), Size = NumberSequence.new(0.7) },
 	-- Smoke squashed tall and thin reads as a rising wisp, not a cloud.
-	streakup = { Squash = NumberSequence.new(2.6), Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 2.8), NumberSequenceKeypoint.new(1, 3.2) }) },
+	streakup = { Squash = NumberSequence.new(2.6), Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 2.0), NumberSequenceKeypoint.new(1, 2.4) }) },
 }
 
 -- Glow colours for tiers 1-9: green, cyan, blue, purple, pink, red, white (on black), gold, white (rainbow).
@@ -470,14 +471,17 @@ function HoodVFX.item(part, tier, color, opts)
 end
 
 ---------------------------------------------------------------------------------------------- station themes
--- Effects that belong to a bag station's mat, one theme per tier (the punching-bag stations, d2_stations):
--- `part` is the mat (effects stand on its top face and use its axes), `name` one of the keys of
+-- Effects that belong to a range lane, one theme per tier (the shooting ranges, d2_stations; the bag stations
+-- before them): `part` is the lane's target field (from the bench to the backstop):
+-- effects stand on its top face and use its axes, `name` one of the keys of
 -- HoodVFX.Themes, `size` Vector3 (width, effect height, depth) or nil for (part width, 12, part depth).
--- opts.parent (default: the part's parent), opts.color (the theme's glow colour), opts.tier, opts.bag (a part
--- of the swinging bag: lava licks up its sides). Returns the Theme model; every holder part in it is invisible.
+-- opts.parent (default: the part's parent), opts.color (the theme's glow colour), opts.tier, opts.bag (the
+-- main target or bag: lava lights it from below, and licks up a bag's sides when there are no burners),
+-- opts.burners (parts on top of burning barrels: lava sets them on fire). Returns the Theme model; every holder
+-- part in it is invisible.
 -- The mats are flat saturated colours, so nothing additive lies on them (no floor pools, decals or light
 -- shafts): the material's own particles carry each theme, as in the reference. Live particles (Rate x
--- Lifetime on the 7 x 18 mat):  stone ~12  red ~39  lava ~155  arcane ~35 (+3 comet beams)  frost ~58
+-- Lifetime, measured on the old 7 x 18 mat; the lanes' 7 x 10 field runs at ~0.57 of these):  stone ~12  red ~39  lava ~155  arcane ~35 (+3 comet beams)  frost ~58
 -- toxic ~51  shadow ~42  gold ~38 (25 big glints). All eight together ~456: thin them on phones with setDensity
 -- (the lobby client already halves locked stations).
 HoodVFX.Themes = {}
@@ -505,14 +509,15 @@ function HoodVFX.Themes.stone(ctx)
 	})
 end
 
--- 2 Red: dense pink-red rain streaking down over the whole mat, tiny splashes where it lands.
+-- 2 Red: dense pink-red rain dashing down over its own mat only (from 4 studs up, short streaks), tiny
+-- splashes where it lands.
 function HoodVFX.Themes.red(ctx)
-	local A, S, w, d, h = ctx.A, ctx.S, ctx.w, ctx.d, ctx.h
-	local sky = holder(ctx.theme, 'RainSky', ctx.top * CFrame.new(0, h * 0.7, 0), V(w * 0.98, 0.2, d * 0.98))
+	local A, S, w, d = ctx.A, ctx.S, ctx.w, ctx.d
+	local sky = holder(ctx.theme, 'RainSky', ctx.top * CFrame.new(0, 4, 0), V(w * 0.96, 0.2, d * 0.96))
 	emitter(sky, 'Rain', 'rain', {
 		EmissionDirection = Enum.NormalId.Bottom, Orientation = Enum.ParticleOrientation.VelocityParallel,
-		Rate = 80 * A, Lifetime = NR(0.3, 0.36), Speed = NR(22, 26), SpreadAngle = Vector2.new(3, 3),
-		Size = seq({ { 0, 3 * S }, { 1, 3.2 * S } }), Transparency = seq({ { 0, 1 }, { 0.12, 0 }, { 0.85, 0.05 }, { 1, 1 } }),
+		Rate = 70 * A, Lifetime = NR(0.2, 0.24), Speed = NR(16, 19), SpreadAngle = Vector2.new(3, 3),
+		Size = seq({ { 0, 1.6 }, { 1, 1.8 } }), Transparency = seq({ { 0, 1 }, { 0.12, 0 }, { 0.85, 0.05 }, { 1, 1 } }),
 		Color = cseq({ { 0, C(255, 225, 235) }, { 1, C(255, 150, 175) } }), LightEmission = 0,
 	})
 	emitter(ctx.deck, 'Splash', 'dust', {
@@ -531,9 +536,9 @@ function HoodVFX.Themes.lava(ctx)
 	local A, S, w, d = ctx.A, ctx.S, ctx.w, ctx.d
 	-- Two layers of the same soft puff: a wide orange to red-orange body, and smaller pale-yellow cores drawn in
 	-- front of it, so each flame reads yellow in the middle and red-orange at the edge.
-	local fire = cseq({ { 0, C(255, 245, 170) }, { 0.35, C(255, 190, 30) }, { 0.75, C(245, 90, 20) }, { 1, C(200, 40, 10) } })
+	local fire = cseq({ { 0, C(255, 240, 0) }, { 0.35, C(255, 190, 30) }, { 0.75, C(245, 90, 20) }, { 1, C(200, 40, 10) } })
 	local body = cseq({ { 0, C(250, 110, 10) }, { 0.5, C(235, 70, 15) }, { 1, C(190, 35, 10) } }) -- redder than the mat
-	local core = cseq({ { 0, C(255, 245, 160) }, { 0.5, C(255, 210, 40) }, { 1, C(255, 160, 10) } })
+	local core = cseq({ { 0, C(255, 240, 0) }, { 0.5, C(255, 210, 20) }, { 1, C(255, 160, 10) } })
 	local lick = cseq({ { 0, C(255, 200, 60) }, { 1, C(245, 80, 20) } })
 	local uploaded = select(2, texture('firepuff'))
 	-- Two holders (front and back half) so the aisle end is as dense as the back.
@@ -559,7 +564,23 @@ function HoodVFX.Themes.lava(ctx)
 			Color = lick, LightEmission = 0.5,
 		})
 	end
-	if ctx.bag then
+	for _, b in ctx.burners or {} do
+		-- A burning barrel: puffs and licks rising out of its open top (the part is the coals disc).
+		local top = b.CFrame * CFrame.new(0, 0, 0)
+		local fire1 = holder(ctx.theme, 'Burner', CFrame.new(top.Position + V(0, 0.15, 0)), V(0.9, 0.2, 0.9))
+		emitter(fire1, 'BurnerFire', 'firepuff', {
+			Rate = 14, Lifetime = NR(0.45, 0.8), Speed = NR(1.5, 3), SpreadAngle = Vector2.new(10, 10), Acceleration = V(0, 2, 0), ZOffset = 0.4,
+			RotSpeed = NR(-25, 25), Size = uploaded and seq({ { 0, 1.6, 0.2 }, { 0.4, 2.2, 0.3 }, { 1, 0 } }) or seq({ { 0, 1.0 }, { 0.4, 1.4, 0.2 }, { 1, 0 } }),
+			Transparency = seq({ { 0, 0.1 }, { 0.5, 0.2 }, { 1, 1 } }), Color = fire, LightEmission = 0.5,
+		})
+		emitter(fire1, 'BurnerLicks', 'flame', {
+			Orientation = Enum.ParticleOrientation.FacingCameraWorldUp, Rate = 8, Lifetime = NR(0.5, 0.8), Speed = NR(3, 4.5),
+			SpreadAngle = Vector2.new(8, 8), ZOffset = 0.5, Size = seq({ { 0, 0.7 }, { 0.4, 1.1, 0.2 }, { 1, 0 } }),
+			Transparency = seq({ { 0, 0.3 }, { 0.15, 0 }, { 1, 1 } }), Color = lick, LightEmission = 0.6,
+		})
+		pointLight(fire1, C(255, 150, 50), 1.2, 9)
+	end
+	if ctx.bag and not ctx.burners then
 		-- Two small fires on the bag's flanks (attachments on a belly slab, so they swing with it).
 		for _, sx in { -1, 1 } do
 			local a = attach(ctx.bag, 'BagFire', V(sx * ctx.bag.Size.Z / 2, -0.3, 0))
@@ -569,6 +590,8 @@ function HoodVFX.Themes.lava(ctx)
 				Color = fire, LightEmission = 0.35,
 			})
 		end
+	end
+	if ctx.bag then
 		-- The bag lit orange from below: a light one stud over the mat under it (static, not on the swinging bag).
 		local under = ctx.top:PointToObjectSpace(ctx.bag.CFrame.Position)
 		pointLight(holder(ctx.theme, 'FireGlow', ctx.top * CFrame.new(under.X, 1, under.Z), V(0.2, 0.2, 0.2)), C(255, 140, 50), 1.2, 9)
@@ -639,12 +662,12 @@ end
 
 -- A field of soft, straight vertical wisps rising from the whole pad to above the bag (6-8 studs), the
 -- reference's toxic look (no curly stock wisps). `from`/`to` colour the wisp from root to tip.
-local function streakField(ctx, name, rate, from, to)
+local function streakField(ctx, name, rate, from, to, tall)
 	local field = holder(ctx.theme, name .. 'Field', ctx.top * CFrame.new(0, 0.15, 0), V(ctx.w * 0.95, 0.2, ctx.d * 0.95))
 	return emitter(field, name, 'streakup', {
 		Orientation = Enum.ParticleOrientation.FacingCameraWorldUp, Rate = rate, Lifetime = NR(1.5, 2.5),
 		Speed = NR(1, 2), SpreadAngle = Vector2.new(2, 2), Acceleration = V(0, 0.4, 0), Drag = 0.2, Rotation = NR(-3, 3),
-		Size = seq({ { 0, 8.5, 1 }, { 1, 9.5, 1 } }), Transparency = seq({ { 0, 1 }, { 0.3, 0.2 }, { 0.65, 0.3 }, { 1, 1 } }),
+		Size = seq({ { 0, tall or 8.5, 1 }, { 1, (tall or 8.5) + 1, 1 } }), Transparency = seq({ { 0, 1 }, { 0.3, 0.2 }, { 0.65, 0.3 }, { 1, 1 } }),
 		Color = cseq({ { 0, from }, { 1, to } }), LightEmission = 0,
 	})
 end
@@ -668,7 +691,7 @@ end
 -- 7 Shadow: the same straight wisps in violet over the deep purple pad, and a low violet ground fog.
 function HoodVFX.Themes.shadow(ctx)
 	local A, S, color = ctx.A, ctx.S, ctx.color
-	streakField(ctx, 'VioletStreaks', 12 * A, C(130, 75, 215), C(45, 22, 80))
+	streakField(ctx, 'VioletStreaks', 12 * A, C(130, 75, 215), C(45, 22, 80), 4.5) -- capped near 5 studs: no purple fire
 	emitter(ctx.deck, 'GroundFog', 'mist', {
 		Rate = 1.2 * A, Lifetime = NR(3, 4), Speed = NR(0.4, 1), SpreadAngle = Vector2.new(85, 85), Drag = 0.8, Acceleration = V(0, -0.1, 0),
 		RotSpeed = NR(-10, 10), ZOffset = -1, Size = seq({ { 0, 2.5 * S }, { 1, 5 * S } }), Transparency = seq({ { 0, 1 }, { 0.3, 0.55 }, { 1, 1 } }),
@@ -707,7 +730,7 @@ function HoodVFX.theme(part, name, size, opts)
 	local deck = holder(theme, 'ThemeDeck', top * CFrame.new(0, 0.15, 0), V(w * 0.9, 0.3, d * 0.9))
 	local column = holder(theme, 'ThemeColumn', top * CFrame.new(0, h * 0.38, 0), V(w * 0.8, h * 0.6, d * 0.8))
 	recipe({
-		theme = theme, top = top, deck = deck, column = column, bag = opts.bag,
+		theme = theme, top = top, deck = deck, column = column, bag = opts.bag, burners = opts.burners,
 		w = w, h = h, d = d, A = (w * d) / 100, S = math.sqrt(w * d) / 11, -- rates scale with the mat area, sizes with its span
 		color = opts.color or THEME_COLOR[name] or WHITE, tier = opts.tier or 1,
 	})
