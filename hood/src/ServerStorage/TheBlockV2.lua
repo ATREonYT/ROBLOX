@@ -1837,8 +1837,9 @@ end
 --           posts and a header beam framing a bank of three pale screens, white neon strips up the posts, a crown
 --           of two chunky black horns round a pale gable with a glowing diamond, white neon "ladder" grips, a
 --           plain black belt with two big V's and a white neon tube across its step-on end, a cyan-white screen
---           bank lit by teal trims, dark smoke climbing past the horns with thin white strands and eight swaying
---           smoke lines (textureless Beams, so they work before any upload), magenta glints and speed streaks
+--           bank lit by teal trims, a storm cloud over the gate half (the step-on half and its V stay clear)
+--           climbing past the horns, thin white strands, swaying smoke lines (textureless Beams, so they work
+--           before any upload), a lightning flash now and then, magenta glints and speed streaks
 -- Local frame: origin on the floor at the middle, footprint x -3.5..3.5, z -7..7, parts up to y ~10.9 (the
 -- Sprint horns lean out past x 3.5 above the header, like the reference's), labels float above. The runner stands on the belt
 -- facing +Z, toward the screen; walk on from -Z.
@@ -1847,7 +1848,8 @@ end
 -- Side) that the client scrolls, Screen (SurfaceGui with TextLabels Title and Detail; ScreenSide panels beside
 -- it on Run and Sprint), Sign (BillboardGui Label with Chip, Cost, Detail, Speed; Config/Treadmills.layoutLabel
 -- switches it), emitter BeltMist (attribute BaseRate), PointLight ScreenLight, Sprint's SmokeLine1..98 Beams
--- (attributes BaseCurve0/1, Sway, Period, Phase; their Attachment1 has BaseY) that the client sways; attributes Tier,
+-- (attributes BaseCurve0/1, Sway, Period, Phase; their Attachment1 has BaseY) that the client sways, and its
+-- PointLight StormFlash (Brightness 0) that the client flashes like lightning; attributes Tier,
 -- TreadmillId, Multiplier, Required; tag HoodTreadmill.
 local Treadmills = {}
 
@@ -1866,8 +1868,8 @@ Treadmills.Looks = {
 		rail = C(255, 240, 80), rearY = 0.8 },
 	{ name = 'black', frame = C(26, 26, 32), frameDark = C(14, 14, 18), baseRim = C(30, 30, 36), deck = C(16, 16, 22),
 		slat = C(18, 18, 24), gap = C(18, 18, 24), screen = C(172, 235, 242), screenText = C(40, 130, 140), bezel = C(18, 18, 24),
-		panels = 3, textT = 0.65, trim = C(100, 165, 170), grip = C(245, 245, 255), bar = C(26, 26, 32),
-		mist = { C(235, 235, 245), C(170, 170, 185) }, edge = C(150, 150, 165),
+		panels = 3, textT = 0.3, trim = C(100, 165, 170), grip = C(245, 245, 255), bar = C(26, 26, 32),
+		mist = { C(235, 235, 245), C(170, 170, 185) }, edge = C(70, 80, 86),
 		tube = C(245, 245, 255), rearY = 1.4 },
 }
 Treadmills.Chevron = C(236, 242, 252)
@@ -1897,8 +1899,7 @@ function Treadmills.emitter(parent, name, tex, frame, props, fallback)
 	local builtin = { mist = 'rbxasset://textures/particles/smoke_main.dds', aura = 'rbxasset://textures/particles/smoke_main.dds',
 		wisp = 'rbxasset://textures/particles/smoke_main.dds', wispline = 'rbxasset://textures/particles/smoke_main.dds',
 		glitter = 'rbxasset://textures/particles/sparkles_main.dds',
-		streak = 'rbxasset://textures/particles/sparkles_main.dds', softglow = 'rbxasset://textures/glow.png',
-		linebit = 'rbxasset://textures/particles/sparkles_main.dds' }
+		streak = 'rbxasset://textures/particles/sparkles_main.dds', softglow = 'rbxasset://textures/glow.png' }
 	local flip = { aura = { Enum.ParticleFlipbookLayout.Grid2x2, Enum.ParticleFlipbookMode.Loop, NumberRange.new(0), true },
 		wisp = { Enum.ParticleFlipbookLayout.Grid4x4, Enum.ParticleFlipbookMode.OneShot },
 		-- 16 different static strands: one random frame per particle (the aura recipe).
@@ -2001,11 +2002,14 @@ function Treadmills.panel(tm, name, size, cf, k, row, detail)
 end
 
 -- Thin smoke lines on the x999 (Sprint): textureless Beams, so they draw before any texture is uploaded.
--- Ninety-six short arcs run across and through the whole cloud (sixteen of them in the doorway under the bank):
+-- Ninety-six short arcs run across and through the cloud over the gate half of the belt, at standing height
+-- (sixteen of them in the doorway under the bank, forty-four in the cloud hanging over the belt's middle), a
+-- quarter of them with one soft break:
 -- half C-arcs, half S-curves, each with its own strength. Two longer lines climb outside the posts from the bank
--- to the horns (curving outward only, so they never cross the screens). Treadmill.client sways them: CurveSize0/1
+-- to the horns in a gentle S (out at the foot, back in at the tip: never a loop round the horn). Treadmill.client sways them: CurveSize0/1
 -- around BaseCurve0/1 by Sway, Attachment1 bobbing round BaseY.
 Treadmills.LineColor = ColorSequence.new(C(228, 242, 244), C(160, 182, 188)) -- teal-white, like the bank's light
+Treadmills.ArcColor = ColorSequence.new(C(232, 246, 248), C(196, 216, 220)) -- the textureless arcs: a brighter tail
 function Treadmills.smokeLines(tm, B, rearY)
 	local holder = ghost(tm:part('SmokeLines', V(0.2, 0.2, 0.2), CFrame.new(0, 0.5, 0), P.white))
 	local hcf = holder.CFrame
@@ -2024,16 +2028,12 @@ function Treadmills.smokeLines(tm, B, rearY)
 		b.Texture = ''
 		b.FaceCamera, b.Segments = true, props.segments
 		b.Width0, b.Width1 = props.w0, props.w1
-		b.Color = Treadmills.LineColor
+		b.Color = props.color or Treadmills.LineColor
 		if props.gaps then
-			-- Broken like the reference's lines: fades in, holds `mid`, breaks `gaps` times (each break a tenth to a
-			-- seventh of the length), fades out.
+			-- Broken like the reference's lines: fades in, holds `mid`, fades through one soft break, fades out.
 			local mid, pts = props.mid, { { 0, 1 }, { 0.12, props.mid } }
-			local centres = props.gaps == 1 and { 0.5 + rnd:NextNumber(-0.15, 0.15) } or { 0.36 + rnd:NextNumber(-0.03, 0.03), 0.64 + rnd:NextNumber(-0.03, 0.03) }
-			for _, c in centres do
-				local half = rnd:NextNumber(0.05, 0.07)
-				for _, kp in { { c - half - 0.02, mid }, { c - half, 1 }, { c + half, 1 }, { c + half + 0.02, mid } } do table.insert(pts, kp) end
-			end
+			local c, half = 0.5 + rnd:NextNumber(-0.1, 0.1), rnd:NextNumber(0.04, 0.06)
+			for _, kp in { { c - half - 0.08, mid }, { c - half, 1 }, { c + half, 1 }, { c + half + 0.08, mid } } do table.insert(pts, kp) end
 			table.insert(pts, { 0.88, math.min(1, mid + 0.1) })
 			table.insert(pts, { 1, 1 })
 			b.Transparency = Treadmills.seq(pts)
@@ -2058,14 +2058,19 @@ function Treadmills.smokeLines(tm, B, rearY)
 		if i <= 16 then
 			-- In the doorway, just under the bank.
 			p0 = V(rnd:NextNumber(-2.3, 2.3), bankBottom - rnd:NextNumber(0.5, 1.5), rnd:NextNumber(3.9, 4.5))
+		elseif i > arcs - 44 then
+			-- In the cloud hanging over the belt's middle at head height (the V stays clear below it).
+			p0 = V(rnd:NextNumber(-1.8, 1.8), rnd:NextNumber(4.6, 5.4), rnd:NextNumber(-3.4, -1.4))
 		else
-			local z = rnd:NextNumber(-6.2, 4.6)
-			p0 = V(rnd:NextNumber(-3, 3), rnd:NextNumber(deckTop(z) + 0.4, bankBottom - 0.3), z)
+			local z = rnd:NextNumber(-1.6, 2.8)
+			p0 = V(rnd:NextNumber(-2.6, 2.6), rnd:NextNumber(deckTop(z) + 1.0, bankBottom - 0.3), z)
 		end
-		-- Across, not up: within 60 degrees of horizontal, 0.8-1.6 studs long.
-		local yaw, pitch = rnd:NextNumber(0, 2 * math.pi), math.rad(rnd:NextNumber(-60, 60))
+		-- Slanting (25-80 degrees off horizontal, up or down), so they never lie flat like sleet; 0.8-1.6 studs.
+		local yaw = rnd:NextNumber(0, 2 * math.pi)
+		local pitch = math.rad(rnd:NextNumber(25, 80)) * (rnd:NextNumber() < 0.5 and -1 or 1)
 		local d = V(math.cos(yaw) * math.cos(pitch), math.sin(pitch), math.sin(yaw) * math.cos(pitch))
 		local p1 = p0 + d * rnd:NextNumber(0.8, 1.6)
+		p1 = V(math.clamp(p1.X, -2.6, 2.6), p1.Y, p1.Z) -- both ends inside the cloud
 		-- Bend in the plane holding the chord and the vertical, turned up to 60 degrees about the chord.
 		local up = V(0, 1, 0)
 		local perp = (up - d * up:Dot(d)).Unit
@@ -2074,18 +2079,18 @@ function Treadmills.smokeLines(tm, B, rearY)
 		-- the same way (a C-arc) and opposite signs make an S.
 		local a0 = attach('LineFoot' .. i, CFrame.fromMatrix(p0, perp, d))
 		local a1 = attach('LineTip' .. i, CFrame.fromMatrix(p1, -perp, d))
-		local k0 = rnd:NextNumber(0.3, 0.6) * (rnd:NextNumber() < 0.5 and -1 or 1)
-		local k1 = rnd:NextNumber(0.3, 0.6) * (i % 2 == 0 and 1 or -1) * (k0 > 0 and 1 or -1)
-		beam(i, a0, a1, k0, k1, { segments = 24, w0 = 0.16, w1 = 0.06, mid = rnd:NextNumber(0, 0.2), emission = 0.8, sway = 0.35,
-			gaps = i % 4 == 0 and 2 or 1 })
+		local k0 = rnd:NextNumber(0.5, 0.9) * (rnd:NextNumber() < 0.5 and -1 or 1)
+		local k1 = rnd:NextNumber(0.5, 0.9) * (i % 2 == 0 and 1 or -1) * (k0 > 0 and 1 or -1)
+		beam(i, a0, a1, k0, k1, { segments = 24, w0 = 0.2, w1 = 0.07, mid = rnd:NextNumber(0, 0.2), emission = 0.8, sway = 0.35, color = Treadmills.ArcColor,
+			gaps = i % 4 == 0 and 1 or nil })
 	end
 	for j, sx in { -1, 1 } do
-		-- X axes point outward, so both control points sit outside the post.
+		-- X axes point outward: the foot's control point bows out, the tip's comes back in (an S, not a ring).
 		local yaw = sx > 0 and 0 or math.pi
 		local p0 = V(sx * 3.7, 6.6, 4.8)
 		local tip = p0 + V(sx * 0.4, rnd:NextNumber(3, 4), 0.2)
 		beam(arcs + j, attach('LineFoot' .. arcs + j, CFrame.new(p0) * CFrame.Angles(0, yaw, 0)), attach('LineTip' .. arcs + j, CFrame.new(tip) * CFrame.Angles(0, yaw, 0)),
-			rnd:NextNumber(1, 1.8), -rnd:NextNumber(0.8, 1.4), { segments = 24, w0 = 0.12, w1 = 0.03, mid = 0.3, emission = 0.1, sway = 1.2 })
+			rnd:NextNumber(0.5, 0.8), rnd:NextNumber(0.3, 0.5), { segments = 24, w0 = 0.12, w1 = 0.03, mid = 0.3, emission = 0.1, sway = 0.4 })
 	end
 	return holder
 end
@@ -2299,64 +2304,85 @@ function Treadmills.build(ctx, id, opts)
 			-- strands and arcs running through all of it. It buries the gate's lower half (the column reaches the
 			-- bank, the side strips rise to the bank's middle, smoke climbs behind the posts past the horns); only
 			-- the bank's lit panels stay clear.
-			local column = ghost(tm:part('AuraColumn', V(7.4, 1, 9), CFrame.new(0, 2.0, -1.1), P.white))
+			local column = ghost(tm:part('AuraColumn', V(6.6, 1, 5.6), CFrame.new(0, 3.4, 1.2), P.white))
 			local smokeDark = ColorSequence.new(C(74, 88, 94), C(30, 36, 40))
 			local lines = Treadmills.LineColor
 			local strandT = seq({ { 0, 0.75 }, { 0.2, 0.45 }, { 0.8, 0.6 }, { 1, 1 } })
 			-- Before the upload smoke_main stands in for the cloud sheet with no strands over it: thinner and darker,
 			-- in patches, so the smoke lines (beams) show between the puffs.
 			local thinSmoke = { Color = ColorSequence.new(C(44, 52, 56), C(16, 19, 22)),
-				Transparency = seq({ { 0, 1 }, { 0.2, 0.7 }, { 0.7, 0.78 }, { 1, 1 } }) }
-			local patchySmoke = { Color = thinSmoke.Color, Transparency = seq({ { 0, 1 }, { 0.2, 0.64 }, { 0.7, 0.74 }, { 1, 1 } }), Rate = 12 }
-			local patchyLow = { Color = thinSmoke.Color, Transparency = thinSmoke.Transparency, Rate = 12 }
+				Transparency = seq({ { 0, 1 }, { 0.2, 0.78 }, { 0.7, 0.85 }, { 1, 1 } }) }
+			local patchySmoke = { Color = thinSmoke.Color, Transparency = seq({ { 0, 1 }, { 0.2, 0.78 }, { 0.7, 0.85 }, { 1, 1 } }), Rate = 4 }
+			local patchyLow = { Color = thinSmoke.Color, Transparency = thinSmoke.Transparency, Rate = 4 }
 			Treadmills.emitter(column, 'Aura', 'aura', CFrame.new(), {
-				Rate = 30, Lifetime = NumberRange.new(2, 3), Speed = NumberRange.new(1.2, 1.8), SpreadAngle = Vector2.new(20, 20),
-				Acceleration = V(0, 0.1, 0), Drag = 0.4, RotSpeed = NumberRange.new(-20, 20), ZOffset = -1,
-				Size = seq({ { 0, 3.5 }, { 1, 5.5 } }), Transparency = seq({ { 0, 1 }, { 0.2, 0.7 }, { 0.7, 0.78 }, { 1, 1 } }),
+				Rate = 34, Lifetime = NumberRange.new(2, 3), Speed = NumberRange.new(0.4, 0.7), SpreadAngle = Vector2.new(20, 20),
+				Acceleration = V(0, 0.05, 0), Drag = 0.4, RotSpeed = NumberRange.new(-20, 20), ZOffset = -1,
+				Size = seq({ { 0, 3 }, { 1, 4.2 } }), Transparency = seq({ { 0, 1 }, { 0.2, 0.7 }, { 0.7, 0.78 }, { 1, 1 } }),
 				Color = smokeDark, LightEmission = 0,
 			}, patchySmoke)
-			-- Near-black puffs in front of the body, and a pale haze behind it.
-			Treadmills.emitter(column, 'Puffs', 'aura', CFrame.new(), {
-				Rate = 24, Lifetime = NumberRange.new(1.6, 2.4), Speed = NumberRange.new(1.2, 2.0), SpreadAngle = Vector2.new(25, 25),
+			-- Translucent near-black puffs hanging in the body (dark depth comes from overlap), and a pale haze behind.
+			-- The puffs and the main strands hang over the middle of the belt (z -1.6..2.2): the doorway gets its own
+			-- small puffs, and the bank's text stays readable over them.
+			local puffBox = ghost(tm:part('PuffColumn', V(6.0, 1, 3.8), CFrame.new(0, 3.2, 0.3), P.white))
+			Treadmills.emitter(puffBox, 'Puffs', 'aura', CFrame.new(), {
+				Rate = 11, Lifetime = NumberRange.new(1.6, 2.4), Speed = NumberRange.new(0.6, 1.0), SpreadAngle = Vector2.new(25, 25),
 				Acceleration = V(0, 0.1, 0), Drag = 0.4, RotSpeed = NumberRange.new(-20, 20), ZOffset = 0,
-				Size = seq({ { 0, 1.6 }, { 1, 2.8 } }), Transparency = seq({ { 0, 1 }, { 0.2, 0.15 }, { 0.7, 0.3 }, { 1, 1 } }),
-				Color = ColorSequence.new(C(16, 19, 22)), LightEmission = 0,
-			}, { Rate = 13, Transparency = seq({ { 0, 1 }, { 0.2, 0.1 }, { 0.7, 0.25 }, { 1, 1 } }) })
-			-- Before the upload the cloud's gaps show the belt's stair edges: a low dark veil lies on the deck then.
-			local veil = ghost(tm:part('DeckVeil', V(7.4, 0.4, 10), CFrame.new(0, rearY + 0.9, -0.6), P.white))
-			Treadmills.emitter(veil, 'DeckVeil', 'aura', CFrame.new(), {
-				Enabled = false, Rate = 20, Lifetime = NumberRange.new(2, 3), Speed = NumberRange.new(0.1, 0.3), SpreadAngle = Vector2.new(30, 30),
-				Drag = 0.5, RotSpeed = NumberRange.new(-10, 10), ZOffset = -0.5,
-				Size = seq({ { 0, 2.5 }, { 1, 3.5 } }), Transparency = seq({ { 0, 1 }, { 0.2, 0.45 }, { 0.7, 0.55 }, { 1, 1 } }),
-				Color = thinSmoke.Color, LightEmission = 0,
-			}, { Enabled = true })
+				Size = seq({ { 0, 2.2 }, { 1, 3.6 } }), Transparency = seq({ { 0, 1 }, { 0.2, 0.52 }, { 0.7, 0.64 }, { 1, 1 } }),
+				Color = ColorSequence.new(C(24, 29, 32)), LightEmission = 0,
+			}, { Rate = 6, Transparency = seq({ { 0, 1 }, { 0.2, 0.56 }, { 0.7, 0.68 }, { 1, 1 } }) })
 			-- The doorway under the bank: small near-black puffs and strands just under the bank's bottom edge, drifting
 			-- across the posts, so the gate's lower half sits in smoke while the panels stay readable.
 			local door = ghost(tm:part('DoorSmoke', V(6.4, 0.6, 1.4), CFrame.new(0, 4.3, 3.9), P.white))
 			Treadmills.emitter(door, 'DoorPuffs', 'aura', CFrame.new(), {
 				Rate = 8, Lifetime = NumberRange.new(1.6, 2.2), Speed = NumberRange.new(0.2, 0.4), SpreadAngle = Vector2.new(20, 20),
 				Drag = 0.6, RotSpeed = NumberRange.new(-20, 20), ZOffset = 0,
-				Size = seq({ { 0, 0.8 }, { 1, 1.5 } }), Transparency = seq({ { 0, 1 }, { 0.2, 0.35 }, { 0.7, 0.5 }, { 1, 1 } }),
-				Color = ColorSequence.new(C(16, 19, 22)), LightEmission = 0,
+				Size = seq({ { 0, 0.8 }, { 1, 1.5 } }), Transparency = seq({ { 0, 1 }, { 0.2, 0.45 }, { 0.7, 0.58 }, { 1, 1 } }),
+				Color = ColorSequence.new(C(24, 29, 32)), LightEmission = 0,
 			})
 			Treadmills.emitter(door, 'WispsDoor', 'wispline', CFrame.new(), {
 				Rate = 8, Lifetime = NumberRange.new(1.4, 2.0), Speed = NumberRange.new(0.2, 0.5), SpreadAngle = Vector2.new(25, 25),
 				Drag = 0.6, Rotation = NumberRange.new(-35, 35), RotSpeed = NumberRange.new(-12, 12),
 				Size = seq({ { 0, 1.0 }, { 1, 1.8 } }), Transparency = strandT, Color = lines, LightEmission = 0,
 			})
-			-- Pale haze rising from the back two thirds of the deck (kept off the doorway and the panels).
-			local hazeBox = ghost(tm:part('HazeColumn', V(7.4, 2, 6), CFrame.new(0, 2.5, -2.6), P.white))
-			Treadmills.emitter(hazeBox, 'Haze', 'aura', CFrame.new(), {
-				Rate = 5, Lifetime = NumberRange.new(2.5, 3.5), Speed = NumberRange.new(0.6, 0.9), SpreadAngle = Vector2.new(30, 30),
-				Acceleration = V(0, 0.1, 0), Drag = 0.4, RotSpeed = NumberRange.new(-12, 12), ZOffset = -2,
-				Size = seq({ { 0, 5 }, { 1, 7.5 } }), Transparency = seq({ { 0, 1 }, { 0.25, 0.66 }, { 0.75, 0.76 }, { 1, 1 } }),
+			-- The storm hangs over the belt's middle too, at head height: from anywhere above the belt the V shows
+			-- below it. Smoke, a few puffs and strands, all slow.
+			local over = ghost(tm:part('OverColumn', V(5.6, 0.8, 3.6), CFrame.new(0, 5.0, -2.6), P.white))
+			Treadmills.emitter(over, 'AuraOver', 'aura', CFrame.new(), {
+				Rate = 10, Lifetime = NumberRange.new(2.4, 3.2), Speed = NumberRange.new(0.15, 0.35), SpreadAngle = Vector2.new(40, 40),
+				Drag = 0.5, RotSpeed = NumberRange.new(-15, 15), ZOffset = -1,
+				Size = seq({ { 0, 2.6 }, { 1, 3.8 } }), Transparency = seq({ { 0, 1 }, { 0.2, 0.84 }, { 0.7, 0.9 }, { 1, 1 } }),
+				Color = smokeDark, LightEmission = 0,
+			}, { Enabled = false }) -- before the upload the hanging cloud is its dark puffs alone
+			Treadmills.emitter(over, 'PuffsOver', 'aura', CFrame.new(), {
+				Rate = 8, Lifetime = NumberRange.new(1.6, 2.4), Speed = NumberRange.new(0.15, 0.35), SpreadAngle = Vector2.new(40, 40),
+				Drag = 0.5, RotSpeed = NumberRange.new(-20, 20), ZOffset = 0,
+				Size = seq({ { 0, 2.0 }, { 1, 3.2 } }), Transparency = seq({ { 0, 1 }, { 0.2, 0.32 }, { 0.7, 0.46 }, { 1, 1 } }),
+				Color = ColorSequence.new(C(24, 29, 32)), LightEmission = 0,
+			}, { Rate = 4, Transparency = seq({ { 0, 1 }, { 0.2, 0.26 }, { 0.7, 0.42 }, { 1, 1 } }) })
+			Treadmills.emitter(over, 'WispsOver', 'wispline', CFrame.new(), {
+				Rate = 26, Lifetime = NumberRange.new(1.8, 2.6), Speed = NumberRange.new(0.3, 0.6), SpreadAngle = Vector2.new(40, 40),
+				Drag = 0.6, Rotation = NumberRange.new(-35, 35), RotSpeed = NumberRange.new(-12, 12), ZOffset = 1,
+				Size = seq({ { 0, 1.6 }, { 1, 2.8 } }), Transparency = strandT, Color = lines, LightEmission = 0,
+			})
+			Treadmills.emitter(over, 'HazeOver', 'aura', CFrame.new(), {
+				Rate = 1.5, Lifetime = NumberRange.new(2.4, 3.2), Speed = NumberRange.new(0.1, 0.3), SpreadAngle = Vector2.new(40, 40),
+				Drag = 0.5, RotSpeed = NumberRange.new(-12, 12), ZOffset = -2,
+				Size = seq({ { 0, 3 }, { 1, 4.5 } }), Transparency = seq({ { 0, 1 }, { 0.25, 0.68 }, { 0.75, 0.78 }, { 1, 1 } }),
 				Color = ColorSequence.new(C(176, 196, 202)), LightEmission = 0.15,
-			}, { Rate = 2.5, Transparency = seq({ { 0, 1 }, { 0.25, 0.86 }, { 0.75, 0.9 }, { 1, 1 } }) }) -- smoke_main reads as white cumulus
+			}, { Enabled = false }) -- smoke_main reads as white cumulus
+			-- Pale haze over the gate half, behind the body (kept clear of the doorway at z 3.9+ and the panels).
+			local hazeBox = ghost(tm:part('HazeColumn', V(7.4, 2, 2.8), CFrame.new(0, 3.2, -0.2), P.white))
+			Treadmills.emitter(hazeBox, 'Haze', 'aura', CFrame.new(), {
+				Rate = 3, Lifetime = NumberRange.new(2.5, 3.5), Speed = NumberRange.new(0.3, 0.5), SpreadAngle = Vector2.new(30, 30),
+				Acceleration = V(0, 0.1, 0), Drag = 0.4, RotSpeed = NumberRange.new(-12, 12), ZOffset = -2,
+				Size = seq({ { 0, 4 }, { 1, 6 } }), Transparency = seq({ { 0, 1 }, { 0.25, 0.66 }, { 0.75, 0.76 }, { 1, 1 } }),
+				Color = ColorSequence.new(C(176, 196, 202)), LightEmission = 0.15,
+			}, { Enabled = false }) -- smoke_main reads as a white cumulus bubble
 			-- Thin teal-white strands (wispline: 16 different static strands, one per particle) flowing up and
 			-- across through the smoke; they grow instead of animating frames, and turn only a little.
-			Treadmills.emitter(column, 'Wisps', 'wispline', CFrame.new(), {
-				Rate = 50, Lifetime = NumberRange.new(1.6, 2.4), Speed = NumberRange.new(1.6, 2.8), SpreadAngle = Vector2.new(25, 25),
-				Acceleration = V(0, 0.8, 0), Drag = 0.6, Rotation = NumberRange.new(-35, 35), RotSpeed = NumberRange.new(-12, 12),
+			Treadmills.emitter(puffBox, 'Wisps', 'wispline', CFrame.new(), {
+				Rate = 44, Lifetime = NumberRange.new(1.6, 2.4), Speed = NumberRange.new(0.8, 1.4), SpreadAngle = Vector2.new(35, 35),
+				Acceleration = V(0, 0.3, 0), Drag = 0.6, Rotation = NumberRange.new(-35, 35), RotSpeed = NumberRange.new(-12, 12),
 				Size = seq({ { 0, 2.0 }, { 1, 4.2 } }), Transparency = strandT, Color = lines, LightEmission = 0,
 			})
 			-- Smoke along both sides wraps the ladders and the deck tubes; a strip outside each post rises to the
@@ -2374,51 +2400,45 @@ function Treadmills.build(ctx, id, opts)
 					Acceleration = V(0, 0.2, 0), Drag = 0.6, Rotation = NumberRange.new(-35, 35), RotSpeed = NumberRange.new(-12, 12),
 					Size = seq({ { 0, 1.4 }, { 1, 2.2 } }), Transparency = strandT, Color = lines, LightEmission = 0,
 				})
-				local side = ghost(tm:part('AuraSide', V(0.9, 1, 8), CFrame.new(sx * 3.3, 2.4, -0.4), P.white))
+				local side = ghost(tm:part('AuraSide', V(0.9, 1, 5), CFrame.new(sx * 3.3, 3.0, 2.0), P.white))
 				Treadmills.emitter(side, 'AuraLow', 'aura', CFrame.new(), {
-					Rate = 12, Lifetime = NumberRange.new(2.2, 3), Speed = NumberRange.new(0.8, 1.3), SpreadAngle = Vector2.new(25, 25),
+					Rate = 12, Lifetime = NumberRange.new(2.2, 3), Speed = NumberRange.new(0.4, 0.8), SpreadAngle = Vector2.new(25, 25),
 					Acceleration = V(0, 0.15, 0), Drag = 0.5, RotSpeed = NumberRange.new(-15, 15), ZOffset = -1,
 					Size = seq({ { 0, 3.5 }, { 1, 5 } }), Transparency = seq({ { 0, 1 }, { 0.2, 0.5 }, { 0.7, 0.62 }, { 1, 1 } }),
 					Color = smokeDark, LightEmission = 0,
 				}, patchyLow)
 				Treadmills.emitter(side, 'WispsLow', 'wispline', CFrame.new(), {
-					Rate = 14, Lifetime = NumberRange.new(1.8, 2.6), Speed = NumberRange.new(0.6, 1.2), SpreadAngle = Vector2.new(25, 25),
+					Rate = 22, Lifetime = NumberRange.new(1.8, 2.6), Speed = NumberRange.new(0.6, 1.2), SpreadAngle = Vector2.new(25, 25),
 					Acceleration = V(0, 0.3, 0), Drag = 0.6, Rotation = NumberRange.new(-35, 35), RotSpeed = NumberRange.new(-12, 12),
 					Size = seq({ { 0, 1.8 }, { 1, 3.2 } }), Transparency = strandT, Color = lines, LightEmission = 0,
 				})
 			end
 			-- Smoke climbing up behind the gate's posts past the horns, with strands in it.
 			for _, sx in { -1, 1 } do
-				local back = ghost(tm:part('AuraHighBase', V(1.2, 1, 2.4), CFrame.new(sx * 5.0, 5.4, 5.8), P.white))
+				-- Tilted 40 degrees outward, so the smoke climbs up and away from the bank's screens.
+				local back = ghost(tm:part('AuraHighBase', V(1.2, 1, 2.4), CFrame.new(sx * 4.2, 5.4, 6.2) * CFrame.Angles(0, 0, -sx * math.rad(40)), P.white))
 				Treadmills.emitter(back, 'AuraHigh', 'aura', CFrame.new(), {
-					Rate = 6, Lifetime = NumberRange.new(2.6, 3.4), Speed = NumberRange.new(1.5, 2.2), SpreadAngle = Vector2.new(15, 15),
+					Rate = 5, Lifetime = NumberRange.new(2.6, 3.4), Speed = NumberRange.new(1.5, 2.2), SpreadAngle = Vector2.new(15, 15),
 					Acceleration = V(0, 0.2, 0), Drag = 0.3, RotSpeed = NumberRange.new(-15, 15), ZOffset = -1,
-					Size = seq({ { 0, 4.5 }, { 1, 8 } }), Transparency = seq({ { 0, 1 }, { 0.2, 0.7 }, { 0.7, 0.8 }, { 1, 1 } }),
+					Size = seq({ { 0, 5 }, { 1, 9.5 } }), Transparency = seq({ { 0, 1 }, { 0.2, 0.68 }, { 0.7, 0.8 }, { 1, 1 } }),
 					Color = smokeDark, LightEmission = 0,
-				}, { Color = thinSmoke.Color, Rate = 12, Size = seq({ { 0, 5 }, { 1, 8.5 } }), Transparency = seq({ { 0, 1 }, { 0.2, 0.91 }, { 0.7, 0.95 }, { 1, 1 } }) })
-				Treadmills.emitter(back, 'WispsHigh', 'wispline', CFrame.new(), {
-					Rate = 20, Lifetime = NumberRange.new(2.0, 2.8), Speed = NumberRange.new(1.4, 2.0), SpreadAngle = Vector2.new(20, 20),
+				}, { Enabled = false }) -- a big faint smoke_main puff draws its edge as a ring round the horn
+				-- Its strands start at the horns (not at the bank), so none hang over a neighbour's screen.
+				local top = ghost(tm:part('WispsHighBase', V(1.2, 0.8, 2.0), CFrame.new(sx * 5.2, 9.0, 6.0) * CFrame.Angles(0, 0, -sx * math.rad(30)), P.white))
+				Treadmills.emitter(top, 'WispsHigh', 'wispline', CFrame.new(), {
+					Rate = 12, Lifetime = NumberRange.new(2.0, 2.8), Speed = NumberRange.new(0.8, 1.2), SpreadAngle = Vector2.new(30, 30),
 					Acceleration = V(0, 0.3, 0), Drag = 0.4, Rotation = NumberRange.new(-35, 35), RotSpeed = NumberRange.new(-12, 12),
-					Size = seq({ { 0, 2.4 }, { 1, 4.0 } }), Transparency = strandT, Color = lines, LightEmission = 0,
+					Size = seq({ { 0, 1.8 }, { 1, 3.0 } }), Transparency = strandT, Color = lines, LightEmission = 0,
 				})
 			end
 			Treadmills.smokeLines(tm, B, rearY)
-			-- Before wispline is uploaded: short broken strokes all through the cloud, the built-in sparkle squashed
-			-- into a thin needle (soft, tapered, brightest in the middle) and turned within 60 degrees of
-			-- horizontal. They are particles, so they sort with the smoke (beams always draw under it).
-			local bits = Treadmills.emitter(column, 'LineBits', 'linebit', CFrame.new(), {
-				Rate = 190, Lifetime = NumberRange.new(1.4, 2.2), Speed = NumberRange.new(0.8, 1.6), SpreadAngle = Vector2.new(40, 40),
-				Acceleration = V(0, 0.4, 0), Drag = 0.5, Rotation = NumberRange.new(60, 120), RotSpeed = NumberRange.new(-15, 15),
-				Size = seq({ { 0, 0.48, 0.12 }, { 1, 0.62, 0.12 } }), Squash = seq({ { 0, 2.6 }, { 1, 2.6 } }), ZOffset = 0.5,
-				Transparency = seq({ { 0, 1 }, { 0.15, 0.25, 0.2 }, { 0.8, 0.4, 0.2 }, { 1, 1 } }), Color = lines, LightEmission = 0.15,
-			})
-			local doorBits = bits:Clone()
-			doorBits.Name, doorBits.Rate, doorBits.Speed = 'DoorBits', 24, NumberRange.new(0.2, 0.5)
-			doorBits.Parent = door
-			for _, e in { bits, doorBits } do
-				e.Enabled = not Treadmills.uploaded('wispline')
-				e:SetAttribute('PreviewTexture', nil)
-			end
+			-- The storm beat: a cold light in the cloud that Treadmill.client flashes now and then (and lights a few
+			-- arcs with it). Dark until then.
+			local flashAt = ghost(tm:part('StormFlash', V(0.2, 0.2, 0.2), CFrame.new(0, 4, 1.5), P.white))
+			local flash = Instance.new('PointLight')
+			flash.Name = 'StormFlash'
+			flash.Color, flash.Range, flash.Brightness, flash.Shadows = C(170, 235, 255), 12, 0, false
+			flash.Parent = flashAt
 			-- Speed streaks shooting back off the belt.
 			Treadmills.emitter(fx, 'Streaks', 'streak', beltWorld, {
 				Orientation = Enum.ParticleOrientation.VelocityParallel, EmissionDirection = Enum.NormalId.Front,

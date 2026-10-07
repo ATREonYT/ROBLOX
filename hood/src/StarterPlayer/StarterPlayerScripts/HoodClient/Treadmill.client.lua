@@ -6,7 +6,8 @@
 --     UNLOCKED / LOCKED, or your walk speed while you run on it
 --   * alive: idle screens breathe (+-12% at 0.5 Hz); while anyone runs on a treadmill its screen holds bright,
 --     its light doubles and its mist thickens
---   * the x999 (Sprint) sways its smoke lines (Beams SmokeLine1..98) within 70 studs of the camera
+--   * the x999 (Sprint) sways its smoke lines (Beams SmokeLine1..98) within 70 studs of the camera, and its
+--     storm flashes: every 2.5-5 s its StormFlash light jumps to 3-4 for 0.08 s and two or three lines light up
 --   * you run: on an unlocked belt your character plays its run animation in place, quicker on Run and Sprint,
 --     and "+3 Speed" pops over the screen every time the server pays you
 -- The belt pattern math is shared with the map builder (Config/Treadmills.chevron).
@@ -65,6 +66,8 @@ local function record(model)
 			r.mist, r.mistRate = d, d:GetAttribute('BaseRate') or d.Rate
 		elseif d:IsA('PointLight') and d.Name == 'ScreenLight' then
 			r.light, r.lightBase = d, d.Brightness
+		elseif d:IsA('PointLight') and d.Name == 'StormFlash' then
+			r.flash = d
 		elseif d:IsA('Beam') and string.sub(d.Name, 1, 9) == 'SmokeLine' and d.Attachment1 then
 			r.lines = r.lines or {}
 			local a1 = d.Attachment1
@@ -196,6 +199,36 @@ local function sway(r, t)
 	end
 end
 
+-- The x999's storm beat: every 2.5-5 s (random) the cloud's StormFlash light jumps to 3-4 for 0.08 s and two
+-- or three smoke lines light up at full strength with it (a lightning crawl); then all drops back. Only near the
+-- camera; a flash in progress still ends when the camera leaves.
+local CRAWL = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.1, 0),
+	NumberSequenceKeypoint.new(0.9, 0), NumberSequenceKeypoint.new(1, 1) })
+local rng = Random.new()
+local function storm(r, t, near)
+	if r.flashEnd then
+		if near and t < r.flashEnd then return end
+		r.flash.Brightness = 0
+		for beam, tr in r.lit do beam.Transparency = tr end
+		r.flashEnd, r.lit = nil, nil
+		return
+	end
+	if not near then return end
+	r.nextFlash = r.nextFlash or t + rng:NextNumber(2.5, 5)
+	if t < r.nextFlash then return end
+	r.flash.Brightness = rng:NextNumber(3, 4)
+	r.lit = {}
+	local lines = r.lines or {}
+	for _ = 1, math.min(#lines, rng:NextInteger(2, 3)) do
+		local beam = lines[rng:NextInteger(1, #lines)].beam
+		if not r.lit[beam] then
+			r.lit[beam] = beam.Transparency
+			beam.Transparency = CRAWL
+		end
+	end
+	r.flashEnd, r.nextFlash = t + 0.08, t + rng:NextNumber(2.5, 5)
+end
+
 ---------------------------------------------------------------------------------------------- running
 -- The character's own run animation (the default Animate script's), or Roblox's stock one for its rig.
 local STOCK_RUN = { R15 = 'rbxassetid://913376220', R6 = 'rbxassetid://180426354' }
@@ -302,6 +335,7 @@ frame:Connect(function(dt)
 			glow(r, clock)
 		end
 		if r.lines and near and near <= 70 then sway(r, clock) end
+		if r.flash then storm(r, clock, near ~= nil and near <= 70) end
 	end
 	setRunning(on)
 end)
