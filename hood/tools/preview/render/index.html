@@ -4,6 +4,7 @@
 <script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js"}}</script>
 <script type="module">
 import * as THREE from 'three';
+import { UnrealBloomPass } from './node_modules/three/examples/jsm/postprocessing/UnrealBloomPass.js';
 
 const Q = new URLSearchParams(location.search), W = +(Q.get('w') || 1600), H = +(Q.get('h') || 1000);
 const renderer = new THREE.WebGLRenderer({antialias: true, preserveDrawingBuffer: true, alpha: true});
@@ -170,12 +171,15 @@ function addTextures(mesh, p) {
     plane.position.set(...off); plane.rotation.copy(rot); plane.receiveShadow = true; mesh.add(plane);
   }
 }
+const billboards = [];
 function addBillboard(pos, gui) {
   const w = gui.sw, h = gui.sh; if (!(w > 0 && h > 0)) return;
   const ppu = Math.min(80, 1024 / Math.max(w, h));
   const tex = textCanvas(gui.labels, w * ppu, h * ppu);
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({map: tex, depthTest: !gui.top, toneMapped: false}));
   sp.scale.set(w, h, 1); sp.position.set(pos[0] + gui.off[0], pos[1] + gui.off[1], pos[2] + gui.off[2]);
+  // BillboardGui.MaxDistance: hidden past it, measured from the camera to the adornee (checked per shot).
+  if (gui.maxd > 0) billboards.push({ sp, at: new THREE.Vector3(pos[0], pos[1], pos[2]), maxd: gui.maxd });
   scene.add(sp);
 }
 
@@ -188,7 +192,7 @@ const BUILTIN = { sparkles_main: 'sparkle', smoke_main: 'smoke', fire_main: 'fla
 // Preview textures that are flipbook sheets (HoodVFX names): grid size and how frames are picked.
 // random = FlipbookStartRandom with Framerate 0 (a static random frame per particle), oneshot = frames spread
 // over the particle's life, loop = plays at fps from a random start.
-const FLIP = { aura: { g: 2, mode: 'random' }, arc: { g: 2, mode: 'random' }, tendril: { g: 2, mode: 'random' }, firepuff: { g: 4, mode: 'loop', fps: 17 }, wisp: { g: 4, mode: 'oneshot' }, flame: { g: 4, mode: 'loop', fps: 18 } };
+const FLIP = { aura: { g: 2, mode: 'random' }, arc: { g: 2, mode: 'random' }, firepuff: { g: 4, mode: 'loop', fps: 17 }, wisp: { g: 4, mode: 'oneshot' }, wispline: { g: 4, mode: 'oneshot' }, flame: { g: 4, mode: 'loop', fps: 18 } };
 let FX_OPTS = {};
 function fxName(fx) {
   let name = FX_OPTS.builtinOnly ? null : fx.preview;
@@ -217,8 +221,8 @@ function frameTexture(name, g, frame) {
   return texCache[key];
 }
 const FX_NAMES = ['glow', 'sparkle', 'star', 'ring', 'smoke', 'streak', 'shard', 'confetti', 'pow', 'lightning', 'energy', 'flame1',
-  'aura', 'wisp', 'flame', 'arc', 'mist', 'ray', 'shaft', 'glitter', 'swirl', 'dust', 'softglow',
-  'rain', 'ember', 'bubble', 'snow', 'tendril', 'comet', 'stamp', 'firepuff', 'streakup'];
+  'aura', 'wisp', 'wispline', 'flame', 'arc', 'mist', 'ray', 'shaft', 'glitter', 'swirl', 'dust', 'softglow',
+  'rain', 'ember', 'bubble', 'snow', 'comet', 'stamp', 'firepuff', 'streakup'];
 async function preloadFx() {
   await Promise.all(FX_NAMES.map(async n => { if (!texCache[n]) { try { const t = await texLoader.loadAsync(`vfx/${n}.png`); t.colorSpace = THREE.SRGBColorSpace; texCache[n] = t; } catch (e) { console.error('missing vfx/' + n + '.png'); } } }));
 }
@@ -507,6 +511,29 @@ window.loadScene = async (data, opts = {}) => {
   return {parts: data.parts.length, lights: lightsUsed};
 };
 
+// Bloom on top of the finished frame. The frame itself is drawn exactly as without bloom (particles blend in
+// display space, which is what every effect was tuned against). The glow comes from a second, linear HDR render
+// (Neon and bright fire go above 1 there, as in Roblox, so they pass the threshold), bright-passed, blurred and
+// added onto the frame. options.bloom = false skips it.
+let bloom = null;
+function applyBloom(camera) {
+  if (!bloom) {
+    const pass = new UnrealBloomPass(new THREE.Vector2(W, H), 0.35, 0.4, 0.85); // strength, radius, threshold
+    // Halo, not smear: drop the sharpest mip (it adds the hot part back onto itself and washes out text drawn on
+    // neon screens), and lay the glow on with a screen blend so it never clips what is already bright.
+    pass.bloomTintColors[0] = new THREE.Vector3(0, 0, 0);
+    const blend = pass.blendMaterial.clone();
+    blend.blending = THREE.CustomBlending; blend.blendEquation = THREE.AddEquation;
+    blend.blendSrc = THREE.OneMinusDstColorFactor; blend.blendDst = THREE.OneFactor;
+    bloom = { hdr: new THREE.WebGLRenderTarget(W, H, { type: THREE.HalfFloatType }), pass, blend };
+  }
+  const b = bloom, autoClear = renderer.autoClear;
+  renderer.setRenderTarget(b.hdr); renderer.render(scene, camera);
+  b.pass.render(renderer, null, b.hdr, 0, false); // leaves the blurred glow in renderTargetsHorizontal[0]
+  b.blend.uniforms['tDiffuse'].value = b.pass.renderTargetsHorizontal[0].texture;
+  b.pass.fsQuad.material = b.blend;
+  renderer.setRenderTarget(null); renderer.autoClear = false; b.pass.fsQuad.render(renderer); renderer.autoClear = autoClear;
+}
 window.shoot = (cam) => {
   let camera;
   if (cam.ortho) {
@@ -519,7 +546,11 @@ window.shoot = (cam) => {
   camera.updateMatrixWorld();
   buildBeams(camera);
   orientParallel(camera);
+  for (const b of billboards) b.sp.visible = camera.position.distanceTo(b.at) <= b.maxd;
+  // Bloom like Roblox's (Lighting.Bloom): bright neon, fire and glints halo. options.bloom = false turns it off
+  // (and it is off for transparent renders, which need the alpha channel).
   renderer.render(scene, camera);
+  if (FX_OPTS.bloom !== false && !FX_OPTS.transparent) applyBloom(camera);
   const g = window.__grade;
   if (g) {
     // ColorCorrection approximation: saturation, contrast, brightness, then a tint multiply.
