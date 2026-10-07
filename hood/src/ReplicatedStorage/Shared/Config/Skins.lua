@@ -1,25 +1,29 @@
--- Fifteen original morphs adapted from the supplied v5 reference pack.
+-- The fifteen looks, street kid to Kingpin. Id, Required and Gain are saved/balanced: never change them.
+-- Everything else is art (Shared/SkinArt.lua reads it): Color = the main top (jacket/tee), Accent and Trim =
+-- the look's second and third colours, Pants, Skin, Hair, Shirt; Style/Hat name the silhouette; Expression
+-- the face; Pose the display pose (SkinArt.Poses). Look picks the recipe (defaults to Id).
 local C=Color3.fromRGB
 local S={List={}}
 local rows={
- {'CornerKid','Corner Kid',0,1,'hoodie',C(173,177,184),C(242,125,105),C(239,211,173),C(107,144,182),'cap','happy'},
- {'Pickpocket','Pickpocket',25,2,'hoodie',C(112,130,75),C(230,228,198),C(235,215,175),C(73,73,80),'hood','sleepy'},
- {'Lookout','Lookout',75,3,'puffer',C(248,166,78),C(250,187,100),C(156,96,57),C(58,57,55),'beanie','worried'},
- {'Bandit','Bandit',150,4,'hoodie',C(51,50,56),C(174,178,188),C(227,181,106),C(79,88,106),'beanie','angry'},
- {'Hustler','Hustler',300,6,'tracksuit',C(146,75,185),C(237,194,66),C(240,222,181),C(146,75,185),'whitehat','smirk'},
- {'Crook','Crook',600,8,'trench',C(201,175,124),C(158,128,82),C(230,210,187),C(96,80,72),'flatcap','serious'},
- {'GetawayDriver','Getaway Driver',1000,10,'racer',C(221,62,66),C(219,226,232),C(153,98,66),C(57,57,66),'hair','smirk'},
- {'Enforcer','Enforcer',1500,12,'vest',C(61,59,72),C(216,221,228),C(239,222,181),C(103,111,87),'bald','angry'},
- {'StreetBoss','Street Boss',2000,16,'furcoat',C(44,45,52),C(246,241,219),C(233,187,116),C(43,44,52),'hair','smirk'},
- {'Gangster','Gangster',3000,22,'suit',C(56,67,106),C(224,64,72),C(229,205,179),C(56,67,106),'fedora','smirk'},
- {'Capo','Capo',5000,30,'suit',C(80,84,95),C(158,54,69),C(195,133,70),C(80,84,95),'hair','serious'},
- {'Consigliere','Consigliere',8000,42,'suit',C(166,171,181),C(64,100,152),C(239,225,204),C(166,171,181),'whitehair','sleepy'},
- {'Underboss','Underboss',12000,58,'suit',C(42,41,40),C(233,233,220),C(129,79,49),C(42,41,40),'blackhat','serious'},
- {'TheDon','The Don',18000,80,'suit',C(237,236,223),C(32,31,32),C(233,207,155),C(237,236,223),'whitehat','sleepy'},
- {'Kingpin','Kingpin',30000,110,'suit',C(41,40,41),C(228,190,72),C(198,131,67),C(41,40,41),'crown','happy'},
+ {Id='CornerKid',Name='Corner Kid',Required=0,Gain=1,Style='tee',Hat='backwards cap',Color=C(248,248,244),Accent=C(232,44,52),Trim=C(255,140,30),Pants=C(40,110,230),Skin=C(224,172,124),Hair=C(60,40,30),Expression='happy',Pose='carry'},
+ {Id='Pickpocket',Name='Runner',Required=25,Gain=2,Style='track jacket',Hat='headphones',Color=C(130,220,50),Accent=C(36,36,44),Trim=C(255,120,40),Pants=C(50,52,62),Skin=C(120,78,50),Hair=C(30,22,18),Expression='smirk',Pose='wave'},
+ {Id='Lookout',Name='Lookout',Required=75,Gain=3,Style='puffer',Hat='beanie',Color=C(255,128,30),Accent=C(30,190,200),Trim=C(210,150,70),Pants=C(100,110,70),Skin=C(255,214,170),Hair=C(150,90,40),Expression='worried',Pose='point'},
+ {Id='Bandit',Name='Bandit',Required=150,Gain=4,Style='hoodie',Hat='hood and bandana',Color=C(150,60,220),Accent=C(30,30,36),Trim=C(214,178,120),Pants=C(52,98,178),Skin=C(198,140,95),Hair=C(40,30,24),Expression='sly',Pose='swagger'},
+ {Id='Hustler',Name='Hustler',Required=300,Gain=6,Style='tracksuit',Hat='bucket hat',Color=C(0,180,190),Accent=C(250,250,246),Trim=C(255,196,48),Pants=C(0,180,190),Skin=C(100,64,42),Hair=C(25,20,18),Expression='cool',Pose='boss'},
+ {Id='Crook',Name='Crook',Required=600,Gain=8,Style='leather jacket',Hat='bandana',Color=C(40,38,44),Accent=C(225,35,45),Trim=C(214,220,230),Pants=C(52,98,178),Skin=C(250,208,170),Hair=C(40,30,25),Expression='smug',Pose='boombox'},
+ {Id='GetawayDriver',Name='Getaway Driver',Required=1000,Gain=10,Style='racing jacket',Hat='pompadour',Color=C(255,206,30),Accent=C(30,30,36),Trim=C(232,44,52),Pants=C(52,58,78),Skin=C(214,160,110),Hair=C(40,28,20),Expression='smirk',Pose='salute'},
+ {Id='Enforcer',Name='Enforcer',Required=1500,Gain=12,Style='tank top',Hat='bald',Color=C(245,245,245),Accent=C(220,30,40),Trim=C(122,74,44),Pants=C(40,40,48),Skin=C(232,184,140),Hair=C(110,70,40),Expression='angry',Pose='cross'},
+ {Id='StreetBoss',Name='OG',Required=2000,Gain=16,Style='fur coat',Hat='kangol',Color=C(20,160,90),Accent=C(250,250,245),Trim=C(150,30,60),Pants=C(30,30,36),Shirt=C(150,30,60),Skin=C(90,58,40),Hair=C(20,18,16),Expression='smug',Pose='boss'},
+ {Id='Gangster',Name='Shot Caller',Required=3000,Gain=22,Style='zoot suit',Hat='wide brim',Color=C(35,95,225),Accent=C(250,250,245),Trim=C(232,44,52),Pants=C(35,95,225),Skin=C(205,150,105),Hair=C(30,25,20),Expression='smirk',Pose='swagger'},
+ {Id='Capo',Name='Capo',Required=5000,Gain=30,Style='three-piece',Hat='fedora',Color=C(104,66,42),Accent=C(225,30,45),Trim=C(150,156,170),Pants=C(104,66,42),Skin=C(240,196,150),Hair=C(30,25,22),Expression='serious',Pose='carry'},
+ {Id='Consigliere',Name='Consigliere',Required=8000,Gain=42,Style='double-breasted',Hat='silver hair',Color=C(140,26,50),Accent=C(255,196,48),Trim=C(110,66,40),Pants=C(140,26,50),Shirt=C(255,240,210),Skin=C(226,180,140),Hair=C(210,212,218),Expression='wise',Pose='easy'},
+ {Id='Underboss',Name='Underboss',Required=12000,Gain=58,Style='overcoat',Hat='black fedora',Color=C(32,32,38),Accent=C(205,150,80),Trim=C(248,248,244),Pants=C(32,32,38),Skin=C(180,122,80),Hair=C(25,22,20),Expression='serious',Pose='boss'},
+ {Id='TheDon',Name='The Don',Required=18000,Gain=80,Style='dinner jacket',Hat='silver hair',Color=C(250,246,232),Accent=C(220,20,50),Trim=C(28,28,34),Pants=C(30,30,36),Skin=C(236,192,150),Hair=C(200,202,208),Expression='wise',Pose='boss'},
+ {Id='Kingpin',Name='Kingpin',Required=30000,Gain=110,Style='royal suit',Hat='crown',Color=C(110,40,200),Accent=C(200,20,40),Trim=C(255,196,48),Pants=C(110,40,200),Skin=C(150,98,62),Hair=C(20,18,16),Expression='smug',Pose='royal'},
 }
 for i,r in rows do
- table.insert(S.List,{Id=r[1],Name=r[2],Required=r[3],Gain=r[4],Style=r[5],Color=r[6],Accent=r[7],Skin=r[8],Pants=r[9],Hat=r[10],Expression=r[11],Index=i})
+ r.Index=i;r.Look=r.Look or r.Id
+ table.insert(S.List,r)
 end
 S.ById={};for _,s in S.List do S.ById[s.Id]=s end
 -- The shooting ranges, in walking order from the entrance (the shot pays Multiplier times your look's gain, times
