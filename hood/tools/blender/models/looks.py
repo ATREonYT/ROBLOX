@@ -40,7 +40,14 @@ SNIPPET = '''
 local Skins = require(game.ReplicatedStorage.Shared.Config.Skins)
 local Art = require(game.ReplicatedStorage.Shared.SkinArt)
 local root = Instance.new('Model'); root.Name = 'Looks'; root.Parent = workspace
-for i, s in Skins.List do Art.posed(root, CFrame.new((i - 1) * %d, 0, 0), s, 1, s.Pose) end
+-- Cycles lifts light skin to near-white on the cards: compress the highlights of the display tone (light
+-- tones darken ~15%%, dark tones barely move). Cards only; the game uses the tone as it is.
+local function tame(c) return Color3.new(c.R * (1 - 0.15 * c.R), c.G * (1 - 0.15 * c.G), c.B * (1 - 0.15 * c.B)) end
+for i, s in Skins.List do
+	local look = table.clone(s)
+	look.Skin = tame(s.Skin)
+	Art.posed(root, CFrame.new((i - 1) * %d, 0, 0), look, 1, s.Pose)
+end
 return #Skins.List
 ''' % PITCH
 

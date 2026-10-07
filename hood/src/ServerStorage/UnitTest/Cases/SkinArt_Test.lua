@@ -112,11 +112,63 @@ return function(t)
   t.expect.equal(head.TextureID,'rbxassetid://1');t.expect.equal(m.UpperTorso.Color,tone);t.expect.truthy(m:FindFirstChildOfClass('BodyColors'))
   m:Destroy()
  end)
- t.test('only the top tiers carry one small sparkle emitter',function()
+ -- Tiers 11+ carry one sparkle emitter that climbs with the tier (purple 5, gold 7, Kingpin 9), keeps its
+ -- colour (no white wash) and stays at about ten live particles per player.
+ t.test('only the top tiers carry one escalating sparkle emitter',function()
+  local last=0
   for _,s in S.List do
    local m=rig(true);Art.equip(m,s)
-   local n=0;for _,d in m.BlockCostume:GetDescendants() do if d:IsA('ParticleEmitter') then n+=1;t.expect.truthy(d.Rate<=4) end end
+   local n=0
+   for _,d in m.BlockCostume:GetDescendants() do
+    if d:IsA('ParticleEmitter') then
+     n+=1
+     t.expect.truthy(d.Rate>=last and d.Rate*d.Lifetime.Max<=11)
+     t.expect.truthy(d.LightEmission<=0.6)
+     for _,kp in d.Color.Keypoints do t.expect.equal(kp.Value,s.Glow) end
+     last=d.Rate
+    end
+   end
    t.expect.equal(n,s.Glow and 1 or 0);t.expect.equal(s.Glow~=nil,s.Index>=11)
+   t.expect.equal(m.BlockCostume:FindFirstChildWhichIsA('PointLight',true)~=nil,s.Index==#S.List)
+   m:Destroy()
+  end
+  t.expect.equal(last,9)
+ end)
+ -- The stash must not keep characters alive: nothing in an entry may lead back to the character (Luau
+ -- weak tables are not ephemerons), so once a character is destroyed and dropped the GC takes it.
+ t.test('equipped characters are not kept alive after they go',function()
+  local m=rig(true);Art.equip(m,S.ById.Crook)
+  local function reaches(v,seen)
+   if v==m then return true end
+   if type(v)~='table' or seen[v] then return false end
+   seen[v]=true
+   for k,x in v do if reaches(k,seen) or reaches(x,seen) then return true end end
+   return false
+  end
+  t.expect.truthy(Art._stash(m));t.expect.falsy(reaches(Art._stash(m),{}))
+  Art.forget(m);t.expect.falsy(Art._stash(m))
+  m:Destroy()
+  local weak=setmetatable({},{__mode='v'})
+  do local c=rig(true);Art.equip(c,S.ById.Kingpin);Art.equip(c,S.ById.TheDon);weak[1]=c;c:Destroy() end
+  for j=1,2000000 do local _={j} end
+  t.expect.falsy(weak[1])
+ end)
+ -- Costume pieces keep their designed size on a real character: on a rig scaled evenly by 1.25 every piece,
+ -- turned or not (briefcases, lapels, diamonds), is exactly 1.25x its recipe size.
+ t.test('turned pieces scale like straight ones on real characters',function()
+  for _,id in {'Crook','Capo','Kingpin'} do
+   local m=rig(true);m.Head:FindFirstChildOfClass('SpecialMesh'):Destroy()
+   for _,p in m:GetChildren() do if p:IsA('BasePart') and Art.Rig[p.Name] then p.Size=Art.Rig[p.Name][1]*1.25 end end
+   Art.equip(m,S.ById[id])
+   local r=Art.recipe(S.ById[id]);local i=0
+   for _,p in m.BlockCostume:GetChildren() do
+    if p:IsA('BasePart') and p.Name~='TierGlow' then
+     i+=1;local want=r.pieces[i].size*1.25
+     t.expect.equal(p.Name,r.pieces[i].name)
+     t.expect.truthy((p.Size-want).Magnitude<1e-3)
+    end
+   end
+   t.expect.equal(i,#r.pieces)
    m:Destroy()
   end
  end)

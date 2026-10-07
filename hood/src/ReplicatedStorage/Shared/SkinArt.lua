@@ -293,7 +293,7 @@ local function shoe(W, sx, kind, main, sole, extra)
 	if kind == 'sneaker' or kind == 'hightop' then
 		W:box(leg, 'Sole', V(1.08, 0.12, 1.34), V(x, 0.06, -0.14), sole)
 		W:box(leg, 'Shoe', V(1.05, 0.28, 1.24), V(x, 0.25, -0.1), main)
-		W:box(leg, 'ToeCap', V(1.06, 0.13, 0.3), V(x, 0.185, -0.58), sole)
+		W:box(leg, 'ToeCap', V(1.08, 0.13, 0.3), V(x, 0.185, -0.58), sole)
 		W:box(leg, 'Swoosh', V(1.07, 0.07, 0.5), V(x, 0.26, 0.05), extra or sole)
 		if kind == 'hightop' then
 			W:box(sx < 0 and 'LeftLowerLeg' or 'RightLowerLeg', 'HighTop', V(1.07, 0.3, 1.07), V(x, 0.5, 0), main)
@@ -308,7 +308,7 @@ local function shoe(W, sx, kind, main, sole, extra)
 		W:box(leg, 'Shoe', V(1.04, 0.24, 1.2), V(x, 0.22, -0.08), main, { mat = 'shiny' })
 		W:wedge(leg, 'ShoeToe', V(1.04, 0.2, 0.22), V(x, 0.2, -0.77), main, { mat = 'shiny', rot = CFrame.identity })
 		if kind == 'spectator' then
-			W:box(leg, 'Wingtip', V(1.05, 0.25, 0.42), V(x, 0.23, -0.42), extra)
+			W:box(leg, 'Wingtip', V(1.07, 0.25, 0.42), V(x, 0.23, -0.42), extra)
 		end
 	end
 end
@@ -410,6 +410,24 @@ local function dollar(W, seg, x, y, z, h, color)
 	W:box(seg, 'DollarBar', V(h * 0.14, h * 1.3, 0.04), V(x, y, z + (z > 0 and 0.02 or -0.02)), color, { mat = 'gold' })
 end
 
+-- A long coat's skirt from the waist to the knee, hung on the thighs so it strides with the legs: per leg a
+-- front panel over the outer part of the thigh (the coat hangs open in the middle), an outer side panel and a
+-- back panel (the two back halves leave a vent), and an optional hem in another colour.
+local function legCoat(W, color, frontWidth, bottom, hem)
+	local y1 = 2.0
+	local h, yc = y1 - bottom, (y1 + bottom) / 2
+	sides(function(sx, side)
+		local seg = side .. 'UpperLeg'
+		W:box(seg, 'CoatSkirt', V(frontWidth, h, 0.1), V(sx * (1.06 - frontWidth / 2), yc, -0.57), color)
+		W:box(seg, 'CoatSkirtSide', V(0.1, h, 1.2), V(sx * 1.07, yc, 0), color)
+		W:box(seg, 'CoatSkirtBack', V(1.02, h, 0.1), V(sx * 0.53, yc, 0.57), color)
+		if hem then
+			W:box(seg, 'CoatHem', V(frontWidth + 0.04, 0.14, 0.14), V(sx * (1.06 - frontWidth / 2), bottom + 0.06, -0.585), hem)
+			W:box(seg, 'CoatBackHem', V(1.06, 0.14, 0.14), V(sx * 0.53, bottom + 0.06, 0.585), hem)
+		end
+	end)
+end
+
 -- A back vent (a dark seam up from the hem) and an optional half-belt with two buttons across the back.
 local function backVent(W, seg, y0, y1, z, color)
 	W:box(seg, 'BackVent', V(0.05, y1 - y0, 0.03), V(0, (y0 + y1) / 2, z), color)
@@ -444,8 +462,8 @@ function Looks.CornerKid(W, s)
 	sides(function(sx, side)
 		band(W, side .. 'UpperLeg', 'ShortsHem', sx * 0.5, 0.88, 0.2, 1.1, 1.1, shorts)
 		W:box(side .. 'UpperLeg', 'ShortsStripe', V(0.04, 1.1, 0.16), V(sx * 1.04, 1.4, 0), K.white)
-		band(W, side .. 'LowerLeg', 'Sock', sx * 0.5, 0.62, 0.36, 1.03, 1.03, K.white)
-		band(W, side .. 'LowerLeg', 'SockStripe', sx * 0.5, 0.74, 0.06, 1.04, 1.04, red)
+		band(W, side .. 'LowerLeg', 'Sock', sx * 0.5, 0.62, 0.36, 1.045, 1.045, K.white)
+		band(W, side .. 'LowerLeg', 'SockStripe', sx * 0.5, 0.74, 0.06, 1.055, 1.055, red)
 		shoe(W, sx, 'hightop', red, K.white, K.white)
 	end)
 	band(W, 'RightLowerArm', 'Wristband', 1.5, 2.42, 0.16, 1.08, 1.08, red)
@@ -571,10 +589,13 @@ function Looks.Bandit(W, s)
 		W:box('UpperTorso', 'Drawstring', V(0.05, 0.45, 0.04), V(sx * 0.18, 3.72, FZ(1)), K.white)
 		W:ball('UpperTorso', 'Aglet', 0.09, V(sx * 0.18, 3.47, FZ(1)), K.white)
 		band(W, side .. 'LowerArm', 'Cuff', sx * 1.5, 2.38, 0.18, 1.06, 1.06, dark)
-		band(W, side .. 'LowerLeg', 'JeanCuff', sx * 0.5, 0.38, 0.12, 1.04, 1.04, s.Pants:Lerp(K.white, 0.25))
+		band(W, side .. 'LowerLeg', 'JeanCuff', sx * 0.5, 0.38, 0.12, 1.04, 1.07, s.Pants:Lerp(K.white, 0.25))
 		shoe(W, sx, 'sneaker', K.white, K.ink, hood)
 	end)
 	band(W, 'LowerTorso', 'Hem', 0, 2.08, 0.18, 2.04, 1.04, dark)
+	-- A white bandit-mask print between the shoulders.
+	W:box('UpperTorso', 'MaskPrint', V(1.0, 0.3, 0.04), V(0.25, 3.45, BZ(1)), K.white)
+	sides(function(sx) W:box('UpperTorso', 'MaskPrintEye', V(0.2, 0.14, 0.03), V(0.25 + sx * 0.24, 3.47, BZ(1) + 0.03), K.ink) end)
 	-- Money sack slung over the left shoulder behind the arm, the rope down the front, bills poking out of
 	-- the neck, a gold $ on its face and on its back.
 	local k = V(-1.5, 4.36, 0.98)
@@ -612,12 +633,12 @@ function Looks.Hustler(W, s)
 	end)
 	-- Cross-body bag on a strap (right shoulder to left hip), front and back below the shoulder line.
 	W:box('UpperTorso', 'BagStrap', V(0.14, 1.85, 0.04), V(0.0, 3.08, FZ(3)), K.ink, { rot = ANG(0, 0, rad(-38)) })
-	W:box('UpperTorso', 'BagStrapBack', V(0.14, 1.85, 0.04), V(0.0, 3.08, BZ(2)), K.ink, { rot = ANG(0, 0, rad(-38)) })
+	W:box('UpperTorso', 'BagStrapBack', V(0.14, 1.85, 0.04), V(0.0, 3.08, 0.62), K.ink, { rot = ANG(0, 0, rad(-38)) })
 	W:box('LowerTorso', 'HipBag', V(0.8, 0.4, 0.3), V(-0.58, 2.35, -0.66), K.ink)
 	W:box('LowerTorso', 'HipBagZip', V(0.72, 0.04, 0.02), V(-0.58, 2.46, -0.82), gold, { mat = 'gold' })
 	-- Bucket hat, shades.
 	hair(W, s, 'hatted')
-	W:box('Head', 'BucketCrown', V(1.52, 0.5, 1.3), V(0, HT + 0.18, 0.02), hat)
+	W:box('Head', 'BucketCrown', V(1.52, 0.5, 1.31), V(0, HT + 0.18, 0.02), hat)
 	W:box('Head', 'BucketBrim', V(2.0, 0.08, 1.78), V(0, HT - 0.08, 0.02), hat, { rot = ANG(rad(-4), 0, 0) })
 	W:cyl('Head', 'Stud', 0.08, 0.26, V(0, HT + 0.47, 0.02), hat, 'y')
 	W:box('Head', 'BucketBand', V(1.54, 0.1, 1.32), V(0, HT + 0.0, 0.02), suit)
@@ -663,19 +684,22 @@ function Looks.Crook(W, s)
 	W:box('Head', 'BandanaKnot', V(0.2, 0.26, 0.3), V(0.86, HT - 0.06, 0.2), red)
 	W:box('Head', 'BandanaTail', V(0.06, 0.55, 0.2), V(0.9, HT - 0.4, 0.34), red, { rot = ANG(rad(-20), 0, rad(8)) })
 	W:box('Head', 'BandanaTail', V(0.06, 0.45, 0.2), V(0.9, HT - 0.36, 0.08), red, { rot = ANG(rad(15), 0, rad(8)) })
-	for i = -2, 2 do W:box('Head', 'BandanaPrint', V(0.08, 0.08, 0.02), V(i * 0.3, HT - 0.06, -0.69), K.white) end
+	for i = -2, 2 do W:box('Head', 'BandanaPrint', V(0.08, 0.08, 0.02), V(i * 0.3, HT - 0.06, -0.7), K.white) end
 	glasses(W, 'shades', K.ink, C(60, 30, 40))
 	face(W, s, s.Expression, { noEyes = true })
-	-- Boombox riding the left shoulder (it moves with the arm), speakers to the front.
-	local b = V(-1.68, 4.5, 0.02)
-	W:box('LeftUpperArm', 'Boombox', V(1.72, 0.96, 0.56), b, box, { mat = 'metal' })
-	for _, dx in { -0.5, 0.5 } do
-		W:cyl('LeftUpperArm', 'Speaker', 0.06, 0.7, b + V(dx, -0.04, -0.3), K.ink, 'z')
-		W:cyl('LeftUpperArm', 'SpeakerCone', 0.06, 0.3, b + V(dx, -0.04, -0.34), red, 'z')
+	-- Boombox carried in the left hand by its handle, hanging at the side and turned so the speakers show
+	-- from the front (well clear of the head whatever the arm does).
+	local turn = ANG(0, rad(-28), 0)
+	local b = V(-1.86, 1.42, -0.1)
+	local function at(v) return b + turn * v end
+	W:box('LeftHand', 'Boombox', V(0.5, 0.86, 1.56), b, box, { mat = 'metal', rot = turn })
+	for _, dz in { -0.44, 0.44 } do
+		W:cyl('LeftHand', 'Speaker', 0.06, 0.62, at(V(-0.27, -0.04, dz)), K.ink, 'x', { rot = turn })
+		W:cyl('LeftHand', 'SpeakerCone', 0.06, 0.26, at(V(-0.31, -0.04, dz)), red, 'x', { rot = turn })
 	end
-	W:box('LeftUpperArm', 'TapeDeck', V(0.3, 0.36, 0.06), b + V(0, 0.08, -0.3), K.ink)
-	W:box('LeftUpperArm', 'BoomboxHandle', V(1.3, 0.12, 0.14), b + V(0, 0.62, 0), K.ink)
-	sides(function(sx) W:box('LeftUpperArm', 'HandlePost', V(0.1, 0.18, 0.1), b + V(sx * 0.6, 0.52, 0), K.ink) end)
+	W:box('LeftHand', 'TapeDeck', V(0.06, 0.3, 0.32), at(V(-0.27, 0.12, 0)), K.ink, { rot = turn })
+	W:box('LeftHand', 'BoomboxHandle', V(0.14, 0.12, 1.1), at(V(0, 0.58, 0)), K.ink, { rot = turn })
+	for _, dz in { -0.5, 0.5 } do W:box('LeftHand', 'HandlePost', V(0.1, 0.16, 0.1), at(V(0, 0.48, dz)), K.ink, { rot = turn }) end
 end
 
 -- 7. Getaway Driver: yellow racing jacket (black stripes, checker panel, a big "7" roundel and a checker band
@@ -687,7 +711,7 @@ function Looks.GetawayDriver(W, s)
 	sides(function(sx, side)
 		W:box('Torso', 'RacingStripe', V(0.14, 1.95, 0.04), V(sx * 0.62, 3.0, FZ(1)), stripe)
 		W:box(side .. 'UpperArm', 'ShoulderStripe', V(1.04, 0.05, 0.14), V(sx * 1.5, 4.025, 0), stripe)
-		W:box(side .. 'Arm', 'SleeveStripe', V(0.04, 1.62, 0.14), V(sx * 2.02, 3.15, 0), stripe)
+		W:box(side .. 'Arm', 'SleeveStripe', V(0.04, 1.62, 0.14), V(sx * 2.015, 3.15, 0), stripe)
 		band(W, side .. 'LowerArm', 'Cuff', sx * 1.5, 2.38, 0.14, 1.06, 1.06, stripe)
 		W:box(side .. 'Hand', 'GloveKnuckle', V(1.04, 0.1, 1.04), V(sx * 1.5, 2.26, 0), helmet)
 		shoe(W, sx, 'boot', K.ink, K.ink, jacket)
@@ -743,8 +767,8 @@ function Looks.Enforcer(W, s)
 	for _, p in { { 0, 0.3 }, { -0.2, 0 }, { 0.2, 0 }, { 0, -0.3 }, { 0, 0 } } do
 		W:box('UpperTorso', 'BackStud', V(0.14, 0.14, 0.04), V(p[1] * 2.2, 3.3 + p[2], BZ(2)), K.gold, { mat = 'gold', rot = ANG(0, 0, math.pi / 4) })
 	end
-	band(W, 'LowerTorso', 'Belt', 0, 2.3, 0.16, 2.04, 1.04, K.ink)
-	W:box('LowerTorso', 'BeltBuckle', V(0.3, 0.2, 0.04), V(0, 2.3, -0.54), K.gold, { mat = 'gold' })
+	band(W, 'LowerTorso', 'Belt', 0, 2.3, 0.16, 2.07, 1.14, K.ink)
+	W:box('LowerTorso', 'BeltBuckle', V(0.3, 0.2, 0.04), V(0, 2.3, -0.57), K.gold, { mat = 'gold' })
 	-- Shoulder holster: harness strap and a holster under the left arm with a grip.
 	W:box('UpperTorso', 'HarnessStrap', V(0.14, 1.5, 0.04), V(-0.66, 3.3, -0.57), holster, { rot = ANG(0, 0, rad(-12)) })
 	W:box('UpperTorso', 'Holster', V(0.3, 0.7, 0.42), V(-1.13, 3.0, -0.18), holster)
@@ -780,9 +804,6 @@ function Looks.StreetBoss(W, s)
 	-- Long open coat: front panels down to the knees, sides and back.
 	sides(function(sx, side)
 		W:box('Torso', 'CoatFront', V(0.66, 2.0, 1.08), V(sx * 0.69, 3.0, 0), coat)
-		W:box('LowerTorso', 'CoatSkirt', V(0.74, 1.3, 0.12), V(sx * 0.66, 1.38, -0.56), coat)
-		W:box('LowerTorso', 'CoatSkirtSide', V(0.12, 1.3, 1.1), V(sx * 1.04, 1.38, 0), coat)
-		W:box('LowerTorso', 'CoatHem', V(0.78, 0.14, 0.16), V(sx * 0.66, 0.78, -0.58), fur)
 		band(W, side .. 'LowerArm', 'FurCuff', sx * 1.5, 2.48, 0.4, 1.24, 1.24, fur)
 		W:box(side .. 'Hand', 'Ring', V(1.04, 0.08, 1.04), V(sx * 1.5, 2.2, 0), K.gold, { mat = 'gold' })
 		shoe(W, sx, 'dress', K.ink, K.ink)
@@ -793,9 +814,7 @@ function Looks.StreetBoss(W, s)
 			W:box('Torso', 'FurTuft', V(0.16, 0.34, 0.2), V(sx * (0.68 - i * 0.05), 3.62 - i * 0.48, -0.62), fur)
 		end
 	end)
-	W:box('LowerTorso', 'CoatBack', V(2.12, 1.3, 0.12), V(0, 1.38, 0.56), coat)
-	W:box('LowerTorso', 'CoatBackHem', V(2.16, 0.14, 0.16), V(0, 0.78, 0.58), fur)
-	backVent(W, 'LowerTorso', 0.85, 1.9, 0.635, coat:Lerp(K.ink, 0.4))
+	legCoat(W, coat, 0.74, 0.72, fur)
 	W:box('Torso', 'CoatBackUpper', V(0.8, 1.9, 0.06), V(0, 3.0, BZ(1)), coat)
 	-- Varsity letters on the back in fur white with a gold outline bar.
 	print7(W, 'UpperTorso', 'OG', 0, 3.2, BZ(2), 0.78, 0.5, 0.16, fur, 'VarsityLetter')
@@ -887,16 +906,18 @@ function Looks.Capo(W, s)
 	-- Sharkskin sheen: a few lighter stripes; the back has a centre vent and charcoal pinstripes.
 	pinstripes(W, 'UpperTorso', -0.85, -0.55, 3.2, 1.6, FZ(1), suit:Lerp(K.white, 0.45), 0.3)
 	pinstripes(W, 'UpperTorso', 0.55, 0.85, 3.2, 1.6, FZ(1), suit:Lerp(K.white, 0.45), 0.3)
-	for _, x in { -0.75, -0.25, 0.25, 0.75 } do W:box('UpperTorso', 'BackStripe', V(0.06, 1.3, 0.03), V(x, 3.3, BZ(1) - 0.01), lapel) end
+	for _, x in { -0.75, -0.45, -0.15, 0.15, 0.45, 0.75 } do W:box('UpperTorso', 'BackStripe', V(0.03, 1.58, 0.03), V(x, 3.2, BZ(1) - 0.01), suit:Lerp(K.white, 0.45)) end
+	-- Sharkskin sheen: a lighter band across the top of the shoulders and arms.
+	W:box('UpperTorso', 'SuitSheen', V(2.04, 0.12, 1.04), V(0, 3.95, 0), suit:Lerp(K.white, 0.4), { mat = 'shiny' })
+	sides(function(sx, side) W:box(side .. 'UpperArm', 'SuitSheen', V(1.04, 0.12, 1.04), V(sx * 1.5, 3.95, 0), suit:Lerp(K.white, 0.4), { mat = 'shiny' }) end)
 	halfBelt(W, 2.22, 0.57, lapel, K.gold)
 	backVent(W, 'LowerTorso', 1.72, 2.1, 0.555, lapel)
-	W:box('UpperTorso', 'BackCollar', V(1.2, 0.16, 0.04), V(0, 3.92, BZ(1)), lapel)
 	-- Black fedora with a red band.
 	hair(W, s, 'hatted')
 	W:box('Head', 'FedoraBrim', V(2.0, 0.08, 1.74), V(0, HT + 0.0, 0.02), hat, { rot = ANG(rad(-5), 0, 0) })
 	W:box('Head', 'FedoraCrown', V(1.42, 0.54, 1.2), V(0, HT + 0.31, 0.06), hat)
 	W:wedge('Head', 'FedoraPinch', V(1.0, 0.16, 0.5), V(0, HT + 0.62, -0.24), hat:Lerp(K.white, 0.12))
-	W:box('Head', 'FedoraBand', V(1.44, 0.16, 1.22), V(0, HT + 0.12, 0.06), red)
+	W:box('Head', 'FedoraBand', V(1.44, 0.16, 1.22), V(0, HT + 0.135, 0.06), red)
 	face(W, s, s.Expression)
 	-- Gold briefcase turned so its face shows, black handle and seam, a lock.
 	local turn = ANG(0, rad(-30), 0)
@@ -908,17 +929,16 @@ function Looks.Capo(W, s)
 	W:box('LeftHand', 'BriefcaseMark', V(0.04, 0.3, 0.3), b + turn * V(-0.21, -0.18, 0), K.white, { rot = turn * ANG(rad(45), 0, 0) })
 end
 
--- 12. Consigliere: wine double-breasted suit with gold buttons and gold-piped lapels, gold bow tie, a black
+-- 12. Consigliere: wine double-breasted suit with gold buttons and dark satin lapels, gold bow tie, a black
 -- homburg with a gold band over silver hair, round gold specs, a pocket watch, a ledger with its pages out.
 function Looks.Consigliere(W, s)
 	local suit, gold, ledger = s.Color, K.gold, s.Trim or C(110, 66, 40)
 	W:paint({ Head = s.Skin, UpperTorso = suit, LowerTorso = suit, UpperArm = suit, LowerArm = suit, Hand = s.Skin, UpperLeg = s.Pants, LowerLeg = s.Pants, Foot = K.ink })
 	suitFront(W, s, { shirt = s.Shirt or C(255, 240, 210), tie = 'bow', tieColor = gold, buttons = {}, vWidth = 0.4, lapel = suit:Lerp(K.ink, 0.25), lapelMat = 'shiny' })
-	sides(function(sx) W:box('UpperTorso', 'LapelPiping', V(0.04, 0.92, 0.03), V(sx * 0.32, 3.5, FZ(2) - 0.03), gold, { mat = 'gold', rot = ANG(0, 0, rad(-sx * 16)) }) end)
 	-- Double-breasted front: overlap panel and six gold buttons.
 	W:box('UpperTorso', 'DoubleBreast', V(0.9, 0.88, 0.04), V(0.15, 2.86, FZ(1) - 0.012), suit:Lerp(K.white, 0.06))
 	for _, x in { -0.18, 0.42 } do
-		for _, y in { 3.0, 2.72, 2.44 } do W:box('Torso', 'Button', V(0.12, 0.12, 0.04), V(x, y, FZ(2)), gold, { mat = 'gold' }) end
+		for _, y in { 3.0, 2.72, 2.44 } do W:box('Torso', 'Button', V(0.12, 0.12, 0.04), V(x, y, FZ(2) - 0.015), gold, { mat = 'gold' }) end
 	end
 	sides(function(sx, side)
 		W:box('LowerTorso', 'JacketSkirt', V(1.04, 0.55, 1.08), V(sx * 0.5, 1.92, 0), suit)
@@ -928,7 +948,7 @@ function Looks.Consigliere(W, s)
 	end)
 	-- The back: a centre vent and two gold buttons at the waist.
 	backVent(W, 'LowerTorso', 1.66, 2.2, 0.555, suit:Lerp(K.ink, 0.45))
-	sides(function(sx) W:box('LowerTorso', 'BackButton', V(0.18, 0.18, 0.04), V(sx * 0.34, 2.25, BZ(1)), gold, { mat = 'gold' }) end)
+	sides(function(sx) W:box('LowerTorso', 'BackButton', V(0.18, 0.18, 0.04), V(sx * 0.34, 2.25, 0.565), gold, { mat = 'gold' }) end)
 	W:box('UpperTorso', 'BackSeam', V(0.05, 1.2, 0.03), V(0, 3.0, BZ(1) - 0.005), suit:Lerp(K.ink, 0.35))
 	W:box('UpperTorso', 'BackYoke', V(1.96, 0.08, 0.04), V(0, 3.66, BZ(1)), gold, { mat = 'gold' })
 	-- Pocket watch chain across the waistcoat.
@@ -957,47 +977,46 @@ function Looks.Consigliere(W, s)
 	sides(function(sx) W:box('LeftHand', 'LedgerCorner', V(0.08, 0.18, 0.18), l + turn * V(sx * 0.27, -0.48, -0.4), gold, { mat = 'gold', rot = turn }) end)
 end
 
--- 13. Underboss: black suit, black shirt, white tie and gold tie bar, a long camel overcoat over the
--- shoulders (tapered back with a vent and a buttoned half-belt, empty sleeves hanging outside the arms, collar
--- turned up), camel fedora, black gloves, a black cane with a gold knob.
+-- 13. Underboss: black suit, black shirt, white tie and gold tie bar under a long camel overcoat worn open
+-- (camel sleeves with dark cuffs, wide lapels, collar turned up, a buttoned half-belt at the back, the skirt
+-- on the thighs so it strides), a gold pocket square, camel fedora with a gold band, black gloves, a black
+-- cane with a big gold knob.
 function Looks.Underboss(W, s)
 	local suit, coat, tie = s.Color, s.Accent, s.Trim or K.white
 	local light = coat:Lerp(K.white, 0.25)
 	local dark = coat:Lerp(K.ink, 0.25)
-	W:paint({ Head = s.Skin, UpperTorso = suit, LowerTorso = suit, UpperArm = suit, LowerArm = suit, Hand = K.ink, UpperLeg = suit, LowerLeg = suit, Foot = K.ink })
-	suitFront(W, s, { shirt = K.ink, collar = K.ink, tie = true, tieColor = tie, buttons = { 2.75 }, vWidth = 0.56, lapel = suit:Lerp(K.white, 0.08), lapelMat = 'shiny' })
+	W:paint({ Head = s.Skin, UpperTorso = suit, LowerTorso = suit, UpperArm = coat, LowerArm = coat, Hand = K.ink, UpperLeg = suit, LowerLeg = suit, Foot = K.ink })
+	suitFront(W, s, { shirt = K.ink, collar = K.ink, tie = true, tieColor = tie, buttons = {}, vWidth = 0.5, lapel = suit:Lerp(K.white, 0.08), lapelMat = 'shiny' })
 	W:box('UpperTorso', 'TieBar', V(0.26, 0.06, 0.03), V(0, 3.45, FZ(3) - 0.035), K.gold, { mat = 'gold' })
-	-- The coat: the yoke over the torso, shoulder caps on the arms, a tapered back (wide upper, narrower
-	-- skirt), front edges with wide lapels, empty sleeves hanging outside the arms, the collar up.
-	W:box('UpperTorso', 'CoatYoke', V(2.12, 0.3, 1.36), V(0, 4.02, 0.06), coat)
-	W:box('UpperTorso', 'CoatBackUpper', V(3.1, 1.5, 0.14), V(0, 3.35, 0.74), coat)
-	W:box('UpperTorso', 'CoatBackLower', V(2.5, 1.9, 0.14), V(0, 1.75, 0.74), coat)
+	-- The coat on the torso: open front panels wrapping the sides, the back, wide lapels, a gold pocket square.
 	sides(function(sx, side)
-		W:box(side .. 'UpperArm', 'CoatShoulder', V(1.16, 0.3, 1.36), V(sx * 1.55, 4.02, 0.06), coat)
-		W:box('Torso', 'CoatFront', V(0.34, 3.2, 0.12), V(sx * 0.86, 2.45, -0.62), coat)
-		W:box('UpperTorso', 'CoatLapel', V(0.3, 1.0, 0.06), V(sx * 0.7, 3.55, -0.7), dark, { rot = ANG(0, 0, rad(sx * 12)) })
-		W:box('UpperTorso', 'CoatButton', V(0.12, 0.12, 0.04), V(sx * 0.86, 2.75, -0.7), K.ink)
-		W:box(side .. 'UpperArm', 'CoatSleeve', V(0.26, 1.7, 0.8), V(sx * 2.15, 3.12, 0.12), coat)
-		W:box(side .. 'UpperArm', 'CoatSleeveCuff', V(0.28, 0.2, 0.82), V(sx * 2.15, 2.35, 0.12), dark)
-		band(W, side .. 'LowerArm', 'ShirtCuff', sx * 1.5, 2.36, 0.1, 1.04, 1.04, K.white)
+		W:box('Torso', 'CoatFront', V(0.62, 2.04, 1.1), V(sx * 0.72, 2.99, 0), coat)
+		W:box('UpperTorso', 'CoatLapel', V(0.3, 1.0, 0.06), V(sx * 0.5, 3.55, -0.58), dark, { rot = ANG(0, 0, rad(-sx * 14)) })
+		W:box('UpperTorso', 'CoatButton', V(0.12, 0.12, 0.04), V(sx * 0.5, 2.75, -0.57), K.ink)
+		band(W, side .. 'LowerArm', 'CoatCuff', sx * 1.5, 2.45, 0.2, 1.06, 1.06, dark)
+		band(W, side .. 'LowerArm', 'ShirtCuff', sx * 1.5, 2.33, 0.06, 1.03, 1.03, K.white)
 		shoe(W, sx, 'dress', K.ink, K.ink)
 	end)
-	W:box('UpperTorso', 'CoatCollar', V(2.2, 0.42, 0.3), V(0, 4.26, 0.62), light)
-	backVent(W, 'UpperTorso', 0.85, 1.9, 0.82, dark)
-	W:box('UpperTorso', 'CoatHalfBelt', V(1.5, 0.22, 0.06), V(0, 2.3, 0.84), dark)
-	sides(function(sx) W:box('UpperTorso', 'CoatBeltButton', V(0.14, 0.14, 0.04), V(sx * 0.6, 2.3, 0.88), K.ink) end)
-	-- Camel fedora with a black band, shades.
+	W:box('UpperTorso', 'PocketSquare', V(0.32, 0.14, 0.05), V(0.7, 3.42, -0.57), K.gold, { mat = 'gold' })
+	sides(function(sx) W:box('UpperTorso', 'PocketSquarePeak', V(0.11, 0.11, 0.04), V(0.7 + sx * 0.08, 3.5, -0.57), K.gold, { mat = 'gold', rot = ANG(0, 0, math.pi / 4) }) end)
+	W:box('Torso', 'CoatBackUpper', V(0.82, 1.98, 0.06), V(0, 3.01, BZ(1)), coat)
+	W:box('UpperTorso', 'CoatCollar', V(1.7, 0.4, 0.3), V(0, 4.15, 0.48), light)
+	W:box('LowerTorso', 'CoatHalfBelt', V(1.5, 0.2, 0.06), V(0, 2.22, 0.58), dark)
+	sides(function(sx) W:box('LowerTorso', 'CoatBeltButton', V(0.14, 0.14, 0.04), V(sx * 0.6, 2.22, 0.63), K.gold, { mat = 'gold' }) end)
+	legCoat(W, coat, 0.72, 0.78, dark)
+	-- Camel fedora with a gold band, shades.
 	hair(W, s, 'hatted')
 	W:box('Head', 'FedoraBrim', V(2.05, 0.08, 1.78), V(0, HT + 0.0, 0.02), coat, { rot = ANG(rad(-6), 0, 0) })
 	W:box('Head', 'FedoraCrown', V(1.44, 0.56, 1.22), V(0, HT + 0.32, 0.06), coat)
 	W:wedge('Head', 'FedoraPinch', V(1.0, 0.16, 0.5), V(0, HT + 0.64, -0.24), light)
-	W:box('Head', 'FedoraBand', V(1.46, 0.16, 1.24), V(0, HT + 0.13, 0.06), K.ink)
+	W:box('Head', 'FedoraBand', V(1.46, 0.18, 1.24), V(0, HT + 0.145, 0.06), K.gold, { mat = 'gold' })
 	glasses(W, 'shades', K.ink, K.ink)
 	face(W, s, s.Expression, { noEyes = true })
-	-- Black cane with a gold knob and tip in the left hand, a gold signet ring on the right.
+	-- Black cane with a big gold knob, a gold collar and tip, in the left hand; a gold signet ring.
 	local c = V(-1.62, 1.15, -0.32)
 	W:cyl('LeftHand', 'Cane', 2.2, 0.14, c, K.ink, 'y', { mat = 'shiny' })
-	W:ball('LeftHand', 'CaneKnob', 0.3, c + V(0, 1.15, 0), K.gold, { mat = 'gold' })
+	W:ball('LeftHand', 'CaneKnob', 0.44, c + V(0, 1.2, 0), K.gold, { mat = 'gold' })
+	W:box('LeftHand', 'CaneCollar', V(0.24, 0.12, 0.24), c + V(0, 0.95, 0), K.gold, { mat = 'gold' })
 	W:box('LeftHand', 'CaneTip', V(0.16, 0.12, 0.16), c + V(0, -1.08, 0), K.gold, { mat = 'gold' })
 	W:box('RightHand', 'SignetRing', V(0.18, 0.12, 0.12), V(1.5, 2.12, -0.52), K.gold, { mat = 'gold' })
 end
@@ -1009,10 +1028,10 @@ function Looks.TheDon(W, s)
 	W:paint({ Head = s.Skin, UpperTorso = jacket, LowerTorso = jacket, UpperArm = jacket, LowerArm = jacket, Hand = s.Skin, UpperLeg = s.Pants, LowerLeg = s.Pants, Foot = K.ink })
 	suitFront(W, s, { shirt = K.white, tie = 'bow', tieColor = K.ink, buttons = { 2.7 }, vWidth = 0.5, lapel = K.ink, lapelMat = 'shiny', buttonColor = K.ink })
 	-- Red rose on the lapel.
-	W:box('UpperTorso', 'RoseStem', V(0.05, 0.3, 0.04), V(-0.62, 3.42, FZ(3)), C(40, 140, 60), { rot = ANG(0, 0, rad(-15)) })
+	W:box('UpperTorso', 'RoseStem', V(0.05, 0.3, 0.04), V(-0.62, 3.42, FZ(3) + 0.012), C(40, 140, 60), { rot = ANG(0, 0, rad(-15)) })
 	W:box('UpperTorso', 'Rose', V(0.24, 0.22, 0.12), V(-0.58, 3.62, FZ(3) - 0.04), rose)
 	W:box('UpperTorso', 'RoseTop', V(0.16, 0.12, 0.14), V(-0.58, 3.74, FZ(3) - 0.04), rose:Lerp(K.white, 0.2))
-	W:box('UpperTorso', 'RoseLeaf', V(0.16, 0.06, 0.04), V(-0.72, 3.5, FZ(3)), C(40, 140, 60), { rot = ANG(0, 0, rad(30)) })
+	W:box('UpperTorso', 'RoseLeaf', V(0.16, 0.06, 0.04), V(-0.72, 3.5, FZ(3) - 0.012), C(40, 140, 60), { rot = ANG(0, 0, rad(30)) })
 	sides(function(sx, side)
 		W:box('LowerTorso', 'JacketSkirt', V(1.04, 0.5, 1.08), V(sx * 0.5, 1.95, 0), jacket)
 		band(W, side .. 'LowerArm', 'ShirtCuff', sx * 1.5, 2.36, 0.1, 1.04, 1.04, K.white)
@@ -1030,26 +1049,27 @@ function Looks.TheDon(W, s)
 	W:box('Head', 'Moustache', V(0.8, 0.16, 0.1), V(0, HC - 0.2, -0.68), s.Hair, { face = true })
 	sides(function(sx) W:box('Head', 'MoustacheEnd', V(0.2, 0.12, 0.1), V(sx * 0.44, HC - 0.26, -0.68), s.Hair, { face = true, rot = ANG(0, 0, rad(sx * 25)) }) end)
 	face(W, s, s.Expression, { noMouth = true })
-	-- His black cat, sitting on his left shoulder (it rides the arm): body, head with ears and green eyes, a
+	-- His black cat, perched on the back of his left shoulder (on the torso, behind the head, so raised arms
+	-- pass in front of it): body and haunch on his back, its head peeking out beside his, ears, green eyes, a
 	-- red collar with a gold bell, the tail hanging down his back.
-	local c = V(-1.42, 4.36, 0.12)
-	local arm = 'LeftUpperArm'
-	W:box(arm, 'CatBody', V(0.62, 0.62, 0.95), c, cat)
-	W:box(arm, 'CatHaunch', V(0.66, 0.4, 0.5), c + V(0, -0.1, 0.25), cat)
-	W:box(arm, 'CatHead', V(0.58, 0.5, 0.5), c + V(0, 0.42, -0.4), cat)
+	local c = V(-0.82, 4.3, 0.92)
+	local seg = 'UpperTorso'
+	W:box(seg, 'CatBody', V(0.62, 0.62, 0.55), c, cat)
+	W:box(seg, 'CatHaunch', V(0.66, 0.42, 0.62), c + V(0.06, -0.24, 0.08), cat)
+	W:box(seg, 'CatHead', V(0.58, 0.5, 0.5), c + V(-0.2, 0.52, -0.04), cat)
 	sides(function(sx)
-		W:wedge(arm, 'CatEar', V(0.16, 0.2, 0.14), c + V(sx * 0.18, 0.77, -0.45), cat, { rot = ANG(0, math.pi, 0) })
-		W:box(arm, 'CatEye', V(0.12, 0.12, 0.03), c + V(sx * 0.13, 0.46, -0.66), C(120, 255, 90), { mat = 'neon' })
+		W:wedge(seg, 'CatEar', V(0.16, 0.2, 0.14), c + V(-0.2 + sx * 0.18, 0.87, -0.06), cat, { rot = ANG(0, math.pi, 0) })
+		W:box(seg, 'CatEye', V(0.12, 0.12, 0.03), c + V(-0.2 + sx * 0.13, 0.56, -0.305), C(120, 255, 90), { mat = 'neon' })
 	end)
-	W:box(arm, 'CatNose', V(0.08, 0.06, 0.03), c + V(0, 0.34, -0.66), C(255, 140, 170))
-	W:box(arm, 'CatCollar', V(0.6, 0.08, 0.52), c + V(0, 0.16, -0.4), C(220, 30, 50))
-	W:ball(arm, 'CatBell', 0.12, c + V(0, 0.1, -0.68), K.gold, { mat = 'gold' })
-	W:box(arm, 'CatTail', V(0.14, 0.9, 0.14), c + V(0.08, -0.55, 0.52), cat, { rot = ANG(rad(-12), 0, rad(-10)) })
+	W:box(seg, 'CatNose', V(0.08, 0.06, 0.03), c + V(-0.2, 0.44, -0.305), C(255, 140, 170))
+	W:box(seg, 'CatCollar', V(0.6, 0.08, 0.52), c + V(-0.2, 0.26, -0.04), C(220, 30, 50))
+	W:ball(seg, 'CatBell', 0.12, c + V(-0.2, 0.2, -0.32), K.gold, { mat = 'gold' })
+	W:box(seg, 'CatTail', V(0.14, 1.0, 0.14), c + V(0.22, -0.75, 0.1), cat, { rot = ANG(0, 0, rad(-14)) })
 end
 
--- 15. Kingpin: royal purple suit with gold lapels and gold pinstripes, a gold waistcoat, a red royal cape with
--- a gold crown on its back and an ermine collar (rolls on the arms), a jewelled gold crown with glowing tips,
--- a diamond chain, gold rings and a gold sceptre.
+-- 15. Kingpin: royal purple suit with gold lapels, a gold waistcoat, a red royal cape with a gold crown on its
+-- back and an ermine collar (rolls on the arms), a jewelled gold crown with a glowing band and tips, a diamond
+-- chain, gold rings and a gold sceptre.
 function Looks.Kingpin(W, s)
 	local suit, gold, cape = s.Color, K.gold, s.Accent
 	local ermine = K.white
@@ -1058,14 +1078,11 @@ function Looks.Kingpin(W, s)
 	W:box('UpperTorso', 'Waistcoat', V(0.7, 0.55, 0.04), V(0, 2.9, FZ(1) - 0.012), gold, { mat = 'gold' })
 	sides(function(sx, side)
 		W:box('LowerTorso', 'JacketSkirt', V(1.04, 0.5, 1.08), V(sx * 0.5, 1.95, 0), suit)
-		W:box(side .. 'UpperArm', 'ArmStripe', V(0.03, 0.9, 0.03), V(sx * 1.5, 3.4, -0.515), gold)
 		band(W, side .. 'LowerArm', 'GoldCuff', sx * 1.5, 2.38, 0.14, 1.06, 1.06, gold, { mat = 'gold' })
 		W:box(side .. 'Hand', 'Ring', V(1.04, 0.08, 1.04), V(sx * 1.5, 2.2, 0), gold, { mat = 'gold' })
 		shoe(W, sx, 'dress', gold, K.ink)
-		W:box('UpperTorso', 'Pinstripe', V(0.03, 1.6, 0.02), V(sx * 0.72, 3.2, FZ(1)), gold)
 		-- Ermine rolls on the shoulders ride the arms.
 		W:box(side .. 'UpperArm', 'ErmineShoulder', V(1.2, 0.42, 1.4), V(sx * 1.56, 4.08, 0.04), ermine)
-		W:box(side .. 'UpperArm', 'ErmineTail', V(0.12, 0.24, 0.04), V(sx * 1.56, 4.08, -0.76), K.ink)
 	end)
 	-- Royal cape (red velvet, gold lining, a gold crown on the back) and the ermine collar on the torso.
 	W:box('UpperTorso', 'Cape', V(3.2, 3.6, 0.14), V(0, 2.25, 0.82), cape)
@@ -1085,17 +1102,17 @@ function Looks.Kingpin(W, s)
 	-- Crown: gold band, a red velvet cap, points all round with glowing gem tips, gems on the band.
 	hair(W, s, 'hatted')
 	W:box('Head', 'CrownBand', V(1.66, 0.34, 1.42), V(0, HT + 0.12, 0.02), gold, { mat = 'gold' })
+	W:box('Head', 'CrownGlow', V(1.68, 0.07, 1.44), V(0, HT + 0.27, 0.02), C(255, 214, 80), { mat = 'neon' })
 	W:box('Head', 'CrownVelvet', V(1.4, 0.5, 1.16), V(0, HT + 0.4, 0.02), cape)
 	for i = -1, 1 do
 		W:box('Head', 'CrownPoint', V(0.24, 0.5, 0.08), V(i * 0.6, HT + 0.5, -0.69), gold, { mat = 'gold' })
 		W:ball('Head', 'CrownTip', 0.2, V(i * 0.6, HT + 0.8, -0.69), i == 0 and K.ruby or K.sapphire, { mat = 'neon' })
-		W:box('Head', 'CrownPoint', V(0.24, 0.5, 0.08), V(i * 0.6, HT + 0.5, 0.73), gold, { mat = 'gold' })
 	end
+	W:box('Head', 'CrownPoint', V(0.24, 0.5, 0.08), V(0, HT + 0.5, 0.73), gold, { mat = 'gold' })
 	sides(function(sx)
 		W:box('Head', 'CrownPoint', V(0.08, 0.5, 0.24), V(sx * 0.81, HT + 0.5, 0.02), gold, { mat = 'gold' })
 		W:ball('Head', 'CrownTip', 0.2, V(sx * 0.81, HT + 0.8, 0.02), K.emerald, { mat = 'neon' })
 	end)
-	W:box('Head', 'CrownGem', V(0.24, 0.24, 0.06), V(0, HT + 0.12, -0.75), K.ruby, { mat = 'glass', rot = ANG(0, 0, math.pi / 4) })
 	face(W, s, s.Expression)
 	-- Sceptre in the left hand: gold staff, orb, cross.
 	local p = V(-1.66, 1.75, -0.3)
@@ -1146,13 +1163,14 @@ local function makePart(parent, name, size, cf, color, mat, shape, anchored)
 end
 
 -- Scale a part-local CFrame by a per-axis factor (rig part -> real part size), keeping its rotation, and
--- the piece size by the same factor seen along the piece's own axes.
+-- the piece size by the same factor seen along the piece's own axes (weights = squared axis components,
+-- which sum to 1, so a turned piece on an evenly scaled part scales exactly like a straight one).
 local function scaled(cf, size, f)
 	if f == V(1, 1, 1) then return cf, size end
 	local x, y, z, r00, r01, r02, r10, r11, r12, r20, r21, r22 = cf:GetComponents()
-	local sx = math.abs(r00) * f.X + math.abs(r10) * f.Y + math.abs(r20) * f.Z
-	local sy = math.abs(r01) * f.X + math.abs(r11) * f.Y + math.abs(r21) * f.Z
-	local sz = math.abs(r02) * f.X + math.abs(r12) * f.Y + math.abs(r22) * f.Z
+	local sx = r00 * r00 * f.X + r10 * r10 * f.Y + r20 * r20 * f.Z
+	local sy = r01 * r01 * f.X + r11 * r11 * f.Y + r21 * r21 * f.Z
+	local sz = r02 * r02 * f.X + r12 * r12 * f.Y + r22 * r22 * f.Z
 	return CFrame.new(x * f.X, y * f.Y, z * f.Z, r00, r01, r02, r10, r11, r12, r20, r21, r22), V(size.X * sx, size.Y * sy, size.Z * sz)
 end
 
@@ -1285,22 +1303,48 @@ local function headBox(head)
 	return head.Size
 end
 
--- What a character wore before its first look, so Art.unequip can give it back: removed instances (and
--- where they were), body part colours and MeshPart textures. Weak keys: a respawned character starts clean.
+-- What a character wore before its first look, so Art.unequip can give it back: removed instances and the
+-- NAME of what held them ('' = the character), body part colours and MeshPart textures by part name.
+-- Nothing in an entry may point back at the character or its parts: Luau weak tables are not ephemerons,
+-- so a value that reaches its own key would keep every equipped character alive for the life of the server.
+-- Entries also go as soon as the character is destroyed or leaves the game (Art.forget).
 local stashes = setmetatable({}, { __mode = 'k' })
+function Art.forget(character)
+	local st = stashes[character]
+	if not st then return end
+	if st.destroying then st.destroying:Disconnect() end
+	if st.ancestry then st.ancestry:Disconnect() end
+	stashes[character] = nil
+end
 local function stashFor(character)
 	local st = stashes[character]
 	if st then return st end
 	st = { items = {}, colors = {}, textures = {} }
 	stashes[character] = st
 	for _, p in character:GetChildren() do
-		if p:IsA('BasePart') then st.colors[p] = p.Color end
+		if p:IsA('BasePart') then st.colors[p.Name] = p.Color end
 	end
+	-- The handlers reach the character through a weak reference, so the connections can't keep it alive
+	-- either. (pcall: the preview harness has no signals.)
+	local ref = setmetatable({ character }, { __mode = 'v' })
+	pcall(function()
+		st.destroying = character.Destroying:Connect(function()
+			if ref[1] then Art.forget(ref[1]) end
+		end)
+		st.ancestry = character.AncestryChanged:Connect(function(_, parent)
+			if parent == nil and ref[1] then Art.forget(ref[1]) end
+		end)
+	end)
 	return st
 end
-local function stashAway(st, inst)
-	table.insert(st.items, { inst, inst.Parent })
+local function stashAway(st, character, inst)
+	local holder = inst.Parent
+	table.insert(st.items, { inst, holder == character and '' or holder.Name })
 	inst.Parent = nil
+end
+-- Test hook: the stash entry for a character (nil when none).
+function Art._stash(character)
+	return stashes[character]
 end
 
 -- The player's own skin tone: kept on the character the first time (the costume repaints the head).
@@ -1326,16 +1370,16 @@ function Art.equip(character, s)
 	local look = table.clone(s)
 	look.Skin = skinTone(character, head)
 	for _, v in character:GetChildren() do
-		if v:IsA('Accessory') or v:IsA('Shirt') or v:IsA('Pants') or v:IsA('ShirtGraphic') or v:IsA('BodyColors') then stashAway(st, v) end
+		if v:IsA('Accessory') or v:IsA('Shirt') or v:IsA('Pants') or v:IsA('ShirtGraphic') or v:IsA('BodyColors') then stashAway(st, character, v) end
 	end
 	for _, p in character:GetChildren() do
 		if p:IsA('BasePart') and p.Name ~= 'HumanoidRootPart' then
 			for _, v in p:GetChildren() do
-				if v:IsA('SurfaceAppearance') or v:IsA('FaceControls') or (p == head and v:IsA('Decal')) then stashAway(st, v) end
+				if v:IsA('SurfaceAppearance') or v:IsA('FaceControls') or (p == head and v:IsA('Decal')) then stashAway(st, character, v) end
 			end
 			-- Textured mesh bodies ignore Color: blank the texture on every part the look paints.
 			if p:IsA('MeshPart') and p.TextureID ~= '' then
-				if st.textures[p] == nil then st.textures[p] = p.TextureID end
+				if st.textures[p.Name] == nil then st.textures[p.Name] = p.TextureID end
 				p.TextureID = ''
 			end
 		end
@@ -1386,7 +1430,9 @@ function Art.equip(character, s)
 					local f = p.Size / box[1]
 					local rest = Art.Rig[seg][2]
 					local c0 = CF(V(rest.X, (band_[1] + band_[2]) / 2, rest.Z) - box[2])
-					local cf, size = scaled(c0, V(box[1].X + 0.03, band_[2] - band_[1], box[1].Z + 0.03), f)
+					-- (arm covers a touch deeper than the torso's so their faces never share a plane at the seam)
+					local deep = name:find('Arm') and 0.045 or 0.03
+					local cf, size = scaled(c0, V(box[1].X + 0.03, band_[2] - band_[1], box[1].Z + deep), f)
 					weld(makePart(m, seg .. 'Cover', size, p.CFrame * cf, recipe.body[seg], 'cloth', nil, false), p, cf)
 				end
 			end
@@ -1409,30 +1455,44 @@ function Art.equip(character, s)
 			weld(p, part, c0)
 		end
 	end
-	-- Top-tier sparkle: one invisible box round the body with a slow emitter in the look's band colour.
+	-- Top-tier sparkle: one invisible box round the body (wider and taller than it, so some sparkles show
+	-- against the sky) with one emitter in the look's band colour; Rate and size climb with the tier
+	-- (Lifetime ~1 s, so about Rate particles are alive: at most ~10 per player). ZOffset draws them in
+	-- front of the body from any camera, so they aren't lost inside it.
 	local torso = character:FindFirstChild('UpperTorso') or character:FindFirstChild('Torso')
 	if typeof(s.Glow) == 'Color3' and torso then
 		local k = torso.Size.X / 2
 		local c0 = CF(0, -0.15 * k * 2, 0.1)
-		local glow = makePart(m, 'TierGlow', V(3.2, 4.6, 1.8) * k, torso.CFrame * c0, s.Glow, 'cloth', nil, false)
+		local glow = makePart(m, 'TierGlow', V(4.6, 5.6, 1.8) * k, torso.CFrame * c0, s.Glow, 'cloth', nil, false)
 		glow.Transparency = 1
 		weld(glow, torso, c0)
 		local e = Instance.new('ParticleEmitter')
 		e.Name = 'TierSparkle'
 		e.Texture = 'rbxasset://textures/particles/sparkles_main.dds'
-		e.Color = ColorSequence.new(s.Glow:Lerp(Color3.new(1, 1, 1), 0.35), s.Glow)
-		e.LightEmission = 1
-		e.Rate = 4
-		e.Lifetime = NumberRange.new(0.7, 1.2)
+		e.Color = ColorSequence.new(s.Glow)
+		e.LightEmission = 0.5
+		e.Rate = math.min(s.GlowRate or 5, 10)
+		e.Lifetime = NumberRange.new(0.8, 1.2)
 		e.Speed = NumberRange.new(0.2, 0.6)
 		e.SpreadAngle = Vector2.new(180, 180)
-		e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.4, 0.55 * k), NumberSequenceKeypoint.new(1, 0) })
+		local peak = (s.GlowSize or 0.8) * k
+		e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.2, peak), NumberSequenceKeypoint.new(0.65, peak), NumberSequenceKeypoint.new(1, 0) })
 		e.Rotation = NumberRange.new(0, 360)
 		e.RotSpeed = NumberRange.new(-90, 90)
 		e.Shape = Enum.ParticleEmitterShape.Box
 		e.ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume
-		e.ZOffset = 0.5
+		e.ZOffset = 1.5 * k
 		e.Parent = glow
+		-- The very top look also gets a soft light of its colour round the player (the one extra cue).
+		if s.GlowLight then
+			local l = Instance.new('PointLight')
+			l.Name = 'TierLight'
+			l.Color = s.Glow
+			l.Brightness = 1.2
+			l.Range = 9 * k
+			l.Shadows = false
+			l.Parent = glow
+		end
 	end
 	m.Parent = character
 	return m
@@ -1445,17 +1505,19 @@ function Art.unequip(character)
 	if old then old:Destroy() end
 	local st = stashes[character]
 	if not st then return end
-	for part, color in st.colors do
-		part.Color = color
+	for name, color in st.colors do
+		local part = character:FindFirstChild(name)
+		if part and part:IsA('BasePart') then part.Color = color end
 	end
-	for part, texture in st.textures do
-		part.TextureID = texture
+	for name, texture in st.textures do
+		local part = character:FindFirstChild(name)
+		if part and part:IsA('MeshPart') then part.TextureID = texture end
 	end
 	for _, item in st.items do
-		-- (pcall: the old parent may have been destroyed since)
-		pcall(function() item[1].Parent = item[2] end)
+		local holder = item[2] == '' and character or character:FindFirstChild(item[2])
+		if holder then item[1].Parent = holder end
 	end
-	stashes[character] = nil
+	Art.forget(character)
 	character:SetAttribute('AvatarSkin', nil)
 end
 
