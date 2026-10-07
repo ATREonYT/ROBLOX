@@ -11,7 +11,8 @@ Schema.Template={
  ProcessedReceipts={},TimePlayed=0,
  -- Guns from the ARMORY: owned ids and the equipped one (its multiplier scales punch Power).
  Guns={Owned={Pistol=true},Equipped='Pistol'},
- -- SPEED from the treadmills (TreadmillService): sets your walk speed through Config/Treadmills.walkSpeed.
+ -- UNUSED. Speed was trained on the treadmills, which are gone (walk speed now comes from your look,
+ -- Config/Skins.walkSpeed). Kept, and still validated, so saved profiles that carry it keep loading.
  Speed=0,
 }
 function Schema.new() return clone(Schema.Template) end
@@ -61,6 +62,6 @@ function Schema.validate(data)
 end
 function Schema.public(data)
  -- Explicit allowlist: receipt ledger and entitlement cache never leave the server.
- return {EquippedSkin=data.EquippedSkin,Rep=data.Rep,Cash=data.Cash,Rebirths=data.Rebirths,Evolution=clone(data.Evolution),HighestMapIndex=data.HighestMapIndex,UnlockedMaps=clone(data.UnlockedMaps),Crew=clone(data.Crew),Settings=clone(data.Settings),Onboarding=clone(data.Onboarding),Guns=clone(data.Guns),Speed=data.Speed}
+ return {EquippedSkin=data.EquippedSkin,Rep=data.Rep,Cash=data.Cash,Rebirths=data.Rebirths,Evolution=clone(data.Evolution),HighestMapIndex=data.HighestMapIndex,UnlockedMaps=clone(data.UnlockedMaps),Crew=clone(data.Crew),Settings=clone(data.Settings),Onboarding=clone(data.Onboarding),Guns=clone(data.Guns)}
 end
 return Schema

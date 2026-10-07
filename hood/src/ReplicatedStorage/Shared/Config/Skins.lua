@@ -50,4 +50,12 @@ S.StationById={};for _,s in S.Stations do S.StationById[s.Id]=s end
 function S.available(power,id) local s=S.ById[id];return s~=nil and power>=s.Required end
 function S.nextSkin(power) for _,s in S.List do if power<s.Required then return s end end end
 function S.gain(id,multiplier) return (S.ById[id] or S.List[1]).Gain*multiplier end
+-- Walk speed by look: every evolution walks a little faster, linear by Index from Roblox's default 16 (Corner
+-- Kid) to 24 (the Kingpin), about 0.57 a look. An unknown id walks at Base. LobbyService puts it on the Humanoid.
+S.Walk={Base=16,Top=24}
+function S.walkSpeed(id)
+ local s=S.ById[id]
+ if not s then return S.Walk.Base end
+ return S.Walk.Base+(S.Walk.Top-S.Walk.Base)*(s.Index-1)/math.max(1,#S.List-1)
+end
 return S

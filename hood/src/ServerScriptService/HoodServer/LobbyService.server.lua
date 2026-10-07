@@ -75,6 +75,13 @@ end
 local function equipAppearance(player,id)
  local c=player.Character
  if not c or not c:FindFirstChild('Head') or not c:FindFirstChild('Humanoid') then return end
+ -- Each look walks a little faster (Skins.walkSpeed). Written only when this character's look speed changes
+ -- (a new character, or a new look), so anything else that sets WalkSpeed in between isn't overridden.
+ local speed=Skins.walkSpeed(id)
+ if c:GetAttribute('LookWalkSpeed')~=speed then
+  local h=c:FindFirstChildOfClass('Humanoid')
+  if h then h.WalkSpeed=speed;c:SetAttribute('LookWalkSpeed',speed) end
+ end
  if not player:HasAppearanceLoaded() then return end
  if applied[player]~=c or c:GetAttribute('BlockSkin')~=id then
   Art.equip(c,Skins.ById[id] or Skins.List[1]);c:SetAttribute('BlockSkin',id);applied[player]=c
