@@ -578,39 +578,65 @@ body(rewards.Well, 'Log in every day for bigger and bigger rewards. Daily reward
 actionIn(rewards.Well, nil, { Name = 'Claim', Tone = 'green', Disabled = true, Text = 'COMING SOON', TextSize = 28, Width = 300, Height = 62, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -14) })
 
 ---------------------------------------------------------------- EVOLVE
-local evolve = makePanel('Evolve', 'EVOLVE', 660, 450, 290)
-local function stage(name, x)
-	local s = Kit.new('Frame', { Name = name, BackgroundColor3 = Color.white, BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, x, 0, 12), Size = px(176, 170), ZIndex = 25, Parent = evolve.Well })
-	Kit.corner(Kit.Radius.m).Parent = s
-	Kit.stroke(Color.ink, 3, true).Parent = s
-	local g = Kit.gradient(Color.white, Color.white, 0.8)
-	g.Parent = s
-	local title = Kit.text({ Name = 'Name', Text = '', TextSize = 24, Stroke = Color.ink, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, x, 0, 186), Size = px(220, 28), ZIndex = 25, Parent = evolve.Well })
-	local gain = Kit.text({ Name = name .. 'Gain', Text = '', FontFace = Kit.Font.number, TextSize = 17, TextColor3 = Color.ink, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, x, 0, 214), Size = px(220, 20), ZIndex = 25, Parent = evolve.Well })
-	return { Frame = s, Gradient = g, Name = title, Gain = gain }
-end
-local fromStage, toStage = stage('From', -186), stage('To', 186)
-Kit.icon3d('Evolve', 110, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 40), ZIndex = 26 }).Parent = evolve.Well
-local evolveBar, evolveFill, evolveBarText = Kit.progress({ Name = 'Progress', Width = 440, Height = 30, Value = 0, Text = '', AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 244) })
+-- Every look on one board: your look and the bar to the next one up top, then all 15 as cards (portrait, name,
+-- +Power/sec, and EQUIPPED, EQUIP or the Power still needed; the next one to unlock is starred). EQUIP asks the
+-- server (EquipSkin), which allows it at the look's own display or anywhere within LobbyRules.WardrobeRange of
+-- the stand's WARDROBE. Away from it the board says where to go and its button asks Lobby.client for the arrow
+-- (GuideEvolve); Lobby.client's WARDROBE prompt opens this panel through the local OpenEvolve attribute.
+local LobbyRules = optional('LobbyRules')
+local evolve = makePanel('Evolve', 'EVOLVE', 860, 500, 290)
+local evolveFace
+local evolveCurrent = Kit.text({ Name = 'Current', Text = '', TextSize = 24, Stroke = Color.ink, TextXAlignment = Enum.TextXAlignment.Left, Position = px(74, 4), Size = px(260, 28), ZIndex = 25, Parent = evolve.Well })
+local evolveWhere = body(evolve.Well, '', { Name = 'Where', Position = px(74, 34), Size = px(270, 22), TextSize = 15 })
+local evolveBar, evolveFill, evolveBarText = Kit.progress({ Name = 'Progress', Width = 290, Height = 30, Value = 0, Text = '', Position = px(346, 14) })
 evolveBar.ZIndex = 25
 evolveBar.Parent = evolve.Well
+local evolveGrid = Kit.new('ScrollingFrame', {
+	Name = 'Looks', BackgroundTransparency = 1, BorderSizePixel = 0, Position = px(8, 64), Size = UDim2.new(1, -16, 1, -70), ZIndex = 24,
+	ScrollBarThickness = 8, ScrollBarImageColor3 = Color.cardboardEdge, ScrollingDirection = Enum.ScrollingDirection.Y,
+	AutomaticCanvasSize = Enum.AutomaticSize.Y, CanvasSize = UDim2.new(), Parent = evolve.Well,
+})
+Kit.new('UIGridLayout', { CellSize = px(150, 170), CellPadding = px(10, 10), SortOrder = Enum.SortOrder.LayoutOrder, Parent = evolveGrid })
+Kit.new('UIPadding', { PaddingTop = UDim.new(0, 6), PaddingLeft = UDim.new(0, 6), PaddingBottom = UDim.new(0, 6), Parent = evolveGrid })
 local evolveAction
-local shownPair
-local function showLook(st, skin, locked)
-	local old = st.Frame:FindFirstChild('Portrait')
-	if old then old:Destroy() end
+local shownBoard
+-- true near the stand's WARDROBE, false away from it, nil on a map without one.
+local function atWardrobe()
+	local map = ActiveMap.get()
+	local point = map and mapHasStand() and map.Lobby:FindFirstChild('WardrobePoint', true)
+	if not point then return nil end
+	local c = player.Character
+	local r = c and c:FindFirstChild('HumanoidRootPart')
+	return r ~= nil and (r.Position - point.Position).Magnitude <= (LobbyRules and LobbyRules.WardrobeRange or 30)
+end
+local function lookCard(skin, state, isNext)
 	local color = tierColor(skin)
-	st.Gradient.Color = ColorSequence.new(color:Lerp(Color.white, 0.7), color:Lerp(Color.white, 0.15))
-	local vp = lookPortrait(skin, 170, 166, locked)
-	vp.AnchorPoint = Vector2.new(0.5, 0.5)
-	vp.Position = UDim2.fromScale(0.5, 0.5)
-	vp.Parent = st.Frame
-	st.Name.Text = string.upper(skin.Name)
-	st.Name.TextColor3 = color
-	st.Gain.Text = '+' .. skin.Gain .. ' POWER / SEC'
+	local c = card(skin.Id, color:Lerp(Color.white, 0.6), color:Lerp(Color.white, 0.1), skin.Index)
+	local vp = lookPortrait(skin, 140, 100, state == 'Locked')
+	vp.AnchorPoint = Vector2.new(0.5, 0)
+	vp.Position = UDim2.new(0.5, 0, 0, 2)
+	vp.Parent = c
+	Kit.text({ Name = 'Title', Text = string.upper(skin.Name), TextSize = 17, Stroke = color:Lerp(Color.ink, 0.7), AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 100), Size = UDim2.new(1, -8, 0, 20), ZIndex = 26, Parent = c })
+	Kit.text({ Name = 'Gain', Text = '+' .. skin.Gain .. ' POWER/SEC', TextSize = 14, TextColor3 = Tone.yellow.top, Stroke = Color.ink, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 119), Size = UDim2.new(1, -8, 0, 16), ZIndex = 26, Parent = c })
+	local where = { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -7), Size = UDim2.new(1, -20, 0, 26), TextSize = 15 }
+	if state == 'Equipped' then
+		pill(c, 'EQUIPPED', 'green', where)
+	elseif state == 'Unlocked' then
+		local holder = Kit.button({ Name = 'Equip', Tone = 'green', Text = 'EQUIP', TextSize = 18, Width = 124, Height = 32, Lip = 4, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -4), ZIndex = 27 })
+		holder.Parent = c
+		Motion.button(holder, function() Net.get('EquipSkin'):FireServer(skin.Id) end)
+	else
+		local _, label = pill(c, short(skin.Required) .. ' POWER', nil, where)
+		label.TextColor3 = isNext and Tone.yellow.top or Color.white
+	end
+	if isNext then
+		local star = Kit.text({ Name = 'Next', Text = 'NEXT!', TextSize = 20, TextColor3 = Tone.yellow.top, Stroke = Color.ink, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 6, 0, 6), Size = px(70, 26), TextXAlignment = Enum.TextXAlignment.Right, Rotation = 8, ZIndex = 28, Parent = c })
+		Kit.stroke(Tone.yellow.top, 4, true).Parent = c
+	end
+	return c
 end
 local function guideToEvolve()
-	-- Lobby.client owns the world arrow; this asks it to point at the EVOLVE booth (or the next look's stand).
+	-- Lobby.client owns the world arrow; this asks it to point at the WARDROBE, the EVOLVE booth or the next look.
 	closePanel()
 	local map = ActiveMap.get()
 	local stand = mapHasStand()
@@ -619,39 +645,58 @@ local function guideToEvolve()
 		return
 	end
 	player:SetAttribute('GuideEvolve', os.clock())
-	toast(stand and 'Follow the arrow to your next look!' or 'Follow the arrow to the EVOLVE booth!', 'green')
+	toast(stand and 'Follow the arrow!' or 'Follow the arrow to the EVOLVE booth!', 'green')
 end
 local function evolveUpdate()
 	local power, skin = num('Power', 0), skinNow()
 	local best = bestUnlocked(power)
-	local target = best.Index > skin.Index and best or Skins.List[skin.Index + 1]
-	local pair = skin.Id .. '>' .. (target and target.Id or '') .. (target and power >= target.Required and '+' or '-')
-	if pair ~= shownPair then
-		shownPair = pair
-		showLook(fromStage, skin, false)
-		showLook(toStage, target or skin, target ~= nil and power < target.Required)
-		if not target then toStage.Name.Text = 'MAX LEVEL' end
+	local nextSkin = Skins.nextSkin and Skins.nextSkin(power) or Skins.List[best.Index + 1]
+	local near = atWardrobe()
+	local board = skin.Id .. '|' .. best.Id .. '|' .. tostring(near)
+	if board ~= shownBoard then
+		shownBoard = board
+		if evolveFace then evolveFace:Destroy() end
+		evolveFace = lookFace(skin, 60, 26)
+		evolveFace.Position = px(6, 0)
+		evolveFace.Parent = evolve.Well
+		evolveCurrent.Text = string.upper(skin.Name) .. '  +' .. skin.Gain .. '/SEC'
+		evolveCurrent.TextColor3 = tierColor(skin)
+		for _, child in evolveGrid:GetChildren() do
+			if child:IsA('GuiObject') then child:Destroy() end
+		end
+		for _, s in Skins.List do
+			local state = s.Id == skin.Id and 'Equipped' or power >= s.Required and 'Unlocked' or 'Locked'
+			lookCard(s, state, nextSkin ~= nil and s.Id == nextSkin.Id).Parent = evolveGrid
+		end
 	end
-	local ready = target ~= nil and power >= target.Required
-	evolveFill.Size = UDim2.fromScale(target and math.clamp(power / target.Required, 0.06, 1) or 1, 1)
-	evolveBarText.Text = not target and 'FULLY EVOLVED!' or ready and 'READY TO EVOLVE!' or short(power) .. ' / ' .. short(target.Required) .. ' POWER'
-	local key = not target and 'max' or ready and 'ready' or 'locked'
+	evolveWhere.Text = near == true and 'At the WARDROBE: equip any look you have unlocked.'
+		or near == false and 'Walk to the WARDROBE at the EVOLUTIONS stand to change looks.'
+		or 'Unlock looks with Power, then evolve at the booth.'
+	evolveFill.Size = UDim2.fromScale(nextSkin and math.clamp(power / nextSkin.Required, 0.06, 1) or 1, 1)
+	evolveBarText.Text = nextSkin and (short(power) .. ' / ' .. short(nextSkin.Required) .. ' → ' .. string.upper(nextSkin.Name)) or 'FULLY EVOLVED!'
+	local ready = best.Gain > skin.Gain
+	local key = (near == true and 'here' or 'away') .. (ready and '+' or '-')
 	if evolveAction and evolveAction:GetAttribute('Key') == key then return end
-	local stand = mapHasStand()
 	evolveAction = actionIn(evolve.Well, evolveAction, {
-		Name = 'Action', Tone = ready and 'green' or 'blue', Disabled = target == nil, TextSize = 26, Width = 340, Height = 60,
-		Text = not target and 'YOU ARE THE KINGPIN' or ready and (stand and 'GO EQUIP IT!' or 'GO TO THE BOOTH!') or (stand and 'SHOW ME THE LOOKS' or 'SHOW ME THE BOOTH'),
-		AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -12),
+		Name = 'Action', Tone = near == true and 'blue' or ready and 'green' or 'blue', TextSize = 20, Width = 180, Height = 46,
+		Text = near == true and 'FIND NEXT LOOK' or ready and (mapHasStand() and 'GO EQUIP IT!' or 'GO TO THE BOOTH!') or 'SHOW ME',
+		AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -10, 0, 8),
 	}, guideToEvolve)
 	evolveAction:SetAttribute('Key', key)
 end
-evolve.Open = evolveUpdate
+evolve.Open = function()
+	shownBoard = nil
+	evolveUpdate()
+end
 evolve.Update = evolveUpdate
 
 actions.Shop = function() openPanel(shop) end
 actions.Rebirth = function() openPanel(rebirth) end
 actions.Rewards = function() openPanel(rewards) end
 actions.Evolve = function() openPanel(evolve) end
+player:GetAttributeChangedSignal('OpenEvolve'):Connect(function()
+	if current ~= evolve then openPanel(evolve) end
+end)
 actions.PVP = function() toast('PVP ARENA COMING SOON! Keep training.', 'purple') end
 
 ---------------------------------------------------------------------------------------------- live values
@@ -679,7 +724,7 @@ local function hintText(power)
 	local skin = skinNow()
 	local best = bestUnlocked(power)
 	if best.Index > skin.Index then
-		return '<font color="#8CF06A">NEW LOOK UNLOCKED!</font>  Evolve into ' .. best.Name .. (mapHasStand() and ' at the looks stand' or ' at the EVOLVE booth')
+		return '<font color="#8CF06A">NEW LOOK UNLOCKED!</font>  Evolve into ' .. best.Name .. (mapHasStand() and ' at the WARDROBE' or ' at the EVOLVE booth')
 	end
 	local station = player:GetAttribute('TrainingStation') or ''
 	local nextSkin = Skins.List[skin.Index + 1]

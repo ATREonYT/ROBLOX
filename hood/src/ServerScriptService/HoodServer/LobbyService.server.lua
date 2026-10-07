@@ -88,10 +88,14 @@ remote.OnServerEvent:Connect(function(player,id)
  local morphs=lobby:FindFirstChild('Morphs',true);local stand=morphs and morphs:FindFirstChild('Skin_'..id);local target=stand and stand:FindFirstChild('Interact')
  -- Maps without a morph stand (The Block V2) evolve at the EVOLVE booth instead.
  local booth=not target and lobby:FindFirstChild('EvolvePoint',true);target=target or booth
- if not target then return end
- local distance=(root.Position-target.Position).Magnitude
- if not Rules.canEquip(profile.Data.Rep,id,distance) then
-  Net.get('Notice'):FireClient(player,distance>14 and (booth and 'Walk to the EVOLVE booth to evolve.' or 'Walk to this character display to equip it.') or ('Reach '..Skins.ById[id].Required..' Power to unlock this look.'));return
+ -- The stand's WARDROBE: the EVOLVE panel equips any unlocked look within Rules.WardrobeRange of it.
+ local wardrobe=morphs and lobby:FindFirstChild('WardrobePoint',true)
+ if not target and not wardrobe then return end
+ local distance=target and (root.Position-target.Position).Magnitude or math.huge
+ local wardrobeDistance=wardrobe and (root.Position-wardrobe.Position).Magnitude or nil
+ if not Rules.canEquip(profile.Data.Rep,id,distance,wardrobeDistance) then
+  local far=distance>Rules.EquipRange and not (wardrobeDistance and wardrobeDistance<=Rules.WardrobeRange)
+  Net.get('Notice'):FireClient(player,far and (booth and 'Walk to the EVOLVE booth to evolve.' or wardrobe and 'Walk to the WARDROBE at the EVOLUTIONS stand to change your look.' or 'Walk to this character display to equip it.') or ('Reach '..Skins.ById[id].Required..' Power to unlock this look.'));return
  end
  profile.Data.EquippedSkin=id;profile.Data.Onboarding.EquippedSkin=true
  equipAppearance(player,id);sync(player,profile,1,'');Data.push(player)

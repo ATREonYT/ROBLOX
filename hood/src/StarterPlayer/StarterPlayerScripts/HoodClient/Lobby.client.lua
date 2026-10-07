@@ -46,13 +46,17 @@ local function compact(v)
 end
 
 ---------------------------------------------------------------------------------------------- prompts
+-- Each look's own prompt reaches only its standing spot (figures stand 9 studs apart, so neighbours' prompts
+-- never show together); the stand's WARDROBE badge has the one big prompt, on its own key, which opens the
+-- HUD's EVOLVE panel (every look, equip from there) through the local OpenEvolve attribute.
+local FIGURE_REACH = 5
 local prompts = {}
 for _, s in (morphs and Skins.List or {}) do
 	local stand = morphs:WaitForChild('Skin_' .. s.Id)
 	local target = stand:WaitForChild('Interact')
 	local p = Instance.new('ProximityPrompt')
 	p.Name = 'Equip_' .. s.Id
-	p.MaxActivationDistance = 11
+	p.MaxActivationDistance = FIGURE_REACH
 	p.RequiresLineOfSight = false
 	p.HoldDuration = 0
 	p.ObjectText = s.Name
@@ -60,6 +64,21 @@ for _, s in (morphs and Skins.List or {}) do
 	p.Parent = target
 	p.Triggered:Connect(function() Net.get('EquipSkin'):FireServer(s.Id) end)
 	prompts[s.Id] = p
+end
+local wardrobePoint = morphs and ActiveMap.find(lobby, 'WardrobePoint', 10) or nil
+if wardrobePoint then
+	local p = Instance.new('ProximityPrompt')
+	p.Name = 'Wardrobe'
+	p.MaxActivationDistance = 9
+	p.RequiresLineOfSight = false
+	p.HoldDuration = 0
+	p.KeyboardKeyCode = Enum.KeyCode.F
+	p.GamepadKeyCode = Enum.KeyCode.ButtonY
+	p.ObjectText = 'WARDROBE'
+	p.ActionText = 'Evolve & change look'
+	p.UIOffset = Vector2.new(0, -24)
+	p.Parent = wardrobePoint
+	p.Triggered:Connect(function() player:SetAttribute('OpenEvolve', os.clock()) end)
 end
 -- No stand: one prompt at the EVOLVE booth puts on your best unlocked look.
 local evolvePoint = not morphs and ActiveMap.find(lobby, 'EvolvePoint', 10) or nil
@@ -87,7 +106,8 @@ end
 -- optional):
 --   locked     its own colours pulled halfway to a dark shade of the pad colour (still recognisable, plainly
 --              not yours), padlock shown, unlock-only effects off, frozen
---   next look  (the first one you can't wear yet) in full colour with its padlock, its pad pulsing: the goal
+--   next look  (the first one you can't wear yet) in full colour with its padlock, its pad pulsing and its
+--              NEXT tag hanging off the pad: the goal
 --   unlocked   full colour, effects on, breathing (a small HoodMotion bob, phased by column)
 --   worn       the same, turning slowly on its disc
 -- A stand with the Showcase attribute (the featured Kingpin) keeps its own colours and motion.
@@ -101,18 +121,19 @@ local looks = {}
 for _, s in (morphs and Skins.List or {}) do
 	local stand = morphs:FindFirstChild('Skin_' .. s.Id)
 	local band = stand and stand:GetAttribute('BandColor')
-	local entry = { Parts = {}, Lock = {}, Fx = {}, Disc = {}, Glow = {}, Column = stand and stand:GetAttribute('Column') or 1 }
-	entry.Shadow = typeof(band) == 'Color3' and band:Lerp(Color3.new(0, 0, 0), 0.6) or LOOK_SHADOW
+	local entry = { Parts = {}, Lock = {}, Fx = {}, Disc = {}, Glow = {}, Tag = {}, Column = stand and stand:GetAttribute('Column') or 1 }
+	-- The shade: the pad colour darkened by the stand's LockShade (gold statues on the top tier, 0.35).
+	entry.Shadow = typeof(band) == 'Color3' and band:Lerp(Color3.new(0, 0, 0), stand:GetAttribute('LockShade') or 0.6) or LOOK_SHADOW
 	entry.Showcase = stand and stand:GetAttribute('Showcase')
 	entry.Display = stand and not entry.Showcase and stand:FindFirstChild('Display')
 	if entry.Display then entry.Pivot = entry.Display:GetPivot() end
 	for _, p in (entry.Display and entry.Display:GetDescendants() or {}) do
 		if p:IsA('BasePart') and p.Transparency < 1 then table.insert(entry.Parts, { Part = p, Color = p.Color, Material = p.Material }) end
 	end
-	for _, name in { 'Lock', 'Turntable' } do
+	for _, name in { 'Lock', 'Turntable', 'NextTag' } do
 		local m = stand and stand:FindFirstChild(name)
 		for _, p in (m and m:GetDescendants() or {}) do
-			if p:IsA('BasePart') then table.insert(name == 'Lock' and entry.Lock or entry.Disc, p) end
+			if p:IsA('BasePart') or (name == 'NextTag' and p:IsA('SurfaceGui')) then table.insert(name == 'Lock' and entry.Lock or name == 'Turntable' and entry.Disc or entry.Tag, p) end
 		end
 	end
 	for _, d in (stand and stand:GetDescendants() or {}) do
@@ -146,6 +167,9 @@ local function paintLooks(n, worn)
 			end
 			for _, p in e.Lock do p.Transparency = locked and 0 or 1 end
 			for _, p in e.Disc do p.Transparency = worn == s.Id and 0 or 1 end
+			for _, p in e.Tag do
+				if p:IsA('SurfaceGui') then p.Enabled = goal == s else p.Transparency = goal == s and 0 or 1 end
+			end
 			for _, fx in e.Fx do fx.Enabled = not locked end
 			local d = e.Display
 			if d and locked then
@@ -249,11 +273,41 @@ for _, s in Skins.Stations do
 		stations[s.Id] = entry
 	end
 end
+-- Bag-station labels like the reference's spawn view: the stations at the two ends of each row show their
+-- stack from anywhere, the ones in the middle of a row only up close (22 studs), so a row reads as two clean
+-- stacks instead of a pile of text. A station is in the middle when two others sit within a row pitch of it.
+local LABEL_FAR, LABEL_NEAR, NEXT_LIFT = 250, 22, Vector3.new(0, 6.5, 0)
+for _, e in stations do
+	if e.Bag and e.Zone then
+		e.Label = e.Sign:FindFirstChildWhichIsA('BillboardGui')
+		local near = 0
+		for _, o in stations do
+			if o ~= e and o.Bag and o.Zone then
+				local d = o.Zone.CFrame.Position - e.Zone.CFrame.Position
+				if Vector3.new(d.X, 0, d.Z).Magnitude < 16 then near += 1 end -- (row pitch 10.5-14.5; rows sit 35+ apart)
+			end
+		end
+		e.Middle = near >= 2
+	end
+end
 local SILHOUETTE = C(18, 18, 22)
 local UNLOCKED, LOCKED = C(20, 235, 70), C(235, 25, 50)
 local function paintStations(n)
+	local goal = nil -- the next station to unlock always shows its stack (lifted clear if it's a middle one)
+	for _, s in Skins.Stations do
+		if n < s.Required then goal = s break end
+	end
 	for _, s in Skins.Stations do
 		local e = stations[s.Id]
+		if e and e.Label then
+			local isGoal = goal == s
+			local state = (e.Middle and 'M' or 'E') .. (isGoal and 'G' or '')
+			if e.LabelState ~= state then
+				e.LabelState = state
+				e.Label.MaxDistance = (e.Middle and not isGoal) and LABEL_NEAR or LABEL_FAR
+				e.Label.StudsOffset = (e.Middle and isGoal) and NEXT_LIFT or Vector3.zero
+			end
+		end
 		if e then
 			local locked = n < s.Required
 			if e.Locked ~= locked then
@@ -285,11 +339,13 @@ end
 
 ---------------------------------------------------------------------------------------------- refresh
 -- The HUD's EVOLVE panel asks for directions by setting the local GuideEvolve attribute: the arrow then points
--- at the EVOLVE booth (or the next look's stand) until you get there or 45 seconds pass.
+-- at the EVOLVE booth (or the stand's WARDROBE when a better look is ready, else the next look's stand) until
+-- you get there or 45 seconds pass.
 local GUIDE_TIME, GUIDE_ARRIVED = 45, 12
 local guideUntil = 0
 local function evolveTarget(skin, best, nextSkin)
 	if morphs then
+		if wardrobePoint and best.Gain > skin.Gain then return wardrobePoint end
 		local s = (best.Gain > skin.Gain and best) or nextSkin
 		local stand = s and morphs:FindFirstChild('Skin_' .. s.Id)
 		return stand and stand:FindFirstChild('Interact')
@@ -342,7 +398,7 @@ local function refresh()
 	end
 	if guideTo then
 		indicator.Adornee = guideTo
-		pointer.Text = morphs and 'YOUR NEXT LOOK ↓' or 'EVOLVE HERE ↓'
+		pointer.Text = guideTo == wardrobePoint and 'WARDROBE ↓' or morphs and 'YOUR NEXT LOOK ↓' or 'EVOLVE HERE ↓'
 	elseif station:find('Locked:') then
 		indicator.Adornee = zoneOf(bestGym.Id)
 		pointer.Text = 'TRAIN x' .. bestGym.Multiplier .. ' HERE ↓'
