@@ -215,9 +215,17 @@ local function paintLooks(n, worn)
 		end
 	end
 end
+-- Where your feet are, from your rig (R15: the root's bottom less HipHeight; R6: 2-stud legs), so short,
+-- scaled and Rthro avatars are judged by the level they stand on. Each stand's level is its equip point less 1.2.
+local function feetOf(c, root)
+	local hum = c and c:FindFirstChildOfClass('Humanoid')
+	local legs = hum and (hum.RigType == Enum.HumanoidRigType.R15 and hum.HipHeight or 2) or 2
+	return root.Position.Y - root.Size.Y / 2 - legs
+end
 local function showLabels(n)
 	local c = player.Character
 	local root = c and c:FindFirstChild('HumanoidRootPart')
+	local feet = root and feetOf(c, root)
 	local goal = n and Skins.nextSkin(n)
 	local any = false
 	for _, s in Skins.List do
@@ -226,7 +234,8 @@ local function showLabels(n)
 			local near = false
 			if root then
 				local d = e.Point.Position - root.Position
-				near = Vector3.new(d.X, 0, d.Z).Magnitude <= LABEL_RANGE and d.Y > 0 and d.Y <= LABEL_RISE
+				local up = e.Point.Position.Y - 1.2 - feet -- (the stand's level above yours: one tier up is 2.7-4.5)
+				near = Vector3.new(d.X, 0, d.Z).Magnitude <= LABEL_RANGE and up > 0.1 and up <= LABEL_RISE + 0.2
 			end
 			e.Label.Enabled = near
 			any = any or near
@@ -245,13 +254,14 @@ local function fadeRows()
 	local c = player.Character
 	local root = c and c:FindFirstChild('HumanoidRootPart')
 	local cam = workspace.CurrentCamera
+	local feet = root and feetOf(c, root)
 	for _, s in Skins.List do
 		local e = looks[s.Id]
 		if e and e.Pivot and e.Point then
 			local fade = false
 			if root then
 				local fp, rp = e.Pivot.Position, root.Position
-				if e.Point.Position.Y <= rp.Y - 1.7 then -- (its equip point 1.2 over its level, your root 3 over yours)
+				if e.Point.Position.Y - 1.2 <= feet + 0.5 then -- (its level at or under yours)
 					if cam then
 						local a = Vector3.new(cam.CFrame.Position.X, 0, cam.CFrame.Position.Z)
 						local b = Vector3.new(rp.X, 0, rp.Z)
@@ -434,6 +444,9 @@ local function refresh()
 			-- Labels with their own Gain row (The Block V2's stand) keep the price, the action and the gain apart.
 			local split = anchor.WorldLabel:FindFirstChild('Gain')
 			detail.Text = split and (id == s.Id and 'EQUIPPED' or unlocked and 'EQUIP' or 'LOCKED') or (id == s.Id and 'EQUIPPED' or unlocked and 'EQUIP' or compact(s.Required) .. ' PWR') .. ' • +' .. s.Gain .. '/sec'
+			-- (a chip-only label, its name rows hidden, names the look: your own body can hide the pad's nameplate)
+			local title = split and anchor.WorldLabel:FindFirstChild('Title')
+			if title and not title.Visible then detail.Text = string.upper(s.Name) .. ' · ' .. detail.Text end
 			detail.TextColor3 = id == s.Id and (split and C(120, 220, 255) or C(255, 126, 119)) or unlocked and C(109, 244, 133) or (split and C(255, 90, 90) or C(255, 255, 255))
 		end
 		if unlocked then best = s end

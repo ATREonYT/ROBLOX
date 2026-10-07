@@ -2495,6 +2495,7 @@ end
 function Evolutions.steps(h) return math.max(1, math.ceil(h / Evolutions.StepRise - 1e-6)) end
 function Evolutions.runFor(h) return Evolutions.steps(h) * Evolutions.Run end
 Evolutions.SideFlight = { z0 = 8.4, z1 = 14.4 } -- slab up to tier 1 along its +X face, climbing toward -X
+Evolutions.BarrierX = -29.6 -- the far alley barrier's end: the lobby wall (1.6 past the slab: the footprint's one overhang)
 -- One pad colour per tier (height is the rarity on the podium; the rarity band stays on the label outline).
 -- `glow` is the Neon inset, about 0.65 of the colour: Neon renders brighter than its Color3 and the full
 -- colour burns out to white (judge in Studio with bloom; drop toward 0.55 if the centre clips). `pale` is the
@@ -2732,13 +2733,20 @@ end
 Evolutions.GoalColor = C(255, 214, 40)
 Evolutions.MarkSize = 2.2
 Evolutions.MarkTip = 0.12 -- the ▼'s tip above the bottom of its box, in box heights (TextYAlignment Bottom)
-function Evolutions.label(c, pos, s, band, tipY, full)
+-- The chip (all but the featured look) floats at pos and reads "<NAME> · EQUIP" (Lobby.client writes it); a
+-- thin stalk with a notch runs down to just over the hat (hatY), so the chip belongs to its figure even when it
+-- floats high enough to clear the heads of the rows behind.
+Evolutions.ChipW, Evolutions.ChipH = 3.8, 0.72
+function Evolutions.label(c, pos, s, band, tipY, full, hatY)
 	local anchor = ghost(c:part('LabelAnchor', V(0.2, 0.2, 0.2), CFrame.new(pos), P.white))
 	local g = Instance.new('BillboardGui')
 	g.Name = 'WorldLabel'
-	-- (the stands carry their name and price on the pad's face; the floating label is the action chip alone,
+	-- (the stands carry their name and price on the pad's face; the floating label is the named chip,
 	-- except over the featured look, whose plinth has no nameplate row)
-	g.Size = full and UDim2.fromScale(4.8, 1.9) or UDim2.fromScale(2.6, 0.72)
+	local cw, ch = Evolutions.ChipW, Evolutions.ChipH
+	local stalk = not full and math.max(0, pos.Y - ch / 2 - ((hatY or pos.Y) + 0.2)) or 0
+	g.Size = full and UDim2.fromScale(4.8, 1.9) or UDim2.fromScale(cw, ch + stalk)
+	g.StudsOffset = Vector3.new(0, -stalk / 2, 0)
 	g.MaxDistance = 70
 	g.LightInfluence = 0
 	g.Parent = anchor
@@ -2772,7 +2780,24 @@ function Evolutions.label(c, pos, s, band, tipY, full)
 	chip.BackgroundTransparency = 0.2
 	chip.BorderSizePixel = 0
 	chip.Position = full and UDim2.fromScale(0.27, 0.72) or UDim2.fromScale(0, 0)
-	chip.Size = full and UDim2.fromScale(0.46, 0.28) or UDim2.fromScale(1, 1)
+	chip.Size = full and UDim2.fromScale(0.46, 0.28) or UDim2.fromScale(1, ch / (ch + stalk))
+	if not full and stalk > 0.05 then
+		local f = ch / (ch + stalk)
+		local line = Instance.new('Frame')
+		line.Name = 'Stalk'
+		line.BackgroundColor3, line.BackgroundTransparency, line.BorderSizePixel = ink, 0.2, 0
+		line.AnchorPoint = Vector2.new(0.5, 0)
+		line.Position, line.Size = UDim2.fromScale(0.5, f), UDim2.fromScale(0.025, (1 - f) * 0.9)
+		line.Parent = g
+		local notch = Instance.new('TextLabel')
+		notch.Name = 'Notch'
+		notch.BackgroundTransparency = 1
+		notch.AnchorPoint = Vector2.new(0.5, 1)
+		notch.Position, notch.Size = UDim2.fromScale(0.5, 1), UDim2.fromScale(0.09, math.min((1 - f) * 0.3, 0.25))
+		notch.Text, notch.TextScaled, notch.TextColor3 = '▼', true, ink
+		notch.Font = FONT.loud
+		notch.Parent = g
+	end
 	local corner = Instance.new('UICorner')
 	corner.CornerRadius = UDim.new(0.4, 0)
 	corner.Parent = chip
@@ -2785,7 +2810,9 @@ function Evolutions.label(c, pos, s, band, tipY, full)
 			t.Visible, t.TextTransparency = false, 1
 			t:FindFirstChildOfClass('UIStroke').Transparency = 1
 		end
-		detail.Position, detail.Size = UDim2.fromScale(0.04, 0.04), UDim2.fromScale(0.92, 0.92)
+		local f = ch / (ch + stalk)
+		detail.Position, detail.Size = UDim2.fromScale(0.04, 0.06 * f), UDim2.fromScale(0.92, 0.88 * f)
+		detail.Text = string.upper(s.Name) .. ' · ' .. detail.Text
 	end
 	local mark = Instance.new('BillboardGui')
 	mark.Name = 'NextMarker'
@@ -2841,16 +2868,19 @@ function Evolutions.tag(c, x, topY, faceZ, dx)
 end
 
 -- Small gold padlock sitting on the pad's front edge (the client hides it once the look unlocks).
-function Evolutions.padlock(c, pos, scale)
+function Evolutions.padlock(c, pos, scale, ink)
 	local l, model = c:group('Lock')
 	local k = scale or 1
 	local gold, steel = C(255, 200, 48), C(206, 212, 222)
-	l:box('LockBody', pos + V(-0.6, -0.5, -0.24) * k, pos + V(0.6, 0.45, 0.24) * k, gold, M.SmoothPlastic)
-	l:box('LockRim', pos + V(-0.64, 0.3, -0.27) * k, pos + V(0.64, 0.45, 0.27) * k, gold:Lerp(C(150, 90, 10), 0.35), M.SmoothPlastic)
+	-- (on the gold statues the lock is ink with a gold keyhole: gold on gold disappears)
+	local body = ink and C(40, 36, 52) or gold
+	l:box('LockBody', pos + V(-0.6, -0.5, -0.24) * k, pos + V(0.6, 0.45, 0.24) * k, body, M.SmoothPlastic)
+	l:box('LockRim', pos + V(-0.64, 0.3, -0.27) * k, pos + V(0.64, 0.45, 0.27) * k, ink and C(70, 64, 86) or gold:Lerp(C(150, 90, 10), 0.35), M.SmoothPlastic)
 	for _, x in { -0.38, 0.38 } do l:box('Shackle', pos + V(x - 0.11, 0.45, -0.11) * k, pos + V(x + 0.11, 1.0, 0.11) * k, steel, M.Metal) end
 	l:box('Shackle', pos + V(-0.49, 1.0, -0.11) * k, pos + V(0.49, 1.2, 0.11) * k, steel, M.Metal)
-	l:part('Keyhole', V(0.22, 0.22, 0.06) * k, CFrame.new(pos + V(0, 0.02, -0.25) * k), C(40, 26, 10), M.SmoothPlastic, Enum.PartType.Ball)
-	l:box('Keyhole', pos + V(-0.05, -0.28, -0.27) * k, pos + V(0.05, 0, -0.23) * k, C(40, 26, 10), M.SmoothPlastic)
+	local hole = ink and gold or C(40, 26, 10)
+	l:part('Keyhole', V(0.22, 0.22, 0.06) * k, CFrame.new(pos + V(0, 0.02, -0.25) * k), hole, M.SmoothPlastic, Enum.PartType.Ball)
+	l:box('Keyhole', pos + V(-0.05, -0.28, -0.27) * k, pos + V(0.05, 0, -0.23) * k, hole, M.SmoothPlastic)
 	for _, d in model:GetDescendants() do
 		if d:IsA('BasePart') then decor(d).CastShadow = false end
 	end
@@ -3037,14 +3067,24 @@ function Evolutions.look(c, s, art, x, y, z, opts)
 		Rate = 1.6, Lifetime = NumberRange.new(0.5, 0.8), Speed = NumberRange.new(0), LightEmission = 1, RotSpeed = NumberRange.new(-60, 60),
 		Size = Evolutions.seq({ { 0, 0 }, { 0.35, 0.6, 0.15 }, { 1, 0 } }), Color = ColorSequence.new(P.white, tint.color:Lerp(P.white, 0.5)), ZOffset = 1,
 	})
-	Evolutions.padlock(st, V(x, feet + 0.62, z - lipHalf - 0.1), 1)
+	Evolutions.padlock(st, V(x, feet + 0.62, z - lipHalf - 0.1), 1, tint.lock == 'Gold')
 	if s.Required == 0 then
 		for _, d in model.Lock:GetDescendants() do
 			if d:IsA('BasePart') then d.Transparency = 1 end
 		end
 	end
-	-- The floating chip just over the hat (the full label over the featured look); the nameplate on the pad.
-	Evolutions.label(st, V(x, featured and labelY or hatY + 0.86, z), s, band, hatY + 0.3, featured)
+	-- The floating chip (the full label over the featured look); the nameplate on the pad. The chip floats
+	-- just high enough that, seen from the default camera (11.4 back, 6.5 up) at the look's own spot, its lower
+	-- edge passes over the top row's hats and the backdrop's top: it never sits on a face in the rows behind.
+	local chipY = hatY + 0.86
+	if not featured and opts.spotFloor then
+		local camY, camZ = opts.spotFloor + 3 + 6.5, z - half - 0.5 - 1.6 - 11.4
+		local slope = (20.2 - camY) / (Evolutions.Back + 1.2 - camZ)
+		local t3 = Evolutions.Tiers[3]
+		if t3.row > z + 1 then slope = math.max(slope, (t3.top + 8.4 - camY) / (t3.row - camZ)) end
+		chipY = math.max(chipY, camY + slope * (z - camZ) + 0.4 + Evolutions.ChipH / 2)
+	end
+	Evolutions.label(st, V(x, featured and labelY or chipY, z), s, band, hatY + 0.3, featured, hatY)
 	Evolutions.tag(st, x, featured and lipY or lipY + 0.08, z - lipHalf, featured and 1.5 or 1.55)
 	local face = not featured and st.parent:FindFirstChild('PadBlock')
 	if face then Evolutions.nameplate(face, s, band) end
@@ -3246,13 +3286,16 @@ function Evolutions.props(c)
 	-- A hazard barrier closing the far alley between the tiers' -X side and the slab's edge (a dead end along
 	-- the lobby wall): striped yellow and ink boards on a diamond-plate foot, beside the far flight.
 	local t1 = Evolutions.Tiers[1]
-	local bx0, bx1, z0, z1 = -27.95, t1.x0, 4.6, 5.0
-	pr:box('BarrierFoot', V(bx0, Evolutions.Base, z0 - 0.2), V(bx1, Evolutions.Base + 0.25, z1 + 0.2), C(90, 100, 124), M.DiamondPlate)
-	local n = 6
+	-- (it runs on past the slab's edge to the lobby wall, its foot down on the deck there)
+	local bx0, bx1, z0, z1 = Evolutions.BarrierX, t1.x0, 4.6, 5.0
+	pr:box('BarrierFoot', V(-28, Evolutions.Base, z0 - 0.2), V(bx1, Evolutions.Base + 0.25, z1 + 0.2), C(90, 100, 124), M.DiamondPlate)
+	pr:box('BarrierFoot', V(bx0, 0, z0 - 0.2), V(-28, 0.25, z1 + 0.2), C(90, 100, 124), M.DiamondPlate)
+	local n = 7
 	for i = 0, n - 1 do
 		local xa = bx0 + (bx1 - bx0) * i / n
 		local xb = bx0 + (bx1 - bx0) * (i + 1) / n
-		pr:box('BarrierStripe', V(xa, Evolutions.Base + 0.25, z0), V(xb, Evolutions.Base + 3, z1), i % 2 == 0 and Evolutions.Colors.yellow or Evolutions.Colors.ink, M.SmoothPlastic)
+		local y0 = xb <= -28 and 0.25 or Evolutions.Base + 0.25
+		pr:box('BarrierStripe', V(xa, xa < -28 and 0.25 or y0, z0), V(xb, Evolutions.Base + 3, z1), i % 2 == 0 and Evolutions.Colors.yellow or Evolutions.Colors.ink, M.SmoothPlastic)
 	end
 	return pr
 end
@@ -3381,6 +3424,7 @@ function Evolutions.build(ctx, opts)
 			if cols[column] then
 				local stand, feet = Evolutions.look(m, s, art, cols[column], t.top, t.row, {
 					column = column, yaw = wobble[(column - 1) % 5 + 1], tint = Evolutions.TierColors[row],
+					spotFloor = row == 1 and Evolutions.Base or Evolutions.Tiers[row - 1].top,
 				})
 				if row == 3 then Evolutions.sparkle(m:into(stand), cols[column], feet, t.row, Evolutions.TierColors[3].color) end
 			end
