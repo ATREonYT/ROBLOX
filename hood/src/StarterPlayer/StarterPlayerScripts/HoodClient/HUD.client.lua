@@ -751,11 +751,14 @@ local function hintText(power)
 		return 'Run on the belt  •  <font color="#' .. tread.Color:ToHex() .. '">x' .. tread.Multiplier .. ' Speed</font>  •  ' .. goal
 	end
 	if station == '' then return 'Step into a shooting range  •  ' .. gun .. '  •  ' .. goal end
-	-- In a lane: the range's multiplier (in the lane's colour) and your gun's, side by side.
+	-- In a lane: the range's multiplier (in the lane's colour) and your gun's (white), side by side. A narrow hint
+	-- (phones: under 700 design px) gets the short form, so the line stays big enough to read.
 	local range = Skins.StationById[station]
 	if range then
-		return 'Click / tap to shoot  •  <font color="#' .. rangeColor(station, range):ToHex() .. '">Range x' .. range.Multiplier
-			.. '</font>  •  <font color="#FFE76A">Gun x' .. gunMultiplier() .. '</font>  •  ' .. goal
+		local multipliers = '<font color="#' .. rangeColor(station, range):ToHex() .. '">Range x' .. range.Multiplier
+			.. '</font>  •  <font color="#FFFFFF">Gun x' .. gunMultiplier() .. '</font>'
+		if hint.Size.X.Offset < 700 then return 'Tap SHOOT  •  ' .. multipliers end
+		return 'Click / tap to shoot  •  ' .. multipliers .. '  •  ' .. goal
 	end
 	return 'Click / tap to shoot  •  ' .. gun .. '  •  ' .. goal
 end

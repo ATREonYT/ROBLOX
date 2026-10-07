@@ -544,13 +544,13 @@ function HoodVFX.Themes.lava(ctx)
 	local uploaded = select(2, texture('firepuff'))
 	-- Two holders (front and back half) so the aisle end is as dense as the back. With burning barrels at the
 	-- sides the carpet keeps clear of them (narrower), so their bases stay visible. Before upload the fire_main
-	-- stand-in runs at half rate and the flame licks take over (flames, not flakes). Budget: ~56 live particles
-	-- on a lane with uploads (carpet 16, cores 8, licks 7, two burners 19, embers 6), ~40 before.
+	-- stand-in carpet is smaller and denser and the flame licks take over (flames, not flakes). Budget: ~52 live
+	-- particles with uploads (carpet 16, cores 8, licks 7, two burners 16, embers 4), ~53 before (carpet 19).
 	local bedW = ctx.burners and #ctx.burners > 0 and math.min(w, 4.3) or w
 	for i, zc in { -d / 4, d / 4 } do
 		local half = holder(ctx.theme, 'FireBed' .. i, ctx.top * CFrame.new(0, 0.1, zc), V(bedW, 0.2, d / 2))
 		emitter(half, 'FireCarpet', 'firepuff', {
-			Rate = (uploaded and 20 or 14) * A, Lifetime = NR(0.4, 0.7), Speed = NR(0.3, 1), SpreadAngle = Vector2.new(12, 12), Acceleration = V(0, 1.5, 0),
+			Rate = (uploaded and 20 or 24) * A, Lifetime = NR(0.4, 0.7), Speed = NR(0.3, 1), SpreadAngle = Vector2.new(12, 12), Acceleration = V(0, 1.5, 0),
 			RotSpeed = NR(-20, 20), ZOffset = 0.2, -- (the soft puff fills ~45% of its frame)
 			Size = uploaded and seq({ { 0, 4.0 * S, 0.3 * S }, { 0.4, 5.4 * S, 0.4 * S }, { 1, 0 } }) or seq({ { 0, 1.5 * S, 0.15 * S }, { 0.4, 2.1 * S, 0.2 * S }, { 1, 0 } }),
 			Transparency = seq({ { 0, 0.1 }, { 0.5, 0.25 }, { 1, 1 } }), Color = uploaded and body or fire, LightEmission = 0.35,
@@ -579,7 +579,7 @@ function HoodVFX.Themes.lava(ctx)
 			Transparency = seq({ { 0, 0.1 }, { 0.5, 0.2 }, { 1, 1 } }), Color = fire, LightEmission = 0.5,
 		})
 		emitter(fire1, 'BurnerLicks', 'flame', {
-			Orientation = Enum.ParticleOrientation.FacingCameraWorldUp, Rate = 6, Lifetime = NR(0.5, 0.8), Speed = NR(3, 4.5),
+			Orientation = Enum.ParticleOrientation.FacingCameraWorldUp, Rate = 4, Lifetime = NR(0.5, 0.8), Speed = NR(3, 4.5),
 			SpreadAngle = Vector2.new(8, 8), ZOffset = 0.5, Size = seq({ { 0, 0.7 }, { 0.4, 1.1, 0.2 }, { 1, 0 } }),
 			Transparency = seq({ { 0, 0.3 }, { 0.15, 0 }, { 1, 1 } }), Color = lick, LightEmission = 0.6,
 		})
@@ -602,7 +602,7 @@ function HoodVFX.Themes.lava(ctx)
 		pointLight(holder(ctx.theme, 'FireGlow', ctx.top * CFrame.new(under.X, 1, under.Z), V(0.2, 0.2, 0.2)), C(255, 140, 50), 1.2, 9)
 	end
 	emitter(ctx.deck, 'Embers', 'ember', {
-		Rate = 4 * A, Lifetime = NR(1.4, 2.6), Speed = NR(2, 5), SpreadAngle = Vector2.new(25, 25), Acceleration = V(0.6, 1.5, 0.3), Drag = 0.6,
+		Rate = 3 * A, Lifetime = NR(1.4, 2.6), Speed = NR(2, 5), SpreadAngle = Vector2.new(25, 25), Acceleration = V(0.6, 1.5, 0.3), Drag = 0.6,
 		RotSpeed = NR(-40, 40), Size = seq({ { 0, 0.3 * S, 0.1 * S }, { 0.7, 0.2 * S }, { 1, 0 } }),
 		Transparency = seq({ { 0, 0 }, { 0.8, 0.2 }, { 1, 1 } }),
 		Color = cseq({ { 0, C(255, 240, 160) }, { 0.4, C(255, 160, 40) }, { 1, C(255, 70, 20) } }), LightEmission = 1, Brightness = 2, ZOffset = 0.8,

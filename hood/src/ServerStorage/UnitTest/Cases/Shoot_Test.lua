@@ -35,6 +35,24 @@ return function(t)
   x,ok=ShotRules.pick({},{a,main,b},main,there);t.expect.equal(x,main);t.expect.falsy(ok)
   x,ok=ShotRules.pick({},{main},main,function() return true end);t.expect.equal(x,main);t.expect.truthy(ok)
  end)
+ -- Sounds: the shot is clicks only (the pings are the hits'), no UI click anywhere, modest volumes, every
+ -- unverified file behind a fallback, pools sized from the real length (a held trigger never cuts a voice).
+ t.test('shot sounds are layered built-ins with safe pools',function()
+  local ShotSounds=require(RS.Shared.ShotSounds)
+  local verified={['clickfast.wav']=true,['electronicpingshort.wav']=true}
+  for _,kind in ShotSounds.ORDER do
+   t.expect.truthy(ShotSounds.LAYERS[kind])
+   for _,layer in ShotSounds.LAYERS[kind] do
+    t.expect.truthy(layer[1]~='button.wav');t.expect.truthy(layer[2]<=0.5)
+    if kind=='Shot' then t.expect.truthy(layer[1]~='electronicpingshort.wav' and (not layer.fallback or layer.fallback[1]~='electronicpingshort.wav')) end
+    t.expect.truthy(verified[layer[1]] or (layer.fallback and verified[layer.fallback[1]]))
+   end
+  end
+  t.expect.equal(ShotSounds.poolSize(0,0.5,'Ding'),4);t.expect.equal(ShotSounds.poolSize(nil,1,'Shot'),4)
+  t.expect.equal(ShotSounds.poolSize(0.3,0.5,'Ding'),6) -- 0.3 s at 0.475 lasts 0.63 s: 5 plays deep, plus one
+  t.expect.equal(ShotSounds.poolSize(2,0.4,'Shot'),10);t.expect.equal(ShotSounds.poolSize(0.05,2,'Shot'),4)
+  t.expect.truthy(type(ShotSounds.demo)=='function' and type(ShotSounds.play)=='function')
+ end)
  -- The remote is Shoot now; Punch is gone.
  t.test('the Shoot remote replaces Punch',function()
   t.expect.falsy(pcall(Net.get,'Punch'))

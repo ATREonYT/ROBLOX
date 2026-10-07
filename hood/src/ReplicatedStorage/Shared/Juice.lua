@@ -102,6 +102,11 @@ end
 -- Sparks + an expanding ring at a world position. A small pool of hidden anchor parts is reused round-robin
 -- (a fast puncher hits 5-8 times a second; making and destroying parts and emitters per hit adds up).
 -- Particles are in world space, so moving an anchor never drags the previous burst along.
+local function backOut(t) -- Back easing (overshoot), 0..1
+	local c = 1.70158
+	t -= 1
+	return 1 + (c + 1) * t * t * t + c * t * t
+end
 local function anchorAt(position)
 	local p = Instance.new('Part')
 	p.Name = 'ImpactFX'
@@ -217,6 +222,136 @@ function Juice.popNumber(position, text, color, fontFace, opts)
 	TweenService:Create(g, TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { StudsOffset = Vector3.new(drift, 3, 0) }):Play()
 	TweenService:Create(t, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.In, 0, false, 0.45), { TextTransparency = 1 }):Play()
 	TweenService:Create(s, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.In, 0, false, 0.45), { Transparency = 1 }):Play()
+end
+
+-- One running "+N" per lane under a held trigger (the simulator norm), instead of a number per shot piling up
+-- over the target. Juice.combo(key, at, gain, opts): `key` is the lane (one combo each), `at` a world point above
+-- and beside the main target (Juice.comboAt), `gain` this hit's Power. The first hit pops a clean "+N"; each
+-- further hit within 0.8 s punches it (scale 1.25 -> 1), rolls the total up to the new sum and shows the hit
+-- count under it ("+2,112" over "6 HITS"); 0.5 s after the last hit it fades out over 0.3 s and the next shot
+-- starts a new one. opts: color (the lane's colour: the count and, darkened, the outline), fill (default white),
+-- big (top lanes: a bigger number), format (number -> text; default thousands separators).
+local combos, comboConn = {}, nil
+local COMBO_HOLD, COMBO_FADE = 0.5, 0.3
+local function commas(n)
+	local s = tostring(math.floor(n + 0.5))
+	local out = s:reverse():gsub('(%d%d%d)', '%1,'):reverse()
+	return (out:gsub('^,', ''))
+end
+local function comboStep(dt)
+	for key, c in combos do
+		c.age += dt
+		c.rollT += dt
+		c.popT += dt
+		-- The total rolls up to the new sum in 0.12 s.
+		local f = math.min(1, c.rollT / 0.12)
+		local shown = c.from + (c.total - c.from) * f
+		local text = '+' .. c.format(shown)
+		if c.number.Text ~= text then c.number.Text = text end
+		-- The first hit pops in (0.4 -> 1 with an overshoot); later hits punch it (1.25 -> 1).
+		if c.count == 1 then
+			c.scale.Scale = 0.4 + 0.6 * backOut(math.min(1, c.popT / 0.15))
+		else
+			c.scale.Scale = 1 + 0.25 * (1 - math.min(1, c.popT / 0.12))
+		end
+		local fade = math.clamp((c.age - COMBO_HOLD) / COMBO_FADE, 0, 1)
+		c.number.TextTransparency, c.numberStroke.Transparency = fade, fade
+		c.hits.TextTransparency, c.hitsStroke.Transparency = fade, fade
+		if fade >= 1 then
+			c.gui.Enabled = false
+			c.alive = false
+			combos[key] = nil
+			c.parked = true
+		end
+	end
+	if next(combos) == nil and comboConn then
+		comboConn:Disconnect()
+		comboConn = nil
+	end
+end
+local comboRigs = setmetatable({}, { __mode = 'k' })
+function Juice.combo(key, at, gain, opts)
+	opts = opts or {}
+	local color = opts.color or Color3.fromRGB(255, 194, 26)
+	local c = combos[key]
+	if not c then
+		-- A rig per lane, made once and reused (parked while no combo runs).
+		c = comboRigs[key]
+		if not c or not c.part.Parent then
+			local part = anchorAt(at)
+			part.Name = 'ComboFX'
+			local g = Instance.new('BillboardGui')
+			g.Name = 'Combo'
+			g.LightInfluence = 0
+			g.AlwaysOnTop = true
+			g.MaxDistance = 80
+			g.Parent = part
+			local holder = Instance.new('Frame')
+			holder.BackgroundTransparency = 1
+			holder.Size = UDim2.fromScale(1, 1)
+			holder.Parent = g
+			local scale = Instance.new('UIScale')
+			scale.Parent = holder
+			local function label(name, y, h)
+				local t = Instance.new('TextLabel')
+				t.Name = name
+				t.BackgroundTransparency = 1
+				t.Position, t.Size = UDim2.fromScale(0, y), UDim2.fromScale(1, h)
+				t.TextScaled = true
+				t.FontFace = opts.fontFace or Font.new('rbxasset://fonts/families/LuckiestGuy.json')
+				local st = Instance.new('UIStroke')
+				st.Parent = t
+				t.Parent = holder
+				return t, st
+			end
+			c = { part = part, gui = g, scale = scale }
+			c.number, c.numberStroke = label('Number', 0, 0.64)
+			c.hits, c.hitsStroke = label('Hits', 0.62, 0.38)
+			comboRigs[key] = c
+		end
+		local size = opts.big and Vector2.new(5, 2.9) or Vector2.new(4.2, 2.4)
+		c.gui.Size = UDim2.fromScale(size.X, size.Y)
+		c.part.CFrame = CFrame.new(at)
+		c.number.TextColor3 = opts.fill or Color3.new(1, 1, 1)
+		c.numberStroke.Color = opts.stroke or color:Lerp(Color3.new(0, 0, 0), 0.65)
+		c.numberStroke.Thickness = opts.thickness or 3
+		c.hits.TextColor3 = color:Lerp(Color3.new(1, 1, 1), 0.25)
+		c.hitsStroke.Color = Color3.fromRGB(20, 18, 32)
+		c.hitsStroke.Thickness = 2
+		c.format = opts.format or commas
+		c.total, c.from, c.count = 0, 0, 0
+		c.alive, c.parked = true, false
+		c.gui.Enabled = true
+		combos[key] = c
+	end
+	c.from = c.from + (c.total - c.from) * math.min(1, (c.rollT or 1) / 0.12) -- (where the roll had got to)
+	c.total += gain
+	c.count += 1
+	c.age, c.rollT, c.popT = 0, c.count == 1 and 1 or 0, 0
+	if c.count == 1 then c.from = c.total end
+	c.hits.Text = c.count > 1 and (c.count .. ' HITS') or ''
+	c.hits.Visible = c.count > 1
+	c.number.Text = '+' .. c.format(c.from)
+	if not comboConn then comboConn = RunService.PreRender:Connect(comboStep) end
+	comboStep(0)
+	return c
+end
+-- Where a lane's combo sits: over the main target's top edge and to the shooter's right of it (the lane faces
+-- `lane`'s +Z; its right on screen is the lane's -X), so it never covers the target or its knock-back.
+function Juice.comboAt(target, lane)
+	local top, aim = -math.huge, target:GetAttribute('Aim')
+	for _, p in target:GetDescendants() do
+		if p:IsA('BasePart') and p.Transparency < 1 then
+			for _, sx in { -1, 1 } do for _, sy in { -1, 1 } do for _, sz in { -1, 1 } do
+				top = math.max(top, (p.CFrame * CFrame.new(sx * p.Size.X / 2, sy * p.Size.Y / 2, sz * p.Size.Z / 2)).Position.Y)
+			end end end
+		end
+	end
+	if typeof(aim) ~= 'Vector3' then aim = target:GetPivot().Position end
+	if top == -math.huge then top = aim.Y + 1 end
+	local zone = lane and lane:FindFirstChild('TrainingZone', true)
+	local right = zone and -zone.CFrame.RightVector or Vector3.new(1, 0, 0)
+	return Vector3.new(aim.X, top + 1.8, aim.Z) + right * 1.8
 end
 
 -- Everything for one punch landing on a bag. `bag` = { sway = Juice.sway(...), model = Model, point = Vector3,
@@ -457,11 +592,6 @@ local KNOCK = { Tip = { 3.2, 0.32, 14 }, Swing = { 1.3, 0.12, -3.2 }, Spin = { 1
 local GONE = { Pop = 0.7, Shatter = 0.5, Fly = 0.8 } -- seconds a burst/flown target stays away
 local SWING_BACK, SWING_FRONT = 0.3, 0.5 -- swing limits (radians; back = away from the shooter; idle sway adds 0.05)
 local FLY_HIDE = 0.3 -- a flown can vanishes this soon (before it can reach the wall behind)
-local function backOut(t) -- Back easing (overshoot), 0..1
-	local c = 1.70158
-	t -= 1
-	return 1 + (c + 1) * t * t * t + c * t * t
-end
 function Juice.knocker(target)
 	local hinge = target:FindFirstChild('Hinge')
 	local swing = target:FindFirstChild('Swing')

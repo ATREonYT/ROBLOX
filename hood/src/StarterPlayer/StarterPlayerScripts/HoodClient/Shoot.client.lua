@@ -1,17 +1,16 @@
 -- Shooting at the ranges: step into a lane's shooter's box and your gun (the gun tool GunService gives you)
 -- comes out; click (or tap SHOOT, or R2) to fire. Each shot is worth a tenth of your per-second gain times your
 -- gun's multiplier (ShotRules; the server checks and pays in LobbyService). Everything you see is local and
--- cheap: a layered shot sound, a muzzle flash, a tracer to the target, sparks, a hit sound and a "+N" where it
--- lands, the target knocked back (a can flying off, a bottle shattering, a plate swinging, a disc spinning, a
--- balloon popping into confetti), a shell casing and a little recoil. Hold the button (or the mouse, or R2) to
--- keep firing. Leaving the lane puts the gun away again (and the hip holster comes back: Armory.client).
+-- cheap: a layered shot sound, a muzzle flash, a tracer to the target, sparks, a hit sound, the target knocked
+-- back (a can flying off, a bottle shattering, a plate swinging, a disc spinning, a balloon popping into
+-- confetti), a shell casing, a little recoil, and one running "+N" over the target per lane (a held trigger
+-- rolls it up and counts the hits). Hold the button (or the mouse, or R2) to keep firing. Leaving the lane puts
+-- the gun away again (and the hip holster comes back: Armory.client).
 local Players = game:GetService('Players')
 local UserInputService = game:GetService('UserInputService')
 local TweenService = game:GetService('TweenService')
 local RunService = game:GetService('RunService')
 local RS = game:GetService('ReplicatedStorage')
-local SoundService = game:GetService('SoundService')
-local ContentProvider = game:GetService('ContentProvider')
 local ActiveMap = require(RS.Shared.ActiveMap)
 local Juice = require(RS.Shared.Juice)
 local Format = require(RS.Shared.Format)
@@ -23,98 +22,11 @@ local GunTool = require(RS.Shared.GunTool)
 local player = Players.LocalPlayer
 
 ---------------------------------------------------------------------------------------------- sounds
--- Roblox ships no gunshot, so each sound is a few client built-ins layered and pitched (none of them the UI
--- click, button.wav, so a shot never sounds like a menu): a shot is a crack (paintball.wav, or clickfast pitched
--- well down) over a short low boom (electronicpingshort far down) and a dull tick, with a faint bullet zing on
--- top (swoosh.wav, or a very high, very quiet ping). A hit depends on the target's Hit attribute: Ding (steel
--- plates, gongs, the spinner) is electronicpingshort pitched by the lane's tier (always well under the stage
--- chime's pitch) with a metal tick, Tock (boards) a low click and a low ping, Glass and Tin a high ping and
--- click, Pop a snap, Ice a bright ping, Barrel a dull thud. paintball.wav, glassbreak.wav, snap.wav and
--- swoosh.wav may not exist in every client (check in Studio: content/sounds); they are tried first and
--- replaced by their fallback when they fail to load. Paste uploaded ids into SOUNDS to replace a whole sound.
--- Every sound plays through the 'Shots' SoundGroup under SoundService (a settings menu can mute or balance it
--- there), from a little pool per layer, so a new shot never restarts the one still playing (all-Ding lanes ring
--- a Ding every 0.15 s: their pools are deeper). Volumes stay modest (shots come 7 a second).
-local SOUNDS = { Shot = '', Ding = '', Tock = '', Glass = '', Tin = '', Pop = '', Ice = '', Barrel = '' }
-local BUILTIN = 'rbxasset://sounds/'
--- { file, volume, playback speed, fallback = { file, volume, speed } }
-local LAYERS = {
-	Shot = {
-		{ 'paintball.wav', 0.3, 0.9, fallback = { 'clickfast.wav', 0.4, 0.6 } },
-		{ 'electronicpingshort.wav', 0.16, 0.32 },
-		{ 'clickfast.wav', 0.18, 0.42 },
-		{ 'swoosh.wav', 0.08, 1.8, fallback = { 'electronicpingshort.wav', 0.04, 2.6 } },
-	},
-	Ding = { { 'electronicpingshort.wav', 0.45, 0.5 }, { 'clickfast.wav', 0.18, 1.3 } },
-	Tock = { { 'clickfast.wav', 0.4, 0.55 }, { 'electronicpingshort.wav', 0.12, 0.4 } },
-	Glass = { { 'glassbreak.wav', 0.4, 1.1, fallback = { 'electronicpingshort.wav', 0.3, 1.7 } }, { 'clickfast.wav', 0.25, 1.4 } },
-	Tin = { { 'electronicpingshort.wav', 0.3, 1.25 }, { 'clickfast.wav', 0.3, 1.1 } },
-	Pop = { { 'snap.wav', 0.45, 1.0, fallback = { 'clickfast.wav', 0.5, 1.6 } }, { 'swoosh.wav', 0.15, 2.0, fallback = { 'electronicpingshort.wav', 0.08, 2.2 } } },
-	Ice = { { 'electronicpingshort.wav', 0.35, 1.45 }, { 'clickfast.wav', 0.2, 1.3 } },
-	Barrel = { { 'clickfast.wav', 0.45, 0.38 }, { 'electronicpingshort.wav', 0.2, 0.45 } },
-}
-local POOL = { Ding = 6 } -- Sounds per layer (default 4)
-local group = SoundService:FindFirstChild('Shots')
-if not (group and group:IsA('SoundGroup')) then
-	group = Instance.new('SoundGroup')
-	group.Name = 'Shots'
-	group.Volume = 1
-	group.Parent = SoundService
-end
-local function newSound(id, volume)
-	local sound = Instance.new('Sound')
-	sound.SoundId = id
-	sound.Volume = volume
-	sound.SoundGroup = group
-	sound.Parent = group
-	return sound
-end
-local function resetPool(layer)
-	for _, sound in layer.pool or {} do sound:Destroy() end
-	layer.pool, layer.next = {}, 1
-end
--- Each layer starts on its known-good file and switches to the first-choice file once that has loaded.
-for kind, layers in LAYERS do
-	for _, layer in layers do
-		local spec = layer.fallback or layer
-		layer.use = { BUILTIN .. spec[1], spec[2], spec[3] }
-		layer.size = POOL[kind] or 4
-		resetPool(layer)
-		if layer.fallback then
-			task.spawn(function()
-				local probe = newSound(BUILTIN .. layer[1], 0)
-				local ok = pcall(function() ContentProvider:PreloadAsync({ probe }) end)
-				local loaded = ok and pcall(function() return probe.IsLoaded end) and probe.IsLoaded and probe.TimeLength > 0
-				probe:Destroy()
-				if loaded then
-					layer.use = { BUILTIN .. layer[1], layer[2], layer[3] }
-					resetPool(layer)
-				end
-			end)
-		end
-	end
-end
-local overrides = {}
-local function play(kind, pitch)
-	local uploaded = SOUNDS[kind]
-	local layers = LAYERS[kind]
-	if uploaded and uploaded ~= '' then
-		overrides[kind] = overrides[kind] or { { use = { uploaded, 0.45, 1 }, pool = {}, next = 1, size = POOL[kind] or 4 } }
-		layers = overrides[kind]
-	end
-	for _, layer in layers or {} do
-		local id, volume, speed = layer.use[1], layer.use[2], layer.use[3]
-		local sound = layer.pool[layer.next]
-		if not sound or sound.SoundId ~= id then
-			if sound then sound:Destroy() end
-			sound = newSound(id, volume)
-			layer.pool[layer.next] = sound
-		end
-		layer.next = layer.next % layer.size + 1
-		sound.PlaybackSpeed = speed * (pitch or 1) * (0.95 + math.random() * 0.1)
-		sound:Play()
-	end
-end
+-- Layered built-in shot and hit sounds through the 'Shots' SoundGroup (ShotSounds: what each layer is, which
+-- file loaded, pool sizes, and a command-bar audition).
+local ShotSounds = require(RS.Shared.ShotSounds)
+ShotSounds.init()
+local play = ShotSounds.play
 -- An attachment's world frame (the same as WorldCFrame, spelled out so offline checks can run this file).
 local function worldOf(att) return att.Parent.CFrame * att.CFrame end
 local active = ActiveMap.wait(20)
@@ -289,11 +201,11 @@ local function shoot()
 			Juice.flash(target.Model)
 		end
 		local gain = ShotRules.pay(player:GetAttribute('PowerRate'), player:GetAttribute('GunMultiplier'))
-		-- White numbers outlined in a dark shade of the lane's colour read on every lane (a yellow "+N" vanished on
-		-- the gold lane); top lanes get bigger ones.
-		Juice.popNumber(to + Vector3.new((math.random() - 0.5) * 1.5, 1.4, 0), '+' .. Format.compact(gain), color, nil, {
-			fill = Color3.new(1, 1, 1), stroke = color:Lerp(Color3.new(0, 0, 0), 0.65), thickness = 3, size = s.Tier >= 5 and Vector2.new(5, 2) or nil,
-		})
+		-- One running "+N" per lane over the main target's top edge and to its right (a held trigger rolls it up
+		-- and counts the hits instead of piling numbers on the target): white outlined in a dark shade of the
+		-- lane's colour, bigger on the top lanes.
+		s.ComboAt = s.ComboAt or Juice.comboAt(s.Main.Model, s.Model)
+		Juice.combo(s.Model, s.ComboAt, gain, { color = color, big = s.Tier >= 5, format = Format.compact })
 	end
 end
 
