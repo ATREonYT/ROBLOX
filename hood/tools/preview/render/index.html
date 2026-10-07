@@ -427,7 +427,7 @@ function addTruss(p) {
     }
     const bar = new THREE.Mesh(new THREE.BoxGeometry(sx, .26, sz), mat); bar.position.y = -sy / 2 + seg * k; bar.scale.set(1, 1, 1); grp.add(bar);
   }
-  grp.children.forEach(m => { m.castShadow = true; m.receiveShadow = true; });
+  grp.children.forEach(m => { m.castShadow = p.shadow !== false; m.receiveShadow = true; });
   const c = p.cf;
   grp.applyMatrix4(new THREE.Matrix4().set(c[3], c[4], c[5], c[0], c[6], c[7], c[8], c[1], c[9], c[10], c[11], c[2], 0, 0, 0, 1));
   scene.add(grp);
