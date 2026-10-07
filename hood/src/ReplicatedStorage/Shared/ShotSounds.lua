@@ -40,9 +40,9 @@ ShotSounds.LAYERS = {
 	Ice = { { 'electronicpingshort.wav', 0.35, 1.45 }, { 'clickfast.wav', 0.2, 1.3 } },
 	Barrel = { { 'clickfast.wav', 0.45, 0.38 }, { 'electronicpingshort.wav', 0.2, 0.45 } },
 }
--- The lowest pitch each kind is played at (Shoot.client: the shot at 1.1 - 0.04 x gun tier, down to 0.78 for
--- the Minigun; hits at 1, Dings higher), times the 5% jitter.
-local SLOWEST = { Shot = 0.78 * 0.95 }
+-- The lowest pitch each kind is played at (Shoot.client: the shot at 1.1 - 0.04 x gun tier, so the last gun in
+-- Config.Guns is the slowest; hits at 1, Dings higher), times the 5% jitter.
+local SLOWEST = { Shot = (1.1 - 0.04 * #require(script.Parent.Config.Guns).List) * 0.95 }
 -- Voices a layer needs so a play every SPACING seconds never restarts one still ringing: its real length at its
 -- slowest pitch over the spacing, plus one (4 to 10; 4 while the length is unknown).
 function ShotSounds.poolSize(length, speed, kind)

@@ -285,9 +285,12 @@ function Juice.combo(key, at, gain, opts)
 			g.LightInfluence = 0
 			g.AlwaysOnTop = true
 			g.MaxDistance = 80
+			g.ClipsDescendants = false -- (the hit punch scales the text past the billboard's edge)
 			g.Parent = part
 			local holder = Instance.new('Frame')
 			holder.BackgroundTransparency = 1
+			holder.AnchorPoint = Vector2.new(0.5, 0.5) -- scale about the centre, not slide in from the corner
+			holder.Position = UDim2.fromScale(0.5, 0.5)
 			holder.Size = UDim2.fromScale(1, 1)
 			holder.Parent = g
 			local scale = Instance.new('UIScale')
@@ -351,7 +354,7 @@ function Juice.comboAt(target, lane)
 	if top == -math.huge then top = aim.Y + 1 end
 	local zone = lane and lane:FindFirstChild('TrainingZone', true)
 	local right = zone and -zone.CFrame.RightVector or Vector3.new(1, 0, 0)
-	return Vector3.new(aim.X, top + 1.8, aim.Z) + right * 1.8
+	return Vector3.new(aim.X, top + 2.1, aim.Z) + right * 1.8
 end
 
 -- Everything for one punch landing on a bag. `bag` = { sway = Juice.sway(...), model = Model, point = Vector3,
