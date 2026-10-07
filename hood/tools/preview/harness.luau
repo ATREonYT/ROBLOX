@@ -98,6 +98,12 @@ local function load(dir, parent)
 			if not base then base = name:match("^(.-)%.luau?$") end
 			local cls = kind == "server" and "Script" or kind == "client" and "LocalScript" or "ModuleScript"
 			local s = Instance.new(cls); s.Name = base; s.Source = fs.readFile(path); s.Parent = parent
+			-- Rojo's <name>.meta.json sets simple properties (e.g. Disabled on the unit test runner).
+			local meta = dir .. "/" .. base .. ".meta.json"
+			if fs.isFile(meta) then
+				local props = (serde.decode("json", fs.readFile(meta)) or {}).properties or {}
+				for k, v in props do pcall(function() s[k] = v end) end
+			end
 		end
 	end
 end
@@ -432,6 +438,29 @@ __exportPartsImpl = function(filter, path, time)
 end
 local result = luau.load(SNIPPET, { debugName = "snippet", environment = envFor(nil) })()
 if result ~= nil then print("snippet returned:", typeof(result) == "table" and serde.encode("json", result) or tostring(result)) end
+
+-- HOOD_PLACE_OUT=<file.rbxl|file.rbxlx>: save the DataModel (scripts plus whatever the snippet built) as a place
+-- Studio can open. The harness's own helper services are dropped first.
+local placeOut = process.env.HOOD_PLACE_OUT
+if placeOut and placeOut ~= "" then
+	for _, name in { "ChangeHistoryService", "Selection", "RunService" } do
+		local s = game:FindFirstChildOfClass(name)
+		if s then pcall(function() s.Parent = nil end) end
+	end
+	-- Lune keeps `x.Font = Enum.Font.Y` as its own EnumItem property, which place files store as FontFace; turn
+	-- it into the Font value Studio expects (FontFace set directly is kept).
+	for _, d in game:GetDescendants() do
+		if d:IsA("TextLabel") or d:IsA("TextButton") or d:IsA("TextBox") then
+			local ok, v = pcall(function() return d.Font end)
+			if ok and typeof(v) == "EnumItem" then
+				if v ~= Enum.Font.Legacy then d.FontFace = roblox.Font.fromEnum(v) end
+				pcall(function() d.Font = nil end)
+			end
+		end
+	end
+	fs.writeFile(placeOut, roblox.serializePlace(game, placeOut:match("%.rbxlx$") ~= nil))
+	print("saved place:", placeOut)
+end
 
 if OUT == "-" then return end
 
