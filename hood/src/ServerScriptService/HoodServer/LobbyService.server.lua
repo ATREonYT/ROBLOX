@@ -124,7 +124,7 @@ while task.wait(1) do
     equipAppearance(player,profile.Data.EquippedSkin)
    end
    sync(player,profile,multiplier,station)
-   table.insert(rows,{Name=player.DisplayName,Power=profile.Data.Rep})
+   table.insert(rows,{Name=player.DisplayName,Power=profile.Data.Rep,Cash=profile.Data.Cash})
   end
  end
  boardTime+=1
@@ -135,5 +135,14 @@ while task.wait(1) do
   if #rows==0 then table.insert(lines,'Be the first to train!') end
   local board=lobby:FindFirstChild('ServerLeaderboard',true);local label=board and board:FindFirstChild('TextLabel',true)
   if label then label.Text=table.concat(lines,'\n') end
+  -- The warehouse lobby's TOP CASH board (Cash comes from first-time gate passes).
+  local cashBoard=lobby:FindFirstChild('CashLeaderboard',true);local cashLabel=cashBoard and cashBoard:FindFirstChild('TextLabel',true)
+  if cashLabel then
+   table.sort(rows,function(a,b) return a.Cash>b.Cash end)
+   local cash={'TOP CASH','THIS SERVER'}
+   for i=1,math.min(#rows,5) do if rows[i].Cash>0 then table.insert(cash,string.format('%d. %s  /  %s',i,rows[i].Name,Format.compact(rows[i].Cash))) end end
+   if #cash==2 then table.insert(cash,'Clear a gate to earn Cash!') end
+   cashLabel.Text=table.concat(cash,'\n')
+  end
  end
 end
