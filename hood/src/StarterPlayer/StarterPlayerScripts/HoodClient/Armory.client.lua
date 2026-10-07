@@ -133,8 +133,9 @@ local function paint(slot, state)
 	end
 	if slot.Price then
 		local glyph = slot.Price:GetAttribute('Glyph') or ''
-		-- (the cash glyph only goes with a price: a tick for OWNED, a star for EQUIPPED)
-		if glyph ~= '' and state ~= 'Locked' then glyph = state == 'Equipped' and '⭐' or '✅' end
+		-- (the cash glyph or icon only goes with a price: a tick for OWNED, a star for EQUIPPED)
+		if state ~= 'Locked' then glyph = state == 'Equipped' and '⭐' or '✅' end
+		if slot.PriceIcon then slot.PriceIcon.Visible = state == 'Locked' end
 		local word = state == 'Locked' and (slot.Gun.Cost == 0 and 'FREE' or Format.compact(slot.Gun.Cost)) or string.upper(state)
 		slot.Price.Text = (glyph ~= '' and glyph .. ' ' or '') .. word
 		slot.Price.TextColor3 = look.Text
@@ -160,6 +161,7 @@ local function bind(model)
 		elseif d:IsA('ParticleEmitter') and d.Name == 'StateHaze' then table.insert(slot.Hazes, d)
 		elseif d:IsA('TextLabel') and d.Name == 'State' then slot.StateLabel = d
 		elseif d:IsA('TextLabel') and d.Name == 'Price' and d:FindFirstAncestor('GunLabel') then slot.Price = d
+		elseif d:IsA('ImageLabel') and d.Name == 'PriceIcon' then slot.PriceIcon = d
 		end
 	end
 	local old = point:FindFirstChild('GunPrompt')
