@@ -9,11 +9,12 @@ local C = Color3.fromRGB
 
 local Treadmills = {}
 
--- Ladder order = tier. Color is the tier accent (screen glow, grips, rail strips, mist tint).
+-- Ladder order = tier. Color is the tier colour of the "x1 Speed" label, the +Speed pops and the HUD hint
+-- (the machines' own colours live with the map builder).
 Treadmills.List = {
-	{ Id = 'Jog', Name = 'Jog', Required = 0, Multiplier = 1, Tier = 1, Color = C(70, 225, 255) },
-	{ Id = 'Run', Name = 'Run', Required = 150, Multiplier = 3, Tier = 2, Color = C(255, 160, 40) },
-	{ Id = 'Sprint', Name = 'Sprint', Required = 1000, Multiplier = 10, Tier = 3, Color = C(222, 92, 255) },
+	{ Id = 'Jog', Name = 'Jog', Required = 0, Multiplier = 1, Tier = 1, Color = C(110, 235, 255) },
+	{ Id = 'Run', Name = 'Run', Required = 150, Multiplier = 3, Tier = 2, Color = C(255, 190, 70) },
+	{ Id = 'Sprint', Name = 'Sprint', Required = 1000, Multiplier = 10, Tier = 3, Color = C(235, 120, 255) },
 }
 Treadmills.ById = {}
 for _, t in Treadmills.List do Treadmills.ById[t.Id] = t end
@@ -49,12 +50,13 @@ function Treadmills.gain(id)
 	return t and t.Multiplier or 0
 end
 
--- The belt's look, shared by the map builder and Treadmill.client (which scrolls it). Slats Depth studs deep
--- run across the belt Spacing studs apart; white chevrons (V's pointing back, the way the belt runs) are
--- painted across the slats, one every Period studs (a whole number of slats, so the pattern repeats
--- cleanly), arms Stroke studs thick (measured along the belt) spreading Slope studs sideways per stud.
--- Scroll is the belt speed per tier, in studs per second.
-Treadmills.Pattern = { Spacing = 0.5, Depth = 0.42, Period = 3.5, Slope = 1.4, Stroke = 1.5, HalfWidth = 2.1 }
+-- The belt's look, shared by the map builder and Treadmill.client (which scrolls it): zebra stripes with bold
+-- V's, like the reference. Dark slats Depth studs deep run across a light belt Spacing studs apart; white
+-- chevrons (V's pointing back, the way the belt runs) are painted across the slats, one every Period studs (a
+-- whole number of slats, so every V is the same), arms Stroke studs thick (measured along the belt) spreading
+-- Slope studs sideways per stud. The light gaps merge with the white pieces into solid V's. Scroll is the
+-- belt speed per tier, in studs per second.
+Treadmills.Pattern = { Spacing = 0.36, Depth = 0.22, Period = 3.6, Slope = 1.2, Stroke = 1.6, HalfWidth = 2.6 }
 Treadmills.Scroll = { 3, 5, 8 }
 
 -- The right-hand white piece on a slat at belt coordinate s (studs along the belt, + toward the console):

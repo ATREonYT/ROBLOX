@@ -36,6 +36,7 @@ end
 local SkinArt = optional('SkinArt')
 local GunRules = optional('GunRules')
 local GunModels = optional('Models', 'GunModels')
+local TreadmillConfig = optional('Config', 'Treadmills')
 
 local player = Players.LocalPlayer
 local Color, Tone, short = Kit.Color, Kit.Tone, Kit.short
@@ -688,6 +689,11 @@ local function hintText(power)
 		local gym = Skins.StationById[station:sub(8)]
 		return '<font color="#FF8A8A">' .. (gym and gym.Name or 'This bag') .. ' needs ' .. short(gym and gym.Required or 0) .. ' Power</font>  •  ' .. goal
 	end
+	-- On a treadmill (TreadmillService sets Treadmill while you run on an unlocked belt): its Speed rate.
+	local tread = TreadmillConfig and TreadmillConfig.ById[player:GetAttribute('Treadmill') or '']
+	if station == '' and tread then
+		return 'Run on the belt  •  <font color="#' .. tread.Color:ToHex() .. '">x' .. tread.Multiplier .. ' Speed</font>  •  ' .. goal
+	end
 	if station == '' then return 'Walk onto a bag to train  •  ' .. gun .. '  •  ' .. goal end
 	return 'Click / tap to train  •  ' .. gun .. '  •  ' .. goal
 end
@@ -736,7 +742,7 @@ local function refresh()
 	hint.Text = hintText(power)
 	if current and current.Update then current.Update() end
 end
-for _, key in { 'Power', 'EquippedSkin', 'TrainingStation', 'PowerRate', 'GunMultiplier', 'EquippedGun', 'OwnedGuns' } do
+for _, key in { 'Power', 'EquippedSkin', 'TrainingStation', 'PowerRate', 'GunMultiplier', 'EquippedGun', 'OwnedGuns', 'Treadmill' } do
 	player:GetAttributeChangedSignal(key):Connect(refresh)
 end
 for _, key in { 'Cash', 'Rebirths' } do

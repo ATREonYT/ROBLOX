@@ -38,15 +38,15 @@ end
 scan()
 if active and #zones == 0 then warn('[TreadmillService] No Treadmill_<Id> models with a TreadmillZone in the active map.') end
 
--- The treadmill under a HumanoidRootPart position: over the zone's footprint (a little slack sideways) and
--- from just under its top to 8 studs above it.
+-- The treadmill under a HumanoidRootPart position: over the zone's footprint (a little slack sideways, short
+-- of the middle of the side rails) and from just under its top to 8 studs above it.
 local function treadmillAt(position)
 	for _, z in zones do
 		local part = z.Part
 		local rel = part.CFrame:PointToObjectSpace(position)
 		local size = part.Size
 		local up = rel.Y - size.Y / 2
-		if math.abs(rel.X) <= size.X / 2 + 0.3 and math.abs(rel.Z) <= size.Z / 2 and up >= -0.5 and up <= 8 then
+		if math.abs(rel.X) <= size.X / 2 + 0.15 and math.abs(rel.Z) <= size.Z / 2 and up >= -0.5 and up <= 8 then
 			return z.Id
 		end
 	end

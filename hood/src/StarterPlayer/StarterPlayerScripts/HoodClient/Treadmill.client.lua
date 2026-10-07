@@ -1,10 +1,12 @@
 -- SPEED treadmills on your screen (TreadmillService pays the Speed):
 --   * belts scroll: every unlocked treadmill near the camera rolls its slats and chevrons back, faster each
---     tier; a locked one stands still
---   * screens: "UNLOCKED" (green) or "LOCKED: 150 POWER" (red) in each Screen's Detail line, and your walk
---     speed while you run on it
---   * you run: on an unlocked belt your character plays its run animation in place, quicker on Run and Sprint
---   * "+3 SPEED" pops over your head every time the server pays you
+--     tier; a locked one stands still and its screen dims
+--   * labels: the floating label's Detail says Unlocked (green) or Locked (red), like the bag stations; the
+--     screen's LCD Detail says UNLOCKED / LOCKED, or your walk speed while you run on it
+--   * alive: idle screens breathe (+-12% at 0.5 Hz); while anyone runs on a treadmill its screen holds bright,
+--     its light doubles and its mist thickens
+--   * you run: on an unlocked belt your character plays its run animation in place, quicker on Run and Sprint,
+--     and "+3 Speed" pops over the screen every time the server pays you
 -- The belt pattern math is shared with the map builder (Config/Treadmills.chevron).
 local Players = game:GetService('Players')
 local RunService = game:GetService('RunService')
@@ -19,8 +21,10 @@ local player = Players.LocalPlayer
 local active = ActiveMap.wait(20)
 if not active then return end
 
-local RANGE = 120 -- belts further than this from the camera stop scrolling
-local GREEN, RED = Color3.fromRGB(120, 255, 140), Color3.fromRGB(255, 96, 96)
+local RANGE = 120 -- belts further than this from the camera stop scrolling and breathing
+local UNLOCKED, LOCKED = Color3.fromRGB(20, 235, 70), Color3.fromRGB(235, 25, 50) -- as the bag labels (Lobby.client)
+local WHITE, BLACK = Color3.new(1, 1, 1), Color3.new(0, 0, 0)
+local POP_FONT = Font.new('rbxasset://fonts/families/FredokaOne.json')
 
 ---------------------------------------------------------------------------------------------- treadmills
 local list = {} -- model -> record
@@ -32,10 +36,10 @@ local function record(model)
 	if not row or not belt then return end
 	local r = {
 		model = model, id = id, row = row, belt = belt, zone = model:FindFirstChild('TreadmillZone', true),
-		screen = model:FindFirstChild('Screen', true), slats = {}, pieces = {}, parts = {}, cfs = {},
-		travel = math.random() * 10, step = nil, locked = nil,
+		screen = model:FindFirstChild('Screen', true), slats = {}, pieces = {}, parts = {}, cfs = {}, panels = {},
+		travel = math.random() * 10, step = nil, painted = nil, phase = math.random() * 2, occupied = false,
 		spacing = belt:GetAttribute('SlatSpacing') or Treadmills.Pattern.Spacing,
-		slatY = belt:GetAttribute('SlatY') or 0.16, chevY = belt:GetAttribute('ChevronY') or 0.18,
+		slatY = belt:GetAttribute('SlatY') or 0.15, chevY = belt:GetAttribute('ChevronY') or 0.155,
 		hideY = belt:GetAttribute('HideY') or 0, scroll = belt:GetAttribute('ScrollSpeed') or Treadmills.Scroll[row.Tier] or 4,
 	}
 	for _, d in model:GetDescendants() do
@@ -45,12 +49,21 @@ local function record(model)
 			elseif d.Name == 'Chevron' then
 				table.insert(r.pieces, { part = d, z0 = d:GetAttribute('Z0'), side = d:GetAttribute('Side') or 1, width = d.Size.X })
 			end
+		elseif d:IsA('BasePart') and (d.Name == 'Screen' or d.Name == 'ScreenSide') then
+			table.insert(r.panels, { part = d, color = d.Color })
+		elseif d:IsA('ParticleEmitter') and d.Name == 'BeltMist' then
+			r.mist, r.mistRate = d, d:GetAttribute('BaseRate') or d.Rate
+		elseif d:IsA('PointLight') and d.Name == 'ScreenLight' then
+			r.light, r.lightBase = d, d.Brightness
 		end
 	end
 	for _, s in r.slats do table.insert(r.parts, s.part) end
 	for _, p in r.pieces do table.insert(r.parts, p.part) end
 	local gui = r.screen and r.screen:FindFirstChildWhichIsA('SurfaceGui')
 	r.detail = gui and gui:FindFirstChild('Detail')
+	local sign = model:FindFirstChild('Sign', true)
+	local label = sign and sign:FindFirstChildWhichIsA('BillboardGui')
+	r.label = label and label:FindFirstChild('Detail')
 	list[model] = r
 end
 for _, m in CollectionService:GetTagged('HoodTreadmill') do record(m) end
@@ -109,33 +122,48 @@ local function over(r, position)
 	if not zone or not zone.Parent then return false end
 	local rel = zone.CFrame:PointToObjectSpace(position)
 	local up = rel.Y - zone.Size.Y / 2
-	return math.abs(rel.X) <= zone.Size.X / 2 + 0.3 and math.abs(rel.Z) <= zone.Size.Z / 2 and up >= -0.5 and up <= 8
+	return math.abs(rel.X) <= zone.Size.X / 2 + 0.15 and math.abs(rel.Z) <= zone.Size.Z / 2 and up >= -0.5 and up <= 8
 end
 
 ---------------------------------------------------------------------------------------------- screens
 local function power() return player:GetAttribute('Power') or 0 end
 local current -- the record of the unlocked treadmill you're running on
+local function walkText()
+	return 'WALK SPEED ' .. tostring(player:GetAttribute('WalkSpeed') or Treadmills.walkSpeed(player:GetAttribute('Speed') or 0))
+end
+-- Texts: the label's Unlocked/Locked and the screen's LCD line. Screens of locked treadmills dim.
 local function paint(r)
 	local locked = not Treadmills.unlocked(power(), r.id)
 	local running = current == r
-	local key = (locked and 'L' or 'U') .. (running and tostring(player:GetAttribute('WalkSpeed')) or '')
-	if key == r.locked then return end
-	r.locked = key
-	local d = r.detail
-	if not d then return end
-	if locked then
-		d.Text = 'LOCKED: ' .. Format.compact(r.row.Required) .. ' POWER'
-		d.TextColor3 = RED
-	elseif running then
-		d.Text = 'WALK SPEED ' .. tostring(player:GetAttribute('WalkSpeed') or Treadmills.walkSpeed(player:GetAttribute('Speed') or 0))
-		d.TextColor3 = GREEN
-	else
-		d.Text = 'UNLOCKED'
-		d.TextColor3 = GREEN
+	local key = (locked and 'L' or 'U') .. (running and walkText() or '')
+	if key == r.painted then return end
+	local wasLocked = r.painted and r.painted:sub(1, 1) == 'L'
+	r.painted = key
+	if r.label then
+		r.label.Text = locked and 'Locked' or 'Unlocked'
+		r.label.TextColor3 = locked and LOCKED or UNLOCKED
+	end
+	if r.detail then
+		r.detail.Text = locked and ('LOCKED: ' .. Format.compact(r.row.Required) .. ' POWER') or (running and walkText() or 'UNLOCKED')
+	end
+	if locked or wasLocked then
+		for _, panel in r.panels do panel.part.Color = locked and panel.color:Lerp(BLACK, 0.45) or panel.color end
 	end
 end
 local function paintAll() for _, r in list do paint(r) end end
 for _, key in { 'Power', 'WalkSpeed' } do player:GetAttributeChangedSignal(key):Connect(paintAll) end
+
+-- Unlocked screens breathe while nobody runs on them, and hold bright (light doubled, mist thicker) while
+-- someone does.
+local function glow(r, t)
+	local busy = r.occupied
+	if r.light then r.light.Brightness = busy and 2.5 or r.lightBase end
+	if r.mist then r.mist.Rate = busy and r.mistRate * 2 or r.mistRate end
+	local f = busy and 0 or 0.12 * math.sin((t + r.phase) * math.pi) -- 0.5 Hz
+	for _, panel in r.panels do
+		panel.part.Color = f >= 0 and panel.color:Lerp(WHITE, f) or panel.color:Lerp(BLACK, -f)
+	end
+end
 
 ---------------------------------------------------------------------------------------------- running
 -- The character's own run animation (the default Animate script's), or Roblox's stock one for its rig.
@@ -182,40 +210,65 @@ local function setRunning(r)
 end
 player.CharacterAdded:Connect(function() trackFor, track, current = nil, nil, nil end)
 
--- "+3 SPEED" over your head each time the server pays you while you run.
+-- "+3 Speed" over the screen of the treadmill you run on, each time the server pays you.
 local lastSpeed = player:GetAttribute('Speed')
 player:GetAttributeChangedSignal('Speed'):Connect(function()
 	local speed = player:GetAttribute('Speed') or 0
 	local gained = lastSpeed and speed - lastSpeed or 0
 	lastSpeed = speed
 	local on = player:GetAttribute('Treadmill') or ''
-	local character = player.Character
-	local head = character and character:FindFirstChild('Head')
-	if gained <= 0 or on == '' or not head or not okJuice then return end
-	local row = Treadmills.ById[on]
-	pcall(Juice.popNumber, head.CFrame.Position + Vector3.new((math.random() - 0.5) * 1.5, 2.2, 0), '+' .. Format.compact(gained) .. ' SPEED', row and row.Color)
+	local r = current
+	if not r or r.id ~= on then
+		for _, other in list do if other.id == on and other.occupied then r = other end end
+	end
+	if gained <= 0 or on == '' or not okJuice or not r or not r.screen then return end
+	local at = r.screen.CFrame.Position + Vector3.new((math.random() - 0.5) * 1.5, 2, 0)
+	pcall(Juice.popNumber, at, '+' .. Format.compact(gained) .. ' Speed', r.row.Color, POP_FONT)
 end)
 
 ---------------------------------------------------------------------------------------------- every frame
 local frame = (pcall(function() return RunService.PreRender end) and RunService.PreRender) or RunService.RenderStepped
+local clock, lastScan = 0, -1
 frame:Connect(function(dt)
 	dt = math.min(dt, 0.1)
+	clock += dt
 	local camera = workspace.CurrentCamera
 	local eye = camera and camera.CFrame.Position
 	local character = player.Character
 	local root = character and character:FindFirstChild('HumanoidRootPart')
 	local humanoid = character and character:FindFirstChildOfClass('Humanoid')
 	local alive = root and humanoid and humanoid.Health > 0
+	-- Who stands on which belt (everyone, five times a second): busy treadmills glow brighter.
+	local scan = clock - lastScan >= 0.2
+	local roots
+	if scan then
+		lastScan = clock
+		roots = {}
+		for _, p in Players:GetPlayers() do
+			local c = p.Character
+			local h = c and c:FindFirstChildOfClass('Humanoid')
+			local rp = c and c:FindFirstChild('HumanoidRootPart')
+			if rp and h and h.Health > 0 then table.insert(roots, rp.CFrame.Position) end
+		end
+	end
 	local on
 	for model, r in list do
 		if not model.Parent or not r.belt.Parent then
 			list[model] = nil
 			continue
 		end
-		if r.locked == nil then paint(r) end
+		if r.painted == nil then paint(r) end
 		local unlocked = Treadmills.unlocked(power(), r.id)
 		if alive and unlocked and not on and over(r, root.CFrame.Position) then on = r end
-		if unlocked and eye and (r.belt.CFrame.Position - eye).Magnitude <= RANGE then roll(r, dt, r.scroll) end
+		if scan then
+			local busy = false
+			for _, pos in roots do if over(r, pos) then busy = true break end end
+			r.occupied = busy and unlocked
+		end
+		if unlocked and eye and (r.belt.CFrame.Position - eye).Magnitude <= RANGE then
+			roll(r, dt, r.scroll)
+			glow(r, clock)
+		end
 	end
 	setRunning(on)
 end)
