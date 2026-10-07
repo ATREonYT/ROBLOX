@@ -2465,7 +2465,7 @@ Evolutions.SideFlight = { z0 = 8.4, z1 = 14.4 } -- slab up to tier 1 along its +
 Evolutions.TierColors = {
 	{ color = C(0, 190, 255), glow = C(0, 124, 166), pale = C(178, 204, 246), shade = 0.6 },
 	{ color = C(150, 70, 255), glow = C(80, 8, 176), pale = C(204, 186, 246), shade = 0.6 },
-	{ color = C(255, 180, 0), glow = C(166, 117, 0), pale = C(240, 214, 162), shade = 0.35 },
+	{ color = C(255, 180, 0), glow = C(166, 117, 0), pale = C(226, 190, 110), shade = 0.35, lock = 'Gold' },
 }
 -- Rarity bands (three looks each, the order the overhead tag uses): the outline of the look's name.
 Evolutions.Bands = {
@@ -2694,11 +2694,13 @@ end
 Evolutions.GoalColor = C(255, 214, 40)
 Evolutions.MarkSize = 2.2
 Evolutions.MarkTip = 0.12 -- the ▼'s tip above the bottom of its box, in box heights (TextYAlignment Bottom)
-function Evolutions.label(c, pos, s, band, tipY)
+function Evolutions.label(c, pos, s, band, tipY, full)
 	local anchor = ghost(c:part('LabelAnchor', V(0.2, 0.2, 0.2), CFrame.new(pos), P.white))
 	local g = Instance.new('BillboardGui')
 	g.Name = 'WorldLabel'
-	g.Size = UDim2.fromScale(4.8, 1.9)
+	-- (the stands carry their name and price on the pad's face; the floating label is the action chip alone,
+	-- except over the featured look, whose plinth has no nameplate row)
+	g.Size = full and UDim2.fromScale(4.8, 1.9) or UDim2.fromScale(2.6, 0.72)
 	g.MaxDistance = 70
 	g.LightInfluence = 0
 	g.Parent = anchor
@@ -2723,22 +2725,30 @@ function Evolutions.label(c, pos, s, band, tipY)
 		return t
 	end
 	local ink, yellow = C(24, 22, 40), C(255, 222, 70)
-	text('Title', s.Name, P.white, 0, 0, 1, 0.42, band.color:Lerp(C(0, 0, 0), 0.35), 3)
-	text('Price', '💪 ' .. (s.Required == 0 and 'FREE' or compact(s.Required)), yellow, 0.04, 0.44, 0.47, 0.25, ink, 2, Enum.TextXAlignment.Right)
-	text('Gain', '+' .. s.Gain .. '/sec', yellow, 0.55, 0.44, 0.41, 0.25, ink, 2, Enum.TextXAlignment.Left)
+	local title = text('Title', s.Name, P.white, 0, 0, 1, 0.42, band.color:Lerp(C(0, 0, 0), 0.35), 3)
+	local price = text('Price', '💪 ' .. (s.Required == 0 and 'FREE' or compact(s.Required)), yellow, 0.04, 0.44, 0.47, 0.25, ink, 2, Enum.TextXAlignment.Right)
+	local gain = text('Gain', '+' .. s.Gain .. '/sec', yellow, 0.55, 0.44, 0.41, 0.25, ink, 2, Enum.TextXAlignment.Left)
 	local chip = Instance.new('Frame')
 	chip.Name = 'Chip'
 	chip.BackgroundColor3 = ink
 	chip.BackgroundTransparency = 0.2
 	chip.BorderSizePixel = 0
-	chip.Position = UDim2.fromScale(0.27, 0.72)
-	chip.Size = UDim2.fromScale(0.46, 0.28)
+	chip.Position = full and UDim2.fromScale(0.27, 0.72) or UDim2.fromScale(0, 0)
+	chip.Size = full and UDim2.fromScale(0.46, 0.28) or UDim2.fromScale(1, 1)
 	local corner = Instance.new('UICorner')
 	corner.CornerRadius = UDim.new(0.4, 0)
 	corner.Parent = chip
 	chip.Parent = g
 	-- A new player's view; Lobby.client rewrites it (EQUIPPED / EQUIP / LOCKED).
-	text('Detail', s.Required == 0 and 'EQUIPPED' or 'LOCKED', s.Required == 0 and C(120, 220, 255) or C(255, 90, 90), 0.27, 0.73, 0.46, 0.26, ink, 2)
+	local detail = text('Detail', s.Required == 0 and 'EQUIPPED' or 'LOCKED', s.Required == 0 and C(120, 220, 255) or C(255, 90, 90), 0.27, 0.73, 0.46, 0.26, ink, 2)
+	if not full then
+		-- (kept for the contract and hidden: the pad's nameplate carries them)
+		for _, t in { title, price, gain } do
+			t.Visible, t.TextTransparency = false, 1
+			t:FindFirstChildOfClass('UIStroke').Transparency = 1
+		end
+		detail.Position, detail.Size = UDim2.fromScale(0.04, 0.04), UDim2.fromScale(0.92, 0.92)
+	end
 	local mark = Instance.new('BillboardGui')
 	mark.Name = 'NextMarker'
 	local ms = Evolutions.MarkSize
@@ -2765,18 +2775,26 @@ function Evolutions.label(c, pos, s, band, tipY)
 	return anchor
 end
 
--- The stock tag: a yellow NEXT tag on a short string from the stand's front lip (lipY at its top edge,
--- faceZ its front face). Every stand has one, hidden; the client shows it on your next look (it hangs under
--- the figure, so no camera can read it as belonging to another).
-function Evolutions.tag(c, x, lipY, faceZ)
+-- The nameplate on a stand's front face (`part`'s Front): the look's name in white outlined in its rarity
+-- colour, the Power it needs and what it pays in yellow. Read from the standing spot in front of it.
+function Evolutions.nameplate(part, s, band)
+	local g = surface(part, Enum.NormalId.Front, 50)
+	g.Name = 'Nameplate'
+	line(g, 'Name', s.Name, P.white, FONT.loud, 0.04, 0.52, band.color:Lerp(C(0, 0, 0), 0.4), 3)
+	line(g, 'Price', '💪 ' .. (s.Required == 0 and 'FREE' or compact(s.Required)) .. '   +' .. s.Gain .. '/sec', C(255, 222, 70), FONT.loud, 0.58, 0.36, C(24, 22, 40), 2)
+	return g
+end
+
+-- The stock tag: a yellow NEXT card on a short post standing on the stand's front-left corner (topY its top,
+-- faceZ its front face, x - dx the post), beside the figure's feet. Every stand has one, hidden; the client
+-- shows it on your next look.
+function Evolutions.tag(c, x, topY, faceZ, dx)
 	local g, model = c:group('NextTag')
-	local w, h = 1.8, 0.85
-	local z = faceZ - 0.1
-	g:box('TagString', V(x - 0.05, lipY - 0.2, z - 0.05), V(x + 0.05, lipY + 0.02, z + 0.05), C(26, 26, 32), M.SmoothPlastic)
-	local t = g:part('Tag', V(w, h, 0.08), CFrame.new(x, lipY - 0.2 - h / 2, z - 0.02) * CFrame.Angles(0, 0, math.rad(-4)), Evolutions.GoalColor, M.SmoothPlastic)
-	g:part('TagHole', V(0.16, 0.16, 0.1), CFrame.new(x, lipY - 0.28, z - 0.02), C(26, 26, 32), M.SmoothPlastic)
+	local px, z = x - (dx or 1.5), faceZ + 0.25
+	g:box('TagPost', V(px - 0.06, topY, z - 0.06), V(px + 0.06, topY + 0.6, z + 0.06), C(26, 26, 32), M.SmoothPlastic)
+	local t = g:part('Tag', V(1.4, 0.68, 0.08), CFrame.new(px, topY + 0.92, z) * CFrame.Angles(0, 0, math.rad(-5)), Evolutions.GoalColor, M.SmoothPlastic)
 	local gui = surface(t, Enum.NormalId.Front, 60)
-	line(gui, 'Text', 'NEXT', C(20, 20, 26), FONT.loud, 0.16, 0.8, nil)
+	line(gui, 'Text', 'NEXT', C(20, 20, 26), FONT.loud, 0.1, 0.8, nil)
 	gui.Enabled = false
 	for _, d in model:GetDescendants() do
 		if d:IsA('BasePart') then decor(d).CastShadow, d.Transparency = false, 1 end
@@ -2930,6 +2948,8 @@ function Evolutions.look(c, s, art, x, y, z, opts)
 	if featured then model:SetAttribute('Showcase', true) end
 	local scale = featured and Evolutions.FeaturedScale or Evolutions.Scale
 	model:SetAttribute('LockShade', tint.shade or 0.6)
+	-- (the top tier locks as gold statues: the client maps each part's brightness onto a gold ramp)
+	if tint.lock then model:SetAttribute('LockStyle', tint.lock) end
 	local feet, lipY, lipHalf
 	if featured then
 		feet, lipY = Evolutions.plinth(st, x, y, z, band)
@@ -2979,14 +2999,17 @@ function Evolutions.look(c, s, art, x, y, z, opts)
 		Rate = 1.6, Lifetime = NumberRange.new(0.5, 0.8), Speed = NumberRange.new(0), LightEmission = 1, RotSpeed = NumberRange.new(-60, 60),
 		Size = Evolutions.seq({ { 0, 0 }, { 0.35, 0.6, 0.15 }, { 1, 0 } }), Color = ColorSequence.new(P.white, tint.color:Lerp(P.white, 0.5)), ZOffset = 1,
 	})
-	Evolutions.padlock(st, V(x, feet + 0.5, z - lipHalf - 0.1), 0.75)
+	Evolutions.padlock(st, V(x, feet + 0.62, z - lipHalf - 0.1), 1)
 	if s.Required == 0 then
 		for _, d in model.Lock:GetDescendants() do
 			if d:IsA('BasePart') then d.Transparency = 1 end
 		end
 	end
-	Evolutions.label(st, V(x, labelY, z), s, band, hatY + 0.3)
-	Evolutions.tag(st, x, lipY, z - lipHalf)
+	-- The floating chip just over the hat (the full label over the featured look); the nameplate on the pad.
+	Evolutions.label(st, V(x, featured and labelY or hatY + 0.86, z), s, band, hatY + 0.3, featured)
+	Evolutions.tag(st, x, featured and lipY or lipY + 0.08, z - lipHalf, featured and 1.5 or 1.55)
+	local face = not featured and st.parent:FindFirstChild('PadBlock')
+	if face then Evolutions.nameplate(face, s, band) end
 	-- Equip point at knee height just in front of the pad (prompt + server distance check).
 	local front = z - half - 0.5
 	local ix = x
@@ -3182,6 +3205,17 @@ function Evolutions.props(c)
 	pal:part('JackWheel', V(0.3, 0.5, 0.5), CFrame.new(0, 0.25, -1.5), C(40, 40, 48), M.SmoothPlastic, Enum.PartType.Cylinder)
 	pal:bar('JackHandle', V(0, 0.9, -1.5), V(0, 2.7, -1.95), 0.14, C(40, 40, 48), M.SmoothPlastic)
 	pal:box('JackGrip', V(-0.4, 2.65, -2.05), V(0.4, 2.85, -1.85), C(40, 40, 48), M.SmoothPlastic)
+	-- A hazard barrier closing the far alley between the tiers' -X side and the slab's edge (a dead end along
+	-- the lobby wall): striped yellow and ink boards on a diamond-plate foot, beside the far flight.
+	local t1 = Evolutions.Tiers[1]
+	local bx0, bx1, z0, z1 = -27.95, t1.x0, 4.6, 5.0
+	pr:box('BarrierFoot', V(bx0, Evolutions.Base, z0 - 0.2), V(bx1, Evolutions.Base + 0.25, z1 + 0.2), C(90, 100, 124), M.DiamondPlate)
+	local n = 6
+	for i = 0, n - 1 do
+		local xa = bx0 + (bx1 - bx0) * i / n
+		local xb = bx0 + (bx1 - bx0) * (i + 1) / n
+		pr:box('BarrierStripe', V(xa, Evolutions.Base + 0.25, z0), V(xb, Evolutions.Base + 3, z1), i % 2 == 0 and Evolutions.Colors.yellow or Evolutions.Colors.ink, M.SmoothPlastic)
+	end
 	return pr
 end
 
@@ -3227,13 +3261,16 @@ function Evolutions.apron(c)
 	local sy0, sy1 = B + 4.8, B + 6.8
 	for _, px in { x0 + 0.6, x1 - 0.6 } do a:box('SignLeg', V(px - 0.1, B + 0.3, zr + 0.45), V(px + 0.1, sy0, zr + 0.65), ink, M.SmoothPlastic) end
 	local board = a:box('WardrobeSign', V(x0 - 0.2, sy0, zr + 0.4), V(x1 + 0.1, sy1, zr + 0.7), ink, M.SmoothPlastic)
-	local g = surface(board, Enum.NormalId.Front, 40)
-	line(g, 'Title', 'WARDROBE', Evolutions.GoalColor, Enum.Font.Oswald, 0.02, 0.68, C(90, 40, 0), 3)
-	line(g, 'Sub', 'CHANGE YOUR LOOK', P.white, FONT.loud, 0.7, 0.24, C(20, 20, 40), 2)
+	-- (lettered on both faces: the walkway stair and the spawn see its back)
+	for _, face in { Enum.NormalId.Front, Enum.NormalId.Back } do
+		local g = surface(board, face, 40)
+		line(g, 'Title', 'WARDROBE', Evolutions.GoalColor, Enum.Font.Oswald, 0.02, 0.68, C(90, 40, 0), 3)
+		line(g, 'Sub', 'CHANGE YOUR LOOK', P.white, FONT.loud, 0.7, 0.24, C(20, 20, 40), 2)
+	end
 	for _, y in { sy0 - 0.1, sy1 } do decor(a:box('SignTube', V(x0 - 0.3, y, zr + 0.32), V(x1 + 0.2, y + 0.1, zr + 0.42), C(255, 90, 200), M.Neon)).CastShadow = false end
 	light(board, C(255, 210, 120), 0.8, 9)
 	-- The ring and the prompt point in front.
-	local px, pz = (x0 + x1) / 2, 2.6
+	local px, pz = x1 - 1.5, 2.2
 	decor(a:part('PromptRing', V(0.1, 3.2, 3.2), CFrame.new(px, B + 0.06, pz) * CFrame.Angles(0, 0, math.pi / 2), Evolutions.GoalColor, M.Neon, Enum.PartType.Cylinder)).CastShadow = false
 	a:part('PromptDisc', V(0.14, 2.7, 2.7), CFrame.new(px, B + 0.08, pz) * CFrame.Angles(0, 0, math.pi / 2), C(40, 40, 52), M.SmoothPlastic, Enum.PartType.Cylinder)
 	local point = ghost(a:part('WardrobePoint', V(1.2, 1.2, 1.2), CFrame.new(px, B + 1.6, pz), P.white))
@@ -3293,7 +3330,8 @@ function Evolutions.build(ctx, opts)
 	for _, s in skins.List do
 		if s.Id == Evolutions.Featured then
 			local at = Evolutions.FeaturedAt
-			Evolutions.look(m, s, art, at.X, Evolutions.Tiers[2].top, at.Z, { featured = true, column = 1 })
+			-- (his equip point at row 3's height: the label rule wants it above the feet of whoever stands at it)
+			Evolutions.look(m, s, art, at.X, Evolutions.Tiers[2].top, at.Z, { featured = true, column = 1, floor = Evolutions.Tiers[2].top + 2.7 })
 			Evolutions.kingpinPanel(e, at.X, at.Z)
 		else
 			-- Fill the rows in price order: 5, 5, then the rest on the narrow top tier.

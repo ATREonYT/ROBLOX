@@ -69,7 +69,7 @@ local wardrobePoint = morphs and ActiveMap.find(lobby, 'WardrobePoint', 10) or n
 if wardrobePoint then
 	local p = Instance.new('ProximityPrompt')
 	p.Name = 'Wardrobe'
-	p.MaxActivationDistance = 6.5 -- (the stand keeps every look's standing spot at least 7 studs from it)
+	p.MaxActivationDistance = 6 -- (you stand on its ring; every look's standing spot is 8+ studs away)
 	p.RequiresLineOfSight = false
 	p.HoldDuration = 0
 	p.KeyboardKeyCode = Enum.KeyCode.F
@@ -118,18 +118,30 @@ local LOOK_SHADOW = C(26, 27, 36)
 local LOCK_TINT = 0.4 -- how far a locked figure's colours move toward the shade
 local LABEL_RANGE, LABEL_RISE = 7, 4.5
 local PULSE = TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
+-- Stands with LockStyle 'Gold' (the top tier) lock as gold statues: each part's brightness mapped onto a
+-- dark -> mid -> light gold ramp, small bits (eyes, buttons) dark gold so faces still read; SmoothPlastic with
+-- a little reflectance for the sheen (Metal reads as dull bronze away from a bright sky).
+local GOLD_DARK, GOLD_MID, GOLD_LIGHT = C(110, 70, 12), C(214, 158, 36), C(255, 226, 130)
+local function gold(color, size)
+	if size.X < 0.3 and size.Y < 0.3 and size.Z < 0.3 then return GOLD_DARK end
+	local l = 0.299 * color.R + 0.587 * color.G + 0.114 * color.B
+	return l < 0.5 and GOLD_DARK:Lerp(GOLD_MID, l / 0.5) or GOLD_MID:Lerp(GOLD_LIGHT, (l - 0.5) / 0.5)
+end
 local looks = {}
 for _, s in (morphs and Skins.List or {}) do
 	local stand = morphs:FindFirstChild('Skin_' .. s.Id)
 	local band = stand and stand:GetAttribute('BandColor')
 	local entry = { Parts = {}, Lock = {}, Fx = {}, Disc = {}, Glow = {}, Tag = {}, Column = stand and stand:GetAttribute('Column') or 1 }
-	-- The shade: the pad colour darkened by the stand's LockShade (gold statues on the top tier, 0.35).
+	-- The shade: the pad colour darkened by the stand's LockShade.
 	entry.Shadow = typeof(band) == 'Color3' and band:Lerp(Color3.new(0, 0, 0), stand:GetAttribute('LockShade') or 0.6) or LOOK_SHADOW
+	entry.Gold = stand and stand:GetAttribute('LockStyle') == 'Gold'
 	entry.Showcase = stand and stand:GetAttribute('Showcase')
 	entry.Display = stand and not entry.Showcase and stand:FindFirstChild('Display')
 	if entry.Display then entry.Pivot = entry.Display:GetPivot() end
 	for _, p in (entry.Display and entry.Display:GetDescendants() or {}) do
-		if p:IsA('BasePart') and p.Transparency < 1 then table.insert(entry.Parts, { Part = p, Color = p.Color, Material = p.Material }) end
+		if p:IsA('BasePart') and p.Transparency < 1 then
+			table.insert(entry.Parts, { Part = p, Color = p.Color, Material = p.Material, Reflectance = p.Reflectance, Gold = entry.Gold and gold(p.Color, p.Size) or nil })
+		end
 	end
 	for _, name in { 'Lock', 'Turntable', 'NextTag' } do
 		local m = stand and stand:FindFirstChild(name)
@@ -163,8 +175,13 @@ local function paintLooks(n, worn)
 		if e and e.State ~= state then
 			e.State = state
 			for _, r in e.Parts do
-				r.Part.Color = shaded and r.Color:Lerp(e.Shadow, LOCK_TINT) or r.Color
-				r.Part.Material = shaded and Enum.Material.SmoothPlastic or r.Material
+				if shaded and r.Gold then
+					r.Part.Color, r.Part.Material, r.Part.Reflectance = r.Gold, Enum.Material.SmoothPlastic, 0.2
+				else
+					r.Part.Color = shaded and r.Color:Lerp(e.Shadow, LOCK_TINT) or r.Color
+					r.Part.Material = shaded and Enum.Material.SmoothPlastic or r.Material
+					r.Part.Reflectance = r.Reflectance
+				end
 			end
 			for _, p in e.Lock do p.Transparency = locked and 0 or 1 end
 			for _, p in e.Disc do p.Transparency = worn == s.Id and 0 or 1 end
@@ -220,13 +237,48 @@ local function showLabels(n)
 		if e and e.Marker then e.Marker.Enabled = goal == s and not any end
 	end
 end
+-- While you walk a tier the row below you stands between the camera and you (the figures don't collide, so
+-- the camera doesn't pull in): fade, on your screen only, any figure standing on your level or lower (its pad
+-- base at or under your feet) within 3.5 studs of the line from the camera to you, between the two.
+local FADE, FADE_WIDTH = 0.6, 3.5
+local function fadeRows()
+	local c = player.Character
+	local root = c and c:FindFirstChild('HumanoidRootPart')
+	local cam = workspace.CurrentCamera
+	for _, s in Skins.List do
+		local e = looks[s.Id]
+		if e and e.Pivot and e.Point then
+			local fade = false
+			if root then
+				local fp, rp = e.Pivot.Position, root.Position
+				if e.Point.Position.Y <= rp.Y - 1.7 then -- (its equip point 1.2 over its level, your root 3 over yours)
+					if cam then
+						local a = Vector3.new(cam.CFrame.Position.X, 0, cam.CFrame.Position.Z)
+						local b = Vector3.new(rp.X, 0, rp.Z)
+						local f = Vector3.new(fp.X, 0, fp.Z)
+						local ab = b - a
+						local t = ab.Magnitude > 0.01 and (f - a):Dot(ab) / ab:Dot(ab) or 2
+						fade = t > 0 and t < 1 and (a + ab * t - f).Magnitude < FADE_WIDTH
+					else
+						fade = math.abs(fp.X - rp.X) < FADE_WIDTH and fp.Z < rp.Z
+					end
+				end
+			end
+			if e.Faded ~= fade then
+				e.Faded = fade
+				for _, r in e.Parts do r.Part.LocalTransparencyModifier = fade and FADE or 0 end
+			end
+		end
+	end
+end
 if morphs then
-	-- Labels follow you round the stand (a few checks a second).
+	-- Labels follow you round the stand and the row in front fades (a few checks a second).
 	local nextCheck = 0
 	RunService.Heartbeat:Connect(function()
 		if os.clock() < nextCheck then return end
 		nextCheck = os.clock() + 0.25
 		showLabels(player:GetAttribute('Power'))
+		fadeRows()
 	end)
 end
 
@@ -388,6 +440,7 @@ local function refresh()
 	end
 	paintLooks(n, id)
 	showLabels(n)
+	fadeRows()
 	paintStations(n)
 	local nextSkin = Skins.nextSkin(n)
 	if evolvePrompt then
@@ -418,8 +471,9 @@ local function refresh()
 	else
 		indicator.Adornee = nil
 	end
-	-- "+N POWER" over your head whenever Power goes up.
-	if lastPower and n > lastPower then
+	-- "+N POWER" over your head whenever Power goes up; not while you shoot on a range (Shoot.client puts each
+	-- shot's "+N" on the target, and a second number over your head would sit right on it).
+	if lastPower and n > lastPower and not require(RS.Shared.ShotRules).counts(station) then
 		local c = player.Character
 		local head = c and c:FindFirstChild('Head')
 		if head then
