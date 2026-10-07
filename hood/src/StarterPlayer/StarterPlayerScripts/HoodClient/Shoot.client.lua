@@ -23,43 +23,63 @@ local GunTool = require(RS.Shared.GunTool)
 local player = Players.LocalPlayer
 
 ---------------------------------------------------------------------------------------------- sounds
--- Roblox ships no gunshot, so each sound is a few client built-ins layered and pitched: a shot is a low click
--- (the crack) over a deep button thud (the body) with a faint high swoosh (the bullet); a hit depends on the
--- target's Hit attribute: Ding (steel plates, gongs, the spinner) is electronicpingshort pitched up by the lane's
--- tier, Tock (boards) a thud and a click, Glass and Tin a high ping and click, Pop a snap, Ice a bright ping,
--- Barrel a dull thud. paintball.wav, glassbreak.wav and snap.wav may not exist in every client (check in
--- Studio: content/sounds); they are tried first and replaced by their fallback when they fail to load.
--- Paste uploaded ids into SOUNDS to replace a whole sound. Each layer has a little pool of Sound instances, so
--- a new shot never restarts the one still playing. Volumes stay modest (clicks are 7 a second).
+-- Roblox ships no gunshot, so each sound is a few client built-ins layered and pitched (none of them the UI
+-- click, button.wav, so a shot never sounds like a menu): a shot is a crack (paintball.wav, or clickfast pitched
+-- well down) over a short low boom (electronicpingshort far down) and a dull tick, with a faint bullet zing on
+-- top (swoosh.wav, or a very high, very quiet ping). A hit depends on the target's Hit attribute: Ding (steel
+-- plates, gongs, the spinner) is electronicpingshort pitched by the lane's tier (always well under the stage
+-- chime's pitch) with a metal tick, Tock (boards) a low click and a low ping, Glass and Tin a high ping and
+-- click, Pop a snap, Ice a bright ping, Barrel a dull thud. paintball.wav, glassbreak.wav, snap.wav and
+-- swoosh.wav may not exist in every client (check in Studio: content/sounds); they are tried first and
+-- replaced by their fallback when they fail to load. Paste uploaded ids into SOUNDS to replace a whole sound.
+-- Every sound plays through the 'Shots' SoundGroup under SoundService (a settings menu can mute or balance it
+-- there), from a little pool per layer, so a new shot never restarts the one still playing (all-Ding lanes ring
+-- a Ding every 0.15 s: their pools are deeper). Volumes stay modest (shots come 7 a second).
 local SOUNDS = { Shot = '', Ding = '', Tock = '', Glass = '', Tin = '', Pop = '', Ice = '', Barrel = '' }
 local BUILTIN = 'rbxasset://sounds/'
 -- { file, volume, playback speed, fallback = { file, volume, speed } }
 local LAYERS = {
-	Shot = { { 'paintball.wav', 0.3, 0.9, fallback = { 'clickfast.wav', 0.35, 0.62 } }, { 'button.wav', 0.22, 0.5 }, { 'swoosh.wav', 0.1, 1.8 } },
-	Ding = { { 'electronicpingshort.wav', 0.45, 0.6 } },
-	Tock = { { 'button.wav', 0.4, 0.75 }, { 'clickfast.wav', 0.3, 0.9 } },
+	Shot = {
+		{ 'paintball.wav', 0.3, 0.9, fallback = { 'clickfast.wav', 0.4, 0.6 } },
+		{ 'electronicpingshort.wav', 0.16, 0.32 },
+		{ 'clickfast.wav', 0.18, 0.42 },
+		{ 'swoosh.wav', 0.08, 1.8, fallback = { 'electronicpingshort.wav', 0.04, 2.6 } },
+	},
+	Ding = { { 'electronicpingshort.wav', 0.45, 0.5 }, { 'clickfast.wav', 0.18, 1.3 } },
+	Tock = { { 'clickfast.wav', 0.4, 0.55 }, { 'electronicpingshort.wav', 0.12, 0.4 } },
 	Glass = { { 'glassbreak.wav', 0.4, 1.1, fallback = { 'electronicpingshort.wav', 0.3, 1.7 } }, { 'clickfast.wav', 0.25, 1.4 } },
 	Tin = { { 'electronicpingshort.wav', 0.3, 1.25 }, { 'clickfast.wav', 0.3, 1.1 } },
-	Pop = { { 'snap.wav', 0.45, 1.0, fallback = { 'button.wav', 0.45, 1.5 } }, { 'swoosh.wav', 0.15, 2.0 } },
+	Pop = { { 'snap.wav', 0.45, 1.0, fallback = { 'clickfast.wav', 0.5, 1.6 } }, { 'swoosh.wav', 0.15, 2.0, fallback = { 'electronicpingshort.wav', 0.08, 2.2 } } },
 	Ice = { { 'electronicpingshort.wav', 0.35, 1.45 }, { 'clickfast.wav', 0.2, 1.3 } },
-	Barrel = { { 'button.wav', 0.45, 0.55 }, { 'electronicpingshort.wav', 0.2, 0.5 } },
+	Barrel = { { 'clickfast.wav', 0.45, 0.38 }, { 'electronicpingshort.wav', 0.2, 0.45 } },
 }
-local soundFolder = Instance.new('Folder')
-soundFolder.Name = 'ShootSounds'
-soundFolder.Parent = SoundService
+local POOL = { Ding = 6 } -- Sounds per layer (default 4)
+local group = SoundService:FindFirstChild('Shots')
+if not (group and group:IsA('SoundGroup')) then
+	group = Instance.new('SoundGroup')
+	group.Name = 'Shots'
+	group.Volume = 1
+	group.Parent = SoundService
+end
 local function newSound(id, volume)
 	local sound = Instance.new('Sound')
 	sound.SoundId = id
 	sound.Volume = volume
-	sound.Parent = soundFolder
+	sound.SoundGroup = group
+	sound.Parent = group
 	return sound
 end
+local function resetPool(layer)
+	for _, sound in layer.pool or {} do sound:Destroy() end
+	layer.pool, layer.next = {}, 1
+end
 -- Each layer starts on its known-good file and switches to the first-choice file once that has loaded.
-for _, layers in LAYERS do
+for kind, layers in LAYERS do
 	for _, layer in layers do
 		local spec = layer.fallback or layer
 		layer.use = { BUILTIN .. spec[1], spec[2], spec[3] }
-		layer.pool, layer.next = {}, 1
+		layer.size = POOL[kind] or 4
+		resetPool(layer)
 		if layer.fallback then
 			task.spawn(function()
 				local probe = newSound(BUILTIN .. layer[1], 0)
@@ -68,7 +88,7 @@ for _, layers in LAYERS do
 				probe:Destroy()
 				if loaded then
 					layer.use = { BUILTIN .. layer[1], layer[2], layer[3] }
-					layer.pool, layer.next = {}, 1
+					resetPool(layer)
 				end
 			end)
 		end
@@ -79,7 +99,7 @@ local function play(kind, pitch)
 	local uploaded = SOUNDS[kind]
 	local layers = LAYERS[kind]
 	if uploaded and uploaded ~= '' then
-		overrides[kind] = overrides[kind] or { { use = { uploaded, 0.45, 1 }, pool = {}, next = 1 } }
+		overrides[kind] = overrides[kind] or { { use = { uploaded, 0.45, 1 }, pool = {}, next = 1, size = POOL[kind] or 4 } }
 		layers = overrides[kind]
 	end
 	for _, layer in layers or {} do
@@ -90,7 +110,7 @@ local function play(kind, pitch)
 			sound = newSound(id, volume)
 			layer.pool[layer.next] = sound
 		end
-		layer.next = layer.next % 3 + 1
+		layer.next = layer.next % layer.size + 1
 		sound.PlaybackSpeed = speed * (pitch or 1) * (0.95 + math.random() * 0.1)
 		sound:Play()
 	end
@@ -134,14 +154,10 @@ local function station(id)
 	stations[id] = s
 	return s
 end
--- Every other shot goes to the main target, the rest walk round the others.
-local function nextTarget(s)
-	s.Turn += 1
-	if s.Turn % 2 == 1 or #s.Targets == 1 then return s.Main end
-	local others = {}
-	for _, t in s.Targets do if t ~= s.Main then table.insert(others, t) end end
-	return others[(s.Turn // 2 - 1) % #others + 1]
-end
+-- Every other shot goes to the main target, the others take turns, and a target that is away (popped, shattered,
+-- flown off: it grows back in a moment) is skipped (ShotRules.pick).
+local function present(t) return not t.Knocker or t.Knocker:present() end
+local function nextTarget(s) return ShotRules.pick(s, s.Targets, s.Main, present) end
 
 ---------------------------------------------------------------------------------------------- the gun
 local function training()
@@ -239,7 +255,8 @@ local function shoot()
 	local rig = tool and Juice.gunRig(tool)
 	local from = rig and worldOf(rig.muzzle).Position or (root.Position + Vector3.new(0, 1.2, 0))
 	local s = id and station(id)
-	local target = s and nextTarget(s)
+	local target, there
+	if s then target, there = nextTarget(s) end
 	local to
 	if target then
 		to = target.Aim + Vector3.new((math.random() - 0.5) * 0.5, (math.random() - 0.5) * 0.5, 0)
@@ -264,11 +281,13 @@ local function shoot()
 	if target and s then
 		local color = s.Model:GetAttribute('HitColor') or gun.Color
 		Juice.burst(to, color, 0.7 + s.Tier * 0.07)
-		if target.Knocker then target.Knocker:hit(1) end
-		local hit = target.Model:GetAttribute('Hit') or 'Ding'
-		-- A steel ding rises in pitch lane by lane.
-		play(hit, hit == 'Ding' and (1 + 0.1 * s.Tier) or 1)
-		Juice.flash(target.Model)
+		if there then
+			if target.Knocker then target.Knocker:hit(1) end
+			local hit = target.Model:GetAttribute('Hit') or 'Ding'
+			-- A steel ding rises in pitch lane by lane (0.53 to 0.78 of the stage chime's).
+			play(hit, hit == 'Ding' and (1 + 0.07 * s.Tier) or 1)
+			Juice.flash(target.Model)
+		end
 		local gain = ShotRules.pay(player:GetAttribute('PowerRate'), player:GetAttribute('GunMultiplier'))
 		-- White numbers outlined in a dark shade of the lane's colour read on every lane (a yellow "+N" vanished on
 		-- the gold lane); top lanes get bigger ones.
@@ -367,15 +386,26 @@ for _, bar in { { 2, 34 }, { 34, 2 } } do
 end
 local scale = Instance.new('UIScale')
 scale.Parent = button
+-- The press that started it (a touch keeps its InputObject until the finger lifts, wherever it lifts).
+local pressing = nil
 button.InputBegan:Connect(function(input)
 	if input.UserInputType ~= Enum.UserInputType.Touch and input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+	pressing = input
 	startFiring('button')
 	scale.Scale = 0.88
 	TweenService:Create(scale, TweenInfo.new(0.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
 end)
-button.InputEnded:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then stopFiring('button') end
-end)
+local function release(input)
+	if not held.button then return end
+	-- Mouse: any left-button release. Touch: only the finger that pressed (another finger on the thumbstick
+	-- lifting must not stop the fire).
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input == pressing then
+		pressing = nil
+		stopFiring('button')
+	end
+end
+button.InputEnded:Connect(release)
+UserInputService.InputEnded:Connect(release) -- (released off the button, the button never hears it; touches too)
 local function refresh()
 	button.Visible = training() ~= nil
 	if not button.Visible then stopFiring('button') end

@@ -720,6 +720,17 @@ local function setFillTone(tone)
 	fillGradient.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, t.top), ColorSequenceKeypoint.new(0.55, t.base), ColorSequenceKeypoint.new(1, t.base) })
 end
 
+-- A range's own colour for the hint (its label's "xN Power" colour, which the built lane carries as TextColor;
+-- the station row's colour until the lane has streamed in).
+local laneColor = {}
+local function rangeColor(id, row)
+	if laneColor[id] then return laneColor[id] end
+	local map = ActiveMap.get()
+	local lane = map and map.Lobby and map.Lobby:FindFirstChild('Training_' .. id, true)
+	local c = lane and lane:GetAttribute('TextColor')
+	if typeof(c) == 'Color3' then laneColor[id] = c return c end
+	return row.Color or Color3.new(1, 1, 1)
+end
 local function hintText(power)
 	local skin = skinNow()
 	local best = bestUnlocked(power)
@@ -740,6 +751,12 @@ local function hintText(power)
 		return 'Run on the belt  •  <font color="#' .. tread.Color:ToHex() .. '">x' .. tread.Multiplier .. ' Speed</font>  •  ' .. goal
 	end
 	if station == '' then return 'Step into a shooting range  •  ' .. gun .. '  •  ' .. goal end
+	-- In a lane: the range's multiplier (in the lane's colour) and your gun's, side by side.
+	local range = Skins.StationById[station]
+	if range then
+		return 'Click / tap to shoot  •  <font color="#' .. rangeColor(station, range):ToHex() .. '">Range x' .. range.Multiplier
+			.. '</font>  •  <font color="#FFE76A">Gun x' .. gunMultiplier() .. '</font>  •  ' .. goal
+	end
 	return 'Click / tap to shoot  •  ' .. gun .. '  •  ' .. goal
 end
 

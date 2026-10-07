@@ -26,4 +26,25 @@ function ShotRules.counts(station: any): boolean
 	return type(station) == 'string' and station ~= '' and string.find(station, 'Locked:', 1, true) == nil
 end
 
+-- Which target a shot goes to. Every other shot the main one, the others take turns; a target that is away (a
+-- popped balloon, a shattered bottle, a flown can, until it grows back) is skipped for the next one that is
+-- there. Returns the target and whether it is there: with nothing there at all, (main, false) (the shot still
+-- flies at the main target's spot and pays; nothing is hit). `state` keeps the turns ({} to start).
+function ShotRules.pick(state: any, targets: { any }, main: any, present: (any) -> boolean): (any, boolean)
+	state.Turn = (state.Turn or 0) + 1
+	local others = {}
+	for _, t in targets do
+		if t ~= main then table.insert(others, t) end
+	end
+	if (state.Turn % 2 == 1 or #others == 0) and present(main) then return main, true end
+	state.Walk = state.Walk or 0
+	for _ = 1, #others do
+		state.Walk = state.Walk % #others + 1
+		local t = others[state.Walk]
+		if present(t) then return t, true end
+	end
+	if present(main) then return main, true end
+	return main, false
+end
+
 return ShotRules

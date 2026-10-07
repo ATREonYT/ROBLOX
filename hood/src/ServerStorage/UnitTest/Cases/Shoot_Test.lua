@@ -17,6 +17,24 @@ return function(t)
   t.expect.falsy(ShotRules.counts(''));t.expect.falsy(ShotRules.counts('Locked:Tape'));t.expect.falsy(ShotRules.counts(nil));t.expect.falsy(ShotRules.counts(7))
   t.expect.truthy(ShotRules.Burst>=ShotRules.PerSecond and ShotRules.PerSecond<=8 and 1/ShotRules.Cooldown>=ShotRules.PerSecond)
  end)
+ -- Targets take turns: every other shot the main one; a target that is away is skipped, never shot at.
+ t.test('shots skip targets that are away',function()
+  local main,a,b={n='main'},{n='a'},{n='b'}
+  local away={}
+  local function there(x) return not away[x] end
+  local st,seq={},{}
+  for _=1,6 do table.insert(seq,ShotRules.pick(st,{a,main,b},main,there).n) end
+  t.expect.equal(table.concat(seq,' '),'main a main b main a')
+  away[a]=true
+  local st2,seq2={},{}
+  for _=1,4 do table.insert(seq2,ShotRules.pick(st2,{a,main,b},main,there).n) end
+  t.expect.equal(table.concat(seq2,' '),'main b main b')
+  away[main]=true
+  local x,ok=ShotRules.pick({},{a,main,b},main,there);t.expect.equal(x,b);t.expect.truthy(ok)
+  away[b]=true
+  x,ok=ShotRules.pick({},{a,main,b},main,there);t.expect.equal(x,main);t.expect.falsy(ok)
+  x,ok=ShotRules.pick({},{main},main,function() return true end);t.expect.equal(x,main);t.expect.truthy(ok)
+ end)
  -- The remote is Shoot now; Punch is gone.
  t.test('the Shoot remote replaces Punch',function()
   t.expect.falsy(pcall(Net.get,'Punch'))

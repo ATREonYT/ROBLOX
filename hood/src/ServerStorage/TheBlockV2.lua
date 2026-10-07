@@ -491,7 +491,7 @@ local Stations = {}
 -- Per tier (Skins.Stations order). rim/rimTop: the base ring (stamped band, studded lip; rimTopMat Neon = a
 -- glowing lip without studs); mat: the inset surface; frame (+frameMat): bench, gantry and stands; groove:
 -- the stamped X's colour (nil = a darker shade of the face); text: the "xN Power" colour; glow: hit sparks;
--- edge: a thin neon line inside the rim (shadow). Colours from the bag stations the critics signed off.
+-- edge: a thin neon line inside the rim (shadow); labelLift: the label stack sits this much higher (gold's crown). Colours from the bag stations the critics signed off.
 -- Tiers 5-7 follow the reference's right row: shadow (x8), frost (x12), toxic (x18).
 Stations.Themes = {
 	{ name = 'stone', rim = C(62, 78, 118), rimTop = C(82, 104, 150), mat = C(115, 132, 172), frame = C(165, 95, 78),
@@ -504,12 +504,12 @@ Stations.Themes = {
 		text = C(214, 120, 255), glow = C(230, 120, 255) },
 	{ name = 'shadow', rim = C(70, 40, 110), rimTop = C(92, 56, 140), mat = C(44, 24, 70), frame = C(22, 18, 32),
 		text = C(198, 164, 255), glow = C(176, 120, 255), edge = C(150, 70, 255) },
-	{ name = 'frost', rim = C(60, 180, 230), rimTop = C(160, 244, 255), mat = C(132, 246, 248), matMat = M.SmoothPlastic, frame = C(80, 215, 250),
+	{ name = 'frost', rim = C(30, 110, 210), rimTop = C(160, 244, 255), mat = C(132, 246, 248), matMat = M.SmoothPlastic, frame = C(30, 110, 210),
 		groove = C(60, 190, 235), text = C(120, 236, 255), glow = C(150, 236, 255) },
 	{ name = 'toxic', rim = C(10, 170, 44), rimTop = C(20, 255, 60), rimTopMat = M.Neon, mat = C(0, 60, 60), frame = C(20, 255, 60), frameMat = M.Neon,
 		groove = C(5, 150, 35), text = C(130, 255, 90), glow = C(120, 255, 80) },
 	{ name = 'gold', rim = C(230, 180, 0), rimTop = C(255, 236, 60), mat = C(252, 242, 88), frame = C(245, 192, 0), groove = C(205, 140, 0),
-		trim = C(175, 18, 48), text = C(255, 222, 50), glow = C(255, 222, 80) },
+		trim = C(175, 18, 48), text = C(255, 222, 50), glow = C(255, 222, 80), labelLift = 0.3 },
 }
 
 Stations.HALF_X, Stations.HALF_Z = 4.5, 10 -- rim outer half sizes (the mat is inset 1 stud)
@@ -859,10 +859,10 @@ end
 
 -- The backstop's body: a wall across the outer end with a stepped top (two steps each side, like the rim's
 -- pixel corners), its front stamped with X's. Returns the three blocks (base, step, top).
-function Stations.wall(c, t, color, material, h)
+function Stations.wall(c, t, color, material, h, groove)
 	local Y, z0, z1 = Stations.MAT_Y, Stations.BACK_Z, Stations.HALF_Z - 0.1
 	h = h or 5.6
-	local groove = Stations.grooveFor(t, color)
+	groove = groove or Stations.grooveFor(t, color)
 	local base = c:box('Backstop', V(-4.3, 0, z0), V(4.3, Y + h, z1), color, material)
 	local step = c:box('BackstopStep', V(-2.9, Y + h, z0 + 0.15), V(2.9, Y + h + 0.8, z1), color, material)
 	local top = c:box('BackstopTop', V(-1.5, Y + h + 0.8, z0 + 0.3), V(1.5, Y + h + 1.4, z1), color, material)
@@ -890,8 +890,12 @@ end
 
 -- The truss gantry over the targets: two grooved truss posts on stamped feet at the lane's edges and a grooved
 -- truss beam across, capped. Hanging targets hang from its underside (GANTRY_Y) on its centre line. neon: lines
--- on the posts' front edges and under the beam (shadow, gold, frost).
-function Stations.gantry(g, t, neon)
+-- on the posts' front edges and under the beam (shadow, gold, frost); look.width (default 0.14) and look.backing
+-- (a dark strip 0.34 wide just behind each line, so it reads without bloom on a bright frame).
+function Stations.gantry(g, t, neon, look)
+	look = look or {}
+	local nw, back = look.width or 0.14, look.backing
+	local nz0, nz1 = back and 0.49 or 0.47, back and 0.35 or 0.33
 	local Y, z, y0 = Stations.MAT_Y, Stations.GANTRY_Z, Stations.GANTRY_Y
 	local W = 0.8
 	local frame, fm = t.frame, t.frameMat or M.SmoothPlastic
@@ -906,12 +910,16 @@ function Stations.gantry(g, t, neon)
 		g:wedge('GantryGusset', V(0.5, 0.8, 0.8), CFrame.new(x - sx * 0.8, y0 - 0.4, z) * CFrame.Angles(0, sx * math.pi / 2, 0), frame, fm)
 		if neon then
 			for _, ex in { 3.5, 4.3 } do
-				decor(g:box('GantryNeon', V(sx * ex - 0.07, Y + 0.8, z - 0.47), V(sx * ex + 0.07, y0 + 0.75, z - 0.33), neon, M.Neon)).CastShadow = false
+				if back then decor(g:box('GantryNeonBack', V(sx * ex - 0.17, Y + 0.76, z - 0.47), V(sx * ex + 0.17, y0 + 0.79, z - 0.31), back)).CastShadow = false end
+				decor(g:box('GantryNeon', V(sx * ex - nw / 2, Y + 0.8, z - nz0), V(sx * ex + nw / 2, y0 + 0.75, z - nz1), neon, M.Neon)).CastShadow = false
 			end
 		end
 	end
 	Stations.truss(g, 'GantryBeam', CFrame.new(-4.35, y0 + W / 2, z) * CFrame.Angles(0, 0, -math.pi / 2), 8.7, W, W, frame, groove, 1.45, { '-z' }, fm)
-	if neon then decor(g:box('GantryNeon', V(-3.5, y0 - 0.07, z - 0.47), V(3.5, y0 + 0.07, z - 0.33), neon, M.Neon)).CastShadow = false end
+	if neon then
+		if back then decor(g:box('GantryNeonBack', V(-3.55, y0 - 0.17, z - 0.47), V(3.55, y0 + 0.17, z - 0.31), back)).CastShadow = false end
+		decor(g:box('GantryNeon', V(-3.5, y0 - nw / 2, z - nz0), V(3.5, y0 + nw / 2, z - nz1), neon, M.Neon)).CastShadow = false
+	end
 end
 
 -- Hang a target from the gantry's underside at x: two short chains down to the target's top `top`.
@@ -948,27 +956,31 @@ function Stations.Lanes.stone(k)
 	for i, s in { { -2.9, 0, 1.9 }, { -0.95, 0, 1.9 }, { 0.95, 0, 1.9 }, { 2.9, 0, 1.9 }, { -1.9, 0.62, 1.8 }, { 1.95, 0.62, 1.8 } } do
 		back:blob('Sandbag', V(s[3], 0.72, 1.05), V(s[1], Y + 0.34 + s[2], z0 - 0.6), i % 2 == 0 and C(158, 146, 120) or C(140, 130, 106), M.Fabric)
 	end
-	-- Bunting between two poles over the planks: little flags in turn red, yellow, blue, white (they bob).
+	-- Bunting between two poles over the planks: little flags in turn red, yellow, blue, white. Odd and even
+	-- flags bob in two groups at different rates, so the string ripples.
 	for _, sx in { -1, 1 } do back:box('BuntingPole', V(sx * 4.1 - 0.13, Y, z0 - 0.45), V(sx * 4.1 + 0.13, Y + 9.15, z0 - 0.19), wood:Lerp(C(0, 0, 0), 0.25)) end
 	local flags = { C(235, 55, 60), C(255, 210, 50), C(60, 140, 240), C(250, 250, 245) }
-	local bc, bunting = back:group('Bunting')
-	bc:box('BuntingLine', V(-4.0, Y + 8.92, z0 - 0.35), V(4.0, Y + 8.97, z0 - 0.29), C(250, 250, 245))
-	for i = 0, 9 do
-		local sag = 0.15 * math.sin((i + 0.5) / 10 * math.pi)
-		bc:wedge('Flag', V(0.06, 0.55, 0.62), CFrame.new(-3.6 + i * 0.8, Y + 8.64 - sag, z0 - 0.33) * CFrame.Angles(0, math.pi / 2, 0) * CFrame.Angles(math.pi, 0, 0), flags[i % 4 + 1])
+	decor(back:box('BuntingLine', V(-4.0, Y + 8.92, z0 - 0.35), V(4.0, Y + 8.97, z0 - 0.29), C(250, 250, 245))).CastShadow = false
+	for half, period in { 1.3, 1.7 } do
+		local bc, bunting = back:group('Bunting')
+		for i = half - 1, 9, 2 do
+			local sag = 0.15 * math.sin((i + 0.5) / 10 * math.pi)
+			bc:wedge('Flag', V(0.06, 0.55, 0.62), CFrame.new(-3.6 + i * 0.8, Y + 8.64 - sag, z0 - 0.33) * CFrame.Angles(0, math.pi / 2, 0) * CFrame.Angles(math.pi, 0, 0), flags[i % 4 + 1])
+		end
+		for _, p in bunting:GetDescendants() do if p:IsA('BasePart') then decor(p).CastShadow = false end end
+		bunting.WorldPivot = bc:world(CFrame.new(0, Y + 8.9, z0 - 0.3))
+		bunting:SetAttribute('Bob', 0.22)
+		bunting:SetAttribute('BobPeriod', period)
+		bunting:AddTag('HoodMotion')
 	end
-	for _, p in bunting:GetDescendants() do if p:IsA('BasePart') then decor(p).CastShadow = false end end
-	bunting.WorldPivot = bc:world(CFrame.new(0, Y + 8.9, z0 - 0.3))
-	bunting:SetAttribute('Bob', 0.08)
-	bunting:SetAttribute('BobPeriod', 1.6)
-	bunting:AddTag('HoodMotion')
 	-- The shelf: two posts, two rails and a deep top rail at chest height the targets stand on.
 	local fz, top = 5.0, Y + 4.4
 	for _, sx in { -1, 1 } do g:box('FencePost', V(sx * 3.05 - 0.28, Y, fz - 0.28), V(sx * 3.05 + 0.28, top + 0.15, fz + 0.28), wood:Lerp(C(0, 0, 0), 0.15)) end
 	for _, ry in { 1.3, 2.9 } do g:box('FenceRail', V(-3.45, Y + ry, fz - 0.15), V(3.45, Y + ry + 0.35, fz + 0.15), wood) end
 	g:box('FenceShelf', V(-3.5, top - 0.25, fz - 0.95), V(3.5, top, fz + 0.95), wood:Lerp(C(255, 255, 255), 0.08))
 	-- Targets, left to right: soda bottle, can, the big cola can with a bullseye (main), can, bottle. Bottles
-	-- shatter, cans fly off.
+	-- shatter, small cans fly off; the big can rocks back on its back edge and stays (it is the one you shoot
+	-- every other shot, so it is always there).
 	local items = {
 		{ -2.75, 'bottle', soda.orange, 1.25, nil, C(255, 255, 255) }, { -1.5, 'tin', soda.blue, 0.55, 1.25 }, { 0, 'tin', soda.red, 0.88, 2.0, true },
 		{ 1.5, 'tin', soda.lime, 0.55, 1.25 }, { 2.75, 'bottle', soda.blue, 1.25, nil, C(255, 214, 40) },
@@ -977,7 +989,10 @@ function Stations.Lanes.stone(k)
 		local base = V(it[1], top, fz)
 		local h = it[2] == 'bottle' and 1.5 * it[4] or it[5]
 		local bottle = it[2] == 'bottle'
-		local sw = Stations.target(k, CFrame.new(base + V(0, 0, 0.2)), base + V(0, h / 2, 0), bottle and 'Shatter' or 'Fly', it[6] == true, bottle and 'Glass' or 'Tin', it[3])
+		local main = it[6] == true
+		local hinge = main and V(0, 0, it[4]) or V(0, 0, 0.2)
+		local sw, model = Stations.target(k, CFrame.new(base + hinge), base + V(0, h / 2, 0), bottle and 'Shatter' or (main and 'Tip' or 'Fly'), main, bottle and 'Glass' or 'Tin', it[3])
+		if main then model:SetAttribute('TipMin', 0) end
 		if bottle then Stations.bottle(sw, base, it[4], it[3], { stripe = it[3], cap = it[6] })
 		else Stations.tin(sw, base, it[4], it[5], it[3], C(255, 255, 255), it[6] and 0.75 or nil) end
 	end
@@ -1101,14 +1116,14 @@ function Stations.Lanes.arcane(k)
 	-- Bunches of three on each gantry post (they bob; not targets).
 	for _, sx in { -1, 1 } do
 		local bc, bunch = g:group('BalloonBunch')
-		local foot = V(sx * 3.9, Stations.GANTRY_Y + 1.05, Stations.GANTRY_Z)
+		local foot = V(sx * 3.9, Stations.GANTRY_Y + 1.05, Stations.GANTRY_Z) -- (on the post's cap)
 		for i, c in { C(255, 90, 170), C(255, 220, 60), C(120, 220, 255) } do
 			local a = (i - 2) * 0.6
-			Stations.balloon(bc, foot + V(math.sin(a) * 1.0 - sx * 0.15, 2.0 + math.cos(a) * 0.5, -0.2 * i), 0.6, c, foot)
+			Stations.balloon(bc, foot + V(math.sin(a) * 1.0 - sx * 0.15, 0.95 + math.cos(a) * 0.35, -0.2 * i), 0.6, c, foot)
 		end
 		for _, p in bunch:GetDescendants() do if p:IsA('BasePart') then decor(p) end end
 		bunch.WorldPivot = bc:world(CFrame.new(foot))
-		bunch:SetAttribute('Bob', 0.18)
+		bunch:SetAttribute('Bob', 0.14)
 		bunch:SetAttribute('BobPeriod', 2.6 + sx * 0.3)
 		bunch:AddTag('HoodMotion')
 	end
@@ -1144,13 +1159,14 @@ function Stations.Lanes.shadow(k)
 end
 
 -- 6 Frost: an ice bullseye on a tall ice pillar (main), small ice blocks on ice pedestals, a four-course ice
--- wall with a snow top, icicles and a neon ice line, icicles, snow and a neon line on the gantry.
+-- wall with a snow top, icicles and a deep-blue neon line, and a deep-blue gantry with deep-blue neon on navy
+-- strips: pale ice in a dark frame, as rich as shadow's neon on black.
 function Stations.Lanes.frost(k)
 	local t, Y, g = k.t, Stations.MAT_Y, k.gear
-	local snow, iceA, iceB, glow, deep = C(248, 252, 255), C(150, 225, 250), C(120, 205, 240), C(140, 240, 255), C(25, 120, 235)
-	Stations.gantry(g, t)
+	local snow, iceA, iceB, deep = C(248, 252, 255), C(150, 225, 250), C(120, 205, 240), C(25, 120, 235)
+	local glow, navy = C(40, 150, 255), C(12, 40, 100) -- deep-blue neon on navy strips (reads without bloom)
+	Stations.gantry(g, t, glow, { width = 0.22, backing = navy })
 	g:box('BeamSnow', V(-4.4, Stations.GANTRY_Y + 0.8, Stations.GANTRY_Z - 0.45), V(4.4, Stations.GANTRY_Y + 1.0, Stations.GANTRY_Z + 0.45), snow)
-	decor(g:box('BeamGlow', V(-3.5, Stations.GANTRY_Y - 0.06, Stations.GANTRY_Z - 0.42), V(3.5, Stations.GANTRY_Y + 0.06, Stations.GANTRY_Z - 0.3), glow, M.Neon)).CastShadow = false
 	for i = 0, 6 do
 		local len = 0.5 + ((i * 37) % 5) * 0.12
 		Stations.icicle(g, V(-3.1 + i * 1.05, Stations.GANTRY_Y - 0.06, Stations.GANTRY_Z - 0.2), len, 0.3)
@@ -1168,11 +1184,28 @@ function Stations.Lanes.frost(k)
 	end
 	local top = Y + 7.6
 	studs(back:box('SnowTop', V(-4.4, top, z0 - 0.1), V(4.4, top + 0.4, z1), snow))
-	decor(back:box('SnowGlow', V(-4.4, top - 0.12, z0 - 0.2), V(4.4, top, z0 - 0.08), glow, M.Neon)).CastShadow = false
+	decor(back:box('SnowGlowBack', V(-4.4, top - 0.34, z0 - 0.18), V(4.4, top, z0 - 0.06), navy)).CastShadow = false
+	decor(back:box('SnowGlow', V(-4.4, top - 0.28, z0 - 0.22), V(4.4, top - 0.06, z0 - 0.1), glow, M.Neon)).CastShadow = false
 	for _, d in { { -2.6, 1.6, 0.5 }, { 0.6, 2.0, 0.7 }, { 2.9, 1.2, 0.4 } } do back:box('SnowDrift', V(d[1] - d[2] / 2, top + 0.4, z0 + 0.1), V(d[1] + d[2] / 2, top + 0.4 + d[3], z1 - 0.1), snow) end
 	for i = 0, 9 do
 		local len = 0.45 + ((i * 53) % 7) * 0.1
 		Stations.icicle(back, V(-3.9 + i * 0.86, top - 0.1, z0 - 0.12), len, 0.34)
+	end
+	-- A big deep-blue neon snowflake on the wall behind the main target (six arms with twin branches), and neon
+	-- lines up the wall's edges: the lane's dark graphic, like shadow's rings.
+	local fc = CFrame.new(0, Y + 5.8, z0 - 0.08)
+	for a = 0, 2 do
+		local arm = fc * CFrame.Angles(0, 0, a * math.pi / 3)
+		decor(back:part('Snowflake', V(5.2, 0.42, 0.1), arm, glow, M.Neon)).CastShadow = false
+		for _, sx in { -1, 1 } do
+			for _, sb in { -1, 1 } do
+				local at = arm * CFrame.new(sx * 1.95, 0, -0.01) * CFrame.Angles(0, 0, sx * sb * math.pi / 3) * CFrame.new(sx * 0.4, 0, 0)
+				decor(back:part('Snowflake', V(0.85, 0.3, 0.1), at, glow, M.Neon)).CastShadow = false
+			end
+		end
+	end
+	for _, sx in { -1, 1 } do
+		decor(back:box('WallNeon', V(sx * 4.3 - 0.11, 0.6, z0 - 0.07), V(sx * 4.3 + 0.11, top - 0.34, z0 + 0.04), glow, M.Neon)).CastShadow = false
 	end
 	-- Main: an ice bullseye (deep blue rings) on a tall ice pillar.
 	local mz = 6.0
@@ -1254,33 +1287,37 @@ function Stations.Lanes.toxic(k)
 	end
 end
 
--- 8 Gold, the top lane: a big gold gong (main) on crimson velvet in a deep-gold wall with cream trim and orange
--- rays, golden neon on the gantry, a turning crown on the beam, gold bottles on a gold shelf, a gold plate on a
--- post, lemon nuggets on the sand and a velvet band on the bench (a VIP counter).
+-- 8 Gold, the top lane: a big gold gong with foil rims (main) in a gold ring on a crimson velvet backstop with cream trim
+-- and gold rays (the gold pops off the dark velvet the way toxic's neon pops off its container), white-hot neon
+-- on crimson strips up the gantry, a turning crown on the beam, gold bottles on a gold shelf, a gold plate on
+-- a post, lemon nuggets on the sand and a velvet band on the bench (a VIP counter).
 function Stations.Lanes.gold(k)
 	local t, Y, g = k.t, Stations.MAT_Y, k.gear
 	local gold, deep, white, ruby, cream = C(255, 222, 40), C(245, 190, 0), C(255, 252, 235), C(235, 30, 70), C(255, 248, 220)
-	Stations.gantry(g, t, C(255, 240, 120))
-	g:box('CrownPlinth', V(-0.5, Stations.GANTRY_Y + 0.8, Stations.GANTRY_Z - 0.4), V(0.5, Stations.GANTRY_Y + 0.95, Stations.GANTRY_Z + 0.4), deep)
-	Stations.crown(g, CFrame.new(0, Stations.GANTRY_Y + 0.95, Stations.GANTRY_Z))
-	-- Wall: deep gold with cream trim, orange rays behind a gold-rimmed crimson velvet disc, two gems.
+	local velvet, rays = C(150, 15, 40), C(255, 200, 40)
+	Stations.gantry(g, t, C(255, 255, 235), { width = 0.22, backing = velvet })
+	g:box('CrownPlinth', V(-0.5, Stations.GANTRY_Y + 0.8, Stations.GANTRY_Z - 0.4), V(0.5, Stations.GANTRY_Y + 0.86, Stations.GANTRY_Z + 0.4), velvet)
+	Stations.crown(g, CFrame.new(0, Stations.GANTRY_Y + 0.86, Stations.GANTRY_Z))
+	-- Wall: crimson velvet with cream trim, gold rays behind a gold ring round a darker velvet field, two gems.
 	local back = k.st:group('Backstop')
 	local z = Stations.BACK_Z
 	local h = 7.4
-	Stations.wall(back, t, C(240, 180, 0), M.SmoothPlastic, h)
+	Stations.wall(back, t, velvet, M.Fabric, h, C(112, 8, 30))
 	Stations.wallLines(back, h, cream, M.SmoothPlastic, 0.3)
-	Stations.starburst(back, CFrame.new(0, Y + 5.8, z - 0.08), 4.2, 0.12, C(255, 150, 0))
-	Stations.disc(back, 'VelvetRim', CFrame.new(0, Y + 5.8, z - 0.2), 2.62, 0.14, C(255, 236, 80))
-	Stations.disc(back, 'Velvet', CFrame.new(0, Y + 5.8, z - 0.26), 2.4, 0.14, C(175, 18, 48))
+	Stations.starburst(back, CFrame.new(0, Y + 5.8, z - 0.08), 4.2, 0.12, rays)
+	Stations.disc(back, 'VelvetRim', CFrame.new(0, Y + 5.8, z - 0.2), 2.62, 0.14, rays, M.Foil)
+	Stations.disc(back, 'Velvet', CFrame.new(0, Y + 5.8, z - 0.26), 2.4, 0.14, C(105, 8, 30), M.Fabric)
 	for _, s in { { -3.45, 1.2, C(60, 140, 255) }, { 3.45, 1.2, C(60, 220, 120) } } do
 		back:part('Gem', V(0.42, 0.42, 0.25), CFrame.new(s[1], Y + s[2], z - 0.08) * CFrame.Angles(0, 0, math.pi / 4), s[3], M.Glass)
 	end
 	-- Main: the gong.
 	local cy = 6.2
 	local sw = Stations.target(k, CFrame.new(0, Stations.GANTRY_Y, Stations.GANTRY_Z), V(0, cy, Stations.GANTRY_Z), 'Swing', true, 'Ding')
-	Stations.disc(sw, 'GongRim', CFrame.new(0, cy, Stations.GANTRY_Z + 0.03), 2.0, 0.22, deep)
+	-- (Foil on the deep-gold rim and ring: they glint in Studio light; the bright face stays plastic so it reads
+	-- the same everywhere.)
+	Stations.disc(sw, 'GongRim', CFrame.new(0, cy, Stations.GANTRY_Z + 0.03), 2.0, 0.22, deep, M.Foil)
 	Stations.disc(sw, 'Gong', CFrame.new(0, cy, Stations.GANTRY_Z - 0.02), 1.75, 0.28, gold)
-	Stations.disc(sw, 'GongRing', CFrame.new(0, cy, Stations.GANTRY_Z - 0.06), 1.08, 0.32, deep)
+	Stations.disc(sw, 'GongRing', CFrame.new(0, cy, Stations.GANTRY_Z - 0.06), 1.08, 0.32, deep, M.Foil)
 	Stations.disc(sw, 'GongBoss', CFrame.new(0, cy, Stations.GANTRY_Z - 0.1), 0.78, 0.36, gold)
 	sw:part('GongRuby', V(0.52, 0.52, 0.3), CFrame.new(0, cy, Stations.GANTRY_Z - 0.3) * CFrame.Angles(0, 0, math.pi / 4), ruby, M.Glass)
 	Stations.chains(sw, 0, cy + 1.9, 0.8)
@@ -1394,8 +1431,9 @@ function Stations.build(ctx, stationId, opts)
 		if p:IsA('BasePart') and (p:FindFirstAncestor('Targets') or p.Size.Magnitude < 1.6) then decor(p) end
 	end
 
-	Stations.labels(st, s, t, Stations.LABEL)
+	Stations.labels(st, s, t, Stations.LABEL + V(0, t.labelLift or 0, 0))
 	model:SetAttribute('Tier', tier)
+	model:SetAttribute('TextColor', t.text) -- (the HUD hint shows the range's multiplier in it)
 	model:SetAttribute('HitPoint', st:world(CFrame.new(k.mainAim or V(0, 4.2, 6))).Position)
 	model:SetAttribute('HitColor', t.glow)
 	if opts.vfx ~= false and VFX then

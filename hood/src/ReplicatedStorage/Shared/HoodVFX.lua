@@ -481,7 +481,7 @@ end
 -- part in it is invisible.
 -- The mats are flat saturated colours, so nothing additive lies on them (no floor pools, decals or light
 -- shafts): the material's own particles carry each theme, as in the reference. Live particles (Rate x
--- Lifetime, measured on the old 7 x 18 mat; the lanes' 7 x 10 field runs at ~0.57 of these):  stone ~12  red ~39  lava ~155  arcane ~35 (+3 comet beams)  frost ~58
+-- Lifetime, measured on the old 7 x 18 mat; the lanes' 7 x 10 field runs at ~0.57 of these):  stone ~12  red ~39  lava ~98  arcane ~35 (+3 comet beams)  frost ~58
 -- toxic ~51  shadow ~42  gold ~38 (25 big glints). All eight together ~456: thin them on phones with setDensity
 -- (the lobby client already halves locked stations).
 HoodVFX.Themes = {}
@@ -544,25 +544,26 @@ function HoodVFX.Themes.lava(ctx)
 	local uploaded = select(2, texture('firepuff'))
 	-- Two holders (front and back half) so the aisle end is as dense as the back. With burning barrels at the
 	-- sides the carpet keeps clear of them (narrower), so their bases stay visible. Before upload the fire_main
-	-- stand-in runs at half rate and the flame licks take over (flames, not flakes).
+	-- stand-in runs at half rate and the flame licks take over (flames, not flakes). Budget: ~56 live particles
+	-- on a lane with uploads (carpet 16, cores 8, licks 7, two burners 19, embers 6), ~40 before.
 	local bedW = ctx.burners and #ctx.burners > 0 and math.min(w, 4.3) or w
 	for i, zc in { -d / 4, d / 4 } do
 		local half = holder(ctx.theme, 'FireBed' .. i, ctx.top * CFrame.new(0, 0.1, zc), V(bedW, 0.2, d / 2))
 		emitter(half, 'FireCarpet', 'firepuff', {
-			Rate = (uploaded and 60 or 30) * A, Lifetime = NR(0.4, 0.7), Speed = NR(0.3, 1), SpreadAngle = Vector2.new(12, 12), Acceleration = V(0, 1.5, 0),
+			Rate = (uploaded and 20 or 14) * A, Lifetime = NR(0.4, 0.7), Speed = NR(0.3, 1), SpreadAngle = Vector2.new(12, 12), Acceleration = V(0, 1.5, 0),
 			RotSpeed = NR(-20, 20), ZOffset = 0.2, -- (the soft puff fills ~45% of its frame)
-			Size = uploaded and seq({ { 0, 3.2 * S, 0.3 * S }, { 0.4, 4.4 * S, 0.4 * S }, { 1, 0 } }) or seq({ { 0, 1.2 * S, 0.15 * S }, { 0.4, 1.7 * S, 0.2 * S }, { 1, 0 } }),
+			Size = uploaded and seq({ { 0, 4.0 * S, 0.3 * S }, { 0.4, 5.4 * S, 0.4 * S }, { 1, 0 } }) or seq({ { 0, 1.5 * S, 0.15 * S }, { 0.4, 2.1 * S, 0.2 * S }, { 1, 0 } }),
 			Transparency = seq({ { 0, 0.1 }, { 0.5, 0.25 }, { 1, 1 } }), Color = uploaded and body or fire, LightEmission = 0.35,
 		})
 		if uploaded then
 			emitter(half, 'FireCores', 'firepuff', {
-				Rate = 42 * A, Lifetime = NR(0.35, 0.6), Speed = NR(0.4, 1.2), SpreadAngle = Vector2.new(12, 12), Acceleration = V(0, 1.5, 0),
-				RotSpeed = NR(-20, 20), ZOffset = 0.5, Size = seq({ { 0, 1.8 * S, 0.2 * S }, { 0.4, 2.5 * S, 0.3 * S }, { 1, 0 } }),
+				Rate = 12 * A, Lifetime = NR(0.35, 0.6), Speed = NR(0.4, 1.2), SpreadAngle = Vector2.new(12, 12), Acceleration = V(0, 1.5, 0),
+				RotSpeed = NR(-20, 20), ZOffset = 0.5, Size = seq({ { 0, 2.3 * S, 0.2 * S }, { 0.4, 3.1 * S, 0.3 * S }, { 1, 0 } }),
 				Transparency = seq({ { 0, 0.1 }, { 0.5, 0.2 }, { 1, 1 } }), Color = core, LightEmission = 0.35,
 			})
 		end
 		emitter(half, 'FlameLicks', 'flame', {
-			Orientation = Enum.ParticleOrientation.FacingCameraWorldUp, Rate = uploaded and 10 or 16, Lifetime = NR(0.5, 0.9), Speed = NR(3, 5),
+			Orientation = Enum.ParticleOrientation.FacingCameraWorldUp, Rate = uploaded and 5 or 9, Lifetime = NR(0.5, 0.9), Speed = NR(3, 5),
 			SpreadAngle = Vector2.new(10, 10), Rotation = NR(-8, 8), ZOffset = 0.3,
 			Size = seq({ { 0, 0.6 * S }, { 0.4, 1.0 * S, 0.2 * S }, { 1, 0 } }), Transparency = seq({ { 0, 0.3 }, { 0.15, 0 }, { 1, 1 } }),
 			Color = lick, LightEmission = 0.5,
@@ -573,12 +574,12 @@ function HoodVFX.Themes.lava(ctx)
 		local top = b.CFrame * CFrame.new(0, 0, 0)
 		local fire1 = holder(ctx.theme, 'Burner', CFrame.new(top.Position + V(0, 0.15, 0)), V(0.9, 0.2, 0.9))
 		emitter(fire1, 'BurnerFire', 'firepuff', {
-			Rate = 14, Lifetime = NR(0.45, 0.8), Speed = NR(1.5, 3), SpreadAngle = Vector2.new(10, 10), Acceleration = V(0, 2, 0), ZOffset = 0.4,
+			Rate = 9, Lifetime = NR(0.45, 0.8), Speed = NR(1.5, 3), SpreadAngle = Vector2.new(10, 10), Acceleration = V(0, 2, 0), ZOffset = 0.4,
 			RotSpeed = NR(-25, 25), Size = uploaded and seq({ { 0, 1.6, 0.2 }, { 0.4, 2.2, 0.3 }, { 1, 0 } }) or seq({ { 0, 1.0 }, { 0.4, 1.4, 0.2 }, { 1, 0 } }),
 			Transparency = seq({ { 0, 0.1 }, { 0.5, 0.2 }, { 1, 1 } }), Color = fire, LightEmission = 0.5,
 		})
 		emitter(fire1, 'BurnerLicks', 'flame', {
-			Orientation = Enum.ParticleOrientation.FacingCameraWorldUp, Rate = 8, Lifetime = NR(0.5, 0.8), Speed = NR(3, 4.5),
+			Orientation = Enum.ParticleOrientation.FacingCameraWorldUp, Rate = 6, Lifetime = NR(0.5, 0.8), Speed = NR(3, 4.5),
 			SpreadAngle = Vector2.new(8, 8), ZOffset = 0.5, Size = seq({ { 0, 0.7 }, { 0.4, 1.1, 0.2 }, { 1, 0 } }),
 			Transparency = seq({ { 0, 0.3 }, { 0.15, 0 }, { 1, 1 } }), Color = lick, LightEmission = 0.6,
 		})
@@ -601,7 +602,7 @@ function HoodVFX.Themes.lava(ctx)
 		pointLight(holder(ctx.theme, 'FireGlow', ctx.top * CFrame.new(under.X, 1, under.Z), V(0.2, 0.2, 0.2)), C(255, 140, 50), 1.2, 9)
 	end
 	emitter(ctx.deck, 'Embers', 'ember', {
-		Rate = 6 * A, Lifetime = NR(1.4, 2.6), Speed = NR(2, 5), SpreadAngle = Vector2.new(25, 25), Acceleration = V(0.6, 1.5, 0.3), Drag = 0.6,
+		Rate = 4 * A, Lifetime = NR(1.4, 2.6), Speed = NR(2, 5), SpreadAngle = Vector2.new(25, 25), Acceleration = V(0.6, 1.5, 0.3), Drag = 0.6,
 		RotSpeed = NR(-40, 40), Size = seq({ { 0, 0.3 * S, 0.1 * S }, { 0.7, 0.2 * S }, { 1, 0 } }),
 		Transparency = seq({ { 0, 0 }, { 0.8, 0.2 }, { 1, 1 } }),
 		Color = cseq({ { 0, C(255, 240, 160) }, { 0.4, C(255, 160, 40) }, { 1, C(255, 70, 20) } }), LightEmission = 1, Brightness = 2, ZOffset = 0.8,
@@ -609,15 +610,16 @@ function HoodVFX.Themes.lava(ctx)
 	pointLight(ctx.column, C(255, 140, 50), 1, 14)
 end
 
--- 4 Arcane: pink-white comets sweeping in arcs over the flat purple mat, with pink sparkles.
+-- 4 Arcane: pink-white comets sweeping in arcs over the gantry, with pink sparkles.
 function HoodVFX.Themes.arcane(ctx)
 	local A, S, color, w, d = ctx.A, ctx.S, ctx.color, ctx.w, ctx.d
-	-- Long thin arcs (head, tail, bend) sweeping across the back of the field, behind and above the targets
-	-- (6-9 studs up, never across the line of fire), in magenta so they never read as a white tracer.
+	-- Long arcs (head, tail, bend) over the back of the field: above the gantry beam and the wall's top (9.2-10.6
+	-- studs over the field, against the lobby, never across the line of fire, under the label), pink heads fading
+	-- to violet tails: bright against the sky and the lobby's blue walls, and up there no tracer is near.
 	local arcs = {
-		{ V(-0.42 * w, 6.2, 0.36 * d), V(0.42 * w, 7.4, 0.44 * d), 2.5 },
-		{ V(0.4 * w, 8.2, 0.3 * d), V(-0.38 * w, 6.8, 0.46 * d), 2.0 },
-		{ V(-0.2 * w, 8.6, 0.42 * d), V(0.3 * w, 6.4, 0.34 * d), 1.8 },
+		{ V(-0.42 * w, 9.3, 0.36 * d), V(0.42 * w, 10.2, 0.44 * d), 1.0 },
+		{ V(0.4 * w, 10.6, 0.3 * d), V(-0.38 * w, 9.5, 0.46 * d), 0.8 },
+		{ V(-0.2 * w, 10.0, 0.42 * d), V(0.3 * w, 9.2, 0.34 * d), 0.7 },
 	}
 	for i, arc in arcs do
 		local up = CFrame.Angles(0, 0, math.pi / 2) -- attachment X axis points up: the beam bows upward
@@ -631,10 +633,10 @@ function HoodVFX.Themes.arcane(ctx)
 		HoodVFX.applyTexture(b, 'comet')
 		b.TextureMode, b.TextureLength, b.TextureSpeed = Enum.TextureMode.Stretch, 1, 0.5 + 0.2 * i
 		b.CurveSize0, b.CurveSize1 = arc[3], -arc[3]
-		b.Width0, b.Width1 = 0.45, 0.05 -- the head (Attachment0) wide, the tail thin
+		b.Width0, b.Width1 = 0.9, 0.06 -- the head (Attachment0) wide, the tail thin
 		b.FaceCamera, b.Segments = true, 16
-		b.LightEmission, b.LightInfluence, b.Brightness = 0.5, 0, 1
-		b.Color = ColorSequence.new(C(255, 110, 220), C(255, 190, 245))
+		b.LightEmission, b.LightInfluence, b.Brightness = 0.25, 0, 1 -- (mostly opaque, not over-bright: the colour holds)
+		b.Color = ColorSequence.new(C(255, 110, 225), C(150, 60, 255))
 		b.Transparency = seq({ { 0, 0 }, { 1, 1 } })
 		b.Parent = ctx.deck
 	end

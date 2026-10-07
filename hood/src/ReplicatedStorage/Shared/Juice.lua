@@ -429,12 +429,12 @@ function Juice.shards(position, color, kind)
 	if kind == 'confetti' then
 		e.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, color), ColorSequenceKeypoint.new(0.5, Color3.new(1, 1, 1)), ColorSequenceKeypoint.new(1, color) })
 		e.Speed, e.Lifetime, e.Acceleration, e.Drag = NumberRange.new(6, 10), NumberRange.new(0.6, 0.9), Vector3.new(0, -25, 0), 2
-		e.Size = NumberSequence.new(0.3)
+		e.Size = NumberSequence.new(0.45)
 		e:Emit(12)
 	else
 		e.Color = ColorSequence.new(color:Lerp(Color3.new(1, 1, 1), 0.35), color)
 		e.Speed, e.Lifetime, e.Acceleration, e.Drag = NumberRange.new(8, 14), NumberRange.new(0.4, 0.6), Vector3.new(0, -40, 0), 1
-		e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.25), NumberSequenceKeypoint.new(1, 0.12) })
+		e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.4), NumberSequenceKeypoint.new(1, 0.18) })
 		e:Emit(10)
 	end
 end
@@ -445,13 +445,18 @@ end
 --   Spin    spins about the hinge's Y axis and settles facing front (the spinner)
 --   Pop     bursts into confetti, grows back (balloons)
 --   Shatter bursts into shards in its colour, grows back (bottles)
---   Fly     flies up and back spinning, vanishes and pops back (cans)
--- :hit(strength). Targets also have idle life (k.idle; :pose() shows it while nothing knocks them): hanging
+--   Fly     flies up and back spinning about its middle, vanishes and pops back (cans)
+-- :hit(strength); :present() is false while a burst or flown target is away (the shooter aims elsewhere). A Tip
+-- target's TipMin attribute limits how far it rocks forward (0 for a can standing on a shelf: it never dips into
+-- it). Swings are capped at SWING_BACK radians backwards, so a gong never reaches the wall behind it, however fast
+-- you fire. Targets also have idle life (k.idle; :pose() shows it while nothing knocks them): hanging
 -- plates sway a few degrees, spinners turn slowly, balloons bob; standing targets keep still. Everything is
 -- local and cheap: a few CFrame writes per frame per knocked target, sleeping when settled.
 local knocking, knockConn = {}, nil
-local KNOCK = { Tip = { 3.2, 0.32, 14 }, Swing = { 1.3, 0.12, -4.5 }, Spin = { 1.2, 0.5, 26 }, Pop = { 4, 0.5, 0 }, Shatter = { 4, 0.5, 0 }, Fly = { 4, 0.5, 0 } }
+local KNOCK = { Tip = { 3.2, 0.32, 14 }, Swing = { 1.3, 0.12, -3.2 }, Spin = { 1.2, 0.5, 26 }, Pop = { 4, 0.5, 0 }, Shatter = { 4, 0.5, 0 }, Fly = { 4, 0.5, 0 } }
 local GONE = { Pop = 0.7, Shatter = 0.5, Fly = 0.8 } -- seconds a burst/flown target stays away
+local SWING_BACK, SWING_FRONT = 0.3, 0.5 -- swing limits (radians; back = away from the shooter; idle sway adds 0.05)
+local FLY_HIDE = 0.3 -- a flown can vanishes this soon (before it can reach the wall behind)
 local function backOut(t) -- Back easing (overshoot), 0..1
 	local c = 1.70158
 	t -= 1
@@ -463,6 +468,10 @@ function Juice.knocker(target)
 	if not hinge or not swing then return nil end
 	local style = target:GetAttribute('Knock') or 'Tip'
 	local k = { target = target, style = style, base = hinge.CFrame, parts = {}, angle = 0, vel = 0, gone = 0, grow = 1, hop = 0, fly = nil }
+	k.tipMin = target:GetAttribute('TipMin') or -0.3
+	-- A flown target spins about its middle (the aim point, in the hinge's frame), not about its foot.
+	local aim = target:GetAttribute('Aim')
+	k.centre = typeof(aim) == 'Vector3' and hinge.CFrame:PointToObjectSpace(aim) or Vector3.zero
 	local p0 = hinge.CFrame.Position
 	local phase = (p0.X * 0.37 + p0.Z * 0.61) % (2 * math.pi) -- neighbours never move in step
 	k.idle = (style == 'Swing' and function(t) return 0.05 * math.sin(1.3 * t + phase) end)
@@ -483,7 +492,7 @@ function Juice.knocker(target)
 		elseif style == 'Swing' then turn = CFrame.Angles(a, 0, 0)
 		elseif style == 'Tip' then turn = CFrame.new(0, k.hop, 0) * CFrame.Angles(a, 0, 0)
 		else turn = CFrame.new() end
-		if k.fly then turn = CFrame.new(k.fly.pos) * CFrame.Angles(k.fly.spin, 0, 0) end
+		if k.fly then turn = CFrame.new(k.fly.pos + k.centre) * CFrame.Angles(k.fly.spin, 0, 0) * CFrame.new(-k.centre) end
 		local at = k.base * turn
 		local g = k.grow
 		for _, r in k.parts do
@@ -499,6 +508,8 @@ function Juice.knocker(target)
 	k.apply = apply
 	-- The idle pose (call every frame for targets near the camera that nothing is knocking).
 	function k:pose() if not knocking[self] then apply() end end
+	-- False while a burst or flown target is away (it grows back in place, which counts as there).
+	function k:present() return self.gone <= 0 and not self.fly end
 	local function step(dt)
 		local spec = KNOCK[style] or KNOCK.Tip
 		if style == 'Spin' and math.abs(k.vel) > 4 then
@@ -509,8 +520,14 @@ function Juice.knocker(target)
 			local goal = style == 'Spin' and math.floor(k.angle / (2 * math.pi) + 0.5) * 2 * math.pi or 0
 			k.angle, k.vel = Juice.springStep(k.angle, k.vel, goal, spec[1], spec[2], dt)
 		end
+		if style == 'Swing' and (k.angle < -SWING_BACK or k.angle > SWING_FRONT) then
+			-- At the limit it stops and drifts back (a soft knock, not a bounce off the wall).
+			k.angle = math.clamp(k.angle, -SWING_BACK, SWING_FRONT)
+			k.vel = -k.vel * 0.25
+		end
 		if style == 'Tip' then
-			k.angle = math.clamp(k.angle, -0.3, 1.25)
+			if k.angle < k.tipMin then k.angle, k.vel = k.tipMin, math.max(k.vel, 0) end
+			k.angle = math.min(k.angle, 1.25)
 			k.hopT = (k.hopT or 0) + dt
 			k.hop = k.hopT < 0.2 and 0.15 * math.sin(math.pi * k.hopT / 0.2) or 0
 		end
@@ -521,7 +538,7 @@ function Juice.knocker(target)
 			f.vel += Vector3.new(0, -30, 0) * dt
 			f.pos += f.vel * dt
 			f.spin += 15 * dt
-			if f.t > 0.45 and not f.hidden then
+			if f.t > FLY_HIDE and not f.hidden then
 				f.hidden = true
 				setHidden(true)
 			end
