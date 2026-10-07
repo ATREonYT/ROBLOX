@@ -1471,29 +1471,35 @@ function Stations.build(ctx, stationId, opts)
 	return model
 end
 ---------------------------------------------------------------------------------------------- armory
--- The ARMORY: the gun ladder on hexagonal pedestals, two rows like a tool shop. Guns 1-5 stand in the front
--- row on the floor, 6-10 on a raised studded step behind, under an ARMORY sign. Each pedestal glows in its
--- state colour (pink locked, blue owned, green equipped; Armory.client repaints them), has a LOCKED / OWNED /
--- EQUIPPED strip on its front, the gun floating and turning above it, and a billboard with the name, the
--- multiplier and the price.
+-- The ARMORY, after the user's item-shop reference: the gun ladder as big upright guns floating over big glowing
+-- hexagonal pads, two rows. Guns 1-5 stand on the front platform (a low studded deck with a step along its front),
+-- guns 6-10 on a raised studded terrace behind it, reached by a stair at each end. Each pad has a light rim and a
+-- glowing face in its state colour (pink locked, blue owned, green equipped; Armory.client repaints them), a glow
+-- skirt on the deck around it, and a plate on its front edge saying LOCKED / OWNED / EQUIPPED. Over each gun a
+-- nameplate stack: the name in the gun's colour, the multiplier, the price (or the state word).
 --
 -- Contract (GunService and HoodClient/Armory): one Model GunSlot_<Id> per gun with attributes GunId, Tier,
 -- Cost, Multiplier, holding
---   GunPoint_<Id>      invisible part in front of the pedestal: prompt anchor and buy-distance point
---   StateTop/StateGlow the coloured top (parts, several each), StateStrip (part) with SurfaceGui > TextLabel State
+--   GunPoint_<Id>      invisible part in front of the pad: prompt anchor and buy-distance point
+--   StateTop/StateGlow the coloured face and glow (parts, several each; a PointLight under a StateGlow),
+--                      StateStrip (part) with SurfaceGui > TextLabel State, StateHaze (ParticleEmitter)
 --   LabelAnchor        BillboardGui GunLabel > TextLabels Name, Multiplier, Price (Glyph attribute = icon text)
---   Display            Model tagged HoodMotion (Spin, Bob) with the gun inside
--- Local frame: origin at the centre front of the display on the ground, front faces -Z (players stand at -Z
--- looking +Z), footprint x -24..24, z -2..18, at most 16 tall.
+--   Display            Model tagged HoodMotion (Bob) with the gun inside
+-- The Armory model is tagged HoodArmory; each slot streams Atomic.
+-- Local frame: origin at the centre of the front step's foot on the hall floor, front faces -Z (players stand
+-- at -Z looking +Z), footprint x -29.4..29.4, z 0..31.2 (Armory.HalfWidth, Armory.Depth), at most 21 tall.
 local Armory = {}
 
-Armory.Floor = 0.4 -- floor plate top
-Armory.Step = 4.4 -- back platform top: four 1-stud steps up from the floor
-Armory.StepDepth = 0.9
-Armory.Rows = { { z = 3.4, y = 0.4 }, { z = 14, y = 4.4 } }
-Armory.Spacing = 9.4
-Armory.Radius = 3 -- pedestal apothem (centre to a flat side)
-Armory.Spin, Armory.Bob = 40, 0.3
+Armory.HalfWidth, Armory.Depth = 29.4, 31.2
+Armory.Floor = 1.6 -- front platform top (one 0.8 step up from the hall floor)
+Armory.Step = 7.6 -- back terrace top
+Armory.TerraceZ = 17.4 -- where the terrace's front wall stands
+Armory.Rows = { { z = 8.6, y = 1.6, label = 1.6 }, { z = 24.9, y = 7.6, label = 3.0 } }
+Armory.Spacing = 10.6
+Armory.Radius = 4.15 -- pad apothem (centre to a flat side); flats face -Z
+Armory.PadHeight = 0.95
+Armory.MaxLength = 8.6
+Armory.Bob, Armory.BobPeriod = 0.35, 2.6
 
 -- Optional modules made by other builders (Shared.HoodVFX, Shared.Models.GunModels / IconModels): nil when
 -- they are not there yet or fail to load.
@@ -1587,9 +1593,9 @@ function Armory.placeholder(gun, scale)
 	return model
 end
 
--- The display gun: GunModels.build when it exists (else the stand-in), scaled up for the pedestal. Small guns
--- are blown up more than big ones (display size ~ natural size^0.55) so a pistol still reads from the street
--- while the long guns stay longer, and each tier gets 3% more on top, up to 6.6 studs.
+-- The display gun: GunModels.build when it exists (else the stand-in), scaled up to stand over its pad about
+-- player height or more. Small guns are blown up more than big ones (display length ~ natural length^0.5), so a
+-- pistol is about 5 studs and the long guns about 8, and each tier gets 3% more on top, up to 8.6 studs.
 function Armory.gun(gun)
 	local models = Armory.optional('GunModels')
 	local function make(scale)
@@ -1603,7 +1609,7 @@ function Armory.gun(gun)
 	local lo, hi = Armory.extents(model, Armory.pivotOf(model))
 	local size = hi - lo
 	local longest = math.max(size.X, size.Y, size.Z, 0.1)
-	local length = math.min(6.6, 2.9 * longest ^ 0.55 * (1 + 0.03 * (gun.Tier - 1)))
+	local length = math.min(Armory.MaxLength, 4.0 * longest ^ 0.5 * (1 + 0.03 * (gun.Tier - 1)))
 	if math.abs(longest - length) > 0.05 then
 		model:Destroy()
 		model = make(length / longest)
@@ -1614,11 +1620,16 @@ function Armory.gun(gun)
 	return model
 end
 
--- Effects that grow with tier (`part` is a box round the gun, which sizes them). HoodVFX.item when the VFX
--- module is there; otherwise a light from tier 2,
--- sparkles from tier 3, rising glow from tier 6 and big star glints for the last two.
+-- Effects that grow with tier (`part` is a box round the gun, which sizes them): a soft light for the front row,
+-- then for the back row HoodVFX.item when the VFX module is there, otherwise a light, sparkles, rising glow and
+-- big star glints for the last two.
 function Armory.effects(part, tier, color)
 	if tier < 2 then return end -- the free pistol stays plain, like the basic tool in the reference
+	-- The front row (tiers 2-5) gets only a soft light: like the reference, effects are for the better items.
+	if tier < 6 then
+		light(part, color, 0.5 + tier * 0.12, 7 + tier * 0.4)
+		return
+	end
 	local vfx = Armory.optional('HoodVFX')
 	if vfx and vfx.item then
 		local ok = pcall(vfx.item, part, tier, color)
@@ -1664,33 +1675,34 @@ function Armory.effects(part, tier, color)
 	end
 end
 
--- The floating label: name in the gun's colour, the multiplier and the price, each row with an icon
--- (IconModels.Images when uploaded, else a text glyph kept in the label's Glyph attribute).
--- Labels show only within 30 studs: from the walkway the wall reads clean, they appear as you step on the deck.
+-- The nameplate stack over a gun, like the reference's: the name big in the gun's colour, the multiplier and
+-- the price (or the state word, painted by Armory.client), each row with an icon (IconModels.Images when uploaded,
+-- else a text glyph kept in the label's Glyph attribute). Readable from 30 studs; hidden past 45 so the hall
+-- reads clean from the spawn.
 function Armory.label(c, pos, gun)
 	local anchor = ghost(c:part('LabelAnchor', V(0.2, 0.2, 0.2), CFrame.new(pos), P.white))
 	local g = Instance.new('BillboardGui')
 	g.Name = 'GunLabel'
-	g.Size = UDim2.fromScale(8, 2.9)
-	g.MaxDistance = 30
+	g.Size = UDim2.fromScale(9, 3.6)
+	g.MaxDistance = 45
 	g.LightInfluence = 0
 	g.Parent = anchor
-	line(g, 'Name', gun.Name, gun.Color:Lerp(P.white, 0.15), FONT.loud, 0, 0.44, C(24, 22, 40), 3)
+	line(g, 'Name', gun.Name, gun.Color:Lerp(P.white, 0.1), FONT.loud, 0, 0.42, C(24, 22, 40), 3)
 	local icons = Armory.optional('IconModels')
 	local images = icons and icons.Images or {}
 	local function row(name, icon, glyph, text, color, y)
 		local image = images[icon]
-		local t = line(g, name, text, color, FONT.loud, y, 0.28, C(24, 22, 40), 2.5)
+		local t = line(g, name, text, color, FONT.loud, y, 0.27, C(24, 22, 40), 2.5)
 		if type(image) == 'string' and image ~= '' then
 			local i = Instance.new('ImageLabel')
 			i.Name = 'Icon'
 			i.BackgroundTransparency = 1
 			i.Image = image
-			i.Position = UDim2.fromScale(0.14, y)
-			i.Size = UDim2.fromScale(0.12, 0.28)
+			i.Position = UDim2.fromScale(0.26, y)
+			i.Size = UDim2.fromScale(0.12, 0.27)
 			-- Icon on the left, the words left-aligned beside it.
-			t.Position = UDim2.fromScale(0.28, y)
-			t.Size = UDim2.fromScale(0.6, 0.28)
+			t.Position = UDim2.fromScale(0.4, y)
+			t.Size = UDim2.fromScale(0.5, 0.27)
 			t.TextXAlignment = Enum.TextXAlignment.Left
 			local a = Instance.new('UIAspectRatioConstraint')
 			a.Parent = i
@@ -1702,13 +1714,13 @@ function Armory.label(c, pos, gun)
 		end
 		return t
 	end
-	row('Multiplier', 'Power', '💪', 'x' .. gun.Multiplier .. ' POWER', P.white, 0.45)
-	row('Price', 'Cash', '💵', gun.Cost == 0 and 'FREE' or compact(gun.Cost), C(255, 228, 92), 0.73)
+	row('Multiplier', 'Power', '💪', 'x' .. gun.Multiplier, P.white, 0.44)
+	row('Price', 'Cash', '💵', gun.Cost == 0 and 'FREE' or compact(gun.Cost), C(255, 228, 92), 0.72)
 	return anchor
 end
 
--- One gun on its pedestal. (x, z) is the pedestal centre, y the floor it stands on.
-function Armory.slot(c, gun, x, z, y, colors)
+-- One gun on its pad. (x, z) is the pad centre, y the deck it stands on.
+function Armory.slot(c, gun, x, z, y, colors, lift)
 	local s, model = c:group('GunSlot_' .. gun.Id)
 	-- Streams in as one piece, so a client that sees the slot also sees its point, labels and gun.
 	pcall(function() model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic end)
@@ -1718,112 +1730,100 @@ function Armory.slot(c, gun, x, z, y, colors)
 	model:SetAttribute('Multiplier', gun.Multiplier)
 	local state = gun.Cost == 0 and 'Equipped' or 'Locked' -- a new player's view; the client repaints
 	local look = colors[state]
-	local r = Armory.Radius
-	-- Pale base, the coloured top with a lighter glowing inlay, a dark rim under the top.
-	Armory.hex(s, 'PedestalBase', x, z, r, y, y + 0.6, C(232, 234, 242), M.SmoothPlastic)
-	Armory.hex(s, 'PedestalRim', x, z, r - 0.12, y + 0.6, y + 0.7, C(70, 72, 92), M.SmoothPlastic)
-	Armory.hex(s, 'StateTop', x, z, r - 0.3, y + 0.7, y + 1.0, look.Top, M.SmoothPlastic)
-	local glow = Armory.hex(s, 'StateGlow', x, z, r - 0.95, y + 1.0, y + 1.05, look.Glow, M.Neon)
-	for _, p in glow do decor(p).CastShadow = false end
-	light(glow[1], look.Top, 1.4, 9)
-	-- Soft haze rising off the top in the state colour (the client recolours it with the pedestal).
-	local hazeSource = ghost(s:part('StateHazeSource', V(r * 1.3, 0.2, r * 1.3), CFrame.new(x, y + 1.15, z), look.Glow))
+	local r, ph = Armory.Radius, Armory.PadHeight
+	-- The glow skirt on the deck round the pad (recoloured with the glow; it carries the pad's light), the pale
+	-- chunky pad with a lighter lip, the glowing face in the state colour set into it.
+	local skirt = Armory.hex(s, 'StateGlow', x, z, r + 0.9, y, y + 0.04, look.Glow, M.Neon)
+	for _, p in skirt do
+		decor(p).CastShadow = false
+		p.Transparency = 0.55
+	end
+	light(skirt[1], look.Top, 1.6, 12)
+	Armory.hex(s, 'PadBase', x, z, r, y, y + ph - 0.2, C(228, 230, 240), M.SmoothPlastic)
+	Armory.hex(s, 'PadLip', x, z, r, y + ph - 0.2, y + ph, C(244, 245, 250), M.SmoothPlastic)
+	local tops = Armory.hex(s, 'StateTop', x, z, r - 0.55, y + ph - 0.05, y + ph + 0.05, look.Top, M.Neon)
+	for _, p in tops do decor(p).CastShadow = false end
+	-- Soft haze rising off the face in the state colour (the client recolours it with the pad).
+	local top = y + ph + 0.05
+	local hazeSource = ghost(s:part('StateHazeSource', V(r * 1.3, 0.2, r * 1.3), CFrame.new(x, top + 0.1, z), look.Glow))
 	hazeSource.CastShadow = false
 	local haze = Instance.new('ParticleEmitter')
 	haze.Name = 'StateHaze'
 	haze.Texture = 'rbxasset://textures/particles/smoke_main.dds'
-	haze.Rate = 5
+	haze.Rate = 2.5
 	haze.Lifetime = NumberRange.new(1.2, 1.8)
 	haze.Speed = NumberRange.new(0.8, 1.4)
 	haze.SpreadAngle = Vector2.new(8, 8)
-	haze.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1.6), NumberSequenceKeypoint.new(1, 2.6) })
-	haze.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.25, 0.78), NumberSequenceKeypoint.new(1, 1) })
+	haze.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 2.2), NumberSequenceKeypoint.new(1, 3.4) })
+	haze.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.3, 0.9), NumberSequenceKeypoint.new(1, 1) })
 	haze.Color = ColorSequence.new(look.Top)
 	haze.LightEmission = 1
 	haze.LightInfluence = 0
 	haze.Rotation = NumberRange.new(0, 360)
 	haze.RotSpeed = NumberRange.new(-20, 20)
 	haze.Parent = hazeSource
-	local top = y + 1.05
-	-- Front strip with the state word.
-	local strip = s:box('StateStrip', V(x - 1.55, y + 0.08, z - r - 0.08), V(x + 1.55, y + 0.52, z - r + 0.02), look.Strip, M.SmoothPlastic)
+	-- The plate on the pad's front edge with the state word.
+	local strip = s:box('StateStrip', V(x - 2.1, y + 0.1, z - r - 0.06), V(x + 2.1, y + ph - 0.25, z - r + 0.02), look.Strip, M.SmoothPlastic)
 	local sg = surface(strip, Enum.NormalId.Front, 50)
 	sg.Name = 'StateGui'
-	line(sg, 'State', string.upper(state), P.white, FONT.loud, 0.08, 0.84, look.Strip:Lerp(P.black, 0.45), 2)
-	-- The gun, floating side-on (muzzle to the viewer's right), slowly turning and bobbing.
+	line(sg, 'State', string.upper(state), P.white, FONT.loud, 0.06, 0.88, look.Strip:Lerp(P.black, 0.45), 2)
+	-- The gun, standing upright over the pad: muzzle up, side-on to the hall, a slight lean, bobbing.
 	local d, display = s:group('Display')
 	local g = Armory.gun(gun)
 	local pivot = Armory.pivotOf(g)
 	local lo, hi = Armory.extents(g, pivot)
 	local mid = (lo + hi) / 2
 	local length = math.max(hi.X - lo.X, hi.Y - lo.Y, hi.Z - lo.Z)
-	local centre = V(x, top + 1.0 + (hi.Y - lo.Y) / 2, z)
-	local pose = CFrame.new(centre) * CFrame.Angles(0, math.pi / 2, 0) * CFrame.Angles(math.rad(8), 0, 0)
+	-- Upright: the gun's -Z (muzzle) points up, its side (X) faces -Z; its height is then its length (Z extent).
+	local tall = hi.Z - lo.Z
+	local centre = V(x, top + 1.0 + tall / 2, z)
+	local pose = CFrame.new(centre) * CFrame.Angles(0, 0, math.rad(-8)) * CFrame.Angles(0, math.pi / 2, 0) * CFrame.Angles(math.pi / 2, 0, 0)
 	Armory.place(g, d:world(pose * CFrame.new(-mid)))
 	g.Name = 'Gun'
 	g.Parent = display
 	display.WorldPivot = d:world(CFrame.new(centre))
-	display:SetAttribute('Spin', Armory.Spin)
 	display:SetAttribute('Bob', Armory.Bob)
-	display:SetAttribute('BobPeriod', 2.4)
+	display:SetAttribute('BobPeriod', Armory.BobPeriod)
 	display:AddTag('HoodMotion')
-	local core = ghost(s:part('FxCore', V(length * 0.55, length * 0.32, length * 0.55), CFrame.new(centre), gun.Color))
+	local core = ghost(s:part('FxCore', V(length * 0.4, length * 0.9, length * 0.4), CFrame.new(centre), gun.Color))
 	core.CastShadow = false
 	Armory.effects(core, gun.Tier, gun.Color)
-	local labelY = centre.Y + (hi.Y - lo.Y) / 2 + 1.7
-	Armory.label(s, V(x, labelY, z), gun)
-	-- Where the prompt sits and the server measures buying distance from.
-	local point = ghost(s:box('GunPoint_' .. gun.Id, V(x - 0.5, top + 0.6, z - r - 1.1), V(x + 0.5, top + 1.6, z - r - 0.1), P.white))
+	-- (every label in a row at one height, over the tallest gun, like the reference's nameplates)
+	Armory.label(s, V(x, y + ph + 1.0 + Armory.MaxLength + (lift or 2.4), z), gun)
+	-- Where the prompt sits and the server measures buying distance from: on the deck at the pad's front.
+	local point = ghost(s:box('GunPoint_' .. gun.Id, V(x - 0.5, y + 0.6, z - r - 1.6), V(x + 0.5, y + 1.6, z - r - 0.6), P.white))
 	point.CastShadow = false
 	return model
 end
 
--- The counter banner: a red studded frame on two posts, a gold board with one line of red text (the lobby's
--- ARMORY mural on the wall above carries the name).
-function Armory.header(c, y)
-	local h = c:group('ArmorySign')
-	local post = C(150, 156, 172)
-	for _, x in { -14.1, 14.1 } do
-		studs(h:box('SignPost', V(x - 0.8, y, 16.8), V(x + 0.8, 12.8, 18.2), post, M.Plastic), true)
-		h:box('SignFoot', V(x - 1.3, y, 16.3), V(x + 1.3, y + 0.8, 18.6), post:Lerp(P.black, 0.25), M.Plastic)
-	end
-	studs(h:box('SignFrame', V(-16, 12.6, 16.9), V(16, 15.5, 18.1), C(222, 52, 52), M.Plastic))
-	studs(h:box('SignCap', V(-16.4, 15.5, 16.8), V(16.4, 16, 18.2), C(250, 206, 52), M.Plastic))
-	local board = h:box('SignBoard', V(-15.3, 12.85, 16.7), V(15.3, 15.3, 17), C(250, 206, 52), M.SmoothPlastic)
-	local g = surface(board, Enum.NormalId.Front, 20)
-	-- What a gun does, in one line.
-	line(g, 'Subtitle', 'BETTER GUN = MORE POWER PER SHOT', C(120, 20, 20), FONT.loud, 0.2, 0.6, C(255, 240, 200), 2)
-	for _, x in { -16.2, 16.2 } do
-		decor(h:box('SignLamp', V(x - 0.25, 12.8, 16.6), V(x + 0.25, 15.3, 16.9), C(255, 120, 200), M.Neon)).CastShadow = false
-	end
-	return h
-end
-
--- The floor, the steps up to the back row and the back platform, all studded.
+-- The deck: a step along the front, the studded front platform with a lip of studs at its edge, the raised
+-- studded terrace behind it (its front wall studded too), a stair up at each end, neon edges.
 function Armory.base(c)
 	local b = c:group('ArmoryBase')
-	local floor, stepColor, edge = C(214, 218, 228), C(196, 201, 214), C(150, 156, 172)
-	studs(b:box('ArmoryFloor', V(-24, 0, -2), V(24, Armory.Floor, 12), floor, M.Plastic))
-	studs(b:box('ArmoryKerb', V(-24, 0, -2), V(24, Armory.Floor + 0.12, -1.2), edge, M.Plastic))
-	local rises = math.round(Armory.Step - Armory.Floor)
-	local z0 = Armory.Rows[2].z - Armory.Radius - 0.8 - (rises - 1) * Armory.StepDepth
-	for i = 1, rises - 1 do
-		local z = z0 + (i - 1) * Armory.StepDepth
-		studs(b:box('ArmoryStep', V(-24, 0, z), V(24, Armory.Floor + i, z + Armory.StepDepth), i % 2 == 1 and stepColor or floor, M.Plastic), true)
-		-- A thin pink neon line under each step nose: reads as a display, and shows the edge at night.
-		decor(b:box('StepGlow', V(-24, Armory.Floor + i - 0.16, z - 0.04), V(24, Armory.Floor + i - 0.06, z), C(255, 120, 200), M.Neon)).CastShadow = false
+	local X, Dp, F, T, TZ = Armory.HalfWidth, Armory.Depth, Armory.Floor, Armory.Step, Armory.TerraceZ
+	local deck, wall, step = C(218, 222, 234), C(190, 196, 214), C(200, 205, 222)
+	studs(b:box('ArmoryStep', V(-X, 0, 0), V(X, F / 2, 1.2), step, M.Plastic), true)
+	studs(b:box('ArmoryFloor', V(-X, 0, 1.2), V(X, F, TZ), deck, M.Plastic), true)
+	studs(b:box('ArmoryLip', V(-X, F, 1.2), V(X, F + 0.12, 1.8), wall, M.Plastic))
+	studs(b:box('ArmoryTerrace', V(-X, 0, TZ), V(X, T, Dp), wall, M.Plastic), true)
+	studs(b:box('ArmoryTerraceTop', V(-X, T, TZ), V(X, T + 0.01, Dp), deck, M.Plastic))
+	-- a stair at each end, from the platform up to the terrace (rises of 0.8 or less, 1.2 treads), white nosing
+	local n = math.ceil((T - F) / 0.8) - 1
+	local rise = (T - F) / (n + 1)
+	for _, sx in { -1, 1 } do
+		local a, bx = sx * (X - 3.2), sx * X
+		for k = 1, n do
+			local z0 = TZ - (n + 1 - k) * 1.2
+			local h = F + k * rise
+			studs(b:box('ArmoryStair', V(math.min(a, bx), F, z0), V(math.max(a, bx), h, TZ), k % 2 == 1 and step or deck, M.Plastic), true)
+			decor(b:box('StairNosing', V(math.min(a, bx), h - 0.02, z0 - 0.02), V(math.max(a, bx), h + 0.03, z0 + 0.22), P.white, M.Neon)).CastShadow = false
+		end
 	end
-	local zp = z0 + (rises - 1) * Armory.StepDepth
-	studs(b:box('ArmoryPlatform', V(-24, 0, zp), V(24, Armory.Step, 18), floor, M.Plastic), true)
-	-- Colour on the deck: a red runner with gold edges from the walkway to the front row, a pink rubber strip
-	-- under each row of pedestals.
-	local front = Armory.Rows[1].z - Armory.Radius - 0.3
-	b:box('ArmoryRunner', V(-5, Armory.Floor, -2), V(5, Armory.Floor + 0.05, front), C(222, 44, 52), M.Fabric)
-	for _, x in { -5.4, 5 } do decor(b:box('ArmoryRunnerEdge', V(x, Armory.Floor, -2), V(x + 0.4, Armory.Floor + 0.07, front), C(255, 204, 48), M.SmoothPlastic)) end
-	for _, row in Armory.Rows do
-		decor(b:box('ArmoryStrip', V(-23.6, row.y, row.z - 1.5), V(23.6, row.y + 0.04, row.z + 1.5), C(255, 120, 200), M.Fabric))
-	end
-	decor(b:box('StepGlow', V(-24, Armory.Step - 0.16, zp - 0.04), V(24, Armory.Step - 0.06, zp), C(255, 120, 200), M.Neon)).CastShadow = false
+	-- neon edges: cyan along the platform's front, white along the terrace's top edge
+	local cyan = C(60, 232, 255)
+	decor(b:box('ArmoryEdge', V(-X, F / 2 - 0.26, -0.06), V(X, F / 2 - 0.04, 0), cyan, M.Neon)).CastShadow = false
+	decor(b:box('ArmoryEdge', V(-X, F - 0.26, 1.14), V(X, F - 0.04, 1.2), cyan, M.Neon)).CastShadow = false
+	decor(b:box('ArmoryEdge', V(-X + 3.2, T - 0.3, TZ - 0.06), V(X - 3.2, T - 0.06, TZ + 0.02), P.white, M.Neon)).CastShadow = false
 	return b
 end
 
@@ -1835,1044 +1835,13 @@ function Armory.build(ctx, opts)
 	local a, model = ctx:group('Armory')
 	model:AddTag('HoodArmory')
 	Armory.base(a)
-	Armory.header(a, Armory.Step)
 	for i, gun in guns do
 		local row = Armory.Rows[(i - 1) // 5 + 1]
 		if not row then break end
 		local col = (i - 1) % 5
 		-- Gun 1 stands on the viewer's left: their left is +X when they look toward +Z.
-		Armory.slot(a, gun, 2 * Armory.Spacing - col * Armory.Spacing, row.z, row.y, colors)
+		Armory.slot(a, gun, 2 * Armory.Spacing - col * Armory.Spacing, row.z, row.y, colors, row.label)
 	end
-	return model
-end
----------------------------------------------------------------------------------------------- evolutions podium
--- The EVOLUTIONS podium, the lobby's morph stand, after the reference's east side and laid out for room: a
--- stepped pyramid of three studded slate-grey tiers (5 / 5 / 4 looks, cheapest at the front and bottom, 9 studs
--- apart, row 2 half a pitch over so every figure stands in a gap of the row in front, each look with its own
--- standing spot on the level in front: the apron, or the 4-stud walk behind the row below). The walkway side
--- (+X) has the wide stair: 6-wide flights with a yellow nose on every step and a red carpet from the slab edge
--- up to the Kingpin on his red plinth at tier 2's back corner, before a red velvet panel; a 4-wide flight on the
--- far side. Warehouse dress, kept to a few big pieces: the neon EVOLUTIONS marquee across the first tier, the
--- standing WARDROBE on the walkway-side front corner (garment rack, mirror, lightbox; its prompt opens the
--- EVOLVE board: every look, equip from there), roller-shutter loading bays behind (light behind the top row,
--- blue on the wings), the DOCK stencil, lamps on the wing caps, a NEW STOCK pallet by the walkway stair.
--- Alive: motes rising off every pad, sparkles on the top tier, chasing marquee bulbs, colour-cycling arrows,
--- warm underglow under the tier lips; the client makes unlocked looks breathe, turns the one you wear and paints
--- locked looks in shadow, and marks your next look with a ▼ over its hat and a NEXT tag on its pad.
---
--- Contract (Lobby.client, LobbyService): a Model `Morphs` (Persistent) holding one Model `Skin_<Id>` per look:
---   Interact     invisible part just in front of the pad: the prompt sits on it (short range, so neighbours'
---                prompts never overlap) and the server measures the 14-stud equip distance to it
---   LabelAnchor  BillboardGui WorldLabel > TextLabels Title (name), Price, Gain (+N/sec) and Detail
---                (EQUIPPED / EQUIP / LOCKED, written by the client, which also shows the label only near you)
---                and BillboardGui NextMarker (the ▼, tip just over the hat)
---   Display      the figure (SkinArt); the client paints it in a band-tinted shadow while locked
---   Lock         a small gold padlock on the pad's front edge, shown while locked
---   Turntable    a disc under the figure, shown for the look you wear
---   NextTag      a yellow NEXT tag hanging off the pad's front lip, shown on your next look
--- and attributes Look, Index, Required, Band, BandColor, Column, LockShade (+ Showcase on the Kingpin).
--- Effects marked UnlockedOnly (or held by a part marked so) are switched off by the client while locked.
--- Beside Morphs: `WardrobePoint` (the standing WARDROBE's prompt part; the server lets you equip any unlocked look
--- from the EVOLVE panel within 30 studs of it). The map root still needs MorphStand = true (g_build).
--- Local frame: origin = centre of the front edge on the floor, the front faces -Z (players walk up from -Z),
--- the walkway is on the +X side, footprint x -28..28, z 0..32, at most 20 tall (labels float above).
-local Evolutions = {}
-
-Evolutions.Base = 0.4 -- floor slab top
-Evolutions.Apron = 5 -- front apron depth: row 1's standing spots
-Evolutions.StepRise = 0.9 -- at most, per step
-Evolutions.Run = 1.1 -- per step (40 degrees)
-Evolutions.Lip = 1 -- tier front to pad front
-Evolutions.Pitch = 9.5 -- tier front to tier front: lip, pad, a 4.1-stud walk behind the pads (the next row's spots)
-Evolutions.Back = 30.5 -- tiers end here, the backdrop stands behind
-Evolutions.Spacing = 9 -- figure to figure along a row
-Evolutions.Pad = 4.4
-Evolutions.PadH = 1.1
--- Rows (x of each look, viewer's left = +X = the walkway side first): row 1 round x = -1, row 2 shifted half a
--- pitch so each of its figures stands in a gap of row 1, row 3 back on row 1's lines two tiers up; the top tier
--- leaves tier 2's walkway corner to the Kingpin.
-Evolutions.Columns = { { 17, 8, -1, -10, -19 }, { 12.5, 3.5, -5.5, -14.5, -23.5 }, { 8, -1, -10, -19 } }
--- Tiers: x0..x1 at their own heights (a tier is a block from the slab up, so its ends can differ), front and
--- the flights cut into its front edge ({ x0, x1 }); tier 3 has none (its front is a 1-stud lip, nobody climbs
--- it). The walkway side gets the wide stair: a 6-wide flight up the +X face from the slab (SideFlight), then a
--- 6-wide flight from tier 1's walk to tier 2 by the Kingpin, carpeted all the way; the far side a 4-wide one.
--- Tier 2 rises a step more than tier 1 (4.5: row 2's heads clear row 1's from the walkway camera even where
--- perspective lines a figure up behind one in front); tier 3, which nobody climbs, the rest (2.7).
-Evolutions.Tiers = {}
-for k, spec in { { 4.0, -26.2, 22.2, { { -26.2, -22.2 } } }, { 8.5, -26.2, 22.2, { { 16.2, 22.2, walkway = true } } }, { 11.2, -21.7, 10.7, {} } } do
-	local front = Evolutions.Apron + (k - 1) * Evolutions.Pitch
-	Evolutions.Tiers[k] = {
-		top = spec[1], front = front, x0 = spec[2], x1 = spec[3], flights = spec[4],
-		row = front + Evolutions.Lip + Evolutions.Pad / 2,
-	}
-end
--- Steps for a climb of h, and the run of that flight.
-function Evolutions.steps(h) return math.max(1, math.ceil(h / Evolutions.StepRise - 1e-6)) end
-function Evolutions.runFor(h) return Evolutions.steps(h) * Evolutions.Run end
-Evolutions.SideFlight = { z0 = 8.4, z1 = 14.4 } -- slab up to tier 1 along its +X face, climbing toward -X
-Evolutions.BarrierX = -29.6 -- the far alley barrier's end: the lobby wall (1.6 past the slab: the footprint's one overhang)
--- One pad colour per tier (height is the rarity on the podium; the rarity band stays on the label outline).
--- `glow` is the Neon inset, about 0.65 of the colour: Neon renders brighter than its Color3 and the full
--- colour burns out to white (judge in Studio with bloom; drop toward 0.55 if the centre clips). `pale` is the
--- pedestal block round it (the reference's lit pale-blue frame), `shade` how far the client pulls a locked
--- figure toward the dark pad colour (gold reads as gold statues at 0.35, sepia at 0.6).
-Evolutions.TierColors = {
-	{ color = C(0, 190, 255), glow = C(0, 124, 166), pale = C(178, 204, 246), shade = 0.6 },
-	{ color = C(150, 70, 255), glow = C(80, 8, 176), pale = C(204, 186, 246), shade = 0.6 },
-	{ color = C(255, 180, 0), glow = C(166, 117, 0), pale = C(226, 190, 110), shade = 0.35, lock = 'Gold' },
-}
--- Rarity bands (three looks each, the order the overhead tag uses): the outline of the look's name.
-Evolutions.Bands = {
-	{ name = 'COMMON', color = C(0, 190, 255) },
-	{ name = 'UNCOMMON', color = C(40, 230, 90) },
-	{ name = 'RARE', color = C(40, 110, 255) },
-	{ name = 'EPIC', color = C(170, 60, 255) },
-	{ name = 'LEGENDARY', color = C(255, 180, 0) },
-}
--- The featured look: its red plinth on tier 2's back corner on the walkway side (where the reference has its
--- featured figure), at the top of the carpeted stair, an upper stage lifting him over the row in front, a red
--- velvet panel in a gold frame behind him.
-Evolutions.Featured = 'Kingpin'
-Evolutions.FeaturedAt = V(19.2, 0, 27.2)
-Evolutions.FeaturedRise = 1.1 -- the upper stage
-Evolutions.FeaturedScale = 1.15
-Evolutions.Scale = 1.12 -- the other figures: a bit over player size, so they fill their pads like the reference
-Evolutions.Colors = {
-	top = C(178, 188, 210), cap = C(164, 174, 198), riser = C(104, 120, 152), rim = C(84, 88, 102), steel = C(120, 128, 146),
-	kick = C(90, 100, 124), hazard = C(255, 200, 40), ink = C(26, 26, 32), pad = C(232, 236, 244), shutter = C(126, 134, 152),
-	slat = C(104, 112, 130), galvanised = C(150, 156, 170), plinth = C(210, 40, 60), rim2 = C(200, 240, 255),
-	wing = C(40, 110, 220), wingSlat = C(70, 140, 235), cheek = C(222, 44, 52), yellow = C(255, 200, 40),
-	carpet = C(176, 22, 44), gold = C(255, 196, 60), amber = C(255, 170, 80),
-}
-
-function Evolutions.band(index) return Evolutions.Bands[math.clamp(math.ceil(index / 3), 1, #Evolutions.Bands)] end
-
--- Optional shared modules (HoodVFX, SkinArt): nil when missing or broken.
-function Evolutions.optional(name)
-	local shared = ReplicatedStorage:FindFirstChild('Shared')
-	local m = shared and shared:FindFirstChild(name)
-	if not m then return nil end
-	local ok, result = pcall(require, m)
-	return ok and result or nil
-end
--- A particle texture: the uploaded HoodVFX sheet when there is one, else a Roblox built-in. The preview
--- renderer reads the PreviewTexture attribute.
-function Evolutions.texture(name)
-	local vfx = Evolutions.optional('HoodVFX')
-	local id = vfx and vfx.Textures and vfx.Textures[name]
-	if type(id) == 'string' and id ~= '' then return id end
-	return ({ dust = 'rbxasset://textures/glow.png', softglow = 'rbxasset://textures/glow.png', shaft = 'rbxasset://textures/glow.png',
-		glitter = 'rbxasset://textures/particles/sparkles_main.dds', ring = 'rbxasset://textures/particles/explosion01_shockwave_main.dds',
-		ray = 'rbxasset://textures/glow.png', mist = 'rbxasset://textures/particles/smoke_main.dds' })[name] or 'rbxasset://textures/particles/sparkles_main.dds'
-end
--- True once the HoodVFX sheet `name` is uploaded. Until then the built-in stand-ins are soft blobs (and
--- smoke_main is a white cumulus), so the effects that only work with the real sheet stay off.
-function Evolutions.uploaded(name)
-	local vfx = Evolutions.optional('HoodVFX')
-	local id = vfx and vfx.Textures and vfx.Textures[name]
-	return type(id) == 'string' and id ~= ''
-end
--- NumberSequence from { {time, value, envelope?}, ... }.
-function Evolutions.seq(points)
-	local k = {}
-	for _, p in points do table.insert(k, NumberSequenceKeypoint.new(p[1], p[2], p[3] or 0)) end
-	return NumberSequence.new(k)
-end
-function Evolutions.emitter(parent, name, tex, props)
-	local e = Instance.new('ParticleEmitter')
-	e.Name = name
-	e.Texture = Evolutions.texture(tex)
-	e.LightInfluence = 0
-	e.Rotation = NumberRange.new(0, 360)
-	for k, v in props do (e :: any)[k] = v end
-	e:SetAttribute('PreviewTexture', tex)
-	e.Parent = parent
-	return e
-end
-function Evolutions.attach(part, name, pos)
-	local a = Instance.new('Attachment')
-	a.Name = name
-	a.CFrame = CFrame.new(pos)
-	a.Parent = part
-	return a
-end
--- Soft sheet of light between two attachments (turns to face the camera).
-function Evolutions.beam(part, name, a0, a1, w0, w1, color, t0)
-	local b = Instance.new('Beam')
-	b.Name = name
-	b.Attachment0, b.Attachment1 = a0, a1
-	b.Texture = Evolutions.texture('shaft')
-	b:SetAttribute('PreviewTexture', 'shaft')
-	b.TextureMode, b.TextureLength, b.TextureSpeed = Enum.TextureMode.Stretch, 1, 0.2
-	b.Width0, b.Width1 = w0, w1
-	b.FaceCamera, b.Segments = true, 1
-	b.LightEmission, b.LightInfluence, b.Brightness = 1, 0, 1.2
-	b.Color = ColorSequence.new(color)
-	b.Transparency = Evolutions.seq({ { 0, t0 }, { 0.6, 1 - (1 - t0) * 0.45 }, { 1, 1 } })
-	b.Parent = part
-	return b
-end
--- Lowest and highest corner of a model's visible parts in `frame` space.
-function Evolutions.extents(model, frame)
-	local lo, hi = V(math.huge, math.huge, math.huge), V(-math.huge, -math.huge, -math.huge)
-	for _, p in model:GetDescendants() do
-		if p:IsA('BasePart') and p.Transparency < 1 then
-			local x, y, z, a, b, cc, d, e, f, g, h, i = frame:ToObjectSpace(p.CFrame):GetComponents()
-			local s = p.Size
-			local hx = (math.abs(a) * s.X + math.abs(b) * s.Y + math.abs(cc) * s.Z) / 2
-			local hy = (math.abs(d) * s.X + math.abs(e) * s.Y + math.abs(f) * s.Z) / 2
-			local hz = (math.abs(g) * s.X + math.abs(h) * s.Y + math.abs(i) * s.Z) / 2
-			lo = V(math.min(lo.X, x - hx), math.min(lo.Y, y - hy), math.min(lo.Z, z - hz))
-			hi = V(math.max(hi.X, x + hx), math.max(hi.Y, y + hy), math.max(hi.Z, z + hz))
-		end
-	end
-	return lo, hi
-end
-
----------------------------------------------------------------------------------------------- stairs
--- One stair flight climbing toward the frame's +Z, `run` deep, between x0 and x1, from y0 to y1, starting at
--- z0: each step a dark riser under a light studded tread with a yellow nose, so every step reads from afar.
--- carpet = { x0, x1 }: a red runner up the treads (behind the noses).
-function Evolutions.flight(c, x0, x1, z0, y0, y1, run, carpet)
-	local col = Evolutions.Colors
-	local n = Evolutions.steps(y1 - y0)
-	local rise, depth = (y1 - y0) / n, run / n
-	local f = c:group('Stairs')
-	for i = 1, n do
-		local z = z0 + (i - 1) * depth
-		local top = y0 + i * rise
-		f:box('Step', V(x0, y0, z), V(x1, top - 0.16, z + depth), col.rim, M.Plastic)
-		studs(f:box('Tread', V(x0, top - 0.16, z), V(x1, top, z + depth), col.top, M.Plastic))
-		decor(f:box('StepNose', V(x0, top - 0.2, z - 0.04), V(x1, top + 0.03, z + 0.3), col.yellow, M.SmoothPlastic))
-		if carpet then
-			decor(f:box('StairCarpet', V(carpet[1], top, z + 0.3), V(carpet[2], top + 0.04, z + depth), col.carpet, M.Fabric))
-		end
-	end
-	return f
-end
-
--- One tier: slate-blue studded body (split round the flights cut into its front), light studded cap with a
--- dark studded band along its open edges (the reference's two-tone rim), a dark band under the lip with a
--- yellow safety line and a warm amber glow under it, diamond-plate kick plates, steel ribs between the pads,
--- and its flights with a red cheek on their inner side.
-function Evolutions.tier(p, k, t, below)
-	local col = Evolutions.Colors
-	local back, run = Evolutions.Back, Evolutions.runFor(t.top - below)
-	local tier = p:group('Tier' .. k)
-	-- Split x0..x1 at the flights: { x0, x1, flight }.
-	local cuts = table.clone(t.flights)
-	table.sort(cuts, function(a, b) return a[1] < b[1] end)
-	local segs, x = {}, t.x0
-	for _, f in cuts do
-		if f[1] > x + 0.05 then table.insert(segs, { x, f[1] }) end
-		table.insert(segs, { f[1], f[2], flight = f })
-		x = f[2]
-	end
-	if t.x1 > x + 0.05 then table.insert(segs, { x, t.x1 }) end
-	for _, s in segs do
-		local x0, x1 = s[1], s[2]
-		local z0 = s.flight and t.front + run or t.front
-		local open0, open1 = math.abs(x0 - t.x0) < 0.05, math.abs(x1 - t.x1) < 0.05
-		studs(tier:box('Riser', V(x0, below, z0), V(x1, t.top - 0.3, back), col.riser, M.Plastic), true)
-		studs(tier:box('Cap', V(open0 and x0 + 0.55 or x0, t.top - 0.3, z0 + 0.55), V(open1 and x1 - 0.55 or x1, t.top, back), col.top, M.Plastic))
-		studs(tier:box('EdgeRim', V(x0 - (open0 and 0.15 or 0), t.top - 0.3, z0 - 0.15), V(x1 + (open1 and 0.15 or 0), t.top, z0 + 0.55), col.rim, M.Plastic))
-		for o, open in { [-1] = open0, [1] = open1 } do
-			if open then
-				local edge = o == 1 and x1 or x0
-				local r0, r1 = edge - o * 0.55, edge + o * 0.15
-				studs(tier:box('EdgeRim', V(math.min(r0, r1), t.top - 0.3, z0 + 0.55), V(math.max(r0, r1), t.top, back), col.rim, M.Plastic))
-				studs(tier:box('SideRim', V(math.min(edge + o * 0.1, edge + o * 0.25), t.top - 0.75, z0), V(math.max(edge + o * 0.1, edge + o * 0.25), t.top - 0.3, back), col.rim, M.Plastic))
-				tier:box('SideKick', V(math.min(edge, edge + o * 0.13), below, z0), V(math.max(edge, edge + o * 0.13), below + 0.5, back), col.kick, M.DiamondPlate)
-			end
-		end
-		if s.flight then
-			local f = s.flight
-			local carpet = f.walkway and { (x0 + x1) / 2 - 1.2, (x0 + x1) / 2 + 1.2 } or nil
-			Evolutions.flight(tier, x0, x1, t.front, below, t.top, run, carpet)
-			-- (the cheek on the side that faces the tier's front wall)
-			for _, cx in { x0, x1 } do
-				if math.abs(cx - t.x0) > 0.05 and math.abs(cx - t.x1) > 0.05 then
-					tier:box('StairCheek', V(cx - 0.2, below, t.front), V(cx + 0.2, t.top - 0.3, t.front + run), col.cheek, M.SmoothPlastic)
-				end
-			end
-		else
-			studs(tier:box('FrontRim', V(x0, t.top - 0.75, t.front - 0.25), V(x1, t.top - 0.3, t.front), col.rim, M.Plastic))
-			decor(tier:box('SafetyLine', V(x0, t.top - 0.22, t.front - 0.2), V(x1, t.top - 0.08, t.front - 0.14), col.hazard, M.SmoothPlastic))
-			local glow = decor(tier:box('Underglow', V(x0 + 0.2, t.top - 0.92, t.front - 0.2), V(x1 - 0.2, t.top - 0.77, t.front - 0.1), col.amber, M.Neon))
-			glow.Transparency, glow.CastShadow = 0.3, false
-			tier:box('KickPlate', V(x0, below, t.front - 0.12), V(x1, below + 0.5, t.front), col.kick, M.DiamondPlate)
-		end
-	end
-	-- Steel ribs between the pads (tier 1 carries the sign in the middle instead).
-	local cols = Evolutions.Columns[k]
-	for i = 1, #cols - 1 do
-		local rx = (cols[i] + cols[i + 1]) / 2
-		local onFlight = false
-		for _, f in t.flights do onFlight = onFlight or (rx > f[1] - 0.5 and rx < f[2] + 0.5) end
-		if not (k == 1 and math.abs(rx - Evolutions.Columns[1][3]) < 15) and not onFlight then
-			tier:box('Rib', V(rx - 0.3, below + 0.5, t.front - 0.18), V(rx + 0.3, t.top - 0.75, t.front), col.steel, M.Metal)
-		end
-	end
-	return tier
-end
-
-function Evolutions.podium(c)
-	local col = Evolutions.Colors
-	local B = Evolutions.Base
-	local p = c:group('Podium')
-	-- Floor slab with a darker studded rim (the reference's two-tone edge).
-	studs(p:box('Slab', V(-28, 0, 0), V(28, B, 32), col.top, M.Plastic))
-	for _, r in { { V(-28, 0, 0), V(28, B + 0.12, 0.9) }, { V(-28, 0, 31.1), V(28, B + 0.12, 32) }, { V(-28, 0, 0.9), V(-27.1, B + 0.12, 31.1) }, { V(27.1, 0, 0.9), V(28, B + 0.12, 31.1) } } do
-		studs(p:box('SlabRim', r[1], r[2], col.rim, M.Plastic))
-	end
-	local below = B
-	for k, t in Evolutions.Tiers do
-		Evolutions.tier(p, k, t, below)
-		below = t.top
-	end
-	-- The walkway stair: up tier 1's +X face from the slab, 6 wide, carpeted (its frame's +Z points to -X).
-	local t1, sf = Evolutions.Tiers[1], Evolutions.SideFlight
-	local run = Evolutions.runFor(t1.top - B)
-	local w = (sf.z1 - sf.z0) / 2
-	local f = p:at(CFrame.new(t1.x1 + run, 0, (sf.z0 + sf.z1) / 2) * CFrame.Angles(0, -math.pi / 2, 0))
-	Evolutions.flight(f, -w, w, 0, B, t1.top, run, { -1.2, 1.2 })
-	return p
-end
-
----------------------------------------------------------------------------------------------- looks
--- The label over a figure: the name in white outlined in the rarity band's colour, then one yellow line with
--- the power needed and the gain, then the action chip. Lobby.client shows it only near you (and on your next
--- look when you are near it). Beside it, off until the client switches it on for your next look from afar: the
--- NextMarker, a big yellow ▼ (the goal colour, as on the NEXT LOOK board and the floor arrow) whose tip sits
--- just over the figure's hat (tipY), so from a low camera it can't land on the figure behind.
-Evolutions.GoalColor = C(255, 214, 40)
-Evolutions.MarkSize = 2.2
-Evolutions.MarkTip = 0.12 -- the ▼'s tip above the bottom of its box, in box heights (TextYAlignment Bottom)
--- The chip (all but the featured look) floats at pos and reads "<NAME> · EQUIP" (Lobby.client writes it); a
--- thin stalk with a notch runs down to just over the hat (hatY), so the chip belongs to its figure even when it
--- floats high enough to clear the heads of the rows behind.
-Evolutions.ChipW, Evolutions.ChipH = 3.8, 0.72
-function Evolutions.label(c, pos, s, band, tipY, full, hatY)
-	local anchor = ghost(c:part('LabelAnchor', V(0.2, 0.2, 0.2), CFrame.new(pos), P.white))
-	local g = Instance.new('BillboardGui')
-	g.Name = 'WorldLabel'
-	-- (the stands carry their name and price on the pad's face; the floating label is the named chip,
-	-- except over the featured look, whose plinth has no nameplate row)
-	local cw, ch = Evolutions.ChipW, Evolutions.ChipH
-	local stalk = not full and math.max(0, pos.Y - ch / 2 - ((hatY or pos.Y) + 0.2)) or 0
-	g.Size = full and UDim2.fromScale(4.8, 1.9) or UDim2.fromScale(cw, ch + stalk)
-	g.StudsOffset = Vector3.new(0, -stalk / 2, 0)
-	g.MaxDistance = 70
-	g.LightInfluence = 0
-	g.Parent = anchor
-	local function text(name, value, color, x, y, w, h, stroke, thickness, align)
-		local t = Instance.new('TextLabel')
-		t.Name = name
-		t.BackgroundTransparency = 1
-		t.Position = UDim2.fromScale(x, y)
-		t.Size = UDim2.fromScale(w, h)
-		t.Font = FONT.loud
-		t.Text = value
-		t.TextColor3 = color
-		t.TextScaled = true
-		t.TextStrokeTransparency = 1
-		if align then t.TextXAlignment = align end
-		local st = Instance.new('UIStroke')
-		st.Color = stroke
-		st.Thickness = thickness or 2
-		st.LineJoinMode = Enum.LineJoinMode.Round
-		st.Parent = t
-		t.Parent = g
-		return t
-	end
-	local ink, yellow = C(24, 22, 40), C(255, 222, 70)
-	local title = text('Title', s.Name, P.white, 0, 0, 1, 0.42, band.color:Lerp(C(0, 0, 0), 0.35), 3)
-	local price = text('Price', '💪 ' .. (s.Required == 0 and 'FREE' or compact(s.Required)), yellow, 0.04, 0.44, 0.47, 0.25, ink, 2, Enum.TextXAlignment.Right)
-	local gain = text('Gain', '+' .. s.Gain .. '/sec', yellow, 0.55, 0.44, 0.41, 0.25, ink, 2, Enum.TextXAlignment.Left)
-	local chip = Instance.new('Frame')
-	chip.Name = 'Chip'
-	chip.BackgroundColor3 = ink
-	chip.BackgroundTransparency = 0.2
-	chip.BorderSizePixel = 0
-	chip.Position = full and UDim2.fromScale(0.27, 0.72) or UDim2.fromScale(0, 0)
-	chip.Size = full and UDim2.fromScale(0.46, 0.28) or UDim2.fromScale(1, ch / (ch + stalk))
-	if not full and stalk > 0.05 then
-		local f = ch / (ch + stalk)
-		local line = Instance.new('Frame')
-		line.Name = 'Stalk'
-		line.BackgroundColor3, line.BackgroundTransparency, line.BorderSizePixel = ink, 0.2, 0
-		line.AnchorPoint = Vector2.new(0.5, 0)
-		line.Position, line.Size = UDim2.fromScale(0.5, f), UDim2.fromScale(0.025, (1 - f) * 0.9)
-		line.Parent = g
-		local notch = Instance.new('TextLabel')
-		notch.Name = 'Notch'
-		notch.BackgroundTransparency = 1
-		notch.AnchorPoint = Vector2.new(0.5, 1)
-		notch.Position, notch.Size = UDim2.fromScale(0.5, 1), UDim2.fromScale(0.09, math.min((1 - f) * 0.3, 0.25))
-		notch.Text, notch.TextScaled, notch.TextColor3 = '▼', true, ink
-		notch.Font = FONT.loud
-		notch.Parent = g
-	end
-	local corner = Instance.new('UICorner')
-	corner.CornerRadius = UDim.new(0.4, 0)
-	corner.Parent = chip
-	chip.Parent = g
-	-- A new player's view; Lobby.client rewrites it (EQUIPPED / EQUIP / LOCKED).
-	local detail = text('Detail', s.Required == 0 and 'EQUIPPED' or 'LOCKED', s.Required == 0 and C(120, 220, 255) or C(255, 90, 90), 0.27, 0.73, 0.46, 0.26, ink, 2)
-	if not full then
-		-- (kept for the contract and hidden: the pad's nameplate carries them)
-		for _, t in { title, price, gain } do
-			t.Visible, t.TextTransparency = false, 1
-			t:FindFirstChildOfClass('UIStroke').Transparency = 1
-		end
-		local f = ch / (ch + stalk)
-		detail.Position, detail.Size = UDim2.fromScale(0.04, 0.06 * f), UDim2.fromScale(0.92, 0.88 * f)
-		detail.Text = string.upper(s.Name) .. ' · ' .. detail.Text
-	end
-	local mark = Instance.new('BillboardGui')
-	mark.Name = 'NextMarker'
-	local ms = Evolutions.MarkSize
-	mark.Size = UDim2.fromScale(ms, ms)
-	mark.StudsOffset = Vector3.new(0, (tipY or pos.Y) - pos.Y + ms * (0.5 - Evolutions.MarkTip), 0)
-	mark.MaxDistance = 120
-	mark.LightInfluence = 0
-	mark.Enabled = false
-	mark.Parent = anchor
-	local arrow = Instance.new('TextLabel')
-	arrow.Name = 'Arrow'
-	arrow.BackgroundTransparency = 1
-	arrow.Size = UDim2.fromScale(1, 1)
-	arrow.Font = FONT.loud
-	arrow.Text = '▼'
-	arrow.TextColor3 = Evolutions.GoalColor
-	arrow.TextScaled = true
-	arrow.TextYAlignment = Enum.TextYAlignment.Bottom
-	arrow.TextStrokeTransparency = 1
-	local st = Instance.new('UIStroke')
-	st.Color, st.Thickness, st.LineJoinMode = C(0, 0, 0), 3, Enum.LineJoinMode.Round
-	st.Parent = arrow
-	arrow.Parent = mark
-	return anchor
-end
-
--- The nameplate on a stand's front face (`part`'s Front): the look's name in white outlined in its rarity
--- colour, the Power it needs and what it pays in yellow. Read from the standing spot in front of it.
-function Evolutions.nameplate(part, s, band)
-	local g = surface(part, Enum.NormalId.Front, 50)
-	g.Name = 'Nameplate'
-	line(g, 'Name', s.Name, P.white, FONT.loud, 0.04, 0.52, band.color:Lerp(C(0, 0, 0), 0.4), 3)
-	line(g, 'Price', '💪 ' .. (s.Required == 0 and 'FREE' or compact(s.Required)) .. '   +' .. s.Gain .. '/sec', C(255, 222, 70), FONT.loud, 0.58, 0.36, C(24, 22, 40), 2)
-	return g
-end
-
--- The stock tag: a yellow NEXT card on a short post standing on the stand's front-left corner (topY its top,
--- faceZ its front face, x - dx the post), beside the figure's feet. Every stand has one, hidden; the client
--- shows it on your next look.
-function Evolutions.tag(c, x, topY, faceZ, dx)
-	local g, model = c:group('NextTag')
-	local px, z = x - (dx or 1.5), faceZ + 0.25
-	g:box('TagPost', V(px - 0.06, topY, z - 0.06), V(px + 0.06, topY + 0.6, z + 0.06), C(26, 26, 32), M.SmoothPlastic)
-	local t = g:part('Tag', V(1.4, 0.68, 0.08), CFrame.new(px, topY + 0.92, z) * CFrame.Angles(0, 0, math.rad(-5)), Evolutions.GoalColor, M.SmoothPlastic)
-	local gui = surface(t, Enum.NormalId.Front, 60)
-	line(gui, 'Text', 'NEXT', C(20, 20, 26), FONT.loud, 0.1, 0.8, nil)
-	gui.Enabled = false
-	for _, d in model:GetDescendants() do
-		if d:IsA('BasePart') then decor(d).CastShadow, d.Transparency = false, 1 end
-	end
-	return model
-end
-
--- Small gold padlock sitting on the pad's front edge (the client hides it once the look unlocks).
-function Evolutions.padlock(c, pos, scale, ink)
-	local l, model = c:group('Lock')
-	local k = scale or 1
-	local gold, steel = C(255, 200, 48), C(206, 212, 222)
-	-- (on the gold statues the lock is ink with a gold keyhole: gold on gold disappears)
-	local body = ink and C(40, 36, 52) or gold
-	l:box('LockBody', pos + V(-0.6, -0.5, -0.24) * k, pos + V(0.6, 0.45, 0.24) * k, body, M.SmoothPlastic)
-	l:box('LockRim', pos + V(-0.64, 0.3, -0.27) * k, pos + V(0.64, 0.45, 0.27) * k, ink and C(70, 64, 86) or gold:Lerp(C(150, 90, 10), 0.35), M.SmoothPlastic)
-	for _, x in { -0.38, 0.38 } do l:box('Shackle', pos + V(x - 0.11, 0.45, -0.11) * k, pos + V(x + 0.11, 1.0, 0.11) * k, steel, M.Metal) end
-	l:box('Shackle', pos + V(-0.49, 1.0, -0.11) * k, pos + V(0.49, 1.2, 0.11) * k, steel, M.Metal)
-	local hole = ink and gold or C(40, 26, 10)
-	l:part('Keyhole', V(0.22, 0.22, 0.06) * k, CFrame.new(pos + V(0, 0.02, -0.25) * k), hole, M.SmoothPlastic, Enum.PartType.Ball)
-	l:box('Keyhole', pos + V(-0.05, -0.28, -0.27) * k, pos + V(0.05, 0, -0.23) * k, hole, M.SmoothPlastic)
-	for _, d in model:GetDescendants() do
-		if d:IsA('BasePart') then decor(d).CastShadow = false end
-	end
-	return model
-end
-
--- Glowing pad, like the reference's: a pedestal block lit in a pale tint of the tier's colour (what you see of
--- the pad at player height), a neon inset over most of its top in the tier's colour with one white rim round
--- it, the glow falling off round it onto the tier (an inner pool and a faint outer one, so stone shows between
--- neighbours), a coloured light above and motes rising off it. `tint` = { color, glow, pale }.
-function Evolutions.pad(c, x, y, z, tint, size, clip)
-	local col = Evolutions.Colors
-	local h, top = size / 2, y + Evolutions.PadH
-	c:box('PadBlock', V(x - h, y, z - h), V(x + h, top, z + h), tint.pale or col.pad, M.SmoothPlastic)
-	for _, ring in { { 'PadHalo', 0.35, 0.5, 0.05 }, { 'PadHaloOuter', 0.8, 0.82, 0.03 } } do
-		local o = ring[2]
-		-- (clip: keep the glow off a stair opening that runs up |x| < clip)
-		local x0, x1 = x - h - o, x + h + o
-		if clip and x > 0 then x0 = math.max(x0, clip) elseif clip then x1 = math.min(x1, -clip) end
-		local halo = decor(c:box(ring[1], V(x0, y, z - h - o), V(x1, y + ring[4], z + h + o), tint.glow, M.Neon))
-		halo.Transparency, halo.CastShadow = ring[3], false
-	end
-	local g = h - 0.32
-	local glow = decor(c:box('PadGlow', V(x - g, top, z - g), V(x + g, top + 0.08, z + g), tint.glow, M.Neon))
-	glow.CastShadow = false
-	-- Bright inner rim round the inset (the ref's white-hot edge).
-	local rim = c:group('PadRim')
-	for _, e in { { V(x - g, 0, z - g), V(x + g, 0, z - g + 0.14) }, { V(x - g, 0, z + g - 0.14), V(x + g, 0, z + g) },
-		{ V(x - g, 0, z - g + 0.14), V(x - g + 0.14, 0, z + g - 0.14) }, { V(x + g - 0.14, 0, z - g + 0.14), V(x + g, 0, z + g - 0.14) } } do
-		decor(rim:box('PadRimStrip', e[1] + V(0, top + 0.08, 0), e[2] + V(0, top + 0.12, 0), col.rim2, M.Neon)).CastShadow = false
-	end
-	-- The light hangs a little above the pad: a coloured pool on the tier and up the figure's legs.
-	local bulb = ghost(c:part('PadLight', V(0.2, 0.2, 0.2), CFrame.new(x, top + 3, z), tint.color))
-	bulb.CastShadow = false
-	light(bulb, tint.color, 0.5, 9)
-	-- A soft sheet of light standing on the pad (unlocked pads only) and motes drifting up through it.
-	local up0 = Evolutions.attach(glow, 'GlowBase', V(0, 0.05, 0))
-	local up1 = Evolutions.attach(glow, 'GlowTop', V(0, 3.4, 0))
-	Evolutions.beam(glow, 'PadGlowSheet', up0, up1, size - 1.1, size - 0.6, tint.glow, 0.7):SetAttribute('UnlockedOnly', true)
-	Evolutions.emitter(glow, 'PadMotes', 'dust', {
-		Rate = 3, Lifetime = NumberRange.new(1.4, 2.4), Speed = NumberRange.new(0.8, 1.8), SpreadAngle = Vector2.new(8, 8),
-		EmissionDirection = Enum.NormalId.Top, Acceleration = V(0, 0.4, 0), LightEmission = 1,
-		Size = Evolutions.seq({ { 0, 0 }, { 0.2, 0.28, 0.08 }, { 1, 0 } }), Transparency = Evolutions.seq({ { 0, 1 }, { 0.2, 0.15 }, { 1, 1 } }),
-		Color = ColorSequence.new(tint.color:Lerp(P.white, 0.5), tint.color),
-	})
-	return top + 0.08
-end
-
--- The featured plinth (the reference's red featured pad), two stages: a red frame with cyan corner lights (its
--- outer part, past tier 2's edge, rises from tier 1's landing as a red tower up the flank), and on it a red
--- upper stage with a cyan inset carrying the turntable and its colour-cycling gold ring; halo, glitter and a
--- ground ring round the figure. Returns the height the figure stands at and the stage top.
-function Evolutions.plinth(c, x, y, z, band)
-	local red, cyan, gold = Evolutions.Colors.plinth, Evolutions.TierColors[1].glow, band.color
-	local h, top = 3, y + 1.6
-	local t1, t2 = Evolutions.Tiers[1], Evolutions.Tiers[2]
-	-- (where it stands past tier 2's edge it rises from the level below: tier 1, or the slab)
-	local foot = x + h <= t2.x1 and y or x + h <= t1.x1 and t1.top or Evolutions.Base
-	studs(c:box('PlinthFrame', V(x - h, foot, z - h), V(x + h, top, z + h), red, M.Plastic), true)
-	c:box('PlinthLip', V(x - h - 0.1, top - 0.3, z - h - 0.1), V(x + h + 0.1, top, z + h + 0.1), red:Lerp(C(0, 0, 0), 0.25), M.SmoothPlastic)
-	for _, cx in { -1, 1 } do
-		for _, cz in { -1, 1 } do
-			decor(c:box('CornerLight', V(x + cx * (h - 0.05) - 0.35, top - 0.85, z + cz * (h - 0.05) - 0.35), V(x + cx * (h - 0.05) + 0.35, top - 0.35, z + cz * (h - 0.05) + 0.35), cyan, M.Neon)).CastShadow = false
-		end
-	end
-	-- The glow round its foot, on each level it stands on.
-	for i, g in { { x - h - 0.5, math.min(x + h + 0.5, t2.x1), y }, { math.max(x - h - 0.5, t2.x1), x + h + 0.5, foot } } do
-		if g[2] - g[1] > 0.2 and (i == 1 or foot < y) then
-			local halo = decor(c:box('PlinthHalo', V(g[1], g[3], z - h - 0.5), V(g[2], g[3] + 0.05, z + h + 0.5), cyan, M.Neon))
-			halo.Transparency, halo.CastShadow = 0.4, false
-		end
-	end
-	-- KINGPIN in gold across the frame's front.
-	local card = ghost(c:box('PlinthSign', V(x - h + 0.4, top - 1.45, z - h - 0.06), V(x + h - 0.4, top - 0.35, z - h - 0.02), P.white))
-	line(surface(card, Enum.NormalId.Front, 40), 'Name', 'KINGPIN', C(255, 206, 60), FONT.loud, 0.02, 0.96, C(110, 16, 30), 3)
-	-- The upper stage.
-	local sh, stop = 2.3, top + Evolutions.FeaturedRise
-	studs(c:box('PlinthStage', V(x - sh, top, z - sh), V(x + sh, stop, z + sh), red, M.Plastic), true)
-	c:box('StageLip', V(x - sh - 0.08, stop - 0.25, z - sh - 0.08), V(x + sh + 0.08, stop, z + sh + 0.08), red:Lerp(C(0, 0, 0), 0.25), M.SmoothPlastic)
-	c:box('StageTrim', V(x - sh - 0.05, top, z - sh - 0.05), V(x + sh + 0.05, top + 0.18, z + sh + 0.05), C(255, 196, 60), M.SmoothPlastic)
-	local inset = decor(c:box('PlinthInset', V(x - sh + 0.45, stop, z - sh + 0.45), V(x + sh - 0.45, stop + 0.06, z + sh - 0.45), cyan, M.Neon))
-	inset.CastShadow = false
-	top = stop
-	c:part('Turntable', V(0.3, 3.2, 3.2), CFrame.new(x, top + 0.2, z) * CFrame.Angles(0, 0, math.pi / 2), C(232, 232, 240), M.Metal, Enum.PartType.Cylinder)
-	local ring = decor(c:part('TurntableRing', V(0.12, 3.6, 3.6), CFrame.new(x, top + 0.12, z) * CFrame.Angles(0, 0, math.pi / 2), gold, M.Neon, Enum.PartType.Cylinder))
-	ring.CastShadow = false
-	ring:SetAttribute('Hue', 14)
-	ring:AddTag('HoodMotion')
-	local bulb = ghost(c:part('PlinthLight', V(0.2, 0.2, 0.2), CFrame.new(x, top + 3.5, z - 2), gold))
-	bulb.CastShadow = false
-	light(bulb, gold, 0.8, 12)
-	-- Effects: a warm halo, star glints and glitter, rising rays, a ring pulsing out over the plinth.
-	local feet = top + 0.35 + 0.25
-	local core = ghost(c:part('FeaturedFx', V(3.4, 6, 2.4), CFrame.new(x, feet + 3.4, z), gold))
-	core.CastShadow = false
-	Evolutions.emitter(core, 'Halo', 'softglow', {
-		Rate = 1, Lifetime = NumberRange.new(2), Speed = NumberRange.new(0), Rotation = NumberRange.new(0), ZOffset = -2, LightEmission = 1,
-		Size = Evolutions.seq({ { 0, 5 }, { 1, 5.5 } }), Transparency = Evolutions.seq({ { 0, 1 }, { 0.4, 0.62 }, { 0.6, 0.62 }, { 1, 1 } }), Color = ColorSequence.new(gold),
-	})
-	Evolutions.emitter(core, 'Glitter', 'glitter', {
-		Rate = 9, Lifetime = NumberRange.new(0.5, 0.9), Speed = NumberRange.new(0.3, 1.2), SpreadAngle = Vector2.new(180, 180), LightEmission = 1,
-		RotSpeed = NumberRange.new(-90, 90), Size = Evolutions.seq({ { 0, 0 }, { 0.4, 0.9, 0.3 }, { 1, 0 } }), Color = ColorSequence.new(P.white, gold), ZOffset = 1,
-	})
-	local base = ghost(c:part('FeaturedRays', V(4, 0.2, 4), CFrame.new(x, top + 0.4, z), gold))
-	base.CastShadow = false
-	if Evolutions.uploaded('ray') then Evolutions.emitter(base, 'Rays', 'ray', {
-		Orientation = Enum.ParticleOrientation.FacingCameraWorldUp, Rate = 1.2, Lifetime = NumberRange.new(1.8, 2.6), Speed = NumberRange.new(0.1),
-		Rotation = NumberRange.new(0), LightEmission = 1, Size = Evolutions.seq({ { 0, 4.5 }, { 1, 5 } }),
-		Transparency = Evolutions.seq({ { 0, 1 }, { 0.4, 0.55 }, { 0.6, 0.55 }, { 1, 1 } }), Color = ColorSequence.new(gold:Lerp(P.white, 0.4)), ZOffset = -1,
-	}) end
-	Evolutions.emitter(base, 'GroundRing', 'ring', {
-		Orientation = Enum.ParticleOrientation.VelocityPerpendicular, EmissionDirection = Enum.NormalId.Top, Rate = 0.8, Lifetime = NumberRange.new(1.6),
-		Speed = NumberRange.new(0.01), LightEmission = 1, Size = Evolutions.seq({ { 0, 1 }, { 1, 5 } }), Transparency = Evolutions.seq({ { 0, 0.3 }, { 1, 1 } }),
-		Color = ColorSequence.new(gold),
-	})
-	return feet, top
-end
-
--- One look: pad (or the featured plinth), posed figure, turntable disc, padlock, label and the equip point,
--- all in Morphs/Skin_<Id>. Returns the model and the height the figure stands at.
-function Evolutions.look(c, s, art, x, y, z, opts)
-	local band = Evolutions.band(s.Index)
-	local st, model = c:group('Skin_' .. s.Id)
-	model:SetAttribute('Look', s.Id)
-	model:SetAttribute('Index', s.Index)
-	model:SetAttribute('Required', s.Required)
-	local tint = opts.tint or Evolutions.TierColors[1]
-	model:SetAttribute('Band', band.name)
-	model:SetAttribute('BandColor', tint.color) -- the pad's colour: the client tints the locked figure with it
-	model:SetAttribute('Column', opts.column or 1)
-	local featured = opts.featured
-	-- The featured look stays in colour while locked (only the padlock says so): it is the goal on show.
-	if featured then model:SetAttribute('Showcase', true) end
-	local scale = featured and Evolutions.FeaturedScale or Evolutions.Scale
-	model:SetAttribute('LockShade', tint.shade or 0.6)
-	-- (the top tier locks as gold statues: the client maps each part's brightness onto a gold ramp)
-	if tint.lock then model:SetAttribute('LockStyle', tint.lock) end
-	local feet, lipY, lipHalf
-	if featured then
-		feet, lipY = Evolutions.plinth(st, x, y, z, band)
-		lipHalf = 2.3
-	else
-		feet = Evolutions.pad(st, x, y, z, tint, Evolutions.Pad, opts.clip)
-		lipY, lipHalf = y + Evolutions.PadH, Evolutions.Pad / 2
-	end
-	local half = featured and 3 or Evolutions.Pad / 2
-	-- The disc the look you wear turns on (shown by the client).
-	if not featured then
-		local disc = st:group('Turntable')
-		-- (its top 0.14 over the inset and 0.1 over the rim strips, so nothing z-fights)
-		decor(disc:part('TurntableDisc', V(0.16, 3.2, 3.2), CFrame.new(x, feet + 0.06, z) * CFrame.Angles(0, 0, math.pi / 2), C(232, 232, 240), M.Metal, Enum.PartType.Cylinder))
-		decor(disc:part('TurntableRim', V(0.12, 3.45, 3.45), CFrame.new(x, feet + 0.04, z) * CFrame.Angles(0, 0, math.pi / 2), tint.color:Lerp(P.white, 0.35), M.Neon, Enum.PartType.Cylinder))
-		for _, p in disc.parent:GetChildren() do p.Transparency, p.CastShadow = 1, false end
-	end
-	-- The figure (SkinArt; the stand still works without it), turned a few degrees so the row doesn't read
-	-- as copies. The featured one turns and bobs (HoodMotion, client side).
-	local labelY = feet + 5.6 * scale + 1.3
-	local hatY = feet + 6.3 * scale
-	if art then
-		local yaw = math.rad(opts.yaw or 0)
-		local poseFn = art.posed or function(parent, cf, look, k) return art.mannequin(parent, cf, look, k) end
-		local fig = poseFn(st.parent, st:world(CFrame.new(x, feet, z) * CFrame.Angles(0, yaw, 0)), s, scale, nil)
-		fig.Name = 'Display'
-		for _, d in fig:GetDescendants() do
-			if d:IsA('BasePart') then d.CanCollide, d.CanQuery, d.CanTouch = false, false, false end
-		end
-		fig.WorldPivot = st:world(CFrame.new(x, feet, z))
-		if featured then
-			fig:SetAttribute('Spin', 24)
-			fig:SetAttribute('Bob', 0.25)
-			fig:SetAttribute('BobPeriod', 3)
-			fig:AddTag('HoodMotion')
-		end
-		-- Label clear of the tallest hat.
-		local _, hi = Evolutions.extents(fig, st:world(CFrame.new()))
-		labelY = hi.Y + 1.3 + (featured and 0.3 or 0)
-		hatY = hi.Y
-	end
-	-- A few glints round an unlocked figure (the client switches them off while it is locked).
-	local glints = ghost(st:part('UnlockedFx', V(3 * scale, 5 * scale, 1.6 * scale), CFrame.new(x, feet + 2.8 * scale, z), band.color))
-	glints.CastShadow = false
-	glints:SetAttribute('UnlockedOnly', true)
-	Evolutions.emitter(glints, 'Glints', 'glitter', {
-		Rate = 1.6, Lifetime = NumberRange.new(0.5, 0.8), Speed = NumberRange.new(0), LightEmission = 1, RotSpeed = NumberRange.new(-60, 60),
-		Size = Evolutions.seq({ { 0, 0 }, { 0.35, 0.6, 0.15 }, { 1, 0 } }), Color = ColorSequence.new(P.white, tint.color:Lerp(P.white, 0.5)), ZOffset = 1,
-	})
-	Evolutions.padlock(st, V(x, feet + 0.62, z - lipHalf - 0.1), 1, tint.lock == 'Gold')
-	if s.Required == 0 then
-		for _, d in model.Lock:GetDescendants() do
-			if d:IsA('BasePart') then d.Transparency = 1 end
-		end
-	end
-	-- The floating chip (the full label over the featured look); the nameplate on the pad. The chip floats
-	-- just high enough that, seen from the default camera (11.4 back, 6.5 up) at the look's own spot, its lower
-	-- edge passes over the top row's hats and the backdrop's top: it never sits on a face in the rows behind.
-	local chipY = hatY + 0.86
-	if not featured and opts.spotFloor then
-		local camY, camZ = opts.spotFloor + 3 + 6.5, z - half - 0.5 - 1.6 - 11.4
-		local slope = (20.2 - camY) / (Evolutions.Back + 1.2 - camZ)
-		local t3 = Evolutions.Tiers[3]
-		if t3.row > z + 1 then slope = math.max(slope, (t3.top + 8.4 - camY) / (t3.row - camZ)) end
-		chipY = math.max(chipY, camY + slope * (z - camZ) + 0.4 + Evolutions.ChipH / 2)
-	end
-	Evolutions.label(st, V(x, featured and labelY or chipY, z), s, band, hatY + 0.3, featured, hatY)
-	Evolutions.tag(st, x, featured and lipY or lipY + 0.08, z - lipHalf, featured and 1.5 or 1.55)
-	local face = not featured and st.parent:FindFirstChild('PadBlock')
-	if face then Evolutions.nameplate(face, s, band) end
-	-- Equip point at knee height just in front of the pad (prompt + server distance check).
-	local front = z - half - 0.5
-	local ix = x
-	local fy = opts.floor or y
-	ghost(st:box('Interact', V(ix - 0.6, fy + 0.6, front - 0.6), V(ix + 0.6, fy + 1.8, front + 0.6), P.white)).CastShadow = false
-	return model, feet
-end
-
--- Sparkle glints around a top-tier figure, locked or not: the top tier is the lure.
-function Evolutions.sparkle(c, x, feet, z, color)
-	local fx = ghost(c:part('TopSparkle', V(3, 5.4, 2), CFrame.new(x, feet + 2.8, z), color))
-	fx.CastShadow = false
-	Evolutions.emitter(fx, 'Glints', 'glitter', {
-		Rate = 3, Lifetime = NumberRange.new(0.5, 0.8), Speed = NumberRange.new(0), LightEmission = 1, RotSpeed = NumberRange.new(-60, 60),
-		Size = Evolutions.seq({ { 0, 0 }, { 0.35, 0.8, 0.2 }, { 1, 0 } }), Color = ColorSequence.new(P.white, color:Lerp(P.white, 0.4)), ZOffset = 1,
-	})
-	return fx
-end
-
----------------------------------------------------------------------------------------------- stagecraft
--- Spotlights clamped under the front edge of the two wing caps (out of every approach), aimed at the two
--- lower rows, each with a soft flare on its lens. targets: { { x = lamp x, at = Vector3 } }.
-function Evolutions.lights(c, targets)
-	local col = Evolutions.Colors
-	local g = c:group('Lights')
-	local wingTop = Evolutions.Tiers[2].top + 7.4 + 0.4
-	local z = Evolutions.Back - 0.4
-	for _, t in targets do
-		local lamp = g:group('Spotlight')
-		local lx = t.x
-		local pos = V(lx, wingTop - 1.1, z - 0.3)
-		lamp:box('LampClamp', V(lx - 0.25, wingTop - 0.55, z - 0.35), V(lx + 0.25, wingTop, z + 0.15), col.ink, M.SmoothPlastic)
-		lamp:box('LampYoke', V(lx - 0.1, wingTop - 0.95, z - 0.4), V(lx + 0.1, wingTop - 0.55, z - 0.2), col.ink, M.SmoothPlastic)
-		local aim = CFrame.lookAt(pos, t.at)
-		decor(lamp:part('LampCan', V(0.7, 0.7, 1.0), aim, C(150, 156, 170), M.SmoothPlastic))
-		decor(lamp:part('LampBack', V(0.5, 0.5, 0.2), aim * CFrame.new(0, 0, 0.55), C(52, 54, 62), M.SmoothPlastic))
-		local lens = decor(lamp:part('LampLens', V(0.58, 0.58, 0.1), aim * CFrame.new(0, 0, -0.52), C(255, 244, 214), M.Neon))
-		lens.CastShadow = false
-		local spot = Instance.new('SpotLight')
-		spot.Face, spot.Color, spot.Brightness, spot.Range, spot.Angle, spot.Shadows = Enum.NormalId.Front, C(255, 236, 200), 2, 40, 35, false
-		spot.Parent = lens
-		Evolutions.emitter(Evolutions.attach(lens, 'Flare', V(0, 0, -0.15)), 'LensFlare', 'softglow', {
-			Rate = 1, Lifetime = NumberRange.new(2), Speed = NumberRange.new(0), Rotation = NumberRange.new(0), LightEmission = 1, ZOffset = 0.5,
-			Size = Evolutions.seq({ { 0, 2.2 }, { 1, 2.4 } }), Transparency = Evolutions.seq({ { 0, 1 }, { 0.3, 0.5 }, { 0.7, 0.5 }, { 1, 1 } }), Color = ColorSequence.new(C(255, 240, 200)),
-		})
-	end
-	-- Dust drifting over the podium, caught by the light.
-	local dust = ghost(g:part('StageDust', V(40, 8, 20), CFrame.new(Evolutions.Columns[1][3], 10, 16), P.white))
-	Evolutions.emitter(dust, 'Dust', 'dust', {
-		Rate = 6, Lifetime = NumberRange.new(4, 7), Speed = NumberRange.new(0.1, 0.4), SpreadAngle = Vector2.new(180, 180), LightEmission = 0.6,
-		Size = Evolutions.seq({ { 0, 0 }, { 0.3, 0.14, 0.05 }, { 1, 0 } }), Transparency = Evolutions.seq({ { 0, 1 }, { 0.3, 0.45 }, { 1, 1 } }), Color = ColorSequence.new(C(255, 240, 210)),
-	})
-	return g
-end
-
--- Behind the Kingpin: a red velvet panel in a gold frame standing on his plinth's back edge, gold neon tubes
--- down its sides and a row of gold studs along its foot (a stage set, not a frame round him: nothing crosses
--- over his head; its top stays under his crown).
-function Evolutions.kingpinPanel(c, x, z)
-	local col = Evolutions.Colors
-	local g = c:group('KingpinPanel')
-	local y0, y1 = Evolutions.Tiers[2].top + 1.6, 17.5
-	local x0, x1, zf = x - 3, x + 3, z + 3 - 0.25
-	g:box('Velvet', V(x0, y0, zf), V(x1, y1, zf + 0.2), col.carpet, M.Fabric)
-	for _, e in { { V(x0 - 0.3, y0, zf - 0.05), V(x0, y1 + 0.3, zf + 0.25) }, { V(x1, y0, zf - 0.05), V(x1 + 0.3, y1 + 0.3, zf + 0.25) }, { V(x0, y1, zf - 0.05), V(x1, y1 + 0.3, zf + 0.25) } } do
-		g:box('PanelFrame', e[1], e[2], col.gold, M.SmoothPlastic)
-	end
-	for _, tx in { x0 + 0.45, x1 - 0.45 } do
-		decor(g:box('PanelTube', V(tx - 0.1, y0 + 0.5, zf - 0.12), V(tx + 0.1, y1 - 0.4, zf - 0.02), col.gold, M.Neon)).CastShadow = false
-	end
-	for sx = x0 + 1.2, x1 - 1.1, 0.95 do
-		decor(g:part('PanelStud', V(0.3, 0.3, 0.3), CFrame.new(sx, y0 + 0.6, zf - 0.12), col.gold, M.Neon, Enum.PartType.Ball)).CastShadow = false
-	end
-	return g
-end
-
--- The EVOLUTIONS marquee across the front of the first tier: a dark board in a cyan neon frame, yellow
--- letters outlined pink, and a ring of bulbs round it, every other one cycling colour so the frame chases.
-function Evolutions.sign(c)
-	local g = c:at(CFrame.new(Evolutions.Columns[1][3], 0, 0)):group('Sign')
-	local t = Evolutions.Tiers[1]
-	local w, y0, y1, z = 13.5, Evolutions.Base + 0.6, t.top - 0.95, t.front - 0.32
-	local board = g:box('SignBoard', V(-w, y0, z), V(w, y1, t.front - 0.1), C(24, 24, 36), M.SmoothPlastic)
-	local tube = C(80, 220, 255)
-	for _, y in { y0 - 0.12, y1 } do
-		decor(g:box('SignTube', V(-w - 0.15, y, z - 0.08), V(w + 0.15, y + 0.12, z + 0.05), tube, M.Neon)).CastShadow = false
-	end
-	for _, x in { -w - 0.15, w } do
-		decor(g:box('SignTube', V(x, y0 - 0.12, z - 0.08), V(x + 0.15, y1 + 0.12, z + 0.05), tube, M.Neon)).CastShadow = false
-	end
-	local face = surface(board, Enum.NormalId.Front, 30)
-	line(face, 'Title', '▲ EVOLUTIONS ▲', C(255, 230, 90), FONT.loud, 0.02, 0.96, C(255, 60, 150), 3)
-	light(board, C(255, 200, 150), 1, 10)
-	-- Marquee bulbs: along the top and bottom edges and up the two ends.
-	local spots = {}
-	for x = -w, w + 0.01, 1.5 do
-		table.insert(spots, V(x, y1 + 0.42, z - 0.12))
-		table.insert(spots, V(x, y0 - 0.42, z - 0.12))
-	end
-	for y = y0, y1 + 0.01, (y1 - y0) / 2 do
-		table.insert(spots, V(-w - 0.55, y, z - 0.12))
-		table.insert(spots, V(w + 0.55, y, z - 0.12))
-	end
-	for i, p in spots do
-		local bulb = decor(g:part('MarqueeBulb', V(0.45, 0.45, 0.45), CFrame.new(p), i % 2 == 0 and C(255, 220, 120) or C(255, 90, 200), M.Neon, Enum.PartType.Ball))
-		bulb.CastShadow = false
-		if i % 2 == 0 then
-			bulb:SetAttribute('Hue', 2.5)
-			bulb:AddTag('HoodMotion')
-		end
-	end
-	return g
-end
-
--- Backdrop: a loading-bay wall of roller shutters behind the tiers, tall and light behind the top tier (it backs
--- the figures), lower and blue on the wings (horizontal slats, a dark bottom rail, a galvanised drum housing
--- along the top), galvanised
--- posts with neon edges splitting the middle into three bays behind the top row, DOCK stencils on the
--- wings, neon footlights along the base and colour-cycling up-arrows (evolving = going up) on the far wing.
-function Evolutions.backdrop(c)
-	local col = Evolutions.Colors
-	local d = c:group('Backdrop')
-	local z0, z1 = Evolutions.Back, Evolutions.Back + 1.2
-	local t1, t2, t3 = Evolutions.Tiers[1], Evolutions.Tiers[2], Evolutions.Tiers[3]
-	local wing = t2.top + 7.4
-	-- { x0, x1, top, where the tiers in front stop hiding it, blue }: behind the top tier, then the wings out to
-	-- the stack's -X edge and, on +X, on behind the Kingpin to the slab's end.
-	local panels = { { t3.x0, t3.x1, 19.4, t3.top }, { t1.x0, t3.x0, wing, t2.top, true }, { t3.x1, 26.8, wing, t2.top, true } }
-	for _, pnl in panels do
-		local x0, x1, top, seen, blue = pnl[1], pnl[2], pnl[3], pnl[4], pnl[5]
-		d:box('Shutter', V(x0, Evolutions.Base, z0 + 0.3), V(x1, top - 0.9, z1), blue and col.wing or col.shutter, M.Plastic)
-		for y = seen + 0.7, top - 1.3, 0.55 do
-			decor(d:box('ShutterSlat', V(x0 + 0.05, y, z0 + 0.18), V(x1 - 0.05, y + 0.16, z0 + 0.3), blue and col.wingSlat or col.slat, M.Plastic)).CastShadow = false
-		end
-		d:box('ShutterRail', V(x0, seen, z0 + 0.15), V(x1, seen + 0.45, z0 + 0.32), col.rim, M.Plastic)
-		d:box('ShutterDrum', V(x0 - 0.1, top - 0.9, z0 - 0.3), V(x1 + 0.1, top, z1 + 0.1), col.galvanised, M.Plastic)
-		studs(d:box('WallCap', V(x0 - 0.2, top, z0 - 0.3), V(x1 + 0.2, top + 0.4, z1 + 0.2), col.steel, M.Plastic))
-	end
-	-- Footlights back-lighting the figures: cyan behind the top tier, violet behind the wings.
-	decor(d:box('Footlight', V(t3.x0, t3.top + 0.1, z0 - 0.1), V(t3.x1, t3.top + 0.4, z0 + 0.1), C(80, 220, 255), M.Neon)).CastShadow = false
-	for _, w in { { t2.x0, t3.x0 }, { t3.x1, Evolutions.FeaturedAt.X - 3.8 } } do
-		decor(d:box('Footlight', V(w[1], t2.top + 0.1, z0 - 0.1), V(w[2], t2.top + 0.4, z0 + 0.1), C(186, 96, 255), M.Neon)).CastShadow = false
-	end
-	-- Bay posts: between the top-row figures and at the ends of the middle panel.
-	local cols = Evolutions.Columns[3]
-	for i, x in { (cols[1] + cols[2]) / 2, (cols[3] + cols[4]) / 2, t3.x1 - 0.35, t3.x0 + 0.35 } do
-		d:box('BayPost', V(x - 0.35, t3.top, z0 - 0.3), V(x + 0.35, 19.4, z0 + 0.3), col.galvanised, M.Plastic)
-		decor(d:box('BayPostNeon', V(x - 0.12, t3.top + 0.5, z0 - 0.36), V(x + 0.12, 18.4, z0 - 0.3), i <= 2 and C(186, 96, 255) or C(80, 220, 255), M.Neon)).CastShadow = false
-	end
-	-- The DOCK stencil on the far wing.
-	local wx = (t1.x0 + t3.x0) / 2
-	for _, w in { { wx, t2.top + 0.75, 'DOCK 03', 1.9 } } do
-		local card = ghost(d:box('Stencil', V(w[1] - w[4], w[2], z0 - 0.02), V(w[1] + w[4], w[2] + w[4] * 0.64, z0 + 0.1), P.white))
-		line(surface(card, Enum.NormalId.Front, 30), 'Text', w[3], C(255, 200, 40), Enum.Font.Oswald, 0, 1, nil)
-	end
-	local arrows, model = d:group('UpArrows')
-	model:SetAttribute('Hue', 12)
-	model:AddTag('HoodMotion')
-	for i = 0, 2 do
-		local y = t2.top + 2.8 + i * 1.5
-		local glow = C(255, 192, 44):Lerp(P.white, i * 0.15)
-		for _, s in { -1, 1 } do
-			local a = V(wx, y + 1.0, z0 - 0.06)
-			local b = V(wx + s * 1.8, y, z0 - 0.06)
-			local mid = (a + b) / 2
-			decor(arrows:part('Chevron', V((b - a).Magnitude + 0.4, 0.45, 0.16), CFrame.new(mid) * CFrame.Angles(0, 0, math.atan2(b.Y - a.Y, b.X - a.X)), glow, M.Neon)).CastShadow = false
-		end
-	end
-	return d
-end
-
--- One delivery where the walkway sees it: on the slab behind the walkway stair, against tier 1's +X face, a
--- pallet of kraft boxes under shrink-wrap with a NEW STOCK tag, the yellow jack still under it.
-function Evolutions.props(c)
-	local pr = c:group('Props')
-	local t1, sf = Evolutions.Tiers[1], Evolutions.SideFlight
-	local px = t1.x1 + 2.6
-	local pal = pr:at(CFrame.new(px, Evolutions.Base, sf.z1 + 3.2) * CFrame.Angles(0, math.rad(-96), 0))
-	for _, bx in { -1, 0, 1 } do pal:box('PalletBlock', V(bx - 0.15, 0, -1.2), V(bx + 0.15, 0.35, 1.2), C(120, 86, 52), M.Wood) end
-	for pz = -1, 1, 0.5 do pal:box('PalletSlat', V(-1.2, 0.35, pz - 0.2), V(1.2, 0.5, pz + 0.2), C(150, 110, 70), M.WoodPlanks) end
-	for _, b in { { -0.55, -0.5, 1.1 }, { 0.55, -0.45, 1.0 }, { 0, 0.55, 1.2 } } do
-		pal:box('KraftBox', V(b[1] - 0.55, 0.5, b[2] - 0.5), V(b[1] + 0.55, 0.5 + b[3], b[2] + 0.5), C(196, 160, 110), M.Cardboard)
-		decor(pal:box('BoxTape', V(b[1] - 0.56, 0.5 + b[3] - 0.02, b[2] - 0.08), V(b[1] + 0.56, 0.5 + b[3] + 0.01, b[2] + 0.08), C(170, 130, 80), M.SmoothPlastic))
-	end
-	local wrap = decor(pal:box('ShrinkWrap', V(-1.15, 0.5, -1.1), V(1.15, 1.85, 1.15), P.white, M.SmoothPlastic))
-	wrap.Transparency, wrap.CastShadow = 0.6, false
-	local tag = pal:box('StockTag', V(-0.5, 1.0, -1.18), V(0.5, 1.45, -1.13), C(255, 200, 40), M.SmoothPlastic)
-	line(surface(tag, Enum.NormalId.Front, 60), 'Text', 'NEW STOCK', C(26, 26, 32), FONT.loud, 0.1, 0.8, nil)
-	-- The jack: forks between the pallet's blocks, body and handle out in front.
-	local yellow = C(255, 200, 40)
-	for _, jx in { -0.45, 0.45 } do pal:box('JackFork', V(jx - 0.2, 0.05, -1.0), V(jx + 0.2, 0.3, 1.1), yellow, M.SmoothPlastic) end
-	pal:box('JackBody', V(-0.75, 0.05, -1.75), V(0.75, 0.9, -1.2), yellow, M.SmoothPlastic)
-	pal:part('JackWheel', V(0.3, 0.5, 0.5), CFrame.new(0, 0.25, -1.5), C(40, 40, 48), M.SmoothPlastic, Enum.PartType.Cylinder)
-	pal:bar('JackHandle', V(0, 0.9, -1.5), V(0, 2.7, -1.95), 0.14, C(40, 40, 48), M.SmoothPlastic)
-	pal:box('JackGrip', V(-0.4, 2.65, -2.05), V(0.4, 2.85, -1.85), C(40, 40, 48), M.SmoothPlastic)
-	-- A hazard barrier closing the far alley between the tiers' -X side and the slab's edge (a dead end along
-	-- the lobby wall): striped yellow and ink boards on a diamond-plate foot, beside the far flight.
-	local t1 = Evolutions.Tiers[1]
-	-- (it runs on past the slab's edge to the lobby wall, its foot down on the deck there)
-	local bx0, bx1, z0, z1 = Evolutions.BarrierX, t1.x0, 4.6, 5.0
-	pr:box('BarrierFoot', V(-28, Evolutions.Base, z0 - 0.2), V(bx1, Evolutions.Base + 0.25, z1 + 0.2), C(90, 100, 124), M.DiamondPlate)
-	pr:box('BarrierFoot', V(bx0, 0, z0 - 0.2), V(-28, 0.25, z1 + 0.2), C(90, 100, 124), M.DiamondPlate)
-	local n = 7
-	for i = 0, n - 1 do
-		local xa = bx0 + (bx1 - bx0) * i / n
-		local xb = bx0 + (bx1 - bx0) * (i + 1) / n
-		local y0 = xb <= -28 and 0.25 or Evolutions.Base + 0.25
-		pr:box('BarrierStripe', V(xa, xa < -28 and 0.25 or y0, z0), V(xb, Evolutions.Base + 3, z1), i % 2 == 0 and Evolutions.Colors.yellow or Evolutions.Colors.ink, M.SmoothPlastic)
-	end
-	return pr
-end
-
--- The WARDROBE, standing on the walkway side's front corner of the apron (the first thing you reach from the
--- walkway): a chrome garment rack of suit bags in the tiers' colours on a low dark base, a full-length mirror
--- ringed with bulbs, a lightbox sign over them (WARDROBE in 1.3-stud letters, CHANGE YOUR LOOK under it), and a
--- gold ring on the floor in front with the WardrobePoint over it: Lobby.client's one big prompt (it opens the
--- EVOLVE board; the server equips any unlocked look within 30 studs of it). Kept low enough that the walkway's
--- sight lines to row 1 pass over the sign.
--- The Kingpin's carpet: a red runner with gold edges from the slab edge up the walkway stair, across tier 1's
--- walk and up the tier-2 flight to his plinth (the stair steps carry their own pieces).
-function Evolutions.apron(c)
-	local col = Evolutions.Colors
-	local a = c:group('Wardrobe')
-	local B = Evolutions.Base
-	local t1, t2, sf = Evolutions.Tiers[1], Evolutions.Tiers[2], Evolutions.SideFlight
-	local x0, x1 = t1.x1 + 0.9, 27.0 -- 22.6 .. 27.0
-	local zr = 5.9 -- the rack's line
-	local chrome, ink = C(214, 220, 230), C(28, 26, 44)
-	a:box('WardrobeBase', V(x0, B, zr - 0.8), V(x1, B + 0.3, zr + 0.8), ink, M.SmoothPlastic)
-	-- Rack: two posts, a top bar, four suit bags on hangers.
-	for _, px in { x0 + 0.4, x1 - 0.4 } do
-		a:box('RackPost', V(px - 0.1, B + 0.3, zr - 0.1), V(px + 0.1, B + 4.6, zr + 0.1), chrome, M.SmoothPlastic)
-	end
-	a:box('RackBar', V(x0 + 0.3, B + 4.4, zr - 0.08), V(x1 - 0.3, B + 4.56, zr + 0.08), chrome, M.SmoothPlastic)
-	local bags = { Evolutions.TierColors[1].color, Evolutions.TierColors[2].color, Evolutions.TierColors[3].color, col.plinth }
-	local span = (x1 - x0 - 1.4) / #bags
-	for i, bc in bags do
-		local bx = x0 + 0.7 + (i - 0.5) * span
-		a:box('Hanger', V(bx - 0.04, B + 4.1, zr - 0.04), V(bx + 0.04, B + 4.45, zr + 0.04), chrome, M.SmoothPlastic)
-		a:box('SuitBag', V(bx - 0.45, B + 1.5, zr - 0.2), V(bx + 0.45, B + 4.1, zr + 0.2), bc, M.Fabric)
-		a:box('Lapel', V(bx - 0.18, B + 3.2, zr - 0.24), V(bx + 0.18, B + 4.05, zr - 0.2), P.white, M.SmoothPlastic)
-	end
-	-- Mirror at the rack's inner end, turned a little toward the front.
-	local m = a:at(CFrame.new(x0 - 0.2, B, zr - 1.4) * CFrame.Angles(0, math.rad(-25), 0))
-	m:box('MirrorFrame', V(-0.75, 0, -0.12), V(0.75, 4.6, 0.12), col.gold, M.SmoothPlastic)
-	local glass = m:box('MirrorGlass', V(-0.55, 0.25, -0.18), V(0.55, 4.35, -0.12), C(196, 226, 246), M.Glass)
-	glass.Reflectance, glass.Transparency = 0.35, 0.1
-	for _, y in { 0.8, 1.9, 3.0, 4.1 } do
-		for _, bx in { -0.62, 0.62 } do decor(m:part('MirrorBulb', V(0.24, 0.24, 0.24), CFrame.new(bx, y, -0.2), C(255, 236, 190), M.Neon, Enum.PartType.Ball)).CastShadow = false end
-	end
-	-- The lightbox on two legs behind the rack.
-	local sy0, sy1 = B + 4.8, B + 6.8
-	for _, px in { x0 + 0.6, x1 - 0.6 } do a:box('SignLeg', V(px - 0.1, B + 0.3, zr + 0.45), V(px + 0.1, sy0, zr + 0.65), ink, M.SmoothPlastic) end
-	local board = a:box('WardrobeSign', V(x0 - 0.2, sy0, zr + 0.4), V(x1 + 0.1, sy1, zr + 0.7), ink, M.SmoothPlastic)
-	-- (lettered on both faces: the walkway stair and the spawn see its back)
-	for _, face in { Enum.NormalId.Front, Enum.NormalId.Back } do
-		local g = surface(board, face, 40)
-		line(g, 'Title', 'WARDROBE', Evolutions.GoalColor, Enum.Font.Oswald, 0.02, 0.68, C(90, 40, 0), 3)
-		line(g, 'Sub', 'CHANGE YOUR LOOK', P.white, FONT.loud, 0.7, 0.24, C(20, 20, 40), 2)
-	end
-	for _, y in { sy0 - 0.1, sy1 } do decor(a:box('SignTube', V(x0 - 0.3, y, zr + 0.32), V(x1 + 0.2, y + 0.1, zr + 0.42), C(255, 90, 200), M.Neon)).CastShadow = false end
-	light(board, C(255, 210, 120), 0.8, 9)
-	-- The ring and the prompt point in front.
-	local px, pz = x1 - 1.5, 2.2
-	decor(a:part('PromptRing', V(0.1, 3.2, 3.2), CFrame.new(px, B + 0.06, pz) * CFrame.Angles(0, 0, math.pi / 2), Evolutions.GoalColor, M.Neon, Enum.PartType.Cylinder)).CastShadow = false
-	a:part('PromptDisc', V(0.14, 2.7, 2.7), CFrame.new(px, B + 0.08, pz) * CFrame.Angles(0, 0, math.pi / 2), C(40, 40, 52), M.SmoothPlastic, Enum.PartType.Cylinder)
-	local point = ghost(a:part('WardrobePoint', V(1.2, 1.2, 1.2), CFrame.new(px, B + 1.6, pz), P.white))
-	point.CastShadow = false
-	-- Carpet: slab edge to the stair's foot, tier 1's walk to the tier-2 flight, tier 2 to the plinth.
-	local zc = (sf.z0 + sf.z1) / 2
-	local fl = t2.flights[1]
-	local cx = (fl[1] + fl[2]) / 2
-	local run, run2 = Evolutions.runFor(t1.top - B), Evolutions.runFor(t2.top - t1.top)
-	local f = Evolutions.FeaturedAt
-	local runs = {
-		{ V(t1.x1 + run, B, zc - 1.2), V(27.1, B + 0.05, zc + 1.2) },
-		{ V(cx - 1.2, t1.top, zc - 1.2), V(t1.x1, t1.top + 0.05, zc + 1.2) },
-		{ V(cx - 1.2, t1.top, zc + 1.2), V(cx + 1.2, t1.top + 0.05, t2.front) },
-		{ V(cx - 1.2, t2.top, t2.front + run2), V(cx + 1.2, t2.top + 0.05, f.Z - 3.5) },
-	}
-	for _, r in runs do
-		decor(a:box('Carpet', r[1], r[2], col.carpet, M.Fabric))
-	end
-	return a, point
-end
-
--- Low stage haze rolling over the top tier.
-function Evolutions.fog(c)
-	if not Evolutions.uploaded('mist') then return nil end
-	local t3 = Evolutions.Tiers[3]
-	local f = ghost(c:part('StageFog', V(30, 0.4, 3), CFrame.new(0, t3.top + 0.4, Evolutions.Back - 1.6), P.white))
-	f.CastShadow = false
-	Evolutions.emitter(f, 'Haze', 'mist', {
-		Rate = 2, Lifetime = NumberRange.new(4, 6), Speed = NumberRange.new(0.3, 0.8), SpreadAngle = Vector2.new(70, 10),
-		EmissionDirection = Enum.NormalId.Front, Acceleration = V(0, -0.05, 0), RotSpeed = NumberRange.new(-10, 10), LightEmission = 0.3,
-		Size = Evolutions.seq({ { 0, 2 }, { 1, 3.5 } }), Transparency = Evolutions.seq({ { 0, 1 }, { 0.25, 0.88 }, { 0.7, 0.9 }, { 1, 1 } }),
-		Color = ColorSequence.new(C(226, 232, 255)),
-	})
-	return f
-end
-
----------------------------------------------------------------------------------------------- build
--- Builds the podium in ctx's frame and returns the Evolutions model. opts.skins / opts.art override
--- Config.Skins and Shared.SkinArt (without SkinArt the stands are built without figures).
-function Evolutions.build(ctx, opts)
-	opts = opts or {}
-	local skins = opts.skins or require(ReplicatedStorage.Shared.Config.Skins)
-	local art = opts.art or Evolutions.optional('SkinArt')
-	local e, model = ctx:group('Evolutions')
-	model:AddTag('HoodEvolutions')
-	Evolutions.podium(e)
-	Evolutions.backdrop(e)
-	Evolutions.props(e)
-	local _, wardrobe = Evolutions.apron(e)
-	local m, morphs = e:group('Morphs')
-	-- The stand is small and every client needs all of it (prompts, labels, the guide arrow).
-	pcall(function() morphs.ModelStreamingMode = Enum.ModelStreamingMode.Persistent end)
-	wardrobe.Parent = model -- (beside Morphs: the server and the client find it by name)
-	local wobble = { -5, 3, -2, 4, -4 }
-	local placed = { 0, 0, 0 }
-	for _, s in skins.List do
-		if s.Id == Evolutions.Featured then
-			local at = Evolutions.FeaturedAt
-			-- (his equip point at row 3's height: the label rule wants it above the feet of whoever stands at it)
-			Evolutions.look(m, s, art, at.X, Evolutions.Tiers[2].top, at.Z, { featured = true, column = 1, floor = Evolutions.Tiers[2].top + 2.7 })
-			Evolutions.kingpinPanel(e, at.X, at.Z)
-		else
-			-- Fill the rows in price order: 5, 5, then the rest on the narrow top tier.
-			local row = placed[1] < 5 and 1 or placed[2] < 5 and 2 or 3
-			local cols = Evolutions.Columns[row]
-			placed[row] += 1
-			local column = placed[row]
-			local t = Evolutions.Tiers[row]
-			if cols[column] then
-				local stand, feet = Evolutions.look(m, s, art, cols[column], t.top, t.row, {
-					column = column, yaw = wobble[(column - 1) % 5 + 1], tint = Evolutions.TierColors[row],
-					spotFloor = row == 1 and Evolutions.Base or Evolutions.Tiers[row - 1].top,
-				})
-				if row == 3 then Evolutions.sparkle(m:into(stand), cols[column], feet, t.row, Evolutions.TierColors[3].color) end
-			end
-		end
-	end
-	-- The built state is a new player's view (Lobby.client takes over at once): no full labels, the marker
-	-- and the NEXT tag on the first look to unlock.
-	local goal = skins.nextSkin and skins.nextSkin(0)
-	for _, stand in morphs:GetChildren() do
-		local isGoal = goal ~= nil and stand.Name == 'Skin_' .. goal.Id
-		local anchor = stand:FindFirstChild('LabelAnchor')
-		if anchor then
-			anchor.WorldLabel.Enabled = false
-			anchor.NextMarker.Enabled = isGoal
-		end
-		local tag = stand:FindFirstChild('NextTag')
-		for _, d in (tag and isGoal and tag:GetDescendants() or {}) do
-			if d:IsA('BasePart') then d.Transparency = 0 elseif d:IsA('SurfaceGui') then d.Enabled = true end
-		end
-	end
-	-- Spotlights from the wing caps on the two lower rows: the -X wing lights the far half, the +X wing (between
-	-- the top tier and the Kingpin's panel) the walkway half.
-	local t1, t2, t3 = Evolutions.Tiers[1], Evolutions.Tiers[2], Evolutions.Tiers[3]
-	local chest = Evolutions.PadH + 3 * Evolutions.Scale
-	local c1, c2 = Evolutions.Columns[1], Evolutions.Columns[2]
-	Evolutions.lights(e, {
-		{ x = t3.x1 + 0.9, at = V((c1[1] + c1[2]) / 2, t1.top + chest, t1.row) },
-		{ x = t3.x1 + 2.4, at = V(c2[2], t2.top + chest, t2.row) },
-		{ x = t1.x0 + 0.8, at = V((c1[4] + c1[5]) / 2, t1.top + chest, t1.row) },
-		{ x = t3.x0 - 0.9, at = V(c2[4], t2.top + chest, t2.row) },
-	})
-	Evolutions.fog(e)
-	Evolutions.sign(e)
 	return model
 end
 ---------------------------------------------------------------------------------------------- buildings
@@ -3151,11 +2120,12 @@ end
 --   North (-Z): the exit to Stage 1 with a monitor over it, the WORLD 2 garage door beside it.
 --   West wall: the 8 shooting ranges as a stepped row, Starter lowest by the exit, Gold highest at the back,
 --     each lane on its own studded base with stairs down to the floor; the targets are by the wall.
---   South (back) centre: the ARMORY on a raised dais under a big ARMORY sign.
---   East: the EVOLUTIONS podium (WARDROBE at its front corner) and three COMING SOON feature pads.
+--   South (back) centre: the SHOE BOX dais (a small podium with big sneaker boxes, COMING SOON) under its sign.
+--   East: the ARMORY (two rows of big guns over glowing hex pads, front platform and raised terrace) facing
+--     the hall under a big ARMORY sign; the corner store at the end of the cross's east arm.
 --   Leaderboards, the gold KINGPIN statue and the reward crates stand along the walls.
--- Builders from other files (Stations, Evolutions, Armory) fill the slots; a missing or failing one leaves a
--- labelled placeholder box of the slot's size.
+-- Builders from other files (Stations, Armory) fill the slots; a missing or failing one leaves a labelled
+-- placeholder box of the slot's size.
 -- Map frame (studs): interior x -66..66, z 6..156 (north wall z 5..6, the Stage 1 gate at z = 0 stays outside),
 -- floor top y = 0. North = -Z. Lobby.Slots: name -> CFrame in the map frame, filled by Lobby.build.
 -- Colour rule: nothing bigger than ~10 studs² darker than luminance 0.2 except screens; no Metal on big
@@ -3195,8 +2165,10 @@ function Lobby.terraceHeight(z)
 	local i = math.floor((z - (Lobby.RangeZ0 - Lobby.RangePitch / 2)) / Lobby.RangePitch) + 1
 	return (i >= 1 and i <= #Lobby.Ranges) and i * Lobby.RangeRise or 0
 end
--- The EVOLUTIONS podium's z span along the east wall (its slot turns local x -29.6..28 to z 104 + 29.6 .. 104 - 28).
-Lobby.EvoZ = { 76, 133.6 }
+-- The ARMORY on the east side: its front step's foot at x ArmoryX, centred on z ArmoryZ, facing the hall (-X).
+-- It spans z ArmorySpan (Armory.HalfWidth 29.4 each way) and x ArmoryX..65.6 (Armory.Depth 31.2).
+Lobby.ArmoryX, Lobby.ArmoryZ = 34.4, 105.4
+Lobby.ArmorySpan = { 76, 134.8 }
 -- The floor's recessed panels (x0, x1, z0, z1) between the arms of the cross walkway.
 Lobby.Panels = { { -30, -8, 16, 58 }, { 8, 30, 16, 58 }, { -30, -8, 74, 121 }, { 8, 30, 74, 121 } } -- 16-wide arms, 22-wide panels
 
@@ -3498,14 +2470,14 @@ function Lobby.hall(L)
 	for _, x in { -55.5, -40.5, 40.5, 55.5 } do Lobby.window(h, south, x, 14, 27) end
 	Lobby.window(h, north, 40.5, 14, 27)
 	-- Pillars: every bay on the side walls, flanking the windows on the end walls.
-	-- Behind the ranges the pillars are shallower; behind the EVOLUTIONS podium only their tops show.
+	-- Behind the ranges the pillars are shallower; behind the ARMORY only their tops show.
 	local r0 = Lobby.RangeZ0 - Lobby.RangePitch / 2
 	local r1 = Lobby.RangeZ0 + (#Lobby.Ranges - 0.5) * Lobby.RangePitch
 	for k = 0, 10 do
 		local z = math.clamp(N + k * Lobby.Bay, N + 2.1, S - 2.1)
 		local onTerrace = z > r0 - 2 and z < r1 + 2
 		Lobby.wallPillar(h, V(-W, 0, z), V(1, 0, 0), onTerrace and 'range' or 'full', onTerrace and Lobby.terraceHeight(z - 1.8) or nil)
-		Lobby.wallPillar(h, V(W, 0, z), V(-1, 0, 0), (z > Lobby.EvoZ[1] - 2 and z < Lobby.EvoZ[2] + 2) and 'above' or 'full')
+		Lobby.wallPillar(h, V(W, 0, z), V(-1, 0, 0), (z > Lobby.ArmorySpan[1] - 2 and z < Lobby.ArmorySpan[2] + 2) and 'above' or 'full')
 	end
 	for _, x in { -63.9, -48, -33, 33, 48, 63.9 } do Lobby.wallPillar(h, V(x, 0, S), V(0, 0, -1)) end
 	-- (The north wall's pillars give way to the loading doors, the portal and TOP REBIRTHS.)
@@ -3544,7 +2516,8 @@ function Lobby.hall(L)
 	-- The hall's big signs on the steel band, like the reference's PETS and CLONE MACHINE.
 	local signs = h:group('WallSigns')
 	Lobby.wallSign(signs, 'RangeSign', V(-W + 2.4, 32.5, 70), V(1, 0, 0), 46, 7, 'SHOOTING RANGE', 'SHOOT TO GAIN 💪 POWER')
-	Lobby.wallSign(signs, 'EvolutionsSign', V(W - 2.4, 32.5, 105), V(-1, 0, 0), 40, 7, 'EVOLUTIONS', 'EVOLVE YOUR LOOK')
+	Lobby.wallSign(signs, 'ArmorySign', V(W - 2.4, 32.5, Lobby.ArmoryZ), V(-1, 0, 0), 40, 7, 'ARMORY', 'BETTER GUN = MORE POWER PER SHOT')
+	Lobby.wallSign(signs, 'ShoeBoxSign', V(0, 24.4, S - 0.9), V(0, 0, -1), 31, 7, 'SHOE BOXES', 'UNBOX FRESH KICKS • SOON')
 
 	-- Roof: a slate ceiling, steel-blue box trusses (two along the hall, one across every bay), rows of fluorescent
 	-- bars (a dark housing over a white tube) hung on wires under them. Everything up here is named Roof* (the
@@ -3623,7 +2596,7 @@ end
 -- colours, one icon and word each.
 function Lobby.banners(r)
 	local H = Lobby.H
-	for _, b in { { -40, 51, C(222, 44, 52), '💪', 'POWER' }, { 44.5, 51, C(40, 120, 230), '🎯', 'AIM' }, { -40, 81, C(150, 70, 230), '👑', 'BOSS' }, { 40, 81, C(250, 190, 30), '⭐', 'STAR' } } do
+	for _, b in { { -40, 51, C(222, 44, 52), '💪', 'POWER' }, { 44.5, 51, C(40, 120, 230), '🎯', 'AIM' }, { -40, 81, C(150, 70, 230), '👑', 'BOSS' }, { 44.5, 81, C(250, 190, 30), '⭐', 'STAR' } } do
 		local x, z = b[1], b[2]
 		local panel = r:box('RoofBanner', V(x - 1.6, 23.6, z - 0.08), V(x + 1.6, 31.6, z + 0.08), b[3], M.Fabric) -- (bottoms above the sneaker wire's line)
 		for _, face in { Enum.NormalId.Front, Enum.NormalId.Back } do
@@ -3882,93 +2855,75 @@ function Lobby.terraceDressing(t, skins, XS, XF, zN, zS, sz, n, rise)
 	line(surface(free, Enum.NormalId.Top, 24), 'Text', 'FREE ▲', K.safety, FONT.loud, 0.05, 0.9, C(60, 30, 0), 2)
 end
 
----------------------------------------------------------------------------------------------- armory dais
--- The hero dais at the back centre (the reference's PETS dais): a raised studded platform with a light diamond-
--- plate top, cyan neon edges and two front steps, the armory on it, a big white-framed ARMORY sign above.
-Lobby.DaisTop, Lobby.DaisZ = 2.4, 128
-function Lobby.armoryDais(L)
-	local K, S = Lobby.Colors, Lobby.S
-	local d = L:group('ArmoryDais')
-	local top, z0 = Lobby.DaisTop, Lobby.DaisZ
-	Lobby.slab(d, 'Dais', V(-28, 0, z0), V(28, top - 0.05, S), K.dais)
-	d:box('DaisPlate', V(-27.4, top - 0.05, z0 + 0.6), V(27.4, top, S - 0.6), K.plate, M.DiamondPlate)
-	for s = 1, 2 do
-		Lobby.slab(d, 'DaisStep', V(-24, 0, z0 - s * 1.2), V(24, top * (3 - s) / 3, z0 - (s - 1) * 1.2), s == 1 and K.step or K.stepDark)
-	end
-	decor(d:box('DaisNeon', V(-28.2, top - 0.45, z0 - 0.25), V(28.2, top - 0.15, z0), K.cyan, M.Neon)).CastShadow = false
+---------------------------------------------------------------------------------------------- shoe box dais
+-- The back wall's centre (the reference's PETS / egg dais): a small studded podium with cyan neon edges and a
+-- step along its front, four big cartoon sneaker boxes floating and turning over little pedestals in rarity
+-- colours (common grey, rare blue, epic purple, legendary gold), the SHOE BOXES sign on the wall above (made in
+-- Lobby.hall). One ComingSoon prompt ("Shoe Boxes"); no unboxing yet. Lobby.Slots.ShoeBoxes is the dais's front
+-- centre on its top, facing the hall; Lobby.SlotSizes.ShoeBoxes its size (local x -19..19, y up to 12, z 0..16).
+Lobby.ShoeDais = { X = 19, Z0 = 140, Top = 1.2 }
+Lobby.SlotSizes = {}
+Lobby.ShoeBoxes = {
+	{ Name = 'COMMON', Color = C(176, 182, 196), Trim = C(236, 238, 244), X = 13.8 },
+	{ Name = 'RARE', Color = C(50, 130, 240), Trim = C(170, 214, 255), X = 4.6 },
+	{ Name = 'EPIC', Color = C(150, 80, 230), Trim = C(220, 180, 255), X = -4.6 },
+	{ Name = 'LEGENDARY', Color = C(250, 190, 30), Trim = C(255, 240, 160), X = -13.8 },
+}
+-- One sneaker box (local: centre bottom at the origin, front -Z): a body in the rarity colour, a white band, a
+-- lid a size bigger, two sneaker-stripe flashes on the sides, the rarity word and a 👟 on the front.
+function Lobby.shoeBox(c, b, scale)
+	local k = scale or 1
+	local function B(name, lo, hi, color, mat) return c:box(name, lo * k, hi * k, color, mat or M.SmoothPlastic) end
+	B('ShoeBoxBody', V(-2.5, 0, -1.7), V(2.5, 2.5, 1.7), b.Color)
+	B('ShoeBoxBand', V(-2.52, 0.9, -1.72), V(2.52, 1.4, 1.72), b.Trim)
+	B('ShoeBoxLid', V(-2.65, 2.4, -1.85), V(2.65, 3.1, 1.85), b.Color:Lerp(P.white, 0.18))
+	B('ShoeBoxLidBand', V(-2.67, 2.55, -1.87), V(2.67, 2.75, 1.87), b.Trim)
 	for _, sx in { -1, 1 } do
-		local a, b = math.min(sx * 28, sx * 28.25), math.max(sx * 28, sx * 28.25)
-		decor(d:box('DaisNeon', V(a, top - 0.45, z0), V(b, top - 0.15, S), K.cyan, M.Neon)).CastShadow = false
+		local x = sx * 2.53
+		c:part('ShoeBoxFlash', V(0.06, 0.4, 2.4) * k, CFrame.new(V(x, 1.75, 0.2) * k) * CFrame.Angles(math.rad(-20), 0, 0), P.white, M.SmoothPlastic)
+		c:part('ShoeBoxFlash', V(0.06, 0.3, 1.6) * k, CFrame.new(V(x, 0.55, -0.3) * k) * CFrame.Angles(math.rad(-20), 0, 0), P.white, M.SmoothPlastic)
 	end
-	local cf = CFrame.lookAt(V(0, 24.4, S - 0.9), V(0, 24.4, 0)) -- just over the armory's own banner (top y 18.4)
-	d:part('ArmorySignFrame', V(34, 10, 0.4), cf * CFrame.new(0, 0, 0.3), K.frame, M.SmoothPlastic)
-	local board = Lobby.board(d, 'ArmorySign', cf, 31, 7.6, C(216, 222, 236), {
-		{ 'Title', 'ARMORY', C(40, 56, 104), FONT.loud, 0.1, 0.8, P.white, 5 },
-	}, 12)
-	studs(board)
-	Lobby.neonFrame(d, cf, 31, 7.6, K.cyan, 0.3)
+	local face = ghost(c:part('ShoeBoxFace', V(4.6, 2.2, 0.05) * k, CFrame.new(V(0, 1.2, -1.75) * k), P.white))
+	local g = surface(face, Enum.NormalId.Front, 20)
+	line(g, 'Kick', '👟', P.white, FONT.loud, 0.02, 0.5)
+	line(g, 'Rarity', b.Name, P.white, FONT.loud, 0.56, 0.36, b.Color:Lerp(P.black, 0.5), 2)
+end
+function Lobby.shoeDais(L)
+	local K, S = Lobby.Colors, Lobby.S
+	local d0 = Lobby.ShoeDais
+	local X, z0, top = d0.X, d0.Z0, d0.Top
+	local d = L:group('ShoeBoxDais')
+	studs(d:box('ShoeDaisStep', V(-X + 2, 0, z0 - 1.2), V(X - 2, top / 2, z0), K.step, M.Plastic), true)
+	studs(d:box('ShoeDais', V(-X, 0, z0), V(X, top, S), K.dais, M.Plastic), true)
+	decor(d:box('ShoeDaisNeon', V(-X - 0.2, top - 0.4, z0 - 0.25), V(X + 0.2, top - 0.15, z0), K.cyan, M.Neon)).CastShadow = false
+	for _, sx in { -1, 1 } do
+		local a, b = sx * X, sx * (X + 0.25)
+		decor(d:box('ShoeDaisNeon', V(math.min(a, b), top - 0.4, z0), V(math.max(a, b), top - 0.15, S), K.cyan, M.Neon)).CastShadow = false
+	end
+	local zb = z0 + 7.5
+	for i, b in Lobby.ShoeBoxes do
+		local base = V(b.X, top + 0.04, zb)
+		d:post('ShoeBoxPedestal', 3.4, 1.3, base, C(240, 242, 248), M.SmoothPlastic)
+		decor(d:post('ShoeBoxPedestalRing', 3.52, 0.25, base + V(0, 0.95, 0), b.Color, M.Neon)).CastShadow = false
+		local k = i == #Lobby.ShoeBoxes and 1.55 or 1.4
+		local hover = base + V(0, 1.3 + 1.0, 0)
+		local bc, box = d:at(CFrame.new(hover) * CFrame.Angles(0, math.rad(-12 + i * 8), 0)):group('ShoeBox')
+		Lobby.shoeBox(bc, b, k)
+		Lobby.motion(box, CFrame.new(hover), 16, 0.3, 2.4 + i * 0.2)
+		if i == #Lobby.ShoeBoxes then
+			local fx = Lobby.emitBox(d, 'ShoeBoxFx', hover + V(-4, 0.5, -3), hover + V(4, 5.6, 3))
+			Lobby.fx(fx, 'ShoeBoxGlints', 'sparkle', { Rate = 6, Lifetime = NumberRange.new(0.8, 1.4), Speed = NumberRange.new(0.3, 1),
+				Size = Lobby.seq({ { 0, 0 }, { 0.3, 0.8 }, { 1, 0 } }), Color = ColorSequence.new(C(255, 230, 120)), LightEmission = 1 })
+			light(fx, C(255, 210, 90), 1.2, 14)
+		end
+	end
+	-- the prompt (coming soon), on the dais's front edge
+	local hit = ghost(d:box('ShoeBoxPrompt', V(-4, top, z0 + 0.4), V(4, top + 3, z0 + 2), P.white))
+	Lobby.prompt(hit, 'Open', 'Shoe Boxes').MaxActivationDistance = 14
+	Lobby.Slots.ShoeBoxes = CFrame.new(0, top, z0)
+	Lobby.SlotSizes.ShoeBoxes = V(2 * X, 12, S - z0)
 	return d
 end
-
----------------------------------------------------------------------------------------------- feature pads
--- Feature pads on the east side at the reference's gamepass scale: a 16x16 checkered floor patch, an 11x11 white
--- plinth with a step on the hall side and neon round its top, the feature's icon turning over a glowing ring,
--- and a chunky label board square to the hall (a deep frame in the pad colour, a white border), a small SOON
--- chip on its corner. Each has a ProximityPrompt with the ComingSoon attribute (the HUD
--- toasts it). Display only. A yellow safety line runs along the walkway in front of them.
-Lobby.PadX = 50
-Lobby.FeaturePads = {
-	{ Name = '2x POWER', Color = C(40, 140, 255), Icon = 'Evolve', Z = 27 },
-	{ Name = 'AUTO SHOOT', Color = C(160, 80, 240), Icon = 'Gun', Z = 43 },
-	{ Name = 'x2 CASH', Color = C(250, 196, 30), Icon = 'Cash', Z = 59 },
-}
-function Lobby.featurePads(L)
-	local K = Lobby.Colors
-	local okIcons, Icons = pcall(function() return require(ReplicatedStorage.Shared.Models.IconModels) end)
-	local dark, white = C(44, 46, 60), C(246, 247, 252)
-	for _, fp in Lobby.FeaturePads do
-		local at = CFrame.lookAt(V(Lobby.PadX, 0, fp.Z), V(0, 0, fp.Z)) -- -Z faces the hall
-		Lobby.Slots['FeaturePad_' .. fp.Name:gsub('%W', '')] = at
-		local p = L:at(at):group('FeaturePad')
-		Lobby.slab(p, 'PadPatch', V(-8, 0, -8), V(8, 0.15, 8), white)
-		for i = 0, 3 do
-			for j = 0, 3 do
-				if (i + j) % 2 == 0 then Lobby.slab(p, 'PadPatchTile', V(-8 + i * 4, 0, -8 + j * 4), V(-4 + i * 4, 0.16, -4 + j * 4), dark) end
-			end
-		end
-		local plinth = Lobby.slab(p, 'PadPlinth', V(-5.5, 0, -5.5), V(5.5, 1.6, 5.5), C(236, 238, 246))
-		Lobby.slab(p, 'PadStep', V(-5.5, 0, -6.5), V(5.5, 0.8, -5.5), C(236, 238, 246))
-		for _, e in { { V(-5.5, 1.6, -5.5), V(0, 1.66, 0) }, { V(0, 1.6, 0), V(5.5, 1.66, 5.5) } } do
-			decor(p:box('PadTile', e[1], e[2], dark, M.SmoothPlastic)).CastShadow = false
-		end
-		for _, e in { { V(-5.6, 1.25, -5.65), V(5.6, 1.6, -5.5) }, { V(-5.65, 1.25, -5.5), V(-5.5, 1.6, 5.5) }, { V(5.5, 1.25, -5.5), V(5.65, 1.6, 5.5) } } do
-			decor(p:box('PadNeon', e[1], e[2], fp.Color, M.Neon)).CastShadow = false
-		end
-		-- The icon, turning and bobbing over a glowing ring.
-		decor(p:part('PadRing', V(0.12, 7.4, 7.4), CFrame.new(0, 1.72, 0) * CFrame.Angles(0, 0, math.pi / 2), fp.Color:Lerp(P.white, 0.3), M.Neon, Enum.PartType.Cylinder)).CastShadow = false
-		if okIcons and Icons and Icons.build then
-			local okB, icon = pcall(Icons.build, fp.Icon, 3.5)
-			if okB and icon then
-				icon:PivotTo(V2.Origin * p.cf * CFrame.new(0, 6.2, 0))
-				icon.Parent = p.parent
-				Lobby.motion(icon, at * CFrame.new(0, 6.2, 0), 40, 0.4)
-			end
-		end
-		-- The label board behind the plinth, on two posts.
-		local bc = p:at(CFrame.new(0, 0, 6.6))
-		for _, x in { -5.6, 5.6 } do bc:box('PadPost', V(x - 0.35, 0, -0.35), V(x + 0.35, 7.0, 0.35), K.steel, M.SmoothPlastic) end
-		studs(bc:box('PadBoardFrame', V(-7.3, 6.75, -0.4), V(7.3, 14.85, 0.4), fp.Color, M.Plastic), true)
-		bc:box('PadBoardBorder', V(-6.9, 7.15, -0.5), V(6.9, 14.45, -0.4), P.white, M.SmoothPlastic)
-		Lobby.board(bc, 'PadBoard', CFrame.new(0, 10.8, -0.65), 13, 6.5, fp.Color, { { 'Title', fp.Name, P.white, FONT.loud, 0.1, 0.8, fp.Color:Lerp(P.black, 0.55), 5 } }, 16)
-		local chip = Lobby.board(bc, 'PadSoon', CFrame.new(-4.6, 15.0, -0.75), 4, 1.4, C(226, 40, 52), { { 'Text', 'SOON', P.white, FONT.loud, 0.08, 0.84, C(90, 0, 10), 2 } }, 24)
-		decor(chip)
-		local pr = Lobby.prompt(plinth, 'Get', fp.Name)
-		pr.MaxActivationDistance = 10
-	end
-	local z0, z1 = Lobby.FeaturePads[1].Z - 8, Lobby.FeaturePads[#Lobby.FeaturePads].Z + 8
-	decor(L:box('SafetyLine', V(Lobby.PadX - 10.2, 0.12, z0), V(Lobby.PadX - 9.8, 0.15, z1), Lobby.Colors.safety, M.SmoothPlastic)).CastShadow = false
-end
-
 
 ---------------------------------------------------------------------------------------------- spawn badge
 -- Our logo at the crossing: a royal-blue plate, a slowly turning gold eight-point star, a red "+1" disc in a cyan
@@ -5150,13 +4105,11 @@ end
 ---------------------------------------------------------------------------------------------- slots
 function Lobby.slots(L)
 	local D = Lobby.Deck
-	-- The EVOLUTIONS podium on the east side, its front (and the WARDROBE at its front corner) to the walkway.
-	Lobby.place(L, L.parent, 'Evolutions', CFrame.new(33, D, 104) * CFrame.Angles(0, math.pi / 2, 0), { X = 57.6, Y = 20, Z0 = 0, Z1 = 32 }, 'EVOLUTIONS', C(80, 220, 255),
-		Evolutions and function(c) Evolutions.build(c, {}) end)
-	decor(L:box('SafetyLine', V(31.6, D + 0.12, Lobby.EvoZ[1]), V(32, D + 0.15, Lobby.EvoZ[2]), Lobby.Colors.safety, M.SmoothPlastic)).CastShadow = false
-	-- The ARMORY on its dais at the back, front to the spawn.
-	Lobby.place(L, L.parent, 'Armory', CFrame.new(0, Lobby.DaisTop, Lobby.DaisZ + 6), { X = 48, Y = 6, Z0 = -2, Z1 = 18 }, 'ARMORY', C(255, 90, 160),
+	-- The ARMORY on the east side, its front to the hall (west), a yellow safety line in front of it.
+	local ax, az = Lobby.ArmoryX, Lobby.ArmoryZ
+	Lobby.place(L, L.parent, 'Armory', CFrame.lookAt(V(ax, D, az), V(0, D, az)), { X = 58.8, Y = 21, Z0 = 0, Z1 = 31.2 }, 'ARMORY', C(255, 90, 160),
 		Armory and function(c) Armory.build(c, {}) end)
+	decor(L:box('SafetyLine', V(ax - 2.4, D + 0.12, Lobby.ArmorySpan[1]), V(ax - 2, D + 0.15, Lobby.ArmorySpan[2]), Lobby.Colors.safety, M.SmoothPlastic)).CastShadow = false
 end
 
 ---------------------------------------------------------------------------------------------- dressing
@@ -5217,7 +4170,7 @@ end
 
 ---------------------------------------------------------------------------------------------- build
 Lobby.RewardAt = {
-	DailyCrate = CFrame.lookAt(V(57, 0, 140.5), V(0, 0, 140.5)), -- SE corner behind the podium, hasp to the hall
+	DailyCrate = CFrame.lookAt(V(56.8, 0, 145), V(0, 0, 145)), -- SE corner past the armory's south end, hasp to the hall
 	LuckyShot = CFrame.new(-42, 0, 20.5), -- NW apron, by the terrace's north stair (the wheel spins; open from every side)
 	VipSafe = CFrame.lookAt(V(39.6, 0, 12.4), V(39.6, 0, 60)), -- north wall, between TOP REBIRTHS and the NE loading door (x 34..45, clear of BAY 3)
 }
@@ -5229,9 +4182,8 @@ function Lobby.build(ctx, skins)
 	Lobby.floorPlan(L)
 	Lobby.badge(L)
 	Lobby.rangeRow(L, skins)
-	Lobby.armoryDais(L)
+	Lobby.shoeDais(L)
 	Lobby.slots(L)
-	Lobby.featurePads(L)
 	Lobby.rewards(L)
 	Lobby.Slots.World2Portal = CFrame.new(-27, 0, 11) * CFrame.Angles(0, math.pi, 0)
 	Lobby.portal(L, Lobby.Slots.World2Portal)
@@ -5242,7 +4194,7 @@ function Lobby.build(ctx, skins)
 	for name, cf in Lobby.RewardAt do Lobby.Slots[name] = cf end
 	Lobby.Slots.NorthDoor = CFrame.new(0, 0, Lobby.N)
 	local boards = L:group('Leaderboards')
-	for k, e in { { V(-60.5, 0, 124), V(0, 0, 124), 'TOP CASH', C(44, 170, 80), 'CashLeaderboard' }, { V(24, 0, 9.5), V(24, 0, 60), 'TOP REBIRTHS', C(132, 62, 212) }, { V(49, 0, 150.5), V(49, 0, 100), 'TOP POWER', C(222, 52, 52), 'ServerLeaderboard' } } do
+	for k, e in { { V(-60.5, 0, 124), V(0, 0, 124), 'TOP CASH', C(44, 170, 80), 'CashLeaderboard' }, { V(24, 0, 9.5), V(24, 0, 60), 'TOP REBIRTHS', C(132, 62, 212) }, { V(38, 0, 150.5), V(38, 0, 100), 'TOP POWER', C(222, 52, 52), 'ServerLeaderboard' } } do
 		local cf = CFrame.lookAt(e[1], e[2])
 		Lobby.Slots['Leaderboard' .. k] = cf
 		Lobby.leaderboard(boards, cf, e[3], e[4], e[5])
@@ -5743,10 +4695,10 @@ function V2.Build()
 	end
 	local root = Instance.new('Model')
 	root.Name = 'TheBlockV2'
-	root:SetAttribute('BuildVersion', 'Hood Evolution W1 lobby hall B2')
+	root:SetAttribute('BuildVersion', 'Hood Evolution W1 lobby C1 armory east, shoe boxes')
 	root:SetAttribute('Origin', V2.Origin.Position)
 	root:SetAttribute('LobbySpawn', SPAWN)
-	root:SetAttribute('MorphStand', true) -- the lobby's EVOLUTIONS podium holds the Morphs stands
+	root:SetAttribute('MorphStand', false) -- no Morphs stands in the world any more: looks are equipped from the HUD's EVOLVE menu
 	local ctx = newCtx(root, CFrame.new())
 
 	buildGround(ctx)
