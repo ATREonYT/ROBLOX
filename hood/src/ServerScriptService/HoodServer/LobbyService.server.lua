@@ -82,7 +82,7 @@ local function equipAppearance(player,id)
 end
 remote.OnServerEvent:Connect(function(player,id)
  if type(id)~='string' or not Skins.ById[id] then return end
- local now=os.clock();if now-(cooldown[player] or 0)<.35 then return end;cooldown[player]=now
+ local now=os.clock();if now-(cooldown[player] or 0)<1 then return end;cooldown[player]=now
  local profile=Data.get(player);local c=player.Character;local root=c and c:FindFirstChild('HumanoidRootPart');local h=c and c:FindFirstChild('Humanoid')
  if not profile or not root or not h or h.Health<=0 then return end
  local morphs=lobby:FindFirstChild('Morphs',true);local stand=morphs and morphs:FindFirstChild('Skin_'..id);local target=stand and stand:FindFirstChild('Interact')

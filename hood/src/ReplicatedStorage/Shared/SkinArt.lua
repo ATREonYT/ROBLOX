@@ -651,7 +651,7 @@ function Looks.Hustler(W, s)
 end
 
 -- 6. Crook: black leather biker jacket (asymmetric zip, wide collar, silver studs, a red winged-wheel patch and
--- a stud row on the back), red tee, red bandana tied round the head, a boombox riding the left shoulder.
+-- a stud row on the back), red tee, red bandana tied round the head, a big boombox carried in the left hand.
 function Looks.Crook(W, s)
 	local leather, red, box = s.Color, s.Accent, s.Trim or K.silver
 	local hide = leather:Lerp(K.white, 0.08)
@@ -687,19 +687,19 @@ function Looks.Crook(W, s)
 	for i = -2, 2 do W:box('Head', 'BandanaPrint', V(0.08, 0.08, 0.02), V(i * 0.3, HT - 0.06, -0.7), K.white) end
 	glasses(W, 'shades', K.ink, C(60, 30, 40))
 	face(W, s, s.Expression, { noEyes = true })
-	-- Boombox carried in the left hand by its handle, hanging at the side and turned so the speakers show
-	-- from the front (well clear of the head whatever the arm does).
-	local turn = ANG(0, rad(-28), 0)
-	local b = V(-1.86, 1.42, -0.1)
-	local function at(v) return b + turn * v end
-	W:box('LeftHand', 'Boombox', V(0.5, 0.86, 1.56), b, box, { mat = 'metal', rot = turn })
+	-- A big boombox carried in the left hand by its handle, hanging at the side (outside the leg) and turned
+	-- 45 degrees so both speakers face front; well clear of the head whatever the arm does.
+	local turn = ANG(0, rad(-45), 0)
+	local b, k = V(-1.98, 1.4, -0.05), 1.2
+	local function at(v) return b + turn * (v * k) end
+	W:box('LeftHand', 'Boombox', V(0.5, 0.86, 1.56) * k, b, box, { mat = 'metal', rot = turn })
 	for _, dz in { -0.44, 0.44 } do
-		W:cyl('LeftHand', 'Speaker', 0.06, 0.62, at(V(-0.27, -0.04, dz)), K.ink, 'x', { rot = turn })
-		W:cyl('LeftHand', 'SpeakerCone', 0.06, 0.26, at(V(-0.31, -0.04, dz)), red, 'x', { rot = turn })
+		W:cyl('LeftHand', 'Speaker', 0.06 * k, 0.62 * k, at(V(-0.27, -0.04, dz)), K.ink, 'x', { rot = turn })
+		W:cyl('LeftHand', 'SpeakerCone', 0.06 * k, 0.26 * k, at(V(-0.31, -0.04, dz)), red, 'x', { rot = turn })
 	end
-	W:box('LeftHand', 'TapeDeck', V(0.06, 0.3, 0.32), at(V(-0.27, 0.12, 0)), K.ink, { rot = turn })
-	W:box('LeftHand', 'BoomboxHandle', V(0.14, 0.12, 1.1), at(V(0, 0.58, 0)), K.ink, { rot = turn })
-	for _, dz in { -0.5, 0.5 } do W:box('LeftHand', 'HandlePost', V(0.1, 0.16, 0.1), at(V(0, 0.48, dz)), K.ink, { rot = turn }) end
+	W:box('LeftHand', 'TapeDeck', V(0.06, 0.3, 0.32) * k, at(V(-0.27, 0.12, 0)), K.ink, { rot = turn })
+	W:box('LeftHand', 'BoomboxHandle', V(0.14, 0.12, 1.1) * k, at(V(0, 0.58, 0)), K.ink, { rot = turn })
+	for _, dz in { -0.5, 0.5 } do W:box('LeftHand', 'HandlePost', V(0.1, 0.16, 0.1) * k, at(V(0, 0.48, dz)), K.ink, { rot = turn }) end
 end
 
 -- 7. Getaway Driver: yellow racing jacket (black stripes, checker panel, a big "7" roundel and a checker band
@@ -735,21 +735,26 @@ function Looks.GetawayDriver(W, s)
 	hair(W, s, 'pompadour')
 	glasses(W, 'aviators', K.gold, C(40, 170, 200))
 	face(W, s, s.Expression, { noEyes = true })
-	-- Racing helmet held by the chin bar: shell, visor, stripe.
-	local h = V(-1.68, 1.5, -0.2)
-	W:box('LeftHand', 'Helmet', V(1.2, 1.15, 1.25), h, helmet, { mat = 'shiny' })
-	W:box('LeftHand', 'HelmetTop', V(1.0, 0.18, 1.05), h + V(0, 0.66, 0), helmet, { mat = 'shiny' })
-	W:cyl('LeftHand', 'Stud', 0.08, 0.34, h + V(0, 0.79, 0), helmet, 'y', { mat = 'shiny' })
-	W:box('LeftHand', 'HelmetStripe', V(0.26, 1.36, 1.28), h + V(0, 0.08, 0), K.white)
-	W:box('LeftHand', 'Visor', V(0.9, 0.42, 0.06), h + V(0, 0.1, -0.64), K.ink, { mat = 'shiny' })
+	-- Racing helmet held by the chin bar, turned so its wide visor faces front-left: red shell, two thin
+	-- yellow racing stripes over the top, a dark visor across the upper front and a chin vent below it.
+	local turn = ANG(0, rad(30), 0)
+	local h = V(-1.7, 1.5, -0.2)
+	local function at(v) return h + turn * v end
+	W:box('LeftHand', 'Helmet', V(1.2, 1.15, 1.25), h, helmet, { mat = 'shiny', rot = turn })
+	W:box('LeftHand', 'HelmetTop', V(1.0, 0.18, 1.05), at(V(0, 0.66, 0)), helmet, { mat = 'shiny', rot = turn })
+	W:cyl('LeftHand', 'Stud', 0.08, 0.34, at(V(0, 0.79, 0)), helmet, 'y', { mat = 'shiny', rot = turn })
+	sides(function(sx) W:box('LeftHand', 'HelmetStripe', V(0.1, 1.32, 1.29), at(V(sx * 0.2, 0.105, 0)), jacket, { rot = turn }) end)
+	W:box('LeftHand', 'Visor', V(1.02, 0.4, 0.06), at(V(0, 0.2, -0.655)), C(26, 34, 60), { mat = 'shiny', rot = turn })
+	W:box('LeftHand', 'ChinVent', V(0.5, 0.08, 0.04), at(V(0, -0.3, -0.64)), K.ink, { rot = turn })
 end
 
 -- 8. Enforcer: red leather sleeveless vest with gold studs over a white tank top, a black-and-red flat cap,
--- big arms with tattoos, beard and shades, a shoulder holster, a heavy gold rope chain, gold rings.
+-- big arms with tattoos, black fingerless gloves with studded wristbands, beard and shades, a shoulder holster
+-- and a big gold rope chain with a padlock.
 function Looks.Enforcer(W, s)
 	local vest, tank, holster = s.Color, s.Accent, s.Trim or K.brown
 	local vestDark = vest:Lerp(K.ink, 0.3)
-	W:paint({ Head = s.Skin, UpperTorso = tank, LowerTorso = s.Pants, UpperArm = s.Skin, LowerArm = s.Skin, Hand = s.Skin, UpperLeg = s.Pants, LowerLeg = s.Pants, Foot = K.ink })
+	W:paint({ Head = s.Skin, UpperTorso = tank, LowerTorso = s.Pants, UpperArm = s.Skin, LowerArm = s.Skin, Hand = K.ink, UpperLeg = s.Pants, LowerLeg = s.Pants, Foot = K.ink })
 	-- The vest: two front panels, a back panel, shoulder straps; gold studs down the front edges and a gold
 	-- diamond of studs on the back.
 	sides(function(sx, side)
@@ -760,7 +765,10 @@ function Looks.Enforcer(W, s)
 		W:box(side .. 'UpperArm', 'Bicep', V(1.14, 0.62, 1.1), V(sx * 1.52, 3.48, 0), s.Skin)
 		band(W, side .. 'UpperArm', 'Tattoo', sx * 1.52, 3.66, 0.1, 1.15, 1.12, C(40, 60, 110))
 		W:box(side .. 'UpperArm', 'TattooStar', V(0.04, 0.2, 0.2), V(sx * 2.1, 3.38, 0), C(40, 60, 110), { rot = ANG(rad(45), 0, 0) })
-		band(W, side .. 'Hand', 'Ring', sx * 1.5, 2.2, 0.08, 1.04, 1.04, K.gold, { mat = 'gold' })
+		-- Black fingerless gloves (the hands) with a red edge, and black wristbands with silver studs.
+		band(W, side .. 'Hand', 'GloveEdge', sx * 1.5, 2.27, 0.05, 1.04, 1.04, vest)
+		band(W, side .. 'LowerArm', 'Wristband', sx * 1.5, 2.46, 0.26, 1.08, 1.13, K.ink, { mat = 'shiny' })
+		for i = -1, 1 do W:ball(side .. 'LowerArm', 'WristStud', 0.12, V(sx * 2.04, 2.46, i * 0.3), K.silver, { mat = 'metal' }) end
 		shoe(W, sx, 'boot', K.ink, K.ink, K.ink)
 	end)
 	W:box('Torso', 'VestBack', V(0.8, 1.9, 0.06), V(0, 3.02, BZ(1)), vest, { mat = 'shiny' })
@@ -771,12 +779,14 @@ function Looks.Enforcer(W, s)
 	W:box('LowerTorso', 'BeltBuckle', V(0.3, 0.2, 0.04), V(0, 2.3, -0.57), K.gold, { mat = 'gold' })
 	-- Shoulder holster: harness strap and a holster under the left arm with a grip.
 	W:box('UpperTorso', 'HarnessStrap', V(0.14, 1.5, 0.04), V(-0.66, 3.3, -0.57), holster, { rot = ANG(0, 0, rad(-12)) })
-	W:box('UpperTorso', 'Holster', V(0.3, 0.7, 0.42), V(-1.13, 3.0, -0.18), holster)
-	W:box('UpperTorso', 'HolsterGrip', V(0.22, 0.32, 0.22), V(-1.13, 3.42, -0.3), K.ink, { rot = ANG(rad(-20), 0, 0) })
-	-- Heavy gold rope chain with a padlock pendant.
-	chain(W, 'GoldRope', 4.0, 0.95, 0.16, K.gold, 3, function(y, z)
-		W:box('UpperTorso', 'LockPendant', V(0.4, 0.36, 0.06), V(0, y, z), K.gold, { mat = 'gold' })
-		W:box('UpperTorso', 'LockShackle', V(0.26, 0.18, 0.05), V(0, y + 0.24, z), K.gold, { mat = 'gold' })
+	-- (tucked high under the arm, above the forearm's reach when the arms swing)
+	W:box('UpperTorso', 'Holster', V(0.24, 0.5, 0.42), V(-1.05, 3.62, -0.18), holster)
+	W:box('UpperTorso', 'HolsterGrip', V(0.2, 0.26, 0.22), V(-1.05, 3.9, -0.3), K.ink, { rot = ANG(rad(-20), 0, 0) })
+	-- Big gold rope chain with a padlock pendant (the look's 30-stud cue on the white tank).
+	chain(W, 'GoldRope', 4.0, 1.12, 0.22, K.gold, 3, function(y, z)
+		W:box('UpperTorso', 'LockPendant', V(0.54, 0.48, 0.08), V(0, y - 0.06, z), K.gold, { mat = 'gold' })
+		W:box('UpperTorso', 'LockShackle', V(0.34, 0.22, 0.06), V(0, y + 0.26, z), K.gold, { mat = 'gold' })
+		W:box('UpperTorso', 'LockKeyhole', V(0.08, 0.16, 0.03), V(0, y - 0.08, z - 0.05), K.goldDark, { mat = 'gold' })
 	end)
 	-- Flat cap (black wool, red band, a short peak), full beard, shades, an earpiece.
 	W:box('Head', 'FlatCap', V(1.62, 0.3, 1.44), V(0, HT + 0.1, 0.05), vestDark:Lerp(K.ink, 0.6))
@@ -851,22 +861,22 @@ function Looks.Gangster(W, s)
 	-- Padded shoulders (on the arms, so they lift with them) and the long drape jacket, pinstripes.
 	sides(function(sx, side)
 		W:box(side .. 'UpperArm', 'ShoulderPad', V(1.2, 0.28, 1.14), V(sx * 1.55, 3.99, 0), suit)
-		W:box('LowerTorso', 'JacketSkirt', V(1.04, 1.0, 1.1), V(sx * 0.5, 1.75, 0), suit)
+		-- The long drape skirt hangs on the thighs (halves that stride with the legs), pinstriped in front.
+		W:box(side .. 'UpperLeg', 'Pinstripe', V(0.03, 0.72, 0.03), V(sx * 0.7, 1.62, -0.63), stripe)
 		band(W, side .. 'LowerArm', 'ShirtCuff', sx * 1.5, 2.36, 0.1, 1.04, 1.04, K.white)
 		band(W, side .. 'LowerLeg', 'PegCuff', sx * 0.5, 0.36, 0.12, 0.96, 0.96, suit:Lerp(K.ink, 0.3))
 		shoe(W, sx, 'spectator', K.white, K.ink, K.ink)
 	end)
 	pinstripes(W, 'UpperTorso', -0.85, -0.55, 3.2, 1.6, FZ(1), stripe, 0.3)
 	pinstripes(W, 'UpperTorso', 0.55, 0.85, 3.2, 1.6, FZ(1), stripe, 0.3)
-	sides(function(sx) W:box('LowerTorso', 'Pinstripe', V(0.03, 0.98, 0.02), V(sx * 0.7, 1.75, -0.565), stripe) end)
+	legCoat(W, suit, 1.02, 1.25)
 	-- The back: pinstripes, a half-belt with gold buttons, a centre vent.
 	pinstripes(W, 'UpperTorso', -0.75, 0.75, 3.2, 1.6, BZ(1) - 0.01, stripe, 0.5)
 	halfBelt(W, 2.2, 0.57, suit:Lerp(K.ink, 0.2), K.gold)
-	backVent(W, 'LowerTorso', 1.25, 2.1, 0.565, suit:Lerp(K.ink, 0.45))
-	-- Long gold watch chain looping from the belt to the knee and back.
-	W:box('LowerTorso', 'WatchChain', V(0.06, 1.25, 0.06), V(0.86, 1.62, -0.6), K.gold, { mat = 'gold', rot = ANG(0, 0, rad(4)) })
-	W:box('LowerTorso', 'WatchChain', V(0.06, 1.1, 0.06), V(1.06, 1.55, -0.3), K.gold, { mat = 'gold', rot = ANG(rad(-14), 0, 0) })
-	W:box('LowerTorso', 'WatchChainLoop', V(0.06, 0.06, 0.36), V(1.02, 1.0, -0.47), K.gold, { mat = 'gold' })
+	-- Long gold watch chain from the belt down the right thigh and back up the side (rides the leg).
+	W:box('RightUpperLeg', 'WatchChain', V(0.06, 0.95, 0.06), V(0.86, 1.55, -0.66), K.gold, { mat = 'gold', rot = ANG(0, 0, rad(4)) })
+	W:box('RightUpperLeg', 'WatchChain', V(0.06, 0.9, 0.06), V(1.15, 1.55, -0.3), K.gold, { mat = 'gold', rot = ANG(rad(-14), 0, 0) })
+	W:box('RightUpperLeg', 'WatchChainLoop', V(0.06, 0.06, 0.4), V(1.14, 1.1, -0.5), K.gold, { mat = 'gold' })
 	-- Wide-brim hat with a band and a feather.
 	hair(W, s, 'hatted')
 	W:box('Head', 'HatBrim', V(2.5, 0.08, 2.1), V(0, HT + 0.0, 0.02), hat)
@@ -1084,11 +1094,21 @@ function Looks.Kingpin(W, s)
 		-- Ermine rolls on the shoulders ride the arms.
 		W:box(side .. 'UpperArm', 'ErmineShoulder', V(1.2, 0.42, 1.4), V(sx * 1.56, 4.08, 0.04), ermine)
 	end)
-	-- Royal cape (red velvet, gold lining, a gold crown on the back) and the ermine collar on the torso.
-	W:box('UpperTorso', 'Cape', V(3.2, 3.6, 0.14), V(0, 2.25, 0.82), cape)
-	W:box('UpperTorso', 'CapeLining', V(3.0, 3.4, 0.04), V(0, 2.3, 0.73), gold, { mat = 'gold' })
-	W:box('UpperTorso', 'CapeCrownBand', V(1.0, 0.24, 0.04), V(0, 2.9, 0.91), gold, { mat = 'gold' })
-	for i = -1, 1 do W:box('UpperTorso', 'CapeCrownPoint', V(0.22, i == 0 and 0.46 or 0.34, 0.04), V(i * 0.39, 3.1 + (i == 0 and 0.12 or 0.06), 0.91), gold, { mat = 'gold' }) end
+	-- Royal cape (red velvet, gold lining, a gold crown on the back) and the ermine collar on the torso. The
+	-- cape is knee length, no wider than the shoulders' inner edge, and hangs back from the shoulder line at
+	-- 11 degrees, so the legs and the swinging arms pass in front of and beside it.
+	local capeW, capeH, capeTilt, capeZ = 2.3, 2.75, 15, 0.66
+	local tilt = ANG(rad(-capeTilt), 0, 0)
+	local top = V(0, 4.05, capeZ)
+	local function onCape(x, y, z) return top + tilt * V(x, y, z) end
+	W:box('UpperTorso', 'Cape', V(capeW, capeH, 0.14), onCape(0, -capeH / 2, 0), cape, { rot = tilt })
+	-- (the gold lining stops short of the hem, where a running heel kicks up behind)
+	W:box('UpperTorso', 'CapeLining', V(capeW - 0.14, capeH - 0.6, 0.04), onCape(0, -0.05 - (capeH - 0.6) / 2, -0.09), gold, { mat = 'gold', rot = tilt })
+	W:box('UpperTorso', 'CapeCrownBand', V(0.92, 0.22, 0.04), onCape(0, -1.15, 0.09), gold, { mat = 'gold', rot = tilt })
+	for i = -1, 1 do
+		local h = i == 0 and 0.44 or 0.32
+		W:box('UpperTorso', 'CapeCrownPoint', V(0.2, h, 0.04), onCape(i * 0.35, -1.15 + 0.09 + h / 2, 0.09), gold, { mat = 'gold', rot = tilt })
+	end
 	W:box('UpperTorso', 'Ermine', V(2.1, 0.44, 1.46), V(0, 4.12, 0.04), ermine)
 	W:box('UpperTorso', 'ErmineBack', V(2.0, 0.5, 0.4), V(0, 4.4, 0.62), ermine)
 	sides(function(sx)
@@ -1114,12 +1134,13 @@ function Looks.Kingpin(W, s)
 		W:ball('Head', 'CrownTip', 0.2, V(sx * 0.81, HT + 0.8, 0.02), K.emerald, { mat = 'neon' })
 	end)
 	face(W, s, s.Expression)
-	-- Sceptre in the left hand: gold staff, orb, cross.
-	local p = V(-1.66, 1.75, -0.3)
-	W:cyl('LeftHand', 'SceptreStaff', 2.2, 0.16, p, gold, 'y', { mat = 'gold' })
-	W:ball('LeftHand', 'SceptreOrb', 0.5, p + V(0, 1.25, 0), K.sapphire, { mat = 'glass' })
-	W:box('LeftHand', 'SceptreCrossV', V(0.1, 0.36, 0.1), p + V(0, 1.66, 0), gold, { mat = 'gold' })
-	W:box('LeftHand', 'SceptreCrossH', V(0.26, 0.1, 0.1), p + V(0, 1.66, 0), gold, { mat = 'gold' })
+	-- Sceptre in the left hand, carried low and forward with the orb on the fist, so its top stays clear of
+	-- the crown, face and arm in jumps, waves, walks and bent-elbow emotes: gold staff, orb, cross.
+	local p, top = V(-1.66, 1.3, -0.5), 1.0
+	W:cyl('LeftHand', 'SceptreStaff', 1.8, 0.16, p, gold, 'y', { mat = 'gold' })
+	W:ball('LeftHand', 'SceptreOrb', 0.46, p + V(0, top, 0), K.sapphire, { mat = 'glass' })
+	W:box('LeftHand', 'SceptreCrossV', V(0.1, 0.3, 0.1), p + V(0, top + 0.34, 0), gold, { mat = 'gold' })
+	W:box('LeftHand', 'SceptreCrossH', V(0.22, 0.1, 0.1), p + V(0, top + 0.34, 0), gold, { mat = 'gold' })
 end
 
 -- The recipe for a look: { pieces, body } (body = rig part -> colour).
@@ -1488,8 +1509,8 @@ function Art.equip(character, s)
 			local l = Instance.new('PointLight')
 			l.Name = 'TierLight'
 			l.Color = s.Glow
-			l.Brightness = 1.2
-			l.Range = 9 * k
+			l.Brightness = 0.7
+			l.Range = 7 * k
 			l.Shadows = false
 			l.Parent = glow
 		end
