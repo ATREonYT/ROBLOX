@@ -72,7 +72,7 @@ local function paint(e, power)
 	if b then
 		b.CanCollide = state == 'Locked' -- only for you: your own character's collisions run on your machine
 		b.Color = state == 'Ready' and GO or e.Light
-		b.Transparency = state == 'Cleared' and 1 or 0.62 -- see-through enough that the street reads behind it
+		b.Transparency = state == 'Cleared' and 1 or (b:GetAttribute('BaseTransparency') or 0.62) -- the street reads behind it
 	end
 	for _, g in e.Guis do g.Enabled = state ~= 'Cleared' end
 	for _, l in e.Lasers do l.Enabled = state == 'Locked' end
@@ -108,7 +108,7 @@ end)
 RunService.Heartbeat:Connect(function()
 	local t = os.clock()
 	for _, e in gates do
-		if e.State == 'Ready' and e.Barrier then e.Barrier.Transparency = 0.5 + math.sin(t * math.pi / 0.6) * 0.12 end
+		if e.State == 'Ready' and e.Barrier then e.Barrier.Transparency = (e.Barrier:GetAttribute('BaseTransparency') or 0.62) - 0.12 + math.sin(t * math.pi / 0.6) * 0.12 end
 	end
 end)
 

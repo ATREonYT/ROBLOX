@@ -351,6 +351,11 @@ for _, p in workspace:GetDescendants() do
 		local mesh = p:FindFirstChildOfClass("SpecialMesh")
 		if mesh then rec.mesh = mesh.MeshType.Name; rec.ms = { mesh.Scale.X, mesh.Scale.Y, mesh.Scale.Z } end
 		for _, child in p:GetChildren() do
+			-- Disabled GUIs don't draw in Roblox, so they aren't exported (the podium hides its labels until the
+			-- client shows the near ones).
+			if (child:IsA("SurfaceGui") or child:IsA("BillboardGui")) and not child.Enabled then
+				continue
+			end
 			if child:IsA("SurfaceGui") then
 				rec.guis = rec.guis or {}
 				table.insert(rec.guis, { kind = "surface", face = child.Face.Name, labels = labels(child) })
@@ -360,6 +365,7 @@ for _, p in workspace:GetDescendants() do
 				table.insert(rec.guis, {
 					kind = "billboard", sw = sz.X.Scale > 0 and sz.X.Scale or sz.X.Offset / 30, sh = sz.Y.Scale > 0 and sz.Y.Scale or sz.Y.Offset / 30,
 					off = { child.StudsOffset.X, child.StudsOffset.Y, child.StudsOffset.Z }, top = child.AlwaysOnTop, labels = labels(child),
+					maxd = child.MaxDistance,
 				})
 			elseif child:IsA("Texture") then
 				-- Tiled image on one face (the bag stations' stamped X): drawn by the renderer from PreviewTexture.
