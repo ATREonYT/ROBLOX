@@ -1834,11 +1834,13 @@ function Armory.slot(c, gun, x, z, y, colors, lift, scale)
 	Armory.effects(core, gun.Tier, gun.Color)
 	-- (every label in a row at one height, over the tallest gun, like the reference's nameplates)
 	Armory.label(s, V(x, y + ph + 1.0 + Armory.DisplayH * k + (lift or 0.8), z), gun)
-	-- On the front row, a display backboard on the terrace wall behind the gun: a panel in the state colour (the
-	-- client repaints it) in a pale glowing rim, under the nameplate.
+	-- On the front row, a display backboard standing right behind the pad (so the gun is always seen in front of
+	-- its own board, not a neighbour's): a panel in the state colour (the client repaints it) in a pale glowing rim
+	-- on a white stand, under the nameplate.
 	if y < Armory.Step - 1 then
-		local bz, bw, b0, b1 = Armory.TerraceZ - 0.08, 3.7, y + 0.9, y + 6.4
+		local bz, bw, b0, b1 = z + Armory.Radius + 0.8, 3.7, y + 0.9, y + 6.4
 		s:box('StateTop', V(x - bw, b0, bz - 0.06), V(x + bw, b1, bz), look.Top, M.SmoothPlastic)
+		s:box('BoardStand', V(x - bw - 0.3, y, bz), V(x + bw + 0.3, b1 + 0.3, bz + 0.35), C(236, 238, 246), M.SmoothPlastic)
 		for _, e in { { V(x - bw - 0.3, b1, bz - 0.12), V(x + bw + 0.3, b1 + 0.3, bz) }, { V(x - bw - 0.3, b0 - 0.3, bz - 0.12), V(x + bw + 0.3, b0, bz) },
 			{ V(x - bw - 0.3, b0, bz - 0.12), V(x - bw, b1, bz) }, { V(x + bw, b0, bz - 0.12), V(x + bw + 0.3, b1, bz) } } do
 			decor(s:box('StateGlow', e[1], e[2], look.Glow, M.Neon)).CastShadow = false
@@ -3015,8 +3017,8 @@ function Lobby.shoeDais(L)
 			Lobby.fx(fx, 'ShoeBoxGlints', 'sparkle', { Rate = 6, Lifetime = NumberRange.new(0.8, 1.4), Speed = NumberRange.new(0.3, 1),
 				Size = Lobby.seq({ { 0, 0 }, { 0.3, 0.8 }, { 1, 0 } }), Color = ColorSequence.new(C(255, 230, 120)), LightEmission = 1 })
 			light(fx, C(255, 210, 90), 1.6, 16)
-			-- a soft gold beam rising out of the open box
-			local beam = decor(d:part('ShoeBoxBeam', V(9, 3.4, 3.4), CFrame.new(hover + V(0, 3.2 * k + 4.5, 0)) * CFrame.Angles(0, 0, math.pi / 2), C(255, 226, 120), M.Neon, Enum.PartType.Cylinder))
+			-- a soft gold beam rising out of the open box (short, so it stays under the SHOE BOXES sign)
+			local beam = decor(d:part('ShoeBoxBeam', V(5, 3.4, 3.4), CFrame.new(hover + V(0, 3.2 * k + 2.5, 0)) * CFrame.Angles(0, 0, math.pi / 2), C(255, 226, 120), M.Neon, Enum.PartType.Cylinder))
 			beam.Transparency, beam.CastShadow = 0.72, false
 		end
 	end
