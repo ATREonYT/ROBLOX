@@ -81,6 +81,12 @@ function Treadmills.chevron(s, pattern)
 	return (a + b) / 2, b - a
 end
 
+-- Uploaded textures only the treadmills use (rbxassetid strings; '' until uploaded). The map builder looks a
+-- name up in HoodVFX.Textures first, then here; until it has an id the effect falls back to a Roblox built-in
+-- or stays off.
+--   wispline  hood/art/vfx/wispline.png: the wisp flipbook as line work (the x999's thin white smoke lines)
+Treadmills.Textures = { wispline = '' }
+
 -- The floating label (a BillboardGui with Chip, Cost, Detail and Speed): one line, "x1 Speed", once the
 -- treadmill is yours, like the reference; the price chip and "Locked" over it only while it is locked. The gui
 -- hangs above its anchor (the anchor marks the label's bottom edge), so switching never moves the bottom.
