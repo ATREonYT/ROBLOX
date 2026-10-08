@@ -1,26 +1,21 @@
 --!strict
 -- Buy and equip rules for the ARMORY. Pure functions over a profile's Guns table ({Owned={[id]=true}, Equipped=id}),
--- so GunService (which enforces them), the armory client (which only labels prompts and paints pedestals with
--- them) and the unit tests all agree. No Instances in here.
+-- so GunService (which enforces them), the armory client (which only labels prompts and paints the shop's gun
+-- panels with them) and the unit tests all agree. No Instances in here.
 local Guns = require(script.Parent.Config.Guns)
 local Format = require(script.Parent.Format)
 
 local GunRules = {}
-GunRules.Range = 14 -- how close (studs) you must stand to a gun's pedestal point to buy or equip it
+GunRules.Range = 14 -- how close (studs) you must stand to a gun's point (on the shop counter) to buy or equip it
 
--- Pedestal colours per state, shared by the map builder (first paint) and the client (repaints): one hue per
--- state in three tones plus a soft neon (rose locked, blue owned, green equipped; Brief 8 volume). Top = the
--- main tone (pad top, plate back), Base = dark (base, bevel, window border), Rim = light (pad rim), Panel = the
--- display board's window, Glow = the neon face and light (GlowAlpha its transparency: brighter as you own and
--- equip), Strip = the plate face, Text = the price row.
+-- Gun-shop colours per state, shared by the map builder (first paint) and the client (repaints). Only small parts
+-- take them: Top = the backing panel behind each hung gun (a muted rose while locked, blue owned, green
+-- equipped), Text = the price or state word on the gun's dark tag.
 local C = Color3.fromRGB
 GunRules.Colors = {
-	Locked = { Top = C(214, 104, 150), Base = C(139, 62, 95), Rim = C(239, 191, 211), Panel = C(220, 140, 172),
-		Glow = C(236, 124, 174), GlowAlpha = 0.3, Strip = C(150, 58, 98), Text = C(255, 224, 110) },
-	Owned = { Top = C(70, 134, 222), Base = C(57, 92, 138), Rim = C(204, 221, 242), Panel = C(124, 166, 226),
-		Glow = C(120, 170, 236), GlowAlpha = 0.2, Strip = C(54, 90, 150), Text = C(170, 210, 255) },
-	Equipped = { Top = C(56, 186, 100), Base = C(46, 117, 68), Rim = C(199, 233, 209), Panel = C(112, 202, 140),
-		Glow = C(104, 210, 138), GlowAlpha = 0.1, Strip = C(40, 124, 66), Text = C(150, 240, 170) },
+	Locked = { Top = C(184, 156, 168), Text = C(255, 224, 110) },
+	Owned = { Top = C(104, 152, 218), Text = C(150, 200, 255) },
+	Equipped = { Top = C(88, 188, 118), Text = C(140, 236, 160) },
 }
 
 -- Makes a Guns table safe to use in place: unknown ids are dropped, the starter is always owned, and the
