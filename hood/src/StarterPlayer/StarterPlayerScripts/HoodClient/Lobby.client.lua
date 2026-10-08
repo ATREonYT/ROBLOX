@@ -272,7 +272,8 @@ local pointer = label(indicator, 'Destination', 22, C(255, 224, 80))
 ---------------------------------------------------------------------------------------------- stations
 -- Training stations in the built lobby: shooter's box, plaque, target. The range lanes (a plaque with a Power
 -- row) stay in full colour while locked: the plaque at the bay's entrance says LOCKED in red, a rope hangs across
--- the entrance, and the lane's effect runs at half rate. Older stations without that plaque (the original
+-- the entrance, the lane's lamp (TargetLamp's light on the target) is dim, and the lane's effect runs at half
+-- rate. An open lane has no rope and its target brightly lit. Older stations without that plaque (the original
 -- Block's gym) still show locked gear as a black silhouette.
 local okVfx, HoodVFX = pcall(require, RS.Shared.HoodVFX)
 if not okVfx then HoodVFX = nil end
@@ -299,11 +300,13 @@ for _, s in Skins.Stations do
 				end
 			end
 		end
-		-- The lane's rope across its entrance (shown while locked) and, on older lanes, a state lamp.
-		entry.Ropes, entry.Lamps = {}, {}
+		-- The lane's rope across its entrance (shown while locked), its lane lamp (bright while open, dim while
+		-- locked: the light's Open and Locked attributes) and, on older lanes, a state lamp.
+		entry.Ropes, entry.Lamps, entry.Lights = {}, {}, {}
 		for _, p in model:GetDescendants() do
 			if p:IsA('BasePart') and p.Name == 'LockRope' then table.insert(entry.Ropes, p) end
 			if p:IsA('BasePart') and p.Name == 'StateLamp' then table.insert(entry.Lamps, p) end
+			if p:IsA('Light') and p.Parent and p.Parent.Name == 'TargetLamp' then table.insert(entry.Lights, p) end
 		end
 		stations[s.Id] = entry
 	end
@@ -325,6 +328,7 @@ local function paintStations(n)
 				if e.Fx and HoodVFX then HoodVFX.setDensity(e.Fx, locked and 0.5 or 1) end
 				for _, rope in e.Ropes do rope.Transparency = locked and 0 or 1 end
 				for _, lamp in e.Lamps do lamp.Color = locked and LAMP_LOCKED or LAMP_OPEN end
+				for _, light in e.Lights do light.Brightness = light:GetAttribute(locked and 'Locked' or 'Open') or light.Brightness end
 				local detail = e.Sign and e.Sign:FindFirstChild('Detail', true)
 				if detail then
 					if e.Bag then

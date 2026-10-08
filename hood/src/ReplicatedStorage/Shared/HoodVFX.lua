@@ -3,9 +3,8 @@
 --
 --   HoodVFX.station(part, tier, color, size?, opts?)  aura on a training platform; returns the Aura model
 --   HoodVFX.item(part, tier, color, opts?)            glow / sparkles / fire on a displayed item; returns emitters
---   HoodVFX.theme(part, name, size?, opts?)           a range lane's small theme effect (a burning barrel,
---                                                     light snow, low fog, bubbles, glints); returns the Theme
---                                                     model
+--   HoodVFX.theme(part, name, size?, opts?)           a range lane's theme effect (only the top bay has one:
+--                                                     glints round the gold gong); returns the Theme model
 --   HoodVFX.setEnabled(container, on)                 switch every effect under `container` (distance LOD)
 --   HoodVFX.setDensity(container, k)                  scale every emitter's Rate (e.g. 0.5 on low graphics)
 --   HoodVFX.Textures                                  name -> uploaded rbxassetid ('' = use a Roblox built-in)
@@ -484,92 +483,23 @@ end
 -- target field (from the bench to the backstop): effects stand on its top face and use its axes, `name` one of
 -- the keys of HoodVFX.Themes, `size` Vector3 (width, effect height, depth) or nil for (part width, 12, part
 -- depth). opts.parent (default: the part's parent), opts.color (the theme's glow colour), opts.tier, opts.bag
--- (the lane's target part), opts.burners (the hero prop's parts that carry the effect: lava's barrel coals,
--- toxic's drum lid). Returns the Theme model; every holder part in it is invisible.
--- Brief 9: the lanes read by their materials and one hero prop, not by glow. So each effect is small and comes
--- off its own hero prop or drifts lightly over the field. Nothing carpets the mat, no comets or rain cross the
--- line of fire, and the only light is the barrel's fire. Stone, red and arcane have none: plain planks, painted
--- boards, and balloons that bob. Live particles (Rate x Lifetime on the 7 x 10 field): lava ~14 (one barrel),
--- shadow ~3 (low fog), frost ~14 (slow snow), toxic ~5 (bubbles), gold ~6 (glints): ~42 for all eight together,
--- against ~260 before. The lobby client still halves locked lanes (setDensity).
+-- (the lane's target part), opts.burners (hero-prop parts an effect may come off; none use them now). Returns the
+-- Theme model; every holder part in it is invisible.
+-- Brief 10: each lane's theme is its floor and ONE hero prop; nothing on the row burns, snows, bubbles or fogs.
+-- The top bay alone keeps an effect, as the last tier's one reward: a few glints round the gold gong (~6 live
+-- particles for all eight lanes, against ~42 in Brief 9 and ~260 before). The lanes' only lights are their own
+-- hidden lane lamps (d2_stations, switched by the lobby client), not effects. The lobby client still halves
+-- locked lanes (setDensity).
 HoodVFX.Themes = {}
 local THEME_COLOR = {
 	stone = C(255, 244, 220), red = C(250, 45, 85), lava = C(255, 150, 40), arcane = C(230, 120, 255),
 	frost = C(150, 236, 255), toxic = C(120, 255, 80), shadow = C(176, 120, 255), gold = C(255, 222, 80),
 }
 
-local function pointLight(at, color, brightness, range)
-	local l = Instance.new('PointLight')
-	l.Name = 'ThemeLight'
-	l.Color, l.Brightness, l.Range, l.Shadows = color, brightness, range, false
-	l.Parent = at
-	return l
-end
-
--- 1 Stone, 2 Red, 4 Arcane: no effects (raw planks, painted boards; arcane's balloons bob on their own).
-function HoodVFX.Themes.stone() end
-function HoodVFX.Themes.red() end
-function HoodVFX.Themes.arcane() end
-
--- 3 Lava: the burning barrel. Soft fire puffs and a few licks out of its open top, a couple of embers, and one
--- warm light. The barrel is the lane's only fire.
-function HoodVFX.Themes.lava(ctx)
-	local fire = cseq({ { 0, C(255, 240, 0) }, { 0.35, C(255, 190, 30) }, { 0.75, C(245, 90, 20) }, { 1, C(200, 40, 10) } })
-	local lick = cseq({ { 0, C(255, 200, 60) }, { 1, C(245, 80, 20) } })
-	local uploaded = select(2, texture('firepuff'))
-	for _, b in ctx.burners or {} do
-		local fire1 = holder(ctx.theme, 'Burner', CFrame.new(b.CFrame.Position + V(0, 0.15, 0)), V(0.9, 0.2, 0.9))
-		emitter(fire1, 'BurnerFire', 'firepuff', {
-			Rate = 6, Lifetime = NR(0.45, 0.8), Speed = NR(1.5, 3), SpreadAngle = Vector2.new(10, 10), Acceleration = V(0, 2, 0), ZOffset = 0.4,
-			RotSpeed = NR(-25, 25), Size = uploaded and seq({ { 0, 1.4, 0.2 }, { 0.4, 1.9, 0.3 }, { 1, 0 } }) or seq({ { 0, 0.9 }, { 0.4, 1.25, 0.2 }, { 1, 0 } }),
-			Transparency = seq({ { 0, 0.1 }, { 0.5, 0.25 }, { 1, 1 } }), Color = fire, LightEmission = 0.4,
-		})
-		emitter(fire1, 'BurnerLicks', 'flame', {
-			Orientation = Enum.ParticleOrientation.FacingCameraWorldUp, Rate = 3, Lifetime = NR(0.5, 0.8), Speed = NR(3, 4.5),
-			SpreadAngle = Vector2.new(8, 8), ZOffset = 0.5, Size = seq({ { 0, 0.6 }, { 0.4, 0.95, 0.2 }, { 1, 0 } }),
-			Transparency = seq({ { 0, 0.3 }, { 0.15, 0 }, { 1, 1 } }), Color = lick, LightEmission = 0.5,
-		})
-		emitter(fire1, 'Embers', 'ember', {
-			Rate = 1.5, Lifetime = NR(1.2, 2), Speed = NR(2, 4), SpreadAngle = Vector2.new(20, 20), Acceleration = V(0.4, 1.2, 0.2), Drag = 0.6,
-			RotSpeed = NR(-40, 40), Size = seq({ { 0, 0.22, 0.08 }, { 0.7, 0.16 }, { 1, 0 } }), Transparency = seq({ { 0, 0 }, { 0.8, 0.2 }, { 1, 1 } }),
-			Color = cseq({ { 0, C(255, 240, 160) }, { 0.4, C(255, 160, 40) }, { 1, C(255, 70, 20) } }), LightEmission = 1, Brightness = 1.3, ZOffset = 0.8,
-		})
-		pointLight(fire1, C(255, 150, 50), 0.7, 8)
-	end
-end
-
--- 5 Shadow: a thin violet ground fog rolling round the stake and the crystals.
-function HoodVFX.Themes.shadow(ctx)
-	local A, S = ctx.A, ctx.S
-	emitter(ctx.deck, 'GroundFog', 'mist', {
-		Rate = 1.2 * A, Lifetime = NR(3, 4), Speed = NR(0.4, 1), SpreadAngle = Vector2.new(85, 85), Drag = 0.8, Acceleration = V(0, -0.1, 0),
-		RotSpeed = NR(-10, 10), ZOffset = -1, Size = seq({ { 0, 2.2 * S }, { 1, 4.2 * S } }), Transparency = seq({ { 0, 1 }, { 0.3, 0.65 }, { 1, 1 } }),
-		Color = ColorSequence.new(C(120, 80, 180)), LightEmission = 0,
-	})
-end
-
--- 6 Frost: slow snow drifting down over the field.
-function HoodVFX.Themes.frost(ctx)
-	local A, S, w, d, h = ctx.A, ctx.S, ctx.w, ctx.d, ctx.h
-	local sky = holder(ctx.theme, 'SnowSky', ctx.top * CFrame.new(0, h * 0.8, 0), V(w, 0.2, d))
-	emitter(sky, 'Snowfall', 'snow', {
-		EmissionDirection = Enum.NormalId.Bottom, Rate = 4 * A, Lifetime = NR(4, 5.5), Speed = NR(1.2, 2), SpreadAngle = Vector2.new(20, 20),
-		Acceleration = V(0.3, 0, 0.2), RotSpeed = NR(-60, 60), Size = seq({ { 0, 0.28 * S, 0.1 * S }, { 1, 0.28 * S, 0.1 * S } }),
-		Transparency = seq({ { 0, 1 }, { 0.1, 0.15 }, { 0.85, 0.25 }, { 1, 1 } }), Color = ColorSequence.new(WHITE), LightEmission = 0.3,
-	})
-end
-
--- 7 Toxic: green bubbles rising out of the drum's lid and popping.
-function HoodVFX.Themes.toxic(ctx)
-	local color = ctx.color
-	for _, b in ctx.burners or {} do
-		local lid = holder(ctx.theme, 'DrumTop', CFrame.new(b.CFrame.Position + V(0, 0.1, 0)), V(1.0, 0.2, 1.0))
-		emitter(lid, 'Bubbles', 'bubble', {
-			Rate = 3, Lifetime = NR(1, 1.6), Speed = NR(0.8, 1.6), SpreadAngle = Vector2.new(15, 15), Acceleration = V(0, 0.6, 0), Drag = 0.6,
-			RotSpeed = NR(-30, 30), Size = seq({ { 0, 0.15 }, { 0.85, 0.5, 0.15 }, { 0.9, 0.65 }, { 1, 0 } }),
-			Transparency = seq({ { 0, 0.2 }, { 0.85, 0.1 }, { 1, 1 } }), Color = cseq({ { 0, lighten(color, 0.3) }, { 1, color } }), LightEmission = 0.4, ZOffset = 0.6,
-		})
-	end
+-- 1 Stone, 2 Red, 3 Lava (a cold fire barrel), 4 Arcane (the balloons bob on their own), 5 Shadow, 6 Frost,
+-- 7 Toxic: no effects.
+for _, name in { 'stone', 'red', 'lava', 'arcane', 'shadow', 'frost', 'toxic' } do
+	HoodVFX.Themes[name] = function() end
 end
 
 -- 8 Gold: a few small white glints twinkling round the gold gong.

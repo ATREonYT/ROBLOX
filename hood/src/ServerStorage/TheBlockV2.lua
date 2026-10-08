@@ -592,69 +592,83 @@ local function teleportPad(g, name, x, z, color, target, label)
 	return pad
 end
 ---------------------------------------------------------------------------------------------- training stations
--- Shooting-range lanes, the numbered bays (Brief 9: a clear bench, target and backstop, nothing on top). Every
--- lane has the same pieces in the same places, so the row reads as one designed series:
---   entrance  two short posts at the aisle end, in the lane's kerb colour. The left (-X) one carries the bay's plaque (BAY n, xN POWER, the
---             Power it needs, open or locked); a rope hangs between them while the lane is locked;
---   bench     a waist-high counter across the firing line with ear muffs, an ammo box and a couple of casings
---             (the cues that say "shooting range" with no words);
---   target    one painted target at the far end (never glowing), its centre 5.8 over the mat, where every
---             shot lands (above the shooter's head from the follow camera);
---   backstop  a wall across the outer end, a little taller every tier.
--- The tier shows in materials and one hero prop, never glow, so each bay reads a little better than the last:
---   1 stone   raw planks, a plywood bullseye on a stake (the humble start, no effects)
---   2 red     a fence of even boards painted navy under a red cap, a red and white board on a navy stake
---   3 lava    a basalt berm, a steel gong on a gong stand, one burning barrel (the lane's only fire)
---   4 arcane  a carnival booth's violet curtain under a pink pelmet, a spinner on a post, a bunch of balloons
---   5 shadow  obsidian blocks, a dark steel plate with violet rings, a cluster of violet crystals (low fog)
---   6 frost   an ice-block wall with a snow cap and icicles, an ice bullseye on an ice pillar (light snow)
---   7 toxic   a ribbed container wall, a lime and navy plate, a toxic drum (bubbles)
---   8 gold    a gold wall with a velvet panel, a gold gong on a gold stand, a crown on the wall (glints)
--- Cartoon targets only: boards, plates, gongs, a spinner. Nothing human-shaped.
+-- Shooting-range lanes, the numbered bays (Brief 10: a bay reads as SHOOTING with every sign hidden). Every lane is
+-- the same shooting booth; only its floor and one hero prop change from bay to bay:
+--   entrance   two short posts at the aisle end. The left (-X) one carries the bay's plaque at waist height (BAY n,
+--              xN POWER, the Power it needs, open or locked); a rope hangs between them while the lane is locked;
+--   booth      a plywood partition at the firing line on the lane's +X side (bay 1 has one each side), so the row
+--              reads as a range's shooting stalls;
+--   bench      a waist-high counter across the firing line: a pistol on a foam rest and spent brass;
+--   target     one painted target at the far end with bullet holes in it (never glowing), its centre 5.8 to 6.3 over
+--              the mat and a little off the lane's axis (each bay its own spot), where every shot lands. The higher
+--              the bay, the tighter the group;
+--   backstop   a concrete wall across the outer end, a little taller every tier, with a stray hole or two;
+--   lamp       a hidden spot over the lane on the target: bright while the lane is open, dim while it is locked.
+-- The tier shows in the mat (the bay's floor) and ONE hero prop, never glow, so each bay reads a little better
+-- than the last:
+--   1 stone   blue rubber mat, a plywood bullseye on a stake, a stack of old tyres (the humble start)
+--   2 red     red painted floor, a red and white board, a striped police barrier
+--   3 lava    terracotta tiles, a steel plate with orange rings, a fire barrel (a still painted flame, no effect)
+--   4 arcane  violet carpet, a carnival spinner, a bunch of balloons
+--   5 shadow  obsidian floor, a dark plate with violet rings, one violet crystal
+--   6 frost   an ice floor, an ice-blue bullseye, a block of ice
+--   7 toxic   a diamond-plate floor, a lime and navy plate, a toxic drum
+--   8 gold    a gold floor, a gold gong that rings when hit (with a few glints)
+-- Cartoon targets only: boards, plates, a spinner, a gong. Nothing human-shaped.
 -- Local frame: origin = mat centre on the deck, footprint x -4.5..4.5, z -10..10 (rim included). The front
--- (-Z) faces the aisle: players walk on from -Z, stand in the box and shoot toward +Z. Parts reach y ~11.3 (gold's
--- crown on its 9-stud backstop). opts.vfx = false skips effects, opts.tier overrides the tier (opts.side is ignored).
+-- (-Z) faces the aisle: players walk on from -Z, stand in the box and shoot toward +Z. Parts reach y ~9.8 (gold's
+-- gong stand on its 9-stud backstop). opts.vfx = false skips effects, opts.tier overrides the tier.
 -- Contract (Lobby.client, Shoot.client, LobbyRules): Training_<Id> > TrainingZone (the shooter's box,
 -- invisible), Equipment > Targets > Target1 (Hinge = the pivot part, Swing = the parts that move; attributes
 -- Knock = Tip | Swing | Spin, Hit = the sound it makes, Aim = world centre where shots land, Main = true),
 -- Equipment > Gear (the stand and the hero prop), Sign (the plaque part: SurfaceGui Label with TextLabels Bay,
 -- Power, Cost, Detail; the client writes Detail), LockRope parts (the client hides them once the lane is open),
--- attributes Tier, HitPoint (the target's centre), HitColor, TextColor. Equipment has no Hinge of its own:
--- Shoot.client knocks the target back when a shot lands on it.
+-- TargetLamp (an invisible part with a SpotLight whose Open/Locked attributes are its two brightnesses; the client
+-- sets it with the rope), attributes Tier,
+-- HitPoint (the target's centre), HitColor, TextColor. Equipment has no Hinge of its own: Shoot.client knocks the
+-- target back when a shot lands on it.
 local Stations = {}
 
--- Per tier (Skins.Stations order). rim: the kerb round the mat; mat (+matMat): the inset surface; body/top
--- (+bodyMat, topMat): the bench; stand (+standMat): the target's stake or stand; text: the plaque's "xN POWER"
--- (and the HUD hint); glow: hit sparks. Brief 8 volume: big surfaces stay at HSV saturation 0.6 or less.
+-- What every bay shares: a dark kerb, concrete backstop, plywood partition, grey bench, the gear on it.
+Stations.Common = {
+	rim = C(62, 66, 76), post = C(48, 51, 60),
+	back = C(150, 152, 158), backCap = C(122, 124, 132),
+	partition = C(176, 140, 100),
+	benchBody = C(84, 88, 100), benchTop = C(214, 180, 136),
+	slide = C(44, 46, 54), grip = C(132, 84, 50), rest = C(196, 200, 206),
+	brass = C(236, 186, 76), hole = C(28, 28, 32), splash = C(206, 208, 214),
+	lamp = C(255, 240, 215),
+}
+-- Per tier (Skins.Stations order). mat (+matMat): the bay's floor, the one surface in its colour; stand
+-- (+standMat): the target's stake or stand; text: the plaque's "xN POWER" (and the HUD hint); glow: hit sparks;
+-- fx: the bay has a HoodVFX theme effect (only the top bay: glints round the gold gong).
+-- Brief 8 volume: big surfaces stay at HSV saturation 0.6 or less.
 Stations.Themes = {
-	{ name = 'stone', rim = C(62, 78, 118), mat = C(115, 132, 172), body = C(150, 100, 66), top = C(198, 152, 104),
-		stand = C(150, 100, 66), text = C(255, 255, 255), glow = C(255, 236, 200) },
-	{ name = 'red', rim = C(30, 34, 70), mat = C(204, 82, 98), body = C(38, 44, 88), top = C(214, 74, 96),
-		stand = C(38, 44, 88), text = C(255, 110, 130), glow = C(255, 70, 100) },
-	{ name = 'lava', rim = C(160, 92, 64), mat = C(204, 128, 98), body = C(70, 66, 76), bodyMat = M.Metal, top = C(236, 162, 104),
-		stand = C(70, 66, 76), standMat = M.Metal, text = C(255, 170, 48), glow = C(255, 150, 40) },
-	{ name = 'arcane', rim = C(136, 66, 126), mat = C(168, 100, 192), body = C(120, 72, 170), top = C(214, 120, 188),
-		stand = C(120, 72, 170), text = C(224, 150, 255), glow = C(230, 120, 255) },
-	{ name = 'shadow', rim = C(72, 46, 110), mat = C(46, 30, 72), body = C(30, 24, 40), top = C(104, 62, 168),
-		stand = C(30, 24, 40), standMat = M.Metal, text = C(198, 164, 255), glow = C(176, 120, 255) },
-	{ name = 'frost', rim = C(78, 132, 196), mat = C(150, 232, 240), matMat = M.SmoothPlastic, body = C(70, 124, 192), top = C(240, 248, 255),
-		stand = C(170, 230, 250), text = C(120, 236, 255), glow = C(150, 236, 255) },
-	{ name = 'toxic', rim = C(60, 150, 84), mat = C(26, 62, 58), body = C(26, 64, 60), top = C(90, 206, 116),
-		stand = C(26, 64, 60), standMat = M.Metal, text = C(130, 255, 90), glow = C(120, 255, 80) },
-	{ name = 'gold', rim = C(208, 166, 84), mat = C(240, 224, 118), body = C(130, 52, 68), bodyMat = M.Fabric, top = C(240, 200, 90),
-		stand = C(232, 180, 70), text = C(255, 222, 50), glow = C(255, 222, 80) },
+	{ name = 'stone', mat = C(115, 132, 172), stand = C(150, 100, 66), standMat = M.Wood, text = C(255, 255, 255), glow = C(255, 236, 200) },
+	{ name = 'red', mat = C(196, 86, 96), matMat = M.Concrete, stand = C(38, 44, 88), text = C(255, 110, 130), glow = C(255, 70, 100) },
+	{ name = 'lava', mat = C(196, 124, 96), matMat = M.Slate, stand = C(70, 66, 76), standMat = M.Metal, text = C(255, 170, 48), glow = C(255, 150, 40) },
+	{ name = 'arcane', mat = C(150, 96, 178), matMat = M.Fabric, stand = C(120, 72, 170), text = C(224, 150, 255), glow = C(230, 120, 255) },
+	{ name = 'shadow', mat = C(58, 40, 86), matMat = M.Slate, stand = C(30, 24, 40), standMat = M.Metal, text = C(198, 164, 255), glow = C(176, 120, 255) },
+	{ name = 'frost', mat = C(160, 222, 236), matMat = M.Ice, stand = C(70, 124, 192), text = C(120, 236, 255), glow = C(150, 236, 255) },
+	{ name = 'toxic', mat = C(70, 104, 84), matMat = M.DiamondPlate, stand = C(26, 64, 60), standMat = M.Metal, text = C(130, 255, 90), glow = C(120, 255, 80) },
+	{ name = 'gold', mat = C(226, 196, 104), stand = C(232, 180, 70), text = C(255, 222, 50), glow = C(255, 222, 80), fx = true },
 }
 
 Stations.HALF_X, Stations.HALF_Z = 4.5, 10 -- rim outer half sizes (the mat is inset 1 stud)
 Stations.MAT_Y = 0.4 -- mat top (where players stand)
 Stations.RIM_Y = 0.6 -- rim top
 Stations.BOX_Z = -3.2 -- the shooter's box runs from the aisle end to here
-Stations.BENCH_Z = -2.75 -- the bench's centre line (it is 0.9 deep)
+Stations.BENCH_Z = -2.75 -- the bench's centre line (its top is 1.1 deep)
 Stations.BENCH_H = 2.3 -- bench top over the mat: waist height, under the held gun
 Stations.FIELD_Z0, Stations.FIELD_Z1 = -1.9, 8.4 -- the target field (effects fill it)
 Stations.BACK_Z = 8.5 -- the backstop's front face
-Stations.TARGET = V(0, 0.4 + 5.8, 6.0) -- every lane's target centre (where shots land)
+Stations.TARGET = V(0, 0.4 + 5.8, 6.0) -- the target centre (where shots land) before each bay's shift
+-- Each bay's target stands a little off the line (sideways and up, never lower: it stays over the shooter's head
+-- in the follow camera), so the row's bullseyes are not one ruled line. Stations.aimOf(tier) is where shots land.
+Stations.TargetShift = { V(0.45, 0, 0), V(-0.4, 0.3, 0), V(0.3, 0.5, 0), V(-0.45, 0.1, 0), V(0.4, 0.4, 0), V(-0.3, 0.2, 0), V(0.45, 0.5, 0), V(0, 0, 0) }
+function Stations.aimOf(tier) return Stations.TARGET + (Stations.TargetShift[tier] or V(0, 0, 0)) end
 Stations.ENTRY_Z = -9.5 -- the entrance posts' centre line
+Stations.LAMP = V(0, 10.2, 0.6) -- the hidden lane lamp (over the field, aimed at the target)
 -- The backstop's height over the mat: a little taller every tier, so the row climbs toward gold.
 function Stations.wallHeight(tier) return 7.0 + 0.25 * tier end
 -- The plaque's state colours (Lobby.client paints the same ones).
@@ -671,6 +685,7 @@ function Stations.can(c, name, pos, r, h, color, material)
 end
 -- Bullseye whose back sits on the plane z = 0 of `cf` (facing -Z): painted rings outer to inner from `colors`,
 -- each a little prouder than the last so no two share a face. Returns the outer ring.
+function Stations.ringFace(i) return 0.02 - (0.08 + 0.035 * i) end -- ring i's front face (z in the bullseye's frame)
 function Stations.bullseye(c, cf, r, colors, material)
 	local n, outer = #colors, nil
 	for i, col in colors do
@@ -679,6 +694,19 @@ function Stations.bullseye(c, cf, r, colors, material)
 		outer = outer or p
 	end
 	return outer
+end
+-- Bullet holes in a bullseye of radius r and n rings (the frame `cf` passed to Stations.bullseye): `count`
+-- holes spread round the centre out to `spread` x r (a golden-angle walk from `seed`, so no two targets share
+-- a pattern), each sitting on the face of the ring it falls in. color: dark holes in paper and wood, light lead
+-- splashes on steel.
+function Stations.holes(c, cf, r, n, count, spread, seed, color)
+	for i = 1, count do
+		local a = math.rad(seed * 47 + i * 137.5)
+		local rho = r * spread * (0.25 + 0.75 * ((seed * 0.37 + i * 0.618) % 1))
+		local ring = math.clamp(n - math.floor(rho / (r / n)), 1, n)
+		local z = Stations.ringFace(ring) - 0.025
+		decor(Stations.disc(c, 'BulletHole', cf * CFrame.new(rho * math.cos(a), rho * math.sin(a), z), 0.15, 0.05, color or Stations.Common.hole))
+	end
 end
 -- Drum (two proud bands and a lid) standing on `pos`. Returns the lid.
 function Stations.drum(c, pos, r, h, color, band, lid, material)
@@ -692,34 +720,40 @@ function Stations.balloon(c, pos, r, color, foot)
 	c:part('BalloonKnot', V(0.25 * r, 0.25 * r, 0.25 * r), CFrame.new(pos - V(0, 1.2 * r, 0)) * CFrame.Angles(0, 0, math.pi / 4), color)
 	if foot then c:bar('BalloonString', pos - V(0, 1.25 * r, 0), foot, 0.06, C(250, 250, 250), M.SmoothPlastic) end
 end
--- Icicle hanging from `top` (the centre of its top edge): a wedge turned so its triangle faces -Z, wide at
--- the top, its point at the bottom.
-function Stations.icicle(c, top, len, w, color)
-	return decor(c:wedge('Icicle', V(0.2, len, w), CFrame.new(top - V(0, len / 2, 0)) * CFrame.Angles(0, math.pi / 2, 0) * CFrame.Angles(math.pi, 0, 0), color or C(205, 246, 255)))
+-- The bench pistol (the Rusty Pistol's blocky profile): dark slide, brown grip raked back, trigger guard, in a frame
+-- where the profile lies in XY facing -Z, the muzzle toward +X and the grip down; `cf` is the slide's underside at
+-- the grip. About 2.1 long at scale 1.
+function Stations.pistol(c, cf, k)
+	local K = Stations.Common
+	k = k or 1
+	decor(c:part('PistolSlide', V(2.1, 0.46, 0.32) * k, cf * CFrame.new(0.5 * k, 0.23 * k, 0), K.slide))
+	decor(c:part('PistolGrip', V(0.54, 1.05, 0.3) * k, cf * CFrame.new(-0.36 * k, -0.46 * k, 0) * CFrame.Angles(0, 0, math.rad(-14)), K.grip, M.Wood))
+	decor(c:part('PistolGuard', V(0.7, 0.1, 0.16) * k, cf * CFrame.new(0.36 * k, -0.42 * k, 0), K.slide))
 end
 
 ---------------------------------------------------------------------------------------------- target
 -- The lane's one target, the client can knock it: Equipment > Targets > Target1 with a Hinge (the pivot, a ghost
 -- part at `pivot`) and a Swing model (build the visible target into the returned context). knock: 'Tip' (tips
 -- back about the hinge's X axis with a little hop), 'Swing' (swings on its hanger), 'Spin' (spins about the
--- hinge's Y axis). Shots land on its centre (Stations.TARGET); `hit` names the sound (Ding steel, Tock wood, Ice).
+-- hinge's Y axis). Shots land on its centre (k.aim, Stations.aimOf); `hit` names the sound (Ding steel, Tock wood, Ice).
 function Stations.target(k, pivot, knock, hit)
 	local tc, model = k.targets:group('Target1')
 	ghost(tc:part('Hinge', V(0.2, 0.2, 0.2), pivot, P.white))
 	local sw = tc:group('Swing')
 	model:SetAttribute('Knock', knock)
 	model:SetAttribute('Hit', hit or 'Ding')
-	model:SetAttribute('Aim', tc:world(CFrame.new(Stations.TARGET)).Position)
+	model:SetAttribute('Aim', tc:world(CFrame.new(k.aim)).Position)
 	model:SetAttribute('Main', true)
 	if knock == 'Tip' then model:SetAttribute('TipMin', 0) end -- (rocks back off its stand, never into the shooter)
 	k.main = model
 	return sw, model
 end
--- A stake behind the target: a foot block on the mat and a post up to `top`, its front 0.3 behind the target.
-function Stations.stake(g, t, top)
+-- A stake behind the target at x: a foot block on the mat and a post up to `top`, its front 0.3 behind the target.
+function Stations.stake(g, t, top, x)
 	local Y, z = Stations.MAT_Y, Stations.TARGET.Z
-	g:box('StandFoot', V(-0.75, Y, z + 0.1), V(0.75, Y + 0.3, z + 1.5), t.stand:Lerp(C(0, 0, 0), 0.25), t.standMat)
-	g:box('StandPost', V(-0.24, Y + 0.3, z + 0.32), V(0.24, top, z + 0.8), t.stand, t.standMat)
+	x = x or 0
+	g:box('StandFoot', V(x - 0.75, Y, z + 0.1), V(x + 0.75, Y + 0.3, z + 1.5), t.stand:Lerp(C(0, 0, 0), 0.25), t.standMat)
+	g:box('StandPost', V(x - 0.24, Y + 0.3, z + 0.32), V(x + 0.24, top, z + 0.8), t.stand, t.standMat)
 end
 -- A gong stand: two posts on feet either side of the target and a bar across the top it hangs from. Returns
 -- the bar's underside.
@@ -734,84 +768,83 @@ function Stations.gongStand(g, t)
 	g:box('StandBar', V(-2.55, y1, z - 0.24), V(2.55, y1 + 0.42, z + 0.24), t.stand, t.standMat)
 	return y1
 end
--- A round board (backing disc `board` plus painted rings) on a stake; it tips back when hit.
-function Stations.board(k, t, r, board, rings, hit, boardMat)
-	local c = Stations.TARGET
-	Stations.stake(k.gear, t, c.Y - 0.6)
+-- A round board or plate (backing disc `board` plus painted rings) on a stake, with bullet holes; it tips back
+-- when hit. `holes` = { count, spread, color }.
+function Stations.board(k, t, r, board, rings, hit, boardMat, holes)
+	local c = k.aim
+	Stations.stake(k.gear, t, c.Y - 0.6, c.X)
 	local sw = Stations.target(k, CFrame.new(c.X, c.Y - r - 0.1, c.Z + 0.25), 'Tip', hit or 'Tock')
 	Stations.disc(sw, 'Board', CFrame.new(c.X, c.Y, c.Z + 0.12), r + 0.12, 0.2, board, boardMat)
-	Stations.bullseye(sw, CFrame.new(c.X, c.Y, c.Z + 0.03), r, rings)
-	return sw
-end
--- A gong (rim, face, painted rings: rim/face colours and materials) hanging on two short straps from a gong stand; it swings when hit.
-function Stations.gong(k, t, r, rim, rimMat, face, faceMat, rings)
-	local c = Stations.TARGET
-	local y1 = Stations.gongStand(k.gear, t)
-	local sw = Stations.target(k, CFrame.new(c.X, y1, c.Z), 'Swing', 'Ding')
-	Stations.disc(sw, 'GongRim', CFrame.new(c.X, c.Y, c.Z + 0.03), r, 0.24, rim, rimMat)
-	Stations.disc(sw, 'Gong', CFrame.new(c.X, c.Y, c.Z - 0.02), r - 0.22, 0.28, face, faceMat)
-	Stations.bullseye(sw, CFrame.new(c.X, c.Y, c.Z - 0.14), (r - 0.22) * 0.68, rings)
-	for _, sx in { -1, 1 } do
-		sw:box('GongStrap', V(sx * 0.6 - 0.08, c.Y + r - 0.25, c.Z - 0.06), V(sx * 0.6 + 0.08, y1, c.Z + 0.06), C(52, 54, 66))
-	end
+	local cf = CFrame.new(c.X, c.Y, c.Z + 0.03)
+	Stations.bullseye(sw, cf, r, rings)
+	Stations.holes(sw, cf, r, #rings, holes[1], holes[2], k.tier, holes[3])
 	return sw
 end
 
 ---------------------------------------------------------------------------------------------- lane pieces
--- The base: a low studded kerb round the mat (one course) and the flat inset mat.
+-- The base: a low studded kerb round the mat (one course, the same dark grey on every bay) and the bay's floor.
 function Stations.base(st, t)
 	local X, Z, MX, MZ, Y = Stations.HALF_X, Stations.HALF_Z, Stations.HALF_X - 1, Stations.HALF_Z - 1, Stations.MAT_Y
 	for _, b in { { V(-X, 0, -Z), V(X, Stations.RIM_Y, -MZ) }, { V(-X, 0, MZ), V(X, Stations.RIM_Y, Z) }, { V(-X, 0, -MZ), V(-MX, Stations.RIM_Y, MZ) }, { V(MX, 0, -MZ), V(X, Stations.RIM_Y, MZ) } } do
-		studs(st:box('Rim', b[1], b[2], t.rim))
+		studs(st:box('Rim', b[1], b[2], Stations.Common.rim))
 	end
 	local mat = st:box('Mat', V(-MX, 0, -MZ), V(MX, Y, MZ), t.mat, t.matMat or M.Plastic)
 	if mat.Material == M.Plastic then studs(mat) end
 end
 
--- The firing line: a waist-high counter across the lane (a body and a top that overhangs it a little), and on it
--- ear muffs, an ammo box and two casings. Even bays mirror the props, so neighbours never match.
-function Stations.bench(st, t, tier)
+-- The booth: a plywood partition at the firing line on the +X kerb (bay 1, the row's end, also gets one on -X).
+function Stations.booth(st, tier)
+	local g = st:group('Booth')
+	for _, sx in tier == 1 and { 1, -1 } or { 1 } do
+		g:box('Partition', V(sx * 4.05, 0, -4.9), V(sx * 4.45, Stations.MAT_Y + 4.0, -0.8), Stations.Common.partition, M.Wood)
+	end
+end
+
+-- The firing line: a waist-high counter across the lane (a grey body under a wood top that overhangs it a little),
+-- and on it a pistol lying on a pale foam rest, with a spent casing beside it and another on the floor. The pistol
+-- moves along the bench from bay to bay (no two neighbours match).
+Stations.BenchLayouts = { -1.3, 1.1, -0.4, 1.6, -1.7, 0.5, -1.0, 1.4 } -- pistol x (its muzzle points to the middle)
+function Stations.bench(st, tier)
+	local K = Stations.Common
 	local Y, z, h = Stations.MAT_Y, Stations.BENCH_Z, Stations.BENCH_H
 	local g = st:group('Bench')
-	g:box('BenchBody', V(-3.4, Y, z - 0.42), V(3.4, Y + h - 0.3, z + 0.42), t.body, t.bodyMat or M.SmoothPlastic)
-	g:box('BenchTop', V(-3.6, Y + h - 0.3, z - 0.62), V(3.6, Y + h, z + 0.5), t.top, t.topMat or M.SmoothPlastic)
+	g:box('BenchBody', V(-3.4, Y, z - 0.42), V(3.4, Y + h - 0.3, z + 0.42), K.benchBody, M.SmoothPlastic)
+	g:box('BenchTop', V(-3.6, Y + h - 0.3, z - 0.62), V(3.6, Y + h, z + 0.5), K.benchTop, M.Wood)
 	local d = st:group('BenchProps')
-	local y, flip = Y + h, tier % 2 == 0 and -1 or 1
-	-- Ear muffs: two dark cups under a yellow band.
-	local mx = -2.5 * flip
-	for _, sx in { -1, 1 } do
-		decor(d:blob('EarCup', V(0.5, 0.55, 0.55), V(mx + sx * 0.4, y + 0.28, z - 0.05), C(50, 52, 60), M.SmoothPlastic))
-	end
-	decor(d:box('EarBand', V(mx - 0.5, y + 0.5, z - 0.12), V(mx + 0.5, y + 0.64, z + 0.02), C(255, 210, 50)))
-	-- Ammo box (olive, a yellow stripe) and two brass casings beside it.
-	local ax = 2.5 * flip
-	decor(d:box('AmmoBox', V(ax - 0.45, y, z - 0.3), V(ax + 0.45, y + 0.48, z + 0.22), C(86, 104, 58)))
-	decor(d:box('AmmoStripe', V(ax - 0.47, y + 0.3, z - 0.32), V(ax + 0.47, y + 0.38, z + 0.24), C(250, 200, 40)))
-	for _, s in { { -0.85, -0.18, 0.3 }, { -1.15, 0.12, 1.6 } } do
-		decor(d:part('Shell', V(0.32, 0.14, 0.14), CFrame.new(ax + s[1] * flip, y + 0.07, z + s[2]) * CFrame.Angles(0, s[3], 0), C(236, 186, 76), M.Metal, Enum.PartType.Cylinder))
-	end
+	local y = Y + h
+	local px = Stations.BenchLayouts[(tier - 1) % #Stations.BenchLayouts + 1]
+	local muzzle = px < 0 and 1 or -1 -- (+1: the muzzle points +X, toward the lane's middle)
+	local rest = CFrame.new(px, y, z - 0.02) * CFrame.Angles(0, math.rad(-16 * muzzle), 0) -- (turned a little down the lane)
+	-- The pistol lies on its side on a 45-degree foam wedge (its slope faces up and toward the shooter), so its
+	-- profile shows from the box, from the aisle and from the hall; its middle sits on the slope's middle.
+	local slope = rest * CFrame.new(0, 0.5, 0)
+	decor(d:wedge('PistolRest', V(2.3, 1.0, 1.0), slope, K.rest, M.Fabric))
+	Stations.pistol(d, slope * CFrame.Angles(math.rad(45), 0, 0) * CFrame.new(0, 0.3, -0.16) * CFrame.Angles(0, muzzle < 0 and math.pi or 0, 0) * CFrame.new(-0.5, 0, 0))
+	decor(d:part('Shell', V(0.34, 0.15, 0.15), CFrame.new(px - 1.45 * muzzle, y + 0.075, z - 0.2) * CFrame.Angles(0, 0.4 + tier, 0), K.brass, M.Metal, Enum.PartType.Cylinder))
+	decor(d:part('Shell', V(0.34, 0.15, 0.15), CFrame.new(px * 0.6 + 0.5 * muzzle, Y + 0.075, z - 1.35) * CFrame.Angles(0, 1.1 + tier * 0.7, 0), K.brass, M.Metal, Enum.PartType.Cylinder))
 end
 
 -- The entrance at the aisle end: the plaque post (left) and a rope post (right) on the kerb, with a rope between
 -- them while the lane is locked (the first paint is a new player's view: only bay 1 open; Lobby.client repaints
--- it), and the bay's one plaque on the left post, tilted back a little for the camera: BAY n, xN POWER, the Power
--- it needs (FREE on bay 1) and its state, readable up close (hidden past 60 studs).
+-- it), and the bay's one plaque on the left post at waist height, tilted back a little: BAY n, xN POWER, the Power
+-- it needs (FREE on bay 1) and its state, readable up close (hidden past 60 studs), below the eye line in the lane.
 function Stations.entrance(st, s, t, tier)
 	local z, y0 = Stations.ENTRY_Z, Stations.RIM_Y
-	local post = t.rim:Lerp(C(0, 0, 0), 0.2) -- (the lane's own kerb colour: the posts belong to the bay)
+	local post = Stations.Common.post
 	local g = st:group('Entrance')
-	g:box('PlaquePost', V(-4.22, y0, z - 0.2), V(-3.82, y0 + 2.5, z + 0.2), post)
+	g:box('PlaquePost', V(-4.22, y0, z - 0.2), V(-3.82, y0 + 1.75, z + 0.2), post)
 	g:box('RopePost', V(3.84, y0, z - 0.18), V(4.2, y0 + 1.95, z + 0.18), post)
 	g:box('RopePostCap', V(3.78, y0 + 1.95, z - 0.24), V(4.26, y0 + 2.15, z + 0.24), post)
-	local a, m, b = V(-3.82, y0 + 1.8, z), V(0, y0 + 1.4, z), V(3.84, y0 + 1.8, z)
+	local a, m, b = V(-3.82, y0 + 1.6, z), V(0, y0 + 1.25, z), V(3.84, y0 + 1.8, z)
 	for _, seg in { { a, m }, { m, b } } do
 		local rope = decor(g:bar('LockRope', seg[1], seg[2], 0.16, C(186, 52, 60), M.SmoothPlastic))
 		rope.CastShadow = false
 		rope.Transparency = tier == 1 and 1 or 0
 	end
-	-- The plaque: a small board (1.5 x 1.8) in a deep shade of the lane's kerb colour on the post's top (it belongs to the
-	-- bay, and with the text hidden it is a small coloured tab, not a black board), its text on a SurfaceGui.
-	local sign = decor(g:part('Sign', V(1.5, 1.8, 0.16), CFrame.new(-3.6, y0 + 3.2, z - 0.12) * CFrame.Angles(math.rad(10), 0, 0), t.rim:Lerp(C(10, 10, 16), 0.45)))
+	-- The plaque: a small board (1.35 x 1.62) in a deep shade of the bay's floor colour on the post's top (it belongs
+	-- to the bay, and with the text hidden it is a small coloured tab), its text on a SurfaceGui. Its top is 3.6 over
+	-- the deck: under the eye line of a player standing in the lane.
+	local sign = decor(g:part('Sign', V(1.35, 1.62, 0.16), CFrame.new(-3.8, y0 + 2.06, z - 0.12) * CFrame.Angles(math.rad(10), 0, 0), t.mat:Lerp(C(10, 10, 16), 0.55)))
 	sign.CastShadow = false
 	local gui = surface(sign, Enum.NormalId.Front, 60)
 	gui.Name = 'Label'
@@ -825,83 +858,101 @@ function Stations.entrance(st, s, t, tier)
 	return sign
 end
 
--- The backstop's body: one wall across the outer end, `h` over the mat, and a cap on it (a lip proud of the
--- front). Returns the wall and the cap's top.
-function Stations.wall(c, h, color, material, cap, capMat)
-	local Y, z0, z1 = Stations.MAT_Y, Stations.BACK_Z, Stations.HALF_Z - 0.1
-	local wall = c:box('Backstop', V(-4.3, 0, z0), V(4.3, Y + h, z1), color, material)
-	if cap then c:box('BackstopCap', V(-4.4, Y + h, z0 - 0.12), V(4.4, Y + h + 0.4, z1 + 0.05), cap, capMat) end
-	return wall, Y + h + (cap and 0.4 or 0)
-end
--- A backstop of n upright boards side by side across the outer end, `h` over the mat (plus dh[i] each),
--- alternating `colors`, every other one set back `step`: raw planks, painted boards, a curtain's folds.
-function Stations.boards(c, name, h, n, colors, dh, material, step)
-	local Y, z0, z1 = Stations.MAT_Y, Stations.BACK_Z, Stations.HALF_Z - 0.1
-	local w = 8.6 / n
-	for i = 1, n do
-		local x = -4.3 + (i - 1) * w
-		c:box(name, V(x + 0.03, 0, z0 + (i % 2) * (step or 0.08)), V(x + w - 0.03, Y + h + (dh and dh[i] or 0), z1), colors[(i - 1) % #colors + 1], material)
+-- The backstop: one concrete wall across the outer end, `h` over the mat, under a darker cap (a lip proud of the
+-- front), and `misses` stray holes in its face round the target. Returns the cap's top.
+function Stations.backstop(st, tier, misses, c)
+	local K = Stations.Common
+	local Y, z0, z1, h = Stations.MAT_Y, Stations.BACK_Z, Stations.HALF_Z - 0.1, Stations.wallHeight(tier)
+	local back = st:group('Backstop')
+	back:box('Backstop', V(-4.3, 0, z0), V(4.3, Y + h, z1), K.back, M.Concrete)
+	back:box('BackstopCap', V(-4.4, Y + h, z0 - 0.12), V(4.4, Y + h + 0.4, z1 + 0.05), K.backCap, M.Concrete)
+	for i = 1, misses do
+		local a = math.rad(tier * 71 + i * 151)
+		local r = 2.45 + 0.5 * ((tier * 0.29 + i * 0.41) % 1)
+		local x, y = c.X + r * math.cos(a) * 1.3, math.min(c.Y + r * math.sin(a) * 0.8, Y + h - 0.6)
+		decor(Stations.disc(back, 'BulletHole', CFrame.new(math.clamp(x, -3.8, 3.8), y, z0 - 0.025), 0.15, 0.05, K.hole))
 	end
+	return Y + h + 0.4
 end
--- The cap along a backstop's top (a lip proud of the front), `h` over the mat.
-function Stations.cap(c, h, color, material)
-	local Y = Stations.MAT_Y
-	return c:box('BackstopCap', V(-4.4, Y + h, Stations.BACK_Z - 0.16), V(4.4, Y + h + 0.4, Stations.HALF_Z - 0.05), color, material)
+
+-- The hidden lane lamp: an invisible part over the field with a SpotLight aimed at the target (critic 9 lighting
+-- notes). Bright while the lane is open, dim while it is locked: Lobby.client sets Brightness to the light's Open
+-- or Locked attribute with the rope. BAY 1, a new player's first lane, is warm; the rest are a cool white. The
+-- first paint is a new player's view: bay 1 open.
+function Stations.lamp(st, tier, aim)
+	local p = ghost(st:part('TargetLamp', V(0.3, 0.3, 0.3), CFrame.lookAt(Stations.LAMP + V(aim.X, 0, 0), aim), P.white))
+	p.CastShadow = false
+	local l = Instance.new('SpotLight')
+	l.Name = 'LaneLight'
+	l.Face = Enum.NormalId.Front
+	l.Color = tier == 1 and Stations.Common.lamp or C(235, 242, 255)
+	l.Range, l.Angle, l.Shadows = 16, 60, false
+	l:SetAttribute('Open', tier == 1 and 1.4 or 1.1)
+	l:SetAttribute('Locked', 0.4)
+	l.Brightness = l:GetAttribute(tier == 1 and 'Open' or 'Locked')
+	l.Parent = p
+	return p
 end
 
 ---------------------------------------------------------------------------------------------- lanes
--- One builder per theme: the backstop, the target on its stand and the hero prop. `k` holds st (the station),
--- gear (Equipment > Gear), targets (Equipment > Targets), t, tier and burners (hero parts that carry the
--- theme's effect: the barrel's coals, the drum's lid).
+-- One builder per theme: the target on its stand and the bay's one hero prop. `k` holds st (the station),
+-- gear (Equipment > Gear), targets (Equipment > Targets), t, tier, aim (the target centre) and burners (the hero part that carries an
+-- effect, if any).
 Stations.Lanes = {}
 local WHITE, RED = C(250, 250, 245), C(226, 56, 60)
 
--- 1 Stone: a fence of raw planks of uneven height, a plywood bullseye on a wooden stake.
+-- 1 Stone: a plywood bullseye on a wooden stake; a stack of old tyres by the backstop (holes all over: the first
+-- bay).
 function Stations.Lanes.stone(k)
-	local h = Stations.wallHeight(k.tier)
-	local back = k.st:group('Backstop')
-	Stations.boards(back, 'Plank', h, 6, { C(176, 124, 82), C(150, 102, 66) }, { -0.35, 0.1, -0.2, 0.2, -0.3, 0.05 })
-	Stations.board(k, k.t, 1.55, C(206, 160, 110), { WHITE, RED, WHITE, RED })
+	Stations.board(k, k.t, 1.55, C(206, 160, 110), { WHITE, RED, WHITE, RED }, 'Tock', nil, { 4, 0.9 })
+	local tyre, hole = C(46, 46, 52), C(18, 18, 20)
+	local tc = k.gear:group('Tyres')
+	local Y = Stations.MAT_Y
+	for i, o in { { -2.55, 7.35 }, { -2.4, 7.25 }, { -2.62, 7.4 } } do
+		Stations.can(tc, 'Tyre', V(o[1], Y + (i - 1) * 0.62, o[2]), 1.0, 0.6, tyre)
+	end
+	decor(Stations.can(tc, 'TyreHole', V(-2.62, Y + 1.86, 7.4), 0.5, 0.04, hole))
 end
 
--- 2 Red: a fence of even boards painted navy under a red cap (the raw planks, done properly); a red and white
--- bullseye on a navy board and stake.
+-- 2 Red: a red and white bullseye on a navy board and stake; a striped police barrier at the side of the field.
 function Stations.Lanes.red(k)
-	local h = Stations.wallHeight(k.tier)
-	local back = k.st:group('Backstop')
-	Stations.boards(back, 'Board', h, 5, { C(46, 52, 100), C(38, 44, 88) }, nil, M.SmoothPlastic, 0.05)
-	Stations.cap(back, h, k.t.top)
-	Stations.board(k, k.t, 1.6, C(38, 44, 88), { WHITE, C(235, 35, 60), WHITE, C(235, 35, 60), C(255, 214, 40) })
+	Stations.board(k, k.t, 1.6, C(38, 44, 88), { WHITE, C(235, 35, 60), WHITE, C(235, 35, 60), C(255, 214, 40) }, 'Tock', nil, { 4, 0.8 })
+	local bc = k.gear:group('Barrier')
+	local Y = Stations.MAT_Y
+	local at = CFrame.new(2.35, Y, 3.4) * CFrame.Angles(0, math.rad(-16), 0)
+	for _, sx in { -1, 1 } do
+		bc:part('BarrierLeg', V(0.18, 2.3, 0.7), at * CFrame.new(sx * 1.2, 1.1, 0) * CFrame.Angles(0, 0, math.rad(sx * 8)), C(40, 44, 70), M.SmoothPlastic)
+	end
+	bc:part('BarrierBoard', V(3.0, 0.55, 0.12), at * CFrame.new(0, 1.95, -0.1), WHITE, M.SmoothPlastic)
+	for _, x in { -0.75, 0.75 } do
+		decor(bc:part('BarrierStripe', V(0.6, 0.57, 0.14), at * CFrame.new(x, 1.95, -0.1), C(226, 50, 56), M.SmoothPlastic))
+	end
 end
 
--- 3 Lava: a basalt berm (a base and two tilted boulders on it, a jagged top), a dark steel gong with painted orange rings on a steel gong stand, and
--- one burning barrel at the berm's foot (HoodVFX sets its coals on fire: the lane's only flame).
+-- 3 Lava: a steel plate with orange rings on a steel stake; a fire barrel at the backstop's foot (its flame is two
+-- painted wedges: the row has no fire effects and no lights but the lane lamps).
 function Stations.Lanes.lava(k)
-	local Y, h, z0, z1 = Stations.MAT_Y, Stations.wallHeight(k.tier), Stations.BACK_Z, Stations.HALF_Z - 0.1
-	local back = k.st:group('Backstop')
-	local rock, rock2 = C(62, 44, 48), C(84, 58, 58)
-	local zc = (z0 + z1) / 2
-	back:part('Basalt', V(8.6, Y + h * 0.55, z1 - z0), CFrame.new(0, (Y + h * 0.55) / 2, zc), rock, M.Slate)
-	back:part('Basalt', V(4.8, h * 0.42, z1 - z0 - 0.3), CFrame.new(-1.6, Y + h * 0.7, zc) * CFrame.Angles(0, math.rad(3), math.rad(9)), rock2, M.Slate)
-	back:part('Basalt', V(3.8, h * 0.34, z1 - z0 - 0.3), CFrame.new(2.0, Y + h * 0.66, zc) * CFrame.Angles(0, math.rad(-3), math.rad(-12)), rock, M.Slate)
-	Stations.gong(k, k.t, 1.62, C(70, 66, 76), M.Metal, C(96, 90, 102), M.Metal, { C(240, 120, 40), C(96, 90, 102), C(255, 196, 80) })
-	local pos = V(3.15, Y, 7.3)
-	Stations.drum(k.gear, pos, 0.6, 1.7, C(150, 50, 32), C(70, 34, 28), C(40, 24, 22), M.Metal)
-	table.insert(k.burners, k.gear:part('Coals', V(0.08, 0.98, 0.98), CFrame.new(pos + V(0, 1.72, 0)) * CFrame.Angles(0, 0, math.pi / 2), C(255, 150, 40), M.SmoothPlastic, Enum.PartType.Cylinder))
+	local Y = Stations.MAT_Y
+	Stations.board(k, k.t, 1.6, C(96, 90, 102), { C(240, 120, 40), WHITE, C(240, 120, 40), C(255, 196, 80) }, 'Ding', M.Metal, { 4, 0.75 })
+	local pos = V(3.1, Y, 7.35)
+	Stations.drum(k.gear, pos, 0.62, 1.75, C(150, 50, 32), C(70, 34, 28), C(40, 24, 22), M.Metal)
+	k.gear:part('Coals', V(0.08, 1.0, 1.0), CFrame.new(pos + V(0, 1.77, 0)) * CFrame.Angles(0, 0, math.pi / 2), C(214, 104, 48), M.Slate, Enum.PartType.Cylinder)
+	-- A still, low-poly flame out of its top (two painted wedges, no light, no particles).
+	local f = CFrame.new(pos + V(0, 1.8, 0)) * CFrame.Angles(0, math.rad(30), 0)
+	decor(k.gear:wedge('Flame', V(0.5, 1.2, 0.7), f * CFrame.new(0, 0.6, 0), C(244, 138, 44)))
+	decor(k.gear:wedge('Flame', V(0.4, 0.8, 0.5), f * CFrame.Angles(0, math.pi, 0) * CFrame.new(0.05, 0.4, 0.05), C(255, 206, 80)))
 end
 
--- 4 Arcane: a carnival booth's violet curtain (seven folds) under a pink pelmet, a spinner (pink, violet and white rings) on a violet post that turns
--- slowly and spins when hit, and a bunch of three balloons tied by the post, bobbing.
+-- 4 Arcane: a carnival spinner (pink, violet and white rings) on a violet post that turns slowly and spins when
+-- hit; a bunch of three balloons tied by the post, bobbing.
 function Stations.Lanes.arcane(k)
-	local Y, c = Stations.MAT_Y, Stations.TARGET
-	local h = Stations.wallHeight(k.tier)
-	local back = k.st:group('Backstop')
-	Stations.boards(back, 'Curtain', h, 7, { C(112, 66, 158), C(90, 52, 132) }, nil, M.Fabric, 0.14)
-	Stations.cap(back, h, k.t.top)
-	Stations.stake(k.gear, k.t, c.Y)
+	local Y, c = Stations.MAT_Y, k.aim
+	Stations.stake(k.gear, k.t, c.Y, c.X)
 	local sw = Stations.target(k, CFrame.new(c), 'Spin', 'Ding')
-	Stations.disc(sw, 'SpinnerBack', CFrame.new(c.X, c.Y, c.Z + 0.12), 1.72, 0.16, k.t.body)
-	Stations.bullseye(sw, CFrame.new(c.X, c.Y, c.Z + 0.03), 1.6, { WHITE, C(255, 100, 200), WHITE, C(150, 60, 220), C(255, 220, 60) })
+	Stations.disc(sw, 'SpinnerBack', CFrame.new(c.X, c.Y, c.Z + 0.12), 1.72, 0.16, k.t.stand)
+	local cf = CFrame.new(c.X, c.Y, c.Z + 0.03)
+	Stations.bullseye(sw, cf, 1.6, { WHITE, C(255, 100, 200), WHITE, C(150, 60, 220), C(255, 220, 60) })
+	Stations.holes(sw, cf, 1.6, 5, 3, 0.7, k.tier)
 	local bc, bunch = k.gear:group('BalloonBunch')
 	local foot = V(2.7, Y + 0.3, 6.6)
 	bc:box('BalloonWeight', foot - V(0.25, 0.3, 0.25), foot + V(0.25, 0.05, 0.25), C(255, 214, 60))
@@ -915,88 +966,57 @@ function Stations.Lanes.arcane(k)
 	bunch:AddTag('HoodMotion')
 end
 
--- 5 Shadow: a wall of big obsidian blocks (two courses, offset) under a violet cap, a dark steel plate with
--- painted violet and lavender rings on a black stake, and a cluster of violet crystals at the wall's foot.
+-- 5 Shadow: a dark steel plate with violet and lavender rings on a black stake; one tall violet crystal by the
+-- backstop.
 function Stations.Lanes.shadow(k)
-	local Y, h, z0, z1 = Stations.MAT_Y, Stations.wallHeight(k.tier), Stations.BACK_Z, Stations.HALF_Z - 0.1
+	local Y = Stations.MAT_Y
 	local violet, dark = C(170, 110, 255), C(40, 30, 60)
-	local back = k.st:group('Backstop')
-	for row = 0, 1 do
-		local ya, yb = row == 0 and 0 or Y + h * 0.55, row == 0 and Y + h * 0.55 or Y + h
-		local xs = row == 0 and { -4.3, 0.7, 4.3 } or { -4.3, -1.5, 4.3 }
-		for i = 1, 2 do
-			back:box('Obsidian', V(xs[i] + 0.04, ya, z0 + ((i + row) % 2) * 0.1), V(xs[i + 1] - 0.04, yb - 0.04, z1), (i + row) % 2 == 0 and C(34, 24, 50) or C(26, 18, 40), M.Slate)
-		end
-	end
-	Stations.cap(back, h, k.t.top)
-	Stations.board(k, k.t, 1.6, dark, { violet, dark, C(214, 190, 255), dark, violet }, 'Ding', M.Metal)
-	local cc = k.gear:group('Crystals')
-	for _, s in { { 2.9, 7.5, 1.1, 3.2, 8 }, { 2.05, 7.9, 0.85, 2.2, -14 }, { 3.6, 7.0, 0.75, 1.6, 20 } } do
-		local p = cc:part('Crystal', V(s[3], s[4], s[3]), CFrame.new(s[1], Y + s[4] / 2 - 0.1, s[2]) * CFrame.Angles(0, math.rad(45), math.rad(s[5])), violet, M.Glass)
-		p.Transparency = 0.15
-	end
+	Stations.board(k, k.t, 1.6, dark, { violet, C(214, 190, 255), violet, C(214, 190, 255), violet }, 'Ding', M.Metal, { 3, 0.6 })
+	-- The crystal: a tall square prism turned 45 degrees with a ridged point (a cube on its edge), leaning a little.
+	local at = CFrame.new(-2.85, Y, 7.55) * CFrame.Angles(0, 0, math.rad(8)) * CFrame.Angles(0, math.rad(45), 0)
+	local cr = k.gear:part('Crystal', V(1.2, 3.0, 1.2), at * CFrame.new(0, 1.5, 0), violet, M.Glass)
+	local tip = k.gear:part('CrystalTip', V(0.85, 0.85, 1.2), at * CFrame.new(0, 3.0, 0) * CFrame.Angles(0, 0, math.rad(45)), violet, M.Glass)
+	cr.Transparency, tip.Transparency = 0.12, 0.12
 end
 
--- 6 Frost: a wall of four big ice blocks under a studded snow cap with icicles, an ice bullseye (white and deep
--- blue) on an ice pillar.
+-- 6 Frost: an ice-blue bullseye on a steel-blue stake; a block of ice at the side of the field.
 function Stations.Lanes.frost(k)
-	local Y, h, z0, z1 = Stations.MAT_Y, Stations.wallHeight(k.tier), Stations.BACK_Z, Stations.HALF_Z - 0.1
-	local snow, iceA, iceB, deep = C(248, 252, 255), C(150, 225, 250), C(120, 205, 240), C(25, 120, 235)
-	local back = k.st:group('Backstop')
-	for row = 0, 1 do
-		local ya, yb = row == 0 and 0 or Y + h / 2, row == 0 and Y + h / 2 or Y + h
-		local xs = row == 0 and { -4.3, 0.4, 4.3 } or { -4.3, -1.2, 4.3 }
-		for i = 1, 2 do
-			local p = back:box('IceWall', V(xs[i] + 0.04, ya, z0 + ((i + row) % 2) * 0.1), V(xs[i + 1] - 0.04, yb - 0.04, z1), (i + row) % 2 == 0 and iceA or iceB)
-			p.Reflectance = 0.15
-		end
-	end
-	studs(back:box('SnowTop', V(-4.4, Y + h, z0 - 0.12), V(4.4, Y + h + 0.45, z1 + 0.05), snow))
-	for i, len in { 0.9, 0.6, 1.1, 0.7 } do Stations.icicle(back, V(-3.3 + (i - 1) * 2.2, Y + h, z0 - 0.06), len, 0.36) end
-	local c = Stations.TARGET
-	local pillar = k.gear:box('IcePillar', V(-0.55, Y, c.Z + 0.3), V(0.55, c.Y - 1.5, c.Z + 1.3), C(170, 230, 250))
-	pillar.Reflectance = 0.15
-	local sw = Stations.target(k, CFrame.new(c.X, c.Y - 1.72, c.Z + 0.25), 'Tip', 'Ice')
-	Stations.disc(sw, 'IceBoard', CFrame.new(c.X, c.Y, c.Z + 0.12), 1.72, 0.2, C(90, 200, 245))
-	Stations.bullseye(sw, CFrame.new(c.X, c.Y, c.Z + 0.03), 1.6, { snow, deep, snow, deep, WHITE })
+	local Y = Stations.MAT_Y
+	local snow, deep = C(248, 252, 255), C(25, 120, 235)
+	Stations.board(k, k.t, 1.6, C(90, 200, 245), { snow, deep, snow, deep, WHITE }, 'Ice', nil, { 3, 0.55 })
+	local ice = k.gear:part('IceBlock', V(2.0, 1.9, 1.7), CFrame.new(-2.45, Y + 0.95, 4.6) * CFrame.Angles(0, math.rad(-12), 0), C(170, 228, 250), M.Ice)
+	ice.Transparency, ice.Reflectance = 0.15, 0.1
 end
 
--- 7 Toxic: a dark ribbed container wall, a lime and navy bullseye on a dark plate and stake, and a lime toxic drum
--- at the wall's foot (HoodVFX bubbles out of its lid).
+-- 7 Toxic: a lime and navy bullseye on a dark plate and stake; a lime toxic drum at the backstop's foot.
 function Stations.Lanes.toxic(k)
-	local Y, h, z0 = Stations.MAT_Y, Stations.wallHeight(k.tier), Stations.BACK_Z
-	local lime, navy, dark = C(110, 220, 90), C(24, 30, 70), C(26, 64, 60)
-	local back = k.st:group('Backstop')
-	Stations.wall(back, h, dark, M.Metal, k.t.rim)
-	for _, x in { -2.9, 0, 2.9 } do back:box('Rib', V(x - 0.2, 0.6, z0 - 0.16), V(x + 0.2, Y + h, z0 + 0.1), dark:Lerp(C(255, 255, 255), 0.14), M.Metal) end
-	Stations.board(k, k.t, 1.6, navy, { WHITE, navy, lime, navy, lime }, 'Ding', M.Metal)
-	table.insert(k.burners, Stations.drum(k.gear, V(-3.0, Y, 7.3), 0.7, 2.0, lime, navy, C(40, 120, 50)))
+	local Y = Stations.MAT_Y
+	local lime, navy = C(110, 220, 90), C(24, 30, 70)
+	Stations.board(k, k.t, 1.6, navy, { WHITE, navy, lime, navy, lime }, 'Ding', M.Metal, { 3, 0.5 })
+	Stations.drum(k.gear, V(-3.0, Y, 7.3), 0.7, 2.0, lime, navy, C(40, 120, 50))
 end
 
--- 8 Gold: a gold wall with a crimson velvet panel and a cream cap, a gold gong with a velvet ring and a ruby on a
--- gold gong stand, and a crown on the wall's cap that turns slowly (the top bay's hero).
+-- 8 Gold: a gold gong with a crimson ring and a ruby on a gold gong stand (the top bay's hero and its target);
+-- a tight group of lead splashes round the ruby.
 function Stations.Lanes.gold(k)
-	local Y, h, z0 = Stations.MAT_Y, Stations.wallHeight(k.tier), Stations.BACK_Z
-	local gold, deep, velvet = C(255, 222, 40), C(245, 190, 0), C(130, 52, 68)
-	local back = k.st:group('Backstop')
-	local _, top = Stations.wall(back, h, C(220, 180, 90), M.SmoothPlastic, C(255, 248, 220))
-	back:box('Velvet', V(-3.6, 1.2, z0 - 0.08), V(3.6, Y + h - 0.6, z0 + 0.1), velvet, M.Fabric)
-	local sw = Stations.gong(k, k.t, 1.8, deep, M.SmoothPlastic, gold, M.SmoothPlastic, { velvet, gold })
-	sw:part('GongRuby', V(0.5, 0.5, 0.3), CFrame.new(Stations.TARGET + V(0, 0, -0.32)) * CFrame.Angles(0, 0, math.pi / 4), C(235, 30, 70), M.Glass)
-	-- The crown: a gold band on a cream rim with five points and a ruby, on the cap's middle.
-	local at = CFrame.new(0, top, Stations.HALF_Z - 1.05) -- (on the cap, inside the slot's back edge)
-	local cc, crown = back:group('Crown')
-	cc:part('CrownRim', V(0.24, 2.1, 2.1), at * CFrame.new(0, 0.12, 0) * CFrame.Angles(0, 0, math.pi / 2), C(255, 252, 235), M.SmoothPlastic, Enum.PartType.Cylinder)
-	cc:part('CrownBand', V(0.7, 1.85, 1.85), at * CFrame.new(0, 0.59, 0) * CFrame.Angles(0, 0, math.pi / 2), deep, M.SmoothPlastic, Enum.PartType.Cylinder)
-	for i = 0, 4 do
-		cc:part('CrownPoint', V(0.62, 0.62, 0.3), at * CFrame.Angles(0, i * 2 * math.pi / 5, 0) * CFrame.new(0, 1.05, -0.78) * CFrame.Angles(0, 0, math.pi / 4), gold)
+	local c = k.aim
+	local gold, deep, velvet = C(255, 222, 40), C(245, 190, 0), C(150, 46, 64)
+	local y1 = Stations.gongStand(k.gear, k.t)
+	local sw = Stations.target(k, CFrame.new(c.X, y1, c.Z), 'Swing', 'Ding')
+	local r = 1.85
+	Stations.disc(sw, 'GongRim', CFrame.new(c.X, c.Y, c.Z + 0.03), r, 0.24, deep)
+	Stations.disc(sw, 'Gong', CFrame.new(c.X, c.Y, c.Z - 0.02), r - 0.22, 0.28, gold)
+	local cf = CFrame.new(c.X, c.Y, c.Z - 0.14)
+	Stations.bullseye(sw, cf, (r - 0.22) * 0.68, { velvet, gold })
+	sw:part('GongRuby', V(0.5, 0.5, 0.3), CFrame.new(c + V(0, 0, -0.32)) * CFrame.Angles(0, 0, math.pi / 4), C(235, 30, 70), M.Glass)
+	Stations.holes(sw, cf, (r - 0.22) * 0.68, 2, 3, 0.75, k.tier, Stations.Common.splash)
+	for _, sx in { -1, 1 } do
+		sw:box('GongStrap', V(sx * 0.6 - 0.08, c.Y + r - 0.25, c.Z - 0.06), V(sx * 0.6 + 0.08, y1, c.Z + 0.06), C(52, 54, 66))
 	end
-	cc:part('CrownGem', V(0.36, 0.36, 0.2), at * CFrame.new(0, 0.6, -0.97) * CFrame.Angles(0, 0, math.pi / 4), C(235, 30, 70), M.Glass)
-	for _, p in crown:GetDescendants() do if p:IsA('BasePart') then decor(p) end end
-	crown.WorldPivot = cc:world(at)
-	crown:SetAttribute('Spin', 30)
-	crown:AddTag('HoodMotion')
 end
+
+-- Stray holes in each backstop (misses), fewer up the row.
+Stations.Misses = { 2, 2, 1, 1, 1, 0, 1, 0 }
 
 -- Build station `stationId` (a Skins.Stations id; not Ring) in ctx (see the frame above). Returns the model.
 function Stations.build(ctx, stationId, opts)
@@ -1020,12 +1040,16 @@ function Stations.build(ctx, stationId, opts)
 	-- Where the player stands to train: the shooter's box, from the aisle edge to just short of the bench.
 	local zone = st:box('TrainingZone', V(-MX, Y - 0.06, -Stations.HALF_Z), V(MX, Y, Stations.BOX_Z), P.white)
 	zone.Transparency, zone.CanCollide, zone.CanQuery, zone.CanTouch, zone.CastShadow = 1, false, false, false, false
-	Stations.bench(st, t, tier)
+	Stations.booth(st, tier)
+	Stations.bench(st, tier)
 	Stations.entrance(st, s, t, tier)
+	local aim = Stations.aimOf(tier)
+	Stations.backstop(st, tier, Stations.Misses[tier] or 0, aim)
+	Stations.lamp(st, tier, aim)
 
 	-- Equipment: the stand and the hero prop (Gear) and the knockable target (Targets).
 	local eq = st:group('Equipment')
-	local k = { st = st, gear = eq:group('Gear'), targets = eq:group('Targets'), t = t, tier = tier, burners = {} }
+	local k = { st = st, gear = eq:group('Gear'), targets = eq:group('Targets'), t = t, tier = tier, aim = aim, burners = {} }
 	local lane = Stations.Lanes[t.name] or Stations.Lanes.stone
 	lane(k)
 	-- The target and small gear never block players or rays.
@@ -1035,10 +1059,10 @@ function Stations.build(ctx, stationId, opts)
 
 	model:SetAttribute('Tier', tier)
 	model:SetAttribute('TextColor', t.text) -- (the HUD hint shows the range's multiplier in it)
-	model:SetAttribute('HitPoint', st:world(CFrame.new(Stations.TARGET)).Position)
+	model:SetAttribute('HitPoint', st:world(CFrame.new(aim)).Position)
 	model:SetAttribute('HitColor', t.glow)
-	if opts.vfx ~= false and VFX and VFX.theme then
-		-- The theme's effect comes off its hero prop (the barrel, the drum) or fills the target field lightly.
+	if t.fx and opts.vfx ~= false and VFX and VFX.theme then
+		-- The theme's effect (only the top bay has one: glints round the gold gong).
 		local z0, z1 = Stations.FIELD_Z0, Stations.FIELD_Z1
 		local field = ghost(st:box('Field', V(-MX, Y - 0.05, z0), V(MX, Y, z1), P.white))
 		field.CanCollide = false
