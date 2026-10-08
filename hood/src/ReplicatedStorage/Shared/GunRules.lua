@@ -9,14 +9,31 @@ local GunRules = {}
 GunRules.Range = 14 -- how close (studs) you must stand to a gun's point (on the shop counter) to buy or equip it
 
 -- Gun-shop colours per state, shared by the map builder (first paint) and the client (repaints). Only small parts
--- take them: Top = the backing panel behind each hung gun (a muted rose while locked, blue owned, green
--- equipped), Text = the price or state word on the gun's dark tag.
+-- take them: Top = the card behind each shown gun (in the slat wall's own blue-grey while locked, so a gun you
+-- don't have seems to hang on the bare wall; blue once owned, green equipped: colour means "yours"), Text = the
+-- price or state word on the gun's dark tag.
 local C = Color3.fromRGB
 GunRules.Colors = {
-	Locked = { Top = C(184, 156, 168), Text = C(255, 224, 110) },
+	Locked = { Top = C(104, 110, 124), Text = C(255, 224, 110) },
 	Owned = { Top = C(104, 152, 218), Text = C(150, 200, 255) },
 	Equipped = { Top = C(88, 188, 118), Text = C(140, 236, 160) },
 }
+
+-- Rarity bands by tier, in an order anyone reads without text: bronze, silver, gold, diamond. The shop shows a
+-- gun's band on the metal strip along its tag (and the shop's mounts climb with it); the client bursts in it
+-- when you buy the gun.
+GunRules.Rarity = {
+	{ Name = 'Bronze', MaxTier = 3, Color = C(190, 120, 70) },
+	{ Name = 'Silver', MaxTier = 6, Color = C(204, 210, 220) },
+	{ Name = 'Gold', MaxTier = 8, Color = C(240, 192, 64) },
+	{ Name = 'Diamond', MaxTier = math.huge, Color = C(120, 224, 250) },
+}
+function GunRules.rarity(tier: number?)
+	for _, band in GunRules.Rarity do
+		if (tier or 1) <= band.MaxTier then return band end
+	end
+	return GunRules.Rarity[#GunRules.Rarity]
+end
 
 -- Makes a Guns table safe to use in place: unknown ids are dropped, the starter is always owned, and the
 -- equipped gun is a known one you own (otherwise the starter). Returns the same table.

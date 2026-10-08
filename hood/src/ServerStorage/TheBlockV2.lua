@@ -1048,46 +1048,71 @@ function Stations.build(ctx, stationId, opts)
 	return model
 end
 ---------------------------------------------------------------------------------------------- armory
--- The ARMORY as a gun shop (Brief 9: it must read as a shop with every sign hidden). A booth in the warehouse:
--- a long counter facing the hall, a slat wall behind it with the guns hung on pegs in two rows (the cheap five
--- low, the better five high, the rows offset so every gun has its own place along the counter), a till and a
--- stool at the counter's end, brick side walls and a roofed back room behind the wall.
--- Colour lives only on small parts at each gun: its backing panel, trimmed to the gun, in the state colour (a
--- muted rose when locked, blue owned, green equipped; Armory.client repaints it), a small gold padlock through the
--- trigger guard while it is locked, and a small dark tag under it with a strip in the gun's own colour (its
--- rarity). The equipped gun is taken off the rack (it is in your hands); its pegs and green panel stay.
+-- The ARMORY as a gun shop (Brief 9: it must read as a shop with every sign hidden; Brief 10: no grid, quiet
+-- padlocks, a rarity order you can read). A booth in the warehouse: a wood counter facing the hall with the till
+-- at the end the customers come from, a lift flap, then a tall glass case; a slat wall behind with the guns hung
+-- by kind, the mount itself climbing with the price from the till end:
+--   handguns on pegs (bronze)  ->  rifles standing in a rack (silver)  ->  the top shelf (gold)
+--   ->  the glass case (diamond, the two best guns on risers)
+-- Colour lives only on small parts at each gun: a card behind it in the state colour (a plain grey card while
+-- locked, blue owned, green equipped; Armory.client repaints it), a small brass padlock hanging under its tag
+-- while it is locked, and the tag's top band in the gun's rarity metal (GunRules.Rarity: bronze, silver, gold,
+-- diamond). The equipped gun is taken off its mount (it is in your hands); the mount and the green card stay.
 --
 -- Contract (GunService and HoodClient/Armory): one Model GunSlot_<Id> per gun with attributes GunId, Tier,
 -- Cost, Multiplier, streaming Atomic, holding
---   GunPoint_<Id>  invisible part on the counter's front edge in front of the gun: the prompt anchor and the
---                  point GunService measures buying distance from (GunRules.Range)
---   parts the client paints by name from GunRules.Colors[state]: StatePanel (Top: the backing panel);
+--   GunPoint_<Id>  invisible part on the counter's (or the case's) front edge in front of the gun: the prompt
+--                  anchor and the point GunService measures buying distance from (GunRules.Range)
+--   parts the client paints by name from GunRules.Colors[state]: StatePanel (Top: the card behind the gun);
 --                  StateLock parts (the padlock) show only while the gun is locked
 --   GunTag         SurfaceGui GunLabel on the tag > TextLabels Name, Multiplier, Price (Glyph attribute = icon
 --                  text); the client writes the price or the state word into Price
 --   Display        Model with the gun (the client hides it while equipped)
 -- The Armory model is tagged HoodArmory.
 -- Local frame: origin at the middle of the slot's front edge on the hall floor, front faces -Z (customers stand
--- at -Z looking +Z), footprint x -29.4..29.4, z 0..31.2 (Armory.HalfWidth, Armory.Depth), 13.6 tall.
+-- at -Z looking +Z; +X is their left, the north end toward the spawn), footprint x -29.4..29.4, z 0..31.2
+-- (Armory.HalfWidth, Armory.Depth), 13.6 tall.
 local Armory = {}
 
 Armory.HalfWidth, Armory.Depth = 29.4, 31.2
--- The counter: front face z0, back z1, top at `top`; it runs from the left wall to x0, leaving a gap at the
--- right end for the clerk.
-Armory.Counter = { z0 = 6.5, z1 = 9.5, top = 3.4, x0 = -25.4 }
+-- The counter line: front face z0, back z1, counter top height. Along x (north +): the wood counter from the
+-- north end to the lift flap, the flap, then the glass case to the south wall.
+Armory.Counter = { z0 = 6.5, z1 = 9.5, top = 3.4, north = 29.4, flap = -10.4, case = -13.4, south = -28.6 }
 -- The slat wall's face, its thickness and height; the back room behind it runs to the slot's back.
 Armory.Wall = { z = 15, t = 0.8, top = 13 }
--- Guns along the wall: neighbours Pitch apart in x, alternately low row and high row (gun 1 low on the
--- customer's left, gun 6 high next to it, ...); each row's tags hang from y Rows[r], its guns hang over them.
-Armory.Pitch = 4.9
-Armory.Rows = { 4.4, 8.8 }
-Armory.TagW, Armory.TagH = 2.7, 0.95
-Armory.GunLen, Armory.GunH = 6.8, 3.3 -- the longest and tallest a hung gun may be
--- The shop's own tones: the hall's greys for the cap, a blue-grey slat wall, a dark counter, hood brick, brass.
+Armory.TagW, Armory.TagH = 2.7, 1.05
+Armory.GunLen, Armory.GunH = 6.8, 3.3 -- the longest and tallest a shown gun may be
+-- The mounts. Rack: the rifles' butts stand on a wood rest (top `rest`, front face z `front`), a bar across
+-- them at `bar`. Shelf: a wood shelf (top y, front face z) on two brackets. Case: plinth top (the deck), glass
+-- top, its front and back glass.
+Armory.Rack = { x0 = 10.0, x1 = -1.4, rest = 4.0, front = 12.9, bar = 9.0 }
+Armory.Shelf = { x0 = -2.6, x1 = -15.6, y = 7.4, front = 12.3 }
+Armory.Case = { deck = 2.0, top = 6.9, front = 6.6, back = 9.45 }
+Armory.Till = 27.4 -- the till's x on the counter (at the north end, where customers arrive)
+-- Where each gun goes: its mount and its x along the shop (the cheap end, by the till, first); pegs also give
+-- the height of the tag's top edge, case risers their height. Each x is its own, so every gun has its own prompt
+-- spot along the counter; the gaps follow the guns' lengths, not a fixed pitch.
+Armory.Place = {
+	Pistol = { mount = 'peg', x = 23.0, y = 4.4 },
+	Revolver = { mount = 'peg', x = 17.8, y = 6.7 },
+	Uzi = { mount = 'peg', x = 12.9, y = 4.7 },
+	Shotgun = { mount = 'rack', x = 7.9 },
+	Tommy = { mount = 'rack', x = 4.5 },
+	AK = { mount = 'rack', x = 0.9 },
+	Deagle = { mount = 'shelf', x = -5.4 },
+	Minigun = { mount = 'shelf', x = -11.8 },
+	Blaster = { mount = 'case', x = -17.6, rise = 0.3 },
+	Diamond = { mount = 'case', x = -24.5, rise = 0.75 },
+}
+-- Pegs for guns the shop doesn't know yet (opts.guns), high on the north wall; more than these are not hung.
+Armory.Spare = { { mount = 'peg', x = 24.4, y = 9.4 }, { mount = 'peg', x = 13.4, y = 9.6 } }
+-- The shop's own tones: the hall's greys for the cap, a blue-grey slat wall, a dark-wood counter with a light
+-- top, hood brick, plain wood for the rack and shelf, a dark velvet deck in the case, brass.
 Armory.Paint = {
 	slat = C(92, 98, 112), groove = C(66, 70, 82), skirt = C(70, 72, 80), cap = C(204, 206, 210),
-	counter = C(66, 70, 80), counterTop = C(226, 228, 232), kick = C(44, 46, 52), brick = P.brick,
-	tag = C(46, 48, 56), peg = C(196, 200, 206), lock = C(226, 182, 66), lockDark = C(150, 116, 40), door = C(84, 88, 98),
+	counter = C(132, 94, 66), counterTop = C(226, 228, 232), kick = C(44, 46, 52), brick = P.brick,
+	wood = C(176, 128, 86), velvet = C(54, 52, 64), glass = C(206, 228, 238),
+	tag = C(46, 48, 56), peg = C(196, 200, 206), lock = C(170, 140, 70), lockDark = C(118, 96, 48),
 }
 
 -- Optional modules made by other builders (Shared.HoodVFX, Shared.Models.GunModels / IconModels): nil when
@@ -1172,7 +1197,7 @@ function Armory.placeholder(gun, scale)
 	return model
 end
 
--- The hung gun: GunModels.build when it exists (else the stand-in), at about 3 x its hand size for a pistol and
+-- The shown gun: GunModels.build when it exists (else the stand-in), at about 3 x its hand size for a pistol and
 -- less for the long ones (length ~ hand length ^ 0.5), never longer than GunLen or taller than GunH.
 function Armory.gun(gun)
 	local models = Armory.optional('GunModels')
@@ -1198,48 +1223,46 @@ function Armory.gun(gun)
 	return model
 end
 
--- Where gun i (1-based, ladder order) hangs: its x along the wall and its row (1 low, 2 high).
-function Armory.spot(i)
-	local row, col = (i - 1) // 5 + 1, (i - 1) % 5
-	local j = 2 * col + row - 1 -- 0..9 along the wall from the customer's left (+X)
-	return (4.5 - j) * Armory.Pitch, row
+-- The gun's rarity metal (GunRules.Rarity by tier; the gun's own colour if GunRules has no bands).
+function Armory.rarity(gun)
+	local ok, rules = pcall(require, ReplicatedStorage.Shared.GunRules)
+	local band = ok and rules.rarity and rules.rarity(gun.Tier)
+	return band and band.Color or gun.Color
 end
 
--- A small gold padlock (body and shackle) standing proud of the panel at `cf` (its front faces -Z).
+-- A small brass padlock (body and shackle) hanging under the tag's left end at `cf` (its front faces -Z).
 function Armory.padlock(s, cf)
 	local G = Armory.Paint
-	decor(s:part('StateLock', V(0.8, 0.62, 0.26), cf, G.lock))
-	decor(s:part('StateLock', V(0.14, 0.42, 0.14), cf * CFrame.new(-0.24, 0.48, 0), G.lockDark))
-	decor(s:part('StateLock', V(0.14, 0.42, 0.14), cf * CFrame.new(0.24, 0.48, 0), G.lockDark))
-	decor(s:part('StateLock', V(0.62, 0.14, 0.14), cf * CFrame.new(0, 0.69, 0), G.lockDark))
+	decor(s:part('StateLock', V(0.45, 0.35, 0.18), cf, G.lock))
+	decor(s:part('StateLock', V(0.28, 0.24, 0.08), cf * CFrame.new(0, 0.29, 0), G.lockDark))
 end
 
--- The tag under the gun: a small dark label with a strip in the gun's own colour (its rarity) along its top,
--- the name over the multiplier and the price (the client writes the price or the state word). Read at the
--- counter; from across the hall it is only the coloured strip.
-function Armory.tag(s, x, y, z, gun, look)
+-- The tag: a small dark label with a band in the gun's rarity metal along its top, the name over the multiplier
+-- and the price (the client writes the price or the state word); `y` is its top edge, `z` its face. Read at the
+-- counter; from across the hall it is only the metal band. The padlock hangs under its left end.
+function Armory.tag(s, x, y, z, gun, look, metal)
 	local G = Armory.Paint
 	local w, h = Armory.TagW, Armory.TagH
 	local tag = decor(s:part('GunTag', V(w, h, 0.12), CFrame.new(x, y - h / 2, z), G.tag))
-	decor(s:part('GunRarity', V(w, 0.18, 0.14), CFrame.new(x, y - 0.09, z - 0.01), gun.Color))
+	decor(s:part('GunRarity', V(w + 0.3, 0.34, 0.2), CFrame.new(x, y - 0.17, z - 0.04), metal))
 	local g = surface(tag, Enum.NormalId.Front, 80)
 	g.Name = 'GunLabel'
 	local ink = C(20, 22, 28)
-	line(g, 'Name', string.upper(gun.Name), P.white, FONT.title, 0.22, 0.36, ink, 1.5)
-	local m = line(g, 'Multiplier', 'x' .. gun.Multiplier, P.white, FONT.loud, 0.58, 0.36, ink, 1.5)
-	m.Position, m.Size = UDim2.fromScale(0.06, 0.58), UDim2.fromScale(0.3, 0.36)
+	line(g, 'Name', string.upper(gun.Name), P.white, FONT.title, 0.33, 0.28, ink, 1.5)
+	local m = line(g, 'Multiplier', 'x' .. gun.Multiplier, P.white, FONT.loud, 0.63, 0.33, ink, 1.5)
+	m.Position, m.Size = UDim2.fromScale(0.06, 0.63), UDim2.fromScale(0.3, 0.33)
 	m.TextXAlignment = Enum.TextXAlignment.Left
 	local icons = Armory.optional('IconModels')
 	local image = icons and icons.Images and icons.Images.Cash
-	local p = line(g, 'Price', gun.Cost == 0 and 'FREE' or compact(gun.Cost), look.Text, FONT.loud, 0.58, 0.36, ink, 1.5)
-	p.Position, p.Size = UDim2.fromScale(0.34, 0.58), UDim2.fromScale(0.6, 0.36)
+	local p = line(g, 'Price', gun.Cost == 0 and 'FREE' or compact(gun.Cost), look.Text, FONT.loud, 0.63, 0.33, ink, 1.5)
+	p.Position, p.Size = UDim2.fromScale(0.34, 0.63), UDim2.fromScale(0.6, 0.33)
 	p.TextXAlignment = Enum.TextXAlignment.Right
 	if type(image) == 'string' and image ~= '' then
 		local i = Instance.new('ImageLabel')
 		i.Name = 'PriceIcon'
 		i.BackgroundTransparency = 1
 		i.Image = image
-		i.Position, i.Size = UDim2.fromScale(0.36, 0.58), UDim2.fromScale(0.14, 0.36)
+		i.Position, i.Size = UDim2.fromScale(0.36, 0.63), UDim2.fromScale(0.14, 0.33)
 		local a = Instance.new('UIAspectRatioConstraint')
 		a.Parent = i
 		i.Parent = g
@@ -1248,11 +1271,13 @@ function Armory.tag(s, x, y, z, gun, look)
 		p.Text = '💵 ' .. p.Text
 		p:SetAttribute('Glyph', '💵')
 	end
+	Armory.padlock(s, CFrame.new(x + w / 2 - 0.45, y - h - 0.32, z))
 	return tag
 end
 
--- One gun on the wall: its panel, pegs, the gun, its tag and padlock, and its point on the counter.
-function Armory.slot(c, gun, i, colors)
+-- One gun on its mount: the card behind it, the gun, the mount's own bits (pegs, a stand, a riser), its tag and
+-- padlock, and its point on the counter.
+function Armory.slot(c, gun, spot, colors)
 	local s, model = c:group('GunSlot_' .. gun.Id)
 	-- Streams in as one piece, so a client that sees the slot also sees its point, tag and gun.
 	pcall(function() model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic end)
@@ -1262,47 +1287,67 @@ function Armory.slot(c, gun, i, colors)
 	model:SetAttribute('Multiplier', gun.Multiplier)
 	local state = gun.Cost == 0 and 'Equipped' or 'Locked' -- a new player's view; the client repaints
 	local look = colors[state]
-	local x, row = Armory.spot(i)
-	local wz = Armory.Wall.z
+	local G, C0, R, Sh, Ca = Armory.Paint, Armory.Counter, Armory.Rack, Armory.Shelf, Armory.Case
+	local x, wz = spot.x, Armory.Wall.z
 	local g = Armory.gun(gun)
 	local lo, hi = Armory.extents(g, Armory.pivotOf(g))
 	local len, tall, thick = hi.Z - lo.Z, hi.Y - lo.Y, hi.X - lo.X
-	-- the gun hangs level in profile (muzzle to the customer's right) on two pegs, just over its tag, in front of
-	-- a board in the state colour a little smaller than the gun (the gun overhangs it at both ends, so the wall
-	-- reads as guns on a rack, not as framed pictures)
-	local gy = Armory.Rows[row] + 0.2 + tall / 2
-	local w, h = len * 0.72 + 0.4, tall * 0.72 + 0.4
-	decor(s:box('StatePanel', V(x - w / 2, gy - h / 2, wz - 0.3), V(x + w / 2, gy + h / 2, wz), look.Top))
-	local gz = wz - 0.3 - 0.25 - thick / 2
 	local mid = (lo + hi) / 2
+	-- Rifles stand muzzle up; everything else is shown level in profile, muzzle to the customer's right. w, h:
+	-- the gun's outline as the customer sees it.
+	local upright = spot.mount == 'rack'
+	local w, h = upright and tall or len, upright and len or tall
+	local back, gy, tagY, tagZ -- the card's back face, the gun's centre height, the tag's top edge and face
+	if spot.mount == 'rack' then
+		back, gy, tagY, tagZ = wz, R.rest + 0.05 + h / 2, R.rest - 0.1, R.front - 0.07
+	elseif spot.mount == 'shelf' then
+		back, gy, tagY, tagZ = wz, Sh.y + 0.3 + h / 2, Sh.y, Sh.front - 0.07
+	elseif spot.mount == 'case' then
+		back, gy, tagY, tagZ = Ca.back - 0.1, Ca.deck + 0.1 + spot.rise + 0.25 + h / 2, Ca.deck - 0.1, C0.z0 - 0.07
+	else
+		back, gy, tagY, tagZ = wz, spot.y + 0.2 + h / 2, spot.y, wz - 0.38
+	end
+	-- the card in the state colour, a little smaller than the gun (the gun overhangs it, so the wall reads as
+	-- guns on mounts, not as framed pictures)
+	local cw, ch = w * 0.72 + 0.4, h * 0.72 + 0.4
+	decor(s:box('StatePanel', V(x - cw / 2, gy - ch / 2, back - 0.3), V(x + cw / 2, gy + ch / 2, back), look.Top))
+	local gz = back - 0.3 - 0.25 - thick / 2
 	local d, display = s:group('Display')
-	local pose = CFrame.new(x, gy, gz) * CFrame.Angles(0, math.pi / 2, 0)
+	local pose = CFrame.new(x, gy, gz) * (upright and CFrame.Angles(0, 0, -math.pi / 2) or CFrame.new()) * CFrame.Angles(0, math.pi / 2, 0)
 	Armory.place(g, d:world(pose * CFrame.new(-mid)))
 	g.Name = 'Gun'
 	g.Parent = display
 	display.WorldPivot = d:world(CFrame.new(x, gy, gz))
-	local bottom = gy - tall / 2
-	for _, px in { x - len * 0.28, x + len * 0.28 } do
-		decor(s:box('Peg', V(px - 0.12, bottom - 0.24, gz - 0.2), V(px + 0.12, bottom, wz - 0.3), Armory.Paint.peg))
+	local bottom = gy - h / 2
+	if spot.mount == 'peg' then
+		-- two short pegs under it
+		for _, px in { x - len * 0.28, x + len * 0.28 } do
+			decor(s:box('Peg', V(px - 0.12, bottom - 0.24, gz - 0.2), V(px + 0.12, bottom, wz - 0.3), G.peg))
+		end
+	elseif spot.mount == 'shelf' or spot.mount == 'case' then
+		-- a short dark stand under it (in the case, on a velvet riser)
+		local foot = spot.mount == 'shelf' and Sh.y or Ca.deck + 0.1
+		if spot.mount == 'case' then
+			decor(s:box('Riser', V(x - 1.2, foot, gz - 0.7), V(x + 1.2, foot + spot.rise, gz + 0.7), G.velvet))
+			foot += spot.rise
+		end
+		decor(s:box('Stand', V(x - 0.45, foot, gz - 0.25), V(x + 0.45, bottom, gz + 0.25), G.kick))
 	end
-	Armory.tag(s, x, Armory.Rows[row], wz - 0.38, gun, look)
-	-- the padlock hangs through the trigger guard (in front of the grip, toward the muzzle), a new player's view
-	-- (hidden once owned)
-	local grip = V(x - mid.Z, gy - mid.Y, gz + mid.X)
-	Armory.padlock(s, CFrame.new(grip.X - 0.1 * len, grip.Y - 0.75, gz - thick / 2 - 0.2))
+	Armory.tag(s, x, tagY, tagZ, gun, look, Armory.rarity(gun))
 	if state ~= 'Locked' then
 		for _, p in model:GetDescendants() do if p.Name == 'StateLock' then p.Transparency = 1 end end
 	end
-	-- The point: on the counter's front edge straight in front of the gun.
-	local C0 = Armory.Counter
+	-- The point: on the counter's (or the case's) front edge straight in front of the gun.
 	ghost(s:box('GunPoint_' .. gun.Id, V(x - 0.5, C0.top, C0.z0 - 0.2), V(x + 0.5, C0.top + 1, C0.z0 + 0.8), P.white)).CastShadow = false
 	return model
 end
 
--- The booth: the slat wall with its back room, brick side walls, the counter with a till, a stool.
+-- The booth: the slat wall with its back room, brick side walls, the wood counter with the till and a stool,
+-- the lift flap, the glass case, the rifle rack and the top shelf.
 function Armory.shop(c)
 	local b = c:group('ArmoryShop')
 	local G, X, D, Wl, C0 = Armory.Paint, Armory.HalfWidth, Armory.Depth, Armory.Wall, Armory.Counter
+	local R, Sh, Ca = Armory.Rack, Armory.Shelf, Armory.Case
 	local wz, top = Wl.z, Wl.top
 	-- the slat wall: a blue-grey board with dark grooves every 1.1 studs and a dark skirting
 	b:box('SlatWall', V(-X + 0.8, 0, wz), V(X - 0.8, top, wz + Wl.t), G.slat, M.SmoothPlastic)
@@ -1310,36 +1355,63 @@ function Armory.shop(c)
 		b:box('SlatGroove', V(-X + 0.8, y, wz - 0.06), V(X - 0.8, y + 0.16, wz + 0.1), G.groove, M.SmoothPlastic)
 	end
 	b:box('SlatSkirt', V(-X + 0.8, 0, wz - 0.15), V(X - 0.8, 0.9, wz + 0.1), G.skirt, M.SmoothPlastic)
-	-- the wall's light cap runs back as the back room's roof (to the warehouse wall); the door to the back room
-	-- stands behind the counter's gap
+	-- the wall's light cap runs back as the back room's roof (to the warehouse wall)
 	b:box('BackRoof', V(-X + 0.9, top, wz - 0.3), V(X - 0.9, top + 0.5, D), G.cap, M.SmoothPlastic)
-	b:box('DoorFrame', V(-X + 1.0, 0, wz - 0.12), V(-X + 4.4, 7.9, wz + 0.1), G.cap, M.SmoothPlastic)
-	b:box('BackDoor', V(-X + 1.35, 0, wz - 0.18), V(-X + 4.05, 7.55, wz + 0.1), G.door, M.SmoothPlastic)
-	-- brick side walls: the left one runs forward past the counter to frame the shop, the right one stops at the
-	-- counter's gap
-	b:box('SideWall', V(X - 0.8, 0, 2), V(X, top, D), G.brick, M.Brick)
-	b:box('SideWallCap', V(X - 0.9, top, 1.9), V(X + 0.1, top + 0.6, D), G.cap, M.SmoothPlastic)
+	-- brick side walls: the north one starts behind the counter, so the counter's end and the till show to
+	-- customers coming from the spawn; the south one runs to the counter's front and closes the case's end
+	b:box('SideWall', V(X - 0.8, 0, C0.z1), V(X, top, D), G.brick, M.Brick)
+	b:box('SideWallCap', V(X - 0.9, top, C0.z1 - 0.1), V(X + 0.1, top + 0.6, D), G.cap, M.SmoothPlastic)
 	b:box('SideWall', V(-X, 0, C0.z0), V(-X + 0.8, top, D), G.brick, M.Brick)
 	b:box('SideWallCap', V(-X - 0.1, top, C0.z0 - 0.1), V(-X + 0.9, top + 0.6, D), G.cap, M.SmoothPlastic)
-	-- the counter: dark body on a darker kick plate, a light top with a lip over the front
-	local x1 = X - 0.8
-	b:box('Counter', V(C0.x0, 0.5, C0.z0 + 0.15), V(x1, C0.top - 0.3, C0.z1), G.counter, M.SmoothPlastic)
-	b:box('CounterKick', V(C0.x0 + 0.1, 0, C0.z0 + 0.4), V(x1, 0.5, C0.z1 - 0.1), G.kick, M.SmoothPlastic)
-	b:box('CounterTop', V(C0.x0 - 0.2, C0.top - 0.3, C0.z0 - 0.15), V(x1, C0.top, C0.z1 + 0.15), G.counterTop, M.SmoothPlastic)
-	-- the till at the left end: a dark base with a lighter drawer front, a sloped key block toward the clerk,
+	-- the wood counter: dark-wood body on a darker kick plate, a light top with a lip over the front and the end
+	local xn, xf = C0.north, C0.flap
+	b:box('Counter', V(xf, 0.5, C0.z0 + 0.15), V(xn, C0.top - 0.3, C0.z1), G.counter, M.SmoothPlastic)
+	b:box('CounterKick', V(xf, 0, C0.z0 + 0.4), V(xn - 0.25, 0.5, C0.z1 - 0.1), G.kick, M.SmoothPlastic)
+	b:box('CounterTop', V(xf, C0.top - 0.3, C0.z0 - 0.15), V(xn + 0.1, C0.top, C0.z1 + 0.15), G.counterTop, M.SmoothPlastic)
+	-- the lift flap: a set-back half door under a plain wood flap, the clerk's way out
+	b:box('FlapDoor', V(C0.case, 0.3, C0.z1 - 1.3), V(xf, C0.top - 0.3, C0.z1 - 1.1), G.counter, M.SmoothPlastic)
+	b:box('Flap', V(C0.case + 0.08, C0.top - 0.3, C0.z0 - 0.15), V(xf - 0.08, C0.top, C0.z1 + 0.15), G.wood, M.SmoothPlastic)
+	-- the till at the north end: a dark base with a lighter drawer front, a sloped key block toward the clerk,
 	-- the screen on a short post facing the customer
-	local tx, tz = x1 - 2.6, C0.z0 + 1.6
+	local tx, tz = Armory.Till, C0.z0 + 1.6
 	local t = C0.top
 	b:box('Till', V(tx - 1.4, t, tz - 1.0), V(tx + 1.4, t + 0.9, tz + 1.1), G.kick, M.SmoothPlastic)
-	b:box('TillDrawer', V(tx - 1.2, t + 0.15, tz - 1.1), V(tx + 1.2, t + 0.6, tz - 0.9), G.counter, M.SmoothPlastic)
-	b:wedge('TillKeys', V(2.6, 0.6, 1.2), CFrame.new(tx, t + 1.2, tz + 0.45) * CFrame.Angles(0, math.pi, 0), G.counter)
+	b:box('TillDrawer', V(tx - 1.2, t + 0.15, tz - 1.1), V(tx + 1.2, t + 0.6, tz - 0.9), C(70, 74, 84), M.SmoothPlastic)
+	b:wedge('TillKeys', V(2.6, 0.6, 1.2), CFrame.new(tx, t + 1.2, tz + 0.45) * CFrame.Angles(0, math.pi, 0), C(70, 74, 84))
 	b:box('TillPost', V(tx - 0.15, t + 0.9, tz - 0.3), V(tx + 0.15, t + 2.0, tz), G.kick, M.SmoothPlastic)
 	b:box('TillScreen', V(tx - 0.8, t + 1.85, tz - 0.45), V(tx + 0.8, t + 2.7, tz - 0.1), C(70, 150, 120), M.SmoothPlastic)
 	-- the clerk's stool behind the till
-	local sx, sz = tx - 0.6, C0.z1 + 1.6
+	local sx, sz = tx - 0.8, C0.z1 + 1.6
 	b:post('StoolFoot', 0.75, 0.2, V(sx, 0, sz), G.kick, M.SmoothPlastic)
 	b:post('StoolPost', 0.16, 2.3, V(sx, 0.2, sz), G.peg, M.Metal)
 	b:post('StoolSeat', 0.85, 0.32, V(sx, 2.5, sz), C(168, 62, 58), M.SmoothPlastic)
+	-- the glass case: a dark-wood plinth with a velvet deck, glass on four sides, a light top
+	local c0, c1 = C0.south, C0.case
+	b:box('CasePlinth', V(c0, 0.45, C0.z0), V(c1, Ca.deck, C0.z1 + 0.1), G.counter, M.SmoothPlastic)
+	b:box('CaseKick', V(c0, 0, C0.z0 + 0.25), V(c1 - 0.25, 0.45, C0.z1), G.kick, M.SmoothPlastic)
+	b:box('CaseDeck', V(c0, Ca.deck, C0.z0 + 0.1), V(c1 - 0.1, Ca.deck + 0.1, C0.z1), G.velvet, M.SmoothPlastic)
+	local function glass(name, a, z)
+		local p = decor(b:box(name, a, z, G.glass, M.Glass))
+		p.Transparency = 0.72
+		p.CastShadow = false
+		p.CanCollide = true
+	end
+	glass('CaseGlass', V(c0, Ca.deck + 0.1, Ca.front - 0.1), V(c1, Ca.top, Ca.front + 0.05))
+	glass('CaseGlass', V(c0, Ca.deck + 0.1, Ca.back), V(c1, Ca.top, Ca.back + 0.15))
+	glass('CaseGlass', V(c1 - 0.15, Ca.deck + 0.1, Ca.front + 0.05), V(c1, Ca.top, Ca.back))
+	b:box('CasePost', V(c1 - 0.25, Ca.deck + 0.1, Ca.front - 0.15), V(c1 + 0.05, Ca.top, Ca.front + 0.15), G.kick, M.SmoothPlastic)
+	b:box('CaseTop', V(c0, Ca.top, C0.z0 - 0.05), V(c1 + 0.1, Ca.top + 0.3, C0.z1 + 0.2), G.counterTop, M.SmoothPlastic)
+	-- the rifle rack: a wood rest the butts stand on and a bar across the barrels, held off the wall by two arms
+	b:box('RackRest', V(R.x1, 0, R.front), V(R.x0, R.rest, wz), G.wood, M.SmoothPlastic)
+	b:box('RackBar', V(R.x1, R.bar, R.front + 0.2), V(R.x0, R.bar + 0.4, R.front + 0.5), G.wood, M.SmoothPlastic)
+	for _, ax in { R.x1, R.x0 - 0.3 } do
+		b:box('RackArm', V(ax, R.bar, R.front + 0.2), V(ax + 0.3, R.bar + 0.4, wz), G.wood, M.SmoothPlastic)
+	end
+	-- the top shelf on two brackets
+	b:box('Shelf', V(Sh.x1, Sh.y - 0.3, Sh.front), V(Sh.x0, Sh.y, wz), G.wood, M.SmoothPlastic)
+	for _, bx in { Sh.x1 + 0.8, Sh.x0 - 1.05 } do
+		b:wedge('ShelfBracket', V(0.25, 0.9, 1.6), CFrame.new(bx + 0.125, Sh.y - 0.75, wz - 0.8) * CFrame.Angles(0, 0, math.pi), G.wood)
+	end
 	return b
 end
 
@@ -1351,9 +1423,14 @@ function Armory.build(ctx, opts)
 	local a, model = ctx:group('Armory')
 	model:AddTag('HoodArmory')
 	Armory.shop(a)
-	for i, gun in guns do
-		if i > 10 then break end
-		Armory.slot(a, gun, i, colors)
+	local spare = 0
+	for _, gun in guns do
+		local spot = Armory.Place[gun.Id]
+		if not spot then
+			spare += 1
+			spot = Armory.Spare[spare]
+		end
+		if spot then Armory.slot(a, gun, spot, colors) end
 	end
 	return model
 end

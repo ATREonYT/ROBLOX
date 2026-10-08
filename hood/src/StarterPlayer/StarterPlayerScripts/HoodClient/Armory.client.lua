@@ -1,8 +1,9 @@
--- The ARMORY (the gun shop) on your screen: a prompt on the counter in front of every gun on the wall (Buy /
--- Equip / Equipped), each gun's backing panel painted in your state colours (a muted rose with a padlock on the
--- gun while locked, blue owned, green equipped, the equipped gun taken off the rack because it is in your hands)
--- and its tag's price or state word to match, a small burst when a gun becomes yours, and everyone's equipped gun
--- worn on the right hip while it isn't in their hand (the held gun tool, Shoot.client, takes its place).
+-- The ARMORY (the gun shop) on your screen: a prompt on the counter in front of every gun in the shop (Buy /
+-- Equip / Equipped), the card behind each gun painted in your state colours (a plain grey card and a small
+-- padlock under its tag while locked, blue owned, green equipped, the equipped gun taken off its mount because it
+-- is in your hands) and its tag's price or state word to match, a small burst in the gun's rarity metal when it
+-- becomes yours, and everyone's equipped gun worn on the right hip while it isn't in their hand (the held gun
+-- tool, Shoot.client, takes its place).
 -- The server decides everything (GunService); this only asks and shows.
 --
 -- Reads the player attributes GunService keeps (OwnedGuns, EquippedGun) and Net 'ProfileUpdated' (Guns).
@@ -128,7 +129,7 @@ local function paint(slot, state)
 		local color = look[ROLES[p.Name]]
 		if color then p.Color = color end
 	end
-	-- the padlock only while it is locked; the gun leaves the rack while it is equipped (it is in your hands)
+	-- the padlock only while it is locked; the gun leaves its mount while it is equipped (it is in your hands)
 	for _, p in slot.Locks do p.Transparency = state == 'Locked' and 0 or 1 end
 	for p, t in slot.GunParts do p.Transparency = state == 'Equipped' and 1 or t end
 	if slot.Price then
@@ -206,16 +207,18 @@ end
 CollectionService:GetInstanceAddedSignal('HoodArmory'):Connect(watchArmory)
 for _, armory in CollectionService:GetTagged('HoodArmory') do watchArmory(armory) end
 
--- A gun that just became yours (or just got equipped) gets a burst and a flash: on the gun if it is still on
--- the rack, else on its green panel (an equipped gun has left the rack for your hands).
+-- A gun that just became yours (or just got equipped) gets a burst in its rarity metal and a flash: on the gun
+-- if it is still on its mount, else on its green card (an equipped gun has left the shop for your hands).
 local function celebrate(slot, text, state)
 	local display = slot.Model:FindFirstChild('Display')
 	local position = display and display:GetPivot().Position or slot.Model:GetPivot().Position
 	local flash = state == 'Equipped' and slot.Parts[1] or display
+	local band = GunRules.rarity and GunRules.rarity(slot.Gun.Tier)
+	local color = band and band.Color or slot.Gun.Color
 	pcall(function()
-		Juice.burst(position, slot.Gun.Color, 1.6)
+		Juice.burst(position, color, 1.6)
 		if flash then Juice.flash(flash) end
-		Juice.popNumber(position + Vector3.new(0, 2, 0), text, slot.Gun.Color)
+		Juice.popNumber(position + Vector3.new(0, 2, 0), text, color)
 	end)
 end
 
