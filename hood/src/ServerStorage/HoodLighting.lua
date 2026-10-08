@@ -1,8 +1,9 @@
 -- Lighting presets (research_notes/Front page feel and gamey stages/lighting_and_gates.md).
--- Lighting is shared by the whole place. TheBlockV2.Build() applies HoodCalm for you; otherwise, in the
+-- Lighting is shared by the whole place. TheBlockV2.Build() applies HoodSoft for you; otherwise, in the
 -- Command Bar:
---   require(game.ServerStorage.HoodLighting).Apply()              -- "HoodCalm": warm-neutral, relaxing (default)
+--   require(game.ServerStorage.HoodLighting).Apply()              -- "HoodSoft": bright and crisp, a touch softer (default)
 --   require(game.ServerStorage.HoodLighting).Apply('FrontPage')   -- the older bright, high-sun, cool-shade look
+--   require(game.ServerStorage.HoodLighting).Apply('HoodCalm')    -- warm-neutral and muted
 --   require(game.ServerStorage.HoodLighting).Apply('GoldenBlock') -- hood evening that stays bright (events)
 --   require(game.ServerStorage.HoodLighting).Restore()            -- put back exactly what was there before
 -- The first Apply saves the current Lighting setup (properties, effects, Sky, Clouds, wind) into
@@ -35,7 +36,26 @@ L.Presets = {
 		clouds = { Cover = 0.55, Density = 0.25, Color = C(255, 255, 255) },
 		wind = Vector3.new(8, 0, 4),
 	},
-	-- The default since the calm pass: warm-neutral and relaxing. A warm grey ambient (the roofed lobby hall is lit
+	-- The default: FrontPage's bright high sun and crisp shade, a little softer. The ambient is a neutral grey
+	-- (FrontPage's violet tinted the grey warehouse lavender), the grade adds no saturation, and the bloom only
+	-- haloes real neon instead of every bright face.
+	HoodSoft = {
+		lighting = {
+			LightingStyle = Enum.LightingStyle.Soft, PrioritizeLightingQuality = true,
+			ClockTime = 13, GeographicLatitude = 30, Brightness = 2.8, ExposureCompensation = 0.15,
+			Ambient = C(140, 142, 150), OutdoorAmbient = C(164, 168, 182),
+			ColorShift_Top = C(255, 240, 220), ColorShift_Bottom = C(146, 156, 186),
+			EnvironmentDiffuseScale = 0.45, EnvironmentSpecularScale = 0.12, ShadowSoftness = 0.25, GlobalShadows = true,
+		},
+		atmosphere = { Density = 0.2, Offset = 0.55, Haze = 0.15, Glare = 0, Color = C(210, 226, 242), Decay = C(160, 180, 218) },
+		grade = { Brightness = 0.03, Contrast = 0.08, Saturation = -0.04, TintColor = C(255, 255, 255) },
+		bloom = { Intensity = 0.45, Size = 26, Threshold = 1.15 },
+		rays = { Intensity = 0.012, Spread = 0.2 },
+		sky = { SunAngularSize = 16, MoonAngularSize = 11, StarCount = 0, CelestialBodiesShown = true },
+		clouds = { Cover = 0.55, Density = 0.25, Color = C(255, 255, 255) },
+		wind = Vector3.new(8, 0, 4),
+	},
+	-- Warm-neutral and muted (the calm pass; no longer the default). A warm grey ambient (the roofed lobby hall is lit
 	-- mostly by Ambient, and FrontPage's violet doubled its floor), slightly desaturated grade, soft bloom that
 	-- only haloes real neon, a light warm depth haze (research/lobby_art_direction.md, "HallCalm").
 	HoodCalm = {
@@ -129,10 +149,10 @@ local function make(class, name, props, parent)
 	return inst
 end
 
--- Apply a preset (default HoodCalm). If the sun would end up in front of players walking down the
+-- Apply a preset (default HoodSoft). If the sun would end up in front of players walking down the
 -- street (toward -Z), the latitude flips so the lit faces of gates and facades face the player.
 function L.Apply(name)
-	name = name or 'HoodCalm'
+	name = name or 'HoodSoft'
 	local preset = L.Presets[name]
 	assert(preset, 'unknown preset ' .. tostring(name))
 	backup()
