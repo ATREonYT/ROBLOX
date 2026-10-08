@@ -1,10 +1,16 @@
--- Stage gates on your screen (lighting_and_gates.md, "States" and "Pass feedback").
---   Locked   Power below the number: the force field is solid for you, the padlock shows, and the bar on
---            the barrier fills toward the number. Walk into it and it flashes red and bumps you back.
---   Ready    You have enough: the field turns green and pulses, the padlock pops off, "GO!".
---   Cleared  Already passed once (the server's count): the field and its lasers are gone.
--- Breaking through shatters the field, bursts confetti, kicks the camera and plays a rising chime; the
--- first clear of each gate also gets the big "STAGE 3 CLEARED!" banner from the server.
+-- Stage gates on your screen. Each gate is the reference street's stage wall: a see-through haze (pink up top,
+-- white at the foot) with "Stage N / Recommended / Power: X" on it, and two pads on the sidewalks in front.
+--   Locked   Power below the number: the wall is solid for you. Walk into it and it flashes red and bumps you back.
+--   Ready    You have enough: the haze turns mint green and breathes, the Power line turns green, walk through.
+--   Cleared  Already passed once (the server's count): the wall, its text and its pads are gone (the last gate's
+--            pads stay, the boss yard's way back), so the street ahead reads like the reference's: one wall, two pads.
+-- Only your next gate shows its text (it reads from far down the street, like the reference); the walls beyond it
+-- show just their haze, so their texts never stack behind the near one.
+-- Breaking through shatters the haze, bursts confetti, kicks the camera and plays a rising chime; the first clear
+-- of each gate also gets the big "STAGE 3 CLEARED!" banner from the server.
+-- Map contract (TheBlockV2 stageGate): a Model tagged HoodStageGate (attributes Stage, Required, LineZ, HalfWidth,
+-- Color, Light) with a Barrier part carrying SurfaceGuis: Frames named Pane (attributes BaseColor and
+-- BaseTransparency) and TextLabels Title, Sub and Power.
 local Players = game:GetService('Players')
 local RS = game:GetService('ReplicatedStorage')
 local CollectionService = game:GetService('CollectionService')
@@ -23,10 +29,13 @@ local frame = active.Frame
 
 local C = Color3.fromRGB
 local GO, DENIED = C(76, 214, 130), C(236, 76, 100) -- (a notch softer than pure neon green and red)
+local MINT, GO_TEXT, GO_INK = C(120, 235, 160), C(120, 236, 140), C(26, 96, 58) -- the ready haze and Power line
 local gates = {}
+local lastStage = 0 -- the furthest gate on the map (its pads never hide)
 
 local function track(model)
 	if gates[model] or not model:IsDescendantOf(active.Root) then return end
+	lastStage = math.max(lastStage, model:GetAttribute('Stage') or 0)
 	gates[model] = {
 		Model = model, Stage = model:GetAttribute('Stage'), Required = model:GetAttribute('Required') or 0,
 		Z = model:GetAttribute('LineZ'), HalfWidth = model:GetAttribute('HalfWidth') or 20,
@@ -41,13 +50,15 @@ CollectionService:GetInstanceRemovedSignal('HoodStageGate'):Connect(function(m) 
 local function collect(e)
 	if e.Barrier and e.Barrier.Parent and e.Collected then return end
 	e.Barrier = e.Model:FindFirstChild('Barrier', true)
-	e.Locks, e.Status, e.Fill, e.Count, e.Guis, e.Lasers = {}, {}, {}, {}, {}, {}
+	e.Panes, e.Lines, e.Guis, e.Pads = {}, {}, {}, {}
 	for _, d in e.Model:GetDescendants() do
-		if d:IsA('BasePart') and (d.Name == 'Lock' or d.Name == 'LaserNub') then table.insert(e.Locks, d)
-		elseif d:IsA('TextLabel') and d.Name == 'Status' then table.insert(e.Status, d)
-		elseif d:IsA('TextLabel') and d.Name == 'Count' then table.insert(e.Count, d)
-		elseif d:IsA('Frame') and d.Name == 'Fill' then table.insert(e.Fill, d)
-		elseif d:IsA('Beam') and d.Name == 'Laser' then table.insert(e.Lasers, d)
+		if d:IsA('Frame') and d.Name == 'Pane' then table.insert(e.Panes, d)
+		elseif d:IsA('BasePart') and (d.Name:sub(1, 8) == 'LobbyPad' or d.Name:sub(1, 11) == 'FurthestPad') then table.insert(e.Pads, d)
+		elseif d:IsA('TextLabel') and (d.Name == 'Power' or d.Name == 'Sub') then
+			table.insert(e.Lines, d)
+			if d:GetAttribute('BaseColor') == nil then d:SetAttribute('BaseColor', d.TextColor3) end
+			local stroke = d:FindFirstChildOfClass('UIStroke')
+			if stroke and stroke:GetAttribute('BaseColor') == nil then stroke:SetAttribute('BaseColor', stroke.Color) end
 		end
 		if d:IsA('SurfaceGui') and d.Parent == e.Barrier then table.insert(e.Guis, d) end
 	end
@@ -59,47 +70,60 @@ local function stateOf(e, power)
 	return power >= e.Required and 'Ready' or 'Locked'
 end
 
-local function paint(e, power)
+-- The haze in a state: its own pink-to-white bands, mint while ready, a red flash when it stops you.
+local function tint(e, toward, amount)
+	for _, f in e.Panes do
+		local base = f:GetAttribute('BaseColor') or f.BackgroundColor3
+		f.BackgroundColor3 = toward and base:Lerp(toward, amount) or base
+	end
+end
+local function breathe(e, k)
+	for _, f in e.Panes do f.BackgroundTransparency = math.clamp((f:GetAttribute('BaseTransparency') or 0.5) + k, 0, 1) end
+end
+
+local function paint(e, power, nextStage)
 	collect(e)
 	local state = stateOf(e, power)
-	local r = math.clamp(power / math.max(e.Required, 1), 0, 1)
-	for _, f in e.Fill do f.Size = UDim2.fromScale(0.62 * r, 0.09) end
-	for _, t in e.Count do t.Text = Format.compact(math.min(power, e.Required)) .. ' / ' .. Format.compact(e.Required) end
-	if e.State == state and e.Painted == e.Barrier then return end
+	local signed = e.Stage == nextStage
+	if e.State == state and e.Painted == e.Barrier and e.Last == lastStage and e.Signed == signed then return end
 	local was = e.State
-	e.State, e.Painted = state, e.Barrier
+	e.State, e.Painted, e.Last, e.Signed = state, e.Barrier, lastStage, signed
 	local b = e.Barrier
 	if b then
 		b.CanCollide = state == 'Locked' -- only for you: your own character's collisions run on your machine
-		b.Color = state == 'Ready' and GO or e.Light
-		b.Transparency = state == 'Cleared' and 1 or (b:GetAttribute('BaseTransparency') or 0.62) -- the street reads behind it
+		b.Transparency = b:GetAttribute('BaseTransparency') or 1
 	end
-	for _, g in e.Guis do g.Enabled = state ~= 'Cleared' end
-	for _, l in e.Lasers do l.Enabled = state == 'Locked' end
-	for _, lock in e.Locks do lock.Transparency = state == 'Locked' and 0 or 1 end
-	for _, t in e.Status do
-		t.Text = state == 'Ready' and 'GO! →' or ('NEED 💪 ' .. Format.compact(e.Required))
-		-- White on the gate's own outline while locked; on the green field, white with a deep green outline.
-		t.TextColor3 = Color3.new(1, 1, 1)
+	for _, g in e.Guis do g.Enabled = state ~= 'Cleared' and (g.Name ~= 'Signage' or signed) end
+	local padsOff = state == 'Cleared' and e.Stage < lastStage
+	for _, pad in e.Pads do
+		pad.Transparency = padsOff and 1 or 0
+		local prompt = pad:FindFirstChildOfClass('ProximityPrompt')
+		if prompt then prompt.Enabled = not padsOff end
+	end
+	tint(e, state == 'Ready' and MINT or nil, 0.6)
+	breathe(e, 0)
+	for _, t in e.Lines do
+		local ready = state == 'Ready' and t.Name == 'Power'
+		t.TextColor3 = ready and GO_TEXT or t:GetAttribute('BaseColor') or t.TextColor3
 		local stroke = t:FindFirstChildOfClass('UIStroke')
-		if stroke then
-			if stroke:GetAttribute('BaseColor') == nil then stroke:SetAttribute('BaseColor', stroke.Color) end
-			stroke.Color = state == 'Ready' and GO:Lerp(Color3.new(0, 0, 0), 0.65) or stroke:GetAttribute('BaseColor')
-		end
+		if stroke then stroke.Color = ready and GO_INK or stroke:GetAttribute('BaseColor') or stroke.Color end
 	end
-	-- The moment a gate opens for you: a quick pop of the status text.
+	-- The moment a gate opens for you: a quick pop of the Power line.
 	if was == 'Locked' and state == 'Ready' then
-		for _, t in e.Status do
-			local s = t:FindFirstChildOfClass('UIScale') or Instance.new('UIScale')
-			s.Parent = t
-			s.Scale = 1.4
-			TweenService:Create(s, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+		for _, t in e.Lines do
+			if t.Name == 'Power' then
+				local s = t:FindFirstChildOfClass('UIScale') or Instance.new('UIScale')
+				s.Parent = t
+				s.Scale = 1.4
+				TweenService:Create(s, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+			end
 		end
 	end
 end
 local function repaint()
 	local power = player:GetAttribute('Power') or 0
-	for _, e in gates do paint(e, power) end
+	local nextStage = (player:GetAttribute('StagesCleared') or 0) + 1
+	for _, e in gates do paint(e, power, nextStage) end
 end
 player:GetAttributeChangedSignal('Power'):Connect(repaint)
 player:GetAttributeChangedSignal('StagesCleared'):Connect(repaint)
@@ -114,7 +138,7 @@ end)
 RunService.Heartbeat:Connect(function()
 	local t = os.clock()
 	for _, e in gates do
-		if e.State == 'Ready' and e.Barrier then e.Barrier.Transparency = (e.Barrier:GetAttribute('BaseTransparency') or 0.62) - 0.12 + math.sin(t * math.pi / 0.6) * 0.12 end
+		if e.State == 'Ready' then breathe(e, -0.08 + math.sin(t * math.pi / 0.6) * 0.08) end
 	end
 end)
 
@@ -208,7 +232,7 @@ local function fovKick()
 	out:Play()
 end
 
--- The field shatters into shards that fly forward and fade (only on your screen).
+-- The haze shatters into shards that fly forward and fade (only on your screen).
 local function shatter(e)
 	local b = e.Barrier
 	if not b then return end
@@ -247,11 +271,8 @@ local lastBump = 0
 local function bump(e, root)
 	if os.clock() - lastBump < 0.8 then return end
 	lastBump = os.clock()
-	local b = e.Barrier
-	if b then
-		b.Color = DENIED
-		task.delay(0.2, function() if e.State == 'Locked' and b.Parent then b.Color = e.Light end end)
-	end
+	tint(e, DENIED, 0.55)
+	task.delay(0.2, function() if e.State == 'Locked' then tint(e, nil) end end)
 	root.AssemblyLinearVelocity = frame:VectorToWorldSpace(Vector3.new(0, 15, 40))
 	buzz:Play()
 	local power = player:GetAttribute('Power') or 0
