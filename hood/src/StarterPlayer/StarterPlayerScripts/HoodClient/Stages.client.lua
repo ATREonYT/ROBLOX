@@ -42,13 +42,14 @@ CollectionService:GetInstanceRemovedSignal('HoodStageGate'):Connect(function(m) 
 local function collect(e)
 	if e.Barrier and e.Barrier.Parent and e.Collected then return end
 	e.Barrier = e.Model:FindFirstChild('Barrier', true)
-	e.Locks, e.Status, e.Fill, e.Count, e.Guis, e.Lasers, e.Boards = {}, {}, {}, {}, {}, {}, {}
+	e.Locks, e.Status, e.Fill, e.Count, e.Guis, e.Lasers, e.Boards, e.Tracks = {}, {}, {}, {}, {}, {}, {}, {}
 	for _, d in e.Model:GetDescendants() do
 		if d:IsA('BasePart') and (d.Name == 'Lock' or d.Name == 'LaserNub') then table.insert(e.Locks, d)
 		elseif d:IsA('BasePart') and d.Name:sub(1, 9) == 'GateBoard' then table.insert(e.Boards, d)
 		elseif d:IsA('TextLabel') and d.Name == 'Status' then table.insert(e.Status, d)
 		elseif d:IsA('TextLabel') and d.Name == 'Count' then table.insert(e.Count, d)
 		elseif d:IsA('Frame') and d.Name == 'Fill' then table.insert(e.Fill, d)
+		elseif d:IsA('Frame') and d.Name == 'Track' then table.insert(e.Tracks, d)
 		elseif d:IsA('Beam') and d.Name == 'Laser' then table.insert(e.Lasers, d)
 		end
 		if d:IsA('SurfaceGui') and d.Parent == e.Barrier then table.insert(e.Guis, d) end
@@ -65,11 +66,26 @@ local function paint(e, power)
 	collect(e)
 	local state = stateOf(e, power)
 	local r = math.clamp(power / math.max(e.Required, 1), 0, 1)
-	for _, f in e.Fill do f.Size = UDim2.fromScale(0.62 * r, 0.09) end
-	for _, t in e.Count do t.Text = Format.compact(math.min(power, e.Required)) .. ' / ' .. Format.compact(e.Required) end
-	-- The status line says the gap (the big number on the board already says the total).
+	-- A new player (no Power yet) gets the big number and where to start; the bar and the count come with the
+	-- first Power. The status line says the gap (the big number on the board already says the total).
+	local fresh = power <= 0
+	for _, f in e.Fill do f.Size = UDim2.fromScale(0.62 * r, 0.09); f.Visible = not fresh end
+	for _, f in e.Tracks do f.Visible = not fresh end
+	for _, t in e.Count do
+		t.Text = Format.compact(math.min(power, e.Required)) .. ' / ' .. Format.compact(e.Required)
+		t.Visible = not fresh and state == 'Locked'
+	end
 	local need = math.max(0, e.Required - power)
-	for _, t in e.Status do t.Text = state == 'Ready' and 'GO! →' or ('NEED ' .. Format.compact(need) .. ' MORE') end
+	for _, t in e.Status do
+		t.Text = state == 'Ready' and 'GO! →' or fresh and '🎯 TRAIN AT THE RANGE' or ('NEED ' .. Format.compact(need) .. ' MORE')
+	end
+	-- Locks show while you're short; the padlock itself (NextOnly) only on your next gate, so the gates beyond
+	-- don't stack padlocks through each other's fields.
+	local nextStage = (player:GetAttribute('StagesCleared') or 0) + 1
+	for _, lock in e.Locks do
+		local show = state == 'Locked' and (not lock:GetAttribute('NextOnly') or e.Stage == nextStage)
+		lock.Transparency = show and 0 or 1
+	end
 	if e.State == state and e.Painted == e.Barrier then return end
 	local was = e.State
 	e.State, e.Painted = state, e.Barrier
@@ -81,7 +97,6 @@ local function paint(e, power)
 	end
 	for _, g in e.Guis do g.Enabled = state ~= 'Cleared' end
 	for _, l in e.Lasers do l.Enabled = state == 'Locked' end
-	for _, lock in e.Locks do lock.Transparency = state == 'Locked' and 0 or 1 end
 	-- The requirement board's frame goes with the field once you've cleared the gate.
 	for _, p in e.Boards do p.Transparency = state == 'Cleared' and 1 or (p:GetAttribute('BaseTransparency') or 0) end
 	for _, t in e.Status do
@@ -103,9 +118,29 @@ local function paint(e, power)
 		end
 	end
 end
+-- The lobby's exit monitor follows gate 1: train first / you can go / cleared (its label ExitStatus; the map's
+-- own text is the locked line).
+local exitLabel, exitLook = nil, 0
+local function paintExit()
+	if not (exitLabel and exitLabel.Parent) then
+		if os.clock() - exitLook < 5 then return end
+		exitLook = os.clock()
+		local monitor = active.Root:FindFirstChild('ExitMonitor', true)
+		exitLabel = monitor and monitor:FindFirstChild('ExitStatus', true)
+		if not exitLabel then return end
+		exitLabel:SetAttribute('BaseText', exitLabel.Text)
+		exitLabel:SetAttribute('BaseColor', exitLabel.TextColor3)
+	end
+	local state
+	for _, e in gates do if e.Stage == 1 then state = e.State end end
+	if not state then return end
+	exitLabel.Text = state == 'Ready' and '✅ YOU CAN GO! WALK IN' or state == 'Cleared' and '🏁 STAGE 1 CLEARED' or exitLabel:GetAttribute('BaseText')
+	exitLabel.TextColor3 = state == 'Ready' and C(150, 236, 160) or state == 'Cleared' and Color3.new(1, 1, 1) or exitLabel:GetAttribute('BaseColor')
+end
 local function repaint()
 	local power = player:GetAttribute('Power') or 0
 	for _, e in gates do paint(e, power) end
+	paintExit()
 end
 player:GetAttributeChangedSignal('Power'):Connect(repaint)
 player:GetAttributeChangedSignal('StagesCleared'):Connect(repaint)
