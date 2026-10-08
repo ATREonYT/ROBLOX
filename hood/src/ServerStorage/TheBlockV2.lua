@@ -314,8 +314,8 @@ local function lantern(c, pos, dir)
 	sbox(l, 'LampCap', V(-1.1, 26.4, -1.1), V(1.1, 27.4, 1.1), col)
 	studs(decor(l:bar('LampStrut', V(0, 22.4, 0.6), V(0, 25.2, 4), 1, col, M.Plastic)), true)
 	sbox(l, 'LampArm', V(-0.5, 24.7, 3.4), V(0.5, 25.7, 10.4), col, true)
-	sbox(l, 'LampHead', V(-0.7, 24.4, 8.2), V(0.7, 25.8, 10.9), col, true)
-	decor(l:box('LampGlow', V(-0.45, 24.2, 9.4), V(0.45, 24.4, 10.7), P.st.lampGlow, M.Neon)).CastShadow = false
+	sbox(l, 'LampHead', V(-0.8, 24.3, 7.6), V(0.8, 25.7, 10.8), col, true)
+	decor(l:box('LampGlow', V(-0.5, 24.1, 9.0), V(0.5, 24.3, 10.6), P.st.lampGlow, M.Neon)).CastShadow = false
 	return l
 end
 -- Small flower: a green stem and four dark blue petals round a yellow eye (~2 wide, 2.6 tall).
@@ -1517,112 +1517,6 @@ function Stations.build(ctx, stationId, opts)
 		end
 	end
 	return model
-end
-
----------------------------------------------------------------------------------------------- range stand
--- The range as the user's video has it (another +1 game's shooting range): a stepped stand of coloured studded pads
--- facing the hall, one per range, each with a soldier figure presenting that tier's gun and the label stack floating
--- over it. Each pad is a training station: you stand on its front half and shoot the bullseye board at its back
--- (the next riser is the backstop); the figure stands at the pad's corner facing the hall, never in the line of fire.
--- Lobby.stand calls Stations.stand(ctx, Lobby.Stand, skins) (map frame). Slot frame (Lobby.Stand.Slots): origin on
--- the tread at the pad's centre, -Z = the front (the hall), room x -8.2..8.2, z -8..8. Same contract as
--- Stations.build: Training_<Id> > TrainingZone, Equipment > Targets > Target1 (Main), Sign, Tier/HitPoint/HitColor.
-Stations.PadColors = { C(255, 214, 40), C(90, 216, 80), C(80, 202, 242), C(238, 66, 74), C(242, 92, 190), C(255, 152, 44), C(152, 98, 242), C(255, 232, 110) }
-Stations.PadRim = C(244, 244, 250)
-Stations.Camo = { { C(88, 100, 66), C(64, 74, 50) }, { C(70, 74, 84), C(46, 48, 56) }, { C(120, 104, 76), C(88, 74, 52) }, { C(44, 46, 54), C(28, 30, 36) } }
-Stations.StandGuns = { 'Pistol', 'Revolver', 'Uzi', 'Shotgun', 'Tommy', 'AK', 'Deagle', 'Minigun' }
-
--- A blocky soldier (R6 proportions, 5.2 tall) standing on `cf` (feet), facing -Z, holding `gunId` at port arms (the
--- barrel up and across the chest, pointing at nobody). Decor only: it never blocks players or shots.
-function Stations.figure(c, cf, tier, gunId)
-	local f = c:at(cf)
-	local camo = Stations.Camo[(tier - 1) % #Stations.Camo + 1]
-	local skin, boot, strap = C(214, 168, 128), C(36, 34, 32), C(40, 40, 36)
-	local parts = {
-		f:box('FigLegL', V(-1, 0, -0.5), V(-0.02, 2, 0.5), camo[2]),
-		f:box('FigLegR', V(0.02, 0, -0.5), V(1, 2, 0.5), camo[2]),
-		f:box('FigBootL', V(-1.04, 0, -0.62), V(-0.02, 0.45, 0.54), boot),
-		f:box('FigBootR', V(0.02, 0, -0.62), V(1.04, 0.45, 0.54), boot),
-		f:box('FigTorso', V(-1, 2, -0.5), V(1, 4, 0.5), camo[1]),
-		f:box('FigVest', V(-1.04, 2.5, -0.58), V(1.04, 3.85, 0.46), camo[2]),
-		f:box('FigBelt', V(-1.03, 2, -0.54), V(1.03, 2.3, 0.54), strap),
-		f:box('FigArmL', V(-2, 2.2, -0.5), V(-1, 4, 0.5), camo[1]),
-		f:box('FigHead', V(-0.6, 4, -0.6), V(0.6, 5.2, 0.6), skin),
-		f:box('FigHelmet', V(-0.68, 4.75, -0.68), V(0.68, 5.35, 0.68), camo[2]),
-		f:box('FigBrim', V(-0.7, 4.72, -0.82), V(0.7, 4.86, -0.6), camo[2]),
-		f:box('FigEyes', V(-0.36, 4.42, -0.62), V(0.36, 4.56, -0.6), C(30, 30, 34)),
-	}
-	-- the right arm comes across the chest to hold the gun
-	table.insert(parts, f:part('FigArmR', V(1, 1.8, 1), CFrame.new(0.95, 3.2, -0.55) * CFrame.Angles(math.rad(-50), 0, math.rad(35)), camo[1]))
-	for _, p in parts do decor(p) end
-	-- the gun: GunModels when it is there (origin at the grip, muzzle toward -Z), else a stand-in block
-	local shared = ReplicatedStorage:FindFirstChild('Shared')
-	local models = shared and shared:FindFirstChild('Models')
-	local gm = models and models:FindFirstChild('GunModels')
-	local ok, G = false, nil
-	if gm then ok, G = pcall(require, gm) end
-	local at = f:world(CFrame.new(0.15, 3.25, -0.95) * CFrame.Angles(0, math.rad(90), 0) * CFrame.Angles(math.rad(55), 0, 0))
-	local gun
-	if ok and G and G.build then
-		local okb, m = pcall(G.build, gunId, 1.35)
-		if okb and m then gun = m end
-	end
-	if gun then
-		gun:PivotTo(at)
-		gun.Name = 'FigGun'
-		gun.Parent = f.parent
-		for _, p in gun:GetDescendants() do if p:IsA('BasePart') then p.Anchored = true; decor(p) end end
-	else
-		decor(f:part('FigGun', V(0.5, 0.8, 2.6), CFrame.new(0.15, 3.6, -0.95) * CFrame.Angles(math.rad(-35), math.rad(90), 0), C(46, 48, 56)))
-	end
-end
-
--- One pad station in slot context `c` (see the frame above).
-function Stations.padStation(c, stationId, tier, skins)
-	local s = assert(skins.StationById[stationId], 'unknown station ' .. tostring(stationId))
-	local t = Stations.Themes[math.clamp(tier, 1, #Stations.Themes)]
-	local color = Stations.PadColors[(tier - 1) % #Stations.PadColors + 1]
-	local st, model = c:group('Training_' .. stationId)
-	model:SetAttribute('Theme', t.name)
-	-- the pad: a white rim under a coloured studded top, like the video's pads
-	local R, H = 6.2, 0.35
-	st:box('PadRim', V(-R, 0, -R), V(R, H, R), Stations.PadRim, M.SmoothPlastic)
-	local top = st:box('PadTop', V(-R + 0.55, H, -R + 0.55), V(R - 0.55, H + 0.25, R - 0.55), color, M.Plastic)
-	studs(top)
-	local Y = H + 0.25
-	-- where you stand: the pad's front half
-	local zone = st:box('TrainingZone', V(-R + 0.55, Y - 0.06, -R + 0.55), V(R - 0.55, Y, 1.4), P.white)
-	zone.Transparency, zone.CanCollide, zone.CanQuery, zone.CanTouch, zone.CastShadow = 1, false, false, false, false
-	-- the target: a bullseye board on two legs at the pad's back edge, its face toward the pad
-	local eq = st:group('Equipment')
-	local gear = eq:group('Gear')
-	local k = { st = st, gear = gear, targets = eq:group('Targets'), list = {}, t = t, tier = tier, burners = {} }
-	local bz, by = 5.2, Y + 4.4
-	for _, sx in { -1, 1 } do gear:box('BoardLeg', V(sx * 1.7 - 0.2, Y, bz + 0.15), V(sx * 1.7 + 0.2, by - 1.6, bz + 0.55), C(120, 86, 56)) end
-	local sw = Stations.target(k, CFrame.new(0, by - 1.7, bz + 0.4), V(0, by, bz - 0.1), 'Tip', true, 'Tock', color)
-	sw:box('Board', V(-2.1, by - 2.1, bz), V(2.1, by + 2.1, bz + 0.3), C(250, 248, 240), M.SmoothPlastic)
-	Stations.bullseye(sw, CFrame.new(0, by, bz - 0.02), 1.75, { C(236, 60, 64), C(250, 248, 240), C(236, 60, 64), C(250, 248, 240), C(236, 60, 64) })
-	for _, p in eq.parent:GetDescendants() do
-		if p:IsA('BasePart') and (p:FindFirstAncestor('Targets') or p.Size.Magnitude < 1.6) then decor(p) end
-	end
-	-- the soldier at the pad's front-left corner, facing the hall, presenting the tier's gun
-	Stations.figure(st, CFrame.new(-4.3, Y, -3.6), tier, Stations.StandGuns[tier] or 'Pistol')
-	-- the label stack over the pad
-	Stations.labels(st, s, t, V(0, 10.8, 0.8))
-	model:SetAttribute('Tier', tier)
-	model:SetAttribute('TextColor', t.text)
-	model:SetAttribute('HitPoint', st:world(CFrame.new(0, by, bz - 0.1)).Position)
-	model:SetAttribute('HitColor', t.glow)
-	return model
-end
-
-function Stations.stand(ctx, St, skins)
-	local ids = {}
-	for _, row in skins.Stations do if row.Id ~= 'Ring' then table.insert(ids, row.Id) end end
-	for k, id in ids do
-		local cf = St.Slots[k]
-		if cf then Stations.padStation(ctx:at(cf), id, k, skins) end
-	end
 end
 ---------------------------------------------------------------------------------------------- armory
 -- The ARMORY, after the user's item-shop reference: the gun ladder as big guns floating in profile over big
@@ -3123,15 +3017,11 @@ function GATE.hazeAt(h)
 	end
 	return k[#k][2], k[#k][3]
 end
--- One line of the wall's text in its band (top y and height in studs), centred, outlined. The text size is capped
--- at 90% of the band: the size the previews draw, matched to the reference's glyphs.
+-- One line of the wall's text, scaled to its band (top y and height in studs), centred, outlined.
 function GATE.text(gui, name, value, top, h, color, ink, thick)
 	local t = line(gui, name, value, color, Enum.Font.Arcade, (GATE.H - top) / GATE.H, h / GATE.H, ink, thick)
 	t.Position, t.Size = UDim2.fromScale(0, (GATE.H - top) / GATE.H), UDim2.fromScale(1, h / GATE.H)
 	t.TextWrapped = false
-	local cap = Instance.new('UITextSizeConstraint')
-	cap.MaxTextSize = math.floor(0.9 * h * gui.PixelsPerStud)
-	cap.Parent = t
 	return t
 end
 local function stageGate(ctx, i)
@@ -3183,9 +3073,9 @@ local function stageGate(ctx, i)
 	GATE.text(sign, 'Title', i > STAGES and 'Boss Yard' or ('Stage ' .. i), 15.1, 2.95, GATE.title, GATE.titleInk, 6)
 	GATE.text(sign, 'Sub', 'Recommended', 9.95, 1.95, GATE.sub, GATE.subInk, 4)
 	GATE.text(sign, 'Power', 'Power: ' .. compact(req), 6.8, 1.95, GATE.sub, GATE.subInk, 4)
-	-- Pads on the sidewalks just before the wall (measured on the reference: ~6 x 11 with the dark rim, a 3-stud strip of
+	-- Pads on the sidewalks just before the wall (measured on the reference: 6 x 11 on a dark rim, a 3-stud strip of
 	-- pavement between them and the wall, 0.5 off the kerb): back to spawn, and on to your furthest stage.
-	local padW, padD = math.min(5.6, walk - 1.5), 11
+	local padW, padD = math.min(6, walk - 1.5), 11
 	local padX, padZ = road + 0.5 + padW / 2, 3 + padD / 2
 	if i > 1 then
 		local opts = { w = padW, d = padD, y = kerb, h = 0.25, bare = true, material = M.SmoothPlastic, base = GATE.padRim }
@@ -3278,7 +3168,7 @@ local function streetStage(ctx, i)
 	local lamp = lantern(d, at(20, 50), V(-1, 0, 0))
 	sbox(lamp, 'StreetSign', V(0.9, 17.4, -2.4), V(1.2, 19.0, -0.2), C(40, 150, 70), true)
 	dumpster(d, CFrame.new(at(31, 50.5)))
-	for k, f in { { 20.6, 17.5 }, { 24, 41 }, { -21, 40 }, { -20, 34 }, { -29.8, 24 }, { 19.5, 60 } } do flower(d, at(f[1], f[2]), seed + 10 + k) end
+	for k, f in { { 21.5, 16.8 }, { 24, 41 }, { -21, 40 }, { -20, 34 }, { -29.8, 24 }, { 19.5, 60 } } do flower(d, at(f[1], f[2]), seed + 10 + k) end
 	for k, t in { { -33, 44 }, { -31.8, 45.5 }, { -32.5, 30 }, { 22.8, 38 }, { 21, 50 }, { -18.5, 60 } } do tuft(d, at(t[1], t[2]), seed + 20 + k) end
 	-- Stage 1: brick wings between the warehouse wall and the gate line, so its wall is the only way through.
 	if i == 1 then
