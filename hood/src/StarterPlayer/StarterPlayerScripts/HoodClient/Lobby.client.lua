@@ -1,6 +1,6 @@
 -- World-side guidance and feedback on the active map (the original Block's SimulatorLobby, or The Block V2):
--- look stand prompts (where a map has one), Locked/Open on the training stations (the original Block's gym
--- still shows locked gear as black silhouettes), the floating arrow over where to go next ("TRAIN HERE"), the
+-- look stand prompts (where a map has one), Locked/Unlocked on the training stations (the original Block's gym
+-- still shows locked gear as black silhouettes), the floating arrow over where to go next ("TRAIN x4 HERE"), the
 -- "+N POWER" pop over your head and the sway of the bag you train on. Looks equip from the HUD's EVOLVE menu. The screen HUD (Power, LEVEL bar, hint line, notices) is HUD.client.
 local Players = game:GetService('Players')
 local RS = game:GetService('ReplicatedStorage')
@@ -270,11 +270,10 @@ indicator.Parent = player.PlayerGui
 local pointer = label(indicator, 'Destination', 22, C(255, 224, 80))
 
 ---------------------------------------------------------------------------------------------- stations
--- Training stations in the built lobby: shooter's box, plaque, target. The range lanes (a plaque with a Power
--- row) stay in full colour while locked: the plaque at the bay's entrance says LOCKED in red, a rope hangs across
--- the entrance, the lane's lamp (TargetLamp's light on the target) is dim, and the lane's effect runs at half
--- rate. An open lane has no rope and its target brightly lit. Older stations without that plaque (the original
--- Block's gym) still show locked gear as a black silhouette.
+-- Training stations in the built lobby: shooter's box, sign, targets. The range lanes (a label with a Power row) stay in
+-- full colour while locked, like the reference: the label says Locked in red and the station's effects run at
+-- half rate. Older stations without that label (the original Block's gym) still show locked gear as a black
+-- silhouette.
 local okVfx, HoodVFX = pcall(require, RS.Shared.HoodVFX)
 if not okVfx then HoodVFX = nil end
 local stations = {}
@@ -300,23 +299,64 @@ for _, s in Skins.Stations do
 				end
 			end
 		end
-		-- The lane's rope across its entrance (shown while locked), its lane lamp (bright while open, dim while
-		-- locked: the light's Open and Locked attributes) and, on older lanes, a state lamp.
-		entry.Ropes, entry.Lamps, entry.Lights = {}, {}, {}
-		for _, p in model:GetDescendants() do
-			if p:IsA('BasePart') and p.Name == 'LockRope' then table.insert(entry.Ropes, p) end
-			if p:IsA('BasePart') and p.Name == 'StateLamp' then table.insert(entry.Lamps, p) end
-			if p:IsA('Light') and p.Parent and p.Parent.Name == 'TargetLamp' then table.insert(entry.Lights, p) end
-		end
 		stations[s.Id] = entry
 	end
 end
+-- Range-lane labels like the reference's spawn view: the stations at the two ends of each row show their
+-- stack from anywhere, the ones in the middle of a row only up close (22 studs), so a row reads as two clean
+-- stacks instead of a pile of text. A station is in the middle when two others sit within a row pitch of it.
+local LABEL_FAR, LABEL_NEAR, NEXT_LIFT = 250, 22, Vector3.new(0, 6.5, 0)
+for _, e in stations do
+	if e.Bag and e.Zone then
+		e.Label = e.Sign:FindFirstChildWhichIsA('BillboardGui')
+		local near = 0
+		for _, o in stations do
+			if o ~= e and o.Bag and o.Zone then
+				local d = o.Zone.CFrame.Position - e.Zone.CFrame.Position
+				if Vector3.new(d.X, 0, d.Z).Magnitude < 16 then near += 1 end -- (row pitch 10.5-14.5; rows sit 35+ apart)
+			end
+		end
+		e.Middle = near >= 2
+	end
+end
+-- The lanes whose box is within 25 studs of each lane's box (any direction, any height): their stacks hide while
+-- you stand in that box, so the shooter's view isn't a pile of labels under the HUD hint.
+local NEIGHBOUR = 25
+for _, e in stations do
+	e.Near = {}
+	for id, o in stations do
+		if o ~= e and e.Zone and o.Zone and (o.Zone.CFrame.Position - e.Zone.CFrame.Position).Magnitude < NEIGHBOUR then e.Near[id] = true end
+	end
+end
 local SILHOUETTE = C(18, 18, 22)
-local LAMP_OPEN, LAMP_LOCKED = C(90, 220, 120), C(235, 80, 70)
 local UNLOCKED, LOCKED = C(140, 206, 120), C(217, 119, 106) -- (soft sage and terracotta, as the lanes build them)
 local function paintStations(n)
+	local goal = nil -- the next station to unlock shows its stack from afar (lifted clear if it's a middle one)
+	for _, s in Skins.Stations do
+		if n < s.Required then goal = s break end
+	end
+	-- While you're still in the free tier the next lane stays a plain lane (no lift, no long range): lifted, its
+	-- stack landed on the FREE lane's from the side, and the free lane is the one a new player needs.
+	local free = n < (Skins.Stations[2] and Skins.Stations[2].Required or 0)
+	-- Your own lane's label hides while you stand in its box (the HUD hint already says its multiplier, or what it
+	-- needs), and so do your neighbours' (within 25 studs): from the shooter's spot they pile up under the hint.
+	local here = player:GetAttribute('TrainingStation') or ''
+	local hereId = here:gsub('^Locked:', '')
+	local box = stations[hereId]
 	for _, s in Skins.Stations do
 		local e = stations[s.Id]
+		if e and e.Label then
+			local lift = goal == s and not free
+			local own = hereId == s.Id
+			local beside = box ~= nil and not own and not lift and box.Near[s.Id] == true
+			local state = (e.Middle and 'M' or 'E') .. (lift and 'G' or '') .. (own and 'O' or '') .. (beside and 'N' or '')
+			if e.LabelState ~= state then
+				e.LabelState = state
+				e.Label.MaxDistance = (e.Middle and not lift) and LABEL_NEAR or LABEL_FAR
+				e.Label.StudsOffset = (e.Middle and lift) and NEXT_LIFT or Vector3.zero
+				e.Label.Enabled = not own and not beside
+			end
+		end
 		if e then
 			local locked = n < s.Required
 			if e.Locked ~= locked then
@@ -326,13 +366,11 @@ local function paintStations(n)
 					r.Part.Material = locked and Enum.Material.SmoothPlastic or r.Material
 				end
 				if e.Fx and HoodVFX then HoodVFX.setDensity(e.Fx, locked and 0.5 or 1) end
-				for _, rope in e.Ropes do rope.Transparency = locked and 0 or 1 end
-				for _, lamp in e.Lamps do lamp.Color = locked and LAMP_LOCKED or LAMP_OPEN end
-				for _, light in e.Lights do light.Brightness = light:GetAttribute(locked and 'Locked' or 'Open') or light.Brightness end
 				local detail = e.Sign and e.Sign:FindFirstChild('Detail', true)
 				if detail then
 					if e.Bag then
-						detail.Text = locked and 'LOCKED' or 'OPEN'
+						-- Chip, Locked/Unlocked and "xN Power" all stay up at every distance.
+						detail.Text = locked and 'Locked' or 'Unlocked'
 						detail.TextColor3 = locked and LOCKED or UNLOCKED
 					else
 						detail.Text = locked and ('LOCKED • ' .. compact(s.Required) .. ' POWER') or (s.Required == 0 and 'FREE • TRAIN HERE' or 'UNLOCKED • TRAIN HERE')
@@ -766,7 +804,7 @@ local function refresh()
 	-- (A new look unlocked is the HUD's job: its EVOLVE button wears a NEW! badge and the hint says to tap it.)
 	if station == '' or station:find('Locked:') then
 		indicator.Adornee = zoneOf(bestGym.Id)
-		pointer.Text = 'TRAIN HERE ↓' -- (the multiplier is on the bay's plaque and in the HUD hint, not floating)
+		pointer.Text = 'TRAIN x' .. bestGym.Multiplier .. ' HERE ↓'
 	else
 		indicator.Adornee = nil
 	end

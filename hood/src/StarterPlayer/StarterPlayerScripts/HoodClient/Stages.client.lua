@@ -1,18 +1,16 @@
--- Stage gates on your screen (Brief 9: one plain checkpoint per gate, the same for all 16).
---   Locked   Power below the number: the sliding gate stays shut with its chain and padlock. The plaque on it
---            shows the number and your progress bar ("🎯 TRAIN AT THE RANGE" before your first Power). The field
---            (Barrier) is solid for you and shows only while you stand near the gate. Walk into it and it flashes
---            red and bumps you back.
---   Ready    You have enough: the chain and padlock drop away, the gate slides open behind the railing, and its
---            plaque turns green ("GO!").
---   Cleared  Already passed once (the server's count): the gate stands open.
--- Walking through bursts confetti, kicks the camera and plays a rising chime. The first clear of each gate also gets
--- the big "STAGE 3 CLEARED!" banner from the server.
+-- Stage gates on your screen (lighting_and_gates.md, "States" and "Pass feedback").
+--   Locked   Power below the number: the force field is solid for you, the padlock shows, and the bar on
+--            the barrier fills toward the number. Walk into it and it flashes red and bumps you back.
+--   Ready    You have enough: the field turns green and pulses, the padlock pops off, "GO!".
+--   Cleared  Already passed once (the server's count): the field and its lasers are gone.
+-- Breaking through shatters the field, bursts confetti, kicks the camera and plays a rising chime; the
+-- first clear of each gate also gets the big "STAGE 3 CLEARED!" banner from the server.
 local Players = game:GetService('Players')
 local RS = game:GetService('ReplicatedStorage')
 local CollectionService = game:GetService('CollectionService')
 local RunService = game:GetService('RunService')
 local TweenService = game:GetService('TweenService')
+local Debris = game:GetService('Debris')
 local ActiveMap = require(RS.Shared.ActiveMap)
 local Juice = require(RS.Shared.Juice)
 local Format = require(RS.Shared.Format)
@@ -24,9 +22,7 @@ if not active then return end
 local frame = active.Frame
 
 local C = Color3.fromRGB
-local DENIED = C(236, 76, 100) -- the field's flash when you bump it (a notch softer than pure neon red)
-local PLAQUE_GO = C(46, 138, 84) -- the plaque's face once you can pass
-local NEAR, FAR = 10, 26 -- the field shows fully within NEAR studs of a gate you can't pass yet, and not past FAR
+local GO, DENIED = C(76, 214, 130), C(236, 76, 100) -- (a notch softer than pure neon green and red)
 local gates = {}
 
 local function track(model)
@@ -34,28 +30,26 @@ local function track(model)
 	gates[model] = {
 		Model = model, Stage = model:GetAttribute('Stage'), Required = model:GetAttribute('Required') or 0,
 		Z = model:GetAttribute('LineZ'), HalfWidth = model:GetAttribute('HalfWidth') or 20,
-		Color = model:GetAttribute('Color') or C(255, 210, 60), Light = model:GetAttribute('Light') or C(206, 222, 240),
+		Color = model:GetAttribute('Color') or C(255, 210, 60), Light = model:GetAttribute('Light') or C(255, 236, 160),
 	}
 end
 for _, m in CollectionService:GetTagged('HoodStageGate') do track(m) end
 CollectionService:GetInstanceAddedSignal('HoodStageGate'):Connect(track)
 CollectionService:GetInstanceRemovedSignal('HoodStageGate'):Connect(function(m) gates[m] = nil end)
 
--- Parts and labels, collected again if the gate streams out and back in (it streams whole: Atomic).
+-- Parts and labels, collected again while the gate is still streaming in.
 local function collect(e)
 	if e.Barrier and e.Barrier.Parent and e.Collected then return end
 	e.Barrier = e.Model:FindFirstChild('Barrier', true)
-	e.Locks, e.Status, e.Fill, e.Count, e.Tracks, e.Plaques, e.Slides = {}, {}, {}, {}, {}, {}, {}
+	e.Locks, e.Status, e.Fill, e.Count, e.Guis, e.Lasers = {}, {}, {}, {}, {}, {}
 	for _, d in e.Model:GetDescendants() do
-		if d:IsA('BasePart') and d.Name == 'Lock' then table.insert(e.Locks, d)
+		if d:IsA('BasePart') and (d.Name == 'Lock' or d.Name == 'LaserNub') then table.insert(e.Locks, d)
 		elseif d:IsA('TextLabel') and d.Name == 'Status' then table.insert(e.Status, d)
 		elseif d:IsA('TextLabel') and d.Name == 'Count' then table.insert(e.Count, d)
 		elseif d:IsA('Frame') and d.Name == 'Fill' then table.insert(e.Fill, d)
-		elseif d:IsA('Frame') and d.Name == 'Track' then table.insert(e.Tracks, d)
+		elseif d:IsA('Beam') and d.Name == 'Laser' then table.insert(e.Lasers, d)
 		end
-		if d:IsA('BasePart') and d.Name == 'GatePlaque' then table.insert(e.Plaques, d) end
-		-- the sliding gate's parts, with where they stand shut
-		if d:IsA('BasePart') and d.Parent and d.Parent.Name == 'GateSlide' then table.insert(e.Slides, { Part = d, Home = d.CFrame }) end
+		if d:IsA('SurfaceGui') and d.Parent == e.Barrier then table.insert(e.Guis, d) end
 	end
 	e.Collected = e.Barrier ~= nil
 end
@@ -65,59 +59,34 @@ local function stateOf(e, power)
 	return power >= e.Required and 'Ready' or 'Locked'
 end
 
--- Shut or open the sliding gate (by the gate's SlideOffset, map frame), sliding when it changes in front of you.
-local function slide(e, open, animate)
-	local offset = e.Model:GetAttribute('SlideOffset')
-	if typeof(offset) ~= 'Vector3' then return end
-	local shift = frame:VectorToWorldSpace(offset)
-	for _, s in e.Slides do
-		local goal = open and s.Home + shift or s.Home
-		if animate then
-			TweenService:Create(s.Part, TweenInfo.new(0.9, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), { CFrame = goal }):Play()
-		else
-			s.Part.CFrame = goal
-		end
-	end
-end
-
 local function paint(e, power)
 	collect(e)
 	local state = stateOf(e, power)
 	local r = math.clamp(power / math.max(e.Required, 1), 0, 1)
-	-- The plaque: the big number always; under it the bar and count while you're short, or one status line: where to
-	-- start (a new player, no Power yet), GO! once you can pass, a tick once you have.
-	local bar = state == 'Locked' and power > 0
-	for _, f in e.Fill do
-		local full = f.Parent and f.Parent:FindFirstChild('Track')
-		f.Size = UDim2.fromScale((full and full.Size.X.Scale or 0.76) * r, full and full.Size.Y.Scale or 0.24)
-		f.Visible = bar
-	end
-	for _, f in e.Tracks do f.Visible = bar end
-	for _, t in e.Count do
-		t.Text = Format.compact(math.min(power, e.Required)) .. ' / ' .. Format.compact(e.Required)
-		t.Visible = bar
-	end
-	for _, t in e.Status do
-		t.Text = state == 'Ready' and 'GO! →' or state == 'Cleared' and '✓ OPEN' or '🎯 TRAIN AT THE RANGE'
-		t.Visible = not bar
-	end
-	-- The chain and padlock show while you're short.
-	for _, lock in e.Locks do lock.Transparency = state == 'Locked' and 0 or 1 end
+	for _, f in e.Fill do f.Size = UDim2.fromScale(0.62 * r, 0.09) end
+	for _, t in e.Count do t.Text = Format.compact(math.min(power, e.Required)) .. ' / ' .. Format.compact(e.Required) end
 	if e.State == state and e.Painted == e.Barrier then return end
 	local was = e.State
 	e.State, e.Painted = state, e.Barrier
 	local b = e.Barrier
 	if b then
 		b.CanCollide = state == 'Locked' -- only for you: your own character's collisions run on your machine
-		b.Color = e.Light
-		if state ~= 'Locked' then b.Transparency = 1 end -- (while locked, the walk-up fade below sets it)
+		b.Color = state == 'Ready' and GO or e.Light
+		b.Transparency = state == 'Cleared' and 1 or (b:GetAttribute('BaseTransparency') or 0.62) -- the street reads behind it
 	end
-	for _, p in e.Plaques do
-		if p:GetAttribute('BaseColor') == nil then p:SetAttribute('BaseColor', p.Color) end
-		p.Color = state == 'Ready' and PLAQUE_GO or p:GetAttribute('BaseColor')
+	for _, g in e.Guis do g.Enabled = state ~= 'Cleared' end
+	for _, l in e.Lasers do l.Enabled = state == 'Locked' end
+	for _, lock in e.Locks do lock.Transparency = state == 'Locked' and 0 or 1 end
+	for _, t in e.Status do
+		t.Text = state == 'Ready' and 'GO! →' or ('NEED 💪 ' .. Format.compact(e.Required))
+		-- White on the gate's own outline while locked; on the green field, white with a deep green outline.
+		t.TextColor3 = Color3.new(1, 1, 1)
+		local stroke = t:FindFirstChildOfClass('UIStroke')
+		if stroke then
+			if stroke:GetAttribute('BaseColor') == nil then stroke:SetAttribute('BaseColor', stroke.Color) end
+			stroke.Color = state == 'Ready' and GO:Lerp(Color3.new(0, 0, 0), 0.65) or stroke:GetAttribute('BaseColor')
+		end
 	end
-	-- Open once you can pass; it slides if you watch it happen, and is simply set on a first paint.
-	slide(e, state ~= 'Locked', was ~= nil and (was == 'Locked') ~= (state == 'Locked'))
 	-- The moment a gate opens for you: a quick pop of the status text.
 	if was == 'Locked' and state == 'Ready' then
 		for _, t in e.Status do
@@ -128,29 +97,9 @@ local function paint(e, power)
 		end
 	end
 end
--- The lobby's exit monitor follows gate 1: train first / you can go / cleared (its label ExitStatus; the map's
--- own text is the locked line).
-local exitLabel, exitLook = nil, 0
-local function paintExit()
-	if not (exitLabel and exitLabel.Parent) then
-		if os.clock() - exitLook < 5 then return end
-		exitLook = os.clock()
-		local monitor = active.Root:FindFirstChild('ExitMonitor', true)
-		exitLabel = monitor and monitor:FindFirstChild('ExitStatus', true)
-		if not exitLabel then return end
-		exitLabel:SetAttribute('BaseText', exitLabel.Text)
-		exitLabel:SetAttribute('BaseColor', exitLabel.TextColor3)
-	end
-	local state
-	for _, e in gates do if e.Stage == 1 then state = e.State end end
-	if not state then return end
-	exitLabel.Text = state == 'Ready' and '✅ YOU CAN GO! WALK IN' or state == 'Cleared' and '🏁 STAGE 1 CLEARED' or exitLabel:GetAttribute('BaseText')
-	exitLabel.TextColor3 = state == 'Ready' and C(150, 236, 160) or state == 'Cleared' and Color3.new(1, 1, 1) or exitLabel:GetAttribute('BaseColor')
-end
 local function repaint()
 	local power = player:GetAttribute('Power') or 0
 	for _, e in gates do paint(e, power) end
-	paintExit()
 end
 player:GetAttributeChangedSignal('Power'):Connect(repaint)
 player:GetAttributeChangedSignal('StagesCleared'):Connect(repaint)
@@ -161,18 +110,11 @@ task.spawn(function()
 	end
 end)
 
--- The field of a gate you can't pass yet fades in as you walk up to it (invisible from down the street).
+-- Ready gates breathe so they read as "go through me".
 RunService.Heartbeat:Connect(function()
-	local character = player.Character
-	local root = character and character:FindFirstChild('HumanoidRootPart')
-	local p = root and frame:PointToObjectSpace(root.CFrame.Position)
+	local t = os.clock()
 	for _, e in gates do
-		local b = e.Barrier
-		if e.State == 'Locked' and b and b.Parent then
-			local d = p and math.abs(p.Z - e.Z) + math.max(0, math.abs(p.X) - e.HalfWidth) or FAR
-			local k = math.clamp((FAR - d) / (FAR - NEAR), 0, 1)
-			b.Transparency = 1 - k * (1 - (b:GetAttribute('BaseTransparency') or 0.8))
-		end
+		if e.State == 'Ready' and e.Barrier then e.Barrier.Transparency = (e.Barrier:GetAttribute('BaseTransparency') or 0.62) - 0.12 + math.sin(t * math.pi / 0.6) * 0.12 end
 	end
 end)
 
@@ -266,8 +208,32 @@ local function fovKick()
 	out:Play()
 end
 
+-- The field shatters into shards that fly forward and fade (only on your screen).
+local function shatter(e)
+	local b = e.Barrier
+	if not b then return end
+	local cf, size = b.CFrame, b.Size
+	for k = 1, 14 do
+		local shard = Instance.new('Part')
+		shard.Name = 'Shard'
+		shard.Size = Vector3.new(2, 2, 0.3)
+		shard.Material = Enum.Material.Neon
+		shard.Color = k % 3 == 0 and Color3.new(1, 1, 1) or e.Light
+		shard.CanCollide, shard.CanQuery, shard.CanTouch, shard.CastShadow = false, false, false, false
+		shard.CFrame = cf * CFrame.new((math.random() - 0.5) * size.X * 0.9, (math.random() - 0.5) * size.Y * 0.8, 0) * CFrame.Angles(math.random() * 6, math.random() * 6, 0)
+		shard.Parent = workspace
+		shard.AssemblyLinearVelocity = cf:VectorToWorldSpace(Vector3.new((math.random() - 0.5) * 16, 10 + math.random() * 15, -(20 + math.random() * 20)))
+		shard.AssemblyAngularVelocity = Vector3.new(math.random() * 10, math.random() * 10, math.random() * 10)
+		task.delay(0.8, function()
+			if shard.Parent then TweenService:Create(shard, TweenInfo.new(0.8), { Transparency = 1, Size = Vector3.new(0.6, 0.6, 0.1) }):Play() end
+		end)
+		Debris:AddItem(shard, 2)
+	end
+end
+
 local function passed(e, rootPos)
-	Juice.burst(rootPos + Vector3.new(0, 2, 0), e.Color, 2.2)
+	if e.State == 'Ready' then shatter(e) end
+	Juice.burst(rootPos + Vector3.new(0, 2, 0), e.Light, 2.2)
 	Juice.kick(0.45)
 	fovKick()
 	chime.PlaybackSpeed = 1 + math.min(e.Stage, 10) * 0.03
@@ -305,7 +271,7 @@ RunService.Heartbeat:Connect(function()
 	local character = player.Character
 	local root = character and character:FindFirstChild('HumanoidRootPart')
 	if not root then lastZ = nil; return end
-	local p = frame:PointToObjectSpace(root.CFrame.Position)
+	local p = frame:PointToObjectSpace(root.Position)
 	for _, e in gates do
 		if math.abs(p.X) <= e.HalfWidth then
 			if lastZ and lastZ >= e.Z and p.Z < e.Z and e.State ~= 'Locked' then passed(e, root.Position) end

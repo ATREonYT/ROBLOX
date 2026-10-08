@@ -1,9 +1,7 @@
--- The ARMORY (the gun shop) on your screen: a prompt on the counter in front of every gun in the shop (Buy /
--- Equip / Equipped), the card behind each gun painted in your state colours (a plain grey card and a small
--- padlock under its tag while locked, blue owned, green equipped, the equipped gun taken off its mount because it
--- is in your hands) and its tag's price or state word to match, a small burst in the gun's rarity metal when it
--- becomes yours, and everyone's equipped gun worn on the right hip while it isn't in their hand (the held gun
--- tool, Shoot.client, takes its place).
+-- The ARMORY on your screen: a prompt on every gun pedestal (Buy / Equip / Equipped), pedestals painted in
+-- your state colours (pink locked, blue owned, green equipped) with the strip and price words to match, a
+-- small burst when a gun becomes yours, and everyone's equipped gun worn on the right hip while it isn't in
+-- their hand (the held gun tool, Shoot.client, takes its place).
 -- The server decides everything (GunService); this only asks and shows.
 --
 -- Reads the player attributes GunService keeps (OwnedGuns, EquippedGun) and Net 'ProfileUpdated' (Guns).
@@ -110,7 +108,7 @@ end
 for _, plr in Players:GetPlayers() do watchPlayer(plr) end
 Players.PlayerAdded:Connect(watchPlayer)
 
----------------------------------------------------------------------------------------------- the shop
+---------------------------------------------------------------------------------------------- pedestals
 -- The map tags the armory HoodArmory and makes each GunSlot_<Id> stream as one piece (Atomic), so slots are
 -- bound as they arrive and dropped if they stream out; the prompt lives on the slot and goes with it.
 local CollectionService = game:GetService('CollectionService')
@@ -120,18 +118,19 @@ if not active then return end
 local guns = GunRules.fromAttributes(player:GetAttribute('OwnedGuns'), player:GetAttribute('EquippedGun'))
 local slots, shown = {}, {}
 
--- Which colour of GunRules.Colors[state] each named slot part takes (the map builder names them).
-local ROLES = { StatePanel = 'Top' }
-
 local function paint(slot, state)
 	local look = GunRules.Colors[state]
-	for _, p in slot.Parts do
-		local color = look[ROLES[p.Name]]
-		if color then p.Color = color end
+	for _, p in slot.Tops do p.Color = look.Top end
+	for _, p in slot.Glows do p.Color = look.Glow end
+	for _, l in slot.Lights do l.Color = look.Top end
+	for _, e in slot.Hazes do e.Color = ColorSequence.new(look.Top) end
+	if slot.Strip then slot.Strip.Color = look.Strip end
+	local label = slot.StateLabel
+	if label then
+		label.Text = string.upper(state)
+		local stroke = label:FindFirstChildOfClass('UIStroke')
+		if stroke then stroke.Color = look.Strip:Lerp(Color3.new(0, 0, 0), 0.45) end
 	end
-	-- the padlock only while it is locked; the gun leaves its mount while it is equipped (it is in your hands)
-	for _, p in slot.Locks do p.Transparency = state == 'Locked' and 0 or 1 end
-	for p, t in slot.GunParts do p.Transparency = state == 'Equipped' and 1 or t end
 	if slot.Price then
 		local glyph = slot.Price:GetAttribute('Glyph') or ''
 		-- (the cash glyph or icon only goes with a price: a tick for OWNED, a star for EQUIPPED)
@@ -153,20 +152,14 @@ local function bind(model)
 	if not gun or (slots[id] and slots[id].Model == model) then return end
 	local point = model:FindFirstChild('GunPoint_' .. id, true) or model:WaitForChild('GunPoint_' .. id, 5)
 	if not point or not model.Parent then return end
-	local slot = { Gun = gun, Model = model, Parts = {}, Locks = {}, GunParts = {} }
-	local display = model:FindFirstChild('Display')
+	local slot = { Gun = gun, Model = model, Tops = {}, Glows = {}, Lights = {}, Hazes = {} }
 	for _, d in model:GetDescendants() do
-		if ROLES[d.Name] and d:IsA('BasePart') then table.insert(slot.Parts, d)
-		elseif d.Name == 'StateLock' and d:IsA('BasePart') then table.insert(slot.Locks, d)
-		elseif display and d:IsA('BasePart') and d:IsDescendantOf(display) then
-			-- (its look as built, remembered on the part the first time, so a slot bound again while its gun is
-			-- off the rack still knows how to hang it back)
-			local t = d:GetAttribute('RackTransparency')
-			if t == nil then
-				t = d.Transparency
-				d:SetAttribute('RackTransparency', t)
-			end
-			slot.GunParts[d] = t
+		if d.Name == 'StateTop' and d:IsA('BasePart') then table.insert(slot.Tops, d)
+		elseif d.Name == 'StateGlow' and d:IsA('BasePart') then table.insert(slot.Glows, d)
+		elseif d.Name == 'StateStrip' and d:IsA('BasePart') then slot.Strip = d
+		elseif d:IsA('PointLight') and d.Parent and d.Parent.Name == 'StateGlow' then table.insert(slot.Lights, d)
+		elseif d:IsA('ParticleEmitter') and d.Name == 'StateHaze' then table.insert(slot.Hazes, d)
+		elseif d:IsA('TextLabel') and d.Name == 'State' then slot.StateLabel = d
 		elseif d:IsA('TextLabel') and d.Name == 'Price' and d:FindFirstAncestor('GunLabel') then slot.Price = d
 		elseif d:IsA('ImageLabel') and d.Name == 'PriceIcon' then slot.PriceIcon = d
 		end
@@ -207,18 +200,14 @@ end
 CollectionService:GetInstanceAddedSignal('HoodArmory'):Connect(watchArmory)
 for _, armory in CollectionService:GetTagged('HoodArmory') do watchArmory(armory) end
 
--- A gun that just became yours (or just got equipped) gets a burst in its rarity metal and a flash: on the gun
--- if it is still on its mount, else on its green card (an equipped gun has left the shop for your hands).
-local function celebrate(slot, text, state)
+-- A gun that just became yours (or just got equipped) gets a burst and a flash.
+local function celebrate(slot, text)
 	local display = slot.Model:FindFirstChild('Display')
 	local position = display and display:GetPivot().Position or slot.Model:GetPivot().Position
-	local flash = state == 'Equipped' and slot.Parts[1] or display
-	local band = GunRules.rarity and GunRules.rarity(slot.Gun.Tier)
-	local color = band and band.Color or slot.Gun.Color
 	pcall(function()
-		Juice.burst(position, color, 1.6)
-		if flash then Juice.flash(flash) end
-		Juice.popNumber(position + Vector3.new(0, 2, 0), text, color)
+		Juice.burst(position, slot.Gun.Color, 1.6)
+		if display then Juice.flash(display) end
+		Juice.popNumber(position + Vector3.new(0, 2, 0), text, slot.Gun.Color)
 	end)
 end
 
@@ -231,8 +220,8 @@ local function refresh(next)
 		if shown[id] ~= state then
 			local before = shown[id]
 			paint(slot, state)
-			if primed and before == 'Locked' then celebrate(slot, 'NEW GUN!', state)
-			elseif primed and before == 'Owned' and state == 'Equipped' then celebrate(slot, 'EQUIPPED!', state) end
+			if primed and before == 'Locked' then celebrate(slot, 'NEW GUN!')
+			elseif primed and before == 'Owned' and state == 'Equipped' then celebrate(slot, 'EQUIPPED!') end
 			shown[id] = state
 		end
 	end
