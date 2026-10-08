@@ -1,7 +1,8 @@
 -- Lighting presets (research_notes/Front page feel and gamey stages/lighting_and_gates.md).
--- Lighting is shared by the whole place. TheBlockV2.Build() applies FrontPage for you; otherwise, in the
+-- Lighting is shared by the whole place. TheBlockV2.Build() applies HoodCalm for you; otherwise, in the
 -- Command Bar:
---   require(game.ServerStorage.HoodLighting).Apply()              -- "Front-page Day": bright, high sun, cool shade
+--   require(game.ServerStorage.HoodLighting).Apply()              -- "HoodCalm": warm-neutral, relaxing (default)
+--   require(game.ServerStorage.HoodLighting).Apply('FrontPage')   -- the older bright, high-sun, cool-shade look
 --   require(game.ServerStorage.HoodLighting).Apply('GoldenBlock') -- hood evening that stays bright (events)
 --   require(game.ServerStorage.HoodLighting).Restore()            -- put back exactly what was there before
 -- The first Apply saves the current Lighting setup (properties, effects, Sky, Clouds, wind) into
@@ -33,6 +34,25 @@ L.Presets = {
 		sky = { SunAngularSize = 16, MoonAngularSize = 11, StarCount = 0, CelestialBodiesShown = true },
 		clouds = { Cover = 0.55, Density = 0.25, Color = C(255, 255, 255) },
 		wind = Vector3.new(8, 0, 4),
+	},
+	-- The default since the calm pass: warm-neutral and relaxing. A warm grey ambient (the roofed lobby hall is lit
+	-- mostly by Ambient, and FrontPage's violet doubled its floor), slightly desaturated grade, soft bloom that
+	-- only haloes real neon, a light warm depth haze (research/lobby_art_direction.md, "HallCalm").
+	HoodCalm = {
+		lighting = {
+			LightingStyle = Enum.LightingStyle.Soft, PrioritizeLightingQuality = true,
+			ClockTime = 14.5, GeographicLatitude = 30, Brightness = 2.4, ExposureCompensation = 0.15,
+			Ambient = C(150, 142, 132), OutdoorAmbient = C(160, 154, 146),
+			ColorShift_Top = C(255, 235, 210), ColorShift_Bottom = C(110, 104, 98),
+			EnvironmentDiffuseScale = 0.35, EnvironmentSpecularScale = 0.1, ShadowSoftness = 0.35, GlobalShadows = true,
+		},
+		atmosphere = { Density = 0.22, Offset = 0.3, Haze = 0.3, Glare = 0, Color = C(226, 216, 200), Decay = C(170, 160, 148) },
+		grade = { Brightness = 0.02, Contrast = 0.06, Saturation = -0.1, TintColor = C(255, 248, 238) },
+		bloom = { Intensity = 0.3, Size = 24, Threshold = 1.25 },
+		rays = { Intensity = 0.01, Spread = 0.15 },
+		sky = { SunAngularSize = 14, MoonAngularSize = 11, StarCount = 0, CelestialBodiesShown = true },
+		clouds = { Cover = 0.5, Density = 0.22, Color = C(255, 252, 246) },
+		wind = Vector3.new(6, 0, 3),
 	},
 	-- Evening that stays bright: peach haze instead of beige, violet shade, neon and string lights glow.
 	GoldenBlock = {
@@ -109,10 +129,10 @@ local function make(class, name, props, parent)
 	return inst
 end
 
--- Apply a preset (default FrontPage). If the sun would end up in front of players walking down the
+-- Apply a preset (default HoodCalm). If the sun would end up in front of players walking down the
 -- street (toward -Z), the latitude flips so the lit faces of gates and facades face the player.
 function L.Apply(name)
-	name = name or 'FrontPage'
+	name = name or 'HoodCalm'
 	local preset = L.Presets[name]
 	assert(preset, 'unknown preset ' .. tostring(name))
 	backup()

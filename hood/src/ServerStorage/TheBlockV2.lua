@@ -8,7 +8,7 @@
 -- the lobby. Buildings stand shoulder to shoulder down both sides,
 -- fronts to the middle; a ring road with trees and parked cars runs round the outside.
 -- Edit-time builder: creates or replaces Workspace.TheBlockV2, makes it the map the game runs on and applies
--- the Front-page Day lighting (both reversible: SetActive(false), HoodLighting.Restore()).
+-- the calm warm lighting (HoodLighting HoodCalm) (both reversible: SetActive(false), HoodLighting.Restore()).
 -- Command Bar:  require(game.ServerStorage.TheBlockV2).Build()
 --
 -- Hooks: gates are HoodStageGate (StageService/HoodClient.Stages). Each stage's pad is tagged HoodFightPad
@@ -4822,7 +4822,7 @@ function V2.Build()
 	local count = 0
 	for _, d in root:GetDescendants() do if d:IsA('BasePart') then count += 1 end end
 	pcall(function() game:GetService('ChangeHistoryService'):SetWaypoint('TheBlockV2 built') end)
-	pcall(function() require(game:GetService('ServerStorage').HoodLighting).Apply('FrontPage') end)
+	pcall(function() require(game:GetService('ServerStorage').HoodLighting).Apply('HoodCalm') end)
 	V2.SetActive(true)
 	print(string.format('[TheBlockV2] Built %d parts at %s. Press Play to spawn in the hood; select TheBlockV2 and press F to fly there.', count, tostring(V2.Origin.Position)))
 	return { parts = count }
