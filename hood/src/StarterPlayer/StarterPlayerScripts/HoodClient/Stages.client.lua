@@ -22,7 +22,7 @@ if not active then return end
 local frame = active.Frame
 
 local C = Color3.fromRGB
-local GO, DENIED = C(70, 255, 140), C(255, 60, 90)
+local GO, DENIED = C(76, 214, 130), C(236, 76, 100) -- (a notch softer than pure neon green and red)
 local gates = {}
 
 local function track(model)
@@ -79,7 +79,13 @@ local function paint(e, power)
 	for _, lock in e.Locks do lock.Transparency = state == 'Locked' and 0 or 1 end
 	for _, t in e.Status do
 		t.Text = state == 'Ready' and 'GO! →' or ('NEED 💪 ' .. Format.compact(e.Required))
-		t.TextColor3 = state == 'Ready' and GO or Color3.new(1, 1, 1)
+		-- White on the gate's own outline while locked; on the green field, white with a deep green outline.
+		t.TextColor3 = Color3.new(1, 1, 1)
+		local stroke = t:FindFirstChildOfClass('UIStroke')
+		if stroke then
+			if stroke:GetAttribute('BaseColor') == nil then stroke:SetAttribute('BaseColor', stroke.Color) end
+			stroke.Color = state == 'Ready' and GO:Lerp(Color3.new(0, 0, 0), 0.65) or stroke:GetAttribute('BaseColor')
+		end
 	end
 	-- The moment a gate opens for you: a quick pop of the status text.
 	if was == 'Locked' and state == 'Ready' then
