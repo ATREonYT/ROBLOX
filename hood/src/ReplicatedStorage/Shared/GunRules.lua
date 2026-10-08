@@ -15,7 +15,7 @@ GunRules.Range = 14 -- how close (studs) you must stand to a gun's pedestal poin
 -- equip), Strip = the plate face, Text = the price row.
 local C = Color3.fromRGB
 GunRules.Colors = {
-	Locked = { Top = C(226, 78, 146), Base = C(139, 62, 95), Rim = C(239, 191, 211), Panel = C(226, 124, 166),
+	Locked = { Top = C(214, 104, 150), Base = C(139, 62, 95), Rim = C(239, 191, 211), Panel = C(220, 140, 172),
 		Glow = C(236, 124, 174), GlowAlpha = 0.3, Strip = C(150, 58, 98), Text = C(255, 224, 110) },
 	Owned = { Top = C(70, 134, 222), Base = C(57, 92, 138), Rim = C(204, 221, 242), Panel = C(124, 166, 226),
 		Glow = C(120, 170, 236), GlowAlpha = 0.2, Strip = C(54, 90, 150), Text = C(170, 210, 255) },

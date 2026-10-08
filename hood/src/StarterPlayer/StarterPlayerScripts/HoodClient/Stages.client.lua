@@ -1,8 +1,9 @@
 -- Stage gates on your screen (lighting_and_gates.md, "States" and "Pass feedback").
---   Locked   Power below the number: the force field is solid for you, the padlock shows, and the bar on
---            the barrier fills toward the number. Walk into it and it flashes red and bumps you back.
+--   Locked   Power below the number: the force field is solid for you, the padlock and red lamps show, the
+--            status line says how much more you need and the bar on the barrier fills toward the number.
+--            Walk into it and it flashes red and bumps you back.
 --   Ready    You have enough: the field turns green and pulses, the padlock pops off, "GO!".
---   Cleared  Already passed once (the server's count): the field and its lasers are gone.
+--   Cleared  Already passed once (the server's count): the field, its board frame and its lasers are gone.
 -- Breaking through shatters the field, bursts confetti, kicks the camera and plays a rising chime; the
 -- first clear of each gate also gets the big "STAGE 3 CLEARED!" banner from the server.
 local Players = game:GetService('Players')
@@ -41,9 +42,10 @@ CollectionService:GetInstanceRemovedSignal('HoodStageGate'):Connect(function(m) 
 local function collect(e)
 	if e.Barrier and e.Barrier.Parent and e.Collected then return end
 	e.Barrier = e.Model:FindFirstChild('Barrier', true)
-	e.Locks, e.Status, e.Fill, e.Count, e.Guis, e.Lasers = {}, {}, {}, {}, {}, {}
+	e.Locks, e.Status, e.Fill, e.Count, e.Guis, e.Lasers, e.Boards = {}, {}, {}, {}, {}, {}, {}
 	for _, d in e.Model:GetDescendants() do
 		if d:IsA('BasePart') and (d.Name == 'Lock' or d.Name == 'LaserNub') then table.insert(e.Locks, d)
+		elseif d:IsA('BasePart') and d.Name:sub(1, 9) == 'GateBoard' then table.insert(e.Boards, d)
 		elseif d:IsA('TextLabel') and d.Name == 'Status' then table.insert(e.Status, d)
 		elseif d:IsA('TextLabel') and d.Name == 'Count' then table.insert(e.Count, d)
 		elseif d:IsA('Frame') and d.Name == 'Fill' then table.insert(e.Fill, d)
@@ -65,6 +67,9 @@ local function paint(e, power)
 	local r = math.clamp(power / math.max(e.Required, 1), 0, 1)
 	for _, f in e.Fill do f.Size = UDim2.fromScale(0.62 * r, 0.09) end
 	for _, t in e.Count do t.Text = Format.compact(math.min(power, e.Required)) .. ' / ' .. Format.compact(e.Required) end
+	-- The status line says the gap (the big number on the board already says the total).
+	local need = math.max(0, e.Required - power)
+	for _, t in e.Status do t.Text = state == 'Ready' and 'GO! →' or ('NEED ' .. Format.compact(need) .. ' MORE') end
 	if e.State == state and e.Painted == e.Barrier then return end
 	local was = e.State
 	e.State, e.Painted = state, e.Barrier
@@ -77,8 +82,9 @@ local function paint(e, power)
 	for _, g in e.Guis do g.Enabled = state ~= 'Cleared' end
 	for _, l in e.Lasers do l.Enabled = state == 'Locked' end
 	for _, lock in e.Locks do lock.Transparency = state == 'Locked' and 0 or 1 end
+	-- The requirement board's frame goes with the field once you've cleared the gate.
+	for _, p in e.Boards do p.Transparency = state == 'Cleared' and 1 or (p:GetAttribute('BaseTransparency') or 0) end
 	for _, t in e.Status do
-		t.Text = state == 'Ready' and 'GO! →' or ('NEED 💪 ' .. Format.compact(e.Required))
 		-- White on the gate's own outline while locked; on the green field, white with a deep green outline.
 		t.TextColor3 = Color3.new(1, 1, 1)
 		local stroke = t:FindFirstChildOfClass('UIStroke')

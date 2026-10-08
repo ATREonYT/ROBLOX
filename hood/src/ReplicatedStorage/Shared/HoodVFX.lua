@@ -84,6 +84,9 @@ local FLIPBOOK = {
 -- starts switched off (attribute NeedsUpload) until the sheet is uploaded. Unlisted names: the built-in reads
 -- well enough on its own. Other builders can add their own names here.
 HoodVFX.Fallback = { wisp = 0.45, arc = 0.6, streakup = 0.5 }
+-- The share of their tuned rate that station() auras' soft cloud layers run at (Brief 8: a notch quieter; the
+-- boss ring's champion aura is the one station aura left). opts.calm overrides it per aura.
+HoodVFX.StationCalm = 0.6
 local FALLBACK_FADE = HoodVFX.Fallback
 -- Extra settings for a built-in stand-in: a soft glow squashed into a streak reads as rain.
 local FALLBACK_PROPS = {
@@ -214,6 +217,9 @@ function HoodVFX.station(part, tier, color, size, opts)
 	local light, deep, pale = lighten(color, 0.35), darken(color, 0.35), lighten(color, 0.7)
 	local smoke = opts.smoke or color -- the clouds' colour (a black-and-white station wants grey smoke)
 	local champ = T >= 9
+	-- Brief 8: the soft cloud layers (mist, spill, wisps, flames, rays, glitter) run at HoodVFX.StationCalm of
+	-- their tuned rate, so an aura (the boss ring's) frames what stands in it instead of fogging it over.
+	local calm = opts.calm or HoodVFX.StationCalm
 	-- Additive layers in a pale colour stack up to a white blob fast, so pale glows (white, gold, cyan) get
 	-- dimmed: o(t) keeps (1 - t) * hot of the opacity.
 	local lum = 0.299 * color.R + 0.587 * color.G + 0.114 * color.B
@@ -251,7 +257,7 @@ function HoodVFX.station(part, tier, color, size, opts)
 		-- ZOffset -1.5 sorts the clouds behind the bag where they overlap, so the bag reads (more than that and
 		-- the deck starts to hide the low puffs).
 		emitter(deck, 'Mist', 'aura', {
-			Rate = (2 + 3 * k) * A, Lifetime = NR(3, 4), Speed = NR(0.8, 1.8 + 0.8 * k), SpreadAngle = Vector2.new(60 + 20 * k, 60 + 20 * k),
+			Rate = (2 + 3 * k) * A * calm, Lifetime = NR(3, 4), Speed = NR(0.8, 1.8 + 0.8 * k), SpreadAngle = Vector2.new(60 + 20 * k, 60 + 20 * k),
 			Drag = 0.5, Acceleration = V(0, 0.3 + 0.5 * k, 0), RotSpeed = NR(-18, 18), ZOffset = -1.5,
 			Size = seq({ { 0, 3 * S, 0.5 * S }, { 0.4, (5 + 2.5 * k) * S, 0.8 * S }, { 1, (7 + 4 * k) * S, S } }),
 			Transparency = seq({ { 0, 1 }, { 0.2, 0.45 - 0.2 * k, 0.08 }, { 0.6, 0.55 - 0.2 * k, 0.08 }, { 1, 1 } }),
@@ -259,7 +265,7 @@ function HoodVFX.station(part, tier, color, size, opts)
 		})
 		-- 2. Spill: wide soft fog rolling sideways off the deck and sinking over the edges.
 		emitter(deck, 'Spill', 'mist', {
-			Rate = (0.8 + 2 * k) * A, Lifetime = NR(2.5, 3.5), Speed = NR(2.5, 4 + k), SpreadAngle = Vector2.new(85, 85),
+			Rate = (0.8 + 2 * k) * A * calm, Lifetime = NR(2.5, 3.5), Speed = NR(2.5, 4 + k), SpreadAngle = Vector2.new(85, 85),
 			Drag = 0.8, Acceleration = V(0, -0.4, 0), RotSpeed = NR(-10, 10), ZOffset = -1,
 			Size = seq({ { 0, 3 * S, 0.5 * S }, { 1, (6 + 4 * k) * S, S } }),
 			Transparency = seq({ { 0, 1 }, { 0.25, 0.55 - 0.2 * k }, { 1, 1 } }),
@@ -280,7 +286,7 @@ function HoodVFX.station(part, tier, color, size, opts)
 	if T >= 3 then
 		-- 3. Curly wisps: the inked smoke curls (OneShot flipbook: each grows, curls and breaks up once).
 		local wisp = {
-			Rate = (1.6 + 4 * k) * A, Lifetime = NR(1.6, 2.4), Speed = NR(2.5, 4.5), SpreadAngle = Vector2.new(22, 22),
+			Rate = (1.6 + 4 * k) * A * calm, Lifetime = NR(1.6, 2.4), Speed = NR(2.5, 4.5), SpreadAngle = Vector2.new(22, 22),
 			Drag = 0.8, Acceleration = V(0, 1.2, 0), Rotation = NR(-40, 40), RotSpeed = NR(-30, 30),
 			Size = seq({ { 0, 2.8 * S, 0.5 * S }, { 1, (4.2 + 1.2 * k) * S, 0.7 * S } }),
 			Transparency = seq({ { 0, 0.4 }, { 0.15, 0 }, { 0.8, 0.15 }, { 1, 1 } }),
@@ -340,7 +346,7 @@ function HoodVFX.station(part, tier, color, size, opts)
 		for i, e in edges do
 			local edge = holder(aura, 'FlameEdge', top * CFrame.new(e[1] + V(0, 0.2, 0)), e[2])
 			emitter(edge, 'Flames' .. i, 'flame', {
-				Orientation = Enum.ParticleOrientation.FacingCameraWorldUp, Rate = (3 + 3 * k) * e[3] * math.max(e[2].X, e[2].Z) / 10,
+				Orientation = Enum.ParticleOrientation.FacingCameraWorldUp, Rate = (3 + 3 * k) * e[3] * math.max(e[2].X, e[2].Z) / 10 * calm,
 				Lifetime = NR(0.6, 1), Speed = NR(2, 3.5), SpreadAngle = Vector2.new(8, 8), Acceleration = V(0, 3, 0), Drag = 0.5, ZOffset = 0.5,
 				Rotation = NR(-8, 8), Size = seq({ { 0, 2 * S }, { 0.3, 3.6 * S, 0.5 * S }, { 1, 2.2 * S } }),
 				Transparency = seq({ { 0, 0.6 }, { 0.15, 0.05 }, { 0.7, 0.25 }, { 1, 1 } }),
@@ -351,7 +357,7 @@ function HoodVFX.station(part, tier, color, size, opts)
 	if T >= 7 then
 		-- 7. God rays: faint shafts fading in and out on the deck, plus three steady beams rising through it.
 		emitter(deck, 'Rays', 'ray', {
-			Orientation = Enum.ParticleOrientation.FacingCameraWorldUp, Rate = (1 + 1.5 * k) * A, Lifetime = NR(2, 3), Speed = NR(0.05),
+			Orientation = Enum.ParticleOrientation.FacingCameraWorldUp, Rate = (1 + 1.5 * k) * A * calm, Lifetime = NR(2, 3), Speed = NR(0.05),
 			Rotation = NR(0), Size = seq({ { 0, h * 0.75, h * 0.1 }, { 1, h * 0.85, h * 0.1 } }),
 			Transparency = seq({ { 0, 1 }, { 0.35, o(0.62 - 0.15 * k) }, { 0.65, o(0.62 - 0.15 * k) }, { 1, 1 } }),
 			Color = champ and rainbow(1) or cseq({ { 0, light }, { 1, color } }), LightEmission = 0.8, Brightness = 1.3,
@@ -378,10 +384,10 @@ function HoodVFX.station(part, tier, color, size, opts)
 	if T >= 8 then
 		-- 8. Gold glitter drifting up through everything.
 		emitter(column, 'Glitter', 'glitter', {
-			Rate = (12 + 8 * (T - 8)) * A, Lifetime = NR(0.6, 1.1), Speed = NR(0.5, 2), Rotation = NR(0, 45), RotSpeed = NR(-90, 90),
+			Rate = (12 + 8 * (T - 8)) * A * calm, Lifetime = NR(0.6, 1.1), Speed = NR(0.5, 2), Rotation = NR(0, 45), RotSpeed = NR(-90, 90),
 			Size = seq({ { 0, 0 }, { 0.4, 0.62 * S, 0.22 * S }, { 1, 0 } }),
 			Color = champ and rainbow(3) or cseq({ { 0, WHITE }, { 0.5, C(255, 226, 120) }, { 1, C(255, 180, 40) } }),
-			LightEmission = 1, Brightness = 2.5, ZOffset = 1.5,
+			LightEmission = 1, Brightness = 1.8, ZOffset = 1.5,
 		})
 	end
 	return aura

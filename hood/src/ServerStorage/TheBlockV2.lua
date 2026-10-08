@@ -31,29 +31,30 @@ local Props, PROPS_KIT, SKINS -- HoodProps (the Champ Ring), the helpers it borr
 V2.Origin = CFrame.new(2400, 0, 0)
 
 -- Palette, taken from the concept: bold, simple, one look per district. The same hues as ever, a notch
--- quieter (Brief 8): big surfaces (walls, ground, courts) at HSV S <= 0.45, objects (pads, boards, props) at
--- S <= 0.7; small accents may stay bright.
+-- quieter (Brief 8): big surfaces (walls, ground, courts) at about HSV S 0.45-0.55 in mid-tones, objects (pads,
+-- boards, props) at S <= 0.7; small accents may stay bright. (Critic round 1: not too dull either; the streets
+-- should sit at about 4-6% loud pixels.)
 local P = {
 	-- Ground.
 	tileA = C(206, 208, 213), tileB = C(193, 196, 202), band = C(146, 149, 156), bandLine = C(236, 236, 238),
-	kerb = C(222, 222, 226), wall = C(214, 214, 218), grass = C(122, 172, 96), asphalt = C(70, 72, 78), roadLine = C(240, 240, 240),
+	kerb = C(222, 222, 226), wall = C(214, 214, 218), grass = C(116, 178, 86), asphalt = C(70, 72, 78), roadLine = C(240, 240, 240),
 	court = C(214, 166, 130), courtKey = C(190, 120, 90), courtLine = C(250, 246, 236),
 	-- Buildings.
-	brick = C(176, 108, 98), brickDark = C(148, 90, 82), brickPink = C(200, 130, 114), slate = C(62, 68, 84), stone = C(158, 158, 164),
-	tan = C(222, 188, 138), tanLight = C(238, 212, 168), tanDark = C(176, 150, 116),
-	glass = C(54, 72, 102), frame = C(214, 214, 220), door = C(52, 120, 86), doorDark = C(48, 52, 62),
-	barberBlue = C(62, 92, 168), groceryGreen = C(100, 154, 104), groceryYellow = C(238, 214, 148), shopBlue = C(100, 130, 182),
-	warehouse = C(100, 130, 182), warehouseDark = C(56, 80, 136), rollDoor = C(72, 76, 84),
+	brick = C(190, 102, 84), brickDark = C(160, 84, 70), brickPink = C(210, 124, 100), slate = C(62, 68, 84), stone = C(158, 158, 164),
+	tan = C(228, 184, 120), tanLight = C(238, 212, 168), tanDark = C(176, 150, 116),
+	glass = C(54, 72, 102), frame = C(214, 214, 220), door = C(46, 128, 86), doorDark = C(48, 52, 62),
+	barberBlue = C(56, 92, 182), groceryGreen = C(100, 154, 104), groceryYellow = C(238, 214, 148), shopBlue = C(88, 124, 192),
+	warehouse = C(88, 124, 192), warehouseDark = C(56, 80, 136), rollDoor = C(72, 76, 84),
 	-- Props.
-	leaf = C(112, 178, 80), leafDark = C(94, 160, 68), hedge = C(86, 152, 72), trunk = C(122, 82, 52), planter = C(196, 196, 202),
+	leaf = C(104, 186, 70), leafDark = C(90, 168, 60), hedge = C(78, 160, 64), trunk = C(122, 82, 52), planter = C(196, 196, 202),
 	iron = C(36, 38, 44), lampGlow = C(255, 220, 140), wood = C(186, 134, 90), woodDark = C(142, 100, 68), crate = C(198, 152, 98),
-	dumpster = C(66, 134, 92), black = C(28, 30, 34), white = C(250, 250, 250), cream = C(240, 236, 226),
-	containerRed = C(186, 88, 74), containerBlue = C(72, 112, 176), containerGreen = C(84, 150, 108),
+	dumpster = C(58, 140, 90), black = C(28, 30, 34), white = C(250, 250, 250), cream = C(240, 236, 226),
+	containerRed = C(196, 82, 66), containerBlue = C(64, 108, 192), containerGreen = C(74, 158, 102),
 	-- Fight pads and district signs (gameplay colours: the loudest things on the street, but not neon-loud).
 	padRed = C(214, 84, 74), padBlue = C(66, 116, 212), padGreen = C(64, 176, 104), bossRing = C(110, 230, 140), boss = C(184, 76, 70),
 	spawnBlue = C(60, 190, 255), evolveBlue = C(40, 88, 210), evolveYellow = C(252, 206, 52),
 	-- Districts: brick red, violet, court orange, apartment amber-gold (kept apart from the orange), yards blue.
-	district = { C(200, 92, 82), C(132, 94, 196), C(216, 140, 88), C(220, 172, 92), C(82, 124, 198) },
+	district = { C(206, 84, 72), C(130, 84, 212), C(220, 136, 78), C(224, 172, 84), C(74, 122, 208) },
 }
 ---------------------------------------------------------------------------------------------- build context
 local Ctx = {}
@@ -273,6 +274,14 @@ function Craft.acUnit(c, x, y, z)
 	decor(c:box('RoofUnit', V(x - 1.5, y + 0.3, z - 2), V(x + 1.5, y + 2.2, z + 2), C(184, 188, 196), M.SmoothPlastic))
 	decor(c:part('RoofFan', V(0.25, 2.2, 2.2), CFrame.new(x, y + 2.3, z + 0.6) * CFrame.Angles(0, 0, math.pi / 2), C(70, 74, 84), M.SmoothPlastic, Enum.PartType.Cylinder))
 end
+-- CornerWedgePart (its high corner at local +X, -Z) in the context's frame.
+function Craft.cornerWedge(c, name, size, cf, color)
+	local p = Instance.new('CornerWedgePart')
+	p.Name, p.Anchored, p.Size, p.Color, p.Material = name, true, size, color, M.SmoothPlastic
+	p.CFrame = V2.Origin * c.cf * cf
+	p.Parent = c.parent
+	return p
+end
 -- A regular octagon slab (4 boxes turned 45 degrees apart), flat-to-flat f, from y0 to y1.
 function Craft.octagon(b, name, f, y0, y1, color, material)
 	for k = 0, 3 do
@@ -484,8 +493,9 @@ local function railing(c, a, b, h)
 end
 
 -- Fight pad: a street boxing-ring mat (research recipe j). A dark base, a cream lip, the mat in the pad's
--- colour with its number, and four corner posts with padded cushions and small lit caps (the pad's only glow).
--- No ropes, so it stays open to walk onto from every side. A small plate on the front-left post names the fight.
+-- colour with its number, and four dark corner posts, each with a padded cushion under a sloped corner cap (the
+-- turnbuckle pad). No ropes, so it stays open to walk onto from every side. A small plate on the front-left post
+-- names the fight. 17 parts, no neon.
 local function fightPad(c, n, pos, color, district, size, label)
 	size = size or PAD_SIZE
 	local h = size / 2
@@ -499,11 +509,10 @@ local function fightPad(c, n, pos, color, district, size, label)
 	for _, x in { -1, 1 } do
 		for _, z in { -1, 1 } do
 			local p = V(x * (h + 0.55), 0, z * (h + 0.55))
-			pad:box('PostFoot', p + V(-0.8, 0.55, -0.8), p + V(0.8, 0.9, 0.8), D, M.SmoothPlastic)
-			pad:post('CornerPost', 0.45, 3.6, p + V(0, 0.9, 0), P.cream, M.SmoothPlastic)
-			-- The padded corner cushion, turned so a flat face looks at the middle of the mat.
-			pad:part('CornerPad', V(1.3, 1.7, 1.3), CFrame.new(p + V(0, 3.35, 0)) * CFrame.Angles(0, math.pi / 4, 0), color, M.SmoothPlastic)
-			decor(pad:post('PostLight', 0.55, 0.5, p + V(0, 4.5, 0), color:Lerp(P.white, 0.25), M.Neon)).CastShadow = false
+			pad:post('CornerPost', 0.4, 2.5, p + V(0, 0.55, 0), D, M.SmoothPlastic)
+			pad:box('CornerPad', p + V(-0.5, 1.9, -0.5), p + V(0.5, 3.1, 0.5), color, M.SmoothPlastic)
+			-- The cap's high corner points away from the mat, so the slope faces the fighters.
+			Craft.cornerWedge(pad, 'CornerCap', V(1.0, 0.7, 1.0), CFrame.new(p + V(0, 3.45, 0)) * CFrame.Angles(0, math.atan2(-x - z, x - z), 0), color:Lerp(P.white, 0.15))
 		end
 	end
 	-- Name plate on the front-left post (players arrive from +Z).
@@ -540,43 +549,42 @@ local function banner(c, cf, title, sub, badge, color)
 	return b
 end
 
--- Teleport pad: a small teleport booth (research recipe c). A round pad in three steps (a dark octagon base, a
--- cream rim, the coloured top with a glowing ring and an icon in the middle) under a little arch: two posts and a
--- framed sign naming where it goes, readable from both sides. The top keeps the pad's name and the prompt
--- (StageService handles targets 'Lobby' and 'Furthest'). Each target has its own hue so a pad reads the same
--- everywhere: SPAWN rose, FURTHEST gold; anything else takes `color`. Steps stay low enough to walk onto.
+-- Teleport pad: a small teleport booth (research recipe c), 14 parts. A round pad in steps (a dark base, a cream rim,
+-- a glowing ring round the coloured top with an icon on it) between two chunky square posts on cream feet with cream
+-- capitals, and a framed sign between them just over head height, readable from both sides. The top keeps the pad's
+-- name and the prompt (StageService handles targets 'Lobby' and 'Furthest'). Each target has its own hue so a pad
+-- reads the same everywhere: SPAWN rose, FURTHEST gold; anything else takes `color`. Steps stay low enough to walk onto.
 local function teleportPad(g, name, x, z, color, target, label)
-	local main = ({ Lobby = C(200, 88, 154), Furthest = C(214, 172, 80) })[target] or color
-	local dark, trim, glow = main:Lerp(P.black, 0.38), C(238, 236, 232), main:Lerp(P.white, 0.3)
+	local main = ({ Lobby = C(204, 92, 158), Furthest = C(226, 184, 84) })[target] or color
+	local dark, trim, glow = main:Lerp(P.black, 0.24), C(238, 236, 232), main:Lerp(P.white, 0.3)
 	local o = V(x, 0, z)
-	-- base: an octagon from four boxes turned 45 degrees apart (flat to flat 7.8)
-	for k = 0, 3 do
-		g:part(name .. 'Base', V(7.8, 0.3, 3.24), CFrame.new(o + V(0, 0.15, 0)) * CFrame.Angles(0, k * math.pi / 4, 0), dark, M.SmoothPlastic)
-	end
 	local up = CFrame.Angles(0, 0, math.pi / 2) -- (cylinders lie along X; this stands them up)
-	g:part(name .. 'Rim', V(0.22, 7, 7), CFrame.new(o + V(0, 0.41, 0)) * up, trim, M.SmoothPlastic, Enum.PartType.Cylinder)
-	local pad = g:part(name, V(0.16, 6.2, 6.2), CFrame.new(o + V(0, 0.6, 0)) * up, main, M.SmoothPlastic, Enum.PartType.Cylinder)
-	local ring = decor(g:part(name .. 'Ring', V(0.06, 5, 5), CFrame.new(o + V(0, 0.71, 0)) * up, glow, M.Neon, Enum.PartType.Cylinder))
+	local function disc(n, d, y0, y1, c, mat)
+		return g:part(name .. n, V(y1 - y0, d, d), CFrame.new(o + V(0, (y0 + y1) / 2, 0)) * up, c, mat or M.SmoothPlastic, Enum.PartType.Cylinder)
+	end
+	disc('Base', 7.8, 0, 0.3, dark)
+	disc('Rim', 7, 0.3, 0.52, trim)
+	local ring = decor(disc('Ring', 5.2, 0.52, 0.62, glow, M.Neon))
 	ring.CastShadow = false
-	decor(g:part(name .. 'Core', V(0.08, 4, 4), CFrame.new(o + V(0, 0.73, 0)) * up, main, M.SmoothPlastic, Enum.PartType.Cylinder)).CastShadow = false
-	local icon = ghost(g:part(name .. 'Icon', V(3, 0.05, 3), CFrame.new(o + V(0, 0.78, 0)), P.white))
+	local pad = disc('', 4.4, 0.52, 0.68, main) -- (the part named `name`: the coloured top inside the ring)
+	local icon = ghost(g:part(name .. 'Icon', V(3, 0.05, 3), CFrame.new(o + V(0, 0.72, 0)), P.white))
 	line(surface(icon, Enum.NormalId.Top, 30), 'Icon', target == 'Lobby' and '🏠' or '🏁', P.white, FONT.loud, 0.1, 0.8)
 	light(ring, glow, 0.8, 9)
-	-- the arch: two posts on the base, a framed sign between their tops, a cap in the pad's colour
+	-- the posts: 1.2 square, 6.4 tall, on cream feet under cream capitals; the sign between them at y 5.2-7.0
 	for _, sx in { -1, 1 } do
-		g:part(name .. 'Post', V(8.1, 0.8, 0.8), CFrame.new(o + V(sx * 3.6, 0.3 + 4.05, 0)) * up, dark, M.SmoothPlastic, Enum.PartType.Cylinder)
-		g:box(name .. 'PostFoot', o + V(sx * 3.6 - 0.6, 0.3, -0.6), o + V(sx * 3.6 + 0.6, 0.9, 0.6), trim, M.SmoothPlastic)
+		local px = sx * 4.1
+		g:box(name .. 'PostFoot', o + V(px - 0.8, 0, -0.8), o + V(px + 0.8, 0.5, 0.8), trim, M.SmoothPlastic)
+		g:box(name .. 'Post', o + V(px - 0.6, 0.5, -0.6), o + V(px + 0.6, 6.9, 0.6), dark, M.SmoothPlastic)
+		g:box(name .. 'PostCap', o + V(px - 0.8, 6.9, -0.8), o + V(px + 0.8, 7.3, 0.8), trim, M.SmoothPlastic)
 	end
-	g:box(name .. 'SignBack', o + V(-4.2, 6.6, -0.25), o + V(4.2, 8.8, 0.25), dark, M.SmoothPlastic)
-	local face = decor(g:box(name .. 'Sign', o + V(-3.85, 6.85, -0.36), o + V(3.85, 8.55, 0.36), trim, M.SmoothPlastic))
+	g:box(name .. 'SignBack', o + V(-3.5, 5.2, -0.3), o + V(3.5, 7.0, 0.3), dark, M.SmoothPlastic)
+	local face = decor(g:box(name .. 'Sign', o + V(-3.2, 5.45, -0.42), o + V(3.2, 6.75, 0.42), trim, M.SmoothPlastic))
 	for _, f in { Enum.NormalId.Front, Enum.NormalId.Back } do
 		local sg = surface(face, f, 24)
 		pcall(function() sg.MaxDistance = 70 end)
-		line(sg, 'Title', label, main:Lerp(P.black, 0.45), FONT.loud, 0.14, 0.72, P.white, 1)
+		line(sg, 'Title', label, main:Lerp(P.black, 0.5), FONT.loud, 0.1, 0.8, trim, 1)
 	end
-	g:box(name .. 'SignCap', o + V(-4.6, 8.8, -0.45), o + V(4.6, 9.35, 0.45), main, M.SmoothPlastic)
-	-- a few soft sparks rising off the ring
-	local fx = ghost(g:part(name .. 'Fx', V(5, 0.2, 5), CFrame.new(o + V(0, 0.9, 0)), P.white))
+	-- a few soft sparks rising off the ring (from the icon's ghost part)
 	local e = Instance.new('ParticleEmitter')
 	e.Name = 'PadSparks'
 	e.Texture = 'rbxasset://textures/particles/sparkles_main.dds'
@@ -586,7 +594,7 @@ local function teleportPad(g, name, x, z, color, target, label)
 	e.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(1, 1) })
 	e.Color, e.LightEmission, e.LightInfluence = ColorSequence.new(glow), 0.6, 0
 	e.EmissionDirection = Enum.NormalId.Top
-	e.Parent = fx
+	e.Parent = icon
 	local prompt = Instance.new('ProximityPrompt')
 	prompt.Name = 'Teleport'
 	prompt.ActionText = 'Teleport'
@@ -668,6 +676,8 @@ Stations.GANTRY_Z = 6.4 -- the gantry's centre line (hanging targets hang from i
 Stations.GANTRY_Y = 8.6 -- underside of the gantry beam
 Stations.LABEL = V(0, 13.8, 3.6) -- the label stack, over the target field
 Stations.StampId = '' -- set from HoodVFX.Textures.stamp at build time ('' until the PNG is uploaded)
+-- The bench's state lamp: green open, red locked (the first paint is a new player's view: only tier 1 open).
+Stations.LampColors = { open = C(90, 220, 120), locked = C(235, 80, 70) }
 
 ---------------------------------------------------------------------------------------------- stamp and X
 -- The groove colour on a face: the theme's own, or the face colour darkened (critic: grooves keep the face's
@@ -980,26 +990,17 @@ function Stations.bench(st, t, tier)
 		decor(d:box('EarArchSide', V(-2.6 + sx * 0.4 - 0.05, y + 0.5, z - 0.1), V(-2.6 + sx * 0.4 + 0.05, y + 0.84, z), yellow))
 	end
 	decor(d:box('EarArch', V(-3.05, y + 0.76, z - 0.1), V(-2.15, y + 0.86, z), yellow))
-	-- Painted on the mat: the box outline (white on dark mats, the groove colour on pale ones), the hazard
-	-- stripe, two shoe prints and the lane number.
+	-- No floor lines (Brief 8): the firing line is one raised kerb across the lane in the mat's light tone, the
+	-- lane number is painted in the box (white on dark mats, the groove colour on pale ones), and a state lamp
+	-- on the bench's end glows green when the lane is open, red while it is locked (Lobby.client repaints it).
 	local m = t.mat
 	local pale = 0.299 * m.R + 0.587 * m.G + 0.114 * m.B > 0.7
 	local edge = pale and Stations.grooveFor(t, m) or C(250, 250, 245)
-	local x0, x1, b0, b1, w = -3.25, 3.25, -8.75, -3.9, 0.14
-	for _, b in { { V(x0, Y, b0), V(x1, Y + 0.03, b0 + w) }, { V(x0, Y, b0), V(x0 + w, Y + 0.03, b1) }, { V(x1 - w, Y, b0), V(x1, Y + 0.03, b1) } } do
-		local p = decor(st:box('BoxLine', b[1], b[2], edge, M.SmoothPlastic))
-		p.CastShadow, p.Transparency = false, 0.2
-	end
-	decor(st:box('FiringLine', V(-3.5, Y, -3.9), V(3.5, Y + 0.03, -3.5), C(255, 214, 30), M.SmoothPlastic)).CastShadow = false
-	for i = 0, 8 do
-		decor(st:part('FiringStripe', V(0.24, 0.02, 0.44), CFrame.new(-3.2 + i * 0.8, Y + 0.035, -3.7) * CFrame.Angles(0, math.rad(40), 0), C(30, 30, 36))).CastShadow = false
-	end
-	for _, sx in { -1, 1 } do
-		local x = sx * 0.45
-		local sole = decor(st:box('ShoePrint', V(x - 0.3, Y, -5.1), V(x + 0.3, Y + 0.03, -4.0), edge, M.SmoothPlastic))
-		local heel = decor(st:box('ShoePrint', V(x - 0.25, Y, -5.8), V(x + 0.25, Y + 0.03, -5.35), edge, M.SmoothPlastic))
-		sole.CastShadow, heel.CastShadow, sole.Transparency, heel.Transparency = false, false, 0.25, 0.25
-	end
+	decor(st:box('ShooterKerb', V(-3.5, Y, -3.9), V(3.5, Y + 0.3, -3.3), m:Lerp(C(255, 255, 255), 0.55), M.SmoothPlastic))
+	g:part('StateLampBase', V(0.25, 0.7, 0.7), CFrame.new(3.25, y + 0.125, z - 0.05) * CFrame.Angles(0, 0, math.pi / 2), C(50, 52, 60), M.SmoothPlastic, Enum.PartType.Cylinder)
+	g:part('StateLampPost', V(0.5, 0.24, 0.24), CFrame.new(3.25, y + 0.5, z - 0.05) * CFrame.Angles(0, 0, math.pi / 2), C(50, 52, 60), M.SmoothPlastic, Enum.PartType.Cylinder)
+	local lamp = decor(g:part('StateLamp', V(0.85, 0.85, 0.85), CFrame.new(3.25, y + 1.1, z - 0.05), Stations.LampColors[tier == 1 and 'open' or 'locked'], M.Neon, Enum.PartType.Ball))
+	lamp.CastShadow = false
 	Stations.digit(st, tier, -8.5, 2.3, edge)
 end
 
@@ -1504,18 +1505,20 @@ function Stations.Lanes.gold(k)
 	Stations.nugget(d, 2.9, 7.4, 0.8, 0.9)
 end
 
--- Floating labels over the targets (the reference's three rows): the Power chip, Unlocked/Locked and the big
--- "xN Power". The client rewrites Detail and hides middle-of-row stacks from afar (Lobby.client).
+-- The floating label over the targets, two lines: a dark chip with the Power it needs and the state (the client
+-- writes Detail: Locked / Unlocked), and the big "xN Power" in white with an ink stroke (the lane's hue is already
+-- on its gantry, mat and lamp). Shown within 35 studs, so a row of lanes never piles into one line; the client
+-- also hides the middle lanes' labels from afar (Lobby.client).
 function Stations.labels(st, s, t, at)
 	local sign = ghost(st:part('Sign', V(0.2, 0.2, 0.2), CFrame.new(at), P.white))
 	local g = Instance.new('BillboardGui')
 	g.Name = 'Label'
-	g.Size = UDim2.fromScale(8, 4.6)
-	g.MaxDistance = 70
+	g.Size = UDim2.fromScale(7.2, 3.2)
+	g.MaxDistance = 35
 	g.LightInfluence = 0
 	g.Parent = sign
 	local ink = C(15, 15, 25)
-	local function text(name, value, color, x, y, w, h, stroke)
+	local function text(name, value, color, x, y, w, h, stroke, align)
 		local l = Instance.new('TextLabel')
 		l.Name = name
 		l.BackgroundTransparency = 1
@@ -1525,28 +1528,31 @@ function Stations.labels(st, s, t, at)
 		l.TextColor3 = color
 		l.TextScaled = true
 		l.TextStrokeTransparency = 1
+		if align then l.TextXAlignment = align end
 		local u = Instance.new('UIStroke')
 		u.Color, u.Thickness, u.LineJoinMode = ink, stroke, Enum.LineJoinMode.Round
 		u.Parent = l
 		l.Parent = g
 		return l
 	end
-	-- Chip: a see-through dark pill with a black outline and the price in white (FREE for the starter).
+	-- Line 1, the chip: a see-through dark pill with a black outline, the Power it needs (FREE for the starter) on
+	-- the left and the state on the right.
 	local chip = Instance.new('Frame')
 	chip.Name = 'Chip'
-	chip.Position, chip.Size = UDim2.fromScale(0.25, 0), UDim2.fromScale(0.5, 0.27)
-	chip.BackgroundColor3, chip.BackgroundTransparency = C(20, 22, 34), 0.55
+	chip.Position, chip.Size = UDim2.fromScale(0.1, 0), UDim2.fromScale(0.8, 0.4)
+	chip.BackgroundColor3, chip.BackgroundTransparency = C(20, 22, 34), 0.45
 	local corner = Instance.new('UICorner')
-	corner.CornerRadius = UDim.new(0.25, 0)
+	corner.CornerRadius = UDim.new(0.3, 0)
 	corner.Parent = chip
 	local edge = Instance.new('UIStroke')
 	edge.Color, edge.Thickness = C(0, 0, 0), 2
 	edge.Parent = chip
 	chip.Parent = g
-	text('Cost', s.Required == 0 and 'FREE' or ('💪 ' .. compact(s.Required)), P.white, 0.27, 0.035, 0.46, 0.2, 2)
 	local open = s.Required == 0
-	text('Detail', open and 'Unlocked' or 'Locked', open and C(20, 235, 70) or C(235, 25, 50), 0.1, 0.28, 0.8, 0.27, 3)
-	text('Power', 'x' .. s.Multiplier .. ' Power', t.text, 0, 0.56, 1, 0.44, 3)
+	text('Cost', open and 'FREE' or ('💪 ' .. compact(s.Required)), P.white, 0.13, 0.05, 0.36, 0.3, 2, Enum.TextXAlignment.Center)
+	text('Detail', open and 'Unlocked' or 'Locked', open and C(140, 206, 120) or C(217, 119, 106), 0.5, 0.05, 0.38, 0.3, 2, Enum.TextXAlignment.Center)
+	-- Line 2: the multiplier, big and white.
+	text('Power', 'x' .. s.Multiplier .. ' Power', P.white, 0, 0.45, 1, 0.55, 3)
 	return sign
 end
 
@@ -1618,7 +1624,7 @@ end
 -- gun ladder as big guns floating in profile over chunky low-poly hexagonal pads, two rows. Guns 1-5 stand on the
 -- front platform (a low studded grey deck with a white kerb along its front), guns 6-10 on a raised studded
 -- terrace behind it, reached by a stair at each end. Every pad is one hue in three tones: a dark base with a
--- bevelled top edge, a pale rim, the main-colour top and an inner glowing face, with a framed plate leaning on its
+-- bevelled top edge, a pale rim, the main-colour top and an inner glowing disc, with a framed plate leaning on its
 -- front saying LOCKED / OWNED / EQUIPPED (rose locked, blue owned, green equipped; Armory.client repaints them).
 -- Each row stands before one long framed display board (white posts and cap on a dark grey back, chunky dark
 -- finials over the posts), a window in each gun's state colour behind it. Over each gun a nameplate stack: the
@@ -1651,8 +1657,8 @@ Armory.Rows = {
 }
 Armory.Spacing = 10.3
 -- The pad, bottom to top (apothems: centre to a flat side; flats face -Z): base 4.1 to 0.3 up with a 0.3 bevel
--- in to the rim, rim 3.8 to 1.0, top 3.25 to 1.15, glowing face 2.55 to 1.2.
-Armory.Pad = { base = 4.1, rim = 3.8, top = 3.25, glow = 2.55, baseH = 0.3, bevel = 0.3, rimH = 1.0, topH = 1.15, glowH = 1.2 }
+-- in to the rim, rim 3.8 to 1.0, top 3.25 to 1.15, and a round glowing face (radius 2.6) to 1.2.
+Armory.Pad = { base = 4.1, rim = 3.8, top = 3.25, glow = 2.6, baseH = 0.3, bevel = 0.3, rimH = 1.0, topH = 1.15, glowH = 1.2 }
 Armory.Radius = 3.8 -- the rim's apothem (the pad's front face)
 Armory.PadHeight = 1.2
 Armory.BoardDepth, Armory.BoardBorder = 0.5, 0.3
@@ -1821,10 +1827,11 @@ function Armory.effects(part, tier, color)
 	e.Parent = part
 end
 
--- The nameplate stack over a gun, like the reference's: the name big in the gun's colour, the multiplier and
--- the price (or the state word, painted by Armory.client), each row with an icon (IconModels.Images when uploaded,
--- else a text glyph kept in the label's Glyph attribute). Readable from 30 studs, shown up to 80, so the whole
--- shop reads from the hall walkway like the reference's.
+-- The nameplate stack over a gun, like the reference's: the name big in white with an ink stroke, the multiplier
+-- on a small tag in the gun's colour (its rarity colour, instead of a rainbow of names), and the price (or the
+-- state word, painted by Armory.client), each row with an icon (IconModels.Images when uploaded, else a text glyph
+-- kept in the label's Glyph attribute). Readable from 30 studs, shown up to 80, so the whole shop reads from the
+-- hall walkway like the reference's.
 function Armory.label(c, pos, gun)
 	local anchor = ghost(c:part('LabelAnchor', V(0.2, 0.2, 0.2), CFrame.new(pos), P.white))
 	local g = Instance.new('BillboardGui')
@@ -1834,16 +1841,31 @@ function Armory.label(c, pos, gun)
 	g.MaxDistance = 80
 	g.LightInfluence = 0
 	g.Parent = anchor
-	-- (a grey gun's name would fade on the pale hall: it gets a rust orange instead)
-	local _, sat = gun.Color:ToHSV()
-	local nameColor = sat < 0.25 and C(240, 150, 90) or gun.Color:Lerp(P.white, 0.15)
 	local ink = C(24, 22, 40)
-	line(g, 'Name', gun.Name, nameColor, FONT.loud, 0, 0.44, ink, 3)
+	line(g, 'Name', gun.Name, P.white, FONT.loud, 0, 0.44, ink, 3)
+	-- The tag: a rounded pill in the gun's colour (a grey gun gets a rust orange), outlined in ink.
+	local _, sat = gun.Color:ToHSV()
+	local tag = Instance.new('Frame')
+	tag.Name = 'Tag'
+	tag.Position, tag.Size = UDim2.fromScale(0.2, 0.465), UDim2.fromScale(0.6, 0.25)
+	tag.BackgroundColor3 = (sat < 0.25 and C(200, 112, 60) or gun.Color):Lerp(P.black, 0.25)
+	tag.BorderSizePixel = 0
+	local round = Instance.new('UICorner')
+	round.CornerRadius = UDim.new(0.5, 0)
+	round.Parent = tag
+	local rim = Instance.new('UIStroke')
+	rim.Color, rim.Thickness = ink, 2
+	rim.Parent = tag
+	tag.Parent = g
 	local icons = Armory.optional('IconModels')
 	local images = icons and icons.Images or {}
 	local function row(name, icon, glyph, text, color, y)
 		local image = images[icon]
 		local t = line(g, name, text, color, FONT.loud, y, 0.26, ink, 2.5)
+		if name == 'Multiplier' then
+			-- (inside its tag)
+			t.Position, t.Size = UDim2.fromScale(0.23, y + 0.02), UDim2.fromScale(0.54, 0.21)
+		end
 		if type(image) == 'string' and image ~= '' then
 			local i = Instance.new('ImageLabel')
 			i.Name = name == 'Price' and 'PriceIcon' or 'Icon'
@@ -1855,6 +1877,10 @@ function Armory.label(c, pos, gun)
 			t.Position = UDim2.fromScale(0.42, y)
 			t.Size = UDim2.fromScale(0.5, 0.26)
 			t.TextXAlignment = Enum.TextXAlignment.Left
+			if name == 'Multiplier' then
+				i.Position, i.Size = UDim2.fromScale(0.25, y + 0.02), UDim2.fromScale(0.1, 0.21)
+				t.Position, t.Size = UDim2.fromScale(0.36, y + 0.02), UDim2.fromScale(0.41, 0.21)
+			end
 			local a = Instance.new('UIAspectRatioConstraint')
 			a.Parent = i
 			i.Parent = g
@@ -1865,7 +1891,7 @@ function Armory.label(c, pos, gun)
 		end
 		return t
 	end
-	row('Multiplier', 'Power', '💪', 'x' .. gun.Multiplier .. ' POWER', P.white, 0.46)
+	row('Multiplier', 'Power', '💪', 'x' .. gun.Multiplier .. ' POWER', P.white, 0.465)
 	row('Price', 'Cash', '💵', gun.Cost == 0 and 'FREE' or compact(gun.Cost), C(255, 224, 110), 0.73)
 	return anchor
 end
@@ -1910,11 +1936,10 @@ function Armory.pad(s, x, z, y, look, state, sparkleColor)
 	Armory.bevel(s, 'StateBase', x, z, R.base, R.rim, y + R.baseH, R.bevel, look.Base)
 	Armory.hex(s, 'StateRim', x, z, R.rim, y + R.baseH, y + R.rimH, look.Rim, M.SmoothPlastic)
 	Armory.hex(s, 'StateTop', x, z, R.top, y + R.rimH, y + R.topH, look.Top, M.SmoothPlastic)
-	local face = Armory.hex(s, 'StateGlow', x, z, R.glow, y + R.topH, y + R.glowH, look.Glow, M.Neon)
-	for _, p in face do
-		decor(p).CastShadow = false
-		p.Transparency = look.GlowAlpha or 0.25
-	end
+	-- One round neon disc, not three overlapping hex boxes (translucent overlaps double-blend into a star).
+	local face = { s:part('StateGlow', V(R.glowH - R.topH, 2 * R.glow, 2 * R.glow), CFrame.new(x, y + (R.topH + R.glowH) / 2, z) * CFrame.Angles(0, 0, math.pi / 2), look.Glow, M.Neon, Enum.PartType.Cylinder) }
+	decor(face[1]).CastShadow = false
+	face[1].Transparency = look.GlowAlpha or 0.25
 	light(face[1], look.Glow, 0.8, 9)
 	local sparkle = Instance.new('ParticleEmitter')
 	sparkle.Name = 'StateSparkle'
@@ -2211,7 +2236,7 @@ local function barberShop(ctx, w)
 		c2:box('ShopDoor', V(w - 6.4, 0, 0), V(w - 3.2, 7.4, 0.5), P.glass, M.SmoothPlastic)
 		c2:box('ShopBand', V(0, 8, 0), V(w, 9.6, 0.4), P.barberBlue, M.SmoothPlastic)
 	end })
-	stripedAwning(c, 1.5, w - 1.5, 9.4, { C(200, 82, 76), P.white, C(200, 82, 76), P.white, P.barberBlue })
+	stripedAwning(c, 1.5, w - 1.5, 9.4, { C(208, 74, 66), P.white, C(208, 74, 66), P.white, P.barberBlue })
 	local sign = c:box('ShopSign', V(w / 2 - 7, 10.2, 0), V(w / 2 + 7, 13.6, 0.8), P.barberBlue, M.SmoothPlastic)
 	decor(c:box('ShopSignBorder', V(w / 2 - 7.4, 9.8, 0), V(w / 2 + 7.4, 14.0, 0.7), P.cream, M.SmoothPlastic))
 	decor(c:box('ShopSignCap', V(w / 2 - 7.7, 14.0, 0), V(w / 2 + 7.7, 14.4, 0.9), Craft.dark(P.barberBlue), M.SmoothPlastic))
@@ -2221,7 +2246,7 @@ local function barberShop(ctx, w)
 	local p0 = V(w - 0.9, 2, 1.2)
 	pole:post('PoleBody', 0.55, 5, p0, P.white, M.SmoothPlastic)
 	for k = 0, 4 do
-		pole:part('PoleStripe', V(0.35, 1.15, 1.15), CFrame.new(p0 + V(0, 0.6 + k * 0.95, 0)) * CFrame.Angles(0, 0, math.pi / 2) * CFrame.Angles(math.rad(22), 0, 0), k % 2 == 0 and C(200, 82, 76) or P.barberBlue, M.SmoothPlastic, Enum.PartType.Cylinder)
+		pole:part('PoleStripe', V(0.35, 1.15, 1.15), CFrame.new(p0 + V(0, 0.6 + k * 0.95, 0)) * CFrame.Angles(0, 0, math.pi / 2) * CFrame.Angles(math.rad(22), 0, 0), k % 2 == 0 and C(208, 74, 66) or P.barberBlue, M.SmoothPlastic, Enum.PartType.Cylinder)
 	end
 	for _, y in { -0.3, 5 } do pole:post('PoleCap', 0.7, 0.4, p0 + V(0, y, 0), P.barberBlue, M.Metal) end
 	pole:box('PoleBracket', p0 + V(-0.15, 2.4, -1.2), p0 + V(0.15, 2.7, -0.5), P.iron, M.Metal)
@@ -2248,7 +2273,7 @@ local function grocery(ctx, w)
 	local sign = c:box('ShopSign', V(1.2, 10.0, 0), V(w - 1.2, 13.6, 0.9), C(46, 100, 62), M.SmoothPlastic)
 	decor(c:box('ShopSignCap', V(0.5, 14.1, 0), V(w - 0.5, 14.5, 1.0), C(36, 78, 50), M.SmoothPlastic))
 	line(surface(sign, Enum.NormalId.Back, 20), 'Text', 'GROCERY', C(250, 230, 160), FONT.loud, 0.12, 0.76, C(18, 44, 26), 3)
-	stripedAwning(c, 0.5, w - 0.5, 9.4, { C(76, 140, 88), C(244, 232, 196) }, 4)
+	stripedAwning(c, 0.5, w - 0.5, 9.4, { C(64, 154, 84), C(244, 232, 196) }, 4)
 	-- Produce stand and crates.
 	c:box('StandTable', V(2.5, 2.4, 1), V(9.5, 2.8, 4), P.wood, M.WoodPlanks)
 	for _, x in { 3, 9 } do c:box('StandLeg', V(x - 0.2, 0, 1.3), V(x + 0.2, 2.4, 3.7), P.woodDark, M.Wood) end
@@ -2275,7 +2300,7 @@ local function blueShop(ctx, w, label)
 	local sign = c:box('ShopSign', V(2, 9.6, 0), V(w - 2, 12.6, 0.7), C(40, 54, 96), M.SmoothPlastic)
 	decor(c:box('ShopSignCap', V(1.5, 12.9, 0), V(w - 1.5, 13.3, 0.8), C(30, 40, 72), M.SmoothPlastic))
 	line(surface(sign, Enum.NormalId.Back, 20), 'Text', label, P.white, FONT.loud, 0.14, 0.72, C(16, 22, 44), 2)
-	decor(c:wedge('Awning', V(w - 4, 1.4, 3), CFrame.new(w / 2, 8.6, 1.5) * CFrame.Angles(0, math.pi, 0), C(66, 90, 146), M.Fabric))
+	decor(c:wedge('Awning', V(w - 4, 1.4, 3), CFrame.new(w / 2, 8.6, 1.5) * CFrame.Angles(0, math.pi, 0), C(58, 92, 168), M.Fabric))
 	return c
 end
 
@@ -2382,13 +2407,14 @@ Lobby.Door, Lobby.DoorH = 12, 20 -- north door half width and height
 Lobby.Bay = 15 -- pillar spacing along the side walls, from z = 6
 Lobby.Slots = {}
 -- Brief 8: the shell is clean neutral grey (floor, walkway, panels, walls, pillars, trusses, ceiling; S <= 0.08);
--- the colour comes from what stands in the hall. Big coloured surfaces stay at S <= 0.45, objects <= 0.7.
+-- the colour comes from what stands in the hall. Big coloured surfaces stay at mid-tones (the terrace a brick red),
+-- objects <= 0.7. The floor keeps a clear walkway / panel contrast so wide shots don't read sterile.
 Lobby.Colors = {
-	floor = C(196, 198, 204), walk = C(214, 216, 220), panel = C(176, 178, 186), panelRim = C(162, 164, 172), kerb = C(234, 235, 238), cyan = C(60, 232, 255),
+	floor = C(196, 198, 204), walk = C(224, 226, 230), panel = C(166, 168, 176), panelRim = C(152, 154, 162), kerb = C(234, 235, 238), cyan = C(60, 232, 255),
 	wall = C(205, 207, 212), wallLow = C(166, 168, 175), pillar = C(106, 108, 114), pillarDark = C(88, 90, 96),
 	neon = C(236, 246, 255), frame = C(240, 241, 244), winFrame = C(80, 82, 88), winGlass = C(160, 214, 248), truss = C(96, 98, 104),
 	lamp = C(92, 94, 100), ceiling = C(156, 158, 164), lampPlate = C(250, 252, 255),
-	step = C(190, 192, 198), stepDark = C(162, 164, 170), carpet = C(188, 104, 108), carpetDark = C(146, 76, 82), carpetLip = C(236, 214, 210), dais = C(208, 210, 216),
+	step = C(190, 192, 198), stepDark = C(162, 164, 170), carpet = C(166, 90, 84), carpetDark = C(124, 66, 62), carpetLip = C(236, 214, 210), dais = C(208, 210, 216),
 	steel = C(198, 200, 206), brick = C(170, 86, 72), screen = C(70, 160, 255),
 	hazard = C(250, 196, 32), warm = C(255, 196, 120), cool = C(96, 210, 236), pink = C(236, 96, 170),
 	gold = C(248, 200, 70), red = C(212, 66, 66), blue = C(66, 120, 206), rackPost = C(40, 90, 190), rackBeam = C(240, 120, 30),
@@ -2416,7 +2442,7 @@ Lobby.ArmorySpan = { 76.8, 135.6 }
 Lobby.Panels = { { -30, -8, 16, 58 }, { 8, 30, 16, 58 }, { -30, -8, 74, 121 }, { 8, 30, 74, 121 } } -- 16-wide arms, 22-wide panels
 -- The lobby's fast-travel pad (FurthestPad): off the walk on the south-east panel's corner by the crossing, front to
 -- the walkway (west).
-Lobby.FurthestAt = CFrame.lookAt(V(14.5, 0, 81), V(0, 0, 81))
+Lobby.FurthestAt = CFrame.lookAt(V(16.5, 0, 81), V(0, 0, 81)) -- (east enough that its header never crosses TOP POWER from the spawn)
 
 
 ---------------------------------------------------------------------------------------------- small kit
@@ -2635,8 +2661,7 @@ function Lobby.loadingDoor(c, x, label)
 	d:box('LoadDoorDrum', V(x - w - 1.4, ht, N), V(x + w + 1.4, ht + 2, N + 1.5), K.cap, M.SmoothPlastic)
 	d:box('LoadDoorDrumLip', V(x - w - 1.5, ht - 0.25, N), V(x + w + 1.5, ht, N + 1.65), K.pillar, M.SmoothPlastic)
 	local panel = d:box('LoadDoorPanel', V(x - w, 0.6, N), V(x + w, ht, N + 0.5), K.doorSteel, M.SmoothPlastic)
-	local g = Lobby.stripes(panel, Enum.NormalId.Back, 2 * w, ht - 0.6, 0.76, 0.18, false, 0.6)
-	line(g, 'Stencil', label, C(206, 70, 64), FONT.loud, 0.34, 0.2, P.white, 2)
+	Lobby.stripes(panel, Enum.NormalId.Back, 2 * w, ht - 0.6, 0.76, 0.18, false, 0.6) -- (no stencil: a plain roller door)
 	d:box('LoadDoorRail', V(x - w, 0, N), V(x + w, 0.6, N + 0.7), K.pillarDark, M.SmoothPlastic)
 	-- the beacon
 	d:box('LoadDoorBeaconBase', V(x - 0.6, ht + 2, N + 0.4), V(x + 0.6, ht + 2.4, N + 1.4), K.pillarDark, M.SmoothPlastic)
@@ -2733,8 +2758,9 @@ function Lobby.hall(L)
 	-- The exit bay (the reference's exit, research recipe a): a framed red stage door. Two pillars on dark plinths
 	-- (cream lip, cream inset panels, a lantern each, capitals at the top) frame the door and the monitor over it;
 	-- a header with a cream cap, dark corbels in the opening's top corners and a cream keystone between the door
-	-- and the monitor; a top beam and cap tie the pillars together; a low concrete sill with ramps under the door.
-	-- One hue (Stage 1's red) in three tones; the monitor is a blue screen in a dark bezel.
+	-- and the monitor; a top beam and cap tie the pillars together, with a round "1" medallion breaking the top line;
+	-- a low concrete sill with ramps under the door. One hue (Stage 1's red) in three tones; the monitor is a blue
+	-- screen in a dark bezel. The power number is said once, on gate 1's board seen through the door.
 	local d = h:group('ExitDoor')
 	do
 		local red = C(188, 72, 66)
@@ -2777,17 +2803,24 @@ function Lobby.hall(L)
 		local screen = d:box('ExitMonitor', V(-Dw + 1.6, 25.6, N + 1.6), V(Dw - 1.6, 32.3, N + 1.8), C(44, 84, 160), M.SmoothPlastic)
 		local sg = surface(screen, Enum.NormalId.Back, 16)
 		line(sg, 'Title', 'STAGE 1  •  THE BLOCK', P.white, FONT.loud, 0.1, 0.36, C(14, 26, 70), 3)
-		line(sg, 'Sub', '💪 ' .. compact(STAGE_POWER[1]) .. ' POWER TO ENTER', C(255, 214, 90), FONT.loud, 0.54, 0.32, C(40, 24, 0), 3)
+		line(sg, 'Sub', '🎯 TRAIN AT THE RANGE FIRST', C(255, 214, 90), FONT.loud, 0.56, 0.28, C(40, 24, 0), 3)
 		decor(d:part('MonitorLive', V(0.7, 0.7, 0.7), CFrame.new(Dw - 1.9, 32.5, N + 1.8), C(255, 80, 70), M.Neon, Enum.PartType.Ball)).CastShadow = false
 		-- The top beam and its cap across the pillars.
 		d:box('DoorTopBeam', V(-x0, top - 0.6, N), V(x0, top + 1, N + 3), red, M.SmoothPlastic)
 		d:box('DoorTopCap', V(-x1 - 0.2, top + 1, N), V(x1 + 0.2, top + 1.6, N + 4.2), trim, M.SmoothPlastic)
+		-- The topper: a dark ring round a cream disc with the stage number, standing on the cap.
+		local medal = CFrame.new(0, top + 1.8, N + 3.6) * CFrame.Angles(0, math.pi / 2, 0) -- (cylinders lie along X)
+		d:part('DoorMedal', V(0.9, 4.2, 4.2), medal, dark, M.SmoothPlastic, Enum.PartType.Cylinder)
+		d:part('DoorMedalFace', V(1.1, 3.4, 3.4), medal, trim, M.SmoothPlastic, Enum.PartType.Cylinder)
+		local num = ghost(d:box('DoorMedalText', V(-1.5, top + 0.3, N + 3.0), V(1.5, top + 3.3, N + 4.3), P.white))
+		line(surface(num, Enum.NormalId.Back, 20), 'Number', '1', red, FONT.loud, 0.1, 0.8, P.white, 3)
 	end
 	-- The hall's big signs on the steel band, like the reference's PETS and CLONE MACHINE.
 	local signs = h:group('WallSigns')
 	Lobby.wallSign(signs, 'RangeSign', V(-W + 2.4, 32.5, 70), V(1, 0, 0), 44, 7, 'SHOOTING RANGE', 'SHOOT TO GAIN 💪 POWER', '🎯')
 	Lobby.wallSign(signs, 'ArmorySign', V(W - 2.4, 32.5, Lobby.ArmoryZ), V(-1, 0, 0), 38, 7, 'ARMORY', 'BETTER GUN = MORE POWER PER SHOT', '⭐')
-	Lobby.wallSign(signs, 'ShoeBoxSign', V(0, 20.2, S - 0.9), V(0, 0, -1), 29, 7, 'SHOE BOXES', 'UNBOX FRESH KICKS • SOON', '👟')
+	Lobby.wallSign(signs, 'ShoeBoxSign', V(0, 20.2, S - 0.9), V(0, 0, -1), 29, 7, 'SHOE BOXES', 'UNBOX FRESH KICKS', '👟')
+	Lobby.wallSign(signs, 'RewardsSign', V(W - 2.4, 32.5, 37.3), V(-1, 0, 0), 26, 7, 'REWARDS', 'DAILY • LUCKY SHOT • VIP  –  SOON', '🎁')
 
 	-- Roof: a slate ceiling, steel-blue box trusses (two along the hall, one across every bay), rows of fluorescent
 	-- bars (a dark housing over a white tube) hung on wires under them. Everything up here is named Roof* (the
@@ -2828,27 +2861,26 @@ function Lobby.hall(L)
 	Lobby.banners(r)
 	return h
 end
--- The yellow overhead crane at z 96: a box-girder bridge hung from the long trusses (its runways) on two end
--- trucks, hazard bands down both faces, a trolley, a chain, a red hook block with a 5 TON plate, and (phase B)
--- a pallet of crates hanging off the hook over the south-east floor panel.
+-- The overhead crane at z 96, in the structure greys (it is building, not an object): a box-girder bridge hung
+-- from the long trusses (its runways) on two end trucks, darker flanges, a trolley, a chunky chain, and the red
+-- 5 TON hook block with a pallet of crates hanging off it over the south-east floor panel (they carry the colour).
 function Lobby.crane(r)
 	local K, H = Lobby.Colors, Lobby.H
 	local z, y = 96, 33
-	local yellow = C(230, 202, 104)
-	r:box('RoofCraneBridge', V(-40, y - 1, z - 1.2), V(40, y + 1, z + 1.2), yellow, M.SmoothPlastic)
+	r:box('RoofCraneBridge', V(-40, y - 1, z - 1.2), V(40, y + 1, z + 1.2), K.pillar, M.SmoothPlastic)
 	-- a girder: darker flanges top and bottom (no hazard paint)
-	for _, fy in { y - 1.3, y + 1 } do r:box('RoofCraneFlange', V(-40, fy, z - 1.5), V(40, fy + 0.3, z + 1.5), yellow:Lerp(P.black, 0.22), M.SmoothPlastic) end
-	for _, x in { -40, 40 } do r:box('RoofCraneTruck', V(x - 1.6, y - 1.4, z - 2.2), V(x + 1.6, H - 2.2, z + 2.2), yellow:Lerp(P.black, 0.18), M.SmoothPlastic) end
+	for _, fy in { y - 1.3, y + 1 } do r:box('RoofCraneFlange', V(-40, fy, z - 1.5), V(40, fy + 0.3, z + 1.5), K.pillarDark, M.SmoothPlastic) end
+	for _, x in { -40, 40 } do r:box('RoofCraneTruck', V(x - 1.6, y - 1.4, z - 2.2), V(x + 1.6, H - 2.2, z + 2.2), K.truss, M.SmoothPlastic) end
 	local tx = 22 -- over the south-east panel's showroom: clear of the exit, WORLD 2 and STAY GOLD sight lines
-	r:box('RoofCraneTrolley', V(tx - 1.6, y - 2.2, z - 1.8), V(tx + 1.6, y - 1, z + 1.8), C(70, 76, 92), M.SmoothPlastic)
-	r:bar('RoofCraneChain', V(tx, y - 2.2, z), V(tx, 28.6, z), 0.25, C(60, 62, 70), M.SmoothPlastic)
+	r:box('RoofCraneTrolley', V(tx - 1.6, y - 2.2, z - 1.8), V(tx + 1.6, y - 1, z + 1.8), K.pillarDark, M.SmoothPlastic)
+	r:bar('RoofCraneChain', V(tx, y - 2.2, z), V(tx, 28.6, z), 0.45, C(60, 62, 70), M.SmoothPlastic)
 	-- the load (hook block, slings, a pallet with two crates) turns slowly on its swivel and bobs on the chain
 	local ld, load = r:group('RoofCraneLoad')
 	local hook = ld:box('RoofCraneHook', V(tx - 0.8, 26.8, z - 0.7), V(tx + 0.8, 28.6, z + 0.7), C(222, 44, 52), M.SmoothPlastic)
 	for _, face in { Enum.NormalId.Front, Enum.NormalId.Back } do line(surface(hook, face, 24), 'Text', '5 TON', P.white, FONT.loud, 0.25, 0.5, C(60, 0, 0), 2) end
 	local py = 22.4
 	for _, dx in { -1.7, 1.7 } do
-		for _, dz in { -1.5, 1.5 } do decor(ld:bar('RoofCraneSling', V(tx, 26.8, z), V(tx + dx, py + 0.8, z + dz), 0.22, C(60, 62, 70), M.SmoothPlastic)).CastShadow = false end
+		for _, dz in { -1.5, 1.5 } do decor(ld:bar('RoofCraneSling', V(tx, 26.8, z), V(tx + dx, py + 0.8, z + dz), 0.4, C(60, 62, 70), M.SmoothPlastic)).CastShadow = false end
 	end
 	local pl = ld:at(CFrame.new(tx, py, z))
 	pallet(pl:group('RoofCranePallet'), CFrame.new())
@@ -3084,6 +3116,15 @@ function Lobby.terraceDressing(t, skins, XS, XF, zN, zS, sz, n, rise)
 			decor(t:box('TerraceSeam', V(XF - 0.05, 0, z0 + 0.85), V(XF + 0.06, h - 0.3, z0 + 1.15), P.white, M.SmoothPlastic)).CastShadow = false
 		end
 	end
+	-- START HERE: a framed green board hung on two rods from the roof over BAY 1's promenade, turned to the spawn
+	-- (the spawn faces this end of the range), so the first goal reads from the arrival camera
+	local sc = CFrame.lookAt(V(-40, 15.5, Lobby.RangeZ0), V(0, 15.5, Lobby.CrossZ))
+	local green = C(72, 166, 96)
+	Lobby.rewardSign(t, sc, 13, 4.2, green, 'START HERE', 'BAY 1  •  FREE', nil)
+	for _, sx in { -1, 1 } do
+		local top = (sc * CFrame.new(sx * 5, 2.4, 0.3)).Position
+		decor(t:bar('StartHereRod', top, V(top.X, Lobby.H - 0.2, top.Z), 0.4, K.truss, M.SmoothPlastic)).CastShadow = false
+	end
 	-- the grand stair's east cheek: a BAY 8 plate at its tall end
 	Lobby.board(t, 'BayPlate', CFrame.lookAt(V(XF + 0.12, 3.6, zS + 2.6), V(XF + 10, 3.6, zS + 2.6)), 4.2, 1.6, C(150, 62, 64),
 		{ { 'Bay', 'BAY 8 • GOLD', K.gold, FONT.loud, 0.1, 0.8, C(60, 20, 0), 2 } }, 24)
@@ -3187,20 +3228,13 @@ function Lobby.shoeDais(L)
 		local bc, box = d:at(CFrame.new(hover) * CFrame.Angles(0, math.rad(b.Hero and 0 or (b.X > 0 and 14 or -14)), 0)):group('ShoeBox')
 		Lobby.shoeBox(bc, b, k, b.Hero)
 		Lobby.motion(box, CFrame.new(hover), b.Hero and nil or 12, 0.25, 2.4 + i * 0.2)
-		-- the nameplate, in the armory's style
-		local nb = billboard(d, hover + V(0, 3.4 * k + 1.6, 0), 5, 1.6, {
-			{ 'Name', b.Name, b.Color:Lerp(P.white, 0.15), FONT.loud, 0, 0.62 },
-			{ 'Soon', 'SOON', P.white, FONT.loud, 0.62, 0.38 },
-		})
-		nb.WorldLabel.MaxDistance = 80
+		-- (the rarity is painted on each box; the riser plate says COMING SOON once, so no floating nameplates)
 		if b.Hero then
-			local fx = Lobby.emitBox(d, 'ShoeBoxFx', hover + V(-4, 0.5, -3), hover + V(4, 6, 3))
-			Lobby.fx(fx, 'ShoeBoxGlints', 'sparkle', { Rate = 6, Lifetime = NumberRange.new(0.8, 1.4), Speed = NumberRange.new(0.3, 1),
-				Size = Lobby.seq({ { 0, 0 }, { 0.3, 0.8 }, { 1, 0 } }), Color = ColorSequence.new(C(255, 230, 120)), LightEmission = 1 })
-			light(fx, C(255, 210, 90), 1.6, 16)
-			-- a soft gold beam rising out of the open box (short, so it stays under the SHOE BOXES sign)
-			local beam = decor(d:part('ShoeBoxBeam', V(5, 3.4, 3.4), CFrame.new(hover + V(0, 3.2 * k + 2.5, 0)) * CFrame.Angles(0, 0, math.pi / 2), C(255, 226, 120), M.Neon, Enum.PartType.Cylinder))
-			beam.Transparency, beam.CastShadow = 0.72, false
+			-- the legendary's glow: a few warm glints and a light out of the open box (no neon beam)
+			local fx = Lobby.emitBox(d, 'ShoeBoxFx', hover + V(-3, 0.5, -2.5), hover + V(3, 5, 2.5))
+			Lobby.fx(fx, 'ShoeBoxGlints', 'sparkle', { Rate = 5, Lifetime = NumberRange.new(0.8, 1.4), Speed = NumberRange.new(0.3, 1),
+				Size = Lobby.seq({ { 0, 0 }, { 0.3, 0.7 }, { 1, 0 } }), Color = ColorSequence.new(C(255, 230, 140)), LightEmission = 0.6 })
+			light(fx, C(255, 210, 90), 1.4, 16)
 		end
 	end
 	-- the display frame: two grey pillars at the dais's back corners (dark plinth, pink inset, light capital) and a
@@ -3215,6 +3249,14 @@ function Lobby.shoeDais(L)
 	-- (the SHOE BOXES sign sits on this beam)
 	d:box('ShoeFrameHeader', V(-19, 14, S - 2.8), V(19, 15, S), K.pillar, M.SmoothPlastic)
 	d:box('ShoeFrameHeaderTrim', V(-16.6, 13.7, S - 2.6), V(16.6, 14, S - 0.2), pink, M.SmoothPlastic)
+	-- the striped canopy (research f2): nine wedges in pink and white sloping forward off the header, over a darker
+	-- valance, so the dais reads as a booth from across the hall
+	local n, cw = 9, 36 / 9
+	for j = 0, n - 1 do
+		local x = -18 + (j + 0.5) * cw
+		d:wedge('ShoeCanopy', V(cw, 1.2, 3), CFrame.new(x, 14, S - 4.3), j % 2 == 0 and pink or C(246, 244, 246), M.SmoothPlastic)
+	end
+	d:box('ShoeCanopyValance', V(-18.2, 12.6, S - 6.0), V(18.2, 13.4, S - 5.6), pinkD, M.SmoothPlastic)
 	-- the stock: a stack of plain closed boxes on the right foot
 	local st = d:at(CFrame.new(-14.6, 1.2, 145) * CFrame.Angles(0, math.rad(8), 0))
 	for j, e in { { V(-1.6, 0, 0), C(232, 214, 186) }, { V(1.7, 0, 0.3), C(222, 204, 176) }, { V(0, 1.9, 0.1), C(236, 220, 192) } } do
@@ -3249,7 +3291,11 @@ end
 -- The spawn (research recipe e, "block-party stage"): a three-tier octagon dais at the crossing (dark grey base,
 -- white lip, a muted-blue top), our medallion on it (white ring, deep-blue disc, a slowly turning gold star and the
 -- red "+1" core), four lamp bollards on the diagonals, a bevelled step toward the exit and one small arrow on the
--- top pointing to Stage 1. The spawn faces south down the hall (a little toward the ranges).
+-- top pointing to Stage 1. The spawn faces the first goal: north-west (Lobby.SpawnYaw), at the free BAY 1 end of
+-- the range with WORLD 2 and the Stage 1 door beside it; g_build writes the yaw to LobbySpawnYaw so the LOBBY
+-- teleport faces the same way, and lands on the dais top (Lobby.SpawnTop).
+Lobby.SpawnYaw = math.rad(40)
+Lobby.SpawnTop = 1.3
 function Lobby.badge(L)
 	local D, cz = Lobby.Deck, Lobby.CrossZ
 	local b = L:at(CFrame.new(0, D, cz)):group('SpawnBadge')
@@ -3269,7 +3315,7 @@ function Lobby.badge(L)
 	end
 	Lobby.motion(star, CFrame.new(0, D + 1.55, cz), 12)
 	decor(Lobby.disc(b, 'BadgeDisc', 3.6, 1.5, 1.72, 0, 0, red)).CastShadow = false
-	local face = ghost(b:part('BadgeText', V(3.2, 0.02, 3.2), CFrame.new(0, 1.76, 0) * CFrame.Angles(0, math.pi, 0), P.white)) -- its up points south: upright from the spawn camera
+	local face = ghost(b:part('BadgeText', V(3.2, 0.02, 3.2), CFrame.new(0, 1.76, 0) * CFrame.Angles(0, Lobby.SpawnYaw, 0), P.white)) -- its up points the way the spawn faces: upright from the spawn camera
 	face.CastShadow = false
 	line(surface(face, Enum.NormalId.Top, 40), 'Text', '+1', P.white, FONT.loud, 0.12, 0.76, C(90, 10, 20), 4)
 	-- one small arrow on the top, by the exit side, pointing to Stage 1
@@ -3278,9 +3324,9 @@ function Lobby.badge(L)
 	-- lamp bollards on the diagonals: a dark post, a white collar, a warm bulb
 	for _, a in { 45, 135, 225, 315 } do
 		local x, z = 9.3 * math.cos(math.rad(a)), 9.3 * math.sin(math.rad(a))
-		Lobby.disc(b, 'SpawnBollard', 1.3, 0.6, 3.0, x, z, dark)
-		Lobby.disc(b, 'SpawnBollardCollar', 1.6, 3.0, 3.3, x, z, pale)
-		decor(Lobby.disc(b, 'SpawnBollardBulb', 1.1, 3.3, 3.95, x, z, C(255, 236, 200), M.Neon)).CastShadow = false
+		Lobby.disc(b, 'SpawnBollard', 1.3, 0.6, 2.0, x, z, dark)
+		Lobby.disc(b, 'SpawnBollardCollar', 1.6, 2.0, 2.3, x, z, pale)
+		decor(Lobby.disc(b, 'SpawnBollardBulb', 1.1, 2.3, 2.9, x, z, C(240, 204, 150), M.Neon)).CastShadow = false -- (warm and low: no white-hot bloom by the camera)
 	end
 	-- Rising glints off the medallion (a soft "you are here") and a warm light over it.
 	local fxBox = Lobby.emitBox(b, 'BadgeFx', V(-3.8, 1.6, -3.8), V(3.8, 2, 3.8))
@@ -3296,7 +3342,7 @@ function Lobby.badge(L)
 	spawn.Neutral = true
 	spawn.Duration = 0
 	spawn.Size = V(12, 0.2, 12)
-	spawn.CFrame = V2.Origin * CFrame.new(SPAWN + V(0, 1.42, 0)) * CFrame.Angles(0, math.pi - math.rad(12), 0) -- on the dais top (1.3)
+	spawn.CFrame = V2.Origin * CFrame.new(SPAWN + V(0, Lobby.SpawnTop + 0.12, 0)) * CFrame.Angles(0, Lobby.SpawnYaw, 0) -- on the dais top
 	spawn.Transparency = 1
 	spawn.CanCollide = false
 	spawn.Parent = b.parent
@@ -3557,9 +3603,11 @@ function Lobby.rewardBase(r, w, hue, glow)
 		-- a bevel on each top edge: the wedge's slope runs from the lip up to the top's face
 		r:wedge('RewardBevel', V(tw, 0.5, 0.5), CFrame.Angles(0, k * math.pi / 2, 0) * CFrame.new(0, 1.35, -tw / 2 - 0.25), hue, M.SmoothPlastic)
 	end
+	-- the claim ring: an inset light trim while the reward is COMING SOON (Lobby.RewardsLive turns it to Neon)
 	local gw, o = tw - 1.2, 0.4
 	for _, e in { { -gw / 2, gw / 2, -gw / 2, -gw / 2 + o }, { -gw / 2, gw / 2, gw / 2 - o, gw / 2 }, { -gw / 2, -gw / 2 + o, -gw / 2 + o, gw / 2 - o }, { gw / 2 - o, gw / 2, -gw / 2 + o, gw / 2 - o } } do
-		decor(r:box('RewardGlow', V(e[1], 1.6, e[3]), V(e[2], 1.68, e[4]), glow or hue:Lerp(P.white, 0.45), M.Neon)).CastShadow = false
+		local ring = decor(r:box('RewardGlow', V(e[1], 1.6, e[3]), V(e[2], 1.68, e[4]), Lobby.RewardsLive and (glow or hue:Lerp(P.white, 0.45)) or Lt, Lobby.RewardsLive and M.Neon or M.SmoothPlastic))
+		ring.CastShadow = false
 	end
 	return 1.6
 end
@@ -3569,7 +3617,7 @@ function Lobby.rewardSign(r, cf, w, h, hue, title, sub, base)
 	local Dk, Lt = hue:Lerp(P.black, 0.35), hue:Lerp(P.white, 0.6)
 	r:part('RewardSignBack', V(w + 0.6, h + 0.6, 0.5), cf * CFrame.new(0, 0, 0.3), Dk, M.SmoothPlastic)
 	local rows = { { 'Title', title, P.white, FONT.loud, sub and 0.04 or 0.1, sub and 0.6 or 0.8, Dk:Lerp(P.black, 0.4), 3 } }
-	if sub then table.insert(rows, { 'Status', sub, C(170, 255, 170), FONT.loud, 0.64, 0.32, Dk:Lerp(P.black, 0.4), 2 }) end
+	if sub then table.insert(rows, { 'Status', sub, C(255, 244, 200), FONT.loud, 0.64, 0.32, Dk:Lerp(P.black, 0.4), 2 }) end
 	Lobby.board(r, 'RewardSign', cf, w, h, hue, rows, 24)
 	r:part('RewardSignCap', V(w + 1, 0.4, 0.9), cf * CFrame.new(0, h / 2 + 0.5, 0.25), Lt, M.SmoothPlastic)
 	if base then
@@ -3580,7 +3628,9 @@ function Lobby.rewardSign(r, cf, w, h, hue, title, sub, base)
 		end
 	end
 end
--- Reward stands by the walls (decor with "coming soon" prompts), each on a reward plinth with a framed sign:
+-- Rewards are not live yet: no claim glow, no sparkles (one REWARDS • SOON sign on the wall says so).
+Lobby.RewardsLive = false
+-- Reward stands in the REWARDS row (decor with "coming soon" prompts), each on a reward plinth with a framed sign:
 -- the DAILY CRATE (a red treasure chest with a peaked lid and gold bands, on a gold plinth), LUCKY SHOT (a
 -- bullseye wheel turning in a blue frame under its header board) and the VIP SAFE (a purple safe on feet with a
 -- dial, a handle and a gold VIP plate). Each has one soft light and a few glints; no light pillars.
@@ -3595,8 +3645,8 @@ function Lobby.scaled(c, k)
 end
 function Lobby.rewards(L)
 	local goldTrim = C(226, 182, 72)
-	-- DAILY CRATE (x1.25 on a 12.5 plinth)
-	local k = 1.25
+	-- DAILY CRATE (x1.15 on an 11.5 plinth)
+	local k = 1.15
 	local r = L:at(Lobby.RewardAt.DailyCrate):group('DailyCrate')
 	local top = Lobby.rewardBase(r, 10 * k, C(222, 178, 84), C(255, 232, 160))
 	local red = C(200, 84, 76)
@@ -3613,15 +3663,16 @@ function Lobby.rewards(L)
 	c:box('CrateLock', V(-0.75, 2.6, -2.95), V(0.75, 4.3, -2.5), goldTrim, M.SmoothPlastic)
 	c:box('CrateKeyhole', V(-0.22, 3.0, -3.0), V(0.22, 3.6, -2.9), red:Lerp(P.black, 0.5), M.SmoothPlastic)
 	Lobby.prompt(body, 'Open', 'Daily Crate')
-	Lobby.rewardSign(r, CFrame.new(0, top + 7.8 * k, 3.7 * k), 8 * k, 2.4 * k, red, 'DAILY CRATE', 'COMING SOON', top)
+	Lobby.rewardSign(r, CFrame.new(0, top + 7.8 * k, 3.7 * k), 8 * k, 2.2 * k, red, 'DAILY CRATE', nil, top)
 	local fx = Lobby.emitBox(c, 'CrateFx', V(-3.4, 3.4, -2.6), V(3.4, 4.4, 2.6))
-	Lobby.fx(fx, 'CrateGlints', 'sparkle', { Rate = 4, Lifetime = NumberRange.new(0.8, 1.4), Speed = NumberRange.new(0.5, 1.5),
+	local e = Lobby.fx(fx, 'CrateGlints', 'sparkle', { Rate = 4, Lifetime = NumberRange.new(0.8, 1.4), Speed = NumberRange.new(0.5, 1.5),
 		Size = Lobby.seq({ { 0, 0 }, { 0.3, 0.8 }, { 1, 0 } }), Color = ColorSequence.new(C(255, 230, 140)), LightEmission = 0.6 })
+	e.Enabled = Lobby.RewardsLive
 	light(fx, C(255, 214, 120), 1, 12)
-	-- LUCKY SHOT (x1.2): a bullseye wheel turning between two posts under a header board, a gold pointer over it
-	k = 1.2
+	-- LUCKY SHOT (x1.05): a bullseye wheel turning between two green posts under a header board, a gold pointer
+	k = 1.05
 	local g = L:at(Lobby.RewardAt.LuckyShot):group('LuckyShot')
-	local blue = C(88, 128, 200)
+	local blue = C(84, 164, 112) -- (green: its own hue, not WORLD 2's blue)
 	local bD, bL = blue:Lerp(P.black, 0.35), blue:Lerp(P.white, 0.6)
 	top = Lobby.rewardBase(g, 10 * k, blue)
 	local gc = Lobby.scaled(g:at(CFrame.new(0, top, 0)), k)
@@ -3648,14 +3699,15 @@ function Lobby.rewards(L)
 	gc:part('WheelPointer', V(1.1, 1.1, 1.2), CFrame.new(0, 9.9, 0) * CFrame.Angles(0, 0, math.pi / 4), goldTrim, M.SmoothPlastic) -- a diamond, tip down
 	Lobby.prompt(ghost(gc:box('TargetHit', V(-3.6, 0, -1.5), V(3.6, 9, 1.5), P.white)), 'Spin', 'Lucky Shot')
 	local glow = Lobby.emitBox(gc, 'TargetFx', V(-3, 2.5, -1), V(3, 8.5, 1))
-	Lobby.fx(glow, 'TargetGlitter', 'glitter', { Rate = 5, Lifetime = NumberRange.new(0.8, 1.5), Speed = NumberRange.new(0.5, 1.5),
+	local e = Lobby.fx(glow, 'TargetGlitter', 'glitter', { Rate = 5, Lifetime = NumberRange.new(0.8, 1.5), Speed = NumberRange.new(0.5, 1.5),
 		Size = Lobby.seq({ { 0, 0.5 }, { 1, 0 } }), Color = ColorSequence.new(C(255, 224, 120)), LightEmission = 0.6 })
+	e.Enabled = Lobby.RewardsLive
 	light(glow, C(255, 214, 120), 0.9, 12)
-	-- VIP SAFE (x1.2): a purple safe on four feet, a light door frame, a dial, a three-part handle, a framed sign
+	-- VIP SAFE (x1.05): a purple safe on four feet, a light door frame, a dial, a three-part handle, a framed sign
 	local v = L:at(Lobby.RewardAt.VipSafe):group('VipSafe')
 	local purple = C(140, 100, 200)
 	local pD, pL = purple:Lerp(P.black, 0.35), purple:Lerp(P.white, 0.6)
-	top = Lobby.rewardBase(v, 10.6, purple) -- (between TOP REBIRTHS' foot and the loading door's jamb)
+	top = Lobby.rewardBase(v, 10 * k, purple)
 	local vc = Lobby.scaled(v:at(CFrame.new(0, top, 0)), k)
 	for _, x in { -2.3, 2.3 } do for _, z in { -1.8, 1.8 } do vc:box('SafeFoot', V(x - 0.5, 0, z - 0.5), V(x + 0.5, 0.6, z + 0.5), pD, M.SmoothPlastic) end end
 	local y0 = 0.6
@@ -3675,15 +3727,17 @@ end
 
 -- The WORLD 2 portal (research recipes a and b), locked: a blue block-stone arch. A two-step base with bevelled
 -- nosing, two pillars on dark plinths (cream lip, inset panel, a lantern each, two-tone capitals), seven arch stones
--- in two blues round a cream keystone, a framed WORLD 2 board on top. Inside: a cream liner round a glowing cyan
--- face with a slowly turning violet swirl, crossed by two chunky chain bars with a gold padlock, and a framed
--- COMING SOON board on legs in front. One hue (blue) in three tones; neon only on the face, the swirl and the bulbs.
+-- in two blues round a cream keystone, a framed WORLD 2 board on top. Inside: a cream liner round a softly lit,
+-- greyed blue face with a slowly turning pale-blue swirl (locked, so it holds its colour back), crossed by two
+-- chunky chain bars with a gold padlock, and a framed COMING SOON board on legs in front (WORLD 2's one SOON).
+-- One hue (blue) in three tones; neon only on the face, the swirl and the bulbs.
 function Lobby.portal(L, cf)
 	cf = cf * CFrame.new(1, 0, 0) -- (1 stud west of the slot: clear of the exit door's pillar and the LUCKY SHOT base)
 	local p = L:at(cf):group('World2Portal')
 	local blue = C(70, 120, 198)
 	local dark, trim, stone, grey = blue:Lerp(P.black, 0.38), C(238, 236, 232), blue:Lerp(P.white, 0.16), C(112, 114, 122)
-	local face, violet = C(108, 168, 222), C(136, 98, 204) -- (face kept at S ~0.5: neon brightens it a lot)
+	-- Locked: the face greyed a quarter and see-through, the swirl in the portal's own blue (full colour when it opens).
+	local face, swirlBlue = C(108, 168, 222):Lerp(C(150, 152, 160), 0.25), C(150, 176, 232)
 	local function B(name, a, b, color, mat) return p:box(name, a, b, color, mat or M.SmoothPlastic) end
 	local function glow(part, t)
 		decor(part).CastShadow = false
@@ -3724,18 +3778,18 @@ function Lobby.portal(L, cf)
 	-- the face: a cream liner, the glowing face in front of it (a box plus a disc for the round top)
 	B('PortalLiner', V(-R0, 1.2, 0.6), V(R0, 17.2, 1.0), trim)
 	p:part('PortalLiner', V(0.4, 2 * R0, 2 * R0), CFrame.new(0, 17.2, 0.8) * along, trim, M.SmoothPlastic, Enum.PartType.Cylinder)
-	local glowFace = glow(B('PortalGlow', V(-R0 + 0.7, 1.2, 0.2), V(R0 - 0.7, 17.2, 0.6), face, M.Neon))
-	glow(p:part('PortalGlow', V(0.4, 2 * R0 - 1.4, 2 * R0 - 1.4), CFrame.new(0, 17.2, 0.4) * along, face, M.Neon, Enum.PartType.Cylinder))
+	local glowFace = glow(B('PortalGlow', V(-R0 + 0.7, 1.2, 0.2), V(R0 - 0.7, 17.2, 0.6), face, M.Neon), 0.3)
+	glow(p:part('PortalGlow', V(0.4, 2 * R0 - 1.4, 2 * R0 - 1.4), CFrame.new(0, 17.2, 0.4) * along, face, M.Neon, Enum.PartType.Cylinder), 0.3)
 	light(glowFace, face, 1.2, 18)
-	-- the swirl: a violet disc, a bright core, four bent arms turning slowly (HoodMotion)
+	-- the swirl: a pale-blue disc, a bright core, four bent arms turning slowly (HoodMotion)
 	local sw, swirl = p:group('PortalSwirl')
 	local mid = CFrame.new(0, 11, 0)
-	glow(sw:part('SwirlDisc', V(0.1, 10, 10), mid * CFrame.new(0, 0, 0.05) * along, violet, M.Neon, Enum.PartType.Cylinder), 0.1)
+	glow(sw:part('SwirlDisc', V(0.1, 10, 10), mid * CFrame.new(0, 0, 0.05) * along, swirlBlue, M.Neon, Enum.PartType.Cylinder), 0.1)
 	glow(sw:part('SwirlEye', V(0.12, 3, 3), mid * CFrame.new(0, 0, -0.08) * along, C(236, 246, 255), M.Neon, Enum.PartType.Cylinder))
 	for j = 0, 3 do
 		local arm = mid * CFrame.new(0, 0, -0.2) * CFrame.Angles(0, 0, j * math.pi / 2)
-		glow(sw:part('SwirlArm', V(1.1, 2.4, 0.14), arm * CFrame.new(0, 2.1, 0), C(214, 190, 255), M.Neon), 0.15)
-		glow(sw:part('SwirlArm', V(1.0, 2.0, 0.14), arm * CFrame.new(0, 3.2, 0) * CFrame.Angles(0, 0, math.rad(40)) * CFrame.new(0, 0.9, 0), C(214, 190, 255), M.Neon), 0.15)
+		glow(sw:part('SwirlArm', V(1.1, 2.4, 0.14), arm * CFrame.new(0, 2.1, 0), C(206, 220, 246), M.Neon), 0.15)
+		glow(sw:part('SwirlArm', V(1.0, 2.0, 0.14), arm * CFrame.new(0, 3.2, 0) * CFrame.Angles(0, 0, math.rad(40)) * CFrame.new(0, 0.9, 0), C(206, 220, 246), M.Neon), 0.15)
 	end
 	Lobby.motion(swirl, cf * mid * CFrame.Angles(-math.pi / 2, 0, 0), 60)
 	-- locked: two chain bars crossed over the face and a gold padlock where they cross
@@ -3774,7 +3828,7 @@ function Lobby.portal(L, cf)
 		LightEmission = 0.5, EmissionDirection = Enum.NormalId.Front, SpreadAngle = Vector2.new(40, 10), Drag = 1 })
 	local spiral = Lobby.emitBox(p, 'PortalSpiralFx', V(-5, 3, -0.6), V(5, 18, -0.2))
 	Lobby.fx(spiral, 'PortalSpiral', 'sparkle', { Rate = 8, Lifetime = NumberRange.new(1, 1.6), Speed = NumberRange.new(0.5, 1.5),
-		Size = Lobby.seq({ { 0, 0.5 }, { 1, 0 } }), Color = ColorSequence.new(C(210, 190, 255), C(170, 230, 255)), LightEmission = 0.6,
+		Size = Lobby.seq({ { 0, 0.5 }, { 1, 0 } }), Color = ColorSequence.new(C(200, 216, 250), C(170, 214, 245)), LightEmission = 0.6,
 		EmissionDirection = Enum.NormalId.Front })
 	return p
 end
@@ -3873,7 +3927,9 @@ end
 function Lobby.statue(L, cf, skins)
 	local K = Lobby.Colors
 	local s, model = L:at(cf):group('KingpinStatue')
-	local head, suit, pale, ink = C(246, 206, 106), C(232, 182, 84), C(250, 234, 180), C(90, 50, 10)
+	-- Three golds (research: one hue, three tones): M for the body, D for the cape, ermine back, tie and shoes,
+	-- L for the crown, cuffs, ermine trim, lapels, chain and shirt; the head a touch lighter than the body.
+	local head, suit, pale, deep, ink = C(232, 190, 98), C(224, 178, 80), C(246, 216, 140), C(170, 124, 48), C(90, 50, 10)
 	-- The plinth, layered: a dark grey octagon base, a red block with a gold lip, a cream top with a dark lip, a
 	-- framed gold plaque on the front and two warm uplights on the base's front corners.
 	local red, trim, cream = C(184, 96, 92), C(226, 182, 72), C(238, 234, 226)
@@ -3896,7 +3952,12 @@ function Lobby.statue(L, cf, skins)
 		fig.Name = 'KingpinFigure'
 		-- No sceptre: the gold deagle goes in that hand.
 		Lobby.stripProp(fig, kingpin)
-		local paleParts = { DressShirt = true, TailoredLapel = true, Tie = true, TieKnot = true, ShirtCuff = true, ShadesGlint = true, EyeGlint = true }
+		local paleParts = { DressShirt = true, TailoredLapel = true, ShirtCuff = true, ShadesGlint = true, EyeGlint = true, Shirt = true, Collar = true,
+			CrownBand = true, CrownPoint = true, CrownTip = true, CrownGlow = true, CapeCrownBand = true, CapeCrownPoint = true, GoldCuff = true,
+			Ermine = true, ErmineLapel = true, ErmineShoulder = true, ErmineTail = true, Lapel = true, LapelNotch = true, GoldChain = true,
+			Medallion = true, Stud = true, Diamond = true, Gem = true }
+		local deepParts = { Cape = true, CapeLining = true, ErmineBack = true, Shoe = true, ShoeToe = true, Sole = true, CrownVelvet = true,
+			HairShell = true, Waistcoat = true, Tie = true, TieKnot = true, TieTip = true, JacketSkirt = true }
 		-- Face features stay dark so the eyes, shades and smirk read (old and new SkinArt names).
 		local face = { EyeWhite = true, Iris = true, Pupil = true, Eyebrow = true, Eyelid = true, Nose = true, Smile = true, SmileTeeth = true,
 			Mouth = true, Moustache = true, Beard = true, SunglassesFrame = true, SunglassesLens = true, LensReflection = true, GlassesBridge = true, RoundSpectacleRim = true,
@@ -3904,7 +3965,7 @@ function Lobby.statue(L, cf, skins)
 		for _, d in fig:GetDescendants() do
 			if d:IsA('BasePart') then
 				d.Material = M.SmoothPlastic
-				d.Color = face[d.Name] and ink or paleParts[d.Name] and pale or d.Name:match('^Head') and head or suit
+				d.Color = face[d.Name] and ink or paleParts[d.Name] and pale or deepParts[d.Name] and deep or d.Name:match('^Head') and head or suit
 				d.CastShadow = true
 			elseif d:IsA('Decal') then
 				d.Color3 = ink
@@ -3916,7 +3977,7 @@ function Lobby.statue(L, cf, skins)
 		local gun = Lobby.handGun(fig, 'Left', scale * 1.35, 'Deagle', nil, math.pi / 2)
 		if gun then
 			gun.Name = 'GoldDeagle'
-			Lobby.goldGun(gun, C(255, 232, 150), C(190, 110, 20))
+			Lobby.goldGun(gun, pale, deep)
 		end
 	else
 		local function b(name, x0, y0, z0, x1, y1, z1, color) return s:box(name, V(x0, top + y0, z0), V(x1, top + y1, z1), color or head, M.SmoothPlastic) end
@@ -4052,7 +4113,7 @@ function Lobby.leaderboard(L, cf, title, accent, live, icon)
 		-- Not wired yet: a season teaser instead of empty rows.
 		line(g, 'Crowns', '👑 👑 👑 👑 👑', Lobby.Colors.gold, FONT.loud, 0.1, 0.22, P.black, 1)
 		line(g, 'Rows', 'SEASON 1', Lobby.Colors.gold, FONT.loud, 0.38, 0.24, P.black, 2)
-		line(g, 'Soon', 'TOP 5 SOON', P.white, FONT.loud, 0.66, 0.2, P.black, 2)
+		line(g, 'Empty', 'Rebirth to get on the board!', P.white, FONT.body, 0.68, 0.16, P.black, 1)
 	end
 	if live == 'ServerLeaderboard' then
 		-- the topper: a gold crown turning and bobbing over the header
@@ -4310,26 +4371,12 @@ function Lobby.dumpster(c, cf)
 	return d
 end
 
--- The loading bays on the north wall: tags sprayed on both roll-up doors; in the NW a dumpster behind a
+-- The loading bays on the north wall (plain roller doors, kept clear): in the NW a dumpster behind a
 -- chain-link fence with milk crates, cones and a hydrant; in the NE cones, a hydrant and a crate stack.
 function Lobby.loadingBays(c)
 	local K, T, N, W = Lobby.Colors, Lobby.Tag, Lobby.N, Lobby.W
 	local g = c:group('LoadingBays')
-	-- tags on the doors (a ghost panel just in front of each slatted door)
-	local dx = Lobby.LoadDoors
-	-- (low and wide, under each door's stencil, so they read past the LUCKY SHOT stand and the VIP SAFE)
-	Lobby.mural(g, 'DoorTag', CFrame.lookAt(V(dx[1], 3.2, N + 0.62), V(dx[1], 3.2, 100)), 14, 4.8, {
-		{ 'splash', 0.02, 0.1, 0.96, 0.72, T.pink, 0.3 },
-		{ 'word', 'GOOD VIBES', 0.04, 0.08, 0.8, 0.72, T.yellow, T.ink },
-		{ 'word', '★', 0.84, 0.06, 0.14, 0.5, T.cyan, T.ink },
-		{ 'drips', 0.08, 0.8, 0.84, 8, 0.16, T.pink },
-	})
-	Lobby.mural(g, 'DoorTag', CFrame.lookAt(V(dx[2] + 1, 3.2, N + 0.62), V(dx[2] + 1, 3.2, 100)), 12, 4.8, {
-		{ 'splash', 0.02, 0.1, 0.96, 0.72, T.lime, 0.35 },
-		{ 'word', 'DREAM BIG', 0.18, 0.08, 0.8, 0.72, T.purple, T.white },
-		{ 'word', '+1', 0.02, 0.06, 0.16, 0.5, T.pink, T.white },
-		{ 'drips', 0.08, 0.8, 0.84, 8, 0.16, T.lime },
-	})
+	-- (the roller doors stay plain: no tags or stencils on them)
 	-- NW: the dumpster in the corner between the west pillars, a chain-link fence screening it from the hall,
 	-- milk crates beside it, cones and a hydrant on the apron
 	Lobby.dumpster(g, CFrame.new(-W + 2.6, 0, 14.6))
@@ -4380,16 +4427,16 @@ end
 
 -- The corner store at the end of the cross walkway's east arm, on the east wall between the pillar and the
 -- podium: a tall teal shopfront, a big glowing window (SNACKS / SODA / ICE POPS and an OPEN neon), a blue door, a
--- striped awning, a CORNER STORE neon board above the feature pads' boards, party bulbs along the wall, and the
--- sidewalk display out front (an ice-pop freezer, a SODA cooler, milk crates, a kid with an ice pop). The BLOCK
--- AVE / HOOD ST street sign stands on its corner.
+-- striped awning, a framed CORNER STORE fascia board on the facade, and the sidewalk display out front (an ice-pop
+-- freezer, a SODA cooler, milk crates, a kid with an ice pop). The BLOCK AVE / HOOD ST street sign stands at the end
+-- of the east arm, north of the pillar (clear of the armory's frame).
 function Lobby.cornerStore(c, skins)
 	local K, W, T = Lobby.Colors, Lobby.W, Lobby.Tag
 	local g = c:group('CornerStore')
 	local z0, z1 = 68.4, 75.6
 	local x = W - 0.3
-	g:box('StoreFront', V(x - 0.25, 0, z0), V(W, 13.3, z1), C(86, 160, 152), M.SmoothPlastic)
-	g:box('StoreFrontCap', V(x - 0.55, 12.9, z0), V(x - 0.25, 13.3, z1), P.white, M.SmoothPlastic)
+	g:box('StoreFront', V(x - 0.25, 0, z0), V(W, 16.6, z1), C(86, 160, 152), M.SmoothPlastic)
+	g:box('StoreFrontCap', V(x - 0.55, 16.2, z0), V(x - 0.25, 16.6, z1), P.white, M.SmoothPlastic)
 	-- a darker kick plate along the foot and a white frame with a sill round the window (layers, not a flat wall)
 	g:box('StoreKick', V(x - 0.5, 0, z0), V(x - 0.25, 1.4, z1 - 2.5), C(56, 104, 100), M.SmoothPlastic)
 	g:box('StoreWindowFrame', V(x - 0.4, 1.8, z0 + 0.1), V(x - 0.25, 11.6, z1 - 2.0), P.white, M.SmoothPlastic)
@@ -4405,14 +4452,14 @@ function Lobby.cornerStore(c, skins)
 	decor(g:box('StoreDoorGlass', V(x - 0.5, 4.6, z1 - 1.8), V(x - 0.45, 8.6, z1 - 0.6), C(170, 220, 255), M.SmoothPlastic)).CastShadow = false
 	local awning = g:part('StoreAwning', V(2.8, 0.2, z1 - z0 + 0.6), CFrame.new(x - 1.3, 12.1, (z0 + z1) / 2) * CFrame.Angles(0, 0, math.rad(22)), C(226, 44, 52), M.SmoothPlastic)
 	Lobby.stripes(awning, Enum.NormalId.Top, 2.8, z1 - z0 + 0.6, 1.2, 0.6, false, 0, P.white)
-	local cf = CFrame.lookAt(V(x - 0.55, 16.4, (z0 + z1) / 2), V(0, 16.4, (z0 + z1) / 2))
-	Lobby.board(g, 'StoreSign', cf, z1 - z0, 4.4, C(28, 30, 60), {
-		{ 'Corner', 'CORNER', C(255, 120, 200), FONT.loud, 0.06, 0.44, C(255, 255, 255), 3 },
-		{ 'Store', 'STORE', C(255, 220, 60), FONT.loud, 0.5, 0.44, C(255, 255, 255), 3 },
-	}, 20)
-	Lobby.neonFrame(g, cf, z1 - z0, 4.4, C(80, 230, 255), 0.25)
+	-- the shop sign: a small framed fascia board on the facade over the awning (no neon, no string lights), so it
+	-- stays part of the shopfront and out of the armory's frame
+	local cf = CFrame.lookAt(V(x - 0.6, 14.7, (z0 + z1) / 2), V(0, 14.7, (z0 + z1) / 2))
+	g:part('StoreSignFrame', V(6.6, 2.7, 0.3), cf * CFrame.new(0, 0, 0.2), P.white, M.SmoothPlastic)
+	Lobby.board(g, 'StoreSign', cf, 6, 2.1, C(36, 40, 70), {
+		{ 'Text', 'CORNER STORE', C(255, 220, 90), FONT.loud, 0.12, 0.76, C(20, 20, 40), 2 },
+	}, 24)
 	light(win, C(255, 220, 160), 0.8, 14)
-	Lobby.stringLights(g, V(W - 2, 21.5, 67.9), V(W - 2, 21.5, 75.4), 1.8, 5)
 	-- the sidewalk display (x 59..63.6, z 70..75.6: the arm keeps z 58..70 clear)
 	local fz = 71.9
 	g:box('FreezerBody', V(61.2, 0, fz - 1.8), V(63.6, 2.5, fz + 1.8), C(246, 248, 252), M.SmoothPlastic)
@@ -4447,15 +4494,15 @@ function Lobby.cornerStore(c, skins)
 		for _, q in { stick, pop } do q.CanCollide, q.CanQuery, q.CanTouch, q.CastShadow = false, false, false, false end
 	end
 	-- the street sign on the store's corner, a hydrant at its foot
-	local pole = V(61.8, 0, 66.6)
-	g:post('SignPole', 0.2, 20.4, pole, C(70, 120, 80), M.SmoothPlastic)
+	local pole = V(60.6, 0, 62.4) -- (at the east arm's end, north of the pillar: its blades stay clear of the armory)
+	g:post('SignPole', 0.25, 16.6, pole, C(70, 120, 80), M.SmoothPlastic)
 	local function blade(name, text, cf)
 		local bl = Lobby.board(g, name, cf, 6.4, 1.3, C(20, 120, 70), { { 'Text', text, P.white, FONT.title, 0.12, 0.76 } }, 24)
 		line(surface(bl, Enum.NormalId.Back, 24), 'Text', text, P.white, FONT.title, 0.12, 0.76)
 	end
-	blade('StreetSign', 'BLOCK AVE', CFrame.new(pole + V(0, 19.6, -3.3)) * CFrame.Angles(0, math.pi / 2, 0))
-	blade('StreetSign', 'HOOD ST', CFrame.new(pole + V(-3.3, 18.2, 0)) * CFrame.Angles(0, math.pi, 0))
-	Lobby.hydrant(g, V(60.2, 0, 65.4))
+	blade('StreetSign', 'BLOCK AVE', CFrame.new(pole + V(0, 15.8, -3.3)) * CFrame.Angles(0, math.pi / 2, 0))
+	blade('StreetSign', 'HOOD ST', CFrame.new(pole + V(-3.3, 14.4, 0)) * CFrame.Angles(0, math.pi, 0))
+	Lobby.hydrant(g, V(59.2, 0, 61.2))
 	return g
 end
 -- A string of round party bulbs from a to b sagging by sag, n bulbs in turning colours.
@@ -4479,9 +4526,9 @@ function Lobby.lowrider(c, pos)
 	local g = c:group('Lowrider')
 	-- the turntable: a dark faceted base, a white rim and a light top (no neon ring on the floor)
 	local tt = g:at(CFrame.new(pos))
-	Lobby.poly(tt, 'TurntableBase', 8, 17.4, 0, 0.3, C(120, 122, 130))
-	Lobby.disc(tt, 'TurntableRim', 16.4, 0.3, 0.5, 0, 0, C(236, 237, 240))
-	Lobby.disc(tt, 'TurntableTop', 15.4, 0.3, 0.6, 0, 0, C(204, 206, 212))
+	Lobby.poly(tt, 'TurntableBase', 8, 16, 0, 0.3, C(120, 122, 130))
+	Lobby.disc(tt, 'TurntableRim', 15.2, 0.3, 0.5, 0, 0, C(236, 237, 240))
+	Lobby.disc(tt, 'TurntableTop', 14.4, 0.3, 0.6, 0, 0, C(204, 206, 212))
 	local frame = CFrame.new(pos + V(0, 0.6, 0)) * CFrame.Angles(0, math.rad(-35), 0)
 	local cc, car = g:at(frame):group('LowriderCar')
 	local paint, roof, chrome = C(150, 50, 210), C(246, 246, 252), C(220, 226, 236)
@@ -4508,7 +4555,8 @@ function Lobby.lowrider(c, pos)
 			decor(cc:part('CarRim', V(0.86, 1.1, 1.1), CFrame.new(x, 1.1, z) * CFrame.Angles(0, math.pi / 2, 0), K.gold, M.SmoothPlastic, Enum.PartType.Cylinder))
 		end
 	end
-	decor(cc:box('CarUnderglow', V(-6.6, 0.55, -2.2), V(6.6, 0.75, 2.2), C(80, 230, 255), M.Neon)).CastShadow = false
+	local glow = decor(cc:box('CarUnderglow', V(-6.6, 0.55, -2.2), V(6.6, 0.75, 2.2), C(80, 230, 255), M.Neon))
+	glow.CastShadow, glow.Transparency = false, 0.5 -- (a soft underglow, not a neon floor slab)
 	Lobby.motion(car, frame, 6, 0.3, 1.4)
 	return g
 end
@@ -4551,9 +4599,9 @@ function Lobby.hood(L, skins)
 	Lobby.sneakerWire(h)
 	Lobby.cornerStore(h, skins)
 	Lobby.terraceMural(h)
-	-- the lowrider showroom in the NE (where the feature pads were), its owner waving at the spawn
-	Lobby.lowrider(h, V(48, 0, 40))
-	Lobby.kid(h, skins, 'RideOwner', 'GetawayDriver', nil, V(40.4, 0.15, 30.2), V(0, 0.15, 66), 'wave', 0.12, 1.8)
+	-- the lowrider showroom in the SE corner (past the armory's south stair), its owner beside it waving at the hall
+	Lobby.lowrider(h, V(53.8, 0, 145.5))
+	Lobby.kid(h, skins, 'RideOwner', 'GetawayDriver', nil, V(44.2, 0.15, 139.6), V(0, 0.15, 100), 'wave', 0.12, 1.8)
 	-- small props cast no shadows (cones, crates, hydrants, sneakers, the boombox...): no visible change, fewer casters
 	for _, p in h.parent:GetDescendants() do
 		if p:IsA('BasePart') and p.Size.X * p.Size.Y * p.Size.Z < 30 then p.CastShadow = false end
@@ -4635,7 +4683,7 @@ end
 Lobby.Mine = { 'Hall', 'Roof', 'FloorPlan', 'SpawnBadge', 'FurthestStop', 'RangeTerrace', 'ShoeBoxDais', 'DailyCrate', 'LuckyShot', 'VipSafe',
 	'KingpinStatue', 'Leaderboards', 'Dressing', 'Hood', 'People' }
 Lobby.NotMine = { ExitDoor = true, World2Portal = true }
-Lobby.Shell = { Hall = true, Roof = true, FloorPlan = true, RangeTerrace = true }
+Lobby.Shell = { Hall = true, Roof = true, FloorPlan = true } -- (the terrace is set by hand: a brick red at S 0.49)
 function Lobby.tame(model)
 	for _, name in Lobby.Mine do
 		for _, g in model:GetChildren() do
@@ -4663,10 +4711,12 @@ function Lobby.tame(model)
 end
 
 ---------------------------------------------------------------------------------------------- build
+-- The rewards stand in one REWARDS row on the north-east floor (east of the NE panel, north of the cross's east
+-- arm), facing the hall (west), 3 studs of floor between plinths: DAILY nearest the crossing, then LUCKY SHOT, VIP.
 Lobby.RewardAt = {
-	DailyCrate = CFrame.lookAt(V(56.2, 0, 145), V(0, 0, 145)), -- SE corner past the armory's south end, hasp to the hall
-	LuckyShot = CFrame.lookAt(V(-45.5, 0, 20.6), V(0, 0, 20.6)), -- NW apron, between the WORLD 2 portal and the terrace's north stair, wheel to the walk
-	VipSafe = CFrame.lookAt(V(41.1, 0, 12.4), V(41.1, 0, 60)), -- north wall, between TOP REBIRTHS and the NE loading door (x 36..46)
+	DailyCrate = CFrame.lookAt(V(50, 0, 51), V(0, 0, 51)),
+	LuckyShot = CFrame.lookAt(V(50, 0, 37), V(0, 0, 37)),
+	VipSafe = CFrame.lookAt(V(50, 0, 23.5), V(0, 0, 23.5)),
 }
 function Lobby.build(ctx, skins)
 	table.clear(Lobby.Slots)
@@ -4683,12 +4733,12 @@ function Lobby.build(ctx, skins)
 	Lobby.portal(L, Lobby.Slots.World2Portal)
 	Lobby.Slots.Statue = CFrame.lookAt(V(-54, 0, 144), V(-54, 0, 0)) -- the SW corner, facing north, square to the hall
 	Lobby.statue(L, Lobby.Slots.Statue, skins)
-	Lobby.Slots.Spawn = CFrame.new(SPAWN) * CFrame.Angles(0, math.pi - math.rad(12), 0)
+	Lobby.Slots.Spawn = CFrame.new(SPAWN + V(0, Lobby.SpawnTop, 0)) * CFrame.Angles(0, Lobby.SpawnYaw, 0)
 	Lobby.Slots.FurthestPad = Lobby.FurthestAt
 	for name, cf in Lobby.RewardAt do Lobby.Slots[name] = cf end
 	Lobby.Slots.NorthDoor = CFrame.new(0, 0, Lobby.N)
 	local boards = L:group('Leaderboards')
-	for k, e in { { V(-60.5, 0, 124), V(0, 0, 124), 'TOP CASH', C(84, 172, 108), 'CashLeaderboard', '💵' }, { V(26.4, 0, 9.5), V(26.4, 0, 60), 'TOP REBIRTHS', C(66, 166, 176), nil, '🔄' }, { V(38, 0, 148.4), V(38, 0, 100), 'TOP POWER', C(210, 92, 88), 'ServerLeaderboard' } } do
+	for k, e in { { V(-60.5, 0, 124), V(0, 0, 124), 'TOP CASH', C(84, 172, 108), 'CashLeaderboard', '💵' }, { V(26.4, 0, 9.5), V(26.4, 0, 60), 'TOP REBIRTHS', C(66, 166, 176), nil, '🔄' }, { V(31, 0, 148.4), V(31, 0, 100), 'TOP POWER', C(210, 92, 88), 'ServerLeaderboard' } } do
 		local cf = CFrame.lookAt(e[1], e[2])
 		Lobby.Slots['Leaderboard' .. k] = cf
 		Lobby.leaderboard(boards, cf, e[3], e[4], e[5], e[6])
@@ -4807,10 +4857,12 @@ end
 -- A gate at the start of every stage (and the boss yard), built like a simulator zone gate (research recipe d):
 -- two towers on dark plinths (cream lip, bands and inset panels, a capital and a state lamp on top) carrying a
 -- sign-bridge with the stage's name, a round number medallion breaking the skyline, and a see-through field in
--- the look's colour showing the power it takes, with a padlock and a progress bar. One hue per gate in three
--- tones (main, a darker base, cream trim). HoodClient/Stages makes the field solid while you're short (red lamps,
--- padlock on), turns it green when you can pass (the padlock and red lamp shells hide, the green lamps show) and
--- clears it once you have; StageService records the clear and pays the reward.
+-- the look's colour on a low threshold. On the field, a framed requirement board (dark frame, cream liner; parts
+-- named GateBoard*) holds the number, how much more you need and a progress bar, with a padlock hung on its top
+-- bar. One hue per gate in three tones (main, a darker base, cream trim). HoodClient/Stages makes the field solid
+-- while you're short (red lamps, padlock on, "NEED 18 MORE"), turns it green when you can pass (the padlock and red
+-- lamp shells hide, the green lamps show) and clears it, with the board frame, once you have; StageService records
+-- the clear and pays the reward.
 local LOOK_NAMES = { 'THE BLOCK', 'SHOP STREET', 'THE COURTS', 'THE APARTMENTS', 'THE YARDS', 'BOSS YARD' }
 local BOSS_RED = C(214, 44, 44)
 local function lookColor(i) return i > STAGES and BOSS_RED or P.district[lookOf(i)] end
@@ -4821,6 +4873,7 @@ local function stageGate(ctx, i)
 	local hue, sat, val = color:ToHSV()
 	local main = Color3.fromHSV(hue, math.min(sat, 0.56), math.min(val, 0.8))
 	local dark, trim, ink = main:Lerp(P.black, 0.38), C(238, 236, 232), main:Lerp(P.black, 0.6)
+	local bridge = Color3.fromHSV(hue, math.min(sat, 0.575), math.min(val, 0.82)) -- (a touch richer; renders just under S 0.6)
 	local g, model = ctx:at(CFrame.new(0, 0, z)):group('StageGate' .. i)
 	local TX, TW, TOP = 34.6, 1.7, 26 -- tower centre, shaft half width, shaft top
 	for _, s in { -1, 1 } do
@@ -4830,11 +4883,11 @@ local function stageGate(ctx, i)
 		B('GatePlinthLip', 2.05, 2.4, 2.9, 2.4, trim)
 		B('GatePost', TW, 2.9, TOP, TW, main)
 		for _, y in { 8.6, 15.2 } do B('GateBand', TW + 0.25, y, y + 0.8, TW + 0.25, trim) end
-		-- inset panels between the bands, front and back
-		for _, sz in { -1, 1 } do
-			g:box('GateInset', V(x - 0.65, 9.9, sz * TW), V(x + 0.65, 14.6, sz * (TW + 0.18)), dark, M.SmoothPlastic)
-			g:box('GateInset', V(x - 0.65, 16.5, sz * TW), V(x + 0.65, 18.8, sz * (TW + 0.18)), dark, M.SmoothPlastic)
-		end
+		-- inset panels between the bands on the approach face, and a cream liner where the field meets the tower
+		g:box('GateInset', V(x - 0.65, 9.9, TW), V(x + 0.65, 14.6, TW + 0.18), dark, M.SmoothPlastic)
+		g:box('GateInset', V(x - 0.65, 16.5, TW), V(x + 0.65, 18.8, TW + 0.18), dark, M.SmoothPlastic)
+		local fx0 = s * (TX - TW)
+		decor(g:box('GateLiner', V(fx0 - s * 0.6, 2.9, -0.45), V(fx0, 19.0, 0.45), trim, M.SmoothPlastic))
 		B('GateCapital', TW + 0.6, TOP, TOP + 1.2, TW + 0.6, trim)
 		B('GateLampSeat', TW - 0.2, TOP + 1.2, TOP + 1.9, TW - 0.2, dark)
 		-- The state lamp, a globe on the tower: a red shell (named Lock, so the client hides it once you can pass)
@@ -4847,7 +4900,7 @@ local function stageGate(ctx, i)
 	-- the top corners of the opening so it reads as a gate, not a rectangle.
 	local inner = TX - TW
 	g:box('GateHeaderTrim', V(-inner, 19.0, -1.0), V(inner, 19.6, 1.0), dark, M.SmoothPlastic)
-	g:box('GateHeader', V(-inner, 19.6, -1.3), V(inner, 23.6, 1.3), main, M.SmoothPlastic)
+	g:box('GateHeader', V(-inner, 19.6, -1.3), V(inner, 23.6, 1.3), bridge, M.SmoothPlastic)
 	g:box('GateHeaderCap', V(-inner - 0.2, 23.6, -1.6), V(inner + 0.2, 24.2, 1.6), trim, M.SmoothPlastic)
 	for _, s in { -1, 1 } do
 		g:wedge('GateCorbel', V(2, 2.6, 2.6), CFrame.new(s * (inner - 1.3), 19.0 - 1.3, 0) * CFrame.Angles(0, s * math.pi / 2, 0) * CFrame.Angles(0, 0, math.pi), dark, M.SmoothPlastic)
@@ -4884,9 +4937,9 @@ local function stageGate(ctx, i)
 		-- Only stage 1's wall text reads from the lobby; later gates show theirs as you walk up, so they don't stack
 		-- behind stage 1's through the warehouse door.
 		pcall(function() bg.MaxDistance = i == 1 and 260 or 90 end)
-		line(bg, 'Power', '💪 ' .. compact(req), P.white, FONT.loud, 0.25, 0.3, ink, 6)
-		line(bg, 'Sub', 'POWER TO ENTER', P.white, FONT.title, 0.555, 0.1, ink, 3)
-		line(bg, 'Status', 'NEED 💪 ' .. compact(req), P.white, FONT.loud, 0.665, 0.11, ink, 3)
+		line(bg, 'Power', '💪 ' .. compact(req), P.white, FONT.loud, 0.24, 0.28, ink, 6)
+		line(bg, 'Sub', 'POWER TO ENTER', P.white, FONT.title, 0.53, 0.09, ink, 3)
+		line(bg, 'Status', '', P.white, FONT.loud, 0.635, 0.11, ink, 3) -- (the client writes how much more you need)
 		-- Your progress toward the number (the client sizes Fill and writes Count).
 		local fill = Instance.new('Frame')
 		fill.Name = 'Fill'
@@ -4901,12 +4954,25 @@ local function stageGate(ctx, i)
 		local count = line(bg, 'Count', '0 / ' .. compact(req), ink, FONT.loud, 0.802, 0.086, P.white, 2)
 		count.ZIndex = 3
 	end
-	-- The padlock hanging from the bridge over the number (every part named Lock: shown only while you're short).
+	-- The requirement board round the text: a dark frame (two posts on the threshold and a top bar) with a cream
+	-- liner inside, both faces. Named GateBoard*: the client hides it with the field once you've cleared the gate.
+	for _, sx in { -1, 1 } do
+		decor(g:box('GateBoardFrame', V(sx * 22.8, 0.3, -0.8), V(sx * 23.6, 18.4, 0.8), dark, M.SmoothPlastic))
+		decor(g:box('GateBoardLiner', V(sx * 22.2, 0.3, -0.6), V(sx * 22.8, 17.6, 0.6), trim, M.SmoothPlastic))
+	end
+	decor(g:box('GateBoardFrame', V(-23.6, 17.6, -0.8), V(23.6, 18.4, 0.8), dark, M.SmoothPlastic))
+	decor(g:box('GateBoardLiner', V(-22.8, 17.0, -0.6), V(22.8, 17.6, 0.6), trim, M.SmoothPlastic))
+	-- The threshold the gate stands on: a low dark sill with ramps on both sides.
+	g:box('GateThreshold', V(-(TX - 2.3), 0, -1.5), V(TX - 2.3, 0.3, 1.5), dark, M.SmoothPlastic)
+	for _, e in { { 1.9, math.pi }, { -1.9, 0 } } do -- (a wedge is tallest at its +Z end)
+		g:wedge('GateThresholdRamp', V(2 * (TX - 2.3), 0.3, 0.8), CFrame.new(0, 0.15, e[1]) * CFrame.Angles(0, e[2], 0), dark, M.SmoothPlastic)
+	end
+	-- The padlock hung on the board's top bar (every part named Lock: shown only while you're short).
 	local gold = C(226, 182, 76)
-	decor(g:box('Lock', V(-1.5, 14.9, -0.6), V(1.5, 17.5, 0.6), gold, M.SmoothPlastic))
-	decor(g:box('Lock', V(-0.25, 15.6, -0.66), V(0.25, 16.6, 0.66), gold:Lerp(P.black, 0.55), M.SmoothPlastic))
-	for _, sx in { -1, 1 } do decor(g:box('Lock', V(sx * 1.0 - 0.3, 17.5, -0.3), V(sx * 1.0 + 0.3, 18.6, 0.3), C(176, 180, 190), M.SmoothPlastic)) end
-	decor(g:box('Lock', V(-1.3, 18.6, -0.3), V(1.3, 19.1, 0.3), C(176, 180, 190), M.SmoothPlastic))
+	decor(g:box('Lock', V(-1.5, 14.8, -0.7), V(1.5, 17.0, 0.7), gold, M.SmoothPlastic))
+	decor(g:box('Lock', V(-0.25, 15.4, -0.76), V(0.25, 16.3, 0.76), gold:Lerp(P.black, 0.55), M.SmoothPlastic))
+	for _, sx in { -1, 1 } do decor(g:box('Lock', V(sx * 1.0 - 0.3, 17.0, -0.95), V(sx * 1.0 + 0.3, 18.9, 0.95), C(176, 180, 190), M.SmoothPlastic)) end
+	decor(g:box('Lock', V(-1.3, 18.4, -0.95), V(1.3, 18.9, 0.95), C(176, 180, 190), M.SmoothPlastic))
 	-- Pads on the approach side: back to spawn, and on to your furthest stage.
 	if i > 1 then
 		teleportPad(g, 'LobbyPad', -26, 7, P.padRed:Lerp(C(255, 40, 255), 0.6), 'Lobby', 'SPAWN')
@@ -5027,12 +5093,12 @@ end
 -- 4-6 Shop Street: the barber and the grocery, then more shops under striped awnings.
 -- Each shop keeps its colour, a notch quieter: strawberry instead of hot pink, a cream-gold instead of lemon.
 local SHOPS = {
-	{ sign = 'PIZZA', signColor = C(190, 74, 66), textColor = C(255, 230, 160), stripes = { C(196, 84, 74), P.white }, wall = P.brickPink },
+	{ sign = 'PIZZA', signColor = C(198, 70, 60), textColor = C(255, 230, 160), stripes = { C(208, 78, 66), P.white }, wall = P.brickPink },
 	{ sign = 'SNEAKERS', signColor = C(44, 48, 58), textColor = P.white, stripes = { C(58, 62, 72), P.white }, wall = P.brick },
-	{ sign = 'ICE CREAM', signColor = C(206, 116, 150), textColor = P.white, stripes = { C(228, 164, 188), P.white }, wall = C(240, 226, 206) },
-	{ sign = 'ARCADE', signColor = C(116, 82, 176), textColor = C(255, 232, 170), stripes = { C(128, 94, 184), C(240, 228, 196) }, wall = P.brickDark },
-	{ sign = 'BAKERY', signColor = C(150, 104, 70), textColor = P.white, stripes = { C(196, 146, 98), P.white }, wall = P.tan, extra = 'crates' },
-	{ sign = 'PHONES', signColor = C(70, 118, 188), textColor = P.white, stripes = { C(76, 124, 192), P.white }, wall = P.brick },
+	{ sign = 'ICE CREAM', signColor = C(206, 116, 150), textColor = P.white, stripes = { C(226, 140, 176), P.white }, wall = C(240, 226, 206) },
+	{ sign = 'ARCADE', signColor = C(118, 76, 188), textColor = C(255, 232, 170), stripes = { C(130, 86, 200), C(240, 228, 196) }, wall = P.brickDark },
+	{ sign = 'BAKERY', signColor = C(150, 104, 70), textColor = P.white, stripes = { C(210, 140, 78), P.white }, wall = P.tan, extra = 'crates' },
+	{ sign = 'PHONES', signColor = C(62, 112, 196), textColor = P.white, stripes = { C(66, 120, 206), P.white }, wall = P.brick },
 }
 local function shopStage(ctx, i)
 	local d, top = stageCore(ctx, i)
@@ -5217,26 +5283,36 @@ local function bossYard(ctx)
 	local ring = SKINS.StationById.Ring
 	local ringCtx, ringModel = b:at(CFrame.new(0, 0, BOSS_TOP - 34) * CFrame.Angles(0, math.pi, 0)):group('Training_' .. ring.Id)
 	Props.ring(ringCtx, PROPS_KIT, ring, 7)
-	-- A notch quieter than the shared prop builds it: gold trims in plastic instead of neon, a deep red skirt,
-	-- softer rope colours (they still cycle) and a crowd in less hot shirts.
+	-- A notch quieter than the shared prop builds it, in one red family: red and cream ropes (no more hue cycling),
+	-- a deep red skirt and apron trim, cream bleacher noses, and a crowd in less hot shirts. Gold stays on the
+	-- sign frame and the canvas logo only.
 	local gold = C(226, 184, 84)
+	local ropes = ringModel:FindFirstChild('Ropes')
+	if ropes then ropes:SetAttribute('Hue', nil) ropes:RemoveTag('HoodMotion') end
 	for _, p in ringModel:GetDescendants() do
 		if not p:IsA('BasePart') then continue end
-		if p.Name == 'ApronTrim' or p.Name == 'SignNeon' or p.Name == 'CanvasLogo' or p.Name == 'BleacherNose' then
+		if p.Name == 'SignNeon' or p.Name == 'CanvasLogo' then
 			p.Color, p.Material = gold, p.Name == 'CanvasLogo' and M.Fabric or M.SmoothPlastic
+		elseif p.Name == 'ApronTrim' then
+			p.Color, p.Material = Craft.dark(P.boss), M.SmoothPlastic
+		elseif p.Name == 'BleacherNose' then
+			p.Color = P.cream
 		elseif p.Name == 'Skirt' then
 			p.Color = P.boss
-		elseif p.Name == 'Rope' or p.Name == 'FanBody' then
+		elseif p.Name == 'Rope' then
+			-- Rows 1 and 3 red, 2 and 4 cream (rope row = height above the canvas in 1.15 steps).
+			local row = math.floor((p.CFrame.Y - V2.Origin.Y - 3.4) / 1.15 + 0.5)
+			p.Color, p.Material = row % 2 == 1 and P.boss or P.cream, M.SmoothPlastic
+		elseif p.Name == 'FanBody' then
 			local h, s, v = p.Color:ToHSV()
 			p.Color = Color3.fromHSV(h, s * 0.7, v * 0.92)
-			if p.Name == 'Rope' then p.Material = M.SmoothPlastic end
 		end
 	end
 	local canvas = ringModel:FindFirstChild('TrainingZone')
 	local vfx = Armory.optional('HoodVFX')
-	-- A warm gold champion's aura (tier 8) instead of the tier-9 rainbow: still the best glow on the map, not a
-	-- pink-and-rainbow cloud.
-	if canvas and vfx then vfx.station(canvas, 8, C(236, 184, 84), V(14, 10, 14)) end
+	-- A warm gold champion's aura (tier 8) instead of the tier-9 rainbow, kept low and inside the ropes (10 x 4 x 10)
+	-- so the BOSS board behind the ring reads from the yard entrance.
+	if canvas and vfx then vfx.station(canvas, 8, C(236, 184, 84), V(10, 4, 10)) end
 	local bz = BOSS_END + 22
 	-- The boss pad on a two-step octagon dais (dark base, cream lip): the stage's one raised platform.
 	local dais = b:at(CFrame.new(0, 0, bz))
@@ -5247,22 +5323,24 @@ local function bossYard(ctx)
 	model.Name = 'BossPad'
 	model:SetAttribute('Boss', true)
 	-- The boss's sign: a framed board on a two-post gantry behind the pad, a gold crown on the beam.
+	-- (Raised so the board's title clears the Champ Ring's belt hologram when seen from the yard entrance.)
 	local sg = b:at(CFrame.new(0, 0, bz - 11.5)):group('BossSign')
 	local bossD = Craft.dark(P.boss)
+	local up = 4.4
 	for _, x in { -10.2, 10.2 } do
 		sg:box('GantryFoot', V(x - 1.3, 0, -1.3), V(x + 1.3, 1.0, 1.3), C(150, 152, 160), M.Concrete)
-		sg:box('GantryPost', V(x - 0.6, 1.0, -0.6), V(x + 0.6, 16.6, 0.6), bossD, M.SmoothPlastic)
-		sg:box('GantryCap', V(x - 0.9, 17.8, -0.9), V(x + 0.9, 18.3, 0.9), P.cream, M.SmoothPlastic)
+		sg:box('GantryPost', V(x - 0.6, 1.0, -0.6), V(x + 0.6, 16.6 + up, 0.6), bossD, M.SmoothPlastic)
+		sg:box('GantryCap', V(x - 0.9, 17.8 + up, -0.9), V(x + 0.9, 18.3 + up, 0.9), P.cream, M.SmoothPlastic)
 	end
-	sg:box('GantryBeam', V(-11.1, 16.6, -0.6), V(11.1, 17.8, 0.6), bossD, M.SmoothPlastic)
-	for _, x in { -6, 6 } do sg:box('SignHanger', V(x - 0.3, 15.6, -0.3), V(x + 0.3, 16.6, 0.3), bossD, M.SmoothPlastic) end
-	local face = Craft.board(sg, -8.6, 8.4, 8.6, 15.2, P.boss)
+	sg:box('GantryBeam', V(-11.1, 16.6 + up, -0.6), V(11.1, 17.8 + up, 0.6), bossD, M.SmoothPlastic)
+	for _, x in { -6, 6 } do sg:box('SignHanger', V(x - 0.3, 15.6 + up, -0.3), V(x + 0.3, 16.6 + up, 0.3), bossD, M.SmoothPlastic) end
+	local face = Craft.board(sg, -8.6, 8.4 + up, 8.6, 15.2 + up, P.boss)
 	Craft.words(face, 'BOSS', 'THE FINAL FIGHT', P.boss)
 	local gold = C(226, 184, 84)
-	sg:box('CrownBand', V(-2.4, 17.8, -0.7), V(2.4, 19.0, 0.7), gold, M.SmoothPlastic)
+	sg:box('CrownBand', V(-2.4, 17.8 + up, -0.7), V(2.4, 19.0 + up, 0.7), gold, M.SmoothPlastic)
 	for _, x in { -1.8, 0, 1.8 } do
 		local k = x == 0 and 1.35 or 1
-		sg:part('CrownPoint', V(1.1, 1.1, 1.1) * k, CFrame.new(x, 19.1 + (k - 1) * 0.5, 0) * CFrame.Angles(0, 0, math.pi / 4), gold, M.SmoothPlastic)
+		sg:part('CrownPoint', V(1.1, 1.1, 1.1) * k, CFrame.new(x, 19.1 + up + (k - 1) * 0.5, 0) * CFrame.Angles(0, 0, math.pi / 4), gold, M.SmoothPlastic)
 	end
 	for x = -30, 30, 15 do tree(b, V(x, 0, BOSS_END + 4), 600 + x, 1) end
 	return b
@@ -5321,7 +5399,8 @@ function V2.Build()
 	root.Name = 'TheBlockV2'
 	root:SetAttribute('BuildVersion', 'Hood Evolution W1 lobby C3 armory backboards, shoe dais text')
 	root:SetAttribute('Origin', V2.Origin.Position)
-	root:SetAttribute('LobbySpawn', SPAWN)
+	root:SetAttribute('LobbySpawn', SPAWN + Vector3.new(0, Lobby.SpawnTop or 0, 0)) -- the spawn dais top (the LOBBY teleport lands 3 above it)
+	if Lobby.SpawnYaw then root:SetAttribute('LobbySpawnYaw', Lobby.SpawnYaw) end -- the way the spawn faces (radians about Y)
 	root:SetAttribute('MorphStand', false) -- no Morphs stands in the world any more: looks are equipped from the HUD's EVOLVE menu
 	local ctx = newCtx(root, CFrame.new())
 

@@ -299,6 +299,11 @@ for _, s in Skins.Stations do
 				end
 			end
 		end
+		-- The range lane's state lamp on its bench (green open, red locked), so the state isn't text only.
+		entry.Lamps = {}
+		for _, p in model:GetDescendants() do
+			if p.Name == 'StateLamp' and p:IsA('BasePart') then table.insert(entry.Lamps, p) end
+		end
 		stations[s.Id] = entry
 	end
 end
@@ -329,6 +334,7 @@ for _, e in stations do
 	end
 end
 local SILHOUETTE = C(18, 18, 22)
+local LAMP_OPEN, LAMP_LOCKED = C(90, 220, 120), C(235, 80, 70) -- (the lanes' Stations.LampColors)
 local UNLOCKED, LOCKED = C(140, 206, 120), C(217, 119, 106) -- (soft sage and terracotta, as the lanes build them)
 local function paintStations(n)
 	local goal = nil -- the next station to unlock shows its stack from afar (lifted clear if it's a middle one)
@@ -366,6 +372,7 @@ local function paintStations(n)
 					r.Part.Material = locked and Enum.Material.SmoothPlastic or r.Material
 				end
 				if e.Fx and HoodVFX then HoodVFX.setDensity(e.Fx, locked and 0.5 or 1) end
+				for _, lamp in e.Lamps do lamp.Color = locked and LAMP_LOCKED or LAMP_OPEN end
 				local detail = e.Sign and e.Sign:FindFirstChild('Detail', true)
 				if detail then
 					if e.Bag then
