@@ -438,8 +438,10 @@ local function car(c, cf, color)
 	end
 	return k
 end
--- Chain-link fence along a straight line, with optional gaps { from, to } (distance along the line).
-local function chainLink(c, a, b, h, gaps)
+-- Chain-link fence along a straight line, with optional gaps { from, to } (distance along the line). see: the mesh's
+-- transparency (0.45 by default; a court cage uses more, so the court reads through it). tint: the posts, rails and
+-- mesh in one coating colour instead of black iron and grey mesh.
+local function chainLink(c, a, b, h, gaps, see, tint)
 	local dir = b - a
 	local len = dir.Magnitude
 	local u = dir.Unit
@@ -452,7 +454,7 @@ local function chainLink(c, a, b, h, gaps)
 		if not open then table.insert(posts, t) end
 	end
 	for _, g in gaps or {} do table.insert(posts, g[1]); table.insert(posts, g[2]) end
-	for _, t in posts do c:post('FencePost', 0.32, h + 0.2, a + u * t, P.iron, M.Metal) end
+	for _, t in posts do c:post('FencePost', 0.32, h + 0.2, a + u * t, tint or P.iron, M.Metal) end
 	local pieces = { { 0, len } }
 	for _, g in gaps or {} do
 		local nextPieces = {}
@@ -469,11 +471,10 @@ local function chainLink(c, a, b, h, gaps)
 		if p[2] - p[1] > 0.3 then
 			local p0, p1 = a + u * p[1], a + u * p[2]
 			local mid, up = (p0 + p1) / 2, V(0, (h - 0.4) / 2 + 0.2, 0)
-			local mesh = c:part('ChainLink', V(0.1, h - 0.4, (p1 - p0).Magnitude), CFrame.lookAt(mid + up, p1 + up), C(70, 74, 82), M.DiamondPlate)
-		mesh.Name = 'ChainLink'
-			mesh.Transparency = 0.45
+			local mesh = c:part('ChainLink', V(0.1, h - 0.4, (p1 - p0).Magnitude), CFrame.lookAt(mid + up, p1 + up), tint or C(70, 74, 82), M.DiamondPlate)
+			mesh.Transparency = see or 0.45
 			mesh.CastShadow = false
-			decor(plank(c, 'FenceRail', p0 + V(0, h, 0), p1 + V(0, h, 0), 0.25, 0.25, P.iron, M.Metal))
+			decor(plank(c, 'FenceRail', p0 + V(0, h, 0), p1 + V(0, h, 0), 0.25, 0.25, tint or P.iron, M.Metal))
 		end
 	end
 end
@@ -492,10 +493,10 @@ local function railing(c, a, b, h)
 	return g
 end
 
--- Fight pad: a street boxing-ring mat (research recipe j). A dark base, a cream lip, the mat in the pad's
--- colour with its number, and four dark corner posts, each with a padded cushion under a sloped corner cap (the
--- turnbuckle pad). No ropes, so it stays open to walk onto from every side. A small plate on the front-left post
--- names the fight. 17 parts, no neon.
+-- Fight pad: a small street boxing ring (Brief 9: it must read as a place to fight, in the same language as the boss
+-- yard's Champ Ring, not as a "stand here" mat). A dark base, a cream apron, the mat in the pad's colour with its
+-- number, a dark post at each corner under a padded cushion, and two cream ropes on three sides. The side players
+-- walk up from (+Z) stays open, so you step into it; the ropes don't collide. No name plate. 17 parts, no neon.
 local function fightPad(c, n, pos, color, district, size, label)
 	size = size or PAD_SIZE
 	local h = size / 2
@@ -506,20 +507,19 @@ local function fightPad(c, n, pos, color, district, size, label)
 	local top = pad:box('Pad', V(-h, 0.3, -h), V(h, 0.75, h), color, M.SmoothPlastic)
 	local g = surface(top, Enum.NormalId.Top, 20)
 	line(g, 'Number', label or tostring(n), P.white, FONT.loud, 0.2, 0.6, D:Lerp(P.black, 0.45), 6)
+	local r = h + 0.35 -- (the posts stand on the apron, just outside the mat)
 	for _, x in { -1, 1 } do
 		for _, z in { -1, 1 } do
-			local p = V(x * (h + 0.55), 0, z * (h + 0.55))
-			pad:post('CornerPost', 0.4, 2.5, p + V(0, 0.55, 0), D, M.SmoothPlastic)
-			pad:box('CornerPad', p + V(-0.5, 1.9, -0.5), p + V(0.5, 3.1, 0.5), color, M.SmoothPlastic)
-			-- The cap's high corner points away from the mat, so the slope faces the fighters.
-			Craft.cornerWedge(pad, 'CornerCap', V(1.0, 0.7, 1.0), CFrame.new(p + V(0, 3.45, 0)) * CFrame.Angles(0, math.atan2(-x - z, x - z), 0), color:Lerp(P.white, 0.15))
+			local p = V(x * r, 0.55, z * r)
+			pad:post('CornerPost', 0.35, 4.3, p, D, M.SmoothPlastic)
+			pad:box('CornerPad', p + V(-0.5, 2.3, -0.5), p + V(0.5, 4.1, 0.5), color, M.SmoothPlastic)
 		end
 	end
-	-- Name plate on the front-left post (players arrive from +Z).
-	local plate = pad:at(CFrame.new(-h - 0.55, 0, h + 1.15))
-	plate:box('PlateBack', V(-0.7, 1.3, -0.2), V(4.6, 2.9, 0.2), D, M.SmoothPlastic)
-	local face = plate:box('PlateFace', V(-0.45, 1.5, -0.3), V(4.35, 2.7, 0.3), P.cream, M.SmoothPlastic)
-	line(surface(face, Enum.NormalId.Back, 30), 'Title', n >= 16 and 'BOSS FIGHT' or ('FIGHT ' .. n), D:Lerp(P.black, 0.3), FONT.title, 0.1, 0.8)
+	-- The ropes, at two heights on the back (-Z) and both sides.
+	for _, y in { 3.15, 4.3 } do
+		decor(pad:box('Rope', V(-r, y - 0.16, -r - 0.16), V(r, y + 0.16, -r + 0.16), P.cream, M.SmoothPlastic))
+		for _, x in { -1, 1 } do decor(pad:box('Rope', V(x * r - 0.16, y - 0.16, -r), V(x * r + 0.16, y + 0.16, r), P.cream, M.SmoothPlastic)) end
+	end
 	local glow = Instance.new('SurfaceLight')
 	glow.Face, glow.Color, glow.Brightness, glow.Range, glow.Angle = Enum.NormalId.Top, color, 0.6, 8, 120
 	glow.Parent = top
@@ -549,59 +549,36 @@ local function banner(c, cf, title, sub, badge, color)
 	return b
 end
 
--- Teleport pad: a small teleport booth (research recipe c), 14 parts. A round pad in steps (a dark base, a cream rim,
--- a glowing ring round the coloured top) between two chunky cream posts on cream feet with capitals in the pad's
--- colour, and a framed sign between them just over head height, readable from both sides, with a round medallion
--- (🏠 / 🏁 on both faces) standing on the sign's top edge to break the outline. The top keeps the pad's name and the
--- prompt (StageService handles targets 'Lobby' and 'Furthest'). Each target has its own hue so a pad reads the same
--- everywhere: SPAWN rose, FURTHEST gold; anything else takes `color`. Steps stay low enough to walk onto.
+-- Teleport pad, built as a bus stop (Brief 9: a transit point by its shape, small and plain), 7 parts. A round
+-- boarding spot on the pavement (a grey kerb ring round a disc in the stop's colour) and, at its back edge, a pole
+-- with a flag sign in the same colour. The sign carries a white pictogram that pokes through both faces: a house
+-- for SPAWN, a flag for FURTHEST STAGE. The label under it is the only text. Each target keeps one hue everywhere:
+-- SPAWN rose, FURTHEST gold; anything else takes `color`. The disc keeps the pad's name and the prompt (StageService
+-- handles targets 'Lobby' and 'Furthest'). The disc is low enough to walk onto.
 local function teleportPad(g, name, x, z, color, target, label)
 	local main = ({ Lobby = C(204, 92, 158), Furthest = C(226, 184, 84) })[target] or color
-	local dark, trim, glow = main:Lerp(P.black, 0.24), C(238, 236, 232), main:Lerp(P.white, 0.3)
+	local white, pole = C(244, 242, 238), C(70, 74, 84)
 	local o = V(x, 0, z)
 	local up = CFrame.Angles(0, 0, math.pi / 2) -- (cylinders lie along X; this stands them up)
-	local function disc(n, d, y0, y1, c, mat)
-		return g:part(name .. n, V(y1 - y0, d, d), CFrame.new(o + V(0, (y0 + y1) / 2, 0)) * up, c, mat or M.SmoothPlastic, Enum.PartType.Cylinder)
+	g:part(name .. 'Kerb', V(0.3, 4.8, 4.8), CFrame.new(o + V(0, 0.15, 0)) * up, C(150, 152, 158), M.SmoothPlastic, Enum.PartType.Cylinder)
+	local pad = g:part(name, V(0.16, 4.0, 4.0), CFrame.new(o + V(0, 0.38, 0)) * up, main, M.SmoothPlastic, Enum.PartType.Cylinder)
+	-- the pole at the back edge of the spot (+Z: players come from -Z, the slot rule); its sign faces both ways
+	local pz = z + 2.6
+	g:box(name .. 'Pole', V(x - 0.22, 0, pz - 0.22), V(x + 0.22, 7.0, pz + 0.22), pole, M.SmoothPlastic)
+	g:box(name .. 'SignRim', V(x - 1.55, 4.2, pz - 0.2), V(x + 1.55, 7.3, pz + 0.2), white, M.SmoothPlastic)
+	local face = g:box(name .. 'Sign', V(x - 1.35, 4.4, pz - 0.26), V(x + 1.35, 7.1, pz + 0.26), main, M.SmoothPlastic)
+	if target == 'Lobby' then -- a house: a block with a square turned 45 degrees for its roof
+		g:box(name .. 'Icon', V(x - 0.6, 5.6, pz - 0.32), V(x + 0.6, 6.35, pz + 0.32), white, M.SmoothPlastic)
+		g:part(name .. 'Icon', V(0.9, 0.9, 0.64), CFrame.new(x, 6.35, pz) * CFrame.Angles(0, 0, math.pi / 4), white, M.SmoothPlastic)
+	else -- a flag on its staff
+		g:box(name .. 'Icon', V(x - 0.62, 5.45, pz - 0.32), V(x - 0.44, 6.9, pz + 0.32), white, M.SmoothPlastic)
+		g:box(name .. 'Icon', V(x - 0.44, 6.05, pz - 0.32), V(x + 0.7, 6.85, pz + 0.32), white, M.SmoothPlastic)
 	end
-	disc('Base', 7.8, 0, 0.3, dark)
-	disc('Rim', 7, 0.3, 0.52, trim)
-	local ring = decor(disc('Ring', 5.2, 0.52, 0.62, glow, M.Neon))
-	ring.CastShadow = false
-	local pad = disc('', 4.4, 0.52, 0.68, main) -- (the part named `name`: the coloured top inside the ring)
-	light(ring, glow, 0.8, 9)
-	-- the posts: 1.2 square, 6.4 tall, cream on cream feet under capitals in the pad's colour; the sign between them
-	-- at y 5.2-7.0
-	for _, sx in { -1, 1 } do
-		local px = sx * 4.1
-		g:box(name .. 'PostFoot', o + V(px - 0.8, 0, -0.8), o + V(px + 0.8, 0.5, 0.8), trim, M.SmoothPlastic)
-		g:box(name .. 'Post', o + V(px - 0.6, 0.5, -0.6), o + V(px + 0.6, 6.9, 0.6), trim, M.SmoothPlastic)
-		g:box(name .. 'PostCap', o + V(px - 0.8, 6.9, -0.8), o + V(px + 0.8, 7.3, 0.8), main, M.SmoothPlastic)
-	end
-	g:box(name .. 'SignBack', o + V(-3.5, 5.2, -0.3), o + V(3.5, 7.0, 0.3), dark, M.SmoothPlastic)
-	local face = decor(g:box(name .. 'Sign', o + V(-3.2, 5.45, -0.42), o + V(3.2, 6.75, 0.42), trim, M.SmoothPlastic))
 	for _, f in { Enum.NormalId.Front, Enum.NormalId.Back } do
-		local sg = surface(face, f, 24)
-		pcall(function() sg.MaxDistance = 70 end)
-		line(sg, 'Title', label, main:Lerp(P.black, 0.5), FONT.loud, 0.1, 0.8, trim, 1)
+		local sg = surface(face, f, 32)
+		pcall(function() sg.MaxDistance = 60 end)
+		line(sg, 'Title', target == 'Furthest' and 'FURTHEST' or label, white, FONT.loud, 0.6, 0.3, main:Lerp(P.black, 0.55), 2)
 	end
-	-- the medallion on the sign's top edge, its icon on both faces
-	local medal = CFrame.new(o + V(0, 7.85, 0))
-	g:part(name .. 'Medal', V(0.7, 2.6, 2.6), medal * CFrame.Angles(0, math.pi / 2, 0), main, M.SmoothPlastic, Enum.PartType.Cylinder)
-	local icon = ghost(g:part(name .. 'Icon', V(2.1, 2.1, 0.8), medal, P.white))
-	for _, f in { Enum.NormalId.Front, Enum.NormalId.Back } do
-		line(surface(icon, f, 30), 'Icon', target == 'Lobby' and '🏠' or '🏁', P.white, FONT.loud, 0.1, 0.8)
-	end
-	-- a few soft sparks rising off the ring (the ring lies on its side: its +X is up)
-	local e = Instance.new('ParticleEmitter')
-	e.Name = 'PadSparks'
-	e.Texture = 'rbxasset://textures/particles/sparkles_main.dds'
-	e:SetAttribute('PreviewTexture', 'sparkle')
-	e.Rate, e.Lifetime, e.Speed = 4, NumberRange.new(1, 1.4), NumberRange.new(2, 3)
-	e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 0) })
-	e.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(1, 1) })
-	e.Color, e.LightEmission, e.LightInfluence = ColorSequence.new(glow), 0.6, 0
-	e.EmissionDirection = Enum.NormalId.Right
-	e.Parent = ring
 	local prompt = Instance.new('ProximityPrompt')
 	prompt.Name = 'Teleport'
 	prompt.ActionText = 'Teleport'
@@ -1387,6 +1364,20 @@ local function lotFrame(ctx, s, za, w)
 	if s < 0 then return ctx:at(CFrame.lookAt(V(-FRONT, 0, za), V(-FRONT - 1, 0, za))) end
 	return ctx:at(CFrame.lookAt(V(FRONT, 0, za - w), V(FRONT + 1, 0, za - w)))
 end
+-- Brief 9: the first stage of each of the first three districts has its own street plan (The Block, Shop Street, The
+-- Courts) instead of the shared corridor. Street holds those plans and the pieces only they use (f2_stages fills in
+-- the stage builders and props); `custom` tells the ground which stages lay their own paving.
+local Street = { custom = { [1] = true, [4] = true, [7] = true } }
+-- A shop's name painted on a plain fascia band across the front above the awning (no framed board, so with the text
+-- hidden it is still just a shopfront). Returns the band for the text.
+function Street.fascia(c, w, color)
+	return c:box('ShopSign', V(0.4, 9.9, 0), V(w - 0.4, 12.5, 0.5), color, M.SmoothPlastic)
+end
+-- The same frame with the facade at x = ±xFront instead of ±FRONT, so setbacks can differ lot by lot.
+function Street.lot(ctx, s, xFront, za, w)
+	if s < 0 then return ctx:at(CFrame.lookAt(V(-xFront, 0, za), V(-xFront - 1, 0, za))) end
+	return ctx:at(CFrame.lookAt(V(xFront, 0, za - w), V(xFront + 1, 0, za - w)))
+end
 local function storeyY(f) return f == 1 and 0 or 12 + (f - 2) * 10 end
 local function roofOf(floors) return 12 + (floors - 1) * 10 end
 local function bays(w, n)
@@ -1425,10 +1416,11 @@ local function sideWindows(c, sideAt, floors, frame)
 		for _, d in { 7, 15, 23 } do window(s, sign * d, storeyY(f) + 3.4, { frame = frame }) end
 	end
 end
--- Striped awning from x0 to x1 with its top at y, alternating two colours.
-local function stripedAwning(c, x0, x1, y, colors, depth)
+-- Striped awning from x0 to x1 with its top at y, alternating two colours. stripe: the stripe width (1.6 by default;
+-- wider stripes mean fewer parts).
+local function stripedAwning(c, x0, x1, y, colors, depth, stripe)
 	depth = depth or 3.6
-	local n = math.max(2, math.floor((x1 - x0) / 1.6))
+	local n = math.max(2, math.floor((x1 - x0) / (stripe or 1.6)))
 	for k = 0, n - 1 do
 		local a, b = x0 + (x1 - x0) * k / n, x0 + (x1 - x0) * (k + 1) / n
 		local col = colors[k % #colors + 1]
@@ -1436,18 +1428,20 @@ local function stripedAwning(c, x0, x1, y, colors, depth)
 		decor(c:box('AwningValance', V(a, y - 2.9, depth - 0.2), V(b, y - 1.8, depth), col, M.Fabric))
 	end
 end
-local function roofCap(c, w, roof, color)
-	c:box('RoofCap', V(0, roof, -DEPTH), V(w, roof + 1.2, 0.7), color, M.SmoothPlastic)
-	Craft.acUnit(c, w * 0.3, roof + 1.2, -10)
+-- depth: how far the building runs back (DEPTH by default); noUnit: no rooftop AC unit.
+local function roofCap(c, w, roof, color, depth, noUnit)
+	c:box('RoofCap', V(0, roof, -(depth or DEPTH)), V(w, roof + 1.2, 0.7), color, M.SmoothPlastic)
+	if not noUnit then Craft.acUnit(c, w * 0.3, roof + 1.2, -10) end
 end
 
 -- Red brick walk-up (the concept's asset kit): stone base, slate roof cap, framed windows, green door.
+-- o: floors, wall, bays, doorX, door, ground(c, w, bayXs), sideAt, name, depth, noUnit
 local function brickBuilding(ctx, w, o)
 	local c, model = ctx:group(o.name or 'BrickBuilding')
 	local roof = roofOf(o.floors)
-	c:box('Wall', V(0, -1, -DEPTH), V(w, roof, 0), o.wall or P.brick, M.Brick)
+	c:box('Wall', V(0, -1, -(o.depth or DEPTH)), V(w, roof, 0), o.wall or P.brick, M.Brick)
 	c:box('Base', V(0, -1, 0), V(w, 1.6, 0.35), P.stone, M.Concrete)
-	roofCap(c, w, roof, P.slate)
+	roofCap(c, w, roof, P.slate, o.depth, o.noUnit)
 	local list = bays(w, o.bays or 3)
 	for f = 2, o.floors do for _, x in list do window(c, x, storeyY(f) + 3, {}) end end
 	local doorX = o.doorX or list[#list // 2 + 1]
@@ -1474,13 +1468,14 @@ end
 local function tanBuilding(ctx, w, o)
 	local c, model = ctx:group(o.name or 'TanApartments')
 	local roof = roofOf(o.floors)
-	c:box('Wall', V(0, -1, -DEPTH), V(w, roof, 0), o.wall or P.tan, M.Brick)
+	local depth = o.depth or DEPTH
+	c:box('Wall', V(0, -1, -depth), V(w, roof, 0), o.wall or P.tan, M.Brick)
 	c:box('Base', V(0, -1, 0), V(w, 2, 0.35), P.tanDark, M.Concrete)
 	for _, x in { 0, w - 1 } do decor(c:box('Pier', V(x, 2, 0), V(x + 1, roof, 0.3), P.tanLight, M.SmoothPlastic)) end
 	for f = 2, o.floors do decor(c:box('FloorBand', V(1, storeyY(f) - 0.4, 0), V(w - 1, storeyY(f) + 0.2, 0.25), P.tanLight, M.SmoothPlastic)) end
 	c:box('Cornice', V(0, roof - 1.2, 0), V(w, roof + 0.6, 0.9), P.tanLight, M.SmoothPlastic)
-	c:box('RoofTop', V(0, roof, -DEPTH), V(w, roof + 0.6, 0), P.tanDark, M.Concrete)
-	Craft.acUnit(c, w * 0.7, roof + 0.6, -10)
+	c:box('RoofTop', V(0, roof, -depth), V(w, roof + 0.6, 0), P.tanDark, M.Concrete)
+	if not o.noUnit then Craft.acUnit(c, w * 0.7, roof + 0.6, -10) end
 	local list = bays(w, o.bays or 3)
 	local mid = (#list + 1) // 2
 	for f = 2, o.floors do
@@ -1502,8 +1497,11 @@ local function tanBuilding(ctx, w, o)
 end
 
 -- Barber: pink brick, blue band and sign, red-white-blue striped awning, the pole by the door.
-local function barberShop(ctx, w)
-	local c = brickBuilding(ctx, w, { name = 'Barber', floors = 2, wall = P.brickPink, ground = function(c2)
+-- o (optional): depth, stripe (awning stripe width), awningDepth, noUnit, fascia (the name painted on a plain band, no
+-- framed board)
+local function barberShop(ctx, w, o)
+	o = o or {}
+	local c = brickBuilding(ctx, w, { name = 'Barber', floors = 2, wall = P.brickPink, depth = o.depth, noUnit = o.noUnit, ground = function(c2)
 		c2:box('ShopBase', V(1, 0, 0), V(w - 1, 1.2, 0.4), P.barberBlue, M.SmoothPlastic)
 		c2:box('ShopGlass', V(2, 1.2, 0), V(w - 8, 7.4, 0.3), P.glass, M.SmoothPlastic).Reflectance = 0.15
 		for x = 2 + (w - 10) / 3, w - 8.5, (w - 10) / 3 do decor(c2:box('ShopMullion', V(x - 0.2, 1.2, 0), V(x + 0.2, 7.4, 0.4), P.barberBlue, M.SmoothPlastic)) end
@@ -1511,10 +1509,12 @@ local function barberShop(ctx, w)
 		c2:box('ShopDoor', V(w - 6.4, 0, 0), V(w - 3.2, 7.4, 0.5), P.glass, M.SmoothPlastic)
 		c2:box('ShopBand', V(0, 8, 0), V(w, 9.6, 0.4), P.barberBlue, M.SmoothPlastic)
 	end })
-	stripedAwning(c, 1.5, w - 1.5, 9.4, { C(208, 74, 66), P.white, C(208, 74, 66), P.white, P.barberBlue })
-	local sign = c:box('ShopSign', V(w / 2 - 7, 10.2, 0), V(w / 2 + 7, 13.6, 0.8), P.barberBlue, M.SmoothPlastic)
-	decor(c:box('ShopSignBorder', V(w / 2 - 7.4, 9.8, 0), V(w / 2 + 7.4, 14.0, 0.7), P.cream, M.SmoothPlastic))
-	decor(c:box('ShopSignCap', V(w / 2 - 7.7, 14.0, 0), V(w / 2 + 7.7, 14.4, 0.9), Craft.dark(P.barberBlue), M.SmoothPlastic))
+	stripedAwning(c, 1.5, w - 1.5, 9.4, { C(208, 74, 66), P.white, C(208, 74, 66), P.white, P.barberBlue }, o.awningDepth, o.stripe)
+	local sign = o.fascia and Street.fascia(c, w, P.barberBlue) or c:box('ShopSign', V(w / 2 - 7, 10.2, 0), V(w / 2 + 7, 13.6, 0.8), P.barberBlue, M.SmoothPlastic)
+	if not o.fascia then
+		decor(c:box('ShopSignBorder', V(w / 2 - 7.4, 9.8, 0), V(w / 2 + 7.4, 14.0, 0.7), P.cream, M.SmoothPlastic))
+		decor(c:box('ShopSignCap', V(w / 2 - 7.7, 14.0, 0), V(w / 2 + 7.7, 14.4, 0.9), Craft.dark(P.barberBlue), M.SmoothPlastic))
+	end
 	line(surface(sign, Enum.NormalId.Back, 20), 'Text', 'BARBER', P.white, FONT.loud, 0.12, 0.76, C(16, 30, 80), 3)
 	-- The pole by the door, turning.
 	local pole, poleModel = c:group('BarberPole')
@@ -1533,22 +1533,29 @@ end
 
 -- Grocery: yellow shop floor under a green upper floor, a big dark green sign, green-yellow awning,
 -- a produce stand and crates out front.
-local function grocery(ctx, w)
+-- o (optional): depth, stripe (awning stripe width), noUnit, fascia, noCrates
+local function grocery(ctx, w, o)
+	o = o or {}
 	local c, model = ctx:group('Grocery')
 	local roof = roofOf(2)
-	c:box('Wall', V(0, -1, -DEPTH), V(w, 12, 0), P.groceryYellow, M.SmoothPlastic)
-	c:box('WallUpper', V(0, 12, -DEPTH), V(w, roof, 0), P.groceryGreen, M.SmoothPlastic)
-	roofCap(c, w, roof, C(58, 108, 70))
+	local depth = o.depth or DEPTH
+	c:box('Wall', V(0, -1, -depth), V(w, 12, 0), P.groceryYellow, M.SmoothPlastic)
+	c:box('WallUpper', V(0, 12, -depth), V(w, roof, 0), P.groceryGreen, M.SmoothPlastic)
+	roofCap(c, w, roof, C(58, 108, 70), depth, o.noUnit)
 	for _, x in bays(w, 3) do window(c, x, storeyY(2) + 3, { frame = P.white }) end
 	c:box('ShopGlass', V(2, 1, 0), V(w - 7, 7.4, 0.3), P.glass, M.SmoothPlastic).Reflectance = 0.15
 	for x = 2 + (w - 9) / 3, w - 7.5, (w - 9) / 3 do decor(c:box('ShopMullion', V(x - 0.2, 1, 0), V(x + 0.2, 7.4, 0.4), C(46, 100, 62), M.SmoothPlastic)) end
 	c:box('ShopDoorFrame', V(w - 6, 0, 0), V(w - 1.6, 8, 0.3), C(46, 100, 62), M.SmoothPlastic)
 	c:box('ShopDoor', V(w - 5.4, 0, 0), V(w - 2.2, 7.4, 0.4), P.glass, M.SmoothPlastic)
-	decor(c:box('ShopSignBorder', V(0.7, 9.5, 0), V(w - 0.7, 14.1, 0.7), P.cream, M.SmoothPlastic))
-	local sign = c:box('ShopSign', V(1.2, 10.0, 0), V(w - 1.2, 13.6, 0.9), C(46, 100, 62), M.SmoothPlastic)
-	decor(c:box('ShopSignCap', V(0.5, 14.1, 0), V(w - 0.5, 14.5, 1.0), C(36, 78, 50), M.SmoothPlastic))
+	local sign
+	if o.fascia then sign = Street.fascia(c, w, C(46, 100, 62))
+	else
+		decor(c:box('ShopSignBorder', V(0.7, 9.5, 0), V(w - 0.7, 14.1, 0.7), P.cream, M.SmoothPlastic))
+		sign = c:box('ShopSign', V(1.2, 10.0, 0), V(w - 1.2, 13.6, 0.9), C(46, 100, 62), M.SmoothPlastic)
+		decor(c:box('ShopSignCap', V(0.5, 14.1, 0), V(w - 0.5, 14.5, 1.0), C(36, 78, 50), M.SmoothPlastic))
+	end
 	line(surface(sign, Enum.NormalId.Back, 20), 'Text', 'GROCERY', C(250, 230, 160), FONT.loud, 0.12, 0.76, C(18, 44, 26), 3)
-	stripedAwning(c, 0.5, w - 0.5, 9.4, { C(64, 154, 84), C(244, 232, 196) }, 4)
+	stripedAwning(c, 0.5, w - 0.5, 9.4, { C(64, 154, 84), C(244, 232, 196) }, 4, o.stripe)
 	-- Produce stand and crates.
 	c:box('StandTable', V(2.5, 2.4, 1), V(9.5, 2.8, 4), P.wood, M.WoodPlanks)
 	for _, x in { 3, 9 } do c:box('StandLeg', V(x - 0.2, 0, 1.3), V(x + 0.2, 2.4, 3.7), P.woodDark, M.Wood) end
@@ -1558,8 +1565,10 @@ local function grocery(ctx, w)
 		c:box('ProduceBox', V(x - 0.7, 2.8, 1.4), V(x + 0.7, 3.4, 3.6), P.crate, M.WoodPlanks)
 		decor(c:box('Produce', V(x - 0.55, 3.4, 1.55), V(x + 0.55, 3.8, 3.45), fruit[k + 1], M.SmoothPlastic))
 	end
-	crate(c, CFrame.new(w - 9, 0, 2.4), 2.4)
-	crate(c, CFrame.new(w - 9, 2.4, 2.4) * CFrame.Angles(0, 0.3, 0), 2)
+	if not o.noCrates then
+		crate(c, CFrame.new(w - 9, 0, 2.4), 2.4)
+		crate(c, CFrame.new(w - 9, 2.4, 2.4) * CFrame.Angles(0, 0.3, 0), 2)
+	end
 	model:SetAttribute('Floors', 2)
 	return c
 end
@@ -1605,10 +1614,11 @@ local function warehouse(ctx, w, color)
 end
 
 -- Shop with a striped awning and a framed sign (the barber's look, reused down Shop Street).
--- o: sign, signColor, textColor, wall, trim, stripes, floors, extra ('crates' | 'pole')
+-- o: sign, signColor, textColor, wall, trim, stripes, floors, extra ('crates' | 'pole'), depth, stripe, awningDepth, noUnit,
+-- fascia, bays
 local function shopBuilding(ctx, w, o)
 	local trim = o.trim or o.signColor
-	local c = brickBuilding(ctx, w, { name = 'Shop_' .. o.sign:gsub('%W', ''), floors = o.floors or 2, wall = o.wall or P.brick, ground = function(c2)
+	local c = brickBuilding(ctx, w, { name = 'Shop_' .. o.sign:gsub('%W', ''), floors = o.floors or 2, wall = o.wall or P.brick, bays = o.bays, depth = o.depth, noUnit = o.noUnit, ground = function(c2)
 		c2:box('ShopBase', V(1, 0, 0), V(w - 1, 1.2, 0.4), trim, M.SmoothPlastic)
 		c2:box('ShopGlass', V(2, 1.2, 0), V(w - 8, 7.4, 0.3), P.glass, M.SmoothPlastic).Reflectance = 0.15
 		for x = 2 + (w - 10) / 3, w - 8.5, (w - 10) / 3 do decor(c2:box('ShopMullion', V(x - 0.2, 1.2, 0), V(x + 0.2, 7.4, 0.4), trim, M.SmoothPlastic)) end
@@ -1616,11 +1626,15 @@ local function shopBuilding(ctx, w, o)
 		c2:box('ShopDoor', V(w - 6.4, 0, 0), V(w - 3.2, 7.4, 0.5), P.glass, M.SmoothPlastic)
 		c2:box('ShopBand', V(0, 8, 0), V(w, 9.6, 0.4), trim, M.SmoothPlastic)
 	end })
-	stripedAwning(c, 1.5, w - 1.5, 9.4, o.stripes)
+	stripedAwning(c, 1.5, w - 1.5, 9.4, o.stripes, o.awningDepth, o.stripe)
 	local sw = math.min(w / 2 - 1.5, 2.5 + #o.sign * 0.85)
-	local sign = c:box('ShopSign', V(w / 2 - sw, 10.2, 0), V(w / 2 + sw, 13.6, 0.8), o.signColor, M.SmoothPlastic)
-	decor(c:box('ShopSignBorder', V(w / 2 - sw - 0.4, 9.8, 0), V(w / 2 + sw + 0.4, 14.0, 0.7), P.cream, M.SmoothPlastic))
-	decor(c:box('ShopSignCap', V(w / 2 - sw - 0.7, 14.0, 0), V(w / 2 + sw + 0.7, 14.4, 0.9), Craft.dark(o.signColor), M.SmoothPlastic))
+	local sign
+	if o.fascia then sign = Street.fascia(c, w, o.signColor)
+	else
+		sign = c:box('ShopSign', V(w / 2 - sw, 10.2, 0), V(w / 2 + sw, 13.6, 0.8), o.signColor, M.SmoothPlastic)
+		decor(c:box('ShopSignBorder', V(w / 2 - sw - 0.4, 9.8, 0), V(w / 2 + sw + 0.4, 14.0, 0.7), P.cream, M.SmoothPlastic))
+		decor(c:box('ShopSignCap', V(w / 2 - sw - 0.7, 14.0, 0), V(w / 2 + sw + 0.7, 14.4, 0.9), Craft.dark(o.signColor), M.SmoothPlastic))
+	end
 	line(surface(sign, Enum.NormalId.Back, 20), 'Text', o.sign, o.textColor or P.white, FONT.loud, 0.12, 0.76, o.signColor:Lerp(P.black, 0.6), 3)
 	if o.extra == 'crates' then
 		crate(c, CFrame.new(3.5, 0, 2.6), 2.4)
@@ -1652,6 +1666,88 @@ local function containerLot(ctx, w, seed)
 	-- Chain-link along the front with a gap, so it reads as a yard and not a wall.
 	chainLink(c, V(0.3, 0.06, 0.3), V(w - 0.3, 0.06, 0.3), 8, { { w * 0.5 - 3, w * 0.5 + 3 } })
 	return c
+end
+
+-- Street pieces (Brief 9). Facade-local like the buildings above: +X along the facade, +Z out to the street.
+-- A brownstone stoop: the ground floor sits 2.4 up, reached by three chunky steps between sloped cheek walls, the
+-- door on the landing. 10 parts. x: the door's centre along the facade.
+function Street.stoop(c, x, door)
+	local H, stone, cheek = 2.4, P.stone, P.stone:Lerp(P.black, 0.18)
+	c:box('StoopLanding', V(x - 2.4, 0, 0), V(x + 2.4, H, 2.2), stone, M.Concrete)
+	for k = 1, 3 do c:box('StoopStep', V(x - 1.85, 0, 1.2 + k), V(x + 1.85, H - k * 0.6, 2.2 + k), stone, M.Concrete) end
+	for _, sx in { -1, 1 } do
+		local cx = x + sx * 2.15
+		c:box('StoopCheek', V(cx - 0.3, 0, 0), V(cx + 0.3, H + 0.9, 2.2), cheek, M.Concrete)
+		-- (a wedge is tallest at its +Z end; turned round, the cheek falls from the landing to the pavement)
+		c:wedge('StoopCheek', V(0.6, H + 0.9, 3), CFrame.new(cx, (H + 0.9) / 2, 3.7) * CFrame.Angles(0, math.pi, 0), cheek, M.Concrete)
+	end
+	decor(c:box('DoorFrame', V(x - 1.9, H, 0), V(x + 1.9, H + 7.6, 0.22), P.frame, M.SmoothPlastic))
+	c:box('Door', V(x - 1.4, H, 0), V(x + 1.4, H + 7.0, 0.45), door or P.door, M.SmoothPlastic)
+end
+-- A walk-up on The Block: brick, a raised ground floor with its stoop in bay `doorBay`, framed windows.
+-- o: floors, wall, bays, doorBay, door, depth, noUnit
+function Street.walkup(ctx, w, o)
+	return brickBuilding(ctx, w, { name = 'WalkUp', floors = o.floors, wall = o.wall, bays = o.bays, depth = o.depth, noUnit = o.noUnit, ground = function(c, _, list)
+		local doorX = list[o.doorBay or 1]
+		for _, x in list do if math.abs(x - doorX) > 3 then window(c, x, 4.2, {}) end end
+		Street.stoop(c, doorX, o.door)
+	end })
+end
+-- The corner store at the end of The Block, its landmark: low (two storeys) and light among the brick walk-ups, a
+-- dark green shop band with glass that turns the corner, the door at the corner end, one green awning wrapped round
+-- both faces. No sign board: the shape says shop. The corner is at local x = w.
+function Street.cornerStore(ctx, w, o)
+	o = o or {}
+	local c, model = ctx:group('CornerStore')
+	local depth, roof = o.depth or DEPTH, roofOf(2)
+	local band, awn = C(48, 92, 70), C(60, 132, 90)
+	c:box('Wall', V(0, -1, -depth), V(w, roof, 0), o.wall or C(232, 222, 202), M.Brick)
+	c:box('ShopBand', V(0.3, -1, -12), V(w + 0.35, 9.4, 0.35), band, M.SmoothPlastic) -- (one block: front and 12 of the side)
+	decor(c:box('ShopGlass', V(1.4, 1.2, 0.3), V(w - 5.4, 7.6, 0.5), P.glass, M.SmoothPlastic)).Reflectance = 0.15
+	decor(c:box('ShopMullion', V((w - 4) / 2 - 0.2, 1.2, 0.3), V((w - 4) / 2 + 0.2, 7.6, 0.6), band:Lerp(P.black, 0.3), M.SmoothPlastic))
+	c:box('ShopDoor', V(w - 4.4, 0, 0.3), V(w - 1.2, 7.8, 0.55), P.glass, M.SmoothPlastic)
+	decor(c:box('SideGlass', V(w + 0.3, 1.2, -10.5), V(w + 0.5, 7.6, -1.6), P.glass, M.SmoothPlastic)).Reflectance = 0.15
+	-- The awning: a sloped canopy on each face (wedges turned so they're tallest at the wall), a darker valance.
+	local L = w + 3.6
+	c:wedge('Awning', V(L - 0.4, 1.6, 3.6), CFrame.new(L / 2 + 0.2, 10.2, 2.15) * CFrame.Angles(0, math.pi, 0), awn, M.Fabric)
+	decor(c:box('AwningValance', V(0.4, 8.7, 3.6), V(L, 9.4, 3.95), Craft.dark(awn), M.Fabric))
+	c:wedge('Awning', V(12, 1.6, 3.6), CFrame.new(w + 2.15, 10.2, -6) * CFrame.Angles(0, -math.pi / 2, 0), awn, M.Fabric)
+	decor(c:box('AwningValance', V(w + 3.6, 8.7, -12), V(w + 3.95, 9.4, 3.95), Craft.dark(awn), M.Fabric))
+	for _, x in bays(w, 2) do window(c, x, storeyY(2) + 3, {}) end
+	window(c:at(CFrame.new(w, 0, 0) * CFrame.Angles(0, math.pi / 2, 0)), 6.5, storeyY(2) + 3, {})
+	roofCap(c, w, roof, C(110, 104, 96), depth, true)
+	model:SetAttribute('Floors', 2)
+	return c, model
+end
+-- The back of the shops behind Shop Street's delivery bay: a plain service wall with a roll-up loading door over a
+-- concrete dock, a rubber bumper each side of it.
+function Street.loadingDock(ctx, w, o)
+	local c = ctx:group('LoadingDock')
+	local h, depth, wall = o.height or 15, o.depth or 14, o.wall or C(176, 172, 166)
+	c:box('Wall', V(0, -1, -depth), V(w, h, 0), wall, M.Concrete)
+	c:box('Parapet', V(-0.2, h, -depth), V(w + 0.2, h + 0.8, 0.4), wall:Lerp(P.black, 0.2), M.Concrete)
+	local dx = w / 2
+	c:box('Dock', V(dx - 5, 0, 0), V(dx + 5, 1.2, 2.4), C(150, 152, 158), M.Concrete)
+	c:box('DoorFrame', V(dx - 4.4, 1.2, 0), V(dx + 4.4, 10.4, 0.3), P.warehouseDark, M.Metal)
+	c:box('RollDoor', V(dx - 3.8, 1.2, 0), V(dx + 3.8, 9.8, 0.45), P.rollDoor, M.Metal)
+	for y = 2.4, 9, 1.6 do decor(c:box('DoorSlat', V(dx - 3.8, y, 0.45), V(dx + 3.8, y + 0.16, 0.55), P.rollDoor:Lerp(P.black, 0.35), M.Metal)) end
+	for _, sx in { -1, 1 } do c:box('DockBumper', V(dx + sx * 4.6 - 0.4, 0.3, 2.4), V(dx + sx * 4.6 + 0.4, 1.5, 2.8), P.black, M.SmoothPlastic) end
+	return c
+end
+-- A rooftop water tank on legs: The Block's mark on the skyline. Stands on (x, y, z) in the context's frame.
+function Street.waterTower(c, x, y, z)
+	local wood, steel = C(156, 112, 78), C(70, 70, 76)
+	local t = c:group('WaterTower')
+	for _, dx in { -1.9, 1.9 } do
+		for _, dz in { -1.9, 1.9 } do t:box('TowerLeg', V(x + dx - 0.3, y, z + dz - 0.3), V(x + dx + 0.3, y + 4.4, z + dz + 0.3), steel, M.Metal) end
+	end
+	t:box('TowerDeck', V(x - 3, y + 4.4, z - 3), V(x + 3, y + 4.9, z + 3), steel, M.Metal)
+	t:post('Tank', 2.9, 6.4, V(x, y + 4.9, z), wood, M.WoodPlanks)
+	for _, hh in { 1.2, 4.7 } do t:post('TankHoop', 3.0, 0.4, V(x, y + 4.9 + hh, z), steel, M.Metal) end
+	t:post('TankRoof', 3.2, 0.6, V(x, y + 11.3, z), steel, M.SmoothPlastic)
+	t:post('TankRoof', 2.2, 0.7, V(x, y + 11.9, z), steel, M.SmoothPlastic)
+	t:post('TankRoof', 1.1, 0.7, V(x, y + 12.6, z), steel, M.SmoothPlastic)
+	return t
 end
 ---------------------------------------------------------------------------------------------- lobby hall
 -- World 1's spawn: the BLOCK RANGE hall, a bright grey warehouse hall (studded walls between slate pillars with
@@ -3013,16 +3109,22 @@ end
 local function buildGround(ctx)
 	assert(Lobby, 'TheBlockV2: e2_lobby.lua (the warehouse lobby) is missing from the assembly')
 	local g = ctx:group('Ground')
-	-- Paving: the stages, and the forecourt in front of the warehouse door.
-	local function pave(x0, x1, z0, z1)
+	-- Paving: the stages, and the forecourt in front of the warehouse door. (zo: where the checker starts counting, so
+	-- the stage-by-stage paving lines up as one pattern.) Stages with their own street plan (Street.custom, Brief 9)
+	-- lay their own ground.
+	local function pave(x0, x1, z0, z1, zo)
+		zo = zo or z0
 		for x = x0, x1 - 1, 8 do
 			for z = z0, z1 - 1, 16 do
-				g:box('Paving', V(x, -1, z), V(math.min(x + 8, x1), 0, math.min(z + 16, z1)), ((x - x0) // 8 + (z - z0) // 16) % 2 == 0 and P.tileA or P.tileB, M.SmoothPlastic)
+				g:box('Paving', V(x, -1, z), V(math.min(x + 8, x1), 0, math.min(z + 16, z1)), ((x - x0) // 8 + (z - zo) // 16) % 2 == 0 and P.tileA or P.tileB, M.SmoothPlastic)
 			end
 		end
 	end
 	pave(-FRONT, FRONT, 0, Lobby.N - 1)
-	pave(-FRONT, FRONT, BOSS_END, 0)
+	pave(-FRONT, FRONT, BOSS_END, BOSS_TOP)
+	for i = 1, STAGES do
+		if not Street.custom[i] then pave(-FRONT, FRONT, stageTop(i) - SLEN, stageTop(i), BOSS_END) end
+	end
 	-- A darker cross-street band where every stage starts; its gate stands in the middle of it. No painted lines:
 	-- a low stone kerb on each edge frames it instead.
 	for i = 1, STAGES + 1 do
@@ -3105,136 +3207,108 @@ local function buildSpawn(ctx, skins)
 	return Lobby.build(ctx, skins)
 end
 ---------------------------------------------------------------------------------------------- stage gates
--- A gate at the start of every stage (and the boss yard), built like a simulator zone gate (research recipe d):
--- two towers on dark plinths (cream lip, bands and inset panels, a capital and a state lamp on top) carrying a
--- sign-bridge with the stage's name, a round number medallion breaking the skyline, and a see-through field in
--- the look's colour on a low threshold. On the field, a framed requirement board (dark frame, cream liner; parts
--- named GateBoard*) holds the number, how much more you need and a progress bar, with a padlock hung on its top
--- bar. One hue per gate in three tones (main, a darker base, cream trim). HoodClient/Stages makes the field solid
--- while you're short (red lamps, padlock on, "NEED 18 MORE"), turns it green when you can pass (the padlock and red
--- lamp shells hide, the green lamps show) and clears it, with the board frame, once you have; StageService records
--- the clear and pays the reward.
+-- One plain checkpoint at the start of every stage and the boss yard, the same for all 16 (Brief 9: the street
+-- itself carries each stage's identity, so the gate has no district colour, no tower, no name board, no number).
+-- It stays low, under 7 studs. A steel railing on a concrete footing runs from kerb to kerb. In the middle, between
+-- two short concrete posts, a sliding yard gate (a braced steel frame on a floor track) shuts the opening. While
+-- you're short, a chain and padlock hold it shut. A small dark plaque hangs on it with the Power number and your
+-- progress.
+-- HoodClient/Stages slides the gate open behind the west railing once you have the Power (the chain and padlock
+-- drop away, the plaque turns green). The field (Barrier) is what really stops you: it is solid for you while
+-- you're short, and invisible until you walk up to a gate you can't pass yet. StageService records the clear and
+-- pays the reward.
+-- Beside every gate after the first, on the east pavement, stands a bus stop: two stops (d_kit's teleportPad: back
+-- to spawn, on to your furthest stage) with a bench between them.
 local LOOK_NAMES = { 'THE BLOCK', 'SHOP STREET', 'THE COURTS', 'THE APARTMENTS', 'THE YARDS', 'BOSS YARD' }
 local BOSS_RED = C(214, 44, 44)
 local function lookColor(i) return i > STAGES and BOSS_RED or P.district[lookOf(i)] end
 local function stageGate(ctx, i)
 	local z = gateZ(i)
-	local color = lookColor(i)
 	local req = STAGE_POWER[i]
-	local hue, sat, val = color:ToHSV()
-	local main = Color3.fromHSV(hue, math.min(sat, 0.56), math.min(val, 0.8))
-	local dark, trim, ink = main:Lerp(P.black, 0.38), C(238, 236, 232), main:Lerp(P.black, 0.6)
-	local bridge = Color3.fromHSV(hue, math.min(sat, 0.575), math.min(val, 0.82)) -- (a touch richer; renders just under S 0.6)
 	local g, model = ctx:at(CFrame.new(0, 0, z)):group('StageGate' .. i)
-	local TX, TW, TOP = 34.6, 1.7, 26 -- tower centre, shaft half width, shaft top
+	pcall(function() model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic end) -- (the client moves the gate whole)
+	local concrete, post, cap = C(150, 152, 158), C(198, 200, 206), C(238, 236, 232)
+	local steel, ink = C(72, 76, 86), C(30, 34, 44)
+	local OW, PX = 7, 7.9 -- the opening's half width; the posts' centres
+	local SLIDE = -16.2 -- how far the gate slides open (west, behind the railing)
+	-- The two posts: a concrete plinth, the shaft, a cream cap.
 	for _, s in { -1, 1 } do
-		local x = s * TX
-		local function B(name, w, y0, y1, d, c, mat) return g:box(name, V(x - w, y0, -d), V(x + w, y1, d), c, mat or M.SmoothPlastic) end
-		B('GatePlinth', 2.3, 0, 2.4, 2.7, dark)
-		B('GatePlinthLip', 2.05, 2.4, 2.9, 2.4, trim)
-		B('GatePost', TW, 2.9, TOP, TW, main)
-		for _, y in { 8.6, 15.2 } do B('GateBand', TW + 0.25, y, y + 0.8, TW + 0.25, trim) end
-		-- inset panels between the bands on the approach face, and a cream liner where the field meets the tower
-		g:box('GateInset', V(x - 0.65, 9.9, TW), V(x + 0.65, 14.6, TW + 0.18), dark, M.SmoothPlastic)
-		g:box('GateInset', V(x - 0.65, 16.5, TW), V(x + 0.65, 18.8, TW + 0.18), dark, M.SmoothPlastic)
-		local fx0 = s * (TX - TW)
-		decor(g:box('GateLiner', V(fx0 - s * 0.6, 2.9, -0.45), V(fx0, 19.0, 0.45), trim, M.SmoothPlastic))
-		B('GateCapital', TW + 0.6, TOP, TOP + 1.2, TW + 0.6, trim)
-		B('GateLampSeat', TW - 0.2, TOP + 1.2, TOP + 1.9, TW - 0.2, dark)
-		-- The state lamp, a globe on the tower: a red shell (named Lock, so the client hides it once you can pass)
-		-- round a green core.
-		local lamp = CFrame.new(x, TOP + 3.3, 0)
-		decor(g:part('GateLamp', V(2.5, 2.5, 2.5), lamp, C(84, 214, 124), M.Neon, Enum.PartType.Ball)).CastShadow = false
-		decor(g:part('Lock', V(2.9, 2.9, 2.9), lamp, C(230, 74, 62), M.Neon, Enum.PartType.Ball)).CastShadow = false
+		local x = s * PX
+		g:box('GatePostBase', V(x - 1.15, 0, -1.15), V(x + 1.15, 0.8, 1.15), concrete)
+		g:box('GatePost', V(x - 0.9, 0.8, -0.9), V(x + 0.9, 6.2, 0.9), post)
+		g:box('GatePostCap', V(x - 1.1, 6.2, -1.1), V(x + 1.1, 6.7, 1.1), cap)
 	end
-	-- The sign-bridge between the towers: a dark underside trim, the coloured board, a cream cap; dark corbels in
-	-- the top corners of the opening so it reads as a gate, not a rectangle.
-	local inner = TX - TW
-	g:box('GateHeaderTrim', V(-inner, 19.0, -1.0), V(inner, 19.6, 1.0), dark, M.SmoothPlastic)
-	g:box('GateHeader', V(-inner, 19.6, -1.3), V(inner, 23.6, 1.3), bridge, M.SmoothPlastic)
-	g:box('GateHeaderCap', V(-inner - 0.2, 23.6, -1.6), V(inner + 0.2, 24.2, 1.6), trim, M.SmoothPlastic)
-	for _, s in { -1, 1 } do
-		g:wedge('GateCorbel', V(2, 2.6, 2.6), CFrame.new(s * (inner - 1.3), 19.0 - 1.3, 0) * CFrame.Angles(0, s * math.pi / 2, 0) * CFrame.Angles(0, 0, math.pi), dark, M.SmoothPlastic)
+	-- The railing from the posts to the kerbs: a footing, two rails, three steel posts per side at uneven spacing
+	-- (on the west side none stands where the open gate's plaque parks, x -19.9..-12.5).
+	for _, side in { { -1, { 21.0, 27.6, 34.1 } }, { 1, { 15.0, 23.6, 34.1 } } } do
+		local s = side[1]
+		local a0, a1 = math.min(s * (PX + 0.9), s * 34.4), math.max(s * (PX + 0.9), s * 34.4)
+		g:box('GateFooting', V(a0, 0, -0.6), V(a1, 0.5, 0.6), concrete)
+		g:box('GateRail', V(a0, 1.8, -0.15), V(a1, 2.1, 0.15), steel)
+		g:box('GateRail', V(a0, 3.3, -0.2), V(a1, 3.7, 0.2), steel)
+		for _, px in side[2] do g:box('GateRailPost', V(s * px - 0.25, 0.5, -0.25), V(s * px + 0.25, 3.7, 0.25), steel) end
 	end
-	-- The name on a framed cream plate in the middle of the bridge (a dark back, the plate a little proud of it).
-	local pw = i > STAGES and 11 or 18
-	g:box('GatePlateBack', V(-pw - 0.5, 19.75, -1.45), V(pw + 0.5, 23.45, 1.45), dark, M.SmoothPlastic)
-	local plate = g:box('GatePlate', V(-pw, 20.05, -1.6), V(pw, 23.15, 1.6), trim, M.SmoothPlastic)
-	for _, face in { Enum.NormalId.Back, Enum.NormalId.Front } do
-		local hg = surface(plate, face, 16)
-		pcall(function() hg.MaxDistance = i == 1 and 400 or 100 end)
-		line(hg, 'Name', i > STAGES and 'BOSS YARD' or ('STAGE ' .. i .. '  •  ' .. LOOK_NAMES[lookOf(i)]), ink, FONT.loud, 0.06, 0.88, trim, 1)
-	end
-	-- The number medallion on top of the bridge: a dark ring round a cream disc. (Not on stage 1: the warehouse's
-	-- BLOCK RANGE sign hangs right behind that one.)
-	local up = CFrame.Angles(0, math.pi / 2, 0) -- (cylinders lie along X; this turns them to face the street)
-	if i > 1 then
-		g:part('GateMedal', V(1.7, 7.4, 7.4), CFrame.new(0, 27.3, 0) * up, dark, M.SmoothPlastic, Enum.PartType.Cylinder)
-		g:part('GateMedalFace', V(2.1, 6.2, 6.2), CFrame.new(0, 27.3, 0) * up, trim, M.SmoothPlastic, Enum.PartType.Cylinder)
-		local num = ghost(g:box('GateMedalText', V(-2.6, 24.7, -1.1), V(2.6, 29.9, 1.1), P.white))
-		for _, face in { Enum.NormalId.Back, Enum.NormalId.Front } do
-			local ng = surface(num, face, 20)
-			pcall(function() ng.MaxDistance = 120 end)
-			line(ng, 'Number', i > STAGES and '👑' or tostring(i), main, FONT.loud, 0.12, 0.76, P.white, 3)
-		end
-	end
-	-- The field. Stage 1's fills the warehouse door, so it is fainter; the client keeps each gate's own base.
-	local barrier = g:box('Barrier', V(-34.4, 0, -0.3), V(34.4, 19.2, 0.3), main, M.SmoothPlastic)
-	barrier.Transparency = i == 1 and 0.8 or 0.62
-	barrier:SetAttribute('BaseTransparency', barrier.Transparency)
-	barrier.CastShadow = false
-	for _, face in { Enum.NormalId.Back, Enum.NormalId.Front } do
-		local bg = surface(barrier, face, 12)
-		-- Only stage 1's wall text reads from the lobby; later gates show theirs as you walk up, so they don't stack
-		-- behind stage 1's through the warehouse door.
-		pcall(function() bg.MaxDistance = i == 1 and 260 or 90 end)
-		line(bg, 'Power', '💪 ' .. compact(req), P.white, FONT.loud, 0.24, 0.28, ink, 6)
-		line(bg, 'Sub', 'POWER TO ENTER', P.white, FONT.title, 0.53, 0.09, ink, 3)
-		line(bg, 'Status', '', P.white, FONT.loud, 0.635, 0.11, ink, 3) -- (the client writes how much more you need)
-		-- Your progress toward the number (the client sizes Fill and writes Count).
-		local fill = Instance.new('Frame')
-		fill.Name = 'Fill'
-		fill.BorderSizePixel, fill.BackgroundColor3, fill.ZIndex = 0, C(118, 216, 146), 2
-		fill.Position, fill.Size = UDim2.fromScale(0.19, 0.8), UDim2.fromScale(0, 0.09)
-		fill.Parent = bg
-		local track = Instance.new('Frame')
-		track.Name = 'Track'
-		track.BorderSizePixel, track.BackgroundColor3, track.BackgroundTransparency, track.ZIndex = 0, P.white, 0.55, 1
-		track.Position, track.Size = UDim2.fromScale(0.19, 0.8), UDim2.fromScale(0.62, 0.09)
-		track.Parent = bg
-		local count = line(bg, 'Count', '0 / ' .. compact(req), ink, FONT.loud, 0.802, 0.086, P.white, 2)
-		count.ZIndex = 3
-	end
-	-- The requirement board round the text: a dark frame (two posts on the threshold and a top bar) with a cream
-	-- liner inside, both faces. Named GateBoard*: the client hides it with the field once you've cleared the gate.
-	for _, sx in { -1, 1 } do
-		decor(g:box('GateBoardFrame', V(sx * 22.8, 0.3, -0.8), V(sx * 23.6, 18.4, 0.8), dark, M.SmoothPlastic))
-		decor(g:box('GateBoardLiner', V(sx * 22.2, 0.3, -0.6), V(sx * 22.8, 17.6, 0.6), trim, M.SmoothPlastic))
-	end
-	decor(g:box('GateBoardFrame', V(-23.6, 17.6, -0.8), V(23.6, 18.4, 0.8), dark, M.SmoothPlastic))
-	decor(g:box('GateBoardLiner', V(-22.8, 17.0, -0.6), V(22.8, 17.6, 0.6), trim, M.SmoothPlastic))
-	-- The threshold the gate stands on: a low dark sill with ramps on both sides.
-	g:box('GateThreshold', V(-(TX - 2.3), 0, -1.5), V(TX - 2.3, 0.3, 1.5), dark, M.SmoothPlastic)
-	for _, e in { { 1.9, math.pi }, { -1.9, 0 } } do -- (a wedge is tallest at its +Z end)
-		g:wedge('GateThresholdRamp', V(2 * (TX - 2.3), 0.3, 0.8), CFrame.new(0, 0.15, e[1]) * CFrame.Angles(0, e[2], 0), dark, M.SmoothPlastic)
-	end
-	-- The padlock hung on the board's top bar (every part named Lock: shown only while you're short; NextOnly: the
-	-- client shows it on your next gate only, so the gates beyond don't stack padlocks through each other).
-	local gold = C(226, 182, 76)
+	-- The sliding gate, shut: a steel frame with a diagonal brace and two pickets, on the stage side of the posts.
+	-- Everything in GateSlide moves with it (the client slides the model by the gate's SlideOffset).
+	local sg = g:group('GateSlide')
+	local ZB, ZF = -1.55, -1.05 -- its back face and its approach face
+	local x0, x1 = -OW - 0.6, OW + 0.4
+	sg:box('GateSlideFrame', V(x0, 0.35, ZB), V(x1, 0.85, ZF), steel)
+	sg:box('GateSlideFrame', V(x0, 4.6, ZB), V(x1, 5.1, ZF), steel)
+	for _, x in { x0, x1 - 0.6 } do sg:box('GateSlideFrame', V(x, 0.85, ZB), V(x + 0.6, 4.6, ZF), steel) end
+	sg:bar('GateSlideBrace', V(x0 + 0.6, 0.85, ZB + 0.25), V(x1 - 0.6, 4.6, ZB + 0.25), 0.4, steel, M.SmoothPlastic)
+	for _, x in { -5.1, 5.1 } do sg:box('GateSlidePicket', V(x - 0.2, 0.85, ZB + 0.08), V(x + 0.2, 4.6, ZF - 0.08), steel) end
+	-- The plaque hung on the gate: a cream frame round a dark face; the Power number and, under it, your progress
+	-- (the client sizes Fill and writes Count and Status).
+	sg:box('GatePlaqueFrame', V(-3.65, 1.05, ZF), V(3.65, 4.65, ZF + 0.2), cap)
+	local plaque = sg:box('GatePlaque', V(-3.4, 1.25, ZF + 0.2), V(3.4, 4.45, ZF + 0.3), C(48, 52, 62))
+	local pg = surface(plaque, Enum.NormalId.Back, 40)
+	pcall(function() pg.MaxDistance = i == 1 and 220 or 100 end) -- (gate 1 reads through the warehouse door)
+	line(pg, 'Power', '💪 ' .. compact(req), P.white, FONT.loud, 0.07, 0.5, ink, 3)
+	line(pg, 'Status', '', P.white, FONT.loud, 0.63, 0.26, ink, 2)
+	local track = Instance.new('Frame')
+	track.Name = 'Track'
+	track.BorderSizePixel, track.BackgroundColor3, track.BackgroundTransparency, track.ZIndex = 0, P.white, 0.6, 1
+	track.Position, track.Size = UDim2.fromScale(0.12, 0.64), UDim2.fromScale(0.76, 0.24)
+	track.Parent = pg
+	local fill = Instance.new('Frame')
+	fill.Name = 'Fill'
+	fill.BorderSizePixel, fill.BackgroundColor3, fill.ZIndex = 0, C(118, 216, 146), 2
+	fill.Position, fill.Size = UDim2.fromScale(0.12, 0.64), UDim2.fromScale(0, 0.24)
+	fill.Parent = pg
+	local count = line(pg, 'Count', '0 / ' .. compact(req), P.white, FONT.loud, 0.655, 0.21, ink, 2)
+	count.ZIndex = 3
+	-- The floor track it runs on.
+	decor(g:box('GateTrack', V(x0 + SLIDE - 0.1, 0, ZB - 0.05), V(x1 + 0.2, 0.12, ZF + 0.05), steel))
+	-- The chain wrapped twice round the east post and the gate's end, and the padlock hooked over it (every part
+	-- named Lock: shown only while you're short).
+	local gold, chain, shackle = C(226, 182, 76), C(64, 68, 78), C(184, 188, 196)
 	local lock = {
-		decor(g:box('Lock', V(-1.5, 14.8, -0.7), V(1.5, 17.0, 0.7), gold, M.SmoothPlastic)),
-		decor(g:box('Lock', V(-0.25, 15.4, -0.76), V(0.25, 16.3, 0.76), gold:Lerp(P.black, 0.55), M.SmoothPlastic)),
-		decor(g:box('Lock', V(-1.3, 18.4, -0.95), V(1.3, 18.9, 0.95), C(176, 180, 190), M.SmoothPlastic)),
+		g:box('Lock', V(PX - 1.0, 0.9, 1.0), V(PX + 1.0, 2.6, 1.65), gold),
+		g:box('Lock', V(PX - 0.17, 1.35, 1.65), V(PX + 0.17, 2.0, 1.72), gold:Lerp(P.black, 0.55)),
+		g:box('Lock', V(PX - 0.75, 3.25, 1.15), V(PX + 0.75, 3.5, 1.45), shackle),
 	}
-	for _, sx in { -1, 1 } do table.insert(lock, decor(g:box('Lock', V(sx * 1.0 - 0.3, 17.0, -0.95), V(sx * 1.0 + 0.3, 18.9, 0.95), C(176, 180, 190), M.SmoothPlastic))) end
-	for _, p in lock do p:SetAttribute('NextOnly', true) end
-	-- Pads on the approach side: back to spawn, and on to your furthest stage.
+	for _, y in { 2.75, 3.6 } do table.insert(lock, g:box('Lock', V(OW - 0.55, y, ZB - 0.17), V(PX + 1.02, y + 0.4, 1.02), chain)) end
+	for _, sx in { -1, 1 } do table.insert(lock, g:box('Lock', V(PX + sx * 0.6 - 0.15, 2.6, 1.15), V(PX + sx * 0.6 + 0.15, 3.25, 1.45), shackle)) end
+	for _, p in lock do decor(p) end
+	-- The field: invisible until you walk up while you're short (BaseTransparency is how it shows then).
+	local barrier = g:box('Barrier', V(-34.4, 0, -0.25), V(34.4, 14, 0.25), C(176, 214, 246), M.SmoothPlastic)
+	barrier.Transparency = 1
+	barrier:SetAttribute('BaseTransparency', 0.7)
+	barrier.CastShadow = false
+	-- The bus stop on the east pavement, just past the cross street's kerb (z 4.5): back to spawn, on to your
+	-- furthest stage, a bench between them with its back to the gate.
 	if i > 1 then
-		teleportPad(g, 'LobbyPad', -26, 7, P.padRed:Lerp(C(255, 40, 255), 0.6), 'Lobby', 'SPAWN')
-		teleportPad(g, 'FurthestPad', 26, 7, C(255, 222, 40), 'Furthest', 'FURTHEST STAGE')
+		local back = CFrame.Angles(0, math.pi, 0) -- (a stop's front is its -Z; here players come from +Z)
+		teleportPad(g:at(CFrame.new(12.4, 0, 7.8) * back), 'LobbyPad', 0, 0, P.padRed, 'Lobby', 'SPAWN')
+		teleportPad(g:at(CFrame.new(21.4, 0, 7.8) * back), 'FurthestPad', 0, 0, C(255, 222, 40), 'Furthest', 'FURTHEST STAGE')
+		local wood = C(186, 134, 90)
+		g:box('StopBench', V(15.0, 1.35, 4.9), V(18.8, 1.7, 6.3), wood)
+		g:box('StopBench', V(15.0, 1.7, 4.85), V(18.8, 3.0, 5.15), wood)
+		for _, x in { 15.3, 18.2 } do g:box('StopBenchLeg', V(x, 0, 5.0), V(x + 0.3, 1.35, 6.2), steel) end
 	end
-	-- Confetti the client fires when you break through.
-	local shell = ghost(g:box('PassShell', V(-15, 17.5, -1), V(15, 18.5, 1), P.white))
+	-- Confetti the client fires when you walk through.
+	local shell = ghost(g:box('PassShell', V(-OW, 5.4, -0.6), V(OW, 6.2, 0.6), P.white))
 	local fx = Instance.new('ParticleEmitter')
 	fx.Name = 'PassFX'
 	fx.Texture = 'rbxasset://textures/particles/SquareParticle.png'
@@ -3247,7 +3321,7 @@ local function stageGate(ctx, i)
 	fx.Drag = 1.2
 	fx.Size = NumberSequence.new(0.5)
 	fx.RotSpeed, fx.Rotation = NumberRange.new(-260, 260), NumberRange.new(0, 360)
-	fx.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, color), ColorSequenceKeypoint.new(0.5, C(255, 222, 40)), ColorSequenceKeypoint.new(1, P.white) })
+	fx.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, lookColor(i)), ColorSequenceKeypoint.new(0.5, C(255, 222, 40)), ColorSequenceKeypoint.new(1, P.white) })
 	fx.EmissionDirection = Enum.NormalId.Bottom
 	fx.LightInfluence = 1
 	fx.Parent = shell
@@ -3258,8 +3332,9 @@ local function stageGate(ctx, i)
 	model:SetAttribute('LineZ', z)
 	model:SetAttribute('PadZ', z + 7)
 	model:SetAttribute('HalfWidth', FRONT)
-	model:SetAttribute('Color', color)
-	model:SetAttribute('Light', main)
+	model:SetAttribute('Color', lookColor(i)) -- (the HUD's STAGE CLEARED banner and the confetti, not the gate)
+	model:SetAttribute('Light', barrier.Color) -- the field's colour
+	model:SetAttribute('SlideOffset', V(SLIDE, 0, 0)) -- (map frame)
 	model:AddTag('HoodStageGate')
 	return model
 end
@@ -3320,6 +3395,7 @@ end
 
 -- 1-3 The Block: red brick walk-ups, dumpsters, bags and crates.
 local function brickStage(ctx, i)
+	if Street.custom[i] then return Street.block(ctx, i) end
 	local d, top = stageCore(ctx, i)
 	local t = trioOf(i)
 	local rows = {
@@ -3356,6 +3432,7 @@ local SHOPS = {
 	{ sign = 'PHONES', signColor = C(62, 112, 196), textColor = P.white, stripes = { C(66, 120, 206), P.white }, wall = P.brick },
 }
 local function shopStage(ctx, i)
+	if Street.custom[i] then return Street.shops(ctx, i) end
 	local d, top = stageCore(ctx, i)
 	local t = trioOf(i)
 	if t == 1 then
@@ -3395,6 +3472,7 @@ local COURTS = {
 	{ C(108, 166, 116), C(126, 182, 132), 'goals' },
 }
 local function courtStage(ctx, i)
+	if Street.custom[i] then return Street.courts(ctx, i) end
 	local d, top = stageCore(ctx, i)
 	local t = trioOf(i)
 	local floor, key, kind = COURTS[t][1], COURTS[t][2], COURTS[t][3]
@@ -3427,23 +3505,7 @@ local function courtStage(ctx, i)
 	arc(FRONT - 4, 14, math.pi / 2, math.pi * 1.5, 12)
 	for _, s in { -1, 1 } do
 		if kind == 'hoops' then
-			-- Chunky low-poly hoop: a padded pole on a foot, an arm, a framed backboard, a square rim over a
-			-- see-through net block.
-			local h = d:at(CFrame.lookAt(V(s * (FRONT - 3), 0, zc), V(0, 0, zc))):group('Hoop')
-			local steel = C(70, 76, 88)
-			h:box('HoopFoot', V(-0.9, 0, -0.3), V(0.9, 0.5, 1.5), steel, M.SmoothPlastic)
-			h:post('HoopPole', 0.45, 11, V(0, 0.5, 0.6), steel, M.SmoothPlastic)
-			h:box('HoopPad', V(-0.6, 0.5, 0.0), V(0.6, 5.0, 1.2), key, M.SmoothPlastic)
-			h:box('HoopArm', V(-0.3, 10.3, -1.2), V(0.3, 10.9, 0.6), steel, M.SmoothPlastic)
-			h:box('BackboardFrame', V(-2.8, 9.2, -1.5), V(2.8, 12.8, -1.25), steel, M.SmoothPlastic)
-			h:box('Backboard', V(-2.5, 9.5, -1.65), V(2.5, 12.5, -1.3), P.white, M.SmoothPlastic)
-			decor(h:box('BoardSquare', V(-1, 10.0, -1.75), V(1, 11.2, -1.6), key, M.SmoothPlastic))
-			local rim = C(222, 116, 66)
-			for _, e in { { V(-0.95, 9.85, -3.55), V(0.95, 10.15, -3.3) }, { V(-0.95, 9.85, -1.9), V(0.95, 10.15, -1.65) }, { V(-0.95, 9.85, -3.55), V(-0.7, 10.15, -1.65) }, { V(0.7, 9.85, -3.55), V(0.95, 10.15, -1.65) } } do
-				decor(h:box('Rim', e[1], e[2], rim, M.SmoothPlastic))
-			end
-			local net = decor(h:box('Net', V(-0.75, 8.9, -3.35), V(0.75, 9.85, -1.85), P.white, M.SmoothPlastic))
-			net.Transparency, net.CastShadow = 0.35, false
+			Street.hoop(d, CFrame.lookAt(V(s * (FRONT - 3), 0, zc), V(0, 0, zc)), key)
 		else
 			-- Small goal: white frame and a dark net box behind it.
 			local gl = d:at(CFrame.lookAt(V(s * (FRONT - 6), 0, zc), V(0, 0, zc))):group('Goal')
@@ -3454,8 +3516,7 @@ local function courtStage(ctx, i)
 			gl:part('Ball', V(1.4, 1.4, 1.4), CFrame.new(1.5, 0.82, -6), P.white, M.SmoothPlastic, Enum.PartType.Ball)
 		end
 	end
-	-- Low court-side fences across the walk (waist-high, so the next gate's power board reads over them).
-	for _, z in { z1 + 1.5, z0 - 1.5 } do chainLink(d, V(-FRONT + 1, 0, z), V(FRONT - 1, 0, z), 4.5, { { FRONT - 1 - 8, FRONT - 1 + 8 } }) end
+	-- (No fences across the walk any more: the gates' railings end each street; Brief 9.)
 	local rows = {
 		{ L = { 'tan3', 'brick3', 'tan2' }, R = { 'brickD2', 'tan3', 'brick3' } },
 		{ L = { 'brick3', 'tan3', 'brickD2' }, R = { 'tan2', 'brick3', 'tan3' } },
@@ -3520,7 +3581,310 @@ local function yardStage(ctx, i)
 		sideRow(d, side[1], top, lots)
 	end
 	standardDressing(d, top, i, { { 'crates', -34, 4 } }, { { 'bags', -36, 3 } })
-	if t == 3 then chainLink(d, V(-FRONT + 1, 0, top - 60), V(FRONT - 1, 0, top - 60), 4.5, { { FRONT - 1 - 9, FRONT - 1 + 9 } }) end
+end
+
+---------------------------------------------------------------------------------------------- three street plans
+-- Brief 9: stages 1 (The Block), 4 (Shop Street) and 7 (The Courts) each get their own street plan, so the place
+-- reads from its shape with every sign hidden (brief/research/readable_places.md). The gameplay stays: the gate on
+-- the stage line (the cross street at each end keeps the gate's full width, and the bus stop by the next gate on the
+-- east side stays clear), the fight pad at (0, padZ), a clear walk from gate to gate, and a sealed edge.
+-- In the builders below, Z(z) is relative to the stage's gate line: 0 at this gate, -64 at the next.
+
+-- Invisible walls round a stage whose plan opens past the old building line, so nobody walks round a gate: down
+-- both long sides at |x| 66, and along both gate lines from |x| 35 outward (the gate's Barrier covers |x| <= 34.4).
+function Street.seal(d, top)
+	for _, s in { -1, 1 } do
+		invisibleWall(d, V(s * 66, -1, top - SLEN), V(s * 67, 60, top))
+		for _, z in { top, top - SLEN } do invisibleWall(d, V(s * 35, -1, z - 0.5), V(s * 67, 60, z + 0.5)) end
+	end
+end
+-- The stage group and its fight pad. No district banner: the street itself says where you are. Grass fills in behind
+-- the set-back buildings (just under any paving laid over it), so no hole shows from a high camera.
+function Street.core(ctx, i)
+	local d = ctx:group('Stage' .. i)
+	local model = fightPad(d, i, V(0, 0, padZ(i)), TRIO_COLORS[trioOf(i)], lookOf(i))
+	model:SetAttribute('Stage', i)
+	local top = stageTop(i)
+	for _, s in { -1, 1 } do d:box('Backfill', V(s * FRONT, -1.2, top - SLEN), V(s * (FRONT + DEPTH), -0.05, top), P.grass, M.Grass) end
+	return d, top
+end
+
+-- Props with a job (each one belongs to something next to it).
+-- A fire hydrant at the kerb.
+function Street.hydrant(c, pos)
+	local red = C(196, 72, 62)
+	c:post('HydrantFoot', 0.6, 0.3, pos, Craft.dark(red), M.SmoothPlastic)
+	c:post('Hydrant', 0.45, 1.7, pos + V(0, 0.3, 0), red, M.SmoothPlastic)
+	c:post('HydrantCap', 0.55, 0.35, pos + V(0, 2.0, 0), Craft.dark(red), M.SmoothPlastic)
+	c:box('HydrantNozzle', pos + V(-0.8, 1.1, -0.25), pos + V(0.8, 1.6, 0.25), red, M.SmoothPlastic)
+end
+-- A bike rack (an inverted U) with a bike locked to it, the bike along the rack's local X.
+function Street.bikeRack(c, cf, color)
+	local k = c:at(cf):group('BikeRack')
+	for _, x in { -1.2, 1.2 } do k:box('RackLeg', V(x - 0.15, 0, -0.15), V(x + 0.15, 2.6, 0.15), P.iron, M.Metal) end
+	k:box('RackTop', V(-1.35, 2.6, -0.15), V(1.35, 2.9, 0.15), P.iron, M.Metal)
+	for _, x in { -1.6, 1.6 } do k:part('BikeWheel', V(0.25, 2.2, 2.2), CFrame.new(x, 1.1, 0.55) * CFrame.Angles(0, math.pi / 2, 0), P.black, M.SmoothPlastic, Enum.PartType.Cylinder) end
+	k:bar('BikeFrame', V(-1.6, 1.1, 0.55), V(-0.3, 2.4, 0.55), 0.26, color, M.SmoothPlastic)
+	k:bar('BikeFrame', V(-0.4, 2.3, 0.55), V(1.2, 2.5, 0.55), 0.26, color, M.SmoothPlastic)
+	k:bar('BikeFrame', V(1.2, 2.6, 0.55), V(1.6, 1.1, 0.55), 0.22, color, M.SmoothPlastic)
+	k:box('BikeSeat', V(-0.8, 2.5, 0.3), V(0.1, 2.75, 0.8), P.black, M.SmoothPlastic)
+end
+-- A street-name blade on a post: the district's one small sign. It reads from the street's approach (+Z).
+function Street.nameSign(c, pos, text)
+	local green = C(46, 112, 72)
+	c:post('SignPole', 0.2, 10.4, pos, P.iron, M.Metal)
+	local blade = c:box('StreetName', pos + V(-2.8, 9.0, -0.12), pos + V(2.8, 10.1, 0.12), green, M.SmoothPlastic)
+	for _, f in { Enum.NormalId.Front, Enum.NormalId.Back } do
+		local g = surface(blade, f, 24)
+		pcall(function() g.MaxDistance = 80 end)
+		line(g, 'Name', text, P.white, FONT.title, 0.12, 0.76)
+	end
+end
+-- A café table: a round top on a post and two stools; with `parasol` (a colour), a parasol through it.
+function Street.cafeTable(c, pos, turn, stool, parasol)
+	local k = c:at(CFrame.new(pos) * CFrame.Angles(0, turn, 0)):group('CafeTable')
+	k:post('TablePost', 0.25, 2.5, V(0, 0, 0), P.iron, M.Metal)
+	k:post('TableTop', 1.35, 0.2, V(0, 2.5, 0), P.cream, M.SmoothPlastic)
+	for _, x in { -2, 2 } do k:post('Stool', 0.55, 1.6, V(x, 0, 0), stool, M.SmoothPlastic) end
+	if parasol then
+		k:post('ParasolPole', 0.15, 4.4, V(0, 2.7, 0), P.iron, M.Metal)
+		k:post('Parasol', 2.9, 0.4, V(0, 7.1, 0), parasol, M.Fabric)
+		k:post('Parasol', 1.6, 0.5, V(0, 7.5, 0), parasol, M.Fabric)
+	end
+end
+-- A market stall: a plank counter, four posts and a sloped striped canopy (tallest at the back), produce trays on
+-- the counter. The customers' side is toward local +Z.
+function Street.stall(c, cf, w, dpt, stripes, fruit)
+	local k = c:at(cf):group('MarketStall')
+	local hw, hd = w / 2, dpt / 2
+	k:box('StallCounter', V(-hw, 0, hd - 1.5), V(hw, 3.0, hd), P.wood, M.WoodPlanks)
+	for _, x in { -hw, hw - 0.3 } do
+		k:box('StallPost', V(x, 0, hd - 0.3), V(x + 0.3, 7.2, hd), P.woodDark, M.Wood)
+		k:box('StallPost', V(x, 0, -hd), V(x + 0.3, 8.4, -hd + 0.3), P.woodDark, M.Wood)
+	end
+	local n, cw = #stripes, (w + 0.6) / #stripes
+	for q = 0, n - 1 do
+		k:wedge('StallCanopy', V(cw, 1.2, dpt + 1.2), CFrame.new(-hw - 0.3 + cw * (q + 0.5), 7.8, 0) * CFrame.Angles(0, math.pi, 0), stripes[q + 1], M.Fabric)
+	end
+	for q, col in fruit do
+		local x = -hw + 0.4 + (q - 0.5) * (w - 0.8) / #fruit
+		decor(k:box('Produce', V(x - 0.7, 3.0, hd - 1.3), V(x + 0.7, 3.5, hd - 0.2), col, M.SmoothPlastic))
+	end
+end
+-- A small box van (front toward local -Z): a cab with a windscreen, a tall cargo box, four wheels with hubs.
+function Street.boxTruck(c, cf, color)
+	local k = c:at(cf):group('BoxTruck')
+	for _, x in { -2.3, 2.3 } do
+		for _, z in { -4.3, 3.7 } do
+			k:part('Wheel', V(0.9, 2.2, 2.2), CFrame.new(x, 1.1, z), P.black, M.SmoothPlastic, Enum.PartType.Cylinder)
+			decor(k:part('Hubcap', V(0.95, 1.1, 1.1), CFrame.new(x, 1.1, z), P.frame, M.SmoothPlastic, Enum.PartType.Cylinder))
+		end
+	end
+	k:box('TruckChassis', V(-2.4, 1.0, -6.4), V(2.4, 1.7, 6.3), P.iron, M.SmoothPlastic)
+	k:box('TruckCab', V(-2.5, 1.7, -6.6), V(2.5, 5.8, -2.7), color, M.SmoothPlastic)
+	decor(k:box('TruckScreen', V(-2.2, 3.9, -6.7), V(2.2, 5.4, -6.3), P.glass, M.SmoothPlastic))
+	k:box('TruckBox', V(-2.7, 1.7, -2.5), V(2.7, 8.6, 6.5), P.cream, M.SmoothPlastic)
+	k:box('TruckBoxBand', V(-2.75, 6.6, -2.4), V(2.75, 7.4, 6.4), color, M.SmoothPlastic)
+	k:box('Bumper', V(-2.5, 0.8, -6.9), V(2.5, 1.5, -6.5), P.frame, M.SmoothPlastic)
+	for _, x in { -1.9, 1.2 } do decor(k:box('Headlight', V(x, 2.4, -6.75), V(x + 0.7, 3.0, -6.6), C(255, 244, 214), M.SmoothPlastic)) end
+end
+-- A hand truck (sack barrow) leaning back on its wheels, two cartons on it; the nose toward local -Z.
+function Street.handTruck(c, cf)
+	local k = c:at(cf):group('HandTruck')
+	for _, x in { -0.8, 0.8 } do k:part('Wheel', V(0.3, 1, 1), CFrame.new(x, 0.5, 0.3), P.black, M.SmoothPlastic, Enum.PartType.Cylinder) end
+	k:box('HandTruckNose', V(-0.9, 0, -1.0), V(0.9, 0.15, 0.2), P.iron, M.Metal)
+	local lean = CFrame.new(0, 0, 0.2) * CFrame.Angles(math.rad(14), 0, 0)
+	k:part('HandTruckFrame', V(1.7, 4.4, 0.25), lean * CFrame.new(0, 2.2, 0), C(200, 64, 56), M.Metal)
+	k:part('Carton', V(1.6, 1.3, 1.2), lean * CFrame.new(0, 0.85, -0.75), P.crate, M.SmoothPlastic)
+	k:part('Carton', V(1.4, 1.1, 1.1), lean * CFrame.new(0.05, 2.05, -0.7) * CFrame.Angles(0, 0.2, 0), P.crate:Lerp(P.white, 0.2), M.SmoothPlastic)
+end
+-- A court floodlight mast: a concrete foot, a tall pole, a lamp head tipped down toward `aim`.
+function Street.floodlight(c, pos, aim)
+	local steel = C(84, 88, 98)
+	c:box('MastFoot', pos + V(-0.9, 0, -0.9), pos + V(0.9, 0.8, 0.9), C(150, 152, 158), M.Concrete)
+	c:post('Mast', 0.35, 17.6, pos + V(0, 0.8, 0), steel, M.Metal)
+	local head = CFrame.lookAt(pos + V(0, 18.6, 0), aim)
+	c:part('MastHead', V(3.8, 1.8, 0.9), head, steel, M.SmoothPlastic)
+	decor(c:part('MastLamp', V(3.3, 1.3, 0.2), head * CFrame.new(0, 0, -0.5), C(250, 246, 232), M.SmoothPlastic))
+end
+-- Bleachers: three concrete tiers `len` long, the low front edge on cf's origin, facing its +Z and rising toward -Z,
+-- a wooden seat on the front of each tier.
+function Street.bleachers(c, cf, len)
+	local b = c:at(cf):group('Bleachers')
+	for k = 0, 2 do
+		local y = 1.1 * (k + 1)
+		b:box('Bleacher', V(-len / 2, 0, -6), V(len / 2, y, -2 * k), C(176, 178, 186), M.Concrete)
+		b:box('BleacherSeat', V(-len / 2 + 0.3, y, -2 * k - 1.3), V(len / 2 - 0.3, y + 0.3, -2 * k), P.wood, M.WoodPlanks)
+	end
+end
+-- A chunky low-poly basketball hoop: a padded pole on a foot, an arm, a framed backboard, a square rim over a
+-- see-through net block. cf: the pole's foot, the board toward its -Z.
+function Street.hoop(c, cf, key)
+	local h = c:at(cf):group('Hoop')
+	local steel = C(70, 76, 88)
+	h:box('HoopFoot', V(-0.9, 0, -0.3), V(0.9, 0.5, 1.5), steel, M.SmoothPlastic)
+	h:post('HoopPole', 0.45, 11, V(0, 0.5, 0.6), steel, M.SmoothPlastic)
+	h:box('HoopPad', V(-0.6, 0.5, 0.0), V(0.6, 5.0, 1.2), key, M.SmoothPlastic)
+	h:box('HoopArm', V(-0.3, 10.3, -1.2), V(0.3, 10.9, 0.6), steel, M.SmoothPlastic)
+	h:box('BackboardFrame', V(-2.8, 9.2, -1.5), V(2.8, 12.8, -1.25), steel, M.SmoothPlastic)
+	h:box('Backboard', V(-2.5, 9.5, -1.65), V(2.5, 12.5, -1.3), P.white, M.SmoothPlastic)
+	decor(h:box('BoardSquare', V(-1, 10.0, -1.75), V(1, 11.2, -1.6), key, M.SmoothPlastic))
+	local rim = C(222, 116, 66)
+	for _, e in { { V(-0.95, 9.85, -3.55), V(0.95, 10.15, -3.3) }, { V(-0.95, 9.85, -1.9), V(0.95, 10.15, -1.65) }, { V(-0.95, 9.85, -3.55), V(-0.7, 10.15, -1.65) }, { V(0.7, 9.85, -3.55), V(0.95, 10.15, -1.65) } } do
+		decor(h:box('Rim', e[1], e[2], rim, M.SmoothPlastic))
+	end
+	local net = decor(h:box('Net', V(-0.75, 8.9, -3.35), V(0.75, 9.85, -1.85), P.white, M.SmoothPlastic))
+	net.Transparency, net.CastShadow = 0.35, false
+	return h
+end
+
+-- The Block (stage 1): a narrow residential street. Brick walk-ups with stoops stand close on both sides at
+-- different setbacks (fronts at x -23, -27 and +20, +17), an asphalt road with raised pavements between them, two
+-- cars at the kerb, a dead-end alley with the bins by a side door, and the corner store at the far corner where the
+-- street meets the next gate's cross street, a water tank on its roof marking the end of the street.
+function Street.block(ctx, i)
+	local d, top = Street.core(ctx, i)
+	local function Z(z) return top + z end
+	-- Asphalt the full width (the cross streets at both ends keep the gate's 72), raised pavements along the block
+	-- with a kerb stone at the road edge.
+	d:box('Road', V(-FRONT, -1, Z(-SLEN)), V(FRONT, 0, Z(0)), P.asphalt, M.Asphalt)
+	for _, pv in { { -27, -14, -14, -55 }, { 9, 21, 9, -52.6 } } do -- (the east one stops short of the next gate's bus stop)
+		d:box('Pavement', V(pv[1], -1, Z(pv[4])), V(pv[2], 0.3, Z(-7)), P.tileA, M.SmoothPlastic)
+		d:box('Kerb', V(pv[3] - 0.45, -1, Z(pv[4])), V(pv[3] + 0.45, 0.34, Z(-7)), P.kerb, M.Concrete)
+	end
+	-- West: two walk-ups, then the corner store with the water tank. East: a walk-up, the alley, a taller walk-up.
+	Street.walkup(Street.lot(d, -1, 23, Z(-8), 15), 15, { floors = 4, bays = 2, doorBay = 2, noUnit = true })
+	Street.walkup(Street.lot(d, -1, 27, Z(-23), 17), 17, { floors = 3, bays = 3, doorBay = 3, wall = P.brickDark })
+	local store = Street.cornerStore(Street.lot(d, -1, 21, Z(-40), 14), 14)
+	Street.waterTower(store, 10, roofOf(2) + 1.2, -5.5) -- (on the low store, near its street corner, so it shows at the end of the street)
+	Street.walkup(Street.lot(d, 1, 20, Z(-8), 20), 20, { floors = 3, bays = 3, doorBay = 2, wall = P.brickPink })
+	-- (the tall one stands 3 forward of its neighbour, so its side door and the bins show down the alley)
+	Street.walkup(Street.lot(d, 1, 17, Z(-35), 17.4), 17.4, { floors = 4, bays = 2, doorBay = 1, noUnit = true })
+	-- The alley (z -28 to -35): a dead end at a brick wall. The tall walk-up's side door with its bin and bags beside
+	-- it, a lamp over the door, the dumpster against the other wall.
+	d:box('AlleyFloor', V(20.6, -1, Z(-35)), V(41, 0.04, Z(-28)), C(98, 100, 106), M.Asphalt)
+	d:box('AlleyWall', V(40, -1, Z(-35)), V(41.4, 13, Z(-28)), P.brickDark, M.Brick)
+	d:box('SideDoorFrame', V(22.6, 0, Z(-35)), V(26.4, 8.3, Z(-34.75)), P.frame, M.SmoothPlastic)
+	d:box('SideDoor', V(23.1, 0, Z(-35)), V(25.9, 7.8, Z(-34.55)), P.doorDark, M.SmoothPlastic)
+	light(d:box('SideDoorLamp', V(24.1, 9.0, Z(-35)), V(24.9, 9.8, Z(-34.2)), P.iron, M.Metal), P.lampGlow, 0.6, 10)
+	trashCan(d, V(21.9, 0.04, Z(-33.7)))
+	trashBags(d, V(27.6, 0.04, Z(-33.4)))
+	dumpster(d, CFrame.new(34, 0.04, Z(-30.3)))
+	-- At the kerb: two parked cars (not near the ring), a hydrant, two lamps where they're needed (by a stoop, at
+	-- the alley mouth), one street tree in the deeper front of the middle walk-up, the bike rack by the store.
+	car(d, CFrame.new(-11.6, 0, Z(-14.5)) * CFrame.Angles(0, math.pi, 0), C(86, 112, 146))
+	car(d, CFrame.new(6.3, 0, Z(-46)), C(228, 228, 232))
+	Street.hydrant(d, V(10.3, 0.3, Z(-24)))
+	lantern(d, V(-15.5, 0.3, Z(-22.5)))
+	lantern(d, V(10.5, 0.3, Z(-37)))
+	tree(d, V(-23.6, 0.3, Z(-29.5)), 31, 0.85)
+	Street.bikeRack(d, CFrame.new(-18.2, 0.3, Z(-45.5)) * CFrame.Angles(0, math.pi / 2, 0), C(70, 120, 190))
+	Street.nameSign(d, V(-15.2, 0.3, Z(-54.3)), 'THE BLOCK')
+	-- The cross streets end at yard walls just past the gate's railing.
+	for _, s in { -1, 1 } do
+		for _, zz in { { -8, 0 }, { -SLEN, s < 0 and -54 or -52.4 } } do
+			d:box('YardWall', V(s * 36, -1, Z(zz[1])), V(s * 37.4, 10, Z(zz[2])), P.brickDark, M.Brick)
+			d:box('YardWallCap', V(s * 35.8, 10, Z(zz[1])), V(s * 37.6, 10.6, Z(zz[2])), P.stone, M.Concrete)
+		end
+	end
+	Street.seal(d, top)
+end
+
+-- Shop Street (stage 4): a wide pedestrian strip, no road. Low shopfronts at different setbacks (the café 6 back, the
+-- grocery 4) under deep striped awnings, names on plain fascias. The fight pad stands in a square of darker paving;
+-- past it, a market island on the axis that the walk splits round, with café tables in the café's forecourt on one
+-- side and a delivery bay on the other (a van, a pallet of crates and a hand truck at a loading door).
+function Street.shops(ctx, i)
+	local d, top = Street.core(ctx, i)
+	local function Z(z) return top + z end
+	d:box('Paving', V(-42, -1, Z(-SLEN)), V(40, 0, Z(0)), C(212, 198, 178), M.SmoothPlastic)
+	d:box('Frontage', V(-42, -1, Z(-63.5)), V(-29, 0.03, Z(-42.5)), C(192, 176, 156), M.SmoothPlastic) -- (the café's forecourt)
+	d:box('PadSquare', V(-11, -1, Z(-43)), V(11, 0.02, Z(-21)), C(198, 184, 164), M.SmoothPlastic)
+	-- West: the barber on the corner, the bakery, the café set back (three storeys) by the next gate.
+	barberShop(Street.lot(d, -1, 36, Z(0), 20), 20, { stripe = 3, fascia = true, noUnit = true })
+	shopBuilding(Street.lot(d, -1, 38, Z(-20), 22), 22, { sign = 'BAKERY', signColor = C(150, 104, 70), stripes = { C(210, 140, 78), P.white }, wall = P.tan, stripe = 3.2, fascia = true })
+	shopBuilding(Street.lot(d, -1, 42, Z(-42), 22), 22, { sign = 'CAFE', signColor = C(150, 98, 66), stripes = { C(198, 126, 76), P.cream }, wall = P.brick, floors = 3, depth = 24, stripe = 3.2, awningDepth = 6, fascia = true, noUnit = true })
+	-- East: the sneaker shop (narrow, three storeys), the grocery set back, the delivery bay, the ice-cream shop.
+	shopBuilding(Street.lot(d, 1, 36, Z(0), 16), 16, { sign = 'SNEAKERS', signColor = C(44, 48, 58), stripes = { C(58, 62, 72), P.white }, wall = P.brickDark, floors = 3, bays = 2, stripe = 3.2, fascia = true, noUnit = true })
+	grocery(Street.lot(d, 1, 40, Z(-16), 20), 20, { depth = 26, stripe = 3.2, fascia = true, noCrates = true })
+	shopBuilding(Street.lot(d, 1, 36, Z(-50), 14), 14, { sign = 'ICE CREAM', signColor = C(206, 116, 150), stripes = { C(226, 140, 176), P.white }, wall = C(240, 226, 206), bays = 2, stripe = 3, fascia = true, noUnit = true })
+	-- The delivery bay (z -36 to -50): the van backed up to the loading door, a pallet of crates beside it, a hand
+	-- truck at the dock.
+	d:box('BayFloor', V(36, -1, Z(-50)), V(52, 0.04, Z(-36)), C(168, 170, 176), M.Concrete)
+	Street.loadingDock(Street.lot(d, 1, 52, Z(-36), 14), 14, { depth = 14 })
+	Street.boxTruck(d, CFrame.new(42.6, 0.04, Z(-43)) * CFrame.Angles(0, math.pi / 2, 0), C(84, 140, 104))
+	pallet(d, CFrame.new(44.5, 0.04, Z(-38.4)))
+	crate(d, CFrame.new(43.6, 0.84, Z(-38.4)), 2.4)
+	crate(d, CFrame.new(45.9, 0.84, Z(-38.2)) * CFrame.Angles(0, 0.25, 0), 2)
+	Street.handTruck(d, CFrame.new(48.9, 0.04, Z(-48.6)) * CFrame.Angles(0, -math.pi / 2, 0))
+	-- The market island on the axis past the fight pad: two stalls of different sizes, their stock in a crate, and a
+	-- tree, on a kerbed island the walk splits round.
+	d:box('IslandKerb', V(-13, -1, Z(-53)), V(7, 0.6, Z(-44.5)), P.stone, M.Concrete)
+	Street.stall(d, CFrame.new(-7.9, 0.6, Z(-48.6)), 7.6, 4.2, { C(204, 84, 72), P.cream, C(204, 84, 72), P.cream, C(204, 84, 72) }, { C(214, 76, 64), C(236, 150, 66), C(124, 186, 78), C(214, 76, 64) })
+	Street.stall(d, CFrame.new(-1.2, 0.6, Z(-49.4)), 4.4, 3.4, { C(70, 140, 96), P.cream, C(70, 140, 96) }, { C(236, 204, 90), C(124, 186, 78) })
+	crate(d, CFrame.new(-12.0, 0.6, Z(-51.4)) * CFrame.Angles(0, 0.3, 0), 1.8)
+	tree(d, V(4.2, 0.6, Z(-48.8)), 47, 0.8)
+	-- Café tables (two under the awning, one out in the sun with a parasol), the bike rack by the grocery door, two
+	-- lamps.
+	local stool = C(196, 126, 76)
+	Street.cafeTable(d, V(-38.8, 0.03, Z(-46.6)), 0.3, stool)
+	Street.cafeTable(d, V(-38.4, 0.03, Z(-53.2)), 1.2, stool)
+	Street.cafeTable(d, V(-32.4, 0.03, Z(-50.2)), -0.3, stool, C(198, 126, 76))
+	Street.bikeRack(d, CFrame.new(37.4, 0, Z(-24)) * CFrame.Angles(0, math.pi / 2, 0), C(206, 116, 150))
+	lantern(d, V(-35.4, 0, Z(-40.5)))
+	lantern(d, V(33.8, 0, Z(-13.5)))
+	Street.seal(d, top)
+end
+
+-- The Courts (stage 7): buildings on the east side only; the west side opens into a park. A fenced basketball court
+-- runs along the street, its gate facing the fight pad across a short footpath, a floodlight mast at two corners,
+-- bleachers on the far side, a bench and a bin beside the court gate, trees and a tall hedge at the back.
+function Street.courts(ctx, i)
+	local d, top = Street.core(ctx, i)
+	local function Z(z) return top + z end
+	-- The promenade (the old paving's colour) and the cross streets at both gates; the lawn.
+	d:box('Promenade', V(-10, -1, Z(-SLEN)), V(FRONT, 0, Z(0)), P.tileA, M.SmoothPlastic)
+	d:box('Promenade', V(-FRONT, -1, Z(-4.5)), V(-10, 0, Z(0)), P.tileA, M.SmoothPlastic)
+	d:box('Promenade', V(-FRONT, -1, Z(-SLEN)), V(-10, 0, Z(-59.5)), P.tileA, M.SmoothPlastic)
+	d:box('Lawn', V(-FRONT, -1, Z(-59.5)), V(-10, 0.12, Z(-4.5)), P.grass, M.Grass)
+	d:box('Lawn', V(-64, -1, Z(-SLEN)), V(-FRONT, 0.12, Z(0)), P.grass, M.Grass)
+	d:box('LawnEdge', V(-10.5, -1, Z(-59.5)), V(-9.9, 0.25, Z(-4.5)), P.kerb, M.Concrete)
+	d:box('Footpath', V(-14, -1, Z(-35)), V(-10.5, 0.16, Z(-29)), P.tileB, M.SmoothPlastic)
+	-- The court, along the street: keys at both ends, a centre circle and line, the edge lines; hoops at both ends.
+	local cx, cz = -28, Z(-34)
+	d:box('Court', V(-40, -1, Z(-53)), V(-16, 0.2, Z(-15)), P.court, M.SmoothPlastic)
+	for _, s in { -1, 1 } do d:box('CourtKey', V(cx - 4, 0.2, cz + s * 19), V(cx + 4, 0.22, cz + s * 12), P.courtKey, M.SmoothPlastic) end
+	d:post('CourtCircle', 3.4, 0.02, V(cx, 0.2, cz), P.courtKey, M.SmoothPlastic)
+	for _, e in { { V(-40, 0.2, cz - 0.2), V(-16, 0.23, cz + 0.2) }, { V(-40, 0.2, Z(-15.4)), V(-16, 0.23, Z(-15)) }, { V(-40, 0.2, Z(-53)), V(-16, 0.23, Z(-52.6)) },
+		{ V(-40, 0.2, Z(-53)), V(-39.6, 0.23, Z(-15)) }, { V(-16.4, 0.2, Z(-53)), V(-16, 0.23, Z(-15)) } } do
+		decor(d:box('CourtLine', e[1], e[2], P.courtLine, M.SmoothPlastic))
+	end
+	Street.hoop(d, CFrame.lookAt(V(cx, 0, Z(-13.6)), V(cx, 0, Z(-80))), P.courtKey)
+	Street.hoop(d, CFrame.lookAt(V(cx, 0, Z(-54.4)), V(cx, 0, Z(20))), P.courtKey)
+	-- The cage round it, green-coated and see-through enough to show the court; its gate on the street side opposite
+	-- the fight pad.
+	local x0, x1, z0, z1, cage = -42, -14, Z(-56), Z(-12), C(58, 104, 80)
+	chainLink(d, V(x0, 0.12, z1), V(x1, 0.12, z1), 8, nil, 0.7, cage)
+	chainLink(d, V(x0, 0.12, z0), V(x1, 0.12, z0), 8, nil, 0.7, cage)
+	chainLink(d, V(x0, 0.12, z0), V(x0, 0.12, z1), 8, nil, 0.7, cage)
+	chainLink(d, V(x1, 0.12, z1), V(x1, 0.12, z0), 8, { { 17, 23 } }, 0.7, cage)
+	Street.floodlight(d, V(-44.5, 0.12, Z(-10.5)), V(cx, 0, cz))
+	Street.floodlight(d, V(-12.2, 0.12, Z(-58)), V(cx, 0, cz))
+	-- Bleachers outside the far sideline, facing the court and the street; the bench and bin by the court gate.
+	Street.bleachers(d, CFrame.new(-44.6, 0.12, cz) * CFrame.Angles(0, math.pi / 2, 0), 22)
+	bench(d, V(-12.2, 0.12, Z(-39.2)), V(1, 0, 0))
+	trashCan(d, V(-12.2, 0.12, Z(-43.6)))
+	tree(d, V(-55, 0.12, Z(-11)), 71, 1.0)
+	tree(d, V(-56.5, 0.12, Z(-50)), 72, 0.9)
+	tree(d, V(-24, 0.12, Z(-59)), 73, 1.05)
+	hedgeZ(d, -62.8, Z(-62), Z(-2), 5)
+	-- East: three buildings, the middle one standing forward.
+	tanBuilding(Street.lot(d, 1, 36, Z(0), 20), 20, { floors = 3, balconies = false, noUnit = true })
+	brickBuilding(Street.lot(d, 1, 31, Z(-20), 24), 24, { floors = 4, wall = P.brickDark, bays = 3 })
+	brickBuilding(Street.lot(d, 1, 36, Z(-44), 20), 20, { floors = 2, wall = P.brick, bays = 3, noUnit = true })
+	lantern(d, V(-8.8, 0, Z(-46)))
+	lantern(d, V(28.6, 0, Z(-42.5)))
+	Street.seal(d, top)
 end
 
 ---------------------------------------------------------------------------------------------- boss yard
