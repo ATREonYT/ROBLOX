@@ -22,7 +22,9 @@ if not active then return end
 local frame = active.Frame
 
 local C = Color3.fromRGB
-local GO, DENIED = C(70, 255, 140), C(255, 60, 90)
+-- State colours match the armory's (GunRules): sage for go, soft red for denied; cream text; ink strokes.
+local GO, DENIED = C(79, 179, 122), C(224, 112, 112)
+local CREAM, INK, GOLD = C(240, 232, 216), C(36, 38, 44), C(227, 169, 63)
 local gates = {}
 
 local function track(model)
@@ -30,7 +32,7 @@ local function track(model)
 	gates[model] = {
 		Model = model, Stage = model:GetAttribute('Stage'), Required = model:GetAttribute('Required') or 0,
 		Z = model:GetAttribute('LineZ'), HalfWidth = model:GetAttribute('HalfWidth') or 20,
-		Color = model:GetAttribute('Color') or C(255, 210, 60), Light = model:GetAttribute('Light') or C(255, 236, 160),
+		Color = model:GetAttribute('Color') or GOLD, Light = model:GetAttribute('Light') or CREAM,
 	}
 end
 for _, m in CollectionService:GetTagged('HoodStageGate') do track(m) end
@@ -79,7 +81,7 @@ local function paint(e, power)
 	for _, lock in e.Locks do lock.Transparency = state == 'Locked' and 0 or 1 end
 	for _, t in e.Status do
 		t.Text = state == 'Ready' and 'GO! →' or ('NEED 💪 ' .. Format.compact(e.Required))
-		t.TextColor3 = state == 'Ready' and GO or Color3.new(1, 1, 1)
+		t.TextColor3 = state == 'Ready' and GO or CREAM
 	end
 	-- The moment a gate opens for you: a quick pop of the status text.
 	if was == 'Locked' and state == 'Ready' then
@@ -163,7 +165,7 @@ local function showBanner(title, detail, color)
 	t.Text = title
 	t.TextColor3 = Color3.new(1, 1, 1)
 	t.Parent = holder
-	local tStroke = stroke(t, C(28, 24, 48), 5)
+	local tStroke = stroke(t, INK, 5)
 	local g = Instance.new('UIGradient')
 	g.Color = ColorSequence.new(Color3.new(1, 1, 1), color)
 	g.Rotation = 90
@@ -176,9 +178,9 @@ local function showBanner(title, detail, color)
 	d.FontFace = Font.new('rbxasset://fonts/families/LuckiestGuy.json')
 	d.TextScaled = true
 	d.Text = detail
-	d.TextColor3 = C(90, 255, 120)
+	d.TextColor3 = GO
 	d.Parent = holder
-	local dStroke = stroke(d, C(28, 24, 48), 4)
+	local dStroke = stroke(d, INK, 4)
 	TweenService:Create(scale, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
 	task.delay(1.8, function()
 		if banner ~= holder then return end
@@ -254,7 +256,7 @@ end
 
 Net.get('Cinematic').OnClientEvent:Connect(function(info)
 	if type(info) ~= 'table' or info.Kind ~= 'StageClear' then return end
-	local color = C(255, 210, 60)
+	local color = GOLD
 	for _, e in gates do if e.Stage == info.Stage then color = e.Color end end
 	showBanner('STAGE ' .. tostring(info.Stage) .. ' CLEARED!', '+' .. Format.compact(info.Reward or 0) .. ' CASH', color)
 end)

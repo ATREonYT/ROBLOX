@@ -30,27 +30,33 @@ local Props, PROPS_KIT, SKINS -- HoodProps (the Champ Ring), the helpers it borr
 
 V2.Origin = CFrame.new(2400, 0, 0)
 
--- Palette, taken from the concept: bold, simple, one look per district.
+-- Palette: a calm, sunny hood street (research/street_palette.md, BRIEF6's lobby palette). Warm-grey paving,
+-- brick, buff and cream walls, charcoal metal, wood, muted leaves; ONE muted accent per district (S <= 0.55).
+-- The colour belongs to the gameplay (gates, fight pads), the signs, the cars and the players, not the walls.
 local P = {
 	-- Ground.
-	tileA = C(206, 208, 213), tileB = C(193, 196, 202), band = C(146, 149, 156), bandLine = C(236, 236, 238),
-	kerb = C(222, 222, 226), wall = C(214, 214, 218), grass = C(104, 178, 72), asphalt = C(70, 72, 78), roadLine = C(240, 240, 240),
-	court = C(236, 142, 58), courtLine = C(250, 246, 236),
+	tileA = C(204, 199, 190), tileB = C(192, 186, 176), band = C(132, 130, 128), bandLine = C(232, 226, 212),
+	kerb = C(214, 208, 198), wall = C(206, 200, 190), grass = C(112, 146, 84), asphalt = C(68, 70, 74), roadLine = C(232, 226, 212),
+	court = C(148, 144, 138), courtLine = C(236, 230, 216), courtSlate = C(118, 126, 134), courtTurf = C(98, 128, 88), courtKey = C(168, 98, 80),
 	-- Buildings.
-	brick = C(176, 74, 58), brickDark = C(150, 64, 52), brickPink = C(198, 112, 92), slate = C(62, 68, 84), stone = C(158, 158, 164),
-	tan = C(224, 184, 128), tanLight = C(238, 208, 160), tanDark = C(178, 150, 112),
-	glass = C(48, 68, 100), frame = C(214, 214, 220), door = C(42, 118, 78), doorDark = C(48, 52, 62),
-	barberBlue = C(38, 72, 168), groceryGreen = C(38, 148, 62), groceryYellow = C(250, 204, 48), shopBlue = C(52, 92, 196),
-	warehouse = C(40, 90, 190), warehouseDark = C(30, 66, 146), rollDoor = C(72, 76, 84),
+	brick = C(154, 102, 85), brickDark = C(134, 90, 76), brickPink = C(170, 118, 100), slate = C(60, 66, 76), stone = C(180, 174, 164),
+	tan = C(206, 184, 152), tanLight = C(228, 216, 194), tanDark = C(164, 146, 122),
+	glass = C(86, 100, 111), frame = C(226, 218, 204), door = C(63, 125, 110), doorDark = C(48, 52, 62),
+	barberBlue = C(74, 96, 128), groceryGreen = C(63, 112, 92), groceryYellow = C(227, 169, 63), shopBlue = C(98, 114, 134),
+	warehouse = C(104, 118, 134), warehouseDark = C(62, 72, 86), rollDoor = C(84, 88, 94),
 	-- Props.
-	leaf = C(112, 192, 62), leafDark = C(96, 176, 52), hedge = C(80, 168, 62), trunk = C(122, 82, 52), planter = C(196, 196, 202),
-	iron = C(36, 38, 44), lampGlow = C(255, 214, 120), wood = C(196, 128, 68), woodDark = C(150, 96, 52), crate = C(206, 148, 76),
-	dumpster = C(44, 132, 72), black = C(28, 30, 34), white = C(250, 250, 250),
-	containerRed = C(196, 52, 42), containerBlue = C(44, 96, 186),
-	-- Fight pads and banners.
-	padRed = C(230, 52, 52), padBlue = C(40, 104, 232), padGreen = C(44, 192, 82), bossRing = C(80, 255, 120),
-	spawnBlue = C(60, 190, 255), evolveBlue = C(40, 88, 210), evolveYellow = C(252, 206, 52),
-	district = { C(222, 52, 52), C(132, 62, 212), C(240, 132, 30), C(214, 116, 40), C(42, 104, 222) },
+	leaf = C(94, 140, 74), leafDark = C(78, 120, 64), hedge = C(84, 124, 68), trunk = C(110, 84, 64), planter = C(190, 184, 174),
+	iron = C(40, 43, 48), lampGlow = C(255, 227, 179), wood = C(165, 122, 88), woodDark = C(126, 92, 66), crate = C(176, 138, 100),
+	dumpster = C(58, 96, 80), black = C(28, 30, 34), white = C(250, 250, 250),
+	containerRed = C(128, 62, 54), containerBlue = C(78, 98, 120), containerTeal = C(63, 112, 100), containerCream = C(214, 204, 186),
+	-- Sign system (one for the whole map): charcoal boards with cream text, or cream boards with charcoal text;
+	-- gold only for the key word; charcoal steel for frames, posts and kerbs.
+	ink = C(43, 47, 54), cream = C(240, 232, 216), gold = C(227, 169, 63), metal = C(60, 66, 76), oxblood = C(150, 62, 60),
+	-- Gameplay markers: muted, still the most saturated things on the street (S <= 0.6).
+	padRed = C(200, 96, 84), padBlue = C(86, 126, 178), padGreen = C(80, 160, 112), bossRing = C(214, 118, 100),
+	spawnBlue = C(96, 150, 180), evolveBlue = C(74, 96, 128), evolveYellow = C(227, 169, 63),
+	-- One accent per district: brick red, dusty violet, teal, amber, slate blue (neighbours >= 95 degrees apart).
+	district = { C(160, 84, 74), C(122, 96, 148), C(60, 128, 118), C(196, 153, 90), C(84, 110, 150) },
 }
 ---------------------------------------------------------------------------------------------- build context
 local Ctx = {}
@@ -353,7 +359,7 @@ local function car(c, cf, color)
 	for _, z in { -5.4, 5.1 } do k:box('Bumper', V(-2.35, 0.9, z), V(2.35, 1.6, z + 0.3), P.frame, M.Metal) end
 	for _, x in { -1.9, 1.0 } do
 		decor(k:box('Headlight', V(x, 2.1, -5.25), V(x + 0.9, 2.6, -5.2), C(255, 244, 200), M.Neon))
-		decor(k:box('TailLight', V(x, 2.1, 5.2), V(x + 0.9, 2.6, 5.25), C(220, 40, 40), M.SmoothPlastic))
+		decor(k:box('TailLight', V(x, 2.1, 5.2), V(x + 0.9, 2.6, 5.25), C(178, 64, 58), M.SmoothPlastic))
 	end
 	return k
 end
@@ -411,18 +417,32 @@ local function railing(c, a, b, h)
 	return g
 end
 
--- Fight pad: a glowing coloured square with a white border and its number painted on top.
+-- Fight pad: a framed stone plinth (charcoal kerb, stone step, warm stone top) with a thin ring in the stage's
+-- colour set into the top and its number in charcoal: the colour is a line, not a glowing square.
 local function fightPad(c, n, pos, color, district, size, label)
 	size = size or PAD_SIZE
 	local h = size / 2
 	local pad, model = c:at(CFrame.new(pos)):group('FightPad_' .. n)
-	pad:box('PadBorder', V(-h - 0.5, 0, -h - 0.5), V(h + 0.5, 0.3, h + 0.5), P.white, M.SmoothPlastic)
-	local top = pad:box('Pad', V(-h + 0.3, 0, -h + 0.3), V(h - 0.3, 0.36, h - 0.3), color, M.SmoothPlastic)
-	decor(pad:box('PadGlow', V(-h, 0.3, -h), V(h, 0.33, h), color:Lerp(P.white, 0.35), M.Neon)).CastShadow = false
+	pad:box('PadBorder', V(-h - 0.6, 0, -h - 0.6), V(h + 0.6, 0.3, h + 0.6), C(60, 66, 76), M.Metal)
+	pad:box('PadStep', V(-h - 0.2, 0.3, -h - 0.2), V(h + 0.2, 0.5, h + 0.2), C(169, 161, 148), M.Concrete)
+	local top = pad:box('Pad', V(-h + 0.2, 0.5, -h + 0.2), V(h - 0.2, 0.7, h - 0.2), C(214, 206, 192), M.SmoothPlastic)
+	-- The ring: four thin strips just inside the top's edge (PadGlow keeps the old name for the clients).
+	local r, t = h - 1.1, 0.5
+	for _, e in { { V(-r, 0, -r), V(r, 0, -r + t) }, { V(-r, 0, r - t), V(r, 0, r) }, { V(-r, 0, -r + t), V(-r + t, 0, r - t) }, { V(r - t, 0, -r + t), V(r, 0, r - t) } } do
+		decor(pad:box('PadGlow', e[1] + V(0, 0.7, 0), e[2] + V(0, 0.76, 0), color, M.Neon)).CastShadow = false
+	end
+	-- Corner posts like a boxing ring's, capped in the stage colour, so the pad reads from down the street.
+	for _, cx in { -1, 1 } do
+		for _, cz in { -1, 1 } do
+			local p = V(cx * (h + 0.25), 0.3, cz * (h + 0.25))
+			decor(pad:box('PadPost', p + V(-0.3, 0, -0.3), p + V(0.3, 1.9, 0.3), C(60, 66, 76), M.Metal))
+			decor(pad:box('PadPostCap', p + V(-0.38, 1.9, -0.38), p + V(0.38, 2.3, 0.38), color, M.SmoothPlastic))
+		end
+	end
 	local g = surface(top, Enum.NormalId.Top, 20)
-	line(g, 'Number', label or tostring(n), P.white, FONT.loud, 0.18, 0.64, C(20, 24, 40), 6)
+	line(g, 'Number', label or tostring(n), C(43, 47, 54), FONT.loud, 0.24, 0.52)
 	local glow = Instance.new('SurfaceLight')
-	glow.Face, glow.Color, glow.Brightness, glow.Range, glow.Angle = Enum.NormalId.Top, color, 1.2, 10, 120
+	glow.Face, glow.Color, glow.Brightness, glow.Range, glow.Angle = Enum.NormalId.Top, color:Lerp(P.white, 0.5), 0.5, 8, 120
 	glow.Parent = top
 	model:SetAttribute('Fight', n)
 	model:SetAttribute('District', district)
@@ -2094,6 +2114,8 @@ end
 ---------------------------------------------------------------------------------------------- buildings
 -- Building frame: origin at the front-left corner on the ground, +X along the walk, +Z out of the facade
 -- toward the middle. One builder serves both sides of the map.
+-- Streets: the street kit's shared helpers (signs, the calm shop recipe), also used by the stages (f2).
+local Streets = {}
 local function lotFrame(ctx, s, za, w)
 	if s < 0 then return ctx:at(CFrame.lookAt(V(-FRONT, 0, za), V(-FRONT - 1, 0, za))) end
 	return ctx:at(CFrame.lookAt(V(FRONT, 0, za - w), V(FRONT + 1, 0, za - w)))
@@ -2106,13 +2128,20 @@ local function bays(w, n)
 	return t
 end
 
--- Window: light frame, dark blue glass with a mullion, a sill.
+-- Window: cream frame, dark blue-grey glass (a deep "hole") with a mullion, a sill. Some life by position, so
+-- neighbours differ and the two sides of the street don't mirror: about 1 in 8 lit warm, 1 in 5 with a cream
+-- blind part way down.
 local function window(c, x, y, o)
 	o = o or {}
 	local w, h = o.w or 3.2, o.h or 4.6
 	local frame = o.frame or P.frame
 	decor(c:box('WindowFrame', V(x - w / 2 - 0.35, y - 0.35, 0), V(x + w / 2 + 0.35, y + h + 0.35, 0.2), frame, M.SmoothPlastic))
-	decor(c:box('Glass', V(x - w / 2, y, 0), V(x + w / 2, y + h, 0.28), P.glass, M.SmoothPlastic)).Reflectance = 0.15
+	local glass = decor(c:box('Glass', V(x - w / 2, y, 0), V(x + w / 2, y + h, 0.28), P.glass, M.SmoothPlastic))
+	glass.Reflectance = 0.15
+	local wp = c:world(CFrame.new(x, y, 0)).Position
+	local k = (math.sin(wp.X * 12.9898 + wp.Y * 78.233 + wp.Z * 37.719) * 43758.5453) % 1
+	if k < 0.12 then glass.Color, glass.Reflectance = C(226, 204, 160), 0
+	elseif k < 0.32 then decor(c:box('Blind', V(x - w / 2 + 0.1, y + h * (0.45 + k), 0), V(x + w / 2 - 0.1, y + h, 0.31), P.frame, M.SmoothPlastic)) end
 	decor(c:box('Mullion', V(x - 0.12, y, 0), V(x + 0.12, y + h, 0.34), frame, M.SmoothPlastic))
 	decor(c:box('Sill', V(x - w / 2 - 0.6, y - 0.75, 0), V(x + w / 2 + 0.6, y - 0.35, 0.7), o.sill or P.stone, M.Concrete))
 end
@@ -2122,7 +2151,7 @@ local function door(c, x, color, awning)
 	c:box('Step', V(x - 2.6, 0.4, 0), V(x + 2.6, 0.8, 1.0), P.stone, M.Concrete)
 	decor(c:box('DoorFrame', V(x - 2.3, 0.8, 0), V(x + 2.3, 8.6, 0.22), P.frame, M.SmoothPlastic))
 	c:box('Door', V(x - 1.7, 0.8, 0), V(x + 1.7, 8.0, 0.45), color or P.door, M.SmoothPlastic)
-	decor(c:box('DoorKnob', V(x + 1.0, 4.2, 0.45), V(x + 1.3, 4.5, 0.6), P.lampGlow, M.Metal))
+	decor(c:box('DoorKnob', V(x + 1.0, 4.2, 0.45), V(x + 1.3, 4.5, 0.6), C(196, 160, 96), M.Metal))
 	if awning ~= false then
 		decor(c:box('DoorAwning', V(x - 3, 9.0, 0), V(x + 3, 9.5, 2.4), awning or P.slate, M.SmoothPlastic))
 		decor(c:box('DoorAwningLip', V(x - 3, 8.5, 2.2), V(x + 3, 9.0, 2.4), awning or P.slate, M.SmoothPlastic))
@@ -2147,17 +2176,43 @@ local function stripedAwning(c, x0, x1, y, colors, depth)
 		decor(c:box('AwningValance', V(a, y - 2.9, depth - 0.2), V(b, y - 1.8, depth), col, M.Fabric))
 	end
 end
+-- Flat roof: a grey tar deck behind a parapet with a dark coping along the front (the street sees the crisp
+-- dark line, the high views a calm grey roof instead of a black slab).
 local function roofCap(c, w, roof, color)
-	c:box('RoofCap', V(0, roof, -DEPTH), V(w, roof + 1.2, 0.7), color, M.SmoothPlastic)
-	decor(c:box('RoofVent', V(w * 0.3 - 1.5, roof + 1.2, -12), V(w * 0.3 + 1.5, roof + 3.2, -8), color:Lerp(P.black, 0.3), M.Metal))
+	c:box('RoofCap', V(0, roof, -DEPTH), V(w, roof + 1.0, -0.4), C(128, 126, 122), M.Concrete)
+	c:box('RoofCoping', V(0, roof, -0.4), V(w, roof + 1.5, 0.7), color, M.SmoothPlastic)
+	decor(c:box('RoofVent', V(w * 0.3 - 1.5, roof + 1.0, -12), V(w * 0.3 + 1.5, roof + 3.0, -8), color:Lerp(P.black, 0.3), M.Metal))
 end
 
--- Red brick walk-up (the concept's asset kit): stone base, slate roof cap, framed windows, green door.
+-- Zig-zag fire escape over bay x (the hood's signature facade): a diamond-plate landing at every upper floor
+-- with a rail and a see-through guard, a stair up to the next landing on alternate sides, a drop ladder.
+function Streets.fireEscape(c, x, floors)
+	local g = c:group('FireEscape')
+	for f = 2, floors do
+		local y = storeyY(f)
+		decor(g:box('EscapeDeck', V(x - 3.6, y - 0.25, 0.2), V(x + 3.6, y, 2.6), P.iron, M.DiamondPlate))
+		decor(g:box('EscapeRail', V(x - 3.6, y + 2.8, 2.45), V(x + 3.6, y + 3.0, 2.65), P.iron, M.Metal))
+		for _, sx in { -3.6, 3.4 } do decor(g:box('EscapeRail', V(x + sx, y + 2.8, 0.2), V(x + sx + 0.2, y + 3.0, 2.65), P.iron, M.Metal)) end
+		decor(g:box('EscapeGuard', V(x - 3.5, y, 2.5), V(x + 3.5, y + 2.8, 2.55), P.iron, M.DiamondPlate)).Transparency = 0.55
+		if f < floors then
+			local s = f % 2 == 0 and 1 or -1
+			decor(g:bar('EscapeStair', V(x - s * 2.6, y, 1.4), V(x + s * 2.0, storeyY(f + 1), 1.4), 0.45, P.iron, M.Metal))
+		end
+	end
+	decor(g:box('EscapeLadder', V(x + 2.6, storeyY(2) - 4.5, 2.2), V(x + 3.2, storeyY(2) - 0.25, 2.35), P.iron, M.Metal))
+	return g
+end
+
+-- Red brick walk-up (the concept's asset kit): stone base, slate roof cap, framed windows, green door; about
+-- half the walk-ups of three floors or more carry a fire escape.
 local function brickBuilding(ctx, w, o)
 	local c, model = ctx:group(o.name or 'BrickBuilding')
 	local roof = roofOf(o.floors)
 	c:box('Wall', V(0, -1, -DEPTH), V(w, roof, 0), o.wall or P.brick, M.Brick)
 	c:box('Base', V(0, -1, 0), V(w, 1.6, 0.35), P.stone, M.Concrete)
+	-- Stone string course over the shop floor and a cornice under the roof: the facade gets a top and a waist.
+	decor(c:box('StringCourse', V(0, 11.3, 0), V(w, 11.9, 0.3), P.stone, M.Concrete))
+	decor(c:box('Cornice', V(0, roof - 1.1, 0), V(w, roof - 0.3, 0.5), P.stone, M.Concrete))
 	roofCap(c, w, roof, P.slate)
 	local list = bays(w, o.bays or 3)
 	for f = 2, o.floors do for _, x in list do window(c, x, storeyY(f) + 3, {}) end end
@@ -2168,6 +2223,10 @@ local function brickBuilding(ctx, w, o)
 		door(c, doorX, o.door)
 	end
 	if o.sideAt then sideWindows(c, o.sideAt, o.floors) end
+	if o.floors >= 3 then
+		local wp = c:world(CFrame.new(w / 2, 0, 0)).Position
+		if (math.sin(wp.X * 3.17 + wp.Z * 0.731) * 9631.7) % 1 < 0.55 then Streets.fireEscape(c, list[1], o.floors) end
+	end
 	model:SetAttribute('Floors', o.floors)
 	return c, model
 end
@@ -2178,8 +2237,8 @@ local function balcony(c, x, y)
 	decor(c:box('BalconySlab', V(x - 3.2, y - 0.5, 0), V(x + 3.2, y, 2.8), P.tanLight, M.Concrete))
 	decor(c:box('BalconyRail', V(x - 3.2, y + 2.6, 2.5), V(x + 3.2, y + 2.85, 2.8), P.iron, M.Metal))
 	for _, sx in { -3.2, 2.95 } do decor(c:box('BalconyRail', V(x + sx, y + 2.6, 0), V(x + sx + 0.25, y + 2.85, 2.8), P.iron, M.Metal)) end
-	for k = 0, 8 do
-		local bx = x - 3.05 + k * 6.1 / 8
+	for k = 0, 6 do
+		local bx = x - 3.05 + k * 6.1 / 6
 		decor(c:box('BalconyBar', V(bx - 0.07, y, 2.55), V(bx + 0.07, y + 2.6, 2.7), P.iron, M.Metal))
 	end
 end
@@ -2188,10 +2247,15 @@ local function tanBuilding(ctx, w, o)
 	local roof = roofOf(o.floors)
 	c:box('Wall', V(0, -1, -DEPTH), V(w, roof, 0), o.wall or P.tan, M.Brick)
 	c:box('Base', V(0, -1, 0), V(w, 2, 0.35), P.tanDark, M.Concrete)
+	if o.stone then
+		-- A pale stone ground storey (the Apartments district): it reads cleaner and richer than the walk-ups.
+		decor(c:box('GroundStone', V(0, 2, 0), V(w, 11.4, 0.15), C(214, 206, 192), M.Concrete))
+		decor(c:box('GroundStoneCap', V(0, 11.4, 0), V(w, 12, 0.45), P.tanLight, M.SmoothPlastic))
+	end
 	for _, x in { 0, w - 1 } do decor(c:box('Pier', V(x, 2, 0), V(x + 1, roof, 0.3), P.tanLight, M.SmoothPlastic)) end
 	for f = 2, o.floors do decor(c:box('FloorBand', V(1, storeyY(f) - 0.4, 0), V(w - 1, storeyY(f) + 0.2, 0.25), P.tanLight, M.SmoothPlastic)) end
 	c:box('Cornice', V(0, roof - 1.2, 0), V(w, roof + 0.6, 0.9), P.tanLight, M.SmoothPlastic)
-	c:box('RoofTop', V(0, roof, -DEPTH), V(w, roof + 0.6, 0), P.tanDark, M.Concrete)
+	c:box('RoofTop', V(0, roof, -DEPTH), V(w, roof + 0.6, 0), C(150, 146, 140), M.Concrete) -- a grey tar roof
 	decor(c:box('RoofVent', V(w * 0.7 - 1.5, roof + 0.6, -12), V(w * 0.7 + 1.5, roof + 2.6, -8), P.slate, M.Metal))
 	local list = bays(w, o.bays or 3)
 	local mid = (#list + 1) // 2
@@ -2213,7 +2277,7 @@ local function tanBuilding(ctx, w, o)
 	return c, model
 end
 
--- Barber: pink brick, blue band and sign, red-white-blue striped awning, the pole by the door.
+-- Barber: light brick, a slate shopfront, a charcoal framed sign, the red-cream-slate awning and the pole by the door.
 local function barberShop(ctx, w)
 	local c = brickBuilding(ctx, w, { name = 'Barber', floors = 2, wall = P.brickPink, ground = function(c2)
 		c2:box('ShopBase', V(1, 0, 0), V(w - 1, 1.2, 0.4), P.barberBlue, M.SmoothPlastic)
@@ -2223,18 +2287,17 @@ local function barberShop(ctx, w)
 		c2:box('ShopDoor', V(w - 6.4, 0, 0), V(w - 3.2, 7.4, 0.5), P.glass, M.SmoothPlastic)
 		c2:box('ShopBand', V(0, 8, 0), V(w, 9.6, 0.4), P.barberBlue, M.SmoothPlastic)
 	end })
-	stripedAwning(c, 1.5, w - 1.5, 9.4, { C(220, 44, 44), P.white, C(220, 44, 44), P.white, P.barberBlue })
-	local sign = c:box('ShopSign', V(w / 2 - 7, 10.2, 0), V(w / 2 + 7, 13.6, 0.8), P.barberBlue, M.SmoothPlastic)
-	decor(c:box('ShopSignBorder', V(w / 2 - 7.3, 9.9, 0), V(w / 2 + 7.3, 13.9, 0.7), P.white, M.SmoothPlastic))
-	line(surface(sign, Enum.NormalId.Back, 20), 'Text', 'BARBER', P.white, FONT.loud, 0.12, 0.76, C(16, 30, 80), 3)
+	local barberRed = C(176, 76, 68)
+	stripedAwning(c, 1.5, w - 1.5, 9.4, { barberRed, P.cream, barberRed, P.cream, P.barberBlue })
+	Streets.shopSign(c, w / 2 - 7, w / 2 + 7, 'BARBER', P.ink, P.cream)
 	-- The pole by the door, turning.
 	local pole, poleModel = c:group('BarberPole')
 	local p0 = V(w - 0.9, 2, 1.2)
-	pole:post('PoleBody', 0.55, 5, p0, P.white, M.SmoothPlastic)
+	pole:post('PoleBody', 0.55, 5, p0, P.cream, M.SmoothPlastic)
 	for k = 0, 4 do
-		pole:part('PoleStripe', V(0.35, 1.15, 1.15), CFrame.new(p0 + V(0, 0.6 + k * 0.95, 0)) * CFrame.Angles(0, 0, math.pi / 2) * CFrame.Angles(math.rad(22), 0, 0), k % 2 == 0 and C(220, 44, 44) or P.barberBlue, M.SmoothPlastic, Enum.PartType.Cylinder)
+		pole:part('PoleStripe', V(0.35, 1.15, 1.15), CFrame.new(p0 + V(0, 0.6 + k * 0.95, 0)) * CFrame.Angles(0, 0, math.pi / 2) * CFrame.Angles(math.rad(22), 0, 0), k % 2 == 0 and barberRed or P.barberBlue, M.SmoothPlastic, Enum.PartType.Cylinder)
 	end
-	for _, y in { -0.3, 5 } do pole:post('PoleCap', 0.7, 0.4, p0 + V(0, y, 0), P.barberBlue, M.Metal) end
+	for _, y in { -0.3, 5 } do pole:post('PoleCap', 0.7, 0.4, p0 + V(0, y, 0), P.metal, M.Metal) end
 	pole:box('PoleBracket', p0 + V(-0.15, 2.4, -1.2), p0 + V(0.15, 2.7, -0.5), P.iron, M.Metal)
 	poleModel:SetAttribute('Spin', 60)
 	poleModel:AddTag('HoodMotion')
@@ -2242,30 +2305,33 @@ local function barberShop(ctx, w)
 	return c
 end
 
--- Grocery: yellow shop floor under a green upper floor, a big dark green sign, green-yellow awning,
--- a produce stand and crates out front.
+-- Grocery: a cream shop floor under a brick upper floor, a deep-green framed sign with the name in gold, a
+-- green-cream awning, a produce stand (the fruit is the colour, kept small) and crates out front.
 local function grocery(ctx, w)
 	local c, model = ctx:group('Grocery')
 	local roof = roofOf(2)
-	c:box('Wall', V(0, -1, -DEPTH), V(w, 12, 0), P.groceryYellow, M.SmoothPlastic)
-	c:box('WallUpper', V(0, 12, -DEPTH), V(w, roof, 0), P.groceryGreen, M.SmoothPlastic)
-	roofCap(c, w, roof, C(24, 104, 44))
-	for _, x in bays(w, 3) do window(c, x, storeyY(2) + 3, { frame = P.white }) end
+	local deep = P.groceryGreen:Lerp(P.black, 0.3)
+	c:box('Wall', V(0, -1, -DEPTH), V(w, 12, 0), P.frame, M.SmoothPlastic)
+	c:box('WallUpper', V(0, 12, -DEPTH), V(w, roof, 0), P.brickDark, M.Brick)
+	decor(c:box('StringCourse', V(0, 11.3, 0), V(w, 12.1, 0.3), P.stone, M.Concrete))
+	roofCap(c, w, roof, P.slate)
+	for _, x in bays(w, 3) do window(c, x, storeyY(2) + 3, {}) end
 	c:box('ShopGlass', V(2, 1, 0), V(w - 7, 7.4, 0.3), P.glass, M.SmoothPlastic).Reflectance = 0.15
-	for x = 2 + (w - 9) / 3, w - 7.5, (w - 9) / 3 do decor(c:box('ShopMullion', V(x - 0.2, 1, 0), V(x + 0.2, 7.4, 0.4), C(24, 104, 44), M.SmoothPlastic)) end
-	c:box('ShopDoorFrame', V(w - 6, 0, 0), V(w - 1.6, 8, 0.3), C(24, 104, 44), M.SmoothPlastic)
+	for x = 2 + (w - 9) / 3, w - 7.5, (w - 9) / 3 do decor(c:box('ShopMullion', V(x - 0.2, 1, 0), V(x + 0.2, 7.4, 0.4), deep, M.SmoothPlastic)) end
+	c:box('ShopDoorFrame', V(w - 6, 0, 0), V(w - 1.6, 8, 0.3), deep, M.SmoothPlastic)
 	c:box('ShopDoor', V(w - 5.4, 0, 0), V(w - 2.2, 7.4, 0.4), P.glass, M.SmoothPlastic)
-	local sign = c:box('ShopSign', V(1, 9.8, 0), V(w - 1, 13.8, 0.9), C(24, 104, 44), M.SmoothPlastic)
-	line(surface(sign, Enum.NormalId.Back, 20), 'Text', 'GROCERY', P.groceryYellow, FONT.loud, 0.12, 0.76, C(10, 50, 20), 3)
-	stripedAwning(c, 0.5, w - 0.5, 9.4, { P.groceryGreen, P.groceryYellow }, 4)
+	c:box('ShopBase', V(1, 0, 0), V(w - 6.4, 1, 0.4), deep, M.SmoothPlastic)
+	Streets.shopSign(c, 2, w - 2, 'GROCERY', P.groceryGreen, P.gold)
+	stripedAwning(c, 0.5, w - 0.5, 9.4, { P.groceryGreen, P.cream }, 4)
 	-- Produce stand and crates.
 	c:box('StandTable', V(2.5, 2.4, 1), V(9.5, 2.8, 4), P.wood, M.WoodPlanks)
 	for _, x in { 3, 9 } do c:box('StandLeg', V(x - 0.2, 0, 1.3), V(x + 0.2, 2.4, 3.7), P.woodDark, M.Wood) end
-	local fruit = { C(230, 60, 50), C(250, 150, 40), C(120, 200, 60), C(250, 210, 60) }
+	-- The fruit keeps its colour (it's an item) but only as small mounds inside the crates.
+	local fruit = { C(196, 82, 66), C(214, 140, 70), C(138, 168, 88), C(222, 194, 100) }
 	for k = 0, 3 do
 		local x = 3.2 + k * 1.6
-		c:box('ProduceBox', V(x - 0.7, 2.8, 1.4), V(x + 0.7, 3.4, 3.6), P.crate, M.WoodPlanks)
-		decor(c:box('Produce', V(x - 0.55, 3.4, 1.55), V(x + 0.55, 3.8, 3.45), fruit[k + 1], M.SmoothPlastic))
+		c:box('ProduceBox', V(x - 0.7, 2.8, 1.4), V(x + 0.7, 3.5, 3.6), P.crate, M.WoodPlanks)
+		decor(c:box('Produce', V(x - 0.5, 3.35, 1.7), V(x + 0.5, 3.65, 3.3), fruit[k + 1], M.SmoothPlastic))
 	end
 	crate(c, CFrame.new(w - 9, 0, 2.4), 2.4)
 	crate(c, CFrame.new(w - 9, 2.4, 2.4) * CFrame.Angles(0, 0.3, 0), 2)
@@ -2273,20 +2339,20 @@ local function grocery(ctx, w)
 	return c
 end
 
--- Blue corner shop (behind the grocery in the concept).
+-- Painted corner shop (slate blue, behind the grocery in the concept): cream door frame, a charcoal framed
+-- sign, a slate awning.
 local function blueShop(ctx, w, label)
 	local c = brickBuilding(ctx, w, { name = 'BlueShop', floors = 2, wall = P.shopBlue, ground = function(c2)
 		c2:box('ShopGlass', V(2, 1, 0), V(w - 7, 7.4, 0.3), P.glass, M.SmoothPlastic).Reflectance = 0.15
 		c2:box('ShopDoor', V(w - 5.4, 0, 0), V(w - 2.2, 7.4, 0.4), P.glass, M.SmoothPlastic)
-		c2:box('ShopDoorFrame', V(w - 6, 0, 0), V(w - 1.6, 8, 0.3), P.white, M.SmoothPlastic)
+		c2:box('ShopDoorFrame', V(w - 6, 0, 0), V(w - 1.6, 8, 0.3), P.frame, M.SmoothPlastic)
 	end })
-	local sign = c:box('ShopSign', V(2, 9.6, 0), V(w - 2, 12.6, 0.6), C(22, 36, 90), M.SmoothPlastic)
-	line(surface(sign, Enum.NormalId.Back, 20), 'Text', label, P.white, FONT.loud, 0.14, 0.72)
-	decor(c:wedge('Awning', V(w - 4, 1.4, 3), CFrame.new(w / 2, 8.6, 1.5) * CFrame.Angles(0, math.pi, 0), C(30, 56, 140), M.Fabric))
+	Streets.shopSign(c, 2, w - 2, label, P.ink, P.cream)
+	decor(c:wedge('Awning', V(w - 4, 1.4, 3), CFrame.new(w / 2, 8.6, 1.5) * CFrame.Angles(0, math.pi, 0), P.shopBlue:Lerp(P.black, 0.3), M.Fabric))
 	return c
 end
 
--- Blue corrugated warehouse with a roll-up door, a light bar and a side door.
+-- Corrugated steel warehouse (slate blue-grey) with a roll-up door, a warm light bar and a side door.
 local function warehouse(ctx, w, color)
 	color = color or P.warehouse
 	local c, model = ctx:group('Warehouse')
@@ -2301,20 +2367,30 @@ local function warehouse(ctx, w, color)
 	c:box('DoorFrame', V(dx - 8, 0, 0), V(dx + 8, 15.2, 0.4), P.warehouseDark, M.Metal)
 	c:box('RollDoor', V(dx - 7, 0, 0), V(dx + 7, 14, 0.5), P.rollDoor, M.Metal)
 	for y = 1, 13.5, 1.1 do decor(c:box('DoorSlat', V(dx - 7, y, 0.5), V(dx + 7, y + 0.14, 0.58), P.rollDoor:Lerp(P.black, 0.35), M.Metal)) end
-	decor(c:box('LightBar', V(dx - 3, 16, 0), V(dx + 3, 16.6, 0.6), C(255, 210, 60), M.Neon))
+	decor(c:box('LightBar', V(dx - 3, 16, 0), V(dx + 3, 16.6, 0.6), P.lampGlow, M.Neon))
 	c:box('SideDoorFrame', V(w - 8.6, 0, 0), V(w - 3.4, 9, 0.35), P.warehouseDark, M.Metal)
-	c:box('SideDoor', V(w - 8, 0, 0), V(w - 4, 8.2, 0.45), C(30, 56, 120), M.Metal)
+	c:box('SideDoor', V(w - 8, 0, 0), V(w - 4, 8.2, 0.45), P.warehouseDark:Lerp(P.black, 0.2), M.Metal)
 	local lampBox = c:box('WallLamp', V(w - 7, 10.6, 0), V(w - 5, 11.4, 1.2), P.iron, M.Metal)
-	decor(c:box('WallLampGlow', V(w - 6.8, 10.4, 0.2), V(w - 5.2, 10.6, 1.1), C(255, 230, 160), M.Neon))
-	light(lampBox, C(255, 230, 160), 1, 12)
+	decor(c:box('WallLampGlow', V(w - 6.8, 10.4, 0.2), V(w - 5.2, 10.6, 1.1), P.lampGlow, M.Neon))
+	light(lampBox, P.lampGlow, 1, 12)
 	model:SetAttribute('Floors', 2)
 	return c
 end
 
--- Shop with a striped awning and a framed sign (the barber's look, reused down Shop Street).
--- o: sign, signColor, textColor, wall, trim, stripes, floors, extra ('crates' | 'pole')
+-- The one sign recipe for the street: a board (charcoal with cream text, or cream with charcoal text; the
+-- grocery's is its deep green with the name in gold) in a charcoal steel frame, fixed flat over the shopfront.
+function Streets.shopSign(c, x0, x1, text, board, ink)
+	decor(c:box('ShopSignFrame', V(x0 - 0.35, 9.85, 0), V(x1 + 0.35, 13.95, 0.65), P.metal, M.Metal))
+	local sign = c:box('ShopSign', V(x0, 10.2, 0), V(x1, 13.6, 0.8), board, M.SmoothPlastic)
+	line(surface(sign, Enum.NormalId.Back, 20), 'Text', text, ink, FONT.loud, 0.14, 0.72)
+	return sign
+end
+
+-- Shop with a striped awning and a framed sign (the barber's look, reused down Shop Street). ONE accent per
+-- shop: the awning stripes (accent and cream) and the painted shopfront (the accent, deepened).
+-- o: sign, accent, board, text, wall, floors, extra ('crates')
 local function shopBuilding(ctx, w, o)
-	local trim = o.trim or o.signColor
+	local trim = o.accent:Lerp(P.black, 0.25)
 	local c = brickBuilding(ctx, w, { name = 'Shop_' .. o.sign:gsub('%W', ''), floors = o.floors or 2, wall = o.wall or P.brick, ground = function(c2)
 		c2:box('ShopBase', V(1, 0, 0), V(w - 1, 1.2, 0.4), trim, M.SmoothPlastic)
 		c2:box('ShopGlass', V(2, 1.2, 0), V(w - 8, 7.4, 0.3), P.glass, M.SmoothPlastic).Reflectance = 0.15
@@ -2323,11 +2399,9 @@ local function shopBuilding(ctx, w, o)
 		c2:box('ShopDoor', V(w - 6.4, 0, 0), V(w - 3.2, 7.4, 0.5), P.glass, M.SmoothPlastic)
 		c2:box('ShopBand', V(0, 8, 0), V(w, 9.6, 0.4), trim, M.SmoothPlastic)
 	end })
-	stripedAwning(c, 1.5, w - 1.5, 9.4, o.stripes)
+	stripedAwning(c, 1.5, w - 1.5, 9.4, { o.accent, P.cream })
 	local sw = math.min(w / 2 - 1.5, 2.5 + #o.sign * 0.85)
-	local sign = c:box('ShopSign', V(w / 2 - sw, 10.2, 0), V(w / 2 + sw, 13.6, 0.8), o.signColor, M.SmoothPlastic)
-	decor(c:box('ShopSignBorder', V(w / 2 - sw - 0.3, 9.9, 0), V(w / 2 + sw + 0.3, 13.9, 0.7), P.white, M.SmoothPlastic))
-	line(surface(sign, Enum.NormalId.Back, 20), 'Text', o.sign, o.textColor or P.white, FONT.loud, 0.12, 0.76, o.signColor:Lerp(P.black, 0.6), 3)
+	Streets.shopSign(c, w / 2 - sw, w / 2 + sw, o.sign, o.board, o.text)
 	if o.extra == 'crates' then
 		crate(c, CFrame.new(3.5, 0, 2.6), 2.4)
 		crate(c, CFrame.new(3.5, 2.4, 2.6) * CFrame.Angles(0, 0.3, 0), 2)
@@ -2338,9 +2412,9 @@ end
 -- A lot of stacked shipping containers behind a low wall, crates out front (the yards' side "buildings").
 local function containerLot(ctx, w, seed)
 	local c = ctx:group('ContainerLot')
-	c:box('LotFloor', V(0, -1, -DEPTH), V(w, 0.06, 0), C(176, 178, 184), M.Concrete)
+	c:box('LotFloor', V(0, -1, -DEPTH), V(w, 0.06, 0), C(178, 172, 162), M.Concrete)
 	c:box('LotWall', V(0, -1, -DEPTH), V(w, 6, -DEPTH + 2), P.wall, M.Concrete)
-	local colors = { P.containerBlue, P.containerRed, C(60, 150, 90), P.containerRed }
+	local colors = { P.containerBlue, P.containerRed, P.containerTeal, P.containerCream }
 	local n = math.floor(w / 20)
 	for k = 0, n - 1 do
 		local x = (w - n * 20) / 2 + 10 + k * 20
@@ -4256,6 +4330,15 @@ local function buildGround(ctx)
 			decor(g:box('CrossLine', V(x - 1.2, 0.02, z - 3.5), V(x + 1.2, 0.05, z - 3.1), P.bandLine, M.SmoothPlastic))
 		end
 	end
+	-- Sidewalks along both building lines (lighter slabs and a kerb line, flush so nothing trips) so the walk
+	-- reads as a street: pavement, kerb, the middle. The lamps stand at the kerb, trees and benches on the pavement.
+	for i = 1, STAGES do
+		local z = stageTop(i)
+		for _, s in { -1, 1 } do
+			decor(g:box('Sidewalk', V(s * (FRONT - 8), 0, z - 60), V(s * FRONT, 0.03, z - 4), P.kerb, M.Pavement))
+			decor(g:box('Kerb', V(s * (FRONT - 8.4), 0, z - 60), V(s * (FRONT - 8), 0.06, z - 4), P.band, M.Concrete))
+		end
+	end
 	-- Grass behind the buildings and round the warehouse, inside the low boundary wall.
 	local zIn0, zIn1 = BOSS_END - 6, SPAWN_TOP + 6
 	for _, s in { -1, 1 } do
@@ -4308,7 +4391,7 @@ local function buildGround(ctx)
 		tree(road, V(x, 0.4, zTop + 28), seed, 1.0)
 		tree(road, V(x, 0.4, zBot - 28), seed + 50, 1.0)
 	end
-	local carColors = { C(252, 204, 40), P.white, C(214, 52, 52), C(52, 102, 214), C(252, 204, 40), C(230, 230, 232) }
+	local carColors = { C(110, 43, 43), C(226, 218, 200), C(63, 125, 110), C(60, 66, 76), C(98, 114, 134), C(236, 234, 228) }
 	local spots = { { -1, 40 }, { -1, -110 }, { -1, -300 }, { -1, -520 }, { -1, -760 }, { -1, -980 }, { 1, 10 }, { 1, -190 }, { 1, -370 }, { 1, -610 }, { 1, -850 }, { 1, -1040 } }
 	for k, sp in spots do
 		car(road, CFrame.new(sp[1] * (W0 + 7.5), 0, sp[2]) * CFrame.Angles(0, sp[1] < 0 and math.pi or 0, 0), carColors[(k - 1) % #carColors + 1])
@@ -4331,38 +4414,50 @@ local function buildSpawn(ctx, skins)
 	return Lobby.build(ctx, skins)
 end
 ---------------------------------------------------------------------------------------------- stage gates
--- A gate at the start of every stage (and the boss yard): two posts at the building line, a header with
--- the stage number, and a see-through wall in the look's colour showing the power it takes. HoodClient/
--- Stages makes the wall solid while you're short, turns it green when you can pass and clears it once
--- you have; StageService records the clear and pays the reward.
+-- A gate at the start of every stage (and the boss yard): charcoal steel posts on stone plinths at the
+-- building line, a framed header board in the district accent with cream lettering, and a see-through wall in
+-- a soft wash of that accent showing the power it takes (big cream number). HoodClient/Stages makes the wall
+-- solid while you're short, turns it sage when you can pass and clears it once you have; StageService records
+-- the clear and pays the reward.
 local LOOK_NAMES = { 'THE BLOCK', 'SHOP STREET', 'THE COURTS', 'THE APARTMENTS', 'THE YARDS', 'BOSS YARD' }
-local BOSS_RED = C(214, 44, 44)
+local BOSS_RED = P.oxblood
 local function lookColor(i) return i > STAGES and BOSS_RED or P.district[lookOf(i)] end
 local function stageGate(ctx, i)
 	local z = gateZ(i)
 	local color = lookColor(i)
+	-- The wall is a soft wash of the accent, not a saturated sheet; its lettering is cream on a deep stroke.
+	-- (Stage 1's sits in the lobby's exit door, so it is paler still: the exit sign there is the hero.)
+	local tint = color:Lerp(P.cream, i == 1 and 0.7 or 0.4)
+	local deep = color:Lerp(P.black, 0.6)
 	local req = STAGE_POWER[i]
 	local g, model = ctx:at(CFrame.new(0, 0, z)):group('StageGate' .. i)
-	for _, s in { -1, 1 } do g:box('GatePost', V(s * 34.4, 0, -0.6), V(s * 36, 24.8, 0.6), color:Lerp(P.black, 0.3), M.SmoothPlastic) end
-	local header = g:box('GateHeader', V(-35.6, 21, -1), V(35.6, 25, 1), color, M.SmoothPlastic)
+	for _, s in { -1, 1 } do
+		g:box('GatePlinth', V(s * 34.1, 0, -1), V(s * 36.3, 1.4, 1), P.stone, M.Concrete)
+		g:box('GatePost', V(s * 34.4, 1.4, -0.6), V(s * 36, 24.8, 0.6), P.metal, M.Metal)
+		g:box('GatePostCap', V(s * 34.2, 25.4, -0.8), V(s * 36.2, 26, 0.8), P.metal, M.Metal)
+	end
+	decor(g:box('GateSill', V(-34.4, 0, -0.5), V(34.4, 0.12, 0.5), P.metal, M.Metal))
+	-- The header: a board in the district accent inside a charcoal steel frame.
+	g:box('GateHeaderFrame', V(-36.2, 20.6, -0.8), V(36.2, 25.4, 0.8), P.metal, M.Metal)
+	local header = g:box('GateHeader', V(-35.4, 21.1, -1), V(35.4, 24.9, 1), color, M.SmoothPlastic)
 	for _, face in { Enum.NormalId.Back, Enum.NormalId.Front } do
 		local hg = surface(header, face, 16)
 		pcall(function() hg.MaxDistance = i == 1 and 400 or 100 end)
-		line(hg, 'Name', i > STAGES and 'BOSS YARD' or ('STAGE ' .. i .. '  •  ' .. LOOK_NAMES[lookOf(i)]), P.white, FONT.loud, 0.12, 0.76, color:Lerp(P.black, 0.6), 4)
+		line(hg, 'Name', i > STAGES and 'BOSS YARD' or ('STAGE ' .. i .. '  •  ' .. LOOK_NAMES[lookOf(i)]), P.cream, FONT.loud, 0.14, 0.72, deep, 3)
 	end
-	local barrier = g:box('Barrier', V(-34.4, 0, -0.3), V(34.4, 21, 0.3), color, M.SmoothPlastic)
+	local barrier = g:box('Barrier', V(-34.4, 0, -0.3), V(34.4, 21, 0.3), tint, M.SmoothPlastic)
 	-- Stage 1's barrier fills the warehouse door, so it is fainter; the client keeps each gate's own base.
-	barrier.Transparency = i == 1 and 0.8 or 0.62
+	barrier.Transparency = i == 1 and 0.8 or 0.68
 	barrier:SetAttribute('BaseTransparency', barrier.Transparency)
 	barrier.CastShadow = false
 	for _, face in { Enum.NormalId.Back, Enum.NormalId.Front } do
 		local bg = surface(barrier, face, 12)
-		-- Only stage 1's wall text reads from the lobby; later gates show theirs as you walk up, so they don't stack
-		-- behind stage 1's through the warehouse door.
-		pcall(function() bg.MaxDistance = i == 1 and 260 or 90 end)
-		line(bg, 'Power', '💪 ' .. compact(req), P.white, FONT.loud, 0.16, 0.34, color:Lerp(P.black, 0.6), 6)
-		line(bg, 'Sub', 'POWER TO ENTER', P.white, FONT.title, 0.5, 0.12, color:Lerp(P.black, 0.6), 3)
-		line(bg, 'Status', 'NEED 💪 ' .. compact(req), P.white, FONT.loud, 0.68, 0.1, color:Lerp(P.black, 0.6), 2)
+		-- Every gate's wall text shows only as you walk up (stage 1's not from inside the lobby, where the exit sign
+		-- already says it; later gates' don't stack behind stage 1's through the warehouse door).
+		pcall(function() bg.MaxDistance = i == 1 and 35 or 90 end)
+		line(bg, 'Power', '💪 ' .. compact(req), P.cream, FONT.loud, 0.16, 0.34, deep, 6)
+		line(bg, 'Sub', 'POWER TO ENTER', P.cream, FONT.title, 0.5, 0.12, deep, 3)
+		line(bg, 'Status', 'NEED 💪 ' .. compact(req), P.cream, FONT.loud, 0.68, 0.1, deep, 2)
 	end
 	-- Pads on the approach side: back to spawn, and on to your furthest stage.
 	if i > 1 then
@@ -4383,7 +4478,7 @@ local function stageGate(ctx, i)
 	fx.Drag = 1.2
 	fx.Size = NumberSequence.new(0.5)
 	fx.RotSpeed, fx.Rotation = NumberRange.new(-260, 260), NumberRange.new(0, 360)
-	fx.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, color), ColorSequenceKeypoint.new(0.5, C(255, 222, 40)), ColorSequenceKeypoint.new(1, P.white) })
+	fx.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, color), ColorSequenceKeypoint.new(0.5, P.gold), ColorSequenceKeypoint.new(1, P.cream) })
 	fx.EmissionDirection = Enum.NormalId.Bottom
 	fx.LightInfluence = 1
 	fx.Parent = shell
@@ -4395,7 +4490,7 @@ local function stageGate(ctx, i)
 	model:SetAttribute('PadZ', z + 7)
 	model:SetAttribute('HalfWidth', FRONT)
 	model:SetAttribute('Color', color)
-	model:SetAttribute('Light', color)
+	model:SetAttribute('Light', tint)
 	model:AddTag('HoodStageGate')
 	return model
 end
@@ -4404,6 +4499,29 @@ end
 -- Fifteen stages, three to a look (the concept's "1-3", "4-6"... groups). Stages that share a look share
 -- their kit and colours but not their layout: building order, heights, shops and props change each time.
 local TRIO_COLORS = { P.padRed, P.padBlue, P.padGreen }
+-- District sign: a framed board on two charcoal posts at the kerb just past the district's first gate, in the
+-- district accent with cream lettering and a cream plate hung under it (it replaces the floating banner,
+-- which hid the next gate's number).
+function Streets.districtSign(ctx, k, top)
+	local s = k % 2 == 1 and -1 or 1
+	local lo, hi = math.min(s * 19.5, s * 30.5), math.max(s * 19.5, s * 30.5)
+	local zc = top - 5
+	local g = ctx:group('DistrictSign')
+	for _, x in { s * 20.5, s * 29.5 } do
+		g:box('SignPostFoot', V(x - 0.6, 0, zc - 0.6), V(x + 0.6, 0.5, zc + 0.6), P.stone, M.Concrete)
+		g:box('SignPost', V(x - 0.3, 0.5, zc - 0.3), V(x + 0.3, 11.4, zc + 0.3), P.metal, M.Metal)
+		g:box('SignPostCap', V(x - 0.45, 11.4, zc - 0.45), V(x + 0.45, 11.7, zc + 0.45), P.metal, M.Metal)
+	end
+	g:box('SignFrame', V(lo - 0.3, 6.8, zc - 0.25), V(hi + 0.3, 11.1, zc + 0.25), P.metal, M.Metal)
+	local board = g:box('SignBoard', V(lo, 7.1, zc - 0.4), V(hi, 10.8, zc + 0.4), P.district[k], M.SmoothPlastic)
+	local plate = g:box('SignPlate', V(lo + 1.6, 5.3, zc - 0.3), V(hi - 1.6, 6.5, zc + 0.3), P.cream, M.SmoothPlastic)
+	for _, x in { lo + 2.2, hi - 2.2 } do decor(g:box('PlateHanger', V(x - 0.06, 6.5, zc - 0.06), V(x + 0.06, 6.8, zc + 0.06), P.metal, M.Metal)) end
+	for _, face in { Enum.NormalId.Back, Enum.NormalId.Front } do
+		line(surface(board, face, 20), 'Title', LOOK_NAMES[k], P.cream, FONT.loud, 0.16, 0.68, P.district[k]:Lerp(P.black, 0.6), 2)
+		line(surface(plate, face, 20), 'Stages', 'STAGES ' .. (3 * k - 2) .. ' - ' .. (3 * k), P.ink, FONT.title, 0.12, 0.76)
+	end
+	return g
+end
 local function sideRow(ctx, s, za, lots)
 	local z = za
 	for _, lot in lots do
@@ -4442,10 +4560,10 @@ local function stageCore(ctx, i)
 	local d = ctx:group('Stage' .. i)
 	local _, pad = fightPad(d, i, V(0, 0, padZ(i)), TRIO_COLORS[trioOf(i)], lookOf(i))
 	pad.parent:SetAttribute('Stage', i)
-	if trioOf(i) == 1 then
-		local k = lookOf(i)
-		banner(d, 'DISTRICT ' .. k .. '  •  ' .. (3 * k - 2) .. ' - ' .. (3 * k), V(0, 7, top - 50), P.district[k], 40)
-	end
+	if trioOf(i) == 1 then Streets.districtSign(d, lookOf(i), top) end
+	-- Flush street furniture in the paving (worn-but-cared-for detail): a manhole cover and two kerb drains.
+	decor(d:part('Manhole', V(0.06, 3.2, 3.2), CFrame.new(i % 2 == 0 and 9 or -11, 0.03, top - 47) * CFrame.Angles(0, 0, math.pi / 2), P.metal, M.DiamondPlate, Enum.PartType.Cylinder))
+	for _, s in { -1, 1 } do decor(d:box('Drain', V(s * 27.4, 0, top - 22 - s * 6), V(s * 28.2, 0.07, top - 19 - s * 6), P.iron, M.DiamondPlate)) end
 	return d, top
 end
 
@@ -4476,14 +4594,15 @@ local function brickStage(ctx, i)
 	standardDressing(d, top, i, extras[t][1], extras[t][2])
 end
 
--- 4-6 Shop Street: the barber and the grocery, then more shops under striped awnings.
+-- 4-6 Shop Street: the barber and the grocery, then more shops under striped awnings. Each shop has ONE
+-- muted accent (awning stripes and shopfront paint) and a framed board from the street's one sign system.
 local SHOPS = {
-	{ sign = 'PIZZA', signColor = C(206, 40, 40), textColor = C(255, 220, 80), stripes = { C(206, 40, 40), P.white }, wall = P.brickPink },
-	{ sign = 'SNEAKERS', signColor = C(28, 30, 36), textColor = P.white, stripes = { C(40, 40, 46), P.white }, wall = P.brick },
-	{ sign = 'ICE CREAM', signColor = C(236, 90, 160), textColor = P.white, stripes = { C(250, 150, 200), P.white }, wall = C(244, 226, 200) },
-	{ sign = 'ARCADE', signColor = C(120, 50, 200), textColor = C(255, 220, 60), stripes = { C(130, 60, 210), C(255, 214, 60) }, wall = P.brickDark },
-	{ sign = 'BAKERY', signColor = C(150, 96, 52), textColor = P.white, stripes = { C(200, 140, 80), P.white }, wall = P.tan, extra = 'crates' },
-	{ sign = 'PHONES', signColor = C(40, 120, 220), textColor = P.white, stripes = { C(40, 120, 220), P.white }, wall = P.brick },
+	{ sign = 'PIZZA', accent = C(170, 80, 66), board = P.ink, text = P.cream, wall = P.brickPink },
+	{ sign = 'SNEAKERS', accent = C(70, 76, 86), board = P.cream, text = P.ink, wall = P.brick },
+	{ sign = 'ICE CREAM', accent = C(190, 132, 140), board = P.cream, text = C(150, 86, 98), wall = C(232, 222, 204) },
+	{ sign = 'ARCADE', accent = C(112, 92, 142), board = P.ink, text = P.gold, wall = P.brickDark },
+	{ sign = 'BAKERY', accent = C(150, 106, 72), board = P.cream, text = C(112, 74, 48), wall = P.tan, extra = 'crates' },
+	{ sign = 'PHONES', accent = C(84, 110, 150), board = P.ink, text = P.cream, wall = P.brick },
 }
 local function shopStage(ctx, i)
 	local d, top = stageCore(ctx, i)
@@ -4516,13 +4635,14 @@ local function shopStage(ctx, i)
 	standardDressing(d, top, i, { { 'bench', -34, 4 } }, { { 'can', -34, 3 } })
 end
 
--- 7-9 The Courts: a fenced court across the walk in each, basketball, then a blue court, then a green
--- five-a-side cage with goals.
-local COURTS = { { P.court, 'hoops' }, { C(60, 120, 210), 'hoops' }, { C(70, 170, 90), 'goals' } }
+-- 7-9 The Courts: a fenced court across the walk in each: a grey basketball court with teal keys, a slate
+-- court with terracotta keys, then a turf five-a-side cage with goals (most real courts are grey; the colour is
+-- in the keys).
+local COURTS = { { P.court, 'hoops', P.district[3] }, { P.courtSlate, 'hoops', P.courtKey }, { P.courtTurf, 'goals' } }
 local function courtStage(ctx, i)
 	local d, top = stageCore(ctx, i)
 	local t = trioOf(i)
-	local floor, kind = COURTS[t][1], COURTS[t][2]
+	local floor, kind, key = COURTS[t][1], COURTS[t][2], COURTS[t][3]
 	local z0, z1 = top - 58, top - 10
 	d:box('Court', V(-FRONT + 4, 0, z0), V(FRONT - 4, 0.12, z1), floor, M.SmoothPlastic)
 	local function stripe(a, b) decor(d:box('CourtLine', a, b, P.courtLine, M.SmoothPlastic)) end
@@ -4540,6 +4660,14 @@ local function courtStage(ctx, i)
 		end
 	end
 	arc(0, 6, 0, math.pi * 2, 16)
+	if key then
+		-- The keys (the painted lanes under each hoop), framed by court line.
+		for _, s in { -1, 1 } do
+			local x0, x1 = s * (FRONT - 4), s * (FRONT - 16)
+			decor(d:box('CourtKey', V(x0, 0.12, zc - 5), V(x1, 0.15, zc + 5), key, M.SmoothPlastic))
+			stripe(V(x1 - 0.2, 0.12, zc - 5), V(x1 + 0.2, 0.16, zc + 5))
+		end
+	end
 	arc(-FRONT + 4, 14, -math.pi / 2, math.pi / 2, 12)
 	arc(FRONT - 4, 14, math.pi / 2, math.pi * 1.5, 12)
 	for _, s in { -1, 1 } do
@@ -4547,11 +4675,11 @@ local function courtStage(ctx, i)
 			local h = d:at(CFrame.lookAt(V(s * (FRONT - 3), 0, zc), V(0, 0, zc))):group('Hoop')
 			h:post('HoopPole', 0.35, 11, V(0, 0, 0.6), C(60, 64, 72), M.Metal)
 			h:box('HoopArm', V(-0.25, 10.4, -1.2), V(0.25, 10.8, 0.6), C(60, 64, 72), M.Metal)
-			h:box('Backboard', V(-2.6, 9.4, -1.6), V(2.6, 12.6, -1.3), P.white, M.SmoothPlastic)
-			decor(h:box('BoardSquare', V(-1, 10.0, -1.65), V(1, 11.2, -1.6), C(220, 60, 50), M.SmoothPlastic))
+			h:box('Backboard', V(-2.6, 9.4, -1.6), V(2.6, 12.6, -1.3), P.frame, M.SmoothPlastic)
+			decor(h:box('BoardSquare', V(-1, 10.0, -1.65), V(1, 11.2, -1.6), key or P.metal, M.SmoothPlastic))
 			for q = 0, 7 do
 				local a = q / 8 * math.pi * 2
-				decor(h:part('Rim', V(0.7, 0.12, 0.14), CFrame.new(math.cos(a) * 0.85, 10, -2.6 + math.sin(a) * 0.85) * CFrame.Angles(0, -a + math.pi / 2, 0), C(240, 100, 40), M.Metal))
+				decor(h:part('Rim', V(0.7, 0.12, 0.14), CFrame.new(math.cos(a) * 0.85, 10, -2.6 + math.sin(a) * 0.85) * CFrame.Angles(0, -a + math.pi / 2, 0), C(184, 110, 76), M.Metal))
 				decor(h:bar('Net', V(math.cos(a) * 0.82, 9.95, -2.6 + math.sin(a) * 0.82), V(math.cos(a) * 0.45, 8.9, -2.6 + math.sin(a) * 0.45), 0.07, P.white, M.Fabric))
 			end
 		else
@@ -4591,14 +4719,15 @@ local function apartmentStage(ctx, i)
 	local d, top = stageCore(ctx, i)
 	local t = trioOf(i)
 	local light = P.tan:Lerp(P.tanLight, 0.35)
-	local floors = { { { 3, 3, 3 }, { 3, 3, 3 } }, { { 3, 4, 3 }, { 4, 3, 3 } }, { { 4, 3, 4 }, { 3, 4, 4 } } }
+	-- Towers, taller each stage: the district reads as "the apartments" from the gate.
+	local floors = { { { 5, 6, 5 }, { 6, 5, 5 } }, { { 6, 5, 6 }, { 5, 6, 6 } }, { { 6, 7, 6 }, { 7, 6, 6 } } }
 	local widths = { { 24, 20, 20 }, { 20, 24, 20 }, { 20, 20, 24 } }
 	for k, s in { -1, 1 } do
 		local f3 = floors[t][k]
 		local lots = {}
 		for q = 1, 3 do
 			local wall = ((q + k + t) % 2 == 0) and light or P.tan
-			table.insert(lots, { widths[t][q], function(f, w) tanBuilding(f, w, { floors = f3[q], wall = wall }) end })
+			table.insert(lots, { widths[t][q], function(f, w) tanBuilding(f, w, { floors = f3[q], wall = wall, stone = true }) end })
 		end
 		sideRow(d, s, top, lots)
 	end
@@ -4609,9 +4738,9 @@ end
 local function yardStage(ctx, i)
 	local d, top = stageCore(ctx, i)
 	local t = trioOf(i)
-	local grey = C(132, 140, 156)
+	local grey = C(150, 146, 140)
 	local plans = {
-		{ L = { { 40, 'warehouse' }, { 24, 'tan4' } }, R = { { 24, 'tan3' }, { 40, 'containers' } } },
+		{ L = { { 32, 'warehouse' }, { 32, 'containers' } }, R = { { 32, 'containers' }, { 32, 'greyhouse' } } }, -- (all industrial: the district's first look)
 		{ L = { { 24, 'tan4' }, { 40, 'greyhouse' } }, R = { { 40, 'containers' }, { 24, 'tan4' } } },
 		{ L = { { 32, 'containers' }, { 32, 'tan4' } }, R = { { 32, 'tan3' }, { 32, 'warehouse' } } },
 	}
@@ -4633,33 +4762,78 @@ local function yardStage(ctx, i)
 end
 
 ---------------------------------------------------------------------------------------------- boss yard
+-- The Champ Ring comes from HoodProps (shared with the old map, not edited here) and is built loud; the boss
+-- yard tones its parts into the street palette after building it: brass instead of yellow, oxblood and slate
+-- instead of signal red and royal blue, warm-white neon, a calmer crowd, and red-cream-slate ropes that hold
+-- still (no rainbow, no neon paint).
+function Streets.calmRing(model)
+	local red, brass = C(160, 70, 66), C(196, 156, 86)
+	for _, d in model:GetDescendants() do
+		if d:IsA('BasePart') and d.Transparency < 1 then
+			local h, s, v = d.Color:ToHSV()
+			local deg = h * 360
+			if d.Name == 'Rope' then
+				-- (rows by height: oxblood, cream, slate, cream from the bottom)
+				local row = math.floor((d.CFrame.Position.Y - V2.Origin.Position.Y - 3.4) / 1.15 + 0.5)
+				d.Color, d.Material = ({ red, P.cream, P.district[5], P.cream })[math.clamp(row, 1, 4)], M.SmoothPlastic
+			elseif s > 0.45 and v > 0.3 then
+				if d.Material == M.Neon then d.Color = P.lampGlow
+				elseif deg >= 30 and deg < 70 then d.Color = brass
+				elseif deg < 15 or deg >= 340 then d.Color = red
+				elseif deg >= 200 and deg < 250 then d.Color = P.district[5]
+				else d.Color = Color3.fromHSV(h, math.min(s, 0.42), math.min(v, 0.78)) end
+			end
+		elseif d:IsA('TextLabel') then
+			local h, s, v = d.TextColor3:ToHSV()
+			if s > 0.45 then d.TextColor3 = Color3.fromHSV(h, 0.45, math.min(v, 0.92)) end
+		elseif d:IsA('ParticleEmitter') and d.Name == 'Confetti' then
+			d.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, P.gold), ColorSequenceKeypoint.new(0.5, P.cream), ColorSequenceKeypoint.new(1, red) })
+		end
+	end
+	local ropes = model:FindFirstChild('Ropes', true)
+	if ropes then ropes:SetAttribute('Hue', nil) end
+end
+
 -- The warehouse on the left, containers on the right, the Champ Ring in the middle (the last training
 -- spot) and the boss pad under its sign at the far end.
 local function bossYard(ctx)
 	local b = ctx:group('BossYard')
-	b:box('YardSlab', V(-FRONT, 0, BOSS_END), V(FRONT, 0.06, BOSS_TOP - 4), C(176, 178, 184), M.Concrete)
+	b:box('YardSlab', V(-FRONT, 0, BOSS_END), V(FRONT, 0.06, BOSS_TOP - 4), C(178, 172, 162), M.Concrete)
 	sideRow(b, -1, BOSS_TOP, {
 		{ 56, function(f, w) warehouse(f, w) end },
 		{ 40, function(f, w) brickBuilding(f, w, { floors = 2, wall = P.warehouse:Lerp(P.black, 0.1), bays = 4 }) end },
 	})
 	sideRow(b, 1, BOSS_TOP, { { 96, function(f, w) containerLot(f, w, 3) end } })
-	car(b, CFrame.new(-26, 0, BOSS_TOP - 70) * CFrame.Angles(0, math.rad(80), 0), P.white)
+	car(b, CFrame.new(-26, 0, BOSS_TOP - 70) * CFrame.Angles(0, math.rad(80), 0), P.frame)
 	local ring = SKINS.StationById.Ring
 	local ringCtx, ringModel = b:at(CFrame.new(0, 0, BOSS_TOP - 34) * CFrame.Angles(0, math.pi, 0)):group('Training_' .. ring.Id)
 	Props.ring(ringCtx, PROPS_KIT, ring, 7)
-	-- The champion aura (tier 9) on the canvas, like the stations along the way.
+	Streets.calmRing(ringModel)
+	-- The champion aura on the canvas, in a warm pale gold (the tier-9 rainbow was the loudest thing in the yard).
 	local canvas = ringModel:FindFirstChild('TrainingZone')
 	local vfx = Armory.optional('HoodVFX')
-	if canvas and vfx then vfx.station(canvas, 9, nil, V(14, 12, 14)) end
+	if canvas and vfx then vfx.station(canvas, 8, C(236, 206, 150), V(14, 12, 14)) end
 	local bz = BOSS_END + 22
-	local _, pad = fightPad(b, 16, V(0, 0, bz), P.padRed, 6, 14, 'BOSS')
+	local _, pad = fightPad(b, 16, V(0, 0, bz), P.bossRing, 6, 14, 'BOSS')
 	local model = pad.parent
 	model.Name = 'BossPad'
 	model:SetAttribute('Boss', true)
 	local glow = decor(b:part('BossRing', V(0.1, 22, 22), CFrame.new(0, 0.05, bz) * CFrame.Angles(0, 0, math.pi / 2), P.bossRing, M.Neon, Enum.PartType.Cylinder))
 	glow.Transparency, glow.CastShadow = 0.25, false
-	decor(b:part('BossRingInner', V(0.11, 18.4, 18.4), CFrame.new(0, 0.06, bz) * CFrame.Angles(0, 0, math.pi / 2), C(176, 178, 184), M.Concrete, Enum.PartType.Cylinder)).CastShadow = false
-	banner(b, 'BOSS', V(0, 13, bz - 4), BOSS_RED, 16)
+	decor(b:part('BossRingInner', V(0.11, 20.8, 20.8), CFrame.new(0, 0.06, bz) * CFrame.Angles(0, 0, math.pi / 2), C(178, 172, 162), M.Concrete, Enum.PartType.Cylinder)).CastShadow = false
+	-- The BOSS board: oxblood in a charcoal frame, hung on chains from a steel gantry behind the pad.
+	local gz = bz - 9
+	for _, x in { -9, 9 } do
+		b:box('GantryFoot', V(x - 0.9, 0, gz - 0.9), V(x + 0.9, 0.8, gz + 0.9), P.stone, M.Concrete)
+		b:box('GantryPost', V(x - 0.45, 0.8, gz - 0.45), V(x + 0.45, 17.4, gz + 0.45), P.metal, M.Metal)
+	end
+	b:box('GantryBeam', V(-9.6, 17.4, gz - 0.6), V(9.6, 18.4, gz + 0.6), P.metal, M.Metal)
+	for _, x in { -5.5, 5.5 } do decor(b:box('GantryChain', V(x - 0.08, 15.9, gz - 0.08), V(x + 0.08, 17.4, gz + 0.08), P.iron, M.Metal)) end
+	b:box('BossSignFrame', V(-8.3, 10.7, gz - 0.3), V(8.3, 15.9, gz + 0.3), P.metal, M.Metal)
+	local board = b:box('BossSign', V(-7.9, 11.1, gz - 0.45), V(7.9, 15.5, gz + 0.45), BOSS_RED, M.SmoothPlastic)
+	for _, face in { Enum.NormalId.Back, Enum.NormalId.Front } do
+		line(surface(board, face, 20), 'Title', 'BOSS', P.cream, FONT.loud, 0.12, 0.76, BOSS_RED:Lerp(P.black, 0.6), 3)
+	end
 	for x = -30, 30, 15 do tree(b, V(x, 0, BOSS_END + 4), 600 + x, 1) end
 	return b
 end
