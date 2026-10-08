@@ -118,13 +118,20 @@ if not active then return end
 local guns = GunRules.fromAttributes(player:GetAttribute('OwnedGuns'), player:GetAttribute('EquippedGun'))
 local slots, shown = {}, {}
 
+-- Which colour of GunRules.Colors[state] each named slot part takes (the map builder names them).
+local ROLES = { StateTop = 'Top', StateGlow = 'Glow', StateBase = 'Base', StateRim = 'Rim', StatePanel = 'Panel', StateStrip = 'Strip' }
+
 local function paint(slot, state)
 	local look = GunRules.Colors[state]
-	for _, p in slot.Tops do p.Color = look.Top end
-	for _, p in slot.Glows do p.Color = look.Glow end
-	for _, l in slot.Lights do l.Color = look.Top end
+	for _, p in slot.Parts do
+		local color = look[ROLES[p.Name]]
+		if color then p.Color = color end
+		-- (the glowing face is dimmer while locked, full once equipped)
+		if p.Name == 'StateGlow' and p.Material == Enum.Material.Neon and look.GlowAlpha then p.Transparency = look.GlowAlpha end
+	end
+	for _, l in slot.Lights do l.Color = look.Glow end
 	for _, e in slot.Hazes do e.Color = ColorSequence.new(look.Top) end
-	if slot.Strip then slot.Strip.Color = look.Strip end
+	for _, e in slot.Sparkles do e.Enabled = state == 'Equipped' end
 	local label = slot.StateLabel
 	if label then
 		label.Text = string.upper(state)
@@ -152,13 +159,12 @@ local function bind(model)
 	if not gun or (slots[id] and slots[id].Model == model) then return end
 	local point = model:FindFirstChild('GunPoint_' .. id, true) or model:WaitForChild('GunPoint_' .. id, 5)
 	if not point or not model.Parent then return end
-	local slot = { Gun = gun, Model = model, Tops = {}, Glows = {}, Lights = {}, Hazes = {} }
+	local slot = { Gun = gun, Model = model, Parts = {}, Lights = {}, Hazes = {}, Sparkles = {} }
 	for _, d in model:GetDescendants() do
-		if d.Name == 'StateTop' and d:IsA('BasePart') then table.insert(slot.Tops, d)
-		elseif d.Name == 'StateGlow' and d:IsA('BasePart') then table.insert(slot.Glows, d)
-		elseif d.Name == 'StateStrip' and d:IsA('BasePart') then slot.Strip = d
+		if ROLES[d.Name] and d:IsA('BasePart') then table.insert(slot.Parts, d)
 		elseif d:IsA('PointLight') and d.Parent and d.Parent.Name == 'StateGlow' then table.insert(slot.Lights, d)
 		elseif d:IsA('ParticleEmitter') and d.Name == 'StateHaze' then table.insert(slot.Hazes, d)
+		elseif d:IsA('ParticleEmitter') and d.Name == 'StateSparkle' then table.insert(slot.Sparkles, d)
 		elseif d:IsA('TextLabel') and d.Name == 'State' then slot.StateLabel = d
 		elseif d:IsA('TextLabel') and d.Name == 'Price' and d:FindFirstAncestor('GunLabel') then slot.Price = d
 		elseif d:IsA('ImageLabel') and d.Name == 'PriceIcon' then slot.PriceIcon = d

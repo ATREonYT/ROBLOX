@@ -487,6 +487,8 @@ end
 -- Lifetime, measured on the old 7 x 18 mat; the lanes' 7 x 10 field runs at ~0.57 of these):  stone ~12  red ~39  lava ~98  arcane ~35 (+3 comet beams)  frost ~58
 -- toxic ~51  shadow ~42  gold ~38 (25 big glints). All eight together ~456: thin them on phones with setDensity
 -- (the lobby client already halves locked stations).
+-- Brief 8 volume: every theme a notch quieter than the signed-off set (rates ~20% lower, glints and motes less
+-- bright, lights ~25% dimmer), the same escalation from stone to gold.
 HoodVFX.Themes = {}
 local THEME_COLOR = {
 	stone = C(255, 244, 220), red = C(250, 45, 85), lava = C(255, 150, 40), arcane = C(230, 120, 255),
@@ -519,13 +521,13 @@ function HoodVFX.Themes.red(ctx)
 	local sky = holder(ctx.theme, 'RainSky', ctx.top * CFrame.new(0, 4, d / 4), V(w * 0.96, 0.2, d * 0.48))
 	emitter(sky, 'Rain', 'rain', {
 		EmissionDirection = Enum.NormalId.Bottom, Orientation = Enum.ParticleOrientation.VelocityParallel,
-		Rate = 40 * A, Lifetime = NR(0.2, 0.24), Speed = NR(16, 19), SpreadAngle = Vector2.new(3, 3),
+		Rate = 32 * A, Lifetime = NR(0.2, 0.24), Speed = NR(16, 19), SpreadAngle = Vector2.new(3, 3),
 		Size = seq({ { 0, 1.1 }, { 1, 1.3 } }), Transparency = seq({ { 0, 1 }, { 0.12, 0 }, { 0.85, 0.05 }, { 1, 1 } }),
 		Color = cseq({ { 0, C(255, 120, 150) }, { 1, C(250, 45, 85) } }), LightEmission = 0,
 	})
 	local floor = holder(ctx.theme, 'RainFloor', ctx.top * CFrame.new(0, 0.15, d / 4), V(w * 0.9, 0.3, d * 0.45))
 	emitter(floor, 'Splash', 'dust', {
-		Orientation = Enum.ParticleOrientation.VelocityParallel, Rate = 16 * A, Lifetime = NR(0.2, 0.35),
+		Orientation = Enum.ParticleOrientation.VelocityParallel, Rate = 12 * A, Lifetime = NR(0.2, 0.35),
 		Speed = NR(3, 6), SpreadAngle = Vector2.new(55, 55), Acceleration = V(0, -30, 0), Drag = 1,
 		Size = seq({ { 0, 0.22 * S }, { 1, 0 } }), Squash = seq({ { 0, 1.2 }, { 1, 0.5 } }),
 		Color = cseq({ { 0, C(255, 200, 210) }, { 1, C(250, 45, 85) } }), LightEmission = 0.6,
@@ -553,20 +555,20 @@ function HoodVFX.Themes.lava(ctx)
 	for i, zc in { -d / 4, d / 4 } do
 		local half = holder(ctx.theme, 'FireBed' .. i, ctx.top * CFrame.new(0, 0.1, zc), V(bedW, 0.2, d / 2))
 		emitter(half, 'FireCarpet', 'firepuff', {
-			Rate = (uploaded and 20 or 24) * A, Lifetime = NR(0.4, 0.7), Speed = NR(0.3, 1), SpreadAngle = Vector2.new(12, 12), Acceleration = V(0, 1.5, 0),
+			Rate = (uploaded and 16 or 19) * A, Lifetime = NR(0.4, 0.7), Speed = NR(0.3, 1), SpreadAngle = Vector2.new(12, 12), Acceleration = V(0, 1.5, 0),
 			RotSpeed = NR(-20, 20), ZOffset = 0.2, -- (the soft puff fills ~45% of its frame)
 			Size = uploaded and seq({ { 0, 4.0 * S, 0.3 * S }, { 0.4, 5.4 * S, 0.4 * S }, { 1, 0 } }) or seq({ { 0, 1.5 * S, 0.15 * S }, { 0.4, 2.1 * S, 0.2 * S }, { 1, 0 } }),
 			Transparency = seq({ { 0, 0.1 }, { 0.5, 0.25 }, { 1, 1 } }), Color = uploaded and body or fire, LightEmission = 0.35,
 		})
 		if uploaded then
 			emitter(half, 'FireCores', 'firepuff', {
-				Rate = 12 * A, Lifetime = NR(0.35, 0.6), Speed = NR(0.4, 1.2), SpreadAngle = Vector2.new(12, 12), Acceleration = V(0, 1.5, 0),
+				Rate = 10 * A, Lifetime = NR(0.35, 0.6), Speed = NR(0.4, 1.2), SpreadAngle = Vector2.new(12, 12), Acceleration = V(0, 1.5, 0),
 				RotSpeed = NR(-20, 20), ZOffset = 0.5, Size = seq({ { 0, 2.3 * S, 0.2 * S }, { 0.4, 3.1 * S, 0.3 * S }, { 1, 0 } }),
 				Transparency = seq({ { 0, 0.1 }, { 0.5, 0.2 }, { 1, 1 } }), Color = core, LightEmission = 0.35,
 			})
 		end
 		emitter(half, 'FlameLicks', 'flame', {
-			Orientation = Enum.ParticleOrientation.FacingCameraWorldUp, Rate = uploaded and 5 or 9, Lifetime = NR(0.5, 0.9), Speed = NR(3, 5),
+			Orientation = Enum.ParticleOrientation.FacingCameraWorldUp, Rate = uploaded and 4 or 7, Lifetime = NR(0.5, 0.9), Speed = NR(3, 5),
 			SpreadAngle = Vector2.new(10, 10), Rotation = NR(-8, 8), ZOffset = 0.3,
 			Size = seq({ { 0, 0.6 * S }, { 0.4, 1.0 * S, 0.2 * S }, { 1, 0 } }), Transparency = seq({ { 0, 0.3 }, { 0.15, 0 }, { 1, 1 } }),
 			Color = lick, LightEmission = 0.5,
@@ -577,7 +579,7 @@ function HoodVFX.Themes.lava(ctx)
 		local top = b.CFrame * CFrame.new(0, 0, 0)
 		local fire1 = holder(ctx.theme, 'Burner', CFrame.new(top.Position + V(0, 0.15, 0)), V(0.9, 0.2, 0.9))
 		emitter(fire1, 'BurnerFire', 'firepuff', {
-			Rate = 9, Lifetime = NR(0.45, 0.8), Speed = NR(1.5, 3), SpreadAngle = Vector2.new(10, 10), Acceleration = V(0, 2, 0), ZOffset = 0.4,
+			Rate = 7, Lifetime = NR(0.45, 0.8), Speed = NR(1.5, 3), SpreadAngle = Vector2.new(10, 10), Acceleration = V(0, 2, 0), ZOffset = 0.4,
 			RotSpeed = NR(-25, 25), Size = uploaded and seq({ { 0, 1.6, 0.2 }, { 0.4, 2.2, 0.3 }, { 1, 0 } }) or seq({ { 0, 1.0 }, { 0.4, 1.4, 0.2 }, { 1, 0 } }),
 			Transparency = seq({ { 0, 0.1 }, { 0.5, 0.2 }, { 1, 1 } }), Color = fire, LightEmission = 0.5,
 		})
@@ -586,7 +588,7 @@ function HoodVFX.Themes.lava(ctx)
 			SpreadAngle = Vector2.new(8, 8), ZOffset = 0.5, Size = seq({ { 0, 0.7 }, { 0.4, 1.1, 0.2 }, { 1, 0 } }),
 			Transparency = seq({ { 0, 0.3 }, { 0.15, 0 }, { 1, 1 } }), Color = lick, LightEmission = 0.6,
 		})
-		pointLight(fire1, C(255, 150, 50), 1.2, 9)
+		pointLight(fire1, C(255, 150, 50), 0.9, 9)
 	end
 	if ctx.bag and not ctx.burners then
 		-- Two small fires on the bag's flanks (attachments on a belly slab, so they swing with it).
@@ -602,15 +604,15 @@ function HoodVFX.Themes.lava(ctx)
 	if ctx.bag then
 		-- The bag lit orange from below: a light one stud over the mat under it (static, not on the swinging bag).
 		local under = ctx.top:PointToObjectSpace(ctx.bag.CFrame.Position)
-		pointLight(holder(ctx.theme, 'FireGlow', ctx.top * CFrame.new(under.X, 1, under.Z), V(0.2, 0.2, 0.2)), C(255, 140, 50), 1.2, 9)
+		pointLight(holder(ctx.theme, 'FireGlow', ctx.top * CFrame.new(under.X, 1, under.Z), V(0.2, 0.2, 0.2)), C(255, 140, 50), 0.9, 9)
 	end
 	emitter(ctx.deck, 'Embers', 'ember', {
 		Rate = 3 * A, Lifetime = NR(1.4, 2.6), Speed = NR(2, 5), SpreadAngle = Vector2.new(25, 25), Acceleration = V(0.6, 1.5, 0.3), Drag = 0.6,
 		RotSpeed = NR(-40, 40), Size = seq({ { 0, 0.3 * S, 0.1 * S }, { 0.7, 0.2 * S }, { 1, 0 } }),
 		Transparency = seq({ { 0, 0 }, { 0.8, 0.2 }, { 1, 1 } }),
-		Color = cseq({ { 0, C(255, 240, 160) }, { 0.4, C(255, 160, 40) }, { 1, C(255, 70, 20) } }), LightEmission = 1, Brightness = 2, ZOffset = 0.8,
+		Color = cseq({ { 0, C(255, 240, 160) }, { 0.4, C(255, 160, 40) }, { 1, C(255, 70, 20) } }), LightEmission = 1, Brightness = 1.5, ZOffset = 0.8,
 	})
-	pointLight(ctx.column, C(255, 140, 50), 1, 14)
+	pointLight(ctx.column, C(255, 140, 50), 0.75, 14)
 end
 
 -- 4 Arcane: pink-white comets sweeping in arcs over the gantry, with pink sparkles.
@@ -638,28 +640,28 @@ function HoodVFX.Themes.arcane(ctx)
 		b.CurveSize0, b.CurveSize1 = arc[3], -arc[3]
 		b.Width0, b.Width1 = 0.9, 0.06 -- the head (Attachment0) wide, the tail thin
 		b.FaceCamera, b.Segments = true, 16
-		b.LightEmission, b.LightInfluence, b.Brightness = 0.25, 0, 1 -- (mostly opaque, not over-bright: the colour holds)
+		b.LightEmission, b.LightInfluence, b.Brightness = 0.2, 0, 0.85 -- (mostly opaque, not over-bright: the colour holds)
 		b.Color = ColorSequence.new(C(255, 110, 225), C(150, 60, 255))
 		b.Transparency = seq({ { 0, 0 }, { 1, 1 } })
 		b.Parent = ctx.deck
 	end
 	emitter(ctx.deck, 'Motes', 'ember', {
-		Rate = 12 * A, Lifetime = NR(1.4, 2.4), Speed = NR(1, 3), SpreadAngle = Vector2.new(30, 30), Acceleration = V(0, 1, 0), Drag = 0.5,
-		Size = seq({ { 0, 0 }, { 0.2, 0.3 * S, 0.1 * S }, { 1, 0 } }), Color = cseq({ { 0, WHITE }, { 1, C(250, 120, 230) } }), LightEmission = 1, Brightness = 1.8, ZOffset = 0.8,
+		Rate = 9 * A, Lifetime = NR(1.4, 2.4), Speed = NR(1, 3), SpreadAngle = Vector2.new(30, 30), Acceleration = V(0, 1, 0), Drag = 0.5,
+		Size = seq({ { 0, 0 }, { 0.2, 0.3 * S, 0.1 * S }, { 1, 0 } }), Color = cseq({ { 0, WHITE }, { 1, C(250, 120, 230) } }), LightEmission = 1, Brightness = 1.3, ZOffset = 0.8,
 	})
 	emitter(ctx.column, 'Glints', 'glitter', {
-		Rate = 8 * A, Lifetime = NR(0.45, 0.8), Speed = NR(0.2, 0.8), Rotation = NR(0, 90), RotSpeed = NR(-60, 60),
-		Size = seq({ { 0, 0 }, { 0.3, 0.7 * S, 0.25 * S }, { 1, 0 } }), Color = cseq({ { 0, WHITE }, { 1, C(255, 170, 240) } }), LightEmission = 1, Brightness = 2, ZOffset = 1,
+		Rate = 6 * A, Lifetime = NR(0.45, 0.8), Speed = NR(0.2, 0.8), Rotation = NR(0, 90), RotSpeed = NR(-60, 60),
+		Size = seq({ { 0, 0 }, { 0.3, 0.7 * S, 0.25 * S }, { 1, 0 } }), Color = cseq({ { 0, WHITE }, { 1, C(255, 170, 240) } }), LightEmission = 1, Brightness = 1.5, ZOffset = 1,
 	})
-	pointLight(ctx.column, color, 0.8, 12)
+	pointLight(ctx.column, color, 0.6, 12)
 end
 
 -- 5 Frost: ice sparkles twinkling over the cyan ice and slow snow drifting down.
 function HoodVFX.Themes.frost(ctx)
 	local A, S, color, w, d, h = ctx.A, ctx.S, ctx.color, ctx.w, ctx.d, ctx.h
 	emitter(ctx.column, 'IceSparkle', 'snow', {
-		Rate = 12 * A, Lifetime = NR(0.5, 0.9), Speed = NR(0.2, 0.6), Rotation = NR(0, 60), RotSpeed = NR(-50, 50),
-		Size = seq({ { 0, 0 }, { 0.35, 0.65 * S, 0.2 * S }, { 1, 0 } }), Color = cseq({ { 0, WHITE }, { 1, lighten(color, 0.4) } }), LightEmission = 1, Brightness = 2, ZOffset = 1,
+		Rate = 9 * A, Lifetime = NR(0.5, 0.9), Speed = NR(0.2, 0.6), Rotation = NR(0, 60), RotSpeed = NR(-50, 50),
+		Size = seq({ { 0, 0 }, { 0.35, 0.65 * S, 0.2 * S }, { 1, 0 } }), Color = cseq({ { 0, WHITE }, { 1, lighten(color, 0.4) } }), LightEmission = 1, Brightness = 1.5, ZOffset = 1,
 	})
 	local sky = holder(ctx.theme, 'SnowSky', ctx.top * CFrame.new(0, h * 0.8, 0), V(w, 0.2, d))
 	emitter(sky, 'Snowfall', 'snow', {
@@ -667,7 +669,7 @@ function HoodVFX.Themes.frost(ctx)
 		Acceleration = V(0.3, 0, 0.2), RotSpeed = NR(-60, 60), Size = seq({ { 0, 0.3 * S, 0.1 * S }, { 1, 0.3 * S, 0.1 * S } }),
 		Transparency = seq({ { 0, 1 }, { 0.1, 0.1 }, { 0.85, 0.2 }, { 1, 1 } }), Color = ColorSequence.new(WHITE), LightEmission = 0.4,
 	})
-	pointLight(ctx.column, C(170, 230, 255), 0.8, 12)
+	pointLight(ctx.column, C(170, 230, 255), 0.6, 12)
 end
 
 -- A field of soft, straight vertical wisps rising from the whole pad to above the bag (6-8 studs), the
@@ -685,7 +687,7 @@ end
 -- 6 Toxic: soft dark-green wisps rising out of the whole neon-rimmed pit past the bag, ooze bubbles, spores.
 function HoodVFX.Themes.toxic(ctx)
 	local A, S, color = ctx.A, ctx.S, ctx.color
-	streakField(ctx, 'DarkStreaks', 14 * A, C(14, 70, 30), C(4, 24, 10))
+	streakField(ctx, 'DarkStreaks', 11 * A, C(14, 70, 30), C(4, 24, 10))
 	emitter(ctx.deck, 'Bubbles', 'bubble', {
 		Rate = 4 * A, Lifetime = NR(1, 1.8), Speed = NR(0.5, 1.4), SpreadAngle = Vector2.new(20, 20), Acceleration = V(0, 0.6, 0), Drag = 0.6,
 		RotSpeed = NR(-30, 30), Size = seq({ { 0, 0.2 * S }, { 0.85, 0.7 * S, 0.2 * S }, { 0.9, 0.9 * S }, { 1, 0 } }),
@@ -693,21 +695,21 @@ function HoodVFX.Themes.toxic(ctx)
 	})
 	emitter(ctx.column, 'Spores', 'ember', {
 		Rate = 4 * A, Lifetime = NR(1.5, 2.5), Speed = NR(0.5, 1.5), SpreadAngle = Vector2.new(40, 40), Acceleration = V(0, 0.5, 0),
-		Size = seq({ { 0, 0 }, { 0.2, 0.26 * S }, { 1, 0 } }), Color = ColorSequence.new(lighten(color, 0.2)), LightEmission = 1, Brightness = 1.6, ZOffset = 0.8,
+		Size = seq({ { 0, 0 }, { 0.2, 0.26 * S }, { 1, 0 } }), Color = ColorSequence.new(lighten(color, 0.2)), LightEmission = 1, Brightness = 1.2, ZOffset = 0.8,
 	})
-	pointLight(ctx.column, color, 1, 14)
+	pointLight(ctx.column, color, 0.75, 14)
 end
 
 -- 7 Shadow: the same straight wisps in violet over the deep purple pad, and a low violet ground fog.
 function HoodVFX.Themes.shadow(ctx)
 	local A, S, color = ctx.A, ctx.S, ctx.color
-	streakField(ctx, 'VioletStreaks', 12 * A, C(130, 75, 215), C(45, 22, 80), 4.5) -- capped near 5 studs: no purple fire
+	streakField(ctx, 'VioletStreaks', 10 * A, C(130, 75, 215), C(45, 22, 80), 4.5) -- capped near 5 studs: no purple fire
 	emitter(ctx.deck, 'GroundFog', 'mist', {
 		Rate = 1.2 * A, Lifetime = NR(3, 4), Speed = NR(0.4, 1), SpreadAngle = Vector2.new(85, 85), Drag = 0.8, Acceleration = V(0, -0.1, 0),
 		RotSpeed = NR(-10, 10), ZOffset = -1, Size = seq({ { 0, 2.5 * S }, { 1, 5 * S } }), Transparency = seq({ { 0, 1 }, { 0.3, 0.55 }, { 1, 1 } }),
 		Color = ColorSequence.new(C(120, 80, 180)), LightEmission = 0,
 	})
-	pointLight(ctx.column, color, 1, 14)
+	pointLight(ctx.column, color, 0.75, 14)
 end
 
 -- 8 Gold: big white four-point glints popping all over the mat and up to six studs above it, a few specks.
@@ -715,14 +717,14 @@ function HoodVFX.Themes.gold(ctx)
 	local A, S, w, d = ctx.A, ctx.S, ctx.w, ctx.d
 	local air = holder(ctx.theme, 'GlintAir', ctx.top * CFrame.new(0, 3, 0), V(w, 6, d))
 	emitter(air, 'Glints', 'glitter', {
-		Rate = 50, Lifetime = NR(0.5, 0.9), Speed = NR(0.05, 0.3), Rotation = NR(0, 20), RotSpeed = NR(-40, 40),
-		Size = seq({ { 0, 0 }, { 0.35, 0.8, 0.2 }, { 1, 0 } }), Color = cseq({ { 0, WHITE }, { 1, C(255, 246, 200) } }), LightEmission = 1, Brightness = 2.5, ZOffset = 1.2,
+		Rate = 38, Lifetime = NR(0.5, 0.9), Speed = NR(0.05, 0.3), Rotation = NR(0, 20), RotSpeed = NR(-40, 40),
+		Size = seq({ { 0, 0 }, { 0.35, 0.8, 0.2 }, { 1, 0 } }), Color = cseq({ { 0, WHITE }, { 1, C(255, 246, 200) } }), LightEmission = 1, Brightness = 1.8, ZOffset = 1.2,
 	})
 	emitter(ctx.deck, 'Specks', 'ember', {
-		Rate = 6 * A, Lifetime = NR(1.2, 2.2), Speed = NR(0.8, 2.4), SpreadAngle = Vector2.new(35, 35), Acceleration = V(0, 0.6, 0), Drag = 0.4,
-		Size = seq({ { 0, 0 }, { 0.2, 0.24 * S, 0.08 * S }, { 1, 0 } }), Color = cseq({ { 0, WHITE }, { 1, C(255, 226, 120) } }), LightEmission = 1, Brightness = 2, ZOffset = 1,
+		Rate = 5 * A, Lifetime = NR(1.2, 2.2), Speed = NR(0.8, 2.4), SpreadAngle = Vector2.new(35, 35), Acceleration = V(0, 0.6, 0), Drag = 0.4,
+		Size = seq({ { 0, 0 }, { 0.2, 0.24 * S, 0.08 * S }, { 1, 0 } }), Color = cseq({ { 0, WHITE }, { 1, C(255, 226, 120) } }), LightEmission = 1, Brightness = 1.5, ZOffset = 1,
 	})
-	pointLight(ctx.column, C(255, 220, 110), 1, 14)
+	pointLight(ctx.column, C(255, 220, 110), 0.75, 14)
 end
 
 function HoodVFX.theme(part, name, size, opts)

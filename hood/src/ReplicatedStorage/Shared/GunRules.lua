@@ -8,12 +8,19 @@ local Format = require(script.Parent.Format)
 local GunRules = {}
 GunRules.Range = 14 -- how close (studs) you must stand to a gun's pedestal point to buy or equip it
 
--- Pedestal colours per state, shared by the map builder (first paint) and the client (repaints).
+-- Pedestal colours per state, shared by the map builder (first paint) and the client (repaints): one hue per
+-- state in three tones plus a soft neon (rose locked, blue owned, green equipped; Brief 8 volume). Top = the
+-- main tone (pad top, plate back), Base = dark (base, bevel, window border), Rim = light (pad rim), Panel = the
+-- display board's window, Glow = the neon face and light (GlowAlpha its transparency: brighter as you own and
+-- equip), Strip = the plate face, Text = the price row.
 local C = Color3.fromRGB
 GunRules.Colors = {
-	Locked = { Top = C(255, 112, 186), Glow = C(255, 172, 222), Strip = C(226, 64, 146), Text = C(255, 228, 92) },
-	Owned = { Top = C(72, 150, 255), Glow = C(156, 208, 255), Strip = C(40, 96, 210), Text = C(150, 205, 255) },
-	Equipped = { Top = C(64, 220, 104), Glow = C(166, 255, 184), Strip = C(26, 156, 64), Text = C(120, 255, 150) },
+	Locked = { Top = C(226, 78, 146), Base = C(139, 62, 95), Rim = C(239, 191, 211), Panel = C(226, 124, 166),
+		Glow = C(236, 124, 174), GlowAlpha = 0.3, Strip = C(150, 58, 98), Text = C(255, 224, 110) },
+	Owned = { Top = C(70, 134, 222), Base = C(57, 92, 138), Rim = C(204, 221, 242), Panel = C(124, 166, 226),
+		Glow = C(120, 170, 236), GlowAlpha = 0.2, Strip = C(54, 90, 150), Text = C(170, 210, 255) },
+	Equipped = { Top = C(56, 186, 100), Base = C(46, 117, 68), Rim = C(199, 233, 209), Panel = C(112, 202, 140),
+		Glow = C(104, 210, 138), GlowAlpha = 0.1, Strip = C(40, 124, 66), Text = C(150, 240, 170) },
 }
 
 -- Makes a Guns table safe to use in place: unknown ids are dropped, the starter is always owned, and the

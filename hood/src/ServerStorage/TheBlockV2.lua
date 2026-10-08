@@ -633,23 +633,27 @@ local Stations = {}
 -- the stamped X's colour (nil = a darker shade of the face); text: the "xN Power" colour; glow: hit sparks;
 -- edge: a thin neon line inside the rim (shadow); labelLift: the label stack sits this much higher (gold's crown). Colours from the bag stations the critics signed off.
 -- Tiers 5-7 follow the reference's right row: shadow (x8), frost (x12), toxic (x18).
+-- Brief 8 volume: the same hue per lane, a notch quieter. Big lane surfaces (mat, rim, backstop) stay at HSV
+-- saturation 0.6 or less, frames and benches at 0.7 or less; the targets, labels and hit sparks keep their
+-- full colour, so the thing you shoot is still the brightest thing in the lane. toxic's gantry and bench are
+-- green plastic now, and its pit lip a bright green plastic (the barrels, bottles, puddles and drip sign glow).
 Stations.Themes = {
 	{ name = 'stone', rim = C(62, 78, 118), rimTop = C(82, 104, 150), mat = C(115, 132, 172), frame = C(165, 95, 78),
 		text = C(255, 255, 255), glow = C(255, 236, 200) },
-	{ name = 'red', rim = C(26, 30, 70), rimTop = C(40, 46, 92), mat = C(250, 45, 85), frame = C(36, 42, 86), trim = C(240, 40, 70),
+	{ name = 'red', rim = C(30, 34, 70), rimTop = C(44, 50, 94), mat = C(204, 82, 98), frame = C(38, 44, 88), trim = C(214, 74, 96),
 		text = C(255, 70, 100), glow = C(255, 70, 100) },
-	{ name = 'lava', rim = C(225, 100, 35), rimTop = C(255, 150, 50), mat = C(255, 140, 20), frame = C(250, 140, 36), groove = C(215, 90, 10),
+	{ name = 'lava', rim = C(160, 92, 64), rimTop = C(236, 162, 104), mat = C(214, 124, 86), frame = C(222, 126, 68), groove = C(150, 80, 50),
 		text = C(255, 170, 48), glow = C(255, 150, 40) },
-	{ name = 'arcane', rim = C(150, 40, 130), rimTop = C(240, 80, 190), mat = C(190, 70, 208), frame = C(170, 80, 220),
+	{ name = 'arcane', rim = C(136, 66, 126), rimTop = C(214, 120, 188), mat = C(168, 100, 192), frame = C(156, 94, 204),
 		text = C(214, 120, 255), glow = C(230, 120, 255) },
-	{ name = 'shadow', rim = C(70, 40, 110), rimTop = C(92, 56, 140), mat = C(44, 24, 70), frame = C(22, 18, 32),
-		text = C(198, 164, 255), glow = C(176, 120, 255), edge = C(150, 70, 255) },
-	{ name = 'frost', rim = C(30, 110, 210), rimTop = C(160, 244, 255), mat = C(132, 246, 248), matMat = M.SmoothPlastic, frame = C(30, 110, 210),
-		groove = C(60, 190, 235), text = C(120, 236, 255), glow = C(150, 236, 255) },
-	{ name = 'toxic', rim = C(10, 170, 44), rimTop = C(20, 255, 60), rimTopMat = M.Neon, mat = C(0, 60, 60), frame = C(20, 255, 60), frameMat = M.Neon,
-		groove = C(5, 150, 35), text = C(130, 255, 90), glow = C(120, 255, 80) },
-	{ name = 'gold', rim = C(230, 180, 0), rimTop = C(255, 236, 60), mat = C(252, 242, 88), frame = C(245, 192, 0), groove = C(205, 140, 0),
-		trim = C(175, 18, 48), text = C(255, 222, 50), glow = C(255, 222, 80), labelLift = 0.3 },
+	{ name = 'shadow', rim = C(72, 46, 110), rimTop = C(92, 60, 140), mat = C(46, 30, 72), frame = C(24, 20, 34),
+		text = C(198, 164, 255), glow = C(176, 120, 255), edge = C(150, 90, 240) },
+	{ name = 'frost', rim = C(78, 132, 196), rimTop = C(176, 236, 248), mat = C(150, 232, 240), matMat = M.SmoothPlastic, frame = C(70, 124, 192),
+		groove = C(84, 172, 214), text = C(120, 236, 255), glow = C(150, 236, 255) },
+	{ name = 'toxic', rim = C(60, 150, 84), rimTop = C(90, 206, 116), mat = C(26, 62, 58), frame = C(72, 168, 96),
+		groove = C(36, 110, 58), text = C(130, 255, 90), glow = C(120, 255, 80) },
+	{ name = 'gold', rim = C(208, 166, 84), rimTop = C(240, 210, 104), mat = C(240, 224, 118), frame = C(232, 180, 70), groove = C(170, 122, 40),
+		trim = C(150, 46, 66), text = C(255, 222, 50), glow = C(255, 222, 80), labelLift = 0.3 },
 }
 
 Stations.HALF_X, Stations.HALF_Z = 4.5, 10 -- rim outer half sizes (the mat is inset 1 stud)
@@ -954,9 +958,11 @@ function Stations.bench(st, t, tier)
 	g:box('BenchKick', V(-3.45, Y, z - 0.47), V(3.45, Y + 0.32, z + 0.4), kick)
 	local front = g:box('BenchFront', V(-3.4, Y + 0.32, z - 0.42), V(3.4, Y + h - 0.62, z + 0.42), body, mat)
 	Stations.panelX(g, front, CFrame.new(0, Y + 0.32 + (h - 0.94) / 2, z - 0.42), 6.8, h - 0.94, 4, Stations.grooveFor(t, body))
-	g:box('BenchBand', V(-3.42, Y + h - 0.62, z - 0.46), V(3.42, Y + h - 0.3, z + 0.3), t.trim or t.rimTop, t.trim and M.SmoothPlastic or t.rimTopMat)
-	local top = g:box('BenchTop', V(-3.6, Y + h - 0.3, z - 0.62), V(3.6, Y + h, z + 0.5), t.rimTop, t.rimTopMat)
-	if not t.rimTopMat then studs(top) end
+	-- (A glowing rim lip stays on the rim: the bench band and top are plastic in every theme.)
+	local topMat = t.rimTopMat ~= M.Neon and t.rimTopMat or nil
+	g:box('BenchBand', V(-3.42, Y + h - 0.62, z - 0.46), V(3.42, Y + h - 0.3, z + 0.3), t.trim or t.rimTop, t.trim and M.SmoothPlastic or topMat)
+	local top = g:box('BenchTop', V(-3.6, Y + h - 0.3, z - 0.62), V(3.6, Y + h, z + 0.5), t.rimTop, topMat)
+	if not topMat then studs(top) end
 	local d = st:group('BenchProps')
 	local y = Y + h
 	-- Ammo box (olive, a yellow stripe and a handle).
@@ -1202,7 +1208,6 @@ function Stations.Lanes.lava(k)
 	for _, c in { { -4.2, 4.2, Y + 3.05 }, { -3.6, 3.8, Y + 6.0 } } do
 		decor(back:box('LavaCrack', V(c[1], c[3] - 0.08, z0 - 0.3), V(c[2], c[3] + 0.08, z0 + 0.4), hot, M.Neon)).CastShadow = false
 	end
-	for _, x in { -1.5, 1.4 } do decor(back:box('LavaCrack', V(x - 0.08, 0.5, z0 - 0.25), V(x + 0.08, Y + 3.05, z0 + 0.4), hot, M.Neon)).CastShadow = false end
 	decor(back:box('LavaPool', V(-1.8, Y + 7.38, z0 + 0.4), V(1.7, Y + 7.5, Stations.HALF_Z - 0.3), C(255, 170, 30), M.Neon)).CastShadow = false
 	-- Plates: a big round gong (main) between two square plates, all hanging from the beam.
 	local function gong(sw, x, cy, r)
@@ -1234,12 +1239,12 @@ function Stations.Lanes.arcane(k)
 	Stations.gantry(g, t)
 	local back = k.st:group('Backstop')
 	local h = 7.0
-	Stations.wall(back, t, C(90, 30, 140), M.SmoothPlastic, h)
+	Stations.wall(back, t, C(98, 58, 140), M.SmoothPlastic, h)
 	Stations.wallLines(back, h, t.rimTop, M.SmoothPlastic, 0.18)
 	local z = Stations.BACK_Z
 	Stations.starburst(back, CFrame.new(0, Y + 5.8, z - 0.1), 3.7, 0.16, t.rimTop)
 	for _, s in { { -3.3, 6.6 }, { 3.2, 2.0 }, { -3.1, 1.6 }, { 3.35, 6.4 }, { -2.6, 4.0 }, { 2.8, 4.6 } } do
-		decor(back:part('Sparkle', V(0.42, 0.42, 0.1), CFrame.new(s[1], Y + s[2], z - 0.06) * CFrame.Angles(0, 0, math.pi / 4), C(255, 240, 255), M.Neon)).CastShadow = false
+		decor(back:part('Sparkle', V(0.42, 0.42, 0.1), CFrame.new(s[1], Y + s[2], z - 0.06) * CFrame.Angles(0, 0, math.pi / 4), C(255, 232, 250), M.SmoothPlastic)).CastShadow = false
 	end
 	-- Spinner: a chunky post with a big ringed disc on a hub; it turns slowly and spins when hit.
 	local sz = 6.0
@@ -1282,7 +1287,7 @@ function Stations.Lanes.shadow(k)
 	Stations.wall(back, t, C(30, 20, 44), M.SmoothPlastic, h)
 	Stations.wallLines(back, h, violet, M.Neon, 0.12)
 	local z = Stations.BACK_Z
-	Stations.bullseye(back, CFrame.new(0, Y + 5.8, z - 0.02), 2.5, { violet, C(20, 14, 30), violet, C(20, 14, 30), violet }, { M.Neon, M.SmoothPlastic, M.Neon, M.SmoothPlastic, M.Neon })
+	Stations.bullseye(back, CFrame.new(0, Y + 5.8, z - 0.02), 2.5, { violet, C(20, 14, 30), C(104, 62, 168), C(20, 14, 30), violet }, { M.Neon, M.SmoothPlastic, M.SmoothPlastic, M.SmoothPlastic, M.Neon })
 	-- Main: a round dark plate with neon rings, hanging from the beam.
 	local cy = 6.2
 	local sw = Stations.target(k, CFrame.new(0, Stations.GANTRY_Y, Stations.GANTRY_Z), V(0, cy, Stations.GANTRY_Z), 'Swing', true, 'Ding')
@@ -1306,7 +1311,7 @@ end
 function Stations.Lanes.frost(k)
 	local t, Y, g = k.t, Stations.MAT_Y, k.gear
 	local snow, iceA, iceB, deep = C(248, 252, 255), C(150, 225, 250), C(120, 205, 240), C(25, 120, 235)
-	local glow, navy = C(40, 150, 255), C(12, 40, 100) -- deep-blue neon on navy strips (reads without bloom)
+	local glow, navy = C(70, 160, 250), C(12, 40, 100) -- deep-blue neon on navy strips (reads without bloom)
 	Stations.gantry(g, t, glow, { width = 0.22, backing = navy })
 	g:box('BeamSnow', V(-4.4, Stations.GANTRY_Y + 0.8, Stations.GANTRY_Z - 0.45), V(4.4, Stations.GANTRY_Y + 1.0, Stations.GANTRY_Z + 0.45), snow)
 	for i = 0, 6 do
@@ -1336,21 +1341,19 @@ function Stations.Lanes.frost(k)
 	-- Two deep-blue neon snowflakes high on the wall either side of the main target (six arms with twin branches;
 	-- clear of the bullseye, the gantry posts and the icicles), and neon lines up the wall's edges: the lane's dark
 	-- graphic, like shadow's rings.
+	local flake = C(52, 118, 214) -- (deep-blue plastic: the glow stays on the gantry and the snow line)
 	for _, sx0 in { -1, 1 } do
 		local fc = CFrame.new(sx0 * 2.66, Y + 6.5, z0 - 0.08) * CFrame.Angles(0, 0, math.rad(15))
 		for a = 0, 2 do
 			local arm = fc * CFrame.Angles(0, 0, a * math.pi / 3)
-			decor(back:part('Snowflake', V(1.6, 0.3, 0.1), arm, glow, M.Neon)).CastShadow = false
+			decor(back:part('Snowflake', V(1.6, 0.3, 0.1), arm, flake, M.SmoothPlastic)).CastShadow = false
 			for _, sx in { -1, 1 } do
 				for _, sb in { -1, 1 } do
 					local at = arm * CFrame.new(sx * 0.48, 0, -0.01) * CFrame.Angles(0, 0, sx * sb * math.pi / 3) * CFrame.new(sx * 0.17, 0, 0)
-					decor(back:part('Snowflake', V(0.36, 0.2, 0.1), at, glow, M.Neon)).CastShadow = false
+					decor(back:part('Snowflake', V(0.36, 0.2, 0.1), at, flake, M.SmoothPlastic)).CastShadow = false
 				end
 			end
 		end
-	end
-	for _, sx in { -1, 1 } do
-		decor(back:box('WallNeon', V(sx * 4.3 - 0.11, 0.6, z0 - 0.07), V(sx * 4.3 + 0.11, top - 0.34, z0 + 0.04), glow, M.Neon)).CastShadow = false
 	end
 	-- Main: an ice bullseye (deep blue rings) on a tall ice pillar.
 	local mz = 6.0
@@ -1379,7 +1382,7 @@ end
 -- stripe and a neon drip sign.
 function Stations.Lanes.toxic(k)
 	local t, Y, g = k.t, Stations.MAT_Y, k.gear
-	local neon, dark, navy = C(60, 255, 90), C(20, 64, 58), C(24, 30, 70)
+	local neon, dark, navy = C(60, 255, 90), C(26, 64, 60), C(24, 30, 70)
 	Stations.gantry(g, t)
 	local back = k.st:group('Backstop')
 	local z = Stations.BACK_Z
@@ -1431,7 +1434,7 @@ function Stations.Lanes.toxic(k)
 	floorDrum:SetAttribute('TipMin', 0)
 	Stations.drum(s3, V(2.7, Y, 4.6), 0.66, 1.9, neon, navy, C(10, 90, 30), M.Neon)
 	-- Glowing puddles on the dark mat.
-	for _, p in { { -1.4, 2.0, 1.1 }, { 1.9, 1.1, 0.75 }, { -0.4, 7.6, 0.8 } } do
+	for _, p in { { -1.4, 2.0, 1.1 }, { 1.9, 1.1, 0.75 } } do
 		decor(g:part('Puddle', V(0.05, 2 * p[3], 2 * p[3] * 1.3), CFrame.new(p[1], Y + 0.025, p[2]) * CFrame.Angles(0, 0, math.pi / 2), neon, M.Neon, Enum.PartType.Cylinder)).CastShadow = false
 	end
 end
@@ -1443,7 +1446,7 @@ end
 function Stations.Lanes.gold(k)
 	local t, Y, g = k.t, Stations.MAT_Y, k.gear
 	local gold, deep, white, ruby, cream = C(255, 222, 40), C(245, 190, 0), C(255, 252, 235), C(235, 30, 70), C(255, 248, 220)
-	local velvet, rays = C(150, 15, 40), C(255, 200, 40)
+	local velvet, rays = C(130, 52, 68), C(236, 194, 96)
 	Stations.gantry(g, t, C(255, 255, 235), { width = 0.22, backing = velvet })
 	g:box('CrownPlinth', V(-0.5, Stations.GANTRY_Y + 0.8, Stations.GANTRY_Z - 0.4), V(0.5, Stations.GANTRY_Y + 0.86, Stations.GANTRY_Z + 0.4), velvet)
 	Stations.crown(g, CFrame.new(0, Stations.GANTRY_Y + 0.86, Stations.GANTRY_Z))
@@ -1452,8 +1455,8 @@ function Stations.Lanes.gold(k)
 	local back = k.st:group('Backstop')
 	local z = Stations.BACK_Z
 	local h = 7.4
-	Stations.wall(back, t, C(235, 170, 0), M.SmoothPlastic, h)
-	local groove = C(112, 8, 30)
+	Stations.wall(back, t, C(220, 180, 90), M.SmoothPlastic, h)
+	local groove = C(96, 30, 44)
 	for _, f in { { 4.05, 0.6, Y + h - 0.25, 0.04 }, { 2.65, Y + h + 0.12, Y + h + 0.62, -0.11 }, { 1.25, Y + h + 0.92, Y + h + 1.22, -0.26 } } do
 		local face = back:box('Velvet', V(-f[1], f[2], z - f[4]), V(f[1], f[3], z - f[4] + 0.1), velvet, M.Fabric)
 		Stations.panelX(back, face, CFrame.new(0, (f[2] + f[3]) / 2, z - f[4]), 2 * f[1], f[3] - f[2], f[1] > 3 and 5 or 4, groove)
@@ -1462,7 +1465,7 @@ function Stations.Lanes.gold(k)
 	Stations.starburst(back, CFrame.new(0, Y + 5.8, z - 0.1), 4.2, 0.12, rays)
 	local ring = Stations.disc(back, 'VelvetRim', CFrame.new(0, Y + 5.8, z - 0.22), 2.62, 0.14, rays)
 	ring.Reflectance = 0.2
-	Stations.disc(back, 'Velvet', CFrame.new(0, Y + 5.8, z - 0.28), 2.4, 0.14, C(105, 8, 30), M.Fabric)
+	Stations.disc(back, 'Velvet', CFrame.new(0, Y + 5.8, z - 0.28), 2.4, 0.14, C(100, 36, 52), M.Fabric)
 	for _, s in { { -3.45, 1.2, C(60, 140, 255) }, { 3.45, 1.2, C(60, 220, 120) } } do
 		back:part('Gem', V(0.42, 0.42, 0.25), CFrame.new(s[1], Y + s[2], z - 0.08) * CFrame.Angles(0, 0, math.pi / 4), s[3], M.Glass)
 	end
@@ -1489,7 +1492,7 @@ function Stations.Lanes.gold(k)
 	local s3 = Stations.target(k, CFrame.new(2.6, Y + 3.0, 5.15), V(2.6, Y + 3.65, 5.05), 'Tip', false, 'Ding')
 	Stations.plate(s3, CFrame.new(2.6, Y + 3.65, 5.05), 1.3, gold, deep, M.SmoothPlastic, white)
 	-- An amber rug with a velvet border over the target field (so the lemon nuggets read), and the nuggets on it.
-	local rug = studs(g:box('Rug', V(-3.3, Y, 0.4), V(3.3, Y + 0.04, 8.2), C(210, 140, 0)))
+	local rug = studs(g:box('Rug', V(-3.3, Y, 0.4), V(3.3, Y + 0.04, 8.2), C(206, 154, 82)))
 	rug.CanCollide = false
 	for _, b in { { V(-3.3, Y, 0.4), V(3.3, Y + 0.05, 0.6) }, { V(-3.3, Y, 8.0), V(3.3, Y + 0.05, 8.2) }, { V(-3.3, Y, 0.4), V(-3.1, Y + 0.05, 8.2) }, { V(3.1, Y, 0.4), V(3.3, Y + 0.05, 8.2) } } do
 		decor(g:box('RugBorder', b[1], b[2], velvet, M.Fabric)).CastShadow = false
@@ -1611,20 +1614,26 @@ function Stations.build(ctx, stationId, opts)
 	return model
 end
 ---------------------------------------------------------------------------------------------- armory
--- The ARMORY, after the user's item-shop reference: the gun ladder as big guns floating in profile over big
--- glowing hexagonal pads, two rows. Guns 1-5 stand on the front platform (a low studded deck with a step along its front),
--- guns 6-10 on a raised studded terrace behind it, reached by a stair at each end. Each pad has a light rim and a
--- glowing face in its state colour (pink locked, blue owned, green equipped; Armory.client repaints them), a glow
--- skirt on the deck around it, and a plate on its front edge saying LOCKED / OWNED / EQUIPPED. Over each gun a
--- nameplate stack: the name in the gun's colour, the multiplier, the price (or the state word).
+-- The ARMORY, after the user's item-shop reference (the hammer shop) and crafted to the Brief 8 pad recipe: the
+-- gun ladder as big guns floating in profile over chunky low-poly hexagonal pads, two rows. Guns 1-5 stand on the
+-- front platform (a low studded grey deck with a white kerb along its front), guns 6-10 on a raised studded
+-- terrace behind it, reached by a stair at each end. Every pad is one hue in three tones: a dark base with a
+-- bevelled top edge, a pale rim, the main-colour top and an inner glowing face, with a framed plate leaning on its
+-- front saying LOCKED / OWNED / EQUIPPED (rose locked, blue owned, green equipped; Armory.client repaints them).
+-- Each row stands before one long framed display board (white posts and cap on a dark grey back, chunky dark
+-- finials over the posts), a window in each gun's state colour behind it. Over each gun a nameplate stack: the
+-- name in the gun's colour, the multiplier, the price (or the state word). Only the top three guns carry small
+-- effects.
 --
 -- Contract (GunService and HoodClient/Armory): one Model GunSlot_<Id> per gun with attributes GunId, Tier,
 -- Cost, Multiplier, holding
---   GunPoint_<Id>      invisible part in front of the pad: prompt anchor and buy-distance point
---   StateTop/StateGlow the coloured face and glow (parts, several each; a PointLight under a StateGlow),
---                      StateStrip (part) with SurfaceGui > TextLabel State, StateHaze (ParticleEmitter)
---   LabelAnchor        BillboardGui GunLabel > TextLabels Name, Multiplier, Price (Glyph attribute = icon text)
---   Display            Model tagged HoodMotion (Bob) with the gun inside, horizontal, in profile to the hall
+--   GunPoint_<Id>  invisible part in front of the pad: prompt anchor and buy-distance point
+--   parts the client paints by name from GunRules.Colors[state]: StateBase (Base), StateRim (Rim), StateTop
+--                  (Top), StatePanel (Panel), StateGlow (Glow; a Neon one also takes GlowAlpha as Transparency, and
+--                  the pad's PointLight hangs under one), StateStrip (Strip: the plate face, SurfaceGui > TextLabel
+--                  State); StateSparkle (ParticleEmitter, on only while equipped)
+--   LabelAnchor    BillboardGui GunLabel > TextLabels Name, Multiplier, Price (Glyph attribute = icon text)
+--   Display        Model tagged HoodMotion (Bob) with the gun inside, horizontal, in profile to the hall
 -- The Armory model is tagged HoodArmory; each slot streams Atomic.
 -- Local frame: origin at the centre of the front step's foot on the hall floor, front faces -Z (players stand
 -- at -Z looking +Z), footprint x -29.4..29.4, z 0..31.2 (Armory.HalfWidth, Armory.Depth), at most 20 tall.
@@ -1634,14 +1643,27 @@ Armory.HalfWidth, Armory.Depth = 29.4, 31.2
 Armory.Floor = 1.6 -- front platform top (one 0.8 step up from the hall floor)
 Armory.Step = 11.6 -- back terrace top: the front row's nameplates sit on its wall, the back row stands above them
 Armory.TerraceZ = 17.4 -- where the terrace's front wall stands
-Armory.Rows = { { z = 8.6, y = 1.6, label = 1.3, scale = 1 }, { z = 24.9, y = 11.6, label = 1.6, scale = 1.15 } }
+-- Each row's display board (in the row's deck frame): its front face z, bottom and top over the deck, and the
+-- window size; the back row's is a size bigger, like its guns.
+Armory.Rows = {
+	{ z = 8.6, y = 1.6, label = 1.3, scale = 1, board = { z = 13.1, y0 = 0.6, y1 = 6.6, window = { 7.0, 5.0 }, ends = 24.65 } },
+	{ z = 24.9, y = 11.6, label = 1.6, scale = 1.15, board = { z = 29.5, y0 = 0.6, y1 = 7.2, window = { 7.6, 5.6 }, ends = 25.75 } },
+}
 Armory.Spacing = 10.3
-Armory.Radius = 3.6 -- pad apothem (centre to a flat side); flats face -Z
-Armory.PadHeight = 0.95
+-- The pad, bottom to top (apothems: centre to a flat side; flats face -Z): base 4.1 to 0.3 up with a 0.3 bevel
+-- in to the rim, rim 3.8 to 1.0, top 3.25 to 1.15, glowing face 2.55 to 1.2.
+Armory.Pad = { base = 4.1, rim = 3.8, top = 3.25, glow = 2.55, baseH = 0.3, bevel = 0.3, rimH = 1.0, topH = 1.15, glowH = 1.2 }
+Armory.Radius = 3.8 -- the rim's apothem (the pad's front face)
+Armory.PadHeight = 1.2
+Armory.BoardDepth, Armory.BoardBorder = 0.5, 0.3
 Armory.MaxLength = 6.5
 Armory.Tilt = 17 -- degrees the muzzle points up
 Armory.DisplayH = 4.6 -- the tallest a tilted gun may stand (taller ones are scaled down; nameplates sit over it)
 Armory.Bob, Armory.BobPeriod = 0.35, 2.6
+-- Neutral trim for the deck and the board (Brief 8: the hall greys; the colour lives on the pads and guns).
+-- The hall's family: decks in the hall floor grey (196), the step between, the terrace wall in the panel grey
+-- (176); white kerbs, copings and nosings; the board backs in the structure grey.
+Armory.Grey = { deck = C(196, 198, 204), step = C(186, 188, 194), wall = C(176, 178, 186), kerb = C(240, 241, 244), dark = C(102, 104, 110), nose = C(232, 234, 238) }
 
 -- Optional modules made by other builders (Shared.HoodVFX, Shared.Models.GunModels / IconModels): nil when
 -- they are not there yet or fail to load.
@@ -1652,16 +1674,6 @@ function Armory.optional(name)
 	if not m then return nil end
 	local ok, result = pcall(require, m)
 	return ok and result or nil
-end
-
--- Hexagonal plinth: three boxes turned 60 degrees apart (flat sides face +-Z), each width 2r*tan(30).
-function Armory.hex(c, name, x, z, r, y0, y1, color, material)
-	local w = 2 * r * math.tan(math.pi / 6)
-	local parts = {}
-	for k = 0, 2 do
-		table.insert(parts, c:part(name, V(w, y1 - y0, 2 * r), CFrame.new(x, (y0 + y1) / 2, z) * CFrame.Angles(0, k * math.pi / 3, 0), color, material))
-	end
-	return parts
 end
 
 -- Box of a model's visible parts in `frame` space: lo, hi corners.
@@ -1762,84 +1774,51 @@ function Armory.gun(gun, shrink)
 	return model
 end
 
--- Effects that grow with tier (`part` is a box round the gun, which sizes them): a soft light for the front row,
--- then for the back row HoodVFX.item when the VFX module is there, otherwise a light, sparkles, rising glow and
--- big star glints for the last two.
+-- Effects, only on the top three guns and kept small (`part` is a box round the gun): HoodVFX.item's glints and
+-- motes, capped at 1.6 studs and slowed, nothing else (no halo, rays, arcs, glitter, flames or wisps). The
+-- pads' own glow and light carry every other gun.
 function Armory.effects(part, tier, color)
-	if tier < 2 then return end -- the free pistol stays plain, like the basic tool in the reference
-	-- The front row (tiers 2-5) gets only a soft light: like the reference, effects are for the better items.
-	if tier < 6 then
-		light(part, color, 0.5 + tier * 0.12, 7 + tier * 0.4)
-		return
-	end
+	if tier < 8 then return end
 	local vfx = Armory.optional('HoodVFX')
 	if vfx and vfx.item then
 		local ok, made = pcall(vfx.item, part, tier, color)
 		if ok then
-			-- A shop display keeps only the small effects: no halo, rays, arcs or glitter (they white out the terrace,
-			-- worst with built-in textures), the rest capped at 2.5 studs and rising slowly so they stay under the
-			-- nameplate.
-			local kill = { ItemGlow = true, ItemRays = true, ItemArcs = true, ItemGlitter = true }
+			local keep = { ItemGlints = true, ItemMotes = true }
 			for _, e in (type(made) == 'table' and made or {}) do
-				if typeof(e) == 'Instance' and kill[e.Name] then
+				if typeof(e) == 'Instance' and not keep[e.Name] then
 					e:Destroy()
 				elseif typeof(e) == 'Instance' and e:IsA('ParticleEmitter') then
 					pcall(function()
 						local most = 0
 						for _, kp in e.Size.Keypoints do most = math.max(most, kp.Value + kp.Envelope) end
-						if most > 2.5 then
-							local f, keys = 2.5 / most, {}
+						if most > 1.6 then
+							local f, keys = 1.6 / most, {}
 							for _, kp in e.Size.Keypoints do table.insert(keys, NumberSequenceKeypoint.new(kp.Time, kp.Value * f, kp.Envelope * f)) end
 							e.Size = NumberSequence.new(keys)
 						end
-						if e.Name == 'ItemWisps' or e.Name == 'ItemFlames' or e.Name == 'ItemMotes' then
-							e.Speed = NumberRange.new(e.Speed.Min * 0.5, e.Speed.Max * 0.5)
-							e.Acceleration = e.Acceleration * 0.4
-						end
+						e.Rate = e.Rate * 0.6
+						e.Speed = NumberRange.new(e.Speed.Min * 0.5, e.Speed.Max * 0.5)
+						e.Acceleration = e.Acceleration * 0.4
 					end)
 				end
 			end
 			return
 		end
 	end
-	light(part, color, 0.5 + tier * 0.12, 7 + tier * 0.4)
-	local function emitter(name, texture, rate, life, speed, size, transparency)
-		local e = Instance.new('ParticleEmitter')
-		e.Name = name
-		e.Texture = texture
-		e.Rate = rate
-		e.Lifetime = NumberRange.new(life[1], life[2])
-		e.Speed = NumberRange.new(speed[1], speed[2])
-		e.SpreadAngle = Vector2.new(180, 180)
-		e.Size = size
-		e.Transparency = transparency
-		e.Color = ColorSequence.new(color:Lerp(P.white, 0.35), color)
-		e.LightEmission = 1
-		e.LightInfluence = 0
-		e.RotSpeed = NumberRange.new(-90, 90)
-		e.Rotation = NumberRange.new(0, 360)
-		e.Parent = part
-		return e
-	end
-	local fade = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(0.7, 0.4), NumberSequenceKeypoint.new(1, 1) })
-	if tier >= 3 then
-		emitter('Sparkles', 'rbxasset://textures/particles/sparkles_main.dds', 2 + tier * 1.5, { 0.8, 1.5 }, { 0.4, 1.4 },
-			NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2 + tier * 0.03), NumberSequenceKeypoint.new(1, 0) }), fade)
-	end
-	if tier >= 6 then
-		local glow = emitter('Glow', 'rbxasset://textures/particles/fire_main.dds', 3 + tier, { 0.9, 1.6 }, { 0.6, 1.4 },
-			NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.6 + tier * 0.06), NumberSequenceKeypoint.new(1, 0.1) }),
-			NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.55), NumberSequenceKeypoint.new(1, 1) }))
-		glow.EmissionDirection = Enum.NormalId.Top
-		glow.SpreadAngle = Vector2.new(25, 25)
-		glow.Acceleration = V(0, 1.5, 0)
-	end
-	if tier >= 9 then
-		local star = emitter('Glints', 'rbxasset://textures/particles/sparkles_main.dds', 3, { 1.2, 2 }, { 0.2, 0.6 },
-			NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.3, 1.1), NumberSequenceKeypoint.new(1, 0) }),
-			NumberSequence.new(0.1))
-		star:SetAttribute('PreviewTexture', 'star')
-	end
+	-- No HoodVFX: a few slow sparkles.
+	local e = Instance.new('ParticleEmitter')
+	e.Name = 'Sparkles'
+	e.Texture = 'rbxasset://textures/particles/sparkles_main.dds'
+	e.Rate = tier - 5
+	e.Lifetime = NumberRange.new(0.8, 1.4)
+	e.Speed = NumberRange.new(0.2, 0.6)
+	e.SpreadAngle = Vector2.new(180, 180)
+	e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 0) })
+	e.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.3), NumberSequenceKeypoint.new(1, 1) })
+	e.Color = ColorSequence.new(color:Lerp(P.white, 0.4), color)
+	e.LightEmission = 0.6
+	e.LightInfluence = 0
+	e.Parent = part
 end
 
 -- The nameplate stack over a gun, like the reference's: the name big in the gun's colour, the multiplier and
@@ -1850,30 +1829,31 @@ function Armory.label(c, pos, gun)
 	local anchor = ghost(c:part('LabelAnchor', V(0.2, 0.2, 0.2), CFrame.new(pos), P.white))
 	local g = Instance.new('BillboardGui')
 	g.Name = 'GunLabel'
-	-- as wide as the name needs, so every name (even Diamond Cannon) fills its row's full height: one name size
-	g.Size = UDim2.fromScale(math.max(6.2, 0.6 * #gun.Name), 2.4)
+	-- One width for every plate, so the names line up as one size along the row; long names shrink to fit.
+	g.Size = UDim2.fromScale(7.6, 2.6)
 	g.MaxDistance = 80
 	g.LightInfluence = 0
 	g.Parent = anchor
 	-- (a grey gun's name would fade on the pale hall: it gets a rust orange instead)
 	local _, sat = gun.Color:ToHSV()
-	local nameColor = sat < 0.25 and C(240, 150, 90) or gun.Color:Lerp(P.white, 0.1)
-	line(g, 'Name', gun.Name, nameColor, FONT.loud, 0, 0.42, C(24, 22, 40), 3)
+	local nameColor = sat < 0.25 and C(240, 150, 90) or gun.Color:Lerp(P.white, 0.15)
+	local ink = C(24, 22, 40)
+	line(g, 'Name', gun.Name, nameColor, FONT.loud, 0, 0.44, ink, 3)
 	local icons = Armory.optional('IconModels')
 	local images = icons and icons.Images or {}
 	local function row(name, icon, glyph, text, color, y)
 		local image = images[icon]
-		local t = line(g, name, text, color, FONT.loud, y, 0.27, C(24, 22, 40), 3)
+		local t = line(g, name, text, color, FONT.loud, y, 0.26, ink, 2.5)
 		if type(image) == 'string' and image ~= '' then
 			local i = Instance.new('ImageLabel')
 			i.Name = name == 'Price' and 'PriceIcon' or 'Icon'
 			i.BackgroundTransparency = 1
 			i.Image = image
 			i.Position = UDim2.fromScale(0.3, y)
-			i.Size = UDim2.fromScale(0.12, 0.27)
+			i.Size = UDim2.fromScale(0.12, 0.26)
 			-- Icon on the left, the words left-aligned beside it.
 			t.Position = UDim2.fromScale(0.42, y)
-			t.Size = UDim2.fromScale(0.5, 0.27)
+			t.Size = UDim2.fromScale(0.5, 0.26)
 			t.TextXAlignment = Enum.TextXAlignment.Left
 			local a = Instance.new('UIAspectRatioConstraint')
 			a.Parent = i
@@ -1885,13 +1865,84 @@ function Armory.label(c, pos, gun)
 		end
 		return t
 	end
-	row('Multiplier', 'Power', '💪', 'x' .. gun.Multiplier, P.white, 0.45)
-	row('Price', 'Cash', '💵', gun.Cost == 0 and 'FREE' or compact(gun.Cost), C(255, 228, 92), 0.73)
+	row('Multiplier', 'Power', '💪', 'x' .. gun.Multiplier .. ' POWER', P.white, 0.46)
+	row('Price', 'Cash', '💵', gun.Cost == 0 and 'FREE' or compact(gun.Cost), C(255, 224, 110), 0.73)
 	return anchor
 end
 
+-- One hexagonal layer: three boxes turned 60 degrees apart (flats face -Z), apothem r, from y0 to y1.
+function Armory.hex(c, name, x, z, r, y0, y1, color, material)
+	local w = 2 * r * math.tan(math.pi / 6)
+	local parts = {}
+	for k = 0, 2 do
+		table.insert(parts, c:part(name, V(w, y1 - y0, 2 * r), CFrame.new(x, (y0 + y1) / 2, z) * CFrame.Angles(0, k * math.pi / 3, 0), color, material))
+	end
+	return parts
+end
+-- A 45 degree bevel round a hex layer's top edge: six wedges on the ring between apothems `outer` and `inner`,
+-- standing on y, `h` tall, their slopes facing out.
+function Armory.bevel(c, name, x, z, outer, inner, y, h, color)
+	local d = outer - inner
+	local len = 2 * inner * math.tan(math.pi / 6) + d * 0.5 -- (meets its neighbours near the corners)
+	local m = (outer + inner) / 2
+	for k = 0, 5 do
+		local a = k * math.pi / 3
+		c:wedge(name, V(len, h, d), CFrame.new(x - math.sin(a) * m, y + h / 2, z - math.cos(a) * m) * CFrame.Angles(0, a, 0), color)
+	end
+end
+
+-- A state's colours with every tone filled in (an older GunRules.Colors has only Top, Glow, Strip and Text):
+-- dark = Top a third darker, light = Top 60% whiter, the board window a quarter whiter.
+function Armory.tones(look)
+	local top = look.Top
+	return {
+		Top = top, Glow = look.Glow or top, Strip = look.Strip or top:Lerp(P.black, 0.3), Text = look.Text,
+		Base = look.Base or top:Lerp(P.black, 0.35), Rim = look.Rim or top:Lerp(P.white, 0.6),
+		Panel = look.Panel or top:Lerp(P.white, 0.25), GlowAlpha = look.GlowAlpha or 0.25,
+	}
+end
+
+-- The pad: one hue in three tones and a soft glowing face (see Armory.Pad), a light that tints the deck round
+-- it, sparkles off the face while equipped, and a framed plate leaning on the front flat with the state word.
+function Armory.pad(s, x, z, y, look, state, sparkleColor)
+	local R = Armory.Pad
+	Armory.hex(s, 'StateBase', x, z, R.base, y, y + R.baseH, look.Base, M.SmoothPlastic)
+	Armory.bevel(s, 'StateBase', x, z, R.base, R.rim, y + R.baseH, R.bevel, look.Base)
+	Armory.hex(s, 'StateRim', x, z, R.rim, y + R.baseH, y + R.rimH, look.Rim, M.SmoothPlastic)
+	Armory.hex(s, 'StateTop', x, z, R.top, y + R.rimH, y + R.topH, look.Top, M.SmoothPlastic)
+	local face = Armory.hex(s, 'StateGlow', x, z, R.glow, y + R.topH, y + R.glowH, look.Glow, M.Neon)
+	for _, p in face do
+		decor(p).CastShadow = false
+		p.Transparency = look.GlowAlpha or 0.25
+	end
+	light(face[1], look.Glow, 0.8, 9)
+	local sparkle = Instance.new('ParticleEmitter')
+	sparkle.Name = 'StateSparkle'
+	sparkle.Texture = 'rbxasset://textures/particles/sparkles_main.dds'
+	sparkle.Rate = 3
+	sparkle.Lifetime = NumberRange.new(0.9, 1.5)
+	sparkle.Speed = NumberRange.new(0.8, 1.6)
+	sparkle.SpreadAngle = Vector2.new(15, 15)
+	sparkle.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.3), NumberSequenceKeypoint.new(1, 0) })
+	sparkle.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(1, 1) })
+	sparkle.Color = ColorSequence.new(P.white, sparkleColor or look.Glow)
+	sparkle.LightEmission = 0.6
+	sparkle.LightInfluence = 0
+	sparkle.Enabled = state == 'Equipped'
+	sparkle.Parent = face[1]
+	-- The plate: a 4 x 0.9 board in the main colour leaning back 20 degrees on the base's top, its face (the plate
+	-- colour) set proud inside it, the state word on the face.
+	local foot = CFrame.new(x, y + R.baseH, z - R.base + 0.05) * CFrame.Angles(math.rad(20), 0, 0)
+	decor(s:part('StateTop', V(4.0, 0.9, 0.2), foot * CFrame.new(0, 0.45, 0.1), look.Top))
+	local plate = decor(s:part('StateStrip', V(3.7, 0.64, 0.08), foot * CFrame.new(0, 0.45, -0.02), look.Strip))
+	local sg = surface(plate, Enum.NormalId.Front, 50)
+	sg.Name = 'StateGui'
+	line(sg, 'State', string.upper(state), P.white, FONT.loud, 0.1, 0.8, look.Strip:Lerp(P.black, 0.45), 2)
+	return y + R.glowH
+end
+
 -- One gun on its pad. (x, z) is the pad centre, y the deck it stands on.
-function Armory.slot(c, gun, x, z, y, colors, lift, scale)
+function Armory.slot(c, gun, x, z, y, colors, lift, scale, board)
 	local s, model = c:group('GunSlot_' .. gun.Id)
 	-- Streams in as one piece, so a client that sees the slot also sees its point, labels and gun.
 	pcall(function() model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic end)
@@ -1900,53 +1951,14 @@ function Armory.slot(c, gun, x, z, y, colors, lift, scale)
 	model:SetAttribute('Cost', gun.Cost)
 	model:SetAttribute('Multiplier', gun.Multiplier)
 	local state = gun.Cost == 0 and 'Equipped' or 'Locked' -- a new player's view; the client repaints
-	local look = colors[state]
-	local r, ph = Armory.Radius, Armory.PadHeight
-	-- The glow skirt on the deck round the pad (recoloured with the glow; it carries the pad's light), the pale
-	-- chunky pad with a lighter lip, the glowing face in the state colour set into it.
-	local skirt = Armory.hex(s, 'StateGlow', x, z, r + 0.5, y, y + 0.04, look.Glow, M.Neon)
-	for _, p in skirt do
-		decor(p).CastShadow = false
-		p.Transparency = 0.45
-	end
-	light(skirt[1], look.Top, 1.6, 12)
-	Armory.hex(s, 'PadBase', x, z, r, y, y + ph - 0.2, C(228, 230, 240), M.SmoothPlastic)
-	Armory.hex(s, 'PadLip', x, z, r, y + ph - 0.2, y + ph, C(244, 245, 250), M.SmoothPlastic)
-	-- a glowing band round the pad's side in the state colour, so the state reads from the hall floor
-	local band = Armory.hex(s, 'StateTop', x, z, r + 0.03, y + 0.22, y + ph - 0.32, look.Top, M.Neon)
-	for _, p in band do decor(p).CastShadow = false end
-	local tops = Armory.hex(s, 'StateTop', x, z, r - 0.55, y + ph - 0.05, y + ph + 0.05, look.Top, M.Neon)
-	for _, p in tops do decor(p).CastShadow = false end
-	-- Soft haze rising off the face in the state colour (the client recolours it with the pad).
-	local top = y + ph + 0.05
-	local hazeSource = ghost(s:part('StateHazeSource', V(r * 1.3, 0.2, r * 1.3), CFrame.new(x, top + 0.1, z), look.Glow))
-	hazeSource.CastShadow = false
-	local haze = Instance.new('ParticleEmitter')
-	haze.Name = 'StateHaze'
-	haze.Texture = 'rbxasset://textures/particles/smoke_main.dds'
-	haze.Rate = 1.2
-	haze.Lifetime = NumberRange.new(1.2, 1.8)
-	haze.Speed = NumberRange.new(0.8, 1.4)
-	haze.SpreadAngle = Vector2.new(8, 8)
-	haze.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 2.2), NumberSequenceKeypoint.new(1, 3.4) })
-	haze.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.3, 0.93), NumberSequenceKeypoint.new(1, 1) })
-	haze.Color = ColorSequence.new(look.Top)
-	haze.LightEmission = 1
-	haze.LightInfluence = 0
-	haze.Rotation = NumberRange.new(0, 360)
-	haze.RotSpeed = NumberRange.new(-20, 20)
-	haze.Parent = hazeSource
-	-- The plate on the pad's front edge with the state word.
-	local strip = s:box('StateStrip', V(x - 1.9, y + 0.1, z - r - 0.06), V(x + 1.9, y + ph - 0.25, z - r + 0.02), look.Strip, M.SmoothPlastic)
-	local sg = surface(strip, Enum.NormalId.Front, 50)
-	sg.Name = 'StateGui'
-	line(sg, 'State', string.upper(state), P.white, FONT.loud, 0.06, 0.88, look.Strip:Lerp(P.black, 0.45), 2)
+	local look = Armory.tones(colors[state])
+	local top = Armory.pad(s, x, z, y, look, state, colors.Equipped and colors.Equipped.Glow)
 	-- The gun floating over the pad in profile to the hall (muzzle to the viewer's right), tilted up a little,
 	-- bobbing; never turning, so it is never seen end-on.
 	local d, display = s:group('Display')
 	local tilt = math.rad(Armory.Tilt)
-	local function measure(model)
-		local lo, hi = Armory.extents(model, Armory.pivotOf(model))
+	local function measure(m)
+		local lo, hi = Armory.extents(m, Armory.pivotOf(m))
 		return lo, hi, (hi.Y - lo.Y) * math.cos(tilt) + (hi.Z - lo.Z) * math.sin(tilt)
 	end
 	local k = scale or 1 -- the back row a size bigger, so it reads as big as the front row from the hall
@@ -1973,63 +1985,82 @@ function Armory.slot(c, gun, x, z, y, colors, lift, scale)
 	core.CastShadow = false
 	Armory.effects(core, gun.Tier, gun.Color)
 	-- (every label in a row at one height, over the tallest gun, like the reference's nameplates)
-	Armory.label(s, V(x, y + ph + 1.0 + Armory.DisplayH * k + (lift or 0.8), z), gun)
-	-- On the front row, a display backboard standing right behind the pad (so the gun is always seen in front of
-	-- its own board, not a neighbour's): a panel in the state colour (the client repaints it) in a pale glowing rim
-	-- on a white stand, under the nameplate.
-	if y < Armory.Step - 1 then
-		local bz, bw, b0, b1 = z + Armory.Radius + 0.8, 3.7, y + 0.9, y + 6.4
-		s:box('StateTop', V(x - bw, b0, bz - 0.06), V(x + bw, b1, bz), look.Top, M.SmoothPlastic)
-		s:box('BoardStand', V(x - bw - 0.3, y, bz), V(x + bw + 0.3, b1 + 0.3, bz + 0.35), C(236, 238, 246), M.SmoothPlastic)
-		for _, e in { { V(x - bw - 0.3, b1, bz - 0.12), V(x + bw + 0.3, b1 + 0.3, bz) }, { V(x - bw - 0.3, b0 - 0.3, bz - 0.12), V(x + bw + 0.3, b0, bz) },
-			{ V(x - bw - 0.3, b0, bz - 0.12), V(x - bw, b1, bz) }, { V(x + bw, b0, bz - 0.12), V(x + bw + 0.3, b1, bz) } } do
-			decor(s:box('StateGlow', e[1], e[2], look.Glow, M.Neon)).CastShadow = false
-		end
+	Armory.label(s, V(x, top + 1.0 + Armory.DisplayH * k + (lift or 0.8), z), gun)
+	-- This gun's window in its row's display board behind it: a border in the dark tone and the window in the
+	-- board tone of its state colour, set proud of the board's dark back.
+	if board then
+		local w, h, e = board.window[1] / 2, board.window[2], Armory.BoardBorder
+		local wy0 = y + board.y0 + (board.y1 - board.y0 - h) / 2
+		local fz = board.z
+		decor(s:box('StateBase', V(x - w - e, wy0 - e, fz - 0.08), V(x + w + e, wy0 + h + e, fz + 0.1), look.Base))
+		decor(s:box('StatePanel', V(x - w, wy0, fz - 0.14), V(x + w, wy0 + h, fz + 0.1), look.Panel))
 	end
 	-- Where the prompt sits and the server measures buying distance from: on the deck at the pad's front.
-	local point = ghost(s:box('GunPoint_' .. gun.Id, V(x - 0.5, y + 0.6, z - r - 1.6), V(x + 0.5, y + 1.6, z - r - 0.6), P.white))
+	local point = ghost(s:box('GunPoint_' .. gun.Id, V(x - 0.5, y + 0.6, z - Armory.Pad.base - 1.6), V(x + 0.5, y + 1.6, z - Armory.Pad.base - 0.6), P.white))
 	point.CastShadow = false
 	return model
 end
 
--- The deck: a step along the front, the studded front platform with a lip of studs at its edge, the raised
--- studded terrace behind it (its front wall studded too), a stair up at each end, neon edges.
+-- The deck: a step along the front, the studded grey platform with a white kerb at its edge, the raised studded
+-- terrace behind it with a white coping, a stair up at each end (light nosing on every tread), and a display
+-- board behind each row. No neon and no floor markings (Brief 8).
 function Armory.base(c)
 	local b = c:group('ArmoryBase')
 	local X, Dp, F, T, TZ = Armory.HalfWidth, Armory.Depth, Armory.Floor, Armory.Step, Armory.TerraceZ
-	local deck, wall, step = C(218, 222, 234), C(190, 196, 214), C(200, 205, 222)
-	studs(b:box('ArmoryStep', V(-X, 0, 0), V(X, F / 2, 1.2), step, M.Plastic), true)
-	studs(b:box('ArmoryFloor', V(-X, 0, 1.2), V(X, F, TZ), deck, M.Plastic), true)
-	studs(b:box('ArmoryLip', V(-X, F, 1.2), V(X, F + 0.12, 1.8), wall, M.Plastic))
-	studs(b:box('ArmoryTerrace', V(-X, 0, TZ), V(X, T, Dp), wall, M.Plastic), true)
-	studs(b:box('ArmoryTerraceTop', V(-X, T, TZ), V(X, T + 0.01, Dp), deck, M.Plastic))
-	-- a stair at each end, from the platform up to the terrace (rises of 0.8 or less, 1.2 treads), white nosing
+	local G = Armory.Grey
+	studs(b:box('ArmoryStep', V(-X, 0, 0), V(X, F / 2, 1.2), G.step, M.Plastic), true)
+	studs(b:box('ArmoryFloor', V(-X, 0, 1.2), V(X, F, TZ), G.deck, M.Plastic), true)
+	b:box('ArmoryKerb', V(-X, F, 1.2), V(X, F + 0.25, 1.6), G.kerb, M.SmoothPlastic)
+	studs(b:box('ArmoryTerrace', V(-X, 0, TZ), V(X, T, Dp), G.wall, M.Plastic), true)
+	studs(b:box('ArmoryTerraceTop', V(-X, T - 0.01, TZ), V(X, T, Dp), G.deck, M.Plastic))
+	-- the terrace's coping between the stairs: a white lip over its front edge
+	b:box('ArmoryCoping', V(-X + 4.4, T, TZ - 0.3), V(X - 4.4, T + 0.25, TZ + 0.5), G.kerb, M.SmoothPlastic)
+	-- a stair at each end, from the platform up to the terrace (rises of 0.8 or less, 1.2 treads), each tread's
+	-- front 0.3 in the light nosing grey, flush with the tread
 	local n = math.ceil((T - F) / 0.8) - 1
 	local rise = (T - F) / (n + 1)
+	local zFoot = TZ - n * 1.2 -- the first tread's front
 	for _, sx in { -1, 1 } do
-		local a, bx = sx * (X - 4.4), sx * X
+		local a, bx = sx * (X - 4.4), sx * (X - 0.5)
+		local x0, x1 = math.min(a, bx), math.max(a, bx)
 		for k = 1, n do
 			local z0 = TZ - (n + 1 - k) * 1.2
 			local h = F + k * rise
-			studs(b:box('ArmoryStair', V(math.min(a, bx), F, z0), V(math.max(a, bx), h, TZ), k % 2 == 1 and step or deck, M.Plastic), true)
-			decor(b:box('StairNosing', V(math.min(a, bx), h - 0.02, z0 - 0.02), V(math.max(a, bx), h + 0.03, z0 + 0.3), C(255, 212, 40), M.Neon)).CastShadow = false
+			studs(b:box('ArmoryStair', V(x0, F, z0 + 0.3), V(x1, h, TZ), k % 2 == 1 and G.step or G.deck, M.Plastic), true)
+			b:box('StairNosing', V(x0, F, z0), V(x1, h, z0 + 0.3), G.nose, M.SmoothPlastic)
 		end
+		-- The open side's cheek: a dark grey band and a sloped wedge on it, riding 0.6 over the nosings, from a
+		-- chunky newel post with a white cap at the foot up to the terrace.
+		local c0, c1 = math.min(sx * (X - 0.5), sx * X), math.max(sx * (X - 0.5), sx * X)
+		local cx, len = (c0 + c1) / 2, TZ - zFoot
+		b:box('StairCheek', V(c0, F, zFoot), V(c1, F + 0.6, TZ), G.dark, M.SmoothPlastic)
+		b:wedge('StairCheek', V(0.5, T - F, len), CFrame.new(cx, F + 0.6 + (T - F) / 2, zFoot + len / 2), G.dark) -- (a wedge rises toward +Z, the terrace)
+		local nx = sx * (X - 0.5)
+		b:box('StairNewel', V(nx - 0.45, F, zFoot - 0.9), V(nx + 0.45, F + 1.9, zFoot), G.dark, M.SmoothPlastic)
+		b:box('StairNewelCap', V(nx - 0.55, F + 1.9, zFoot - 1.0), V(nx + 0.55, F + 2.2, zFoot + 0.1), G.kerb, M.SmoothPlastic)
 	end
-	-- an UP chevron painted on the deck at each stair's foot
-	for _, sx in { -1, 1 } do
-		local cx = sx * (X - 2)
-		local z1 = TZ - n * 1.2 - 0.1 -- just in front of the first tread
-		for _, side in { -1, 1 } do
-			local tip, tail = V(cx, F + 0.03, z1), V(cx + side * 1.1, F + 0.03, z1 - 1.2)
-			decor(b:part('StairChevron', V(0.5, 0.05, (tip - tail).Magnitude + 0.3), CFrame.lookAt((tip + tail) / 2, tip), C(255, 212, 40), M.Neon)).CastShadow = false
-		end
-	end
-	-- neon edges: cyan along the platform's front, white along the terrace's top edge
-	local cyan = C(60, 232, 255)
-	decor(b:box('ArmoryEdge', V(-X, F / 2 - 0.26, -0.06), V(X, F / 2 - 0.04, 0), cyan, M.Neon)).CastShadow = false
-	decor(b:box('ArmoryEdge', V(-X, F - 0.26, 1.14), V(X, F - 0.04, 1.2), cyan, M.Neon)).CastShadow = false
-	decor(b:box('ArmoryEdge', V(-X + 4.4, T - 0.3, TZ - 0.06), V(X - 4.4, T - 0.06, TZ + 0.02), P.white, M.Neon)).CastShadow = false
+	-- Each row's display board.
+	for _, row in Armory.Rows do Armory.board(b, row.y, row.board) end
 	return b
+end
+
+-- A row's display board (`y` the deck it stands on): a dark grey back between white posts on dark feet, white
+-- skirting, a white cap with a bevel along its front and a dark under-trim. The guns' windows are the slots'.
+function Armory.board(b, y, B)
+	local G = Armory.Grey
+	local bx = B.ends or 2.5 * Armory.Spacing -- the outer posts (clear of the stairs on the platform)
+	local z0, z1 = B.z, B.z + Armory.BoardDepth
+	b:box('BoardBack', V(-bx, y + B.y0, z0), V(bx, y + B.y1, z1), G.dark, M.SmoothPlastic)
+	for i = -2, 3 do
+		local px = i == -2 and -bx or i == 3 and bx or (i - 0.5) * Armory.Spacing
+		b:box('BoardPost', V(px - 0.35, y, z0 - 0.25), V(px + 0.35, y + B.y1 + 0.1, z1 + 0.15), G.kerb, M.SmoothPlastic)
+		b:box('BoardFoot', V(px - 0.55, y, z0 - 0.5), V(px + 0.55, y + 0.35, z1 + 0.35), G.dark, M.SmoothPlastic)
+		b:box('BoardFinial', V(px - 0.45, y + B.y1 + 0.45, z0 - 0.3), V(px + 0.45, y + B.y1 + 0.85, z1 + 0.1), G.dark, M.SmoothPlastic)
+	end
+	b:box('BoardSkirt', V(-bx, y + B.y0 - 0.3, z0 - 0.15), V(bx, y + B.y0, z1), G.kerb, M.SmoothPlastic)
+	b:box('BoardCap', V(-bx - 0.5, y + B.y1 + 0.1, z0 - 0.45), V(bx + 0.5, y + B.y1 + 0.45, z1 + 0.25), G.kerb, M.SmoothPlastic)
+	b:wedge('BoardCapBevel', V(2 * bx + 1, 0.3, 0.3), CFrame.new(0, y + B.y1 + 0.6, z0 - 0.3), G.kerb)
+	b:box('BoardCapTrim', V(-bx - 0.4, y + B.y1 - 0.05, z0 - 0.4), V(bx + 0.4, y + B.y1 + 0.1, z0 - 0.1), G.dark, M.SmoothPlastic)
 end
 
 -- Builds the whole armory in ctx's frame. opts.guns overrides the gun list (default Config.Guns.List).
@@ -2045,7 +2076,7 @@ function Armory.build(ctx, opts)
 		if not row then break end
 		local col = (i - 1) % 5
 		-- Gun 1 stands on the viewer's left: their left is +X when they look toward +Z.
-		Armory.slot(a, gun, 2 * Armory.Spacing - col * Armory.Spacing, row.z, row.y, colors, row.label, row.scale)
+		Armory.slot(a, gun, 2 * Armory.Spacing - col * Armory.Spacing, row.z, row.y, colors, row.label, row.scale, row.board)
 	end
 	return model
 end
