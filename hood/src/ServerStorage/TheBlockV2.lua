@@ -11,9 +11,9 @@
 -- the bright, slightly softened lighting (HoodLighting HoodSoft) (both reversible: SetActive(false), HoodLighting.Restore()).
 -- Command Bar:  require(game.ServerStorage.TheBlockV2).Build()
 --
--- Hooks: gates are HoodStageGate (StageService/HoodClient.Stages). Each stage's pad is tagged HoodFightPad
--- (Fight = stage, 16 = the boss) for the fight system to come. The lobby's Morphs stand is where looks are
--- equipped; Training_<Id> stations (8 in the lobby, the Ring in the boss yard) train.
+-- Hooks: gates are HoodStageGate (StageService/HoodClient.Stages). The streets have no fight pads; only the
+-- boss yard keeps one (HoodFightPad, Fight = 16) under its sign. Looks are equipped from the HUD's EVOLVE
+-- menu; Training_<Id> stations (8 in the lobby, the Ring in the boss yard) train.
 --
 -- Layout (local studs, floor top at y = 0, players walk toward -Z):
 --   lobby         x -67..67, z 6..157 (a warehouse; its north door opens onto stage 1)
@@ -226,11 +226,8 @@ local STAGE_POWER = { 10, 30, 60, 150, 300, 500, 750, 1000, 1800, 3000, 5000, 80
 V2.StagePower = STAGE_POWER
 V2.StageLength = SLEN
 V2.StageTop = stageTop
-
--- Every stage's pad in walking order, then the boss: the fight system can read them straight from here.
-V2.Fights = {}
-for i = 1, STAGES do table.insert(V2.Fights, { Fight = i, Stage = i, Look = lookOf(i), X = 0, Z = padZ(i) }) end
-table.insert(V2.Fights, { Fight = 16, Stage = 16, Look = 6, X = 0, Z = BOSS_END + 22, Boss = true })
+-- (V2.Fights, the list of the 15 street fight rings plus the boss, went with the street rings on 2026-10-08: no game
+-- code read it. The boss yard's BOSS pad still carries its HoodFightPad tag and Fight = 16.)
 ---------------------------------------------------------------------------------------------- asset kit
 -- The concept's "Asset Kit (simple Roblox parts)". All positions are in the given context's frame.
 -- Street craft kit (Brief 8 research recipes): every object is one hue in three tones, M (main), D (dark base and
@@ -493,10 +490,10 @@ local function railing(c, a, b, h)
 	return g
 end
 
--- Fight pad: a small street boxing ring (Brief 9: it must read as a place to fight, in the same language as the boss
--- yard's Champ Ring, not as a "stand here" mat). A dark base, a cream apron, the mat in the pad's colour with its
--- number, a dark post at each corner under a padded cushion, and two cream ropes on three sides. The side players
--- walk up from (+Z) stays open, so you step into it; the ropes don't collide. No name plate. 17 parts, no neon.
+-- Fight pad: a small boxing ring. Only the boss yard's BOSS pad uses it now; the 15 street rings were removed
+-- (the user's call, 2026-10-08: the street and its gate are the stage). A dark base, a cream apron, the mat in the
+-- pad's colour with its label, a dark post at each corner under a padded cushion, and two cream ropes on three sides.
+-- The side players walk up from (+Z) stays open; the ropes don't collide. 17 parts, no neon.
 local function fightPad(c, n, pos, color, district, size, label)
 	size = size or PAD_SIZE
 	local h = size / 2
@@ -549,35 +546,44 @@ local function banner(c, cf, title, sub, badge, color)
 	return b
 end
 
--- Teleport pad, built as a bus stop (Brief 9: a transit point by its shape, small and plain), 7 parts. A round
--- boarding spot on the pavement (a grey kerb ring round a disc in the stop's colour) and, at its back edge, a pole
--- with a flag sign in the same colour. The sign carries a white pictogram that pokes through both faces: a house
--- for SPAWN, a flag for FURTHEST STAGE. The label under it is the only text. Each target keeps one hue everywhere:
--- SPAWN rose, FURTHEST gold; anything else takes `color`. The disc keeps the pad's name and the prompt (StageService
--- handles targets 'Lobby' and 'Furthest'). The disc is low enough to walk onto.
-local function teleportPad(g, name, x, z, color, target, label)
-	local main = ({ Lobby = C(204, 92, 158), Furthest = C(226, 184, 84) })[target] or color
-	local white, pole = C(244, 242, 238), C(70, 74, 84)
+-- Teleport pad, built as a bus stop (Brief 9 and 10: a transit point by its shape, small and quiet). A boarding spot
+-- on the pavement (a grey disc in a thin rim of the stop's colour) and, behind it, a short pole with a small white
+-- flag reaching back over the spot. Only the flag's pictogram is in colour, built from parts that show on both faces:
+-- a house for SPAWN, a fast-forward double chevron for FURTHEST STAGE. The label under it is the only text. Each target
+-- keeps one hue everywhere: SPAWN rose, FURTHEST amber; anything else takes `color`. The disc keeps the pad's name and
+-- the prompt (StageService handles targets 'Lobby' and 'Furthest'); it is low enough to walk onto.
+-- opts.side (1 unless given): the pole stands behind the spot on that side (+X or -X) and the flag reaches from it
+-- toward the spot. opts.pole = false leaves the pole out: the gates' two stops share one pole (f2_stages gateStop).
+-- The lobby's FurthestPad is this same unit with its own pole, so it reads as the stops on the street do.
+local function teleportPad(g, name, x, z, color, target, label, opts)
+	opts = opts or {}
+	local main = ({ Lobby = C(204, 92, 158), Furthest = C(214, 150, 44) })[target] or color
+	local white, pole, grey = C(244, 242, 238), C(70, 74, 84), C(150, 152, 158)
+	local side = opts.side or 1
 	local o = V(x, 0, z)
 	local up = CFrame.Angles(0, 0, math.pi / 2) -- (cylinders lie along X; this stands them up)
-	g:part(name .. 'Kerb', V(0.3, 4.8, 4.8), CFrame.new(o + V(0, 0.15, 0)) * up, C(150, 152, 158), M.SmoothPlastic, Enum.PartType.Cylinder)
-	local pad = g:part(name, V(0.16, 4.0, 4.0), CFrame.new(o + V(0, 0.38, 0)) * up, main, M.SmoothPlastic, Enum.PartType.Cylinder)
-	-- the pole at the back edge of the spot (+Z: players come from -Z, the slot rule); its sign faces both ways
-	local pz = z + 2.6
-	g:box(name .. 'Pole', V(x - 0.22, 0, pz - 0.22), V(x + 0.22, 7.0, pz + 0.22), pole, M.SmoothPlastic)
-	g:box(name .. 'SignRim', V(x - 1.55, 4.2, pz - 0.2), V(x + 1.55, 7.3, pz + 0.2), white, M.SmoothPlastic)
-	local face = g:box(name .. 'Sign', V(x - 1.35, 4.4, pz - 0.26), V(x + 1.35, 7.1, pz + 0.26), main, M.SmoothPlastic)
+	g:part(name .. 'Kerb', V(0.3, 3.6, 3.6), CFrame.new(o + V(0, 0.15, 0)) * up, main, M.SmoothPlastic, Enum.PartType.Cylinder)
+	local pad = g:part(name, V(0.12, 3.0, 3.0), CFrame.new(o + V(0, 0.36, 0)) * up, grey, M.SmoothPlastic, Enum.PartType.Cylinder)
+	-- the pole behind the spot (+Z: players come from -Z, the slot rule), off to its side; the flag between them
+	local px, pz = x + side * 2.2, z + 2.3
+	if opts.pole ~= false then g:box(name .. 'Pole', V(px - 0.16, 0, pz - 0.16), V(px + 0.16, 5.6, pz + 0.16), pole, M.SmoothPlastic) end
+	local fx = px - side * 1.06 -- (the flag's centre)
+	local face = g:box(name .. 'Sign', V(fx - 0.9, 3.8, pz - 0.14), V(fx + 0.9, 5.3, pz + 0.14), white, M.SmoothPlastic)
+	local iy = 4.85 -- (the pictogram's middle)
 	if target == 'Lobby' then -- a house: a block with a square turned 45 degrees for its roof
-		g:box(name .. 'Icon', V(x - 0.6, 5.6, pz - 0.32), V(x + 0.6, 6.35, pz + 0.32), white, M.SmoothPlastic)
-		g:part(name .. 'Icon', V(0.9, 0.9, 0.64), CFrame.new(x, 6.35, pz) * CFrame.Angles(0, 0, math.pi / 4), white, M.SmoothPlastic)
-	else -- a flag on its staff
-		g:box(name .. 'Icon', V(x - 0.62, 5.45, pz - 0.32), V(x - 0.44, 6.9, pz + 0.32), white, M.SmoothPlastic)
-		g:box(name .. 'Icon', V(x - 0.44, 6.05, pz - 0.32), V(x + 0.7, 6.85, pz + 0.32), white, M.SmoothPlastic)
+		g:box(name .. 'Icon', V(fx - 0.3, iy - 0.42, pz - 0.21), V(fx + 0.3, iy, pz + 0.21), main, M.SmoothPlastic)
+		g:part(name .. 'Icon', V(0.56, 0.56, 0.42), CFrame.new(fx, iy, pz) * CFrame.Angles(0, 0, math.pi / 4), main, M.SmoothPlastic)
+	else -- fast forward: two chevrons pointing to the reader's right on the stop's front (-X here)
+		for _, tx in { fx - 0.36, fx + 0.06 } do
+			for _, s in { 1, -1 } do
+				g:part(name .. 'Icon', V(0.64, 0.17, 0.42), CFrame.new(tx + 0.17, iy + s * 0.17, pz) * CFrame.Angles(0, 0, s * math.pi / 4), main, M.SmoothPlastic)
+			end
+		end
 	end
 	for _, f in { Enum.NormalId.Front, Enum.NormalId.Back } do
 		local sg = surface(face, f, 32)
 		pcall(function() sg.MaxDistance = 60 end)
-		line(sg, 'Title', target == 'Furthest' and 'FURTHEST' or label, white, FONT.loud, 0.6, 0.3, main:Lerp(P.black, 0.55), 2)
+		line(sg, 'Title', target == 'Furthest' and 'FURTHEST' or label, main:Lerp(P.black, 0.35), FONT.loud, 0.66, 0.3)
 	end
 	local prompt = Instance.new('ProximityPrompt')
 	prompt.Name = 'Teleport'
@@ -1786,13 +1792,19 @@ function Street.stoop(c, x, door)
 	c:box('Door', V(x - 1.4, H, 0), V(x + 1.4, H + 7.0, 0.45), door or P.door, M.SmoothPlastic)
 end
 -- A walk-up on The Block: brick, a raised ground floor with its stoop in bay `doorBay`, framed windows.
--- o: floors, wall, bays, doorBay, door, depth, noUnit
+-- o: floors, wall, bays, doorBay, door, depth, noUnit, cornice (S1, Brief 10: a deep tenement cornice along the
+-- roofline, one part, so the Block's skyline differs from Shop Street's flat parapets)
 function Street.walkup(ctx, w, o)
-	return brickBuilding(ctx, w, { name = 'WalkUp', floors = o.floors, wall = o.wall, bays = o.bays, depth = o.depth, noUnit = o.noUnit, ground = function(c, _, list)
+	local c, model = brickBuilding(ctx, w, { name = 'WalkUp', floors = o.floors, wall = o.wall, bays = o.bays, depth = o.depth, noUnit = o.noUnit, ground = function(c, _, list)
 		local doorX = list[o.doorBay or 1]
 		for _, x in list do if math.abs(x - doorX) > 3 then window(c, x, 4.2, {}) end end
 		Street.stoop(c, doorX, o.door)
 	end })
+	if o.cornice then
+		local roof = roofOf(o.floors)
+		c:box('Cornice', V(-0.3, roof - 1.7, 0), V(w + 0.3, roof + 0.5, 1.6), C(214, 204, 188), M.SmoothPlastic)
+	end
+	return c, model
 end
 -- The corner store at the end of The Block, its landmark: low (two storeys) and light among the brick walk-ups, a
 -- dark green shop band with glass that turns the corner, the door at the corner end, one green awning wrapped round
@@ -1850,21 +1862,225 @@ function Street.waterTower(c, x, y, z)
 	t:post('TankRoof', 1.1, 0.7, V(x, y + 12.6, z), steel, M.SmoothPlastic)
 	return t
 end
+-- The Block's laundromat (stage 2's landmark, S1 Brief 10): one tall storey of pale tiles. Through a big shop window
+-- you see a white bank of front-loaders, two rows of round doors, so it reads as a laundromat with no sign. The name
+-- goes on a plain fascia; two dryer vent stacks stand on the roof. Facade-local like the buildings above, the door at
+-- the left end (x 0). o: depth, wall, trim, corner (true: it stands on a corner, so the shop band and fascia wrap round
+-- its left side, which gets a window and a service door). Returns the context, the model and the fascia (for the name).
+function Street.laundromat(ctx, w, o)
+	o = o or {}
+	local c, model = ctx:group('Laundromat')
+	local depth, H = o.depth or DEPTH, 12.4
+	local wall, trim = o.wall or C(200, 214, 222), o.trim or C(66, 112, 146)
+	-- The shop front is recessed 1.6 between two piers, so the machines can stand behind the glass.
+	c:box('Wall', V(0, -1, -depth), V(w, H, -1.6), wall, M.SmoothPlastic)
+	for _, x in { 0, w - 1.2 } do c:box('Pier', V(x, -1, -1.6), V(x + 1.2, H, 0.3), wall, M.SmoothPlastic) end
+	c:box('ShopBase', V(1.2, -1, -1.6), V(w - 1.2, 1.2, 0.3), trim, M.SmoothPlastic)
+	local fascia = c:box('ShopSign', V(0, 8.6, -1.6), V(w, 11.2, 0.5), trim, M.SmoothPlastic)
+	c:box('Parapet', V(-0.2, H, -depth - 0.2), V(w + 0.2, H + 0.9, 0.6), trim:Lerp(P.black, 0.35), M.SmoothPlastic)
+	c:box('ShopDoorFrame', V(1.2, 0, -0.6), V(5.2, 8.6, 0.3), P.white, M.SmoothPlastic)
+	c:box('ShopDoor', V(1.7, 0, 0.3), V(4.7, 7.9, 0.45), P.glass, M.SmoothPlastic)
+	local glass = decor(c:box('ShopGlass', V(5.2, 1.2, 0.05), V(w - 1.2, 8.6, 0.2), C(176, 204, 220), M.Glass))
+	glass.Transparency, glass.CastShadow = 0.6, false
+	-- The machines: one white bank, two rows of round doors (a chrome ring round a dark porthole).
+	c:box('Machines', V(5.6, 0, -1.6), V(w - 1.6, 8.0, -0.7), P.white, M.SmoothPlastic)
+	local n = math.max(2, math.floor((w - 7.6) / 3.3))
+	local pitch = (w - 7.6) / n
+	for k = 0, n - 1 do
+		local x = 5.9 + pitch * (k + 0.5)
+		for _, y in { 2.3, 5.7 } do
+			local cf = CFrame.new(x, y, -0.6) * CFrame.Angles(0, math.pi / 2, 0)
+			decor(c:rod('DrumRing', 1.25, 0.2, cf, C(196, 200, 208), M.SmoothPlastic))
+			decor(c:rod('DrumDoor', 0.9, 0.3, cf, C(44, 56, 74), M.SmoothPlastic))
+		end
+	end
+	for k, x in { w * 0.3, w * 0.62 } do c:post('VentStack', 0.55, 2.6 + k * 0.8, V(x, H + 0.9, -depth * 0.55), C(176, 180, 188), M.Metal) end
+	if o.corner then
+		c:box('ShopSignSide', V(-0.4, 8.6, -depth + 1.2), V(0, 11.2, 0.5), trim, M.SmoothPlastic)
+		c:box('ShopBaseSide', V(-0.4, -1, -depth + 1.2), V(0, 1.2, 0.3), trim, M.SmoothPlastic)
+		-- (on the side wall, facing -X: a framed window toward the front, a service door toward the back)
+		local side = c:at(CFrame.new(0, 0, -depth) * CFrame.Angles(0, -math.pi / 2, 0))
+		window(side, depth - 5, 3.2, {})
+		side:box('SideDoorFrame', V(2.2, 0, 0), V(5.8, 8.2, 0.25), P.white, M.SmoothPlastic)
+		side:box('SideDoor', V(2.6, 0, 0), V(5.4, 7.8, 0.4), P.doorDark, M.SmoothPlastic)
+	end
+	model:SetAttribute('Floors', 1)
+	return c, model, fascia
+end
+
+-- ==== S2 kit BEGIN: Shop Street and Courts pieces (builder S2, Brief 10; add-only) ====
+-- Shop Street's own facade (critic 13: it must not read as the Block's brick walk-up with a shop at the bottom). A low
+-- painted front (smooth render, pale warm colours) of one to three storeys, wide shop-flat windows upstairs (one per bay,
+-- no sills or mullions), a cream cornice over the shop, and a parapet with a coping instead of a slate roof, its middle
+-- stepped up on some ("false front"). Ground floor: a shop window, a glass door at one end, a band, the awning and the
+-- name on a plain fascia. Facade-local like the buildings (+X along the facade, +Z out to the street).
+-- o: sign, signColor, textColor, trim, wall, stripes, floors (1-3, default 2), bays (upper windows per floor), depth,
+--    stripe, awningDepth, step (the stepped parapet), doorLeft, pole (a barber's pole by the door), name,
+--    arcade (the ground floor set back this far under the upper floors: the street builds the columns; the name then
+--    sits on the beam over the columns, no awning)
+function Street.shopfront(ctx, w, o)
+	local c, model = ctx:group(o.name or ('Shop_' .. string.gsub(o.sign or 'Front', '%W', '')))
+	local floors = o.floors or 2
+	local roof = 13 + (floors - 1) * 9
+	local depth = o.depth or DEPTH
+	local wall = o.wall or P.tanLight
+	local trim = o.trim or o.signColor or C(120, 110, 100)
+	local rec = o.arcade or 0
+	if rec > 0 then
+		c:box('Wall', V(0, -1, -depth), V(w, 11, -rec), wall, M.SmoothPlastic)
+		c:box('Wall', V(0, 11, -depth), V(w, roof, 0), wall, M.SmoothPlastic)
+	else
+		c:box('Wall', V(0, -1, -depth), V(w, roof, 0), wall, M.SmoothPlastic)
+	end
+	c:box('RoofTop', V(0, roof, -depth), V(w, roof + 0.3, -0.9), C(176, 178, 184), M.Concrete)
+	c:box('Parapet', V(0, roof, -0.9), V(w, roof + 1.7, 0.25), wall, M.SmoothPlastic)
+	c:box('Coping', V(-0.25, roof + 1.7, -1.1), V(w + 0.25, roof + 2.2, 0.5), P.cream, M.SmoothPlastic)
+	if o.step then
+		local sw = math.min(w * 0.42, 9)
+		c:box('ParapetStep', V(w / 2 - sw / 2, roof + 2.2, -0.9), V(w / 2 + sw / 2, roof + 4.2, 0.3), wall, M.SmoothPlastic)
+		c:box('Coping', V(w / 2 - sw / 2 - 0.25, roof + 4.2, -1.1), V(w / 2 + sw / 2 + 0.25, roof + 4.7, 0.5), P.cream, M.SmoothPlastic)
+	end
+	-- the shop, at the front or at the back of the arcade
+	local g = c:at(CFrame.new(0, 0, -rec))
+	local dl = o.doorLeft
+	local gx0, gx1 = dl and 6.2 or 1.4, dl and w - 1.4 or w - 6.2
+	local dx = dl and 1.2 or w - 5.4
+	g:box('ShopBase', V(gx0 - 0.4, 0, 0), V(gx1 + 0.4, 1.1, 0.35), trim, M.SmoothPlastic)
+	decor(g:box('ShopGlass', V(gx0, 1.1, 0), V(gx1, 7.6, 0.3), P.glass, M.SmoothPlastic)).Reflectance = 0.15
+	if gx1 - gx0 > 9 then decor(g:box('ShopMullion', V((gx0 + gx1) / 2 - 0.2, 1.1, 0), V((gx0 + gx1) / 2 + 0.2, 7.6, 0.42), trim, M.SmoothPlastic)) end
+	g:box('ShopDoorFrame', V(dx, 0, 0), V(dx + 4.2, 8.2, 0.3), trim, M.SmoothPlastic)
+	decor(g:box('ShopDoor', V(dx + 0.5, 0, 0), V(dx + 3.7, 7.6, 0.45), P.glass, M.SmoothPlastic))
+	g:box('ShopBand', V(0, 8.2, 0), V(w, 9.4, 0.4), trim, M.SmoothPlastic)
+	local sign
+	if rec > 0 then
+		if o.sign then sign = c:box('ShopSign', V(0.3, 11.3, 0), V(w - 0.3, 12.9, 0.35), o.signColor, M.SmoothPlastic) end
+	else
+		if o.stripes then stripedAwning(c, 1.2, w - 1.2, 9.4, o.stripes, o.awningDepth, o.stripe) end
+		if o.sign then sign = Street.fascia(c, w, o.signColor) end
+		decor(c:box('Cornice', V(-0.2, 12.5, 0), V(w + 0.2, 13.1, 0.8), P.cream, M.SmoothPlastic))
+	end
+	if sign then line(surface(sign, Enum.NormalId.Back, 20), 'Text', o.sign, o.textColor or P.white, FONT.loud, 0.12, 0.76, o.signColor:Lerp(P.black, 0.6), 3) end
+	-- upstairs: one wide window per bay
+	local n = o.bays or math.max(1, math.floor(w / 9))
+	for f = 2, floors do
+		local y0 = 13 + (f - 2) * 9 + 2.4
+		for k = 1, n do
+			local cx, hw = w * (k - 0.5) / n, math.min(w / n / 2 - 1.6, 3.2)
+			decor(c:box('WindowFrame', V(cx - hw - 0.4, y0 - 0.4, 0), V(cx + hw + 0.4, y0 + 4.6, 0.25), P.cream, M.SmoothPlastic))
+			decor(c:box('Glass', V(cx - hw, y0, 0), V(cx + hw, y0 + 4.2, 0.32), P.glass, M.SmoothPlastic)).Reflectance = 0.15
+		end
+	end
+	if o.pole then Street.barberPole(c, V(dl and 0.9 or w - 0.9, 2, 1.2)) end
+	model:SetAttribute('Floors', floors)
+	return c, model
+end
+-- The barber's turning pole (the same pole barberShop hangs by its door), standing on p0 in c's frame.
+function Street.barberPole(c, p0)
+	local pole, poleModel = c:group('BarberPole')
+	pole:post('PoleBody', 0.55, 5, p0, P.white, M.SmoothPlastic)
+	for k = 0, 4 do
+		pole:part('PoleStripe', V(0.35, 1.15, 1.15), CFrame.new(p0 + V(0, 0.6 + k * 0.95, 0)) * CFrame.Angles(0, 0, math.pi / 2) * CFrame.Angles(math.rad(22), 0, 0), k % 2 == 0 and C(208, 74, 66) or P.barberBlue, M.SmoothPlastic, Enum.PartType.Cylinder)
+	end
+	for _, y in { -0.3, 5 } do pole:post('PoleCap', 0.7, 0.4, p0 + V(0, y, 0), P.barberBlue, M.Metal) end
+	pole:box('PoleBracket', p0 + V(-0.15, 2.4, -1.2), p0 + V(0.15, 2.7, -0.5), P.iron, M.Metal)
+	poleModel:SetAttribute('Spin', 60)
+	poleModel:AddTag('HoodMotion')
+	poleModel.WorldPivot = c:world(CFrame.new(p0 + V(0, 2.5, 0)))
+	return pole
+end
+-- A small shopping mall (Shop Street's last stage): a wide three-storey block in light render, a tall glazed atrium
+-- standing proud of the front over a pair of dark doors, a flat canopy on two posts in front of them, one long ribbon
+-- window per floor on each wing, a shop window either side of the doors, a coloured parapet. Facade-local.
+-- o: depth, wall, band (the trim colour), atrium (its centre along the facade)
+function Street.mall(ctx, w, o)
+	o = o or {}
+	local c, model = ctx:group('Mall')
+	local roof, depth = 31, o.depth or DEPTH
+	local wall, band = o.wall or C(228, 226, 222), o.band or C(112, 100, 140)
+	c:box('Wall', V(0, -1, -depth), V(w, roof, 0), wall, M.SmoothPlastic)
+	c:box('RoofTop', V(0, roof, -depth), V(w, roof + 0.3, -0.9), C(176, 178, 184), M.Concrete)
+	c:box('Parapet', V(-0.2, roof, -0.9), V(w + 0.2, roof + 1.6, 0.3), band, M.SmoothPlastic)
+	decor(c:box('StringCourse', V(0, 9.8, 0), V(w, 10.6, 0.5), band, M.SmoothPlastic))
+	local ax = o.atrium or w / 2
+	c:box('AtriumFrame', V(ax - 7.4, 0, 0), V(ax + 7.4, roof + 2.5, 1.6), band, M.SmoothPlastic)
+	decor(c:box('AtriumGlass', V(ax - 6.4, 0, 1.6), V(ax + 6.4, roof + 1.5, 1.75), P.glass, M.SmoothPlastic)).Reflectance = 0.2
+	for _, y in { 11.5, 21.5 } do decor(c:box('AtriumTransom', V(ax - 6.4, y, 1.6), V(ax + 6.4, y + 0.5, 1.95), wall, M.SmoothPlastic)) end
+	decor(c:box('AtriumMullion', V(ax - 0.25, 0, 1.6), V(ax + 0.25, roof + 1.5, 1.95), wall, M.SmoothPlastic))
+	c:box('MallDoors', V(ax - 3.4, 0, 1.75), V(ax + 3.4, 8.4, 2.0), C(40, 46, 58), M.SmoothPlastic)
+	c:box('Canopy', V(ax - 6, 9.6, 1.6), V(ax + 6, 10.4, 8.0), wall, M.SmoothPlastic)
+	decor(c:box('CanopyEdge', V(ax - 6.1, 9.3, 7.6), V(ax + 6.1, 10.6, 8.1), band, M.SmoothPlastic))
+	for _, x in { ax - 5.4, ax + 5.4 } do c:box('CanopyPost', V(x - 0.3, 0, 7.2), V(x + 0.3, 9.6, 7.8), P.iron, M.Metal) end
+	for _, wing in { { 1.6, ax - 8.4 }, { ax + 8.4, w - 1.6 } } do
+		if wing[2] - wing[1] > 3 then
+			for _, y in { 13.6, 23.2 } do decor(c:box('Ribbon', V(wing[1], y, 0), V(wing[2], y + 3.6, 0.3), P.glass, M.SmoothPlastic)).Reflectance = 0.15 end
+			decor(c:box('ShopGlass', V(wing[1] + 0.6, 1.2, 0), V(wing[2] - 0.6, 7.8, 0.3), P.glass, M.SmoothPlastic)).Reflectance = 0.15
+		end
+	end
+	return c, model
+end
+-- The five-a-side clubhouse: one storey, white, a team-colour band and a pent roof that rises to the front, a veranda
+-- along the front on three posts with a bench under it, a roller shutter (the kit store), a door and a window.
+-- Facade-local. o: depth, wall, team (the club's colour)
+function Street.clubhouse(ctx, w, o)
+	o = o or {}
+	local c, model = ctx:group('Clubhouse')
+	local depth, h = o.depth or 9, 8
+	local wall, team = o.wall or C(236, 236, 230), o.team or C(66, 116, 212)
+	c:box('Wall', V(0, -1, -depth), V(w, h, 0), wall, M.SmoothPlastic)
+	c:box('Plinth', V(-0.1, -1, -depth - 0.1), V(w + 0.1, 0.9, 0.25), C(150, 152, 158), M.Concrete)
+	c:box('TeamBand', V(-0.1, h - 1.6, -depth - 0.1), V(w + 0.1, h, 0.3), team, M.SmoothPlastic)
+	c:wedge('Roof', V(w + 1.2, 2.2, depth + 1.4), CFrame.new(w / 2, h + 1.1, -depth / 2 + 0.2), Craft.dark(team), M.SmoothPlastic)
+	c:box('Veranda', V(-0.4, h - 0.5, 0.3), V(w + 0.4, h, 4.4), Craft.dark(team), M.SmoothPlastic)
+	for _, x in { 0.5, w * 0.46, w - 0.5 } do c:box('VerandaPost', V(x - 0.25, 0, 3.6), V(x + 0.25, h - 0.5, 4.1), wall, M.SmoothPlastic) end
+	c:box('ShutterFrame', V(1.6, 0, 0), V(9.4, 6.6, 0.3), C(120, 124, 132), M.Metal)
+	c:box('RollShutter', V(2.1, 0, 0.3), V(8.9, 6.1, 0.45), C(170, 174, 182), M.Metal)
+	for y = 1.6, 5.2, 1.8 do decor(c:box('DoorSlat', V(2.1, y, 0.45), V(8.9, y + 0.15, 0.52), C(130, 134, 142), M.Metal)) end
+	decor(c:box('DoorFrame', V(w - 7.2, 0, 0), V(w - 3.2, 7.4, 0.22), P.cream, M.SmoothPlastic))
+	c:box('Door', V(w - 6.7, 0, 0), V(w - 3.7, 6.9, 0.4), team, M.SmoothPlastic)
+	decor(c:box('WindowFrame', V(11.6, 2.6, 0), V(w - 9.4, 6.4, 0.22), P.cream, M.SmoothPlastic))
+	decor(c:box('Glass', V(12.0, 3.0, 0), V(w - 9.8, 6.0, 0.3), P.glass, M.SmoothPlastic)).Reflectance = 0.15
+	c:box('BenchSeat', V(12.4, 1.4, 1.0), V(w - 10.2, 1.75, 2.3), P.wood, M.WoodPlanks)
+	for _, x in { 12.8, w - 10.6 } do c:box('BenchLeg', V(x - 0.25, 0, 1.2), V(x + 0.25, 1.4, 2.1), P.iron, M.Metal) end
+	return c, model
+end
+-- A newspaper kiosk: a green hut with a counter hatch to the front (+Z), papers on the counter, a magazine rack on each
+-- side, a stepped roof with a lip.
+function Street.kiosk(c, cf, color)
+	local k = c:at(cf):group('Kiosk')
+	local dark = Craft.dark(color)
+	k:box('KioskBase', V(-2.4, 0, -2.0), V(2.4, 0.6, 2.0), dark, M.SmoothPlastic)
+	k:box('KioskBody', V(-2.2, 0.6, -1.8), V(2.2, 6.6, 1.8), color, M.SmoothPlastic)
+	decor(k:box('KioskHatch', V(-1.6, 3.2, 1.8), V(1.6, 5.8, 1.9), C(40, 44, 54), M.SmoothPlastic))
+	k:box('KioskCounter', V(-1.9, 2.9, 1.8), V(1.9, 3.2, 2.7), P.cream, M.SmoothPlastic)
+	decor(k:box('Papers', V(-1.5, 3.2, 1.95), V(-0.2, 3.65, 2.6), P.white, M.SmoothPlastic))
+	decor(k:box('Papers', V(0.2, 3.2, 1.95), V(1.5, 3.5, 2.6), C(232, 228, 210), M.SmoothPlastic))
+	for _, s in { -1, 1 } do decor(k:box('MagazineRack', V(s * 2.2, 1.4, -1.3), V(s * 2.45, 4.6, 1.3), s < 0 and C(214, 108, 128) or C(96, 150, 206), M.SmoothPlastic)) end
+	k:box('KioskRoof', V(-2.9, 6.6, -2.5), V(2.9, 7.1, 2.5), dark, M.SmoothPlastic)
+	k:box('KioskRoof', V(-2.0, 7.1, -1.6), V(2.0, 7.8, 1.6), color, M.SmoothPlastic)
+	k:box('KioskRoof', V(-0.9, 7.8, -0.7), V(0.9, 8.3, 0.7), dark, M.SmoothPlastic)
+	return k
+end
+-- ==== S2 kit END ====
 ---------------------------------------------------------------------------------------------- lobby hall
 -- World 1's spawn: the BLOCK RANGE hall, a bright grey warehouse hall (studded walls between slate pillars with
 -- white strips, big windows, box trusses with rows of fluorescent bars, a studded grey floor). Brief 9: every place
--- in it reads by its shape and where it stands, with at most one sign each.
---   Spawn: a low pad on the hall's spine just inside the exit, facing west down a red runner to BAY 1's front steps
---     (the free lane, the first thing to do); the exit to Stage 1 is the big door at the spine's north end.
---   West wall: the 8 shooting ranges as one stepped red terrace, Starter lowest by the exit, Gold highest at the back.
---   North wall: the stage door in the middle, the fast-travel pad west of it, the locked WORLD 2 arch east of it, a
---     roller loading door in each corner (deliveries on pallets inside the west one; the corner store's back yard,
---     bins and a soda delivery by the east one).
---   East: the corner store (a small shop box with its side door and bins), the ARMORY (builder D) further south.
---   By the spawn: the three rewards (a chest, a prize wheel, a safe) on one low stand.
+-- in it reads by its shape and where it stands, with at most one sign each. Brief 10: the middle of the hall is a
+-- place too (a plaza round the hub's one landmark), and the floor says who stands where.
+--   Spawn: a low pad on a short white walk just inside the exit, facing west down a blue runner that climbs BAY 1's
+--     front steps into the lane (the free lane, the first thing to do); the exit to Stage 1 is the big door north.
+--   West wall: the 8 shooting ranges as one stepped red terrace, Starter lowest by the exit, Gold highest at the back;
+--     at its foot, mid-terrace, a rubber mat with two benches and a water cooler: where you wait for a lane.
+--   Middle: the KINGPIN plaza, a paved octagon with the giant gold statue on a red plinth whose low stone ledge all
+--     round is a seat (the place to meet), facing north to the spawn and the door.
+--   North wall: the stage door in the middle (a glazed transom over it, a small monitor), the fast-travel pad west of
+--     it, the locked WORLD 2 arch east of it, a roller loading door in each corner (deliveries on pallets inside the
+--     west one; the site office's bins by the east one).
+--   East: the site office (a prefab cabin with a window band) and two vending machines by it, the rewards just east
+--     of the spawn (the chest and the safe on one low stand, the prize wheel on its own), the ARMORY (builder D)
+--     further south with its customers' plank floor in front of the counter.
 --   South wall: the sneaker shop (cubby wall of shoe boxes, try-on benches, a counter); the street-ball court with a
---     bench beside it and the gold KINGPIN statue in the south-west; the two leaderboards behind a 1-2-3 podium in
---     the south-east.
+--     bench beside it in the south-west; the hall of fame in the south-east (a winners' podium with three players on
+--     it, the trophy held high, the two leaderboards as one board on the wall behind them).
 -- Builders from other files (Stations, Armory) fill the slots; a missing or failing one leaves a labelled
 -- placeholder box of the slot's size.
 -- Map frame (studs): interior x -66..66, z 6..156 (north wall z 5..6, the Stage 1 gate at z = 0 stays outside),
@@ -1914,10 +2130,22 @@ end
 -- It spans z ArmorySpan (Armory.HalfWidth 29.4 each way) and x ArmoryX..65.6 (Armory.Depth 31.2).
 Lobby.ArmoryX, Lobby.ArmoryZ = 34.4, 106.2
 Lobby.ArmorySpan = { 76.8, 135.6 }
--- The floor: one studded grey, a lighter spine (x -SpineW..SpineW) from the stage door to the sneaker shop, and the
--- red runner (z CrossZ ± RunnerW) from the spawn pad west to BAY 1's front steps. No kerbed panels.
+-- The floor: one studded grey; a short lighter walk (x -SpineW..SpineW) from the stage door to just past the spawn
+-- (z N..WalkZ1); the blue runner (z CrossZ ± RunnerW) from the spawn pad west up BAY 1's front steps to the lane's
+-- mouth; and three zones, each under the place it serves: the plaza's paving round the statue, the spectators' mat
+-- at the terrace's foot, the customers' planks in front of the armory counter. No kerbed panels, no lines.
 Lobby.SpineW, Lobby.RunnerW = 7, 4.5
--- The lobby's fast-travel pad (FurthestPad): the other way out, west of the stage door, its front to the spine.
+Lobby.WalkZ1 = 40
+Lobby.RunnerColor = C(104, 126, 176) -- the spawn top's and BAY 1's blue: "from here to that lane"
+-- The KINGPIN plaza in the middle of the hall: the statue's centre, the paving's and the seat ledge's flat-to-flat.
+Lobby.Plaza = { X = -4, Z = 92, Paving = 34, Ledge = 20, LedgeH = 1.2 } -- (a little west of the hall's axis: the middle between the terrace's front and the armory's, and the exit door stays in view past it from the sneaker shop's east half)
+-- The spectators' spot at the terrace's foot, between the Heavy lane's side stair and Gold's grand stair.
+Lobby.Spectators = { X0 = -34, X1 = -24, Z0 = 74, Z1 = 96 }
+-- The armory customers' floor: from a few studs out on the hall floor to under the counter's front.
+Lobby.CustomerFloor = { X0 = 29, X1 = 41.4, Z0 = 78.2, Z1 = 134.2 }
+-- The hall of fame in the south-east: the podium's centre (its front faces north) and the board on the south wall.
+Lobby.Fame = { X = 40.5, Z = 147.8 }
+-- The lobby's fast-travel pad (FurthestPad): the other way out, west of the stage door, its front to the door's walk.
 Lobby.FurthestAt = CFrame.lookAt(V(-23, 0, 15), V(0, 0, 15))
 
 
@@ -2039,9 +2267,9 @@ function Lobby.wallPillar(c, pos, normal, kind, y)
 	c:wedge('PillarKink', V(w, y1 - y0, d0 - d1), f * CFrame.new(0, (y0 + y1) / 2, -(d0 + d1) / 2), K.pillar, M.SmoothPlastic)
 	for _, x in xs do neon(x, y1, H - 1.6, d1) end
 end
--- A big window on a wall: white outer frame, a navy inner frame with a mullion, very light blue glass with a
--- lighter streak, and a small white lamp plate under it. f(u, y, w) maps (along the wall, height, out from
--- the wall) to the map.
+-- A big window on a wall: white outer frame, a navy inner frame with a mullion, very light blue glass. (No glint
+-- streak or glowing lamp plate any more: fewer parts, and the lighting pass lights the places, not the walls.)
+-- f(u, y, w) maps (along the wall, height, out from the wall) to the map.
 function Lobby.window(c, f, u, y0, y1)
 	local K = Lobby.Colors
 	c:box('WindowFrame', f(u - 5.4, y0 - 0.6, 0), f(u + 5.4, y1 + 0.6, 0.35), K.frame, M.SmoothPlastic)
@@ -2049,8 +2277,6 @@ function Lobby.window(c, f, u, y0, y1)
 	c:box('WindowGlass', f(u - 4.4, y0 + 0.5, 0.4), f(u + 4.4, y1 - 0.5, 0.5), K.winGlass, M.SmoothPlastic)
 	local ym = y1 - (y1 - y0) * 0.36
 	c:box('WindowMullion', f(u - 4.4, ym - 0.25, 0.4), f(u + 4.4, ym + 0.25, 0.56), K.winFrame, M.SmoothPlastic)
-	decor(c:box('WindowGlint', f(u - 3.8, y0 + 0.5, 0.45), f(u - 2.4, ym - 0.25, 0.55), K.winGlass:Lerp(P.white, 0.55), M.SmoothPlastic)).CastShadow = false
-	decor(c:box('WallLamp', f(u - 0.9, y0 - 1.5, 0), f(u + 0.9, y0 - 0.9, 0.3), K.lampPlate, M.Neon)).CastShadow = false
 end
 -- A closed roll-up loading door in the north wall at x: grey steel jambs on dark plinths, grey slats (painted as
 -- stripes), a dark bottom rail, a drum housing over it. (No beacon: deliveries in front of it say what it is.)
@@ -2071,13 +2297,31 @@ function Lobby.loadingDoor(c, x)
 	d:box('LoadDoorRail', V(x - w, 0, N), V(x + w, 0.6, N + 0.7), K.pillarDark, M.SmoothPlastic)
 	return d
 end
--- A hall sign: one pale studded board with the area's name in deep slate on a darker grey back plate. One per
--- area, no medallions or frames on frames; the hall's lamps light it.
-function Lobby.wallSign(c, name, pos, normal, w, ht, title)
-	local K = Lobby.Colors
-	local cf = CFrame.lookAt(pos, pos + normal)
-	c:part(name .. 'Back', V(w + 1.2, ht + 1.2, 0.4), cf * CFrame.new(0, 0, 0.4), K.pillarDark, M.SmoothPlastic)
-	studs(Lobby.board(c, name, cf, w, ht, C(226, 228, 234), { { 'Title', title, C(52, 60, 86), FONT.loud, 0.1, 0.8, P.white, 5 } }, 12))
+-- A hall sign that still reads with every word hidden: a round plate whose pictogram is built from parts (kind
+-- 'target': a red and white bullseye; 'gun': a white pistol in profile on a slate disc) and, beside it (toward the
+-- sign's local +X, or -X when side is -1), the area's name on a slim pale plate. One per area; nothing glows.
+function Lobby.roundelSign(c, name, pos, normal, title, kind, side)
+	side = side or 1
+	local cf = CFrame.lookAt(pos, pos + normal) -- -Z = into the hall
+	local flat = CFrame.Angles(0, math.pi / 2, 0) -- (a cylinder's axis along the sign's normal)
+	local function disc(n, dia, z0, z1, col)
+		return c:part(n, V(z1 - z0, dia, dia), cf * CFrame.new(0, 0, -(z0 + z1) / 2) * flat, col, M.SmoothPlastic, Enum.PartType.Cylinder)
+	end
+	local D = 6.4
+	if kind == 'target' then
+		disc(name, D, 0, 0.4, C(204, 66, 62))
+		disc(name .. 'Ring', D * 0.68, 0.4, 0.5, C(244, 244, 246))
+		disc(name .. 'Eye', D * 0.34, 0.5, 0.6, C(204, 66, 62))
+	else
+		disc(name, D, 0, 0.4, C(52, 62, 92))
+		local w = C(244, 244, 246)
+		c:part(name .. 'Slide', V(3.8, 1.05, 0.2), cf * CFrame.new(0.45, 0.6, -0.5), w, M.SmoothPlastic)
+		c:part(name .. 'Grip', V(1.15, 2.3, 0.2), cf * CFrame.new(-0.9, -0.7, -0.5) * CFrame.Angles(0, 0, math.rad(-14)), w, M.SmoothPlastic)
+		c:part(name .. 'Guard', V(1.0, 0.28, 0.2), cf * CFrame.new(0.2, -0.45, -0.5), w, M.SmoothPlastic)
+	end
+	local pw = math.max(8, #title * 1.02 + 1.2)
+	Lobby.board(c, name .. 'Plate', cf * CFrame.new(side * (D / 2 + 0.8 + pw / 2), 0, -0.15), pw, 2.6, C(226, 228, 234),
+		{ { 'Title', title, C(52, 60, 86), FONT.loud, 0.12, 0.76, P.white, 3 } }, 14)
 end
 function Lobby.hall(L)
 	local K, W, N, S, H = Lobby.Colors, Lobby.W, Lobby.N, Lobby.S, Lobby.H
@@ -2123,8 +2367,10 @@ function Lobby.hall(L)
 		Lobby.window(h, west, z, 14, 27)
 		Lobby.window(h, east, z, 14, 27)
 	end
-	for _, x in { -55.5, -40.5, 40.5, 55.5 } do Lobby.window(h, south, x, 14, 27) end
-	Lobby.window(h, north, 40.5, 14, 27)
+	-- (the south wall's bay at x 40.5 holds the hall of fame's board instead of a window; the north wall gets one
+	-- each side of the stage door, so the corners over the loading doors are not one blank wall)
+	for _, x in { -55.5, -40.5, 55.5 } do Lobby.window(h, south, x, 14, 27) end
+	for _, x in { -31.5, 40.5 } do Lobby.window(h, north, x, 14, 27) end
 	-- Pillars: every bay on the side walls, flanking the windows on the end walls.
 	-- Behind the ranges the pillars are shallower; behind the ARMORY only their tops show.
 	local r0 = Lobby.RangeZ0 - Lobby.RangePitch / 2
@@ -2138,9 +2384,10 @@ function Lobby.hall(L)
 	for _, x in { -63.9, -48, -33, 33, 48, 63.9 } do Lobby.wallPillar(h, V(x, 0, S), V(0, 0, -1)) end
 	-- (The north wall's pillars give way to the loading doors, the portal and TOP REBIRTHS.)
 	for _, x in Lobby.LoadDoors do Lobby.loadingDoor(h, x) end
-	-- The stage door, the hall's way out to Stage 1: two red pillars and a red header round the 24 x 20 opening, the
-	-- monitor in the bay over the header (a dark bezel round a blue screen: STAGE 1 and gate 1's state, which
-	-- HoodClient/Stages rewrites), a light cap tying the pillar tops. One hue in two tones; gate 1 fills the opening.
+	-- The stage door, the hall's way out to Stage 1: two red pillars and a red header round the 24 x 20 opening; over
+	-- the header a glazed transom (the street's daylight shows through it: the door reads by its light, not by a
+	-- board) split by two dark mullions, with a small monitor standing on the header between them (STAGE 1 and gate
+	-- 1's state, which HoodClient/Stages rewrites); a light cap tying the pillar tops. Gate 1 fills the opening.
 	local d = h:group('ExitDoor')
 	do
 		local red = C(186, 78, 70)
@@ -2150,19 +2397,22 @@ function Lobby.hall(L)
 			d:box('DoorPillar', V(math.min(sx * Dw, sx * x1), 0, N), V(math.max(sx * Dw, sx * x1), top, N + 2.6), red, M.SmoothPlastic)
 		end
 		d:box('DoorHeader', V(-Dw, DH, N), V(Dw, DH + 2.6, N + 2.6), red, M.SmoothPlastic)
-		d:box('MonitorBezel', V(-Dw, DH + 2.6, N + 0.4), V(Dw, top, N + 1.8), dark, M.SmoothPlastic)
-		local screen = d:box('ExitMonitor', V(-Dw + 0.8, DH + 3.3, N + 1.8), V(Dw - 0.8, top - 0.7, N + 2.0), C(54, 100, 190), M.SmoothPlastic)
-		local sg = surface(screen, Enum.NormalId.Back, 16)
-		line(sg, 'Title', 'STAGE 1  •  THE BLOCK', P.white, FONT.loud, 0.1, 0.36, C(14, 26, 70), 3)
+		local glass = d:box('DoorTransom', V(-Dw, DH + 2.6, N + 0.9), V(Dw, top, N + 1.3), C(196, 226, 246), M.Glass)
+		glass.Transparency, glass.CastShadow = 0.45, false
+		for _, x in { -6.75, 6.75 } do d:box('TransomMullion', V(x - 0.35, DH + 2.6, N + 0.7), V(x + 0.35, top, N + 1.6), dark, M.SmoothPlastic) end
+		d:box('MonitorBezel', V(-6.4, DH + 2.6, N + 1.4), V(6.4, DH + 6.6, N + 2.4), dark, M.SmoothPlastic)
+		local screen = d:box('ExitMonitor', V(-6, DH + 2.95, N + 2.4), V(6, DH + 6.25, N + 2.6), C(54, 100, 190), M.SmoothPlastic)
+		local sg = surface(screen, Enum.NormalId.Back, 20)
+		line(sg, 'Title', 'STAGE 1  •  THE BLOCK', P.white, FONT.loud, 0.06, 0.36, C(14, 26, 70), 2)
 		-- (HoodClient/Stages rewrites ExitStatus from gate 1's state: train first / you can go / cleared)
-		line(sg, 'ExitStatus', '🎯 TRAIN AT THE RANGE FIRST', C(255, 214, 90), FONT.loud, 0.56, 0.28, C(40, 24, 0), 3)
+		line(sg, 'ExitStatus', '🎯 TRAIN AT THE RANGE FIRST', C(255, 214, 90), FONT.loud, 0.5, 0.42, C(40, 24, 0), 2)
 		d:box('DoorCap', V(-x1 - 0.3, top, N), V(x1 + 0.3, top + 0.8, N + 3), trim, M.SmoothPlastic)
 	end
-	-- The two big areas' names on the steel band (one sign each; the sneaker shop and the corner store carry
-	-- their own fascia boards).
+	-- The two big areas' signs on the steel band: a round plate whose pictogram is built from parts (a bullseye, a
+	-- pistol), so it still says "range" and "gun shop" with every word hidden, and the name on a slim plate beside it.
 	local signs = h:group('WallSigns')
-	Lobby.wallSign(signs, 'RangeSign', V(-W + 2.4, 31.8, 70), V(1, 0, 0), 24, 4.4, 'SHOOTING RANGE')
-	Lobby.wallSign(signs, 'ArmorySign', V(W - 2.4, 31.8, Lobby.ArmoryZ), V(-1, 0, 0), 15, 4.4, 'ARMORY')
+	Lobby.roundelSign(signs, 'RangeSign', V(-W + 2.4, 31.8, 59), V(1, 0, 0), 'SHOOTING RANGE', 'target')
+	Lobby.roundelSign(signs, 'ArmorySign', V(W - 2.4, 31.8, Lobby.ArmoryZ - 6), V(-1, 0, 0), 'ARMORY', 'gun', -1)
 
 	-- Roof: a slate ceiling, steel-blue box trusses (two along the hall, one across every bay), rows of fluorescent
 	-- bars (a dark housing over a white tube) hung on wires under them. Everything up here is named Roof* (the
@@ -2202,12 +2452,12 @@ function Lobby.hall(L)
 	Lobby.crane(r)
 	return h
 end
--- The overhead crane at z 96, in the structure greys (it is building, not an object): a box-girder bridge hung
--- from the long trusses (its runways) on two end trucks, darker flanges, a trolley parked over the east side.
--- Nothing hangs over the floor.
+-- The overhead crane at z 126 (under a cross truss, south of the plaza so nothing hangs over the statue), in the
+-- structure greys (it is building, not an object): a box-girder bridge hung from the long trusses (its runways) on
+-- two end trucks, darker flanges, a trolley parked over the east side. Nothing hangs over the floor.
 function Lobby.crane(r)
 	local K, H = Lobby.Colors, Lobby.H
-	local z, y = 96, 33
+	local z, y = 126, 33
 	r:box('RoofCraneBridge', V(-40, y - 1, z - 1.2), V(40, y + 1, z + 1.2), K.pillar, M.SmoothPlastic)
 	for _, fy in { y - 1.3, y + 1 } do r:box('RoofCraneFlange', V(-40, fy, z - 1.5), V(40, fy + 0.3, z + 1.5), K.pillarDark, M.SmoothPlastic) end
 	for _, x in { -40, 40 } do r:box('RoofCraneTruck', V(x - 1.6, y - 1.4, z - 2.2), V(x + 1.6, H - 2.2, z + 2.2), K.truss, M.SmoothPlastic) end
@@ -2216,18 +2466,24 @@ function Lobby.crane(r)
 end
 
 ---------------------------------------------------------------------------------------------- floor
--- The floor: one studded grey slab; a lighter studded spine 0.12 over it from the stage door south to the sneaker
--- shop's wood floor; and the red runner, a smooth rubber mat a touch higher, from the spawn pad west to the foot of
--- BAY 1's front steps: the first walk, read by its colour (the terrace's red) and its straight line, not by arrows.
--- Nothing else is painted on the floor.
-Lobby.ShopZ = 138 -- the sneaker shop's wood floor starts here (the spine stops at it)
+-- The floor: one studded grey slab; a lighter studded walk 0.12 over it from the stage door to just past the spawn
+-- pad (the way out, and no further: south of the spawn the floor is the plaza's); the blue runner, a smooth rubber
+-- mat a touch higher, from the spawn pad west to BAY 1's front steps (it carries on up the treads and across the
+-- promenade into the lane, Lobby.rangeRow): the first walk, read by its colour (the spawn's and BAY 1's blue) and its
+-- straight line, not by arrows. Two zones belong to the places beside them: the spectators' dark rubber mat at the
+-- terrace's foot and the customers' warm planks in front of the armory counter (the plaza's paving is laid with the
+-- statue). Nothing else is painted on the floor.
+Lobby.ShopZ = 138 -- the sneaker shop's wood floor starts here
 function Lobby.floorPlan(L)
 	local K, N = Lobby.Colors, Lobby.N
 	local f = L:group('FloorPlan')
 	local sw, rw, z = Lobby.SpineW, Lobby.RunnerW, Lobby.CrossZ
-	Lobby.slab(f, 'Walkway', V(-sw, 0, N), V(sw, 0.12, Lobby.ShopZ), K.walk).CastShadow = false
+	Lobby.slab(f, 'Walkway', V(-sw, 0, N), V(sw, 0.12, Lobby.WalkZ1), K.walk).CastShadow = false
 	local x0 = Lobby.TerraceX + Lobby.Bay1Steps
-	f:box('Runner', V(x0, 0, z - rw), V(-sw + 2, 0.16, z + rw), C(176, 104, 98), M.SmoothPlastic).CastShadow = false
+	f:box('Runner', V(x0, 0, z - rw), V(-sw + 2, 0.16, z + rw), Lobby.RunnerColor, M.SmoothPlastic).CastShadow = false
+	local sp, cu = Lobby.Spectators, Lobby.CustomerFloor
+	f:box('SpectatorMat', V(sp.X0, 0, sp.Z0), V(sp.X1, 0.08, sp.Z1), C(70, 74, 84), M.SmoothPlastic).CastShadow = false
+	f:box('CustomerFloor', V(cu.X0, 0, cu.Z0), V(cu.X1, 0.08, cu.Z1), C(150, 120, 92), M.WoodPlanks).CastShadow = false
 	return f
 end
 
@@ -2320,10 +2576,17 @@ function Lobby.rangeRow(L, skins)
 	nose(V(-W, n * rise - 0.02, zS - 0.02), V(XS, n * rise + 0.03, zS + 0.25))
 	-- North stair to Starter, across the terrace's whole width.
 	Lobby.terraceStair(t, 'TerraceStair', -W, XF, zN - 2, zN, rise, 'z', -1)
-	-- BAY 1's front steps: straight off the promenade onto the red runner, as wide as the runner, so the walk from the
-	-- spawn ends on them.
+	-- BAY 1's front steps: straight off the promenade onto the blue runner, as wide as the runner, so the walk from the
+	-- spawn ends on them. The runner climbs with you: a strip on every tread and across the promenade to the lane's
+	-- mouth (BAY 1's own blue mat starts there), so the one blue line runs from the spawn pad into the free lane.
 	local z1, rw = Lobby.RangeZ0, Lobby.RunnerW
-	Lobby.terraceStair(t, 'TerraceStair', XF, XF + Lobby.Bay1Steps, z1 - rw, z1 + rw, rise, 'x', 1)
+	local tr = Lobby.terraceStair(t, 'TerraceStair', XF, XF + Lobby.Bay1Steps, z1 - rw, z1 + rw, rise, 'x', 1)
+	local ra, rb = z1 - rw + 0.6, z1 + rw - 0.6
+	for k = 1, Lobby.Bay1Steps do
+		local hk = rise - k * tr
+		t:box('RunnerTread', V(XF + k - 1, hk, ra), V(XF + k - 0.25, hk + 0.05, rb), Lobby.RunnerColor, M.SmoothPlastic).CastShadow = false
+	end
+	t:box('RunnerTread', V(XS + 0.1, rise, ra), V(XF - 0.25, rise + 0.05, rb), Lobby.RunnerColor, M.SmoothPlastic).CastShadow = false
 	-- Side stair from the Heavy lane down to the floor (6 wide), red cheeks both sides.
 	local si = Lobby.SideStair
 	local sz, sh = Lobby.RangeZ0 + (si - 1) * Lobby.RangePitch, si * rise
@@ -2338,23 +2601,11 @@ function Lobby.rangeRow(L, skins)
 	end
 	Lobby.terraceDressing(t, skins, XS, XF, zN, zS, sz, n, rise)
 end
--- The terrace's vertical rhythm: red glass stall dividers between the lanes (booth partitions, stepping up 1.2 a
--- tier), each on a steel front post, and white seams at the tier joints. The lanes carry their own small BAY plaques
--- (builder R, Stations.plaque) at their entrances; nothing else is written on the terrace.
+-- The terrace's vertical rhythm: white seams at the tier joints on its front. (No glass stall fins or posts between
+-- the lanes any more: each lane carries its own plywood booth partition at the firing line, builder R.) The lanes
+-- carry their own small BAY plaques (Stations.plaque) at their entrances; nothing else is written on the terrace.
 function Lobby.terraceDressing(t, skins, XS, XF, zN, zS, sz, n, rise)
-	local K = Lobby.Colors
 	local pitch = Lobby.RangePitch
-	local fins = { zN + 0.25 }
-	for k = 1, n - 1 do table.insert(fins, zN + k * pitch - 0.45) end
-	table.insert(fins, zS - 0.35)
-	local postX = XS - 0.6
-	for _, fz in fins do
-		local tier = math.clamp(math.floor((fz - zN) / pitch) + 1, 1, n)
-		local base, top = tier * rise, tier * rise + 7
-		local glass = t:box('StallFin', V(-52, base, fz - 0.2), V(postX - 0.6, top, fz + 0.2), C(218, 92, 92), M.Glass)
-		glass.Transparency, glass.CastShadow = 0.45, false
-		t:box('StallPost', V(postX - 0.6, base, fz - 0.3), V(postX, top + 0.35, fz + 0.3), K.steel, M.SmoothPlastic)
-	end
 	for i = 2, #Lobby.Ranges do
 		local z0 = Lobby.RangeZ0 + (i - 1) * pitch - pitch / 2
 		decor(t:box('TerraceSeam', V(XF - 0.05, 0, z0 + 0.85), V(XF + 0.06, i * rise - 0.3, z0 + 1.15), P.white, M.SmoothPlastic)).CastShadow = false
@@ -2422,10 +2673,12 @@ function Lobby.shoeShop(L)
 			end
 		end
 	end
-	-- the shop's one sign, over the cubby wall
-	local scf = CFrame.lookAt(V(0, top + 2.6, S - 0.5), V(0, top + 2.6, 0))
-	d:part('ShoeBoxSignBack', V(17.2, 3.6, 0.3), scf * CFrame.new(0, 0, 0.2), K.pillarDark, M.SmoothPlastic)
-	Lobby.board(d, 'ShoeBoxSign', scf, 16, 2.8, C(236, 232, 226), { { 'Title', 'SHOE BOXES', C(196, 70, 96), FONT.loud, 0.1, 0.8, P.white, 3 } }, 16)
+	-- the shop's sign: a giant high-top standing side on along the top of the cubby wall (the shop's shape from across
+	-- the hall, words or no words) and the name on a slim plate on the wall beside it
+	-- (the shoe stands at the west end, the plate at the east end, so from the spawn neither hides behind the statue)
+	Lobby.sneaker(d, CFrame.new(-10.2, top + 0.6, S - 1.6) * CFrame.Angles(0, math.rad(90), 0), 3.2, C(222, 58, 66), P.white)
+	local scf = CFrame.lookAt(V(8, top + 2.4, S - 0.5), V(8, top + 2.4, 0))
+	Lobby.board(d, 'ShoeBoxSign', scf, 11, 2.4, C(236, 232, 226), { { 'Title', 'SHOE BOXES', C(196, 70, 96), FONT.loud, 0.1, 0.8, P.white, 3 } }, 16)
 	-- the try-on seats: a long padded bench and a round pouf, an open box and a pair of sneakers on the floor
 	local seat, base = C(70, 132, 150), C(76, 78, 86)
 	d:box('TryOnBenchBase', V(-9.4, 0.14, 145.3), V(0.4, 1.0, 147.1), base, M.SmoothPlastic)
@@ -2556,20 +2809,28 @@ function Lobby.prompt(part, action, object)
 	p.Parent = part
 	return p
 end
--- The rewards, together on one low studded stand just east of the spawn (where you land is where you claim): the
--- DAILY CRATE (a red treasure chest with gold bands), the LUCKY SHOT prize wheel (four coloured spokes on a white
--- wheel in a gold rim, a pointer on top, turning slowly on an A-frame) and the VIP SAFE (a purple safe with a dial
--- and a handle). No signs, plinths or glow: their shapes say what they are. Decor with "coming soon" prompts.
-Lobby.RewardStand = { 13, 21, 38, 62 } -- x0, x1, z0, z1 (fronts face west, to the spine; clear of WORLD 2's approach)
-Lobby.RewardAt = {
-	DailyCrate = CFrame.lookAt(V(17, 0.6, 42), V(0, 0.6, 42)),
-	LuckyShot = CFrame.lookAt(V(17.4, 0.6, 50.5), V(0, 0.6, 50.5)),
-	VipSafe = CFrame.lookAt(V(17, 0.6, 58), V(0, 0.6, 58)),
-}
+-- The rewards just east of the spawn (where you land is where you claim), each turned to face the spawn pad: the
+-- LUCKY SHOT prize wheel (four coloured spokes on a white wheel in a gold rim, a pointer on top, turning slowly on
+-- an A-frame) on its own round base nearest the pad, and the DAILY CRATE (a red treasure chest with gold bands) and
+-- the VIP SAFE (a purple safe with a dial and a handle) on one low studded stand further east. From the spawn's walk
+-- WORLD 2's arch stands clear behind them, and from the pad the armory's till (the counter's north end, about 45
+-- degrees south of east) shows past their south side. No signs or glow: their shapes say what they are. Decor with
+-- "coming soon" prompts.
+Lobby.RewardStand = { 23.2, 38.8, 44.4, 55.2 } -- x0, x1, z0, z1 (the chest and the safe)
+Lobby.WheelBase = V(19, 0, 44) -- the prize wheel's round base
+do
+	local face = V(0, 0.6, Lobby.CrossZ) -- (the spawn pad)
+	Lobby.RewardAt = {
+		DailyCrate = CFrame.lookAt(V(27.6, 0.6, 50.6), face),
+		LuckyShot = CFrame.lookAt(V(19, 0.6, 44), face),
+		VipSafe = CFrame.lookAt(V(34.8, 0.6, 48.4), face),
+	}
+end
 function Lobby.rewards(L)
 	local st = Lobby.RewardStand
 	local stand = L:group('RewardStand')
 	Lobby.slab(stand, 'RewardStand', V(st[1], 0, st[3]), V(st[2], 0.6, st[4]), C(206, 196, 168))
+	Lobby.disc(stand, 'WheelBase', 6.4, 0, 0.6, Lobby.WheelBase.X, Lobby.WheelBase.Z, C(206, 196, 168))
 	local goldTrim = C(226, 182, 72)
 	-- DAILY CRATE
 	local c = L:at(Lobby.RewardAt.DailyCrate):group('DailyCrate')
@@ -2619,7 +2880,7 @@ function Lobby.portal(L, cf)
 	local p = L:at(cf):group('World2Portal')
 	local open = false
 	local signBlue = C(70, 120, 198)
-	local blue = open and signBlue or signBlue:Lerp(C(150, 152, 160), 0.3)
+	local blue = open and signBlue or signBlue:Lerp(C(150, 152, 160), 0.15) -- (a landmark keeps most of its colour, locked or not)
 	local dark, stone, grey = blue:Lerp(P.black, 0.38), blue:Lerp(P.white, 0.16), C(150, 152, 160)
 	local face = C(108, 168, 222):Lerp(C(150, 152, 160), 0.25)
 	local function B(name, a, b, color, mat) return p:box(name, a, b, color, mat or M.SmoothPlastic) end
@@ -2743,23 +3004,37 @@ function Lobby.handGun(fig, side, scale, id, light, roll)
 	return nil
 end
 
+-- The KINGPIN plaza, the middle of the hall: a paved octagon (warm pavers inside a darker kerb ring) round the hub's
+-- one landmark, the statue, so the empty floor between the stations is a square with something at its heart: the
+-- place to meet, to sit on the plinth's ledge and look at the range, the gun shop and the door. Lobby.Slots.Statue
+-- is its centre, facing north (the spawn and the door).
+function Lobby.plaza(L, cf, skins)
+	local P0 = Lobby.Plaza
+	local p = L:at(cf):group('Plaza')
+	Lobby.poly(p, 'PlazaKerb', 8, P0.Paving + 1.6, 0, 0.07, C(160, 120, 94))
+	for _, q in Lobby.poly(p, 'PlazaPaving', 8, P0.Paving, 0, 0.1, C(200, 158, 122)) do
+		studs(q).CastShadow = false
+	end
+	return Lobby.statue(L, cf, skins)
+end
 -- The KINGPIN: a giant gold figure (SkinArt's top look: crown, suit, chain) holding a gold deagle high, on a
--- plinth (red block, cream top) with a warm light. Two-tone gold (suit and a pale
--- shirt, tie and lapels) with a dark face so the eyes and shades read. Falls back to a block figure without
--- SkinArt.
+-- plinth (red block, cream top) on a wide low stone octagon, a ledge to sit on all round, with a warm light. Two-tone
+-- gold (suit and a pale shirt, tie and lapels) with a dark face so the eyes and shades read. Falls back to a block
+-- figure without SkinArt.
 function Lobby.statue(L, cf, skins)
 	local K = Lobby.Colors
 	local s, model = L:at(cf):group('KingpinStatue')
 	-- Three golds (research: one hue, three tones): M for the body, D for the cape, ermine back, tie and shoes,
 	-- L for the crown, cuffs, ermine trim, lapels, chain and shirt; the head a touch lighter than the body.
 	local head, suit, pale, deep, ink = C(232, 190, 98), C(224, 178, 80), C(246, 216, 140), C(170, 124, 48), C(90, 50, 10)
-	-- The plinth: a dark grey octagon base, a red block, a cream top. (No plaque: a giant gold figure on a plinth
-	-- reads as the champion without one.)
+	-- The plinth: a pale stone octagon seat ledge (sitting height), a red block, a cream top. (No plaque: a giant
+	-- gold figure on a plinth reads as the champion without one.)
+	local P0 = Lobby.Plaza
 	local red, cream = C(184, 96, 92), C(238, 234, 226)
-	Lobby.poly(s, 'PlinthBase', 8, 15.4, 0, 0.8, C(118, 120, 128))
-	s:box('Plinth', V(-6.2, 0.8, -6.2), V(6.2, 3.1, 6.2), red, M.SmoothPlastic)
-	s:box('PlinthTop', V(-5.9, 3.1, -5.9), V(5.9, 3.6, 5.9), cream, M.SmoothPlastic)
-	local top, scale = 3.6, 4.5
+	Lobby.poly(s, 'SeatLedge', 8, P0.Ledge, 0, P0.LedgeH, C(220, 214, 202))
+	s:box('Plinth', V(-6.2, P0.LedgeH, -6.2), V(6.2, 3.6, 6.2), red, M.SmoothPlastic)
+	s:box('PlinthTop', V(-5.9, 3.6, -5.9), V(5.9, 4.1, 5.9), cream, M.SmoothPlastic)
+	local top, scale = 4.1, 4.5
 	local base = V2.Origin * s.cf * CFrame.new(0, top, 0)
 	local kingpin = skins.ById.Kingpin or skins.List[#skins.List]
 	local fig = Lobby.figure(model, base, kingpin, scale, Lobby.Poses.kingpin)
@@ -2810,44 +3085,87 @@ function Lobby.statue(L, cf, skins)
 	return s
 end
 
--- The leaderboards, together in the south-east as the hall of fame: two plain scoreboards (TOP CASH, TOP POWER)
--- either side of a winners' podium. A board: two dark posts, a navy screen under a header strip in its one hue
--- (its title), standing square. `live` names the model LobbyService writes into (a TextLabel named TextLabel):
--- ServerLeaderboard (top Power) or CashLeaderboard (top Cash).
-function Lobby.leaderboard(L, cf, title, accent, live)
+-- The hall of fame in the south-east, between the sneaker shop and the armory's end wall: a winners' podium with
+-- three players on it (the champion holding the trophy over his head) and, on the wall behind them where a window
+-- was, the two live leaderboards as one board: a slate frame under a gold cap, two navy screens side by side (TOP
+-- POWER on the left as you face it, TOP CASH on the right). The podium says "ranking" with every word hidden; the
+-- board only holds the names.
+function Lobby.hallOfFame(L)
+	local F, S = Lobby.Fame, Lobby.S
+	local boards = L:group('Leaderboards')
+	local x0, x1, y0, y1 = F.X - 5.6, F.X + 5.6, 10, 17.4
+	local zf = S - 1.15 -- the frame's front face (its back sits on the brick wainscot's cap)
+	boards:box('FameBoard', V(x0, y0, zf), V(x1, y1, S - 0.55), C(52, 56, 70), M.SmoothPlastic)
+	boards:box('FameBoardCap', V(x0 - 0.3, y1, zf - 0.2), V(x1 + 0.3, y1 + 0.8, S - 0.55), C(226, 186, 84), M.SmoothPlastic)
+	for k, e in { { F.X - 2.75, 'TOP CASH', 'CashLeaderboard' }, { F.X + 2.75, 'TOP POWER', 'ServerLeaderboard' } } do
+		local cf = CFrame.lookAt(V(e[1], (y0 + y1) / 2, zf - 0.2), V(e[1], (y0 + y1) / 2, 0))
+		Lobby.Slots['Leaderboard' .. k] = cf
+		Lobby.leaderboard(boards, cf, e[2], e[3])
+	end
+	Lobby.Slots.Podium = CFrame.lookAt(V(F.X, 0, F.Z), V(F.X, 0, 0))
+	Lobby.podium(boards, Lobby.Slots.Podium)
+	return boards
+end
+-- One leaderboard screen centred on cf, its face toward cf's look: a navy screen (5.2 x 6.2) with its title on top,
+-- the live list under it, and down the list's left edge three small rank chips (gold, silver, bronze) on the rows of
+-- the first three names, so the board reads as a ranking even with every word hidden. `live` names the model
+-- LobbyService writes into (a TextLabel named TextLabel): ServerLeaderboard (top Power) or CashLeaderboard (top Cash).
+function Lobby.leaderboard(L, cf, title, live)
 	local b, model = L:at(cf):group(live)
-	local Dk = accent:Lerp(P.black, 0.35)
-	local hw = 5.6
-	-- (the screen starts above the podium and its trophy, so neither ever covers a row)
-	for _, sx in { -1, 1 } do b:box('BoardPost', V(sx * hw - 0.6, 0, -0.6), V(sx * hw + 0.6, 17.4, 0.6), Dk, M.SmoothPlastic) end
-	local screen = b:box('BoardScreen', V(-hw + 0.6, 7.8, -0.4), V(hw - 0.6, 17.4, 0.4), C(32, 42, 74), M.SmoothPlastic)
-	local header = b:box('BoardHeader', V(-hw - 0.8, 17.4, -0.8), V(hw + 0.8, 20.2, 0.8), accent, M.SmoothPlastic)
-	line(surface(header, Enum.NormalId.Front, 20), 'Title', title, P.white, FONT.loud, 0.12, 0.76, Dk:Lerp(P.black, 0.45), 3)
-	local text = line(surface(screen, Enum.NormalId.Front, 20), 'TextLabel', live == 'CashLeaderboard' and 'TOP CASH\nTHIS SERVER\nClear a gate to earn Cash!' or 'BLOCK LEADERS\nTHIS SERVER\nBe the first to train!', P.white, FONT.body, 0.05, 0.9, P.black, 1)
+	local w, h = 5.2, 6.2
+	local screen = b:box('BoardScreen', V(-w / 2, -h / 2, -0.2), V(w / 2, h / 2, 0.2), C(32, 42, 74), M.SmoothPlastic)
+	local g = surface(screen, Enum.NormalId.Front, 24)
+	line(g, 'Title', title, C(255, 214, 90), FONT.loud, 0.03, 0.14, C(40, 24, 0), 2)
+	local text = line(g, 'TextLabel', live == 'CashLeaderboard' and 'TOP CASH\nTHIS SERVER\nClear a gate to earn Cash!' or 'BLOCK LEADERS\nTHIS SERVER\nBe the first to train!', P.white, FONT.body, 0.2, 0.76, P.black, 1)
 	text.TextYAlignment = Enum.TextYAlignment.Top
+	text.Position, text.Size = UDim2.fromScale(0.16, 0.2), UDim2.fromScale(0.8, 0.76)
+	-- the chips: the list's lines 3-5 of 7 (two header lines, then the names); the gui's left edge is the part's +X
+	local gx = w / 2 - 0.08 * w
+	for k, col in { C(236, 192, 74), C(200, 204, 214), C(196, 136, 92) } do
+		local gy = 0.2 + (k + 1.5) * 0.76 / 7
+		b:box('RankChip', V(gx - 0.26, h / 2 - gy * h - 0.26, -0.26), V(gx + 0.26, h / 2 - gy * h + 0.26, -0.2), col, M.SmoothPlastic)
+	end
 	return model
 end
--- The winners' podium (local: front toward -Z): three studded blocks, 2-1-3, in silver, gold and bronze, and a gold
--- trophy on the top step.
+-- A blocky player (the classic build, 5.2 tall) standing on cf, facing -Z: dark legs, a shirt, yellow head and arms.
+-- pose 'champ': both arms straight up, a gold trophy held over the head; 'wave': one arm up; anything else: arms down.
+function Lobby.player(c, cf, shirt, pants, pose)
+	local f = c:at(cf):group('Winner')
+	local skin = C(245, 205, 72)
+	for _, x in { -1, 0.05 } do f:box('WinnerLeg', V(x, 0, -0.5), V(x + 0.95, 2, 0.5), pants, M.SmoothPlastic) end
+	f:box('WinnerTorso', V(-1, 2, -0.5), V(1, 4, 0.5), shirt, M.SmoothPlastic)
+	f:box('WinnerHead', V(-0.6, 4, -0.6), V(0.6, 5.2, 0.6), skin, M.SmoothPlastic)
+	for _, sx in { -1, 1 } do
+		local up = pose == 'champ' or (pose == 'wave' and sx > 0)
+		local y = up and 4 or 2
+		f:box('WinnerArm', V(math.min(sx, sx * 2), y, -0.5), V(math.max(sx, sx * 2), y + 2, 0.5), skin, M.SmoothPlastic)
+	end
+	if pose == 'champ' then
+		local gold = C(236, 192, 74)
+		f:box('TrophyBase', V(-0.7, 5.3, -0.7), V(0.7, 5.7, 0.7), C(70, 56, 40), M.SmoothPlastic)
+		Lobby.disc(f, 'TrophyCup', 2, 5.7, 7.5, 0, 0, gold)
+		f:box('TrophyHandle', V(-1.05, 6.2, -0.2), V(1.05, 6.8, 0.2), gold, M.SmoothPlastic)
+	end
+	return f
+end
+-- The winners' podium (local: front toward -Z): three studded blocks, 2-1-3 as you face it, in silver, gold and
+-- bronze, each with its player.
 function Lobby.podium(L, cf)
 	local p = L:at(cf):group('Podium')
-	for _, e in { { -5, 2.4, C(200, 204, 214) }, { 0, 3.6, C(226, 186, 84) }, { 5, 1.4, C(196, 136, 92) } } do
+	local pants = C(56, 62, 86)
+	for _, e in { { 5, 1.8, C(200, 204, 214), C(64, 120, 206), 'wave' }, { 0, 2.6, C(226, 186, 84), C(206, 70, 64), 'champ' }, { -5, 1.2, C(196, 136, 92), C(72, 160, 98), 'clap' } } do
 		Lobby.slab(p, 'PodiumStep', V(e[1] - 2.5, 0, -2.2), V(e[1] + 2.5, e[2], 2.2), e[3])
+		Lobby.player(p, CFrame.new(e[1], e[2], 0.2), e[4], pants, e[5])
 	end
-	local gold = C(236, 192, 74)
-	p:box('TrophyBase', V(-0.9, 3.6, -0.9), V(0.9, 4.2, 0.9), C(70, 56, 40), M.SmoothPlastic)
-	Lobby.disc(p, 'TrophyStem', 0.6, 4.2, 5.2, 0, 0, gold)
-	Lobby.disc(p, 'TrophyCup', 2.2, 5.2, 7.2, 0, 0, gold)
-	for _, x in { -1.7, 1.0 } do p:box('TrophyHandle', V(x, 5.6, -0.2), V(x + 0.7, 6.9, 0.2), gold, M.SmoothPlastic) end
 	return p
 end
 
 ---------------------------------------------------------------------------------------------- hood life
 -- The hood in the hall as small groups, each with a reason to be where it is, never on the walks: the street-ball
 -- court in the south-west (a bench beside it, a boombox on a milk crate by the bench); deliveries on pallets and a
--- hand truck inside the west loading door; the corner store in the north-east with its back yard by the east
--- loading door (bins and bags beside its side door, a pallet of soda crates just in). Kid-friendly: no gang signs,
--- nothing aimed at anyone, only snacks and soda.
+-- hand truck inside the west loading door; the site office in the north-east (bins and bags beside its side door by
+-- the east loading door, two vending machines south of it); the spectators' spot at the terrace's foot (two benches
+-- facing the lanes, a water cooler). Kid-friendly: no gang signs, nothing aimed at anyone, only snacks and soda.
 Lobby.Tag = {
 	pink = C(236, 100, 176), cyan = C(84, 206, 236), lime = C(148, 212, 84), orange = C(240, 152, 68),
 	purple = C(146, 102, 236), yellow = C(246, 212, 78), white = C(255, 255, 255), ink = C(30, 24, 48),
@@ -2897,13 +3215,14 @@ function Lobby.ball(c, pos, s)
 	end
 end
 
--- The street-ball court (south-west, between the KINGPIN statue and the spine): a hoop on the south wall over a
--- painted half court with its key, a ball by the hoop, BLOCK BALLERS on the brick under the hoop (the court's one
--- piece of writing), and on the court's east side a bench facing it with a boombox on a milk crate beside it.
+-- The street-ball court (the south-west corner, south of Gold's grand stair; it has the corner to itself since the
+-- statue moved to the plaza): a hoop on the south wall over a full-width painted half court with its key (the
+-- south wall's pillars stand in its back edge), a ball by the hoop, BLOCK BALLERS on the brick under the hoop (the
+-- court's one piece of writing), and on the court's east side a bench facing it with a boombox on a milk crate.
 function Lobby.courtCorner(c)
 	local K, T, S = Lobby.Colors, Lobby.Tag, Lobby.S
 	local g = c:group('StreetCourt')
-	local x0, x1, z0, z1 = -46.6, -29.6, 132.6, S - 0.4
+	local x0, x1, z0, z1 = -55, -26, 128.6, S - 0.4
 	local xc = -40.5
 	-- the court: blue sport paint, white boundary, a red key with a free-throw line and a half circle
 	decor(g:box('CourtPaint', V(x0, 0.12, z0), V(x1, 0.15, z1), C(108, 140, 196), M.SmoothPlastic)).CastShadow = false
@@ -2988,46 +3307,73 @@ function Lobby.deliveries(c)
 	return g
 end
 
--- The corner store in the north-east: a small teal shop box built against the east wall between two pillars, its
--- front to the hall (a warm shop window, a blue door, a striped awning and the CORNER STORE fascia, its one sign), an
--- ice-pop freezer out front. Its side door opens north into the back yard by the east loading door: two wheelie
--- bins and a pile of bin bags beside the side door, a pallet of soda crates just in from the loading door.
-Lobby.Store = { X0 = 54.6, Z0 = 23.4, Z1 = 33.6, H = 14 }
+-- The site office in the north-east: a prefab cabin against the east wall between two pillars (pale panels on a
+-- dark kick, a window band and a door to the hall, a flat roof with a lip): the warehouse's own office, not a street
+-- shop. Its side door opens north into the corner by the east loading door: two wheelie bins and a pile of bin bags
+-- beside it. Two vending machines (a red drinks machine, a blue snack machine) stand against the east wall just
+-- south of it: the hall's snack stop, a few steps from the spawn and the rewards.
+Lobby.Store = { X0 = 56, Z0 = 22.6, Z1 = 33.6, H = 10 }
+Lobby.Vending = { 40.2, 43.8 } -- the machines' centres along the east wall
+-- A vending machine (local: front toward -Z, 3.2 wide, 2.6 deep, 7.2 tall): the body in its brand colour, a pale
+-- glass front with three rows of goods, a dark coin panel beside it, the pick-up slot low down, a white header band.
+function Lobby.vendingMachine(c, cf, body, goods)
+	local v = c:at(cf):group('VendingMachine')
+	v:box('VendBody', V(-1.6, 0, -1.3), V(1.6, 7.2, 1.3), body, M.SmoothPlastic)
+	v:box('VendGlass', V(-1.35, 2.3, -1.42), V(0.55, 6.3, -1.3), C(226, 236, 244), M.SmoothPlastic)
+	for k, col in goods do
+		local y = 2.55 + (k - 1) * 1.25
+		v:box('VendGoods', V(-1.2, y, -1.5), V(0.4, y + 0.7, -1.4), col, M.SmoothPlastic)
+	end
+	v:box('VendPanel', V(0.75, 3.0, -1.42), V(1.35, 5.9, -1.3), C(52, 56, 64), M.SmoothPlastic)
+	v:box('VendSlot', V(-1.2, 0.7, -1.42), V(0.4, 1.6, -1.3), C(36, 38, 44), M.SmoothPlastic)
+	v:box('VendHeader', V(-1.6, 6.55, -1.42), V(1.6, 7.2, -1.3), C(244, 244, 246), M.SmoothPlastic)
+	return v
+end
 function Lobby.cornerStore(c)
-	local W, N = Lobby.W, Lobby.N
+	local W = Lobby.W
 	local st = Lobby.Store
 	local x0, z0, z1, ht = st.X0, st.Z0, st.Z1, st.H
-	local g = c:group('CornerStore')
-	local teal = C(86, 160, 152)
-	g:box('StoreBody', V(x0, 0, z0), V(W, ht, z1), teal, M.SmoothPlastic)
-	g:box('StoreRoof', V(x0 - 0.4, ht, z0 - 0.3), V(W, ht + 0.7, z1 + 0.3), P.white, M.SmoothPlastic)
-	g:box('StoreKick', V(x0 - 0.3, 0, z0), V(x0, 1.4, z1), teal:Lerp(P.black, 0.3), M.SmoothPlastic)
-	local win = g:box('StoreWindow', V(x0 - 0.2, 2, z0 + 0.8), V(x0, 8.6, z1 - 3.6), C(255, 232, 170), M.SmoothPlastic)
-	g:box('StoreWindowSill', V(x0 - 0.7, 1.6, z0 + 0.6), V(x0, 2, z1 - 3.4), P.white, M.SmoothPlastic)
-	g:box('StoreDoor', V(x0 - 0.2, 0, z1 - 2.9), V(x0, 8.6, z1 - 0.6), C(40, 90, 200), M.SmoothPlastic)
-	local awning = g:part('StoreAwning', V(2.8, 0.2, z1 - z0), CFrame.new(x0 - 1.3, 9.6, (z0 + z1) / 2) * CFrame.Angles(0, 0, math.rad(22)), C(226, 44, 52), M.SmoothPlastic)
-	Lobby.stripes(awning, Enum.NormalId.Top, 2.8, z1 - z0, 1.2, 0.6, false, 0, P.white)
-	local cf = CFrame.lookAt(V(x0 - 0.2, 12, (z0 + z1) / 2), V(0, 12, (z0 + z1) / 2))
-	Lobby.board(g, 'StoreSign', cf, 8.6, 2.2, C(36, 40, 70), { { 'Text', 'CORNER STORE', C(255, 220, 90), FONT.loud, 0.12, 0.76, C(20, 20, 40), 2 } }, 24)
-	light(win, C(255, 220, 160), 0.8, 14)
-	-- the freezer out front, by the window
-	local fz = z0 + 2.4
-	g:box('FreezerBody', V(x0 - 3.4, 0, fz - 1.6), V(x0 - 1.0, 2.5, fz + 1.6), C(246, 248, 252), M.SmoothPlastic)
-	g:box('FreezerBand', V(x0 - 3.45, 0.3, fz - 1.65), V(x0 - 0.95, 0.7, fz + 1.65), C(60, 200, 255), M.SmoothPlastic)
-	local lid = g:box('FreezerLid', V(x0 - 3.3, 2.5, fz - 1.5), V(x0 - 1.1, 2.75, fz + 1.5), C(120, 230, 255), M.Glass)
-	lid.Transparency = 0.25
-	-- the back yard: the side door, bins and bags beside it, the soda delivery by the loading door
+	local g = c:group('SiteOffice')
+	local panel, kick, trim = C(232, 228, 218), C(70, 84, 104), C(196, 198, 204)
+	g:box('OfficeBody', V(x0, 0, z0), V(W, ht, z1), panel, M.SmoothPlastic)
+	g:box('OfficeKick', V(x0 - 0.2, 0, z0), V(W, 1.2, z1 + 0.2), kick, M.SmoothPlastic)
+	g:box('OfficeRoof', V(x0 - 0.5, ht, z0 - 0.5), V(W, ht + 0.6, z1 + 0.5), trim, M.SmoothPlastic)
+	g:box('OfficeWindowFrame', V(x0 - 0.2, 3.2, z0 + 3.8), V(x0, 7.8, z1 - 0.8), kick, M.SmoothPlastic)
+	g:box('OfficeWindow', V(x0 - 0.3, 3.5, z0 + 4.1), V(x0 - 0.1, 7.5, z1 - 1.1), C(160, 214, 248), M.SmoothPlastic)
+	local zm = (z0 + 4.1 + z1 - 1.1) / 2
+	g:box('OfficeMullion', V(x0 - 0.4, 3.5, zm - 0.15), V(x0 - 0.1, 7.5, zm + 0.15), kick, M.SmoothPlastic)
+	g:box('OfficeDoor', V(x0 - 0.2, 0, z0 + 0.7), V(x0 + 0.1, 7.6, z0 + 3.1), C(84, 120, 176), M.SmoothPlastic)
+	-- the side door into the corner by the loading door, bins and bags beside it
 	local sx = x0 + 6.2
-	g:box('StoreSideDoor', V(sx - 1.3, 0, z0 - 0.2), V(sx + 1.3, 8, z0), C(60, 74, 80), M.SmoothPlastic)
+	g:box('StoreSideDoor', V(sx - 1.3, 0, z0 - 0.2), V(sx + 1.3, 7.6, z0), C(60, 74, 80), M.SmoothPlastic)
 	g:box('StoreSideStep', V(sx - 1.8, 0, z0 - 1.2), V(sx + 1.8, 0.4, z0), C(150, 152, 160), M.SmoothPlastic)
 	Lobby.wheelieBin(g, CFrame.new(sx - 4, 0, z0 - 1.9) * CFrame.Angles(0, math.rad(4), 0), C(56, 120, 84))
 	Lobby.wheelieBin(g, CFrame.new(sx - 6.7, 0, z0 - 2.2) * CFrame.Angles(0, math.rad(-7), 0), C(60, 84, 140))
 	trashBags(g, V(sx + 2.4, 0, z0 - 7))
-	local sp = g:at(CFrame.new(Lobby.LoadDoors[2] - 3.4, 0, N + 4.4) * CFrame.Angles(0, math.rad(-5), 0))
-	pallet(sp, CFrame.new())
-	for k, e in { V(-1, 0.8, -1), V(1, 0.8, -1), V(-1, 0.8, 1), V(1, 0.8, 1), V(0, 2.4, 0) } do
-		Lobby.milkCrate(sp, CFrame.new(e) * CFrame.Angles(0, (k % 2) * 0.12, 0), C(206, 58, 58))
+	-- the vending machines against the wall south of the office, fronts to the hall
+	local goods = {
+		{ C(204, 62, 58), { C(246, 206, 72), C(84, 168, 232), C(120, 200, 92) } },
+		{ C(56, 98, 192), { C(240, 150, 62), C(222, 74, 84), C(250, 222, 96) } },
+	}
+	for k, z in Lobby.Vending do
+		Lobby.vendingMachine(g, CFrame.lookAt(V(W - 1.9, 0, z), V(0, 0, z)), goods[k][1], goods[k][2])
 	end
+	return g
+end
+
+-- The spectators' spot at the terrace's foot, mid-terrace (between the Heavy lane's side stair and Gold's grand
+-- stair): a dark rubber mat on the floor (Lobby.floorPlan), two plain benches facing the lanes at different gaps and
+-- offsets, and a water cooler at the mat's south end. People waiting for a lane, watching the others shoot.
+function Lobby.spectators(c)
+	local sp = Lobby.Spectators
+	local g = c:group('Spectators')
+	bench(g, V(sp.X1 - 4.2, 0, sp.Z0 + 5.6), V(-1, 0, 0))
+	bench(g, V(sp.X1 - 5.4, 0, sp.Z0 + 15.8), V(-1, 0, 0))
+	-- the water cooler: a white cabinet, a dark tap on its north face, a blue bottle upside down on top
+	local x, z = sp.X1 - 2, sp.Z1 - 1.8
+	g:box('CoolerBody', V(x - 0.75, 0.08, z - 0.75), V(x + 0.75, 3.1, z + 0.75), C(232, 234, 238), M.SmoothPlastic)
+	g:box('CoolerTap', V(x - 0.3, 2.1, z - 0.95), V(x + 0.3, 2.6, z - 0.75), C(52, 56, 64), M.SmoothPlastic)
+	Lobby.disc(g, 'CoolerBottle', 1.25, 3.1, 4.9, x, z, C(110, 176, 232))
 	return g
 end
 
@@ -3036,6 +3382,7 @@ function Lobby.hood(L)
 	Lobby.courtCorner(h)
 	Lobby.deliveries(h)
 	Lobby.cornerStore(h)
+	Lobby.spectators(h)
 	-- small props cast no shadows (crates, bins, the boombox...): no visible change, fewer casters
 	for _, p in h.parent:GetDescendants() do
 		if p:IsA('BasePart') and p.Size.X * p.Size.Y * p.Size.Z < 30 then p.CastShadow = false end
@@ -3053,14 +3400,12 @@ function Lobby.slots(L)
 end
 
 ---------------------------------------------------------------------------------------------- dressing
--- The street face: the BLOCK RANGE board over the door, and the hall's landmark from the street, a giant gold deagle
--- turning slowly on a red mast on the roof over the door (a giant bullseye if the gun models aren't there).
+-- The street face: the hall's landmark from the street, a giant gold deagle turning slowly on a red mast on the roof
+-- over the door (a giant bullseye if the gun models aren't there). (No board on the facade: the gun on the roof and
+-- the open door with the hall's light in it say what the building is.)
 function Lobby.dressing(L)
 	local K, N = Lobby.Colors, Lobby.N
 	local dr = L:group('Dressing')
-	local clubOut = Lobby.onWall(V(0, 31, N - 1.5), V(0, 0, -1))
-	dr:part('ClubSignBack', V(31.2, 6.6, 0.4), clubOut * CFrame.new(0, 0, 0.35), K.pillarDark, M.SmoothPlastic)
-	Lobby.board(dr, 'ClubSign', clubOut, 30, 5.4, C(66, 30, 52), { { 'Title', 'BLOCK RANGE', C(250, 170, 210), FONT.loud, 0.12, 0.76, C(90, 20, 50), 4 } }, 14)
 	local ridge = Lobby.H + 0.3
 	local mast = dr:group('RoofMast')
 	mast:part('MastPlinth', V(1.2, 6, 6), CFrame.new(0, ridge + 0.6, N - 0.5) * CFrame.Angles(0, 0, math.pi / 2), K.red, M.SmoothPlastic, Enum.PartType.Cylinder)
@@ -3098,7 +3443,7 @@ end
 -- touch lower when cut). Neon, glass, hidden parts and small parts (biggest face under 4 studs²) keep their
 -- colour: accents may stay bright.
 Lobby.Mine = { 'Hall', 'Roof', 'FloorPlan', 'SpawnBadge', 'RangeTerrace', 'SneakerShop', 'RewardStand', 'DailyCrate', 'LuckyShot', 'VipSafe',
-	'KingpinStatue', 'Leaderboards', 'Dressing', 'Hood' }
+	'Plaza', 'KingpinStatue', 'Leaderboards', 'Dressing', 'Hood' }
 Lobby.NotMine = { ExitDoor = true, World2Portal = true }
 Lobby.Shell = { Hall = true, Roof = true, FloorPlan = true } -- (the terrace is set by hand: a brick red at S 0.49)
 function Lobby.tame(model)
@@ -3160,6 +3505,49 @@ function Lobby.guideNodes(L)
 	return folder
 end
 
+---------------------------------------------------------------------------------------------- light anchors
+-- Where the lighting pass (builder L) hangs its pools: invisible, non-colliding anchor parts in a LightAnchors folder,
+-- each where its light goes, its front (-Z) aimed at what it lights, carrying the light it asks for as attributes:
+-- Pool (what it lights), Kind (Spot / Surface / Point), Face (the face a Spot or Surface light uses), Color,
+-- Brightness, Range, Angle, Rank (1 = the brightest patch in the hall). No Light instances here: L adds and tunes
+-- them (and retires the nine spine PointLights on the RoofLampTubes in Lobby.hall). The ranges' per-bay spots (2-8)
+-- belong on R's own parts, BAY 1's included (R's TargetLamp per lane; Lobby.client paints their state).
+-- { pool, at, aim, kind, color, brightness, range, angle, rank }
+Lobby.LightPools = {
+	{ 'ArmoryCounterNorth', V(39.5, 18, 87.5), V(41.5, 3.4, 87.5), 'Spot', C(255, 226, 184), 1.0, 18, 75, 2 },
+	{ 'ArmoryCounterMid', V(39.5, 18, 104), V(41.5, 3.4, 104), 'Spot', C(255, 226, 184), 1.0, 18, 75, 2 },
+	{ 'ArmoryCounterSouth', V(39.5, 18, 127), V(41.5, 3.4, 127), 'Spot', C(255, 226, 184), 1.0, 18, 75, 2 }, -- (over D's glass case)
+	{ 'ArmoryGunWall', V(47.5, 13.4, 106.2), V(49.4, 6, 106.2), 'Surface', C(245, 245, 250), 0.7, 10, 120, 2 },
+	{ 'Spawn', V(0, 16, 34), V(0, 0, 34), 'Spot', C(255, 236, 210), 0.9, 18, 70, 3 },
+	{ 'Statue', V(Lobby.Plaza.X, 20, Lobby.Plaza.Z - 16), V(Lobby.Plaza.X, 14, Lobby.Plaza.Z), 'Spot', C(255, 222, 160), 1.0, 26, 45, 4 },
+	{ 'ShoeCubbies', V(0, 12.4, Lobby.S - 1.6), V(0, 0, Lobby.S - 1.6), 'Surface', C(255, 232, 200), 0.8, 8, 120, 5 },
+	{ 'HallOfFame', V(Lobby.Fame.X, 16, Lobby.Fame.Z - 7), V(Lobby.Fame.X, 6, Lobby.Fame.Z), 'Spot', C(255, 226, 184), 0.8, 14, 40, 6 },
+	{ 'VendingMachines', V(Lobby.W - 4.2, 4.5, (Lobby.Vending[1] + Lobby.Vending[2]) / 2), V(0, 4.5, (Lobby.Vending[1] + Lobby.Vending[2]) / 2), 'Point', C(235, 245, 255), 0.4, 8, 0, 8 },
+	{ 'LoadingDoorWest', V(Lobby.LoadDoors[1], 6, Lobby.N + 0.7), V(Lobby.LoadDoors[1], 6, 40), 'Surface', C(220, 232, 255), 0.5, 10, 120, 9 },
+	{ 'LoadingDoorEast', V(Lobby.LoadDoors[2], 6, Lobby.N + 0.7), V(Lobby.LoadDoors[2], 6, 40), 'Surface', C(220, 232, 255), 0.5, 10, 120, 9 },
+}
+function Lobby.lightAnchors(L)
+	local folder = Instance.new('Folder')
+	folder.Name = 'LightAnchors'
+	folder.Parent = L.parent
+	local c = L:into(folder)
+	for _, e in Lobby.LightPools do
+		local dir = (e[3] - e[2]).Unit
+		local up = math.abs(dir.Y) > 0.95 and V(0, 0, -1) or V(0, 1, 0) -- (a light aimed straight down needs another up)
+		local p = c:part('LightAnchor_' .. e[1], V(0.4, 0.4, 0.4), CFrame.lookAt(e[2], e[3], up), P.white)
+		p.Transparency, p.CanCollide, p.CanQuery, p.CanTouch, p.CastShadow = 1, false, false, false, false
+		p:SetAttribute('Pool', e[1])
+		p:SetAttribute('Kind', e[4])
+		p:SetAttribute('Face', 'Front')
+		p:SetAttribute('Color', e[5])
+		p:SetAttribute('Brightness', e[6])
+		p:SetAttribute('Range', e[7])
+		p:SetAttribute('Angle', e[8])
+		p:SetAttribute('Rank', e[9])
+	end
+	return folder
+end
+
 ---------------------------------------------------------------------------------------------- build
 function Lobby.build(ctx, skins)
 	table.clear(Lobby.Slots)
@@ -3174,25 +3562,18 @@ function Lobby.build(ctx, skins)
 	Lobby.rewards(L)
 	Lobby.Slots.World2Portal = CFrame.new(29, 0, 11) * CFrame.Angles(0, math.pi, 0)
 	Lobby.portal(L, Lobby.Slots.World2Portal)
-	Lobby.Slots.Statue = CFrame.lookAt(V(-54, 0, 144), V(-54, 0, 0)) -- the SW corner, facing north, square to the hall
-	Lobby.statue(L, Lobby.Slots.Statue, skins)
+	-- the KINGPIN plaza in the middle of the hall, the statue facing north (the spawn and the door)
+	Lobby.Slots.Statue = CFrame.lookAt(V(Lobby.Plaza.X, 0, Lobby.Plaza.Z), V(Lobby.Plaza.X, 0, 0))
+	Lobby.plaza(L, Lobby.Slots.Statue, skins)
 	Lobby.Slots.Spawn = CFrame.new(SPAWN + V(0, Lobby.SpawnTop, 0)) * CFrame.Angles(0, Lobby.SpawnYaw, 0)
 	Lobby.Slots.FurthestPad = Lobby.FurthestAt
 	for name, cf in Lobby.RewardAt do Lobby.Slots[name] = cf end
 	Lobby.Slots.NorthDoor = CFrame.new(0, 0, Lobby.N)
-	-- the hall of fame in the south-east, in the nook between the sneaker shop and the armory's end wall: TOP CASH and
-	-- TOP POWER side by side against the south wall, the winners' podium in front of them
-	local boards = L:group('Leaderboards')
-	for k, e in { { 28.4, 'TOP CASH', C(84, 172, 108), 'CashLeaderboard' }, { 41.2, 'TOP POWER', C(210, 92, 88), 'ServerLeaderboard' } } do
-		local cf = CFrame.lookAt(V(e[1], 0, 150.6), V(e[1], 0, 0))
-		Lobby.Slots['Leaderboard' .. k] = cf
-		Lobby.leaderboard(boards, cf, e[2], e[3], e[4])
-	end
-	Lobby.Slots.Podium = CFrame.lookAt(V(34.8, 0, 144.6), V(34.8, 0, 0))
-	Lobby.podium(boards, Lobby.Slots.Podium)
+	Lobby.hallOfFame(L)
 	Lobby.dressing(L)
 	Lobby.hood(L)
 	Lobby.guideNodes(L)
+	Lobby.lightAnchors(L)
 	Lobby.tame(model)
 	return model
 end
@@ -3311,18 +3692,61 @@ end
 -- One plain checkpoint at the start of every stage and the boss yard, the same for all 16 (Brief 9: the street
 -- itself carries each stage's identity, so the gate has no district colour, no tower, no name board, no number).
 -- It stays low, under 7 studs. A steel railing on a concrete footing runs from kerb to kerb. In the middle, between
--- two short concrete posts, a sliding yard gate (a braced steel frame on a floor track) shuts the opening. While
--- you're short, a chain and padlock hold it shut. A small dark plaque hangs on it with the Power number and your
--- progress.
+-- two short concrete posts, a sliding yard gate (a braced frame on a floor track) shuts the opening. It is cream,
+-- not steel (Brief 10): from down the street a shut gate is a pale bar across the dark railing line, an open one a
+-- gap. While you're short, a chain and padlock hold it shut. A small dark plaque hangs on its brace with the Power
+-- number and your progress.
 -- HoodClient/Stages slides the gate open behind the west railing once you have the Power (the chain and padlock
 -- drop away, the plaque turns green). The field (Barrier) is what really stops you: it is solid for you while
 -- you're short, and invisible until you walk up to a gate you can't pass yet. StageService records the clear and
 -- pays the reward.
--- Beside every gate after the first, on the east pavement, stands a bus stop: two stops (d_kit's teleportPad: back
--- to spawn, on to your furthest stage) with a bench between them.
+-- Every gate after the first has a bus stop on its approach side (d_kit's teleportPad: back to spawn, on to your
+-- furthest stage), wherever that street has room for it (GATE_STOPS).
 local LOOK_NAMES = { 'THE BLOCK', 'SHOP STREET', 'THE COURTS', 'THE APARTMENTS', 'THE YARDS', 'BOSS YARD' }
 local BOSS_RED = C(214, 44, 44)
 local function lookColor(i) return i > STAGES and BOSS_RED or P.district[lookOf(i)] end
+-- Where each gate's bus stop stands (Brief 10: each street puts it where its own plan has room, so it never stands at
+-- the same spot twice; agreed with the street builders in brief/out10/notes_streets.md). In the gate's frame: x is
+-- the stop's centre, dz how far before the gate line (toward the lobby), yaw turns it (0 faces the approach, 90 faces
+-- west, -90 east), y lifts it onto a raised pavement, and bench adds a bench on its outer side (only where the street
+-- has none of its own close by). Not nearer than dz 7.1: the cross street's kerb runs at 3.5..4.5.
+-- A stage builder may set GATE_STOPS[n] for the gate at its own far end: the stages are built before the gates.
+local GATE_STOPS = {
+	[2] = { x = 18.5, dz = 7.6, bench = true }, -- the Block: the cross street's east corner
+	[3] = { x = -17, dz = 8.6 }, -- the end of the bend, west
+	[4] = { x = 11.2, dz = 19, yaw = 90, y = 0.3 }, -- on the east pavement by the park fence, facing the road (gate 4 is in an archway)
+	[5] = { x = 13.4, dz = 7.3, bench = true }, -- Shop Street: east, close in
+	[6] = { x = -15, dz = 8.8, bench = true }, -- the colonnade's end
+	[7] = { x = 21.5, dz = 7.8 }, -- under the viaduct
+	[8] = { x = 19, dz = 8.2, bench = true }, -- the Courts: the houses' side (the cage fills the park side)
+	[9] = { x = -16, dz = 7.4, bench = true }, -- by the skate plaza's houses
+	[10] = { x = 16, dz = 9.0 }, -- east, across from the clubhouse
+	[11] = { x = 19, dz = 8, bench = true }, -- the Apartments: east (the courtyard and bin store are west)
+	[12] = { x = -19, dz = 8.4, bench = true }, -- west (the car park is east)
+	[13] = { x = 14, dz = 7.6 }, -- east, past the tower's lawn (the tree's ring bench is close)
+	[14] = { x = 23.5, dz = 8, bench = true }, -- the Yards: by the yard fence's end, out past the floodlight's foot
+	[15] = { x = -22, dz = 8.8 }, -- in front of the boiler house
+	[16] = { x = 20, dz = 7.6 }, -- just outside the funnel's mouth to the boss yard
+}
+-- The bus stop: one short pole with two small flags, a boarding spot in front of each (house: back to spawn; fast
+-- forward: on to your furthest stage), and the bench if the street wants one.
+local function gateStop(g, i)
+	local s = GATE_STOPS[i]
+	if not s then return end
+	local turn = math.pi - math.rad(s.yaw or 0) -- (a stop's front is its -Z; players come from +Z)
+	local c = g:at(CFrame.new(s.x, s.y or 0, s.dz) * CFrame.Angles(0, turn, 0))
+	teleportPad(c, 'LobbyPad', -2.2, 0, P.padRed, 'Lobby', 'SPAWN', { side = 1 })
+	teleportPad(c, 'FurthestPad', 2.2, 0, C(255, 222, 40), 'Furthest', 'FURTHEST STAGE', { side = -1, pole = false })
+	if s.bench then
+		-- beside the stop on the side away from the middle of the street, facing the same way
+		local k = math.abs(math.cos(turn)) > 0.5 and ((math.cos(turn) * s.x > 0) and 1 or -1) or 1
+		local a, b = k * 4.6, k * 8.2
+		local wood, steel = C(186, 134, 90), C(72, 76, 86)
+		c:box('StopBench', V(a, 1.35, -0.7), V(b, 1.7, 0.7), wood)
+		c:box('StopBench', V(a, 1.7, 0.65), V(b, 3.0, 0.95), wood)
+		for _, x in { a + k * 0.3, b - k * 0.3 } do c:box('StopBenchLeg', V(x - 0.15, 0, -0.6), V(x + 0.15, 1.35, 0.6), steel) end
+	end
+end
 local function stageGate(ctx, i)
 	local z = gateZ(i)
 	local req = STAGE_POWER[i]
@@ -3340,7 +3764,7 @@ local function stageGate(ctx, i)
 		g:box('GatePostCap', V(x - 1.1, 6.2, -1.1), V(x + 1.1, 6.7, 1.1), cap)
 	end
 	-- The railing from the posts to the kerbs: a footing, two rails, three steel posts per side at uneven spacing
-	-- (on the west side none stands where the open gate's plaque parks, x -19.9..-12.5).
+	-- (on the west side none stands where the open gate's plaque parks, x -18.3..-14.1).
 	for _, side in { { -1, { 21.0, 27.6, 34.1 } }, { 1, { 15.0, 23.6, 34.1 } } } do
 		local s = side[1]
 		local a0, a1 = math.min(s * (PX + 0.9), s * 34.4), math.max(s * (PX + 0.9), s * 34.4)
@@ -3349,35 +3773,34 @@ local function stageGate(ctx, i)
 		g:box('GateRail', V(a0, 3.3, -0.2), V(a1, 3.7, 0.2), steel)
 		for _, px in side[2] do g:box('GateRailPost', V(s * px - 0.25, 0.5, -0.25), V(s * px + 0.25, 3.7, 0.25), steel) end
 	end
-	-- The sliding gate, shut: a steel frame with a diagonal brace and two pickets, on the stage side of the posts.
+	-- The sliding gate, shut: a cream frame with a diagonal brace and two pickets, on the stage side of the posts.
 	-- Everything in GateSlide moves with it (the client slides the model by the gate's SlideOffset).
 	local sg = g:group('GateSlide')
 	local ZB, ZF = -1.55, -1.05 -- its back face and its approach face
 	local x0, x1 = -OW - 0.6, OW + 0.4
-	sg:box('GateSlideFrame', V(x0, 0.35, ZB), V(x1, 0.85, ZF), steel)
-	sg:box('GateSlideFrame', V(x0, 4.6, ZB), V(x1, 5.1, ZF), steel)
-	for _, x in { x0, x1 - 0.6 } do sg:box('GateSlideFrame', V(x, 0.85, ZB), V(x + 0.6, 4.6, ZF), steel) end
-	sg:bar('GateSlideBrace', V(x0 + 0.6, 0.85, ZB + 0.25), V(x1 - 0.6, 4.6, ZB + 0.25), 0.4, steel, M.SmoothPlastic)
-	for _, x in { -5.1, 5.1 } do sg:box('GateSlidePicket', V(x - 0.2, 0.85, ZB + 0.08), V(x + 0.2, 4.6, ZF - 0.08), steel) end
-	-- The plaque hung on the gate: a cream frame round a dark face; the Power number and, under it, your progress
-	-- (the client sizes Fill and writes Count and Status).
-	sg:box('GatePlaqueFrame', V(-3.65, 1.05, ZF), V(3.65, 4.65, ZF + 0.2), cap)
-	local plaque = sg:box('GatePlaque', V(-3.4, 1.25, ZF + 0.2), V(3.4, 4.45, ZF + 0.3), C(48, 52, 62))
+	sg:box('GateSlideFrame', V(x0, 0.35, ZB), V(x1, 0.85, ZF), cap)
+	sg:box('GateSlideFrame', V(x0, 4.6, ZB), V(x1, 5.1, ZF), cap)
+	for _, x in { x0, x1 - 0.6 } do sg:box('GateSlideFrame', V(x, 0.85, ZB), V(x + 0.6, 4.6, ZF), cap) end
+	sg:bar('GateSlideBrace', V(x0 + 0.6, 0.85, ZB + 0.25), V(x1 - 0.6, 4.6, ZB + 0.25), 0.4, cap, M.SmoothPlastic)
+	for _, x in { -5.1, 5.1 } do sg:box('GateSlidePicket', V(x - 0.2, 0.85, ZB + 0.08), V(x + 0.2, 4.6, ZF - 0.08), cap) end
+	-- The plaque hung on the brace (4.2 x 2.4, Brief 10: no longer the biggest thing on the gate): the Power number
+	-- and, under it, your progress (the client sizes Fill and writes Count and Status).
+	local plaque = sg:box('GatePlaque', V(-2.1, 1.7, ZF), V(2.1, 4.1, ZF + 0.12), C(48, 52, 62))
 	local pg = surface(plaque, Enum.NormalId.Back, 40)
 	pcall(function() pg.MaxDistance = i == 1 and 220 or 100 end) -- (gate 1 reads through the warehouse door)
-	line(pg, 'Power', '💪 ' .. compact(req), P.white, FONT.loud, 0.07, 0.5, ink, 3)
-	line(pg, 'Status', '', P.white, FONT.loud, 0.63, 0.26, ink, 2)
+	line(pg, 'Power', '💪 ' .. compact(req), P.white, FONT.loud, 0.06, 0.52, ink, 3)
+	line(pg, 'Status', '', P.white, FONT.loud, 0.62, 0.28, ink, 2)
 	local track = Instance.new('Frame')
 	track.Name = 'Track'
 	track.BorderSizePixel, track.BackgroundColor3, track.BackgroundTransparency, track.ZIndex = 0, P.white, 0.6, 1
-	track.Position, track.Size = UDim2.fromScale(0.12, 0.64), UDim2.fromScale(0.76, 0.24)
+	track.Position, track.Size = UDim2.fromScale(0.1, 0.63), UDim2.fromScale(0.8, 0.26)
 	track.Parent = pg
 	local fill = Instance.new('Frame')
 	fill.Name = 'Fill'
 	fill.BorderSizePixel, fill.BackgroundColor3, fill.ZIndex = 0, C(118, 216, 146), 2
-	fill.Position, fill.Size = UDim2.fromScale(0.12, 0.64), UDim2.fromScale(0, 0.24)
+	fill.Position, fill.Size = UDim2.fromScale(0.1, 0.63), UDim2.fromScale(0, 0.26)
 	fill.Parent = pg
-	local count = line(pg, 'Count', '0 / ' .. compact(req), P.white, FONT.loud, 0.655, 0.21, ink, 2)
+	local count = line(pg, 'Count', '0 / ' .. compact(req), P.white, FONT.loud, 0.645, 0.23, ink, 2)
 	count.ZIndex = 3
 	-- The floor track it runs on.
 	decor(g:box('GateTrack', V(x0 + SLIDE - 0.1, 0, ZB - 0.05), V(x1 + 0.2, 0.12, ZF + 0.05), steel))
@@ -3397,17 +3820,7 @@ local function stageGate(ctx, i)
 	barrier.Transparency = 1
 	barrier:SetAttribute('BaseTransparency', 0.7)
 	barrier.CastShadow = false
-	-- The bus stop on the east pavement, just past the cross street's kerb (z 4.5): back to spawn, on to your
-	-- furthest stage, a bench between them with its back to the gate.
-	if i > 1 then
-		local back = CFrame.Angles(0, math.pi, 0) -- (a stop's front is its -Z; here players come from +Z)
-		teleportPad(g:at(CFrame.new(12.4, 0, 7.8) * back), 'LobbyPad', 0, 0, P.padRed, 'Lobby', 'SPAWN')
-		teleportPad(g:at(CFrame.new(21.4, 0, 7.8) * back), 'FurthestPad', 0, 0, C(255, 222, 40), 'Furthest', 'FURTHEST STAGE')
-		local wood = C(186, 134, 90)
-		g:box('StopBench', V(15.0, 1.35, 4.9), V(18.8, 1.7, 6.3), wood)
-		g:box('StopBench', V(15.0, 1.7, 4.85), V(18.8, 3.0, 5.15), wood)
-		for _, x in { 15.3, 18.2 } do g:box('StopBenchLeg', V(x, 0, 5.0), V(x + 0.3, 1.35, 6.2), steel) end
-	end
+	gateStop(g, i)
 	-- Confetti the client fires when you walk through.
 	local shell = ghost(g:box('PassShell', V(-OW, 5.4, -0.6), V(OW, 6.2, 0.6), P.white))
 	local fx = Instance.new('ParticleEmitter')
@@ -3482,8 +3895,7 @@ end
 local function stageCore(ctx, i)
 	local top = stageTop(i)
 	local d = ctx:group('Stage' .. i)
-	local _, pad = fightPad(d, i, V(0, 0, padZ(i)), TRIO_COLORS[trioOf(i)], lookOf(i))
-	pad.parent:SetAttribute('Stage', i)
+	-- (No fight ring any more: the user removed the street rings on 2026-10-08. The street and its gate are the stage.)
 	if trioOf(i) == 1 then
 		-- The district's name on a sign hung from a post at the left kerb (not over the walk, so the next gate
 		-- stays in view).
@@ -3496,7 +3908,7 @@ end
 
 -- 1-3 The Block: red brick walk-ups, dumpsters, bags and crates.
 local function brickStage(ctx, i)
-	if Street.custom[i] then return Street.block(ctx, i) end
+	if Street.custom[i] then return (i == 2 and Street.bend or i == 3 and Street.deadEnd or Street.block)(ctx, i) end
 	local d, top = stageCore(ctx, i)
 	local t = trioOf(i)
 	local rows = {
@@ -3533,7 +3945,7 @@ local SHOPS = {
 	{ sign = 'PHONES', signColor = C(62, 112, 196), textColor = P.white, stripes = { C(66, 120, 206), P.white }, wall = P.brick },
 }
 local function shopStage(ctx, i)
-	if Street.custom[i] then return Street.shops(ctx, i) end
+	if Street.custom[i] then return ({ Street.shops, Street.arcade, Street.trucks })[trioOf(i)](ctx, i) end
 	local d, top = stageCore(ctx, i)
 	local t = trioOf(i)
 	if t == 1 then
@@ -3573,7 +3985,7 @@ local COURTS = {
 	{ C(108, 166, 116), C(126, 182, 132), 'goals' },
 }
 local function courtStage(ctx, i)
-	if Street.custom[i] then return Street.courts(ctx, i) end
+	if Street.custom[i] then return ({ Street.courts, Street.skate, Street.fives })[trioOf(i)](ctx, i) end
 	local d, top = stageCore(ctx, i)
 	local t = trioOf(i)
 	local floor, key, kind = COURTS[t][1], COURTS[t][2], COURTS[t][3]
@@ -3641,6 +4053,7 @@ end
 
 -- 10-12 The Apartments: tan blocks with balconies, hedges and benches.
 local function apartmentStage(ctx, i)
+	if Street.custom[i] then return Street.apartments(ctx, i) end
 	local d, top = stageCore(ctx, i)
 	local t = trioOf(i)
 	local light = P.tan:Lerp(P.tanLight, 0.35)
@@ -3660,6 +4073,7 @@ end
 
 -- 13-15 The Yards: warehouses and container lots between the last apartments, fences toward the boss.
 local function yardStage(ctx, i)
+	if Street.custom[i] then return Street.yards(ctx, i) end
 	local d, top = stageCore(ctx, i)
 	local t = trioOf(i)
 	local grey = C(132, 140, 156)
@@ -3699,12 +4113,11 @@ function Street.seal(d, top)
 		for _, z in { top, top - SLEN } do invisibleWall(d, V(s * 35, -1, z - 0.5), V(s * 67, 60, z + 0.5)) end
 	end
 end
--- The stage group and its fight pad. No district banner: the street itself says where you are. Grass fills in behind
--- the set-back buildings (just under any paving laid over it), so no hole shows from a high camera.
+-- The stage group. No fight ring (the user removed the 15 street rings on 2026-10-08: the street and its gate are the
+-- stage) and no district banner: the street itself says where you are. Grass fills in behind the set-back buildings
+-- (just under any paving laid over it), so no hole shows from a high camera.
 function Street.core(ctx, i)
 	local d = ctx:group('Stage' .. i)
-	local model = fightPad(d, i, V(0, 0, padZ(i)), TRIO_COLORS[trioOf(i)], lookOf(i))
-	model:SetAttribute('Stage', i)
 	local top = stageTop(i)
 	for _, s in { -1, 1 } do d:box('Backfill', V(s * FRONT, -1.2, top - SLEN), V(s * (FRONT + DEPTH), -0.05, top), P.grass, M.Grass) end
 	return d, top
@@ -3733,8 +4146,11 @@ end
 -- A street-name blade on a post: the district's one small sign. It reads from the street's approach (+Z).
 function Street.nameSign(c, pos, text)
 	local green = C(46, 112, 72)
-	c:post('SignPole', 0.2, 10.4, pos, P.iron, M.Metal)
-	local blade = c:box('StreetName', pos + V(-2.8, 9.0, -0.12), pos + V(2.8, 10.1, 0.12), green, M.SmoothPlastic)
+	-- (The pole stops under the blade, which sits on a small cap on top: critic 9 r1 item 10, the pole no longer
+	-- cuts through the name.)
+	c:post('SignPole', 0.2, 9.0, pos, P.iron, M.Metal)
+	c:box('SignPoleCap', pos + V(-0.35, 9.0, -0.2), pos + V(0.35, 9.2, 0.2), P.iron, M.Metal)
+	local blade = c:box('StreetName', pos + V(-2.8, 9.2, -0.12), pos + V(2.8, 10.3, 0.12), green, M.SmoothPlastic)
 	for _, f in { Enum.NormalId.Front, Enum.NormalId.Back } do
 		local g = surface(blade, f, 24)
 		pcall(function() g.MaxDistance = 80 end)
@@ -3854,13 +4270,13 @@ function Street.block(ctx, i)
 		d:box('Kerb', V(pv[3] - 0.45, -1, Z(pv[4])), V(pv[3] + 0.45, 0.34, Z(-7)), P.kerb, M.Concrete)
 	end
 	-- West: two walk-ups, then the corner store with the water tank. East: a walk-up, the alley, a taller walk-up.
-	Street.walkup(Street.lot(d, -1, 23, Z(-8), 15), 15, { floors = 4, bays = 2, doorBay = 2, noUnit = true })
-	Street.walkup(Street.lot(d, -1, 27, Z(-23), 17), 17, { floors = 3, bays = 3, doorBay = 3, wall = P.brickDark })
+	Street.walkup(Street.lot(d, -1, 23, Z(-8), 15), 15, { floors = 4, bays = 2, doorBay = 2, noUnit = true, cornice = true })
+	Street.walkup(Street.lot(d, -1, 27, Z(-23), 17), 17, { floors = 3, bays = 3, doorBay = 3, wall = P.brickDark, noUnit = true, cornice = true })
 	local store = Street.cornerStore(Street.lot(d, -1, 21, Z(-40), 14), 14)
 	Street.waterTower(store, 10, roofOf(2) + 1.2, -5.5) -- (on the low store, near its street corner, so it shows at the end of the street)
-	Street.walkup(Street.lot(d, 1, 20, Z(-8), 20), 20, { floors = 3, bays = 3, doorBay = 2, wall = P.brickPink })
+	Street.walkup(Street.lot(d, 1, 20, Z(-8), 20), 20, { floors = 3, bays = 3, doorBay = 2, wall = P.brickPink, noUnit = true, cornice = true })
 	-- (the tall one stands 3 forward of its neighbour, so its side door and the bins show down the alley)
-	Street.walkup(Street.lot(d, 1, 17, Z(-35), 17.4), 17.4, { floors = 4, bays = 2, doorBay = 1, noUnit = true })
+	Street.walkup(Street.lot(d, 1, 17, Z(-35), 17.4), 17.4, { floors = 4, bays = 2, doorBay = 1, noUnit = true, cornice = true })
 	-- The alley (z -28 to -35): a dead end at a brick wall. The tall walk-up's side door with its bin and bags beside
 	-- it, a lamp over the door, the dumpster against the other wall.
 	d:box('AlleyFloor', V(20.6, -1, Z(-35)), V(41, 0.04, Z(-28)), C(98, 100, 106), M.Asphalt)
@@ -3871,7 +4287,7 @@ function Street.block(ctx, i)
 	trashCan(d, V(21.9, 0.04, Z(-33.7)))
 	trashBags(d, V(27.6, 0.04, Z(-33.4)))
 	dumpster(d, CFrame.new(34, 0.04, Z(-30.3)))
-	-- At the kerb: two parked cars (not near the ring), a hydrant, two lamps where they're needed (by a stoop, at
+	-- At the kerb: two parked cars, a hydrant, two lamps where they're needed (by a stoop, at
 	-- the alley mouth), one street tree in the deeper front of the middle walk-up, the bike rack by the store.
 	car(d, CFrame.new(-11.6, 0, Z(-14.5)) * CFrame.Angles(0, math.pi, 0), C(86, 112, 146))
 	car(d, CFrame.new(6.3, 0, Z(-46)), C(228, 228, 232))
@@ -3880,7 +4296,9 @@ function Street.block(ctx, i)
 	lantern(d, V(10.5, 0.3, Z(-37)))
 	tree(d, V(-23.6, 0.3, Z(-29.5)), 31, 0.85)
 	Street.bikeRack(d, CFrame.new(-18.2, 0.3, Z(-45.5)) * CFrame.Angles(0, math.pi / 2, 0), C(70, 120, 190))
-	Street.nameSign(d, V(-15.2, 0.3, Z(-54.3)), 'THE BLOCK')
+	-- The district's one street sign, at the corner where you turn into the Block from the warehouse door (critic 9 r1
+	-- item 10: off the store's green awning, so it isn't green on green).
+	Street.nameSign(d, V(9.8, 0.3, Z(-7.8)), 'THE BLOCK')
 	-- The cross streets end at yard walls just past the gate's railing.
 	for _, s in { -1, 1 } do
 		for _, zz in { { -8, 0 }, { -SLEN, s < 0 and -54 or -52.4 } } do
@@ -3891,24 +4309,422 @@ function Street.block(ctx, i)
 	Street.seal(d, top)
 end
 
--- Shop Street (stage 4): a wide pedestrian strip, no road. Low shopfronts at different setbacks (the café 6 back, the
--- grocery 4) under deep striped awnings, names on plain fascias. The fight pad stands in a square of darker paving;
--- past it, a market island on the axis that the walk splits round, with café tables in the café's forecourt on one
--- side and a delivery bay on the other (a van, a pallet of crates and a hand truck at a loading door).
+---------------------------------------------------------------------------------------------- the Block, stages 2 and 3
+-- S1, Brief 10: the rest of The Block, from the rollout plan (brief/out9_S/S_rollout.md). The same section as stage 1
+-- (an asphalt road between raised pavements, brick walk-ups with stoops at varied setbacks), but each street has its
+-- own shape. Stage 2 bends round a laundromat that stands across the axis. Stage 3 is a dead end with a pocket park,
+-- closed by a building with the gate to Shop Street in its archway. Each one closes the long view, so nobody looks
+-- down a straight line of gates.
+Street.custom[2], Street.custom[3] = true, true
+
+-- A laundry cart: a wire basket on a wheeled skid, washing piled in it, a hanging rail at its local -Z side.
+function Street.laundryCart(c, cf, load)
+	local k = c:at(cf):group('LaundryCart')
+	local chrome = C(186, 190, 198)
+	k:box('CartSkid', V(-1.3, 0, -0.9), V(1.3, 0.6, 0.9), P.iron, M.Metal) -- (the casters, as one dark block)
+	k:box('CartBasket', V(-1.2, 0.6, -0.8), V(1.2, 2.6, 0.8), chrome, M.DiamondPlate)
+	k:box('CartLoad', V(-1.0, 2.6, -0.6), V(1.0, 3.0, 0.6), load, M.Fabric)
+	for _, x in { -1.2, 1.05 } do k:box('CartPost', V(x, 2.6, -0.95), V(x + 0.15, 4.6, -0.8), chrome, M.Metal) end
+	k:box('CartRail', V(-1.2, 4.45, -0.95), V(1.2, 4.6, -0.8), chrome, M.Metal)
+end
+-- An old sofa put out at the kerb on moving day: a base, a back, two arms. It faces local -Z.
+function Street.sofa(c, cf, color)
+	local k = c:at(cf):group('Sofa')
+	k:box('SofaBase', V(-2.8, 0, -1.2), V(2.8, 1.5, 1.2), color, M.Fabric)
+	k:box('SofaBack', V(-2.8, 1.5, 0.4), V(2.8, 3.4, 1.2), color, M.Fabric)
+	for _, x in { -2.8, 2.1 } do k:box('SofaArm', V(x, 1.5, -1.2), V(x + 0.7, 2.4, 0.4), color:Lerp(P.black, 0.18), M.Fabric) end
+end
+-- A wheelie bin, the handle and wheels at its local +Z side.
+function Street.wheelieBin(c, cf, color)
+	local k = c:at(cf):group('WheelieBin')
+	k:box('Bin', V(-0.95, 0.3, -1.0), V(0.95, 3.4, 1.0), color, M.SmoothPlastic)
+	k:box('BinLid', V(-1.05, 3.4, -1.1), V(1.05, 3.7, 1.25), Craft.dark(color), M.SmoothPlastic)
+	k:box('BinWheels', V(-1.0, 0, 0.45), V(1.0, 0.75, 1.1), P.black, M.SmoothPlastic)
+end
+-- A pram: a deep body on a dark frame, its hood up at the back (+Z), a push handle. It faces local -Z.
+function Street.stroller(c, cf, color)
+	local k = c:at(cf):group('Stroller')
+	k:box('PramWheels', V(-0.8, 0, -1.0), V(0.8, 0.9, 1.0), P.iron, M.SmoothPlastic)
+	k:box('PramBody', V(-0.75, 0.9, -1.0), V(0.75, 2.4, 1.0), color, M.Fabric)
+	k:wedge('PramHood', V(1.6, 1.4, 1.3), CFrame.new(0, 3.1, 0.35), color:Lerp(P.black, 0.25), M.Fabric)
+	k:bar('PramHandle', V(0, 2.4, 1.0), V(0, 3.9, 1.9), 0.22, P.iron, M.Metal)
+end
+-- A playground slide: a deck on four posts under a little pitched roof, a ladder up the back (+X), a wide chute down
+-- the front (-X). cf: the deck's centre, on the ground.
+function Street.slide(c, cf)
+	local k = c:at(cf):group('Slide')
+	local post, roof, chute = C(70, 110, 170), C(204, 88, 74), C(236, 186, 76)
+	for _, x in { -1.6, 1.6 } do for _, z in { -1.6, 1.6 } do k:box('SlidePost', V(x - 0.25, 0, z - 0.25), V(x + 0.25, 9.6, z + 0.25), post, M.SmoothPlastic) end end
+	k:box('SlideDeck', V(-1.9, 4.6, -1.9), V(1.9, 5.1, 1.9), P.wood, M.WoodPlanks)
+	-- (two wedges back to back make the ridge, along X)
+	k:wedge('SlideRoof', V(4.6, 1.7, 2.3), CFrame.new(0, 10.45, 1.15) * CFrame.Angles(0, math.pi, 0), roof, M.SmoothPlastic)
+	k:wedge('SlideRoof', V(4.6, 1.7, 2.3), CFrame.new(0, 10.45, -1.15), roof, M.SmoothPlastic)
+	plank(k, 'SlideChute', V(-1.9, 4.9, 0), V(-9.6, 0.5, 0), 2.2, 0.3, chute)
+	for _, z in { -1.15, 1.15 } do plank(k, 'SlideLip', V(-1.9, 5.3, z), V(-9.6, 0.9, z), 0.25, 0.9, chute:Lerp(P.black, 0.2)) end
+	for _, z in { -0.75, 0.75 } do k:bar('LadderRail', V(3.7, 0, z), V(1.9, 5.1, z), 0.25, post, M.SmoothPlastic) end
+	for q = 1, 3 do
+		local t = q / 4
+		k:box('LadderRung', V(3.7 - 1.8 * t - 0.15, 5.1 * t - 0.1, -0.75), V(3.7 - 1.8 * t + 0.15, 5.1 * t + 0.1, 0.75), post, M.SmoothPlastic)
+	end
+end
+-- A swing frame: an A-frame at each end, a top beam along local X, two seats on chains.
+function Street.swings(c, cf)
+	local k = c:at(cf):group('Swings')
+	local frame = C(70, 110, 170)
+	for _, x in { -4.6, 4.6 } do
+		for _, z in { -2.3, 2.3 } do k:bar('SwingLeg', V(x, 0, z), V(x, 8.3, 0), 0.4, frame, M.SmoothPlastic) end
+	end
+	k:box('SwingBeam', V(-4.9, 8.0, -0.25), V(4.9, 8.5, 0.25), frame, M.SmoothPlastic)
+	for _, x in { -2.3, 2.0 } do
+		for _, dx in { -0.7, 0.7 } do decor(k:box('SwingChain', V(x + dx - 0.06, 2.2, -0.06), V(x + dx + 0.06, 8.0, 0.06), P.iron, M.Metal)) end
+		k:box('SwingSeat', V(x - 0.9, 1.9, -0.45), V(x + 0.9, 2.2, 0.45), C(204, 88, 74), M.SmoothPlastic)
+	end
+end
+-- A mural painted on a blank wall that faces local +Z: a sun coming up behind a green hill, a few big flat shapes (paint,
+-- not a sign). cf: the bottom-left corner of the painted area on the wall; w by h.
+function Street.mural(c, cf, w, h)
+	local k = c:at(cf):group('Mural')
+	-- (the sun and the hills break out past the sky's edges, so it reads as paint on the wall, not a board or a window)
+	decor(k:box('MuralSky', V(0, 0, 0), V(w, h, 0.12), C(150, 190, 218), M.SmoothPlastic))
+	decor(k:rod('MuralSun', h * 0.22, 0.12, CFrame.new(w * 0.74, h * 0.9, 0.18) * CFrame.Angles(0, math.pi / 2, 0), C(238, 198, 104), M.SmoothPlastic))
+	-- (a wedge turned a quarter round lies flat on the wall, tall at its +X end; a pair back to back is a hill)
+	local function slope(name, x0, x1, hh, y0, color, z)
+		local up = x1 > x0
+		local cx = (x0 + x1) / 2
+		decor(k:wedge(name, V(0.12, hh, math.abs(x1 - x0)), CFrame.new(cx, y0 + hh / 2, z) * CFrame.Angles(0, up and math.pi / 2 or -math.pi / 2, 0), color, M.SmoothPlastic))
+	end
+	slope('MuralHill', -3, w * 0.4, h * 0.56, h * 0.16, C(104, 168, 98), 0.24)
+	slope('MuralHill', w * 0.86, w * 0.4, h * 0.56, h * 0.16, C(104, 168, 98), 0.24)
+	slope('MuralHill', w * 0.48, w + 3, h * 0.34, h * 0.16, C(78, 140, 96), 0.3)
+	decor(k:box('MuralGround', V(-3, -1, 0.12), V(w + 3, h * 0.16, 0.36), C(78, 140, 96), M.SmoothPlastic))
+end
+
+-- The Block, stage 2 ("the bend"): the street jogs. A one-storey laundromat stands across the axis with its round-door
+-- machines facing the gate, so the street ends in it. The road bends west round it, past a vacant lot behind a chain-link
+-- fence, then comes back east to the next gate. The groups: laundry carts and a bench outside the laundromat, bins behind
+-- its back door, a car with its hood up at the lot's kerb, and an old sofa and boxes put out by the last stoop.
+function Street.bend(ctx, i)
+	local d, top = Street.core(ctx, i)
+	local function Z(z) return top + z end
+	d:box('Road', V(-FRONT, -1, Z(-SLEN)), V(FRONT, 0, Z(0)), P.asphalt, M.Asphalt)
+	-- Raised pavements, and the kerbs along their road edges (along z at x, or along x at z).
+	local function pave(x0, x1, z0, z1)
+		d:box('Pavement', V(x0, -1, Z(z0)), V(x1, 0.3, Z(z1)), P.tileA, M.SmoothPlastic)
+	end
+	local function kerbX(x, z0, z1) d:box('Kerb', V(x - 0.45, -1, Z(z0)), V(x + 0.45, 0.34, Z(z1)), P.kerb, M.Concrete) end
+	local function kerbZ(z, x0, x1) d:box('Kerb', V(x0, -1, Z(z) - 0.45), V(x1, 0.34, Z(z) + 0.45), P.kerb, M.Concrete) end
+	-- West: in front of the first walk-up (kerb -13), along the lot (kerb -26), in front of the last walk-up (kerb -17).
+	pave(-30, -13, -7, -20)
+	pave(-34, -26, -20, -42)
+	pave(-30, -17, -42, -53)
+	kerbX(-13, -7.45, -20)
+	kerbX(-26, -20, -42)
+	kerbX(-17, -42, -53)
+	kerbZ(-20, -26, -13)
+	kerbZ(-42, -26, -17)
+	-- East: the first walk-up (kerb 11), the laundromat's forecourt and its west side (kerb -6.5), its back, the last
+	-- walk-up (kerb 9).
+	pave(11, 20, -7, -24)
+	pave(-6.5, 17, -20, -24)
+	pave(-6.5, -4, -24, -44)
+	pave(-6.5, 16, -41, -44)
+	pave(9, 18, -44, -54)
+	kerbX(11, -7.45, -20)
+	kerbZ(-20, -6.95, 11)
+	kerbX(-6.5, -20, -44)
+	kerbZ(-44, -6.95, 9)
+	kerbX(9, -44, -54)
+	-- Buildings. West: a tall narrow walk-up, the lot, a walk-up. East: a walk-up, the laundromat across the axis (its
+	-- front at z -24, x -4..17), a tall walk-up.
+	Street.walkup(Street.lot(d, -1, 19, Z(-8), 12), 12, { floors = 4, bays = 2, doorBay = 1, noUnit = true, wall = P.brickDark, cornice = true })
+	Street.walkup(Street.lot(d, -1, 23, Z(-42), 11), 11, { floors = 3, bays = 2, doorBay = 2, noUnit = true, cornice = true })
+	Street.walkup(Street.lot(d, 1, 17, Z(-8), 16), 16, { floors = 3, bays = 2, doorBay = 1, noUnit = true, wall = P.brickPink, cornice = true })
+	Street.walkup(Street.lot(d, 1, 15, Z(-41), 13), 13, { floors = 4, bays = 2, doorBay = 2, noUnit = true, cornice = true })
+	local _, _, fascia = Street.laundromat(d:at(CFrame.new(-4, 0, Z(-24))), 21, { depth = 17, corner = true })
+	line(surface(fascia, Enum.NormalId.Back, 20), 'Text', 'LAUNDROMAT', P.white, FONT.loud, 0.14, 0.72, C(20, 40, 60), 3)
+	-- The vacant lot: bare ground behind a chain-link fence, weeds and one scrappy tree; the walk-ups' blank side walls
+	-- face it.
+	d:box('LotGround', V(-60, -1, Z(-42)), V(-32, 0.2, Z(-20)), C(150, 132, 104), M.Ground)
+	chainLink(d, V(-32, 0.3, Z(-20.3)), V(-32, 0.3, Z(-41.7)), 7, nil, 0.5)
+	for _, w in { { -38, -24, 3.2, 1.4 }, { -45, -37, 2.4, 1.0 } } do d:box('Weeds', V(w[1] - w[3], 0.2, Z(w[2]) - w[3] * 0.7), V(w[1] + w[3], 0.2 + w[4], Z(w[2]) + w[3] * 0.7), P.hedge:Lerp(P.trunk, 0.25), M.Grass) end
+	d:box('Trunk', V(-44.4, 0.2, Z(-29.6)), V(-43.4, 9.5, Z(-28.6)), P.trunk, M.Wood)
+	d:part('Crown', V(7.5, 5.5, 7.5), CFrame.new(-44, 11.4, Z(-29)) * CFrame.Angles(0, math.rad(30), 0), P.leaf:Lerp(P.leafDark, 0.7), M.SmoothPlastic)
+	d:part('Crown', V(5, 4.4, 5), CFrame.new(-45, 13.6, Z(-30)) * CFrame.Angles(math.rad(25), math.rad(10), math.rad(-20)), P.leaf, M.SmoothPlastic)
+	-- Outside the laundromat: two carts by the door, a bench under the window. Its back door, with the bins.
+	Street.laundryCart(d, CFrame.new(3.2, 0.3, Z(-21.7)) * CFrame.Angles(0, 0.25, 0), C(226, 232, 240))
+	Street.laundryCart(d, CFrame.new(6.8, 0.3, Z(-22.3)) * CFrame.Angles(0, -0.15, 0), C(170, 196, 226))
+	bench(d, V(12.2, 0.3, Z(-22.4)), V(0, 0, 1))
+	d:box('BackDoor', V(4.5, 0.3, Z(-41.15)), V(7.5, 7.6, Z(-40.85)), P.doorDark, M.SmoothPlastic)
+	trashCan(d, V(9.4, 0.3, Z(-42.6)))
+	trashBags(d, V(1.6, 0.3, Z(-42.7)))
+	-- A car with its hood up at the lot's kerb, a toolbox on the pavement by its nose.
+	car(d, CFrame.new(-23.3, 0, Z(-31)), C(196, 160, 84))
+	d:part('CarHood', V(4.3, 0.25, 3.3), CFrame.new(-23.3, 0, Z(-31)) * CFrame.new(0, 2.7, -1.9) * CFrame.Angles(math.rad(62), 0, 0) * CFrame.new(0, 0, -1.6), C(196, 160, 84), M.SmoothPlastic)
+	d:box('Toolbox', V(-28.6, 0.3, Z(-36.4)), V(-27.0, 1.3, Z(-35.6)), C(196, 70, 62), M.SmoothPlastic)
+	-- Moving day at the last walk-up: the old sofa and two boxes put out on the pavement beside its stoop.
+	Street.sofa(d, CFrame.new(-21.4, 0.3, Z(-45)) * CFrame.Angles(0, -math.pi / 2, 0), C(120, 136, 112))
+	d:box('Carton', V(-19.6, 0.3, Z(-42.6)), V(-17.9, 1.8, Z(-44.2)), P.crate:Lerp(P.white, 0.15), M.SmoothPlastic)
+	crate(d, CFrame.new(-18.8, 0.3, Z(-46.6)) * CFrame.Angles(0, 0.2, 0), 1.8)
+	-- Two lamps where the light is needed: the bend, beside the laundromat, and the last walk-up's stoop.
+	lantern(d, V(-5.3, 0.3, Z(-33.6)))
+	lantern(d, V(10, 0.3, Z(-51.6)))
+	-- The cross streets end at yard walls past the gate's railing.
+	for _, s in { -1, 1 } do
+		for _, zz in { { -8, 0 }, { -SLEN, s < 0 and -53 or -54 } } do
+			d:box('YardWall', V(s * 36, -1, Z(zz[1])), V(s * 37.4, 10.6, Z(zz[2])), P.brickDark, M.Brick)
+		end
+	end
+	Street.seal(d, top)
+end
+
+-- The Block, stage 3 ("the dead end"): the last street of the district. The tallest walk-ups on the west; on the east, after
+-- one walk-up, a small fenced park with a slide and swings. The road stops at a turning head, and a four-storey building
+-- closes the whole end of the street with the gate to Shop Street in its archway (critic 11: a district edge you can
+-- see). The park's back is that building's blank end wall, painted with a mural. Groups: a bench and a pram by the park
+-- gate, recycling bins by the last stoop.
+function Street.deadEnd(ctx, i)
+	local d, top = Street.core(ctx, i)
+	local function Z(z) return top + z end
+	d:box('Road', V(-FRONT, -1, Z(-SLEN)), V(FRONT, 0, Z(0)), P.asphalt, M.Asphalt)
+	d:box('Pavement', V(-30, -1, Z(-52)), V(-11, 0.3, Z(-7)), P.tileA, M.SmoothPlastic)
+	d:box('Pavement', V(7, -1, Z(-52)), V(16, 0.3, Z(-7)), P.tileA, M.SmoothPlastic)
+	d:box('Pavement', V(-11, -1, Z(-62.1)), V(7, 0.3, Z(-46)), P.tileA, M.SmoothPlastic) -- (the turning head and the passage)
+	d:box('Kerb', V(-11.45, -1, Z(-46)), V(-10.55, 0.34, Z(-7.45)), P.kerb, M.Concrete)
+	d:box('Kerb', V(6.55, -1, Z(-46)), V(7.45, 0.34, Z(-7.45)), P.kerb, M.Concrete)
+	d:box('Kerb', V(-11.45, -1, Z(-46.45)), V(7.45, 0.34, Z(-45.55)), P.kerb, M.Concrete)
+	-- West: the tallest walk-ups. East: one walk-up, then the park.
+	Street.walkup(Street.lot(d, -1, 19, Z(-8), 17), 17, { floors = 5, bays = 2, doorBay = 2, noUnit = true, cornice = true })
+	Street.walkup(Street.lot(d, -1, 23, Z(-25), 14), 14, { floors = 4, bays = 2, doorBay = 1, noUnit = true, wall = P.brickDark, cornice = true })
+	Street.walkup(Street.lot(d, -1, 20, Z(-39), 13), 13, { floors = 4, bays = 2, doorBay = 2, noUnit = true, wall = P.brickPink, cornice = true })
+	Street.walkup(Street.lot(d, 1, 15, Z(-8), 13), 13, { floors = 3, bays = 2, doorBay = 1, noUnit = true, cornice = true })
+	-- The building across the end: two wings and a block over the arch (x -8..8, 12 high), a stone surround on the
+	-- street side, a lamp in the passage. Its back face stops 1.9 short of the gate's line.
+	local z0, z1, AW, AH, PH = Z(-52), Z(-62.1), 8, 12, roofOf(4) -- (back face 1.9 short of the gate line: G's padlock)
+	local brick = P.brick:Lerp(P.brickDark, 0.5)
+	d:box('ArchWing', V(-48, -1, z1), V(-AW, PH, z0), brick, M.Brick)
+	d:box('ArchWing', V(AW, -1, z1), V(46, PH, z0), brick, M.Brick)
+	d:box('ArchSpan', V(-AW, AH, z1), V(AW, PH, z0), brick, M.Brick)
+	d:box('ArchRoof', V(-48.3, PH, z1 - 0.4), V(46.3, PH + 1.4, z0 + 0.8), P.slate, M.SmoothPlastic)
+	d:box('ArchBase', V(-20, -1, z0), V(-AW - 1.3, 1.6, z0 + 0.35), P.stone, M.Concrete)
+	d:box('ArchBase', V(AW + 1.3, -1, z0), V(46, 1.6, z0 + 0.35), P.stone, M.Concrete)
+	for _, x in { -AW - 1.3, AW } do d:box('ArchJamb', V(x, 0.3, z0), V(x + 1.3, AH, z0 + 0.45), P.stone, M.Concrete) end
+	d:box('ArchLintel', V(-AW - 1.3, AH, z0), V(AW + 1.3, AH + 1.7, z0 + 0.45), P.stone, M.Concrete)
+	light(d:box('ArchLamp', V(-0.7, AH - 0.5, Z(-57.6)), V(0.7, AH, Z(-56.6)), P.lampGlow, M.Neon), P.lampGlow, 0.8, 14)
+	local front, back = d:at(CFrame.new(0, 0, z0)), d:at(CFrame.new(0, 0, z1) * CFrame.Angles(0, math.pi, 0))
+	for f = 2, 4 do
+		for _, x in { -14, 0 } do window(front, x, storeyY(f) + 3, {}) end
+		window(back, 0, storeyY(f) + 3, {})
+	end
+	for _, x in { -24, 24 } do window(back, x, storeyY(3) + 3, {}) end
+	-- The mural on the end wall above the park.
+	Street.mural(d, CFrame.new(19.5, 9, z0), 22, 20)
+	-- The park: a lawn behind a low green fence with its gate opposite the road, safety surfacing under the slide and
+	-- the swings, a tree, a hedge at the back.
+	d:box('ParkLawn', V(16, -1, Z(-52)), V(46, 0.4, Z(-21)), P.grass, M.Grass)
+	d:box('PlaySurface', V(18.8, 0.4, Z(-49.5)), V(34.5, 0.5, Z(-41)), C(184, 112, 92), M.SmoothPlastic)
+	d:box('PlaySurface', V(21, 0.4, Z(-34.5)), V(33, 0.5, Z(-25.5)), C(184, 112, 92), M.SmoothPlastic)
+	chainLink(d, V(16.2, 0.3, Z(-21.2)), V(16.2, 0.3, Z(-51.8)), 4.2, { { 3.5, 7.5 } }, 0.55, C(58, 104, 80))
+	hedgeZ(d, 44.5, Z(-51.8), Z(-21.2), 2.4)
+	Street.slide(d, CFrame.new(29.6, 0.5, Z(-45.2)))
+	Street.swings(d, CFrame.new(27, 0.5, Z(-30)))
+	tree(d, V(39.6, 0.4, Z(-37)), 33, 0.95)
+	-- Beside the park gate (z -24.7..-28.7): a bench facing the play area and a pram parked by it.
+	bench(d, V(18.4, 0.4, Z(-32.6)), V(1, 0, 0))
+	Street.stroller(d, CFrame.new(18.8, 0.4, Z(-37.4)) * CFrame.Angles(0, math.pi / 2, 0), C(96, 128, 168))
+	lantern(d, V(-11.9, 0.3, Z(-36.8)))
+	-- Recycling bins by the last stoop.
+	Street.wheelieBin(d, CFrame.new(-13.4, 0.3, Z(-41.2)) * CFrame.Angles(0, -math.pi / 2, 0), C(66, 112, 176))
+	Street.wheelieBin(d, CFrame.new(-13.4, 0.3, Z(-43.6)) * CFrame.Angles(0, -math.pi / 2, 0), C(70, 140, 92))
+	-- Bollards across the turning head: no cars into the passage.
+	for _, x in { -6.4, -2.1, 2.1, 6.4 } do d:post('Bollard', 0.35, 3.0, V(x, 0.3, Z(-48.4)), C(64, 66, 74), M.Metal) end
+	-- The cross street at the start ends at yard walls past the gate's railing.
+	for _, s in { -1, 1 } do d:box('YardWall', V(s * 36, -1, Z(-8)), V(s * 37.4, 10.6, Z(0)), P.brickDark, M.Brick) end
+	Street.seal(d, top)
+end
+
+-- ==== S2 BEGIN: Shop Street and the Courts, stages 4-9 (builder S2, Brief 10) ====
+-- Every stage of the two districts has its own street plan. With the rings gone, each street's centre has its own
+-- purpose, and that object also closes the long view down the axis, the walk bending round it (critic 11): the market
+-- stalls (4), the clock square with its kiosk (5), the food trucks (6), the big tree at the court gate (7), the quarter
+-- pipe (8) and the clubhouse at the end of the pitch (9). A rail viaduct over gate 7 is the edge between the districts.
+-- Shop Street (4-6) has its own facade kit (Street.shopfront: low, painted, wide windows, parapets), not the Block's
+-- brick walk-ups; the Courts (7-9) are built on one side only, the other side open (park, skate plaza, pitch).
+-- In the builders below, Z(z) is relative to the stage's gate line: 0 at this gate, -64 at the next.
+for _, k in { 4, 5, 6, 7, 8, 9 } do Street.custom[k] = true end
+Street.PAVE, Street.SETTS = C(212, 198, 178), C(190, 174, 154) -- Shop Street's warm paving and its market setts
+
+-- A raised pavement (0.3) with a kerb stone along the street edge, in front of each lot of a one-sided Courts street.
+-- s: the side (-1 west, 1 east); segs: { { xFront, z0, z1 } } in map z.
+function Street.pavement(d, s, segs, wide)
+	wide = wide or 4.5
+	for _, g in segs do
+		local xa, xb = s * g[1], s * (g[1] - wide)
+		d:box('Pavement', V(xa, -1, g[2]), V(xb, 0.3, g[3]), P.tileB, M.SmoothPlastic)
+		d:box('Kerb', V(xb - 0.45, -1, g[2]), V(xb + 0.45, 0.34, g[3]), P.kerb, M.Concrete)
+	end
+end
+-- A big plane tree on a stone planter with a wooden seat ledge round it: the Courts' meeting point at the park gate.
+function Street.shadeTree(c, pos, seed)
+	local r = Random.new(seed)
+	local t = c:at(CFrame.new(pos) * CFrame.Angles(0, r:NextNumber(0, math.pi / 2), 0)):group('ShadeTree')
+	t:box('Planter', V(-3, 0, -3), V(3, 1.1, 3), P.stone, M.Concrete)
+	t:box('PlanterSeat', V(-3.5, 1.1, -3.5), V(3.5, 1.45, 3.5), P.wood, M.WoodPlanks)
+	t:box('Trunk', V(-0.85, 1.45, -0.85), V(0.85, 10.5, 0.85), P.trunk, M.Wood)
+	local s = 1.4
+	t:part('Crown', V(7, 6.4, 7) * s, CFrame.new(0, 13.4, 0) * CFrame.Angles(0, math.rad(45), 0), P.leaf:Lerp(P.leafDark, r:NextNumber(0, 0.5)), M.SmoothPlastic)
+	t:part('Crown', V(6.2, 6.2, 6.2) * s, CFrame.new(1.1, 14.4, -0.8) * CFrame.Angles(math.rad(38), math.rad(20), math.rad(34)), P.leaf:Lerp(P.leafDark, 0.6), M.SmoothPlastic)
+	t:part('Crown', V(4.6, 4.6, 4.6) * s, CFrame.new(-0.6, 17.0, 0.4) * CFrame.Angles(math.rad(20), math.rad(60), math.rad(-25)), P.leaf, M.SmoothPlastic)
+	return t
+end
+-- A street clock on a post (the arcade's square): a dark green post on a plinth, a four-faced clock head, a cap.
+function Street.streetClock(c, pos)
+	local k = c:at(CFrame.new(pos)):group('StreetClock')
+	local green, face, ink = C(46, 92, 72), C(244, 240, 228), C(36, 40, 48)
+	k:box('ClockPlinth', V(-1, 0, -1), V(1, 1.4, 1), green:Lerp(P.black, 0.25), M.SmoothPlastic)
+	k:post('ClockPost', 0.38, 9.4, V(0, 1.4, 0), green, M.Metal)
+	k:box('ClockHead', V(-1.4, 10.8, -1.4), V(1.4, 13.6, 1.4), green, M.SmoothPlastic)
+	decor(k:box('ClockFace', V(-1.15, 11.05, -1.5), V(1.15, 13.35, 1.5), face, M.SmoothPlastic))
+	decor(k:box('ClockFace', V(-1.5, 11.05, -1.15), V(1.5, 13.35, 1.15), face, M.SmoothPlastic))
+	decor(k:box('ClockHand', V(-0.09, 12.2, -1.56), V(0.09, 13.0, 1.56), ink, M.SmoothPlastic))
+	decor(k:box('ClockHand', V(-0.09, 12.11, -1.56), V(0.75, 12.29, 1.56), ink, M.SmoothPlastic))
+	decor(k:box('ClockHand', V(-1.56, 12.2, -0.09), V(1.56, 13.0, 0.09), ink, M.SmoothPlastic))
+	decor(k:box('ClockHand', V(-1.56, 12.11, -0.75), V(1.56, 12.29, 0.09), ink, M.SmoothPlastic))
+	k:box('ClockCap', V(-1.6, 13.6, -1.6), V(1.6, 14.0, 1.6), green:Lerp(P.black, 0.25), M.SmoothPlastic)
+	k:box('ClockCap', V(-0.9, 14.0, -0.9), V(0.9, 14.6, 0.9), green, M.SmoothPlastic)
+	k:part('ClockFinial', V(0.8, 0.8, 0.8), CFrame.new(0, 14.95, 0), C(214, 176, 96), M.SmoothPlastic, Enum.PartType.Ball)
+	return k
+end
+-- A food truck: the box van with a serving hatch down its +X side (the flap propped up as an awning, a counter under
+-- it) and its dish as a big chunky model on the roof ('burger' or 'drink'), so it reads with no sign.
+function Street.foodTruck(c, cf, color, awn, dish)
+	Street.boxTruck(c, cf, color)
+	local k = c:at(cf):group('FoodTruck')
+	decor(k:box('Hatch', V(2.7, 3.4, -1.6), V(2.82, 6.4, 4.8), C(44, 46, 54), M.SmoothPlastic))
+	k:box('HatchCounter', V(2.7, 3.2, -1.8), V(3.7, 3.5, 5.0), P.cream, M.SmoothPlastic)
+	k:part('HatchFlap', V(2.4, 0.25, 6.8), CFrame.new(3.9, 7.0, 1.6) * CFrame.Angles(0, 0, math.rad(18)), awn, M.SmoothPlastic)
+	decor(k:box('RearDoorSeam', V(-0.09, 1.9, 6.5), V(0.09, 8.3, 6.62), C(150, 150, 152), M.SmoothPlastic))
+	for _, x in { -2.3, 1.7 } do decor(k:box('TailLight', V(x, 2.0, 6.4), V(x + 0.6, 2.8, 6.6), C(200, 70, 64), M.SmoothPlastic)) end
+	local up = CFrame.Angles(0, 0, math.pi / 2) -- (cylinders lie along X; this stands them up)
+	if dish == 'burger' then
+		for _, l in { { 8.6, 0.9, 2.0, C(222, 160, 84) }, { 9.5, 0.6, 2.25, C(120, 72, 52) }, { 10.1, 0.25, 2.35, C(110, 176, 76) }, { 10.35, 1.0, 2.05, C(222, 160, 84) }, { 11.35, 0.5, 1.4, C(230, 172, 96) } } do
+			k:part('Burger', V(l[2], l[3] * 2, l[3] * 2), CFrame.new(0, l[1] + l[2] / 2, 1.6) * up, l[4], M.SmoothPlastic, Enum.PartType.Cylinder)
+		end
+	else
+		k:part('Cup', V(3.4, 2.8, 2.8), CFrame.new(0, 10.3, 1.6) * up, P.white, M.SmoothPlastic, Enum.PartType.Cylinder)
+		k:part('CupBand', V(1.1, 2.9, 2.9), CFrame.new(0, 10.4, 1.6) * up, color, M.SmoothPlastic, Enum.PartType.Cylinder)
+		k:part('CupLid', V(0.35, 3.1, 3.1), CFrame.new(0, 12.15, 1.6) * up, P.cream, M.SmoothPlastic, Enum.PartType.Cylinder)
+		k:bar('Straw', V(0.3, 12.2, 1.4), V(0.9, 14.4, 1.0), 0.3, C(214, 84, 74), M.SmoothPlastic)
+	end
+	return k
+end
+-- A picnic table: a plank top, a bench each side, a solid leg frame at each end.
+function Street.picnicTable(c, cf)
+	local k = c:at(cf):group('PicnicTable')
+	k:box('TableTop', V(-2.8, 2.5, -1.2), V(2.8, 2.8, 1.2), P.wood, M.WoodPlanks)
+	for _, z in { -2.1, 2.1 } do k:box('TableSeat', V(-2.8, 1.4, z - 0.5), V(2.8, 1.65, z + 0.5), P.wood, M.WoodPlanks) end
+	for _, x in { -2.0, 2.0 } do k:box('TableFrame', V(x - 0.2, 0, -2.6), V(x + 0.2, 2.5, 2.6), P.woodDark, M.Wood) end
+	return k
+end
+-- A rail viaduct across the map at a district edge, just on the near side of the gate line z0: steel plate girders on
+-- brick piers that stand in the gap between the building lots (|x| 38..43, out of the street), abutments over the lots'
+-- backs. Its underside is at 13.6, clear of the gate (6.7) and of the bus stops.
+function Street.viaduct(c, z0)
+	local v = c:group('Viaduct')
+	local steel, deep, brick = C(78, 96, 116), C(56, 66, 80), C(150, 86, 72)
+	local zf, zb = z0 + 0.6, z0 + 7.2
+	v:box('ViaductDeck', V(-62, 14.2, zf), V(62, 15.4, zb), deep, M.Metal)
+	for _, zz in { zf, zb - 0.6 } do v:box('ViaductGirder', V(-62, 13.6, zz), V(62, 18.2, zz + 0.6), steel, M.Metal) end
+	for _, x in { -27.5, -15.5, -5, 7, 18.5, 29 } do decor(v:box('GirderRib', V(x - 0.3, 13.6, zb), V(x + 0.3, 18.2, zb + 0.25), deep, M.Metal)) end
+	for _, x in { -1.2, 1.2 } do decor(v:box('Rail', V(-62, 15.4, (zf + zb) / 2 + x - 0.15), V(62, 15.75, (zf + zb) / 2 + x + 0.15), P.iron, M.Metal)) end
+	for _, s in { -1, 1 } do
+		v:box('ViaductPier', V(s * 38, -1, zf + 0.8), V(s * 43, 13.6, zb - 0.8), brick, M.Brick)
+		v:box('PierCap', V(s * 37.6, 12.9, zf + 0.4), V(s * 43.4, 13.6, zb - 0.4), P.stone, M.Concrete)
+		v:box('Abutment', V(s * 56, -1, zf), V(s * 62.5, 14.2, zb), brick, M.Brick)
+	end
+	return v
+end
+-- Skate park pieces in light and mid concrete. A quarter pipe facing local +Z: a two-wedge curve (shallow at the foot,
+-- steep at the lip), a deck behind with a metal coping on the lip and a rail along the deck's back. w wide, h high.
+Street.RAMP, Street.RAMPSIDE, Street.COPING = C(80, 128, 204), C(72, 82, 102), C(200, 204, 212) -- (painted ramps on a darker frame)
+function Street.quarterPipe(c, cf, w, h)
+	local k = c:at(cf):group('QuarterPipe')
+	local ramp, side = Street.RAMP, Street.RAMPSIDE
+	local h1, l1, l2 = h * 0.4, h * 1.15, h * 0.42
+	-- (a wedge rises toward its +Z; turned round, these rise toward the back)
+	k:wedge('RampFoot', V(w, h1, l1), CFrame.new(0, h1 / 2, -l1 / 2) * CFrame.Angles(0, math.pi, 0), ramp, M.Concrete)
+	k:box('RampBody', V(-w / 2, 0, -l1 - l2), V(w / 2, h1, -l1), side, M.Concrete)
+	k:wedge('RampLip', V(w, h - h1, l2), CFrame.new(0, h1 + (h - h1) / 2, -l1 - l2 / 2) * CFrame.Angles(0, math.pi, 0), ramp, M.Concrete)
+	k:box('RampDeck', V(-w / 2, 0, -l1 - l2 - 2.6), V(w / 2, h, -l1 - l2), side, M.Concrete)
+	k:rod('Coping', 0.26, w, CFrame.new(0, h, -l1 - l2), Street.COPING, M.Metal)
+	local back = -l1 - l2 - 2.6
+	k:box('DeckRail', V(-w / 2, h + 2.6, back), V(w / 2, h + 2.9, back + 0.3), P.iron, M.Metal)
+	for _, x in { -w / 2, w / 2 - 0.3 } do k:box('DeckRailPost', V(x, h, back), V(x + 0.3, h + 2.6, back + 0.3), P.iron, M.Metal) end
+	return k
+end
+-- A fun box: a low concrete box with a ramp at each end (along local Z) and a grind rail along one edge.
+function Street.funBox(c, cf)
+	local k = c:at(cf):group('FunBox')
+	local ramp, side = Street.RAMP, Street.RAMPSIDE
+	k:box('FunBoxTop', V(-3, 0, -3.5), V(3, 1.8, 3.5), side, M.Concrete)
+	k:wedge('FunBoxRamp', V(6, 1.8, 4.5), CFrame.new(0, 0.9, 5.75) * CFrame.Angles(0, math.pi, 0), ramp, M.Concrete)
+	k:wedge('FunBoxRamp', V(6, 1.8, 4.5), CFrame.new(0, 0.9, -5.75), ramp, M.Concrete)
+	k:rod('GrindRail', 0.2, 7.4, CFrame.new(2.4, 2.35, 0) * CFrame.Angles(0, math.pi / 2, 0), Street.COPING, M.Metal)
+	for _, z in { -3.2, 3.2 } do k:box('RailLeg', V(2.3, 1.8, z - 0.1), V(2.5, 2.35, z + 0.1), P.iron, M.Metal) end
+	return k
+end
+-- A five-a-side goal: white posts and bar, a see-through net box behind (local +Z); the mouth faces local -Z.
+function Street.goal(c, cf)
+	local gl = c:at(cf):group('Goal')
+	for _, x in { -4, 4 } do gl:box('GoalPost', V(x - 0.25, 0, -0.25), V(x + 0.25, 5, 0.25), P.white, M.SmoothPlastic) end
+	gl:box('GoalBar', V(-4.25, 5, -0.25), V(4.25, 5.5, 0.25), P.white, M.SmoothPlastic)
+	local net = gl:box('GoalNet', V(-4, 0.2, 0.3), V(4, 4.9, 3), C(220, 224, 230), M.Fabric)
+	net.Transparency = 0.5
+	return gl
+end
+-- A drinking fountain: a stone pillar, a steel bowl, a spout.
+function Street.fountain(c, pos)
+	local k = c:group('DrinkFountain')
+	k:post('FountainPost', 0.5, 3.0, pos, P.stone, M.Concrete)
+	k:post('FountainBowl', 0.95, 0.5, pos + V(0, 3.0, 0), C(176, 180, 188), M.Metal)
+	k:box('FountainSpout', pos + V(-0.12, 3.5, -0.12), pos + V(0.12, 3.9, 0.12), P.iron, M.Metal)
+	return k
+end
+-- A kick scooter standing along local Z (its stem at -Z).
+function Street.kickScooter(c, cf, color)
+	local k = c:at(cf):group('KickScooter')
+	k:box('ScooterDeck', V(-0.4, 0.35, -1.5), V(0.4, 0.55, 1.4), color, M.SmoothPlastic)
+	for _, z in { -1.55, 1.45 } do k:part('ScooterWheel', V(0.3, 0.7, 0.7), CFrame.new(0, 0.35, z), P.black, M.SmoothPlastic, Enum.PartType.Cylinder) end
+	k:bar('ScooterStem', V(0, 0.55, -1.5), V(0, 3.6, -1.75), 0.2, P.iron, M.Metal)
+	k:box('ScooterBar', V(-0.9, 3.5, -1.85), V(0.9, 3.75, -1.65), P.iron, M.Metal)
+	return k
+end
+-- A traffic cone: a square foot and a tapering body (two steps), orange with a white band.
+function Street.cone(c, pos)
+	local orange = C(232, 120, 64)
+	c:box('ConeFoot', pos + V(-0.55, 0, -0.55), pos + V(0.55, 0.15, 0.55), orange, M.SmoothPlastic)
+	c:post('Cone', 0.36, 0.7, pos + V(0, 0.15, 0), orange, M.SmoothPlastic)
+	c:post('ConeTop', 0.22, 0.65, pos + V(0, 0.85, 0), P.white, M.SmoothPlastic)
+end
+
+-- Shop Street (stage 4): a wide pedestrian strip, no road, low painted shopfronts at different setbacks under deep
+-- striped awnings (the barber on the corner, the fishmonger, the café three storeys by the next gate; the sneaker shop, the
+-- grocery set back, the delivery bay, the one-storey ice-cream parlour). The centre is the market: three stalls on
+-- darker setts in the middle of the strip, one facing the gate you come in by, one facing each walk, crates between
+-- them; the walk splits round it. Café tables in the café's forecourt, the van at the loading door.
 function Street.shops(ctx, i)
 	local d, top = Street.core(ctx, i)
 	local function Z(z) return top + z end
-	d:box('Paving', V(-42, -1, Z(-SLEN)), V(40, 0, Z(0)), C(212, 198, 178), M.SmoothPlastic)
+	d:box('Paving', V(-42, -1, Z(-SLEN)), V(40, 0, Z(0)), Street.PAVE, M.SmoothPlastic)
 	d:box('Frontage', V(-42, -1, Z(-63.5)), V(-29, 0.03, Z(-42.5)), C(192, 176, 156), M.SmoothPlastic) -- (the café's forecourt)
-	d:box('PadSquare', V(-11, -1, Z(-43)), V(11, 0.02, Z(-21)), C(198, 184, 164), M.SmoothPlastic)
-	-- West: the barber on the corner, the bakery, the café set back (three storeys) by the next gate.
-	barberShop(Street.lot(d, -1, 36, Z(0), 20), 20, { stripe = 3, fascia = true, noUnit = true })
-	shopBuilding(Street.lot(d, -1, 38, Z(-20), 22), 22, { sign = 'BAKERY', signColor = C(150, 104, 70), stripes = { C(210, 140, 78), P.white }, wall = P.tan, stripe = 3.2, fascia = true })
-	shopBuilding(Street.lot(d, -1, 42, Z(-42), 22), 22, { sign = 'CAFE', signColor = C(150, 98, 66), stripes = { C(198, 126, 76), P.cream }, wall = P.brick, floors = 3, depth = 24, stripe = 3.2, awningDepth = 6, fascia = true, noUnit = true })
-	-- East: the sneaker shop (narrow, three storeys), the grocery set back, the delivery bay, the ice-cream shop.
-	shopBuilding(Street.lot(d, 1, 36, Z(0), 16), 16, { sign = 'SNEAKERS', signColor = C(44, 48, 58), stripes = { C(58, 62, 72), P.white }, wall = P.brickDark, floors = 3, bays = 2, stripe = 3.2, fascia = true, noUnit = true })
+	d:box('MarketSetts', V(-16.5, -1, Z(-44)), V(5.5, 0.02, Z(-20)), Street.SETTS, M.SmoothPlastic)
+	-- West: the barber on the corner, the fishmonger, the café set back (three storeys) by the next gate.
+	Street.shopfront(Street.lot(d, -1, 36, Z(0), 20), 20, { name = 'Barber', sign = 'BARBER', signColor = P.barberBlue, stripes = { C(208, 74, 66), P.white, C(208, 74, 66), P.white, P.barberBlue }, wall = C(232, 190, 176), stripe = 3, pole = true })
+	Street.shopfront(Street.lot(d, -1, 38, Z(-20), 22), 22, { sign = 'FISH', signColor = C(52, 96, 150), stripes = { C(72, 128, 190), P.white }, wall = C(236, 204, 150), stripe = 3.2, step = true, doorLeft = true })
+	Street.shopfront(Street.lot(d, -1, 42, Z(-42), 22), 22, { sign = 'CAFE', signColor = C(150, 98, 66), stripes = { C(198, 126, 76), P.cream }, wall = C(232, 214, 186), floors = 3, depth = 24, stripe = 3.2, awningDepth = 6 })
+	-- East: the sneaker shop (narrow, three storeys), the grocery set back, the delivery bay, the ice-cream parlour.
+	Street.shopfront(Street.lot(d, 1, 36, Z(0), 16), 16, { sign = 'SNEAKERS', signColor = C(44, 48, 58), stripes = { C(58, 62, 72), P.white }, wall = C(184, 204, 190), floors = 3, bays = 2, stripe = 3.2, doorLeft = true })
 	grocery(Street.lot(d, 1, 40, Z(-16), 20), 20, { depth = 26, stripe = 3.2, fascia = true, noCrates = true })
-	shopBuilding(Street.lot(d, 1, 36, Z(-50), 14), 14, { sign = 'ICE CREAM', signColor = C(206, 116, 150), stripes = { C(226, 140, 176), P.white }, wall = C(240, 226, 206), bays = 2, stripe = 3, fascia = true, noUnit = true })
+	Street.shopfront(Street.lot(d, 1, 36, Z(-50), 14), 14, { sign = 'ICE CREAM', signColor = C(206, 116, 150), stripes = { C(226, 140, 176), P.white }, wall = C(244, 206, 214), floors = 1, step = true, stripe = 3 })
 	-- The delivery bay (z -36 to -50): the van backed up to the loading door, a pallet of crates beside it, a hand
 	-- truck at the dock.
 	d:box('BayFloor', V(36, -1, Z(-50)), V(52, 0.04, Z(-36)), C(168, 170, 176), M.Concrete)
@@ -3918,13 +4734,16 @@ function Street.shops(ctx, i)
 	crate(d, CFrame.new(43.6, 0.84, Z(-38.4)), 2.4)
 	crate(d, CFrame.new(45.9, 0.84, Z(-38.2)) * CFrame.Angles(0, 0.25, 0), 2)
 	Street.handTruck(d, CFrame.new(48.9, 0.04, Z(-48.6)) * CFrame.Angles(0, -math.pi / 2, 0))
-	-- The market island on the axis past the fight pad: two stalls of different sizes, their stock in a crate, and a
-	-- tree, on a kerbed island the walk splits round.
-	d:box('IslandKerb', V(-13, -1, Z(-53)), V(7, 0.6, Z(-44.5)), P.stone, M.Concrete)
-	Street.stall(d, CFrame.new(-7.9, 0.6, Z(-48.6)), 7.6, 4.2, { C(204, 84, 72), P.cream, C(204, 84, 72), P.cream, C(204, 84, 72) }, { C(214, 76, 64), C(236, 150, 66), C(124, 186, 78), C(214, 76, 64) })
-	Street.stall(d, CFrame.new(-1.2, 0.6, Z(-49.4)), 4.4, 3.4, { C(70, 140, 96), P.cream, C(70, 140, 96) }, { C(236, 204, 90), C(124, 186, 78) })
-	crate(d, CFrame.new(-12.0, 0.6, Z(-51.4)) * CFrame.Angles(0, 0.3, 0), 1.8)
-	tree(d, V(4.2, 0.6, Z(-48.8)), 47, 0.8)
+	-- The market: the big stall faces the gate you arrive by, the other two face the walks either side, their stock in
+	-- crates between them and a bin at the far corner.
+	local red, green, orange = C(204, 84, 72), C(70, 140, 96), C(222, 150, 70)
+	Street.stall(d, CFrame.new(-6.6, 0.02, Z(-24.8)), 8, 4.4, { red, P.cream, red, P.cream, red }, { C(214, 76, 64), C(236, 150, 66), C(124, 186, 78), C(214, 76, 64) })
+	Street.stall(d, CFrame.new(-12.6, 0.02, Z(-36.4)) * CFrame.Angles(0, -math.pi / 2, 0), 6.4, 4, { green, P.cream, green }, { C(236, 204, 90), C(124, 186, 78) })
+	Street.stall(d, CFrame.new(1.6, 0.02, Z(-37.6)) * CFrame.Angles(0, math.pi / 2, 0), 5.2, 3.6, { orange, P.cream, orange }, { C(236, 150, 66), C(214, 76, 64), C(236, 204, 90) })
+	crate(d, CFrame.new(-6.4, 0.02, Z(-35.8)) * CFrame.Angles(0, 0.2, 0), 2.4)
+	crate(d, CFrame.new(-6.2, 2.42, Z(-35.7)) * CFrame.Angles(0, 0.55, 0), 1.9)
+	crate(d, CFrame.new(-3.4, 0.02, Z(-39.4)) * CFrame.Angles(0, -0.25, 0), 2.1)
+	trashCan(d, V(-10.4, 0.02, Z(-42.6)))
 	-- Café tables (two under the awning, one out in the sun with a parasol), the bike rack by the grocery door, two
 	-- lamps.
 	local stool = C(196, 126, 76)
@@ -3937,20 +4756,111 @@ function Street.shops(ctx, i)
 	Street.seal(d, top)
 end
 
--- The Courts (stage 7): buildings on the east side only; the west side opens into a park. A fenced basketball court
--- runs along the street, its gate facing the fight pad across a short footpath, a floodlight mast at two corners,
--- bleachers on the far side, a bench and a bin beside the court gate, trees and a tall hedge at the back.
+-- The arcade (stage 5): the west shops stand behind a colonnade, their upper floors carried over the walk on square
+-- cream columns, so that side is a shaded arcade; the east shops are open fronts at three setbacks. The centre is a
+-- small square of pale stone a little east of the axis: the street clock, the newspaper kiosk on the axis and one tree.
+-- Groups: the kiosk by the clock, bread crates by the bakery's side door, scooters at a rack by the phone shop, a
+-- flower stand at the corner florist.
+function Street.arcade(ctx, i)
+	local d, top = Street.core(ctx, i)
+	local function Z(z) return top + z end
+	d:box('Paving', V(-38, -1, Z(-SLEN)), V(38, 0, Z(0)), Street.PAVE, M.SmoothPlastic)
+	d:box('ArcadeFloor', V(-38, -1, Z(-53)), V(-30.6, 0.03, Z(-2)), Street.SETTS, M.SmoothPlastic)
+	-- West: the colonnade, three fronts over one row of columns (the columns at an even pitch: it's one building line).
+	local W = { { -2, 16, 'BOOKS', C(58, 118, 92), C(234, 214, 160), 2, false }, { -18, 17, 'GIFTS', C(140, 84, 150), C(222, 182, 150), 3, true }, { -35, 18, 'TOYS', C(196, 92, 84), C(236, 222, 196), 2, false } }
+	for _, s in W do
+		Street.shopfront(Street.lot(d, -1, 31, Z(s[1]), s[2]), s[2], { sign = s[3], signColor = s[4], wall = s[5], floors = s[6], step = s[7], arcade = 7, bays = 2 })
+	end
+	for _, z in { -3, -10.5, -18, -25.5, -33, -40.5, -48, -52.6 } do
+		d:box('Column', V(-32.6, 0, Z(z) - 0.75), V(-31.1, 11, Z(z) + 0.75), P.cream, M.SmoothPlastic)
+		d:box('ColumnBase', V(-32.85, 0, Z(z) - 1.0), V(-30.85, 0.7, Z(z) + 1.0), P.stone, M.Concrete)
+	end
+	-- The corner florist past the colonnade (by the next gate's bus stop), its flower stand out front.
+	Street.shopfront(Street.lot(d, -1, 36, Z(-53), 11), 11, { sign = 'FLOWERS', signColor = C(92, 146, 92), stripes = { C(112, 170, 108), P.cream }, wall = C(214, 226, 200), floors = 2, bays = 1, step = true, stripe = 3, doorLeft = true })
+	d:box('FlowerStand', V(-35.6, 0, Z(-61.4)), V(-33.2, 1.6, Z(-56.6)), P.wood, M.WoodPlanks)
+	for k, col in { C(222, 96, 128), C(240, 200, 84), C(186, 112, 196) } do
+		decor(d:box('Flowers', V(-35.4, 1.6, Z(-56.6) - k * 1.55 + 0.1), V(-33.4, 2.5, Z(-56.6) - (k - 1) * 1.55 - 0.1), col, M.SmoothPlastic))
+	end
+	-- East: the phone shop, the bakery standing forward (its side door and the bread crates face you), the toy shop.
+	Street.shopfront(Street.lot(d, 1, 38, Z(0), 18), 18, { sign = 'PHONES', signColor = C(62, 112, 196), stripes = { C(66, 120, 206), P.white }, wall = C(206, 216, 228), floors = 2, stripe = 3, doorLeft = true })
+	Street.shopfront(Street.lot(d, 1, 32, Z(-18), 18), 18, { sign = 'BAKERY', signColor = C(150, 104, 70), stripes = { C(210, 140, 78), P.white }, wall = C(236, 204, 150), floors = 2, step = true, stripe = 3.2 })
+	Street.shopfront(Street.lot(d, 1, 38, Z(-36), 28), 28, { sign = 'PIZZA', signColor = C(198, 70, 60), stripes = { C(208, 78, 66), P.white }, wall = C(236, 200, 176), floors = 3, bays = 3, stripe = 3.4 })
+	-- The bakery's side door (in its north wall, facing the way you come) and its bread crates.
+	d:box('SideDoorFrame', V(34.2, 0, Z(-18.25)), V(37.8, 8.2, Z(-17.9)), P.frame, M.SmoothPlastic)
+	d:box('SideDoor', V(34.7, 0, Z(-18.1)), V(37.3, 7.6, Z(-17.7)), C(150, 104, 70), M.SmoothPlastic)
+	for k, p in { V(32.9, 0, -16.8), V(32.95, 1.0, -16.85), V(32.7, 0, -14.9) } do
+		d:box('BreadCrate', V(p.X - 0.9, p.Y, Z(p.Z) - 0.7), V(p.X + 0.9, p.Y + 1.0, Z(p.Z) + 0.7), k == 3 and C(196, 92, 78) or C(70, 120, 186), M.SmoothPlastic)
+		decor(d:box('Bread', V(p.X - 0.7, p.Y + 1.0, Z(p.Z) - 0.5), V(p.X + 0.7, p.Y + 1.3, Z(p.Z) + 0.5), C(216, 156, 88), M.SmoothPlastic))
+	end
+	-- Scooters at a low rack by the phone shop.
+	d:box('ScooterRack', V(33.6, 0.9, Z(-12.6)), V(33.9, 1.2, Z(-6.4)), P.iron, M.Metal)
+	for _, z in { -12.8, -6.2 } do d:box('ScooterRackLeg', V(33.6, 0, Z(z) - 0.15), V(33.9, 0.9, Z(z) + 0.15), P.iron, M.Metal) end
+	Street.kickScooter(d, CFrame.new(32.6, 0, Z(-8.2)) * CFrame.Angles(0, math.pi / 2, 0), C(96, 196, 150))
+	Street.kickScooter(d, CFrame.new(32.7, 0, Z(-10.9)) * CFrame.Angles(0, math.pi / 2 + 0.12, 0), C(96, 196, 150))
+	-- The clock square: an octagon of pale stone, one step up; the kiosk on the axis facing the way you come, the clock
+	-- beside it, a tree behind, a bench facing the kiosk, a bin.
+	Craft.octagon(d:at(CFrame.new(5, 0, Z(-38))), 'ClockSquare', 17, -1, 0.25, C(228, 218, 200))
+	Street.kiosk(d, CFrame.new(0.6, 0.25, Z(-34.6)), C(58, 112, 84))
+	Street.streetClock(d, V(8.6, 0.25, Z(-36.4)))
+	tree(d, V(3.4, 0.25, Z(-42.6)), 55, 0.95)
+	bench(d, V(11.8, 0.25, Z(-31.8)), V(-1, 0, -0.35))
+	trashCan(d, V(-3.4, 0.25, Z(-36.4)))
+	lantern(d, V(-29.8, 0, Z(-56.5)))
+	lantern(d, V(12.4, 0.25, Z(-43.6)))
+	Street.seal(d, top)
+end
+
+-- Food trucks (stage 6): the last of Shop Street. Two food trucks park at an angle in the middle of the strip on a patch
+-- of setts, hatches to opposite sides, picnic tables in front of each with a bin; gas bottles and crates behind them.
+-- West: noodles, the games arcade (three storeys), the deli; east: a small mall with a glazed atrium and a canopy. Past
+-- the trucks the strip narrows between two corner shops, and a rail viaduct crosses right over gate 7: the edge of
+-- Shop Street and the way into the Courts.
+function Street.trucks(ctx, i)
+	local d, top = Street.core(ctx, i)
+	local function Z(z) return top + z end
+	d:box('Paving', V(-38, -1, Z(-SLEN)), V(38, 0, Z(0)), Street.PAVE, M.SmoothPlastic)
+	d:box('TruckSetts', V(-15, -1, Z(-51)), V(17, 0.02, Z(-13)), Street.SETTS, M.SmoothPlastic)
+	-- West.
+	Street.shopfront(Street.lot(d, -1, 38, Z(0), 18), 18, { sign = 'NOODLES', signColor = C(204, 104, 56), stripes = { C(222, 128, 70), P.cream }, wall = C(238, 206, 170), floors = 2, step = true, stripe = 3 })
+	Street.shopfront(Street.lot(d, -1, 33, Z(-18), 20), 20, { sign = 'ARCADE', signColor = C(118, 76, 188), textColor = C(255, 232, 170), stripes = { C(130, 86, 200), C(240, 228, 196) }, wall = C(214, 206, 226), floors = 3, bays = 2, stripe = 3.2, doorLeft = true })
+	Street.shopfront(Street.lot(d, -1, 26, Z(-38), 16), 16, { sign = 'DELI', signColor = C(52, 110, 80), stripes = { C(64, 132, 92), P.cream }, wall = C(220, 230, 204), floors = 1, step = true, stripe = 3.2 })
+	-- East: the mall, then the corner shop that narrows the strip.
+	Street.mall(Street.lot(d, 1, 36, Z(-2), 36), 36, { atrium = 20 })
+	Street.shopfront(Street.lot(d, 1, 22, Z(-38), 14), 14, { sign = 'MUSIC', signColor = C(50, 116, 128), stripes = { C(60, 130, 144), P.white }, wall = C(204, 222, 222), floors = 2, bays = 2, stripe = 3.2, doorLeft = true })
+	-- The food court.
+	Street.foodTruck(d, CFrame.new(1.4, 0.02, Z(-24)) * CFrame.Angles(0, -0.45, 0), C(196, 82, 70), C(236, 196, 92), 'burger')
+	Street.foodTruck(d, CFrame.new(-2.2, 0.02, Z(-42.6)) * CFrame.Angles(0, math.pi + 0.4, 0), C(70, 132, 176), C(240, 238, 232), 'drink')
+	Street.picnicTable(d, CFrame.new(11.2, 0.02, Z(-19.5)) * CFrame.Angles(0, 0.12, 0))
+	Street.picnicTable(d, CFrame.new(12.6, 0.02, Z(-30.2)) * CFrame.Angles(0, -0.18, 0))
+	trashCan(d, V(16.8, 0.02, Z(-25.4)))
+	Street.picnicTable(d, CFrame.new(-11.6, 0.02, Z(-38.6)) * CFrame.Angles(0, 0.2, 0))
+	Street.picnicTable(d, CFrame.new(-13, 0.02, Z(-47.2)) * CFrame.Angles(0, -0.1, 0))
+	trashCan(d, V(-15.6, 0.02, Z(-43.6)))
+	for _, p in { V(-4.4, 0.02, -21.6), V(-5.5, 0.02, -23.0) } do d:post('GasBottle', 0.6, 2.6, V(p.X, p.Y, Z(p.Z)), C(196, 92, 78), M.SmoothPlastic) end
+	crate(d, CFrame.new(4.6, 0.02, Z(-44.2)) * CFrame.Angles(0, 0.3, 0), 2.4)
+	crate(d, CFrame.new(4.9, 0.02, Z(-47.1)) * CFrame.Angles(0, -0.1, 0), 2)
+	lantern(d, V(-24.6, 0, Z(-31.5)))
+	lantern(d, V(18.6, 0, Z(-46.5)))
+	-- The viaduct over gate 7.
+	Street.viaduct(d, Z(-SLEN))
+	Street.seal(d, top)
+end
+
+-- The Courts (stage 7): buildings on the east side only, the west opens into a park, and the park comes to the street
+-- (critic 2). The lawn reaches x -6, three street trees stand on its edge, a paved apron runs from the court's gate to
+-- the axis with a drinking fountain and the big shade tree with a seat round it (the meeting point, and what closes the
+-- view down the street). The court's street-side fence is low, so the court and both hoops read from the street. The
+-- middle house stands forward; all three have a raised pavement.
 function Street.courts(ctx, i)
 	local d, top = Street.core(ctx, i)
 	local function Z(z) return top + z end
-	-- The promenade (the old paving's colour) and the cross streets at both gates; the lawn.
-	d:box('Promenade', V(-10, -1, Z(-SLEN)), V(FRONT, 0, Z(0)), P.tileA, M.SmoothPlastic)
-	d:box('Promenade', V(-FRONT, -1, Z(-4.5)), V(-10, 0, Z(0)), P.tileA, M.SmoothPlastic)
-	d:box('Promenade', V(-FRONT, -1, Z(-SLEN)), V(-10, 0, Z(-59.5)), P.tileA, M.SmoothPlastic)
-	d:box('Lawn', V(-FRONT, -1, Z(-59.5)), V(-10, 0.12, Z(-4.5)), P.grass, M.Grass)
+	d:box('Promenade', V(-3, -1, Z(-SLEN)), V(FRONT, 0, Z(0)), P.tileA, M.SmoothPlastic)
+	d:box('Promenade', V(-FRONT, -1, Z(-4.5)), V(-3, 0, Z(0)), P.tileA, M.SmoothPlastic)
+	d:box('Promenade', V(-FRONT, -1, Z(-SLEN)), V(-3, 0, Z(-59.5)), P.tileA, M.SmoothPlastic)
+	d:box('Lawn', V(-FRONT, -1, Z(-59.5)), V(-3, 0.12, Z(-4.5)), P.grass, M.Grass)
 	d:box('Lawn', V(-64, -1, Z(-SLEN)), V(-FRONT, 0.12, Z(0)), P.grass, M.Grass)
-	d:box('LawnEdge', V(-10.5, -1, Z(-59.5)), V(-9.9, 0.25, Z(-4.5)), P.kerb, M.Concrete)
-	d:box('Footpath', V(-14, -1, Z(-35)), V(-10.5, 0.16, Z(-29)), P.tileB, M.SmoothPlastic)
+	for _, e in { { -4.5, -26.5 }, { -45.5, -59.5 } } do d:box('LawnEdge', V(-3.5, -1, Z(e[2])), V(-2.9, 0.25, Z(e[1])), P.kerb, M.Concrete) end
+	d:box('Apron', V(-14, -1, Z(-45.5)), V(6, 0.18, Z(-26.5)), P.tileB, M.SmoothPlastic)
 	-- The court, along the street: keys at both ends, a centre circle and line, the edge lines; hoops at both ends.
 	local cx, cz = -28, Z(-34)
 	d:box('Court', V(-40, -1, Z(-53)), V(-16, 0.2, Z(-15)), P.court, M.SmoothPlastic)
@@ -3962,31 +4872,808 @@ function Street.courts(ctx, i)
 	end
 	Street.hoop(d, CFrame.lookAt(V(cx, 0, Z(-13.6)), V(cx, 0, Z(-80))), P.courtKey)
 	Street.hoop(d, CFrame.lookAt(V(cx, 0, Z(-54.4)), V(cx, 0, Z(20))), P.courtKey)
-	-- The cage round it, green-coated and see-through enough to show the court; its gate on the street side opposite
-	-- the fight pad.
+	-- The cage round it, green-coated and see-through; the run along the street is low (4) so the court shows, its gate
+	-- opposite the apron.
 	local x0, x1, z0, z1, cage = -42, -14, Z(-56), Z(-12), C(58, 104, 80)
 	chainLink(d, V(x0, 0.12, z1), V(x1, 0.12, z1), 8, nil, 0.7, cage)
 	chainLink(d, V(x0, 0.12, z0), V(x1, 0.12, z0), 8, nil, 0.7, cage)
 	chainLink(d, V(x0, 0.12, z0), V(x0, 0.12, z1), 8, nil, 0.7, cage)
-	chainLink(d, V(x1, 0.12, z1), V(x1, 0.12, z0), 8, { { 17, 23 } }, 0.7, cage)
+	chainLink(d, V(x1, 0.12, z1), V(x1, 0.12, z0), 4, { { 17, 23 } }, 0.7, cage)
 	Street.floodlight(d, V(-44.5, 0.12, Z(-10.5)), V(cx, 0, cz))
 	Street.floodlight(d, V(-12.2, 0.12, Z(-58)), V(cx, 0, cz))
-	-- Bleachers outside the far sideline, facing the court and the street; the bench and bin by the court gate.
+	-- Bleachers outside the far sideline; the bench and bin by the court gate; the fountain and the shade tree on the
+	-- apron; street trees on the lawn edge at uneven spacing; trees and a tall hedge at the back.
 	Street.bleachers(d, CFrame.new(-44.6, 0.12, cz) * CFrame.Angles(0, math.pi / 2, 0), 22)
-	bench(d, V(-12.2, 0.12, Z(-39.2)), V(1, 0, 0))
-	trashCan(d, V(-12.2, 0.12, Z(-43.6)))
+	bench(d, V(-12.2, 0.18, Z(-39.2)), V(1, 0, 0))
+	trashCan(d, V(-12.2, 0.18, Z(-43.6)))
+	Street.fountain(d, V(-4.6, 0.18, Z(-29.6)))
+	Street.shadeTree(d, V(1.2, 0.18, Z(-38.4)), 77)
+	for k, z in { -21.4, -51.2 } do tree(d, V(-8.6, 0.12, Z(z)), 73 + k, 0.82 + k * 0.04) end
 	tree(d, V(-55, 0.12, Z(-11)), 71, 1.0)
-	tree(d, V(-56.5, 0.12, Z(-50)), 72, 0.9)
-	tree(d, V(-24, 0.12, Z(-59)), 73, 1.05)
+	tree(d, V(-49, 0.12, Z(-60)), 79, 1.0)
 	hedgeZ(d, -62.8, Z(-62), Z(-2), 5)
-	-- East: three buildings, the middle one standing forward.
+	-- East: three houses, the middle one standing forward (the street narrows to 28 there), a raised pavement in front.
 	tanBuilding(Street.lot(d, 1, 36, Z(0), 20), 20, { floors = 3, balconies = false, noUnit = true })
-	brickBuilding(Street.lot(d, 1, 31, Z(-20), 24), 24, { floors = 4, wall = P.brickDark, bays = 3 })
+	brickBuilding(Street.lot(d, 1, 22, Z(-20), 24), 24, { floors = 3, wall = P.brickDark, bays = 3, noUnit = true })
 	brickBuilding(Street.lot(d, 1, 36, Z(-44), 20), 20, { floors = 2, wall = P.brick, bays = 3, noUnit = true })
-	lantern(d, V(-8.8, 0, Z(-46)))
-	lantern(d, V(28.6, 0, Z(-42.5)))
+	Street.pavement(d, 1, { { 36, Z(-20), Z(-8) }, { 22, Z(-44), Z(-20) }, { 36, Z(-54), Z(-44) } })
+	lantern(d, V(-12.6, 0.18, Z(-27.6)))
+	lantern(d, V(19.6, 0.3, Z(-40.5)))
 	Street.seal(d, top)
 end
+
+-- Skate park (stage 8): the open side swaps to the east. Houses on the west behind a raised pavement (the near corner
+-- left as a pocket of grass with a tree); the east is a concrete skate plaza that starts at the axis: a fun box with a
+-- grind rail, a kicker, a long quarter pipe along the back, a light mast, and a big quarter pipe across the far end on
+-- the axis (the landmark: its curve faces you as you come in). Skateboards on the bench at the plaza's edge, a drinking
+-- fountain.
+function Street.skate(ctx, i)
+	local d, top = Street.core(ctx, i)
+	local function Z(z) return top + z end
+	d:box('Promenade', V(-FRONT, -1, Z(-SLEN)), V(FRONT, 0, Z(0)), P.tileA, M.SmoothPlastic)
+	d:box('SkatePlaza', V(2, -1, Z(-56)), V(64, 0.06, Z(-8)), C(182, 186, 194), M.Concrete)
+	d:box('SkatePlaza', V(-7, -1, Z(-56)), V(2, 0.06, Z(-38)), C(182, 186, 194), M.Concrete)
+	d:box('Lawn', V(-64, -1, Z(-8)), V(-36, 0.12, Z(0)), P.grass, M.Grass)
+	-- West: the houses (forward, back, back again), each with its piece of raised pavement.
+	tanBuilding(Street.lot(d, -1, 24, Z(-8), 20), 20, { floors = 3, balconies = false, noUnit = true, wall = P.tan:Lerp(P.tanLight, 0.4), sideAt = 0 })
+	brickBuilding(Street.lot(d, -1, 31, Z(-28), 22), 22, { floors = 2, wall = P.brick, bays = 3, noUnit = true })
+	tanBuilding(Street.lot(d, -1, 36, Z(-50), 14), 14, { floors = 4, balconies = false, noUnit = true, bays = 2 })
+	Street.pavement(d, -1, { { 24, Z(-28), Z(-8) }, { 31, Z(-50), Z(-28) }, { 36, Z(-54), Z(-50) } })
+	tree(d, V(-31, 0.12, Z(-5)), 81, 0.9)
+	-- The skate plaza.
+	Street.quarterPipe(d, CFrame.new(5, 0.06, Z(-39.6)), 22, 7.5)
+	Street.quarterPipe(d, CFrame.new(51, 0.06, Z(-31)) * CFrame.Angles(0, -math.pi / 2, 0), 26, 5)
+	Street.funBox(d, CFrame.new(15.5, 0.06, Z(-23.5)) * CFrame.Angles(0, 0.08, 0))
+	d:box('Ledge', V(25, 0.06, Z(-14.6)), V(38, 1.4, Z(-12.6)), Street.RAMPSIDE, M.Concrete)
+	d:box('LedgeEdge', V(24.9, 1.4, Z(-14.7)), V(38.1, 1.6, Z(-12.5)), Street.COPING, M.Metal)
+	d:wedge('Kicker', V(5, 1.8, 5.5), CFrame.new(32, 0.96, Z(-34)) * CFrame.Angles(0, math.rad(160), 0), Street.RAMP, M.Concrete)
+	Street.floodlight(d, V(46, 0.06, Z(-54.2)), V(28, 0, Z(-30)))
+	bench(d, V(3.4, 0.06, Z(-34.4)), V(1, 0, 0))
+	for k, col in { C(214, 84, 74), C(72, 128, 206) } do
+		d:part('Skateboard', V(0.8, 0.22, 3.0), CFrame.new(2.8 + k * 0.1, 1.86, Z(-34.4 + (k - 1.5) * 2.4)) * CFrame.Angles(0, 0.1 * k, 0), col, M.SmoothPlastic)
+	end
+	Street.fountain(d, V(3.6, 0.06, Z(-30.5)))
+	tree(d, V(58.5, 0.06, Z(-11.5)), 83, 0.95)
+	tree(d, V(59, 0.06, Z(-50.5)), 84, 0.85)
+	hedgeZ(d, 63.4, Z(-56), Z(-8), 3)
+	lantern(d, V(-21, 0.3, Z(-17.5)))
+	lantern(d, V(-28.4, 0.3, Z(-44)))
+	Street.seal(d, top)
+end
+
+-- Five-a-side (stage 9): the west opens again, onto a five-a-side cage right on the walk: its touchline is the street's
+-- west edge (white kickboards, dark netting high behind the goals and along the back), its gate in the middle with the
+-- team bench and a cooler beside it. Across the far end of the pitch stands the clubhouse (one storey, a pent roof in
+-- the club's colour, a veranda, the kit store's roller shutter), its east end just short of the axis, so the gate's
+-- middle stays in view; kit bags and cones by its door. Houses on the east behind a raised pavement.
+function Street.fives(ctx, i)
+	local d, top = Street.core(ctx, i)
+	local function Z(z) return top + z end
+	d:box('Promenade', V(-6, -1, Z(-SLEN)), V(FRONT, 0, Z(0)), P.tileA, M.SmoothPlastic)
+	d:box('Promenade', V(-FRONT, -1, Z(-8)), V(-6, 0, Z(0)), P.tileA, M.SmoothPlastic)
+	d:box('Promenade', V(-FRONT, -1, Z(-SLEN)), V(-6, 0, Z(-44)), P.tileA, M.SmoothPlastic)
+	d:box('Lawn', V(-64, -1, Z(-SLEN)), V(-32, 0.12, Z(-8)), P.grass, M.Grass)
+	d:box('Lawn', V(-64, -1, Z(-8)), V(-FRONT, 0.12, Z(0)), P.grass, M.Grass)
+	-- The pitch: turf with mown stripes, white lines, kickboards round it (a gate in the street side), goals at the ends.
+	local px0, px1, pz0, pz1, turf = -32, -6, Z(-44), Z(-9), C(92, 168, 104)
+	d:box('Pitch', V(px0, -1, pz0), V(px1, 0.14, pz1), turf, M.SmoothPlastic)
+	for _, z in { -13, -25, -37 } do decor(d:box('PitchStripe', V(px0, 0.14, Z(z) - 3), V(px1, 0.16, Z(z) + 3), C(112, 184, 122), M.SmoothPlastic)) end
+	for _, e in { { V(px0 + 1, 0.14, Z(-26.65)), V(px1 - 1, 0.18, Z(-26.35)) }, { V(px0 + 1, 0.14, pz1 - 1.3), V(px1 - 1, 0.18, pz1 - 1) }, { V(px0 + 1, 0.14, pz0 + 1), V(px1 - 1, 0.18, pz0 + 1.3) },
+		{ V(px0 + 1, 0.14, pz0 + 1), V(px0 + 1.3, 0.18, pz1 - 1) }, { V(px1 - 1.3, 0.14, pz0 + 1), V(px1 - 1, 0.18, pz1 - 1) } } do
+		decor(d:box('PitchLine', e[1], e[2], P.courtLine, M.SmoothPlastic))
+	end
+	local board = C(236, 236, 232)
+	d:box('Kickboard', V(px0, 0, pz1 - 0.4), V(px1, 1.2, pz1), board, M.SmoothPlastic)
+	d:box('Kickboard', V(px0, 0, pz0), V(px1, 1.2, pz0 + 0.4), board, M.SmoothPlastic)
+	d:box('Kickboard', V(px0, 0, pz0), V(px0 + 0.4, 1.2, pz1), board, M.SmoothPlastic)
+	d:box('Kickboard', V(px1 - 0.4, 0, Z(-29.5)), V(px1, 1.2, pz1), board, M.SmoothPlastic)
+	d:box('Kickboard', V(px1 - 0.4, 0, pz0), V(px1, 1.2, Z(-24.5)), board, M.SmoothPlastic)
+	local net = C(54, 66, 96)
+	chainLink(d, V(px0, 1.2, pz1 - 0.2), V(px1, 1.2, pz1 - 0.2), 7, nil, 0.6, net)
+	chainLink(d, V(px0, 1.2, pz0 + 0.2), V(px1, 1.2, pz0 + 0.2), 7, nil, 0.6, net)
+	chainLink(d, V(px0 + 0.2, 1.2, pz0), V(px0 + 0.2, 1.2, pz1), 7, nil, 0.6, net)
+	Street.goal(d, CFrame.new(-19, 0.14, Z(-12.6)))
+	Street.goal(d, CFrame.new(-19, 0.14, Z(-40.4)) * CFrame.Angles(0, math.pi, 0))
+	d:part('Ball', V(1.4, 1.4, 1.4), CFrame.new(-15.5, 0.84, Z(-30.5)), P.white, M.SmoothPlastic, Enum.PartType.Ball)
+	-- The team bench and the cooler by the pitch gate, on the walk side.
+	bench(d, V(-3.9, 0, Z(-20.2)), V(-1, 0, 0))
+	d:box('Cooler', V(-4.9, 0, Z(-33.6)), V(-3.1, 1.5, Z(-31.4)), C(70, 120, 186), M.SmoothPlastic)
+	d:box('CoolerLid', V(-5.0, 1.5, Z(-33.7)), V(-3.0, 1.85, Z(-31.3)), P.white, M.SmoothPlastic)
+	-- The clubhouse across the pitch's end, its front to the pitch and the way you come; kit bags and cones by its door.
+	Street.clubhouse(d:at(CFrame.lookAt(V(-30, 0, Z(-48.2)), V(-30, 0, Z(-49.2)))), 27, { team = C(66, 116, 212) })
+	for k, p in { V(-4.6, 0, -46.9), V(-1.4, 0, -45.3) } do d:blob('KitBag', V(2.6, 1.3, 1.4), V(p.X, 0.65, Z(p.Z)), k == 1 and C(66, 116, 212) or C(40, 46, 58), M.Fabric) end
+	Street.cone(d, V(3.6, 0, Z(-50.8)))
+	Street.cone(d, V(-9.6, 0, Z(-46.4)))
+	tree(d, V(-45.5, 0.12, Z(-17)), 91, 1.0)
+	tree(d, V(-51, 0.12, Z(-38.5)), 92, 0.9)
+	-- East: three houses (a low corner one, a tall one standing forward, a long one), a raised pavement in front.
+	brickBuilding(Street.lot(d, 1, 36, Z(0), 14), 14, { floors = 2, wall = P.brickPink, bays = 2, noUnit = true })
+	tanBuilding(Street.lot(d, 1, 27, Z(-14), 24), 24, { floors = 4, balconies = false, noUnit = true })
+	brickBuilding(Street.lot(d, 1, 36, Z(-38), 26), 26, { floors = 3, wall = P.brickDark, bays = 3, noUnit = true })
+	Street.pavement(d, 1, { { 36, Z(-14), Z(-8) }, { 27, Z(-38), Z(-14) }, { 36, Z(-54), Z(-38) } })
+	lantern(d, V(-3.6, 0, Z(-36.5)))
+	lantern(d, V(23.4, 0.3, Z(-27)))
+	Street.seal(d, top)
+end
+-- ==== S2 END ====
+
+---------------------------------------------------------------------------------------------- the Apartments and the Yards
+-- S3, Brief 10: stages 10-12 (The Apartments) and 13-15 (The Yards) get their own street sections from the rollout plan
+-- (brief/out9_S/S_rollout.md), and the end of stage 15 becomes the walk-in to the boss yard.
+-- The Apartments: tall, thin slab blocks stand back behind lawns, every flat's balcony in a grid of cross walls; a light
+-- estate road runs round something in the middle of each street (a planted median, a parking strip, a garden square).
+-- The Yards: no houses at all. Wide dark asphalt, container stacks, high fences, a crane, loading docks and a railway.
+-- Each stage has its own landmark and its own centre, and the two district edges close the long view: two tall blocks
+-- joined by a sky bridge just past gate 10, and a gantry crane across the yard past gate 13.
+-- In the builders below, Z(z) is relative to the stage's gate line, as above. No new top-level locals: everything
+-- hangs off Street.
+for i = 10, 15 do Street.custom[i] = true end
+
+-- The Apartments' kit. -------------------------------------------------------------------------------------------------
+-- An estate slab block: tall and thin. Its flats show as a grid: a cross wall (fin) between every two flats through all
+-- floors, a balcony in front of each flat on every upper floor (or one gallery right across), and a glass ribbon behind
+-- them. A stair tower stands out of the front with the entrance under a flat canopy and an intercom post by the door.
+-- Facade-local like the buildings (+X along the front, +Z out to the street, the block runs back to -depth).
+-- o: floors, depth, wall, band (balconies), fin, flats (across), core (x of the stair tower, or nil), coreColor, gallery,
+-- accent (a colour, or a list the accents take in turn) and accents ({ {flat, floor}, ... } with a coloured balcony front), dishes ({ {flat, floor}, ... }: a satellite
+-- dish on that balcony), back (glass ribbons on the back too), name.
+function Street.slab(ctx, w, o)
+	local c, model = ctx:group(o.name or 'Slab')
+	local floors, dp = o.floors or 5, o.depth or 12
+	local roof = roofOf(floors)
+	local wall, band = o.wall or P.tanLight, o.band or P.cream
+	local fin = o.fin or wall:Lerp(P.black, 0.14)
+	local n = o.flats or math.max(2, math.floor(w / 8 + 0.5))
+	local accent, pal = {}, type(o.accent) == 'table' and o.accent or { o.accent or P.district[4] }
+	for q, a in o.accents or {} do accent[a[1] .. ':' .. a[2]] = pal[(q - 1) % #pal + 1] end
+	c:box('Wall', V(0, -1, -dp), V(w, roof, 0), wall, M.SmoothPlastic)
+	c:box('Plinth', V(-0.2, -1, 0), V(w + 0.2, 1.2, 0.5), fin, M.Concrete)
+	for f = 1, floors do
+		local y = storeyY(f)
+		decor(c:box('Glass', V(0.6, f == 1 and 1.8 or y + 2.6, 0), V(w - 0.6, f == 1 and 7.6 or y + 7.6, 0.3), P.glass, M.SmoothPlastic))
+		if o.back then decor(c:box('Glass', V(0.6, f == 1 and 1.8 or y + 2.6, -dp - 0.3), V(w - 0.6, f == 1 and 7.6 or y + 7.6, -dp), P.glass, M.SmoothPlastic)) end
+		if f > 1 then
+			if o.gallery then
+				c:box('Gallery', V(0.2, y - 0.5, 0), V(w - 0.2, y + 2.6, 2.6), band, M.SmoothPlastic)
+			else
+				for k = 1, n do
+					local col = accent[k .. ':' .. f] or band
+					c:box('Balcony', V(w * (k - 1) / n + 0.8, y - 0.5, 0), V(w * k / n - 0.8, y + 2.5, 2.4), col, M.SmoothPlastic)
+				end
+			end
+		end
+	end
+	-- the cross walls between the flats, up through every floor (the two ends close the balconies off)
+	for k = 0, n do
+		local x = w * k / n
+		c:box('Fin', V(x - 0.4, 0, 0), V(x + 0.4, roof, 3.0), fin, M.SmoothPlastic)
+	end
+	c:box('RoofCap', V(-0.5, roof, -dp - 0.4), V(w + 0.5, roof + 0.9, 3.2), fin, M.SmoothPlastic)
+	for _, dsh in o.dishes or {} do
+		local x, y = w * (dsh[1] - 0.5) / n + 1.6, storeyY(dsh[2]) + 3.6
+		decor(c:part('Dish', V(0.3, 1.7, 1.7), CFrame.new(x, y, 1.6) * CFrame.Angles(0, -1.2, 0.35), P.frame, M.SmoothPlastic, Enum.PartType.Cylinder))
+	end
+	if o.core then
+		local cx, cc = o.core, o.coreColor or band
+		c:box('StairTower', V(cx - 3, -1, 0), V(cx + 3, roof + 3.5, 3.6), cc, M.SmoothPlastic)
+		decor(c:box('StairGlass', V(cx - 1, 9.5, 3.6), V(cx + 1, roof + 1.5, 3.85), P.glass, M.SmoothPlastic))
+		c:box('Entrance', V(cx - 1.8, 0, 3.6), V(cx + 1.8, 7.4, 3.9), P.glass, M.SmoothPlastic)
+		c:box('Canopy', V(cx - 4.6, 8.2, 3.6), V(cx + 4.6, 8.9, 8.2), Craft.dark(cc), M.SmoothPlastic)
+		for _, x in { cx - 4.1, cx + 4.1 } do c:box('CanopyPost', V(x - 0.2, 0, 7.4), V(x + 0.2, 8.2, 7.8), P.iron, M.Metal) end
+		c:box('Intercom', V(cx + 5.4, 0, 5.4), V(cx + 6.0, 4.2, 6.0), P.iron, M.Metal)
+		decor(c:box('IntercomPanel', V(cx + 5.3, 2.8, 5.3), V(cx + 6.1, 3.9, 6.1), C(150, 152, 160), M.SmoothPlastic))
+	end
+	model:SetAttribute('Floors', floors)
+	return c, model
+end
+-- A tree on open grass (no planter): a trunk under a faceted crown of two turned cubes.
+function Street.lawnTree(c, pos, seed, scale)
+	local r = Random.new(seed)
+	local s = scale or 1
+	local t = c:at(CFrame.new(pos) * CFrame.Angles(0, r:NextNumber(0, math.pi), 0)):group('Tree')
+	t:box('Trunk', V(-0.55 * s, 0, -0.55 * s), V(0.55 * s, 7 * s, 0.55 * s), P.trunk, M.Wood)
+	t:part('Crown', V(6.6, 6, 6.6) * s, CFrame.new(0, 9.6 * s, 0) * CFrame.Angles(0, math.rad(45), 0), P.leaf:Lerp(P.leafDark, r:NextNumber(0, 0.5)), M.SmoothPlastic)
+	t:part('Crown', V(4.8, 4.8, 4.8) * s, CFrame.new(0, 12 * s, 0) * CFrame.Angles(math.rad(30), math.rad(50), math.rad(-20)), P.leaf, M.SmoothPlastic)
+	return t
+end
+-- A kerbed island in the middle of an estate road, from corner a to corner b (x and z), its top a lawn or `top`.
+function Street.island(c, a, b, top)
+	c:box('IslandKerb', V(a.X, -1, a.Z), V(b.X, 0.5, b.Z), P.kerb, M.Concrete)
+	c:box(top and 'IslandPaving' or 'IslandLawn', V(a.X + 0.6, 0.5, a.Z + 0.6), V(b.X - 0.6, 0.56, b.Z - 0.6), top or P.grass, top and M.SmoothPlastic or M.Grass)
+end
+-- The courtyard's climbing frame: a rocket (the old estate playground kind) on three fins over a round rubber mat,
+-- portholes up the side that faces local +Z, a slide out of its middle (+X) and a ladder up the back (-X). cf: its foot.
+function Street.rocket(c, cf)
+	local k = c:at(cf):group('Rocket')
+	local red, white, blue, yellow = C(206, 84, 72), P.cream, C(70, 110, 170), C(236, 186, 76)
+	k:post('PlayMat', 7, 0.2, V(0, 0, 0), C(72, 150, 196), M.Rubber)
+	k:post('RocketBody', 2.2, 10.4, V(0, 2.6, 0), white, M.SmoothPlastic)
+	for _, y in { 5.2, 9.6 } do k:post('RocketBand', 2.32, 1.1, V(0, y, 0), red, M.SmoothPlastic) end
+	k:post('RocketNose', 1.7, 1.5, V(0, 13.0, 0), red, M.SmoothPlastic)
+	k:post('RocketNose', 1.0, 1.4, V(0, 14.5, 0), red, M.SmoothPlastic)
+	k:post('RocketNose', 0.4, 1.2, V(0, 15.9, 0), red, M.SmoothPlastic)
+	for q = 0, 2 do
+		local a = q * math.pi * 2 / 3 + math.pi / 3
+		local out = V(math.sin(a), 0, math.cos(a))
+		-- (a wedge is tallest at its +Z end: looking outward, its +Z end is at the body)
+		k:wedge('RocketFin', V(0.5, 5.6, 2.8), CFrame.lookAt(out * 3.5 + V(0, 2.8, 0), out * 5 + V(0, 2.8, 0)), red, M.SmoothPlastic)
+	end
+	for _, y in { 7.6, 11.4 } do decor(k:part('Porthole', V(0.3, 1.3, 1.3), CFrame.new(0, y, 2.15) * CFrame.Angles(0, math.pi / 2, 0), P.glass, M.SmoothPlastic, Enum.PartType.Cylinder)) end
+	plank(k, 'RocketSlide', V(2.0, 6.6, 0), V(9.2, 0.4, 0), 2.0, 0.3, yellow)
+	for _, z in { -1.05, 1.05 } do plank(k, 'RocketSlideLip', V(2.0, 7.0, z), V(9.2, 0.8, z), 0.25, 0.8, yellow:Lerp(P.black, 0.2)) end
+	for _, z in { -0.7, 0.7 } do k:bar('RocketLadder', V(-4.6, 0, z), V(-2.1, 6.6, z), 0.3, blue, M.SmoothPlastic) end
+	for q = 1, 2 do
+		local t = q / 3
+		k:box('RocketRung', V(-4.6 + 2.5 * t - 0.15, 6.6 * t - 0.12, -0.7), V(-4.6 + 2.5 * t + 0.15, 6.6 * t + 0.12, 0.7), blue, M.SmoothPlastic)
+	end
+end
+-- A bin store: a low brick enclosure, open at its front (local -Z), with two big communal bins in it, lids shut.
+function Street.binStore(c, cf, wall)
+	local k = c:at(cf):group('BinStore')
+	wall = wall or P.tanDark
+	k:box('BinStoreWall', V(-4.6, 0, 1.8), V(4.6, 4.2, 2.4), wall, M.Brick)
+	for _, x in { -4.6, 4.0 } do k:box('BinStoreWall', V(x, 0, -2.2), V(x + 0.6, 4.2, 2.4), wall, M.Brick) end
+	for q, x in { -1.9, 1.7 } do
+		local col = q == 1 and C(70, 112, 92) or C(120, 124, 132)
+		k:box('BigBin', V(x - 1.6, 0.4, -1.2), V(x + 1.6, 3.4, 1.4), col, M.SmoothPlastic)
+		k:box('BigBinLid', V(x - 1.7, 3.4, -1.3), V(x + 1.7, 3.8, 1.5), Craft.dark(col), M.SmoothPlastic)
+	end
+end
+-- A bike shed by a block's door: a back screen, a flat roof on two front posts, bikes parked nose to the back (+Z), each
+-- two wheels and a frame. cf: the middle of its front edge.
+function Street.bikeShed(c, cf, colors)
+	local k = c:at(cf):group('BikeShed')
+	local n = #colors
+	local w = n * 2.2 + 1.2
+	local steel = C(84, 88, 98)
+	k:box('ShedBack', V(-w / 2, 0, 2.6), V(w / 2, 5.0, 2.9), C(160, 164, 172), M.Metal)
+	k:box('ShedRoof', V(-w / 2 - 0.3, 5.0, -0.4), V(w / 2 + 0.3, 5.4, 3.1), steel, M.Metal)
+	for _, x in { -w / 2 + 0.2, w / 2 - 0.2 } do k:box('ShedPost', V(x - 0.15, 0, -0.2), V(x + 0.15, 5.0, 0.1), steel, M.Metal) end
+	for q, col in colors do
+		local x = -w / 2 + 0.6 + (q - 0.5) * 2.2
+		for _, z in { 0.4, 2.2 } do k:part('BikeWheel', V(0.25, 1.9, 1.9), CFrame.new(x, 0.95, z), P.black, M.SmoothPlastic, Enum.PartType.Cylinder) end
+		k:box('BikeFrame', V(x - 0.13, 1.2, 0.4), V(x + 0.13, 2.4, 2.2), col, M.SmoothPlastic)
+	end
+end
+-- A car seen from further off (on a deck, across a lot): the body, a glass cabin and the roof, the wheels as two dark
+-- blocks. Front toward local -Z. 5 parts.
+function Street.carLite(c, cf, color)
+	local k = c:at(cf):group('Car')
+	for _, z in { -3.3, 3.3 } do k:box('Wheels', V(-2.2, 0, z - 1), V(2.2, 1.9, z + 1), P.black, M.SmoothPlastic) end
+	k:box('CarBody', V(-2.3, 0.8, -5.3), V(2.3, 2.6, 5.3), color, M.SmoothPlastic)
+	decor(k:box('CarGlass', V(-2.05, 2.6, -2.2), V(2.05, 3.9, 2.8), P.glass, M.SmoothPlastic))
+	k:box('CarRoof', V(-2.15, 3.9, -1.9), V(2.15, 4.35, 2.6), color, M.SmoothPlastic)
+	return k
+end
+-- A delivery scooter on its stand by a block's door: two small wheels, the leg shield and handlebars, the seat and a big
+-- insulated box on the back. Faces local -Z.
+function Street.scooter(c, cf, color)
+	local k = c:at(cf):group('Scooter')
+	for _, z in { -1.7, 1.5 } do k:part('Wheel', V(0.45, 1.3, 1.3), CFrame.new(0, 0.65, z), P.black, M.SmoothPlastic, Enum.PartType.Cylinder) end
+	k:box('ScooterBody', V(-0.65, 0.7, -0.8), V(0.65, 2.1, 2.0), color, M.SmoothPlastic)
+	k:box('ScooterShield', V(-0.55, 0.6, -2.2), V(0.55, 3.5, -1.4), color, M.SmoothPlastic)
+	k:box('Handlebar', V(-1.1, 3.5, -2.0), V(1.1, 3.75, -1.7), P.iron, M.Metal)
+	k:box('ScooterSeat', V(-0.55, 2.1, -0.2), V(0.55, 2.5, 1.2), P.black, M.SmoothPlastic)
+	k:box('DeliveryBox', V(-1.05, 2.5, 1.0), V(1.05, 4.6, 2.7), C(226, 128, 70), M.SmoothPlastic)
+end
+-- A small greenhouse: a low brick base, glass walls, a pitched glass roof on a white frame (ridge and corner posts), the
+-- door at its local +Z end. cf: the middle of its floor; w across (X), d long (Z).
+function Street.greenhouse(c, cf, w, d)
+	local k = c:at(cf):group('Greenhouse')
+	local glass, frame, eave, rh = C(198, 228, 222), P.white, 5.6, 3.0
+	k:box('GreenhouseBase', V(-w / 2, 0, -d / 2), V(w / 2, 1.4, d / 2), P.brick, M.Brick)
+	local g = k:box('GreenhouseGlass', V(-w / 2 + 0.15, 1.4, -d / 2 + 0.15), V(w / 2 - 0.15, eave, d / 2 - 0.15), glass, M.Glass)
+	g.Transparency = 0.35
+	for _, s in { -1, 1 } do
+		-- (a wedge is tallest at its +Z end; turned so that end meets the ridge)
+		local r = k:wedge('GreenhouseRoof', V(d, rh, w / 2), CFrame.new(s * w / 4, eave + rh / 2, 0) * CFrame.Angles(0, -s * math.pi / 2, 0), glass, M.Glass)
+		r.Transparency = 0.35
+		for _, z in { -d / 2, d / 2 } do k:box('GreenhouseFrame', V(s * w / 2 - 0.2, 1.4, z - 0.2), V(s * w / 2 + 0.2, eave, z + 0.2), frame, M.SmoothPlastic) end
+	end
+	k:box('GreenhouseRidge', V(-0.25, eave + rh - 0.1, -d / 2 - 0.1), V(0.25, eave + rh + 0.3, d / 2 + 0.1), frame, M.SmoothPlastic)
+	k:box('GreenhouseDoor', V(-1.3, 1.4, d / 2 - 0.1), V(1.3, eave, d / 2 + 0.1), frame, M.SmoothPlastic).Transparency = 0.2
+	-- tomato plants inside, seen through the glass
+	decor(k:box('GreenhousePlants', V(-w / 2 + 0.8, 1.4, -d / 2 + 0.8), V(w / 2 - 0.8, 3.6, d / 2 - 2.4), C(84, 150, 70), M.Grass))
+end
+-- A raised vegetable bed: a plank box of soil with rows of greens and one row of a crop colour. Long along local X.
+function Street.raisedBed(c, cf, w, d, crop)
+	local k = c:at(cf):group('RaisedBed')
+	k:box('BedFrame', V(-w / 2, 0, -d / 2), V(w / 2, 1.5, d / 2), P.wood, M.WoodPlanks)
+	k:box('BedSoil', V(-w / 2 + 0.35, 1.5, -d / 2 + 0.35), V(w / 2 - 0.35, 1.62, d / 2 - 0.35), C(98, 72, 54), M.Ground)
+	decor(k:box('BedGreens', V(-w / 2 + 0.7, 1.62, -d / 2 + 0.6), V(w / 2 - 0.7, 2.5, -0.2), C(92, 162, 76), M.Grass))
+	decor(k:box('BedCrop', V(-w / 2 + 0.7, 1.62, 0.3), V(w / 2 - 0.7, 2.2, d / 2 - 0.6), crop, M.SmoothPlastic))
+end
+-- A wheelbarrow with its handles toward local +Z: the tub, the wheel at the front, two legs, a load of soil.
+function Street.wheelbarrow(c, cf, color)
+	local k = c:at(cf):group('Wheelbarrow')
+	k:part('BarrowWheel', V(0.4, 1.4, 1.4), CFrame.new(0, 0.7, -1.6), P.black, M.SmoothPlastic, Enum.PartType.Cylinder)
+	k:box('BarrowTub', V(-1.1, 1.1, -1.4), V(1.1, 2.3, 1.0), color, M.Metal)
+	decor(k:box('BarrowLoad', V(-0.9, 2.3, -1.2), V(0.9, 2.55, 0.8), C(98, 72, 54), M.Ground))
+	for _, x in { -0.8, 0.8 } do
+		k:bar('BarrowHandle', V(x, 1.4, -1.0), V(x, 2.0, 2.8), 0.2, P.iron, M.Metal)
+		k:box('BarrowLeg', V(x - 0.1, 0, 0.6), V(x + 0.1, 1.2, 0.8), P.iron, M.Metal)
+	end
+end
+
+-- The Yards' kit. ------------------------------------------------------------------------------------------------------
+-- The yard's colours. Whole walls of containers and the crane are big surfaces, so the blue, green and the crane's ochre
+-- stay under HSV S 0.57; the red boxes and the small machines (forklift amber, reach stacker rust) keep their punch.
+Street.yardColors = {
+	red = C(198, 92, 74), blue = C(86, 120, 180), green = C(82, 150, 106), cream = C(222, 214, 196), grey = C(140, 146, 156),
+	crane = C(206, 168, 92), forklift = C(224, 168, 66), stacker = C(204, 96, 68),
+}
+-- A stack of shipping containers cheap enough to wall a yard with: each one a coloured box with a darker rim on top
+-- (19.6 long along local Z, 8 wide, 8.6 high). With `ridged`, the containers' +X faces get the ribs and corner posts
+-- (the side you see from the street). cf: the stack's foot, centred; colors bottom to top.
+function Street.stack(c, cf, colors, ridged)
+	local k = c:at(cf):group('ContainerStack')
+	local H = 8.6
+	for q, col in colors do
+		local y = (q - 1) * H
+		local dark = col:Lerp(P.black, 0.28)
+		k:box('ContainerBody', V(-4, y, -9.8), V(4, y + H - 0.35, 9.8), col, M.SmoothPlastic)
+		k:box('ContainerRim', V(-4.1, y + H - 0.35, -9.9), V(4.1, y + H, 9.9), dark, M.SmoothPlastic)
+		if ridged then
+			for z = -6.6, 6.7, 3.3 do k:box('ContainerRidge', V(4, y + 0.4, z - 0.45), V(4.2, y + H - 0.6, z + 0.45), col:Lerp(P.black, 0.14), M.SmoothPlastic) end
+			for _, z in { -9.8, 9.2 } do k:box('ContainerCorner', V(3.7, y, z), V(4.25, y + H, z + 0.6), dark, M.SmoothPlastic) end
+		end
+	end
+	return k
+end
+-- An open container on the ground, its doors swung back toward the street: the box, a dark inside, the two doors, ribs
+-- on its long sides, cartons stacked just inside. Its open end faces local +Z. cf: its foot, centred.
+function Street.openContainer(c, cf, color)
+	local k = c:at(cf):group('OpenContainer')
+	local dark = color:Lerp(P.black, 0.28)
+	k:box('ContainerBody', V(-4, 0, -9.8), V(4, 8.25, 9.6), color, M.SmoothPlastic)
+	k:box('ContainerRim', V(-4.1, 8.25, -9.9), V(4.1, 8.6, 9.9), dark, M.SmoothPlastic)
+	decor(k:box('ContainerInside', V(-3.5, 0.3, 9.6), V(3.5, 8.0, 9.75), C(40, 42, 48), M.SmoothPlastic))
+	for _, s in { -1, 1 } do
+		k:box('ContainerCorner', V(s * 4.2 - 0.35, 0, 9.4), V(s * 4.2 + 0.35, 8.6, 10.0), dark, M.SmoothPlastic)
+		-- each door swung right back against the side wall
+		k:box('ContainerDoor', V(s * 4.25 - 0.15 + s * 0.2, 0.3, 6.0), V(s * 4.25 + 0.15 + s * 0.2, 8.1, 9.9), dark, M.SmoothPlastic)
+		for z = -7.4, 3.0, 3.4 do k:box('ContainerRidge', V(s * 4.05 - 0.1, 0.4, z - 0.45), V(s * 4.05 + 0.1, 7.9, z + 0.45), color:Lerp(P.black, 0.14), M.SmoothPlastic) end
+	end
+	k:box('Carton', V(-3.2, 0.3, 6.0), V(-0.4, 3.0, 9.0), P.crate, M.Cardboard)
+	k:box('Carton', V(-3.0, 3.0, 6.4), V(-0.8, 5.0, 8.8), P.crate:Lerp(P.white, 0.15), M.Cardboard)
+	k:box('Carton', V(0.4, 0.3, 4.8), V(3.2, 2.6, 8.2), P.crate, M.Cardboard)
+	return k
+end
+-- A rail-mounted gantry crane: at each end two legs on a bogie sill and a tie near the top, two girders across the top
+-- (along local X, from x0 to x1, underside at h), the trolley at hx with the operator's cab under it, and a container
+-- hanging from the spreader with its foot at hy. cf: the crane's centre on the ground; the legs stand at z ±5.2.
+function Street.gantryCrane(c, cf, x0, x1, h, color, hx, hy, load)
+	local k = c:at(cf):group('GantryCrane')
+	local dark = Craft.dark(color)
+	for _, x in { x0, x1 } do
+		k:box('CraneSill', V(x - 1.3, 0, -7), V(x + 1.3, 1.8, 7), dark, M.SmoothPlastic)
+		for _, z in { -5.2, 5.2 } do k:box('CraneLeg', V(x - 0.9, 1.8, z - 0.9), V(x + 0.9, h, z + 0.9), color, M.SmoothPlastic) end
+		k:box('CraneTie', V(x - 0.7, h - 4.4, -5.2), V(x + 0.7, h - 2.8, 5.2), color, M.SmoothPlastic)
+	end
+	for _, z in { -5.2, 5.2 } do k:box('CraneGirder', V(x0 - 2.4, h, z - 1.2), V(x1 + 2.4, h + 3.2, z + 1.2), color, M.SmoothPlastic) end
+	k:box('CraneTrolley', V(hx - 3.4, h + 3.2, -6.6), V(hx + 3.4, h + 5.4, 6.6), P.cream, M.SmoothPlastic)
+	k:box('CraneCab', V(hx + 3.6, h - 4.2, -1.8), V(hx + 7.0, h, 1.8), P.cream, M.SmoothPlastic)
+	decor(k:box('CraneCabGlass', V(hx + 3.5, h - 3.6, -1.9), V(hx + 7.1, h - 1.6, 1.9), P.glass, M.SmoothPlastic))
+	local sy = hy + 8.6
+	for _, z in { -3.4, 3.4 } do decor(k:box('CraneRope', V(hx - 0.12, sy + 1, z - 0.12), V(hx + 0.12, h, z + 0.12), P.iron, M.Metal)) end
+	k:box('CraneSpreader', V(hx - 4.2, sy, -10.2), V(hx + 4.2, sy + 1.0, 10.2), dark, M.SmoothPlastic)
+	if load then Street.stack(k, CFrame.new(hx, hy, 0), { load }) end
+	return k
+end
+-- A forklift with its forks toward local -Z, carrying a pallet of cartons: the body and counterweight, the seat under an
+-- overhead guard, the mast and forks.
+function Street.forklift(c, cf, color)
+	local k = c:at(cf):group('Forklift')
+	for _, z in { -1.3, 1.7 } do k:box('Wheels', V(-1.6, 0, z - 0.7), V(1.6, 1.4, z + 0.7), P.black, M.SmoothPlastic) end
+	k:box('ForkliftBody', V(-1.4, 0.6, -1.7), V(1.4, 2.6, 2.4), color, M.SmoothPlastic)
+	k:box('Counterweight', V(-1.5, 0.6, 2.2), V(1.5, 3.4, 3.1), Craft.dark(color), M.SmoothPlastic)
+	k:box('ForkliftSeat', V(-0.7, 2.6, 0.6), V(0.7, 3.6, 1.7), P.black, M.SmoothPlastic)
+	for _, x in { -1.25, 1.25 } do k:box('GuardPost', V(x - 0.12, 2.6, -1.5), V(x + 0.12, 6.1, -1.25), P.iron, M.Metal) end
+	k:box('GuardRoof', V(-1.4, 6.1, -1.6), V(1.4, 6.4, 2.3), P.iron, M.Metal)
+	for _, x in { -0.9, 0.9 } do k:box('Mast', V(x - 0.2, 0.3, -2.3), V(x + 0.2, 6.8, -1.9), P.iron, M.Metal) end
+	for _, x in { -0.7, 0.7 } do k:box('Fork', V(x - 0.2, 1.0, -5.2), V(x + 0.2, 1.2, -2.3), P.iron, M.Metal) end
+	k:box('PalletLoad', V(-1.9, 1.2, -5.4), V(1.9, 1.7, -2.4), P.woodDark, M.Wood)
+	k:box('Carton', V(-1.6, 1.7, -5.1), V(1.6, 3.9, -2.6), P.crate, M.Cardboard)
+end
+-- A reach stacker parked with its boom down: a long chassis on big wheels, the counterweight at the back, the cab off to
+-- one side, the boom from the back over the front, the spreader across its nose. Front toward local -Z.
+function Street.reachStacker(c, cf, color)
+	local k = c:at(cf):group('ReachStacker')
+	local dark = Craft.dark(color)
+	for _, z in { -3.6, 3.8 } do k:box('Wheels', V(-2.9, 0, z - 1.5), V(2.9, 3.0, z + 1.5), P.black, M.SmoothPlastic) end
+	k:box('StackerChassis', V(-2.6, 1.2, -5.8), V(2.6, 3.4, 6.2), color, M.SmoothPlastic)
+	k:box('StackerWeight', V(-2.7, 1.2, 5.6), V(2.7, 4.8, 7.4), dark, M.SmoothPlastic)
+	k:box('StackerCab', V(-2.5, 3.4, 1.4), V(0.2, 7.6, 4.6), color, M.SmoothPlastic)
+	decor(k:box('StackerGlass', V(-2.6, 4.8, 1.3), V(0.3, 7.0, 4.7), P.glass, M.SmoothPlastic))
+	k:bar('StackerBoom', V(1.3, 4.4, 5.2), V(1.3, 8.6, -7.6), 1.7, color, M.SmoothPlastic)
+	k:box('StackerSpreader', V(-5.6, 7.2, -8.6), V(5.6, 8.4, -7.0), dark, M.SmoothPlastic)
+end
+-- A site office: a portable cabin (window strip, door) with a second one stacked on it and an outside stair up to the
+-- top one along its +X end. cf: the lower cabin's front-left corner, the fronts toward local +Z; w long.
+function Street.siteOffice(c, cf, w, color)
+	local k = c:at(cf):group('SiteOffice')
+	local trim = Craft.dark(color)
+	for q = 0, 1 do
+		local y = q * 6.2
+		k:box('Cabin', V(0, y, -6), V(w, y + 6.0, 0), color, M.SmoothPlastic)
+		k:box('CabinRoof', V(-0.2, y + 6.0, -6.2), V(w + 0.2, y + 6.2, 0.2), trim, M.SmoothPlastic)
+		decor(k:box('CabinWindows', V(1.2, y + 2.6, 0), V(w - 5, y + 4.6, 0.15), P.glass, M.SmoothPlastic))
+		k:box('CabinDoor', V(w - 3.8, y + 0.2, 0), V(w - 1.6, y + 5.2, 0.15), trim, M.SmoothPlastic)
+	end
+	plank(k, 'OfficeStair', V(w + 1.4, 0.2, 3.6), V(w + 1.4, 6.2, -1.2), 2.2, 0.4, P.iron, M.Metal)
+	k:box('OfficeLanding', V(w - 4.2, 6.0, 0), V(w + 2.6, 6.3, 2.2), P.iron, M.Metal)
+end
+-- A railway track laid flush in a yard, from a to b on the ground: a ballast bed, two rails and sleepers every 4.5 studs.
+function Street.track(c, a, b)
+	local len = (b - a).Magnitude
+	local k = c:at(CFrame.lookAt(a, b)):group('Track')
+	k:box('TrackBed', V(-3.3, -1, -len), V(3.3, 0.04, 0), C(124, 116, 108), M.Pebble)
+	for t = 2.2, len - 1, 4.5 do k:box('Sleeper', V(-3, 0.04, -t - 0.6), V(3, 0.14, -t + 0.6), C(98, 80, 64), M.Wood) end
+	for _, x in { -2.2, 2.2 } do k:box('Rail', V(x - 0.2, 0.04, -len), V(x + 0.2, 0.3, 0), C(156, 158, 166), M.Metal) end
+	return k
+end
+-- A railway boxcar standing on the track (long along local Z): two bogies, the deck, a tall body with a sliding door on
+-- each side and a rounded roof.
+function Street.boxcar(c, cf, color)
+	local k = c:at(cf):group('Boxcar')
+	local dark = color:Lerp(P.black, 0.3)
+	for _, z in { -9.5, 9.5 } do k:box('Bogie', V(-2.4, 0.3, z - 3), V(2.4, 2.2, z + 3), P.black, M.Metal) end
+	k:box('BoxcarDeck', V(-3.2, 2.2, -14), V(3.2, 3.0, 14), P.iron, M.Metal)
+	k:box('BoxcarBody', V(-3.0, 3.0, -13.6), V(3.0, 10.6, 13.6), color, M.SmoothPlastic)
+	k:rod('BoxcarRoof', 3.0, 27.4, CFrame.new(0, 10.0, 0) * CFrame.Angles(0, math.pi / 2, 0), color:Lerp(P.white, 0.1), M.SmoothPlastic)
+	for _, s in { -1, 1 } do
+		k:box('BoxcarDoor', V(s * 3.0 - 0.2, 3.4, -3.4), V(s * 3.0 + 0.2, 10.0, 3.4), dark, M.SmoothPlastic)
+		k:box('BoxcarDoorRail', V(s * 3.0 - 0.3, 10.0, -7), V(s * 3.0 + 0.3, 10.4, 7), P.iron, M.Metal)
+	end
+	for _, z in { -14.3, 14.3 } do k:box('BoxcarCoupler', V(-0.4, 1.4, z - 0.7), V(0.4, 2.2, z + 0.7), P.iron, M.Metal) end
+end
+-- A level-crossing signal facing local +Z: a post on a foot, the white crossbuck, a black board with two red lamps and,
+-- beside it, the barrier arm standing up (raised: the line is clear), red and white.
+function Street.crossing(c, cf)
+	local k = c:at(cf):group('LevelCrossing')
+	k:box('CrossingFoot', V(-0.7, 0, -0.7), V(0.7, 0.6, 0.7), C(150, 152, 158), M.Concrete)
+	k:post('CrossingPost', 0.22, 8.4, V(0, 0.6, 0), P.iron, M.Metal)
+	for _, a in { 35, -35 } do k:part('Crossbuck', V(4.0, 0.7, 0.15), CFrame.new(0, 8.0, 0.3) * CFrame.Angles(0, 0, math.rad(a)), P.white, M.SmoothPlastic) end
+	k:box('CrossingBoard', V(-1.8, 5.0, 0.15), V(1.8, 6.2, 0.4), P.black, M.SmoothPlastic)
+	for _, x in { -1.1, 1.1 } do decor(k:part('CrossingLamp', V(0.2, 0.9, 0.9), CFrame.new(x, 5.6, 0.45) * CFrame.Angles(0, math.pi / 2, 0), C(214, 70, 60), M.SmoothPlastic, Enum.PartType.Cylinder)) end
+	k:box('BarrierPivot', V(0.8, 1.8, -0.6), V(2.0, 3.2, 0.6), P.iron, M.Metal)
+	k:box('BarrierArm', V(1.15, 3.2, -0.22), V(1.65, 13.2, 0.22), P.white, M.SmoothPlastic)
+	for _, y in { 5.0, 8.6 } do decor(k:box('BarrierStripe', V(1.1, y, -0.27), V(1.7, y + 1.8, 0.27), C(206, 70, 62), M.SmoothPlastic)) end
+end
+-- An articulated lorry, front toward local -Z: the tractor (cab with its windscreen, chassis, wheels) and a tall box
+-- trailer on its own wheels.
+function Street.lorry(c, cf, color, box)
+	local k = c:at(cf):group('Lorry')
+	for _, z in { -11, -4, 8.8, 11.6 } do k:box('Wheels', V(-2.5, 0, z - 1.1), V(2.5, 2.2, z + 1.1), P.black, M.SmoothPlastic) end
+	k:box('TractorChassis', V(-2.3, 1.2, -13.4), V(2.3, 2.4, -2), P.iron, M.SmoothPlastic)
+	k:box('TractorCab', V(-2.6, 2.0, -13.6), V(2.6, 8.6, -8.4), color, M.SmoothPlastic)
+	decor(k:box('TractorScreen', V(-2.3, 5.4, -13.75), V(2.3, 7.8, -13.5), P.glass, M.SmoothPlastic))
+	k:box('TractorBumper', V(-2.7, 1.0, -13.9), V(2.7, 2.0, -13.4), P.frame, M.SmoothPlastic)
+	decor(k:box('TractorGrille', V(-1.3, 2.4, -13.75), V(1.3, 4.6, -13.55), P.iron, M.SmoothPlastic))
+	for _, x in { -2.2, 1.5 } do decor(k:box('Headlight', V(x, 2.4, -13.75), V(x + 0.7, 3.0, -13.55), C(255, 244, 214), M.SmoothPlastic)) end
+	k:box('TrailerBox', V(-2.8, 2.6, -7.6), V(2.8, 12.4, 13.6), box, M.SmoothPlastic)
+	k:box('TrailerBand', V(-2.85, 9.8, -7.5), V(2.85, 10.8, 13.5), color, M.SmoothPlastic)
+	k:box('TrailerChassis', V(-2.2, 1.6, -7.4), V(2.2, 2.6, 13.4), P.iron, M.SmoothPlastic)
+end
+-- A brick chimney on a square foot: tall, with two dark bands near the top and a cap.
+function Street.chimney(c, pos, h)
+	local k = c:group('Chimney')
+	local brick = C(170, 92, 76)
+	k:box('ChimneyFoot', pos + V(-3.4, 0, -3.4), pos + V(3.4, 6, 3.4), brick:Lerp(P.black, 0.15), M.Brick)
+	k:post('Chimney', 2.4, h - 6, pos + V(0, 6, 0), brick, M.Brick)
+	for _, y in { h - 6, h - 2.6 } do k:post('ChimneyBand', 2.6, 0.8, pos + V(0, y, 0), C(62, 60, 64), M.SmoothPlastic) end
+	k:post('ChimneyCap', 2.7, 0.6, pos + V(0, h - 0.6, 0), C(62, 60, 64), M.SmoothPlastic)
+	return k
+end
+-- The two sections' ground. ---------------------------------------------------------------------------------------------
+-- The Apartments: paving across both gates' cross streets, an estate road (a lighter asphalt than the Block's) from x0 to
+-- x1 between raised pavements, lawns out to the plots' backs. Everything stops at -53, so the far cross street's paving
+-- is deep enough for the next gate's bus stop to stand flat (G, notes 16:30).
+function Street.estateGround(d, top, x0, x1)
+	local function Z(z) return top + z end
+	for _, zz in { { -8, 0 }, { -SLEN, -53 } } do d:box('CrossPaving', V(-FRONT, -1, Z(zz[1])), V(FRONT, 0, Z(zz[2])), P.tileA, M.SmoothPlastic) end
+	d:box('EstateRoad', V(x0, -1, Z(-53)), V(x1, 0, Z(-8)), C(108, 110, 118), M.Asphalt)
+	for _, pv in { { x0 - 4, x0 }, { x1, x1 + 4 } } do
+		d:box('Pavement', V(pv[1], -1, Z(-53)), V(pv[2], 0.3, Z(-8)), P.tileA, M.SmoothPlastic)
+		local kx = pv[1] == x0 - 4 and x0 or x1
+		d:box('Kerb', V(kx - 0.45, -1, Z(-53)), V(kx + 0.45, 0.34, Z(-8)), P.kerb, M.Concrete)
+	end
+	d:box('Lawn', V(-64, -1, Z(-53)), V(x0 - 4, 0.12, Z(-8)), P.grass, M.Grass)
+	d:box('Lawn', V(x1 + 4, -1, Z(-53)), V(64, 0.12, Z(-8)), P.grass, M.Grass)
+end
+-- The Yards: dark asphalt everywhere, concrete across both gates' cross streets.
+function Street.yardGround(d, top)
+	local function Z(z) return top + z end
+	local concrete = C(168, 170, 176)
+	for _, zz in { { -8, 0 }, { -SLEN, -56 } } do d:box('CrossConcrete', V(-FRONT, -1, Z(zz[1])), V(FRONT, 0, Z(zz[2])), concrete, M.Concrete) end
+	d:box('YardAsphalt', V(-FRONT, -1, Z(-56)), V(FRONT, 0, Z(-8)), P.asphalt, M.Asphalt)
+	for _, s in { -1, 1 } do d:box('YardAsphalt', V(s * FRONT, -1, Z(-SLEN)), V(s * 64, 0, Z(0)), P.asphalt, M.Asphalt) end
+end
+
+-- The Apartments. -------------------------------------------------------------------------------------------------------
+-- Stage 10, "the courtyard". The district's edge: right past gate 10 two tall slabs stand end-on to the street, joined
+-- high up by a glazed sky bridge, so the long view from the Courts ends in the estate's front door. Beyond them the
+-- estate opens: a planted median with three trees splits the road, a block on the west wraps a courtyard that opens to
+-- the street, and in it stands the rocket, the old climbing frame, with a parent's bench and a pram facing it. On the
+-- east, a slab behind its lawn: two cars in a parking court, the bike shed by its door. The bin store waits by the road.
+function Street.courtyard(ctx, i)
+	local d, top = Street.core(ctx, i)
+	local function Z(z) return top + z end
+	Street.estateGround(d, top, -12, 12)
+	Street.island(d, V(-4, 0, Z(-48)), V(5, 0, Z(-22)))
+	d:box('MedianHedge', V(-3.2, 0.5, Z(-24.8)), V(4.2, 1.7, Z(-22.8)), P.hedge, M.Grass)
+	Street.lawnTree(d, V(0.8, 0.56, Z(-31.5)), 1002, 0.85)
+	Street.lawnTree(d, V(-0.2, 0.56, Z(-43.4)), 1003, 0.95)
+	-- The gateway pair: end-on to the street, fronts toward the gate (+Z), joined by the sky bridge at the 4th floor. (Not a
+	-- mirror pair: the east block is wider and a storey taller.)
+	local north = function(x0, zf) return d:at(CFrame.lookAt(V(x0, 0, Z(zf)), V(x0, 0, Z(zf) - 1))) end
+	Street.slab(north(-64, -11), 44, { name = 'GatewayWest', floors = 6, wall = P.tanLight, band = P.cream, flats = 5, back = true,
+		accents = { { 2, 3 }, { 4, 5 }, { 1, 6 } }, accent = C(214, 150, 84), dishes = { { 3, 4 }, { 5, 2 } } })
+	Street.slab(north(16, -11), 48, { name = 'GatewayEast', floors = 7, wall = P.tan, band = P.cream, flats = 5, back = true,
+		accents = { { 3, 2 }, { 1, 4 }, { 4, 6 }, { 5, 3 } }, accent = { C(214, 124, 78), C(222, 150, 70) }, dishes = { { 2, 5 } } })
+	local bridge = d:group('SkyBridge')
+	bridge:box('BridgeBody', V(-20.4, 31.4, Z(-21)), V(16.4, 41.6, Z(-13)), P.cream, M.SmoothPlastic)
+	for _, z in { -13, -21 } do decor(bridge:box('BridgeGlass', V(-20.4, 33.6, Z(z) - 0.15), V(16.4, 39.4, Z(z) + 0.15), P.glass, M.SmoothPlastic)) end
+	bridge:box('BridgeCap', V(-20.6, 41.6, Z(-21.3)), V(16.6, 42.4, Z(-12.7)), P.tanDark, M.SmoothPlastic)
+	-- The courtyard block (west): its back slab faces the street across the courtyard, its south arm closes it.
+	Street.slab(Street.lot(d, -1, 50, Z(-23), 39), 39, { name = 'CourtyardBack', floors = 5, wall = P.cream, band = P.tan, flats = 5, core = 12,
+		accents = { { 1, 3 }, { 3, 2 }, { 5, 4 }, { 4, 2 }, { 2, 5 } }, accent = { C(222, 150, 70), C(92, 156, 150), C(204, 96, 78) }, dishes = { { 2, 3 }, { 4, 5 } } })
+	Street.slab(north(-50, -50), 14, { name = 'CourtyardArm', floors = 4, wall = P.tanLight, band = P.cream, flats = 2,
+		accents = { { 1, 2 }, { 2, 4 } }, accent = { C(222, 150, 70), C(204, 96, 78) } })
+	d:box('CourtPath', V(-50, -1, Z(-36)), V(-16, 0.16, Z(-32)), P.tileB, M.SmoothPlastic)
+	Street.rocket(d, CFrame.new(-28, 0.12, Z(-44)) * CFrame.Angles(0, math.pi / 2, 0))
+	bench(d, V(-18.8, 0.12, Z(-40.2)), V(-1, 0, 0))
+	Street.stroller(d, CFrame.new(-18.6, 0.12, Z(-43.6)) * CFrame.Angles(0, math.pi / 2, 0), C(70, 110, 170))
+	Street.binStore(d, CFrame.new(-20.6, 0.12, Z(-50.6)))
+	-- The east slab behind its lawn: the path to its door, the bike shed beside it, the parking court by the road.
+	Street.slab(Street.lot(d, 1, 36, Z(-26), 34), 34, { name = 'EastSlab', floors = 5, wall = C(232, 196, 160), band = P.cream, core = 14, flats = 4,
+		accents = { { 1, 2 }, { 4, 3 }, { 2, 4 }, { 3, 5 }, { 4, 5 } }, accent = { C(204, 96, 78), C(222, 150, 70) }, dishes = { { 3, 3 } } })
+	d:box('EastPath', V(16, -1, Z(-48.5)), V(36, 0.16, Z(-44.5)), P.tileB, M.SmoothPlastic)
+	Street.bikeShed(d, CFrame.new(28.6, 0.12, Z(-39.6)) * CFrame.Angles(0, math.pi / 2, 0), { C(206, 84, 72), C(70, 110, 170), C(236, 186, 76) })
+	d:box('ParkingCourt', V(16, -1, Z(-36)), V(30, 0.14, Z(-24)), C(108, 110, 118), M.Asphalt)
+	for _, z in { -24.4, -30, -35.6 } do decor(d:box('BayLine', V(17, 0.14, Z(z) - 0.15), V(29, 0.17, Z(z) + 0.15), P.roadLine, M.SmoothPlastic)) end
+	car(d, CFrame.new(23.4, 0.14, Z(-27.2)) * CFrame.Angles(0, -math.pi / 2, 0), C(206, 84, 72))
+	car(d, CFrame.new(23.0, 0.14, Z(-32.8)) * CFrame.Angles(0, -math.pi / 2, 0), C(226, 226, 230))
+	lantern(d, V(-17.6, 0.12, Z(-27)))
+	lantern(d, V(14.2, 0.3, Z(-50)))
+	Street.nameSign(d, V(13.8, 0.3, Z(-9.4)), 'THE APARTMENTS')
+	-- Gate 11's bus stop: on the east side of the cross street, a bench beside it.
+	Street.seal(d, top)
+end
+
+-- Stage 11, "the car park". The road runs either side of a parking strip down the middle (cars along both kerbs of a
+-- paved island, a pay machine at its head, one car being washed, a bucket and a wet patch by it). The landmark is the
+-- multi-storey car park on the east: open decks with cars on them, a ramp up its north end with a car climbing it and a
+-- barrier arm at its foot. On the west a long slab close to the road, a delivery scooter by its door.
+function Street.carPark(ctx, i)
+	local d, top = Street.core(ctx, i)
+	local function Z(z) return top + z end
+	Street.estateGround(d, top, -15, 15)
+	Street.island(d, V(-2, 0, Z(-49)), V(2, 0, Z(-15)), P.tileB)
+	for _, s in { -1, 1 } do
+		for _, z in { -15, -26.5, -38, -49 } do decor(d:box('BayLine', V(s * 2, 0.02, Z(z) - 0.15), V(s * 7.2, 0.05, Z(z) + 0.15), P.roadLine, M.SmoothPlastic)) end
+		decor(d:box('BayLine', V(s * 7.05, 0.02, Z(-49)), V(s * 7.35, 0.05, Z(-15)), P.roadLine, M.SmoothPlastic))
+	end
+	car(d, CFrame.new(-4.7, 0, Z(-20.8)), C(70, 110, 170))
+	car(d, CFrame.new(-4.7, 0, Z(-43.4)) * CFrame.Angles(0, math.pi, 0), C(236, 186, 76))
+	car(d, CFrame.new(4.7, 0, Z(-32.2)), C(206, 84, 72))
+	d:post('Bucket', 0.6, 1.1, V(8.4, 0, Z(-29.6)), C(70, 140, 196), M.SmoothPlastic)
+	decor(d:post('WetPatch', 3.4, 0.03, V(7.6, 0, Z(-32)), C(80, 92, 110), M.SmoothPlastic)).Transparency = 0.3
+	d:box('PayMachine', V(-0.7, 0.56, Z(-16.6)), V(0.7, 4.0, Z(-15.8)), C(70, 110, 170), M.SmoothPlastic)
+	decor(d:box('PayMachineFace', V(-0.5, 2.4, Z(-15.85)), V(0.5, 3.4, Z(-15.7)), P.cream, M.SmoothPlastic))
+	-- The multi-storey car park: three decks on columns behind low parapets, a stair tower at its south-west corner, a
+	-- dark back wall so the floors read as open.
+	local cp = d:group('CarPark')
+	local grey, deep = C(178, 180, 186), C(62, 64, 72)
+	cp:box('CarParkFloor', V(36, -1, Z(-62)), V(64, 0.06, Z(-22)), C(108, 110, 118), M.Asphalt)
+	cp:box('CarParkBack', V(62.6, 0, Z(-62)), V(63.4, 27, Z(-22)), deep, M.SmoothPlastic)
+	for _, y in { 8.4, 17.4, 26.4 } do
+		cp:box('CarParkDeck', V(36, y, Z(-62)), V(64, y + 0.6, Z(-22)), grey, M.Concrete)
+		cp:box('CarParkParapet', V(35.6, y + 0.6, Z(-62)), V(36.4, y + 3.2, Z(-22)), grey, M.Concrete)
+		cp:box('CarParkParapet', V(36, y + 0.6, Z(-22.4)), V(64, y + 3.2, Z(-21.6)), grey, M.Concrete)
+	end
+	for _, z in { -22, -35.5, -49 } do cp:box('CarParkColumn', V(35.8, 0, Z(z) - 0.6), V(37.0, 26.4, Z(z) + 0.6), grey:Lerp(P.black, 0.12), M.Concrete) end
+	cp:box('StairTower', V(36, 0, Z(-62)), V(42.4, 33, Z(-55.6)), C(150, 154, 162), M.Concrete)
+	decor(cp:box('StairGlass', V(35.8, 3, Z(-60.6)), V(36.0, 31, Z(-57)), P.glass, M.SmoothPlastic))
+	Street.carLite(cp, CFrame.new(44, 9.0, Z(-31)) * CFrame.Angles(0, -math.pi / 2, 0), P.white)
+	Street.carLite(cp, CFrame.new(46, 18.0, Z(-43)) * CFrame.Angles(0, math.pi / 2, 0), C(96, 150, 132))
+	Street.carLite(cp, CFrame.new(42, 27.0, Z(-38)) * CFrame.Angles(0, -math.pi / 2, 0), C(206, 84, 72))
+	Street.carLite(cp, CFrame.new(50, 0.06, Z(-46)) * CFrame.Angles(0, math.pi / 2, 0), C(70, 110, 170))
+	-- The ramp up to the first deck along the north end (from the cross street's side, outside x 36), its parapets, a car
+	-- halfway up and the barrier arm down across its foot.
+	local slope = math.atan2(9, 16)
+	cp:wedge('CarParkRamp', V(8, 9, 16), CFrame.new(42, 4.5, Z(-14)) * CFrame.Angles(0, math.pi, 0), grey, M.Concrete)
+	for _, x in { 38.2, 45.8 } do plank(cp, 'RampParapet', V(x, 1.4, Z(-6)), V(x, 10.4, Z(-22)), 0.5, 1.6, grey:Lerp(P.black, 0.08), M.Concrete) end
+	Street.carLite(cp, CFrame.new(42, 4.8, Z(-14.6)) * CFrame.Angles(slope, 0, 0), C(236, 186, 76))
+	cp:box('BarrierPost', V(46.4, 0, Z(-5.4)), V(47.4, 3.6, Z(-4.4)), C(236, 186, 76), M.SmoothPlastic)
+	cp:box('BarrierArm', V(38.2, 2.9, Z(-5.1)), V(46.4, 3.3, Z(-4.7)), P.white, M.SmoothPlastic)
+	decor(cp:box('BarrierStripe', V(40.6, 2.85, Z(-5.15)), V(42.4, 3.35, Z(-4.65)), C(206, 70, 62), M.SmoothPlastic))
+	-- The west slab, close to the road, its door with a delivery scooter on its stand.
+	Street.slab(Street.lot(d, -1, 27, Z(-9), 44), 44, { name = 'WestSlab', floors = 6, wall = C(236, 206, 176), band = P.white, flats = 5, core = 26, depth = 13,
+		accents = { { 2, 2 }, { 5, 3 }, { 3, 5 }, { 1, 6 }, { 4, 2 } }, accent = { C(214, 124, 78), C(222, 150, 70) }, dishes = { { 1, 3 }, { 4, 4 }, { 2, 6 } } })
+	d:box('WestPath', V(-27, -1, Z(-37.4)), V(-19, 0.16, Z(-33.4)), P.tileB, M.SmoothPlastic)
+	Street.scooter(d, CFrame.new(-21.6, 0.16, Z(-28.2)) * CFrame.Angles(0, math.pi / 2, 0), C(70, 140, 196))
+	lantern(d, V(-17.4, 0.3, Z(-48)))
+	lantern(d, V(17.2, 0.3, Z(-20)))
+	Street.seal(d, top)
+end
+
+-- Stage 12, "the community garden". The estate's last street has no road: a square of paving where the residents grow
+-- vegetables. Raised beds inside a low fence, the greenhouse at the garden's far corner (its pitched glass roof is the
+-- landmark), a wheelbarrow, sacks and a water butt by the beds. The one big tree stands in the square with a bench
+-- under it. East, the estate's tallest block; west, a lower slab behind the garden.
+function Street.garden(ctx, i)
+	local d, top = Street.core(ctx, i)
+	local function Z(z) return top + z end
+	for _, zz in { { -8, 0 }, { -SLEN, -53 } } do d:box('CrossPaving', V(-FRONT, -1, Z(zz[1])), V(FRONT, 0, Z(zz[2])), P.tileA, M.SmoothPlastic) end
+	d:box('Square', V(-30, -1, Z(-53)), V(17, 0.06, Z(-8)), C(214, 204, 188), M.SmoothPlastic)
+	d:box('Lawn', V(-64, -1, Z(-53)), V(-30, 0.12, Z(-8)), P.grass, M.Grass)
+	d:box('Lawn', V(17, -1, Z(-53)), V(64, 0.12, Z(-8)), P.grass, M.Grass)
+	-- The garden: a soil-and-grass plot inside a low plank fence, a gap toward the square.
+	local gx0, gx1, gz0, gz1 = -30, -7, Z(-52), Z(-20)
+	d:box('GardenPlot', V(gx0, 0.06, gz0), V(gx1, 0.14, gz1), C(132, 168, 92), M.Grass)
+	local fence, fh = C(176, 136, 96), 2.4
+	d:box('GardenFence', V(gx0, 0, gz1 - 0.3), V(gx1, fh, gz1), fence, M.WoodPlanks)
+	d:box('GardenFence', V(gx1 - 0.3, 0, gz0), V(gx1, fh, Z(-30)), fence, M.WoodPlanks)
+	d:box('GardenFence', V(gx1 - 0.3, 0, Z(-25)), V(gx1, fh, gz1), fence, M.WoodPlanks)
+	d:box('GardenFence', V(gx0, 0, gz0), V(gx1, fh, gz0 + 0.3), fence, M.WoodPlanks)
+	Street.raisedBed(d, CFrame.new(-21, 0.14, Z(-25)), 12, 3.4, C(206, 84, 72))
+	Street.raisedBed(d, CFrame.new(-23, 0.14, Z(-31.5)), 10, 3.4, C(236, 186, 76))
+	Street.raisedBed(d, CFrame.new(-20, 0.14, Z(-38)), 14, 3.4, C(150, 96, 160))
+	Street.greenhouse(d, CFrame.new(-16.5, 0.14, Z(-46)) * CFrame.Angles(0, math.pi / 2, 0), 8, 12)
+	Street.wheelbarrow(d, CFrame.new(-10.6, 0.14, Z(-33.6)) * CFrame.Angles(0, 0.5, 0), C(206, 84, 72))
+	for q, p in { V(-27.4, 0.14, Z(-44.0)), V(-26.0, 0.14, Z(-45.2)) } do d:blob('CompostSack', V(1.6, 1.7, 1.3), p + V(0, 0.85, 0), q == 1 and C(70, 120, 84) or C(186, 160, 118), M.Fabric) end
+	d:post('WaterButt', 1.2, 3.0, V(-27.6, 0.14, Z(-48.4)), C(70, 120, 84), M.SmoothPlastic)
+	d:post('WaterButtLid', 1.3, 0.3, V(-27.6, 3.14, Z(-48.4)), Craft.dark(C(70, 120, 84)), M.SmoothPlastic)
+	-- The one tree in the square, a bench under it facing the garden.
+	d:box('TreeBed', V(8.6, 0.06, Z(-43.4)), V(14.8, 0.4, Z(-37.2)), C(98, 72, 54), M.Ground)
+	Street.lawnTree(d, V(11.7, 0.4, Z(-40.3)), 1201, 1.35)
+	bench(d, V(7.0, 0.06, Z(-40.4)), V(-1, 0, 0))
+	-- East: the estate's tallest block, its door toward the square. West: a lower slab behind the garden.
+	Street.slab(Street.lot(d, 1, 33, Z(-14), 30), 30, { name = 'TowerBlock', floors = 8, wall = P.cream, band = P.tanLight, flats = 3, core = 15, depth = 18,
+		accents = { { 1, 3 }, { 3, 5 }, { 2, 7 }, { 1, 8 }, { 3, 2 }, { 2, 4 } }, accent = { C(222, 150, 70), C(92, 156, 150), C(204, 96, 78) }, dishes = { { 2, 4 }, { 3, 6 } } })
+	d:box('TowerPath', V(17, -1, Z(-31)), V(33, 0.16, Z(-27)), P.tileB, M.SmoothPlastic)
+	Street.slab(Street.lot(d, -1, 40, Z(-14), 40), 40, { name = 'GardenSlab', floors = 4, wall = P.tan, band = P.cream, flats = 5, core = 22, gallery = true })
+	lantern(d, V(14.6, 0.06, Z(-50.5)))
+	Street.seal(d, top)
+end
+
+-- The Yards. ------------------------------------------------------------------------------------------------------------
+-- Stage 13, "the container yard". The whole west side is container stacks, one to three high in uneven steps. A gantry
+-- crane straddles the stacks and the yard (the tallest thing since the estate), a container hanging from it. In the
+-- middle of the yard one container stands open with its doors back, cartons inside, and a forklift brings a pallet to
+-- it; the walk passes either side. East, behind a high fence: the site office (two cabins stacked) and more stacks; the
+-- reach stacker is parked on the apron in front of it.
+function Street.containerYard(ctx, i)
+	local d, top = Street.core(ctx, i)
+	local function Z(z) return top + z end
+	Street.yardGround(d, top)
+	local Y = Street.yardColors
+	local red, blue, green, cream, grey = Y.red, Y.blue, Y.green, Y.cream, Y.grey
+	local cols = {
+		{ -24, { { red }, { blue, green } } },
+		{ -32.6, { { green, cream }, { grey, red } } },
+		{ -41.2, { { blue, red, cream }, { red } } },
+		{ -49.8, { { cream, grey }, { blue, cream, red } } },
+		{ -58.4, { { red, blue, green }, { green, grey } } },
+	}
+	for k, col in cols do
+		for b, zc in { -21, -43.4 } do Street.stack(d, CFrame.new(col[1], 0, Z(zc)), col[2][b], k == 1) end
+	end
+	Street.gantryCrane(d, CFrame.new(0, 0, Z(-45)), -64.2, 40, 28, Y.crane, -41.2, 12.6, blue)
+	Street.openContainer(d, CFrame.new(0.4, 0, Z(-41.6)), blue)
+	Street.forklift(d, CFrame.new(8.6, 0, Z(-27.4)) * CFrame.Angles(0, math.pi / 2, 0), Y.forklift)
+	Street.nameSign(d, V(-12.4, 0, Z(-9.4)), 'THE YARDS')
+	pallet(d, CFrame.new(-6.6, 0, Z(-29.4)))
+	d:box('Carton', V(-8.2, 0.8, Z(-30.8)), V(-5.0, 3.4, Z(-28.0)), P.crate, M.Cardboard)
+	-- East: the fence along the yard, the office behind it, more stacks, the reach stacker on the apron.
+	chainLink(d, V(34, 0, Z(-8.5)), V(34, 0, Z(-33)), 9, nil, 0.5, C(70, 74, 82))
+	Street.siteOffice(d, CFrame.new(40, 0, Z(-26)) * CFrame.Angles(0, -math.pi / 2, 0), 14, C(232, 232, 236))
+	for _, s in { { 50.4, -44, { green, red } }, { 59, -44, { blue } } } do Street.stack(d, CFrame.new(s[1], 0, Z(s[2])), s[3], false) end
+	Street.reachStacker(d, CFrame.new(24, 0, Z(-24)), Y.stacker)
+	Street.floodlight(d, V(30, 0, Z(-51)), V(0, 0, Z(-30)))
+	Street.seal(d, top)
+end
+
+-- Stage 14, "the depot". A long shed on the east with three loading docks in three states: shut; open, with pallet
+-- racks inside and pallets and a hand truck on the dock; and a van backed up to the third. In the middle of the yard a
+-- lorry stands on the weighbridge, the walk going round it. West: the gatehouse with its fuel pump under a canopy, a
+-- high fence, and the boiler house whose tall brick chimney is the landmark.
+function Street.depot(ctx, i)
+	local d, top = Street.core(ctx, i)
+	local function Z(z) return top + z end
+	Street.yardGround(d, top)
+	-- The shed: corrugated walls (a rib every 4.8), a low-pitched roof, the dock platform along its front.
+	local shed = d:group('DepotShed')
+	local wall, ribC, roofC = C(186, 192, 200), C(170, 176, 186), C(96, 104, 120)
+	shed:box('ShedWall', V(36.4, -1, Z(-62)), V(64, 18, Z(-6)), wall, M.SmoothPlastic)
+	for z = -8.4, -60, -4.8 do decor(shed:box('ShedRib', V(36.1, 0.6, Z(z) - 0.35), V(36.4, 17.4, Z(z) + 0.35), ribC, M.SmoothPlastic)) end
+	shed:box('ShedRoof', V(35.6, 18, Z(-62.6)), V(64.4, 19.2, Z(-5.4)), roofC, M.SmoothPlastic)
+	shed:box('ShedBand', V(36.0, 13.4, Z(-62)), V(36.5, 15.0, Z(-6)), C(62, 108, 196), M.SmoothPlastic)
+	shed:box('DockPlatform', V(32.8, 0, Z(-54)), V(36.4, 1.3, Z(-8)), C(150, 152, 158), M.Concrete)
+	d:box('Apron', V(18, 0, Z(-54)), V(32.8, 0.05, Z(-8)), C(156, 158, 164), M.Concrete)
+	for k, zc in { -15, -31, -47 } do
+		local z0, z1 = Z(zc - 4.6), Z(zc + 4.6)
+		shed:box('DockFrame', V(35.9, 1.3, z0 - 0.6), V(36.5, 12.0, z1 + 0.6), P.warehouseDark, M.Metal)
+		for _, zz in { z0 - 0.3, z1 + 0.3 } do shed:box('DockBumper', V(32.4, 0.4, zz - 0.4), V(32.8, 1.6, zz + 0.4), P.black, M.SmoothPlastic) end
+		if k == 2 then
+			-- open: the dark inside with a pallet rack (two uprights, two beams, a pallet of cartons on each level)
+			decor(shed:box('DockInside', V(35.8, 1.3, z0), V(36.1, 11.4, z1), C(36, 38, 44), M.SmoothPlastic))
+			for _, z in { z0 + 0.8, z1 - 0.8 } do shed:box('RackUpright', V(33.2, 1.3, z - 0.25), V(33.6, 10.6, z + 0.25), C(220, 120, 60), M.Metal) end
+			for _, y in { 5.4, 9.6 } do
+				shed:box('RackBeam', V(33.1, y, z0 + 0.6), V(33.7, y + 0.5, z1 - 0.6), C(70, 110, 170), M.Metal)
+				shed:box('RackLoad', V(33.0, y + 0.5, z0 + 1.4), V(35.6, y + 3.0, z1 - 1.4), P.crate, M.Cardboard)
+			end
+		else
+			shed:box('RollDoor', V(35.8, 1.3, z0), V(36.2, 11.4, z1), P.rollDoor, M.Metal)
+			for y = 3, 10.5, 2.5 do decor(shed:box('DoorSlat', V(35.65, y, z0), V(35.8, y + 0.2, z1), P.rollDoor:Lerp(P.black, 0.35), M.Metal)) end
+		end
+	end
+	Street.boxTruck(d, CFrame.new(25.6, 0.05, Z(-47)) * CFrame.Angles(0, math.pi / 2, 0), C(206, 84, 72))
+	pallet(d, CFrame.new(30.2, 0.05, Z(-34.6)))
+	crate(d, CFrame.new(30.0, 0.85, Z(-34.6)), 2.6)
+	pallet(d, CFrame.new(29.8, 0.05, Z(-25.8)) * CFrame.Angles(0, 0.2, 0))
+	Street.handTruck(d, CFrame.new(34.4, 1.3, Z(-29.4)) * CFrame.Angles(0, -math.pi / 2, 0))
+	-- The weighbridge in the middle of the yard with a lorry on it.
+	d:box('Weighbridge', V(-6.4, 0, Z(-50)), V(8.4, 0.1, Z(-20)), C(120, 124, 132), M.DiamondPlate)
+	Street.lorry(d, CFrame.new(1, 0.1, Z(-35.5)) * CFrame.Angles(0, math.pi + 0.32, 0), C(62, 108, 196), C(232, 232, 236))
+	-- West: the gatehouse and its fuel pump, a high fence, the boiler house and its chimney.
+	d:box('FuelIsland', V(-28, 0, Z(-26)), V(-22, 0.4, Z(-17)), P.kerb, M.Concrete)
+	d:box('FuelPump', V(-26.0, 0.4, Z(-22.6)), V(-24.0, 5.0, Z(-20.4)), C(206, 84, 72), M.SmoothPlastic)
+	decor(d:box('FuelPumpFace', V(-23.95, 2.6, Z(-22.2)), V(-23.85, 4.0, Z(-20.8)), P.cream, M.SmoothPlastic))
+	for _, z in { -18, -25 } do d:box('CanopyPost', V(-25.3, 0.4, Z(z) - 0.3), V(-24.7, 9.4, Z(z) + 0.3), P.frame, M.SmoothPlastic) end
+	d:box('FuelCanopy', V(-31, 9.4, Z(-28)), V(-19, 10.6, Z(-15)), P.white, M.SmoothPlastic)
+	decor(d:box('FuelCanopyBand', V(-31.1, 9.6, Z(-28.1)), V(-18.9, 10.3, Z(-14.9)), C(206, 84, 72), M.SmoothPlastic))
+	Street.siteOffice(d, CFrame.new(-36, 0, Z(-10)) * CFrame.Angles(0, math.pi / 2, 0), 10, C(150, 186, 168))
+	chainLink(d, V(-34, 0, Z(-30)), V(-34, 0, Z(-44)), 9, nil, 0.5, C(70, 74, 82))
+	local boiler = d:group('BoilerHouse')
+	boiler:box('BoilerWall', V(-60, -1, Z(-62)), V(-38, 12, Z(-46)), C(178, 98, 80), M.Brick)
+	boiler:box('BoilerRoof', V(-60.4, 12, Z(-62.4)), V(-37.6, 13, Z(-45.6)), P.slate, M.SmoothPlastic)
+	boiler:box('BoilerDoor', V(-38.2, 0, Z(-56)), V(-37.8, 9, Z(-50)), P.rollDoor, M.Metal)
+	decor(boiler:box('BoilerWindows', V(-38.1, 6, Z(-61)), V(-37.9, 10, Z(-57.4)), P.glass, M.SmoothPlastic))
+	Street.chimney(d, V(-46, 0, Z(-58)), 40)
+	Street.floodlight(d, V(-14, 0, Z(-12)), V(0, 0, Z(-34)))
+	Street.seal(d, top)
+end
+
+-- Stage 15, "the rail spur", and the walk-in to the boss yard. A railway crosses the yard on the slant, flush with the
+-- asphalt; a boxcar stands on it on the west side and a level-crossing signal stands at each side of the walk. Past the
+-- line, high fences close in from both sides like a funnel and floodlight masts at its mouth light the way through gate
+-- 16 to the Champ Ring. Behind the fences, containers on the west and a parked trailer on the east.
+function Street.railSpur(ctx, i)
+	local d, top = Street.core(ctx, i)
+	local function Z(z) return top + z end
+	Street.yardGround(d, top)
+	local a, b = V(-64, 0, Z(-38)), V(64, 0, Z(-12))
+	Street.track(d, a, b)
+	local dir = (b - a).Unit
+	local function onTrack(x) return a + dir * ((x - a.X) / dir.X) end
+	local p = onTrack(-27)
+	Street.boxcar(d, CFrame.lookAt(p, p + dir), C(150, 86, 66))
+	for _, x in { 13, -11 } do Street.crossing(d, CFrame.new(onTrack(x) + V(0, 0, 6))) end
+	-- The funnel: high fences closing in toward gate 16, with gaps nowhere; floodlights at its mouth aimed at the ring.
+	local cage = C(70, 74, 82)
+	chainLink(d, V(-36, 0, Z(-40)), V(-13, 0, Z(-53)), 10, nil, 0.5, cage)
+	chainLink(d, V(36, 0, Z(-36)), V(13, 0, Z(-53)), 10, nil, 0.5, cage)
+	for _, x in { -36, 36 } do chainLink(d, V(x, 0, Z(-SLEN + 0.8)), V(x, 0, Z(x < 0 and -40 or -36)), 10, nil, 0.5, cage) end
+	for _, x in { -10.6, 10.6 } do Street.floodlight(d, V(x, 0, Z(-51.4)), V(0, 0, BOSS_TOP - 34)) end
+	local Y = Street.yardColors
+	Street.stack(d, CFrame.new(-44, 0, Z(-52)), { Y.green, Y.red }, false)
+	Street.stack(d, CFrame.new(-52.6, 0, Z(-52)), { Y.blue }, false)
+	Street.stack(d, CFrame.new(-61.2, 0, Z(-52)), { Y.cream, Y.blue }, false)
+	Street.lorry(d, CFrame.new(50, 0, Z(-48)) * CFrame.Angles(0, math.pi, 0), C(206, 84, 72), C(140, 146, 156))
+	Street.seal(d, top)
+end
+
+-- Dispatch from the district builders.
+function Street.apartments(ctx, i)
+	return ({ [10] = Street.courtyard, [11] = Street.carPark, [12] = Street.garden })[i](ctx, i)
+end
+function Street.yards(ctx, i)
+	return ({ [13] = Street.containerYard, [14] = Street.depot, [15] = Street.railSpur })[i](ctx, i)
+end
+
+-- (end of the Apartments and the Yards)
 
 ---------------------------------------------------------------------------------------------- boss yard
 -- The warehouse on the left, containers on the right, the Champ Ring in the middle (the last training

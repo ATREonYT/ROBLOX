@@ -25,15 +25,6 @@ return function(t)
   for _,i in {3,1,2} do local m=Instance.new('Model');m:SetAttribute('Stage',i);m:SetAttribute('WallId','W'..i);m:SetAttribute('Required',i*10);m:SetAttribute('LineZ',-i*10);table.insert(models,m) end
   local g=R.fromModels(models);t.expect.equal(g[1].Stage,1);t.expect.equal(g[3].WallId,'W3');t.expect.equal(g[2].HalfWidth,20)
  end)
- t.test('the hood map runs 15 fights in walking order, then the boss',function()
-  local V2=require(game.ServerStorage.TheBlockV2);local S=require(game.ReplicatedStorage.Shared.Config.Skins)
-  t.expect.equal(#V2.Fights,16)
-  for i,f in V2.Fights do
-   t.expect.equal(f.Fight,i)
-   if i>1 then t.expect.truthy(f.Z<=V2.Fights[i-1].Z) end
-  end
-  t.expect.truthy(V2.Fights[16].Boss)
- end)
  t.test('every stage needs more power than the last, and the Champ Ring opens with the boss yard',function()
   local V2=require(game.ServerStorage.TheBlockV2);local S=require(game.ReplicatedStorage.Shared.Config.Skins)
   t.expect.equal(#V2.StagePower,16)
