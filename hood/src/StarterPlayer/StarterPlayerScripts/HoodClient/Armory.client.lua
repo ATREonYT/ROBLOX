@@ -136,6 +136,7 @@ local function paint(slot, state)
 	for _, p in slot.Tops do p.Color = look.Top end
 	for _, p in slot.Glows do p.Color = look.Glow end
 	for _, p in slot.Shades do p.Color = shade end
+	for _, p in slot.Mats do p.Color = look.Mat or look.Glow end
 	for _, l in slot.Lights do l.Color = look.Top end
 	for _, e in slot.Hazes do e.Color = ColorSequence.new(look.Top) end
 	if slot.Strip then slot.Strip.Color = look.Strip end
@@ -170,11 +171,12 @@ local function bind(model)
 	if not gun or (slots[id] and slots[id].Model == model) then return end
 	local point = model:FindFirstChild('GunPoint_' .. id, true) or model:WaitForChild('GunPoint_' .. id, 5)
 	if not point or not model.Parent then return end
-	local slot = { Gun = gun, Model = model, Tops = {}, Glows = {}, Shades = {}, Lights = {}, Hazes = {} }
+	local slot = { Gun = gun, Model = model, Tops = {}, Glows = {}, Shades = {}, Mats = {}, Lights = {}, Hazes = {} }
 	for _, d in model:GetDescendants() do
 		if d.Name == 'StateTop' and d:IsA('BasePart') then table.insert(slot.Tops, d)
 		elseif d.Name == 'StateGlow' and d:IsA('BasePart') then table.insert(slot.Glows, d)
 		elseif d.Name == 'StateShade' and d:IsA('BasePart') then table.insert(slot.Shades, d)
+		elseif d.Name == 'StateMat' and d:IsA('BasePart') then table.insert(slot.Mats, d)
 		elseif d.Name == 'StateStrip' and d:IsA('BasePart') then slot.Strip = d
 		elseif d:IsA('PointLight') and d.Parent and d.Parent.Name == 'StateGlow' then table.insert(slot.Lights, d)
 		elseif d:IsA('ParticleEmitter') and d.Name == 'StateHaze' then table.insert(slot.Hazes, d)

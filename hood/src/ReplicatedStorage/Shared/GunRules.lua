@@ -9,15 +9,15 @@ local GunRules = {}
 GunRules.Range = 14 -- how close (studs) you must stand to a gun's pedestal point to buy or equip it
 
 -- Pedestal colours per state, shared by the map builder (first paint) and the client (repaints): the pad face
--- (Top), its light core (Glow), its dark rim (Shade), the front plate (Strip), the price (Text) and the
--- nameplate's price/state line (Word: red locked, yellow buy, blue owned, green equipped). Buy is how a Locked gun
--- you can afford is shown (the same pad, a yellow BUY line).
+-- (Top), its light core (Glow), its dark rim (Shade), the mat under the pad (Mat), the front plate (Strip), the price
+-- (Text) and the nameplate's price/state line (Word: red locked, yellow buy, blue owned, green equipped). Buy is how a
+-- Locked gun you can afford is shown (the same pad, a yellow BUY line).
 local C = Color3.fromRGB
 GunRules.Colors = {
-	Locked = { Top = C(255, 112, 186), Glow = C(255, 160, 214), Shade = C(150, 50, 106), Strip = C(226, 64, 146), Text = C(255, 228, 92), Word = C(255, 92, 92) },
-	Buy = { Top = C(255, 112, 186), Glow = C(255, 160, 214), Shade = C(150, 50, 106), Strip = C(226, 64, 146), Text = C(255, 228, 92), Word = C(255, 214, 52) },
-	Owned = { Top = C(72, 150, 255), Glow = C(140, 196, 255), Shade = C(30, 66, 152), Strip = C(40, 96, 210), Text = C(150, 205, 255), Word = C(110, 180, 255) },
-	Equipped = { Top = C(64, 220, 104), Glow = C(150, 250, 172), Shade = C(20, 112, 50), Strip = C(26, 156, 64), Text = C(120, 255, 150), Word = C(92, 242, 122) },
+	Locked = { Top = C(255, 112, 186), Glow = C(255, 160, 214), Shade = C(150, 50, 106), Mat = C(240, 132, 194), Strip = C(226, 64, 146), Text = C(255, 228, 92), Word = C(255, 92, 92) },
+	Buy = { Top = C(255, 112, 186), Glow = C(255, 160, 214), Shade = C(150, 50, 106), Mat = C(240, 132, 194), Strip = C(226, 64, 146), Text = C(255, 228, 92), Word = C(255, 214, 52) },
+	Owned = { Top = C(72, 150, 255), Glow = C(140, 196, 255), Shade = C(30, 66, 152), Mat = C(118, 170, 250), Strip = C(40, 96, 210), Text = C(150, 205, 255), Word = C(110, 180, 255) },
+	Equipped = { Top = C(64, 220, 104), Glow = C(150, 250, 172), Shade = C(20, 112, 50), Mat = C(116, 222, 146), Strip = C(26, 156, 64), Text = C(120, 255, 150), Word = C(92, 242, 122) },
 }
 
 -- Makes a Guns table safe to use in place: unknown ids are dropped, the starter is always owned, and the

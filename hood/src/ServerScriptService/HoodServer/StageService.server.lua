@@ -95,7 +95,7 @@ while task.wait(0.25) do
 		local root = character and character:FindFirstChild('HumanoidRootPart')
 		if profile and root then
 			local p = frame:PointToObjectSpace(root.Position)
-			local newly, blockedBy = StageRules.check(gates, p, profile.Data.Rep, profile.Data.ClearedWalls)
+			local newly, blockedBy = StageRules.check(gates, p, profile.Data.Rep, profile.Data.ClearedWalls, player:GetAttribute('WaveCleared')) -- (WaveService: the targets before each gate)
 			for _, gate in newly do clear(player, profile, gate) end
 			if blockedBy then
 				-- Slipped through a gate this player can't open yet: put them back in front of it.

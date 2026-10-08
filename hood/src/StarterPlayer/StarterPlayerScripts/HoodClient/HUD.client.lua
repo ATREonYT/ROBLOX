@@ -230,7 +230,8 @@ hint.TextScaled = true
 Kit.new('UITextSizeConstraint', { MaxTextSize = 30, MinTextSize = 12, Parent = hint })
 
 -- Notices stack under the hint, newest on top, three at most.
-local toastStack = Kit.new('Frame', { Name = 'Toasts', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 50), Size = px(720, 160), ZIndex = 40, Parent = root })
+-- (They start at y 92: Goals.client's NEXT GOAL line sits between the hint and them, y 50..86.)
+local toastStack = Kit.new('Frame', { Name = 'Toasts', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 92), Size = px(720, 160), ZIndex = 40, Parent = root })
 Kit.new('UIListLayout', { Padding = UDim.new(0, 6), HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder, Parent = toastStack })
 local toastCount = 0
 local function toast(text, tone)
@@ -664,6 +665,9 @@ local function rangeColor(id, row)
 	return row.Color or Color3.new(1, 1, 1)
 end
 local function hintText(power)
+	-- In a stage with targets up, Waves.client's "N LEFT" counter takes the hint's place at the top centre.
+	local waveLeft = player:GetAttribute('WaveLeft')
+	if type(waveLeft) == 'number' and waveLeft > 0 then return '' end
 	local skin = skinNow()
 	local best = bestUnlocked(power)
 	if best.Index > skin.Index then
@@ -748,7 +752,7 @@ local function refresh()
 	hint.Text = hintText(power)
 	if current and current.Update then current.Update() end
 end
-for _, key in { 'Power', 'EquippedSkin', 'TrainingStation', 'PowerRate', 'GunMultiplier', 'EquippedGun', 'OwnedGuns', 'GuidePhase' } do
+for _, key in { 'Power', 'EquippedSkin', 'TrainingStation', 'PowerRate', 'GunMultiplier', 'EquippedGun', 'OwnedGuns', 'GuidePhase', 'WaveLeft' } do
 	player:GetAttributeChangedSignal(key):Connect(refresh)
 end
 for _, key in { 'Cash', 'Rebirths' } do

@@ -1,6 +1,9 @@
 -- Stage gates on your screen. Each gate is the reference street's stage wall: a see-through haze (pink up top,
 -- white at the foot) with "Stage N / Recommended / Power: X" on it, and two pads on the sidewalks in front.
 --   Locked   Power below the number: the wall is solid for you. Walk into it and it flashes red and bumps you back.
+--   Wave     You have the Power but this stage's targets are still standing (the server's WaveCleared, the highest
+--            stage whose wave you've cleared, is below the stage before this gate): still solid, and the wall reads
+--            "Clear the targets first" (the Status line). Maps or servers without waves leave WaveCleared unset.
 --   Ready    You have enough: the haze turns mint green and breathes, the Power line turns green, walk through.
 --   Cleared  Already passed once (the server's count): the wall, its text and its pads are gone (the last gate's
 --            pads stay, the boss yard's way back), so the street ahead reads like the reference's: one wall, two pads.
@@ -10,7 +13,9 @@
 -- of each gate also gets the big "STAGE 3 CLEARED!" banner from the server.
 -- Map contract (TheBlockV2 stageGate): a Model tagged HoodStageGate (attributes Stage, Required, LineZ, HalfWidth,
 -- Color, Light) with a Barrier part carrying SurfaceGuis: Frames named Pane (attributes BaseColor and
--- BaseTransparency) and TextLabels Title, Sub and Power.
+-- BaseTransparency) and TextLabels Title, Sub, Power and Status (hidden unless 'Wave'); Field* parts (the emitter track: BaseColor,
+-- BaseTransparency); and the pads, parts named LobbyPad*/FurthestPad* (BaseTransparency; the prompt, sparkles and
+-- label hang off them).
 local Players = game:GetService('Players')
 local RS = game:GetService('ReplicatedStorage')
 local CollectionService = game:GetService('CollectionService')
@@ -50,9 +55,11 @@ CollectionService:GetInstanceRemovedSignal('HoodStageGate'):Connect(function(m) 
 local function collect(e)
 	if e.Barrier and e.Barrier.Parent and e.Collected then return end
 	e.Barrier = e.Model:FindFirstChild('Barrier', true)
-	e.Panes, e.Lines, e.Guis, e.Pads = {}, {}, {}, {}
+	e.Panes, e.Lines, e.Guis, e.Pads, e.Fields, e.Status = {}, {}, {}, {}, {}, {}
 	for _, d in e.Model:GetDescendants() do
 		if d:IsA('Frame') and d.Name == 'Pane' then table.insert(e.Panes, d)
+		elseif d:IsA('BasePart') and d.Name:sub(1, 5) == 'Field' then table.insert(e.Fields, d)
+		elseif d:IsA('TextLabel') and d.Name == 'Status' then table.insert(e.Status, d)
 		elseif d:IsA('BasePart') and (d.Name:sub(1, 8) == 'LobbyPad' or d.Name:sub(1, 11) == 'FurthestPad') then table.insert(e.Pads, d)
 		elseif d:IsA('TextLabel') and (d.Name == 'Power' or d.Name == 'Sub') then
 			table.insert(e.Lines, d)
@@ -67,14 +74,22 @@ end
 
 local function stateOf(e, power)
 	if e.Stage <= (player:GetAttribute('StagesCleared') or 0) then return 'Cleared' end
-	return power >= e.Required and 'Ready' or 'Locked'
+	if power < e.Required then return 'Locked' end
+	local wave = player:GetAttribute('WaveCleared')
+	if type(wave) == 'number' and e.Stage > 1 and wave < e.Stage - 1 then return 'Wave' end
+	return 'Ready'
 end
+local function shut(state) return state == 'Locked' or state == 'Wave' end
 
 -- The haze in a state: its own pink-to-white bands, mint while ready, a red flash when it stops you.
 local function tint(e, toward, amount)
 	for _, f in e.Panes do
 		local base = f:GetAttribute('BaseColor') or f.BackgroundColor3
 		f.BackgroundColor3 = toward and base:Lerp(toward, amount) or base
+	end
+	for _, p in e.Fields do
+		local base = p:GetAttribute('BaseColor') or p.Color
+		p.Color = toward and base:Lerp(toward, amount) or base
 	end
 end
 local function breathe(e, k)
@@ -90,16 +105,19 @@ local function paint(e, power, nextStage)
 	e.State, e.Painted, e.Last, e.Signed = state, e.Barrier, lastStage, signed
 	local b = e.Barrier
 	if b then
-		b.CanCollide = state == 'Locked' -- only for you: your own character's collisions run on your machine
+		b.CanCollide = shut(state) -- only for you: your own character's collisions run on your machine
 		b.Transparency = b:GetAttribute('BaseTransparency') or 1
 	end
 	for _, g in e.Guis do g.Enabled = state ~= 'Cleared' and (g.Name ~= 'Signage' or signed) end
+	for _, p in e.Fields do p.Transparency = state == 'Cleared' and 1 or (p:GetAttribute('BaseTransparency') or 0) end
 	local padsOff = state == 'Cleared' and e.Stage < lastStage
 	for _, pad in e.Pads do
-		pad.Transparency = padsOff and 1 or 0
-		local prompt = pad:FindFirstChildOfClass('ProximityPrompt')
-		if prompt then prompt.Enabled = not padsOff end
+		pad.Transparency = padsOff and 1 or (pad:GetAttribute('BaseTransparency') or 0)
+		for _, x in pad:GetDescendants() do
+			if x:IsA('ProximityPrompt') or x:IsA('ParticleEmitter') or x:IsA('BillboardGui') then x.Enabled = not padsOff end
+		end
 	end
+	for _, t in e.Status do t.Visible = state == 'Wave' end
 	tint(e, state == 'Ready' and MINT or nil, 0.6)
 	breathe(e, 0)
 	for _, t in e.Lines do
@@ -109,7 +127,7 @@ local function paint(e, power, nextStage)
 		if stroke then stroke.Color = ready and GO_INK or stroke:GetAttribute('BaseColor') or stroke.Color end
 	end
 	-- The moment a gate opens for you: a quick pop of the Power line.
-	if was == 'Locked' and state == 'Ready' then
+	if shut(was) and state == 'Ready' then
 		for _, t in e.Lines do
 			if t.Name == 'Power' then
 				local s = t:FindFirstChildOfClass('UIScale') or Instance.new('UIScale')
@@ -127,6 +145,7 @@ local function repaint()
 end
 player:GetAttributeChangedSignal('Power'):Connect(repaint)
 player:GetAttributeChangedSignal('StagesCleared'):Connect(repaint)
+player:GetAttributeChangedSignal('WaveCleared'):Connect(repaint)
 task.spawn(function()
 	while true do
 		repaint()
@@ -266,17 +285,18 @@ local function passed(e, rootPos)
 	if fx and fx:IsA('ParticleEmitter') then fx:Emit(60) end
 end
 
--- Walking into a locked gate: red flash, a bump back toward the lobby, and how much more you need.
+-- Walking into a shut gate: red flash, a bump back toward the lobby, and what you still need.
 local lastBump = 0
 local function bump(e, root)
 	if os.clock() - lastBump < 0.8 then return end
 	lastBump = os.clock()
 	tint(e, DENIED, 0.55)
-	task.delay(0.2, function() if e.State == 'Locked' then tint(e, nil) end end)
+	task.delay(0.2, function() if shut(e.State) then tint(e, nil) end end)
 	root.AssemblyLinearVelocity = frame:VectorToWorldSpace(Vector3.new(0, 15, 40))
 	buzz:Play()
 	local power = player:GetAttribute('Power') or 0
-	Juice.popNumber(root.Position + Vector3.new(0, 4, 0), 'NEED ' .. Format.compact(math.max(0, e.Required - power)) .. ' MORE 💪', DENIED)
+	local why = e.State == 'Wave' and 'CLEAR THE TARGETS FIRST 🎯' or ('NEED ' .. Format.compact(math.max(0, e.Required - power)) .. ' MORE 💪')
+	Juice.popNumber(root.Position + Vector3.new(0, 4, 0), why, DENIED)
 end
 
 Net.get('Cinematic').OnClientEvent:Connect(function(info)
@@ -295,8 +315,8 @@ RunService.Heartbeat:Connect(function()
 	local p = frame:PointToObjectSpace(root.Position)
 	for _, e in gates do
 		if math.abs(p.X) <= e.HalfWidth then
-			if lastZ and lastZ >= e.Z and p.Z < e.Z and e.State ~= 'Locked' then passed(e, root.Position) end
-			if e.State == 'Locked' and p.Z > e.Z and p.Z < e.Z + 3 then bump(e, root) end
+			if lastZ and lastZ >= e.Z and p.Z < e.Z and not shut(e.State) then passed(e, root.Position) end
+			if shut(e.State) and p.Z > e.Z and p.Z < e.Z + 3 then bump(e, root) end
 		end
 	end
 	lastZ = p.Z

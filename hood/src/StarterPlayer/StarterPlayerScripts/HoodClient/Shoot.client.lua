@@ -157,6 +157,8 @@ local function shoot()
 	local id = training()
 	local tool = heldGun()
 	if not id and not tool then return end
+	-- On a stage street with targets up, Waves.client fires the shots (this dry shot would double them).
+	if not id and (player:GetAttribute('WaveLeft') or 0) > 0 then return end
 	last = os.clock()
 	if id then remote:FireServer() end
 	local c = player.Character

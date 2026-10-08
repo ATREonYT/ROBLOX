@@ -1,7 +1,8 @@
 -- Lighting presets (research_notes/Front page feel and gamey stages/lighting_and_gates.md).
--- Lighting is shared by the whole place. TheBlockV2.Build() applies HoodSoft for you; otherwise, in the
+-- Lighting is shared by the whole place. TheBlockV2.Build() applies HoodSun for you; otherwise, in the
 -- Command Bar:
---   require(game.ServerStorage.HoodLighting).Apply()              -- "HoodSoft": bright and crisp, a touch softer (default)
+--   require(game.ServerStorage.HoodLighting).Apply()              -- "HoodSun": warm side sun, cool shade (default)
+--   require(game.ServerStorage.HoodLighting).Apply('HoodSoft')    -- the previous default: high sun, flatter
 --   require(game.ServerStorage.HoodLighting).Apply('FrontPage')   -- the older bright, high-sun, cool-shade look
 --   require(game.ServerStorage.HoodLighting).Apply('HoodCalm')    -- warm-neutral and muted
 --   require(game.ServerStorage.HoodLighting).Apply('GoldenBlock') -- hood evening that stays bright (events)
@@ -53,6 +54,34 @@ L.Presets = {
 		rays = { Intensity = 0.012, Spread = 0.2 },
 		sky = { SunAngularSize = 16, MoonAngularSize = 11, StarCount = 0, CelestialBodiesShown = true },
 		clouds = { Cover = 0.55, Density = 0.25, Color = C(255, 255, 255) },
+		wind = Vector3.new(8, 0, 4),
+	},
+	-- The side-lit day (BRIEF13/15), the default: a warm sun from +X (morning side), direction (0.50, 0.80, 0.33): about
+	-- 53 degrees up and leaning ~20 degrees to +Z (Roblox's sun rises at +X and leans to +Z by latitude - 23.5), so a
+	-- street seen down -Z has its left facades well lit and its right ones in shade while both sidewalks stay in sun (the
+	-- right buildings' shadow reaches 0.63 x their height across: just the grass, as ref1_street), with soft shadows; a
+	-- cool ambient so shade reads blue-grey, not black; thick white clouds; a light haze at distance; bloom only on Neon.
+	-- Calibrated with RENDER in render13 (Roblox's lighting model; its suggestion was Brightness 1.75 / OutdoorAmbient
+	-- 92,96,108) so a lit top face shows about its own Color3: ref1_street's road and sidewalks within a few sRGB, the
+	-- hall walkway on the reference's 176-184,179-187,221-227 (HoodSoft washed both out by +35..+60). Haze 0.1 keeps
+	-- the far hall wall crisp. The lobby hall's shell casts no shadows, so its interior takes this light like the
+	-- reference's bright, nearly shadowless hall, plus the cool PointLights in its light bars. (v4: the sun moved from
+	-- ClockTime 10.5 / latitude 45 to 9.85 / 43 for brighter street facades, and Brightness rose 1.85 -> 2.0 by the
+	-- ratio of the sun's old and new height, 0.86 / 0.80, so floors and roads keep their brightness.)
+	HoodSun = {
+		lighting = {
+			LightingStyle = Enum.LightingStyle.Soft, PrioritizeLightingQuality = true,
+			ClockTime = 9.85, GeographicLatitude = 43, Brightness = 2.0, ExposureCompensation = 0,
+			Ambient = C(90, 93, 104), OutdoorAmbient = C(100, 105, 122),
+			ColorShift_Top = C(255, 236, 210), ColorShift_Bottom = C(120, 130, 160),
+			EnvironmentDiffuseScale = 0.4, EnvironmentSpecularScale = 0.15, ShadowSoftness = 0.3, GlobalShadows = true,
+		},
+		atmosphere = { Density = 0.2, Offset = 0.5, Haze = 0.1, Glare = 0, Color = C(210, 226, 242), Decay = C(150, 170, 210) },
+		grade = { Brightness = 0.02, Contrast = 0.1, Saturation = 0.05, TintColor = C(255, 255, 255) },
+		bloom = { Intensity = 0.5, Size = 24, Threshold = 1.2 },
+		rays = { Intensity = 0.01, Spread = 0.2 },
+		sky = { SunAngularSize = 16, MoonAngularSize = 11, StarCount = 0, CelestialBodiesShown = true },
+		clouds = { Cover = 0.6, Density = 0.6, Color = C(255, 255, 255) },
 		wind = Vector3.new(8, 0, 4),
 	},
 	-- Warm-neutral and muted (the calm pass; no longer the default). A warm grey ambient (the roofed lobby hall is lit
@@ -152,7 +181,7 @@ end
 -- Apply a preset (default HoodSoft). If the sun would end up in front of players walking down the
 -- street (toward -Z), the latitude flips so the lit faces of gates and facades face the player.
 function L.Apply(name)
-	name = name or 'HoodSoft'
+	name = name or 'HoodSun'
 	local preset = L.Presets[name]
 	assert(preset, 'unknown preset ' .. tostring(name))
 	backup()

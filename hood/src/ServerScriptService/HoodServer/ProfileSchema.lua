@@ -14,6 +14,10 @@ Schema.Template={
  -- UNUSED. Speed was trained on the treadmills, which are gone (walk speed now comes from your look,
  -- Config/Skins.walkSpeed). Kept, and still validated, so saved profiles that carry it keep loading.
  Speed=0,
+ -- Stage target waves: the highest stage whose wave you cleared (Shared/WaveRules; gate i needs i-1). The goal
+ -- chain: the current goal's step (Shared/GoalRules); Synced false = a profile from before the chain, caught up
+ -- quietly on its first check.
+ Waves={Cleared=0},Goals={Step=1,Synced=true},
 }
 function Schema.new() return clone(Schema.Template) end
 function Schema.migrate(data)
@@ -32,7 +36,13 @@ function Schema.migrate(data)
   local aliases={Rookie='CornerKid',RoadRunner='Pickpocket',Crook='Bandit',Gangster='Crook',MafiaBoss='StreetBoss',Legend='Capo'}
   data.EquippedSkin=aliases[data.EquippedSkin] or data.EquippedSkin
  end
+ -- Profiles from before the waves and the goal chain: their passed gates count as cleared waves (nobody is
+ -- re-locked), and their goals catch up without paying.
+ if data.Waves==nil then data.Waves={Cleared=require(game.ReplicatedStorage.Shared.WaveRules).legacy(data.ClearedWalls)} end
+ if data.Goals==nil then data.Goals={Step=1,Synced=false} end
  reconcile(data,Schema.Template)
+ require(game.ReplicatedStorage.Shared.WaveRules).sanitize(data.Waves)
+ require(game.ReplicatedStorage.Shared.GoalRules).sanitize(data.Goals)
  -- Guns removed from the config fall away and the pistol stays owned, so a retired gun never locks a profile out.
  require(game.ReplicatedStorage.Shared.GunRules).sanitize(data.Guns)
  data.SchemaVersion=Schema.Version
@@ -58,10 +68,12 @@ function Schema.validate(data)
  assert(type(data.Guns)=='table' and type(data.Guns.Owned)=='table','Invalid Guns')
  for id,owned in pairs(data.Guns.Owned) do assert(type(id)=='string' and guns.ById[id] and owned==true,'Invalid owned gun') end
  assert(type(data.Guns.Equipped)=='string' and data.Guns.Owned[data.Guns.Equipped]==true,'Equipped gun not owned')
+ assert(type(data.Waves)=='table' and type(data.Waves.Cleared)=='number' and data.Waves.Cleared%1==0 and data.Waves.Cleared>=0 and data.Waves.Cleared<=64,'Invalid Waves')
+ assert(type(data.Goals)=='table' and type(data.Goals.Step)=='number' and data.Goals.Step%1==0 and data.Goals.Step>=1 and type(data.Goals.Synced)=='boolean','Invalid Goals')
  return true
 end
 function Schema.public(data)
  -- Explicit allowlist: receipt ledger and entitlement cache never leave the server.
- return {EquippedSkin=data.EquippedSkin,Rep=data.Rep,Cash=data.Cash,Rebirths=data.Rebirths,Evolution=clone(data.Evolution),HighestMapIndex=data.HighestMapIndex,UnlockedMaps=clone(data.UnlockedMaps),Crew=clone(data.Crew),Settings=clone(data.Settings),Onboarding=clone(data.Onboarding),Guns=clone(data.Guns)}
+ return {EquippedSkin=data.EquippedSkin,Rep=data.Rep,Cash=data.Cash,Rebirths=data.Rebirths,Evolution=clone(data.Evolution),HighestMapIndex=data.HighestMapIndex,UnlockedMaps=clone(data.UnlockedMaps),Crew=clone(data.Crew),Settings=clone(data.Settings),Onboarding=clone(data.Onboarding),Guns=clone(data.Guns),Waves=clone(data.Waves),Goals=clone(data.Goals)}
 end
 return Schema

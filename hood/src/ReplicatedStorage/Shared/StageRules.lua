@@ -6,11 +6,15 @@ local StageRules = {}
 
 StageRules.SLIP_DEPTH = 12 -- how far past a locked gate still counts as slipping through it
 
-function StageRules.check(gates, pos, power, cleared)
+-- waveCleared (optional): the highest stage whose target wave the player has cleared (WaveService's WaveCleared).
+-- Given, gate i (i >= 2) also needs it to be at least i - 1 (the targets in the stage before it are down); nil keeps
+-- the Power-only rule.
+function StageRules.check(gates, pos, power, cleared, waveCleared)
 	local newly, blockedBy = {}, nil
 	for _, g in gates do
 		if math.abs(pos.X) <= g.HalfWidth + 2 and pos.Z < g.Z then
-			if power >= g.Required then
+			local wavesDown = type(waveCleared) ~= 'number' or g.Stage <= 1 or waveCleared >= g.Stage - 1
+			if power >= g.Required and wavesDown then
 				if not cleared[g.WallId] then table.insert(newly, g) end
 			elseif pos.Z > g.Z - StageRules.SLIP_DEPTH and not blockedBy then
 				blockedBy = g

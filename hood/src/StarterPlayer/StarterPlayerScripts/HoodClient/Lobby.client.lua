@@ -270,10 +270,10 @@ indicator.Parent = player.PlayerGui
 local pointer = label(indicator, 'Destination', 22, C(255, 224, 80))
 
 ---------------------------------------------------------------------------------------------- stations
--- Training stations in the built lobby: shooter's box, sign, targets. The range lanes (a label with a Power row) stay in
--- full colour while locked, like the reference: the label says Locked in red and the station's effects run at
--- half rate. Older stations without that label (the original Block's gym) still show locked gear as a black
--- silhouette.
+-- Training stations in the built lobby: shooter's box, sign, targets. A locked station turns black, like the
+-- training lanes in the user's +1 video: range lanes built with the Silhouette attribute go black as a whole (every
+-- visible part, its textures, surface signs, effects and lights) while their label stays readable over them;
+-- older stations without it (the original Block's gym) black out their gear only.
 local okVfx, HoodVFX = pcall(require, RS.Shared.HoodVFX)
 if not okVfx then HoodVFX = nil end
 local stations = {}
@@ -281,11 +281,23 @@ for _, s in Skins.Stations do
 	local model = training:FindFirstChild('Training_' .. s.Id, true)
 	if model then
 		local sign = model:FindFirstChild('Sign', true) or model:FindFirstChild('Nameplate', true)
-		local entry = { Zone = model:FindFirstChild('TrainingZone', true), Sign = sign, Parts = {}, Swing = {}, Fx = model:FindFirstChild('Theme') }
+		local entry = { Zone = model:FindFirstChild('TrainingZone', true), Sign = sign, Parts = {}, Swing = {}, Fx = model:FindFirstChild('Theme'), Skins = {}, Guis = {} }
 		entry.Bag = sign ~= nil and sign:FindFirstChild('Power', true) ~= nil
+		if model:GetAttribute('Silhouette') then
+			entry.Whole = model
+			for _, p in model:GetDescendants() do
+				if p:IsA('BasePart') and p.Transparency < 1 then
+					table.insert(entry.Parts, { Part = p, Color = p.Color, Material = p.Material })
+				elseif p:IsA('Texture') or p:IsA('Decal') then
+					table.insert(entry.Skins, { Item = p, Transparency = p.Transparency })
+				elseif p:IsA('SurfaceGui') then
+					table.insert(entry.Guis, p)
+				end
+			end
+		end
 		local gear = model:FindFirstChild('Equipment')
 		if gear then
-			if not entry.Bag then
+			if not entry.Bag and not entry.Whole then
 				for _, p in gear:GetDescendants() do
 					if p:IsA('BasePart') and p.Transparency < 1 then table.insert(entry.Parts, { Part = p, Color = p.Color, Material = p.Material }) end
 				end
@@ -302,21 +314,13 @@ for _, s in Skins.Stations do
 		stations[s.Id] = entry
 	end
 end
--- Range-lane labels like the reference's spawn view: the stations at the two ends of each row show their
--- stack from anywhere, the ones in the middle of a row only up close (22 studs), so a row reads as two clean
--- stacks instead of a pile of text. A station is in the middle when two others sit within a row pitch of it.
+-- Range-lane labels like the video's training row: every lane shows its stack (Locked/Unlocked, what it needs,
+-- "xN Power") from across the hall. (Middle stays for a station that should only show up close; none does now.)
 local LABEL_FAR, LABEL_NEAR, NEXT_LIFT = 250, 22, Vector3.new(0, 6.5, 0)
 for _, e in stations do
 	if e.Bag and e.Zone then
 		e.Label = e.Sign:FindFirstChildWhichIsA('BillboardGui')
-		local near = 0
-		for _, o in stations do
-			if o ~= e and o.Bag and o.Zone then
-				local d = o.Zone.CFrame.Position - e.Zone.CFrame.Position
-				if Vector3.new(d.X, 0, d.Z).Magnitude < 16 then near += 1 end -- (row pitch 10.5-14.5; rows sit 35+ apart)
-			end
-		end
-		e.Middle = near >= 2
+		e.Middle = false
 	end
 end
 -- The lanes whose box is within 25 studs of each lane's box (any direction, any height): their stacks hide while
@@ -329,7 +333,7 @@ for _, e in stations do
 	end
 end
 local SILHOUETTE = C(18, 18, 22)
-local UNLOCKED, LOCKED = C(140, 206, 120), C(217, 119, 106) -- (soft sage and terracotta, as the lanes build them)
+local UNLOCKED, LOCKED = C(40, 235, 90), C(240, 40, 60) -- (the video's green Unlocked and red Locked, as the lanes build them)
 local function paintStations(n)
 	local goal = nil -- the next station to unlock shows its stack from afar (lifted clear if it's a middle one)
 	for _, s in Skins.Stations do
@@ -365,7 +369,13 @@ local function paintStations(n)
 					r.Part.Color = locked and SILHOUETTE or r.Color
 					r.Part.Material = locked and Enum.Material.SmoothPlastic or r.Material
 				end
-				if e.Fx and HoodVFX then HoodVFX.setDensity(e.Fx, locked and 0.5 or 1) end
+				if e.Whole then
+					for _, k in e.Skins do k.Item.Transparency = locked and 1 or k.Transparency end
+					for _, g in e.Guis do g.Enabled = not locked end
+					if HoodVFX then HoodVFX.setEnabled(e.Whole, not locked) end -- (the theme's effects and the lane's own flames)
+				elseif e.Fx and HoodVFX then
+					HoodVFX.setDensity(e.Fx, locked and 0.5 or 1)
+				end
 				local detail = e.Sign and e.Sign:FindFirstChild('Detail', true)
 				if detail then
 					if e.Bag then
