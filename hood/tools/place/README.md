@@ -4,7 +4,7 @@
 
 - every script from `hood/src`, laid out the way Rojo syncs them (`.meta.json` properties included, so the unit test
   runner stays disabled);
-- The Block V2 already built in Workspace, set as the active map, with its Front-page Day lighting applied.
+- The Block V2 already built in Workspace, set as the active map, with its HoodSoft lighting applied (bright sun, neutral grey shade, gentle bloom).
 
 ```sh
 sh hood/tools/place/build_place.sh              # needs Lune: brew install lune (or rokit add lune-org/lune)
