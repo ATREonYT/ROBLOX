@@ -42,7 +42,10 @@ end
 
 -- Teleport pads: 'Lobby' (past every gate: back to the block) and 'Furthest' (in the lobby: to the pad past
 -- your furthest cleared gate). Prompts are tagged HoodTeleport by the map builder.
+-- 'Lobby' lands you on the spawn facing the way a fresh spawn does (the map's LobbySpawnYaw).
+local spawnYaw = active.Root:GetAttribute('LobbySpawnYaw')
 local spawnPoint = frame * CFrame.new((active.Root:GetAttribute('LobbySpawn') or Vector3.new(0, 0, 30)) + Vector3.new(0, 3, 0))
+	* CFrame.Angles(0, type(spawnYaw) == 'number' and spawnYaw or 0, 0)
 local function teleport(player, target)
 	local character = player.Character
 	local root = character and character:FindFirstChild('HumanoidRootPart')
@@ -58,7 +61,7 @@ local function teleport(player, target)
 		end
 		cf = frame * CFrame.new(0, 3, best.Z - 12)
 	end
-	character:PivotTo(cf * CFrame.Angles(0, 0, 0))
+	character:PivotTo(cf)
 end
 local teleportLimit = {}
 local function hookPrompt(prompt)
