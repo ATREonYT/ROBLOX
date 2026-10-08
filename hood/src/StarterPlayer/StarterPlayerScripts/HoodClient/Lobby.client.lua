@@ -329,7 +329,7 @@ for _, e in stations do
 	end
 end
 local SILHOUETTE = C(18, 18, 22)
-local UNLOCKED, LOCKED = C(20, 235, 70), C(235, 25, 50)
+local UNLOCKED, LOCKED = C(140, 206, 120), C(217, 119, 106) -- (soft sage and terracotta, as the lanes build them)
 local function paintStations(n)
 	local goal = nil -- the next station to unlock shows its stack from afar (lifted clear if it's a middle one)
 	for _, s in Skins.Stations do
@@ -387,15 +387,26 @@ local function zoneOf(id)
 end
 
 ---------------------------------------------------------------------------------------------- new-player guide
--- A brand-new player (under the first look's Power, never reborn) who isn't in a shooter's box gets a scrolling
--- chevron trail from their feet to the box of the lane they can use, and a pulsing frame in that box: it works
--- from any facing, on any layout and after every respawn, and ends on the box the arrow names. It hands over to
--- the arrow whenever the evolve guidance is on, hides while you stand in a box, and is gone for good at the first
--- look's Power (a few seconds of shooting). One beam and four parts, made once per target. While the box is off
--- screen (behind you at the spawn), a small pointer on an inner ellipse of the screen turns toward it, with the
--- lane's name, so the first frame shows the way without turning.
-local GUIDE_POWER = Skins.List[2] and Skins.List[2].Required or 25
-local GUIDE_COLOR = C(255, 224, 80)
+-- A new player (never reborn, Stage 1 not cleared yet) is led in two steps, published as the GuidePhase
+-- attribute for the HUD's hint:
+--   'lane'  under Stage 1's Power (the stage-1 gate's Required, 10): to the free lane's box (BAY 1);
+--   'exit'  from then until Stage 1 is cleared: to the stage-1 door ("The street is open!").
+-- Each step draws a scrolling chevron trail from the feet along a walkable route (the lobby's GuideNodes, else
+-- the engine's pathfinding, else straight), moves the floating arrow over the goal, pulses a frame in a lane's
+-- box, and, while the next turn of the trail is off screen, shows a small pointer on an inner ellipse of the
+-- screen. The trail re-plans after a respawn or when you wander off it. The lane step hides while you stand in a
+-- box; the exit step keeps its trail and arrow there (you are in BAY 1 when Stage 1 opens), without the pointer.
+-- Map contract (all read live, so the lobby can move things): Training_<Id>.TrainingZone; the HoodStageGate
+-- model with Stage = 1 (Required, LineZ, PadZ and its Barrier part); and, optionally, a GuideNodes folder of small
+-- invisible parts, each standing on a walkable floor, whose Links attribute names (comma-separated) the nodes
+-- you can walk to from it in a straight line (stair foot to stair top, and so on). A node with Goal = 'Exit'
+-- marks where the exit trail ends; without one it ends DOOR_IN studs inside the stage-1 gate line.
+local CollectionService = game:GetService('CollectionService')
+local okPath, PathfindingService = pcall(function() return game:GetService('PathfindingService') end)
+if not okPath then PathfindingService = nil end
+local GUIDE_POWER = Skins.List[2] and Skins.List[2].Required or 25 -- (a map without stage gates: the old hand-off)
+local GUIDE_COLOR = C(240, 186, 80)
+local HOVER, DOOR_IN, LEVEL = 0.7, 8, 0.8 -- trail height over the floor; exit point; "same floor" tolerance
 local guide, guideWant = {}, nil
 local compass = Instance.new('ScreenGui')
 compass.Name = 'GuideCompass'
@@ -405,7 +416,7 @@ local needle = Instance.new('Frame')
 needle.Name = 'Pointer'
 needle.AnchorPoint, needle.Size, needle.BackgroundTransparency = Vector2.new(0.5, 0.5), UDim2.fromOffset(150, 96), 1
 needle.Parent = compass
--- ">>": two chevrons of two bars each, turned toward the box bar by bar (no rotated container, so every UI
+-- ">>": two chevrons of two bars each, turned toward the goal bar by bar (no rotated container, so every UI
 -- renderer draws it the same).
 local bars = {}
 for _, ox in { -11, 11 } do
@@ -428,12 +439,221 @@ local function showCompass(on) -- (the pointer itself hides too, for every UI re
 	compass.Enabled, needle.Visible = on, on
 end
 showCompass(false)
+
+-- The map's pieces.
+local function stageOne()
+	local ok, tagged = pcall(function() return CollectionService:GetTagged('HoodStageGate') end)
+	for _, m in ok and tagged or {} do
+		if m:GetAttribute('Stage') == 1 and m:IsDescendantOf(active.Root) then return m end
+	end
+	return nil
+end
+local function guideNodes()
+	local folder = active.Root:FindFirstChild('GuideNodes', true)
+	local nodes = {}
+	if not folder then return nodes end
+	for _, p in folder:GetChildren() do
+		if p:IsA('BasePart') then
+			nodes[p.Name] = { pos = p.CFrame.Position - Vector3.new(0, p.Size.Y / 2, 0), links = {}, goal = p:GetAttribute('Goal') }
+		end
+	end
+	for _, p in folder:GetChildren() do
+		local node, links = nodes[p.Name], p:GetAttribute('Links')
+		if node and type(links) == 'string' then
+			for other in links:gmatch('[^,%s]+') do
+				local o = nodes[other]
+				if o and o ~= node then node.links[o], o.links[node] = true, true end
+			end
+		end
+	end
+	return nodes
+end
+-- Where the exit trail ends: the lobby's Exit node, else on the floor DOOR_IN studs inside the gate line (the
+-- lobby side is the PadZ side; stages run toward -Z in the map frame).
+local function exitPoint(gate)
+	for _, node in guideNodes() do
+		if node.goal == 'Exit' then return node.pos end
+	end
+	local frame = active.Frame
+	local line, pad = gate:GetAttribute('LineZ'), gate:GetAttribute('PadZ')
+	local side = (line and pad and pad < line) and -1 or 1
+	local barrier = gate:FindFirstChild('Barrier', true)
+	local at = barrier and frame:PointToObjectSpace(barrier.CFrame.Position) or Vector3.zero
+	local floor = barrier and at.Y - barrier.Size.Y / 2 or 0
+	return frame * Vector3.new(at.X, floor, (line or at.Z) + side * DOOR_IN)
+end
+-- Which step you are on: 'lane', 'exit' or ''.
+local function guidePhase(n)
+	if (player:GetAttribute('Rebirths') or 0) > 0 then return '', nil end
+	local gate = stageOne()
+	if not gate then return n < GUIDE_POWER and 'lane' or '', nil end
+	local cleared = player:GetAttribute('StagesCleared')
+	if (cleared or 0) >= 1 then return '', nil end
+	if n < (gate:GetAttribute('Required') or 10) then return 'lane', gate end
+	return cleared ~= nil and 'exit' or '', gate -- (not before the server has said you haven't cleared it)
+end
+
+-- Routes: floor points from your feet to the goal, the goal last.
+local function clearLine(a, b) -- nothing solid between two floor points at knee height (true if it can't tell)
+	local ok, hit = pcall(function()
+		local params = RaycastParams.new()
+		params.FilterType = Enum.RaycastFilterType.Exclude
+		params.FilterDescendantsInstances = { player.Character }
+		params.RespectCanCollide = true
+		return workspace:Raycast(a + Vector3.new(0, 1, 0), b - a, params)
+	end)
+	return not ok or hit == nil
+end
+local function walkable(a, b) return math.abs(a.Y - b.Y) < LEVEL and clearLine(a, b) end
+-- The lobby's GuideNodes: the shortest chain of linked nodes, entered and left on your own floor.
+local function nodeRoute(from, to)
+	local nodes = guideNodes()
+	if next(nodes) == nil then return nil end
+	if walkable(from, to) then return { to } end
+	local dist, prev, open = {}, {}, {}
+	for _, node in nodes do
+		if walkable(from, node.pos) then dist[node], open[node] = (node.pos - from).Magnitude, true end
+	end
+	local best, bestCost
+	while true do
+		local u
+		for node in open do
+			if not u or dist[node] < dist[u] then u = node end
+		end
+		if not u or (bestCost and dist[u] >= bestCost) then break end
+		open[u] = nil
+		if walkable(u.pos, to) and (not bestCost or dist[u] + (to - u.pos).Magnitude < bestCost) then
+			best, bestCost = u, dist[u] + (to - u.pos).Magnitude
+		end
+		for v in u.links do
+			local d = dist[u] + (v.pos - u.pos).Magnitude
+			if dist[v] == nil or d < dist[v] then dist[v], prev[v], open[v] = d, u, true end
+		end
+	end
+	if not best then return nil end
+	local route, node = { to }, best
+	while node do
+		table.insert(route, 1, node.pos)
+		node = prev[node]
+	end
+	return route
+end
+-- Fewer, straighter legs: drop the points within 0.75 studs of the line through their neighbours.
+local function simplify(points)
+	local keep = { [1] = true, [#points] = true }
+	local function split(i, j)
+		local a, b, far, at = points[i], points[j], 0.75, nil
+		local ab = b - a
+		for k = i + 1, j - 1 do
+			local t = ab:Dot(ab) > 0 and math.clamp((points[k] - a):Dot(ab) / ab:Dot(ab), 0, 1) or 0
+			local d = (a + ab * t - points[k]).Magnitude
+			if d > far then far, at = d, k end
+		end
+		if at then
+			keep[at] = true
+			split(i, at)
+			split(at, j)
+		end
+	end
+	split(1, #points)
+	local out = {}
+	for k, p in points do
+		if keep[k] then table.insert(out, p) end
+	end
+	return out
+end
+-- The engine's pathfinding (no jumps: stairs, not terrace faces). Yields.
+local function engineRoute(from, to)
+	if not PathfindingService then return nil end
+	local ok, route = pcall(function()
+		local path = PathfindingService:CreatePath({ AgentRadius = 1.5, AgentHeight = 5, AgentCanJump = false, WaypointSpacing = 4 })
+		path:ComputeAsync(from, to)
+		if path.Status ~= Enum.PathStatus.Success then return nil end
+		local points = { from }
+		for _, w in path:GetWaypoints() do table.insert(points, w.Position) end
+		table.insert(points, to)
+		points = simplify(points)
+		table.remove(points, 1)
+		return points
+	end)
+	return ok and route or nil
+end
+
+-- The trail: one beam per leg, the first from your feet (an attachment on your root).
+local function beamOf(a0, a1, first, last)
+	local beam = Instance.new('Beam')
+	beam.Name = 'FloorGuide'
+	beam.Attachment0, beam.Attachment1 = a0, a1
+	beam.FaceCamera = true -- (a band along the floor from the follow camera, whatever the attachments' axes)
+	beam.Width0, beam.Width1 = 1.2, 1.2
+	beam.Segments = 1
+	beam.Color = ColorSequence.new(GUIDE_COLOR)
+	beam.LightEmission, beam.LightInfluence, beam.Brightness = 0.4, 0, 1
+	beam.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, first and 1 or 0.15), NumberSequenceKeypoint.new(0.08, 0.15),
+		NumberSequenceKeypoint.new(0.95, 0.15), NumberSequenceKeypoint.new(1, last and 0.5 or 0.15) })
+	if HoodVFX and HoodVFX.applyTexture then HoodVFX.applyTexture(beam, 'chevron') else beam.Texture = 'rbxasset://textures/glow.png' end
+	beam.TextureMode, beam.TextureLength, beam.TextureSpeed = Enum.TextureMode.Wrap, 2, 1.5 -- (chevrons point and scroll toward the goal)
+	return beam
+end
+local function drawTrail()
+	if guide.trail then guide.trail:ClearAllChildren() end
+	local points = guide.points
+	if not (points and guide.trail and guide.from) then return end
+	local prev = guide.from
+	for i, p in points do
+		local a = Instance.new('Attachment')
+		a.Name = 'GuidePoint'
+		a.CFrame = CFrame.new(p + Vector3.new(0, HOVER, 0))
+		a.Parent = guide.trail
+		beamOf(prev, a, i == 1, i == #points).Parent = guide.trail
+		prev = a
+	end
+end
+local function feetOfGuide()
+	return guide.root.CFrame.Position - Vector3.new(0, guide.feet, 0)
+end
+local function plan()
+	local token = {}
+	guide.token, guide.planned = token, os.clock()
+	local from, to = feetOfGuide(), guide.goal.point
+	task.spawn(function()
+		local route = nodeRoute(from, to) or engineRoute(from, to) or { to }
+		if guide.token ~= token then return end -- (a newer goal or plan took over)
+		guide.points, guide.near = route, nil
+		drawTrail()
+	end)
+end
+-- Every frame: drop the turns you've reached (within 3 studs), and plan again when you wander 12+ studs
+-- further from the next turn than you've been (at most every 2 seconds).
+local function followTrail()
+	local points = guide.points
+	if not (points and guide.root and guide.root.Parent) then return end
+	local feet = feetOfGuide()
+	local reached = false
+	while #points > 1 do
+		local d = points[1] - feet
+		if Vector3.new(d.X, 0, d.Z).Magnitude < 3 and math.abs(d.Y) < 2.5 then
+			table.remove(points, 1)
+			reached = true
+		else
+			break
+		end
+	end
+	if reached then
+		guide.near = nil
+		drawTrail()
+	end
+	local d = points[1] - feet
+	local flat = Vector3.new(d.X, 0, d.Z).Magnitude
+	guide.near = math.min(guide.near or flat, flat)
+	if flat > guide.near + 12 and os.clock() - (guide.planned or 0) > 2 then plan() end
+end
 local function pointCompass()
 	local cam = workspace.CurrentCamera
-	local zone = guide.zone
+	local target = guide.points and guide.points[1]
 	local ok, vp = pcall(function() return cam.ViewportSize end)
-	if not (cam and zone and ok and vp.X > 1) then return showCompass(false) end
-	local rel = cam.CFrame:PointToObjectSpace(zone.CFrame.Position + Vector3.new(0, 1, 0))
+	if guide.inBox or not (cam and target and ok and vp.X > 1) then return showCompass(false) end
+	local rel = cam.CFrame:PointToObjectSpace(target + Vector3.new(0, 1, 0))
 	local ty = math.tan(math.rad(cam.FieldOfView) / 2)
 	local tx = ty * vp.X / vp.Y
 	if rel.Z < 0 and math.abs(rel.X / rel.Z) < tx * 0.85 and math.abs(rel.Y / rel.Z) < ty * 0.85 then
@@ -452,75 +672,96 @@ local function pointCompass()
 end
 local function clearGuide()
 	for _, t in guide.tweens or {} do t:Cancel() end
-	for _, k in { 'beam', 'frame', 'from', 'to' } do
+	for _, k in { 'trail', 'frame', 'from', 'door' } do
 		if guide[k] then guide[k]:Destroy() end
 	end
 	guide = {}
 	if compassConn then compassConn:Disconnect() compassConn = nil end
 	showCompass(false)
 end
-local function showGuide(zone)
+-- goal: { key = the zone or 'exit', point = the floor point, zone = the lane's box or nil, title = the pointer's name }
+local function showGuide(goal, inBox)
 	local c = player.Character
 	local root = c and c:FindFirstChild('HumanoidRootPart')
-	if not (zone and root) then return clearGuide() end
-	if guide.zone == zone and guide.root == root and guide.beam and guide.beam.Parent then return end
+	if not (goal and root) then return clearGuide() end
+	if guide.key == goal.key and guide.root == root and guide.trail and guide.trail.Parent then
+		guide.inBox = inBox
+		return
+	end
 	clearGuide()
-	guide.zone, guide.root, guide.tweens = zone, root, {}
-	-- The trail rides 0.7 over the floor (clear of rims and mats), from the feet to the middle of the box.
+	guide.key, guide.goal, guide.root, guide.inBox, guide.tweens = goal.key, goal, root, inBox, {}
+	laneName.Text = goal.title or ''
 	local h = c:FindFirstChildOfClass('Humanoid')
-	local feet = (h and h.HipHeight or 2) + root.Size.Y / 2
+	guide.feet = (h and h.HipHeight or 2) + root.Size.Y / 2
 	guide.from = Instance.new('Attachment')
 	guide.from.Name = 'GuideFrom'
-	guide.from.CFrame = CFrame.new(0, 0.7 - feet, 0)
+	guide.from.CFrame = CFrame.new(0, HOVER - guide.feet, 0)
 	guide.from.Parent = root
-	guide.to = Instance.new('Attachment')
-	guide.to.Name = 'GuideTo'
-	guide.to.CFrame = CFrame.new(0, zone.Size.Y / 2 + 0.7, 0)
-	guide.to.Parent = zone
-	local beam = Instance.new('Beam')
-	beam.Name = 'FloorGuide'
-	beam.Attachment0, beam.Attachment1 = guide.from, guide.to
-	beam.FaceCamera = true -- (a band along the floor from the follow camera, whatever the attachments' axes)
-	beam.Width0, beam.Width1 = 1.2, 1.2
-	beam.Segments = 1
-	beam.Color = ColorSequence.new(GUIDE_COLOR)
-	beam.LightEmission, beam.LightInfluence, beam.Brightness = 0.5, 0, 1
-	beam.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.08, 0.15), NumberSequenceKeypoint.new(0.95, 0.15), NumberSequenceKeypoint.new(1, 0.5) })
-	if HoodVFX and HoodVFX.applyTexture then HoodVFX.applyTexture(beam, 'chevron') else beam.Texture = 'rbxasset://textures/glow.png' end
-	beam.TextureMode, beam.TextureLength, beam.TextureSpeed = Enum.TextureMode.Wrap, 2, 1.5 -- (chevrons point and scroll toward the box)
-	beam.Parent = zone
-	guide.beam = beam
-	-- A pulsing frame just inside the box's edges.
-	local frame = Instance.new('Model')
-	frame.Name = 'GuideFrame'
-	local w, d = zone.Size.X - 0.3, zone.Size.Z - 0.3
-	local top = zone.CFrame * CFrame.new(0, zone.Size.Y / 2 + 0.06, 0)
-	for _, b in { { 0, d / 2, w, 0.25 }, { 0, -d / 2, w, 0.25 }, { w / 2, 0, 0.25, d }, { -w / 2, 0, 0.25, d } } do
-		local p = Instance.new('Part')
-		p.Name = 'GuideEdge'
-		p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch, p.CastShadow = true, false, false, false, false
-		p.Material, p.Color = Enum.Material.Neon, GUIDE_COLOR
-		p.Size = Vector3.new(b[3], 0.1, b[4])
-		p.CFrame = top * CFrame.new(b[1], 0, b[2])
-		p.Transparency = 0.15
-		p.Parent = frame
-		local t = TweenService:Create(p, PULSE, { Transparency = 0.75 })
-		t:Play()
-		table.insert(guide.tweens, t)
+	-- The trail's turns hang on an invisible part at the origin (so each attachment's CFrame is its world spot).
+	local trail = Instance.new('Part')
+	trail.Name = 'GuideTrail'
+	trail.Anchored, trail.CanCollide, trail.CanQuery, trail.CanTouch, trail.CastShadow = true, false, false, false, false
+	trail.Transparency, trail.Size, trail.CFrame = 1, Vector3.new(0.2, 0.2, 0.2), CFrame.new()
+	trail.Parent = workspace
+	guide.trail = trail
+	if goal.zone then
+		-- A pulsing frame just inside the box's edges.
+		local zone = goal.zone
+		local frame = Instance.new('Model')
+		frame.Name = 'GuideFrame'
+		local w, d = zone.Size.X - 0.3, zone.Size.Z - 0.3
+		local top = zone.CFrame * CFrame.new(0, zone.Size.Y / 2 + 0.06, 0)
+		for _, b in { { 0, d / 2, w, 0.25 }, { 0, -d / 2, w, 0.25 }, { w / 2, 0, 0.25, d }, { -w / 2, 0, 0.25, d } } do
+			local p = Instance.new('Part')
+			p.Name = 'GuideEdge'
+			p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch, p.CastShadow = true, false, false, false, false
+			p.Material, p.Color = Enum.Material.Neon, GUIDE_COLOR
+			p.Size = Vector3.new(b[3], 0.1, b[4])
+			p.CFrame = top * CFrame.new(b[1], 0, b[2])
+			p.Transparency = 0.15
+			p.Parent = frame
+			local t = TweenService:Create(p, PULSE, { Transparency = 0.75 })
+			t:Play()
+			table.insert(guide.tweens, t)
+		end
+		frame.Parent = zone.Parent
+		guide.frame = frame
+	else
+		-- Something for the floating arrow to stand on at the door.
+		local door = Instance.new('Part')
+		door.Name = 'GuideDoor'
+		door.Anchored, door.CanCollide, door.CanQuery, door.CanTouch, door.CastShadow = true, false, false, false, false
+		door.Transparency, door.Size, door.CFrame = 1, Vector3.new(0.2, 0.2, 0.2), CFrame.new(goal.point + Vector3.new(0, 1, 0))
+		door.Parent = workspace
+		guide.door = door
 	end
-	frame.Parent = zone.Parent
-	guide.frame = frame
-	compassConn = RunService.PreRender:Connect(pointCompass)
+	plan()
+	compassConn = RunService.PreRender:Connect(function()
+		followTrail()
+		pointCompass()
+	end)
 end
--- n: Power; station: TrainingStation; evolving: the arrow is on the evolve guidance; zone: the box to go to.
+-- n: Power; station: TrainingStation; evolving: the arrow is on the evolve guidance; zone: the free lane's box.
 local function updateGuide(n, station, evolving, zone, laneTitle)
 	guideWant = { n, station, evolving, zone, laneTitle }
-	local new = n < GUIDE_POWER and (player:GetAttribute('Rebirths') or 0) == 0
-	if new and station == '' and not evolving then
-		laneName.Text = laneTitle or ''
-		showGuide(zone)
+	local phase, gate = guidePhase(n)
+	if player:GetAttribute('GuidePhase') ~= phase then player:SetAttribute('GuidePhase', phase) end
+	local inBox = station ~= '' and not station:find('Locked:')
+	local goal
+	if phase == 'exit' then
+		goal = { key = 'exit', point = exitPoint(gate), title = 'STAGE 1' }
+	elseif phase == 'lane' and zone and not inBox then
+		goal = { key = zone, point = (zone.CFrame * CFrame.new(0, zone.Size.Y / 2, 0)).Position, zone = zone, title = laneTitle }
+	end
+	if goal and not evolving then
+		showGuide(goal, inBox)
 	else
 		clearGuide()
+	end
+	if guide.door then
+		-- The floating arrow leaves the lanes for the door.
+		indicator.Adornee = guide.door
+		pointer.Text = 'STAGE 1 OPEN ↓'
 	end
 end
 player.CharacterAdded:Connect(function(c)
@@ -592,7 +833,7 @@ local function refresh()
 	end
 	lastPower = n
 end
-for _, key in { 'Power', 'EquippedSkin', 'TrainingStation', 'PowerRate' } do
+for _, key in { 'Power', 'EquippedSkin', 'TrainingStation', 'PowerRate', 'StagesCleared', 'Rebirths' } do -- (the last two: the guide's steps)
 	player:GetAttributeChangedSignal(key):Connect(refresh)
 end
 refresh()

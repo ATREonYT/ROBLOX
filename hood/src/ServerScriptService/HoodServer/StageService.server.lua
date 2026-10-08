@@ -53,7 +53,7 @@ local function teleport(player, target)
 		local best
 		for _, gate in gates do if profile.Data.ClearedWalls[gate.WallId] then best = gate end end
 		if not best then
-			Net.get('Notice'):FireClient(player, 'Clear Stage 1 first: shoot at the free range until you have 10 Power, then walk through the stage door.')
+			Net.get('Notice'):FireClient(player, 'Clear Stage 1 first: shoot at BAY 1 until you have 10 Power, then walk through the stage door.')
 			return
 		end
 		cf = frame * CFrame.new(0, 3, best.Z - 12)

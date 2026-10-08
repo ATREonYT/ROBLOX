@@ -488,28 +488,37 @@ end
 -- nothing sways while you stand there: Shoot.client knocks each target back when a shot lands on it.
 local Stations = {}
 
--- Per tier (Skins.Stations order). rim/rimTop: the base ring (stamped band, studded lip; rimTopMat Neon = a
--- glowing lip without studs); mat: the inset surface; frame (+frameMat): bench, gantry and stands; groove:
--- the stamped X's colour (nil = a darker shade of the face); text: the "xN Power" colour; glow: hit sparks;
--- edge: a thin neon line inside the rim (shadow); labelLift: the label stack sits this much higher (gold's crown). Colours from the bag stations the critics signed off.
--- Tiers 5-7 follow the reference's right row: shadow (x8), frost (x12), toxic (x18).
+-- Per tier (Skins.Stations order). rim/rimTop: the base ring (stamped band, studded lip); mat: the inset surface;
+-- frame (+frameMat): bench, gantry and stands; groove: the stamped X's colour (nil = a darker shade of the face);
+-- trim: the bench band; text: the "xN Power" colour; glow: hit sparks; edge: a thin neon line inside the rim
+-- (shadow); labelLift: the label stack sits this much higher (gold's crown).
+-- The calm pass (BRIEF6): the structure is neutral and climbs by material, not hue (concrete and wood, then
+-- charcoal steel, black steel, brass); mats stay at or under 50% saturation; the theme colour lives on the
+-- targets and the effects; the "xN Power" text follows the lobby's plaque ramp (bronze, silver, gold, diamond).
+Stations.Kit = {
+	concrete = C(150, 144, 134), concreteLight = C(189, 181, 168), cream = C(229, 220, 203),
+	steel = C(60, 66, 76), steelLight = C(92, 98, 108), black = C(38, 41, 48), blackLight = C(62, 64, 74),
+	wood = C(165, 122, 88), walnut = C(96, 68, 48), brass = C(160, 124, 66), brassLight = C(212, 176, 108),
+	oxblood = C(110, 43, 43), muted = C(216, 180, 74), -- (#D8B44A: the only yellow, on real edges)
+	bronze = C(205, 150, 104), silver = C(206, 212, 220), gold = C(232, 182, 80), diamond = C(176, 222, 236),
+}
 Stations.Themes = {
-	{ name = 'stone', rim = C(62, 78, 118), rimTop = C(82, 104, 150), mat = C(115, 132, 172), frame = C(165, 95, 78),
-		text = C(255, 255, 255), glow = C(255, 236, 200) },
-	{ name = 'red', rim = C(26, 30, 70), rimTop = C(40, 46, 92), mat = C(250, 45, 85), frame = C(36, 42, 86), trim = C(240, 40, 70),
-		text = C(255, 70, 100), glow = C(255, 70, 100) },
-	{ name = 'lava', rim = C(225, 100, 35), rimTop = C(255, 150, 50), mat = C(255, 140, 20), frame = C(250, 140, 36), groove = C(215, 90, 10),
-		text = C(255, 170, 48), glow = C(255, 150, 40) },
-	{ name = 'arcane', rim = C(150, 40, 130), rimTop = C(240, 80, 190), mat = C(190, 70, 208), frame = C(170, 80, 220),
-		text = C(214, 120, 255), glow = C(230, 120, 255) },
-	{ name = 'shadow', rim = C(70, 40, 110), rimTop = C(92, 56, 140), mat = C(44, 24, 70), frame = C(22, 18, 32),
-		text = C(198, 164, 255), glow = C(176, 120, 255), edge = C(150, 70, 255) },
-	{ name = 'frost', rim = C(30, 110, 210), rimTop = C(160, 244, 255), mat = C(132, 246, 248), matMat = M.SmoothPlastic, frame = C(30, 110, 210),
-		groove = C(60, 190, 235), text = C(120, 236, 255), glow = C(150, 236, 255) },
-	{ name = 'toxic', rim = C(10, 170, 44), rimTop = C(20, 255, 60), rimTopMat = M.Neon, mat = C(0, 60, 60), frame = C(20, 255, 60), frameMat = M.Neon,
-		groove = C(5, 150, 35), text = C(130, 255, 90), glow = C(120, 255, 80) },
-	{ name = 'gold', rim = C(230, 180, 0), rimTop = C(255, 236, 60), mat = C(252, 242, 88), frame = C(245, 192, 0), groove = C(205, 140, 0),
-		trim = C(175, 18, 48), text = C(255, 222, 50), glow = C(255, 222, 80), labelLift = 0.3 },
+	{ name = 'stone', rim = Stations.Kit.concrete, rimTop = Stations.Kit.concreteLight, mat = C(120, 128, 146), frame = Stations.Kit.wood, trim = Stations.Kit.wood:Lerp(C(0, 0, 0), 0.2),
+		text = Stations.Kit.bronze, glow = C(255, 236, 200) },
+	{ name = 'red', rim = Stations.Kit.concrete, rimTop = Stations.Kit.concreteLight, mat = C(164, 102, 98), frame = Stations.Kit.steel, trim = Stations.Kit.wood,
+		text = Stations.Kit.bronze, glow = C(236, 120, 120) },
+	{ name = 'lava', rim = Stations.Kit.steel, rimTop = Stations.Kit.steelLight, mat = C(148, 96, 78), frame = Stations.Kit.steel, groove = C(40, 44, 52), trim = Stations.Kit.steelLight,
+		text = Stations.Kit.silver, glow = C(240, 140, 70) },
+	{ name = 'arcane', rim = Stations.Kit.steel, rimTop = Stations.Kit.steelLight, mat = C(126, 108, 140), frame = Stations.Kit.steel, groove = C(40, 44, 52), trim = Stations.Kit.steelLight,
+		text = Stations.Kit.silver, glow = C(220, 160, 230) },
+	{ name = 'shadow', rim = Stations.Kit.black, rimTop = Stations.Kit.blackLight, mat = C(54, 50, 64), frame = Stations.Kit.black, trim = Stations.Kit.blackLight,
+		text = Stations.Kit.gold, glow = C(170, 150, 230), edge = C(96, 80, 140) },
+	{ name = 'frost', rim = Stations.Kit.black, rimTop = C(176, 184, 190), mat = C(184, 202, 208), matMat = M.SmoothPlastic, frame = Stations.Kit.steel, trim = C(176, 184, 190),
+		groove = C(150, 172, 186), text = Stations.Kit.gold, glow = C(180, 220, 240) },
+	{ name = 'toxic', rim = Stations.Kit.black, rimTop = Stations.Kit.steelLight, mat = C(58, 74, 68), frame = Stations.Kit.steel, groove = C(40, 44, 52), trim = Stations.Kit.brass,
+		text = Stations.Kit.diamond, glow = C(160, 210, 130) },
+	{ name = 'gold', rim = Stations.Kit.brass, rimTop = Stations.Kit.brassLight, mat = C(204, 186, 148), frame = Stations.Kit.walnut, groove = C(120, 92, 50),
+		trim = Stations.Kit.oxblood, text = Stations.Kit.diamond, glow = C(255, 222, 130), labelLift = 0.3 },
 }
 
 Stations.HALF_X, Stations.HALF_Z = 4.5, 10 -- rim outer half sizes (the mat is inset 1 stud)
@@ -689,7 +698,7 @@ end
 -- Gold nugget like the reference's: a flat bevelled slab (a low core with sloping wedges round it) with a
 -- smaller centred lump on top, lemon gold, never an amber pile.
 function Stations.nugget(c, x, z, s, turn)
-	local Y, col = Stations.MAT_Y, C(255, 228, 0)
+	local Y, col = Stations.MAT_Y, C(232, 182, 80)
 	local cf = CFrame.new(x, Y, z) * CFrame.Angles(0, turn or 0, 0)
 	local function lump(at, w, h, d, slope)
 		c:part('Nugget', V(w, h, d), at * CFrame.new(0, h / 2, 0), col)
@@ -711,7 +720,7 @@ end
 -- (white tips on the tall ones), ruby and sapphire gems round the band; ~2.8 wide, ~1.9 tall. It turns slowly.
 function Stations.crown(g, at)
 	local cc, crown = g:group('Crown')
-	local body, deep, white = C(245, 190, 0), C(222, 150, 0), C(255, 252, 235)
+	local body, deep, white = C(227, 169, 63), C(184, 134, 58), C(244, 236, 220)
 	Stations.ring8(cc, 'CrownRim', at, 1.42, 0.3, 0.22, white)
 	Stations.ring8(cc, 'CrownBand', at * CFrame.new(0, 0.2, 0), 1.35, 0.3, 0.75, body)
 	for k = 0, 7 do
@@ -721,7 +730,7 @@ function Stations.crown(g, at)
 		local cy = 0.95 + s * 0.25
 		cc:part('CrownPoint', V(s, s, 0.24), face * CFrame.new(0, cy, -1.22) * CFrame.Angles(0, 0, math.pi / 4), tall and body or deep)
 		if tall then cc:part('CrownTip', V(0.3, 0.3, 0.3), face * CFrame.new(0, cy + s * 0.71, -1.22), white, M.SmoothPlastic, Enum.PartType.Ball) end
-		cc:part('CrownGem', V(0.3, 0.3, 0.16), face * CFrame.new(0, 0.58, -1.36) * CFrame.Angles(0, 0, math.pi / 4), tall and C(235, 30, 70) or C(50, 110, 255), M.Glass)
+		cc:part('CrownGem', V(0.3, 0.3, 0.16), face * CFrame.new(0, 0.58, -1.36) * CFrame.Angles(0, 0, math.pi / 4), tall and C(168, 52, 60) or C(70, 110, 170), M.Glass)
 	end
 	for _, p in crown:GetDescendants() do if p:IsA('BasePart') then decor(p) end end
 	crown.WorldPivot = cc:world(at)
@@ -805,6 +814,7 @@ end
 -- muffs on it; in front of it a yellow and black hazard stripe (the firing line); in the box two shoe prints and
 -- the lane's number in big blocky digits, readable from the aisle.
 function Stations.bench(st, t, tier)
+	local K = Stations.Kit
 	local Y, z, h = Stations.MAT_Y, Stations.BENCH_Z, Stations.BENCH_H
 	local g = st:group('Bench')
 	local body = t.frame
@@ -821,14 +831,14 @@ function Stations.bench(st, t, tier)
 	local y = Y + h
 	-- Ammo box (olive, a yellow stripe and a handle).
 	decor(d:box('AmmoBox', V(2.15, y, z - 0.3), V(3.05, y + 0.48, z + 0.22), C(86, 104, 58)))
-	decor(d:box('AmmoStripe', V(2.13, y + 0.3, z - 0.32), V(3.07, y + 0.38, z + 0.24), C(250, 200, 40)))
+	decor(d:box('AmmoStripe', V(2.13, y + 0.3, z - 0.32), V(3.07, y + 0.38, z + 0.24), K.muted))
 	decor(d:box('AmmoHandle', V(2.45, y + 0.48, z - 0.08), V(2.75, y + 0.56, z), C(40, 44, 40)))
 	-- A few brass shells lying about.
 	for i, s in { { 1.45, -0.15, 0.3 }, { 1.7, 0.05, 1.4 }, { 1.25, 0.12, 2.2 } } do
 		decor(d:part('Shell', V(0.32, 0.14, 0.14), CFrame.new(s[1], y + 0.07, z + s[2]) * CFrame.Angles(0, s[3], 0), i == 2 and C(232, 176, 72) or C(244, 194, 80), M.Metal, Enum.PartType.Cylinder))
 	end
-	-- Ear muffs: two dark cups under a yellow arch.
-	local yellow = C(255, 210, 50)
+	-- Ear muffs: two dark cups under a muted yellow arch.
+	local yellow = K.muted
 	for _, sx in { -1, 1 } do
 		decor(d:blob('EarCup', V(0.5, 0.55, 0.55), V(-2.6 + sx * 0.42, y + 0.28, z - 0.05), C(50, 52, 60), M.SmoothPlastic))
 		decor(d:box('EarArchSide', V(-2.6 + sx * 0.4 - 0.05, y + 0.5, z - 0.1), V(-2.6 + sx * 0.4 + 0.05, y + 0.84, z), yellow))
@@ -844,7 +854,7 @@ function Stations.bench(st, t, tier)
 		local p = decor(st:box('BoxLine', b[1], b[2], edge, M.SmoothPlastic))
 		p.CastShadow, p.Transparency = false, 0.2
 	end
-	decor(st:box('FiringLine', V(-3.5, Y, -3.9), V(3.5, Y + 0.03, -3.5), C(255, 214, 30), M.SmoothPlastic)).CastShadow = false
+	decor(st:box('FiringLine', V(-3.5, Y, -3.9), V(3.5, Y + 0.03, -3.5), K.muted, M.SmoothPlastic)).CastShadow = false
 	for i = 0, 8 do
 		decor(st:part('FiringStripe', V(0.24, 0.02, 0.44), CFrame.new(-3.2 + i * 0.8, Y + 0.035, -3.7) * CFrame.Angles(0, math.rad(40), 0), C(30, 30, 36))).CastShadow = false
 	end
@@ -889,9 +899,10 @@ function Stations.wallLines(c, h, color, material, th)
 end
 
 -- The truss gantry over the targets: two grooved truss posts on stamped feet at the lane's edges and a grooved
--- truss beam across, capped. Hanging targets hang from its underside (GANTRY_Y) on its centre line. neon: lines
--- on the posts' front edges and under the beam (shadow, gold, frost); look.width (default 0.14) and look.backing
--- (a dark strip 0.34 wide just behind each line, so it reads without bloom on a bright frame).
+-- truss beam across, capped. Hanging targets hang from its underside (GANTRY_Y) on its centre line. neon: strip
+-- lights on the posts' front edges and under the beam (shadow, frost, toxic, gold); look.width (default 0.14),
+-- look.backing (a dark strip 0.34 wide just behind each line, so it reads without bloom on a bright frame) and
+-- look.cap (the feet and caps in another metal: brass on the top two tiers).
 function Stations.gantry(g, t, neon, look)
 	look = look or {}
 	local nw, back = look.width or 0.14, look.backing
@@ -900,12 +911,12 @@ function Stations.gantry(g, t, neon, look)
 	local W = 0.8
 	local frame, fm = t.frame, t.frameMat or M.SmoothPlastic
 	local groove = Stations.grooveFor(t, frame)
-	local foot = frame:Lerp(C(0, 0, 0), 0.12)
+	local foot = look.cap or frame:Lerp(C(0, 0, 0), 0.12) -- (look.cap: metal feet and caps, a step up the material ladder)
 	for _, sx in { -1, 1 } do
 		local x = sx * 3.9
 		Stations.stamp(g:box('GantryFoot', V(x - 0.55, 0.05, z - 0.6), V(x + 0.55, Y + 0.75, z + 0.6), fm == M.Neon and t.rim or foot), Stations.SIDES, 1.1, Y + 0.7, groove)
 		Stations.truss(g, 'GantryPost', CFrame.new(x, Y + 0.75, z), y0 - Y - 0.75, W, W, frame, groove, 1.55, { '-z', '-x', '+x' }, fm)
-		g:box('GantryCap', V(x - 0.55, y0 + W, z - 0.55), V(x + 0.55, y0 + W + 0.25, z + 0.55), fm == M.Neon and t.rim or frame)
+		g:box('GantryCap', V(x - 0.55, y0 + W, z - 0.55), V(x + 0.55, y0 + W + 0.25, z + 0.55), fm == M.Neon and t.rim or look.cap or frame)
 		-- A small gusset under each end of the beam.
 		g:wedge('GantryGusset', V(0.5, 0.8, 0.8), CFrame.new(x - sx * 0.8, y0 - 0.4, z) * CFrame.Angles(0, sx * math.pi / 2, 0), frame, fm)
 		if neon then
@@ -952,14 +963,14 @@ function Stations.Lanes.stone(k)
 		Stations.stamp(p, { Enum.NormalId.Front }, 1.16, Y + h, Stations.grooveFor(t, wood), 0.35)
 	end
 	for _, y in { 1.2, 6.6 } do back:box('Batten', V(-4.3, Y + y, z0 + 0.5), V(4.3, Y + y + 0.45, z0 + 0.85), wood:Lerp(C(0, 0, 0), 0.2)) end
-	Stations.bullseye(back, CFrame.new(0, Y + 6.8, z0 - 0.02), 1.15, { C(250, 250, 245), C(230, 50, 50), C(250, 250, 245), C(230, 50, 50) })
+	Stations.bullseye(back, CFrame.new(0, Y + 6.8, z0 - 0.02), 1.15, { C(236, 228, 214), C(178, 74, 64), C(236, 228, 214), C(178, 74, 64) })
 	for i, s in { { -2.9, 0, 1.9 }, { -0.95, 0, 1.9 }, { 0.95, 0, 1.9 }, { 2.9, 0, 1.9 }, { -1.9, 0.62, 1.8 }, { 1.95, 0.62, 1.8 } } do
 		back:blob('Sandbag', V(s[3], 0.72, 1.05), V(s[1], Y + 0.34 + s[2], z0 - 0.6), i % 2 == 0 and C(158, 146, 120) or C(140, 130, 106), M.Fabric)
 	end
-	-- Bunting between two poles over the planks: two strands of little flags (red, yellow, blue, white), each on
+	-- Bunting between two poles over the planks: two strands of little flags (cream, teal, gold, brick), each on
 	-- its own string, bobbing at different rates, so the pair ripples and no flag ever leaves its line.
 	for _, sx in { -1, 1 } do back:box('BuntingPole', V(sx * 4.1 - 0.13, Y, z0 - 0.45), V(sx * 4.1 + 0.13, Y + 9.15, z0 - 0.19), wood:Lerp(C(0, 0, 0), 0.25)) end
-	local flags = { C(235, 55, 60), C(255, 210, 50), C(60, 140, 240), C(250, 250, 245) }
+	local flags = { C(229, 220, 203), C(63, 125, 110), C(227, 169, 63), C(154, 102, 85) }
 	for strand, at in { { 8.95, 1.3, -0.33 }, { 8.62, 1.7, -0.27 } } do
 		local bc, bunting = back:group('Bunting')
 		local y, period, dz = at[1], at[2], at[3]
@@ -1017,16 +1028,17 @@ function Stations.Lanes.stone(k)
 	g:part('FallenCan', V(0.95, 0.84, 0.84), CFrame.new(1.2, Y + 0.42, 3.2) * CFrame.Angles(0, 0.6, 0), soda.blue, M.SmoothPlastic, Enum.PartType.Cylinder)
 end
 
--- 2 Red: three bullseye boards on navy easels (the main one up high); a navy board backstop with red trim and a
--- little target sign.
+-- 2 Red: three red-and-cream bullseye boards on charcoal easels (the main one up high); a charcoal board backstop
+-- with wood trim and a little target sign.
 function Stations.Lanes.red(k)
 	local t, Y, g = k.t, Stations.MAT_Y, k.gear
 	local back = k.st:group('Backstop')
 	local h = 6.6
 	Stations.wall(back, t, t.frame, M.SmoothPlastic, h)
 	Stations.wallLines(back, h, t.trim, M.SmoothPlastic, 0.3)
-	Stations.bullseye(back, CFrame.new(0, Y + h + 1.1, Stations.BACK_Z + 0.28), 0.45, { C(250, 250, 245), t.trim, C(250, 250, 245) })
-	local rings = { C(250, 250, 245), C(235, 35, 60), C(250, 250, 245), C(235, 35, 60), C(255, 214, 40) }
+	local cream, red = C(236, 228, 214), C(192, 66, 62)
+	Stations.bullseye(back, CFrame.new(0, Y + h + 1.1, Stations.BACK_Z + 0.28), 0.45, { cream, red, cream })
+	local rings = { cream, red, cream, red, C(227, 169, 63) }
 	-- Boards: big centre (main), two small at the sides, at different depths and heights.
 	for _, b in { { 0, 6.0, 4.0, 1.78, true }, { -2.55, 4.5, 1.5, 1.0 }, { 2.6, 4.1, 2.15, 1.0 } } do
 		local x, bz, ledge, r = b[1], b[2], Y + b[3], b[4]
@@ -1038,16 +1050,16 @@ function Stations.Lanes.red(k)
 	-- A spare board leaning on the backstop.
 	local lean = CFrame.new(3.35, Y + 1.05, Stations.BACK_Z - 0.45) * CFrame.Angles(math.rad(-12), math.rad(-8), 0)
 	Stations.disc(g, 'Board', lean, 0.95, 0.15, t.frame)
-	Stations.bullseye(g, lean * CFrame.new(0, 0, -0.08), 0.85, { C(250, 250, 245), C(235, 35, 60), C(250, 250, 245) })
+	Stations.bullseye(g, lean * CFrame.new(0, 0, -0.08), 0.85, { cream, red, cream })
 end
 
--- 3 Lava: hot plates swinging from the gantry (a big gong is the main), burning barrels at the sides, a basalt
--- berm with lava cracks and a hot pool on top, nearly as tall as the gantry.
+-- 3 Lava (ember): hot plates swinging from a charcoal gantry (a big gong is the main), burning barrels at the
+-- sides, a basalt berm with ember cracks and a glowing pool on top, nearly as tall as the gantry.
 function Stations.Lanes.lava(k)
 	local t, Y, g = k.t, Stations.MAT_Y, k.gear
 	Stations.gantry(g, t)
 	local back = k.st:group('Backstop')
-	local rock, rock2, hot = C(62, 44, 48), C(84, 58, 58), C(255, 110, 20)
+	local rock, rock2, hot = C(62, 50, 50), C(80, 64, 62), C(196, 82, 40) -- (ember: a glow, not a blaze)
 	local z0 = Stations.BACK_Z
 	local blocks = {
 		{ -4.3, -1.5, 0, 3.1, 0.0, rock, 3 }, { -1.6, 1.5, 0, 3.5, -0.15, rock2, -2 }, { 1.4, 4.3, 0, 2.9, 0.05, rock, 4 },
@@ -1063,43 +1075,43 @@ function Stations.Lanes.lava(k)
 		decor(back:box('LavaCrack', V(c[1], c[3] - 0.08, z0 - 0.3), V(c[2], c[3] + 0.08, z0 + 0.4), hot, M.Neon)).CastShadow = false
 	end
 	for _, x in { -1.5, 1.4 } do decor(back:box('LavaCrack', V(x - 0.08, 0.5, z0 - 0.25), V(x + 0.08, Y + 3.05, z0 + 0.4), hot, M.Neon)).CastShadow = false end
-	decor(back:box('LavaPool', V(-1.8, Y + 7.38, z0 + 0.4), V(1.7, Y + 7.5, Stations.HALF_Z - 0.3), C(255, 170, 30), M.Neon)).CastShadow = false
+	decor(back:box('LavaPool', V(-1.8, Y + 7.38, z0 + 0.4), V(1.7, Y + 7.5, Stations.HALF_Z - 0.3), C(206, 112, 56), M.Neon)).CastShadow = false
 	-- Plates: a big round gong (main) between two square plates, all hanging from the beam.
 	local function gong(sw, x, cy, r)
 		Stations.disc(sw, 'GongRim', CFrame.new(x, cy, Stations.GANTRY_Z), r, 0.25, C(70, 66, 76), M.Metal)
-		Stations.disc(sw, 'GongHot', CFrame.new(x, cy, Stations.GANTRY_Z - 0.05), r * 0.8, 0.3, C(255, 120, 20), M.Neon)
-		Stations.disc(sw, 'GongCore', CFrame.new(x, cy, Stations.GANTRY_Z - 0.1), r * 0.42, 0.34, C(255, 225, 90), M.Neon)
+		Stations.disc(sw, 'GongHot', CFrame.new(x, cy, Stations.GANTRY_Z - 0.05), r * 0.8, 0.3, C(206, 92, 44), M.Neon)
+		Stations.disc(sw, 'GongCore', CFrame.new(x, cy, Stations.GANTRY_Z - 0.1), r * 0.42, 0.34, C(244, 176, 108), M.Neon)
 		Stations.chains(sw, x, cy + r - 0.1, r * 0.45)
 	end
 	local sw = Stations.target(k, CFrame.new(0, Stations.GANTRY_Y, Stations.GANTRY_Z), V(0, 6.2, Stations.GANTRY_Z), 'Swing', true, 'Ding')
 	gong(sw, 0, 6.2, 1.62)
 	for _, p in { { -2.65, 4.3, 1.4 }, { 2.65, 4.9, 1.35 } } do
 		local s2 = Stations.target(k, CFrame.new(p[1], Stations.GANTRY_Y, Stations.GANTRY_Z), V(p[1], p[2], Stations.GANTRY_Z), 'Swing', false, 'Ding')
-		Stations.plate(s2, CFrame.new(p[1], p[2], Stations.GANTRY_Z), p[3], C(64, 60, 70), C(255, 120, 20), M.Neon, C(255, 220, 80))
+		Stations.plate(s2, CFrame.new(p[1], p[2], Stations.GANTRY_Z), p[3], C(64, 60, 70), C(206, 92, 44), M.Neon, C(244, 176, 108))
 		Stations.chains(s2, p[1], p[2] + p[3] / 2, p[3] * 0.32)
 	end
 	-- Burning barrels (flames come from HoodVFX on their open tops).
 	for _, b in { { -2.85, 1.9 }, { 2.9, 3.1 } } do
 		local pos = V(b[1], Y, b[2])
-		Stations.drum(g, pos, 0.62, 1.7, C(150, 50, 32), C(70, 34, 28), C(40, 24, 22), M.Metal)
-		local coal = decor(g:part('Coals', V(0.08, 1.0, 1.0), CFrame.new(pos + V(0, 1.72, 0)) * CFrame.Angles(0, 0, math.pi / 2), C(255, 150, 30), M.Neon, Enum.PartType.Cylinder))
+		Stations.drum(g, pos, 0.62, 1.7, C(122, 66, 48), C(70, 44, 36), C(40, 30, 28), M.Metal)
+		local coal = decor(g:part('Coals', V(0.08, 1.0, 1.0), CFrame.new(pos + V(0, 1.72, 0)) * CFrame.Angles(0, 0, math.pi / 2), C(220, 112, 52), M.Neon, Enum.PartType.Cylinder))
 		table.insert(k.burners, coal)
 	end
 end
 
 -- 4 Arcane: a big spinner disc up high (main), two balloons to pop, balloon bunches bobbing on the gantry posts,
--- a deep violet wall with a pink starburst behind the spinner and white sparkle diamonds.
+-- a dark plum wall with a muted plum starburst behind the spinner and pale sparkle diamonds.
 function Stations.Lanes.arcane(k)
 	local t, Y, g = k.t, Stations.MAT_Y, k.gear
 	Stations.gantry(g, t)
 	local back = k.st:group('Backstop')
 	local h = 7.0
-	Stations.wall(back, t, C(90, 30, 140), M.SmoothPlastic, h)
+	Stations.wall(back, t, C(58, 52, 70), M.SmoothPlastic, h)
 	Stations.wallLines(back, h, t.rimTop, M.SmoothPlastic, 0.18)
 	local z = Stations.BACK_Z
-	Stations.starburst(back, CFrame.new(0, Y + 5.8, z - 0.1), 3.7, 0.16, t.rimTop)
+	Stations.starburst(back, CFrame.new(0, Y + 5.8, z - 0.1), 3.7, 0.16, C(118, 92, 132))
 	for _, s in { { -3.3, 6.6 }, { 3.2, 2.0 }, { -3.1, 1.6 }, { 3.35, 6.4 }, { -2.6, 4.0 }, { 2.8, 4.6 } } do
-		decor(back:part('Sparkle', V(0.42, 0.42, 0.1), CFrame.new(s[1], Y + s[2], z - 0.06) * CFrame.Angles(0, 0, math.pi / 4), C(255, 240, 255), M.Neon)).CastShadow = false
+		decor(back:part('Sparkle', V(0.42, 0.42, 0.1), CFrame.new(s[1], Y + s[2], z - 0.06) * CFrame.Angles(0, 0, math.pi / 4), C(214, 200, 226), M.SmoothPlastic)).CastShadow = false
 	end
 	-- Spinner: a chunky post with a big ringed disc on a hub; it turns slowly and spins when hit.
 	local sz = 6.0
@@ -1107,11 +1119,11 @@ function Stations.Lanes.arcane(k)
 	g:box('SpinnerFoot', V(-0.75, Y, sz - 0.2), V(0.75, Y + 0.35, sz + 1.2), t.frame:Lerp(C(0, 0, 0), 0.25))
 	local sw = Stations.target(k, CFrame.new(0, Y + 5.8, sz), V(0, Y + 5.8, sz), 'Spin', true, 'Ding')
 	Stations.disc(sw, 'SpinnerBack', CFrame.new(0, Y + 5.8, sz + 0.12), 1.72, 0.16, t.frame)
-	Stations.bullseye(sw, CFrame.new(0, Y + 5.8, sz + 0.03), 1.62, { C(255, 255, 255), C(255, 100, 200), C(255, 255, 255), C(150, 60, 220), C(255, 220, 60) })
+	Stations.bullseye(sw, CFrame.new(0, Y + 5.8, sz + 0.03), 1.62, { C(236, 228, 214), C(206, 112, 164), C(236, 228, 214), C(128, 96, 176), C(227, 169, 63) })
 	-- Balloons to pop, tied to little weights.
-	for _, b in { { -2.6, 4.4, Y + 4.2, C(255, 90, 170) }, { 2.65, 5.1, Y + 4.9, C(80, 200, 255) } } do
+	for _, b in { { -2.6, 4.4, Y + 4.2, C(214, 112, 160) }, { 2.65, 5.1, Y + 4.9, C(120, 176, 214) } } do
 		local pos = V(b[1], b[3], b[2])
-		g:box('BalloonWeight', V(b[1] - 0.22, Y, b[2] - 0.22), V(b[1] + 0.22, Y + 0.35, b[2] + 0.22), C(255, 214, 60))
+		g:box('BalloonWeight', V(b[1] - 0.22, Y, b[2] - 0.22), V(b[1] + 0.22, Y + 0.35, b[2] + 0.22), C(216, 180, 74))
 		local s2 = Stations.target(k, CFrame.new(pos), pos, 'Pop', false, 'Pop', b[4])
 		Stations.balloon(s2, pos, 0.62, b[4], V(b[1], Y + 0.35, b[2]))
 	end
@@ -1119,7 +1131,7 @@ function Stations.Lanes.arcane(k)
 	for _, sx in { -1, 1 } do
 		local bc, bunch = g:group('BalloonBunch')
 		local foot = V(sx * 3.9, Stations.GANTRY_Y + 1.05, Stations.GANTRY_Z) -- (on the post's cap)
-		for i, c in { C(255, 90, 170), C(255, 220, 60), C(120, 220, 255) } do
+		for i, c in { C(214, 112, 160), C(227, 169, 63), C(120, 176, 214) } do
 			local a = (i - 2) * 0.6
 			Stations.balloon(bc, foot + V(math.sin(a) * 1.0 - sx * 0.15, 0.95 + math.cos(a) * 0.35, -0.2 * i), 0.6, c, foot)
 		end
@@ -1131,18 +1143,19 @@ function Stations.Lanes.arcane(k)
 	end
 end
 
--- 5 Shadow: dark plates with violet neon rims (a big hanging one is the main, haloed by a neon ring on the
--- obsidian wall), violet neon on the gantry and along the wall's steps.
+-- 5 Shadow: dark plates with violet neon rims (a big hanging one is the main, haloed by a dim neon ring on the
+-- black wall), dim violet neon on the gantry and along the wall's steps.
 function Stations.Lanes.shadow(k)
 	local t, Y, g = k.t, Stations.MAT_Y, k.gear
-	local violet, dark = C(160, 80, 255), C(40, 30, 60)
-	Stations.gantry(g, t, violet)
+	-- (Dim violet on the structure, a brighter violet only on the targets.)
+	local dim, violet, dark = C(96, 80, 140), C(136, 108, 204), C(44, 40, 54)
+	Stations.gantry(g, t, dim)
 	local back = k.st:group('Backstop')
 	local h = 7.0
-	Stations.wall(back, t, C(30, 20, 44), M.SmoothPlastic, h)
-	Stations.wallLines(back, h, violet, M.Neon, 0.12)
+	Stations.wall(back, t, C(34, 33, 42), M.SmoothPlastic, h)
+	Stations.wallLines(back, h, dim, M.Neon, 0.1)
 	local z = Stations.BACK_Z
-	Stations.bullseye(back, CFrame.new(0, Y + 5.8, z - 0.02), 2.5, { violet, C(20, 14, 30), violet, C(20, 14, 30), violet }, { M.Neon, M.SmoothPlastic, M.Neon, M.SmoothPlastic, M.Neon })
+	Stations.bullseye(back, CFrame.new(0, Y + 5.8, z - 0.02), 2.5, { dim, C(26, 26, 34), dim, C(26, 26, 34), dim }, { M.Neon, M.SmoothPlastic, M.Neon, M.SmoothPlastic, M.Neon })
 	-- Main: a round dark plate with neon rings, hanging from the beam.
 	local cy = 6.2
 	local sw = Stations.target(k, CFrame.new(0, Stations.GANTRY_Y, Stations.GANTRY_Z), V(0, cy, Stations.GANTRY_Z), 'Swing', true, 'Ding')
@@ -1160,14 +1173,14 @@ function Stations.Lanes.shadow(k)
 	end
 end
 
--- 6 Frost: an ice bullseye on a tall ice pillar (main), small ice blocks on ice pedestals, a four-course ice
--- wall with a snow top, icicles and a deep-blue neon line, and a deep-blue gantry with deep-blue neon on navy
--- strips: pale ice in a dark frame, as rich as shadow's neon on black.
+-- 6 Frost: an ice bullseye on a tall ice pillar (main), small ice blocks on charcoal pedestals, a four-course
+-- frosted ice wall with a snow top, icicles and one soft icy glow under it, slate-blue snowflakes, and a charcoal
+-- gantry with a thin icy line: pale ice in a dark frame.
 function Stations.Lanes.frost(k)
 	local t, Y, g = k.t, Stations.MAT_Y, k.gear
-	local snow, iceA, iceB, deep = C(248, 252, 255), C(150, 225, 250), C(120, 205, 240), C(25, 120, 235)
-	local glow, navy = C(40, 150, 255), C(12, 40, 100) -- deep-blue neon on navy strips (reads without bloom)
-	Stations.gantry(g, t, glow, { width = 0.22, backing = navy })
+	local snow, iceA, iceB, deep = C(244, 246, 248), C(196, 218, 228), C(176, 202, 214), C(64, 112, 170)
+	local glow, slate = C(170, 206, 228), C(96, 132, 170) -- (one soft icy glow; slate-blue paint for the graphics)
+	Stations.gantry(g, t, C(214, 232, 240), { width = 0.1 })
 	g:box('BeamSnow', V(-4.4, Stations.GANTRY_Y + 0.8, Stations.GANTRY_Z - 0.45), V(4.4, Stations.GANTRY_Y + 1.0, Stations.GANTRY_Z + 0.45), snow)
 	for i = 0, 6 do
 		local len = 0.5 + ((i * 37) % 5) * 0.12
@@ -1186,31 +1199,30 @@ function Stations.Lanes.frost(k)
 	end
 	local top = Y + 7.6
 	studs(back:box('SnowTop', V(-4.4, top, z0 - 0.1), V(4.4, top + 0.4, z1), snow))
-	decor(back:box('SnowGlowBack', V(-4.4, top - 0.34, z0 - 0.18), V(4.4, top, z0 - 0.06), navy)).CastShadow = false
 	decor(back:box('SnowGlow', V(-4.4, top - 0.28, z0 - 0.22), V(4.4, top - 0.06, z0 - 0.1), glow, M.Neon)).CastShadow = false
 	for _, d in { { -2.6, 1.6, 0.5 }, { 0.6, 2.0, 0.7 }, { 2.9, 1.2, 0.4 } } do back:box('SnowDrift', V(d[1] - d[2] / 2, top + 0.4, z0 + 0.1), V(d[1] + d[2] / 2, top + 0.4 + d[3], z1 - 0.1), snow) end
 	for i = 0, 9 do
 		local len = 0.45 + ((i * 53) % 7) * 0.1
 		Stations.icicle(back, V(-3.9 + i * 0.86, top - 0.1, z0 - 0.12), len, 0.34)
 	end
-	-- Two deep-blue neon snowflakes high on the wall either side of the main target (six arms with twin branches;
-	-- clear of the bullseye, the gantry posts and the icicles), and neon lines up the wall's edges: the lane's dark
+	-- Two slate-blue snowflakes high on the wall either side of the main target (six arms with twin branches;
+	-- clear of the bullseye, the gantry posts and the icicles), and slate lines up the wall's edges: the lane's dark
 	-- graphic, like shadow's rings.
 	for _, sx0 in { -1, 1 } do
 		local fc = CFrame.new(sx0 * 2.66, Y + 6.5, z0 - 0.08) * CFrame.Angles(0, 0, math.rad(15))
 		for a = 0, 2 do
 			local arm = fc * CFrame.Angles(0, 0, a * math.pi / 3)
-			decor(back:part('Snowflake', V(1.6, 0.3, 0.1), arm, glow, M.Neon)).CastShadow = false
+			decor(back:part('Snowflake', V(1.6, 0.3, 0.1), arm, slate, M.SmoothPlastic)).CastShadow = false
 			for _, sx in { -1, 1 } do
 				for _, sb in { -1, 1 } do
 					local at = arm * CFrame.new(sx * 0.48, 0, -0.01) * CFrame.Angles(0, 0, sx * sb * math.pi / 3) * CFrame.new(sx * 0.17, 0, 0)
-					decor(back:part('Snowflake', V(0.36, 0.2, 0.1), at, glow, M.Neon)).CastShadow = false
+					decor(back:part('Snowflake', V(0.36, 0.2, 0.1), at, slate, M.SmoothPlastic)).CastShadow = false
 				end
 			end
 		end
 	end
 	for _, sx in { -1, 1 } do
-		decor(back:box('WallNeon', V(sx * 4.3 - 0.11, 0.6, z0 - 0.07), V(sx * 4.3 + 0.11, top - 0.34, z0 + 0.04), glow, M.Neon)).CastShadow = false
+		decor(back:box('WallNeon', V(sx * 4.3 - 0.11, 0.6, z0 - 0.07), V(sx * 4.3 + 0.11, top - 0.34, z0 + 0.04), slate, M.SmoothPlastic)).CastShadow = false
 	end
 	-- Main: an ice bullseye (deep blue rings) on a tall ice pillar.
 	local mz = 6.0
@@ -1219,7 +1231,7 @@ function Stations.Lanes.frost(k)
 	g:box('IcePillarFoot', V(-0.8, Y, mz - 0.55), V(0.8, Y + 0.4, mz + 1.05), t.frame)
 	g:part('IceShine', V(0.12, 2.4, 0.04), CFrame.new(-0.2, Y + 2.2, mz - 0.32) * CFrame.Angles(0, 0, math.rad(35)), C(255, 255, 255)).Transparency = 0.25
 	local sw = Stations.target(k, CFrame.new(0, Y + 4.1, mz), V(0, Y + 5.8, mz), 'Tip', true, 'Ice')
-	Stations.disc(sw, 'IceBoard', CFrame.new(0, Y + 5.8, mz + 0.12), 1.82, 0.18, C(90, 200, 245))
+	Stations.disc(sw, 'IceBoard', CFrame.new(0, Y + 5.8, mz + 0.12), 1.82, 0.18, C(150, 190, 214))
 	Stations.bullseye(sw, CFrame.new(0, Y + 5.8, mz + 0.03), 1.72, { snow, deep, snow, deep, C(255, 255, 255) })
 	-- Ice blocks on pedestals at the sides.
 	for _, b in { { -2.6, 4.5, 2.6, 0.95 }, { 2.6, 5.0, 3.2, 0.9 } } do
@@ -1235,12 +1247,13 @@ function Stations.Lanes.frost(k)
 end
 
 -- 7 Toxic: a big toxic barrel with a target face on a pallet and two crates (main), green bottles on a shelf
--- under a hanging hazard sign, a second barrel, glowing puddles, a dark container wall with ribs, a hazard
--- stripe and a neon drip sign.
+-- under a hanging hazard sign, a second barrel, glassy puddles, a dark container wall with ribs, a muted
+-- hazard stripe and a drip sign.
 function Stations.Lanes.toxic(k)
 	local t, Y, g = k.t, Stations.MAT_Y, k.gear
-	local neon, dark, navy = C(60, 255, 90), C(20, 64, 58), C(24, 30, 70)
-	Stations.gantry(g, t)
+	local green, dark, navy = C(112, 170, 92), C(46, 60, 58), C(43, 47, 54) -- (a muted toxic green, no neon)
+	-- (Brass feet and caps and thin warm work lights: a step up from frost's steel, a step below gold's walnut.)
+	Stations.gantry(g, t, C(255, 227, 179), { width = 0.08, cap = Stations.Kit.brass })
 	local back = k.st:group('Backstop')
 	local z = Stations.BACK_Z
 	local h = 7.0
@@ -1250,106 +1263,106 @@ function Stations.Lanes.toxic(k)
 		back:box('Rib', V(x - 0.14, 0.6, z - 0.12), V(x + 0.14, Y + h - 0.75, z + 0.1), dark:Lerp(C(255, 255, 255), 0.12))
 	end
 	-- Hazard band: yellow with black slanted bars.
-	back:box('HazardBand', V(-4.3, Y + h - 0.7, z - 0.16), V(4.3, Y + h - 0.1, z + 0.1), C(255, 214, 30))
+	back:box('HazardBand', V(-4.3, Y + h - 0.7, z - 0.16), V(4.3, Y + h - 0.1, z + 0.1), C(216, 180, 74))
 	for i = 0, 7 do
 		decor(back:part('HazardBar', V(0.35, 0.82, 0.05), CFrame.new(-3.75 + i * 1.07, Y + h - 0.4, z - 0.18) * CFrame.Angles(0, 0, math.rad(40)), C(30, 30, 36)))
 	end
-	-- The drip sign (a neon drop on a dark plate), off to the right of the barrel stack.
+	-- The drip sign (a green drop on a dark plate), off to the right of the barrel stack.
 	local sx, sy = 2.45, Y + 4.4
 	Stations.disc(back, 'SignPlate', CFrame.new(sx, sy, z - 0.2), 1.25, 0.14, navy)
-	Stations.disc(back, 'Drip', CFrame.new(sx, sy - 0.25, z - 0.32), 0.75, 0.14, neon, M.Neon)
-	decor(back:part('DripTip', V(1.06, 1.06, 0.14), CFrame.new(sx, sy + 0.18, z - 0.32) * CFrame.Angles(0, 0, math.pi / 4), neon, M.Neon))
-	Stations.disc(back, 'DripShine', CFrame.new(sx - 0.24, sy - 0.05, z - 0.42), 0.18, 0.08, C(220, 255, 220), M.Neon)
+	Stations.disc(back, 'Drip', CFrame.new(sx, sy - 0.25, z - 0.32), 0.75, 0.14, green, M.SmoothPlastic)
+	decor(back:part('DripTip', V(1.06, 1.06, 0.14), CFrame.new(sx, sy + 0.18, z - 0.32) * CFrame.Angles(0, 0, math.pi / 4), green, M.SmoothPlastic))
+	Stations.disc(back, 'DripShine', CFrame.new(sx - 0.24, sy - 0.05, z - 0.42), 0.18, 0.08, C(222, 236, 214), M.SmoothPlastic)
 	-- Hazard diamond hanging from the beam over the bottle shelf (decor).
 	local hx = -2.6
 	for _, ox in { -0.5, 0.5 } do g:box('SignChain', V(hx + ox - 0.08, Stations.GANTRY_Y - 0.8, Stations.GANTRY_Z - 0.08), V(hx + ox + 0.08, Stations.GANTRY_Y, Stations.GANTRY_Z + 0.08), C(52, 54, 66)) end
-	g:part('HazardSign', V(1.25, 1.25, 0.12), CFrame.new(hx, Stations.GANTRY_Y - 1.5, Stations.GANTRY_Z) * CFrame.Angles(0, 0, math.pi / 4), C(255, 214, 30))
+	g:part('HazardSign', V(1.25, 1.25, 0.12), CFrame.new(hx, Stations.GANTRY_Y - 1.5, Stations.GANTRY_Z) * CFrame.Angles(0, 0, math.pi / 4), C(216, 180, 74))
 	g:part('HazardSignMark', V(0.22, 0.6, 0.06), CFrame.new(hx, Stations.GANTRY_Y - 1.4, Stations.GANTRY_Z - 0.08), C(30, 30, 36))
 	g:part('HazardSignDot', V(0.22, 0.22, 0.06), CFrame.new(hx, Stations.GANTRY_Y - 1.9, Stations.GANTRY_Z - 0.08), C(30, 30, 36))
 	-- Main: a big toxic barrel with a target face, on a pallet and two stamped crates.
 	local mz = 6.0
 	g:box('Pallet', V(-1.05, Y, mz - 1.05), V(1.05, Y + 0.35, mz + 1.05), C(150, 105, 60))
 	local crate = g:box('Crate', V(-0.95, Y + 0.35, mz - 0.95), V(0.95, Y + 2.35, mz + 0.95), navy)
-	Stations.stamp(crate, Stations.SIDES, 1.9, 2.0, C(5, 150, 35))
+	Stations.stamp(crate, Stations.SIDES, 1.9, 2.0, C(70, 104, 72))
 	local crate2 = g:part('Crate', V(1.6, 1.8, 1.6), CFrame.new(0.05, Y + 3.25, mz) * CFrame.Angles(0, math.rad(8), 0), dark)
-	Stations.stamp(crate2, Stations.SIDES, 1.6, 1.8, C(5, 150, 35))
+	Stations.stamp(crate2, Stations.SIDES, 1.6, 1.8, C(70, 104, 72))
 	local base = Y + 4.15
 	local sw, drum = Stations.target(k, CFrame.new(0, base, mz + 0.95), V(0, base + 1.25, mz - 1.0), 'Tip', true, 'Barrel')
 	drum:SetAttribute('TipMin', 0) -- (rocks back on its back edge, never into the crate)
-	Stations.drum(sw, V(0, base, mz), 0.95, 2.5, neon, navy, C(10, 90, 30), M.Neon)
-	Stations.bullseye(sw, CFrame.new(0, base + 1.25, mz - 1.02), 0.75, { C(255, 255, 255), navy, neon }, { M.SmoothPlastic, M.SmoothPlastic, M.Neon })
+	Stations.drum(sw, V(0, base, mz), 0.95, 2.5, green, navy, C(64, 96, 62), M.SmoothPlastic)
+	Stations.bullseye(sw, CFrame.new(0, base + 1.25, mz - 1.02), 0.75, { C(236, 228, 214), navy, green }, { M.SmoothPlastic, M.SmoothPlastic, M.SmoothPlastic })
 	-- Green bottles on a little shelf (they shatter), and a barrel on the floor.
 	local shelf = Y + 3.0
 	for _, ox in { -1, 1 } do g:box('ShelfLeg', V(-2.6 + ox * 0.85 - 0.18, Y, 4.5 - 0.18), V(-2.6 + ox * 0.85 + 0.18, shelf, 4.5 + 0.18), navy) end
 	g:box('Shelf', V(-3.7, shelf - 0.25, 4.1), V(-1.5, shelf, 4.9), navy)
 	for _, x in { -3.1, -2.1 } do
 		local b = V(x, shelf, 4.5)
-		local s2 = Stations.target(k, CFrame.new(b + V(0, 0, 0.2)), b + V(0, 0.7, 0), 'Shatter', false, 'Glass', neon)
-		Stations.bottle(s2, b, 0.95, C(60, 220, 90), { label = navy, stripe = neon, material = M.Neon })
+		local s2 = Stations.target(k, CFrame.new(b + V(0, 0, 0.2)), b + V(0, 0.7, 0), 'Shatter', false, 'Glass', green)
+		Stations.bottle(s2, b, 0.95, C(126, 184, 110), { label = navy, stripe = green, material = M.Glass })
 	end
 	local s3, floorDrum = Stations.target(k, CFrame.new(2.7, Y, 5.26), V(2.7, Y + 0.95, 4.6), 'Tip', false, 'Barrel')
 	floorDrum:SetAttribute('TipMin', 0)
-	Stations.drum(s3, V(2.7, Y, 4.6), 0.66, 1.9, neon, navy, C(10, 90, 30), M.Neon)
-	-- Glowing puddles on the dark mat.
+	Stations.drum(s3, V(2.7, Y, 4.6), 0.66, 1.9, green, navy, C(64, 96, 62), M.SmoothPlastic)
+	-- Glassy green puddles on the dark mat.
 	for _, p in { { -1.4, 2.0, 1.1 }, { 1.9, 1.1, 0.75 }, { -0.4, 7.6, 0.8 } } do
-		decor(g:part('Puddle', V(0.05, 2 * p[3], 2 * p[3] * 1.3), CFrame.new(p[1], Y + 0.025, p[2]) * CFrame.Angles(0, 0, math.pi / 2), neon, M.Neon, Enum.PartType.Cylinder)).CastShadow = false
+		decor(g:part('Puddle', V(0.05, 2 * p[3], 2 * p[3] * 1.3), CFrame.new(p[1], Y + 0.025, p[2]) * CFrame.Angles(0, 0, math.pi / 2), C(118, 166, 98), M.Glass, Enum.PartType.Cylinder)).CastShadow = false
 	end
 end
 
--- 8 Gold, the top lane: a big gold gong with a crimson ring (main) in a gold ring on a velvet-faced gold backstop with cream trim
--- and gold rays (the gold pops off the dark velvet the way toxic's neon pops off its container), white-hot neon
--- on crimson strips up the gantry, a turning crown on the beam, gold bottles on a gold shelf, a gold plate on
--- a post, lemon nuggets on the sand and a velvet band on the bench (a VIP counter).
+-- 8 Gold, the top lane: a big gold gong with an oxblood ring (main) in a brass ring on an oxblood-velvet walnut
+-- backstop with brass trim and brass rays (the gold reads off the dark velvet), warm-white strip lights on
+-- oxblood up the gantry, a turning crown on the beam, gold bottles on a brass shelf, a gold plate on a post,
+-- gold nuggets on a camel rug and a velvet band on the bench (a quiet VIP lounge rather than a gold blast).
 function Stations.Lanes.gold(k)
 	local t, Y, g = k.t, Stations.MAT_Y, k.gear
-	local gold, deep, white, ruby, cream = C(255, 222, 40), C(245, 190, 0), C(255, 252, 235), C(235, 30, 70), C(255, 248, 220)
-	local velvet, rays = C(150, 15, 40), C(255, 200, 40)
-	Stations.gantry(g, t, C(255, 255, 235), { width = 0.22, backing = velvet })
+	local gold, deep, white, ruby, brass = C(227, 169, 63), C(184, 134, 58), C(244, 236, 220), C(168, 52, 60), Stations.Kit.brass
+	local velvet, rays = Stations.Kit.oxblood, Stations.Kit.brassLight
+	Stations.gantry(g, t, C(255, 227, 179), { width = 0.16, backing = velvet, cap = Stations.Kit.brass })
 	g:box('CrownPlinth', V(-0.5, Stations.GANTRY_Y + 0.8, Stations.GANTRY_Z - 0.4), V(0.5, Stations.GANTRY_Y + 0.86, Stations.GANTRY_Z + 0.4), velvet)
 	Stations.crown(g, CFrame.new(0, Stations.GANTRY_Y + 0.86, Stations.GANTRY_Z))
-	-- Wall: a gold body (its sides, back and top read gold from the aisle) with a crimson velvet field framed in
-	-- gold on the shooter's face, cream trim, gold rays behind a gold ring round a darker velvet disc, two gems.
+	-- Wall: a walnut body with an oxblood velvet field on the shooter's face, brass trim, brass rays behind a
+	-- brass ring round a darker velvet disc, two small gems.
 	local back = k.st:group('Backstop')
 	local z = Stations.BACK_Z
 	local h = 7.4
-	Stations.wall(back, t, C(235, 170, 0), M.SmoothPlastic, h)
-	local groove = C(112, 8, 30)
+	Stations.wall(back, t, Stations.Kit.walnut, M.Wood, h)
+	local groove = C(78, 30, 32)
 	for _, f in { { 4.05, 0.6, Y + h - 0.25, 0.04 }, { 2.65, Y + h + 0.12, Y + h + 0.62, -0.11 }, { 1.25, Y + h + 0.92, Y + h + 1.22, -0.26 } } do
 		local face = back:box('Velvet', V(-f[1], f[2], z - f[4]), V(f[1], f[3], z - f[4] + 0.1), velvet, M.Fabric)
 		Stations.panelX(back, face, CFrame.new(0, (f[2] + f[3]) / 2, z - f[4]), 2 * f[1], f[3] - f[2], f[1] > 3 and 5 or 4, groove)
 	end
-	Stations.wallLines(back, h, cream, M.SmoothPlastic, 0.3)
+	Stations.wallLines(back, h, rays, M.SmoothPlastic, 0.3)
 	Stations.starburst(back, CFrame.new(0, Y + 5.8, z - 0.1), 4.2, 0.12, rays)
 	local ring = Stations.disc(back, 'VelvetRim', CFrame.new(0, Y + 5.8, z - 0.22), 2.62, 0.14, rays)
 	ring.Reflectance = 0.2
-	Stations.disc(back, 'Velvet', CFrame.new(0, Y + 5.8, z - 0.28), 2.4, 0.14, C(105, 8, 30), M.Fabric)
-	for _, s in { { -3.45, 1.2, C(60, 140, 255) }, { 3.45, 1.2, C(60, 220, 120) } } do
+	Stations.disc(back, 'Velvet', CFrame.new(0, Y + 5.8, z - 0.28), 2.4, 0.14, C(84, 34, 36), M.Fabric)
+	for _, s in { { -3.45, 1.2, C(70, 110, 170) }, { 3.45, 1.2, C(70, 140, 100) } } do
 		back:part('Gem', V(0.42, 0.42, 0.25), CFrame.new(s[1], Y + s[2], z - 0.08) * CFrame.Angles(0, 0, math.pi / 4), s[3], M.Glass)
 	end
 	-- Main: the gong.
 	local cy = 6.2
 	local sw = Stations.target(k, CFrame.new(0, Stations.GANTRY_Y, Stations.GANTRY_Z), V(0, cy, Stations.GANTRY_Z), 'Swing', true, 'Ding')
-	-- (A little reflectance on the gold rim: a metal glint in Studio light; the crimson ring ties it to the velvet.)
+	-- (A little reflectance on the brass rim: a metal glint in Studio light; the oxblood ring ties it to the velvet.)
 	Stations.disc(sw, 'GongRim', CFrame.new(0, cy, Stations.GANTRY_Z + 0.03), 2.0, 0.22, deep).Reflectance = 0.2
 	Stations.disc(sw, 'Gong', CFrame.new(0, cy, Stations.GANTRY_Z - 0.02), 1.75, 0.28, gold)
 	Stations.disc(sw, 'GongRing', CFrame.new(0, cy, Stations.GANTRY_Z - 0.06), 1.08, 0.32, velvet)
 	Stations.disc(sw, 'GongBoss', CFrame.new(0, cy, Stations.GANTRY_Z - 0.1), 0.78, 0.36, gold)
 	sw:part('GongRuby', V(0.52, 0.52, 0.3), CFrame.new(0, cy, Stations.GANTRY_Z - 0.3) * CFrame.Angles(0, 0, math.pi / 4), ruby, M.Glass)
 	Stations.chains(sw, 0, cy + 1.9, 0.8)
-	-- Gold bottles on a gold shelf (left) and a gold plate on a post (right).
+	-- Gold bottles on a brass shelf (left) and a gold plate on a post (right).
 	local shelf = Y + 3.0
-	for _, ox in { -1, 1 } do g:box('ShelfLeg', V(-2.6 + ox * 0.85 - 0.18, Y, 4.5 - 0.18), V(-2.6 + ox * 0.85 + 0.18, shelf, 4.5 + 0.18), deep) end
-	g:box('Shelf', V(-3.7, shelf - 0.25, 4.1), V(-1.5, shelf, 4.9), deep)
+	for _, ox in { -1, 1 } do g:box('ShelfLeg', V(-2.6 + ox * 0.85 - 0.18, Y, 4.5 - 0.18), V(-2.6 + ox * 0.85 + 0.18, shelf, 4.5 + 0.18), brass) end
+	g:box('Shelf', V(-3.7, shelf - 0.25, 4.1), V(-1.5, shelf, 4.9), Stations.Kit.walnut, M.Wood)
 	for _, x in { -3.1, -2.1 } do
 		local b = V(x, shelf, 4.5)
 		local s2 = Stations.target(k, CFrame.new(b + V(0, 0, 0.2)), b + V(0, 0.7, 0), 'Shatter', false, 'Glass', gold)
 		Stations.bottle(s2, b, 0.95, gold, { label = white, stripe = ruby, cap = ruby })
 	end
-	g:box('PlatePost', V(2.4, Y, 5.15), V(2.8, Y + 3.0, 5.55), deep)
+	g:box('PlatePost', V(2.4, Y, 5.15), V(2.8, Y + 3.0, 5.55), brass)
 	local s3 = Stations.target(k, CFrame.new(2.6, Y + 3.0, 5.15), V(2.6, Y + 3.65, 5.05), 'Tip', false, 'Ding')
 	Stations.plate(s3, CFrame.new(2.6, Y + 3.65, 5.05), 1.3, gold, deep, M.SmoothPlastic, white)
-	-- An amber rug with a velvet border over the target field (so the lemon nuggets read), and the nuggets on it.
-	local rug = studs(g:box('Rug', V(-3.3, Y, 0.4), V(3.3, Y + 0.04, 8.2), C(210, 140, 0)))
+	-- A camel rug with a velvet border over the target field (so the gold nuggets read), and the nuggets on it.
+	local rug = studs(g:box('Rug', V(-3.3, Y, 0.4), V(3.3, Y + 0.04, 8.2), C(150, 116, 80), M.Fabric))
 	rug.CanCollide = false
 	for _, b in { { V(-3.3, Y, 0.4), V(3.3, Y + 0.05, 0.6) }, { V(-3.3, Y, 8.0), V(3.3, Y + 0.05, 8.2) }, { V(-3.3, Y, 0.4), V(-3.1, Y + 0.05, 8.2) }, { V(3.1, Y, 0.4), V(3.3, Y + 0.05, 8.2) } } do
 		decor(g:box('RugBorder', b[1], b[2], velvet, M.Fabric)).CastShadow = false
@@ -1402,7 +1415,7 @@ function Stations.labels(st, s, t, at)
 	chip.Parent = g
 	text('Cost', s.Required == 0 and 'FREE' or ('💪 ' .. compact(s.Required)), P.white, 0.27, 0.035, 0.46, 0.2, 2)
 	local open = s.Required == 0
-	text('Detail', open and 'Unlocked' or 'Locked', open and C(20, 235, 70) or C(235, 25, 50), 0.1, 0.28, 0.8, 0.27, 3)
+	text('Detail', open and 'Unlocked' or 'Locked', open and C(140, 206, 120) or C(217, 119, 106), 0.1, 0.28, 0.8, 0.27, 3)
 	text('Power', 'x' .. s.Multiplier .. ' Power', t.text, 0, 0.56, 1, 0.44, 3)
 	return sign
 end
@@ -1425,14 +1438,14 @@ function Stations.build(ctx, stationId, opts)
 	local st, model = ctx:group('Training_' .. stationId)
 	model:SetAttribute('Theme', t.name)
 
-	-- Base: the rim, the flat inset mat, a thin neon line inside the rim on shadow.
+	-- Base: the rim, the flat inset mat, a thin plastic inlay inside the rim on shadow (no floor neon).
 	Stations.rim(st, t)
 	local Y, MX, MZ = Stations.MAT_Y, Stations.HALF_X - 1, Stations.HALF_Z - 1
 	local mat = st:box('Mat', V(-MX, 0, -MZ), V(MX, Y, MZ), t.mat, t.matMat or M.Plastic)
 	if mat.Material == M.Plastic then studs(mat) end
 	if t.edge then
 		for _, b in { { V(-MX, Y, -MZ), V(MX, Y + 0.14, -MZ + 0.08) }, { V(-MX, Y, MZ - 0.08), V(MX, Y + 0.14, MZ) }, { V(-MX, Y, -MZ), V(-MX + 0.08, Y + 0.14, MZ) }, { V(MX - 0.08, Y, -MZ), V(MX, Y + 0.14, MZ) } } do
-			decor(st:box('EdgeGlow', b[1], b[2], t.edge, M.Neon)).CastShadow = false
+			decor(st:box('EdgeGlow', b[1], b[2], t.edge, M.SmoothPlastic)).CastShadow = false
 		end
 	end
 	-- Where the player stands to train: the shooter's box, from the aisle edge to just short of the bench.
@@ -1471,40 +1484,72 @@ function Stations.build(ctx, stationId, opts)
 	return model
 end
 ---------------------------------------------------------------------------------------------- armory
--- The ARMORY, after the user's item-shop reference: the gun ladder as big guns floating in profile over big
--- glowing hexagonal pads, two rows. Guns 1-5 stand on the front platform (a low studded deck with a step along its front),
--- guns 6-10 on a raised studded terrace behind it, reached by a stair at each end. Each pad has a light rim and a
--- glowing face in its state colour (pink locked, blue owned, green equipped; Armory.client repaints them), a glow
--- skirt on the deck around it, and a plate on its front edge saying LOCKED / OWNED / EQUIPPED. Over each gun a
--- nameplate stack: the name in the gun's colour, the multiplier, the price (or the state word).
+-- The ARMORY: a calm gun showroom. Ten guns float in profile over dark hexagonal plinths, five on the deck and
+-- five on a raised terrace behind them, the back row offset half a pitch so every back gun shows between two
+-- front guns, stepping up toward the Diamond Cannon, which sits highest. A cream riser behind the front row and
+-- a brick back wall behind the back row (both mid-tone, so dark and light guns both read); a charcoal canopy
+-- over the back row hides the downlights. The tier shows in the plinth material (concrete 1-3, black steel 4-5,
+-- dark wood and brass 6-7, a gold-framed glass case 8-10), not in colour. The state shows only on a thin ring
+-- round the plinth top and on a plate (front row: the plinth's front; back row: the riser, where you buy it).
+-- Armory.client paints the states (GunRules.Colors): LOCKED no ring, a padlock, a dimmer gun; NEXT UP the next
+-- gun to buy (amber ring, brighter spot and a slow bob once you can afford it); OWNED steel blue; EQUIPPED sage,
+-- the only glowing ring. Effects only on 8-10, one small step per gun.
 --
--- Contract (GunService and HoodClient/Armory): one Model GunSlot_<Id> per gun with attributes GunId, Tier,
--- Cost, Multiplier, holding
---   GunPoint_<Id>      invisible part in front of the pad: prompt anchor and buy-distance point
---   StateTop/StateGlow the coloured face and glow (parts, several each; a PointLight under a StateGlow),
---                      StateStrip (part) with SurfaceGui > TextLabel State, StateHaze (ParticleEmitter)
---   LabelAnchor        BillboardGui GunLabel > TextLabels Name, Multiplier, Price (Glyph attribute = icon text)
---   Display            Model tagged HoodMotion (Bob) with the gun inside, horizontal, in profile to the hall
--- The Armory model is tagged HoodArmory; each slot streams Atomic.
+-- Contract (GunService and HoodClient/Armory): one Model GunSlot_<Id> per gun (Atomic) with attributes GunId,
+-- Tier, Cost, Multiplier, Row (1 front, 2 back), holding
+--   GunPoint_<Id>  invisible part where you stand to buy: the prompt anchor and the server's distance point
+--   StateRing      ring parts (the client colours them; LOCKED paints them the cap colour)
+--   StateStrip     the state plate: SurfaceGui StateGui > TextLabel State, Frames NextBar (track) and NextFill
+--   StateLock      the padlock parts (hidden unless LOCKED)
+--   StateSpot      the downlight (SpotLight) over the gun; StateGlow the soft PointLight under it (EQUIPPED)
+--   LabelAnchor    BillboardGui GunLabel > TextLabels Tier (LEGENDARY on 8-10), Name, Multiplier, Price
+--                  (+ ImageLabel PriceIcon once the Cash icon is uploaded; Price's Glyph attribute = text icon)
+--   Display        Model tagged HoodMotion with the gun (Model Gun) inside; the client sets Bob on it
+-- The Armory model is tagged HoodArmory.
 -- Local frame: origin at the centre of the front step's foot on the hall floor, front faces -Z (players stand
--- at -Z looking +Z), footprint x -29.4..29.4, z 0..31.2 (Armory.HalfWidth, Armory.Depth), at most 20 tall.
+-- at -Z looking +Z), footprint x -29.4..29.4, z 0..31.2 (Armory.HalfWidth, Armory.Depth), at most 21 tall.
 local Armory = {}
 
 Armory.HalfWidth, Armory.Depth = 29.4, 31.2
-Armory.Floor = 1.6 -- front platform top (one 0.8 step up from the hall floor)
-Armory.Step = 11.6 -- back terrace top: the front row's nameplates sit on its wall, the back row stands above them
-Armory.TerraceZ = 17.4 -- where the terrace's front wall stands
-Armory.Rows = { { z = 8.6, y = 1.6, label = 1.3, scale = 1 }, { z = 24.9, y = 11.6, label = 1.6, scale = 1.15 } }
-Armory.Spacing = 10.3
-Armory.Radius = 3.6 -- pad apothem (centre to a flat side); flats face -Z
-Armory.PadHeight = 0.95
-Armory.MaxLength = 6.5
-Armory.Tilt = 17 -- degrees the muzzle points up
-Armory.DisplayH = 4.6 -- the tallest a tilted gun may stand (taller ones are scaled down; nameplates sit over it)
-Armory.Bob, Armory.BobPeriod = 0.35, 2.6
+Armory.Pitch = 11.2 -- gun to gun along a row; the back row sits half a pitch over
+Armory.Floor = 0.6 -- deck top (two 0.3 rises up from the hall floor)
+Armory.Terrace = 7.0 -- back terrace top
+Armory.RiserZ, Armory.WallZ = 10.6, 19.5 -- the terrace's front face, the back wall's face
+Armory.Rows = {
+	{ z = 5.8, y = 0.6, plinth = 1.4, scale = 1, displayH = 3.4, step = 0 },
+	{ z = 14.5, y = 7.0, plinth = 1.8, scale = 1.12, displayH = 3.6, step = 0.5 },
+}
+Armory.Radius = 3.2 -- plinth apothem (centre to a flat side); flats face -Z
+Armory.Float = 0.6 -- gap between a plinth top and its gun
+Armory.MaxLength = 6.8
+Armory.Tilt, Armory.Yaw = 12, 12 -- degrees: muzzle up, and turned away from the walkway (a 3/4 view)
+Armory.CanopyY = 19.2
+Armory.LabelH = 2.7
+Armory.Font = Enum.Font.GothamBlack
 
--- Optional modules made by other builders (Shared.HoodVFX, Shared.Models.GunModels / IconModels): nil when
--- they are not there yet or fail to load.
+-- BRIEF6 palette (plus the darker tones the plinths need).
+Armory.K = {
+	charcoal = C(60, 66, 76), ink = C(43, 47, 54), graphite = C(52, 54, 58), cream = C(229, 220, 203),
+	brick = C(146, 96, 80), wood = C(165, 122, 88), woodDark = C(92, 64, 46), deck = C(166, 158, 146),
+	concrete = C(128, 123, 116), steel = C(78, 84, 94), chrome = C(188, 192, 198), brass = C(176, 138, 70),
+	gold = C(227, 169, 63), black = C(34, 37, 42), glass = C(206, 222, 228), warm = C(255, 227, 179),
+	spot = C(255, 228, 196), outline = C(28, 30, 36), white = C(246, 243, 237), power = C(255, 212, 110),
+}
+
+-- Plinth looks per tier band: the material carries the tier, colour stays for the state.
+function Armory.tierLook(tier)
+	local K = Armory.K
+	if tier <= 3 then
+		return { name = 'Street', body = K.concrete, bodyMat = M.Concrete, trim = K.charcoal, trimMat = M.Metal }
+	elseif tier <= 5 then
+		return { name = 'Pro', body = K.steel, bodyMat = M.DiamondPlate, trim = K.chrome, trimMat = M.Metal } -- (gunmetal, not black: no voids in the row)
+	elseif tier <= 7 then
+		return { name = 'Elite', body = K.woodDark, bodyMat = M.Wood, trim = K.brass, trimMat = M.Metal }
+	end
+	return { name = 'Legendary', body = K.black, bodyMat = M.SmoothPlastic, trim = K.gold, trimMat = M.Metal, case = true }
+end
+
+-- Optional modules made by other builders (Shared.Models.GunModels / IconModels): nil when missing or broken.
 function Armory.optional(name)
 	local shared = ReplicatedStorage:FindFirstChild('Shared')
 	local models = shared and shared:FindFirstChild('Models')
@@ -1514,12 +1559,22 @@ function Armory.optional(name)
 	return ok and result or nil
 end
 
--- Hexagonal plinth: three boxes turned 60 degrees apart (flat sides face +-Z), each width 2r*tan(30).
+-- Hexagonal prism (flat sides facing ±Z): three boxes turned 60 degrees apart, each 2r*tan(30) wide.
 function Armory.hex(c, name, x, z, r, y0, y1, color, material)
 	local w = 2 * r * math.tan(math.pi / 6)
 	local parts = {}
 	for k = 0, 2 do
 		table.insert(parts, c:part(name, V(w, y1 - y0, 2 * r), CFrame.new(x, (y0 + y1) / 2, z) * CFrame.Angles(0, k * math.pi / 3, 0), color, material))
+	end
+	return parts
+end
+-- Six bars along a hexagon's sides, outer edge at apothem a, `w` wide (a ring or a frame).
+function Armory.hexRing(c, name, x, z, a, y0, y1, w, color, material)
+	local side = 2 * a * math.tan(math.pi / 6)
+	local parts = {}
+	for k = 0, 5 do
+		local cf = CFrame.new(x, (y0 + y1) / 2, z) * CFrame.Angles(0, k * math.pi / 3, 0) * CFrame.new(0, 0, -(a - w / 2))
+		table.insert(parts, c:part(name, V(side, y1 - y0, w), cf, color, material))
 	end
 	return parts
 end
@@ -1559,7 +1614,7 @@ function Armory.place(model, target)
 end
 
 -- Stand-in gun while GunModels is missing: a chunky blocky gun in the contract's frame (grip at the origin,
--- muzzle toward -Z, up +Y; a pistol is about 1.6 long). Longer guns get a stock; the colour runs down a stripe.
+-- muzzle toward -Z, up +Y; a pistol is about 1.6 long). Longer guns get a stock.
 function Armory.placeholder(gun, scale)
 	local s = scale or 1
 	local model = Instance.new('Model')
@@ -1582,7 +1637,7 @@ function Armory.placeholder(gun, scale)
 	local front = -len + 0.35
 	local grip = add('Grip', V(0.3, 0.75, 0.42), CFrame.new(0, -0.22, 0.12) * CFrame.Angles(math.rad(-14), 0, 0), long and C(132, 82, 48) or dark, long and M.Wood or M.SmoothPlastic)
 	add('Body', V(0.34, 0.44, len), CFrame.new(0, 0.32, front / 2 + 0.3), dark)
-	add('Stripe', V(0.36, 0.12, len * 0.7), CFrame.new(0, 0.38, front / 2 + 0.2), gun.Color, M.Neon)
+	add('Stripe', V(0.36, 0.12, len * 0.7), CFrame.new(0, 0.38, front / 2 + 0.2), gun.Color, M.SmoothPlastic)
 	add('Barrel', V(0.34, 0.2, 0.2), CFrame.new(0, 0.3, front - 0.12) * CFrame.Angles(0, math.pi / 2, 0), metal, M.Metal, Enum.PartType.Cylinder)
 	add('Guard', V(0.12, 0.22, 0.36), CFrame.new(0, -0.02, -0.22), dark)
 	add('Sight', V(0.1, 0.1, 0.16), CFrame.new(0, 0.58, front + 0.12), metal, M.Metal)
@@ -1595,9 +1650,9 @@ function Armory.placeholder(gun, scale)
 	return model
 end
 
--- The display gun: GunModels.build when it exists (else the stand-in), scaled up to read across the hall over its
--- pad. Small guns are blown up more than big ones (display length ~ natural length^0.5), so a pistol is about 4.3
--- studs and the long guns about 6.5, and each tier gets 3% more on top, up to 6.5 studs.
+-- The display gun (GunModels.build, else the stand-in), scaled up to read across the hall: small guns grow more
+-- than big ones (display length ~ natural length^0.5), 3% more per tier, at most MaxLength (x the row's scale):
+-- a pistol about 4.5 studs, the long guns 6.8.
 function Armory.gun(gun, shrink)
 	local models = Armory.optional('GunModels')
 	local function make(scale)
@@ -1611,147 +1666,146 @@ function Armory.gun(gun, shrink)
 	local lo, hi = Armory.extents(model, Armory.pivotOf(model))
 	local size = hi - lo
 	local longest = math.max(size.X, size.Y, size.Z, 0.1)
-	local length = math.min(Armory.MaxLength, 3.5 * longest ^ 0.5 * (1 + 0.03 * (gun.Tier - 1))) * (shrink or 1)
+	local length = math.min(Armory.MaxLength, 3.7 * longest ^ 0.5 * (1 + 0.03 * (gun.Tier - 1))) * (shrink or 1)
 	if math.abs(longest - length) > 0.05 then
 		model:Destroy()
 		model = make(length / longest)
 	end
 	for _, p in model:GetDescendants() do
-		if p:IsA('BasePart') then p.Anchored, p.CanCollide, p.CanTouch, p.CanQuery = true, false, false, false end
+		if p:IsA('BasePart') then
+			p.Anchored, p.CanCollide, p.CanTouch, p.CanQuery = true, false, false, false
+			p.CastShadow = false -- (a floating gun's shadow on its own plinth only reads as a dark blot)
+		end
 	end
 	return model
 end
 
--- Effects that grow with tier (`part` is a box round the gun, which sizes them): a soft light for the front row,
--- then for the back row HoodVFX.item when the VFX module is there, otherwise a light, sparkles, rising glow and
--- big star glints for the last two.
-function Armory.effects(part, tier, color)
-	if tier < 2 then return end -- the free pistol stays plain, like the basic tool in the reference
-	-- The front row (tiers 2-5) gets only a soft light: like the reference, effects are for the better items.
-	if tier < 6 then
-		light(part, color, 0.5 + tier * 0.12, 7 + tier * 0.4)
-		return
-	end
-	local vfx = Armory.optional('HoodVFX')
-	if vfx and vfx.item then
-		local ok, made = pcall(vfx.item, part, tier, color)
-		if ok then
-			-- A shop display keeps only the small effects: no halo, rays, arcs or glitter (they white out the terrace,
-			-- worst with built-in textures), the rest capped at 2.5 studs and rising slowly so they stay under the
-			-- nameplate.
-			local kill = { ItemGlow = true, ItemRays = true, ItemArcs = true, ItemGlitter = true }
-			for _, e in (type(made) == 'table' and made or {}) do
-				if typeof(e) == 'Instance' and kill[e.Name] then
-					e:Destroy()
-				elseif typeof(e) == 'Instance' and e:IsA('ParticleEmitter') then
-					pcall(function()
-						local most = 0
-						for _, kp in e.Size.Keypoints do most = math.max(most, kp.Value + kp.Envelope) end
-						if most > 2.5 then
-							local f, keys = 2.5 / most, {}
-							for _, kp in e.Size.Keypoints do table.insert(keys, NumberSequenceKeypoint.new(kp.Time, kp.Value * f, kp.Envelope * f)) end
-							e.Size = NumberSequence.new(keys)
-						end
-						if e.Name == 'ItemWisps' or e.Name == 'ItemFlames' or e.Name == 'ItemMotes' then
-							e.Speed = NumberRange.new(e.Speed.Min * 0.5, e.Speed.Max * 0.5)
-							e.Acceleration = e.Acceleration * 0.4
-						end
-					end)
-				end
-			end
-			return
-		end
-	end
-	light(part, color, 0.5 + tier * 0.12, 7 + tier * 0.4)
-	local function emitter(name, texture, rate, life, speed, size, transparency)
-		local e = Instance.new('ParticleEmitter')
-		e.Name = name
-		e.Texture = texture
-		e.Rate = rate
-		e.Lifetime = NumberRange.new(life[1], life[2])
-		e.Speed = NumberRange.new(speed[1], speed[2])
-		e.SpreadAngle = Vector2.new(180, 180)
-		e.Size = size
-		e.Transparency = transparency
-		e.Color = ColorSequence.new(color:Lerp(P.white, 0.35), color)
-		e.LightEmission = 1
-		e.LightInfluence = 0
-		e.RotSpeed = NumberRange.new(-90, 90)
-		e.Rotation = NumberRange.new(0, 360)
-		e.Parent = part
-		return e
-	end
-	local fade = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(0.7, 0.4), NumberSequenceKeypoint.new(1, 1) })
-	if tier >= 3 then
-		emitter('Sparkles', 'rbxasset://textures/particles/sparkles_main.dds', 2 + tier * 1.5, { 0.8, 1.5 }, { 0.4, 1.4 },
-			NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2 + tier * 0.03), NumberSequenceKeypoint.new(1, 0) }), fade)
-	end
-	if tier >= 6 then
-		local glow = emitter('Glow', 'rbxasset://textures/particles/fire_main.dds', 3 + tier, { 0.9, 1.6 }, { 0.6, 1.4 },
-			NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.6 + tier * 0.06), NumberSequenceKeypoint.new(1, 0.1) }),
-			NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.55), NumberSequenceKeypoint.new(1, 1) }))
-		glow.EmissionDirection = Enum.NormalId.Top
-		glow.SpreadAngle = Vector2.new(25, 25)
-		glow.Acceleration = V(0, 1.5, 0)
-	end
-	if tier >= 9 then
-		local star = emitter('Glints', 'rbxasset://textures/particles/sparkles_main.dds', 3, { 1.2, 2 }, { 0.2, 0.6 },
-			NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.3, 1.1), NumberSequenceKeypoint.new(1, 0) }),
-			NumberSequence.new(0.1))
-		star:SetAttribute('PreviewTexture', 'star')
-	end
+---------------------------------------------------------------------------------------------- labels
+-- One line of label text: one font (GothamBlack) for everything, a dark outline, no wrapping (so a long name
+-- shrinks instead of breaking onto two lines).
+function Armory.text(gui, name, value, color, y, h, thickness)
+	local t = Instance.new('TextLabel')
+	t.Name = name
+	t.BackgroundTransparency = 1
+	t.Position = UDim2.fromScale(0, y)
+	t.Size = UDim2.fromScale(1, h)
+	t.Font = Armory.Font
+	t.Text = value
+	t.TextColor3 = color
+	t.TextScaled = true
+	t.TextWrapped = false
+	t.TextStrokeTransparency = 1
+	local s = Instance.new('UIStroke')
+	s.Color = Armory.K.outline
+	s.Thickness = thickness or 2.5
+	s.LineJoinMode = Enum.LineJoinMode.Round
+	s.Parent = t
+	t.Parent = gui
+	return t
 end
 
--- The nameplate stack over a gun, like the reference's: the name big in the gun's colour, the multiplier and
--- the price (or the state word, painted by Armory.client), each row with an icon (IconModels.Images when uploaded,
--- else a text glyph kept in the label's Glyph attribute). Readable from 30 studs, shown up to 80, so the whole
--- shop reads from the hall walkway like the reference's.
-function Armory.label(c, pos, gun)
-	local anchor = ghost(c:part('LabelAnchor', V(0.2, 0.2, 0.2), CFrame.new(pos), P.white))
+-- The nameplate over a gun: a small gold LEGENDARY on the top three, the name in white, "xN POWER" in warm
+-- yellow almost as big, then the price (soft red until you can afford it, green after; the client swaps in
+-- OWNED / EQUIPPED once it's yours). The plate is as wide as its name needs, so every name prints at one size.
+-- `bottom` is where the plate's bottom edge sits.
+function Armory.label(c, x, bottom, z, gun, state)
+	local H = Armory.LabelH
+	local anchor = ghost(c:part('LabelAnchor', V(0.2, 0.2, 0.2), CFrame.new(x, bottom + H / 2, z), P.white))
+	anchor.CastShadow = false
 	local g = Instance.new('BillboardGui')
 	g.Name = 'GunLabel'
-	-- as wide as the name needs, so every name (even Diamond Cannon) fills its row's full height: one name size
-	g.Size = UDim2.fromScale(math.max(6.2, 0.6 * #gun.Name), 2.4)
+	g.Size = UDim2.fromScale(math.max(5.6, 0.58 * #gun.Name), H)
 	g.MaxDistance = 80
 	g.LightInfluence = 0
 	g.Parent = anchor
-	-- (a grey gun's name would fade on the pale hall: it gets a rust orange instead)
-	local _, sat = gun.Color:ToHSV()
-	local nameColor = sat < 0.25 and C(240, 150, 90) or gun.Color:Lerp(P.white, 0.1)
-	line(g, 'Name', gun.Name, nameColor, FONT.loud, 0, 0.42, C(24, 22, 40), 3)
+	local K = Armory.K
+	Armory.text(g, 'Tier', gun.Tier >= 8 and 'LEGENDARY' or '', K.gold, 0, 0.15, 2)
+	Armory.text(g, 'Name', gun.Name, K.white, 0.16, 0.32, 3)
+	Armory.text(g, 'Multiplier', 'x' .. gun.Multiplier .. ' POWER', K.power, 0.5, 0.27, 3)
 	local icons = Armory.optional('IconModels')
-	local images = icons and icons.Images or {}
-	local function row(name, icon, glyph, text, color, y)
-		local image = images[icon]
-		local t = line(g, name, text, color, FONT.loud, y, 0.27, C(24, 22, 40), 3)
-		if type(image) == 'string' and image ~= '' then
-			local i = Instance.new('ImageLabel')
-			i.Name = name == 'Price' and 'PriceIcon' or 'Icon'
-			i.BackgroundTransparency = 1
-			i.Image = image
-			i.Position = UDim2.fromScale(0.3, y)
-			i.Size = UDim2.fromScale(0.12, 0.27)
-			-- Icon on the left, the words left-aligned beside it.
-			t.Position = UDim2.fromScale(0.42, y)
-			t.Size = UDim2.fromScale(0.5, 0.27)
-			t.TextXAlignment = Enum.TextXAlignment.Left
-			local a = Instance.new('UIAspectRatioConstraint')
-			a.Parent = i
-			i.Parent = g
-			t:SetAttribute('Glyph', '')
-		else
-			t.Text = glyph .. ' ' .. text
-			t:SetAttribute('Glyph', glyph)
-		end
-		return t
+	local image = icons and icons.Images and icons.Images.Cash
+	local colors = Armory.colors
+	local word = state == 'Equipped' and 'EQUIPPED' or state == 'Owned' and 'OWNED' or compact(gun.Cost)
+	local color = (state == 'Equipped' or state == 'Owned') and colors[state].Text or colors.Price.Short
+	local price = Armory.text(g, 'Price', word, color, 0.79, 0.21, 2.5)
+	if type(image) == 'string' and image ~= '' then
+		-- The uploaded Cash icon on the left, the words left-aligned beside it (the client hides it once owned).
+		local i = Instance.new('ImageLabel')
+		i.Name = 'PriceIcon'
+		i.BackgroundTransparency = 1
+		i.Image = image
+		i.Position = UDim2.fromScale(0.3, 0.79)
+		i.Size = UDim2.fromScale(0.12, 0.21)
+		i.Visible = state ~= 'Equipped' and state ~= 'Owned'
+		local a = Instance.new('UIAspectRatioConstraint')
+		a.Parent = i
+		i.Parent = g
+		price.Position = UDim2.fromScale(0.42, 0.79)
+		price.Size = UDim2.fromScale(0.5, 0.21)
+		price.TextXAlignment = Enum.TextXAlignment.Left
+		price:SetAttribute('Glyph', '')
+	else
+		price:SetAttribute('Glyph', '💵')
+		if state ~= 'Equipped' and state ~= 'Owned' then price.Text = '💵 ' .. word end
 	end
-	row('Multiplier', 'Power', '💪', 'x' .. gun.Multiplier, P.white, 0.45)
-	row('Price', 'Cash', '💵', gun.Cost == 0 and 'FREE' or compact(gun.Cost), C(255, 228, 92), 0.73)
 	return anchor
 end
 
--- One gun on its pad. (x, z) is the pad centre, y the deck it stands on.
-function Armory.slot(c, gun, x, z, y, colors, lift, scale)
+---------------------------------------------------------------------------------------------- the state plate
+-- A charcoal enamel plate with the state word, a padlock (LOCKED) and a thin fill bar (NEXT UP: your Cash
+-- against the price). `cf` is the plate's centre, its front facing -Z.
+function Armory.plate(c, cf, width, look, word)
+	local K = Armory.K
+	local strip = c:part('StateStrip', V(width, 0.62, 0.08), cf, look.Strip, M.SmoothPlastic)
+	decor(strip).CastShadow = false
+	local sg = surface(strip, Enum.NormalId.Front, 60)
+	sg.Name = 'StateGui'
+	local t = Instance.new('TextLabel')
+	t.Name = 'State'
+	t.BackgroundTransparency = 1
+	t.Position = UDim2.fromScale(0.2, 0.12)
+	t.Size = UDim2.fromScale(0.72, 0.62)
+	t.Font = Armory.Font
+	t.Text = word
+	t.TextColor3 = look.Text
+	t.TextScaled = true
+	t.Parent = sg
+	local bar = Instance.new('Frame')
+	bar.Name = 'NextBar'
+	bar.BorderSizePixel = 0
+	bar.BackgroundColor3 = K.charcoal:Lerp(K.ink, 0.5)
+	bar.Position = UDim2.fromScale(0.2, 0.8)
+	bar.Size = UDim2.fromScale(0.72, 0.1)
+	bar.Visible = word == 'NEXT UP'
+	bar.Parent = sg
+	-- (the fill lies over the track as its sibling: the client sets its width to Cash / price of the track's)
+	local fill = Instance.new('Frame')
+	fill.Name = 'NextFill'
+	fill.BorderSizePixel = 0
+	fill.BackgroundColor3 = Armory.colors.Next.Top
+	fill.Position = bar.Position
+	fill.Size = UDim2.fromScale(0, 0.1)
+	fill.Visible = bar.Visible
+	fill.ZIndex = 2
+	fill.Parent = sg
+	-- The padlock, part-built on the plate's left (it reads on low graphics too).
+	local lockCf = cf * CFrame.new(width / 2 - 0.36, -0.04, -0.06) -- (+X is the viewer's left)
+	local grey = C(150, 153, 158)
+	local shown = word == 'LOCKED' and 0 or 1
+	for _, d in { { V(0.34, 0.26, 0.06), CFrame.new(0, -0.02, 0) }, { V(0.05, 0.16, 0.05), CFrame.new(-0.11, 0.17, 0) },
+		{ V(0.05, 0.16, 0.05), CFrame.new(0.11, 0.17, 0) }, { V(0.27, 0.05, 0.05), CFrame.new(0, 0.25, 0) } } do
+		local p = decor(c:part('StateLock', d[1], lockCf * d[2], grey, M.Metal))
+		p.CastShadow = false
+		p.Transparency = shown
+	end
+	return strip
+end
+
+---------------------------------------------------------------------------------------------- one slot
+-- One gun on its plinth: `x` along the row, `row` one of Armory.Rows (its z, deck height, plinth height, gun size),
+-- `lift` raises a back-row plinth (the ladder steps up toward #10), `rowIndex` 1 front / 2 back.
+function Armory.slot(c, gun, x, row, lift, rowIndex)
+	local K = Armory.K
 	local s, model = c:group('GunSlot_' .. gun.Id)
 	-- Streams in as one piece, so a client that sees the slot also sees its point, labels and gun.
 	pcall(function() model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic end)
@@ -1759,136 +1813,243 @@ function Armory.slot(c, gun, x, z, y, colors, lift, scale)
 	model:SetAttribute('Tier', gun.Tier)
 	model:SetAttribute('Cost', gun.Cost)
 	model:SetAttribute('Multiplier', gun.Multiplier)
-	local state = gun.Cost == 0 and 'Equipped' or 'Locked' -- a new player's view; the client repaints
+	model:SetAttribute('Row', rowIndex)
+	-- First paint = a new player's view (the pistol equipped, the revolver next); the client repaints.
+	local state = gun.Cost == 0 and 'Equipped' or (gun.Tier == 2 and 'Next' or 'Locked')
+	local colors = Armory.colors
 	local look = colors[state]
-	local r, ph = Armory.Radius, Armory.PadHeight
-	-- The glow skirt on the deck round the pad (recoloured with the glow; it carries the pad's light), the pale
-	-- chunky pad with a lighter lip, the glowing face in the state colour set into it.
-	local skirt = Armory.hex(s, 'StateGlow', x, z, r + 0.5, y, y + 0.04, look.Glow, M.Neon)
-	for _, p in skirt do
-		decor(p).CastShadow = false
-		p.Transparency = 0.45
+	local tier = Armory.tierLook(gun.Tier)
+	local z, r = row.z, Armory.Radius
+	local y0 = row.y + lift
+	local top = y0 + row.plinth
+	-- The plinth: a dark foot, the tier body, a trim band, a matte graphite cap with a lip, the state ring inlaid in
+	-- the cap (and, on the raised back row, a thin band round the cap's edge too, so it reads from below).
+	if lift > 0 then
+		Armory.hex(s, 'PlinthRiser', x, z, r + 0.1, row.y, y0, K.charcoal, M.Metal)
 	end
-	light(skirt[1], look.Top, 1.6, 12)
-	Armory.hex(s, 'PadBase', x, z, r, y, y + ph - 0.2, C(228, 230, 240), M.SmoothPlastic)
-	Armory.hex(s, 'PadLip', x, z, r, y + ph - 0.2, y + ph, C(244, 245, 250), M.SmoothPlastic)
-	-- a glowing band round the pad's side in the state colour, so the state reads from the hall floor
-	local band = Armory.hex(s, 'StateTop', x, z, r + 0.03, y + 0.22, y + ph - 0.32, look.Top, M.Neon)
-	for _, p in band do decor(p).CastShadow = false end
-	local tops = Armory.hex(s, 'StateTop', x, z, r - 0.55, y + ph - 0.05, y + ph + 0.05, look.Top, M.Neon)
-	for _, p in tops do decor(p).CastShadow = false end
-	-- Soft haze rising off the face in the state colour (the client recolours it with the pad).
-	local top = y + ph + 0.05
-	local hazeSource = ghost(s:part('StateHazeSource', V(r * 1.3, 0.2, r * 1.3), CFrame.new(x, top + 0.1, z), look.Glow))
-	hazeSource.CastShadow = false
-	local haze = Instance.new('ParticleEmitter')
-	haze.Name = 'StateHaze'
-	haze.Texture = 'rbxasset://textures/particles/smoke_main.dds'
-	haze.Rate = 1.2
-	haze.Lifetime = NumberRange.new(1.2, 1.8)
-	haze.Speed = NumberRange.new(0.8, 1.4)
-	haze.SpreadAngle = Vector2.new(8, 8)
-	haze.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 2.2), NumberSequenceKeypoint.new(1, 3.4) })
-	haze.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.3, 0.93), NumberSequenceKeypoint.new(1, 1) })
-	haze.Color = ColorSequence.new(look.Top)
-	haze.LightEmission = 1
-	haze.LightInfluence = 0
-	haze.Rotation = NumberRange.new(0, 360)
-	haze.RotSpeed = NumberRange.new(-20, 20)
-	haze.Parent = hazeSource
-	-- The plate on the pad's front edge with the state word.
-	local strip = s:box('StateStrip', V(x - 1.9, y + 0.1, z - r - 0.06), V(x + 1.9, y + ph - 0.25, z - r + 0.02), look.Strip, M.SmoothPlastic)
-	local sg = surface(strip, Enum.NormalId.Front, 50)
-	sg.Name = 'StateGui'
-	line(sg, 'State', string.upper(state), P.white, FONT.loud, 0.06, 0.88, look.Strip:Lerp(P.black, 0.45), 2)
-	-- The gun floating over the pad in profile to the hall (muzzle to the viewer's right), tilted up a little,
-	-- bobbing; never turning, so it is never seen end-on.
+	Armory.hex(s, 'PlinthFoot', x, z, r + 0.18, y0, y0 + 0.18, K.ink, M.SmoothPlastic)
+	Armory.hex(s, 'PlinthBody', x, z, r, y0 + 0.18, top - 0.36, tier.body, tier.bodyMat)
+	Armory.hex(s, 'PlinthTrim', x, z, r + 0.04, top - 0.36, top - 0.2, tier.trim, tier.trimMat)
+	Armory.hex(s, 'PlinthCap', x, z, r + 0.12, top - 0.2, top, K.graphite, M.Slate)
+	local ringColor = state == 'Locked' and K.graphite or look.Top
+	local ringMat = state == 'Equipped' and M.Neon or M.SmoothPlastic
+	local ring = Armory.hexRing(s, 'StateRing', x, z, r - 0.25, top - 0.02, top + 0.05, 0.3, ringColor, ringMat)
+	if rowIndex == 2 then
+		for _, p in Armory.hex(s, 'StateRing', x, z, r + 0.15, top - 0.17, top - 0.05, ringColor, ringMat) do table.insert(ring, p) end
+	end
+	for _, p in ring do decor(p).CastShadow = false end
+	-- The gun floating over the plinth in profile to the hall (muzzle to the viewer's right), tilted up a little
+	-- and turned a little away from the walkway; still, unless the client makes it bob (NEXT UP, EQUIPPED).
 	local d, display = s:group('Display')
-	local tilt = math.rad(Armory.Tilt)
-	local function measure(model)
-		local lo, hi = Armory.extents(model, Armory.pivotOf(model))
+	local tilt, yaw = math.rad(Armory.Tilt), math.rad(Armory.Yaw)
+	local function measure(m)
+		local lo, hi = Armory.extents(m, Armory.pivotOf(m))
 		return lo, hi, (hi.Y - lo.Y) * math.cos(tilt) + (hi.Z - lo.Z) * math.sin(tilt)
 	end
-	local k = scale or 1 -- the back row a size bigger, so it reads as big as the front row from the hall
+	local k = row.scale * (gun.Tier >= 8 and 1 + 0.04 * (gun.Tier - 8) or 1)
 	local g = Armory.gun(gun, k)
 	local lo, hi, tall = measure(g)
-	if tall > Armory.DisplayH * k then
-		-- a deep gun (an Uzi's long magazine) stands too tall tilted: a size smaller, under the nameplates
+	if tall > row.displayH then
+		-- a deep gun (the Uzi's long magazine) stands too tall when tilted: a size smaller, under the nameplate
 		g:Destroy()
-		g = Armory.gun(gun, k * Armory.DisplayH * k / tall)
+		g = Armory.gun(gun, k * row.displayH / tall)
 		lo, hi, tall = measure(g)
 	end
 	local mid = (lo + hi) / 2
-	local length = math.max(hi.X - lo.X, hi.Y - lo.Y, hi.Z - lo.Z)
-	local centre = V(x, top + 1.0 + tall / 2, z)
-	local pose = CFrame.new(centre) * CFrame.Angles(0, 0, -tilt) * CFrame.Angles(0, math.pi / 2, 0)
+	local centre = V(x, top + Armory.Float + tall / 2, z)
+	local pose = CFrame.new(centre) * CFrame.Angles(0, yaw, 0) * CFrame.Angles(0, 0, -tilt) * CFrame.Angles(0, math.pi / 2, 0)
 	Armory.place(g, d:world(pose * CFrame.new(-mid)))
 	g.Name = 'Gun'
 	g.Parent = display
 	display.WorldPivot = d:world(CFrame.new(centre))
-	display:SetAttribute('Bob', Armory.Bob)
-	display:SetAttribute('BobPeriod', Armory.BobPeriod)
 	display:AddTag('HoodMotion')
-	local core = ghost(s:part('FxCore', V(length * 0.5, math.max(tall * 0.7, length * 0.25), length * 0.2), CFrame.new(centre), gun.Color))
-	core.CastShadow = false
-	Armory.effects(core, gun.Tier, gun.Color)
-	-- (every label in a row at one height, over the tallest gun, like the reference's nameplates)
-	Armory.label(s, V(x, y + ph + 1.0 + Armory.DisplayH * k + (lift or 0.8), z), gun)
-	-- On the front row, a display backboard standing right behind the pad (so the gun is always seen in front of
-	-- its own board, not a neighbour's): a panel in the state colour (the client repaints it) in a pale glowing rim
-	-- on a white stand, under the nameplate.
-	if y < Armory.Step - 1 then
-		local bz, bw, b0, b1 = z + Armory.Radius + 0.8, 3.7, y + 0.9, y + 6.4
-		s:box('StateTop', V(x - bw, b0, bz - 0.06), V(x + bw, b1, bz), look.Top, M.SmoothPlastic)
-		s:box('BoardStand', V(x - bw - 0.3, y, bz), V(x + bw + 0.3, b1 + 0.3, bz + 0.35), C(236, 238, 246), M.SmoothPlastic)
-		for _, e in { { V(x - bw - 0.3, b1, bz - 0.12), V(x + bw + 0.3, b1 + 0.3, bz) }, { V(x - bw - 0.3, b0 - 0.3, bz - 0.12), V(x + bw + 0.3, b0, bz) },
-			{ V(x - bw - 0.3, b0, bz - 0.12), V(x - bw, b1, bz) }, { V(x + bw, b0, bz - 0.12), V(x + bw + 0.3, b1, bz) } } do
-			decor(s:box('StateGlow', e[1], e[2], look.Glow, M.Neon)).CastShadow = false
-		end
+	if state == 'Equipped' then
+		display:SetAttribute('Bob', 0.15)
+		display:SetAttribute('BobPeriod', 4.5)
 	end
-	-- Where the prompt sits and the server measures buying distance from: on the deck at the pad's front.
-	local point = ghost(s:box('GunPoint_' .. gun.Id, V(x - 0.5, y + 0.6, z - r - 1.6), V(x + 0.5, y + 1.6, z - r - 0.6), P.white))
+	-- The soft glow under the equipped gun (the client switches it), and the downlight over the gun: on the back
+	-- row hidden in the canopy straight above, on the front row a small spot on the canopy's edge aimed at it.
+	local glow = ghost(s:part('StateGlowSource', V(0.2, 0.2, 0.2), CFrame.new(x, top + 0.3, z), P.white))
+	glow.CastShadow = false
+	local pl = light(glow, look.Glow, 0.5, 7)
+	pl.Name = 'StateGlow'
+	pl.Enabled = state == 'Equipped'
+	local aim = V(x, centre.Y, z)
+	local from = rowIndex == 2 and V(x, Armory.CanopyY - 0.25, z) or V(x, Armory.CanopyY - 0.45, Armory.RiserZ + 0.75)
+	-- (straight down for the back row: lookAt is undefined along the up axis, so turn the front face down by hand)
+	local aimCf = rowIndex == 2 and CFrame.new(from) * CFrame.Angles(-math.pi / 2, 0, 0) or CFrame.lookAt(from, aim)
+	local fixture = s:part('StateSpotFixture', V(0.42, 0.42, 0.5), aimCf, K.charcoal, M.Metal)
+	decor(fixture).CastShadow = false
+	if rowIndex == 2 then fixture.Transparency = 1 end
+	local spot = Instance.new('SpotLight')
+	spot.Name = 'StateSpot'
+	spot.Face = Enum.NormalId.Front
+	spot.Color = K.spot
+	spot.Brightness = state == 'Locked' and 0.6 or 1
+	spot.Range = (from - aim).Magnitude + 6
+	spot.Angle = 40
+	spot.Shadows = false
+	spot.Parent = fixture
+	if rowIndex == 1 then
+		-- the fixture's warm lens
+		local lens = decor(s:part('StateSpotLens', V(0.3, 0.3, 0.04), aimCf * CFrame.new(0, 0, -0.26), K.warm, M.Neon))
+		lens.CastShadow = false
+	end
+	-- Legendary: a gold-framed glass case on the plinth, then one more small step per gun.
+	local caseTop = tier.case and Armory.case(s, gun, x, z, top, tall) or top
+	-- The nameplate: one height per row (stepping with the back-row plinths), above the tallest gun a row allows
+	-- (and above a case's gold rim).
+	Armory.label(s, x, math.max(top + Armory.Float + row.displayH + 0.45, caseTop + 0.35), z, gun, state)
+	-- The state plate and the buy point. Front row: the plate on the plinth's front, you stand before it. Back row:
+	-- the plate on the riser under the gun, at the end of the aisle between two front plinths, where you buy it.
+	local word = state == 'Equipped' and 'EQUIPPED' or state == 'Next' and 'NEXT UP' or 'LOCKED'
+	local point
+	if rowIndex == 1 then
+		Armory.plate(s, CFrame.new(x, y0 + 0.18 + (row.plinth - 0.54) / 2, z - r - 0.04), 2.9, look, word)
+		point = ghost(s:box('GunPoint_' .. gun.Id, V(x - 0.5, Armory.Floor + 0.5, z - r - 1.6), V(x + 0.5, Armory.Floor + 1.5, z - r - 0.6), P.white))
+	else
+		-- (seated on the riser's wood rail at the aisle's end: all ten plates make one low band under the nameplates)
+		local pz, py = Armory.RiserZ, Armory.Floor + 1.66
+		Armory.plate(s, CFrame.new(x, py, pz - 0.15), 3.2, look, word)
+		-- a charcoal bracket round the plate, so it reads as a fitted tag, not a sticker
+		decor(s:box('StateStripFrame', V(x - 1.72, py - 0.39, pz - 0.16), V(x + 1.72, py + 0.39, pz), K.charcoal, M.Metal)).CastShadow = false
+		point = ghost(s:box('GunPoint_' .. gun.Id, V(x - 0.5, Armory.Floor + 0.8, pz - 1.4), V(x + 0.5, Armory.Floor + 1.8, pz - 0.4), P.white))
+	end
 	point.CastShadow = false
 	return model
 end
 
--- The deck: a step along the front, the studded front platform with a lip of studs at its edge, the raised
--- studded terrace behind it (its front wall studded too), a stair up at each end, neon edges.
+-- The top three's glass case: gold edges and rings, six glass sides, then their small steps up: #9 a few slow
+-- gold sparkles, #10 also a faint shaft of light from the canopy.
+function Armory.case(s, gun, x, z, top, tall)
+	local K = Armory.K
+	local a, h = Armory.Radius - 0.1, Armory.Float + tall + 0.5
+	local side = 2 * a * math.tan(math.pi / 6)
+	for k = 0, 5 do
+		local rot = CFrame.new(x, top, z) * CFrame.Angles(0, k * math.pi / 3, 0)
+		local pane = decor(s:part('CaseGlass', V(side - 0.1, h - 0.2, 0.06), rot * CFrame.new(0, h / 2, -a + 0.1), K.glass, M.Glass))
+		pane.Transparency = 0.78
+		pane.CastShadow = false
+		-- a gold edge at each corner
+		local corner = rot * CFrame.Angles(0, math.pi / 6, 0) * CFrame.new(0, h / 2, -(a / math.cos(math.pi / 6)) + 0.08)
+		decor(s:part('CaseFrame', V(0.14, h, 0.14), corner, K.gold, M.Metal)).CastShadow = false
+	end
+	for _, p in Armory.hexRing(s, 'CaseFrame', x, z, a + 0.02, top + h - 0.12, top + h, 0.16, K.gold, M.Metal) do decor(p).CastShadow = false end
+	for _, p in Armory.hexRing(s, 'CaseFrame', x, z, a + 0.02, top, top + 0.12, 0.16, K.gold, M.Metal) do decor(p).CastShadow = false end
+	if gun.Tier >= 9 then
+		local src = ghost(s:part('CaseSparkles', V(a * 1.2, tall, a * 0.8), CFrame.new(x, top + Armory.Float + tall / 2, z), K.gold))
+		src.CastShadow = false
+		local e = Instance.new('ParticleEmitter')
+		e.Name = 'Sparkle'
+		e.Texture = 'rbxasset://textures/particles/sparkles_main.dds'
+		e.Rate = gun.Tier >= 10 and 4 or 2.5
+		e.Lifetime = NumberRange.new(1.2, 2)
+		e.Speed = NumberRange.new(0.1, 0.4)
+		e.SpreadAngle = Vector2.new(180, 180)
+		e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.3, 0.28), NumberSequenceKeypoint.new(1, 0) })
+		e.Transparency = NumberSequence.new(0.15)
+		e.Color = ColorSequence.new(C(255, 236, 170), K.gold)
+		e.LightEmission = 0.4
+		e.LightInfluence = 0
+		e.Rotation = NumberRange.new(0, 360)
+		e.RotSpeed = NumberRange.new(-40, 40)
+		e.Parent = src
+	end
+	if gun.Tier >= 10 then
+		local hi = ghost(s:part('CaseShaftTop', V(0.2, 0.2, 0.2), CFrame.new(x, Armory.CanopyY - 0.1, z), P.white))
+		local lo = ghost(s:part('CaseShaftBottom', V(0.2, 0.2, 0.2), CFrame.new(x, top + 0.2, z), P.white))
+		hi.CastShadow, lo.CastShadow = false, false
+		local a0, a1 = Instance.new('Attachment'), Instance.new('Attachment')
+		a0.Parent, a1.Parent = hi, lo
+		local b = Instance.new('Beam')
+		b.Name = 'Shaft'
+		b.Attachment0, b.Attachment1 = a0, a1
+		b.Width0, b.Width1 = 2.2, 4.6
+		b.FaceCamera = true
+		b.Segments = 1
+		b.LightEmission = 0.6
+		b.LightInfluence = 0
+		b.Color = ColorSequence.new(C(255, 238, 200))
+		b.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.96), NumberSequenceKeypoint.new(0.5, 0.82), NumberSequenceKeypoint.new(1, 0.9) })
+		b.Parent = hi
+	end
+	return top + h
+end
+
+---------------------------------------------------------------------------------------------- the room
+-- The deck (warm grey, a wood-nosed half step in front, a charcoal kerb), the terrace (a cream riser with a
+-- charcoal skirting and a wood cap), the brick back wall with charcoal pilasters between the back bays, the
+-- charcoal canopy over the back row with a warm LED strip under its edge, and two slim posts at its corners.
 function Armory.base(c)
+	local K = Armory.K
 	local b = c:group('ArmoryBase')
-	local X, Dp, F, T, TZ = Armory.HalfWidth, Armory.Depth, Armory.Floor, Armory.Step, Armory.TerraceZ
-	local deck, wall, step = C(218, 222, 234), C(190, 196, 214), C(200, 205, 222)
-	studs(b:box('ArmoryStep', V(-X, 0, 0), V(X, F / 2, 1.2), step, M.Plastic), true)
-	studs(b:box('ArmoryFloor', V(-X, 0, 1.2), V(X, F, TZ), deck, M.Plastic), true)
-	studs(b:box('ArmoryLip', V(-X, F, 1.2), V(X, F + 0.12, 1.8), wall, M.Plastic))
-	studs(b:box('ArmoryTerrace', V(-X, 0, TZ), V(X, T, Dp), wall, M.Plastic), true)
-	studs(b:box('ArmoryTerraceTop', V(-X, T, TZ), V(X, T + 0.01, Dp), deck, M.Plastic))
-	-- a stair at each end, from the platform up to the terrace (rises of 0.8 or less, 1.2 treads), white nosing
-	local n = math.ceil((T - F) / 0.8) - 1
-	local rise = (T - F) / (n + 1)
+	local X, D, F, T = Armory.HalfWidth, Armory.Depth, Armory.Floor, Armory.Terrace
+	local RZ, WZ, CY = Armory.RiserZ, Armory.WallZ, Armory.CanopyY
+	-- deck: a half step (wood tread, charcoal face) then the deck itself
+	b:box('ArmoryStep', V(-X, 0, 0), V(X, F / 2 - 0.08, 0.9), K.charcoal, M.Metal)
+	b:box('ArmoryStepTread', V(-X, F / 2 - 0.08, 0), V(X, F / 2, 0.9), K.wood, M.Wood)
+	b:box('ArmoryDeckFace', V(-X, 0, 0.9), V(X, F - 0.08, RZ), K.charcoal, M.Metal)
+	b:box('ArmoryDeck', V(-X + 0.3, F - 0.08, 0.9), V(X - 0.3, F, RZ), K.deck, M.SmoothPlastic)
+	b:box('ArmoryDeckEdge', V(-X, F - 0.08, 0.9), V(X, F + 0.02, 1.15), K.wood, M.Wood)
 	for _, sx in { -1, 1 } do
-		local a, bx = sx * (X - 4.4), sx * X
-		for k = 1, n do
-			local z0 = TZ - (n + 1 - k) * 1.2
-			local h = F + k * rise
-			studs(b:box('ArmoryStair', V(math.min(a, bx), F, z0), V(math.max(a, bx), h, TZ), k % 2 == 1 and step or deck, M.Plastic), true)
-			decor(b:box('StairNosing', V(math.min(a, bx), h - 0.02, z0 - 0.02), V(math.max(a, bx), h + 0.03, z0 + 0.3), C(255, 212, 40), M.Neon)).CastShadow = false
-		end
+		b:box('ArmoryDeckEdge', V(sx * X, F - 0.08, 0.9), V(sx * (X - 0.3), F + 0.02, RZ), K.charcoal, M.Metal)
 	end
-	-- an UP chevron painted on the deck at each stair's foot
+	-- terrace: charcoal skirting, cream riser, a wood cap with a small lip; cream ends with charcoal corners
+	b:box('TerraceSkirt', V(-X, F, RZ - 0.1), V(X, F + 0.45, WZ), K.charcoal, M.Metal)
+	b:box('TerraceRiser', V(-X, F + 0.45, RZ), V(X, T - 0.3, WZ), K.cream, M.SmoothPlastic)
+	b:box('TerraceCap', V(-X, T - 0.3, RZ - 0.2), V(X, T, WZ), K.wood, M.Wood)
+	b:box('TerraceGap', V(-X, T - 0.42, RZ - 0.03), V(X, T - 0.3, RZ), K.charcoal, M.SmoothPlastic)
+	b:box('TerraceRail', V(-X, F + 1.0, RZ - 0.12), V(X, F + 1.25, RZ), K.wood, M.Wood)
+	b:box('TerraceTop', V(-X + 0.2, T, RZ + 0.1), V(X - 0.2, T + 0.02, WZ), K.deck, M.SmoothPlastic)
 	for _, sx in { -1, 1 } do
-		local cx = sx * (X - 2)
-		local z1 = TZ - n * 1.2 - 0.1 -- just in front of the first tread
-		for _, side in { -1, 1 } do
-			local tip, tail = V(cx, F + 0.03, z1), V(cx + side * 1.1, F + 0.03, z1 - 1.2)
-			decor(b:part('StairChevron', V(0.5, 0.05, (tip - tail).Magnitude + 0.3), CFrame.lookAt((tip + tail) / 2, tip), C(255, 212, 40), M.Neon)).CastShadow = false
-		end
+		b:box('TerraceCorner', V(sx * (X - 0.35), F, RZ - 0.15), V(sx * (X + 0.05), T - 0.3, RZ + 0.25), K.charcoal, M.Metal)
 	end
-	-- neon edges: cyan along the platform's front, white along the terrace's top edge
-	local cyan = C(60, 232, 255)
-	decor(b:box('ArmoryEdge', V(-X, F / 2 - 0.26, -0.06), V(X, F / 2 - 0.04, 0), cyan, M.Neon)).CastShadow = false
-	decor(b:box('ArmoryEdge', V(-X, F - 0.26, 1.14), V(X, F - 0.04, 1.2), cyan, M.Neon)).CastShadow = false
-	decor(b:box('ArmoryEdge', V(-X + 4.4, T - 0.3, TZ - 0.06), V(X - 4.4, T - 0.06, TZ + 0.02), P.white, M.Neon)).CastShadow = false
+	-- back wall: brick from the terrace to the canopy (a solid block back to the hall wall)
+	b:box('BackWall', V(-X, 0, WZ), V(X, CY, D), K.brick, M.Brick)
+	b:box('BackWallBase', V(-X, T, WZ - 0.15), V(X, T + 0.5, WZ), K.charcoal, M.Metal)
+	-- pilasters between the back bays (at the front guns' x) and at the ends
+	local p = Armory.Pitch
+	for k = 0, 4 do
+		local px = 2.25 * p - k * p
+		b:box('BackPilaster', V(px - 0.4, T, WZ - 0.35), V(px + 0.4, CY, WZ), K.charcoal, M.Metal)
+	end
+	for _, sx in { -1, 1 } do
+		b:box('BackPilaster', V(sx * (X - 0.8), T, WZ - 0.35), V(sx * X, CY, WZ), K.charcoal, M.Metal)
+	end
+	-- the narrow bay past the back row's start: a small cream board saying where Cash comes from
+	local bx0, bx1 = 2.25 * p + 0.4, X - 0.8
+	local bc = (bx0 + bx1) / 2
+	b:box('CashBoardFrame', V(bx0 + 0.1, T + 3.0, WZ - 0.25), V(bx1 - 0.1, T + 8.2, WZ), K.charcoal, M.Metal)
+	local board = b:box('CashBoard', V(bx0 + 0.25, T + 3.15, WZ - 0.32), V(bx1 - 0.25, T + 8.05, WZ - 0.25), K.cream, M.SmoothPlastic)
+	local sg = surface(board, Enum.NormalId.Front, 40)
+	local function words(name, text, color, y, h)
+		local t = Instance.new('TextLabel')
+		t.Name = name
+		t.BackgroundTransparency = 1
+		t.Position = UDim2.fromScale(0.08, y)
+		t.Size = UDim2.fromScale(0.84, h)
+		t.Font = Armory.Font
+		t.Text = text
+		t.TextColor3 = color
+		t.TextScaled = true
+		t.Parent = sg
+	end
+	-- (big stacked words: the board is narrow and read from the hall)
+	words('Line1', 'CLEAR', K.ink, 0.06, 0.2)
+	words('Line2', 'GATES', K.ink, 0.27, 0.2)
+	words('Line3', 'FOR', K.charcoal, 0.5, 0.13)
+	words('Line4', 'CASH', K.gold, 0.66, 0.24)
+	-- canopy over the back row and the wall, with a fascia and a warm LED strip under its front edge
+	b:box('Canopy', V(-X, CY, RZ + 0.4), V(X, CY + 0.5, D), K.charcoal, M.Metal)
+	b:box('CanopyFascia', V(-X, CY - 0.5, RZ + 0.4), V(X, CY + 0.7, RZ + 0.75), K.charcoal, M.Metal)
+	b:box('CanopySoffit', V(-X, CY - 0.06, RZ + 0.75), V(X, CY, WZ), K.ink, M.SmoothPlastic)
+	decor(b:box('CanopyLED', V(-X, CY - 0.62, RZ + 0.62), V(X, CY - 0.5, RZ + 0.78), K.warm, M.Neon)).CastShadow = false
+	for _, sx in { -1, 1 } do
+		b:box('CanopyPost', V(sx * (X - 0.55), T, RZ + 0.45), V(sx * (X - 0.05), CY - 0.5, RZ + 0.95), K.charcoal, M.Metal)
+	end
+	for _, part in b.parent:GetDescendants() do
+		if part:IsA('BasePart') and (part.Name:match('^Canopy') or part.Name == 'TerraceTop') then part.CastShadow = false end
+	end
 	return b
 end
 
@@ -1896,16 +2057,27 @@ end
 function Armory.build(ctx, opts)
 	opts = opts or {}
 	local guns = opts.guns or require(ReplicatedStorage.Shared.Config.Guns).List
-	local colors = require(ReplicatedStorage.Shared.GunRules).Colors
+	local rules = require(ReplicatedStorage.Shared.GunRules)
+	-- (falls back to the plain three states if GunRules has no NEXT UP / price colours yet)
+	local colors = rules.Colors
+	Armory.colors = {
+		Locked = colors.Locked, Owned = colors.Owned, Equipped = colors.Equipped,
+		Next = colors.Next or colors.Locked,
+		Price = colors.Price or { Afford = C(126, 214, 155), Short = C(224, 112, 112) },
+	}
 	local a, model = ctx:group('Armory')
 	model:AddTag('HoodArmory')
 	Armory.base(a)
+	local p = Armory.Pitch
 	for i, gun in guns do
-		local row = Armory.Rows[(i - 1) // 5 + 1]
+		local rowIndex = (i - 1) // 5 + 1
+		local row = Armory.Rows[rowIndex]
 		if not row then break end
 		local col = (i - 1) % 5
-		-- Gun 1 stands on the viewer's left: their left is +X when they look toward +Z.
-		Armory.slot(a, gun, 2 * Armory.Spacing - col * Armory.Spacing, row.z, row.y, colors, row.label, row.scale)
+		-- Gun 1 stands on the viewer's left (+X when looking toward +Z); the back row sits half a pitch to the
+		-- right, so #6 shows between #1 and #2 ... and #10 stands past #5, the last and highest step.
+		local x = 2.25 * p - col * p - (rowIndex - 1) * p / 2
+		Armory.slot(a, gun, x, row, row.step * col, rowIndex)
 	end
 	return model
 end

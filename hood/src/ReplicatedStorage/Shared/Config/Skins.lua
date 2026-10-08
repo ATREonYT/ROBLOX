@@ -34,16 +34,17 @@ S.ById={};for _,s in S.List do S.ById[s.Id]=s end
 -- The shooting ranges, in walking order from the entrance (the shot pays Multiplier times your look's gain, times
 -- your gun). Where each shooter's box sits is read from the built lobby at runtime (Training_<Id>.TrainingZone),
 -- so the lanes can be moved in Studio without code edits. Gear names the original Block's gym builders
--- (SimulatorLobby), so it keeps its old values.
+-- (SimulatorLobby), so it keeps its old values. Name is the lane's one player-facing name, everywhere (the
+-- terrace plaques, the HUD hint, the guide's pointer): BAY 1 to BAY 8, in walking order.
 S.Stations={
- {Id='Starter',Name='Bottle Fence',Gear='TireBag',Required=0,Multiplier=2,Color=C(150,156,166)},
- {Id='Tape',Name='Bullseye Lane',Gear='TapeBag',Required=50,Multiplier=3,Color=C(196,150,96)},
- {Id='Street',Name='Hot Plates',Gear='StreetBag',Required=150,Multiplier=4,Color=C(84,140,220)},
- {Id='Heavy',Name='Spinner Lane',Gear='HeavyBag',Required=500,Multiplier=6,Color=C(222,72,72)},
- {Id='Speed',Name='Shadow Range',Gear='SpeedBag',Required=1000,Multiplier=8,Color=C(246,136,52)},
- {Id='DoubleEnd',Name='Ice Lane',Gear='DoubleEndBag',Required=3000,Multiplier=12,Color=C(160,86,226)},
- {Id='Pro',Name='Toxic Yard',Gear='ProBag',Required=8000,Multiplier=18,Color=C(40,190,190)},
- {Id='Gold',Name='Gold Range',Gear='GoldBag',Required=20000,Multiplier=25,Color=C(240,192,56)},
+ {Id='Starter',Name='BAY 1',Gear='TireBag',Required=0,Multiplier=2,Color=C(150,156,166)},
+ {Id='Tape',Name='BAY 2',Gear='TapeBag',Required=50,Multiplier=3,Color=C(196,150,96)},
+ {Id='Street',Name='BAY 3',Gear='StreetBag',Required=150,Multiplier=4,Color=C(84,140,220)},
+ {Id='Heavy',Name='BAY 4',Gear='HeavyBag',Required=500,Multiplier=6,Color=C(222,72,72)},
+ {Id='Speed',Name='BAY 5',Gear='SpeedBag',Required=1000,Multiplier=8,Color=C(246,136,52)},
+ {Id='DoubleEnd',Name='BAY 6',Gear='DoubleEndBag',Required=3000,Multiplier=12,Color=C(160,86,226)},
+ {Id='Pro',Name='BAY 7',Gear='ProBag',Required=8000,Multiplier=18,Color=C(40,190,190)},
+ {Id='Gold',Name='BAY 8',Gear='GoldBag',Required=20000,Multiplier=25,Color=C(240,192,56)},
  {Id='Ring',Name='Champ Ring',Gear='Ring',Required=50000,Multiplier=40,Color=C(230,60,140)},
 }
 S.StationById={};for _,s in S.Stations do S.StationById[s.Id]=s end

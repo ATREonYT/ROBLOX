@@ -677,16 +677,20 @@ local function hintText(power)
 		local gym = Skins.StationById[station:sub(8)]
 		return '<font color="#FF8A8A">' .. (gym and gym.Name or 'This range') .. ' needs ' .. short(gym and gym.Required or 0) .. ' Power</font>  •  ' .. goal
 	end
+	-- A new player follows Lobby.client's floor guide (its GuidePhase, in the guide's gold): first to the free
+	-- lane, then, once Stage 1 is open, out through the door, even from the lane (you're in BAY 1 when it opens).
+	local phase = player:GetAttribute('GuidePhase')
+	if phase == 'exit' then
+		return 'The street is open! Head through the <font color="#F0BA50">door</font> ▸'
+	end
 	if station == '' then
-		-- A brand-new player (under the first look, never reborn) is told which lane to go to, in the yellow of
-		-- Lobby.client's floor guide that leads there: the best lane they can use (the free one).
 		local first = Skins.List[2]
-		if first and power < first.Required and rebirthsNow() == 0 then
+		if phase == 'lane' or (phase == nil and first and power < first.Required and rebirthsNow() == 0) then
 			local lane = Skins.Stations[1]
 			for _, s in Skins.Stations do
 				if power >= s.Required then lane = s end
 			end
-			return 'Go to the <font color="#FFE050">' .. string.upper(lane.Name) .. '</font> range and shoot! (x' .. lane.Multiplier .. ')'
+			return 'Go to <font color="#F0BA50">' .. string.upper(lane.Name) .. '</font> and shoot! (x' .. lane.Multiplier .. ')'
 		end
 		return 'Step into a shooting range  •  ' .. gun .. '  •  ' .. goal
 	end
@@ -744,7 +748,7 @@ local function refresh()
 	hint.Text = hintText(power)
 	if current and current.Update then current.Update() end
 end
-for _, key in { 'Power', 'EquippedSkin', 'TrainingStation', 'PowerRate', 'GunMultiplier', 'EquippedGun', 'OwnedGuns' } do
+for _, key in { 'Power', 'EquippedSkin', 'TrainingStation', 'PowerRate', 'GunMultiplier', 'EquippedGun', 'OwnedGuns', 'GuidePhase' } do
 	player:GetAttributeChangedSignal(key):Connect(refresh)
 end
 for _, key in { 'Cash', 'Rebirths' } do
