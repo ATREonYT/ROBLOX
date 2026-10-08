@@ -1,7 +1,8 @@
--- The ARMORY on your screen: a prompt on every gun pedestal (Buy / Equip / Equipped), pedestals painted in
--- your state colours (pink locked, blue owned, green equipped) with the strip and price words to match, a
--- small burst when a gun becomes yours, and everyone's equipped gun worn on the right hip while it isn't in
--- their hand (the held gun tool, Shoot.client, takes its place).
+-- The ARMORY on your screen: a prompt on every gun pedestal (Buy / Equip / Equipped) that comes up when you step
+-- onto the pad, pedestals painted in your state colours (pink locked, blue owned, green equipped) with the plate
+-- and the nameplate's last line to match (the price in red, BUY + price in yellow when you can afford it, OWNED,
+-- EQUIPPED), a small burst when a gun becomes yours, and everyone's equipped gun worn on the right hip while it
+-- isn't in their hand (the held gun tool, Shoot.client, takes its place).
 -- The server decides everything (GunService); this only asks and shows.
 --
 -- Reads the player attributes GunService keeps (OwnedGuns, EquippedGun) and Net 'ProfileUpdated' (Guns).
@@ -118,10 +119,23 @@ if not active then return end
 local guns = GunRules.fromAttributes(player:GetAttribute('OwnedGuns'), player:GetAttribute('EquippedGun'))
 local slots, shown = {}, {}
 
+-- What a pad shows: GunRules.state, except that a Locked gun you can afford shows as Buy (like the soldier game's
+-- stand: Equipped, Owned, Buy, Locked). Display only; the server still decides.
+local function shownState(id, gun)
+	local state = GunRules.state(guns, id)
+	if state == 'Locked' then
+		local cash = player:GetAttribute('Cash')
+		if type(cash) == 'number' and cash >= gun.Cost then return 'Buy' end
+	end
+	return state
+end
+
 local function paint(slot, state)
-	local look = GunRules.Colors[state]
+	local look = GunRules.Colors[state] or GunRules.Colors.Locked
+	local shade = look.Shade or look.Strip
 	for _, p in slot.Tops do p.Color = look.Top end
 	for _, p in slot.Glows do p.Color = look.Glow end
+	for _, p in slot.Shades do p.Color = shade end
 	for _, l in slot.Lights do l.Color = look.Top end
 	for _, e in slot.Hazes do e.Color = ColorSequence.new(look.Top) end
 	if slot.Strip then slot.Strip.Color = look.Strip end
@@ -132,18 +146,22 @@ local function paint(slot, state)
 		if stroke then stroke.Color = look.Strip:Lerp(Color3.new(0, 0, 0), 0.45) end
 	end
 	if slot.Price then
+		-- The nameplate's third line: the price with the Cash glyph or icon while the gun is to buy (red while you
+		-- can't afford it, BUY in yellow when you can), else the state word (OWNED blue, EQUIPPED green).
 		local glyph = slot.Price:GetAttribute('Glyph') or ''
-		-- (the cash glyph or icon only goes with a price: a tick for OWNED, a star for EQUIPPED)
-		if state ~= 'Locked' then glyph = state == 'Equipped' and '⭐' or '✅' end
-		if slot.PriceIcon then slot.PriceIcon.Visible = state == 'Locked' end
-		local word = state == 'Locked' and (slot.Gun.Cost == 0 and 'FREE' or Format.compact(slot.Gun.Cost)) or string.upper(state)
-		slot.Price.Text = (glyph ~= '' and glyph .. ' ' or '') .. word
-		slot.Price.TextColor3 = look.Text
+		local pay = state == 'Locked' or state == 'Buy'
+		if slot.PriceIcon then slot.PriceIcon.Visible = pay end
+		local price = slot.Gun.Cost == 0 and 'FREE' or Format.compact(slot.Gun.Cost)
+		local text = pay and ((glyph ~= '' and glyph .. ' ' or '') .. price) or string.upper(state)
+		if state == 'Buy' then text = 'BUY ' .. text end
+		slot.Price.Text = text
+		slot.Price.TextColor3 = look.Word or look.Text
 	end
 	local prompt = slot.Prompt
-	prompt.ActionText = GunRules.actionText(state, slot.Gun.Cost)
+	local real = state == 'Buy' and 'Locked' or state
+	prompt.ActionText = GunRules.actionText(real, slot.Gun.Cost)
 	-- Buying holds a moment so a passing tap doesn't spend Cash; equipping is instant.
-	prompt.HoldDuration = (state == 'Locked' and slot.Gun.Cost > 0) and 0.35 or 0
+	prompt.HoldDuration = (real == 'Locked' and slot.Gun.Cost > 0) and 0.35 or 0
 end
 
 local function bind(model)
@@ -152,10 +170,11 @@ local function bind(model)
 	if not gun or (slots[id] and slots[id].Model == model) then return end
 	local point = model:FindFirstChild('GunPoint_' .. id, true) or model:WaitForChild('GunPoint_' .. id, 5)
 	if not point or not model.Parent then return end
-	local slot = { Gun = gun, Model = model, Tops = {}, Glows = {}, Lights = {}, Hazes = {} }
+	local slot = { Gun = gun, Model = model, Tops = {}, Glows = {}, Shades = {}, Lights = {}, Hazes = {} }
 	for _, d in model:GetDescendants() do
 		if d.Name == 'StateTop' and d:IsA('BasePart') then table.insert(slot.Tops, d)
 		elseif d.Name == 'StateGlow' and d:IsA('BasePart') then table.insert(slot.Glows, d)
+		elseif d.Name == 'StateShade' and d:IsA('BasePart') then table.insert(slot.Shades, d)
 		elseif d.Name == 'StateStrip' and d:IsA('BasePart') then slot.Strip = d
 		elseif d:IsA('PointLight') and d.Parent and d.Parent.Name == 'StateGlow' then table.insert(slot.Lights, d)
 		elseif d:IsA('ParticleEmitter') and d.Name == 'StateHaze' then table.insert(slot.Hazes, d)
@@ -169,7 +188,8 @@ local function bind(model)
 	local prompt = Instance.new('ProximityPrompt')
 	prompt.Name = 'GunPrompt'
 	prompt.ObjectText = gun.Name .. '  (x' .. gun.Multiplier .. ' Power)'
-	prompt.MaxActivationDistance = 9
+	-- (short: the prompt comes up when you step onto the pad, not from the next one)
+	prompt.MaxActivationDistance = 6
 	prompt.RequiresLineOfSight = false
 	prompt.Parent = point
 	prompt.Triggered:Connect(function()
@@ -180,7 +200,7 @@ local function bind(model)
 	slot.Prompt = prompt
 	slots[id] = slot
 	-- A slot arriving (or coming back) is painted as it is now, without a celebration.
-	local state = GunRules.state(guns, id)
+	local state = shownState(id, gun)
 	paint(slot, state)
 	shown[id] = state
 end
@@ -216,11 +236,11 @@ local primed = player:GetAttribute('OwnedGuns') ~= nil
 local function refresh(next)
 	guns = GunRules.sanitize(next)
 	for id, slot in slots do
-		local state = GunRules.state(guns, id)
+		local state = shownState(id, slot.Gun)
 		if shown[id] ~= state then
 			local before = shown[id]
 			paint(slot, state)
-			if primed and before == 'Locked' then celebrate(slot, 'NEW GUN!')
+			if primed and (before == 'Locked' or before == 'Buy') and state ~= 'Locked' and state ~= 'Buy' then celebrate(slot, 'NEW GUN!')
 			elseif primed and before == 'Owned' and state == 'Equipped' then celebrate(slot, 'EQUIPPED!') end
 			shown[id] = state
 		end
@@ -241,6 +261,16 @@ local function fromAttributes()
 end
 player:GetAttributeChangedSignal('OwnedGuns'):Connect(fromAttributes)
 player:GetAttributeChangedSignal('EquippedGun'):Connect(fromAttributes)
+-- Cash going up or down turns LOCKED into BUY and back (a repaint, never a celebration).
+player:GetAttributeChangedSignal('Cash'):Connect(function()
+	for id, slot in slots do
+		local state = shownState(id, slot.Gun)
+		if shown[id] ~= state then
+			paint(slot, state)
+			shown[id] = state
+		end
+	end
+end)
 Net.get('ProfileUpdated').OnClientEvent:Connect(function(data)
 	if type(data) == 'table' and type(data.Guns) == 'table' and type(data.Guns.Owned) == 'table' then
 		refresh({ Owned = table.clone(data.Guns.Owned), Equipped = data.Guns.Equipped })
