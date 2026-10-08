@@ -2579,10 +2579,13 @@ local function window(c, x, y, o)
 	sbox(c, 'WindowFrame', V(x0 + t, y1 - t, -0.2), V(x1 - t, y1, 1.0), trim, true)
 	sbox(c, 'WindowSill', V(x0 - 0.6, y - 0.8, -0.2), V(x1 + 0.6, y, 1.6), P.st.sill, true)
 	sbox(c, 'WindowLintel', V(x0 - 0.3, y1, -0.2), V(x1 + 0.3, y1 + 0.9, 1.3), P.st.trimDark, true)
-	-- the reveal: a darker strip inside the top and left of the frame, where the frame shades the glass
-	local rev = P.st.trimDark:Lerp(P.black, 0.3)
-	sbox(c, 'WindowReveal', V(x0 + t, y1 - t - 0.45, -0.2), V(x1 - t, y1 - t, 0.5), rev, true)
-	sbox(c, 'WindowReveal', V(x0 + t, y + t, -0.2), V(x0 + t + 0.45, y1 - t - 0.45, 0.5), rev, true)
+	-- the reveal: a darker strip inside the top and left of the frame, where the frame shades the glass (big windows
+	-- only: on small ones it isn't seen and the parts add up on tall buildings)
+	if w >= 8 then
+		local rev = P.st.trimDark:Lerp(P.black, 0.3)
+		sbox(c, 'WindowReveal', V(x0 + t, y1 - t - 0.45, -0.2), V(x1 - t, y1 - t, 0.5), rev, true)
+		sbox(c, 'WindowReveal', V(x0 + t, y + t, -0.2), V(x0 + t + 0.45, y1 - t - 0.45, 0.5), rev, true)
+	end
 	local n = o.panes or (w >= 9 and 4 or 2)
 	local bar = 0.7
 	local g0, g1 = x0 + t, x1 - t
@@ -2867,7 +2870,7 @@ local function brickBuilding(ctx, w, o)
 	local roof = o.roof or 'hip'
 	sbox(c, 'Wall', V(0, -1, -d), V(w, H, 0), wall)
 	sbox(c, 'Plinth', V(-0.3, -1, -d - 0.3), V(w + 0.3, 2.4, 0.3), dark)
-	for y = 4.9, H - 2, 2.5 do
+	for y = 4.9, H - 2, floors > 2 and 5 or 2.5 do -- (tall blocks: every other course, read from further away)
 		local nearBand = false
 		for _, b in bands do if math.abs(y - b) <= 1.6 then nearBand = true end end
 		if not nearBand then decor(c:box('BrickCourse', V(-0.06, y, -d - 0.06), V(w + 0.06, y + 0.35, 0.06), dark:Lerp(wall, 0.35), M.Plastic)) end
@@ -4695,7 +4698,69 @@ local PLANS = {
 		gates = { L = { { 10.5, 13.5 } }, R = { { 9.5, 12.5 }, { 26.2, 29.2 } } },
 		paths = { { -35.7, 12 }, { 34.6, 11 }, { 35.2, 27.7 } },
 	},
+	-- Stage 2: a porch house and a long hip-roofed terrace on the left; a flat-roofed house, a side yard (shed, washing
+	-- line) and a gabled stoop house on the right. (Paths stay out of MECHANICS' backstops: left z' 22..47, right 13..24.)
+	[2] = {
+		L = {
+			{ 20, 40, edge = 'picket', { name = 'House22', roof = 'gableFront', h = 27, bays = 2, winW = 5.4, wall = P.st.brickLight,
+				entrance = { x = 10, kind = 'porch', span = { 1, 19 }, door = C(170, 50, 50), number = '22' } } },
+			{ 36, 36, { name = 'House24', roof = 'hip', h = 30, pilasters = 3, chimney = { 26, -12 }, ac = { { 'front', 6, 16.4 } } } },
+		},
+		R = {
+			{ 24, 38, { name = 'House21', roof = 'flat', h = 29, bays = 2, winW = 7, wall = P.st.brickDeep,
+				entrance = { x = 18, kind = 'door', door = C(36, 60, 110), number = '21' } } },
+			{ 10, yard = true },
+			{ 22, 41, edge = 'wall', { name = 'House25', roof = 'gable', h = 28, bays = 2, winW = 6, chimney = { 4, -8 },
+				entrance = { x = 6, kind = 'stoop', door = C(40, 110, 76), number = '25' } } },
+		},
+		gates = { L = { { 8.5, 11.5 } }, R = { { 4.5, 7.5 }, { 48.5, 51.5 } } },
+		paths = { { -34.6, 10 }, { 35.2, 6 }, { 36.7, 50 } },
+	},
+	-- Stage 3: a three-storey flat-roofed block and a chimneyed stoop house on the left; a front-gabled porch house, a
+	-- side yard and a hip-roofed door house on the right.
+	[3] = {
+		L = {
+			{ 28, 36, { name = 'House32', roof = 'flat', floors = 3, pilasters = 3, wall = P.st.brick:Lerp(P.st.brickDeep, 0.4), ac = { { 'front', 5, 31.4 } } } },
+			{ 28, 41, edge = 'wall', { name = 'House34', roof = 'gable', h = 28, bays = 3, winW = 5, chimney = { 6, -9 }, wall = P.st.brickDeep,
+				entrance = { x = 21, kind = 'stoop', door = C(130, 60, 160), number = '34' } } },
+		},
+		R = {
+			{ 18, 40, edge = 'picket', { name = 'House31', roof = 'gableFront', h = 26, bays = 2, winW = 4.6, wall = P.st.brickLight,
+				entrance = { x = 9, kind = 'porch', span = { 1, 17 }, door = C(40, 110, 76), number = '31' } } },
+			{ 12, yard = true },
+			{ 26, 38, { name = 'House35', roof = 'hip', h = 30, pilasters = 2, entrance = { x = 6, kind = 'door', door = C(200, 140, 40), number = '35' } } },
+		},
+		gates = { L = { { 47.5, 50.5 } }, R = { { 7.5, 10.5 }, { 48.5, 51.5 } } },
+		paths = { { -36.7, 49 }, { 34.6, 9 }, { 35.2, 50 } },
+	},
 }
+-- A side yard (between two houses, open to the street over a low picket fence): grass, a plank shed with a sloped
+-- roof, a washing line with clothes, a small tree and a kettle grill, closed at the back by a tall wall.
+local function sideYard(d, s, za, w, top, seed)
+	local ST = P.street
+	sbox(d, 'SideYard', V(s * FRONT, -1, za - w), V(s * 64, ST.kerb, za), P.st.grass)
+	sbox(d, 'YardWall', V(s * 64, -1, za - w), V(s * 65.6, 14, za), P.st.brickDark)
+	sbox(d, 'YardWallCoping', V(s * 63.7, 14, za - w), V(s * 65.9, 14.6, za), P.st.trim, true)
+	local mz = za - w / 2
+	local shed = d:at(CFrame.new(s * 58, ST.kerb, mz)):group('Shed')
+	sbox(shed, 'ShedBody', V(-3.5, 0, -3), V(3.5, 6.4, 3), C(150, 110, 70))
+	for z = -2.4, 2.5, 1.2 do decor(shed:box('ShedPlank', V(-s * 3.5 - 0.05, 0.2, z - 0.06), V(-s * 3.5 + s * 0.05, 6.2, z + 0.06), C(118, 84, 52), M.Plastic)) end
+	sbox(shed, 'ShedDoor', V(-s * 3.5 - 0.1, 0, -1.2), V(-s * 3.5 + s * 0.1, 5.2, 1.2), C(110, 78, 48), true)
+	studs(shed:wedge('ShedRoof', V(w - 3, 1.6, 8.4), CFrame.new(0, 7.2, 0) * CFrame.Angles(0, s > 0 and -math.pi / 2 or math.pi / 2, 0), P.st.roofDark, M.Plastic), true)
+	for _, z in { za - 2, za - w + 2 } do
+		sbox(d, 'LinePost', V(s * 44 - 0.25, ST.kerb, z - 0.25), V(s * 44 + 0.25, ST.kerb + 7, z + 0.25), C(200, 204, 210), true)
+	end
+	decor(d:box('WashLine', V(s * 44 - 0.06, ST.kerb + 6.6, za - w + 2), V(s * 44 + 0.06, ST.kerb + 6.72, za - 2), C(240, 240, 240), M.Plastic))
+	local cloth = { C(240, 90, 90), C(80, 160, 240), P.white, C(250, 210, 60) }
+	for k = 1, math.floor((w - 4) / 2.2) do
+		local cz = za - 2 - k * 2.0
+		decor(d:box('Laundry', V(s * 44 - 0.08, ST.kerb + 4.2 + (k % 2) * 0.6, cz - 0.8), V(s * 44 + 0.08, ST.kerb + 6.6, cz + 0.8), cloth[k % #cloth + 1], M.Plastic))
+	end
+	tree(d, V(s * 51, ST.kerb, za - w + 3), seed, 0.7)
+	local grill = d:at(CFrame.new(s * 40, ST.kerb, mz)):group('Grill')
+	for _, a in { 0, 2.1, 4.2 } do decor(grill:box('GrillLeg', V(math.cos(a) * 0.6 - 0.1, 0, math.sin(a) * 0.6 - 0.1), V(math.cos(a) * 0.6 + 0.1, 2.2, math.sin(a) * 0.6 + 0.1), C(30, 32, 36), M.Plastic)) end
+	decor(grill:part('GrillBowl', V(1.8, 1.4, 1.8), CFrame.new(0, 2.7, 0), C(30, 32, 36), M.Plastic, Enum.PartType.Ball))
+end
 -- A house frame like lotFrame, with the facade at |x| = front.
 local function houseFrame(ctx, s, za, w, front)
 	if s < 0 then return ctx:at(CFrame.lookAt(V(-front, 0, za), V(-front - 1, 0, za))) end
@@ -4861,7 +4926,7 @@ function District.corner(ctx, i)
 	end
 	-- Right: the corner store, the side street, the far corner shop.
 	local function rightBuilding(z0, z1, store, corner)
-		local w = z0 - z1
+		local w = z1 - z0 -- (z0 < z1: z' runs away from the gate)
 		local sh = store and { sign = 'CORNER STORE', color = C(30, 120, 60), stripes = { C(30, 120, 60), C(250, 214, 60) } } or District.SHOPS[(i + 4) % #District.SHOPS + 1]
 		-- (right side: local x runs back up the street, so the side street side is 'left' for the near corner, 'right'
 		-- for the far one)
@@ -5178,6 +5243,7 @@ function District.container(d, cf, color)
 	sbox(k, 'ContainerBody', V(-4, 0, -10), V(4, 8.6, 10), color)
 	for _, x in { -4.2, 3.6 } do for _, z in { -10.2, 9.6 } do sbox(k, 'ContainerPost', V(x, 0, z), V(x + 0.6, 8.6, z + 0.6), dark, true) end end
 	sbox(k, 'ContainerRim', V(-4.2, 8.2, -10.2), V(4.2, 8.8, 10.2), dark, true)
+	for z = -7.5, 7.6, 3 do for _, x in { -4.15, 4.0 } do decor(k:box('ContainerRib', V(x, 0.4, z - 0.45), V(x + 0.15, 8.2, z + 0.45), color:Lerp(P.white, 0.1), M.Plastic)) end end
 	for _, x in { -1.6, 1.6 } do decor(k:box('ContainerBar', V(x - 0.15, 0.6, 10), V(x + 0.15, 8, 10.25), dark, M.Plastic)) end
 	return k
 end
@@ -5231,6 +5297,17 @@ function District.yards(ctx, i)
 		sbox(d, 'RollDoor', V(-wf + 0.35, 4.2, top - dzc - 5.8), V(-wf - 0.4, 15.8, top - dzc + 5.8), C(178, 184, 194))
 		for yy = 5.4, 15, 1.2 do decor(d:box('DoorSlat', V(-wf + 0.45, yy, top - dzc - 5.8), V(-wf + 0.3, yy + 0.25, top - dzc + 5.8), C(130, 136, 148), M.Plastic)) end
 	end
+	-- a clerestory strip high on the front, lamps over the doors, an office door with its own canopy at the far end
+	sbox(d, 'Clerestory', V(-wf + 0.15, 19.4, top - 4), V(-wf - 0.2, 22.2, top - 52), P.st.glassA, true)
+	for zc = 4, 52, 4 do sbox(d, 'ClerestoryBar', V(-wf + 0.3, 19.4, top - zc - 0.3), V(-wf - 0.2, 22.2, top - zc + 0.3), wcol:Lerp(P.black, 0.4), true) end
+	for _, dzc in { 19, 35 } do
+		local lb = sbox(d, 'DoorLamp', V(-wf + 1.4, 17.0, top - dzc - 0.8), V(-wf, 17.4, top - dzc + 0.8), C(46, 50, 60), true)
+		decor(d:box('DoorLampGlow', V(-wf + 1.3, 16.9, top - dzc - 0.6), V(-wf + 0.1, 17.0, top - dzc + 0.6), P.st.lampGlow, M.Neon)).CastShadow = false
+	end
+	sbox(d, 'OfficeDoor', V(-wf + 0.3, ST.kerb, top - 47.5), V(-wf - 0.2, ST.kerb + 7.6, top - 50.5), C(70, 76, 90))
+	sbox(d, 'OfficeDoorFrame', V(-wf + 0.2, ST.kerb, top - 47), V(-wf - 0.2, ST.kerb + 8.2, top - 51), wcol:Lerp(P.black, 0.4))
+	sbox(d, 'OfficeCanopy', V(-wf, ST.kerb + 9, top - 46.2), V(-wf + 2.6, ST.kerb + 9.5, top - 51.8), C(46, 50, 60), true)
+	sbox(d, 'OfficeWindow', V(-wf + 0.2, ST.kerb + 3.4, top - 52.4), V(-wf - 0.2, ST.kerb + 7.2, top - 53.6), P.st.glassB, true)
 	sbox(d, 'DockCanopy', V(-wf, 17.4, top - dz0 + 1), V(-(wf - 6.5), 18.2, top - dz1 - 1), wcol:Lerp(P.black, 0.25))
 	for zb = dz0 + 2, dz1 - 1, 10 do decor(d:bar('CanopyBrace', V(-wf, 13.4, top - zb), V(-(wf - 6), 17.4, top - zb), 0.4, C(46, 50, 60), M.Plastic)) end
 	pallet(d, CFrame.new(V(-(wf - 2), 4.2, top - 26)))
@@ -5264,6 +5341,18 @@ function District.yards(ctx, i)
 		end
 	end
 	District.forklift(d, CFrame.new(at(38.5, 27.5) + V(0, 0.08, 0)) * CFrame.Angles(0, math.rad(70), 0))
+	-- the gatehouse by the gate (inside), a stack of tyres, a second pallet stack
+	local booth = d:at(CFrame.new(at(26.6, 41) + V(0, 0.08, 0))):group('Gatehouse')
+	sbox(booth, 'BoothBase', V(-2.4, 0, -2.6), V(2.4, 1, 2.6), C(150, 156, 166))
+	sbox(booth, 'BoothWall', V(-2.2, 1, -2.4), V(2.2, 3.4, 2.4), C(236, 238, 242))
+	sbox(booth, 'BoothGlass', V(-2.25, 3.4, -2.45), V(2.25, 6.2, 2.45), P.st.glassA, true)
+	for _, x in { -2.2, 1.9 } do for _, z in { -2.4, 2.1 } do sbox(booth, 'BoothPost', V(x, 3.4, z), V(x + 0.3, 6.2, z + 0.3), C(236, 238, 242), true) end end
+	sbox(booth, 'BoothRoof', V(-2.8, 6.2, -3), V(2.8, 6.9, 3), C(46, 96, 186))
+	for k = 0, 2 do decor(d:part('Tyre', V(1, 2.4, 2.4), CFrame.new(at(26.2, 51.5) + V(0, 0.6 + k * 1.0, 0)) * CFrame.Angles(0, 0, math.pi / 2), C(34, 36, 40), M.Plastic, Enum.PartType.Cylinder)) end
+	for k = 0, 1 do
+		pallet(d, CFrame.new(at(39, 52) + V(0, 0.08 + k * 0.8, 0)) * CFrame.Angles(0, k * 0.15, 0))
+	end
+	crate(d, CFrame.new(at(39, 52) + V(0, 1.68, 0)) * CFrame.Angles(0, 0.2, 0), 3)
 	pallet(d, CFrame.new(at(25.6, 8) + V(0, 0.08, 0)) * CFrame.Angles(0, math.rad(90), 0))
 	crate(d, CFrame.new(at(25.6, 8) + V(0, 0.88, 0)), 2.8)
 	pallet(d, CFrame.new(at(25.6, 28) + V(0, 0.08, 0)) * CFrame.Angles(0, math.rad(90), 0))
@@ -5299,6 +5388,12 @@ local function streetStage(ctx, i)
 			local z = top
 			for _, g in plan.gates[s < 0 and 'L' or 'R'] do table.insert(gaps, { top - g[1], top - g[2] }) end
 			for _, h in plan[s < 0 and 'L' or 'R'] do
+				if h.yard then
+					sideYard(d, s, z, h[1], top, i * 100 + 77)
+					picketFence(d, s * ST.fence, z, z - h[1], -s)
+					z -= h[1]
+					continue
+				end
 				brickBuilding(houseFrame(d, s, z, h[1], h[2]), h[1], h[3])
 				-- the yard in front of a set-back house
 				if h[2] > FRONT then sbox(d, 'Yard', V(s * FRONT, -1, z - h[1]), V(s * h[2], ST.kerb, z), P.st.grass) end
@@ -5327,25 +5422,35 @@ local function streetStage(ctx, i)
 	end
 	local seed = i * 100
 	local function at(x, zp) return V(x, ST.kerb, top - zp) end
+	-- Dressing keeps off the paver paths (and their 1.5-stud margins): free(x, z', r) is false where an item of
+	-- radius r would stand on one.
+	local function free(x, zp, r)
+		for _, pth in plan and plan.paths or {} do
+			if math.sign(pth[1]) == math.sign(x) and math.abs(x) - r < math.abs(pth[1]) and math.abs(zp - pth[2]) < 1.5 + r + 0.5 then return false end
+		end
+		return true
+	end
 	-- Left, near to far: hedge, lamp, the big tree, the far tree, a hedge and the second lamp by the end building.
-	hedge(d, plan and at(-27, 5) or at(-25, 14), plan and 5 or 6)
+	if free(-27, 5, 3) then hedge(d, plan and at(-27, 5) or at(-25, 14), plan and 5 or 6) end
 	lantern(d, at(-20, 19), V(1, 0, 0))
 	tree(d, at(-24.5, 28.5), seed + 1, 1, 38)
-	tree(d, at(-23.8, 45), seed + 2, 0.85, 20)
-	hedge(d, at(-23, 51), 4)
+	if free(-23.8, 45, 3.2) then tree(d, at(-23.8, 45), seed + 2, 0.85, 20) end
+	if free(-23, 51, 2.2) then hedge(d, at(-23, 51), 4) end
 	-- (the far lamps stand out at |x| 25.5, clear of the line from the street to GATES' gate pillars)
 	lantern(d, at(-25.5, 53.5), V(1, 0, 0))
 	-- Right: open grass with a flower, the low hedge, the lamp (with its street sign) and the dumpster behind it.
-	hedge(d, at(25.8, 34), 6)
+	if free(25.8, 34, 3.2) then hedge(d, at(25.8, 34), 6) end
 	local lamp = lantern(d, at(25.5, 50), V(-1, 0, 0))
 	local sign = sbox(lamp, 'StreetSign', V(0.9, 17.4, -2.4), V(1.2, 19.0, -0.2), C(40, 150, 70), true)
 	for _, face in { Enum.NormalId.Right, Enum.NormalId.Left } do line(surface(sign, face, 30), 'Street', 'HOOD ST', P.white, FONT.body, 0.18, 0.64) end
-	dumpster(d, CFrame.new(at(31, 50.5)))
-	for k, f in { { 20.6, 17.5 }, { 24, 41 }, { -21, 40 }, { -20, 34 }, { -29.8, 24 }, { 20.8, 62.5 } } do flower(d, at(f[1], f[2]), seed + 10 + k) end
-	for k, t in { { -33, 33.5 }, { -31.8, 35 }, { -32.5, 30 }, { 22.8, 38 }, { 21, 50 }, { -18, 57.5 } } do tuft(d, at(t[1], t[2]), seed + 20 + k) end
+	if free(31, 50.5, 4.5) then dumpster(d, CFrame.new(at(31, 50.5)))
+	elseif free(31, 41, 4.5) then dumpster(d, CFrame.new(at(31, 41))) end
+	for k, f in { { 20.6, 17.5 }, { 24, 41 }, { -21, 40 }, { -20, 34 }, { -29.8, 24 }, { 20.8, 62.5 } } do if free(f[1], f[2], 1.2) then flower(d, at(f[1], f[2]), seed + 10 + k) end end
+	for k, t in { { -33, 33.5 }, { -31.8, 35 }, { -32.5, 30 }, { 22.8, 38 }, { 21, 50 }, { -18, 57.5 } } do if free(t[1], t[2], 1) then tuft(d, at(t[1], t[2]), seed + 20 + k) end end
 	-- The grass in two greens: darker clumps where the picture's grass is shaded or worn.
 	for _, g in { { -28, plan and 18 or 10, 3, 5 }, { -30.5, 38, 2.5, 4 }, { -19.5, 44, 2, 3 }, { -31, 22, 2, 3 }, { 28, plan and 18 or 12, 4, 3 }, { 22, plan and 33 or 28, 2.5, 4 }, { 31, plan and 22 or 25, 2, 3 }, { 26.5, 44, 3, 2.5 } } do
 		local p = at(g[1], g[2])
+		if not free(g[1], g[2], math.max(g[3], g[4]) / 2) then continue end
 		decor(sbox(d, 'GrassClump', p + V(-g[3] / 2, -0.2, -g[4] / 2), p + V(g[3] / 2, 0.05, g[4] / 2), P.st.grassDark)).CastShadow = false
 	end
 	-- Street furniture in the road: a manhole and two kerb drains (dark grates in lighter frames).
@@ -5359,14 +5464,16 @@ local function streetStage(ctx, i)
 	end
 	-- Hood prop clusters at the sides, never on the walk: bags and a wheelie bin by the dumpster; a crate with a
 	-- boombox on it by the left end building; a hydrant on the right before the gate.
-	trashBags(d, CFrame.new(at(28.4, 44)) * CFrame.Angles(0, 0.4, 0), 3)
-	wheelieBin(d, CFrame.new(at(31.9, 41.4)))
+	if free(28.4, 44, 2.5) then trashBags(d, CFrame.new(at(28.4, 44)) * CFrame.Angles(0, 0.4, 0), 3) end
+	if free(31.9, 41.4, 1.8) then wheelieBin(d, CFrame.new(at(31.9, 41.4))) end
 	crate(d, CFrame.new(at(-19.8, 55)) * CFrame.Angles(0, 0.2, 0), 2.6)
 	boombox(d, CFrame.new(at(-19.8, 55) + V(0, 2.6, 0)) * CFrame.Angles(0, math.rad(-70), 0))
 	hydrant(d, at(19.6, 54.5))
 	-- Right, by the near fence: a bike parked against it and corner-store produce crates on a pallet.
-	bike(d, CFrame.new(at(32.4, plan and 16.5 or 13.5)) * CFrame.Angles(0, math.pi, 0), ({ C(230, 60, 60), C(60, 140, 240), C(250, 200, 40) })[i % 3 + 1])
-	if plan then
+	local bz = plan and 16.5 or 13.5
+	if not free(32.4, bz, 2.4) then bz = 30 end
+	if free(32.4, bz, 2.4) then bike(d, CFrame.new(at(32.4, bz)) * CFrame.Angles(0, math.pi, 0), ({ C(230, 60, 60), C(60, 140, 240), C(250, 200, 40) })[i % 3 + 1]) end
+	if i == 1 then
 		-- The porch house: a bench on the porch and pots by its steps; pots on the stoop's cheek walls.
 		porchBench(d, CFrame.lookAt(V(38.2, ST.kerb + 1.0, top - 18), V(30, ST.kerb + 1.0, top - 18)))
 		for _, zp in { 7.4, 14.6 } do plantPot(d, V(37.2, ST.kerb + 1.0, top - zp), zp) end
@@ -5377,16 +5484,18 @@ local function streetStage(ctx, i)
 			for q = 0, 2 do flower(d, V(-38.6, ST.kerb + 0.2, top - (b[1] + 1 + q * 2)), seed + 40 + k * 3 + q) end
 		end
 		hedge(d, V(-36.8, ST.kerb, top - 20), 3)
-	else
+	elseif free(30.8, 20.5, 2.6) then
 		storeCrates(d, CFrame.new(at(30.8, 20.5)) * CFrame.Angles(0, 0.1, 0), 3)
 	end
 	-- Left, by the fence between the trees: a junk corner of a chain-link panel, a tagged board leaning on it and a
 	-- pallet with a crate.
-	chainLink(d, at(-32.9, 36.6), at(-32.9, 43.4), 7)
-	local tag2 = TAGS[(i + 2) % #TAGS + 1]
-	graffitiBoard(d, CFrame.lookAt(at(-31.7, 40), at(-31.7, 40) + V(1, 0, 0)), tag2[1], tag2[2])
-	pallet(d, CFrame.new(at(-29.6, 42.8)) * CFrame.Angles(0, 0.3, 0))
-	crate(d, CFrame.new(at(-29.6, 42.8) + V(0, 0.8, 0)) * CFrame.Angles(0, 0.5, 0), 2.4)
+	if free(-31, 40, 4) then
+		chainLink(d, at(-32.9, 36.6), at(-32.9, 43.4), 7)
+		local tag2 = TAGS[(i + 2) % #TAGS + 1]
+		graffitiBoard(d, CFrame.lookAt(at(-31.7, 40), at(-31.7, 40) + V(1, 0, 0)), tag2[1], tag2[2])
+		pallet(d, CFrame.new(at(-29.6, 42.8)) * CFrame.Angles(0, 0.3, 0))
+		crate(d, CFrame.new(at(-29.6, 42.8) + V(0, 0.8, 0)) * CFrame.Angles(0, 0.5, 0), 2.4)
+	end
 	-- A darker repair patch in the asphalt.
 	decor(sbox(d, 'RoadPatch', V(-5.6, -0.2, top - 47), V(-2.2, 0.03, top - 41.5), P.st.roadDark)).CastShadow = false
 	-- Stage 1: brick wings between the warehouse wall and the gate line, so its wall is the only way through.
