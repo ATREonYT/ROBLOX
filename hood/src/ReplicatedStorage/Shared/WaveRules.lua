@@ -16,32 +16,40 @@ WaveRules.MaxIndex = 32 -- and on target indices
 -- A target's HP per stage (1-15 the streets, 16 the boss yard) for a weight-1 kind: about 10-25 shots with the gun and
 -- look a player usually has by then (shots there deal 1-2 to start, ~100+ near the end of World 1).
 WaveRules.HP = { 10, 24, 30, 36, 50, 60, 70, 80, 90, 120, 250, 400, 700, 1100, 1800, 2500 }
--- The kinds of target: the name on its tag and its HP weight.
+-- The kinds of target: the name on its tag and its HP weight. The first five stand anywhere; Sign (Corner Shop),
+-- Bottles and Crates (The Alley), Backboard (The Courts) and Tyres (The Yards) belong to one district each.
 WaveRules.Kinds = {
 	Board = { Name = 'Board', Weight = 1 },
 	Cans = { Name = 'Cans', Weight = 0.6 },
 	Cone = { Name = 'Cone', Weight = 0.8 },
 	Boombox = { Name = 'Boombox', Weight = 1.4 },
 	Drum = { Name = 'Drum', Weight = 1.2 },
+	Sign = { Name = 'Sign', Weight = 0.9 },
+	Bottles = { Name = 'Bottles', Weight = 0.7 },
+	Crates = { Name = 'Crates', Weight = 1.1 },
+	Backboard = { Name = 'Backboard', Weight = 1 },
+	Tyres = { Name = 'Tyres', Weight = 1.2 },
 	MegaBoard = { Name = 'Mega Board', Weight = 3 },
 }
--- Which targets stand in each stage, in index order (the map builder places them; the server reads the map).
+-- Which targets stand in each stage, in index order (the map builder sets each one up in its district's own spot;
+-- the server reads the map): The Block 1-3, Corner Shop 4-6, The Alley 7-9, The Courts 10-12, The Yards 13-15, the
+-- boss yard 16.
 WaveRules.Lineups = {
 	{ 'Board', 'Cans', 'Cone' },
 	{ 'Cans', 'Board', 'Cone' },
 	{ 'Board', 'Cans', 'Cone', 'Boombox' },
-	{ 'Cone', 'Board', 'Cans', 'Drum' },
-	{ 'Board', 'Boombox', 'Cans', 'Cone' },
-	{ 'Drum', 'Board', 'Cans', 'Boombox' },
-	{ 'Board', 'Cans', 'Cone', 'Boombox' },
-	{ 'Board', 'Cans', 'Cone', 'Boombox', 'Drum' },
-	{ 'Cans', 'Board', 'Drum', 'Cone', 'Boombox' },
-	{ 'Board', 'Boombox', 'Cans', 'Cone', 'Drum' },
-	{ 'Drum', 'Board', 'Cans', 'Boombox', 'Cone' },
-	{ 'Board', 'Cans', 'Cone', 'Boombox', 'Drum' },
-	{ 'Boombox', 'Board', 'Cans', 'Drum', 'Cone' },
-	{ 'Board', 'Drum', 'Cans', 'Boombox', 'Cone' },
-	{ 'Board', 'Cans', 'Cone', 'Boombox', 'Drum' },
+	{ 'Cans', 'Sign', 'Board', 'Boombox' },
+	{ 'Sign', 'Board', 'Cans', 'Boombox' },
+	{ 'Cans', 'Board', 'Sign', 'Drum' },
+	{ 'Cans', 'Bottles', 'Board', 'Crates' },
+	{ 'Crates', 'Cans', 'Bottles', 'Board', 'Boombox' },
+	{ 'Board', 'Cans', 'Crates', 'Bottles', 'Drum' },
+	{ 'Board', 'Cans', 'Backboard', 'Cone', 'Boombox' },
+	{ 'Backboard', 'Board', 'Cans', 'Cone', 'Drum' },
+	{ 'Board', 'Backboard', 'Cans', 'Boombox', 'Cone' },
+	{ 'Crates', 'Drum', 'Tyres', 'Drum', 'Board' },
+	{ 'Tyres', 'Crates', 'Drum', 'Drum', 'Board' },
+	{ 'Board', 'Crates', 'Tyres', 'Drum', 'Drum' },
 	{ 'MegaBoard', 'Board', 'Boombox', 'Drum', 'Cans', 'Cone' },
 }
 

@@ -5558,7 +5558,7 @@ end
 -- ('Tip'), Hit (a ShotSounds hit), ShardColor; children Hinge (the pivot, a ghost part in the target's frame: front
 -- -Z toward the shooter), Swing (the parts that knock and fall), Base (what stays when it falls) and TagAnchor with
 -- the BillboardGui WaveTag (TextLabel Name, Frame Bar > Frame Fill, TextLabel HP). Which kinds stand in each stage
--- comes from WaveRules.Lineups; where they stand is here (Waves.Layout).
+-- comes from WaveRules.Lineups; where they stand, district by district, is here (Waves.Sets).
 -- Placement (STREETS' bands, out13/notes.md): targets on the sidewalks (|x| 9.6..16.4), the range's backstop and
 -- props on the grass strip behind them (|x| 17..21.5), z' 8..44 past the stage's gate; nothing on the road.
 local Waves = {}
@@ -5669,39 +5669,55 @@ end
 
 ---------------------------------------------------------------------------------------------- the kinds
 -- Plywood bullseye board on two 2x4 uprights with back braces, its feet in two cinder blocks; a darker edge frame
--- round the sheet and a rail along its top.
-function Waves.Board(sw, base, scale)
-	local s = scale or 1
+-- round the sheet and a rail along its top. opts: scale; lean = propped against a fence, wall or gate behind it (two
+-- rubber feet, no stand, the sheet tipped back 14 degrees).
+function Waves.Board(sw, base, opts)
+	opts = opts or {}
+	local s = opts.scale or 1
 	local W = Waves.Wood
-	for _, x in { -1.25 * s, 1.25 * s } do
-		sbox(base, 'CinderBlock', V(x - 0.55 * s, 0, -0.55 * s), V(x + 0.55 * s, 0.7 * s, 0.6 * s), C(168, 170, 178))
-		Waves.trim(base, 'CinderHole', V(x - 0.38 * s, 0.7 * s, -0.36 * s), V(x + 0.38 * s, 0.74 * s, 0.4 * s), C(118, 120, 130))
-	end
 	local y0, y1, hw = 0.95 * s, 4.55 * s, 1.9 * s
-	for _, x in { -1.25 * s, 1.25 * s } do
-		decor(sw:box('Upright', V(x - 0.22 * s, 0.4 * s, 0.12), V(x + 0.22 * s, y1 - 0.1 * s, 0.56 * s), W.post, M.SmoothPlastic))
-		decor(sw:bar('Brace', V(x, y1 - 0.8 * s, 0.5 * s), V(x, 0.1, 1.9 * s), 0.36 * s, W.dark, M.SmoothPlastic))
+	local c, tilt = sw, CFrame.new()
+	if opts.lean then
+		y0, y1 = 0.3 * s, 3.9 * s
+		for _, x in { -1.25 * s, 1.25 * s } do sbox(base, 'RubberFoot', V(x - 0.45 * s, 0, -0.45 * s), V(x + 0.45 * s, 0.3 * s, 0.45 * s), C(46, 48, 56)) end
+		tilt = CFrame.new(0, y0, 0) * CFrame.Angles(math.rad(14), 0, 0) * CFrame.new(0, -y0, 0)
+		c = sw:at(tilt)
+		-- two battens down its back
+		for _, x in { -1.25 * s, 1.25 * s } do decor(c:box('Batten', V(x - 0.22 * s, y0 + 0.2, 0.14), V(x + 0.22 * s, y1 - 0.2, 0.46), W.post, M.SmoothPlastic)) end
+	else
+		for _, x in { -1.25 * s, 1.25 * s } do
+			sbox(base, 'CinderBlock', V(x - 0.55 * s, 0, -0.55 * s), V(x + 0.55 * s, 0.7 * s, 0.6 * s), C(168, 170, 178))
+			Waves.trim(base, 'CinderHole', V(x - 0.38 * s, 0.7 * s, -0.36 * s), V(x + 0.38 * s, 0.74 * s, 0.4 * s), C(118, 120, 130))
+		end
+		for _, x in { -1.25 * s, 1.25 * s } do
+			decor(sw:box('Upright', V(x - 0.22 * s, 0.4 * s, 0.12), V(x + 0.22 * s, y1 - 0.1 * s, 0.56 * s), W.post, M.SmoothPlastic))
+			decor(sw:bar('Brace', V(x, y1 - 0.8 * s, 0.5 * s), V(x, 0.1, 1.9 * s), 0.36 * s, W.dark, M.SmoothPlastic))
+		end
 	end
-	decor(sw:box('Sheet', V(-hw, y0, -0.12), V(hw, y1, 0.14), W.lit, M.SmoothPlastic))
+	decor(c:box('Sheet', V(-hw, y0, -0.12), V(hw, y1, 0.14), W.lit, M.SmoothPlastic))
 	local f = 0.24 * s
-	Waves.trim(sw, 'SheetEdge', V(-hw, y1 - f, -0.2), V(hw, y1, -0.11), W.edge)
-	Waves.trim(sw, 'SheetEdge', V(-hw, y0, -0.2), V(hw, y0 + f, -0.11), W.edge)
-	Waves.trim(sw, 'SheetEdge', V(-hw, y0 + f, -0.2), V(-hw + f, y1 - f, -0.11), W.edge)
-	Waves.trim(sw, 'SheetEdge', V(hw - f, y0 + f, -0.2), V(hw, y1 - f, -0.11), W.edge)
+	Waves.trim(c, 'SheetEdge', V(-hw, y1 - f, -0.2), V(hw, y1, -0.11), W.edge)
+	Waves.trim(c, 'SheetEdge', V(-hw, y0, -0.2), V(hw, y0 + f, -0.11), W.edge)
+	Waves.trim(c, 'SheetEdge', V(-hw, y0 + f, -0.2), V(-hw + f, y1 - f, -0.11), W.edge)
+	Waves.trim(c, 'SheetEdge', V(hw - f, y0 + f, -0.2), V(hw, y1 - f, -0.11), W.edge)
 	local centre = V(0, (y0 + y1) / 2, 0)
-	Waves.bullseye(sw, centre, 1.45 * s, -0.2)
-	Waves.trim(sw, 'TopRail', V(-hw - 0.15 * s, y1, -0.3 * s), V(hw + 0.15 * s, y1 + 0.32 * s, 0.4 * s), W.dark)
-	return { hinge = V(0, 0.7 * s, 0.2 * s), aim = centre + V(0, 0, -0.35), top = y1 + 0.32 * s, hit = 'Tock', shard = Waves.Red }
+	Waves.bullseye(c, centre, 1.45 * s, -0.2)
+	Waves.trim(c, 'TopRail', V(-hw - 0.15 * s, y1, -0.3 * s), V(hw + 0.15 * s, y1 + 0.32 * s, 0.4 * s), W.dark)
+	local top = (tilt * CFrame.new(0, y1 + 0.32 * s, 0)).Position.Y
+	return { hinge = V(0, opts.lean and y0 or 0.7 * s, 0.2 * s), aim = (tilt * CFrame.new(centre + V(0, 0, -0.35))).Position, top = top, hit = 'Tock', shard = Waves.Red }
 end
 
 -- A pyramid of six soda cans (white label band, silver lid) on a studded wooden crate with darker bands and corners.
-function Waves.Cans(sw, base)
+-- opts.noBase: the cans stand straight on what's under them (a bench, a table, a plank across a dumpster).
+function Waves.Cans(sw, base, opts)
 	local W = Waves.Wood
-	local h = 2.1
-	sbox(base, 'Crate', V(-1.4, 0, -1.1), V(1.4, h, 1.1), C(206, 148, 76))
-	for _, y in { 0, h - 0.4 } do Waves.trim(base, 'CrateBand', V(-1.46, y, -1.16), V(1.46, y + 0.4, 1.16), W.dark) end
-	for _, x in { -1.46, 1.16 } do Waves.trim(base, 'CrateCorner', V(x, 0, -1.16), V(x + 0.3, h, -0.86), W.dark) end
-	Waves.trim(base, 'CrateLid', V(-1.3, h, -1.0), V(1.3, h + 0.08, 1.0), C(224, 172, 104))
+	local h = (opts and opts.noBase) and -0.08 or 2.1
+	if h > 0 then
+		sbox(base, 'Crate', V(-1.4, 0, -1.1), V(1.4, h, 1.1), C(206, 148, 76))
+		for _, y in { 0, h - 0.4 } do Waves.trim(base, 'CrateBand', V(-1.46, y, -1.16), V(1.46, y + 0.4, 1.16), W.dark) end
+		for _, x in { -1.46, 1.16 } do Waves.trim(base, 'CrateCorner', V(x, 0, -1.16), V(x + 0.3, h, -0.86), W.dark) end
+		Waves.trim(base, 'CrateLid', V(-1.3, h, -1.0), V(1.3, h + 0.08, 1.0), C(224, 172, 104))
+	end
 	local colors = { C(226, 54, 60), C(52, 118, 226), C(62, 188, 98), C(250, 150, 40), C(150, 86, 226), C(250, 210, 60) }
 	local r, ch = 0.36, 0.95
 	local k = 0
@@ -5715,7 +5731,7 @@ function Waves.Cans(sw, base)
 			Waves.can(sw, 'CanLid', r - 0.06, 0.06, foot + V(0, ch, 0), C(204, 208, 216), M.SmoothPlastic)
 		end
 	end
-	return { hinge = V(0, h, 0.4), aim = V(0, h + 1.3, -0.4), top = h + 0.08 + 3 * ch, hit = 'Tin', shard = colors[1] }
+	return { hinge = V(0, math.max(0, h), 0.4), aim = V(0, h + 1.3, -0.4), top = h + 0.08 + 3 * ch, hit = 'Tin', shard = colors[1] }
 end
 
 -- A stacked traffic cone (dark foot band, two white bands) on a black rubber base, wearing a round target sign on a
@@ -5735,12 +5751,18 @@ end
 
 -- A big boombox on a blue milk crate: charcoal case with a lighter face plate, the two speakers painted as bullseyes,
 -- a cassette deck and four coloured buttons between them, a chrome carry handle on top.
-function Waves.Boombox(sw, base)
+-- opts.noBase: it stands on whatever is under it (on two rubber feet).
+function Waves.Boombox(sw, base, opts)
 	local blue, rim = C(52, 98, 204), C(34, 70, 158)
 	local h = 1.5
-	sbox(base, 'MilkCrate', V(-1.3, 0, -1.0), V(1.3, h, 1.0), blue)
-	Waves.trim(base, 'MilkCrateRim', V(-1.36, h - 0.25, -1.06), V(1.36, h, 1.06), rim)
-	for _, x in { -0.75, 0, 0.75 } do Waves.trim(base, 'MilkCrateSlot', V(x - 0.24, 0.35, -1.04), V(x + 0.24, 0.95, -1.0), C(24, 40, 96)) end
+	if opts and opts.noBase then
+		h = 0.2
+		for _, x in { -1.5, 1.5 } do sbox(base, 'RubberFoot', V(x - 0.35, 0, -0.35), V(x + 0.35, h, 0.35), C(30, 32, 38)) end
+	else
+		sbox(base, 'MilkCrate', V(-1.3, 0, -1.0), V(1.3, h, 1.0), blue)
+		Waves.trim(base, 'MilkCrateRim', V(-1.36, h - 0.25, -1.06), V(1.36, h, 1.06), rim)
+		for _, x in { -0.75, 0, 0.75 } do Waves.trim(base, 'MilkCrateSlot', V(x - 0.24, 0.35, -1.04), V(x + 0.24, 0.95, -1.0), C(24, 40, 96)) end
+	end
 	local y0, y1 = h, h + 2.5
 	decor(sw:box('Case', V(-2.1, y0, -0.5), V(2.1, y1, 0.55), C(50, 52, 62), M.SmoothPlastic))
 	Waves.trim(sw, 'FacePlate', V(-1.98, y0 + 0.12, -0.58), V(1.98, y1 - 0.12, -0.5), C(74, 78, 92))
@@ -5781,7 +5803,7 @@ end
 
 -- The boss yard's MEGA BOARD: the board at twice the size, its frame gold, a gold crown with red gems on its rail.
 function Waves.MegaBoard(sw, base)
-	local spec = Waves.Board(sw, base, 1.9)
+	local spec = Waves.Board(sw, base, { scale = 1.9 })
 	local gold, deep = C(242, 192, 60), C(196, 146, 40)
 	for _, p in sw.parent:GetDescendants() do
 		if p:IsA('BasePart') and p.Name == 'SheetEdge' then p.Color = gold end
@@ -5798,6 +5820,93 @@ function Waves.MegaBoard(sw, base)
 	spec.hit = 'Ding'
 	spec.shard = gold
 	return spec
+end
+
+-- District kinds (same kit, one each where it belongs).
+-- Corner Shop: a temporary road sign on a rubber foot, a red-rimmed white face painted as a bullseye.
+function Waves.Sign(sw, base)
+	sbox(base, 'SignFoot', V(-1.1, 0, -1.1), V(1.1, 0.35, 1.1), C(42, 44, 52))
+	Waves.trim(base, 'SignFootLip', V(-0.8, 0.35, -0.8), V(0.8, 0.5, 0.8), C(70, 72, 82))
+	local grey, dark = C(176, 182, 194), C(116, 122, 136)
+	decor(sw:box('SignPost', V(-0.18, 0.5, -0.18), V(0.18, 4.4, 0.18), grey, M.SmoothPlastic))
+	Waves.trim(sw, 'SignCollar', V(-0.27, 0.5, -0.27), V(0.27, 1.1, 0.27), dark)
+	local centre = V(0, 5.35, 0)
+	Waves.disc(sw, 'SignBack', 1.25, 0.14, centre + V(0, 0, 0.14), dark)
+	Waves.disc(sw, 'SignRim', 1.2, 0.08, centre + V(0, 0, 0.04), C(214, 40, 40))
+	Waves.bullseye(sw, centre, 0.98, 0)
+	return { hinge = V(0, 0.5, 0.2), aim = centre + V(0, 0, -0.3), top = centre.Y + 1.25, hit = 'Ding', shard = C(214, 40, 40) }
+end
+-- The Alley: five soda bottles (labels, white caps) on a plank across two cinder blocks.
+function Waves.Bottles(sw, base)
+	local W = Waves.Wood
+	for _, x in { -1.1, 1.1 } do
+		sbox(base, 'CinderBlock', V(x - 0.5, 0, -0.55), V(x + 0.5, 0.7, 0.55), C(168, 170, 178))
+		Waves.trim(base, 'CinderHole', V(x - 0.34, 0.7, -0.36), V(x + 0.34, 0.74, 0.36), C(118, 120, 130))
+	end
+	sbox(base, 'Plank', V(-1.75, 0.7, -0.55), V(1.75, 0.98, 0.55), W.lit)
+	Waves.trim(base, 'PlankEdge', V(-1.75, 0.7, -0.6), V(1.75, 0.84, -0.55), W.edge)
+	local colors = { C(62, 188, 98), C(250, 150, 40), C(52, 118, 226), C(226, 54, 60), C(150, 86, 226) }
+	for k, col in colors do
+		local foot = V(-1.32 + (k - 1) * 0.66, 0.98, -0.05)
+		Waves.can(sw, 'Bottle', 0.27, 0.95, foot, col)
+		Waves.can(sw, 'BottleLabel', 0.29, 0.32, foot + V(0, 0.28, 0), Waves.White)
+		Waves.can(sw, 'BottleNeck', 0.13, 0.45, foot + V(0, 0.95, 0), col)
+		Waves.can(sw, 'BottleCap', 0.15, 0.12, foot + V(0, 1.4, 0), C(240, 240, 236))
+	end
+	return { hinge = V(0, 0.98, 0.4), aim = V(0, 1.6, -0.35), top = 2.5, hit = 'Tin', shard = colors[1] }
+end
+-- The Alley: three studded crates stacked on a pallet, the top one stencilled with a target.
+function Waves.Crates(sw, base)
+	local W = Waves.Wood
+	for _, z in { -1.05, 0, 1.05 } do Waves.trim(base, 'PalletRunner', V(-1.9, 0, z - 0.2), V(1.9, 0.3, z + 0.2), W.dark) end
+	for _, x in { -1.55, -0.78, 0, 0.78, 1.55 } do sbox(base, 'PalletSlat', V(x - 0.3, 0.3, -1.3), V(x + 0.3, 0.5, 1.3), C(214, 162, 96)) end
+	local function crate(cx, cy, cz, tone)
+		sbox(sw, 'Crate', V(cx - 0.9, cy, cz - 0.9), V(cx + 0.9, cy + 1.8, cz + 0.9), tone)
+		Waves.trim(sw, 'CrateBand', V(cx - 0.95, cy + 1.45, cz - 0.95), V(cx + 0.95, cy + 1.8, cz + 0.95), W.dark)
+		Waves.trim(sw, 'CrateBand', V(cx - 0.95, cy, cz - 0.95), V(cx + 0.95, cy + 0.3, cz + 0.95), W.dark)
+	end
+	crate(-0.92, 0.5, 0, C(206, 148, 76))
+	crate(0.92, 0.5, 0.05, C(196, 140, 72))
+	crate(0, 2.3, 0.1, C(214, 158, 88))
+	Waves.bullseye(sw, V(0, 3.1, 0), 0.62, -0.82)
+	return { hinge = V(0, 0.5, 0.7), aim = V(0, 3.1, -1.05), top = 4.1, hit = 'Tock', shard = C(206, 148, 76) }
+end
+-- The Courts: a little hoop on a padded post whose white backboard is painted as a bullseye, an orange rim and net.
+function Waves.Backboard(sw, base)
+	sbox(base, 'HoopFoot', V(-1.2, 0, -1.2), V(1.2, 0.6, 1.2), C(46, 50, 60))
+	Waves.trim(base, 'HoopFootLip', V(-1.0, 0.6, -1.0), V(1.0, 0.75, 1.0), C(70, 74, 86))
+	decor(sw:box('HoopPost', V(-0.3, 0.75, 0.2), V(0.3, 5.4, 0.8), C(60, 66, 80), M.SmoothPlastic))
+	Waves.trim(sw, 'HoopPad', V(-0.45, 0.75, 0.05), V(0.45, 2.9, 0.95), C(40, 90, 200))
+	local cy, ink = 5.6, C(60, 66, 80)
+	decor(sw:box('Backboard', V(-2.1, cy - 1.3, -0.1), V(2.1, cy + 1.3, 0.2), Waves.White, M.SmoothPlastic))
+	Waves.trim(sw, 'BoardFrame', V(-2.1, cy + 1.12, -0.16), V(2.1, cy + 1.3, -0.1), ink)
+	Waves.trim(sw, 'BoardFrame', V(-2.1, cy - 1.3, -0.16), V(2.1, cy - 1.12, -0.1), ink)
+	Waves.trim(sw, 'BoardFrame', V(-2.1, cy - 1.12, -0.16), V(-1.92, cy + 1.12, -0.1), ink)
+	Waves.trim(sw, 'BoardFrame', V(1.92, cy - 1.12, -0.16), V(2.1, cy + 1.12, -0.1), ink)
+	Waves.bullseye(sw, V(0, cy + 0.1, 0), 0.95, -0.1)
+	local orange = C(240, 110, 40)
+	Waves.trim(sw, 'Rim', V(-0.7, cy - 1.5, -1.4), V(0.7, cy - 1.35, -1.25), orange)
+	Waves.trim(sw, 'Rim', V(-0.7, cy - 1.5, -0.25), V(0.7, cy - 1.35, -0.1), orange)
+	Waves.trim(sw, 'Rim', V(-0.7, cy - 1.5, -1.4), V(-0.55, cy - 1.35, -0.1), orange)
+	Waves.trim(sw, 'Rim', V(0.55, cy - 1.5, -1.4), V(0.7, cy - 1.35, -0.1), orange)
+	for _, x in { -0.45, 0, 0.45 } do Waves.trim(sw, 'Net', V(x - 0.05, cy - 2.2, -0.8), V(x + 0.05, cy - 1.5, -0.7), Waves.White) end
+	return { hinge = V(0, 0.75, 0.5), aim = V(0, cy + 0.1, -0.35), top = cy + 1.3, hit = 'Ding', shard = orange }
+end
+-- The Yards: three old tyres stacked (a lighter tread band on each), a round target plate stuck in the top one.
+function Waves.Tyres(sw, base)
+	local tyre, tread, hub = C(36, 38, 44), C(58, 60, 68), C(84, 88, 98)
+	Waves.can(base, 'Tyre', 1.15, 0.8, V(0, 0, 0), tyre)
+	Waves.can(base, 'TyreTread', 1.17, 0.24, V(0, 0.28, 0), tread)
+	for k = 1, 2 do
+		Waves.can(sw, 'Tyre', 1.15, 0.8, V(0, 0.8 * k, 0), tyre)
+		Waves.can(sw, 'TyreTread', 1.17, 0.24, V(0, 0.8 * k + 0.28, 0), tread)
+	end
+	Waves.can(sw, 'TyreHub', 0.62, 0.05, V(0, 2.4, 0), hub)
+	Waves.can(sw, 'PlateStick', 0.1, 1.3, V(0, 2.4, 0.15), Waves.Wood.post)
+	local centre = V(0, 4.3, 0)
+	Waves.disc(sw, 'PlateBack', 0.98, 0.12, centre + V(0, 0, 0.12), C(58, 62, 74))
+	Waves.bullseye(sw, centre, 0.88, 0)
+	return { hinge = V(0, 0.8, 0.7), aim = centre + V(0, 0, -0.25), top = centre.Y + 0.98, hit = 'Barrel', shard = C(250, 200, 60) }
 end
 
 ---------------------------------------------------------------------------------------------- the range set-up
@@ -5871,50 +5980,104 @@ function Waves.props(c, s, horseAt, crateAt)
 	end
 end
 
----------------------------------------------------------------------------------------------- where they stand
--- Each stage's wave as { side, slots = { { x, z' }, ... } } in lineup order, plus where its backstop, sawhorse and
--- spare-can crate stand. The range sets up on the left (-X) side, past the left lamp (z' 17..21), where the afternoon
--- sun (from +X) lights the targets' faces; a 4th and 5th target stand as a pair on the right sidewalk between the
--- paver paths to the right-hand doors (z' 9.5..12.5 and 26.2..29.2). z' runs from the stage's gate (map z =
--- gateZ - z'); the paths, lamps and yards are STREETS' (out13/notes.md).
-function Waves.Layout(stage)
-	local s = -1
-	local slots = {}
-	-- (Staggered a little off the line so their tags don't line up behind each other seen from the road.)
-	for k, z in { 27, 34, 41 } do table.insert(slots, { s * (Waves.Walk + (k % 2 == 0 and 1.4 or 0)), z }) end
-	for _, z in { 15, 21 } do table.insert(slots, { -s * Waves.Walk, z }) end
-	-- The sawhorse at the far end of the backstop and the spare cans between the first two targets, both on the
-	-- sidewalk's outer edge.
-	-- (The pair gets its own short two-sheet backstop on the right grass, between the paths.)
-	return { side = s, slots = slots, back = { 23, 45 }, horse = { 15.8, 46.5 }, crate = { 16.2, 30.5 }, pairBack = { 13.4, 23.2 } }
+-- Small set dressing that makes a spot a set-up: a picnic table (The Block), a scrap plank laid over a dumpster's
+-- rubbish (The Alley).
+function Waves.picnic(c, cf)
+	local W = Waves.Wood
+	local t = c:at(cf):group('PicnicTable')
+	sbox(t, 'TableTop', V(-1.6, 2.3, -3.2), V(1.6, 2.6, 3.2), C(204, 148, 88))
+	Waves.trim(t, 'TableEdge', V(-1.7, 2.18, -3.3), V(1.7, 2.32, 3.3), W.dark)
+	for _, z in { -2.4, 2.4 } do
+		for _, x in { -1, 1 } do decor(t:bar('TableLeg', V(x * 0.3, 2.2, z), V(x * 1.7, 0, z), 0.3, W.dark, M.SmoothPlastic)) end
+		decor(t:box('BenchRail', V(-3, 1.0, z - 0.15), V(3, 1.3, z + 0.15), W.dark, M.SmoothPlastic))
+	end
+	for _, x in { -2.55, 2.55 } do
+		sbox(t, 'Bench', V(x - 0.4, 1.3, -3), V(x + 0.4, 1.55, 3), C(204, 148, 88))
+	end
+	return t
 end
--- The boss yard (z' from gate 16; the Champ Ring stands at z' 27..41 in the middle): the MEGA BOARD and two more on the
--- right, three on the left.
-Waves.BossSlots = { { 21, 15 }, { -15, 10 }, { -19, 19 }, { 14, 24 }, { -15, 28 }, { 19, 30 } }
+function Waves.plank(c, x0, x1, zc, y)
+	local p = c:box('ScrapPlank', V(math.min(x0, x1), y - 0.25, zc - 1.8), V(math.max(x0, x1), y, zc + 1.8), Waves.Wood.lit, M.SmoothPlastic)
+	Waves.trim(c, 'ScrapPlankEdge', V(math.min(x0, x1) - 0.02, y - 0.25, zc - 1.8), V(math.max(x0, x1) + 0.02, y - 0.12, zc + 1.8), Waves.Wood.edge)
+	return p
+end
 
--- The way a target at (x, z) faces: toward the road and back up it, so you see its face as you walk in.
-function Waves.facing(x, z, y, jitter)
+---------------------------------------------------------------------------------------------- where they stand
+-- Each stage's set-up, in its district's own place (STREETS' geometry, out13/notes.md and DISTRICTS_REPORT.md):
+--   The Block    1 the plywood side-yard range on the left grass; 2 cans and a board along the side yard's picket
+--                fence; 3 a picnic table with cans and the boombox on it, a board and a cone by the sidewalk
+--   Corner Shop  cans by the store's produce crates, a road-sign target on a forecourt, a board propped on the side
+--                street's dead-end barriers (4) or standing in the side street (5, 6), a boombox outside the shops, a
+--                drum at the dead end
+--   The Alley    cans on a plank over a service-bay dumpster; soda bottles on a plank, a crate stack and a board
+--                along the gutter strip at the foot of the walls (under the ground-floor sills)
+--   The Courts   a board propped on the court fence, cans on a team bench, a backboard target on the apartments'
+--                grass, a cone at the court gate
+--   The Yards    crates, tyres and a board up on the loading dock, a drum line by the gatehouse (13), by the dock
+--                steps (14) or past the barriers (15), tyres by the barriers or the floodlight, a board propped on the
+--                yard gate
+-- Targets: { x, z' (studs past the stage's gate), y = the surface it stands on (default the street's ground), face =
+-- the way it faces (default toward the road and back up it), opts = the kind's options }, in lineup order.
+-- (lean: a board propped on what's behind it, facing the road; on: a target without its own base, standing on a
+-- surface at height y. Heights: the team bench's seat, the loading dock's top, a plank over a dumpster's rubbish.)
+function Waves.lean(x, zp) return { x, zp, face = V(-math.sign(x) * 0.9, 0, 0.42), opts = { lean = true } } end
+function Waves.on(x, zp, y, face) return { x, zp, y = y, face = face, opts = { noBase = true } } end
+-- (wall: against an alley wall or a fence, turned to face straight across the street.)
+function Waves.wall(x, zp) return { x, zp, face = V(-math.sign(x), 0, 0.35) } end
+Waves.H = { bench = 2.4, dock = 4.2, bin = 7.55 }
+Waves.Sets = {
+	{ dress = 'range', { -13, 27 }, { -14.4, 34 }, { -13, 41 } },
+	{ { 32.1, 25.6 }, Waves.lean(31.9, 29.6), { 28.4, 24.4 } },
+	{ dress = 'picnic', { -14, 33.5 }, Waves.on(-21, 36.3, 3.2), { -14.2, 43.5 }, Waves.on(-21, 39.9, 3.2) },
+	{ { 20.4, 13 }, { 19.6, 18 }, Waves.lean(52.5, 39.8), { -20.5, 30 } },
+	{ { 20, 14 }, { 26, 41 }, { -20.5, 26 }, { -20.5, 38 } },
+	{ { 20.6, 15.5 }, { 30, 38 }, { -19.6, 22 }, { 52.2, 33 } },
+	{ dress = { { 1, 30 } }, Waves.on(23.2, 32.4, Waves.H.bin, V(-1, 0, 0.3)), Waves.wall(-16.6, 29), Waves.wall(-16.1, 41), Waves.wall(-15.7, 12.5) },
+	{ dress = { { -1, 20 } }, Waves.wall(15.7, 16), Waves.on(-23.2, 22.4, Waves.H.bin, V(1, 0, 0.3)), Waves.wall(16.6, 40), Waves.wall(16.1, 21.5), Waves.wall(-16.4, 38) },
+	{ dress = { { 1, 34 } }, Waves.wall(-16.1, 27), Waves.on(23.2, 36.4, Waves.H.bin, V(-1, 0, 0.3)), Waves.wall(-15.7, 35), Waves.wall(16.6, 22), Waves.wall(15.7, 16.6) },
+	{ Waves.lean(19.6, 16), Waves.on(24.6, 40.5, Waves.H.bench, V(-1, 0, 0.2)), { -19.5, 33 }, { 20, 25.2 }, { -20.5, 43 } },
+	{ { -19.5, 41 }, Waves.lean(19.6, 34), Waves.on(24.6, 10.4, Waves.H.bench, V(-1, 0, 0.2)), { -19.5, 24 }, { 18.6, 45.2 } },
+	{ Waves.lean(19.6, 42), { -19.5, 25 }, Waves.on(24.6, 42.6, Waves.H.bench, V(-1, 0, 0.2)), { -20.5, 36 }, { -19.5, 44 } },
+	{ { -27, 18, y = Waves.H.dock }, { 20.2, 39.5 }, { 20.3, 17 }, { 20.2, 43.6 }, { -27.2, 35, y = Waves.H.dock } },
+	{ { -20.5, 22 }, { -27, 38, y = Waves.H.dock }, { -21, 41.5 }, { -21.4, 45.2 }, Waves.lean(20.7, 29) },
+	{ { -27.2, 20, y = Waves.H.dock }, { -20.5, 32 }, { -27, 31, y = Waves.H.dock }, { 20.2, 15.5 }, { 20.2, 19.2 } },
+}
+-- The boss yard (z' from gate 16; the Champ Ring and its bleachers fill |x| < 22 from z' 23 to 45): the MEGA BOARD and
+-- a board and boombox near the gate, a drum and the cans out beside the bleachers, a cone past the ring.
+Waves.BossSlots = { { 22, 14 }, { -15, 10 }, { -21, 17 }, { 27, 30 }, { -27, 32 }, { 16, 47 } }
+for _, slot in Waves.BossSlots do slot.y = 0.06 end
+Waves.Sets[STAGES + 1] = Waves.BossSlots
+-- The street's ground: The Block's grass and sidewalks; the districts' paving, court ground and aprons sit a hair higher.
+function Waves.ground(stage) return (stage > 3 and stage <= STAGES) and 0.68 or Waves.Ground end
+
+-- The way a target at (x, z) faces: toward the road and back up it, so you see its face as you walk in (or `face`).
+function Waves.facing(x, z, y, jitter, face)
 	local at = V(x, y, z)
-	return CFrame.lookAt(at, V(0, y, z + 14)) * CFrame.Angles(0, math.rad(jitter or 0), 0)
+	local look = face and at + face or V(0, y, z + 14)
+	return CFrame.lookAt(at, look) * CFrame.Angles(0, math.rad(jitter or 0), 0)
 end
 
 function Waves.stage(ctx, stage, kinds, top)
 	local g = ctx:group('Wave' .. stage)
-	local boss = stage > STAGES
-	local layout = not boss and Waves.Layout(stage) or nil
-	local y = boss and 0.06 or Waves.Ground
+	local set = Waves.Sets[stage] or {}
 	for index, kind in kinds do
-		local slot = boss and Waves.BossSlots[index] or layout.slots[index]
+		local slot = set[index]
 		if slot then
 			local x, z = slot[1], top - slot[2]
-			local jitter = ((stage * 7 + index * 13) % 9 - 4) -- a few degrees off square: set up by hand
-			Waves.target(g, stage, index, kind, Waves.facing(x, z, y, jitter), function(sw, base) return Waves[kind](sw, base) end)
+			local jitter = slot.face and 0 or ((stage * 7 + index * 13) % 9 - 4) -- a few degrees off square: set up by hand
+			Waves.target(g, stage, index, kind, Waves.facing(x, z, slot.y or Waves.ground(stage), jitter, slot.face),
+				function(sw, base) return Waves[kind](sw, base, slot.opts) end)
 		end
 	end
-	if layout then
-		Waves.backstop(g, layout.side, top - layout.back[2], top - layout.back[1])
-		if #kinds > 3 then Waves.backstop(g, -layout.side, top - layout.pairBack[2], top - layout.pairBack[1], 2) end
-		Waves.props(g, layout.side, { layout.horse[1], top - layout.horse[2] }, { layout.crate[1], top - layout.crate[2] })
+	if set.dress == 'range' then
+		Waves.backstop(g, -1, top - 45, top - 23)
+		Waves.props(g, -1, { 15.8, top - 46.5 }, { 16.2, top - 30.5 })
+	elseif set.dress == 'picnic' then
+		Waves.picnic(g, CFrame.new(-21, Waves.ground(stage), top - 36))
+	elseif type(set.dress) == 'table' then
+		-- (The Alley: a scrap plank over the service-bay dumpster at { side, the bay's first z' }.)
+		-- (on the gate side of the dumpster's middle: its lid stands open along the far side)
+		for _, bay in set.dress do Waves.plank(g, bay[1] * 22.3, bay[1] * 24.1, top - (bay[2] + 2.4), Waves.H.bin) end
 	end
 	return g
 end
@@ -5935,7 +6098,7 @@ function Waves.build(ctx)
 	end
 	return all
 end
-V2.Waves = Waves -- (the unit tests read Waves.Layout and Waves.BossSlots)
+V2.Waves = Waves -- (the unit tests read Waves.Sets)
 ---------------------------------------------------------------------------------------------- play here
 -- Make The Block V2 the map the game runs on (players spawn here; gameplay services and the HUD use it),
 -- or hand the game back to the original Block. Other spawn points are switched off, never deleted: each

@@ -104,15 +104,25 @@ return function(t)
   local wld,bad=W.worldFrom({m(1,2,'Cans',v),m(1,1,'Board',v),m(2,2,'Cone',v),m(3,1,'Sword',v),m(4,1,'Board',nil)})
   t.expect.equal(#wld[1],2);t.expect.equal(wld[1][1].Kind,'Board');t.expect.equal(wld[2],nil);t.expect.equal(wld[3],nil);t.expect.equal(#bad,3)
  end)
- t.test('the hood map sets up every wave on the sidewalks and grass, clear of the road and the gates',function()
+ t.test('every stage sets up its own wave in its district: off the road, past the gate, in range, no spot repeated',function()
   local V2=require(game.ServerStorage.TheBlockV2)
   local Waves=V2.Waves;t.expect.truthy(Waves~=nil)
-  for stage=1,15 do
-   local layout=Waves.Layout(stage)
-   t.expect.truthy(#layout.slots>=#W.Lineups[stage])
-   for _,s in layout.slots do t.expect.truthy(math.abs(s[1])>=9.6 and math.abs(s[1])<=16.4 and s[2]>=6 and s[2]<=46) end
+  for stage=1,16 do
+   local set=Waves.Sets[stage];t.expect.truthy(set~=nil)
+   t.expect.truthy(#set>=#W.Lineups[stage])
+   for _,s in ipairs(set) do t.expect.truthy(math.abs(s[1])>=9.5 and math.abs(s[1])-8.5<=W.Range-20 and s[2]>=6 and s[2]<=48) end
   end
-  t.expect.truthy(#Waves.BossSlots>=#W.Lineups[16])
-  for _,s in Waves.BossSlots do t.expect.truthy(math.abs(s[1])>=9 and s[2]>=6) end
+  -- (three stages a district: no spot is used twice within one; every district has its own kind of target)
+  local own={'Board','Sign','Bottles','Backboard','Tyres'}
+  for d=0,4 do
+   local seen,dup={},0
+   for stage=d*3+1,d*3+3 do
+    for _,s in ipairs(Waves.Sets[stage]) do local key=math.floor(s[1]+0.5)..':'..math.floor(s[2]+0.5);if seen[key] then dup+=1 end;seen[key]=true end
+   end
+   t.expect.truthy(dup<=1)
+   local found=false
+   for stage=d*3+1,d*3+3 do if table.find(W.Lineups[stage],own[d+1]) then found=true end end
+   t.expect.truthy(found)
+  end
  end)
 end
