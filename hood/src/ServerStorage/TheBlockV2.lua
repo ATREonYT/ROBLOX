@@ -3913,7 +3913,8 @@ function Lobby.pads(L)
 		Lobby.motion(trophy, CFrame.new(pd.X, 0.3, pd.Z), 18, 0.25, 3 + i * 0.3)
 		local hit = ghost(c:box('PadHit', V(-2.6, 0, -2.6), V(2.6, 9, 2.6), P.white))
 		Lobby.prompt(hit, 'Buy', pd.Name, 10)
-		Lobby.notice(c, V(0, 12.4 + (i % 2) * 2.4, 0), 8, 2.2, { { 'Name', pd.Name, pd.Color:Lerp(P.white, 0.2), 0.6 }, { 'Soon', 'COMING SOON', P.white, 0.36, font = FONT.title } }, 110)
+		-- (just over the trophy and only up close: from the spine these labels stacked behind the Gold lane's)
+		Lobby.notice(c, V(0, 11.2, 0), 8, 2.2, { { 'Name', pd.Name, pd.Color:Lerp(P.white, 0.2), 0.6 }, { 'Soon', 'COMING SOON', P.white, 0.36, font = FONT.title } }, 50)
 	end
 	return g
 end
@@ -3941,7 +3942,7 @@ function Lobby.signs(L)
 	Lobby.hallSign(s, 'BoostSign', CFrame.lookAt(V(-84, 24.4, S - Lobby.PillarD[1] - 0.8), V(-84, 24.4, 0)), 22, 9, 'BOOSTS')
 	-- the reference's big floating CLONE MACHINE words: the ARMORY's title, high over the back of its stand (clear of
 	-- the guns and nameplates from the floor and the treads)
-	Lobby.title(s, V(102, 32, 77), 40, 9, 'ARMORY', 'Better guns, more Power per shot!', nil, 160)
+	Lobby.title(s, V(108, 38, 77), 40, 9, 'ARMORY', 'Better guns, more Power per shot!', nil, 160)
 	return s
 end
 
@@ -5031,6 +5032,253 @@ function District.alley(ctx, i)
 	return d
 end
 
+-- Basketball hoop on a frame whose +Z faces the court: a padded post, an arm, a white backboard with a red square,
+-- an orange rim and a white net.
+function District.hoop(d, cf)
+	local h = d:at(cf):group('Hoop')
+	sbox(h, 'HoopBase', V(-1.2, 0, -1.2), V(1.2, 1, 1.2), C(46, 50, 60))
+	sbox(h, 'HoopPost', V(-0.5, 1, -0.5), V(0.5, 11.5, 0.5), C(60, 66, 80))
+	sbox(h, 'HoopPad', V(-0.8, 1, -0.8), V(0.8, 5, 0.8), C(40, 90, 200), true)
+	sbox(h, 'HoopArm', V(-0.35, 10.6, 0), V(0.35, 11.2, 2.6), C(60, 66, 80), true)
+	sbox(h, 'Backboard', V(-3, 9.2, 2.6), V(3, 13, 3), P.white, true)
+	decor(h:box('BoardSquare', V(-1.1, 9.9, 3), V(1.1, 11.3, 3.1), C(220, 60, 50), M.Plastic))
+	for q = 0, 7 do
+		local a = q / 8 * math.pi * 2
+		decor(h:part('Rim', V(0.8, 0.15, 0.18), CFrame.new(math.cos(a) * 0.95, 9.6, 4.1 + math.sin(a) * 0.95) * CFrame.Angles(0, -a + math.pi / 2, 0), C(240, 110, 40), M.Plastic))
+		decor(h:bar('Net', V(math.cos(a) * 0.9, 9.55, 4.1 + math.sin(a) * 0.9), V(math.cos(a) * 0.5, 8.4, 4.1 + math.sin(a) * 0.5), 0.08, P.white, M.Plastic))
+	end
+	return h
+end
+-- Floodlight pole: a dark base, a tall pole and a head of four lamps turned toward the court (-Z of the frame, as
+-- CFrame.lookAt aims it).
+function District.floodlight(d, cf, h)
+	h = h or 26
+	local f = d:at(cf):group('Floodlight')
+	sbox(f, 'FloodBase', V(-1.2, 0, -1.2), V(1.2, 1.2, 1.2), C(46, 50, 60))
+	sbox(f, 'FloodPole', V(-0.5, 1.2, -0.5), V(0.5, h, 0.5), C(150, 156, 166))
+	sbox(f, 'FloodFrame', V(-2.6, h, -0.6), V(2.6, h + 3, 0.6), C(60, 66, 80), true)
+	for _, x in { -1.3, 1.3 } do for _, y in { h + 0.75, h + 2.25 } do
+		decor(f:box('FloodLamp', V(x - 1, y - 0.6, -0.8), V(x + 1, y + 0.6, -0.6), C(250, 248, 230), M.Neon)).CastShadow = false
+	end end
+	return f
+end
+-- Bleachers along Z on side s: three studded aluminium tiers stepping up away from the court (x0 = the front edge),
+-- blue seat boards and a back rail.
+function District.bleachers(d, top, s, x0, za, zb)
+	local g = d:group('Bleachers')
+	for k = 0, 2 do
+		local xa, xb = x0 + k * 1.8, x0 + 6
+		sbox(g, 'BleacherTier', V(s * xa, P.street.kerb, top - za), V(s * xb, P.street.kerb + 1.4 * (k + 1), top - zb), C(186, 192, 204))
+		sbox(g, 'BleacherSeat', V(s * (xa + 0.2), P.street.kerb + 1.4 * (k + 1), top - za - 0.3), V(s * (xa + 1.2), P.street.kerb + 1.4 * (k + 1) + 0.4, top - zb + 0.3), C(40, 90, 200), true)
+	end
+	decor(g:box('BleacherRail', V(s * (x0 + 5.8), P.street.kerb + 6.6, top - za), V(s * (x0 + 6), P.street.kerb + 6.9, top - zb), C(150, 156, 166), M.Plastic))
+	for z = za, zb, (zb - za) / 4 do decor(g:box('BleacherRailPost', V(s * (x0 + 5.8), P.street.kerb + 4.2, top - z - 0.1), V(s * (x0 + 6), P.street.kerb + 6.6, top - z + 0.1), C(150, 156, 166), M.Plastic)) end
+	return g
+end
+
+-- The Courts (stages 10-12): the right side opens onto a fenced basketball court (hoops, lines, bleachers, benches,
+-- floodlights, a mural wall behind), an apartment block with balconies on the left, trees on its grass.
+District.COURTS = {
+	{ court = C(226, 120, 52), key = C(196, 92, 40), ground = C(60, 128, 92) },
+	{ court = C(52, 112, 210), key = C(36, 86, 170), ground = C(84, 92, 110) },
+	{ court = C(196, 60, 60), key = C(160, 44, 44), ground = C(46, 70, 120) },
+}
+function District.courts(ctx, i)
+	local d, top, at = District.base(ctx, i)
+	local ST = P.street
+	local t = trioOf(i)
+	local K = District.COURTS[t]
+	-- Left: apartments with balconies (three storeys), a front garden strip with trees.
+	local lw = ({ { 30, 26 }, { 24, 32 }, { 28, 28 } })[t]
+	local z = top
+	District.floor(d, top, -1, FRONT, 40, 0, 56, ST.kerb, P.st.grass, 'Yard')
+	for k = 1, 2 do
+		local w = lw[k]
+		brickBuilding(houseFrame(d, -1, z, w, 40), w, { name = 'Apartments', floors = 3, roof = k == 1 and 'flat' or 'hip', pilasters = math.max(2, math.floor(w / 10)),
+			wall = ({ P.st.brickLight, P.st.brick, P.st.brickDeep })[(k + t) % 3 + 1], depth = 24,
+			balconies = { { x = w / 2, w = 8 } }, entrance = { x = k == 1 and 5 or w - 5, kind = 'stoop', door = ({ C(40, 110, 76), C(36, 60, 110), C(170, 50, 50) })[(k + t) % 3 + 1], number = tostring(100 + i * 2 + k) } })
+		z -= w
+	end
+	-- the plank fence opens at both stoops, with paver paths across the grass
+	fence(d, -ST.fence, top, top - ST.endZ, 1, nil, { { top - 3.2, top - 6.8 }, { top - 49.2, top - 52.8 } })
+	for _, zc in { 5, 51 } do
+		for x = ST.road + ST.walk, 34.4, 2 do sbox(d, 'Paver', V(-x, ST.kerb - 0.3, top - zc + 1.5), V(-math.min(x + 1.9, 34.5), ST.kerb + 0.07, top - zc - 1.5), (x // 2) % 2 == 0 and P.st.kerbStone or P.st.sill) end
+	end
+	for k, zp in ipairs({ 9, 30, 52 }) do tree(d, at(-26.5, zp), i * 100 + k, 0.95, 20 + k * 25) end
+	lantern(d, at(-20.5, 15), V(1, 0, 0))
+	-- Right: the court.
+	local x0, x1, za, zb = 22, 62.4, 3, 55
+	District.floor(d, top, 1, ST.road + ST.walk, x1, 0, 56, ST.kerb + 0.08, K.ground, 'CourtGround')
+	District.floor(d, top, 1, 28, 56, 7, 51, ST.kerb + 0.14, K.court, 'Court')
+	local y = ST.kerb + 0.14
+	local function paint(a, b) decor(d:box('CourtLine', V(a.X, y, top - a.Z), V(b.X, y + 0.06, top - b.Z), P.white, M.Plastic)).CastShadow = false end
+	paint(V(28, 0, 7), V(56, 0, 7.4)); paint(V(28, 0, 50.6), V(56, 0, 51)); paint(V(28, 0, 7), V(28.4, 0, 51)); paint(V(55.6, 0, 7), V(56, 0, 51))
+	paint(V(28, 0, 28.8), V(56, 0, 29.2))
+	for _, e in { { 7, 19 }, { 39, 51 } } do
+		decor(sbox(d, 'CourtKey', V(36.4, y - 0.4, top - e[1]), V(47.6, y + 0.04, top - e[2]), K.key)).CastShadow = false
+		paint(V(36, 0, e[1]), V(36.4, 0, e[2])); paint(V(47.6, 0, e[1]), V(48, 0, e[2]))
+		local ez = e[1] == 7 and 19 or 39
+		paint(V(36, 0, ez - 0.2), V(48, 0, ez + 0.2))
+	end
+	local function arc(cx, cz, r, a0, a1, n)
+		for q = 0, n - 1 do
+			local t0, t1 = a0 + (a1 - a0) * q / n, a0 + (a1 - a0) * (q + 1) / n
+			local p0 = V(cx + math.cos(t0) * r, y + 0.03, top - (cz + math.sin(t0) * r))
+			local p1 = V(cx + math.cos(t1) * r, y + 0.03, top - (cz + math.sin(t1) * r))
+			decor(d:part('CourtArc', V(0.4, 0.06, (p1 - p0).Magnitude + 0.05), CFrame.lookAt((p0 + p1) / 2, p1), P.white, M.Plastic)).CastShadow = false
+		end
+	end
+	arc(42, 29, 3.6, 0, math.pi * 2, 12)
+	arc(42, 9.2, 12, math.rad(10), math.rad(170), 10)
+	arc(42, 48.8, 12, math.rad(190), math.rad(350), 10)
+	District.hoop(d, CFrame.new(at(42, 4.4)) * CFrame.Angles(0, math.pi, 0))
+	District.hoop(d, CFrame.new(at(42, 53.6)))
+	-- The fence: chain-link round three sides with a gateway onto the grass, the back wall behind with a mural.
+	chainLink(d, V(x0, ST.kerb, top - za), V(x0, ST.kerb, top - zb), 12, { { 23, 27.5 } })
+	chainLink(d, V(x0, ST.kerb, top - za), V(x1 - 0.4, ST.kerb, top - za), 12)
+	chainLink(d, V(x0, ST.kerb, top - zb), V(x1 - 0.4, ST.kerb, top - zb), 12)
+	District.backWall(d, top, 1, x1, 0, 56, 16)
+	local mural = ghost(d:box('Mural', V(x1 - 0.08, ST.kerb + 3, top - 14), V(x1 - 0.02, ST.kerb + 13, top - 42), P.white, M.SmoothPlastic))
+	local g = surface(mural, Enum.NormalId.Left, 12)
+	line(g, 'Mural', ({ 'HOOD BALLERS', 'GAME ON', 'NEXT UP' })[t], ({ C(255, 210, 60), C(255, 96, 206), C(70, 220, 255) })[t], FONT.tag, 0.1, 0.8, P.black, 4).Rotation = -4
+	District.bleachers(d, top, 1, 56.6, 13, 45)
+	for _, bz in { 11, 41 } do
+		local b = d:at(CFrame.lookAt(at(24.6, bz), at(40, bz))):group('TeamBench')
+		sbox(b, 'BenchSeat', V(-3.5, 1.4, -0.7), V(3.5, 1.8, 0.7), C(40, 90, 200))
+		for _, x in { -3, 3 } do sbox(b, 'BenchLeg', V(x - 0.25, 0, -0.6), V(x + 0.25, 1.4, 0.6), P.iron, true) end
+	end
+	for k, bp in ipairs({ { 25, 13.5 }, { 26.4, 15 }, { 40, 30.5 } }) do decor(d:part('Basketball', V(1.2, 1.2, 1.2), CFrame.new(at(bp[1], bp[2]) + V(0, 0.75, 0)), C(236, 112, 40), M.Plastic, Enum.PartType.Ball)) end
+	sbox(d, 'WaterCooler', at(24.4, 44.4), at(25.8, 45.8) + V(0, 2.2, 0), C(40, 120, 220))
+	for _, fl in { { 24, 4.6, 0.6 }, { 60, 4.6, -0.6 }, { 24, 53.4, 2.5 }, { 60, 53.4, -2.5 } } do
+		District.floodlight(d, CFrame.lookAt(at(fl[1], fl[2]), at(42, 29)), 26)
+	end
+	endBuilding(d, -1, top - ST.endZ, top - SLEN, { wall = P.st.brickLight, roof = 'hip', floors = 3 })
+	endBuilding(d, 1, top - ST.endZ, top - SLEN, { name = 'Clubhouse', wall = P.st.brickDeep, roof = 'flat', floors = 1, h = 14 })
+	return d
+end
+
+-- Corrugated metal shed on a lot frame (+Z out of the front): a darker plinth, the wall with a lighter rib every 2.6
+-- studs along the front, a dark sign band, a low gable roof along the street with a ridge cap.
+function District.shed(c, w, dep, H, color, sign)
+	local g = c:group('Warehouse')
+	local dark = color:Lerp(P.black, 0.3)
+	sbox(g, 'ShedWall', V(0, -1, -dep), V(w, H, 0), color)
+	sbox(g, 'ShedPlinth', V(-0.3, -1, -dep - 0.3), V(w + 0.3, 2.2, 0.3), dark)
+	for x = 1.3, w - 1, 2.6 do decor(g:box('ShedRib', V(x - 0.4, 2.2, 0), V(x + 0.4, H - 2.6, 0.3), color:Lerp(P.white, 0.14), M.Plastic)) end
+	local band = sbox(g, 'ShedBand', V(-0.3, H - 2.6, -dep - 0.3), V(w + 0.3, H, 0.4), dark)
+	if sign then line(surface(band, Enum.NormalId.Back, 16), 'Sign', sign, P.white, FONT.loud, 0.1, 0.8, P.black, 3) end
+	gableRoof(g, w, dep, H, dep * 0.18, 'x', color:Lerp(P.white, 0.2))
+	return g
+end
+-- Shipping container in the studded kit (8 wide, 20 long along local Z, 8.6 tall): body, darker corner posts and top
+-- rim, door end with locking bars.
+function District.container(d, cf, color)
+	local k = d:at(cf):group('Container')
+	local dark = color:Lerp(P.black, 0.28)
+	sbox(k, 'ContainerBody', V(-4, 0, -10), V(4, 8.6, 10), color)
+	for _, x in { -4.2, 3.6 } do for _, z in { -10.2, 9.6 } do sbox(k, 'ContainerPost', V(x, 0, z), V(x + 0.6, 8.6, z + 0.6), dark, true) end end
+	sbox(k, 'ContainerRim', V(-4.2, 8.2, -10.2), V(4.2, 8.8, 10.2), dark, true)
+	for _, x in { -1.6, 1.6 } do decor(k:box('ContainerBar', V(x - 0.15, 0.6, 10), V(x + 0.15, 8, 10.25), dark, M.Plastic)) end
+	return k
+end
+-- Forklift (front = local -Z): yellow body, a dark counterweight, the cab frame, mast and forks.
+function District.forklift(d, cf)
+	local k = d:at(cf):group('Forklift')
+	local y = C(250, 196, 40)
+	for _, x in { -1.6, 1.6 } do for _, z in { -1.6, 1.8 } do decor(k:part('Wheel', V(0.8, 1.6, 1.6), CFrame.new(x, 0.8, z), C(30, 32, 36), M.Plastic, Enum.PartType.Cylinder)) end end
+	sbox(k, 'LiftBody', V(-1.6, 0.6, -2.2), V(1.6, 2.6, 2.6), y)
+	sbox(k, 'LiftWeight', V(-1.7, 0.6, 2.2), V(1.7, 3.2, 3.2), C(46, 50, 60))
+	sbox(k, 'LiftSeat', V(-0.8, 2.6, 0.4), V(0.8, 3.4, 1.8), C(30, 32, 36), true)
+	for _, x in { -1.4, 1.4 } do
+		decor(k:box('CabPost', V(x - 0.15, 2.6, -0.8), V(x + 0.15, 6.4, -0.5), C(30, 32, 36), M.Plastic))
+		decor(k:box('CabPost', V(x - 0.15, 2.6, 2.0), V(x + 0.15, 6.4, 2.3), C(30, 32, 36), M.Plastic))
+	end
+	sbox(k, 'CabRoof', V(-1.6, 6.4, -0.9), V(1.6, 6.7, 2.4), C(30, 32, 36), true)
+	sbox(k, 'Mast', V(-1.2, 0.6, -2.8), V(1.2, 7.2, -2.3), C(60, 66, 80), true)
+	for _, x in { -0.8, 0.8 } do sbox(k, 'Fork', V(x - 0.2, 0.5, -5.6), V(x + 0.2, 0.8, -2.8), C(60, 66, 80), true) end
+	return k
+end
+
+-- The Yards (stages 13-15): concrete aprons; a corrugated warehouse with a loading dock (bumpers, roll-up doors, a
+-- canopy, stairs) on one side; a container yard behind chain-link with a sliding gate, stacks two high, a forklift
+-- and pallets on the other; floodlights, drums and barriers.
+function District.yards(ctx, i)
+	local d, top, at = District.base(ctx, i)
+	local ST = P.street
+	local t = trioOf(i)
+	local apron = C(196, 198, 202)
+	for _, s in { -1, 1 } do District.floor(d, top, s, ST.road + ST.walk, 63, 0, 56, ST.kerb + 0.08, apron, 'Apron') end
+	for _, st in ipairs({ { -22, 8, 3, 2 }, { -26, 32, 4, 3 }, { 20.5, 6, 2.5, 3 }, { 21, 40, 3, 2 }, { -21, 50, 2, 2.5 } }) do
+		decor(sbox(d, 'OilStain', at(st[1] - st[3] / 2, st[2] - st[4] / 2) + V(0, 0.06, 0), at(st[1] + st[3] / 2, st[2] + st[4] / 2) + V(0, 0.11, 0), apron:Lerp(P.black, 0.35))).CastShadow = false
+	end
+	for _, s in { -1, 1 } do decor(sbox(d, 'LaneLine', V(s * 17.4, ST.kerb + 0.08, top), V(s * 17.9, ST.kerb + 0.13, top - 56), C(250, 204, 40))).CastShadow = false end
+	-- Left: the warehouse and its dock.
+	local wcol = ({ C(84, 118, 170), C(150, 156, 166), C(120, 140, 110) })[t]
+	local wf = 30
+	District.shed(houseFrame(d, -1, top - 2, 52, wf), 52, 34, 22, wcol, 'DEPOT ' .. i)
+	District.floor(d, top, -1, wf - 0.2, 64, 0, 2, ST.kerb + 0.08, apron, 'Apron')
+	District.backWall(d, top, -1, 64, 0, 2, 14)
+	District.backWall(d, top, -1, 64, 54, 56, 14)
+	local dz0, dz1 = 10, 44
+	sbox(d, 'Dock', V(-wf, -1, top - dz0), V(-(wf - 5), 4.2, top - dz1), C(176, 178, 184))
+	sbox(d, 'DockEdge', V(-(wf - 5) - 0.3, 3.8, top - dz0), V(-(wf - 5) + 0.3, 4.3, top - dz1), C(250, 204, 40), true)
+	for zb = dz0 + 3, dz1 - 2, 6 do sbox(d, 'DockBumper', V(-(wf - 5) + 0.2, 1.4, top - zb - 0.7), V(-(wf - 5) - 0.6, 3.6, top - zb + 0.7), C(30, 32, 36), true) end
+	for k, s in ipairs({ { dz1, dz1 + 1.1, 3.4 }, { dz1 + 1.1, dz1 + 2.2, 2.2 }, { dz1 + 2.2, dz1 + 3.3, 1.0 } }) do
+		sbox(d, 'DockStep', V(-wf, -1, top - s[1]), V(-(wf - 3), s[3], top - s[2]), C(176, 178, 184))
+	end
+	for _, dzc in { 19, 35 } do
+		sbox(d, 'RollDoorFrame', V(-wf + 0.2, 4.2, top - dzc - 6.6), V(-wf - 0.4, 16.6, top - dzc + 6.6), wcol:Lerp(P.black, 0.4))
+		sbox(d, 'RollDoor', V(-wf + 0.35, 4.2, top - dzc - 5.8), V(-wf - 0.4, 15.8, top - dzc + 5.8), C(178, 184, 194))
+		for yy = 5.4, 15, 1.2 do decor(d:box('DoorSlat', V(-wf + 0.45, yy, top - dzc - 5.8), V(-wf + 0.3, yy + 0.25, top - dzc + 5.8), C(130, 136, 148), M.Plastic)) end
+	end
+	sbox(d, 'DockCanopy', V(-wf, 17.4, top - dz0 + 1), V(-(wf - 6.5), 18.2, top - dz1 - 1), wcol:Lerp(P.black, 0.25))
+	for zb = dz0 + 2, dz1 - 1, 10 do decor(d:bar('CanopyBrace', V(-wf, 13.4, top - zb), V(-(wf - 6), 17.4, top - zb), 0.4, C(46, 50, 60), M.Plastic)) end
+	pallet(d, CFrame.new(V(-(wf - 2), 4.2, top - 26)))
+	crate(d, CFrame.new(V(-(wf - 2), 5.0, top - 26)) * CFrame.Angles(0, 0.2, 0), 2.6)
+	for k, dp in ipairs({ { -21.5, 6 }, { -22.6, 7.6 }, { -21, 8.8 } }) do
+		local drum = d:post('Drum', 1.1, 3.4, at(dp[1], dp[2]), ({ C(40, 90, 200), C(200, 50, 40), C(40, 90, 200) })[k], M.Plastic)
+		studs(drum)
+		decor(d:post('DrumRim', 1.18, 0.3, at(dp[1], dp[2]) + V(0, 3.2, 0), C(30, 32, 36), M.Plastic))
+	end
+	-- Right: the container yard.
+	local fx = 23
+	chainLink(d, V(fx, ST.kerb, top - 2), V(fx, ST.kerb, top - 54), 12, { { 20, 34 } })
+	chainLink(d, V(fx, ST.kerb, top - 2), V(63, ST.kerb, top - 2), 12)
+	chainLink(d, V(fx, ST.kerb, top - 54), V(63, ST.kerb, top - 54), 12)
+	District.backWall(d, top, 1, 63, 0, 56, 14)
+	-- the sliding gate, shut: a framed chain-link leaf on wheels across the gap, a sign
+	local gate = d:group('YardGate')
+	sbox(gate, 'GateFrame', V(fx - 0.2, ST.kerb + 0.6, top - 22), V(fx + 0.3, ST.kerb + 11.4, top - 36), C(150, 156, 166))
+	local mesh = gate:box('GateMesh', V(fx - 0.25, ST.kerb + 1.2, top - 22.6), V(fx + 0.35, ST.kerb + 10.8, top - 35.4), C(70, 74, 82), M.DiamondPlate)
+	mesh.Transparency = 0.45
+	for _, gz in { 23, 35 } do decor(gate:part('GateWheel', V(0.5, 1.2, 1.2), CFrame.new(fx + 0.05, ST.kerb + 0.6, top - gz), C(30, 32, 36), M.Plastic, Enum.PartType.Cylinder)) end
+	local sign = sbox(gate, 'YardSign', V(fx - 0.5, ST.kerb + 6, top - 26.5), V(fx - 0.3, ST.kerb + 8.6, top - 31.5), P.white, true)
+	line(surface(sign, Enum.NormalId.Left, 30), 'Sign', 'YARD ' .. i, C(200, 40, 40), FONT.body, 0.12, 0.76)
+	local colors = { C(196, 52, 42), C(44, 96, 186), C(46, 150, 90), C(232, 130, 40) }
+	local rows = ({ { { 32, 3, 2 }, { 32, 30, 1 }, { 45, 5, 2 }, { 45, 31, 2 }, { 57, 4, 1 }, { 57, 30, 2 } },
+		{ { 32, 4, 1 }, { 32, 30, 2 }, { 45, 4, 2 }, { 45, 30, 1 }, { 57, 4, 2 }, { 57, 30, 2 } },
+		{ { 32, 3, 2 }, { 32, 30, 2 }, { 45, 5, 1 }, { 45, 31, 2 }, { 57, 4, 2 }, { 57, 30, 1 } } })[t]
+	for k, r in ipairs(rows) do
+		for lvl = 0, r[3] - 1 do
+			District.container(d, CFrame.new(at(r[1], r[2] + 10.6) + V(0, -ST.kerb + ST.kerb + 0.08 + lvl * 8.7, 0)) * CFrame.Angles(0, math.rad((k * 3 + lvl * 2) % 5 - 2), 0), colors[(k + lvl + i) % #colors + 1])
+		end
+	end
+	District.forklift(d, CFrame.new(at(38.5, 27.5) + V(0, 0.08, 0)) * CFrame.Angles(0, math.rad(70), 0))
+	pallet(d, CFrame.new(at(25.6, 8) + V(0, 0.08, 0)) * CFrame.Angles(0, math.rad(90), 0))
+	crate(d, CFrame.new(at(25.6, 8) + V(0, 0.88, 0)), 2.8)
+	pallet(d, CFrame.new(at(25.6, 28) + V(0, 0.08, 0)) * CFrame.Angles(0, math.rad(90), 0))
+	for k = 0, 2 do
+		local bz = top - (4 + k * 4)
+		sbox(d, 'Barrier', V(19.4, ST.kerb, bz - 1.8), V(21.2, ST.kerb + 3, bz + 1.8), C(206, 208, 214))
+		sbox(d, 'BarrierStripe', V(19.3, ST.kerb + 1.6, bz - 1.85), V(21.3, ST.kerb + 2.2, bz + 1.85), C(250, 204, 40), true)
+	end
+	District.floodlight(d, CFrame.lookAt(at(-20.5, 14), at(0, 28)), 24)
+	District.floodlight(d, CFrame.lookAt(at(26, 50), at(45, 28)), 26)
+	endBuilding(d, -1, top - ST.endZ, top - SLEN, { wall = C(150, 156, 166), roof = 'flat', floors = 2 })
+	endBuilding(d, 1, top - ST.endZ, top - SLEN, { wall = wcol, roof = 'flat', floors = 2 })
+	return d
+end
+
 local function streetStage(ctx, i)
 	local top = stageTop(i)
 	local ST = P.street
@@ -5184,7 +5432,7 @@ local function bossYard(ctx)
 end
 
 local function buildStages(ctx)
-	local byLook = { streetStage, District.corner, District.alley }
+	local byLook = { streetStage, District.corner, District.alley, District.courts, District.yards }
 	for i = 1, STAGES do (byLook[lookOf(i)] or streetStage)(ctx, i) end
 	local gates = ctx:group('Gates')
 	for i = 1, STAGES + 1 do stageGate(gates, i) end
