@@ -8,12 +8,21 @@ local Format = require(script.Parent.Format)
 local GunRules = {}
 GunRules.Range = 14 -- how close (studs) you must stand to a gun's pedestal point to buy or equip it
 
--- Pedestal colours per state, shared by the map builder (first paint) and the client (repaints).
+-- Pedestal colours per state, shared by the map builder (first paint) and the client (repaints). Calm: the
+-- state lives on a thin ring round the plinth top and on its plate, never on a big glowing face.
+--   Top    the ring (LOCKED: the plinth cap's own graphite, i.e. no ring)
+--   Glow   the soft light under the gun (only EQUIPPED switches it on)
+--   Strip  the state plate (one charcoal enamel for all; the word's colour carries the state)
+--   Text   the plate word, and the nameplate's OWNED / EQUIPPED
+-- Next is the next gun to buy (the cheapest you don't own): NEXT UP in amber, the amber ring once you can
+-- afford it. Price is the nameplate's price colour: Afford (you have the Cash) or Short (you don't).
 local C = Color3.fromRGB
 GunRules.Colors = {
-	Locked = { Top = C(255, 112, 186), Glow = C(255, 172, 222), Strip = C(226, 64, 146), Text = C(255, 228, 92) },
-	Owned = { Top = C(72, 150, 255), Glow = C(156, 208, 255), Strip = C(40, 96, 210), Text = C(150, 205, 255) },
-	Equipped = { Top = C(64, 220, 104), Glow = C(166, 255, 184), Strip = C(26, 156, 64), Text = C(120, 255, 150) },
+	Locked = { Top = C(52, 54, 58), Glow = C(255, 236, 214), Strip = C(43, 47, 54), Text = C(178, 182, 188) },
+	Next = { Top = C(242, 184, 75), Glow = C(255, 225, 190), Strip = C(43, 47, 54), Text = C(242, 184, 75) },
+	Owned = { Top = C(93, 143, 191), Glow = C(214, 228, 242), Strip = C(43, 47, 54), Text = C(141, 184, 230) },
+	Equipped = { Top = C(79, 179, 122), Glow = C(222, 242, 226), Strip = C(43, 47, 54), Text = C(127, 214, 160) },
+	Price = { Afford = C(126, 214, 155), Short = C(224, 112, 112) },
 }
 
 -- Makes a Guns table safe to use in place: unknown ids are dropped, the starter is always owned, and the
