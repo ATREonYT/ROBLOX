@@ -4,9 +4,10 @@
 Plain python3, no packages:  python3 hood/tools/make_ui_textures.py [--out DIR] [--preview FILE]
 
 Measured on brief/ref17/user_26-28 (stud pitch 22 ref px on the HUD, 42 px on the window headers):
-  - a stud is a square ring ~50% of the pitch, its line ~7.5% of the pitch;
+  - a stud is a rounded square ring ~55% of the pitch (corners ~3/64 of the pitch), its rim ~1/12 of the pitch;
   - light comes from the top right: a raised stud has a dark left + bottom edge (an "L") and a light top + right edge;
-    a recessed one (the windows alternate them in a checkerboard) is the opposite, with a slightly darker face;
+    a recessed one (the windows alternate them in a checkerboard) is the opposite, with a face ~12% darker; both rims
+    show strongly enough (light ~0x70, dark ~0x6B alpha) that every stud reads as a whole square on gold, cyan, red, green;
   - the Store header and the big cards carry two soft diagonal light bands.
 
 Files (all RGBA, transparent where there is no stud):
@@ -25,8 +26,9 @@ import zlib
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, '..', 'art', 'ui')
 
-STUD = 0.5     # ring outer size / pitch
-LINE = 0.075   # ring line width / pitch
+STUD = 0.55    # ring outer size / pitch (the reference's studs are ~55% of the pitch)
+LINE = 1 / 12  # ring line width / pitch
+CORNER = 3 / 64  # outer corner radius / pitch (3 px on the 64 px tile)
 SS = 4         # subsamples per axis (antialiasing)
 
 
@@ -48,27 +50,25 @@ def write_png(path, w, h, rows):
 		f.write(png)
 
 
+def _sd_round_box(x, y, h, r):
+	"""Signed distance to a square of half-size h with corners rounded by r (negative inside)."""
+	qx, qy = abs(x) - h + r, abs(y) - h + r
+	return math.hypot(max(qx, 0.0), max(qy, 0.0)) + min(max(qx, qy), 0.0) - r
+
+
 def stud_parts(u, v):
-	"""For a point (u, v) in a one-stud cell (0..1, v down), which part of the ring it is on:
-	'L' (left/bottom edges), 'T' (top/right edges), 'F' (the face inside), or None."""
+	"""For a point (u, v) in a one-stud cell (0..1, v down), which part of the stud it is on:
+	'L' (the left/bottom rim), 'T' (the top/right rim), 'F' (the face inside the rim), or None (outside)."""
 	h = STUD / 2
 	x, y = u - 0.5, v - 0.5
-	ax, ay = abs(x), abs(y)
-	if ax > h or ay > h:
+	if _sd_round_box(x, y, h, CORNER) > 0:
 		return None
-	inner = h - LINE
-	if ax < inner and ay < inner:
+	if _sd_round_box(x, y, h - LINE, max(CORNER - LINE, 0.004)) < 0:
 		return 'F'
-	# on the ring: split the corners along the diagonals (top-left and bottom-right corners are shared)
-	left = x < -inner
-	bottom = y > inner
-	right = x > inner
-	top = y < -inner
-	if left and top:
-		return 'L' if (-x) - (-y) > 0 else 'T'   # top-left corner: the darker edge wins below the diagonal
-	if right and bottom:
-		return 'L' if y - x > 0 else 'T'
-	return 'L' if (left or bottom) else 'T'
+	# on the rim: split along the two diagonals; the left and bottom sides are the 'L', top and right the 'T'
+	if abs(x) >= abs(y):
+		return 'L' if x < 0 else 'T'
+	return 'L' if y > 0 else 'T'
 
 
 def shade(part, raised, mode):
@@ -79,10 +79,10 @@ def shade(part, raised, mode):
 	if mode == 'grey':
 		if part == 'F':
 			return (0.7, 0.7, 0.7, 0.0)
-		return (0.22, 0.22, 0.22, 1.0) if dark_edge else (1.0, 1.0, 1.0, 0.85)
+		return (0.22, 0.22, 0.22, 1.0) if dark_edge else (1.0, 1.0, 1.0, 0.9)
 	if part == 'F':
-		return (1.0, 1.0, 1.0, 0.05) if raised else (0.0, 0.0, 0.0, 0.12)
-	return (0.0, 0.0, 0.0, 0.36) if dark_edge else (1.0, 1.0, 1.0, 0.24)
+		return (1.0, 1.0, 1.0, 0.04) if raised else (0.0, 0.0, 0.0, 0.12)  # recessed face ~12% darker
+	return (0.0, 0.0, 0.0, 0.42) if dark_edge else (1.0, 1.0, 1.0, 0.44)  # light rim ~0x70: both rims read
 
 
 def cell_pixels(n, raised, mode):

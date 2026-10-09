@@ -139,55 +139,78 @@ def power_pack3():
 	bolt((0.47, 0.25, 0.38), 0.36, rot=18)
 
 
-@icon('DoublePower', view=(-0.15, -1.0, 0.18), fill=0.88, sparkles=3, seed=4, glow=((1.0, 0.8, 0.3), 0.45))
+@icon('DoublePower', view=(-0.3, -1.0, 0.42), fill=0.9, sparkles=3, seed=4, glow=((1.0, 0.82, 0.3), 0.4))
 def double_power():
-	# (the HUD card and the Store card both print "2x Power" already: no text in the art)
-	arm(at=(0.04, 0, -0.02), size=0.96)
-	bolt((0.5, 0.25, 0.42), 0.44, rot=16)
-	bolt((-0.44, 0.25, 0.3), 0.36, rot=-14)
+	"""The 2x Power card art (UICRITIC P2-7): a hard, detailed object like the reference's studded punching bags: a gold
+	dumbbell with octagonal studded plates, riveted faces, steel collars and a knurled grip. No text (UI3 adds the
+	sticker)."""
+	gold = mat(GOLD, tiles=0.85, tile_rgb=GOLD_TILE, density=6.0, rough=0.26, coat=0.5, dark=(214, 110, 18), light=(255, 222, 96))
+	rim = mat((232, 136, 18), light=(255, 196, 64), dark=(196, 96, 14), rough=0.3, coat=0.4)
+	steel = mat((196, 206, 222), light=(246, 250, 255), dark=(112, 124, 150), rough=0.24, coat=0.6)
+	knurl = mat((70, 74, 96), tiles=0.6, tile_rgb=(120, 126, 150), density=14.0, light=(120, 126, 150))
+	piv = bpy.data.objects.new('Dumbbell', None)
+	bpy.context.scene.collection.objects.link(piv)
+	parts = []
+	parts.append(cyl((0, 0, 0), 0.13, 2.7, steel, rot=(0, 90, 0), r=0.03, group=K.C.new_group(), name='Bar'))
+	parts.append(cyl((0, 0, 0), 0.18, 0.9, knurl, rot=(0, 90, 0), r=0.04, group=K.C.new_group(), name='Grip'))
+	for sx in (-1, 1):
+		parts.append(cyl((sx * 0.56, 0, 0), 0.27, 0.16, steel, rot=(0, 90, 0), r=0.05, group=K.C.new_group(), name='Collar'))
+		g = K.C.new_group()
+		parts.append(cyl((sx * 0.82, 0, 0), 0.86, 0.36, gold, rot=(0, 90, 22.5), r=0.07, sides=8, group=g, name='PlateBig'))
+		parts.append(cyl((sx * 0.82, 0, 0), 0.9, 0.14, rim, rot=(0, 90, 22.5), r=0.05, sides=8, group=K.C.new_group(), name='Rim'))
+		g2 = K.C.new_group()
+		parts.append(cyl((sx * 1.16, 0, 0), 0.66, 0.3, gold, rot=(0, 90, 22.5), r=0.06, sides=8, group=g2, name='PlateSmall'))
+		face = sx * (1.16 + 0.155)
+		for k in range(8):
+			a = math.radians(22.5 + 45 * k)
+			parts.append(ball((face, 0.47 * math.cos(a), 0.47 * math.sin(a)), 0.065, steel, group=g2, name='Rivet', seg=16))
+		parts.append(cyl((sx * 1.38, 0, 0), 0.24, 0.14, steel, rot=(0, 90, 0), r=0.05, group=K.C.new_group(), name='Cap'))
+	for o in parts:
+		o.parent = piv
+	place(piv, (0, 0, 0), (0, -16, 40))
 
 
 # ------------------------------------------------------------------ Rebirth: the red and white circular arrows
-def ring_arrow(a0, a1, col, tile, R=0.84, w=0.9, d=0.5, head=0.78, hin=0.52, hout=0.9, bend=32, group=None):
-	"""One circular arrow, clockwise from angle a0 to a1 (degrees, a0 > a1), with a big arrowhead at a1."""
+def ring_arrow(a0, ah, a1, col, tile, rin=0.4, rout=1.0, depth=0.42, tiles=0.75, group=None, density=4.4, barb_out=0.26,
+		barb_in=0.24):
+	"""One thick curved arrow of the Rebirth icon (the reference's "hollow ring of two arrows"): a flat ring band
+	clockwise from a0 to ah, then the head from ah to a1. The head's base is wider than the band (a barb outside, a tab
+	in the hole); its leading edge runs from the tab across the band to the tip on the OUTER edge, so the boundary with
+	the other arrow is one clean diagonal, as in the reference."""
 	g = group or K.C.new_group()
-	m = mat(col, tiles=0.7, tile_rgb=tile, density=2.6, rough=0.34, coat=0.3)
-	prof = round_rect(w, d, 0.15, 5)
-	sweep(arc_frames((0, 0, 0), R, a0, a1, 40), prof, m, group=g, name='Arc')
-	e = math.radians(a1)
-	t0 = (math.sin(e), -math.cos(e))  # clockwise travel
-	rad = (math.cos(e), math.sin(e))
-	cb, sb = math.cos(math.radians(bend)), math.sin(math.radians(bend))
-	tip = (t0[0] * cb - rad[0] * sb, t0[1] * cb - rad[1] * sb)  # bent toward the centre, following the ring
-	bx, bz = R * rad[0] + tip[0] * 0.02, R * rad[1] + tip[1] * 0.02
-	pts = [(bx - rad[0] * hin, bz - rad[1] * hin), (bx + rad[0] * hout, bz + rad[1] * hout),
-		(bx + tip[0] * head + rad[0] * 0.12, bz + tip[1] * head + rad[1] * 0.12)]
-	slab(pts, d + 0.06, m, loc=(0, -0.05, 0), r=0.12, seg=4, group=g, name='Head')
+	m = mat(col, tiles=tiles, tile_rgb=tile, density=density, rough=0.32, coat=0.35)
+	K.arc_band(a0, ah, rin, rout, rin, rout, depth, m, steps=40, corner=0.1, group=g, name='Arc')
+	K.arc_band(ah, a1, rin - barb_in, rout + barb_out, rout - 0.1, rout + 0.02, depth + 0.04, m, steps=24, corner=0.1, group=g,
+		name='Head', y=-0.03)
 	return g
 
 
 def rebirth_icon(col, tile):
-	# (the reference splits red/white on a 10-to-4 o'clock diagonal; each head hides the other arrow's tail)
-	ring_arrow(155, -20, col, tile)
-	ring_arrow(-30, -205, WHITE, WHITE_TILE)
+	# Reference (user_26/27): red over the top, its head at ~1-2 o'clock with the tip at ~4 on the outer edge; white
+	# underneath, its head at ~7-8 o'clock with the tip at ~10. Each head covers the start of the other arrow, which
+	# leaves the S-shaped dark gap in the hole.
+	ring_arrow(217, 45, -28, col, tile)
+	ring_arrow(40, -135, -208, WHITE, WHITE_TILE, tiles=0.45)
 
 
-@icon('Rebirth', view=(-0.2, -1.0, 0.2), fill=0.86)
+@icon('Rebirth', view=(-0.4, -1.0, 0.14), fill=0.88)
 def rebirth():
 	rebirth_icon(RED, RED_TILE)
 
 
-@icon('RebirthSkip', view=(-0.2, -1.0, 0.2), fill=0.86)
+@icon('RebirthSkip', view=(-0.4, -1.0, 0.14), fill=0.88)
 def rebirth_skip():
 	rebirth_icon(GREEN, GREEN_TILE)
 
 
 # ------------------------------------------------------------------ Store: the baskets
-def basket(body, tile, inside, handle=STEEL, holes=False, dark=None, inside_light=None):
+def basket(body, tile, inside, handle=STEEL, holes=False, dark=None, inside_light=None, streak=False):
 	g = K.C.new_group()
 	m_out = mat(body, tiles=1.0 if holes else 0.0, tile_rgb=tile, density=1.8, rough=0.36, coat=0.3, dark=dark)
 	m_in = mat(inside, tiles=1.0 if holes else 0.0, tile_rgb=tile, density=1.8, rough=0.4, coat=0.15, light=inside_light)
-	tub((2.2, 1.6), (1.42, 1.02), 1.1, 0.14, m_out, m_in, loc=(0, 0, -0.5), r=0.07, group=g, name='Tub')
+	tub((2.2, 1.6), (1.42, 1.02), 1.27, 0.14, m_out, m_in, loc=(0, 0, -0.62), r=0.07, group=g, name='Tub')
+	if streak:  # the reference's white specular streak down the front-left corner
+		tube([(-0.78, -0.57, -0.42), (-0.98, -0.72, 0.28)], 0.035, flat((255, 255, 255)), group=g, name='Streak')
 	mh = mat(handle, rough=0.32, coat=0.4)
 	pts = [(-0.96, 0.0, -0.1), (-0.96, 0.0, 0.56), (0.96, 0.0, 0.56), (0.96, 0.0, -0.1)]
 	h = bar(pts, 0.22, 0.22, mh, rr=0.35, corner=0.2, group=K.C.new_group(), name='Handle')
@@ -197,7 +220,8 @@ def basket(body, tile, inside, handle=STEEL, holes=False, dark=None, inside_ligh
 
 @icon('Basket', view=(-0.5, -1.0, 0.75), fill=0.88)
 def basket_orange():
-	basket((252, 146, 28), (255, 196, 80), (255, 200, 70), handle=(130, 162, 200), dark=(244, 116, 30), inside_light=(255, 226, 110))
+	basket((252, 140, 24), (255, 196, 80), (255, 200, 70), handle=(130, 162, 200), dark=(240, 108, 26), inside_light=(255, 226, 110),
+		streak=True)
 
 
 @icon('Shop', view=(-0.5, -1.0, 0.75), fill=0.88)
@@ -206,7 +230,7 @@ def shop_legacy():
 	basket_orange()
 
 
-@icon('BasketRed', view=(0.45, -1.0, 0.7), fill=0.88)
+@icon('BasketRed', view=(0.45, -1.0, 0.38), fill=0.88)
 def basket_red():
 	basket((222, 28, 76), (118, 0, 36), (240, 80, 124), handle=(176, 188, 206), holes=True)
 
@@ -351,7 +375,7 @@ def arrow45():
 	green_arrow(45)
 
 
-@icon('Evolve', view=(-0.5, -1.0, 0.3), fill=0.86)
+@icon('Evolve', view=(-0.22, -1.0, 0.72), fill=0.86)
 def evolve():
 	green_arrow(0)
 
@@ -386,12 +410,14 @@ def hexagon(rad, rr=0.0):
 	return [(rad * math.cos(math.radians(90 + 60 * kk)), rad * math.sin(math.radians(90 + 60 * kk))) for kk in range(6)]
 
 
-@icon('Robux', view=(-0.12, -1.0, 0.12), fill=0.86, inner=1.2)
+@icon('Robux', view=(-0.12, -1.0, 0.12), fill=0.86, inner=1.2, ink=(11, 42, 0))
 def robux():
-	white = mat((244, 246, 250), light=(255, 255, 255), dark=(196, 204, 216))
+	# (UICRITIC P2-7) the reference's mark: a pure white face with dark-green linework, so the white price buttons read
+	# right; gold/lime tints still work since the ink stays dark
+	white = mat((250, 251, 252), light=(255, 255, 255), dark=(232, 236, 240), spec=0.1, coat=0.1)
 	slab(hexagon(1.0), 0.3, white, r=0.2, group=K.C.new_group(), name='Outer')
 	slab(hexagon(0.64), 0.32, white, loc=(0, -0.02, 0), r=0.08, group=K.C.new_group(), name='Inner')
-	slab([(-0.11, -0.11), (0.11, -0.11), (0.11, 0.11), (-0.11, 0.11)], 0.05, flat(NAVY), loc=(0, -0.18, 0), r=0.0, group=K.C.new_group(), name='Hole')
+	slab([(-0.11, -0.11), (0.11, -0.11), (0.11, 0.11), (-0.11, 0.11)], 0.05, flat((11, 42, 0)), loc=(0, -0.18, 0), r=0.0, group=K.C.new_group(), name='Hole')
 
 
 # ------------------------------------------------------------------ VIP: a gold crown

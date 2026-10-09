@@ -560,6 +560,38 @@ def arc_frames(centre, radius, a0, a1, steps, plane='xz'):
 	return out
 
 
+def arc_band(a0, a1, rin0, rout0, rin1, rout1, depth, material, centre=(0, 0, 0), steps=36, corner=0.12, group=None,
+		name='band', y=0.0):
+	"""A flat ring segment in the xz plane (front face toward -y), from angle a0 to a1 (degrees, counter-clockwise from
+	+x; a1 < a0 runs clockwise). Its radial span goes linearly from [rin0, rout0] to [rin1, rout1], so the same call makes
+	the ring body (constant span) and an arrow head that narrows to a point along the ring. Section: rounded rectangle."""
+	cx, cy, cz = centre
+	frames = []
+	for i in range(steps + 1):
+		t = i / steps
+		a = math.radians(a0 + (a1 - a0) * t)
+		rin = rin0 + (rin1 - rin0) * t
+		rout = rout0 + (rout1 - rout0) * t
+		radial = Vector((math.cos(a), 0, math.sin(a)))
+		frames.append((Vector((cx, cy + y, cz)) + radial * ((rin + rout) / 2), radial, max(rout - rin, 0.02)))
+	verts, faces = [], []
+	n = None
+	for (p, U, w) in frames:
+		cr = min(corner, w * 0.45, depth * 0.45)
+		prof = round_rect(w, depth, cr, 4)
+		n = len(prof)
+		for (u, v) in prof:
+			verts.append(tuple(p + U * u + Vector((0, 1, 0)) * v))
+	for i in range(len(frames) - 1):
+		for k in range(n):
+			a, b = i * n + k, i * n + (k + 1) % n
+			faces.append((a, b, b + n, a + n))
+	faces.append(tuple(range(n - 1, -1, -1)))
+	last = (len(frames) - 1) * n
+	faces.append(tuple(last + k for k in range(n)))
+	return _mesh_obj(name, verts, faces, material, group)
+
+
 def tube(points, radius, material, group=None, name='tube', segs=20, caps=True, taper=None):
 	"""Round tube through 3D points (parallel-transport frames). taper: (start, end) radius factors."""
 	pts = [Vector(p) for p in points]
@@ -779,7 +811,7 @@ def finish(beauty, index_path, out_png, ss, opts):
 	h, w, _ = img.shape
 	img = saturate(img, LOOK['sat'] * opts.get('sat', 1.0))
 	alpha = img[..., 3]
-	navy = np.array(NAVY, np.float32) / 255.0
+	navy = np.array(opts.get('ink', NAVY), np.float32) / 255.0  # outline + part lines (Robux: dark green)
 	solid = alpha > 0.5
 	r_out = LOOK['outline'] * w * opts.get('outline', 1.0)
 	# Inner lines where two line groups meet (both sides of the boundary), drawn over the beauty.

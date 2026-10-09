@@ -87,7 +87,7 @@ Re-running `hood/tools/blender/export_luau.py` (which regenerates `IconModels.lu
 
 **HUD column:**
 - `Basket`: the orange Store square.
-- `Rebirth`
+- `Rebirth`: the red-and-white ring of two arrows.
 - `Sneaker`: Shoes, the Pets slot.
 - `Gun`: Guns, the Items slot.
 - `Quest`: the scroll.
@@ -102,7 +102,7 @@ Re-running `hood/tools/blender/export_luau.py` (which regenerates `IconModels.lu
 
 **Offers and passes:**
 - `DoubleCash`
-- `DoublePower`
+- `DoublePower`: the gold studded dumbbell (no text: the UI adds the "2x" sticker).
 - `AutoFight`
 - `VIP`
 
@@ -114,15 +114,16 @@ Re-running `hood/tools/blender/export_luau.py` (which regenerates `IconModels.lu
 - `Shield`: the XP badge with an empty face.
 - `XP`: the XP badge with its letters.
 - `Skull`: the fight pill.
-- `Robux`: white, so ImageColor3 can tint it.
+- `Robux`: a flat white face with dark-green lines, as on the reference's price buttons; ImageColor3 can still tint
+  it gold or lime.
 
 **Older ids, still in use as fallbacks:** `Shop`, `PVP`, `Power`.
 
 ## The textures
 | File | UIKit line | How UIKit draws it |
 |---|---|---|
-| `stud_bevel.png` | `Kit.StudBevel` | one stud a tile, pre-shaded; ImageColor3 white |
-| `stud_checker.png` | `Kit.StudChecker` | 2x2 studs, raised and recessed; TileSize = 2 x pitch |
+| `stud_bevel.png` | `Kit.StudBevel` | one rounded raised stud a tile, pre-shaded (light rim top/right, dark rim left/bottom); ImageColor3 white |
+| `stud_checker.png` | `Kit.StudChecker` | 2x2 rounded studs, raised and recessed (recessed face ~12% darker); TileSize = 2 x pitch |
 | `stud_tile.png` | `Kit.StudTile` | one stud, greyscale; tinted with the block's lip colour |
 | `gloss_band.png` | `Kit.GlossBand` | two diagonal light bands, stretched over a block |
 | `gloss_stripes.png` | `Kit.GlossStripes` | seamless 45-degree stripe; ScaleType Tile over headers |
