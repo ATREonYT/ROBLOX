@@ -1,4 +1,4 @@
-"""The 9 HUD icons. Bold silhouettes that read at 64 px: one big shape, one accent colour, studs on top.
+"""The HUD icons as BoxKit part models (the live fallbacks; brief 19 PNGs come from icons_hd.py). Bold silhouettes that read at 64 px: one big shape, one accent colour, studs on top.
 
 Icons face the camera at -z (Roblox Front), are centred on the origin and fit a 10 DU cube, which is
 2 studs at the shared unit of 0.2 (the IconModels contract: fit in 2x2x2 at scale 1).
@@ -238,6 +238,103 @@ def quest():
 	return m
 
 
+# ---------------------------------------------------------------- brief 19: live fallbacks for the new HUD ids
+# (the uploaded PNGs from icons_hd.py are the main look; these keep IconModels.build(id) working before the upload)
+SNEAKER_RED = (232, 40, 56)
+INK = (12, 10, 52)
+
+
+def sneaker():
+	"""A red high-top in profile: toe at screen-right (-x), heel collar at screen-left (+x)."""
+	m = Model('Sneaker', 'Sneaker', UNIT, kind='icon')
+	m.box((0, -2.75, 0), (9.6, 1.3, 4.0), 'white', 'smooth', name='Sole')
+	m.box((0.05, -3.6, 0), (9.3, 0.42, 3.8), (84, 100, 140), 'smooth', name='Outsole')
+	m.box((1.0, -1.0, 0), (6.6, 2.2, 3.6), SNEAKER_RED, 'smooth', name='Upper')
+	m.box((3.0, 1.35, 0), (3.2, 2.5, 3.64), SNEAKER_RED, 'smooth', name='Ankle')
+	m.box((-3.05, -1.33, 0), (3.3, 1.5, 3.7), 'white', 'smooth', name='ToeCap')
+	m.box((1.2, 2.7, 0), (1.3, 1.6, 2.4), (250, 84, 98), 'smooth', name='Tongue')
+	for i, x in enumerate((-1.4, -0.3, 0.8)):
+		m.box((x, 0.18 + 0.02 * i, 0), (0.55, 0.36, 3.8), 'white', 'smooth', name='Lace')
+	m.box((0.35, -1.4, -1.88), (5.2, 0.6, 0.2), 'yellow', 'smooth', bevel=0.02, name='Stripe')
+	m.box((4.75, 1.6, 0), (0.42, 1.4, 1.4), 'yellow', 'smooth', name='HeelTab')
+	return m
+
+
+def robux():
+	"""The Robux glyph (white, so a tint works): a hexagon ring and a small square hole."""
+	m = Model('Robux', 'Robux', UNIT, kind='icon')
+	m.prism((0, 0, 0), 1.2, 8.6, 'white', 'smooth', sides=6, axis='z', spin=30, name='Outer')
+	m.prism((0, 0, -0.66), 0.14, 6.0, (190, 200, 216), 'smooth', sides=6, axis='z', spin=30, name='Groove')
+	m.prism((0, 0, -0.78), 0.14, 5.2, 'white', 'smooth', sides=6, axis='z', spin=30, name='Inner')
+	m.box((0, 0, -0.9), (1.5, 1.5, 0.14), INK, 'smooth', name='Hole')
+	return m
+
+
+def shield(iid='Shield', letters=False):
+	def build():
+		m = Model(iid, iid, UNIT, kind='icon')
+		m.box((0, 1.3, 0), (7.4, 4.4, 1.4), (30, 140, 250), 'smooth', name='Top')
+		m.box((0, -1.0, 0), (5.2, 5.2, 1.36), (30, 140, 250), 'smooth', rot=euler(0, 0, 45), name='Point')
+		m.box((0, 1.3, -0.76), (5.6, 3.2, 0.14), (10, 30, 190), 'smooth', name='FaceTop')
+		m.box((0, -0.7, -0.78), (3.8, 3.8, 0.14), (10, 30, 190), 'smooth', rot=euler(0, 0, 45), name='FacePoint')
+		if letters:
+			# "XP" from bars (screen-right is -x): X on the left (+x), P on the right (-x)
+			for sgn in (1, -1):
+				m.box((1.3, 1.0, -0.9), (0.6, 3.2, 0.14), 'white', 'smooth', rot=euler(0, 0, sgn * 30), name='X')
+			m.box((-0.9, 1.0, -0.92), (0.6, 3.2, 0.14), 'white', 'smooth', name='P')
+			m.box((-1.55, 1.92, -0.94), (1.3, 1.3, 0.14), 'white', 'smooth', name='P')
+		return m
+	return build
+
+
+def skull():
+	m = Model('Skull', 'Skull', UNIT, kind='icon')
+	m.ball((0, 0.9, 0), 7.6, 'white', 'smooth', name='Cranium')
+	m.box((0, -2.6, 0.2), (5.2, 3.0, 4.6), 'white', 'smooth', name='Jaw')
+	for sx in (-1, 1):
+		m.box((sx * 1.55, 0.2, -3.45), (1.9, 2.0, 0.6), INK, 'smooth', name='Eye')
+	m.box((0, -1.35, -2.95), (0.8, 0.9, 0.4), INK, 'smooth', name='Nose')
+	for x in (-1.2, -0.4, 0.4, 1.2):
+		m.box((x, -2.9, -2.15), (0.22, 1.4, 0.2), INK, 'smooth', name='Tooth')
+	return m
+
+
+def vip():
+	m = Model('VIP', 'VIP', UNIT, kind='icon')
+	m.box((0, -2.4, 0), (8.6, 2.0, 3.0), 'golddark', 'gold', name='Band')
+	m.box((0, -0.8, 0.1), (7.6, 1.8, 2.4), 'gold', 'gold', name='Crown')
+	for x, h in ((-3.2, 2.6), (0.0, 3.4), (3.2, 2.6)):
+		m.box((x, 0.6 + h / 2 - 1.0, 0.1), (2.0, 2.0, 2.3), 'gold', 'gold', rot=euler(0, 0, 45), name='Spike')
+		m.ball((x, 1.9 + h - 2.2, 0.1), 1.1, 'gold', 'gold', name='Tip')
+	m.box((0, -2.4, -1.58), (1.3, 1.3, 0.3), 'red', 'glass', rot=euler(0, 0, 45), name='Ruby')
+	for sx in (-1, 1):
+		m.box((sx * 2.8, -2.4, -1.56), (0.9, 0.9, 0.24), 'blue', 'glass', name='Sapphire')
+	return m
+
+
+def autofight():
+	"""A red coin with a white crosshair (the Auto Fight pass)."""
+	m = Model('AutoFight', 'AutoFight', UNIT, kind='icon')
+	m.cyl((0, 0, 0), 1.3, 9.0, (226, 40, 66), 'smooth', axis='z', name='Coin')
+	m.cyl((0, 0, -0.7), 0.12, 5.6, 'white', 'smooth', axis='z', name='Ring')
+	m.cyl((0, 0, -0.78), 0.12, 4.6, (240, 64, 88), 'smooth', axis='z', name='Face')
+	for (x, y, w, h) in ((0, 2.5, 0.7, 2.0), (0, -2.5, 0.7, 2.0), (2.5, 0, 2.0, 0.7), (-2.5, 0, 2.0, 0.7)):
+		m.box((x, y, -0.9), (w, h, 0.14), 'white', 'smooth', name='Tick')
+	m.box((0, 0, -0.9), (0.9, 0.9, 0.14), 'white', 'smooth', name='Dot')
+	return m
+
+
+def arrow45():
+	"""The Rebirth window's green arrow, already pointing up-right (screen-right is -x)."""
+	m = Model('Arrow', 'Arrow', UNIT, kind='icon')
+	with m.at((0, 0, 0), euler(0, 0, 45)):
+		depth = 2.8
+		m.box((0, -2.3, 0), (3.6, 4.8, depth), 'green', 'smooth', name='Shaft')
+		m.tri((0, 0.0, 0), (0, 1, 0), (1, 0, 0), 4.9, 8.8, depth, 'green', 'smooth', name='Head')
+		m.box((0, -2.1, -1.45), (2.4, 3.9, 0.2), 'cashlight', 'smooth', bevel=0.04, name='Shine')
+	return m
+
+
 ICONS = [
 	('Shop', shop),
 	('Rebirth', rebirth),
@@ -252,7 +349,25 @@ ICONS = [
 	('Basket', basket('Basket')),
 	('BasketRed', basket('BasketRed', body=(232, 52, 80), light=(255, 110, 130), dark=(186, 30, 58), handle=(170, 180, 196))),
 	('Quest', quest),
+	('Sneaker', sneaker),
+	('Robux', robux),
+	('Shield', shield('Shield')),
+	('XP', shield('XP', letters=True)),
+	('Skull', skull),
+	('VIP', vip),
+	('AutoFight', autofight),
+	('Arrow', arrow45),
 ]
+
+# Ids that reuse another model's live fallback (their PNGs differ; see icons_hd.py).
+ALIASES = {
+	'RebirthSkip': 'Rebirth',
+	'PowerPack1': 'Muscle',
+	'PowerPack2': 'Muscle',
+	'PowerPack3': 'Muscle',
+	'DoublePower': 'Muscle',
+	'DoubleCash': 'Cash',
+}
 
 
 def build_all():

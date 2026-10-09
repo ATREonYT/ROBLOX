@@ -88,7 +88,8 @@ local function verify(moduleName, rootName, kind)
 	local M = load(moduleName)
 	check(type(M.Ids) == "table" and #M.Ids > 0, moduleName .. ".Ids")
 	for _, id in M.Ids do
-		check(M.Images[id] == "", moduleName .. ".Images." .. id .. " should start empty")
+		local img = M.Images[id]
+		check(img == "" or (type(img) == "string" and string.match(img, "^rbxassetid://%d+$") ~= nil), moduleName .. ".Images." .. id .. " is '' or rbxassetid://N")
 		check(M.Meta[id] ~= nil, moduleName .. ".Meta." .. id)
 		for _, scale in { 1, 0.5, 3 } do
 			local model = M.build(id, scale)

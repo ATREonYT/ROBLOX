@@ -57,6 +57,17 @@ a render is what the game builds. Never hand-edit `Shared/Models/*.lua`; they ar
 - Camera: `camera_fit` frames all vertices with a 70 mm lens; long guns get a diagonal roll.
 - Look at every render (Read the PNG). Fast previews: `--res 384 --samples 24 --out <scratch>`.
 
+## 2b. HUD icon PNGs in the reference style (icons_hd.py + hdkit.py, brief 19)
+- The uploaded HUD/window icons are NOT BoxKit renders any more: `icons_hd.py` models them as smooth cartoon shapes
+  (bevelled boxes, sweeps, lathes, metaballs, text) in Blender axes (x right, z up, camera at -y) to match the
+  reference game; BoxKit models stay as the live `IconModels.build` fallback (`ALIASES` for PNG-only ids).
+- Look: hue-shifted 3-stop ramp on the base colour driven by the key-light angle (warm lights for warm colours, cool
+  for blues; a warm light on blue turns it lavender), raised-square tile grid (world space), navy #0C0A34 outline
+  3.4% + 45% inner lines between "line groups" (object-index pass), 2x supersampling. Calibrate colours by comparing
+  10/50/90 % percentiles against the reference crop, not by eye.
+- Iterate with `--res 256 --samples 10` previews, a side-by-side sheet (reference crop | ours on the button colour |
+  ours at 64 px) and an in-context paste of ours over the reference screenshot at its own size.
+
 ## 3. Roblox scale, axes, limits
 - 1 Blender unit = 1 stud when exporting. Roblox (x, y, z) = Blender (-x, z, y); FBX export with
   Forward = Z, Up = Y undoes this exactly (verified by re-import).

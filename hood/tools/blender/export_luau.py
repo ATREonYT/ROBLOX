@@ -146,7 +146,7 @@ local function makePart(row, s: number): BasePart
 end
 
 function M.build(id: string, scale: number?): Model
-	local rows = DATA[id]
+	local rows = %(lookup)s
 	assert(rows, '%(module)s: unknown id ' .. tostring(id))
 	local s = scale or 1
 	local model = Instance.new('Model')
@@ -218,7 +218,8 @@ return M
 
 
 def existing_images(path):
-	"""Keep image ids already pasted into M.Images when the module is regenerated."""
+	"""Keep image ids already pasted into M.Images when the module is regenerated (in file order, so keys that
+	hood/tools/upload_assets.py added for PNG-only ids survive too)."""
 	if not os.path.exists(path):
 		return {}
 	text = open(path).read()
@@ -228,7 +229,10 @@ def existing_images(path):
 	return dict(re.findall(r"(\w+) = '([^']*)'", block.group(1)))
 
 
-def write_module(path, module, models, src, what, origin, root, rootwhy, view, extra_meta):
+def write_module(path, module, models, src, what, origin, root, rootwhy, view, extra_meta, aliases=None):
+	"""aliases: {id: model id} for ids that have their own uploaded PNG but reuse another model as the live
+	fallback (IconModels only)."""
+	aliases = aliases or {}
 	keep = existing_images(path)
 	colors, rots = {}, {}
 	data_blocks, meta_lines = [], []
@@ -241,8 +245,16 @@ def write_module(path, module, models, src, what, origin, root, rootwhy, view, e
 		fields = ["Name = '%s'" % m.name, 'Parts = %d' % (len(rows) + 1), 'Size = %s' % vec(size), 'Center = %s' % vec(centre)]
 		fields += extra_meta(m)
 		meta_lines.append('\t%s = { %s },' % (m.id, ', '.join(fields)))
-	ids = ', '.join("'%s'" % m.id for m in models)
-	images = '\n'.join("\t%s = '%s', -- %s" % (m.id, keep.get(m.id, ''), m.name) for m in models)
+	by_id = {m.id: m for m in models}
+	for alias, target in aliases.items():
+		size, centre = bounds_studs(by_id[target])
+		fields = ["Name = '%s'" % alias, "Alias = '%s'" % target, 'Parts = %d' % (by_id[target].part_count() + 1),
+			'Size = %s' % vec(size), 'Center = %s' % vec(centre)] + extra_meta(by_id[target])
+		meta_lines.append('\t%s = { %s },' % (alias, ', '.join(fields)))
+	ids = ', '.join("'%s'" % i for i in [m.id for m in models] + list(aliases))
+	image_ids = [m.id for m in models] + list(aliases)
+	image_ids += [k for k in keep if k not in image_ids]  # PNG-only keys added by the upload tool
+	images = '\n'.join("\t%s = '%s', -- %s" % (i, keep.get(i, ''), by_id[i].name if i in by_id else i) for i in image_ids)
 	materials = '\n'.join("\t%s = { Material = Enum.Material.%s, Reflectance = %s, Transparency = %s, CastShadow = %s }," % (k, v[0], num(v[1]), num(v[2]), 'true' if v[3] else 'false') for k, v in ((k, ROBLOX_MAT[k]) for k in KIND_ORDER))
 	color_lines = '\n'.join('\tColor3.fromRGB(%d, %d, %d),' % c for c, _ in sorted(colors.items(), key=lambda kv: kv[1]))
 	rot_lines = '\n'.join('\t{ %s },' % ', '.join(num(v) for v in r) for r, _ in sorted(rots.items(), key=lambda kv: kv[1]))
@@ -251,8 +263,12 @@ def write_module(path, module, models, src, what, origin, root, rootwhy, view, e
 	text += '-- Paste the uploaded image ids of hood/art/%s renders here (rbxassetid://...).\nM.Images = {\n%s\n}\n' % ('renders/guns' if module == 'GunModels' else 'icons3d', images)
 	text += 'M.Unit = %s -- studs per BoxKit design unit at scale 1 (one stud bump pitch)\n' % num(models[0].unit if module == 'GunModels' else 0.2)
 	text += 'M.Meta = {\n%s\n}\n' % '\n'.join(meta_lines)
+	if module == 'IconModels':
+		text += '-- Ids with their own PNG that reuse another model as the live fallback (build(id) builds the target).\n'
+		text += 'M.Alias = {\n%s\n}\n' % '\n'.join("\t%s = '%s'," % kv for kv in aliases.items())
 	text += BODY % dict(materials=materials, kinds=', '.join("'%s'" % k for k in KIND_ORDER), colors=color_lines, rots=rot_lines,
-		data='\n'.join(data_blocks), module=module, root=root, rootwhy=rootwhy, view=vec(bk.norm(view)))
+		data='\n'.join(data_blocks), module=module, root=root, rootwhy=rootwhy, view=vec(bk.norm(view)),
+		lookup="DATA[id] or DATA[M.Alias[id] or '']" if module == 'IconModels' else 'DATA[id]')
 	with open(path, 'w') as f:
 		f.write(text)
 	return len(text)
@@ -283,9 +299,10 @@ def main():
 		return ['Unit = %s' % num(m.unit)]
 
 	n = write_module(os.path.join(OUT_DIR, 'IconModels.lua'), 'IconModels', icon_models, 'icons',
-		'The 9 HUD icons as 3D models (Shop, Rebirth, Rewards, PVP, Evolve, Cash, Power, Trophy, Gun).',
+		'The HUD and window icons as 3D part models: the live fallback until the PNGs (hood/art/icons3d, rendered by\n'
+		'-- hood/tools/blender/icons_hd.py) are uploaded with hood/tools/upload_assets.py, which fills M.Images.',
 		'centred on the origin, fits a 2x2x2 stud box at scale 1, front faces -Z',
-		'Root', 'the centre of the icon', ICON_VIEW, icon_meta)
+		'Root', 'the centre of the icon', ICON_VIEW, icon_meta, aliases=icons.ALIASES)
 	print('IconModels.lua', n, 'bytes', [(m.id, m.part_count() + 1) for m in icon_models])
 	return 1 if problems else 0
 

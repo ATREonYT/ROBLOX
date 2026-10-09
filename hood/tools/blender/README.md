@@ -33,6 +33,30 @@ BLENDER_PY=$PY hood/tools/blender/compare.sh             # Blender vs Roblox par
 Add `--res 384 --samples 24 --out /tmp/x` to `render.py` for quick previews while modelling.
 Set `BK_TMP` to choose where intermediate render passes go.
 
+## HUD icons in the reference style (brief 19): icons_hd.py + hdkit.py
+
+The HUD/window PNGs in `hood/art/icons3d/` are no longer BoxKit renders: `icons_hd.py` models each icon directly in
+Blender as smooth cartoon shapes (bevelled boxes, swept bands, lathes, metaballs, text) to match the reference game's
+icons, and `hdkit.py` holds the shared kit:
+
+- material: glossy plastic whose base colour runs through a hue-shifted 3-stop ramp driven by the key-light angle
+  (dark -> base -> light), plus an optional world-space grid of soft raised squares (the reference's surface tiles);
+- camera fitted to the evaluated geometry, a camera-relative light rig, Cycles at 2x the output size;
+- post: a navy (#0C0A34) outline ~3.4% of the canvas around the silhouette (exact distance transform) and thinner
+  lines (45%) wherever two "line groups" meet, from the object-index pass; optional glow + sparkles; 2x downsample.
+
+```sh
+$PY hood/tools/blender/icons_hd.py --list                   # the ids
+$PY hood/tools/blender/icons_hd.py                          # all -> hood/art/icons3d/<Id>.png (512 px), ~30 s each
+$PY hood/tools/blender/icons_hd.py Muscle Rebirth --out /tmp/x --res 256 --samples 10   # quick previews
+python3 hood/tools/make_ui_textures.py                      # hood/art/ui/ stud + gloss tiles (plain python3)
+python3 hood/tools/upload_assets.py --dry-run               # see hood/art/README_upload.md
+```
+
+The BoxKit models in `models/icons.py` stay as the live in-game fallback (`IconModels.build`). Ids that only have a
+PNG reuse another model through `ALIASES` (written as `M.Alias` in IconModels.lua). `export_luau.py` keeps every
+id already in `M.Images`, including keys the upload tool added.
+
 ## Getting the models into Roblox Studio
 
 1. **Parts (the main path).** Rojo syncs `src/ReplicatedStorage/Shared/Models/*.lua`. In game code:
@@ -55,7 +79,7 @@ Set `BK_TMP` to choose where intermediate render passes go.
 
 ## Uploading the renders
 
-`hood/art/renders/guns/*.png` (1024 px) and `hood/art/icons3d/*.png` (512 px) have transparent
-backgrounds, a dark outline and soft shadow, so they read on any button. Upload them (Asset Manager >
-Bulk Import), then paste the ids into `M.Images` in the two modules. Re-running `export_luau.py` keeps
-ids that are already filled in.
+`hood/art/icons3d/*.png` and `hood/art/ui/*.png`: `python3 hood/tools/upload_assets.py` (Open Cloud, writes the ids
+into IconModels.Images and UIKit), or by hand: `hood/art/README_upload.md`. `hood/art/renders/guns/*.png` (1024 px):
+Asset Manager > Bulk Import, then paste the ids into `GunModels.Images`. Re-running `export_luau.py` keeps ids that
+are already filled in.
