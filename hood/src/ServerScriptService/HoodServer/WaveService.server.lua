@@ -2,9 +2,11 @@
 -- Every stage street holds a few targets (map: TheBlockV2 Waves.build, Models tagged HoodWaveTarget with attributes
 -- Stage, Index, Kind and Aim). Each player has their own wave per stage, kept here: Waves.client asks to shoot one
 -- (WaveShot stage, index) and the server checks the shot (you stand in that stage, the target is up and within
--- WaveRules.Range, the ranges' shot rate), deals the shot's pay as damage and pays it as Power. The last target down
--- clears the wave: a stage's first clear pays Cash and opens the next gate (StageService and HoodClient/Stages read
--- WaveCleared); a later visit respawns the wave for Power only.
+-- WaveRules.Range, the ranges' shot rate), deals the shot's pay as damage and pays it as Power (a x1 lane: your
+-- rebirth multiplier, gun, shoes and boosts). The last target down clears the wave: a stage's first clear pays Cash
+-- (Balance.WaveCash) and opens the next gate (StageService and HoodClient/Stages read WaveCleared). A cleared wave comes
+-- back WaveRules.RespawnDelay seconds after the clear (while you stay, or on your next visit), and every later clear pays
+-- a little Cash (WaveRules.repeatReward: World 1's repeatable Cash). Cash is x2 with the x2 Cash pass.
 -- Player attributes: WaveCleared (the highest stage whose wave you ever cleared, saved as profile Waves.Cleared),
 -- WaveStage (the stage with targets you stand in, 0 = none), WaveLeft (your targets still up there).
 -- Remote WaveState, to that player only: { Kind = 'Wave', Stage, HP, Max, Left } when you enter a stage (a fresh or
@@ -18,7 +20,8 @@ local ActiveMap = require(RS.Shared.ActiveMap)
 local StageRules = require(RS.Shared.StageRules)
 local WaveRules = require(RS.Shared.WaveRules)
 local ShotRules = require(RS.Shared.ShotRules)
-local Skins = require(RS.Shared.Config.Skins)
+local RebirthRules = require(RS.Shared.RebirthRules)
+local Boosts = require(script.Parent.Boosts)
 
 while not RS:GetAttribute('FoundationReady') do task.wait(0.1) end
 local active = ActiveMap.get()
@@ -38,8 +41,6 @@ if #bad > 0 then warn('[WaveService] Skipped targets with bad attributes: ' .. t
 -- No gates or no targets on this map: no waves (WaveCleared stays unset, so gates ask for Power only).
 if #gates == 0 or next(world) == nil then return end
 local lastStage = gates[#gates].Stage
-local required = {}
-for _, g in gates do required[g.Stage] = g.Required end
 
 local stateRemote = Net.get('WaveState')
 local sessions = {}
@@ -62,12 +63,14 @@ local function publish(player, profile, s)
 	local w = s:current()
 	set(player, 'WaveLeft', w and w.Left or 0)
 end
--- Where you stand now; on entering a stage with targets, its wave (fresh or kept) goes to your client.
+-- Where you stand now; on entering a stage with targets its wave (fresh or kept) goes to your client, and so does a
+-- cleared wave coming back while you stay.
 local function place(player, s, root)
 	local before = s.Stage
 	s:move(WaveRules.stageAt(gates, frame:PointToObjectSpace(root.Position)))
+	local back = s.Stage == before and s:revive()
 	local w = s:current()
-	if s.Stage ~= before and w then
+	if (s.Stage ~= before or back) and w then
 		stateRemote:FireClient(player, { Kind = 'Wave', Stage = s.Stage, HP = table.clone(w.HP), Max = table.clone(w.Max), Left = w.Left })
 	end
 end
@@ -80,24 +83,23 @@ Net.get('WaveShot').OnServerEvent:Connect(function(player, stage, index)
 	if not profile or not root or not h or h.Health <= 0 then return end
 	local s = sessionOf(player)
 	place(player, s, root) -- (where you are now, not at the last tick)
-	-- A hit is worth what a shot pays off the ranges: a tenth of your look's gain (at least 1) times your gun, times
-	-- your equipped shoes (ShoeService's ShoeMultiplier; their fraction carries to the next hit).
+	-- A hit is worth what a shot pays on a x1 lane: your rebirth multiplier and boosts, times your gun, times your
+	-- equipped shoes (ShoeService's ShoeMultiplier; their fraction carries to the next hit).
 	shoeCarry[player] = shoeCarry[player] or {}
-	local damage = ShotRules.pay(Skins.gain(profile.Data.EquippedSkin, 1), player:GetAttribute('GunMultiplier'), player:GetAttribute('ShoeMultiplier'), shoeCarry[player])
+	local perShot = ShotRules.perShot(1, RebirthRules.count(profile.Data.Rebirths), Boosts.power(player))
+	local damage = ShotRules.pay(perShot, player:GetAttribute('GunMultiplier'), player:GetAttribute('ShoeMultiplier'), shoeCarry[player])
 	local ok, _, w, _, cleared = s:shoot(stage, index, root.Position, damage)
 	if not ok then return end
 	profile.Data.Rep = math.min(1e12, profile.Data.Rep + damage)
+	player:SetAttribute('Power', profile.Data.Rep)
 	stateRemote:FireClient(player, { Kind = 'Hit', Stage = stage, Index = index, HP = w.HP[index], Left = w.Left, Damage = damage })
 	if cleared then
 		local first = stage > best(profile)
-		local reward = 0
-		if first then
-			profile.Data.Waves.Cleared = math.max(profile.Data.Waves.Cleared, stage)
-			reward = WaveRules.reward(required[stage])
-			profile.Data.Cash = math.min(1e12, profile.Data.Cash + reward)
-			player:SetAttribute('Cash', profile.Data.Cash)
-			Data.push(player)
-		end
+		if first then profile.Data.Waves.Cleared = math.max(profile.Data.Waves.Cleared, stage) end
+		local reward = Boosts.cashFor(player, first and WaveRules.reward(stage) or WaveRules.repeatReward(stage))
+		profile.Data.Cash = math.min(1e12, profile.Data.Cash + reward)
+		player:SetAttribute('Cash', profile.Data.Cash)
+		Data.push(player)
 		stateRemote:FireClient(player, { Kind = 'Cleared', Stage = stage, Reward = reward, First = first })
 	end
 	publish(player, profile, s)

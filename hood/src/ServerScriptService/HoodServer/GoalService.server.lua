@@ -1,6 +1,7 @@
 -- The goal chain (the soldier game's "GOAL DONE! ... / NEXT GOAL: ... - where to go"; the list is GoalRules). The
 -- server checks each player's current goal once a second against what it knows (Power, gates passed, waves cleared,
--- guns owned, the range you stand in), pays its small Cash reward and moves you on; the step is saved in the profile
+-- guns owned, the range you stand in, rebirths), pays its small Cash reward (x2 with the x2 Cash pass) and moves you
+-- on; the step is saved in the profile
 -- (Goals). A profile from before the chain catches up quietly on its first check (no rewards for old progress).
 -- Player attributes (HoodClient/Goals shows them): GoalStep (#List + 1 = all done), GoalText, GoalWhere, GoalReward.
 -- Remote Goal, to that player: { Kind = 'Done', Text, Reward, NextText, NextWhere, NextReward } when a goal completes.
@@ -14,6 +15,7 @@ local Net = require(RS.Shared.Net)
 local GoalRules = require(RS.Shared.GoalRules)
 local Skins = require(RS.Shared.Config.Skins)
 local Guns = require(RS.Shared.Config.Guns)
+local Boosts = require(script.Parent.Boosts)
 
 while not RS:GetAttribute('FoundationReady') do task.wait(0.1) end
 local remote = Net.get('Goal')
@@ -37,6 +39,7 @@ local function stateOf(player, profile)
 		Guns = owned,
 		Range = type(station) == 'string' and rangeIndex[station] or 0, -- ('Locked:<Id>' and '' are 0)
 		Boxes = type(profile.Data.Shoes) == 'table' and profile.Data.Shoes.Opened or 0,
+		Rebirths = profile.Data.Rebirths,
 		ShoeBoxes = RS:GetAttribute('ShoeBoxes') == true, -- (no shoe boxes on this map: the box goal is skipped)
 	}
 end
@@ -58,11 +61,12 @@ local function check(player)
 	local goals = profile.Data.Goals
 	local done = GoalRules.advance(goals, stateOf(player, profile))
 	if done then
-		profile.Data.Cash = math.min(1e12, profile.Data.Cash + done.Reward)
+		local paid = Boosts.cashFor(player, done.Reward)
+		profile.Data.Cash = math.min(1e12, profile.Data.Cash + paid)
 		player:SetAttribute('Cash', profile.Data.Cash)
 		local nextGoal = GoalRules.at(goals.Step)
 		remote:FireClient(player, {
-			Kind = 'Done', Text = done.Text, Reward = done.Reward,
+			Kind = 'Done', Text = done.Text, Reward = paid,
 			NextText = nextGoal and nextGoal.Text or GoalRules.AllDone.Text,
 			NextWhere = nextGoal and nextGoal.Where or GoalRules.AllDone.Where,
 			NextReward = nextGoal and nextGoal.Reward or 0,

@@ -1,7 +1,8 @@
 -- Stage gates on the active map. A gate opens for you once your Power reaches its number: each client
 -- blocks it locally while you're short (HoodClient/Stages), so the walk feels like a real wall. The server
--- records your first clear of each gate, pays its Cash reward, and moves back anyone who slips past a
--- gate they haven't earned.
+-- records your first clear of each gate, pays its Cash (Config/Balance.StageCash, x2 with the x2 Cash pass), and
+-- moves back anyone who slips past a gate they haven't earned. A gate you have passed stays open for good, whatever
+-- your Power: a rebirth resets Power, never the map (StageRules).
 --
 -- Gate contract (built by map builders): a Model tagged 'HoodStageGate' with attributes
 --   Stage, WallId, Required, Reward, LineZ (gate plane, map frame; stages run toward -Z), HalfWidth.
@@ -13,6 +14,8 @@ local Net = require(RS.Shared.Net)
 local ActiveMap = require(RS.Shared.ActiveMap)
 local Format = require(RS.Shared.Format)
 local StageRules = require(RS.Shared.StageRules)
+local Balance = require(RS.Shared.Config.Balance)
+local Boosts = require(script.Parent.Boosts)
 
 while not RS:GetAttribute('FoundationReady') do task.wait(0.1) end
 local active = ActiveMap.get()
@@ -27,11 +30,13 @@ if #gates == 0 then return end
 local frame = active.Frame
 local stageClear = Net.get('Cinematic')
 
+-- (A stage the Cash table doesn't know pays the gate's own Reward attribute.)
 local function clear(player, profile, gate)
 	profile.Data.ClearedWalls[gate.WallId] = true
-	profile.Data.Cash = math.min(1e12, profile.Data.Cash + gate.Reward)
+	local reward = Boosts.cashFor(player, Balance.StageCash[gate.Stage] or gate.Reward)
+	profile.Data.Cash = math.min(1e12, profile.Data.Cash + reward)
 	Data.push(player)
-	stageClear:FireClient(player, { Kind = 'StageClear', Stage = gate.Stage, Reward = gate.Reward })
+	stageClear:FireClient(player, { Kind = 'StageClear', Stage = gate.Stage, Reward = reward })
 	-- Big clears are news for the whole server: other players' progress keeps the street feeling alive.
 	if gate.Stage >= 3 then
 		for _, other in Players:GetPlayers() do

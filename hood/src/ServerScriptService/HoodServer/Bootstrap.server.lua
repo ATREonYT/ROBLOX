@@ -19,13 +19,15 @@ end
 Net.get('SetSettings').OnServerEvent:Connect(function(player,key,value)
  if intentLimit.allow(player) then DataService.setSetting(player,key,value) end
 end)
-for _,name in ipairs({'HatchCrew','EquipCrew','Rebirth','MoveOut','SelectMap'}) do
+for _,name in ipairs({'HatchCrew','EquipCrew','MoveOut','SelectMap'}) do
  Net.get(name).OnServerEvent:Connect(function(player)
   if intentLimit.allow(player) then Net.get('Notice'):FireClient(player,'This feature arrives in a later build milestone.') end
  end)
 end
+-- Rebirths are real (RebirthService: the Rebirth remote, rate limited, server-checked).
+require(script.Parent.RebirthService).start()
 Players.PlayerRemoving:Connect(function(player) snapshotLimit.remove(player);intentLimit.remove(player) end)
 DataService.start(map)
 ReplicatedStorage:SetAttribute('FoundationReady',true)
 ReplicatedStorage:SetAttribute('MapName',map.Name)
-print('[Foundation] Ready: '..map.Name..'. Lobby training and skins enabled when present.')
+print('[Foundation] Ready: '..map.Name..'. Lobby ranges and rebirths enabled when present.')

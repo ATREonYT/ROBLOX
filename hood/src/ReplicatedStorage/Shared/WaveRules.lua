@@ -1,11 +1,14 @@
 -- Stage target waves: the soldier game's guard waves, the hood way (cartoon targets only, nothing human-shaped).
 -- Pure rules shared by WaveService (which decides), Waves.client (which shows and aims) and the unit tests.
 --   Every stage street and the boss yard (16) holds a small wave of targets (the map: TheBlockV2 Waves.build, Models
---   tagged HoodWaveTarget). Each player has their own wave per stage. A hit deals the shot's pay (ShotRules.pay at
---   x1, no range multiplier) as damage and pays it as Power, like the ranges. The last target down clears the wave:
---   the first clear of a stage pays Cash and opens the next gate (gate i needs WaveCleared >= i - 1, with WaveCleared
---   the highest stage whose wave you ever cleared); a later visit respawns the wave for Power only.
+--   tagged HoodWaveTarget). Each player has their own wave per stage. A hit deals the shot's pay (ShotRules.pay of a
+--   x1 lane: rebirth multiplier, gun, shoes, boosts) as damage and pays it as Power, like the ranges. The last target
+--   down clears the wave: the first clear of a stage pays Cash (Balance.WaveCash) and opens the next gate (gate i needs
+--   WaveCleared >= i - 1, with WaveCleared the highest stage whose wave you ever cleared). A cleared wave comes back
+--   RespawnDelay seconds after the clear, the next time you walk into that stage, and every later clear pays a little
+--   Cash (repeatReward: World 1's repeatable Cash) as well as its Power.
 local ShotRules = require(script.Parent.ShotRules)
+local Balance = require(script.Parent.Config.Balance)
 
 local WaveRules = {}
 
@@ -13,9 +16,12 @@ WaveRules.Range = 80 -- studs from you to a target for a shot to count
 WaveRules.LastDepth = 120 -- the last gate's arena (the boss yard) runs this far past its line
 WaveRules.MaxStage = 64 -- sanity cap on stage numbers from the network
 WaveRules.MaxIndex = 32 -- and on target indices
--- A target's HP per stage (1-15 the streets, 16 the boss yard) for a weight-1 kind: about 10-25 shots with the gun and
--- look a player usually has by then (shots there deal 1-2 to start, ~100+ near the end of World 1).
-WaveRules.HP = { 10, 24, 30, 36, 50, 60, 70, 80, 90, 120, 250, 400, 700, 1100, 1800, 2500 }
+WaveRules.RespawnDelay = 20 -- seconds after a clear before that stage's wave can come back
+-- A target's HP per stage (1-15 the streets, 16 the boss yard) for a weight-1 kind. A first clear takes about 25 shots
+-- at Stage 1 and grows to ~100 by Stage 15 and ~150 in the boss yard with the gun, shoes and rebirths a player
+-- usually has on arrival (the pacing simulation: a hit deals 1 at Stage 1, ~50 at Stage 10, ~700 in the boss yard);
+-- later visits go faster as your multipliers grow.
+WaveRules.HP = { 10, 25, 35, 40, 65, 150, 300, 450, 650, 900, 1500, 2000, 3000, 4000, 6500, 14000 }
 -- The kinds of target: the name on its tag and its HP weight. The first five stand anywhere; Sign (Corner Shop),
 -- Bottles and Crates (The Alley), Backboard (The Courts) and Tyres (The Yards) belong to one district each.
 WaveRules.Kinds = {
@@ -68,10 +74,15 @@ function WaveRules.maxHp(stage: number, kind: string?): number
 	return math.max(1, math.floor(hp / step + 0.5) * step)
 end
 
--- Cash for a stage's first clear: 5% of the Power that stage's gate asks for (at least 5).
-function WaveRules.reward(required: any): number
-	local r = type(required) == 'number' and required == required and required or 0
-	return math.max(5, math.floor(math.clamp(r, 0, 1e12) * 0.05))
+-- Cash for a stage's first clear (Balance.WaveCash; 5 for a stage the table doesn't know).
+function WaveRules.reward(stage: any): number
+	local s = int(stage)
+	return s and Balance.WaveCash[s] or 5
+end
+
+-- Cash for clearing a stage's wave again: Balance.WaveRepeatShare of the stage's gate Cash, at least 1.
+function WaveRules.repeatReward(stage: any): number
+	return math.max(1, math.floor(Balance.stageCash(int(stage)) * Balance.WaveRepeatShare))
 end
 
 -- The stage whose arena `pos` (map frame) stands in: past gate i's line and before gate i+1's, on the street
@@ -174,7 +185,8 @@ end
 ---------------------------------------------------------------------------------------------- one player's waves
 -- WaveRules.session(world, clock): the server keeps one per player. :move(stage) as they walk (0 = not in a stage
 -- with targets) spawns a wave the first time they enter that stage and again when they come back after clearing it;
--- an unfinished wave keeps its HP while they step out. :shoot(stage, index, from, damage) checks the shot (whole
+-- an unfinished wave keeps its HP while they step out; a cleared one comes back on a later visit once RespawnDelay
+-- has passed since the clear. :shoot(stage, index, from, damage) checks the shot (whole
 -- numbers in range, the shot rate, standing in that stage, the target up and within Range of `from`) and applies it.
 local Session = {}
 Session.__index = Session
@@ -199,13 +211,24 @@ function Session:move(stage: number?): any
 	if s == 0 then return nil end
 	local w = self.Waves[s]
 	local fresh = nil
-	if not w or (w.Cleared and w.Away) then
+	if not w or (w.Cleared and w.Away and self.Clock() - (w.ClearedAt or -math.huge) >= WaveRules.RespawnDelay) then
 		w = WaveRules.spawn(s, self:kinds(s))
 		self.Waves[s] = w
 		fresh = w
 	end
 	w.Away = false
 	return fresh
+end
+
+-- While you stay in a stage whose wave you cleared, it comes back RespawnDelay seconds after the clear. Returns the
+-- new wave when it did.
+function Session:revive(): any
+	local w = self:current()
+	if not w or not w.Cleared or #self:kinds(self.Stage) == 0 then return nil end
+	if self.Clock() - (w.ClearedAt or -math.huge) < WaveRules.RespawnDelay then return nil end
+	w = WaveRules.spawn(self.Stage, self:kinds(self.Stage))
+	self.Waves[self.Stage] = w
+	return w
 end
 
 -- The wave you're in now (nil outside a stage with targets).
@@ -235,6 +258,7 @@ function Session:shoot(stage: any, index: any, from: Vector3, damage: number): (
 	if typeof(from) ~= 'Vector3' or (t.Pos - from).Magnitude > WaveRules.Range then return false, 'range', w, false, false end
 	local hit, downed, cleared = WaveRules.hit(w, index, damage)
 	if not hit then return false, 'down', w, false, false end
+	if cleared then w.ClearedAt = self.Clock() end
 	return true, nil, w, downed, cleared
 end
 

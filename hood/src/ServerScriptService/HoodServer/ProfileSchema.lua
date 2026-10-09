@@ -1,23 +1,25 @@
 --!strict
-local Schema={Version=3}
+local Schema={Version=4}
 local function clone(value)
  if type(value)~='table' then return value end
  local result={} for k,v in pairs(value) do result[k]=clone(v) end return result
 end
 Schema.Template={
- SchemaVersion=3,EquippedSkin="CornerKid",Rep=0,Cash=0,Rebirths=0,Evolution={Block=1},HighestMapIndex=1,
+ -- Rep is Power (it resets to 0 on a rebirth; Shared/RebirthRules). EquippedSkin is UNUSED since the looks went (players
+ -- keep their own avatar); kept, as a known look id, so saved profiles keep loading.
+ SchemaVersion=4,EquippedSkin="CornerKid",Rep=0,Cash=0,Rebirths=0,Evolution={Block=1},HighestMapIndex=1,
  UnlockedMaps={Block=true},ClearedWalls={},Crew={owned={},equipped={}},Passes={},
  DailyStreak=0,LastDaily=0,Onboarding={},Settings={Music=true,Sound=true,ReducedMotion=false},
  ProcessedReceipts={},TimePlayed=0,
  -- Guns from the ARMORY: owned ids and the equipped one (its multiplier scales punch Power).
  Guns={Owned={Pistol=true},Equipped='Pistol'},
- -- UNUSED. Speed was trained on the treadmills, which are gone (walk speed now comes from your look,
- -- Config/Skins.walkSpeed). Kept, and still validated, so saved profiles that carry it keep loading.
+ -- UNUSED. Speed was trained on the treadmills, which are gone (walk speed now comes from your rebirths,
+ -- RebirthRules.walkSpeed). Kept, and still validated, so saved profiles that carry it keep loading.
  Speed=0,
  -- Stage target waves: the highest stage whose wave you cleared (Shared/WaveRules; gate i needs i-1). The goal
  -- chain: the current goal's step (Shared/GoalRules); Synced false = a profile from before the chain, caught up
  -- quietly on its first check.
- Waves={Cleared=0},Goals={Step=1,Synced=true,Chain=2},
+ Waves={Cleared=0},Goals={Step=1,Synced=true,Chain=3},
  -- Shoes from the shoe boxes (Shared/ShoeRules): pairs owned by id ({[id]=copies}), the equipped ids (up to 3; the
  -- best is worn, the others follow you) and how many boxes you have opened. Goals.Chain = GoalRules.Chain (a goal
  -- inserted into the chain moves older saves' steps; GoalRules.migrate).
@@ -45,6 +47,14 @@ function Schema.migrate(data)
  if data.Waves==nil then data.Waves={Cleared=require(game.ReplicatedStorage.Shared.WaveRules).legacy(data.ClearedWalls)} end
  if data.Goals==nil then data.Goals={Step=1,Synced=false,Chain=require(game.ReplicatedStorage.Shared.GoalRules).Chain}
  else require(game.ReplicatedStorage.Shared.GoalRules).migrate(data.Goals) end
+ -- Version 4 (brief 17: no looks, real rebirths): a look id that no longer exists falls back to the first one (it is
+ -- never worn); the rebirth count is made a whole number in range (RebirthRules.count). Power, Cash and everything
+ -- else are kept as they are.
+ if version<4 then
+  local Skins=require(game.ReplicatedStorage.Shared.Config.Skins)
+  if type(data.EquippedSkin)~='string' or not Skins.ById[data.EquippedSkin] then data.EquippedSkin=nil end
+  if data.Rebirths~=nil then data.Rebirths=require(game.ReplicatedStorage.Shared.RebirthRules).count(data.Rebirths) end
+ end
  -- Shoes (added with the shoe boxes): new profiles start with none; a damaged table is cleaned, never a reason to kick.
  data.Shoes=require(game.ReplicatedStorage.Shared.ShoeRules).sanitize(data.Shoes)
  reconcile(data,Schema.Template)
@@ -61,8 +71,7 @@ function Schema.validate(data)
   assert(type(n)=='number' and n==n and n>=0 and n<=1e12,'Invalid numeric profile field: '..key)
  end
  assert(type(data.EquippedSkin)=='string' and require(game.ReplicatedStorage.Shared.Config.Skins).ById[data.EquippedSkin],'Invalid equipped skin')
- assert(require(game.ReplicatedStorage.Shared.Config.Skins).available(data.Rep,data.EquippedSkin),'Equipped skin exceeds progress')
- assert(data.Rebirths%1==0,'Invalid rebirth count')
+ assert(data.Rebirths%1==0 and data.Rebirths<=require(game.ReplicatedStorage.Shared.Config.Balance).MaxRebirths,'Invalid rebirth count')
  assert(type(data.HighestMapIndex)=='number' and data.HighestMapIndex>=1 and data.HighestMapIndex%1==0,'Invalid map progress')
  for _,key in ipairs({'Evolution','UnlockedMaps','ClearedWalls','Passes','Onboarding','Settings','ProcessedReceipts','Crew'}) do
   assert(type(data[key])=='table','Invalid profile table: '..key)

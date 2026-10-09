@@ -23,20 +23,27 @@ local NEXT, WHERE = '#FFE76A', '#9CF6FF' -- "NEXT GOAL" yellow, the where-to-go 
 local gui, root, fit = Kit.screen('HoodGoals', nil, 7)
 
 ---------------------------------------------------------------------------------------------- tracker
-local tracker = Kit.new('Frame', { Name = 'Goal', AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 50), Size = px(720, 36), BackgroundColor3 = Color.asphalt, BackgroundTransparency = 0.12, BorderSizePixel = 0, Visible = false, Parent = root })
-Kit.corner(UDim.new(0.5, 0)).Parent = tracker
-Kit.stroke(Color.ink, 2.5, true).Parent = tracker
+-- (brief 17: the HUD's block style: square-ish corners, a thick ink outline, a dark gradient and a light inner rim)
+local tracker = Kit.new('Frame', { Name = 'Goal', AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 50), Size = px(720, 38), BackgroundColor3 = Color.white, BackgroundTransparency = 0.08, BorderSizePixel = 0, Visible = false, Parent = root })
+Kit.corner(8).Parent = tracker
+Kit.stroke(Color.ink, 3.5, true).Parent = tracker
+Kit.gradient(Kit.hex('454B68'), Kit.hex('262A3E'), 0.7).Parent = tracker
+do
+	local rim = Kit.new('Frame', { Name = 'Rim', BackgroundTransparency = 1, Position = px(3, 3), Size = UDim2.new(1, -6, 1, -6), Parent = tracker })
+	Kit.corner(5).Parent = rim
+	Kit.stroke(Color.white, 2, true, 0.7).Parent = rim
+end
 local trackerScale = Kit.new('UIScale', { Parent = tracker })
 local flag = Kit.text({ Name = 'Flag', Text = '🏁', FontFace = Kit.Font.body, TextSize = 22, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 10, 0.5, 0), Size = px(26, 26), Parent = tracker })
 flag.ZIndex = 2
-local line = Kit.text({ Name = 'Line', Text = '', TextSize = 22, Stroke = Color.ink, RichText = true, TextXAlignment = Enum.TextXAlignment.Left, Position = px(42, 1), Size = UDim2.new(1, -124, 1, 0), ZIndex = 2, Parent = tracker })
+local line = Kit.text({ Name = 'Line', Text = '', TextSize = 22, Stroke = Color.ink, StrokeThickness = 2.5, RichText = true, TextXAlignment = Enum.TextXAlignment.Left, Position = px(42, 1), Size = UDim2.new(1, -124, 1, 0), ZIndex = 2, Parent = tracker })
 line.TextScaled = true
 Kit.new('UITextSizeConstraint', { MaxTextSize = 22, MinTextSize = 11, Parent = line })
 local chip = Kit.new('Frame', { Name = 'Reward', AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -6, 0.5, 0), Size = px(74, 26), BackgroundColor3 = Tone.green.base, BorderSizePixel = 0, ZIndex = 2, Parent = tracker })
-Kit.corner(UDim.new(0.5, 0)).Parent = chip
-Kit.stroke(Color.ink, 2, true).Parent = chip
-Kit.gradient(Tone.green.top, Tone.green.base, 0.55).Parent = chip
-local chipText = Kit.text({ Name = 'Cash', Text = '+0', TextSize = 18, Stroke = Tone.green.stroke, ZIndex = 3, Parent = chip })
+Kit.corner(5).Parent = chip
+Kit.stroke(Color.ink, 2.5, true).Parent = chip
+Kit.gradient(Tone.green.top, Tone.green.base, 0.6).Parent = chip
+local chipText = Kit.text({ Name = 'Cash', Text = '+0', TextSize = 20, Stroke = Color.ink, StrokeThickness = 2.5, ZIndex = 3, Parent = chip })
 
 local function escape(s) return (tostring(s):gsub('&', '&amp;'):gsub('<', '&lt;'):gsub('>', '&gt;')) end
 local function goalLine(text, where)

@@ -10,6 +10,10 @@
 -- The first Apply saves the current Lighting setup (properties, effects, Sky, Clouds, wind) into
 -- ServerStorage.HoodLightingBackup; Restore uses it.
 --
+-- light17 (BRIEF17): Roblox ADDS ColorShift_Top to the sun (~4.5x its colour), so every preset with a bright ColorShift_Top
+-- and Brightness 2-3 is ~5x brighter in Studio than it was tuned for. Only HoodSun (the default) is retuned; scale the
+-- others' Brightness down ~6x before using them.
+--
 -- Why the old look read dark: a 17.2 o'clock sun shading most of the street, the Realistic lighting style,
 -- a beige haze at 1.6 with a dimming tint, Bloom too high for Neon to glow, and dark large surfaces.
 local Lighting = game:GetService('Lighting')
@@ -56,19 +60,40 @@ L.Presets = {
 		clouds = { Cover = 0.55, Density = 0.25, Color = C(255, 255, 255) },
 		wind = Vector3.new(8, 0, 4),
 	},
-	-- The side-lit day (BRIEF13/15), the default: a warm sun from +X (morning side), direction (0.50, 0.80, 0.33): about
+	-- The side-lit day (BRIEF13/15/17), the default: a warm sun from +X (morning side), direction (0.50, 0.80, 0.33): about
 	-- 53 degrees up and leaning ~20 degrees to +Z (Roblox's sun rises at +X and leans to +Z by latitude - 23.5), so a
 	-- street seen down -Z has its left facades well lit and its right ones in shade while both sidewalks stay in sun (the
 	-- right buildings' shadow reaches 0.63 x their height across: just the grass, as ref1_street), with soft shadows; a
-	-- cool ambient so shade reads blue-grey, not black; thick white clouds; a light haze at distance; bloom only on Neon.
-	-- Calibrated with RENDER in render13 (Roblox's lighting model; its suggestion was Brightness 1.75 / OutdoorAmbient
-	-- 92,96,108) so a lit top face shows about its own Color3: ref1_street's road and sidewalks within a few sRGB, the
-	-- hall walkway on the reference's 176-184,179-187,221-227 (HoodSoft washed both out by +35..+60). Haze 0.1 keeps
-	-- the far hall wall crisp. The lobby hall's shell casts no shadows, so its interior takes this light like the
-	-- reference's bright, nearly shadowless hall, plus the cool PointLights in its light bars. (v4: the sun moved from
-	-- ClockTime 10.5 / latitude 45 to 9.85 / 43 for brighter street facades, and Brightness rose 1.85 -> 2.0 by the
-	-- ratio of the sun's old and new height, 0.86 / 0.80, so floors and roads keep their brightness.)
+	-- cool sky fill so shade reads blue-grey, not black; thick white clouds; a thin haze at distance; bloom only on Neon.
+	-- light17 (BRIEF17, measured on the user's own Studio frame of this preset): ColorShift_Top is not a tint, it ADDS about
+	-- 4.5x its colour to the sun, so with this warm-white ColorShift_Top the old Brightness 2 made a sun ~5x stronger than
+	-- planned and Studio showed a white floor and a milky glow. Brightness 0.32 with the SAME ColorShift_Top gives a sun of
+	-- about 0.58 / 0.50 / 0.41 (r/g/b) on a face square to it: a lit floor shows about its own Color3 (the hall walkway
+	-- ~182,187,235 like ref1_hall's 183,186,227), a street facade in sun about 1.6x the one in shade. Keep ColorShift_Top
+	-- as it is and scale Brightness if you want more or less sun (the calibration was made at this ColorShift_Top).
+	-- Ambient / OutdoorAmbient a cool grey (shade and the few roofed corners), EnvironmentDiffuse 0.2 for the blue sky
+	-- fill, a light Atmosphere (0.12, no haze: Studio veiled the far hall), Bloom over 1.25 (only Neon reaches it now),
+	-- a little more saturation. The lobby hall's shell still casts no shadows (code5/e2_lobby.lua says why): its floor
+	-- takes this sun like the reference's bright hall; the light bars only glow round the ceiling.
+	-- HoodSun16 below is the previous HoodSun (too bright in Studio), for comparison: Apply('HoodSun16').
 	HoodSun = {
+		lighting = {
+			LightingStyle = Enum.LightingStyle.Soft, PrioritizeLightingQuality = true,
+			ClockTime = 9.85, GeographicLatitude = 43, Brightness = 0.32, ExposureCompensation = 0,
+			Ambient = C(140, 143, 155), OutdoorAmbient = C(146, 151, 170),
+			ColorShift_Top = C(255, 236, 210), ColorShift_Bottom = C(120, 130, 160),
+			EnvironmentDiffuseScale = 0.2, EnvironmentSpecularScale = 0.15, ShadowSoftness = 0.3, GlobalShadows = true,
+		},
+		atmosphere = { Density = 0.12, Offset = 0.5, Haze = 0, Glare = 0, Color = C(205, 222, 240), Decay = C(140, 165, 210) },
+		grade = { Brightness = 0, Contrast = 0.1, Saturation = 0.08, TintColor = C(255, 255, 255) },
+		bloom = { Intensity = 0.6, Size = 24, Threshold = 1.25 },
+		rays = { Intensity = 0.01, Spread = 0.2 },
+		sky = { SunAngularSize = 16, MoonAngularSize = 11, StarCount = 0, CelestialBodiesShown = true },
+		clouds = { Cover = 0.6, Density = 0.6, Color = C(255, 255, 255) },
+		wind = Vector3.new(8, 0, 4),
+	},
+	-- The HoodSun of BRIEF13-16 (what the user saw in Studio on 2026-10-09: far too bright). Kept for comparison only.
+	HoodSun16 = {
 		lighting = {
 			LightingStyle = Enum.LightingStyle.Soft, PrioritizeLightingQuality = true,
 			ClockTime = 9.85, GeographicLatitude = 43, Brightness = 2.0, ExposureCompensation = 0,

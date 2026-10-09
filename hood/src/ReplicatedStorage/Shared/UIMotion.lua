@@ -170,6 +170,23 @@ function Motion.toast(toast, hold)
 	end)
 end
 
+-- (brief 17) A soft blur over the 3D world while any window is open, like the reference's Store and Rebirth
+-- windows. Each window calls Motion.blur(itsName, true/false); the blur stays while any of them is open.
+local blurOwners = {}
+function Motion.blur(owner, on)
+	blurOwners[owner] = on and true or nil
+	local cam = workspace.CurrentCamera
+	if not cam then return end
+	local b = cam:FindFirstChild('HoodWindowBlur')
+	if not b then
+		b = Instance.new('BlurEffect')
+		b.Name = 'HoodWindowBlur'
+		b.Size = 0
+		b.Parent = cam
+	end
+	tween(b, on and 0.22 or 0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out, { Size = next(blurOwners) and 10 or 0 })
+end
+
 -- Looping idle motion: a notification badge wobbles, a tutorial arrow bobs.
 function Motion.wobble(gui, degrees, period)
 	local t = TweenService:Create(gui, TweenInfo.new((period or 0.9) / 2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), { Rotation = degrees or 8 })

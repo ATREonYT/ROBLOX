@@ -1,6 +1,6 @@
 -- Shooting at the ranges: step into a lane's shooter's box and your gun (the gun tool GunService gives you)
--- comes out; click (or tap SHOOT, or R2) to fire. Each shot is worth a tenth of your per-second gain times your
--- gun's multiplier (ShotRules; the server checks and pays in LobbyService). Everything you see is local and
+-- comes out; click (or tap SHOOT, or R2) to fire. Each shot is worth the lane x your rebirths (the ShotBase attribute)
+-- x your gun x your shoes (ShotRules; the server checks and pays in LobbyService). Everything you see is local and
 -- cheap: a layered shot sound, a muzzle flash, a tracer to the target, sparks, a hit sound, the target knocked
 -- back (a can flying off, a bottle shattering, a plate swinging, a disc spinning, a balloon popping into
 -- confetti), a shell casing, a little recoil, and one running "+N" over the target per lane (a held trigger
@@ -203,7 +203,7 @@ local function shoot()
 			play(hit, hit == 'Ding' and (1 + 0.07 * s.Tier) or 1)
 			Juice.flash(target.Model)
 		end
-		local gain = ShotRules.pay(player:GetAttribute('PowerRate'), player:GetAttribute('GunMultiplier'), player:GetAttribute('ShoeMultiplier'), shoeCarry)
+		local gain = ShotRules.pay(player:GetAttribute('ShotBase'), player:GetAttribute('GunMultiplier'), player:GetAttribute('ShoeMultiplier'), shoeCarry)
 		-- One running "+N" per lane over the main target's top edge and to its right (a held trigger rolls it up
 		-- and counts the hits instead of piling numbers on the target): white outlined in a dark shade of the
 		-- lane's colour, bigger on the top lanes.

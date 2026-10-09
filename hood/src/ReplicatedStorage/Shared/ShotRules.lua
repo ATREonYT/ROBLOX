@@ -1,27 +1,50 @@
 --!strict
--- Shooting at the ranges: what a shot pays and when it counts. Pure functions, so LobbyService (which pays),
--- Shoot.client (which shows the "+N" before the server answers) and the unit tests all agree.
---   A shot pays a tenth of your per-second gain (at least 1) times your gun's multiplier, only while you stand
---   in an unlocked range's shooter's box (the TrainingStation attribute LobbyService keeps), about 7 a second.
+-- Shooting at the ranges and the stage targets: what a shot pays and when it counts. Pure functions, so LobbyService
+-- and WaveService (which pay), Shoot.client and Waves.client (which show the "+N" before the server answers) and the
+-- unit tests all agree.
+--   One shot pays  ShotBase x the lane's Multiplier x the rebirth multiplier x boosts  (perShot; a stage target is a
+--   x1 lane; boosts = x2 with the 2x Power pass, times a running timed boost)  x the gun's multiplier  x the shoes'
+--   multiplier. Only in an open lane's shooter's box (a locked lane pays nothing) or at a stage target; nothing is paid
+--   per second. About 7 shots a second at most (the server's rate limit).
+--   The server publishes perShot for where you stand as the player attribute ShotBase (LobbyService).
+local Balance = require(script.Parent.Config.Balance)
+local RebirthRules = require(script.Parent.RebirthRules)
+
 local ShotRules = {}
 ShotRules.Burst = 8 -- shots the server lets through at once
 ShotRules.PerSecond = 7 -- and the rate it refills at
 ShotRules.Cooldown = 0.14 -- seconds between shots on the client (a little under the server's rate)
+ShotRules.MaxBoost = 10 -- sanity cap on pass x timed boost
+ShotRules.MaxShoeMultiplier = 100 -- sanity cap (three Secrets from the top box give about x25)
 
 local function number(v: any, fallback: number): number
 	if type(v) ~= 'number' or v ~= v or v == math.huge or v == -math.huge then return fallback end
 	return v
 end
 
--- Power one shot pays: max(1, floor(PowerRate * 0.1)) * GunMultiplier (bad inputs count as 1), times the equipped
--- shoes' multiplier when one is given (ShoeMultiplier, 1 + their bonus / 100; Shared/ShoeRules). With `carry` (a
--- table kept per player, {} to start) the shoes' fraction carries over to the next shot, so a +10% pays exactly 10%
--- more over time even while a shot pays 1 or 2; without it the shoes' result is rounded.
-ShotRules.MaxShoeMultiplier = 100 -- sanity cap (three Secrets from the top box give about x25)
-function ShotRules.pay(powerRate: any, gunMultiplier: any, shoeMultiplier: any?, carry: any?): number
-	local rate = math.max(0, number(powerRate, 1))
+-- The boost factor from the player's pass and timed boost (attributes the store sets on the server): x2 with the 2x
+-- Power pass, times PowerBoost (1..10).
+function ShotRules.boost(doublePass: any, timedBoost: any): number
+	local b = (doublePass == true and 2 or 1) * math.clamp(number(timedBoost, 1), 1, ShotRules.MaxBoost)
+	return math.min(b, ShotRules.MaxBoost)
+end
+
+-- Power one shot pays before the gun and the shoes: ShotBase x lane x rebirth multiplier x boost (lane 1 for a stage
+-- target; a locked lane's 0 stays 0).
+function ShotRules.perShot(lane: any, rebirths: any, boost: any?): number
+	local l = math.max(0, number(lane, 1))
+	return Balance.ShotBase * l * RebirthRules.multiplier(rebirths) * math.clamp(number(boost, 1), 1, ShotRules.MaxBoost)
+end
+
+-- Power one shot pays: max(1, floor(perShot)) x the gun's multiplier (junk counts as 1; a perShot of 0 or less, a locked
+-- lane's, pays 0), times the equipped shoes' multiplier when one is given (ShoeMultiplier, 1 + their bonus / 100;
+-- Shared/ShoeRules). With `carry` (a table kept per player, {} to start) the shoes' fraction carries over to the next
+-- shot, so a +10% pays exactly 10% more over time even while a shot pays 1 or 2; without it the shoes' result is rounded.
+function ShotRules.pay(perShot: any, gunMultiplier: any, shoeMultiplier: any?, carry: any?): number
+	local per = number(perShot, 1)
+	if per <= 0 then return 0 end
 	local gun = math.max(1, number(gunMultiplier, 1))
-	local base = math.max(1, math.floor(rate * 0.1)) * gun
+	local base = math.max(1, math.floor(per + 1e-7)) * gun
 	local shoes = math.clamp(number(shoeMultiplier, 1), 1, ShotRules.MaxShoeMultiplier)
 	if shoes == 1 then return base end
 	local exact = base * shoes
@@ -33,7 +56,7 @@ function ShotRules.pay(powerRate: any, gunMultiplier: any, shoeMultiplier: any?,
 end
 
 -- True when a shot from a player standing at `station` (the TrainingStation attribute: '' = not on a range,
--- 'Locked:<Id>' = on a range you can't use yet) counts.
+-- 'Locked:<Id>' = on a lane that needs more rebirths) pays.
 function ShotRules.counts(station: any): boolean
 	return type(station) == 'string' and station ~= '' and string.find(station, 'Locked:', 1, true) == nil
 end

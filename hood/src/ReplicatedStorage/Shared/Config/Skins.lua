@@ -1,9 +1,10 @@
--- The fifteen looks, street kid to Kingpin. Id, Required and Gain are saved/balanced: never change them.
--- Everything else is art (Shared/SkinArt.lua reads it): Color = the main top (jacket/tee), Accent and Trim =
--- the look's second and third colours, Pants, Skin, Hair, Shirt; Style/Hat name the silhouette; Expression
--- the face; Pose the display pose (SkinArt.Poses); Glow (tiers 11+) the sparkle colour on players, with
--- GlowRate/GlowSize climbing up the tiers and GlowLight a light round the Kingpin. Look picks the recipe
--- (defaults to Id).
+-- The fifteen looks, street kid to Kingpin: ART ONLY now. Players keep their own Roblox avatar (brief 17), so no look is
+-- equipped, gives Power or changes walk speed. The rows stay for SkinArt (its mannequin renders, the shoe fit checks)
+-- and the original Block's look stand (SimulatorLobby), and their ids stay valid in old saves (EquippedSkin).
+-- Color = the main top (jacket/tee), Accent and Trim = the look's second and third colours, Pants, Skin, Hair, Shirt;
+-- Style/Hat name the silhouette; Expression the face; Pose the display pose (SkinArt.Poses); Glow (tiers 11+) the
+-- sparkle colour, with GlowRate/GlowSize climbing up the tiers and GlowLight a light round the Kingpin. Look picks the
+-- recipe (defaults to Id). Required and Gain are the old ladder's numbers, printed by the old stand only.
 local C=Color3.fromRGB
 local S={List={}}
 -- Skin tones are spread over the whole ladder (no tone belongs to a tier); on players Art.equip keeps the
@@ -31,32 +32,23 @@ for i,r in rows do
  table.insert(S.List,r)
 end
 S.ById={};for _,s in S.List do S.ById[s.Id]=s end
--- The shooting ranges, in walking order from the entrance (the shot pays Multiplier times your look's gain, times
--- your gun). Where each shooter's box sits is read from the built lobby at runtime (Training_<Id>.TrainingZone),
--- so the lanes can be moved in Studio without code edits. Gear names the original Block's gym builders
--- (SimulatorLobby), so it keeps its old values. Name is the lane's one player-facing name, everywhere (the
--- terrace plaques, the HUD hint, the guide's pointer): BAY 1 to BAY 8, in walking order.
+-- The shooting ranges (lanes), in walking order from the entrance. A lane opens at a number of rebirths (Rebirths:
+-- BAY 1 at once, then every two rebirths; the Champ Ring in the boss yard at 16) and multiplies every shot's Power by
+-- its Multiplier (Shared/ShotRules: base x lane x rebirth multiplier x gun x shoes). Where each shooter's box sits is
+-- read from the built map at runtime (Training_<Id>.TrainingZone), so lanes can move in Studio without code edits.
+-- Name is the lane's one player-facing name everywhere (labels, the HUD hint, the guide). Gear names the original
+-- Block's gym builders (SimulatorLobby). Required is always 0: HoodProps' and SimulatorLobby's sign builders print it
+-- (the old Power price); nothing gameplay reads it.
 S.Stations={
- {Id='Starter',Name='BAY 1',Gear='TireBag',Required=0,Multiplier=2,Color=C(150,156,166)},
- {Id='Tape',Name='BAY 2',Gear='TapeBag',Required=50,Multiplier=3,Color=C(196,150,96)},
- {Id='Street',Name='BAY 3',Gear='StreetBag',Required=150,Multiplier=4,Color=C(84,140,220)},
- {Id='Heavy',Name='BAY 4',Gear='HeavyBag',Required=500,Multiplier=6,Color=C(222,72,72)},
- {Id='Speed',Name='BAY 5',Gear='SpeedBag',Required=1000,Multiplier=8,Color=C(246,136,52)},
- {Id='DoubleEnd',Name='BAY 6',Gear='DoubleEndBag',Required=3000,Multiplier=12,Color=C(160,86,226)},
- {Id='Pro',Name='BAY 7',Gear='ProBag',Required=8000,Multiplier=18,Color=C(40,190,190)},
- {Id='Gold',Name='BAY 8',Gear='GoldBag',Required=20000,Multiplier=25,Color=C(240,192,56)},
- {Id='Ring',Name='Champ Ring',Gear='Ring',Required=50000,Multiplier=40,Color=C(230,60,140)},
+ {Id='Starter',Name='BAY 1',Gear='TireBag',Rebirths=0,Multiplier=1,Required=0,Color=C(150,156,166)},
+ {Id='Tape',Name='BAY 2',Gear='TapeBag',Rebirths=2,Multiplier=2,Required=0,Color=C(196,150,96)},
+ {Id='Street',Name='BAY 3',Gear='StreetBag',Rebirths=4,Multiplier=3,Required=0,Color=C(84,140,220)},
+ {Id='Heavy',Name='BAY 4',Gear='HeavyBag',Rebirths=6,Multiplier=5,Required=0,Color=C(222,72,72)},
+ {Id='Speed',Name='BAY 5',Gear='SpeedBag',Rebirths=8,Multiplier=8,Required=0,Color=C(246,136,52)},
+ {Id='DoubleEnd',Name='BAY 6',Gear='DoubleEndBag',Rebirths=10,Multiplier=12,Required=0,Color=C(160,86,226)},
+ {Id='Pro',Name='BAY 7',Gear='ProBag',Rebirths=12,Multiplier=18,Required=0,Color=C(40,190,190)},
+ {Id='Gold',Name='BAY 8',Gear='GoldBag',Rebirths=14,Multiplier=25,Required=0,Color=C(240,192,56)},
+ {Id='Ring',Name='Champ Ring',Gear='Ring',Rebirths=16,Multiplier=40,Required=0,Color=C(230,60,140)},
 }
 S.StationById={};for _,s in S.Stations do S.StationById[s.Id]=s end
-function S.available(power,id) local s=S.ById[id];return s~=nil and power>=s.Required end
-function S.nextSkin(power) for _,s in S.List do if power<s.Required then return s end end end
-function S.gain(id,multiplier) return (S.ById[id] or S.List[1]).Gain*multiplier end
--- Walk speed by look: every evolution walks a little faster, linear by Index from Roblox's default 16 (Corner
--- Kid) to 24 (the Kingpin), about 0.57 a look. An unknown id walks at Base. LobbyService puts it on the Humanoid.
-S.Walk={Base=16,Top=24}
-function S.walkSpeed(id)
- local s=S.ById[id]
- if not s then return S.Walk.Base end
- return S.Walk.Base+(S.Walk.Top-S.Walk.Base)*(s.Index-1)/math.max(1,#S.List-1)
-end
 return S

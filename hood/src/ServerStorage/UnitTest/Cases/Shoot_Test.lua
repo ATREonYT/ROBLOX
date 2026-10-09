@@ -4,15 +4,33 @@ return function(t)
  local GunTool=require(RS.Shared.GunTool)
  local Guns=require(RS.Shared.Config.Guns)
  local Net=require(RS.Shared.Net)
- local Skins=require(RS.Shared.Config.Skins)
- -- A shot pays a tenth of the per-second gain (at least 1) times the gun, whatever junk arrives.
- t.test('a shot pays a tenth of the gain times the gun',function()
-  t.expect.equal(ShotRules.pay(0,1),1);t.expect.equal(ShotRules.pay(9,1),1);t.expect.equal(ShotRules.pay(10,1),1);t.expect.equal(ShotRules.pay(100,1),10)
-  t.expect.equal(ShotRules.pay(100,3),30);t.expect.equal(ShotRules.pay(5,8),8);t.expect.equal(ShotRules.pay(Skins.gain('Kingpin',25),32),275*32)
-  t.expect.equal(ShotRules.pay(0/0,0/0),1);t.expect.equal(ShotRules.pay(-50,-4),1);t.expect.equal(ShotRules.pay('x',nil),1);t.expect.equal(ShotRules.pay(math.huge,1),1)
+ -- A shot pays ShotBase x lane x rebirth multiplier (x boosts) x gun x shoes, whatever junk arrives (brief 17).
+ t.test('a shot pays base x lane x rebirth x gun',function()
+  local Balance=require(RS.Shared.Config.Balance)
+  t.expect.equal(Balance.ShotBase,1)
+  t.expect.equal(ShotRules.perShot(1,0),1);t.expect.equal(ShotRules.perShot(3,0),3);t.expect.equal(ShotRules.perShot(3,4),15);t.expect.equal(ShotRules.perShot(25,14),375)
+  t.expect.equal(ShotRules.perShot(0,9),0) -- (a locked lane)
+  t.expect.equal(ShotRules.perShot(2,1,2),8);t.expect.equal(ShotRules.perShot(2,1,99),2*2*ShotRules.MaxBoost);t.expect.equal(ShotRules.perShot(2,1,0/0),4)
+  t.expect.equal(ShotRules.pay(ShotRules.perShot(1,0),1),1);t.expect.equal(ShotRules.pay(ShotRules.perShot(3,4),8),120);t.expect.equal(ShotRules.pay(ShotRules.perShot(18,12),32,2),18*13*32*2)
+  t.expect.equal(ShotRules.pay(0,8),0);t.expect.equal(ShotRules.pay(-50,-4),0) -- (a locked lane pays nothing)
+  t.expect.equal(ShotRules.pay(0/0,0/0),1);t.expect.equal(ShotRules.pay('x',nil),1);t.expect.equal(ShotRules.pay(nil,3),3);t.expect.equal(ShotRules.pay(math.huge,1),1);t.expect.equal(ShotRules.pay(2.7,1),2)
+  t.expect.equal(ShotRules.boost(true,nil),2);t.expect.equal(ShotRules.boost(false,3),3);t.expect.equal(ShotRules.boost(true,3),6);t.expect.equal(ShotRules.boost('yes',0/0),1);t.expect.equal(ShotRules.boost(true,1e9),ShotRules.MaxBoost)
  end)
- -- Only an unlocked range's box counts.
- t.test('shots count only on an unlocked range',function()
+ -- No Power per second any more: nothing in the shared rules pays by time, and the lobby service only adds Power in
+ -- its Shoot handler (the source is checked where it can be read: the offline harness, the command bar).
+ t.test('no passive gain: Power only comes from shots',function()
+  local Skins=require(RS.Shared.Config.Skins);t.expect.equal(Skins.gain,nil)
+  local ok,src=pcall(function() return game.ServerScriptService.HoodServer.LobbyService.Source end)
+  if ok and type(src)=='string' and #src>0 then
+   local writes=0;for _ in src:gmatch('profile%.Data%.Rep%s*=') do writes+=1 end
+   t.expect.equal(writes,1)
+   local shoot=src:find("Net.get('Shoot').OnServerEvent",1,true);local at=src:find('profile%.Data%.Rep%s*=')
+   local loop=src:find('while task.wait',1,true)
+   t.expect.truthy(shoot and at and at>shoot and loop and at<loop)
+  end
+ end)
+ -- Only an open lane's box counts.
+ t.test('shots count only on an open lane',function()
   t.expect.truthy(ShotRules.counts('Starter'));t.expect.truthy(ShotRules.counts('Gold'))
   t.expect.falsy(ShotRules.counts(''));t.expect.falsy(ShotRules.counts('Locked:Tape'));t.expect.falsy(ShotRules.counts(nil));t.expect.falsy(ShotRules.counts(7))
   t.expect.truthy(ShotRules.Burst>=ShotRules.PerSecond and ShotRules.PerSecond<=8 and 1/ShotRules.Cooldown>=ShotRules.PerSecond)

@@ -150,8 +150,8 @@ CollectionService:GetInstanceRemovedSignal('HoodWaveTarget'):Connect(untrack)
 local gui, root, fit = Kit.screen('HoodWaves', nil, 6)
 -- "N LEFT" at the top centre, in the HUD's ink-outlined sticker style, a red-and-white target as its icon.
 local pill = Kit.new('Frame', { Name = 'WaveLeft', AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 4), Size = UDim2.fromOffset(196, 46), BackgroundColor3 = Kit.Color.asphalt, BorderSizePixel = 0, Visible = false, Parent = root })
-Kit.corner(14).Parent = pill
-Kit.stroke(Kit.Color.ink, 3, true).Parent = pill
+Kit.corner(8).Parent = pill -- (brief 17: the HUD's block style)
+Kit.stroke(Kit.Color.ink, 3.5, true).Parent = pill
 Kit.gradient(Kit.hex('3B3F5C'), Kit.Color.asphalt, 0.5).Parent = pill
 local pillScale = Kit.new('UIScale', { Parent = pill })
 local icon = Kit.new('Frame', { Name = 'Target', AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 8, 0.5, 0), Size = UDim2.fromOffset(34, 34), BackgroundTransparency = 1, Parent = pill })
@@ -271,10 +271,11 @@ local function pick(rootPos)
 	sticky = WaveRules.pick(list, eye, look, rootPos, sticky)
 	return sticky and targets[current][sticky]
 end
--- What a hit will deal (the server's own sum: ShotRules.pay at x1 with your look, gun and shoes).
+-- What a hit will deal (the server's own sum: ShotRules.pay of the x1 ShotBase the server keeps on you off the
+-- ranges (rebirth multiplier and boosts), times your gun and shoes).
 local shoeCarry = {}
 local function expected()
-	return ShotRules.pay(Skins.gain(player:GetAttribute('EquippedSkin') or '', 1), player:GetAttribute('GunMultiplier'), player:GetAttribute('ShoeMultiplier'), shoeCarry)
+	return ShotRules.pay(player:GetAttribute('ShotBase'), player:GetAttribute('GunMultiplier'), player:GetAttribute('ShoeMultiplier'), shoeCarry)
 end
 -- The running "+N" sits beside the target on your screen's right, clear of its tag.
 local function comboAt(e)

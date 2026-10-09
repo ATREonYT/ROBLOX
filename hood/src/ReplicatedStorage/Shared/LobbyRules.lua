@@ -1,20 +1,27 @@
 local Skins=require(script.Parent.Config.Skins)
+local RebirthRules=require(script.Parent.RebirthRules)
 local Rules={}
--- A look you've unlocked equips from anywhere (the HUD's EVOLVE menu): only a known id and enough Power count.
-function Rules.canEquip(power,id)
- return type(id)=='string' and type(power)=='number' and power==power and Skins.available(power,id)
-end
 -- Training zones are map-local rectangles: {Station,X,Z,HalfX,HalfZ,Top}. Rules.zonesFrom reads them off the
--- TrainingZone mats in the built lobby, so the server always trains on the mats players can actually see.
-function Rules.training(power,localPosition,zones)
+-- TrainingZone mats in the built map, so the server trains on the mats players can actually see.
+-- Rules.training(rebirths, localPosition, zones): the lane you stand in. Returns (multiplier, station): an open lane
+-- gives its Multiplier and its Id; a lane that needs more rebirths gives (0, 'Locked:<Id>') (its shots pay nothing);
+-- off every lane (1, '') (the x1 a stage target pays).
+function Rules.training(rebirths,localPosition,zones)
  for _,z in zones do
   local s=z.Station
   if math.abs(localPosition.X-z.X)<=z.HalfX and math.abs(localPosition.Z-z.Z)<=z.HalfZ and localPosition.Y>=z.Top-0.5 and localPosition.Y<=z.Top+8 then
-   if power>=s.Required then return s.Multiplier,s.Id end
-   return 1,'Locked:'..s.Id
+   if RebirthRules.laneOpen(s,rebirths) then return s.Multiplier,s.Id end
+   return 0,'Locked:'..s.Id
   end
  end
  return 1,''
+end
+-- Rebirths the lane in a TrainingStation value still needs ('Locked:<Id>'), else 0.
+function Rules.need(station,rebirths)
+ if type(station)~='string' then return 0 end
+ local s=Skins.StationById[(station:gsub('^Locked:',''))]
+ if not s or RebirthRules.laneOpen(s,rebirths) then return 0 end
+ return RebirthRules.laneNeed(s)
 end
 function Rules.zonesFrom(lobby,mapFrame)
  local zones={}

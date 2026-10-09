@@ -1,26 +1,21 @@
--- World-side guidance and feedback on the active map (the original Block's SimulatorLobby, or The Block V2):
--- look stand prompts (where a map has one), Locked/Unlocked on the training stations (the original Block's gym
--- still shows locked gear as black silhouettes), the floating arrow over where to go next ("TRAIN x4 HERE"), the
--- "+N POWER" pop over your head and the sway of the bag you train on. Looks equip from the HUD's EVOLVE menu. The screen HUD (Power, LEVEL bar, hint line, notices) is HUD.client.
+-- World-side guidance and feedback on the active map (The Block V2, or the original Block's SimulatorLobby):
+-- Unlocked/Locked on the shooting ranges (a lane opens at a number of rebirths, Config/Skins.Stations; a locked lane
+-- is a black silhouette under a label that stays readable: "Locked", the rebirths it needs, "xN Power"), the floating
+-- arrow over your best open lane ("TRAIN x3 HERE"), the new player's floor guide (to BAY 1, then out through the
+-- stage door), the "+N POWER" pop over your head for Power that comes from anywhere but a shot, and the sway of the
+-- bag you train on. Players keep their own avatar: there are no looks to equip. The screen HUD is HUD.client.
 local Players = game:GetService('Players')
 local RS = game:GetService('ReplicatedStorage')
 local TweenService = game:GetService('TweenService')
 local RunService = game:GetService('RunService')
 local Skins = require(RS.Shared.Config.Skins)
-local Net = require(RS.Shared.Net)
 local ActiveMap = require(RS.Shared.ActiveMap)
+local RebirthRules = require(RS.Shared.RebirthRules)
 
 local player = Players.LocalPlayer
 local active = ActiveMap.wait(20)
 if not active then return end
 local lobby = active.Lobby
--- A map may have a morph stand (`Morphs`, which the original Block's SimulatorLobby builds): its looks get
--- prompts, labels and locked/unlocked paint. Without one (The Block V2) all of that is skipped and the rest runs
--- as usual; looks equip from the HUD's EVOLVE menu anywhere. Only the original Block waits for its stand to
--- stream in, so a map without one never stalls here.
-local morphs = active.Root:GetAttribute('MorphStand') ~= false
-	and (lobby:FindFirstChild('Morphs', true) or (active.Id == 'Block' and ActiveMap.find(lobby, 'Morphs', 20)))
-	or nil
 local training = lobby:FindFirstChild('Training') or lobby
 
 local C = Color3.fromRGB
@@ -47,217 +42,6 @@ local function compact(v)
 	return tostring(math.floor(v))
 end
 
----------------------------------------------------------------------------------------------- prompts
--- Each look on a stand has its own Equip prompt (the server equips unlocked looks from anywhere, so the prompt
--- is only a shortcut).
-local FIGURE_REACH = 11
-local prompts = {}
-for _, s in (morphs and Skins.List or {}) do
-	local stand = morphs:WaitForChild('Skin_' .. s.Id, 10)
-	local target = stand and stand:WaitForChild('Interact', 10)
-	if not target then continue end
-	local p = Instance.new('ProximityPrompt')
-	p.Name = 'Equip_' .. s.Id
-	p.MaxActivationDistance = FIGURE_REACH
-	p.RequiresLineOfSight = false
-	p.HoldDuration = 0
-	p.ObjectText = s.Name
-	p.ActionText = 'Equip'
-	p.Parent = target
-	p.Triggered:Connect(function() Net.get('EquipSkin'):FireServer(s.Id) end)
-	prompts[s.Id] = p
-end
--- Looks on the stand (Skin_<Id> > Display = the figure, Lock = the padlock, Turntable = the disc, LabelAnchor =
--- the label (WorldLabel) and the NextMarker; effects marked UnlockedOnly or held by a part marked so; all
--- optional):
---   locked     its own colours pulled halfway to a dark shade of the pad colour (still recognisable, plainly
---              not yours), padlock shown, unlock-only effects off, frozen
---   next look  (the first one you can't wear yet) in full colour with its padlock, its pad pulsing and its
---              NEXT tag hanging off the pad: the goal
---   unlocked   full colour, effects on, breathing (a small HoodMotion bob, phased by column)
---   worn       the same, turning slowly on its disc
--- A stand with the Showcase attribute (the featured Kingpin) keeps its own colours and motion.
--- Labels on the podium's stands (Look attribute): the full label only on stands within 7 studs of you whose
--- equip point is above your feet but within one level (the row you face, never the row behind/below you);
--- while none is up, your next look shows a bobbing ▼ marker instead.
-local LOOK_SHADOW = C(26, 27, 36)
-local LOCK_TINT = 0.4 -- how far a locked figure's colours move toward the shade
-local LABEL_RANGE, LABEL_RISE = 7, 4.5
-local PULSE = TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
--- Stands with LockStyle 'Gold' (the top tier) lock as gold statues: each part's brightness mapped onto a
--- dark -> mid -> light gold ramp, small bits (eyes, buttons) dark gold so faces still read; SmoothPlastic with
--- a little reflectance for the sheen (Metal reads as dull bronze away from a bright sky).
-local GOLD_DARK, GOLD_MID, GOLD_LIGHT = C(110, 70, 12), C(214, 158, 36), C(255, 226, 130)
-local function gold(color, size)
-	if size.X < 0.3 and size.Y < 0.3 and size.Z < 0.3 then return GOLD_DARK end
-	local l = 0.299 * color.R + 0.587 * color.G + 0.114 * color.B
-	return l < 0.5 and GOLD_DARK:Lerp(GOLD_MID, l / 0.5) or GOLD_MID:Lerp(GOLD_LIGHT, (l - 0.5) / 0.5)
-end
-local looks = {}
-for _, s in (morphs and Skins.List or {}) do
-	local stand = morphs:FindFirstChild('Skin_' .. s.Id)
-	local band = stand and stand:GetAttribute('BandColor')
-	local entry = { Parts = {}, Lock = {}, Fx = {}, Disc = {}, Glow = {}, Tag = {}, Column = stand and stand:GetAttribute('Column') or 1 }
-	-- The shade: the pad colour darkened by the stand's LockShade.
-	entry.Shadow = typeof(band) == 'Color3' and band:Lerp(Color3.new(0, 0, 0), stand:GetAttribute('LockShade') or 0.6) or LOOK_SHADOW
-	entry.Gold = stand and stand:GetAttribute('LockStyle') == 'Gold'
-	entry.Showcase = stand and stand:GetAttribute('Showcase')
-	entry.Display = stand and not entry.Showcase and stand:FindFirstChild('Display')
-	if entry.Display then entry.Pivot = entry.Display:GetPivot() end
-	for _, p in (entry.Display and entry.Display:GetDescendants() or {}) do
-		if p:IsA('BasePart') and p.Transparency < 1 then
-			table.insert(entry.Parts, { Part = p, Color = p.Color, Material = p.Material, Reflectance = p.Reflectance, Gold = entry.Gold and gold(p.Color, p.Size) or nil })
-		end
-	end
-	for _, name in { 'Lock', 'Turntable', 'NextTag' } do
-		local m = stand and stand:FindFirstChild(name)
-		for _, p in (m and m:GetDescendants() or {}) do
-			if p:IsA('BasePart') or (name == 'NextTag' and p:IsA('SurfaceGui')) then table.insert(name == 'Lock' and entry.Lock or name == 'Turntable' and entry.Disc or entry.Tag, p) end
-		end
-	end
-	for _, d in (stand and stand:GetDescendants() or {}) do
-		if (d:IsA('ParticleEmitter') or d:IsA('Beam')) and (d:GetAttribute('UnlockedOnly') or d.Parent:GetAttribute('UnlockedOnly')) then table.insert(entry.Fx, d) end
-		-- The pad's inset and rim strips: they pulse while this is your next look.
-		if d:IsA('BasePart') and (d.Name == 'PadGlow' or d.Name == 'PadRimStrip') then table.insert(entry.Glow, d) end
-	end
-	local anchor = stand and stand:GetAttribute('Look') and stand:FindFirstChild('LabelAnchor')
-	entry.Label = anchor and anchor:FindFirstChild('WorldLabel')
-	entry.Marker = anchor and anchor:FindFirstChild('NextMarker')
-	if entry.Marker then
-		-- The marker bobs (it only shows on your next look).
-		TweenService:Create(entry.Marker, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), { StudsOffset = entry.Marker.StudsOffset + Vector3.new(0, 0.3, 0) }):Play()
-	end
-	entry.Point = stand and stand:FindFirstChild('Interact')
-	looks[s.Id] = entry
-end
-local pulsing = {}
-local function paintLooks(n, worn)
-	local goal = Skins.nextSkin(n)
-	for _, s in Skins.List do
-		local e = looks[s.Id]
-		local locked = n < s.Required
-		local shaded = locked and goal ~= s
-		local state = (locked and 'L' or 'U') .. (shaded and 'S' or '') .. (worn == s.Id and 'W' or '') .. (goal == s and 'G' or '')
-		if e and e.State ~= state then
-			e.State = state
-			for _, r in e.Parts do
-				if shaded and r.Gold then
-					r.Part.Color, r.Part.Material, r.Part.Reflectance = r.Gold, Enum.Material.SmoothPlastic, 0.2
-				else
-					r.Part.Color = shaded and r.Color:Lerp(e.Shadow, LOCK_TINT) or r.Color
-					r.Part.Material = shaded and Enum.Material.SmoothPlastic or r.Material
-					r.Part.Reflectance = r.Reflectance
-				end
-			end
-			for _, p in e.Lock do p.Transparency = locked and 0 or 1 end
-			for _, p in e.Disc do p.Transparency = worn == s.Id and 0 or 1 end
-			for _, p in e.Tag do
-				if p:IsA('SurfaceGui') then p.Enabled = goal == s else p.Transparency = goal == s and 0 or 1 end
-			end
-			for _, fx in e.Fx do fx.Enabled = not locked end
-			local d = e.Display
-			if d and locked then
-				-- Frozen, back on its spot.
-				d:RemoveTag('HoodMotion')
-				d:PivotTo(e.Pivot)
-			elseif d then
-				d:SetAttribute('Bob', 0.1)
-				d:SetAttribute('BobPeriod', 2.4 + 0.3 * e.Column)
-				d:SetAttribute('Spin', worn == s.Id and 12 or nil)
-				d:AddTag('HoodMotion')
-			end
-			-- The goal's pad breathes; any other pad sits still at full glow.
-			for _, t in (pulsing[s.Id] or {}) do t:Cancel() end
-			pulsing[s.Id] = nil
-			for _, p in e.Glow do p.Transparency = 0 end
-			if goal == s then
-				pulsing[s.Id] = {}
-				for _, p in e.Glow do
-					local t = TweenService:Create(p, PULSE, { Transparency = 0.35 })
-					t:Play()
-					table.insert(pulsing[s.Id], t)
-				end
-			end
-		end
-	end
-end
--- Where your feet are, from your rig (R15: the root's bottom less HipHeight; R6: 2-stud legs), so short,
--- scaled and Rthro avatars are judged by the level they stand on. Each stand's level is its equip point less 1.2.
-local function feetOf(c, root)
-	local hum = c and c:FindFirstChildOfClass('Humanoid')
-	local legs = hum and (hum.RigType == Enum.HumanoidRigType.R15 and hum.HipHeight or 2) or 2
-	return root.Position.Y - root.Size.Y / 2 - legs
-end
-local function showLabels(n)
-	local c = player.Character
-	local root = c and c:FindFirstChild('HumanoidRootPart')
-	local feet = root and feetOf(c, root)
-	local goal = n and Skins.nextSkin(n)
-	local any = false
-	for _, s in Skins.List do
-		local e = looks[s.Id]
-		if e and e.Label and e.Point then
-			local near = false
-			if root then
-				local d = e.Point.Position - root.Position
-				local up = e.Point.Position.Y - 1.2 - feet -- (the stand's level above yours: one tier up is 2.7-4.5)
-				near = Vector3.new(d.X, 0, d.Z).Magnitude <= LABEL_RANGE and up > 0.1 and up <= LABEL_RISE + 0.2
-			end
-			e.Label.Enabled = near
-			any = any or near
-		end
-	end
-	for _, s in Skins.List do
-		local e = looks[s.Id]
-		if e and e.Marker then e.Marker.Enabled = goal == s and not any end
-	end
-end
--- While you walk a tier the row below you stands between the camera and you (the figures don't collide, so
--- the camera doesn't pull in): fade, on your screen only, any figure standing on your level or lower (its pad
--- base at or under your feet) within 3.5 studs of the line from the camera to you, between the two.
-local FADE, FADE_WIDTH = 0.6, 3.5
-local function fadeRows()
-	local c = player.Character
-	local root = c and c:FindFirstChild('HumanoidRootPart')
-	local cam = workspace.CurrentCamera
-	local feet = root and feetOf(c, root)
-	for _, s in Skins.List do
-		local e = looks[s.Id]
-		if e and e.Pivot and e.Point then
-			local fade = false
-			if root then
-				local fp, rp = e.Pivot.Position, root.Position
-				if e.Point.Position.Y - 1.2 <= feet + 0.5 then -- (its level at or under yours)
-					if cam then
-						local a = Vector3.new(cam.CFrame.Position.X, 0, cam.CFrame.Position.Z)
-						local b = Vector3.new(rp.X, 0, rp.Z)
-						local f = Vector3.new(fp.X, 0, fp.Z)
-						local ab = b - a
-						local t = ab.Magnitude > 0.01 and (f - a):Dot(ab) / ab:Dot(ab) or 2
-						fade = t > 0 and t < 1 and (a + ab * t - f).Magnitude < FADE_WIDTH
-					else
-						fade = math.abs(fp.X - rp.X) < FADE_WIDTH and fp.Z < rp.Z
-					end
-				end
-			end
-			if e.Faded ~= fade then
-				e.Faded = fade
-				for _, r in e.Parts do r.Part.LocalTransparencyModifier = fade and FADE or 0 end
-			end
-		end
-	end
-end
-if morphs then
-	-- Labels follow you round the stand and the row in front fades (a few checks a second).
-	local nextCheck = 0
-	RunService.Heartbeat:Connect(function()
-		if os.clock() < nextCheck then return end
-		nextCheck = os.clock() + 0.25
-		showLabels(player:GetAttribute('Power'))
-		fadeRows()
-	end)
-end
-
 ---------------------------------------------------------------------------------------------- arrow
 local indicator = Instance.new('BillboardGui')
 indicator.Name = 'NextDestination'
@@ -270,80 +54,102 @@ indicator.Parent = player.PlayerGui
 local pointer = label(indicator, 'Destination', 22, C(255, 224, 80))
 
 ---------------------------------------------------------------------------------------------- stations
--- Training stations in the built lobby: shooter's box, sign, targets. A locked station turns black, like the
--- training lanes in the user's +1 video: range lanes built with the Silhouette attribute go black as a whole (every
--- visible part, its textures, surface signs, effects and lights) while their label stays readable over them;
--- older stations without it (the original Block's gym) black out their gear only.
+-- The shooting ranges on the map: shooter's box, label, targets. A lane opens at a number of rebirths
+-- (Skins.Stations[i].Rebirths); a locked lane turns black, like the training lanes in the user's +1 video: lanes built
+-- with the Silhouette attribute go black as a whole (every visible part, its textures, surface signs, effects and
+-- lights) while their label stays readable over them; older stations without it (the Champ Ring, the original Block's
+-- gym) black out their gear only.
+--   Lane labels (code5/d2_stations Stations.labels: a BillboardGui with Detail, Chip > Cost, Power): Detail
+--   "Unlocked" green / "Locked" red, the chip "FREE" or "🔄 <rebirths>", and "xN Power" in the lane's colour. The chip
+--   and the multiplier are rewritten here from the config too, so a map built before the rebirth lanes still reads right.
+--   The Champ Ring's sign (HoodProps): Detail "LOCKED • 🔄 16 REBIRTHS" / "UNLOCKED • TRAIN HERE".
 local okVfx, HoodVFX = pcall(require, RS.Shared.HoodVFX)
 if not okVfx then HoodVFX = nil end
 local stations = {}
-for _, s in Skins.Stations do
-	local model = training:FindFirstChild('Training_' .. s.Id, true)
-	if model then
-		local sign = model:FindFirstChild('Sign', true) or model:FindFirstChild('Nameplate', true)
-		local entry = { Zone = model:FindFirstChild('TrainingZone', true), Sign = sign, Parts = {}, Swing = {}, Fx = model:FindFirstChild('Theme'), Skins = {}, Guis = {} }
-		entry.Bag = sign ~= nil and sign:FindFirstChild('Power', true) ~= nil
-		if model:GetAttribute('Silhouette') then
-			entry.Whole = model
-			for _, p in model:GetDescendants() do
-				if p:IsA('BasePart') and p.Transparency < 1 then
-					table.insert(entry.Parts, { Part = p, Color = p.Color, Material = p.Material })
-				elseif p:IsA('Texture') or p:IsA('Decal') then
-					table.insert(entry.Skins, { Item = p, Transparency = p.Transparency })
-				elseif p:IsA('SurfaceGui') then
-					table.insert(entry.Guis, p)
-				end
-			end
-		end
-		local gear = model:FindFirstChild('Equipment')
-		if gear then
-			if not entry.Bag and not entry.Whole then
-				for _, p in gear:GetDescendants() do
-					if p:IsA('BasePart') and p.Transparency < 1 then table.insert(entry.Parts, { Part = p, Color = p.Color, Material = p.Material }) end
-				end
-			end
-			local hinge = gear:FindFirstChild('Hinge')
-			local swing = gear:FindFirstChild('Swing')
-			if hinge and swing then
-				entry.Hinge = hinge.CFrame
-				for _, p in swing:GetDescendants() do
-					if p:IsA('BasePart') then table.insert(entry.Swing, { Part = p, Offset = hinge.CFrame:ToObjectSpace(p.CFrame) }) end
-				end
-			end
-		end
-		stations[s.Id] = entry
-	end
-end
--- Range-lane labels like the video's training row: every lane shows its stack (Locked/Unlocked, what it needs,
--- "xN Power") from across the hall. (Middle stays for a station that should only show up close; none does now.)
 local LABEL_FAR, LABEL_NEAR, NEXT_LIFT = 250, 22, Vector3.new(0, 6.5, 0)
-for _, e in stations do
-	if e.Bag and e.Zone then
-		e.Label = e.Sign:FindFirstChildWhichIsA('BillboardGui')
-		e.Middle = false
+local function chipText(s) return s.Rebirths == 0 and 'FREE' or ('🔄 ' .. s.Rebirths) end
+local function track(s)
+	local model = training:FindFirstChild('Training_' .. s.Id, true) or active.Root:FindFirstChild('Training_' .. s.Id, true)
+	if not model then return nil end
+	local sign = model:FindFirstChild('Sign', true) or model:FindFirstChild('Nameplate', true)
+	local entry = { Zone = model:FindFirstChild('TrainingZone', true), Sign = sign, Parts = {}, Swing = {}, Fx = model:FindFirstChild('Theme'), Skins = {}, Guis = {} }
+	entry.Bag = sign ~= nil and sign:FindFirstChild('Power', true) ~= nil
+	if model:GetAttribute('Silhouette') then
+		entry.Whole = model
+		for _, p in model:GetDescendants() do
+			if p:IsA('BasePart') and p.Transparency < 1 then
+				table.insert(entry.Parts, { Part = p, Color = p.Color, Material = p.Material })
+			elseif p:IsA('Texture') or p:IsA('Decal') then
+				table.insert(entry.Skins, { Item = p, Transparency = p.Transparency })
+			elseif p:IsA('SurfaceGui') then
+				table.insert(entry.Guis, p)
+			end
+		end
 	end
+	local gear = model:FindFirstChild('Equipment')
+	if gear then
+		if not entry.Bag and not entry.Whole then
+			for _, p in gear:GetDescendants() do
+				if p:IsA('BasePart') and p.Transparency < 1 then table.insert(entry.Parts, { Part = p, Color = p.Color, Material = p.Material }) end
+			end
+		end
+		local hinge = gear:FindFirstChild('Hinge')
+		local swing = gear:FindFirstChild('Swing')
+		if hinge and swing then
+			entry.Hinge = hinge.CFrame
+			for _, p in swing:GetDescendants() do
+				if p:IsA('BasePart') then table.insert(entry.Swing, { Part = p, Offset = hinge.CFrame:ToObjectSpace(p.CFrame) }) end
+			end
+		end
+	end
+	-- Range-lane labels like the video's training row: every lane shows its stack from across the hall. (Middle
+	-- stays for a station that should only show up close; none does now.)
+	if entry.Bag and entry.Zone then
+		entry.Label = sign:FindFirstChildWhichIsA('BillboardGui')
+		entry.Middle = false
+		local cost = sign:FindFirstChild('Cost', true)
+		if cost and cost:IsA('TextLabel') then cost.Text = chipText(s) end
+		local power = sign:FindFirstChild('Power', true)
+		if power and power:IsA('TextLabel') then power.Text = 'x' .. s.Multiplier .. ' Power' end
+	end
+	stations[s.Id] = entry
+	return entry
 end
+for _, s in Skins.Stations do track(s) end
 -- The lanes whose box is within 25 studs of each lane's box (any direction, any height): their stacks hide while
 -- you stand in that box, so the shooter's view isn't a pile of labels under the HUD hint.
 local NEIGHBOUR = 25
-for _, e in stations do
-	e.Near = {}
-	for id, o in stations do
-		if o ~= e and e.Zone and o.Zone and (o.Zone.CFrame.Position - e.Zone.CFrame.Position).Magnitude < NEIGHBOUR then e.Near[id] = true end
+local function neighbours()
+	for _, e in stations do
+		e.Near = {}
+		for id, o in stations do
+			if o ~= e and e.Zone and o.Zone and (o.Zone.CFrame.Position - e.Zone.CFrame.Position).Magnitude < NEIGHBOUR then e.Near[id] = true end
+		end
 	end
+end
+neighbours()
+-- A station that hasn't streamed in yet (the Champ Ring is far down the street) is looked for again now and then.
+local nextLook = 0
+local function retrack()
+	if os.clock() < nextLook then return end
+	nextLook = os.clock() + 5
+	local found = false
+	for _, s in Skins.Stations do
+		if not stations[s.Id] and track(s) then found = true end
+	end
+	if found then neighbours() end
 end
 local SILHOUETTE = C(18, 18, 22)
 local UNLOCKED, LOCKED = C(40, 235, 90), C(240, 40, 60) -- (the video's green Unlocked and red Locked, as the lanes build them)
+-- n: your rebirths.
 local function paintStations(n)
-	local goal = nil -- the next station to unlock shows its stack from afar (lifted clear if it's a middle one)
-	for _, s in Skins.Stations do
-		if n < s.Required then goal = s break end
-	end
-	-- While you're still in the free tier the next lane stays a plain lane (no lift, no long range): lifted, its
-	-- stack landed on the FREE lane's from the side, and the free lane is the one a new player needs.
-	local free = n < (Skins.Stations[2] and Skins.Stations[2].Required or 0)
-	-- Your own lane's label hides while you stand in its box (the HUD hint already says its multiplier, or what it
-	-- needs), and so do your neighbours' (within 25 studs): from the shooter's spot they pile up under the hint.
+	retrack()
+	local goal = RebirthRules.nextLane(n) -- the next lane to open shows its stack from afar (lifted clear if it's a middle one)
+	-- While you're still before the first rebirth lane, the next lane stays a plain lane (no lift, no long range):
+	-- lifted, its stack landed on the FREE lane's from the side, and the free lane is the one a new player needs.
+	local free = n < (Skins.Stations[2] and Skins.Stations[2].Rebirths or 0)
+	-- Your own lane's label hides while you stand in its box (the HUD hint already says its multiplier, or the
+	-- rebirths it needs), and so do your neighbours' (within 25 studs): from the shooter's spot they pile up under it.
 	local here = player:GetAttribute('TrainingStation') or ''
 	local hereId = here:gsub('^Locked:', '')
 	local box = stations[hereId]
@@ -352,7 +158,7 @@ local function paintStations(n)
 		if e and e.Label then
 			local lift = goal == s and not free
 			local own = hereId == s.Id
-			local beside = box ~= nil and not own and not lift and box.Near[s.Id] == true
+			local beside = box ~= nil and not own and not lift and (box.Near or {})[s.Id] == true
 			local state = (e.Middle and 'M' or 'E') .. (lift and 'G' or '') .. (own and 'O' or '') .. (beside and 'N' or '')
 			if e.LabelState ~= state then
 				e.LabelState = state
@@ -362,7 +168,7 @@ local function paintStations(n)
 			end
 		end
 		if e then
-			local locked = n < s.Required
+			local locked = not RebirthRules.laneOpen(s, n)
 			if e.Locked ~= locked then
 				e.Locked = locked
 				for _, r in e.Parts do
@@ -379,11 +185,11 @@ local function paintStations(n)
 				local detail = e.Sign and e.Sign:FindFirstChild('Detail', true)
 				if detail then
 					if e.Bag then
-						-- Chip, Locked/Unlocked and "xN Power" all stay up at every distance.
+						-- Locked/Unlocked, the chip and "xN Power" all stay up at every distance.
 						detail.Text = locked and 'Locked' or 'Unlocked'
 						detail.TextColor3 = locked and LOCKED or UNLOCKED
 					else
-						detail.Text = locked and ('LOCKED • ' .. compact(s.Required) .. ' POWER') or (s.Required == 0 and 'FREE • TRAIN HERE' or 'UNLOCKED • TRAIN HERE')
+						detail.Text = locked and ('LOCKED • 🔄 ' .. s.Rebirths .. ' REBIRTHS') or (s.Rebirths == 0 and 'FREE • TRAIN HERE' or 'UNLOCKED • TRAIN HERE')
 						detail.TextColor3 = locked and C(255, 128, 128) or C(126, 255, 171)
 					end
 				end
@@ -414,7 +220,8 @@ end
 local CollectionService = game:GetService('CollectionService')
 local okPath, PathfindingService = pcall(function() return game:GetService('PathfindingService') end)
 if not okPath then PathfindingService = nil end
-local GUIDE_POWER = Skins.List[2] and Skins.List[2].Required or 25 -- (a map without stage gates: the old hand-off)
+local GUIDE_POWER = 10 -- (a map without stage gates: to BAY 1 until 10 Power)
+local PULSE = TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
 local GUIDE_COLOR = C(240, 186, 80)
 local HOVER, DOOR_IN, LEVEL = 0.7, 8, 0.8 -- trail height over the floor; exit point; "same floor" tolerance
 local guide, guideWant = {}, nil
@@ -751,7 +558,7 @@ local function showGuide(goal, inBox)
 		pointCompass()
 	end)
 end
--- n: Power; station: TrainingStation; evolving: the arrow is on the evolve guidance; zone: the free lane's box.
+-- n: Power; station: TrainingStation; evolving: true hides the guide (nothing sets it now); zone: the free lane's box.
 local function updateGuide(n, station, evolving, zone, laneTitle)
 	guideWant = { n, station, evolving, zone, laneTitle }
 	local phase, gate = guidePhase(n)
@@ -785,33 +592,14 @@ local pulse
 local function refresh()
 	local n = player:GetAttribute('Power')
 	if n == nil then return end
-	local id = player:GetAttribute('EquippedSkin') or 'CornerKid'
+	local rebirths = RebirthRules.count(player:GetAttribute('Rebirths'))
 	local station = player:GetAttribute('TrainingStation') or ''
-	for _, s in Skins.List do
-		local unlocked = n >= s.Required
-		if prompts[s.Id] then prompts[s.Id].ActionText = (id == s.Id and 'Equipped') or (unlocked and 'Equip  +' .. s.Gain .. '/sec') or (compact(s.Required) .. ' Power needed') end
-		local stand = morphs and morphs:FindFirstChild('Skin_' .. s.Id)
-		local anchor = stand and stand:FindFirstChild('LabelAnchor')
-		local detail = anchor and anchor:FindFirstChild('WorldLabel') and anchor.WorldLabel:FindFirstChild('Detail')
-		if detail then
-			-- Labels with their own Gain row (The Block V2's stand) keep the price, the action and the gain apart.
-			local split = anchor.WorldLabel:FindFirstChild('Gain')
-			detail.Text = split and (id == s.Id and 'EQUIPPED' or unlocked and 'EQUIP' or 'LOCKED') or (id == s.Id and 'EQUIPPED' or unlocked and 'EQUIP' or compact(s.Required) .. ' PWR') .. ' • +' .. s.Gain .. '/sec'
-			-- (a chip-only label, its name rows hidden, names the look: your own body can hide the pad's nameplate)
-			local title = split and anchor.WorldLabel:FindFirstChild('Title')
-			if title and not title.Visible then detail.Text = string.upper(s.Name) .. ' · ' .. detail.Text end
-			detail.TextColor3 = id == s.Id and (split and C(120, 220, 255) or C(255, 126, 119)) or unlocked and C(109, 244, 133) or (split and C(255, 90, 90) or C(255, 255, 255))
-		end
-	end
-	paintLooks(n, id)
-	showLabels(n)
-	fadeRows()
-	paintStations(n)
+	paintStations(rebirths)
+	-- The arrow floats over your best open lane while you're not in one.
 	local bestGym = Skins.Stations[1]
 	for _, g in Skins.Stations do
-		if n >= g.Required and stations[g.Id] then bestGym = g end
+		if RebirthRules.laneOpen(g, rebirths) and stations[g.Id] then bestGym = g end
 	end
-	-- (A new look unlocked is the HUD's job: its EVOLVE button wears a NEW! badge and the hint says to tap it.)
 	if station == '' or station:find('Locked:') then
 		indicator.Adornee = zoneOf(bestGym.Id)
 		pointer.Text = 'TRAIN x' .. bestGym.Multiplier .. ' HERE ↓'
@@ -819,9 +607,10 @@ local function refresh()
 		indicator.Adornee = nil
 	end
 	updateGuide(n, station, false, zoneOf(bestGym.Id), string.upper(bestGym.Name))
-	-- "+N POWER" over your head whenever Power goes up; not while you shoot on a range (Shoot.client puts each
-	-- shot's "+N" on the target, and a second number over your head would sit right on it).
-	if lastPower and n > lastPower and not require(RS.Shared.ShotRules).counts(station) then
+	-- "+N POWER" over your head when Power comes from anything but a shot (a pack from the store, say): not on a range
+	-- (Shoot.client puts each shot's "+N" on the target) and not in a stage with targets (Waves.client does there).
+	local inWave = (player:GetAttribute('WaveStage') or 0) ~= 0
+	if lastPower and n > lastPower and not require(RS.Shared.ShotRules).counts(station) and not inWave then
 		local c = player.Character
 		local head = c and c:FindFirstChild('Head')
 		if head then
@@ -843,10 +632,17 @@ local function refresh()
 	end
 	lastPower = n
 end
-for _, key in { 'Power', 'EquippedSkin', 'TrainingStation', 'PowerRate', 'StagesCleared', 'Rebirths' } do -- (the last two: the guide's steps)
+for _, key in { 'Power', 'TrainingStation', 'StagesCleared', 'Rebirths' } do -- (the last two: the guide's steps and the lanes)
 	player:GetAttributeChangedSignal(key):Connect(refresh)
 end
 refresh()
+-- (Lanes that stream in later get painted too.)
+task.spawn(function()
+	while true do
+		task.wait(5)
+		refresh()
+	end
+end)
 
 -- Only the bag you're training on sways, and only on your screen.
 local lastStation = ''

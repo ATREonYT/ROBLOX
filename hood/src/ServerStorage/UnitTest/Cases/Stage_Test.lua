@@ -34,10 +34,21 @@ return function(t)
   end
   t.expect.truthy(V2.Fights[16].Boss)
  end)
- t.test('every stage needs more power than the last, and the Champ Ring opens with the boss yard',function()
+ t.test('every stage needs more power than the last, from the economy table, and the Champ Ring opens last',function()
   local V2=require(game.ServerStorage.TheBlockV2);local S=require(game.ReplicatedStorage.Shared.Config.Skins)
-  t.expect.equal(#V2.StagePower,16)
-  for i=2,#V2.StagePower do t.expect.truthy(V2.StagePower[i]>V2.StagePower[i-1]) end
-  t.expect.truthy(S.StationById.Ring.Required<=V2.StagePower[16])
+  local Balance=require(game.ReplicatedStorage.Shared.Config.Balance)
+  t.expect.equal(#V2.StagePower,16);t.expect.equal(#Balance.StagePower,16);t.expect.equal(#Balance.StageCash,16);t.expect.equal(#Balance.WaveCash,16)
+  for i=1,16 do t.expect.equal(V2.StagePower[i],Balance.StagePower[i]) end
+  t.expect.equal(V2.StagePower[1],10)
+  for i=2,#V2.StagePower do t.expect.truthy(V2.StagePower[i]>V2.StagePower[i-1]);t.expect.truthy(Balance.StageCash[i]>Balance.StageCash[i-1]);t.expect.truthy(Balance.WaveCash[i]>Balance.WaveCash[i-1]) end
+  for _,s in S.Stations do t.expect.truthy(s.Rebirths<=S.StationById.Ring.Rebirths) end
+ end)
+ -- A rebirth resets Power, never the map: a gate you passed once stays open with no Power at all.
+ t.test('a gate you have passed stays open after a rebirth',function()
+  local g=gates();local cleared={}
+  for i=1,3 do cleared[g[i].WallId]=true end
+  local n,b=R.check(g,Vector3.new(0,3,-20-2*36-5),0,cleared);t.expect.equal(#n,0);t.expect.equal(b,nil) -- (past gate 3 with 0 Power)
+  n,b=R.check(g,Vector3.new(0,3,-20-3*36-4),0,cleared);t.expect.equal(#n,0);t.expect.equal(b.Stage,4) -- (gate 4 still needs its Power)
+  t.expect.equal(R.furthest(g,cleared),3);t.expect.equal(R.furthest(g,{}),0)
  end)
 end

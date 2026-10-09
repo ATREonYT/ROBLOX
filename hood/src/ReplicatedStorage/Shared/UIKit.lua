@@ -9,7 +9,11 @@
 --   * colour means something: yellow = primary/Power, green = buy/Cash, red = close, blue = info
 --   * three fonts at most, a fixed type scale, a fixed spacing and radius scale
 --   * illustrated sticker icons (hood/art/icons), never emoji
--- Used by HoodClient/HUD (the player HUD); UIKitDemo builds sample screens with it.
+-- Brief 17 (the user's reference HUD, Store and Rebirth windows) adds the "studded block" family used by every
+-- screen now: Kit.block / Kit.blockButton (square-ish, thick ink outline, flat tone gradient, a faint stud grid),
+-- Kit.window (studded coloured header with a big 3D icon, title and a red X over a dark see-through body),
+-- Kit.bar (studded progress bar), Kit.robux / Kit.robuxButton (the green Robux price button) and Kit.studs.
+-- Used by HoodClient/HUD, Store, Shoes, Goals and Waves; UIKitDemo builds sample screens with the older pieces.
 local Kit = {}
 
 local function hex(h)
@@ -43,6 +47,11 @@ Kit.Tone = {
 	cyan = { top = hex('9CF6FF'), base = hex('22C7EE'), lip = hex('1484A8'), stroke = hex('083A52') },
 	cardboard = { top = hex('FFF8EA'), base = hex('FFEFD2'), lip = hex('C99A5B'), stroke = hex('5C3A12') },
 	grey = { top = hex('E6E2DC'), base = hex('C4BFB8'), lip = hex('8D877F'), stroke = hex('3A3631') },
+	-- (brief 17) the reference's Store orange and two deeper card colours
+	orange = { top = hex('FFD84A'), base = hex('FF9A1F'), lip = hex('C9620A'), stroke = hex('5A2600') },
+	pink = { top = hex('FF9AD5'), base = hex('F2459E'), lip = hex('A8186A'), stroke = hex('4A0830') },
+	teal = { top = hex('7DF2C8'), base = hex('19B98A'), lip = hex('0C7A5A'), stroke = hex('063A2B') },
+	dark = { top = hex('4A5170'), base = hex('2E3349'), lip = hex('1F2335'), stroke = hex('0E1020') },
 }
 -- Cross-industry rarity ladder (white, green, blue, purple, gold), extended upward.
 Kit.Rarity = {
@@ -54,7 +63,10 @@ Kit.Rarity = {
 	{ name = 'MYTHIC', color = hex('FF3B5C') },
 }
 Kit.Font = {
-	display = Font.new('rbxasset://fonts/families/LuckiestGuy.json'),
+	-- (brief 17) the reference's chunky rounded mixed-case face everywhere on screen; LuckiestGuy stays for loud
+	-- one-word banners (Kit.Font.loud) and the world's signs.
+	display = Font.new('rbxasset://fonts/families/FredokaOne.json'),
+	loud = Font.new('rbxasset://fonts/families/LuckiestGuy.json'),
 	number = Font.new('rbxasset://fonts/families/BuilderSans.json', Enum.FontWeight.ExtraBold),
 	body = Font.new('rbxasset://fonts/families/BuilderSans.json', Enum.FontWeight.Bold),
 	tag = Font.new('rbxasset://fonts/families/PermanentMarker.json'),
@@ -116,6 +128,7 @@ Kit.corner, Kit.stroke, Kit.gradient = corner, stroke, vgradient
 function Kit.text(props)
 	local size = props.TextSize or Kit.Text.label
 	local strokeColor = props.Stroke
+	local strokeWidth = props.StrokeThickness -- (optional: the reference's titles carry a heavier outline)
 	props.Stroke = nil
 	local t = new('TextLabel', {
 		Name = props.Name or 'Label', BackgroundTransparency = 1, BorderSizePixel = 0,
@@ -125,7 +138,7 @@ function Kit.text(props)
 		TextYAlignment = props.TextYAlignment or Enum.TextYAlignment.Center, TextWrapped = props.TextWrapped or false,
 		ZIndex = props.ZIndex or 1, Rotation = props.Rotation or 0, RichText = props.RichText or false,
 	})
-	if strokeColor then stroke(strokeColor, math.max(1.5, size * 0.1)).Parent = t end
+	if strokeColor then stroke(strokeColor, strokeWidth or math.max(1.5, size * 0.1)).Parent = t end
 	t.Parent = props.Parent
 	return t
 end
@@ -512,6 +525,287 @@ function Kit.toast(props)
 	if props.Icon then Kit.icon(props.Icon, 52, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, -8, 0.5, 0), ZIndex = 2 }).Parent = holder end
 	Kit.text({ Text = props.Text or '', TextSize = Kit.Text.label + 2, Stroke = tone.stroke, Position = UDim2.fromOffset(props.Icon and 22 or 0, 1), ZIndex = 2, Parent = holder })
 	return holder
+end
+
+---------------------------------------------------------------------------------------------- studded blocks (brief 17)
+-- The reference game's look (the user's HUD, Store and Rebirth pictures): square-ish blocks with a thick ink
+-- outline, a two-tone fill lit from the top, a faint grid of studs (each a small outlined square, the plates the
+-- whole game is built from), a thin light rim inside the outline and a hard shadow straight down. Buttons, cards,
+-- window headers and bars all use it, so every screen reads as one family. Plain UI shapes only: no textures.
+
+local function toneOf(t)
+	if type(t) == 'table' then return t end
+	return Kit.Tone[t or 'yellow'] or Kit.Tone.yellow
+end
+Kit.toneOf = toneOf
+
+-- Optional: the id of an uploaded seamless stud tile (hood/art/ui/stud_tile.png: one white stud outline per tile,
+-- tinted per block). When set, Kit.studs draws one tiled ImageLabel instead of a small frame per stud (fewer
+-- instances: the HUD drops from ~1.6K to ~0.9K). Empty = frames, which work with no uploads.
+Kit.StudTile = ''
+
+-- A stud grid over parent, clipped to it. props: Width / Height (design px of the area; default the parent's
+-- Offset size), Pitch (px between stud centres, 22), Size (stud side, ~0.56 x Pitch), Color (the studs' outline),
+-- Transparency (0.55), Thickness (2), Inset (px kept clear at the edges, 3), ZIndex. Returns the holder.
+function Kit.studs(parent, props)
+	props = props or {}
+	local w = props.Width or parent.Size.X.Offset
+	local h = props.Height or parent.Size.Y.Offset
+	local pitch = props.Pitch or 22
+	local s = props.Size or math.floor(pitch * 0.56 + 0.5)
+	local inset = props.Inset or 3
+	local z = props.ZIndex or parent.ZIndex
+	local color = props.Color or Kit.Color.white
+	local transparency = props.Transparency or 0.55
+	local holder = blank({ Name = 'Studs', Position = UDim2.fromOffset(inset, inset), Size = UDim2.new(1, -2 * inset, 1, -2 * inset), ClipsDescendants = true, ZIndex = z, Parent = parent })
+	if Kit.StudTile ~= '' then
+		new('ImageLabel', {
+			Name = 'Tile', BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Image = Kit.StudTile, ScaleType = Enum.ScaleType.Tile,
+			TileSize = UDim2.fromOffset(pitch, pitch), ImageColor3 = color, ImageTransparency = transparency, ZIndex = z, Parent = holder,
+		})
+		return holder
+	end
+	local aw, ah = math.max(0, w - 2 * inset), math.max(0, h - 2 * inset)
+	local cols, rows = math.max(1, math.ceil(aw / pitch)), math.max(1, math.ceil(ah / pitch))
+	local ox, oy = (aw - (cols - 1) * pitch) / 2, (ah - (rows - 1) * pitch) / 2 -- (the grid centred; edge studs clip)
+	for r = 0, rows - 1 do
+		for c = 0, cols - 1 do
+			local stud = blank({ Name = 'Stud', AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(math.floor(ox + c * pitch), math.floor(oy + r * pitch)), Size = UDim2.fromOffset(s, s), ZIndex = z, Parent = holder })
+			stroke(color, props.Thickness or 2, true, transparency).Parent = stud
+		end
+	end
+	return holder
+end
+
+-- Two soft diagonal light bands across a block (the reference's headers and big cards).
+function Kit.gloss(parent, props)
+	props = props or {}
+	local band = blank({ Name = 'Gloss', BackgroundTransparency = 0, BackgroundColor3 = Kit.Color.white, Size = UDim2.fromScale(1, 1), ZIndex = props.ZIndex or parent.ZIndex, Parent = parent })
+	corner(props.Radius or 6).Parent = band
+	local a = props.Transparency or 0.84
+	new('UIGradient', {
+		Rotation = props.Rotation or 24,
+		Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.2, 1), NumberSequenceKeypoint.new(0.21, a), NumberSequenceKeypoint.new(0.36, a),
+			NumberSequenceKeypoint.new(0.37, 1), NumberSequenceKeypoint.new(0.55, 1), NumberSequenceKeypoint.new(0.56, a + (1 - a) * 0.35),
+			NumberSequenceKeypoint.new(0.63, a + (1 - a) * 0.35), NumberSequenceKeypoint.new(0.64, 1), NumberSequenceKeypoint.new(1, 1),
+		}),
+		Parent = band,
+	})
+	return band
+end
+
+-- A studded block. props: Name, Tone (a Kit.Tone name or a {top, base, lip, stroke} table), Width, Height,
+-- Position, AnchorPoint, LayoutOrder, ZIndex, Radius (6), Outline (3.5), Studs (pitch in px, or false; 22),
+-- StudColor / StudTransparency, Gloss (the diagonal bands), Shadow (px straight down, 4; 0 = none), Rim (false =
+-- no light inner rim), Flat (one colour), Split (where the gradient reaches the base colour, 0.75).
+-- Returns holder; holder.Body is the face to put content in.
+function Kit.block(props)
+	local tone = toneOf(props.Tone)
+	local w, h = props.Width or 160, props.Height or 60
+	local r = props.Radius or 6
+	local z = props.ZIndex or 1
+	local holder = blank({ Name = props.Name or 'Block', Size = UDim2.fromOffset(w, h), Position = props.Position or UDim2.new(), AnchorPoint = props.AnchorPoint or Vector2.zero, LayoutOrder = props.LayoutOrder or 0, ZIndex = z })
+	local sh = props.Shadow or 4
+	if sh > 0 then
+		local shadow = blank({ Name = 'Shadow', BackgroundTransparency = 0.45, BackgroundColor3 = Kit.Color.ink, Position = UDim2.fromOffset(0, sh), Size = UDim2.fromScale(1, 1), ZIndex = z, Parent = holder })
+		corner(r).Parent = shadow
+	end
+	local body = blank({ Name = 'Body', BackgroundTransparency = 0, BackgroundColor3 = props.Flat and tone.base or Kit.Color.white, Size = UDim2.fromScale(1, 1), ZIndex = z + 1, Parent = holder })
+	corner(r).Parent = body
+	stroke(Kit.Color.ink, props.Outline or 3.5, true).Parent = body
+	if not props.Flat then vgradient(tone.top, tone.base, props.Split or 0.75).Parent = body end
+	if props.Studs ~= false then
+		Kit.studs(body, { Width = w, Height = h, Pitch = props.Studs or 22, Color = props.StudColor or tone.lip, Transparency = props.StudTransparency or 0.5, ZIndex = z + 1 })
+	end
+	if props.Gloss then Kit.gloss(body, { ZIndex = z + 1, Radius = r }) end
+	if props.Rim ~= false then
+		local rim = blank({ Name = 'Rim', Position = UDim2.fromOffset(3, 3), Size = UDim2.new(1, -6, 1, -6), ZIndex = z + 1, Parent = body })
+		corner(math.max(2, r - 3)).Parent = rim
+		stroke(Kit.Color.white, 2, true, 0.55).Parent = rim
+	end
+	holder:SetAttribute('Tone', type(props.Tone) == 'string' and props.Tone or '')
+	return holder
+end
+
+-- A Kit.block that presses (UIMotion.button: holder.Hit takes the input, holder.Body drops onto its shadow).
+-- Extra props: Text, TextSize, TextColor3, FontFace, Icon (an icon3d id) / IconSize / IconInset, Disabled (grey,
+-- and the caller doesn't hook UIMotion.button). Returns holder, hit.
+function Kit.blockButton(props)
+	local p = table.clone(props)
+	if p.Disabled then p.Tone = 'grey' end
+	local holder = Kit.block(p)
+	local body = holder.Body
+	local h = p.Height or 60
+	local z = (p.ZIndex or 1) + 2
+	local textLeft = 0
+	if p.Icon then
+		local s = p.IconSize or math.floor(h * 0.95)
+		Kit.icon3d(p.Icon, s, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, p.IconInset or -4, 0.5, 0), ZIndex = z }).Parent = body
+		textLeft = s + (p.IconInset or -4) - 4
+	end
+	if p.Text then
+		local size = p.TextSize or Kit.Text.button
+		Kit.text({
+			Name = 'Label', Text = p.Text, TextSize = size, FontFace = p.FontFace or Kit.Font.display, TextColor3 = p.TextColor3 or (p.Disabled and Kit.hex('EDEAE4')) or Kit.Color.white,
+			Stroke = Kit.Color.ink, StrokeThickness = math.max(1.5, size * 0.12), Position = UDim2.new(0, textLeft + 4, 0, 0), Size = UDim2.new(1, -textLeft - 8, 1, -1), ZIndex = z, Parent = body,
+		})
+	end
+	local hit = new('TextButton', { Name = 'Hit', Text = '', AutoButtonColor = false, BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = z + 3, Parent = holder })
+	holder:SetAttribute('Lip', p.Shadow or 4)
+	return holder, hit
+end
+
+-- The HUD's square action button (the reference's Store / World / Rebirth ... column): a studded block with a big
+-- 3D icon popping out of its top edge and an outlined caption along the bottom. props: Name, Tone, Width, Height,
+-- Position, AnchorPoint, ZIndex, Text, TextSize, Icon (an icon3d id) or IconNode (any GuiObject), IconSize, Pop
+-- (px the icon rises over the top edge). The hit area grows to cover the icon. Returns holder, hit, icon, caption.
+function Kit.actionButton(props)
+	local w, h = props.Width or 92, props.Height or 92
+	local pop = props.Pop or 16
+	local holder, hit = Kit.blockButton({ Name = props.Name, Tone = props.Tone, Width = w, Height = h, Position = props.Position, AnchorPoint = props.AnchorPoint, ZIndex = props.ZIndex, Studs = props.Studs or 18 })
+	local z = (props.ZIndex or 1) + 3
+	local size = props.IconSize or math.floor(math.min(w, h) * 0.86)
+	local icon = props.IconNode or Kit.icon3d(props.Icon or 'Shop', size, {})
+	icon.AnchorPoint = Vector2.new(0.5, 0)
+	icon.Position = UDim2.new(0.5, 0, 0, -pop)
+	icon.ZIndex = z
+	for _, d in icon:GetDescendants() do
+		if d:IsA('GuiObject') then d.ZIndex = z end
+	end
+	icon.Parent = holder.Body
+	local textSize = props.TextSize or 22
+	local caption = Kit.text({
+		Name = 'Caption', Text = props.Text or '', TextSize = textSize, Stroke = Kit.Color.ink, StrokeThickness = math.max(2, textSize * 0.14),
+		AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -1), Size = UDim2.new(1, 10, 0, textSize + 4), ZIndex = z + 1, Parent = holder.Body,
+	})
+	hit.Position = UDim2.fromOffset(0, -pop)
+	hit.Size = UDim2.new(1, 0, 1, pop)
+	return holder, hit, icon, caption
+end
+
+-- An outlined sticker on a corner of a button ("100%", "NEW!"): props Text, TextSize, TextColor3, AnchorPoint,
+-- Position, Rotation, Width.
+function Kit.sticker(parent, props)
+	local size = props.TextSize or 24
+	return Kit.text({
+		Name = props.Name or 'Sticker', Text = props.Text or '', TextSize = size, TextColor3 = props.TextColor3, Stroke = Kit.Color.ink, StrokeThickness = math.max(2, size * 0.14),
+		AnchorPoint = props.AnchorPoint or Vector2.new(1, 0.5), Position = props.Position or UDim2.new(1, 8, 0, 4), Size = UDim2.fromOffset(props.Width or 80, size + 6),
+		TextXAlignment = props.TextXAlignment or Enum.TextXAlignment.Right, Rotation = props.Rotation or 0, ZIndex = props.ZIndex or 8, Parent = parent,
+	})
+end
+
+-- The Robux mark drawn with UI shapes (a rounded ring round a small square, ink-edged so it reads on any colour).
+-- props: Color (white), Position, AnchorPoint, ZIndex, LayoutOrder. Returns a `size` square Frame.
+function Kit.robux(size, props)
+	props = props or {}
+	local color = props.Color or Kit.Color.white
+	local z = props.ZIndex or 1
+	local holder = blank({ Name = 'Robux', Size = UDim2.fromOffset(size, size), Position = props.Position or UDim2.new(), AnchorPoint = props.AnchorPoint or Vector2.zero, LayoutOrder = props.LayoutOrder or 0, ZIndex = z })
+	local ringW = math.max(1.5, size * 0.13)
+	for i, look in { { Kit.Color.ink, ringW + 3 }, { color, ringW } } do
+		local ring = blank({ Name = i == 1 and 'Edge' or 'Ring', AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(size * 0.74, size * 0.74), ZIndex = z, Parent = holder })
+		corner(UDim.new(0.32, 0)).Parent = ring
+		stroke(look[1], look[2], true).Parent = ring
+	end
+	local core = blank({ Name = 'Core', BackgroundTransparency = 0, BackgroundColor3 = color, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(math.max(3, size * 0.26), math.max(3, size * 0.26)), ZIndex = z, Parent = holder })
+	corner(math.max(1, math.floor(size * 0.05))).Parent = core
+	stroke(Kit.Color.ink, 1.5, true).Parent = core
+	return holder
+end
+
+-- A rough width for a line of display text (FredokaOne runs about 0.58 em a character), for labels laid out
+-- next to each other without AutomaticSize.
+function Kit.textWidth(text, size)
+	return math.ceil((utf8.len(tostring(text)) or #tostring(text)) * size * 0.58 + size * 0.3)
+end
+
+-- The reference's green price button: the Robux mark and the price. props as Kit.blockButton plus Price (a
+-- number or text). Returns holder, hit, label.
+function Kit.robuxButton(props)
+	local p = table.clone(props)
+	p.Tone = p.Tone or 'green'
+	p.Text = nil
+	local holder, hit = Kit.blockButton(p)
+	local h = p.Height or 44
+	local z = (p.ZIndex or 1) + 2
+	local size = p.TextSize or math.floor(h * 0.6)
+	local text = tostring(p.Price or '?')
+	local glyph = math.floor(size * 1.05)
+	local tw = Kit.textWidth(text, size)
+	local row = blank({ Name = 'Price', AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(glyph + 4 + tw, h), ZIndex = z, Parent = holder.Body })
+	Kit.robux(glyph, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 0, 0.5, 0), ZIndex = z }).Parent = row
+	local label = Kit.text({ Name = 'Label', Text = text, TextSize = size, Stroke = Kit.Color.ink, StrokeThickness = math.max(1.5, size * 0.12), TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(glyph + 4, 0), Size = UDim2.new(0, tw, 1, -1), ZIndex = z, Parent = row })
+	return holder, hit, label
+end
+
+-- A studded progress bar like the reference's level bar: a dark track, a tone fill, studs over both and outlined
+-- text at the left, the right and/or the centre. props: Name, Width, Height, Tone (the fill), Value (0..1), Left,
+-- Right, Text, TextSize, Position, AnchorPoint, LayoutOrder, ZIndex, Radius, Outline.
+-- Returns track, fill, labels ({ Left, Right, Text }; only the ones asked for).
+function Kit.bar(props)
+	local w, h = props.Width or 400, props.Height or 40
+	local tone = toneOf(props.Tone or 'orange')
+	local z = props.ZIndex or 1
+	local r = props.Radius or 6
+	local track = blank({ Name = props.Name or 'Bar', BackgroundTransparency = 0, BackgroundColor3 = hex('2B2F45'), Size = UDim2.fromOffset(w, h), Position = props.Position or UDim2.new(), AnchorPoint = props.AnchorPoint or Vector2.zero, LayoutOrder = props.LayoutOrder or 0, ZIndex = z })
+	corner(r).Parent = track
+	stroke(Kit.Color.ink, props.Outline or 3.5, true).Parent = track
+	vgradient(hex('3A3F5C'), hex('23263A'), 0.6).Parent = track
+	local fill = blank({ Name = 'Fill', BackgroundTransparency = 0, BackgroundColor3 = Kit.Color.white, Size = UDim2.fromScale(math.clamp(props.Value or 0, 0, 1), 1), ZIndex = z, Parent = track })
+	corner(r).Parent = fill
+	vgradient(tone.top, tone.base, 0.7).Parent = fill
+	Kit.studs(track, { Width = w, Height = h, Pitch = math.max(14, math.floor(h * 0.55)), Color = Kit.Color.white, Transparency = 0.78, ZIndex = z })
+	local rim = blank({ Name = 'Rim', Position = UDim2.fromOffset(3, 3), Size = UDim2.new(1, -6, 1, -6), ZIndex = z, Parent = track })
+	corner(math.max(2, r - 3)).Parent = rim
+	stroke(Kit.Color.white, 2, true, 0.6).Parent = rim
+	local size = props.TextSize or math.floor(h * 0.62)
+	local labels = {}
+	local function label(name, text, align, pos, anchor, width)
+		labels[name] = Kit.text({
+			Name = name, Text = text, TextSize = size, Stroke = Kit.Color.ink, StrokeThickness = math.max(1.5, size * 0.13), TextXAlignment = align,
+			AnchorPoint = anchor, Position = pos, Size = UDim2.new(width, -24, 1, -1), ZIndex = z + 1, Parent = track,
+		})
+	end
+	if props.Left then label('Left', props.Left, Enum.TextXAlignment.Left, UDim2.fromOffset(14, 0), Vector2.zero, 0.6) end
+	if props.Right then label('Right', props.Right, Enum.TextXAlignment.Right, UDim2.new(1, -14, 0, 0), Vector2.new(1, 0), 0.6) end
+	if props.Text then label('Text', props.Text, Enum.TextXAlignment.Center, UDim2.fromScale(0.5, 0), Vector2.new(0.5, 0), 1) end
+	return track, fill, labels
+end
+
+-- A window like the reference's Store and Rebirth: a dimmed backdrop, a studded header in the window's colour (a
+-- big 3D icon, the title, a red X) over a dark see-through body with a light inner rim.
+-- props: Name, Title, Icon (an icon3d id) or IconNode (any GuiObject), Tone, Width, Height, HeaderHeight (76),
+-- TitleSize (52). Returns panel, well (the body to fill), closeHit, overlay, header. UIMotion.open/close animate it.
+function Kit.window(root, props)
+	local w, h = props.Width or 820, props.Height or 480
+	local hh = props.HeaderHeight or 76
+	local overlay = blank({ Name = (props.Name or 'Window') .. 'Overlay', BackgroundTransparency = 0.5, BackgroundColor3 = Kit.Color.ink, Size = UDim2.fromScale(1, 1), ZIndex = 20, Parent = root })
+	local panel = blank({ Name = props.Name or 'Window', AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, 6), Size = UDim2.fromOffset(w, h), ZIndex = 21, Parent = overlay })
+	local shadow = blank({ Name = 'Shadow', BackgroundTransparency = 0.5, BackgroundColor3 = Kit.Color.ink, AnchorPoint = panel.AnchorPoint, Position = UDim2.new(0.5, 0, 0.5, 6 + 8), Size = panel.Size, ZIndex = 20, Parent = overlay })
+	corner(12).Parent = shadow
+	local frame = blank({ Name = 'Frame', BackgroundTransparency = 0.22, BackgroundColor3 = hex('353B52'), Position = UDim2.fromOffset(0, hh - 8), Size = UDim2.new(1, 0, 1, -(hh - 8)), ZIndex = 21, Parent = panel })
+	corner(12).Parent = frame
+	stroke(Kit.Color.ink, 5, true).Parent = frame
+	local well = blank({ Name = 'Content', BackgroundTransparency = 0.6, BackgroundColor3 = hex('6A7290'), Position = UDim2.fromOffset(12, hh + 6), Size = UDim2.new(1, -24, 1, -hh - 18), ZIndex = 22, Parent = panel })
+	corner(8).Parent = well
+	stroke(Kit.Color.white, 3, true, 0.5).Parent = well
+	local header = Kit.block({ Name = 'Header', Tone = props.Tone or 'orange', Width = w, Height = hh, Outline = 5, Radius = 12, Studs = 26, Gloss = true, Shadow = 0, ZIndex = 23 })
+	header.Parent = panel
+	local icon = props.IconNode or (props.Icon and Kit.icon3d(props.Icon, hh + 30, { ZIndex = 27 }))
+	if icon then
+		icon.AnchorPoint = Vector2.new(0, 0.5)
+		icon.Position = UDim2.new(0, 2, 0.5, -2)
+		icon.Parent = header
+	end
+	local left = icon and (hh + 30) or 22
+	Kit.text({
+		Name = 'Title', Text = props.Title or 'Title', TextSize = props.TitleSize or 52, Stroke = Kit.Color.ink, StrokeThickness = 5,
+		TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(left, -1), Size = UDim2.new(1, -left - hh, 1, 0), ZIndex = 27, Parent = header.Body,
+	})
+	local close, closeHit = Kit.blockButton({ Name = 'Close', Tone = 'red', Width = hh - 16, Height = hh - 16, Text = 'X', TextSize = 40, Studs = false, Shadow = 3, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -12, 0.5, -1), ZIndex = 27 })
+	close.Parent = header
+	return panel, well, closeHit, overlay, header
 end
 
 -- 1234 -> "1.2K", 15300000 -> "15.3M"

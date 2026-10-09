@@ -123,21 +123,21 @@ return function(t)
   local s=rack({FreshCanvas=1,Ember=1,Phoenix=1},{'FreshCanvas','Ember','Phoenix'})
   t.expect.equal(R.bonus(s),4+11+130);t.expect.near(R.multiplier(s),2.45);t.expect.equal(R.bonusText(R.bonus(s)),'+145%')
   t.expect.equal(R.bonus(rack()),0);t.expect.equal(R.multiplier(rack()),1)
-  -- No shoes: a shot pays what it always did.
-  t.expect.equal(ShotRules.pay(100,3),30);t.expect.equal(ShotRules.pay(100,3,1),30);t.expect.equal(ShotRules.pay(100,3,nil,{}),30)
+  -- No shoes: a shot pays what it always did (ShotRules.pay(perShot, gun, shoes): 10 x3 = 30).
+  t.expect.equal(ShotRules.pay(10,3),30);t.expect.equal(ShotRules.pay(10,3,1),30);t.expect.equal(ShotRules.pay(10,3,nil,{}),30)
   -- Shoes without a carry: rounded.
-  t.expect.equal(ShotRules.pay(100,3,2.45),74);t.expect.equal(ShotRules.pay(0,1,1.04),1);t.expect.equal(ShotRules.pay(0,1,1.5),2)
+  t.expect.equal(ShotRules.pay(10,3,2.45),74);t.expect.equal(ShotRules.pay(1,1,1.04),1);t.expect.equal(ShotRules.pay(1,1,1.5),2)
   -- Bad multipliers count as none; a huge one is capped.
-  t.expect.equal(ShotRules.pay(100,3,0/0),30);t.expect.equal(ShotRules.pay(100,3,0.5),30);t.expect.equal(ShotRules.pay(100,3,-2),30);t.expect.equal(ShotRules.pay(100,3,'x'),30)
-  t.expect.equal(ShotRules.pay(0,1,1e9),ShotRules.MaxShoeMultiplier)
+  t.expect.equal(ShotRules.pay(10,3,0/0),30);t.expect.equal(ShotRules.pay(10,3,0.5),30);t.expect.equal(ShotRules.pay(10,3,-2),30);t.expect.equal(ShotRules.pay(10,3,'x'),30)
+  t.expect.equal(ShotRules.pay(1,1,1e9),ShotRules.MaxShoeMultiplier)
   -- With a carry the fraction is paid over the next shots: +4% on 1-Power shots pays 1 extra every 25 shots.
   local carry,total={},0
-  for _=1,100 do total+=ShotRules.pay(0,1,1.04,carry) end
+  for _=1,100 do total+=ShotRules.pay(1,1,1.04,carry) end
   t.expect.equal(total,104)
   carry,total={},0
-  for _=1,20 do total+=ShotRules.pay(0,2,2.45,carry) end
+  for _=1,20 do total+=ShotRules.pay(1,2,2.45,carry) end
   t.expect.equal(total,98)
-  local bad={Shoes=0/0};t.expect.equal(ShotRules.pay(0,1,1.5,bad),1);t.expect.near(bad.Shoes,0.5)
+  local bad={Shoes=0/0};t.expect.equal(ShotRules.pay(1,1,1.5,bad),1);t.expect.near(bad.Shoes,0.5)
  end)
 
  t.test('attributes round trip: the rack and the equipped list as strings',function()
@@ -188,16 +188,17 @@ return function(t)
   -- Before the gun goal: unchanged, and the shoe goal comes in its turn.
   local g=migrated(4);t.expect.equal(g.Step,4);t.expect.equal(g.Back,nil);t.expect.equal(g.Chain,G.Chain)
   g=migrated(1,false);t.expect.equal(g.Step,1);t.expect.equal(g.Back,nil)
-  -- Past it: the shoe goal now, then back to the goal they were on (the same goal by id).
+  -- Past it: the shoe goal now, then back to the goal they were on (the same goal by id; a goal brief 17's chain
+  -- dropped comes back as the one that took its place, GoalRules.Renamed).
   local old={'FreeRange','Stage1','Wave1','Gun','Stage3','Range2','Stage6','Gun3','Range4','Stage10','Range6','Stage13','Wave15','BossYard','BossWave'}
   for step=5,#old do
-   g=migrated(step);t.expect.equal(G.List[g.Step].Id,'Shoe');t.expect.equal(G.List[g.Back].Id,old[step])
+   g=migrated(step);t.expect.equal(G.List[g.Step].Id,'Shoe');t.expect.equal(G.List[g.Back].Id,G.Renamed[old[step]] or old[step])
   end
   g=migrated(#old+1);t.expect.equal(g.Step,5);t.expect.equal(g.Back,#G.List+1) -- (all done: the shoe goal, then done again)
   -- Already migrated: nothing moves twice.
   local d={SchemaVersion=3,Goals={Step=5,Synced=true,Back=9,Chain=G.Chain}};S.migrate(d);t.expect.equal(d.Goals.Step,5);t.expect.equal(d.Goals.Back,9)
   -- The detour: done once, paid once, then the old goal again (it is not repeated: it was never done).
-  local goals={Step=5,Synced=true,Back=10}
+  local goals={Step=5,Synced=true,Back=G.ById.Range4.Step}
   local st={Power=600,Stages=6,Wave=6,Waves=true,Guns=3,Range=0,Boxes=0,ShoeBoxes=true}
   t.expect.equal(G.advance(goals,st),nil);t.expect.equal(goals.Step,5)
   st.Boxes=1;t.expect.equal(G.advance(goals,st).Id,'Shoe');t.expect.equal(G.List[goals.Step].Id,'Range4');t.expect.equal(goals.Back,nil)
@@ -205,9 +206,9 @@ return function(t)
   -- A pre-chain profile catches up to the shoe goal, with the first unmet goal after it kept.
   local pre={Step=1,Synced=false}
   t.expect.equal(G.advance(pre,{Power=9000,Stages=8,Wave=8,Waves=true,Guns=4,Range=0,Boxes=0,ShoeBoxes=true}),nil)
-  t.expect.equal(G.List[pre.Step].Id,'Shoe');t.expect.equal(G.List[pre.Back].Id,'Range2')
+  t.expect.equal(G.List[pre.Step].Id,'Shoe');t.expect.equal(G.List[pre.Back].Id,'Rebirth1') -- (brief 17's chain: a first rebirth is next)
   local done={Step=1,Synced=false};G.advance(done,{Power=9000,Stages=8,Wave=8,Waves=true,Guns=4,Range=0,Boxes=2,ShoeBoxes=true})
-  t.expect.equal(G.List[done.Step].Id,'Range2');t.expect.equal(done.Back,nil)
+  t.expect.equal(G.List[done.Step].Id,'Rebirth1');t.expect.equal(done.Back,nil)
   -- Damaged Back values are dropped.
   t.expect.equal(G.sanitize({Step=5,Synced=true,Back=5}).Back,nil);t.expect.equal(G.sanitize({Step=5,Synced=true,Back=99}).Back,nil);t.expect.equal(G.sanitize({Step=5,Synced=true,Back=6.5}).Back,nil)
   t.expect.equal(G.sanitize({Step=5,Synced=true,Back=8}).Back,8)
