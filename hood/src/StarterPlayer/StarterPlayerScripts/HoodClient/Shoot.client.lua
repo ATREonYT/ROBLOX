@@ -152,6 +152,7 @@ end)
 
 ---------------------------------------------------------------------------------------------- shooting
 local last = 0
+local shoeCarry = {} -- (the shoes' fraction of a shot, carried like the server does: ShotRules.pay)
 local function shoot()
 	if os.clock() - last < ShotRules.Cooldown then return end
 	local id = training()
@@ -202,7 +203,7 @@ local function shoot()
 			play(hit, hit == 'Ding' and (1 + 0.07 * s.Tier) or 1)
 			Juice.flash(target.Model)
 		end
-		local gain = ShotRules.pay(player:GetAttribute('PowerRate'), player:GetAttribute('GunMultiplier'))
+		local gain = ShotRules.pay(player:GetAttribute('PowerRate'), player:GetAttribute('GunMultiplier'), player:GetAttribute('ShoeMultiplier'), shoeCarry)
 		-- One running "+N" per lane over the main target's top edge and to its right (a held trigger rolls it up
 		-- and counts the hits instead of piling numbers on the target): white outlined in a dark shade of the
 		-- lane's colour, bigger on the top lanes.

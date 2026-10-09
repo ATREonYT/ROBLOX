@@ -43,6 +43,7 @@ for _, g in gates do required[g.Stage] = g.Required end
 
 local stateRemote = Net.get('WaveState')
 local sessions = {}
+local shoeCarry = {}
 local function sessionOf(player)
 	local s = sessions[player]
 	if not s then
@@ -79,8 +80,10 @@ Net.get('WaveShot').OnServerEvent:Connect(function(player, stage, index)
 	if not profile or not root or not h or h.Health <= 0 then return end
 	local s = sessionOf(player)
 	place(player, s, root) -- (where you are now, not at the last tick)
-	-- A hit is worth what a shot pays off the ranges: a tenth of your look's gain (at least 1) times your gun.
-	local damage = ShotRules.pay(Skins.gain(profile.Data.EquippedSkin, 1), player:GetAttribute('GunMultiplier'))
+	-- A hit is worth what a shot pays off the ranges: a tenth of your look's gain (at least 1) times your gun, times
+	-- your equipped shoes (ShoeService's ShoeMultiplier; their fraction carries to the next hit).
+	shoeCarry[player] = shoeCarry[player] or {}
+	local damage = ShotRules.pay(Skins.gain(profile.Data.EquippedSkin, 1), player:GetAttribute('GunMultiplier'), player:GetAttribute('ShoeMultiplier'), shoeCarry[player])
 	local ok, _, w, _, cleared = s:shoot(stage, index, root.Position, damage)
 	if not ok then return end
 	profile.Data.Rep = math.min(1e12, profile.Data.Rep + damage)
@@ -100,7 +103,10 @@ Net.get('WaveShot').OnServerEvent:Connect(function(player, stage, index)
 	publish(player, profile, s)
 end)
 
-Players.PlayerRemoving:Connect(function(player) sessions[player] = nil end)
+Players.PlayerRemoving:Connect(function(player)
+	sessions[player] = nil
+	shoeCarry[player] = nil
+end)
 
 while task.wait(0.25) do
 	for _, player in Players:GetPlayers() do

@@ -271,9 +271,10 @@ local function pick(rootPos)
 	sticky = WaveRules.pick(list, eye, look, rootPos, sticky)
 	return sticky and targets[current][sticky]
 end
--- What a hit will deal (the server's own sum: ShotRules.pay at x1 with your look and gun).
+-- What a hit will deal (the server's own sum: ShotRules.pay at x1 with your look, gun and shoes).
+local shoeCarry = {}
 local function expected()
-	return ShotRules.pay(Skins.gain(player:GetAttribute('EquippedSkin') or '', 1), player:GetAttribute('GunMultiplier'))
+	return ShotRules.pay(Skins.gain(player:GetAttribute('EquippedSkin') or '', 1), player:GetAttribute('GunMultiplier'), player:GetAttribute('ShoeMultiplier'), shoeCarry)
 end
 -- The running "+N" sits beside the target on your screen's right, clear of its tag.
 local function comboAt(e)

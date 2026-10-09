@@ -103,10 +103,12 @@ remote.OnServerEvent:Connect(function(player,id)
 end)
 -- Shooting: while you stand in an unlocked range's shooter's box, each shot (click, tap SHOOT or R2) pays a
 -- tenth of your per-second gain (at least 1) times your gun's multiplier (ShotRules.pay), up to about 7 a
--- second. Where you stand is checked now, against the same lane mats the passive gain uses.
+-- second. Where you stand is checked now, against the same lane mats the passive gain uses. Your equipped shoes
+-- multiply it (ShoeService's ShoeMultiplier attribute).
 local RateLimiter=require(script.Parent.RateLimiter)
 local ShotRules=require(RS.Shared.ShotRules)
 local shotLimit=RateLimiter.new(ShotRules.Burst,ShotRules.PerSecond)
+local shoeCarry={} -- (per player: the equipped shoes' fraction of a shot, carried to the next one; ShotRules.pay)
 Net.get('Shoot').OnServerEvent:Connect(function(player)
  if not shotLimit.allow(player) then return end
  local profile=Data.get(player);local c=player.Character;local root=c and c:FindFirstChild('HumanoidRootPart');local h=c and c:FindFirstChildOfClass('Humanoid')
@@ -115,9 +117,10 @@ Net.get('Shoot').OnServerEvent:Connect(function(player)
  if not ShotRules.counts(station) then return end
  -- (Your per-second gain on this lane, worked out now rather than from last second's PowerRate.)
  local rate=Skins.gain(profile.Data.EquippedSkin,multiplier)
- profile.Data.Rep=math.min(1e12,profile.Data.Rep+ShotRules.pay(rate,player:GetAttribute('GunMultiplier')))
+ shoeCarry[player]=shoeCarry[player] or {}
+ profile.Data.Rep=math.min(1e12,profile.Data.Rep+ShotRules.pay(rate,player:GetAttribute('GunMultiplier'),player:GetAttribute('ShoeMultiplier'),shoeCarry[player]))
 end)
-Players.PlayerRemoving:Connect(function(p) cooldown[p]=nil;applied[p]=nil;shotLimit.remove(p) end)
+Players.PlayerRemoving:Connect(function(p) cooldown[p]=nil;applied[p]=nil;shotLimit.remove(p);shoeCarry[p]=nil end)
 local boardTime=0
 while task.wait(1) do
  local rows={}

@@ -80,7 +80,7 @@ local chime = Instance.new('Sound')
 chime.SoundId = 'rbxasset://sounds/electronicpingshort.wav'
 chime.Volume = 0.55
 chime.Parent = gui
--- Other big banners (StageClear from the server, WAVE CLEARED) own the middle of the screen for ~2.3 s.
+-- Other big banners (StageClear from the server, WAVE CLEARED, an unboxing) own the middle of the screen for a while.
 local busyUntil = 0
 local queue, running = {}, false
 
@@ -176,6 +176,9 @@ task.spawn(function()
 	Net.get('WaveState').OnClientEvent:Connect(function(info)
 		if type(info) == 'table' and info.Kind == 'Cleared' then busyUntil = math.max(busyUntil, os.clock() + 2.3) end
 	end)
+	-- (Shoes.client's unboxing moment owns the middle of the screen for 4 to 5 s)
+	local opened = Net.get('ShoeOpened')
+	if opened then opened.OnClientEvent:Connect(function() busyUntil = math.max(busyUntil, os.clock() + 5.2) end) end
 end)
 
 ---------------------------------------------------------------------------------------------- layout

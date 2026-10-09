@@ -17,7 +17,11 @@ Schema.Template={
  -- Stage target waves: the highest stage whose wave you cleared (Shared/WaveRules; gate i needs i-1). The goal
  -- chain: the current goal's step (Shared/GoalRules); Synced false = a profile from before the chain, caught up
  -- quietly on its first check.
- Waves={Cleared=0},Goals={Step=1,Synced=true},
+ Waves={Cleared=0},Goals={Step=1,Synced=true,Chain=2},
+ -- Shoes from the shoe boxes (Shared/ShoeRules): pairs owned by id ({[id]=copies}), the equipped ids (up to 3; the
+ -- best is worn, the others follow you) and how many boxes you have opened. Goals.Chain = GoalRules.Chain (a goal
+ -- inserted into the chain moves older saves' steps; GoalRules.migrate).
+ Shoes={Owned={},Equipped={},Opened=0},
 }
 function Schema.new() return clone(Schema.Template) end
 function Schema.migrate(data)
@@ -39,7 +43,10 @@ function Schema.migrate(data)
  -- Profiles from before the waves and the goal chain: their passed gates count as cleared waves (nobody is
  -- re-locked), and their goals catch up without paying.
  if data.Waves==nil then data.Waves={Cleared=require(game.ReplicatedStorage.Shared.WaveRules).legacy(data.ClearedWalls)} end
- if data.Goals==nil then data.Goals={Step=1,Synced=false} end
+ if data.Goals==nil then data.Goals={Step=1,Synced=false,Chain=require(game.ReplicatedStorage.Shared.GoalRules).Chain}
+ else require(game.ReplicatedStorage.Shared.GoalRules).migrate(data.Goals) end
+ -- Shoes (added with the shoe boxes): new profiles start with none; a damaged table is cleaned, never a reason to kick.
+ data.Shoes=require(game.ReplicatedStorage.Shared.ShoeRules).sanitize(data.Shoes)
  reconcile(data,Schema.Template)
  require(game.ReplicatedStorage.Shared.WaveRules).sanitize(data.Waves)
  require(game.ReplicatedStorage.Shared.GoalRules).sanitize(data.Goals)
@@ -70,10 +77,19 @@ function Schema.validate(data)
  assert(type(data.Guns.Equipped)=='string' and data.Guns.Owned[data.Guns.Equipped]==true,'Equipped gun not owned')
  assert(type(data.Waves)=='table' and type(data.Waves.Cleared)=='number' and data.Waves.Cleared%1==0 and data.Waves.Cleared>=0 and data.Waves.Cleared<=64,'Invalid Waves')
  assert(type(data.Goals)=='table' and type(data.Goals.Step)=='number' and data.Goals.Step%1==0 and data.Goals.Step>=1 and type(data.Goals.Synced)=='boolean','Invalid Goals')
+ assert(data.Goals.Back==nil or (type(data.Goals.Back)=='number' and data.Goals.Back%1==0 and data.Goals.Back>data.Goals.Step),'Invalid Goals.Back')
+ local shoes=require(game.ReplicatedStorage.Shared.Config.Shoes)
+ local s=data.Shoes
+ assert(type(s)=='table' and type(s.Owned)=='table' and type(s.Equipped)=='table','Invalid Shoes')
+ for id,n in pairs(s.Owned) do assert(type(id)=='string' and shoes.ById[id] and type(n)=='number' and n%1==0 and n>=1,'Invalid owned shoe') end
+ assert(#s.Equipped<=shoes.MaxEquipped,'Too many shoes equipped')
+ local on={}
+ for _,id in ipairs(s.Equipped) do on[id]=(on[id] or 0)+1;assert((s.Owned[id] or 0)>=on[id],'Equipped shoe not owned') end
+ assert(type(s.Opened)=='number' and s.Opened%1==0 and s.Opened>=0,'Invalid Shoes.Opened')
  return true
 end
 function Schema.public(data)
  -- Explicit allowlist: receipt ledger and entitlement cache never leave the server.
- return {EquippedSkin=data.EquippedSkin,Rep=data.Rep,Cash=data.Cash,Rebirths=data.Rebirths,Evolution=clone(data.Evolution),HighestMapIndex=data.HighestMapIndex,UnlockedMaps=clone(data.UnlockedMaps),Crew=clone(data.Crew),Settings=clone(data.Settings),Onboarding=clone(data.Onboarding),Guns=clone(data.Guns),Waves=clone(data.Waves),Goals=clone(data.Goals)}
+ return {EquippedSkin=data.EquippedSkin,Rep=data.Rep,Cash=data.Cash,Rebirths=data.Rebirths,Evolution=clone(data.Evolution),HighestMapIndex=data.HighestMapIndex,UnlockedMaps=clone(data.UnlockedMaps),Crew=clone(data.Crew),Settings=clone(data.Settings),Onboarding=clone(data.Onboarding),Guns=clone(data.Guns),Waves=clone(data.Waves),Goals=clone(data.Goals),Shoes=clone(data.Shoes)}
 end
 return Schema

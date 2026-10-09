@@ -13,11 +13,23 @@ local function number(v: any, fallback: number): number
 	return v
 end
 
--- Power one shot pays: max(1, floor(PowerRate * 0.1)) * GunMultiplier (bad inputs count as 1).
-function ShotRules.pay(powerRate: any, gunMultiplier: any): number
+-- Power one shot pays: max(1, floor(PowerRate * 0.1)) * GunMultiplier (bad inputs count as 1), times the equipped
+-- shoes' multiplier when one is given (ShoeMultiplier, 1 + their bonus / 100; Shared/ShoeRules). With `carry` (a
+-- table kept per player, {} to start) the shoes' fraction carries over to the next shot, so a +10% pays exactly 10%
+-- more over time even while a shot pays 1 or 2; without it the shoes' result is rounded.
+ShotRules.MaxShoeMultiplier = 100 -- sanity cap (three Secrets from the top box give about x25)
+function ShotRules.pay(powerRate: any, gunMultiplier: any, shoeMultiplier: any?, carry: any?): number
 	local rate = math.max(0, number(powerRate, 1))
 	local gun = math.max(1, number(gunMultiplier, 1))
-	return math.max(1, math.floor(rate * 0.1)) * gun
+	local base = math.max(1, math.floor(rate * 0.1)) * gun
+	local shoes = math.clamp(number(shoeMultiplier, 1), 1, ShotRules.MaxShoeMultiplier)
+	if shoes == 1 then return base end
+	local exact = base * shoes
+	if type(carry) ~= 'table' then return math.floor(exact + 0.5) end
+	exact += math.clamp(number(carry.Shoes, 0), 0, 0.999999)
+	local paid = math.floor(exact + 1e-7) -- (so 25 x 0.04 counts as a whole 1)
+	carry.Shoes = math.max(0, exact - paid)
+	return paid
 end
 
 -- True when a shot from a player standing at `station` (the TrainingStation attribute: '' = not on a range,

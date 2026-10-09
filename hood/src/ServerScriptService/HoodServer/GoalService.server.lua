@@ -5,7 +5,8 @@
 -- Player attributes (HoodClient/Goals shows them): GoalStep (#List + 1 = all done), GoalText, GoalWhere, GoalReward.
 -- Remote Goal, to that player: { Kind = 'Done', Text, Reward, NextText, NextWhere, NextReward } when a goal completes.
 -- Reads the attributes StageService (StagesCleared), WaveService (WaveCleared; unset on maps without waves) and
--- LobbyService (TrainingStation) keep on the server.
+-- LobbyService (TrainingStation) keep on the server, the boxes opened (profile Shoes.Opened) and whether this map has
+-- shoe boxes (ShoeService sets ReplicatedStorage's ShoeBoxes).
 local Players = game:GetService('Players')
 local RS = game:GetService('ReplicatedStorage')
 local Data = require(script.Parent.DataService)
@@ -35,6 +36,8 @@ local function stateOf(player, profile)
 		Waves = type(wave) == 'number', -- (no waves on this map: wave goals are skipped)
 		Guns = owned,
 		Range = type(station) == 'string' and rangeIndex[station] or 0, -- ('Locked:<Id>' and '' are 0)
+		Boxes = type(profile.Data.Shoes) == 'table' and profile.Data.Shoes.Opened or 0,
+		ShoeBoxes = RS:GetAttribute('ShoeBoxes') == true, -- (no shoe boxes on this map: the box goal is skipped)
 	}
 end
 

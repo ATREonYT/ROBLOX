@@ -8,7 +8,7 @@ return function(t)
    t.expect.truthy(type(g.Text)=='string' and #g.Text>0 and type(g.Where)=='string' and #g.Where>0)
    t.expect.truthy(g.Reward>0 and g.Reward%1==0);total+=g.Reward
    t.expect.falsy(ids[g.Id]);ids[g.Id]=true;t.expect.equal(g.Step,i)
-   for k in g.Need do t.expect.truthy(k=='Power' or k=='Stages' or k=='Wave' or k=='Guns' or k=='Range') end
+   for k in g.Need do t.expect.truthy(k=='Power' or k=='Stages' or k=='Wave' or k=='Guns' or k=='Range' or k=='Boxes') end
   end
   t.expect.truthy(total<5000)
   t.expect.equal(G.List[1].Need.Power,10);t.expect.equal(G.List[2].Need.Stages,1);t.expect.equal(G.List[3].Need.Wave,1);t.expect.equal(G.List[4].Need.Guns,2)

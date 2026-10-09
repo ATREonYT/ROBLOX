@@ -784,7 +784,8 @@ end
 -- Cartoon targets only: bottles, cans, bullseyes, plates, balloons, ice, barrels. Nothing human-shaped.
 -- Local frame: origin = mat centre on the deck, footprint x -4.5..4.5, z -10..10 (rim included). The front
 -- (-Z) faces the aisle: players walk on from -Z, stand in the box and shoot toward +Z. Parts reach y ~11.5,
--- labels float to ~16. opts.vfx = false skips effects, opts.tier overrides the tier (opts.side is ignored).
+-- labels float to ~16. opts.vfx = false skips effects, opts.tier overrides the tier, opts.labelLift raises the
+-- label stack (the lobby staggers neighbouring stacks); opts.side is ignored.
 -- Contract (Lobby.client, Shoot.client, LobbyRules): Training_<Id> > TrainingZone (the shooter's box,
 -- invisible), Equipment > Targets > Target<i> (Hinge = the pivot part, Swing = the parts that move; attributes
 -- Knock = Tip | Swing | Spin | Pop | Shatter | Fly, Hit = the sound it makes, ShardColor, Aim = world centre
@@ -1884,7 +1885,7 @@ function Stations.build(ctx, stationId, opts)
 		if p:IsA('BasePart') and (p:FindFirstAncestor('Targets') or p.Size.Magnitude < 1.6) then decor(p) end
 	end
 
-	Stations.labels(st, s, t, Stations.LABEL + V(0, t.labelLift or 0, 0))
+	Stations.labels(st, s, t, Stations.LABEL + V(0, (t.labelLift or 0) + (opts.labelLift or 0), 0))
 	model:SetAttribute('Tier', tier)
 	model:SetAttribute('TextColor', t.text) -- (the HUD hint shows the range's multiplier in it)
 	model:SetAttribute('HitPoint', st:world(CFrame.new(k.mainAim or V(0, 4.2, 6))).Position)
@@ -3565,6 +3566,7 @@ function Lobby.floorPlan(L)
 	-- each panel: a pale studded slab with every other 4-stud tile a shade darker on it (the reference's checker of
 	-- two close greys), the tiles clipped to the panel
 	for _, p in Lobby.Panels do
+		if Lobby.Plaza and p[2] <= 0 then continue end -- (RANGES: the west panels lie under the training plaza)
 		local x0, x1, z0, z1, ox, oz = p[1], p[2], p[3], p[4], p[5], p[6]
 		Lobby.slab(f, 'Panel', V(x0, 0, z0), V(x1, 0.06, z1), K.panelLight).CastShadow = false
 		for i = math.floor((x0 - ox) / 4), math.ceil((x1 - ox) / 4) - 1 do
@@ -3580,6 +3582,7 @@ function Lobby.floorPlan(L)
 	-- cyan border (0.8, inside the panel's edge) and the dark band (1.0, outside it)
 	local cw, bw = 1.3, 0.9
 	for _, outline in Lobby.PanelOutlines do
+		if Lobby.Plaza and outline[1][3] <= 0 then continue end -- (RANGES: the west outlines go with their panels)
 		-- the panel's centre, to know which side is outside
 		local cx, cz, n = 0, 0, 0
 		for _, ed in outline do cx += ed[1] + ed[3]; cz += ed[2] + ed[4]; n += 2 end
@@ -3608,51 +3611,54 @@ function Lobby.floorPlan(L)
 end
 
 ---------------------------------------------------------------------------------------------- range stand
--- The west side of the hall: the eight themed shooting lanes (Stations.build in code5/d2_stations.lua: stone, red,
--- lava, arcane, shadow, frost, toxic, gold) laid flat in one row side by side, like the training lanes in the user's
--- +1 video, on one low red floor: Starter (FREE) at the north end, nearest the exit (spawn -> free lane -> Stage 1
--- door), Gold at the south end. The row stands back against the west wall (the targets' backstops a few studs in front
--- of it, clear of its pillars), so the hall floor in front of it is one open approach from the spine. Every lane faces
--- the hall: you step on from the red runway at its front (x -90) and shoot west at the targets; the wall is the
--- backdrop. The structure stays in the hall's neutral greys; the colour is the lanes'.
---   Range floor: one low (0.4) red studded platform under the whole row (the reference's red carpet under its
---     capsules, the video's terracotta lane platforms), a darker border band, pale nosings, a dark kick band; its
---     front 4 studs are the runway along the lanes' fronts.
---   Lane lamps: a lamp post in every gap between the lanes at their front (the capsule row's rhythm).
---   The wall behind: three graffiti murals painted on it, clear of the labels (a big target over the north hangout, a
---     lightning bolt and a crown high in the bays over the row), cartoon shapes only.
---   North end: a little hangout by the free lane (a bench, crates and a boombox, a tyre stack).
--- Lobby.Stand (map frame): Lanes[i] = { z, z0, z1 }: lane i's centre and its stretch along the row (Pitch apart round
--- Mid); every lane covers x X.lane..X.front (20 deep); the range floor runs X.lane - 2 .. X.front + 4. Slots[i] = Lobby.Ranges[i]'s
--- frame (origin on the deck at the lane's centre, -Z = the front, east toward the hall).
+-- The TRAINING plaza on the west half of the hall, laid out like the training plaza in the user's lobby reference
+-- (brief/ref_lobby.png; the stations on both sides of a path in ref_bags.png): a low studded plaza opens off the spine,
+-- the hall's east-west walkway arm (z 78..96) runs on into it as the aisle, and the eight themed shooting lanes
+-- (Stations.build in code5/d2_stations.lua) stand on both sides of the aisle facing it: four on the north side, three
+-- on the south side, and Gold, the finale, closing the aisle's west end like the reference's special station.
+-- Every lane's shooter end is at the aisle edge: you stand with your back to the aisle and shoot away from it into the
+-- lane's own backstop (north, south, or west into the wall for Gold), so nobody aims across the aisle or at anyone.
+-- Reading order: each step west down the aisle is the next tier, the sides taking turns (north 1, south 2, north 3 ...
+-- north 7, then Gold 8): Starter (FREE) is the north row's east end, the first lane off the spine.
+--   Plaza: a pale grey studded deck 0.4 high with a darker raised kerb round it (open at the aisle mouth), studded
+--     corner blocks, pale nosings; the aisle in the walkway's own lavender with darker edge lines, a red runner down
+--     its middle to Gold; lamp posts along both aisle edges between the lanes; two gold-capped posts flank Gold.
+--   Corners: a hangout in the NW corner (a bench, crates and a boombox, tyres), drums on a pallet and crates in the SW.
+--   The wall: graffiti murals (a target over the hangout under the RANGES board, a bolt over Gold, a crown).
+-- Lobby.Plaza = the deck's rectangle (map frame) and the aisle's z run; Lobby.floorPlan skips the two west floor panels
+-- under it. Lobby.Stand.Lanes[i] = { x, z, look } for Lobby.Ranges[i]; Slots[i] = its frame (origin on the deck at the
+-- lane's centre, -Z = the front, toward the aisle).
 Lobby.Ranges = { 'Starter', 'Tape', 'Street', 'Heavy', 'Speed', 'DoubleEnd', 'Pro', 'Gold' }
+Lobby.Plaza = { x0 = -113.6, x1 = -13, z0 = 51, z1 = 123, aisle = { 78, 96 }, deck = 0.4 }
 Lobby.Stand = {
-	Pitch = 12, Mid = 87, Deck = 0.4,
-	X = { lane = -110, front = -90 },
-	-- (the hall's lavender greys, sampled off the reference's terrace; its red strip for the carpet)
+	-- lane centres: north row z 67 (shooter end z 77), south row z 107 (z 97), 18 apart along each row and offset half
+	-- a pitch across the aisle; Gold x -102 (shooter end x -92)
+	Place = {
+		{ -22, 67, 'S' }, { -31, 107, 'N' }, { -40, 67, 'S' }, { -49, 107, 'N' },
+		{ -58, 67, 'S' }, { -67, 107, 'N' }, { -76, 67, 'S' }, { -102, 87, 'E' },
+	},
+	LabelStep = 0.45, -- each tier's label stack a little higher than the last, so the stacks don't pile up from the spine
 	Colors = {
-		tread = C(186, 189, 228), riser = C(146, 150, 192), riserDark = C(104, 110, 156), nose = C(228, 232, 250),
-		carpet = C(212, 84, 94), carpetDark = C(158, 46, 62),
-		post = C(166, 170, 210), cap = C(210, 214, 242), wood = C(176, 112, 70), woodDark = C(124, 76, 46), metal = C(70, 76, 96),
+		deck = C(204, 206, 226), kerb = C(112, 118, 158), kerbTop = C(150, 154, 192), nose = C(228, 232, 250),
+		aisle = C(183, 187, 230), aisleEdge = C(140, 146, 196), carpet = C(212, 84, 94), carpetDark = C(158, 46, 62),
+		post = C(166, 170, 210), cap = C(210, 214, 242), riserDark = C(104, 110, 156), gold = C(245, 192, 30), goldDark = C(190, 130, 10),
+		wood = C(176, 112, 70), woodDark = C(124, 76, 46), metal = C(70, 76, 96),
 	},
 	Lanes = {}, Slots = {},
 }
 function Lobby.standLayout()
 	local St = Lobby.Stand
-	local n = #Lobby.Ranges
 	table.clear(St.Lanes)
 	table.clear(St.Slots)
-	for i = 1, n do
-		local z = St.Mid + (i - (n + 1) / 2) * St.Pitch
-		St.Lanes[i] = { z = z, z0 = z - St.Pitch / 2, z1 = z + St.Pitch / 2 }
-		local pos = V((St.X.lane + St.X.front) / 2, St.Deck, z)
-		St.Slots[i] = CFrame.lookAt(pos, pos + V(1, 0, 0))
+	local dirs = { S = V(0, 0, 1), N = V(0, 0, -1), E = V(1, 0, 0) } -- (the way each lane's front faces: to the aisle)
+	for i, p in St.Place do
+		local pos = V(p[1], Lobby.Plaza.deck, p[2])
+		St.Lanes[i] = { x = p[1], z = p[2], look = dirs[p[3]] }
+		St.Slots[i] = CFrame.lookAt(pos, pos + dirs[p[3]])
 	end
-	St.Z = { St.Lanes[1].z0, St.Lanes[n].z1 }
-	St.Depth = St.X.front - St.X.lane
 	return St
 end
--- Hood props in a small cluster (c in the map frame, at = the cluster's centre on the ground):
+-- Hood props in a small cluster (c in the map frame, at = the cluster's centre on the ground it stands on):
 -- kind 1 a stack of tyres, a crate and a cone; 2 two drums on a pallet; 3 a crate stack, a milk crate and a boombox.
 function Lobby.standProps(c, kind, at)
 	local wood, woodDark = C(196, 140, 80), C(146, 96, 52)
@@ -3733,9 +3739,9 @@ function Lobby.rangeMural(c, kind, za, zb, ya, yb)
 end
 function Lobby.stand(L, skins)
 	local St = Lobby.standLayout()
-	local K, X = St.Colors, St.X
-	local lanes, n = St.Lanes, #St.Lanes
-	local z0, z1 = St.Z[1], St.Z[2]
+	local K, Pz = St.Colors, Lobby.Plaza
+	local x0, x1, z0, z1, h = Pz.x0, Pz.x1, Pz.z0, Pz.z1, Pz.deck
+	local a0, a1 = Pz.aisle[1], Pz.aisle[2]
 	local training = Instance.new('Folder')
 	training.Name = 'Training'
 	training.Parent = L.parent
@@ -3746,101 +3752,197 @@ function Lobby.stand(L, skins)
 		p.CastShadow = false
 		return p
 	end
-	-- A low studded block (x xa..xb, z za..zb, top y1) with its edges finished: a pale nosing round the top, a darker
-	-- kick band round the foot (base, body, cap in three tones).
-	local function deck(name, xa, xb, za, zb, y1, top)
-		slab(name, V(xa, 0, za), V(xb, y1, zb), top or K.tread)
-		flat('DeckKick', V(xa - 0.05, 0, za - 0.05), V(xb + 0.05, math.min(0.16, y1 / 2), zb + 0.05), K.riserDark)
-		for _, e in { { V(xa - 0.08, y1 - 0.14, za - 0.08), V(xb + 0.08, y1 + 0.03, za + 0.42) }, { V(xa - 0.08, y1 - 0.14, zb - 0.42), V(xb + 0.08, y1 + 0.03, zb + 0.08) },
-			{ V(xa - 0.08, y1 - 0.14, za + 0.42), V(xa + 0.42, y1 + 0.03, zb - 0.42) }, { V(xb - 0.42, y1 - 0.14, za + 0.42), V(xb + 0.08, y1 + 0.03, zb - 0.42) } } do
-			flat('DeckNosing', e[1], e[2], K.nose)
-		end
+
+	-- The deck, the kerb round it (0.25 proud, studded, a paler top band) and studded corner blocks; the kerb is open
+	-- across the aisle mouth on the east edge, where a pale nosing finishes the step up from the hall floor.
+	local kw = 1.2
+	slab('PlazaDeck', V(x0 + kw, 0, z0 + kw), V(x1 - kw, h, z1 - kw), K.deck)
+	local ky = h + 0.25
+	local kerbs = {
+		{ V(x0, 0, z0), V(x1, ky, z0 + kw) }, { V(x0, 0, z1 - kw), V(x1, ky, z1) }, { V(x0, 0, z0 + kw), V(x0 + kw, ky, z1 - kw) },
+		{ V(x1 - kw, 0, z0 + kw), V(x1, ky, a0) }, { V(x1 - kw, 0, a1), V(x1, ky, z1 - kw) },
+	}
+	for _, e in kerbs do
+		slab('PlazaKerb', e[1], e[2], K.kerb, true)
+		flat('PlazaKerbTop', V(e[1].X + 0.15, ky, e[1].Z + 0.15), e[2] + V(-0.15, 0.04, -0.15), K.kerbTop)
+	end
+	slab('PlazaDeck', V(x1 - kw, 0, a0), V(x1, h, a1), K.aisle) -- (the mouth: the aisle's own colour)
+	flat('PlazaNosing', V(x1 - 0.06, h - 0.14, a0), V(x1 + 0.3, h + 0.03, a1), K.nose)
+	for _, c in { { x0, z0 }, { x0, z1 }, { x1, z0 }, { x1, z1 } } do
+		local cx, cz = c[1] + (c[1] == x0 and 0.9 or -0.9), c[2] + (c[2] == z0 and 0.9 or -0.9)
+		slab('PlazaCorner', V(cx - 1.1, 0, cz - 1.1), V(cx + 1.1, 0.95, cz + 1.1), K.kerb, true)
+		flat('PlazaCornerCap', V(cx - 1.2, 0.95, cz - 1.2), V(cx + 1.2, 1.12, cz + 1.2), K.cap)
 	end
 
-	-- The range floor: one low red studded platform under the whole row (the reference's red carpet under its capsule
-	-- row, the video's terracotta lane platforms): a darker border band round the red field, pale nosings, a dark kick.
-	-- Its front 4 studs are the runway you walk along to the lanes.
-	local fx0, fx1 = X.lane - 2, X.front + 4
-	local pz0, pz1 = z0 - 1.5, z1 + 1.5
-	local h, bw = St.Deck, 0.9
-	slab('RangeFloor', V(fx0 + bw, 0, pz0 + bw), V(fx1 - bw, h, pz1 - bw), K.carpet)
-	for _, e in { { V(fx0, 0, pz0), V(fx1, h, pz0 + bw) }, { V(fx0, 0, pz1 - bw), V(fx1, h, pz1) },
-		{ V(fx0, 0, pz0 + bw), V(fx0 + bw, h, pz1 - bw) }, { V(fx1 - bw, 0, pz0 + bw), V(fx1, h, pz1 - bw) } } do
-		slab('RangeFloorBorder', e[1], e[2], K.carpetDark)
-	end
-	flat('DeckKick', V(fx0 - 0.05, 0, pz0 - 0.05), V(fx1 + 0.05, 0.14, pz1 + 0.05), K.riserDark)
-	for _, e in { { V(fx0 - 0.08, h - 0.12, pz0 - 0.08), V(fx1 + 0.08, h + 0.03, pz0 + 0.36) }, { V(fx0 - 0.08, h - 0.12, pz1 - 0.36), V(fx1 + 0.08, h + 0.03, pz1 + 0.08) },
-		{ V(fx0 - 0.08, h - 0.12, pz0 + 0.36), V(fx0 + 0.36, h + 0.03, pz1 - 0.36) }, { V(fx1 - 0.36, h - 0.12, pz0 + 0.36), V(fx1 + 0.08, h + 0.03, pz1 - 0.36) } } do
-		flat('DeckNosing', e[1], e[2], K.nose)
-	end
+	-- The aisle: the walkway's lavender from the mouth to Gold's front, darker edge lines, a red runner down its middle.
+	local ax = St.Lanes[8].x + 10 -- (Gold's shooter end)
+	slab('Aisle', V(ax, h, a0), V(x1 - kw, h + 0.04, a1), K.aisle)
+	for _, z in { a0, a1 - 0.35 } do flat('AisleEdge', V(ax, h + 0.04, z), V(x1 - kw, h + 0.07, z + 0.35), K.aisleEdge) end
+	local rz0, rz1 = (a0 + a1) / 2 - 3, (a0 + a1) / 2 + 3
+	slab('AisleRunner', V(ax, h + 0.04, rz0 + 0.6), V(x1, h + 0.16, rz1 - 0.6), K.carpet)
+	for _, z in { rz0, rz1 - 0.6 } do slab('AisleRunnerEdge', V(ax, h + 0.04, z), V(x1, h + 0.16, z + 0.6), K.carpetDark) end
 
-	-- Lane lamps in the gaps at the lanes' front ends (and one past each end of the row): a dark foot, a light post,
-	-- a pale cap, a warm lamp head under a dark lid.
-	for k = 0, n do
-		local z = k == 0 and lanes[1].z0 + 0.4 or k == n and lanes[n].z1 - 0.4 or lanes[k].z1
-		local x, y = X.front + 0.3, St.Deck
-		slab('LaneLampFoot', V(x - 0.65, y, z - 0.6), V(x + 0.65, y + 0.55, z + 0.6), K.riserDark)
+	-- Lamp posts on both aisle edges in the gaps between the lanes (and at the mouth): a dark foot, a light post with a
+	-- band, a pale cap, a warm lamp under a dark lid.
+	local function lamp(x, z)
+		local y = h
+		slab('LaneLampFoot', V(x - 0.65, y, z - 0.65), V(x + 0.65, y + 0.55, z + 0.65), K.riserDark)
 		t:box('LaneLampPost', V(x - 0.42, y + 0.55, z - 0.42), V(x + 0.42, y + 4.4, z + 0.42), K.post, M.SmoothPlastic)
 		t:box('LaneLampBand', V(x - 0.47, y + 2.1, z - 0.47), V(x + 0.47, y + 2.45, z + 0.47), K.riserDark, M.SmoothPlastic)
 		t:box('LaneLampCap', V(x - 0.6, y + 4.4, z - 0.6), V(x + 0.6, y + 4.7, z + 0.6), K.cap, M.SmoothPlastic)
 		decor(t:box('LaneLamp', V(x - 0.38, y + 4.7, z - 0.38), V(x + 0.38, y + 5.4, z + 0.38), C(255, 236, 196), M.Neon)).CastShadow = false
 		t:box('LaneLampTop', V(x - 0.52, y + 5.4, z - 0.52), V(x + 0.52, y + 5.62, z + 0.52), K.riserDark, M.SmoothPlastic)
 	end
+	for _, x in { -15.6, -31, -49, -67, -85 } do lamp(x, a0 - 1.4) end
+	for _, x in { -15.6, -40, -58, -76 } do lamp(x, a1 + 1.4) end
+	-- Gold's gate: two taller gold-capped posts on the aisle either side of its shooter end.
+	for _, z in { a0 + 1.6, a1 - 1.6 } do
+		local x = ax + 1.2
+		slab('GoldPostFoot', V(x - 0.9, h, z - 0.9), V(x + 0.9, h + 0.7, z + 0.9), K.riserDark)
+		t:box('GoldPost', V(x - 0.6, h + 0.7, z - 0.6), V(x + 0.6, h + 6.2, z + 0.6), K.post, M.SmoothPlastic)
+		t:box('GoldPostBand', V(x - 0.66, h + 3.0, z - 0.66), V(x + 0.66, h + 3.5, z + 0.66), K.goldDark, M.SmoothPlastic)
+		t:box('GoldPostCap', V(x - 0.85, h + 6.2, z - 0.85), V(x + 0.85, h + 6.6, z + 0.85), K.gold, M.SmoothPlastic)
+		decor(t:box('GoldPostLamp', V(x - 0.5, h + 6.6, z - 0.5), V(x + 0.5, h + 7.4, z + 0.5), C(255, 226, 120), M.Neon)).CastShadow = false
+		t:box('GoldPostTop', V(x - 0.7, h + 7.4, z - 0.7), V(x + 0.7, h + 7.65, z + 0.7), K.goldDark, M.SmoothPlastic)
+	end
 
-	-- Graffiti murals on the wall, painted 0.12 proud of it, clear of the label stacks (they top out at y ~19): a big
-	-- target over the hangout at the row's north end, a bolt and a crown high in the next bays (y 19.5..30, under the
-	-- windows; the RANGES board has the first bay).
-	Lobby.rangeMural(t, 1, 15, 35, 6.5, 19)
+	-- The corners: a hangout in the NW (a bench facing the aisle, crates with a milk crate and a boombox, tyres and a
+	-- crate), drums on a pallet and a crate stack in the SW.
+	local bx, bz = -100, 64
+	for _, dx in { -3.5, 3.5 } do slab('BenchLeg', V(bx + dx - 0.5, h, bz - 0.9), V(bx + dx + 0.5, h + 1.4, bz + 0.9), K.riserDark) end
+	t:box('BenchSeat', V(bx - 4.6, h + 1.4, bz - 1.1), V(bx + 4.6, h + 1.85, bz + 1.1), K.wood, M.SmoothPlastic)
+	t:box('BenchSeatEdge', V(bx - 4.7, h + 1.25, bz - 1.2), V(bx + 4.7, h + 1.45, bz + 1.2), K.woodDark, M.SmoothPlastic)
+	for _, dx in { -3.5, 3.5 } do t:box('BenchBackPost', V(bx + dx - 0.25, h + 1.85, bz - 1.1), V(bx + dx + 0.25, h + 4.0, bz - 0.6), K.metal, M.SmoothPlastic) end
+	t:box('BenchBack', V(bx - 4.6, h + 2.6, bz - 1.15), V(bx + 4.6, h + 3.8, bz - 0.75), K.wood, M.SmoothPlastic)
+	Lobby.standProps(t, 3, V(-109, h, 58))
+	Lobby.standProps(t, 1, V(-88, h, 59))
+	Lobby.standProps(t, 2, V(-106, h, 115))
+	Lobby.standProps(t, 3, V(-86, h, 116))
+
+	-- Graffiti murals on the west wall, clear of the label stacks: a target over the hangout under the RANGES board, a
+	-- lightning bolt high over Gold, a crown in the next bay south.
+	Lobby.rangeMural(t, 1, 51, 70.5, 6.5, 19)
 	Lobby.rangeMural(t, 2, 86.5, 105.5, 19.8, 30)
 	Lobby.rangeMural(t, 3, 122.5, 141.5, 19.8, 30)
-	-- A hangout by the free lane at the row's north end: a bench facing the hall, crates with a boombox, tyres.
-	local bz = z0 - 4.5
-	for _, bx in { -107.5, -100.5 } do slab('BenchLeg', V(bx - 0.5, 0, bz - 0.9), V(bx + 0.5, 1.4, bz + 0.9), K.riserDark) end
-	t:box('BenchSeat', V(-108.6, 1.4, bz - 1.1), V(-99.4, 1.85, bz + 1.1), K.wood, M.SmoothPlastic)
-	t:box('BenchSeatEdge', V(-108.7, 1.25, bz - 1.2), V(-99.3, 1.45, bz + 1.2), K.woodDark, M.SmoothPlastic)
-	for _, bx in { -107.5, -100.5 } do t:box('BenchBackPost', V(bx - 0.25, 1.85, bz - 1.1), V(bx + 0.25, 4.0, bz - 0.6), K.metal, M.SmoothPlastic) end
-	t:box('BenchBack', V(-108.6, 2.6, bz - 1.15), V(-99.4, 3.8, bz - 0.75), K.wood, M.SmoothPlastic)
-	Lobby.standProps(t, 3, V(-114, 0, bz + 0.5))
-	Lobby.standProps(t, 1, V(-95, 0, bz - 1.5))
 
-	-- The lanes.
+	-- The lanes (each label stack LabelStep higher than the tier before).
 	for k, id in Lobby.Ranges do
 		local s = skins.StationById[id]
+		local lift = k < #Lobby.Ranges and (k - 1) * St.LabelStep or 0
 		Lobby.place(L, training, 'Range_' .. id, St.Slots[k], { X = 9, Y = 12, Z0 = -10, Z1 = 10 }, string.upper(s and s.Name or id), C(90, 200, 120),
-			Stations and function(c) Stations.build(c, id) end)
+			Stations and function(c) Stations.build(c, id, { labelLift = lift }) end)
 	end
 	return t
 end
 
 ---------------------------------------------------------------------------------------------- shoe box dais
--- The back wall's centre (the reference's PETS egg dais) is kept for the coming SHOE BOXES and nothing else: a
--- finished two-level studded dais (a darker rim round paler decks, chamfered front corners, a front step, a short
--- stair up the middle to the high deck), a checkered shelf on each deck, and eight egg-style pedestals ready for the
--- boxes (a dark foot, a pale drum, a glowing ring in the rarity colour, a white top), each showing a faint box-shaped
--- hologram where its box will sit, under a rarity nameplate. The SHOE BOXES sign is on the back wall's centre pillar
--- (Lobby.signs). One ComingSoon prompt ("Shoe Boxes"); no unboxing yet.
--- Lobby.Slots.ShoeBoxes: the dais's front centre on the floor, facing the hall (Lobby.SlotSizes.ShoeBoxes its size);
--- Lobby.Slots.ShoeBoxPedestal<i>: the top of pedestal i (where box i goes), facing the hall.
-Lobby.Dais = { X = 27, Z0 = 136, Z1 = 172, Low = 1.6, High = 4.4, Riser = 151, Rows = { 143, 161 } }
-Lobby.ShoeBoxes = {
-	{ Name = 'Common', Color = C(236, 238, 244), Shelf = 1, X = 19.5 },
-	{ Name = 'Uncommon', Color = C(80, 210, 90), Shelf = 1, X = 7.5 },
-	{ Name = 'Rare', Color = C(50, 130, 240), Shelf = 1, X = -7.5 },
-	{ Name = 'Epic', Color = C(150, 80, 230), Shelf = 1, X = -19.5 },
-	{ Name = 'Legendary', Color = C(250, 190, 30), Shelf = 2, X = 19.5 },
-	{ Name = 'Mythic', Color = C(240, 70, 150), Shelf = 2, X = 7.5 },
-	{ Name = 'Secret', Color = C(120, 255, 200), Shelf = 2, X = -7.5 },
-	{ Name = 'Exclusive', Color = C(230, 40, 52), Shelf = 2, X = -19.5 },
+-- The back wall's centre (the reference's PETS egg dais) holds the 10 SHOE BOXES, cheapest first, laid out the way
+-- the user's videos show their eggs: every box big on its own round pad (the soldier game's egg pads: a dark foot, a
+-- drum in the box's colour, a glowing ring, a pale top) over the reference's checkered shelf, its name and price
+-- floating just over it. The ten make one row, left to right as seen from the hall, staggered: the odd ones on the low
+-- deck, the even ones on the high deck behind, each between two of the front ones, so every box and label reads from
+-- the spawn without a second row hiding behind the first; full-width steps run up between the two. Each box is
+-- turned a little toward the spine. The dais: a darker studded rim round paler studded decks, chamfered
+-- front corners, a full-width front step, pale nosings on every edge, a low studded rail at the back. The SHOE BOXES
+-- sign is on the back wall's centre pillar (Lobby.signs).
+-- Map contract (HoodServer/ShoeService, HoodClient/Shoes.client): a Model `ShoeBoxes` tagged HoodShoeBoxes holding
+-- `ShoeBox_<Id>` Models (attributes BoxId, Order, Price), each with:
+--   Box_<Id>         BoxModels.build (the closed box; its `Lid` sub-model can pop), on its pad
+--   BoxPoint_<Id>    invisible part on the pad's front, about 3 studs over the deck you stand on: the prompt anchor and
+--                    the point ShoeService measures to (ShoeRules.Range 12)
+--   BoxLabel_<Id>    BillboardGui WorldLabel: TextLabels Title (the box name) and Price (the Cash price, Glyph attribute
+--                    as the armory's); Shoes.client may repaint Price. An Attachment ChancesPoint over it marks where
+--                    Shoes.client floats the chances board.
+--   BoxCollider      an invisible solid block round the box (the box's own parts don't collide)
+-- Prices and names come from Config.Shoes (Lobby.ShoeBoxStub until it loads). Lobby.Slots.ShoeBoxes (+ SlotSizes):
+-- the dais's front centre on the floor; Lobby.Slots.ShoeBox<i>: box i's pad top, facing the hall.
+Lobby.Dais = {
+	X = 33, Z0 = 136, Z1 = 172, Low = 1.6, High = 4.8, Riser = 148, Top = 152, Scale = 1.45, PadR = 4.3,
+	-- box i stands at x = First - (i - 1) * Pitch (left to right from the hall), odd ones on row 1, even ones on row 2
+	First = 27.6, Pitch = 6.13, Rows = { { deck = 'Low', z = 143.5 }, { deck = 'High', z = 160 } },
 }
--- One pedestal (c: centre bottom, front -Z) in the rarity colour col; returns the height of its top.
-function Lobby.pedestal(c, col)
-	local K = Lobby.Colors
-	c:post('PedestalFoot', 3, 0.5, V(0, 0, 0), C(62, 68, 100), M.SmoothPlastic)
-	c:post('PedestalDrum', 2.5, 1.5, V(0, 0.5, 0), C(214, 218, 236), M.SmoothPlastic)
-	c:post('PedestalBand', 2.56, 0.3, V(0, 0.8, 0), K.pillarSide, M.SmoothPlastic)
-	decor(c:post('PedestalRing', 2.65, 0.25, V(0, 2.0, 0), col, M.Neon)).CastShadow = false
-	c:post('PedestalTop', 2.3, 0.25, V(0, 2.25, 0), P.white, M.SmoothPlastic)
-	return 2.5
+Lobby.ShoeBoxStub = {
+	{ Id = 'Street', Name = 'Street Box', Price = 25, Color = C(232, 70, 56) },
+	{ Id = 'Graffiti', Name = 'Graffiti Box', Price = 75, Color = C(255, 110, 190) },
+	{ Id = 'Frost', Name = 'Frost Box', Price = 200, Color = C(120, 200, 255) },
+	{ Id = 'Lava', Name = 'Lava Box', Price = 450, Color = C(255, 110, 40) },
+	{ Id = 'Toxic', Name = 'Toxic Box', Price = 900, Color = C(110, 230, 70) },
+	{ Id = 'Candy', Name = 'Candy Box', Price = 1600, Color = C(250, 140, 180) },
+	{ Id = 'Ocean', Name = 'Ocean Box', Price = 2800, Color = C(30, 140, 190) },
+	{ Id = 'Gem', Name = 'Gem Box', Price = 4500, Color = C(40, 190, 100) },
+	{ Id = 'Galaxy', Name = 'Galaxy Box', Price = 7000, Color = C(130, 110, 240) },
+	{ Id = 'Gold', Name = 'Gold Box', Price = 10000, Color = C(250, 186, 40) },
+}
+-- A shared module by path under ReplicatedStorage.Shared ('Config', 'Shoes'), nil if missing or failing.
+function Lobby.sharedModule(...)
+	local m = ReplicatedStorage:FindFirstChild('Shared')
+	for _, name in { ... } do m = m and m:FindFirstChild(name) end
+	if not m then return nil end
+	local ok, result = pcall(require, m)
+	return ok and result or nil
+end
+-- The boxes in price order: Config.Shoes.Boxes, or the stub.
+function Lobby.shoeBoxList()
+	local cfg = Lobby.sharedModule('Config', 'Shoes')
+	local list = (cfg and type(cfg.Boxes) == 'table' and #cfg.Boxes > 0) and table.clone(cfg.Boxes) or table.clone(Lobby.ShoeBoxStub)
+	table.sort(list, function(a, b) return (a.Price or 0) < (b.Price or 0) end)
+	return list
+end
+-- One round pad (c: its centre on the deck, front -Z) in colour col, a pedestal like the hall reference's under the
+-- video's round egg pad: a dark foot, a drum in the box's colour with a pale band, a glowing ring, a pale top; a tag
+-- leaning on its front (the video's oval tags) with `tag` on it. Returns the height of its top.
+function Lobby.boxPad(c, col, tag)
+	local r = Lobby.Dais.PadR
+	local drum = col:Lerp(C(20, 22, 44), 0.5)
+	c:post('BoxPadFoot', r, 0.36, V(0, 0, 0), C(58, 64, 98), M.SmoothPlastic)
+	c:post('BoxPadDrum', r - 0.3, 0.84, V(0, 0.34, 0), drum, M.SmoothPlastic)
+	c:post('BoxPadBand', r - 0.26, 0.16, V(0, 0.56, 0), col:Lerp(P.white, 0.35), M.SmoothPlastic)
+	decor(c:post('BoxPadRing', r - 0.14, 0.14, V(0, 1.16, 0), col:Lerp(P.black, 0.2), M.Neon)).CastShadow = false
+	c:post('BoxPadTop', r - 0.45, 0.2, V(0, 1.22, 0), col:Lerp(P.white, 0.72), M.SmoothPlastic)
+	if tag then
+		local plate = c:part('BoxPadTag', V(2.6, 0.9, 0.14), CFrame.new(0, 0.8, -r + 0.12) * CFrame.Angles(-0.32, 0, 0), C(30, 32, 52), M.SmoothPlastic)
+		c:part('BoxPadTagRim', V(2.8, 1.06, 0.1), CFrame.new(0, 0.8, -r + 0.2) * CFrame.Angles(-0.32, 0, 0), col:Lerp(P.white, 0.25), M.SmoothPlastic)
+		line(surface(plate, Enum.NormalId.Front, 40), 'Tag', tag, P.white, FONT.loud, 0.1, 0.8, col:Lerp(P.black, 0.4), 2)
+	end
+	return 1.42
+end
+-- The floating name and price over a box (the video's egg labels), kept low so Shoes.client's chances board has the
+-- space above it (at the ChancesPoint attachment).
+function Lobby.boxLabel(c, id, pos, name, price, col)
+	local a = ghost(c:part('BoxLabel_' .. id, V(0.2, 0.2, 0.2), CFrame.new(pos), P.white))
+	local g = Instance.new('BillboardGui')
+	g.Name = 'WorldLabel'
+	g.Size = UDim2.fromScale(math.max(6.5, 0.52 * #name), 2.6)
+	g.MaxDistance = 120
+	g.LightInfluence = 0
+	g.Parent = a
+	local ink = C(24, 22, 40)
+	local h, s, v = col:ToHSV()
+	line(g, 'Title', name, Color3.fromHSV(h, math.min(s, 0.75), math.max(v, 0.95)), FONT.loud, 0, 0.56, ink, 3)
+	local icons = Lobby.sharedModule('Models', 'IconModels')
+	local image = icons and icons.Images and icons.Images.Cash
+	local t = line(g, 'Price', compact(price), C(255, 228, 92), FONT.loud, 0.56, 0.44, ink, 3)
+	if type(image) == 'string' and image ~= '' then
+		local i = Instance.new('ImageLabel')
+		i.Name = 'PriceIcon'
+		i.BackgroundTransparency = 1
+		i.Image = image
+		i.Position = UDim2.fromScale(0.24, 0.56)
+		i.Size = UDim2.fromScale(0.16, 0.44)
+		local r = Instance.new('UIAspectRatioConstraint')
+		r.Parent = i
+		i.Parent = g
+		t.Position, t.Size, t.TextXAlignment = UDim2.fromScale(0.41, 0.56), UDim2.fromScale(0.55, 0.44), Enum.TextXAlignment.Left
+		t:SetAttribute('Glyph', '')
+	else
+		t.Text = '💵 ' .. compact(price)
+		t:SetAttribute('Glyph', '💵')
+	end
+	local cp = Instance.new('Attachment')
+	cp.Name = 'ChancesPoint'
+	cp.CFrame = CFrame.new(0, 5.5, 0)
+	cp.Parent = a
+	return a
 end
 function Lobby.shoeDais(L)
 	local K = Lobby.Colors
@@ -3857,57 +3959,106 @@ function Lobby.shoeDais(L)
 	end
 	Lobby.slab(d, 'DaisTop', V(-X + 4.6, lo - 0.25, z0 + 0.6), V(X - 4.6, lo, z1 - 0.6), deck)
 	Lobby.slab(d, 'DaisTop', V(-X + 0.6, lo - 0.25, z0 + 4.6), V(X - 0.6, lo, z1 - 0.6), deck)
-	-- the front step (a pale nosing on it) and the high deck behind, reached by a short stair up the middle
-	Lobby.slab(d, 'DaisStep', V(-10, 0, z0 - 2.2), V(10, lo / 2, z0), deck, true)
-	d:box('DaisNosing', V(-10, lo / 2 - 0.1, z0 - 2.3), V(10, lo / 2 + 0.02, z0 - 1.7), K.trim, M.SmoothPlastic)
+	-- the full-width front step (a pale nosing on it and on the deck's front edge)
+	Lobby.slab(d, 'DaisStep', V(-X + 4, 0, z0 - 1.3), V(X - 4, lo / 2, z0), deck, true)
+	d:box('DaisNosing', V(-X + 4, lo / 2 - 0.1, z0 - 1.4), V(X - 4, lo / 2 + 0.02, z0 - 0.9), K.trim, M.SmoothPlastic)
 	d:box('DaisNosing', V(-X + 4, lo - 0.1, z0 - 0.1), V(X - 4, lo + 0.02, z0 + 0.5), K.trim, M.SmoothPlastic)
-	Lobby.slab(d, 'DaisHigh', V(-X + 3, lo, D.Riser), V(X - 3, hi - 0.25, z1), rim, true)
-	Lobby.slab(d, 'DaisHighTop', V(-X + 3.6, hi - 0.25, D.Riser + 0.6), V(X - 3.6, hi, z1 - 0.6), deck)
-	d:box('DaisNosing', V(-X + 3, hi - 0.1, D.Riser - 0.1), V(X - 3, hi + 0.02, D.Riser + 0.5), K.trim, M.SmoothPlastic)
-	for k = 1, 3 do
-		Lobby.slab(d, 'DaisStair', V(-3.5, lo, D.Riser - (4 - k)), V(3.5, lo + (hi - lo) * k / 3, D.Riser), deck, true)
+	-- the high deck behind, narrower (its studded ends stand on the low deck), up four full-width steps
+	local hx = X - 1
+	Lobby.slab(d, 'DaisHigh', V(-hx, lo, D.Top), V(hx, hi - 0.25, z1), rim, true)
+	Lobby.slab(d, 'DaisHighTop', V(-hx + 0.6, hi - 0.25, D.Top + 0.6), V(hx - 0.6, hi, z1 - 0.6), deck)
+	-- each step: a darker studded riser block under a pale studded tread, a pale nosing on its edge
+	local n = 4
+	for k = 1, n do
+		local y = lo + (hi - lo) * k / n
+		local za, zb = D.Riser + (D.Top - D.Riser) * (k - 1) / n, D.Riser + (D.Top - D.Riser) * k / n
+		Lobby.slab(d, 'DaisStair', V(-hx, lo, za), V(hx, y - 0.2, zb), rim, true)
+		Lobby.slab(d, 'DaisStairTread', V(-hx + 0.3, y - 0.2, za + 0.3), V(hx - 0.3, y, zb + (k == n and 0.6 or 0)), deck)
+		d:box('DaisNosing', V(-hx, y - 0.1, za - 0.1), V(hx, y + 0.02, za + 0.4), K.trim, M.SmoothPlastic)
 	end
 	-- a low studded rail finishes the high deck's back edge (a pale cap on it)
-	Lobby.slab(d, 'DaisRail', V(-X + 3.6, hi, z1 - 2), V(X - 3.6, hi + 1.4, z1 - 0.6), rim, true)
-	d:box('DaisRailCap', V(-X + 3.4, hi + 1.4, z1 - 2.2), V(X - 3.4, hi + 1.7, z1 - 0.4), K.trim, M.SmoothPlastic)
-	-- a checkered shelf (2 tones, 4-stud checks) along each row of pedestals
-	local shelves = { { y = lo, x = 25, z = D.Rows[1] }, { y = hi, x = 22, z = D.Rows[2] } }
-	for _, s in shelves do
-		d:box('ShelfStrip', V(-s.x, s.y, s.z - 4), V(s.x, s.y + 0.05, s.z + 4), K.shelfLight, M.SmoothPlastic).CastShadow = false
-		for i = 0, math.floor(2 * s.x / 4) - 1 do
+	Lobby.slab(d, 'DaisRail', V(-hx + 0.6, hi, z1 - 2), V(hx - 0.6, hi + 1.4, z1 - 0.6), rim, true)
+	d:box('DaisRailCap', V(-hx + 0.4, hi + 1.4, z1 - 2.2), V(hx - 0.4, hi + 1.7, z1 - 0.4), K.trim, M.SmoothPlastic)
+	-- a checkered shelf (2 tones, 4-stud checks) under each row of pads
+	for _, row in D.Rows do
+		local y, sx = D[row.deck], row.deck == 'Low' and X - 1 or hx - 1
+		d:box('ShelfStrip', V(-sx, y, row.z - 4), V(sx, y + 0.05, row.z + 4), K.shelfLight, M.SmoothPlastic).CastShadow = false
+		for i = 0, math.floor(2 * sx / 4) - 1 do
 			for j = 0, 1 do
 				if (i + j) % 2 == 0 then
-					local xa = -s.x + 4 * i
-					d:box('ShelfTile', V(xa, s.y, s.z - 4 + 4 * j), V(math.min(xa + 4, s.x), s.y + 0.1, s.z + 4 * j), K.shelfDark, M.SmoothPlastic).CastShadow = false
+					local xa = -sx + 4 * i
+					d:box('ShelfTile', V(xa, y, row.z - 4 + 4 * j), V(math.min(xa + 4, sx), y + 0.1, row.z + 4 * j), K.shelfDark, M.SmoothPlastic).CastShadow = false
 				end
 			end
 		end
 	end
-	-- the pedestals, each with its box hologram (a slow spin) and its nameplate
-	for i, b in Lobby.ShoeBoxes do
-		local s = shelves[b.Shelf]
-		local base = V(b.X, s.y + 0.1, s.z)
-		local pc = d:at(CFrame.new(base))
-		local top = Lobby.pedestal(pc, b.Color:Lerp(P.black, 0.3))
-		local slot = CFrame.new(base + V(0, top, 0)) * CFrame.Angles(0, math.pi, 0)
-		Lobby.Slots['ShoeBoxPedestal' .. i] = slot
-		local hc, holo = d:at(CFrame.new(base + V(0, top + 0.6, 0)) * CFrame.Angles(0, math.rad(i % 2 == 0 and 14 or -14), 0)):group('ShoeBoxHologram')
-		-- a shoe-box hologram: a see-through body in the rarity colour under a paler lid, a glowing band round the lid
-		-- (darkened so the Neon glows in its colour instead of clipping to white)
-		for _, e in { { 'HoloBox', V(-2.2, 0, -1.5), V(2.2, 2.3, 1.5), b.Color, 0.35, M.SmoothPlastic }, { 'HoloLid', V(-2.4, 2.3, -1.7), V(2.4, 2.9, 1.7), b.Color:Lerp(P.white, 0.55), 0.25, M.SmoothPlastic },
-			{ 'HoloBand', V(-2.45, 2.32, -1.75), V(2.45, 2.52, 1.75), b.Color:Lerp(P.black, 0.35), 0, M.Neon } } do
-			local p = decor(hc:box(e[1], e[2] * 1.3, e[3] * 1.3, e[4], e[6]))
-			p.Transparency, p.CastShadow = e[5], false
-		end
-		Lobby.motion(holo, CFrame.new(base + V(0, top + 0.6, 0)), 12, 0.25, 2.6 + i * 0.15)
-		local nb = billboard(d, base + V(0, top + 6.4, 0), 5, 1.5, {
-			{ 'Name', b.Name, b.Color:Lerp(P.white, 0.2), FONT.loud, 0, 0.55 },
-			{ 'Soon', 'COMING SOON', C(255, 214, 60), FONT.loud, 0.57, 0.43 },
-		})
-		nb.WorldLabel.MaxDistance = 120
+	-- the boxes, in price order along the rows
+	local BoxModels = Lobby.sharedModule('Models', 'BoxModels')
+	local holder, folder = L:group('ShoeBoxes')
+	folder:AddTag('HoodShoeBoxes')
+	local slots = {}
+	for i = 1, 10 do
+		local row = D.Rows[2 - i % 2]
+		table.insert(slots, { x = D.First - (i - 1) * D.Pitch, z = row.z, y = D[row.deck] })
 	end
-	local hit = ghost(d:box('ShoeBoxPrompt', V(-8, 0, z0 - 2.2), V(8, 5, z0 + 2), P.white))
-	Lobby.prompt(hit, 'Open', 'Shoe Boxes', 14)
+	for i, b in Lobby.shoeBoxList() do
+		local s = slots[i]
+		if not s then break end
+		local id = b.Id
+		local col = b.Color or C(200, 200, 210)
+		local base = V(s.x, s.y + 0.1, s.z)
+		-- turned partly toward the spine, so the plates read from the walkway
+		local face = CFrame.lookAt(base, base + V(-s.x * 0.45, 0, 70 - s.z))
+		local bc, model = holder:group('ShoeBox_' .. id)
+		model:SetAttribute('BoxId', id)
+		model:SetAttribute('Order', i)
+		model:SetAttribute('Price', b.Price)
+		-- (it streams in whole, so Shoes.client finds the box, its point and its label together)
+		pcall(function() model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic end)
+		local best = 0
+		local cfg = Lobby.sharedModule('Config', 'Shoes')
+		for _, sid in (b.Shoes or {}) do
+			local sh = cfg and cfg.ById and cfg.ById[sid]
+			if sh and type(sh.Bonus) == 'number' then best = math.max(best, sh.Bonus) end
+		end
+		local top = Lobby.boxPad(bc:at(face), col, best > 0 and ('UP TO +' .. compact(best) .. '%') or ('#' .. i))
+		local slot = face * CFrame.new(0, top, 0)
+		Lobby.Slots['ShoeBox' .. i] = slot
+		local sc = D.Scale
+		local height = 6.6 * sc
+		if BoxModels then
+			local ok, box = pcall(BoxModels.build, id, sc, bc:world(slot))
+			if ok and box then
+				box.Name = 'Box_' .. id
+				box.Parent = model
+				-- its theme particles and glow, and its floating pieces moving (client-side idle motion)
+				if BoxModels.fx then pcall(BoxModels.fx, box) end
+				if BoxModels.animate then pcall(BoxModels.animate, box) end
+				-- the label floats just over the box's highest visible part
+				local yTop = -math.huge
+				for _, p in box:GetDescendants() do
+					if p:IsA('BasePart') and p.Transparency < 1 then
+						local _, y, _, _, _, _, r10, r11, r12 = p.CFrame:GetComponents()
+						yTop = math.max(yTop, y + (math.abs(r10) * p.Size.X + math.abs(r11) * p.Size.Y + math.abs(r12) * p.Size.Z) / 2)
+					end
+				end
+				if yTop > -math.huge then height = yTop - bc:world(slot).Position.Y end
+			else
+				warn('[Lobby] BoxModels.build(' .. id .. ') failed: ' .. tostring(box))
+			end
+		end
+		if not model:FindFirstChild('Box_' .. id) then
+			-- a placeholder box in the box's colour when BoxModels is missing
+			local ph = bc:at(slot):box('Box_' .. id, V(-3.2, 0, -2.45), V(3.2, 4.5, 2.45), col, M.SmoothPlastic)
+			decor(ph)
+		end
+		-- a solid block round the box (its own parts don't collide), the prompt point on the pad's front
+		local coll = bc:at(slot):box('BoxCollider', V(-3.3, 0, -2.6), V(3.3, 4.6, 2.6), P.white, M.SmoothPlastic)
+		coll.Transparency, coll.CanQuery, coll.CanTouch, coll.CastShadow = 1, false, false, false
+		local point = ghost(bc:at(face):box('BoxPoint_' .. id, V(-0.6, 2.3, -D.PadR - 1.2), V(0.6, 3.7, -D.PadR), P.white))
+		point.CastShadow = false
+		Lobby.boxLabel(bc, id, (slot * CFrame.new(0, height + (i % 2 == 0 and 1.7 or 1.2), 0)).Position, b.Name or (id .. ' Box'), b.Price or 0, col)
+	end
 	Lobby.Slots.ShoeBoxes = CFrame.new(0, 0, z0)
 	Lobby.SlotSizes.ShoeBoxes = V(2 * X, 14, z1 - z0)
 	return d
