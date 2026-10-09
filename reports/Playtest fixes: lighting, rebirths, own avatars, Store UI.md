@@ -102,3 +102,22 @@ About 74% of play time is spent at the ranges. A casual player takes about 1.5×
 - the blur behind open windows;
 - the FredokaOne font;
 - the HUD on a phone.
+
+## If the lighting still looks off in Studio
+- **Apply the preset first.** The place file keeps whatever lighting was applied last. Run `require(game.ServerStorage.HoodLighting).Apply()` in the Command Bar, or rebuild the map.
+- **Check the values:** Lighting should show Brightness 0.32, ColorShift_Top 255,236,210, LightingStyle Soft and ExposureCompensation 0.
+- **Check the effects:** there should be one each of Atmosphere, Bloom and ColorCorrection. Delete any leftover extra ones.
+- **Adjust the sun with Brightness, not ColorShift_Top.** Roblox adds ColorShift_Top to the sunlight, so changing it shifts everything.
+  - Still too bright: set Brightness to 0.25, or ExposureCompensation to -0.3.
+  - Too dull: set ExposureCompensation to +0.3.
+- **If the ceiling glares round the light bars,** lower the PointLight Brightness on the RoofLampTube parts.
+- **What you should see:**
+  - Hall:
+    - a lavender studded floor, not white;
+    - darker lavender checker panels with crisp cyan outlines;
+    - teal walls;
+    - soft shadows;
+    - no milky haze.
+  - Streets:
+    - warm, sunlit brick on the left and cool shade on the right;
+    - saturated grass.
