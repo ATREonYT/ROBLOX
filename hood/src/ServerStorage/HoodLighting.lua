@@ -1,7 +1,7 @@
 -- Lighting presets (research_notes/Front page feel and gamey stages/lighting_and_gates.md).
 -- Lighting is shared by the whole place. TheBlockV2.Build() applies HoodSun for you; otherwise, in the
 -- Command Bar:
---   require(game.ServerStorage.HoodLighting).Apply()              -- "HoodSun": warm side sun, cool shade (default)
+--   require(game.ServerStorage.HoodLighting).Apply()              -- "HoodSun": warm side sun, light shade, vivid (default)
 --   require(game.ServerStorage.HoodLighting).Apply('HoodSoft')    -- the previous default: high sun, flatter
 --   require(game.ServerStorage.HoodLighting).Apply('FrontPage')   -- the older bright, high-sun, cool-shade look
 --   require(game.ServerStorage.HoodLighting).Apply('HoodCalm')    -- warm-neutral and muted
@@ -13,6 +13,8 @@
 -- light17 (BRIEF17): Roblox ADDS ColorShift_Top to the sun (~4.5x its colour), so every preset with a bright ColorShift_Top
 -- and Brightness 2-3 is ~5x brighter in Studio than it was tuned for. Only HoodSun (the default) is retuned; scale the
 -- others' Brightness down ~6x before using them.
+-- LIGHT2 (BRIEF20): Roblox's tone curve is filmic (ACES-like) and Ambient/OutdoorAmbient carry most of the light; HoodSun
+-- is retuned on the user's Studio frames (HoodSun17 = light17's, too dark).
 --
 -- Why the old look read dark: a 17.2 o'clock sun shading most of the street, the Realistic lighting style,
 -- a beige haze at 1.6 with a dimming tint, Bloom too high for Neon to glow, and dark large surfaces.
@@ -65,18 +67,34 @@ L.Presets = {
 	-- street seen down -Z has its left facades well lit and its right ones in shade while both sidewalks stay in sun (the
 	-- right buildings' shadow reaches 0.63 x their height across: just the grass, as ref1_street), with soft shadows; a
 	-- cool sky fill so shade reads blue-grey, not black; thick white clouds; a thin haze at distance; bloom only on Neon.
-	-- light17 (BRIEF17, measured on the user's own Studio frame of this preset): ColorShift_Top is not a tint, it ADDS about
-	-- 4.5x its colour to the sun, so with this warm-white ColorShift_Top the old Brightness 2 made a sun ~5x stronger than
-	-- planned and Studio showed a white floor and a milky glow. Brightness 0.32 with the SAME ColorShift_Top gives a sun of
-	-- about 0.58 / 0.50 / 0.41 (r/g/b) on a face square to it: a lit floor shows about its own Color3 (the hall walkway
-	-- ~182,187,235 like ref1_hall's 183,186,227), a street facade in sun about 1.6x the one in shade. Keep ColorShift_Top
-	-- as it is and scale Brightness if you want more or less sun (the calibration was made at this ColorShift_Top).
-	-- Ambient / OutdoorAmbient a cool grey (shade and the few roofed corners), EnvironmentDiffuse 0.2 for the blue sky
-	-- fill, a light Atmosphere (0.12, no haze: Studio veiled the far hall), Bloom over 1.25 (only Neon reaches it now),
-	-- a little more saturation. The lobby hall's shell still casts no shadows (code5/e2_lobby.lua says why): its floor
-	-- takes this sun like the reference's bright hall; the light bars only glow round the ceiling.
-	-- HoodSun16 below is the previous HoodSun (too bright in Studio), for comparison: Apply('HoodSun16').
+	-- LIGHT2 (BRIEF20, measured on the user's Studio frames of light17's preset, brief/ref20/user_30..32): Roblox tone-maps
+	-- with a filmic (ACES-like) curve, and with Brightness 0.32 and cool ambients the hall floor (186,188,224) showed as
+	-- 140,151,197: a quarter darker than its Color3 and bluish ("still too dark"). The white floor of BRIEF17 was the hall's
+	-- light bars (PointLight 1.2 / range 60 reaching the floor), not this sun. Now: the same sun direction and ColorShift_Top,
+	-- a little more sun (0.36), a HIGH neutral-warm Ambient = OutdoorAmbient (shade stays light: the reference has very
+	-- little shadow darkness), a weak blue sky fill (0.1: it cooled everything), +0.3 exposure, saturation +0.45 and a touch
+	-- of contrast (crisp), a thin Atmosphere with no haze, bloom on Neon only. Expected in Studio: a lit Color3 shows at about
+	-- itself (the old hall floor 186,188,224 -> ~185,184,216), shade at ~0.9 of it, saturated colours stay saturated.
+	-- To brighten or darken the whole look, change ExposureCompensation in 0.15 steps (not Brightness, not the ambients).
+	-- HoodSun17 below is light17's HoodSun (too dark), HoodSun16 the one before it (too bright): Apply('HoodSun17').
 	HoodSun = {
+		lighting = {
+			LightingStyle = Enum.LightingStyle.Soft, PrioritizeLightingQuality = true,
+			ClockTime = 9.85, GeographicLatitude = 43, Brightness = 0.36, ExposureCompensation = 0.3,
+			Ambient = C(178, 176, 172), OutdoorAmbient = C(178, 176, 172),
+			ColorShift_Top = C(255, 236, 210), ColorShift_Bottom = C(120, 130, 160),
+			EnvironmentDiffuseScale = 0.1, EnvironmentSpecularScale = 0.15, ShadowSoftness = 0.3, GlobalShadows = true,
+		},
+		atmosphere = { Density = 0.1, Offset = 0.5, Haze = 0, Glare = 0, Color = C(205, 222, 240), Decay = C(140, 165, 210) },
+		grade = { Brightness = 0, Contrast = 0.14, Saturation = 0.45, TintColor = C(255, 255, 255) },
+		bloom = { Intensity = 0.5, Size = 24, Threshold = 1.3 },
+		rays = { Intensity = 0.01, Spread = 0.2 },
+		sky = { SunAngularSize = 16, MoonAngularSize = 11, StarCount = 0, CelestialBodiesShown = true },
+		clouds = { Cover = 0.6, Density = 0.6, Color = C(255, 255, 255) },
+		wind = Vector3.new(8, 0, 4),
+	},
+	-- light17's HoodSun (BRIEF17-19): what the user saw in Studio on 2026-10-09 afternoon ("still too dark"). Comparison only.
+	HoodSun17 = {
 		lighting = {
 			LightingStyle = Enum.LightingStyle.Soft, PrioritizeLightingQuality = true,
 			ClockTime = 9.85, GeographicLatitude = 43, Brightness = 0.32, ExposureCompensation = 0,
