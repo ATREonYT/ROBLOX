@@ -1,77 +1,29 @@
--- Stage target waves: the soldier game's guard waves, the hood way (cartoon targets only, nothing human-shaped).
--- Pure rules shared by WaveService (which decides), Waves.client (which shows and aims) and the unit tests.
---   Every stage street and the boss yard (16) holds a small wave of targets (the map: TheBlockV2 Waves.build, Models
---   tagged HoodWaveTarget). Each player has their own wave per stage. A hit deals the shot's pay (ShotRules.pay of a
---   x1 lane: rebirth multiplier, gun, shoes, boosts) as damage and pays it as Power, like the ranges. The last target
---   down clears the wave: the first clear of a stage pays Cash (Balance.WaveCash) and opens the next gate (gate i needs
---   WaveCleared >= i - 1, with WaveCleared the highest stage whose wave you ever cleared). A cleared wave comes back
---   RespawnDelay seconds after the clear, the next time you walk into that stage, and every later clear pays a little
---   Cash (repeatReward: World 1's repeatable Cash) as well as its Power.
+-- Stage waves (brief 18): every stage street and the Boss Yard (16) holds a small wave of cartoon rival-crew goons
+-- (Shared/EnemyRules: who, where, how tough, how they chase and punch). Pure bookkeeping shared by WaveService (which
+-- decides), Waves.client (which shows and aims) and the unit tests:
+--   Each player has their own wave per stage. A hit deals your Power as damage (EnemyRules.damage); the server pays the
+--   x1 shot's "+N" Power for it. The last goon down clears the wave: the first clear of a stage pays Cash
+--   (Balance.WaveCash) and opens the next gate (gate i needs WaveCleared >= i - 1, with WaveCleared the highest stage whose
+--   wave you ever cleared). A cleared wave comes back RespawnDelay seconds after the clear, the next time you walk into
+--   that stage (or while you stay), and every later clear pays a little Cash (repeatReward) as well.
 local ShotRules = require(script.Parent.ShotRules)
 local Balance = require(script.Parent.Config.Balance)
+local EnemyRules = require(script.Parent.EnemyRules)
 
 local WaveRules = {}
 
-WaveRules.Range = 80 -- studs from you to a target for a shot to count
-WaveRules.LastDepth = 120 -- the last gate's arena (the boss yard) runs this far past its line
+WaveRules.Range = EnemyRules.FightRange -- studs from you to a goon for a shot (the server adds EnemyRules.Slack)
+WaveRules.LastDepth = 120 -- the last gate's arena (the Boss Yard) runs this far past its line
 WaveRules.MaxStage = 64 -- sanity cap on stage numbers from the network
-WaveRules.MaxIndex = 32 -- and on target indices
+WaveRules.MaxIndex = 32 -- and on goon indices
 WaveRules.RespawnDelay = 20 -- seconds after a clear before that stage's wave can come back
--- A target's HP per stage (1-15 the streets, 16 the boss yard) for a weight-1 kind. A first clear takes about 25 shots
--- at Stage 1 and grows to ~100 by Stage 15 and ~150 in the boss yard with the gun, shoes and rebirths a player
--- usually has on arrival (the pacing simulation: a hit deals 1 at Stage 1, ~50 at Stage 10, ~700 in the boss yard);
--- later visits go faster as your multipliers grow.
-WaveRules.HP = { 10, 25, 35, 40, 65, 150, 300, 450, 650, 900, 1500, 2000, 3000, 4000, 6500, 14000 }
--- The kinds of target: the name on its tag and its HP weight. The first five stand anywhere; Sign (Corner Shop),
--- Bottles and Crates (The Alley), Backboard (The Courts) and Tyres (The Yards) belong to one district each.
-WaveRules.Kinds = {
-	Board = { Name = 'Board', Weight = 1 },
-	Cans = { Name = 'Cans', Weight = 0.6 },
-	Cone = { Name = 'Cone', Weight = 0.8 },
-	Boombox = { Name = 'Boombox', Weight = 1.4 },
-	Drum = { Name = 'Drum', Weight = 1.2 },
-	Sign = { Name = 'Sign', Weight = 0.9 },
-	Bottles = { Name = 'Bottles', Weight = 0.7 },
-	Crates = { Name = 'Crates', Weight = 1.1 },
-	Backboard = { Name = 'Backboard', Weight = 1 },
-	Tyres = { Name = 'Tyres', Weight = 1.2 },
-	MegaBoard = { Name = 'Mega Board', Weight = 3 },
-}
--- Which targets stand in each stage, in index order (the map builder sets each one up in its district's own spot;
--- the server reads the map): The Block 1-3, Corner Shop 4-6, The Alley 7-9, The Courts 10-12, The Yards 13-15, the
--- boss yard 16.
-WaveRules.Lineups = {
-	{ 'Board', 'Cans', 'Cone' },
-	{ 'Cans', 'Board', 'Cone' },
-	{ 'Board', 'Cans', 'Cone', 'Boombox' },
-	{ 'Cans', 'Sign', 'Board', 'Boombox' },
-	{ 'Sign', 'Board', 'Cans', 'Boombox' },
-	{ 'Cans', 'Board', 'Sign', 'Drum' },
-	{ 'Cans', 'Bottles', 'Board', 'Crates' },
-	{ 'Crates', 'Cans', 'Bottles', 'Board', 'Boombox' },
-	{ 'Board', 'Cans', 'Crates', 'Bottles', 'Drum' },
-	{ 'Board', 'Cans', 'Backboard', 'Cone', 'Boombox' },
-	{ 'Backboard', 'Board', 'Cans', 'Cone', 'Drum' },
-	{ 'Board', 'Backboard', 'Cans', 'Boombox', 'Cone' },
-	{ 'Crates', 'Drum', 'Tyres', 'Drum', 'Board' },
-	{ 'Tyres', 'Crates', 'Drum', 'Drum', 'Board' },
-	{ 'Board', 'Crates', 'Tyres', 'Drum', 'Drum' },
-	{ 'MegaBoard', 'Board', 'Boombox', 'Drum', 'Cans', 'Cone' },
-}
+-- (Older names, kept for readers of the target waves: the lineups and HP are EnemyRules' now.)
+WaveRules.Lineups = EnemyRules.Lineups
+WaveRules.maxHp = EnemyRules.maxHp
 
 local function int(v: any): number?
 	if type(v) ~= 'number' or v ~= v or v % 1 ~= 0 then return nil end
 	return v
-end
-
--- A target's full HP in a stage, rounded to a number that reads cleanly on its tag (5s from 20, 50s from 200, 500s
--- from 2000).
-function WaveRules.maxHp(stage: number, kind: string?): number
-	local base = WaveRules.HP[math.clamp(math.floor(stage), 1, #WaveRules.HP)]
-	local k = kind and WaveRules.Kinds[kind]
-	local hp = math.max(1, base * (k and k.Weight or 1))
-	local step = hp >= 2000 and 500 or hp >= 200 and 50 or hp >= 20 and 5 or 1
-	return math.max(1, math.floor(hp / step + 0.5) * step)
 end
 
 -- Cash for a stage's first clear (Balance.WaveCash; 5 for a stage the table doesn't know).
@@ -102,8 +54,8 @@ function WaveRules.gateOpen(stage: number, waveCleared: any): boolean
 	return waveCleared >= stage - 1
 end
 
--- The WaveCleared a player has: their saved best, carried on through stages that have no targets built (a map
--- without waves in some stages never blocks a gate on them). hasWave: stage -> truthy.
+-- The WaveCleared a player has: their saved best, carried on through stages that have no goons (a map without waves in
+-- some stages never blocks a gate on them). hasWave: stage -> truthy.
 function WaveRules.effective(saved: any, hasWave: { [number]: any }, lastStage: number): number
 	local c = math.max(0, int(saved) or 0)
 	while c < lastStage and not hasWave[c + 1] do c += 1 end
@@ -132,23 +84,29 @@ function WaveRules.sanitize(waves: any): any
 	return waves
 end
 
--- A fresh wave of `kinds` (index order) in a stage.
-function WaveRules.spawn(stage: number, kinds: { string }): any
-	local w = { Stage = stage, HP = {}, Max = {}, Left = #kinds, Cleared = #kinds == 0, Away = false }
-	for i, kind in kinds do
-		local hp = WaveRules.maxHp(stage, kind)
+-- A fresh wave of `enemies` ({ {Kind, Home}, ... } in index order; plain kind names work too, standing at the origin) in
+-- a stage: each goon's HP, and the goons themselves (EnemyRules.new) on their spots.
+function WaveRules.spawn(stage: number, enemies: { any }): any
+	local w = { Stage = stage, HP = {}, Max = {}, Goons = {}, Left = #enemies, Cleared = #enemies == 0, Away = false }
+	for i, e in enemies do
+		local kind = type(e) == 'table' and e.Kind or e
+		local home = type(e) == 'table' and e.Home or Vector3.zero
+		local hp = EnemyRules.maxHp(stage, kind)
 		w.HP[i], w.Max[i] = hp, hp
+		w.Goons[i] = EnemyRules.new(kind, home, (i - 1) / math.max(1, #enemies))
 	end
 	return w
 end
 
--- Damage on target `index`: returns (hit, downed, cleared). A target already down, or a cleared wave, takes nothing.
+-- Damage on goon `index`: returns (hit, downed, cleared). A goon already down, or a cleared wave, takes nothing.
 function WaveRules.hit(w: any, index: number, damage: number): (boolean, boolean, boolean)
 	local hp = w.HP[index]
 	if type(hp) ~= 'number' or hp <= 0 or w.Cleared then return false, false, false end
 	hp = math.max(0, hp - math.max(0, damage))
 	w.HP[index] = hp
 	if hp > 0 then return true, false, false end
+	local g = w.Goons and w.Goons[index]
+	if g then g.State = EnemyRules.Down end
 	w.Left = math.max(0, w.Left - 1)
 	if w.Left == 0 then
 		w.Cleared = true
@@ -157,48 +115,17 @@ function WaveRules.hit(w: any, index: number, damage: number): (boolean, boolean
 	return true, true, false
 end
 
--- Reads the map's targets into { [stage] = { { Kind, Pos (world), Name }, ... } } in index order; a stage whose
--- indices aren't 1..n, or a target with a bad attribute, is left out (warned once by the caller).
-function WaveRules.worldFrom(models: { any }): ({ [number]: { any } }, { string })
-	local byStage, bad = {}, {}
-	for _, m in models do
-		local stage, index, kind, aim = m:GetAttribute('Stage'), m:GetAttribute('Index'), m:GetAttribute('Kind'), m:GetAttribute('Aim')
-		if int(stage) and int(index) and stage >= 1 and stage <= WaveRules.MaxStage and index >= 1 and index <= WaveRules.MaxIndex
-			and type(kind) == 'string' and WaveRules.Kinds[kind] and typeof(aim) == 'Vector3' then
-			byStage[stage] = byStage[stage] or {}
-			byStage[stage][index] = { Kind = kind, Pos = aim, Name = WaveRules.Kinds[kind].Name, Model = m }
-		else
-			table.insert(bad, m.Name)
-		end
-	end
-	local world = {}
-	for stage, list in byStage do
-		local n = 0
-		for i in list do n = math.max(n, i) end
-		local whole = true
-		for i = 1, n do if not list[i] then whole = false end end
-		if whole then world[stage] = list else table.insert(bad, 'stage ' .. stage) end
-	end
-	return world, bad
-end
-
 ---------------------------------------------------------------------------------------------- one player's waves
--- WaveRules.session(world, clock): the server keeps one per player. :move(stage) as they walk (0 = not in a stage
--- with targets) spawns a wave the first time they enter that stage and again when they come back after clearing it;
--- an unfinished wave keeps its HP while they step out; a cleared one comes back on a later visit once RespawnDelay
--- has passed since the clear. :shoot(stage, index, from, damage) checks the shot (whole
--- numbers in range, the shot rate, standing in that stage, the target up and within Range of `from`) and applies it.
+-- WaveRules.session(world, clock, arenas): the server keeps one per player (world and arenas from EnemyRules.world).
+-- :move(stage) as they walk (0/nil = not in a stage with goons) spawns a wave the first time they enter that stage and
+-- again when they come back after clearing it; an unfinished wave keeps its HP while they step out (its goons walk
+-- home); a cleared one comes back on a later visit once RespawnDelay has passed since the clear. :tick(dt, you) runs
+-- the goons; :shoot(stage, index, from, damage) checks a shot and applies it; :knockout() sends the goons home calm.
 local Session = {}
 Session.__index = Session
 
-function WaveRules.session(world: { [number]: { any } }, clock: () -> number): any
-	return setmetatable({ World = world, Clock = clock, Stage = 0, Waves = {}, Tokens = ShotRules.Burst, Last = clock() }, Session)
-end
-
-function Session:kinds(stage: number): { string }
-	local list = {}
-	for i, t in self.World[stage] or {} do list[i] = t.Kind end
-	return list
+function WaveRules.session(world: { [number]: { any } }, clock: () -> number, arenas: { [number]: any }?): any
+	return setmetatable({ World = world, Arenas = arenas or {}, Clock = clock, Stage = 0, Waves = {}, Tokens = ShotRules.Burst, Last = clock(), CalmUntil = -math.huge }, Session)
 end
 
 -- Returns the wave when it was (re)spawned by this move.
@@ -206,13 +133,16 @@ function Session:move(stage: number?): any
 	local s = (stage and self.World[stage]) and stage or 0
 	if s == self.Stage then return nil end
 	local old = self.Waves[self.Stage]
-	if old then old.Away = true end
+	if old then
+		old.Away = true
+		if old.Goons then EnemyRules.sendHome(old.Goons) end
+	end
 	self.Stage = s
 	if s == 0 then return nil end
 	local w = self.Waves[s]
 	local fresh = nil
 	if not w or (w.Cleared and w.Away and self.Clock() - (w.ClearedAt or -math.huge) >= WaveRules.RespawnDelay) then
-		w = WaveRules.spawn(s, self:kinds(s))
+		w = WaveRules.spawn(s, self.World[s])
 		self.Waves[s] = w
 		fresh = w
 	end
@@ -224,19 +154,19 @@ end
 -- new wave when it did.
 function Session:revive(): any
 	local w = self:current()
-	if not w or not w.Cleared or #self:kinds(self.Stage) == 0 then return nil end
+	if not w or not w.Cleared or #(self.World[self.Stage] or {}) == 0 then return nil end
 	if self.Clock() - (w.ClearedAt or -math.huge) < WaveRules.RespawnDelay then return nil end
-	w = WaveRules.spawn(self.Stage, self:kinds(self.Stage))
+	w = WaveRules.spawn(self.Stage, self.World[self.Stage])
 	self.Waves[self.Stage] = w
 	return w
 end
 
--- The wave you're in now (nil outside a stage with targets).
+-- The wave you're in now (nil outside a stage with goons).
 function Session:current(): any
 	return self.Stage ~= 0 and self.Waves[self.Stage] or nil
 end
 
--- Token bucket at the ranges' rate (ShotRules.Burst at once, refilling ShotRules.PerSecond).
+-- Token bucket at the shot rate (ShotRules.Burst at once, refilling ShotRules.PerSecond).
 function Session:allow(): boolean
 	local now = self.Clock()
 	self.Tokens = math.min(ShotRules.Burst, self.Tokens + math.max(0, now - self.Last) * ShotRules.PerSecond)
@@ -246,35 +176,105 @@ function Session:allow(): boolean
 	return true
 end
 
+-- Wakes goon `index` of wave `w` and the goons near it (a shot or a sighting). Returns the indices that noticed.
+local function wake(w: any, index: number): { number }
+	local g = w.Goons and w.Goons[index]
+	if not g or g.State ~= EnemyRules.Idle then return {} end
+	EnemyRules.alert(g, 0)
+	local list = EnemyRules.callPack(w.Goons, g)
+	table.insert(list, 1, index)
+	return list
+end
+
 -- Returns ok, why (when not ok: 'bad', 'rate', 'stage', 'target', 'range', 'down'), the wave, downed, cleared.
+-- `from` is the shooter's position in the map frame (the goons' frame).
 function Session:shoot(stage: any, index: any, from: Vector3, damage: number): (boolean, string?, any, boolean, boolean)
 	if not int(stage) or not int(index) or stage < 1 or stage > WaveRules.MaxStage or index < 1 or index > WaveRules.MaxIndex then
 		return false, 'bad', nil, false, false
 	end
 	if not self:allow() then return false, 'rate', nil, false, false end
 	if stage ~= self.Stage then return false, 'stage', nil, false, false end
-	local w, t = self.Waves[stage], (self.World[stage] or {})[index]
-	if not w or not t then return false, 'target', nil, false, false end
-	if typeof(from) ~= 'Vector3' or (t.Pos - from).Magnitude > WaveRules.Range then return false, 'range', w, false, false end
+	local w = self.Waves[stage]
+	local g = w and w.Goons and w.Goons[index]
+	if not w or not g then return false, 'target', nil, false, false end
+	if typeof(from) ~= 'Vector3' or (Vector3.new(g.Pos.X - from.X, 0, g.Pos.Z - from.Z)).Magnitude > WaveRules.Range + EnemyRules.Slack then
+		return false, 'range', w, false, false
+	end
 	local hit, downed, cleared = WaveRules.hit(w, index, damage)
 	if not hit then return false, 'down', w, false, false end
+	if not downed then w.Woke = wake(w, index) end
 	if cleared then w.ClearedAt = self.Clock() end
 	return true, nil, w, downed, cleared
 end
 
+-- Runs every wave that has goons up and about: the one you stand in (they chase `you`, your position in the map frame,
+-- or nil when you can't be chased) and any you left (they walk home). Returns the events: { Stage, Kind = 'notice' |
+-- 'punch' | 'home', Index, Landed (punch), Damage (punch) }, and the stages whose goons moved this tick.
+function Session:tick(dt: number, you: Vector3?): ({ any }, { [number]: boolean })
+	local events, moved = {}, {}
+	local now = self.Clock()
+	for stage, w in self.Waves do
+		if not w.Cleared and w.Goons then
+			local here = stage == self.Stage and not w.Away
+			local target = here and you or nil
+			local busy = false
+			for i, g in w.Goons do
+				if g.State ~= EnemyRules.Down and (g.State ~= EnemyRules.Idle or target) then
+					local before = g.Pos
+					local was = g.State
+					local ev, landed = EnemyRules.step(g, dt, target, now, self.CalmUntil, self.Arenas[stage], w.Goons)
+					if ev == 'notice' then
+						table.insert(events, { Stage = stage, Kind = 'notice', Index = i })
+						for _, j in EnemyRules.callPack(w.Goons, g) do table.insert(events, { Stage = stage, Kind = 'notice', Index = j }) end
+					elseif ev == 'punch' then
+						table.insert(events, { Stage = stage, Kind = 'punch', Index = i, Landed = landed == true, Damage = EnemyRules.punch(g.Kind) })
+					elseif ev == 'home' then
+						table.insert(events, { Stage = stage, Kind = 'home', Index = i })
+					end
+					if g.Pos ~= before or g.State ~= was then busy = true end
+				end
+			end
+			if busy then moved[stage] = true end
+		end
+	end
+	return events, moved
+end
+
+-- You were knocked out: every goon walks home and ignores you for EnemyRules.Calm seconds.
+function Session:knockout()
+	self.CalmUntil = self.Clock() + EnemyRules.Calm
+	for _, w in self.Waves do
+		if w.Goons then EnemyRules.sendHome(w.Goons) end
+	end
+end
+
+-- The goons of wave `w` as the 'Moves' message sends them: { x, z, state, x, z, state, ... } (map frame, 0.01 studs).
+function WaveRules.pack(w: any): { number }
+	local d = {}
+	for i, g in w.Goons or {} do
+		d[3 * i - 2] = math.floor(g.Pos.X * 100 + 0.5) / 100
+		d[3 * i - 1] = math.floor(g.Pos.Z * 100 + 0.5) / 100
+		d[3 * i] = g.State
+	end
+	return d
+end
+
 ---------------------------------------------------------------------------------------------- aiming (client)
--- Which target a shot goes to: `list` = { [key] = { Pos, Up } }, from the camera at `eye` looking along `look`,
--- standing at `from`. Only targets that are up and within Range count; the one nearest the middle of the screen
--- wins (each stud away adds a little), and the one you were shooting keeps the trigger while it stands in view
--- (within 50 degrees), so an HP bar drains one target at a time.
-function WaveRules.pick(list: { [any]: any }, eye: Vector3, look: Vector3, from: Vector3, current: any): any
+-- Which goon a shot goes to (the soft aim assist): `list` = { [key] = { Pos, Up } }, standing at `from` and looking
+-- along `look` (the camera). Only goons that are up and within Range count; the nearest wins (a goon in front of you
+-- counts a little nearer than one behind), and the one you were shooting keeps the trigger while it stays in range, so an
+-- HP bar drains one goon at a time.
+function WaveRules.pick(list: { [any]: any }, from: Vector3, look: Vector3, current: any): any
 	local best, bestScore = nil, math.huge
+	local l = Vector3.new(look.X, 0, look.Z)
+	l = l.Magnitude > 1e-3 and l.Unit or Vector3.new(0, 0, -1)
 	for key, t in list do
-		if t.Up and (t.Pos - from).Magnitude <= WaveRules.Range - 2 then
-			local to = t.Pos - eye
-			local angle = to.Magnitude > 1e-3 and math.deg(math.acos(math.clamp(to.Unit:Dot(look.Unit), -1, 1))) or 0
-			local score = angle + (t.Pos - from).Magnitude * 0.35
-			if key == current and angle < 50 then score -= 1000 end
+		local d = Vector3.new(t.Pos.X - from.X, 0, t.Pos.Z - from.Z)
+		local dist = d.Magnitude
+		if t.Up and dist <= WaveRules.Range then
+			local facing = dist > 1e-3 and d.Unit:Dot(l) or 1
+			local score = dist * (1.25 - 0.25 * facing)
+			if key == current then score -= 1000 end
 			if score < bestScore then best, bestScore = key, score end
 		end
 	end

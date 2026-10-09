@@ -9,27 +9,28 @@
 local GoalRules = {}
 
 -- (Where: the hall's layout as built: the ranges are the lanes on the west wall, the ARMORY the stepped stand on the
--- east side, the shoe boxes at the back, the stage door at the end.)
+-- east side, the shoe boxes at the back, the stage door at the end. Brief 18: the ranges fire by themselves, every stage
+-- is a crew of goons to beat.)
 GoalRules.List = {
-	{ Id = 'FreeRange', Text = 'Shoot at the FREE range', Where = 'BAY 1 on the left of the hall, get 10 Power', Reward = 5, Need = { Power = 10 } },
+	{ Id = 'FreeRange', Text = 'Stand in the FREE range', Where = 'BAY 1 on the left of the hall, your gun shoots by itself: get 10 Power', Reward = 5, Need = { Power = 10 } },
 	{ Id = 'Stage1', Text = 'Walk to Stage 1', Where = 'the big door at the end of the hall', Reward = 10, Need = { Stages = 1 } },
-	{ Id = 'Wave1', Text = "Clear Stage 1's targets", Where = 'in the side yard past the door', Reward = 15, Need = { Wave = 1 } },
+	{ Id = 'Wave1', Text = "Beat Stage 1's goons", Where = 'they wait past the door: hold to shoot', Reward = 15, Need = { Wave = 1 } },
 	{ Id = 'Gun', Text = 'Buy a gun', Where = 'the ARMORY stand on the right side of the hall', Reward = 20, Need = { Guns = 2 } },
 	{ Id = 'Shoe', Text = 'Open a shoe box', Where = 'the boxes are at the back of the hall', Reward = 25, Need = { Boxes = 1 }, Side = true },
 	{ Id = 'Stage3', Text = 'Reach Stage 3', Where = 'down the street past Stage 2', Reward = 25, Need = { Stages = 3 } },
 	{ Id = 'Rebirth1', Text = 'Rebirth!', Where = 'fill your Power bar, then tap REBIRTH', Reward = 30, Need = { Rebirths = 1 } },
 	{ Id = 'Stage6', Text = 'Reach Stage 6', Where = 'keep heading down the street', Reward = 50, Need = { Stages = 6 } },
-	{ Id = 'Range2', Text = 'Shoot at BAY 2', Where = 'next to BAY 1, it opens at 2 rebirths', Reward = 60, Need = { Range = 2 } },
+	{ Id = 'Range2', Text = 'Train at BAY 2', Where = 'next to BAY 1, it opens at 2 rebirths', Reward = 60, Need = { Range = 2 } },
 	{ Id = 'Gun4', Text = 'Get the Pump Shotgun', Where = 'on the ARMORY stand, right side of the hall', Reward = 75, Need = { Guns = 4 } },
-	{ Id = 'Range3', Text = 'Shoot at BAY 3', Where = 'the range wall, it opens at 4 rebirths', Reward = 100, Need = { Range = 3 } },
+	{ Id = 'Range3', Text = 'Train at BAY 3', Where = 'the range wall, it opens at 4 rebirths', Reward = 100, Need = { Range = 3 } },
 	{ Id = 'Stage10', Text = 'Reach Stage 10', Where = 'further down the street', Reward = 150, Need = { Stages = 10 } },
-	{ Id = 'Range4', Text = 'Shoot at BAY 4', Where = 'the range wall, it opens at 6 rebirths', Reward = 200, Need = { Range = 4 } },
+	{ Id = 'Range4', Text = 'Train at BAY 4', Where = 'the range wall, it opens at 6 rebirths', Reward = 200, Need = { Range = 4 } },
 	{ Id = 'Stage13', Text = 'Reach Stage 13', Where = 'the far end of the street', Reward = 300, Need = { Stages = 13 } },
-	{ Id = 'Range5', Text = 'Shoot at BAY 5', Where = 'the range wall, it opens at 8 rebirths', Reward = 400, Need = { Range = 5 } },
-	{ Id = 'Wave15', Text = "Clear Stage 15's targets", Where = 'the last street before the Boss Yard', Reward = 500, Need = { Wave = 15 } },
+	{ Id = 'Range5', Text = 'Train at BAY 5', Where = 'the range wall, it opens at 8 rebirths', Reward = 400, Need = { Range = 5 } },
+	{ Id = 'Wave15', Text = "Beat Stage 15's goons", Where = 'the last street before the Boss Yard', Reward = 500, Need = { Wave = 15 } },
 	{ Id = 'BossYard', Text = 'Reach the Boss Yard', Where = 'through the gate after Stage 15', Reward = 750, Need = { Stages = 16 } },
-	{ Id = 'BossWave', Text = 'Clear the Boss Yard', Where = 'shoot every target in the yard', Reward = 1000, Need = { Wave = 16 } },
-	{ Id = 'Range8', Text = 'Shoot at BAY 8', Where = 'the gold lane, it opens at 14 rebirths', Reward = 1500, Need = { Range = 8 } },
+	{ Id = 'BossWave', Text = 'Beat the Boss', Where = 'his crew and the BOSS wait past the Champ Ring', Reward = 1000, Need = { Wave = 16 } },
+	{ Id = 'Range8', Text = 'Train at BAY 8', Where = 'the gold lane, it opens at 14 rebirths', Reward = 1500, Need = { Range = 8 } },
 	{ Id = 'Ring', Text = 'Train in the Champ Ring', Where = 'in the Boss Yard, it opens at 16 rebirths', Reward = 2500, Need = { Range = 9 } },
 }
 GoalRules.ById = {}

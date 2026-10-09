@@ -1,4 +1,6 @@
--- Shot and hit sounds for the shooting ranges. Shoot.client plays them; anyone can audition them.
+-- Shot and hit sounds for the shooting ranges and the goons. Shoot.client and Waves.client play them; anyone can audition
+-- them. Brief 18: every game sound is behind Config/Sound (off for now): while Enabled is false, init() and play() make and
+-- play nothing (demo() still works from the command bar, to audition replacements).
 --   ShotSounds.init()            once per client: the 'Shots' SoundGroup under SoundService, pools, file probes
 --   ShotSounds.play(kind, pitch) a shot ('Shot') or a hit (the target's Hit attribute: Ding, Tock, Glass, ...)
 --   ShotSounds.demo()            plays every layer alone, then every kind whole, then 3 s of held Minigun fire on
@@ -19,6 +21,8 @@
 local SoundService = game:GetService('SoundService')
 local ContentProvider = game:GetService('ContentProvider')
 local RunService = game:GetService('RunService')
+
+local Sound = require(script.Parent.Config.Sound)
 
 local ShotSounds = {}
 ShotSounds.SOUNDS = { Shot = '', Ding = '', Tock = '', Glass = '', Tin = '', Pop = '', Ice = '', Barrel = '' }
@@ -142,6 +146,7 @@ end
 local bank
 -- Once per client: the SoundGroup (a settings menu can mute or balance 'Shots'), the pools, the probes.
 function ShotSounds.init()
+	if not Sound.Enabled then return nil end
 	if bank then return bank.group end
 	local group = SoundService:FindFirstChild('Shots')
 	if not (group and group:IsA('SoundGroup')) then
@@ -162,6 +167,7 @@ function ShotSounds.init()
 end
 
 function ShotSounds.play(kind, pitch)
+	if not Sound.Enabled then return end
 	if not bank then ShotSounds.init() end
 	playIn(bank, kind, pitch)
 end

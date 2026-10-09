@@ -1,10 +1,11 @@
 -- The lobby's ranges, every player's overhead tag, walk speed and the lobby boards, on whichever map is active (the
 -- original Block's SimulatorLobby, or The Block V2). Brief 17:
---   * No Power per second. Power comes from shots only: here at the ranges, and at the stage targets (WaveService).
---     While you stand in an open lane's shooter's box, each shot (click, tap SHOOT or R2; Shoot.client fires the Shoot
---     remote) pays ShotRules: ShotBase x the lane's Multiplier x your rebirth multiplier x boosts, x your gun, x your
---     shoes (their fraction carries to the next shot), about 7 a second at most. A lane opens at its Rebirths
---     (Config/Skins.Stations); a shot in a locked lane pays nothing.
+--   * Power comes from shots only: here at the ranges, and at the stage goons (WaveService). At the ranges your gun
+--     fires on its own (brief 18): while you stand in an open lane's shooter's box this server pays ShotRules.AutoRate
+--     shots a second on its own clock (ShotRules.autoShots; nobody clicks, no remote), each paying ShotRules: ShotBase x
+--     the lane's Multiplier x your rebirth multiplier x boosts, x your gun, x your shoes (their fraction carries to the
+--     next shot). Shoot.client shows the same shots. A lane opens at its Rebirths (Config/Skins.Stations); a locked lane
+--     doesn't fire. The old Shoot remote is still there but pays nothing (old clients, no double pay).
 --   * Players keep their own Roblox avatar: no costume and no look. Walk speed rises a little with rebirths
 --     (RebirthRules.walkSpeed), written only when it changes, so anything else that sets WalkSpeed isn't fought.
 --   * The overhead tag: your name (gold with the VIP pass), your Power and your rebirths (Roblox's own name display is
@@ -27,7 +28,6 @@ local Skins=require(RS.Shared.Config.Skins)
 local Net=require(RS.Shared.Net)
 local Format=require(RS.Shared.Format)
 local ActiveMap=require(RS.Shared.ActiveMap)
-local RateLimiter=require(script.Parent.RateLimiter)
 while not RS:GetAttribute('FoundationReady') do task.wait(.1) end
 local active=ActiveMap.get();if not active then return end
 local f=active.Frame;local lobby=active.Lobby
@@ -125,27 +125,31 @@ local function walk(player,n)
 end
 
 ---------------------------------------------------------------------------------------------- shooting
--- Where you stand is checked at the shot, against the same lane mats the attributes use.
-local shotLimit=RateLimiter.new(ShotRules.Burst,ShotRules.PerSecond)
+-- The gun fires by itself in an open lane: each tick pays the shots due on the auto clock (ShotRules.autoShots), checked
+-- where you stand now, against the same lane mats the attributes use.
 local shoeCarry={} -- (per player: the equipped shoes' fraction of a shot, carried to the next one; ShotRules.pay)
-Net.get('Shoot').OnServerEvent:Connect(function(player)
- if not shotLimit.allow(player) then return end
- local profile=Data.get(player);local c=player.Character;local root=c and c:FindFirstChild('HumanoidRootPart');local h=c and c:FindFirstChildOfClass('Humanoid')
- if not profile or not root or not h or h.Health<=0 then return end
+local autoCarry={} -- (per player: the auto clock's fraction of a shot)
+Net.get('Shoot').OnServerEvent:Connect(function() end) -- (the ranges fire on their own now: a click pays nothing)
+local function autoFire(player,profile,lane,station,dt)
+ autoCarry[player]=autoCarry[player] or {}
+ local shots=ShotRules.autoShots(autoCarry[player],dt,station)
+ if shots<=0 then return end
  local n=RebirthRules.count(profile.Data.Rebirths)
- local lane,station=Rules.training(n,f:PointToObjectSpace(root.Position),zones)
- if not ShotRules.counts(station) then return end -- (off the ranges, or a lane that needs more rebirths)
  shoeCarry[player]=shoeCarry[player] or {}
- local pay=ShotRules.pay(ShotRules.perShot(lane,n,Boosts.power(player)),player:GetAttribute('GunMultiplier'),player:GetAttribute('ShoeMultiplier'),shoeCarry[player])
+ local per=ShotRules.perShot(lane,n,Boosts.power(player))
+ local gun,shoes=player:GetAttribute('GunMultiplier'),player:GetAttribute('ShoeMultiplier')
+ local pay=0
+ for _=1,shots do pay+=ShotRules.pay(per,gun,shoes,shoeCarry[player]) end
  profile.Data.Rep=math.min(1e12,profile.Data.Rep+pay)
  profile.Data.Onboarding.Trained=true
  RebirthService.publish(player,profile.Data) -- (Power and RebirthReady at once, so the counter climbs with every shot)
-end)
-Players.PlayerRemoving:Connect(function(p) shotLimit.remove(p);shoeCarry[p]=nil end)
+end
+Players.PlayerRemoving:Connect(function(p) shoeCarry[p]=nil;autoCarry[p]=nil end)
 
 ---------------------------------------------------------------------------------------------- loop
 local beat=0
-while task.wait(0.25) do
+while true do
+ local dt=task.wait(0.25)
  beat+=1
  local rows={}
  for _,player in Players:GetPlayers() do
@@ -154,6 +158,7 @@ while task.wait(0.25) do
    local n=RebirthRules.count(profile.Data.Rebirths)
    local lane,station=standing(player,n)
    sync(player,profile,lane,station)
+   autoFire(player,profile,lane,station,dt)
    walk(player,n)
    if beat%4==0 then overheadTag(player,profile.Data.Rep,n) end
    table.insert(rows,{Name=player.DisplayName,Power=profile.Data.Rep,Cash=profile.Data.Cash,Rebirths=n})

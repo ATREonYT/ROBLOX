@@ -36,7 +36,8 @@ function Motion.button(holder, onClick)
 	local hit, body = holder:FindFirstChild('Hit'), holder:FindFirstChild('Body')
 	local lip = holder:GetAttribute('Lip') or 6
 	local s = scaleOf(holder)
-	local up, down = UDim2.new(), UDim2.fromOffset(0, lip - 1)
+	local up = body and body.Position or UDim2.new() -- (a block's face sits inset by its outline)
+	local down = up + UDim2.fromOffset(0, lip - 1)
 	local hovering, pressed = false, false
 	local function settle()
 		if pressed then return end

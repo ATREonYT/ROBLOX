@@ -11,6 +11,10 @@ from models import guns
 
 UNIT = 0.2
 FIT = 10.0  # DU
+# (brief 18) colours of the user's reference HUD icons
+GIFT, GIFT_LID = (236, 64, 140), (252, 104, 172)
+ARM, ARM_LIGHT, ARM_DARK = (255, 152, 30), (255, 196, 84), (226, 112, 18)
+PARCHMENT, PARCHMENT_END, PARCHMENT_DARK = (246, 196, 150), (214, 132, 100), (180, 100, 74)
 
 
 def shop():
@@ -53,9 +57,10 @@ def rebirth():
 
 def rewards():
 	m = Model('Rewards', 'Rewards', UNIT, kind='icon')
-	m.box((0, -1.7, 0), (6.4, 4.6, 5.6), 'purple', 'smooth', name='Box')
+	# (brief 18: the reference's Playtime Reward gift: a pink box, a yellow-orange ribbon and bow)
+	m.box((0, -1.7, 0), (6.4, 4.6, 5.6), GIFT, 'smooth', name='Box')
 	ribbon = lambda x, z: abs(x) < 0.8 or abs(z) < 0.8
-	m.box((0, 1.25, 0), (7.0, 1.4, 6.2), 'violet', 'smooth', studs=True, skip=ribbon, name='Lid')
+	m.box((0, 1.25, 0), (7.0, 1.4, 6.2), GIFT_LID, 'smooth', studs=True, skip=ribbon, name='Lid')
 	# Gold ribbon: bands on the front and sides, a cross on the lid.
 	m.box((0, -1.7, -2.86), (1.25, 4.64, 0.2), 'gold', 'gold', name='Ribbon')
 	m.box((0, 1.25, -3.17), (1.3, 1.44, 0.22), 'gold', 'gold', name='Ribbon')
@@ -174,6 +179,65 @@ def gun():
 	return m
 
 
+def muscle():
+	"""The reference's Power icon: a flexed arm, the fist up at screen-left, the bicep bulging at screen-right."""
+	m = Model('Muscle', 'Muscle', UNIT, kind='icon')
+	# (screen-right is world -x) the upper arm along the bottom from the elbow (screen-left) to the shoulder
+	m.cyl((-0.6, -2.5, 0), 6.0, 2.9, ARM, 'smooth', axis='x', name='UpperArm')
+	m.ball((-3.6, -2.5, 0), 2.9, ARM, 'smooth', name='Shoulder')
+	m.ball((2.4, -2.5, 0), 3.0, ARM_DARK, 'smooth', name='Elbow')
+	# the bicep: a big ball bulging up over the upper arm, a lighter one for its shine
+	m.ball((-1.3, -1.1, 0.05), 4.3, ARM, 'smooth', name='Bicep')
+	m.ball((-1.7, -0.5, -0.9), 2.1, ARM_LIGHT, 'smooth', name='BicepShine')
+	# the forearm standing up from the elbow, leaning a little toward the bicep
+	with m.at((2.25, 0.2, 0), euler(0, 0, -8)):
+		m.cyl((0, 0, 0), 5.0, 2.7, ARM, 'smooth', axis='y', name='Forearm')
+	# the fist on top: a round back of the hand and the knuckles facing the bicep
+	m.ball((2.0, 3.3, 0.1), 3.7, ARM, 'smooth', name='Fist')
+	m.ball((0.75, 3.15, 0.0), 2.7, ARM, 'smooth', name='Knuckles')
+	m.box((0.95, 2.05, -0.55), (2.6, 0.55, 1.9), ARM_DARK, 'smooth', rot=euler(0, 0, 10), name='Thumb')
+	m.ball((2.3, 4.1, -0.9), 1.4, ARM_LIGHT, 'smooth', name='FistShine')
+	return m
+
+
+def basket(iid, body=(255, 150, 28), light=(255, 200, 70), dark=(222, 108, 14), handle=(120, 150, 184)):
+	"""The reference's Store basket: a tapered tub with a studded rim and a steel handle arching over it."""
+	def build():
+		m = Model(iid, iid, UNIT, kind='icon')
+		m.box((0, -2.2, 0), (5.6, 2.6, 4.2), dark, 'smooth', name='Bottom')
+		m.box((0, -0.3, 0), (6.6, 2.2, 4.9), body, 'smooth', name='Tub')
+		m.box((0, 1.1, 0), (7.4, 0.9, 5.5), light, 'smooth', studs=True, skip=lambda x, z: abs(z) < 1.2 and abs(x) < 2.6, name='Rim')
+		m.box((0, 1.12, 0), (5.2, 0.95, 3.4), dark, 'smooth', name='Inside')
+		# square holes on the front, like the reference's basket weave
+		for i, x in enumerate((-2.0, 0.0, 2.0)):
+			for y in (-0.5, -2.1):
+				m.box((x, y, -2.47 if y > -1 else -2.12), (1.1, 0.9, 0.12), light, 'smooth', bevel=0.02, name='Hole')
+		# the handle: two posts and a bar over the top
+		for sx in (-1, 1):
+			m.box((sx * 2.6, 2.8, 0), (0.7, 3.0, 0.7), handle, 'metal', name='Handle')
+		m.box((0, 4.35, 0), (6.04, 0.7, 0.72), handle, 'metal', name='Handle')
+		return m
+	return build
+
+
+def quest():
+	"""The reference's Quest scroll: a rolled parchment lying across, tied with a red band."""
+	m = Model('Quest', 'Quest', UNIT, kind='icon')
+	with m.at((0, 0, 0), euler(0, 0, 32)):
+		m.cyl((0, 0, 0), 7.8, 3.4, PARCHMENT, 'smooth', axis='x', name='Roll')
+		m.cyl((-3.95, 0, 0), 0.2, 3.0, PARCHMENT_END, 'smooth', axis='x', bevel=0.02, name='End')
+		m.cyl((-4.06, 0, 0), 0.1, 1.6, PARCHMENT_DARK, 'smooth', axis='x', bevel=0.0, name='Core')
+		m.cyl((3.95, 0, 0), 0.2, 3.0, PARCHMENT_END, 'smooth', axis='x', bevel=0.02, name='End')
+		m.cyl((0.4, 0, 0), 1.6, 3.6, 'red', 'smooth', axis='x', name='Band')
+		m.box((0.4, 0, -1.85), (1.0, 1.0, 0.2), 'reddark', 'smooth', bevel=0.02, name='Knot')
+		# the loose sheet curling out of the roll
+		m.box((-1.6, -1.95, -0.6), (4.2, 0.35, 2.2), PARCHMENT, 'smooth', rot=euler(0, 0, -6), name='Sheet')
+	# ribbon tails hanging from the band
+	m.box((0.9, -2.1, -1.4), (0.7, 2.0, 0.25), 'red', 'smooth', rot=euler(0, 0, 18), name='Tail')
+	m.box((0.1, -2.3, -1.45), (0.7, 2.2, 0.25), 'reddark', 'smooth', rot=euler(0, 0, -12), name='Tail')
+	return m
+
+
 ICONS = [
 	('Shop', shop),
 	('Rebirth', rebirth),
@@ -184,6 +248,10 @@ ICONS = [
 	('Power', power),
 	('Trophy', trophy),
 	('Gun', gun),
+	('Muscle', muscle),
+	('Basket', basket('Basket')),
+	('BasketRed', basket('BasketRed', body=(232, 52, 80), light=(255, 110, 130), dark=(186, 30, 58), handle=(170, 180, 196))),
+	('Quest', quest),
 ]
 
 

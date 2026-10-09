@@ -1,20 +1,19 @@
--- Shooting at the ranges: step into a lane's shooter's box and your gun (the gun tool GunService gives you)
--- comes out; click (or tap SHOOT, or R2) to fire. Each shot is worth the lane x your rebirths (the ShotBase attribute)
--- x your gun x your shoes (ShotRules; the server checks and pays in LobbyService). Everything you see is local and
--- cheap: a layered shot sound, a muzzle flash, a tracer to the target, sparks, a hit sound, the target knocked
--- back (a can flying off, a bottle shattering, a plate swinging, a disc spinning, a balloon popping into
--- confetti), a shell casing, a little recoil, and one running "+N" over the target per lane (a held trigger
--- rolls it up and counts the hits). Hold the button (or the mouse, or R2) to keep firing. Leaving the lane puts
--- the gun away again (and the hip holster comes back: Armory.client).
+-- Shooting at the ranges (brief 18: "make your gun shoot on its own when you step on it"): step into an open lane's
+-- shooter's box and your gun (the gun tool GunService gives you) comes out and fires by itself, ShotRules.AutoRate
+-- shots a second, until you step off. Nobody clicks and nothing is sent: the server pays the same shots on its own
+-- clock (LobbyService). Each shot is worth the lane x your rebirths (the ShotBase attribute) x your gun x your shoes
+-- (ShotRules). Everything you see is local and cheap: a muzzle flash, a tracer to the target, sparks, the target
+-- knocked back (a can flying off, a bottle shattering, a plate swinging, a disc spinning, a balloon popping into
+-- confetti), a shell casing, a little recoil, and one running "+N" over the target per lane (the stream of shots rolls
+-- it up and counts the hits). A locked lane doesn't fire. Leaving the lane puts the gun away again (and the hip
+-- holster comes back: Armory.client). Other players near you firing at their lanes show too (muzzle, tracer, knock).
+-- Sounds only with Config/Sound.Enabled.
 local Players = game:GetService('Players')
-local UserInputService = game:GetService('UserInputService')
-local TweenService = game:GetService('TweenService')
 local RunService = game:GetService('RunService')
 local RS = game:GetService('ReplicatedStorage')
 local ActiveMap = require(RS.Shared.ActiveMap)
 local Juice = require(RS.Shared.Juice)
 local Format = require(RS.Shared.Format)
-local Net = require(RS.Shared.Net)
 local Guns = require(RS.Shared.Config.Guns)
 local ShotRules = require(RS.Shared.ShotRules)
 local GunTool = require(RS.Shared.GunTool)
@@ -22,16 +21,16 @@ local GunTool = require(RS.Shared.GunTool)
 local player = Players.LocalPlayer
 
 ---------------------------------------------------------------------------------------------- sounds
--- Layered built-in shot and hit sounds through the 'Shots' SoundGroup (ShotSounds: what each layer is, which
--- file loaded, pool sizes, and a command-bar audition).
-local ShotSounds = require(RS.Shared.ShotSounds)
-ShotSounds.init()
-local play = ShotSounds.play
+-- Layered built-in shot and hit sounds through the 'Shots' SoundGroup (ShotSounds), only while sounds are on
+-- (Config/Sound: off for now).
+local Sound = require(RS.Shared.Config.Sound)
+local ShotSounds = Sound.Enabled and require(RS.Shared.ShotSounds) or nil
+if ShotSounds then ShotSounds.init() end
+local function play(kind, pitch) if ShotSounds then ShotSounds.play(kind, pitch) end end
 -- An attachment's world frame (the same as WorldCFrame, spelled out so offline checks can run this file).
 local function worldOf(att) return att.Parent.CFrame * att.CFrame end
 local active = ActiveMap.wait(20)
 if not active then return end
-local remote = Net.get('Shoot')
 
 ---------------------------------------------------------------------------------------------- stations
 -- Each range's targets, read once per station model (and again if the model is rebuilt or streams back in).
@@ -151,17 +150,10 @@ RunService.PreRender:Connect(function()
 end)
 
 ---------------------------------------------------------------------------------------------- shooting
-local last = 0
+-- One shot's show (the server pays it on its own clock: LobbyService). Nothing is sent.
 local shoeCarry = {} -- (the shoes' fraction of a shot, carried like the server does: ShotRules.pay)
-local function shoot()
-	if os.clock() - last < ShotRules.Cooldown then return end
-	local id = training()
+local function shoot(id)
 	local tool = heldGun()
-	if not id and not tool then return end
-	-- On a stage street with targets up, Waves.client fires the shots (this dry shot would double them).
-	if not id and (player:GetAttribute('WaveLeft') or 0) > 0 then return end
-	last = os.clock()
-	if id then remote:FireServer() end
 	local c = player.Character
 	local root = c and c:FindFirstChild('HumanoidRootPart')
 	if not root then return end
@@ -169,161 +161,120 @@ local function shoot()
 	local gunPower = 0.9 + gun.Tier * 0.1
 	local rig = tool and Juice.gunRig(tool)
 	local from = rig and worldOf(rig.muzzle).Position or (root.Position + Vector3.new(0, 1.2, 0))
-	local s = id and station(id)
-	local target, there
-	if s then target, there = nextTarget(s) end
-	local to
-	if target then
-		to = target.Aim + Vector3.new((math.random() - 0.5) * 0.5, (math.random() - 0.5) * 0.5, 0)
-		-- Turn to face what you shoot (only while standing still, so walking is never fought).
-		local h = humanoid()
-		if h and h.MoveDirection.Magnitude < 0.1 then
-			local look = Vector3.new(to.X, root.Position.Y, to.Z)
-			if (look - root.Position).Magnitude > 0.5 then root.CFrame = CFrame.lookAt(root.Position, look) end
-		end
-		if rig then from = worldOf(rig.muzzle).Position end
-	else
-		-- Off a range: a dry shot straight ahead (nothing is paid).
-		to = from + root.CFrame.LookVector * 30
+	local s = station(id)
+	if not s then return end
+	local target, there = nextTarget(s)
+	local to = target.Aim + Vector3.new((math.random() - 0.5) * 0.5, (math.random() - 0.5) * 0.5, 0)
+	-- Turn to face what you shoot (only while standing still, so walking is never fought).
+	local h = humanoid()
+	if h and h.MoveDirection.Magnitude < 0.1 then
+		local look = Vector3.new(to.X, root.Position.Y, to.Z)
+		if (look - root.Position).Magnitude > 0.5 then root.CFrame = CFrame.lookAt(root.Position, look) end
 	end
+	if rig then from = worldOf(rig.muzzle).Position end
 	-- (Bigger guns sound a little deeper.)
 	play('Shot', 1.1 - gun.Tier * 0.04)
 	Juice.muzzle(rig, gun.Color, gunPower)
 	Juice.tracer(from, to, gun.Color, 0.18 + gun.Tier * 0.015)
 	if rig and rig.eject then Juice.casing(worldOf(rig.eject)) end
 	if tool then kick(tool, 0.8 + gun.Tier * 0.05) end
-	Juice.kick(0.08 + gun.Tier * 0.015)
-	if target and s then
-		local color = s.Model:GetAttribute('HitColor') or gun.Color
-		Juice.burst(to, color, 0.7 + s.Tier * 0.07)
-		if there then
-			if target.Knocker then target.Knocker:hit(1) end
-			local hit = target.Model:GetAttribute('Hit') or 'Ding'
-			-- A steel ding rises in pitch lane by lane (0.53 to 0.78 of the stage chime's).
-			play(hit, hit == 'Ding' and (1 + 0.07 * s.Tier) or 1)
-			Juice.flash(target.Model)
-		end
-		local gain = ShotRules.pay(player:GetAttribute('ShotBase'), player:GetAttribute('GunMultiplier'), player:GetAttribute('ShoeMultiplier'), shoeCarry)
-		-- One running "+N" per lane over the main target's top edge and to its right (a held trigger rolls it up
-		-- and counts the hits instead of piling numbers on the target): white outlined in a dark shade of the
-		-- lane's colour, bigger on the top lanes.
-		s.ComboAt = s.ComboAt or Juice.comboAt(s.Main.Model, s.Model)
-		Juice.combo(s.Model, s.ComboAt, gain, { color = color, big = s.Tier >= 5, format = Format.compact })
+	Juice.kick(0.05 + gun.Tier * 0.01) -- (a touch softer than a held trigger used to be: it never stops now)
+	local color = s.Model:GetAttribute('HitColor') or gun.Color
+	Juice.burst(to, color, 0.7 + s.Tier * 0.07)
+	if there then
+		if target.Knocker then target.Knocker:hit(1) end
+		local hit = target.Model:GetAttribute('Hit') or 'Ding'
+		-- A steel ding rises in pitch lane by lane (0.53 to 0.78 of the stage chime's).
+		play(hit, hit == 'Ding' and (1 + 0.07 * s.Tier) or 1)
+		Juice.flash(target.Model)
 	end
+	local gain = ShotRules.pay(player:GetAttribute('ShotBase'), player:GetAttribute('GunMultiplier'), player:GetAttribute('ShoeMultiplier'), shoeCarry)
+	-- One running "+N" per lane over the main target's top edge and to its right (the stream of shots rolls it up and
+	-- counts the hits instead of piling numbers on the target): white outlined in a dark shade of the lane's colour,
+	-- bigger on the top lanes.
+	s.ComboAt = s.ComboAt or Juice.comboAt(s.Main.Model, s.Model)
+	Juice.combo(s.Model, s.ComboAt, gain, { color = color, big = s.Tier >= 5, format = Format.compact })
 end
 
--- Hold to fire: while the mouse, R2 or the SHOOT button is held, shots keep coming at the client cooldown
--- (the server's rate limit matches it).
-local held, firing = {}, false
-local function startFiring(source)
-	held[source] = true
-	shoot()
-	if firing then return end
-	firing = true
-	task.spawn(function()
-		while next(held) do
-			task.wait(ShotRules.Cooldown)
-			if next(held) then shoot() end
-		end
-		firing = false
-	end)
-end
-local function stopFiring(source) held[source] = nil end
-local function sourceOf(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then return 'mouse' end
-	if input.KeyCode == Enum.KeyCode.ButtonR2 then return 'r2' end
-	return nil
-end
-UserInputService.InputBegan:Connect(function(input, processed)
-	if processed then return end
-	local source = sourceOf(input)
-	if source then startFiring(source) end
-end)
-UserInputService.InputEnded:Connect(function(input)
-	local source = sourceOf(input)
-	if source then stopFiring(source) end
+-- The auto-fire clock (brief 18): while you stand in an open lane the gun fires ShotRules.AutoRate times a second by
+-- itself, the first shot at once; a locked lane or stepping off stops it. The server pays the same shots on its clock.
+local due, wasIn = 0, nil
+RunService.PreRender:Connect(function(dt)
+	local id = training()
+	if not id then
+		due, wasIn = 0, nil
+		return
+	end
+	if wasIn ~= id then
+		wasIn = id
+		due = 1 -- (the first shot as you step on)
+	else
+		due += dt * ShotRules.AutoRate
+	end
+	-- (the gun may still be coming out: wait for it, a shot without a gun in hand looks wrong)
+	if not heldGun() then
+		due = math.min(due, 1)
+		return
+	end
+	local shots = math.min(math.floor(due), 2)
+	if shots >= 1 then
+		due -= shots
+		for _ = 1, shots do shoot(id) end
+	end
 end)
 
--- A big round SHOOT button while you're on a range (the only way to shoot on a phone), where PUNCH used to be.
-local gui = Instance.new('ScreenGui')
-gui.Name = 'ShootButton'
-gui.ResetOnSpawn = false
-gui.ScreenInsets = Enum.ScreenInsets.CoreUISafeInsets
-gui.Parent = player:WaitForChild('PlayerGui')
-local button = Instance.new('TextButton')
-button.Name = 'Shoot'
-button.AnchorPoint = Vector2.new(1, 1)
-button.Position = UDim2.new(1, -150, 1, -40)
-button.Size = UDim2.fromOffset(112, 112)
-button.BackgroundColor3 = Color3.fromRGB(255, 71, 87)
-button.Text = 'SHOOT'
-button.FontFace = Font.new('rbxasset://fonts/families/LuckiestGuy.json')
-button.TextSize = 24
-button.TextColor3 = Color3.new(1, 1, 1)
-button.TextYAlignment = Enum.TextYAlignment.Bottom
-button.AutoButtonColor = false
-button.Visible = false
-button.Parent = gui
-local corner = Instance.new('UICorner')
-corner.CornerRadius = UDim.new(0.5, 0)
-corner.Parent = button
-local pad = Instance.new('UIPadding')
-pad.PaddingBottom = UDim.new(0, 22)
-pad.Parent = button
-local stroke = Instance.new('UIStroke')
-stroke.Color = Color3.fromRGB(74, 11, 22)
-stroke.Thickness = 4
-stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-stroke.Parent = button
--- A white crosshair ring over the word.
-local ring = Instance.new('Frame')
-ring.Name = 'Crosshair'
-ring.AnchorPoint = Vector2.new(0.5, 0.5)
-ring.Position = UDim2.new(0.5, 0, 0, 34)
-ring.Size = UDim2.fromOffset(26, 26)
-ring.BackgroundTransparency = 1
-ring.Parent = button
-local ringCorner = Instance.new('UICorner')
-ringCorner.CornerRadius = UDim.new(0.5, 0)
-ringCorner.Parent = ring
-local ringStroke = Instance.new('UIStroke')
-ringStroke.Color = Color3.new(1, 1, 1)
-ringStroke.Thickness = 3
-ringStroke.Parent = ring
-for _, bar in { { 2, 34 }, { 34, 2 } } do
-	local b = Instance.new('Frame')
-	b.AnchorPoint = Vector2.new(0.5, 0.5)
-	b.Position = UDim2.fromScale(0.5, 0.5)
-	b.Size = UDim2.fromOffset(bar[1] + 1, bar[2] + 1)
-	b.BackgroundColor3 = Color3.new(1, 1, 1)
-	b.BorderSizePixel = 0
-	b.Parent = ring
+---------------------------------------------------------------------------------------------- everyone else
+-- The other players at the ranges fire too, on your screen (their TrainingStation attribute is everyone's to read): a
+-- muzzle flash, a tracer to their lane's target and its knock, a little slower than your own and without their "+N", so a
+-- hall full of players reads busy. Only players near your camera, a few at most.
+local OTHERS_RANGE, OTHERS_MAX, OTHERS_RATE = 90, 6, 2.5
+local others, othersCheck = {}, 0
+local function shootFor(other, id)
+	local c = other.Character
+	local root = c and c:FindFirstChild('HumanoidRootPart')
+	local s = station(id)
+	if not root or not s then return end
+	local tool = GunTool.held(c)
+	if not tool then return end
+	local gun = Guns.ById[tool:GetAttribute('GunId') or ''] or Guns.List[1]
+	local rig = Juice.gunRig(tool)
+	local target, there = nextTarget(s)
+	local to = target.Aim + Vector3.new((math.random() - 0.5) * 0.5, (math.random() - 0.5) * 0.5, 0)
+	local from = rig and worldOf(rig.muzzle).Position or (root.Position + Vector3.new(0, 1.2, 0))
+	Juice.muzzle(rig, gun.Color, 0.8 + gun.Tier * 0.08)
+	Juice.tracer(from, to, gun.Color, 0.15 + gun.Tier * 0.012)
+	if there and target.Knocker then target.Knocker:hit(0.8) end
 end
-local scale = Instance.new('UIScale')
-scale.Parent = button
--- The press that started it (a touch keeps its InputObject until the finger lifts, wherever it lifts).
-local pressing = nil
-button.InputBegan:Connect(function(input)
-	if input.UserInputType ~= Enum.UserInputType.Touch and input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
-	pressing = input
-	startFiring('button')
-	scale.Scale = 0.88
-	TweenService:Create(scale, TweenInfo.new(0.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
-end)
-local function release(input)
-	if not held.button then return end
-	-- Mouse: any left-button release. Touch: only the finger that pressed (another finger on the thumbstick
-	-- lifting must not stop the fire).
-	if input.UserInputType == Enum.UserInputType.MouseButton1 or input == pressing then
-		pressing = nil
-		stopFiring('button')
+RunService.PreRender:Connect(function(dt)
+	local camera = workspace.CurrentCamera
+	if not camera then return end
+	othersCheck -= dt
+	if othersCheck <= 0 then
+		-- (who is near and firing, looked at four times a second)
+		othersCheck = 0.25
+		local list = {}
+		for _, other in Players:GetPlayers() do
+			local id = other ~= player and other:GetAttribute('TrainingStation')
+			local c = other.Character
+			local root = c and c:FindFirstChild('HumanoidRootPart')
+			if id and ShotRules.counts(id) and root and (root.Position - camera.CFrame.Position).Magnitude < OTHERS_RANGE then
+				table.insert(list, { player = other, id = id, d = (root.Position - camera.CFrame.Position).Magnitude })
+			end
+		end
+		table.sort(list, function(a, b) return a.d < b.d end)
+		local keep = {}
+		for i = 1, math.min(#list, OTHERS_MAX) do
+			local e = list[i]
+			local was = others[e.player]
+			keep[e.player] = { id = e.id, due = was and was.id == e.id and was.due or math.random() }
+		end
+		others = keep
 	end
-end
-button.InputEnded:Connect(release)
-UserInputService.InputEnded:Connect(release) -- (released off the button, the button never hears it; touches too)
-local function refresh()
-	button.Visible = training() ~= nil
-	if not button.Visible then stopFiring('button') end
-end
-player:GetAttributeChangedSignal('TrainingStation'):Connect(refresh)
-refresh()
+	for other, e in others do
+		e.due += dt * OTHERS_RATE
+		if e.due >= 1 then
+			e.due -= 1
+			shootFor(other, e.id)
+		end
+	end
+end)

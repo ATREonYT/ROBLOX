@@ -16,24 +16,39 @@ return function(t)
   t.expect.equal(ShotRules.pay(0/0,0/0),1);t.expect.equal(ShotRules.pay('x',nil),1);t.expect.equal(ShotRules.pay(nil,3),3);t.expect.equal(ShotRules.pay(math.huge,1),1);t.expect.equal(ShotRules.pay(2.7,1),2)
   t.expect.equal(ShotRules.boost(true,nil),2);t.expect.equal(ShotRules.boost(false,3),3);t.expect.equal(ShotRules.boost(true,3),6);t.expect.equal(ShotRules.boost('yes',0/0),1);t.expect.equal(ShotRules.boost(true,1e9),ShotRules.MaxBoost)
  end)
- -- No Power per second any more: nothing in the shared rules pays by time, and the lobby service only adds Power in
- -- its Shoot handler (the source is checked where it can be read: the offline harness, the command bar).
- t.test('no passive gain: Power only comes from shots',function()
+ -- Brief 18: the gun fires by itself at the ranges. Power still comes from shots only: the server's auto clock pays
+ -- AutoRate shots a second while you stand in an OPEN lane, nothing in a locked lane or off the ranges, and a click
+ -- pays nothing (the source is checked where it can be read: the offline harness, the command bar).
+ t.test('auto-shoot: an open lane fires AutoRate shots a second on the server clock; nothing else pays',function()
   local Skins=require(RS.Shared.Config.Skins);t.expect.equal(Skins.gain,nil)
+  t.expect.truthy(ShotRules.AutoRate>=3 and ShotRules.AutoRate<=7)
+  -- ten seconds in BAY 1 on 0.25 s ticks: exactly AutoRate x 10 shots (the first one on the first tick)
+  local carry,n={},0
+  local first=ShotRules.autoShots(carry,0.25,'Starter');t.expect.truthy(first>=1)
+  n=first
+  for _=2,40 do n+=ShotRules.autoShots(carry,0.25,'Starter') end
+  t.expect.truthy(math.abs(n-ShotRules.AutoRate*10)<=1)
+  -- a locked lane, off the ranges, junk: no shots, and the clock is primed for the next lane
+  t.expect.equal(ShotRules.autoShots(carry,5,'Locked:Tape'),0);t.expect.equal(ShotRules.autoShots(carry,5,''),0);t.expect.equal(ShotRules.autoShots(carry,5,nil),0)
+  t.expect.equal(ShotRules.autoShots(nil,1,'Starter'),0);t.expect.equal(ShotRules.autoShots(carry,0/0,'Starter'),0)
+  t.expect.truthy(ShotRules.autoShots(carry,0.25,'Tape')>=1)
+  -- a long server hitch never pays a burst
+  t.expect.truthy(ShotRules.autoShots({},30,'Gold')<=3)
   local ok,src=pcall(function() return game.ServerScriptService.HoodServer.LobbyService.Source end)
   if ok and type(src)=='string' and #src>0 then
    local writes=0;for _ in src:gmatch('profile%.Data%.Rep%s*=') do writes+=1 end
    t.expect.equal(writes,1)
-   local shoot=src:find("Net.get('Shoot').OnServerEvent",1,true);local at=src:find('profile%.Data%.Rep%s*=')
-   local loop=src:find('while task.wait',1,true)
-   t.expect.truthy(shoot and at and at>shoot and loop and at<loop)
+   local auto=src:find('local function autoFire',1,true);local at=src:find('profile%.Data%.Rep%s*=')
+   local loop=src:find('while true do',1,true)
+   t.expect.truthy(auto and at and at>auto and loop and at<loop)
+   t.expect.truthy(src:find("Net.get('Shoot').OnServerEvent:Connect(function() end)",1,true)~=nil) -- (a click pays nothing)
   end
  end)
  -- Only an open lane's box counts.
  t.test('shots count only on an open lane',function()
   t.expect.truthy(ShotRules.counts('Starter'));t.expect.truthy(ShotRules.counts('Gold'))
   t.expect.falsy(ShotRules.counts(''));t.expect.falsy(ShotRules.counts('Locked:Tape'));t.expect.falsy(ShotRules.counts(nil));t.expect.falsy(ShotRules.counts(7))
-  t.expect.truthy(ShotRules.Burst>=ShotRules.PerSecond and ShotRules.PerSecond<=8 and 1/ShotRules.Cooldown>=ShotRules.PerSecond)
+  t.expect.truthy(ShotRules.Burst>=ShotRules.PerSecond and ShotRules.PerSecond<=8 and 1/ShotRules.Cooldown<=ShotRules.PerSecond)
  end)
  -- Targets take turns: every other shot the main one; a target that is away is skipped, never shot at.
  t.test('shots skip targets that are away',function()

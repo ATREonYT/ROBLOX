@@ -1,19 +1,23 @@
 --!strict
--- Shooting at the ranges and the stage targets: what a shot pays and when it counts. Pure functions, so LobbyService
+-- Shooting at the ranges and the stage goons: what a shot pays and when it counts. Pure functions, so LobbyService
 -- and WaveService (which pay), Shoot.client and Waves.client (which show the "+N" before the server answers) and the
 -- unit tests all agree.
---   One shot pays  ShotBase x the lane's Multiplier x the rebirth multiplier x boosts  (perShot; a stage target is a
+--   One shot pays  ShotBase x the lane's Multiplier x the rebirth multiplier x boosts  (perShot; a stage goon is a
 --   x1 lane; boosts = x2 with the 2x Power pass, times a running timed boost)  x the gun's multiplier  x the shoes'
---   multiplier. Only in an open lane's shooter's box (a locked lane pays nothing) or at a stage target; nothing is paid
---   per second. About 7 shots a second at most (the server's rate limit).
+--   multiplier. Only in an open lane's shooter's box (a locked lane pays nothing) or at a stage goon.
+--   At the ranges the gun fires on its own (brief 18): while you stand in an open lane the server pays AutoRate shots a
+--   second (LobbyService, on its own clock: nobody clicks) and Shoot.client shows them. At the goons you hold the
+--   trigger (or the Auto Fight pass fires for you): Cooldown between shots on the client, the server's token bucket
+--   (Burst, PerSecond) a little looser.
 --   The server publishes perShot for where you stand as the player attribute ShotBase (LobbyService).
 local Balance = require(script.Parent.Config.Balance)
 local RebirthRules = require(script.Parent.RebirthRules)
 
 local ShotRules = {}
-ShotRules.Burst = 8 -- shots the server lets through at once
-ShotRules.PerSecond = 7 -- and the rate it refills at
-ShotRules.Cooldown = 0.14 -- seconds between shots on the client (a little under the server's rate)
+ShotRules.AutoRate = 5 -- shots a second the gun fires by itself in an open lane (paid by the server's clock)
+ShotRules.Burst = 6 -- shots at goons the server lets through at once
+ShotRules.PerSecond = 6 -- and the rate it refills at
+ShotRules.Cooldown = 0.2 -- seconds between shots at goons on the client (5 a second: a little under the server's rate)
 ShotRules.MaxBoost = 10 -- sanity cap on pass x timed boost
 ShotRules.MaxShoeMultiplier = 100 -- sanity cap (three Secrets from the top box give about x25)
 
@@ -59,6 +63,22 @@ end
 -- 'Locked:<Id>' = on a lane that needs more rebirths) pays.
 function ShotRules.counts(station: any): boolean
 	return type(station) == 'string' and station ~= '' and string.find(station, 'Locked:', 1, true) == nil
+end
+
+-- The auto-fire clock: `carry` ({} per player) gathers dt x AutoRate; returns the whole shots due now (at most `cap`,
+-- default 3: a long server hitch never pays a burst) and keeps the fraction. In a locked lane or off the ranges the
+-- clock stops and primes itself, so stepping into a lane fires (and pays) on the very next tick.
+ShotRules.AutoPrime = 0.8
+function ShotRules.autoShots(carry: any, dt: any, station: any, cap: number?): number
+	if type(carry) ~= 'table' then return 0 end
+	if not ShotRules.counts(station) then
+		carry.Auto = ShotRules.AutoPrime
+		return 0
+	end
+	local acc = math.max(0, number(carry.Auto, ShotRules.AutoPrime)) + math.clamp(number(dt, 0), 0, 1) * ShotRules.AutoRate
+	local shots = math.min(math.floor(acc + 1e-7), cap or 3)
+	carry.Auto = math.min(acc - shots, 1)
+	return shots
 end
 
 -- Which target a shot goes to. Every other shot the main one, the others take turns; a target that is away (a

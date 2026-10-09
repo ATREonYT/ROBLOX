@@ -14,7 +14,7 @@ return function(t)
   end
   t.expect.truthy(total<10000)
   t.expect.equal(G.List[1].Need.Power,10);t.expect.equal(G.List[2].Need.Stages,1);t.expect.equal(G.List[3].Need.Wave,1);t.expect.equal(G.List[4].Need.Guns,2)
-  t.expect.equal(G.line(G.List[3]),"Clear Stage 1's targets - in the side yard past the door")
+  t.expect.equal(G.line(G.List[3]),"Beat Stage 1's goons - they wait past the door: hold to shoot")
   -- The armory is the stepped stand on the right (east) of the hall now.
   t.expect.truthy(string.find(G.ById.Gun.Where,'right',1,true));t.expect.falsy(string.find(G.ById.Gun.Where,'corner',1,true))
   -- Rebirth goals and lane goals by rebirths.
