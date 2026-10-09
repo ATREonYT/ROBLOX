@@ -56,11 +56,13 @@ Kit.Tone = {
 	-- (brief 18) colours sampled from the user's reference HUD (user_26), Rebirth (user_27) and Store (user_28), top of
 	-- the fill -> bottom; `lip` is the faint stud outline, `rim` the light band inside the black outline.
 	gold = { top = hex('FFD150'), base = hex('FFA20C'), lip = hex('D27A00'), stroke = hex('5A2E00'), rim = hex('FFE29A') }, -- Store, Items, 2x Wins
-	coral = { top = hex('FF9E9E'), base = hex('E8585C'), lip = hex('B83A40'), stroke = hex('4A0B16'), rim = hex('FFB4B4') }, -- Rebirth
-	magenta = { top = hex('DF77F1'), base = hex('A50FB8'), lip = hex('7E0A8E'), stroke = hex('2A0B4E'), rim = hex('EBA0F6') }, -- Pets
-	sky = { top = hex('7AB4F6'), base = hex('2E7BC5'), lip = hex('1E5A98'), stroke = hex('0B2A55'), rim = hex('A8CEFA') }, -- Heros
-	grass = { top = hex('8EE04A'), base = hex('3EB005'), lip = hex('2A8000'), stroke = hex('123F17'), rim = hex('B6EE8C') }, -- World
-	brown = { top = hex('E09A70'), base = hex('B06440'), lip = hex('8A4A2C'), stroke = hex('3A1A08'), rim = hex('EEB898') }, -- Quest
+	-- (brief 22: re-sampled on ref22_hud_buttons, top -> bottom of each square's fill)
+	coral = { top = hex('F67079'), base = hex('C15751'), lip = hex('983A38'), stroke = hex('4A0B16'), rim = hex('FFA8AE') }, -- Rebirth
+	magenta = { top = hex('E585F5'), base = hex('AA11C0'), lip = hex('7E0A8E'), stroke = hex('2A0B4E'), rim = hex('F0AEF8') }, -- Pets (our Shoes)
+	sky = { top = hex('7BB5FB'), base = hex('1F70BF'), lip = hex('175494'), stroke = hex('0B2A55'), rim = hex('8DB8E2') }, -- Heros (our Guns)
+	grass = { top = hex('B9EF48'), base = hex('3BBA16'), lip = hex('2A8A0E'), stroke = hex('123F17'), rim = hex('D2F68A') }, -- World
+	brown = { top = hex('F3A682'), base = hex('AF4E24'), lip = hex('86381A'), stroke = hex('3A1A08'), rim = hex('F8C4A8') }, -- Quest
+	items = { top = hex('FCD164'), base = hex('F4A423'), lip = hex('C47A10'), stroke = hex('5A2E00'), rim = hex('FFE29A') }, -- Items
 	fire = { top = hex('FF5E52'), base = hex('FFC130'), lip = hex('D8602A'), stroke = hex('5A1A00'), rim = hex('FF9A8A') }, -- +2x Power (red top, yellow bottom)
 	level = { top = hex('FFBB26'), base = hex('FF413B'), lip = hex('D0401A'), stroke = hex('5A1400'), rim = hex('FFD27A') }, -- the Level bar
 	lemon = { top = hex('F8EC72'), base = hex('F3B740'), lip = hex('C99A20'), stroke = hex('5A4600'), rim = hex('FFF6B0') }, -- +1B pack
@@ -69,9 +71,12 @@ Kit.Tone = {
 	lime = { top = hex('E6FF10'), base = hex('36E402'), lip = hex('20A000'), stroke = hex('0E3A00'), rim = hex('A8FF6A') }, -- the green Robux price button
 	rose = { top = hex('FF0A8E'), base = hex('FF0A1E'), lip = hex('B00010'), stroke = hex('4A0010'), rim = hex('FF6AB0') }, -- the red X
 	-- the two window headers: Rebirth (cyan -> blue, a bright cyan rim) and Store (yellow-orange, a bright yellow rim)
-	headerCyan = { top = hex('16D2FA'), base = hex('0874E8'), lip = hex('0A5CB8'), stroke = hex('062C48'), rim = hex('10F0FF'), rot = 70 },
-	headerGold = { top = hex('FFC414'), base = hex('F39A02'), lip = hex('C87400'), stroke = hex('5A2E00'), rim = hex('FFE600'), rot = 80 },
-	headerMagenta = { top = hex('E07AF4'), base = hex('8C16C4'), lip = hex('6A0E96'), stroke = hex('2A0B4E'), rim = hex('F6A8FF'), rot = 70 },
+	-- (brief 19 r7, UICRITIC P2-3) straight top -> bottom like the reference's (user_27 #02B6E4 -> #0173EA, user_28
+	-- #FFBA01 -> #FC9A01, measured down the header): an angled gradient on a 10:1 header reads sideways
+	headerCyan = { top = hex('06BCEC'), base = hex('0174EA'), lip = hex('0A5CB8'), stroke = hex('062C48'), rim = hex('10F0FF'), rot = 90 },
+	headerGold = { top = hex('FFBE0A'), base = hex('FA9800'), lip = hex('C87400'), stroke = hex('5A2E00'), rim = hex('FFE600'), rot = 90 },
+	headerMagenta = { top = hex('E07AF4'), base = hex('8C16C4'), lip = hex('6A0E96'), stroke = hex('2A0B4E'), rim = hex('F6A8FF'), rot = 90 },
+	headerBrown = { top = hex('E09A70'), base = hex('B06440'), lip = hex('8A4A2C'), stroke = hex('3A1A08'), rim = hex('F2BE9A'), rot = 90 }, -- (the Quest window, like the HUD's Quest square)
 	-- Store cards (user_28): Golden Zone orange, Galaxy Zone purple, Hacker Zone green
 	cardGold = { top = hex('FFDA68'), base = hex('FCA526'), lip = hex('E08A10'), stroke = hex('5A2E00'), rim = hex('FFD27A') },
 	cardPurple = { top = hex('EC94F8'), base = hex('AE26C0'), lip = hex('8A1A9E'), stroke = hex('2A0B4E'), rim = hex('F2B0FA') },
@@ -80,6 +85,15 @@ Kit.Tone = {
 	cardRed = { top = hex('FF8A80'), base = hex('E8303A'), lip = hex('B01E28'), stroke = hex('4A0B16'), rim = hex('FFB0A8') },
 	cardTeal = { top = hex('8AF6D4'), base = hex('16B48A'), lip = hex('0C8A68'), stroke = hex('063A2B'), rim = hex('B4FAE4') },
 	cardPink = { top = hex('FFA4D8'), base = hex('EC3E98'), lip = hex('B81A70'), stroke = hex('4A0830'), rim = hex('FFC4E4') },
+	-- (brief 22) the Store's new cards, sampled on ref22_store_*: the egg card's blue and magenta, the packs' orange (a strong
+	-- yellow -> orange ramp), the two potion half cards (a muted red, gold) and the Boost Bundle's purple -> red sweep
+	storeBlue = { top = hex('1AA4FE'), base = hex('0A95FF'), lip = hex('0A6EC0'), stroke = hex('062C48'), rim = hex('63BFFF') },
+	storeMagenta = { top = hex('F64CF4'), base = hex('E62CE6'), lip = hex('A812AA'), stroke = hex('4A0A4A'), rim = hex('FF98F8') },
+	packOrange = { top = hex('FFC42B'), base = hex('FF8B01'), lip = hex('D06800'), stroke = hex('5A2E00'), rim = hex('FEE15E') },
+	potionRed = { top = hex('E26C76'), base = hex('D23739'), lip = hex('982428'), stroke = hex('3A0A0E'), rim = hex('F2A0A8') },
+	potionGold = { top = hex('FEC503'), base = hex('FFAE01'), lip = hex('C87400'), stroke = hex('5A2E00'), rim = hex('FFE07A') },
+	bundleRainbow = { top = hex('B100DF'), base = hex('EA2D04'), lip = hex('8A0070'), stroke = hex('3A0030'), rim = hex('FF9AEA'), rot = 0,
+		seq = { { 0, hex('B100DF') }, { 0.4, hex('FF00B1') }, { 0.65, hex('FE0250') }, { 1, hex('EA2D04') } } },
 	-- horizontal gradients: the +100B pack's rainbow and the 2x Speed button
 	rainbow = { top = hex('F20D18'), base = hex('1E6AF0'), lip = hex('8A1A9E'), stroke = hex('2A0B4E'), rim = hex('FFFFFF'), rot = 0,
 		seq = { { 0, hex('F20D18') }, { 0.22, hex('F26D1D') }, { 0.4, hex('F8C311') }, { 0.58, hex('98EB22') }, { 0.76, hex('22E0E0') }, { 1, hex('1E6AF0') } } },
@@ -107,6 +121,16 @@ Kit.Font = {
 	tag = Font.new('rbxasset://fonts/families/PermanentMarker.json'),
 }
 Kit.Text = { title = 40, cta = 30, button = 24, label = 18, small = 15 } -- at the 1280x720 design size
+
+-- (brief 19 r7) The reference hides Roblox's player list (nothing at its top right). Ours is the user's call: flip this to
+-- true and HUD.client hides it (StarterGui:SetCoreGuiEnabled(PlayerList, false)); the HUD's layout is right either way.
+Kit.HidePlayerList = false
+-- The width (design px) Roblox's player list takes at the top right under the top bar on this screen: ~285 dp with our
+-- two leaderstats on PC; 0 when hidden, and on phones (Roblox keeps it collapsed there).
+function Kit.playerListRoom(abs)
+	if Kit.HidePlayerList or math.min(abs.X, abs.Y) <= 500 then return 0 end
+	return 285 / Kit.scaleFor(abs)
+end
 Kit.Space = { xs = 4, s = 8, m = 16, l = 24, xl = 32 }
 Kit.Radius = { s = 8, m = 14, l = 22 }
 Kit.Stroke = { outline = 3, heavy = 4 }
@@ -250,13 +274,13 @@ function Kit.iconOr(...)
 	return ids[#ids]
 end
 
--- Cartoon light for ViewportFrames: a key light from the camera's upper left. (brief 19) A ViewportFrame lights a face
--- with about Ambient + LightColor x N.L, so the old 150 + 255 pushed every lit face past 1 and bright plastics went
--- pale and flat (user_24/25 in Studio); 128 + 235 keeps camera-facing faces at their own colour (~1.0), tops a little
--- brighter (~1.15), the shaded sides at ~0.5-0.85: the chunky light-and-shade read of the reference's icons.
+-- Cartoon light for ViewportFrames: a key light from the camera's upper left. (brief 19 r7) Ambient 150 + LightColor 255
+-- is what the user's Studio frame user_24 shows the live icons with: their own colours (the yellow glove's median at 0.86
+-- of its Color3, highlights at 0.96, shade at 0.62). (Round 1 dimmed it to 128 + 235 from an offline estimate that
+-- turned out to be ~3x too dark; Studio is the evidence.)
 function Kit.lightViewport(vp, camCFrame)
-	vp.Ambient = Color3.fromRGB(128, 128, 138)
-	vp.LightColor = Color3.fromRGB(235, 232, 225)
+	vp.Ambient = Color3.fromRGB(150, 150, 162)
+	vp.LightColor = Color3.fromRGB(255, 250, 238)
 	vp.LightDirection = camCFrame:VectorToWorldSpace(Vector3.new(0.55, -1, -0.75))
 end
 
@@ -265,30 +289,69 @@ end
 -- props: Direction (Vector3 from the model toward the camera) or Yaw / Pitch in degrees (orbit away from the
 -- front view; the front faces -Z), Fov (vertical), Aspect (frame width / height, default 1), Zoom (>1 = closer),
 -- Focus (a Vector3 to aim at instead of the bounding-box centre).
-function Kit.frameModel(vp, model, props)
+-- (brief 22 r2) props.Tight: frame the VISIBLE parts' corners instead of the bounding box, centred on their silhouette.
+-- The box fit leaves a live icon small and off-centre when the model carries an invisible root / fit part or is seen
+-- across its diagonal (a live shoe filled ~0.73 of its square and ran off the bottom); this fills it the way ICONS'
+-- renders do (Margin, default 1.06: how much room is left round the silhouette). Returns the camera CFrame and fov,
+-- so an offline renderer can use exactly the same view (Kit.frameFor).
+function Kit.frameFor(model, props)
 	props = props or {}
-	local box, ext = model:GetBoundingBox()
 	local fov = props.Fov or 30
-	local focus = props.Focus or box.Position
 	local orbit = CFrame.Angles(0, math.rad(props.Yaw or 0), 0) * CFrame.Angles(math.rad(props.Pitch or 0), 0, 0)
 	local back = props.Direction and props.Direction.Unit or orbit:VectorToWorldSpace(Vector3.new(0, 0, -1)) -- from the focus toward the camera
 	local up = (Vector3.yAxis - back * back:Dot(Vector3.yAxis)).Unit
 	local right = back:Cross(up)
 	local tanV = math.tan(math.rad(fov / 2))
 	local tanH = tanV * (props.Aspect or 1)
-	local dist = 0
-	for _, sx in { -0.5, 0.5 } do
-		for _, sy in { -0.5, 0.5 } do
-			for _, sz in { -0.5, 0.5 } do
-				local v = box:PointToWorldSpace(ext * Vector3.new(sx, sy, sz)) - focus
-				dist = math.max(dist, v:Dot(back) + math.max(math.abs(v:Dot(right)) / tanH, math.abs(v:Dot(up)) / tanV))
+	local points = {}
+	if props.Tight then
+		for _, d in model:GetDescendants() do
+			if d:IsA('BasePart') and d.Transparency < 0.99 then
+				local cf, h = d.CFrame, d.Size / 2
+				for _, sx in { -1, 1 } do
+					for _, sy in { -1, 1 } do
+						for _, sz in { -1, 1 } do
+							table.insert(points, cf:PointToWorldSpace(Vector3.new(sx * h.X, sy * h.Y, sz * h.Z)))
+						end
+					end
+				end
 			end
 		end
 	end
-	dist = dist * 1.06 / (props.Zoom or 1)
+	local focus = props.Focus
+	if #points == 0 then
+		local box, ext = model:GetBoundingBox()
+		focus = focus or box.Position
+		for _, sx in { -0.5, 0.5 } do
+			for _, sy in { -0.5, 0.5 } do
+				for _, sz in { -0.5, 0.5 } do
+					table.insert(points, box:PointToWorldSpace(ext * Vector3.new(sx, sy, sz)))
+				end
+			end
+		end
+	elseif not focus then
+		-- the middle of the silhouette across the view (and of the depth)
+		local lo, hi = { math.huge, math.huge, math.huge }, { -math.huge, -math.huge, -math.huge }
+		for _, p in points do
+			for i, q in { p:Dot(right), p:Dot(up), p:Dot(back) } do
+				lo[i], hi[i] = math.min(lo[i], q), math.max(hi[i], q)
+			end
+		end
+		focus = right * (lo[1] + hi[1]) / 2 + up * (lo[2] + hi[2]) / 2 + back * (lo[3] + hi[3]) / 2
+	end
+	local dist = 0
+	for _, p in points do
+		local v = p - focus
+		dist = math.max(dist, v:Dot(back) + math.max(math.abs(v:Dot(right)) / tanH, math.abs(v:Dot(up)) / tanV))
+	end
+	dist = dist * (props.Margin or 1.06) / (props.Zoom or 1)
+	return CFrame.lookAt(focus + back * dist, focus), fov
+end
+function Kit.frameModel(vp, model, props)
+	local cf, fov = Kit.frameFor(model, props)
 	local cam = vp:FindFirstChildOfClass('Camera') or new('Camera', { Parent = vp })
 	cam.FieldOfView = fov
-	cam.CFrame = CFrame.lookAt(focus + back * dist, focus)
+	cam.CFrame = cf
 	vp.CurrentCamera = cam
 	Kit.lightViewport(vp, cam.CFrame)
 	return cam
@@ -314,6 +377,35 @@ end
 -- same side as its Blender render (IconModels.View) so live icons and uploaded images match.
 -- props: Position, AnchorPoint, ZIndex, Yaw / Pitch (instead of the render's view), Zoom, Fallback (text to
 -- show when nothing else exists).
+-- (brief 22 r2) A live icon is framed on its visible silhouette (Kit.frameFor, Tight) with IconMargin round it, so with
+-- its 1.09x outline copy it fills ~89% of the square like ICONS' renders. LiveZoom (>1 closer) is what is left per id
+-- after that (Shoe_ / Box_ ids by prefix): World and Rebirth are drawn smaller, like their padded renders.
+Kit.IconMargin = 1.2
+-- (measured against ICONS' round-3 renders and live models: each live icon's silhouette, outline copy included, vs
+-- its PNG's; clamped to 0.9-1.5. The potions, BoostBundle and Cash/Power piles: ICONS' values for their rebuilt live models)
+Kit.LiveZoom = {
+	Arrow = 1.41, AutoFight = 1.09, Backpack = 1.07, BasketRed = 0.9, BoostBundle = 1.07, Box_ = 1.09, Cash = 1.13,
+	CashLarge = 1.03, CashMedium = 1.02, CashSmall = 1.05, CashTiny = 1.07, DoubleCash = 1.13, DoublePower = 1.07,
+	Favorite = 1.06, Muscle = 1.06, PVP = 0.92, PotionGold = 1.11, PotionRed = 1.11, Power = 1.06, PowerLarge = 1.1,
+	PowerMedium = 1.05, PowerPack1 = 1.06, PowerPack2 = 1.1, PowerPack3 = 1.16, PowerSmall = 1.05, PowerTiny = 1.11,
+	Quest = 1.07, Rebirth = 0.94, RebirthSkip = 0.94, Robux = 1.03, Search = 1.09, Shield = 0.92, ShoeBox = 1.06,
+	ShoePile = 0.9, Shoe_ = 1.27, Skull = 1.16, Sneaker = 1.05, Trophy = 0.92, VIP = 0.9, World = 1.43, XP = 0.92,
+}
+function Kit.liveZoom(id)
+	return Kit.LiveZoom[id] or Kit.LiveZoom[string.match(id, '^(%a+_)') or ''] or nil
+end
+-- (brief 22) a live Shoe_<id> (IconModels: one right shoe) and Box_<id> seen exactly like ICONS' renders (their view in
+-- Roblox space, model to camera): the shoe from above with the toe and laces at the front-left, the box from the
+-- front-right
+Kit.ShoeView = Vector3.new(-0.665, 0.311, -0.68)
+Kit.BoxView = Vector3.new(0.36, 0.27, -0.89)
+-- The camera props Kit.icon3d gives a live id (an offline renderer passes them to Kit.frameFor to draw the same view).
+function Kit.iconLook(id, props, models)
+	props = props or {}
+	models = models or Kit.iconModels()
+	local view = (string.match(id, '^Shoe_') and Kit.ShoeView) or (string.match(id, '^Box_') and Kit.BoxView) or (not (props.Yaw or props.Pitch) and models and typeof(models.View) == 'Vector3' and models.View) or nil
+	return { Direction = view, Yaw = props.Yaw or 18, Pitch = props.Pitch or 19, Zoom = props.Zoom or Kit.liveZoom(id), Tight = true, Margin = Kit.IconMargin, ZIndex = props.ZIndex or 1 }
+end
 function Kit.icon3d(id, size, props)
 	props = props or {}
 	local holder = blank({ Name = 'Icon3D_' .. id, Size = UDim2.fromOffset(size, size), Position = props.Position or UDim2.new(), AnchorPoint = props.AnchorPoint or Vector2.zero, ZIndex = props.ZIndex or 1 })
@@ -330,15 +422,14 @@ function Kit.icon3d(id, size, props)
 	if models and type(models.build) == 'function' then
 		local ok, model = pcall(models.build, id, 1)
 		if ok and typeof(model) == 'Instance' then
-			local view = not (props.Yaw or props.Pitch) and typeof(models.View) == 'Vector3' and models.View or nil
-			local look = { Direction = view, Yaw = props.Yaw or 18, Pitch = props.Pitch or 19, Zoom = props.Zoom, ZIndex = z }
+			local look = Kit.iconLook(id, props, models)
 			-- (brief 18) The reference's icons carry a thick dark outline (so do the Blender renders): a black copy of the
 			-- live model, a little bigger, behind it. One extra ViewportFrame per icon; Outline = false skips it (brief 19:
 			-- and icons under 34 px, where it would be a 1-2 px line for twice the parts).
 			if props.Outline ~= false and size >= 34 then
 				local edge = Kit.viewport(model:Clone(), size, look)
 				edge.Name = 'Outline'
-				edge.ImageColor3 = Kit.hex('0C0A34') -- (brief 19: the navy of ICONS' baked outlines)
+				edge.ImageColor3 = Kit.hex('0C0A1E') -- (brief 22: the near-black of ICONS' round-2 outlines)
 				edge.AnchorPoint = Vector2.new(0.5, 0.5)
 				edge.Position = UDim2.fromScale(0.5, 0.5)
 				edge.Size = UDim2.fromScale(1.09, 1.09)
@@ -634,6 +725,9 @@ Kit.StudChecker = '' -- hood/art/ui/stud_checker.png
 Kit.StudTile = '' -- hood/art/ui/stud_tile.png
 Kit.GlossBand = '' -- hood/art/ui/gloss_band.png
 Kit.GlossStripes = '' -- hood/art/ui/gloss_stripes.png
+Kit.Splat = '' -- hood/art/ui/splat.png
+Kit.SplatRainbow = '' -- hood/art/ui/splat_rainbow.png
+Kit.SplatBlack = '' -- hood/art/ui/splat_black.png
 --   StudBevel: one stud per tile, pre-shaded (a white highlight and a black shadow in its alpha): drawn white, it gives
 --     the reference's light top-left and dark bottom-right edges on any colour. The default stud.
 --   StudChecker: 2 x 2 studs, raised and recessed alternating (the reference's level bar, its Rebirth boxes and buttons),
@@ -641,7 +735,10 @@ Kit.GlossStripes = '' -- hood/art/ui/gloss_stripes.png
 --   StudTile: one greyscale stud per tile, tinted with the block's lip colour (used when StudBevel is missing).
 --   GlossStripes: one seamless 45-degree light stripe, tiled every ~3 stud pitches: the window headers' repeated bands.
 --   GlossBand: two diagonal light bands stretched over the face (used when GlossStripes is missing).
-Kit.TextureFiles = { stud_bevel = 'StudBevel', stud_checker = 'StudChecker', stud_tile = 'StudTile', gloss_band = 'GlossBand', gloss_stripes = 'GlossStripes' } -- (file -> field)
+--   Splat / SplatRainbow / SplatBlack (brief 22): the paint splat behind a pet / shoe / item (ref22's inventory and Store
+--     egg card): white (tinted by rarity), rainbow (Secret), black (the "+n" slot). Kit.splat draws them.
+Kit.TextureFiles = { stud_bevel = 'StudBevel', stud_checker = 'StudChecker', stud_tile = 'StudTile', gloss_band = 'GlossBand', gloss_stripes = 'GlossStripes',
+	splat = 'Splat', splat_rainbow = 'SplatRainbow', splat_black = 'SplatBlack' } -- (file -> field)
 -- Whether studs are one cheap tiled image (some stud texture is uploaded): long lists add studs only then.
 function Kit.studsAreCheap() return Kit.StudBevel ~= '' or Kit.StudTile ~= '' end
 
@@ -663,21 +760,22 @@ function Kit.studs(parent, props)
 	-- (brief 19) an uploaded texture: one ImageLabel tiles the whole grid, offset so whole studs sit centred like the frame
 	-- grid's. props.Pattern = 'checker' asks for the raised / recessed 2 x 2 tile; Shade (0..1, default 0.7 = an
 	-- ImageTransparency of 0.3) is how strongly the pre-shaded tiles draw.
-	local file, image, tilePitch, tint, alpha
+	-- (brief 22, ICONS r1) StudBevel is the HUD blocks' recessed stud, drawn white at ImageTransparency >= 0.2; the
+	-- checker (window headers, the level bar, the Rebirth boxes) stays at >= 0.45 (UICRITIC2: low contrast).
+	local file, image, tilePitch, tint, alpha, floor
 	if props.Pattern == 'checker' and Kit.StudChecker ~= '' then
-		file, image, tilePitch, tint, alpha = 'stud_checker', Kit.StudChecker, pitch * 2, Kit.Color.white, 1 - (props.Shade or 0.7)
+		file, image, tilePitch, tint, alpha, floor = 'stud_checker', Kit.StudChecker, pitch * 2, Kit.Color.white, 1 - (props.Shade or 0.7), 0.45
 	elseif Kit.StudBevel ~= '' then
-		file, image, tilePitch, tint, alpha = 'stud_bevel', Kit.StudBevel, pitch, Kit.Color.white, 1 - (props.Shade or 0.7)
+		file, image, tilePitch, tint, alpha, floor = 'stud_bevel', Kit.StudBevel, pitch, Kit.Color.white, 1 - (props.Shade or 0.7), 0.2
 	elseif Kit.StudTile ~= '' then
-		file, image, tilePitch, tint, alpha = 'stud_tile', Kit.StudTile, pitch, color, math.max(0, transparency - (props.TileBoost or 0.12))
+		file, image, tilePitch, tint, alpha, floor = 'stud_tile', Kit.StudTile, pitch, color, math.max(0, transparency - (props.TileBoost or 0.12)), 0
 	end
 	if image then
-		local cols, rows = math.max(1, math.floor(aw / tilePitch)), math.max(1, math.floor(ah / tilePitch))
-		if tilePitch ~= pitch then cols, rows = math.max(1, math.floor(aw / pitch)) / 2, math.max(1, math.floor(ah / pitch)) / 2 end
+		-- (brief 22, UICRITIC2: the reference's grid fills the whole block from its top-left corner, the first stud half a
+		-- pitch in, and is low-contrast) one tiled ImageLabel over the whole face
 		local tile = new('ImageLabel', {
 			Name = 'Studs', BackgroundTransparency = 1, Image = image, ScaleType = Enum.ScaleType.Tile, TileSize = UDim2.fromOffset(tilePitch, tilePitch),
-			ImageColor3 = tint, ImageTransparency = alpha, AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(cols * tilePitch, rows * tilePitch), ZIndex = z, Parent = parent,
+			ImageColor3 = tint, ImageTransparency = math.max(alpha, props.MinAlpha or floor), Size = UDim2.fromScale(1, 1), ClipsDescendants = true, ZIndex = z, Parent = parent,
 		})
 		tile:SetAttribute('PreviewImage', 'ui:' .. file) -- (the offline previewer draws hood/art/ui/<file>.png)
 		return tile
@@ -686,28 +784,74 @@ function Kit.studs(parent, props)
 	local cols, rows = math.max(1, math.floor(aw / pitch)), math.max(1, math.floor(ah / pitch))
 	local filled = props.Filled
 	if filled == nil then filled = pitch >= 24 end
+	local shade = props.Shade or 0.7
+	local light = props.Light or Kit.Color.white
 	local ox, oy = (aw - (cols - 1) * pitch) / 2, (ah - (rows - 1) * pitch) / 2 -- (the grid centred, whole studs only)
+	local recessed = props.Pattern == 'recessed'
+	if props.Pattern == 'checker' or recessed then
+		-- (brief 22, UICRITIC2) like the texture: the grid from the top-left corner, the first stud half a pitch in
+		cols, rows = math.max(1, math.ceil(aw / pitch)), math.max(1, math.ceil(ah / pitch))
+		ox, oy = pitch / 2 - inset, pitch / 2 - inset
+	end
 	for r = 0, rows - 1 do
 		for c = 0, cols - 1 do
-			-- a stud is a small square outline, like the reference's plates (Frame + UIStroke: two instances a stud); big
-			-- surfaces (pitch >= 24: window cards and rows) get a faint filled square instead, one instance a stud
 			local at = UDim2.fromOffset(math.floor(ox + c * pitch), math.floor(oy + r * pitch))
-			if props.Pattern == 'checker' then
-				-- (brief 19) the reference's level bar / Rebirth boxes: half outlines, a top + right corner and a left + bottom
-				-- corner taking turns (two thin frames a stud, like an outline's Frame + UIStroke)
-				local t = props.Thickness or math.max(1.2, pitch * 0.1)
-				local cx, cy = math.floor(ox + c * pitch), math.floor(oy + r * pitch)
-				local hs = s / 2
-				local a = (r + c) % 2 == 0
-				blank({ Name = 'StudH', BackgroundTransparency = transparency, BackgroundColor3 = color, Position = UDim2.fromOffset(cx - hs, a and cy - hs or cy + hs - t), Size = UDim2.fromOffset(s, t), ZIndex = z, Parent = holder })
-				blank({ Name = 'StudV', BackgroundTransparency = transparency, BackgroundColor3 = color, Position = UDim2.fromOffset(a and cx + hs - t or cx - hs, cy - hs), Size = UDim2.fromOffset(t, s), ZIndex = z, Parent = holder })
+			local raised = (r + c) % 2 == 0
+			if recessed then
+				-- (brief 22, UICRITIC2 r0 #5 / ICONS r1: the HUD blocks' studs are all alike, recessed, about 10% darker than
+				-- the fill) one faint dark Frame a stud; on big surfaces (pitch >= 24) props.Sparse keeps every other one
+				if not (filled and raised and props.Sparse) then
+					blank({ Name = 'Stud', BackgroundTransparency = filled and 0.9 or 0.87, BackgroundColor3 = Kit.Color.black, AnchorPoint = Vector2.new(0.5, 0.5), Position = at, Size = UDim2.fromOffset(s, s), ZIndex = z, Parent = holder })
+				end
+			elseif props.Pattern == 'checker' then
+				-- (brief 22, UICRITIC2: the reference's studs are recessed and low-contrast: a darker outline about 10% off
+				-- the fill, every other one with a slightly darker face) a Frame + its UIStroke a stud; on big surfaces
+				-- (pitch >= 24: cards) one faint Frame a stud, and props.Sparse keeps only every other one (long lists).
+				if filled then
+					if not raised or not props.Sparse then
+						blank({ Name = 'Stud', BackgroundTransparency = raised and math.min(0.95, transparency + 0.1) or transparency, BackgroundColor3 = color, AnchorPoint = Vector2.new(0.5, 0.5), Position = at, Size = UDim2.fromOffset(s, s), ZIndex = z, Parent = holder })
+					end
+				elseif raised then
+					local stud = blank({ Name = 'Stud', AnchorPoint = Vector2.new(0.5, 0.5), Position = at, Size = UDim2.fromOffset(s, s), ZIndex = z, Parent = holder })
+					stroke(color, props.Thickness or math.max(1.2, pitch * 0.09), true, transparency, Enum.LineJoinMode.Miter).Parent = stud
+				else
+					-- (the recessed alternate: just a faint darker face, one instance)
+					blank({ Name = 'Stud', BackgroundTransparency = 1 - (1 - transparency) * 0.55, BackgroundColor3 = color, AnchorPoint = Vector2.new(0.5, 0.5), Position = at, Size = UDim2.fromOffset(s, s), ZIndex = z, Parent = holder })
+				end
 			elseif filled then
+				-- a stud is a small square outline, like the reference's plates (Frame + UIStroke: two instances a stud); big
+				-- surfaces (pitch >= 24: window cards and rows) get a faint filled square instead, one instance a stud
 				blank({ Name = 'Stud', BackgroundTransparency = math.min(0.95, transparency + 0.16), BackgroundColor3 = color, AnchorPoint = Vector2.new(0.5, 0.5), Position = at, Size = UDim2.fromOffset(s, s), ZIndex = z, Parent = holder })
 			else
 				local stud = blank({ Name = 'Stud', AnchorPoint = Vector2.new(0.5, 0.5), Position = at, Size = UDim2.fromOffset(s, s), ZIndex = z, Parent = holder })
 				stroke(color, props.Thickness or math.max(1.2, pitch * 0.09), true, transparency).Parent = stud
 			end
 		end
+	end
+	return holder
+end
+
+-- (brief 22) A paint splat (ref22: behind every pet in the inventory and the Store's egg card): `size` square, tinted
+-- `color`; props.Kind = 'rainbow' (Secret) or 'black' (the "+n" slot), Position, AnchorPoint, ZIndex, Rotation. The
+-- uploaded texture when there is one, else six overlapping round blobs in the colour (12 instances).
+function Kit.splat(size, color, props)
+	props = props or {}
+	local z = props.ZIndex or 1
+	local kind = props.Kind
+	local image = kind == 'rainbow' and Kit.SplatRainbow or kind == 'black' and Kit.SplatBlack or Kit.Splat
+	local holder = blank({ Name = 'Splat', Size = UDim2.fromOffset(size, size), Position = props.Position or UDim2.new(), AnchorPoint = props.AnchorPoint or Vector2.zero, Rotation = props.Rotation or 0, ZIndex = z })
+	if image ~= '' then
+		local file = kind == 'rainbow' and 'splat_rainbow' or kind == 'black' and 'splat_black' or 'splat'
+		local img = new('ImageLabel', { Name = 'Image', BackgroundTransparency = 1, Image = image, ScaleType = Enum.ScaleType.Fit, ImageColor3 = (kind == nil and color) or Kit.Color.white, Size = UDim2.fromScale(1, 1), ZIndex = z, Parent = holder })
+		img:SetAttribute('PreviewImage', 'ui:' .. file)
+		return holder
+	end
+	local c = kind == 'black' and hex('15151C') or color or Kit.Color.white
+	-- (brief 22 r2: like ICONS' texture, a lobed splash ~80% of the square with loose drops, not three big discs)
+	local rainbow = { hex('FF4FA0'), hex('5AD8FF'), hex('FFE24A'), hex('A65CFF'), hex('FF9A2E'), hex('5BE37A') }
+	for i, b in { { 0.5, 0.52, 0.56 }, { 0.32, 0.36, 0.34 }, { 0.69, 0.35, 0.3 }, { 0.68, 0.69, 0.3 }, { 0.33, 0.7, 0.26 }, { 0.14, 0.62, 0.09 } } do
+		local blob = blank({ Name = 'Blob' .. i, BackgroundTransparency = 0, BackgroundColor3 = kind == 'rainbow' and rainbow[i] or c, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(b[1], b[2]), Size = UDim2.fromScale(b[3], b[3]), ZIndex = z, Parent = holder })
+		corner(UDim.new(0.5, 0)).Parent = blob
 	end
 	return holder
 end
@@ -766,10 +910,13 @@ function Kit.block(props)
 	local O = props.Outline or 3
 	local body = blank({ Name = 'Body', BackgroundTransparency = 0, BackgroundColor3 = props.Flat and tone.base or Kit.Color.white, Position = UDim2.fromOffset(O, O), Size = UDim2.new(1, -2 * O, 1, -2 * O), ZIndex = z + 1, Parent = holder })
 	if r > 0 then corner(r).Parent = body end
-	stroke(Kit.Color.black, O, true, 0, r > 0 and Enum.LineJoinMode.Round or Enum.LineJoinMode.Miter).Parent = body
+	stroke(props.OutlineColor or Kit.Color.black, O, true, 0, r > 0 and Enum.LineJoinMode.Round or Enum.LineJoinMode.Miter).Parent = body
 	if not props.Flat then Kit.fillGradient(tone).Parent = body end
 	if props.Studs ~= false then
-		Kit.studs(body, { Width = w - 2 * O, Height = h - 2 * O, Pitch = props.Studs or 15, Color = props.StudColor or tone.lip, Transparency = props.StudTransparency or 0.66, Pattern = props.StudPattern, Shade = props.StudShade, ZIndex = z + 1 })
+		-- (brief 22) the reference's recessed studs on every block ('checker': the raised / recessed tile of the window
+		-- headers and the Rebirth boxes; 'plain': none of these, the old centred outline grid)
+		local pattern = props.StudPattern or 'recessed'
+		Kit.studs(body, { Width = w - 2 * O, Height = h - 2 * O, Pitch = props.Studs or 15, Color = props.StudColor or tone.lip, Transparency = props.StudTransparency or 0.66, Pattern = pattern ~= 'plain' and pattern or nil, Shade = props.StudShade or 0.8, Sparse = props.StudSparse, ZIndex = z + 1 })
 	end
 	if props.Gloss then Kit.gloss(body, { ZIndex = z + 1, Radius = r }) end
 	if props.Rim ~= false then
@@ -777,6 +924,11 @@ function Kit.block(props)
 		local rim = blank({ Name = 'Rim', Position = UDim2.fromOffset(rw, rw), Size = UDim2.new(1, -2 * rw, 1, -2 * rw), ZIndex = z + 1, Parent = body })
 		if r > rw then corner(r - rw).Parent = rim end
 		stroke(tone.rim or Kit.Color.white, rw, true, tone.rim and 0.25 or 0.6, r > rw and Enum.LineJoinMode.Round or Enum.LineJoinMode.Miter).Parent = rim
+		if props.InnerLine then
+			-- (brief 22: the reference's squares: outline, a light rim, then a thin darker line before the fill)
+			local line = blank({ Name = 'InnerLine', Position = UDim2.fromOffset(rw, rw), Size = UDim2.new(1, -2 * rw, 1, -2 * rw), ZIndex = z + 1, Parent = rim })
+			stroke(tone.lip or Kit.Color.black, 1, true, 0.35, Enum.LineJoinMode.Miter).Parent = line
+		end
 	end
 	holder:SetAttribute('Tone', type(props.Tone) == 'string' and props.Tone or '')
 	return holder
@@ -820,7 +972,7 @@ end
 function Kit.actionButton(props)
 	local w, h = props.Width or 81, props.Height or 81
 	local pop = props.Pop or 12
-	local holder, hit = Kit.blockButton({ Name = props.Name, Tone = props.Tone, Width = w, Height = h, Position = props.Position, AnchorPoint = props.AnchorPoint, ZIndex = props.ZIndex, Studs = props.Studs or 15 })
+	local holder, hit = Kit.blockButton({ Name = props.Name, Tone = props.Tone, Width = w, Height = h, Position = props.Position, AnchorPoint = props.AnchorPoint, ZIndex = props.ZIndex, Studs = props.Studs or 15, RimWidth = props.RimWidth or 3, InnerLine = props.InnerLine ~= false })
 	local z = (props.ZIndex or 1) + 3
 	local size = props.IconSize or math.floor(math.min(w, h) * 0.88)
 	local icon = props.IconNode or Kit.icon3d(props.Icon or 'Shop', size, {})
@@ -878,7 +1030,7 @@ function Kit.robux(size, props)
 	-- black edge, the coloured ring, a darker (or `Inner`) hexagon inside it, and the square core (`Core`, black)
 	local R = size * 0.5
 	local edge = math.max(1.5, size * 0.1)
-	hexagon('Edge', R, Kit.Color.black, z)
+	hexagon('Edge', R, props.Edge or Kit.Color.black, z)
 	hexagon('Face', R - edge, color, z)
 	if size >= 14 then hexagon('Inner', (R - edge) * 0.62, props.Inner or color:Lerp(Kit.Color.black, 0.3), z) end
 	local core = blank({ Name = 'Core', BackgroundTransparency = 0, BackgroundColor3 = props.Core or Kit.Color.black, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(math.max(3, size * 0.26), math.max(3, size * 0.26)), ZIndex = z, Parent = holder })
@@ -951,6 +1103,9 @@ function Kit.robuxButton(props)
 	p.Text = nil
 	p.Studs = p.Studs or false
 	p.Outline = p.Outline or 3
+	-- (brief 19 r7, UICRITIC P2-7) the reference's price button is outlined in its own dark green, not black
+	local ink = toneOf(p.Tone).stroke or Kit.Color.black
+	p.OutlineColor = p.OutlineColor or ink
 	local holder, hit = Kit.blockButton(p)
 	local h = p.Height or 44
 	local z = (p.ZIndex or 1) + 2
@@ -959,9 +1114,9 @@ function Kit.robuxButton(props)
 	local glyph = math.floor(size * 1.12)
 	local tw = Kit.textWidth(text, size)
 	local row = blank({ Name = 'Price', AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(glyph + 2 + tw, h), ZIndex = z, Parent = holder.Body })
-	-- (the reference's: a white hexagon ring with the button's green inside it and a white core)
-	Kit.robux(glyph, { Color = Kit.Color.white, Inner = toneOf(p.Tone).base, Core = Kit.Color.white, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 0, 0.5, 0), ZIndex = z }).Parent = row
-	local label = Kit.text({ Name = 'Label', Text = text, TextSize = size, Stroke = Kit.Color.black, StrokeThickness = math.max(2, size * 0.12), TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(glyph + 2, 0), Size = UDim2.new(0, tw, 1, -1), ZIndex = z, Parent = row })
+	-- (the reference's mark: a white hexagon with dark-green linework and a dark-green square in the middle)
+	Kit.robux(glyph, { Color = Kit.Color.white, Inner = Kit.Color.white, Core = ink, Edge = ink, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 0, 0.5, 0), ZIndex = z }).Parent = row
+	local label = Kit.text({ Name = 'Label', Text = text, TextSize = size, Stroke = ink, StrokeThickness = math.max(2, size * 0.12), TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(glyph + 2, 0), Size = UDim2.new(0, tw, 1, -1), ZIndex = z, Parent = row })
 	return holder, hit, label
 end
 
@@ -1022,17 +1177,19 @@ function Kit.window(root, props)
 	new('UIScale', { Name = 'FitScale', Parent = fitter })
 	local panel = blank({ Name = props.Name or 'Window', AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(1, 1), ZIndex = 21, Parent = fitter })
 	-- the body: grey and see-through, with a light band inside its outline
-	local bodyTop = hh - 6
+	local bodyTop = hh - 6 - (props.HeaderOverlap or 0) -- (HeaderOverlap: a taller header over the same body, user_28's)
 	-- (the reference's body darkens what's behind it by about a third and keeps it visible: a near-black at 0.68)
-	local frame = blank({ Name = 'Frame', BackgroundTransparency = 0.66, BackgroundColor3 = hex('1C202A'), Position = UDim2.fromOffset(O, bodyTop + O), Size = UDim2.new(1, -2 * O, 1, -bodyTop - 2 * O), ZIndex = 21, Parent = panel })
+	local frame = blank({ Name = 'Frame', BackgroundTransparency = 0.58, BackgroundColor3 = hex('12141C'), Position = UDim2.fromOffset(O, bodyTop + O), Size = UDim2.new(1, -2 * O, 1, -bodyTop - 2 * O), ZIndex = 21, Parent = panel })
 	corner(5).Parent = frame
 	stroke(Kit.Color.black, O, true).Parent = frame
 	local band = blank({ Name = 'Rim', Position = UDim2.fromOffset(RIM, RIM), Size = UDim2.new(1, -2 * RIM, 1, -2 * RIM), ZIndex = 21, Parent = frame })
-	stroke(hex('A3A6B2'), RIM, true, 0).Parent = band
+	stroke(Kit.Color.white, RIM, true, 0.5).Parent = band -- (brief 22, UICRITIC2: a translucent white band, ~50%, like the reference's)
 	local inset = Kit.Window.Inset
 	local well = blank({ Name = 'Content', Position = UDim2.fromOffset(inset, bodyTop + inset), Size = UDim2.new(1, -2 * inset, 1, -bodyTop - 2 * inset), ZIndex = 22, Parent = panel })
 	-- the header
-	local header = Kit.block({ Name = 'Header', Tone = props.Tone or 'headerGold', Width = w, Height = hh, Outline = O, Radius = 5, Studs = 34, StudShade = 0.9, Gloss = true, RimWidth = 6, ZIndex = 23 })
+	-- (brief 19 r7) the header's studs are the reference's raised / recessed checker, at its strongest; the diagonal gloss
+	-- only where the reference has it (the Store's; props.Gloss = false for Rebirth and Rewards)
+	local header = Kit.block({ Name = 'Header', Tone = props.Tone or 'headerGold', Width = w, Height = hh, Outline = O, Radius = 5, Studs = 34, StudPattern = 'checker', StudShade = 0.9, Gloss = props.Gloss ~= false, RimWidth = 6, ZIndex = 23 })
 	header.Parent = panel
 	local iconSize = props.IconSize or math.floor(hh * 0.95)
 	local icon = props.IconNode or (props.Icon and Kit.icon3d(props.Icon, iconSize, { ZIndex = 27 }))

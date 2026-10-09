@@ -8,14 +8,20 @@
 -- every shot pays (LobbyService and WaveService pass ShoeMultiplier to ShotRules.pay).
 --
 -- Remotes (Shared/Net), all checked here:
---   OpenShoeBox(boxId)     a known Cash box of this world (a later world's box or a Robux box is refused: a Robux
+--   OpenShoeBox(boxId, count?)  a known Cash box of this world (a later world's box or a Robux box is refused: a Robux
 --                          box opens only from its receipt), the open rate limit (one per 1.25 s), a loaded profile
 --                          and a live character, within ShoeRules.Range of that box's BoxPoint, enough Cash, room in
 --                          the rack. Takes the Cash, rolls the shoe (server Random), saves it, answers with ShoeOpened.
+--                          count = 3 (brief 22, the Triple Open pass: Pass_TripleOpen) opens three at once for 3x the
+--                          Price, with room for 3 pairs, in one ShoeOpened (Buy = 3); without the pass it is refused.
+--                          A Lucky owner (Pass_Lucky) rolls with the Lucky odds (ShoeRules.chances(boxId, true)).
 --   ShoeAction(action, id) 'Equip' | 'Unequip' | 'EquipBest' | 'Recycle' (a spare pair, for a tenth of its box's
---                          price), from anywhere, under the action rate limit.
---   ShoeOpened             to that player: { Box, Shoe, Rarity, New (first pair of it), Count (copies now),
---                          Equipped (it went straight on) }; Shoes.client plays the unboxing moment from it.
+--                          price), from anywhere, under the action rate limit. Up to ShoesMax pairs on (3; 4 with the
+--                          +1 Shoe Slot pass, Pass_ExtraEquip).
+--   ShoeOpened             to that player, once per open: { Box, Shoe, Rarity, New (first pair of it), Count (copies
+--                          now), Equipped (it went straight on), Shoes (every pair of the open, in roll order), Buy
+--                          (#Shoes: 1 here, 3 or 8 from a Store bundle), Best, Product } (HoodServer/ShoeOpening has
+--                          the details); Shoes.client plays the unboxing moment from it.
 -- Answers that need words go back as Net 'Notice' messages.
 --
 -- Player attributes kept in step with the profile (set on load and on every change):
@@ -23,6 +29,7 @@
 --   ShoeWorn        the best equipped id (worn on the feet), '' for none
 --   ShoeBonus       the equipped pairs' total bonus, percent
 --   ShoeMultiplier  1 + ShoeBonus / 100 (what a shot's Power is multiplied by)
+--   ShoesMax        pairs you may have on: 3, or 4 with the +1 Shoe Slot pass (brief 22)
 --   ShoesOwned      the rack: 'Id:copies,...' in the boxes' order
 --   ShoesOpened     boxes opened ever
 -- ReplicatedStorage attribute ShoeBoxes: true when this map has shoe boxes (GoalService skips the box goal otherwise).
@@ -64,11 +71,17 @@ local sync = ShoeOpening.sync
 local function notice(player, text) Net.get('Notice'):FireClient(player, text) end
 local function nameOf(id) local s = Shoes.ById[id]; return s and s.Name or 'that pair' end
 
-Net.get('OpenShoeBox').OnServerEvent:Connect(function(player, boxId)
+Net.get('OpenShoeBox').OnServerEvent:Connect(function(player, boxId, count)
 	local box = type(boxId) == 'string' and Shoes.BoxById[boxId]
 	if not box then return end
 	-- another world's box (not built here) or a Robux box (its receipt opens it): never through this remote
 	if not ShoeRules.inWorld(box.Id) or box.Robux then return end
+	-- (brief 22) three at once only with the Triple Open pass; anything else is one
+	local n = 1
+	if count == 3 then
+		if player:GetAttribute('Pass_TripleOpen') ~= true then return end
+		n = 3
+	end
 	if not openLimit.allow(player) then return end
 	local profile = Data.get(player)
 	local character = player.Character
@@ -82,20 +95,22 @@ Net.get('OpenShoeBox').OnServerEvent:Connect(function(player, boxId)
 	end
 	local shoes = ShoeRules.sanitize(profile.Data.Shoes)
 	profile.Data.Shoes = shoes
-	local ok, why = ShoeRules.canOpen(shoes, profile.Data.Cash, box.Id, (root.CFrame.Position - point.CFrame.Position).Magnitude)
+	local ok, why = ShoeRules.canOpen(shoes, profile.Data.Cash, box.Id, (root.CFrame.Position - point.CFrame.Position).Magnitude, nil, n)
 	if not ok then
 		if why == 'far' then
 			notice(player, 'Walk up to the ' .. box.Name .. ' to open it')
 		elseif why == 'cash' then
-			notice(player, 'Need ' .. Format.compact(box.Price) .. ' Cash for the ' .. box.Name)
+			notice(player, 'Need ' .. Format.compact(box.Price * n) .. ' Cash for ' .. (n > 1 and (n .. ' ' .. box.Name .. 'es') or ('the ' .. box.Name)))
+		elseif why == 'full' and n > 1 then
+			notice(player, 'Your shoe rack needs room for ' .. n .. ' more pairs. Recycle spares in SHOES first.')
 		elseif why == 'full' then
 			notice(player, 'Your shoe rack is full (' .. ShoeRules.MaxOwned .. ' pairs). Recycle spares in SHOES first.')
 		end
 		return
 	end
-	profile.Data.Cash -= box.Price
+	profile.Data.Cash -= box.Price * n
 	player:SetAttribute('Cash', profile.Data.Cash)
-	ShoeOpening.open(player, profile, box.Id)
+	ShoeOpening.openMany(player, profile, box.Id, n)
 	Data.push(player)
 end)
 
@@ -107,18 +122,19 @@ Net.get('ShoeAction').OnServerEvent:Connect(function(player, action, id)
 	local shoes = ShoeRules.sanitize(profile.Data.Shoes)
 	profile.Data.Shoes = shoes
 	local changed = false
+	local slots = ShoeOpening.slots(player)
 	if action == 'Equip' then
-		local ok, why = ShoeRules.equip(shoes, id)
+		local ok, why = ShoeRules.equip(shoes, id, slots)
 		changed = ok
 		if why == 'full' then
-			notice(player, ShoeRules.MaxEquipped .. ' pairs are on. Take one off first, or tap EQUIP BEST.')
+			notice(player, slots .. ' pairs are on. Take one off first, or tap EQUIP BEST.')
 		elseif why == 'all' then
 			notice(player, 'Every pair of ' .. nameOf(id) .. ' you have is on.')
 		end
 	elseif action == 'Unequip' then
 		changed = ShoeRules.unequip(shoes, id)
 	elseif action == 'EquipBest' then
-		changed = ShoeRules.equipBest(shoes)
+		changed = ShoeRules.equipBest(shoes, slots)
 		if #shoes.Equipped > 0 then notice(player, 'Wearing your best shoes! ' .. ShoeRules.bonusText(ShoeRules.bonus(shoes)) .. ' Power') end
 	elseif action == 'Recycle' then
 		local ok, why = ShoeRules.canRecycle(shoes, id)
@@ -145,6 +161,9 @@ local function watch(player)
 		if profile then sync(player, profile) end
 	end
 	player:GetAttributeChangedSignal('ProfileReady'):Connect(ready)
+	-- (brief 22) the +1 Shoe Slot pass arriving (or the pass check finishing) changes the slots
+	player:GetAttributeChangedSignal('Pass_ExtraEquip'):Connect(ready)
+	player:GetAttributeChangedSignal('PassesChecked'):Connect(ready)
 	ready()
 end
 Players.PlayerAdded:Connect(watch)

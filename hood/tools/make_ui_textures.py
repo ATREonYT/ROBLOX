@@ -11,11 +11,16 @@ Measured on brief/ref17/user_26-28 (stud pitch 22 ref px on the HUD, 42 px on th
   - the Store header and the big cards carry two soft diagonal light bands.
 
 Files (all RGBA, transparent where there is no stud):
-  stud_tile.png     64x64   one raised stud, GREYSCALE (light edge white, dark edge dark grey): for ImageColor3 tinting
-  stud_bevel.png    64x64   one raised stud PRE-SHADED (white highlight + black shadow in alpha): ImageColor3 = white
+  stud_tile.png     64x64   the same recessed stud as stud_bevel, GREYSCALE (lit walls white, shaded walls dark grey): for
+                            ImageColor3 tinting
+  stud_bevel.png    64x64   the HUD blocks' stud (ref22): one RECESSED rounded stud lit from the top left (shaded top/left
+                            walls, lit bottom/right), low contrast, PRE-SHADED: ImageColor3 = white
   stud_checker.png  128x128 2x2 studs, raised/recessed alternating, pre-shaded: TileSize = 2 x pitch
   gloss_band.png    512x128 two diagonal white bands in alpha: ScaleType Stretch over a small block face
   gloss_stripes.png 128x128 one seamless 45-degree light stripe: ScaleType Tile (TileSize ~3 x pitch) over headers/cards
+  splat.png         256x256 a white paint splat (tint with ImageColor3 = the rarity colour), behind shoes/pets
+  splat_rainbow.png 256x256 the same splat in rainbow hues round the edge (Secret)
+  splat_black.png   256x256 the same splat in dark translucent grey (the "+n" buy-a-slot splat; the UI draws "+n")
 """
 import argparse
 import math
@@ -56,10 +61,10 @@ def _sd_round_box(x, y, h, r):
 	return math.hypot(max(qx, 0.0), max(qy, 0.0)) + min(max(qx, qy), 0.0) - r
 
 
-def stud_parts(u, v):
+def stud_parts(u, v, stud=None):
 	"""For a point (u, v) in a one-stud cell (0..1, v down), which part of the stud it is on:
 	'L' (the left/bottom rim), 'T' (the top/right rim), 'F' (the face inside the rim), or None (outside)."""
-	h = STUD / 2
+	h = (stud or STUD) / 2
 	x, y = u - 0.5, v - 0.5
 	if _sd_round_box(x, y, h, CORNER) > 0:
 		return None
@@ -83,6 +88,46 @@ def shade(part, raised, mode):
 	if part == 'F':
 		return (1.0, 1.0, 1.0, 0.04) if raised else (0.0, 0.0, 0.0, 0.12)  # recessed face ~12% darker
 	return (0.0, 0.0, 0.0, 0.42) if dark_edge else (1.0, 1.0, 1.0, 0.44)  # light rim ~0x70: both rims read
+
+
+def inset_parts(u, v):
+	"""The HUD blocks' stud (ref22_hud_buttons, the Store pack cards): a RECESSED rounded square lit from the top left,
+	so its top and left inner walls are in shade ('D') and its bottom and right walls catch the light ('B'), ~47% of the
+	pitch; 'F' face, None outside."""
+	h = 0.47 / 2
+	x, y = u - 0.5, v - 0.5
+	if _sd_round_box(x, y, h, CORNER) > 0:
+		return None
+	if _sd_round_box(x, y, h - LINE, max(CORNER - LINE, 0.004)) < 0:
+		return 'F'
+	if abs(x) >= abs(y):
+		return 'D' if x < 0 else 'B'
+	return 'D' if y < 0 else 'B'
+
+
+def inset_pixels(n, mode='bevel'):
+	"""Pre-shaded overlay of inset_parts: low contrast like the reference (about +-10% of the fill once UIKit draws it
+	at ImageTransparency ~0.3). mode 'grey': the tintable version (dark grey walls / white walls, for ImageColor3)."""
+	look = {None: (0.0, 0.0, 0.0, 0.0), 'F': (0.0, 0.0, 0.0, 0.02), 'D': (0.36, 0.14, 0.0, 0.16), 'B': (1.0, 1.0, 0.9, 0.3)}  # warm shade (UICRITIC2: the ref's walls stay saturated)
+	if mode == 'grey':
+		look = {None: (1.0, 1.0, 1.0, 0.0), 'F': (1.0, 1.0, 1.0, 0.0), 'D': (0.22, 0.22, 0.22, 1.0), 'B': (1.0, 1.0, 1.0, 0.9)}
+	rows = []
+	for py in range(n):
+		row = []
+		for px in range(n):
+			acc = [0.0, 0.0, 0.0, 0.0]
+			for sy in range(SS):
+				for sx in range(SS):
+					r, g, b, a = look[inset_parts((px + (sx + 0.5) / SS) / n, (py + (sy + 0.5) / SS) / n)]
+					acc[0] += r * a
+					acc[1] += g * a
+					acc[2] += b * a
+					acc[3] += a
+			a = acc[3] / (SS * SS)
+			rgb = [acc[i] / acc[3] for i in range(3)] if acc[3] > 0 else [0.0, 0.0, 0.0]
+			row.append(tuple(int(round(c * 255)) for c in rgb) + (int(round(a * 255)),))
+		rows.append(row)
+	return rows
 
 
 def cell_pixels(n, raised, mode):
@@ -173,16 +218,87 @@ def gloss_pixels(w, h):
 	return rows
 
 
+# ------------------------------------------------------------------------------------------------- paint splats
+# (brief 22, ref22_pets_window / store_limited) the flat paint splat behind every pet: one big blob with 5-7 round lobes
+# and a few loose drops around it. Flat colour, no outline, like the reference.
+SPLAT_SEED = 7
+
+
+def _splat_circles(seed=SPLAT_SEED):
+	"""The splat as a union of circles (x, y, r) in -1..1, like ref22's: a big core, 4 lobes of mixed sizes that reach
+	out mostly sideways (so the splat shows left and right of the item standing on it), and 4 loose droplets."""
+	circles = [(0.0, -0.04, 0.6)]
+	for (a, d, rad) in ((12, 0.48, 0.36), (168, 0.5, 0.33), (232, 0.46, 0.3), (305, 0.5, 0.27), (95, 0.42, 0.26)):
+		t = math.radians(a)
+		circles.append((d * math.cos(t), d * math.sin(t) - 0.04, rad))
+	for (a, d, rad) in ((35, 0.93, 0.055), (150, 0.9, 0.065), (205, 0.92, 0.045), (330, 0.9, 0.06)):
+		t = math.radians(a)
+		circles.append((d * math.cos(t), d * math.sin(t), rad))
+	return circles
+
+
+def splat_pixels(n, kind='white'):
+	"""kind 'white' (tint with ImageColor3), 'rainbow' (hue round the edge), 'black' (the "+n" slot)."""
+	circles = _splat_circles()
+	ss = 3
+	rows = []
+	for py in range(n):
+		row = []
+		for px in range(n):
+			acc = 0
+			cx = cy = 0.0
+			rad_acc = 0.0
+			for sy in range(ss):
+				for sx in range(ss):
+					x = ((px + (sx + 0.5) / ss) / n - 0.5) * 2 / 0.97
+					y = -((py + (sy + 0.5) / ss) / n - 0.5) * 2 / 0.97
+					for (qx, qy, qr) in circles:
+						if (x - qx) ** 2 + (y - qy) ** 2 <= qr * qr:
+							acc += 1
+							cx += x
+							cy += y
+							rad_acc += math.hypot(x, y)
+							break
+			a = acc / (ss * ss)
+			if acc == 0:
+				row.append((255, 255, 255, 0) if kind != 'black' else (0, 0, 0, 0))
+				continue
+			if kind == 'white':
+				row.append((255, 255, 255, int(round(a * 255))))
+			elif kind == 'black':
+				row.append((30, 30, 36, int(round(a * 0.86 * 255))))
+			else:
+				t = math.atan2(cy, cx)
+				h = (t / (2 * math.pi)) % 1.0
+				rad = rad_acc / acc
+				r, g, b = _hsv(h, 0.9 if rad > 0.4 else 0.9 * rad / 0.4, 1.0)
+				row.append((r, g, b, int(round(a * 255))))
+		rows.append(row)
+	return rows
+
+
+def _hsv(h, s, v):
+	i = int(h * 6) % 6
+	f = h * 6 - int(h * 6)
+	p, q, t = v * (1 - s), v * (1 - f * s), v * (1 - (1 - f) * s)
+	r, g, b = [(v, t, p), (q, v, p), (p, v, t), (p, q, v), (t, p, v), (v, p, q)][i]
+	return int(r * 255), int(g * 255), int(b * 255)
+
+
 def make(out):
-	write_png(os.path.join(out, 'stud_tile.png'), 64, 64, soften(cell_pixels(64, True, 'grey')))
-	write_png(os.path.join(out, 'stud_bevel.png'), 64, 64, soften(cell_pixels(64, True, 'bevel')))
+	write_png(os.path.join(out, 'stud_tile.png'), 64, 64, soften(inset_pixels(64, 'grey')))
+	# (brief 22, UICRITIC2) StudBevel = the HUD blocks' recessed stud, lit from the top left, low contrast
+	write_png(os.path.join(out, 'stud_bevel.png'), 64, 64, soften(inset_pixels(64)))
 	a = cell_pixels(64, True, 'bevel')
 	b = cell_pixels(64, False, 'bevel')
 	rows = [a[y] + b[y] for y in range(64)] + [b[y] + a[y] for y in range(64)]
 	write_png(os.path.join(out, 'stud_checker.png'), 128, 128, soften(rows))
 	write_png(os.path.join(out, 'gloss_band.png'), 512, 128, gloss_pixels(512, 128))
 	write_png(os.path.join(out, 'gloss_stripes.png'), 128, 128, stripes_pixels(128))
-	return ['stud_tile.png', 'stud_bevel.png', 'stud_checker.png', 'gloss_band.png', 'gloss_stripes.png']
+	for name, kind in (('splat.png', 'white'), ('splat_rainbow.png', 'rainbow'), ('splat_black.png', 'black')):
+		write_png(os.path.join(out, name), 256, 256, splat_pixels(256, kind))
+	return ['stud_tile.png', 'stud_bevel.png', 'stud_checker.png', 'gloss_band.png', 'gloss_stripes.png', 'splat.png',
+		'splat_rainbow.png', 'splat_black.png']
 
 
 if __name__ == '__main__':

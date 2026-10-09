@@ -91,7 +91,9 @@ function Schema.validate(data)
  local s=data.Shoes
  assert(type(s)=='table' and type(s.Owned)=='table' and type(s.Equipped)=='table','Invalid Shoes')
  for id,n in pairs(s.Owned) do assert(type(id)=='string' and shoes.ById[id] and type(n)=='number' and n%1==0 and n>=1,'Invalid owned shoe') end
- assert(#s.Equipped<=shoes.MaxEquipped,'Too many shoes equipped')
+ -- (up to ShoeRules.MaxSlots: one more than MaxEquipped for the +1 Shoe Slot pass, brief 22; a save with the 4th pair on
+ -- must keep loading even before the pass check comes back)
+ assert(#s.Equipped<=require(game.ReplicatedStorage.Shared.ShoeRules).MaxSlots,'Too many shoes equipped')
  local on={}
  for _,id in ipairs(s.Equipped) do on[id]=(on[id] or 0)+1;assert((s.Owned[id] or 0)>=on[id],'Equipped shoe not owned') end
  assert(type(s.Opened)=='number' and s.Opened%1==0 and s.Opened>=0,'Invalid Shoes.Opened')

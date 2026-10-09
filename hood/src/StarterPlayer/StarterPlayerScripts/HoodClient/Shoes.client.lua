@@ -8,7 +8,10 @@
 --   * The chances board: over the box you stand nearest to (within BOARD_RANGE), its shoes with their chances (6, or 5
 --     on a Robux box: no Commons), like a pet-sim egg board. An unowned Secret shows as a dark "???" until you have one.
 --   * The unboxing moment (remote ShoeOpened): the box flies up in front of your camera, shakes, the lid pops with a light
---     burst, and the pair rises spinning out of it under a rarity banner (the name, the bonus, NEW!, EQUIPPED).
+--     burst, and the pair rises spinning out of it under a rarity banner (the name, the bonus, NEW!, EQUIPPED). A Buy 3 /
+--     Buy 8 (brief 22: one ShoeOpened with Shoes = the N pairs, Buy = N, Best = the pair the top-level fields describe)
+--     plays the same box, then deals the N pairs out as cards over their rarity splats. PlayerGui `Unboxing` is true
+--     while a moment plays (the HUD's hint and the goal line step away).
 --   * Worn pairs: every player's best equipped pair (attribute ShoeWorn) on their feet via ShoeModels.wear, re-applied
 --     on respawn and when SkinArt rebuilds the look's costume; the costume's own shoes are hidden locally meanwhile.
 --   * Followers: every player's other equipped pairs (ShoesEquipped minus the worn one) hover and hop behind them like
@@ -16,8 +19,8 @@
 --     two short attributes, so followers cost no network traffic, move at the frame rate with no jitter, and appear for
 --     everyone (each client draws everyone's). Each follower is one anchored root with its parts welded to it, so a
 --     frame moves one part per follower.
---   * The SHOES button (in the HUD's action column, slot ShoesSlot next to Rebirth) and the inventory: your pairs in rarity frames, the
---     selected pair's card with EQUIP / UNEQUIP / RECYCLE, EQUIP BEST, and the total bonus.
+--   * (brief 22) The inventory window (your pairs, equip, recycle, equip best, the Index) is HoodClient/Inventory.client
+--     now, and the HUD's Shoes square is HUD.client's; this script keeps no window.
 -- Shared/Models/ShoeModels and BoxModels (other builders) build the shoes and boxes; until they exist, or if one fails,
 -- simple stand-in models are used so nothing breaks.
 local Players = game:GetService('Players')
@@ -324,6 +327,8 @@ end
 -- The slot behind the owner (owner space) for follower i of n.
 local function slot(i, n)
 	if n == 1 then return V3(-FOLLOW.Side * 0.75, 0, FOLLOW.Back) end
+	-- (a 3rd follower with the +1 Shoe Slot pass: centred, a step further back)
+	if i == 3 then return V3(0, 0, FOLLOW.Back + 2.6) end
 	return V3((i == 1 and -1 or 1) * FOLLOW.Side, 0, FOLLOW.Back + (i - 1) * 0.4)
 end
 -- Where the owner's feet are (the lowest foot or leg), so followers hover just over the floor they walk on.
@@ -458,9 +463,6 @@ end)
 local function myRack()
 	return ShoeRules.fromAttributes(player:GetAttribute('ShoesOwned'), player:GetAttribute('ShoesEquipped'), player:GetAttribute('ShoesOpened'))
 end
-local newIds = {} -- pairs unboxed since you last opened the inventory (the SHOES button's NEW!)
-local paintBadge -- (the SHOES button's sticker; set once the button exists)
-local stickers = {} -- the ones the open inventory marks NEW!
 local function cashNow()
 	local c = player:GetAttribute('Cash')
 	return type(c) == 'number' and c or 0
@@ -492,6 +494,10 @@ local function boardAnchorOffset(entry)
 	local top = box.Position.Y + size.Y / 2
 	return V3(0, top - entry.Point.CFrame.Y + 2.5 + 2.5, 0), nil
 end
+-- What a board shows changes with your rack and with the Lucky pass (a Lucky owner's Cash boxes have better odds).
+local function boardKey()
+	return (player:GetAttribute('ShoesOwned') or '') .. '|' .. tostring(player:GetAttribute('Pass_Lucky') == true)
+end
 local function cellFor(board, i, id, rack, n)
 	local shoe = Shoes.ById[id]
 	local rarity = Shoes.RarityById[shoe.Rarity]
@@ -510,7 +516,7 @@ local function cellFor(board, i, id, rack, n)
 	vp.Position = UDim2.fromScale(0.5, 0.02)
 	vp.Size = UDim2.fromScale(0.96, 0.62)
 	vp.Parent = cell
-	local chance = Kit.text({ Name = 'Chance', Text = ShoeRules.chanceText(ShoeRules.chanceOf(id)), Stroke = Color.ink, Position = UDim2.fromScale(0, 0.62), Size = UDim2.fromScale(1, 0.24), ZIndex = 3, Parent = cell })
+	local chance = Kit.text({ Name = 'Chance', Text = ShoeRules.chanceText(ShoeRules.chanceOf(id, player:GetAttribute('Pass_Lucky') == true)), Stroke = Color.ink, Position = UDim2.fromScale(0, 0.62), Size = UDim2.fromScale(1, 0.24), ZIndex = 3, Parent = cell })
 	chance.TextScaled = true
 	local name = Kit.text({ Name = 'Name', Text = hidden and '???' or string.upper(shoe.Name), FontFace = Kit.Font.body, TextColor3 = Color.white, Stroke = Color.ink, Position = UDim2.fromScale(0.04, 0.85), Size = UDim2.fromScale(0.92, 0.13), ZIndex = 3, Parent = cell })
 	name.TextScaled = true
@@ -558,7 +564,7 @@ local function buildBoard(entry)
 	gui.Enabled = false
 	gui.Parent = entry.Point
 	entry.Board = gui
-	entry.BoardKey = ShoeRules.ownedString(rack)
+	entry.BoardKey = boardKey()
 end
 
 -- A short line in the upper middle of the screen (the HUD's notice style), for answers given here ("Coming soon!").
@@ -587,7 +593,7 @@ local function buyBox(box)
 		return
 	end
 	local ok = pcall(function() MarketplaceService:PromptProductPurchase(player, Products.idOf(box.Robux)) end)
-	if not ok then say('The Store is busy, try again!') end
+	if not ok then say('Try again!') end
 end
 local function bindBox(model)
 	local id = model:GetAttribute('BoxId')
@@ -617,7 +623,32 @@ local function bindBox(model)
 		end
 	end)
 	boxes[id] = { Box = box, Model = model, Point = point, Prompt = prompt }
+	if not box.Robux then
+		-- (brief 22) The Triple Open pass: a second prompt opens 3 at once for 3x the price (the server checks the pass,
+		-- the Cash and the room; one ShoeOpened with Buy = 3 comes back). Shown only while you own the pass.
+		local triple = Instance.new('ProximityPrompt')
+		triple.Name = 'ShoePromptTriple'
+		triple.ObjectText = box.Name
+		triple.ActionText = 'Open x3  ' .. Format.compact(box.Price * 3) .. ' Cash'
+		triple.KeyboardKeyCode = Enum.KeyCode.F
+		triple.UIOffset = Vector2.new(0, 72)
+		triple.HoldDuration = 0.3
+		triple.MaxActivationDistance = 8
+		triple.RequiresLineOfSight = false
+		triple.Enabled = player:GetAttribute('Pass_TripleOpen') == true
+		triple.Parent = point
+		triple.Triggered:Connect(function()
+			if unboxing then return end
+			Net.get('OpenShoeBox'):FireServer(id, 3)
+		end)
+		boxes[id].Triple = triple
+	end
 end
+player:GetAttributeChangedSignal('Pass_TripleOpen'):Connect(function()
+	for _, entry in boxes do
+		if entry.Triple then entry.Triple.Enabled = player:GetAttribute('Pass_TripleOpen') == true end
+	end
+end)
 local function watchDais(dais)
 	local function added(child)
 		if child:IsA('Model') and child:GetAttribute('BoxId') then task.spawn(bindBox, child) end
@@ -676,7 +707,7 @@ local function refreshBoards()
 			end
 		end
 	end
-	if best and best.Board and best.BoardKey ~= (player:GetAttribute('ShoesOwned') or '') then
+	if best and best.Board and best.BoardKey ~= boardKey() then
 		best.Board:Destroy()
 		best.Board = nil
 	end
@@ -751,7 +782,9 @@ local function banner(info, shoe, rarity)
 	else
 		Kit.gradient(Color.white, rarity.Color, 0.5).Parent = word
 	end
-	local bottom = Kit.new('Frame', { Name = 'Bottom', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromScale(0.5, 0.62), Size = px(760, 150), ZIndex = 5, Parent = holder })
+	-- (the name and its lines sit over the HUD's bottom bar's top edge at most: higher up on a short phone screen)
+	local rootH = momentGui.AbsoluteSize.Y * momentRoot.Size.Y.Scale
+	local bottom = Kit.new('Frame', { Name = 'Bottom', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, math.min(rootH * 0.62, rootH - 270)), Size = px(760, 150), ZIndex = 5, Parent = holder })
 	local name = Kit.text({ Name = 'Name', Text = shoe.Name, TextSize = 50, Stroke = Color.black, StrokeThickness = 5.5, Size = UDim2.new(1, 0, 0, 56), ZIndex = 6, Parent = bottom })
 	local bonus = Kit.text({ Name = 'Bonus', Text = ShoeRules.bonusText(shoe.Bonus) .. ' Power', TextSize = 38, Stroke = Color.black, StrokeThickness = 4.5, Position = px(0, 56), Size = UDim2.new(1, 0, 0, 44), ZIndex = 6, Parent = bottom })
 	Kit.new('UIGradient', { Rotation = 90, Color = ColorSequence.new(Kit.hex('FFF27A'), Kit.hex('FFA81A')), Parent = bonus })
@@ -760,11 +793,11 @@ local function banner(info, shoe, rarity)
 	if info.Equipped then
 		note = 'EQUIPPED!'
 	elseif info.Better then
-		note = 'Tap SHOES > EQUIP BEST to wear it'
+		note = 'BETTER!' -- (a better pair than one you have on: the inventory's star puts it on)
 	else
 		note = 'From the ' .. (box and box.Name or 'box') .. '  •  you have x' .. tostring(info.Count or 1)
 	end
-	local line = Kit.text({ Name = 'Note', Text = note, TextSize = 28, TextColor3 = info.Equipped and Kit.hex('7CFF4F') or Color.white, Stroke = Color.black, StrokeThickness = 3.5, Position = px(0, 104), Size = UDim2.new(1, 0, 0, 34), ZIndex = 6, Parent = bottom })
+	local line = Kit.text({ Name = 'Note', Text = note, TextSize = 28, TextColor3 = (info.Equipped or info.Better) and Kit.hex('7CFF4F') or Color.white, Stroke = Color.black, StrokeThickness = 3.5, Position = px(0, 104), Size = UDim2.new(1, 0, 0, 34), ZIndex = 6, Parent = bottom })
 	local sticker
 	if info.New then
 		sticker = Kit.text({ Name = 'New', Text = 'NEW!', TextSize = 44, TextColor3 = Kit.hex('7CFF4F'), Stroke = Color.black, StrokeThickness = 5, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 260, 0, 24), Size = px(160, 54), Rotation = 12, ZIndex = 7, Parent = bottom })
@@ -806,6 +839,114 @@ local function banner(info, shoe, rarity)
 	}
 end
 
+-- (brief 22) A Buy 3 / Buy 8: the best pair's rarity word up top, the box and the count under it, and the N pairs dealt
+-- out as cards (each over its rarity splat, its name, its rarity, NEW!), one after another, in rows of up to 4.
+local IK = require(Shared.InventoryKit)
+local function batchBanner(info, list)
+	local best = Shoes.ById[info.Shoe]
+	local rarity = Shoes.RarityById[best.Rarity]
+	local holder = Kit.new('Frame', { Name = 'Unboxed', BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = momentRoot })
+	local flash = Kit.new('Frame', { Name = 'Flash', BackgroundColor3 = Color.white, BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.fromScale(1, 1), ZIndex = 1, Parent = holder })
+	local top = Kit.new('Frame', { Name = 'Top', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.13), Size = px(760, 90), ZIndex = 5, Parent = holder })
+	local topScale = Kit.new('UIScale', { Scale = 0.2, Parent = top })
+	local word = Kit.text({ Name = 'Rarity', Text = string.upper(rarity.Name) .. '!', TextSize = 70, Stroke = Color.black, StrokeThickness = 7, ZIndex = 6, Parent = top })
+	if rarity.Rank == #Shoes.Rarities then
+		Kit.new('UIGradient', { Color = rainbow(), Parent = word })
+	else
+		Kit.gradient(Color.white, rarity.Color, 0.5).Parent = word
+	end
+	local box = Shoes.BoxById[info.Box]
+	local count = Kit.text({ Name = 'Count', Text = (box and box.Name or 'Box') .. '  x' .. #list, TextSize = 30, Stroke = Color.black, StrokeThickness = 3.5, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0.13, 46), Size = px(760, 36), ZIndex = 6, Parent = holder })
+	Kit.new('UIGradient', { Rotation = 90, Color = ColorSequence.new(Kit.hex('FFF27A'), Kit.hex('FFA81A')), Parent = count })
+	local n = #list
+	local perRow = n <= 4 and n or math.ceil(n / 2)
+	local rows = math.ceil(n / perRow)
+	-- (two rows of 4 stay between the rarity word and the HUD's bottom bar)
+	local cw, ch = n <= 3 and 230 or 170, n <= 3 and 250 or 178
+	local gap, rowGap = n <= 3 and 34 or 22, 6
+	local gw, gh = perRow * cw + (perRow - 1) * gap, rows * ch + (rows - 1) * rowGap
+	-- The cards fill the room under the box's name, clear of the HUD's side columns and its bottom bar: on a short
+	-- screen (a phone) they shrink to fit instead of running over the HUD.
+	local abs = momentGui.AbsoluteSize
+	local rootW, rootH = abs.X * momentRoot.Size.X.Scale, abs.Y * momentRoot.Size.Y.Scale
+	local roomTop = rootH * 0.13 + 46 + 36 + 8
+	local roomH, roomW = rootH - roomTop - 130, rootW - 2 * 230
+	local fitS = math.clamp(math.min(roomH / gh, roomW / gw), 0.5, 1)
+	local grid = Kit.new('Frame', { Name = 'Cards', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, roomTop + math.max(0, roomH - gh * fitS) / 2), Size = px(gw, gh), ZIndex = 5, Parent = holder })
+	Kit.new('UIScale', { Name = 'Fit', Scale = fitS, Parent = grid })
+	local cards, fade = {}, { word, count }
+	for i, e in list do
+		local shoe = type(e) == 'table' and Shoes.ById[e.Shoe]
+		if shoe then
+			local r = Shoes.RarityById[shoe.Rarity]
+			local row, col = math.ceil(i / perRow) - 1, (i - 1) % perRow
+			local inRow = row == rows - 1 and (n - row * perRow) or perRow
+			local x = (gw - (inRow * cw + (inRow - 1) * gap)) / 2 + col * (cw + gap)
+			local card = Kit.new('Frame', { Name = 'Card' .. i, BackgroundTransparency = 1, Position = px(x, row * (ch + rowGap)), Size = px(cw, ch), ZIndex = 5, Parent = grid })
+			local scale = Kit.new('UIScale', { Scale = 0, Parent = card })
+			-- (the splat ~1.25x the shoe, as the reference's behind its pets)
+			IK.splat(cw * 0.92, IK.SplatColor[r.Id] or r.Color, { Kind = r.Rank == #Shoes.Rarities and 'rainbow' or nil, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(cw / 2 - 3 + (i * 37) % 7 - 3, ch * 0.38 + cw * 0.06), Rotation = (i * 47) % 50 - 25, ZIndex = 5 }).Parent = card
+			local icon = IK.shoeIcon(e.Shoe, math.floor(cw * 0.62), { ZIndex = 6 })
+			icon.AnchorPoint = Vector2.new(0.5, 0.5)
+			icon.Position = px(cw / 2, ch * 0.38)
+			icon.Parent = card
+			local name = Kit.text({ Name = 'Name', Text = shoe.Name, TextSize = Kit.fitSize(shoe.Name, n <= 3 and 28 or 24, cw + 6, 14), Stroke = Color.black, StrokeThickness = 3.2, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(cw / 2, ch * 0.8), Size = px(cw + 20, 32), ZIndex = 8, Parent = card })
+			local rare = Kit.text({ Name = 'Rarity', Text = r.Name .. '  ' .. ShoeRules.bonusText(shoe.Bonus), TextSize = n <= 3 and 22 or 19, Stroke = Color.black, StrokeThickness = 2.8, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(cw / 2, ch * 0.93), Size = px(cw + 20, 26), ZIndex = 8, Parent = card })
+			if r.Rank == #Shoes.Rarities then
+				Kit.new('UIGradient', { Color = rainbow(), Parent = rare })
+			else
+				Kit.gradient(Color.white, r.Color, 0.45).Parent = rare
+			end
+			if e.New then
+				Kit.text({ Name = 'New', Text = 'NEW!', TextSize = n <= 3 and 30 or 24, TextColor3 = Kit.hex('7CFF4F'), Stroke = Color.black, StrokeThickness = 3.5, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(cw * 0.82, ch * 0.08), Size = px(90, 34), Rotation = 12, ZIndex = 9, Parent = card })
+			end
+			table.insert(cards, { Card = card, Scale = scale, Rank = r.Rank })
+			table.insert(fade, name)
+			table.insert(fade, rare)
+		end
+	end
+	for _, t in fade do
+		t.TextTransparency = 1
+		t:FindFirstChildOfClass('UIStroke').Transparency = 1
+	end
+	local show = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+	return {
+		Holder = holder, Flash = flash, TopScale = topScale, Fade = fade, Cards = cards,
+		Reveal = function()
+			flash.BackgroundTransparency = 0.15
+			TweenService:Create(flash, TweenInfo.new(0.45, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundTransparency = 1 }):Play()
+			for _, t in { word, count } do
+				TweenService:Create(t, show, { TextTransparency = 0 }):Play()
+				TweenService:Create(t:FindFirstChildOfClass('UIStroke'), show, { Transparency = 0 }):Play()
+			end
+			TweenService:Create(topScale, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+			-- the cards one by one (a rare one pops a little bigger)
+			for i, c in cards do
+				task.delay(0.2 + (i - 1) * 0.14, function()
+					if not c.Card.Parent then return end
+					TweenService:Create(c.Scale, TweenInfo.new(0.32, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+					for _, t in c.Card:GetChildren() do
+						if t:IsA('TextLabel') then
+							TweenService:Create(t, show, { TextTransparency = 0 }):Play()
+							local st = t:FindFirstChildOfClass('UIStroke')
+							if st then TweenService:Create(st, show, { Transparency = 0 }):Play() end
+						end
+					end
+					if c.Rank >= 4 then Motion.pop(c.Card, 0.12) end
+				end)
+			end
+		end,
+		Out = function()
+			local fadeOut = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+			for _, t in { word, count } do
+				TweenService:Create(t, fadeOut, { TextTransparency = 1 }):Play()
+				TweenService:Create(t:FindFirstChildOfClass('UIStroke'), fadeOut, { Transparency = 1 }):Play()
+			end
+			for _, c in cards do TweenService:Create(c.Scale, fadeOut, { Scale = 0 }):Play() end
+		end,
+	}
+end
+
 -- Timeline (seconds): box flies in, shakes three times, the lid pops (flash, rays, light), the pair rises spinning out of
 -- the box, holds under the banner (longer for Legendary and up), then everything goes. A tap after the reveal skips.
 local T = { In = 0.35, Shake = 1.0, Pop = 0.22, Rise = 0.75, Hold = 1.5, Out = 0.35 }
@@ -815,7 +956,10 @@ local function play(info)
 	local boxDef = Shoes.BoxById[info.Box]
 	if not shoe or not boxDef then return end
 	local rarity = Shoes.RarityById[shoe.Rarity]
+	-- (brief 22) a Buy 3 / Buy 8: the box, then the N pairs as cards (no single pair rising)
+	local batch = type(info.Shoes) == 'table' and #info.Shoes > 1 and info.Shoes or nil
 	unboxing = true
+	player.PlayerGui:SetAttribute('Unboxing', true)
 	if shownBoard and shownBoard.Board then shownBoard.Board.Enabled = false end
 	local folder = Instance.new('Model')
 	folder.Name = 'HoodUnboxing'
@@ -842,19 +986,22 @@ local function play(info)
 	box.Parent = folder
 	if not stub then pcall(BoxModels.fx, box) end
 	local boxParts = parts(box)
-	local pair = makePair(info.Shoe, PAIR_SCALE)
-	pair.Parent = folder
-	addFx(pair, rarity.Id)
-	local pairParts = parts(pair)
+	local pair, pairParts
+	if not batch then
+		pair = makePair(info.Shoe, PAIR_SCALE)
+		pair.Parent = folder
+		addFx(pair, rarity.Id)
+		pairParts = parts(pair)
+	end
 	local light = Instance.new('PointLight')
 	light.Color = rarity.Color
 	light.Range = 14
 	light.Brightness = 0
 	light.Shadows = false
-	light.Parent = pairParts[1]
+	light.Parent = pairParts and pairParts[1] or boxParts[1]
 	local rays = makeRays(folder, rarity.Rank == #Shoes.Rarities and Color3.fromRGB(255, 236, 140) or rarity.Color, rarity.Rank >= 4 and 14 or 10)
-	local ui = banner(info, shoe, rarity)
-	local hold = T.Hold + (rarity.Rank >= 4 and 0.9 or 0)
+	local ui = batch and batchBanner(info, batch) or banner(info, shoe, rarity)
+	local hold = T.Hold + (rarity.Rank >= 4 and 0.9 or 0) + (batch and (1.2 + 0.14 * #batch) or 0)
 	local tReveal = T.In + T.Shake + T.Pop
 	local tEnd = tReveal + T.Rise + hold + T.Out
 	local skip = Kit.new('TextButton', { Name = 'Skip', Text = '', AutoButtonColor = false, BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 20, Parent = ui.Holder })
@@ -862,7 +1009,7 @@ local function play(info)
 	skip.Activated:Connect(function() skipRequested = true end)
 	local start = os.clock()
 	-- The pair grows from small as it rises (Model:ScaleTo, where the engine has it).
-	local canScale = pcall(function() return pair:GetScale() end)
+	local canScale = pair ~= nil and pcall(function() return pair:GetScale() end)
 	local scaled = 1
 	local revealed = false
 	local finished = false
@@ -901,6 +1048,7 @@ local function play(info)
 		yawSpin = 6 * math.pi * ease(r) + math.max(0, t - tReveal - T.Rise) * 1.4
 		local pairCf = stage * CF(0, riseY, 0) * CFrame.Angles(-0.22, 0, 0) * CFrame.Angles(0, yawSpin + 0.45, 0)
 		if r <= 0 then pairCf = cam * CF(0, -60, 40) end -- (out of sight, behind the camera, until the lid pops)
+		if batch then riseY = BOX_Y + 1.2 end -- (a batch: the burst stays over the box, the cards are on the screen)
 		if canScale then
 			local k = 0.35 + 0.65 * backOut(r)
 			if math.abs(k - scaled) > 0.002 then
@@ -908,7 +1056,7 @@ local function play(info)
 				pcall(pair.ScaleTo, pair, k)
 			end
 		end
-		place(pair, pairCf, pairParts)
+		if pair then place(pair, pairCf, pairParts) end
 		-- the burst behind it
 		local glow = r > 0 and math.clamp(1 - (t - tReveal) / (T.Rise + hold), 0.35, 1) or 0
 		light.Brightness = 3.5 * glow
@@ -929,6 +1077,7 @@ local function play(info)
 		folder:Destroy()
 		focus:Destroy()
 		unboxing = false
+		if #queue == 0 then player.PlayerGui:SetAttribute('Unboxing', false) end
 	end
 	RunService:BindToRenderStep('HoodUnboxing', Enum.RenderPriority.Camera.Value + 1, function()
 		local t = os.clock() - start
@@ -961,13 +1110,13 @@ local function drain()
 	if not ok then
 		warn('[Shoes] unboxing: ' .. tostring(length))
 		unboxing = false
+		player.PlayerGui:SetAttribute('Unboxing', false)
 		return drain()
 	end
 	task.delay((length or 0) + 0.1, drain)
 end
 Net.get('ShoeOpened').OnClientEvent:Connect(function(info)
 	if type(info) ~= 'table' or not Shoes.ById[info.Shoe] then return end
-	newIds[info.Shoe] = true
 	-- Better than a pair you have on (and it didn't go straight on): the banner says how to wear it.
 	if not info.Equipped then
 		local rack = myRack()
@@ -975,374 +1124,18 @@ Net.get('ShoeOpened').OnClientEvent:Connect(function(info)
 		for _, id in rack.Equipped do worst = math.min(worst, Shoes.bonus(id)) end
 		info.Better = #rack.Equipped >= ShoeRules.MaxEquipped and Shoes.bonus(info.Shoe) > worst
 	end
-	if paintBadge then paintBadge() end
 	table.insert(queue, info)
 	drain()
 end)
 
----------------------------------------------------------------------------------------------- HUD button + inventory
-local hudGui = player:WaitForChild('PlayerGui'):WaitForChild('HoodHUD', 10)
-local hudRoot = hudGui and hudGui:FindFirstChild('Root')
-local column = hudRoot and hudRoot:FindFirstChild('Actions')
-local gui, root, fit = Kit.screen('HoodShoes', nil, 8) -- (8: the window sits over the goal line, like the HUD's and the Store's)
--- (brief 17) The HUD keeps an empty square, ShoesSlot, in its button column (next to Rebirth); the button is the
--- HUD's own Kit.actionButton, so it matches the others. Without that slot: our own button at the left edge.
-local slot = column and column:FindFirstChild('ShoesSlot')
-if not slot then
-	slot = Kit.new('Frame', { Name = 'ShoesSlot', BackgroundTransparency = 1, Position = px(126, 200), Size = px(96, 96), Parent = column or root })
-end
--- (brief 18: the reference's Pets square: magenta, the icon filling it and rising over its top edge, like the HUD's)
-local GRID_W, GRID_H, POP, ICON = slot.Size.X.Offset, slot.Size.Y.Offset, 14, 84
-local buttonHolder, buttonHit = Kit.actionButton({ Name = 'Shoes', Tone = 'magenta', Width = GRID_W, Height = GRID_H, Position = px(0, 0), Text = 'Shoes', TextSize = 22, IconNode = Kit.new('Frame', { Name = 'IconSpot', BackgroundTransparency = 1, Size = px(ICON, ICON) }), Pop = POP })
-buttonHolder.Parent = slot
-local buttonSpot = buttonHolder.Body:FindFirstChild('IconSpot')
-local buttonIcon
-local buttonIconId
-local function setButtonIcon()
-	-- (brief 19) ICONS' Sneaker render once uploaded (the reference's Pets square shows one fixed glossy icon); until then
-	-- the pair you wear, live
-	if Kit.iconImage('Sneaker') ~= '' then
-		if buttonIconId == 'Sneaker' then return end
-		buttonIconId = 'Sneaker'
-		if buttonIcon then buttonIcon:Destroy() end
-		buttonIcon = Kit.icon3d('Sneaker', ICON, { ZIndex = buttonSpot.ZIndex })
-		buttonIcon.Parent = buttonSpot
-		return
-	end
-	local id = player:GetAttribute('ShoeWorn')
-	if type(id) ~= 'string' or not Shoes.ById[id] then id = Shoes.Boxes[1].Shoes[1] end
-	if id == buttonIconId and buttonIcon and buttonIcon.Parent then return end
-	buttonIconId = id
-	if buttonIcon then buttonIcon:Destroy() end
-	buttonIcon = pairViewport(id, ICON, buttonSpot.ZIndex)
-	buttonIcon.Parent = buttonSpot
-end
-setButtonIcon()
--- (the reference's red "!" over the top-right corner, like its Items square: new pairs to look at)
-local buttonBadge = Kit.sticker(buttonHolder, { Name = 'Badge', Text = '', TextSize = 40, TextColor3 = Kit.hex('FF3A1A'), AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(1, -2, 0, 4), Width = 40, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 9 })
-local badgeWobble
-paintBadge = function()
-	local fresh = next(newIds) ~= nil
-	buttonBadge.Text = fresh and '!' or ''
-	if fresh and not badgeWobble then
-		badgeWobble = Motion.wobble(buttonBadge, 10, 0.8)
-	elseif not fresh and badgeWobble then
-		badgeWobble:Cancel()
-		badgeWobble = nil
-		buttonBadge.Rotation = 0
-	end
-end
-
--- The panel: a Kit.window like the HUD's (brief 17): a green studded header with a pair of shoes, "Shoes" and a red
--- X over the dark see-through body. PlayerGui's HoodWindow attribute keeps one window open at a time.
-local headerArt = Kit.new('Frame', { Name = 'HeaderArt', BackgroundTransparency = 1, Size = px(110, 110), ZIndex = 27 })
-local panel, well, closeHit, overlay = Kit.window(root, { Name = 'Shoes', Title = 'Shoes', IconNode = headerArt, IconSize = 110, Tone = 'headerMagenta', Width = 940, Height = 642 })
-do
-	local art
-	if Kit.iconImage('Sneaker') ~= '' then
-		art = Kit.icon3d('Sneaker', 110, { ZIndex = 27 })
-	else
-		art = pairViewport(Shoes.Boxes[1].Shoes[1], 110, 27)
-	end
-	art.Parent = headerArt
-end
-overlay.Visible = false
-local isOpen = false
-local function closePanel()
-	if not isOpen then return end
-	isOpen = false
-	table.clear(stickers)
-	Motion.blur('Shoes', false)
-	Motion.close(overlay, panel)
-	if player.PlayerGui:GetAttribute('HoodWindow') == 'Shoes' then player.PlayerGui:SetAttribute('HoodWindow', '') end
-end
-player.PlayerGui:GetAttributeChangedSignal('HoodWindow'):Connect(function()
-	if isOpen and player.PlayerGui:GetAttribute('HoodWindow') ~= 'Shoes' then closePanel() end
-end)
-local backdrop = Kit.new('TextButton', { Name = 'Backdrop', Text = '', AutoButtonColor = false, BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 20, Parent = overlay })
-backdrop.Activated:Connect(closePanel)
-Kit.new('TextButton', { Name = 'Sink', Text = '', AutoButtonColor = false, BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 21, Parent = panel })
-Motion.button(closeHit.Parent, closePanel)
-
-local function body(parent, text, props)
-	props = props or {}
-	return Kit.text({
-		Name = props.Name or 'Body', Text = text, FontFace = Kit.Font.body, TextSize = props.TextSize or 16, TextColor3 = props.Color or Color.white,
-		Stroke = props.Stroke or Color.ink, StrokeThickness = props.StrokeThickness or 2,
-		TextXAlignment = props.Align or Enum.TextXAlignment.Left, TextYAlignment = props.YAlign or Enum.TextYAlignment.Center, TextWrapped = true,
-		Position = props.Position, Size = props.Size, AnchorPoint = props.AnchorPoint, ZIndex = props.ZIndex or 25, Parent = parent,
-	})
-end
--- A small chip (WORN, the rarity line): square-ish, a thick ink outline, the tone's gradient, an outlined label.
-local function pill(parent, text, tone, props)
-	local t = Tone[tone]
-	local p = Kit.new('Frame', { Name = props.Name or 'Pill', BackgroundColor3 = t and t.base or Color.asphalt, BorderSizePixel = 0, AnchorPoint = props.AnchorPoint or Vector2.zero, Position = props.Position, Size = props.Size, ZIndex = props.ZIndex or 26, Parent = parent })
-	Kit.corner(3).Parent = p
-	Kit.stroke(Color.black, 2.5, true).Parent = p
-	if t then Kit.gradient(t.top, t.base, 0.6).Parent = p end
-	local label = Kit.text({ Name = 'Text', Text = text, TextSize = props.TextSize or 15, Stroke = Color.black, StrokeThickness = math.max(1.5, (props.TextSize or 15) * 0.13), ZIndex = (props.ZIndex or 26) + 1, Parent = p })
-	return p, label
-end
-local function actionIn(parent, old, props, onClick)
-	if old then old:Destroy() end
-	props.ZIndex = props.ZIndex or 27
-	if props.Studs == nil then props.Studs = 18 end
-	local holder = Kit.blockButton(props)
-	holder.Parent = parent
-	if not props.Disabled then Motion.button(holder, onClick) end
-	return holder
-end
-
--- Top bar: the total bonus, how many pairs are on, the rack, EQUIP BEST.
--- (brief 18: the reference's window body: the total in gold Gotham Black, the grid of pairs left, the selected pair's
--- studded card right, all on the grey see-through body of Kit.window 940 x 642)
-local total = Kit.text({ Name = 'Total', Text = '', TextSize = 32, Stroke = Color.black, StrokeThickness = 4, TextXAlignment = Enum.TextXAlignment.Left, Position = px(6, 0), Size = px(560, 38), ZIndex = 25, Parent = well })
-Kit.new('UIGradient', { Rotation = 90, Color = ColorSequence.new(Kit.hex('FFF27A'), Kit.hex('FFA81A')), Parent = total })
-local summary = body(well, '', { Name = 'Summary', Position = px(6, 38), Size = px(600, 24), TextSize = 17, Stroke = Color.black })
-local bestButton
-local grid = Kit.new('ScrollingFrame', {
-	Name = 'Pairs', BackgroundTransparency = 1, BorderSizePixel = 0, Position = px(0, 70), Size = px(606, 422), ZIndex = 24,
-	ScrollBarThickness = 8, ScrollBarImageColor3 = Color.white, ScrollingDirection = Enum.ScrollingDirection.Y,
-	AutomaticCanvasSize = Enum.AutomaticSize.Y, CanvasSize = UDim2.new(), Parent = well,
-})
-Kit.new('UIGridLayout', { CellSize = px(138, 168), CellPadding = px(10, 12), SortOrder = Enum.SortOrder.LayoutOrder, Parent = grid })
-Kit.new('UIPadding', { PaddingTop = UDim.new(0, 6), PaddingLeft = UDim.new(0, 6), PaddingBottom = UDim.new(0, 6), Parent = grid })
-local empty = body(well, 'No shoes yet!\nOpen a shoe box at the back of the hall.\nEvery pair you wear adds Power to every shot.', { Name = 'Empty', FontFace = Kit.Font.display, Stroke = Color.black, StrokeThickness = 3, Align = Enum.TextXAlignment.Center, Position = px(20, 170), Size = px(560, 140), TextSize = 26 })
-
--- The selected pair's card on the right.
-local DETAIL_W, DETAIL_H = 286, 422
-local detail = Kit.new('Frame', { Name = 'Detail', BackgroundColor3 = Color.white, BorderSizePixel = 0, Position = px(618, 70), Size = px(DETAIL_W, DETAIL_H), ZIndex = 24, Parent = well })
-Kit.stroke(Color.black, 5, true, 0, Enum.LineJoinMode.Miter).Parent = detail
-local detailGradient = Kit.gradient(Color.white, Color.cardboardInset, 0.6)
-detailGradient.Parent = detail
-Kit.studs(detail, { Width = DETAIL_W, Height = DETAIL_H, Pitch = 26, Color = Color.black, Transparency = 0.92, ZIndex = 24 })
-do
-	local rim = Kit.new('Frame', { Name = 'Rim', BackgroundTransparency = 1, Position = px(5, 5), Size = UDim2.new(1, -10, 1, -10), ZIndex = 24, Parent = detail })
-	Kit.stroke(Color.white, 5, true, 0.55, Enum.LineJoinMode.Miter).Parent = rim
-end
-local detailView
-local detailName = Kit.text({ Name = 'Name', Text = '', TextSize = 30, Stroke = Color.black, StrokeThickness = 4, Position = px(8, 168), Size = px(DETAIL_W - 16, 36), ZIndex = 26, Parent = detail })
-local detailRarity, detailRarityText = pill(detail, '', nil, { Name = 'Rarity', AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 206), Size = px(176, 28), TextSize = 17 })
-local detailBonus = Kit.text({ Name = 'Bonus', Text = '', TextSize = 30, Stroke = Color.black, StrokeThickness = 4, Position = px(8, 238), Size = px(DETAIL_W - 16, 36), ZIndex = 26, Parent = detail })
-Kit.new('UIGradient', { Rotation = 90, Color = ColorSequence.new(Kit.hex('FFF27A'), Kit.hex('FFA81A')), Parent = detailBonus })
-local detailFrom = body(detail, '', { Name = 'From', Align = Enum.TextXAlignment.Center, Stroke = Color.black, Position = px(8, 274), Size = px(DETAIL_W - 16, 22), TextSize = 16, ZIndex = 26 })
-local detailEquip, detailRecycle
-local selected
-local confirmRecycle = { Id = nil, Until = 0 }
-
-local function rarityFill(frame, id)
-	local shoe = Shoes.ById[id]
-	local rarity = rarityOf(id)
-	local g = frame:FindFirstChildOfClass('UIGradient')
-	if shoe and shoe.Rank == #Shoes.Rarities then
-		g.Color = rainbow()
-		g.Rotation = 45
-	else
-		g.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, rarity.Color:Lerp(Color.white, 0.6)), ColorSequenceKeypoint.new(0.6, rarity.Color:Lerp(Color.white, 0.1)), ColorSequenceKeypoint.new(1, rarity.Color:Lerp(Color.white, 0.1)) })
-		g.Rotation = 90
-	end
-end
-
-local refreshPanel -- (forward)
-local function paintDetail(rack)
-	local id = selected
-	local shoe = id and Shoes.ById[id]
-	detail.Visible = shoe ~= nil and ShoeRules.copies(rack, id) > 0
-	if not detail.Visible then return end
-	local rarity = rarityOf(id)
-	rarityFill(detail, id)
-	if detailView then detailView:Destroy() end
-	detailView = pairViewport(id, Vector2.new(270, 160), 26)
-	detailView.Position = px(8, 6)
-	detailView.Parent = detail
-	detailName.Text = shoe.Name
-	detailName.TextSize = Kit.fitSize(shoe.Name, 30, DETAIL_W - 24, 14)
-	detailRarity.BackgroundColor3 = rarity.Color
-	detailRarityText.Text = rarity.Name .. '  ' .. ShoeRules.chanceText(ShoeRules.chanceOf(id))
-	detailBonus.Text = ShoeRules.bonusText(shoe.Bonus) .. ' Power'
-	local copies, on = ShoeRules.copies(rack, id), ShoeRules.equippedCount(rack, id)
-	detailFrom.Text = (Shoes.BoxById[shoe.Box] and Shoes.BoxById[shoe.Box].Name or '') .. '  •  x' .. copies .. (on > 0 and ('  •  ' .. on .. ' on') or '')
-	local canEquip, why = ShoeRules.canEquip(rack, id)
-	local equipProps
-	if on > 0 and not canEquip then
-		equipProps = { Name = 'Equip', Tone = 'cardRed', Text = 'Unequip', TextSize = 32, Width = 240, Height = 58, Outline = 4, RimWidth = 3, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 304) }
-		detailEquip = actionIn(detail, detailEquip, equipProps, function() Net.get('ShoeAction'):FireServer('Unequip', id) end)
-	else
-		equipProps = { Name = 'Equip', Tone = 'lime', Text = why == 'full' and 'Slots full' or 'Equip', TextSize = 32, Width = 240, Height = 58, Outline = 4, RimWidth = 3, Disabled = not canEquip, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 304) }
-		detailEquip = actionIn(detail, detailEquip, equipProps, function() Net.get('ShoeAction'):FireServer('Equip', id) end)
-	end
-	local canRecycle = ShoeRules.canRecycle(rack, id)
-	local confirming = canRecycle and confirmRecycle.Id == id and os.clock() < confirmRecycle.Until
-	local refund = ShoeRules.refund(id)
-	detailRecycle = actionIn(detail, detailRecycle, {
-		Name = 'Recycle', Tone = confirming and 'cardRed' or 'grey', Disabled = not canRecycle, TextSize = 18, Width = 240, Height = 40, Outline = 3, RimWidth = 2, Studs = false,
-		Text = confirming and 'Tap again to recycle' or (canRecycle and ('Recycle  +' .. Format.compact(refund) .. ' Cash') or 'Take it off to recycle'),
-		AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 370),
-	}, function()
-		if confirmRecycle.Id == id and os.clock() < confirmRecycle.Until then
-			confirmRecycle.Id = nil
-			Net.get('ShoeAction'):FireServer('Recycle', id)
-		else
-			confirmRecycle.Id, confirmRecycle.Until = id, os.clock() + 3
-			task.delay(3.05, function() if isOpen then refreshPanel() end end)
-		end
-		refreshPanel()
-	end)
-end
-
--- Card viewports are kept per shoe and moved into each new card (a rebuilt grid builds no new models).
-local cardViews = {}
-local function cardView(id)
-	local vp = cardViews[id]
-	if not vp then
-		vp = pairViewport(id, Vector2.new(130, 96), 26)
-		vp.Position = px(4, 8)
-		cardViews[id] = vp
-	end
-	return vp
-end
-local function paintSelection()
-	for _, c in grid:GetChildren() do
-		local stroke = c:IsA('Frame') and c:FindFirstChildOfClass('UIStroke')
-		if stroke then
-			local on = c.Name == selected
-			stroke.Color = on and Kit.hex('FFE600') or Color.black
-			stroke.Thickness = on and 5 or 3.5
-		end
-	end
-end
-local function pairCard(id, rack, order)
-	local shoe = Shoes.ById[id]
-	local rarity = rarityOf(id)
-	local copies, on = ShoeRules.copies(rack, id), ShoeRules.equippedCount(rack, id)
-	-- (brief 19) the Store's card family: square corners, a mitred black outline, a light rim, faint studs once they're a
-	-- texture (a frame grid on every card of a long list would cost too much)
-	local c = Kit.new('Frame', { Name = id, BackgroundColor3 = Color.white, BorderSizePixel = 0, Size = px(138, 168), LayoutOrder = order, ZIndex = 25 })
-	Kit.stroke(Color.black, 3.5, true, 0, Enum.LineJoinMode.Miter).Parent = c
-	Kit.gradient(Color.white, Color.white, 0.6).Parent = c
-	rarityFill(c, id)
-	if Kit.studsAreCheap() then Kit.studs(c, { Width = 138, Height = 168, Pitch = 26, Shade = 0.45, ZIndex = 25 }) end
-	local rim = Kit.new('Frame', { Name = 'Rim', BackgroundTransparency = 1, Position = px(3, 3), Size = UDim2.new(1, -6, 1, -6), ZIndex = 25, Parent = c })
-	Kit.stroke(Color.white, 3, true, 0.5, Enum.LineJoinMode.Miter).Parent = rim
-	if shoe.Rank >= 4 then
-		for k = 0, 5 do
-			local ray = Kit.new('Frame', { BackgroundTransparency = 0.72, BackgroundColor3 = Color.white, BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 52), Size = px(12, 112), Rotation = k * 30, ZIndex = 25, Parent = c })
-			Kit.corner(UDim.new(0.5, 0)).Parent = ray
-		end
-	end
-	cardView(id).Parent = c
-	Kit.text({ Name = 'ItemName', Text = shoe.Name, TextSize = Kit.fitSize(shoe.Name, 20, 126, 11), Stroke = Color.black, StrokeThickness = 2.5, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 102), Size = UDim2.new(1, -8, 0, 22), ZIndex = 27, Parent = c })
-	local bonusText = Kit.text({ Name = 'Bonus', Text = ShoeRules.bonusText(shoe.Bonus), TextSize = 20, Stroke = Color.black, StrokeThickness = 2.5, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 124), Size = UDim2.new(1, -8, 0, 22), ZIndex = 27, Parent = c })
-	Kit.new('UIGradient', { Rotation = 90, Color = ColorSequence.new(Kit.hex('FFF27A'), Kit.hex('FFA81A')), Parent = bonusText })
-	local tag = Kit.new('Frame', { Name = 'Rarity', BackgroundColor3 = rarity.Color, BorderSizePixel = 0, AnchorPoint = Vector2.new(0, 0.5), Position = px(-6, 12), Size = px(math.max(62, #rarity.Name * 8 + 14), 20), Rotation = -6, ZIndex = 28, Parent = c })
-	Kit.corner(6).Parent = tag
-	Kit.stroke(Color.ink, 2, true).Parent = tag
-	Kit.text({ Text = rarity.Name, TextSize = 14, Stroke = Color.ink, StrokeThickness = 2, ZIndex = 29, Parent = tag })
-	if copies > 1 then
-		Kit.text({ Name = 'Copies', Text = 'x' .. copies, FontFace = Kit.Font.number, TextSize = 18, Stroke = Color.ink, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -6, 0, 2), Size = px(40, 20), TextXAlignment = Enum.TextXAlignment.Right, ZIndex = 28, Parent = c })
-	end
-	if on > 0 then
-		-- the best pair on is the one on your feet; the others follow you
-		local wornHere = ShoeRules.worn(rack) == id
-		local text = wornHere and 'Worn' or 'Follows'
-		if on > 1 then text = wornHere and ('Worn +' .. (on - 1)) or ('Follows x' .. on) end
-		pill(c, text, wornHere and 'yellow' or 'green', { Name = 'On', AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -5), Size = UDim2.new(1, -28, 0, 18), TextSize = 13, ZIndex = 28 })
-	end
-	if stickers[id] then
-		Kit.text({ Name = 'New', Text = 'NEW!', TextSize = 18, TextColor3 = Tone.green.top, Stroke = Tone.green.stroke, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 6, 0, 30), Size = px(52, 22), Rotation = 10, ZIndex = 29, Parent = c })
-	end
-	local hit = Kit.new('TextButton', { Name = 'Hit', Text = '', AutoButtonColor = false, BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 30, Parent = c })
-	hit.Activated:Connect(function()
-		selected = id
-		refreshPanel()
-		if c.Parent then Motion.pop(c, 0.06) end
-	end)
-	return c
-end
-
-local shownKey
-refreshPanel = function(force)
-	if not isOpen then return end
-	local rack = myRack()
-	local list = {}
-	for id in rack.Owned do table.insert(list, id) end
-	table.sort(list, function(a, b)
-		local ea, eb = ShoeRules.equippedCount(rack, a) > 0, ShoeRules.equippedCount(rack, b) > 0
-		if ea ~= eb then return ea end
-		return ShoeRules.before(a, b)
-	end)
-	if not selected or ShoeRules.copies(rack, selected) == 0 then selected = list[1] end
-	local bonus = ShoeRules.bonus(rack)
-	total.Text = ShoeRules.bonusText(bonus) .. ' Power  (x' .. string.format('%.2f', 1 + bonus / 100):gsub('%.?0+$', '') .. ' per shot)'
-	summary.Text = #rack.Equipped .. '/' .. ShoeRules.MaxEquipped .. ' on: the best is worn, the others follow you  •  ' .. ShoeRules.count(rack) .. '/' .. ShoeRules.MaxOwned .. ' pairs'
-	local bestNow = ShoeRules.best(rack)
-	local isBest = #bestNow == #rack.Equipped
-	if isBest then
-		local current = ShoeRules.equippedList(rack)
-		for i, idb in bestNow do
-			if current[i] ~= idb then isBest = false end
-		end
-	end
-	local bestKey = (#list == 0 and 'none') or (isBest and 'done') or 'ready'
-	if not (bestButton and bestButton:GetAttribute('Key') == bestKey) then
-		bestButton = actionIn(well, bestButton, {
-			Name = 'EquipBest', Tone = 'aqua', Disabled = bestKey ~= 'ready', Text = bestKey == 'done' and 'Best on' or 'Equip Best', TextSize = 30, Width = 286, Height = 58, Outline = 4, RimWidth = 3,
-			AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, 0, 0, 2),
-		}, function() Net.get('ShoeAction'):FireServer('EquipBest') end)
-		bestButton:SetAttribute('Key', bestKey)
-	end
-	empty.Visible = #list == 0
-	local fresh = {}
-	for id in stickers do table.insert(fresh, id) end
-	table.sort(fresh)
-	local key = ShoeRules.ownedString(rack) .. '|' .. table.concat(rack.Equipped, ',') .. '|' .. table.concat(fresh, ',')
-	if force or key ~= shownKey then
-		shownKey = key
-		for _, vp in cardViews do vp.Parent = nil end
-		for _, child in grid:GetChildren() do
-			if child:IsA('GuiObject') then child:Destroy() end
-		end
-		for i, id in list do pairCard(id, rack, i).Parent = grid end
-	end
-	paintSelection()
-	paintDetail(rack)
-end
-
-local function openPanel()
-	if isOpen then
-		closePanel()
-		return
-	end
-	isOpen = true
-	player.PlayerGui:SetAttribute('HoodWindow', 'Shoes')
-	shownKey = nil
-	stickers = table.clone(newIds)
-	table.clear(newIds)
-	refreshPanel(true)
-	paintBadge()
-	Motion.blur('Shoes', true)
-	Motion.open(overlay, panel, 1)
-end
-Motion.button(buttonHolder, openPanel)
-
----------------------------------------------------------------------------------------------- wiring
-for _, key in { 'ShoesOwned', 'ShoesEquipped', 'ShoeBonus', 'Cash' } do
-	player:GetAttributeChangedSignal(key):Connect(function()
-		paintBadge()
-		if isOpen then refreshPanel() end
-	end)
-end
-player:GetAttributeChangedSignal('ShoeWorn'):Connect(setButtonIcon)
-
+---------------------------------------------------------------------------------------------- screen
+-- (brief 22) The inventory window and the HUD's Shoes square moved to Inventory.client and HUD.client: only the unboxing
+-- moment's screen is left here.
 local function relayout()
-	local abs = gui.AbsoluteSize
+	local abs = momentGui.AbsoluteSize
 	if abs.X < 1 or abs.Y < 1 then return end
-	fit(abs)
-	Kit.fitWindow(panel, abs)
-	momentFit(momentGui.AbsoluteSize)
+	momentFit(abs)
 end
-gui:GetPropertyChangedSignal('AbsoluteSize'):Connect(relayout)
-gui.Parent = player:WaitForChild('PlayerGui')
+momentGui:GetPropertyChangedSignal('AbsoluteSize'):Connect(relayout)
 momentGui.Parent = player:WaitForChild('PlayerGui')
 relayout()
-paintBadge()

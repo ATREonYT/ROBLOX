@@ -53,6 +53,16 @@ python3 hood/tools/make_ui_textures.py                      # hood/art/ui/ stud 
 python3 hood/tools/upload_assets.py --dry-run               # see hood/art/README_upload.md
 ```
 
+Shoe and box icons (`Shoe_<id>`, `Box_<id>`, brief 22) are rendered from the game's own part models: export them with
+`export_luau_parts.luau` through the preview harness, then point icons_hd at the JSON:
+```sh
+cd hood/tools/preview && lune run harness.luau ../../src - "OUT='/tmp/parts.json' ALL=true $(cat ../blender/export_luau_parts.luau)"
+BK_PARTS_JSON=/tmp/parts.json BK_MORE_SHOES=<comma list of non-World-1 ids> $PY hood/tools/blender/icons_hd.py Shoe_RedRocket Box_Grail
+```
+(`hdkit.import_parts` rebuilds the Parts, WedgeParts, cylinders, balls and sphere meshes, and the name plate text, in the
+icon look; `PART_LOOK` in icons_hd.py lifts a too-dark model.) Their live fallback needs no BoxKit model:
+`IconModels.build('Shoe_<id>')` / `('Box_<id>')` delegate to ShoeModels / BoxModels (`EXTERNAL` in models/icons.py).
+
 The BoxKit models in `models/icons.py` stay as the live in-game fallback (`IconModels.build`). Ids that only have a
 PNG reuse another model through `ALIASES` (written as `M.Alias` in IconModels.lua). `export_luau.py` keeps every
 id already in `M.Images`, including keys the upload tool added.

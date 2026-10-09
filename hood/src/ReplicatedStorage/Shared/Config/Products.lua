@@ -13,12 +13,18 @@
 -- receipts) AND the game applies its effect. The client never prompts a purchase for an item that is not Wired, even
 -- with an id: nobody can pay Robux for something that does nothing yet. Flip it when the effect ships.
 -- Wired now: DoubleRep, DoubleCash and VIP (Pass_* attributes; HoodServer/Boosts and the overhead tag apply them), the
--- Power and Cash packs, the timed boosts and Block Party (StoreService; PowerBoost), SkipRebirth (RebirthService).
--- AutoShoot ("Auto Fight", brief 18: with Pass_AutoShoot your gun fires at stage goons on its own; Waves.client).
--- ShoeBoxExclusive and ShoeBoxGrail (brief 21: World 1's two Robux shoe boxes; StoreService opens the box through
--- HoodServer/ShoeOpening, the same unboxing as a Cash box; the box's prompt on the dais and the Store's 'Box' cards
--- buy them).
--- Not yet: Lucky, TripleOpen, ExtraEquip (their cards say "Coming soon!" until someone builds the effect).
+-- Power and Cash packs, the timed boosts, the Boost Bundle and Block Party (StoreService; PowerBoost), SkipRebirth
+-- (RebirthService). AutoShoot ("Auto Fight", brief 18: with Pass_AutoShoot your gun fires at stage goons on its own;
+-- Waves.client). The Robux shoe boxes, one or a bundle of 3 or 8 (brief 21/22: StoreService opens them through
+-- HoodServer/ShoeOpening, the same roll and unboxing as a Cash box; the dais prompt and the Store's 'Box' cards buy them).
+-- The shoe passes (brief 22; ShoeOpening and ShoeService read the Pass_* attributes): ExtraEquip (+1 Shoe Slot, 4 pairs
+-- on; ShoesMax tells the UI), Lucky (Cash boxes roll with ShoeRules.weights(boxId, true); every odds display shows the
+-- owner ShoeRules.chances / chanceOf(..., true)) and TripleOpen (the dais's "Open x3" prompt: OpenShoeBox(boxId, 3), 3
+-- at once for 3x the Price).
+--
+-- Honest prices (brief 22): a bundle's WasPrice is what its parts cost bought one by one (a box bundle: Count x the
+-- single box's Price; the Boost Bundle: the sum of its parts' Price), so the struck-through number is a real price.
+-- Nothing here is limited or timed: no "Limited Stock", no countdowns.
 local Products = {}
 Products.Enabled = true -- master switch: false = every card says "Coming soon!"
 
@@ -28,62 +34,89 @@ Products.Passes = {
 	DoubleCash = 0, -- 2x Cash from gates, waves and goals
 	AutoShoot = 0, -- (shown as "Auto Fight", brief 18) your gun fires at stage goons on its own
 	VIP = 0, -- VIP tag + 1.5x Cash
-	Lucky = 0, -- luckier shoe boxes
-	TripleOpen = 0, -- open 3 shoe boxes at once
+	Lucky = 0, -- better odds for Epic and up in Cash shoe boxes
+	TripleOpen = 0, -- open 3 Cash shoe boxes at once for 3x the Cash
 	ExtraEquip = 0, -- +1 shoe pair on (4 instead of 3); replaces the old crew-slot pass
 }
 -- Developer product ids (0 = not created yet).
 Products.DeveloperProducts = {
-	PowerPack1 = 0, PowerPack2 = 0, PowerPack3 = 0, -- +Power, sized from your next rebirth (Products.powerAmount)
-	SmallCash = 0, MediumCash = 0, LargeCash = 0, -- +Cash (Products.cashAmount)
-	RepBoost2x = 0, RepBoost3x = 0, -- 15 minutes of x2 / x3 Power
+	PowerPack1 = 0, PowerPack2 = 0, PowerPack3 = 0, PowerPack4 = 0, -- +Power, sized from your next rebirth (Products.powerAmount)
+	TinyCash = 0, SmallCash = 0, MediumCash = 0, LargeCash = 0, -- +Cash (Products.cashAmount)
+	RepBoost2x = 0, RepBoost3x = 0, -- 15 minutes of 2x / 3x Power
+	BoostBundle = 0, -- (brief 22) two 2x Power boosts + one 3x Power boost
 	BlockParty = 0, -- x2 Power for everyone in the server, 15 minutes
 	SkipRebirth = 0, -- rebirth now without the Power (the Rebirth window shows it only once this id is set)
-	-- (brief 21) the Robux shoe boxes on World 1's dais: one roll from the box's own exclusive shoes (Config/Shoes)
+	-- (brief 21) the Robux shoe boxes on World 1's dais: one roll from the box's own exclusive shoes (Config/Shoes);
+	-- (brief 22) and the Store's Buy 3 / Buy 8 bundles of them
 	ShoeBoxExclusive = 0, -- "Exclusive Box", 99 Robux
+	ShoeBoxExclusive3 = 0, -- "3 Exclusive Boxes", 249 Robux
+	ShoeBoxExclusive8 = 0, -- "8 Exclusive Boxes", 599 Robux
 	ShoeBoxGrail = 0, -- "Grail Box", 199 Robux
+	ShoeBoxGrail3 = 0, -- "3 Grail Boxes", 499 Robux
+	ShoeBoxGrail8 = 0, -- "8 Grail Boxes", 1199 Robux
 }
 Products.BoostDurationSeconds = 900
 
--- The Store's cards, in order. Kind: 'Pass' | 'Product'. Section: 'Gamepass' (big cards; Banner = the wide one),
--- 'Power', 'Cash', 'Boost', 'Box' (small cards), 'Rebirth' (only in the Rebirth window). A 'Box' card's Price is the
--- same number as its box's RobuxPrice in Config/Shoes. Art: what the card shows
--- ('icon:<IconModels id>', 'gun:<Guns id>', 'box:<Shoes box id>', 'boxes:<id>' = three boxes, 'shoe:<Shoes id>').
--- Tone: a UIKit tone. Title: the card's first line (and the name notices use). Big: the card's big gold lines
--- (the reference's "Golden / Zone"; \n splits them). Offer: the short line on the HUD's offer card and pass button.
--- Sticker: big text stuck on the art ('2x'). (brief 18: AutoShoot is shown as "Auto Fight", COMBAT's repurpose.)
+-- The Store's cards, in order. Kind: 'Pass' | 'Product'. Section: the Store's sections (Products.Sections) or
+-- 'Rebirth' (only in the Rebirth window). Art: what the card shows ('icon:<IconModels id>', 'gun:<Guns id>',
+-- 'box:<Shoes box id>', 'boxes:<id>' = three boxes, 'shoe:<Shoes id>'). Tone: a UIKit tone. Title: the card's first
+-- line (and the name notices use). Big: the card's big gold lines (the reference's "Golden / Zone"; \n splits them).
+-- Offer: the short line on the HUD's offer card and pass button. Sticker: big text stuck on the art ('2x').
+-- (brief 18: AutoShoot is shown as "Auto Fight", COMBAT's repurpose.)
+-- brief 22 fields (UI3's Store reads them):
+--   Box rows ('Box'): Box = the Shoes box id (one card per Box), Count = boxes it opens (1, 3, 8: the card's Buy 1 /
+--     Buy 3 / Buy 8 buttons), WasPrice = Count x the Count-1 row's Price (nil on Count 1). The Count-1 row's Price is
+--     the same number as its box's RobuxPrice in Config/Shoes.
+--   Boost rows ('Boost'): Boost = the level a timed boost gives (2 = 2x Power) for BoostDurationSeconds. The bundle:
+--     Bundle = the boost keys it grants (one entry per boost), Lines = its bullet lines, WasPrice = the sum of its
+--     parts' Price, Wide = true (the wide card).
+--   Cash rows: Cash = the amount. Power rows: Pack = the share of your next rebirth's Power (Products.powerAmount).
 Products.Catalog = {
+	-- ~Shoe Boxes~
+	{ Key = 'ShoeBoxExclusive', Kind = 'Product', Section = 'Box', Box = 'Exclusive', Count = 1, Title = 'Exclusive Box', Detail = 'Exclusive shoes, no Commons', Price = 99, Art = 'box:Exclusive', Tone = 'cardBlue', Wired = true },
+	{ Key = 'ShoeBoxExclusive3', Kind = 'Product', Section = 'Box', Box = 'Exclusive', Count = 3, Title = 'Exclusive Box', Detail = '3 Exclusive Boxes', Price = 249, WasPrice = 297, Art = 'box:Exclusive', Tone = 'cardBlue', Wired = true },
+	{ Key = 'ShoeBoxExclusive8', Kind = 'Product', Section = 'Box', Box = 'Exclusive', Count = 8, Title = 'Exclusive Box', Detail = '8 Exclusive Boxes', Price = 599, WasPrice = 792, Art = 'box:Exclusive', Tone = 'cardBlue', Wired = true },
+	{ Key = 'ShoeBoxGrail', Kind = 'Product', Section = 'Box', Box = 'Grail', Count = 1, Title = 'Grail Box', Detail = 'The best exclusive shoes', Price = 199, Art = 'box:Grail', Tone = 'cardPurple', Wired = true },
+	{ Key = 'ShoeBoxGrail3', Kind = 'Product', Section = 'Box', Box = 'Grail', Count = 3, Title = 'Grail Box', Detail = '3 Grail Boxes', Price = 499, WasPrice = 597, Art = 'box:Grail', Tone = 'cardPurple', Wired = true },
+	{ Key = 'ShoeBoxGrail8', Kind = 'Product', Section = 'Box', Box = 'Grail', Count = 8, Title = 'Grail Box', Detail = '8 Grail Boxes', Price = 1199, WasPrice = 1592, Art = 'box:Grail', Tone = 'cardPurple', Wired = true },
+	-- ~Gamepass~
 	{ Key = 'DoubleRep', Kind = 'Pass', Section = 'Gamepass', Title = '2x Power', Big = 'Every\nShot', Detail = 'Every shot pays double', Price = 199, Art = 'icon:Power', Tone = 'cardGold', Offer = '2x Power', Sticker = '2x', Wired = true },
 	{ Key = 'DoubleCash', Kind = 'Pass', Section = 'Gamepass', Title = '2x Cash', Big = 'Every\nStage', Detail = 'Double Cash from gates, waves and goals', Price = 149, Art = 'icon:Cash', Tone = 'cardPurple', Offer = '2x Cash', Sticker = '2x', Wired = true },
 	{ Key = 'VIP', Kind = 'Pass', Section = 'Gamepass', Banner = true, Title = 'VIP', Big = 'VIP', Detail = 'GOLD TAG + 1.5x CASH', Price = 249, Art = 'icon:Trophy', Tone = 'cardGreen', Wired = true },
 	{ Key = 'AutoShoot', Kind = 'Pass', Section = 'Gamepass', Title = 'Auto Fight', Big = 'Hands\nFree', Detail = 'Fires at goons for you', Price = 99, Art = 'gun:Uzi', Tone = 'cardRed', Offer = 'Auto Fight', Wired = true },
-	{ Key = 'Lucky', Kind = 'Pass', Section = 'Gamepass', Title = 'Lucky', Big = 'Better\nBoxes', Detail = 'Better odds in every shoe box', Price = 129, Art = 'box:Galaxy', Tone = 'cardTeal', Wired = false },
-	{ Key = 'TripleOpen', Kind = 'Pass', Section = 'Gamepass', Title = 'Triple Open', Big = '3 Boxes\nat Once', Detail = 'Open 3 shoe boxes at once', Price = 179, Art = 'boxes:Street', Tone = 'cardBlue', Sticker = 'x3', Wired = false },
-	{ Key = 'ExtraEquip', Kind = 'Pass', Section = 'Gamepass', Title = '+1 Shoe Slot', Big = '4 Pairs\nOn', Detail = 'Wear 4 pairs at once', Price = 99, Art = 'shoe:Comet', Tone = 'cardPink', Sticker = '+1', Wired = false },
-	{ Key = 'PowerPack1', Kind = 'Product', Section = 'Power', Title = 'Power Pack', Price = 19, Art = 'icon:Power', Tone = 'lemon', Pack = 0.1, Wired = true },
-	{ Key = 'PowerPack2', Kind = 'Product', Section = 'Power', Title = 'Power Crate', Price = 69, Art = 'icon:Power', Tone = 'cherry', Pack = 0.5, Wired = true },
-	{ Key = 'PowerPack3', Kind = 'Product', Section = 'Power', Title = 'Power Truck', Price = 199, Art = 'icon:Power', Tone = 'rainbow', Pack = 2.5, Wired = true },
-	{ Key = 'SmallCash', Kind = 'Product', Section = 'Cash', Title = 'Cash Stack', Price = 29, Art = 'icon:Cash', Tone = 'cardGreen', Cash = 1000, Wired = true },
-	{ Key = 'MediumCash', Kind = 'Product', Section = 'Cash', Title = 'Cash Bag', Price = 129, Art = 'icon:Cash', Tone = 'cardTeal', Cash = 6000, Wired = true },
-	{ Key = 'LargeCash', Kind = 'Product', Section = 'Cash', Title = 'Cash Van', Price = 399, Art = 'icon:Cash', Tone = 'cardBlue', Cash = 25000, Wired = true },
-	{ Key = 'RepBoost2x', Kind = 'Product', Section = 'Boost', Title = 'x2 Power', Detail = '15 minutes', Price = 39, Art = 'icon:Evolve', Tone = 'cardGold', Sticker = 'x2', Wired = true },
-	{ Key = 'RepBoost3x', Kind = 'Product', Section = 'Boost', Title = 'x3 Power', Detail = '15 minutes', Price = 69, Art = 'icon:Evolve', Tone = 'cardRed', Sticker = 'x3', Wired = true },
+	{ Key = 'Lucky', Kind = 'Pass', Section = 'Gamepass', Title = 'Lucky', Big = 'Better\nBoxes', Detail = 'Better odds for Epic and up in Cash boxes', Price = 129, Art = 'box:Galaxy', Tone = 'cardTeal', Wired = true },
+	{ Key = 'TripleOpen', Kind = 'Pass', Section = 'Gamepass', Title = 'Triple Open', Big = '3 Boxes\nat Once', Detail = 'Open 3 Cash boxes at once, for 3x the Cash', Price = 179, Art = 'boxes:Street', Tone = 'cardBlue', Sticker = 'x3', Wired = true },
+	{ Key = 'ExtraEquip', Kind = 'Pass', Section = 'Gamepass', Title = '+1 Shoe Slot', Big = '4 Pairs\nOn', Detail = 'Wear 4 pairs at once', Price = 99, Art = 'shoe:Comet', Tone = 'cardPink', Sticker = '+1', Wired = true },
+	-- ~Boosts~ (two 2x + one 3x bought one by one: 39 + 39 + 69 = 147)
+	{ Key = 'BoostBundle', Kind = 'Product', Section = 'Boost', Wide = true, Title = 'Boost Bundle', Detail = '45 minutes of boosts', Bundle = { 'RepBoost2x', 'RepBoost2x', 'RepBoost3x' }, Lines = { '- Two 2x Power Boosts', '- One 3x Power Boost' }, Price = 119, WasPrice = 147, Art = 'icon:BoostBundle', Tone = 'rainbow', Wired = true },
+	{ Key = 'RepBoost2x', Kind = 'Product', Section = 'Boost', Title = '2x Power', Detail = '15 minutes', Boost = 2, Price = 39, Art = 'icon:PotionRed', Tone = 'cardRed', Wired = true },
+	{ Key = 'RepBoost3x', Kind = 'Product', Section = 'Boost', Title = '3x Power', Detail = '15 minutes', Boost = 3, Price = 69, Art = 'icon:PotionGold', Tone = 'cardGold', Wired = true },
 	{ Key = 'BlockParty', Kind = 'Product', Section = 'Boost', Title = 'Block Party', Detail = 'x2 Power for the whole server, 15 min', Price = 149, Art = 'icon:Rewards', Tone = 'cardPurple', Wired = true },
+	-- ~Cash Packs~ (Cash per Robux: 26, 29, 31, 34)
+	{ Key = 'TinyCash', Kind = 'Product', Section = 'Cash', Title = 'Tiny Pack', Price = 19, Art = 'icon:CashTiny', Tone = 'cardGold', Cash = 500, Wired = true },
+	{ Key = 'SmallCash', Kind = 'Product', Section = 'Cash', Title = 'Small Pack', Price = 49, Art = 'icon:CashSmall', Tone = 'cardGold', Cash = 1400, Wired = true },
+	{ Key = 'MediumCash', Kind = 'Product', Section = 'Cash', Title = 'Medium Pack', Price = 129, Art = 'icon:CashMedium', Tone = 'cardGold', Cash = 4000, Wired = true },
+	{ Key = 'LargeCash', Kind = 'Product', Section = 'Cash', Title = 'Large Pack', Price = 399, Art = 'icon:CashLarge', Tone = 'cardGold', Cash = 13500, Wired = true },
+	-- ~Power Packs~ (share of the next rebirth per 100 Robux: 0.53, 0.61, 0.70, 0.75)
+	{ Key = 'PowerPack1', Kind = 'Product', Section = 'Power', Title = 'Tiny Pack', Price = 19, Art = 'icon:PowerTiny', Tone = 'cardGold', Pack = 0.1, Wired = true },
+	{ Key = 'PowerPack2', Kind = 'Product', Section = 'Power', Title = 'Small Pack', Price = 49, Art = 'icon:PowerSmall', Tone = 'cardGold', Pack = 0.3, Wired = true },
+	{ Key = 'PowerPack3', Kind = 'Product', Section = 'Power', Title = 'Medium Pack', Price = 129, Art = 'icon:PowerMedium', Tone = 'cardGold', Pack = 0.9, Wired = true },
+	{ Key = 'PowerPack4', Kind = 'Product', Section = 'Power', Title = 'Large Pack', Price = 399, Art = 'icon:PowerLarge', Tone = 'cardGold', Pack = 3, Wired = true },
+	-- (the Rebirth window)
 	{ Key = 'SkipRebirth', Kind = 'Product', Section = 'Rebirth', Title = 'Skip Rebirth', Detail = 'Rebirth now', Price = 99, Art = 'icon:Rebirth', Tone = 'aqua', Wired = true },
-	{ Key = 'ShoeBoxExclusive', Kind = 'Product', Section = 'Box', Title = 'Exclusive Box', Detail = 'Exclusive shoes, no Commons', Price = 99, Art = 'box:Exclusive', Tone = 'cardBlue', Wired = true },
-	{ Key = 'ShoeBoxGrail', Kind = 'Product', Section = 'Box', Title = 'Grail Box', Detail = 'The best exclusive shoes', Price = 199, Art = 'box:Grail', Tone = 'cardPurple', Wired = true },
 }
 Products.ByKey = {}
 for i, entry in Products.Catalog do
 	entry.Order = i
 	Products.ByKey[entry.Key] = entry
 end
+-- The Store's sections, top to bottom (brief 22, the reference's order).
 Products.Sections = {
-	{ Id = 'Gamepass', Title = '~Gamepass~' },
-	{ Id = 'Power', Title = '~Power Packs~' },
-	{ Id = 'Cash', Title = '~Cash~' },
-	{ Id = 'Boost', Title = '~Boosts~' },
 	{ Id = 'Box', Title = '~Shoe Boxes~' },
+	{ Id = 'Gamepass', Title = '~Gamepass~' },
+	{ Id = 'Boost', Title = '~Boosts~' },
+	{ Id = 'Cash', Title = '~Cash Packs~' },
+	{ Id = 'Power', Title = '~Power Packs~' },
 }
 
 -- The id for a catalog key (0 when unknown or not set yet).
@@ -135,6 +168,30 @@ end
 function Products.cashAmount(key)
 	local entry = Products.ByKey[key]
 	return entry and type(entry.Cash) == 'number' and entry.Cash or 0
+end
+
+-- The timed boosts a product grants, one entry per boost: { level, ... } (a boost row: its one level; the Boost
+-- Bundle: its parts' levels, in order). Each runs Products.BoostDurationSeconds. Empty for anything else.
+function Products.boostLevels(key)
+	local entry = Products.ByKey[key]
+	local levels = {}
+	if not entry then return levels end
+	if type(entry.Bundle) == 'table' then
+		for _, part in entry.Bundle do
+			local p = Products.ByKey[part]
+			if p and type(p.Boost) == 'number' then table.insert(levels, p.Boost) end
+		end
+	elseif type(entry.Boost) == 'number' then
+		table.insert(levels, entry.Boost)
+	end
+	return levels
+end
+
+-- The shoe box a product opens and how many: boxId, count (nil, 0 for anything else).
+function Products.boxOpen(key)
+	local entry = Products.ByKey[key]
+	if not entry or entry.Section ~= 'Box' or type(entry.Box) ~= 'string' then return nil, 0 end
+	return entry.Box, type(entry.Count) == 'number' and entry.Count or 1
 end
 
 return Products

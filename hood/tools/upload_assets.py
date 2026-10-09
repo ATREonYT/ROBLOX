@@ -147,7 +147,8 @@ def set_icon_images(text, ids):
 
 # The UIKit field each texture belongs to (used when a line has no `-- hood/art/ui/<file>.png` comment).
 TEXTURE_FIELDS = {'stud_tile.png': 'StudTile', 'stud_bevel.png': 'StudBevel', 'stud_checker.png': 'StudChecker',
-	'gloss_band.png': 'GlossBand', 'gloss_stripes.png': 'GlossStripes'}
+	'gloss_band.png': 'GlossBand', 'gloss_stripes.png': 'GlossStripes', 'splat.png': 'Splat', 'splat_rainbow.png': 'SplatRainbow',
+	'splat_black.png': 'SplatBlack'}
 KIT_LINE = re.compile(r"^(\s*Kit\.(\w+)\s*=\s*)'([^']*)'([^\n]*?--\s*(?:hood/)?art/ui/([\w.\-]+\.png)[^\n]*)$", re.M)
 
 

@@ -38,6 +38,20 @@ function StageRules.furthest(gates, cleared)
 	return best
 end
 
+-- Where a teleport pad (or the World window's travel buttons, brief 22) sends you: 'Lobby' -> 'Lobby'; 'Furthest' ->
+-- the gate of the furthest stage you have cleared (you land just past it), or nil, 'locked' when you have cleared none;
+-- anything else -> nil, 'unknown'. StageService's pads and HoodServer/TravelService both go through this.
+function StageRules.travelTarget(gates, cleared, target)
+	if target == 'Lobby' then return 'Lobby', nil end
+	if target ~= 'Furthest' then return nil, 'unknown' end
+	local best
+	for _, g in gates do
+		if type(cleared) == 'table' and cleared[g.WallId] and (not best or g.Stage > best.Stage) then best = g end
+	end
+	if not best then return nil, 'locked' end
+	return best, nil
+end
+
 -- Reads gate models (tagged 'HoodStageGate') into sorted gate tables.
 function StageRules.fromModels(models)
 	local gates = {}

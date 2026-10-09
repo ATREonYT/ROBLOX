@@ -25,18 +25,18 @@ tempfile.tempdir = os.environ.get('BK_TMP') or None
 import bpy  # noqa: E402
 import bmesh  # noqa: E402
 import numpy as np  # noqa: E402
-from mathutils import Euler, Vector  # noqa: E402
+from mathutils import Euler, Matrix, Vector  # noqa: E402
 
 import bk_blender as bb  # noqa: E402  (png io, blur, over)
 
 HOOD = os.path.abspath(os.path.join(HERE, '..', '..'))
 OUT = os.path.join(HOOD, 'art', 'icons3d')
-NAVY = (12, 10, 52)
+NAVY = (12, 10, 30)  # ref22's outline is near-black navy (~#08061A)
 FONT_PATHS = ['/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', '/Library/Fonts/Arial Bold.ttf',
 	'/System/Library/Fonts/Supplemental/Arial Bold.ttf']
 
 # Look knobs (tuned in rounds against the reference; see brief/out19/ICONS).
-LOOK = dict(world=0.85, key=0.4, fill=0.2, rim=0.6, top=0.25, exposure=0.0, outline=0.034, inner=0.45, sat=1.15, spec=0.35)
+LOOK = dict(world=0.85, key=0.4, fill=0.2, rim=0.6, top=0.25, exposure=0.0, outline=0.046, frame=0.92, inner=0.45, sat=1.15, spec=0.35)
 
 
 def lin(rgb):
@@ -98,6 +98,7 @@ def reset(res, samples):
 	sc.view_settings.look = 'None'
 	sc.view_settings.exposure = LOOK['exposure']
 	sc.view_layers[0].use_pass_object_index = True
+	sc.view_layers[0].use_pass_z = True
 	return sc
 
 
@@ -145,12 +146,14 @@ def compositor_index(sc, path_prefix):
 	tree.links.new(rl.outputs['Image'], out.inputs[0])
 	fo = tree.nodes.new('CompositorNodeOutputFile')
 	fo.file_output_items.new('FLOAT', 'idx')
+	fo.file_output_items.new('FLOAT', 'depth')
 	fo.directory = os.path.dirname(path_prefix) + '/'
 	fo.file_name = os.path.basename(path_prefix)
 	fo.format.media_type = 'IMAGE'
 	fo.format.file_format = 'OPEN_EXR'
 	fo.format.color_depth = '32'
 	tree.links.new(rl.outputs['Object Index'], fo.inputs['idx'])
+	tree.links.new(rl.outputs['Depth'], fo.inputs['depth'])
 
 
 # ------------------------------------------------------------------------------------------- materials
@@ -657,6 +660,119 @@ def text(s, material, loc=(0, 0, 0), size=1.0, depth=0.1, rot=(90, 0, 0), bev=0.
 	return place(ob, loc, rot)
 
 
+# ------------------------------------------------------------------------------------------- Luau part models
+R2B = Matrix(((-1, 0, 0), (0, 0, 1), (0, 1, 0)))  # Roblox (x, y, z) -> Blender (-x, z, y), as bk_blender
+
+
+def _wedge_geo(x, y, z):
+	"""Roblox WedgePart in its local space: full height at +z, sloping down to the bottom edge at -z."""
+	v = [(-x, -y, -z), (x, -y, -z), (x, -y, z), (-x, -y, z), (-x, y, z), (x, y, z)]
+	f = [(0, 1, 2, 3), (3, 2, 5, 4), (0, 4, 5, 1), (0, 3, 4), (1, 5, 2)]
+	return v, f
+
+
+def _box_geo(x, y, z):
+	v = [(-x, -y, -z), (x, -y, -z), (x, y, -z), (-x, y, -z), (-x, -y, z), (x, -y, z), (x, y, z), (-x, y, z)]
+	f = [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4), (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)]
+	return v, f
+
+
+def _cyl_geo(x, r, n=28):
+	"""Roblox cylinder: axis along local X."""
+	v = [(-x, r * math.cos(2 * math.pi * i / n), r * math.sin(2 * math.pi * i / n)) for i in range(n)]
+	v += [(x, r * math.cos(2 * math.pi * i / n), r * math.sin(2 * math.pi * i / n)) for i in range(n)]
+	f = [tuple(range(n - 1, -1, -1)), tuple(range(n, 2 * n))] + [(i, (i + 1) % n, n + (i + 1) % n, n + i) for i in range(n)]
+	return v, f
+
+
+def part_material(rgb, material, transparency, lift=0.0, neon=1.0):
+	"""Roblox material -> the icon look: plastics are toon plastic, Metal/Foil a little shinier, Neon glows, Glass
+	stays saturated (see-through only a little)."""
+	rgb = tuple(int(c) for c in rgb)
+	if lift and max(rgb) < 110:  # very dark parts read as black blocks on a card: lift them toward a cool grey
+		rgb = mix_rgb(rgb, (70, 110, 190), lift)
+	if material == 'Neon':
+		return mat(rgb, emit=1.4 * neon, light=mix_rgb(rgb, (255, 255, 255), 0.4), coat=0.0)
+	if material == 'Glass':
+		return mat(rgb, rough=0.12, coat=0.8, light=mix_rgb(rgb, (255, 255, 255), 0.45), emit=0.25)
+	if material in ('Metal', 'DiamondPlate', 'CorrodedMetal'):
+		return mat(rgb, rough=0.24, coat=0.6, light=mix_rgb(rgb, (255, 255, 255), 0.35))
+	if material == 'Foil':
+		return mat(rgb, rough=0.2, coat=0.6, light=mix_rgb(rgb, (255, 250, 220), 0.4))
+	return mat(rgb)
+
+
+def import_parts(parts, group_by='color', bevel_frac=0.14, bevel_max=0.06, min_bevel=0.004, lift=0.0, neon=1.0):
+	"""Build Roblox parts (dicts from export_luau_parts.luau) as Blender meshes in Roblox's frame turned to Blender's.
+	group_by='color': parts of one colour share an outline group, so the inner lines trace colour regions (cel look)
+	instead of every part seam."""
+	groups = {}
+	objs = []
+	for p in parts:
+		sx, sy, sz = (c / 2 for c in p['size'])
+		cls, shape, mesh = p['cls'], p.get('shape'), p.get('mesh')
+		smooth = False
+		if mesh == 'Sphere' or shape == 'Ball':
+			if shape == 'Ball' and not mesh:
+				d = min(sx, sy, sz)
+				sx = sy = sz = d
+			bm = bmesh.new()
+			bmesh.ops.create_uvsphere(bm, u_segments=32, v_segments=16, radius=1.0)
+			for vtx in bm.verts:
+				vtx.co = Vector((vtx.co.x * sx, vtx.co.y * sy, vtx.co.z * sz))
+			v = [tuple(vtx.co) for vtx in bm.verts]
+			f = [tuple(vtx.index for vtx in face.verts) for face in bm.faces]
+			bm.free()
+			smooth = True
+		elif cls == 'WedgePart':
+			v, f = _wedge_geo(sx, sy, sz)
+		elif shape == 'Cylinder':
+			v, f = _cyl_geo(sx, min(sy, sz))
+		else:
+			v, f = _box_geo(sx, sy, sz)
+		c = p['cf']
+		rot_r = Matrix(((c[3], c[4], c[5]), (c[6], c[7], c[8]), (c[9], c[10], c[11])))
+		pos_r = Vector((c[0], c[1], c[2]))
+		world = [R2B @ (rot_r @ Vector(q) + pos_r) for q in v]
+		key = tuple(p['color']) + (p['material'],) if group_by == 'color' else len(groups)
+		g = groups.setdefault(key, C.new_group())
+		ob = _mesh_obj(p.get('name') or 'part', world, f, part_material(p['color'], p['material'], p.get('transparency', 0), lift, neon), g)
+		ob.data.set_sharp_from_angle(angle=math.radians(40 if smooth or shape == 'Cylinder' else 1))
+		bw = min(bevel_max, min(p['size']) * bevel_frac)
+		if not smooth and bw > min_bevel:
+			mod = ob.modifiers.new('Bevel', 'BEVEL')
+			mod.width = bw
+			mod.segments = 3
+			mod.limit_method = 'ANGLE'
+			mod.angle_limit = math.radians(40)
+			mod.harden_normals = True
+			mod.use_clamp_overlap = True
+		gui = p.get('gui')
+		if gui and gui.get('face') == 'Front' and gui.get('lines'):
+			_gui_text(p, rot_r, pos_r, gui['lines'], g)
+		objs.append(ob)
+	return objs
+
+
+def _gui_text(p, rot_r, pos_r, lines, group):
+	"""The SurfaceGui lines on a part's Front face (-Z) as flat text, e.g. a box's name plate."""
+	w, h, d = p['size']
+	for ln in lines:
+		y_local = h / 2 - (ln['y'] + ln['h'] / 2) * h
+		size = ln['h'] * h * 0.9
+		loc_r = rot_r @ Vector((0, y_local, -d / 2 - 0.012)) + pos_r
+		col = tuple(ln['color'])
+		# same outline group as the plate: no navy line round every glyph (it filled small text in)
+		ob = text(ln['text'], flat(col, 1.0), loc=tuple(R2B @ loc_r), size=size, depth=0.004, rot=(90, 0, 0), bev=0.0,
+			group=group, name='Label')
+		# shrink long names to the plate's width
+		bpy.context.view_layer.update()
+		width = ob.dimensions.x
+		if width > w * 0.92:
+			k = w * 0.92 / width
+			ob.scale = (k, k, k)
+
+
 # ------------------------------------------------------------------------------------------- camera + lights
 def eval_points(objs):
 	dg = bpy.context.evaluated_depsgraph_get()
@@ -746,14 +862,18 @@ def lights(sc, cam, centre, dist, key=1.0):
 
 
 # ------------------------------------------------------------------------------------------- post
-def load_exr_index(path):
+def load_exr(path):
 	img = bpy.data.images.load(path, check_existing=False)
 	w, h = img.size
 	buf = np.empty(w * h * img.channels, dtype=np.float32)
 	img.pixels.foreach_get(buf)
 	ch = img.channels
 	bpy.data.images.remove(img)
-	return np.rint(buf.reshape(h, w, ch)[..., 0]).astype(np.int32)
+	return buf.reshape(h, w, ch)[..., 0]
+
+
+def load_exr_index(path):
+	return np.rint(load_exr(path)).astype(np.int32)
 
 
 def edt(seed):
@@ -814,17 +934,22 @@ def finish(beauty, index_path, out_png, ss, opts):
 	navy = np.array(opts.get('ink', NAVY), np.float32) / 255.0  # outline + part lines (Robux: dark green)
 	solid = alpha > 0.5
 	r_out = LOOK['outline'] * w * opts.get('outline', 1.0)
-	# Inner lines where two line groups meet (both sides of the boundary), drawn over the beauty.
+	# Inner lines where two line groups meet, drawn over the beauty on the FARTHER part only (from the depth pass), so
+	# the nearer part keeps its whole fill, like its own outline (brief 22: lines on both sides doubled their weight).
 	if os.path.exists(index_path) and opts.get('inner', 1.0) > 0:
 		idx = load_exr_index(index_path)
 		idx = np.where(solid, idx, 0)
+		depth_path = index_path.replace('ix_idx', 'ix_depth')
+		depth = load_exr(depth_path) if os.path.exists(depth_path) else np.zeros(idx.shape, np.float32)
 		e = np.zeros_like(solid)
 		for dy, dx in ((0, 1), (1, 0)):
 			a = idx[: h - dy, : w - dx]
 			b = idx[dy:, dx:]
+			da = depth[: h - dy, : w - dx]
+			db = depth[dy:, dx:]
 			diff = (a != b) & (a > 0) & (b > 0)
-			e[: h - dy, : w - dx] |= diff
-			e[dy:, dx:] |= diff
+			e[: h - dy, : w - dx] |= diff & (da >= db)
+			e[dy:, dx:] |= diff & (db > da)
 		if e.any():
 			r_in = r_out * LOOK['inner'] * opts.get('inner', 1.0)
 			d = edt(e)
@@ -856,6 +981,13 @@ def finish(beauty, index_path, out_png, ss, opts):
 		lay[..., 3] = sp
 		img = bb.over(lay, img)
 	img = downsample(img, ss)
+	# clear the canvas edge: glows and sparkles fade out over the outer 3% (UICRITIC2: a clipped glow showed a square)
+	H, W = img.shape[:2]
+	m = max(2, int(W * 0.03))
+	xs = np.minimum(np.arange(W) + 0.5, W - 0.5 - np.arange(W))
+	ys = np.minimum(np.arange(H) + 0.5, H - 0.5 - np.arange(H))
+	ramp = np.clip(np.minimum(xs[None, :], ys[:, None]) / m, 0, 1).astype(np.float32)
+	img[..., 3] *= ramp
 	os.makedirs(os.path.dirname(out_png), exist_ok=True)
 	bb.save_png(img, out_png)
 

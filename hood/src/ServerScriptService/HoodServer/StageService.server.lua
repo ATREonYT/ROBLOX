@@ -51,22 +51,31 @@ end
 local spawnYaw = active.Root:GetAttribute('LobbySpawnYaw')
 local spawnPoint = frame * CFrame.new((active.Root:GetAttribute('LobbySpawn') or Vector3.new(0, 0, 30)) + Vector3.new(0, 3, 0))
 	* CFrame.Angles(0, type(spawnYaw) == 'number' and spawnYaw or 0, 0)
+-- Returns true, or false and why ('loading', 'unknown', 'locked').
 local function teleport(player, target)
 	local character = player.Character
 	local root = character and character:FindFirstChild('HumanoidRootPart')
 	local profile = Data.get(player)
-	if not root or not profile then return end
-	local cf = spawnPoint
-	if target == 'Furthest' then
-		local best
-		for _, gate in gates do if profile.Data.ClearedWalls[gate.WallId] then best = gate end end
-		if not best then
+	if not root or not profile then return false, 'loading' end
+	local where, why = StageRules.travelTarget(gates, profile.Data.ClearedWalls, target)
+	if not where then
+		if why == 'locked' then
 			Net.get('Notice'):FireClient(player, 'Clear Stage 1 first: shoot at BAY 1 until you have 10 Power, then walk through the stage door.')
-			return
 		end
-		cf = frame * CFrame.new(0, 3, best.Z - 12)
+		return false, why
 	end
+	local cf = spawnPoint
+	if where ~= 'Lobby' then cf = frame * CFrame.new(0, 3, where.Z - 12) end
 	character:PivotTo(cf)
+	return true, nil
+end
+-- (brief 22) The World window's travel buttons (HoodServer/TravelService) use this same teleport, so the pads and the
+-- window share one rule.
+do
+	local travel = Instance.new('BindableFunction')
+	travel.Name = 'StageTravel'
+	travel.OnInvoke = function(player, target) return teleport(player, target) end
+	travel.Parent = script
 end
 local teleportLimit = {}
 local function hookPrompt(prompt)

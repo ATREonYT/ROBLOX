@@ -117,6 +117,22 @@ Re-running `hood/tools/blender/export_luau.py` (which regenerates `IconModels.lu
 - `Robux`: a flat white face with dark-green lines, as on the reference's price buttons; ImageColor3 can still tint
   it gold or lime.
 
+**Inventory, World and Store (brief 22):**
+- `World`: the globe (World button and window).
+- `Backpack`: the Items button, the inventory header and its Items tab.
+- `ShoePile`, `ShoeBox`: the Your Shoes and Boxes tabs.
+- `Delete`, `Favorite`, `Search`: the red X block, the gold star and the magnifier.
+- `PotionRed`, `PotionGold`, `BoostBundle`: the 2x and 3x Power boosts and the Boost Bundle card.
+- `CashTiny`, `CashSmall`, `CashMedium`, `CashLarge`: the growing cash piles on the Cash Pack cards.
+- `PowerTiny`, `PowerSmall`, `PowerMedium`, `PowerLarge`: the growing dumbbell piles on the Power Pack cards.
+- `Shoe_<ShoeId>`: World 1's 22 shoes (the shoes of `Shoes.boxesForWorld(1)`, for example `Shoe_RedRocket`,
+  `Shoe_TheGrail`).
+- `Box_<BoxId>`: World 1's 4 shoe boxes: `Box_Street`, `Box_Graffiti`, `Box_Exclusive` and `Box_Grail`.
+
+  Until these are uploaded, the game builds the shoe or box itself from ShoeModels or BoxModels. The other worlds'
+  shoes and boxes have no PNG yet (those worlds aren't built): they always use that live model, and
+  `hood/tools/blender/README.md` says how to render them later.
+
 **Older ids, still in use as fallbacks:** `Shop`, `PVP`, `Power`.
 
 ## The textures
@@ -127,3 +143,6 @@ Re-running `hood/tools/blender/export_luau.py` (which regenerates `IconModels.lu
 | `stud_tile.png` | `Kit.StudTile` | one stud, greyscale; tinted with the block's lip colour |
 | `gloss_band.png` | `Kit.GlossBand` | two diagonal light bands, stretched over a block |
 | `gloss_stripes.png` | `Kit.GlossStripes` | seamless 45-degree stripe; ScaleType Tile over headers |
+| `splat.png` | `Kit.Splat` | white paint splat; tinted with the rarity colour behind a shoe |
+| `splat_rainbow.png` | `Kit.SplatRainbow` | rainbow splat for Secret shoes |
+| `splat_black.png` | `Kit.SplatBlack` | dark splat for the "+n" slot; the UI draws the "+n" text |
