@@ -828,7 +828,7 @@ Stations.FIELD_Z0, Stations.FIELD_Z1 = -1.9, 8.4 -- the target field (effects fi
 Stations.BACK_Z = 8.5 -- the backstop's front face
 Stations.GANTRY_Z = 6.4 -- the gantry's centre line (hanging targets hang from it)
 Stations.GANTRY_Y = 8.6 -- underside of the gantry beam
-Stations.LABEL = V(0, 13.8, 3.6) -- the label stack, over the target field
+Stations.LABEL = V(0, 14.4, 3.6) -- the label stack, over the target field
 Stations.StampId = '' -- set from HoodVFX.Textures.stamp at build time ('' until the PNG is uploaded)
 
 ---------------------------------------------------------------------------------------------- stamp and X
@@ -1791,7 +1791,7 @@ function Stations.labels(st, s, t, at)
 	local sign = ghost(st:part('Sign', V(0.2, 0.2, 0.2), CFrame.new(at), P.white))
 	local g = Instance.new('BillboardGui')
 	g.Name = 'Label'
-	g.Size = UDim2.fromScale(10.5, 6)
+	g.Size = UDim2.fromScale(12, 7.2) -- (a lane pitch wide: the row's labels read from the hall's spine)
 	g.MaxDistance = 250 -- (across the hall; Lobby.client keeps it there for every lane)
 	g.LightInfluence = 0
 	g.Parent = sign
@@ -3610,28 +3610,30 @@ end
 ---------------------------------------------------------------------------------------------- range stand
 -- The west side of the hall: the eight themed shooting lanes (Stations.build in code5/d2_stations.lua: stone, red,
 -- lava, arcane, shadow, frost, toxic, gold) laid flat in one row side by side, like the training lanes in the user's
--- +1 video, each on a low studded deck: Starter (FREE) at the north end, nearest the exit (spawn -> free lane -> Stage 1
--- door), Gold at the south end. Every lane faces the hall: you step on from the red carpet runway along the walkway
--- side (x -44) and shoot west at the targets; the targets stand toward the west wall. The structure stays in the
--- hall's neutral lavender greys; the colour is the lanes'.
+-- +1 video, on one low red floor: Starter (FREE) at the north end, nearest the exit (spawn -> free lane -> Stage 1
+-- door), Gold at the south end. The row stands back against the west wall (the targets' backstops a few studs in front
+-- of it, clear of its pillars), so the hall floor in front of it is one open approach from the spine. Every lane faces
+-- the hall: you step on from the red runway at its front (x -90) and shoot west at the targets; the wall is the
+-- backdrop. The structure stays in the hall's neutral greys; the colour is the lanes'.
 --   Range floor: one low (0.4) red studded platform under the whole row (the reference's red carpet under its
 --     capsules, the video's terracotta lane platforms), a darker border band, pale nosings, a dark kick band; its
 --     front 4 studs are the runway along the lanes' fronts.
 --   Lane lamps: a lamp post in every gap between the lanes at their front (the capsule row's rhythm).
---   Back fence: a chain-link range fence behind the targets on posts at the lane joints; small clusters of hood props
---     (tyres and a crate, drums on a pallet, crates and a boombox) behind it.
+--   The wall behind: three graffiti murals painted on it, clear of the labels (a big target over the north hangout, a
+--     lightning bolt and a crown high in the bays over the row), cartoon shapes only.
+--   North end: a little hangout by the free lane (a bench, crates and a boombox, a tyre stack).
 -- Lobby.Stand (map frame): Lanes[i] = { z, z0, z1 }: lane i's centre and its stretch along the row (Pitch apart round
 -- Mid); every lane covers x X.lane..X.front (20 deep); the range floor runs X.lane - 2 .. X.front + 4. Slots[i] = Lobby.Ranges[i]'s
 -- frame (origin on the deck at the lane's centre, -Z = the front, east toward the hall).
 Lobby.Ranges = { 'Starter', 'Tape', 'Street', 'Heavy', 'Speed', 'DoubleEnd', 'Pro', 'Gold' }
 Lobby.Stand = {
 	Pitch = 12, Mid = 87, Deck = 0.4,
-	X = { fence = -70, lane = -64, front = -44 },
+	X = { lane = -110, front = -90 },
 	-- (the hall's lavender greys, sampled off the reference's terrace; its red strip for the carpet)
 	Colors = {
 		tread = C(186, 189, 228), riser = C(146, 150, 192), riserDark = C(104, 110, 156), nose = C(228, 232, 250),
 		carpet = C(212, 84, 94), carpetDark = C(158, 46, 62),
-		post = C(166, 170, 210), cap = C(210, 214, 242), mesh = C(172, 178, 196), meshPost = C(86, 92, 112),
+		post = C(166, 170, 210), cap = C(210, 214, 242), wood = C(176, 112, 70), woodDark = C(124, 76, 46), metal = C(70, 76, 96),
 	},
 	Lanes = {}, Slots = {},
 }
@@ -3680,6 +3682,53 @@ function Lobby.standProps(c, kind, at)
 			Stations.milkcrate(c, CFrame.new(at + V(1.2, 0, 0.9)), C(40, 120, 220), { C(235, 55, 60), C(255, 150, 30) })
 			Stations.boombox(c, CFrame.new(at + V(1.3, 0, -1.2)) * CFrame.Angles(0, -math.pi / 2, 0))
 		end
+	end
+end
+-- A cartoon graffiti mural painted on the west wall over z za..zb, y ya..yb (kind 1 a big target on a magenta
+-- splat, 2 a lightning bolt on a cyan splat, 3 a crown on a yellow splat): a stepped splat with a darker drop
+-- shadow, drips under it, the motif, two sparkle stars. Flat parts 0.1-0.3 proud of the wall's face (x -120).
+function Lobby.rangeMural(c, kind, za, zb, ya, yb)
+	local x0 = -Lobby.W
+	local cz, cy = (za + zb) / 2, (ya + yb) / 2
+	local w, h = zb - za, yb - ya
+	local pal = ({ { C(236, 64, 160), C(150, 30, 104), C(255, 214, 60) }, { C(40, 200, 236), C(20, 110, 160), C(255, 230, 70) },
+		{ C(255, 206, 40), C(190, 120, 10), C(150, 15, 40) } })[kind]
+	local function paint(name, z0, z1, y0, y1, color, d)
+		local p = decor(c:box(name, V(x0, y0, z0), V(x0 + (d or 0.12), y1, z1), color, M.SmoothPlastic))
+		p.CastShadow = false
+		return p
+	end
+	-- the splat: a cross of three stepped boxes over a darker drop shadow a little down and along
+	for _, r in { { 0.5, 0.18, 0.06 }, { 0.36, 0.5, 0.06 }, { 0.44, 0.36, 0.06 } } do
+		paint('MuralShadow', cz - w * r[1] + 0.5, cz + w * r[1] + 0.5, cy - h * r[2] - 0.5, cy + h * r[2] - 0.5, pal[2], 0.1)
+	end
+	for _, r in { { 0.48, 0.2 }, { 0.34, 0.46 }, { 0.42, 0.34 } } do
+		paint('MuralSplat', cz - w * r[1], cz + w * r[1], cy - h * r[2], cy + h * r[2], pal[1], 0.16)
+	end
+	for _, d in { { -0.3, 1.6 }, { 0.05, 2.4 }, { 0.32, 1.2 } } do
+		local z = cz + w * d[1]
+		paint('MuralDrip', z - 0.35, z + 0.35, cy - h * 0.46 - d[2], cy - h * 0.4, pal[1], 0.16)
+	end
+	if kind == 1 then
+		for k, r in { 4.2, 3.2, 2.2, 1.2 } do
+			decor(c:part('MuralTarget', V(0.2 + k * 0.04, 2 * r, 2 * r), CFrame.new(x0 + 0.1 + k * 0.02, cy, cz), k % 2 == 1 and P.white or C(230, 40, 50), M.SmoothPlastic, Enum.PartType.Cylinder)).CastShadow = false
+		end
+	elseif kind == 2 then
+		local ys = math.min(h * 0.38, 4.5)
+		for _, b in { { -1.2, ys * 0.55, 1.6, ys, -24 }, { 0.2, 0, 3.6, 1.1, 0 }, { 1.2, -ys * 0.55, 1.6, ys, -24 } } do
+			decor(c:part('MuralBolt', V(0.3, b[4], b[3]), CFrame.new(x0 + 0.2, cy + b[2], cz + b[1]) * CFrame.Angles(math.rad(b[5]), 0, 0), pal[3], M.SmoothPlastic)).CastShadow = false
+		end
+	else
+		local cw = math.min(w * 0.6, 7)
+		paint('MuralCrown', cz - cw / 2, cz + cw / 2, cy - 2.2, cy + 0.2, pal[3], 0.3)
+		for k = 0, 2 do
+			local z = cz - cw / 2 + cw * (0.15 + 0.35 * k)
+			paint('MuralCrown', z - 0.7, z + 0.7, cy + 0.2, cy + 2.4, pal[3], 0.3)
+			paint('MuralGem', z - 0.35, z + 0.35, cy - 1.4, cy - 0.7, k == 1 and C(60, 140, 255) or C(220, 30, 60), 0.36)
+		end
+	end
+	for _, st in { { -0.4, 0.3 }, { 0.42, -0.2 } } do
+		decor(c:part('MuralStar', V(0.2, 1.1, 1.1), CFrame.new(x0 + 0.2, cy + h * st[2], cz + w * st[1]) * CFrame.Angles(math.pi / 4, 0, 0), P.white, M.SmoothPlastic)).CastShadow = false
 	end
 end
 function Lobby.stand(L, skins)
@@ -3738,26 +3787,21 @@ function Lobby.stand(L, skins)
 		t:box('LaneLampTop', V(x - 0.52, y + 5.4, z - 0.52), V(x + 0.52, y + 5.62, z + 0.52), K.riserDark, M.SmoothPlastic)
 	end
 
-	-- The range fence behind the targets: posts at the lane joints, two rails, a chain-link mesh per bay.
-	local fx = X.fence
-	local fh = 4.2
-	for k = 0, n do
-		local z = k == 0 and z0 or lanes[k].z1
-		slab('FencePostFoot', V(fx - 0.45, 0, z - 0.45), V(fx + 0.45, 0.4, z + 0.45), K.riserDark)
-		t:box('FencePost', V(fx - 0.22, 0.4, z - 0.22), V(fx + 0.22, fh + 0.3, z + 0.22), K.meshPost, M.Metal)
-		t:box('FencePostCap', V(fx - 0.3, fh + 0.3, z - 0.3), V(fx + 0.3, fh + 0.45, z + 0.3), K.cap, M.SmoothPlastic)
-	end
-	for _, y in { 0.5, fh } do t:box('FenceRail', V(fx - 0.12, y, z0), V(fx + 0.12, y + 0.2, z1), K.meshPost, M.Metal) end
-	for _, ln in lanes do
-		local mesh = t:box('FenceMesh', V(fx - 0.04, 0.7, ln.z0 + 0.25), V(fx + 0.04, fh, ln.z1 - 0.25), K.mesh, M.SmoothPlastic)
-		mesh.Transparency, mesh.CastShadow = 0.55, false
-		for _, face in { Enum.NormalId.Left, Enum.NormalId.Right } do
-			Lobby.stripes(mesh, face, St.Pitch - 0.5, fh - 0.7, 0.75, 0.09, true, 0.3, K.meshPost)
-			Lobby.stripes(mesh, face, St.Pitch - 0.5, fh - 0.7, 0.75, 0.09, false, 0.3, K.meshPost)
-		end
-	end
-	-- hood props behind the fence, a cluster every other bay
-	for i = 1, n, 2 do Lobby.standProps(t, (i - 1) / 2 % 3 + 1, V(fx - 6 - (i % 4 == 1 and 0 or 5), 0, lanes[i].z + 3)) end
+	-- Graffiti murals on the wall, painted 0.12 proud of it, clear of the label stacks (they top out at y ~19): a big
+	-- target over the hangout at the row's north end, a bolt and a crown high in the next bays (y 19.5..30, under the
+	-- windows; the RANGES board has the first bay).
+	Lobby.rangeMural(t, 1, 15, 35, 6.5, 19)
+	Lobby.rangeMural(t, 2, 86.5, 105.5, 19.8, 30)
+	Lobby.rangeMural(t, 3, 122.5, 141.5, 19.8, 30)
+	-- A hangout by the free lane at the row's north end: a bench facing the hall, crates with a boombox, tyres.
+	local bz = z0 - 4.5
+	for _, bx in { -107.5, -100.5 } do slab('BenchLeg', V(bx - 0.5, 0, bz - 0.9), V(bx + 0.5, 1.4, bz + 0.9), K.riserDark) end
+	t:box('BenchSeat', V(-108.6, 1.4, bz - 1.1), V(-99.4, 1.85, bz + 1.1), K.wood, M.SmoothPlastic)
+	t:box('BenchSeatEdge', V(-108.7, 1.25, bz - 1.2), V(-99.3, 1.45, bz + 1.2), K.woodDark, M.SmoothPlastic)
+	for _, bx in { -107.5, -100.5 } do t:box('BenchBackPost', V(bx - 0.25, 1.85, bz - 1.1), V(bx + 0.25, 4.0, bz - 0.6), K.metal, M.SmoothPlastic) end
+	t:box('BenchBack', V(-108.6, 2.6, bz - 1.15), V(-99.4, 3.8, bz - 0.75), K.wood, M.SmoothPlastic)
+	Lobby.standProps(t, 3, V(-114, 0, bz + 0.5))
+	Lobby.standProps(t, 1, V(-95, 0, bz - 1.5))
 
 	-- The lanes.
 	for k, id in Lobby.Ranges do
