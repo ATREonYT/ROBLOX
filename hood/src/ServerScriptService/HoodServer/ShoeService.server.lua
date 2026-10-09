@@ -1,14 +1,17 @@
 -- Shoe boxes and shoes: the game's eggs and pets (brief 16; the rules are Shared/ShoeRules, the list Config/Shoes).
--- Boxes stand on the shoe-box dais at the back of the hall (map: a Model tagged HoodShoeBoxes holding ShoeBox_<Id>
--- models, each with an invisible BoxPoint_<Id> part). Opening one costs its Price in Cash and gives one pair, rolled
--- here. Up to three pairs are equipped: the best is worn, the others follow you (Shoes.client builds both on every
--- client from the attributes below). The equipped bonus multiplies the Power every shot pays (LobbyService and
--- WaveService pass ShoeMultiplier to ShotRules.pay).
+-- Boxes stand on the shoe-box dais in the hall (map: a Model tagged HoodShoeBoxes holding ShoeBox_<Id> models, each
+-- with an invisible BoxPoint_<Id> part): this world's boxes only (Shoes.boxesForWorld(Shoes.ActiveWorld); brief 21:
+-- World 1 has Street, Graffiti and the two Robux boxes). Opening a Cash box costs its Price in Cash and gives one
+-- pair, rolled by HoodServer/ShoeOpening (StoreService opens the Robux boxes through it too, from their receipts, so
+-- both play the same unboxing). Up to three pairs are equipped: the best is worn, the others follow you
+-- (Shoes.client builds both on every client from the attributes below). The equipped bonus multiplies the Power
+-- every shot pays (LobbyService and WaveService pass ShoeMultiplier to ShotRules.pay).
 --
 -- Remotes (Shared/Net), all checked here:
---   OpenShoeBox(boxId)     a known box, the open rate limit (one per 1.25 s), a loaded profile and a live character,
---                          within ShoeRules.Range of that box's BoxPoint, enough Cash, room in the rack. Takes the
---                          Cash, rolls the shoe (server Random), saves it, answers with ShoeOpened.
+--   OpenShoeBox(boxId)     a known Cash box of this world (a later world's box or a Robux box is refused: a Robux
+--                          box opens only from its receipt), the open rate limit (one per 1.25 s), a loaded profile
+--                          and a live character, within ShoeRules.Range of that box's BoxPoint, enough Cash, room in
+--                          the rack. Takes the Cash, rolls the shoe (server Random), saves it, answers with ShoeOpened.
 --   ShoeAction(action, id) 'Equip' | 'Unequip' | 'EquipBest' | 'Recycle' (a spare pair, for a tenth of its box's
 --                          price), from anywhere, under the action rate limit.
 --   ShoeOpened             to that player: { Box, Shoe, Rarity, New (first pair of it), Count (copies now),
@@ -32,6 +35,7 @@ local ActiveMap = require(RS.Shared.ActiveMap)
 local Format = require(RS.Shared.Format)
 local Shoes = require(RS.Shared.Config.Shoes)
 local ShoeRules = require(RS.Shared.ShoeRules)
+local ShoeOpening = require(script.Parent.ShoeOpening)
 
 while not RS:GetAttribute('FoundationReady') do task.wait(0.1) end
 -- No dais on this map is fine: attributes still get set (equip and recycle work), and opens are refused.
@@ -45,39 +49,26 @@ local function pointFor(id)
 	points[id] = p
 	return p
 end
+-- (only this world's boxes stand here; the later worlds' are kept for their own halls)
+local here = Shoes.boxesForWorld(Shoes.ActiveWorld)
 local found = 0
-for _, box in Shoes.Boxes do
+for _, box in here do
 	if pointFor(box.Id) then found += 1 end
 end
 RS:SetAttribute('ShoeBoxes', found > 0)
-if active and found < #Shoes.Boxes then warn('[ShoeService] ' .. found .. ' of ' .. #Shoes.Boxes .. ' shoe boxes found on this map.') end
+if active and found < #here then warn('[ShoeService] ' .. found .. ' of ' .. #here .. ' shoe boxes found on this map.') end
 
-local rng = Random.new()
 local openLimit = RateLimiter.new(ShoeRules.OpenBurst, ShoeRules.OpenPerSecond)
 local actionLimit = RateLimiter.new(ShoeRules.ActionBurst, ShoeRules.ActionPerSecond)
-local opened = Net.get('ShoeOpened')
-
-local function set(player, name, value)
-	if player:GetAttribute(name) ~= value then player:SetAttribute(name, value) end
-end
-local function sync(player, profile)
-	local shoes = ShoeRules.sanitize(profile.Data.Shoes)
-	profile.Data.Shoes = shoes
-	local list = ShoeRules.equippedList(shoes)
-	local bonus = ShoeRules.bonus(shoes)
-	set(player, 'ShoesEquipped', table.concat(list, ','))
-	set(player, 'ShoeWorn', list[1] or '')
-	set(player, 'ShoeBonus', bonus)
-	set(player, 'ShoeMultiplier', 1 + bonus / 100)
-	set(player, 'ShoesOwned', ShoeRules.ownedString(shoes))
-	set(player, 'ShoesOpened', shoes.Opened)
-end
+local sync = ShoeOpening.sync
 local function notice(player, text) Net.get('Notice'):FireClient(player, text) end
 local function nameOf(id) local s = Shoes.ById[id]; return s and s.Name or 'that pair' end
 
 Net.get('OpenShoeBox').OnServerEvent:Connect(function(player, boxId)
 	local box = type(boxId) == 'string' and Shoes.BoxById[boxId]
 	if not box then return end
+	-- another world's box (not built here) or a Robux box (its receipt opens it): never through this remote
+	if not ShoeRules.inWorld(box.Id) or box.Robux then return end
 	if not openLimit.allow(player) then return end
 	local profile = Data.get(player)
 	local character = player.Character
@@ -86,7 +77,7 @@ Net.get('OpenShoeBox').OnServerEvent:Connect(function(player, boxId)
 	if not profile or not root or not humanoid or humanoid.Health <= 0 then return end
 	local point = pointFor(box.Id)
 	if not point then
-		notice(player, 'Find the shoe boxes at the back of the hall.')
+		notice(player, 'Find the shoe boxes in the hall.')
 		return
 	end
 	local shoes = ShoeRules.sanitize(profile.Data.Shoes)
@@ -102,22 +93,10 @@ Net.get('OpenShoeBox').OnServerEvent:Connect(function(player, boxId)
 		end
 		return
 	end
-	local before = #shoes.Equipped
 	profile.Data.Cash -= box.Price
-	local id, fresh = ShoeRules.open(shoes, box.Id, rng:NextNumber())
-	local shoe = Shoes.ById[id]
 	player:SetAttribute('Cash', profile.Data.Cash)
-	sync(player, profile)
+	ShoeOpening.open(player, profile, box.Id)
 	Data.push(player)
-	opened:FireClient(player, {
-		Box = box.Id, Shoe = id, Rarity = shoe.Rarity, New = fresh, Count = ShoeRules.copies(shoes, id), Equipped = #shoes.Equipped > before,
-	})
-	-- Legendary and up are news for the whole server, like big stage clears.
-	if shoe.Rank >= 4 then
-		for _, other in Players:GetPlayers() do
-			if other ~= player then notice(other, player.DisplayName .. ' unboxed ' .. shoe.Name .. ' (' .. shoe.Rarity .. ')!') end
-		end
-	end
 end)
 
 Net.get('ShoeAction').OnServerEvent:Connect(function(player, action, id)

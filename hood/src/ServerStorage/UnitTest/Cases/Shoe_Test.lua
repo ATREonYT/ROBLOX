@@ -10,14 +10,26 @@ return function(t)
  -- A deterministic uniform stream for the statistics test (Park-Miller).
  local function lcg(seed) local s=seed return function() s=(s*48271)%2147483647 return s/2147483647 end end
 
- t.test('ten boxes of six shoes, one per rarity, priced and bonused in order',function()
-  t.expect.equal(#Shoes.Boxes,10);t.expect.equal(#Shoes.List,60);t.expect.equal(#Shoes.Rarities,6)
+ t.test('ten Cash boxes of six shoes, one per rarity, priced and bonused in order (then the two Robux boxes)',function()
+  t.expect.equal(#Shoes.Boxes,12);t.expect.equal(#Shoes.List,70);t.expect.equal(#Shoes.Rarities,6)
   local ids,weight,chance={},0,0
   for i,r in Shoes.Rarities do t.expect.equal(r.Rank,i);weight+=r.Weight;chance+=r.Chance;if i>1 then t.expect.truthy(r.Chance<Shoes.Rarities[i-1].Chance and r.Power>Shoes.Rarities[i-1].Power) end end
   t.expect.equal(weight,Shoes.TotalWeight);t.expect.near(chance,100,1e-9)
-  local want={'Street','Graffiti','Frost','Lava','Toxic','Candy','Ocean','Gem','Galaxy','Gold'}
+  local want={'Street','Graffiti','Frost','Lava','Toxic','Candy','Ocean','Gem','Galaxy','Gold','Exclusive','Grail'}
   for i,box in Shoes.Boxes do
-   t.expect.equal(box.Id,want[i]);t.expect.equal(Shoes.BoxById[box.Id],box);t.expect.equal(box.Tier,i);t.expect.equal(#box.Shoes,6)
+   t.expect.equal(box.Id,want[i]);t.expect.equal(Shoes.BoxById[box.Id],box);t.expect.equal(box.Tier,i)
+   if i>10 then
+    -- the Robux boxes: no Cash price, a product key and a Robux price, five shoes Rare..Secret
+    t.expect.equal(box.Price,nil);t.expect.truthy(type(box.Robux)=='string');t.expect.truthy(box.RobuxPrice>0);t.expect.equal(box.Exclusive,true);t.expect.equal(#box.Shoes,5)
+    for j,id in box.Shoes do
+     local sh=Shoes.ById[id];t.expect.falsy(ids[id]);ids[id]=true
+     t.expect.equal(sh.Box,box.Id);t.expect.equal(sh.Rank,j+1);t.expect.equal(sh.Rarity,Shoes.Rarities[j+1].Id);t.expect.equal(sh.Exclusive,true);t.expect.equal(sh.World,box.World)
+     t.expect.truthy(type(sh.Name)=='string' and #sh.Name>0 and typeof(sh.Colors.Main)=='Color3')
+     if j>1 then t.expect.truthy(sh.Bonus>Shoes.ById[box.Shoes[j-1]].Bonus) end
+    end
+    continue
+   end
+   t.expect.equal(#box.Shoes,6);t.expect.equal(box.Robux,nil);t.expect.equal(box.RobuxPrice,nil);t.expect.equal(box.Exclusive,false)
    if i>1 then local prev=Shoes.Boxes[i-1];t.expect.truthy(box.Price>prev.Price);t.expect.truthy(Shoes.ById[box.Shoes[1]].Bonus>Shoes.ById[prev.Shoes[1]].Bonus) end
    for rank,id in box.Shoes do
     local s=Shoes.ById[id];t.expect.falsy(ids[id]);ids[id]=true
@@ -64,7 +76,122 @@ return function(t)
   t.expect.equal(select(2,R.canOpen(s,1e9,'Street',nil)),'far')
   t.expect.equal(select(2,R.canOpen(s,1e9,'Nope',1)),'unknown')
   t.expect.equal(select(2,R.canOpen(s,1e9,{},1)),'unknown')
-  t.expect.truthy(R.canOpen(s,10000,'Gold',R.Range))
+  -- (the Gold box opens in its own world, World 5)
+  t.expect.truthy(R.canOpen(s,10000,'Gold',R.Range,5))
+ end)
+
+ -- brief 21: each world keeps two Cash boxes; World 1 adds the two Robux boxes.
+ t.test('worlds: boxesForWorld(1) is Street, Graffiti, Exclusive, Grail; two Cash boxes for each later world',function()
+  local function ids(world) local l={} for _,b in Shoes.boxesForWorld(world) do table.insert(l,b.Id) end return table.concat(l,',') end
+  t.expect.equal(Shoes.ActiveWorld,1)
+  t.expect.equal(ids(1),'Street,Graffiti,Exclusive,Grail')
+  t.expect.equal(ids(2),'Frost,Lava');t.expect.equal(ids(3),'Toxic,Candy');t.expect.equal(ids(4),'Ocean,Gem');t.expect.equal(ids(5),'Galaxy,Gold')
+  t.expect.equal(ids(6),'');t.expect.equal(ids(nil),'');t.expect.equal(ids('1'),'')
+  -- every box is in exactly one world, and the list is a fresh copy each call
+  local seen=0;for w=1,Shoes.Worlds do seen+=#Shoes.boxesForWorld(w) end;t.expect.equal(seen,#Shoes.Boxes)
+  local a=Shoes.boxesForWorld(1);table.remove(a,1);t.expect.equal(#Shoes.boxesForWorld(1),4);t.expect.equal(Shoes.BoxById.Street.World,1)
+  -- the saves and the art keep every box
+  for _,id in {'Frost','Lava','Toxic','Candy','Ocean','Gem','Galaxy','Gold'} do t.expect.truthy(Shoes.BoxById[id] and Shoes.BoxById[id].World>1) end
+  t.expect.truthy(S.validate((function() local p=S.new();p.Shoes.Owned.PlusOneInfinity=1;p.Shoes.Owned.TheGrail=1;p.Shoes.Equipped={'TheGrail'};return p end)()))
+ end)
+
+ t.test('World 1 refuses the later worlds\' boxes, and never opens a Robux box for Cash',function()
+  local s=rack()
+  for _,b in Shoes.Boxes do
+   local ok,why=R.canOpen(s,1e12,b.Id,1)
+   if b.World~=1 then t.expect.falsy(ok);t.expect.equal(why,'world');t.expect.falsy(R.inWorld(b.Id))
+   elseif b.Robux then t.expect.falsy(ok);t.expect.equal(why,'robux');t.expect.truthy(R.inWorld(b.Id))
+   else t.expect.truthy(ok);t.expect.truthy(R.inWorld(b.Id)) end
+  end
+  -- not even in its own world, nor with junk Cash
+  t.expect.equal(select(2,R.canOpen(s,1e12,'Grail',1,1)),'robux');t.expect.equal(select(2,R.canOpen(s,1e12,'Exclusive',1,5)),'world')
+  t.expect.equal(select(2,R.canOpen(s,0/0,'Exclusive',1)),'robux')
+  t.expect.falsy(R.inWorld('Nope'));t.expect.falsy(R.inWorld(nil))
+ end)
+
+ t.test('Robux boxes: no Commons, odds sum, fair bonuses (Lava..Gem per rarity, under Gold), better than Graffiti',function()
+  for _,box in Shoes.Boxes do
+   local c,w=0,0
+   for i in box.Shoes do c+=box.Chances[i];w+=box.Weights[i];t.expect.truthy(box.Chances[i]>0) end
+   t.expect.near(c,100,1e-9);t.expect.equal(w,Shoes.TotalWeight)
+  end
+  local function at(boxId,rank) for _,id in Shoes.BoxById[boxId].Shoes do if Shoes.ById[id].Rank==rank then return Shoes.ById[id].Bonus end end end
+  local function mean(boxId) local b=Shoes.BoxById[boxId];local m=0;for i,id in b.Shoes do m+=b.Chances[i]/100*Shoes.ById[id].Bonus end;return m end
+  for rank=2,6 do
+   t.expect.truthy(at('Lava',rank)<=at('Exclusive',rank));t.expect.truthy(at('Exclusive',rank)<at('Grail',rank))
+   t.expect.truthy(at('Grail',rank)<=at('Gem',rank));t.expect.truthy(at('Grail',rank)<at('Gold',rank))
+  end
+  for _,id in {'Exclusive','Grail'} do
+   for _,sid in Shoes.BoxById[id].Shoes do t.expect.truthy(Shoes.ById[sid].Rank>=2);t.expect.truthy(Shoes.ById[sid].Bonus<Shoes.ById.PlusOneInfinity.Bonus) end
+  end
+  t.expect.truthy(mean('Exclusive')>mean('Graffiti'));t.expect.truthy(mean('Grail')>mean('Exclusive'));t.expect.truthy(mean('Grail')<mean('Gold'))
+  t.expect.truthy(mean('Exclusive')>=mean('Lava'))
+  -- the roll and the chances board use the box's own odds
+  local ex=Shoes.BoxById.Exclusive
+  local cases={{0,1},{0.5999,1},{0.6,2},{0.8799,2},{0.88,3},{0.9699,3},{0.97,4},{0.9949,4},{0.995,5},{0.99999999,5}}
+  for _,c in cases do local id,rarity=R.roll('Exclusive',c[1]);t.expect.equal(id,ex.Shoes[c[2]]);t.expect.equal(rarity,Shoes.ById[ex.Shoes[c[2]]].Rarity) end
+  local list=R.chances('Grail');t.expect.equal(#list,5);t.expect.equal(list[1].Rarity,'Rare');t.expect.equal(list[5].Id,'TheGrail');t.expect.equal(list[5].Chance,1)
+  t.expect.equal(R.chanceOf('SilverStreak'),60);t.expect.equal(R.chanceOf('FreshCanvas'),62);t.expect.equal(R.chanceOf('Nope'),0)
+  -- 200k rolls: never a Common, each shoe at its chance
+  local n,hits,rnd=200000,{},lcg(777)
+  for _=1,n do local id=R.roll('Grail',rnd());hits[id]=(hits[id] or 0)+1 end
+  for i,id in Shoes.BoxById.Grail.Shoes do
+   local p=Shoes.BoxById.Grail.Chances[i]/100;local got=(hits[id] or 0)/n
+   t.expect.truthy(math.abs(got-p)<=4*math.sqrt(p*(1-p)/n)+1e-9)
+  end
+  for id in hits do t.expect.truthy(Shoes.ById[id].Rarity~='Common') end
+  -- a recycled exclusive pair pays a tenth of its box's set value
+  t.expect.equal(R.refund('SilverStreak'),100);t.expect.equal(R.refund('TheGrail'),200)
+ end)
+
+ t.test('the receipt path: a product key opens its Robux box through ShoeOpening, the same roll and save',function()
+  local Products=require(RS.Shared.Config.Products)
+  local Opening=require(game.ServerScriptService.HoodServer.ShoeOpening)
+  for _,box in Shoes.boxesForWorld(1) do
+   if box.Robux then
+    -- the product exists (id 0 until the owner makes it: nothing can be bought, the prompt says Coming soon) and
+    -- its Store card matches the box
+    t.expect.equal(Products.DeveloperProducts[box.Robux],0)
+    local entry=Products.ByKey[box.Robux];t.expect.truthy(entry and entry.Kind=='Product' and entry.Section=='Box' and entry.Wired==true)
+    t.expect.equal(entry.Price,box.RobuxPrice);t.expect.equal(entry.Art,'box:'..box.Id)
+    t.expect.equal(select(2,Products.canBuy(box.Robux)),'noid')
+    t.expect.equal(R.canGrant(box.Robux),box);t.expect.equal(Shoes.boxForProduct(box.Robux),box)
+   end
+  end
+  t.expect.equal(R.canGrant('PowerPack1'),nil);t.expect.equal(select(2,R.canGrant('Nope')),'unknown');t.expect.equal(R.canGrant(nil),nil)
+  -- a stand-in player (attributes only; not in Players, so no remotes) and a profile
+  local attrs={}
+  local fake={DisplayName='Tester',Parent=nil}
+  function fake:GetAttribute(k) return attrs[k] end
+  function fake:SetAttribute(k,v) attrs[k]=v end
+  local profile={Data=S.new()}
+  profile.Data.Shoes.Owned.FreshCanvas=R.MaxOwned -- (a full rack: a paid box is still given)
+  local id,info=Opening.open(fake,profile,R.canGrant('ShoeBoxExclusive').Id,0)
+  t.expect.equal(id,'SilverStreak');t.expect.equal(info.Box,'Exclusive');t.expect.equal(info.Rarity,'Rare');t.expect.truthy(info.New);t.expect.truthy(info.Equipped)
+  t.expect.equal(profile.Data.Shoes.Owned.SilverStreak,1);t.expect.equal(profile.Data.Shoes.Opened,1);t.expect.equal(R.count(profile.Data.Shoes),R.MaxOwned+1)
+  t.expect.truthy(string.find(attrs.ShoesOwned,'SilverStreak:1',1,true)~=nil);t.expect.equal(attrs.ShoeWorn,'SilverStreak');t.expect.equal(attrs.ShoesOpened,1)
+  id=Opening.open(fake,profile,R.canGrant('ShoeBoxGrail').Id,0.99999)
+  t.expect.equal(id,'TheGrail');t.expect.equal(profile.Data.Shoes.Owned.TheGrail,1);t.expect.equal(attrs.ShoeWorn,'TheGrail')
+  t.expect.truthy(S.validate(profile.Data))
+  -- the Cash never moves on a receipt
+  t.expect.equal(profile.Data.Cash,S.new().Cash)
+ end)
+
+ t.test('the Robux boxes and their shoes have models: premium boxes within budget, exclusive shoes within budget',function()
+  local BoxModels=require(RS.Shared.Models.BoxModels)
+  local ShoeModels=require(RS.Shared.Models.ShoeModels)
+  local function parts(m) local n=0 for _,d in m:GetDescendants() do if d:IsA('BasePart') then n+=1 end end return n end
+  for _,box in Shoes.Boxes do
+   local m=BoxModels.build(box.Id,1)
+   t.expect.truthy(m:FindFirstChild('Lid') and m.PrimaryPart);t.expect.truthy(parts(m)<=150)
+   m:Destroy()
+  end
+  t.expect.equal(#ShoeModels.Ids,60);t.expect.equal(#ShoeModels.ExclusiveIds,10);t.expect.equal(#ShoeModels.AllIds,70)
+  for _,id in ShoeModels.ExclusiveIds do
+   local sh=Shoes.ById[id];t.expect.truthy(sh and sh.Exclusive);t.expect.equal(ShoeModels.Meta[id].Box,sh.Box);t.expect.equal(ShoeModels.Meta[id].Rarity,sh.Rank)
+   local m=ShoeModels.shoe(id,'R',1);t.expect.truthy(parts(m)-1<=60);m:Destroy()
+   local p=ShoeModels.pair(id,1);t.expect.truthy(parts(p)<=123);p:Destroy()
+  end
  end)
 
  t.test('opening adds the pair, counts the box and fills free slots',function()

@@ -6,8 +6,11 @@
 --     Owned     how many pairs of each shoe you have (whole numbers >= 1; 0 is never stored)
 --     Equipped  up to MaxEquipped ids, each no more often than you own it (two copies of a shoe can both be on)
 --     Opened    boxes opened ever (the goal chain's "Open a shoe box")
---   Opening a box: stand within Range of its BoxPoint, pay its Price, have room in the rack (MaxOwned pairs); one
---   uniform roll picks the rarity by weight (Config.Shoes.Rarities) and so the shoe (each box has one per rarity).
+--   Opening a Cash box: it belongs to the world this server runs (Config.Shoes.ActiveWorld; later worlds' boxes
+--   can't be opened here), stand within Range of its BoxPoint, pay its Price, have room in the rack (MaxOwned pairs);
+--   one uniform roll picks a shoe by the box's own Weights (a Cash box: the Rarities' weights, one shoe per rarity; a
+--   Robux box: its own odds, Rare..Secret). A Robux box never opens for Cash: its developer-product receipt opens it
+--   (canGrant; StoreService -> HoodServer/ShoeOpening), wherever you stand and even with a full rack (it was paid).
 --   Bonus: every equipped pair adds its Bonus percent; the total multiplies the Power each shot pays (ShotRules.pay's
 --   shoe multiplier, 1 + total / 100). The best equipped pair (highest Bonus) is the one worn; the others follow.
 local Shoes = require(script.Parent.Config.Shoes)
@@ -21,7 +24,7 @@ ShoeRules.OpenBurst = 1 -- opens the server lets through at once
 ShoeRules.OpenPerSecond = 0.8 -- and the rate it refills at (one open every 1.25 s: the unboxing moment's length)
 ShoeRules.ActionBurst = 6 -- equip / unequip / equip best / recycle requests at once
 ShoeRules.ActionPerSecond = 4
-ShoeRules.RecycleShare = 0.1 -- recycling a spare pair gives back this share of its box's price
+ShoeRules.RecycleShare = 0.1 -- recycling a spare pair gives back this share of its box's Value (Cash price)
 ShoeRules.Actions = { Equip = true, Unequip = true, EquipBest = true, Recycle = true }
 
 local function int(v: any): number?
@@ -81,30 +84,47 @@ function ShoeRules.equippedCount(shoes, id: any): number
 end
 
 ---------------------------------------------------------------------------------------------- boxes
--- The shoe a uniform roll r in [0, 1) gives from a box (nil for an unknown box), and its rarity.
+-- The shoe a uniform roll r in [0, 1) gives from a box (nil for an unknown box), and its rarity. The box's Weights
+-- (one per shoe, adding up to Shoes.TotalWeight) split [0, 1) in the Shoes order, commonest first.
 function ShoeRules.roll(boxId: any, r: any): (string?, string?)
 	local box = type(boxId) == 'string' and Shoes.BoxById[boxId]
 	if not box then return nil, nil end
 	local x = (type(r) == 'number' and r == r) and math.clamp(r, 0, 0.999999999) or 0
 	local pick = x * Shoes.TotalWeight
 	local acc = 0
-	for rank, rarity in Shoes.Rarities do
-		acc += rarity.Weight
-		if pick < acc then return box.Shoes[rank], rarity.Id end
+	for i, id in box.Shoes do
+		acc += box.Weights[i]
+		if pick < acc then return id, Shoes.ById[id].Rarity end
 	end
-	return box.Shoes[1], Shoes.Rarities[1].Id
+	local first = box.Shoes[1]
+	return first, Shoes.ById[first].Rarity
 end
 
--- A box's six shoes with their chances (percent), Common first: { { Id, Rarity, Chance } }.
+-- A box's shoes with their chances (percent), commonest first: { { Id, Rarity, Chance } } (6 on a Cash box, 5 on a
+-- Robux box).
 function ShoeRules.chances(boxId: any)
 	local box = type(boxId) == 'string' and Shoes.BoxById[boxId]
 	local list = {}
 	if not box then return list end
-	for rank, id in box.Shoes do
-		local rarity = Shoes.Rarities[rank]
-		table.insert(list, { Id = id, Rarity = rarity.Id, Chance = rarity.Chance })
+	for i, id in box.Shoes do
+		table.insert(list, { Id = id, Rarity = Shoes.ById[id].Rarity, Chance = box.Chances[i] })
 	end
 	return list
+end
+
+-- The chance (percent) a shoe's own box gives it (0 for an unknown id).
+function ShoeRules.chanceOf(id: any): number
+	local shoe = type(id) == 'string' and Shoes.ById[id]
+	local box = shoe and Shoes.BoxById[shoe.Box]
+	local i = box and table.find(box.Shoes, id)
+	return i and box.Chances[i] or 0
+end
+
+-- Is this box on show (and openable) in `world` (default: the world this server runs)?
+function ShoeRules.inWorld(boxId: any, world: any): boolean
+	local box = type(boxId) == 'string' and Shoes.BoxById[boxId]
+	if not box then return false end
+	return box.World == (world or Shoes.ActiveWorld)
 end
 
 -- "62%", "9.5%", "0.45%", "0.05%".
@@ -118,19 +138,31 @@ local function near(distance: any): boolean
 	return type(distance) == 'number' and distance == distance and distance >= 0 and distance <= ShoeRules.Range
 end
 
--- Can this player open box `boxId` now? true, or false and why: 'unknown' (no such box), 'far' (not at the box),
--- 'cash' (can't afford it), 'full' (the rack holds MaxOwned pairs).
-function ShoeRules.canOpen(shoes, cash: any, boxId: any, distance: any): (boolean, string?)
+-- Can this player open box `boxId` for Cash now? true, or false and why: 'unknown' (no such box), 'world' (it
+-- belongs to another world than `world`, default the active one), 'robux' (a Robux box: only its receipt opens it),
+-- 'far' (not at the box), 'cash' (can't afford it), 'full' (the rack holds MaxOwned pairs).
+function ShoeRules.canOpen(shoes, cash: any, boxId: any, distance: any, world: any): (boolean, string?)
 	local box = type(boxId) == 'string' and Shoes.BoxById[boxId]
 	if not box then return false, 'unknown' end
+	if not ShoeRules.inWorld(boxId, world) then return false, 'world' end
+	if box.Robux or type(box.Price) ~= 'number' then return false, 'robux' end
 	if not near(distance) then return false, 'far' end
 	if type(cash) ~= 'number' or cash ~= cash or cash < box.Price then return false, 'cash' end
 	if ShoeRules.count(shoes) >= ShoeRules.MaxOwned then return false, 'full' end
 	return true, nil
 end
 
--- Adds the shoe roll r gives to the rack (call after canOpen; the caller takes the Cash). Returns the shoe id and
--- whether it is a new one for you. While a slot is free the new pair goes straight on.
+-- Can a paid receipt for developer product `key` open a box? The box, or nil and why: 'unknown' (no Robux box for
+-- that key). No distance, world or rack check: the Robux were paid, so the pair is always given (the rack may go past
+-- MaxOwned; Cash opens wait until you recycle).
+function ShoeRules.canGrant(key: any): (any, string?)
+	local box = Shoes.boxForProduct(key)
+	if not box or not box.Exclusive then return nil, 'unknown' end
+	return box, nil
+end
+
+-- Adds the shoe roll r gives to the rack (call after canOpen or canGrant; the caller takes the Cash). Returns the shoe
+-- id and whether it is a new one for you. While a slot is free the new pair goes straight on.
 function ShoeRules.open(shoes, boxId: string, r: number): (string?, boolean)
 	local id = ShoeRules.roll(boxId, r)
 	if not id then return nil, false end
@@ -218,12 +250,14 @@ function ShoeRules.equipBest(shoes): boolean
 end
 
 ---------------------------------------------------------------------------------------------- recycling
--- Cash a recycled pair of `id` gives back (a tenth of its box's price, at least 1).
+-- Cash a recycled pair of `id` gives back (a tenth of its box's Value: the Cash price, or a Robux box's set value;
+-- at least 1).
 function ShoeRules.refund(id: any): number
 	local shoe = type(id) == 'string' and Shoes.ById[id]
 	local box = shoe and Shoes.BoxById[shoe.Box]
-	if not box then return 0 end
-	return math.max(1, math.floor(box.Price * ShoeRules.RecycleShare))
+	local value = box and (box.Value or box.Price)
+	if type(value) ~= 'number' then return 0 end
+	return math.max(1, math.floor(value * ShoeRules.RecycleShare))
 end
 
 -- Can a spare pair of `id` be recycled? false reasons: 'unknown', 'locked' (none owned), 'equipped' (every copy is on).

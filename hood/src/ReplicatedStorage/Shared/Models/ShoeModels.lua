@@ -1,5 +1,7 @@
 -- The 60 shoes of the 10 shoe boxes (Config/Shoes.lua ids), built from plain Parts, wedges, cylinders and balls.
 -- Chunky high-top sneakers in the game's classic block style, after the Blender mock-ups in the shoe brief.
+-- (brief 21) Plus the 10 exclusive shoes of the two Robux boxes (Exclusive, Grail; Rare..Secret, no Commons): the
+-- same kit and accents in premium finishes (chrome, gold, hologram, rainbow) no Cash shoe wears.
 --
 --   ShoeModels.shoe(id, side, scale) -> Model   one shoe ('L' or 'R'); PrimaryPart `Fit` is an invisible box the size
 --                                              of a canonical R15 foot (1, 0.3, 1), centred where the foot goes, toe -Z
@@ -10,7 +12,9 @@
 --                                              an R6 character (leg bottoms), scaled to the real parts
 --   ShoeModels.fx(model, rarity, opts?)        rarity particles and light (optional eye candy, client side)
 --   ShoeModels.viewport(id, size?) -> ViewportFrame   the pair, framed like the mock-ups (inventory, chance boards)
---   ShoeModels.Ids, ShoeModels.Meta[id] = { Name, Box, Rarity, RarityName, Parts }, ShoeModels.Rarities
+--   ShoeModels.Ids (the 60 Cash-box shoes, box by box), ShoeModels.ExclusiveIds (the 10 Robux-box shoes),
+--   ShoeModels.AllIds (all 70), ShoeModels.Meta[id] = { Name, Box, Rarity, RarityName, Parts } (all 70),
+--   ShoeModels.Rarities
 --
 -- How a shoe is made: one shared sneaker kit (sole and midsole stripe, toe cap, toe box, inclined lace panel with
 -- eyestays, laces and eyelets, quarter and ankle panels, padded collar, tongue, heel counter and tab, side logo,
@@ -1211,7 +1215,111 @@ def('PlusOneInfinity', { Name = '+1 Infinity', Box = 'Gold', rarity = 6,
 	end,
 })
 
+-- Robux boxes (brief 21) ---------------------------------------------------------------------------------------------
+-- Their own list, so Ids stays the 60 Cash-box shoes box by box.
+local EXCLUSIVE = {}
+local function xdef(id, t)
+	t.Id = id
+	DEFS[id] = t
+	table.insert(EXCLUSIVE, id)
+end
+local ICE, PINKGLOW = C(90, 230, 255), C(255, 140, 220)
+-- Exclusive Box: chrome, midnight, rainbow and hologram, ice-blue light.
+xdef('SilverStreak', { Name = 'Silver Streak', Box = 'Exclusive', rarity = 2,
+	upper = C(214, 222, 234), ankle = C(196, 206, 222), heel = C(40, 44, 62), collar = C(40, 44, 62), tongue = C(224, 230, 242), tab = ICE,
+	upperKind = 'metal', base = C(40, 44, 62), stripe = ICE, logo = { kind = 'bolt', color = ICE, mat = 'neon' }, tongueLabel = ICE,
+})
+xdef('MidnightChrome', { Name = 'Midnight Chrome', Box = 'Exclusive', rarity = 3,
+	upper = C(34, 36, 54), ankle = C(28, 30, 46), heel = C(204, 212, 226), collar = C(28, 30, 46), tongue = C(34, 36, 54), upperKind = 'gloss',
+	lace = ICE, toe = C(204, 212, 226), toeKind = 'metal', sole = C(204, 210, 224), base = C(28, 30, 46), stripe = ICE, tab = ICE,
+	tongueLabel = ICE,
+	deco = function(B, d)
+		B:onShaft(function() A.zigzag(B, B.U + 0.42, 0.06, 0.8, ICE, 'neon') end)
+		A.toeBadge(B, d, 'sparkle', ICE, 'neon', 0.28)
+	end,
+})
+xdef('RainbowDrip', { Name = 'Rainbow Drip', Box = 'Exclusive', rarity = 4, fx = { tex = 'sparkle', colors = { C(255, 120, 200), C(120, 220, 255), C(255, 236, 120) } },
+	upper = C(246, 246, 250), ankle = C(236, 238, 244), heel = C(255, 90, 160), collar = C(255, 90, 160), tongue = C(246, 246, 250), upperKind = 'gloss',
+	rainbowLaces = true, rainbowStripe = true, sole = K.snow, base = C(80, 200, 255), toe = C(80, 200, 255), tongueLabel = C(255, 90, 160),
+	deco = function(B, d)
+		A.drips(B, d, C(255, 90, 160), 'gloss', 3, 1.1)
+		A.speckles(B, d, { { 0.5, 0.25, 0.07, RAINBOW[1], 45 }, { 0.36, -0.05, 0.07, RAINBOW[3], 45 }, { 0.22, 0.3, 0.06, RAINBOW[4], 45 },
+			{ 0.46, -0.35, 0.06, RAINBOW[5], 45 }, { 0.26, -0.25, 0.06, RAINBOW[6], 45 } }, 'neon')
+		A.heelStrip(B, d, C(120, 220, 255))
+	end,
+})
+xdef('Hologram', { Name = 'Hologram', Box = 'Exclusive', rarity = 5, fx = { tex = 'sparkle', colors = { C(170, 240, 255), C(255, 170, 230) } },
+	upper = C(226, 236, 255), ankle = C(214, 226, 250), heel = PINKGLOW, collar = C(120, 230, 240), tongue = C(232, 240, 255), upperKind = 'gloss',
+	lace = C(255, 170, 230), sole = C(240, 244, 255), base = C(120, 230, 240), stripe = PINKGLOW, toe = C(214, 226, 250), toeKind = 'gloss',
+	tongueLabel = C(120, 230, 240),
+	deco = function(B, d)
+		A.wings(B, d, C(170, 240, 255), C(255, 170, 230), 'gloss', 1.1)
+		A.heelStrip(B, d, PINKGLOW)
+		A.toeBadge(B, d, 'gem', C(120, 230, 240), 'glass', 0.26)
+	end,
+})
+xdef('PlatinumWings', { Name = 'Platinum Wings', Box = 'Exclusive', rarity = 6,
+	upper = C(226, 232, 242), ankle = C(208, 216, 230), heel = ICE, collar = C(70, 80, 110), tongue = C(226, 232, 242), upperKind = 'metal',
+	rainbowLaces = true, eyelet = K.gold, eyeletKind = 'gold', sole = C(240, 244, 250), base = ICE, rainbowStripe = true, rainbowOffset = 3,
+	toe = C(208, 216, 230), toeKind = 'metal', tongueLabel = false,
+	deco = function(B, d)
+		A.wings(B, d, C(250, 250, 255), C(200, 236, 255), 'smooth', 1.25)
+		A.rainbowBand(B, d, 0.26, 3)
+		A.toeBadge(B, d, 'gem', ICE, 'glass', 0.28)
+	end,
+})
+-- Grail Box: gold, starlight, sun flares and royal purple.
+local SUN, GOLDEN, ROYAL = C(255, 120, 60), C(255, 205, 60), C(80, 40, 160)
+xdef('GoldenHour', { Name = 'Golden Hour', Box = 'Grail', rarity = 2,
+	upper = C(255, 196, 52), ankle = C(240, 176, 40), heel = SUN, collar = K.snow, tongue = C(255, 206, 72), tab = SUN, upperKind = 'gold',
+	base = SUN, stripe = C(255, 150, 80), logo = { kind = 'sparkle', color = SUN }, tongueLabel = SUN,
+})
+xdef('Starlight', { Name = 'Starlight', Box = 'Grail', rarity = 3,
+	upper = C(28, 34, 90), ankle = C(24, 28, 76), heel = C(255, 214, 80), collar = C(24, 28, 76), tongue = C(28, 34, 90), tab = C(255, 214, 80),
+	lace = C(240, 240, 255), base = C(255, 200, 60), stripe = C(255, 224, 120), tongueLabel = C(255, 214, 80),
+	deco = function(B, d)
+		B:onShaft(function() A.star(B, sideCF(B.U + 0.44, 0.12, 0.03), 0.34, C(255, 214, 80), 'gold') end)
+		A.speckles(B, d, { { 0.56, 0.35, 0.05, K.snow, 45 }, { 0.3, -0.2, 0.05, C(255, 236, 160), 45 }, { 0.2, 0.3, 0.04, K.snow, 45 },
+			{ 0.5, -0.36, 0.04, C(255, 236, 160), 45 } }, 'neon')
+		A.toeBadge(B, d, 'star', C(255, 214, 80), 'gold', 0.28)
+	end,
+})
+xdef('SolarFlare', { Name = 'Solar Flare', Box = 'Grail', rarity = 4, fx = { tex = 'ember', colors = { C(255, 200, 60), C(255, 120, 40) } },
+	upper = C(255, 176, 40), ankle = C(255, 150, 30), heel = C(60, 30, 20), collar = C(60, 30, 20), tongue = C(255, 190, 60), upperKind = 'gloss',
+	lace = C(255, 240, 200), eyelet = K.gold, eyeletKind = 'gold', sole = C(60, 30, 20), base = C(255, 90, 40), stripe = C(255, 220, 90),
+	toe = C(255, 90, 40), tongueLabel = C(255, 70, 40),
+	deco = function(B, d)
+		A.collarFlames(B, d, C(255, 110, 40), C(255, 230, 90), 'smooth')
+		B:onShaft(function() A.flame(B, sideCF(B.U + 0.3, 0.05, 0.022, 0), 0.5, C(255, 90, 40), K.gold, 'smooth') end)
+	end,
+})
+xdef('AstroCrown', { Name = 'Astro Crown', Box = 'Grail', rarity = 5, fx = { tex = 'star', colors = { C(255, 214, 90), C(190, 150, 255) } },
+	upper = ROYAL, ankle = C(66, 32, 140), heel = GOLDEN, collar = C(30, 20, 60), tongue = C(30, 20, 60), upperKind = 'gloss',
+	lace = C(255, 214, 80), eyelet = K.gold, eyeletKind = 'gold', sole = C(30, 20, 60), base = C(255, 196, 50), stripe = C(190, 150, 255),
+	toe = GOLDEN, toeKind = 'gold', tongueLabel = C(255, 214, 80),
+	deco = function(B, d)
+		B:onShaft(function()
+			A.crown(B, CF(B.cat(L.XC + 0.02, 0.12, B.collarZ)) * ANG(0, math.pi, 0), 0.62, GOLDEN, C(120, 220, 255))
+		end)
+		A.wings(B, d, C(190, 150, 255), GOLDEN, 'smooth', 1.05)
+		A.speckles(B, d, { { 0.2, 0.25, 0.05, K.snow, 45 }, { 0.3, -0.3, 0.05, K.snow, 45 } }, 'neon')
+	end,
+})
+xdef('TheGrail', { Name = 'The Grail', Box = 'Grail', rarity = 6,
+	upper = C(255, 200, 56), ankle = C(240, 180, 40), heel = C(170, 90, 255), collar = C(110, 50, 190), tongue = C(255, 206, 72), upperKind = 'gold',
+	tongueKind = 'gold', rainbowLaces = true, sole = K.snow, base = C(170, 90, 255), rainbowStripe = true, rainbowOffset = 4,
+	toe = C(170, 90, 255), toeKind = 'gloss', tongueLabel = false,
+	deco = function(B, d)
+		A.wings(B, d, C(250, 250, 255), C(232, 236, 248), 'smooth', 1.2)
+		A.rainbowBand(B, d, 0.26, 4)
+		B:onShaft(function() A.plusOneFront(B, B.tongueFront * CF(0, 0.47, -0.02), 0.36, C(170, 90, 255), 'gloss') end)
+		A.toeBadge(B, d, 'gem', C(170, 90, 255), 'glass', 0.28)
+	end,
+})
+
 ShoeModels.Ids = ORDER
+ShoeModels.ExclusiveIds = EXCLUSIVE
+ShoeModels.AllIds = table.move(EXCLUSIVE, 1, #EXCLUSIVE, #ORDER + 1, table.clone(ORDER))
 ShoeModels.Defs = DEFS
 local ALIAS = { ['24Karat'] = 'TwentyFourKarat', Karat24 = 'TwentyFourKarat', ['PlusOne Infinity'] = 'PlusOneInfinity', KingSCrown = 'KingsCrown' }
 local function resolve(id)
@@ -1552,6 +1660,8 @@ local THEME = {
 	Gem = { tex = 'shard', colors = { C(150, 255, 200), C(220, 250, 255) } },
 	Galaxy = { tex = 'star', colors = { C(220, 210, 255), C(170, 140, 255) } },
 	Gold = { tex = 'sparkle', colors = { C(255, 220, 90), C(255, 190, 40) } },
+	Exclusive = { tex = 'sparkle', colors = { C(170, 240, 255), C(255, 170, 230) } },
+	Grail = { tex = 'star', colors = { C(255, 220, 90), C(200, 150, 255) } },
 }
 ShoeModels.Themes = THEME
 local BUILTIN = {
@@ -1745,7 +1855,7 @@ end
 
 ---------------------------------------------------------------------------------------------- meta
 ShoeModels.Meta = {}
-for _, id in ORDER do
+for _, id in ShoeModels.AllIds do
 	local d = DEFS[id]
 	ShoeModels.Meta[id] = { Name = d.Name, Box = d.Box, Rarity = d.rarity, RarityName = RARITIES[d.rarity] }
 end
@@ -1755,7 +1865,7 @@ function ShoeModels.parts(id: string): number
 	return #list
 end
 setmetatable(ShoeModels.Meta, {})
-for _, id in ORDER do
+for _, id in ShoeModels.AllIds do
 	setmetatable(ShoeModels.Meta[id], { __index = function(t, key)
 		if key == 'Parts' then
 			local n = ShoeModels.parts(id)

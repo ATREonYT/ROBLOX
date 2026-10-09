@@ -1,7 +1,10 @@
--- BoxModels: the 10 shoe boxes ("eggs" of the shoe system), part-built in Luau (no meshes, no uploads), after the
+-- BoxModels: the 12 shoe boxes ("eggs" of the shoe system), part-built in Luau (no meshes, no uploads), after the
 -- user's mock-up renders (shoes_in/Shoes_And_Boxes_Detailed/<NN>_<Box>_Box/0_<Box>_Box.jpg), tuned to the game's
 -- studded toy style: a chunky rounded tub on a darker foot, a framed name plate ("STREET / SHOE BOX"), a "+1" coin
 -- on each side, and a lid (rim band, body, bevel cap, big studs) carrying the box's theme topper.
+-- The two Robux boxes (brief 21: Exclusive and Grail, World 1's "Robux Exclusive" eggs) wear a premium finish the
+-- Cash boxes never have: a glowing rainbow band round the tub, a metal (chrome or gold) lid, a big floating topper (a
+-- spinning cut diamond; a golden winged sneaker under a rainbow halo), a stronger glow and rainbow sparkles.
 --   BoxModels.build(boxId, scale?, at?) -> Model   closed box, pivot = bottom centre (PrimaryPart `Root`), front -Z;
 --               built at CFrame `at` (default the origin)
 --     .Lid      sub-model (rim, lid, studs, drips and the `Topper` model); its pivot (PrimaryPart `Hinge`) is the
@@ -20,7 +23,7 @@ local SM, NEON, GLASS, FOIL = M.SmoothPlastic, M.Neon, M.Glass, M.Foil
 local PI = math.pi
 local WHITE = C(250, 250, 252)
 
-BoxModels.Ids = { 'Street', 'Graffiti', 'Frost', 'Lava', 'Toxic', 'Candy', 'Ocean', 'Gem', 'Galaxy', 'Gold' }
+BoxModels.Ids = { 'Street', 'Graffiti', 'Frost', 'Lava', 'Toxic', 'Candy', 'Ocean', 'Gem', 'Galaxy', 'Gold', 'Exclusive', 'Grail' }
 -- the tub (W x D), the body's top (where the lid sits and the hinge is), the lid's cap top
 BoxModels.Size = { W = 4.4, D = 3.4, Body = 2.1, Top = 3.08 }
 local W, D = BoxModels.Size.W, BoxModels.Size.D
@@ -176,6 +179,8 @@ end
 --   rim, rimMat           the band between lid and tub (glowing on most boxes, like the pictures)
 --   plate/frame/ink/inkStroke/sub   the name plate: its face, its frame, the name's colour and outline, "SHOE BOX"
 --   coin/coinFace/mark    the "+1" side coin
+--   lidMat/coinMat        optional materials for the lid body and cap, and the coin (default SmoothPlastic)
+--   premium               a Robux box: the rainbow band round the tub, a stronger glow, rainbow sparkles
 local THEMES = {
 	Street = {
 		Order = 1, Name = 'Street', Color = C(222, 56, 48), Accent = C(255, 132, 116),
@@ -266,6 +271,26 @@ local THEMES = {
 		coin = C(255, 204, 90), coinFace = C(255, 224, 140), mark = WHITE,
 		gold = C(255, 196, 50), wing = C(244, 246, 252), wingShade = C(206, 216, 238),
 	},
+	-- (brief 21) the Robux boxes: a midnight tub with a chrome lid and an ice-blue glow; a royal purple tub with a gold
+	-- lid and a gold glow
+	Exclusive = {
+		Order = 11, Name = 'Exclusive', Color = C(70, 200, 255), Accent = C(190, 240, 255), premium = true,
+		body = C(30, 34, 70), bodyShade = C(22, 24, 52), foot = C(14, 14, 30),
+		lid = C(206, 216, 232), lidLight = C(232, 238, 248), stud = C(196, 206, 224), lidMat = M.Metal,
+		rim = C(70, 214, 255), rimMat = NEON,
+		plate = C(16, 18, 40), frame = C(70, 214, 255), ink = C(160, 238, 255), inkStroke = C(10, 44, 90), sub = WHITE,
+		coin = C(206, 216, 232), coinFace = C(232, 238, 248), mark = C(40, 150, 220), coinMat = M.Metal,
+		gem = C(110, 226, 255), gemLight = C(200, 246, 255), gemCore = C(150, 240, 255),
+	},
+	Grail = {
+		Order = 12, Name = 'Grail', Color = C(170, 80, 255), Accent = C(255, 210, 80), premium = true,
+		body = C(104, 44, 184), bodyShade = C(80, 30, 150), foot = C(46, 18, 96),
+		lid = C(255, 194, 52), lidLight = C(255, 214, 100), stud = C(250, 186, 56), lidMat = FOIL,
+		rim = C(255, 206, 70), rimMat = NEON,
+		plate = C(42, 16, 84), frame = C(255, 200, 60), ink = C(255, 224, 120), inkStroke = C(90, 40, 10), sub = WHITE,
+		coin = C(255, 200, 60), coinFace = C(255, 222, 120), mark = C(104, 44, 184), coinMat = FOIL,
+		gold = C(255, 198, 56), goldDark = C(222, 150, 30), wing = C(250, 250, 255), wingShade = C(214, 222, 242),
+	},
 }
 BoxModels.Meta = {}
 for id, t in THEMES do
@@ -320,8 +345,8 @@ end
 -- The "+1" coin on a side face (sx = 1: +X side, -1: -X side), its mark reading from outside.
 local function coin(k, t, sx)
 	local x = sx * HW
-	k:cyl('Coin', V(x + sx * 0.06, 1.2, 0), 'x', 0.2, 1.36, t.coin, SM)
-	k:cyl('CoinFace', V(x + sx * 0.17, 1.2, 0), 'x', 0.08, 1.04, t.coinFace, SM)
+	k:cyl('Coin', V(x + sx * 0.06, 1.2, 0), 'x', 0.2, 1.36, t.coin, t.coinMat or SM)
+	k:cyl('CoinFace', V(x + sx * 0.17, 1.2, 0), 'x', 0.08, 1.04, t.coinFace, t.coinMat or SM)
 	-- the viewer's left on this face is +Z * sx
 	local mx, left = x + sx * 0.22, sx
 	k:box('CoinPlus', V(mx, 1.2, left * 0.17), V(0.06, 0.1, 0.34), t.mark, SM)
@@ -356,8 +381,8 @@ local function common(k, t)
 	hinge.Transparency = 1
 	lid.PrimaryPart = hinge
 	lk:rbox('LidRim', 0, BODY, 0, W + 0.24, 0.24, D + 0.24, 0.62, t.rim, t.rimMat or SM)
-	lk:rbox('LidBody', 0, BODY + 0.24, 0, W + 0.16, 0.58, D + 0.16, 0.58, t.lid, SM)
-	lk:rbox('LidCap', 0, TOP - 0.16, 0, W - 0.2, 0.16, D - 0.2, 0.42, t.lidLight, SM)
+	lk:rbox('LidBody', 0, BODY + 0.24, 0, W + 0.16, 0.58, D + 0.16, 0.58, t.lid, t.lidMat or SM)
+	lk:rbox('LidCap', 0, TOP - 0.16, 0, W - 0.2, 0.16, D - 0.2, 0.42, t.lidLight, t.lidMat or SM)
 	-- the lid's underside (covers the glowing rim's bottom when the lid is open) and the tub's dark inside
 	lk:span('LidInside', V(-HW + 0.1, BODY - 0.016, -HD + 0.1), V(HW - 0.1, BODY - 0.004, HD - 0.1), t.lid, SM)
 	k:span('Inside', V(-HW + 0.3, BODY, -HD + 0.3), V(HW - 0.3, BODY + 0.012, HD - 0.3), C(30, 30, 38), SM)
@@ -369,8 +394,39 @@ local function studsOn(lk, t, skip)
 	if not t.stud then return end
 	for i, p in STUDS do
 		if not (skip and skip[i]) then
-			lk:cyl('Stud', V(p.X, TOP + 0.1, p.Z), 'y', 0.2, 0.56, t.stud, SM)
+			lk:cyl('Stud', V(p.X, TOP + 0.1, p.Z), 'y', 0.2, 0.56, t.stud, t.lidMat or SM)
 		end
+	end
+end
+
+-- The Robux boxes' rainbow band: glowing segments in the six rainbow colours round the tub on its shade band, under
+-- the name plate (six across the front and the back, four along each side), the colours running on round the corners.
+local RAINBOW = { C(255, 72, 92), C(255, 160, 40), C(255, 230, 64), C(80, 226, 120), C(60, 180, 255), C(170, 100, 255) }
+BoxModels.Rainbow = RAINBOW
+local function rainbowBand(k)
+	local y0, y1, out = 0.36, 0.56, 0.05
+	local i = 0
+	local function seg(a, b)
+		i += 1
+		k:span('RainbowBand', a, b, RAINBOW[(i - 1) % #RAINBOW + 1], NEON)
+	end
+	local fx = HW - 0.5 -- (the straight part of each face, clear of the rounded corners)
+	for j = 0, 5 do
+		local x0 = -fx + 2 * fx * j / 6
+		seg(V(x0, y0, -HD - out), V(x0 + 2 * fx / 6, y1, -HD + 0.02))
+	end
+	local fz = HD - 0.5
+	for j = 0, 3 do
+		local z0 = -fz + 2 * fz * j / 4
+		seg(V(HW - 0.02, y0, z0), V(HW + out, y1, z0 + 2 * fz / 4))
+	end
+	for j = 5, 0, -1 do
+		local x0 = -fx + 2 * fx * j / 6
+		seg(V(x0, y0, HD - 0.02), V(x0 + 2 * fx / 6, y1, HD + out))
+	end
+	for j = 3, 0, -1 do
+		local z0 = -fz + 2 * fz * j / 4
+		seg(V(-HW - out, y0, z0), V(-HW + 0.02, y1, z0 + 2 * fz / 4))
 	end
 end
 
@@ -768,6 +824,89 @@ function TOPPERS.Gold(k, lk, tk, t)
 	end
 end
 
+-- (brief 21) Exclusive: a big cut diamond spinning over a chrome stand ringed in ice-blue light, with sparkles round
+-- it; the rainbow band on the midnight tub.
+function TOPPERS.Exclusive(k, lk, tk, t)
+	studsOn(lk, t, { [3] = true, [7] = true, [8] = true, [9] = true, [13] = true })
+	rainbowBand(k)
+	-- the stand: a chrome drum on the lid with a glowing ring and a cup the diamond's point sits over
+	tk:cyl('Stand', V(0, TOP + 0.14, 0), 'y', 0.28, 1.7, t.lidLight, M.Metal)
+	tk:cyl('StandRing', V(0, TOP + 0.3, 0), 'y', 0.08, 1.82, t.rim, NEON)
+	tk:cyl('StandCup', V(0, TOP + 0.4, 0), 'y', 0.16, 0.9, t.lid, M.Metal)
+	-- the diamond (a brilliant cut, girdle up the middle): a shallow crown of 8 facets under a glowing table, a deep
+	-- pavilion of 8 facets down to a point; two tones so the facets read. It turns slowly and bobs.
+	local gy = TOP + 1.95
+	local gem = tk:floating('Diamond', V(0, gy, 0), 36, 0.14, 2.6)
+	local girdle = CFrame.new(0, gy, 0)
+	gem:frustum('DiamondCrown', girdle, 1.12, 0.66, 0.5, 8, { t.gem, t.gemLight }, SM)
+	gem:cyl('DiamondTable', V(0, gy + 0.52, 0), 'y', 0.06, 1.36, t.gemCore, NEON)
+	gem:frustum('DiamondPavilion', girdle * CFrame.Angles(PI, PI / 8, 0), 1.12, 0.08, 1.05, 8, { t.gemLight, t.gem }, SM)
+	-- sparkles round it (they float with it)
+	for _, e in { { -1.55, 0.45, -0.3, 0.6 }, { 1.5, 0.95, 0.2, 0.5 }, { 1.0, -0.5, -0.9, 0.42 }, { -1.15, 1.2, 0.6, 0.38 } } do
+		gem:sparkle('Sparkle', CFrame.new(e[1], gy + e[2], e[3]) * CFrame.Angles(0, 0.35, 0.2), e[4], WHITE, NEON)
+	end
+end
+
+-- (brief 21) Grail: the dream pair, a golden winged high-top on a gold plinth under a spinning rainbow halo, stars
+-- round it; the rainbow band on the royal purple tub.
+function TOPPERS.Grail(k, lk, tk, t)
+	studsOn(lk, t, { [2] = true, [3] = true, [4] = true, [7] = true, [8] = true, [9] = true, [12] = true, [13] = true, [14] = true })
+	rainbowBand(k)
+	-- the plinth: a gold drum with a glowing lip
+	tk:cyl('Plinth', V(0, TOP + 0.16, 0.05), 'y', 0.32, 2.5, t.goldDark, FOIL)
+	tk:cyl('PlinthLip', V(0, TOP + 0.35, 0.05), 'y', 0.08, 2.62, t.rim, NEON)
+	-- the golden sneaker (a chunky high-top like the Street box's, toe to the front-left), rainbow line round its sole
+	local s = newKit(tk.parent, tk.s * 1.12, tk.cf * CFrame.new(V(0.05, TOP + 0.39, 0.1) * tk.s) * CFrame.Angles(0, 1.15, 0))
+	local gold, goldDark, purple, white = t.gold, t.goldDark, C(104, 44, 184), C(250, 250, 252)
+	s:span('ShoeOutsole', V(-0.56, 0, -1.25), V(0.56, 0.12, 1.2), purple, SM)
+	s:span('ShoeSole', V(-0.6, 0.12, -1.28), V(0.6, 0.44, 1.22), white, SM)
+	for j = 0, 5 do
+		local z0 = -1.3 + 2.54 * j / 6
+		s:span('ShoeSoleLine', V(-0.62, 0.24, z0), V(0.62, 0.32, z0 + 2.54 / 6), RAINBOW[j + 1], NEON)
+	end
+	s:span('ShoeToe', V(-0.52, 0.44, -1.22), V(0.52, 0.62, -0.2), gold, FOIL)
+	s:wedge('ShoeVamp', CFrame.new(0, 0.62 + 0.24, -0.71), V(1.04, 0.48, 1.02), gold, FOIL)
+	s:span('ShoeToeCap', V(-0.54, 0.44, -1.27), V(0.54, 0.56, -0.85), purple, SM)
+	s:span('ShoeUpper', V(-0.53, 0.44, -0.2), V(0.53, 1.12, 1.18), gold, FOIL)
+	s:span('ShoeCollar', V(-0.53, 1.12, 0.32), V(0.53, 1.62, 1.18), gold, FOIL)
+	s:span('ShoeCollarPad', V(-0.46, 1.62, 0.38), V(0.46, 1.78, 1.12), purple, SM)
+	s:box('ShoeTongue', V(0, 1.38, 0.2), V(0.56, 0.78, 0.16), goldDark, FOIL, CFrame.Angles(-0.25, 0, 0))
+	for j, z in { -0.75, -0.42 } do
+		s:box('ShoeLace', V(0, 0.68 + 0.24 * j, z), V(0.92, 0.07, 0.11), white, SM, CFrame.Angles(-0.48, 0, 0))
+	end
+	for _, z in { -0.08, 0.14 } do
+		s:box('ShoeLace', V(0, 1.14, z), V(0.92, 0.07, 0.11), white, SM)
+	end
+	s:span('ShoeHeelTab', V(-0.18, 1.25, 1.16), V(0.18, 1.9, 1.26), purple, SM)
+	-- a purple swoosh on each side, a glowing star on it
+	for _, sx in { -1, 1 } do
+		s:box('ShoeStripe', V(sx * 0.545, 0.8, 0.15), V(0.04, 0.2, 1.3), purple, SM, CFrame.Angles(0.3, 0, 0))
+		s:box('ShoeStar', V(sx * 0.57, 0.86, -0.05), V(0.04, 0.3, 0.3), C(255, 250, 230), NEON, CFrame.Angles(PI / 4, 0, 0))
+	end
+	-- white wings off both sides of the collar: three rounded feathers fanned up and back
+	for _, sx in { -1, 1 } do
+		local wc = s:at(CFrame.new(sx * 0.58, 1.2, 0.55) * CFrame.Angles(0, sx * -0.35, 0))
+		for j, e in { { 0.5, 1.5, 0.6 }, { 0.95, 1.25, 0.55 }, { 1.35, 0.95, 0.5 } } do
+			local f = CFrame.Angles(0.55, 0, sx * -e[1]) * CFrame.new(0, e[2] / 2, 0)
+			wc:blob('Wing', f.Position, V(e[3], e[2], 0.2), j == 3 and t.wingShade or t.wing, SM, f.Rotation)
+		end
+	end
+	-- the rainbow halo over it, turning; gold stars round it
+	local hy = TOP + 3.55
+	local halo = tk:floating('Halo', V(0, hy, 0.05), 40, 0.15, 2.4)
+	local hcf = CFrame.new(0, hy, 0.05) * CFrame.Angles(0.18, 0, 0)
+	local n = 12
+	local R = 1.15
+	local len = 2 * R * math.tan(PI / n) + 0.1
+	for j = 0, n - 1 do
+		halo:make('Part', 'Halo', V(len, 0.16, 0.2), hcf * CFrame.Angles(0, j * 2 * PI / n, 0) * CFrame.new(0, 0, R), RAINBOW[j % #RAINBOW + 1], NEON)
+	end
+	local stars = tk:floating('Stars', V(0, TOP + 2.2, 0), 18, 0.12, 3.0)
+	for _, e in { { -1.85, 1.6, -0.4, 0.62 }, { 1.9, 2.3, 0.1, 0.52 }, { 1.45, 0.8, -1.0, 0.42 } } do
+		stars:sparkle('Star', CFrame.new(e[1], TOP + e[2], e[3]) * CFrame.Angles(0, 0.3, 0.15), e[4], C(255, 226, 120), NEON)
+	end
+end
+
 ---------------------------------------------------------------------------------------------- build
 -- at: where to build it (its pivot), so a caller needs no PivotTo (default: the origin).
 function BoxModels.build(boxId: string, scale: number?, at: CFrame?): Model
@@ -833,6 +972,8 @@ local FX = {
 	Gem = { 'sparkles_main', 'glitter', C(170, 255, 200), 4, 0.5 },
 	Galaxy = { 'sparkles_main', 'star', C(220, 210, 255), 4, 0.55 },
 	Gold = { 'sparkles_main', 'star', C(255, 226, 120), 5, 0.6 },
+	Exclusive = { 'sparkles_main', 'sparkle', C(170, 240, 255), 6, 0.55 },
+	Grail = { 'sparkles_main', 'star', C(255, 226, 120), 6, 0.6 },
 }
 function BoxModels.fx(model: Model)
 	local id = model:GetAttribute('BoxId')
@@ -864,11 +1005,25 @@ function BoxModels.fx(model: Model)
 	e.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(1, 1) })
 	e.Rotation = NumberRange.new(0, 360)
 	e.Parent = a
+	local premium = THEMES[id].premium
+	if premium then
+		-- the Robux boxes: rainbow sparkles too
+		local r = e:Clone()
+		r.Name = 'BoxRainbow'
+		local keys = {}
+		for i, c in RAINBOW do table.insert(keys, ColorSequenceKeypoint.new((i - 1) / (#RAINBOW - 1), c)) end
+		r.Color = ColorSequence.new(keys)
+		r:SetAttribute('PreviewTexture', 'sparkle')
+		r.Rate = 3
+		r.LightEmission = 1
+		r.Parent = a
+	end
 	local l = Instance.new('PointLight')
 	l.Name = 'BoxGlow'
 	l.Color = THEMES[id].Color
-	l.Brightness = 0.8
-	l.Range = 8 * s
+	-- (a little stronger and wider on the Robux boxes, still a short pool: LIGHT2 asks for no long bright lights)
+	l.Brightness = premium and 1.1 or 0.8
+	l.Range = (premium and 10 or 8) * s
 	l.Shadows = false
 	l.Parent = root
 end

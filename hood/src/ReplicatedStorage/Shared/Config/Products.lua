@@ -15,6 +15,9 @@
 -- Wired now: DoubleRep, DoubleCash and VIP (Pass_* attributes; HoodServer/Boosts and the overhead tag apply them), the
 -- Power and Cash packs, the timed boosts and Block Party (StoreService; PowerBoost), SkipRebirth (RebirthService).
 -- AutoShoot ("Auto Fight", brief 18: with Pass_AutoShoot your gun fires at stage goons on its own; Waves.client).
+-- ShoeBoxExclusive and ShoeBoxGrail (brief 21: World 1's two Robux shoe boxes; StoreService opens the box through
+-- HoodServer/ShoeOpening, the same unboxing as a Cash box; the box's prompt on the dais and the Store's 'Box' cards
+-- buy them).
 -- Not yet: Lucky, TripleOpen, ExtraEquip (their cards say "Coming soon!" until someone builds the effect).
 local Products = {}
 Products.Enabled = true -- master switch: false = every card says "Coming soon!"
@@ -36,11 +39,15 @@ Products.DeveloperProducts = {
 	RepBoost2x = 0, RepBoost3x = 0, -- 15 minutes of x2 / x3 Power
 	BlockParty = 0, -- x2 Power for everyone in the server, 15 minutes
 	SkipRebirth = 0, -- rebirth now without the Power (the Rebirth window shows it only once this id is set)
+	-- (brief 21) the Robux shoe boxes on World 1's dais: one roll from the box's own exclusive shoes (Config/Shoes)
+	ShoeBoxExclusive = 0, -- "Exclusive Box", 99 Robux
+	ShoeBoxGrail = 0, -- "Grail Box", 199 Robux
 }
 Products.BoostDurationSeconds = 900
 
 -- The Store's cards, in order. Kind: 'Pass' | 'Product'. Section: 'Gamepass' (big cards; Banner = the wide one),
--- 'Power', 'Cash', 'Boost' (small cards), 'Rebirth' (only in the Rebirth window). Art: what the card shows
+-- 'Power', 'Cash', 'Boost', 'Box' (small cards), 'Rebirth' (only in the Rebirth window). A 'Box' card's Price is the
+-- same number as its box's RobuxPrice in Config/Shoes. Art: what the card shows
 -- ('icon:<IconModels id>', 'gun:<Guns id>', 'box:<Shoes box id>', 'boxes:<id>' = three boxes, 'shoe:<Shoes id>').
 -- Tone: a UIKit tone. Title: the card's first line (and the name notices use). Big: the card's big gold lines
 -- (the reference's "Golden / Zone"; \n splits them). Offer: the short line on the HUD's offer card and pass button.
@@ -63,6 +70,8 @@ Products.Catalog = {
 	{ Key = 'RepBoost3x', Kind = 'Product', Section = 'Boost', Title = 'x3 Power', Detail = '15 minutes', Price = 69, Art = 'icon:Evolve', Tone = 'cardRed', Sticker = 'x3', Wired = true },
 	{ Key = 'BlockParty', Kind = 'Product', Section = 'Boost', Title = 'Block Party', Detail = 'x2 Power for the whole server, 15 min', Price = 149, Art = 'icon:Rewards', Tone = 'cardPurple', Wired = true },
 	{ Key = 'SkipRebirth', Kind = 'Product', Section = 'Rebirth', Title = 'Skip Rebirth', Detail = 'Rebirth now', Price = 99, Art = 'icon:Rebirth', Tone = 'aqua', Wired = true },
+	{ Key = 'ShoeBoxExclusive', Kind = 'Product', Section = 'Box', Title = 'Exclusive Box', Detail = 'Exclusive shoes, no Commons', Price = 99, Art = 'box:Exclusive', Tone = 'cardBlue', Wired = true },
+	{ Key = 'ShoeBoxGrail', Kind = 'Product', Section = 'Box', Title = 'Grail Box', Detail = 'The best exclusive shoes', Price = 199, Art = 'box:Grail', Tone = 'cardPurple', Wired = true },
 }
 Products.ByKey = {}
 for i, entry in Products.Catalog do
@@ -74,6 +83,7 @@ Products.Sections = {
 	{ Id = 'Power', Title = '~Power Packs~' },
 	{ Id = 'Cash', Title = '~Cash~' },
 	{ Id = 'Boost', Title = '~Boosts~' },
+	{ Id = 'Box', Title = '~Shoe Boxes~' },
 }
 
 -- The id for a catalog key (0 when unknown or not set yet).

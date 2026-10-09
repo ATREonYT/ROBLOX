@@ -13,6 +13,10 @@
 --                    the bigger level wins), kept in the profile (Passes.Boost) so it survives a rejoin
 --     BlockParty     x2 Power for everyone in this server for the same time
 --     SkipRebirth    RebirthService.rebirth(player, { Free = true })
+--     ShoeBoxExclusive / ShoeBoxGrail   (brief 21) opens that Robux shoe box (Config/Shoes: the box whose Robux is the
+--                    key) through HoodServer/ShoeOpening, the same roll, save and unboxing moment as a Cash box; no
+--                    distance, world or rack check (it was paid). A player who left gets it on the next join (Roblox asks
+--                    again; the purchase id check stops a second pair).
 --   PowerBoost: each second every player's attribute PowerBoost = personal boost x party (1 when none); BoostEnds = the
 --   os.time() the personal boost ends (0 when none), for the HUD.
 local Players = game:GetService('Players')
@@ -31,6 +35,8 @@ local function optional(module)
 end
 local RebirthRules = optional(RS.Shared:FindFirstChild('RebirthRules'))
 local RebirthService = optional(script.Parent:FindFirstChild('RebirthService'))
+local ShoeRules = optional(RS.Shared:FindFirstChild('ShoeRules'))
+local ShoeOpening = optional(script.Parent:FindFirstChild('ShoeOpening'))
 
 local RECEIPTS_KEPT = 100 -- purchase ids remembered per profile
 local SAVE_WAIT = 30 -- seconds to wait for the save that holds a grant before telling Roblox to ask again
@@ -133,6 +139,16 @@ GRANTS.SkipRebirth = function(player)
 	local ok, why = RebirthService.rebirth(player, { Free = true })
 	assert(ok, 'rebirth refused: ' .. tostring(why))
 end
+-- A Robux shoe box: one roll from its own pool, revealed like a Cash box (ShoeOpening fires ShoeOpened).
+local function shoeBox(player, profile, key)
+	assert(ShoeRules and ShoeOpening, 'ShoeRules / ShoeOpening missing')
+	local box = ShoeRules.canGrant(key)
+	assert(box, 'no shoe box for ' .. tostring(key))
+	ShoeOpening.open(player, profile, box.Id)
+	-- (the pair is in the profile now: nothing after this may fail the grant, or Roblox's retry would give a second)
+	pcall(notice, player, 'Thanks! Your ' .. box.Name .. ' is open!')
+end
+GRANTS.ShoeBoxExclusive, GRANTS.ShoeBoxGrail = shoeBox, shoeBox
 
 ---------------------------------------------------------------------------------------------- receipts
 local function savedHas(profile, purchaseId)

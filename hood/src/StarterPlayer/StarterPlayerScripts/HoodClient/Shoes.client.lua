@@ -1,9 +1,12 @@
 -- Shoes on your screen (brief 16: the game's eggs and pets, the hood way). ShoeService decides everything; this asks
 -- and shows:
 --   * Box prompts: an "Open" prompt on every BoxPoint_<Id> of the shoe-box dais (map: a Model tagged HoodShoeBoxes with
---     ShoeBox_<Id> models), bound as boxes stream in, like Armory.client's gun slots.
---   * The chances board: over the box you stand nearest to (within BOARD_RANGE), its 6 shoes with their chances, like a
---     pet-sim egg board. An unowned Secret shows as a dark "???" until you have one.
+--     ShoeBox_<Id> models), bound as boxes stream in, like Armory.client's gun slots. A Cash box opens for Cash (the
+--     OpenShoeBox remote); a Robux box (brief 21: Config.Shoes box.Robux = its developer-product key) prompts Roblox's
+--     purchase when it is live (Products.canBuy: an id and Wired), else says "Coming soon!". The receipt opens it on
+--     the server (StoreService) and the same unboxing moment plays.
+--   * The chances board: over the box you stand nearest to (within BOARD_RANGE), its shoes with their chances (6, or 5
+--     on a Robux box: no Commons), like a pet-sim egg board. An unowned Secret shows as a dark "???" until you have one.
 --   * The unboxing moment (remote ShoeOpened): the box flies up in front of your camera, shakes, the lid pops with a light
 --     burst, and the pair rises spinning out of it under a rarity banner (the name, the bonus, NEW!, EQUIPPED).
 --   * Worn pairs: every player's best equipped pair (attribute ShoeWorn) on their feet via ShoeModels.wear, re-applied
@@ -22,6 +25,7 @@ local RS = game:GetService('ReplicatedStorage')
 local RunService = game:GetService('RunService')
 local TweenService = game:GetService('TweenService')
 local CollectionService = game:GetService('CollectionService')
+local MarketplaceService = game:GetService('MarketplaceService')
 
 local Shared = RS:WaitForChild('Shared')
 local Kit = require(Shared.UIKit)
@@ -30,6 +34,7 @@ local Net = require(Shared.Net)
 local Format = require(Shared.Format)
 local Shoes = require(Shared.Config.Shoes)
 local ShoeRules = require(Shared.ShoeRules)
+local Products = require(Shared.Config.Products)
 
 local player = Players.LocalPlayer
 local Color, Tone = Kit.Color, Kit.Tone
@@ -487,12 +492,14 @@ local function boardAnchorOffset(entry)
 	local top = box.Position.Y + size.Y / 2
 	return V3(0, top - entry.Point.CFrame.Y + 2.5 + 2.5, 0), nil
 end
-local function cellFor(board, i, id, rack)
+local function cellFor(board, i, id, rack, n)
 	local shoe = Shoes.ById[id]
 	local rarity = Shoes.RarityById[shoe.Rarity]
 	local owned = ShoeRules.copies(rack, id) > 0
 	local hidden = shoe.Rank == #Shoes.Rarities and not owned
-	local cell = Kit.new('Frame', { Name = 'Cell' .. i, BackgroundColor3 = Color.white, BorderSizePixel = 0, Position = UDim2.fromScale(0.02 + (i - 1) * 0.163, 0.28), Size = UDim2.fromScale(0.15, 0.68), Parent = board })
+	-- (n cells centred in a row: six fill it, a Robux box's five sit in the middle)
+	local x0 = (1 - (n * 0.163 - 0.013)) / 2
+	local cell = Kit.new('Frame', { Name = 'Cell' .. i, BackgroundColor3 = Color.white, BorderSizePixel = 0, Position = UDim2.fromScale(x0 + (i - 1) * 0.163, 0.28), Size = UDim2.fromScale(0.15, 0.68), Parent = board })
 	Kit.corner(UDim.new(0.14, 0)).Parent = cell
 	Kit.stroke(Color.ink, 2.5, true).Parent = cell
 	local g = Kit.gradient(rarity.Color:Lerp(Color.white, 0.5), rarity.Color, 0.6)
@@ -503,7 +510,7 @@ local function cellFor(board, i, id, rack)
 	vp.Position = UDim2.fromScale(0.5, 0.02)
 	vp.Size = UDim2.fromScale(0.96, 0.62)
 	vp.Parent = cell
-	local chance = Kit.text({ Name = 'Chance', Text = ShoeRules.chanceText(rarity.Chance), Stroke = Color.ink, Position = UDim2.fromScale(0, 0.62), Size = UDim2.fromScale(1, 0.24), ZIndex = 3, Parent = cell })
+	local chance = Kit.text({ Name = 'Chance', Text = ShoeRules.chanceText(ShoeRules.chanceOf(id)), Stroke = Color.ink, Position = UDim2.fromScale(0, 0.62), Size = UDim2.fromScale(1, 0.24), ZIndex = 3, Parent = cell })
 	chance.TextScaled = true
 	local name = Kit.text({ Name = 'Name', Text = hidden and '???' or string.upper(shoe.Name), FontFace = Kit.Font.body, TextColor3 = Color.white, Stroke = Color.ink, Position = UDim2.fromScale(0.04, 0.85), Size = UDim2.fromScale(0.92, 0.13), ZIndex = 3, Parent = cell })
 	name.TextScaled = true
@@ -538,20 +545,56 @@ local function buildBoard(entry)
 	Kit.corner(UDim.new(0.5, 0)).Parent = price
 	Kit.stroke(Color.ink, 2.5, true).Parent = price
 	Kit.gradient(Tone.green.top, Tone.green.base, 0.55).Parent = price
-	local priceText = Kit.text({ Name = 'Text', Text = Format.compact(box.Price) .. ' CASH', Stroke = Tone.green.stroke, Position = UDim2.fromScale(0.08, 0.1), Size = UDim2.fromScale(0.84, 0.8), ZIndex = 3, Parent = price })
+	local priceText = Kit.text({ Name = 'Text', Text = box.Robux and (tostring(box.RobuxPrice) .. ' ROBUX') or (Format.compact(box.Price) .. ' CASH'), Stroke = Tone.green.stroke, Position = UDim2.fromScale(0.08, 0.1), Size = UDim2.fromScale(0.84, 0.8), ZIndex = 3, Parent = price })
 	priceText.TextScaled = true
 	entry.Price = price
-	for i, id in box.Shoes do cellFor(panel, i, id, rack) end
+	if box.Exclusive then
+		-- (a Robux box: a green EXCLUSIVE tag next to the title, like the reference's "Robux Exclusive" eggs)
+		title.Size = UDim2.fromScale(0.36, 0.22)
+		local tag = Kit.text({ Name = 'Exclusive', Text = 'EXCLUSIVE', TextColor3 = Kit.hex('7CFF4F'), Stroke = Color.ink, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromScale(0.4, 0.07), Size = UDim2.fromScale(0.26, 0.15), ZIndex = 2, Parent = panel })
+		tag.TextScaled = true
+	end
+	for i, id in box.Shoes do cellFor(panel, i, id, rack, #box.Shoes) end
 	gui.Enabled = false
 	gui.Parent = entry.Point
 	entry.Board = gui
 	entry.BoardKey = ShoeRules.ownedString(rack)
 end
 
+-- A short line in the upper middle of the screen (the HUD's notice style), for answers given here ("Coming soon!").
+local _, sayRoot = Kit.screen('HoodShoeNotice', player:WaitForChild('PlayerGui'), 10)
+local saying = 0
+local function say(text)
+	saying += 1
+	local mine = saying
+	for _, c in sayRoot:GetChildren() do
+		if c.Name == 'Say' then c:Destroy() end
+	end
+	local t = Kit.text({ Name = 'Say', Text = text, TextSize = 30, TextColor3 = Kit.hex('5AE0FF'), Stroke = Color.black, StrokeThickness = 4, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 160), Size = px(900, 40), ZIndex = 44, Parent = sayRoot })
+	t.TextScaled = true
+	Motion.toast(t, 2.6)
+	task.delay(3, function() if mine == saying and t.Parent then t:Destroy() end end)
+end
+
+-- A Robux box's prompt: Roblox's purchase once the product is live, "Coming soon!" until then (id 0).
+local function robuxPrompt(box)
+	if Products.canBuy(box.Robux) then return 'Buy  ' .. tostring(box.RobuxPrice) .. ' Robux' end
+	return 'Coming soon!'
+end
+local function buyBox(box)
+	if not Products.canBuy(box.Robux) then
+		say(box.Name .. ' is coming soon!')
+		return
+	end
+	local ok = pcall(function() MarketplaceService:PromptProductPurchase(player, Products.idOf(box.Robux)) end)
+	if not ok then say('The Store is busy, try again!') end
+end
 local function bindBox(model)
 	local id = model:GetAttribute('BoxId')
 	local box = type(id) == 'string' and Shoes.BoxById[id]
 	if not box or (boxes[id] and boxes[id].Model == model) then return end
+	-- (a later world's box is never on this world's dais; if a map shows one anyway, it gets no prompt)
+	if not ShoeRules.inWorld(id) then return end
 	local point = model:FindFirstChild('BoxPoint_' .. id, true) or model:WaitForChild('BoxPoint_' .. id, 5)
 	if not point or not model.Parent then return end
 	local old = point:FindFirstChild('ShoePrompt')
@@ -559,15 +602,19 @@ local function bindBox(model)
 	local prompt = Instance.new('ProximityPrompt')
 	prompt.Name = 'ShoePrompt'
 	prompt.ObjectText = box.Name
-	prompt.ActionText = 'Open  ' .. Format.compact(box.Price) .. ' Cash'
+	prompt.ActionText = box.Robux and robuxPrompt(box) or ('Open  ' .. Format.compact(box.Price) .. ' Cash')
 	prompt.KeyboardKeyCode = Enum.KeyCode.E
-	prompt.HoldDuration = 0.3 -- (it spends Cash: a passing tap doesn't open a box)
+	prompt.HoldDuration = 0.3 -- (it spends Cash or opens a purchase: a passing tap doesn't)
 	prompt.MaxActivationDistance = 8
 	prompt.RequiresLineOfSight = false
 	prompt.Parent = point
 	prompt.Triggered:Connect(function()
 		if unboxing then return end
-		Net.get('OpenShoeBox'):FireServer(id)
+		if box.Robux then
+			buyBox(box)
+		else
+			Net.get('OpenShoeBox'):FireServer(id)
+		end
 	end)
 	boxes[id] = { Box = box, Model = model, Point = point, Prompt = prompt }
 end
@@ -589,7 +636,8 @@ for _, dais in CollectionService:GetTagged('HoodShoeBoxes') do watchDais(dais) e
 local function paintPrice(entry)
 	local pill = entry.Price
 	if not pill then return end
-	local tone = cashNow() >= entry.Box.Price and Tone.green or Tone.red
+	-- (a Robux box's pill stays green: Roblox's own purchase window checks the Robux)
+	local tone = (entry.Box.Robux or cashNow() >= entry.Box.Price) and Tone.green or Tone.red
 	pill.BackgroundColor3 = tone.base
 	local g = pill:FindFirstChildOfClass('UIGradient')
 	if g then g.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, tone.top), ColorSequenceKeypoint.new(0.55, tone.base), ColorSequenceKeypoint.new(1, tone.base) }) end
@@ -1110,7 +1158,7 @@ local function paintDetail(rack)
 	detailName.Text = shoe.Name
 	detailName.TextSize = Kit.fitSize(shoe.Name, 30, DETAIL_W - 24, 14)
 	detailRarity.BackgroundColor3 = rarity.Color
-	detailRarityText.Text = rarity.Name .. '  ' .. ShoeRules.chanceText(rarity.Chance)
+	detailRarityText.Text = rarity.Name .. '  ' .. ShoeRules.chanceText(ShoeRules.chanceOf(id))
 	detailBonus.Text = ShoeRules.bonusText(shoe.Bonus) .. ' Power'
 	local copies, on = ShoeRules.copies(rack, id), ShoeRules.equippedCount(rack, id)
 	detailFrom.Text = (Shoes.BoxById[shoe.Box] and Shoes.BoxById[shoe.Box].Name or '') .. '  •  x' .. copies .. (on > 0 and ('  •  ' .. on .. ' on') or '')
