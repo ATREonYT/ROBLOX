@@ -19,7 +19,7 @@ local lobby = active.Lobby
 local training = lobby:FindFirstChild('Training') or lobby
 
 local C = Color3.fromRGB
-local DISPLAY = Font.new('rbxasset://fonts/families/LuckiestGuy.json')
+local DISPLAY = Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.Heavy) -- (LOOP: the HUD's Gotham Black, was LuckiestGuy)
 local INK = C(28, 24, 48)
 local function label(parent, name, textSize, color)
 	local t = Instance.new('TextLabel')
@@ -63,10 +63,15 @@ local pointer = label(indicator, 'Destination', 22, C(255, 224, 80))
 --   "Unlocked" green / "Locked" red, the chip "FREE" or "🔄 <rebirths>", and "xN Power" in the lane's colour. The chip
 --   and the multiplier are rewritten here from the config too, so a map built before the rebirth lanes still reads right.
 --   The Champ Ring's sign (HoodProps): Detail "LOCKED • 🔄 16 REBIRTHS" / "UNLOCKED • TRAIN HERE".
+--   (LABELS) How a lane's label shows is HoodClient/LabelFade's (Shared/LabelFade, kind Lane): it fades and shrinks a
+--   little with the distance, shrinks up close, and declutters the row seen down the aisle. This only says which lane
+--   reads from further (the next to open: FadeNear/FadeFar) and which fade out while you stand in a box (FadeHold).
 local okVfx, HoodVFX = pcall(require, RS.Shared.HoodVFX)
 if not okVfx then HoodVFX = nil end
 local stations = {}
-local LABEL_FAR, LABEL_NEAR, NEXT_LIFT = 250, 22, Vector3.new(0, 6.5, 0)
+-- (LABELS) Label bands in studs from the camera, over LabelFade's lane band (45 -> 75): the next lane to open reads
+-- from across the hall, a middle lane's stack only up close.
+local GOAL_NEAR, GOAL_FAR, MIDDLE_NEAR, MIDDLE_FAR, NEXT_LIFT = 65, 105, 14, 22, Vector3.new(0, 6.5, 0)
 local function chipText(s) return s.Rebirths == 0 and 'FREE' or ('🔄 ' .. s.Rebirths) end
 local function track(s)
 	local model = training:FindFirstChild('Training_' .. s.Id, true) or active.Root:FindFirstChild('Training_' .. s.Id, true)
@@ -102,8 +107,8 @@ local function track(s)
 			end
 		end
 	end
-	-- Range-lane labels like the video's training row: every lane shows its stack from across the hall. (Middle
-	-- stays for a station that should only show up close; none does now.)
+	-- Range-lane labels like the video's training row: the near lanes' stacks big and clear, the far ones faded
+	-- (LabelFade). (Middle stays for a station that should only show up close; none does now.)
 	if entry.Bag and entry.Zone then
 		entry.Label = sign:FindFirstChildWhichIsA('BillboardGui')
 		entry.Middle = false
@@ -162,9 +167,13 @@ local function paintStations(n)
 			local state = (e.Middle and 'M' or 'E') .. (lift and 'G' or '') .. (own and 'O' or '') .. (beside and 'N' or '')
 			if e.LabelState ~= state then
 				e.LabelState = state
-				e.Label.MaxDistance = (e.Middle and not lift) and LABEL_NEAR or LABEL_FAR
+				-- (LABELS) LabelFade owns MaxDistance, Enabled stays on: the band and the hold are attributes it reads
+				-- (nil: the lane band), so the hold fades the stack out and back in instead of switching it.
+				local middle = e.Middle and not lift
+				e.Label:SetAttribute('FadeNear', middle and MIDDLE_NEAR or (lift and GOAL_NEAR or nil))
+				e.Label:SetAttribute('FadeFar', middle and MIDDLE_FAR or (lift and GOAL_FAR or nil))
 				e.Label.StudsOffset = (e.Middle and lift) and NEXT_LIFT or Vector3.zero
-				e.Label.Enabled = not own and not beside
+				e.Label:SetAttribute('FadeHold', (own or beside) or nil)
 			end
 		end
 		if e then
@@ -576,9 +585,9 @@ local function updateGuide(n, station, evolving, zone, laneTitle)
 		clearGuide()
 	end
 	if guide.door then
-		-- The floating arrow leaves the lanes for the door.
-		indicator.Adornee = guide.door
-		pointer.Text = 'STAGE 1 OPEN ↓'
+		-- The floating arrow leaves the lanes. (LOOP: it used to float "STAGE 1 OPEN ↓" at the door, right on the gate
+		-- sign's own "Open! Walk through" badge: the sign says it, the trail leads there.)
+		indicator.Adornee = nil
 	end
 end
 player.CharacterAdded:Connect(function(c)
@@ -643,6 +652,10 @@ task.spawn(function()
 		refresh()
 	end
 end)
+
+-- (LOOP's two label rules, the shrink inside 34 studs of the camera and the declutter of the lanes lined up down the
+-- aisle (a stack more than 12% covered on screen by a nearer one waits, showing again under 6%), live on in
+-- HoodClient/LabelFade (Shared/LabelFade, kind Lane), merged with the distance fade so the two never fight over a label.)
 
 -- Only the bag you're training on sways, and only on your screen.
 local lastStation = ''

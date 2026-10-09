@@ -209,7 +209,7 @@ function Juice.popNumber(position, text, color, fontFace, opts)
 	t.Size = UDim2.fromScale(1, 1)
 	t.Text = text
 	t.TextScaled = true -- BillboardGuis are the one place TextScaled is recommended
-	t.FontFace = fontFace or Font.new('rbxasset://fonts/families/LuckiestGuy.json')
+	t.FontFace = fontFace or Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.Heavy) -- (LOOP: the HUD's Gotham Black, was LuckiestGuy)
 	t.TextColor3 = opts.fill or color or Color3.fromRGB(255, 194, 26)
 	local s = Instance.new('UIStroke')
 	s.Color = opts.stroke or Color3.fromRGB(28, 24, 48)
@@ -301,7 +301,7 @@ function Juice.combo(key, at, gain, opts)
 				t.BackgroundTransparency = 1
 				t.Position, t.Size = UDim2.fromScale(0, y), UDim2.fromScale(1, h)
 				t.TextScaled = true
-				t.FontFace = opts.fontFace or Font.new('rbxasset://fonts/families/LuckiestGuy.json')
+				t.FontFace = opts.fontFace or Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.Heavy) -- (LOOP: the HUD's Gotham Black, was LuckiestGuy)
 				local st = Instance.new('UIStroke')
 				st.Parent = t
 				t.Parent = holder

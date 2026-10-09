@@ -28,7 +28,8 @@ local gui, root, fit = Kit.screen('HoodGoals', nil, 7)
 local BLACK = Color.black
 local GREEN = '#5CE08A' -- the reference's "DOCTOR DOOM" green
 local LINE_SIZE, CHIP_W, CHIP_H = 28, 84, 30
-local tracker = Kit.new('Frame', { Name = 'Goal', AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 2), Size = px(820, 36), BackgroundTransparency = 1, Visible = false, Parent = root })
+local TRACKER_Y = 2 -- (the line's centre on the reference's second line, measured at its size)
+local tracker = Kit.new('Frame', { Name = 'Goal', AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, TRACKER_Y), Size = px(820, 36), BackgroundTransparency = 1, Visible = false, Parent = root })
 local trackerScale = Kit.new('UIScale', { Parent = tracker })
 local line = Kit.text({ Name = 'Line', Text = '', TextSize = LINE_SIZE, Stroke = BLACK, StrokeThickness = 3.5, RichText = true, Position = px(0, 0), Size = px(600, 34), ZIndex = 2, Parent = tracker })
 local chip = Kit.new('Frame', { Name = 'Reward', AnchorPoint = Vector2.new(0, 0.5), Position = px(610, 17), Size = px(CHIP_W, CHIP_H), BackgroundColor3 = Kit.hex('3E9A92'), BackgroundTransparency = 0.4, BorderSizePixel = 0, ZIndex = 2, Parent = tracker })
@@ -80,6 +81,10 @@ local function paintTracker(pop)
 	end
 	allDoneAt = nil
 	local whereText = (type(where) == 'string' and where ~= '') and (' - ' .. where) or ''
+	-- (brief 19) one short line like the reference's "Next RAID in: 3:26": where to go only when it fits at 21 px or more
+	-- (the GOAL DONE moment and the Quest window always say it)
+	local room = tracker.Size.X.Offset - CHIP_W - 14
+	if whereText ~= '' and Kit.fitSize('Next goal: ' .. text .. whereText, LINE_SIZE, room, 8) < 21 then whereText = '' end
 	line.Text = 'Next goal: <font color="' .. GREEN .. '">' .. escape(text) .. '</font>' .. escape(whereText)
 	place('Next goal: ' .. text .. whereText, true)
 	chipText.Text = '+' .. Format.compact(reward)
@@ -101,10 +106,13 @@ local chime = Sound.new('rbxasset://sounds/electronicpingshort.wav', 0.55, gui)
 -- Other big banners (StageClear from the server, WAVE CLEARED, an unboxing) own the middle of the screen for a while.
 local busyUntil = 0
 local queue, running = {}, false
+local MOMENT_Y, MOMENT_W = 50, 700 -- (LOOP: the moment's top, just under the goal line, and its width; design px)
+local screen = { W = 1280, Phone = false } -- (the root's design width and whether it's a phone; relayout keeps it)
 
-local function fadeOut(holder, labels)
+local function fadeOut(holder, labels, back)
 	local fade = TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
-	TweenService:Create(holder, fade, { Position = UDim2.fromScale(0.5, 0.3) }):Play()
+	TweenService:Create(holder, fade, { Position = holder.Position - UDim2.fromOffset(0, 24) }):Play()
+	if back then TweenService:Create(back, fade, { BackgroundTransparency = 1 }):Play() end
 	for _, t in labels do
 		TweenService:Create(t, fade, { TextTransparency = 1 }):Play()
 		local s = t:FindFirstChildOfClass('UIStroke')
@@ -112,26 +120,46 @@ local function fadeOut(holder, labels)
 	end
 end
 
+-- (LOOP) PlayerGui's GoalMoment attribute is true while a moment is up: the HUD's notices drop below it meanwhile.
+local function momentUp(on) pcall(function() player.PlayerGui:SetAttribute('GoalMoment', on) end) end
 local function moment(info)
 	holding = true
+	momentUp(true)
 	tracker.Visible = false
-	-- (brief 18: the video's "GOAL DONE! / Wins Potion / NEXT GOAL / Hatch an egg - Eggs are in the lobby": no boxes,
-	-- gold headings and white lines in Gotham Black with a black stroke, centred in the upper third)
-	local holder = Kit.new('Frame', { Name = 'GoalDone', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.34), Size = px(860, 236), Parent = root })
+	-- (brief 18: the video's "GOAL DONE! / Wins Potion / NEXT GOAL / Hatch an egg - Eggs are in the lobby": gold
+	-- headings and white lines in Gotham Black with a black stroke.) (LOOP: like the video it sits high, just under the
+	-- top lines, at the video's text sizes (it was twice as big, in the middle of the screen, right over the next gate's
+	-- sign and the goons), on a dark see-through backing like the video's reward banner, so it reads over anything.)
+	-- (brief 19, LOOP: the backing is as wide as the longest line, not a fixed 700, and darker, so a gate sign's title
+	-- doesn't show through one side of it)
+	local cashText = '+' .. Format.compact(type(info.Reward) == 'number' and info.Reward or 0) .. ' Cash'
+	local widest = math.max(Kit.textWidth('GOAL DONE!', 32), Kit.textWidth((info.Text or '') .. '   ' .. cashText, 26), Kit.textWidth('NEXT GOAL', 26),
+		Kit.textWidth((info.NextText or '') .. ' - ' .. (info.NextWhere or ''), 24))
+	local width = math.clamp(widest + 48, 360, MOMENT_W)
+	-- (brief 19) on phones it keeps clear of the button column (left) and the Rewards gift (top right)
+	local x = UDim.new(0.5, 0)
+	if screen.Phone then
+		local l, r = 230, screen.W - 370
+		width = math.min(width, r - l)
+		x = UDim.new(0, math.clamp(screen.W / 2, l + width / 2, r - width / 2))
+	end
+	local holder = Kit.new('Frame', { Name = 'GoalDone', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(x.Scale, x.Offset, 0, MOMENT_Y), Size = px(width, 150), Parent = root })
 	local scale = Kit.new('UIScale', { Scale = 0.3, Parent = holder })
+	local back = Kit.new('Frame', { Name = 'Back', BackgroundColor3 = Kit.hex('10131E'), BackgroundTransparency = 0.28, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 76), ZIndex = 0, Parent = holder })
+	Kit.corner(10).Parent = back
 	local function goldText(t)
 		Kit.new('UIGradient', { Rotation = 90, Color = ColorSequence.new(Kit.hex('FFF27A'), Kit.hex('FFB020')), Parent = t })
 		return t
 	end
-	local title = goldText(Kit.text({ Name = 'Title', Text = 'GOAL DONE!', TextSize = 46, Stroke = BLACK, StrokeThickness = 5, Size = UDim2.new(1, 0, 0, 52), Parent = holder }))
-	local cash = '<font color="' .. GREEN .. '">+' .. Format.compact(type(info.Reward) == 'number' and info.Reward or 0) .. ' Cash</font>'
-	local reward = Kit.text({ Name = 'Reward', Text = escape(info.Text or '') .. '   ' .. cash, TextSize = 34, Stroke = BLACK, StrokeThickness = 4, TextColor3 = Color.white, RichText = true, Position = px(0, 56), Size = UDim2.new(1, 0, 0, 42), Parent = holder })
+	local title = goldText(Kit.text({ Name = 'Title', Text = 'GOAL DONE!', TextSize = 32, Stroke = BLACK, StrokeThickness = 4, Position = px(0, 4), Size = UDim2.new(1, 0, 0, 36), Parent = holder }))
+	local cash = '<font color="' .. GREEN .. '">' .. cashText .. '</font>'
+	local reward = Kit.text({ Name = 'Reward', Text = escape(info.Text or '') .. '   ' .. cash, TextSize = 26, Stroke = BLACK, StrokeThickness = 3.5, TextColor3 = Color.white, RichText = true, Position = px(12, 40), Size = UDim2.new(1, -24, 0, 30), Parent = holder })
 	reward.TextScaled = true
-	Kit.new('UITextSizeConstraint', { MaxTextSize = 34, Parent = reward })
-	local nextTitle = goldText(Kit.text({ Name = 'Next', Text = 'NEXT GOAL', TextSize = 40, Stroke = BLACK, StrokeThickness = 4.5, Position = px(0, 110), Size = UDim2.new(1, 0, 0, 46), Parent = holder }))
-	local nextLine = Kit.text({ Name = 'NextLine', Text = escape(info.NextText or '') .. ' - ' .. escape(info.NextWhere or ''), TextSize = 32, Stroke = BLACK, StrokeThickness = 4, RichText = true, Position = px(0, 160), Size = UDim2.new(1, 0, 0, 76), TextWrapped = true, Parent = holder })
+	Kit.new('UITextSizeConstraint', { MaxTextSize = 26, Parent = reward })
+	local nextTitle = goldText(Kit.text({ Name = 'Next', Text = 'NEXT GOAL', TextSize = 26, Stroke = BLACK, StrokeThickness = 3.5, Position = px(0, 80), Size = UDim2.new(1, 0, 0, 30), Parent = holder }))
+	local nextLine = Kit.text({ Name = 'NextLine', Text = escape(info.NextText or '') .. ' - ' .. escape(info.NextWhere or ''), TextSize = 24, Stroke = BLACK, StrokeThickness = 3.5, RichText = true, Position = px(12, 112), Size = UDim2.new(1, -24, 0, 30), Parent = holder })
 	nextLine.TextScaled = true
-	Kit.new('UITextSizeConstraint', { MaxTextSize = 32, Parent = nextLine })
+	Kit.new('UITextSizeConstraint', { MaxTextSize = 24, Parent = nextLine })
 	for _, t in { nextTitle, nextLine } do
 		t.TextTransparency = 1
 		t:FindFirstChildOfClass('UIStroke').Transparency = 1
@@ -140,7 +168,7 @@ local function moment(info)
 	TweenService:Create(scale, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
 	-- A STAGE CLEARED or WAVE CLEARED banner arriving mid-moment takes the screen: this one steps aside at once and
 	-- plays again, whole, once that banner is gone.
-	local function interrupted() return busyUntil > os.clock() end
+	local function interrupted() return busyUntil > os.clock() or fighting() end -- (LOOP: a fight starting too)
 	local function hold(t)
 		local untilT = os.clock() + t
 		while os.clock() < untilT do
@@ -153,20 +181,23 @@ local function moment(info)
 		holder:Destroy()
 		table.insert(queue, 1, info)
 		holding = false
+		momentUp(false)
 		return false
 	end
 	if not hold(0.9) then return stepAside() end
 	local show = TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+	TweenService:Create(back, show, { Size = UDim2.new(1, 0, 0, 150) }):Play() -- (the banner grows to take NEXT GOAL, like the video's)
 	for _, t in { nextTitle, nextLine } do
 		TweenService:Create(t, show, { TextTransparency = 0 }):Play()
 		TweenService:Create(t:FindFirstChildOfClass('UIStroke'), show, { Transparency = 0 }):Play()
 	end
 	Sound.play(chime, 1.2)
 	if not hold(2.9) then return stepAside() end
-	fadeOut(holder, { title, reward, nextTitle, nextLine })
+	fadeOut(holder, { title, reward, nextTitle, nextLine }, back)
 	task.wait(0.45)
 	holder:Destroy()
 	holding = false
+	momentUp(false)
 	paintTracker(true)
 	return true
 end
@@ -176,9 +207,17 @@ local function drain()
 	running = true
 	task.spawn(function()
 		while #queue > 0 do
-			local wait = busyUntil - os.clock()
-			if wait > 0 then task.wait(wait) end
-			moment(table.remove(queue, 1))
+			-- (LOOP) A banner owns the screen, or a fight is on (the goons and the "N LEFT" pill own it): wait.
+			while busyUntil > os.clock() or fighting() do task.wait(0.1) end
+			-- Goals done meanwhile ("Walk to Stage 1", then "Beat Stage 1's goons" in the same fight) make one moment: the
+			-- newest goal and NEXT GOAL, with all their Cash, so a stale "NEXT GOAL" never plays after it is done.
+			local info = table.remove(queue, 1)
+			while #queue > 0 do
+				local newer = table.clone(table.remove(queue, 1))
+				newer.Reward = (tonumber(newer.Reward) or 0) + (tonumber(info.Reward) or 0)
+				info = newer
+			end
+			moment(info)
 		end
 		running = false
 	end)
@@ -214,7 +253,17 @@ local function relayout()
 	fit(abs)
 	local k = Kit.scaleFor(abs)
 	local w = abs.X / k
-	tracker.Size = px(math.max(360, math.min(880, w - 2 * 250)), 36)
+	screen.W, screen.Phone = w, math.min(abs.X, abs.Y) <= 500
+	-- (brief 19) The line keeps clear of the HUD's Rewards gift (PC: the top-left slot, x 290..400 design px) and, on PC, of
+	-- Roblox's player list under the top bar at the top right (~290 dp wide with our two leaderstats); on phones (no
+	-- player list) of the counters' row at the top-left (x 0..390). Centred on the screen while it fits, else in the room.
+	local phone = math.min(abs.X, abs.Y) <= 500
+	local left = phone and 390 or 410
+	local right = w - (phone and 16 or 290 / k)
+	local tw = math.max(300, math.min(880, right - left))
+	local cx = math.clamp(w / 2, left + tw / 2, math.max(left + tw / 2, right - tw / 2))
+	tracker.Size = px(tw, 36)
+	tracker.Position = UDim2.new(0, cx, 0, TRACKER_Y)
 	paintTracker(false)
 end
 gui:GetPropertyChangedSignal('AbsoluteSize'):Connect(relayout)

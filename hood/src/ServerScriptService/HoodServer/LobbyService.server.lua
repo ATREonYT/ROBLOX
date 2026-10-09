@@ -38,8 +38,9 @@ Net.get('EquipSkin').OnServerEvent:Connect(function() end)
 
 ---------------------------------------------------------------------------------------------- overhead tag
 -- Like the reference: your name small and white, "<Power> POWER" big in yellow-green, then "🔄 n REBIRTHS" in the
--- rebirth blue, all in LuckiestGuy with a dark outline. Sized in studs so it shrinks with distance.
-local TAG_FONT=Font.new('rbxasset://fonts/families/LuckiestGuy.json')
+-- rebirth blue, all in the HUD's Gotham Black (LOOP: was LuckiestGuy) with a dark outline. Sized in studs so it
+-- shrinks with distance. (Waves.client hides your own on your screen; everyone else sees it.)
+local TAG_FONT=Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.Heavy)
 local TAG_ROWS={
  {Name='User',Height=0.3,Color=Color3.fromRGB(240,242,248),Stroke=1.5},
  {Name='Power',Height=0.4,Color=Color3.fromRGB(205,245,70),Stroke=2},
@@ -172,6 +173,15 @@ while true do
   if #rows==0 then table.insert(lines,'Be the first to train!') end
   local board=lobby:FindFirstChild('ServerLeaderboard',true);local label=board and board:FindFirstChild('TextLabel',true)
   if label then label.Text=table.concat(lines,'\n') end
+  -- TOP POWER (the lobby's third board): Power alone.
+  local powerBoard=lobby:FindFirstChild('PowerLeaderboard',true);local powerLabel=powerBoard and powerBoard:FindFirstChild('TextLabel',true)
+  if powerLabel then
+   table.sort(rows,function(a,b) return a.Power>b.Power end)
+   local power={'TOP POWER','THIS SERVER'}
+   for i=1,math.min(#rows,5) do table.insert(power,string.format('%d. %s  /  %s',i,rows[i].Name,Format.compact(rows[i].Power))) end
+   if #rows==0 then table.insert(power,'Be the first to train!') end
+   powerLabel.Text=table.concat(power,'\n')
+  end
   local cashBoard=lobby:FindFirstChild('CashLeaderboard',true);local cashLabel=cashBoard and cashBoard:FindFirstChild('TextLabel',true)
   if cashLabel then
    table.sort(rows,function(a,b) return a.Cash>b.Cash end)

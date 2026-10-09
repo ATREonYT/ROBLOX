@@ -251,6 +251,7 @@ local function fit(e, cam, f, w, h, foot)
 	end
 	return lo
 end
+local NEAR, NEAR_MIN, NEAR_GONE = 36, 0.45, 9 -- (studs from the camera to the sign)
 local function grow(e, cam)
 	local sign = e.Sign
 	local anchor = sign.Parent
@@ -260,6 +261,9 @@ local function grow(e, cam)
 	local w, h = sign:GetAttribute('BaseW') or sign.Size.X.Scale, sign:GetAttribute('BaseH') or sign.Size.Y.Scale
 	local f = math.clamp((d / (sign:GetAttribute('GrowFrom') or 80)) ^ (sign:GetAttribute('GrowPow') or 1), 1, sign:GetAttribute('GrowMax') or 1)
 	if f > 1 then f = fit(e, cam.CFrame, f, w, h, frame:PointToObjectSpace(at)) end
+	-- (LOOP) Up close the base sign was wider than the screen (cut off under the HUD from the doorway): it shrinks
+	-- inside NEAR studs and is gone as you walk through, like the video's sign fading as you pass.
+	if d < NEAR then f = d <= NEAR_GONE and 0 or math.max(NEAR_MIN, d / NEAR) end
 	if math.abs(f - (e.Grown or 0)) > 0.01 then
 		e.Grown = f
 		sign.Size = UDim2.fromScale(w * f, h * f)
@@ -306,31 +310,54 @@ local function stroke(parent, color, thickness)
 	return s
 end
 
--- Big centred banner: pops in with an overshoot, holds, then floats up and fades.
+-- The banner: pops in with an overshoot, holds, then floats up and fades. (LOOP: it sits just under the fight's
+-- "N LEFT" counter, sized to the screen like the HUD (UIKit's scale), in the HUD's Gotham Black: in the middle of the
+-- screen it covered the next gate's sign and the goons running at you.)
+local DISPLAY = Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.Heavy)
+local okKit, Kit = pcall(require, RS.Shared.UIKit)
 local banner
-local function showBanner(title, detail, color)
+local function showBanner(title, detail, color, detailColor)
 	if banner then banner:Destroy() end
+	local okAbs, abs = pcall(function() return gui.AbsoluteSize end) -- (offline checks may not have it)
+	if not okAbs or typeof(abs) ~= 'Vector2' or abs.X <= 1 then abs = Vector2.new(1280, 720) end
+	local k = (okKit and Kit.scaleFor) and Kit.scaleFor(abs) or 1
 	local holder = Instance.new('Frame')
 	holder.Name = 'Banner'
-	holder.AnchorPoint = Vector2.new(0.5, 0.5)
-	holder.Position = UDim2.fromScale(0.5, 0.3)
-	holder.Size = UDim2.fromOffset(640, 150)
+	holder.AnchorPoint = Vector2.new(0.5, 0)
+	-- (under Roblox's top bar, the fight's counter and Waves.client's "Hold click to shoot!" line under it)
+	holder.Position = UDim2.new(0.5, 0, 0, 58 + 94 * k)
+	holder.Size = UDim2.fromOffset(480 * k, 86 * k)
 	holder.BackgroundTransparency = 1
+	holder:SetAttribute('Title', title)
 	holder.Parent = gui
 	banner = holder
 	local scale = Instance.new('UIScale')
 	scale.Scale = 0.3
 	scale.Parent = holder
+	-- (LOOP) a dark see-through backing, like the GOAL DONE moment's, so it reads over the street and the next sign
+	local back = Instance.new('Frame')
+	back.Name = 'Back'
+	back.AnchorPoint = Vector2.new(0.5, 0.5)
+	back.Position = UDim2.fromScale(0.5, 0.5)
+	back.Size = UDim2.new(1, 16 * k, 1, 12 * k)
+	back.BackgroundColor3 = C(16, 19, 30)
+	back.BackgroundTransparency = 0.4
+	back.BorderSizePixel = 0
+	back.ZIndex = 0
+	local backCorner = Instance.new('UICorner')
+	backCorner.CornerRadius = UDim.new(0, 12 * k)
+	backCorner.Parent = back
+	back.Parent = holder
 	local t = Instance.new('TextLabel')
 	t.Name = 'Title'
 	t.BackgroundTransparency = 1
-	t.Size = UDim2.new(1, 0, 0, 92)
-	t.FontFace = Font.new('rbxasset://fonts/families/LuckiestGuy.json')
+	t.Size = UDim2.fromScale(1, 0.6)
+	t.FontFace = DISPLAY
 	t.TextScaled = true
 	t.Text = title
 	t.TextColor3 = Color3.new(1, 1, 1)
 	t.Parent = holder
-	local tStroke = stroke(t, C(28, 24, 48), 5)
+	local tStroke = stroke(t, C(0, 0, 0), 4.5 * k)
 	local g = Instance.new('UIGradient')
 	g.Color = ColorSequence.new(Color3.new(1, 1, 1), color)
 	g.Rotation = 90
@@ -338,21 +365,22 @@ local function showBanner(title, detail, color)
 	local d = Instance.new('TextLabel')
 	d.Name = 'Detail'
 	d.BackgroundTransparency = 1
-	d.Position = UDim2.fromOffset(0, 94)
-	d.Size = UDim2.new(1, 0, 0, 44)
-	d.FontFace = Font.new('rbxasset://fonts/families/LuckiestGuy.json')
+	d.Position = UDim2.fromScale(0, 0.62)
+	d.Size = UDim2.fromScale(1, 0.38)
+	d.FontFace = DISPLAY
 	d.TextScaled = true
 	d.Text = detail
-	d.TextColor3 = C(90, 255, 120)
+	d.TextColor3 = detailColor or C(90, 255, 120)
 	d.Parent = holder
-	local dStroke = stroke(d, C(28, 24, 48), 4)
+	local dStroke = stroke(d, C(0, 0, 0), 3.5 * k)
 	TweenService:Create(scale, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
 	task.delay(1.8, function()
 		if banner ~= holder then return end
 		local fade = TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
-		TweenService:Create(holder, fade, { Position = UDim2.fromScale(0.5, 0.24) }):Play()
+		TweenService:Create(holder, fade, { Position = holder.Position - UDim2.fromOffset(0, 24 * k) }):Play()
 		for _, x in { t, d } do TweenService:Create(x, fade, { TextTransparency = 1 }):Play() end
 		for _, x in { tStroke, dStroke } do TweenService:Create(x, fade, { Transparency = 1 }):Play() end
+		TweenService:Create(back, fade, { BackgroundTransparency = 1 }):Play()
 		task.delay(0.45, function() if banner == holder then holder:Destroy(); banner = nil end end)
 	end)
 end
@@ -413,14 +441,19 @@ local function bump(e, root)
 	Sound.play(buzz)
 	local power = player:GetAttribute('Power') or 0
 	local why = e.State == 'Wave' and 'DEFEAT THE GOONS FIRST!' or ('🔒 NEED ' .. Format.compact(math.max(0, e.Required - power)) .. ' MORE POWER')
-	Juice.popNumber(root.Position + Vector3.new(0, 4, 0), why, DENIED)
+	-- (LOOP) The reason used to pop over your head as a tiny 4-stud label for under a second (too small to read, and it
+	-- is the moment the game tells you to go and train): it is the banner now, with what to do about it.
+	if not banner or banner:GetAttribute('Title') ~= why then
+		showBanner(why, e.State == 'Wave' and "Beat this street's goons" or 'Train at the ranges!', DENIED, Color3.new(1, 1, 1))
+	end
 end
 
 Net.get('Cinematic').OnClientEvent:Connect(function(info)
 	if type(info) ~= 'table' or info.Kind ~= 'StageClear' then return end
 	local color = C(255, 210, 60)
 	for _, e in gates do if e.Stage == info.Stage then color = e.Color end end
-	showBanner('STAGE ' .. tostring(info.Stage) .. ' CLEARED!', '+' .. Format.compact(info.Reward or 0) .. ' CASH', color)
+	-- (LOOP: "CLEARED!" as you walked in, with the goons still to beat, read wrong: you have unlocked the stage)
+	showBanner('STAGE ' .. tostring(info.Stage) .. ' UNLOCKED!', '+' .. Format.compact(info.Reward or 0) .. ' Cash', color)
 end)
 
 -- Watch your own character cross gate lines (stages run toward -Z in the map frame).

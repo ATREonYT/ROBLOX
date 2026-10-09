@@ -40,7 +40,7 @@ local playerGui = player:WaitForChild('PlayerGui')
 local Color, short, hex = Kit.Color, Kit.short, Kit.hex
 local BLACK = Color.black
 local px = UDim2.fromOffset
-local function iconOr(id, fallback) return (IconModels and IconModels.Meta and IconModels.Meta[id]) and id or fallback end
+local iconOr = Kit.iconOr -- (the first id IconModels can show: an uploaded render or a live model)
 
 local NAME = 'Store'
 local gui, root, fit = Kit.screen('HoodStore', nil, 8)
@@ -72,8 +72,12 @@ local function label(props)
 	props.StrokeThickness = props.StrokeThickness or math.max(2, (props.TextSize or 20) * 0.12)
 	return Kit.text(props)
 end
+-- (brief 19) The reference's big card lines ("Golden / Zone") are a pale cream gold with a dark brown outline.
+local CARD_INK = hex('2B1D02')
 local function gold(t)
-	Kit.new('UIGradient', { Rotation = 90, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, hex('FFF8B0')), ColorSequenceKeypoint.new(0.55, hex('FFD23A')), ColorSequenceKeypoint.new(1, hex('E89A10')) }), Parent = t })
+	Kit.new('UIGradient', { Rotation = 90, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, hex('FFFBDC')), ColorSequenceKeypoint.new(0.6, hex('FFF2A8')), ColorSequenceKeypoint.new(1, hex('FFE27A')) }), Parent = t })
+	local st = t:FindFirstChildOfClass('UIStroke')
+	if st then st.Color = CARD_INK end
 	return t
 end
 
@@ -150,9 +154,13 @@ local function modelView(model, size, view, attr, z)
 	vp:SetAttribute('PreviewImage', attr)
 	return vp
 end
+-- (brief 19) ICONS' offer-card renders, used once uploaded (the live models stay the fallback)
+local CARD_ART = { DoubleRep = 'DoublePower', DoubleCash = 'DoubleCash', VIP = 'VIP', AutoShoot = 'AutoFight' }
 local function artFor(entry, size, z)
+	local w0 = typeof(size) == 'Vector2' and size.X or size
+	local art = CARD_ART[entry.Key]
+	if art and Kit.iconImage(art) ~= '' then return Kit.icon3d(art, w0, { ZIndex = z }) end
 	local kind, id = entry.Art:match('^(%w+):(.+)$')
-	local w = typeof(size) == 'Vector2' and size.X or size
 	local ok, node = pcall(function()
 		if kind == 'gun' and GunModels then
 			return modelView(GunModels.build(id, 1), size, typeof(GunModels.View) == 'Vector3' and GunModels.View or nil, 'gun:' .. id, z)
@@ -175,7 +183,7 @@ local function artFor(entry, size, z)
 	if ok and node then return node end
 	local icon = kind == 'icon' and id or 'Shop'
 	if icon == 'Power' then icon = iconOr('Muscle', 'Power') end
-	return Kit.icon3d(icon, w, { ZIndex = z })
+	return Kit.icon3d(icon, w0, { ZIndex = z })
 end
 
 -- Price buttons, live prices and owned passes.
@@ -218,6 +226,8 @@ end
 
 ---------------------------------------------------------------------------------------------- cards
 local INNER = 1004 -- the list's width (the body's inside)
+-- (brief 19) The cards' faint studs only as a texture: as frames they were ~1.8K instances for 16 cards.
+local CARD_STUDS = Kit.studsAreCheap() and 30 or false
 local MARGIN, GAP = 21, 13 -- the cards' side margin and the gap between them
 -- A section title like "~Gamepass~": the thin dark rule along the top of the body, then the title in italic Gotham
 -- Black, centred.
@@ -234,17 +244,18 @@ end
 -- button on the left; the art large on the right, poking over the top edge.
 local BIG_W, BIG_H, BIG_GAP = 475, 290, 22
 local function bigCard(entry, x, y, parent)
-	local card = Kit.block({ Name = entry.Key, Tone = entry.Tone, Width = BIG_W, Height = BIG_H, Position = px(x, y), Outline = 5, RimWidth = 7, Studs = 30, ZIndex = 25 })
+	local card = Kit.block({ Name = entry.Key, Tone = entry.Tone, Width = BIG_W, Height = BIG_H, Position = px(x, y), Outline = 5, RimWidth = 7, Studs = CARD_STUDS, StudTransparency = 0.8, StudShade = 0.45, ZIndex = 25 })
 	card.Parent = parent
 	local z = 28
-	local art = artFor(entry, 236, z)
+	-- (brief 19: the reference's art is huge, the card's height, poking ~25 px over its top edge)
+	local art = artFor(entry, 258, z)
 	art.AnchorPoint = Vector2.new(0.5, 0)
-	art.Position = UDim2.new(0, 356, 0, -22)
+	art.Position = UDim2.new(0, 352, 0, -30)
 	art.Parent = card.Body
 	label({ Name = 'Title', Text = entry.Title, TextSize = Kit.fitSize(entry.Title, 42, 270, 16), StrokeThickness = 5, TextXAlignment = Enum.TextXAlignment.Left, AnchorPoint = Vector2.new(0, 0.5), Position = px(32, 39), Size = px(300, 48), ZIndex = z + 1, Parent = card.Body })
 	local lines = string.split(entry.Big or '', '\n')
 	for i, text in lines do
-		gold(label({ Name = 'Big' .. i, Text = text, TextSize = Kit.fitSize(text, 64, 250, 20), StrokeThickness = 6.5, TextXAlignment = Enum.TextXAlignment.Left, AnchorPoint = Vector2.new(0, 0.5), Position = px(26, 97 + (i - 1) * 57), Size = px(270, 66), ZIndex = z + 1, Parent = card.Body }))
+		gold(label({ Name = 'Big' .. i, Text = text, TextSize = Kit.fitSize(text, 52, 250, 20), StrokeThickness = 5.5, TextXAlignment = Enum.TextXAlignment.Left, AnchorPoint = Vector2.new(0, 0.5), Position = px(26, 102 + (i - 1) * 61), Size = px(270, 62), ZIndex = z + 1, Parent = card.Body }))
 	end
 	priceButton(card.Body, entry, 179, 67, px(29, 195), Vector2.zero, z)
 	return card
@@ -254,7 +265,7 @@ end
 -- glow edge, the line under it and the price on the right.
 local BANNER_H = 210
 local function bannerCard(entry, y, parent)
-	local card = Kit.block({ Name = entry.Key, Tone = entry.Tone, Width = INNER - 2 * MARGIN, Height = BANNER_H, Position = px(MARGIN, y), Outline = 5, RimWidth = 7, Studs = 30, ZIndex = 25 })
+	local card = Kit.block({ Name = entry.Key, Tone = entry.Tone, Width = INNER - 2 * MARGIN, Height = BANNER_H, Position = px(MARGIN, y), Outline = 5, RimWidth = 7, Studs = CARD_STUDS, StudTransparency = 0.8, StudShade = 0.45, ZIndex = 25 })
 	card.Parent = parent
 	local z = 28
 	local art = artFor(entry, 220, z)
@@ -262,7 +273,7 @@ local function bannerCard(entry, y, parent)
 	art.Position = UDim2.new(0, 22, 0.5, -26)
 	art.Parent = card.Body
 	local tone = Kit.toneOf(entry.Tone)
-	label({ Name = 'Big', Text = entry.Big or entry.Title, TextSize = 96, TextColor3 = hex('0A0A0A'), Stroke = tone.rim or Color.white, StrokeThickness = 6, TextXAlignment = Enum.TextXAlignment.Left, Position = px(270, 8), Size = px(420, 106), ZIndex = z + 1, Parent = card.Body })
+	label({ Name = 'Big', Text = entry.Big or entry.Title, TextSize = 96, TextColor3 = hex('0A0A0A'), Stroke = tone.glow or tone.rim or Color.white, StrokeThickness = 6, TextXAlignment = Enum.TextXAlignment.Left, Position = px(270, 8), Size = px(420, 106), ZIndex = z + 1, Parent = card.Body })
 	local detail = gold(label({ Name = 'Detail', Text = entry.Detail or '', TextSize = 40, StrokeThickness = 5, TextXAlignment = Enum.TextXAlignment.Left, Position = px(272, 112), Size = px(440, 50), ZIndex = z + 1, Parent = card.Body }))
 	detail.TextScaled = true
 	Kit.new('UITextSizeConstraint', { MaxTextSize = 40, Parent = detail })
@@ -280,7 +291,7 @@ local function smallTitle(entry)
 	return entry.Title
 end
 local function smallCard(entry, x, y, parent)
-	local card = Kit.block({ Name = entry.Key, Tone = entry.Tone, Width = SMALL_W, Height = SMALL_H, Position = px(x, y), Outline = 5, RimWidth = 6, Studs = 30, ZIndex = 25 })
+	local card = Kit.block({ Name = entry.Key, Tone = entry.Tone, Width = SMALL_W, Height = SMALL_H, Position = px(x, y), Outline = 5, RimWidth = 6, Studs = CARD_STUDS, StudTransparency = 0.8, StudShade = 0.45, ZIndex = 25 })
 	card.Parent = parent
 	local z = 28
 	local art = artFor(entry, 116, z)

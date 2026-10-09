@@ -61,7 +61,8 @@ function FightUI.pill(parent)
 	Kit.corner(5).Parent = rim
 	Kit.stroke(FightUI.Color.edge, 2, true, 0.3).Parent = rim
 	local scale = Kit.new('UIScale', { Parent = box })
-	local icon = skull(44, 7)
+	-- (brief 19) ICONS' Skull render once uploaded; the frame skull until then
+	local icon = Kit.iconImage('Skull') ~= '' and Kit.icon3d('Skull', 46, { ZIndex = 7 }) or skull(44, 7)
 	icon.AnchorPoint = Vector2.new(0, 0.5)
 	icon.Position = UDim2.new(0, 12, 0.5, 0)
 	icon.Parent = box

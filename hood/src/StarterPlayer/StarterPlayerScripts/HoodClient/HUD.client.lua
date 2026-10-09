@@ -54,9 +54,10 @@ local Color, Tone, short = Kit.Color, Kit.Tone, Kit.short
 local BLACK = Color.black
 local px = UDim2.fromOffset
 local hex = Kit.hex
--- The Power icon: the reference's orange flexed arm once IconModels has it, else our glove.
-local POWER = (IconModels and IconModels.Meta and IconModels.Meta.Muscle) and 'Muscle' or 'Power'
-local function iconOr(id, fallback) return (IconModels and IconModels.Meta and IconModels.Meta[id]) and id or fallback end
+-- The Power icon: the reference's orange flexed arm once IconModels has it, else our glove. iconOr(a, b, ...): the first
+-- id IconModels can show (an uploaded render or a live model; brief 19: ICONS adds renders like Sneaker or DoubleCash).
+local POWER = Kit.iconOr('Muscle', 'Power')
+local iconOr = Kit.iconOr
 
 ---------------------------------------------------------------------------------------------- state
 local snapshot = {} -- Cash and Rebirths from the profile snapshot, until the attributes arrive
@@ -176,7 +177,7 @@ local function actionButton(props)
 	Motion.button(holder, props.OnClick)
 	return holder, icon, caption, hit
 end
-local storeButton = actionButton({ Name = 'Store', Tone = 'gold', Width = WIDE_W, Height = WIDE_H, Position = px(0, 0), Text = 'Store', TextSize = 24, LabelY = 0.72, Icon = iconOr('Basket', 'Shop'), IconSize = 102, IconX = -5, Pop = 30, OnClick = call('Store') })
+local storeButton = actionButton({ Name = 'Store', Tone = 'gold', Width = WIDE_W, Height = WIDE_H, Position = px(0, 0), Text = 'Store', TextSize = 24, LabelY = 0.72, Icon = iconOr('Basket', 'Shop'), IconSize = 86, IconX = -5, Pop = 26, OnClick = call('Store') })
 Motion.shine(storeButton.Body, 4, UDim.new(0, 3))
 -- (Shoes.client builds its Shoes button in this slot, the reference's Pets square, with the same Kit.actionButton)
 Kit.new('Frame', { Name = 'ShoesSlot', BackgroundTransparency = 1, Position = px(GRID_X, ROW1), Size = px(SQ, SQ), Parent = column })
@@ -209,7 +210,12 @@ local function counter(name, iconId, centreY, iconSize, iconX, textSize, top, bo
 	return value, icon
 end
 local rebirthCount, rebirthIcon = counter('Rebirths', 'Rebirth', 12 + 22, 42, 24, 32, Color.white, hex('F28A8A'))
-local cashCount, cashIcon = counter('Cash', 'Cash', COUNTERS_H - 12 - 44 + 24, 56, 16, 39, hex('F0FF8A'), hex('3CCB3C'))
+-- (brief 19) Cash in the reference's gold trophy row: its "67.2K" gold (yellow -> orange), not green
+local cashCount, cashIcon = counter('Cash', 'Cash', COUNTERS_H - 12 - 44 + 24, 56, 16, 39, hex('FFE84A'), hex('FF9A10'))
+-- On PC the rows sit where the reference's 2nd row (its "0") and trophy row are: 117 and 66 design px over the bottom.
+local COUNTER_PC_Y = { Rebirths = COUNTERS_H + 2 - 117, Cash = COUNTERS_H + 2 - 66 }
+-- Phones: side by side in one row under Roblox's top bar, over the column (the bottom-left is the thumbstick's).
+local COUNTER_PHONE = { Rebirths = px(0, 28), Cash = px(112, 28) }
 
 -- The daily Rewards gift in the reference's top-left event slot (its "VILLAINS / 1:30 PM" shop): the icon and a caption.
 local rewardsSpot = Kit.new('Frame', { Name = 'RewardsGift', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0, 345, 0, -26), Size = px(110, 104), Parent = root })
@@ -242,8 +248,9 @@ local function offerCard(key, i, tone, iconId)
 	Motion.button(holder, function() buy(key) end)
 	return holder
 end
-offerCard('DoubleCash', 1, 'gold', 'Cash')
-offerCard('DoubleRep', 2, 'fire', POWER)
+-- (ICONS' 2x Cash / 2x Power card art once uploaded; the bill stack and the arm until then)
+offerCard('DoubleCash', 1, 'gold', Kit.iconImage('DoubleCash') ~= '' and 'DoubleCash' or 'Cash')
+offerCard('DoubleRep', 2, 'fire', Kit.iconImage('DoublePower') ~= '' and 'DoublePower' or POWER)
 
 ---------------------------------------------------------------------------------------------- bottom-centre
 -- The reference's bottom block: "Multiplier: 22.3x" over the bar's left end, the Power icon and count centred over the
@@ -299,9 +306,9 @@ local packLabels = {}
 local packs = Kit.new('Frame', { Name = 'Packs', BackgroundTransparency = 1, Position = px(math.floor((BAR_W - (3 * PACK_W + 2 * PACK_GAP)) / 2), PACK_TOP), Size = px(3 * PACK_W + 2 * PACK_GAP, PACK_H + 12), Parent = status })
 for i, key in PACKS do
 	local entry = Products.ByKey[key]
-	local holder = Kit.blockButton({ Name = key, Tone = PACK_TONES[i], Width = PACK_W, Height = PACK_H, Position = px((i - 1) * (PACK_W + PACK_GAP), 0) })
+	local holder = Kit.blockButton({ Name = key, Tone = PACK_TONES[i], Width = PACK_W, Height = PACK_H, Position = px((i - 1) * (PACK_W + PACK_GAP), 0), StudPattern = 'checker' })
 	holder.Parent = packs
-	Kit.icon3d(POWER, 64, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, -14, 0.5, 0), ZIndex = 6 }).Parent = holder.Body
+	Kit.icon3d(POWER, 56, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, -12, 0.5, 2), ZIndex = 6 }).Parent = holder.Body
 	packLabels[key] = label({ Name = 'Amount', Text = '+0', TextSize = 26, StrokeThickness = 3.5, TextXAlignment = Enum.TextXAlignment.Right, Position = px(36, -2), Size = UDim2.new(1, -45, 1, 0), ZIndex = 7, Parent = holder.Body })
 	local price = Kit.only(entry.Price, 16, { Only = false, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 2, 1, 2), ZIndex = 8, MarkColor = hex('A6F02A'), PriceColors = ColorSequence.new(hex('C8FF4A'), hex('5AD81A')) })
 	price.Parent = holder
@@ -320,7 +327,9 @@ do
 	if entry then
 		local holder = Kit.blockButton({ Name = 'AutoShoot', Tone = 'sunset', Width = SIDE_W, Height = SIDE_H, Position = px(BAR_W + SIDE_GAP, BAR_TOP - 2), Text = entry.Offer or entry.Title, TextSize = 22 })
 		holder.Parent = status
-		Kit.only(entry.Price, 15, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 1, 1), ZIndex = 8 }).Parent = holder
+		-- (the reference's 2x Speed price is all lime: ONLY, the mark and the number)
+		local lime = ColorSequence.new(hex('8CFF5A'), hex('5EE83A'))
+		Kit.only(entry.Price, 15, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 1, 1), ZIndex = 8, OnlyColors = lime, MarkColor = hex('7DF04E'), PriceColors = lime }).Parent = holder
 		Motion.button(holder, function() buy('AutoShoot') end)
 	end
 end
@@ -328,7 +337,8 @@ end
 ---------------------------------------------------------------------------------------------- top-centre
 -- The hint sits where the reference's first timer line does (beside Roblox's own top bar buttons): white outlined
 -- text with the key words in colour.
-local hint = label({ Name = 'Hint', Text = '', TextSize = 21, StrokeThickness = 3, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, -21), Size = px(820, 28), RichText = true, Parent = root })
+local HINT_Y = -21 -- (centred on the reference's first line, measured at its size)
+local hint = label({ Name = 'Hint', Text = '', TextSize = 21, StrokeThickness = 3, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, HINT_Y), Size = px(820, 28), RichText = true, Parent = root })
 hint.TextScaled = true
 Kit.new('UITextSizeConstraint', { MaxTextSize = 21, MinTextSize = 11, Parent = hint })
 
@@ -340,11 +350,16 @@ Kit.new('UIListLayout', { Padding = UDim.new(0, 2), HorizontalAlignment = Enum.H
 local toastCount = 0
 -- Notices sit in the upper middle; while a window is open (the HUD is away) they move up into the top band, clear of it.
 local toastY = 115
+-- (LOOP) While Goals.client's GOAL DONE moment is up (PlayerGui GoalMoment; it takes design px 50..200 at the top centre),
+-- they sit under it: "Bought Snub Revolver!" landed right on "GOAL DONE!".
+local MOMENT_BOTTOM = 208
 placeToasts = function()
 	local open = playerGui:GetAttribute('HoodWindow')
 	local windowOpen = type(open) == 'string' and open ~= ''
-	toastStack.Position = UDim2.new(0.5, 0, 0, windowOpen and -50 or toastY)
+	local moment = playerGui:GetAttribute('GoalMoment') == true
+	toastStack.Position = UDim2.new(0.5, 0, 0, windowOpen and -50 or (moment and math.max(toastY, MOMENT_BOTTOM)) or toastY)
 end
+playerGui:GetAttributeChangedSignal('GoalMoment'):Connect(function() placeToasts() end)
 toast = function(text, tone)
 	text = tostring(text)
 	toastCount += 1
@@ -419,8 +434,8 @@ playerGui:GetAttributeChangedSignal('HoodWindow'):Connect(function()
 	gui.Enabled = not (type(open) == 'string' and open ~= '')
 	if placeToasts then placeToasts() end
 end)
-local function makePanel(name, title, icon, tone, w, h)
-	local panel, well, closeHit, overlay, header = Kit.window(panelRoot, { Name = name, Title = title, Icon = icon, Tone = tone, Width = w, Height = h })
+local function makePanel(name, title, icon, tone, w, h, titleSize)
+	local panel, well, closeHit, overlay, header = Kit.window(panelRoot, { Name = name, Title = title, Icon = icon, Tone = tone, Width = w, Height = h, TitleSize = titleSize or 72 })
 	overlay.Visible = false
 	-- Taps beside the window close it; taps on the window itself stop there.
 	local backdrop = Kit.new('TextButton', { Name = 'Backdrop', Text = '', AutoButtonColor = false, BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 20, Parent = overlay })
@@ -473,14 +488,14 @@ end
 -- as its badge (the reference's XP shield); the Rebirth button and Skip Rebirth (once its product id is set), 314 x 83.
 -- (Positions are in the window's Content frame: 18 px in from the sides, 132 px down from the top.)
 local RB_W, RB_H = 940, 642
-local rebirth = makePanel('Rebirth', 'Rebirth', 'Rebirth', 'headerCyan', RB_W, RB_H)
+local rebirth = makePanel('Rebirth', 'Rebirth', 'Rebirth', 'headerCyan', RB_W, RB_H, 68)
 local rw = rebirth.Well
 local BOX_W, BOX_H, BOX_Y = 285, 87, 77
 local FROM_X, TO_X = 79, 539
-local fromTitle = label({ Name = 'From', Text = 'Rebirth 0', TextSize = 36, StrokeThickness = 4.5, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(FROM_X + BOX_W / 2, 50), Size = px(BOX_W + 80, 48), ZIndex = 26, Parent = rw })
-local toTitle = label({ Name = 'To', Text = 'Rebirth 1', TextSize = 36, StrokeThickness = 4.5, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(TO_X + BOX_W / 2, 50), Size = px(BOX_W + 80, 48), ZIndex = 26, Parent = rw })
+local fromTitle = label({ Name = 'From', Text = 'Rebirth 0', TextSize = 32, StrokeThickness = 4, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(FROM_X + BOX_W / 2, 50), Size = px(BOX_W + 80, 48), ZIndex = 26, Parent = rw })
+local toTitle = label({ Name = 'To', Text = 'Rebirth 1', TextSize = 32, StrokeThickness = 4, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(TO_X + BOX_W / 2, 50), Size = px(BOX_W + 80, 48), ZIndex = 26, Parent = rw })
 local function multiplierBox(name, x)
-	local box = Kit.block({ Name = name, Tone = 'aqua', Width = BOX_W, Height = BOX_H, Position = px(x, BOX_Y), Outline = 5, RimWidth = 3, Studs = 20, ZIndex = 25 })
+	local box = Kit.block({ Name = name, Tone = 'aqua', Width = BOX_W, Height = BOX_H, Position = px(x, BOX_Y), Outline = 5, RimWidth = 3, Studs = 20, StudPattern = 'checker', ZIndex = 25 })
 	box.Parent = rw
 	Kit.icon3d(POWER, 78, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 8, 0.5, 0), ZIndex = 28 }).Parent = box.Body
 	local value = label({ Name = 'Value', Text = '1x', TextSize = 38, StrokeThickness = 5, TextXAlignment = Enum.TextXAlignment.Left, Position = px(98, -1), Size = UDim2.new(1, -102, 1, 0), ZIndex = 28, Parent = box.Body })
@@ -488,40 +503,77 @@ local function multiplierBox(name, x)
 end
 local fromValue = multiplierBox('FromBox', FROM_X)
 local toValue = multiplierBox('ToBox', TO_X)
--- The green arrow between them: the Evolve icon model turned to point right (the reference's studded green arrow).
+-- The green arrow between them (the reference's studded green arrow, pointing up and to the right): ICONS' Arrow render
+-- once uploaded, else the Evolve icon model turned 45 degrees with a black outline copy behind it, like Kit.icon3d's.
 local arrow
-if IconModels and type(IconModels.build) == 'function' then
+if Kit.iconImage('Arrow') ~= '' then
+	arrow = Kit.icon3d('Arrow', 128, { ZIndex = 27 })
+elseif IconModels and type(IconModels.build) == 'function' then
 	local ok, model = pcall(IconModels.build, 'Evolve', 1)
 	if ok and typeof(model) == 'Instance' then
-		-- (the reference's arrow points up and to the right, at 45 degrees; seen from the front, screen-right is world -X)
+		-- (seen from the front, screen-right is world -X)
 		pcall(function() model:PivotTo(CFrame.Angles(0, 0, math.pi / 4)) end)
-		arrow = Kit.viewport(model, 128, { Direction = typeof(IconModels.View) == 'Vector3' and IconModels.View or nil, ZIndex = 27 })
+		local look = { Direction = typeof(IconModels.View) == 'Vector3' and IconModels.View or nil, ZIndex = 28 }
+		arrow = Kit.new('Frame', { BackgroundTransparency = 1, Size = px(128, 128), ZIndex = 27 })
+		local edge = Kit.viewport(model:Clone(), 128, look)
+		edge.Name = 'Outline'
+		edge.ImageColor3 = hex('0C0A34')
+		edge.AnchorPoint = Vector2.new(0.5, 0.5)
+		edge.Position = UDim2.fromScale(0.5, 0.5)
+		edge.Size = UDim2.fromScale(1.1, 1.1)
+		edge.ZIndex = 27
+		edge.Parent = arrow
+		local vp = Kit.viewport(model, 128, look)
+		vp.Size = UDim2.fromScale(1, 1)
+		vp.Parent = arrow
+		arrow:SetAttribute('PreviewImage', 'icon3d:Evolve')
+		arrow:SetAttribute('PreviewRotate', 45)
 	end
 end
 arrow = arrow or label({ Name = 'Arrow', Text = '>', TextSize = 80, TextColor3 = Tone.green.top, StrokeThickness = 6, Size = px(128, 128), Rotation = -45, ZIndex = 27 })
 arrow.Name = 'Arrow'
-arrow:SetAttribute('PreviewImage', 'icon3d:Evolve')
-arrow:SetAttribute('PreviewRotate', 45)
 arrow.AnchorPoint = Vector2.new(0.5, 0.5)
 arrow.Position = px(454, BOX_Y + BOX_H / 2)
 arrow.Parent = rw
 -- (the lane the next rebirth opens, under the right box: "Unlocks BAY 3!")
 local unlockLine = label({ Name = 'Unlock', Text = '', TextSize = 22, TextColor3 = hex('7CFF4F'), StrokeThickness = 3, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(TO_X + BOX_W / 2, BOX_Y + BOX_H + 22), Size = px(BOX_W + 60, 28), ZIndex = 26, Parent = rw })
-label({ Name = 'Warning', Text = 'Rebirth resets your power', TextSize = 35, TextColor3 = hex('FF1A1A'), StrokeThickness = 4.5, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(452, 228), Size = px(860, 46), ZIndex = 26, Parent = rw })
+label({ Name = 'Warning', Text = 'Rebirth resets your power', TextSize = 32, TextColor3 = hex('F00606'), StrokeThickness = 4, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(452, 228), Size = px(860, 46), ZIndex = 26, Parent = rw })
 local RBAR_X, RBAR_Y, RBAR_W, RBAR_H = 138, 265, 656, 84
-local rebirthBar, rebirthFill, rebirthBarText = Kit.bar({ Name = 'Progress', Width = RBAR_W, Height = RBAR_H, Tone = 'aqua', Value = 0, Text = '0 / 0 Power', TextSize = 40, Position = px(RBAR_X, RBAR_Y), Outline = 5, Studs = 20, ZIndex = 25 })
+local rebirthBar, rebirthFill, rebirthBarText = Kit.bar({ Name = 'Progress', Width = RBAR_W, Height = RBAR_H, Tone = 'aqua', Value = 0, Text = '0 / 0 Power', TextSize = 36, Position = px(RBAR_X, RBAR_Y), Outline = 5, Studs = 20, ZIndex = 25 })
 rebirthBar.Parent = rw
--- the badge over the bar's left end (the reference's XP shield): the Power arm on a navy shield
+-- the badge over the bar's left end (the reference's XP shield, tilted): ICONS' Shield render once uploaded, else a shield
+-- of frames (a square top and a diamond point: black edge, a light blue band, the navy face), the Power arm on it
+local function shield(w, h, z)
+	local holder = Kit.new('Frame', { Name = 'Badge', BackgroundTransparency = 1, Size = px(w, h), ZIndex = z })
+	if Kit.iconImage('Shield') ~= '' then
+		local img = Kit.icon3d('Shield', math.max(w, h), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = z })
+		img.Parent = holder
+		return holder
+	end
+	for i, look in { { 0, BLACK }, { 5, hex('6AB0FF') }, { 10, hex('1E48C8') } } do
+		local inset, color = look[1], look[2]
+		local top = Kit.new('Frame', { Name = 'Top' .. i, BackgroundColor3 = color, BorderSizePixel = 0, Position = px(inset, inset), Size = px(w - 2 * inset, h * 0.6 - inset), ZIndex = z + i - 1, Parent = holder })
+		Kit.corner(math.max(2, 14 - inset)).Parent = top
+		local side = (w - 2 * inset) / math.sqrt(2)
+		Kit.new('Frame', { Name = 'Point' .. i, BackgroundColor3 = color, BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0.5), Rotation = 45, Position = px(w / 2, h - inset * 1.41 - (w - 2 * inset) / 2), Size = px(side, side), ZIndex = z + i - 1, Parent = holder })
+		if i == 3 then Kit.gradient(hex('3A78F0'), color, 0.5).Parent = top end
+	end
+	return holder
+end
 do
-	local badge = Kit.block({ Name = 'Badge', Tone = { top = hex('2E6CE0'), base = hex('1A3CA8'), lip = hex('122E80'), stroke = BLACK, rim = hex('6AA8FF') }, Width = 96, Height = 100, Outline = 6, Radius = 18, Studs = false, RimWidth = 4, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(RBAR_X - 32, RBAR_Y + RBAR_H / 2), ZIndex = 29 })
-	badge.Rotation = -8
+	local badge = shield(98, 112, 29)
+	badge.AnchorPoint = Vector2.new(0.5, 0.5)
+	badge.Position = px(RBAR_X - 30, RBAR_Y + RBAR_H / 2)
+	badge.Rotation = -10
 	badge.Parent = rw
-	Kit.icon3d(POWER, 80, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 31 }).Parent = badge.Body
+	Kit.icon3d(POWER, 70, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.44, 0), ZIndex = 33 }).Parent = badge
 end
 local rebirthAction, skipAction
 local confirmUntil = 0
 local ACTION_Y, ACTION_W, ACTION_H = 385, 314, 83
-local function skipLive() return Products.idOf('SkipRebirth') ~= 0 end
+-- (brief 19) Skip Rebirth sits beside Rebirth like the reference's, id or not: with no product id yet a tap says it's
+-- coming soon (Products.canBuy), like every Store card.
+local function skipLive() return Products.ByKey.SkipRebirth ~= nil end
 local function rebirthUpdate()
 	local power, n = num('Power', 0), rebirthsNow()
 	local need = rebirthNeed(n)
@@ -545,10 +597,17 @@ local function rebirthUpdate()
 		return
 	end
 	rebirthAction = actionIn(rw, rebirthAction, {
-		Name = 'Action', Tone = confirming and 'gold' or 'aqua', Disabled = not ready, Text = text, TextSize = ready and 51 or 40,
-		Icon = 'Rebirth', IconSize = 64, IconInset = 22, Width = ACTION_W, Height = ACTION_H, Outline = 5, RimWidth = 3, Studs = 20,
+		-- (brief 19) the reference's button is the cyan block whatever the state; not ready, it says what's missing and a tap
+		-- says how to get there (grey only at the last rebirth)
+		Name = 'Action', Tone = confirming and 'gold' or 'aqua', Disabled = maxed, Text = text, TextSize = ready and 51 or 40,
+		Icon = 'Rebirth', IconSize = 64, IconInset = 22, Width = ACTION_W, Height = ACTION_H, Outline = 5, RimWidth = 3, Studs = 20, StudPattern = 'checker',
 		Position = skip and px(105, ACTION_Y) or px(452 - ACTION_W / 2, ACTION_Y),
 	}, function()
+		local nowPower, nowNeed = num('Power', 0), rebirthNeed()
+		if nowPower < nowNeed then
+			toast('Train to ' .. short(nowNeed) .. ' Power to rebirth!', 'orange')
+			return
+		end
 		if os.clock() < confirmUntil then
 			confirmUntil = 0
 			Net.get('Rebirth'):FireServer()
@@ -567,8 +626,8 @@ local function rebirthUpdate()
 	if skip then
 		local entry = Products.ByKey.SkipRebirth
 		skipAction = actionIn(rw, nil, {
-			Name = 'Skip', Tone = 'aqua', Text = 'Skip Rebirth', TextSize = 33, Icon = 'Rebirth', IconSize = 60, IconInset = 18, Width = ACTION_W, Height = ACTION_H,
-			Outline = 5, RimWidth = 3, Studs = 20, Position = px(480, ACTION_Y),
+			Name = 'Skip', Tone = 'aqua', Text = 'Skip Rebirth', TextSize = 33, Icon = Kit.iconImage('RebirthSkip') ~= '' and 'RebirthSkip' or 'Rebirth', IconSize = 60, IconInset = 18, Width = ACTION_W, Height = ACTION_H,
+			Outline = 5, RimWidth = 3, Studs = 20, StudPattern = 'checker', Position = px(480, ACTION_Y),
 		}, function() buy('SkipRebirth') end)
 		Kit.only(entry.Price, 38, { Only = false, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 30, 0, 4), ZIndex = 32, MarkColor = hex('A6F02A'), PriceColors = ColorSequence.new(hex('E8FF4A'), hex('8AE82A')) }).Parent = skipAction
 	end
@@ -598,10 +657,14 @@ local function gunTone(gun)
 	return { top = c:Lerp(Color.white, 0.45), base = c, lip = c:Lerp(BLACK, 0.3), stroke = c:Lerp(BLACK, 0.7), rim = c:Lerp(Color.white, 0.6) }
 end
 local function gunCard(gun, owned, cash)
-	local card = Kit.block({ Name = gun.Id, Tone = gunTone(gun), Width = GUN_W, Height = GUN_H, Outline = 4, RimWidth = 3, Studs = 26, ZIndex = 25 })
+	local card = Kit.block({ Name = gun.Id, Tone = gunTone(gun), Width = GUN_W, Height = GUN_H, Outline = 4, RimWidth = 3, Studs = Kit.studsAreCheap() and 26 or false, ZIndex = 25 })
 	card.LayoutOrder = gun.Tier
 	local art
-	if GunModels and type(GunModels.build) == 'function' then
+	local image = GunModels and type(GunModels.Images) == 'table' and GunModels.Images[gun.Id]
+	if type(image) == 'string' and image ~= '' then
+		-- (an uploaded gun render: one ImageLabel instead of a live model of ~40 parts)
+		art = Kit.new('ImageLabel', { BackgroundTransparency = 1, Image = image, ScaleType = Enum.ScaleType.Fit, Size = px(150, 92), ZIndex = 28 })
+	elseif GunModels and type(GunModels.build) == 'function' then
 		local ok, model = pcall(GunModels.build, gun.Id, 1)
 		if ok and typeof(model) == 'Instance' then
 			local view = typeof(GunModels.View) == 'Vector3' and GunModels.View or nil
@@ -623,7 +686,7 @@ local function gunCard(gun, owned, cash)
 	if state == 'Equipped' or state == 'Owned' then
 		label({ Name = 'Text', Text = state, TextSize = 21, StrokeThickness = 3, Size = UDim2.fromScale(1, 1), ZIndex = 31, Parent = chip.Body })
 	else
-		Kit.icon3d('Cash', 36, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, -10, 0.5, 0), ZIndex = 31 }).Parent = chip.Body
+		Kit.icon3d('Cash', 36, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, -10, 0.5, 0), ZIndex = 31, Outline = false }).Parent = chip.Body
 		label({ Name = 'Text', Text = gun.Cost <= 0 and 'Free' or short(gun.Cost), TextSize = 21, StrokeThickness = 3, TextColor3 = cash >= gun.Cost and hex('7CFF4F') or Color.white, Position = px(18, 0), Size = UDim2.new(1, -18, 1, 0), ZIndex = 31, Parent = chip.Body })
 	end
 	return card
@@ -664,7 +727,8 @@ Kit.new('UIListLayout', { Padding = UDim.new(0, 12), SortOrder = Enum.SortOrder.
 Kit.new('UIPadding', { PaddingTop = UDim.new(0, 8), PaddingBottom = UDim.new(0, 12), Parent = questList })
 local function questRow(goal, state)
 	local tone = state == 'done' and 'lime' or state == 'now' and 'gold' or 'dark'
-	local row = Kit.block({ Name = goal.Id or 'Goal', Tone = tone, Width = 860, Height = 74, Outline = 4, RimWidth = 3, Studs = 34, ZIndex = 25 })
+	-- (brief 19: 20 rows: studs only as a texture, and the live Cash icon without its outline copy; ~1.3K instances saved)
+	local row = Kit.block({ Name = goal.Id or 'Goal', Tone = tone, Width = 860, Height = 74, Outline = 4, RimWidth = 3, Studs = Kit.studsAreCheap() and 34 or false, ZIndex = 25 })
 	row.LayoutOrder = goal.Step or 0
 	label({ Name = 'Step', Text = state == 'done' and '✓' or tostring(goal.Step or ''), FontFace = state == 'done' and Kit.Font.body or nil, TextSize = 36, StrokeThickness = 4, Position = px(10, 0), Size = px(56, 74), ZIndex = 28, Parent = row.Body })
 	local text = label({ Name = 'Text', Text = goal.Text or '', TextSize = 26, StrokeThickness = 3.5, TextXAlignment = Enum.TextXAlignment.Left, Position = px(74, 6), Size = px(640, 32), ZIndex = 28, Parent = row.Body })
@@ -673,7 +737,7 @@ local function questRow(goal, state)
 	local where = label({ Name = 'Where', Text = goal.Where or '', TextSize = 19, StrokeThickness = 2.5, TextColor3 = state == 'dark' and Color.white or hex('E8FBFF'), TextXAlignment = Enum.TextXAlignment.Left, Position = px(74, 40), Size = px(640, 24), ZIndex = 28, Parent = row.Body })
 	where.TextScaled = true
 	Kit.new('UITextSizeConstraint', { MaxTextSize = 19, MinTextSize = 10, Parent = where })
-	Kit.icon3d('Cash', 46, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(1, -150, 0.5, 0), ZIndex = 28 }).Parent = row.Body
+	Kit.icon3d('Cash', 46, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(1, -150, 0.5, 0), ZIndex = 28, Outline = false }).Parent = row.Body
 	fillText(label({ Name = 'Reward', Text = '+' .. short(goal.Reward or 0), TextSize = 30, StrokeThickness = 4, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.new(1, -100, 0, 0), Size = px(96, 74), ZIndex = 28, Parent = row.Body }), hex('F0FF8A'), hex('3CCB3C'))
 	return row
 end
@@ -692,6 +756,9 @@ local function fillQuest()
 	for i, goal in GoalRules.List do
 		questRow(goal, i < step and 'done' or i == step and 'now' or 'next').Parent = questList
 	end
+	-- (brief 19) open on the goal you're on, one done row above it, not on the first goals you finished long ago
+	-- (deferred: AutomaticCanvasSize grows the canvas after this frame's layout)
+	task.defer(function() questList.CanvasPosition = Vector2.new(0, math.max(0, (step - 2) * (74 + 12))) end)
 end
 quest.Open = fillQuest
 quest.Update = fillQuest
@@ -767,7 +834,7 @@ local function hintText(power)
 	local gun = 'Gun ' .. c(GOLD, times(gunMultiplier()))
 	if station:find('Locked:') then
 		local lane = Skins.StationById[station:sub(8)]
-		return c(RED, (lane and lane.Name or 'This range') .. ' needs ' .. (lane and lockText(lane) or 'more')) .. '  •  ' .. goal
+		return c(RED, (lane and lane.Name or 'This range') .. ' needs ' .. (lane and lockText(lane) or 'more'))
 	end
 	-- A new player follows Lobby.client's floor guide (its GuidePhase, in the guide's gold): first to the free
 	-- lane, then, once Stage 1 is open, out through the door, even from the lane.
@@ -785,12 +852,13 @@ local function hintText(power)
 			end
 			return 'Stand at ' .. c(GOLD, string.upper(lane.Name)) .. ' to shoot! (' .. times(lane.Multiplier) .. ')'
 		end
-		return 'Stand at a range to shoot  •  ' .. gun .. '  •  ' .. goal
+		return 'Stand at a range to shoot  •  ' .. goal
 	end
 	-- In a lane: the gun fires by itself; the range's multiplier (in the lane's colour) and your gun's, side by side.
 	local range = Skins.StationById[station]
 	if range then
-		return c(GREEN, 'Auto-shooting!') .. '  •  Range ' .. c('#' .. rangeColor(station, range):ToHex(), times(range.Multiplier)) .. '  •  ' .. gun .. '  •  ' .. goal
+		-- (brief 19: as short as the reference's timer line; the bottom block shows the whole multiplier)
+		return c(GREEN, 'Auto-shooting!') .. '  •  Range ' .. c('#' .. rangeColor(station, range):ToHex(), times(range.Multiplier)) .. '  •  ' .. goal
 	end
 	return gun .. '  •  ' .. goal
 end
@@ -868,7 +936,11 @@ pcall(function()
 	end)
 end)
 task.spawn(function()
-	Net.get('Notice').OnClientEvent:Connect(function(message) toast(message, noticeTone(tostring(message))) end)
+	Net.get('Notice').OnClientEvent:Connect(function(message)
+		-- (LOOP) Your own "Rebirth 3! Every shot pays x4" is what the rebirth moment says in big letters: once is enough.
+		if string.find(tostring(message), '^Rebirth %d+!') then return end
+		toast(message, noticeTone(tostring(message)))
+	end)
 	Net.get('Cinematic').OnClientEvent:Connect(function(info)
 		if type(info) == 'table' and info.Kind == 'Rebirth' and type(info.Rebirths) == 'number' then rebirthMoment(info.Rebirths, info.Unlocked) end
 	end)
@@ -910,12 +982,20 @@ local function relayout()
 	if phone then
 		counters.AnchorPoint = Vector2.new(0, 0)
 		counters.Position = px(0, -6)
+		for name, at in COUNTER_PHONE do
+			local row = counters:FindFirstChild(name)
+			if row then row.Position = at end
+		end
 		column.Position = px(LEFT, 118)
 		offers.Position = UDim2.new(1, -16, 0, 96)
 		rewardsSpot.Position = UDim2.new(1, -305, 0, 70) -- (the reference's Playtime Reward slot: Roblox hides the player list on phones)
 	else
 		counters.AnchorPoint = Vector2.new(0, 1)
 		counters.Position = UDim2.new(0, 0, 1, -2)
+		for name, y in COUNTER_PC_Y do
+			local row = counters:FindFirstChild(name)
+			if row then row.Position = px(0, y) end
+		end
 		column.Position = px(LEFT, math.floor(h * 0.221)) -- (the reference's Store top: 159 of 720)
 		offers.Position = UDim2.new(1, -22, 0, math.floor(middle - 98))
 		rewardsSpot.Position = UDim2.new(0, 345, 0, -26)
@@ -924,7 +1004,14 @@ local function relayout()
 	local shootLeft = (abs.X - SHOOT_RIGHT - SHOOT_SIZE) / k
 	local x = math.min(w / 2 - BAR_W / 2, shootLeft - 10 - STATUS_W)
 	status.Position = UDim2.new(0, x, 1, -10)
-	hint.Size = px(math.max(360, math.min(820, w - 2 * 300)), 28)
+	-- (brief 19) The hint keeps clear of the Rewards gift (PC: the top-left slot, x 290..400) and Roblox's top-right buttons;
+	-- on phones of the counters' row (x 0..390). Centred on the screen while it fits, else in the room between.
+	local left = phone and 390 or 410
+	local right = w - (phone and 16 or 110 / k)
+	local hw = math.max(300, math.min(820, right - left))
+	local cx = math.clamp(w / 2, left + hw / 2, math.max(left + hw / 2, right - hw / 2))
+	hint.Size = px(hw, 28)
+	hint.Position = UDim2.new(0, cx, 0, HINT_Y)
 	toastY = math.floor(h * 0.16)
 	placeToasts()
 end

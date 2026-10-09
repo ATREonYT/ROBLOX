@@ -599,6 +599,24 @@ end
 -- Show the board of the box you stand nearest to (only that one exists: walking off drops it); rebuild it when your
 -- rack changes what it shows.
 local shownBoard
+-- (brief 19, LOOP) Standing at a box, the board above it lands in the screen's top band, over the hint, the goal line and
+-- the GOAL DONE moment: it steps away while its top edge is in the top 17% of the screen (back below 22%) or while a
+-- GOAL DONE moment is up. Walking up to a box, it shows mid-screen as before.
+local boardHidden = false
+local function boardClear(entry)
+	local cam = workspace.CurrentCamera
+	local gui = entry.Board
+	if not cam or not gui then return true end
+	if player.PlayerGui:GetAttribute('GoalMoment') == true then return false end
+	local adornee = gui.Adornee
+	local ok, pos = pcall(function() return adornee:IsA('Attachment') and adornee.WorldPosition or adornee.Position end)
+	if not ok or typeof(pos) ~= 'Vector3' then return true end
+	local p, onScreen = cam:WorldToViewportPoint(pos + gui.StudsOffsetWorldSpace + Vector3.new(0, gui.Size.Y.Scale / 2, 0))
+	if not onScreen then return true end
+	local line = cam.ViewportSize.Y * (boardHidden and 0.22 or 0.17)
+	boardHidden = p.Y < line
+	return not boardHidden
+end
 local function refreshBoards()
 	local root = rootOf(player.Character)
 	local best, bestD = nil, BOARD_RANGE
@@ -621,7 +639,7 @@ local function refreshBoards()
 	if best and not best.Board then buildBoard(best) end
 	if best and best.Board then
 		paintPrice(best)
-		best.Board.Enabled = true
+		best.Board.Enabled = boardClear(best)
 	end
 	shownBoard = best
 end
@@ -933,6 +951,16 @@ local buttonSpot = buttonHolder.Body:FindFirstChild('IconSpot')
 local buttonIcon
 local buttonIconId
 local function setButtonIcon()
+	-- (brief 19) ICONS' Sneaker render once uploaded (the reference's Pets square shows one fixed glossy icon); until then
+	-- the pair you wear, live
+	if Kit.iconImage('Sneaker') ~= '' then
+		if buttonIconId == 'Sneaker' then return end
+		buttonIconId = 'Sneaker'
+		if buttonIcon then buttonIcon:Destroy() end
+		buttonIcon = Kit.icon3d('Sneaker', ICON, { ZIndex = buttonSpot.ZIndex })
+		buttonIcon.Parent = buttonSpot
+		return
+	end
 	local id = player:GetAttribute('ShoeWorn')
 	if type(id) ~= 'string' or not Shoes.ById[id] then id = Shoes.Boxes[1].Shoes[1] end
 	if id == buttonIconId and buttonIcon and buttonIcon.Parent then return end
@@ -962,8 +990,12 @@ end
 local headerArt = Kit.new('Frame', { Name = 'HeaderArt', BackgroundTransparency = 1, Size = px(110, 110), ZIndex = 27 })
 local panel, well, closeHit, overlay = Kit.window(root, { Name = 'Shoes', Title = 'Shoes', IconNode = headerArt, IconSize = 110, Tone = 'headerMagenta', Width = 940, Height = 642 })
 do
-	local id = Shoes.Boxes[1].Shoes[1]
-	local art = pairViewport(id, 110, 27)
+	local art
+	if Kit.iconImage('Sneaker') ~= '' then
+		art = Kit.icon3d('Sneaker', 110, { ZIndex = 27 })
+	else
+		art = pairViewport(Shoes.Boxes[1].Shoes[1], 110, 27)
+	end
 	art.Parent = headerArt
 end
 overlay.Visible = false
@@ -1032,15 +1064,13 @@ local empty = body(well, 'No shoes yet!\nOpen a shoe box at the back of the hall
 -- The selected pair's card on the right.
 local DETAIL_W, DETAIL_H = 286, 422
 local detail = Kit.new('Frame', { Name = 'Detail', BackgroundColor3 = Color.white, BorderSizePixel = 0, Position = px(618, 70), Size = px(DETAIL_W, DETAIL_H), ZIndex = 24, Parent = well })
-Kit.corner(3).Parent = detail
-Kit.stroke(Color.black, 5, true).Parent = detail
+Kit.stroke(Color.black, 5, true, 0, Enum.LineJoinMode.Miter).Parent = detail
 local detailGradient = Kit.gradient(Color.white, Color.cardboardInset, 0.6)
 detailGradient.Parent = detail
 Kit.studs(detail, { Width = DETAIL_W, Height = DETAIL_H, Pitch = 26, Color = Color.black, Transparency = 0.92, ZIndex = 24 })
 do
 	local rim = Kit.new('Frame', { Name = 'Rim', BackgroundTransparency = 1, Position = px(5, 5), Size = UDim2.new(1, -10, 1, -10), ZIndex = 24, Parent = detail })
-	Kit.corner(2).Parent = rim
-	Kit.stroke(Color.white, 5, true, 0.55).Parent = rim
+	Kit.stroke(Color.white, 5, true, 0.55, Enum.LineJoinMode.Miter).Parent = rim
 end
 local detailView
 local detailName = Kit.text({ Name = 'Name', Text = '', TextSize = 30, Stroke = Color.black, StrokeThickness = 4, Position = px(8, 168), Size = px(DETAIL_W - 16, 36), ZIndex = 26, Parent = detail })
@@ -1137,14 +1167,15 @@ local function pairCard(id, rack, order)
 	local shoe = Shoes.ById[id]
 	local rarity = rarityOf(id)
 	local copies, on = ShoeRules.copies(rack, id), ShoeRules.equippedCount(rack, id)
-	local c = Kit.new('Frame', { Name = id, BackgroundColor3 = Color.white, BorderSizePixel = 0, LayoutOrder = order, ZIndex = 25 })
-	Kit.corner(3).Parent = c
-	Kit.stroke(Color.black, 3.5, true).Parent = c
+	-- (brief 19) the Store's card family: square corners, a mitred black outline, a light rim, faint studs once they're a
+	-- texture (a frame grid on every card of a long list would cost too much)
+	local c = Kit.new('Frame', { Name = id, BackgroundColor3 = Color.white, BorderSizePixel = 0, Size = px(138, 168), LayoutOrder = order, ZIndex = 25 })
+	Kit.stroke(Color.black, 3.5, true, 0, Enum.LineJoinMode.Miter).Parent = c
 	Kit.gradient(Color.white, Color.white, 0.6).Parent = c
 	rarityFill(c, id)
+	if Kit.studsAreCheap() then Kit.studs(c, { Width = 138, Height = 168, Pitch = 26, Shade = 0.45, ZIndex = 25 }) end
 	local rim = Kit.new('Frame', { Name = 'Rim', BackgroundTransparency = 1, Position = px(3, 3), Size = UDim2.new(1, -6, 1, -6), ZIndex = 25, Parent = c })
-	Kit.corner(2).Parent = rim
-	Kit.stroke(Color.white, 3, true, 0.5).Parent = rim
+	Kit.stroke(Color.white, 3, true, 0.5, Enum.LineJoinMode.Miter).Parent = rim
 	if shoe.Rank >= 4 then
 		for k = 0, 5 do
 			local ray = Kit.new('Frame', { BackgroundTransparency = 0.72, BackgroundColor3 = Color.white, BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 52), Size = px(12, 112), Rotation = k * 30, ZIndex = 25, Parent = c })

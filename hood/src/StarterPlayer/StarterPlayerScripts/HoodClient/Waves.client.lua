@@ -178,7 +178,7 @@ local function buildRig(v)
 	local tag = FightUI.tag(rig.Head, v.Name, v.Max)
 	-- (bigger goons carry their tag higher: the Bruiser's and the Boss's heads are bigger)
 	tag.Gui.StudsOffset = (FightUI.TagOffset or Vector3.new(0, 2.6, 0)) + Vector3.new(0, (rig.Scale - 1) * 1.6, 0)
-	v.Rig, v.Tag = rig, tag
+	v.Rig, v.Tag, v.TagK = rig, tag, nil
 	v.Model = rig.Model
 end
 
@@ -217,7 +217,8 @@ local function knockOut(v, animate)
 	if v.Tag then v.Tag.Gui.Enabled = false end
 	if animate and v.Rig then
 		v.Stars = starsOver(v.Rig.Head, 1.2 * v.Rig.Scale)
-		Juice.popNumber(v.Rig.Head.Position + Vector3.new(0, 2.5 * v.Rig.Scale, 0), 'KO!', Color3.fromRGB(255, 220, 60), Kit.Font.display, { size = Vector2.new(3.6, 1.6), thickness = 3, stroke = BLACK })
+		-- (LOOP: up over the tag's height, clear of the red numbers and your "+N" by the goons' chests)
+		Juice.popNumber(v.Rig.Head.Position + Vector3.new(0, 4 * v.Rig.Scale, 0), 'KO!', Color3.fromRGB(255, 220, 60), Kit.Font.display, { size = Vector2.new(3.6, 1.6), thickness = 3, stroke = BLACK })
 	end
 end
 local function poof(v)
@@ -310,6 +311,11 @@ end
 ---------------------------------------------------------------------------------------------- the HUD
 local gui, root, fit = Kit.screen('HoodWaves', nil, 6)
 local pill = FightUI.pill(root)
+-- (LOOP) The first fights teach themselves: while goons are up and you haven't fired for a moment, "Hold click to
+-- shoot!" (or "Hold SHOOT to fire!" on a touch screen) sits under the counter, in the goal line's gold. Only until
+-- you have beaten a couple of stages; the Auto Fight pass needs no telling.
+local shootHint = Kit.text({ Name = 'ShootHint', Text = 'Hold click to shoot!', TextSize = 26, Stroke = BLACK, StrokeThickness = 3.5, TextColor3 = Kit.hex('FFD21A'), AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 52), Size = UDim2.fromOffset(460, 32), Visible = false, Parent = root })
+local HINT_UNTIL, HINT_IDLE = 2, 1.2 -- (shown while WaveCleared < HINT_UNTIL, after HINT_IDLE s without a shot)
 local clearUntil = 0 -- (the CLEAR! moment holds the pill until then)
 -- "KNOCKED OUT!" over "Train more Power at the ranges!" (UI2's banner style: Kit text, a black stroke, a lit gradient):
 -- pops in, holds, floats up and fades.
@@ -319,6 +325,9 @@ local function koBanner()
 	local holder = Kit.new('Frame', { Name = 'FightBanner', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.32), Size = UDim2.fromOffset(680, 150), Parent = root })
 	banner = holder
 	local scale = Kit.new('UIScale', { Scale = 0.3, Parent = holder })
+	-- (LOOP) on a dark see-through backing, like the GOAL DONE moment: it lands over the next gate's sign and the street
+	local back = Kit.new('Frame', { Name = 'Back', BackgroundColor3 = Kit.hex('10131E'), BackgroundTransparency = 0.4, BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, -4), Size = UDim2.new(0.84, 0, 0, 140), ZIndex = 0, Parent = holder })
+	Kit.corner(12).Parent = back
 	local t = Kit.text({ Name = 'Title', Text = 'KNOCKED OUT!', TextSize = 72, Stroke = BLACK, StrokeThickness = 5, Size = UDim2.new(1, 0, 0, 84), Parent = holder })
 	t.TextScaled = true
 	Kit.gradient(Color3.fromRGB(255, 160, 150), Color3.fromRGB(255, 59, 59), 0.5).Parent = t
@@ -329,6 +338,7 @@ local function koBanner()
 		if banner ~= holder then return end
 		local fade = TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
 		TweenService:Create(holder, fade, { Position = UDim2.fromScale(0.5, 0.26) }):Play()
+		TweenService:Create(back, fade, { BackgroundTransparency = 1 }):Play()
 		for _, x in { t, d } do
 			TweenService:Create(x, fade, { TextTransparency = 1 }):Play()
 			local st = x:FindFirstChildOfClass('UIStroke')
@@ -419,6 +429,34 @@ local function gain()
 	return ShotRules.pay(player:GetAttribute('ShotBase'), player:GetAttribute('GunMultiplier'), player:GetAttribute('ShoeMultiplier'), shoeCarry)
 end
 local DAMAGE_RED = Color3.fromRGB(255, 70, 70)
+-- (brief 19, LOOP: in a scrum one red number per shot stacked into a column over the goons) One red number per goon at
+-- most every DAMAGE_EVERY seconds: the first shot pops at once, the shots after it add up into the next one.
+local DAMAGE_EVERY = 0.3
+local damageAcc = setmetatable({}, { __mode = 'k' }) -- [goon] = { Sum, Last, Pending, At }
+local function popDamage(v, damage, at)
+	local acc = damageAcc[v]
+	if not acc then
+		acc = { Sum = 0, Last = 0 }
+		damageAcc[v] = acc
+	end
+	acc.Sum += damage
+	acc.At = at
+	if acc.Pending then return end
+	local function flush()
+		acc.Pending = false
+		acc.Last = os.clock()
+		if acc.Sum <= 0 then return end
+		Juice.popNumber(acc.At + Vector3.new(0, 1.6, 0), Format.compact(acc.Sum), DAMAGE_RED, Kit.Font.display, { size = Vector2.new(2.6, 1.1), thickness = 2, stroke = BLACK })
+		acc.Sum = 0
+	end
+	local wait = DAMAGE_EVERY - (os.clock() - acc.Last)
+	if wait <= 0 then
+		flush()
+	else
+		acc.Pending = true
+		task.delay(wait, flush)
+	end
+end
 
 local last, aimed, aimUntil = 0, nil, 0
 local gainCombo -- (the running "+N" rig: kept by your shoulder as you move)
@@ -449,7 +487,7 @@ local function shoot()
 	v.FlinchV += 7
 	play('Tock', 1.1)
 	-- The video's numbers: red damage over the goon, your "+N" Power by you.
-	Juice.popNumber(to + Vector3.new(0, 1.6, 0), Format.compact(damage), DAMAGE_RED, Kit.Font.display, { size = Vector2.new(2.6, 1.1), thickness = 2, stroke = BLACK })
+	popDamage(v, damage, to)
 	-- your Power: one running "+N" by your shoulder that rolls up while you fire (the ranges' combo), and follows you
 	local cam = workspace.CurrentCamera
 	local right = cam and cam.CFrame.RightVector or Vector3.new(1, 0, 0)
@@ -534,9 +572,11 @@ end
 button.InputEnded:Connect(release)
 UserInputService.InputEnded:Connect(release)
 
--- Your own name/Power tag over your head (LobbyService's HoodTag) would sit right where the goons are on your screen:
--- in a fight it is hidden on your screen only (everyone else still sees it).
-local function ownTag(show)
+-- Your own name/Power tag over your head (LobbyService's HoodTag) would sit right where the goons are on your screen,
+-- and from the spawn right over the Stage 1 gate's sign: it is hidden on your screen only (everyone else still sees
+-- it; your HUD shows your Power and rebirths). (LOOP: it used to show outside fights.)
+local function ownTag(_)
+	local show = false
 	local c = player.Character
 	local head = c and c:FindFirstChild('Head')
 	local tag = head and head:FindFirstChild('HoodTag')
@@ -560,6 +600,7 @@ local function groundAt(v, p)
 end
 
 local DRAW_FAR, BUILD_FAR = 150, 170
+local TAG_NEAR = 16 -- (LOOP: studs from the camera inside which a goon's tag stops growing on screen)
 local function yawTo(from, to)
 	local d = Vector3.new(to.X - from.X, 0, to.Z - from.Z)
 	if d.Magnitude < 1e-3 then return nil end
@@ -642,7 +683,24 @@ local function draw(v, dt, now, you)
 	if v.Tag then
 		local on = not v.Down and (v.Stage == current or v.State ~= S.Idle or v.Hp < v.Max)
 		if v.Tag.Gui.Enabled ~= on then v.Tag.Gui.Enabled = on end
-		if on then v.Tag.set(shownHp(v), v.Max) end
+		if on then
+			v.Tag.set(shownHp(v), v.Max)
+			-- (LOOP) A crew's tags all say "Goon N", and in a group they stacked into "Goon 1Goon 1": only the goon your
+			-- gun is on (and the Boss) shows its name; the rest show just their HP bar.
+			local named = v.Kind == 'Boss' or (v.Stage == current and v.Index == sticky)
+			if v.Tag.Name and v.Tag.Name.Visible ~= named then v.Tag.Name.Visible = named end
+			-- (LOOP) The tag is sized in studs, so a goon right by the camera (between it and you) had a bar filling the
+			-- screen: inside TAG_NEAR studs of the camera it shrinks, never bigger on screen than it is at TAG_NEAR.
+			local cam = workspace.CurrentCamera
+			if cam and v.Rig and v.Rig.Head then
+				local k = math.clamp((v.Rig.Head.Position - cam.CFrame.Position).Magnitude / TAG_NEAR, 0.25, 1)
+				if math.abs(k - (v.TagK or 1)) > 0.02 then
+					v.TagK = k
+					local size = FightUI.TagSize or Vector2.new(4.6, 1.55)
+					v.Tag.Gui.Size = UDim2.fromScale(size.X * k, size.Y * k)
+				end
+			end
+		end
 	end
 end
 
@@ -668,6 +726,14 @@ RunService.PreRender:Connect(function(dt)
 	if idleFrame then
 		idleTick = 0
 		ownTag(not inFight())
+		local learning = (player:GetAttribute('WaveCleared') or 0) < HINT_UNTIL
+		local want = learning and inFight() and not autoFight() and now - last > HINT_IDLE
+		if want and shootHint.Visible == false then
+			local okT, touch = pcall(function() return UserInputService.TouchEnabled and not UserInputService.MouseEnabled end)
+			touch = okT and touch
+			shootHint.Text = touch and 'Hold SHOOT to fire!' or 'Hold click to shoot!'
+		end
+		if shootHint.Visible ~= want then shootHint.Visible = want end
 	end
 	for stage in world do
 		local near = stageNear(stage, cam.CFrame.Position)

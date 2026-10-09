@@ -170,7 +170,7 @@ return function(t)
 
  t.test('the goal chain: the shoe box goal sits after the gun goal',function()
   t.expect.equal(G.List[4].Id,'Gun');t.expect.equal(G.List[5].Id,'Shoe');t.expect.equal(G.List[5].Need.Boxes,1)
-  t.expect.equal(G.line(G.List[5]),'Open a shoe box - the boxes are at the back of the hall')
+  t.expect.equal(G.line(G.List[5]),'Open a shoe box - at the back of the hall')
   t.expect.equal(S.Template.Goals.Chain,G.Chain)
   local st={Power=20,Stages=1,Wave=1,Waves=true,Guns=2,Range=0,Boxes=0,ShoeBoxes=true}
   local goals={Step=4,Synced=true}
