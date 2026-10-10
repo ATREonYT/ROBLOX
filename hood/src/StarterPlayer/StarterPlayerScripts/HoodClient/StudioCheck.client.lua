@@ -4,6 +4,8 @@
 -- including errors that happened before this script started), "Infinite yield" warnings (a script waiting forever),
 -- and any of our screens still missing after 10 seconds. HUD.client prints "[HoodHUD] start" and "[HoodHUD] ready",
 -- so a HUD that started but never finished is named too. Tap the panel to hide it.
+-- It also fetches every UI picture (IconModels.Images) and names the ones that don't load: those are still in Roblox
+-- review or were rejected (hood/tools/upload_assets.py --status says which).
 local RunService = game:GetService('RunService')
 if not RunService:IsStudio() then return end
 
@@ -99,6 +101,35 @@ task.delay(10, function()
 		add('HUD script started but did not finish: look for the error or yield above')
 	end
 	if #missing > 0 then add('Screens not loaded after 10 s: ' .. table.concat(missing, ', ')) end
+	local okIcons, Icons = pcall(function()
+		return require(game:GetService('ReplicatedStorage'):WaitForChild('Shared'):WaitForChild('Models'):WaitForChild('IconModels'))
+	end)
+	local names, ids = {}, {}
+	if okIcons and type(Icons) == 'table' and type(Icons.Images) == 'table' then
+		for name, id in Icons.Images do
+			if type(id) == 'string' and string.find(id, '%d') then
+				table.insert(names, name)
+				table.insert(ids, id)
+			end
+		end
+	end
+	if #ids > 0 then
+		local failed = {}
+		local byId = {}
+		for i, id in ids do byId[id] = names[i] end
+		pcall(function()
+			game:GetService('ContentProvider'):PreloadAsync(ids, function(contentId, status)
+				if status ~= Enum.AssetFetchStatus.Success then table.insert(failed, byId[contentId] or contentId) end
+			end)
+		end)
+		table.sort(failed)
+		local shown = #ids - #failed
+		print(('[StudioCheck] pictures loaded: %d of %d'):format(shown, #ids))
+		if #failed > 0 then
+			add(('%d of %d UI pictures not showing yet: in Roblox review or rejected (check: /usr/bin/python3 '
+				.. 'hood/tools/upload_assets.py --status): %s'):format(#failed, #ids, table.concat(failed, ', ')))
+		end
+	end
 	local root = workspace:FindFirstChild('TheBlockV2')
 	local build = root and root:GetAttribute('BuildVersion') or 'map not found'
 	tag.Text = (#problems == 0) and 'Studio check: UI OK' or 'Studio check: PROBLEMS'

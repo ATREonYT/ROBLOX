@@ -15,7 +15,8 @@ What it uploads: every PNG in hood/art/icons3d/ (-> IconModels.Images[<file name
 Idempotent: hood/art/asset_ids.json remembers the sha256 and asset id of every uploaded file. Unchanged files are not
 uploaded again (their ids are still written, so a re-run repairs the Lua files); a changed PNG is uploaded as a new
 asset. Options: --only Basket,stud_tile (names without .png), --force (re-upload everything), --write-only (no uploads:
-write the ids already in the manifest), --asset-type Image|Decal (default Image: ImageLabels need image ids).
+write the ids already in the manifest), --asset-type Image|Decal (default Image: ImageLabels need image ids),
+--status (no uploads: ask Roblox whether each uploaded picture is approved, still in review or rejected).
 
 The API key is only ever sent in the x-api-key header. It is never printed or written anywhere, and any text that
 comes back from the server is scrubbed of it before it is shown.
@@ -300,6 +301,45 @@ def upload_one(cfg, path, display, description):
 	return asset_id, state or 'unknown', (resp.get('assetType') or cfg.asset_type)
 
 
+def moderation_of(cfg, asset_id):
+	"""The picture's moderation state now: 'approved', 'reviewing', 'rejected' or 'unknown'."""
+	resp = http('GET', cfg.api + '/assets/v1/assets/' + asset_id + '?readMask=moderationResult', cfg.key)
+	state = ((resp.get('moderationResult') or {}).get('moderationState') or '').replace('MODERATION_STATE_', '').lower()
+	return state or 'unknown'
+
+
+def show_status(cfg, root, files):
+	"""--status: ask Roblox about every uploaded picture, print the list, and remember the answers in the manifest."""
+	manifest = load_manifest(root)
+	groups = {}
+	for key_, path, kind, name in files:
+		rec = manifest.get(key_) or {}
+		if not rec.get('assetId'):
+			groups.setdefault('not uploaded', []).append(name)
+			continue
+		try:
+			state = moderation_of(cfg, rec['assetId'])
+		except UploadError as e:
+			log('  ? %s: %s' % (key_, e))
+			state = 'unknown'
+		if state != 'unknown':
+			rec['moderation'] = state
+			manifest[key_] = rec
+		groups.setdefault(state, []).append(name)
+	save_manifest(root, manifest)
+	for state in ('approved', 'reviewing', 'rejected', 'unknown', 'not uploaded'):
+		names = groups.get(state) or []
+		if names:
+			log('  %-12s %3d  %s' % (state.upper(), len(names), ', '.join(sorted(names))))
+	if groups.get('rejected'):
+		log('Rejected pictures stay blank in the game. Tell Claude which ones; they get redrawn and uploaded again.')
+	if groups.get('reviewing'):
+		log('Pictures in review show as simple stand-ins until Roblox approves them (usually minutes, sometimes hours).')
+	if groups.get('not uploaded'):
+		log('Not uploaded yet: run this tool without --status to upload them.')
+	return 1 if groups.get('rejected') else 0
+
+
 # ------------------------------------------------------------------------------------------------- main
 def parse(argv):
 	ap = argparse.ArgumentParser(description=__doc__.split('\n\n')[0], formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -307,6 +347,7 @@ def parse(argv):
 	ap.add_argument('--only', default='', help='comma-separated file names without .png (e.g. Basket,stud_tile)')
 	ap.add_argument('--force', action='store_true', help='upload even files whose sha256 is already in the manifest')
 	ap.add_argument('--write-only', action='store_true', help='no uploads: write the ids already in the manifest')
+	ap.add_argument('--status', action='store_true', help='no uploads: show which uploaded pictures Roblox has approved')
 	ap.add_argument('--asset-type', default='Image', choices=['Image', 'Decal'])
 	ap.add_argument('--timeout', type=int, default=120, help='seconds to wait for each upload operation')
 	ap.add_argument('--root', default=DEFAULT_ROOT, help=argparse.SUPPRESS)  # the hood/ folder (tests)
@@ -325,14 +366,14 @@ def main(argv=None):
 	log('hood upload_assets: root %s%s' % (root, ' (DRY RUN: no network, no writes)' if a.dry_run else ''))
 	log('  ROBLOX_API_KEY: %s   ROBLOX_CREATOR_ID: %s   ROBLOX_CREATOR_TYPE: %s' % (
 		'set (hidden)' if key else 'MISSING', creator_id or 'MISSING', creator_type))
-	need_net = not a.write_only and not a.dry_run
+	need_net = (not a.write_only and not a.dry_run) or a.status
 	problems = []
 	if need_net or a.dry_run:
 		if not key:
 			problems.append('ROBLOX_API_KEY is not set')
-		if not creator_id.isdigit():
+		if not creator_id.isdigit() and not a.status:
 			problems.append('ROBLOX_CREATOR_ID must be your numeric user id or group id')
-		if creator_type not in ('user', 'group'):
+		if creator_type not in ('user', 'group') and not a.status:
 			problems.append('ROBLOX_CREATOR_TYPE must be User or Group')
 	if problems and need_net:
 		for p in problems:
@@ -345,6 +386,13 @@ def main(argv=None):
 	if not files:
 		log('nothing to do: no PNGs in art/icons3d or art/ui%s' % (' matching --only' if only else ''))
 		return 0
+	if a.status:
+		class StatusCfg:
+			pass
+		scfg = StatusCfg()
+		scfg.key, scfg.api = key, a.api.rstrip('/')
+		log('  asking Roblox about %d pictures ...' % len(files))
+		return show_status(scfg, root, files)
 	manifest = load_manifest(root)
 	plan = []
 	for key_, path, kind, name in files:
