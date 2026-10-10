@@ -6,6 +6,9 @@
 --   (HoodServer/Runs, StageRules.gateOpen). A cleared wave stays down until the run ends (back in the lobby: the session
 --   is reset and every crew stands again). The first clear of a stage EVER pays a little Cash (Balance.WaveCash; the
 --   saved best is WaveCleared), a later one repeatReward (ECON: 0 now, the pads before the gate pay instead).
+--   (brief 24) Leave a stage before its crew is down (back through its gate, into the lobby, or on past the next gate)
+--   and the crew is whole again (WaveRules.restore): every goon's HP back to full, a knocked-out one back on its spot,
+--   the rest walking home. Nothing you did to them carries over to the next time you walk in.
 local ShotRules = require(script.Parent.ShotRules)
 local Balance = require(script.Parent.Config.Balance)
 local EnemyRules = require(script.Parent.EnemyRules)
@@ -47,6 +50,34 @@ function WaveRules.stageAt(gates: { any }, pos: Vector3): number?
 		if math.abs(pos.X) <= g.HalfWidth + 2 and pos.Z < g.Z and pos.Z >= far then return g.Stage end
 	end
 	return nil
+end
+
+-- The stage whose stretch of the map `pos` (map frame) is in, at any X: past gate i's line and before gate i+1's (the
+-- last gate's runs on for good); nil on the lobby side of gate 1. Walking out of it is leaving the stage
+-- (Session:move): a side street or yard beside the street (stageAt says nil there) still counts as that stage.
+-- `keep` (the stage whose unbeaten crew you are with, Session:keep): you have only left it once you are LeaveMargin
+-- studs past its line, so a kid backing away from the goons who stumbles a step over the line doesn't reset the fight
+-- (the goons still turn for home the moment you step out: you can't shoot them from out there, as before).
+WaveRules.LeaveMargin = 6
+function WaveRules.bandAt(gates: { any }, pos: Vector3, keep: number?): number?
+	local band = nil
+	for n, g in gates do
+		local after = gates[n + 1]
+		if pos.Z < g.Z and (not after or pos.Z >= after.Z) then
+			band = g.Stage
+			break
+		end
+	end
+	if keep and keep ~= band then
+		for n, g in gates do
+			if g.Stage == keep then
+				local after = gates[n + 1]
+				if pos.Z < g.Z + WaveRules.LeaveMargin and (not after or pos.Z >= after.Z - WaveRules.LeaveMargin) then return keep end
+				break
+			end
+		end
+	end
+	return band
 end
 
 -- The WaveCleared a player has: their saved best, carried on through stages that have no goons (a map without waves in
@@ -110,30 +141,77 @@ function WaveRules.hit(w: any, index: number, damage: number): (boolean, boolean
 	return true, true, false
 end
 
+-- (brief 24) A crew you walked away from before beating it is whole again: every goon's HP back to full (Left too), a
+-- knocked-out goon back on its spot at once (Waves.client poofs it in there), the rest walking home
+-- (EnemyRules.sendHome). A cleared wave stays down (the run's rule). Returns true when anything changed.
+function WaveRules.restore(w: any): boolean
+	if type(w) ~= 'table' or w.Cleared then return false end
+	local changed = false
+	for i, max in w.Max do
+		if w.HP[i] ~= max then w.HP[i], changed = max, true end
+	end
+	if w.Left ~= #w.Max then w.Left, changed = #w.Max, true end
+	for _, g in w.Goons or {} do
+		if g.State == EnemyRules.Down then
+			g.State, g.T, g.Pos = EnemyRules.Idle, 0, g.Home
+			changed = true
+		elseif g.State ~= EnemyRules.Idle and g.State ~= EnemyRules.Return then
+			changed = true -- (still after you: it turns for home)
+		end
+	end
+	if w.Goons then EnemyRules.sendHome(w.Goons) end
+	for _, g in w.Goons or {} do
+		-- (one still on its spot just stands easy)
+		if g.State == EnemyRules.Return and (g.Pos - g.Home).Magnitude < 0.05 then g.State, g.T, g.Pos = EnemyRules.Idle, 0, g.Home end
+	end
+	w.Woke = nil
+	return changed
+end
+
+-- Every goon of wave `w` on its spot, standing easy (as a fresh wave has them).
+local function settled(w: any): boolean
+	for _, g in w.Goons or {} do
+		if g.State ~= EnemyRules.Idle or g.Pos ~= g.Home then return false end
+	end
+	return true
+end
+
 ---------------------------------------------------------------------------------------------- one player's waves
 -- WaveRules.session(world, clock, arenas): the server keeps one per player (world and arenas from EnemyRules.world).
--- :move(stage) as they walk (0/nil = not in a stage with goons) spawns a wave the first time they enter that stage in a
--- run; an unfinished wave keeps its HP while they step out (its goons walk home); a cleared one stays down for the rest
--- of the run. :reset() ends the run (every crew stands again, fresh). :tick(dt, you) runs the goons; :shoot(stage,
--- index, from, damage) checks a shot and applies it; :knockout() sends the goons home calm.
+-- :move(stage, band) as they walk (stage 0/nil = not on the street of a stage with goons; band = the stage whose stretch
+-- of the map they are in, WaveRules.bandAt) spawns a wave the first time they enter that stage in a run. Stepping off
+-- the street but staying in the stage (a side street) sends its goons home with their HP as it is; LEAVING the stage
+-- (its band) makes an unbeaten crew whole again (WaveRules.restore), so nothing done to it carries over. A cleared wave
+-- stays down for the rest of the run. :reset() ends the run (every crew stands again, whole). :tick(dt, you) runs the
+-- goons; :shoot(stage, index, from, damage) checks a shot and applies it; :knockout() sends the goons home calm.
 local Session = {}
 Session.__index = Session
 
 function WaveRules.session(world: { [number]: { any } }, clock: () -> number, arenas: { [number]: any }?): any
-	return setmetatable({ World = world, Arenas = arenas or {}, Clock = clock, Stage = 0, Waves = {}, Tokens = ShotRules.Burst, Last = clock(), CalmUntil = -math.huge }, Session)
+	return setmetatable({ World = world, Arenas = arenas or {}, Clock = clock, Stage = 0, Band = 0, Waves = {}, Tokens = ShotRules.Burst, Last = clock(), CalmUntil = -math.huge }, Session)
 end
 
--- Returns the wave when it was (re)spawned by this move.
-function Session:move(stage: number?): any
+-- Returns the wave when it was (re)spawned by this move, and the waves this move made whole again (left behind, in
+-- stage order: the server tells your client). `band` left out = `stage` (move(0) / move(nil): you left every stage).
+function Session:move(stage: number?, band: number?): (any, { any })
 	local s = (stage and self.World[stage]) and stage or 0
-	if s == self.Stage then return nil end
+	local b = type(band) == 'number' and band or s
+	local whole = {}
+	if b ~= self.Band then
+		self.Band = b
+		for n, w in self.Waves do
+			if n ~= b and WaveRules.restore(w) then table.insert(whole, w) end
+		end
+		table.sort(whole, function(x, y) return x.Stage < y.Stage end)
+	end
+	if s == self.Stage then return nil, whole end
 	local old = self.Waves[self.Stage]
 	if old then
 		old.Away = true
 		if old.Goons then EnemyRules.sendHome(old.Goons) end
 	end
 	self.Stage = s
-	if s == 0 then return nil end
+	if s == 0 then return nil, whole end
 	local w = self.Waves[s]
 	local fresh = nil
 	if not w then
@@ -142,20 +220,39 @@ function Session:move(stage: number?): any
 		fresh = w
 	end
 	w.Away = false
-	return fresh
+	return fresh, whole
 end
 
--- The run ended: every crew stands again, fresh, the next time you walk in (you are back in the lobby), and nobody is
--- calm after an old KO.
-function Session:reset()
-	self.Waves = {}
-	self.Stage = 0
+-- The run ended (you are back in the lobby): every crew stands again, whole, the next time you walk in, and nobody is
+-- calm after an old KO. A beaten crew comes back fresh; an unbeaten one still out of place walks home whole
+-- (WaveRules.restore) instead of popping back. Returns those stages (in order): the server sends them to your client.
+function Session:reset(): { number }
+	local walking = {}
+	for n, w in self.Waves do
+		if w.Cleared then
+			self.Waves[n] = nil
+		else
+			WaveRules.restore(w)
+			w.Away = true
+			if settled(w) then self.Waves[n] = nil else table.insert(walking, n) end
+		end
+	end
+	table.sort(walking)
+	self.Stage, self.Band = 0, 0
 	self.CalmUntil = -math.huge
+	return walking
 end
 
 -- The wave you're in now (nil outside a stage with goons).
 function Session:current(): any
 	return self.Stage ~= 0 and self.Waves[self.Stage] or nil
+end
+
+-- The stage whose unbeaten crew you are with (WaveRules.bandAt's `keep`: only that fight gets the LeaveMargin; out of a
+-- beaten or empty stage you are into the next one at once), or nil.
+function Session:keep(): number?
+	local w = self.Band ~= 0 and self.Waves[self.Band] or nil
+	return (w and not w.Cleared) and self.Band or nil
 end
 
 -- Token bucket at the shot rate (ShotRules.Burst at once, refilling ShotRules.PerSecond).

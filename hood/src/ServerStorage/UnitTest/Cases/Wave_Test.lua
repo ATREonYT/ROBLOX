@@ -127,13 +127,35 @@ return function(t)
   local g=w.Goons[1];local ev=E.step(g,0.1,Vector3.new(),0,nil,nil,w.Goons);t.expect.equal(ev,nil);t.expect.equal(g.State,E.Down)
  end)
 
- t.test('your wave spawns when you walk in, keeps its HP while you step out, stays down for the run once cleared, stands again after a reset',function()
+ t.test('your wave spawns when you walk in; leave the stage and its crew is whole again; it stays down for the run once cleared, stands again after a reset',function()
   local s,c=session()
   t.expect.truthy(s:move(1)~=nil);t.expect.equal(s.Stage,1)
   local w=s:current();local g=w.Goons[1]
   t.expect.truthy((s:shoot(1,1,g.Pos,4)))
-  t.expect.equal(s:move(nil),nil);t.expect.equal(s.Stage,0)
-  t.expect.equal(s:move(1),nil);t.expect.equal(s:current().HP[1],E.maxHp(1,'Goon')-4) -- (kept: not cleared yet)
+  -- (brief 24) off the street but still inside Stage 1 (a side street): they go home, the damage stays
+  local _,none=s:move(nil,1);t.expect.equal(s.Stage,0);t.expect.equal(#none,0)
+  t.expect.equal(s:move(1),nil);t.expect.equal(s:current().HP[1],E.maxHp(1,'Goon')-4)
+  -- leave the stage (back through its gate): the hurt goon is whole again, the knocked-out one back on its spot, the
+  -- rest walk home; walk back in and nothing you did carries over
+  c.t+=1;t.expect.truthy((s:shoot(1,2,w.Goons[2].Pos,1e6)));t.expect.equal(w.Left,2);t.expect.equal(w.Goons[2].State,E.Down)
+  for _=1,12 do c.t+=0.1;s:tick(0.1,Vector3.new(0,0,-20)) end -- (they come at you)
+  local fresh,whole=s:move(nil)
+  t.expect.equal(fresh,nil);t.expect.equal(#whole,1);t.expect.equal(whole[1],w)
+  for i=1,3 do t.expect.equal(w.HP[i],w.Max[i]) end
+  t.expect.equal(w.Left,3);t.expect.falsy(w.Cleared)
+  t.expect.equal(w.Goons[2].State,E.Idle);t.expect.equal(w.Goons[2].Pos,w.Goons[2].Home)
+  local walking=0;for _,x in w.Goons do t.expect.truthy(x.State==E.Idle or x.State==E.Return);if x.State==E.Return then walking+=1 end end
+  t.expect.truthy(walking>=1)
+  for _=1,100 do c.t+=0.1;s:tick(0.1,nil) end
+  t.expect.equal(s:move(1),nil)
+  for i,x in w.Goons do t.expect.equal(x.State,E.Idle);t.expect.equal(x.Pos,x.Home);t.expect.equal(w.HP[i],w.Max[i]) end
+  local _,again=s:move(1);t.expect.equal(#again,0) -- (nothing more to tell)
+  -- leave the other way (on past the next gate, a slip): the same
+  c.t+=1;s:shoot(1,3,w.Goons[3].Pos,7);t.expect.equal(w.HP[3],w.Max[3]-7)
+  local _,ahead=s:move(2);t.expect.equal(#ahead,1);t.expect.equal(w.HP[3],w.Max[3])
+  local _,back=s:move(1);t.expect.equal(#back,0);t.expect.equal(s:current().HP[3],s:current().Max[3]) -- (stage 2's crew was untouched)
+  -- a KO keeps you in the stage: the goons go home and keep their HP
+  c.t+=1;s:shoot(1,1,w.Goons[1].Pos,5);s:knockout();local _,ko=s:move(1,1);t.expect.equal(#ko,0);t.expect.equal(w.HP[1],w.Max[1]-5)
   for i=1,3 do c.t+=1;s:shoot(1,i,s:current().Goons[i].Pos,1e6) end
   t.expect.truthy(s:current().Cleared)
   t.expect.equal(s:move(1),nil) -- (still here: stays cleared)
@@ -146,6 +168,52 @@ return function(t)
   t.expect.truthy(s:move(1)~=nil);t.expect.equal(s:current().HP[1],E.maxHp(1,'Goon'));t.expect.equal(s:current().Left,3);t.expect.falsy(s:current().Cleared)
   t.expect.truthy(s:move(2)~=nil);t.expect.equal(s:current().HP[1],E.maxHp(2,s:current().Goons[1].Kind)) -- (the hurt one too)
   t.expect.equal(s:move(99),nil);t.expect.equal(s.Stage,0) -- (a stage with no goons is no wave)
+ end)
+
+ t.test('(brief 24) a run that ends while a crew is out after you: it walks home whole; a beaten or settled crew comes back fresh',function()
+  local s,c=session();s:move(1);local w=s:current()
+  c.t+=1;t.expect.truthy((s:shoot(1,1,w.Goons[1].Pos,3)))
+  for _=1,12 do c.t+=0.1;s:tick(0.1,Vector3.new(0,0,-12)) end
+  local walking=s:reset()
+  t.expect.equal(#walking,1);t.expect.equal(walking[1],1);t.expect.equal(s.Waves[1],w);t.expect.equal(s.Stage,0)
+  t.expect.equal(w.HP[1],w.Max[1]);t.expect.equal(w.Left,3)
+  local out=0;for _,x in w.Goons do t.expect.truthy(x.State==E.Return or x.State==E.Idle);if x.State==E.Return then out+=1 end end
+  t.expect.truthy(out>=1)
+  for _=1,60 do c.t+=0.1;s:tick(0.1,nil) end
+  for _,x in w.Goons do t.expect.equal(x.State,E.Idle);t.expect.equal(x.Pos,x.Home) end
+  t.expect.equal(s:move(1),nil);t.expect.equal(s:current(),w);t.expect.equal(s:current().HP[1],w.Max[1])
+  -- beaten this run: fresh next run (and a crew that never moved is simply dropped)
+  for i=1,3 do c.t+=1;s:shoot(1,i,w.Goons[i].Pos,1e6) end
+  t.expect.truthy(w.Cleared);s:move(2)
+  t.expect.equal(#s:reset(),0);t.expect.equal(next(s.Waves),nil)
+  t.expect.truthy(s:move(1)~=nil);t.expect.falsy(s:current().Cleared)
+  -- restore leaves a beaten crew down, and junk alone
+  t.expect.falsy(W.restore(nil));local b=W.spawn(1,{'Goon'});W.hit(b,1,1e6);t.expect.falsy(W.restore(b));t.expect.equal(b.HP[1],0);t.expect.equal(b.Goons[1].State,E.Down)
+  -- a goon caught on something on its way home is put back on its spot after ReturnMax
+  local g=E.new('Goon',Vector3.new(0,0,-30));g.Pos=Vector3.new(0,0,-5000);g.State=E.Return
+  local ev;local n=0
+  repeat n+=1;ev=E.step(g,0.5,nil,0,nil,nil,{g}) until ev=='home' or n>100
+  t.expect.equal(ev,'home');t.expect.equal(g.Pos,g.Home);t.expect.equal(g.State,E.Idle);t.expect.truthy(n*0.5>=E.ReturnMax-0.5 and n*0.5<=E.ReturnMax+0.5)
+ end)
+
+ t.test('(brief 24) walking the street as the server sees it: a stumble over the line keeps the fight, walking off resets it, a beaten stage holds nothing back',function()
+  local g=gates();local s,c=session();local M=W.LeaveMargin
+  local function walk(z,x) local p=Vector3.new(x or 0,3,z);return s:move(W.stageAt(g,p),W.bandAt(g,p,s:keep())) end
+  -- Stage 1, beaten this run
+  walk(-12);for i=1,3 do c.t+=1;s:shoot(1,i,s:current().Goons[i].Pos,1e6) end;t.expect.truthy(s.Waves[1].Cleared);t.expect.equal(s:keep(),nil)
+  -- just through gate 2 (inside the margin of Stage 1's stretch): you are in Stage 2 at once, and its crew is yours
+  walk(-64-2);t.expect.equal(s.Stage,2);t.expect.equal(s.Band,2);t.expect.equal(s:keep(),2)
+  local w=s:current();c.t+=1;t.expect.truthy((s:shoot(2,1,w.Goons[1].Pos+Vector3.new(0,0,20),9)));t.expect.equal(w.HP[1],w.Max[1]-9)
+  -- a stumble back over the line: the fight pauses (they head home), nothing resets
+  local _,a=walk(-64+M-2);t.expect.equal(s.Stage,1);t.expect.equal(s.Band,2);t.expect.equal(#a,0);t.expect.equal(w.HP[1],w.Max[1]-9)
+  local _,b=walk(-64-4);t.expect.equal(#b,0);t.expect.equal(w.HP[1],w.Max[1]-9)
+  -- walking off into Stage 1: whole again; and back in, whole
+  local _,cc=walk(-64+M+3);t.expect.equal(s.Band,1);t.expect.equal(#cc,1);t.expect.equal(w.HP[1],w.Max[1])
+  walk(-64-4);t.expect.equal(s:current().HP[1],w.Max[1])
+  -- the side of the street inside Stage 2 (no gate crossed): the damage stays
+  c.t+=1;s:shoot(2,1,w.Goons[1].Pos,9);local _,d=walk(-90,50);t.expect.equal(s.Stage,0);t.expect.equal(s.Band,2);t.expect.equal(#d,0);t.expect.equal(w.HP[1],w.Max[1]-9)
+  -- the lobby side of gate 1, far enough (the run ends there anyway): whole
+  local _,e=walk(M+1);t.expect.equal(s.Band,0);t.expect.equal(#e,1);t.expect.equal(w.HP[1],w.Max[1])
  end)
 
  t.test('a shot wakes its goon and the crew; shots at another stage, out of reach, at a missing goon or with junk are refused',function()
@@ -195,6 +263,17 @@ return function(t)
   t.expect.equal(W.stageAt(g,Vector3.new(0,3,10)),nil);t.expect.equal(W.stageAt(g,Vector3.new(0,3,-1)),1);t.expect.equal(W.stageAt(g,Vector3.new(14,3,-63)),1)
   t.expect.equal(W.stageAt(g,Vector3.new(0,3,-64)),1);t.expect.equal(W.stageAt(g,Vector3.new(0,3,-65)),2);t.expect.equal(W.stageAt(g,Vector3.new(0,3,-1000)),16);t.expect.equal(W.stageAt(g,Vector3.new(0,3,-960-W.LastDepth-1)),nil)
   t.expect.equal(W.stageAt(g,Vector3.new(50,3,-20)),nil)
+  -- (brief 24) the stage's stretch of the map, at any X (a side street is still that stage): leaving it is leaving the stage
+  t.expect.equal(W.bandAt(g,Vector3.new(0,3,10)),nil);t.expect.equal(W.bandAt(g,Vector3.new(0,3,0)),nil);t.expect.equal(W.bandAt(g,Vector3.new(0,3,-1)),1)
+  t.expect.equal(W.bandAt(g,Vector3.new(50,3,-20)),1);t.expect.equal(W.bandAt(g,Vector3.new(0,3,-64)),1);t.expect.equal(W.bandAt(g,Vector3.new(-60,3,-65)),2)
+  t.expect.equal(W.bandAt(g,Vector3.new(0,3,-960-W.LastDepth-1)),16)
+  for z=8,-1100,-7 do for _,x in {0,30,37} do local p=Vector3.new(x,3,z);local st=W.stageAt(g,p);if st then t.expect.equal(W.bandAt(g,p),st) end end end
+  -- a step back over the line is not leaving yet: LeaveMargin studs past it is (either way, the lobby side too)
+  local M=W.LeaveMargin;t.expect.truthy(M>=3 and M<=10)
+  t.expect.equal(W.bandAt(g,Vector3.new(0,3,-64+M-0.5),2),2);t.expect.equal(W.bandAt(g,Vector3.new(0,3,-64+M+0.5),2),1)
+  t.expect.equal(W.bandAt(g,Vector3.new(0,3,M-0.5),1),1);t.expect.equal(W.bandAt(g,Vector3.new(0,3,M+0.5),1),nil)
+  t.expect.equal(W.bandAt(g,Vector3.new(0,3,-128-M+0.5),2),2);t.expect.equal(W.bandAt(g,Vector3.new(0,3,-128-M-0.5),2),3)
+  t.expect.equal(W.bandAt(g,Vector3.new(0,3,-64+M-0.5),1),1);t.expect.equal(W.bandAt(g,Vector3.new(0,3,-64+M-0.5),0),1) -- (never pulls you into a stage you weren't in)
  end)
 
  t.test('a gate opens only when the crew before it is down this run (brief 23: Power opens nothing)',function()

@@ -16,6 +16,9 @@
 --     server puts you back at the stage start).
 --   Runs (brief 23): a beaten crew stays down for the rest of the run; when the run ends (back in the lobby, WaveState
 --     'Reset') every crew is drawn fresh again on its spots, the next one waiting behind its gate.
+--   Leaving a stage (brief 24): a crew you walk away from before beating it is whole again (WaveState 'Wave' with
+--     Restored): its HP bars fill back up with a green glint, a knocked-out goon pops back in on its spot in a puff of
+--     smoke, and the rest walk home (a crew still walking when the run ends keeps walking: Reset's Keep).
 local Players = game:GetService('Players')
 local UserInputService = game:GetService('UserInputService')
 local TweenService = game:GetService('TweenService')
@@ -86,8 +89,10 @@ folder.Parent = workspace
 
 -- waves[stage] = { Stage, Known (the server told us), Cleared, Goons = { [i] = view } }
 -- view = { Index, Kind, Name, Home, Rig, Tag, Pos (drawn, map frame), Srv (server's), Vel, State, Since (when the state
---   began), Hp, Max, Down, KO (time knocked out), Walk, Yaw, Y (ground), Punch (time of the last punch), Flinch, FlinchV }
+--   began), Hp, Max, Down, KO (time knocked out), Walk, Yaw, Y (ground), Punch (time of the last punch), Flinch, FlinchV,
+--   Refill = { From, At } (the HP bar filling back up), PopIn (puff in when its rig is next built) }
 local waves = {}
+local popIn = {} -- [stage] = { At, [index] = true }: goons that come back in a puff once their crew is drawn again
 local current = 0 -- the stage you stand in (with goons), the server's WaveStage
 local pending = {} -- [index] = { { damage, time }, ... }: your shots in this stage the server hasn't answered yet
 local PENDING_FOR = 1.2
@@ -105,6 +110,19 @@ local function shownHp(v)
 	local hp = v.Hp
 	if v.Stage == current then hp -= pendingSum(v.Index) end
 	return math.max(0, hp)
+end
+-- What the HP bar shows: shownHp, or on its way back up to full (a crew you left, made whole: REFILL_FOR seconds).
+local REFILL_FOR = 0.6
+local function tagHp(v, now)
+	local r = v.Refill
+	if not r then return shownHp(v) end
+	local k = (now - r.At) / REFILL_FOR
+	if k >= 1 then
+		v.Refill = nil
+		return shownHp(v)
+	end
+	k = 1 - (1 - math.max(0, k)) ^ 2
+	return r.From + (shownHp(v) - r.From) * k
 end
 
 local function toWorld(p, y) return frame * CFrame.new(p.X, y or 0, p.Z) end
@@ -164,7 +182,13 @@ local function waveOf(stage)
 	local w = waves[stage]
 	if not w and world[stage] then
 		w = { Stage = stage, Known = false, Cleared = false, Goons = {} }
-		for i, e in world[stage] do w.Goons[i] = newView(stage, i, e) end
+		-- (goons knocked out when the run ended pop back in, if their crew is drawn again right away)
+		local back = popIn[stage]
+		popIn[stage] = nil
+		for i, e in world[stage] do
+			w.Goons[i] = newView(stage, i, e)
+			if back and back[i] then w.Goons[i].PopIn = back.At end
+		end
 		waves[stage] = w
 	end
 	return w
@@ -174,15 +198,39 @@ local function dropRig(v)
 	if v.Rig then v.Rig.Model:Destroy() end
 	v.Rig, v.Tag, v.Stars = nil, nil, nil
 end
+-- A puff of white smoke at `at` (world), `scale` the goon's size: a goon vanishing or popping in.
+local function puffAt(at, scale, count)
+	for k = 1, count or 7 do
+		local p = Instance.new('Part')
+		p.Name = 'Poof'
+		p.Shape = Enum.PartType.Ball
+		p.Material = Enum.Material.SmoothPlastic
+		p.Color = k % 3 == 0 and Color3.fromRGB(220, 220, 228) or Color3.fromRGB(250, 250, 252)
+		p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch, p.CastShadow = true, false, false, false, false
+		local a = k / (count or 7) * math.pi * 2
+		local off = Vector3.new(math.cos(a) * 1.3, (k % 2) * 0.9, math.sin(a) * 1.3) * scale
+		p.Size = Vector3.one * 1.2 * scale
+		p.CFrame = CFrame.new(at + off * 0.4)
+		p.Parent = folder
+		TweenService:Create(p, TweenInfo.new(0.42, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = Vector3.one * 3.2 * scale, CFrame = CFrame.new(at + off + Vector3.new(0, 1, 0)), Transparency = 1 }):Play()
+		task.delay(0.5, function() p:Destroy() end)
+	end
+end
 local function buildRig(v)
 	local crew = EnemyRules.Crews[v.Stage] or 'Red'
 	if v.Kind == 'Boss' then crew = 'Boss' end
 	local rig = GoonRig.build(v.Kind, crew, v.Variant, folder)
+	rig.Model:SetAttribute('Stage', v.Stage)
+	rig.Model:SetAttribute('Index', v.Index)
 	local tag = FightUI.tag(rig.Head, v.Name, v.Max)
 	-- (bigger goons carry their tag higher: the Bruiser's and the Boss's heads are bigger)
 	tag.Gui.StudsOffset = (FightUI.TagOffset or Vector3.new(0, 2.6, 0)) + Vector3.new(0, (rig.Scale - 1) * 1.6, 0)
 	v.Rig, v.Tag, v.TagK = rig, tag, nil
 	v.Model = rig.Model
+	-- Back on its spot a moment ago (its crew made whole, or a new run): it pops up out of a puff (draw() puffs once it
+	-- is placed). A crew first drawn later, as you walk up, just stands there.
+	if v.PopIn and os.clock() - v.PopIn < 2 then v.Spawned, v.PuffIn = os.clock(), true end
+	v.PopIn = nil
 end
 
 ---------------------------------------------------------------------------------------------- the server's word
@@ -195,7 +243,8 @@ local function setState(v, state)
 		v.Hop = os.clock()
 	end
 end
-local function applyMoves(w, d)
+-- snap: the crew was only just drawn (put everyone where the server has them, no puffs).
+local function applyMoves(w, d, snap)
 	local now = os.clock()
 	for i, v in w.Goons do
 		local x, z, st = d[3 * i - 2], d[3 * i - 1], d[3 * i]
@@ -203,10 +252,22 @@ local function applyMoves(w, d)
 			local p = Vector3.new(x, 0, z)
 			local age = math.max(1 / 30, now - v.SrvAt)
 			local vel = (p - v.Srv) / age
-			if vel.Magnitude > 30 then vel = Vector3.zero end
+			if vel.Magnitude > 30 or snap then vel = Vector3.zero end
 			v.Vel = v.Vel:Lerp(vel, 0.6)
+			-- (only a running goon is drawn a little ahead of the server: one that has stopped, on its spot or squaring up
+			-- to you, stands exactly where the server has it, not a stride past)
+			if type(st) == 'number' and st ~= EnemyRules.Chase and st ~= EnemyRules.Return then v.Vel = Vector3.zero end
 			v.SrvPrev, v.Srv, v.SrvAt = v.Srv, p, now
-			if (v.Pos - p).Magnitude > 12 then v.Pos = p end -- (a jump: snap)
+			if snap then
+				v.Pos = p
+			elseif (v.Pos - p).Magnitude > 12 then
+				-- (a jump: snap. One you can see goes in a puff and comes out of one: put back on its spot)
+				if v.Rig and not v.Down then
+					puffAt(toWorld(v.Pos, (v.Y or 0) + 2 * v.Rig.Scale).Position, v.Rig.Scale, 5)
+					v.PuffIn = true
+				end
+				v.Pos = p
+			end
 		end
 		if type(st) == 'number' and not v.Down then setState(v, st) end
 	end
@@ -227,21 +288,7 @@ end
 local function poof(v)
 	if not v.Rig then return end
 	local at = v.Rig.Head.Position - Vector3.new(0, 1.6 * v.Rig.Scale, 0)
-	for k = 1, 7 do
-		local p = Instance.new('Part')
-		p.Name = 'Poof'
-		p.Shape = Enum.PartType.Ball
-		p.Material = Enum.Material.SmoothPlastic
-		p.Color = k % 3 == 0 and Color3.fromRGB(220, 220, 228) or Color3.fromRGB(250, 250, 252)
-		p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch, p.CastShadow = true, false, false, false, false
-		local a = k / 7 * math.pi * 2
-		local off = Vector3.new(math.cos(a) * 1.3, (k % 2) * 0.9, math.sin(a) * 1.3) * v.Rig.Scale
-		p.Size = Vector3.one * 1.2 * v.Rig.Scale
-		p.CFrame = CFrame.new(at + off * 0.4)
-		p.Parent = folder
-		TweenService:Create(p, TweenInfo.new(0.42, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = Vector3.one * 3.2 * v.Rig.Scale, CFrame = CFrame.new(at + off + Vector3.new(0, 1, 0)), Transparency = 1 }):Play()
-		task.delay(0.5, function() p:Destroy() end)
-	end
+	puffAt(at, v.Rig.Scale)
 	Juice.burst(at + Vector3.new(0, 1, 0), Color3.fromRGB(255, 220, 60), 1.4 * v.Rig.Scale)
 	Juice.shards(at + Vector3.new(0, 1.5, 0), Color3.fromRGB(255, 220, 60), 'confetti')
 	play('Pop', 0.9)
@@ -284,30 +331,37 @@ local function swipe(v)
 	play('Tock', 0.7)
 end
 
+local HEAL_GREEN = Color3.fromRGB(96, 232, 112)
 local function onWave(info)
 	local stage = info.Stage
+	local drawn = waves[stage] ~= nil
 	local w = waveOf(stage)
 	if not w then return end
 	w.Known, w.Cleared = true, false
+	local now = os.clock()
 	for i, v in w.Goons do
 		local max = type(info.Max) == 'table' and info.Max[i] or v.Max
 		local hp = type(info.HP) == 'table' and info.HP[i] or max
-		local wasDown = v.Down
+		local wasDown, was = v.Down, tagHp(v, now)
 		v.Max, v.Hp = max, hp
 		if hp > 0 then
 			if wasDown then
-				-- Back on its spot (a wave coming back): pops in.
+				-- Back on its spot (a crew you left, made whole): it pops up out of a puff there.
 				v.Down, v.KO, v.Stars = false, nil, nil
 				dropRig(v)
-				v.Pos, v.Srv = v.Home, v.Home
-				v.Spawned = os.clock()
+				v.Pos, v.Srv, v.SrvPrev, v.Vel = v.Home, v.Home, v.Home, Vector3.zero
+				v.PopIn = now
+			elseif info.Restored and was < hp and v.Rig then
+				-- (brief 24) its HP bar fills back up, with a green glint
+				v.Refill = { From = was, At = now }
+				Juice.burst(v.Rig.Head.Position, HEAL_GREEN, 0.9 * v.Rig.Scale)
 			end
-			if v.Tag then v.Tag.set(hp, max) end
+			if v.Tag then v.Tag.set(tagHp(v, now), max) end
 		else
 			knockOut(v, false)
 		end
 	end
-	if type(info.D) == 'table' then applyMoves(w, info.D) end
+	if type(info.D) == 'table' then applyMoves(w, info.D, not drawn) end
 	if stage == current then table.clear(pending) end
 end
 
@@ -674,12 +728,16 @@ local function draw(v, dt, now, you)
 		if t > 0.95 then poof(v); return end
 	end
 	local at = toWorld(v.Pos, v.Y or 0) * CFrame.Angles(0, v.Yaw, 0)
+	if v.PuffIn then
+		v.PuffIn = nil
+		puffAt(at.Position + Vector3.new(0, 2 * v.Rig.Scale, 0), v.Rig.Scale, 5)
+	end
 	GoonRig.pose(v.Rig, at, p)
 	if v.Tag then
-		local on = not v.Down and (v.Stage == current or v.State ~= S.Idle or v.Hp < v.Max)
+		local on = not v.Down and (v.Stage == current or v.State ~= S.Idle or v.Hp < v.Max or v.Refill ~= nil)
 		if v.Tag.Gui.Enabled ~= on then v.Tag.Gui.Enabled = on end
 		if on then
-			v.Tag.set(shownHp(v), v.Max)
+			v.Tag.set(tagHp(v, now), v.Max)
 			-- (LOOP) A crew's tags all say "Goon N", and in a group they stacked into "Goon 1Goon 1": only the goon your
 			-- gun is on (and the Boss) shows its name; the rest show just their HP bar.
 			local named = v.Kind == 'Boss' or (v.Stage == current and v.Index == sticky)
@@ -740,7 +798,7 @@ RunService.PreRender:Connect(function(dt)
 				if show and not v.Rig and not v.Down then buildRig(v) end
 				if not show and v.Rig then dropRig(v) end
 				if v.Rig then
-					local busy = v.State ~= S.Idle or v.Down or v.Hop or v.Punch or v.Spawned or math.abs(v.FlinchV) > 1e-2 or math.abs(v.Flinch) > 1e-2
+					local busy = v.State ~= S.Idle or v.Down or v.Hop or v.Punch or v.Spawned or v.Refill or v.PuffIn or math.abs(v.FlinchV) > 1e-2 or math.abs(v.Flinch) > 1e-2
 					if busy or idleFrame then draw(v, busy and dt or 1 / 15, now, you) end
 				end
 			end
@@ -799,12 +857,33 @@ for _, name in { 'WaveStage', 'WaveLeft', 'TrainingStation' } do
 	player:GetAttributeChangedSignal(name):Connect(refresh)
 end
 
--- The run ended: every crew stands again, fresh (the views are made again from the map's crews as they come in view).
-local function resetRun()
-	for _, w in waves do
-		for _, v in w.Goons do dropRig(v) end
+-- The run ended: every crew stands again, fresh (the views are made again from the map's crews as they come in view):
+-- a knocked-out goon (or one caught out of place) pops back in on its spot if its crew is drawn again right away. The
+-- crews in `keep` are still walking home, whole again: they walk on (their Restored 'Wave' follows).
+local function resetRun(keep)
+	local kept = {}
+	for _, n in type(keep) == 'table' and keep or {} do
+		if type(n) == 'number' then kept[n] = true end
 	end
-	table.clear(waves)
+	local now = os.clock()
+	for stage, w in waves do
+		if kept[stage] then
+			w.Cleared = false
+		else
+			local back = nil
+			for i, v in w.Goons do
+				local away = v.Rig and not v.Down and (v.State ~= S.Idle or (v.Pos - v.Home).Magnitude > 1)
+				if away then puffAt(toWorld(v.Pos, (v.Y or 0) + 2 * v.Rig.Scale).Position, v.Rig.Scale, 5) end
+				if v.Down or away then
+					back = back or { At = now }
+					back[i] = true
+				end
+				dropRig(v)
+			end
+			waves[stage] = nil
+			popIn[stage] = back
+		end
+	end
 	table.clear(pending)
 	table.clear(held)
 	aimed, sticky = nil, nil
@@ -815,18 +894,21 @@ end
 Net.get('WaveState').OnClientEvent:Connect(function(info)
 	if type(info) ~= 'table' or type(info.Stage) ~= 'number' then return end
 	if info.Kind == 'Reset' then
-		resetRun()
+		resetRun(info.Keep)
 		return
 	end
 	local stage = info.Stage
-	local w = waveOf(stage)
 	if info.Kind == 'Wave' then
 		onWave(info)
-	elseif not w then
+		return
+	end
+	local drawn = waves[stage] ~= nil
+	local w = waveOf(stage)
+	if not w then
 		return
 	elseif info.Kind == 'Moves' and type(info.D) == 'table' then
 		w.Known = true
-		applyMoves(w, info.D)
+		applyMoves(w, info.D, not drawn)
 	elseif info.Kind == 'Hit' and type(info.Index) == 'number' and type(info.HP) == 'number' then
 		local v = w.Goons[info.Index]
 		local list = pending[info.Index]

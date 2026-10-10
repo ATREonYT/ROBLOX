@@ -13,16 +13,23 @@
 --   WaveRules.repeatReward (0 for now: the pads before the gate pay). Cash is x2 with the x2 Cash pass.
 --   A cleared wave stays down for the rest of the run. When the run ends (back in the lobby: StageService calls
 --   Runs.reset) your session is reset and every crew stands again, fresh.
+--   (brief 24) Leave a stage before its crew is down (back through its gate, into the lobby, or on past the next gate:
+--   WaveRules.bandAt, LeaveMargin studs past the line) and that crew is whole again (WaveRules.restore): full HP, a
+--   knocked-out goon back on its spot, the rest walking home. A step back over the line, or off the street inside the
+--   stage (a side street), only sends them home, as before (you can't shoot them from there).
 -- Player attributes: WaveCleared (the highest stage whose wave you ever cleared, saved as profile Waves.Cleared),
 -- WaveStage (the stage with goons you stand in, 0 = none), WaveLeft (your goons still up there); Runs sets RunCleared
 -- and RunStage.
 -- Remote WaveState, to that player only:
---   { Kind = 'Wave', Stage, HP, Max, Left, Enemies = { {Kind, Name, Home = {x, z}} }, D }  entering a stage (fresh or kept)
+--   { Kind = 'Wave', Stage, HP, Max, Left, Enemies = { {Kind, Name, Home = {x, z}} }, D }  entering a stage (fresh or kept);
+--     with Restored = true: a crew you left, whole again (sent as you leave, and for crews still walking home when a
+--     run ends)
 --   { Kind = 'Moves', Stage, D = {x, z, state, ...} }  10 a second while they move (map frame; EnemyRules state codes)
 --   { Kind = 'Hit', Stage, Index, HP, Left, Damage, Gain }  each hit
 --   { Kind = 'Punch', Stage, Index, Damage, Landed }  a wind-up ending (Landed: it reached you)
 --   { Kind = 'KO', Stage }  your soft respawn;  { Kind = 'Cleared', Stage, Reward, First, Opens (the gate it opened) }
---   { Kind = 'Reset', Stage = 0 }  the run ended: every crew is fresh again
+--   { Kind = 'Reset', Stage = 0, Keep = { stage, ... } }  the run ended: every crew is fresh again (Keep: the crews
+--     still walking home, whole; their Restored 'Wave' follows)
 local Players = game:GetService('Players')
 local RS = game:GetService('ReplicatedStorage')
 local CollectionService = game:GetService('CollectionService')
@@ -90,16 +97,19 @@ local function mapPos(root)
 	return Vector3.new(p.X, 0, p.Z)
 end
 
--- The wave you just walked into (or that came back), whole, for your client.
-local function sendWave(player, stage, w)
+-- The wave you just walked into (or that came back), whole, for your client; restored: a crew you left, made whole.
+local function sendWave(player, stage, w, restored)
 	local enemies = {}
 	for i, e in world[stage] or {} do enemies[i] = { Kind = e.Kind, Name = e.Name, Home = { e.Home.X, e.Home.Z } } end
-	stateRemote:FireClient(player, { Kind = 'Wave', Stage = stage, HP = table.clone(w.HP), Max = table.clone(w.Max), Left = w.Left, Enemies = enemies, D = WaveRules.pack(w) })
+	stateRemote:FireClient(player, { Kind = 'Wave', Stage = stage, HP = table.clone(w.HP), Max = table.clone(w.Max), Left = w.Left, Enemies = enemies, D = WaveRules.pack(w), Restored = restored or nil })
 end
 -- Where you stand now; on entering a stage with goons its wave (fresh or kept) goes to your client, and the run is on.
+-- Leaving a stage (its stretch of the map, WaveRules.bandAt) makes its crew whole again: your client hears that too.
 local function place(player, s, root)
 	local before = s.Stage
-	s:move(root and WaveRules.stageAt(gates, frame:PointToObjectSpace(root.Position)) or nil)
+	local p = root and frame:PointToObjectSpace(root.Position)
+	local _, whole = s:move(p and WaveRules.stageAt(gates, p) or nil, p and WaveRules.bandAt(gates, p, s:keep()) or nil)
+	for _, left in whole do sendWave(player, left.Stage, left, true) end
 	local w = s:current()
 	if s.Stage ~= 0 then Runs.start(player) end
 	if s.Stage ~= before and w then sendWave(player, s.Stage, w) end
@@ -176,11 +186,13 @@ Net.get('WaveShot').OnServerEvent:Connect(function(player, stage, index)
 	publish(player, profile, s)
 end)
 
--- The run ended (StageService: back in the lobby): every crew stands again, fresh, and your client drops its goons.
+-- The run ended (StageService: back in the lobby): every crew stands again, fresh, and your client drops its goons,
+-- except a crew still on its way home (whole again: it walks on, it doesn't pop back).
 Runs.onReset(function(player)
 	local s = sessions[player]
-	if s then s:reset() end
-	stateRemote:FireClient(player, { Kind = 'Reset', Stage = 0 })
+	local walking = s and s:reset() or {}
+	stateRemote:FireClient(player, { Kind = 'Reset', Stage = 0, Keep = walking })
+	for _, stage in walking do sendWave(player, stage, s.Waves[stage], true) end
 	local profile = Data.get(player)
 	if profile and s then publish(player, profile, s) end
 end)

@@ -29,6 +29,8 @@ EnemyRules.Gap = 2.6 -- goons keep about this far apart (times their scale)
 EnemyRules.Standoff = 0.7 -- a goon stops this share of its reach in front of you ...
 EnemyRules.MinGap = 0.45 -- ... and never comes closer than this share
 EnemyRules.MaxPunch = 40 -- sanity cap on one punch
+EnemyRules.ReturnMax = 15 -- (brief 24) a goon still not home this long after it turned back (caught on something) is put
+-- back on its spot (Waves.client shows a poof)
 
 -- State codes (WaveState 'Moves' sends them as numbers).
 EnemyRules.Idle, EnemyRules.Alert, EnemyRules.Chase, EnemyRules.Windup, EnemyRules.Recover, EnemyRules.Return, EnemyRules.Down = 0, 1, 2, 3, 4, 5, 6
@@ -237,9 +239,10 @@ function EnemyRules.step(g: any, dt: number, target: Vector3?, now: number, calm
 			g.State = S.Chase
 			return nil
 		end
+		g.T += dt -- (how long it has been heading home)
 		g.Pos = stepToward(g.Pos, g.Home, k.Speed, dt, 0, arena)
-		if (g.Pos - g.Home).Magnitude < 0.05 then
-			g.Pos, g.State = g.Home, S.Idle
+		if (g.Pos - g.Home).Magnitude < 0.05 or g.T >= S.ReturnMax then
+			g.Pos, g.State, g.T = g.Home, S.Idle, 0
 			return 'home'
 		end
 		return nil
@@ -302,7 +305,8 @@ function EnemyRules.callPack(goons: { any }, caller: any): { number }
 	return list
 end
 
--- Every goon back to its spot (your KO): they walk home and keep their HP.
+-- Every goon back to its spot: they walk home (your KO, where they keep their HP; or you left the stage, where
+-- WaveRules.restore has made them whole first).
 function EnemyRules.sendHome(goons: { any })
 	for _, g in goons do
 		if g.State ~= EnemyRules.Down and g.State ~= EnemyRules.Idle then g.State, g.T = EnemyRules.Return, 0 end
