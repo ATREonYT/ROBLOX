@@ -13,7 +13,8 @@ reads at phone size, and wires it into the UI. Then you run the upload command o
 **Each picture:**
 - one object, centred, nothing else in the picture;
 - square, at least 512 x 512;
-- a transparent background if the AI can do it; otherwise one plain flat colour (Claude removes it);
+- a transparent background if the AI can do it; otherwise one plain, strong flat colour such as bright green or
+  magenta (Claude removes it). Avoid white or grey backgrounds: they get confused with white parts of the picture;
 - no words or numbers in the picture ("2x" stickers, prices and names are drawn by the game);
 - no characters from other games or films.
 
