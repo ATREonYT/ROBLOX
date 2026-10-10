@@ -87,7 +87,9 @@ async function main() {
 		let cx = bb[0] + bb[2] / 2, cy = bb[1] + bb[3] / 2;
 		for (let pass = 0; pass < 2; pass++) {
 			const vs = size / s;
-			const ab = await alphaBox(page, k.svg(drawing, [cx - vs / 2, cy - vs / 2, vs, vs], ow / s, size), size);
+			// frameBy 'shoe': measure the object alone (its rarity glow and sparkles fall in the margin)
+			const meas = icons[name] && icons[name].frameBy === 'shoe' ? { ...drawing, under: '', over: '' } : drawing;
+			const ab = await alphaBox(page, k.svg(meas, [cx - vs / 2, cy - vs / 2, vs, vs], ow / s, size), size);
 			const longest = Math.max(ab[2] - ab[0], ab[3] - ab[1]);
 			cx += ((ab[0] + ab[2]) / 2 - size / 2) / s; cy += ((ab[1] + ab[3]) / 2 - size / 2) / s;
 			s *= (FRAME * size - 2 * ow) / (longest - 2 * ow);
