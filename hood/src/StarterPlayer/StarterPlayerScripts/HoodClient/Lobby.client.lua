@@ -4,6 +4,8 @@
 -- arrow over your best open lane ("TRAIN x3 HERE"), the new player's floor guide (to BAY 1, then out through the
 -- stage door), the "+N POWER" pop over your head for Power that comes from anywhere but a shot, and the sway of the
 -- bag you train on. Players keep their own avatar: there are no looks to equip. The screen HUD is HUD.client.
+-- (LOBBY6, BRIEF24) Also the lobby's pass boards (the reference hall's floor gamepass cards: e2_lobby Lobby.passBoard): a
+-- hold on one buys its pass, and an owned pass reads OWNED.
 local Players = game:GetService('Players')
 local RS = game:GetService('ReplicatedStorage')
 local TweenService = game:GetService('TweenService')
@@ -19,7 +21,9 @@ local lobby = active.Lobby
 local training = lobby:FindFirstChild('Training') or lobby
 
 local C = Color3.fromRGB
-local DISPLAY = Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.Heavy) -- (LOOP: the HUD's Gotham Black, was LuckiestGuy)
+-- (LOBBY6, BRIEF24: "use the same fonts as the references": the lobby's world words are the reference's FredokaOne with a
+-- dark outline, the lane stacks' and the boards' font; the screen HUD keeps its own)
+local DISPLAY = Font.fromEnum(Enum.Font.FredokaOne)
 local INK = C(28, 24, 48)
 local function label(parent, name, textSize, color)
 	local t = Instance.new('TextLabel')
@@ -118,6 +122,9 @@ local stations = {}
 -- lane band 45 -> 75); the next lane to open from further; a middle lane's stack only up close.
 local LANE_NEAR, LANE_FAR = 60, 90
 local GOAL_NEAR, GOAL_FAR, MIDDLE_NEAR, MIDDLE_FAR, NEXT_LIFT = 65, 105, 14, 22, Vector3.new(0, 6.5, 0)
+-- (LOBBY6) a Robux lane's big stack reads from further still: GOLD BAY at the aisle's far end is ~60 studs from the spawn
+-- and the armory, and both Robux lanes sell from across the hall
+local PROMO_NEAR, PROMO_FAR = 80, 120
 -- The chip's text: the number alone next to the label's icon (its Glyph attribute is ''), else the glyph and the
 -- number (a map built before the icons: the old "FREE" / "🔄 n").
 local function chipText(s, cost)
@@ -246,8 +253,9 @@ local function paintStations(n)
 				-- (LABELS) LabelFade owns MaxDistance, Enabled stays on: the band and the hold are attributes it reads
 				-- (nil: the lane band), so the hold fades the stack out and back in instead of switching it.
 				local middle = e.Middle and not lift
-				e.Label:SetAttribute('FadeNear', middle and MIDDLE_NEAR or (lift and GOAL_NEAR or LANE_NEAR))
-				e.Label:SetAttribute('FadeFar', middle and MIDDLE_FAR or (lift and GOAL_FAR or LANE_FAR))
+				local promo = paidLane(s)
+				e.Label:SetAttribute('FadeNear', promo and PROMO_NEAR or middle and MIDDLE_NEAR or (lift and GOAL_NEAR or LANE_NEAR))
+				e.Label:SetAttribute('FadeFar', promo and PROMO_FAR or middle and MIDDLE_FAR or (lift and GOAL_FAR or LANE_FAR))
 				e.Label.StudsOffset = (e.Middle and lift) and NEXT_LIFT or Vector3.zero
 				e.Label:SetAttribute('FadeHold', (own or beside) or nil)
 			end
@@ -671,11 +679,52 @@ player.CharacterAdded:Connect(function(c)
 	if guideWant then updateGuide(table.unpack(guideWant)) end
 end)
 
+---------------------------------------------------------------------------------------------- pass boards
+-- The lobby's pass boards (code5/e2_lobby Lobby.passBoard: PassBoard_<Key> tagged HoodPassBoard, PassPoint >
+-- PassPrompt with the Pass attribute): a hold buys the pass (Products.canBuy: an id and Wired; Roblox's own purchase
+-- window, the player's choice), else the HUD's "<pass> is coming soon!" toast (the prompt's ComingSoon attribute, which
+-- HUD.client reads). A pass you own: the board's chip reads OWNED and its prompt hides. Nothing here opens by itself.
+local okProducts, Products = pcall(require, RS.Shared.Config.Products)
+if not okProducts or type(Products) ~= 'table' then Products = nil end
+local MarketplaceService = game:GetService('MarketplaceService')
+local boards = {}
+local function paintBoard(b)
+	local owned = player:GetAttribute('Pass_' .. b.Key) == true
+	if b.Owned == owned then return end
+	b.Owned = owned
+	if b.Prompt then b.Prompt.Enabled = not owned end
+	if b.Price then
+		local price = b.Price:GetAttribute('Price')
+		b.Price.Text = owned and 'OWNED' or ((Products and Products.RobuxMark or '') .. tostring(price or ''))
+	end
+end
+local function watchBoards()
+	local ok, tagged = pcall(function() return CollectionService:GetTagged('HoodPassBoard') end)
+	for _, m in ok and tagged or {} do
+		local key = m:GetAttribute('Pass')
+		if boards[m] or type(key) ~= 'string' or not m:IsDescendantOf(active.Root) then continue end
+		local prompt = m:FindFirstChild('PassPrompt', true)
+		local b = { Key = key, Prompt = prompt, Price = m:FindFirstChild('Price', true) }
+		boards[m] = b
+		if prompt and prompt:IsA('ProximityPrompt') then
+			local live = Products ~= nil and Products.canBuy(key)
+			prompt:SetAttribute('ComingSoon', not live) -- (HUD.client toasts "<ObjectText> is coming soon!")
+			prompt.Triggered:Connect(function()
+				if not (Products and Products.canBuy(key)) or player:GetAttribute('Pass_' .. key) == true then return end
+				pcall(function() MarketplaceService:PromptGamePassPurchase(player, Products.idOf(key)) end)
+			end)
+		end
+		player:GetAttributeChangedSignal('Pass_' .. key):Connect(function() paintBoard(b) end)
+		paintBoard(b)
+	end
+end
+
 ---------------------------------------------------------------------------------------------- refresh
 local lastPower
 local pulse
 local function refresh()
 	pcall(watchBoxLabels)
+	pcall(watchBoards)
 	local n = player:GetAttribute('Power')
 	if n == nil then return end
 	local rebirths = RebirthRules.count(player:GetAttribute('Rebirths'))
