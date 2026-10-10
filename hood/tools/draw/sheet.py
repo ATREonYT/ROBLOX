@@ -50,6 +50,8 @@ REFS = {
 	'Robux': ('ref22/ref22_store_packs.png', (540, 585, 610, 655), '#9be03a', '#7cd030'),
 	'XP': ('ref17/user_27.png', (160, 660, 350, 850), '#7ad8f0', '#4ab8e8'),
 	'Delete': ('ref22/ref22_store_packs.png', (1385, 30, 1515, 160), '#fdb52c', '#fca422'),
+	**{'Gun_' + g: ('/home/user/ROBLOX/hood/art/renders/guns/%s.png' % g, (0, 0, 1024, 1024), '#7a8090', '#6a6f7c')
+		for g in ('Pistol', 'Revolver', 'Uzi', 'Shotgun', 'Tommy', 'AK', 'Deagle', 'Minigun', 'Blaster', 'Diamond')},
 	'PotionGold': ('ref22/ref22_store_boosts.png', (840, 700, 1170, 1030), '#fdb32c', '#fca422'),
 }
 
@@ -81,7 +83,12 @@ def block(name, args, font):
 	im = Image.new('RGB', (bw, bh), '#1d2027')
 	png = os.path.join(args.png, name + '.png')
 	if ref:
-		src = Image.open(os.path.join(args.brief, ref[0])).convert('RGB').crop(ref[1])
+		src = Image.open(os.path.join(args.brief, ref[0]))
+		if src.mode == 'RGBA':  # a render with alpha: put it on the same slot colour as ours
+			bg = slot(src.width, top, bottom).resize(src.size).convert('RGBA')
+			bg.alpha_composite(src)
+			src = bg
+		src = src.convert('RGB').crop(ref[1])
 		for s, (x, y) in ((W, (0, 0)), (128, (0, W + GAP)), (48, (2 * 128 + 2 * GAP, W + GAP))):
 			im.paste(src.resize((s, s), Image.LANCZOS), (x, y))
 	for s, (x, y) in ((W, (W + GAP, 0)), (128, (128 + GAP, W + GAP)), (48, (2 * 128 + 3 * GAP + 48, W + GAP))):
