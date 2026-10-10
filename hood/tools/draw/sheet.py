@@ -46,6 +46,8 @@ REFS = {
 	'GoldBay': ('ref17/user_28.png', (392, 290, 842, 740), '#fdb52c', '#fca422'),
 	'BlockParty': ('ref17/user_28.png', (1110, 290, 1560, 740), '#c040e0', '#a830d0'),
 	'Arrow': ('ref17/user_27.png', (670, 370, 860, 560), '#9ad04a', '#6cb83a'),
+	'Evolve': ('ref17/user_27.png', (670, 370, 860, 560), '#9ad04a', '#6cb83a'),
+	'Robux': ('ref22/ref22_store_packs.png', (540, 585, 610, 655), '#9be03a', '#7cd030'),
 	'XP': ('ref17/user_27.png', (160, 660, 350, 850), '#7ad8f0', '#4ab8e8'),
 	'Delete': ('ref22/ref22_store_packs.png', (1385, 30, 1515, 160), '#fdb52c', '#fca422'),
 	'PotionGold': ('ref22/ref22_store_boosts.png', (840, 700, 1170, 1030), '#fdb32c', '#fca422'),

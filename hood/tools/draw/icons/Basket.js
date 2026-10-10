@@ -125,6 +125,6 @@ const RED = {
 };
 
 module.exports = [
-	{ name: 'Basket', draw: (k, K) => basket(k, K, ORANGE, { yaw: -34, pitch: 30, a: 0.84, b: 0.96, w: 0.21, t: 0.22, h: 1.3, a2: 0.56, b2: 0.66, H: 0.5, hw: 0.08, th: 0.1, axis: 'z' }) },
+	{ name: 'Basket', draw: (k, K) => basket(k, K, ORANGE, { yaw: -34, pitch: 30, a: 0.84, b: 0.96, w: 0.21, t: 0.22, h: 1.3, a2: 0.56, b2: 0.66, H: 0.5, hw: 0.12, th: 0.14, axis: 'z' }) },
 	{ name: 'BasketRed', draw: (k, K) => basket(k, K, RED, { tiles: true, wicker: true, sparkle: false, yaw: 32, pitch: 30, a: 1.02, b: 0.8, w: 0.25, t: 0.28, h: 0.9, a2: 0.88, b2: 0.68, H: 0.62, hw: 0.15, th: 0.17, postIn: true }) },
 ];

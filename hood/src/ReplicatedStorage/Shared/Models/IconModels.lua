@@ -227,33 +227,41 @@ M.Fallback = {
 -- (brief 25) Each PNG's drawn content: { x0, y0, x1, y1 } as fractions of the 512 canvas (alpha > 10%, top-left
 -- origin), written by hood/tools/blender/icon_bounds.py after each render batch. UIKit places pictures by it.
 M.Bounds = {
-	Arrow = { 0.066, 0.059, 0.934, 0.941 },
+	Arrow = { 0.061, 0.068, 0.939, 0.932 },
 	AutoFight = { 0.061, 0.086, 0.939, 0.914 },
 	Backpack = { 0.064, 0.061, 0.936, 0.939 },
-	Basket = { 0.074, 0.061, 0.926, 0.939 },
+	Basket = { 0.084, 0.061, 0.918, 0.939 },
 	BasketRed = { 0.061, 0.098, 0.941, 0.902 },
 	BlockParty = { 0.076, 0.061, 0.922, 0.939 },
 	BoostBundle = { 0.061, 0.166, 0.939, 0.834 },
-	Box_Exclusive = { 0.152, 0.025, 0.848, 0.961 },
-	Box_Graffiti = { 0.137, 0.039, 0.863, 0.961 },
-	Box_Grail = { 0.164, 0.010, 0.836, 0.961 },
-	Box_Street = { 0.100, 0.039, 0.900, 0.961 },
+	BoxBase_Exclusive = { 0.084, 0.223, 0.916, 0.832 },
+	BoxBase_Graffiti = { 0.084, 0.223, 0.916, 0.832 },
+	BoxBase_Grail = { 0.061, 0.285, 0.939, 0.756 },
+	BoxBase_Street = { 0.084, 0.223, 0.916, 0.832 },
+	BoxLid_Exclusive = { 0.061, 0.168, 0.941, 0.619 },
+	BoxLid_Graffiti = { 0.061, 0.168, 0.941, 0.619 },
+	BoxLid_Grail = { 0.166, 0.244, 0.834, 0.600 },
+	BoxLid_Street = { 0.061, 0.168, 0.941, 0.619 },
+	Box_Exclusive = { 0.061, 0.168, 0.941, 0.832 },
+	Box_Graffiti = { 0.061, 0.168, 0.941, 0.832 },
+	Box_Grail = { 0.061, 0.244, 0.939, 0.756 },
+	Box_Street = { 0.061, 0.168, 0.941, 0.832 },
 	Cash = { 0.061, 0.203, 0.939, 0.797 },
 	CashLarge = { 0.061, 0.127, 0.939, 0.873 },
 	CashMedium = { 0.061, 0.129, 0.939, 0.871 },
 	CashSmall = { 0.061, 0.174, 0.939, 0.826 },
 	CashTiny = { 0.061, 0.180, 0.939, 0.820 },
-	Delete = { 0.064, 0.059, 0.936, 0.941 },
+	Delete = { 0.086, 0.061, 0.914, 0.939 },
 	DoubleCash = { 0.061, 0.141, 0.939, 0.859 },
 	DoublePower = { 0.061, 0.084, 0.939, 0.916 },
-	Evolve = { 0.059, 0.064, 0.941, 0.936 },
+	Evolve = { 0.061, 0.068, 0.939, 0.932 },
 	ExtraEquip = { 0.061, 0.156, 0.939, 0.844 },
-	Favorite = { 0.059, 0.066, 0.941, 0.934 },
+	Favorite = { 0.061, 0.072, 0.939, 0.928 },
 	GoldBay = { 0.209, 0.061, 0.791, 0.939 },
 	Gun = { 0.061, 0.150, 0.939, 0.850 },
 	Lucky = { 0.111, 0.061, 0.891, 0.939 },
 	Muscle = { 0.061, 0.078, 0.939, 0.922 },
-	PVP = { 0.131, 0.086, 0.871, 0.928 },
+	PVP = { 0.154, 0.061, 0.844, 0.939 },
 	PotionGold = { 0.086, 0.061, 0.912, 0.939 },
 	PotionRed = { 0.086, 0.061, 0.912, 0.939 },
 	Power = { 0.061, 0.078, 0.939, 0.922 },
@@ -269,11 +277,11 @@ M.Bounds = {
 	Rebirth = { 0.061, 0.068, 0.939, 0.932 },
 	RebirthSkip = { 0.061, 0.068, 0.939, 0.932 },
 	Rewards = { 0.061, 0.092, 0.939, 0.908 },
-	Robux = { 0.096, 0.059, 0.904, 0.941 },
-	Search = { 0.066, 0.059, 0.934, 0.941 },
-	Shield = { 0.100, 0.059, 0.900, 0.941 },
-	ShoeBox = { 0.049, 0.143, 0.951, 0.857 },
-	ShoePile = { 0.125, 0.039, 0.875, 0.961 },
+	Robux = { 0.104, 0.061, 0.895, 0.939 },
+	Search = { 0.061, 0.092, 0.939, 0.908 },
+	Shield = { 0.105, 0.061, 0.893, 0.939 },
+	ShoeBox = { 0.061, 0.168, 0.941, 0.832 },
+	ShoePile = { 0.061, 0.135, 0.939, 0.865 },
 	Shoe_AstroCrown = { 0.145, 0.039, 0.855, 0.961 },
 	Shoe_BlockRoyalty = { 0.070, 0.039, 0.930, 0.961 },
 	Shoe_Checkmate = { 0.059, 0.039, 0.941, 0.961 },
@@ -296,37 +304,34 @@ M.Bounds = {
 	Shoe_StreetAngel = { 0.156, 0.039, 0.844, 0.961 },
 	Shoe_TheGrail = { 0.164, 0.039, 0.836, 0.961 },
 	Shoe_WildStyle = { 0.064, 0.039, 0.936, 0.961 },
-	Shop = { 0.074, 0.061, 0.926, 0.939 },
-	Skull = { 0.088, 0.059, 0.912, 0.941 },
+	Shop = { 0.084, 0.061, 0.918, 0.939 },
+	Skull = { 0.068, 0.061, 0.930, 0.939 },
 	Sneaker = { 0.061, 0.160, 0.941, 0.840 },
 	TenXCash = { 0.066, 0.061, 0.934, 0.939 },
 	TripleOpen = { 0.061, 0.184, 0.941, 0.816 },
-	Trophy = { 0.049, 0.111, 0.951, 0.889 },
+	Trophy = { 0.061, 0.117, 0.939, 0.883 },
 	VIP = { 0.061, 0.111, 0.939, 0.889 },
 	World = { 0.062, 0.061, 0.936, 0.939 },
-	XP = { 0.100, 0.059, 0.900, 0.941 },
+	XP = { 0.100, 0.061, 0.902, 0.939 },
 }
 -- (brief 25) The PNGs with text baked into the picture: id -> that text. The Store skips its own sticker ('2x', 'x100')
 -- while a PNG whose text is that sticker shows, so a card never carries the label twice ('$' on money or a box's name
 -- plate is not a sticker). Kept up to date by hood/tools/import_icons.py (hood/art/incoming/labels.txt) for imported
 -- pictures; set by hand for rendered ones.
 M.Labelled = {
-	Box_Exclusive = 'EXCLUSIVE',
-	Box_Graffiti = 'GRAFFITI',
-	Box_Grail = 'GRAIL',
-	Box_Street = 'STREET',
 	Cash = '$',
 	CashLarge = '$',
 	CashMedium = '$',
 	CashSmall = '$',
 	CashTiny = '$',
 	DoubleCash = '$',
+	TenXCash = '$',
 	XP = 'XP',
 }
-M.BoxLidLine = 0.6
+M.BoxLidLine = 0.619
 -- per box (each Box_<id> PNG has its own framing; the lid's bottom edge runs from the median to the front corner):
 -- prefer the BoxLid_<id> / BoxBase_<id> PNGs, which split it exactly
-M.BoxLidLines = { Street = 0.6, Graffiti = 0.6, Exclusive = 0.63, Grail = 0.69 }
+M.BoxLidLines = { Street = 0.619, Graffiti = 0.619, Exclusive = 0.619, Grail = 0.6 }
 
 local FAMILIES = { '^Shoe_', '^Box_', '^Gun_' }
 function M.has(id: string): boolean

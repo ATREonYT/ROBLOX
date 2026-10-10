@@ -75,7 +75,20 @@ function shield(k, K) {
 	// a lighter pentagon panel inside, like the ref's
 	const panel = K.roundPoly(rotAll([[-0.5, -0.36], [0.5, -0.36], [0.5, 0.1], [0.0, 0.46], [-0.5, 0.1]].map(P), [256, 256], -8), 0.05 * U);
 	g += k.path(panel, '#2a5fd8');
-	g += starPath(k, K.rotp(P([0, 0.02]), [256, 256], -8), 0.33 * U, '#ffffff');
+	// the letters "XP" as chunky white block shapes with the ink outline, tilted with the badge
+	const L = (pts) => K.roundPoly(rotAll(pts.map(P), [256, 256], -8), 0.035 * U);
+	const t = 0.1, cx = -0.27, cy = -0.12, e = 0.22;
+	const X = L([[cx, cy - t * 1.1], [cx + e - t * 0.4, cy - e - t * 0.2], [cx + e + t * 0.5, cy - e + t * 0.7], [cx + t * 1.1, cy],
+		[cx + e + t * 0.5, cy + e - t * 0.7], [cx + e - t * 0.4, cy + e + t * 0.2], [cx, cy + t * 1.1], [cx - e + t * 0.4, cy + e + t * 0.2],
+		[cx - e - t * 0.5, cy + e - t * 0.7], [cx - t * 1.1, cy], [cx - e - t * 0.5, cy - e + t * 0.7], [cx - e + t * 0.4, cy - e - t * 0.2]]);
+	const px = 0.08, py = cy - 0.27;
+	const Pout = L([[px, py], [px + 0.3, py], [px + 0.44, py + 0.08], [px + 0.46, py + 0.2], [px + 0.42, py + 0.3], [px + 0.3, py + 0.36], [px + 0.15, py + 0.36],
+		[px + 0.15, py + 0.54], [px, py + 0.54]]);
+	const Pin = L([[px + 0.15, py + 0.12], [px + 0.27, py + 0.12], [px + 0.31, py + 0.18], [px + 0.27, py + 0.24], [px + 0.15, py + 0.24]]);
+	const letters = `<path d="${X}"/><path d="${Pout} ${Pin}" fill-rule="evenodd"/>`;
+	g += `<g fill="${k.NAVY}" stroke="${k.NAVY}" stroke-width="${0.075 * U}" stroke-linejoin="round">${letters}</g>`;
+	g += `<g fill="#ffffff">${letters}</g>`;
+	g += k.soft(`${X} ${Pout}`, K.poly(rotAll([[-0.6, 0.0], [0.7, 0.0], [0.7, 0.4], [-0.6, 0.4]].map(P), [256, 256], -8)), '#cfe0f4', 3, 0.8);
 	g += k.streak([P([-0.78, -0.4]), P([-0.8, -0.72]), P([-0.56, -0.86])], 0.05 * U, { bias: 0.6, power: 0.6 });
 	return { sil: sl.sil, body: g };
 }
@@ -114,14 +127,17 @@ function trophy(k, K) {
 // ---------------------------------------------------------------- Arrow
 function arrow(k, K) {
 	const U = 205, P = P2(U, [256, 266]);
-	const pts = rotAll([[0.0, -0.98], [0.94, -0.04], [0.44, -0.04], [0.44, 0.84], [-0.44, 0.84], [-0.44, -0.04], [-0.94, -0.04]].map(P), [256, 266], 12);
+	const pts = rotAll([[0.0, -0.98], [0.94, -0.04], [0.44, -0.04], [0.44, 0.84], [-0.44, 0.84], [-0.44, -0.04], [-0.94, -0.04]].map(P), [256, 266], 42);
 	const face = K.roundPts(pts, 0.08 * U, 4);
-	const sl = k.slab(face, [-0.12 * U, -0.07 * U], { face: '#4fcf4f', wall: '#2a9a36', rib: '#3cb544', pitch: 44 });
+	const sl = k.slab(face, [-0.21 * U, 0.13 * U], { face: '#4fcf4f', wall: '#5fd25c', rib: '#7ee07a', pitch: 44, lightDir: [0.9, -0.3] });
 	let g = sl.body;
 	g += k.soft(sl.face, K.circle(...P([0.5, 0.6]), 0.6 * U), '#3cb63f', 16, 0.8);
-	g += faceStuds(k, K, sl.face, P([0, 0]), { p: 0.26 * U, s: 0.19 * U, rot: 12, alpha: 0.15, bevel: 0.38, shadow: 0.24, shadowColor: '#0c5a18' });
+	g += faceStuds(k, K, sl.face, P([0, 0]), { p: 0.26 * U, s: 0.19 * U, rot: 42, alpha: 0.15, bevel: 0.38, shadow: 0.24, shadowColor: '#0c5a18' });
+	// white slivers along the head's left edge and down the side face's outer edge
 	const tip = pts[0], lw = pts[6];
 	g += k.streak([K.lerp(tip, lw, 0.05), K.lerp(tip, lw, 0.5), K.lerp(tip, lw, 0.92)], 0.05 * U, { bias: 0.4, power: 0.6 });
+	const o = [-0.21 * U, 0.13 * U], b0 = [pts[4][0] + o[0], pts[4][1] + o[1]], b1 = [pts[5][0] + o[0], pts[5][1] + o[1]];
+	g += k.streak([K.lerp(b1, b0, 0.1), K.lerp(b1, b0, 0.5), K.lerp(b1, b0, 0.9)], 0.04 * U, { bias: 0.5, power: 0.6, opacity: 0.9 });
 	return { sil: sl.sil, body: g };
 }
 
@@ -138,6 +154,14 @@ function box(k, K, c, part = 'all', { P = null, at = [0, 0, 0], W = 1.05, D = 0.
 	const silB = [], silL = [];
 	for (const [n, f] of faces(body)) {
 		const d = q(f);
+		if (n === 'top') {
+			// the open top (only seen when the lid is off): a rim round a dark inside
+			const rimW = 0.09, t = f[0][1];
+			const inner = [[ax - W + rimW, t, az - D + rimW], [ax - W + rimW, t, az + D - rimW], [ax + W - rimW, t, az + D - rimW], [ax + W - rimW, t, az - D + rimW]];
+			gb += k.path(d, c.body) + k.path(q(inner), c.inside || '#3a2a4a');
+			gb += k.soft(q(inner), q([[ax - W, t, az - D], [ax + W, t, az - D], [ax + W, t, az - D + 0.5], [ax - W, t, az - D + 0.5]]), '#000000', 4, 0.35);
+			continue;
+		}
 		gb += k.path(d, n === 'front' ? c.body : c.bodySide);
 		if (n === 'front') {
 			const [fw, fh] = K.faceSize(f);
@@ -155,8 +179,8 @@ function box(k, K, c, part = 'all', { P = null, at = [0, 0, 0], W = 1.05, D = 0.
 		if (n === 'top') {
 			const [fw, fh] = K.faceSize(f);
 			const cells = [];
-			for (let j = 0; j < 3; j++) for (let i = 0; i < 5; i++) cells.push([0.14 + i * ((fw - 0.5) / 4), 0.12 + j * ((fh - 0.46) / 2)]);
-			gl += k.tiles(d, K.faceM(P, f), cells, { s: 0.3, r: 0.07, ...c.lidStuds, blurSd: 0.006 });
+			for (let j = 0; j < 2; j++) for (let i = 0; i < 4; i++) cells.push([0.16 + i * ((fw - 0.72) / 3), 0.16 + j * ((fh - 0.72) / 1)]);
+			gl += k.tiles(d, K.faceM(P, f), cells, { s: 0.4, r: 0.09, ...c.lidStuds, blurSd: 0.006 });
 			if (c.lidDecor) gl += c.lidDecor(k, K, P, f, d);
 		}
 	}
@@ -171,56 +195,71 @@ function box(k, K, c, part = 'all', { P = null, at = [0, 0, 0], W = 1.05, D = 0.
 
 const STUDS_DARK = { alpha: 0.14, bevel: 0.36, shadow: 0.24 };
 const BOXES = {
-	Street: { body: '#f4f6f9', bodySide: '#d4dbe5', lid: '#e8343e', lidSide: '#c0202c', lidTop: '#f4525a',
-		studs: { ...STUDS_DARK, alpha: 0.4, shadowColor: '#7a8aa0' }, lidStuds: { ...STUDS_DARK, shadowColor: '#6a0010' } },
-	Graffiti: { body: '#2c2c3a', bodySide: '#1e1e2a', lid: '#ff4fa8', lidSide: '#d8308a', lidTop: '#ff74bc',
+	Street: { inside: '#8a96a8', body: '#f4f6f9', bodySide: '#d4dbe5', lid: '#e8343e', lidSide: '#c0202c', lidTop: '#f4525a',
+		studs: { ...STUDS_DARK, alpha: 0.4, shadowColor: '#7a8aa0' }, lidStuds: { ...STUDS_DARK, shadowColor: '#6a0010' },
+		decor: (...a) => sneakerPrint('#e8343e', '#8a1018')(...a) },
+	Graffiti: { inside: '#18181f', body: '#3c3c4e', bodySide: '#2c2c3c', lid: '#ff4fa8', lidSide: '#d8308a', lidTop: '#ff74bc',
 		studs: { ...STUDS_DARK, alpha: 0.1, shadowColor: '#000000' }, lidStuds: { ...STUDS_DARK, shadowColor: '#6a0040' },
 		decor(k, K, P, f, d) {
 			// paint splashes on the front
 			const M = K.faceM(P, f);
 			const blob = (u, v, r, col) => `<g transform="matrix(${M.join(' ')})"><path d="${K.smooth([[u - r, v], [u - r * 0.4, v - r * 0.8], [u + r * 0.5, v - r * 0.9], [u + r, v - r * 0.1], [u + r * 0.6, v + r * 0.8], [u - r * 0.3, v + r * 0.9]], true, 0.6)}" fill="${col}"/></g>`;
-			return k.clip(d, blob(0.5, 0.42, 0.2, '#3ad0ff') + blob(1.3, 0.3, 0.14, '#ffe03a') + blob(1.75, 0.5, 0.18, '#7cf05a') + blob(1.0, 0.62, 0.1, '#ff4fa8'));
+			return k.clip(d, blob(0.26, 0.34, 0.2, '#3ad0ff') + blob(1.86, 0.3, 0.17, '#ffe03a') + blob(1.88, 0.76, 0.18, '#7cf05a') + blob(0.24, 0.8, 0.15, '#ff4fa8')) +
+				sneakerPrint('#ffffff', '#ff4fa8')(k, K, P, f, d);
 		} },
-	Exclusive: { body: '#f4f6f9', bodySide: '#d4dbe5', lid: '#2f86f0', lidSide: '#1f66c8', lidTop: '#4aa0f8',
+	Exclusive: { inside: '#7a8aa4', body: '#f4f6f9', bodySide: '#d4dbe5', lid: '#2f86f0', lidSide: '#1f66c8', lidTop: '#4aa0f8',
+		decor: (...a) => sneakerPrint('#2f86f0', '#1a4a9a')(...a),
 		studs: { ...STUDS_DARK, alpha: 0.4, shadowColor: '#7a8aa0' }, lidStuds: { ...STUDS_DARK, shadowColor: '#0a2a6a' },
 		lidDecor(k, K, P, f, d) {
 			// a diamond gem on the lid
-			const c = P(0, 0.58, 0);
-			const s = 52;
+			const c = P(0, 0.6, 0.2);
+			const s = 74;
 			const gem = K.poly([[c[0] - s, c[1] - s * 0.5], [c[0] - s * 0.5, c[1] - s], [c[0] + s * 0.5, c[1] - s], [c[0] + s, c[1] - s * 0.5], [c[0], c[1] + s * 0.9]]);
 			return `<path d="${gem}" fill="${k.NAVY}" stroke="${k.NAVY}" stroke-width="14" stroke-linejoin="round"/>` + k.path(gem, '#7ee8ff') +
 				k.path(K.poly([[c[0] - s, c[1] - s * 0.5], [c[0] + s, c[1] - s * 0.5], [c[0], c[1] + s * 0.9]]), '#3cc6f0') +
-				k.path(K.poly([[c[0] - s * 0.5, c[1] - s], [c[0] + s * 0.5, c[1] - s], [c[0] + s * 0.25, c[1] - s * 0.5], [c[0] - s * 0.25, c[1] - s * 0.5]]), '#d6fbff');
+				k.path(K.poly([[c[0] - s * 0.5, c[1] - s], [c[0] + s * 0.5, c[1] - s], [c[0] + s * 0.25, c[1] - s * 0.5], [c[0] - s * 0.25, c[1] - s * 0.5]]), '#d6fbff') +
+				k.streak([[c[0] - s * 0.78, c[1] - s * 0.42], [c[0] - s * 0.42, c[1] - s * 0.1], [c[0] - s * 0.12, c[1] + s * 0.5]], s * 0.12, { bias: 0.4, power: 0.6 });
 		} },
-	Grail: { body: '#8a3ee0', bodySide: '#6a28b8', lid: '#ffc928', lidSide: '#e8960e', lidTop: '#ffd94e',
-		studs: { ...STUDS_DARK, shadowColor: '#2a0a5a' }, lidStuds: { ...STUDS_DARK, shadowColor: '#8a4a00' } },
+	Grail: { inside: '#44207a', body: '#9d58f0', bodySide: '#7c3ed4', lid: '#ffc928', lidSide: '#e8960e', lidTop: '#ffd94e',
+		studs: { ...STUDS_DARK, shadowColor: '#2a0a5a' }, lidStuds: { ...STUDS_DARK, shadowColor: '#8a4a00' },
+		decor: (...a) => sneakerPrint('#ffd23a', '#b07a10')(...a) },
 };
-// little gold wings on the Grail box's sides
+// gold feathered wings on the Grail box's sides: three feather scallops each, swept up and out
 function wings(k, K) {
 	const wing = (sx) => {
-		const c = [256 + sx * 190, 262];
-		const pts = [[0, -0.1], [0.5, -0.5], [0.66, -0.3], [0.5, -0.24], [0.62, -0.06], [0.44, -0.02], [0.52, 0.14], [0.2, 0.12], [0, 0.12]].map(([u, v]) => [c[0] + sx * u * 120, c[1] + v * 120]);
-		const d = K.smooth(pts, true, 0.3);
-		return { d, body: k.path(d, '#ffd23a') + k.soft(d, K.circle(c[0] + sx * 40, c[1] + 20, 40), '#f0a514', 6, 0.8) };
+		const c = [256 + sx * 186, 268];
+		const W = (u, v) => [c[0] + sx * u * 130, c[1] + v * 130];
+		// the root at the box, the top edge sweeping up and out, three rounded feathers along the lower edge
+		const pts = [W(0, -0.22), W(0.3, -0.5), W(0.66, -0.8), W(0.86, -0.78), W(0.8, -0.56), W(0.9, -0.5), W(0.84, -0.3),
+			W(0.66, -0.24), W(0.72, -0.08), W(0.5, 0.02), W(0.44, 0.08), W(0.2, 0.14), W(0, 0.16)];
+		const d = K.smooth(pts, true, 0.45);
+		// feather divisions: darker lines from the root toward each scallop notch
+		const lines = [[W(0.2, -0.06), W(0.62, -0.26)], [W(0.18, 0.04), W(0.44, 0.0)], [W(0.24, -0.2), W(0.78, -0.54)]]
+			.map(([a, b]) => `<path d="M${a.join(' ')} L${b.join(' ')}" stroke="#e8960e" stroke-width="7" stroke-linecap="round"/>`).join('');
+		const body = k.path(d, '#ffd23a') + k.soft(d, K.circle(c[0] + sx * 60, c[1] + 30, 50), '#f2a818', 8, 0.8) + lines +
+			k.streak([W(0.28, -0.44), W(0.56, -0.7), W(0.82, -0.8)], 9, { bias: 0.5, power: 0.6 });
+		return { d, body };
 	};
 	return [wing(-1), wing(1)];
 }
 
 // a sneaker picture printed on a box's front face (a high-top silhouette with a sole line)
-function sneakerPrint(color = '#ffffff', sole = '#ffd2a8', scale = 0.5) {
+function sneakerPrint(color = '#ffffff', sole = '#ffd2a8', scale = 0.62, edge = null) {
 	return (k2, K2, P, f, d) => {
 		const M = K2.faceM(P, f);
 		const [fw, fh] = K2.faceSize(f);
-		const sx = fw / 2, sy = fh * 0.64, sc = scale;
+		// centred in the part of the front the lid does not cover (the lid hangs over its top ~0.15)
+		const sx = fw / 2, sy = (0.15 + fh) / 2 + 0.14 * scale, sc = scale;
 		const T = (pts) => pts.map(([u, v]) => [sx + u * sc, sy + v * sc]);
 		// a high-top in profile, toe to the right: heel, collar dip, tongue, laces sloping down to a round toe
 		const shoeD = K2.smooth(T([[-0.88, 0.3, 'c'], [-0.9, -0.2], [-0.84, -0.6, 'c'], [-0.62, -0.5], [-0.44, -0.68, 'c'], [-0.3, -0.5],
 			[0.1, -0.24], [0.6, -0.1], [0.9, 0.04], [0.98, 0.3, 'c']]), true, 0.5);
 		const soleD = K2.roundPoly(T([[-0.94, 0.18], [1.0, 0.18], [1.0, 0.4], [-0.94, 0.4]]), 0.04);
-		return `<g transform="matrix(${M.join(' ')})"><path d="${shoeD}" fill="${color}" opacity="0.95"/><path d="${soleD}" fill="${sole}"/></g>`;
+		const stroke = edge ? ` stroke="${edge}" stroke-width="0.05" stroke-linejoin="round"` : '';
+		return `<g transform="matrix(${M.join(' ')})"><path d="${shoeD}" fill="${color}"${stroke}/><path d="${soleD}" fill="${sole}"${stroke}/></g>`;
 	};
 }
-const SHOEBOX = { body: '#ff9a2a', bodySide: '#e8781c', lid: '#ff6a3a', lidSide: '#d84a24', lidTop: '#ff8656',
+const SHOEBOX = { inside: '#a8480e', body: '#ff9a2a', bodySide: '#e8781c', lid: '#ff6a3a', lidSide: '#d84a24', lidTop: '#ff8656',
 	studs: { ...STUDS_DARK, shadowColor: '#7a3000' }, lidStuds: { ...STUDS_DARK, shadowColor: '#7a2000' }, decor: sneakerPrint('#ffffff', '#c85a14') };
 function shoeBoxIcon(k, K) {
 	return box(k, K, SHOEBOX);
@@ -232,6 +271,7 @@ const out = [
 	{ name: 'XP', draw: (k, K) => shield(k, K) },
 	{ name: 'Trophy', draw: (k, K) => trophy(k, K) },
 	{ name: 'Arrow', draw: (k, K) => arrow(k, K) },
+	{ name: 'Evolve', draw: (k, K) => arrow(k, K) }, // the Rebirth window's arrow (the same picture)
 	{ name: 'ShoeBox', draw: (k, K) => shoeBoxIcon(k, K) },
 ];
 for (const [id, c] of Object.entries(BOXES)) {

@@ -250,6 +250,7 @@ class Kit {
 			sil: d.sil.map((x) => (typeof x === 'string' ? { d: x, t } : { ...x, t: t + ' ' + (x.t || '') })),
 			body: `<g transform="${t}">${d.body}</g>`,
 			over: d.over ? `<g transform="${t}">${d.over}</g>` : '',
+			under: d.under ? `<g transform="${t}">${d.under}</g>` : '',
 		};
 	}
 	// A dark separating edge drawn just before an item that sits in front of others in a pile (the refs keep a thin
@@ -261,7 +262,7 @@ class Kit {
 	group(items, sepW = 0) {
 		let body = '';
 		items.forEach((it, i) => { if (i && sepW) body += this.sep(it.sil, sepW); body += it.body; });
-		return { sil: items.flatMap((it) => it.sil), body, over: items.map((it) => it.over || '').join('') };
+		return { sil: items.flatMap((it) => it.sil), body, over: items.map((it) => it.over || '').join(''), under: items.map((it) => it.under || '').join('') };
 	}
 
 	// A chunky slab: the face polygon pts (screen, clockwise) pushed back by o = [ox, oy]; the walls that face the
@@ -291,6 +292,12 @@ class Kit {
 		return { sil, body: g, face: fd, walls: x.walls, back: x.back };
 	}
 
+	// A soft rarity glow round a silhouette: the silhouette widened by w and blurred (for drawing.under).
+	glow(sil, color, w = 30, sd = 14, opacity = 0.75) {
+		return `<g ${this.blur(sd)} opacity="${opacity}" fill="${color}" stroke="${color}" stroke-width="${f(w * 2)}" stroke-linejoin="round">` +
+			sil.map((x) => silPath(x, 'fill-rule')).join('') + '</g>';
+	}
+
 	// Build the final SVG for given framing: view = [x, y, size] square in working space; ow = outline band in
 	// working units; px = output size.
 	svg(drawing, view, ow, px = 512) {
@@ -299,7 +306,8 @@ class Kit {
 		// the outline: an even band, plus a copy nudged down-right so it runs a little heavier on the bottom-right
 		// (the refs' ink is hand-made, not uniform)
 		const og = (dx, dy, w) => `<g transform="translate(${f(dx)} ${f(dy)})" fill="${NAVY}" stroke="${NAVY}" stroke-width="${f(w * 2)}" stroke-linejoin="round" stroke-linecap="round">${silG}</g>`;
-		let inner = og(0, 0, ow * 0.94) + og(ow * 0.1, ow * 0.2, ow * 0.94) +
+		// drawing.under: drawn first, under the outline and unclipped (a rarity glow round the silhouette)
+		let inner = (drawing.under || '') + og(0, 0, ow * 0.94) + og(ow * 0.1, ow * 0.2, ow * 0.94) +
 			// the drawing stays inside the silhouette (a glint never pokes out over the outline)
 			`<clipPath id="${this.name}_silclip">${drawing.sil.map((x) => silPath(x, 'clip-rule')).join('')}</clipPath>` +
 			`<g clip-path="url(#${this.name}_silclip)">${drawing.body}</g>` +
