@@ -558,13 +558,15 @@ local function actionIn(parent, old, props, onClick)
 	return holder
 end
 
+local rebirth
+do
 ---------------------------------------------------------------- REBIRTH (user_27)
 -- Measured on the reference: a 940 x 642 window; "Rebirth n" over a 285 x 87 cyan box with the Power icon and "Nx", a
 -- green 3D arrow, "Rebirth n+1" over "(N+1)x"; "Rebirth resets your power" in red; a 656 x 84 bar with the Power icon
 -- as its badge (the reference's XP shield); the Rebirth button and Skip Rebirth (once its product id is set), 314 x 83.
 -- (Positions are in the window's Content frame: 18 px in from the sides, 132 px down from the top.)
 local RB_W, RB_H = 940, 642
-local rebirth = makePanel('Rebirth', 'Rebirth', 'Rebirth', 'headerCyan', RB_W, RB_H, 68, false) -- (user_27's header has no gloss bands)
+rebirth = makePanel('Rebirth', 'Rebirth', 'Rebirth', 'headerCyan', RB_W, RB_H, 68, false) -- (user_27's header has no gloss bands)
 local rw = rebirth.Well
 local BOX_W, BOX_H, BOX_Y = 285, 87, 77
 local FROM_X, TO_X = 79, 539
@@ -689,11 +691,14 @@ rebirth.Open = function()
 	rebirthUpdate()
 end
 rebirth.Update = rebirthUpdate
+end -- (Rebirth window: its locals stay inside, under the 200-local limit Roblox Studio enforces)
 
+local quest
+do
 ---------------------------------------------------------------- QUEST (the goal chain)
 -- The reference's Quest square opens our goal chain (GoalService decides; GoalRules has the list): every goal as a
 -- studded row, the ones you've done ticked, the current one gold, the rest waiting, each with the Cash it pays.
-local quest = makePanel('Quest', 'Quest', iconOr('Quest', 'Trophy'), 'headerBrown', 940, 642) -- (brown like the HUD's Quest square)
+quest = makePanel('Quest', 'Quest', iconOr('Quest', 'Trophy'), 'headerBrown', 940, 642) -- (brown like the HUD's Quest square)
 local questList = Kit.new('ScrollingFrame', {
 	Name = 'Goals', BackgroundTransparency = 1, BorderSizePixel = 0, Position = px(0, 0), Size = UDim2.fromScale(1, 1), ZIndex = 24,
 	ScrollBarThickness = 8, ScrollBarImageColor3 = Color.white, ScrollingDirection = Enum.ScrollingDirection.Y,
@@ -746,7 +751,9 @@ local function fillQuest()
 end
 quest.Open = fillQuest
 quest.Update = fillQuest
+end -- (Quest window: its locals stay inside, under the 200-local limit Roblox Studio enforces)
 
+do
 ---------------------------------------------------------------- REWARDS
 local rewards = makePanel('Rewards', 'Rewards', 'Rewards', 'headerCyan', 900, 560, nil, false)
 -- (brief 19 r7, UICRITIC P3-15) big studded day cards that fill the body like the Store's (4 + 3, Day 7 a wide gold
@@ -790,7 +797,10 @@ actions.Guns = function() if not openOther('HoodInventory', 'Guns') then toast('
 actions.Shoes = function() if not openOther('HoodInventory', 'Shoes') then toast('Shoes: loading...', 'blue') end end
 actions.Items = function() if not openOther('HoodInventory', 'Items') then toast('Items: soon!', 'blue') end end
 actions.World = function() if not openOther('HoodWorld') then toast('World 2: soon!', 'blue') end end
+end -- (Rewards window: its locals stay inside, under the 200-local limit Roblox Studio enforces)
 
+local refreshCounters, refresh
+do
 ---------------------------------------------------------------------------------------------- live values
 local shown = Instance.new('NumberValue') -- the Power the HUD is showing; tweens up for the count-up
 shown.Changed:Connect(function(v)
@@ -841,7 +851,7 @@ local function hintText(power)
 end
 
 local lastPower, lastCash, lastRebirths
-local function refreshCounters()
+function refreshCounters()
 	local cash, n = cashNow(), rebirthsNow()
 	cashCount.Text = short(cash)
 	rebirthCount.Text = short(n)
@@ -852,7 +862,7 @@ local function refreshCounters()
 	end
 	lastCash, lastRebirths = cash, n
 end
-local function refresh()
+function refresh()
 	local power = num('Power', nil)
 	if power == nil then
 		hint.Text = 'Getting your block ready...'
@@ -938,7 +948,9 @@ task.spawn(function()
 		task.wait(2)
 	end
 end)
+end -- (live values: its locals stay inside, under the 200-local limit Roblox Studio enforces)
 
+do
 ---------------------------------------------------------------------------------------------- layout
 -- PC, like the reference: the column centred on the screen (its middle 26 px above the root's, the top bar's half),
 -- the offers on the same middle, the counters and the bottom block on the bottom edge. Phones keep the column and
@@ -1001,3 +1013,4 @@ relayout()
 refreshCounters()
 refresh()
 print('[HoodHUD] ready') -- (StudioCheck.client reads this and the start line to tell where a broken HUD stopped)
+end -- (layout: its locals stay inside, under the 200-local limit Roblox Studio enforces)

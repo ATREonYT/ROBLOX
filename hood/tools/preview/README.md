@@ -33,3 +33,6 @@ are read from `hood/art/vfx`; `render/vfx` only holds preview-only extras.
 
 The renderer approximates Roblox: no bloom, simple lighting. Judge layout, proportions, colour and effect
 density, then confirm the final look in Studio.
+
+## Studio local limit
+`lune run hood/tools/preview/check_locals.luau` compiles every script the way Studio does (optimization level 0) and fails if any script has more than 200 locals in one scope. The harness compiles at a higher level and does not catch this, so run it before shipping a big script change.
