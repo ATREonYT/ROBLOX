@@ -677,7 +677,9 @@ Kit.Place = {
 	-- reference's is held to its height, so nothing stands higher over its bar than the reference's)
 	-- (the basket's bottom hides behind the "Store" label: its TOP is the line that matters, so it is anchored there and
 	-- may be up to 1.05 h tall; TopAt: the content's top, in h, from the bar's top)
-	storeBar = { W = 1.21, H = 1.05, X = 0.5, XH = -0.07, Y = 0.2, TopAt = -0.21 },
+	-- (CRITIC4, DRAW's deeper basket: H up to 1.2 h for the reference's width; ClipTop: the picture is drawn in a frame
+	-- from that height, in h, down to the bar's bottom edge, so a deep basket never shows under the bar)
+	storeBar = { W = 1.21, H = 1.2, X = 0.5, XH = -0.07, Y = 0.2, TopAt = -0.21, ClipTop = -0.45 },
 	-- user_26's +1B / +10B / +100B packs (65 ref px tall): the arm 1.0 h wide and 0.92 h tall, centred 0.34 h in from the
 	-- left edge (it hangs 0.17 h out) and 0.48 h down
 	pack = { W = 1.0, H = 0.95, X = 0, XH = 0.34, Y = 0.48 },
@@ -1349,10 +1351,19 @@ function Kit.actionButton(props)
 	local holder, hit = Kit.blockButton({ Name = props.Name, Tone = props.Tone, Width = w, Height = h, Position = props.Position, AnchorPoint = props.AnchorPoint, ZIndex = props.ZIndex, Studs = props.Studs or 15, RimWidth = props.RimWidth or 3, InnerLine = props.InnerLine ~= false })
 	local z = (props.ZIndex or 1) + 3
 	local icon
+	local clip
 	if props.Place and not props.IconNode then
 		-- (brief 25) the picture where the reference puts it (Kit.Place[props.Place]): big, popping out of the top
-		icon = Kit.icon3d(props.Icon or 'Shop', nil, { Place = { Rule = props.Place, W = w, H = h, X0 = 3, Y0 = 3 } })
-		pop = math.max(0, -(icon.Position.Y.Offset + 3) - 4)
+		local rule = Kit.Place[props.Place]
+		local place = { Rule = props.Place, W = w, H = h, X0 = 3, Y0 = 3 }
+		if rule and rule.ClipTop then
+			-- clipped at the button's bottom edge (the frame spans the button's width, from ClipTop down)
+			local top = math.floor(rule.ClipTop * h)
+			clip = new('Frame', { Name = 'PictureClip', BackgroundTransparency = 1, ClipsDescendants = true, Position = UDim2.fromOffset(-3, top - 3), Size = UDim2.fromOffset(w, h - top), ZIndex = z, Parent = holder.Body })
+			place.X0, place.Y0 = 0, top
+		end
+		icon = Kit.icon3d(props.Icon or 'Shop', nil, { Place = place })
+		pop = math.max(0, -(icon.Position.Y.Offset + place.Y0) - 4)
 	else
 		local size = props.IconSize or math.floor(math.min(w, h) * 0.88)
 		icon = props.IconNode or Kit.icon3d(props.Icon or 'Shop', size, {})
@@ -1364,7 +1375,7 @@ function Kit.actionButton(props)
 	for _, d in icon:GetDescendants() do
 		if d:IsA('GuiObject') then d.ZIndex = z + math.max(0, d.ZIndex - base) end -- (keeps the icon's layers in order)
 	end
-	icon.Parent = holder.Body
+	icon.Parent = clip or holder.Body
 	local textSize = props.TextSize or 22
 	local caption = Kit.text({
 		Name = 'Caption', Text = props.Text or '', TextSize = textSize, Stroke = Kit.Color.black, StrokeThickness = math.max(2, textSize * 0.13),
