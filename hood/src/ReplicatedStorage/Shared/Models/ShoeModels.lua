@@ -1,7 +1,10 @@
--- The 60 shoes of the 10 shoe boxes (Config/Shoes.lua ids), built from plain Parts, wedges, cylinders and balls.
--- Chunky high-top sneakers in the game's classic block style, after the Blender mock-ups in the shoe brief.
--- (brief 21) Plus the 10 exclusive shoes of the two Robux boxes (Exclusive, Grail; Rare..Secret, no Commons): the
--- same kit and accents in premium finishes (chrome, gold, hologram, rainbow) no Cash shoe wears.
+-- The 60 shoes of the 10 shoe boxes (Config/Shoes.lua ids), built from plain Parts, wedges, cylinders, balls and
+-- ellipsoids (a Part with a Sphere SpecialMesh: no upload). Chunky cartoon sneakers after the Blender mock-ups in the
+-- shoe brief. (brief 21) Plus the 10 exclusive shoes of the two Robux boxes (Exclusive, Grail; Rare..Secret, no Commons).
+-- (brief 24) Restyled to stand out: a lower, longer chunky sneaker (thick two-layer sole, puffy dome toe with a rubber
+-- cap, a side flash, fat laces with a bow, a tall tongue, a pillow collar, a padded heel cap), crisp colour blocking,
+-- Neon stripes and flashes from Epic, a glass air bubble from Legendary, and premium finishes on the Robux-box shoes
+-- (mirror chrome, gold, gems, hologram glass, glowing laces). The rarity effects are Shared/ShoeFX.
 --
 --   ShoeModels.shoe(id, side, scale) -> Model   one shoe ('L' or 'R'); PrimaryPart `Fit` is an invisible box the size
 --                                              of a canonical R15 foot (1, 0.3, 1), centred where the foot goes, toe -Z
@@ -9,26 +12,30 @@
 --                                              the soles' centre, so the pivot is on the ground between the shoes
 --   ShoeModels.wear(character, id, opts?) -> cleanup()
 --                                              welds the pair onto an R15 (feet, and the lower legs for the collar) or
---                                              an R6 character (leg bottoms), scaled to the real parts
---   ShoeModels.fx(model, rarity, opts?)        rarity particles and light (optional eye candy, client side)
---   ShoeModels.viewport(id, size?) -> ViewportFrame   the pair, framed like the mock-ups (inventory, chance boards)
+--                                              an R6 character (leg bottoms), scaled to the real parts and a size up
+--                                              (WornChunk); adds the worn rarity effects (opts.noFx skips them,
+--                                              opts.fxDensity thins them)
+--   ShoeModels.fx(model, rarity, opts?)        rarity effects on a pair or shoe: ShoeFX.apply with the shoe's theme
+--                                              (followers, displays; client side)
+--   ShoeModels.viewport(id, size?) -> ViewportFrame   the pair, framed like the mock-ups (kept for old callers)
 --   ShoeModels.Ids (the 60 Cash-box shoes, box by box), ShoeModels.ExclusiveIds (the 10 Robux-box shoes),
 --   ShoeModels.AllIds (all 70), ShoeModels.Meta[id] = { Name, Box, Rarity, RarityName, Parts } (all 70),
 --   ShoeModels.Rarities
 --
--- How a shoe is made: one shared sneaker kit (sole and midsole stripe, toe cap, toe box, inclined lace panel with
--- eyestays, laces and eyelets, quarter and ankle panels, padded collar, tongue, heel counter and tab, side logo,
--- a studded outsole) dressed per shoe by a
--- definition (colours, sole build, panels) and a few accents (wings, flames, crystals, drips, crowns, stars, splats,
--- bubbles, coins...). Every part is authored once for the RIGHT shoe in "foot space" (studs, ground at y = 0, the
--- foot's centre at x = z = 0, outer side +X, toe -Z) and mirrored for the left shoe. Parts are recorded as specs
--- first, so the same shoe can be built anchored (displays) or welded and stretched per axis onto a real foot (wear).
+-- How a shoe is made: one shared sneaker kit (outsole, midsole and its stripe, dome toe box and rubber toe cap, quarter,
+-- heel cap, side flash, inclined lace panel with eyestays, laces, eyelets and a bow, tongue, ankle panel with its side
+-- pillow, pillow collar and heel tab) dressed per shoe by a definition (colours, materials, panels) and a few accents
+-- (wings, flames, crystals, drips, crowns, stars, splats, bubbles...). Every part is authored once for the RIGHT shoe in
+-- "foot space" (studs, ground at y = 0, the foot's centre at x = z = 0, outer side +X, toe -Z) and mirrored for the left
+-- shoe. Parts are recorded as specs first, so the same shoe can be built anchored (displays) or welded and stretched per
+-- axis onto a real foot (wear).
 --
 -- Fit on a character: the canonical R15 foot is 1 x 0.3 x 1 and both feet touch at the body's centre line, so each
--- shoe hangs over its foot on the OUTER side only (inner faces stay on the foot's inner plane): the two shoes never
--- cut into each other. Parts flagged `shaft` (collar, tongue, ankle panel and what sits on them) ride the lower leg
--- on R15, so the high top doesn't swing through the shin when the ankle bends.
--- Part budget: <= 60 per shoe (a worn or follower pair <= 120). Common ~40, Secret ~60.
+-- shoe hangs over its foot on the OUTER side only (inner faces stay on the foot's inner plane, and the heel stays square
+-- there): the two shoes never cut into each other or show the foot between them. Parts flagged `shaft` (collar, tongue,
+-- ankle panel and what sits on them) ride the lower leg on R15, so the top doesn't swing through the shin when the ankle
+-- bends.
+-- Part budget: <= 60 per shoe (a worn or follower pair <= 120). Common ~45, Secret ~58.
 local ShoeModels = {}
 
 local V, C = Vector3.new, Color3.fromRGB
@@ -61,10 +68,15 @@ local KIND = {
 	neon = { Enum.Material.Neon, 0, 0, false },
 	glass = { Enum.Material.Glass, 0.15, 0.3, false },
 	ice = { Enum.Material.Glass, 0.1, 0.12, false },
+	-- (brief 24) premium finishes
+	chrome = { Enum.Material.Metal, 0.5, 0, true }, -- mirror chrome (mid grey: the sky's reflection brightens it)
+	gem = { Enum.Material.Glass, 0.3, 0.12, false }, -- cut gems: shiny, a little see-through
+	holo = { Enum.Material.SmoothPlastic, 0.3, 0, true }, -- hologram panels: pearly pastel with a sheen
 }
 ShoeModels.Kinds = KIND
 
 local function dark(c, t) return c:Lerp(C(0, 0, 0), t or 0.2) end
+local function lum(c) return 0.299 * c.R + 0.587 * c.G + 0.114 * c.B end
 local function light(c, t) return c:Lerp(C(255, 255, 255), t or 0.25) end
 
 ---------------------------------------------------------------------------------------------- spec builder
@@ -79,7 +91,7 @@ function Builder:add(cls, shape, name, size, cf, color, kind, opts)
 	opts = opts or {}
 	local spec = {
 		cls = cls, shape = shape, name = name, size = size, cf = cf, color = color, kind = kind or 'smooth',
-		shaft = opts.shaft or self.shaft, text = opts.text, transp = opts.transp, studsBottom = opts.studsBottom,
+		shaft = opts.shaft or self.shaft, text = opts.text, transp = opts.transp, studsBottom = opts.studsBottom, mesh = opts.mesh,
 	}
 	table.insert(self.list, spec)
 	return spec
@@ -99,6 +111,12 @@ function Builder:cyl(name, length, d, pos, color, kind, axis, opts)
 end
 function Builder:ball(name, d, pos, color, kind, opts)
 	return self:add('Part', 'Ball', name, V(d, d, d), CF(pos), color, kind, opts)
+end
+-- An ellipsoid the size of `size` (a Block with a Sphere SpecialMesh: domes, pillows, feathers, bubbles).
+function Builder:egg(name, size, pos, color, kind, rot, opts)
+	opts = opts or {}
+	opts.mesh = 'Sphere'
+	return self:add('Part', 'Block', name, size, CF(pos) * (rot or CFrame.identity), color, kind, opts)
 end
 -- A flat isosceles triangle (two wedges back to back): base along local Z, apex up local Y, thickness local X.
 -- `cf` places the base centre.
@@ -133,129 +151,157 @@ local function unmirrorText(cf, text)
 end
 
 ---------------------------------------------------------------------------------------------- the sneaker kit
+-- (brief 24) A chunky cartoon high-top: a thick two-layer sole round at both ends (rubber outsole, foam midsole, a
+-- stripe that turns neon from Epic), a puffy dome toe box with a rubber toe cap, the quarter round at the heel, a padded
+-- heel cap, a tapered side flash, the lace panel with three fat laces, a tall tongue rounded on top, and a pillow collar
+-- round the opening. Domes and pillows are Parts with a Sphere SpecialMesh (an ellipsoid the part's size; no upload).
 -- Layout (right shoe): main pieces keep their inner faces on the foot's inner plane (x = -0.5) and hang out on the
 -- outer side. Numbers are studs at scale 1 on a canonical foot.
 local L = {
 	XI = -0.503, -- inner face of the enclosing pieces (the foot's inner face is x = -0.5)
-	XO = 0.655, -- outer face of the quarter panel
-	ZT = -0.98, -- sole toe tip
-	ZH = 0.645, -- sole heel end
-	SOLE = { 0.18, 0.22, 0.24, 0.26, 0.27, 0.3 }, -- sole height by rarity (platforms rise like the pictures)
+	XO = 0.68, -- outer face of the quarter panel
+	ZT = -1.1, -- sole toe tip
+	ZH = 0.7, -- sole heel end
+	SOLE = { 0.28, 0.3, 0.32, 0.35, 0.37, 0.4 }, -- sole height by rarity (platforms rise like the pictures)
+	OUT = 0.085, -- the rubber outsole band under the midsole
 }
 L.XC = (L.XI + L.XO) / 2
 ShoeModels.Layout = L
 
--- Sole: a rounded toe in plan (a vertical cylinder the sole's width) and a square heel; an outsole band from Rare
--- up; the midsole stripe all round. (The toe's circle is placed so the foot's front corners stay inside it.)
-local function stadium(B, name, w, h, xc, y, zt, zh, color, kind, studs)
+-- A sole layer in plan: a round toe (an upright cylinder the full width) and a square heel. (The heel stays square:
+-- a round one would uncover the foot's inner back corner, between the two shoes.)
+local function pill(B, name, w, h, xc, y, zt, zh, color, kind, studs)
 	local r = w / 2
-	local zc = zt + r
-	B:box(name, V(w, h, zh - zc), V(xc, y, (zc + zh) / 2), color, kind, nil, { studsBottom = studs })
-	B:cyl(name .. 'Toe', h - 0.002, w, V(xc, y - 0.001, zc), color, kind, 'y')
+	local z0 = zt + r
+	B:box(name, V(w, h, zh - z0), V(xc, y, (z0 + zh) / 2), color, kind, nil, { studsBottom = studs })
+	B:cyl(name .. 'Toe', h - 0.002, w, V(xc, y - 0.001, z0), color, kind, 'y')
 end
 local function buildSole(B, d, U)
-	local XI, XO = L.XI, L.XO
-	local x0, x1 = XI - 0.005, XO + 0.035
+	local x0, x1 = L.XI - 0.005, L.XO + 0.04
 	local w, xc = x1 - x0, (x0 + x1) / 2
 	local zt, zh = L.ZT, L.ZH
-	local base = d.base -- outsole band colour (nil = one-piece sole)
-	local hb = base and math.min(0.09, U * 0.36) or 0
+	local hb = L.OUT
 	local top = U - hb
-	stadium(B, 'Sole', w, top, xc, hb + top / 2, zt, zh, d.sole, d.soleKind, not base)
-	if base then
-		stadium(B, 'Outsole', w + 0.03, hb, xc, hb / 2, zt - 0.015, zh + 0.015, base, d.baseKind, true)
-	end
-	-- the stripe: a band just proud of the sole all round, near its top; neon from Epic up
-	local sh = d.stripeH or (d.rarity >= 4 and 0.055 or 0.04)
-	local sy = hb + top * 0.6
+	-- outsole: the rubber band underneath (studded tread), a touch wider; midsole: the thick foam slab
+	pill(B, 'Outsole', w + 0.03, hb, xc, hb / 2, zt - 0.015, zh + 0.015, d.base, d.baseKind, true)
+	pill(B, 'Sole', w, top, xc, hb + top / 2, zt, zh, d.sole, d.soleKind)
+	-- the stripe round the midsole (neon from Epic)
+	local sh = d.stripeH or (d.rarity >= 4 and 0.06 or 0.045)
+	local sy = hb + top * 0.52
+	B.stripeY = sy
 	if d.rainbowStripe then
-		-- Secret: a rainbow band in segments along the shoe (the toe round in its own colour)
+		-- Secret: a rainbow band in segments along the shoe (the round ends in their own colours)
 		local sw = w + 0.026
-		local zc = zt - 0.013 + sw / 2
-		B:cyl('StripeRainbow', sh, sw, V(xc, sy, zc), RAINBOW[(d.rainbowOffset or 0) % #RAINBOW + 1], 'neon', 'y')
-		local n = 3
-		for i = 1, n do
-			local z0 = zc + (zh + 0.013 - zc) * (i - 1) / n
-			local z1 = zc + (zh + 0.013 - zc) * i / n
-			B:box('StripeRainbow', V(sw + (i % 2) * 0.004, sh + (i % 2) * 0.003, z1 - z0), V(xc, sy, (z0 + z1) / 2), RAINBOW[(i + (d.rainbowOffset or 0)) % #RAINBOW + 1], 'neon')
+		local r = sw / 2
+		local z0, z1 = zt - 0.013 + r, zh + 0.013 - r
+		local o = d.rainbowOffset or 0
+		z1 = zh + 0.013
+		B:cyl('StripeRainbow', sh, sw, V(xc, sy, z0), RAINBOW[o % #RAINBOW + 1], 'neon', 'y')
+		for i = 1, 3 do
+			local a, b = z0 + (z1 - z0) * (i - 1) / 3, z0 + (z1 - z0) * i / 3
+			B:box('StripeRainbow', V(sw + (i % 2) * 0.004, sh + (i % 2) * 0.004, b - a), V(xc, sy, (a + b) / 2), RAINBOW[(o + i) % #RAINBOW + 1], 'neon')
 		end
 	else
-		stadium(B, 'Stripe', w + 0.026, sh, xc, sy, zt - 0.013, zh + 0.013, d.stripe, d.stripeKind or (d.rarity >= 3 and 'neon' or 'smooth'))
+		pill(B, 'Stripe', w + 0.026, sh, xc, sy, zt - 0.013, zh + 0.013, d.stripe, d.stripeKind or (d.rarity >= 3 and 'neon' or 'smooth'))
 	end
 	if d.stripe2 then
-		stadium(B, 'Stripe2', w + 0.012, 0.03, xc, hb + 0.03, zt - 0.006, zh + 0.006, d.stripe2, d.stripe2Kind or 'smooth')
+		pill(B, 'Stripe2', w + 0.04, 0.035, xc, hb, zt - 0.02, zh + 0.02, d.stripe2, d.stripe2Kind or 'neon')
+	end
+	-- Legendary+: a glass air bubble over the stripe at the outer heel (the neon shows through it)
+	if d.rarity >= 4 and d.air ~= false then
+		B:egg('AirBubble', V(0.1, math.min(top * 0.72, 0.2), 0.46), V(x1 + 0.006, sy, 0.3), d.airColor or C(235, 248, 255), 'glass')
 	end
 end
 
--- Toe cap, toe box and the laces. In plan the toe is round: a white rubber cap disc, then the coloured toe box, a disc
--- tipped forward so it slopes from the cap up into the ankle. The laces sit on one inclined panel in front of the
--- shin (eyestays either side, a strip of tongue between), crossing over it like a real high-top.
+-- Toe: a puffy dome from the sole up to the laces, and the rubber toe cap round its front.
+local function buildToe(B, d, U)
+	local XC = L.XC
+	local w = L.XO - L.XI
+	-- (its bottom stays just above the ground: the lower half hides in the sole, the equator bulges over its edge)
+	local y0, y1 = 0.02, U + 0.42
+	B:egg('ToeBox', V(w + 0.012, y1 - y0, 1.22), V(XC, (y0 + y1) / 2, -0.49), d.toeBox or d.upper, d.toeBoxKind or d.upperKind)
+	B:egg('ToeCap', V(w + 0.05, 0.46, 0.68), V(XC, U - 0.01, -0.79), d.toe, d.toeKind)
+end
+
+-- The laces sit on one inclined panel in front of the shin (eyestays either side, a strip of tongue between), three fat
+-- laces crossing it in a zigzag with metal eyelets; the tongue stands up above it, rounded on top, with a label.
 local function buildFront(B, d, U)
 	local XC = L.XC
-	B:cyl('ToeCap', 0.28, 1.12, V(XC, U + 0.1, L.ZT + 0.025 + 0.56), d.toe, d.toeKind, 'y')
-	local tilt = rad(24)
-	local tb = CF(XC, U + 0.33, -0.43) * ANG(-tilt, 0, 0)
-	B:add('Part', 'Cylinder', 'ToeBox', V(0.16, 1.02, 1.02), tb * AXIS.y, d.toeBox or d.upper, d.upperKind)
-	-- slope frame on the toe box's top: local Z up the slope, local Y its normal
-	local S = tb * CF(0, 0.08, 0)
-	B.slope, B.slopeLen = S * CF(0, 0, -0.42), 0.42
 	local ey = d.eyestay or dark(d.upper, 0.14)
 	local ek, lk = d.upperKind, d.laceKind
-	-- the lace panel (shaft): one inclined panel from the toe box up to the collar, in front of the shin. Eyestays
-	-- either side, a strip of tongue between them, laces crossing over it; the tongue stands up above it.
-	local lean = rad(27)
-	local F0 = CF(XC, U + 0.27, -0.745) * ANG(lean, 0, 0) -- local Y up the panel, local -Z out of it
-	local plen = 0.47
+	local lean = rad(32)
+	local F0 = CF(XC, U + 0.24, -0.8) * ANG(lean, 0, 0) -- local Y up the panel, local -Z out of it
+	local plen = 0.46
 	B.lacePanel, B.lacePanelLen = F0, plen
-	local hx = 0.27
+	-- (kept for older accents: a frame on the toe's slope)
+	B.slope, B.slopeLen = CF(XC, U + 0.36, -0.62) * ANG(rad(-20), 0, 0), 0.3
+	local hx = 0.25
 	B:onShaft(function()
 		for _, sx in { -1, 1 } do
-			local c = F0 * CF(sx * 0.255, plen / 2, -0.02)
+			local c = F0 * CF(sx * 0.25, plen / 2, -0.02)
 			B:box('Eyestay', V(0.15, plen, 0.1), c.Position, ey, ek, c.Rotation)
 		end
+		-- the strip of tongue the laces cross: a contrasting tone so the laces read
 		local c = F0 * CF(0, plen / 2, -0.005)
-		B:box('TongueStrip', V(0.37, plen, 0.08), c.Position, d.tongue or d.upper, d.tongueKind or d.upperKind, c.Rotation)
-		-- the tongue: stands up from behind the panel's top, past the collar
-		local tcf = CF(XC, U + 0.76, -0.59) * ANG(rad(-6), 0, 0)
-		B:box('Tongue', V(0.46, 0.56, 0.09), tcf.Position, d.tongue or d.upper, d.tongueKind or d.upperKind, tcf.Rotation)
-		local lcf = tcf * CF(0, 0.15, -0.05)
-		B.tongueFront = tcf * CF(0, 0, -0.045)
+		local strip = d.laceBed or d.tongue or d.upper
+		if math.abs(lum(strip) - lum(d.lace)) < 0.28 then strip = lum(d.lace) > 0.5 and dark(strip, 0.32) or light(strip, 0.5) end
+		B:box('TongueStrip', V(0.36, plen, 0.08), c.Position, strip, 'smooth', c.Rotation)
+		-- the tongue: stands up from behind the panel's top, past the collar, rounded on top
+		local tcf = CF(XC, U + 0.6, -0.6) * ANG(rad(-12), 0, 0)
+		B:box('Tongue', V(0.5, 0.5, 0.1), tcf.Position, d.tongue or d.upper, d.tongueKind or d.upperKind, tcf.Rotation)
+		B:cyl('TongueTop', 0.5, 0.1, (tcf * CF(0, 0.25, 0)).Position, d.tongue or d.upper, d.tongueKind or d.upperKind, tcf.Rotation)
+		B.tongueFront = tcf * CF(0, 0, -0.05)
 		if d.tongueLabel ~= false then
-			B:box('TongueLabel', V(0.3, 0.14, 0.02), lcf.Position, d.tongueLabel or d.collar, d.tongueLabelKind or 'smooth', lcf.Rotation)
+			local lcf = tcf * CF(0, 0.13, -0.055)
+			B:box('TongueLabel', V(0.32, 0.15, 0.02), lcf.Position, d.tongueLabel or d.collar, d.tongueLabelKind or 'smooth', lcf.Rotation)
 		end
-		-- laces: three eyelet rows, crossed bars between them, a straight bar on top
-		local rows = { plen * 0.2, plen * 0.52, plen * 0.84 }
-		for i = 1, #rows - 1 do
+		-- laces: fat round cords crossing in two X's up the panel, a straight one on top with a bow (two loops) and
+		-- metal eyelets at its ends
+		local rows = { plen * 0.1, plen * 0.46, plen * 0.82 }
+		for i = 1, 2 do
 			local y0, y1 = rows[i], rows[i + 1]
-			local ds = y1 - y0
-			local l = math.sqrt((2 * hx) ^ 2 + ds * ds) + 0.07
-			local a = math.atan2(ds, 2 * hx)
+			local dy = y1 - y0
+			local len = math.sqrt((2 * hx) ^ 2 + dy * dy) + 0.06
+			local a = math.atan2(dy, 2 * hx)
 			for j, sgn in { 1, -1 } do
-				local cf = F0 * CF(0, (y0 + y1) / 2, -0.095 - (j - 1) * 0.016) * ANG(0, 0, sgn * a)
-				B:box('Lace', V(l, 0.11, 0.045), cf.Position, d.lace, lk, cf.Rotation)
+				local cf = F0 * CF(0, (y0 + y1) / 2, -0.1 - (j - 1) * 0.03) * ANG(0, 0, sgn * a)
+				B:cyl('Lace', len, 0.1, cf.Position, d.lace, lk, cf.Rotation)
 			end
 		end
-		local cf = F0 * CF(0, rows[#rows], -0.103)
-		B:box('Lace', V(2 * hx + 0.1, 0.11, 0.045), cf.Position, d.lace, lk, cf.Rotation)
-		for _, y in rows do
-			for _, sx in { -1, 1 } do
-				B:ball('Eyelet', 0.095, (F0 * CF(sx * hx, y, -0.075)).Position, d.eyelet, d.eyeletKind or 'metal')
-			end
+		local top = F0 * CF(0, rows[3], -0.115)
+		B:cyl('Lace', 2 * hx + 0.1, 0.11, top.Position, d.lace, lk, top.Rotation)
+		for _, sx in { -1, 1 } do
+			B:ball('Eyelet', 0.1, (F0 * CF(sx * hx, rows[3], -0.075)).Position, d.eyelet, d.eyeletKind or 'metal')
+		end
+		for _, sx in { -1, 1 } do
+			local bcf = F0 * CF(sx * 0.13, rows[3] + 0.04, -0.16) * ANG(0, 0, sx * rad(28))
+			B:egg('LaceBow', V(0.28, 0.15, 0.07), bcf.Position, d.lace, lk, bcf.Rotation)
 		end
 	end)
 end
 
--- Quarter panel and rounded heel counter (foot); the ankle panel, padded collar, lining and heel tab (shaft). The
--- collar is tipped strongly (high at the heel, low at the front) so the upper's top line falls from the heel to the
--- tongue: the classic high-top silhouette, with the shin coming out of the opening.
+-- Quarter round at the heel (foot), a padded heel cap, the side flash; the ankle panel, padded collar, lining and heel
+-- tab (shaft). The collar is tipped (high at the heel, low at the front) so the upper's top line falls from the heel to
+-- the tongue: the classic high-top silhouette, with the shin coming out of the opening.
 L.TILT = -7
-L.COLLAR_Y = 0.86 -- collar centre height above the sole top (at the opening's middle)
+L.COLLAR_Y = 0.64 -- collar centre height above the sole top (at the opening's middle): a chunky mid-top
 local function buildUpper(B, d, U)
 	local XI, XO, XC = L.XI, L.XO, L.XC
-	-- quarter: the low body round the foot
-	B:box('Quarter', V(XO - XI, 0.42, 1.12), V(XC, U + 0.21, -0.06), d.upper, d.upperKind)
-	-- heel counter: the back panel, its own tone
-	B:box('HeelCounter', V(XO - XI + 0.014, 0.46, 0.17), V(XC, U + 0.23, 0.56), d.heel or dark(d.upper, 0.22), d.heelKind or d.upperKind)
+	local w = XO - XI
+	-- quarter: the low body round the foot (its front just ahead of the shin's, under the toe dome; its back under
+	-- the heel cap, still behind the foot's heel)
+	local qh, qy = 0.44, U - 0.02
+	local q0, q1 = -0.53, L.ZH - 0.12
+	B:box('Quarter', V(w, qh, q1 - q0), V(XC, qy + qh / 2, (q0 + q1) / 2), d.upper, d.upperKind)
+	-- heel cap: a padded dome of its own tone over the back
+	local hc = { V(w + 0.05, 0.62, 0.64), V(XC, U + 0.18, L.ZH - 0.28) }
+	B.heelCap = hc
+	B:egg('HeelCounter', hc[1], hc[2], d.heel or dark(d.upper, 0.22), d.heelKind or d.upperKind)
+	-- the side flash: a tapered stripe sweeping up from the heel toward the toe on the outer side
+	if d.flash ~= false then
+		local fcf = CF(XO + 0.012, U + 0.13, -0.12) * ANG(rad(11), 0, 0)
+		B:wedge('Flash', V(0.04, 0.19, 0.84), fcf.Position, d.flash, d.flashKind or 'smooth', fcf.Rotation)
+	end
 	-- the collar frame: tipped about the opening's middle
 	local cy = U + L.COLLAR_Y
 	local pivot = V(0, cy, 0.035)
@@ -274,36 +320,35 @@ local function buildUpper(B, d, U)
 		local yfloor = cy + (zb0 - pivot.Z) * slope - 0.1
 		local ybot = U + 0.26
 		B:box('Ankle', V(ax1 - ax0, yfloor - ybot, depth), V((ax0 + ax1) / 2, (yfloor + ybot) / 2, zc), ac, ak)
+		-- the outer side swells into a soft pillow (the cartoon look; logos and prints sit on its surface, sideX)
+		local e = { cx = ax1 + 0.1 - 0.32, cy = U + 0.4, cz = zc, a = 0.32, b = 0.27, c = 0.58 }
+		B.side = e
+		B:egg('AnkleSide', V(2 * e.a, 2 * e.b, 2 * e.c), V(e.cx, e.cy, e.cz), d.ankleSide or ac, d.ankleSideKind or ak)
 		local rise = slope * depth + 0.06
 		B:wedge('AnkleWall', V(ax1 - 0.5, rise, depth), V((ax1 + 0.5) / 2, yfloor + rise / 2, zc), ac, ak)
 		B:wedge('AnkleWall', V(0.09, rise, depth), V(ax0 + 0.045, yfloor + rise / 2, zc), ac, ak)
 		B:box('AnkleBack', V(ax1 - ax0 - 0.002, rise + 0.02, zb1 - 0.5), V((ax0 + ax1) / 2, yfloor + (rise + 0.02) / 2, (zb1 + 0.5) / 2), ac, ak)
 		-- lining: the floor of the hollow, dark (inside the shin when worn)
-		B:box('Lining', V(0.9, 0.02, 0.96), V(0.0, yfloor + 0.01, 0.03), d.lining or C(70, 74, 88), 'smooth')
-		-- padded collar: fat tubes and corner balls round the opening (the shin is x, z in -0.5..0.5). The front tube
-		-- is thinner (the tongue stands in front of it); the inner tube sits half in the shin so it never pokes into
-		-- the other shoe.
-		local cd = 0.3
-		local xo = 0.52 -- outer tube: centred just outside the shin's face, half of it hugging the shin when worn
-		local zz = 0.515
-		local zf = -0.53
-		local xi = -0.41 -- inner tube: thinner, inside the shin, never into the other shoe
+		B:box('Lining', V(0.9, 0.02, 0.96), V(0.0, yfloor + 0.01, 0.03), d.lining, 'smooth')
+		-- padded collar: a fat pillow round the back, tubes down the sides and across the front, balls at the front
+		-- corners. The inner tube sits half in the shin so it never pokes into the other shoe.
+		local xo, xi = 0.53, -0.41
+		local zz, zf = 0.52, -0.53
 		local col, ck = d.collar, d.collarKind
 		local function tube(name, len, dia, x, y, z, axis)
 			B:add('Part', 'Cylinder', name, V(len, dia, dia), at(x, y, z) * AXIS[axis], col, ck)
 		end
+		B:add('Part', 'Block', 'Collar', V(xo - xi + 0.36, 0.4, 0.4), at((xo + xi) / 2, cy + 0.01, zz), col, ck, { mesh = 'Sphere' })
+		tube('Collar', zz - zf, 0.3, xo, cy, (zz + zf) / 2, 'z')
+		tube('Collar', zz - zf, 0.2, xi, cy - 0.04, (zz + zf) / 2, 'z')
 		tube('Collar', xo - xi, 0.22, (xo + xi) / 2, cy - 0.03, zf, 'x')
-		tube('Collar', xo - xi, cd, (xo + xi) / 2, cy, zz, 'x')
-		tube('Collar', zz - zf, cd, xo, cy, (zz + zf) / 2, 'z')
-		tube('Collar', zz - zf, 0.18, xi, cy - 0.04, (zz + zf) / 2, 'z')
-		for _, p in { V(xo, cy - 0.01, zf), V(xo, cy, zz), V(xi, cy - 0.03, zf), V(xi, cy - 0.01, zz) } do
-			B:ball('CollarCorner', (p.X > 0 and p.Z > 0) and cd or 0.24, at(p.X, p.Y, p.Z).Position, col, ck)
-		end
+		B:ball('CollarCorner', 0.3, at(xo, cy - 0.01, zf).Position, col, ck)
+		B:ball('CollarCorner', 0.24, at(xi, cy - 0.03, zf).Position, col, ck)
 		-- heel tab: a little loop standing up at the back of the collar
 		local tab = d.tab or d.collar
-		local hcf = at(XC, cy + 0.17, zz + 0.1)
-		B:box('HeelTab', V(0.2, 0.22, 0.045), hcf.Position, tab, d.tabKind, hcf.Rotation)
-		B:box('HeelTabHole', V(0.1, 0.08, 0.055), (hcf * CF(0, 0.04, 0)).Position, dark(tab, 0.45), 'smooth', hcf.Rotation)
+		local hcf = at(XC, cy + 0.2, zz + 0.12)
+		B:box('HeelTab', V(0.22, 0.24, 0.05), hcf.Position, tab, d.tabKind, hcf.Rotation)
+		B:box('HeelTabHole', V(0.11, 0.09, 0.06), (hcf * CF(0, 0.04, 0)).Position, dark(tab, 0.45), 'smooth', hcf.Rotation)
 		B.collarY, B.collarZ = cy, zz
 		B.collarBack = at(XC, cy, zz)
 		B.collarAt = at
@@ -313,24 +358,34 @@ local function buildUpper(B, d, U)
 end
 
 ---------------------------------------------------------------------------------------------- accents
--- Side face of the ankle panel (outer, x = +side), the "canvas" for logos and prints.
+-- Side face of the ankle panel (outer, x = +side), the "canvas" for logos and prints. Its middle swells into the
+-- AnkleSide pillow: sideX(y, z) is the outer surface there (the flat face where the pillow sinks in).
 local SIDE_X = L.XO + 0.016
+local CUR -- the builder whose shoe is being decorated (recipe sets it)
+local function sideX(y, z)
+	local e = CUR and CUR.side
+	if not e then return SIDE_X end
+	local dy, dz = (y - e.cy) / e.b, (z - e.cz) / e.c
+	local q = 1 - dy * dy - dz * dz
+	return q > 0 and math.max(SIDE_X, e.cx + e.a * math.sqrt(q)) or SIDE_X
+end
+ShoeModels.sideX = sideX
 local A = {}
 ShoeModels.Accents = A
 -- Frame on the outer side face at (y, z): x out of the face, rotation about X tilts within the face.
 local function sideCF(y, z, out, tilt)
-	return CF(SIDE_X + (out or 0.02), y, z) * ANG(rad(tilt or 0), 0, 0)
+	return CF(sideX(y, z) + (out or 0.02), y, z) * ANG(rad(tilt or 0), 0, 0)
 end
 -- A flat disc on the side face.
 local function sideDisc(B, name, d, y, z, color, kind, out, thick)
-	return B:cyl(name, thick or 0.035, d, V(SIDE_X + (out or 0.018), y, z), color, kind, 'x')
+	return B:cyl(name, thick or 0.035, d, V(sideX(y, z) + (out or 0.018), y, z), color, kind, 'x')
 end
 
 -- "+1" glyph on the side face, centred at (y, z), height h. Reads left to right from outside on both shoes.
 function A.plusOne(B, y, z, h, color, kind, out)
 	local t = h * 0.22
 	local text = { face = 'x', centre = V(0, y, z) }
-	local x = SIDE_X + (out or 0.04)
+	local x = sideX(y, z) + (out or 0.04)
 	-- '+' on the left (toward the heel on the right shoe = screen-left from outside)
 	local pz = z + h * 0.36
 	B:box('GlyphPlus', V(0.03, t, h * 0.62), V(x, y, pz), color, kind, nil, { text = text })
@@ -368,7 +423,7 @@ function A.logo(B, d)
 			if lg.glyph == 'plus1' then
 				A.plusOne(B, y, z, 0.17, lg.glyphColor or K.white, 'smooth', 0.042)
 			elseif lg.glyph == 'plus' then
-				local x = SIDE_X + 0.04
+				local x = sideX(y, z) + 0.04
 				B:box('GlyphPlus', V(0.03, 0.05, 0.18), V(x, y, z), lg.glyphColor or K.white)
 				B:box('GlyphPlus', V(0.032, 0.18, 0.05), V(x, y, z), lg.glyphColor or K.white)
 			elseif lg.glyph == 'dot' then
@@ -417,7 +472,7 @@ function A.zigzag(B, y, z, len, color, kind, out)
 	for i = 1, n do
 		local zc = z + len / 2 - seg * (i - 0.5)
 		local up = (i % 2 == 0) and 1 or -1
-		B:box('Zigzag', V(0.03, 0.06, seg * 1.25), V(SIDE_X + (out or 0.02), y, zc), color, kind, ANG(rad(up * 35), 0, 0))
+		B:box('Zigzag', V(0.03, 0.06, seg * 1.25), V(sideX(y, zc) + (out or 0.02), y, zc), color, kind, ANG(rad(up * 35), 0, 0))
 	end
 end
 -- A chunky five-point star: a centre disc and five 90-degree points. `cf` = centre on a face, X = face normal.
@@ -475,8 +530,8 @@ function A.wave(B, y, z, len, color, kind)
 	local seg = len / n
 	for i = 1, n do
 		local zc = z + len / 2 - seg * (i - 0.5)
-		B:box('Wave', V(0.03, 0.07, seg * 0.62), V(SIDE_X + 0.02, y + 0.04, zc + seg * 0.18), color, kind, ANG(rad(28), 0, 0))
-		B:box('Wave', V(0.031, 0.07, seg * 0.55), V(SIDE_X + 0.021, y + 0.04, zc - seg * 0.24), color, kind, ANG(rad(-38), 0, 0))
+		B:box('Wave', V(0.03, 0.07, seg * 0.62), V(sideX(y + 0.04, zc + seg * 0.18) + 0.02, y + 0.04, zc + seg * 0.18), color, kind, ANG(rad(28), 0, 0))
+		B:box('Wave', V(0.031, 0.07, seg * 0.55), V(sideX(y + 0.04, zc - seg * 0.24) + 0.021, y + 0.04, zc - seg * 0.24), color, kind, ANG(rad(-38), 0, 0))
 	end
 end
 -- Flame on a face: tongues of two colours (outer and core), each a disc with a diamond point.
@@ -507,56 +562,62 @@ function A.checker(B, d, a, b)
 		for i = 0, 3 do
 			for j = 0, 1 do
 				if (i + j) % 2 == 0 then
-					B:box('Check', V(0.03, s, s), V(SIDE_X + 0.012, U + 0.38 + j * s, 0.56 - i * s - s / 2), b)
+					local y, z = U + 0.38 + j * s, 0.56 - i * s - s / 2
+					B:box('Check', V(0.03, s, s), V(sideX(y, z) + 0.006, y, z), b)
 				end
 			end
 		end
 	end)
 end
 -- Drips hanging from the collar on the outer side and the back (paint, slime, frosting).
-function A.drips(B, d, color, kind, n, long)
+function A.drips(B, d, color, kind, n, long, colors)
 	B:onShaft(function()
 		local spots = { { 'side', 0.32, 0.36 }, { 'side', -0.08, 0.5 }, { 'side', -0.38, 0.28 }, { 'back', 0.28, 0.42 }, { 'back', -0.18, 0.3 } }
 		for i = 1, math.min(n or 3, #spots) do
 			local s = spots[i]
 			local h = s[3] * (long or 1)
+			local c = colors and colors[(i - 1) % #colors + 1] or color
 			if s[1] == 'side' then
-				local x = SIDE_X + 0.03
 				local y0 = B.cat(0.6, -0.06, s[2]).Y
-				B:box('Drip', V(0.045, h, 0.1), V(x, y0 - h / 2, s[2]), color, kind)
-				B:ball('DripEnd', 0.14, V(x - 0.012, y0 - h, s[2]), color, kind)
+				local x = math.max(sideX(y0 - h * 0.5, s[2]), sideX(y0 - h, s[2]), sideX(B.side and B.side.cy or y0, s[2])) + 0.03
+				B:box('Drip', V(0.045, h, 0.1), V(x, y0 - h / 2, s[2]), c, kind)
+				B:ball('DripEnd', 0.14, V(x - 0.012, y0 - h, s[2]), c, kind)
 			else
+				-- down the back of the shaft, ending above the heel cap
 				local z = 0.648
 				local y0 = B.cat(0, -0.06, 0.6).Y
-				B:box('Drip', V(0.1, h, 0.045), V(L.XC + s[2], y0 - h / 2, z), color, kind)
-				B:ball('DripEnd', 0.14, V(L.XC + s[2], y0 - h, z - 0.012), color, kind)
+				h = math.max(0.12, math.min(h, y0 - (B.U + 0.48)))
+				B:box('Drip', V(0.1, h, 0.045), V(L.XC + s[2], y0 - h / 2, z), c, kind)
+				B:ball('DripEnd', 0.14, V(L.XC + s[2], y0 - h, z - 0.012), c, kind)
 			end
 		end
 	end)
 end
--- Wings on the outer side of the ankle, fanning up and back: a round covert at the root and four broad feathers with
--- round tips, overlapping like a cartoon wing. style 'ice' gives square tips (icicles), 'flame' pointed ones.
+-- Wings on the outer side of the ankle, fanning up and back: a round covert at the root and four broad rounded
+-- feathers (ellipsoids), overlapping like a cartoon wing. style 'ice' gives straight square feathers (icicles),
+-- 'flame' adds a pointed tip to each.
 function A.wings(B, d, color, color2, kind, scale, style)
 	B:onShaft(function()
 		local k = scale or 1
 		local root = CF(B.cat(0.72, -0.06, 0.26)) * ANG(0, rad(62), 0)
-		B:cyl('WingRoot', 0.07, 0.56 * k, (root * CF(0.03, 0.06, 0.1)).Position, color2 or color, kind, root.Rotation)
-		local feathers = { { 0.92, 18 }, { 0.88, 33 }, { 0.78, 48 }, { 0.64, 63 } }
-		local w = 0.3 * k
+		B:egg('WingRoot', V(0.12, 0.44 * k, 0.5 * k), (root * CF(0.03, 0.04, 0.12)).Position, color2 or color, kind, root.Rotation)
+		local feathers = { { 1.0, 16 }, { 0.92, 34 }, { 0.8, 52 }, { 0.64, 70 } }
+		local w = 0.32 * k
 		for i, f in feathers do
 			local len = f[1] * k
 			local fcf = root * ANG(rad(-f[2]), 0, 0)
 			local c = (i % 2 == 0 and color2) or color
-			local x = 0.012 * i
-			local body = fcf * CF(x, 0, len / 2)
-			B:box('Feather', V(0.05, w, len), body.Position, c, kind, body.Rotation)
-			local tip = fcf * CF(x, 0, len)
+			local x = 0.014 * i
+			local body = fcf * CF(x, 0, len / 2 + 0.04)
+			if style == 'ice' then
+				B:box('Feather', V(0.05, w * 0.8, len), body.Position, c, kind, body.Rotation)
+			else
+				B:egg('Feather', V(0.06, w, len + 0.12), body.Position, c, kind, body.Rotation)
+			end
 			if style == 'flame' then
 				-- a pointed tip: one wedge whose slope runs out to the point
-				local t = tip * CF(0, 0, w * 0.6) * ANG(rad(90), 0, 0)
-				B:wedge('FeatherTip', V(0.05, w * 1.2, w), t.Position, c, kind, t.Rotation)
-			elseif style ~= 'ice' then
-				B:cyl('FeatherTip', 0.05, w, tip.Position, c, kind, tip.Rotation)
+				local t = fcf * CF(x, 0, len + 0.04 + w * 0.5) * ANG(rad(90), 0, 0)
+				B:wedge('FeatherTip', V(0.05, w * 1.0, w * 0.8), t.Position, c, kind, t.Rotation)
 			end
 		end
 	end)
@@ -612,24 +673,32 @@ function A.speckles(B, d, list, kind)
 end
 -- A heel strip (glows from Legendary): a vertical band down the back of the heel counter, seen from the camera.
 function A.heelStrip(B, d, color, kind)
-	B:box('HeelStrip', V(0.12, 0.42, 0.02), V(L.XC, B.U + 0.25, 0.655), color, kind or 'neon')
+	-- a narrow dome over the heel cap's own: it shows as a band down the back of the cap
+	local hc = B.heelCap
+	B:egg('HeelStrip', V(0.15, hc[1].Y + 0.012, hc[1].Z + 0.03), hc[2], color, kind or 'neon')
 end
 -- Rainbow stripes round the ankle panel (Secret): two segments on the outer side and one across the back. 3 parts.
 function A.rainbowBand(B, d, y, offset)
 	B:onShaft(function()
 		local o = offset or 0
-		for i = 1, 2 do
-			local z1 = 0.62 - (i - 1) * 0.56
-			B:box('RainbowBand', V(0.03, 0.07, 0.56), V(SIDE_X + 0.012, B.U + y, z1 - 0.28), RAINBOW[(i + o - 1) % #RAINBOW + 1], 'neon')
+		local e = B.side
+		local yb = B.U + y
+		if e then
+			-- a thin slice of the side pillow, a touch proud of it: a band hugging its curve
+			local f = math.sqrt(math.max(0.05, 1 - ((yb - e.cy) / e.b) ^ 2))
+			B:egg('RainbowBand', V(2 * (e.a * f + 0.014), 0.075, 2 * (e.c * f + 0.014)), V(e.cx, yb, e.cz), RAINBOW[o % #RAINBOW + 1], 'neon')
 		end
+		B:box('RainbowBand', V(1.0, 0.07, 0.03), V(L.XC - 0.05, yb, 0.643), RAINBOW[(o + 2) % #RAINBOW + 1], 'neon')
 		B:box('RainbowBand', V(1.15, 0.07, 0.03), V(L.XC + 0.01, B.U + y, 0.643), RAINBOW[(o + 2) % #RAINBOW + 1], 'neon')
 	end)
 end
 -- Toe badge: a motif on the vamp/toe box front (mock-ups put stars, drops, crowns, gems on the toe).
 function A.toeBadge(B, d, kind, color, mat, size)
 	-- a badge on the front of the rubber toe cap: X = out of the toe (-Z), Y = up
-	local p = V(L.XC, B.U + 0.12, L.ZT + 0.025 - 0.012)
-	local cf = CFrame.fromMatrix(p, V(0, 0, -1), V(0, 1, 0), V(1, 0, 0))
+	-- (leaning back 25 degrees, following the toe's dome)
+	local a = rad(25)
+	local p = V(L.XC, B.U + 0.06, L.ZT - 0.03)
+	local cf = CFrame.fromMatrix(p, V(0, math.sin(a), -math.cos(a)), V(0, math.cos(a), math.sin(a)), V(1, 0, 0))
 	size = math.min(size or 0.26, 0.28)
 	local s = size or 0.3
 	if kind == 'star' then A.star(B, cf, s, color, mat)
@@ -785,7 +854,7 @@ def('Glacier', { Name = 'Glacier', Box = 'Frost', rarity = 4,
 	tongueLabel = K.snow,
 	deco = function(B, d)
 		A.crystals(B, d, C(190, 235, 255), 'ice', 4, 0.9)
-		B:onShaft(function() B:box('IcePanel', V(0.03, 0.3, 0.52), V(SIDE_X + 0.016, B.U + 0.4, 0.1), C(190, 235, 255), 'ice') end)
+		B:onShaft(function() B:box('IcePanel', V(0.03, 0.3, 0.52), V(sideX(B.U + 0.48, 0.1) + 0.006, B.U + 0.44, 0.1), C(190, 235, 255), 'ice') end)
 		A.heelStrip(B, d, C(200, 240, 255))
 	end,
 })
@@ -1001,8 +1070,8 @@ def('Pearl', { Name = 'Pearl', Box = 'Ocean', rarity = 4,
 		B:cyl('PearlCup', 0.08, 0.34, p - V(0, 0.08, 0), K.gold, 'gold', 'y')
 		B:ball('Pearl', 0.3, p + V(0, 0.06, 0), C(255, 220, 236), 'gloss')
 		B:onShaft(function()
-			B:ball('Bubble', 0.16, V(SIDE_X + 0.05, B.U + 0.5, 0.2), C(200, 245, 255), 'glass')
-			B:ball('Bubble', 0.1, V(SIDE_X + 0.05, B.U + 0.3, -0.05), C(200, 245, 255), 'glass')
+			B:ball('Bubble', 0.16, V(sideX(B.U + 0.5, 0.2) + 0.05, B.U + 0.5, 0.2), C(200, 245, 255), 'glass')
+			B:ball('Bubble', 0.1, V(sideX(B.U + 0.3, -0.05) + 0.04, B.U + 0.3, -0.05), C(200, 245, 255), 'glass')
 		end)
 		A.heelStrip(B, d, C(150, 240, 255))
 	end,
@@ -1216,7 +1285,8 @@ def('PlusOneInfinity', { Name = '+1 Infinity', Box = 'Gold', rarity = 6,
 })
 
 -- Robux boxes (brief 21) ---------------------------------------------------------------------------------------------
--- Their own list, so Ids stays the 60 Cash-box shoes box by box.
+-- Their own list, so Ids stays the 60 Cash-box shoes box by box. (brief 24) Premium finishes no Cash shoe wears, from
+-- Rare up: mirror chrome, smooth gold, gems and hologram glass, glowing (neon) laces, flashes and stripes.
 local EXCLUSIVE = {}
 local function xdef(id, t)
 	t.Id = id
@@ -1224,99 +1294,105 @@ local function xdef(id, t)
 	table.insert(EXCLUSIVE, id)
 end
 local ICE, PINKGLOW = C(90, 230, 255), C(255, 140, 220)
+local CHROME, CHROME2, NAVY = C(196, 204, 220), C(158, 168, 188), C(40, 44, 62)
 -- Exclusive Box: chrome, midnight, rainbow and hologram, ice-blue light.
 xdef('SilverStreak', { Name = 'Silver Streak', Box = 'Exclusive', rarity = 2,
-	upper = C(214, 222, 234), ankle = C(196, 206, 222), heel = C(40, 44, 62), collar = C(40, 44, 62), tongue = C(224, 230, 242), tab = ICE,
-	upperKind = 'metal', base = C(40, 44, 62), stripe = ICE, logo = { kind = 'bolt', color = ICE, mat = 'neon' }, tongueLabel = ICE,
+	upper = CHROME, ankle = CHROME2, upperKind = 'chrome', heel = NAVY, heelKind = 'gloss', collar = NAVY, tongue = NAVY, tab = ICE,
+	lace = C(236, 250, 255), laceKind = 'gloss', eyelet = ICE, eyeletKind = 'neon', base = NAVY, stripe = ICE, stripeKind = 'neon', flash = ICE, flashKind = 'neon',
+	toe = NAVY, logo = { kind = 'bolt', color = ICE, mat = 'neon' }, tongueLabel = ICE, tongueLabelKind = 'neon',
 })
 xdef('MidnightChrome', { Name = 'Midnight Chrome', Box = 'Exclusive', rarity = 3,
-	upper = C(34, 36, 54), ankle = C(28, 30, 46), heel = C(204, 212, 226), collar = C(28, 30, 46), tongue = C(34, 36, 54), upperKind = 'gloss',
-	lace = ICE, toe = C(204, 212, 226), toeKind = 'metal', sole = C(204, 210, 224), base = C(28, 30, 46), stripe = ICE, tab = ICE,
-	tongueLabel = ICE,
+	upper = C(34, 36, 56), ankle = C(28, 30, 48), heel = CHROME, heelKind = 'chrome', collar = C(28, 30, 48), tongue = C(34, 36, 56), upperKind = 'gloss',
+	lace = ICE, laceKind = 'gloss', toe = CHROME, toeKind = 'chrome', sole = CHROME2, soleKind = 'chrome', base = C(28, 30, 46), stripe = ICE, tab = ICE,
+	flash = ICE, flashKind = 'neon', eyelet = CHROME, eyeletKind = 'chrome', tongueLabel = ICE, tongueLabelKind = 'neon',
 	deco = function(B, d)
-		B:onShaft(function() A.zigzag(B, B.U + 0.42, 0.06, 0.8, ICE, 'neon') end)
+		B:onShaft(function() A.zigzag(B, B.U + 0.4, 0.06, 0.8, ICE, 'neon') end)
 		A.toeBadge(B, d, 'sparkle', ICE, 'neon', 0.28)
 	end,
 })
 xdef('RainbowDrip', { Name = 'Rainbow Drip', Box = 'Exclusive', rarity = 4, fx = { tex = 'sparkle', colors = { C(255, 120, 200), C(120, 220, 255), C(255, 236, 120) } },
-	upper = C(246, 246, 250), ankle = C(236, 238, 244), heel = C(255, 90, 160), collar = C(255, 90, 160), tongue = C(246, 246, 250), upperKind = 'gloss',
-	rainbowLaces = true, rainbowStripe = true, sole = K.snow, base = C(80, 200, 255), toe = C(80, 200, 255), tongueLabel = C(255, 90, 160),
+	upper = C(248, 248, 252), ankle = C(238, 240, 246), heel = C(80, 200, 255), collar = C(255, 90, 160), tongue = C(248, 248, 252), upperKind = 'gloss',
+	rainbowLaces = true, rainbowStripe = true, sole = K.snow, base = C(80, 200, 255), toe = C(80, 200, 255), flash = C(255, 90, 160), flashKind = 'neon',
+	eyelet = CHROME, eyeletKind = 'chrome', tongueLabel = C(255, 90, 160),
 	deco = function(B, d)
-		A.drips(B, d, C(255, 90, 160), 'gloss', 3, 1.1)
-		A.speckles(B, d, { { 0.5, 0.25, 0.07, RAINBOW[1], 45 }, { 0.36, -0.05, 0.07, RAINBOW[3], 45 }, { 0.22, 0.3, 0.06, RAINBOW[4], 45 },
-			{ 0.46, -0.35, 0.06, RAINBOW[5], 45 }, { 0.26, -0.25, 0.06, RAINBOW[6], 45 } }, 'neon')
+		A.drips(B, d, C(255, 90, 160), 'gloss', 4, 1.1, RAINBOW)
+		A.speckles(B, d, { { 0.42, 0.25, 0.07, RAINBOW[1], 45 }, { 0.3, -0.05, 0.07, RAINBOW[3], 45 }, { 0.22, 0.3, 0.06, RAINBOW[4], 45 },
+			{ 0.4, -0.35, 0.06, RAINBOW[5], 45 } }, 'neon')
 		A.heelStrip(B, d, C(120, 220, 255))
 	end,
 })
 xdef('Hologram', { Name = 'Hologram', Box = 'Exclusive', rarity = 5, fx = { tex = 'sparkle', colors = { C(170, 240, 255), C(255, 170, 230) } },
-	upper = C(226, 236, 255), ankle = C(214, 226, 250), heel = PINKGLOW, collar = C(120, 230, 240), tongue = C(232, 240, 255), upperKind = 'gloss',
-	lace = C(255, 170, 230), sole = C(240, 244, 255), base = C(120, 230, 240), stripe = PINKGLOW, toe = C(214, 226, 250), toeKind = 'gloss',
-	tongueLabel = C(120, 230, 240),
+	upper = C(186, 160, 255), ankle = C(255, 150, 222), toeBox = C(110, 226, 255), upperKind = 'holo', toeBoxKind = 'holo', ankleKind = 'holo',
+	heel = C(110, 240, 200), heelKind = 'holo', collar = C(120, 230, 240), collarKind = 'gloss', tongue = C(232, 240, 255), tongueKind = 'gloss',
+	lace = C(255, 170, 230), laceKind = 'neon', sole = C(240, 244, 255), base = PINKGLOW, baseKind = 'neon', stripe = C(120, 230, 240), stripe2 = PINKGLOW,
+	toe = C(214, 226, 250), toeKind = 'chrome', flash = C(120, 230, 240), flashKind = 'neon', eyelet = CHROME, eyeletKind = 'chrome',
+	tongueLabel = C(120, 230, 240), tongueLabelKind = 'neon',
 	deco = function(B, d)
-		A.wings(B, d, C(170, 240, 255), C(255, 170, 230), 'gloss', 1.1)
-		A.heelStrip(B, d, PINKGLOW)
-		A.toeBadge(B, d, 'gem', C(120, 230, 240), 'glass', 0.26)
+		A.wings(B, d, C(170, 240, 255), C(255, 170, 230), 'holo', 1.15)
+		A.toeBadge(B, d, 'gem', C(120, 230, 240), 'gem', 0.26)
 	end,
 })
 xdef('PlatinumWings', { Name = 'Platinum Wings', Box = 'Exclusive', rarity = 6,
-	upper = C(226, 232, 242), ankle = C(208, 216, 230), heel = ICE, collar = C(70, 80, 110), tongue = C(226, 232, 242), upperKind = 'metal',
-	rainbowLaces = true, eyelet = K.gold, eyeletKind = 'gold', sole = C(240, 244, 250), base = ICE, rainbowStripe = true, rainbowOffset = 3,
-	toe = C(208, 216, 230), toeKind = 'metal', tongueLabel = false,
+	upper = CHROME, ankle = CHROME2, upperKind = 'chrome', heel = CHROME2, heelKind = 'chrome', collar = C(70, 80, 110), collarKind = 'gloss',
+	tongue = CHROME, tongueKind = 'chrome', rainbowLaces = true, eyelet = K.gold, eyeletKind = 'gold', sole = C(244, 246, 252), base = ICE, baseKind = 'neon',
+	rainbowStripe = true, rainbowOffset = 3, toe = C(70, 80, 110), toeKind = 'gloss', flash = ICE, flashKind = 'neon', tongueLabel = false,
 	deco = function(B, d)
-		A.wings(B, d, C(250, 250, 255), C(200, 236, 255), 'smooth', 1.25)
-		A.rainbowBand(B, d, 0.26, 3)
-		A.toeBadge(B, d, 'gem', ICE, 'glass', 0.28)
+		A.wings(B, d, C(252, 252, 255), CHROME2, 'chrome', 1.3)
+		A.rainbowBand(B, d, 0.24, 3)
+		A.toeBadge(B, d, 'gem', ICE, 'gem', 0.28)
 	end,
 })
 -- Grail Box: gold, starlight, sun flares and royal purple.
 local SUN, GOLDEN, ROYAL = C(255, 120, 60), C(255, 205, 60), C(80, 40, 160)
 xdef('GoldenHour', { Name = 'Golden Hour', Box = 'Grail', rarity = 2,
-	upper = C(255, 196, 52), ankle = C(240, 176, 40), heel = SUN, collar = K.snow, tongue = C(255, 206, 72), tab = SUN, upperKind = 'gold',
-	base = SUN, stripe = C(255, 150, 80), logo = { kind = 'sparkle', color = SUN }, tongueLabel = SUN,
+	upper = C(255, 198, 56), ankle = C(244, 178, 40), heel = SUN, heelKind = 'gloss', collar = K.snow, tongue = C(255, 208, 76), tab = SUN, upperKind = 'gold',
+	base = SUN, stripe = SUN, stripeKind = 'neon', flash = SUN, flashKind = 'neon', eyelet = K.gold, eyeletKind = 'gold',
+	logo = { kind = 'sparkle', color = SUN, mat = 'neon' }, tongueLabel = SUN,
 })
 xdef('Starlight', { Name = 'Starlight', Box = 'Grail', rarity = 3,
-	upper = C(28, 34, 90), ankle = C(24, 28, 76), heel = C(255, 214, 80), collar = C(24, 28, 76), tongue = C(28, 34, 90), tab = C(255, 214, 80),
-	lace = C(240, 240, 255), base = C(255, 200, 60), stripe = C(255, 224, 120), tongueLabel = C(255, 214, 80),
+	upper = C(28, 34, 90), ankle = C(24, 28, 76), heel = GOLDEN, heelKind = 'gold', collar = C(24, 28, 76), tongue = C(28, 34, 90), tab = GOLDEN, upperKind = 'gloss',
+	lace = C(240, 240, 255), base = C(255, 200, 60), stripe = C(255, 224, 120), toe = GOLDEN, toeKind = 'gold', flash = GOLDEN, flashKind = 'gold',
+	eyelet = K.gold, eyeletKind = 'gold', tongueLabel = C(255, 214, 80),
 	deco = function(B, d)
-		B:onShaft(function() A.star(B, sideCF(B.U + 0.44, 0.12, 0.03), 0.34, C(255, 214, 80), 'gold') end)
-		A.speckles(B, d, { { 0.56, 0.35, 0.05, K.snow, 45 }, { 0.3, -0.2, 0.05, C(255, 236, 160), 45 }, { 0.2, 0.3, 0.04, K.snow, 45 },
-			{ 0.5, -0.36, 0.04, C(255, 236, 160), 45 } }, 'neon')
-		A.toeBadge(B, d, 'star', C(255, 214, 80), 'gold', 0.28)
+		B:onShaft(function() A.star(B, sideCF(B.U + 0.4, 0.12, 0.03), 0.34, C(255, 214, 80), 'gold') end)
+		A.speckles(B, d, { { 0.5, 0.35, 0.05, K.snow, 45 }, { 0.3, -0.2, 0.05, C(255, 236, 160), 45 }, { 0.22, 0.32, 0.04, K.snow, 45 },
+			{ 0.46, -0.36, 0.04, C(255, 236, 160), 45 } }, 'neon')
+		A.toeBadge(B, d, 'star', C(255, 236, 160), 'neon', 0.28)
 	end,
 })
 xdef('SolarFlare', { Name = 'Solar Flare', Box = 'Grail', rarity = 4, fx = { tex = 'ember', colors = { C(255, 200, 60), C(255, 120, 40) } },
-	upper = C(255, 176, 40), ankle = C(255, 150, 30), heel = C(60, 30, 20), collar = C(60, 30, 20), tongue = C(255, 190, 60), upperKind = 'gloss',
+	upper = C(255, 176, 40), ankle = C(255, 150, 30), heel = GOLDEN, heelKind = 'gold', collar = C(60, 30, 20), tongue = C(255, 190, 60), upperKind = 'gloss',
 	lace = C(255, 240, 200), eyelet = K.gold, eyeletKind = 'gold', sole = C(60, 30, 20), base = C(255, 90, 40), stripe = C(255, 220, 90),
-	toe = C(255, 90, 40), tongueLabel = C(255, 70, 40),
+	toe = C(255, 90, 40), toeKind = 'gloss', flash = C(255, 90, 40), flashKind = 'neon', tongueLabel = C(255, 70, 40),
 	deco = function(B, d)
-		A.collarFlames(B, d, C(255, 110, 40), C(255, 230, 90), 'smooth')
-		B:onShaft(function() A.flame(B, sideCF(B.U + 0.3, 0.05, 0.022, 0), 0.5, C(255, 90, 40), K.gold, 'smooth') end)
+		A.collarFlames(B, d, C(255, 110, 40), C(255, 230, 90), 'neon')
+		A.heelStrip(B, d, C(255, 230, 90))
 	end,
 })
 xdef('AstroCrown', { Name = 'Astro Crown', Box = 'Grail', rarity = 5, fx = { tex = 'star', colors = { C(255, 214, 90), C(190, 150, 255) } },
-	upper = ROYAL, ankle = C(66, 32, 140), heel = GOLDEN, collar = C(30, 20, 60), tongue = C(30, 20, 60), upperKind = 'gloss',
+	upper = ROYAL, ankle = C(66, 32, 140), heel = GOLDEN, heelKind = 'gold', collar = C(30, 20, 60), tongue = C(30, 20, 60), upperKind = 'gloss',
 	lace = C(255, 214, 80), eyelet = K.gold, eyeletKind = 'gold', sole = C(30, 20, 60), base = C(255, 196, 50), stripe = C(190, 150, 255),
-	toe = GOLDEN, toeKind = 'gold', tongueLabel = C(255, 214, 80),
+	toe = GOLDEN, toeKind = 'gold', flash = GOLDEN, flashKind = 'gold', tongueLabel = C(255, 214, 80),
 	deco = function(B, d)
 		B:onShaft(function()
 			A.crown(B, CF(B.cat(L.XC + 0.02, 0.12, B.collarZ)) * ANG(0, math.pi, 0), 0.62, GOLDEN, C(120, 220, 255))
 		end)
-		A.wings(B, d, C(190, 150, 255), GOLDEN, 'smooth', 1.05)
+		A.wings(B, d, C(190, 150, 255), GOLDEN, 'gloss', 1.05)
 		A.speckles(B, d, { { 0.2, 0.25, 0.05, K.snow, 45 }, { 0.3, -0.3, 0.05, K.snow, 45 } }, 'neon')
 	end,
 })
 xdef('TheGrail', { Name = 'The Grail', Box = 'Grail', rarity = 6,
-	upper = C(255, 200, 56), ankle = C(240, 180, 40), heel = C(170, 90, 255), collar = C(110, 50, 190), tongue = C(255, 206, 72), upperKind = 'gold',
-	tongueKind = 'gold', rainbowLaces = true, sole = K.snow, base = C(170, 90, 255), rainbowStripe = true, rainbowOffset = 4,
-	toe = C(170, 90, 255), toeKind = 'gloss', tongueLabel = false,
+	upper = C(255, 202, 60), ankle = C(244, 182, 44), heel = C(170, 90, 255), heelKind = 'gem', collar = C(110, 50, 190), collarKind = 'gloss', upperKind = 'gold',
+	tongue = C(255, 208, 76), tongueKind = 'gold', rainbowLaces = true, sole = K.snow, base = C(170, 90, 255), baseKind = 'neon', rainbowStripe = true,
+	rainbowOffset = 4, toe = C(170, 90, 255), toeKind = 'gem', flash = C(170, 90, 255), flashKind = 'neon', eyelet = K.gold, eyeletKind = 'gold',
+	tongueLabel = false,
 	deco = function(B, d)
-		A.wings(B, d, C(250, 250, 255), C(232, 236, 248), 'smooth', 1.2)
-		A.rainbowBand(B, d, 0.26, 4)
-		B:onShaft(function() A.plusOneFront(B, B.tongueFront * CF(0, 0.47, -0.02), 0.36, C(170, 90, 255), 'gloss') end)
-		A.toeBadge(B, d, 'gem', C(170, 90, 255), 'glass', 0.28)
+		A.wings(B, d, C(255, 236, 170), GOLDEN, 'gold', 1.25)
+		A.rainbowBand(B, d, 0.24, 4)
+		B:onShaft(function() A.plusOneFront(B, B.tongueFront * CF(0, 0.42, -0.02), 0.34, C(170, 90, 255), 'gem') end)
+		A.toeBadge(B, d, 'gem', C(170, 90, 255), 'gem', 0.28)
 	end,
 })
-
 ShoeModels.Ids = ORDER
 ShoeModels.ExclusiveIds = EXCLUSIVE
 ShoeModels.AllIds = table.move(EXCLUSIVE, 1, #EXCLUSIVE, #ORDER + 1, table.clone(ORDER))
@@ -1339,7 +1415,16 @@ local function filled(d)
 	d.lace = d.lace or K.snow
 	d.eyelet = d.eyelet or K.silver
 	d.stripe = d.stripe or K.ink
+	d.base = d.base or dark(d.sole, 0.2)
+	-- the lining at the bottom of the opening: the collar's colour a third darker (a mid grey under a dark collar), so
+	-- the opening reads as a soft hollow, not a black slot, from the icons' 3/4-above view
+	d.lining = d.lining or (lum(d.collar) < 0.3 and C(128, 132, 150) or dark(d.collar, 0.35))
+	d.toeKind = d.toeKind or (r >= 2 and 'gloss' or 'smooth')
 	if not d.tab and d.logo and d.rarity == 1 then d.tab = d.logo.color end
+	-- the side flash: a Common's logo colour (its one accent), else the outsole's or the heel's tone
+	if d.flash == nil then
+		d.flash = (r == 1 and (d.logo and d.logo.color or dark(d.upper, 0.15))) or (d.base ~= d.upper and d.base) or d.heel or dark(d.upper, 0.2)
+	end
 	d._filled = true
 	return d
 end
@@ -1348,15 +1433,17 @@ end
 local function recipe(d)
 	d = filled(d)
 	local B = newBuilder(d)
+	CUR = B
 	local U = L.SOLE[d.rarity]
 	B.U = U
 	buildSole(B, d, U)
+	buildToe(B, d, U)
 	buildUpper(B, d, U)
 	buildFront(B, d, U)
 	if d.rainbowLaces then
 		local i = 0
 		for _, s in B.list do
-			if s.name == 'Lace' then
+			if s.name == 'Lace' or s.name == 'LaceBow' then
 				i += 1
 				s.color = RAINBOW[(i - 1) % #RAINBOW + 1]
 				s.kind = 'smooth'
@@ -1365,6 +1452,7 @@ local function recipe(d)
 	end
 	A.logo(B, d)
 	if d.deco then d.deco(B, d) end
+	CUR = nil
 	return B.list
 end
 
@@ -1427,6 +1515,11 @@ local function makePart(spec, cf, size)
 	p.Massless = true
 	if spec.shaft then p:SetAttribute('Shaft', true) end
 	if spec.studsBottom then p.BottomSurface = Enum.SurfaceType.Studs end
+	if spec.mesh then
+		local mesh = Instance.new('SpecialMesh')
+		mesh.MeshType = Enum.MeshType.Sphere
+		mesh.Parent = p
+	end
 	return p
 end
 
@@ -1438,6 +1531,14 @@ local function fitCF(spec, side)
 		if spec.text then cf = unmirrorText(cf, spec.text) end
 	end
 	return CF(0, -FIT.Y / 2, 0) * cf
+end
+-- (brief 24) Worn shoes are a size up: big cartoon sneakers that read from the follow camera. They grow away from the
+-- inner side (the two shoes still meet at the body's centre line) and up from the ground (soles stay on it).
+ShoeModels.WornChunk = V(1.12, 1.08, 1.1)
+local function chunky(cf, size, side)
+	local base = CF((side == 'L' and -1 or 1) * L.XI, -FIT.Y / 2, 0)
+	local rel, sz = scaled(base:Inverse() * cf, size, ShoeModels.WornChunk)
+	return base * rel, sz
 end
 
 local function newFit(k)
@@ -1551,7 +1652,7 @@ local wornState = setmetatable({}, { __mode = 'k' })
 -- Weld the pair onto a character. R15: shoe body to Left/RightFoot, the shaft (collar, tongue, ankle panel) to
 -- Left/RightLowerLeg. R6: everything to the bottom of Left/Right Leg. Scaled per axis to the real parts.
 -- opts.noFx: skip the rarity effects. Returns cleanup() (also called by wearing another pair).
-function ShoeModels.wear(character: Model, id: string, opts: { noFx: boolean? }?): () -> ()
+function ShoeModels.wear(character: Model, id: string, opts: { noFx: boolean?, fxDensity: number? }?): () -> ()
 	opts = opts or {}
 	local list, d = specs(id)
 	local old = wornState[character]
@@ -1587,15 +1688,15 @@ function ShoeModels.wear(character: Model, id: string, opts: { noFx: boolean? }?
 		if foot and foot:IsA('BasePart') and f then
 			for _, s in list do
 				local host, c0, size = foot, nil, nil
-				local cf = fitCF(s, side)
+				local cf, size0 = chunky(fitCF(s, side), s.size, side)
 				if r15 and s.shaft and leg and leg:IsA('BasePart') and fLeg then
 					-- shaft pieces: measured from the top of the foot = the bottom of the lower leg
 					host = leg
 					anchorLeg = CF(0, -leg.Size.Y / 2, 0)
-					local rel, sz = scaled(CF(0, -FIT.Y / 2, 0) * cf, s.size, fLeg)
+					local rel, sz = scaled(CF(0, -FIT.Y / 2, 0) * cf, size0, fLeg)
 					c0, size = anchorLeg * rel, sz
 				else
-					local rel, sz = scaled(cf, s.size, f)
+					local rel, sz = scaled(cf, size0, f)
 					c0, size = (anchorFoot or CFrame.identity) * rel, sz
 				end
 				local p = makePart(s, host.CFrame * c0, size)
@@ -1610,7 +1711,7 @@ function ShoeModels.wear(character: Model, id: string, opts: { noFx: boolean? }?
 				w.Parent = p
 				p.Parent = m
 			end
-			table.insert(fxHosts, { foot, (anchorFoot or CFrame.identity), f })
+			table.insert(fxHosts, { Part = foot, At = anchorFoot or CFrame.identity, Scale = f, Side = side })
 		end
 	end
 	m.Parent = character
@@ -1624,8 +1725,18 @@ function ShoeModels.wear(character: Model, id: string, opts: { noFx: boolean? }?
 			if child.Name == 'BlockCostume' then hideCostumeShoes(child, hidden) end
 		end)
 	end)
-	if not opts.noFx and d.rarity >= 3 then
-		for i, h in fxHosts do ShoeModels.fx(m, d.rarity, { worn = true, host = h[1], at = h[2], scale = h[3], box = d.Box, id = d.Id, light = i == #fxHosts }) end
+	if not opts.noFx and d.rarity >= 2 and #fxHosts > 0 then
+		-- other players' feet get 60 % of the particles (every layer stays, so their rarity still reads)
+		local density = opts.fxDensity
+		if density == nil then
+			local ok, other = pcall(function()
+				local Players = game:GetService('Players')
+				local me = Players.LocalPlayer
+				return me ~= nil and Players:GetPlayerFromCharacter(character) ~= me
+			end)
+			if ok and other then density = 0.6 end
+		end
+		ShoeModels.fx(m, d.rarity, { context = 'worn', feet = fxHosts, id = d.Id, density = density })
 	end
 	local done = false
 	local function cleanup()
@@ -1647,186 +1758,45 @@ function ShoeModels.wear(character: Model, id: string, opts: { noFx: boolean? }?
 end
 
 ---------------------------------------------------------------------------------------------- effects
--- Theme particles per box (texture names from hood/art/vfx; in game each falls back to a Roblox built-in until the
--- sheets are uploaded into HoodVFX.Textures). Colours: the box's own.
-local THEME = {
-	Street = { tex = 'star', colors = { C(255, 110, 120), C(255, 150, 130) } },
-	Graffiti = { tex = 'glow', colors = { C(255, 110, 190), C(110, 230, 255), C(150, 255, 110) } },
-	Frost = { tex = 'snow', colors = { C(230, 245, 255), C(170, 220, 255) } },
-	Lava = { tex = 'ember', colors = { C(255, 170, 60), C(255, 90, 40) } },
-	Toxic = { tex = 'glow', colors = { C(160, 255, 90), C(110, 230, 70) } },
-	Candy = { tex = 'confetti', colors = { C(255, 140, 200), C(150, 200, 255), C(255, 230, 120) } },
-	Ocean = { tex = 'bubble', colors = { C(190, 240, 255), C(120, 220, 255) } },
-	Gem = { tex = 'shard', colors = { C(150, 255, 200), C(220, 250, 255) } },
-	Galaxy = { tex = 'star', colors = { C(220, 210, 255), C(170, 140, 255) } },
-	Gold = { tex = 'sparkle', colors = { C(255, 220, 90), C(255, 190, 40) } },
-	Exclusive = { tex = 'sparkle', colors = { C(170, 240, 255), C(255, 170, 230) } },
-	Grail = { tex = 'star', colors = { C(255, 220, 90), C(200, 150, 255) } },
-}
-ShoeModels.Themes = THEME
-local BUILTIN = {
-	star = 'rbxasset://textures/particles/sparkles_main.dds', sparkle = 'rbxasset://textures/particles/sparkles_main.dds',
-	glow = 'rbxasset://textures/glow.png', snow = 'rbxasset://textures/particles/sparkles_main.dds', ember = 'rbxasset://textures/glow.png',
-	confetti = 'rbxasset://textures/particles/sparkles_main.dds', bubble = 'rbxasset://textures/particles/explosion01_shockwave_main.dds',
-	shard = 'rbxasset://textures/particles/sparkles_main.dds', softglow = 'rbxasset://textures/glow.png', ray = 'rbxasset://textures/glow.png',
-	ring = 'rbxasset://textures/particles/explosion01_shockwave_main.dds',
-}
-local okVFX, HoodVFX = pcall(function()
-	local m = script.Parent.Parent:FindFirstChild('HoodVFX')
-	return m and require(m)
-end)
-local function setTexture(e, name)
-	local id = okVFX and HoodVFX and HoodVFX.Textures and HoodVFX.Textures[name]
-	e.Texture = (id and id ~= '') and id or BUILTIN[name] or BUILTIN.glow
-	e:SetAttribute('PreviewTexture', name)
+-- The rarity effects live in Shared/ShoeFX (brief 24: one ladder for worn shoes, followers and the reveal's data).
+-- ShoeModels only adds each shoe's own theme (its box's, or a definition's `fx` override) and the worn feet.
+local FX -- Shared.ShoeFX, required on first use (false when missing)
+local function shoeFX()
+	if FX == nil then
+		local ok, m = pcall(function()
+			local node = script.Parent.Parent:FindFirstChild('ShoeFX')
+			return node and require(node)
+		end)
+		FX = ok and type(m) == 'table' and m or false
+	end
+	return FX or nil
 end
-local function nseq(points)
-	local k = {}
-	for _, p in points do table.insert(k, NumberSequenceKeypoint.new(p[1], p[2], p[3] or 0)) end
-	return NumberSequence.new(k)
+-- A shoe's particle theme: its box's (ShoeFX.Themes), or the definition's own `fx = { tex, colors }`.
+local function themeOf(sdef)
+	local F = shoeFX()
+	local theme = F and F.Themes[sdef.Box] or { tex = 'sparkle', colors = { C(255, 255, 255) } }
+	if sdef.fx then theme = { tex = sdef.fx.tex or theme.tex, colors = sdef.fx.colors or theme.colors } end
+	return theme
 end
-local function cseq(colors)
-	if #colors == 1 then return ColorSequence.new(colors[1]) end
-	local k = {}
-	for i, c in colors do table.insert(k, ColorSequenceKeypoint.new((i - 1) / (#colors - 1), c)) end
-	return ColorSequence.new(k)
-end
-local function emitter(parent, name, tex, props)
-	local e = Instance.new('ParticleEmitter')
-	e.Name = name
-	e.LightInfluence = 0
-	e.LightEmission = 0.6
-	e.Rotation = NumberRange.new(0, 360)
-	for key, v in props do (e :: any)[key] = v end
-	setTexture(e, tex)
-	e.Parent = parent
-	return e
-end
+ShoeModels.Themes = shoeFX() and shoeFX().Themes or {}
 
--- Rarity effects on a shoe, a pair or worn shoes. Escalates like the mock-ups: Epic themed particles, Legendary
--- + a soft glow and a light, Mythic + a light shaft, Secret + rainbow colours and a ground ring.
--- opts.worn (smaller, sparser), opts.host/at/scale (worn: the foot part to weld the emitter box to).
--- Live particles (display pair): Epic ~6, Legendary ~14, Mythic ~22, Secret ~32; worn about half per foot.
-function ShoeModels.fx(model: Instance, rarity: any, opts: { [string]: any }?): Part?
-	opts = opts or {}
-	local r = type(rarity) == 'number' and rarity or table.find(RARITIES, rarity) or 1
-	if r < 2 then return nil end
-	local sid = opts.id or model:GetAttribute('ShoeId')
-	local sdef = sid and DEFS[sid]
-	local box = opts.box or (sdef and sdef.Box) or 'Street'
-	local theme = THEME[box] or THEME.Street
-	if sdef and sdef.fx then theme = { tex = sdef.fx.tex or theme.tex, colors = sdef.fx.colors or theme.colors } end
-	local worn = opts.worn
-	-- the emitter box: round the pair (display) or round one foot's shoe (worn)
-	local holder = Instance.new('Part')
-	holder.Name = 'ShoeFX'
-	holder.Transparency = 1
-	holder.CastShadow = false
-	holder.CanCollide = false
-	holder.CanTouch = false
-	holder.CanQuery = false
-	holder.Massless = true
-	local k
-	if worn and opts.host then
-		local f = opts.scale or V(1, 1, 1)
-		k = (f.X + f.Z) / 2
-		holder.Size = V(1.4, 1.1, 1.6) * k
-		local c0 = (opts.at or CFrame.identity) * CF(0, 0.45 * f.Y, -0.1 * f.Z)
-		holder.CFrame = opts.host.CFrame * c0
-		holder.Anchored = false
-		local w = Instance.new('Weld')
-		w.Part0 = opts.host
-		w.Part1 = holder
-		w.C0 = c0
-		w.Parent = holder
-	else
-		local root = model:IsA('Model') and model.PrimaryPart or model
-		k = (model:GetAttribute('Scale') or 1)
-		local isPair = model:IsA('Model') and model:FindFirstChild('Root') ~= nil
-		holder.Size = (isPair and V(2.6, 1.4, 1.8) or V(1.4, 1.4, 1.8)) * k
-		local base = root and root.CFrame or CFrame.identity
-		local up = isPair and 0.7 * k or 0.55 * k
-		holder.CFrame = base * CF(0, up, -0.1 * k)
-		holder.Anchored = root == nil or root.Anchored
-		if root and not root.Anchored then
-			local w = Instance.new('WeldConstraint')
-			w.Part0 = root
-			w.Part1 = holder
-			w.Parent = holder
-		end
+-- Rarity effects on a pair or a shoe (followers, displays): ShoeFX.apply with the shoe's theme. rarity: 1..6 or
+-- 'Common'..'Secret'. opts are ShoeFX.apply's (context 'follower' by default). Returns the ShoeFX holder, or nil for a
+-- Common (or without ShoeFX).
+function ShoeModels.fx(model: Instance, rarity: any, opts: { [string]: any }?): BasePart?
+	local F = shoeFX()
+	if not F then return nil end
+	local o = table.clone(opts or {})
+	local sid = o.id or model:GetAttribute('ShoeId')
+	local sdef = type(sid) == 'string' and DEFS[sid] or nil
+	if sdef and not o.theme then o.theme = themeOf(sdef) end
+	if o.worn and o.host then
+		-- (the older per-foot form)
+		o.context = 'worn'
+		o.feet = o.feet or { { Part = o.host, At = o.at, Scale = o.scale } }
+		o.scale = nil
 	end
-	holder.Parent = model
-	local secret = r >= 6
-	local colors = secret and RAINBOW or theme.colors
-	local dens = worn and 0.45 or 1
-	local sz = (worn and 0.75 or 1) * k
-	-- 1. themed particles drifting up (Epic+): stars, snow, embers, bubbles, coins...
-	if r >= 3 then
-		local rate = ({ 0, 0, 3, 5, 7, 10 })[r] * dens
-		local s = ({ 0, 0, 0.32, 0.38, 0.42, 0.48 })[r] * sz
-		emitter(holder, 'ShoeMotes', theme.tex, {
-			Rate = rate, Lifetime = NumberRange.new(1.3, 2.1), Speed = NumberRange.new(0.6, 1.4), SpreadAngle = Vector2.new(25, 25),
-			Acceleration = V(0, box == 'Frost' and -0.4 or 0.6, 0), Drag = 0.6, RotSpeed = NumberRange.new(-60, 60),
-			Size = nseq({ { 0, 0 }, { 0.2, s, s * 0.3 }, { 0.8, s * 0.8 }, { 1, 0 } }),
-			Transparency = nseq({ { 0, 1 }, { 0.15, 0.05 }, { 0.75, 0.2 }, { 1, 1 } }),
-			Color = cseq(colors), LightEmission = (box == 'Ocean' or box == 'Candy') and 0.3 or 0.8, Brightness = 1.2,
-			ZOffset = 0.5, EmissionDirection = Enum.NormalId.Top,
-		})
-	elseif r == 2 then
-		emitter(holder, 'ShoeGlint', 'sparkle', {
-			Rate = 0.8 * dens, Lifetime = NumberRange.new(0.4, 0.7), Speed = NumberRange.new(0), RotSpeed = NumberRange.new(-40, 40),
-			Size = nseq({ { 0, 0 }, { 0.4, 0.35 * sz }, { 1, 0 } }), Color = ColorSequence.new(C(255, 255, 255)), LightEmission = 1, ZOffset = 1,
-		})
-	end
-	-- 2. soft glow behind and a light (Legendary+)
-	if r >= 4 then
-		local glow = secret and C(255, 255, 255) or theme.colors[1]
-		local hot = 1 - math.max(0, 0.299 * glow.R + 0.587 * glow.G + 0.114 * glow.B - 0.55)
-		emitter(holder, 'ShoeGlow', 'softglow', {
-			Rate = 0.8, Lifetime = NumberRange.new(2.2), Speed = NumberRange.new(0), Rotation = NumberRange.new(0),
-			Size = nseq({ { 0, (worn and 2.0 or 2.7) * k }, { 1, (worn and 2.3 or 3.0) * k } }),
-			-- pale additive glows stack to white in daylight: keep the halo faint (dimmer still for pale colours)
-			Transparency = nseq({ { 0, 1 }, { 0.4, 1 - hot * (worn and 0.14 or 0.2) }, { 0.6, 1 - hot * (worn and 0.14 or 0.2) }, { 1, 1 } }),
-			Color = secret and cseq(RAINBOW) or ColorSequence.new(glow), LightEmission = 1, ZOffset = -1, Shape = Enum.ParticleEmitterShape.Box,
-		})
-		if not worn or (r >= 5 and opts.light ~= false) then
-			local l = Instance.new('PointLight')
-			l.Name = 'ShoeLight'
-			l.Color = glow
-			-- a soft pool of the shoe's colour, not a floodlight: pale floors wash out under bright lights
-			l.Brightness = ({ 0, 0, 0, 0.45, 0.6, 0.75 })[r] * (worn and 0.7 or 1)
-			l.Range = (worn and 4 or 5.5) * k
-			l.Shadows = false
-			l.Parent = holder
-		end
-	end
-	-- 3. a light shaft rising from the shoes (Mythic+, displays and followers only)
-	if r >= 5 and not worn then
-		emitter(holder, 'ShoeRays', 'ray', {
-			Orientation = Enum.ParticleOrientation.FacingCameraWorldUp, Rate = 1.2, Lifetime = NumberRange.new(1.8, 2.6), Speed = NumberRange.new(0.05),
-			Rotation = NumberRange.new(0), Size = nseq({ { 0, 3.2 * k }, { 1, 3.6 * k } }),
-			Transparency = nseq({ { 0, 1 }, { 0.4, 0.55 }, { 0.6, 0.55 }, { 1, 1 } }),
-			Color = secret and cseq(RAINBOW) or cseq({ C(255, 255, 255), theme.colors[1] }), LightEmission = 1, ZOffset = -0.5,
-		})
-	end
-	-- 4. Secret: a rainbow ring on the ground and extra sparkles
-	if secret and not (worn and opts.light == false) then
-		local base = Instance.new('Attachment')
-		base.Name = 'ShoeFXBase'
-		base.CFrame = CF(0, -holder.Size.Y / 2 + 0.05 * k, 0)
-		base.Parent = holder
-		emitter(base, 'ShoeRing', 'ring', {
-			Orientation = Enum.ParticleOrientation.VelocityPerpendicular, Speed = NumberRange.new(0.01), Rate = worn and 0.4 or 0.7,
-			Lifetime = NumberRange.new(1.6), Rotation = NumberRange.new(0), EmissionDirection = Enum.NormalId.Top,
-			Size = nseq({ { 0, 0.8 * k }, { 1, (worn and 2.2 or 3.4) * k } }), Transparency = nseq({ { 0, 1 }, { 0.2, 0.3 }, { 1, 1 } }),
-			Color = cseq(RAINBOW), LightEmission = 1,
-		})
-		emitter(holder, 'ShoeSparkle', 'sparkle', {
-			Rate = 5 * dens, Lifetime = NumberRange.new(0.5, 0.9), Speed = NumberRange.new(0.3, 1), RotSpeed = NumberRange.new(-90, 90),
-			Size = nseq({ { 0, 0 }, { 0.4, 0.3 * sz, 0.1 * sz }, { 1, 0 } }), Color = cseq(RAINBOW), LightEmission = 1, Brightness = 2, ZOffset = 1,
-		})
-	end
-	return holder
+	return F.apply(model, rarity, o)
 end
 
 ---------------------------------------------------------------------------------------------- viewport
