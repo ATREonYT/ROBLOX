@@ -1,34 +1,60 @@
--- Fifteen original morphs adapted from the supplied v5 reference pack.
+-- The fifteen looks, street kid to Kingpin: ART ONLY now. Players keep their own Roblox avatar (brief 17), so no look is
+-- equipped, gives Power or changes walk speed. The rows stay for SkinArt (its mannequin renders, the shoe fit checks)
+-- and the original Block's look stand (SimulatorLobby), and their ids stay valid in old saves (EquippedSkin).
+-- Color = the main top (jacket/tee), Accent and Trim = the look's second and third colours, Pants, Skin, Hair, Shirt;
+-- Style/Hat name the silhouette; Expression the face; Pose the display pose (SkinArt.Poses); Glow (tiers 11+) the
+-- sparkle colour, with GlowRate/GlowSize climbing up the tiers and GlowLight a light round the Kingpin. Look picks the
+-- recipe (defaults to Id). Required and Gain are the old ladder's numbers, printed by the old stand only.
 local C=Color3.fromRGB
 local S={List={}}
+-- Skin tones are spread over the whole ladder (no tone belongs to a tier); on players Art.equip keeps the
+-- player's own tone and only the displays and cards use these.
+local A,B,Cc,D,E,F=C(246,204,160),C(240,196,150),C(214,160,110),C(178,120,78),C(124,82,54),C(92,60,40)
 local rows={
- {'CornerKid','Corner Kid',0,1,'hoodie',C(173,177,184),C(242,125,105),C(239,211,173),C(107,144,182),'cap','happy'},
- {'Pickpocket','Pickpocket',25,2,'hoodie',C(112,130,75),C(230,228,198),C(235,215,175),C(73,73,80),'hood','sleepy'},
- {'Lookout','Lookout',75,3,'puffer',C(248,166,78),C(250,187,100),C(156,96,57),C(58,57,55),'beanie','worried'},
- {'Bandit','Bandit',150,4,'hoodie',C(51,50,56),C(174,178,188),C(227,181,106),C(79,88,106),'beanie','angry'},
- {'Hustler','Hustler',300,6,'tracksuit',C(146,75,185),C(237,194,66),C(240,222,181),C(146,75,185),'whitehat','smirk'},
- {'Crook','Crook',600,8,'trench',C(201,175,124),C(158,128,82),C(230,210,187),C(96,80,72),'flatcap','serious'},
- {'GetawayDriver','Getaway Driver',1000,10,'racer',C(221,62,66),C(219,226,232),C(153,98,66),C(57,57,66),'hair','smirk'},
- {'Enforcer','Enforcer',1500,12,'vest',C(61,59,72),C(216,221,228),C(239,222,181),C(103,111,87),'bald','angry'},
- {'StreetBoss','Street Boss',2000,16,'furcoat',C(44,45,52),C(246,241,219),C(233,187,116),C(43,44,52),'hair','smirk'},
- {'Gangster','Gangster',3000,22,'suit',C(56,67,106),C(224,64,72),C(229,205,179),C(56,67,106),'fedora','smirk'},
- {'Capo','Capo',5000,30,'suit',C(80,84,95),C(158,54,69),C(195,133,70),C(80,84,95),'hair','serious'},
- {'Consigliere','Consigliere',8000,42,'suit',C(166,171,181),C(64,100,152),C(239,225,204),C(166,171,181),'whitehair','sleepy'},
- {'Underboss','Underboss',12000,58,'suit',C(42,41,40),C(233,233,220),C(129,79,49),C(42,41,40),'blackhat','serious'},
- {'TheDon','The Don',18000,80,'suit',C(237,236,223),C(32,31,32),C(233,207,155),C(237,236,223),'whitehat','sleepy'},
- {'Kingpin','Kingpin',30000,110,'suit',C(41,40,41),C(228,190,72),C(198,131,67),C(41,40,41),'crown','happy'},
+ {Id='CornerKid',Name='Corner Kid',Required=0,Gain=1,Style='tee',Hat='backwards cap',Color=C(248,248,244),Accent=C(232,44,52),Trim=C(255,140,30),Pants=C(40,110,230),Skin=D,Hair=C(40,28,22),Expression='happy',Pose='carry'},
+ {Id='Pickpocket',Name='Runner',Required=25,Gain=2,Style='track jacket',Hat='headphones',Color=C(130,220,50),Accent=C(36,36,44),Trim=C(255,120,40),Pants=C(50,52,62),Skin=A,Hair=C(120,70,30),Expression='smirk',Pose='wave'},
+ {Id='Lookout',Name='Lookout',Required=75,Gain=3,Style='puffer',Hat='beanie',Color=C(255,128,30),Accent=C(30,190,200),Trim=C(210,150,70),Pants=C(100,110,70),Skin=E,Hair=C(30,22,18),Expression='worried',Pose='point'},
+ {Id='Bandit',Name='Bandit',Required=150,Gain=4,Style='hoodie',Hat='hood and bandana',Color=C(150,60,220),Accent=C(30,30,36),Trim=C(214,178,120),Pants=C(52,98,178),Skin=Cc,Hair=C(40,30,24),Expression='sly',Pose='swagger'},
+ {Id='Hustler',Name='Hustler',Required=300,Gain=6,Style='tracksuit',Hat='bucket hat',Color=C(0,180,190),Accent=C(250,250,246),Trim=C(255,196,48),Pants=C(0,180,190),Skin=B,Hair=C(60,40,26),Expression='cool',Pose='boss'},
+ {Id='Crook',Name='Crook',Required=600,Gain=8,Style='leather jacket',Hat='bandana',Color=C(62,56,60),Accent=C(225,35,45),Trim=C(214,220,230),Pants=C(52,98,178),Skin=Cc,Hair=C(20,16,14),Expression='smug',Pose='carry'},
+ {Id='GetawayDriver',Name='Getaway Driver',Required=1000,Gain=10,Style='racing jacket',Hat='pompadour',Color=C(255,206,30),Accent=C(30,30,36),Trim=C(232,44,52),Pants=C(52,58,78),Skin=F,Hair=C(40,28,20),Expression='smirk',Pose='salute'},
+ {Id='Enforcer',Name='Enforcer',Required=1500,Gain=12,Style='leather vest',Hat='flat cap',Color=C(205,30,40),Accent=C(245,245,245),Trim=C(122,74,44),Pants=C(40,40,48),Skin=A,Hair=C(110,70,40),Expression='angry',Pose='hips'},
+ {Id='StreetBoss',Name='OG',Required=2000,Gain=16,Style='fur coat',Hat='kangol',Color=C(20,160,90),Accent=C(250,250,245),Trim=C(150,30,60),Pants=C(30,30,36),Shirt=C(150,30,60),Skin=B,Hair=C(50,34,24),Expression='smug',Pose='boss'},
+ {Id='Gangster',Name='Shot Caller',Required=3000,Gain=22,Style='zoot suit',Hat='wide brim',Color=C(35,95,225),Accent=C(250,250,245),Trim=C(232,44,52),Pants=C(35,95,225),Skin=E,Hair=C(20,16,14),Expression='smirk',Pose='swagger'},
+ {Id='Capo',Name='Capo',Required=5000,Gain=30,Style='sharkskin suit',Hat='black fedora',Color=C(168,178,198),Accent=C(225,30,45),Trim=C(30,30,36),Pants=C(168,178,198),Skin=F,Hair=C(20,16,14),Expression='serious',Pose='carry',Glow=C(190,110,255),GlowRate=5,GlowSize=0.8},
+ {Id='Consigliere',Name='Consigliere',Required=8000,Gain=42,Style='double-breasted',Hat='homburg',Color=C(150,20,62),Accent=C(255,196,48),Trim=C(110,66,40),Pants=C(150,20,62),Shirt=C(255,240,210),Skin=B,Hair=C(210,212,218),Expression='wise',Pose='easy',Glow=C(190,110,255),GlowRate=5,GlowSize=0.8},
+ {Id='Underboss',Name='Underboss',Required=12000,Gain=58,Style='overcoat',Hat='camel fedora',Color=C(32,32,38),Accent=C(205,150,80),Trim=C(248,248,244),Pants=C(32,32,38),Skin=D,Hair=C(25,22,20),Expression='serious',Pose='boss',Glow=C(255,200,60),GlowRate=7,GlowSize=0.9},
+ {Id='TheDon',Name='The Don',Required=18000,Gain=80,Style='dinner jacket',Hat='silver hair',Color=C(250,246,232),Accent=C(220,20,50),Trim=C(28,28,34),Pants=C(30,30,36),Skin=A,Hair=C(200,202,208),Expression='wise',Pose='boss',Glow=C(255,200,60),GlowRate=7,GlowSize=0.9},
+ {Id='Kingpin',Name='Kingpin',Required=30000,Gain=110,Style='royal suit',Hat='crown',Color=C(88,30,170),Accent=C(200,20,40),Trim=C(255,196,48),Pants=C(88,30,170),Skin=E,Hair=C(20,18,16),Expression='cool',Pose='royal',Glow=C(255,200,60),GlowRate=9,GlowSize=1,GlowLight=true},
 }
 for i,r in rows do
- table.insert(S.List,{Id=r[1],Name=r[2],Required=r[3],Gain=r[4],Style=r[5],Color=r[6],Accent=r[7],Skin=r[8],Pants=r[9],Hat=r[10],Expression=r[11],Index=i})
+ r.Index=i;r.Look=r.Look or r.Id
+ table.insert(S.List,r)
 end
 S.ById={};for _,s in S.List do S.ById[s.Id]=s end
+-- The shooting ranges (lanes), in walking order from the entrance (brief 23: the superhero game's ladder). A lane
+-- multiplies every shot's Power by its Multiplier (Shared/ShotRules: base x lane x rebirth multiplier x gun x shoes).
+--   Rebirth lanes open at a number of rebirths (Rebirths): BAY 1 at once, then every two rebirths up to BAY 6 (x50 at
+--     10), and the Champ Ring in the boss yard at 12 (x75: the best free lane).
+--   Robux lanes (PRO BAY x100, GOLD BAY x250) open with their game pass only, at any rebirth: Pass is the key in
+--     Config/Products.Passes (ownership arrives as the player attribute Pass_<Key>), RobuxPrice the Robux price their
+--     label shows (the same number as that pass's Catalog Price). Rebirths is 0 on them and means nothing.
+-- Shared/RebirthRules.laneOpen decides (with the player's passes); LobbyService pays only in an open lane.
+-- Where each shooter's box sits is read from the built map at runtime (Training_<Id>.TrainingZone), so lanes can move in
+-- Studio without code edits; the Ids never change (the map and old saves name them).
+-- Name is the lane's one player-facing name everywhere (labels, the HUD hint, the guide). Gear names the original
+-- Block's gym builders (SimulatorLobby). Required is always 0: HoodProps' and SimulatorLobby's sign builders print it
+-- (the old Power price); nothing gameplay reads it.
 S.Stations={
- {Id='Starter',Name='Corner Gym',Required=0,Multiplier=2,Color=C(162,171,186),X=-29,Z=66,HalfX=8,HalfZ=8},
- {Id='Street',Name='Street Gym',Required=150,Multiplier=4,Color=C(112,165,199),X=-50,Z=66,HalfX=8,HalfZ=8},
- {Id='Boss',Name='Boss Gym',Required=1000,Multiplier=8,Color=C(218,190,98),X=-40,Z=43,HalfX=8,HalfZ=8},
+ {Id='Starter',Name='BAY 1',Gear='TireBag',Rebirths=0,Multiplier=1,Required=0,Color=C(150,156,166)},
+ {Id='Tape',Name='BAY 2',Gear='TapeBag',Rebirths=2,Multiplier=4,Required=0,Color=C(196,150,96)},
+ {Id='Street',Name='BAY 3',Gear='StreetBag',Rebirths=4,Multiplier=10,Required=0,Color=C(84,140,220)},
+ {Id='Heavy',Name='BAY 4',Gear='HeavyBag',Rebirths=6,Multiplier=20,Required=0,Color=C(222,72,72)},
+ {Id='Speed',Name='BAY 5',Gear='SpeedBag',Rebirths=8,Multiplier=35,Required=0,Color=C(246,136,52)},
+ {Id='DoubleEnd',Name='BAY 6',Gear='DoubleEndBag',Rebirths=10,Multiplier=50,Required=0,Color=C(160,86,226)},
+ {Id='Pro',Name='PRO BAY',Gear='ProBag',Rebirths=0,Multiplier=100,Pass='RangeVIP1',RobuxPrice=99,Required=0,Color=C(40,190,190)},
+ {Id='Gold',Name='GOLD BAY',Gear='GoldBag',Rebirths=0,Multiplier=250,Pass='RangeVIP2',RobuxPrice=249,Required=0,Color=C(240,192,56)},
+ {Id='Ring',Name='Champ Ring',Gear='Ring',Rebirths=12,Multiplier=75,Required=0,Color=C(230,60,140)},
 }
 S.StationById={};for _,s in S.Stations do S.StationById[s.Id]=s end
-function S.available(power,id) local s=S.ById[id];return s~=nil and power>=s.Required end
-function S.nextSkin(power) for _,s in S.List do if power<s.Required then return s end end end
-function S.gain(id,multiplier) return (S.ById[id] or S.List[1]).Gain*multiplier end
 return S

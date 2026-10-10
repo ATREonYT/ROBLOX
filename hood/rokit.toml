@@ -1,0 +1,4 @@
+# Tools for this project. With Rokit installed, run `rokit install` in this folder to get them.
+[tools]
+rojo = "rojo-rbx/rojo@7.7.0"
+lune = "lune-org/lune@0.10.5"

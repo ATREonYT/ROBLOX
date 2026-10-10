@@ -1,6 +1,8 @@
 -- Studio-only review screen; not the production HUD (milestone 4).
 local RunService=game:GetService('RunService')
 if not RunService:IsStudio() then return end
+-- The game HUD (HUD.client) replaces this panel, which would sit over its hint line and toasts.
+if script.Parent:FindFirstChild('HUD') then return end
 local Players=game:GetService('Players')
 local ReplicatedStorage=game:GetService('ReplicatedStorage')
 local Net=require(ReplicatedStorage:WaitForChild('Shared'):WaitForChild('Net'))

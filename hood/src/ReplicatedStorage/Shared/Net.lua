@@ -2,7 +2,7 @@
 local RunService=game:GetService('RunService')
 local ReplicatedStorage=game:GetService('ReplicatedStorage')
 local Net={}
-local definitions={EquipSkin='RemoteEvent',RequestSnapshot='RemoteFunction',ProfileUpdated='RemoteEvent',Notice='RemoteEvent',HatchCrew='RemoteEvent',EquipCrew='RemoteEvent',Rebirth='RemoteEvent',MoveOut='RemoteEvent',SelectMap='RemoteEvent',SetSettings='RemoteEvent',Cinematic='RemoteEvent'}
+local definitions={EquipSkin='RemoteEvent',RequestSnapshot='RemoteFunction',ProfileUpdated='RemoteEvent',Notice='RemoteEvent',HatchCrew='RemoteEvent',EquipCrew='RemoteEvent',Rebirth='RemoteEvent',MoveOut='RemoteEvent',SelectMap='RemoteEvent',SetSettings='RemoteEvent',Cinematic='RemoteEvent',Shoot='RemoteEvent',BuyGun='RemoteEvent',EquipGun='RemoteEvent',WaveShot='RemoteEvent',WaveState='RemoteEvent',Goal='RemoteEvent',OpenShoeBox='RemoteEvent',ShoeAction='RemoteEvent',ShoeOpened='RemoteEvent',Travel='RemoteEvent'}
 function Net.init()
  assert(RunService:IsServer(),'Only server creates network objects')
  local folder=ReplicatedStorage:FindFirstChild('HoodNet')
