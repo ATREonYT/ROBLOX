@@ -6,6 +6,9 @@
 --     the lane's Multiplier x your rebirth multiplier x boosts, x your gun, x your shoes (their fraction carries to the
 --     next shot). Shoot.client shows the same shots. A lane opens at its Rebirths (Config/Skins.Stations); a locked lane
 --     doesn't fire. The old Shoot remote is still there but pays nothing (old clients, no double pay).
+--   * (brief 23) The two Robux lanes (PRO BAY x100, GOLD BAY x250: a Stations row with Pass) open and pay only with their
+--     game pass, the Pass_<Key> attribute StoreService sets on the server (a client can't fake it). Stepping into one you
+--     don't own shows that pass's purchase prompt (or the Notice "Coming soon!" while its id is 0), once per step-in.
 --   * Players keep their own Roblox avatar: no costume and no look. Walk speed rises a little with rebirths
 --     (RebirthRules.walkSpeed), written only when it changes, so anything else that sets WalkSpeed isn't fought.
 --   * The overhead tag: your name (gold with the VIP pass), your Power and your rebirths (Roblox's own name display is
@@ -13,11 +16,13 @@
 -- Player attributes kept here (a few times a second, and Power on every paid shot):
 --   Power, Cash, Rebirths and the rebirth attributes (RebirthService.publish), TrainingStation ('' off the ranges,
 --   '<Id>' in an open lane, 'Locked:<Id>' in a locked one), TrainingNeed (rebirths that locked lane needs, else 0),
---   BestLane (Id of your best open lane), ShotBase (what one shot pays before gun and shoes where you stand: x1 off
+--   TrainingPass (the game-pass key the Robux lane you stand in needs and you don't own, else ''), BestLane (Id of your
+--   best open lane, your lane passes counted), ShotBase (what one shot pays before gun and shoes where you stand: x1 off
 --   the ranges, which is what a stage target pays), ShotMultiplier (rebirth x gun x shoes x boosts: everything but the
 --   lane). Also leaderstats Power and Rebirths.
 local Players=game:GetService('Players')
 local RS=game:GetService('ReplicatedStorage')
+local MarketplaceService=game:GetService('MarketplaceService')
 local Data=require(script.Parent.DataService)
 local Boosts=require(script.Parent.Boosts)
 local RebirthService=require(script.Parent.RebirthService)
@@ -25,6 +30,7 @@ local Rules=require(RS.Shared.LobbyRules)
 local ShotRules=require(RS.Shared.ShotRules)
 local RebirthRules=require(RS.Shared.RebirthRules)
 local Skins=require(RS.Shared.Config.Skins)
+local Products=require(RS.Shared.Config.Products)
 local Net=require(RS.Shared.Net)
 local Format=require(RS.Shared.Format)
 local ActiveMap=require(RS.Shared.ActiveMap)
@@ -98,7 +104,7 @@ end
 local function standing(player,rebirths)
  local c=player.Character;local root=c and c:FindFirstChild('HumanoidRootPart');local h=c and c:FindFirstChildOfClass('Humanoid')
  if not root or not h or h.Health<=0 then return 1,'' end
- return Rules.training(rebirths,f:PointToObjectSpace(root.Position),zones)
+ return Rules.training(rebirths,f:PointToObjectSpace(root.Position),zones,player) -- (player: its Pass_* attributes)
 end
 local function sync(player,profile,lane,station)
  local data=profile.Data
@@ -107,7 +113,8 @@ local function sync(player,profile,lane,station)
  set(player,'Cash',data.Cash)
  set(player,'TrainingStation',station)
  set(player,'TrainingNeed',Rules.need(station,n))
- set(player,'BestLane',RebirthRules.bestLane(n).Id)
+ set(player,'TrainingPass',Rules.pass(station))
+ set(player,'BestLane',RebirthRules.bestLane(n,player).Id)
  local boost=Boosts.power(player)
  set(player,'ShotBase',ShotRules.perShot(math.max(lane,1),n,boost))
  local gun=player:GetAttribute('GunMultiplier');local shoes=player:GetAttribute('ShoeMultiplier')
@@ -145,7 +152,28 @@ local function autoFire(player,profile,lane,station,dt)
  profile.Data.Onboarding.Trained=true
  RebirthService.publish(player,profile.Data) -- (Power and RebirthReady at once, so the counter climbs with every shot)
 end
-Players.PlayerRemoving:Connect(function(p) shoeCarry[p]=nil;autoCarry[p]=nil end)
+
+---------------------------------------------------------------------------------------------- Robux lanes
+-- Stepping into a Robux lane you don't own: its pass's purchase prompt (Products.canBuy: an id and Wired), else
+-- "Coming soon!". Once per step-in, at most every 4 seconds (LobbyRules.offerDue). In a new player's quiet window
+-- (OnboardingQuiet, HOOK's OnboardingService: no purchase prompt opens by itself) a Notice names the pass instead.
+local offered={} -- (per player: the step-in state LobbyRules.offerDue keeps)
+local function offer(player,pass)
+ offered[player]=offered[player] or {}
+ if not Rules.offerDue(offered[player],pass,os.clock()) then return end
+ local entry=Products.ByKey[pass]
+ if player:GetAttribute('OnboardingQuiet')==true then
+  Net.get('Notice'):FireClient(player,'This lane opens with the '..(entry and entry.Title or 'lane')..' pass (Store)')
+  return
+ end
+ if Products.canBuy(pass) then
+  local ok,err=pcall(MarketplaceService.PromptGamePassPurchase,MarketplaceService,player,Products.idOf(pass))
+  if ok then return end
+  warn('[LobbyService] Could not prompt '..pass..': '..tostring(err))
+ end
+ Net.get('Notice'):FireClient(player,(entry and entry.Title or 'This lane')..': Coming soon!')
+end
+Players.PlayerRemoving:Connect(function(p) shoeCarry[p]=nil;autoCarry[p]=nil;offered[p]=nil end)
 
 ---------------------------------------------------------------------------------------------- loop
 local beat=0
@@ -159,6 +187,7 @@ while true do
    local n=RebirthRules.count(profile.Data.Rebirths)
    local lane,station=standing(player,n)
    sync(player,profile,lane,station)
+   offer(player,Rules.pass(station))
    autoFire(player,profile,lane,station,dt)
    walk(player,n)
    if beat%4==0 then overheadTag(player,profile.Data.Rep,n) end

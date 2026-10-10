@@ -1,17 +1,27 @@
 --!strict
--- World 1's economy in one place (brief 17; the pacing simulation is brief/out17/LOGIC/pacing.luau).
---   Power only comes from shooting: at the ranges and at the stage target waves. One shot pays
+-- World 1's economy in one place (brief 23; the pacing simulation is brief/out23/ECON/pacing23.luau).
+-- The loop (brief 23, a "run" game like the soldier and superhero games):
+--   Power only comes from shooting: at the ranges (the lanes) and at the stage goons. One shot pays
 --     ShotBase x the lane's Multiplier x the rebirth multiplier x the gun x the shoes (x the 2x Power pass, x a timed boost)
---   (Shared/ShotRules; a stage target counts as a x1 lane). Nothing is paid per second.
+--   (Shared/ShotRules; a goon counts as a x1 lane). Nothing is paid per second.
 --   A rebirth resets Power to 0 and raises the rebirth multiplier by one (1x, 2x, 3x ...); each one asks for more Power
---   (Shared/RebirthRules.need). Lanes unlock by rebirths (Config/Skins.Stations).
---   Stage gates ask for Power (StagePower, read by the map builder) and pay Cash once (StageCash); each stage's target
---   wave pays Cash on its first clear (WaveCash) and a little on every later clear (WaveRepeatShare of StageCash).
+--   (Shared/RebirthRules.need). Lanes open by rebirths, the two Robux lanes by their game pass (Config/Skins.Stations).
+--   A run: Stage 1 onward; a stage's gate opens when you beat the goons of the stage before it, every run. Your shots deal
+--   your Power, so Power is what beats the goons: StagePower is each stage's Recommended Power (the gate's sign, and the
+--   goons' HP: Shared/EnemyRules.maxHp). Before every gate stand two pads: the yellow Return pad pays PadCash[stage] and
+--   takes you home (the run ends), the magenta one 10x that with the 10x Cash pass (Shared/PadRules). The pad is the one
+--   big Cash moment of a run (beating goons pays Power, not Cash); the goal chain pays a little on top.
 --   Cash buys guns (Config/Guns) and shoe boxes (Config/Shoes).
 -- The older fields (Wall*, MapThresholdGrowth, BaseRepPerSecond, ...) belong to the foundation's map list (Config/Maps)
 -- and RepMath; the game doesn't pace with them.
+
+-- The pads' Cash, Stage 1 to the boss yard (16): +10 at Stage 1, growing every stage, round numbers.
+local PAD_CASH = { 10, 25, 45, 70, 100, 140, 200, 280, 380, 520, 700, 950, 1300, 1700, 2300, 3000 }
+
 local Balance = {
- Version = 2, BaseRepPerSecond = 1, StudsPerStep = 6, MaxStepsPerSecond = 3,
+ -- The currency's name, in one place (brief 23: the reference's "Wins" are our Cash; the pads say "+10 Cash").
+ CashName = 'Cash',
+ Version = 3, BaseRepPerSecond = 1, StudsPerStep = 6, MaxStepsPerSecond = 3,
  WallBase = 50, WallGrowth = 2.1, WallsPerMap = 10, MapThresholdGrowth = 40,
  BaseCrewSlots = 3, MaxSafeValue = 1e12,
 
@@ -19,24 +29,29 @@ local Balance = {
  ShotBase = 1,
 
  -- Rebirths (Shared/RebirthRules): need(n) = RebirthBase x RebirthGrowth^n x multiplier(n), two significant figures;
- -- multiplier(n) = 1 + n x RebirthMultiplierPerLevel. So 2K, 7.5K, 21K, 50K, 120K, 260K, 550K, 1.2M ... (the first one
- -- about 2.5 minutes of shooting at BAY 1 with the first guns; each later one faster at first thanks to the new lane).
- RebirthBase = 2000, RebirthGrowth = 1.85, RebirthMultiplierPerLevel = 1,
+ -- multiplier(n) = 1 + n x RebirthMultiplierPerLevel. So 2K, 8.5K, 26K, 75K, 190K, 490K, 1.2M, 2.9M, 7M, 16M, 37M, 85M
+ -- ... (brief 23: steeper than before, for the steeper lane ladder x1 x4 x10 x20 x35 x50 x75). The first one about 6
+ -- minutes in, each one after it 4 to 8 minutes up to rebirth 9, then longer (the pacing sim's table).
+ RebirthBase = 2000, RebirthGrowth = 2.1, RebirthMultiplierPerLevel = 1,
  MaxRebirths = 1000, -- sanity cap for saves (need() passes the 1e12 Power cap long before this)
 
  -- Walk speed: Roblox's default 16, half a stud a second faster per rebirth, up to 24 (the old top look's speed).
  Walk = { Base = 16, PerRebirth = 0.5, Top = 24 },
 
- -- Stage gates 1-15 and the boss yard (16): the Power each gate asks for. Each gate is reachable in the rebirth cycle
- -- the pacing aims it at (stages 1-5 before the first rebirth, then about one new stage a rebirth, the boss yard at 12),
- -- about 80% of that cycle's rebirth need. The map builder reads this (code5/c_layout STAGE_POWER).
- StagePower = { 10, 60, 250, 800, 1600, 6000, 17000, 40000, 95000, 210000, 440000, 950000, 2000000, 4000000, 8000000, 34000000 },
- -- Cash for a gate's first pass, and for the first clear of the target wave in the stage behind it.
- StageCash = { 20, 30, 50, 75, 120, 180, 280, 430, 650, 1000, 1600, 2500, 3800, 6000, 9000, 14000 },
- WaveCash = { 8, 12, 20, 30, 50, 70, 110, 170, 260, 400, 650, 1000, 1500, 2400, 3600, 5500 },
- -- A wave cleared again (it comes back WaveRules.RespawnDelay seconds after a clear, the next time you walk in) pays this
- -- share of the stage's gate Cash (at least 1): World 1's repeatable Cash, 1 at Stage 1 up to 700 in the boss yard.
- WaveRepeatShare = 0.05,
+ -- Stages 1-15 and the boss yard (16): each stage's Recommended Power (the gate's "Recommended Power: N" sign, and its
+ -- goons' HP: EnemyRules.maxHp = HpShots x the kind's weight x this). Stages 1-5 come before the first rebirth; after
+ -- that one new stage a rebirth cycle, at about half that cycle's rebirth need (so it opens mid-cycle): stage 5 + n at
+ -- about need(n) / 2, the boss yard in cycle 11. The map builder reads this (code5/c_layout STAGE_POWER).
+ StagePower = { 10, 60, 200, 500, 1100, 3500, 13000, 38000, 95000, 250000, 600000, 1500000, 3500000, 8000000, 19000000, 43000000 },
+ -- The pads (Shared/PadRules): the yellow Return pad's Cash per stage; the magenta pad pays PadRules.TenX times it.
+ PadCash = PAD_CASH,
+ -- Beating a stage's goons pays no Cash, the first time or any later run (WaveRules.reward / repeatReward): the pad at
+ -- the end of the run is the one big number (CRITIC3: fewer, bigger Cash moments). Kept for readers of the old field.
+ WaveCash = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+ -- (brief 23) Gates pay nothing now: a gate opens every run when its goons are down (the pads pay instead). Kept at 0
+ -- for readers of the old field (StageService's first-pass Cash).
+ StageCash = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+ WaveRepeatShare = 0,
 }
 
 function Balance.wallThreshold(mapIndex: number, wallIndex: number): number

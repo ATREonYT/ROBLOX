@@ -167,25 +167,13 @@ function InventoryKit.guns(ownedText, equipped)
 	return list
 end
 
--- The World window's cards. World 1 has two trips: the Lobby, and the stage past your furthest cleared gate (the
--- same places the LOBBY and FURTHEST pads send you; StageRules.travelTarget is the rule the server checks). Worlds 2-5
--- are coming. stagesCleared: StageService's StagesCleared attribute.
+-- The World window's cards: World 1 is open, worlds 2-5 are coming. (brief 23: World 1's trips, Lobby and "Start a
+-- run", are StageRules.Trips, the rule the server checks; World.client reads them there.)
 InventoryKit.WorldNames = { 'The Block', 'The Suburbs', 'Uptown', 'The Hills', 'Downtown' }
-function InventoryKit.worlds(stagesCleared)
-	local n = math.max(0, math.floor(tonumber(stagesCleared) or 0))
+function InventoryKit.worlds()
 	local list = {}
 	for i, name in InventoryKit.WorldNames do
-		if i == 1 then
-			table.insert(list, {
-				World = 1, Name = name, Open = true,
-				Trips = {
-					{ Target = 'Lobby', Text = 'Lobby', Open = true },
-					{ Target = 'Furthest', Text = n > 0 and ('Stage ' .. n) or 'Stage 1', Open = n > 0, Stage = n },
-				},
-			})
-		else
-			table.insert(list, { World = i, Name = name, Open = false, Trips = {} })
-		end
+		table.insert(list, { World = i, Name = name, Open = i == 1 })
 	end
 	return list
 end

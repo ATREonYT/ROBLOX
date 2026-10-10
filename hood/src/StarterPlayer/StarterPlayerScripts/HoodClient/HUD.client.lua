@@ -191,7 +191,22 @@ local function actionButton(props)
 end
 -- (UICRITIC2 r1 #3: the ref's Store block has no dark inner line, its pale rim runs into the fill; the squares keep it)
 local storeButton = actionButton({ Name = 'Store', Tone = 'gold', Width = WIDE_W, Height = WIDE_H, Position = px(0, 0), Text = 'Store', TextSize = 24, LabelY = 0.72, Icon = iconOr('Basket', 'Shop'), IconSize = 86, IconX = -5, Pop = 26, InnerLine = false, OnClick = call('Store') })
-Motion.shine(storeButton.Body, 4, UDim.new(0, 3))
+do
+	-- (brief 23, HOOK) nothing for sale flashes while a new player settles in: no shine while OnboardingQuiet is on (the
+	-- onboarding's first 300 s of play). The HUD opens no window by itself, and the offer cards never pulse.
+	local stopShine
+	local function paintShine()
+		local quiet = player:GetAttribute('OnboardingQuiet') == true
+		if quiet and stopShine then
+			stopShine()
+			stopShine = nil
+		elseif not quiet and not stopShine then
+			stopShine = Motion.shine(storeButton.Body, 4, UDim.new(0, 3))
+		end
+	end
+	player:GetAttributeChangedSignal('OnboardingQuiet'):Connect(paintShine)
+	paintShine()
+end
 actionButton({ Name = 'World', Tone = 'grass', Width = SQ, Height = SQ, Position = px(GRID_X, ROW1), Text = 'World', TextSize = 22, Icon = iconOr('World', 'Evolve'), IconSize = ICON, Pop = POP, OnClick = call('World') })
 local rebirthButton = actionButton({ Name = 'Rebirth', Tone = 'coral', Width = SQ, Height = SQ, Position = px(COL2, ROW1), Text = 'Rebirth', TextSize = 19, Icon = 'Rebirth', IconSize = ICON + 4, Pop = POP + 8, OnClick = call('Rebirth') }) -- (its padded render: the ref's ring starts ~12 px above the square)
 local shoesButton = actionButton({ Name = 'Shoes', Tone = 'magenta', Width = SQ, Height = SQ, Position = px(GRID_X, ROW2), Text = 'Shoes', TextSize = 22, Icon = iconOr('Sneaker', 'Shop'), IconSize = ICON, Pop = POP, OnClick = call('Shoes') })
@@ -242,8 +257,8 @@ local function setRebirthReady(ready)
 	end
 end
 
--- Counters (the reference's bottom-left: an icon and a big outlined number each; Rebirths in its small rebirth row,
--- Cash in its big gold trophy row).
+-- Counters (the reference's bottom-left: an icon and a big outlined number each). (brief 23: the user wants Rebirths and
+-- Cash the same size, so both rows are the reference's big trophy row: one icon size, one number size, one row height.)
 local COUNTERS_W, COUNTERS_H = 300, 128
 local counters = Kit.new('Frame', { Name = 'Counters', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 0, 1, 0), Size = px(COUNTERS_W, COUNTERS_H), Parent = root })
 local function counter(name, iconId, centreY, iconSize, iconX, textSize, top, bottom)
@@ -253,13 +268,14 @@ local function counter(name, iconId, centreY, iconSize, iconX, textSize, top, bo
 	local value = fillText(label({ Name = 'Value', Text = '0', TextSize = textSize, TextXAlignment = Enum.TextXAlignment.Left, Position = px(81, 0), Size = UDim2.new(1, -81, 1, 0), ZIndex = 2, Parent = row }), top, bottom)
 	return value, icon
 end
-local rebirthCount, rebirthIcon = counter('Rebirths', 'Rebirth', 12 + 22, 42, 24, 25, Color.white, hex('F28A8A')) -- (r7: the reference's "8" is 26 px tall)
+local rebirthCount, rebirthIcon = counter('Rebirths', 'Rebirth', 8, 56, 16, 38, Color.white, hex('F28A8A'))
 -- (brief 19) Cash in the reference's gold trophy row: its "67.2K" gold (yellow -> orange), not green
-local cashCount, cashIcon = counter('Cash', 'Cash', COUNTERS_H - 12 - 44 + 24, 56, 16, 39, hex('FFE84A'), hex('FF9A10'))
--- On PC the rows sit where the reference's 2nd row (its "0") and trophy row are: 117 and 66 design px over the bottom.
-local COUNTER_PC_Y = { Rebirths = COUNTERS_H + 2 - 117, Cash = COUNTERS_H + 2 - 66 }
--- Phones: side by side in one row under Roblox's top bar, over the column (the bottom-left is the thumbstick's).
-local COUNTER_PHONE = { Rebirths = px(0, 28), Cash = px(112, 28) }
+local cashCount, cashIcon = counter('Cash', 'Cash', 64, 56, 16, 38, hex('FFE84A'), hex('FF9A10'))
+-- On PC the Cash row sits where the reference's trophy row is (66 design px over the bottom), Rebirths one row above.
+local COUNTER_PC_Y = { Rebirths = COUNTERS_H + 2 - 122, Cash = COUNTERS_H + 2 - 66 }
+-- Phones: side by side in one row under Roblox's top bar, over the column (the bottom-left is the thumbstick's); the
+-- Cash row starts just after the rebirth count (refreshCounters).
+local COUNTER_PHONE = { Rebirths = px(0, 28), Cash = px(124, 28) }
 
 -- (brief 19 r7, UICRITIC P2-1) The daily Rewards gift in the reference's PLAYTIME REWARD slot at the top right: the gift
 -- and a two-line caption. With Roblox's player list showing (Kit.HidePlayerList false) it steps left of the list.
@@ -281,10 +297,12 @@ local offers = Kit.new('Frame', { Name = 'Offers', BackgroundTransparency = 1, A
 local function offerCard(key, i, tone, iconId)
 	local entry = Products.ByKey[key]
 	if not entry then return end
-	local holder, hit = Kit.blockButton({ Name = key, Tone = tone, Width = OFFER_W, Height = OFFER_H, Position = px(0, (i - 1) * OFFER_STEP) })
+	-- (the upper card draws over the lower one, so its price stays on top of the art the lower card raises)
+	local holder, hit = Kit.blockButton({ Name = key, Tone = tone, Width = OFFER_W, Height = OFFER_H, Position = px(0, (i - 1) * OFFER_STEP), ZIndex = 3 - i })
 	holder.Parent = offers
-	-- (r7, UICRITIC P3-9: the reference's +2x Power arm is big and centred behind the name)
-	local icon = Kit.icon3d(iconId, i == 2 and 108 or 92, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, i == 2 and 0 or -10, 0, i == 2 and -22 or -14), ZIndex = 5 })
+	-- (r7, UICRITIC P3-9: the reference's +2x Power arm is big and centred behind the name; brief 23: both cards' art the
+	-- same size and place, centred behind the name and rising over the top edge like the reference's trophy)
+	local icon = Kit.icon3d(iconId, 92, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, -18), ZIndex = 5 })
 	icon.Parent = holder.Body
 	local title = entry.Offer or entry.Title
 	label({ Name = 'Title', Text = title, TextSize = Kit.fitSize(title, 33, OFFER_W - 24, 14), StrokeThickness = 4, Position = px(4, -1), Size = UDim2.new(1, -8, 1, 0), ZIndex = 7, Parent = holder.Body })
@@ -362,11 +380,14 @@ for i, key in PACKS do
 	Motion.button(holder, function() buy(key) end)
 end
 local function paintPacks(need)
+	-- (brief 23: one number size on all three, like the reference's "+1B / +10B / +100B": the longest one decides)
+	local size = 26
 	for _, key in PACKS do
 		local l = packLabels[key]
 		l.Text = '+' .. short(Products.powerAmount(key, need))
-		l.TextSize = Kit.fitSize(l.Text, 26, PACK_W - 50, 12)
+		size = math.min(size, Kit.fitSize(l.Text, 26, PACK_W - 50, 12))
 	end
+	for _, key in PACKS do packLabels[key].TextSize = size end
 end
 -- The Auto Fight pass in the reference's "2x Speed" slot: a sunset gradient block and "ONLY <Robux> n" under it.
 do
@@ -413,9 +434,10 @@ Kit.new('UIListLayout', { Padding = UDim.new(0, 2), HorizontalAlignment = Enum.H
 local toastCount = 0
 -- Notices sit in the upper middle; while a window is open (the HUD is away) they move up into the top band, clear of it.
 local toastY = 115
--- (LOOP) While Goals.client's GOAL DONE moment is up (PlayerGui GoalMoment; it takes design px 50..200 at the top centre),
--- they sit under it: "Bought Snub Revolver!" landed right on "GOAL DONE!".
-local MOMENT_BOTTOM = 208
+-- (LOOP) While Goals.client's GOAL DONE moment is up (PlayerGui GoalMoment; brief 23: it takes design px 2..98 at the top
+-- centre, or moves low, over the bottom bar, when a pad label is there), they sit under it: "Bought Snub Revolver!"
+-- landed right on "GOAL DONE!".
+local MOMENT_BOTTOM = 106
 placeToasts = function()
 	local open = playerGui:GetAttribute('HoodWindow')
 	local windowOpen = type(open) == 'string' and open ~= ''
@@ -811,7 +833,12 @@ end)
 -- Ranges open by rebirths (Skins.Stations[i].Rebirths; the server's TrainingNeed is the count the lane you stand
 -- in needs, BestLane your best open lane).
 local function laneOpen(lane)
-	return rebirthsNow() >= (type(lane.Rebirths) == 'number' and lane.Rebirths or 0)
+	-- (brief 23, ECON: a Robux lane opens with its pass, not with rebirths: RebirthRules.laneOpen reads Pass_<Key>)
+	if RebirthRules and type(RebirthRules.laneOpen) == 'function' then
+		local ok, open = pcall(RebirthRules.laneOpen, lane, rebirthsNow(), player)
+		if ok then return open == true end
+	end
+	return not lane.Pass and rebirthsNow() >= (type(lane.Rebirths) == 'number' and lane.Rebirths or 0)
 end
 local function lockText(lane)
 	local n = num('TrainingNeed', 0)
@@ -832,6 +859,11 @@ local function hintText(power)
 	local need = rebirthNeed()
 	if station:find('Locked:') then
 		local lane = Skins.StationById[station:sub(8)]
+		-- (brief 23, ECON) a Robux lane you don't own: its price (the server shows the pass prompt as you step in)
+		local pass = player:GetAttribute('TrainingPass')
+		if lane and ((type(pass) == 'string' and pass ~= '') or lane.Pass) and lane.RobuxPrice then
+			return lane.Name .. ' needs ' .. c(GOLD, '⏣' .. lane.RobuxPrice)
+		end
 		return (lane and lane.Name or 'Range') .. ' needs ' .. c(RED, lane and lockText(lane) or 'more')
 	end
 	-- A new player follows Lobby.client's floor guide (its GuidePhase): first to the free lane, then out through the door.
@@ -850,12 +882,61 @@ local function hintText(power)
 	return 'Rebirth at ' .. c(GREEN, short(need)) .. ' Power'
 end
 
+-- (brief 23, CRITIC3 / HOOK: counter juice) Every gain makes its counter jump (the row: 1 -> 1.2 -> 1 in 0.15 s) and
+-- floats a small "+N" beside it; gains that land within 0.25 s add up in the one that is already floating. A pad
+-- cash-out (STAGES' Cinematic CashOut) also flies a handful of bills from the middle of the screen into the Cash counter.
+local floating = {} -- counter -> { Label, At, Sum }
+local function gainFloat(key, row, x, amount, top, bottom)
+	local f = floating[key]
+	if f and f.Label.Parent and os.clock() - f.At < 0.25 then
+		f.Sum += amount
+		f.Label.Text = '+' .. short(f.Sum)
+		return
+	end
+	local l = fillText(label({ Name = 'Gain', Text = '+' .. short(amount), TextSize = 22, StrokeThickness = 3, TextXAlignment = Enum.TextXAlignment.Left, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, x, 0.5, -4), Size = px(120, 26), ZIndex = 4, Parent = row }), top, bottom)
+	floating[key] = { Label = l, At = os.clock(), Sum = amount }
+	Motion.tween(l, 0.75, Enum.EasingStyle.Quad, Enum.EasingDirection.In, { Position = UDim2.new(0, x + 6, 0.5, -30), TextTransparency = 1 })
+	local st = l:FindFirstChildOfClass('UIStroke')
+	if st then Motion.tween(st, 0.75, Enum.EasingStyle.Quad, Enum.EasingDirection.In, { Transparency = 1 }) end
+	task.delay(0.8, function() l:Destroy() end)
+end
+local function flyCash(count)
+	local row = counters:FindFirstChild('Cash')
+	if not row then return end
+	local k = Kit.scaleFor(gui.AbsoluteSize)
+	local w, h = gui.AbsoluteSize.X / k, gui.AbsoluteSize.Y / k
+	-- (the Cash icon's centre in the Root's design px; about there if the engine can't say)
+	local target = Vector2.new(44, h - 66)
+	pcall(function() target = (cashIcon.AbsolutePosition + cashIcon.AbsoluteSize / 2 - root.AbsolutePosition) / k end)
+	for i = 1, count do
+		local bill = Kit.icon3d('Cash', 70, { AnchorPoint = Vector2.new(0.5, 0.5), Position = px(w / 2, h * 0.45), ZIndex = 50, Outline = false })
+		bill.Parent = root
+		local spread = px(w / 2 + math.random(-150, 150), h * 0.45 + math.random(-80, 60))
+		Motion.tween(bill, 0.16, Enum.EasingStyle.Quad, Enum.EasingDirection.Out, { Position = spread })
+		task.delay(0.16 + i * 0.05, function()
+			if not bill.Parent then return end
+			local t = Motion.tween(bill, 0.42, Enum.EasingStyle.Quad, Enum.EasingDirection.In, { Position = px(target.X, target.Y), Size = px(40, 40) })
+			t.Completed:Once(function()
+				bill:Destroy()
+				Motion.bump(row, 0.2)
+			end)
+		end)
+	end
+end
 local lastPower, lastCash, lastRebirths
 function refreshCounters()
 	local cash, n = cashNow(), rebirthsNow()
 	cashCount.Text = short(cash)
 	rebirthCount.Text = short(n)
-	if lastCash and cash > lastCash then Motion.pop(cashIcon, 0.3) end
+	if counters:GetAttribute('Phone') then
+		-- (phones: one row, the Cash icon 22 px after the rebirth count, however many digits it has)
+		COUNTER_PHONE.Cash = px(COUNTER_PHONE.Rebirths.X.Offset + 81 + math.max(Kit.textWidth(rebirthCount.Text, rebirthCount.TextSize), 24) + 6, 28)
+		counters.Cash.Position = COUNTER_PHONE.Cash
+	end
+	if lastCash and cash > lastCash then
+		Motion.bump(counters.Cash, 0.2)
+		gainFloat('Cash', counters.Cash, 81 + Kit.textWidth(cashCount.Text, cashCount.TextSize) + 4, cash - lastCash, hex('FFF27A'), hex('FFA81A'))
+	end
 	if lastRebirths and n > lastRebirths then
 		Motion.pop(rebirthIcon, 0.3)
 		task.delay(0.5, function() rebirthMoment(n) end)
@@ -876,7 +957,8 @@ function refresh()
 		Motion.tween(shown, 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out, { Value = power }) -- also stops a running count-up
 	elseif power > lastPower then
 		Motion.tween(shown, 0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out, { Value = power })
-		Motion.pop(powerLabel, 0.07)
+		Motion.bump(powerRow, 0.2)
+		gainFloat('Power', powerRow, powerRow.Size.X.Offset + 6, power - lastPower, hex('FFF27A'), hex('FFA81A'))
 	end
 	powerLabel.Text = short(shown.Value)
 	centrePower(powerLabel.Text)
@@ -894,7 +976,7 @@ function refresh()
 	hint.Text = hintText(power)
 	if current and current.Update then current.Update() end
 end
-for _, key in { 'Power', 'TrainingStation', 'TrainingNeed', 'BestLane', 'GunMultiplier', 'EquippedGun', 'OwnedGuns', 'GuidePhase', 'WaveLeft', 'RebirthNeed', 'RebirthMultiplier', 'RebirthNextMultiplier', 'RebirthUnlock', 'ShoeMultiplier', 'ShotMultiplier', 'Pass_DoubleRep', 'GoalStep' } do
+for _, key in { 'Power', 'TrainingStation', 'TrainingNeed', 'TrainingPass', 'BestLane', 'GunMultiplier', 'EquippedGun', 'OwnedGuns', 'GuidePhase', 'WaveLeft', 'RebirthNeed', 'RebirthMultiplier', 'RebirthNextMultiplier', 'RebirthUnlock', 'ShoeMultiplier', 'ShotMultiplier', 'Pass_DoubleRep', 'GoalStep' } do
 	player:GetAttributeChangedSignal(key):Connect(refresh)
 end
 for _, key in { 'Cash', 'Rebirths' } do
@@ -926,10 +1008,13 @@ task.spawn(function()
 	Net.get('Notice').OnClientEvent:Connect(function(message)
 		-- (LOOP) Your own "Rebirth 3! Every shot pays x4" is what the rebirth moment says in big letters: once is enough.
 		if string.find(tostring(message), '^Rebirth %d+!') then return end
+		-- (brief 23, HOOK) a new player's first guided gun buy: Onboarding.client's big "x2 POWER!" says it already
+		if string.find(tostring(message), '^Bought ') and player:GetAttribute('OnboardingStep') == 'Gun' then return end
 		toast(message, noticeTone(tostring(message)))
 	end)
 	Net.get('Cinematic').OnClientEvent:Connect(function(info)
 		if type(info) == 'table' and info.Kind == 'Rebirth' and type(info.Rebirths) == 'number' then rebirthMoment(info.Rebirths, info.Unlocked) end
+		if type(info) == 'table' and info.Kind == 'CashOut' then flyCash(info.TenX and 8 or 6) end
 	end)
 	Net.get('ProfileUpdated').OnClientEvent:Connect(applyProfile)
 	Net.get('WaveState').OnClientEvent:Connect(function(info)
@@ -971,6 +1056,8 @@ local function relayout()
 	if phone then
 		counters.AnchorPoint = Vector2.new(0, 0)
 		counters.Position = px(0, -6)
+		counters:SetAttribute('Phone', true)
+		refreshCounters()
 		for name, at in COUNTER_PHONE do
 			local row = counters:FindFirstChild(name)
 			if row then row.Position = at end
@@ -982,6 +1069,7 @@ local function relayout()
 	else
 		counters.AnchorPoint = Vector2.new(0, 1)
 		counters.Position = UDim2.new(0, 0, 1, -2)
+		counters:SetAttribute('Phone', false)
 		for name, y in COUNTER_PC_Y do
 			local row = counters:FindFirstChild(name)
 			if row then row.Position = px(0, y) end

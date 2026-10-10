@@ -1,6 +1,5 @@
 -- (brief 22, UI4) The inventory's and the World window's pure rules: Shared/InventoryKit (search, stacking, the Index,
--- the boost queue, passes, guns, worlds) and StageRules.travelTarget (where the LOBBY / FURTHEST pads and the World
--- window's trips send you).
+-- the boost queue, passes, guns, worlds) and StageRules.travelTarget (where the World window's trips send you).
 return function(t)
 	local RS = game.ReplicatedStorage
 	local IK = require(RS.Shared.InventoryKit)
@@ -125,19 +124,12 @@ return function(t)
 		e.equal(junk[10].State, 'Locked')
 	end)
 
-	t.test('worlds: World 1 has the Lobby and your furthest stage, worlds 2-5 are coming', function()
-		local w = IK.worlds(3)
+	t.test('worlds: World 1 is open, worlds 2-5 are coming (World 1\'s trips are StageRules.Trips)', function()
+		local w = IK.worlds()
 		e.equal(#w, 5)
 		e.truthy(w[1].Open)
-		e.equal(w[1].Trips[1].Target, 'Lobby')
-		e.truthy(w[1].Trips[1].Open)
-		e.equal(w[1].Trips[2].Target, 'Furthest')
-		e.equal(w[1].Trips[2].Text, 'Stage 3')
-		e.truthy(w[1].Trips[2].Open)
-		for i = 2, 5 do e.falsy(w[i].Open); e.equal(#w[i].Trips, 0) end
-		local fresh = IK.worlds(nil)
-		e.falsy(fresh[1].Trips[2].Open)
-		e.equal(fresh[1].Trips[2].Text, 'Stage 1')
+		e.equal(w[1].Name, 'The Block')
+		for i = 2, 5 do e.falsy(w[i].Open); e.equal(w[i].World, i) end
 	end)
 
 	t.test('splat colours: the rarity colour, Common the warm beige, Secret flagged for the rainbow', function()
@@ -192,16 +184,24 @@ return function(t)
 		if not ok then error(err, 0) end
 	end)
 
-	t.test('travel: Lobby always, Furthest only past a cleared gate (the furthest), nothing else', function()
-		local gates = { { Stage = 1, WallId = 'W1', Z = -20 }, { Stage = 2, WallId = 'W2', Z = -56 }, { Stage = 3, WallId = 'W3', Z = -92 } }
-		e.equal(StageRules.travelTarget(gates, {}, 'Lobby'), 'Lobby')
-		local none, why = StageRules.travelTarget(gates, {}, 'Furthest')
+	-- (brief 23) A run is fought from Stage 1: World 1's trips are the Lobby and Stage 1 (both end the run you are on);
+	-- the furthest-stage trip is gone.
+	t.test('travel: World 1 has the Lobby and Stage 1 (a fresh run), nothing else', function()
+		local gates = { { Stage = 2, WallId = 'W2', Z = -56 }, { Stage = 1, WallId = 'W1', Z = -20 }, { Stage = 3, WallId = 'W3', Z = -92 } }
+		e.equal(StageRules.travelTarget(gates, 'Lobby'), 'Lobby')
+		e.equal(StageRules.travelTarget(gates, 'Stage1').WallId, 'W1')
+		for _, junk in { 'Furthest', 'Stage9', 'Stage2', '', 7 } do
+			local none, why = StageRules.travelTarget(gates, junk)
+			e.equal(none, nil); e.equal(why, 'unknown')
+		end
+		local none, why = StageRules.travelTarget({}, 'Stage1')
 		e.equal(none, nil); e.equal(why, 'locked')
-		e.equal(StageRules.travelTarget(gates, { W1 = true, W2 = true }, 'Furthest').Stage, 2)
-		-- the furthest cleared, whatever the order they were cleared in
-		e.equal(StageRules.travelTarget(gates, { W3 = true, W1 = true }, 'Furthest').Stage, 3)
-		local bad, why2 = StageRules.travelTarget(gates, { W1 = true }, 'Stage9')
-		e.equal(bad, nil); e.equal(why2, 'unknown')
-		e.equal(select(2, StageRules.travelTarget(gates, nil, 'Furthest')), 'locked')
+		e.equal(StageRules.travelTarget(nil, 'Lobby'), 'Lobby')
+		-- the World window's buttons: exactly these two, each one the server takes
+		e.equal(#StageRules.Trips, 2)
+		e.equal(StageRules.Trips[1].Target, 'Lobby'); e.equal(StageRules.Trips[1].Caption, 'Spawn')
+		e.equal(StageRules.Trips[2].Target, 'Stage1'); e.equal(StageRules.Trips[2].Text, 'Stage 1'); e.equal(StageRules.Trips[2].Caption, 'Start a run')
+		for _, trip in StageRules.Trips do e.truthy(StageRules.travelTarget(gates, trip.Target) ~= nil) end
+		e.truthy(StageRules.TripLand > 0 and StageRules.TripLand < 30) -- (inside Stage 1, short of its crew)
 	end)
 end

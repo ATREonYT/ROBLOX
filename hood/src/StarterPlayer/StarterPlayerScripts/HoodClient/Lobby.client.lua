@@ -55,33 +55,101 @@ local pointer = label(indicator, 'Destination', 22, C(255, 224, 80))
 
 ---------------------------------------------------------------------------------------------- stations
 -- The shooting ranges on the map: shooter's box, label, targets. A lane opens at a number of rebirths
--- (Skins.Stations[i].Rebirths); a locked lane turns black, like the training lanes in the user's +1 video: lanes built
--- with the Silhouette attribute go black as a whole (every visible part, its textures, surface signs, effects and
--- lights) while their label stays readable over them; older stations without it (the Champ Ring, the original Block's
+-- (Skins.Stations[i].Rebirths); a locked lane is a black silhouette, like the user's ref_lanes_spread.png and
+-- ref_training_lanes.png (LOBBY5 r11/r12): in a lane built with the Silhouette attribute the station (its pad, rim,
+-- bench, stands and targets, their textures and surface signs) goes flat black and its effects stop, while its side
+-- walls and backstop and the plaza's deck between the lanes keep their colours (the black shapes stand out against
+-- them) and the label stays readable over it; it comes back in colour when it unlocks. Older stations without the attribute (the Champ Ring, the original Block's
 -- gym) black out their gear only.
---   Lane labels (code5/d2_stations Stations.labels: a BillboardGui with Detail, Chip > Cost, Power): Detail
---   "Unlocked" green / "Locked" red, the chip "FREE" or "🔄 <rebirths>", and "xN Power" in the lane's colour. The chip
---   and the multiplier are rewritten here from the config too, so a map built before the rebirth lanes still reads right.
+--   Lane labels (code5/d2_stations Stations.labels, BRIEF23's superhero lanes: a BillboardGui with Chip + Icon + Cost,
+--   Detail, Power): the chip shows the rebirth icon and the rebirths the lane needs (a Robux lane: the Robux icon and
+--   its price), Detail "Unlocked" green / "Locked" red, and "xN Power" big in white. The chip's number and the
+--   multiplier are rewritten here from the config too (RebirthRules.laneLabel), so the label always says what
+--   Config/Skins.Stations says. A Robux lane (Pass) opens with its game pass (Pass_<Key>, RebirthRules.laneOpen with the
+--   player) and is never blacked out while locked: it is for sale, so it keeps its colours and its premium trim.
 --   The Champ Ring's sign (HoodProps): Detail "LOCKED • 🔄 16 REBIRTHS" / "UNLOCKED • TRAIN HERE".
 --   (LABELS) How a lane's label shows is HoodClient/LabelFade's (Shared/LabelFade, kind Lane): it fades and shrinks a
 --   little with the distance, shrinks up close, and declutters the row seen down the aisle. This only says which lane
 --   reads from further (the next to open: FadeNear/FadeFar) and which fade out while you stand in a box (FadeHold).
 local okVfx, HoodVFX = pcall(require, RS.Shared.HoodVFX)
+local okKit, Kit = pcall(require, RS.Shared.UIKit)
+if not okKit or type(Kit) ~= 'table' then Kit = nil end
+-- (brief 23, UI5's UIKit.watchImage) An uploaded icon still in Roblox review draws nothing. While a label's icon (the
+-- lane chip's rebirth / Robux icon, a shoe box label's Cash / Robux icon) doesn't draw, it hides, its text moves to the
+-- middle of `span` (x0, w) and carries the glyph instead (the Glyph attribute chipText reads); back when it loads.
+local function iconOrGlyph(icon, text, glyph, span, repaint)
+	if not (Kit and Kit.watchImage and icon and text) or icon:GetAttribute('Watched') then return end
+	icon:SetAttribute('Watched', true)
+	local pos, size, align = text.Position, text.Size, text.TextXAlignment
+	local function set(missing)
+		icon.Visible = not missing
+		text.Position = missing and UDim2.fromScale(span[1], pos.Y.Scale) or pos
+		text.Size = missing and UDim2.fromScale(span[2], size.Y.Scale) or size
+		text.TextXAlignment = missing and Enum.TextXAlignment.Center or align
+		text:SetAttribute('Glyph', missing and glyph or '')
+		repaint()
+	end
+	Kit.watchImage(icon, function() set(true) end, function() set(false) end)
+end
+-- The shoe boxes' labels (code5/e2_lobby Lobby.boxLabel: WorldLabel > PriceIcon beside Price, or beside Title on a Robux
+-- box): the same fallback. Boxes stream in whole, so this looks again with every refresh.
+local function watchBoxLabels()
+	local boxes = active.Root:FindFirstChild('ShoeBoxes', true)
+	for _, d in (boxes and boxes:GetDescendants() or {}) do
+		if d:IsA('ImageLabel') and d.Name == 'PriceIcon' and not d:GetAttribute('Watched') then
+			local g = d.Parent
+			local robux = g:GetAttribute('Robux') == true
+			local text = g:FindFirstChild(robux and 'Title' or 'Price')
+			if text and text:IsA('TextLabel') then
+				local base = text.Text
+				local glyph = robux and (RebirthRules.RobuxMark or '⏣') or '💵'
+				iconOrGlyph(d, text, glyph, { 0.04, 0.92 }, function()
+					local gl = text:GetAttribute('Glyph') or ''
+					text.Text = gl ~= '' and (gl .. (robux and '' or ' ') .. base) or base
+				end)
+			end
+		end
+	end
+end
 if not okVfx then HoodVFX = nil end
 local stations = {}
--- (LABELS) Label bands in studs from the camera, over LabelFade's lane band (45 -> 75): the next lane to open reads
--- from across the hall, a middle lane's stack only up close.
+-- (LABELS) Label bands in studs from the camera: every lane's stack reads from the spawn and the aisle mouth (LOBBY5 r12,
+-- CRITIC3: the Robux lanes at the aisle's far end sell, so they must read from the spawn too: 60 -> 90, over LabelFade's
+-- lane band 45 -> 75); the next lane to open from further; a middle lane's stack only up close.
+local LANE_NEAR, LANE_FAR = 60, 90
 local GOAL_NEAR, GOAL_FAR, MIDDLE_NEAR, MIDDLE_FAR, NEXT_LIFT = 65, 105, 14, 22, Vector3.new(0, 6.5, 0)
-local function chipText(s) return s.Rebirths == 0 and 'FREE' or ('🔄 ' .. s.Rebirths) end
+-- The chip's text: the number alone next to the label's icon (its Glyph attribute is ''), else the glyph and the
+-- number (a map built before the icons: the old "FREE" / "🔄 n").
+local function chipText(s, cost)
+	local pass = RebirthRules.lanePass and RebirthRules.lanePass(s)
+	local number = pass and tostring(s.RobuxPrice or '') or tostring(RebirthRules.laneNeed(s))
+	local glyph = cost:GetAttribute('Glyph')
+	if glyph == '' then return number end
+	if glyph ~= nil then return pass and (glyph .. number) or (glyph .. ' ' .. number) end
+	if pass then return (RebirthRules.RobuxMark or '') .. number end
+	return s.Rebirths == 0 and 'FREE' or ('🔄 ' .. s.Rebirths)
+end
+local function paidLane(s) return RebirthRules.lanePass ~= nil and RebirthRules.lanePass(s) ~= nil end
 local function track(s)
 	local model = training:FindFirstChild('Training_' .. s.Id, true) or active.Root:FindFirstChild('Training_' .. s.Id, true)
 	if not model then return nil end
 	local sign = model:FindFirstChild('Sign', true) or model:FindFirstChild('Nameplate', true)
 	local entry = { Zone = model:FindFirstChild('TrainingZone', true), Sign = sign, Parts = {}, Swing = {}, Fx = model:FindFirstChild('Theme'), Skins = {}, Guis = {} }
 	entry.Bag = sign ~= nil and sign:FindFirstChild('Power', true) ~= nil
-	if model:GetAttribute('Silhouette') then
+	if model:GetAttribute('Silhouette') and not paidLane(s) then
 		entry.Whole = model
+		-- (LOBBY5 r12, CRITIC3: the lane's side walls and its backstop keep their colours, so the black pad, bench, stands
+		-- and targets stand out against them as shapes, like the reference's black figures before their sandbag walls)
+		local function framing(p)
+			local a = p.Parent
+			while a and a ~= model do
+				if a.Name == 'Walls' or a.Name == 'Backstop' then return true end
+				a = a.Parent
+			end
+			return false
+		end
 		for _, p in model:GetDescendants() do
+			if framing(p) then continue end
 			if p:IsA('BasePart') and p.Transparency < 1 then
 				table.insert(entry.Parts, { Part = p, Color = p.Color, Material = p.Material })
 			elseif p:IsA('Texture') or p:IsA('Decal') then
@@ -113,7 +181,15 @@ local function track(s)
 		entry.Label = sign:FindFirstChildWhichIsA('BillboardGui')
 		entry.Middle = false
 		local cost = sign:FindFirstChild('Cost', true)
-		if cost and cost:IsA('TextLabel') then cost.Text = chipText(s) end
+		if cost and cost:IsA('TextLabel') then
+			cost.Text = chipText(s, cost)
+			local icon = sign:FindFirstChild('Icon', true)
+			if icon and icon:IsA('ImageLabel') then
+				-- (the chip spans x 0.33..0.67 of the label: the glyph and the number centre in it)
+				local glyph = paidLane(s) and (RebirthRules.RobuxMark or '⏣') or '🔄'
+				iconOrGlyph(icon, cost, glyph, { 0.35, 0.3 }, function() cost.Text = chipText(s, cost) end)
+			end
+		end
 		local power = sign:FindFirstChild('Power', true)
 		if power and power:IsA('TextLabel') then power.Text = 'x' .. s.Multiplier .. ' Power' end
 	end
@@ -144,7 +220,7 @@ local function retrack()
 	end
 	if found then neighbours() end
 end
-local SILHOUETTE = C(18, 18, 22)
+local SILHOUETTE = C(0, 0, 0) -- (flat black on Plastic: SmoothPlastic's sky sheen showed it navy)
 local UNLOCKED, LOCKED = C(40, 235, 90), C(240, 40, 60) -- (the video's green Unlocked and red Locked, as the lanes build them)
 -- n: your rebirths.
 local function paintStations(n)
@@ -170,19 +246,19 @@ local function paintStations(n)
 				-- (LABELS) LabelFade owns MaxDistance, Enabled stays on: the band and the hold are attributes it reads
 				-- (nil: the lane band), so the hold fades the stack out and back in instead of switching it.
 				local middle = e.Middle and not lift
-				e.Label:SetAttribute('FadeNear', middle and MIDDLE_NEAR or (lift and GOAL_NEAR or nil))
-				e.Label:SetAttribute('FadeFar', middle and MIDDLE_FAR or (lift and GOAL_FAR or nil))
+				e.Label:SetAttribute('FadeNear', middle and MIDDLE_NEAR or (lift and GOAL_NEAR or LANE_NEAR))
+				e.Label:SetAttribute('FadeFar', middle and MIDDLE_FAR or (lift and GOAL_FAR or LANE_FAR))
 				e.Label.StudsOffset = (e.Middle and lift) and NEXT_LIFT or Vector3.zero
 				e.Label:SetAttribute('FadeHold', (own or beside) or nil)
 			end
 		end
 		if e then
-			local locked = not RebirthRules.laneOpen(s, n)
+			local locked = not RebirthRules.laneOpen(s, n, player)
 			if e.Locked ~= locked then
 				e.Locked = locked
 				for _, r in e.Parts do
 					r.Part.Color = locked and SILHOUETTE or r.Color
-					r.Part.Material = locked and Enum.Material.SmoothPlastic or r.Material
+					r.Part.Material = locked and Enum.Material.Plastic or r.Material
 				end
 				if e.Whole then
 					for _, k in e.Skins do k.Item.Transparency = locked and 1 or k.Transparency end
@@ -599,6 +675,7 @@ end)
 local lastPower
 local pulse
 local function refresh()
+	pcall(watchBoxLabels)
 	local n = player:GetAttribute('Power')
 	if n == nil then return end
 	local rebirths = RebirthRules.count(player:GetAttribute('Rebirths'))
@@ -607,7 +684,7 @@ local function refresh()
 	-- The arrow floats over your best open lane while you're not in one.
 	local bestGym = Skins.Stations[1]
 	for _, g in Skins.Stations do
-		if RebirthRules.laneOpen(g, rebirths) and stations[g.Id] then bestGym = g end
+		if RebirthRules.laneOpen(g, rebirths, player) and stations[g.Id] then bestGym = g end
 	end
 	if station == '' or station:find('Locked:') then
 		indicator.Adornee = zoneOf(bestGym.Id)
@@ -643,6 +720,11 @@ local function refresh()
 end
 for _, key in { 'Power', 'TrainingStation', 'StagesCleared', 'Rebirths' } do -- (the last two: the guide's steps and the lanes)
 	player:GetAttributeChangedSignal(key):Connect(refresh)
+end
+-- (a Robux lane opens the moment its pass arrives: Pass_RangeVIP1, Pass_RangeVIP2)
+for _, s in Skins.Stations do
+	local pass = RebirthRules.lanePass and RebirthRules.lanePass(s)
+	if pass then player:GetAttributeChangedSignal('Pass_' .. pass):Connect(refresh) end
 end
 refresh()
 -- (Lanes that stream in later get painted too.)

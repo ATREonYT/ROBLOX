@@ -12,6 +12,9 @@
 -- Wired = true only when the server really grants the item (HoodServer/StoreService: ownership attributes and
 -- receipts) AND the game applies its effect. The client never prompts a purchase for an item that is not Wired, even
 -- with an id: nobody can pay Robux for something that does nothing yet. Flip it when the effect ships.
+-- (brief 23) RangeVIP1 / RangeVIP2 (the PRO BAY x100 and GOLD BAY x250 lanes: LobbyService opens and pays a Robux lane
+-- only with its Pass_* attribute) and TenXCash (the magenta pad before each gate pays Shared/PadRules.reward(stage, true)
+-- with Pass_TenXCash: StageService).
 -- Wired now: DoubleRep, DoubleCash and VIP (Pass_* attributes; HoodServer/Boosts and the overhead tag apply them), the
 -- Power and Cash packs, the timed boosts, the Boost Bundle and Block Party (StoreService; PowerBoost), SkipRebirth
 -- (RebirthService). AutoShoot ("Auto Fight", brief 18: with Pass_AutoShoot your gun fires at stage goons on its own;
@@ -27,16 +30,23 @@
 -- Nothing here is limited or timed: no "Limited Stock", no countdowns.
 local Products = {}
 Products.Enabled = true -- master switch: false = every card says "Coming soon!"
+-- The Robux sign in text: U+E002, the character Roblox's own fonts draw as the Robux icon (written ⏣ in our docs; a
+-- terminal prints it as nothing). World labels use it for prices: RebirthRules.laneLabel, PadRules.labels.
+Products.RobuxMark = utf8.char(0xE002)
 
 -- Game pass ids (0 = not created yet).
 Products.Passes = {
 	DoubleRep = 0, -- 2x Power on every shot (key kept from the first build)
-	DoubleCash = 0, -- 2x Cash from gates, waves and goals
+	DoubleCash = 0, -- 2x Cash from the pads and goals
 	AutoShoot = 0, -- (shown as "Auto Fight", brief 18) your gun fires at stage goons on its own
 	VIP = 0, -- VIP tag + 1.5x Cash
 	Lucky = 0, -- better odds for Epic and up in Cash shoe boxes
 	TripleOpen = 0, -- open 3 Cash shoe boxes at once for 3x the Cash
 	ExtraEquip = 0, -- +1 shoe pair on (4 instead of 3); replaces the old crew-slot pass
+	-- (brief 23)
+	TenXCash = 0, -- "10x Cash": the magenta pad before each gate pays 10x the yellow one (Shared/PadRules, StageService)
+	RangeVIP1 = 0, -- "Pro Bay": the x100 Power lane, PRO BAY (Config/Skins.Stations Pass; LobbyService)
+	RangeVIP2 = 0, -- "Gold Bay": the x250 Power lane, GOLD BAY
 }
 -- Developer product ids (0 = not created yet).
 Products.DeveloperProducts = {
@@ -81,12 +91,16 @@ Products.Catalog = {
 	{ Key = 'ShoeBoxGrail8', Kind = 'Product', Section = 'Box', Box = 'Grail', Count = 8, Title = 'Grail Box', Detail = '8 Grail Boxes', Price = 1199, WasPrice = 1592, Art = 'box:Grail', Tone = 'cardPurple', Wired = true },
 	-- ~Gamepass~
 	{ Key = 'DoubleRep', Kind = 'Pass', Section = 'Gamepass', Title = '2x Power', Big = 'Every\nShot', Detail = 'Every shot pays double', Price = 199, Art = 'icon:Power', Tone = 'cardGold', Offer = '2x Power', Sticker = '2x', Wired = true },
-	{ Key = 'DoubleCash', Kind = 'Pass', Section = 'Gamepass', Title = '2x Cash', Big = 'Every\nStage', Detail = 'Double Cash from gates, waves and goals', Price = 149, Art = 'icon:Cash', Tone = 'cardPurple', Offer = '2x Cash', Sticker = '2x', Wired = true },
+	{ Key = 'DoubleCash', Kind = 'Pass', Section = 'Gamepass', Title = '2x Cash', Big = 'Every\nStage', Detail = 'Double Cash from pads and goals', Price = 149, Art = 'icon:Cash', Tone = 'cardPurple', Offer = '2x Cash', Sticker = '2x', Wired = true },
 	{ Key = 'VIP', Kind = 'Pass', Section = 'Gamepass', Banner = true, Title = 'VIP', Big = 'VIP', Detail = 'GOLD TAG + 1.5x CASH', Price = 249, Art = 'icon:Trophy', Tone = 'cardGreen', Wired = true },
 	{ Key = 'AutoShoot', Kind = 'Pass', Section = 'Gamepass', Title = 'Auto Fight', Big = 'Hands\nFree', Detail = 'Fires at goons for you', Price = 99, Art = 'gun:Uzi', Tone = 'cardRed', Offer = 'Auto Fight', Wired = true },
 	{ Key = 'Lucky', Kind = 'Pass', Section = 'Gamepass', Title = 'Lucky', Big = 'Better\nBoxes', Detail = 'Better odds for Epic and up in Cash boxes', Price = 129, Art = 'box:Galaxy', Tone = 'cardTeal', Wired = true },
 	{ Key = 'TripleOpen', Kind = 'Pass', Section = 'Gamepass', Title = 'Triple Open', Big = '3 Boxes\nat Once', Detail = 'Open 3 Cash boxes at once, for 3x the Cash', Price = 179, Art = 'boxes:Street', Tone = 'cardBlue', Sticker = 'x3', Wired = true },
 	{ Key = 'ExtraEquip', Kind = 'Pass', Section = 'Gamepass', Title = '+1 Shoe Slot', Big = '4 Pairs\nOn', Detail = 'Wear 4 pairs at once', Price = 99, Art = 'shoe:Comet', Tone = 'cardPink', Sticker = '+1', Wired = true },
+	-- (brief 23) the 10x Cash pad and the two Robux lanes. A lane row's Price is its station's RobuxPrice (Config/Skins).
+	{ Key = 'TenXCash', Kind = 'Pass', Section = 'Gamepass', Title = '10x Cash', Big = '10x\nPads', Detail = 'The pink pad pays 10x Cash', Price = 199, Art = 'icon:Cash', Tone = 'cardPink', Offer = '10x Cash', Sticker = '10x', Wired = true },
+	{ Key = 'RangeVIP1', Kind = 'Pass', Section = 'Gamepass', Title = 'Pro Bay', Big = 'x100\nPower', Detail = 'Your own x100 Power lane', Price = 99, Art = 'icon:Power', Tone = 'cardTeal', Offer = 'x100 Lane', Sticker = 'x100', Wired = true },
+	{ Key = 'RangeVIP2', Kind = 'Pass', Section = 'Gamepass', Title = 'Gold Bay', Big = 'x250\nPower', Detail = 'The best lane: x250 Power', Price = 249, Art = 'icon:Power', Tone = 'cardGold', Offer = 'x250 Lane', Sticker = 'x250', Wired = true },
 	-- ~Boosts~ (two 2x + one 3x bought one by one: 39 + 39 + 69 = 147)
 	{ Key = 'BoostBundle', Kind = 'Product', Section = 'Boost', Wide = true, Title = 'Boost Bundle', Detail = '45 minutes of boosts', Bundle = { 'RepBoost2x', 'RepBoost2x', 'RepBoost3x' }, Lines = { '- Two 2x Power Boosts', '- One 3x Power Boost' }, Price = 119, WasPrice = 147, Art = 'icon:BoostBundle', Tone = 'rainbow', Wired = true },
 	{ Key = 'RepBoost2x', Kind = 'Product', Section = 'Boost', Title = '2x Power', Detail = '15 minutes', Boost = 2, Price = 39, Art = 'icon:PotionRed', Tone = 'cardRed', Wired = true },

@@ -41,10 +41,11 @@ EnemyRules.Kinds = {
 	Boss = { Name = 'Boss', Hp = 7, Speed = 9, Reach = 6, Windup = 0.9, Recover = 1.3, Punch = 14, Scale = 2.1 },
 }
 
--- Who stands in each stage (index order) and where (x, z' past the gate): a loose group on the street in front of the
--- next gate, like the video's guards, each district's group in its own spots. The Block 1-3, Corner Shop 4-6, The Alley
--- 7-9 (narrow: |x| <= 13), The Courts 10-12 (two hang out on the court), The Yards 13-15, the Boss Yard 16 (two goons
--- by the gate, two past the Champ Ring, the boss on the BOSS pad).
+-- Who stands in each stage (index order) and where (x, z' past the gate): a loose group in the middle of the street
+-- (brief 23: z' 32..43, so the two pads before the next gate, on the sidewalks from z' 50, stay clear and show from the
+-- stage's entry; the crew notices you as you walk in), each district's group in its own spots. The Block 1-3, Corner
+-- Shop 4-6, The Alley 7-9 (narrow: |x| <= 13), The Courts 10-12 (two hang out on the court), The Yards 13-15, the Boss
+-- Yard 16 (two goons by the gate, two past the Champ Ring, the boss on the BOSS pad).
 local G, R, B = 'Goon', 'Runner', 'Bruiser'
 EnemyRules.Lineups = {
 	{ G, G, G },
@@ -65,21 +66,21 @@ EnemyRules.Lineups = {
 	{ 'Boss', G, R, G, B },
 }
 EnemyRules.Spots = {
-	{ { -6, 44 }, { 5, 46 }, { -0.5, 40 } },
-	{ { -8, 42 }, { 7, 44 }, { -1, 48 } },
-	{ { -5, 40 }, { 7, 43 }, { 1, 47 } },
-	{ { -9, 40 }, { -2, 45 }, { 5, 41 }, { 11, 46 } },
-	{ { -10, 44 }, { -3, 40 }, { 4, 46 }, { 10, 41 } },
-	{ { -8, 41 }, { -1, 46 }, { 6, 42 }, { 12, 47 } },
-	{ { -6, 40 }, { 0, 45 }, { 6, 41 }, { -2, 50 } },
-	{ { -7, 44 }, { -1, 40 }, { 6, 45 }, { 2, 50 } },
-	{ { -6, 42 }, { 1, 47 }, { 7, 41 }, { -2, 51 } },
-	{ { -7, 42 }, { 1, 46 }, { 27.5, 37 }, { 30.5, 43 } },
-	{ { -8, 44 }, { -1, 40 }, { 27.5, 43 }, { 30.5, 37 } },
-	{ { -6, 41 }, { 2, 46 }, { 27.5, 36 }, { 30.5, 42 } },
-	{ { -10, 40 }, { -4, 45 }, { 2, 41 }, { 8, 46 }, { 13, 41 } },
-	{ { -12, 44 }, { -6, 40 }, { 0, 46 }, { 6, 41 }, { 11, 45 } },
-	{ { -11, 41 }, { -5, 46 }, { 1, 40 }, { 7, 45 }, { 12, 40 } },
+	{ { -6, 36 }, { 5, 38 }, { -0.5, 32 } },
+	{ { -8, 34 }, { 7, 36 }, { -1, 40 } },
+	{ { -5, 32 }, { 7, 35 }, { 1, 39 } },
+	{ { -9, 32 }, { -2, 37 }, { 5, 33 }, { 11, 38 } },
+	{ { -10, 36 }, { -3, 32 }, { 4, 38 }, { 10, 33 } },
+	{ { -8, 33 }, { -1, 38 }, { 6, 34 }, { 12, 39 } },
+	{ { -6, 32 }, { 0, 37 }, { 6, 33 }, { -2, 42 } },
+	{ { -7, 36 }, { -1, 32 }, { 6, 37 }, { 2, 42 } },
+	{ { -6, 34 }, { 1, 39 }, { 7, 33 }, { -2, 43 } },
+	{ { -7, 34 }, { 1, 38 }, { 27.5, 37 }, { 30.5, 43 } },
+	{ { -8, 36 }, { -1, 32 }, { 27.5, 43 }, { 30.5, 37 } },
+	{ { -6, 33 }, { 2, 38 }, { 27.5, 36 }, { 30.5, 42 } },
+	{ { -10, 32 }, { -4, 37 }, { 2, 33 }, { 8, 38 }, { 13, 33 } },
+	{ { -12, 36 }, { -6, 32 }, { 0, 38 }, { 6, 33 }, { 11, 37 } },
+	{ { -11, 33 }, { -5, 38 }, { 1, 32 }, { 7, 37 }, { 12, 32 } },
 	{ { 0, 74 }, { -12, 12 }, { 12, 14 }, { -22, 52 }, { 22, 54 } },
 }
 -- Places goons walk round (map-frame boxes in z', per stage): the Champ Ring and its bleachers in the Boss Yard.

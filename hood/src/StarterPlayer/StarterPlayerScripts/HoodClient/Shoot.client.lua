@@ -1,13 +1,14 @@
 -- Shooting at the ranges (brief 18: "make your gun shoot on its own when you step on it"): step into an open lane's
--- shooter's box and your gun (the gun tool GunService gives you) comes out and fires by itself, ShotRules.AutoRate
+-- shooter's box and your gun (the gun tool GunService gives you, always in your hand) fires by itself, ShotRules.AutoRate
 -- shots a second, until you step off. Nobody clicks and nothing is sent: the server pays the same shots on its own
 -- clock (LobbyService). Each shot is worth the lane x your rebirths (the ShotBase attribute) x your gun x your shoes
 -- (ShotRules). Everything you see is local and cheap: a muzzle flash, a tracer to the target, sparks, the target
 -- knocked back (a can flying off, a bottle shattering, a plate swinging, a disc spinning, a balloon popping into
 -- confetti), a shell casing, a little recoil, and one running "+N" over the target per lane (the stream of shots rolls
--- it up and counts the hits). A locked lane doesn't fire. Leaving the lane puts the gun away again (and the hip
--- holster comes back: Armory.client). Other players near you firing at their lanes show too (muzzle, tracer, knock).
--- Sounds only with Config/Sound.Enabled.
+-- it up and counts the hits). A locked lane doesn't fire. Other players near you firing at their lanes show too (muzzle,
+-- tracer, knock). Sounds only with Config/Sound.Enabled.
+-- (brief 23) It also keeps your gun in your hand: Roblox's own hotbar is hidden (it sat over the power packs the HUD
+-- sells) and the gun you chose is always held (see "the gun, always in hand").
 local Players = game:GetService('Players')
 local RunService = game:GetService('RunService')
 local RS = game:GetService('ReplicatedStorage')
@@ -29,6 +30,54 @@ if ShotSounds then ShotSounds.init() end
 local function play(kind, pitch) if ShotSounds then ShotSounds.play(kind, pitch) end end
 -- An attachment's world frame (the same as WorldCFrame, spelled out so offline checks can run this file).
 local function worldOf(att) return att.Parent.CFrame * att.CFrame end
+
+---------------------------------------------------------------------------------------------- the gun, always in hand
+-- (brief 23) Roblox's default hotbar ("1 Rusty Pistol") sat over the power packs the HUD sells, so it is hidden, and
+-- the gun you chose (the inventory's Guns tab or the armory: GunService's EquippedGun) is always in your hand instead.
+-- It comes out on spawn, after every respawn and when you change guns (GunService swaps the tool in the hand), and
+-- whatever puts it away (a number key, the backpack, another script's UnequipTools) it comes straight back. The
+-- ranges' auto-shoot below, the goon fights (Waves.client) and the armory all read the held gun (GunTool.held).
+task.spawn(function()
+	-- (CoreGui calls can fail for a moment at start: retried until one sticks)
+	local starterGui = game:GetService('StarterGui')
+	local tries = 0
+	while not pcall(function() starterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Backpack, false) end) do
+		tries += 1
+		task.wait(tries < 40 and 0.25 or 2)
+	end
+end)
+local function humanoid()
+	local c = player.Character
+	return c and c:FindFirstChildOfClass('Humanoid')
+end
+local function heldGun()
+	return player.Character and GunTool.held(player.Character) or nil
+end
+local function hold()
+	local c = player.Character
+	local h = humanoid()
+	if not c or not c.Parent or not h or h.Health <= 0 then return end
+	local tool = GunTool.find(player)
+	if tool and tool.Parent ~= c then h:EquipTool(tool) end
+end
+-- The tool lands in the Backpack (given on spawn, put away by anything): back into the hand. (Its GunId attribute is
+-- set before it is parented.)
+player.DescendantAdded:Connect(function(d)
+	if d:IsA('Tool') then task.defer(hold) end
+end)
+local function spawned(c)
+	-- (a new character can take a moment to reach the Workspace; the gun usually arrives a little after it)
+	task.spawn(function()
+		for _ = 1, 50 do
+			if c.Parent then break end
+			task.wait(0.1)
+		end
+		hold()
+	end)
+end
+player.CharacterAdded:Connect(spawned)
+if player.Character then spawned(player.Character) end
+
 local active = ActiveMap.wait(20)
 if not active then return end
 
@@ -71,39 +120,11 @@ local function present(t) return not t.Knocker or t.Knocker:present() end
 local function nextTarget(s) return ShotRules.pick(s, s.Targets, s.Main, present) end
 
 ---------------------------------------------------------------------------------------------- the gun
+-- (the lane you stand in, if it fires; the gun is already in your hand: "the gun, always in hand" above)
 local function training()
 	local id = player:GetAttribute('TrainingStation') or ''
 	return ShotRules.counts(id) and id or nil
 end
-local function humanoid()
-	local c = player.Character
-	return c and c:FindFirstChildOfClass('Humanoid')
-end
-local function heldGun()
-	return player.Character and GunTool.held(player.Character) or nil
-end
--- On a range the gun comes out by itself; when you leave, it goes back if it was us who took it out.
-local autoEquipped = false
-local function refreshEquip()
-	local h = humanoid()
-	if not h or h.Health <= 0 then return end
-	if training() then
-		local tool = GunTool.find(player)
-		if tool and tool.Parent ~= player.Character then
-			h:EquipTool(tool)
-			autoEquipped = true
-		end
-	elseif autoEquipped then
-		autoEquipped = false
-		if heldGun() then h:UnequipTools() end
-	end
-end
-player:GetAttributeChangedSignal('TrainingStation'):Connect(refreshEquip)
--- The tool can arrive after you step on (GunService gives it on spawn and swaps it when you change guns).
-player.DescendantAdded:Connect(function(d)
-	if d:IsA('Tool') then task.defer(refreshEquip) end -- (its GunId attribute is set before it is parented)
-end)
-player.CharacterAdded:Connect(function() task.defer(refreshEquip) end)
 
 -- Recoil: the gun kicks up and back in the hand (Tool.Grip) and springs home.
 local recoil = { angle = 0, vel = 0, tool = nil, base = nil, conn = nil }
@@ -221,6 +242,67 @@ RunService.PreRender:Connect(function(dt)
 		due -= shots
 		for _ = 1, shots do shoot(id) end
 	end
+end)
+
+---------------------------------------------------------------------------------------------- a click anywhere
+-- (brief 23, CRITIC3 / HOOK: a kid's first click must answer at once) Off the ranges and out of a fight, a click, a tap
+-- or R2 fires the gun in your hand for show: the muzzle flash, a tracer along the mouse / tap ray to whatever it meets,
+-- sparks there, a casing, recoil and a little camera kick, and the shot sound once sounds are on. Nothing is sent and
+-- nothing is paid. (On a range the auto-fire shoots; in a fight Waves.client's aim assist does.)
+local UserInputService = game:GetService('UserInputService')
+local lastFree = 0
+local function freeShot(where, viewport)
+	if training() or os.clock() - lastFree < 0.1 then return end
+	local stage, left = player:GetAttribute('WaveStage'), player:GetAttribute('WaveLeft')
+	if type(stage) == 'number' and stage > 0 and type(left) == 'number' and left > 0 then return end
+	local tool = heldGun()
+	local c = player.Character
+	local root = c and c:FindFirstChild('HumanoidRootPart')
+	local camera = workspace.CurrentCamera
+	if not tool or not root or not camera then return end
+	lastFree = os.clock()
+	-- where it goes: along the camera ray through the click (the first thing it meets within 150 studs), else straight ahead
+	local to = root.Position + root.CFrame.LookVector * 40 + Vector3.new(0, 1.2, 0)
+	pcall(function()
+		local screen = where()
+		local ray = viewport and camera:ViewportPointToRay(screen.X, screen.Y) or camera:ScreenPointToRay(screen.X, screen.Y)
+		to = ray.Origin + ray.Direction * 150
+		local params = RaycastParams.new()
+		params.FilterType = Enum.RaycastFilterType.Exclude
+		params.FilterDescendantsInstances = { c }
+		local hit = workspace:Raycast(ray.Origin, ray.Direction * 150, params)
+		if hit then to = hit.Position end
+	end)
+	-- (turn to face it while standing still, as on the ranges)
+	local h = humanoid()
+	if h and h.MoveDirection.Magnitude < 0.1 then
+		local look = Vector3.new(to.X, root.Position.Y, to.Z)
+		if (look - root.Position).Magnitude > 0.5 then root.CFrame = CFrame.lookAt(root.Position, look) end
+	end
+	local gun = Guns.ById[tool:GetAttribute('GunId') or ''] or Guns.List[1]
+	local rig = Juice.gunRig(tool)
+	local from = rig and worldOf(rig.muzzle).Position or (root.Position + Vector3.new(0, 1.2, 0))
+	play('Shot', 1.1 - gun.Tier * 0.04)
+	Juice.muzzle(rig, gun.Color, 0.9 + gun.Tier * 0.1)
+	Juice.tracer(from, to, gun.Color, 0.18 + gun.Tier * 0.015)
+	if rig and rig.eject then Juice.casing(worldOf(rig.eject)) end
+	kick(tool, 0.8 + gun.Tier * 0.05)
+	Juice.kick(0.04 + gun.Tier * 0.008)
+	if (to - from).Magnitude < 149 then Juice.burst(to, gun.Color, 0.5) end
+end
+UserInputService.InputBegan:Connect(function(input, processed)
+	if processed then return end
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		freeShot(function() return input.Position end, false)
+	elseif input.KeyCode == Enum.KeyCode.ButtonR2 then
+		freeShot(function() return workspace.CurrentCamera.ViewportSize / 2 end, true)
+	end
+end)
+pcall(function()
+	UserInputService.TouchTap:Connect(function(positions, processed)
+		if processed or not positions[1] then return end
+		freeShot(function() return positions[1] end, false)
+	end)
 end)
 
 ---------------------------------------------------------------------------------------------- everyone else

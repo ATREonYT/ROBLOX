@@ -38,7 +38,9 @@ return function(t)
    for _,k in l do t.expect.truthy(E.Kinds[k]~=nil) end
    for i,spot in E.Spots[s] do
     t.expect.truthy(math.abs(spot[1])<=34)
-    if s<16 then t.expect.truthy(spot[2]>=34 and spot[2]<=56) end -- (far side of the street: they see you come in)
+    -- (brief 23) mid-street: they see you come in, and the two pads before the next gate (on the sidewalks from z' 50)
+    -- stay clear of them and show from the stage's entry
+    if s<16 then t.expect.truthy(spot[2]>=30 and spot[2]<=44) end
     for j=i+1,#E.Spots[s] do local o=E.Spots[s][j];t.expect.truthy((Vector3.new(spot[1],0,spot[2])-Vector3.new(o[1],0,o[2])).Magnitude>=4) end
    end
   end
@@ -125,7 +127,7 @@ return function(t)
   local g=w.Goons[1];local ev=E.step(g,0.1,Vector3.new(),0,nil,nil,w.Goons);t.expect.equal(ev,nil);t.expect.equal(g.State,E.Down)
  end)
 
- t.test('your wave spawns when you walk in, keeps its HP while you step out, respawns a while after a clear',function()
+ t.test('your wave spawns when you walk in, keeps its HP while you step out, stays down for the run once cleared, stands again after a reset',function()
   local s,c=session()
   t.expect.truthy(s:move(1)~=nil);t.expect.equal(s.Stage,1)
   local w=s:current();local g=w.Goons[1]
@@ -135,8 +137,14 @@ return function(t)
   for i=1,3 do c.t+=1;s:shoot(1,i,s:current().Goons[i].Pos,1e6) end
   t.expect.truthy(s:current().Cleared)
   t.expect.equal(s:move(1),nil) -- (still here: stays cleared)
-  s:move(2);t.expect.equal(s:move(1),nil) -- (back too soon: it comes back RespawnDelay seconds after the clear)
-  c.t+=W.RespawnDelay;s:move(2);t.expect.truthy(s:move(1)~=nil);t.expect.equal(s:current().HP[1],E.maxHp(1,'Goon'));t.expect.equal(s:current().Left,3)
+  -- (brief 23) a cleared crew stays down for the whole run, however long you are away
+  s:move(2);c.t+=3600;s:move(nil);t.expect.equal(s:move(1),nil);t.expect.truthy(s:current().Cleared);t.expect.equal(s:current().Left,0)
+  for _=1,20 do c.t+=0.1;local ev=s:tick(0.1,Vector3.new(0,0,-30));t.expect.equal(#ev,0) end -- (nobody gets up)
+  -- the run ends (back in the lobby): every crew stands again, fresh, the next time you walk in
+  s:move(2);s:shoot(2,1,s:current().Goons[1].Pos,5)
+  s:knockout();s:reset();t.expect.equal(s.Stage,0);t.expect.equal(s:current(),nil);t.expect.equal(s.CalmUntil,-math.huge)
+  t.expect.truthy(s:move(1)~=nil);t.expect.equal(s:current().HP[1],E.maxHp(1,'Goon'));t.expect.equal(s:current().Left,3);t.expect.falsy(s:current().Cleared)
+  t.expect.truthy(s:move(2)~=nil);t.expect.equal(s:current().HP[1],E.maxHp(2,s:current().Goons[1].Kind)) -- (the hurt one too)
   t.expect.equal(s:move(99),nil);t.expect.equal(s.Stage,0) -- (a stage with no goons is no wave)
  end)
 
@@ -189,32 +197,30 @@ return function(t)
   t.expect.equal(W.stageAt(g,Vector3.new(50,3,-20)),nil)
  end)
 
- t.test('a gate needs the wave before it down, as well as its Power; no wave system keeps Power only',function()
+ t.test('a gate opens only when the crew before it is down this run (brief 23: Power opens nothing)',function()
   local g=gates()
-  -- Walking the street with plenty of Power: only the gates whose waves are down count as passed.
-  local n,b=StageRules.check(g,Vector3.new(0,3,-520),1e9,{},0);t.expect.equal(#n,1);t.expect.equal(b.Stage,9)
-  n=StageRules.check(g,Vector3.new(0,3,-520),1e9,{},3);t.expect.equal(#n,4)
-  n,b=StageRules.check(g,Vector3.new(0,3,-520),1e9,{},16);t.expect.equal(#n,9);t.expect.equal(b,nil)
-  n,b=StageRules.check(g,Vector3.new(0,3,-520),1e9,{},nil);t.expect.equal(#n,9);t.expect.equal(b,nil)
-  -- Just past gate 2: held back until stage 1's goons are down.
-  n,b=StageRules.check(g,Vector3.new(0,3,-70),1e9,{HoodW1Stage1=true},0);t.expect.equal(#n,0);t.expect.equal(b.Stage,2)
-  n,b=StageRules.check(g,Vector3.new(0,3,-70),1e9,{HoodW1Stage1=true},1);t.expect.equal(#n,1);t.expect.equal(b,nil)
-  t.expect.truthy(W.gateOpen(1,0));t.expect.falsy(W.gateOpen(2,0));t.expect.truthy(W.gateOpen(2,1));t.expect.truthy(W.gateOpen(9,nil))
+  -- Walking the street: only the gates the run has opened count as passed; the first shut one stops you.
+  local function run(cleared) return StageRules.runStage(cleared,#g) end
+  local n,b=StageRules.check(g,Vector3.new(0,3,-520),run(0),{});t.expect.equal(#n,1);t.expect.equal(b.Stage,2)
+  n,b=StageRules.check(g,Vector3.new(0,3,-520),run(3),{});t.expect.equal(#n,4);t.expect.equal(b.Stage,5)
+  n,b=StageRules.check(g,Vector3.new(0,3,-520),run(16),{});t.expect.equal(#n,9);t.expect.equal(b,nil)
+  -- Just past gate 2: held back until stage 1's goons are down, whatever your Power and whatever you passed before.
+  n,b=StageRules.check(g,Vector3.new(0,3,-70),run(0),{HoodW1Stage1=true,HoodW1Stage2=true});t.expect.equal(#n,0);t.expect.equal(b.Stage,2)
+  n,b=StageRules.check(g,Vector3.new(0,3,-70),run(1),{HoodW1Stage1=true});t.expect.equal(#n,1);t.expect.equal(b,nil)
+  -- the crews' stages are the gates' stages: stage n's crew stands between gate n and gate n+1
+  local world=E.world(g)
+  for s=1,15 do for _,e in world[s] do t.expect.truthy(e.Home.Z<g[s].Z and e.Home.Z>g[s+1].Z) end end
  end)
 
- t.test('stages with no goons never hold a gate; the first clear pays Cash, a re-clear a little',function()
+ t.test('stages with no goons never hold a gate; beating a crew pays what Balance says (nothing now: the pad pays)',function()
   t.expect.equal(W.effective(0,{[1]=true,[2]=true},16),0);t.expect.equal(W.effective(1,{[1]=true,[3]=true},16),2)
   t.expect.equal(W.effective(0,{},16),16);t.expect.equal(W.effective('x',{[1]=true},16),0)
-  t.expect.equal(W.reward(1),Balance.WaveCash[1]);t.expect.equal(W.reward(16),Balance.WaveCash[16]);t.expect.equal(W.reward(0/0),5);t.expect.equal(W.reward(99),5)
-  t.expect.equal(W.repeatReward(1),1);t.expect.equal(W.repeatReward(10),math.floor(Balance.StageCash[10]*0.05));t.expect.equal(W.repeatReward(16),700);t.expect.equal(W.repeatReward(nil),1)
-  for i=2,16 do t.expect.truthy(W.repeatReward(i)>=W.repeatReward(i-1) and W.repeatReward(i)<W.reward(i)) end
-  -- staying in a cleared stage: it comes back RespawnDelay after the clear
-  local c,now=clock()
-  local s=W.session({[1]={{Kind='Runner',Home=Vector3.new(0,0,-20)}}},now);s:move(1)
-  local _,_,_,_,cleared=s:shoot(1,1,Vector3.new(0,0,-10),1e9);t.expect.truthy(cleared)
-  c.t+=W.RespawnDelay-1;t.expect.equal(s:revive(),nil)
-  c.t+=1;local w=s:revive();t.expect.truthy(w~=nil);t.expect.equal(w.Left,1);t.expect.equal(s:current(),w);t.expect.equal(s:revive(),nil)
-  s:move(nil);t.expect.equal(s:revive(),nil)
+  t.expect.equal(W.reward(1),Balance.WaveCash[1]);t.expect.equal(W.reward(16),Balance.WaveCash[16]);t.expect.equal(W.reward(0/0),0);t.expect.equal(W.reward(99),0)
+  -- (brief 23) beating a stage's goons again pays (next to) nothing: the run's pad pays instead (Balance.WaveRepeatShare 0)
+  for i=1,16 do t.expect.equal(W.repeatReward(i),0);t.expect.equal(W.reward(i),0) end
+  t.expect.equal(W.repeatReward(nil),0)
+  -- (no timed respawn: a run's cleared crew stays down until the run ends)
+  t.expect.equal(W.RespawnDelay,nil);t.expect.equal(W.session({},function() return 0 end).revive,nil)
  end)
 
  t.test('clears persist in the profile; old profiles keep every gate they had passed',function()

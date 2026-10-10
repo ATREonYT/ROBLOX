@@ -1,28 +1,64 @@
--- Stage gate rules: which gates a player has just cleared, and whether they slipped past one they
--- can't open yet. Used by the server's StageService; kept pure so the unit tests can drive it.
--- A gate is { Stage, WallId, Required, Z, HalfWidth }: stages run toward -Z in the map frame, and a
--- player counts as past a gate once they're on the street (|X| within HalfWidth + 2) beyond its line.
--- A gate you have passed once stays open for good: a rebirth resets your Power, never the map you have opened.
+-- Stage gates and runs (brief 23), the pure rules: used by the server's StageService (and WaveService, TravelService),
+-- the clients (Stages, World) and the unit tests.
+-- A gate is { Stage, WallId, Required, Z, HalfWidth }: stages run toward -Z in the map frame, and a player counts as
+-- past a gate once they're on the street (|X| within HalfWidth + 2) beyond its line.
+-- THE RUN: every trip out of the lobby is a run. A gate opens when you beat the crew of goons in the stage before it,
+-- every run (gate 1, lobby -> Stage 1, is always open); going back to the lobby ends the run and every gate closes again.
+-- Power no longer opens anything: a gate's Required is the "Recommended Power" on its sign (it is what beats the goons).
+-- Run state per player (HoodServer/Runs keeps it, never saved): RunCleared, the highest stage whose crew you have beaten
+-- this run (0 = none), and from it RunStage, the furthest gate open this run.
 local StageRules = {}
 
-StageRules.SLIP_DEPTH = 12 -- how far past a locked gate still counts as slipping through it
+StageRules.LOBBY_MARGIN = 3 -- studs past gate 1's line (on the lobby side) that already count as the lobby
 
--- waveCleared (optional): the highest stage whose target wave the player has cleared (WaveService's WaveCleared).
--- Given, gate i (i >= 2) also needs it to be at least i - 1 (the targets in the stage before it are down); nil keeps
--- the Power-only rule. Gates in `cleared` (WallId -> true) are open whatever your Power.
-function StageRules.check(gates, pos, power, cleared, waveCleared)
+local function whole(v)
+	return type(v) == 'number' and v == v and v % 1 == 0 and v or nil
+end
+
+-- The furthest gate open in a run where `cleared` is the highest stage beaten: the next one (gate 1 always), at most
+-- the last gate on the map.
+function StageRules.runStage(cleared, lastGate)
+	local c = math.max(0, whole(cleared) or 0)
+	local last = whole(lastGate) or math.huge
+	return math.clamp(c + 1, 1, math.max(1, last))
+end
+
+-- Gate `stage` is open in a run where `cleared` is the highest stage beaten (the crew of the stage before it is down).
+function StageRules.gateOpen(stage, cleared)
+	local s = whole(stage)
+	if not s then return false end
+	return s <= 1 or (whole(cleared) or 0) >= s - 1
+end
+
+-- A stage's pads (yellow Return, magenta 10x Cash) pay once its crew is down this run.
+function StageRules.padReady(stage, cleared)
+	local s = whole(stage)
+	return s ~= nil and s >= 1 and (whole(cleared) or 0) >= s
+end
+
+-- Where you stand against the gates, in a run whose furthest open gate is `open` (RunStage):
+--   newly      the open gates you are past that `passed` (WallId -> true: gates ever passed, saved) doesn't have yet;
+--   blockedBy  the first gate past `open` that you stand beyond (at any depth): the server puts you back in front of it.
+function StageRules.check(gates, pos, open, passed)
 	local newly, blockedBy = {}, nil
+	passed = type(passed) == 'table' and passed or {}
+	open = type(open) == 'number' and open or 1
 	for _, g in gates do
-		if math.abs(pos.X) <= g.HalfWidth + 2 and pos.Z < g.Z and not cleared[g.WallId] then
-			local wavesDown = type(waveCleared) ~= 'number' or g.Stage <= 1 or waveCleared >= g.Stage - 1
-			if power >= g.Required and wavesDown then
-				table.insert(newly, g)
-			elseif pos.Z > g.Z - StageRules.SLIP_DEPTH and not blockedBy then
+		if math.abs(pos.X) <= g.HalfWidth + 2 and pos.Z < g.Z then
+			if g.Stage <= open then
+				if not passed[g.WallId] then table.insert(newly, g) end
+			elseif not blockedBy then
 				blockedBy = g
 			end
 		end
 	end
 	return newly, blockedBy
+end
+
+-- On the lobby side of gate 1 (any X): being here ends a run.
+function StageRules.inLobby(gates, pos)
+	local first = gates[1]
+	return first ~= nil and pos.Z > first.Z + StageRules.LOBBY_MARGIN
 end
 
 function StageRules.count(gates, cleared)
@@ -31,25 +67,31 @@ function StageRules.count(gates, cleared)
 	return n
 end
 
--- The furthest stage whose gate you have passed (0 for none).
+-- The furthest stage whose gate you have ever passed (0 for none).
 function StageRules.furthest(gates, cleared)
 	local best = 0
 	for _, g in gates do if cleared[g.WallId] and g.Stage > best then best = g.Stage end end
 	return best
 end
 
--- Where a teleport pad (or the World window's travel buttons, brief 22) sends you: 'Lobby' -> 'Lobby'; 'Furthest' ->
--- the gate of the furthest stage you have cleared (you land just past it), or nil, 'locked' when you have cleared none;
--- anything else -> nil, 'unknown'. StageService's pads and HoodServer/TravelService both go through this.
-function StageRules.travelTarget(gates, cleared, target)
+-- World 1's trips (the World window's buttons, HoodClient/World): both end the run you are on. Lobby: the hall's spawn.
+-- Stage1: just inside the Stage 1 gate, a fresh run.
+StageRules.Trips = {
+	{ Target = 'Lobby', Text = 'Lobby', Caption = 'Spawn' },
+	{ Target = 'Stage1', Text = 'Stage 1', Caption = 'Start a run' },
+}
+StageRules.TripLand = 12 -- a Stage 1 trip lands this far past the gate's line
+
+-- Where a trip goes: 'Lobby' -> 'Lobby'; 'Stage1' -> the Stage 1 gate (you land TripLand past it), or nil, 'locked' on a
+-- map without gates; anything else (the retired 'Furthest' too) -> nil, 'unknown'. StageService and TravelService
+-- both go through this.
+function StageRules.travelTarget(gates, target)
 	if target == 'Lobby' then return 'Lobby', nil end
-	if target ~= 'Furthest' then return nil, 'unknown' end
-	local best
-	for _, g in gates do
-		if type(cleared) == 'table' and cleared[g.WallId] and (not best or g.Stage > best.Stage) then best = g end
+	if target ~= 'Stage1' then return nil, 'unknown' end
+	for _, g in gates or {} do
+		if g.Stage == 1 then return g, nil end
 	end
-	if not best then return nil, 'locked' end
-	return best, nil
+	return nil, 'locked'
 end
 
 -- Reads gate models (tagged 'HoodStageGate') into sorted gate tables.

@@ -1,11 +1,11 @@
 -- The World window (brief 22, UI4): the HUD's World square opens it (PlayerGui.HoodWorld.Open, a BindableEvent; a
 -- second tap closes it). The inventory's look (Shared/InventoryKit: a studded header with the globe, the title and the
 -- red X over the dark see-through studded body), smaller:
---   World 1   "The Block": two trips, Lobby (the hall's spawn) and your furthest stage ("Stage n": just past the furthest
---             stage gate you have cleared), the same places the LOBBY and FURTHEST pads send you. The server checks
---             every trip (HoodServer/TravelService -> StageService's pad teleport, StageRules.travelTarget).
+--   World 1   "The Block": two trips, StageRules.Trips (brief 23): Lobby (the hall's spawn) and Stage 1 (just inside the
+--             Stage 1 gate: start a run). Both end the run you are on. The server checks every trip
+--             (HoodServer/TravelService -> StageService's teleport, StageRules.travelTarget).
 --   Worlds 2-5  locked cards, "Coming soon".
--- Reads StagesCleared (StageService). Sets PlayerGui `HoodWindow` = 'World' while open (one window at a time).
+-- Sets PlayerGui `HoodWindow` = 'World' while open (one window at a time).
 local Players = game:GetService('Players')
 local RS = game:GetService('ReplicatedStorage')
 
@@ -14,6 +14,7 @@ local Kit = require(Shared.UIKit)
 local Motion = require(Shared.UIMotion)
 local Net = require(Shared.Net)
 local IK = require(Shared.InventoryKit)
+local StageRules = require(Shared.StageRules)
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild('PlayerGui')
@@ -35,7 +36,7 @@ local backdrop = Kit.new('TextButton', { Name = 'Backdrop', Text = '', AutoButto
 Kit.new('TextButton', { Name = 'Sink', Text = '', AutoButtonColor = false, BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 21, Parent = W.Pop })
 local content = W.Content
 
--- Answers ("Clear Stage 1 first", "coming soon") just over the window.
+-- Answers ("coming soon") just over the window.
 local sayLabel = label({ Name = 'Say', Text = '', TextSize = 26, StrokeThickness = 3.5, TextColor3 = hex('5AE0FF'), AnchorPoint = Vector2.new(0.5, 1), Position = px(WW / 2, -8), Size = px(WW, 34), ZIndex = 40, Parent = W.Pop })
 local saying = 0
 local function say(text)
@@ -69,30 +70,19 @@ local sub = label({ Name = 'Name', Text = IK.WorldNames[1], TextSize = 24, Strok
 Kit.new('UIGradient', { Rotation = 90, Color = ColorSequence.new(hex('FFF27A'), hex('FFA81A')), Parent = sub })
 label({ Name = 'You', Text = "You're here", TextSize = 18, StrokeThickness = 2.5, TextColor3 = hex('7CFF4F'), TextXAlignment = Enum.TextXAlignment.Left, Position = px(128, 102), Size = px(240, 24), ZIndex = 31, Parent = card.Body })
 
-local tripButtons = {}
-local function travel(trip)
-	if not trip.Open then
-		say('Clear Stage 1 first!')
-		return
-	end
-	Net.get('Travel'):FireServer(trip.Target, 1)
-	close()
-end
-local function paintTrips()
-	for _, b in tripButtons do b:Destroy() end
-	table.clear(tripButtons)
-	local info = IK.worlds(player:GetAttribute('StagesCleared'))[1]
-	for i, trip in info.Trips do
-		-- (UICRITIC2 r1: the family's "go" buttons are studded green with a black outline, never grey)
-		local holder = Kit.blockButton({
-			Name = trip.Target, Tone = 'grass', Width = 176, Height = 68, Text = trip.Text, TextSize = 30, Outline = 4, RimWidth = 3, Studs = IK.Layout.StudPitch, StudPattern = 'recessed',
-			AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -(16 + (2 - i) * 192), 0.5, -8), ZIndex = 31,
-		})
-		holder.Parent = card.Body
-		label({ Name = 'Caption', Text = i == 1 and 'Spawn' or 'Best stage', TextSize = 17, StrokeThickness = 2.5, TextColor3 = hex('E8FBFF'), AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 1, 2), Size = px(176, 22), ZIndex = 33, Parent = holder })
-		Motion.button(holder, function() travel(trip) end)
-		table.insert(tripButtons, holder)
-	end
+-- The trips: one green button each (the same for everyone; the server checks every trip).
+for i, trip in StageRules.Trips do
+	-- (UICRITIC2 r1: the family's "go" buttons are studded green with a black outline, never grey)
+	local holder = Kit.blockButton({
+		Name = trip.Target, Tone = 'grass', Width = 176, Height = 68, Text = trip.Text, TextSize = 30, Outline = 4, RimWidth = 3, Studs = IK.Layout.StudPitch, StudPattern = 'recessed',
+		AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -(16 + (#StageRules.Trips - i) * 192), 0.5, -8), ZIndex = 31,
+	})
+	holder.Parent = card.Body
+	label({ Name = 'Caption', Text = trip.Caption, TextSize = 17, StrokeThickness = 2.5, TextColor3 = hex('E8FBFF'), AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 1, 2), Size = px(176, 22), ZIndex = 33, Parent = holder })
+	Motion.button(holder, function()
+		Net.get('Travel'):FireServer(trip.Target, 1)
+		close()
+	end)
 end
 
 ---------------------------------------------------------------------------------------------- worlds 2-5
@@ -135,7 +125,6 @@ local function open()
 		return
 	end
 	isOpen = true
-	paintTrips()
 	playerGui:SetAttribute('HoodWindow', 'World')
 	Motion.blur('World', true)
 	IK.coverPlayerList('World', true)
@@ -144,9 +133,6 @@ end
 openEvent.Event:Connect(open)
 playerGui:GetAttributeChangedSignal('HoodWindow'):Connect(function()
 	if isOpen and playerGui:GetAttribute('HoodWindow') ~= 'World' then close() end
-end)
-player:GetAttributeChangedSignal('StagesCleared'):Connect(function()
-	if isOpen then paintTrips() end
 end)
 backdrop.Activated:Connect(close)
 Motion.button(W.CloseButton, close)
@@ -160,4 +146,3 @@ end
 gui:GetPropertyChangedSignal('AbsoluteSize'):Connect(relayout)
 gui.Parent = playerGui
 relayout()
-paintTrips()

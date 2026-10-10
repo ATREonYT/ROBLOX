@@ -1,23 +1,34 @@
 -- Lighting presets (research_notes/Front page feel and gamey stages/lighting_and_gates.md).
 -- Lighting is shared by the whole place. TheBlockV2.Build() applies HoodSun for you; otherwise, in the
 -- Command Bar:
---   require(game.ServerStorage.HoodLighting).Apply()              -- "HoodSun": warm side sun, light shade, vivid (default)
---   require(game.ServerStorage.HoodLighting).Apply('HoodSoft')    -- the previous default: high sun, flatter
+--   require(game.ServerStorage.HoodLighting).Apply()              -- "HoodSun": bright, soft, even simulator daylight (default)
+--   require(game.ServerStorage.HoodLighting).Apply('HoodSun20')   -- LIGHT2's (BRIEF20) preset, what the user saw on 2026-10-10
+--   require(game.ServerStorage.HoodLighting).Apply('HoodSoft')    -- an older default: high sun, flatter
 --   require(game.ServerStorage.HoodLighting).Apply('FrontPage')   -- the older bright, high-sun, cool-shade look
 --   require(game.ServerStorage.HoodLighting).Apply('HoodCalm')    -- warm-neutral and muted
 --   require(game.ServerStorage.HoodLighting).Apply('GoldenBlock') -- hood evening that stays bright (events)
 --   require(game.ServerStorage.HoodLighting).Restore()            -- put back exactly what was there before
 -- The first Apply saves the current Lighting setup (properties, effects, Sky, Clouds, wind) into
--- ServerStorage.HoodLightingBackup; Restore uses it.
+-- ServerStorage.HoodLightingBackup; Restore uses it. Every Apply sets EVERY Lighting property the look depends on and
+-- moves any other Atmosphere / Sky / post effect / Clouds into that backup, so a place saved with other settings (or
+-- with effects someone added later) still gets exactly this look.
 --
 -- light17 (BRIEF17): Roblox ADDS ColorShift_Top to the sun (~4.5x its colour), so every preset with a bright ColorShift_Top
--- and Brightness 2-3 is ~5x brighter in Studio than it was tuned for. Only HoodSun (the default) is retuned; scale the
--- others' Brightness down ~6x before using them.
--- LIGHT2 (BRIEF20): Roblox's tone curve is filmic (ACES-like) and Ambient/OutdoorAmbient carry most of the light; HoodSun
--- is retuned on the user's Studio frames (HoodSun17 = light17's, too dark).
---
--- Why the old look read dark: a 17.2 o'clock sun shading most of the street, the Realistic lighting style,
--- a beige haze at 1.6 with a dimming tint, Bloom too high for Neon to glow, and dark large surfaces.
+-- and Brightness 2-3 is ~5x brighter in Studio than it was tuned for. Scale the old presets' Brightness down ~6x before
+-- using them.
+-- LIGHT2 (BRIEF20): Roblox's tone curve is filmic (ACES-like) and Ambient/OutdoorAmbient carry most of the light.
+-- LIGHT3 (BRIEF23), measured on the user's Studio frame brief/ref23/ours_studio_spawn.png (render13 recalibrated on it):
+--   - The place renders with VOXEL lighting (the saved place says Technology = Voxel; no character shadow shows, small
+--     PointLights barely show), ExposureCompensation 0.3 had no visible effect, and ColorCorrection Saturation 0.45 acted
+--     like a mild boost. So HoodSun keeps ExposureCompensation at 0, puts its brightness in the light itself, and asks for
+--     the same technology through every switch Roblox has (Technology, LightingStyle, PrioritizeLightingQuality).
+--   - Why voxel: the simulator look is flat, bright and almost shadowless (the references show no hard cast shadows);
+--     voxel's 4-stud shadows are soft, local lights stay soft (no hot pools), it is the cheapest technology, and phones
+--     on low graphics quality get the same picture as a PC because the look lives in Ambient + a soft sun, not in shadow
+--     maps, Bloom or SunRays (which low quality levels drop). It is also what render13 is calibrated on.
+--   - To try crisp shadow-mapped sun shadows: set HoodSun.technology = 'ShadowMap' (uncalibrated; check in Studio).
+--     Scripts cannot set Lighting.Technology: Apply sets it where the engine allows (the place file that
+--     hood/tools/place/build_place.sh writes); in your own place set it in Properties (Lighting > Technology) if shown.
 local Lighting = game:GetService('Lighting')
 local ServerStorage = game:GetService('ServerStorage')
 local C = Color3.fromRGB
@@ -62,22 +73,43 @@ L.Presets = {
 		clouds = { Cover = 0.55, Density = 0.25, Color = C(255, 255, 255) },
 		wind = Vector3.new(8, 0, 4),
 	},
-	-- The side-lit day (BRIEF13/15/17), the default: a warm sun from +X (morning side), direction (0.50, 0.80, 0.33): about
-	-- 53 degrees up and leaning ~20 degrees to +Z (Roblox's sun rises at +X and leans to +Z by latitude - 23.5), so a
-	-- street seen down -Z has its left facades well lit and its right ones in shade while both sidewalks stay in sun (the
-	-- right buildings' shadow reaches 0.63 x their height across: just the grass, as ref1_street), with soft shadows; a
-	-- cool sky fill so shade reads blue-grey, not black; thick white clouds; a thin haze at distance; bloom only on Neon.
-	-- LIGHT2 (BRIEF20, measured on the user's Studio frames of light17's preset, brief/ref20/user_30..32): Roblox tone-maps
-	-- with a filmic (ACES-like) curve, and with Brightness 0.32 and cool ambients the hall floor (186,188,224) showed as
-	-- 140,151,197: a quarter darker than its Color3 and bluish ("still too dark"). The white floor of BRIEF17 was the hall's
-	-- light bars (PointLight 1.2 / range 60 reaching the floor), not this sun. Now: the same sun direction and ColorShift_Top,
-	-- a little more sun (0.36), a HIGH neutral-warm Ambient = OutdoorAmbient (shade stays light: the reference has very
-	-- little shadow darkness), a weak blue sky fill (0.1: it cooled everything), +0.3 exposure, saturation +0.45 and a touch
-	-- of contrast (crisp), a thin Atmosphere with no haze, bloom on Neon only. Expected in Studio: a lit Color3 shows at about
-	-- itself (the old hall floor 186,188,224 -> ~185,184,216), shade at ~0.9 of it, saturated colours stay saturated.
-	-- To brighten or darken the whole look, change ExposureCompensation in 0.15 steps (not Brightness, not the ambients).
-	-- HoodSun17 below is light17's HoodSun (too dark), HoodSun16 the one before it (too bright): Apply('HoodSun17').
+	-- The default (LIGHT3, BRIEF23): simulator daylight. "Its not that simulator lighting ... make the lighting way better
+	-- so its nice for the eyes": bright, soft, even light; colours that read as themselves; soft shadows; no muddy shade;
+	-- no white wash-out (brief/ref17/user_24 is the limit); a clean sky; the same look in the lobby and on the streets.
+	--   - A high sun (65 degrees) from BEHIND a player who walks north (toward the gates, -Z): the floors and every face the
+	--     player looks at (gates, signs, stand fronts, the door wall) are lit; shadows fall away from the camera; the two
+	--     side walls of the hall and of every street get the same light.
+	--   - A neutral Ambient = OutdoorAmbient carries ~70% of the light, so shade is only ~10% darker than sun on the walls
+	--     (render13: lit 83,166,187 / shade 70,153,179 on the hall teal 126,183,193) and the floor shows a touch under its
+	--     Color3 (186,188,224 -> ~175,177,217: light, not washed out). A little sky light (EnvironmentDiffuse 0.2) and a
+	--     warm-white sun add shape.
+	--   - ExposureCompensation 0 (it did nothing in the user's Studio). Saturation 0.65 in the grade: Studio shows
+	--     ColorCorrection saturation at ~0.4 of its value (0.45 looked like ~0.18), so this is a moderate boost; reds stay
+	--     red, the sky a clear blue. Contrast 0.1.
+	--   - A thin blue-white Atmosphere (Haze 0.1: more whitens the far gates), Bloom only on Neon, white clouds.
+	-- To brighten or darken the whole look in Studio, move Ambient and OutdoorAmbient together in steps of 6 (e.g.
+	-- 172 -> 178), not ExposureCompensation (no effect with voxel lighting).
 	HoodSun = {
+		technology = 'Voxel',
+		lighting = {
+			LightingStyle = Enum.LightingStyle.Soft, PrioritizeLightingQuality = false,
+			ClockTime = 12.4, GeographicLatitude = 48.5, Brightness = 0.5, ExposureCompensation = 0,
+			Ambient = C(172, 172, 180), OutdoorAmbient = C(172, 172, 180),
+			ColorShift_Top = C(255, 240, 220), ColorShift_Bottom = C(150, 165, 200),
+			EnvironmentDiffuseScale = 0.2, EnvironmentSpecularScale = 0.1, ShadowSoftness = 0.5, GlobalShadows = true,
+		},
+		atmosphere = { Density = 0.18, Offset = 0.25, Haze = 0.1, Glare = 0, Color = C(215, 230, 250), Decay = C(190, 210, 240) },
+		grade = { Brightness = 0, Contrast = 0.1, Saturation = 0.65, TintColor = C(255, 255, 255) },
+		bloom = { Intensity = 0.5, Size = 24, Threshold = 1.1 },
+		rays = { Intensity = 0.01, Spread = 0.15 },
+		sky = { SunAngularSize = 14, MoonAngularSize = 11, StarCount = 0, CelestialBodiesShown = true },
+		clouds = { Cover = 0.5, Density = 0.35, Color = C(255, 255, 255) },
+		wind = Vector3.new(8, 0, 4),
+	},
+	-- LIGHT2's HoodSun (BRIEF20-22): what the user saw in Studio on 2026-10-10 (brief/ref23/ours_studio_spawn.png,
+	-- "the lighting is off ... not that simulator lighting"). Comparison only. A warm side sun from +X at 53 degrees,
+	-- ambient 178, ExposureCompensation 0.3 (no effect in Studio), Saturation 0.45.
+	HoodSun20 = {
 		lighting = {
 			LightingStyle = Enum.LightingStyle.Soft, PrioritizeLightingQuality = true,
 			ClockTime = 9.85, GeographicLatitude = 43, Brightness = 0.36, ExposureCompensation = 0.3,
@@ -170,36 +202,59 @@ L.Presets.BlockParty = L.Presets.GoldenBlock
 
 local EFFECTS = { atmosphere = 'Atmosphere', grade = 'ColorCorrectionEffect', bloom = 'BloomEffect', rays = 'SunRaysEffect' }
 local SAVED_PROPS = {
-	'LightingStyle', 'PrioritizeLightingQuality', 'ClockTime', 'GeographicLatitude', 'Brightness', 'ExposureCompensation',
-	'Ambient', 'OutdoorAmbient', 'ColorShift_Top', 'ColorShift_Bottom', 'EnvironmentDiffuseScale', 'EnvironmentSpecularScale',
-	'ShadowSoftness', 'GlobalShadows',
+	'Technology', 'LightingStyle', 'PrioritizeLightingQuality', 'ClockTime', 'GeographicLatitude', 'Brightness',
+	'ExposureCompensation', 'Ambient', 'OutdoorAmbient', 'ColorShift_Top', 'ColorShift_Bottom', 'EnvironmentDiffuseScale',
+	'EnvironmentSpecularScale', 'ShadowSoftness', 'GlobalShadows', 'FogStart', 'FogEnd', 'FogColor',
 }
--- Some properties are newer than others; a place on an engine without one just skips it.
+-- LIGHT3: one technology, asked for through every switch Roblox reads (Technology is the legacy one; LightingStyle +
+-- PrioritizeLightingQuality the current ones: Soft without PrioritizeLightingQuality is voxel lighting, Soft with it
+-- shadow maps, Realistic with it Future), so whichever one this engine honours, the place renders the same way.
+L.Technologies = {
+	Voxel = { LightingStyle = 'Soft', PrioritizeLightingQuality = false },
+	ShadowMap = { LightingStyle = 'Soft', PrioritizeLightingQuality = true },
+	Future = { LightingStyle = 'Realistic', PrioritizeLightingQuality = true },
+}
+-- Some properties are newer than others, and scripts may not write Technology (Studio's Command Bar and game scripts
+-- can't; Lune, which writes hood/places/HoodEvolution.rbxl, can): a property that can't be set is skipped.
 local function set(inst, prop, value) pcall(function() inst[prop] = value end) end
 local function get(inst, prop)
 	local ok, value = pcall(function() return inst[prop] end)
 	return ok and value or nil
 end
+local function enumItem(enumName, itemName)
+	local ok, item = pcall(function() return Enum[enumName][itemName] end)
+	return ok and item or nil
+end
 
-local function backup()
-	if ServerStorage:FindFirstChild('HoodLightingBackup') then return end
-	local folder = Instance.new('Folder')
+local function backupFolder()
+	local folder = ServerStorage:FindFirstChild('HoodLightingBackup')
+	if folder then return folder end
+	folder = Instance.new('Folder')
 	folder.Name = 'HoodLightingBackup'
 	for _, prop in SAVED_PROPS do
 		local v = get(Lighting, prop)
 		if typeof(v) == 'EnumItem' then folder:SetAttribute(prop, v.Name) elseif v ~= nil then folder:SetAttribute(prop, v) end
 	end
 	folder:SetAttribute('GlobalWind', workspace.GlobalWind)
-	-- Move the existing effects, sky and clouds aside rather than editing them, so Restore is exact.
-	for _, child in Lighting:GetChildren() do
-		if child:IsA('Atmosphere') or child:IsA('PostEffect') or child:IsA('Sky') then child.Parent = folder end
-	end
-	local clouds = workspace.Terrain:FindFirstChildOfClass('Clouds')
-	if clouds then
-		clouds:SetAttribute('HoodFromTerrain', true)
-		clouds.Parent = folder
-	end
 	folder.Parent = ServerStorage
+	return folder
+end
+
+-- Every Apply: anything in Lighting that changes the picture and isn't ours (an Atmosphere, Sky or post effect from the
+-- place, a plugin or an older build) and the Terrain's own Clouds move into the backup folder, so they can't stack on
+-- this look; Restore puts them back. Moved, not edited, so Restore is exact.
+local function setAside(folder)
+	for _, child in Lighting:GetChildren() do
+		if not child:GetAttribute('HoodLighting') and (child:IsA('Atmosphere') or child:IsA('PostEffect') or child:IsA('Sky')) then
+			child.Parent = folder
+		end
+	end
+	for _, child in workspace.Terrain:GetChildren() do
+		if child:IsA('Clouds') and not child:GetAttribute('HoodLighting') then
+			child:SetAttribute('HoodFromTerrain', true)
+			child.Parent = folder
+		end
+	end
 end
 
 local function clearOurs()
@@ -216,27 +271,41 @@ local function make(class, name, props, parent)
 	if not ok then return nil end
 	inst.Name = 'Hood' .. class
 	inst:SetAttribute('HoodLighting', name)
+	set(inst, 'Enabled', true)
 	for prop, value in props do set(inst, prop, value) end
 	inst.Parent = parent
 	return inst
 end
 
--- Apply a preset (default HoodSoft). If the sun would end up in front of players walking down the
--- street (toward -Z), the latitude flips so the lit faces of gates and facades face the player.
+-- Apply a preset (default HoodSun). If the sun would end up in front of players walking down the street (toward
+-- -Z), the latitude flips so the lit faces of gates and facades face the player.
 function L.Apply(name)
 	name = name or 'HoodSun'
 	local preset = L.Presets[name]
 	assert(preset, 'unknown preset ' .. tostring(name))
-	backup()
+	local folder = backupFolder()
+	setAside(folder)
+	-- the technology first, then the preset's own properties (they win where they name the same property)
+	local tech = preset.technology and L.Technologies[preset.technology]
+	if tech then
+		set(Lighting, 'Technology', enumItem('Technology', preset.technology))
+		set(Lighting, 'LightingStyle', enumItem('LightingStyle', tech.LightingStyle))
+		set(Lighting, 'PrioritizeLightingQuality', tech.PrioritizeLightingQuality)
+	end
+	-- the legacy fog off (an Atmosphere replaces it, but a place with a short FogEnd would still grey everything)
+	set(Lighting, 'FogStart', 0)
+	set(Lighting, 'FogEnd', 100000)
 	for prop, value in preset.lighting do set(Lighting, prop, value) end
 	clearOurs()
-	for key, class in EFFECTS do make(class, name, preset[key], Lighting) end
+	for key, class in EFFECTS do
+		if preset[key] then make(class, name, preset[key], Lighting) end
+	end
 	-- Default tonemapper ("vivid colours and high contrast"), where the engine has ColorGradingEffect.
-	make('ColorGradingEffect', name, { TonemapperPreset = Enum.TonemapperPreset and Enum.TonemapperPreset.Default or nil }, Lighting)
+	make('ColorGradingEffect', name, { TonemapperPreset = enumItem('TonemapperPreset', 'Default') }, Lighting)
 	local sky = make('Sky', name, preset.sky, Lighting)
 	if sky then sky:SetAttribute('Spin', 0.5) end -- HoodClient/WorldMotion turns the skybox slowly
-	make('Clouds', name, preset.clouds, workspace.Terrain)
-	workspace.GlobalWind = preset.wind
+	if preset.clouds then make('Clouds', name, preset.clouds, workspace.Terrain) end
+	workspace.GlobalWind = preset.wind or Vector3.new(8, 0, 4)
 	local ok, sun = pcall(function() return Lighting:GetSunDirection() end)
 	if ok and sun.Z < 0 then
 		Lighting.GeographicLatitude = -preset.lighting.GeographicLatitude
@@ -255,7 +324,7 @@ function L.Restore()
 	for _, prop in SAVED_PROPS do
 		local v = folder:GetAttribute(prop)
 		if v ~= nil then
-			if prop == 'LightingStyle' then set(Lighting, prop, Enum.LightingStyle[v]) else set(Lighting, prop, v) end
+			if prop == 'LightingStyle' or prop == 'Technology' then set(Lighting, prop, enumItem(prop, v)) else set(Lighting, prop, v) end
 		end
 	end
 	local wind = folder:GetAttribute('GlobalWind')

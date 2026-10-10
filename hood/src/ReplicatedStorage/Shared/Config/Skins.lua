@@ -32,23 +32,29 @@ for i,r in rows do
  table.insert(S.List,r)
 end
 S.ById={};for _,s in S.List do S.ById[s.Id]=s end
--- The shooting ranges (lanes), in walking order from the entrance. A lane opens at a number of rebirths (Rebirths:
--- BAY 1 at once, then every two rebirths; the Champ Ring in the boss yard at 16) and multiplies every shot's Power by
--- its Multiplier (Shared/ShotRules: base x lane x rebirth multiplier x gun x shoes). Where each shooter's box sits is
--- read from the built map at runtime (Training_<Id>.TrainingZone), so lanes can move in Studio without code edits.
+-- The shooting ranges (lanes), in walking order from the entrance (brief 23: the superhero game's ladder). A lane
+-- multiplies every shot's Power by its Multiplier (Shared/ShotRules: base x lane x rebirth multiplier x gun x shoes).
+--   Rebirth lanes open at a number of rebirths (Rebirths): BAY 1 at once, then every two rebirths up to BAY 6 (x50 at
+--     10), and the Champ Ring in the boss yard at 12 (x75: the best free lane).
+--   Robux lanes (PRO BAY x100, GOLD BAY x250) open with their game pass only, at any rebirth: Pass is the key in
+--     Config/Products.Passes (ownership arrives as the player attribute Pass_<Key>), RobuxPrice the Robux price their
+--     label shows (the same number as that pass's Catalog Price). Rebirths is 0 on them and means nothing.
+-- Shared/RebirthRules.laneOpen decides (with the player's passes); LobbyService pays only in an open lane.
+-- Where each shooter's box sits is read from the built map at runtime (Training_<Id>.TrainingZone), so lanes can move in
+-- Studio without code edits; the Ids never change (the map and old saves name them).
 -- Name is the lane's one player-facing name everywhere (labels, the HUD hint, the guide). Gear names the original
 -- Block's gym builders (SimulatorLobby). Required is always 0: HoodProps' and SimulatorLobby's sign builders print it
 -- (the old Power price); nothing gameplay reads it.
 S.Stations={
  {Id='Starter',Name='BAY 1',Gear='TireBag',Rebirths=0,Multiplier=1,Required=0,Color=C(150,156,166)},
- {Id='Tape',Name='BAY 2',Gear='TapeBag',Rebirths=2,Multiplier=2,Required=0,Color=C(196,150,96)},
- {Id='Street',Name='BAY 3',Gear='StreetBag',Rebirths=4,Multiplier=3,Required=0,Color=C(84,140,220)},
- {Id='Heavy',Name='BAY 4',Gear='HeavyBag',Rebirths=6,Multiplier=5,Required=0,Color=C(222,72,72)},
- {Id='Speed',Name='BAY 5',Gear='SpeedBag',Rebirths=8,Multiplier=8,Required=0,Color=C(246,136,52)},
- {Id='DoubleEnd',Name='BAY 6',Gear='DoubleEndBag',Rebirths=10,Multiplier=12,Required=0,Color=C(160,86,226)},
- {Id='Pro',Name='BAY 7',Gear='ProBag',Rebirths=12,Multiplier=18,Required=0,Color=C(40,190,190)},
- {Id='Gold',Name='BAY 8',Gear='GoldBag',Rebirths=14,Multiplier=25,Required=0,Color=C(240,192,56)},
- {Id='Ring',Name='Champ Ring',Gear='Ring',Rebirths=16,Multiplier=40,Required=0,Color=C(230,60,140)},
+ {Id='Tape',Name='BAY 2',Gear='TapeBag',Rebirths=2,Multiplier=4,Required=0,Color=C(196,150,96)},
+ {Id='Street',Name='BAY 3',Gear='StreetBag',Rebirths=4,Multiplier=10,Required=0,Color=C(84,140,220)},
+ {Id='Heavy',Name='BAY 4',Gear='HeavyBag',Rebirths=6,Multiplier=20,Required=0,Color=C(222,72,72)},
+ {Id='Speed',Name='BAY 5',Gear='SpeedBag',Rebirths=8,Multiplier=35,Required=0,Color=C(246,136,52)},
+ {Id='DoubleEnd',Name='BAY 6',Gear='DoubleEndBag',Rebirths=10,Multiplier=50,Required=0,Color=C(160,86,226)},
+ {Id='Pro',Name='PRO BAY',Gear='ProBag',Rebirths=0,Multiplier=100,Pass='RangeVIP1',RobuxPrice=99,Required=0,Color=C(40,190,190)},
+ {Id='Gold',Name='GOLD BAY',Gear='GoldBag',Rebirths=0,Multiplier=250,Pass='RangeVIP2',RobuxPrice=249,Required=0,Color=C(240,192,56)},
+ {Id='Ring',Name='Champ Ring',Gear='Ring',Rebirths=12,Multiplier=75,Required=0,Color=C(230,60,140)},
 }
 S.StationById={};for _,s in S.Stations do S.StationById[s.Id]=s end
 return S

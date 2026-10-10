@@ -7,18 +7,22 @@
 --   back at the stage start (just inside its gate), healed, with a short ForceField, and the goons walk home keeping their HP.
 --   Your shots: Waves.client asks to shoot one (WaveShot stage, index); the server checks it (you stand in that stage, the
 --   goon is up and within reach, the shot rate) and deals your Power as damage (EnemyRules.damage), and pays the x1 shot's
---   Power for the hit (rebirth multiplier, boosts, gun, shoes), like the video's "+6". The last goon down clears the wave:
---   a stage's first clear pays Cash (Balance.WaveCash) and opens the next gate (StageService and HoodClient/Stages read
---   WaveCleared); every later clear pays a little (WaveRules.repeatReward); a clear heals you. A cleared wave comes back
---   WaveRules.RespawnDelay seconds after the clear (while you stay, or on your next visit). Cash is x2 with the x2 Cash pass.
+--   Power for the hit (rebirth multiplier, boosts, gun, shoes), like the video's "+6". The last goon down clears the wave
+--   and opens the next gate for the rest of the run (brief 23: HoodServer/Runs; StageService and HoodClient/Stages read
+--   RunStage); a clear heals you. A stage's first clear EVER pays a little Cash (WaveRules.reward), a later one
+--   WaveRules.repeatReward (0 for now: the pads before the gate pay). Cash is x2 with the x2 Cash pass.
+--   A cleared wave stays down for the rest of the run. When the run ends (back in the lobby: StageService calls
+--   Runs.reset) your session is reset and every crew stands again, fresh.
 -- Player attributes: WaveCleared (the highest stage whose wave you ever cleared, saved as profile Waves.Cleared),
--- WaveStage (the stage with goons you stand in, 0 = none), WaveLeft (your goons still up there).
+-- WaveStage (the stage with goons you stand in, 0 = none), WaveLeft (your goons still up there); Runs sets RunCleared
+-- and RunStage.
 -- Remote WaveState, to that player only:
 --   { Kind = 'Wave', Stage, HP, Max, Left, Enemies = { {Kind, Name, Home = {x, z}} }, D }  entering a stage (fresh or kept)
 --   { Kind = 'Moves', Stage, D = {x, z, state, ...} }  10 a second while they move (map frame; EnemyRules state codes)
 --   { Kind = 'Hit', Stage, Index, HP, Left, Damage, Gain }  each hit
 --   { Kind = 'Punch', Stage, Index, Damage, Landed }  a wind-up ending (Landed: it reached you)
---   { Kind = 'KO', Stage }  your soft respawn;  { Kind = 'Cleared', Stage, Reward, First }
+--   { Kind = 'KO', Stage }  your soft respawn;  { Kind = 'Cleared', Stage, Reward, First, Opens (the gate it opened) }
+--   { Kind = 'Reset', Stage = 0 }  the run ended: every crew is fresh again
 local Players = game:GetService('Players')
 local RS = game:GetService('ReplicatedStorage')
 local CollectionService = game:GetService('CollectionService')
@@ -32,6 +36,7 @@ local EnemyRules = require(RS.Shared.EnemyRules)
 local ShotRules = require(RS.Shared.ShotRules)
 local RebirthRules = require(RS.Shared.RebirthRules)
 local Boosts = require(script.Parent.Boosts)
+local Runs = require(script.Parent.Runs)
 
 while not RS:GetAttribute('FoundationReady') do task.wait(0.1) end
 local active = ActiveMap.get()
@@ -43,11 +48,13 @@ for _, m in CollectionService:GetTagged('HoodStageGate') do
 	if m:IsDescendantOf(active.Root) then table.insert(models, m) end
 end
 local gates = StageRules.fromModels(models)
--- No gates on this map: no waves (WaveCleared stays unset, so gates ask for Power only).
+-- No gates on this map: no waves (WaveCleared stays unset).
 if #gates == 0 then return end
 local world, arenas = EnemyRules.world(gates)
-if next(world) == nil then return end
 local lastStage = gates[#gates].Stage
+-- (the run counts a stage without goons as beaten; a map with gates and no goons at all opens every gate)
+Runs.setCrews(world, lastStage)
+if next(world) == nil then return end
 local gateOf = {}
 for _, g in gates do gateOf[g.Stage] = g end
 
@@ -89,14 +96,13 @@ local function sendWave(player, stage, w)
 	for i, e in world[stage] or {} do enemies[i] = { Kind = e.Kind, Name = e.Name, Home = { e.Home.X, e.Home.Z } } end
 	stateRemote:FireClient(player, { Kind = 'Wave', Stage = stage, HP = table.clone(w.HP), Max = table.clone(w.Max), Left = w.Left, Enemies = enemies, D = WaveRules.pack(w) })
 end
--- Where you stand now; on entering a stage with goons its wave (fresh or kept) goes to your client, and so does a
--- cleared wave coming back while you stay.
+-- Where you stand now; on entering a stage with goons its wave (fresh or kept) goes to your client, and the run is on.
 local function place(player, s, root)
 	local before = s.Stage
 	s:move(root and WaveRules.stageAt(gates, frame:PointToObjectSpace(root.Position)) or nil)
-	local back = s.Stage == before and s:revive()
 	local w = s:current()
-	if (s.Stage ~= before or back) and w then sendWave(player, s.Stage, w) end
+	if s.Stage ~= 0 then Runs.start(player) end
+	if s.Stage ~= before and w then sendWave(player, s.Stage, w) end
 end
 
 local function heal(player)
@@ -136,6 +142,9 @@ Net.get('WaveShot').OnServerEvent:Connect(function(player, stage, index)
 	local profile = Data.get(player)
 	local _, root = living(player)
 	if not profile or not root then return end
+	-- (only a crew behind a gate this run has opened: someone who slipped past a shut gate, before StageService puts
+	-- them back, can't beat a crew further down the street)
+	if type(stage) ~= 'number' or stage > Runs.stage(player) then return end
 	local s = sessionOf(player)
 	place(player, s, root) -- (where you are now, not at the last tick)
 	-- Damage is your Power; the hit pays what a shot pays on a x1 lane: your rebirth multiplier and boosts, times your
@@ -152,14 +161,28 @@ Net.get('WaveShot').OnServerEvent:Connect(function(player, stage, index)
 	if cleared then
 		local first = stage > best(profile)
 		if first then profile.Data.Waves.Cleared = math.max(profile.Data.Waves.Cleared, stage) end
-		local reward = Boosts.cashFor(player, first and WaveRules.reward(stage) or WaveRules.repeatReward(stage))
-		profile.Data.Cash = math.min(1e12, profile.Data.Cash + reward)
-		player:SetAttribute('Cash', profile.Data.Cash)
-		Data.push(player)
+		local base = first and WaveRules.reward(stage) or WaveRules.repeatReward(stage)
+		local reward = base > 0 and Boosts.cashFor(player, base) or 0
+		if reward > 0 then
+			profile.Data.Cash = math.min(1e12, profile.Data.Cash + reward)
+			player:SetAttribute('Cash', profile.Data.Cash)
+			Data.push(player)
+		end
 		heal(player)
-		stateRemote:FireClient(player, { Kind = 'Cleared', Stage = stage, Reward = reward, First = first })
+		-- The gate after this stage opens for the rest of the run (Stages.client plays its open moment).
+		local opens = Runs.clear(player, stage) and gateOf[stage + 1] and stage + 1 or nil
+		stateRemote:FireClient(player, { Kind = 'Cleared', Stage = stage, Reward = reward, First = first, Opens = opens })
 	end
 	publish(player, profile, s)
+end)
+
+-- The run ended (StageService: back in the lobby): every crew stands again, fresh, and your client drops its goons.
+Runs.onReset(function(player)
+	local s = sessions[player]
+	if s then s:reset() end
+	stateRemote:FireClient(player, { Kind = 'Reset', Stage = 0 })
+	local profile = Data.get(player)
+	if profile and s then publish(player, profile, s) end
 end)
 
 Players.PlayerRemoving:Connect(function(player)

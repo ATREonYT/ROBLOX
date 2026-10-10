@@ -15,6 +15,8 @@ local Guns = require(RS.Shared.Config.Guns)
 local GunRules = require(RS.Shared.GunRules)
 local Format = require(RS.Shared.Format)
 local Juice = require(RS.Shared.Juice)
+local okKit, Kit = pcall(require, RS.Shared.UIKit)
+if not okKit or type(Kit) ~= 'table' then Kit = nil end
 
 local player = Players.LocalPlayer
 
@@ -151,7 +153,7 @@ local function paint(slot, state)
 		-- can't afford it, BUY in yellow when you can), else the state word (OWNED blue, EQUIPPED green).
 		local glyph = slot.Price:GetAttribute('Glyph') or ''
 		local pay = state == 'Locked' or state == 'Buy'
-		if slot.PriceIcon then slot.PriceIcon.Visible = pay end
+		if slot.PriceIcon then slot.PriceIcon.Visible = pay and not slot.PriceIconMissing end
 		local price = slot.Gun.Cost == 0 and 'FREE' or Format.compact(slot.Gun.Cost)
 		local text = pay and ((glyph ~= '' and glyph .. ' ' or '') .. price) or string.upper(state)
 		if state == 'Buy' then text = 'BUY ' .. text end
@@ -163,6 +165,38 @@ local function paint(slot, state)
 	prompt.ActionText = GunRules.actionText(real, slot.Gun.Cost)
 	-- Buying holds a moment so a passing tap doesn't spend Cash; equipping is instant.
 	prompt.HoldDuration = (real == 'Locked' and slot.Gun.Cost > 0) and 0.35 or 0
+end
+
+-- (brief 23, UI5's UIKit.watchImage) An uploaded icon still in Roblox review draws nothing: while the Power or Cash icon
+-- on a nameplate doesn't draw, it hides, its line centres and carries the text glyph instead (the Glyph attribute the
+-- painter reads); the icon comes back the moment it loads.
+local function iconOrGlyph(icon, text, glyph, repaint, onMissing)
+	if not (Kit and Kit.watchImage and icon and text) then return end
+	local pos, size, align = text.Position, text.Size, text.TextXAlignment
+	local function set(missing)
+		if onMissing then onMissing(missing) end
+		icon.Visible = not missing
+		text.Position = missing and UDim2.fromScale(0.04, pos.Y.Scale) or pos
+		text.Size = missing and UDim2.fromScale(0.92, size.Y.Scale) or size
+		text.TextXAlignment = missing and Enum.TextXAlignment.Center or align
+		text:SetAttribute('Glyph', missing and glyph or '')
+		repaint()
+	end
+	Kit.watchImage(icon, function() set(true) end, function() set(false) end)
+end
+local function watchIcons(slot, id)
+	local gun = slot.Gun
+	if slot.Power then
+		iconOrGlyph(slot.PowerIcon, slot.Power, '💪', function()
+			local glyph = slot.Power:GetAttribute('Glyph') or ''
+			slot.Power.Text = (glyph ~= '' and glyph .. ' ' or '') .. 'x' .. gun.Multiplier .. ' Power'
+		end)
+	end
+	if slot.Price then
+		iconOrGlyph(slot.PriceIcon, slot.Price, '💵', function()
+			if slots[id] == slot then paint(slot, shown[id] or shownState(id, gun)) end
+		end, function(missing) slot.PriceIconMissing = missing end)
+	end
 end
 
 local function bind(model)
@@ -183,6 +217,8 @@ local function bind(model)
 		elseif d:IsA('TextLabel') and d.Name == 'State' then slot.StateLabel = d
 		elseif d:IsA('TextLabel') and d.Name == 'Price' and d:FindFirstAncestor('GunLabel') then slot.Price = d
 		elseif d:IsA('ImageLabel') and d.Name == 'PriceIcon' then slot.PriceIcon = d
+		elseif d:IsA('ImageLabel') and d.Name == 'Icon' and d:FindFirstAncestor('GunLabel') then slot.PowerIcon = d
+		elseif d:IsA('TextLabel') and d.Name == 'Multiplier' and d:FindFirstAncestor('GunLabel') then slot.Power = d
 		end
 	end
 	local old = point:FindFirstChild('GunPrompt')
@@ -201,6 +237,7 @@ local function bind(model)
 	end)
 	slot.Prompt = prompt
 	slots[id] = slot
+	watchIcons(slot, id)
 	-- A slot arriving (or coming back) is painted as it is now, without a celebration.
 	local state = shownState(id, gun)
 	paint(slot, state)

@@ -27,7 +27,7 @@ return function(t)
 	end)
 
 	t.test('the pad passes and the shoe-box passes are all in the store', function()
-		for _, key in { 'DoubleRep', 'DoubleCash', 'AutoShoot', 'VIP', 'Lucky', 'TripleOpen', 'ExtraEquip', 'PowerPack1', 'SmallCash', 'SkipRebirth' } do
+		for _, key in { 'DoubleRep', 'DoubleCash', 'AutoShoot', 'VIP', 'Lucky', 'TripleOpen', 'ExtraEquip', 'PowerPack1', 'SmallCash', 'SkipRebirth', 'TenXCash', 'RangeVIP1', 'RangeVIP2' } do
 			t.expect.truthy(Products.ByKey[key] ~= nil)
 		end
 	end)
@@ -60,6 +60,30 @@ return function(t)
 		t.expect.falsy((Products.canBuy('DoubleRep')))
 		Products.Passes.DoubleRep, Products.Passes.VIP, Products.DeveloperProducts.PowerPack1, Products.Enabled = saved[1], saved[2], saved[3], saved[4]
 		t.expect.falsy((Products.canBuy('NoSuchThing')))
+	end)
+
+	-- Brief 23: the 10x Cash pad and the two Robux lanes are passes like the others: an id slot, a card, a purchase that
+	-- maps back to its key (StoreService sets Pass_<Key> from it) and a prompt only once the owner pastes an id.
+	t.test('the 10x Cash and lane passes: id slots, wired cards, purchases map back to their keys', function()
+		local saved = { Products.Passes.TenXCash, Products.Passes.RangeVIP1, Products.Passes.RangeVIP2, Products.Enabled }
+		Products.Enabled = true
+		for i, key in { 'TenXCash', 'RangeVIP1', 'RangeVIP2' } do
+			local e = Products.ByKey[key]
+			t.expect.truthy(e ~= nil and e.Kind == 'Pass' and e.Section == 'Gamepass' and e.Wired == true)
+			t.expect.equal(Products.idOf(key), saved[i] > 0 and saved[i] or 0)
+			Products.Passes[key] = 9000 + i
+			t.expect.equal(Products.idOf(key), 9000 + i)
+			t.expect.equal(Products.keyFor('Pass', 9000 + i), key)
+			t.expect.equal(Products.keyFor('Product', 9000 + i), nil)
+			t.expect.truthy((Products.canBuy(key)))
+			Products.Passes[key] = 0
+			local ok, why = Products.canBuy(key)
+			t.expect.falsy(ok); t.expect.equal(why, 'noid')
+		end
+		t.expect.equal(Products.ByKey.TenXCash.Price, 199)
+		t.expect.equal(Products.ByKey.RangeVIP1.Price, 99)
+		t.expect.equal(Products.ByKey.RangeVIP2.Price, 249)
+		Products.Passes.TenXCash, Products.Passes.RangeVIP1, Products.Passes.RangeVIP2, Products.Enabled = saved[1], saved[2], saved[3], saved[4]
 	end)
 
 	t.test('ids must be whole positive numbers', function()

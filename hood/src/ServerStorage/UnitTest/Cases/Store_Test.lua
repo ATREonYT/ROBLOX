@@ -162,9 +162,10 @@ return function(t)
 			end
 			last = per
 		end
-		-- the Tiny pack is less than the first six stages pay, and no pack buys the end-of-world guns
+		-- the Tiny pack is less than one cash-out at each of the first eight stages (their Return pads), and no pack buys
+		-- the end-of-world guns
 		local early = 0
-		for s = 1, 6 do early += Balance.StageCash[s] + Balance.WaveCash[s] end
+		for s = 1, 8 do early += Balance.PadCash[s] end
 		t.expect.truthy(Products.cashAmount('TinyCash') < early)
 		t.expect.truthy(Products.cashAmount('LargeCash') < Guns.ById.Blaster.Cost)
 		t.expect.truthy(Products.cashAmount('LargeCash') < Guns.ById.Diamond.Cost)

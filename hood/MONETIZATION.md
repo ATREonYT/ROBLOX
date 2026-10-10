@@ -12,12 +12,15 @@ Create a pass, set its price, copy its id, and paste it at `Products.Passes.<Key
 | Name | Price (Robux) | Key in Products.lua | What it does |
 |---|---|---|---|
 | 2x Power | 199 | `DoubleRep` | Every shot gives double Power |
-| 2x Cash | 149 | `DoubleCash` | Double Cash from gates, waves and goals |
+| 2x Cash | 149 | `DoubleCash` | Double Cash from the pads and goals |
 | VIP | 249 | `VIP` | Gold VIP tag + 1.5x Cash |
 | Auto Fight | 99 | `AutoShoot` | Your gun fires at stage goons on its own |
 | Lucky | 129 | `Lucky` | Epic-and-better shoes are twice as likely in Cash boxes |
 | Triple Open | 179 | `TripleOpen` | Open 3 Cash shoe boxes at once (for 3x the Cash) |
 | +1 Shoe Slot | 99 | `ExtraEquip` | Wear 4 pairs of shoes instead of 3 |
+| 10x Cash | 199 | `TenXCash` | The pink pad before every gate pays 10x the yellow one (+100 instead of +10 at Stage 1) |
+| Pro Bay | 99 | `RangeVIP1` | Opens PRO BAY, the x100 Power shooting lane, forever |
+| Gold Bay | 249 | `RangeVIP2` | Opens GOLD BAY, the x250 Power shooting lane (the best one), forever |
 
 ## Developer products (Monetization → Developer Products)
 
@@ -52,6 +55,18 @@ Create a product, set its price, copy its id, and paste it at `Products.Develope
    real one-by-one price.
 3. For the two single Robux boxes, also update `RobuxPrice` in `Config/Shoes.lua`. That price is shown on the
    box's label in the lobby.
+4. For Pro Bay and Gold Bay, also update `RobuxPrice` on the lane's row in `Config/Skins.lua` (`S.Stations`, the
+   `Pro` and `Gold` rows). That price is shown over the lane in the lobby.
+
+## How the new passes work in game
+
+- **10x Cash:** before every gate stand two pads. The yellow Return pad pays the stage's Cash (+10 at Stage 1, more
+  each stage) and takes you back to the lobby. The pink pad pays 10 times that and does the same, but only with this
+  pass. Without the pass, stepping on the pink pad opens the purchase window. The 2x Cash and VIP passes add to both
+  pads as usual.
+- **Pro Bay / Gold Bay:** the two best shooting lanes in the lobby. Every other lane opens with rebirths (up to x50
+  at 10 rebirths, and the Champ Ring in the Boss Yard at x75 at 12). These two open only with their pass, at any
+  rebirth. Stepping into one without the pass opens its purchase window.
 
 ## Upload the icons first
 

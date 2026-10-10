@@ -110,6 +110,16 @@ function Motion.pop(gui, amount)
 	end)
 end
 
+-- (brief 23) A counter's jump on every gain: up to 1 + amount (0.2) and straight back, `time` (0.15 s) in all.
+function Motion.bump(gui, amount, time)
+	local s = scaleOf(gui)
+	time = time or 0.15
+	local t = tween(s, time * 0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out, { Scale = 1 + (amount or 0.2) })
+	t.Completed:Once(function(state)
+		if state == Enum.PlaybackState.Completed then tween(s, time * 0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.In, { Scale = 1 }) end
+	end)
+end
+
 -- Tick a label's number from one value to another; format(n) builds the text (UIKit.short by default).
 local counters = setmetatable({}, { __mode = 'k' })
 function Motion.countTo(label, from, to, duration, format)

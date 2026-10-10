@@ -1,11 +1,11 @@
--- Stage waves (brief 18): every stage street and the Boss Yard (16) holds a small wave of cartoon rival-crew goons
--- (Shared/EnemyRules: who, where, how tough, how they chase and punch). Pure bookkeeping shared by WaveService (which
--- decides), Waves.client (which shows and aims) and the unit tests:
+-- Stage waves (brief 18, runs brief 23): every stage street and the Boss Yard (16) holds a small wave of cartoon
+-- rival-crew goons (Shared/EnemyRules: who, where, how tough, how they chase and punch). Pure bookkeeping shared by
+-- WaveService (which decides), Waves.client (which shows and aims) and the unit tests:
 --   Each player has their own wave per stage. A hit deals your Power as damage (EnemyRules.damage); the server pays the
---   x1 shot's "+N" Power for it. The last goon down clears the wave: the first clear of a stage pays Cash
---   (Balance.WaveCash) and opens the next gate (gate i needs WaveCleared >= i - 1, with WaveCleared the highest stage whose
---   wave you ever cleared). A cleared wave comes back RespawnDelay seconds after the clear, the next time you walk into
---   that stage (or while you stay), and every later clear pays a little Cash (repeatReward) as well.
+--   x1 shot's "+N" Power for it. The last goon down clears the wave and opens the next gate for the rest of the run
+--   (HoodServer/Runs, StageRules.gateOpen). A cleared wave stays down until the run ends (back in the lobby: the session
+--   is reset and every crew stands again). The first clear of a stage EVER pays a little Cash (Balance.WaveCash; the
+--   saved best is WaveCleared), a later one repeatReward (ECON: 0 now, the pads before the gate pay instead).
 local ShotRules = require(script.Parent.ShotRules)
 local Balance = require(script.Parent.Config.Balance)
 local EnemyRules = require(script.Parent.EnemyRules)
@@ -16,7 +16,6 @@ WaveRules.Range = EnemyRules.FightRange -- studs from you to a goon for a shot (
 WaveRules.LastDepth = 120 -- the last gate's arena (the Boss Yard) runs this far past its line
 WaveRules.MaxStage = 64 -- sanity cap on stage numbers from the network
 WaveRules.MaxIndex = 32 -- and on goon indices
-WaveRules.RespawnDelay = 20 -- seconds after a clear before that stage's wave can come back
 -- (Older names, kept for readers of the target waves: the lineups and HP are EnemyRules' now.)
 WaveRules.Lineups = EnemyRules.Lineups
 WaveRules.maxHp = EnemyRules.maxHp
@@ -26,15 +25,17 @@ local function int(v: any): number?
 	return v
 end
 
--- Cash for a stage's first clear (Balance.WaveCash; 5 for a stage the table doesn't know).
+-- Cash for a stage's first clear ever (Balance.WaveCash; ECON: 0 now, the pad is the run's one big number; 0 for a
+-- stage the table doesn't know).
 function WaveRules.reward(stage: any): number
 	local s = int(stage)
-	return s and Balance.WaveCash[s] or 5
+	return s and Balance.WaveCash[s] or 0
 end
 
--- Cash for clearing a stage's wave again: Balance.WaveRepeatShare of the stage's gate Cash, at least 1.
+-- Cash for clearing a stage's wave again (a later run): Balance.WaveRepeatShare of the stage's gate Cash (0 is fine:
+-- the CLEAR! moment then shows no Cash).
 function WaveRules.repeatReward(stage: any): number
-	return math.max(1, math.floor(Balance.stageCash(int(stage)) * Balance.WaveRepeatShare))
+	return math.max(0, math.floor(Balance.stageCash(int(stage)) * (Balance.WaveRepeatShare or 0)))
 end
 
 -- The stage whose arena `pos` (map frame) stands in: past gate i's line and before gate i+1's, on the street
@@ -46,12 +47,6 @@ function WaveRules.stageAt(gates: { any }, pos: Vector3): number?
 		if math.abs(pos.X) <= g.HalfWidth + 2 and pos.Z < g.Z and pos.Z >= far then return g.Stage end
 	end
 	return nil
-end
-
--- Gate `stage` is open as far as waves go (the Power check is StageRules'): nil = no wave system here.
-function WaveRules.gateOpen(stage: number, waveCleared: any): boolean
-	if type(waveCleared) ~= 'number' or stage <= 1 then return true end
-	return waveCleared >= stage - 1
 end
 
 -- The WaveCleared a player has: their saved best, carried on through stages that have no goons (a map without waves in
@@ -117,10 +112,10 @@ end
 
 ---------------------------------------------------------------------------------------------- one player's waves
 -- WaveRules.session(world, clock, arenas): the server keeps one per player (world and arenas from EnemyRules.world).
--- :move(stage) as they walk (0/nil = not in a stage with goons) spawns a wave the first time they enter that stage and
--- again when they come back after clearing it; an unfinished wave keeps its HP while they step out (its goons walk
--- home); a cleared one comes back on a later visit once RespawnDelay has passed since the clear. :tick(dt, you) runs
--- the goons; :shoot(stage, index, from, damage) checks a shot and applies it; :knockout() sends the goons home calm.
+-- :move(stage) as they walk (0/nil = not in a stage with goons) spawns a wave the first time they enter that stage in a
+-- run; an unfinished wave keeps its HP while they step out (its goons walk home); a cleared one stays down for the rest
+-- of the run. :reset() ends the run (every crew stands again, fresh). :tick(dt, you) runs the goons; :shoot(stage,
+-- index, from, damage) checks a shot and applies it; :knockout() sends the goons home calm.
 local Session = {}
 Session.__index = Session
 
@@ -141,7 +136,7 @@ function Session:move(stage: number?): any
 	if s == 0 then return nil end
 	local w = self.Waves[s]
 	local fresh = nil
-	if not w or (w.Cleared and w.Away and self.Clock() - (w.ClearedAt or -math.huge) >= WaveRules.RespawnDelay) then
+	if not w then
 		w = WaveRules.spawn(s, self.World[s])
 		self.Waves[s] = w
 		fresh = w
@@ -150,15 +145,12 @@ function Session:move(stage: number?): any
 	return fresh
 end
 
--- While you stay in a stage whose wave you cleared, it comes back RespawnDelay seconds after the clear. Returns the
--- new wave when it did.
-function Session:revive(): any
-	local w = self:current()
-	if not w or not w.Cleared or #(self.World[self.Stage] or {}) == 0 then return nil end
-	if self.Clock() - (w.ClearedAt or -math.huge) < WaveRules.RespawnDelay then return nil end
-	w = WaveRules.spawn(self.Stage, self.World[self.Stage])
-	self.Waves[self.Stage] = w
-	return w
+-- The run ended: every crew stands again, fresh, the next time you walk in (you are back in the lobby), and nobody is
+-- calm after an old KO.
+function Session:reset()
+	self.Waves = {}
+	self.Stage = 0
+	self.CalmUntil = -math.huge
 end
 
 -- The wave you're in now (nil outside a stage with goons).

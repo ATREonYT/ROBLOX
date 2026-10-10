@@ -11,8 +11,17 @@ return function(t)
  end)
  t.test('training requires standing on the mat of an open lane',function()
   local z=streetZone()
-  t.expect.equal(R.training(4,Vector3.new(-50,4,66),z),3);t.expect.equal(select(2,R.training(4,Vector3.new(-50,4,66),z)),'Street')
+  t.expect.equal(R.training(4,Vector3.new(-50,4,66),z),S.StationById.Street.Multiplier);t.expect.equal(select(2,R.training(4,Vector3.new(-50,4,66),z)),'Street')
   t.expect.equal(R.training(4,Vector3.new(-50,30,66),z),1);t.expect.equal(select(2,R.training(4,Vector3.new(-56,4,66),z)),'')
+ end)
+ t.test('a Robux lane offers its pass once per step-in, never twice within the gap',function()
+  local st={}
+  t.expect.truthy(R.offerDue(st,'RangeVIP1',100));t.expect.falsy(R.offerDue(st,'RangeVIP1',101));t.expect.falsy(R.offerDue(st,'RangeVIP1',150)) -- (still standing in it)
+  t.expect.falsy(R.offerDue(st,'',151)) -- (stepped out)
+  t.expect.truthy(R.offerDue(st,'RangeVIP1',160)) -- (stepped in again: once more)
+  t.expect.falsy(R.offerDue(st,'',161));t.expect.falsy(R.offerDue(st,'RangeVIP1',162)) -- (out and in within 4 s: not yet ...)
+  t.expect.truthy(R.offerDue(st,'RangeVIP1',164.5));t.expect.falsy(R.offerDue(st,'RangeVIP1',170)) -- (... then once, while in)
+  t.expect.truthy(R.offerDue(st,'RangeVIP2',300));t.expect.falsy(R.offerDue(st,nil,301));t.expect.falsy(R.offerDue(nil,'RangeVIP1',400))
  end)
  t.test('zones are read from the built mats',function()
   local lobby=Instance.new('Model')
@@ -20,10 +29,29 @@ return function(t)
   local mat=Instance.new('Part');mat.Name='TrainingZone';mat.Size=Vector3.new(10,0.25,8);mat.CFrame=CFrame.new(20,2,30)*CFrame.Angles(0,math.pi/2,0);mat.Parent=bay
   local zones=R.zonesFrom(lobby,CFrame.new())
   t.expect.equal(#zones,1);t.expect.near(zones[1].HalfX,4,1e-4);t.expect.near(zones[1].HalfZ,5,1e-4);t.expect.near(zones[1].Top,2.125,1e-4)
-  t.expect.equal(R.training(4,Vector3.new(23,5,34),zones),3)
+  t.expect.equal(R.training(4,Vector3.new(23,5,34),zones),S.StationById.Street.Multiplier)
   lobby:Destroy()
  end)
- t.test('lanes climb in rebirths needed and payoff',function() for i=2,#S.Stations do t.expect.truthy(S.Stations[i].Rebirths>S.Stations[i-1].Rebirths);t.expect.truthy(S.Stations[i].Multiplier>S.Stations[i-1].Multiplier) end end)
+ t.test('the lobby rebirth lanes climb in rebirths needed and payoff, in walking order',function()
+  local last
+  for _,s in S.Stations do
+   if not s.Pass and s.Id~='Ring' then
+    if last then t.expect.truthy(s.Rebirths>last.Rebirths);t.expect.truthy(s.Multiplier>last.Multiplier) end
+    last=s
+   end
+  end
+ end)
+ -- Brief 23: a Robux lane fires and pays only with its pass; without it the box says which pass it needs (TrainingPass).
+ t.test('a Robux lane pays only with its pass, and names the pass it needs',function()
+  local z={{Station=S.StationById.Gold,X=10,Z=10,HalfX=5,HalfZ=5,Top=1}}
+  local m,id=R.training(99,Vector3.new(10,3,10),z);t.expect.equal(m,0);t.expect.equal(id,'Locked:Gold')
+  t.expect.equal(R.need(id,99),0);t.expect.equal(R.pass(id),'RangeVIP2');t.expect.equal(R.pass('Gold'),'');t.expect.equal(R.pass(''),'');t.expect.equal(R.pass(nil),'')
+  t.expect.equal(R.pass('Locked:Street'),'');t.expect.equal(R.pass('Locked:Nope'),'')
+  m,id=R.training(0,Vector3.new(10,3,10),z,{RangeVIP2=true});t.expect.equal(m,250);t.expect.equal(id,'Gold')
+  m,id=R.training(0,Vector3.new(10,3,10),z,{RangeVIP1=true});t.expect.equal(m,0);t.expect.equal(id,'Locked:Gold')
+  local p=Instance.new('Folder');p:SetAttribute('Pass_RangeVIP2',true)
+  m,id=R.training(0,Vector3.new(10,3,10),z,p);t.expect.equal(m,250);t.expect.equal(id,'Gold');p:Destroy()
+ end)
  t.test('every station has gear the lobby builder knows',function() local L=require(game.ServerStorage.SimulatorLobby);for _,s in S.Stations do t.expect.truthy(s.Gear=='Ring' or L.Gear[s.Gear]) end end)
  -- The looks are art only now: nothing equips them, gains from them or walks faster with them.
  t.test('the looks give nothing: no gain, no equip, no walk speed',function()

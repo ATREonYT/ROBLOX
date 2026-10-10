@@ -1,11 +1,13 @@
 -- The ARMORY: buy guns with Cash and equip one. The equipped gun multiplies the Power each shot pays at the
 -- ranges (LobbyService's Shoot handler reads the player attribute GunMultiplier), and it is the gun you hold:
 -- every player carries one gun Tool (Shared/GunTool) of their equipped gun, given on spawn and swapped
--- (in the hand if it was held) whenever the equipped gun changes. Shoot.client takes it out on a range.
+-- whenever the equipped gun changes. (brief 23) Roblox's hotbar is hidden, so the gun is always in the hand: the
+-- server puts it there on every spawn and swap, and Shoot.client keeps it there.
 --
 -- Remotes (Shared/Net): BuyGun(id) and EquipGun(id), both RemoteEvents. Everything is checked here: the id,
--- a rate limit, that the profile is loaded and the character alive, that you stand within GunRules.Range of
--- that gun's pedestal (part GunPoint_<Id> in the active map), that you own it (equip) or can afford it (buy).
+-- a rate limit, that the profile is loaded and the character alive, and that you own it (equip) or can afford it
+-- (buy). Buying needs you within GunRules.Range of that gun's pedestal (part GunPoint_<Id> in the active map);
+-- (brief 23) equipping a gun you own works anywhere, so the inventory's Guns tab can choose it.
 -- Buying takes the Cash, adds the gun and equips it. Answers go back as Net 'Notice' messages.
 --
 -- Player attributes kept in step with the profile (set on load and on every change):
@@ -36,12 +38,21 @@ local function pointFor(id)
 	return p
 end
 
--- The held gun follows EquippedGun (a failed build never blocks the attributes).
+-- The held gun follows EquippedGun (a failed build never blocks the attributes), and it goes into the hand of a
+-- living character at once (brief 23: there is no hotbar to take it out with).
 local function giveTool(player)
 	local id = player:GetAttribute('EquippedGun')
 	if type(id) == 'string' then
-		local ok, err = pcall(GunTool.sync, player, id)
-		if not ok then warn('[GunService] gun tool: ' .. tostring(err)) end
+		local ok, result = pcall(GunTool.sync, player, id)
+		if not ok then
+			warn('[GunService] gun tool: ' .. tostring(result))
+			return
+		end
+		local character = player.Character
+		local humanoid = character and character:FindFirstChildOfClass('Humanoid')
+		if result and result.Parent and character and character.Parent and humanoid and humanoid.Health > 0 and result.Parent ~= character then
+			pcall(function() humanoid:EquipTool(result) end)
+		end
 	end
 end
 
@@ -57,9 +68,10 @@ local function notice(player, text) Net.get('Notice'):FireClient(player, text) e
 local function perShot(gun) return 'x' .. gun.Multiplier .. ' Power per shot' end
 
 -- Shared front half of both requests: valid id, under the rate limit, profile loaded, alive, and how far
--- you stand from the gun. Returns nil when the request should be dropped silently.
+-- you stand from the gun (anywhere = 0 when `anywhere`: equipping). Returns nil when the request should be dropped
+-- silently.
 local limit = RateLimiter.new(4, 2)
-local function begin(player, id)
+local function begin(player, id, anywhere)
 	if type(id) ~= 'string' or not Guns.ById[id] then return nil end
 	if not limit.allow(player) then return nil end
 	local profile = Data.get(player)
@@ -67,6 +79,7 @@ local function begin(player, id)
 	local root = character and character:FindFirstChild('HumanoidRootPart')
 	local humanoid = character and character:FindFirstChildOfClass('Humanoid')
 	if not profile or not root or not humanoid or humanoid.Health <= 0 then return nil end
+	if anywhere then return profile, 0 end
 	local point = pointFor(id)
 	if not point then
 		notice(player, 'Find the ARMORY to get guns.')
@@ -114,7 +127,7 @@ Net.get('BuyGun').OnServerEvent:Connect(function(player, id)
 end)
 
 Net.get('EquipGun').OnServerEvent:Connect(function(player, id)
-	local profile, distance = begin(player, id)
+	local profile, distance = begin(player, id, true)
 	if not profile then return end
 	local guns = GunRules.sanitize(profile.Data.Guns)
 	local gun = Guns.ById[id]
@@ -139,9 +152,14 @@ local function watch(player)
 	end
 	player:GetAttributeChangedSignal('ProfileReady'):Connect(ready)
 	ready()
-	-- A new character gets a fresh Backpack: hand the gun over again once it exists.
-	player.CharacterAdded:Connect(function()
+	-- A new character gets a fresh Backpack: hand the gun over again once it exists, into the hand once the character
+	-- is in the Workspace.
+	player.CharacterAdded:Connect(function(character)
 		task.wait(0.1) -- (the old Backpack goes away around the spawn)
+		for _ = 1, 50 do
+			if not character or character.Parent then break end
+			task.wait(0.1)
+		end
 		if player:WaitForChild('Backpack', 10) then giveTool(player) end
 	end)
 end

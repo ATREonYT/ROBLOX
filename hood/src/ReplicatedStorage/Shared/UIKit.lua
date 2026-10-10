@@ -274,6 +274,133 @@ function Kit.iconOr(...)
 	return ids[#ids]
 end
 
+-- (brief 23) Uploaded images that never arrive. Roblox shows an uploaded image only once moderation has approved it, and
+-- never if it was rejected: the owner's Studio showed World, Shoes, Guns and Items blank while Store, Rebirth and Quest
+-- drew. So every uploaded image Kit draws is watched, once per image id, and nothing on screen is ever blank:
+--   * ContentProvider:PreloadAsync (Kit.Preloader) fetches it; its status callback (Enum.AssetFetchStatus) settles it:
+--     Failure / TimedOut = missing for good, Success = the image shows (it is in the cache now);
+--   * a label on screen that hasn't drawn after Kit.ImageGrace (0.2 s; ImageLabel.IsLoaded) shows its stand-in at once
+--     and gets the image back the moment the fetch succeeds;
+--   * with no answer after Kit.ImageWait seconds, or "Success" while a label on screen still doesn't draw, the image
+--     counts as missing for now (stand-ins everywhere) and comes back if it arrives later.
+-- The stand-ins: the live 3D model for an icon, the frame glyph for the Robux mark, round blobs for a splat. Where
+-- neither PreloadAsync nor IsLoaded can be read (an offline harness), the image is kept.
+-- Kit.ImageStatus[content id]: 'checking', 'fetched' (Success, checked on screen at the deadline), 'slow' (its stand-in
+-- shows while it still loads), 'ok' or 'failed'.
+Kit.ImageWait = 4
+Kit.ImageGrace = 0.2
+Kit.ImageStatus = {}
+local imageWatch = {} -- content id -> { { Label, Fail, Restore, Swapped }, ... } until it settles
+local function swapEntry(e, missing)
+	if not e.Label.Parent or e.Swapped == missing then return end
+	e.Swapped = missing
+	local fn = missing and e.Fail or e.Restore
+	if fn then
+		local ok, err = pcall(fn, e.Label)
+		if not ok then warn('[UIKit] image stand-in: ' .. tostring(err)) end
+	end
+end
+local function swapImages(content, missing)
+	for _, e in imageWatch[content] or {} do swapEntry(e, missing) end
+end
+local function settleImage(content, state)
+	local now = Kit.ImageStatus[content]
+	if now == 'ok' or now == 'failed' then return end
+	Kit.ImageStatus[content] = state
+	swapImages(content, state == 'failed')
+	imageWatch[content] = nil
+end
+-- How an image is fetched: calls back (content id, Enum.AssetFetchStatus). (A test may replace it.)
+function Kit.Preloader(content, callback)
+	game:GetService('ContentProvider'):PreloadAsync({ content }, callback)
+end
+-- Whether a label would be drawn now: it and its ancestors Visible, in an enabled ScreenGui / BillboardGui / SurfaceGui.
+local function onScreen(label)
+	local x = label
+	while x do
+		if x:IsA('LayerCollector') then return x.Enabled and x.Parent ~= nil end
+		if x:IsA('GuiObject') and not x.Visible then return false end
+		x = x.Parent
+	end
+	return false
+end
+-- Whether a label has drawn its image: true / false, or nil where ImageLabel.IsLoaded can't be read. (A test may replace it.)
+function Kit.IsLoaded(label)
+	local ok, v = pcall(function() return label.IsLoaded end)
+	if not ok then return nil end
+	return v == true
+end
+-- An entry that is on screen and still blank after the grace: its stand-in now, the image back on Success.
+local function graceCheck(content, e)
+	task.delay(Kit.ImageGrace, function()
+		if Kit.ImageStatus[content] ~= 'checking' or e.Swapped or not e.Label.Parent then return end
+		if Kit.IsLoaded(e.Label) == false and onScreen(e.Label) then swapEntry(e, true) end
+	end)
+end
+-- Watches `label` (an ImageLabel with an uploaded Image): fail(label) shows its stand-in, restore(label) undoes it.
+function Kit.watchImage(label, fail, restore)
+	local content = label.Image
+	if type(content) ~= 'string' or not string.find(content, '%d') then return end
+	local state = Kit.ImageStatus[content]
+	if state == 'ok' then return end
+	if state == 'failed' then
+		fail(label)
+		return
+	end
+	local entry = { Label = label, Fail = fail, Restore = restore, Swapped = false }
+	if state then
+		local list = imageWatch[content]
+		for i = #list, 1, -1 do
+			if not list[i].Label.Parent then table.remove(list, i) end -- (labels since destroyed)
+		end
+		table.insert(list, entry)
+		if state == 'slow' then swapEntry(entry, true) elseif state == 'checking' then graceCheck(content, entry) end
+		return
+	end
+	Kit.ImageStatus[content] = 'checking'
+	imageWatch[content] = { entry }
+	graceCheck(content, entry)
+	local preloads, due = true, false
+	task.spawn(function()
+		local ok = pcall(Kit.Preloader, content, function(_, status)
+			if status == Enum.AssetFetchStatus.Success then
+				local now = Kit.ImageStatus[content]
+				if now == 'checking' or now == 'slow' then
+					-- the image is in the cache: back on screen at once (still checked on screen at the deadline)
+					Kit.ImageStatus[content] = 'fetched'
+					swapImages(content, false)
+				end
+				if due then settleImage(content, 'ok') end
+			elseif status == Enum.AssetFetchStatus.Failure or status == Enum.AssetFetchStatus.TimedOut then
+				settleImage(content, 'failed')
+			end
+		end)
+		preloads = ok
+	end)
+	task.delay(Kit.ImageWait, function()
+		due = true
+		local now = Kit.ImageStatus[content]
+		if now ~= 'checking' and now ~= 'fetched' then return end
+		local readable, blank = false, false
+		for _, e in imageWatch[content] or {} do
+			local loaded = Kit.IsLoaded(e.Label)
+			if loaded then
+				settleImage(content, 'ok')
+				return
+			end
+			readable = readable or loaded ~= nil
+			blank = blank or (loaded == false and e.Label.Parent ~= nil and onScreen(e.Label))
+		end
+		if (now == 'fetched' and not blank) or (not readable and not preloads) then
+			settleImage(content, 'ok') -- (fetched and nothing on screen blank; or nothing here can tell: keep the image)
+			return
+		end
+		-- no answer yet, or "fetched" while a label on screen still draws nothing: the stand-in for now
+		Kit.ImageStatus[content] = 'slow'
+		swapImages(content, true)
+	end)
+end
+
 -- Cartoon light for ViewportFrames: a key light from the camera's upper left. (brief 19 r7) Ambient 150 + LightColor 255
 -- is what the user's Studio frame user_24 shows the live icons with: their own colours (the yellow glove's median at 0.86
 -- of its Color3, highlights at 0.96, shade at 0.62). (Round 1 dimmed it to 128 + 235 from an offline estimate that
@@ -406,43 +533,67 @@ function Kit.iconLook(id, props, models)
 	local view = (string.match(id, '^Shoe_') and Kit.ShoeView) or (string.match(id, '^Box_') and Kit.BoxView) or (not (props.Yaw or props.Pitch) and models and typeof(models.View) == 'Vector3' and models.View) or nil
 	return { Direction = view, Yaw = props.Yaw or 18, Pitch = props.Pitch or 19, Zoom = props.Zoom or Kit.liveZoom(id), Tight = true, Margin = Kit.IconMargin, ZIndex = props.ZIndex or 1 }
 end
-function Kit.icon3d(id, size, props)
-	props = props or {}
-	local holder = blank({ Name = 'Icon3D_' .. id, Size = UDim2.fromOffset(size, size), Position = props.Position or UDim2.new(), AnchorPoint = props.AnchorPoint or Vector2.zero, ZIndex = props.ZIndex or 1 })
-	local z = props.ZIndex or 1
+-- The live stand-in of icon `id` in holder: IconModels' model in a ViewportFrame over its outline copy (at holder's
+-- ZIndex, the model one over), else an emoji. `locked` draws both black (InventoryKit's silhouettes). Every part it
+-- adds carries the attribute LiveIcon, so a late upload can take them away again (Kit.icon3d's restore).
+local function liveIcon(holder, id, size, props, locked)
+	local z = holder.ZIndex
 	local models = Kit.iconModels()
-	local image = Kit.iconImage(id)
-	if image ~= '' then
-		-- (brief 19) ICONS' uploaded render: one ImageLabel, the outline and gloss baked in. ImageColor3 / Rotation from props.
-		local img = new('ImageLabel', { Name = 'Image', BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Image = image, ScaleType = Enum.ScaleType.Fit, ImageColor3 = props.Color or Color3.new(1, 1, 1), Rotation = props.Rotation or 0, ZIndex = z, Parent = holder })
-		img:SetAttribute('PreviewImage', 'icon3d:' .. id) -- the offline previewer draws hood/art/icons3d/<id>.png here
-		return holder
-	end
-	holder:SetAttribute('PreviewImage', 'icon3d:' .. id) -- the offline previewer draws the Blender render here
 	if models and type(models.build) == 'function' then
 		local ok, model = pcall(models.build, id, 1)
 		if ok and typeof(model) == 'Instance' then
 			local look = Kit.iconLook(id, props, models)
+			look.ZIndex = z
 			-- (brief 18) The reference's icons carry a thick dark outline (so do the Blender renders): a black copy of the
 			-- live model, a little bigger, behind it. One extra ViewportFrame per icon; Outline = false skips it (brief 19:
 			-- and icons under 34 px, where it would be a 1-2 px line for twice the parts).
-			if props.Outline ~= false and size >= 34 then
+			if props.Outline ~= false and size >= 34 and not locked then
 				local edge = Kit.viewport(model:Clone(), size, look)
 				edge.Name = 'Outline'
 				edge.ImageColor3 = Kit.hex('0C0A1E') -- (brief 22: the near-black of ICONS' round-2 outlines)
 				edge.AnchorPoint = Vector2.new(0.5, 0.5)
 				edge.Position = UDim2.fromScale(0.5, 0.5)
 				edge.Size = UDim2.fromScale(1.09, 1.09)
+				edge:SetAttribute('LiveIcon', true)
 				edge.Parent = holder
 			end
 			local vp = Kit.viewport(model, size, look)
 			vp.Size = UDim2.fromScale(1, 1)
 			vp.ZIndex = z + 1 -- (over its outline copy)
+			if locked then vp.ImageColor3 = Color3.new(0, 0, 0) end
+			vp:SetAttribute('LiveIcon', true)
 			vp.Parent = holder
-			return holder
+			return
 		end
 	end
-	Kit.text({ Name = 'Fallback', Text = props.Fallback or Kit.IconEmoji[id] or '?', FontFace = Kit.Font.body, TextSize = math.floor(size * 0.8), ZIndex = z, Parent = holder })
+	local t = Kit.text({ Name = 'Fallback', Text = props.Fallback or Kit.IconEmoji[id] or '?', FontFace = Kit.Font.body, TextSize = math.floor(size * 0.8), ZIndex = z, Parent = holder })
+	t:SetAttribute('LiveIcon', true)
+end
+function Kit.icon3d(id, size, props)
+	props = props or {}
+	local holder = blank({ Name = 'Icon3D_' .. id, Size = UDim2.fromOffset(size, size), Position = props.Position or UDim2.new(), AnchorPoint = props.AnchorPoint or Vector2.zero, ZIndex = props.ZIndex or 1 })
+	local z = props.ZIndex or 1
+	local image = Kit.iconImage(id)
+	if image ~= '' then
+		-- (brief 19) ICONS' uploaded render: one ImageLabel, the outline and gloss baked in. ImageColor3 / Rotation from props.
+		local img = new('ImageLabel', { Name = 'Image', BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Image = image, ScaleType = Enum.ScaleType.Fit, ImageColor3 = props.Color or Color3.new(1, 1, 1), Rotation = props.Rotation or 0, ZIndex = z, Parent = holder })
+		img:SetAttribute('PreviewImage', 'icon3d:' .. id) -- the offline previewer draws hood/art/icons3d/<id>.png here
+		-- (brief 23) an upload that never arrives (in review, rejected) swaps to the live model; back if it comes later
+		Kit.watchImage(img, function()
+			img.Visible = false
+			holder:SetAttribute('PreviewImage', 'icon3d:' .. id)
+			liveIcon(holder, id, size, props, holder:GetAttribute('PreviewSilhouette') == true or img.ImageColor3 == Color3.new(0, 0, 0))
+		end, function()
+			for _, d in holder:GetChildren() do
+				if d:GetAttribute('LiveIcon') then d:Destroy() end
+			end
+			holder:SetAttribute('PreviewImage', nil)
+			img.Visible = true
+		end)
+		return holder
+	end
+	holder:SetAttribute('PreviewImage', 'icon3d:' .. id) -- the offline previewer draws the Blender render here
+	liveIcon(holder, id, size, props, false)
 	return holder
 end
 
@@ -840,19 +991,32 @@ function Kit.splat(size, color, props)
 	local kind = props.Kind
 	local image = kind == 'rainbow' and Kit.SplatRainbow or kind == 'black' and Kit.SplatBlack or Kit.Splat
 	local holder = blank({ Name = 'Splat', Size = UDim2.fromOffset(size, size), Position = props.Position or UDim2.new(), AnchorPoint = props.AnchorPoint or Vector2.zero, Rotation = props.Rotation or 0, ZIndex = z })
+	local c = kind == 'black' and hex('15151C') or color or Kit.Color.white
+	-- (brief 22 r2: like ICONS' texture, a lobed splash ~80% of the square with loose drops, not three big discs)
+	local function blobs(transparency)
+		local rainbow = { hex('FF4FA0'), hex('5AD8FF'), hex('FFE24A'), hex('A65CFF'), hex('FF9A2E'), hex('5BE37A') }
+		for i, b in { { 0.5, 0.52, 0.56 }, { 0.32, 0.36, 0.34 }, { 0.69, 0.35, 0.3 }, { 0.68, 0.69, 0.3 }, { 0.33, 0.7, 0.26 }, { 0.14, 0.62, 0.09 } } do
+			local blob = blank({ Name = 'Blob' .. i, BackgroundTransparency = transparency or 0, BackgroundColor3 = kind == 'rainbow' and rainbow[i] or c, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(b[1], b[2]), Size = UDim2.fromScale(b[3], b[3]), ZIndex = z, Parent = holder })
+			corner(UDim.new(0.5, 0)).Parent = blob
+		end
+	end
 	if image ~= '' then
 		local file = kind == 'rainbow' and 'splat_rainbow' or kind == 'black' and 'splat_black' or 'splat'
 		local img = new('ImageLabel', { Name = 'Image', BackgroundTransparency = 1, Image = image, ScaleType = Enum.ScaleType.Fit, ImageColor3 = (kind == nil and color) or Kit.Color.white, Size = UDim2.fromScale(1, 1), ZIndex = z, Parent = holder })
 		img:SetAttribute('PreviewImage', 'ui:' .. file)
+		-- (brief 23) the blobs while the uploaded texture doesn't load (Kit.watchImage)
+		Kit.watchImage(img, function()
+			img.Visible = false
+			blobs(img.ImageTransparency)
+		end, function()
+			for _, d in holder:GetChildren() do
+				if d ~= img then d:Destroy() end
+			end
+			img.Visible = true
+		end)
 		return holder
 	end
-	local c = kind == 'black' and hex('15151C') or color or Kit.Color.white
-	-- (brief 22 r2: like ICONS' texture, a lobed splash ~80% of the square with loose drops, not three big discs)
-	local rainbow = { hex('FF4FA0'), hex('5AD8FF'), hex('FFE24A'), hex('A65CFF'), hex('FF9A2E'), hex('5BE37A') }
-	for i, b in { { 0.5, 0.52, 0.56 }, { 0.32, 0.36, 0.34 }, { 0.69, 0.35, 0.3 }, { 0.68, 0.69, 0.3 }, { 0.33, 0.7, 0.26 }, { 0.14, 0.62, 0.09 } } do
-		local blob = blank({ Name = 'Blob' .. i, BackgroundTransparency = 0, BackgroundColor3 = kind == 'rainbow' and rainbow[i] or c, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(b[1], b[2]), Size = UDim2.fromScale(b[3], b[3]), ZIndex = z, Parent = holder })
-		corner(UDim.new(0.5, 0)).Parent = blob
-	end
+	blobs(0)
 	return holder
 end
 
@@ -1008,20 +1172,11 @@ end
 -- The Robux mark (the reference's lime hexagon-ish coin with a square hole): a rounded ring round a small square,
 -- black-edged so it reads on any colour. props: Color (lime), Position, AnchorPoint, ZIndex, LayoutOrder. Returns a
 -- `size` square Frame.
-function Kit.robux(size, props)
-	props = props or {}
-	local color = props.Color or Kit.Tone.lime.top
-	local z = props.ZIndex or 1
-	local holder = blank({ Name = 'Robux', Size = UDim2.fromOffset(size, size), Position = props.Position or UDim2.new(), AnchorPoint = props.AnchorPoint or Vector2.zero, LayoutOrder = props.LayoutOrder or 0, ZIndex = z })
-	-- (brief 19) ICONS' uploaded glyph (white, black outline baked in) tinted to `color`: one ImageLabel.
-	local image = Kit.iconImage('Robux')
-	if image ~= '' then
-		local img = new('ImageLabel', { Name = 'Glyph', BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Image = image, ScaleType = Enum.ScaleType.Fit, ImageColor3 = color, ZIndex = z, Parent = holder })
-		img:SetAttribute('PreviewImage', 'icon3d:Robux')
-		return holder
-	end
-	-- Fallback, frames: the reference's mark is a pointy-topped hexagon (black-edged) with a dark square in its middle.
-	-- A hexagon is three rectangles turned 0 / 60 / 120 degrees (R across the corners: R * sqrt(3) wide, R tall).
+-- The mark drawn with frames (before the upload, or while the uploaded glyph doesn't load): the reference's mark is a
+-- pointy-topped hexagon (black-edged) with a dark square in its middle. A hexagon is three rectangles turned 0 / 60 /
+-- 120 degrees (R across the corners: R * sqrt(3) wide, R tall).
+local function robuxFrames(holder, size, color, props)
+	local z = holder.ZIndex
 	local function hexagon(name, r, c, zz)
 		for i, rot in { 0, 60, 120 } do
 			blank({ Name = name .. i, BackgroundTransparency = 0, BackgroundColor3 = c, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(r * 1.732, r), Rotation = rot, ZIndex = zz, Parent = holder })
@@ -1035,6 +1190,30 @@ function Kit.robux(size, props)
 	if size >= 14 then hexagon('Inner', (R - edge) * 0.62, props.Inner or color:Lerp(Kit.Color.black, 0.3), z) end
 	local core = blank({ Name = 'Core', BackgroundTransparency = 0, BackgroundColor3 = props.Core or Kit.Color.black, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(math.max(3, size * 0.26), math.max(3, size * 0.26)), ZIndex = z, Parent = holder })
 	corner(math.max(1, math.floor(size * 0.05))).Parent = core
+end
+function Kit.robux(size, props)
+	props = props or {}
+	local color = props.Color or Kit.Tone.lime.top
+	local z = props.ZIndex or 1
+	local holder = blank({ Name = 'Robux', Size = UDim2.fromOffset(size, size), Position = props.Position or UDim2.new(), AnchorPoint = props.AnchorPoint or Vector2.zero, LayoutOrder = props.LayoutOrder or 0, ZIndex = z })
+	-- (brief 19) ICONS' uploaded glyph (white, black outline baked in) tinted to `color`: one ImageLabel.
+	local image = Kit.iconImage('Robux')
+	if image ~= '' then
+		local img = new('ImageLabel', { Name = 'Glyph', BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Image = image, ScaleType = Enum.ScaleType.Fit, ImageColor3 = color, ZIndex = z, Parent = holder })
+		img:SetAttribute('PreviewImage', 'icon3d:Robux')
+		-- (brief 23) the frame mark while the uploaded glyph doesn't load (Kit.watchImage)
+		Kit.watchImage(img, function()
+			img.Visible = false
+			robuxFrames(holder, size, img.ImageColor3, props)
+		end, function()
+			for _, d in holder:GetChildren() do
+				if d ~= img then d:Destroy() end
+			end
+			img.Visible = true
+		end)
+		return holder
+	end
+	robuxFrames(holder, size, color, props)
 	return holder
 end
 

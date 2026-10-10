@@ -3,8 +3,10 @@
 --   Passes: on join (and on PromptGamePassPurchaseFinished) each pass with an id is checked with
 --     UserOwnsGamePassAsync (pcall, a few tries) and the player gets the attribute Pass_<Key> = true, then
 --     PassesChecked = true once all came back. Gameplay reads those on the server (HoodServer/Boosts: Pass_DoubleRep,
---     Pass_DoubleCash; HoodServer/ShoeOpening and ShoeService: Pass_ExtraEquip, Pass_Lucky, Pass_TripleOpen); a client
---     can't fake them.
+--     Pass_DoubleCash; HoodServer/ShoeOpening and ShoeService: Pass_ExtraEquip, Pass_Lucky, Pass_TripleOpen; brief 23:
+--     LobbyService: Pass_RangeVIP1 / Pass_RangeVIP2 open the PRO BAY / GOLD BAY lanes, StageService: Pass_TenXCash lets
+--     the magenta pad pay 10x); a client can't fake them. A pass bought in game counts at once (the attribute is set on
+--     PromptGamePassPurchaseFinished), so a lane or pad that just prompted works on the next step.
 --   Products: MarketplaceService.ProcessReceipt -> HoodServer/StoreReceipts (the grants and the once-per-purchase
 --     answer live there, so the unit tests run the same code): each purchase is granted exactly once; its id goes into
 --     the profile's ProcessedReceipts in the same save as the grant, and Roblox hears PurchaseGranted only once that

@@ -298,16 +298,18 @@ return function(t)
  end)
 
  t.test('the goal chain: the shoe box goal sits after the gun goal',function()
-  t.expect.equal(G.List[4].Id,'Gun');t.expect.equal(G.List[5].Id,'Shoe');t.expect.equal(G.List[5].Need.Boxes,1)
-  t.expect.equal(G.line(G.List[5]),'Open a shoe box - at the back of the hall')
-  t.expect.equal(S.Template.Goals.Chain,G.Chain)
-  local st={Power=20,Stages=1,Wave=1,Waves=true,Guns=2,Range=0,Boxes=0,ShoeBoxes=true}
-  local goals={Step=4,Synced=true}
-  t.expect.equal(G.advance(goals,st).Id,'Gun');t.expect.equal(goals.Step,5)
+  local gun,shoe=G.ById.Gun.Step,G.ById.Shoe.Step
+  -- (brief 23: the stage 2 cash-out sits between them, so the kid has the box's Cash when the box goal comes)
+  t.expect.equal(shoe,gun+2);t.expect.equal(G.List[gun+1].Id,'CashOut2');t.expect.equal(G.List[shoe].Need.Boxes,1)
+  t.expect.equal(G.line(G.List[shoe]),'Open a shoe box - at the back of the hall')
+  t.expect.equal(S.Template.Goals.Chain,G.Chain);t.expect.equal(S.migrate(S.new()).Goals.Chain,G.Chain)
+  local st={Power=20,Stages=1,Wave=1,CashOuts=1,CashOutStage=2,Waves=true,Guns=2,Range=0,Boxes=0,ShoeBoxes=true}
+  local goals={Step=gun,Synced=true}
+  t.expect.equal(G.advance(goals,st).Id,'Gun');t.expect.equal(G.advance(goals,st).Id,'CashOut2');t.expect.equal(goals.Step,shoe)
   t.expect.equal(G.advance(goals,st),nil)
   st.Boxes=1;t.expect.equal(G.advance(goals,st).Id,'Shoe');t.expect.equal(G.List[goals.Step].Id,'Stage3')
   -- A map without shoe boxes skips it quietly.
-  local none={Step=5,Synced=true};t.expect.equal(G.advance(none,{Power=20,Stages=1,Waves=true,Guns=2,Range=0}),nil);t.expect.equal(G.List[none.Step].Id,'Stage3')
+  local none={Step=shoe,Synced=true};t.expect.equal(G.advance(none,{Power=20,Stages=1,Waves=true,Guns=2,Range=0}),nil);t.expect.equal(G.List[none.Step].Id,'Stage3')
  end)
 
  t.test('saved goal steps move with the new goal: nobody skips or repeats one',function()
@@ -315,7 +317,7 @@ return function(t)
    local d={SchemaVersion=3,Goals={Step=step,Synced=synced~=false,Back=back}};S.migrate(d);t.expect.truthy(S.validate(d));return d.Goals
   end
   -- Before the gun goal: unchanged, and the shoe goal comes in its turn.
-  local g=migrated(4);t.expect.equal(g.Step,4);t.expect.equal(g.Back,nil);t.expect.equal(g.Chain,G.Chain)
+  local g=migrated(4);t.expect.equal(G.List[g.Step].Id,'Gun');t.expect.equal(g.Back,nil);t.expect.equal(g.Chain,G.Chain)
   g=migrated(1,false);t.expect.equal(g.Step,1);t.expect.equal(g.Back,nil)
   -- Past it: the shoe goal now, then back to the goal they were on (the same goal by id; a goal brief 17's chain
   -- dropped comes back as the one that took its place, GoalRules.Renamed).
@@ -323,20 +325,20 @@ return function(t)
   for step=5,#old do
    g=migrated(step);t.expect.equal(G.List[g.Step].Id,'Shoe');t.expect.equal(G.List[g.Back].Id,G.Renamed[old[step]] or old[step])
   end
-  g=migrated(#old+1);t.expect.equal(g.Step,5);t.expect.equal(g.Back,#G.List+1) -- (all done: the shoe goal, then done again)
+  g=migrated(#old+1);t.expect.equal(g.Step,G.ById.Shoe.Step);t.expect.equal(g.Back,#G.List+1) -- (all done: the shoe goal, then done again)
   -- Already migrated: nothing moves twice.
   local d={SchemaVersion=3,Goals={Step=5,Synced=true,Back=9,Chain=G.Chain}};S.migrate(d);t.expect.equal(d.Goals.Step,5);t.expect.equal(d.Goals.Back,9)
   -- The detour: done once, paid once, then the old goal again (it is not repeated: it was never done).
-  local goals={Step=5,Synced=true,Back=G.ById.Range4.Step}
-  local st={Power=600,Stages=6,Wave=6,Waves=true,Guns=3,Range=0,Boxes=0,ShoeBoxes=true}
-  t.expect.equal(G.advance(goals,st),nil);t.expect.equal(goals.Step,5)
+  local goals={Step=G.ById.Shoe.Step,Synced=true,Back=G.ById.Range4.Step}
+  local st={Power=600,Stages=6,Wave=6,CashOuts=1,CashOutStage=2,Waves=true,Guns=3,Range=0,Boxes=0,ShoeBoxes=true}
+  t.expect.equal(G.advance(goals,st),nil);t.expect.equal(goals.Step,G.ById.Shoe.Step)
   st.Boxes=1;t.expect.equal(G.advance(goals,st).Id,'Shoe');t.expect.equal(G.List[goals.Step].Id,'Range4');t.expect.equal(goals.Back,nil)
   t.expect.equal(G.advance(goals,st),nil)
   -- A pre-chain profile catches up to the shoe goal, with the first unmet goal after it kept.
   local pre={Step=1,Synced=false}
-  t.expect.equal(G.advance(pre,{Power=9000,Stages=8,Wave=8,Waves=true,Guns=4,Range=0,Boxes=0,ShoeBoxes=true}),nil)
+  t.expect.equal(G.advance(pre,{Power=9000,Stages=8,Wave=8,CashOuts=1,CashOutStage=2,Waves=true,Guns=4,Range=0,Boxes=0,ShoeBoxes=true}),nil)
   t.expect.equal(G.List[pre.Step].Id,'Shoe');t.expect.equal(G.List[pre.Back].Id,'Rebirth1') -- (brief 17's chain: a first rebirth is next)
-  local done={Step=1,Synced=false};G.advance(done,{Power=9000,Stages=8,Wave=8,Waves=true,Guns=4,Range=0,Boxes=2,ShoeBoxes=true})
+  local done={Step=1,Synced=false};G.advance(done,{Power=9000,Stages=8,Wave=8,CashOuts=1,CashOutStage=2,Waves=true,Guns=4,Range=0,Boxes=2,ShoeBoxes=true})
   t.expect.equal(G.List[done.Step].Id,'Rebirth1');t.expect.equal(done.Back,nil)
   -- Damaged Back values are dropped.
   t.expect.equal(G.sanitize({Step=5,Synced=true,Back=5}).Back,nil);t.expect.equal(G.sanitize({Step=5,Synced=true,Back=99}).Back,nil);t.expect.equal(G.sanitize({Step=5,Synced=true,Back=6.5}).Back,nil)

@@ -1,6 +1,6 @@
 -- Studio-only playtest check: shows on screen what broke, so a plain screenshot of a playtest is enough to report it.
--- Players never see it (it stops at once outside Studio). Bottom-right: a small tag with the build and "UI OK" once
--- every UI screen has loaded. If something fails, a red panel lists the client's script errors (from LogService,
+-- Players never see it (it stops at once outside Studio). Top-right: a small "UI OK" tag once every UI screen has
+-- loaded (the build name goes to the Output). If something fails, a red panel lists the client's script errors (from LogService,
 -- including errors that happened before this script started), "Infinite yield" warnings (a script waiting forever),
 -- and any of our screens still missing after 10 seconds. HUD.client prints "[HoodHUD] start" and "[HoodHUD] ready",
 -- so a HUD that started but never finished is named too. Tap the panel to hide it.
@@ -23,9 +23,9 @@ gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 local tag = Instance.new('TextLabel')
 tag.Name = 'Tag'
-tag.AnchorPoint = Vector2.new(1, 1)
-tag.Position = UDim2.new(1, -8, 1, -8)
-tag.Size = UDim2.fromOffset(420, 18)
+tag.AnchorPoint = Vector2.new(1, 0)
+tag.Position = UDim2.new(1, -8, 0, 8) -- (top-right, clear of the bottom bar's prices)
+tag.Size = UDim2.fromOffset(150, 18)
 tag.BackgroundTransparency = 0.35
 tag.BackgroundColor3 = Color3.fromRGB(20, 22, 40)
 tag.TextColor3 = Color3.fromRGB(235, 238, 255)
@@ -101,6 +101,7 @@ task.delay(10, function()
 	if #missing > 0 then add('Screens not loaded after 10 s: ' .. table.concat(missing, ', ')) end
 	local root = workspace:FindFirstChild('TheBlockV2')
 	local build = root and root:GetAttribute('BuildVersion') or 'map not found'
-	tag.Text = string.format('%s  |  UI %s', tostring(build), (#problems == 0) and 'OK' or 'PROBLEMS (see red panel)')
+	tag.Text = (#problems == 0) and 'Studio check: UI OK' or 'Studio check: PROBLEMS'
+	print('[StudioCheck] build: ' .. tostring(build) .. ' | UI ' .. ((#problems == 0) and 'OK' or 'PROBLEMS'))
 	tag.TextColor3 = (#problems == 0) and Color3.fromRGB(140, 240, 160) or Color3.fromRGB(255, 150, 150)
 end)

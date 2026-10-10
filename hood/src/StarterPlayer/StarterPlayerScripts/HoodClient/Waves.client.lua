@@ -6,13 +6,16 @@
 --     notice you ("!"), run at you, put their fists up, wind up and punch (a white swipe; Roblox's own health bar and
 --     red hurt flash show the damage), flinch and flash white when hit, and a knocked-out goon falls flat on its back,
 --     sees stars and vanishes in a poof. Over each: its name and a red HP bar ("Goon 1  40/40", Shared/FightUI: UI2's look).
---   Shooting: while you stand in a stage with goons up (the server's WaveLeft), your gun comes out by itself; hold the
+--   Shooting: while you stand in a stage with goons up (the server's WaveLeft), with your gun in hand (always): hold the
 --     mouse, R2 or the SHOOT button and it fires at the nearest goon in reach (a soft aim assist that sticks to one goon
 --     until it drops), and you turn to face it while you strafe. With the Auto Fight pass (Pass_AutoShoot) it fires on its
 --     own. Each shot: muzzle flash, tracer, sparks, recoil, a red damage number over the goon (your Power) and your "+N"
 --     Power by you. Shoot.client stands down while you're in a fight.
 --   HUD (Shared/FightUI, UI2's look): "💀 N LEFT" at the top centre, green "CLEAR!" with the Cash a clear paid (held a
---     moment); "KNOCKED OUT!" when a punch would have finished you (the server puts you back at the stage start).
+--     moment; the gate ahead opens with it, HoodClient/Stages); "KNOCKED OUT!" when a punch would have finished you (the
+--     server puts you back at the stage start).
+--   Runs (brief 23): a beaten crew stays down for the rest of the run; when the run ends (back in the lobby, WaveState
+--     'Reset') every crew is drawn fresh again on its spots, the next one waiting behind its gate.
 local Players = game:GetService('Players')
 local UserInputService = game:GetService('UserInputService')
 local TweenService = game:GetService('TweenService')
@@ -359,21 +362,13 @@ local function humanoid()
 	return c and c:FindFirstChildOfClass('Humanoid')
 end
 local function heldGun() return player.Character and GunTool.held(player.Character) or nil end
--- In a fight the gun comes out by itself; it goes back a moment after the wave is down, if it was us who took it out.
-local autoEquipped = false
+-- (brief 23) Your gun is always in your hand (the hotbar is hidden; Shoot.client and GunService keep it equipped): in a
+-- fight this makes sure of it, and it never puts the gun away after one.
 local function refreshEquip()
 	local h = humanoid()
-	if not h or h.Health <= 0 then return end
-	if inFight() then
-		local tool = GunTool.find(player)
-		if tool and tool.Parent ~= player.Character then
-			h:EquipTool(tool)
-			autoEquipped = true
-		end
-	elseif autoEquipped then
-		autoEquipped = false
-		if heldGun() and not training() then h:UnequipTools() end
-	end
+	if not h or h.Health <= 0 or not inFight() then return end
+	local tool = GunTool.find(player)
+	if tool and tool.Parent ~= player.Character then h:EquipTool(tool) end
 end
 player.DescendantAdded:Connect(function(d)
 	if d:IsA('Tool') then task.defer(refreshEquip) end
@@ -797,8 +792,6 @@ local function refresh()
 		refreshEquip()
 	elseif wasOn then
 		table.clear(held)
-		-- (a moment after the last goon falls, so the last shot's flash and casing play out in your hand)
-		task.delay(1.2, refreshEquip)
 	end
 	wasOn = on
 end
@@ -806,8 +799,25 @@ for _, name in { 'WaveStage', 'WaveLeft', 'TrainingStation' } do
 	player:GetAttributeChangedSignal(name):Connect(refresh)
 end
 
+-- The run ended: every crew stands again, fresh (the views are made again from the map's crews as they come in view).
+local function resetRun()
+	for _, w in waves do
+		for _, v in w.Goons do dropRig(v) end
+	end
+	table.clear(waves)
+	table.clear(pending)
+	table.clear(held)
+	aimed, sticky = nil, nil
+	clearUntil = 0
+	pill.hide()
+end
+
 Net.get('WaveState').OnClientEvent:Connect(function(info)
 	if type(info) ~= 'table' or type(info.Stage) ~= 'number' then return end
+	if info.Kind == 'Reset' then
+		resetRun()
+		return
+	end
 	local stage = info.Stage
 	local w = waveOf(stage)
 	if info.Kind == 'Wave' then

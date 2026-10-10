@@ -9,8 +9,9 @@
 --            ("x2"), best first. Tap a pair to put it on, tap one above to take it off.
 --            Under the window: Index (every World 1 shoe: yours in colour, the rest as black silhouettes) and the bar:
 --            the red X = recycle mode (tap a spare pair twice to recycle it for Cash), the star = equip your best
---   Guns     the gun you use, then every gun of the ladder (yours in colour, the rest dark with their price); guns are
---            bought and equipped at the ARMORY
+--   Guns     the gun you use, then every gun of the ladder (yours in colour, the rest dark with their price); tap one
+--            of yours to hold it (GunService's EquipGun works anywhere for a gun you own, brief 23); guns are bought
+--            at the ARMORY
 --   Items    your timed boosts (the running one and the queued ones, with the time left) and the game passes (yours in
 --            colour; tap another to see it in the Store)
 --   Boxes    World 1's four shoe boxes, each with its shoes and their chances, and how to get it
@@ -389,7 +390,7 @@ local function paintGuns()
 				show()
 				press(holder)
 				if e.State == 'Owned' then
-					say('Equip it at the ARMORY')
+					Net.get('EquipGun'):FireServer(gun.Id) -- (the server says "Equipped ...!"; the gun goes into your hand)
 				elseif e.State == 'Locked' then
 					say('At the ARMORY')
 				end
