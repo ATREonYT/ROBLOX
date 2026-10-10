@@ -620,12 +620,20 @@ end
 
 -- An icon by IconModels id: its uploaded PNG (one ImageLabel), or the flat stand-in while that can't draw.
 -- props: Position, AnchorPoint, ZIndex, Color (ImageColor3), Rotation, Locked (a black silhouette of the PNG / a dark
--- stand-in), Bare (the stand-in without its block: Kit.flatIcon). Returns the holder, `size` square.
+-- stand-in), Bare (true by default: the stand-in without its block; false asks for the block: Kit.flatIcon), Place (brief 25:
+-- { Rule, W, H, X0, Y0 }, Kit.place: sized and moved to where the reference puts its picture; size is then ignored).
+-- Returns the holder, `size` square.
 function Kit.icon3d(id, size, props)
 	props = props or {}
 	local z = props.ZIndex or 1
-	local holder = blank({ Name = 'Icon3D_' .. id, Size = UDim2.fromOffset(size, size), Position = props.Position or UDim2.new(), AnchorPoint = props.AnchorPoint or Vector2.zero, ZIndex = z })
+	local place = props.Place
+	-- (brief 25, CRITIC4: "a tile on a tile") the references never put a picture on a block of its own: the stand-in is
+	-- the bare glyph unless the caller asks for the block (Bare = false: a plain backdrop, e.g. a sheet of icons)
+	local bare = props.Bare ~= false
 	local image = Kit.iconImage(id)
+	if place then size = Kit.placeSize(id, image ~= '', bare, place) end
+	local holder = blank({ Name = 'Icon3D_' .. id, Size = UDim2.fromOffset(size, size), Position = props.Position or UDim2.new(), AnchorPoint = props.AnchorPoint or Vector2.zero, ZIndex = z })
+	holder:SetAttribute('IconId', id)
 	local black = Color3.new(0, 0, 0)
 	if image ~= '' then
 		-- ART2's uploaded PNG: one ImageLabel, outline and shading baked in
@@ -634,19 +642,155 @@ function Kit.icon3d(id, size, props)
 		-- (brief 23/24) an upload that never arrives (in review, rejected) swaps to the flat stand-in; back if it comes later
 		Kit.watchImage(img, function()
 			img.Visible = false
-			local f = Kit.flatIcon(holder, id, size, { Locked = img.ImageColor3 == black, Bare = props.Bare })
+			local f = Kit.flatIcon(holder, id, holder.Size.X.Offset, { Locked = img.ImageColor3 == black, Bare = bare })
 			f.Rotation = img.Rotation
+			Kit.replace(holder)
 		end, function()
 			for _, d in holder:GetChildren() do
 				if d:GetAttribute('Flat') then d:Destroy() end
 			end
 			img.Visible = true
+			Kit.replace(holder)
 		end)
-		return holder
+	else
+		local f = Kit.flatIcon(holder, id, size, { Locked = props.Locked, Bare = bare })
+		f.Rotation = props.Rotation or 0
 	end
-	local f = Kit.flatIcon(holder, id, size, { Locked = props.Locked, Bare = props.Bare })
-	f.Rotation = props.Rotation or 0
+	if place then Kit.place(holder, place) end
 	return holder
+end
+
+---------------------------------------------------------------------------------------------- picture placement
+-- (brief 25, "it's not in place where it has to be, especially the pictures") Where the references put a picture on its
+-- button, measured as fractions of the button's HEIGHT h (its whole look, outline included). The picture's DRAWN
+-- content (not its square) fits a W x H box (in h); its centre sits X of the button's width plus XH (in h) across and
+-- Y (in h) down from the button's top; Top (in h, optional): the content's top is at least that high (it pops out).
+-- Content bounds: ART2's IconModels.Bounds[id] (the PNG's alpha box), the flat stand-in's glyph, else a centred square.
+-- Every rule is a contain fit (the drawn box fits inside both W and H). TopAt (in h, optional): the content's top sits
+-- exactly there (Y is then ignored).
+Kit.Place = {
+	-- ref22_hud_buttons (a square, B = 179 ref px): the globe 0.89 B wide and 0.16 B over the top; the dog, mask and
+	-- backpack 0.80-0.85 B tall, 0.13-0.15 B over; the scroll 0.87 B wide; every picture centred 0.28 B down
+	hud = { W = 0.92, H = 0.87, X = 0.5, XH = 0, Y = 0.28, Top = -0.12 },
+	-- the Store bar (145 ref px tall, 2.88 h wide): the basket 1.21 h wide and 0.81 h tall, centred 0.2 h down and 0.07 h
+	-- left of the bar's centre (its handle 0.21 h over the top). (Every rule is a contain fit: a picture taller than the
+	-- reference's is held to its height, so nothing stands higher over its bar than the reference's)
+	-- (the basket's bottom hides behind the "Store" label: its TOP is the line that matters, so it is anchored there and
+	-- may be up to 1.05 h tall; TopAt: the content's top, in h, from the bar's top)
+	storeBar = { W = 1.21, H = 1.05, X = 0.5, XH = -0.07, Y = 0.2, TopAt = -0.21 },
+	-- user_26's +1B / +10B / +100B packs (65 ref px tall): the arm 1.0 h wide and 0.92 h tall, centred 0.34 h in from the
+	-- left edge (it hangs 0.17 h out) and 0.48 h down
+	pack = { W = 1.0, H = 0.95, X = 0, XH = 0.34, Y = 0.48 },
+	-- user_26's 2x Wins / +2x Power cards (101 ref px tall): the trophy / arm 1.1 h wide and 0.97 h tall, centred 0.37 h
+	-- down and 0.08 h right of the centre, 0.11 h over the top, behind the title
+	offer = { W = 1.1, H = 0.97, X = 0.5, XH = 0.08, Y = 0.37, Top = -0.1 },
+	-- ref22_store_*'s window header (170 ref px tall): the basket 0.85 h wide and 0.79 h tall, centred 0.62 h in from the
+	-- header's left end and 0.51 h down; the title starts right after it (Kit.window)
+	windowHeader = { W = 0.85, H = 0.8, X = 0, XH = 0.62, Y = 0.51 },
+	-- ref22_pets_window's header (132 ref px tall): the backpack 1.04 h wide and 0.95 h tall, centred 0.8 h in from the
+	-- header's left end and 0.52 h down
+	header = { W = 1.04, H = 0.95, X = 0, XH = 0.8, Y = 0.52 },
+	-- its side tabs (95 ref px tall, 115 the open one): the mask / crystal / egg 0.82-0.98 h tall, the paw 1.13 h wide,
+	-- centred across and about 0.43 h down, from up to 0.08 h over the tab's top down to the caption
+	tab = { W = 1.15, H = 0.9, X = 0.5, XH = 0, Y = 0.43, Top = -0.06 },
+	-- user_28's gamepass cards (430 ref px tall): the punching bag and its post 0.79 h wide and 0.98 h tall, centred 0.75
+	-- of the card's width across and 0.42 h down, 0.07 h over the top
+	passCard = { W = 0.79, H = 0.98, X = 0.75, XH = 0, Y = 0.42, Top = -0.07 },
+	-- the wide banner card (user_28's HACKER ZONE): the art at the left end, the card's height and a little more
+	bannerCard = { W = 1.0, H = 1.0, X = 0, XH = 0.64, Y = 0.42 },
+	-- ref22_store_packs' Tiny..Large Pack cards (410 ref px tall, 1.63 h wide): the pile 0.66 h wide and 0.51 h tall,
+	-- centred 0.236 of the card's width across and 0.57 h down (the piles grow in the art)
+	packCard = { W = 0.66, H = 0.53, X = 0.236, XH = 0, Y = 0.57 },
+	-- user_26's counters (a row h = the number's size + 12: the trophy 66 x 65 ref px next to 45 px tall digits, its
+	-- centre 1.4 digit heights in from the left edge): the picture 0.95 h wide and 0.85 h tall, centred 0.88 h in
+	counter = { W = 0.95, H = 0.85, X = 0, XH = 0.88, Y = 0.5 },
+}
+local placed = setmetatable({}, { __mode = 'k' })
+-- The drawn content of a picture, as { x0, y0, x1, y1 } of its square.
+local function glyphBounds(kind)
+	local parts = Kit.Glyphs[kind]
+	if not parts then return { 0.1, 0.1, 0.9, 0.9 } end
+	local x0, y0, x1, y1 = 1, 1, 0, 0
+	for _, p in parts do
+		if not p[8] then
+			x0, x1 = math.min(x0, p[1] - p[3] / 2), math.max(x1, p[1] + p[3] / 2)
+			y0, y1 = math.min(y0, p[2] - p[4] / 2), math.max(y1, p[2] + p[4] / 2)
+		end
+	end
+	return { math.max(0, x0), math.max(0, y0), math.min(1, x1), math.min(1, y1) }
+end
+function Kit.contentBounds(id, imaged, bare)
+	if imaged then
+		local models = Kit.iconModels()
+		local b = models and type(models.Bounds) == 'table' and models.Bounds[id]
+		if type(b) == 'table' and #b == 4 then return b end
+		return { 0.06, 0.06, 0.94, 0.94 }
+	end
+	local spec = Kit.flatSpec(id)
+	if bare and spec.Glyph ~= 'text' then
+		local g = glyphBounds(spec.Glyph)
+		return { 0.07 + 0.86 * g[1], 0.07 + 0.86 * g[2], 0.07 + 0.86 * g[3], 0.07 + 0.86 * g[4] }
+	end
+	return { 0.08, 0.08, 0.92, 0.92 }
+end
+local function ruleOf(place)
+	local rule = place.Rule
+	if type(rule) == 'string' then rule = Kit.Place[rule] end
+	return rule
+end
+-- The square's size for picture `id` placed by `place` = { Rule (a Kit.Place name or a table), W, H (the button's
+-- whole size), X0, Y0 (where the holder's parent sits inside the button: a block's Body is inset by its outline) }.
+function Kit.placeSize(id, imaged, bare, place)
+	local rule = ruleOf(place)
+	local b = Kit.contentBounds(id, imaged, bare)
+	local cw, ch = math.max(0.05, b[3] - b[1]), math.max(0.05, b[4] - b[2])
+	return math.floor(math.min(rule.W * place.H / cw, rule.H * place.H / ch) + 0.5)
+end
+-- Sizes and moves an icon3d holder so its drawn content lands where `place` says (and remembers it: the holder is
+-- placed again if its picture swaps between the PNG and the flat stand-in).
+function Kit.place(holder, place)
+	local rule = ruleOf(place)
+	if not rule then return holder end
+	placed[holder] = place
+	local id = holder:GetAttribute('IconId') or string.match(holder.Name, '^Icon3D_(.+)$') or ''
+	local img = holder:FindFirstChild('Image')
+	local flat
+	for _, d in holder:GetChildren() do
+		if d:GetAttribute('Flat') then flat = d end
+	end
+	local imaged = img ~= nil and img.Visible and not flat
+	local bare = flat and flat:GetAttribute('Bare') == true or (not flat and place.Bare ~= false)
+	local b = Kit.contentBounds(id, imaged, bare)
+	local cw, ch = math.max(0.05, b[3] - b[1]), math.max(0.05, b[4] - b[2])
+	local h = place.H
+	local size = math.min(rule.W * h / cw, rule.H * h / ch)
+	local cx = (rule.X or 0.5) * place.W + (rule.XH or 0) * h
+	local cy = rule.Y * h
+	if rule.TopAt then
+		cy = rule.TopAt * h + ch * size / 2
+	elseif rule.Top and cy - ch * size / 2 > rule.Top * h then
+		cy = rule.Top * h + ch * size / 2
+	end
+	local function round(v) return math.floor(v + 0.5) end -- (a UDim's offset is a whole pixel)
+	holder.AnchorPoint = Vector2.zero
+	holder.Size = UDim2.fromOffset(round(size), round(size))
+	holder.Position = UDim2.fromOffset(round(cx - (b[1] + b[3]) / 2 * size - (place.X0 or 0)), round(cy - (b[2] + b[4]) / 2 * size - (place.Y0 or 0)))
+	return holder
+end
+-- The x (in the holder's parent) where a placed picture's drawn content ends.
+function Kit.contentRight(holder)
+	local id = holder:GetAttribute('IconId') or ''
+	local img = holder:FindFirstChild('Image')
+	local flat
+	for _, d in holder:GetChildren() do
+		if d:GetAttribute('Flat') then flat = d end
+	end
+	local b = Kit.contentBounds(id, img ~= nil and img.Visible and not flat, flat == nil or flat:GetAttribute('Bare') == true)
+	return holder.Position.X.Offset + b[3] * holder.Size.X.Offset
+end
+function Kit.replace(holder)
+	local place = placed[holder]
+	if place then Kit.place(holder, place) end
 end
 -- Black (props.Locked) or not: turns an icon3d holder into its silhouette after the fact (the PNG tinted black, or the
 -- stand-in rebuilt dark).
@@ -1204,10 +1348,17 @@ function Kit.actionButton(props)
 	local pop = props.Pop or 12
 	local holder, hit = Kit.blockButton({ Name = props.Name, Tone = props.Tone, Width = w, Height = h, Position = props.Position, AnchorPoint = props.AnchorPoint, ZIndex = props.ZIndex, Studs = props.Studs or 15, RimWidth = props.RimWidth or 3, InnerLine = props.InnerLine ~= false })
 	local z = (props.ZIndex or 1) + 3
-	local size = props.IconSize or math.floor(math.min(w, h) * 0.88)
-	local icon = props.IconNode or Kit.icon3d(props.Icon or 'Shop', size, {})
-	icon.AnchorPoint = Vector2.new(0.5, 0)
-	icon.Position = UDim2.new(0.5, props.IconX or 0, 0, -pop)
+	local icon
+	if props.Place and not props.IconNode then
+		-- (brief 25) the picture where the reference puts it (Kit.Place[props.Place]): big, popping out of the top
+		icon = Kit.icon3d(props.Icon or 'Shop', nil, { Place = { Rule = props.Place, W = w, H = h, X0 = 3, Y0 = 3 } })
+		pop = math.max(0, -(icon.Position.Y.Offset + 3) - 4)
+	else
+		local size = props.IconSize or math.floor(math.min(w, h) * 0.88)
+		icon = props.IconNode or Kit.icon3d(props.Icon or 'Shop', size, {})
+		icon.AnchorPoint = Vector2.new(0.5, 0)
+		icon.Position = UDim2.new(0.5, props.IconX or 0, 0, -pop)
+	end
 	local base = icon.ZIndex
 	icon.ZIndex = z
 	for _, d in icon:GetDescendants() do
@@ -1437,13 +1588,19 @@ function Kit.window(root, props)
 	local header = Kit.block({ Name = 'Header', Tone = props.Tone or 'headerGold', Width = w, Height = hh, Outline = O, Radius = 5, Studs = 34, StudPattern = 'checker', StudShade = 0.9, Gloss = props.Gloss ~= false, RimWidth = 6, ZIndex = 23 })
 	header.Parent = panel
 	local iconSize = props.IconSize or math.floor(hh * 0.95)
-	local icon = props.IconNode or (props.Icon and Kit.icon3d(props.Icon, iconSize, { ZIndex = 27 }))
+	local icon = props.IconNode
+	local left = 30
 	if icon then
 		icon.AnchorPoint = Vector2.new(0, 0.5)
 		icon.Position = UDim2.new(0, 14, 0.5, 0)
 		icon.Parent = header
+		left = 14 + iconSize + 8
+	elseif props.Icon then
+		-- (brief 25) the picture where user_28's / ref22_store's basket is: Kit.Place.windowHeader
+		icon = Kit.icon3d(props.Icon, nil, { ZIndex = 27, Place = { Rule = 'windowHeader', W = w, H = hh } })
+		icon.Parent = header
+		left = math.floor(Kit.contentRight(icon) + hh * 0.1 - O) -- (the title, in the header's Body, right after the picture)
 	end
-	local left = icon and (14 + iconSize + 8) or 30
 	local titleSize = props.TitleSize or 80
 	Kit.text({
 		Name = 'Title', Text = props.Title or 'Title', TextSize = titleSize, Stroke = Kit.Color.black, StrokeThickness = math.max(4, titleSize * 0.075),

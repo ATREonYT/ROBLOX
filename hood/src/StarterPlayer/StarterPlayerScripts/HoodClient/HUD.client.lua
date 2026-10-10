@@ -167,8 +167,9 @@ end
 
 ---------------------------------------------------------------------------------------------- left column
 -- (brief 22, ref22_hud_buttons) A wide Store block (187 x 66) over a 2 x 3 grid of 81 px squares, 14 apart side by side
--- and 13 apart row to row: World | Rebirth, Shoes | Guns (the reference's Pets | Heros), Items | Quest. The icons fill
--- most of each square and rise over its top edge. (Every size is the whole look, outline included.)
+-- and 13 apart row to row: World | Rebirth, Shoes | Guns (the reference's Pets | Heros), Items | Quest. (brief 25) The
+-- pictures sit where the reference's do: UIKit's Kit.Place.hud / .storeBar. (Every size is the whole look, outline
+-- included.)
 local SQ, GAP_X, GAP_Y = 81, 13.5, 12.5
 local WIDE_W, WIDE_H, WIDE_GAP = 187, 66, 15
 local GRID_X = math.floor((WIDE_W - (2 * SQ + GAP_X)) / 2 + 0.5)
@@ -177,7 +178,7 @@ local ROW2 = ROW1 + SQ + GAP_Y
 local ROW3 = ROW2 + SQ + GAP_Y
 local COL2 = GRID_X + SQ + GAP_X
 local COLUMN_W, COLUMN_H = WIDE_W, ROW3 + SQ
-local LEFT, POP, ICON = 24, 18, 84 -- (LEFT: the reference's 36 px margin at its size; POP: ICONS' round-2 renders rise ~10 ref px over the square like the ref's)
+local LEFT = 24 -- (the reference's 36 px margin at its size)
 local column = Kit.new('Frame', { Name = 'Actions', BackgroundTransparency = 1, Position = px(LEFT, 160), Size = px(COLUMN_W, COLUMN_H), Parent = root })
 local columnScale = Kit.new('UIScale', { Parent = column }) -- (phones: a little smaller, clear of the thumbstick)
 local actions = {} -- filled with the button callbacks once the windows exist
@@ -190,7 +191,7 @@ local function actionButton(props)
 	return holder, icon, caption, hit
 end
 -- (UICRITIC2 r1 #3: the ref's Store block has no dark inner line, its pale rim runs into the fill; the squares keep it)
-local storeButton = actionButton({ Name = 'Store', Tone = 'gold', Width = WIDE_W, Height = WIDE_H, Position = px(0, 0), Text = 'Store', TextSize = 24, LabelY = 0.72, Icon = iconOr('Basket', 'Shop'), IconSize = 86, IconX = -5, Pop = 26, InnerLine = false, OnClick = call('Store') })
+local storeButton = actionButton({ Name = 'Store', Tone = 'gold', Width = WIDE_W, Height = WIDE_H, Position = px(0, 0), Text = 'Store', TextSize = 24, LabelY = 0.72, Icon = iconOr('Basket', 'Shop'), Place = 'storeBar', InnerLine = false, OnClick = call('Store') })
 do
 	-- (brief 23, HOOK) nothing for sale flashes while a new player settles in: no shine while OnboardingQuiet is on (the
 	-- onboarding's first 300 s of play). The HUD opens no window by itself, and the offer cards never pulse.
@@ -207,12 +208,12 @@ do
 	player:GetAttributeChangedSignal('OnboardingQuiet'):Connect(paintShine)
 	paintShine()
 end
-actionButton({ Name = 'World', Tone = 'grass', Width = SQ, Height = SQ, Position = px(GRID_X, ROW1), Text = 'World', TextSize = 22, Icon = iconOr('World', 'Evolve'), IconSize = ICON, Pop = POP, OnClick = call('World') })
-local rebirthButton = actionButton({ Name = 'Rebirth', Tone = 'coral', Width = SQ, Height = SQ, Position = px(COL2, ROW1), Text = 'Rebirth', TextSize = 19, Icon = 'Rebirth', IconSize = ICON + 4, Pop = POP + 8, OnClick = call('Rebirth') }) -- (its padded render: the ref's ring starts ~12 px above the square)
-local shoesButton = actionButton({ Name = 'Shoes', Tone = 'magenta', Width = SQ, Height = SQ, Position = px(GRID_X, ROW2), Text = 'Shoes', TextSize = 22, Icon = iconOr('Sneaker', 'Shop'), IconSize = ICON, Pop = POP, OnClick = call('Shoes') })
-actionButton({ Name = 'Guns', Tone = 'sky', Width = SQ, Height = SQ, Position = px(COL2, ROW2), Text = 'Guns', TextSize = 22, Icon = 'Gun', IconSize = ICON, Pop = POP, OnClick = call('Guns') })
-actionButton({ Name = 'Items', Tone = 'items', Width = SQ, Height = SQ, Position = px(GRID_X, ROW3), Text = 'Items', TextSize = 22, Icon = iconOr('Backpack', 'Shop'), IconSize = ICON, Pop = POP, OnClick = call('Items') })
-actionButton({ Name = 'Quest', Tone = 'brown', Width = SQ, Height = SQ, Position = px(COL2, ROW3), Text = 'Quest', TextSize = 21, Icon = iconOr('Quest', 'Trophy'), IconSize = ICON, Pop = POP, OnClick = call('Quest') })
+actionButton({ Name = 'World', Tone = 'grass', Width = SQ, Height = SQ, Position = px(GRID_X, ROW1), Text = 'World', TextSize = 22, Icon = iconOr('World', 'Evolve'), Place = 'hud', OnClick = call('World') })
+local rebirthButton = actionButton({ Name = 'Rebirth', Tone = 'coral', Width = SQ, Height = SQ, Position = px(COL2, ROW1), Text = 'Rebirth', TextSize = 19, Icon = 'Rebirth', Place = 'hud', OnClick = call('Rebirth') })
+local shoesButton = actionButton({ Name = 'Shoes', Tone = 'magenta', Width = SQ, Height = SQ, Position = px(GRID_X, ROW2), Text = 'Shoes', TextSize = 22, Icon = iconOr('Sneaker', 'Shop'), Place = 'hud', OnClick = call('Shoes') })
+actionButton({ Name = 'Guns', Tone = 'sky', Width = SQ, Height = SQ, Position = px(COL2, ROW2), Text = 'Guns', TextSize = 22, Icon = 'Gun', Place = 'hud', OnClick = call('Guns') })
+actionButton({ Name = 'Items', Tone = 'items', Width = SQ, Height = SQ, Position = px(GRID_X, ROW3), Text = 'Items', TextSize = 22, Icon = iconOr('Backpack', 'Shop'), Place = 'hud', OnClick = call('Items') })
+actionButton({ Name = 'Quest', Tone = 'brown', Width = SQ, Height = SQ, Position = px(COL2, ROW3), Text = 'Quest', TextSize = 21, Icon = iconOr('Quest', 'Trophy'), Place = 'hud', OnClick = call('Quest') })
 -- (transition) Shoes.client used to build its own Shoes button in this slot. While an old Shoes.client still does, its
 -- button shows here instead of ours (it opens its own window); once it stops (UI4, brief 22), the slot stays empty.
 local shoesSlot = Kit.new('Frame', { Name = 'ShoesSlot', BackgroundTransparency = 1, Position = px(GRID_X, ROW2), Size = px(SQ, SQ), Visible = false, Parent = column })
@@ -263,7 +264,7 @@ local COUNTERS_W, COUNTERS_H = 300, 128
 local counters = Kit.new('Frame', { Name = 'Counters', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 0, 1, 0), Size = px(COUNTERS_W, COUNTERS_H), Parent = root })
 local function counter(name, iconId, centreY, iconSize, iconX, textSize, top, bottom)
 	local row = Kit.new('Frame', { Name = name, BackgroundTransparency = 1, AnchorPoint = Vector2.new(0, 0.5), Position = px(0, centreY), Size = px(COUNTERS_W, textSize + 12), Parent = counters })
-	local icon = Kit.icon3d(iconId, iconSize, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, iconX, 0.5, 0), ZIndex = 2 })
+	local icon = Kit.icon3d(iconId, nil, { ZIndex = 2, Place = { Rule = 'counter', W = COUNTERS_W, H = textSize + 12 } }) -- (brief 25: Kit.Place.counter)
 	icon.Parent = row
 	local value = fillText(label({ Name = 'Value', Text = '0', TextSize = textSize, TextXAlignment = Enum.TextXAlignment.Left, Position = px(81, 0), Size = UDim2.new(1, -81, 1, 0), ZIndex = 2, Parent = row }), top, bottom)
 	return value, icon
@@ -302,7 +303,7 @@ local function offerCard(key, i, tone, iconId)
 	holder.Parent = offers
 	-- (r7, UICRITIC P3-9: the reference's +2x Power arm is big and centred behind the name; brief 23: both cards' art the
 	-- same size and place, centred behind the name and rising over the top edge like the reference's trophy)
-	local icon = Kit.icon3d(iconId, 92, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, -18), ZIndex = 5 })
+	local icon = Kit.icon3d(iconId, nil, { ZIndex = 5, Place = { Rule = 'offer', W = OFFER_W, H = OFFER_H, X0 = 3, Y0 = 3 } })
 	icon.Parent = holder.Body
 	local title = entry.Offer or entry.Title
 	label({ Name = 'Title', Text = title, TextSize = Kit.fitSize(title, 33, OFFER_W - 24, 14), StrokeThickness = 4, Position = px(4, -1), Size = UDim2.new(1, -8, 1, 0), ZIndex = 7, Parent = holder.Body })
@@ -373,7 +374,7 @@ for i, key in PACKS do
 	local entry = Products.ByKey[key]
 	local holder = Kit.blockButton({ Name = key, Tone = PACK_TONES[i], Width = PACK_W, Height = PACK_H, Position = px((i - 1) * (PACK_W + PACK_GAP), 0), StudPattern = 'checker' })
 	holder.Parent = packs
-	Kit.icon3d(POWER, 56, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, -12, 0.5, 2), ZIndex = 6 }).Parent = holder.Body
+	Kit.icon3d(POWER, nil, { ZIndex = 6, Place = { Rule = 'pack', W = PACK_W, H = PACK_H, X0 = 3, Y0 = 3 } }).Parent = holder.Body
 	packLabels[key] = label({ Name = 'Amount', Text = '+0', TextSize = 26, StrokeThickness = 3.5, TextXAlignment = Enum.TextXAlignment.Right, Position = px(36, -2), Size = UDim2.new(1, -45, 1, 0), ZIndex = 7, Parent = holder.Body })
 	local price = Kit.only(entry.Price, 16, { Only = false, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 2, 1, 2), ZIndex = 8, MarkColor = hex('A6F02A'), PriceColors = ColorSequence.new(hex('C8FF4A'), hex('5AD81A')) })
 	price.Parent = holder

@@ -312,7 +312,7 @@ end
 -- no live models, no ViewportFrames. A thing you don't own yet is its black silhouette (props.Locked). props.Bare: the
 -- stand-in without its block (an item on a splat, like the reference's pets); shoes and guns are bare by default.
 local function icon3d(id, size, props)
-	local holder = Kit.icon3d(id, size, { ZIndex = props.ZIndex, Locked = props.Locked, Bare = props.Bare })
+	local holder = Kit.icon3d(id, size, { ZIndex = props.ZIndex, Locked = props.Locked, Bare = props.Bare, Place = props.Place })
 	if props.Locked then holder:SetAttribute('PreviewSilhouette', true) end
 	return holder
 end
@@ -509,10 +509,11 @@ function InventoryKit.frame(root, props)
 	elseif gloss then
 		gloss.BackgroundTransparency = 0.45
 	end
-	local iconHolder = blank({ Name = 'IconSpot', AnchorPoint = Vector2.new(0.5, 0.5), Position = px(L.IconX, L.IconY), Size = px(L.Icon, L.Icon), ZIndex = 30, Parent = header })
+	-- (brief 25) the header's picture where ref22_pets_window's backpack is: Kit.Place.header, on the header block
+	local iconHolder = blank({ Name = 'IconSpot', Size = UDim2.fromScale(1, 1), ZIndex = 30, Parent = header })
 	local function setIcon(ids)
 		for _, c in iconHolder:GetChildren() do c:Destroy() end
-		local icon = InventoryKit.icon(ids, L.Icon, { ZIndex = 30 })
+		local icon = InventoryKit.icon(ids, nil, { ZIndex = 30, Place = { Rule = 'header', W = W, H = L.Header } })
 		icon.Parent = iconHolder
 	end
 	setIcon(props.Icon or { 'Backpack', 'Sneaker' })
@@ -571,11 +572,9 @@ function InventoryKit.tab(props)
 	local holder, hit = Kit.blockButton({ Name = props.Name or 'Tab', Tone = tone, Width = w, Height = h, Outline = L.TabOutline, RimWidth = 3, Studs = L.StudPitch, StudPattern = 'recessed', StudShade = on and 0.75 or 0.55, Position = props.Position, AnchorPoint = Vector2.new(1, 0), ZIndex = props.ZIndex or 21 })
 	local z = (props.ZIndex or 21) + 4
 	InventoryKit.bottomEdge(holder, { Rim = 3, RimColor = tone.rimLow, ZIndex = z - 2 })
-	-- (the reference's: the icon ~47 px of a 54 px slab, centred 43% down; the open tab's ~69 px, 49% down)
-	local iconSize = math.floor((on and 80 or 60) * (props.IconScale or 1))
-	local icon = InventoryKit.icon(props.Icon or { 'Sneaker' }, iconSize, { ZIndex = z })
-	icon.AnchorPoint = Vector2.new(0.5, 0.5)
-	icon.Position = UDim2.new(0.5, 0, on and 0.47 or 0.44, -L.TabOutline)
+	-- (brief 25) the picture where ref22_pets_window's tab pictures are: Kit.Place.tab (the slab's part out from under the
+	-- window: its right 4 px tuck under the window's outline)
+	local icon = InventoryKit.icon(props.Icon or { 'Sneaker' }, nil, { ZIndex = z, Place = { Rule = 'tab', W = w - 4, H = h, X0 = L.TabOutline, Y0 = L.TabOutline } })
 	icon.Parent = holder.Body
 	-- The name, centred on the part of the slab out from under the window (its right 4 px tuck under the outline). A
 	-- phone's readable size can't fit a long name there: the short one (props.Short) is used instead.

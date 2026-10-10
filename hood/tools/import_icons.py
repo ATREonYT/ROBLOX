@@ -26,6 +26,10 @@ For each file:
      hood/art/icons3d/<Name>.png (the framing every icon shares; see hood/art/README_upload.md).
   4. Report. Unknown names, inputs that are badly off-square or under 256 px (or whose object is under 256 px),
      background haze left in a transparent input, and big removed holes are listed.
+Labels: a picture with text baked in (a "2x" disc, say) is listed in IconModels.M.Labelled (id -> the text), so the Store
+doesn't add its own sticker on top. Say which imported pictures carry text in hood/art/incoming/labels.txt (one
+"Name: text" per line, e.g. "DoublePower: 2x"; # starts a comment) or with --label Name=text. Every imported picture
+not listed there is removed from M.Labelled (its new picture has no text: AI_ICONS.md asks for none).
 Then it refreshes IconModels.M.Bounds (hood/tools/blender/icon_bounds.py) and writes the contact sheet
 hood/art/incoming/_check.png: every imported icon at 128 and 48 px on the three HUD button colours, with its name.
 Upload as usual afterwards (hood/tools/upload_assets.py uploads only the changed PNGs).
@@ -334,6 +338,55 @@ def import_one(path, args, ids):
 	return res
 
 
+# ------------------------------------------------------------------------------------------------- M.Labelled
+LABELLED = re.compile(r'(M\.Labelled = \{\n)(.*?)(\}\n)', re.S)
+
+
+def read_labels(src, extra):
+	"""{name: text} from <src>/labels.txt ("Name: text" lines) and --label Name=text."""
+	labels = {}
+	path = os.path.join(src, 'labels.txt')
+	if os.path.exists(path):
+		for line in open(path):
+			line = line.split('#', 1)[0].strip()
+			if ':' in line:
+				k, v = line.split(':', 1)
+				if k.strip() and v.strip():
+					labels[k.strip()] = v.strip()
+	for item in extra:
+		if '=' in item:
+			k, v = item.split('=', 1)
+			labels[k.strip()] = v.strip()
+	return labels
+
+
+def update_labelled(names, labels, module=MODULE, dry=False):
+	"""Set M.Labelled[name] = labels[name] for each imported name that has a label, and remove the others. Returns the
+	changes as text lines."""
+	text = open(module).read()
+	m = LABELLED.search(text)
+	if not m:
+		return ['IconModels.lua has no M.Labelled block: not updated']
+	rows = {}
+	for line in m.group(2).splitlines():
+		mm = re.match(r"^\s*(\w+)\s*=\s*'([^']*)',?", line)
+		if mm:
+			rows[mm.group(1)] = mm.group(2)
+	changes = []
+	for n in names:
+		want = labels.get(n)
+		if want is None and n in rows:
+			changes.append('M.Labelled.%s removed (was %r)' % (n, rows.pop(n)))
+		elif want is not None and rows.get(n) != want:
+			changes.append('M.Labelled.%s = %r' % (n, want))
+			rows[n] = want.replace("'", '')
+	if changes and not dry:
+		body = ''.join("\t%s = '%s',\n" % (k, rows[k]) for k in sorted(rows))
+		text = text[:m.start()] + m.group(1) + body + m.group(3) + text[m.end():]
+		open(module, 'w').write(text)
+	return changes
+
+
 # ------------------------------------------------------------------------------------------------- sheet + main
 def contact_sheet(results, out, dry):
 	cell = 128 + 8 + 48 + 8
@@ -373,7 +426,8 @@ def main(argv=None):
 	ap.add_argument('--tol', type=int, default=48, help='background colour tolerance (max channel difference)')
 	ap.add_argument('--hole-tol', type=int, default=10, help='tolerance for enclosed background holes (flat only)')
 	ap.add_argument('--speck', type=float, default=0.005, help='islands under this fraction of the object area are dropped')
-	ap.add_argument('--no-bounds', action='store_true', help="don't refresh IconModels.M.Bounds")
+	ap.add_argument('--no-bounds', action='store_true', help="don't refresh IconModels.M.Bounds or M.Labelled")
+	ap.add_argument('--label', action='append', default=[], help='Name=text: this picture has text baked in (repeatable)')
 	args = ap.parse_args(argv)
 	only = set(x.strip() for x in args.only.split(',') if x.strip())
 	files = sorted(f for f in os.listdir(args.src) if f.lower().endswith('.png') and not f.startswith('_'))
@@ -404,7 +458,16 @@ def main(argv=None):
 	n_ok = sum(1 for r in results if r.image is not None)
 	n_warn = sum(1 for r in results if r.notes)
 	print('%d imported%s, %d with notes' % (n_ok, ' (dry run: nothing written)' if args.dry_run else ' into ' + args.out, n_warn))
-	if not args.dry_run and not args.no_bounds and os.path.abspath(args.out) == os.path.abspath(ICONS):
+	labels = read_labels(args.src, args.label)
+	imported = [r.name for r in results if r.image is not None]
+	unknown = sorted(set(labels) - set(r.name for r in results))
+	if unknown:
+		print('labels for pictures not in this import (ignored): %s' % ', '.join(unknown))
+	into_game = os.path.abspath(args.out) == os.path.abspath(ICONS) and not args.no_bounds
+	if into_game or args.dry_run:
+		for c in update_labelled(imported, labels, dry=args.dry_run or not into_game):
+			print(('would set ' if args.dry_run else '') + c)
+	if not args.dry_run and into_game:
 		sys.path.insert(0, os.path.join(HERE, 'blender'))
 		import icon_bounds
 		icon_bounds.main([])

@@ -158,12 +158,13 @@ end
 -- (brief 24: "the UI shouldn't look 3D") What a card shows (Products' Art), always a flat PNG (Kit.icon3d: ART2's upload,
 -- or its flat 2D stand-in while that can't draw; never a live model): 'icon:<id>' an icon, 'gun:<id>' Gun_<id>,
 -- 'box:<id>' Box_<id>, 'boxes:<id>' three Box_<id> stacked, 'shoe:<id>' Shoe_<id>.
-local function artFor(entry, size, z)
+-- (brief 25) place: a UIKit Kit.Place rule for the card ({ Rule, W, H }): the art lands where the reference's does
+local function artFor(entry, size, z, place)
 	local w0 = typeof(size) == 'Vector2' and size.X or size
 	local kind, id = (entry.Art or ''):match('^(%w+):(.+)$')
-	if kind == 'gun' then return Kit.icon3d('Gun_' .. id, w0, { ZIndex = z }) end
-	if kind == 'box' then return Kit.icon3d('Box_' .. id, w0, { ZIndex = z }) end
-	if kind == 'shoe' then return Kit.icon3d('Shoe_' .. id, w0, { ZIndex = z }) end
+	if kind == 'gun' then return Kit.icon3d('Gun_' .. id, w0, { ZIndex = z, Place = place }) end
+	if kind == 'box' then return Kit.icon3d('Box_' .. id, w0, { ZIndex = z, Place = place }) end
+	if kind == 'shoe' then return Kit.icon3d('Shoe_' .. id, w0, { ZIndex = z, Place = place }) end
 	if kind == 'boxes' then
 		-- three boxes in a little pyramid, one picture each
 		local holder = Kit.new('Frame', { Name = 'Boxes_' .. id, BackgroundTransparency = 1, Size = px(w0, w0), ZIndex = z })
@@ -176,7 +177,7 @@ local function artFor(entry, size, z)
 	end
 	local icon = kind == 'icon' and id or 'Shop'
 	if icon == 'Power' then icon = iconOr('Muscle', 'Power') end
-	return Kit.icon3d(icon, w0, { ZIndex = z })
+	return Kit.icon3d(icon, w0, { ZIndex = z, Place = place })
 end
 
 -- Price buttons, live prices and owned passes.
@@ -236,9 +237,25 @@ end
 -- button on the left; the art large on the right, poking over the top edge.
 local BIG_W, BIG_H, BIG_GAP = 475, 290, 22
 local ART_PASS = 240 -- (brief 24) every gamepass card's art, one size
--- A pass's Sticker on its art: big outlined gold text, tilted, like the reference's "x8" over its pets.
-local function sticker(parent, entry, pos, z)
+-- A pass's Sticker on its art: big outlined gold text, tilted, like the reference's "x8" over its pets. (brief 25,
+-- CRITIC4: one label only) none when the art's own picture already carries it: IconModels.Labelled[id] (the text baked
+-- into that PNG) is the sticker's text, while that PNG is what shows (its flat stand-in has no text: the sticker stays).
+local function labelled(art, text)
+	local models = Kit.iconModels()
+	local marks = models and type(models.Labelled) == 'table' and models.Labelled
+	if not marks then return false end
+	for _, d in art:GetDescendants() do
+		if d.Name == 'Image' and d:IsA('ImageLabel') and d.Visible then
+			local id = d.Parent and d.Parent:GetAttribute('IconId')
+			local baked = id and marks[id]
+			if baked == true or (type(baked) == 'string' and string.lower(baked) == string.lower(text)) then return true end
+		end
+	end
+	return false
+end
+local function sticker(parent, entry, pos, z, art)
 	if type(entry.Sticker) ~= 'string' or entry.Sticker == '' then return nil end
+	if art and labelled(art, entry.Sticker) then return nil end
 	local size = Kit.fitSize(entry.Sticker, 58, 150, 28)
 	local t = gold(label({ Name = 'Sticker', Text = entry.Sticker, TextSize = size, StrokeThickness = math.max(4, size * 0.13), AnchorPoint = Vector2.new(0.5, 0.5), Position = pos, Size = px(170, size + 10), Rotation = -10, ZIndex = z, Parent = parent }))
 	local st = t:FindFirstChildOfClass('UIStroke')
@@ -251,11 +268,10 @@ local function bigCard(entry, x, y, parent)
 	local z = 28
 	-- (brief 19: the reference's art is huge, the card's height, poking ~25 px over its top edge; brief 24: every pass's
 	-- art at one size, ART_PASS, and its Sticker ('2x', 'x100') stuck on it: ART2's card art carries no text)
-	local art = artFor(entry, ART_PASS, z)
-	art.AnchorPoint = Vector2.new(0.5, 0)
-	art.Position = UDim2.new(0, 352, 0, -22)
+	local art = artFor(entry, ART_PASS, z, { Rule = 'passCard', W = BIG_W, H = BIG_H, X0 = 5, Y0 = 5 })
 	art.Parent = card.Body
-	sticker(card.Body, entry, px(352 + ART_PASS * 0.3, ART_PASS * 0.72 - 22), z + 6)
+	local a = art.Size.X.Offset
+	sticker(card.Body, entry, px(art.Position.X.Offset + a * 0.8, art.Position.Y.Offset + a * 0.72), z + 6, art)
 	-- (r7, UICRITIC P2-7: the reference's title is white with a thin olive-brown edge, lighter than the gold lines)
 	label({ Name = 'Title', Text = entry.Title, TextSize = Kit.fitSize(entry.Title, 42, 270, 16), Stroke = hex('5A4600'), StrokeThickness = 3.5, TextXAlignment = Enum.TextXAlignment.Left, AnchorPoint = Vector2.new(0, 0.5), Position = px(32, 39), Size = px(300, 48), ZIndex = z + 1, Parent = card.Body })
 	local lines = string.split(entry.Big or '', '\n')
@@ -273,11 +289,10 @@ local function bannerCard(entry, y, parent)
 	local card = Kit.block({ Name = entry.Key, Tone = entry.Tone, Width = INNER - 2 * MARGIN, Height = BANNER_H, Position = px(MARGIN, y), Outline = 5, RimWidth = 7, Studs = CARD_STUDS, StudSparse = true, StudTransparency = 0.8, StudShade = 0.6, ZIndex = 25 })
 	card.Parent = parent
 	local z = 28
-	local art = artFor(entry, ART_PASS, z)
-	art.AnchorPoint = Vector2.new(0, 0.5)
-	art.Position = UDim2.new(0, 14, 0.5, -20)
+	local art = artFor(entry, ART_PASS, z, { Rule = 'bannerCard', W = INNER - 2 * MARGIN, H = BANNER_H, X0 = 5, Y0 = 5 })
 	art.Parent = card.Body
-	sticker(card.Body, entry, px(14 + ART_PASS * 0.8, BANNER_H * 0.5 - 20 + ART_PASS * 0.22), z + 6)
+	local a = art.Size.X.Offset
+	sticker(card.Body, entry, px(art.Position.X.Offset + a * 0.8, art.Position.Y.Offset + a * 0.72), z + 6, art)
 	local tone = Kit.toneOf(entry.Tone)
 	label({ Name = 'Big', Text = entry.Big or entry.Title, TextSize = 96, TextColor3 = hex('0A0A0A'), Stroke = tone.glow or tone.rim or Color.white, StrokeThickness = 6, TextXAlignment = Enum.TextXAlignment.Left, Position = px(270, 8), Size = px(420, 106), ZIndex = z + 1, Parent = card.Body })
 	local detail = gold(label({ Name = 'Detail', Text = entry.Detail or '', TextSize = 40, StrokeThickness = 5, TextXAlignment = Enum.TextXAlignment.Left, Position = px(272, 112), Size = px(440, 50), ZIndex = z + 1, Parent = card.Body }))
@@ -482,11 +497,10 @@ local function packCard(entry, i, x, y, parent)
 	local artId = (entry.Art or ''):match('^icon:(.+)$')
 	-- (ref22_store_packs: every pile at the left, fuller pack by pack; brief 24: one picture size for every pack, the
 	-- pile itself grows in ART2's art)
-	local art = Kit.icon3d(iconOr(pile, artId or '', entry.Section == 'Power' and 'Muscle' or 'Cash'), 206, { ZIndex = z })
-	art.AnchorPoint = Vector2.new(0.5, 0.5)
-	art.Position = px(112, 168)
+	local art = Kit.icon3d(iconOr(pile, artId or '', entry.Section == 'Power' and 'Muscle' or 'Cash'), nil, { ZIndex = z, Place = { Rule = 'packCard', W = PACK_W, H = PACK_H, X0 = 5, Y0 = 5 } })
 	art.Parent = card.Body
-	local amount = label({ Name = 'Amount', Text = packAmount(entry), TextSize = 37, StrokeThickness = 4, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(318, 128), Size = px(240, 46), ZIndex = z + 2, Parent = card.Body })
+	-- (brief 25: ref22's "+5K Wins" centred 0.70 of the card across, 0.53 down)
+	local amount = label({ Name = 'Amount', Text = packAmount(entry), TextSize = 37, StrokeThickness = 4, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(318, 146), Size = px(240, 46), ZIndex = z + 2, Parent = card.Body })
 	amount.TextSize = Kit.fitSize(amount.Text, 37, 236, 18)
 	if entry.Section == 'Power' then packLabels[entry.Key] = amount end
 	priceButton(card.Body, entry, 187, 77, px(240, 174), Vector2.zero, z + 2)

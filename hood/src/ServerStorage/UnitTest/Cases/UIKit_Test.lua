@@ -37,11 +37,17 @@ return function(t)
 		local saved = models.Images.World
 		models.Images.World = freshId()
 		with(answers(Enum.AssetFetchStatus.Failure), function()
-			local first = Kit.icon3d('World', 64)
+			-- (brief 25) by default the stand-in is the bare glyph: no tile on a tile
+			local plain = Kit.icon3d('World', 64)
+			e.falsy(plain.Image.Visible)
+			e.truthy(live(plain))
+			e.falsy(plain.Flat:FindFirstChild('Block'))
+			e.truthy(plain.Flat:FindFirstChild('Glyph'))
+			local first = Kit.icon3d('World', 64, { Bare = false })
 			e.falsy(first.Image.Visible)
 			e.truthy(live(first))
 			e.equal(viewports(first), 0)
-			-- the stand-in: a rounded block in the icon's colour with the ink outline, and its glyph on top
+			-- asked for (Bare = false): a rounded block in the icon's colour with the ink outline, and its glyph on top
 			local block = first.Flat:FindFirstChild('Block')
 			e.truthy(block)
 			e.truthy(block:FindFirstChildOfClass('UICorner'))
@@ -131,7 +137,7 @@ return function(t)
 		for _, id in { 'Power', 'Cash', 'World', 'Shoe_RedRocket', 'Box_Street', 'Gun_Uzi', 'Lucky', 'NoSuchIcon' } do
 			local saved = models.Images[id]
 			models.Images[id] = nil
-			local h = Kit.icon3d(id, 64)
+			local h = Kit.icon3d(id, 64, { Bare = false })
 			e.truthy(live(h))
 			e.equal(viewports(h), 0)
 			e.truthy(h.Flat:FindFirstChild('Block'))
@@ -173,11 +179,47 @@ return function(t)
 		local bare = Kit.icon3d('Shoe_Checkmate', 80, { Bare = true })
 		e.falsy(bare.Flat:FindFirstChild('Block'))
 		e.truthy(bare.Flat:FindFirstChild('Glyph'))
-		local dark = Kit.icon3d('Shoe_Checkmate', 80, { Locked = true })
+		local dark = Kit.icon3d('Shoe_Checkmate', 80, { Locked = true, Bare = false })
 		e.truthy(dark.Flat.Block:FindFirstChildOfClass('UIGradient') ~= nil)
 		Kit.setLocked(bare, true)
 		e.truthy(live(bare))
 		e.falsy(bare.Flat:FindFirstChild('Block'))
 		models.Images.Shoe_Checkmate = saved
+	end)
+
+	-- (brief 25) "not in place, especially the pictures": a picture placed on a button by a Kit.Place rule fills the
+	-- reference's box by its DRAWN content (IconModels.Bounds, or the stand-in's glyph), pops out over the top, and is bare
+	t.test('a placed picture fills the reference box by its drawn content and pops out; its stand-in is bare', function()
+		local models = Kit.iconModels()
+		local rule = Kit.Place.hud
+		e.truthy(rule)
+		local function contentOf(h, b)
+			local s = h.Size.X.Offset
+			return h.Position.X.Offset + b[1] * s, h.Position.Y.Offset + b[2] * s, (b[3] - b[1]) * s, (b[4] - b[2]) * s
+		end
+		-- a wide PNG (a gun: 0.88 x 0.72 of its square)
+		local savedImg, savedB = models.Images.Gun, models.Bounds
+		models.Images.Gun = freshId()
+		models.Bounds = { Gun = { 0.059, 0.141, 0.941, 0.859 } }
+		with(answers(Enum.AssetFetchStatus.Success), function()
+			local h = Kit.icon3d('Gun', nil, { Place = { Rule = 'hud', W = 81, H = 81 } })
+			local x, y, w, hh = contentOf(h, models.Bounds.Gun)
+			e.truthy(math.abs(w - rule.W * 81) < 1.5) -- (as wide as the reference's globe; whole pixels)
+			e.truthy(hh <= rule.H * 81 + 1.5)
+			e.truthy(y <= rule.Top * 81 + 1.5) -- (over the square's top)
+			e.truthy(math.abs(x + w / 2 - 40.5) < 1.5) -- (centred)
+		end)
+		models.Images.Gun, models.Bounds = savedImg, savedB
+		-- no upload: the bare glyph, placed the same way
+		local saved = models.Images.Backpack
+		models.Images.Backpack = nil
+		local h = Kit.icon3d('Backpack', nil, { Place = { Rule = 'hud', W = 81, H = 81 } })
+		e.truthy(live(h))
+		e.truthy(h.Flat:GetAttribute('Bare'))
+		e.falsy(h.Flat:FindFirstChild('Block'))
+		local x, y, w, hh = contentOf(h, Kit.contentBounds('Backpack', false, true))
+		e.truthy(y < 0)
+		e.truthy(w <= rule.W * 81 + 1.5 and hh <= rule.H * 81 + 1.5)
+		models.Images.Backpack = saved
 	end)
 end
