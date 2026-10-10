@@ -771,11 +771,11 @@ local function teleportPad(g, name, x, z, color, target, label, opts)
 		gui.MaxDistance = 45
 		gui.LightInfluence = 0
 		gui.Parent = anchor
-		-- (the game's text face, UI2's Gotham Black, with a near-black outline)
-		line(gui, 'Title', opts.title, C(240, 242, 248), opts.font or Enum.Font.GothamBlack, 0, 0.58, C(16, 18, 30), 3)
-		line(gui, 'Sub', opts.sub or '', opts.labelColor or color, opts.font or Enum.Font.GothamBlack, 0.6, 0.36, C(16, 18, 30), 2)
+		-- (the world's text face, the references' FredokaOne, with a near-black outline)
+		line(gui, 'Title', opts.title, C(240, 242, 248), opts.font or Enum.Font.FredokaOne, 0, 0.58, C(16, 18, 30), 3)
+		line(gui, 'Sub', opts.sub or '', opts.labelColor or color, opts.font or Enum.Font.FredokaOne, 0.6, 0.36, C(16, 18, 30), 2)
 	elseif not opts.bare then
-		billboard(g, V(x, topY + 3, z), 6, 1.4, { { 'Title', label, P.white, opts.font or Enum.Font.GothamBlack, 0, 1 } }).WorldLabel.MaxDistance = 50
+		billboard(g, V(x, topY + 3, z), 6, 1.4, { { 'Title', label, P.white, opts.font or Enum.Font.FredokaOne, 0, 1 } }).WorldLabel.MaxDistance = 50
 	end
 	return pad
 end
@@ -5322,10 +5322,10 @@ local GATE = {
 		{ 8, C(230, 86, 120), 0.54 }, { 3, C(242, 122, 152), 0.5 }, { 0, C(246, 142, 168), 0.5 },
 	},
 	bands = 74, -- quarter-stud bands (5 px each at the haze's 20 pixels per stud)
-	-- The game's text style (UI2's display face, the reference's Gotham Black): heavy letters with a thick near-black
-	-- outline, colour by meaning: white STAGE N, cyan Recommended / Power (the video's #45E6FF), and the state line as a
-	-- badge, white on red (locked, blocked) or green (open).
-	font = Enum.Font.GothamBlack,
+	-- The world's text style (brief 24: the references' rounded FredokaOne, like the lobby's labels and the pads): heavy
+	-- letters with a thick near-black outline, colour by meaning: white STAGE N, cyan Recommended (the video's #45E6FF),
+	-- and the state line as a badge, white on red (locked, blocked) or green (open). Only "Power: X" stays in pixels.
+	font = Enum.Font.FredokaOne,
 	powerFont = Enum.Font.Arcade, -- the "Power: X" line in pixel letters, like the reference's corridor sign
 	title = C(255, 255, 255), titleInk = C(14, 16, 26),
 	sub = C(69, 230, 255), subInk = C(8, 26, 46),
