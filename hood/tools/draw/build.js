@@ -70,33 +70,41 @@ async function main() {
 
 	const browser = await chromium.launch();
 	const page = await browser.newPage({ viewport: { width: size, height: size }, deviceScaleFactor: 1 });
+	const frames = {};
+	async function frameOf(name, given) {
+		if (frames[name]) return frames[name];
+		let k, drawing;
+		if (given) ({ k, drawing } = given);
+		else { k = new K.Kit(name); drawing = icons[name].draw(k, K); }
+		// 1. the silhouette's fill box in working units
+		const silSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"><g id="s">${drawing.sil.map((x) => K.silPath(x, 'fill-rule')).join('')}</g></svg>`;
+		await page.setContent(`<html><body style="margin:0">${silSvg}</body></html>`);
+		const bb = await page.evaluate(() => { const b = document.getElementById('s').getBBox(); return [b.x, b.y, b.width, b.height]; });
+		// 2. framing: longest side + 2 outline bands = FRAME * size, first from the box, then corrected twice from the
+		// rendered picture's real alpha box (getBBox is loose for rotated pieces; the outline is heavier bottom-right)
+		const ow = K.OUTLINE_PX * (size / 512);
+		let s = (FRAME * size - 2 * ow) / Math.max(bb[2], bb[3]);
+		let cx = bb[0] + bb[2] / 2, cy = bb[1] + bb[3] / 2;
+		for (let pass = 0; pass < 2; pass++) {
+			const vs = size / s;
+			const ab = await alphaBox(page, k.svg(drawing, [cx - vs / 2, cy - vs / 2, vs, vs], ow / s, size), size);
+			const longest = Math.max(ab[2] - ab[0], ab[3] - ab[1]);
+			cx += ((ab[0] + ab[2]) / 2 - size / 2) / s; cy += ((ab[1] + ab[3]) / 2 - size / 2) / s;
+			s *= (FRAME * size - 2 * ow) / (longest - 2 * ow);
+		}
+		const vs = size / s;
+		frames[name] = { view: [cx - vs / 2, cy - vs / 2, vs, vs], s };
+		return frames[name];
+	}
 	for (const name of todo) {
 		const ic = icons[name];
 		if (!ic) { console.error('no icon', name); continue; }
 		const k = new K.Kit(name);
 		const drawing = ic.draw(k, K);
-		// 1. measure the silhouette's fill box in working units
-		const silSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"><g id="s">${drawing.sil.map((x) => K.silPath(x, 'fill-rule')).join('')}</g></svg>`;
-		await page.setContent(`<html><body style="margin:0">${silSvg}</body></html>`);
-		const bb = await page.evaluate(() => { const b = document.getElementById('s').getBBox(); return [b.x, b.y, b.width, b.height]; });
-		// 2. framing: fill longest side + 2 outline bands = FRAME * size (a first guess from the silhouette's box)
 		const ow = K.OUTLINE_PX * (size / 512); // outline band in output px
-		let s = (FRAME * size - 2 * ow) / Math.max(bb[2], bb[3]); // output px per working unit
-		let cx = bb[0] + bb[2] / 2, cy = bb[1] + bb[3] / 2;
-		let svg, ab;
-		// then measure the rendered picture's real alpha box and correct (getBBox is loose for rotated pieces, and the
-		// outline is a little heavier on the bottom-right), twice
-		for (let pass = 0; pass < 3; pass++) {
-			const vs = size / s;
-			svg = k.svg(drawing, [cx - vs / 2, cy - vs / 2, vs, vs], ow / s, size);
-			if (pass === 2) break;
-			ab = await alphaBox(page, svg, size);
-			const longest = Math.max(ab[2] - ab[0], ab[3] - ab[1]);
-			const mx = (ab[0] + ab[2]) / 2, my = (ab[1] + ab[3]) / 2;
-			cx += (mx - size / 2) / s; cy += (my - size / 2) / s;
-			// grow the drawing (not the outline band) so the whole box reaches FRAME
-			s *= (FRAME * size - 2 * ow) / (longest - 2 * ow);
-		}
+		// a piece (a box's lid or body) uses its whole picture's exact framing
+		const fr = await frameOf(ic.frameAs || name, ic.frameAs ? null : { k, drawing });
+		const svg = k.svg(drawing, fr.view, ow / fr.s, size);
 		if (writeSvg) fs.writeFileSync(path.join(SVG_DIR, name + '.svg'), svg);
 		// 3. render
 		await page.setContent(`<html><body style="margin:0;background:transparent">${svg}</body></html>`);

@@ -13,38 +13,41 @@ const OUT = [
 	[0.44, -0.64, 'c'],
 ];
 
-function bottle(k, K, liq, { U = 205, C = [256 + 0.02 * 205, 256 - 0.04 * 205], rot = 0, shift = [0, 0], tag = '' } = {}) {
+function bottle(k, K, liq, { U = 205, C = [256 + 0.02 * 205, 256 - 0.04 * 205], rot = 0, shift = [0, 0], tag = '', neck = 0 } = {}) {
 	const P0 = ([u, v]) => [C[0] + u * U + shift[0], C[1] + v * U + shift[1]];
 	const P = (p) => (rot ? K.rotp(P0(p), [C[0] + shift[0], C[1] + 0.1 * U + shift[1]], rot) : P0(p));
 	const RP = (pts, r) => K.roundPoly(pts.map(P), r * U);
 	const poly = (pts) => K.poly(pts.map(P));
 
-	// outer glass: rounded star + neck
-	const glass = RP(OUT, 0.06);
+	// outer glass: rounded star + neck (neck > 0 lengthens the neck, for the bundle where the bottles are small)
+	const OUTn = OUT.map(([u, v, c]) => (v < -0.6 ? [u, v - neck, c] : [u, v, c]));
+	const glass = RP(OUTn, 0.06);
 	// inner volume: the same star inset (the thick glass wall)
 	const IN = [
 		[-0.33, -0.52], [-0.33, -0.05], [-0.77, -0.02], [-0.76, 0.09], [-0.41, 0.35], [-0.5, 0.75], [-0.02, 0.55],
 		[0.46, 0.75], [0.37, 0.35], [0.72, 0.09], [0.73, -0.02], [0.29, -0.05], [0.29, -0.52],
 	];
-	const inner = RP(IN, 0.05);
+	const INn = IN.map(([u, v]) => (v < -0.5 ? [u, v - neck] : [u, v]));
+	const up = (pts) => pts.map(([u, v]) => [u, v - neck]);
+	const inner = RP(INn, 0.05);
 	// liquid: everything of the inner volume below the surface line (just above the arms), a lighter top band
 	const liquidCut = poly([[-1.2, 0.13], [1.2, 0.11], [1.2, 1.3], [-1.2, 1.3]]);
 	const surface = poly([[-1.2, 0.13], [1.2, 0.11], [1.2, 0.29], [-1.2, 0.31]]);
 	// the big blocky cork: top face, front face, lower lip
 	// a trapezoid cork, wider at the top, with an orange underside
-	const corkTop = poly([[-0.4, -1.08], [0.36, -1.08], [0.34, -0.9], [-0.38, -0.9]]);
-	const corkFront = poly([[-0.38, -0.9], [0.34, -0.9], [0.28, -0.68], [-0.32, -0.68]]);
-	const corkLip = poly([[-0.33, -0.7], [0.29, -0.7], [0.26, -0.56], [-0.3, -0.56]]);
-	const cork = RP([[-0.41, -1.09], [0.37, -1.09], [0.27, -0.56], [-0.31, -0.56]], 0.035);
+	const corkTop = poly(up([[-0.4, -1.08], [0.36, -1.08], [0.34, -0.9], [-0.38, -0.9]]));
+	const corkFront = poly(up([[-0.38, -0.9], [0.34, -0.9], [0.28, -0.68], [-0.32, -0.68]]));
+	const corkLip = poly(up([[-0.33, -0.7], [0.29, -0.7], [0.26, -0.56], [-0.3, -0.56]]));
+	const cork = RP(up([[-0.41, -1.09], [0.37, -1.09], [0.27, -0.56], [-0.31, -0.56]]), 0.035);
 	// neck top face
-	const neckTop = poly([[-0.5, -0.7], [0.46, -0.7], [0.46, -0.52], [-0.5, -0.52]]);
+	const neckTop = poly(up([[-0.5, -0.7], [0.46, -0.7], [0.46, -0.52], [-0.5, -0.52]]));
 
 	let g = '';
 	g += k.path(glass, liq.wall);
 	// the thick glass wall in light and dark triangular facets (each wall quad split along its diagonal)
-	for (let i = 0; i < OUT.length; i++) {
-		if (i === OUT.length - 1) continue; // the neck's top edge sits under the cork
-		const o0 = OUT[i], o1 = OUT[(i + 1) % OUT.length], i0 = IN[i], i1 = IN[(i + 1) % IN.length];
+	for (let i = 0; i < OUTn.length; i++) {
+		if (i === OUTn.length - 1) continue; // the neck's top edge sits under the cork
+		const o0 = OUTn[i], o1 = OUTn[(i + 1) % OUTn.length], i0 = INn[i], i1 = INn[(i + 1) % INn.length];
 		const ex = o1[0] - o0[0], ey = o1[1] - o0[1], l = Math.hypot(ex, ey) || 1;
 		const n = [ey / l, -ex / l]; // outward normal (the outline runs clockwise on screen)
 		const lit = -(n[0] * 0.55 + n[1] * 0.83);
@@ -71,13 +74,13 @@ function bottle(k, K, liq, { U = 205, C = [256 + 0.02 * 205, 256 - 0.04 * 205], 
 		[-0.48, 0.74], [0.44, 0.74], [-0.02, 0.36]].map(([u, v]) => P([u - 0.13, v - 0.13])), { s: 0.26 * U, r: 0.065 * U, ...liq.tiles });
 	// a bold white glare down the left (neck and the left arm's top edge), a sharp streak on the right arm
 	// highlights: one bold white glare down the neck's left, one sparkle on the right arm's tip
-	g += k.clip(inner, k.streak([P([-0.26, -0.56]), P([-0.27, -0.36]), P([-0.3, -0.08]), P([-0.5, 0.0])], 0.1 * U, { bias: 0.35, power: 0.5, opacity: 0.9 }));
+	g += k.clip(inner, k.streak([P([-0.26, -0.56 - neck]), P([-0.27, -0.36]), P([-0.3, -0.08]), P([-0.5, 0.0])], 0.1 * U, { bias: 0.35, power: 0.5, opacity: 0.9 }));
 	g += k.streak([P([0.5, -0.17]), P([0.7, -0.16]), P([0.88, -0.13])], 0.05 * U, { bias: 0.7, power: 0.6 });
 	// cork
 	g += k.path(cork, liq.corkFront);
 	g += k.clip(cork, k.path(corkTop, liq.corkTop) + k.path(corkFront, liq.corkFront) + k.path(corkLip, liq.corkLip) +
-		k.soft(corkFront, poly([[0.12, -0.86], [0.4, -0.86], [0.4, -0.5], [0.12, -0.5]]), liq.corkShade, 4, 0.6));
-	g += k.tiles(cork, [1, 0, 0, 1, 0, 0], [P([-0.15, -1.07]), P([-0.13, -0.87])], { s: 0.2 * U, r: 0.045 * U, alpha: 0.22, bevel: 0.5, shadow: 0.2, shadowColor: '#7a3a00' });
+		k.soft(corkFront, poly(up([[0.12, -0.86], [0.4, -0.86], [0.4, -0.5], [0.12, -0.5]])), liq.corkShade, 4, 0.6));
+	g += k.tiles(cork, [1, 0, 0, 1, 0, 0], up([[-0.15, -1.07], [-0.13, -0.87]]).map(P), { s: 0.2 * U, r: 0.045 * U, alpha: 0.22, bevel: 0.5, shadow: 0.2, shadowColor: '#7a3a00' });
 	return { sil: [glass, cork], body: g };
 }
 
@@ -85,10 +88,10 @@ const RED = {
 	wall: '#bfe8fa', facetDark: '#78b9d8', neckTop: '#e4f7fe', air: '#7fdcf7', airLit: '#9fe6fa', ridge: '#c6ecfb',
 	front: '#e9304f', deep: '#cc1d3d', top: '#f58ba3', topLit: '#fba9bb',
 	corkTop: '#ffe25a', corkFront: '#ffc02a', corkLip: '#f8860c', corkShade: '#f4a018',
-	tiles: { alpha: 0.26, bevel: 0.6, shadow: 0.18, shadowColor: '#1d5f80' },
+	tiles: { alpha: 0.18, bevel: 0.55, shadow: 0.2, shadowColor: '#1d5f80' },
 };
-const GOLD = { ...RED, front: '#f9d227', deep: '#eeb412', top: '#fde872', topLit: '#fff3a8' };
-const BLUE = { ...RED, front: '#2f8df5', deep: '#1f6ed8', top: '#7cbdfb', topLit: '#a6d3fd' };
+const GOLD = { ...RED, front: '#ffc81a', deep: '#f29a08', top: '#ffe45a', topLit: '#fff09a' };
+const BLUE = { ...RED, front: '#2a7ff2', deep: '#1656cc', top: '#6fb2fa', topLit: '#9ccafc' };
 
 module.exports = [
 	{ name: 'PotionRed', draw: (k, K) => bottle(k, K, RED) },
@@ -97,9 +100,9 @@ module.exports = [
 		// three star bottles grouped: gold back-left and blue back-right, tilted outward, the red one in front
 		name: 'BoostBundle',
 		draw(k, K) {
-			const gold = k.place(bottle(k, K, GOLD), 'translate(-150 -70) rotate(-20 256 256) scale(0.78) translate(72 72)');
-			const blue = k.place(bottle(k, K, BLUE), 'translate(150 -70) rotate(20 256 256) scale(0.78) translate(72 72)');
-			const red = k.place(bottle(k, K, RED), 'translate(0 60) scale(0.9) translate(28.4 28.4)');
+			const gold = k.place(bottle(k, K, GOLD, { neck: 0.22 }), 'translate(-175 -30) rotate(-24 256 256) scale(0.8) translate(64 64)');
+			const blue = k.place(bottle(k, K, BLUE, { neck: 0.22 }), 'translate(175 -30) rotate(24 256 256) scale(0.8) translate(64 64)');
+			const red = k.place(bottle(k, K, RED, { neck: 0.22 }), 'translate(0 70) scale(0.84) translate(48.8 48.8)');
 			return k.group([gold, blue, red], 10);
 		},
 	},

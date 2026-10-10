@@ -249,6 +249,7 @@ class Kit {
 		return {
 			sil: d.sil.map((x) => (typeof x === 'string' ? { d: x, t } : { ...x, t: t + ' ' + (x.t || '') })),
 			body: `<g transform="${t}">${d.body}</g>`,
+			over: d.over ? `<g transform="${t}">${d.over}</g>` : '',
 		};
 	}
 	// A dark separating edge drawn just before an item that sits in front of others in a pile (the refs keep a thin
@@ -260,7 +261,34 @@ class Kit {
 	group(items, sepW = 0) {
 		let body = '';
 		items.forEach((it, i) => { if (i && sepW) body += this.sep(it.sil, sepW); body += it.body; });
-		return { sil: items.flatMap((it) => it.sil), body };
+		return { sil: items.flatMap((it) => it.sil), body, over: items.map((it) => it.over || '').join('') };
+	}
+
+	// A chunky slab: the face polygon pts (screen, clockwise) pushed back by o = [ox, oy]; the walls that face the
+	// viewer are drawn darker, ribbed every `pitch` px, the face on top. Returns { sil, body, face }.
+	slab(pts, o, { face, wall, rib, pitch = 40, lightDir = [-0.4, -0.9] } = {}) {
+		const x = extrude(pts, o);
+		let g = '';
+		const sil = [poly(pts), poly(x.back)];
+		for (const w of x.walls) {
+			const quad = [w.p, w.q, w.qo, w.po];
+			sil.push(poly(quad));
+			const lit = -(w.n[0] * lightDir[0] + w.n[1] * lightDir[1]);
+			const col = lit > 0 ? mix(wall, '#ffffff', 0.25 * lit) : mix(wall, '#000000', -0.18 * lit);
+			g += this.path(poly(quad), col);
+			const L = Math.hypot(w.q[0] - w.p[0], w.q[1] - w.p[1]);
+			if (rib && L > pitch * 0.9) {
+				const n = Math.max(1, Math.round(L / pitch));
+				for (let i = 0; i < n; i++) {
+					const t0 = (i + 0.16) / n, t1 = (i + 0.84) / n;
+					const a = lerp(w.p, w.q, t0), b = lerp(w.p, w.q, t1), ao = lerp(w.po, w.qo, t0), bo = lerp(w.po, w.qo, t1);
+					g += `<path d="${poly([lerp(a, ao, 0.18), lerp(b, bo, 0.18), lerp(b, bo, 0.82), lerp(a, ao, 0.82)])}" fill="${lit > 0 ? mix(rib, '#ffffff', 0.2 * lit) : rib}" ${this.blur(0.6)}/>`;
+				}
+			}
+		}
+		const fd = poly(pts);
+		g += this.path(fd, face);
+		return { sil, body: g, face: fd, walls: x.walls, back: x.back };
 	}
 
 	// Build the final SVG for given framing: view = [x, y, size] square in working space; ow = outline band in
@@ -274,7 +302,9 @@ class Kit {
 		let inner = og(0, 0, ow * 0.94) + og(ow * 0.1, ow * 0.2, ow * 0.94) +
 			// the drawing stays inside the silhouette (a glint never pokes out over the outline)
 			`<clipPath id="${this.name}_silclip">${drawing.sil.map((x) => silPath(x, 'clip-rule')).join('')}</clipPath>` +
-			`<g clip-path="url(#${this.name}_silclip)">${drawing.body}</g>`;
+			`<g clip-path="url(#${this.name}_silclip)">${drawing.body}</g>` +
+			// drawing.over: drawn on top, not clipped (the refs' big sparkles sit over the outline)
+			(drawing.over || '');
 		// see-through holes (the rebirth ring's centre): an ink rim round each, then cut clean through
 		if (drawing.holes && drawing.holes.length) {
 			const hs = drawing.holes.map((h) => (typeof h === 'string' ? { d: h } : h));
@@ -369,6 +399,26 @@ function extrude(pts, o) {
 	}
 	return { back: pts.map((p) => [p[0] + o[0], p[1] + o[1]]), walls };
 }
+// A polygon with rounded corners, as points (for extrude): each corner replaced by an n-step arc of radius r.
+function roundPts(pts, r, n = 5) {
+	const out = [];
+	const m = pts.length;
+	for (let i = 0; i < m; i++) {
+		const p0 = pts[(i - 1 + m) % m], p1 = pts[i], p2 = pts[(i + 1) % m];
+		const v1 = [p0[0] - p1[0], p0[1] - p1[1]], v2 = [p2[0] - p1[0], p2[1] - p1[1]];
+		const l1 = Math.hypot(...v1), l2 = Math.hypot(...v2);
+		const k = Math.min(r, l1 / 2.2, l2 / 2.2);
+		const a = [p1[0] + (v1[0] / l1) * k, p1[1] + (v1[1] / l1) * k], b = [p1[0] + (v2[0] / l2) * k, p1[1] + (v2[1] / l2) * k];
+		for (let j = 0; j <= n; j++) {
+			const t = j / n;
+			// quadratic Bezier a -> p1 -> b
+			out.push([(1 - t) * (1 - t) * a[0] + 2 * (1 - t) * t * p1[0] + t * t * b[0], (1 - t) * (1 - t) * a[1] + 2 * (1 - t) * t * p1[1] + t * t * b[1]]);
+		}
+	}
+	return out;
+}
+module.exports.roundPts = roundPts;
+
 // Arc points from angle a0 to a1 (degrees, screen: 0 = right, 90 = down), radius r about c.
 function arc(c, r, a0, a1, step = 3) {
 	const n = Math.max(2, Math.ceil(Math.abs(a1 - a0) / step));
