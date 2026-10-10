@@ -5,14 +5,19 @@ return function(t)
  local Skins=require(RS.Shared.Config.Skins)
  local Schema=require(game.ServerScriptService.HoodServer.ProfileSchema)
  -- Brief 17: "Rebirth n -> n+1, Nx -> (N+1)x", a requirement that grows every time, the first one a few minutes of
- -- shooting at BAY 1. Brief 23: steeper (x2.1 a rebirth) for the steeper lane ladder: 2K, 8.5K, 26K ... 85M at 11.
+ -- shooting at BAY 1. Brief 24: the hit simulators' curve, quick first rebirths (the first ~2.5 min in, the second by
+ -- ~6 with BAY 2) and each one after taking longer: 600, 4.5K, 30K, 80K ... 400M at 13 (Balance.RebirthNeed), then x2 a
+ -- rebirth times the multiplier step.
  t.test('the rebirth multiplier is 1x, 2x, 3x ... and the labels read like the reference',function()
   t.expect.equal(R.multiplier(0),1);t.expect.equal(R.multiplier(1),2);t.expect.equal(R.multiplier(8),9)
   local a,b=R.labels(8);t.expect.equal(a,'Rebirth 8 → Rebirth 9');t.expect.equal(b,'9x → 10x')
   t.expect.equal(R.multiplier(-3),1);t.expect.equal(R.multiplier(0/0),1);t.expect.equal(R.multiplier('7'),1);t.expect.equal(R.multiplier(2.7),3)
  end)
  t.test('each rebirth needs more Power than the last, in round numbers',function()
-  t.expect.equal(R.need(0),2000);t.expect.equal(R.need(1),8500);t.expect.equal(R.need(2),26000);t.expect.equal(R.need(4),190000);t.expect.equal(R.need(11),85000000)
+  t.expect.equal(R.need(0),600);t.expect.equal(R.need(1),4500);t.expect.equal(R.need(2),30000);t.expect.equal(R.need(4),300000);t.expect.equal(R.need(11),70000000)
+  t.expect.equal(R.need(13),400000000);t.expect.equal(R.need(14),850000000);t.expect.equal(R.need(15),1800000000) -- (past the list: x2 x (n + 1) / n)
+  for n=0,#Balance.RebirthNeed-1 do t.expect.equal(R.need(n),Balance.RebirthNeed[n+1]) end
+  t.expect.equal(Balance.RebirthBase,R.need(0))
   local last=0
   for n=0,30 do
    local v=R.need(n);t.expect.truthy(v>last);last=v
@@ -20,12 +25,29 @@ return function(t)
    t.expect.truthy(#digits<=2)
   end
   t.expect.truthy(R.need(25)>Balance.MaxSafeValue/10) -- (the 1e12 Power cap ends the ladder long before MaxRebirths)
+  local top=R.need(R.Max);t.expect.truthy(top==top and top<math.huge and top>=R.need(30)) -- (no inf or NaN at the cap)
+ end)
+ t.test('the curve: quick first rebirths, then each need at least 1.5x the last',function()
+  -- (brief 24) the first rebirth is a minute of BAY 1 with the first gun (5 shots a second, x2); the rest of its ~2.5
+  -- minutes is the first four runs. Every need after it is at least 1.5x the last, so with the lane and gun steps each
+  -- rebirth takes longer than the one before (the pacing sim checks the times).
+  t.expect.truthy(R.need(0)<=60*5*2)
+  for n=1,30 do t.expect.truthy(R.need(n)>=1.5*R.need(n-1)) end
+ end)
+ t.test('every stage opens inside one rebirth cycle; the boss yard before the Champ Ring',function()
+  -- Recommended Power (Balance.StagePower): stages 1-4 before the first rebirth, 5 and 6 with 1 rebirth, then stage s
+  -- with s - 5 rebirths: above the need that cycle starts after, below the one it ends with.
+  local P=Balance.StagePower
+  for s=1,4 do t.expect.truthy(P[s]<R.need(0)) end
+  for s=5,6 do t.expect.truthy(P[s]>R.need(0) and P[s]<R.need(1)) end
+  for s=7,16 do local r=s-5;t.expect.truthy(P[s]>R.need(r-1) and P[s]<R.need(r)) end
+  t.expect.truthy(16-5<Skins.StationById.Ring.Rebirths) -- (the boss yard's cycle comes before the Ring's rebirth)
  end)
  t.test('you can rebirth at the need, not a point before; junk never rebirths',function()
-  t.expect.falsy(R.canRebirth(1999,0));t.expect.truthy(R.canRebirth(2000,0));t.expect.falsy(R.canRebirth(8499,1));t.expect.truthy(R.canRebirth(8500,1))
+  t.expect.falsy(R.canRebirth(599,0));t.expect.truthy(R.canRebirth(600,0));t.expect.falsy(R.canRebirth(4499,1));t.expect.truthy(R.canRebirth(4500,1))
   t.expect.falsy(R.canRebirth(0/0,0));t.expect.falsy(R.canRebirth(nil,0));t.expect.falsy(R.canRebirth('1e9',0))
   t.expect.falsy(R.canRebirth(1e300,R.Max))
-  t.expect.near(R.progress(1000,0),0.5);t.expect.equal(R.progress(1e9,0),1);t.expect.equal(R.progress(-5,0),0)
+  t.expect.near(R.progress(300,0),0.5);t.expect.equal(R.progress(1e9,0),1);t.expect.equal(R.progress(-5,0),0)
  end)
  t.test('a rebirth resets Power only: Cash, guns, shoes, stage clears, waves and goals stay',function()
   local d=Schema.new()

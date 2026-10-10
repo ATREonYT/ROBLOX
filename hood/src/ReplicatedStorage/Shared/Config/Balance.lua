@@ -1,5 +1,5 @@
 --!strict
--- World 1's economy in one place (brief 23; the pacing simulation is brief/out23/ECON/pacing23.luau).
+-- World 1's economy in one place (brief 24; the pacing simulation is brief/out24/ECON2/pacing24.luau).
 -- The loop (brief 23, a "run" game like the soldier and superhero games):
 --   Power only comes from shooting: at the ranges (the lanes) and at the stage goons. One shot pays
 --     ShotBase x the lane's Multiplier x the rebirth multiplier x the gun x the shoes (x the 2x Power pass, x a timed boost)
@@ -15,8 +15,17 @@
 -- The older fields (Wall*, MapThresholdGrowth, BaseRepPerSecond, ...) belong to the foundation's map list (Config/Maps)
 -- and RepMath; the game doesn't pace with them.
 
--- The pads' Cash, Stage 1 to the boss yard (16): +10 at Stage 1, growing every stage, round numbers.
-local PAD_CASH = { 10, 25, 45, 70, 100, 140, 200, 280, 380, 520, 700, 950, 1300, 1700, 2300, 3000 }
+-- The pads' Cash, Stage 1 to the boss yard (16): +10 at Stage 1, growing every stage, round numbers that read exactly on
+-- the pad's label (Format.compact). Brief 24: the early stages pay more (the Uzi, a box and the Shotgun come sooner), the
+-- late ones about as before.
+local PAD_CASH = { 10, 40, 70, 110, 160, 220, 300, 400, 520, 700, 900, 1200, 1500, 1900, 2400, 3000 }
+
+-- The rebirth ladder (brief 24, "the start moves quicker, then slows down, like the other games"): NEED[n + 1] is the
+-- Power rebirth n -> n + 1 needs. A focused free player's rebirths come at about 2:30, 5:40 (BAY 2 x4 opens), 9:00,
+-- 13:00 ... and each one takes longer than the last: 2.5, 3, 3.5, 4, 4.5, 6.5, 8, 10.5, 12, 15.5, 17, 24, 32, 47
+-- minutes (the pacing sim's table; a casual player's rise the same way, a little slower). The jumps follow the lanes: a rebirth that opens a lane (2, 4 ... 10) makes every
+-- shot several times bigger, so the next need jumps with it.
+local NEED = { 600, 4500, 30000, 80000, 300000, 500000, 2200000, 3500000, 12000000, 18000000, 40000000, 70000000, 180000000, 400000000 }
 
 local Balance = {
  -- The currency's name, in one place (brief 23: the reference's "Wins" are our Cash; the pads say "+10 Cash").
@@ -28,21 +37,23 @@ local Balance = {
  -- Shots (Shared/ShotRules).
  ShotBase = 1,
 
- -- Rebirths (Shared/RebirthRules): need(n) = RebirthBase x RebirthGrowth^n x multiplier(n), two significant figures;
- -- multiplier(n) = 1 + n x RebirthMultiplierPerLevel. So 2K, 8.5K, 26K, 75K, 190K, 490K, 1.2M, 2.9M, 7M, 16M, 37M, 85M
- -- ... (brief 23: steeper than before, for the steeper lane ladder x1 x4 x10 x20 x35 x50 x75). The first one about 6
- -- minutes in, each one after it 4 to 8 minutes up to rebirth 9, then longer (the pacing sim's table).
- RebirthBase = 2000, RebirthGrowth = 2.1, RebirthMultiplierPerLevel = 1,
+ -- Rebirths (Shared/RebirthRules.need): RebirthNeed[n + 1] (above: 600, 4.5K, 30K, 80K, 300K, 500K, 2.2M, 3.5M, 12M,
+ -- 18M, 40M, 70M, 180M, 400M); past the list each one is RebirthGrowth times the last, times the multiplier step
+ -- (n + 1) / n, two significant figures (850M, 1.8B, 3.9B ...). multiplier(n) = 1 + n x RebirthMultiplierPerLevel.
+ -- RebirthBase is the first need (the HUD's fallback and the foundation's map list, Config/Maps, read it).
+ RebirthNeed = NEED, RebirthBase = NEED[1], RebirthGrowth = 2, RebirthMultiplierPerLevel = 1,
  MaxRebirths = 1000, -- sanity cap for saves (need() passes the 1e12 Power cap long before this)
 
  -- Walk speed: Roblox's default 16, half a stud a second faster per rebirth, up to 24 (the old top look's speed).
  Walk = { Base = 16, PerRebirth = 0.5, Top = 24 },
 
  -- Stages 1-15 and the boss yard (16): each stage's Recommended Power (the gate's "Recommended Power: N" sign, and its
- -- goons' HP: EnemyRules.maxHp = HpShots x the kind's weight x this). Stages 1-5 come before the first rebirth; after
- -- that one new stage a rebirth cycle, at about half that cycle's rebirth need (so it opens mid-cycle): stage 5 + n at
- -- about need(n) / 2, the boss yard in cycle 11. The map builder reads this (code5/c_layout STAGE_POWER).
- StagePower = { 10, 60, 200, 500, 1100, 3500, 13000, 38000, 95000, 250000, 600000, 1500000, 3500000, 8000000, 19000000, 43000000 },
+ -- goons' HP: EnemyRules.maxHp = HpShots x the kind's weight x this). Brief 24: Stages 1-4 come before the first rebirth
+ -- (about 2 minutes), 5 and 6 with 1 rebirth (0.35 and 0.8 of that need), then one new stage a rebirth: stage s while you
+ -- have r = s - 5 rebirths, at max(half that rebirth's need, 1.2 x the need before it), so it opens in the middle of the
+ -- cycle and never falls to the Power the cycle before ended with. The boss yard comes with 11 rebirths, before the
+ -- Champ Ring (12). The map builder reads this (code5/c_layout STAGE_POWER).
+ StagePower = { 10, 60, 150, 350, 1600, 3600, 15000, 40000, 150000, 360000, 1100000, 2600000, 6000000, 14000000, 22000000, 48000000 },
  -- The pads (Shared/PadRules): the yellow Return pad's Cash per stage; the magenta pad pays PadRules.TenX times it.
  PadCash = PAD_CASH,
  -- Beating a stage's goons pays no Cash, the first time or any later run (WaveRules.reward / repeatReward): the pad at

@@ -27,6 +27,17 @@ return function(t)
 		for s = 1, PadRules.Stages do t.expect.equal(PadRules.reward(s, true), 10 * PadRules.reward(s, false)) end
 	end)
 
+	t.test('every pad label shows exactly what the pad pays (no rounding on the sign)', function()
+		local units = { K = 1e3, M = 1e6 }
+		for s = 1, PadRules.Stages do
+			for _, tenX in { false, true } do
+				local v = PadRules.reward(s, tenX)
+				local num, unit = string.match(PadRules.text(v), '^%+([%d%.]+)(%a?) ')
+				t.expect.equal(math.floor(tonumber(num) * (units[unit] or 1) + 0.5), v)
+			end
+		end
+	end)
+
 	t.test('junk stages are clamped, never an error or a nil', function()
 		t.expect.equal(PadRules.reward(0, false), PadRules.reward(1, false))
 		t.expect.equal(PadRules.reward(-3, true), PadRules.reward(1, true))

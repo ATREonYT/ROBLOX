@@ -27,10 +27,17 @@ function RebirthRules.multiplier(n: any): number
 	return 1 + RebirthRules.count(n) * Balance.RebirthMultiplierPerLevel
 end
 
--- Power needed for the rebirth from n to n + 1.
+-- Power needed for the rebirth from n to n + 1 (brief 24): Balance.RebirthNeed[n + 1] (600, 4.5K, 30K ... quick at
+-- first, each rebirth then taking longer than the last); past the list, each one RebirthGrowth times the last, times the
+-- multiplier step (n + 1) / n, in two significant figures. Capped at NeedCap (no inf or NaN for absurd counts).
+RebirthRules.NeedCap = 1e15
 function RebirthRules.need(n: any): number
 	local k = RebirthRules.count(n)
-	return Balance.round(Balance.RebirthBase * Balance.RebirthGrowth ^ k * RebirthRules.multiplier(k))
+	local list = Balance.RebirthNeed
+	if k < #list then return list[k + 1] end
+	local last = #list - 1
+	local v = list[#list] * Balance.RebirthGrowth ^ math.min(k - last, 60) * RebirthRules.multiplier(k) / RebirthRules.multiplier(last)
+	return Balance.round(math.min(v, RebirthRules.NeedCap))
 end
 
 function RebirthRules.canRebirth(power: any, n: any): boolean
