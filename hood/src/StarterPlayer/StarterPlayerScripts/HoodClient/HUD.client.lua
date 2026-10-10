@@ -18,6 +18,7 @@
 -- rebirth service: RebirthNeed, RebirthMultiplier; GunService: EquippedGun, GunMultiplier, OwnedGuns; ShoeService:
 -- ShoeMultiplier; StoreService: Pass_<Key>; GoalService: GoalStep) and the profile snapshot.
 -- Windows tell each other apart through PlayerGui's HoodWindow attribute: opening one closes the others.
+print('[HoodHUD] start')
 local Players = game:GetService('Players')
 local RS = game:GetService('ReplicatedStorage')
 local MarketplaceService = game:GetService('MarketplaceService')
@@ -999,3 +1000,4 @@ noticeGui.Parent = playerGui
 relayout()
 refreshCounters()
 refresh()
+print('[HoodHUD] ready') -- (StudioCheck.client reads this and the start line to tell where a broken HUD stopped)
