@@ -19,6 +19,7 @@
 --   open(tab) / openWorld()                 fire PlayerGui.HoodInventory.Open / HoodWorld.Open (the HUD's squares do)
 --   Layout, Tone                            the measured sizes (design px; 1 design px = 1.8 reference px) and colours
 --   splat, shoeIcon, gunIcon, boxIcon, icon, label, slot, divider, frame
+--   shoeModel, gunModel, boxModel           (brief 27) the items as their real 3D models (UIKit Kit.model3d)
 local InventoryKit = {}
 
 local Shared = script.Parent
@@ -254,8 +255,8 @@ InventoryKit.Color = {
 	plus = hex('121218'),
 }
 -- The rarity colour of a shoe's splat (Secret: the rainbow splat). Common's light grey reads as smoke on the dark
--- body: its splat is the reference's warm beige-grey (UICRITIC2 r2).
-InventoryKit.SplatColor = { Common = hex('B9AE9A') }
+-- body: its splat is a slate grey (brief 27; UICRITIC2 r2 had a beige-grey that hid white pairs).
+InventoryKit.SplatColor = { Common = hex('78808C') } -- (brief 27, CRITIC5 r1: dark enough that a white pair pops)
 function InventoryKit.rarityColor(id)
 	local s = Shoes.ById[id]
 	local r = s and Shoes.RarityById[s.Rarity] or Shoes.Rarities[1]
@@ -344,6 +345,30 @@ function InventoryKit.boxIcon(id, size, props)
 	return holder
 end
 
+-- (brief 27, the user: "in the inventory you see the actual 3d model, not a sketch") The ITEMS are their real 3D models:
+-- Kit.model3d in its studio for the kind (the shoe pair, the gun, the box), one look everywhere; a thing you don't own
+-- yet stays the black silhouette (Locked: the drawn PNG's, no viewport). props: ZIndex, Locked, Rarity (a shoe's: ShoeFX's
+-- glow behind it), Priority. The PNG icons above stay for anything that isn't an item (and for Shoes.client).
+function InventoryKit.shoeModel(id, size, props)
+	props = props or {}
+	local s = Shoes.ById[id]
+	local holder = Kit.model3d('shoe', tostring(id), size, { ZIndex = props.ZIndex, Locked = props.Locked, Rarity = props.Rarity ~= false and s and s.Rarity or nil, Priority = props.Priority })
+	holder.Name = 'Shoe_' .. tostring(id)
+	return holder
+end
+function InventoryKit.gunModel(id, size, props)
+	props = props or {}
+	local holder = Kit.model3d('gun', tostring(id), size, { ZIndex = props.ZIndex, Locked = props.Locked, Priority = props.Priority, Fill = props.Fill, YWeight = props.YWeight, PreviewKind = props.PreviewKind })
+	holder.Name = 'Gun_' .. tostring(id)
+	return holder
+end
+function InventoryKit.boxModel(id, size, props)
+	props = props or {}
+	local holder = Kit.model3d('box', tostring(id), size, { ZIndex = props.ZIndex, Locked = props.Locked, Priority = props.Priority })
+	holder.Name = 'Box_' .. tostring(id)
+	return holder
+end
+
 -- Any IconModels icon, the first of the ids it can show (Kit.iconOr), with the silhouette option.
 function InventoryKit.icon(ids, size, props)
 	props = props or {}
@@ -354,7 +379,7 @@ end
 -- One item of the reference's rows: the splat, the item over it, its value low over its bottom edge ("x8"; ours
 -- "+15%"), and a count badge at the top right ("x2"). props: Name, Icon (a GuiObject, `Icon` px square), Color / Kind
 -- (the splat), Value, ValueColor, Badge, BadgeColor, Position, AnchorPoint, LayoutOrder, ZIndex, Locked, Dim (a faint
--- splat: an empty slot). Returns holder, hit.
+-- splat: an empty slot), Under (brief 27: a frame for the splat, under a row of 3D items). Returns holder, hit.
 function InventoryKit.slot(props)
 	local S = L.Slot
 	local z = props.ZIndex or 1
@@ -363,10 +388,20 @@ function InventoryKit.slot(props)
 	-- under the value; each one turned and nudged its own way, from the slot's order. ICONS' splat.png's cloud covers
 	-- 0.72 x 0.80 of its square, centred at 0.52 / 0.46: hence SplatDX / SplatDY)
 	local j = props.Jitter or props.LayoutOrder or 0
-	local jx, jy = ((j * 37) % 9) - 4 + (S.SplatDX or 0), ((j * 53) % 5) - 2
+	-- (brief 27, CRITIC5 r1) the splat's cloud centred on the item (the texture's cloud sits at 0.52 / 0.46 of its square);
+	-- only its turn changes slot to slot
+	local size = props.SplatSize or S.Splat
 	if props.Splat ~= false then
-		local splat = InventoryKit.splat(props.SplatSize or S.Splat, props.Color, { Kind = props.Kind, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(S.W / 2 + jx, S.CY + (S.SplatDY or 0) + jy), ZIndex = z, Transparency = props.Dim and 0.7 or nil, Rotation = props.SplatRotation or (((j * 71) % 50) - 25) })
-		splat.Parent = holder
+		local splat = InventoryKit.splat(size, props.Color, { Kind = props.Kind, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(S.W / 2 - 0.02 * size, S.CY + 0.04 * size), ZIndex = z, Transparency = props.Dim and 0.7 or nil, Rotation = props.SplatRotation or (((j * 71) % 50) - 25) })
+		-- (brief 27) props.Under: a layer under the row of 3D items that sits over the slots (Kit.model3dRow): the splat goes
+		-- there, at this slot's place, so it stays under the item while the slot's labels stay over it
+		if props.Under and props.Position then
+			local p0 = props.Position
+			splat.Position = UDim2.fromOffset(p0.X.Offset + splat.Position.X.Offset, p0.Y.Offset + splat.Position.Y.Offset)
+			splat.Parent = props.Under
+		else
+			splat.Parent = holder
+		end
 	end
 	if props.Icon then
 		props.Icon.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -391,9 +426,11 @@ end
 -- Dims a slot's item and labels (a search that doesn't match it): or puts them back.
 function InventoryKit.dim(holder, on)
 	for _, d in holder:GetDescendants() do
-		if d:IsA('ImageLabel') then
+		if d:IsA('ImageLabel') or d:IsA('ViewportFrame') then
+			-- (brief 27: a 3D item's viewport fades the same way; PreviewT tells the offline shot tools)
 			if d:GetAttribute('BaseT') == nil then d:SetAttribute('BaseT', d.ImageTransparency) end
 			d.ImageTransparency = on and 0.75 or d:GetAttribute('BaseT')
+			if d:IsA('ViewportFrame') then d:SetAttribute('PreviewT', on and 0.75 or nil) end
 		elseif d:IsA('Frame') and d:FindFirstAncestor('Flat') then
 			-- (brief 24) a flat stand-in's shapes and their outlines
 			if d:GetAttribute('BaseT') == nil then d:SetAttribute('BaseT', d.BackgroundTransparency) end

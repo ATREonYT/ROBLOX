@@ -68,13 +68,13 @@ return function(t)
 			table.insert(titles, s.Title)
 		end
 		t.expect.equal(table.concat(ids, ','), 'Box,Gamepass,Boost,Cash,Power')
-		t.expect.equal(table.concat(titles, ','), '~Shoe Boxes~,~Gamepass~,~Boosts~,~Cash Packs~,~Power Packs~')
+		t.expect.equal(table.concat(titles, ','), 'Exclusive,Gamepasses,Boosts,Cash Packs,Power Packs') -- (brief 27: video A's plain titles)
 		local function honest(text)
 			t.expect.truthy(type(text) ~= 'string' or not string.find(string.lower(text), 'limited', 1, true))
 		end
 		for _, s in Products.Sections do honest(s.Title) end
 		for _, e in Products.Catalog do
-			for _, field in { 'Title', 'Detail', 'Big', 'Offer', 'Sticker' } do honest(e[field]) end
+			for _, field in { 'Title', 'Detail', 'Big', 'Offer', 'Sticker', 'Sub' } do honest(e[field]) end
 			for _, line in e.Lines or {} do honest(line) end
 		end
 	end)
@@ -126,6 +126,34 @@ return function(t)
 			end
 		end
 		t.expect.equal(Products.boxOpen('TinyCash'), nil)
+	end)
+
+	t.test('(brief 27) the struck price is the real one-by-one price and SAVE n% is computed from it', function()
+		local seen = 0
+		for _, e in Products.Catalog do
+			local whole, pct = Products.savings(e.Key)
+			if e.Section == 'Box' and (e.Count or 1) > 1 then
+				local single
+				for _, s in Products.Catalog do if s.Section == 'Box' and s.Box == e.Box and (s.Count or 1) == 1 then single = s end end
+				t.expect.equal(whole, e.Count * single.Price)
+				t.expect.equal(whole, e.WasPrice) -- (the config's struck price agrees)
+				t.expect.equal(pct, math.floor(100 * (1 - e.Price / whole) + 0.5))
+				seen += 1
+			elseif type(e.Bundle) == 'table' then
+				local sum = 0
+				for _, part in e.Bundle do sum += Products.ByKey[part].Price end
+				t.expect.equal(whole, sum)
+				t.expect.equal(whole, e.WasPrice)
+				t.expect.equal(pct, math.floor(100 * (1 - e.Price / sum) + 0.5))
+				seen += 1
+			else
+				t.expect.equal(whole, nil) -- (no saving claimed on anything else)
+			end
+		end
+		t.expect.equal(seen, 5)
+		t.expect.equal(select(2, Products.savings('ShoeBoxExclusive8')), 24)
+		t.expect.equal(select(2, Products.savings('ShoeBoxExclusive3')), 16)
+		t.expect.equal(select(2, Products.savings('BoostBundle')), 19)
 	end)
 
 	t.test('the Boost Bundle: two 2x + one 3x, WasPrice = the sum of the parts, a lower price', function()

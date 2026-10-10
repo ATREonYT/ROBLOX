@@ -19,6 +19,9 @@
 -- (ShoeService), OwnedGuns / EquippedGun (GunService), Pass_<Key>, BoostQueue, PowerBoost, BoostEnds, PartyEnds
 -- (StoreService). Sets PlayerGui `ShoesNew` (pairs unboxed since you last looked: the HUD's red "!") and `HoodWindow`
 -- = 'Inventory' while open (one window at a time). Look and rules: Shared/InventoryKit.
+-- (brief 27) Every ITEM is its real 3D model (InventoryKit.shoeModel / gunModel / boxModel: UIKit's Kit.model3d studio):
+-- the pairs, the guns and the boxes; one you point at (or tap) turns slowly, and the gun in your hand always does. Things
+-- you don't own yet stay black silhouettes; HUD and menu pictures (tabs, passes, potions) stay the drawn PNGs.
 local Players = game:GetService('Players')
 local RS = game:GetService('ReplicatedStorage')
 local MarketplaceService = game:GetService('MarketplaceService')
@@ -62,6 +65,13 @@ local function myRack()
 	return ShoeRules.fromAttributes(player:GetAttribute('ShoesOwned'), player:GetAttribute('ShoesEquipped'), player:GetAttribute('ShoesOpened'))
 end
 local function shoeName(id) local s = Shoes.ById[id]; return s and s.Name or tostring(id) end
+-- Odds as people read them: "62%", "9.5%", "0.45%", "0.5%" (no trailing zeros).
+local function pctText(chance)
+	local t = string.format('%.2f', tonumber(chance) or 0)
+	t = string.gsub(t, '0+$', '')
+	t = string.gsub(t, '%.$', '')
+	return t .. '%'
+end
 -- Pairs that can be on at once: ShoeService's ShoesMax (4 with the +1 Shoe Slot pass), else the rule's 3.
 local function maxEquipped()
 	local m = player:GetAttribute('ShoesMax')
@@ -126,6 +136,7 @@ end
 
 ---------------------------------------------------------------------------------------------- the page
 local page -- the tab's content, rebuilt when what it shows changes
+local gridRows -- (below)
 local function newPage()
 	if page then
 		for _, d in page:GetDescendants() do
@@ -148,19 +159,64 @@ local function rowSlot(props, i, n)
 	holder.Parent = page
 	return holder, hit
 end
--- The grid under the second line: a scrolling grid, left-aligned under the Equipped row's first column.
-local function grid(top, firstX, centre, pitch)
-	local y = top or L.GridY
+-- (brief 27) A tapped item turns for a moment (as long as its name shows); pointing at one turns it too. A row of items
+-- shares one viewport (Kit.model3dRow): item i of it.
+local function spinFor(model, seconds, i)
+	if i then
+		Kit.model3dItemActive(model, i, 'tap', true)
+		task.delay(seconds or 1.6, function() Kit.model3dItemActive(model, i, 'tap', false) end)
+		return
+	end
+	Kit.model3dActive(model, 'tap', true)
+	task.delay(seconds or 1.6, function() Kit.model3dActive(model, 'tap', false) end)
+end
+local ITEM = 124 -- (a 3D item's cell in a slot: the model fills ~80% of it, centred on the splat)
+-- One 3D row for shoes (one viewport for the whole row), kept while its content is the same.
+local function shoeRow(key, ids, flags)
+	return cached('row:' .. key .. ':' .. table.concat(ids, ',') .. ':' .. (flags or ''), function()
+		local items = {}
+		for _, id in ids do
+			local s = Shoes.ById[id]
+			table.insert(items, { Id = id, Rarity = s and s.Rarity, Locked = flags and string.find(flags, '|' .. id .. '!', 1, true) ~= nil })
+		end
+		return Kit.model3dRow('shoe', items, ITEM, L.Pitch, { ZIndex = 26 })
+	end)
+end
+-- The grid under the second line, left-aligned under the Equipped row's first column (UICRITIC2 r1). (brief 27) Built as
+-- rows, each row's pairs in ONE 3D viewport (Kit.model3dRow): a scrolling list of row
+-- frames, each with its splats (Under), its 3D row and its slots at the grid's columns. Returns the list and
+-- rowOf(i) -> the row frame, its 3D row, the item's column in it, the slot's Position in the row frame.
+gridRows = function(entries)
+	local y = L.GridY
 	local left = L.Outline + 6
+	local gw = L.W - 2 * left
 	local g = Kit.new('ScrollingFrame', {
-		Name = 'Grid', BackgroundTransparency = 1, BorderSizePixel = 0, Position = px(L.Outline + 6, y), Size = px(L.W - 2 * (L.Outline + 6), L.H - y - L.Outline - 4), ZIndex = 25,
+		Name = 'Grid', BackgroundTransparency = 1, BorderSizePixel = 0, Position = px(left, y), Size = px(gw, L.H - y - L.Outline - 4), ZIndex = 25,
 		ScrollBarThickness = 6, ScrollBarImageColor3 = Color3.new(1, 1, 1), ScrollingDirection = Enum.ScrollingDirection.Y,
 		AutomaticCanvasSize = Enum.AutomaticSize.Y, CanvasSize = UDim2.new(), Parent = page,
 	})
-	-- (UICRITIC2 r1: the grid starts under the Equipped row's first column, left-aligned like a list)
-	Kit.new('UIGridLayout', { CellSize = px(S.W, S.H), CellPadding = px((pitch or L.Pitch) - S.W, 4), SortOrder = Enum.SortOrder.LayoutOrder, HorizontalAlignment = Enum.HorizontalAlignment.Left, Parent = g })
-	Kit.new('UIPadding', { PaddingTop = UDim.new(0, math.max(0, (centre or 402) - S.CY - y)), PaddingBottom = UDim.new(0, 8), PaddingLeft = UDim.new(0, math.max(0, (firstX or rowX(1, ShoeRules.MaxEquipped + 1)) - S.W / 2 - left)), Parent = g })
-	return g
+	Kit.new('UIListLayout', { Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder, Parent = g })
+	Kit.new('UIPadding', { PaddingTop = UDim.new(0, math.max(0, 402 - S.CY - y)), PaddingBottom = UDim.new(0, 8), Parent = g })
+	local padLeft = math.max(0, rowX(1, ShoeRules.MaxEquipped + 1) - S.W / 2 - left)
+	local cols = math.max(1, math.floor((gw - 8 - padLeft - S.W) / L.Pitch) + 1)
+	local rows = {}
+	for r = 1, math.ceil(#entries / cols) do
+		local ids = {}
+		for c = 1, cols do
+			local e = entries[(r - 1) * cols + c]
+			if e then table.insert(ids, e.Id) end
+		end
+		local frame = blank({ Name = 'Row' .. r, Size = px(gw - 8, S.H), LayoutOrder = r, ZIndex = 25, Parent = g })
+		blank({ Name = 'Under', Size = UDim2.fromScale(1, 1), ZIndex = 25, Parent = frame })
+		local row = shoeRow('grid' .. r, ids)
+		row.Position = px(padLeft + S.W / 2 - ITEM / 2, S.CY - ITEM / 2)
+		row.Parent = frame
+		rows[r] = { frame, row }
+	end
+	return g, function(i)
+		local r, c = math.floor((i - 1) / cols) + 1, (i - 1) % cols + 1
+		return rows[r][1], rows[r][2], c, px(padLeft + (c - 1) * L.Pitch, 0)
+	end
 end
 local function emptyLine(text, y)
 	local t = label({ Name = 'Empty', Text = text, TextSize = 26, StrokeThickness = 3, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(L.W / 2, y), Size = px(L.W - 80, 70), ZIndex = 27, Parent = page })
@@ -204,6 +260,15 @@ local function paintShoes()
 	IK.titleLine(page, 'Equipped  ' .. #on .. '/' .. max, L.TitleY, { ZIndex = 26 })
 	local n = max + (plusShown and 1 or 0)
 	local matchedOn = 0
+	-- (brief 27) the pairs on as ONE 3D row (one viewport), between their splats (the Under layer) and their labels
+	local under = blank({ Name = 'Under', Size = px(L.W, L.H), ZIndex = 25, Parent = page })
+	local onRow
+	if #on > 0 then
+		local nn = math.max(n, ShoeRules.MaxEquipped + 1)
+		onRow = shoeRow('on', on)
+		onRow.Position = px(rowX(1, nn) - ITEM / 2, L.RowY - ITEM / 2)
+		onRow.Parent = page
+	end
 	for i = 1, max do
 		local id = on[i]
 		if id then
@@ -211,13 +276,15 @@ local function paintShoes()
 			local match = IK.matches(shoeName(id), state.Query)
 			if match then matchedOn += 1 end
 			local holder, hit = rowSlot(shoeSlot(id, {
-				Name = 'On' .. i, Value = ShoeRules.bonusText(Shoes.bonus(id)), Dim = not match,
-				Icon = cached('on' .. i .. ':' .. id, function() return IK.shoeIcon(id, S.Icon, { ZIndex = 27 }) end),
+				Name = 'On' .. i, Value = ShoeRules.bonusText(Shoes.bonus(id)), Dim = not match, Under = under, ZIndex = 27,
 			}), i, n)
 			IK.dim(holder, not match)
+			Kit.model3dItemDim(onRow, i, not match)
+			Kit.model3dItemHover(onRow, i, hit)
 			local show = nameTag(holder, hit, shoeName(id))
 			hit.Activated:Connect(function()
 				show()
+				spinFor(onRow, nil, i)
 				press(holder)
 				if state.Delete then
 					say("It's on!")
@@ -241,7 +308,7 @@ local function paintShoes()
 	IK.divider(page, { Name = 'Line2', Fade = 'both', Position = px(L.Outline + 6, L.Line2Y), Size = px(L.W - 2 * (L.Outline + 6), 7), ZIndex = 25 })
 	local all = IK.stack(rack)
 	local list = IK.search(all, state.Query)
-	local g = grid()
+	local g, rowOf = gridRows(list)
 	if ShoeRules.count(rack) == 0 then
 		emptyLine('No shoes yet!', 410)
 	elseif #list == 0 and matchedOn == 0 and state.Query ~= '' then
@@ -249,6 +316,7 @@ local function paintShoes()
 	end
 	for order, e in list do
 		local id = e.Id
+		local rowFrame, row, col, slotPos = rowOf(order)
 		local canRecycle = ShoeRules.canRecycle(rack, id)
 		local value = ShoeRules.bonusText(Shoes.bonus(id))
 		local valueColor
@@ -262,10 +330,10 @@ local function paintShoes()
 			end
 		end
 		local holder, hit = IK.slot(shoeSlot(id, {
-			Name = id, LayoutOrder = order, Value = value, ValueColor = valueColor, Badge = 'x' .. e.Copies, ZIndex = 26,
-			Icon = cached('grid:' .. id, function() return IK.shoeIcon(id, S.Icon, { ZIndex = 27 }) end),
+			Name = id, LayoutOrder = order, Value = value, ValueColor = valueColor, Badge = 'x' .. e.Copies, ZIndex = 27, Position = slotPos, Under = rowFrame:FindFirstChild('Under'),
 		}))
-		holder.Parent = g
+		holder.Parent = rowFrame
+		Kit.model3dItemHover(row, col, hit)
 		if stickers[id] then
 			label({ Name = 'New', Text = 'NEW!', TextSize = 20, TextColor3 = hex('7CFF4F'), AnchorPoint = Vector2.new(0.5, 0.5), Position = px(30, 18), Size = px(60, 24), Rotation = -10, ZIndex = 35, Parent = holder })
 		end
@@ -277,6 +345,7 @@ local function paintShoes()
 		local show = nameTag(holder, hit, shoeName(id))
 		hit.Activated:Connect(function()
 			show()
+			spinFor(row, nil, col)
 			press(holder)
 			if state.Delete then
 				if not canRecycle then
@@ -325,22 +394,33 @@ local function paintIndex()
 		if #shown > 0 then
 			local section = blank({ Name = row.Box.Id, Size = px(innerW, 214), LayoutOrder = order, ZIndex = 25, Parent = list })
 			IK.titleLine(section, row.Box.Name .. '  ' .. row.Owned .. '/' .. row.Total, 30, { Width = innerW, ZIndex = 26, TextSize = 26, LineInset = 4 })
+			-- (brief 27) the box's shoes as ONE 3D row: yours in colour, the rest black silhouettes of the real pairs
+			local under = blank({ Name = 'Under', Size = UDim2.fromScale(1, 1), ZIndex = 25, Parent = section })
+			local ids, dark = {}, ''
+			for _, s in shown do
+				table.insert(ids, s.Id)
+				if not s.Owned then dark ..= '|' .. s.Id .. '!' end
+			end
+			local models = shoeRow('idx', ids, dark)
+			models.Position = px(innerW / 2 + (1 - (#shown + 1) / 2) * L.Pitch - ITEM / 2, 50 + S.CY - ITEM / 2)
+			models.Parent = section
 			for i, s in shown do
 				local id = s.Id
 				local color, rainbow = IK.rarityColor(id)
 				local holder, hit = IK.slot({
 					Name = id, Color = s.Owned and color or hex('596273'), Kind = s.Owned and rainbow and 'rainbow' or nil, Dim = not s.Owned,
 					Value = s.Owned and ShoeRules.bonusText(Shoes.bonus(id)) or '???', ValueColor = not s.Owned and hex('B8C0CC') or nil, ValueSize = 30,
-					Badge = s.Copies > 0 and ('x' .. s.Copies) or nil, BadgeSize = 28, ZIndex = 26,
-					Icon = cached('idx:' .. id .. (s.Owned and '' or ':dark'), function() return IK.shoeIcon(id, S.Icon, { ZIndex = 27, Locked = not s.Owned }) end),
+					Badge = s.Copies > 0 and ('x' .. s.Copies) or nil, BadgeSize = 28, ZIndex = 27, Under = under,
 					Position = px(innerW / 2 + (i - (#shown + 1) / 2) * L.Pitch - S.W / 2, 50),
 				})
 				holder.Parent = section
+				if s.Owned then Kit.model3dItemHover(models, i, hit) end
 				local show = nameTag(holder, hit, s.Owned and shoeName(id) or '???')
 				hit.Activated:Connect(function()
 					show()
+					if s.Owned then spinFor(models, nil, i) end
 					press(holder)
-					if not s.Owned then say(row.Box.Name .. '  ' .. ShoeRules.chanceText(ShoeRules.chanceOf(id, player:GetAttribute('Pass_Lucky') == true))) end
+					if not s.Owned then say(row.Box.Name .. '  ' .. pctText(ShoeRules.chanceOf(id, player:GetAttribute('Pass_Lucky') == true))) end
 				end)
 			end
 		end
@@ -356,6 +436,7 @@ end
 -- guns: buying stays at the ARMORY (one line says so while the Rusty Pistol is all you have).
 local gunView -- the gun shown: the one in your hand, or the one just picked while the server equips it
 local shownGun -- (the gun the page showed last: a new one pops in)
+local spinning -- (brief 27: the big 3D gun that turns, the selected item)
 local function ownedGuns()
 	local list = {}
 	for _, e in IK.guns(player:GetAttribute('OwnedGuns'), player:GetAttribute('EquippedGun')) do
@@ -386,10 +467,14 @@ local function paintGuns()
 	IK.titleLine(page, 'Equipped', L.TitleY, { ZIndex = 26 })
 	-- the gun, big, over its splat
 	IK.splat(math.floor(GUN.Size * 1.3), gun.Color, { AnchorPoint = Vector2.new(0.5, 0.5), Position = px(cx - 3, GUN.Y + 8), Rotation = -8, ZIndex = 26 }).Parent = page
-	local art = cached('gunBig:' .. gun.Id, function() return IK.gunIcon(gun.Id, GUN.Size, { ZIndex = 27 }) end)
+	-- (brief 27) the gun in your hand as its real 3D model, slowly turning (the selected item)
+	local art = cached('gunBig:' .. gun.Id, function() return IK.gunModel(gun.Id, GUN.Size, { ZIndex = 27, Priority = 10, Fill = 0.92, YWeight = 1.4, PreviewKind = 'gunbig' }) end)
 	art.AnchorPoint = Vector2.new(0.5, 0.5)
 	art.Position = px(cx, GUN.Y)
 	art.Parent = page
+	if spinning and spinning ~= art then Kit.model3dActive(spinning, 'select', false) end
+	spinning = art
+	Kit.model3dActive(art, 'select', true)
 	if shownGun ~= gun.Id then
 		if shownGun then Motion.pop(art, 0.12) end
 		shownGun = gun.Id
@@ -422,13 +507,14 @@ local function paintGuns()
 		local x = cx + (i - (#list + 1) / 2) * GUN.Pitch
 		local slab = IK.block({ Name = 'Own_' .. e.Gun.Id, Tone = on and 'tabOn' or 'tabOff', Width = GUN.Slot, Height = GUN.Slot, Outline = on and 4 or 3, RimWidth = 3, StudShade = on and 0.75 or 0.55, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(x, GUN.StripY), ZIndex = 27 })
 		slab.Parent = page
-		local ic = cached('gunStrip:' .. e.Gun.Id, function() return IK.gunIcon(e.Gun.Id, GUN.Slot - 10, { ZIndex = 30 }) end)
+		local ic = cached('gunStrip:' .. e.Gun.Id, function() return IK.gunModel(e.Gun.Id, GUN.Slot - 6, { ZIndex = 30 }) end)
 		ic.AnchorPoint = Vector2.new(0.5, 0.5)
 		ic.Position = UDim2.fromScale(0.5, 0.5)
 		ic.Parent = slab
-		local tag = label({ Name = 'Mult', Text = 'x' .. e.Gun.Multiplier, TextSize = 20, StrokeThickness = 3, AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, 4, 1, 6), Size = px(60, 24), TextXAlignment = Enum.TextXAlignment.Right, ZIndex = 34, Parent = slab })
+		local tag = label({ Name = 'Mult', Text = 'x' .. e.Gun.Multiplier, TextSize = 28, StrokeThickness = 3.5, AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, 6, 1, 10), Size = px(70, 32), TextXAlignment = Enum.TextXAlignment.Right, ZIndex = 34, Parent = slab })
 		tag.TextColor3 = on and hex('FFE24A') or Color3.new(1, 1, 1)
 		local hit = Kit.new('TextButton', { Name = 'Hit', Text = '', AutoButtonColor = false, BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 36, Parent = slab })
+		Kit.model3dHover(ic, hit)
 		local show = nameTag(slab, hit, e.Gun.Name)
 		hit.Activated:Connect(function()
 			show()
@@ -591,10 +677,10 @@ local function paintBoxes()
 			card.LayoutOrder = order
 			card.Parent = list
 			local body = card.Body
-			cached('boxart:' .. box.Id, function() return IK.boxIcon(box.Id, 150, { ZIndex = 30 }) end).Parent = body
-			local art = body:FindFirstChild('Box_' .. box.Id)
+			local art = cached('boxart:' .. box.Id, function() return IK.boxModel(box.Id, 156, { ZIndex = 30, Priority = 1 }) end)
+			art.Parent = body
 			art.AnchorPoint = Vector2.new(0, 0.5)
-			art.Position = px(-6, CARD_H / 2 + 6)
+			art.Position = px(-10, CARD_H / 2 + 8) -- (a little low: a tall topper rises into the gap above, not onto the card before)
 			label({ Name = 'Title', Text = box.Name, TextSize = 34, StrokeThickness = 4.5, TextXAlignment = Enum.TextXAlignment.Left, Position = px(150, 4), Size = px(400, 44), ZIndex = 31, Parent = body })
 			-- the price: green Robux button (a Robux box) or the Cash price (a Cash box: open it on the dais)
 			if box.Robux then
@@ -616,30 +702,43 @@ local function paintBoxes()
 			-- its shoes over their splats with their chances (an unowned Secret stays a "???" silhouette)
 			local n = #box.Shoes
 			local chances = chancesOf(box)
+			local x0 = 150 + (6 - n) * 59 -- (cell i at x0 + (i - 1) * 118, 104 x 120; the shoe centred 52, 46 in it)
+			-- (brief 27) the shoes as ONE 3D row over their splats (an unowned Secret is the real pair's black silhouette)
+			local ids, dark, items = {}, '', {}
+			for _, id in box.Shoes do
+				local shoe = Shoes.ById[id]
+				local hidden = shoe.Rank == #Shoes.Rarities and ShoeRules.copies(rack, id) == 0
+				table.insert(ids, id)
+				if hidden then dark ..= '|' .. id .. '!' end
+				table.insert(items, { Id = id, Rarity = shoe.Rarity, Locked = hidden })
+			end
+			local models = cached('boxrow:' .. table.concat(ids, ',') .. dark, function() return Kit.model3dRow('shoe', items, 96, 118, { ZIndex = 31 }) end)
+			models.Position = px(x0 + 52 - 48, 50 + 46 - 48)
+			models.Parent = body
 			for i, id in box.Shoes do
 				local shoe = Shoes.ById[id]
-				local owned = ShoeRules.copies(rack, id) > 0
-				local hidden = shoe.Rank == #Shoes.Rarities and not owned
+				local hidden = items[i].Locked
 				local color, rainbow = IK.rarityColor(id)
-				local cell = blank({ Name = id, Size = px(104, 120), Position = px(150 + (i - 1) * 118 + (6 - n) * 59, 50), ZIndex = 30, Parent = body })
+				local cx = x0 + (i - 1) * 118
 				-- (the splat's cloud ~1.2x the shoe, centred on it a little low; see InventoryKit.slot)
-				IK.splat(112, color, { Kind = rainbow and 'rainbow' or nil, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(50, 54), ZIndex = 30, Rotation = i * 37 % 40 - 20 }).Parent = cell
-				local ic = cached('boxshoe:' .. id .. (hidden and ':dark' or ''), function() return IK.shoeIcon(id, 76, { ZIndex = 31, Locked = hidden, Outline = true }) end)
-				ic.AnchorPoint = Vector2.new(0.5, 0.5)
-				ic.Position = px(52, 46)
-				ic.Parent = cell
-				label({ Name = 'Chance', Text = ShoeRules.chanceText(chances[i] or 0), TextSize = 24, StrokeThickness = 3, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(52, 98), Size = px(110, 28), ZIndex = 33, Parent = cell })
-				local hit = Kit.new('TextButton', { Name = 'Hit', Text = '', AutoButtonColor = false, BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 36, Parent = cell })
-				local tag = label({ Name = 'NameTag', Text = hidden and '???' or shoe.Name, TextSize = 16, StrokeThickness = 2.5, AnchorPoint = Vector2.new(0.5, 1), Position = px(52, 4), Size = px(150, 20), ZIndex = 40, Parent = cell })
+				-- (centred under the pair: the cloud ~1.15x its width; the texture's cloud sits at 0.52 / 0.46 of its square)
+				local sz = math.floor(96 * Kit.Studio.shoe.Fill * 1.15 / 0.72 + 0.5)
+				IK.splat(sz, color, { Kind = rainbow and 'rainbow' or nil, On = box.Color, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(cx + 52 - 0.02 * sz, 50 + 46 + 0.04 * sz), ZIndex = 30, Rotation = i * 37 % 40 - 20 }).Parent = body
+				label({ Name = 'Chance' .. i, Text = pctText(chances[i] or 0), TextSize = 24, StrokeThickness = 3, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(cx + 52, 50 + 98), Size = px(110, 28), ZIndex = 33, Parent = body })
+				local hit = Kit.new('TextButton', { Name = 'Hit_' .. id, Text = '', AutoButtonColor = false, BackgroundTransparency = 1, Position = px(cx, 50), Size = px(104, 120), ZIndex = 36, Parent = body })
+				if not hidden then Kit.model3dItemHover(models, i, hit) end
+				local tag = label({ Name = 'NameTag', Text = hidden and '???' or shoe.Name, TextSize = 16, StrokeThickness = 2.5, AnchorPoint = Vector2.new(0.5, 1), Position = px(cx + 52, 54), Size = px(150, 20), ZIndex = 40, Parent = body })
 				tag.Visible = false
 				hit.MouseEnter:Connect(function() tag.Visible = true end)
 				hit.MouseLeave:Connect(function() tag.Visible = false end)
 				hit.Activated:Connect(function()
 					tag.Visible = true
+					if not hidden then spinFor(models, nil, i) end
 					task.delay(1.6, function() if tag.Parent then tag.Visible = false end end)
 				end)
 			end
 			local cardHit = Kit.new('TextButton', { Name = 'CardHit', Text = '', AutoButtonColor = false, BackgroundTransparency = 1, Size = px(150, CARD_H), ZIndex = 35, Parent = card })
+			Kit.model3dHover(art, cardHit)
 			cardHit.Activated:Connect(function()
 				press(card)
 				if box.Robux then

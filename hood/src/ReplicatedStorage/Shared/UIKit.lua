@@ -809,6 +809,899 @@ function Kit.setLocked(holder, locked)
 	end
 end
 
+---------------------------------------------------------------------------------------------- 3D items (brief 27)
+-- The user (brief 27): "in the inventory you see the actual 3d model, not a sketch ... make them presentable ... fine
+-- tuned". ITEMS show as their real part-built models (Shared/Models: a ShoeModels pair, GunModels, BoxModels) in a
+-- ViewportFrame; the HUD and menu ICONS (buttons, potions, cash, passes, tabs) stay the drawn PNGs (Kit.icon3d).
+--   Kit.model3d(kind, id, size, opts) -> holder   kind 'shoe' | 'gun' | 'box'; size a number (square) or a Vector2.
+--       opts: Name, Position, AnchorPoint, ZIndex, LayoutOrder, Locked (a black silhouette of the same model: a thing you
+--       don't own yet), Rarity (a shoe's rarity: ShoeFX's glow behind it from Epic up, rays from Legendary up), Fill (how
+--       much of the item's body fills the cell; the studio's by default), MaxReach (how far the whole model may reach,
+--       share of the cell), Overflow (the viewport's size over the cell's: the studio's or Kit.Model3DOverflow by
+--       default, room for a decoration past the cell's edge), Whole (framed on the whole model, decorations too, so it
+--       fits a viewport the size of its cell: the Store's hero boxes), Pitch / Fov (the cell's own camera: the hero
+--       boxes look down a little more, nearly flat-on, so a halo reads as a ring), YWeight (a gun's height weight: the
+--       Guns tab's gun in hand), Priority (higher gets a live viewport first).
+--   Kit.model3dActive(holder, reason, on)   the gentle spin and bob while any reason ('hover', 'select', ...) is on
+--   Kit.model3dHover(holder, button)        the pointer (or a gamepad's selection) on `button` spins the item
+--   Kit.model3dDim(holder, on)              faded (a search that doesn't match it)
+--   Kit.model3dStats()                      { Registered, Live, Built, Cap, Driver, Parts } (tests, the shot tools)
+--   Kit.frame3d(model, back, fov, aspect, fill) -> camera CFrame, distance, focus, fill reached (pure maths)
+-- ONE studio per kind (Kit.Studio): the camera's yaw and pitch round the item's show side, the FOV, how much of the cell
+-- the item fills (framed on its VISIBLE parts' corners, so every shoe looks as big as every other shoe), the key light (in
+-- camera space: from the upper front-left), its colour and the ambient (a ViewportFrame has one light; the ambient is the
+-- fill). A model that can't build shows the item's drawn PNG (its flat stand-in while that can't load) instead.
+-- Performance (phones): a cell builds its model only once it is near the screen (Kit.Model3DBuilds a frame), at most
+-- Kit.Model3DCap live viewports (24 on PC, 12 on a phone; any more show their PNG), viewports scrolled away are hidden,
+-- ones in a closed window don't count, and ONE shared render-step connection does all of it: it turns the active items
+-- (one or two) and checks what is on screen ~7 times a second; it disconnects once nothing is registered. Built models
+-- beyond Kit.Model3DKeep are freed, least recently shown first.
+do
+	local V3 = Vector3.new
+	-- yaw: degrees from Side toward Toward; pitch: degrees down onto the item. Key: the light's travel in camera space
+	-- (x right, y up, -z into the picture): steeply from above and in front, on the side the item's main face (Side) is
+	-- turned to (a shoe's long side looks right, a gun's and a box's front left), so the top is brightest, the main face
+	-- ~25% darker and the end face (Toward) in the ambient's shade. Spin: degrees a second while active; Bob: the share of
+	-- the cell's height it rises and falls, at BobHz.
+	-- (CRITIC5 r1) Framed on the item's BODY (Body: which parts count), so wings, spikes, lollipops and box toppers don't make
+	-- a decorated item look smaller than a plain one; the whole model still stays inside MaxReach of the cell (a shoe's
+	-- 1.3: a decoration may spill 15% of the cell past its edge, into the viewport's overflow; nothing is clipped). Guns
+	-- are framed on max(length, YWeight x height), so a stubby pistol isn't drawn bigger than a long rifle.
+	-- The light: a ViewportFrame has ONE directional light and an ambient, so the key comes steeply from above and in
+	-- front (tops and top edges bright, side faces clearly darker) over a ~45% ambient (no black faces).
+	local SHOE_BODY = { Outsole = true, OutsoleToe = true, Sole = true, SoleToe = true, Stripe = true, StripeToe = true, ToeBox = true, ToeCap = true,
+		Quarter = true, HeelCounter = true, HeelTab = true, Ankle = true, AnkleBack = true, AnkleSide = true, AnkleWall = true, Collar = true,
+		CollarCorner = true, Lining = true, Tongue = true, TongueTop = true, TongueStrip = true, Eyestay = true, Flash = true }
+	local function inTopper(part)
+		local x = part.Parent
+		while x and x:IsA('Model') do
+			if x.Name == 'Topper' then return true end
+			x = x.Parent
+		end
+		return false
+	end
+	Kit.Studio = {
+		-- the pair from the left shoe's outer side, turned toward the toes: the classic sneaker shot (the right shoe peeks
+		-- out behind it)
+		shoe = { Side = V3(-1, 0, 0), Toward = V3(0, 0, -1), Yaw = 32, Pitch = 15, Fov = 26, Fill = 0.8, MaxReach = 1.3,
+			Body = function(part) return SHOE_BODY[part.Name] == true end,
+			Key = V3(-0.42, -1.1, -0.5), Light = Color3.fromRGB(255, 250, 240), Ambient = Color3.fromRGB(112, 116, 132), Spin = 40, Bob = 0.025, BobHz = 0.5 },
+		-- the gun's right side (muzzle to the right), turned a little toward the muzzle
+		gun = { Side = V3(1, 0, 0), Toward = V3(0, 0, -1), Yaw = 27, Pitch = 13, Fov = 26, Fill = 0.8, MaxReach = 0.97, YWeight = 1.8,
+			Key = V3(0.42, -1.2, -0.5), Light = Color3.fromRGB(255, 252, 246), Ambient = Color3.fromRGB(124, 128, 144), Spin = 40, Bob = 0.025, BobHz = 0.5 },
+		-- the box's name plate, turned toward its left side, from a little above (the lid and its topper show). Framed on
+		-- its tub: the topper (the box's identity) may rise up to 22% of the cell past its top edge, and a tall one sets
+		-- the tub up to 10% of the cell lower (Drop) before it would shrink the box; its viewport is 1.5x the cell.
+		box = { Side = V3(0, 0, -1), Toward = V3(-1, 0, 0), Yaw = 30, Pitch = 17, Fov = 26, Fill = 0.8, MaxReach = 1.45, Overflow = 1.5, Drop = 0.2,
+			Body = function(part) return not inTopper(part) end,
+			Key = V3(0.5, -1.1, -0.55), Light = Color3.fromRGB(255, 248, 234), Ambient = Color3.fromRGB(114, 114, 128), Spin = 36, Bob = 0.025, BobHz = 0.5 },
+	}
+	-- A viewport is Kit.Model3DOverflow x its cell (centred), so a decoration reaching past the cell (a wing, a topper: up
+	-- to MaxReach 1.3, 15% of the cell past its edge) spills over the edge instead of being cut there; the camera's FOV is
+	-- widened to match, so the item itself is framed for its cell.
+	Kit.Model3DOverflow = 1.36
+	local function widen(fov, k) return math.deg(2 * math.atan(math.tan(math.rad(fov / 2)) * k)) end
+	Kit.widenFov = widen
+	Kit.Model3DCap = { PC = 24, Phone = 12 }
+	-- the most parts drawn at once in live viewports; past it the least-seen cells (a card scrolled mostly away) show
+	-- their drawn picture
+	Kit.Model3DParts = { PC = 6000, Phone = 1500 }
+	Kit.Model3DBuilds = 3 -- models built a frame at most (the rest wait a frame)
+	Kit.Model3DKeep = 40 -- built models kept for cells that aren't showing
+	Kit.Model3DCheck = 0.15 -- seconds between on-screen checks (and at once when a list scrolls)
+	Kit.Model3DShow = 12 -- px: a cell shows its live viewport once it is this close to the screen (a cell nearer than
+	-- one cell's size is built, ready, but not drawn)
+	local PREFIX = { shoe = 'Shoe_', gun = 'Gun_', box = 'Box_' }
+	Kit.Model3DPrefix = PREFIX
+
+	-- The unit direction from an item toward the camera for `kind`'s studio (or a preset table).
+	function Kit.studioView(kind, pitch)
+		local s = type(kind) == 'table' and kind or Kit.Studio[kind] or Kit.Studio.shoe
+		local yaw = math.rad(s.Yaw)
+		pitch = math.rad(pitch or s.Pitch)
+		local flat = (s.Side.Unit * math.cos(yaw) + s.Toward.Unit * math.sin(yaw)).Unit
+		return (flat * math.cos(pitch) + Vector3.yAxis * math.sin(pitch)).Unit
+	end
+
+	local modules = {}
+	local function models(name)
+		if modules[name] == nil then
+			modules[name] = false
+			local folder = script.Parent:FindFirstChild('Models')
+			local m = folder and folder:FindFirstChild(name)
+			if m then
+				local ok, result = pcall(require, m)
+				if ok and type(result) == 'table' then modules[name] = result end
+			end
+		end
+		return modules[name] or nil
+	end
+	local STRIP = { 'ParticleEmitter', 'Light', 'Beam', 'Trail', 'Sound', 'LuaSourceContainer', 'Fire', 'Smoke', 'Sparkles', 'Attachment' }
+	-- The item's display model: the real game model, still and stripped for a viewport (no effects, no invisible fit boxes).
+	-- Returns the Model and its part count, or nil and why.
+	Kit.LodMin = 0.25 -- (a phone's small cell: parts whose largest side is under this many studs are left out)
+	function Kit.build3d(kind, id, lod)
+		local ok, model = pcall(function()
+			if kind == 'shoe' then return models('ShoeModels').pair(id, 1) end
+			if kind == 'gun' then return models('GunModels').build(id, 1) end
+			if kind == 'box' then return models('BoxModels').build(id, 1) end
+			error('unknown kind ' .. tostring(kind))
+		end)
+		if not ok or typeof(model) ~= 'Instance' then return nil, tostring(model) end
+		local parts, full = 0, 0
+		for _, d in model:GetDescendants() do
+			if d.Parent == nil then continue end
+			local strip = false
+			for _, cls in STRIP do
+				if d:IsA(cls) then strip = true; break end
+			end
+			if strip then
+				d:Destroy()
+			elseif d:IsA('BasePart') then
+				if d.Transparency >= 0.99 then
+					if model.PrimaryPart == d then pcall(function() model.PrimaryPart = nil end) end
+					d:Destroy()
+				else
+					full += 1
+					local sz = d.Size
+					if lod and math.max(sz.X, sz.Y, sz.Z) < Kit.LodMin then
+						d:Destroy()
+					else
+						d.Anchored = true
+						d.CastShadow = false
+						parts += 1
+					end
+				end
+			end
+		end
+		model:SetAttribute('Parts', parts)
+		return model, parts, full
+	end
+
+	-- The corners of a model's visible parts.
+	local function corners(model, keep)
+		local pts = {}
+		local list = model:IsA('BasePart') and { model } or model:GetDescendants()
+		for _, d in list do
+			if d:IsA('BasePart') and d.Transparency < 0.99 and (not keep or keep(d)) then
+				local cf, h = d.CFrame, d.Size / 2
+				for _, sx in { -1, 1 } do
+					for _, sy in { -1, 1 } do
+						for _, sz in { -1, 1 } do table.insert(pts, cf:PointToWorldSpace(V3(sx * h.X, sy * h.Y, sz * h.Z))) end
+					end
+				end
+			end
+		end
+		return pts
+	end
+	Kit.corners3d = corners
+	-- The basis of a view along `back` (model -> camera): right, up.
+	local function basis(back)
+		local up = (Vector3.yAxis - back * back:Dot(Vector3.yAxis)).Unit
+		return up:Cross(back), up
+	end
+	-- The camera distance at which every point (seen from `focus` along `back`) lies within `fill` of the frame.
+	local function distanceFor(pts, focus, back, right, up, tanH, tanV, fill, yWeight)
+		local d = 0
+		local yw = yWeight or 1
+		for _, p in pts do
+			local v = p - focus
+			d = math.max(d, v:Dot(back) + math.max(math.abs(v:Dot(right)) / (fill * tanH), yw * math.abs(v:Dot(up)) / (fill * tanV)))
+		end
+		return d
+	end
+	-- Frames the visible parts seen along `back` (unit, model -> camera) with vertical `fov` (degrees) in a cell `aspect`
+	-- (w / h) wide: the camera backs off until the silhouette fills `fill` of the cell along its longer side, and the
+	-- silhouette is centred. Returns the camera CFrame, its distance, the focus and the fill reached ({ x, y } half-extents
+	-- of the silhouette in the frame, 0..1).
+	function Kit.frame3d(model, back, fov, aspect, fill, pts, opts)
+		opts = opts or {}
+		back = back.Unit
+		local all = pts or corners(model)
+		pts = opts.Body and corners(model, opts.Body) or all
+		if #pts == 0 then pts = all end
+		local right, up = basis(back)
+		local tanV = math.tan(math.rad(fov / 2))
+		local tanH = tanV * (aspect or 1)
+		fill = fill or 0.8
+		if #pts == 0 then
+			local cf = model:GetPivot()
+			return CFrame.lookAt(cf.Position + back * 10, cf.Position), 10, cf.Position, { 0, 0 }
+		end
+		local lo, hi = V3(math.huge, math.huge, math.huge), V3(-math.huge, -math.huge, -math.huge)
+		for _, p in pts do lo, hi = lo:Min(p), hi:Max(p) end
+		local focus = (lo + hi) / 2
+		local d, reach = 0, { 0, 0 }
+		local yw = opts.YWeight
+		for _ = 1, 4 do
+			d = distanceFor(pts, focus, back, right, up, tanH, tanV, fill, yw)
+			-- the silhouette's box in the frame at that distance, and the shift that centres it
+			local x0, x1, y0, y1, depthSum = math.huge, -math.huge, math.huge, -math.huge, 0
+			for _, p in pts do
+				local v = p - focus
+				local depth = math.max(1e-3, d - v:Dot(back))
+				local nx, ny = v:Dot(right) / (depth * tanH), v:Dot(up) / (depth * tanV)
+				x0, x1, y0, y1 = math.min(x0, nx), math.max(x1, nx), math.min(y0, ny), math.max(y1, ny)
+				depthSum += depth
+			end
+			local depth = depthSum / #pts
+			reach = { (x1 - x0) / 2, (y1 - y0) / 2 }
+			focus += right * ((x0 + x1) / 2) * depth * tanH + up * ((y0 + y1) / 2) * depth * tanV
+		end
+		d = distanceFor(pts, focus, back, right, up, tanH, tanV, fill, yw)
+		-- (Drop: a decoration rising past MaxReach first sets the body lower in the cell, up to Drop of its half-height, as
+		-- far as the decoration needs and the bottom allows)
+		if opts.MaxReach and opts.Drop and all ~= pts then
+			local dropped = 0
+			for _ = 1, 3 do
+				local top, bottom, topDepth = -math.huge, math.huge, d
+				for _, p in all do
+					local v = p - focus
+					local depth = math.max(1e-3, d - v:Dot(back))
+					local ny = v:Dot(up) / (depth * tanV)
+					if ny > top then top, topDepth = ny, depth end
+					bottom = math.min(bottom, ny)
+				end
+				local shift = math.min(top - opts.MaxReach, opts.MaxReach + bottom)
+				shift = math.min(shift, opts.Drop - dropped)
+				if shift <= 1e-4 then break end
+				dropped += shift
+				focus += up * (shift * topDepth * tanV)
+			end
+		end
+		-- the whole model (decorations too) stays inside MaxReach of the cell: nothing is clipped
+		if opts.MaxReach and all ~= pts then
+			local need = distanceFor(all, focus, back, right, up, tanH, tanV, opts.MaxReach)
+			if need > d then
+				-- (pushed back for a big decoration: the body's fill actually reached at that distance)
+				d = need
+				local rx, ry = 0, 0
+				for _, p in pts do
+					local v = p - focus
+					local depth = math.max(1e-3, d - v:Dot(back))
+					rx, ry = math.max(rx, math.abs(v:Dot(right)) / (depth * tanH)), math.max(ry, math.abs(v:Dot(up)) / (depth * tanV))
+				end
+				reach = { rx, ry }
+			end
+		end
+		return CFrame.lookAt(focus + back * d, focus), d, focus, reach
+	end
+	-- frame3d's options for a studio (and a cell's own MaxReach, e.g. the Store's hero box)
+	function Kit.studioFrame(studio, maxReach, cell)
+		cell = cell or {}
+		if cell.Whole then return { YWeight = cell.YWeight or studio.YWeight } end -- (framed on the whole model: nothing spills)
+		return { Body = studio.Body, YWeight = cell.YWeight or studio.YWeight, MaxReach = maxReach or studio.MaxReach, Drop = studio.Drop }
+	end
+
+	---------------------------------------------------------------- the shared driver
+	local registry = setmetatable({}, { __mode = 'k' }) -- holder -> entry
+	local order, driverConn = 0, nil
+	local acc, dirty, clock = 0, true, 0
+	local stats = { Live = 0, Built = 0, Cap = Kit.Model3DCap.PC, Parts = 0 }
+	local scrolls = setmetatable({}, { __mode = 'k' }) -- ScrollingFrame -> its CanvasPosition connection
+	-- (a list that scrolls re-checks at once, so a cell coming into view shows on that frame, not up to 0.15 s later)
+	local function watchScroll(h)
+		local a = h.Parent
+		while a and not a:IsA('LayerCollector') do
+			if a:IsA('ScrollingFrame') and not scrolls[a] then
+				local ok, conn = pcall(function() return a:GetPropertyChangedSignal('CanvasPosition'):Connect(function() dirty = true end) end)
+				scrolls[a] = ok and conn or true
+			end
+			a = a.Parent
+		end
+	end
+	-- A phone (its screen's short side <= 500, Kit.scaleFor's rule): the camera's view, else the ScreenGui's size.
+	local function phone(gui)
+		local ok, vs = pcall(function() return workspace.CurrentCamera.ViewportSize end)
+		if not (ok and typeof(vs) == 'Vector2' and vs.X > 1) then
+			if not gui then
+				-- (nothing on screen yet: the player's screen, from any of their ScreenGuis)
+				pcall(function() gui = game:GetService('Players').LocalPlayer:FindFirstChildOfClass('PlayerGui'):FindFirstChildWhichIsA('ScreenGui') end)
+			end
+			local okG, gs = pcall(function() return gui.AbsoluteSize end)
+			vs = okG and typeof(gs) == 'Vector2' and gs or Vector2.new(1280, 720)
+		end
+		return vs.X > 1 and math.min(vs.X, vs.Y) <= 500
+	end
+	function Kit.model3dCap(gui) return phone(gui) and Kit.Model3DCap.Phone or Kit.Model3DCap.PC end
+	-- Drawn now: the gui and its ancestors visible, in an enabled ScreenGui (or any LayerCollector): that collector.
+	local function shown(gui)
+		local x = gui
+		while x do
+			if x:IsA('LayerCollector') then return x.Enabled and x.Parent ~= nil and x end
+			if x:IsA('GuiObject') and not x.Visible then return false end
+			x = x.Parent
+		end
+		return false
+	end
+	-- Inside (or within `margin` px of) every clipping ancestor's box: a ScrollingFrame or a ClipsDescendants frame.
+	-- True where the sizes can't be read (zero: an offline harness).
+	-- (a test may replace Kit.AbsBox to put cells on and off screen)
+	function Kit.AbsBox(g)
+		local ok, p, s = pcall(function() return g.AbsolutePosition, g.AbsoluteSize end)
+		if ok and typeof(s) == 'Vector2' and s.X > 0 and s.Y > 0 then return p, s end
+		return nil
+	end
+	local function box(g) return Kit.AbsBox(g) end
+	local function near(gui, margin)
+		local p, s = box(gui)
+		if not p then return true end
+		local x0, y0, x1, y1 = p.X, p.Y, p.X + s.X, p.Y + s.Y
+		local a = gui.Parent
+		while a and not a:IsA('LayerCollector') do
+			if a:IsA('GuiObject') and (a.ClipsDescendants or a:IsA('ScrollingFrame')) then
+				local ap, as = box(a)
+				if ap and (x1 < ap.X - margin or x0 > ap.X + as.X + margin or y1 < ap.Y - margin or y0 > ap.Y + as.Y + margin) then return false end
+			end
+			a = a.Parent
+		end
+		return true
+	end
+	-- The share of the gui's area on screen, inside every clipping ancestor (1 where sizes can't be read).
+	local function seenShare(gui)
+		local p, s = box(gui)
+		if not p or s.X * s.Y <= 0 then return 1 end
+		local x0, y0, x1, y1 = p.X, p.Y, p.X + s.X, p.Y + s.Y
+		local a = gui.Parent
+		while a and not a:IsA('LayerCollector') do
+			if a:IsA('GuiObject') and (a.ClipsDescendants or a:IsA('ScrollingFrame')) then
+				local ap, as = box(a)
+				if ap then
+					x0, y0 = math.max(x0, ap.X), math.max(y0, ap.Y)
+					x1, y1 = math.min(x1, ap.X + as.X), math.min(y1, ap.Y + as.Y)
+				end
+			end
+			a = a.Parent
+		end
+		return math.max(0, x1 - x0) * math.max(0, y1 - y0) / (s.X * s.Y)
+	end
+	local function showFlat(h, e, on)
+		if e.Row then
+			if on and not e.Flat then
+				e.Flat = blank({ Name = 'Flat2D', Size = UDim2.fromScale(1, 1), ZIndex = e.Z + 1, Parent = h })
+				for i, it in e.Items do
+					local f = Kit.icon3d(PREFIX[e.Kind] .. it.Id, e.Cell, { ZIndex = e.Z + 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(Kit.model3dRowX(i, e.Cell, e.Pitch), e.H / 2), Locked = it.Locked })
+					if it.Locked then f:SetAttribute('PreviewSilhouette', true) end
+					f.Parent = e.Flat
+				end
+			end
+			if e.Flat then e.Flat.Visible = on end
+			return
+		end
+		if on and not e.Flat then
+			e.Flat = Kit.icon3d(PREFIX[e.Kind] .. e.Id, math.min(e.W, e.H), { ZIndex = e.Z + 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Locked = e.Locked })
+			e.Flat.Name = 'Flat2D'
+			if e.Locked then e.Flat:SetAttribute('PreviewSilhouette', true) end
+			e.Flat.Parent = h
+		end
+		if e.Flat then e.Flat.Visible = on end
+	end
+	local function aim(e, angle, bob)
+		local s = e.Studio
+		local back, focus, d = e.Back, e.Focus, e.Dist
+		if e.Act > 0 then
+			local k = e.Act * e.Act * (3 - 2 * e.Act) -- (smoothstep: eases into and out of the spin)
+			back = CFrame.Angles(0, math.rad(angle), 0):VectorToWorldSpace(e.Back)
+			focus = e.Focus:Lerp(e.Pivot, k) + Vector3.yAxis * (bob * e.FrameH * k)
+			d = e.Dist + (e.SpinDist - e.Dist) * k
+		end
+		local cf = CFrame.lookAt(focus + back * d, focus)
+		e.Camera.CFrame = cf
+		e.Viewport.LightDirection = cf:VectorToWorldSpace(s.Key.Unit)
+	end
+	-- The spin's distance: the farthest of the needed ones over a full turn round the item's own upright axis.
+	local function spinFrame(e)
+		if e.SpinDist then return end
+		local pts = corners(e.Model)
+		local lo, hi = V3(math.huge, math.huge, math.huge), V3(-math.huge, -math.huge, -math.huge)
+		for _, p in pts do lo, hi = lo:Min(p), hi:Max(p) end
+		local c = (lo + hi) / 2
+		e.Pivot = V3(c.X, e.Focus.Y, c.Z)
+		local tanV = math.tan(math.rad(e.Fov / 2))
+		local tanH = tanV * (e.W / e.H)
+		local fill = (e.MaxReach or e.Studio.MaxReach or 0.97) / (1 + 2 * e.Studio.Bob) -- (the whole model, with room for the bob)
+		local d = e.Dist
+		for i = 0, 15 do
+			local back = CFrame.Angles(0, i * math.pi / 8, 0):VectorToWorldSpace(e.Back)
+			local right, up = basis(back)
+			d = math.max(d, distanceFor(pts, e.Pivot, back, right, up, tanH, tanV, fill))
+		end
+		e.SpinDist = d
+	end
+	local buildRow -- (below)
+	local function build(e)
+		if e.Row then return buildRow(e) end
+		local model, parts, full = Kit.build3d(e.Kind, e.Id, e.Lod)
+		e.PartsFull = full
+		if not model then
+			e.Failed = true
+			warn('[UIKit] model3d ' .. e.Kind .. ' ' .. tostring(e.Id) .. ': ' .. tostring(parts))
+			return
+		end
+		e.Model, e.Parts = model, parts
+		e.Back = Kit.studioView(e.Studio, e.CamPitch)
+		local cf, d, focus = Kit.frame3d(model, e.Back, e.Fov, e.W / e.H, e.Fill, nil, Kit.studioFrame(e.Studio, e.MaxReach, e))
+		e.Dist, e.Focus = d, focus
+		e.FrameH = 2 * d * math.tan(math.rad(e.Fov / 2))
+		e.Camera.CFrame = cf
+		e.Viewport.LightDirection = cf:VectorToWorldSpace(e.Studio.Key.Unit)
+		model.Parent = e.Viewport
+		stats.Built += 1
+	end
+	local function free(e)
+		if e.Row and e.Model then
+			for _, it in e.Items do
+				if it.Model then it.Model:Destroy(); it.Model = nil end
+			end
+		end
+		if e.Model then
+			if not e.Row then e.Model:Destroy() end
+			e.Model, e.SpinDist = nil, nil
+			stats.Built -= 1
+		end
+	end
+	local function setLive(e, on)
+		e.Live = on
+		e.Viewport.Visible = on and e.Model ~= nil
+		if on then e.Seen = clock end
+	end
+	local function pass()
+		local want, screen = {}, nil
+		for h, e in registry do
+			local lc = h.Parent ~= nil and shown(h)
+			screen = screen or lc or nil
+			if not lc then
+				-- (a closed window, a cached cell put aside: draws nothing anyway; its viewport stays as it was, so a window
+				-- that opens again shows its items at once)
+				e.Want, e.Live = false, false
+			else
+				-- (near: within a cell of the clip, so a scrolled-in item is built and ready; inside: on screen now, the only
+				-- ones drawn, served first)
+				e.Want = near(h, e.Row and e.H or math.max(e.W, e.H))
+				e.Inside = e.Want and near(h, Kit.Model3DShow)
+				e.Share = e.Inside and math.floor(seenShare(h) * 10 + 0.5) / 10 or 0 -- (to a tenth: a steady order)
+				if not e.Watched then e.Watched = true; watchScroll(h) end
+				if e.Want then table.insert(want, h) else setLive(e, false); showFlat(h, e, false) end
+			end
+		end
+		local cap = Kit.model3dCap(screen)
+		stats.Cap = cap
+		-- (a phone's small cells, under ~80 px on screen, build without their tiny trim)
+		local small = cap == Kit.Model3DCap.Phone
+		local scale = 1
+		if small and screen then
+			local okS, gs = pcall(function() return screen.AbsoluteSize end)
+			if okS and typeof(gs) == 'Vector2' and gs.X > 1 then scale = Kit.scaleFor(gs) end
+		end
+		table.sort(want, function(ha, hb)
+			local a, b = registry[ha], registry[hb]
+			if (a.Act > 0 or next(a.Reasons) ~= nil) ~= (b.Act > 0 or next(b.Reasons) ~= nil) then return a.Act > 0 or next(a.Reasons) ~= nil end
+			if a.Inside ~= b.Inside then return a.Inside end
+			if a.Share ~= b.Share then return a.Share > b.Share end -- (the most-seen first: a sliver of a card comes last)
+			if a.Priority ~= b.Priority then return a.Priority > b.Priority end
+			return a.Order < b.Order
+		end)
+		local builds, live, parts, partsFull, shown = 0, 0, 0, 0, 0
+		local budget, over = small and Kit.Model3DParts.Phone or Kit.Model3DParts.PC, 0
+		for _, h in want do
+			local e = registry[h]
+			if e.Inside then shown += 1 end
+			if e.Failed or (e.Inside and shown > cap) then
+				setLive(e, false)
+				showFlat(h, e, true)
+			else
+				if not e.Model and builds < Kit.Model3DBuilds then
+					local _, sz = box(h)
+					local px = sz and math.min(sz.Y, e.Row and sz.Y or sz.X) or math.min(e.Row and e.Cell or e.W, e.H) * scale
+					e.Lod = small and px < 80 and e.Kind ~= 'gun' -- (guns are few parts already)
+					build(e)
+					builds += 1
+				end
+				if e.Failed then
+					showFlat(h, e, true)
+				elseif e.Model and not e.Inside then
+					setLive(e, false) -- (built and ready just off screen: not drawn)
+					showFlat(h, e, false)
+					e.Seen = clock
+				elseif live > 0 and parts + (e.Parts or 0) > budget then
+					setLive(e, false) -- (over the parts budget: its drawn picture)
+					showFlat(h, e, true)
+					over += 1
+				elseif e.Model then
+					setLive(e, true)
+					showFlat(h, e, false)
+					live += 1
+					parts += e.Parts or 0
+					partsFull += e.PartsFull or e.Parts or 0
+				else
+					dirty = true -- (its turn to build comes next frame)
+				end
+			end
+		end
+		stats.Live, stats.Parts, stats.PartsFull, stats.Over, stats.Budget = live, parts, partsFull, over, budget
+		-- free the models longest unseen past the keep
+		if stats.Built > Kit.Model3DKeep then
+			local idle = {}
+			for _, e in registry do
+				if e.Model and not e.Live and not e.Want then table.insert(idle, e) end -- (never one just off screen: next to show)
+			end
+			table.sort(idle, function(a, b) return (a.Seen or 0) < (b.Seen or 0) end)
+			for i = 1, math.min(#idle, stats.Built - Kit.Model3DKeep) do free(idle[i]) end
+		end
+	end
+	local moving = setmetatable({}, { __mode = 'k' }) -- holder -> true while it spins or eases back
+	local function step(dt)
+		dt = math.min(tonumber(dt) or 0, 0.1)
+		clock += dt
+		acc += dt
+		if dirty or acc >= Kit.Model3DCheck then
+			dirty, acc = false, 0
+			local ok, err = pcall(pass)
+			if not ok then warn('[UIKit] model3d: ' .. tostring(err)) end
+		end
+		for h in moving do
+			local e = registry[h]
+			local on = e and next(e.Reasons) ~= nil
+			if e and e.Row then
+				local any = false
+				for _, it in e.Items do
+					local want = next(it.Reasons) ~= nil
+					if it.Model and e.Live and (want or it.Act > 0) then
+						it.Act = math.clamp(it.Act + (want and dt or -dt) / 0.35, 0, 1)
+						if want then
+							it.Angle = (it.Angle + e.Studio.Spin * dt) % 360
+						else
+							local a = it.Angle > 180 and it.Angle - 360 or it.Angle
+							it.Angle = (a * math.exp(-6 * dt)) % 360
+						end
+						it.T += dt
+						local k = it.Act * it.Act * (3 - 2 * it.Act)
+						local bob = e.Studio.Bob * math.sin(it.T * 2 * math.pi * e.Studio.BobHz) * e.CellStuds * k
+						if it.Act == 0 and not want then it.Angle, it.T, bob = 0, 0, 0 end
+						pcall(function() it.Model:PivotTo(CFrame.new(it.Centre + Vector3.yAxis * bob) * CFrame.Angles(0, math.rad(it.Angle), 0)) end)
+					end
+					any = any or want or it.Act > 0
+				end
+				if not any then moving[h] = nil end
+			elseif not e then
+				moving[h] = nil
+			elseif e.Model and e.Live then
+				if on and not e.SpinDist then pcall(spinFrame, e) end
+				on = on and e.SpinDist ~= nil
+				e.Act = math.clamp(e.Act + (on and dt or -dt) / 0.35, 0, 1)
+				if on then
+					e.Angle = (e.Angle + e.Studio.Spin * dt) % 360
+				else
+					-- back to the show side the short way round
+					local a = e.Angle > 180 and e.Angle - 360 or e.Angle
+					e.Angle = (a * math.exp(-6 * dt)) % 360
+				end
+				e.T += dt
+				local ok = pcall(aim, e, e.Angle, e.Studio.Bob * math.sin(e.T * 2 * math.pi * e.Studio.BobHz))
+				if not ok then e.Act = 0 end
+				if e.Act == 0 and not on then
+					e.Angle, e.T = 0, 0
+					pcall(aim, e, 0, 0)
+					moving[h] = nil
+				end
+			elseif not on then
+				moving[h] = nil
+			end
+		end
+		if next(registry) == nil and driverConn then
+			driverConn:Disconnect()
+			driverConn = nil
+		end
+	end
+	Kit.model3dStep = step -- (an offline harness can step it)
+	local function ensureDriver()
+		if driverConn then return end
+		-- (PreRender on a client; where it can't be used, the next one that can: tests step Kit.model3dStep themselves)
+		local RunService = game:GetService('RunService')
+		for _, name in { 'PreRender', 'RenderStepped', 'Heartbeat' } do
+			local ok, conn = pcall(function() return RunService[name]:Connect(step) end)
+			if ok and conn then
+				driverConn = conn
+				return
+			end
+		end
+	end
+	function Kit.model3dStats()
+		local n = 0
+		for _ in registry do n += 1 end
+		return { Registered = n, Live = stats.Live, Built = stats.Built, Cap = stats.Cap, Driver = driverConn ~= nil, Parts = stats.Parts, PartsFull = stats.PartsFull or stats.Parts, Over = stats.Over or 0, Budget = stats.Budget }
+	end
+
+	---------------------------------------------------------------- the cell
+	-- ShoeFX's ladder (lazily: its glow strength, rays and rainbow for the backdrop)
+	local shoeFX
+	local function tierOf(rarity)
+		if rarity == nil then return nil end
+		if shoeFX == nil then
+			shoeFX = false
+			local m = script.Parent:FindFirstChild('ShoeFX')
+			if m then
+				local ok, r = pcall(require, m)
+				if ok and type(r) == 'table' then shoeFX = r end
+			end
+		end
+		return shoeFX and shoeFX.tier(rarity) or nil
+	end
+	-- The rarity hint behind a shoe: a soft glow (3 rings) from Epic, rays from Legendary, rainbow for Secret.
+	local function rarityGlow(holder, tier, w, h, z)
+		if not tier or tier.Glow < 0.3 then return end
+		local rainbow = tier.Rainbow and shoeFX and shoeFX.Rainbow or nil
+		local glow = blank({ Name = 'RarityGlow', Size = UDim2.fromScale(1, 1), ZIndex = z, Parent = holder })
+		local s = math.min(w, h)
+		if tier.Rays > 8 then
+			local rays = blank({ Name = 'Rays', AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(s, s), ZIndex = z, Parent = glow })
+			local n = math.min(8, math.floor(tier.Rays / 2))
+			for i = 1, n do
+				local c = rainbow and rainbow[(i - 1) % #rainbow + 1] or tier.Accent
+				local ray = blank({ BackgroundTransparency = 0, BackgroundColor3 = c, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(0, math.max(3, s * 0.07), 1.05, 0), Rotation = (i - 1) * 180 / n, ZIndex = z, Parent = rays })
+				new('UIGradient', { Rotation = 90, Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.3, 0.55), NumberSequenceKeypoint.new(0.5, 1), NumberSequenceKeypoint.new(0.7, 0.55), NumberSequenceKeypoint.new(1, 1) }), Parent = ray })
+			end
+		end
+		for i, k in { 0.92, 0.7, 0.48 } do
+			local c = rainbow and rainbow[i * 2 - 1] or tier.Color:Lerp(Kit.Color.white, (i - 1) * 0.25)
+			local ring = blank({ Name = 'Glow' .. i, BackgroundTransparency = 1 - tier.Glow * (0.16 + 0.1 * i), BackgroundColor3 = c, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.52), Size = UDim2.fromOffset(s * k, s * k * 0.86), ZIndex = z, Parent = glow })
+			corner(UDim.new(0.5, 0)).Parent = ring
+		end
+	end
+	function Kit.model3d(kind, id, size, opts)
+		opts = opts or {}
+		local studio = Kit.Studio[kind] or Kit.Studio.shoe
+		local w, h = size, size
+		if typeof(size) == 'Vector2' then w, h = size.X, size.Y end
+		local z = opts.ZIndex or 1
+		local holder = blank({ Name = opts.Name or ('Model3D_' .. tostring(kind) .. '_' .. tostring(id)), Size = UDim2.fromOffset(w, h), Position = opts.Position or UDim2.new(), AnchorPoint = opts.AnchorPoint or Vector2.zero, LayoutOrder = opts.LayoutOrder or 0, ZIndex = z })
+		holder:SetAttribute('Model3D', tostring(kind))
+		holder:SetAttribute('ItemId', tostring(id))
+		if kind == 'shoe' and opts.Rarity ~= nil and not opts.Locked then
+			rarityGlow(holder, tierOf(opts.Rarity), w, h, z)
+		end
+		if not PREFIX[kind] then
+			local flat = Kit.icon3d(tostring(id), math.min(w, h), { ZIndex = z + 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
+			flat.Name = 'Flat2D'
+			flat.Parent = holder
+			return holder
+		end
+		local over = opts.Overflow or studio.Overflow or Kit.Model3DOverflow
+		local vp = new('ViewportFrame', {
+			Name = 'Viewport', BackgroundTransparency = 1, BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(over, over), ZIndex = z + 1,
+			Ambient = studio.Ambient, LightColor = studio.Light, LightDirection = V3(0, -1, 0), Visible = false, Parent = holder,
+		})
+		vp:SetAttribute('PreviewImage', 'm3d:' .. (opts.PreviewKind or kind) .. ':' .. tostring(id)) -- (the offline shot tools draw its studio render)
+		if opts.Locked then
+			-- (a thing you don't own yet: the same model, black; its stand-in is the drawn PNG's silhouette)
+			vp.ImageColor3 = Color3.new(0, 0, 0)
+			vp:SetAttribute('PreviewSilhouette', true)
+		end
+		local fov = opts.Fov or studio.Fov
+		local cam = new('Camera', { Name = 'Camera', FieldOfView = widen(fov, over), Parent = vp })
+		vp.CurrentCamera = cam
+		order += 1
+		local e = { Viewport = vp, Camera = cam, Kind = kind, Id = id, Studio = studio, W = w, H = h, Z = z, Fill = opts.Fill or studio.Fill,
+			Priority = opts.Priority or 0, Order = order, Locked = opts.Locked == true, MaxReach = opts.MaxReach, Over = over, Whole = opts.Whole == true, YWeight = opts.YWeight, CamPitch = opts.Pitch, Fov = fov, Act = 0, Angle = 0, T = 0, Reasons = {}, Live = false, Want = false }
+		registry[holder] = e
+		pcall(function()
+			holder.Destroying:Connect(function()
+				if registry[holder] then
+					registry[holder] = nil
+					free(e)
+				end
+			end)
+		end)
+		dirty = true
+		ensureDriver()
+		return holder
+	end
+	-- The spin while any reason is on ('hover', 'select', ...); it eases back to the show side when the last one goes.
+	function Kit.model3dActive(holder, reason, on)
+		local e = holder and registry[holder]
+		if not e then return end
+		e.Reasons[reason or 'select'] = on and true or nil
+		if on then moving[holder] = true end
+		dirty = true
+		ensureDriver()
+	end
+	function Kit.model3dHover(holder, button)
+		if not (holder and button) then return end
+		pcall(function()
+			button.MouseEnter:Connect(function() Kit.model3dActive(holder, 'hover', true) end)
+			button.MouseLeave:Connect(function() Kit.model3dActive(holder, 'hover', false) end)
+			button.SelectionGained:Connect(function() Kit.model3dActive(holder, 'hover', true) end)
+			button.SelectionLost:Connect(function() Kit.model3dActive(holder, 'hover', false) end)
+		end)
+	end
+	---------------------------------------------------------------- rows: one viewport for a row of items
+	-- A row of items (an odds row, a grid row) shares ONE ViewportFrame: every item is placed in it so it looks exactly as
+	-- in its own cell (turned to face the camera along its own ray, so each is seen from the studio's angle, and scaled so
+	-- its silhouette fills the same share of its square cell). The row camera is nearly orthographic (Kit.RowFov), so the
+	-- items at the ends aren't stretched. A pointed-at item turns on its own (Model:PivotTo: only that model moves).
+	Kit.RowFov = 3 -- (a long row is ~7 cells wide: its ends are ~10 degrees off the axis, so items there stay true)
+	local TYPICAL = { shoe = 2.6, gun = 3, box = 5 } -- (studs: the row's cell is about the item's size, so the scale is ~1)
+	-- The x of item i's cell centre in a row (cell px square, pitch px apart).
+	function Kit.model3dRowX(i, cell, pitch) return cell / 2 + (i - 1) * pitch end
+	buildRow = function(e)
+		local studio = e.Studio
+		local back = Kit.studioView(studio)
+		local tanV = math.tan(math.rad(Kit.RowFov / 2))
+		local hs = (TYPICAL[e.Kind] or 3) / e.Fill -- (the cell's height in studs at the focal plane)
+		local d = hs / (2 * tanV)
+		local camPos = back * d
+		local cf = CFrame.lookAt(camPos, Vector3.zero)
+		local right = cf.RightVector
+		e.CellStuds = hs
+		e.Camera.FieldOfView = widen(Kit.RowFov, e.VH / e.H) -- (the viewport is taller than the row: the row's cells keep Kit.RowFov)
+		e.Camera.CFrame = cf
+		e.Viewport.LightDirection = cf:VectorToWorldSpace(studio.Key.Unit)
+		local parts, built = 0, 0
+		for i, it in e.Items do
+			local model, n, full = Kit.build3d(e.Kind, it.Id, e.Lod)
+			if model then
+				e.PartsFull = (e.PartsFull or 0) + full
+				local P = right * ((Kit.model3dRowX(i, e.Cell, e.Pitch) - e.W / 2) * hs / e.H)
+				local backI = (camPos - P).Unit
+				local pts = corners(model)
+				local lo, hi = V3(math.huge, math.huge, math.huge), V3(-math.huge, -math.huge, -math.huge)
+				for _, p in pts do lo, hi = lo:Min(p), hi:Max(p) end
+				local c = (lo + hi) / 2
+				-- turned to face the camera along its own ray (the studio's view for every item)
+				local axis = back:Cross(backI)
+				local q = CFrame.identity
+				if axis.Magnitude > 1e-6 then q = CFrame.fromAxisAngle(axis.Unit, math.asin(math.clamp(axis.Magnitude, -1, 1))) end
+				local turn = CFrame.new(c) * q * CFrame.new(-c)
+				-- its BODY's silhouette seen along that ray (centre and size); the whole model stays inside the cell
+				local r, u = basis(backI)
+				local function extents(list)
+					local x0, x1, y0, y1 = math.huge, -math.huge, math.huge, -math.huge
+					for _, p in list do
+						local v = turn:PointToWorldSpace(p) - c
+						x0, x1, y0, y1 = math.min(x0, v:Dot(r)), math.max(x1, v:Dot(r)), math.min(y0, v:Dot(u)), math.max(y1, v:Dot(u))
+					end
+					return x0, x1, y0, y1
+				end
+				local bodyPts = studio.Body and corners(model, studio.Body) or pts
+				if #bodyPts == 0 then bodyPts = pts end
+				local x0, x1, y0, y1 = extents(bodyPts)
+				local sc = c + r * ((x0 + x1) / 2) + u * ((y0 + y1) / 2)
+				-- (cos: an item off the axis is seen a little wider on the flat picture; this keeps every item the same size)
+				local cos = backI:Dot(back)
+				local yw = studio.YWeight or 1
+				local k = e.Fill * hs / math.max(1e-3, (x1 - x0) / cos, yw * (y1 - y0))
+				local ax0, ax1, ay0, ay1 = extents(pts)
+				local mx, my = (x0 + x1) / 2, (y0 + y1) / 2
+				local reachX = math.max(mx - ax0, ax1 - mx) * 2 / cos
+				local reachY = math.max(my - ay0, ay1 - my) * 2
+				local room = (studio.MaxReach or 0.97) * hs
+				-- (sideways a decoration may use the gap to the next cell: the viewport runs a margin past the row's ends)
+				local roomX = room * math.max(1, e.Pitch / e.Cell)
+				k = math.min(k, roomX / math.max(1e-3, reachX), room / math.max(1e-3, reachY))
+				for _, part in model:GetDescendants() do
+					if part:IsA('BasePart') then
+						local pcf = turn * part.CFrame
+						part.Size *= k
+						part.CFrame = CFrame.new(P + (pcf.Position - sc) * k) * pcf.Rotation
+						if it.Locked then
+							-- (a thing you don't own yet: a black silhouette of it)
+							part.Color = Color3.new(0, 0, 0)
+							part.Material = Enum.Material.SmoothPlastic
+							part.Reflectance = 0
+						end
+					elseif part:IsA('SpecialMesh') then
+						part.Offset *= k
+						if part.MeshType == Enum.MeshType.FileMesh then part.Scale *= k end
+					elseif it.Locked and (part:IsA('Decal') or part:IsA('SurfaceGui')) then
+						part:Destroy()
+					end
+				end
+				pcall(function() model.WorldPivot = CFrame.new(P) end)
+				it.Model, it.Centre, it.Parts = model, P, n
+				model.Parent = e.Viewport
+				parts += n
+				built += 1
+				if it.Dim then Kit.model3dItemDim(e.Holder, i, true) end
+			end
+		end
+		if built == 0 then
+			e.Failed = true
+			return
+		end
+		e.Model, e.Parts = true, parts
+		stats.Built += 1
+	end
+	-- A row of items in one viewport: list = { { Id, Locked?, Rarity?, Dim? }, ... }, each in a `cell` px square, `pitch`
+	-- px apart (the row is pitch x (n - 1) + cell wide). opts: Name, Position, AnchorPoint, ZIndex, LayoutOrder, Fill,
+	-- Priority, Glow (false: no rarity glows). Returns the holder; Kit.model3dRowX(i, cell, pitch) is item i's centre.
+	function Kit.model3dRow(kind, list, cell, pitch, opts)
+		opts = opts or {}
+		local studio = Kit.Studio[kind] or Kit.Studio.shoe
+		local n = #list
+		local w, h = math.floor(pitch * math.max(0, n - 1) + cell + 0.5), cell
+		local z = opts.ZIndex or 1
+		local holder = blank({ Name = opts.Name or ('Model3DRow_' .. tostring(kind)), Size = UDim2.fromOffset(w, h), Position = opts.Position or UDim2.new(), AnchorPoint = opts.AnchorPoint or Vector2.zero, LayoutOrder = opts.LayoutOrder or 0, ZIndex = z })
+		holder:SetAttribute('Model3D', tostring(kind))
+		-- (the viewport runs a margin past the row's ends, so the end items' decorations aren't cut)
+		local margin = math.ceil(math.max(cell, pitch) * (studio.MaxReach or 0.97) / 2 - cell / 2) + 2
+		local over = studio.Overflow or Kit.Model3DOverflow
+		local vy = math.floor(cell * (over - 1) / 2 + 0.5) -- (and over and under it, like a single cell's)
+		local vp = new('ViewportFrame', {
+			Name = 'Viewport', BackgroundTransparency = 1, BorderSizePixel = 0, Position = UDim2.fromOffset(-margin, -vy), Size = UDim2.new(1, 2 * margin, 1, 2 * vy), ZIndex = z + 1,
+			Ambient = studio.Ambient, LightColor = studio.Light, LightDirection = V3(0, -1, 0), Visible = false, Parent = holder,
+		})
+		local cam = new('Camera', { Name = 'Camera', FieldOfView = Kit.RowFov, Parent = vp })
+		vp.CurrentCamera = cam
+		local items = {}
+		for i, it in list do
+			local x = Kit.model3dRowX(i, cell, pitch)
+			if kind == 'shoe' and it.Rarity ~= nil and not it.Locked and opts.Glow ~= false then
+				local spot = blank({ Name = 'Glow' .. i, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(x, h / 2), Size = UDim2.fromOffset(cell, cell), ZIndex = z, Parent = holder })
+				rarityGlow(spot, tierOf(it.Rarity), cell, cell, z)
+			end
+			-- (each item's cell, for the offline shot tools: they draw its studio render there)
+			local mark = blank({ Name = 'Cell' .. i, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(x + margin, h / 2 + vy), Size = UDim2.fromOffset(cell * over, cell * over), ZIndex = z + 1, Parent = vp })
+			mark:SetAttribute('PreviewM3D', 'm3d:' .. kind .. ':' .. tostring(it.Id))
+			if it.Locked then mark:SetAttribute('PreviewSilhouette', true) end
+			items[i] = { Id = tostring(it.Id), Locked = it.Locked == true, Dim = it.Dim == true, Act = 0, Angle = 0, T = 0, Reasons = {}, Mark = mark }
+		end
+		order += 1
+		local e = { Row = true, Items = items, Holder = holder, Viewport = vp, Camera = cam, Kind = kind, Studio = studio, W = w, H = h, Cell = cell, Pitch = pitch, Z = z, VH = h + 2 * vy, Fov = studio.Fov,
+			Fill = opts.Fill or studio.Fill, Priority = opts.Priority or 0, Order = order, Act = 0, Angle = 0, T = 0, Reasons = {}, Live = false, Want = false }
+		registry[holder] = e
+		pcall(function()
+			holder.Destroying:Connect(function()
+				if registry[holder] then
+					registry[holder] = nil
+					free(e)
+				end
+			end)
+		end)
+		dirty = true
+		ensureDriver()
+		return holder
+	end
+	-- Item i of a row turns while any reason is on; hover on a button turns it; dim fades it (a search).
+	function Kit.model3dItemActive(holder, i, reason, on)
+		local e = holder and registry[holder]
+		local it = e and e.Row and e.Items[i]
+		if not it then return end
+		it.Reasons[reason or 'select'] = on and true or nil
+		if on then moving[holder] = true end
+		ensureDriver()
+	end
+	function Kit.model3dItemHover(holder, i, button)
+		if not (holder and button) then return end
+		pcall(function()
+			button.MouseEnter:Connect(function() Kit.model3dItemActive(holder, i, 'hover', true) end)
+			button.MouseLeave:Connect(function() Kit.model3dItemActive(holder, i, 'hover', false) end)
+			button.SelectionGained:Connect(function() Kit.model3dItemActive(holder, i, 'hover', true) end)
+			button.SelectionLost:Connect(function() Kit.model3dItemActive(holder, i, 'hover', false) end)
+		end)
+	end
+	function Kit.model3dItemDim(holder, i, on)
+		local e = holder and registry[holder]
+		local it = e and e.Row and e.Items[i]
+		if not it then return end
+		it.Dim = on and true or false
+		it.Mark:SetAttribute('PreviewT', on and 0.75 or nil)
+		if not it.Model then return end
+		for _, part in it.Model:GetDescendants() do
+			if part:IsA('BasePart') then
+				if part:GetAttribute('BaseT') == nil then part:SetAttribute('BaseT', part.Transparency) end
+				local base = part:GetAttribute('BaseT')
+				part.Transparency = on and (1 - (1 - base) * 0.25) or base
+			end
+		end
+	end
+
+	function Kit.model3dDim(holder, on)
+		for _, d in holder:GetDescendants() do
+			if d:IsA('ViewportFrame') then d.ImageTransparency = on and 0.75 or 0 end
+		end
+	end
+end
+
 ---------------------------------------------------------------------------------------------- screen + scaling
 -- ScreenGui with a Root frame sized to the 1280x720 design canvas and a UIScale that fits it to the screen.
 -- Phones (short side <= 500, Roblox's own TouchJump rule) get a 1.3x bonus so touch targets stay >= ~44 pt.
@@ -1197,6 +2090,24 @@ end
 -- (brief 22) A paint splat (ref22: behind every pet in the inventory and the Store's egg card): `size` square, tinted
 -- `color`; props.Kind = 'rainbow' (Secret) or 'black' (the "+n" slot), Position, AnchorPoint, ZIndex, Rotation. The
 -- uploaded texture when there is one, else six overlapping round blobs in the colour (12 instances).
+-- Two colours' hues within `deg` degrees (both colourful: a grey or a near-white has no hue to clash).
+function Kit.hueNear(a, b, deg)
+	local function hsv(c)
+		local mx, mn = math.max(c.R, c.G, c.B), math.min(c.R, c.G, c.B)
+		local d = mx - mn
+		if d < 1e-6 then return 0, 0 end
+		local h
+		if mx == c.R then h = ((c.G - c.B) / d) % 6 elseif mx == c.G then h = (c.B - c.R) / d + 2 else h = (c.R - c.G) / d + 4 end
+		return h * 60, d / mx
+	end
+	local ha, sa = hsv(a)
+	local hb, sb = hsv(b)
+	if sa < 0.25 or sb < 0.25 then return false end
+	local diff = math.abs(ha - hb) % 360
+	return math.min(diff, 360 - diff) <= deg
+end
+-- props.On: the colour it sits on (a card); within 30 degrees of the splat's hue, the splat gets a darker rim so it
+-- doesn't vanish into the card (CRITIC5 r2: the blue Rare splat on the blue Exclusive card).
 function Kit.splat(size, color, props)
 	props = props or {}
 	local z = props.ZIndex or 1
@@ -1214,17 +2125,25 @@ function Kit.splat(size, color, props)
 	end
 	if image ~= '' then
 		local file = kind == 'rainbow' and 'splat_rainbow' or kind == 'black' and 'splat_black' or 'splat'
+		local edge
+		if kind == nil and props.On and Kit.hueNear(c, props.On, 30) then
+			-- (made first: drawn under the splat, 4 px out all round)
+			edge = new('ImageLabel', { Name = 'Edge', BackgroundTransparency = 1, Image = image, ScaleType = Enum.ScaleType.Fit, ImageColor3 = c:Lerp(Color3.new(0, 0, 0), 0.55), AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(1, 8, 1, 8), ZIndex = z, Parent = holder })
+			edge:SetAttribute('PreviewImage', 'ui:' .. file)
+		end
 		local img = new('ImageLabel', { Name = 'Image', BackgroundTransparency = 1, Image = image, ScaleType = Enum.ScaleType.Fit, ImageColor3 = (kind == nil and color) or Kit.Color.white, Size = UDim2.fromScale(1, 1), ZIndex = z, Parent = holder })
 		img:SetAttribute('PreviewImage', 'ui:' .. file)
 		-- (brief 23) the blobs while the uploaded texture doesn't load (Kit.watchImage)
 		Kit.watchImage(img, function()
 			img.Visible = false
+			if edge then edge.Visible = false end
 			blobs(img.ImageTransparency)
 		end, function()
 			for _, d in holder:GetChildren() do
-				if d ~= img then d:Destroy() end
+				if d ~= img and d ~= edge then d:Destroy() end
 			end
 			img.Visible = true
+			if edge then edge.Visible = true end
 		end)
 		return holder
 	end
@@ -1636,6 +2555,103 @@ function Kit.fitWindow(panel, abs)
 	local w = panel:GetAttribute('DesignW') or fitter.Size.X.Offset
 	local h = panel:GetAttribute('DesignH') or fitter.Size.Y.Offset
 	scale.Scale = math.min(1, (rootW - 24) / w, (rootH - 10) / h)
+end
+
+-- (brief 27) The Store like the user's video A: ONE scrolling window and no header bar. A big "Shop" title with its basket
+-- floats over the window's top-left edge and a red square X over its top-right corner; a thin frame (a dark line with a
+-- light line inside it, rounded corners) holds a see-through dark body (the world, blurred by UIMotion.blur, shows
+-- through) with a faint stud tile. props: Name, Title ('Shop'), Icon (an icon3d id: the basket), Width / Height (the
+-- body, Kit.ShopWindow.W / H), TitleSize. Returns { Overlay, Fit, Panel (what UIMotion.open pops), Frame (the body), List
+-- (the ScrollingFrame to fill, ListW wide), Close (the X's hit), CloseButton, Title, Icon }. Kit.fitWindow(out.Panel, abs)
+-- shrinks the whole of it (title included) onto small screens. Measured on video A at 1280 wide: the window ~56% of the
+-- screen's width and ~61% of its height, the title's cap ~7% of the height, the X ~60 px.
+Kit.ShopWindow = { W = 800, H = 474, Top = 58, Corner = 16, Line = 3, Light = 4, Pad = 12, Bar = 7 }
+function Kit.shopWindow(root, props)
+	props = props or {}
+	local SW = Kit.ShopWindow
+	local w, h, top = props.Width or SW.W, props.Height or SW.H, SW.Top
+	local overlay = blank({ Name = (props.Name or 'Shop') .. 'Overlay', Size = UDim2.fromScale(1, 1), ZIndex = 20, Parent = root })
+	local fitter = blank({ Name = 'Fit', AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(w, h + top), ZIndex = 21, Parent = overlay })
+	new('UIScale', { Name = 'FitScale', Parent = fitter })
+	local panel = blank({ Name = props.Name or 'Shop', AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(1, 1), ZIndex = 21, Parent = fitter })
+	-- the body: a near-black at half strength, the dark line round it, the light line inside that
+	local frame = blank({ Name = 'Frame', BackgroundTransparency = 0.5, BackgroundColor3 = hex('0C0E16'), Position = UDim2.fromOffset(0, top), Size = UDim2.fromOffset(w, h), ZIndex = 21, Parent = panel })
+	corner(SW.Corner).Parent = frame
+	stroke(Kit.Color.black, SW.Line, true).Parent = frame
+	local rim = blank({ Name = 'Rim', Position = UDim2.fromOffset(SW.Light, SW.Light), Size = UDim2.new(1, -2 * SW.Light, 1, -2 * SW.Light), ZIndex = 21, Parent = frame })
+	corner(SW.Corner - SW.Light).Parent = rim
+	stroke(hex('DCE0EC'), SW.Light, true, 0.15).Parent = rim
+	if Kit.studsAreCheap() then
+		-- (the faint stud tile of the reference's body: one tiled image, its corners rounded with the frame)
+		local tile = Kit.studs(frame, { Width = w, Height = h, Pitch = 30, Color = Kit.Color.white, Transparency = 0.9, Shade = 0.1, MinAlpha = 0.86, ZIndex = 21 })
+		if tile then corner(SW.Corner).Parent = tile end
+	end
+	local pad = SW.Pad
+	-- (the list's own scroll bar is invisible but still takes drags; a drawn one shows where you are, over the cards' margin)
+	local list = new('ScrollingFrame', {
+		Name = 'Items', BackgroundTransparency = 1, BorderSizePixel = 0, Position = UDim2.fromOffset(pad, top + pad), Size = UDim2.fromOffset(w - 2 * pad, h - 2 * pad), ZIndex = 24,
+		ScrollBarThickness = SW.Bar, ScrollBarImageColor3 = Kit.Color.white, ScrollBarImageTransparency = 1, ScrollingDirection = Enum.ScrollingDirection.Y,
+		VerticalScrollBarInset = Enum.ScrollBarInset.None, AutomaticCanvasSize = Enum.AutomaticSize.Y, CanvasSize = UDim2.new(), Parent = panel,
+	})
+	local trackH = h - 2 * pad - 8
+	local track = blank({ Name = 'ScrollTrack', BackgroundTransparency = 0.6, BackgroundColor3 = Kit.Color.black, AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromOffset(w - pad + 2, top + pad + 4), Size = UDim2.fromOffset(SW.Bar, trackH), ZIndex = 30, Parent = panel })
+	corner(UDim.new(0.5, 0)).Parent = track
+	local thumb = blank({ Name = 'Thumb', BackgroundTransparency = 0.08, BackgroundColor3 = hex('E8ECF4'), Size = UDim2.new(1, 0, 0, 40), ZIndex = 31, Parent = track })
+	corner(UDim.new(0.5, 0)).Parent = thumb
+	local contentH = h
+	-- where the drawn bar's thumb sits: its height is the share of the list in view, its place the scroll
+	local function placeThumb()
+		local view = list.Size.Y.Offset
+		local th = math.clamp(trackH * view / math.max(view, contentH), 36, trackH)
+		local maxY = math.max(1, contentH - view)
+		local f = math.clamp(list.CanvasPosition.Y / maxY, 0, 1)
+		thumb.Size = UDim2.new(1, 0, 0, th)
+		thumb.Position = UDim2.fromOffset(0, math.floor(f * (trackH - th) + 0.5))
+		track.Visible = contentH > view + 1
+	end
+	list:GetPropertyChangedSignal('CanvasPosition'):Connect(placeThumb)
+	-- the floating title and its basket, over the top-left edge
+	local titleSize = props.TitleSize or 80
+	local iconSize = math.floor(titleSize * 1.2)
+	local icon = Kit.icon3d(props.Icon or 'Shop', iconSize, { ZIndex = 31, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(iconSize * 0.36, top - 12), Rotation = -6 })
+	icon.Parent = panel
+	local title = Kit.text({
+		Name = 'Title', Text = props.Title or 'Shop', TextSize = titleSize, Stroke = Kit.Color.black, StrokeThickness = math.max(4, titleSize * 0.075),
+		-- (its box hugs the letters, so it never sits over the list's first line)
+		TextXAlignment = Enum.TextXAlignment.Left, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.fromOffset(math.floor(iconSize * 0.82), top - 14), Size = UDim2.fromOffset(w * 0.6, math.floor(titleSize * 0.82)), ZIndex = 32, Parent = panel,
+	})
+	-- the red square X over the top-right corner
+	local xs = props.CloseSize or 64
+	local close, closeHit = Kit.blockButton({ Name = 'Close', Tone = 'rose', Width = xs, Height = xs, Text = 'X', TextSize = math.floor(xs * 0.66), Studs = false, Outline = 4, RimWidth = 3, Radius = 8, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(w - 10, top + 4), ZIndex = 32 })
+	close.Parent = panel
+	panel:SetAttribute('DesignW', w)
+	panel:SetAttribute('DesignH', h + top)
+	return {
+		Overlay = overlay, Fit = fitter, Panel = panel, Frame = frame, List = list, ListW = w - 2 * pad, Close = closeHit, CloseButton = close, Title = title, Icon = icon,
+		-- the list's content height (the caller knows it: its blocks' sizes) and the bar's width (thicker on phones)
+		SetContent = function(height) contentH = height; placeThumb() end,
+		SetBar = function(width)
+			track.Size = UDim2.fromOffset(width, trackH)
+			list.ScrollBarThickness = width
+		end,
+		PlaceThumb = placeThumb,
+	}
+end
+
+-- (brief 27, CRITIC5) Video A's white sunburst behind a card's art: `n` soft rays (bars through the centre, faded at the
+-- middle and the ends) at `alpha`, static. A `size` square. props: Position, AnchorPoint, ZIndex, Rays (14), Alpha (0.15),
+-- Color.
+function Kit.sunburst(size, props)
+	props = props or {}
+	local z = props.ZIndex or 1
+	local holder = blank({ Name = 'Sunburst', Size = UDim2.fromOffset(size, size), Position = props.Position or UDim2.new(), AnchorPoint = props.AnchorPoint or Vector2.zero, ZIndex = z })
+	local bars = math.floor((props.Rays or 14) / 2)
+	local a = 1 - (props.Alpha or 0.15)
+	for i = 1, bars do
+		local bar = blank({ Name = 'Ray' .. i, BackgroundTransparency = 0, BackgroundColor3 = props.Color or Kit.Color.white, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(0, math.max(4, math.floor(size * 0.09)), 1, 0), Rotation = (i - 1) * 180 / bars, ZIndex = z, Parent = holder })
+		new('UIGradient', { Rotation = 90, Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.08, a), NumberSequenceKeypoint.new(0.38, a), NumberSequenceKeypoint.new(0.5, 1), NumberSequenceKeypoint.new(0.62, a), NumberSequenceKeypoint.new(0.92, a), NumberSequenceKeypoint.new(1, 1) }), Parent = bar })
+	end
+	return holder
 end
 
 -- 1234 -> "1.2K", 15300000 -> "15.3M"

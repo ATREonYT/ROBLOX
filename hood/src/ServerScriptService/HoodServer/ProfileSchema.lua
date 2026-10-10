@@ -25,6 +25,8 @@ Schema.Template={
  -- best is worn, the others follow you) and how many boxes you have opened. Goals.Chain = GoalRules.Chain (a goal
  -- inserted into the chain moves older saves' steps; GoalRules.migrate).
  Shoes={Owned={},Equipped={},Opened=0},
+ -- (brief 27) The Store's codes used: {[CODE]=os.time used} (HoodServer/Codes: each code once per player).
+ Codes={},
 }
 function Schema.new() return clone(Schema.Template) end
 function Schema.migrate(data)
@@ -58,6 +60,9 @@ function Schema.migrate(data)
  end
  -- Shoes (added with the shoe boxes): new profiles start with none; a damaged table is cleaned, never a reason to kick.
  data.Shoes=require(game.ReplicatedStorage.Shared.ShoeRules).sanitize(data.Shoes)
+ -- Codes (brief 27): a profile from before them gets an empty table; a damaged one is cleaned, never a reason to kick.
+ -- No version bump: an older server that loads this profile keeps the field as it is.
+ data.Codes=require(script.Parent.Codes).sanitize(data.Codes)
  reconcile(data,Schema.Template)
  require(game.ReplicatedStorage.Shared.WaveRules).sanitize(data.Waves)
  require(game.ReplicatedStorage.Shared.GoalRules).sanitize(data.Goals)
@@ -98,6 +103,8 @@ function Schema.validate(data)
  local on={}
  for _,id in ipairs(s.Equipped) do on[id]=(on[id] or 0)+1;assert((s.Owned[id] or 0)>=on[id],'Equipped shoe not owned') end
  assert(type(s.Opened)=='number' and s.Opened%1==0 and s.Opened>=0,'Invalid Shoes.Opened')
+ assert(type(data.Codes)=='table','Invalid Codes')
+ for code,at in pairs(data.Codes) do assert(type(code)=='string' and type(at)=='number' and at==at and at>=0,'Invalid used code') end
  return true
 end
 function Schema.public(data)
