@@ -5,3 +5,4 @@ rojo.exe
 # Roblox Studio lock files (created while a place file is open)
 *.rbxl.lock
 *.rbxlx.lock
+__pycache__/
