@@ -101,7 +101,7 @@ return function(t)
 		end
 		-- (as Store.client's Exclusive cards and Inventory.client's Guns tab make them)
 		for _, b in Shoes.Boxes do
-			if b.Robux then table.insert(cases, { 'box', b.Id, Vector2.new(285, 318), { Whole = true, Fill = 0.98, MaxReach = 0.99, Overflow = 1, Pitch = 24, Fov = 14 } }) end
+			if b.Robux then table.insert(cases, { 'box', b.Id, Vector2.new(285, 307), { Whole = true, Fill = 0.99, MaxReach = 0.99, Overflow = 1, Pitch = 24, Fov = 14 } }) end
 		end
 		for _, id in idsOf('gun') do table.insert(cases, { 'gun', id, Vector2.new(170, 170), { Fill = 0.92, YWeight = 1.4 } }) end
 		for _, c in cases do

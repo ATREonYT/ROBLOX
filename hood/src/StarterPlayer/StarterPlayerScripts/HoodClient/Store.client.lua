@@ -279,6 +279,7 @@ end
 -- rarity splats) with their true chances; the x8 / x3 / x1 buttons, biggest first, each bundle with its real
 -- one-by-one price struck through inside the button and its "SAVE n%".
 local BOX_H, BOX_POP, BOX_GAP = 290, 28, 14
+local BOX_FOOT = 11 -- (px kept clear under the box: it stands on its card, not on the card's bottom border)
 local BUNDLE_TONE = { [8] = 'rainbow', [3] = 'gold' } -- (x1: the green Robux button)
 local function boxTone(first)
 	return first.Tone == 'cardPurple' and 'storeMagenta' or 'storeBlue'
@@ -295,7 +296,9 @@ local function itemSplat(parent, cx, cy, itemW, color, kind, rot, z, on)
 	sp.Parent = parent
 	return sp
 end
-local function boxCard(rows, y, parent)
+-- over: the box cards' top layer (their buttons, counts and SAVE badges), drawn over every box card, so a box standing
+-- over the card above (its halo, its wings) always stays under that card's buttons.
+local function boxCard(rows, y, parent, over)
 	local first = rows[1]
 	local boxId = first.Box or (first.Art or ''):match('^box:(.+)$') or ''
 	local box = Shoes and Shoes.BoxById and Shoes.BoxById[boxId]
@@ -303,10 +306,10 @@ local function boxCard(rows, y, parent)
 	local c = card({ Key = 'Box_' .. boxId }, tone, CW, BOX_H, MARGIN, y, parent)
 	local z = 28
 	local left = math.floor(CW * 0.38) -- (the box's side of the card)
-	-- the real box, the WHOLE model (topper and sparkles too) framed to fill the card's left part and BOX_POP over it:
-	-- nothing is cut. Its camera looks down a little more (24 degrees) and nearly flat-on (FOV 14), so a halo on top
-	-- reads as a ring, not a bar.
-	local art = Kit.model3d('box', boxId, Vector2.new(left, BOX_H + BOX_POP), { ZIndex = z, Whole = true, Fill = 0.98, MaxReach = 0.99, Overflow = 1, Pitch = 24, Fov = 14, Priority = 5, PreviewKind = 'boxhero' })
+	-- the real box, the WHOLE model (topper and sparkles too) framed to fill the card's left part and BOX_POP over it,
+	-- BOX_FOOT clear of its bottom: nothing is cut. Its camera looks down a little more (24 degrees) and nearly flat-on
+	-- (FOV 14), so a halo on top reads as a ring, not a bar.
+	local art = Kit.model3d('box', boxId, Vector2.new(left, BOX_H + BOX_POP - BOX_FOOT), { ZIndex = z, Whole = true, Fill = 0.99, MaxReach = 0.99, Overflow = 1, Pitch = 24, Fov = 14, Priority = 5, PreviewKind = 'boxhero' })
 	art.Position = px(-3, -BOX_POP - 3)
 	art.Parent = c.Body
 	local artHit = Kit.new('TextButton', { Name = 'ArtHit', Text = '', AutoButtonColor = false, BackgroundTransparency = 1, Size = px(left, BOX_H), ZIndex = 34, Parent = c.Body })
@@ -367,14 +370,18 @@ local function boxCard(rows, y, parent)
 	local bundles = #rows - (single and 1 or 0)
 	local bw = math.floor((right - (#rows - 1) * gap - (single or 0)) / math.max(1, bundles))
 	local by = BOX_H - BTN_H - 10
+	-- (on the top layer, at this card's body's place in it)
+	local layer = over or c.Body
+	local ox, oy = 0, 0
+	if over then ox, oy = MARGIN + c.Body.Position.X.Offset, y + c.Body.Position.Y.Offset end
 	local x = left
 	for _, r in ipairs(rows) do
 		local count = r.Count or 1
 		local w = (count == 1 and single) or bw
 		local whole = Products.savings(r.Key)
-		priceButton(c.Body, r, w, BTN_H, px(x, by), Vector2.zero, z + 2, BUNDLE_TONE[count], { Was = whole, TextSize = 28 })
-		label({ Name = 'Count' .. count, Text = 'x' .. count, TextSize = 24, StrokeThickness = 3.5, TextXAlignment = Enum.TextXAlignment.Left, AnchorPoint = Vector2.new(0, 0.5), Position = px(x, by - 17), Size = px(50, 30), ZIndex = z + 6, Parent = c.Body })
-		saveBadge(c.Body, r.Key, px(x + w, by - 17), Vector2.new(1, 0.5), z + 6)
+		priceButton(layer, r, w, BTN_H, px(ox + x, oy + by), Vector2.zero, z + 2, BUNDLE_TONE[count], { Was = whole, TextSize = 28 })
+		label({ Name = 'Count' .. count, Text = 'x' .. count, TextSize = 24, StrokeThickness = 3.5, TextXAlignment = Enum.TextXAlignment.Left, AnchorPoint = Vector2.new(0, 0.5), Position = px(ox + x, oy + by - 17), Size = px(50, 30), ZIndex = z + 6, Parent = layer })
+		saveBadge(layer, r.Key, px(ox + x + w, oy + by - 17), Vector2.new(1, 0.5), z + 6)
 		sections[r.Key] = c
 		x += w + gap
 	end
@@ -563,8 +570,9 @@ local function build()
 				table.insert(byBox[id], entry)
 			end
 			-- (no room added for the boxes standing out of their cards: the first stands in the section title's room)
+			local over = Kit.new('Frame', { Name = 'BoxButtons', BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 26 + #boxes, Parent = block })
 			for k, id in boxes do
-				sections[id] = boxCard(byBox[id], y, block)
+				sections[id] = boxCard(byBox[id], y, block, over)
 				sections[id].ZIndex += k -- (each card over the one before: its box stands over that card's bottom edge)
 				y += BOX_H + BOX_GAP
 			end
