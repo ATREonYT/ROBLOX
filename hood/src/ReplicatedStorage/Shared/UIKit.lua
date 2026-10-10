@@ -720,14 +720,14 @@ end
 -- shaped `Kit.<Name> = '<id>' -- hood/art/ui/<file>.png` from the file named in its comment; paste ids by hand the same
 -- way. '' = not uploaded: everything still draws, with UI frames instead. Set, Kit.studs draws ONE tiled ImageLabel per
 -- block instead of a frame (or two) per stud: the HUD's biggest instance cost after the live icon models.
-Kit.StudBevel = '' -- hood/art/ui/stud_bevel.png
-Kit.StudChecker = '' -- hood/art/ui/stud_checker.png
-Kit.StudTile = '' -- hood/art/ui/stud_tile.png
-Kit.GlossBand = '' -- hood/art/ui/gloss_band.png
-Kit.GlossStripes = '' -- hood/art/ui/gloss_stripes.png
-Kit.Splat = '' -- hood/art/ui/splat.png
-Kit.SplatRainbow = '' -- hood/art/ui/splat_rainbow.png
-Kit.SplatBlack = '' -- hood/art/ui/splat_black.png
+Kit.StudBevel = 'rbxassetid://139282026688556' -- hood/art/ui/stud_bevel.png
+Kit.StudChecker = 'rbxassetid://118305896629632' -- hood/art/ui/stud_checker.png
+Kit.StudTile = 'rbxassetid://73170865063856' -- hood/art/ui/stud_tile.png
+Kit.GlossBand = 'rbxassetid://138159080318845' -- hood/art/ui/gloss_band.png
+Kit.GlossStripes = 'rbxassetid://101972782810941' -- hood/art/ui/gloss_stripes.png
+Kit.Splat = 'rbxassetid://102123425905753' -- hood/art/ui/splat.png
+Kit.SplatRainbow = 'rbxassetid://138967590529890' -- hood/art/ui/splat_rainbow.png
+Kit.SplatBlack = 'rbxassetid://101192232825527' -- hood/art/ui/splat_black.png
 --   StudBevel: one stud per tile, pre-shaded (a white highlight and a black shadow in its alpha): drawn white, it gives
 --     the reference's light top-left and dark bottom-right edges on any colour. The default stud.
 --   StudChecker: 2 x 2 studs, raised and recessed alternating (the reference's level bar, its Rebirth boxes and buttons),
