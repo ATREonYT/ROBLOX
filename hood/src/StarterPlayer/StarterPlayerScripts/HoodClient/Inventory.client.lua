@@ -9,9 +9,9 @@
 --            ("x2"), best first. Tap a pair to put it on, tap one above to take it off.
 --            Under the window: Index (every World 1 shoe: yours in colour, the rest as black silhouettes) and the bar:
 --            the red X = recycle mode (tap a spare pair twice to recycle it for Cash), the star = equip your best
---   Guns     the gun you use, then every gun of the ladder (yours in colour, the rest dark with their price); tap one
---            of yours to hold it (GunService's EquipGun works anywhere for a gun you own, brief 23); guns are bought
---            at the ARMORY
+--   Guns     (brief 24) only the gun in your hand, big, with its name and "xN Power"; arrows and a short strip of the
+--            guns you own switch it (GunService's EquipGun works anywhere for a gun you own, brief 23); no empty slots,
+--            no locked guns: guns are bought at the ARMORY
 --   Items    your timed boosts (the running one and the queued ones, with the time left) and the game passes (yours in
 --            colour; tap another to see it in the Store)
 --   Boxes    World 1's four shoe boxes, each with its shoes and their chances, and how to get it
@@ -31,7 +31,6 @@ local Format = require(Shared.Format)
 local Shoes = require(Shared.Config.Shoes)
 local ShoeRules = require(Shared.ShoeRules)
 local Products = require(Shared.Config.Products)
-local Guns = require(Shared.Config.Guns)
 local IK = require(Shared.InventoryKit)
 
 local player = Players.LocalPlayer
@@ -113,7 +112,7 @@ local function openStore(at)
 	if open and open:IsA('BindableEvent') then open:Fire(at) else say('Loading...') end
 end
 
--- Icons hold live models, so each is kept (per place it shows in) and moved into the rebuilt page.
+-- Icons are kept (per place they show in) and moved into the rebuilt page, so a repaint doesn't rebuild every picture.
 local iconCache = {}
 local function cached(key, make)
 	local h = iconCache[key]
@@ -333,7 +332,7 @@ local function paintIndex()
 					Name = id, Color = s.Owned and color or hex('596273'), Kind = s.Owned and rainbow and 'rainbow' or nil, Dim = not s.Owned,
 					Value = s.Owned and ShoeRules.bonusText(Shoes.bonus(id)) or '???', ValueColor = not s.Owned and hex('B8C0CC') or nil, ValueSize = 30,
 					Badge = s.Copies > 0 and ('x' .. s.Copies) or nil, BadgeSize = 28, ZIndex = 26,
-					Icon = cached('idx:' .. id .. (s.Owned and '' or ':dark'), function() return IK.shoeIcon(id, S.Icon - 6, { ZIndex = 27, Locked = not s.Owned }) end),
+					Icon = cached('idx:' .. id .. (s.Owned and '' or ':dark'), function() return IK.shoeIcon(id, S.Icon, { ZIndex = 27, Locked = not s.Owned }) end),
 					Position = px(innerW / 2 + (i - (#shown + 1) / 2) * L.Pitch - S.W / 2, 50),
 				})
 				holder.Parent = section
@@ -350,54 +349,93 @@ local function paintIndex()
 end
 
 ---------------------------------------------------------------------------------------------- Guns
+-- (brief 24, the user: "make the guns menu just show the gun equipped, and you can switch it out for others, without
+-- extra slots for guns") Only the gun in your hand, big, over its splat, with its name and "xN Power". With more than
+-- one gun: arrows either side switch to the previous / next gun you own, and a short strip under it holds only the
+-- guns you own (tap one to hold it; GunService's EquipGun works anywhere for a gun you own). No empty slots, no locked
+-- guns: buying stays at the ARMORY (one line says so while the Rusty Pistol is all you have).
+local gunView -- the gun shown: the one in your hand, or the one just picked while the server equips it
+local shownGun -- (the gun the page showed last: a new one pops in)
+local function ownedGuns()
+	local list = {}
+	for _, e in IK.guns(player:GetAttribute('OwnedGuns'), player:GetAttribute('EquippedGun')) do
+		if e.State ~= 'Locked' then table.insert(list, e) end
+	end
+	return list
+end
+local function holdGun(id)
+	if id == gunView then return end
+	gunView = id
+	Net.get('EquipGun'):FireServer(id) -- (the server says "Equipped ...!" and puts it in your hand)
+	refresh(true)
+end
+local GUN = { Y = 236, Size = 196, NameY = 356, PowerY = 392, StripY = 452, Slot = 80, Pitch = 96, ArrowX = 262 }
 local function paintGuns()
 	newPage()
-	local all = IK.guns(player:GetAttribute('OwnedGuns'), player:GetAttribute('EquippedGun'))
-	local using
-	for _, e in all do if e.State == 'Equipped' then using = e.Gun end end
-	IK.titleLine(page, 'Equipped  1/1', L.TitleY, { ZIndex = 26 })
-	if using then
-		local holder, hit = rowSlot({ Name = 'Using', Color = using.Color, Value = 'x' .. using.Multiplier, Icon = cached('gunOn:' .. using.Id, function() return IK.gunIcon(using.Id, S.Icon, { ZIndex = 27 }) end) }, 1, 2)
-		local show = nameTag(holder, hit, using.Name)
-		hit.Activated:Connect(function() show(); press(holder) end)
+	local owned = ownedGuns()
+	local shown
+	for _, e in owned do if e.Gun.Id == gunView then shown = e end end
+	if not shown then
+		for _, e in owned do if e.State == 'Equipped' then shown = e end end
 	end
-	local plus, plusHit = rowSlot({ Name = 'Armory', Kind = 'black', Text = '+', TextSize = 44, SplatRotation = 12 }, 2, 2)
-	plusHit.Activated:Connect(function()
-		press(plus)
-		say('At the ARMORY')
-	end)
-	IK.divider(page, { Name = 'Line2', Fade = 'both', Position = px(L.Outline + 6, L.Line2Y), Size = px(L.W - 2 * (L.Outline + 6), 7), ZIndex = 25 })
-	local g = grid()
-	local cash = player:GetAttribute('Cash')
-	cash = type(cash) == 'number' and cash or 0
-	local any = false
-	for order, e in all do
-		local gun = e.Gun
-		if IK.matches(gun.Name, state.Query) then
-			any = true
-			local owned = e.State ~= 'Locked'
-			local holder, hit = IK.slot({
-				Name = gun.Id, LayoutOrder = order, Color = owned and gun.Color or hex('596273'), Dim = not owned, ZIndex = 26,
-				Value = owned and ('x' .. gun.Multiplier) or Kit.short(gun.Cost), ValueColor = (not owned) and (cash >= gun.Cost and hex('7CFF4F') or hex('FFD21A')) or nil,
-				Icon = cached('gun:' .. gun.Id .. (owned and '' or ':dark'), function() return IK.gunIcon(gun.Id, S.Icon, { ZIndex = 27, Locked = not owned }) end),
-			})
-			holder.Parent = g
-			if not owned then
-				Kit.icon3d('Cash', 30, { AnchorPoint = Vector2.new(1, 0.5), Position = px(S.W / 2 - Kit.textWidth(Kit.short(gun.Cost), L.ValueSize) / 2 + 4, S.CY + 52), ZIndex = 30, Outline = false }).Parent = holder
-			end
-			local show = nameTag(holder, hit, gun.Name)
-			hit.Activated:Connect(function()
-				show()
-				press(holder)
-				if e.State == 'Owned' then
-					Net.get('EquipGun'):FireServer(gun.Id) -- (the server says "Equipped ...!"; the gun goes into your hand)
-				elseif e.State == 'Locked' then
-					say('At the ARMORY')
-				end
-			end)
-		end
+	shown = shown or owned[1]
+	if not shown then return end
+	local gun = shown.Gun
+	gunView = gun.Id
+	local cx = L.W / 2
+	IK.titleLine(page, 'Equipped', L.TitleY, { ZIndex = 26 })
+	-- the gun, big, over its splat
+	IK.splat(math.floor(GUN.Size * 1.3), gun.Color, { AnchorPoint = Vector2.new(0.5, 0.5), Position = px(cx - 3, GUN.Y + 8), Rotation = -8, ZIndex = 26 }).Parent = page
+	local art = cached('gunBig:' .. gun.Id, function() return IK.gunIcon(gun.Id, GUN.Size, { ZIndex = 27 }) end)
+	art.AnchorPoint = Vector2.new(0.5, 0.5)
+	art.Position = px(cx, GUN.Y)
+	art.Parent = page
+	if shownGun ~= gun.Id then
+		if shownGun then Motion.pop(art, 0.12) end
+		shownGun = gun.Id
 	end
-	if not any then emptyLine('No match', 410) end
+	label({ Name = 'GunName', Text = gun.Name, TextSize = Kit.fitSize(gun.Name, 40, 460, 20), StrokeThickness = 4.5, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(cx, GUN.NameY), Size = px(480, 46), ZIndex = 28, Parent = page })
+	local power = label({ Name = 'GunPower', Text = 'x' .. gun.Multiplier .. ' Power', TextSize = 32, StrokeThickness = 4, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(cx, GUN.PowerY), Size = px(420, 38), ZIndex = 28, Parent = page })
+	Kit.new('UIGradient', { Rotation = 90, Color = ColorSequence.new(hex('FFF27A'), hex('FFA81A')), Parent = power })
+	if #owned <= 1 then
+		local more = label({ Name = 'More', Text = 'More guns at the ARMORY', TextSize = 24, StrokeThickness = 3, TextColor3 = hex('5AE0FF'), AnchorPoint = Vector2.new(0.5, 0.5), Position = px(cx, GUN.StripY), Size = px(600, 32), ZIndex = 28, Parent = page })
+		more.TextTransparency = 0.05
+		return
+	end
+	-- the arrows: the previous / next gun you own
+	local at = table.find(owned, shown) or 1
+	for _, side in { -1, 1 } do
+		local arrow = Kit.blockButton({ Name = side < 0 and 'Prev' or 'Next', Tone = IK.Tone.tabOn, Width = 70, Height = 84, Text = side < 0 and '<' or '>', TextSize = 54, Outline = 4, RimWidth = 3, Studs = L.StudPitch, StudPattern = 'recessed', StudShade = 0.7, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(cx + side * GUN.ArrowX, GUN.Y), ZIndex = 30 })
+		arrow.Parent = page
+		Motion.button(arrow, function()
+			local nxt = owned[(at - 1 + side) % #owned + 1]
+			holdGun(nxt.Gun.Id)
+		end)
+	end
+	-- the strip: only the guns you own, the shown one lit
+	local list = {}
+	for _, e in owned do
+		if IK.matches(e.Gun.Name, state.Query) or e == shown then table.insert(list, e) end
+	end
+	for i, e in list do
+		local on = e == shown
+		local x = cx + (i - (#list + 1) / 2) * GUN.Pitch
+		local slab = IK.block({ Name = 'Own_' .. e.Gun.Id, Tone = on and 'tabOn' or 'tabOff', Width = GUN.Slot, Height = GUN.Slot, Outline = on and 4 or 3, RimWidth = 3, StudShade = on and 0.75 or 0.55, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(x, GUN.StripY), ZIndex = 27 })
+		slab.Parent = page
+		local ic = cached('gunStrip:' .. e.Gun.Id, function() return IK.gunIcon(e.Gun.Id, GUN.Slot - 10, { ZIndex = 30 }) end)
+		ic.AnchorPoint = Vector2.new(0.5, 0.5)
+		ic.Position = UDim2.fromScale(0.5, 0.5)
+		ic.Parent = slab
+		local tag = label({ Name = 'Mult', Text = 'x' .. e.Gun.Multiplier, TextSize = 20, StrokeThickness = 3, AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, 4, 1, 6), Size = px(60, 24), TextXAlignment = Enum.TextXAlignment.Right, ZIndex = 34, Parent = slab })
+		tag.TextColor3 = on and hex('FFE24A') or Color3.new(1, 1, 1)
+		local hit = Kit.new('TextButton', { Name = 'Hit', Text = '', AutoButtonColor = false, BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 36, Parent = slab })
+		local show = nameTag(slab, hit, e.Gun.Name)
+		hit.Activated:Connect(function()
+			show()
+			press(slab)
+			holdGun(e.Gun.Id)
+		end)
+	end
 end
 
 ---------------------------------------------------------------------------------------------- Items
@@ -418,75 +456,104 @@ local function artIcon(art, size, locked, key)
 		if kind == 'gun' then return IK.gunIcon(id, size, { ZIndex = 27, Locked = locked }) end
 		if kind == 'shoe' then return IK.shoeIcon(id, size, { ZIndex = 27, Locked = locked }) end
 		if kind == 'box' or kind == 'boxes' then return IK.boxIcon(id, size, { ZIndex = 27, Locked = locked }) end
-		return IK.icon({ id or 'Rewards', 'Rewards' }, size, { ZIndex = 27, Locked = locked })
+		return IK.icon({ id or 'Rewards', 'Rewards' }, size, { ZIndex = 27, Locked = locked, Bare = true })
 	end)
+end
+-- (the lead, r1) a pass you don't own: its card greyed (a slate tone; the picture toned down), the price chip under it
+local PASS_OFF = { top = hex('8E96A6'), base = hex('5D6474'), lip = hex('454B58'), stroke = hex('1C2029'), rim = hex('AAB1BE') }
+local function greyed(node)
+	for _, d in node:GetDescendants() do
+		if d:IsA('ImageLabel') then
+			d.ImageColor3 = Color3.fromRGB(150, 154, 166)
+		elseif d:IsA('Frame') and d:FindFirstAncestor('Flat') and d.BackgroundTransparency < 1 then
+			d.BackgroundColor3 = d.BackgroundColor3:Lerp(Color3.fromRGB(128, 132, 144), 0.75)
+		end
+	end
+	return node
 end
 local function paintItems()
 	newPage()
 	table.clear(boostLabels)
 	local boosts = boostList()
 	IK.titleLine(page, 'Boosts  ' .. #boosts, L.TitleY, { ZIndex = 26 })
-	-- each boost a potion on its splat, "x3" in the corner like a stack and the time left under it (the running one
-	-- counting down in green); no boost, no empty slot: just the black "+" (the Store's boosts)
-	local shown = math.min(3, #boosts)
-	local n = shown + 1
-	for i = 1, shown do
-		local b = boosts[i]
-		local potion = b.Party and { 'Rewards' } or (b.Level >= 3 and { 'PotionGold', 'PowerPack3', 'Power' } or { 'PotionRed', 'DoublePower', 'Power' })
-		local holder, hit = rowSlot({
-			Name = 'Boost' .. i, Color = b.Party and hex('B26CFF') or b.Level >= 3 and hex('FFC21A') or hex('FF4A4A'),
-			Value = IK.timeText(b.Left), ValueColor = b.Running and hex('7CFF4F') or hex('D8E0EA'), Badge = 'x' .. b.Level,
-			Icon = cached('boost' .. i .. ':' .. table.concat(potion, ','), function() return IK.icon(potion, S.Icon - 8, { ZIndex = 27 }) end),
-		}, i, n)
-		local value = holder:FindFirstChild('Value')
-		if value then table.insert(boostLabels, { Label = value, Index = i }) end
-		local show = nameTag(holder, hit, b.Party and 'Block Party' or (b.Running and 'Running now' or 'Up next'))
-		hit.Activated:Connect(function() show(); press(holder) end)
+	if #boosts == 0 then
+		-- (the lead, r1: no black "hole") no boost yet: a soft card with a potion, a line, and "Get boosts" (the Store's boosts)
+		local cardW, cardH = 640, 118
+		local card = blank({ Name = 'NoBoosts', BackgroundTransparency = 0.8, BackgroundColor3 = Color3.new(1, 1, 1), AnchorPoint = Vector2.new(0.5, 0.5), Position = px(L.W / 2, (L.TitleY + L.Line2Y) / 2 + 8), Size = px(cardW, cardH), ZIndex = 26, Parent = page })
+		Kit.corner(UDim.new(0, 22)).Parent = card
+		Kit.stroke(Color3.new(1, 1, 1), 2.5, true, 0.45).Parent = card
+		local potion = cached('noBoost', function() return IK.icon({ 'PotionRed', 'DoublePower', 'Power' }, 96, { ZIndex = 27, Bare = true }) end)
+		potion.AnchorPoint = Vector2.new(0.5, 0.5)
+		potion.Position = px(64, cardH / 2)
+		potion.Parent = card
+		label({ Name = 'Line', Text = 'No boosts yet', TextSize = 34, StrokeThickness = 4, TextXAlignment = Enum.TextXAlignment.Left, Position = px(124, 18), Size = px(300, 42), ZIndex = 27, Parent = card })
+		label({ Name = 'Sub', Text = '2x or 3x Power for 15 min', TextSize = 21, StrokeThickness = 2.5, TextColor3 = hex('BFF4FF'), TextXAlignment = Enum.TextXAlignment.Left, Position = px(124, 62), Size = px(300, 28), ZIndex = 27, Parent = card })
+		local get = Kit.blockButton({ Name = 'GetBoosts', Tone = 'lime', OutlineColor = Kit.Tone.lime.stroke, Width = 190, Height = 62, Text = 'Get boosts', TextSize = 27, Studs = false, Outline = 3.5, AnchorPoint = Vector2.new(1, 0.5), Position = px(cardW - 18, cardH / 2), ZIndex = 27 })
+		get.Parent = card
+		Motion.button(get, function() openStore('Boost') end)
+	else
+		-- each boost a potion on its splat, "x3" in the corner like a stack and the time left under it (the running one
+		-- counting down in green), then a green "+" (the Store's boosts)
+		local shown = math.min(3, #boosts)
+		local n = shown + 1
+		for i = 1, shown do
+			local b = boosts[i]
+			local potion = b.Party and { 'BlockParty', 'Rewards' } or (b.Level >= 3 and { 'PotionGold', 'PowerPack3', 'Power' } or { 'PotionRed', 'DoublePower', 'Power' })
+			local holder, hit = rowSlot({
+				Name = 'Boost' .. i, Color = b.Party and hex('B26CFF') or b.Level >= 3 and hex('FFC21A') or hex('FF4A4A'),
+				Value = IK.timeText(b.Left), ValueColor = b.Running and hex('7CFF4F') or hex('D8E0EA'), Badge = 'x' .. b.Level,
+				Icon = cached('boost' .. i .. ':' .. table.concat(potion, ','), function() return IK.icon(potion, S.Icon, { ZIndex = 27, Bare = true }) end),
+			}, i, n)
+			local value = holder:FindFirstChild('Value')
+			if value then table.insert(boostLabels, { Label = value, Index = i }) end
+			local show = nameTag(holder, hit, b.Party and 'Block Party' or (b.Running and 'Running now' or 'Up next'))
+			hit.Activated:Connect(function() show(); press(holder) end)
+		end
+		local plus = Kit.blockButton({ Name = 'MoreBoosts', Tone = 'lime', OutlineColor = Kit.Tone.lime.stroke, Width = 76, Height = 76, Text = '+', TextSize = 52, Studs = false, Outline = 3.5, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(rowX(n, math.max(n, ShoeRules.MaxEquipped + 1)), L.RowY), ZIndex = 27 })
+		plus.Parent = page
+		Motion.button(plus, function() openStore('Boost') end)
 	end
-	local plus, plusHit = rowSlot({ Name = 'MoreBoosts', Kind = 'black', Text = '+', TextSize = 44, SplatRotation = 12 }, n, n)
-	plusHit.Activated:Connect(function()
-		press(plus)
-		openStore('Boost')
-	end)
 	IK.divider(page, { Name = 'Line2', Fade = 'both', Position = px(L.Outline + 6, L.Line2Y), Size = px(L.W - 2 * (L.Outline + 6), 7), ZIndex = 25 })
-	-- the passes under their own title, "Gamepasses  n/6" between fading lines like "Equipped  3/3"
+	-- (the lead, r1) every pass as a small card: yours in its colour ("Yours!"), the rest greyed with the price chip; a tap
+	-- on one you don't have opens its purchase
 	local passes = IK.passes(function(k) return player:GetAttribute(k) end)
 	local owned = 0
 	for _, p in passes do if p.Owned then owned += 1 end end
 	IK.titleLine(page, 'Gamepasses  ' .. owned .. '/' .. #passes, L.PassTitleY, { Name = 'PassTitle', ZIndex = 26 })
-	-- (all of them in one row: a tighter pitch, the names fitted to it)
-	local pitch = math.min(L.Pitch, math.floor((L.W - 2 * (L.Outline + 6) - S.W) / math.max(1, #passes - 1)) - 1)
-	local g = grid(L.PassTitleY + 18, L.W / 2 - (math.min(#passes, 7) - 1) / 2 * pitch, L.PassRowY, pitch)
-	local captionFloor = IK.readable(W, 14, 10)
-	local any = false
-	for order, p in passes do
-		local entry = p.Entry
-		if IK.matches(entry.Title, state.Query) then
-			any = true
-			local tone = Kit.Tone[entry.Tone] or Kit.Tone.gold
-			local holder, hit = IK.slot({
-				Name = entry.Key, LayoutOrder = order, Color = tone.base, Splat = p.Owned, ZIndex = 26, -- (the ones you don't own: bare silhouettes, as the Index's)
-				Value = entry.Title, ValueSize = 24, ValueWidth = pitch - 6, ValueColor = not p.Owned and hex('B8C0CC') or nil,
-				Badge = p.Owned and 'Yours' or nil, BadgeColor = hex('7CFF4F'), BadgeSize = 20,
-				Icon = artIcon(entry.Art, S.Icon - 10, not p.Owned, 'pass:' .. entry.Key .. (p.Owned and '' or ':dark')),
-			})
-			-- (on a phone the fitted name would be under the 10 dp floor: it keeps that size on two lines instead)
-			local name = holder:FindFirstChild('Value')
-			if name and name.TextSize < captionFloor then
-				name.TextSize, name.TextWrapped = captionFloor, true
-				name.Size = px(pitch - 4, captionFloor * 2 + 4)
-				name.Position = px(S.W / 2, S.CY + 46 + captionFloor / 2)
-			end
-			holder.Parent = g
-			local show = nameTag(holder, hit, p.Owned and 'Yours!' or 'In the Store')
-			hit.Activated:Connect(function()
-				show()
-				press(holder)
-				if not p.Owned then openStore(entry.Key) end
-			end)
-		end
+	local CW, CH, GAP = 84, 122, 6
+	local list = {}
+	for _, p in passes do
+		if IK.matches(p.Entry.Title, state.Query) then table.insert(list, p) end
 	end
-	if not any then emptyLine('No match', 410) end
+	local left = (L.W - (#list * CW + (#list - 1) * GAP)) / 2
+	local top = L.PassTitleY + 26
+	for i, p in list do
+		local entry, mine = p.Entry, p.Owned
+		local card = Kit.blockButton({ Name = entry.Key, Tone = mine and (Kit.Tone[entry.Tone] or Kit.Tone.gold) or PASS_OFF, Width = CW, Height = CH, Outline = 3, RimWidth = 2, Studs = false, Position = px(left + (i - 1) * (CW + GAP), top), ZIndex = 26 })
+		card.Parent = page
+		local art = cached('passcard:' .. entry.Key .. (mine and ':on' or ':off'), function()
+			local a = artIcon(entry.Art, 70, false, 'passart:' .. entry.Key .. (mine and ':on' or ':off'))
+			return mine and a or greyed(a)
+		end)
+		art.AnchorPoint = Vector2.new(0.5, 0.5)
+		art.Position = px(CW / 2 - 3, 44)
+		art.Parent = card.Body
+		if mine then
+			label({ Name = 'Yours', Text = 'Yours!', TextSize = 22, StrokeThickness = 2.8, TextColor3 = hex('7CFF4F'), AnchorPoint = Vector2.new(0.5, 0.5), Position = px(CW / 2 - 3, CH - 24), Size = px(CW - 4, 24), ZIndex = 30, Parent = card.Body })
+		else
+			local chip = Kit.only(entry.Price, 22, { Only = false, ZIndex = 30, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(CW / 2 - 3, CH - 24) })
+			chip.Parent = card.Body
+		end
+		local tag = label({ Name = 'NameTag', Text = entry.Title, TextSize = 18, StrokeThickness = 2.5, AnchorPoint = Vector2.new(0.5, 1), Position = px(CW / 2, -2), Size = px(CW + 60, 22), ZIndex = 40, Parent = card })
+		tag.Visible = false
+		card.Hit.MouseEnter:Connect(function() tag.Visible = true end)
+		card.Hit.MouseLeave:Connect(function() tag.Visible = false end)
+		Motion.button(card, function()
+			tag.Visible = true
+			task.delay(1.6, function() if tag.Parent then tag.Visible = false end end)
+			if mine then say(entry.Title .. ': yours!', hex('7CFF4F')) else buyPass(entry.Key) end
+		end)
+	end
 end
 local function tickBoosts()
 	if not (isOpen and state.Tab == 'Items' and not state.Index) or #boostLabels == 0 then return end
@@ -680,13 +747,23 @@ do
 	end)
 end
 
+local headerIcon -- (the header's picture follows the tab: the gun on Guns, the shoes on Your Shoes...)
+local HEADER_ICONS = { Guns = { 'Gun' }, Shoes = { 'ShoePile', 'Sneaker' }, Items = { 'Backpack' }, Boxes = { 'ShoeBox', 'Rewards' }, Index = { 'ShoePile', 'Sneaker' } }
 local function paintChrome()
 	local title = state.Index and 'Index' or (IK.Tabs[1].Title)
 	for _, tab in IK.Tabs do
 		if tab.Id == state.Tab and not state.Index then title = tab.Title end
 	end
 	W.Title.Text = title
+	local want = state.Index and 'Index' or state.Tab
+	if want ~= headerIcon and W.SetIcon then
+		headerIcon = want
+		W.SetIcon(HEADER_ICONS[want] or { 'Backpack' })
+	end
 	W.Bar.Visible = state.Tab == 'Shoes' and not state.Index
+	W.Index.Visible = state.Tab == 'Shoes' or state.Index -- (brief 24: the Index is your shoes'; the other tabs stay clean)
+	-- (CRITIC4 r1) the Guns tab shows one gun: no Search box there
+	if W.Search and W.Search.Parent then W.Search.Parent.Visible = state.Index or state.Tab ~= 'Guns' end
 	local idxLabel = W.Index.Body:FindFirstChild('Label')
 	if idxLabel then idxLabel.Text = state.Index and 'Back' or 'Index' end
 	-- recycle mode: the red X block is lit (a bright glow behind it, bigger, tilted) while it's on; no words
@@ -717,10 +794,7 @@ local function keyNow()
 		return 'shoes|' .. tostring(player:GetAttribute('ShoesMax')) .. tostring(player:GetAttribute('Pass_ExtraEquip')) .. '|' .. tostring(player:GetAttribute('ShoesOwned')) .. '|' .. tostring(player:GetAttribute('ShoesEquipped')) .. '|' .. state.Query .. '|' .. tostring(state.Delete) .. '|' .. tostring(confirm.Id) .. '|' .. table.concat(fresh, ',')
 	end
 	if state.Tab == 'Guns' then
-		local cash = player:GetAttribute('Cash')
-		local affordable = 0
-		for _, gun in Guns.List do if type(cash) == 'number' and cash >= gun.Cost then affordable += 1 end end
-		return 'guns|' .. tostring(player:GetAttribute('OwnedGuns')) .. '|' .. tostring(player:GetAttribute('EquippedGun')) .. '|' .. affordable .. '|' .. state.Query
+		return 'guns|' .. tostring(player:GetAttribute('OwnedGuns')) .. '|' .. tostring(player:GetAttribute('EquippedGun')) .. '|' .. tostring(gunView) .. '|' .. state.Query
 	end
 	if state.Tab == 'Items' then
 		local owned = {}
@@ -790,6 +864,7 @@ local function open(tab)
 	state.Index = wantIndex
 	if not isOpen then
 		isOpen = true
+		gunView = nil
 		state.Query = ''
 		if W.Search then W.Search.Text = '' end
 		if W.Placeholder then W.Placeholder.Visible = true end
@@ -805,6 +880,7 @@ openEvent.Event:Connect(open)
 playerGui:GetAttributeChangedSignal('HoodWindow'):Connect(function()
 	if isOpen and playerGui:GetAttribute('HoodWindow') ~= 'Inventory' then close() end
 end)
+player:GetAttributeChangedSignal('EquippedGun'):Connect(function() gunView = nil end) -- (the server's answer wins)
 backdrop.Activated:Connect(close)
 Motion.button(W.CloseButton, close)
 Motion.button(W.Index, function()

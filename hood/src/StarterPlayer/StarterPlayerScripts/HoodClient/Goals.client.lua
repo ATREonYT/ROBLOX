@@ -73,9 +73,19 @@ local function keyed(text)
 	local key = table.concat(words, ' ', at)
 	return (head ~= '' and escape(head) .. ' ' or '') .. '<font color="' .. GREEN .. '">' .. escape(key) .. '</font>'
 end
-local unboxUntil = 0 -- (5.2 s after a ShoeOpened: Shoes.client's unboxing moment)
+local unboxUntil = 0 -- (just after a ShoeOpened, before Shoes.client's unboxing moment sets PlayerGui Unboxing)
 local function unboxing()
 	return os.clock() < unboxUntil or (player:FindFirstChildOfClass('PlayerGui') ~= nil and player.PlayerGui:GetAttribute('Unboxing') == true)
+end
+-- (CRITIC4 r1: one message at a time) just after an unboxing, the guide's callout (Onboarding.client's "GUN!" after the
+-- gift) goes first: GOAL DONE waits a beat for it, then while it is up (2 s at most).
+local settleUntil = 0
+local function boardUp() -- (Shoes.client's box chance board: PlayerGui BoxBoard)
+	return player:FindFirstChildOfClass('PlayerGui') ~= nil and player.PlayerGui:GetAttribute('BoxBoard') == true
+end
+local function calloutUp()
+	local g = player:FindFirstChildOfClass('PlayerGui') and player.PlayerGui:FindFirstChild('HoodOnboarding')
+	return g ~= nil and g:FindFirstChild('Callout', true) ~= nil
 end
 
 local holding = false -- while a GOAL DONE moment is up, the tracker waits
@@ -99,7 +109,7 @@ local function paintTracker(pop)
 		line.Text = '<font color="' .. GREEN .. '">' .. escape(text) .. '</font>'
 		place(text, false)
 		chip.Visible = false
-		tracker.Visible = not holding and not fighting() and not unboxing() and os.clock() - allDoneAt < 12
+		tracker.Visible = not holding and not fighting() and not unboxing() and not boardUp() and os.clock() - allDoneAt < 12
 		if tracker.Visible then task.delay(12.5, function() paintTracker(false) end) end
 		return
 	end
@@ -114,7 +124,7 @@ local function paintTracker(pop)
 	chipText.Text = '+' .. Format.compact(reward)
 	chipText.TextSize = Kit.fitSize(chipText.Text, 20, CHIP_W - 30, 10)
 	chip.Visible = true
-	tracker.Visible = not holding and not fighting() and not unboxing()
+	tracker.Visible = not holding and not fighting() and not unboxing() and not boardUp()
 	if pop and tracker.Visible then
 		trackerScale.Scale = 1.15
 		TweenService:Create(trackerScale, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
@@ -262,7 +272,7 @@ local function moment(info)
 	TweenService:Create(scale, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
 	-- A STAGE CLEARED or WAVE CLEARED banner arriving mid-moment takes the screen: this one steps aside at once and
 	-- plays again, whole, once that banner is gone.
-	local function interrupted() return busyUntil > os.clock() or fighting() end -- (LOOP: a fight starting too)
+	local function interrupted() return busyUntil > os.clock() or fighting() or unboxing() end -- (LOOP: a fight starting too; brief 24: the unboxing moment)
 	local function hold(t)
 		local untilT = os.clock() + t
 		while os.clock() < untilT do
@@ -302,7 +312,13 @@ local function drain()
 	task.spawn(function()
 		while #queue > 0 do
 			-- (LOOP) A banner owns the screen, or a fight is on (the goons and the "N LEFT" pill own it): wait.
-			while busyUntil > os.clock() or fighting() do task.wait(0.1) end
+			local afterBox = false
+			while busyUntil > os.clock() or fighting() or unboxing() do
+				afterBox = afterBox or unboxing()
+				task.wait(0.1)
+			end
+			if afterBox then settleUntil = math.max(settleUntil, os.clock() + 0.5) end
+			while os.clock() < settleUntil or (os.clock() < settleUntil + 2 and calloutUp()) do task.wait(0.1) end
 			-- Goals done meanwhile ("Walk to Stage 1", then "Beat Stage 1's goons" in the same fight) make one moment: the
 			-- newest goal and NEXT GOAL, with all their Cash, so a stale "NEXT GOAL" never plays after it is done.
 			local info = table.remove(queue, 1)
@@ -335,14 +351,15 @@ task.spawn(function()
 			task.delay(2.45, function() paintTracker(false) end)
 		end
 	end)
-	-- (Shoes.client's unboxing moment owns the middle of the screen for 4 to 5 s)
+	-- (Shoes.client's unboxing moment owns the middle of the screen while PlayerGui Unboxing is on: brief 24, 3 to 5.5 s
+	-- by rarity, shorter when tapped; this covers the moment between the remote and that attribute)
 	local opened = Net.get('ShoeOpened')
 	if opened then
 		opened.OnClientEvent:Connect(function()
-			busyUntil = math.max(busyUntil, os.clock() + 5.2)
-			unboxUntil = os.clock() + 5.2 -- (r7, UICRITIC P2-5: the goal line steps away too)
+			busyUntil = math.max(busyUntil, os.clock() + 0.6)
+			unboxUntil = os.clock() + 0.6 -- (r7, UICRITIC P2-5: the goal line steps away too)
 			paintTracker(false)
-			task.delay(5.25, function() paintTracker(false) end)
+			task.delay(0.65, function() paintTracker(false) end)
 		end)
 	end
 end)
@@ -371,7 +388,12 @@ playerGui:GetAttributeChangedSignal('HoodWindow'):Connect(function()
 	gui.Enabled = not (type(open) == 'string' and open ~= '')
 end)
 -- (brief 19 r7, UICRITIC P2-5) Shoes.client's unboxing moment owns the top of the screen while PlayerGui's Unboxing is on
-playerGui:GetAttributeChangedSignal('Unboxing'):Connect(function() paintTracker(false) end)
+playerGui:GetAttributeChangedSignal('Unboxing'):Connect(function()
+	if playerGui:GetAttribute('Unboxing') ~= true then settleUntil = os.clock() + 0.5 end
+	paintTracker(false)
+end)
+-- (CRITIC4 r1) Shoes.client's box chance board (PlayerGui BoxBoard) stands where the goal line is: it steps away too.
+playerGui:GetAttributeChangedSignal('BoxBoard'):Connect(function() paintTracker(false) end)
 gui.Parent = playerGui
 relayout()
 paintTracker(false)

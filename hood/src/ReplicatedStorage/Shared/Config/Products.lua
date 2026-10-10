@@ -68,8 +68,9 @@ Products.DeveloperProducts = {
 Products.BoostDurationSeconds = 900
 
 -- The Store's cards, in order. Kind: 'Pass' | 'Product'. Section: the Store's sections (Products.Sections) or
--- 'Rebirth' (only in the Rebirth window). Art: what the card shows ('icon:<IconModels id>', 'gun:<Guns id>',
--- 'box:<Shoes box id>', 'boxes:<id>' = three boxes, 'shoe:<Shoes id>'). Tone: a UIKit tone. Title: the card's first
+-- 'Rebirth' (only in the Rebirth window). Art: what the card shows, always a flat PNG ('icon:<IconModels id>', 'gun:<Guns
+-- id>' = Gun_<id>, 'box:<Shoes box id>' = Box_<id>, 'boxes:<id>' = three boxes, 'shoe:<Shoes id>' = Shoe_<id>; brief 24:
+-- each gamepass has its own card art, ART2's DoublePower ... GoldBay). Tone: a UIKit tone. Title: the card's first
 -- line (and the name notices use). Big: the card's big gold lines (the reference's "Golden / Zone"; \n splits them).
 -- Offer: the short line on the HUD's offer card and pass button. Sticker: big text stuck on the art ('2x').
 -- (brief 18: AutoShoot is shown as "Auto Fight", COMBAT's repurpose.)
@@ -90,22 +91,22 @@ Products.Catalog = {
 	{ Key = 'ShoeBoxGrail3', Kind = 'Product', Section = 'Box', Box = 'Grail', Count = 3, Title = 'Grail Box', Detail = '3 Grail Boxes', Price = 499, WasPrice = 597, Art = 'box:Grail', Tone = 'cardPurple', Wired = true },
 	{ Key = 'ShoeBoxGrail8', Kind = 'Product', Section = 'Box', Box = 'Grail', Count = 8, Title = 'Grail Box', Detail = '8 Grail Boxes', Price = 1199, WasPrice = 1592, Art = 'box:Grail', Tone = 'cardPurple', Wired = true },
 	-- ~Gamepass~
-	{ Key = 'DoubleRep', Kind = 'Pass', Section = 'Gamepass', Title = '2x Power', Big = 'Every\nShot', Detail = 'Every shot pays double', Price = 199, Art = 'icon:Power', Tone = 'cardGold', Offer = '2x Power', Sticker = '2x', Wired = true },
-	{ Key = 'DoubleCash', Kind = 'Pass', Section = 'Gamepass', Title = '2x Cash', Big = 'Every\nStage', Detail = 'Double Cash from pads and goals', Price = 149, Art = 'icon:Cash', Tone = 'cardPurple', Offer = '2x Cash', Sticker = '2x', Wired = true },
-	{ Key = 'VIP', Kind = 'Pass', Section = 'Gamepass', Banner = true, Title = 'VIP', Big = 'VIP', Detail = 'GOLD TAG + 1.5x CASH', Price = 249, Art = 'icon:Trophy', Tone = 'cardGreen', Wired = true },
-	{ Key = 'AutoShoot', Kind = 'Pass', Section = 'Gamepass', Title = 'Auto Fight', Big = 'Hands\nFree', Detail = 'Fires at goons for you', Price = 99, Art = 'gun:Uzi', Tone = 'cardRed', Offer = 'Auto Fight', Wired = true },
-	{ Key = 'Lucky', Kind = 'Pass', Section = 'Gamepass', Title = 'Lucky', Big = 'Better\nBoxes', Detail = 'Better odds for Epic and up in Cash boxes', Price = 129, Art = 'box:Galaxy', Tone = 'cardTeal', Wired = true },
-	{ Key = 'TripleOpen', Kind = 'Pass', Section = 'Gamepass', Title = 'Triple Open', Big = '3 Boxes\nat Once', Detail = 'Open 3 Cash boxes at once, for 3x the Cash', Price = 179, Art = 'boxes:Street', Tone = 'cardBlue', Sticker = 'x3', Wired = true },
-	{ Key = 'ExtraEquip', Kind = 'Pass', Section = 'Gamepass', Title = '+1 Shoe Slot', Big = '4 Pairs\nOn', Detail = 'Wear 4 pairs at once', Price = 99, Art = 'shoe:Comet', Tone = 'cardPink', Sticker = '+1', Wired = true },
+	{ Key = 'DoubleRep', Kind = 'Pass', Section = 'Gamepass', Title = '2x Power', Big = 'Every\nShot', Detail = 'Every shot pays double', Price = 199, Art = 'icon:DoublePower', Tone = 'cardGold', Offer = '2x Power', Sticker = '2x', Wired = true },
+	{ Key = 'DoubleCash', Kind = 'Pass', Section = 'Gamepass', Title = '2x Cash', Big = 'Every\nStage', Detail = 'Double Cash from pads and goals', Price = 149, Art = 'icon:DoubleCash', Tone = 'cardPurple', Offer = '2x Cash', Sticker = '2x', Wired = true },
+	{ Key = 'VIP', Kind = 'Pass', Section = 'Gamepass', Banner = true, Title = 'VIP', Big = 'VIP', Detail = 'GOLD TAG + 1.5x CASH', Price = 249, Art = 'icon:VIP', Tone = 'cardGreen', Wired = true },
+	{ Key = 'AutoShoot', Kind = 'Pass', Section = 'Gamepass', Title = 'Auto Fight', Big = 'Hands\nFree', Detail = 'Fires at goons for you', Price = 99, Art = 'icon:AutoFight', Tone = 'cardRed', Offer = 'Auto Fight', Wired = true },
+	{ Key = 'Lucky', Kind = 'Pass', Section = 'Gamepass', Title = 'Lucky', Big = 'Better\nBoxes', Detail = 'Better odds for Epic and up in Cash boxes', Price = 129, Art = 'icon:Lucky', Tone = 'cardTeal', Wired = true },
+	{ Key = 'TripleOpen', Kind = 'Pass', Section = 'Gamepass', Title = 'Triple Open', Big = '3 Boxes\nat Once', Detail = 'Open 3 Cash boxes at once, for 3x the Cash', Price = 179, Art = 'icon:TripleOpen', Tone = 'cardBlue', Sticker = 'x3', Wired = true },
+	{ Key = 'ExtraEquip', Kind = 'Pass', Section = 'Gamepass', Title = '+1 Shoe Slot', Big = '4 Pairs\nOn', Detail = 'Wear 4 pairs at once', Price = 99, Art = 'icon:ExtraEquip', Tone = 'cardPink', Sticker = '+1', Wired = true },
 	-- (brief 23) the 10x Cash pad and the two Robux lanes. A lane row's Price is its station's RobuxPrice (Config/Skins).
-	{ Key = 'TenXCash', Kind = 'Pass', Section = 'Gamepass', Title = '10x Cash', Big = '10x\nPads', Detail = 'The pink pad pays 10x Cash', Price = 199, Art = 'icon:Cash', Tone = 'cardPink', Offer = '10x Cash', Sticker = '10x', Wired = true },
-	{ Key = 'RangeVIP1', Kind = 'Pass', Section = 'Gamepass', Title = 'Pro Bay', Big = 'x100\nPower', Detail = 'Your own x100 Power lane', Price = 99, Art = 'icon:Power', Tone = 'cardTeal', Offer = 'x100 Lane', Sticker = 'x100', Wired = true },
-	{ Key = 'RangeVIP2', Kind = 'Pass', Section = 'Gamepass', Title = 'Gold Bay', Big = 'x250\nPower', Detail = 'The best lane: x250 Power', Price = 249, Art = 'icon:Power', Tone = 'cardGold', Offer = 'x250 Lane', Sticker = 'x250', Wired = true },
+	{ Key = 'TenXCash', Kind = 'Pass', Section = 'Gamepass', Title = '10x Cash', Big = '10x\nPads', Detail = 'The pink pad pays 10x Cash', Price = 199, Art = 'icon:TenXCash', Tone = 'cardPink', Offer = '10x Cash', Sticker = '10x', Wired = true },
+	{ Key = 'RangeVIP1', Kind = 'Pass', Section = 'Gamepass', Title = 'Pro Bay', Big = 'x100\nPower', Detail = 'Your own x100 Power lane', Price = 99, Art = 'icon:ProBay', Tone = 'cardTeal', Offer = 'x100 Lane', Sticker = 'x100', Wired = true },
+	{ Key = 'RangeVIP2', Kind = 'Pass', Section = 'Gamepass', Title = 'Gold Bay', Big = 'x250\nPower', Detail = 'The best lane: x250 Power', Price = 249, Art = 'icon:GoldBay', Tone = 'cardGold', Offer = 'x250 Lane', Sticker = 'x250', Wired = true },
 	-- ~Boosts~ (two 2x + one 3x bought one by one: 39 + 39 + 69 = 147)
 	{ Key = 'BoostBundle', Kind = 'Product', Section = 'Boost', Wide = true, Title = 'Boost Bundle', Detail = '45 minutes of boosts', Bundle = { 'RepBoost2x', 'RepBoost2x', 'RepBoost3x' }, Lines = { '- Two 2x Power Boosts', '- One 3x Power Boost' }, Price = 119, WasPrice = 147, Art = 'icon:BoostBundle', Tone = 'rainbow', Wired = true },
 	{ Key = 'RepBoost2x', Kind = 'Product', Section = 'Boost', Title = '2x Power', Detail = '15 minutes', Boost = 2, Price = 39, Art = 'icon:PotionRed', Tone = 'cardRed', Wired = true },
 	{ Key = 'RepBoost3x', Kind = 'Product', Section = 'Boost', Title = '3x Power', Detail = '15 minutes', Boost = 3, Price = 69, Art = 'icon:PotionGold', Tone = 'cardGold', Wired = true },
-	{ Key = 'BlockParty', Kind = 'Product', Section = 'Boost', Title = 'Block Party', Detail = 'x2 Power for the whole server, 15 min', Price = 149, Art = 'icon:Rewards', Tone = 'cardPurple', Wired = true },
+	{ Key = 'BlockParty', Kind = 'Product', Section = 'Boost', Title = 'Block Party', Detail = 'x2 Power for the whole server, 15 min', Price = 149, Art = 'icon:BlockParty', Tone = 'cardPurple', Wired = true },
 	-- ~Cash Packs~ (Cash per Robux: 26, 29, 31, 34)
 	{ Key = 'TinyCash', Kind = 'Product', Section = 'Cash', Title = 'Tiny Pack', Price = 19, Art = 'icon:CashTiny', Tone = 'cardGold', Cash = 500, Wired = true },
 	{ Key = 'SmallCash', Kind = 'Product', Section = 'Cash', Title = 'Small Pack', Price = 49, Art = 'icon:CashSmall', Tone = 'cardGold', Cash = 1400, Wired = true },

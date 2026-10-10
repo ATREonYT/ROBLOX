@@ -7,11 +7,13 @@
 --     the server (StoreService) and the same unboxing moment plays.
 --   * The chances board: over the box you stand nearest to (within BOARD_RANGE), its shoes with their chances (6, or 5
 --     on a Robux box: no Commons), like a pet-sim egg board. An unowned Secret shows as a dark "???" until you have one.
---   * The unboxing moment (remote ShoeOpened): the box flies up in front of your camera, shakes, the lid pops with a light
---     burst, and the pair rises spinning out of it under a rarity banner (the name, the bonus, NEW!, EQUIPPED). A Buy 3 /
---     Buy 8 (brief 22: one ShoeOpened with Shoes = the N pairs, Buy = N, Best = the pair the top-level fields describe)
---     plays the same box, then deals the N pairs out as cards over their rarity splats. PlayerGui `Unboxing` is true
---     while a moment plays (the HUD's hint and the goal line step away).
+--   * The unboxing moment (remote ShoeOpened; brief 24: all 2D, flat PNGs over a blurred world): the box drops in,
+--     shakes, the lid pops with a light burst, and the pair flies out big over its rarity splat with its rarity word,
+--     name and bonus (NEW!, EQUIPPED!); rarer pairs get a bigger moment (SHOES2's ShoeFX.tier). A Buy 3 / Buy 8 (brief
+--     22: one ShoeOpened with Shoes = the N pairs, Buy = N, Best = the pair the top-level fields describe) plays the same
+--     box, then the N pairs fly out into a row. PlayerGui `Unboxing` is true while a moment plays and 0.3 s after
+--     its last fade (the hint, the goal line, the toasts and the guide wait); `UnboxingCalm` is true until the pairs fly
+--     back (the HUD steps aside). A tap moves it on a beat.
 --   * Worn pairs: every player's best equipped pair (attribute ShoeWorn) on their feet via ShoeModels.wear, re-applied
 --     on respawn and when SkinArt rebuilds the look's costume; the costume's own shoes are hidden locally meanwhile.
 --   * Followers: every player's other equipped pairs (ShoesEquipped minus the worn one) hover and hop behind them like
@@ -21,8 +23,8 @@
 --     frame moves one part per follower.
 --   * (brief 22) The inventory window (your pairs, equip, recycle, equip best, the Index) is HoodClient/Inventory.client
 --     now, and the HUD's Shoes square is HUD.client's; this script keeps no window.
--- Shared/Models/ShoeModels and BoxModels (other builders) build the shoes and boxes; until they exist, or if one fails,
--- simple stand-in models are used so nothing breaks.
+-- Shared/Models/ShoeModels (another builder) builds the worn and follower shoes; until it exists, or if it fails, simple
+-- stand-in models are used so nothing breaks.
 local Players = game:GetService('Players')
 local RS = game:GetService('ReplicatedStorage')
 local RunService = game:GetService('RunService')
@@ -54,7 +56,8 @@ local function optional(...)
 	return ok and type(result) == 'table' and result or nil
 end
 local ShoeModels = optional('Models', 'ShoeModels')
-local BoxModels = optional('Models', 'BoxModels')
+local ShoeFX = optional('ShoeFX') -- (SHOES2: the rarity tiers, pure data; the reveal reads ShoeFX.tier)
+local IK = require(Shared.InventoryKit)
 
 local BOARD_RANGE = 20 -- studs: the nearest box within this shows its chances board
 local FOLLOW = { Range = 150, MaxPlayers = 12, Scale = 1.15, Back = 4.0, Side = 2.4, Hover = 0.5, Hop = 0.7 }
@@ -146,38 +149,6 @@ function Stub.wear(character, id)
 		for _, m in made do m:Destroy() end
 	end
 end
--- A plain box: body, name plate and a Lid sub-model hinged on the body's back top edge. Pivot bottom centre.
-function Stub.box(boxId, scale)
-	local b = Shoes.BoxById[boxId] or Shoes.Boxes[1]
-	local k = scale or 1
-	local m = Instance.new('Model')
-	m.Name = b.Id .. 'Box'
-	local root = stubPart(m, 'Root', V3(1, 0.2, 1) * k, CFrame.identity, Color.white)
-	root.Transparency = 1
-	m.PrimaryPart = root
-	stubPart(m, 'Body', V3(4.4, 2.1, 3.4) * k, CF(0, 1.05 * k, 0), b.Color)
-	stubPart(m, 'Plate', V3(3, 0.8, 0.1) * k, CF(0, 1.05 * k, -1.75 * k), Color.ink)
-	local lid = Instance.new('Model')
-	lid.Name = 'Lid'
-	lid.Parent = m
-	local hinge = stubPart(lid, 'Hinge', V3(0.2, 0.2, 0.2) * k, CF(0, 2.1 * k, 1.7 * k), Color.white)
-	hinge.Transparency = 1
-	lid.PrimaryPart = hinge
-	stubPart(lid, 'LidTop', V3(4.6, 0.6, 3.6) * k, CF(0, 2.4 * k, 0), b.Color:Lerp(Color.white, 0.25))
-	m:SetAttribute('Scale', k)
-	return m
-end
-function Stub.openLid(model, t)
-	local lid, root = model:FindFirstChild('Lid'), model.PrimaryPart
-	if not (lid and root and lid.PrimaryPart) then return end
-	local k = model:GetAttribute('Scale') or 1
-	local target = root.CFrame * CF(0, 2.1 * k, 1.7 * k) * CFrame.Angles(math.rad(110) * math.clamp(t, 0, 1), 0, 0)
-	local delta = target * lid.PrimaryPart.CFrame:Inverse()
-	for _, p in lid:GetDescendants() do
-		if p:IsA('BasePart') then p.CFrame = delta * p.CFrame end
-	end
-end
-
 local function call(module, name, ...)
 	if module and type(module[name]) == 'function' then
 		local ok, result = pcall(module[name], ...)
@@ -190,11 +161,6 @@ local function makePair(id, scale)
 	local m = call(ShoeModels, 'pair', id, scale)
 	if typeof(m) == 'Instance' then return m end
 	return Stub.pair(id, scale)
-end
-local function makeBox(boxId, scale)
-	local m = call(BoxModels, 'build', boxId, scale)
-	if typeof(m) == 'Instance' then return m, false end
-	return Stub.box(boxId, scale), true
 end
 -- Returns the cleanup and whether the stand-in was used (ShoeModels.wear hides the look's own shoes itself).
 local function wearPair(character, id)
@@ -468,19 +434,6 @@ local function cashNow()
 	return type(c) == 'number' and c or 0
 end
 
--- A pair in a ViewportFrame, 3/4 from above. locked: a dark silhouette.
-local function pairViewport(id, size, z, locked)
-	local model = makePair(id, 1)
-	-- (from ShoeModels' own viewing side when it gives one, like the mock-ups; else 3/4 from above)
-	local view = ShoeModels and typeof(ShoeModels.View) == 'Vector3' and ShoeModels.View or nil
-	local vp = Kit.viewport(model, size, { Direction = view, Yaw = 32, Pitch = 22, Zoom = 1.04, ZIndex = z })
-	vp:SetAttribute('PreviewImage', 'shoe:' .. id)
-	if locked then
-		vp.ImageColor3 = Color3.new(0, 0, 0)
-		vp:SetAttribute('PreviewSilhouette', true)
-	end
-	return vp
-end
 
 ---------------------------------------------------------------------------------------------- box prompts + chances boards
 local boxes = {} -- [boxId] = { Box, Model, Point, Prompt, Board }
@@ -511,11 +464,13 @@ local function cellFor(board, i, id, rack, n)
 	local g = Kit.gradient(rarity.Color:Lerp(Color.white, 0.5), rarity.Color, 0.6)
 	if shoe.Rank == #Shoes.Rarities then g.Color = rainbow(); g.Rotation = 45 end
 	g.Parent = cell
-	local vp = pairViewport(id, 96, 2, hidden)
-	vp.AnchorPoint = Vector2.new(0.5, 0)
-	vp.Position = UDim2.fromScale(0.5, 0.02)
-	vp.Size = UDim2.fromScale(0.96, 0.62)
-	vp.Parent = cell
+	-- (brief 24) the shoe's flat PNG (or its flat stand-in), the same picture as the inventory's; never a 3D model
+	local icon = IK.shoeIcon(id, 96, { ZIndex = 2, Locked = hidden })
+	icon.AnchorPoint = Vector2.new(0.5, 0)
+	icon.Position = UDim2.fromScale(0.5, 0.02)
+	icon.Size = UDim2.fromScale(0.96, 0.62)
+	Kit.new('UIAspectRatioConstraint', { AspectRatio = 1, Parent = icon })
+	icon.Parent = cell
 	local chance = Kit.text({ Name = 'Chance', Text = ShoeRules.chanceText(ShoeRules.chanceOf(id, player:GetAttribute('Pass_Lucky') == true)), Stroke = Color.ink, Position = UDim2.fromScale(0, 0.62), Size = UDim2.fromScale(1, 0.24), ZIndex = 3, Parent = cell })
 	chance.TextScaled = true
 	local name = Kit.text({ Name = 'Name', Text = hidden and '???' or string.upper(shoe.Name), FontFace = Kit.Font.body, TextColor3 = Color.white, Stroke = Color.ink, Position = UDim2.fromScale(0.04, 0.85), Size = UDim2.fromScale(0.92, 0.13), ZIndex = 3, Parent = cell })
@@ -721,6 +676,8 @@ local function refreshBoards()
 		best.Board.Enabled = boardClear(best)
 	end
 	shownBoard = best
+	-- (CRITIC4 r1) while a board is up, the HUD's hint and Goals' goal line (it stands over them) step away
+	player.PlayerGui:SetAttribute('BoxBoard', best ~= nil and best.Board ~= nil and best.Board.Enabled)
 end
 task.spawn(function()
 	while true do
@@ -730,379 +687,728 @@ task.spawn(function()
 	end
 end)
 
----------------------------------------------------------------------------------------------- unboxing moment
+---------------------------------------------------------------------------------------------- unboxing moment (brief 24)
+-- The user: "make the box opening animation way better, right now there is a half black screen ... maybe just blur the
+-- back and add a nice animation". All 2D now (ART2's flat PNGs, or their flat stand-ins; no 3D model, no dark sheet):
+--   0.00  the world blurs (a BlurEffect tweened in: Motion.blur) and stays bright; the HUD steps aside (PlayerGui
+--         Unboxing: HUD.client slides its columns and bottom bar out). The box drops in and lands with a squash.
+--   0.40  it shakes: three hops, each a squash and a stretch, the wobble growing, a soft light swelling behind it.
+--   1.15  POP: a deep squash, the lid flies off spinning, a white flash ring and a burst of sparkles.
+--   1.18  the shoe flies out of the box, big, over a splat in its rarity colour; its rarity word, its name and
+--         "+N% Power" (NEW! / EQUIPPED! / BETTER!). Rarer means a bigger moment (SHOES2's ShoeFX.tier, the same ladder
+--         as the worn and follower effects): a glow from Rare, rays from Epic, more sparkles for Legendary, a glow round
+--         the screen's edge for Mythic, a rainbow (rays, splat, words, edge) and a halo for Secret, and a longer hold.
+--   then  it holds, bobbing, and flies into the HUD's Shoes square as the HUD comes back.
+-- A Buy 3 / Buy 8 (one ShoeOpened, Shoes = the N pairs): the same box, then the pairs fly out one by one into a row
+-- (two rows of 4 for 8), each over its splat with its name and bonus; the best one leads the rarity effects.
+-- A tap skips: during the box straight to the pop, after the reveal to the way out. A Common takes ~3 s.
+-- (the same safe area as the HUD, under Roblox's top bar, so its words and pairs line up with the HUD's squares)
 local momentGui, momentRoot, momentFit = Kit.screen('HoodUnboxing', nil, 9)
-momentGui.IgnoreGuiInset = true
 local Sound = require(RS.Shared.Config.Sound) -- (COMBAT: every game sound behind one switch, off for now)
 local chime = Sound.new('rbxasset://sounds/electronicpingshort.wav', 0.6, momentGui)
 
 local queue = {}
-local function cameraFrame()
-	local cam = workspace.CurrentCamera
-	if cam then return cam.CFrame, cam.FieldOfView end
-	local root = rootOf(player.Character)
-	local at = root and root.CFrame.Position or Vector3.zero
-	return CFrame.lookAt(at + V3(0, 5, 12), at + V3(0, 2, 0)), 70
-end
-local function ease(t) return 1 - (1 - math.clamp(t, 0, 1)) ^ 3 end
+local function c01(t) return math.clamp(t, 0, 1) end
+local function easeOut(t) return 1 - (1 - c01(t)) ^ 3 end
+local function easeIn(t) return c01(t) ^ 2 end
 local function backOut(t)
-	t = math.clamp(t, 0, 1)
+	t = c01(t)
 	local c = 1.70158
 	return 1 + (c + 1) * (t - 1) ^ 3 + c * (t - 1) ^ 2
 end
+local function lerp(a, b, t) return a + (b - a) * t end
+local NK = NumberSequenceKeypoint.new
 
--- The light burst: thin neon rays fanned round the view axis behind the shoe, spinning slowly.
-local function makeRays(parent, color, count)
+-- The rarity tiers: SHOES2's ShoeFX.tier (the worn and follower effects' ladder) over these defaults.
+local TIERS = {
+	Common = { Rays = 0, Sparkles = 0, Glow = 0, Hold = 0 }, -- (and Glint from Rare, Trail from Legendary, Shake by rank)
+	Rare = { Rays = 0, Sparkles = 3, Glow = 0.15, Hold = 0 },
+	Epic = { Rays = 6, Sparkles = 8, Glow = 0.35, Hold = 0.3 },
+	Legendary = { Rays = 10, Sparkles = 14, Glow = 0.55, Hold = 0.8 },
+	Mythic = { Rays = 14, Sparkles = 20, Glow = 0.8, EdgeGlow = true, Hold = 1.2 },
+	Secret = { Rays = 16, Sparkles = 24, Glow = 1, EdgeGlow = true, Rainbow = true, Halo = true, Hold = 1.8 },
+}
+local function tierOf(rarity)
+	local tier = table.clone(TIERS[rarity.Id] or TIERS.Common)
+	if ShoeFX and type(ShoeFX.tier) == 'function' then
+		local ok, t = pcall(ShoeFX.tier, rarity.Id)
+		if ok and type(t) == 'table' then
+			for k, v in t do tier[k] = v end
+		end
+	end
+	tier.Color = typeof(tier.Color) == 'Color3' and tier.Color or rarity.Color
+	tier.Accent = typeof(tier.Accent) == 'Color3' and tier.Accent or tier.Color:Lerp(Color.white, 0.5)
+	tier.Glint = tier.Glint == true or (tier.Glint == nil and rarity.Rank >= 2)
+	tier.Trail = tier.Trail == true or (tier.Trail == nil and rarity.Rank >= 4)
+	tier.Shake = math.clamp(tonumber(tier.Shake) or (rarity.Rank - 1) / 5, 0, 1)
+	tier.Rank = rarity.Rank
+	tier.Rainbow = tier.Rainbow == true or rarity.Rank == #Shoes.Rarities
+	tier.Rays = math.clamp(tonumber(tier.Rays) or 0, 0, 16)
+	tier.Sparkles = math.clamp(tonumber(tier.Sparkles) or 0, 0, 24)
+	tier.Glow = math.clamp(tonumber(tier.Glow) or 0, 0, 1)
+	tier.Hold = math.clamp(tonumber(tier.Hold) or 0, 0, 2.5)
+	return tier
+end
+local function hue(t, i) return Color3.fromHSV((t * 0.35 + (i or 0) * 0.137) % 1, 0.62, 1) end
+
+-- The pieces (design px on the moment's root; every one a plain frame, text or PNG).
+local Fx = {}
+function Fx.frame(props)
+	props.BorderSizePixel = 0
+	props.BackgroundTransparency = props.BackgroundTransparency or 1
+	return Kit.new('Frame', props)
+end
+function Fx.disc(parent, size, color, transparency, z)
+	local f = Fx.frame({ Name = 'Disc', BackgroundTransparency = transparency, BackgroundColor3 = color, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = px(size, size), ZIndex = z, Parent = parent })
+	Kit.corner(UDim.new(0.5, 0)).Parent = f
+	return f
+end
+-- A soft round light: three discs, the outer ones fainter. Fx.setLight(light, 0..1) sets its strength.
+function Fx.light(parent, size, color, z)
+	local holder = Fx.frame({ Name = 'Light', AnchorPoint = Vector2.new(0.5, 0.5), Size = px(size, size), ZIndex = z, Parent = parent })
+	for _, k in { { 1, 0.86 }, { 0.7, 0.76 }, { 0.44, 0.64 } } do
+		Fx.disc(holder, size * k[1], color, 1, z):SetAttribute('Base', k[2])
+	end
+	return holder
+end
+function Fx.setLight(light, a, color)
+	for _, d in light:GetChildren() do
+		local b = d:GetAttribute('Base')
+		if b then
+			d.BackgroundTransparency = 1 - (1 - b) * c01(a)
+			if color then d.BackgroundColor3 = color end
+		end
+	end
+end
+-- Light rays round a centre: bars through it, bright in the middle and fading out to both tips (each bar is two rays).
+function Fx.rays(parent, count, size, z)
+	local holder = Fx.frame({ Name = 'Rays', AnchorPoint = Vector2.new(0.5, 0.5), Size = px(size, size), ZIndex = z, Parent = parent })
+	local n = math.max(1, math.floor(count / 2))
+	for i = 1, n do
+		local bar = Fx.frame({ Name = 'Ray' .. i, BackgroundTransparency = 1, BackgroundColor3 = Color.white, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(0, math.floor(size * 0.085), 1, 0), Rotation = (i - 1) / n * 180, ZIndex = z, Parent = holder })
+		Kit.new('UIGradient', { Rotation = 90, Transparency = NumberSequence.new({ NK(0, 1), NK(0.18, 0.7), NK(0.5, 0.05), NK(0.82, 0.7), NK(1, 1) }), Parent = bar })
+	end
+	return holder
+end
+-- A four-point sparkle: two crossed bars and a white core.
+function Fx.sparkle(parent, size, color, z)
+	local holder = Fx.frame({ Name = 'Sparkle', AnchorPoint = Vector2.new(0.5, 0.5), Size = px(size, size), ZIndex = z, Parent = parent })
+	for _, rot in { 0, 90 } do
+		local bar = Fx.frame({ Name = 'Arm', BackgroundTransparency = 0, BackgroundColor3 = color, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(1, 0.2), Rotation = rot, ZIndex = z, Parent = holder })
+		Kit.corner(UDim.new(0.5, 0)).Parent = bar
+	end
+	Fx.disc(holder, size * 0.34, Color.white, 0, z + 1).Name = 'Core'
+	return holder
+end
+function Fx.paint(holder, transparency, color)
+	for _, d in holder:GetChildren() do
+		if d:IsA('Frame') then
+			d.BackgroundTransparency = transparency
+			if color and d.Name == 'Arm' then d.BackgroundColor3 = color end
+		end
+	end
+end
+-- Glow along the screen's four edges (Mythic and up): bands fading inward.
+function Fx.edges(parent, z)
 	local list = {}
-	for i = 1, count do
-		local p = Instance.new('Part')
-		p.Name = 'Ray'
-		p.Material = Enum.Material.Neon
-		p.Color = color
-		p.Transparency = 1
-		p.Anchored, p.CanCollide, p.CanTouch, p.CanQuery, p.CastShadow = true, false, false, false, false
-		p.Size = V3(0.32, 7.5, 0.05)
-		p.Parent = parent
-		table.insert(list, { Part = p, Angle = (i - 1) / count * math.pi * 2 })
+	-- (the bands reach OUT past the safe area by M design px: under Roblox's top bar and a phone's side insets too)
+	local M = 90
+	for _, e in { { Vector2.zero, UDim2.new(0, -M, 0, -M), UDim2.new(1, 2 * M, 0.24, M), 90 }, { Vector2.new(0, 1), UDim2.new(0, -M, 1, M), UDim2.new(1, 2 * M, 0.24, M), -90 },
+		{ Vector2.zero, UDim2.new(0, -M, 0, -M), UDim2.new(0.14, M, 1, 2 * M), 0 }, { Vector2.new(1, 0), UDim2.new(1, M, 0, -M), UDim2.new(0.14, M, 1, 2 * M), 180 } } do
+		local f = Fx.frame({ Name = 'Edge', BackgroundTransparency = 1, BackgroundColor3 = Color.white, AnchorPoint = e[1], Position = e[2], Size = e[3], ZIndex = z, Parent = parent })
+		Kit.new('UIGradient', { Rotation = e[4], Transparency = NumberSequence.new({ NK(0, 0), NK(0.45, 0.6), NK(1, 1) }), Parent = f })
+		table.insert(list, f)
 	end
 	return list
 end
-
--- The banner: rarity word up top, the name, bonus and stickers under the shoe.
-local function banner(info, shoe, rarity)
-	local holder = Kit.new('Frame', { Name = 'Unboxed', BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = momentRoot })
-	local flash = Kit.new('Frame', { Name = 'Flash', BackgroundColor3 = Color.white, BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.fromScale(1, 1), ZIndex = 1, Parent = holder })
-	local top = Kit.new('Frame', { Name = 'Top', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.17), Size = px(760, 90), ZIndex = 5, Parent = holder })
-	local topScale = Kit.new('UIScale', { Scale = 0.2, Parent = top })
-	-- (brief 18: the reference's text: Gotham Black, white lit tops, thick black strokes, no boxes)
-	local word = Kit.text({ Name = 'Rarity', Text = string.upper(rarity.Name) .. '!', TextSize = 76, Stroke = Color.black, StrokeThickness = 7, ZIndex = 6, Parent = top })
-	if rarity.Rank == #Shoes.Rarities then
-		local g = Kit.new('UIGradient', { Color = rainbow(), Parent = word })
-		g.Rotation = 0
-	else
-		Kit.gradient(Color.white, rarity.Color, 0.5).Parent = word
-	end
-	-- (the name and its lines sit over the HUD's bottom bar's top edge at most: higher up on a short phone screen)
-	local rootH = momentGui.AbsoluteSize.Y * momentRoot.Size.Y.Scale
-	local bottom = Kit.new('Frame', { Name = 'Bottom', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, math.min(rootH * 0.62, rootH - 270)), Size = px(760, 150), ZIndex = 5, Parent = holder })
-	local name = Kit.text({ Name = 'Name', Text = shoe.Name, TextSize = 50, Stroke = Color.black, StrokeThickness = 5.5, Size = UDim2.new(1, 0, 0, 56), ZIndex = 6, Parent = bottom })
-	local bonus = Kit.text({ Name = 'Bonus', Text = ShoeRules.bonusText(shoe.Bonus) .. ' Power', TextSize = 38, Stroke = Color.black, StrokeThickness = 4.5, Position = px(0, 56), Size = UDim2.new(1, 0, 0, 44), ZIndex = 6, Parent = bottom })
-	Kit.new('UIGradient', { Rotation = 90, Color = ColorSequence.new(Kit.hex('FFF27A'), Kit.hex('FFA81A')), Parent = bonus })
-	local box = Shoes.BoxById[shoe.Box]
-	local note
-	if info.Equipped then
-		note = 'EQUIPPED!'
-	elseif info.Better then
-		note = 'BETTER!' -- (a better pair than one you have on: the inventory's star puts it on)
-	else
-		note = 'From the ' .. (box and box.Name or 'box') .. '  •  you have x' .. tostring(info.Count or 1)
-	end
-	local line = Kit.text({ Name = 'Note', Text = note, TextSize = 28, TextColor3 = (info.Equipped or info.Better) and Kit.hex('7CFF4F') or Color.white, Stroke = Color.black, StrokeThickness = 3.5, Position = px(0, 104), Size = UDim2.new(1, 0, 0, 34), ZIndex = 6, Parent = bottom })
-	local sticker
-	if info.New then
-		sticker = Kit.text({ Name = 'New', Text = 'NEW!', TextSize = 44, TextColor3 = Kit.hex('7CFF4F'), Stroke = Color.black, StrokeThickness = 5, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 260, 0, 24), Size = px(160, 54), Rotation = 12, ZIndex = 7, Parent = bottom })
-	end
-	local fadeables = { word, name, bonus, line, sticker }
-	for _, t in fadeables do
-		t.TextTransparency = 1
-		t:FindFirstChildOfClass('UIStroke').Transparency = 1
-	end
-	return {
-		Holder = holder, Flash = flash, TopScale = topScale, Fade = fadeables,
-		Reveal = function()
-			flash.BackgroundTransparency = 0.15
-			TweenService:Create(flash, TweenInfo.new(0.45, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundTransparency = 1 }):Play()
-			word.TextTransparency = 0
-			word:FindFirstChildOfClass('UIStroke').Transparency = 0
-			TweenService:Create(topScale, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
-			local show = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-			for i, t in fadeables do
-				if t and t ~= word then
-					task.delay(0.15 + i * 0.08, function()
-						if not t.Parent then return end
-						TweenService:Create(t, show, { TextTransparency = 0 }):Play()
-						TweenService:Create(t:FindFirstChildOfClass('UIStroke'), show, { Transparency = 0 }):Play()
-					end)
-				end
-			end
-			if sticker then Motion.wobble(sticker, 8, 0.7) end
-		end,
-		Out = function()
-			local fade = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
-			for _, t in fadeables do
-				if t then
-					TweenService:Create(t, fade, { TextTransparency = 1 }):Play()
-					TweenService:Create(t:FindFirstChildOfClass('UIStroke'), fade, { Transparency = 1 }):Play()
-				end
-			end
-		end,
-	}
+-- Text that fades: its fill and its stroke together.
+function Fx.fade(label, transparency)
+	label.TextTransparency = transparency
+	local st = label:FindFirstChildOfClass('UIStroke')
+	if st then st.Transparency = transparency end
+end
+function Fx.label(parent, props)
+	props.Stroke = props.Stroke or Color.black
+	props.StrokeThickness = props.StrokeThickness or math.max(2, (props.TextSize or 20) * 0.12)
+	props.Parent = parent
+	local t = Kit.text(props)
+	Fx.fade(t, 1)
+	return t
+end
+function Fx.rainbowText(label)
+	local keys = {}
+	for i, c in Shoes.Rainbow do table.insert(keys, ColorSequenceKeypoint.new((i - 1) / (#Shoes.Rainbow - 1), c)) end
+	return Kit.new('UIGradient', { Color = ColorSequence.new(keys), Parent = label })
 end
 
--- (brief 22) A Buy 3 / Buy 8: the best pair's rarity word up top, the box and the count under it, and the N pairs dealt
--- out as cards (each over its rarity splat, its name, its rarity, NEW!), one after another, in rows of up to 4.
-local IK = require(Shared.InventoryKit)
-local function batchBanner(info, list)
-	local best = Shoes.ById[info.Shoe]
-	local rarity = Shoes.RarityById[best.Rarity]
-	local holder = Kit.new('Frame', { Name = 'Unboxed', BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = momentRoot })
-	local flash = Kit.new('Frame', { Name = 'Flash', BackgroundColor3 = Color.white, BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.fromScale(1, 1), ZIndex = 1, Parent = holder })
-	local top = Kit.new('Frame', { Name = 'Top', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.13), Size = px(760, 90), ZIndex = 5, Parent = holder })
-	local topScale = Kit.new('UIScale', { Scale = 0.2, Parent = top })
-	local word = Kit.text({ Name = 'Rarity', Text = string.upper(rarity.Name) .. '!', TextSize = 70, Stroke = Color.black, StrokeThickness = 7, ZIndex = 6, Parent = top })
-	if rarity.Rank == #Shoes.Rarities then
-		Kit.new('UIGradient', { Color = rainbow(), Parent = word })
-	else
-		Kit.gradient(Color.white, rarity.Color, 0.5).Parent = word
+-- The box: ART2's Box_<id> PNG, whole while it shakes, in two pieces when it pops (ART2's BoxLid_ / BoxBase_ PNGs, or two
+-- copies of Box_ masked by gradients: the lid above IconModels.BoxLidLine, the body below), or the flat stand-in drawn in
+-- two pieces.
+-- Returns { Holder, Whole?, Lid, Body }.
+function Fx.box(parent, boxId, size, z)
+	local def = Shoes.BoxById[boxId]
+	local color = def and def.Color or Color.white
+	local holder = Fx.frame({ Name = 'Box', AnchorPoint = Vector2.new(0.5, 1), Size = px(size, size), ZIndex = z, Parent = parent })
+	local out = { Holder = holder }
+	local models = Kit.iconModels()
+	-- (ART2: each box's lid line, IconModels.BoxLidLines[id], else the shared BoxLidLine)
+	local lines = models and type(models.BoxLidLines) == 'table' and models.BoxLidLines or {}
+	local line = tonumber(lines[boxId]) or (models and tonumber(models.BoxLidLine)) or 0.5
+	out.Line = line
+	local function flat()
+		local white, ink = Color.white, Kit.FlatInk
+		local function shade(f, c)
+			Kit.new('UIGradient', { Rotation = 90, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, c:Lerp(white, 0.3)), ColorSequenceKeypoint.new(0.6, c), ColorSequenceKeypoint.new(1, c:Lerp(Color3.new(0, 0, 0), 0.22)) }), Parent = f })
+			Kit.stroke(ink, math.max(2, size * 0.028), true).Parent = f
+		end
+		local body = Fx.frame({ Name = 'FlatBody', BackgroundTransparency = 0, BackgroundColor3 = white, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.fromScale(0.5, 0.93), Size = UDim2.fromScale(0.8, 0.52), ZIndex = z + 1, Parent = holder })
+		Kit.corner(UDim.new(0.08, 0)).Parent = body
+		shade(body, color)
+		local plate = Fx.frame({ Name = 'Plate', BackgroundTransparency = 0, BackgroundColor3 = white, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.56), Size = UDim2.fromScale(0.62, 0.36), ZIndex = z + 2, Parent = body })
+		Kit.corner(UDim.new(0.18, 0)).Parent = plate
+		Kit.stroke(ink, math.max(1.5, size * 0.016), true).Parent = plate
+		local name = def and string.upper((def.Name:gsub(' Box$', ''))) or 'BOX'
+		Kit.text({ Name = 'Name', Text = name, TextSize = Kit.fitSize(name, math.floor(size * 0.1), size * 0.44, 8), TextColor3 = color:Lerp(Color3.new(0, 0, 0), 0.15), ZIndex = z + 3, Parent = plate })
+		local lid = Fx.frame({ Name = 'FlatLid', BackgroundTransparency = 0, BackgroundColor3 = white, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.42), Size = UDim2.fromScale(0.92, 0.2), ZIndex = z + 4, Parent = holder })
+		Kit.corner(UDim.new(0.14, 0)).Parent = lid
+		shade(lid, color:Lerp(white, 0.12))
+		out.Whole, out.Lid, out.Body, out.Flat, out.Line = nil, lid, body, true, 0.42
 	end
-	local box = Shoes.BoxById[info.Box]
-	local count = Kit.text({ Name = 'Count', Text = (box and box.Name or 'Box') .. '  x' .. #list, TextSize = 30, Stroke = Color.black, StrokeThickness = 3.5, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0.13, 46), Size = px(760, 36), ZIndex = 6, Parent = holder })
-	Kit.new('UIGradient', { Rotation = 90, Color = ColorSequence.new(Kit.hex('FFF27A'), Kit.hex('FFA81A')), Parent = count })
-	local n = #list
-	local perRow = n <= 4 and n or math.ceil(n / 2)
-	local rows = math.ceil(n / perRow)
-	-- (two rows of 4 stay between the rarity word and the HUD's bottom bar)
-	local cw, ch = n <= 3 and 230 or 170, n <= 3 and 250 or 178
-	local gap, rowGap = n <= 3 and 34 or 22, 6
-	local gw, gh = perRow * cw + (perRow - 1) * gap, rows * ch + (rows - 1) * rowGap
-	-- The cards fill the room under the box's name, clear of the HUD's side columns and its bottom bar: on a short
-	-- screen (a phone) they shrink to fit instead of running over the HUD.
-	local abs = momentGui.AbsoluteSize
-	local rootW, rootH = abs.X * momentRoot.Size.X.Scale, abs.Y * momentRoot.Size.Y.Scale
-	local roomTop = rootH * 0.13 + 46 + 36 + 8
-	local roomH, roomW = rootH - roomTop - 130, rootW - 2 * 230
-	local fitS = math.clamp(math.min(roomH / gh, roomW / gw), 0.5, 1)
-	local grid = Kit.new('Frame', { Name = 'Cards', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, roomTop + math.max(0, roomH - gh * fitS) / 2), Size = px(gw, gh), ZIndex = 5, Parent = holder })
-	Kit.new('UIScale', { Name = 'Fit', Scale = fitS, Parent = grid })
-	local cards, fade = {}, { word, count }
-	for i, e in list do
-		local shoe = type(e) == 'table' and Shoes.ById[e.Shoe]
-		if shoe then
-			local r = Shoes.RarityById[shoe.Rarity]
-			local row, col = math.ceil(i / perRow) - 1, (i - 1) % perRow
-			local inRow = row == rows - 1 and (n - row * perRow) or perRow
-			local x = (gw - (inRow * cw + (inRow - 1) * gap)) / 2 + col * (cw + gap)
-			local card = Kit.new('Frame', { Name = 'Card' .. i, BackgroundTransparency = 1, Position = px(x, row * (ch + rowGap)), Size = px(cw, ch), ZIndex = 5, Parent = grid })
-			local scale = Kit.new('UIScale', { Scale = 0, Parent = card })
-			-- (the splat ~1.25x the shoe, as the reference's behind its pets)
-			IK.splat(cw * 0.92, IK.SplatColor[r.Id] or r.Color, { Kind = r.Rank == #Shoes.Rarities and 'rainbow' or nil, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(cw / 2 - 3 + (i * 37) % 7 - 3, ch * 0.38 + cw * 0.06), Rotation = (i * 47) % 50 - 25, ZIndex = 5 }).Parent = card
-			local icon = IK.shoeIcon(e.Shoe, math.floor(cw * 0.62), { ZIndex = 6 })
-			icon.AnchorPoint = Vector2.new(0.5, 0.5)
-			icon.Position = px(cw / 2, ch * 0.38)
-			icon.Parent = card
-			local name = Kit.text({ Name = 'Name', Text = shoe.Name, TextSize = Kit.fitSize(shoe.Name, n <= 3 and 28 or 24, cw + 6, 14), Stroke = Color.black, StrokeThickness = 3.2, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(cw / 2, ch * 0.8), Size = px(cw + 20, 32), ZIndex = 8, Parent = card })
-			local rare = Kit.text({ Name = 'Rarity', Text = r.Name .. '  ' .. ShoeRules.bonusText(shoe.Bonus), TextSize = n <= 3 and 22 or 19, Stroke = Color.black, StrokeThickness = 2.8, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(cw / 2, ch * 0.93), Size = px(cw + 20, 26), ZIndex = 8, Parent = card })
-			if r.Rank == #Shoes.Rarities then
-				Kit.new('UIGradient', { Color = rainbow(), Parent = rare })
-			else
-				Kit.gradient(Color.white, r.Color, 0.45).Parent = rare
-			end
-			if e.New then
-				Kit.text({ Name = 'New', Text = 'NEW!', TextSize = n <= 3 and 30 or 24, TextColor3 = Kit.hex('7CFF4F'), Stroke = Color.black, StrokeThickness = 3.5, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(cw * 0.82, ch * 0.08), Size = px(90, 34), Rotation = 12, ZIndex = 9, Parent = card })
-			end
-			table.insert(cards, { Card = card, Scale = scale, Rank = r.Rank })
-			table.insert(fade, name)
-			table.insert(fade, rare)
+	local image = Kit.iconImage('Box_' .. tostring(boxId))
+	if image == '' then
+		flat()
+		return out
+	end
+	local function picture(name, keep, zz, content, preview)
+		local l = Kit.new('ImageLabel', { Name = name, BackgroundTransparency = 1, Image = content, ScaleType = Enum.ScaleType.Stretch, Size = UDim2.fromScale(1, 1), ZIndex = zz, Parent = holder })
+		l:SetAttribute('PreviewImage', 'icon3d:' .. preview)
+		if keep then
+			local a, b = keep == 'top' and 0 or 1, keep == 'top' and 1 or 0
+			Kit.new('UIGradient', { Rotation = 90, Transparency = NumberSequence.new({ NK(0, a), NK(line - 0.004, a), NK(line + 0.004, b), NK(1, b) }), Parent = l })
+		end
+		-- (the pieces stay Visible, see-through until the pop: Kit.watchImage only judges an image that is on screen)
+		if name ~= 'Whole' then l.ImageTransparency = 1 end
+		return l
+	end
+	local id = 'Box_' .. tostring(boxId)
+	-- the pieces: ART2's BoxLid_ / BoxBase_ PNGs (the box's own framing, laid over each other) when both are uploaded,
+	-- else the Box_ PNG split at its lid line by two gradient masks
+	local function split()
+		for _, k in { 'Body', 'Lid' } do
+			if out[k] then out[k]:Destroy() end
+		end
+		out.Body = picture('BodyPart', 'bottom', z + 1, image, id)
+		out.Lid = picture('LidPart', 'top', z + 4, image, id)
+	end
+	out.Whole = picture('Whole', nil, z + 1, image, id)
+	local lidImage, baseImage = Kit.iconImage('BoxLid_' .. tostring(boxId)), Kit.iconImage('BoxBase_' .. tostring(boxId))
+	if lidImage ~= '' and baseImage ~= '' then
+		out.Body = picture('BodyPart', nil, z + 1, baseImage, 'BoxBase_' .. tostring(boxId))
+		out.Lid = picture('LidPart', nil, z + 4, lidImage, 'BoxLid_' .. tostring(boxId))
+		for _, k in { 'Body', 'Lid' } do
+			Kit.watchImage(out[k], function() if not out.Flat then split() end end)
+		end
+	else
+		split()
+	end
+	-- (an upload that can't draw: the flat box instead, for the rest of this moment)
+	Kit.watchImage(out.Whole, function()
+		for _, k in { 'Whole', 'Body', 'Lid' } do
+			if out[k] then out[k]:Destroy() end
+		end
+		flat()
+	end)
+	return out
+end
+-- How much of the box shows (0 = gone): its pictures or its flat frames.
+function Fx.boxAlpha(box, a)
+	for _, d in box.Holder:GetDescendants() do
+		if d:IsA('ImageLabel') then
+			d.ImageTransparency = 1 - a
+		elseif d:IsA('Frame') and d.Name ~= 'Box' then
+			d.BackgroundTransparency = 1 - a
+			local st = d:FindFirstChildOfClass('UIStroke')
+			if st then st.Transparency = 1 - a end
+		elseif d:IsA('TextLabel') then
+			d.TextTransparency = 1 - a
 		end
 	end
-	for _, t in fade do
-		t.TextTransparency = 1
-		t:FindFirstChildOfClass('UIStroke').Transparency = 1
-	end
-	local show = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-	return {
-		Holder = holder, Flash = flash, TopScale = topScale, Fade = fade, Cards = cards,
-		Reveal = function()
-			flash.BackgroundTransparency = 0.15
-			TweenService:Create(flash, TweenInfo.new(0.45, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundTransparency = 1 }):Play()
-			for _, t in { word, count } do
-				TweenService:Create(t, show, { TextTransparency = 0 }):Play()
-				TweenService:Create(t:FindFirstChildOfClass('UIStroke'), show, { Transparency = 0 }):Play()
-			end
-			TweenService:Create(topScale, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
-			-- the cards one by one (a rare one pops a little bigger)
-			for i, c in cards do
-				task.delay(0.2 + (i - 1) * 0.14, function()
-					if not c.Card.Parent then return end
-					TweenService:Create(c.Scale, TweenInfo.new(0.32, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
-					for _, t in c.Card:GetChildren() do
-						if t:IsA('TextLabel') then
-							TweenService:Create(t, show, { TextTransparency = 0 }):Play()
-							local st = t:FindFirstChildOfClass('UIStroke')
-							if st then TweenService:Create(st, show, { Transparency = 0 }):Play() end
-						end
-					end
-					if c.Rank >= 4 then Motion.pop(c.Card, 0.12) end
-				end)
-			end
-		end,
-		Out = function()
-			local fadeOut = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
-			for _, t in { word, count } do
-				TweenService:Create(t, fadeOut, { TextTransparency = 1 }):Play()
-				TweenService:Create(t:FindFirstChildOfClass('UIStroke'), fadeOut, { Transparency = 1 }):Play()
-			end
-			for _, c in cards do TweenService:Create(c.Scale, fadeOut, { Scale = 0 }):Play() end
-		end,
-	}
 end
 
--- Timeline (seconds): box flies in, shakes three times, the lid pops (flash, rays, light), the pair rises spinning out of
--- the box, holds under the banner (longer for Legendary and up), then everything goes. A tap after the reveal skips.
-local T = { In = 0.35, Shake = 1.0, Pop = 0.22, Rise = 0.75, Hold = 1.5, Out = 0.35 }
+-- Where a pair flies at the end: the HUD's Shoes square (its centre on this screen, design px), else about there.
+local function shoesSquare(W, H)
+	local k = Kit.scaleFor(momentGui.AbsoluteSize)
+	local ok, at = pcall(function()
+		local square = player.PlayerGui.HoodHUD.Root.Actions.Shoes
+		local p = square.AbsolutePosition + square.AbsoluteSize / 2 - momentRoot.AbsolutePosition
+		return Vector2.new(p.X / k + 360, p.Y / k) -- (the column is still stepped aside 360 px; it slides back now)
+	end)
+	if ok and typeof(at) == 'Vector2' and at.X > 0 and at.X < W and at.Y > 0 and at.Y < H then return at end
+	return Vector2.new(66, H * 0.6)
+end
+
+local drain -- (forward: the next moment in the queue)
+local T = { Drop = 0.28, Land = 0.4, Shake = 1.02, Pop = 1.15, Fly = 0.45, Text = 1.3, Out = 0.35, Stagger = 0.14 }
 local skipRequested = false
 local function play(info)
 	local shoe = Shoes.ById[info.Shoe]
 	local boxDef = Shoes.BoxById[info.Box]
 	if not shoe or not boxDef then return end
 	local rarity = Shoes.RarityById[shoe.Rarity]
-	-- (brief 22) a Buy 3 / Buy 8: the box, then the N pairs as cards (no single pair rising)
-	local batch = type(info.Shoes) == 'table' and #info.Shoes > 1 and info.Shoes or nil
-	unboxing = true
-	player.PlayerGui:SetAttribute('Unboxing', true)
-	if shownBoard and shownBoard.Board then shownBoard.Board.Enabled = false end
-	local folder = Instance.new('Model')
-	folder.Name = 'HoodUnboxing'
-	folder.Parent = workspace.CurrentCamera or workspace
-	local BOX_SCALE, PAIR_SCALE, D = 0.62, 1.5, 6.5
-	-- a dark sheet behind the stage dims the world while the moment plays (the box and pair stay bright in front)
-	local dim = Instance.new('Part')
-	dim.Name = 'Dim'
-	dim.Size = V3(60, 40, 0.2)
-	dim.Color = Color3.fromRGB(8, 8, 20)
-	dim.Material = Enum.Material.Neon -- (unlit: a plain dark veil whatever the light)
-	dim.Transparency = 1
-	dim.Anchored, dim.CanCollide, dim.CanTouch, dim.CanQuery, dim.CastShadow = true, false, false, false, false
-	dim.Parent = folder
-	-- and the world past the stage goes soft (a local depth-of-field: the box and pair, D studs away, stay sharp)
-	local focus = Instance.new('DepthOfFieldEffect')
-	focus.Name = 'HoodUnboxingFocus'
-	focus.FocusDistance = D
-	focus.InFocusRadius = 4
-	focus.NearIntensity = 0
-	focus.FarIntensity = 0
-	focus.Parent = game:GetService('Lighting')
-	local box, stub = makeBox(info.Box, BOX_SCALE)
-	box.Parent = folder
-	if not stub then pcall(BoxModels.fx, box) end
-	local boxParts = parts(box)
-	local pair, pairParts
-	if not batch then
-		pair = makePair(info.Shoe, PAIR_SCALE)
-		pair.Parent = folder
-		addFx(pair, rarity.Id)
-		pairParts = parts(pair)
+	-- (brief 22) a Buy 3 / Buy 8: the pairs fly out into a row
+	local list = {}
+	if type(info.Shoes) == 'table' and #info.Shoes > 1 then
+		for _, e in info.Shoes do
+			if type(e) == 'table' and Shoes.ById[e.Shoe] then table.insert(list, e) end
+		end
 	end
-	local light = Instance.new('PointLight')
-	light.Color = rarity.Color
-	light.Range = 14
-	light.Brightness = 0
-	light.Shadows = false
-	light.Parent = pairParts and pairParts[1] or boxParts[1]
-	local rays = makeRays(folder, rarity.Rank == #Shoes.Rarities and Color3.fromRGB(255, 236, 140) or rarity.Color, rarity.Rank >= 4 and 14 or 10)
-	local ui = batch and batchBanner(info, batch) or banner(info, shoe, rarity)
-	local hold = T.Hold + (rarity.Rank >= 4 and 0.9 or 0) + (batch and (1.2 + 0.14 * #batch) or 0)
-	local tReveal = T.In + T.Shake + T.Pop
-	local tEnd = tReveal + T.Rise + hold + T.Out
-	local skip = Kit.new('TextButton', { Name = 'Skip', Text = '', AutoButtonColor = false, BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 20, Parent = ui.Holder })
+	local batch = #list > 1 and list or nil
+	local tier = tierOf(rarity)
+	unboxing = true
+	local pg = player.PlayerGui
+	pg:SetAttribute('Unboxing', true) -- (Goals, the toasts and the guide wait for it: until the moment has fully faded)
+	pg:SetAttribute('UnboxingCalm', true) -- (the HUD steps aside: until the pairs fly back into it)
+	pg:SetAttribute('HoodWindow', '') -- (a window open over it closes: the moment owns the screen)
+	if shownBoard and shownBoard.Board then shownBoard.Board.Enabled = false end
+	pg:SetAttribute('BoxBoard', false)
+	Motion.blur('Unboxing', true, 18)
+
+	local abs = momentGui.AbsoluteSize
+	if abs.X < 2 or abs.Y < 2 then abs = Vector2.new(1280, 720) end
+	momentFit(abs)
+	local k = Kit.scaleFor(abs)
+	local W, H = abs.X / k, abs.Y / k
+	local s = math.clamp(H / 720, 0.74, 1.1) -- (text and art follow the screen's height: a phone's is ~554)
+	local cx = W / 2
+	local stage = Fx.frame({ Name = 'Unboxed', Size = UDim2.fromScale(1, 1), ZIndex = 1, Parent = momentRoot })
+
+	-- the screen-wide pieces
+	local edges = tier.EdgeGlow and Fx.edges(stage, 2) or {}
+	local flash = Fx.frame({ Name = 'Flash', BackgroundTransparency = 1, BackgroundColor3 = Color.white, Position = UDim2.fromOffset(-90, -90), Size = UDim2.new(1, 180, 1, 180), ZIndex = 3, Parent = stage })
+
+	-- the box, its light, the burst
+	local B = math.floor(H * (batch and 0.32 or 0.38))
+	local boxY = H * (batch and 0.6 or 0.5) + B / 2 -- (its bottom)
+	local mouthY = boxY - B * 0.62
+	local boxLight = Fx.light(stage, B * 1.9, Color.white, 5)
+	boxLight.Position = px(cx, boxY - B * 0.5)
+	local box = Fx.box(stage, info.Box, B, 6)
+	box.Holder.Position = px(cx, boxY)
+	mouthY = boxY - B * (1 - (box.Line or 0.42)) -- (where the lid comes off: the pairs fly out from there)
+	local ring = Fx.disc(stage, B, Color.white, 1, 26)
+	ring.BackgroundTransparency = 1
+	local ringStroke = Kit.stroke(Color.white, 10, true, 1)
+	ringStroke.Parent = ring
+	local core = Fx.disc(stage, B, Color.white, 1, 25)
+	local burst = {}
+	for i = 1, 10 + math.floor(tier.Sparkles / 2) do
+		local size = math.floor((18 + (i * 7) % 16) * s)
+		local sp = Fx.sparkle(stage, size, i <= 10 and Color.white or tier.Color, 24)
+		sp:SetAttribute('S', size)
+		sp.Visible = false
+		local a = (i / (10 + math.floor(tier.Sparkles / 2))) * math.pi * 2 + (i % 3) * 0.4
+		table.insert(burst, { Node = sp, Dir = Vector2.new(math.cos(a), math.sin(a)), Dist = H * (0.22 + ((i * 37) % 10) / 30), Life = 0.55 + ((i * 13) % 7) / 20 })
+	end
+
+	-- the reveal: one pair (single) or the cards (batch)
+	local revealDone, hold
+	local focus = Vector2.new(cx, H * 0.42) -- (where the rays, the glow and the twinkles sit)
+	local S = math.floor(math.min(H * 0.5, W * 0.32)) -- (a single pair: half the screen's height, its words still on screen)
+	local cards = {}
+	local word, sub, name, bonus, note, newTag
+	local shoeNode, shoeScale, splat, glow, rays, halo
+	local wordScale
+	if not batch then
+		splat = IK.splat(math.floor(S * 1.3), IK.SplatColor[rarity.Id] or rarity.Color, { Kind = tier.Rainbow and 'rainbow' or nil, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(focus.X, focus.Y + S * 0.04), ZIndex = 14 })
+		splat.Parent = stage
+		Kit.new('UIScale', { Name = 'Pop', Scale = 0.001, Parent = splat })
+		-- (the pair is on screen from the start at scale 0: Kit.watchImage swaps a PNG that can't draw for its stand-in
+		-- only while it is on screen)
+		shoeNode = IK.shoeIcon(info.Shoe, S, { ZIndex = 16 })
+		shoeNode.AnchorPoint = Vector2.new(0.5, 0.5)
+		shoeNode.Position = px(focus.X, mouthY)
+		shoeNode.Parent = stage
+		shoeScale = Kit.new('UIScale', { Scale = 0.001, Parent = shoeNode }) -- (not 0: some renderers read 0 as unset)
+		local top = H * 0.12
+		word = Fx.label(stage, { Name = 'Rarity', Text = string.upper(rarity.Name) .. '!', TextSize = math.floor(78 * s), StrokeThickness = 7 * s, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(cx, top), Size = px(W, 96 * s), ZIndex = 32 })
+		-- (the lead, r1: the reveal is the biggest, clearest thing on screen: the name big in FredokaOne with a dark
+		-- stroke, the bonus in the rarity's colour)
+		local nameY = focus.Y + S * 0.52 + 4
+		name = Fx.label(stage, { Name = 'Name', Text = shoe.Name, FontFace = Kit.Font.reveal, TextSize = Kit.fitSize(shoe.Name, math.floor(72 * s), W - 80, 24), StrokeThickness = 7 * s, AnchorPoint = Vector2.new(0.5, 0), Position = px(cx, nameY), Size = px(W, 76 * s), ZIndex = 32 })
+		bonus = Fx.label(stage, { Name = 'Bonus', Text = ShoeRules.bonusText(shoe.Bonus) .. ' Power', FontFace = Kit.Font.reveal, TextSize = math.floor(48 * s), StrokeThickness = 5.5 * s, AnchorPoint = Vector2.new(0.5, 0), Position = px(cx, nameY + 70 * s), Size = px(W, 54 * s), ZIndex = 32 })
+		if tier.Rainbow then Fx.rainbowText(bonus) else Kit.gradient(Color.white, rarity.Color, 0.35).Parent = bonus end
+		local text
+		if info.Equipped then
+			text = 'EQUIPPED!'
+		elseif info.Better then
+			text = 'BETTER!' -- (a better pair than one you have on: the inventory's star puts it on)
+		else
+			text = 'You have x' .. tostring(info.Count or 1)
+		end
+		note = Fx.label(stage, { Name = 'Note', Text = text, TextSize = math.floor(28 * s), StrokeThickness = 3.5 * s, TextColor3 = (info.Equipped or info.Better) and Kit.hex('7CFF4F') or Color.white, AnchorPoint = Vector2.new(0.5, 0), Position = px(cx, nameY + 124 * s), Size = px(W, 34 * s), ZIndex = 32 })
+		if info.New then
+			newTag = Fx.label(stage, { Name = 'New', Text = 'NEW!', TextSize = math.floor(46 * s), StrokeThickness = 5 * s, TextColor3 = Kit.hex('7CFF4F'), AnchorPoint = Vector2.new(0.5, 0.5), Position = px(focus.X + S * 0.62, focus.Y - S * 0.3), Size = px(170 * s, 56 * s), Rotation = 12, ZIndex = 33 })
+		end
+		revealDone = T.Pop + 0.05 + T.Fly
+		hold = 1.6 + tier.Hold -- (time to read it: a Common holds 1.6 s)
+	else
+		-- the cards: a row (two rows of up to 4 for more than 4), sized to the room between the words and the bottom
+		local n = #batch
+		local perRow = n <= 4 and n or math.ceil(n / 2)
+		local rows = math.ceil(n / perRow)
+		local cw = math.min((n <= 3 and 340 or 250) * s, (W - 160) / perRow - 26) -- (a Buy 3's pairs bigger, a Buy 8's in two rows)
+		-- (a card's slot: the pair, then its name and bonus under it, all inside the screen)
+		local roomTop, roomBottom = H * 0.2, H * 0.95
+		cw = math.min(cw, ((roomBottom - roomTop) - (rows - 1) * 14) / rows / 1.28)
+		local ch = cw * 1.28
+		local gap = math.min(26, cw * 0.12)
+		local gh = rows * ch + (rows - 1) * 14
+		local y0 = roomTop + math.max(0, (roomBottom - roomTop - gh) / 2)
+		local best = math.clamp(tonumber(info.Best) or 1, 1, n)
+		for i, e in batch do
+			local sh = Shoes.ById[e.Shoe]
+			local r = Shoes.RarityById[sh.Rarity]
+			local row, col = math.ceil(i / perRow) - 1, (i - 1) % perRow
+			local inRow = row == rows - 1 and (n - row * perRow) or perRow
+			local x = cx - (inRow * cw + (inRow - 1) * gap) / 2 + col * (cw + gap) + cw / 2
+			local y = y0 + row * (ch + 14) + cw * 0.5
+			local holder = Fx.frame({ Name = 'Card' .. i, AnchorPoint = Vector2.new(0.5, 0.5), Size = px(cw, cw), ZIndex = 14, Parent = stage })
+			local cScale = Kit.new('UIScale', { Scale = 0.001, Parent = holder })
+			local sp = IK.splat(math.floor(cw * 0.96), IK.SplatColor[r.Id] or r.Color, { Kind = r.Rank == #Shoes.Rarities and 'rainbow' or nil, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.52), Rotation = (i * 47) % 50 - 25, ZIndex = 14 })
+			sp.Parent = holder
+			local ic = IK.shoeIcon(e.Shoe, math.floor(cw * 0.82), { ZIndex = 16 })
+			ic.AnchorPoint = Vector2.new(0.5, 0.5)
+			ic.Position = UDim2.fromScale(0.5, 0.5)
+			ic.Parent = holder
+			holder.Position = px(cx, mouthY)
+			local nm = Fx.label(stage, { Name = 'Name' .. i, Text = sh.Name, TextSize = Kit.fitSize(sh.Name, math.floor(cw * 0.15), cw + gap * 0.5 - 4, 15), StrokeThickness = math.max(2.5, cw * 0.016), AnchorPoint = Vector2.new(0.5, 0.5), Position = px(x, y + cw * 0.5 + cw * 0.06), Size = px(cw + 30, cw * 0.17), ZIndex = 32 })
+			local bn = Fx.label(stage, { Name = 'Bonus' .. i, Text = ShoeRules.bonusText(sh.Bonus), TextSize = math.max(16, math.floor(cw * 0.13)), StrokeThickness = math.max(2.5, cw * 0.014), AnchorPoint = Vector2.new(0.5, 0.5), Position = px(x, y + cw * 0.5 + cw * 0.2), Size = px(cw + 30, cw * 0.15), ZIndex = 32 })
+			if r.Rank == #Shoes.Rarities then Fx.rainbowText(bn) else Kit.gradient(Color.white, r.Color, 0.45).Parent = bn end
+			local nw
+			if e.New then
+				nw = Fx.label(stage, { Name = 'New' .. i, Text = 'NEW!', TextSize = math.floor(cw * 0.15), StrokeThickness = math.max(2.5, cw * 0.017), TextColor3 = Kit.hex('7CFF4F'), AnchorPoint = Vector2.new(0.5, 0.5), Position = px(x + cw * 0.34, y - cw * 0.38), Size = px(cw * 0.6, cw * 0.18), Rotation = 12, ZIndex = 33 })
+			end
+			table.insert(cards, { Node = holder, Scale = cScale, Splat = sp, At = Vector2.new(x, y), Name = nm, Bonus = bn, New = nw, Rank = r.Rank, Start = T.Pop + 0.07 + (i - 1) * T.Stagger })
+			if i == best then focus = Vector2.new(x, y) end
+		end
+		word = Fx.label(stage, { Name = 'Rarity', Text = string.upper(rarity.Name) .. '!', TextSize = math.floor(66 * s), StrokeThickness = 6.5 * s, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(cx, H * 0.085), Size = px(W, 80 * s), ZIndex = 32 })
+		sub = Fx.label(stage, { Name = 'Count', Text = boxDef.Name .. '  x' .. n, TextSize = math.floor(30 * s), StrokeThickness = 3.5 * s, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(cx, H * 0.085 + 48 * s), Size = px(W, 36 * s), ZIndex = 32 })
+		Kit.new('UIGradient', { Rotation = 90, Color = ColorSequence.new(Kit.hex('FFF27A'), Kit.hex('FFA81A')), Parent = sub })
+		S = math.floor(cards[1].Node.Size.X.Offset)
+		revealDone = T.Pop + 0.07 + (n - 1) * T.Stagger + T.Fly
+		hold = 1.3 + 0.08 * n + tier.Hold * 0.6
+	end
+	wordScale = Kit.new('UIScale', { Scale = 0.3, Parent = word })
+	if tier.Rainbow then
+		Fx.rainbowText(word)
+	else
+		Kit.gradient(Color.white, rarity.Color, 0.5).Parent = word
+	end
+	-- the rarity look behind the pair (or the best card)
+	glow = Fx.light(stage, S * 2.1, tier.Color, 12)
+	glow.Position = px(focus.X, focus.Y)
+	if tier.Rays > 0 then
+		rays = Fx.rays(stage, tier.Rays, math.floor(math.max(S * 3.4, H * 1.05)), 4)
+		rays.Position = px(focus.X, focus.Y)
+	end
+	if tier.Halo then
+		halo = Fx.disc(stage, S * 1.32, Color.white, 1, 13)
+		halo.Position = px(focus.X, focus.Y)
+		Kit.stroke(Kit.hex('FFE24A'), math.max(4, S * 0.03), true, 0).Parent = halo
+	end
+	local twinkles = {}
+	for i = 1, tier.Sparkles do
+		local size = math.floor((16 + (i * 11) % 18) * s)
+		local sp = Fx.sparkle(stage, size, tier.Accent, 24)
+		sp:SetAttribute('S', size)
+		sp.Visible = false
+		local a = i * 2.39996 -- (the golden angle: spread round the pair)
+		local d = S * (0.55 + ((i * 7) % 10) / 22)
+		table.insert(twinkles, { Node = sp, At = Vector2.new(focus.X + math.cos(a) * d * 1.15, focus.Y + math.sin(a) * d * 0.85), Period = 0.8 + ((i * 3) % 7) / 10, Phase = ((i * 17) % 10) / 10 })
+	end
+
+	-- the glint (Rare and up): a quick white star on the pair once it lands; the trail (Legendary and up): a streak of
+	-- light behind the pair (or the best card) as it flies out of the box
+	local glint = tier.Glint and Fx.sparkle(stage, math.floor(S * 0.34), Color.white, 34) or nil
+	if glint then glint.Visible = false end
+	local trail = {}
+	if tier.Trail then
+		for i = 1, 5 do
+			local d = Fx.disc(stage, S * (0.5 - i * 0.06), tier.Accent, 1, 13)
+			d.Visible = false
+			table.insert(trail, d)
+		end
+	end
+	local tOut = revealDone + hold
+	local tEnd = tOut + T.Out
+	local skip = Kit.new('TextButton', { Name = 'Skip', Text = '', AutoButtonColor = false, BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 50, Parent = stage })
 	skipRequested = false
 	skip.Activated:Connect(function() skipRequested = true end)
-	local start = os.clock()
-	-- The pair grows from small as it rises (Model:ScaleTo, where the engine has it).
-	local canScale = pair ~= nil and pcall(function() return pair:GetScale() end)
-	local scaled = 1
-	local revealed = false
-	local finished = false
-	local yawSpin = 0
-	local function frameAt(t)
-		local cam = cameraFrame()
-		-- the stage: D studs in front of the camera, facing it (its -Z toward the camera), level with the view's centre.
-		-- The box stands below the centre, its top tipped toward you and turned three-quarters; the pair ends up in the
-		-- middle of the screen, between the rarity word above and the name below.
-		local stage = cam * CF(0, 0, -D) * CFrame.Angles(0, math.pi, 0)
-		local pose = CFrame.Angles(-0.28, 0, 0) * CFrame.Angles(0, 0.5, 0)
-		local BOX_Y = -2.7
-		local boxCf
-		if t < T.In then
-			local k = backOut(t / T.In)
-			boxCf = stage * CF(0, BOX_Y - 6 * (1 - k), 0) * pose
-		elseif t < T.In + T.Shake then
-			local s = (t - T.In) / T.Shake
-			local wave = math.sin(s * math.pi * 6) * (0.05 + 0.14 * s)
-			local hopY = math.abs(math.sin(s * math.pi * 3)) * 0.25 * s
-			boxCf = stage * CF(0, BOX_Y + hopY, 0) * pose * CFrame.Angles(0, 0, wave)
+	local start = os.clock() -- (the moment's clock; a tap moves it on)
+	local popped, leaving, finished = false, false, false
+	local target -- (where the pairs fly at the end)
+	local function frameAt(t: number)
+		mouthY = boxY - B * (1 - (box.Line or 0.42)) -- (again: a box image that can't draw turns into the flat box)
+		-- the box: drop, land, shake, squash, pop
+		local x, y, sx, sy, rot = cx, boxY, 1, 1, 0
+		if t < T.Drop then
+			local u = easeIn(t / T.Drop)
+			y = lerp(-B * 0.2, boxY, u)
+			sx, sy = 0.9, 1.12
+		elseif t < T.Land then
+			local q = 1 - (t - T.Drop) / (T.Land - T.Drop)
+			sx, sy = 1 + 0.2 * q * q, 1 - 0.24 * q * q
+		elseif t < T.Shake then
+			local u = (t - T.Land) / (T.Shake - T.Land)
+			local p = u * 3 % 1
+			local air, land = math.sin(p * math.pi), math.max(0, 1 - p / 0.22)
+			y = boxY - air * B * (0.07 + 0.05 * u)
+			sx, sy = 1 - 0.06 * air + 0.13 * land, 1 + 0.1 * air - 0.15 * land
+			rot = math.sin(u * math.pi * 7) * (3 + 10 * u) * (0.8 + 0.5 * tier.Shake) -- (a rarer pair shakes its box harder)
+		elseif t < T.Pop then
+			local e = easeOut((t - T.Shake) / (T.Pop - T.Shake))
+			sx, sy = 1 + 0.18 * e, 1 - 0.22 * e
+			rot = math.sin(t * 90) * 2
 		else
-			local s = math.clamp((t - tReveal - T.Rise * 0.4) / 0.6, 0, 1)
-			boxCf = stage * CF(0, BOX_Y - 5 * ease(s), 0) * pose
+			local u = (t - T.Pop) / 0.16
+			sx, sy = lerp(0.9, 1, easeOut(u)), lerp(1.16, 1, easeOut(u))
+			local fallAt = batch and (revealDone - T.Fly + 0.2) or (T.Pop + 0.25)
+			if t > fallAt then y = boxY + H * 0.75 * easeIn((t - fallAt) / 0.45) end
 		end
-		place(box, boxCf, boxParts)
-		local fade = math.clamp(t / T.In, 0, 1) * math.clamp((tEnd - t) / T.Out, 0, 1)
-		dim.Transparency = 1 - 0.45 * fade
-		focus.FarIntensity = 0.75 * fade
-		dim.CFrame = stage * CF(0, 0, 14)
-		local lidT = t < T.In + T.Shake and 0 or ease((t - T.In - T.Shake) / T.Pop)
-		if stub then Stub.openLid(box, lidT) else pcall(BoxModels.openLid, box, lidT) end
-		-- the pair: hidden in the box until the pop, then rises and spins (fast, slowing to a slow turn)
-		local r = math.clamp((t - tReveal + T.Pop * 0.5) / T.Rise, 0, 1)
-		local riseY = BOX_Y + 0.6 + 1.1 * ease(r) -- (soles: from inside the box to just under the screen's centre)
-		yawSpin = 6 * math.pi * ease(r) + math.max(0, t - tReveal - T.Rise) * 1.4
-		local pairCf = stage * CF(0, riseY, 0) * CFrame.Angles(-0.22, 0, 0) * CFrame.Angles(0, yawSpin + 0.45, 0)
-		if r <= 0 then pairCf = cam * CF(0, -60, 40) end -- (out of sight, behind the camera, until the lid pops)
-		if batch then riseY = BOX_Y + 1.2 end -- (a batch: the burst stays over the box, the cards are on the screen)
-		if canScale then
-			local k = 0.35 + 0.65 * backOut(r)
-			if math.abs(k - scaled) > 0.002 then
-				scaled = k
-				pcall(pair.ScaleTo, pair, k)
+		local bh = box.Holder
+		bh.Position = px(x, y)
+		bh.Size = px(B * sx, B * sy)
+		bh.Rotation = rot
+		Fx.setLight(boxLight, t < T.Pop and (0.2 + 0.8 * c01((t - T.Land) / (T.Pop - T.Land))) * 0.85 or (1 - c01((t - T.Pop) / 0.3)), Color.white)
+		boxLight.Position = px(x, y - B * 0.5)
+		local s2 = 0.7 + 0.5 * c01((t - T.Land) / (T.Pop - T.Land))
+		boxLight.Size = px(B * 1.9 * s2, B * 1.9 * s2)
+		-- the pop: the lid flies, the whole picture splits
+		if t >= T.Pop then
+			if box.Whole then box.Whole.Visible = false end
+			local u = t - T.Pop
+			if box.Lid then
+				local dx, dy = W * 0.1 * u, -H * 1.3 * u + H * 1.9 * u * u
+				box.Lid.Position = box.Flat and UDim2.new(0.5, dx, 0.42, dy) or UDim2.new(0, dx, 0, dy)
+				box.Lid.Rotation = 280 * u
+			end
+			local fade = batch and c01((t - (revealDone - T.Fly + 0.2)) / 0.4) or c01((t - (T.Pop + 0.25)) / 0.4)
+			Fx.boxAlpha(box, 1 - fade)
+		end
+		-- the flash: a white core and a ring opening out from the box's mouth, and the whole screen for Legendary+
+		local f = (t - T.Pop) / 0.4
+		if f >= 0 and f <= 1 then
+			ring.Visible, core.Visible = true, true
+			ring.Position, core.Position = px(cx, mouthY), px(cx, mouthY)
+			local rs = lerp(B * 0.3, B * 2.6, easeOut(f))
+			ring.Size = px(rs, rs)
+			ringStroke.Transparency = lerp(0.1, 1, f)
+			ringStroke.Thickness = lerp(14, 2, f) * s
+			local cs = lerp(B * 0.5, B * 1.5, easeOut(f))
+			core.Size = px(cs, cs)
+			core.BackgroundTransparency = lerp(0.2, 1, c01(f * 1.8))
+			flash.BackgroundTransparency = tier.Rank >= 4 and lerp(0.4, 1, c01(f * 1.2)) or 1
+		else
+			ring.Visible, core.Visible = false, false
+			flash.BackgroundTransparency = 1
+		end
+		for _, b in burst do
+			local age = t - T.Pop
+			local u = age / b.Life
+			b.Node.Visible = u >= 0 and u <= 1
+			if b.Node.Visible then
+				local d = b.Dist * easeOut(u)
+				b.Node.Position = px(cx + b.Dir.X * d, mouthY + b.Dir.Y * d * 0.8 - 30 * u)
+				local sz = b.Node:GetAttribute('S') * (0.4 + math.sin(u * math.pi))
+				b.Node.Size = px(sz, sz)
+				b.Node.Rotation = age * 200
 			end
 		end
-		if pair then place(pair, pairCf, pairParts) end
-		-- the burst behind it
-		local glow = r > 0 and math.clamp(1 - (t - tReveal) / (T.Rise + hold), 0.35, 1) or 0
-		light.Brightness = 3.5 * glow
-		local center = stage * CF(0, riseY + 1.0, 0)
-		local back = (center.Position - cam.Position).Unit
-		local face = CFrame.lookAt(center.Position + back * 2.2, center.Position + back * 3.2)
-		for _, ray in rays do
-			local a = ray.Angle + t * 0.6
-			ray.Part.CFrame = face * CFrame.Angles(0, 0, a) * CF(0, 3.9, 0)
-			ray.Part.Transparency = r > 0 and (1 - 0.55 * ease(r) * glow) or 1
+		-- the reveal's look, in and out
+		local inA = c01((t - (T.Pop + 0.05)) / 0.35)
+		local outA = 1 - c01((t - tOut) / T.Out)
+		local textA = 1 - c01((t - tOut) / 0.14) -- (the words go first, before the HUD's bottom bar slides back under them)
+		local a = inA * outA
+		Fx.setLight(glow, a * (0.12 + 0.6 * tier.Glow) * (0.9 + 0.1 * math.sin(t * 5)), tier.Rainbow and hue(t) or nil)
+		if rays then
+			rays.Rotation = (t * 24) % 360
+			for i, bar in rays:GetChildren() do
+				if bar:IsA('Frame') then
+					bar.BackgroundTransparency = 1 - a * 0.9
+					if tier.Rainbow then bar.BackgroundColor3 = hue(t, i) else bar.BackgroundColor3 = tier.Accent end
+				end
+			end
+		end
+		if halo then
+			local hs = halo:FindFirstChildOfClass('UIStroke')
+			hs.Transparency = 1 - a * (0.7 + 0.3 * math.sin(t * 4))
+			halo.Rotation = t * 30
+		end
+		for i, e in edges do
+			e.BackgroundTransparency = 1 - a * (0.38 + 0.14 * math.sin(t * 4 + i))
+			e.BackgroundColor3 = tier.Rainbow and hue(t, i * 2) or tier.Color
+		end
+		for i, tw in twinkles do
+			local live = t > revealDone - 0.2 and t < tEnd
+			local u = ((t + tw.Phase * tw.Period) / tw.Period) % 1
+			tw.Node.Visible = live and a > 0.05
+			if tw.Node.Visible then
+				local sz = tw.Node:GetAttribute('S')
+				local sc = math.sin(u * math.pi) * a
+				tw.Node.Size = px(sz * sc, sz * sc)
+				tw.Node.Position = px(tw.At.X, tw.At.Y - 16 * u)
+				tw.Node.Rotation = 45 * u
+				if tier.Rainbow then Fx.paint(tw.Node, 0, hue(t, i)) end
+			end
+		end
+		-- the glint and the trail
+		if glint then
+			local gu = (t - (revealDone + 0.05)) / 0.5
+			glint.Visible = gu >= 0 and gu <= 1
+			if glint.Visible then
+				local gs = math.sin(gu * math.pi) * S * 0.34
+				glint.Size = px(gs, gs)
+				glint.Position = px(focus.X + S * 0.3, focus.Y - S * 0.22)
+				glint.Rotation = 90 * gu
+			end
+		end
+		if #trail > 0 then
+			local start0 = batch and cards[math.clamp(tonumber(info.Best) or 1, 1, #cards)].Start or (T.Pop + 0.03)
+			for i, d in trail do
+				local u = (t - start0) / T.Fly - i * 0.07
+				d.Visible = u > 0 and u < 1 and t < revealDone + 0.1
+				if d.Visible then
+					local e = easeOut(u)
+					local from = Vector2.new(cx, mouthY)
+					d.Position = px(lerp(from.X, focus.X, e), lerp(from.Y, focus.Y, e) - math.sin(u * math.pi) * H * (batch and 0.08 or 0.06))
+					d.BackgroundTransparency = 0.35 + i * 0.12
+				end
+			end
+		end
+		-- the words
+		local wu = (t - T.Text) / 0.35
+		wordScale.Scale = lerp(0.3, 1, backOut(wu)) * (1 + 0.04 * math.sin(math.max(0, t - T.Text - 0.35) * 5))
+		Fx.fade(word, 1 - c01(wu * 3) * textA)
+		local g = word:FindFirstChildOfClass('UIGradient')
+		if tier.Rainbow and g then g.Offset = Vector2.new((t * 0.4) % 1 - 0.5, 0) end
+		if sub then Fx.fade(sub, 1 - c01((t - T.Text - 0.1) / 0.25) * textA) end
+		if not target and t >= tOut then target = shoesSquare(W, H) end
+		if not batch then
+			-- the pair flies out of the box's mouth, spinning, and settles big in the middle
+			local u = (t - (T.Pop + 0.03)) / T.Fly
+			if u < 0 then shoeScale.Scale = 0.001 end
+			if u >= 0 then
+				local e = easeOut(u)
+				local sy0 = lerp(mouthY, focus.Y, e) - math.sin(c01(u) * math.pi) * H * 0.06
+				local bob = math.max(0, t - revealDone)
+				local px0, py0 = focus.X, sy0 + math.sin(bob * 2.6) * 6 * c01(bob * 2)
+				local sc = lerp(0.2, 1, backOut(u))
+				local r = -220 * (1 - e) + math.sin(bob * 2) * 4 * c01(bob * 2)
+				if target and t >= tOut then
+					local o = easeIn((t - tOut) / T.Out)
+					px0, py0 = lerp(px0, target.X, o), lerp(py0, target.Y, o)
+					sc = lerp(sc, 0.22, o)
+					r += 140 * o
+				end
+				shoeNode.Position = px(px0, py0)
+				shoeScale.Scale = sc
+				shoeNode.Rotation = r
+				local pu = (t - (T.Pop + 0.15)) / 0.32
+				splat.Pop.Scale = math.max(0.001, backOut(pu) * outA)
+				splat.Rotation = (t * 10) % 360
+			end
+			local function line(label, at, dy)
+				local u2 = (t - at) / 0.25
+				Fx.fade(label, 1 - c01(u2) * textA)
+				label:SetAttribute('Y', label:GetAttribute('Y') or label.Position.Y.Offset)
+				label.Position = px(cx, label:GetAttribute('Y') + (dy or 18) * (1 - easeOut(u2)))
+			end
+			line(name, T.Text + 0.1)
+			line(bonus, T.Text + 0.18)
+			line(note, T.Text + 0.26)
+			if newTag then
+				local nu = (t - (T.Text + 0.3)) / 0.3
+				Fx.fade(newTag, 1 - c01(nu * 3) * textA)
+				newTag.Rotation = 12 + math.sin(t * 6) * 6
+				newTag.Size = px(170 * s * lerp(0.4, 1, backOut(nu)), 56 * s * lerp(0.4, 1, backOut(nu)))
+			end
+		else
+			for i, c in cards do
+				local u = (t - c.Start) / T.Fly
+				if u < 0 then c.Scale.Scale = 0.001 end
+				if u >= 0 then
+					local e = easeOut(u)
+					local px0 = lerp(cx, c.At.X, e)
+					local py0 = lerp(mouthY, c.At.Y, e) - math.sin(c01(u) * math.pi) * H * 0.08
+					local sc = lerp(0.15, 1, backOut(u))
+					local r = -180 * (1 - e)
+					if target and t >= tOut then
+						local o = easeIn((t - tOut - (i - 1) * 0.02) / T.Out)
+						px0, py0 = lerp(px0, target.X, o), lerp(py0, target.Y, o)
+						sc = lerp(sc, 0.2, o)
+					end
+					c.Node.Position = px(px0, py0)
+					c.Scale.Scale = sc
+					c.Node.Rotation = r
+					local lu = c01((u - 0.85) / 0.3) * textA
+					Fx.fade(c.Name, 1 - lu)
+					Fx.fade(c.Bonus, 1 - lu)
+					if c.New then
+						Fx.fade(c.New, 1 - lu)
+						c.New.Rotation = 12 + math.sin(t * 6 + i) * 6
+					end
+				end
+			end
 		end
 	end
 	local function finish()
 		if finished then return end
 		finished = true
 		RunService:UnbindFromRenderStep('HoodUnboxing')
-		ui.Holder:Destroy()
-		folder:Destroy()
-		focus:Destroy()
+		stage:Destroy()
 		unboxing = false
-		if #queue == 0 then player.PlayerGui:SetAttribute('Unboxing', false) end
+		if #queue == 0 then
+			Motion.blur('Unboxing', false)
+			pg:SetAttribute('UnboxingCalm', false)
+			-- (CRITIC4 r1: one message at a time: GOAL DONE, the toasts and the guide's callouts wait a beat after the
+			-- moment's last fade)
+			task.delay(0.3, function()
+				if not unboxing and #queue == 0 then pg:SetAttribute('Unboxing', false) end
+			end)
+		end
+		task.defer(drain)
 	end
 	RunService:BindToRenderStep('HoodUnboxing', Enum.RenderPriority.Camera.Value + 1, function()
 		local t = os.clock() - start
-		if skipRequested and revealed and t < tEnd - T.Out then
-			start -= (tEnd - T.Out) - t -- jump to the way out
-			t = tEnd - T.Out
+		if skipRequested then
+			skipRequested = false
+			-- a tap moves the moment on a beat: the shake to the pop, the flight to the landed pair, the hold to the way out
+			local to = (t < T.Shake and T.Shake) or (t < revealDone - 0.1 and revealDone) or (t < tOut and tOut) or t
+			start -= to - t
+			t = to
 		end
-		skipRequested = false
-		if not revealed and t >= tReveal - T.Pop * 0.4 then
-			revealed = true
-			ui.Reveal()
+		stage:SetAttribute('T', t) -- (where the moment is: the offline harness shoots it at set moments)
+		if not popped and t >= T.Pop then
+			popped = true
 			Sound.play(chime, 0.9 + rarity.Rank * 0.12)
 		end
-		if t >= tEnd - T.Out and not ui.Leaving then
-			ui.Leaving = true
-			ui.Out()
+		if not leaving and t >= tOut then
+			leaving = true
+			-- the HUD comes back as the pairs fly into its Shoes square
+			if #queue == 0 then
+				Motion.blur('Unboxing', false)
+				pg:SetAttribute('UnboxingCalm', false)
+			end
 		end
 		frameAt(math.min(t, tEnd))
 		if t >= tEnd then finish() end
 	end)
+	frameAt(0)
 	-- (a safety net: the moment always ends, even if the render step stops being called)
 	task.delay(tEnd + 2, finish)
 	return tEnd
 end
-local function drain()
+function drain()
 	if unboxing then return end
 	local info = table.remove(queue, 1)
 	if not info then return end
@@ -1111,9 +1417,10 @@ local function drain()
 		warn('[Shoes] unboxing: ' .. tostring(length))
 		unboxing = false
 		player.PlayerGui:SetAttribute('Unboxing', false)
+		player.PlayerGui:SetAttribute('UnboxingCalm', false)
 		return drain()
 	end
-	task.delay((length or 0) + 0.1, drain)
+	task.delay((length or 0) + 0.3, drain) -- (finish starts the next one sooner; this is the safety net)
 end
 Net.get('ShoeOpened').OnClientEvent:Connect(function(info)
 	if type(info) ~= 'table' or not Shoes.ById[info.Shoe] then return end

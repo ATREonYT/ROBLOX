@@ -1,7 +1,7 @@
 -- Player HUD for +1 Hood Evolution: a 1:1 copy of the user's reference simulator HUD (brief 18/19: user_26 and the
 -- soldier game's video; brief 22: ref22_hud_buttons), with our features in its slots:
 --   left column    the wide Store block, then World | Rebirth, Shoes | Guns, Items | Quest (the reference's World |
---                  Rebirth, Pets | Heros, Items | Quest): square studded blocks, black outlines, big 3D icons popping out
+--                  Rebirth, Pets | Heros, Items | Quest): square studded blocks, black outlines, big flat icons popping out
 --                  of their tops, captions low on their faces. Shoes, Guns and Items open UI4's inventory window
 --                  (PlayerGui.HoodInventory.Open), World its World window (HoodWorld.Open)
 --   counters       bottom-left: Rebirths (the reference's small rebirth row) and Cash (its big trophy row)
@@ -52,7 +52,7 @@ local BLACK = Color.black
 local px = UDim2.fromOffset
 local hex = Kit.hex
 -- The Power icon: the reference's orange flexed arm once IconModels has it, else our glove. iconOr(a, b, ...): the first
--- id IconModels can show (an uploaded render or a live model; brief 19: ICONS adds renders like Sneaker or DoubleCash).
+-- id IconModels knows (an uploaded PNG or a flat stand-in row; brief 24: never a 3D model).
 local POWER = Kit.iconOr('Muscle', 'Power')
 local iconOr = Kit.iconOr
 
@@ -290,7 +290,7 @@ do
 end
 
 ---------------------------------------------------------------------------------------------- right column
--- Offer cards like the reference's "2x Wins / ONLY 9" and "+2x Power": a studded block 198 x 69, a big 3D icon behind
+-- Offer cards like the reference's "2x Wins / ONLY 9" and "+2x Power": a studded block 198 x 69, a big icon behind
 -- the name poking over its top edge, "ONLY <Robux> price" over its bottom edge. A tap buys (or says it's coming soon).
 local OFFER_W, OFFER_H, OFFER_STEP = 198, 69, 92
 local offers = Kit.new('Frame', { Name = 'Offers', BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -22, 0, 236), Size = px(OFFER_W, OFFER_STEP + OFFER_H + 16), Parent = root })
@@ -408,17 +408,19 @@ end
 local HINT_Y, HINT_W = -21, 460 -- (centred on the reference's first line, measured at its size; its width)
 local hint = label({ Name = 'Hint', Text = '', TextSize = 21, StrokeThickness = 3, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, HINT_Y), Size = px(HINT_W, 28), RichText = true, Parent = root })
 -- (brief 19 r7, UICRITIC P2-5) Shoes.client's unboxing moment owns the top of the screen: while PlayerGui's Unboxing is
--- on, or for the moment's 5.2 s after a ShoeOpened, the hint steps away.
+-- on (and just after a ShoeOpened, before it is set), the hint steps away.
 local unboxUntil = 0
-local function paintHintShown() hint.Visible = playerGui:GetAttribute('Unboxing') ~= true and os.clock() >= unboxUntil end
+-- (CRITIC4 r1) Shoes.client's box chance board (PlayerGui BoxBoard) stands where the hint is: the hint steps away too.
+local function paintHintShown() hint.Visible = playerGui:GetAttribute('Unboxing') ~= true and playerGui:GetAttribute('BoxBoard') ~= true and os.clock() >= unboxUntil end
 playerGui:GetAttributeChangedSignal('Unboxing'):Connect(paintHintShown)
+playerGui:GetAttributeChangedSignal('BoxBoard'):Connect(paintHintShown)
 task.spawn(function()
 	local opened = Net.get('ShoeOpened')
 	if opened then
 		opened.OnClientEvent:Connect(function()
-			unboxUntil = os.clock() + 5.2
+			unboxUntil = os.clock() + 0.6 -- (brief 24: then PlayerGui Unboxing holds it while the moment plays)
 			paintHintShown()
-			task.delay(5.25, paintHintShown)
+			task.delay(0.65, paintHintShown)
 		end)
 	end
 end)
@@ -440,12 +442,22 @@ local toastY = 115
 local MOMENT_BOTTOM = 106
 placeToasts = function()
 	local open = playerGui:GetAttribute('HoodWindow')
-	local windowOpen = type(open) == 'string' and open ~= ''
+	-- (brief 24: the unboxing moment's words fill the middle-top too)
+	local windowOpen = (type(open) == 'string' and open ~= '') or playerGui:GetAttribute('Unboxing') == true
 	local moment = playerGui:GetAttribute('GoalMoment') == true
 	toastStack.Position = UDim2.new(0.5, 0, 0, windowOpen and -50 or (moment and math.max(toastY, MOMENT_BOTTOM)) or toastY)
 end
 playerGui:GetAttributeChangedSignal('GoalMoment'):Connect(function() placeToasts() end)
-toast = function(text, tone)
+toast = function(text, tone, waited)
+	-- (CRITIC4 r1: one message at a time) a notice during the unboxing moment waits for it to end (8 s at most)
+	if not waited and playerGui:GetAttribute('Unboxing') == true then
+		task.spawn(function()
+			local t0 = os.clock()
+			while playerGui:GetAttribute('Unboxing') == true and os.clock() - t0 < 8 do task.wait(0.1) end
+			toast(text, tone, true)
+		end)
+		return
+	end
 	text = tostring(text)
 	toastCount += 1
 	local slot = Kit.new('Frame', { Name = 'Toast' .. toastCount, BackgroundTransparency = 1, Size = px(900, 40), LayoutOrder = -toastCount, Parent = toastStack })
@@ -584,7 +596,7 @@ local rebirth
 do
 ---------------------------------------------------------------- REBIRTH (user_27)
 -- Measured on the reference: a 940 x 642 window; "Rebirth n" over a 285 x 87 cyan box with the Power icon and "Nx", a
--- green 3D arrow, "Rebirth n+1" over "(N+1)x"; "Rebirth resets your power" in red; a 656 x 84 bar with the Power icon
+-- green arrow, "Rebirth n+1" over "(N+1)x"; "Rebirth resets your power" in red; a 656 x 84 bar with the Power icon
 -- as its badge (the reference's XP shield); the Rebirth button and Skip Rebirth (once its product id is set), 314 x 83.
 -- (Positions are in the window's Content frame: 18 px in from the sides, 132 px down from the top.)
 local RB_W, RB_H = 940, 642
@@ -604,7 +616,7 @@ end
 local fromValue = multiplierBox('FromBox', FROM_X)
 local toValue = multiplierBox('ToBox', TO_X)
 -- The green arrow between them (brief 19 r7, UICRITIC P2-2): the reference's chunky studded arrow points UP and leans
--- ~10 degrees left: the upright Evolve icon (uploaded render or live model) turned -10.
+-- ~10 degrees left: the upright Evolve icon (its PNG or flat stand-in) turned -10.
 local arrow = Kit.icon3d('Evolve', 140, { ZIndex = 27, Fallback = '⬆️' })
 arrow.Rotation = -10
 arrow.Name = 'Arrow'
@@ -645,11 +657,12 @@ do
 	Kit.icon3d(POWER, 70, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.44, 0), ZIndex = 33 }).Parent = badge
 end
 local rebirthAction, skipAction
-local confirmUntil = 0
 local ACTION_Y, ACTION_W, ACTION_H = 385, 314, 83
 -- (brief 19) Skip Rebirth sits beside Rebirth like the reference's, id or not: with no product id yet a tap says it's
 -- coming soon (Products.canBuy), like every Store card.
-local function skipLive() return Products.ByKey.SkipRebirth ~= nil end
+-- (brief 24, ECON2 / lead) the first rebirths are quick now (the first needs 600 Power), so a paid skip would be poor value
+-- early: it shows from rebirth 4 on.
+local function skipLive(n) return Products.ByKey.SkipRebirth ~= nil and n >= 4 end
 local function rebirthUpdate()
 	local power, n = num('Power', 0), rebirthsNow()
 	local need = rebirthNeed(n)
@@ -663,10 +676,9 @@ local function rebirthUpdate()
 	rebirthBarText.Text.Text = short(power) .. ' / ' .. short(need) .. ' Power'
 	local maxed = RebirthRules and type(RebirthRules.Max) == 'number' and n >= RebirthRules.Max
 	local ready = power >= need and not maxed
-	local confirming = ready and os.clock() < confirmUntil
-	local skip = skipLive() and not maxed
-	local text = maxed and 'Max rebirths!' or confirming and 'Tap again!' or (ready and 'Rebirth' or ('Need ' .. short(need - power)))
-	local key = (ready and 'ready' or 'locked') .. (confirming and '+confirm' or '') .. (skip and '+skip' or '')
+	local skip = skipLive(n) and not maxed
+	local text = maxed and 'Max rebirths!' or (ready and 'Rebirth' or ('Need ' .. short(need - power)))
+	local key = (ready and 'ready' or 'locked') .. (skip and '+skip' or '')
 	if rebirthAction and rebirthAction:GetAttribute('Key') == key then
 		local l = rebirthAction:FindFirstChild('Label', true)
 		if l then l.Text = text end
@@ -675,7 +687,7 @@ local function rebirthUpdate()
 	rebirthAction = actionIn(rw, rebirthAction, {
 		-- (brief 19) the reference's button is the cyan block whatever the state; not ready, it says what's missing and a tap
 		-- says how to get there (grey only at the last rebirth)
-		Name = 'Action', Tone = confirming and 'gold' or 'aqua', Disabled = maxed, Text = text, TextSize = ready and 51 or 40,
+		Name = 'Action', Tone = 'aqua', Disabled = maxed, Text = text, TextSize = ready and 51 or 40,
 		Icon = 'Rebirth', IconSize = 64, IconInset = 22, Width = ACTION_W, Height = ACTION_H, Outline = 5, RimWidth = 3, Studs = 20, StudPattern = 'checker',
 		Position = skip and px(105, ACTION_Y) or px(452 - ACTION_W / 2, ACTION_Y),
 	}, function()
@@ -684,15 +696,10 @@ local function rebirthUpdate()
 			toast('Need ' .. short(nowNeed - nowPower) .. ' more Power!', 'orange')
 			return
 		end
-		if os.clock() < confirmUntil then
-			confirmUntil = 0
-			Net.get('Rebirth'):FireServer()
-			closePanel()
-		else
-			confirmUntil = os.clock() + 4
-			task.delay(4.1, function() if current == rebirth then rebirthUpdate() end end)
-		end
-		rebirthUpdate()
+		-- (brief 24, the user: "make the rebirth one click") one tap rebirths: the window already says in red that
+		-- Rebirth resets your Power, so there is no "Tap again!" step. (RebirthService checks the Power and rate-limits.)
+		Net.get('Rebirth'):FireServer()
+		closePanel()
 	end)
 	rebirthAction:SetAttribute('Key', key)
 	if skipAction then
@@ -708,10 +715,7 @@ local function rebirthUpdate()
 		Kit.only(entry.Price, 46, { Only = false, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 34, 0, 2), ZIndex = 32, MarkColor = hex('A6F02A'), PriceColors = ColorSequence.new(hex('E8FF4A'), hex('8AE82A')) }).Parent = skipAction
 	end
 end
-rebirth.Open = function()
-	confirmUntil = 0
-	rebirthUpdate()
-end
+rebirth.Open = rebirthUpdate
 rebirth.Update = rebirthUpdate
 end -- (Rebirth window: its locals stay inside, under the 200-local limit Roblox Studio enforces)
 
@@ -730,7 +734,7 @@ Kit.new('UIListLayout', { Padding = UDim.new(0, 12), SortOrder = Enum.SortOrder.
 Kit.new('UIPadding', { PaddingTop = UDim.new(0, 8), PaddingBottom = UDim.new(0, 12), Parent = questList })
 local function questRow(goal, state)
 	local tone = state == 'done' and 'lime' or state == 'now' and 'gold' or 'dark'
-	-- (brief 19: 20 rows: studs only as a texture, and the live Cash icon without its outline copy; ~1.3K instances saved)
+	-- (brief 19: 20 rows: studs only as a texture, and a small Cash icon; ~1.3K instances saved)
 	local row = Kit.block({ Name = goal.Id or 'Goal', Tone = tone, Width = 860, Height = 74, Outline = 4, RimWidth = 3, Studs = Kit.studsAreCheap() and 34 or false, ZIndex = 25 })
 	row.LayoutOrder = goal.Step or 0
 	if state == 'done' then
@@ -782,7 +786,7 @@ local rewards = makePanel('Rewards', 'Rewards', 'Rewards', 'headerCyan', 900, 56
 -- one), one short line, no grey placeholder button.
 local DAY_W, DAY_H, DAY_GAP = 140, 166, 16
 local days = Kit.new('Frame', { Name = 'Days', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 6), Size = px(4 * DAY_W + 3 * DAY_GAP, 2 * DAY_H + DAY_GAP), ZIndex = 24, Parent = rewards.Well })
--- The day tiles hold 3D icons, so they are built the first time the window opens.
+-- The day tiles hold icons, so they are built the first time the window opens.
 rewards.Open = function()
 	if days:FindFirstChild('Day1') then return end
 	for day = 1, 7 do
@@ -820,6 +824,16 @@ actions.Shoes = function() if not openOther('HoodInventory', 'Shoes') then toast
 actions.Items = function() if not openOther('HoodInventory', 'Items') then toast('Items: soon!', 'blue') end end
 actions.World = function() if not openOther('HoodWorld') then toast('World 2: soon!', 'blue') end end
 end -- (Rewards window: its locals stay inside, under the 200-local limit Roblox Studio enforces)
+
+do
+	-- (brief 24) The unboxing moment (Shoes.client, PlayerGui UnboxingCalm) calms the HUD: the column and the counters
+	-- slide out left, the offers and the gift right, the bottom block down, and all slide back as the pair flies home.
+	-- The world behind is blurred, never darkened. The toasts wait for PlayerGui Unboxing (the moment fully faded).
+	playerGui:GetAttributeChangedSignal('UnboxingCalm'):Connect(function()
+		Motion.aside({ { column, px(-360, 0) }, { counters, px(-380, 0) }, { offers, px(320, 0) }, { rewardsSpot, px(0, -320) }, { status, px(0, 300) } }, playerGui:GetAttribute('UnboxingCalm') == true)
+	end)
+	playerGui:GetAttributeChangedSignal('Unboxing'):Connect(placeToasts)
+end
 
 local refreshCounters, refresh
 do

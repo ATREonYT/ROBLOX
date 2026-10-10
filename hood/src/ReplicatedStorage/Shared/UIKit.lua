@@ -11,7 +11,7 @@
 --   * illustrated sticker icons (hood/art/icons), never emoji
 -- Brief 17 (the user's reference HUD, Store and Rebirth windows) adds the "studded block" family used by every
 -- screen now: Kit.block / Kit.blockButton (square-ish, thick ink outline, flat tone gradient, a faint stud grid),
--- Kit.window (studded coloured header with a big 3D icon, title and a red X over a dark see-through body),
+-- Kit.window (studded coloured header with a big icon, title and a red X over a dark see-through body),
 -- Kit.bar (studded progress bar), Kit.robux / Kit.robuxButton (the green Robux price button) and Kit.studs.
 -- Used by HoodClient/HUD, Store, Shoes, Goals and Waves; UIKitDemo builds sample screens with the older pieces.
 local Kit = {}
@@ -119,6 +119,8 @@ Kit.Font = {
 	number = Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.Heavy),
 	body = Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.Bold),
 	tag = Font.new('rbxasset://fonts/families/PermanentMarker.json'),
+	-- (brief 24, the lead) the unboxing reveal's pair name and bonus: FredokaOne, the world signs' face
+	reveal = Font.new('rbxasset://fonts/families/FredokaOne.json'),
 }
 Kit.Text = { title = 40, cta = 30, button = 24, label = 18, small = 15 } -- at the 1280x720 design size
 
@@ -232,14 +234,15 @@ function Kit.useFallbacks(root)
 	end
 end
 
----------------------------------------------------------------------------------------------- 3D icons
--- Chunky 3D icons made in Blender live in Shared/Models/IconModels (build(id, scale) -> Model centred on its
--- origin, front facing -Z; Images[id] = uploaded render id or ''). Kit.icon3d shows, in order of preference:
--- the uploaded render (an ImageLabel, cheapest), the live model in a ViewportFrame, or an emoji, so screens
--- work before the module or the uploads exist.
-Kit.IconEmoji = {
-	Shop = '🛍️', Rebirth = '🔄', Rewards = '🎁', PVP = '👊', Evolve = '⬆️', Cash = '💵', Power = '💪', Trophy = '🏆', Gun = '🔫',
-}
+---------------------------------------------------------------------------------------------- icons (brief 24: flat)
+-- The user (brief 24): "the UI shouldn't look 3D". Every picture in every screen is a flat PNG: ART2's cartoon icons in
+-- Shared/Models/IconModels (Images[id] = the uploaded id; one framing for all of them: a 512 canvas, the art centred,
+-- its longer side ~86% of it, so every icon drawn at one size reads the same size). There are no ViewportFrames and no
+-- live part models in any screen any more. While an image can't draw (not uploaded yet, still in Roblox's review,
+-- rejected), Kit.icon3d shows a FLAT 2D stand-in (Kit.flatIcon): a rounded block in the icon's colour with the PNGs'
+-- dark ink outline and a simple white glyph, from ART2's IconModels.Fallback[id] = { Color, Glyph, Text?, Ink?, Accent? }
+-- (Kit.FlatDefault until a row exists). Families need no rows: Shoe_<ShoeId>, Box_<BoxId> and Gun_<GunId> take their
+-- colours from Config.Shoes / Config.Guns. (The name icon3d stays: every screen calls it.)
 local iconModels -- the module, or false once we know it is missing
 function Kit.iconModels()
 	if iconModels == nil then
@@ -253,19 +256,25 @@ function Kit.iconModels()
 	end
 	return iconModels or nil
 end
--- The uploaded render of an icon ('' when none yet).
+-- The uploaded image of an icon ('' when none yet).
 function Kit.iconImage(id)
 	local models = Kit.iconModels()
 	local image = models and type(models.Images) == 'table' and models.Images[id]
 	return type(image) == 'string' and image or ''
 end
--- Whether IconModels can show `id` at all: an uploaded image or a live model.
+-- Whether IconModels knows `id`: an uploaded image or a Fallback row (ART2's IconModels.has; families: an image).
 function Kit.hasIcon(id)
+	if type(id) ~= 'string' or id == '' then return false end
 	local models = Kit.iconModels()
-	if not models then return false end
-	return Kit.iconImage(id) ~= '' or (type(models.Meta) == 'table' and models.Meta[id] ~= nil)
+	if models and type(models.has) == 'function' then
+		local ok, v = pcall(models.has, id)
+		if ok and v then return true end
+	end
+	if Kit.iconImage(id) ~= '' then return true end
+	local rows = models and type(models.Fallback) == 'table' and models.Fallback
+	return (rows and type(rows[id]) == 'table') or Kit.FlatDefault[id] ~= nil
 end
--- The first of the ids IconModels can show (e.g. Kit.iconOr('DoubleCash', 'Cash')), else the last one.
+-- The first of the ids IconModels knows (e.g. Kit.iconOr('DoubleCash', 'Cash')), else the last one.
 function Kit.iconOr(...)
 	local ids = { ... }
 	for _, id in ids do
@@ -283,7 +292,7 @@ end
 --     and gets the image back the moment the fetch succeeds;
 --   * with no answer after Kit.ImageWait seconds, or "Success" while a label on screen still doesn't draw, the image
 --     counts as missing for now (stand-ins everywhere) and comes back if it arrives later.
--- The stand-ins: the live 3D model for an icon, the frame glyph for the Robux mark, round blobs for a splat. Where
+-- The stand-ins: the flat 2D stand-in for an icon (brief 24), the frame glyph for the Robux mark, round blobs for a splat. Where
 -- neither PreloadAsync nor IsLoaded can be read (an offline harness), the image is kept.
 -- Kit.ImageStatus[content id]: 'checking', 'fetched' (Success, checked on screen at the deadline), 'slow' (its stand-in
 -- shows while it still loads), 'ok' or 'failed'.
@@ -401,200 +410,257 @@ function Kit.watchImage(label, fail, restore)
 	end)
 end
 
--- Cartoon light for ViewportFrames: a key light from the camera's upper left. (brief 19 r7) Ambient 150 + LightColor 255
--- is what the user's Studio frame user_24 shows the live icons with: their own colours (the yellow glove's median at 0.86
--- of its Color3, highlights at 0.96, shade at 0.62). (Round 1 dimmed it to 128 + 235 from an offline estimate that
--- turned out to be ~3x too dark; Studio is the evidence.)
-function Kit.lightViewport(vp, camCFrame)
-	vp.Ambient = Color3.fromRGB(150, 150, 162)
-	vp.LightColor = Color3.fromRGB(255, 250, 238)
-	vp.LightDirection = camCFrame:VectorToWorldSpace(Vector3.new(0.55, -1, -0.75))
+-- (brief 24) The flat stand-ins' rows until ART2's IconModels.Fallback has them (and for ids it doesn't cover):
+-- { Color = the block, Glyph = a Kit.Glyphs name, Text = a short sticker, Ink = the glyph's fill (white by default),
+-- Accent = its details (the block's colour by default) }. (The gamepass card art has no text: the Store puts each pass's
+-- Sticker, '2x' / 'x100', on it.)
+Kit.FlatInk = hex('060632') -- (the PNGs' ink: ART2's outline colour, the references' measured outline)
+do
+	local function row(color, glyph, text, ink, accent)
+		return { Color = hex(color), Glyph = glyph, Text = text, Ink = ink and hex(ink) or nil, Accent = accent and hex(accent) or nil }
+	end
+	Kit.FlatDefault = {
+		Shop = row('FF9A1F', 'basket'), Basket = row('FF9A1F', 'basket'), BasketRed = row('E8364A', 'basket'),
+		Rebirth = row('E2484E', 'cycle'), RebirthSkip = row('2EB84A', 'cycle'), Rewards = row('E8364A', 'gift', nil, nil, 'FFD23F'),
+		PVP = row('E8364A', 'fist'), Evolve = row('3FC23A', 'arrow'), Arrow = row('3FC23A', 'arrow'),
+		Cash = row('3FB84A', 'cash'), CashTiny = row('3FB84A', 'cash'), CashSmall = row('3FB84A', 'cash'), CashMedium = row('3FB84A', 'cash'),
+		CashLarge = row('3FB84A', 'cash'), DoubleCash = row('3FB84A', 'cash'), TenXCash = row('EC3E98', 'cash'),
+		Power = row('FF9A1F', 'arm'), Muscle = row('FF9A1F', 'arm'), PowerTiny = row('FF9A1F', 'arm'), PowerSmall = row('FF9A1F', 'arm'),
+		PowerMedium = row('FF9A1F', 'arm'), PowerLarge = row('FF9A1F', 'arm'), PowerPack1 = row('F3B740', 'arm'), PowerPack2 = row('E6343A', 'arm'),
+		PowerPack3 = row('A64DFF', 'arm'), DoublePower = row('FF6A1F', 'arm'),
+		Trophy = row('FFB020', 'trophy'), Gun = row('2F7FE0', 'gun'), Quest = row('C0683A', 'scroll', nil, nil, 'E8364A'),
+		Sneaker = row('B83AD0', 'shoe', nil, nil, 'E8364A'), ShoePile = row('B83AD0', 'shoe', nil, nil, 'E8364A'), ShoeBox = row('FF8A2A', 'box'),
+		Robux = row('7DE84A', 'hex'), Shield = row('2F6BE0', 'shield'), XP = row('2F6BE0', 'shield', 'XP'), Skull = row('5A5F70', 'skull'),
+		VIP = row('FFB020', 'crown', nil, nil, 'E8364A'), AutoFight = row('E8364A', 'gun'), World = row('3BBA16', 'globe', nil, '5AB8FF'),
+		Backpack = row('F4A423', 'bag', nil, nil, 'E8603A'), Delete = row('E8203A', 'x'), Favorite = row('FFB020', 'star', nil, 'FFE24A'),
+		Search = row('2F7FE0', 'search'), PotionRed = row('D23739', 'potion'), PotionGold = row('FFAE01', 'potion'),
+		BoostBundle = row('B100DF', 'potion'), Lucky = row('19B98A', 'clover', nil, 'FFE24A'), TripleOpen = row('2A86E6', 'box'),
+		ExtraEquip = row('EC3E98', 'shoe'), ProBay = row('16B48A', 'arm'), GoldBay = row('FFB020', 'arm'),
+	}
 end
-
--- Points a ViewportFrame camera at model so it just fills the frame: every corner of its bounding box is
--- projected and the camera backs off until all of them fit (with a small margin).
--- props: Direction (Vector3 from the model toward the camera) or Yaw / Pitch in degrees (orbit away from the
--- front view; the front faces -Z), Fov (vertical), Aspect (frame width / height, default 1), Zoom (>1 = closer),
--- Focus (a Vector3 to aim at instead of the bounding-box centre).
--- (brief 22 r2) props.Tight: frame the VISIBLE parts' corners instead of the bounding box, centred on their silhouette.
--- The box fit leaves a live icon small and off-centre when the model carries an invisible root / fit part or is seen
--- across its diagonal (a live shoe filled ~0.73 of its square and ran off the bottom); this fills it the way ICONS'
--- renders do (Margin, default 1.06: how much room is left round the silhouette). Returns the camera CFrame and fov,
--- so an offline renderer can use exactly the same view (Kit.frameFor).
-function Kit.frameFor(model, props)
-	props = props or {}
-	local fov = props.Fov or 30
-	local orbit = CFrame.Angles(0, math.rad(props.Yaw or 0), 0) * CFrame.Angles(math.rad(props.Pitch or 0), 0, 0)
-	local back = props.Direction and props.Direction.Unit or orbit:VectorToWorldSpace(Vector3.new(0, 0, -1)) -- from the focus toward the camera
-	local up = (Vector3.yAxis - back * back:Dot(Vector3.yAxis)).Unit
-	local right = back:Cross(up)
-	local tanV = math.tan(math.rad(fov / 2))
-	local tanH = tanV * (props.Aspect or 1)
-	local points = {}
-	if props.Tight then
-		for _, d in model:GetDescendants() do
-			if d:IsA('BasePart') and d.Transparency < 0.99 then
-				local cf, h = d.CFrame, d.Size / 2
-				for _, sx in { -1, 1 } do
-					for _, sy in { -1, 1 } do
-						for _, sz in { -1, 1 } do
-							table.insert(points, cf:PointToWorldSpace(Vector3.new(sx * h.X, sy * h.Y, sz * h.Z)))
-						end
-					end
-				end
-			end
+-- Config, for the families' colours (loaded on first use; the stand-ins still draw without it).
+local configs = {}
+local function config(name)
+	if configs[name] == nil then
+		configs[name] = false
+		local folder = script.Parent:FindFirstChild('Config')
+		local module = folder and folder:FindFirstChild(name)
+		if module then
+			local ok, result = pcall(require, module)
+			if ok and type(result) == 'table' then configs[name] = result end
 		end
 	end
-	local focus = props.Focus
-	if #points == 0 then
-		local box, ext = model:GetBoundingBox()
-		focus = focus or box.Position
-		for _, sx in { -0.5, 0.5 } do
-			for _, sy in { -0.5, 0.5 } do
-				for _, sz in { -0.5, 0.5 } do
-					table.insert(points, box:PointToWorldSpace(ext * Vector3.new(sx, sy, sz)))
-				end
-			end
-		end
-	elseif not focus then
-		-- the middle of the silhouette across the view (and of the depth)
-		local lo, hi = { math.huge, math.huge, math.huge }, { -math.huge, -math.huge, -math.huge }
-		for _, p in points do
-			for i, q in { p:Dot(right), p:Dot(up), p:Dot(back) } do
-				lo[i], hi[i] = math.min(lo[i], q), math.max(hi[i], q)
-			end
-		end
-		focus = right * (lo[1] + hi[1]) / 2 + up * (lo[2] + hi[2]) / 2 + back * (lo[3] + hi[3]) / 2
-	end
-	local dist = 0
-	for _, p in points do
-		local v = p - focus
-		dist = math.max(dist, v:Dot(back) + math.max(math.abs(v:Dot(right)) / tanH, math.abs(v:Dot(up)) / tanV))
-	end
-	dist = dist * (props.Margin or 1.06) / (props.Zoom or 1)
-	return CFrame.lookAt(focus + back * dist, focus), fov
+	return configs[name] or nil
 end
-function Kit.frameModel(vp, model, props)
-	local cf, fov = Kit.frameFor(model, props)
-	local cam = vp:FindFirstChildOfClass('Camera') or new('Camera', { Parent = vp })
-	cam.FieldOfView = fov
-	cam.CFrame = cf
-	vp.CurrentCamera = cam
-	Kit.lightViewport(vp, cam.CFrame)
-	return cam
-end
-
--- A transparent ViewportFrame showing model (parented into it), framed with Kit.frameModel.
--- size: a number (square) or a Vector2 (width, height).
-function Kit.viewport(model, size, props)
-	props = table.clone(props or {})
-	local w, h = size, size
-	if typeof(size) == 'Vector2' then w, h = size.X, size.Y end
-	props.Aspect = props.Aspect or w / h
-	local vp = new('ViewportFrame', {
-		Name = props.Name or 'Model3D', BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.fromOffset(w, h),
-		Position = props.Position or UDim2.new(), AnchorPoint = props.AnchorPoint or Vector2.zero, ZIndex = props.ZIndex or 1,
-	})
-	model.Parent = vp
-	Kit.frameModel(vp, model, props)
-	return vp
-end
-
--- A 3D icon by IconModels id (Shop, Rebirth, Rewards, PVP, Evolve, Cash, Power, Trophy, Gun), seen from the
--- same side as its Blender render (IconModels.View) so live icons and uploaded images match.
--- props: Position, AnchorPoint, ZIndex, Yaw / Pitch (instead of the render's view), Zoom, Fallback (text to
--- show when nothing else exists).
--- (brief 22 r2) A live icon is framed on its visible silhouette (Kit.frameFor, Tight) with IconMargin round it, so with
--- its 1.09x outline copy it fills ~89% of the square like ICONS' renders. LiveZoom (>1 closer) is what is left per id
--- after that (Shoe_ / Box_ ids by prefix): World and Rebirth are drawn smaller, like their padded renders.
-Kit.IconMargin = 1.2
--- (measured against ICONS' round-3 renders and live models: each live icon's silhouette, outline copy included, vs
--- its PNG's; clamped to 0.9-1.5. The potions, BoostBundle and Cash/Power piles: ICONS' values for their rebuilt live models)
-Kit.LiveZoom = {
-	Arrow = 1.41, AutoFight = 1.09, Backpack = 1.07, BasketRed = 0.9, BoostBundle = 1.07, Box_ = 1.09, Cash = 1.13,
-	CashLarge = 1.03, CashMedium = 1.02, CashSmall = 1.05, CashTiny = 1.07, DoubleCash = 1.13, DoublePower = 1.07,
-	Favorite = 1.06, Muscle = 1.06, PVP = 0.92, PotionGold = 1.11, PotionRed = 1.11, Power = 1.06, PowerLarge = 1.1,
-	PowerMedium = 1.05, PowerPack1 = 1.06, PowerPack2 = 1.1, PowerPack3 = 1.16, PowerSmall = 1.05, PowerTiny = 1.11,
-	Quest = 1.07, Rebirth = 0.94, RebirthSkip = 0.94, Robux = 1.03, Search = 1.09, Shield = 0.92, ShoeBox = 1.06,
-	ShoePile = 0.9, Shoe_ = 1.27, Skull = 1.16, Sneaker = 1.05, Trophy = 0.92, VIP = 0.9, World = 1.43, XP = 0.92,
-}
-function Kit.liveZoom(id)
-	return Kit.LiveZoom[id] or Kit.LiveZoom[string.match(id, '^(%a+_)') or ''] or nil
-end
--- (brief 22) a live Shoe_<id> (IconModels: one right shoe) and Box_<id> seen exactly like ICONS' renders (their view in
--- Roblox space, model to camera): the shoe from above with the toe and laces at the front-left, the box from the
--- front-right
-Kit.ShoeView = Vector3.new(-0.665, 0.311, -0.68)
-Kit.BoxView = Vector3.new(0.36, 0.27, -0.89)
--- The camera props Kit.icon3d gives a live id (an offline renderer passes them to Kit.frameFor to draw the same view).
-function Kit.iconLook(id, props, models)
-	props = props or {}
-	models = models or Kit.iconModels()
-	local view = (string.match(id, '^Shoe_') and Kit.ShoeView) or (string.match(id, '^Box_') and Kit.BoxView) or (not (props.Yaw or props.Pitch) and models and typeof(models.View) == 'Vector3' and models.View) or nil
-	return { Direction = view, Yaw = props.Yaw or 18, Pitch = props.Pitch or 19, Zoom = props.Zoom or Kit.liveZoom(id), Tight = true, Margin = Kit.IconMargin, ZIndex = props.ZIndex or 1 }
-end
--- The live stand-in of icon `id` in holder: IconModels' model in a ViewportFrame over its outline copy (at holder's
--- ZIndex, the model one over), else an emoji. `locked` draws both black (InventoryKit's silhouettes). Every part it
--- adds carries the attribute LiveIcon, so a late upload can take them away again (Kit.icon3d's restore).
-local function liveIcon(holder, id, size, props, locked)
-	local z = holder.ZIndex
+-- The stand-in's look for `id`: ART2's row, else the family's colours, else Kit.FlatDefault, else a grey block with the
+-- id's first letter.
+function Kit.flatSpec(id)
+	id = tostring(id)
 	local models = Kit.iconModels()
-	if models and type(models.build) == 'function' then
-		local ok, model = pcall(models.build, id, 1)
-		if ok and typeof(model) == 'Instance' then
-			local look = Kit.iconLook(id, props, models)
-			look.ZIndex = z
-			-- (brief 18) The reference's icons carry a thick dark outline (so do the Blender renders): a black copy of the
-			-- live model, a little bigger, behind it. One extra ViewportFrame per icon; Outline = false skips it (brief 19:
-			-- and icons under 34 px, where it would be a 1-2 px line for twice the parts).
-			if props.Outline ~= false and size >= 34 and not locked then
-				local edge = Kit.viewport(model:Clone(), size, look)
-				edge.Name = 'Outline'
-				edge.ImageColor3 = Kit.hex('0C0A1E') -- (brief 22: the near-black of ICONS' round-2 outlines)
-				edge.AnchorPoint = Vector2.new(0.5, 0.5)
-				edge.Position = UDim2.fromScale(0.5, 0.5)
-				edge.Size = UDim2.fromScale(1.09, 1.09)
-				edge:SetAttribute('LiveIcon', true)
-				edge.Parent = holder
-			end
-			local vp = Kit.viewport(model, size, look)
-			vp.Size = UDim2.fromScale(1, 1)
-			vp.ZIndex = z + 1 -- (over its outline copy)
-			if locked then vp.ImageColor3 = Color3.new(0, 0, 0) end
-			vp:SetAttribute('LiveIcon', true)
-			vp.Parent = holder
-			return
+	local rows = models and type(models.Fallback) == 'table' and models.Fallback
+	local own = rows and rows[id]
+	if type(own) == 'table' and typeof(own.Color) == 'Color3' then return own end
+	local shoeId = string.match(id, '^Shoe_(.+)$')
+	if shoeId then
+		local Shoes = config('Shoes')
+		local s = Shoes and Shoes.ById and Shoes.ById[shoeId]
+		if s then
+			local r = Shoes.RarityById and Shoes.RarityById[s.Rarity]
+			local c = s.Colors or {}
+			return { Color = r and r.Color or hex('B8BEC8'), Glyph = 'shoe', Ink = c.Main, Accent = c.Accent, Sole = c.Sole }
 		end
+		return { Color = hex('B83AD0'), Glyph = 'shoe' }
 	end
-	local t = Kit.text({ Name = 'Fallback', Text = props.Fallback or Kit.IconEmoji[id] or '?', FontFace = Kit.Font.body, TextSize = math.floor(size * 0.8), ZIndex = z, Parent = holder })
-	t:SetAttribute('LiveIcon', true)
+	local boxId = string.match(id, '^Box_(.+)$')
+	if boxId then
+		local Shoes = config('Shoes')
+		local b = Shoes and Shoes.BoxById and Shoes.BoxById[boxId]
+		local c = b and b.Color or hex('FF8A2A')
+		return { Color = c, Glyph = 'box', Accent = c:Lerp(Color3.new(0, 0, 0), 0.2) }
+	end
+	local gunId = string.match(id, '^Gun_(.+)$')
+	if gunId then
+		local Guns = config('Guns')
+		local g = Guns and Guns.ById and Guns.ById[gunId]
+		return { Color = g and g.Color or hex('2F7FE0'), Glyph = 'gun' }
+	end
+	return Kit.FlatDefault[id] or { Color = hex('8A92A6'), Glyph = 'text', Text = string.upper(string.sub(id, 1, 1)) }
 end
+
+-- The glyphs, drawn with plain frames in a square box (0..1 both ways): { centre x, centre y, width, height, corner
+-- (a fraction of the shorter side; 0.5 = round), rotation, tone, detail }. tone: nil = the fill (white, or the row's
+-- Ink), 'a' = the accent, 'b' = the block's colour (a hole), 'k' = the ink, 's' = a shoe's sole. The shapes are drawn
+-- twice, an ink copy a little bigger under the fill, so the glyph has ONE outline round its whole silhouette; `detail`
+-- parts go on top with a thin outline of their own.
+Kit.Glyphs = {
+	-- (CRITIC4 r1: a flexed arm like ref u27: the forearm up the left from the elbow to the fist, the upper arm along the
+	-- bottom with the round bicep on it; one short crease on the fist, in the block's colour)
+	arm = { { 0.28, 0.52, 0.29, 0.58, 0.45, 3 }, { 0.38, 0.22, 0.46, 0.36, 0.48, 12 }, { 0.6, 0.78, 0.74, 0.3, 0.5, 0 }, { 0.7, 0.6, 0.46, 0.46, 0.5, 0 },
+		{ 0.29, 0.75, 0.32, 0.32, 0.5, 0 }, { 0.5, 0.27, 0.05, 0.16, 0.5, 20, 'b', true } },
+	dumbbell = { { 0.5, 0.5, 0.74, 0.14, 0.3, -20 }, { 0.26, 0.59, 0.2, 0.6, 0.2, -20 }, { 0.74, 0.41, 0.2, 0.6, 0.2, -20 }, { 0.12, 0.64, 0.12, 0.4, 0.3, -20 },
+		{ 0.88, 0.36, 0.12, 0.4, 0.3, -20 }, { 0.26, 0.59, 0.06, 0.4, 0.5, -20, 'a', true }, { 0.74, 0.41, 0.06, 0.4, 0.5, -20, 'a', true } },
+	cash = { { 0.46, 0.42, 0.84, 0.46, 0.14, -10 }, { 0.54, 0.6, 0.84, 0.46, 0.14, 0 }, { 0.54, 0.6, 0.24, 0.24, 0.5, 0, 'a', true },
+		{ 0.25, 0.6, 0.08, 0.08, 0.5, 0, 'a', true }, { 0.83, 0.6, 0.08, 0.08, 0.5, 0, 'a', true } },
+	coin = { { 0.5, 0.5, 0.84, 0.84, 0.5, 0 }, { 0.5, 0.5, 0.5, 0.5, 0.5, 0, 'a', true } },
+	cycle = { { 0.5, 0.5, 0.86, 0.86, 0.5, 0 }, { 0.8, 0.26, 0.3, 0.3, 0.08, 45 }, { 0.5, 0.5, 0.38, 0.38, 0.5, 0, 'b', true }, { 0.2, 0.72, 0.16, 0.1, 0.3, 45, 'b', true } },
+	basket = { { 0.5, 0.64, 0.84, 0.52, 0.16, 0 }, { 0.5, 0.38, 0.98, 0.16, 0.4, 0 }, { 0.5, 0.12, 0.56, 0.1, 0.5, 0 }, { 0.25, 0.24, 0.1, 0.28, 0.5, 0 },
+		{ 0.75, 0.24, 0.1, 0.28, 0.5, 0 }, { 0.35, 0.66, 0.08, 0.32, 0.5, 0, 'a', true }, { 0.5, 0.66, 0.08, 0.32, 0.5, 0, 'a', true }, { 0.65, 0.66, 0.08, 0.32, 0.5, 0, 'a', true } },
+	globe = { { 0.5, 0.5, 0.9, 0.9, 0.5, 0 }, { 0.36, 0.38, 0.36, 0.26, 0.5, -20, 'a', true }, { 0.66, 0.66, 0.3, 0.22, 0.5, 15, 'a', true }, { 0.7, 0.27, 0.14, 0.12, 0.5, 0, 'a', true } },
+	shoe = { { 0.5, 0.78, 1, 0.16, 0.5, 0, 's' }, { 0.42, 0.6, 0.7, 0.3, 0.3, 0 }, { 0.76, 0.65, 0.4, 0.22, 0.5, 0 }, { 0.2, 0.48, 0.26, 0.34, 0.4, 0 },
+		{ 0.4, 0.42, 0.22, 0.2, 0.4, -18 }, { 0.5, 0.63, 0.36, 0.09, 0.5, -14, 'a', true }, { 0.48, 0.47, 0.1, 0.05, 0.5, 25, 's', true }, { 0.58, 0.51, 0.1, 0.05, 0.5, 25, 's', true } },
+	gun = { { 0.56, 0.38, 0.84, 0.22, 0.15, 0 }, { 0.32, 0.64, 0.22, 0.44, 0.2, 14 }, { 0.46, 0.5, 0.3, 0.14, 0.2, 0 }, { 0.88, 0.38, 0.08, 0.1, 0.5, 0, 'k', true },
+		{ 0.47, 0.6, 0.1, 0.1, 0.5, 0, 'b', true }, { 0.56, 0.31, 0.5, 0.05, 0.5, 0, 'a', true } },
+	bag = { { 0.5, 0.58, 0.74, 0.72, 0.3, 0 }, { 0.5, 0.15, 0.32, 0.14, 0.5, 0 }, { 0.5, 0.4, 0.76, 0.26, 0.3, 0, 'a', true }, { 0.5, 0.73, 0.42, 0.22, 0.2, 0, 'a', true } },
+	scroll = { { 0.5, 0.5, 0.86, 0.4, 0.18, -28 }, { 0.19, 0.69, 0.25, 0.25, 0.5, -28 }, { 0.81, 0.31, 0.25, 0.25, 0.5, -28 }, { 0.5, 0.5, 0.14, 0.48, 0.1, -28, 'a', true } },
+	box = { { 0.5, 0.64, 0.82, 0.52, 0.1, 0 }, { 0.5, 0.35, 0.94, 0.22, 0.12, 0, 'a' }, { 0.5, 0.66, 0.44, 0.18, 0.2, 0, nil, true } },
+	potion = { { 0.5, 0.65, 0.74, 0.64, 0.5, 0 }, { 0.5, 0.28, 0.28, 0.28, 0.2, 0 }, { 0.5, 0.13, 0.38, 0.13, 0.3, 0, 'a' }, { 0.5, 0.74, 0.56, 0.34, 0.5, 0, 'a', true },
+		{ 0.38, 0.55, 0.1, 0.1, 0.5, 0, nil, true } },
+	x = { { 0.5, 0.5, 0.96, 0.3, 0.25, 45 }, { 0.5, 0.5, 0.96, 0.3, 0.25, -45 } },
+	arrow = { { 0.5, 0.68, 0.34, 0.52, 0.12, 0 }, { 0.5, 0.38, 0.54, 0.54, 0.1, 45 } },
+	trophy = { { 0.5, 0.34, 0.66, 0.48, 0.35, 0 }, { 0.19, 0.32, 0.24, 0.24, 0.5, 0 }, { 0.81, 0.32, 0.24, 0.24, 0.5, 0 }, { 0.5, 0.64, 0.14, 0.24, 0.1, 0 },
+		{ 0.5, 0.83, 0.56, 0.14, 0.25, 0 }, { 0.19, 0.32, 0.1, 0.1, 0.5, 0, 'b', true }, { 0.81, 0.32, 0.1, 0.1, 0.5, 0, 'b', true }, { 0.5, 0.36, 0.2, 0.2, 0.5, 0, 'a', true } },
+	gift = { { 0.5, 0.65, 0.82, 0.54, 0.08, 0 }, { 0.5, 0.38, 0.94, 0.18, 0.1, 0 }, { 0.37, 0.2, 0.26, 0.18, 0.5, -22, 'a' }, { 0.63, 0.2, 0.26, 0.18, 0.5, 22, 'a' },
+		{ 0.5, 0.6, 0.15, 0.62, 0, 0, 'a', true } },
+	hex = { { 0.5, 0.5, 0.8, 0.46, 0, 0 }, { 0.5, 0.5, 0.8, 0.46, 0, 60 }, { 0.5, 0.5, 0.8, 0.46, 0, 120 }, { 0.5, 0.5, 0.26, 0.26, 0.12, 0, 'b', true } },
+	shield = { { 0.5, 0.38, 0.76, 0.5, 0.18, 0 }, { 0.5, 0.6, 0.52, 0.52, 0.1, 45 }, { 0.5, 0.46, 0.3, 0.3, 0.5, 0, 'a', true } },
+	skull = { { 0.5, 0.42, 0.82, 0.7, 0.5, 0 }, { 0.5, 0.74, 0.5, 0.3, 0.25, 0 }, { 0.33, 0.46, 0.24, 0.26, 0.5, 0, 'k', true }, { 0.67, 0.46, 0.24, 0.26, 0.5, 0, 'k', true },
+		{ 0.5, 0.63, 0.1, 0.1, 0.2, 45, 'k', true }, { 0.42, 0.8, 0.04, 0.14, 0.5, 0, 'k', true }, { 0.58, 0.8, 0.04, 0.14, 0.5, 0, 'k', true } },
+	search = { { 0.4, 0.4, 0.64, 0.64, 0.5, 0 }, { 0.75, 0.75, 0.42, 0.16, 0.5, 45 }, { 0.4, 0.4, 0.38, 0.38, 0.5, 0, 'b', true } },
+	-- (CRITIC4 r1: not a castle: three tall points with balls on their tips, a band, gems)
+	crown = { { 0.21, 0.46, 0.3, 0.3, 0.06, 45 }, { 0.5, 0.42, 0.34, 0.34, 0.06, 45 }, { 0.79, 0.46, 0.3, 0.3, 0.06, 45 }, { 0.5, 0.67, 0.64, 0.24, 0.06, 0 },
+		{ 0.5, 0.85, 0.94, 0.2, 0.3, 0 }, { 0.21, 0.22, 0.15, 0.15, 0.5, 0 }, { 0.5, 0.15, 0.17, 0.17, 0.5, 0 }, { 0.79, 0.22, 0.15, 0.15, 0.5, 0 },
+		{ 0.5, 0.85, 0.14, 0.14, 0.5, 45, 'a', true }, { 0.25, 0.85, 0.09, 0.09, 0.5, 0, 'a', true }, { 0.75, 0.85, 0.09, 0.09, 0.5, 0, 'a', true } },
+	bolt = { { 0.58, 0.3, 0.26, 0.5, 0.1, 22 }, { 0.42, 0.7, 0.26, 0.5, 0.1, 22 }, { 0.5, 0.5, 0.52, 0.16, 0.1, -12 } },
+	lock = { { 0.5, 0.66, 0.74, 0.52, 0.16, 0 }, { 0.5, 0.34, 0.52, 0.52, 0.5, 0 }, { 0.5, 0.37, 0.26, 0.3, 0.5, 0, 'b', true }, { 0.5, 0.67, 0.1, 0.2, 0.3, 0, 'k', true } },
+	-- (CRITIC4 r1: PVP's boxing glove: the round mitt, the thumb, the cuff)
+	fist = { { 0.54, 0.4, 0.7, 0.62, 0.48, -10 }, { 0.24, 0.5, 0.24, 0.36, 0.5, -24 }, { 0.5, 0.8, 0.5, 0.26, 0.2, -10, 'a' },
+		{ 0.34, 0.52, 0.05, 0.22, 0.5, -24, 'b', true }, { 0.5, 0.7, 0.5, 0.05, 0.5, -10, 'k', true } },
+	-- (CRITIC4 r1: Lucky's clover: four round leaves and a stem)
+	clover = { { 0.49, 0.26, 0.38, 0.38, 0.5, 0 }, { 0.26, 0.49, 0.38, 0.38, 0.5, 0 }, { 0.72, 0.49, 0.38, 0.38, 0.5, 0 }, { 0.49, 0.72, 0.38, 0.38, 0.5, 0 },
+		{ 0.74, 0.82, 0.08, 0.34, 0.5, -40 }, { 0.49, 0.49, 0.16, 0.16, 0.5, 45, 'b', true } },
+}
+-- Draws glyph `kind` in a `box` px square centred in parent, from ZIndex z (scale: the square as a fraction of the
+-- parent instead, so it follows a holder drawn at another size, e.g. in a BillboardGui). colours: { Fill, Accent, Base,
+-- Sole, Text }. 'star' is the outlined text star, 'text' (and any name Kit.Glyphs lacks) is colours.Text.
+function Kit.glyph(parent, kind, colours, box, z, scale)
+	local holder = blank({ Name = 'Glyph', AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = scale and UDim2.fromScale(scale, scale) or UDim2.fromOffset(box, box), ZIndex = z, Parent = parent })
+	local ink = Kit.FlatInk
+	local t = math.max(1.5, box * 0.07)
+	local parts = Kit.Glyphs[kind]
+	if not parts then
+		local text = kind == 'star' and '★' or tostring(colours.Text or '?')
+		local size = kind == 'star' and math.floor(box * 1.25) or Kit.fitSize(text, math.floor(box * 0.82), box * 1.1, 8)
+		Kit.text({ Name = 'Text', Text = text, TextSize = size, TextColor3 = colours.Fill, Stroke = ink, StrokeThickness = t, ZIndex = z + 1, Parent = holder })
+		return holder
+	end
+	local function tone(name)
+		if name == 'a' then return colours.Accent end
+		if name == 'b' then return colours.Base end
+		if name == 'k' then return ink end
+		if name == 's' then return colours.Sole or Kit.Color.white end
+		return colours.Fill
+	end
+	local function part(p, grow, color, zz, edge)
+		local f = blank({ BackgroundTransparency = 0, BackgroundColor3 = color, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(p[1], p[2]), Size = UDim2.new(p[3], grow, p[4], grow), Rotation = p[6] or 0, ZIndex = zz, Parent = holder })
+		if (p[5] or 0) > 0 then corner(UDim.new(p[5], 0)).Parent = f end
+		if edge then stroke(ink, edge, true, 0, Enum.LineJoinMode.Round).Parent = f end
+		return f
+	end
+	for _, p in parts do
+		if not p[8] then part(p, 2 * t, ink, z) end
+	end
+	for _, p in parts do
+		if not p[8] then part(p, 0, tone(p[7]), z + 1) end
+	end
+	for _, p in parts do
+		if p[8] then part(p, 0, tone(p[7]), z + 2, p[7] ~= 'k' and math.max(1, t * 0.5) or nil) end
+	end
+	return holder
+end
+
+-- The flat stand-in of icon `id` in holder (filling it): the rounded block, its ink outline and one soft highlight, the
+-- glyph and the row's sticker text. props.Locked: a dark silhouette block (things you don't own yet). Every part sits in
+-- one frame with the attribute Flat, so a late upload takes it away again (Kit.icon3d's restore).
+-- props.Bare: no block, the glyph alone and bigger in the icon's own colours (a picture sitting on a splat or a slab:
+-- the inventory's items, the unboxing's pairs; the splat is its backdrop), black when Locked.
+function Kit.flatIcon(holder, id, size, props)
+	props = props or {}
+	local spec = Kit.flatSpec(id)
+	local locked = props.Locked == true
+	local z = holder.ZIndex
+	local base = locked and hex('262A38') or spec.Color
+	local white, black = Kit.Color.white, Color3.new(0, 0, 0)
+	local root = blank({ Name = 'Flat', Size = UDim2.fromScale(1, 1), ZIndex = z, Parent = holder })
+	root:SetAttribute('Flat', true)
+	root:SetAttribute('Bare', props.Bare == true)
+	if props.Bare and spec.Glyph ~= 'text' then
+		local fill = locked and hex('16161E') or spec.Ink or spec.Color
+		local colours = { Fill = fill, Accent = locked and fill or spec.Accent or fill:Lerp(white, 0.5), Base = locked and fill or fill:Lerp(black, 0.4), Sole = locked and fill or spec.Sole }
+		Kit.glyph(root, spec.Glyph, colours, math.floor(size * 0.86), z, 0.86)
+		return root
+	end
+	local block = blank({ Name = 'Block', BackgroundTransparency = 0, BackgroundColor3 = white, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(0.84, 0.84), ZIndex = z, Parent = root })
+	corner(UDim.new(0.24, 0)).Parent = block
+	stroke(Kit.FlatInk, math.max(1.5, size * 0.045), true).Parent = block
+	new('UIGradient', { Rotation = 90, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, base:Lerp(white, 0.3)), ColorSequenceKeypoint.new(0.55, base), ColorSequenceKeypoint.new(1, base:Lerp(black, 0.2)) }), Parent = block })
+	if size >= 30 and not locked then
+		local shine = blank({ Name = 'Highlight', BackgroundTransparency = 0.55, BackgroundColor3 = white, Position = UDim2.fromScale(0.12, 0.08), Size = UDim2.fromScale(0.36, 0.09), Rotation = -10, ZIndex = z, Parent = block })
+		corner(UDim.new(0.5, 0)).Parent = shine
+	end
+	local colours = locked and { Fill = hex('3E4558'), Accent = hex('323848'), Base = base, Sole = hex('3E4558'), Text = '?' }
+		or { Fill = spec.Ink or white, Accent = spec.Accent or base, Base = base, Sole = spec.Sole, Text = spec.Text }
+	Kit.glyph(root, spec.Glyph or 'text', colours, math.floor(size * 0.6), z + 1, 0.6)
+	if spec.Text and spec.Glyph ~= 'text' and not locked and size >= 28 then
+		local ts = Kit.fitSize(spec.Text, math.floor(size * 0.34), size * 0.62, 8)
+		Kit.text({ Name = 'Sticker', Text = spec.Text, TextSize = ts, Stroke = Kit.FlatInk, StrokeThickness = math.max(1.5, ts * 0.16), AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(0.7, 0.78), Size = UDim2.fromScale(0.7, 0.4), Rotation = -8, ZIndex = z + 4, Parent = root })
+	end
+	return root
+end
+
+-- An icon by IconModels id: its uploaded PNG (one ImageLabel), or the flat stand-in while that can't draw.
+-- props: Position, AnchorPoint, ZIndex, Color (ImageColor3), Rotation, Locked (a black silhouette of the PNG / a dark
+-- stand-in), Bare (the stand-in without its block: Kit.flatIcon). Returns the holder, `size` square.
 function Kit.icon3d(id, size, props)
 	props = props or {}
-	local holder = blank({ Name = 'Icon3D_' .. id, Size = UDim2.fromOffset(size, size), Position = props.Position or UDim2.new(), AnchorPoint = props.AnchorPoint or Vector2.zero, ZIndex = props.ZIndex or 1 })
 	local z = props.ZIndex or 1
+	local holder = blank({ Name = 'Icon3D_' .. id, Size = UDim2.fromOffset(size, size), Position = props.Position or UDim2.new(), AnchorPoint = props.AnchorPoint or Vector2.zero, ZIndex = z })
 	local image = Kit.iconImage(id)
+	local black = Color3.new(0, 0, 0)
 	if image ~= '' then
-		-- (brief 19) ICONS' uploaded render: one ImageLabel, the outline and gloss baked in. ImageColor3 / Rotation from props.
-		local img = new('ImageLabel', { Name = 'Image', BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Image = image, ScaleType = Enum.ScaleType.Fit, ImageColor3 = props.Color or Color3.new(1, 1, 1), Rotation = props.Rotation or 0, ZIndex = z, Parent = holder })
+		-- ART2's uploaded PNG: one ImageLabel, outline and shading baked in
+		local img = new('ImageLabel', { Name = 'Image', BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Image = image, ScaleType = Enum.ScaleType.Fit, ImageColor3 = props.Locked and black or props.Color or Color3.new(1, 1, 1), Rotation = props.Rotation or 0, ZIndex = z, Parent = holder })
 		img:SetAttribute('PreviewImage', 'icon3d:' .. id) -- the offline previewer draws hood/art/icons3d/<id>.png here
-		-- (brief 23) an upload that never arrives (in review, rejected) swaps to the live model; back if it comes later
+		-- (brief 23/24) an upload that never arrives (in review, rejected) swaps to the flat stand-in; back if it comes later
 		Kit.watchImage(img, function()
 			img.Visible = false
-			holder:SetAttribute('PreviewImage', 'icon3d:' .. id)
-			liveIcon(holder, id, size, props, holder:GetAttribute('PreviewSilhouette') == true or img.ImageColor3 == Color3.new(0, 0, 0))
+			local f = Kit.flatIcon(holder, id, size, { Locked = img.ImageColor3 == black, Bare = props.Bare })
+			f.Rotation = img.Rotation
 		end, function()
 			for _, d in holder:GetChildren() do
-				if d:GetAttribute('LiveIcon') then d:Destroy() end
+				if d:GetAttribute('Flat') then d:Destroy() end
 			end
-			holder:SetAttribute('PreviewImage', nil)
 			img.Visible = true
 		end)
 		return holder
 	end
-	holder:SetAttribute('PreviewImage', 'icon3d:' .. id) -- the offline previewer draws the Blender render here
-	liveIcon(holder, id, size, props, false)
+	local f = Kit.flatIcon(holder, id, size, { Locked = props.Locked, Bare = props.Bare })
+	f.Rotation = props.Rotation or 0
 	return holder
+end
+-- Black (props.Locked) or not: turns an icon3d holder into its silhouette after the fact (the PNG tinted black, or the
+-- stand-in rebuilt dark).
+function Kit.setLocked(holder, locked)
+	local img = holder:FindFirstChild('Image')
+	if img and img:IsA('ImageLabel') then img.ImageColor3 = locked and Color3.new(0, 0, 0) or Color3.new(1, 1, 1) end
+	for _, d in holder:GetChildren() do
+		if d:GetAttribute('Flat') then
+			local id = string.match(holder.Name, '^Icon3D_(.+)$')
+			local bare = d:GetAttribute('Bare') == true
+			d:Destroy()
+			if id then Kit.flatIcon(holder, id, holder.Size.X.Offset, { Locked = locked, Bare = bare }) end
+		end
+	end
 end
 
 ---------------------------------------------------------------------------------------------- screen + scaling
@@ -1129,7 +1195,7 @@ function Kit.blockButton(props)
 end
 
 -- The HUD's square action button (the reference's Store / World / Rebirth ... column): a studded block with a big
--- 3D icon filling most of it and popping out of its top edge, and an outlined caption low on its face. props: Name,
+-- icon filling most of it and popping out of its top edge, and an outlined caption low on its face. props: Name,
 -- Tone, Width, Height, Position, AnchorPoint, ZIndex, Text, TextSize, LabelY (the caption's centre as a fraction of the
 -- height, 0.82), Icon (an icon3d id) or IconNode (any GuiObject), IconSize, IconX (px off centre), Pop (px the icon
 -- rises over the top edge). The hit area grows to cover the icon. Returns holder, hit, icon, caption.
@@ -1145,7 +1211,7 @@ function Kit.actionButton(props)
 	local base = icon.ZIndex
 	icon.ZIndex = z
 	for _, d in icon:GetDescendants() do
-		if d:IsA('GuiObject') then d.ZIndex = z + math.max(0, d.ZIndex - base) end -- (keeps a 3D icon over its outline)
+		if d:IsA('GuiObject') then d.ZIndex = z + math.max(0, d.ZIndex - base) end -- (keeps the icon's layers in order)
 	end
 	icon.Parent = holder.Body
 	local textSize = props.TextSize or 22
@@ -1339,7 +1405,7 @@ function Kit.bar(props)
 end
 
 -- A window like the reference's Store and Rebirth (user_27/28, measured at their size): a studded header in the
--- window's colour (a big 3D icon, the title in Gotham Black, a red-pink square X) over a grey see-through body with a
+-- window's colour (a big icon, the title in Gotham Black, a red-pink square X) over a grey see-through body with a
 -- light inner band, both with a thick black outline; no dimming (the world behind is blurred, UIMotion.blur). The
 -- window keeps the reference's size (it covers most of the screen) and shrinks to fit small screens (Kit.fitWindow).
 -- props: Name, Title, Icon (an icon3d id) or IconNode (any GuiObject), Tone (the header), Width (940), Height (642),

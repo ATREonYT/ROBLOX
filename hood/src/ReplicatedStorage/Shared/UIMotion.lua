@@ -182,10 +182,11 @@ function Motion.toast(toast, hold)
 end
 
 -- (brief 17) A soft blur over the 3D world while any window is open, like the reference's Store and Rebirth
--- windows. Each window calls Motion.blur(itsName, true/false); the blur stays while any of them is open.
+-- windows. Each window calls Motion.blur(itsName, true/false); the blur stays while any of them is open. (brief 24)
+-- size: how strong this owner wants it (10 for a window; the unboxing moment asks 18); the strongest one shows.
 local blurOwners = {}
-function Motion.blur(owner, on)
-	blurOwners[owner] = on and true or nil
+function Motion.blur(owner, on, size)
+	blurOwners[owner] = on and (tonumber(size) or 10) or nil
 	local cam = workspace.CurrentCamera
 	if not cam then return end
 	local b = cam:FindFirstChild('HoodWindowBlur')
@@ -195,7 +196,35 @@ function Motion.blur(owner, on)
 		b.Size = 0
 		b.Parent = cam
 	end
-	tween(b, on and 0.22 or 0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out, { Size = next(blurOwners) and 10 or 0 })
+	local want = 0
+	for _, v in blurOwners do want = math.max(want, v) end
+	tween(b, on and 0.22 or 0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out, { Size = want })
+end
+
+-- (brief 24) Steps a few screen pieces aside and back (the HUD while the unboxing moment plays): items = { { gui,
+-- offset UDim2 }, ... }; on = true slides each out by its offset (a little wind-up first), false slides it back. A piece
+-- that a layout pass moved meanwhile stays where the layout put it.
+local asides = setmetatable({}, { __mode = 'k' })
+function Motion.aside(items, on, time)
+	for _, it in items do
+		local gui, offset = it[1], it[2]
+		local rec = asides[gui]
+		if on then
+			if not rec then
+				rec = { Base = gui.Position }
+				asides[gui] = rec
+			end
+			rec.Away = rec.Base + offset
+			rec.Tween = tween(gui, time or 0.24, Enum.EasingStyle.Back, Enum.EasingDirection.In, { Position = rec.Away })
+		elseif rec then
+			asides[gui] = nil
+			-- (still on its way out, or where it was sent: within a few px, as a tween may stop a hair short)
+			local p, a = gui.Position, rec.Away
+			local near = math.abs(p.X.Scale - a.X.Scale) < 1e-3 and math.abs(p.Y.Scale - a.Y.Scale) < 1e-3 and math.abs(p.X.Offset - a.X.Offset) < 4 and math.abs(p.Y.Offset - a.Y.Offset) < 4
+			local moving = rec.Tween and rec.Tween.PlaybackState == Enum.PlaybackState.Playing
+			if moving or near then tween(gui, time or 0.32, Enum.EasingStyle.Back, Enum.EasingDirection.Out, { Position = rec.Base }) end
+		end
+	end
 end
 
 -- Looping idle motion: a notification badge wobbles, a tutorial arrow bobs.

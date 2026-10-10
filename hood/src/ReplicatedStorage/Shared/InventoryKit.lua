@@ -308,137 +308,39 @@ function InventoryKit.splat(size, color, props)
 	return holder
 end
 
--- Optional modules (other builders'); everything here works without them.
-local function optional(...)
-	local node = Shared
-	for _, name in { ... } do
-		node = node and node:FindFirstChild(name)
-	end
-	if not node then return nil end
-	local ok, result = pcall(require, node)
-	return ok and type(result) == 'table' and result or nil
-end
-local ShoeModels, BoxModels, GunModels
-
--- A live model in a ViewportFrame with the reference's thick dark outline (a navy copy 1.09x behind it, like
--- Kit.icon3d's), framed from `dir` (from the model toward the camera). Returns the holder.
--- The camera props of our own live icons: Kit.icon3d's tight silhouette framing (Kit.frameFor with Tight and
--- Kit.IconMargin), from `dir`. (tools render the fallback offline with the same props through Kit.frameFor.)
-function InventoryKit.liveLook(dir, zoom)
-	return { Direction = dir, Zoom = zoom, Tight = true, Margin = Kit.IconMargin or 1.2, Fov = 30 }
-end
-local function liveIcon(model, size, props)
-	local z = props.ZIndex or 1
-	local holder = blank({ Name = props.Name or 'Live', Size = px(size, size), Position = props.Position or UDim2.new(), AnchorPoint = props.AnchorPoint or Vector2.zero, ZIndex = z })
-	local look = InventoryKit.liveLook(props.Direction, props.Zoom)
-	look.ZIndex = z
-	if props.Outline ~= false and size >= 40 and not props.Locked then
-		local edge = Kit.viewport(model:Clone(), size, look)
-		edge.Name = 'Outline'
-		edge.ImageColor3 = hex('0C0A1E') -- (Kit.icon3d's: the near-black of ICONS' baked outlines)
-		edge.AnchorPoint = Vector2.new(0.5, 0.5)
-		edge.Position = UDim2.fromScale(0.5, 0.5)
-		edge.Size = UDim2.fromScale(1.09, 1.09)
-		edge.Parent = holder
-	end
-	local vp = Kit.viewport(model, size, look)
-	vp.Size = UDim2.fromScale(1, 1)
-	vp.ZIndex = z + 1
-	if props.Locked then vp.ImageColor3 = Color3.new(0, 0, 0) end
-	vp.Parent = holder
-	return holder
-end
-
--- Kit.icon3d with the silhouette look for things you don't own yet (the uploaded render or the live model, tinted
--- black); `preview` keeps the offline renderer's art name.
+-- (brief 24) Every picture is a flat PNG (Kit.icon3d: ART2's upload, or its flat 2D stand-in while that can't draw):
+-- no live models, no ViewportFrames. A thing you don't own yet is its black silhouette (props.Locked). props.Bare: the
+-- stand-in without its block (an item on a splat, like the reference's pets); shoes and guns are bare by default.
 local function icon3d(id, size, props)
-	local holder = Kit.icon3d(id, size, { ZIndex = props.ZIndex, Outline = props.Outline })
-	if props.Locked then
-		for _, d in holder:GetDescendants() do
-			if d:IsA('ImageLabel') then d.ImageColor3 = Color3.new(0, 0, 0) elseif d:IsA('ViewportFrame') then d.ImageColor3 = Color3.new(0, 0, 0) end
-		end
-		holder:SetAttribute('PreviewSilhouette', true)
-		for _, d in holder:GetDescendants() do
-			if d:GetAttribute('PreviewImage') then d:SetAttribute('PreviewSilhouette', true) end
-		end
-	end
+	local holder = Kit.icon3d(id, size, { ZIndex = props.ZIndex, Locked = props.Locked, Bare = props.Bare })
+	if props.Locked then holder:SetAttribute('PreviewSilhouette', true) end
 	return holder
 end
 
--- A shoe's icon: Kit.icon3d('Shoe_<id>'): ICONS' render (one right shoe, toe and laces at the front-left, a thick
--- outline) once uploaded, the live shoe from the same side before (IconModels delegates to ShoeModels). Without
--- IconModels' Shoe_ rows, our own live shoe from ShoeModels. props: ZIndex, Locked (a black silhouette), Outline.
--- (the side ICONS' Shoe_<id> PNGs show: the toe and laces at the front-left, from above; Kit.ShoeView, matched on their
--- silhouettes by UI3, so the fallback and the upload read alike)
-InventoryKit.ShoeView = (Kit.ShoeView or Vector3.new(-0.7, 0.5, -0.55)).Unit
-InventoryKit.ShoeZoom = (Kit.liveZoom and Kit.liveZoom('Shoe_')) or 1.2 -- (the live shoe fills its square like the PNG)
+-- A shoe's icon: ART2's Shoe_<id> PNG (one right shoe, the toe and laces to the front-left, a thick outline), or its
+-- flat stand-in in the shoe's colours. props: ZIndex, Locked (a black silhouette).
 function InventoryKit.shoeIcon(id, size, props)
-	props = props or {}
-	local iconId = 'Shoe_' .. tostring(id)
-	local holder
-	if Kit.hasIcon(iconId) then
-		-- (ICONS' PNG once uploaded; before that Kit.icon3d's live shoe, seen from the PNG's side, Kit.ShoeView)
-		holder = icon3d(iconId, size, props)
-	else
-		ShoeModels = ShoeModels or optional('Models', 'ShoeModels') or false
-		local ok, model = false, nil
-		if ShoeModels and type(ShoeModels.shoe) == 'function' then ok, model = pcall(ShoeModels.shoe, id, 'R', 1) end
-		if ok and typeof(model) == 'Instance' then
-			holder = liveIcon(model, size, { ZIndex = props.ZIndex, Direction = InventoryKit.ShoeView, Zoom = InventoryKit.ShoeZoom, Locked = props.Locked, Outline = props.Outline })
-		else
-			holder = icon3d('Sneaker', size, props)
-		end
-	end
+	props = table.clone(props or {})
+	if props.Bare == nil then props.Bare = true end
+	local holder = icon3d('Shoe_' .. tostring(id), size, props)
 	holder.Name = 'Shoe_' .. tostring(id)
-	holder:SetAttribute('PreviewImage', 'icon3d:' .. iconId)
-	if props.Locked then holder:SetAttribute('PreviewSilhouette', true) end
 	return holder
 end
 
--- A gun's icon: GunModels' uploaded render, else the live gun (from the armory's side), else the Gun icon.
+-- A gun's icon: ART2's Gun_<id> PNG (side view, muzzle to the right), or its flat stand-in in the gun's colour.
 function InventoryKit.gunIcon(id, size, props)
-	props = props or {}
-	GunModels = GunModels or optional('Models', 'GunModels') or false
-	local holder
-	local image = GunModels and type(GunModels.Images) == 'table' and GunModels.Images[id]
-	if type(image) == 'string' and image ~= '' then
-		holder = blank({ Name = 'Gun_' .. id, Size = px(size, size), ZIndex = props.ZIndex or 1 })
-		new('ImageLabel', { Name = 'Image', BackgroundTransparency = 1, Image = image, ScaleType = Enum.ScaleType.Fit, ImageColor3 = props.Locked and Color3.new(0, 0, 0) or Color3.new(1, 1, 1), Size = UDim2.fromScale(1, 1), ZIndex = props.ZIndex or 1, Parent = holder })
-	elseif GunModels and type(GunModels.build) == 'function' then
-		local ok, model = pcall(GunModels.build, id, 1)
-		if ok and typeof(model) == 'Instance' then
-			local view = typeof(GunModels.View) == 'Vector3' and GunModels.View or Vector3.new(0.86, 0.36, -0.36)
-			holder = liveIcon(model, size, { ZIndex = props.ZIndex, Direction = view, Zoom = 1.02, Locked = props.Locked, Outline = props.Outline })
-		end
-	end
-	holder = holder or icon3d('Gun', size, props)
-	holder.Name = 'Gun_' .. id
-	holder:SetAttribute('PreviewImage', 'gun:' .. id)
-	if props.Locked then holder:SetAttribute('PreviewSilhouette', true) end
+	props = table.clone(props or {})
+	if props.Bare == nil then props.Bare = true end
+	local holder = icon3d('Gun_' .. tostring(id), size, props)
+	holder.Name = 'Gun_' .. tostring(id)
 	return holder
 end
 
--- A shoe box's icon: ICONS' Box_<id> render once uploaded, else the live box from BoxModels (3/4 front, from above).
-InventoryKit.BoxView = (Kit.BoxView or Vector3.new(0.36, 0.27, -0.89)).Unit -- (ICONS' Box_<id> PNG view, as Kit.icon3d)
+-- A shoe box's icon: ART2's Box_<id> PNG, or its flat stand-in in the box's colour.
 function InventoryKit.boxIcon(id, size, props)
 	props = props or {}
-	local iconId = 'Box_' .. tostring(id)
-	local holder
-	if Kit.hasIcon(iconId) then
-		holder = icon3d(iconId, size, props)
-	else
-		BoxModels = BoxModels or optional('Models', 'BoxModels') or false
-		local ok, model = false, nil
-		if BoxModels and type(BoxModels.build) == 'function' then ok, model = pcall(BoxModels.build, id, 1) end
-		if ok and typeof(model) == 'Instance' then
-			holder = liveIcon(model, size, { ZIndex = props.ZIndex, Direction = InventoryKit.BoxView, Zoom = 1.02, Outline = props.Outline, Locked = props.Locked })
-		else
-			holder = icon3d(Kit.iconOr('ShoeBox', 'Rewards'), size, props)
-		end
-	end
-	holder.Name = iconId
-	holder:SetAttribute('PreviewImage', 'icon3d:' .. iconId)
-	if props.Locked then holder:SetAttribute('PreviewSilhouette', true) end
+	local holder = icon3d('Box_' .. tostring(id), size, props)
+	holder.Name = 'Box_' .. tostring(id)
 	return holder
 end
 
@@ -489,9 +391,15 @@ end
 -- Dims a slot's item and labels (a search that doesn't match it): or puts them back.
 function InventoryKit.dim(holder, on)
 	for _, d in holder:GetDescendants() do
-		if d:IsA('ImageLabel') or d:IsA('ViewportFrame') then
+		if d:IsA('ImageLabel') then
 			if d:GetAttribute('BaseT') == nil then d:SetAttribute('BaseT', d.ImageTransparency) end
 			d.ImageTransparency = on and 0.75 or d:GetAttribute('BaseT')
+		elseif d:IsA('Frame') and d:FindFirstAncestor('Flat') then
+			-- (brief 24) a flat stand-in's shapes and their outlines
+			if d:GetAttribute('BaseT') == nil then d:SetAttribute('BaseT', d.BackgroundTransparency) end
+			d.BackgroundTransparency = on and math.max(0.75, d:GetAttribute('BaseT')) or d:GetAttribute('BaseT')
+			local st = d:FindFirstChildOfClass('UIStroke')
+			if st then st.Transparency = on and 0.75 or 0 end
 		elseif d:IsA('TextLabel') then
 			if d:GetAttribute('BaseT') == nil then d:SetAttribute('BaseT', d.TextTransparency) end
 			d.TextTransparency = on and 0.6 or d:GetAttribute('BaseT')

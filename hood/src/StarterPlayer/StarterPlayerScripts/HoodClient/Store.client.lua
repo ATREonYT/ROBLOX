@@ -30,10 +30,6 @@ local function optional(...)
 	local ok, result = pcall(require, node)
 	return ok and type(result) == 'table' and result or nil
 end
-local GunModels = optional('Models', 'GunModels')
-local BoxModels = optional('Models', 'BoxModels')
-local ShoeModels = optional('Models', 'ShoeModels')
-local IconModels = optional('Models', 'IconModels')
 local RebirthRules = optional('RebirthRules')
 -- (brief 22) Roblox's player list (top right, under the topbar) would sit over the window's X: hidden while the Store is
 -- open, through UI4's shared switch so the inventory, World and HUD windows agree (UIKit.HidePlayerList: hidden for good)
@@ -47,7 +43,7 @@ local playerGui = player:WaitForChild('PlayerGui')
 local Color, short, hex = Kit.Color, Kit.short, Kit.hex
 local BLACK = Color.black
 local px = UDim2.fromOffset
-local iconOr = Kit.iconOr -- (the first id IconModels can show: an uploaded render or a live model)
+local iconOr = Kit.iconOr -- (the first id IconModels knows: an uploaded PNG or a flat stand-in row)
 
 local NAME = 'Store'
 local gui, root, fit = Kit.screen('HoodStore', nil, 8)
@@ -159,42 +155,25 @@ local function buy(key)
 end
 
 ---------------------------------------------------------------------------------------------- art
--- What a card shows (Products' Art): a 3D icon, a gun, a shoe box, three boxes or a pair of shoes, as live models
--- in ViewportFrames (the offline previewer draws the matching renders from PreviewImage).
-local function modelView(model, size, view, attr, z)
-	local vp = Kit.viewport(model, size, { Direction = view, Yaw = 25, Pitch = 18, ZIndex = z })
-	vp:SetAttribute('PreviewImage', attr)
-	return vp
-end
--- (brief 19) ICONS' offer-card renders, used once uploaded (the live models stay the fallback)
-local CARD_ART = { DoubleRep = 'DoublePower', DoubleCash = 'DoubleCash', VIP = 'VIP', AutoShoot = 'AutoFight' }
+-- (brief 24: "the UI shouldn't look 3D") What a card shows (Products' Art), always a flat PNG (Kit.icon3d: ART2's upload,
+-- or its flat 2D stand-in while that can't draw; never a live model): 'icon:<id>' an icon, 'gun:<id>' Gun_<id>,
+-- 'box:<id>' Box_<id>, 'boxes:<id>' three Box_<id> stacked, 'shoe:<id>' Shoe_<id>.
 local function artFor(entry, size, z)
 	local w0 = typeof(size) == 'Vector2' and size.X or size
-	local art = CARD_ART[entry.Key]
-	-- (r7, UICRITIC P1-3) any art IconModels can show, uploaded or live (the live VIP crown, the AutoFight crosshair, the
-	-- DoubleCash / DoublePower aliases), before the catalog's generic Art
-	if art and Kit.hasIcon(art) then return Kit.icon3d(art, w0, { ZIndex = z }) end
-	local kind, id = entry.Art:match('^(%w+):(.+)$')
-	local ok, node = pcall(function()
-		if kind == 'gun' and GunModels then
-			return modelView(GunModels.build(id, 1), size, typeof(GunModels.View) == 'Vector3' and GunModels.View or nil, 'gun:' .. id, z)
-		elseif kind == 'box' and BoxModels then
-			return modelView(BoxModels.build(id, 1), size, Vector3.new(-0.45, 0.42, -0.79).Unit, 'box:' .. id, z)
-		elseif kind == 'boxes' and BoxModels then
-			-- three boxes in a little pyramid
-			local m = Instance.new('Model')
-			for i, at in { CFrame.new(-2.5, 0, 0), CFrame.new(2.5, 0, 0), CFrame.new(0, 3.2, 0.4) } do
-				local b = BoxModels.build(id, 1, at)
-				b.Name = 'Box' .. i
-				b.Parent = m
-			end
-			return modelView(m, size, Vector3.new(-0.3, 0.35, -0.89).Unit, 'boxes:' .. id, z)
-		elseif kind == 'shoe' and ShoeModels then
-			return modelView(ShoeModels.pair(id, 1), size, typeof(ShoeModels.View) == 'Vector3' and ShoeModels.View or nil, 'shoe:' .. id, z)
+	local kind, id = (entry.Art or ''):match('^(%w+):(.+)$')
+	if kind == 'gun' then return Kit.icon3d('Gun_' .. id, w0, { ZIndex = z }) end
+	if kind == 'box' then return Kit.icon3d('Box_' .. id, w0, { ZIndex = z }) end
+	if kind == 'shoe' then return Kit.icon3d('Shoe_' .. id, w0, { ZIndex = z }) end
+	if kind == 'boxes' then
+		-- three boxes in a little pyramid, one picture each
+		local holder = Kit.new('Frame', { Name = 'Boxes_' .. id, BackgroundTransparency = 1, Size = px(w0, w0), ZIndex = z })
+		for i, at in { { 0.5, 0.34 }, { 0.3, 0.66 }, { 0.7, 0.66 } } do
+			-- (the top one first and lowest, the two in front over it)
+			local b = Kit.icon3d('Box_' .. id, math.floor(w0 * 0.56), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(at[1], at[2]), ZIndex = z + (i == 1 and 0 or 5) })
+			b.Parent = holder
 		end
-		return nil
-	end)
-	if ok and node then return node end
+		return holder
+	end
 	local icon = kind == 'icon' and id or 'Shop'
 	if icon == 'Power' then icon = iconOr('Muscle', 'Power') end
 	return Kit.icon3d(icon, w0, { ZIndex = z })
@@ -256,15 +235,27 @@ end
 -- A big gamepass card (the reference's "10x Power / Golden Zone"): the name, two big gold lines, the green Robux
 -- button on the left; the art large on the right, poking over the top edge.
 local BIG_W, BIG_H, BIG_GAP = 475, 290, 22
+local ART_PASS = 240 -- (brief 24) every gamepass card's art, one size
+-- A pass's Sticker on its art: big outlined gold text, tilted, like the reference's "x8" over its pets.
+local function sticker(parent, entry, pos, z)
+	if type(entry.Sticker) ~= 'string' or entry.Sticker == '' then return nil end
+	local size = Kit.fitSize(entry.Sticker, 58, 150, 28)
+	local t = gold(label({ Name = 'Sticker', Text = entry.Sticker, TextSize = size, StrokeThickness = math.max(4, size * 0.13), AnchorPoint = Vector2.new(0.5, 0.5), Position = pos, Size = px(170, size + 10), Rotation = -10, ZIndex = z, Parent = parent }))
+	local st = t:FindFirstChildOfClass('UIStroke')
+	if st then st.Color = BLACK end
+	return t
+end
 local function bigCard(entry, x, y, parent)
 	local card = Kit.block({ Name = entry.Key, Tone = entry.Tone, Width = BIG_W, Height = BIG_H, Position = px(x, y), Outline = 5, RimWidth = 7, Studs = CARD_STUDS, StudSparse = true, StudTransparency = 0.8, StudShade = 0.6, ZIndex = 25 })
 	card.Parent = parent
 	local z = 28
-	-- (brief 19: the reference's art is huge, the card's height, poking ~25 px over its top edge)
-	local art = artFor(entry, 258, z)
+	-- (brief 19: the reference's art is huge, the card's height, poking ~25 px over its top edge; brief 24: every pass's
+	-- art at one size, ART_PASS, and its Sticker ('2x', 'x100') stuck on it: ART2's card art carries no text)
+	local art = artFor(entry, ART_PASS, z)
 	art.AnchorPoint = Vector2.new(0.5, 0)
-	art.Position = UDim2.new(0, 352, 0, -30)
+	art.Position = UDim2.new(0, 352, 0, -22)
 	art.Parent = card.Body
+	sticker(card.Body, entry, px(352 + ART_PASS * 0.3, ART_PASS * 0.72 - 22), z + 6)
 	-- (r7, UICRITIC P2-7: the reference's title is white with a thin olive-brown edge, lighter than the gold lines)
 	label({ Name = 'Title', Text = entry.Title, TextSize = Kit.fitSize(entry.Title, 42, 270, 16), Stroke = hex('5A4600'), StrokeThickness = 3.5, TextXAlignment = Enum.TextXAlignment.Left, AnchorPoint = Vector2.new(0, 0.5), Position = px(32, 39), Size = px(300, 48), ZIndex = z + 1, Parent = card.Body })
 	local lines = string.split(entry.Big or '', '\n')
@@ -282,10 +273,11 @@ local function bannerCard(entry, y, parent)
 	local card = Kit.block({ Name = entry.Key, Tone = entry.Tone, Width = INNER - 2 * MARGIN, Height = BANNER_H, Position = px(MARGIN, y), Outline = 5, RimWidth = 7, Studs = CARD_STUDS, StudSparse = true, StudTransparency = 0.8, StudShade = 0.6, ZIndex = 25 })
 	card.Parent = parent
 	local z = 28
-	local art = artFor(entry, 220, z)
+	local art = artFor(entry, ART_PASS, z)
 	art.AnchorPoint = Vector2.new(0, 0.5)
-	art.Position = UDim2.new(0, 22, 0.5, -26)
+	art.Position = UDim2.new(0, 14, 0.5, -20)
 	art.Parent = card.Body
+	sticker(card.Body, entry, px(14 + ART_PASS * 0.8, BANNER_H * 0.5 - 20 + ART_PASS * 0.22), z + 6)
 	local tone = Kit.toneOf(entry.Tone)
 	label({ Name = 'Big', Text = entry.Big or entry.Title, TextSize = 96, TextColor3 = hex('0A0A0A'), Stroke = tone.glow or tone.rim or Color.white, StrokeThickness = 6, TextXAlignment = Enum.TextXAlignment.Left, Position = px(270, 8), Size = px(420, 106), ZIndex = z + 1, Parent = card.Body })
 	local detail = gold(label({ Name = 'Detail', Text = entry.Detail or '', TextSize = 40, StrokeThickness = 5, TextXAlignment = Enum.TextXAlignment.Left, Position = px(272, 112), Size = px(440, 50), ZIndex = z + 1, Parent = card.Body }))
@@ -318,22 +310,9 @@ local function strikePrice(parent, value, size, pos, anchor, z)
 	Kit.stroke(hex('5A0000'), 1.5, true, 0, Enum.LineJoinMode.Miter).Parent = line
 	return row
 end
--- A pair of shoes' art (ICONS' Shoe_<id> render or live model), the box's art (Box_<id> or the live box).
--- (ICONS r1: IconModels builds every Shoe_ / Box_ id live too, so Kit.icon3d draws the PNG once uploaded and the same
--- 3/4 view of the live model before.)
-local function shoeArt(id, size, z)
-	if Kit.hasIcon('Shoe_' .. id) then return Kit.icon3d('Shoe_' .. id, size, { ZIndex = z }) end
-	local ok, node = pcall(function()
-		if not ShoeModels then return nil end
-		local model = (type(ShoeModels.shoe) == 'function' and ShoeModels.shoe(id, 1)) or ShoeModels.pair(id, 1)
-		return modelView(model, size, typeof(ShoeModels.View) == 'Vector3' and ShoeModels.View or nil, 'shoe:' .. id, z)
-	end)
-	return ok and node or Kit.icon3d('Sneaker', size, { ZIndex = z })
-end
-local function boxArt(id, size, z)
-	if Kit.hasIcon('Box_' .. id) then return Kit.icon3d('Box_' .. id, size, { ZIndex = z }) end
-	return artFor({ Art = 'box:' .. id }, size, z)
-end
+-- A shoe's art (ART2's Shoe_<id> PNG or its flat stand-in), a box's art (Box_<id>).
+local function shoeArt(id, size, z) return Kit.icon3d('Shoe_' .. id, size, { ZIndex = z, Bare = true }) end -- (on its splat)
+local function boxArt(id, size, z) return Kit.icon3d('Box_' .. id, size, { ZIndex = z }) end
 
 -- ~Shoe Boxes~ (ref22_store_limited's egg card, 962 x 354): the name huge at the top-left, the box art large at the
 -- bottom-left, its shoes over rarity splats with their drop chance (the rarest last and biggest), and one green Robux
@@ -361,9 +340,10 @@ local function boxCard(rows, y, parent)
 	-- (UICRITIC2 r1 #1: the ref's egg is ~330 px wide, runs off the card's left edge and ~7 px past its bottom, and the
 	-- first pet overlaps it; ICONS' box PNGs keep ~14% clear on the left and ~2% below. The list clips 21 px out from
 	-- the card, so the art pokes out ~7 px, clear of that edge.)
-	local art = boxArt(boxId, 360, z)
+	-- (brief 24: ART2's chunky box fills 0.879 of its square, so at 316 px it shows whole, its lid clear of the title)
+	local art = boxArt(boxId, 316, z)
 	art.AnchorPoint = Vector2.new(0, 1)
-	art.Position = UDim2.new(0, -64, 1, 19)
+	art.Position = UDim2.new(0, -34, 1, 14)
 	art.Parent = card.Body
 	-- the shoes, rarest last and biggest (ref: ~120 px pets at 140 px steps over their splats, the 1% one ~168 px;
 	-- ICONS' shoe PNGs fill ~90% of their square)
@@ -500,8 +480,9 @@ local function packCard(entry, i, x, y, parent)
 	gold(label({ Name = 'Title', Text = title, TextSize = Kit.fitSize(title, 52, PACK_W - 50, 24), StrokeThickness = 5, TextXAlignment = Enum.TextXAlignment.Left, Position = px(30, 14), Size = px(PACK_W - 40, 62), ZIndex = z + 2, Parent = card.Body }))
 	local pile = (entry.Section == 'Power' and 'Power' or 'Cash') .. (PILE[i] or 'Large')
 	local artId = (entry.Art or ''):match('^icon:(.+)$')
-	-- (ref22_store_packs: every pile ~180 px wide at the left, growing taller and fuller)
-	local art = Kit.icon3d(iconOr(pile, artId or '', entry.Section == 'Power' and 'Muscle' or 'Cash'), 190 + 8 * math.min(i, 4), { ZIndex = z })
+	-- (ref22_store_packs: every pile at the left, fuller pack by pack; brief 24: one picture size for every pack, the
+	-- pile itself grows in ART2's art)
+	local art = Kit.icon3d(iconOr(pile, artId or '', entry.Section == 'Power' and 'Muscle' or 'Cash'), 206, { ZIndex = z })
 	art.AnchorPoint = Vector2.new(0.5, 0.5)
 	art.Position = px(112, 168)
 	art.Parent = card.Body
