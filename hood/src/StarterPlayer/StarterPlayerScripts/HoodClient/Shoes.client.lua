@@ -565,52 +565,13 @@ local function bindBox(model)
 	if not ShoeRules.inWorld(id) then return end
 	local point = model:FindFirstChild('BoxPoint_' .. id, true) or model:WaitForChild('BoxPoint_' .. id, 5)
 	if not point or not model.Parent then return end
-	local old = point:FindFirstChild('ShoePrompt')
-	if old then old:Destroy() end
-	local prompt = Instance.new('ProximityPrompt')
-	prompt.Name = 'ShoePrompt'
-	prompt.ObjectText = box.Name
-	prompt.ActionText = box.Robux and robuxPrompt(box) or ('Open  ' .. Format.compact(box.Price) .. ' Cash')
-	prompt.KeyboardKeyCode = Enum.KeyCode.E
-	prompt.HoldDuration = 0.3 -- (it spends Cash or opens a purchase: a passing tap doesn't)
-	prompt.MaxActivationDistance = 8
-	prompt.RequiresLineOfSight = false
-	prompt.Parent = point
-	prompt.Triggered:Connect(function()
-		if unboxing then return end
-		if box.Robux then
-			buyBox(box)
-		else
-			Net.get('OpenShoeBox'):FireServer(id)
-		end
-	end)
-	boxes[id] = { Box = box, Model = model, Point = point, Prompt = prompt }
-	if not box.Robux then
-		-- (brief 22) The Triple Open pass: a second prompt opens 3 at once for 3x the price (the server checks the pass,
-		-- the Cash and the room; one ShoeOpened with Buy = 3 comes back). Shown only while you own the pass.
-		local triple = Instance.new('ProximityPrompt')
-		triple.Name = 'ShoePromptTriple'
-		triple.ObjectText = box.Name
-		triple.ActionText = 'Open x3  ' .. Format.compact(box.Price * 3) .. ' Cash'
-		triple.KeyboardKeyCode = Enum.KeyCode.F
-		triple.UIOffset = Vector2.new(0, 72)
-		triple.HoldDuration = 0.3
-		triple.MaxActivationDistance = 8
-		triple.RequiresLineOfSight = false
-		triple.Enabled = player:GetAttribute('Pass_TripleOpen') == true
-		triple.Parent = point
-		triple.Triggered:Connect(function()
-			if unboxing then return end
-			Net.get('OpenShoeBox'):FireServer(id, 3)
-		end)
-		boxes[id].Triple = triple
+	-- (P3, brief 29: the key panel under "box keys" below replaces the proximity prompts: E / R / T and the three cards)
+	for _, name in { 'ShoePrompt', 'ShoePromptTriple' } do
+		local old = point:FindFirstChild(name)
+		if old then old:Destroy() end
 	end
+	boxes[id] = { Box = box, Model = model, Point = point }
 end
-player:GetAttributeChangedSignal('Pass_TripleOpen'):Connect(function()
-	for _, entry in boxes do
-		if entry.Triple then entry.Triple.Enabled = player:GetAttribute('Pass_TripleOpen') == true end
-	end
-end)
 local function watchDais(dais)
 	local function added(child)
 		if child:IsA('Model') and child:GetAttribute('BoxId') then task.spawn(bindBox, child) end
@@ -692,6 +653,226 @@ task.spawn(function()
 		local ok, err = pcall(refreshBoards)
 		if not ok then warn('[Shoes] board: ' .. tostring(err)) end
 	end
+end)
+
+---------------------------------------------------------------------------------------------- box keys (P3, brief 29)
+-- The reference's egg panel keys (refs29 section 8), flat 2D: three key cards under the box's name and price, each a
+-- rounded square with a cream keycap and its label under it: E Open (lime), R Open 3 (yellow), T Auto (cyan). Standing
+-- within KEY_RANGE of a box shows them; the keys or a tap/click on a card act. Open 3 and Auto need passes: without the
+-- pass the card shows a padlock and the pass's Robux price, and pressing it opens Roblox's own purchase window for the
+-- pass (or "coming soon" while it has no id); with it the card shows the box's price (x3 for Open 3).
+-- A Robux box ("Exclusive"): the same three cards read Buy, Buy 3 and Buy 8 with the Robux prices of the box's own
+-- products (Products ShoeBoxExclusive, ...3, ...8), each Roblox's own purchase window.
+-- P5 HOOK: BOX_PASS names the pass behind each locked key. Triple is the existing TripleOpen pass; Auto is the pass P5 adds
+-- (Products key AutoOpen, ownership as the player attribute Pass_AutoOpen). Until Products.ByKey.AutoOpen exists the Auto
+-- card shows the padlock and "SOON". Auto, once owned, opens this box again and again (one at a time, after each
+-- reveal) until you press T again, walk away, or it can't open one (no Cash or no room).
+local BOX_PASS = { Triple = 'TripleOpen', Auto = 'AutoOpen' }
+local KEY_RANGE = 11 -- studs from a box's point: the panel shows within this
+local KEY_TONES = { E = Kit.hex('B0F500'), R = Kit.hex('FFF200'), T = Kit.hex('14E8F8') }
+local keysGui, keysRoot = Kit.screen('HoodBoxKeys', player:WaitForChild('PlayerGui'), 6)
+local keysUI = {}
+local keysEntry -- the box entry the panel is up for
+local autoOn = false
+
+local function passOwned(key) return player:GetAttribute('Pass_' .. key) == true end
+local function passEntry(key) return Products.ByKey and Products.ByKey[key] end
+-- Roblox's own purchase window for a pass (the player's choice), or "coming soon" while it isn't live.
+local function buyPass(key)
+	local entry = passEntry(key)
+	if not entry or not Products.canBuy(key) then
+		say((entry and entry.Title or 'This pass') .. ' is coming soon!')
+		return
+	end
+	local ok = pcall(function() MarketplaceService:PromptGamePassPurchase(player, Products.idOf(key)) end)
+	if not ok then say('Try again!') end
+end
+local function buyProduct(key)
+	if not passEntry(key) or not Products.canBuy(key) then
+		say('Coming soon!')
+		return
+	end
+	local ok = pcall(function() MarketplaceService:PromptProductPurchase(player, Products.idOf(key)) end)
+	if not ok then say('Try again!') end
+end
+local function openBox(entry, count)
+	if unboxing then return end
+	if count and count > 1 then
+		Net.get('OpenShoeBox'):FireServer(entry.Box.Id, count)
+	else
+		Net.get('OpenShoeBox'):FireServer(entry.Box.Id)
+	end
+end
+local function stopAuto()
+	autoOn = false
+end
+local function startAuto(entry)
+	if autoOn then return end
+	autoOn = true
+	task.spawn(function()
+		while autoOn and keysEntry == entry and entry.Point.Parent do
+			if not unboxing then
+				if cashNow() < entry.Box.Price then
+					say('Not enough Cash for Auto!')
+					break
+				end
+				openBox(entry)
+				-- (the server answers with ShoeOpened, which starts a reveal; no reveal in 2 s means it can't open one)
+				local waited = 0
+				while not unboxing and waited < 2 and autoOn do task.wait(0.1) waited += 0.1 end
+				if not unboxing then
+					say("Auto stopped: can't open right now")
+					break
+				end
+			end
+			task.wait(0.25)
+		end
+		autoOn = false
+	end)
+end
+-- what each key does for the box (Cash box: Open / Open 3 / Auto; Robux box: Buy / Buy 3 / Buy 8)
+local function keyAction(entry, key)
+	local box = entry.Box
+	if box.Robux then
+		if key == 'E' then buyBox(box)
+		elseif key == 'R' then buyProduct(box.Robux .. '3')
+		else buyProduct(box.Robux .. '8') end
+		return
+	end
+	if key == 'E' then
+		openBox(entry)
+	elseif key == 'R' then
+		if passOwned(BOX_PASS.Triple) then openBox(entry, 3) else buyPass(BOX_PASS.Triple) end
+	else
+		if not passOwned(BOX_PASS.Auto) then buyPass(BOX_PASS.Auto) elseif autoOn then stopAuto() else startAuto(entry) end
+	end
+end
+
+local function lockIcon(parent)
+	-- a padlock from two frames (no emoji): a rounded body and a shackle ring over it
+	local holder = Kit.new('Frame', { Name = 'Lock', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.42), Size = px(40, 46), ZIndex = 6, Parent = parent })
+	local shackle = Kit.new('Frame', { Name = 'Shackle', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromScale(0.5, 0), Size = px(22, 26), ZIndex = 6, Parent = holder })
+	Kit.corner(UDim.new(0.5, 0)).Parent = shackle
+	Kit.stroke(Color.white, 5, true).Parent = shackle
+	local body = Kit.new('Frame', { Name = 'Body', BackgroundColor3 = Color.white, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.fromScale(0.5, 1), Size = px(36, 26), ZIndex = 7, Parent = holder })
+	Kit.corner(UDim.new(0.2, 0)).Parent = body
+	Kit.stroke(Color.ink, 2.5, true).Parent = body
+	Kit.new('Frame', { Name = 'Keyhole', BackgroundColor3 = Color.ink, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.45), Size = px(6, 11), ZIndex = 8, Parent = body })
+	return holder
+end
+
+local function buildKeys()
+	local panel = Kit.new('Frame', { Name = 'Panel', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -150), Size = px(470, 270), Visible = false, Parent = keysRoot })
+	keysUI.Panel = panel
+	keysUI.Name = Kit.text({ Name = 'Name', Text = '', FontFace = face('Title', Kit.Font.display), TextSize = 40, Stroke = Color.ink, StrokeThickness = 6, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 0), Size = px(470, 48), Parent = panel })
+	keysUI.Price = Kit.text({ Name = 'Price', Text = '', FontFace = face('Title', Kit.Font.display), TextSize = 28, TextColor3 = Kit.hex('FFC800'), Stroke = Color.ink, StrokeThickness = 5, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 46), Size = px(470, 34), Parent = panel })
+	keysUI.Cards = {}
+	for i, key in { 'E', 'R', 'T' } do
+		local card = Kit.new('TextButton', { Name = 'Card' .. key, Text = '', AutoButtonColor = false, BackgroundTransparency = 1, Position = px(8 + (i - 1) * 152, 88), Size = px(144, 176), Parent = panel })
+		local sq = Kit.new('Frame', { Name = 'Square', BackgroundColor3 = KEY_TONES[key], Size = px(144, 124), Parent = card })
+		Kit.corner(UDim.new(0.14, 0)).Parent = sq
+		Kit.stroke(Color.ink, 4, true).Parent = sq
+		local sheen = Kit.new('Frame', { Name = 'Sheen', BackgroundColor3 = Color.white, BackgroundTransparency = 0.7, Position = px(8, 8), Size = px(128, 28), Parent = sq })
+		Kit.corner(UDim.new(0.5, 0)).Parent = sheen
+		local cap = Kit.new('Frame', { Name = 'Keycap', BackgroundColor3 = Color3.fromRGB(255, 246, 220), AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 12), Size = px(62, 62), Parent = sq })
+		Kit.corner(UDim.new(0.2, 0)).Parent = cap
+		Kit.stroke(Color3.fromRGB(70, 62, 50), 3, true).Parent = cap
+		local letter = Kit.text({ Name = 'Letter', Text = key, FontFace = face('Title', Kit.Font.display), TextColor3 = Color3.fromRGB(60, 66, 80), TextSize = 40, Size = UDim2.fromScale(1, 1), Parent = cap })
+		local sub = Kit.text({ Name = 'Sub', Text = '', FontFace = face('Title', Kit.Font.display), TextSize = 24, Stroke = Color.ink, StrokeThickness = 4, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -6), Size = px(136, 30), Parent = sq })
+		local label = Kit.text({ Name = 'Label', Text = '', FontFace = face('Title', Kit.Font.display), TextSize = 28, Stroke = Color.ink, StrokeThickness = 5, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 130), Size = px(144, 38), Parent = card })
+		local lock = lockIcon(sq)
+		lock.Visible = false
+		keysUI.Cards[key] = { Card = card, Square = sq, Letter = letter, Sub = sub, Label = label, Lock = lock, Cap = cap }
+		card.Activated:Connect(function()
+			if keysEntry and not unboxing then keyAction(keysEntry, key) end
+		end)
+	end
+end
+buildKeys()
+
+-- paint the cards for the box entry
+local function paintKeys(entry)
+	local box = entry.Box
+	local c = keysUI.Cards
+	keysUI.Name.Text = string.upper(box.Name)
+	if box.Robux then
+		keysUI.Name.TextColor3 = Kit.hex('7CFF4F')
+		keysUI.Price.Text = 'EXCLUSIVE'
+		keysUI.Price.TextColor3 = Kit.hex('B8F838')
+		local labels = { E = { 'Buy', box.Robux }, R = { 'Buy 3', box.Robux .. '3' }, T = { 'Buy 8', box.Robux .. '8' } }
+		for key, spec in labels do
+			local pe = passEntry(spec[2])
+			local card = c[key]
+			card.Label.Text = spec[1]
+			card.Sub.Text = pe and ((Products.RobuxMark or '') .. tostring(pe.Price)) or 'SOON'
+			card.Sub.TextColor3 = Kit.hex('B8F838')
+			card.Square.BackgroundColor3 = KEY_TONES[key]
+			card.Lock.Visible = false
+		end
+		return
+	end
+	local afford = cashNow() >= box.Price
+	keysUI.Name.TextColor3 = box.Color and box.Color:Lerp(Color.white, 0.45) or Color.white
+	keysUI.Price.Text = Format.compact(box.Price) .. ' Cash'
+	keysUI.Price.TextColor3 = afford and Kit.hex('FFC800') or Kit.hex('FF7A7A')
+	local function setCard(key, label, sub, lockedKey, subColor)
+		local card = c[key]
+		local locked = lockedKey ~= nil
+		card.Label.Text = label
+		card.Sub.Text = sub
+		card.Sub.TextColor3 = subColor
+		card.Lock.Visible = locked
+		card.Letter.Visible = not locked
+		card.Cap.Visible = not locked
+		card.Square.BackgroundColor3 = locked and KEY_TONES[key]:Lerp(Color3.fromRGB(46, 50, 70), 0.62) or KEY_TONES[key]
+	end
+	local gold = afford and Color.white or Kit.hex('FF7A7A')
+	setCard('E', 'Open', Format.compact(box.Price), nil, gold)
+	-- Open 3: the pass, or the lock and its price
+	if passOwned(BOX_PASS.Triple) then
+		setCard('R', 'Open 3', Format.compact(box.Price * 3), nil, cashNow() >= box.Price * 3 and Color.white or Kit.hex('FF7A7A'))
+	else
+		local pe = passEntry(BOX_PASS.Triple)
+		setCard('R', 'Open 3', pe and ((Products.RobuxMark or '') .. tostring(pe.Price)) or 'SOON', BOX_PASS.Triple, Kit.hex('B8F838'))
+	end
+	-- Auto: the pass (P5's AutoOpen), or the lock and its price (or SOON while the pass has no catalog entry)
+	if passOwned(BOX_PASS.Auto) then
+		setCard('T', autoOn and 'Stop' or 'Auto', autoOn and 'ON' or Format.compact(box.Price), nil, autoOn and Kit.hex('7CFF4F') or Color.white)
+	else
+		local pe = passEntry(BOX_PASS.Auto)
+		setCard('T', 'Auto', pe and ((Products.RobuxMark or '') .. tostring(pe.Price)) or 'SOON', BOX_PASS.Auto, Kit.hex('B8F838'))
+	end
+end
+local function refreshKeys()
+	local root = rootOf(player.Character)
+	local best, bestD = nil, KEY_RANGE
+	if root and not unboxing and player.PlayerGui:GetAttribute('Unboxing') ~= true then
+		for _, entry in boxes do
+			if entry.Point.Parent then
+				local d = (entry.Point.CFrame.Position - root.CFrame.Position).Magnitude
+				if d <= bestD then best, bestD = entry, d end
+			end
+		end
+	end
+	if best ~= keysEntry then
+		if autoOn then stopAuto() end
+		keysEntry = best
+	end
+	keysUI.Panel.Visible = best ~= nil
+	if best then paintKeys(best) end
+end
+task.spawn(function()
+	while true do
+		task.wait(0.2)
+		local ok, err = pcall(refreshKeys)
+		if not ok then warn('[Shoes] keys: ' .. tostring(err)) end
+	end
+end)
+local UIS = game:GetService('UserInputService')
+UIS.InputBegan:Connect(function(input, processed)
+	if processed or not keysEntry or unboxing then return end
+	local key = input.KeyCode == Enum.KeyCode.E and 'E' or input.KeyCode == Enum.KeyCode.R and 'R' or input.KeyCode == Enum.KeyCode.T and 'T' or nil
+	if key then keyAction(keysEntry, key) end
 end)
 
 ---------------------------------------------------------------------------------------------- unboxing moment (brief 24)
