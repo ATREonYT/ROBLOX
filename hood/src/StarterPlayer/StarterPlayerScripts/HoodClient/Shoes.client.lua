@@ -62,6 +62,8 @@ end
 local ShoeModels = optional('Models', 'ShoeModels')
 local ShoeFX = optional('ShoeFX') -- (SHOES2: the rarity tiers, pure data; the reveal reads ShoeFX.tier)
 local Cinematic = optional('UnboxCinematic') -- (brief 27, REVEAL: the world-space unboxing; the 2D moment is its fallback)
+local Fonts = optional('Fonts') -- (brief 28: the game's one family, by role)
+local function face(role, fallback) return Fonts and Fonts[role] or fallback end
 local IK = require(Shared.InventoryKit)
 
 local BOARD_RANGE = 20 -- studs: the nearest box within this shows its chances board
@@ -478,10 +480,10 @@ local function cellFor(board, i, id, rack, n)
 	icon.Parent = cell
 	local chance = Kit.text({ Name = 'Chance', Text = ShoeRules.chanceText(ShoeRules.chanceOf(id, player:GetAttribute('Pass_Lucky') == true)), Stroke = Color.ink, Position = UDim2.fromScale(0, 0.62), Size = UDim2.fromScale(1, 0.24), ZIndex = 3, Parent = cell })
 	chance.TextScaled = true
-	local name = Kit.text({ Name = 'Name', Text = hidden and '???' or string.upper(shoe.Name), FontFace = Kit.Font.body, TextColor3 = Color.white, Stroke = Color.ink, Position = UDim2.fromScale(0.04, 0.85), Size = UDim2.fromScale(0.92, 0.13), ZIndex = 3, Parent = cell })
+	local name = Kit.text({ Name = 'Name', Text = hidden and '???' or string.upper(shoe.Name), FontFace = face('Heading', Kit.Font.body), TextColor3 = Color.white, Stroke = Color.ink, Position = UDim2.fromScale(0.04, 0.85), Size = UDim2.fromScale(0.92, 0.13), ZIndex = 3, Parent = cell })
 	name.TextScaled = true
 	if owned then
-		local tick = Kit.text({ Name = 'Owned', Text = '✔', FontFace = Kit.Font.body, TextColor3 = Tone.green.top, Stroke = Color.ink, AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromScale(1.04, -0.06), Size = UDim2.fromScale(0.32, 0.2), ZIndex = 4, Parent = cell })
+		local tick = Kit.text({ Name = 'Owned', Text = '✔', FontFace = face('Body', Kit.Font.body), TextColor3 = Tone.green.top, Stroke = Color.ink, AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromScale(1.04, -0.06), Size = UDim2.fromScale(0.32, 0.2), ZIndex = 4, Parent = cell })
 		tick.TextScaled = true
 	end
 	return cell
@@ -953,6 +955,11 @@ local function shoesSquare(W, H)
 end
 
 local drain -- (forward: the next moment in the queue)
+-- (brief 28c) the server keeps the opener safe (an invisible ForceField) while the moment plays where they stand; this
+-- tells it the moment is over (the queue is empty)
+local function reportDone()
+	pcall(function() Net.get('UnboxDone'):FireServer() end)
+end
 local T = { Drop = 0.28, Land = 0.4, Shake = 1.02, Pop = 1.15, Fly = 0.45, Text = 1.3, Out = 0.35, Stagger = 0.14 }
 local skipRequested = false
 local function play(info)
@@ -1036,11 +1043,11 @@ local function play(info)
 		shoeScale = Kit.new('UIScale', { Scale = 0.001, Parent = shoeNode }) -- (not 0: some renderers read 0 as unset)
 		local top = H * 0.12
 		word = Fx.label(stage, { Name = 'Rarity', Text = string.upper(rarity.Name) .. '!', TextSize = math.floor(78 * s), StrokeThickness = 7 * s, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(cx, top), Size = px(W, 96 * s), ZIndex = 32 })
-		-- (the lead, r1: the reveal is the biggest, clearest thing on screen: the name big in FredokaOne with a dark
-		-- stroke, the bonus in the rarity's colour)
+		-- (the lead, r1: the reveal is the biggest, clearest thing on screen: the name big in the game's Title face
+		-- (Shared/Fonts) with a dark stroke, the bonus in the rarity's colour)
 		local nameY = focus.Y + S * 0.52 + 4
-		name = Fx.label(stage, { Name = 'Name', Text = shoe.Name, FontFace = Kit.Font.reveal, TextSize = Kit.fitSize(shoe.Name, math.floor(72 * s), W - 80, 24), StrokeThickness = 7 * s, AnchorPoint = Vector2.new(0.5, 0), Position = px(cx, nameY), Size = px(W, 76 * s), ZIndex = 32 })
-		bonus = Fx.label(stage, { Name = 'Bonus', Text = ShoeRules.bonusText(shoe.Bonus) .. ' Power', FontFace = Kit.Font.reveal, TextSize = math.floor(48 * s), StrokeThickness = 5.5 * s, AnchorPoint = Vector2.new(0.5, 0), Position = px(cx, nameY + 70 * s), Size = px(W, 54 * s), ZIndex = 32 })
+		name = Fx.label(stage, { Name = 'Name', Text = shoe.Name, FontFace = face('Title', Kit.Font.reveal), TextSize = Kit.fitSize(shoe.Name, math.floor(72 * s), W - 80, 24), StrokeThickness = 7 * s, AnchorPoint = Vector2.new(0.5, 0), Position = px(cx, nameY), Size = px(W, 76 * s), ZIndex = 32 })
+		bonus = Fx.label(stage, { Name = 'Bonus', Text = ShoeRules.bonusText(shoe.Bonus) .. ' Power', FontFace = face('Number', Kit.Font.reveal), TextSize = math.floor(48 * s), StrokeThickness = 5.5 * s, AnchorPoint = Vector2.new(0.5, 0), Position = px(cx, nameY + 70 * s), Size = px(W, 54 * s), ZIndex = 32 })
 		if tier.Rainbow then Fx.rainbowText(bonus) else Kit.gradient(Color.white, rarity.Color, 0.35).Parent = bonus end
 		local text
 		if info.Equipped then
@@ -1373,6 +1380,7 @@ local function play(info)
 		stage:Destroy()
 		unboxing = false
 		if #queue == 0 then
+			reportDone()
 			Motion.blur('Unboxing', false)
 			pg:SetAttribute('UnboxingCalm', false)
 			-- (CRITIC4 r1: one message at a time: GOAL DONE, the toasts and the guide's callouts wait a beat after the
@@ -1416,6 +1424,32 @@ end
 -- (brief 27) The cinematic: the same flags as the 2D moment; it restores the camera, the controls and the lighting
 -- itself, then the next one in the queue plays. Returns its length, or nil when it couldn't build (the 2D one plays).
 local reducedMotion = false
+-- (brief 28c) The opening in the world ends by flying the pair into the HUD's Shoes square: its centre in viewport
+-- pixels, where it stands once the column has slid back (it is still stepped aside 360 design px while the moment
+-- plays), and a little bump when the pair lands in it.
+local function shoesButtonPx()
+	local square = player.PlayerGui.HoodHUD.Root.Actions.Shoes
+	local hud = square:FindFirstAncestorOfClass('ScreenGui')
+	local k = Kit.scaleFor(hud.AbsoluteSize)
+	local p = square.AbsolutePosition + square.AbsoluteSize / 2
+	if player.PlayerGui:GetAttribute('UnboxingCalm') == true then p += Vector2.new(360 * k, 0) end
+	if not hud.IgnoreGuiInset then p += game:GetService('GuiService'):GetGuiInset() end
+	return p
+end
+local function bumpShoesButton(delay)
+	task.delay(delay, function()
+		pcall(function()
+			local square = player.PlayerGui.HoodHUD.Root.Actions.Shoes
+			local sc = square:FindFirstChild('UnboxBump') or Instance.new('UIScale')
+			sc.Name = 'UnboxBump'
+			sc.Scale = 1
+			sc.Parent = square
+			local up = TweenService:Create(sc, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Scale = 1.18 })
+			up.Completed:Connect(function() TweenService:Create(sc, TweenInfo.new(0.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play() end)
+			up:Play()
+		end)
+	end)
+end
 local function playCinematic(info)
 	if not Cinematic or type(Cinematic.play) ~= 'function' then return nil end
 	local pg = player.PlayerGui
@@ -1428,11 +1462,16 @@ local function playCinematic(info)
 	local abs = momentGui.AbsoluteSize
 	if abs.X >= 2 and abs.Y >= 2 then momentFit(abs) end
 	local done = false
-	local job = Cinematic.play(info, { gui = momentGui, reduced = reducedMotion, onDone = function(j)
+	local job = Cinematic.play(info, { gui = momentGui, reduced = reducedMotion, closeTarget = shoesButtonPx, onClose = function(j)
+		-- (the HUD slides back as the pair flies into it; not when another opening is waiting)
+		if #queue == 0 then pg:SetAttribute('UnboxingCalm', false) end
+		bumpShoesButton(j.closeLen or j.Plan.closeLen or 0.5)
+	end, onDone = function(j)
 		if done or j.Failed then return end
 		done = true
 		unboxing = false
 		if #queue == 0 then
+			reportDone()
 			pg:SetAttribute('UnboxingCalm', false)
 			task.delay(0.3, function()
 				if not unboxing and #queue == 0 then pg:SetAttribute('Unboxing', false) end
@@ -1472,6 +1511,7 @@ function drain()
 	if not ok then
 		warn('[Shoes] unboxing: ' .. tostring(length))
 		unboxing = false
+		if #queue == 0 then reportDone() end
 		player.PlayerGui:SetAttribute('Unboxing', false)
 		player.PlayerGui:SetAttribute('UnboxingCalm', false)
 		return drain()

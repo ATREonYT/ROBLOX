@@ -177,6 +177,34 @@ return function(t)
   t.expect.equal(profile.Data.Cash,S.new().Cash)
  end)
 
+ t.test('the opener is safe while the opening plays where they stand: an invisible ForceField until the client is done, a death or respawn, or 15 s',function()
+  local Opening=require(game.ServerScriptService.HoodServer.ShoeOpening)
+  local ch=Instance.new('Model');ch.Name='ShieldTester'
+  local hum=Instance.new('Humanoid');hum.Health=100;hum.Parent=ch
+  ch.Parent=workspace
+  local fake={Name='ShieldTester',Character=ch}
+  local function fields() local n=0 for _,d in ch:GetChildren() do if d:IsA('ForceField') then n+=1 end end return n end
+  -- every opening puts one on (a second one keeps the same shield)
+  local f=Opening.shield(fake)
+  t.expect.truthy(f~=nil and f.Name=='UnboxShield' and f.Visible==false and f.Parent==ch)
+  t.expect.truthy(Opening.shielded(fake))
+  t.expect.equal(Opening.shield(fake),f);t.expect.equal(fields(),1)
+  -- the client says it is over: gone
+  Opening.unshield(fake);t.expect.equal(fields(),0);t.expect.falsy(Opening.shielded(fake))
+  -- the safety timeout: still on just before ShieldSeconds, gone after (a longest opening, a Secret batch, is 14 s)
+  t.expect.truthy(Opening.ShieldSeconds>=14 and Opening.ShieldSeconds<=20)
+  Opening.shield(fake);Opening.sweep(os.clock()+Opening.ShieldSeconds-1);t.expect.equal(fields(),1)
+  Opening.sweep(os.clock()+Opening.ShieldSeconds+1);t.expect.equal(fields(),0);t.expect.falsy(Opening.shielded(fake))
+  -- a respawn: the shield went with the old character, and the record goes at the next sweep
+  Opening.shield(fake);local ch2=Instance.new('Model');local hum2=Instance.new('Humanoid');hum2.Health=100;hum2.Parent=ch2;ch2.Parent=workspace
+  ch:ClearAllChildren();fake.Character=ch2
+  t.expect.falsy(Opening.shielded(fake));Opening.sweep();t.expect.falsy(Opening.shielded(fake))
+  -- a new opening shields the new character; a dead one gets none
+  t.expect.truthy(Opening.shield(fake)~=nil and Opening.shielded(fake));Opening.unshield(fake)
+  hum2.Health=0;t.expect.equal(Opening.shield(fake),nil)
+  ch:Destroy();ch2:Destroy()
+ end)
+
  t.test('the Robux boxes and their shoes have models: premium boxes within budget, exclusive shoes within budget',function()
   local BoxModels=require(RS.Shared.Models.BoxModels)
   local ShoeModels=require(RS.Shared.Models.ShoeModels)

@@ -839,11 +839,13 @@ actions.World = function() if not openOther('HoodWorld') then toast('World 2: so
 end -- (Rewards window: its locals stay inside, under the 200-local limit Roblox Studio enforces)
 
 do
-	-- (brief 24) The unboxing moment (Shoes.client, PlayerGui UnboxingCalm) calms the HUD: the column and the counters
-	-- slide out left, the offers and the gift right, the bottom block down, and all slide back as the pair flies home.
-	-- The world behind is blurred, never darkened. The toasts wait for PlayerGui Unboxing (the moment fully faded).
+	-- (brief 24, 28c) The unboxing moment (Shoes.client, PlayerGui UnboxingCalm) calms the HUD as the soldier game does:
+	-- the action column slides out left, the offers and the gift right, the bottom block down, in 0.1 s; Cash and
+	-- Rebirths stay. They slide back (0.2 s) as the pair flies into the Shoes button. The toasts wait for PlayerGui
+	-- Unboxing (the moment fully over).
 	playerGui:GetAttributeChangedSignal('UnboxingCalm'):Connect(function()
-		Motion.aside({ { column, px(-360, 0) }, { counters, px(-380, 0) }, { offers, px(320, 0) }, { rewardsSpot, px(0, -320) }, { status, px(0, 300) } }, playerGui:GetAttribute('UnboxingCalm') == true)
+		local calm = playerGui:GetAttribute('UnboxingCalm') == true
+		Motion.aside({ { column, px(-360, 0) }, { offers, px(320, 0) }, { rewardsSpot, px(0, -320) }, { status, px(0, 300) } }, calm, calm and 0.1 or 0.2)
 	end)
 	playerGui:GetAttributeChangedSignal('Unboxing'):Connect(placeToasts)
 end

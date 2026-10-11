@@ -21,6 +21,7 @@
 --   Deluxe                        cash tiers 7-10: the look's tint { tint, atm, decay, haze, clock, stars, ambient }
 --   Night, Lit                    premium: NightTakeover and StageLit overrides { ambient, atm, decay, clock, ... }
 --   Rings                         the premium charge rings' colours (ring 1 also shows the honest rarity tease)
+--   Neon                          the Secret's two saturated ring colours (its charge and the rings before the reveal)
 --   Tags, Wall, Poster, Hold      the reveal's backdrop: poster words, wall colour, poster style, the hold layer
 local UnboxThemes = {}
 
@@ -194,11 +195,22 @@ local HOLD = {
 for id, h in HOLD do
 	for k, v in h do T[id][k] = v end
 end
+-- The Secret's neon rings: two saturated colours per look (CRITIC5: S >= 0.7, never pastel; the reference's magenta
+-- and red over a blue sky)
+local NEON = {
+	Street = { C(255, 30, 60), C(255, 40, 200) }, Graffiti = { C(255, 40, 170), C(0, 215, 230) },
+	Frost = { C(0, 170, 255), C(60, 80, 255) }, Lava = { C(255, 110, 0), C(255, 30, 40) },
+	Toxic = { C(90, 230, 30), C(130, 60, 255) }, Candy = { C(255, 60, 170), C(140, 60, 255) },
+	Ocean = { C(0, 200, 230), C(30, 100, 255) }, Gem = { C(0, 210, 110), C(255, 190, 0) },
+	Galaxy = { C(150, 60, 255), C(0, 215, 255) }, Gold = { C(255, 190, 0), C(255, 100, 0) },
+	Exclusive = { C(0, 200, 255), C(255, 50, 210) }, Grail = { C(255, 190, 20), C(160, 40, 255) },
+}
 for id, t in T do
 	t.Id = id
 	t.Land = t.Land or {}
 	t.Open = t.Open or {}
 	t.Rings = t.Rings or { t.Color, t.Accent, WHITE }
+	t.Neon = t.Neon or NEON[id]
 	t.Ambient = t.Ambient or {}
 end
 UnboxThemes.Themes = T
@@ -237,6 +249,105 @@ UnboxThemes.Rarity = {
 	{ Sparks = 16, Ring = 6, Rays = 10, Comets = 2, Confetti = 48, Rain = 0, Pillar = false, Edge = false, Double = false, Halo = false, SlowMo = false, Flash2 = false, Shake = 0.45, HitStop = 0.06, Hold = 0.8, MiniFlash = true },
 	{ Sparks = 20, Ring = 8, Rays = 14, Comets = 2, Confetti = 48, Rain = 20, Pillar = true, Edge = true, Double = true, Halo = false, SlowMo = false, Flash2 = false, Shake = 0.7, HitStop = 0.09, Hold = 1.2, MiniFlash = true },
 	{ Sparks = 24, Ring = 10, Rays = 16, Comets = 2, Confetti = 48, Rain = 20, Pillar = true, Edge = true, Double = true, Halo = true, SlowMo = true, Flash2 = true, Shake = 1.0, HitStop = 0.16, Hold = 1.8, MiniFlash = true },
+}
+
+-- The egg's tuning (brief 28 / 28b: the hit games' hatch with the reference's animation grammar): data, so that
+-- matching it is a value change.
+--   Glint     how long the box hangs glinting in the sky before it drops (s)
+--   Shakes    { roll (deg), hop (studs), length (s) } per shake, in order: a crouch, a hop with a left-right roll in
+--             the air, a squash on landing (the count is the list's length)
+--   Pauses    the rests between shakes (s, shrinking)   Swings  left-right swings per shake (1.5: L-R-L)
+--   First     the first shake of a single (s)         Pop     { the pair's overshoot scale, its time (s) }
+--   Squash    the box's height on the landing frame     ShakeSquash  its height as each shake lands
+--   BoxShare  the box's (tub and lid) share of the frame height while it shakes; Fov the egg camera's
+--   Flash     the pop's soft flash peak (plain, rainbow: a rainbow's real flash comes >= 1 s later, at its reveal)
+--   Confetti  pieces from the top by rank
+--   Lux       Legendary / Mythic after the pop (the reference's beats 13-15, short): the dusk dip (s), the rings
+--             (count, size), the spin (turns, s); then the rarity flash and the reveal
+--   Rainbow   per level (1 Legendary, 2 Mythic): sweep (turns/s), sat, cycle (box widths per hue turn), and a
+--             Mythic's extra channels: glow (its rim and band in Neon, pulsing at pulse Hz), aura (a halo round the
+--             box, in box widths past its edge), ring (a ring of light round it), stars (larger star sparkles a second,
+--             in the rarity's colour), pop (burst scale)
+UnboxThemes.Egg = {
+	Glint = 0.25,
+	Shakes = { { 7, 0.35, 0.2 }, { 10, 0.55, 0.22 }, { 15, 0.8, 0.25 } },
+	Pauses = { 0.2, 0.13 },
+	Swings = 1.5,
+	First = 0.72,
+	Pop = { 1.15, 0.28 },
+	Squash = 0.76, ShakeSquash = 0.86,
+	BoxShare = 0.32,
+	Fov = 70,
+	Flash = { 0.18, 0.18 },
+	Confetti = { 0, 18, 22, 34, 38, 38 },
+	Lux = {
+		{ dusk = 0.35, rings = 3, size = 1, turns = 1.5, spin = 0.45 },
+		{ dusk = 0.35, rings = 4, size = 1.25, turns = 1.5, spin = 0.3 },
+	},
+	Rainbow = {
+		{ sweep = 0.35, sat = 0.7, cycle = 0.85, pop = 1.2 },
+		{ sweep = 0.7, sat = 0.8, cycle = 0.8, pop = 1.4, glow = true, pulse = 1.6, aura = 0.3, ring = true, stars = 8 },
+	},
+}
+
+-- The opening in the world (brief 28c, copy_spec v5 §11.5: the soldier game's egg hatch at its own speed, with our box
+-- and pair; UnboxWorld). Times in seconds from the buy.
+--   Box, Pair  shares of the screen's height (the box with its lid and topper; the pair at the reveal); At  the rig's
+--              centre, as a share of the height from the top (a row's: RowAt); Dist  studs from the camera to the rig
+--   Land, Fall the drop (Quad In) lands; Stretch, Squash  its sy falling and on contact; Bounce { hop (box heights), s }
+--   Shakes     { time, roll (deg), hop (box heights), length (s) }: hop-and-roll shakes on the bottom edge (ShakesLux: a
+--              Legendary's four, ShakesMythic: a Mythic's, harder); Rock { deg from, deg to, Hz from, Hz to }: the low
+--              rock between them
+--   Ghost      { landing scale, shake scale, opacity, fade (s) }: the translucent copy of the box at each impact
+--   Jolt       the lid's jump at each shake (box heights)
+--   Squeeze    { from, to, scale } (SqueezeLux); Pop, PopLux  the pop; Spring  the pair growing in (s: 0.45x to full
+--              in 0.1 s, a touch over, settled); SpinLux { s, Legendary turns, Mythic turns }  their extra spin
+--   Wash       { Common-Epic peak (white, never a white-out), Legendary/Mythic peak, Quad Out (s) }; Burst  the pop's burst
+--              and ring size by tier
+--   Hold       auto-close after the reveal (s); Close { auto, tap } the fly into the inventory button (s)
+--   Idle       { deg/s, bob (pair heights), bob Hz }
+--   Rays       the reference's sunburst: count, reach and peak (pair heights from the centre), Legendary and Mythic
+--              size, deg/s, the core's opacity (low: its breathing low), from (s after the pop), the first fade in and
+--              hold { in, hold } (s), then the breath's period (s)
+UnboxThemes.World = {
+	Box = 0.34, Pair = 0.31, At = 0.47, RowAt = 0.43, Dist = 6.5,
+	Land = 0.35, Fall = 0.25, Stretch = 1.15, Squash = 0.8, Bounce = { 0.06, 0.15 },
+	Shakes = { { 0.9, 12, 0.05, 0.22 }, { 1.65, 18, 0.08, 0.22 }, { 2.2, 24, 0.12, 0.24 } },
+	ShakesLux = { { 0.9, 10, 0.04, 0.2 }, { 1.8, 14, 0.06, 0.22 }, { 2.55, 19, 0.09, 0.22 }, { 3.15, 25, 0.12, 0.24 } },
+	ShakesMythic = { { 0.9, 11, 0.04, 0.2 }, { 1.8, 16, 0.065, 0.22 }, { 2.55, 22, 0.1, 0.22 }, { 3.15, 29, 0.14, 0.24 } },
+	Rock = { 4, 8, 2.5, 5 },
+	Ghost = { 1.5, 1.12, 0.4, 0.25 },
+	Jolt = { 0.035, 0.055, 0.075, 0.095 },
+	Squeeze = { 2.45, 2.9, 0.85 }, SqueezeLux = { 3.25, 3.75, 0.85 },
+	Pop = 2.95, PopLux = 3.8,
+	Spring = 0.25, SpinLux = { 0.6, 2, 2.5 },
+	Wash = { 0.48, 0.85, 0.45 },
+	Burst = { 1, 1.35, 1.65 }, -- (the pop's burst and ring: Common-Epic, Legendary, Mythic)
+	Hold = 5.7, Close = { 0.5, 0.3 },
+	Idle = { 90, 0.03, 0.5 },
+	Rays = { n = 20, reach = 2.3, peak = 1.75, lux = 1.3, mythic = 1.55, turn = 4, core = 0.58, low = 0.3, from = 0.35, cycle = { 1, 0.5 }, period = 3 },
+}
+
+-- The crazy sheet's single-box beats (a Secret's middle; brief 27's premium, to be re-timed to REF28's measures of the
+-- crate video): data, like the egg's. Times are seconds from the sheet's start.
+--   Telegraph  the pad pulses               Appear, Fall0, Land  the comet shows, falls, slams
+--   Charge     { from, to }                 RingsIn  the three rings' entries     Wobbles  { time, roll, hop }
+--   Dip        the dark beat's length; the flash ends it       Accent  the reveal after the flash (Secret: SlowAccent)
+--   SlowMo     the old false calm (unused by the chain)   Dusk, Rings2  the dusk dip and the second rings, before the
+--              reveal (s before it)                         Hold  the read hold after the reveal
+--   Whip, Carousel, Pick, Tease  the Secret's animated middle (copy_spec §1 beats 9-12), from flash 2 (s): the pair
+--              launches past the lens and back; five candidates revolve; the others fly out; the edge-on tease
+UnboxThemes.Crazy = {
+	-- (copy_spec §1/§9.1, the crate's clock: the tear hangs, the streak falls in 2 frames, the slam at 0.50; the charge
+	-- 0.77-2.0; the warm dip 2.0-2.4; flash 2; the bright middle; the dusk dip and the second rings; the reveal flash)
+	Telegraph = { 0.3, 0.43 },
+	Appear = 0.1, Fall0 = 0.43, Land = 0.5,
+	Charge = { 0.77, 2.0 }, RingsIn = { 0.77, 0.8, 0.83 },
+	Wobbles = { { 0.92, 5, 0.1 }, { 1.18, 6, 0.1 }, { 1.45, 6, 0.15 }, { 1.68, 7, 0.15 }, { 1.86, 8, 0.2 } },
+	Dip = 0.4,
+	Accent = 4.7, SlowMo = { 0.65, 1.25 }, SlowAccent = 4.7,
+	Whip = { 0.07, 0.73 }, Carousel = { 0.73, 3.2 }, Pick = { 3.2, 3.43 }, Tease = { 3.43, 3.9 },
+	Dusk = 0.8, Rings2 = 0.43, Hold = 2.2,
 }
 
 return UnboxThemes

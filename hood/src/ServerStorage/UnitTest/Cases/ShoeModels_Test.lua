@@ -83,16 +83,18 @@ return function(t)
    local hosts={[p.LeftFoot]=true,[p.RightFoot]=true,[p.LeftLowerLeg]=true,[p.RightLowerLeg]=true}
    local cleanup=M.wear(m,'StreetAngel')
    local n=checkWorn(m,hosts);t.expect.equal(n,2*M.Meta.StreetAngel.Parts)
-   -- the collar rides the shin, the sole the foot; the soles reach the ground at this scale
-   local lowY=math.huge
+   -- the tongue rides the shin; the collar and the sole ride the foot; the soles reach the ground at this scale
+   local lowY,seen=math.huge,{}
    for _,d in m.HoodShoes:GetDescendants() do
     if d:IsA('BasePart') then
      local w=d:FindFirstChildOfClass('Weld')
-     if d.Name=='Collar' then t.expect.truthy(w.Part0.Name:find('LowerLeg')) end
+     if d.Name=='Tongue' then t.expect.truthy(w.Part0.Name:find('LowerLeg'));seen.Tongue=true end
+     if d.Name=='Collar' then t.expect.truthy(w.Part0.Name:find('Foot'));seen.Collar=true end
      if d.Name:find('Sole') then t.expect.truthy(w.Part0.Name:find('Foot')) end
      lowY=math.min(lowY,bottom(d))
     end
    end
+   t.expect.truthy(seen.Tongue and seen.Collar)
    t.expect.near(lowY,0,0.02*k)
    cleanup();t.expect.falsy(m:FindFirstChild('HoodShoes'))
    m:Destroy()

@@ -18,6 +18,8 @@
 --   ShoeAction(action, id) 'Equip' | 'Unequip' | 'EquipBest' | 'Recycle' (a spare pair, for a tenth of its box's
 --                          price), from anywhere, under the action rate limit. Up to ShoesMax pairs on (3; 4 with the
 --                          +1 Shoe Slot pass, Pass_ExtraEquip).
+--   UnboxDone()            (brief 28c) the client's moment is over (its queue is empty): the opener's shield goes
+--                          (ShoeOpening.unshield; it also goes by itself after ShoeOpening.ShieldSeconds).
 --   ShoeOpened             to that player, once per open: { Box, Shoe, Rarity, New (first pair of it), Count (copies
 --                          now), Equipped (it went straight on), Shoes (every pair of the open, in roll order), Buy
 --                          (#Shoes: 1 here, 3 or 8 from a Store bundle), Best, Product } (HoodServer/ShoeOpening has
@@ -113,6 +115,16 @@ Net.get('OpenShoeBox').OnServerEvent:Connect(function(player, boxId, count)
 	ShoeOpening.openMany(player, profile, box.Id, n)
 	Data.push(player)
 end)
+
+-- (brief 28c) the opening is over on that client: no more shield (only their own; it ends by itself too)
+do
+	local ok, remote = pcall(Net.get, 'UnboxDone')
+	if ok and remote then
+		remote.OnServerEvent:Connect(function(player) ShoeOpening.unshield(player) end)
+	else
+		warn('[ShoeService] no UnboxDone remote: the opener\'s shield ends by its own timeout')
+	end
+end
 
 Net.get('ShoeAction').OnServerEvent:Connect(function(player, action, id)
 	if type(action) ~= 'string' or not ShoeRules.Actions[action] then return end

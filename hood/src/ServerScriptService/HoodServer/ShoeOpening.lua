@@ -9,6 +9,11 @@
 --   ShoeOpening.slots(player) / .lucky(player)    the +1 Shoe Slot and Lucky passes (Pass_* attributes, set by
 --                                                StoreService on the server: a client can't fake them)
 --   ShoeOpening.open(player, profile, boxId, r?) -> shoeId, info          one pair (r: a fixed roll in [0, 1) for tests)
+--   ShoeOpening.shield(player, seconds?) / .unshield(player) / .shielded(player) / .sweep(now?)
+--       (brief 28c) the opening plays where the player stands, so they are kept safe: every ShoeOpened puts an invisible
+--       ForceField ('UnboxShield') on their character until the client says the moment is over (the UnboxDone remote,
+--       ShoeService), the character dies or respawns, the player leaves, or ShieldSeconds (15) pass, whichever is first.
+--       WaveService's punches already miss a character wearing a ForceField; Humanoid:TakeDamage does too.
 --   ShoeOpening.openMany(player, profile, boxId, n, opts?) -> { shoeId }, info
 --       n pairs (1..MaxBatch) from one box. opts.Rolls = { r, ... } fixes the rolls (tests); opts.Product = the
 --       developer-product key, passed on to the client. A Lucky owner rolls a Cash box with the Lucky odds
@@ -32,7 +37,52 @@ local ShoeRules = require(RS.Shared.ShoeRules)
 
 local ShoeOpening = {}
 ShoeOpening.MaxBatch = 10 -- the most pairs one open may give (the Store sells 1, 3 and 8)
+ShoeOpening.ShieldSeconds = 15 -- (the longest opening, a Secret batch, is 14 s)
 local rng = Random.new()
+
+-- the opener's shield: player -> { field, expires (os.clock), character, died, respawn }
+local shields = {}
+function ShoeOpening.unshield(player)
+	local s = shields[player]
+	shields[player] = nil
+	if not s then return end
+	for _, c in { s.died, s.respawn } do pcall(function() c:Disconnect() end) end
+	if s.field then s.field:Destroy() end
+end
+function ShoeOpening.shielded(player)
+	local s = shields[player]
+	return s ~= nil and s.field.Parent ~= nil and s.field.Parent == s.character
+end
+-- drops every shield past its time (now: os.clock(); tests pass a later one)
+function ShoeOpening.sweep(now)
+	now = now or os.clock()
+	for player, s in shields do
+		if s.expires <= now or s.field.Parent ~= s.character then ShoeOpening.unshield(player) end
+	end
+end
+function ShoeOpening.shield(player, seconds)
+	seconds = seconds or ShoeOpening.ShieldSeconds
+	local character = player.Character
+	local humanoid = character and character:FindFirstChildOfClass('Humanoid')
+	if not humanoid or humanoid.Health <= 0 then return nil end
+	local s = shields[player]
+	if not s or s.character ~= character or not s.field.Parent then
+		ShoeOpening.unshield(player)
+		local field = Instance.new('ForceField')
+		field.Name = 'UnboxShield'
+		field.Visible = false
+		field.Parent = character
+		s = { field = field, character = character }
+		pcall(function() s.died = humanoid.Died:Connect(function() ShoeOpening.unshield(player) end) end)
+		pcall(function() s.respawn = player.CharacterAdded:Connect(function() ShoeOpening.unshield(player) end) end)
+		shields[player] = s
+	end
+	-- (a second opening while shielded keeps the one shield and moves its end)
+	s.expires = math.max(s.expires or 0, os.clock() + seconds)
+	task.delay(seconds + 0.05, function() ShoeOpening.sweep() end)
+	return s.field
+end
+pcall(function() Players.PlayerRemoving:Connect(function(player) ShoeOpening.unshield(player) end) end)
 
 local function set(player, name, value)
 	if player:GetAttribute(name) ~= value then player:SetAttribute(name, value) end
@@ -107,6 +157,8 @@ function ShoeOpening.openMany(player, profile, boxId, n, opts)
 	pcall(ShoeOpening.sync, player, profile)
 	if player.Parent == Players then
 		pcall(function() Net.get('ShoeOpened'):FireClient(player, info) end)
+		-- (the opening plays where they stand: safe until it is over)
+		pcall(ShoeOpening.shield, player)
 		-- Legendary and up are news for the whole server, like big stage clears (one line for a batch: its best pair).
 		local shoe = Shoes.ById[top.Shoe]
 		if shoe.Rank >= 4 then

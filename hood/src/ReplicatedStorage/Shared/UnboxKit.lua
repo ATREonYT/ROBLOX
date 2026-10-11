@@ -16,13 +16,22 @@ local NR = NumberRange.new
 local WHITE = Color3.new(1, 1, 1)
 local PI = math.pi
 
-local HoodVFX
+local HoodVFX, Fonts
 do
 	local node = script.Parent:FindFirstChild('HoodVFX')
 	if node then
 		local ok, m = pcall(require, node)
 		HoodVFX = ok and type(m) == 'table' and m or nil
 	end
+	-- (brief 28: the game's one family; the posters' words and the sign in its Title weight)
+	local fnode = script.Parent:FindFirstChild('Fonts')
+	if fnode then
+		local ok, m = pcall(require, fnode)
+		Fonts = ok and type(m) == 'table' and m or nil
+	end
+end
+local function titleFace(l)
+	if Fonts and Fonts.Title then l.FontFace = Fonts.Title else l.Font = Enum.Font.GothamBlack end
 end
 
 ---------------------------------------------------------------------------------------------- maths
@@ -496,11 +505,12 @@ function Bits:count() return #self.list end
 
 ---------------------------------------------------------------------------------------------- rings
 -- An energy ring of four quarter arcs (a hard core ribbon and a soft glow ribbon each), with a comet look: the head
--- arc bright, the next two fading. Ring:pose(cf, radius, alpha, theta, width) every frame.
+-- arc bright, the next two fading. Ring:pose(cf, radius, alpha, theta, width) every frame. `solid`: the core is drawn
+-- in its own colour (no light emission), so a saturated ring stays saturated over a bright sky; its glow is fainter.
 local Ring = {}
 Ring.__index = Ring
 Kit.Ring = Ring
-function Ring.new(anchor, name, color, coreW, glowW, full)
+function Ring.new(anchor, name, color, coreW, glowW, full, solid)
 	local self = setmetatable({ anchor = anchor, atts = {}, beams = {}, coreW = coreW, glowW = glowW, color = color }, Ring)
 	for i = 1, 4 do self.atts[i] = Make.attach(anchor, name .. 'A' .. i) end
 	-- a comet ring (three arcs, bright head to a faded tail) or, `full`, a whole even circle (a shockwave's edge)
@@ -510,9 +520,9 @@ function Ring.new(anchor, name, color, coreW, glowW, full)
 	if full then tr = { { { 0, 0 }, { 1, 0 } }, { { 0, 0 }, { 1, 0 } }, { { 0, 0 }, { 1, 0 } }, { { 0, 0 }, { 1, 0 } } } end
 	for i = 1, #tr do
 		local a0, a1 = self.atts[i], self.atts[i % 4 + 1]
-		local core = Make.beam(anchor, a0, a1, color:Lerp(WHITE, 0.4), coreW, coreW, Kit.nseq(tr[i]), 1, { Segments = 16 })
+		local core = Make.beam(anchor, a0, a1, color:Lerp(WHITE, 0.4), coreW, coreW, Kit.nseq(tr[i]), solid and 0 or 1, { Segments = 16 })
 		local glowT = {}
-		for _, k in tr[i] do table.insert(glowT, { k[1], M.lerp(0.55, 1, k[2]) }) end
+		for _, k in tr[i] do table.insert(glowT, { k[1], M.lerp(solid and 0.72 or 0.55, 1, k[2]) }) end
 		local glow = Make.beam(anchor, a0, a1, color, glowW, glowW, Kit.nseq(glowT), 1, { Segments = 16 })
 		core.Name, glow.Name = name .. 'Core' .. i, name .. 'Glow' .. i
 		core.Enabled, glow.Enabled = false, false
@@ -520,11 +530,11 @@ function Ring.new(anchor, name, color, coreW, glowW, full)
 	end
 	return self
 end
-function Ring:setColor(color)
-	if self.color == color then return end
-	self.color = color
+function Ring:setColor(color, flat)
+	if self.color == color and self.flat == flat then return end
+	self.color, self.flat = color, flat
 	for _, b in self.beams do
-		b[1].Color = ColorSequence.new(color:Lerp(WHITE, 0.4))
+		b[1].Color = ColorSequence.new(flat and color or color:Lerp(WHITE, 0.4))
 		b[2].Color = ColorSequence.new(color)
 	end
 end
@@ -690,13 +700,14 @@ function Stage.build(job)
 		local l = Instance.new('TextLabel')
 		l.BackgroundTransparency = 1
 		l.Size = UDim2.fromScale(1, 1)
-		l.Font = Enum.Font.LuckiestGuy
+		titleFace(l)
 		l.Text = text
 		l.TextScaled = true
 		l.TextColor3 = c
 		local st = Instance.new('UIStroke')
-		st.Color = Color3.fromRGB(24, 20, 30)
+		st.Color = Fonts and Fonts.Outline and Fonts.Outline.Color or Color3.fromRGB(6, 6, 8)
 		st.Thickness = 4
+		st.LineJoinMode = Enum.LineJoinMode.Round
 		st.Parent = l
 		l.Parent = g
 		g.Parent = p
@@ -731,7 +742,7 @@ function Stage.build(job)
 	l.BackgroundTransparency = 1
 	l.Size = UDim2.fromScale(1, 1)
 	l.Position = UDim2.fromScale(0, 0)
-	l.Font = Enum.Font.LuckiestGuy
+	titleFace(l)
 	l.Text = '+1 DROP'
 	l.TextScaled = true
 	l.TextColor3 = th.Rim:Lerp(WHITE, 0.45)
