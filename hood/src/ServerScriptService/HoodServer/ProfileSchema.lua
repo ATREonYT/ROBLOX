@@ -27,6 +27,10 @@ Schema.Template={
  Shoes={Owned={},Equipped={},Opened=0,Favorites={}},
  -- (brief 27) The Store's codes used: {[CODE]=os.time used} (HoodServer/Codes: each code once per player).
  Codes={},
+ -- (brief 29, P4) The best Level you ever reached (Shared/LevelRules: a level is a curve over Power; the rank follows this
+ -- number, so a rebirth, which resets Power, never lowers it). Kept by HoodServer/Levels; HoodServer/ProfileSchema.migrate
+ -- fills it for a profile from before it (no version bump: an older server keeps the field as it is).
+ BestLevel=1,
 }
 function Schema.new() return clone(Schema.Template) end
 function Schema.migrate(data)
@@ -64,6 +68,9 @@ function Schema.migrate(data)
  -- No version bump: an older server that loads this profile keeps the field as it is.
  data.Codes=require(script.Parent.Codes).sanitize(data.Codes)
  reconcile(data,Schema.Template)
+ -- BestLevel (brief 29): a damaged or missing value is rebuilt from Power and the rebirths (LevelRules.bestOf), never a reason
+ -- to kick, and never below what the profile already earned (nobody loses a rank).
+ data.BestLevel=require(game.ReplicatedStorage.Shared.LevelRules).bestOf(data)
  require(game.ReplicatedStorage.Shared.WaveRules).sanitize(data.Waves)
  require(game.ReplicatedStorage.Shared.GoalRules).sanitize(data.Goals)
  -- Guns removed from the config fall away and the pistol stays owned, so a retired gun never locks a profile out.
@@ -104,11 +111,12 @@ function Schema.validate(data)
  for _,id in ipairs(s.Equipped) do on[id]=(on[id] or 0)+1;assert((s.Owned[id] or 0)>=on[id],'Equipped shoe not owned') end
  assert(type(s.Opened)=='number' and s.Opened%1==0 and s.Opened>=0,'Invalid Shoes.Opened')
  assert(type(data.Codes)=='table','Invalid Codes')
+ assert(type(data.BestLevel)=='number' and data.BestLevel%1==0 and data.BestLevel>=1 and data.BestLevel<=require(game.ReplicatedStorage.Shared.LevelRules).MaxLevel,'Invalid BestLevel')
  for code,at in pairs(data.Codes) do assert(type(code)=='string' and type(at)=='number' and at==at and at>=0,'Invalid used code') end
  return true
 end
 function Schema.public(data)
  -- Explicit allowlist: receipt ledger and entitlement cache never leave the server.
- return {EquippedSkin=data.EquippedSkin,Rep=data.Rep,Cash=data.Cash,Rebirths=data.Rebirths,Evolution=clone(data.Evolution),HighestMapIndex=data.HighestMapIndex,UnlockedMaps=clone(data.UnlockedMaps),Crew=clone(data.Crew),Settings=clone(data.Settings),Onboarding=clone(data.Onboarding),Guns=clone(data.Guns),Waves=clone(data.Waves),Goals=clone(data.Goals),Shoes=clone(data.Shoes)}
+ return {EquippedSkin=data.EquippedSkin,Rep=data.Rep,Cash=data.Cash,Rebirths=data.Rebirths,Evolution=clone(data.Evolution),HighestMapIndex=data.HighestMapIndex,UnlockedMaps=clone(data.UnlockedMaps),Crew=clone(data.Crew),Settings=clone(data.Settings),Onboarding=clone(data.Onboarding),Guns=clone(data.Guns),Waves=clone(data.Waves),Goals=clone(data.Goals),Shoes=clone(data.Shoes),BestLevel=data.BestLevel}
 end
 return Schema

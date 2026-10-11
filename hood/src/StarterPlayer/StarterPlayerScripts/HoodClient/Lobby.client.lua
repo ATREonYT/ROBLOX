@@ -14,6 +14,7 @@ local Skins = require(RS.Shared.Config.Skins)
 local ActiveMap = require(RS.Shared.ActiveMap)
 local RebirthRules = require(RS.Shared.RebirthRules)
 local Fonts = require(RS.Shared.Fonts)
+local LevelRules = require(RS.Shared.LevelRules)
 
 local player = Players.LocalPlayer
 local active = ActiveMap.wait(20)
@@ -304,6 +305,7 @@ end
 local CollectionService = game:GetService('CollectionService')
 local okPath, PathfindingService = pcall(function() return game:GetService('PathfindingService') end)
 if not okPath then PathfindingService = nil end
+local DRAW_GUIDE = false
 local GUIDE_POWER = 10 -- (a map without stage gates: to BAY 1 until 10 Power)
 local PULSE = TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
 local GUIDE_COLOR = C(240, 186, 80)
@@ -390,7 +392,7 @@ local function guidePhase(n)
 	if not gate then return n < GUIDE_POWER and 'lane' or '', nil end
 	local cleared = player:GetAttribute('StagesCleared')
 	if (cleared or 0) >= 1 then return '', nil end
-	if n < (gate:GetAttribute('Required') or 10) then return 'lane', gate end
+	if n < LevelRules.powerFor(LevelRules.levelOf(gate:GetAttribute('Required') or 10)) then return 'lane', gate end -- (brief 29: the gate's Level, where it starts)
 	return cleared ~= nil and 'exit' or '', gate -- (not before the server has said you haven't cleared it)
 end
 
@@ -654,7 +656,9 @@ local function updateGuide(n, station, evolving, zone, laneTitle)
 	elseif phase == 'lane' and zone and not inBox then
 		goal = { key = zone, point = (zone.CFrame * CFrame.new(0, zone.Size.Y / 2, 0)).Position, zone = zone, title = laneTitle }
 	end
-	if goal and not evolving then
+	-- (brief 29, P4: the yellow curved trail, the frame and the ">>" pointer are gone; HoodClient/Tutorial draws the tutorial's straight
+	-- white arrows. GuidePhase is still published: the HUD's hint reads it.)
+	if DRAW_GUIDE and goal and not evolving then
 		showGuide(goal, inBox)
 	else
 		clearGuide()

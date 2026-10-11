@@ -28,6 +28,10 @@ local Boosts=require(script.Parent.Boosts)
 local RebirthService=require(script.Parent.RebirthService)
 local Rules=require(RS.Shared.LobbyRules)
 local ShotRules=require(RS.Shared.ShotRules)
+local LevelRules=require(RS.Shared.LevelRules)
+local Levels=require(script.Parent.Levels) -- (brief 29: levels and ranks)
+local FreeShot=require(script.Parent.FreeShot) -- (brief 29: every shot pays a little)
+local HotTarget=require(script.Parent.HotTarget) -- (brief 29: the optional Hot Target bonus)
 local RebirthRules=require(RS.Shared.RebirthRules)
 local Skins=require(RS.Shared.Config.Skins)
 local Products=require(RS.Shared.Config.Products)
@@ -44,7 +48,8 @@ if #zones<#Skins.Stations then warn('[LobbyService] Only '..#zones..' of '..#Ski
 Net.get('EquipSkin').OnServerEvent:Connect(function() end)
 
 ---------------------------------------------------------------------------------------------- overhead tag
--- Like the reference: your name small and white, "<Power> POWER" big in yellow-green, then "🔄 n REBIRTHS" in the
+-- Like the reference: your name small and white, your RANK and LEVEL big in the rank's colour ("Hustler  Lv 17": brief 29,
+-- levels instead of strength; Power is still what the lanes and the gates run on, under it), then "🔄 n REBIRTHS" in the
 -- rebirth blue, all in the HUD's Montserrat Black (Shared/Fonts' Title; LOOP: was LuckiestGuy) with a dark outline.
 -- Sized in studs so it shrinks with distance. (Waves.client hides your own on your screen; everyone else sees it.)
 local TAG_FONT=Fonts.Title
@@ -53,7 +58,7 @@ local TAG_ROWS={
  {Name='Power',Height=0.4,Color=Color3.fromRGB(205,245,70),Stroke=2},
  {Name='Rebirths',Height=0.3,Color=Color3.fromRGB(110,200,255),Stroke=1.8},
 }
-local function overheadTag(player,power,rebirths)
+local function overheadTag(player,power,rebirths,bestLevel)
  local c=player.Character
  local head=c and c:FindFirstChild('Head')
  if not head then return end
@@ -90,7 +95,8 @@ local function overheadTag(player,power,rebirths)
  end
  tag.User.Text=player.DisplayName
  tag.User.TextColor3=player:GetAttribute('Pass_VIP')==true and Color3.fromRGB(255,206,64) or TAG_ROWS[1].Color
- tag.Power.Text=Format.compact(power)..' POWER'
+ tag.Power.Text=LevelRules.tag(bestLevel,power)
+ tag.Power.TextColor3=Color3.fromHex(LevelRules.rankOf(bestLevel).Color)
  tag.Rebirths.Text='🔄 '..rebirths..(rebirths==1 and ' REBIRTH' or ' REBIRTHS')
 end
 
@@ -138,7 +144,17 @@ end
 -- where you stand now, against the same lane mats the attributes use.
 local shoeCarry={} -- (per player: the equipped shoes' fraction of a shot, carried to the next one; ShotRules.pay)
 local autoCarry={} -- (per player: the auto clock's fraction of a shot)
-Net.get('Shoot').OnServerEvent:Connect(function() end) -- (the ranges fire on their own now: a click pays nothing)
+-- (brief 29, P4: "whenever you shoot, make it gain strength, but not as much as at a shooting range") A click off the ranges and
+-- out of a fight (Shoot.client's free shot) pays a share through HoodServer/FreeShot (its own file, so the one write below
+-- stays the only place this script pays a range shot); on a range or in a fight it pays nothing there.
+Net.get('Shoot').OnServerEvent:Connect(function(player)
+ local profile=Data.get(player)
+ local c=player.Character;local root=c and c:FindFirstChild('HumanoidRootPart');local h=c and c:FindFirstChildOfClass('Humanoid')
+ if not profile or not root or not h or h.Health<=0 then return end
+ local _,station=standing(player,RebirthRules.count(profile.Data.Rebirths))
+ shoeCarry[player]=shoeCarry[player] or {}
+ FreeShot.click(player,profile,station,shoeCarry[player],RebirthService)
+end)
 local function autoFire(player,profile,lane,station,dt)
  autoCarry[player]=autoCarry[player] or {}
  local shots=ShotRules.autoShots(autoCarry[player],dt,station)
@@ -174,7 +190,16 @@ local function offer(player,pass)
  end
  Net.get('Notice'):FireClient(player,(entry and entry.Title or 'This lane')..': Coming soon!')
 end
-Players.PlayerRemoving:Connect(function(p) shoeCarry[p]=nil;autoCarry[p]=nil;offered[p]=nil end)
+-- (brief 29) The optional Hot Target bonus: a hit from the corner panel (only while you train in an open range).
+Net.get('HotTarget').OnServerEvent:Connect(function(player)
+ local profile=Data.get(player)
+ if not profile then return end
+ local n=RebirthRules.count(profile.Data.Rebirths)
+ local lane,station=standing(player,n)
+ shoeCarry[player]=shoeCarry[player] or {}
+ HotTarget.claim(player,profile,lane,station,shoeCarry[player],RebirthService)
+end)
+Players.PlayerRemoving:Connect(function(p) shoeCarry[p]=nil;autoCarry[p]=nil;offered[p]=nil;FreeShot.forget(p);HotTarget.forget(p) end)
 
 ---------------------------------------------------------------------------------------------- lobby boards
 -- (brief 29) The three boards (TheBlockV2's Lobby.leaderboard): ten small rows of rank + name | main stat | second stat,
@@ -233,7 +258,8 @@ while true do
    offer(player,Rules.pass(station))
    autoFire(player,profile,lane,station,dt)
    walk(player,n)
-   if beat%4==0 then overheadTag(player,profile.Data.Rep,n) end
+   Levels.publish(player,profile.Data) -- (brief 29: Level, BestLevel and Rank, and the rank-up when a rank is crossed)
+   if beat%4==0 then overheadTag(player,profile.Data.Rep,n,profile.Data.BestLevel) end
    local waves=profile.Data.Waves
    table.insert(rows,{Name=player.DisplayName,Power=profile.Data.Rep,Cash=profile.Data.Cash,Rebirths=n,Stage=type(waves)=='table' and tonumber(waves.Cleared) or 0})
   end

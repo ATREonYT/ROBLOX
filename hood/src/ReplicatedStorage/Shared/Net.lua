@@ -3,6 +3,9 @@ local RunService=game:GetService('RunService')
 local ReplicatedStorage=game:GetService('ReplicatedStorage')
 local Net={}
 local definitions={EquipSkin='RemoteEvent',RequestSnapshot='RemoteFunction',ProfileUpdated='RemoteEvent',Notice='RemoteEvent',HatchCrew='RemoteEvent',EquipCrew='RemoteEvent',Rebirth='RemoteEvent',MoveOut='RemoteEvent',SelectMap='RemoteEvent',SetSettings='RemoteEvent',Cinematic='RemoteEvent',Shoot='RemoteEvent',BuyGun='RemoteEvent',EquipGun='RemoteEvent',WaveShot='RemoteEvent',WaveState='RemoteEvent',Goal='RemoteEvent',OpenShoeBox='RemoteEvent',ShoeAction='RemoteEvent',ShoeOpened='RemoteEvent',UnboxDone='RemoteEvent',Travel='RemoteEvent',RedeemCode='RemoteFunction',WorldBoss='RemoteEvent',WorldBossShot='RemoteEvent',WorldBossJoin='RemoteEvent'}
+-- (brief 29, P4) The rank-up screen's remote, and the optional Hot Target bonus's request (HoodServer/HotTarget).
+definitions.RankUp='RemoteEvent'
+definitions.HotTarget='RemoteEvent'
 function Net.init()
  assert(RunService:IsServer(),'Only server creates network objects')
  local folder=ReplicatedStorage:FindFirstChild('HoodNet')

@@ -490,7 +490,8 @@ end
 -- The "+N" a hit pays (the server's own sum: ShotRules.pay of your x1 ShotBase off the ranges, times gun and shoes).
 local shoeCarry = {}
 local function gain()
-	return ShotRules.pay(player:GetAttribute('ShotBase'), player:GetAttribute('GunMultiplier'), player:GetAttribute('ShoeMultiplier'), shoeCarry)
+	-- (brief 29: a hit pays ShotRules.EnemyShare of that, the fraction carried like the server's)
+	return ShotRules.share(ShotRules.pay(player:GetAttribute('ShotBase'), player:GetAttribute('GunMultiplier'), player:GetAttribute('ShoeMultiplier'), shoeCarry), ShotRules.EnemyShare, shoeCarry, 'Enemy')
 end
 local DAMAGE_RED = Color3.fromRGB(255, 70, 70)
 -- (brief 19, LOOP: in a scrum one red number per shot stacked into a column over the goons) One red number per goon at
@@ -565,7 +566,8 @@ local function shoot()
 	local cam = workspace.CurrentCamera
 	local right = cam and cam.CFrame.RightVector or Vector3.new(1, 0, 0)
 	local at = r.Position + right * 2.4 + Vector3.new(0, 2.6, 0)
-	local c = Juice.combo('HoodFightGain', at, gain(), { color = Kit.Color.power, format = Format.compact })
+	local paid = gain()
+	local c = paid > 0 and Juice.combo('HoodFightGain', at, paid, { color = Kit.Color.power, format = Format.compact }) or nil
 	if c and c.part then
 		c.part.CFrame = CFrame.new(at)
 		if c.gui then c.gui.Size = UDim2.fromScale(2.8, 1.6) end -- (smaller than the ranges': it sits right by you)

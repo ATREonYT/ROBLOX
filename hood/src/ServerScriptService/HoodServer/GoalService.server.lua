@@ -85,7 +85,7 @@ end
 -- legitimately stay unset), so a returning player's catch-up sees their progress. Then one check a second.
 -- (CRITIC3 r1, HOOK) A big moment has the screen to itself: no goal completes for HOLD seconds after a pad cash-out
 -- (CashOuts: the "+10 Cash" pop) or a gun purchase (OwnedGuns: HOOK's "x2 POWER!"), so their GOAL DONE lands after it.
-local TICK, GRACE, EVERY, HOLD = 0.25, 3, 1, 2.2
+local TICK, GRACE, EVERY, HOLD = 0.25, 3, 0.5, 2.2 -- (brief 29: EVERY 1 -> 0.5, so a goal is celebrated within half a second of the Power that completes it: the first-30 reward margin)
 local HOLD_ON = { 'CashOuts', 'OwnedGuns' }
 local since, holdUntil, seen = {}, {}, {} -- [player] = seconds since their profile loaded / os.clock() until which checks
 -- wait / { [attribute] = value } as this loop last saw them (a change, seen before the check in the same pass, holds)

@@ -14,6 +14,7 @@ local RunService = game:GetService('RunService')
 local RS = game:GetService('ReplicatedStorage')
 local ActiveMap = require(RS.Shared.ActiveMap)
 local Juice = require(RS.Shared.Juice)
+local Net = require(RS.Shared.Net)
 local Format = require(RS.Shared.Format)
 local Guns = require(RS.Shared.Config.Guns)
 local ShotRules = require(RS.Shared.ShotRules)
@@ -249,8 +250,8 @@ end)
 ---------------------------------------------------------------------------------------------- a click anywhere
 -- (brief 23, CRITIC3 / HOOK: a kid's first click must answer at once) Off the ranges and out of a fight, a click, a tap
 -- or R2 fires the gun in your hand for show: the muzzle flash, a tracer along the mouse / tap ray to whatever it meets,
--- sparks there, a casing, recoil and a little camera kick, and the shot sound once sounds are on. Nothing is sent and
--- nothing is paid. (On a range the auto-fire shoots; in a fight Waves.client's aim assist does.)
+-- sparks there, a casing, recoil and a little camera kick, and the shot sound once sounds are on. (Brief 29: it tells the
+-- server, which pays a small share off the ranges and out of fights: HoodServer/FreeShot.) (On a range the auto-fire shoots; in a fight Waves.client's aim assist does.)
 local UserInputService = game:GetService('UserInputService')
 local lastFree = 0
 local function freeShot(where, viewport)
@@ -264,6 +265,9 @@ local function freeShot(where, viewport)
 	local camera = workspace.CurrentCamera
 	if not tool or not root or not camera then return end
 	lastFree = os.clock()
+	-- (brief 29: every shot pays a little. The server decides: off the ranges and out of a fight it pays ShotRules.FreeShare,
+	-- with its own limit; the HUD shows the Power when it lands.)
+	pcall(function() Net.get('Shoot'):FireServer() end)
 	-- where it goes: along the camera ray through the click (the first thing it meets within 150 studs), else straight ahead
 	local to = root.Position + root.CFrame.LookVector * 40 + Vector3.new(0, 1.2, 0)
 	pcall(function()

@@ -12,6 +12,7 @@
 -- on a pad to cash out (back to the lobby), spend the Cash, then fight further each run.
 local Skins = require(script.Parent.Config.Skins)
 local PadRules = require(script.Parent.PadRules)
+local LevelRules = require(script.Parent.LevelRules) -- (brief 29: goals speak in Levels; the Need stays in Power)
 
 local GoalRules = {}
 
@@ -34,7 +35,7 @@ end
 -- side, the shoe boxes at the back, the stage door at the end. The ranges fire by themselves; every stage is a crew of
 -- goons to beat, and the two pads before its far gate cash out.)
 GoalRules.List = {
-	{ Id = 'FreeRange', Text = 'Reach 10 Power in BAY 1', Where = 'on the left, it shoots for you', Reward = 2, Need = { Power = 10 } },
+	{ Id = 'FreeRange', Text = 'Reach Level ' .. LevelRules.levelOf(10) .. ' in BAY 1', Where = 'on the left, it shoots for you', Reward = 2, Need = { Power = LevelRules.powerFor(LevelRules.levelOf(10)) } }, -- (Level 6 starts at 7 Power)
 	{ Id = 'Stage1', Text = 'Walk to Stage 1', Where = 'through the big door ahead', Reward = 3, Need = { Stages = 1 } },
 	{ Id = 'Wave1', Text = 'Beat the Stage 1 crew', Where = 'hold to shoot them', Reward = 5, Need = { Wave = 1 } },
 	{ Id = 'CashOut', Text = 'Step on the yellow pad', Where = 'by the gate: ' .. PadRules.text(PadRules.reward(1, false)), Reward = 5, Need = { CashOuts = 1 } },
@@ -43,7 +44,7 @@ GoalRules.List = {
 	{ Id = 'CashOut2', Text = 'Beat Stage 2 and cash out', Where = 'the yellow pad: ' .. PadRules.text(PadRules.reward(2, false)), Reward = 5, Need = { CashOutStage = 2 } },
 	{ Id = 'Shoe', Text = 'Open a shoe box', Where = 'at the back of the hall', Reward = 5, Need = { Boxes = 1 }, Side = true },
 	{ Id = 'Stage3', Text = 'Reach Stage 3', Where = 'beat each crew to open its gate', Reward = 25, Need = { Stages = 3 } },
-	{ Id = 'Rebirth1', Text = 'Rebirth!', Where = 'fill the Power bar, then tap Rebirth', Reward = 30, Need = { Rebirths = 1 } },
+	{ Id = 'Rebirth1', Text = 'Rebirth!', Where = 'fill the Level bar, then tap Rebirth', Reward = 30, Need = { Rebirths = 1 } },
 	{ Id = 'Stage6', Text = 'Reach Stage 6', Where = 'beat the crews down the street', Reward = 50, Need = { Stages = 6 } },
 	lane('Tape', 'Range2', 60),
 	{ Id = 'Gun4', Text = 'Get the Pump Shotgun', Where = 'at the ARMORY', Reward = 75, Need = { Guns = 4 } },

@@ -5262,7 +5262,11 @@ function GATE.sign(g, i, req)
 	grad.Color, grad.Rotation = GATE.titleShade, 90
 	grad.Parent = title
 	put('Sub', 'Recommended', GATE.sub, GATE.subInk)
-	put('Power', 'Power: ' .. compact(req), GATE.sub, GATE.subInk).FontFace = Font.fromEnum(GATE.powerFont) -- FontFace only, so the saved place keeps one face
+	-- (brief 29, P4: levels instead of strength) The gate says the LEVEL the Recommended Power is (LevelRules.levelOf); the gate's
+	-- Required attribute, the goons' HP and the economy are still in Power.
+	local okLevels, LevelRules = pcall(function() return require(ReplicatedStorage.Shared.LevelRules) end)
+	local powerText = (okLevels and type(LevelRules) == 'table') and ('Level ' .. LevelRules.levelOf(req)) or ('Power: ' .. compact(req))
+	put('Power', powerText, GATE.sub, GATE.subInk).FontFace = Font.fromEnum(GATE.powerFont) -- FontFace only, so the saved place keeps one face
 	-- The state line on its badge: "Defeat the crew first" while the stage before still has its goons this run (as
 	-- built), "OPEN!" once its crew is down (HoodClient/Stages writes it and the badge colour, and makes an open gate's
 	-- sign compact: the title over the badge).

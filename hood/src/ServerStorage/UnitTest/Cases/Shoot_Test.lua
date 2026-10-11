@@ -41,7 +41,8 @@ return function(t)
    local auto=src:find('local function autoFire',1,true);local at=src:find('profile%.Data%.Rep%s*=')
    local loop=src:find('while true do',1,true)
    t.expect.truthy(auto and at and at>auto and loop and at<loop)
-   t.expect.truthy(src:find("Net.get('Shoot').OnServerEvent:Connect(function() end)",1,true)~=nil) -- (a click pays nothing)
+   -- (brief 29, P4: a click off the ranges and out of a fight pays a share, but through HoodServer/FreeShot: still one write here)
+   t.expect.truthy(src:find("Net.get('Shoot').OnServerEvent:Connect(function(player)",1,true)~=nil and src:find('FreeShot.click(',1,true)~=nil)
   end
  end)
  -- Only an open lane's box counts.

@@ -184,7 +184,9 @@ Net.get('WaveShot').OnServerEvent:Connect(function(player, stage, index)
 	if not ok then return end
 	shoeCarry[player] = shoeCarry[player] or {}
 	local perShot = ShotRules.perShot(1, RebirthRules.count(profile.Data.Rebirths), Boosts.power(player))
-	local gain = ShotRules.pay(perShot, player:GetAttribute('GunMultiplier'), player:GetAttribute('ShoeMultiplier'), shoeCarry[player])
+	-- P4 (brief 29) BEGIN: every shot pays a little, less than a range: a hit on a goon or boss pays ShotRules.EnemyShare of the x1 shot
+	local gain = ShotRules.share(ShotRules.pay(perShot, player:GetAttribute('GunMultiplier'), player:GetAttribute('ShoeMultiplier'), shoeCarry[player]), ShotRules.EnemyShare, shoeCarry[player], 'Enemy')
+	-- P4 (brief 29) END
 	profile.Data.Rep = math.min(1e12, profile.Data.Rep + gain)
 	player:SetAttribute('Power', profile.Data.Rep)
 	stateRemote:FireClient(player, { Kind = 'Hit', Stage = stage, Index = index, HP = w.HP[index], Left = w.Left, Damage = damage, Gain = gain })

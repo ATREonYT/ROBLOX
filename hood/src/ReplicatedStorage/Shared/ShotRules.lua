@@ -102,4 +102,43 @@ function ShotRules.pick(state: any, targets: { any }, main: any, present: (any) 
 	return main, false
 end
 
+---------------------------------------------------------------------------------------------- every shot pays a little (brief 29, P4)
+-- "Whenever you shoot, make it gain strength, but not as much as when you are at a shooting range." A range pays the
+-- whole shot (x its lane, 1x on BAY 1 up to 250x); every other shot pays a share of a x1 shot, and the fraction carries
+-- so it is exact over time (the first shot always pays):
+--   * a hit on a stage goon or a boss (WaveService)            EnemyShare of the x1 shot (it paid the whole x1 shot before)
+--   * a click off the ranges and out of a fight (LobbyService) FreeShare of it: the lobby, the streets between crews
+-- Both are at most half of BAY 1, the cheapest range, and a click is held to Burst / PerSecond like a goon hit.
+ShotRules.EnemyShare = 0.5
+ShotRules.FreeShare = 0.5
+
+-- `paid` (whole Power, from pay) cut to `share` of it: returns the whole Power due now and keeps the fraction in
+-- carry[key] (the first call always pays, so a kid's first shot answers with a number: carry starts at 1 - share).
+function ShotRules.share(paid: any, share: any, carry: any, key: any?): number
+	local p = math.max(0, number(paid, 0))
+	local sh = math.clamp(number(share, 1), 0, 1)
+	if type(carry) ~= 'table' then return math.floor(p * sh + 0.5) end
+	local k = key or 'Share'
+	local acc = (type(carry[k]) == 'number' and carry[k] or 1 - sh) + p * sh
+	local due = math.floor(acc + 1e-7)
+	carry[k] = math.max(0, acc - due)
+	return due
+end
+
+-- A token bucket for clicks (state {} per player, now in seconds): true when a shot may count, using Burst tokens that
+-- refill at PerSecond.
+function ShotRules.take(state: any, now: any): boolean
+	if type(state) ~= 'table' then return false end
+	local t = number(now, 0)
+	local tokens = type(state.Tokens) == 'number' and state.Tokens or ShotRules.Burst
+	tokens = math.min(ShotRules.Burst, tokens + math.max(0, t - number(state.At, t)) * ShotRules.PerSecond)
+	state.At = t
+	if tokens < 1 then
+		state.Tokens = tokens
+		return false
+	end
+	state.Tokens = tokens - 1
+	return true
+end
+
 return ShotRules

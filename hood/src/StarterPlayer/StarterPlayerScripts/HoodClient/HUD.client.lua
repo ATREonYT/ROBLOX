@@ -43,6 +43,7 @@ local function optional(...)
 	return ok and type(result) == 'table' and result or nil
 end
 local RebirthRules = optional('RebirthRules')
+local LevelRules = optional('LevelRules') -- (brief 29: the bar reads Level N, XP; Power is still underneath)
 local GoalRules = optional('GoalRules')
 
 local player = Players.LocalPlayer
@@ -364,8 +365,11 @@ task.spawn(function()
 	end
 end)
 
-local bar, fill, barText = Kit.bar({ Name = 'RebirthBar', Width = BAR_W, Height = BAR_H, Tone = 'level', Value = 0, Left = 'Rebirth 1', Right = '0 / 0', TextSize = 22, Position = px(0, BAR_TOP), ZIndex = 2 })
+local bar, fill, barText = Kit.bar({ Name = 'RebirthBar', Width = BAR_W, Height = BAR_H, Tone = 'level', Value = 0, Left = 'Level 1', Right = '0 / 0', TextSize = 22, Position = px(0, BAR_TOP), ZIndex = 2 })
 bar.Parent = status
+-- (brief 29, P4) Your RANK over the bar's right end, in the rank's colour (the reference's bottom-left "Private"): the
+-- word only; the rank-up screen (Progress.client) is where it is celebrated.
+local rankChip = fillText(label({ Name = 'Rank', Text = '', TextSize = 16, StrokeThickness = 2.5, TextXAlignment = Enum.TextXAlignment.Right, AnchorPoint = Vector2.new(1, 1), Position = px(BAR_W - 3, BAR_TOP - 1), Size = px(180, 24), ZIndex = 3, Parent = status }), Color.white, Color.white)
 local fillGradient = fill:FindFirstChildOfClass('UIGradient')
 local function setFillTone(name)
 	local t = Tone[name]
@@ -507,7 +511,7 @@ local function rebirthMoment(n, unlocked)
 	line.TextScaled = true
 	Kit.new('UITextSizeConstraint', { MaxTextSize = 38, Parent = line })
 	Motion.tween(scale, 0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out, { Scale = 1 })
-	task.delay(2.2, function()
+	task.delay(1.45, function() -- (brief 29: short, 2 s or less in all: in 0.35, held, out 0.4)
 		if not holder.Parent then return end
 		Motion.tween(holder, 0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In, { Position = UDim2.fromScale(0.5, 0.34) })
 		for _, t in { title, line } do
@@ -908,6 +912,8 @@ local function hintText(power)
 		return 'Train at ' .. c(GOLD, string.upper(lane.Name)) .. '!'
 	end
 	if power >= need then return c(GREEN, 'Rebirth') .. ' ready!' end
+	-- (brief 29) as a Level while you are below it; the bar's last level holds the rebirth, so then its Power
+	if LevelRules and LevelRules.levelOf(power) < LevelRules.levelOf(need) then return 'Rebirth at ' .. c(GREEN, 'Level ' .. LevelRules.levelOf(need)) end
 	return 'Rebirth at ' .. c(GREEN, short(need)) .. ' Power'
 end
 
@@ -968,13 +974,25 @@ function refresh()
 	end
 	powerLabel.Text = short(shown.Value)
 	centrePower(powerLabel.Text)
+	powerIcon.Visible, powerLabel.Visible = false, false -- (brief 29: the bar says Level; the row only carries the "+N" that floats up from it)
 	lastPower = power
 	multiplierLabel.Text = 'Multiplier: ' .. times(totalMultiplier())
 	placePower()
 	local ready = power >= need
-	barText.Left.Text = 'Rebirth ' .. n
-	barText.Right.Text = ready and 'READY!' or (short(power) .. ' / ' .. short(need))
-	fill.Size = UDim2.fromScale(math.clamp(power / need, 0, 1), 1)
+	-- (brief 29, P4: levels, not strength) "Level 7   311 / 600" like the reference: the level's own Power is the XP.
+	if LevelRules then
+		local level, into, span, frac, maxed = LevelRules.progress(power)
+		barText.Left.Text = 'Level ' .. level
+		barText.Right.Text = ready and 'REBIRTH!' or (maxed and 'MAX' or (short(into) .. ' / ' .. short(span)))
+		fill.Size = UDim2.fromScale(ready and 1 or frac, 1)
+		local rank = LevelRules.rankOf(num('BestLevel', level))
+		rankChip.Text = rank.Name
+		rankChip.TextColor3 = hex(string.sub(rank.Color, 2))
+	else
+		barText.Left.Text = 'Rebirth ' .. n
+		barText.Right.Text = ready and 'READY!' or (short(power) .. ' / ' .. short(need))
+		fill.Size = UDim2.fromScale(math.clamp(power / need, 0, 1), 1)
+	end
 	setFillTone(ready and 'lime' or 'level')
 	paintPacks(need)
 	local percent = math.clamp(math.floor(power / need * 100), 0, 100)
@@ -983,7 +1001,7 @@ function refresh()
 	hint.Text = hintText(power)
 	if current and current.Update then current.Update() end
 end
-for _, key in { 'Power', 'TrainingStation', 'TrainingNeed', 'TrainingPass', 'BestLane', 'GunMultiplier', 'EquippedGun', 'OwnedGuns', 'GuidePhase', 'WaveLeft', 'RebirthNeed', 'RebirthMultiplier', 'RebirthNextMultiplier', 'RebirthUnlock', 'ShoeMultiplier', 'ShotMultiplier', 'Pass_DoubleRep', 'GoalStep' } do
+for _, key in { 'Power', 'BestLevel', 'TrainingStation', 'TrainingNeed', 'TrainingPass', 'BestLane', 'GunMultiplier', 'EquippedGun', 'OwnedGuns', 'GuidePhase', 'WaveLeft', 'RebirthNeed', 'RebirthMultiplier', 'RebirthNextMultiplier', 'RebirthUnlock', 'ShoeMultiplier', 'ShotMultiplier', 'Pass_DoubleRep', 'GoalStep' } do
 	player:GetAttributeChangedSignal(key):Connect(refresh)
 end
 for _, key in { 'Cash', 'Rebirths' } do

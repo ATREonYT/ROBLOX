@@ -66,8 +66,9 @@ local function screenOf(world)
 end
 -- opts: y (the screen height share, CALLOUT_Y by default) and fly (a function giving the world point to fly to, else
 -- the guided target).
+local CALLOUTS = false -- (brief 29, P4: the quick tutorial is HoodClient/Tutorial now: a white box, white arrows and a hint line; no gold words)
 local function callout(word, opts)
-	if type(word) ~= 'string' or word == '' then return false end
+	if not CALLOUTS or type(word) ~= 'string' or word == '' then return false end
 	opts = opts or {}
 	local y = opts.y or CALLOUT_Y
 	if shown then shown:Destroy() end
@@ -483,8 +484,9 @@ local step = nil
 local hint = {} -- the timed hint's track (OnboardingRules.stuck)
 local hintsLeft = Rules.StuckRepeats
 local function guideOn()
-	local phase = attr('GuidePhase')
-	return Rules.Guided[step] == true and (phase == nil or phase == '')
+	-- (brief 29, P4: the yellow chevron trail, the bouncing arrow and the ">>" pointer are gone: HoodClient/Tutorial draws the straight white
+	-- arrows for the tutorial's steps, and nothing after it. This script keeps the welcome present and the step bookkeeping.)
+	return false
 end
 local function inBox()
 	local s = attr('TrainingStation')
