@@ -7,7 +7,11 @@
 --     the server (StoreService) and the same unboxing moment plays.
 --   * The chances board: over the box you stand nearest to (within BOARD_RANGE), its shoes with their chances (6, or 5
 --     on a Robux box: no Commons), like a pet-sim egg board. An unowned Secret shows as a dark "???" until you have one.
---   * The unboxing moment (remote ShoeOpened; brief 24: all 2D, flat PNGs over a blurred world): the box drops in,
+--   * The unboxing moment (remote ShoeOpened). Brief 27 (REVEAL): Shared/UnboxCinematic plays it in the world: the
+--     real 3D box drops onto a rooftop stage of its own, slams, wobbles and pops, and the real 3D pair rises out of it
+--     (NORMAL for Cash boxes, ~4.4-6 s; PREMIUM for the Robux boxes, ~8.5-10 s; the welcome gift short); the same
+--     PlayerGui flags as before. The 2D moment below (brief 24) is its fallback if the cinematic can't build:
+--     (brief 24: all 2D, flat PNGs over a blurred world): the box drops in,
 --     shakes, the lid pops with a light burst, and the pair flies out big over its rarity splat with its rarity word,
 --     name and bonus (NEW!, EQUIPPED!); rarer pairs get a bigger moment (SHOES2's ShoeFX.tier). A Buy 3 / Buy 8 (brief
 --     22: one ShoeOpened with Shoes = the N pairs, Buy = N, Best = the pair the top-level fields describe) plays the same
@@ -57,6 +61,7 @@ local function optional(...)
 end
 local ShoeModels = optional('Models', 'ShoeModels')
 local ShoeFX = optional('ShoeFX') -- (SHOES2: the rarity tiers, pure data; the reveal reads ShoeFX.tier)
+local Cinematic = optional('UnboxCinematic') -- (brief 27, REVEAL: the world-space unboxing; the 2D moment is its fallback)
 local IK = require(Shared.InventoryKit)
 
 local BOARD_RANGE = 20 -- studs: the nearest box within this shows its chances board
@@ -1408,10 +1413,61 @@ local function play(info)
 	task.delay(tEnd + 2, finish)
 	return tEnd
 end
+-- (brief 27) The cinematic: the same flags as the 2D moment; it restores the camera, the controls and the lighting
+-- itself, then the next one in the queue plays. Returns its length, or nil when it couldn't build (the 2D one plays).
+local reducedMotion = false
+local function playCinematic(info)
+	if not Cinematic or type(Cinematic.play) ~= 'function' then return nil end
+	local pg = player.PlayerGui
+	unboxing = true
+	pg:SetAttribute('Unboxing', true)
+	pg:SetAttribute('UnboxingCalm', true)
+	pg:SetAttribute('HoodWindow', '')
+	if shownBoard and shownBoard.Board then shownBoard.Board.Enabled = false end
+	pg:SetAttribute('BoxBoard', false)
+	local abs = momentGui.AbsoluteSize
+	if abs.X >= 2 and abs.Y >= 2 then momentFit(abs) end
+	local done = false
+	local job = Cinematic.play(info, { gui = momentGui, reduced = reducedMotion, onDone = function(j)
+		if done or j.Failed then return end
+		done = true
+		unboxing = false
+		if #queue == 0 then
+			pg:SetAttribute('UnboxingCalm', false)
+			task.delay(0.3, function()
+				if not unboxing and #queue == 0 then pg:SetAttribute('Unboxing', false) end
+			end)
+		end
+		task.defer(drain)
+	end })
+	if not job or job.Failed then
+		unboxing = false
+		return nil
+	end
+	return job.Plan.total
+end
+Net.get('ProfileUpdated').OnClientEvent:Connect(function(data)
+	if type(data) == 'table' and type(data.Settings) == 'table' then reducedMotion = data.Settings.ReducedMotion == true end
+end)
 function drain()
 	if unboxing then return end
 	local info = table.remove(queue, 1)
 	if not info then return end
+	local okC, lengthC = pcall(playCinematic, info)
+	if not okC then
+		warn('[Shoes] unboxing cinematic: ' .. tostring(lengthC))
+		unboxing = false
+	end
+	if okC and lengthC then
+		task.delay(lengthC + 3.5, function()
+			-- (the safety net: the cinematic always ends itself; if it ever didn't, the queue still moves on)
+			if unboxing and Cinematic.active and not Cinematic.active() then
+				unboxing = false
+				drain()
+			end
+		end)
+		return
+	end
 	local ok, length = pcall(play, info)
 	if not ok then
 		warn('[Shoes] unboxing: ' .. tostring(length))
