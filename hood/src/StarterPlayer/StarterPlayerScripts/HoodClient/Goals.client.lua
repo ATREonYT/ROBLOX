@@ -1,8 +1,8 @@
 -- The goal chain on your screen (the soldier game's "GOAL DONE! ... / NEXT GOAL: ... - where to go"). The server
 -- decides (GoalService, Shared/GoalRules); this shows it.
---   Tracker: one line at the top centre, under the HUD's hint: "NEXT GOAL: Clear Stage 1's targets - in the side
---     yard past the door", with the Cash it pays in a green chip. It reads the attributes GoalStep, GoalText,
---     GoalWhere and GoalReward the server keeps on you.
+--   Tracker (brief 29: specific, not vague): three short lines at the top centre, under the HUD's hint: a gold "NEXT
+--     GOAL" (with the Cash it pays in a green chip), what to do (the key words green) and where or how, in light blue,
+--     always shown. It reads the attributes GoalStep, GoalText, GoalWhere and GoalReward the server keeps on you.
 --   The moment: when a goal completes (remote Goal), "GOAL DONE!" pops at the top centre with the Cash it paid on one
 --     dark band that fades out at both ends, then "NEXT GOAL: ..." under it, holds, and floats away; the tracker then
 --     shows the new goal. It waits for a STAGE CLEARED or WAVE CLEARED banner on screen to finish first.
@@ -33,29 +33,41 @@ local GREEN = '#5CE08A' -- the reference's "DOCTOR DOOM" green
 local LINE_SIZE, CHIP_W, CHIP_H = 25, 84, 30 -- (r7: the reference's second line, cap 26 ref px = text 25 design px)
 local TRACKER_Y = 2 -- (the line's centre on the reference's second line, measured at its size)
 -- (brief 19 r7, UICRITIC P2-1) centred and no wider than the reference's line (~620 ref px with its chip = 420 design px)
-local TRACKER_W = 420
-local PREFIX = 'Goal: ' -- (as short as the reference's "Next RAID in:")
-local tracker = Kit.new('Frame', { Name = 'Goal', AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, TRACKER_Y), Size = px(TRACKER_W, 36), BackgroundTransparency = 1, Visible = false, Parent = root })
+-- (brief 29, the user: "make the goal ui better, its way too vague") The tracker is three lines now, centred: the gold
+-- "NEXT GOAL" with the Cash chip beside it, the goal itself (the key words green) and, under it, where to go or what to do,
+-- in light blue, never dropped for lack of room (it shrinks to fit instead). Like the reference's "NEXT GOAL / Reach
+-- Level 10 - Train at a target".
+local TRACKER_W, TRACKER_H = 420, 76
+local HEAD_SIZE, WHERE_SIZE = 17, 19
+local tracker = Kit.new('Frame', { Name = 'Goal', AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, TRACKER_Y), Size = px(TRACKER_W, TRACKER_H), BackgroundTransparency = 1, Visible = false, Parent = root })
 local trackerScale = Kit.new('UIScale', { Parent = tracker })
-local line = Kit.text({ Name = 'Line', Text = '', TextSize = LINE_SIZE, Stroke = BLACK, StrokeThickness = 3.5, RichText = true, Position = px(0, 0), Size = px(600, 34), ZIndex = 2, Parent = tracker })
-local chip = Kit.new('Frame', { Name = 'Reward', AnchorPoint = Vector2.new(0, 0.5), Position = px(610, 17), Size = px(CHIP_W, CHIP_H), BackgroundColor3 = Kit.hex('3E9A92'), BackgroundTransparency = 0.4, BorderSizePixel = 0, ZIndex = 2, Parent = tracker })
+local head = Kit.text({ Name = 'Head', Text = 'NEXT GOAL', TextSize = HEAD_SIZE, Stroke = BLACK, StrokeThickness = 3, TextColor3 = Kit.hex('FFD84A'), RichText = true, Position = px(0, 0), Size = px(TRACKER_W, 20), ZIndex = 2, Parent = tracker })
+local line = Kit.text({ Name = 'Line', Text = '', TextSize = LINE_SIZE, Stroke = BLACK, StrokeThickness = 3.5, RichText = true, Position = px(0, 20), Size = px(600, 34), ZIndex = 2, Parent = tracker })
+local whereLine = Kit.text({ Name = 'Where', Text = '', TextSize = WHERE_SIZE, Stroke = BLACK, StrokeThickness = 3, TextColor3 = Kit.hex('8FE3FF'), Position = px(0, 54), Size = px(TRACKER_W, 22), ZIndex = 2, Parent = tracker })
+local chip = Kit.new('Frame', { Name = 'Reward', AnchorPoint = Vector2.new(0, 0.5), Position = px(610, 37), Size = px(CHIP_W, CHIP_H), BackgroundColor3 = Kit.hex('3E9A92'), BackgroundTransparency = 0.4, BorderSizePixel = 0, ZIndex = 2, Parent = tracker })
 Kit.corner(2).Parent = chip
 Kit.stroke(Kit.hex('133E48'), 2.5, true).Parent = chip
 Kit.icon3d('Cash', 30, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, -4, 0.5, 0), ZIndex = 3 }).Parent = chip
 local chipText = Kit.text({ Name = 'Cash', Text = '+0', TextSize = 20, Stroke = BLACK, StrokeThickness = 2.5, Position = px(24, 0), Size = UDim2.new(1, -26, 1, 0), ZIndex = 3, Parent = chip })
--- The line and its chip sit side by side, centred together (the line sized to its text).
-local function place(plain, withChip)
+-- The goal line and its chip sit side by side, centred together (the line sized to its text); the where line under it
+-- fits the card's width.
+local function place(plain, withChip, whereText)
 	local width = tracker.Size.X.Offset
 	local room = width - (withChip and CHIP_W + 14 or 0)
-	line.TextSize = Kit.fitSize(plain, LINE_SIZE, room, 12)
+	line.TextSize = Kit.fitSize(plain, LINE_SIZE, room, 14)
 	local stroke = line:FindFirstChildOfClass('UIStroke')
 	if stroke then stroke.Thickness = math.max(2, line.TextSize * 0.125) end
 	local textW = math.min(Kit.textWidth(plain, line.TextSize), room)
 	local total = textW + (withChip and CHIP_W + 14 or 0)
 	local x0 = (width - total) / 2
-	line.Position = px(x0, 0)
+	line.Position = px(x0, 20)
 	line.Size = px(textW, 34)
-	chip.Position = px(x0 + textW + 14, 17)
+	chip.Position = px(x0 + textW + 14, 37)
+	head.Size = px(width, 20)
+	whereLine.Size = px(width, 22)
+	whereLine.TextSize = Kit.fitSize(whereText or '', WHERE_SIZE, width - 8, 11)
+	local ws = whereLine:FindFirstChildOfClass('UIStroke')
+	if ws then ws.Thickness = math.max(2, whereLine.TextSize * 0.14) end
 end
 
 local function escape(s) return (tostring(s):gsub('&', '&amp;'):gsub('<', '&lt;'):gsub('>', '&gt;')) end
@@ -103,24 +115,25 @@ local function paintTracker(pop)
 		return
 	end
 	local done = type(reward) ~= 'number' or reward <= 0
+	local whereText = type(where) == 'string' and where or ''
 	if done then
 		-- The whole chain is done: say so for a while, then get out of the way.
 		allDoneAt = allDoneAt or os.clock()
+		head.Text = ''
 		line.Text = '<font color="' .. GREEN .. '">' .. escape(text) .. '</font>'
-		place(text, false)
+		whereLine.Text = whereText
+		place(text, false, whereText)
 		chip.Visible = false
 		tracker.Visible = not holding and not fighting() and not unboxing() and not boardUp() and os.clock() - allDoneAt < 12
 		if tracker.Visible then task.delay(12.5, function() paintTracker(false) end) end
 		return
 	end
 	allDoneAt = nil
-	local whereText = (type(where) == 'string' and where ~= '') and (' - ' .. where) or ''
-	-- (brief 19) one short line like the reference's "Next RAID in: 3:26": where to go only when it fits at 21 px or more
-	-- (the GOAL DONE moment and the Quest window always say it)
-	local room = tracker.Size.X.Offset - CHIP_W - 14
-	if whereText ~= '' and Kit.fitSize(PREFIX .. text .. whereText, LINE_SIZE, room, 8) < 21 then whereText = '' end
-	line.Text = PREFIX .. keyed(text) .. escape(whereText)
-	place(PREFIX .. text .. whereText, true)
+	-- (brief 29) the gold heading, the goal and, always, where to go or what to do
+	head.Text = 'NEXT GOAL'
+	line.Text = keyed(text)
+	whereLine.Text = whereText
+	place(text, true, whereText)
 	chipText.Text = '+' .. Format.compact(reward)
 	chipText.TextSize = Kit.fitSize(chipText.Text, 20, CHIP_W - 30, 10)
 	chip.Visible = true
@@ -376,7 +389,7 @@ local function relayout()
 	-- (brief 19 r7) Centred like the reference's second line and no wider than it, which keeps it clear of the Rewards gift
 	-- (top right) and, on phones, of the counters' row at the top-left (x < 340).
 	local phone = screen.Phone
-	tracker.Size = px(math.max(300, math.min(TRACKER_W, w - 2 * (phone and 340 or 20))), 36)
+	tracker.Size = px(math.max(300, math.min(TRACKER_W, w - 2 * (phone and 340 or 20))), TRACKER_H)
 	tracker.Position = UDim2.new(0.5, 0, 0, TRACKER_Y)
 	paintTracker(false)
 end

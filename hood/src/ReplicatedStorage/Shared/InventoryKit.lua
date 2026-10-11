@@ -79,6 +79,33 @@ function InventoryKit.stack(rack)
 	return list
 end
 
+-- (brief 29) The grid's order: starred pairs first, then by `mode` (InventoryKit.SortModes): 'Best' (the most Power:
+-- ShoeRules.before), 'Rarity' (the rarest first, then the most Power) or 'Name' (A to Z). `rack` (optional) carries the
+-- Favorites. Returns a new list.
+InventoryKit.SortModes = { 'Best', 'Rarity', 'Name' }
+function InventoryKit.sorted(list, mode, rack)
+	local out = table.clone(list)
+	local favorites = rack and type(rack.Favorites) == 'table' and rack.Favorites or {}
+	local function rank(id)
+		local s = Shoes.ById[id]
+		local r = s and Shoes.RarityById[s.Rarity]
+		return r and r.Rank or 0
+	end
+	table.sort(out, function(a, b)
+		local fa, fb = favorites[a.Id] == true, favorites[b.Id] == true
+		if fa ~= fb then return fa end
+		if mode == 'Rarity' then
+			local ra, rb = rank(a.Id), rank(b.Id)
+			if ra ~= rb then return ra > rb end
+		elseif mode == 'Name' then
+			local x, y = Shoes.ById[a.Id], Shoes.ById[b.Id]
+			if x and y and x.Name ~= y.Name then return x.Name < y.Name end
+		end
+		return ShoeRules.before(a.Id, b.Id)
+	end)
+	return out
+end
+
 -- The entries whose name matches the query (a new list, same order). nameOf(entry) -> name; default the shoe's name.
 function InventoryKit.search(list, query, nameOf)
 	nameOf = nameOf or function(e)

@@ -4,7 +4,7 @@
 --
 --   local pill = FightUI.pill(parent)   -- parent: a Kit.screen Root (design px)
 --   pill.set(left)                      -- "3 LEFT" (white), "1 LEFT" (red); pops when the number changes
---   pill.clear(rewardText?)             -- "CLEAR!" in green (+ an optional small line under it, e.g. "+120 Cash")
+--   pill.clear(rewardText?)             -- "CLEAR!" in green with a drawn tick (+ an optional small line under it, e.g. "+120 Cash")
 --   pill.hide()
 --   local tag = FightUI.tag(adornee, name, max)   -- a BillboardGui on the goon's head part (parented to it)
 --   tag.set(hp, max)                    -- the red bar and "40/40"; tag.Gui is the BillboardGui; tag.destroy()
@@ -24,31 +24,39 @@ FightUI.Color = {
 	hp = hex('E81E2A'), hpTop = hex('FF5A5A'), track = hex('4A0C14'),
 }
 
--- A cartoon skull drawn with UI shapes (a round white head, a jaw, two dark eyes, a nose and teeth), `size` px.
-local function skull(size, z)
-	local holder = Kit.new('Frame', { Name = 'Skull', BackgroundTransparency = 1, Size = px(size, size), ZIndex = z })
-	local head = Kit.new('Frame', { Name = 'Head', BackgroundColor3 = hex('F2F2F6'), BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromScale(0.5, 0.02), Size = UDim2.fromScale(0.92, 0.74), ZIndex = z, Parent = holder })
-	Kit.corner(UDim.new(0.48, 0)).Parent = head
-	Kit.stroke(BLACK, math.max(1.5, size * 0.06), true).Parent = head
-	Kit.gradient(Kit.Color.white, hex('C9CBD6'), 0.6).Parent = head
-	local jaw = Kit.new('Frame', { Name = 'Jaw', BackgroundColor3 = hex('E4E5EC'), BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromScale(0.5, 0.6), Size = UDim2.fromScale(0.56, 0.34), ZIndex = z - 1, Parent = holder })
-	Kit.corner(UDim.new(0.25, 0)).Parent = jaw
-	Kit.stroke(BLACK, math.max(1.5, size * 0.06), true).Parent = jaw
-	for _, x in { 0.31, 0.69 } do
-		local eye = Kit.new('Frame', { Name = 'Eye', BackgroundColor3 = hex('1A1A24'), BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(x, 0.42), Size = UDim2.fromScale(0.27, 0.27), ZIndex = z + 1, Parent = holder })
-		Kit.corner(UDim.new(0.5, 0)).Parent = eye
-	end
-	local nose = Kit.new('Frame', { Name = 'Nose', BackgroundColor3 = hex('1A1A24'), BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.63), Size = UDim2.fromScale(0.1, 0.12), Rotation = 45, ZIndex = z + 1, Parent = holder })
-	Kit.corner(2).Parent = nose
-	for _, x in { 0.42, 0.58 } do
-		Kit.new('Frame', { Name = 'Tooth', BackgroundColor3 = hex('6A6C78'), BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromScale(x, 0.78), Size = UDim2.fromScale(0.04, 0.12), ZIndex = z + 1, Parent = holder })
+-- (brief 29: the skull is gone, "the clear emoji is not good") Two flat drawn icons for the pill, `size` px: a bullseye
+-- while goons are left (white and red rings, a black outline) and a green disc with a white tick for CLEAR!. Plain
+-- frames and strokes, the same flat language as the HUD's glyphs.
+local function disc(parent, name, size, color, z, ink)
+	local f = Kit.new('Frame', { Name = name, BackgroundColor3 = color, BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = size, ZIndex = z, Parent = parent })
+	Kit.corner(UDim.new(0.5, 0)).Parent = f
+	if ink then Kit.stroke(BLACK, ink, true).Parent = f end
+	return f
+end
+local function bullseye(size, z)
+	local holder = Kit.new('Frame', { Name = 'Target', BackgroundTransparency = 1, Size = px(size, size), ZIndex = z })
+	local ink = math.max(2, size * 0.07)
+	disc(holder, 'Ring1', UDim2.fromScale(0.92, 0.92), hex('E8222E'), z, ink)
+	disc(holder, 'Ring2', UDim2.fromScale(0.64, 0.64), Kit.Color.white, z + 1, nil)
+	disc(holder, 'Ring3', UDim2.fromScale(0.38, 0.38), hex('E8222E'), z + 2, nil)
+	disc(holder, 'Dot', UDim2.fromScale(0.14, 0.14), Kit.Color.white, z + 3, nil)
+	return holder
+end
+local function tick(size, z)
+	local holder = Kit.new('Frame', { Name = 'Tick', BackgroundTransparency = 1, Size = px(size, size), ZIndex = z })
+	local disk = disc(holder, 'Disc', UDim2.fromScale(0.92, 0.92), hex('3FD13A'), z, math.max(2, size * 0.07))
+	Kit.gradient(hex('8CFF5A'), hex('2DB52E'), 0.5).Parent = disk
+	-- the tick: a short bar down to the right, a long bar up to the right, rounded, white with a dark edge
+	for _, b in { { 0.38, 0.6, 0.2, 0.46, -45 }, { 0.6, 0.5, 0.2, 0.74, 45 } } do
+		local bar = Kit.new('Frame', { Name = 'Bar', BackgroundColor3 = Kit.Color.white, BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(b[1], b[2]), Size = UDim2.fromScale(b[3] * 0.62, b[4] * 0.62), Rotation = b[5], ZIndex = z + 1, Parent = holder })
+		Kit.corner(UDim.new(0.5, 0)).Parent = bar
 	end
 	return holder
 end
-FightUI.skull = skull
+FightUI.bullseye, FightUI.tick = bullseye, tick
 
 ---------------------------------------------------------------------------------------------- "N LEFT"
--- A slate box 190 x 62 design px at the top centre (over Roblox's top bar band, like the video), a white skull and the
+-- A slate box 190 x 62 design px at the top centre (over Roblox's top bar band, like the video), a drawn bullseye and the
 -- count in Gotham Black with a thick black stroke.
 FightUI.PillSize = Vector2.new(190, 62)
 function FightUI.pill(parent)
@@ -61,11 +69,16 @@ function FightUI.pill(parent)
 	Kit.corner(5).Parent = rim
 	Kit.stroke(FightUI.Color.edge, 2, true, 0.3).Parent = rim
 	local scale = Kit.new('UIScale', { Parent = box })
-	-- (brief 19) ICONS' Skull render once uploaded; the frame skull until then
-	local icon = Kit.iconImage('Skull') ~= '' and Kit.icon3d('Skull', 46, { ZIndex = 7 }) or skull(44, 7)
+	-- (brief 29) the bullseye while goons are left, the green tick on CLEAR!: drawn, no skull
+	local icon = bullseye(40, 7)
 	icon.AnchorPoint = Vector2.new(0, 0.5)
-	icon.Position = UDim2.new(0, 12, 0.5, 0)
+	icon.Position = UDim2.new(0, 14, 0.5, 0)
 	icon.Parent = box
+	local doneIcon = tick(40, 7)
+	doneIcon.AnchorPoint = Vector2.new(0, 0.5)
+	doneIcon.Position = UDim2.new(0, 14, 0.5, 0)
+	doneIcon.Visible = false
+	doneIcon.Parent = box
 	local text = Kit.text({ Name = 'Count', Text = '3 LEFT', TextSize = 34, Stroke = BLACK, StrokeThickness = 4, TextXAlignment = Enum.TextXAlignment.Left, Position = px(64, -1), Size = UDim2.new(1, -70, 1, 0), ZIndex = 7, Parent = box })
 	local sub = Kit.text({ Name = 'Reward', Text = '', TextSize = 22, Stroke = BLACK, StrokeThickness = 3, TextColor3 = FightUI.Color.clear, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 1, 4), Size = px(320, 28), ZIndex = 7, Parent = box })
 	local function pop()
@@ -83,10 +96,12 @@ function FightUI.pill(parent)
 	local api = { Gui = box }
 	function api.set(left)
 		sub.Text = ''
+		icon.Visible, doneIcon.Visible = true, false
 		left = math.max(0, math.floor(tonumber(left) or 0))
 		show(left .. ' LEFT', left == 1 and FightUI.Color.last or FightUI.Color.white)
 	end
 	function api.clear(rewardText)
+		icon.Visible, doneIcon.Visible = false, true
 		show('CLEAR!', FightUI.Color.clear)
 		sub.Text = rewardText and tostring(rewardText) or ''
 	end

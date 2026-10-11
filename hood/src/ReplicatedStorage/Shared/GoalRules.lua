@@ -34,7 +34,7 @@ end
 -- side, the shoe boxes at the back, the stage door at the end. The ranges fire by themselves; every stage is a crew of
 -- goons to beat, and the two pads before its far gate cash out.)
 GoalRules.List = {
-	{ Id = 'FreeRange', Text = 'Stand in BAY 1', Where = 'on the left, it shoots for you', Reward = 2, Need = { Power = 10 } },
+	{ Id = 'FreeRange', Text = 'Reach 10 Power in BAY 1', Where = 'on the left, it shoots for you', Reward = 2, Need = { Power = 10 } },
 	{ Id = 'Stage1', Text = 'Walk to Stage 1', Where = 'through the big door ahead', Reward = 3, Need = { Stages = 1 } },
 	{ Id = 'Wave1', Text = 'Beat the Stage 1 crew', Where = 'hold to shoot them', Reward = 5, Need = { Wave = 1 } },
 	{ Id = 'CashOut', Text = 'Step on the yellow pad', Where = 'by the gate: ' .. PadRules.text(PadRules.reward(1, false)), Reward = 5, Need = { CashOuts = 1 } },

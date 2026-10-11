@@ -204,4 +204,43 @@ return function(t)
 		for _, trip in StageRules.Trips do e.truthy(StageRules.travelTarget(gates, trip.Target) ~= nil) end
 		e.truthy(StageRules.TripLand > 0 and StageRules.TripLand < 30) -- (inside Stage 1, short of its crew)
 	end)
+	-- (brief 29) the shoe grid's order and the starred pairs
+	t.test('the grid sorts by Best, Rarity or Name with starred pairs first, and a starred pair is kept out of Recycle', function()
+		local rack = ShoeRules.new()
+		local ids = {}
+		for _, s in Shoes.List do
+			table.insert(ids, s.Id)
+			if #ids == 6 then break end
+		end
+		for _, id in ids do rack.Owned[id] = 2 end
+		local list = IK.stack(rack)
+		local rarest, rarestRank = nil, 0
+		for _, entry in list do
+			local rr = Shoes.RarityById[Shoes.ById[entry.Id].Rarity].Rank
+			if rr > rarestRank then rarest, rarestRank = entry.Id, rr end
+		end
+		e.equal(IK.sorted(list, 'Rarity', rack)[1].Id, rarest)
+		local byName = IK.sorted(list, 'Name', rack)
+		for i = 2, #byName do e.truthy(Shoes.ById[byName[i - 1].Id].Name <= Shoes.ById[byName[i].Id].Name) end
+		local last = IK.sorted(list, 'Best', rack)[#list].Id
+		rack.Favorites[last] = true
+		for _, mode in IK.SortModes do e.equal(IK.sorted(list, mode, rack)[1].Id, last) end
+		e.equal(#list, #IK.sorted(list, 'Rarity', nil))
+		-- a starred pair can't be recycled (the server's ShoeService asks canRecycle), an unstarred spare can
+		local ok, why = ShoeRules.canRecycle(rack, last)
+		e.falsy(ok); e.equal(why, 'favorite')
+		e.truthy(ShoeRules.setFavorite(rack, last, false))
+		e.truthy(ShoeRules.canRecycle(rack, last))
+		e.falsy(ShoeRules.setFavorite(rack, 'NoSuchShoe', true))
+		e.truthy(ShoeRules.setFavorite(rack, ids[1], true))
+		local text = ShoeRules.favoritesString(rack)
+		e.equal(text, ids[1])
+		e.truthy(ShoeRules.fromAttributes(ShoeRules.ownedString(rack), '', 0, text).Favorites[ids[1]])
+		-- sanitize keeps stars on owned pairs only
+		rack.Favorites.NoSuchShoe = true
+		rack.Owned[ids[2]] = nil
+		rack.Favorites[ids[2]] = true
+		ShoeRules.sanitize(rack)
+		e.truthy(rack.Favorites[ids[1]]); e.falsy(rack.Favorites.NoSuchShoe); e.falsy(rack.Favorites[ids[2]])
+end)
 end

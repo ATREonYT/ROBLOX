@@ -929,29 +929,6 @@ local function gainFloat(key, row, x, amount, top, bottom)
 	if st then Motion.tween(st, 0.75, Enum.EasingStyle.Quad, Enum.EasingDirection.In, { Transparency = 1 }) end
 	task.delay(0.8, function() l:Destroy() end)
 end
-local function flyCash(count)
-	local row = counters:FindFirstChild('Cash')
-	if not row then return end
-	local k = Kit.scaleFor(gui.AbsoluteSize)
-	local w, h = gui.AbsoluteSize.X / k, gui.AbsoluteSize.Y / k
-	-- (the Cash icon's centre in the Root's design px; about there if the engine can't say)
-	local target = Vector2.new(44, h - 66)
-	pcall(function() target = (cashIcon.AbsolutePosition + cashIcon.AbsoluteSize / 2 - root.AbsolutePosition) / k end)
-	for i = 1, count do
-		local bill = Kit.icon3d('Cash', 70, { AnchorPoint = Vector2.new(0.5, 0.5), Position = px(w / 2, h * 0.45), ZIndex = 50, Outline = false })
-		bill.Parent = root
-		local spread = px(w / 2 + math.random(-150, 150), h * 0.45 + math.random(-80, 60))
-		Motion.tween(bill, 0.16, Enum.EasingStyle.Quad, Enum.EasingDirection.Out, { Position = spread })
-		task.delay(0.16 + i * 0.05, function()
-			if not bill.Parent then return end
-			local t = Motion.tween(bill, 0.42, Enum.EasingStyle.Quad, Enum.EasingDirection.In, { Position = px(target.X, target.Y), Size = px(40, 40) })
-			t.Completed:Once(function()
-				bill:Destroy()
-				Motion.bump(row, 0.2)
-			end)
-		end)
-	end
-end
 local lastPower, lastCash, lastRebirths
 function refreshCounters()
 	local cash, n = cashNow(), rebirthsNow()
@@ -963,8 +940,8 @@ function refreshCounters()
 		counters.Cash.Position = COUNTER_PHONE.Cash
 	end
 	if lastCash and cash > lastCash then
+		-- (brief 29) Cash just adds to the balance: the counter ticks, nothing flies or floats
 		Motion.bump(counters.Cash, 0.2)
-		gainFloat('Cash', counters.Cash, 81 + Kit.textWidth(cashCount.Text, cashCount.TextSize) + 4, cash - lastCash, hex('FFF27A'), hex('FFA81A'))
 	end
 	if lastRebirths and n > lastRebirths then
 		Motion.pop(rebirthIcon, 0.3)
@@ -1044,7 +1021,6 @@ task.spawn(function()
 	end)
 	Net.get('Cinematic').OnClientEvent:Connect(function(info)
 		if type(info) == 'table' and info.Kind == 'Rebirth' and type(info.Rebirths) == 'number' then rebirthMoment(info.Rebirths, info.Unlocked) end
-		if type(info) == 'table' and info.Kind == 'CashOut' then flyCash(info.TenX and 8 or 6) end
 	end)
 	Net.get('ProfileUpdated').OnClientEvent:Connect(applyProfile)
 	Net.get('WaveState').OnClientEvent:Connect(function(info)

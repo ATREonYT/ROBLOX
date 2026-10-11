@@ -199,7 +199,7 @@ local function shoot(id)
 	Juice.tracer(from, to, gun.Color, 0.18 + gun.Tier * 0.015)
 	if rig and rig.eject then Juice.casing(worldOf(rig.eject)) end
 	if tool then kick(tool, 0.8 + gun.Tier * 0.05) end
-	Juice.kick(0.05 + gun.Tier * 0.01) -- (a touch softer than a held trigger used to be: it never stops now)
+	Juice.kick(0.03 + gun.Tier * 0.005) -- (brief 29: tiny, and it returns: no creep; the shots never stop now)
 	local color = s.Model:GetAttribute('HitColor') or gun.Color
 	Juice.burst(to, color, 0.7 + s.Tier * 0.07)
 	if there then
@@ -287,7 +287,7 @@ local function freeShot(where, viewport)
 	Juice.tracer(from, to, gun.Color, 0.18 + gun.Tier * 0.015)
 	if rig and rig.eject then Juice.casing(worldOf(rig.eject)) end
 	kick(tool, 0.8 + gun.Tier * 0.05)
-	Juice.kick(0.04 + gun.Tier * 0.008)
+	Juice.kick(0.025 + gun.Tier * 0.004)
 	if (to - from).Magnitude < 149 then Juice.burst(to, gun.Color, 0.5) end
 end
 UserInputService.InputBegan:Connect(function(input, processed)

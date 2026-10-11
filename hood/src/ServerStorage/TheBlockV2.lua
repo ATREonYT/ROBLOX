@@ -1170,7 +1170,7 @@ end
 -- The shooter's end: a waist-high bench across the lane (a dark kick plate, a stamped front with four X's, a
 -- band in the theme's trim colour, a studded top in the lip colour) with an ammo box, a few shells and ear
 -- muffs on it; in front of it a yellow and black hazard stripe (the firing line); in the box two shoe prints and
--- the lane's number in big blocky digits, readable from the aisle.
+-- (brief 29: no number painted on the mat).
 function Stations.bench(st, t, tier)
 	local Y, z, h = Stations.MAT_Y, Stations.BENCH_Z, Stations.BENCH_H
 	local g = st:group('Bench')
@@ -1201,7 +1201,7 @@ function Stations.bench(st, t, tier)
 	end
 	decor(d:box('EarArch', V(-3.0, y + 0.5, z - 0.12), V(-2.2, y + 0.64, z + 0.02), yellow)) -- (resting on the cups)
 	-- Painted on the mat: the box outline (white on dark mats, the groove colour on pale ones), the hazard
-	-- stripe, two shoe prints and the lane number.
+	-- stripe and two shoe prints.
 	local m = t.mat
 	local pale = 0.299 * m.R + 0.587 * m.G + 0.114 * m.B > 0.7
 	local edge = pale and Stations.grooveFor(t, m) or C(250, 250, 245)
@@ -1226,7 +1226,7 @@ function Stations.bench(st, t, tier)
 		local sole = decor(st:box('ShoePrint', V(x - 0.3, Y, -5.1), V(x + 0.3, Y + 0.03, -4.0), edge, M.SmoothPlastic))
 		sole.CastShadow, sole.Transparency = false, 0.25
 	end
-	Stations.digit(st, tier, -8.5, 2.3, edge)
+	-- (brief 29: no lane number painted on the mat any more; the label says what the lane is)
 end
 
 -- The lane's side walls, like the video's lanes walled at the sides (ours hood walls, not sandbags): a low wall on
@@ -1848,18 +1848,16 @@ function Stations.Lanes.gold(k)
 end
 
 -- Floating labels over the targets, the superhero game's training lanes (BRIEF23, ref_lanes_spread.png and
--- ref_training_lanes.png), three rows top to bottom: "Unlocked" (green) or "Locked" (red), small; a dark chip with the
--- rebirth icon and the rebirths the lane needs (a Robux lane: the Robux icon and its price); the big "xN Power" in the
--- lane's own colour (the theme's text tint) with a dark outline. The words come from Shared/RebirthRules.laneLabel
--- (ECON's Skins.Stations fields: Rebirths, Multiplier, Pass, RobuxPrice). The icon is IconModels.Images.Rebirth / .Robux;
--- until one is uploaded the chip's text carries a glyph instead (the Glyph attribute). The client repaints Detail as you
--- rebirth or buy the lane, and Cost and Power from the config (Lobby.client).
--- LOBBY6 (BRIEF24, the user: "promote it better, use the same fonts as the references"): every row in the references'
--- Montserrat Black (brief 28; it was FredokaOne) with a dark outline. A Robux lane's stack is a third bigger (16 x 9.6 studs, its "x250 Power" 4.7 studs
--- tall) with the reference's Robux chip (a dark chip, a Robux-green rim, the price in white); the best lane (the
--- highest multiplier, opts.best) also wears a tilted red BEST! sticker at its top right. Same names and rows as every
--- lane (Chip, Icon, Cost, Detail, Power; BestTag and Best), so Lobby.client and LabelFade treat it like the rest.
-Stations.LabelSize, Stations.PromoLabelSize = V(12, 7.2, 0), V(16, 9.6, 0)
+-- ref_training_lanes.png), three rows top to bottom: "Unlocked" (green) or "Locked" (red), small; the rebirth icon and the
+-- rebirths the lane needs (a Robux lane: the Robux icon and its price); the big "Nx Power" in the lane's own colour
+-- (the theme's text tint) with a dark outline. The words come from Shared/RebirthRules.laneLabel (ECON's Skins.Stations
+-- fields: Rebirths, Multiplier, Pass, RobuxPrice). The icon is IconModels.Images.Rebirth / .Robux; until one is uploaded
+-- the number's text carries a glyph instead (the Glyph attribute). The client repaints Detail as you rebirth or buy the
+-- lane, and Cost and Power from the config (Lobby.client).
+-- LOBBY6 (BRIEF24): every row in the references' Montserrat Black with a dark outline. A Robux lane's stack is bigger
+-- (16 x 10.4 studs) with its price in lime; the best lane (the highest multiplier, opts.best) also wears a tilted BEST!
+-- at its top right.
+Stations.LabelSize, Stations.PromoLabelSize = V(13, 8.6, 0), V(16, 10.4, 0)
 function Stations.labelText(s, open)
 	local okR, Rules = pcall(function() return require(ReplicatedStorage.Shared.RebirthRules) end)
 	if okR and type(Rules) == 'table' and Rules.laneLabel then
@@ -1867,8 +1865,12 @@ function Stations.labelText(s, open)
 		if okL then return top, state, power, Rules.RobuxMark end
 	end
 	local paid = type(s.Pass) == 'string' and s.Pass ~= ''
-	return paid and tostring(s.RobuxPrice or '') or tostring(s.Rebirths or 0), open and 'Unlocked' or 'Locked', 'x' .. tostring(s.Multiplier) .. ' Power', nil
+	return paid and tostring(s.RobuxPrice or '') or tostring(s.Rebirths or 0), open and 'Unlocked' or 'Locked', tostring(s.Multiplier) .. 'x Power', nil
 end
+-- (brief 29, the user: "floating text with no board, like the reference") Three rows of plain outlined text, no pill and
+-- no chip: a small "Locked" (red) / "Unlocked" (green), the rebirth icon with the rebirths the lane needs (a Robux lane:
+-- the Robux icon and its price, in lime), and the big "Nx Power" in the lane's own colour. The icon and its number sit
+-- as one pair, centred. Names: Icon, Cost, Detail, Power (and Best), so Lobby.client and LabelFade treat it like the rest.
 function Stations.labels(st, s, t, at, opts)
 	opts = opts or {}
 	local paid = type(s.Pass) == 'string' and s.Pass ~= ''
@@ -1902,57 +1904,38 @@ function Stations.labels(st, s, t, at, opts)
 	local top, state, power, mark = Stations.labelText(s, open)
 	-- the number alone (the icon says what it counts)
 	local number = paid and tostring(s.RobuxPrice or '') or tostring(s.Rebirths or 0)
-	-- Chip: a see-through dark pill with a black outline (a Robux lane's: the reference's dark chip with a Robux-green rim)
-	local chip = Instance.new('Frame')
-	chip.Name = 'Chip'
-	chip.Position, chip.Size = UDim2.fromScale(0.33, 0.235), UDim2.fromScale(0.34, 0.25)
-	chip.BackgroundColor3, chip.BackgroundTransparency = paid and C(18, 30, 26) or C(20, 22, 34), paid and 0.2 or 0.55
-	local corner = Instance.new('UICorner')
-	corner.CornerRadius = UDim.new(0.25, 0)
-	corner.Parent = chip
-	local edge = Instance.new('UIStroke')
-	edge.Color, edge.Thickness = paid and C(88, 232, 112) or C(0, 0, 0), paid and 3 or 2
-	edge.Parent = chip
-	chip.Parent = g
 	local okI, icons = pcall(function() return require(ReplicatedStorage.Shared.Models.IconModels) end)
 	local image = okI and type(icons) == 'table' and icons.Images and icons.Images[paid and 'Robux' or 'Rebirth']
-	local cost = text('Cost', number, P.white, 0.36, 0.26, 0.28, 0.2, 2)
+	local rowY, rowH = 0.2, 0.27
+	local numberColor = paid and C(184, 248, 56) or P.white
+	local cost
 	if type(image) == 'string' and image ~= '' then
+		-- the pair: a square icon the row's height, then the number, centred together
+		local iconW = rowH * size.Y / size.X
+		local numW = 0.085 * math.max(1, #number) + 0.03
+		local x0 = 0.5 - (iconW + 0.015 + numW) / 2
 		local icon = Instance.new('ImageLabel')
 		icon.Name = 'Icon'
 		icon.BackgroundTransparency = 1
 		icon.Image = image
-		icon.Position, icon.Size = UDim2.fromScale(0.355, 0.255), UDim2.fromScale(0.1, 0.21)
+		icon.Position, icon.Size = UDim2.fromScale(x0, rowY), UDim2.fromScale(iconW, rowH)
 		local a = Instance.new('UIAspectRatioConstraint')
 		a.Parent = icon
 		icon.Parent = g
-		cost.Position, cost.Size = UDim2.fromScale(0.465, 0.26), UDim2.fromScale(0.19, 0.2)
+		cost = text('Cost', number, numberColor, x0 + iconW + 0.015, rowY + 0.01, numW, rowH - 0.02, 3)
 		cost.TextXAlignment = Enum.TextXAlignment.Left
 		cost:SetAttribute('Glyph', '')
 	else
 		-- no icon yet: the glyph in the text (the Robux sign Roblox's fonts draw, or the rebirth arrows)
-		cost.Text = paid and ((mark or '') .. number) or ('🔄 ' .. number)
-		cost:SetAttribute('Glyph', paid and (mark or '') or '🔄')
+		cost = text('Cost', paid and ((mark or '') .. number) or ('\u{1F504} ' .. number), numberColor, 0.25, rowY + 0.01, 0.5, rowH - 0.02, 3)
+		cost:SetAttribute('Glyph', paid and (mark or '') or '\u{1F504}')
 	end
 	local _ = top
-	text('Detail', state, open and C(40, 235, 90) or C(240, 40, 60), 0.2, 0, 0.6, 0.21, 3)
-	text('Power', power, t.text or P.white, 0, 0.51, 1, 0.49, paid and 4 or 3)
+	text('Detail', state, open and C(40, 235, 90) or C(240, 70, 80), 0.2, 0, 0.6, 0.19, 3)
+	text('Power', power, t.text or P.white, 0, 0.5, 1, 0.5, paid and 4 or 3.5)
 	if opts.best then
-		-- the BEST! sticker: a red tag tilted over the top right corner, yellow words with a dark red outline
-		-- (the tag and its words both sit on the gui, not nested, each turned about its own centre: the same middle)
-		local tag = Instance.new('Frame')
-		tag.Name = 'BestTag'
-		tag.Position, tag.Size = UDim2.fromScale(0.7, 0.0), UDim2.fromScale(0.3, 0.23)
-		tag.Rotation = 10
-		tag.BackgroundColor3, tag.BackgroundTransparency = C(232, 36, 52), 0
-		local tc = Instance.new('UICorner')
-		tc.CornerRadius = UDim.new(0.3, 0)
-		tc.Parent = tag
-		local ts = Instance.new('UIStroke')
-		ts.Color, ts.Thickness = C(255, 255, 255), 2.5
-		ts.Parent = tag
-		tag.Parent = g
-		local best = text('Best', 'BEST!', C(255, 236, 72), 0.72, 0.02, 0.26, 0.19, 3)
+		-- BEST!: plain tilted words over the top right corner (brief 29: no red tag behind them), yellow with a deep red outline
+		local best = text('Best', 'BEST!', C(255, 236, 72), 0.72, 0.02, 0.26, 0.17, 3.5)
 		best.Rotation = 10
 		best:FindFirstChildOfClass('UIStroke').Color = C(110, 10, 20)
 	end
@@ -1963,7 +1946,7 @@ end
 -- it better"; the green x250 lane of ref_training_lanes.png and user_33.png): no gate, no posts, no plate. The lane
 -- glows in its own colour like the reference's best lane: a neon frame hugging the rim's foot, a soft halo strip on the
 -- floor outside it, bright streaks rising off the whole mat (the reference's rising green streaks) and sparkles in the
--- lane's colour over the target field. Its label (Stations.labels) is the big one, with the Robux chip and, on the best
+-- lane's colour over the target field. Its label (Stations.labels) is the big one, with the Robux icon and price and, on the best
 -- lane, BEST!. Built only for a lane with a Pass. Budget: streaks 9/s x ~1.9 s + sparkles 6/s x ~1.7 s, about 27 live
 -- particles a lane, all small; no PointLight of its own (the theme's is the one).
 function Stations.promo(st, t, s, VFX)
@@ -2072,7 +2055,7 @@ function Stations.build(ctx, stationId, opts)
 	local zone = st:box('TrainingZone', V(-MX, Y - 0.06, -Stations.HALF_Z), V(MX, Y, Stations.BOX_Z), P.white)
 	zone.Transparency, zone.CanCollide, zone.CanQuery, zone.CanTouch, zone.CastShadow = 1, false, false, false, false
 	Stations.bench(st, t, tier)
-	Stations.walls(st, t)
+	-- (brief 29: no side walls, so you can walk onto a lane from anywhere; Stations.walls stays for reference)
 
 	-- Equipment: the stands and gantry (Gear) and the knockable targets (Targets).
 	local eq = st:group('Equipment')
@@ -4930,9 +4913,9 @@ Lobby.ShoePasses = { { 'Lucky', -12.5, -3.5 }, { 'TripleOpen', 0, -1 }, { 'Extra
 Lobby.Boards = {
 	-- (left to right for a player facing them, i.e. facing south: POWER at the east end, CASH at the west end; x and z
 	-- from the field's centre)
-	{ x = 11.6, z = 3.2, yaw = 22, lift = 0, name = 'POWER', title = 'TOP POWER', color = C(255, 166, 40), live = 'PowerLeaderboard' },
-	{ x = 0, z = 7.2, yaw = 0, lift = 1, name = 'REBIRTHS', title = 'TOP REBIRTHS', color = C(255, 70, 70), live = 'ServerLeaderboard' },
-	{ x = -11.6, z = 3.2, yaw = -22, lift = 0, name = 'CASH', title = 'TOP CASH', color = C(120, 226, 70), live = 'CashLeaderboard' },
+	{ x = 11.6, z = 3.2, yaw = 22, lift = 0, name = 'POWER', title = 'TOP POWER', color = C(255, 166, 40), live = 'PowerLeaderboard', main = 'POWER', extra = 'REBIRTHS' },
+	{ x = 0, z = 7.2, yaw = 0, lift = 1, name = 'REBIRTHS', title = 'TOP REBIRTHS', color = C(255, 70, 70), live = 'ServerLeaderboard', main = 'REBIRTHS', extra = 'POWER' },
+	{ x = -11.6, z = 3.2, yaw = -22, lift = 0, name = 'CASH', title = 'TOP CASH', color = C(120, 226, 70), live = 'CashLeaderboard', main = 'CASH', extra = 'STAGE' },
 }
 Lobby.BoardW, Lobby.BoardH, Lobby.BoardY = 7.5, 12, 3.2 -- the screen's width, height and its foot's height
 function Lobby.leaderboard(L, cf, b)
@@ -4965,23 +4948,59 @@ function Lobby.leaderboard(L, cf, b)
 		end
 	end
 	-- the screen: a dark bezel, the navy face, pale row stripes behind the text LobbyService writes
+	-- (brief 29, the user: "way too large letters and very vague, barely any stats"): small text like the reference's boards,
+	-- ten rows of rank + name | main stat | second stat under a small column header, one row every 38 px of a 276 x 456 px
+	-- canvas. LobbyService writes the three lists (TextLabel: "1  Name", Values: the main stat, Extra: the second) with
+	-- RichText, one line per row, all three at the same size and line height so the rows line up.
 	root:box('BoardBezel', V(-px + 1, y0, -0.5), V(px - 1, top, 0.5), dark, M.SmoothPlastic)
 	local screen = root:box('BoardScreen', V(-w / 2 + 0.3, y0 + 0.3, -0.62), V(w / 2 - 0.3, top - 0.3, 0.3), navy, M.SmoothPlastic)
-	local g = surface(screen, Enum.NormalId.Front, 20)
-	for k = 0, 6 do
+	local g = surface(screen, Enum.NormalId.Front, 40)
+	local CW, CH = (w - 0.6) * 40, (h - 0.6) * 40 -- the canvas, px
+	local ROW, ROW0, ROWS, SIZE = 38, 46, 10, 19
+	for k = 0, ROWS - 1, 2 do
 		local f = Instance.new('Frame')
 		f.Name = 'Band'
 		f.BorderSizePixel = 0
 		f.BackgroundColor3 = C(60, 76, 140)
-		f.BackgroundTransparency = 0.55
-		f.Position, f.Size = UDim2.fromScale(0.04, 0.2 + k * 0.115), UDim2.fromScale(0.92, 0.075)
+		f.BackgroundTransparency = 0.6
+		f.Position, f.Size = UDim2.fromScale(0.02, (ROW0 + k * ROW) / CH), UDim2.fromScale(0.96, ROW / CH)
 		f.ZIndex = 0
 		f.Parent = g
 	end
-	local first = b.live == 'CashLeaderboard' and 'TOP CASH\nTHIS SERVER\nClear a gate to earn Cash!'
-		or b.live == 'PowerLeaderboard' and 'TOP POWER\nTHIS SERVER\nBe the first to train!' or 'BLOCK LEADERS\nTHIS SERVER\nBe the first to train!'
-	local t = line(g, 'TextLabel', first, C(214, 228, 255), FONT.title, 0.04, 0.92, C(10, 14, 34), 1)
-	t.TextYAlignment = Enum.TextYAlignment.Top
+	local function head(name, value, x, wd, align)
+		local l = Instance.new('TextLabel')
+		l.Name = name
+		l.BackgroundTransparency = 1
+		l.Position, l.Size = UDim2.fromScale(x, 8 / CH), UDim2.fromScale(wd, 30 / CH)
+		l.FontFace = FONT.small
+		l.TextSize, l.Text, l.TextColor3 = 11, value, C(150, 168, 214)
+		l.TextXAlignment = align
+		l.TextTransparency = 0
+		l.Parent = g
+		return l
+	end
+	local function col(name, x, wd, align, color)
+		local l = Instance.new('TextLabel')
+		l.Name = name
+		l.BackgroundTransparency = 1
+		l.Position, l.Size = UDim2.fromScale(x, ROW0 / CH), UDim2.fromScale(wd, ROWS * ROW / CH)
+		l.FontFace = FONT.small
+		l.TextSize, l.LineHeight = SIZE, ROW / (SIZE * 1.219) -- (Montserrat's line is 1.219 em)
+		l.RichText, l.TextWrapped, l.TextYAlignment, l.TextXAlignment = true, false, Enum.TextYAlignment.Top, align
+		l.TextColor3 = color
+		local s = Instance.new('UIStroke')
+		s.Color, s.Thickness, s.LineJoinMode = C(8, 12, 30), 2, Enum.LineJoinMode.Round
+		s.Parent = l
+		l.Parent = g
+		return l
+	end
+	head('HeadName', 'PLAYER', 0.04, 0.42, Enum.TextXAlignment.Left)
+	head('HeadMain', b.main, 0.44, 0.31, Enum.TextXAlignment.Right)
+	head('HeadExtra', b.extra, 0.75, 0.23, Enum.TextXAlignment.Right)
+	local names = col('TextLabel', 0.04, 0.42, Enum.TextXAlignment.Left, C(240, 244, 255))
+	col('Values', 0.44, 0.34, Enum.TextXAlignment.Right, C(92, 200, 255))
+	col('Extra', 0.76, 0.22, Enum.TextXAlignment.Right, C(190, 198, 226))
+	names.Text = 'Be the first to train!'
 	-- the floating title in the board's colour
 	local a = Lobby.title(root, V(0, hy + 3.8 + (b.lift or 0), 0), 11.5, 3, b.title, nil, b.color, 200)
 	-- (LabelFade: seen across the hall like the reference's "TOP 50" titles, gone from the streets)
@@ -5306,10 +5325,11 @@ end
 -- so the street and the next gates show through it), two hazard-striped barrier bars across it and a big chunky
 -- padlock hanging on the lower one (the video's locked gate), a lit lip and edges and a glowing emitter track along
 -- its foot. Its frame follows the video game's gates: a sturdy studded pillar each side (plinth, a column of
--- recesses, banded cap) and a hazard-striped beam. The text is ONE floating sign in the opening (the video's): "STAGE
--- N" in white, "Recommended" in cyan, "Power: X" in cyan pixel letters (the reference's corridor sign) and a state
--- line, with a thick dark outline; HoodClient/Stages shows it only on your next gate and grows it with distance, so it
--- reads from the spawn.
+-- recesses, banded cap) and a hazard-striped beam. The text is ONE sign hung in the opening (the video's): "STAGE N" in
+-- white, "Recommended" in cyan, "Power: X" in cyan pixel letters (the reference's corridor sign) and a state line, with
+-- a thick dark outline. (Brief 29: it is a fixed board now, a SurfaceGui on a thin invisible panel in the gate's own
+-- plane, 34 x 12 studs, so it never grows, shrinks, fades or turns; its letters and outlines are painted at one size.
+-- HoodClient/Stages only shows it on your next gate and switches its lines for "STAGE N / OPEN!".)
 -- The run (brief 23): a gate opens for you when you beat the crew of the stage before it, every run, and shuts again
 -- when you go back to the lobby (HoodServer/Runs; gate 1 is always open). HoodClient/Stages keeps the wall solid and
 -- locked-looking while it is shut, and at the moment the crew falls shatters the haze, drops the bars and padlock and
@@ -5344,11 +5364,11 @@ local GATE = {
 	-- from there, see HoodClient/Stages: GrowFrom studs, GrowPow, GrowMax, never past the openings in front of it), and
 	-- its lines: name, top and height (0-1 of the sign) and outline thickness as a share of the line's height (UI2's:
 	-- ~7% on titles, ~11% on small lines).
-	signW = 26, signH = 9.6, signY = 7.4, grow = { 40, 1, 2.2 },
+	signW = 34, signH = 11.6, signY = 6.8, signZ = 2.9, signPPS = 30, -- (the board: studs, foot height, distance in front of the wall, px per stud)
 	lines = {
-		{ 'Title', 0, 0.34, 0.075 }, { 'Sub', 0.355, 0.19, 0.11 }, { 'Power', 0.545, 0.19, 0.11 }, { 'Status', 0.79, 0.19, 0.11 },
+		{ 'Title', 0, 0.37, 0.075 }, { 'Sub', 0.375, 0.235, 0.1 }, { 'Power', 0.61, 0.235, 0.1 }, { 'Status', 0.88, 0.12, 0.1 },
 	},
-	plateBox = { 0.17, 0.765, 0.66, 0.235 }, -- the state badge behind the Status line: x, y, w, h (0-1 of the sign)
+	plateBox = { 0.24, 0.87, 0.52, 0.13 }, -- the state badge behind the Status line: x, y, w, h (0-1 of the sign)
 	magenta = C(255, 32, 255), yellow = C(250, 246, 70), padRim = C(58, 66, 98), -- the pads and the dark rim under them
 	-- Each pad: its lit top, the darker sides, the neon edge between them, its label's big words (the reference's
 	-- "2M Wins" magenta and "200K Wins" yellow) in a well-known game face.
@@ -5384,9 +5404,11 @@ function GATE.hazeAt(h)
 	return k[#k][2], k[#k][3]
 end
 -- One line of the sign (y and h are 0-1 of its height), centred, outlined; HoodClient/Stages sets the outline's
--- thickness from the line's size on your screen (attribute Ink: the share of the line's height).
+-- thickness is the line's height in canvas pixels times its Ink share (about 7% on the title, 10% on the small lines,
+-- UI2's), painted once.
 function GATE.text(gui, name, value, y, h, color, ink, share)
-	local t = line(gui, name, value, color, GATE.font, y, h, ink, 3)
+	local px = GATE.signH * GATE.signPPS * h
+	local t = line(gui, name, value, color, GATE.font, y, h, ink, math.max(3, math.floor(px * share + 0.5)))
 	t.Position, t.Size = UDim2.fromScale(0, y), UDim2.fromScale(1, h)
 	t.TextWrapped = false
 	t.ZIndex = 2
@@ -5447,28 +5469,20 @@ function GATE.lock(g, inner)
 	for _, p in parts do p:SetAttribute('BaseTransparency', p.Transparency) end
 	return parts
 end
--- The sign: one floating BillboardGui in the opening (the video's), on an invisible anchor at its foot, 5 studs in
--- front of the wall: a billboard is depth-tested as one flat card at its own depth, and from a player camera looking
--- down the beam and the pillar tops stand nearer than a card on the gate line (they would cut its title).
--- HoodClient/Stages shows it only on your next gate, writes the state line and grows it with the distance.
+-- The sign: one fixed board in the opening (the video's gate sign): a SurfaceGui on a thin invisible panel standing in
+-- front of the lock, facing the street (the approach side). A panel in the gate's plane is depth-tested like the wall,
+-- so the beam and the pillars never cut it, and it holds one size, at one outline, from every distance. It is wide as
+-- the opening (34 of its 36 studs) and its top meets the beam; the lock's upper bar and padlock are under its foot.
+-- HoodClient/Stages shows it only on your next gate and writes the state line.
 function GATE.sign(g, i, req)
-	local anchor = ghost(g:part('SignAnchor', V(0.2, 0.2, 0.2), CFrame.new(0, GATE.signY, 5), P.white))
-	local gui = Instance.new('BillboardGui')
+	local board = ghost(g:part('SignBoard', V(GATE.signW, GATE.signH, 0.1), CFrame.new(0, GATE.signY + GATE.signH / 2, GATE.signZ), P.white))
+	board.CastShadow = false
+	local gui = surface(board, Enum.NormalId.Back, GATE.signPPS)
 	gui.Name = 'GateSign'
-	gui.Size = UDim2.fromScale(GATE.signW, GATE.signH)
-	gui.StudsOffsetWorldSpace = V(0, GATE.signH / 2, 0)
-	gui.MaxDistance = 1000
-	gui.LightInfluence = 0
 	gui.AlwaysOnTop = false
-	gui:SetAttribute('BaseW', GATE.signW)
-	gui:SetAttribute('BaseH', GATE.signH)
-	gui:SetAttribute('GrowFrom', GATE.grow[1])
-	gui:SetAttribute('GrowPow', GATE.grow[2])
-	gui:SetAttribute('GrowMax', GATE.grow[3])
 	-- (brief 28) Built as a player first sees it: HoodClient/Stages shows only your next gate's sign, which from the spawn is
 	-- gate 1's; the others start hidden, so Studio's edit view and the previews never stack the far signs behind it.
 	gui.Enabled = i == 1
-	gui.Parent = anchor
 	local L = {}
 	for _, l in GATE.lines do L[l[1]] = l end
 	local function put(name, text, color, ink)
@@ -5495,7 +5509,7 @@ function GATE.sign(g, i, req)
 	corner.CornerRadius = UDim.new(0.5, 0)
 	corner.Parent = plate
 	local edge = Instance.new('UIStroke')
-	edge.Color, edge.Thickness = GATE.plateInk, 2
+	edge.Color, edge.Thickness = GATE.plateInk, 5
 	edge.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 	edge.Parent = plate
 	plate.Parent = gui

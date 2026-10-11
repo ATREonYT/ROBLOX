@@ -55,7 +55,7 @@ function ShoeRules.slotsFor(extraEquip: any): number
 end
 
 function ShoeRules.new()
-	return { Owned = {}, Equipped = {}, Opened = 0 }
+	return { Owned = {}, Equipped = {}, Opened = 0, Favorites = {} }
 end
 
 -- Makes a Shoes table safe to use in place (unknown ids dropped, counts whole and capped, Equipped only what you
@@ -84,6 +84,14 @@ function ShoeRules.sanitize(shoes: any, slots: number?)
 	end
 	shoes.Owned = clean
 	shoes.Equipped = equipped
+	-- (brief 29) the starred pairs: only shoes you own, `true` each (a favourite is kept out of Recycle)
+	local favorites = {}
+	if type(shoes.Favorites) == 'table' then
+		for id, on in shoes.Favorites do
+			if type(id) == 'string' and clean[id] and on == true then favorites[id] = true end
+		end
+	end
+	shoes.Favorites = favorites
 	local opened = int(shoes.Opened)
 	shoes.Opened = opened and math.clamp(opened, 0, 1e9) or 0
 	return shoes
@@ -328,6 +336,7 @@ function ShoeRules.canRecycle(shoes, id: any): (boolean, string?)
 	if type(id) ~= 'string' or not Shoes.ById[id] then return false, 'unknown' end
 	local copies = ShoeRules.copies(shoes, id)
 	if copies == 0 then return false, 'locked' end
+	if type(shoes.Favorites) == 'table' and shoes.Favorites[id] == true then return false, 'favorite' end
 	if ShoeRules.equippedCount(shoes, id) >= copies then return false, 'equipped' end
 	return true, nil
 end
@@ -369,9 +378,30 @@ function ShoeRules.ownedString(shoes): string
 	return table.concat(parts, ',')
 end
 
--- The reverse, for clients: a Shoes table from the ShoesOwned and ShoesEquipped attributes (sanitized).
-function ShoeRules.fromAttributes(owned: any, equipped: any, opened: any)
-	local shoes = { Owned = {}, Equipped = {}, Opened = type(opened) == 'number' and opened or 0 }
+-- (brief 29) The starred pairs as the ShoesFavorites attribute: 'Id,Id' in the boxes' order, '' for none.
+function ShoeRules.favoritesString(shoes): string
+	local parts = {}
+	if type(shoes.Favorites) ~= 'table' then return '' end
+	for _, shoe in Shoes.List do
+		if shoes.Favorites[shoe.Id] == true and shoes.Owned[shoe.Id] then table.insert(parts, shoe.Id) end
+	end
+	return table.concat(parts, ',')
+end
+-- Stars or unstars a shoe you own. Returns whether it changed.
+function ShoeRules.setFavorite(shoes, id: any, on: boolean): boolean
+	if type(id) ~= 'string' or not Shoes.ById[id] or not shoes.Owned[id] then return false end
+	if type(shoes.Favorites) ~= 'table' then shoes.Favorites = {} end
+	local was = shoes.Favorites[id] == true
+	if was == on then return false end
+	shoes.Favorites[id] = on and true or nil
+	return true
+end
+
+-- The reverse, for clients: a Shoes table from the ShoesOwned and ShoesEquipped attributes (sanitized); `favorites` (the
+-- ShoesFavorites attribute, optional) stars pairs.
+function ShoeRules.fromAttributes(owned: any, equipped: any, opened: any, favorites: any?)
+	local shoes = { Owned = {}, Equipped = {}, Opened = type(opened) == 'number' and opened or 0, Favorites = {} }
+	for id in string.gmatch(type(favorites) == 'string' and favorites or '', '[^,]+') do shoes.Favorites[id] = true end
 	for id, n in string.gmatch(type(owned) == 'string' and owned or '', '([^,:]+):(%d+)') do shoes.Owned[id] = tonumber(n) end
 	for id in string.gmatch(type(equipped) == 'string' and equipped or '', '[^,]+') do table.insert(shoes.Equipped, id) end
 	return ShoeRules.sanitize(shoes)

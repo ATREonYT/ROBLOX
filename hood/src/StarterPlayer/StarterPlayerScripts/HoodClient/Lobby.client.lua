@@ -62,13 +62,12 @@ local pointer = label(indicator, 'Destination', 22, C(255, 224, 80))
 -- The shooting ranges on the map: shooter's box, label, targets. A lane opens at a number of rebirths
 -- (Skins.Stations[i].Rebirths); a locked lane is a black silhouette, like the user's ref_lanes_spread.png and
 -- ref_training_lanes.png (LOBBY5 r11/r12): in a lane built with the Silhouette attribute the station (its pad, rim,
--- bench, stands and targets, their textures and surface signs) goes flat black and its effects stop, while its side
--- walls and backstop and the plaza's deck between the lanes keep their colours (the black shapes stand out against
--- them) and the label stays readable over it; it comes back in colour when it unlocks. Older stations without the attribute (the Champ Ring, the original Block's
+-- bench, stands, targets and backstop, their textures and surface signs) goes flat black and its effects stop, and the
+-- label stays readable over it; it comes back in colour when it unlocks (brief 29: all of it black, no coloured walls). Older stations without the attribute (the Champ Ring, the original Block's
 -- gym) black out their gear only.
---   Lane labels (code5/d2_stations Stations.labels, BRIEF23's superhero lanes: a BillboardGui with Chip + Icon + Cost,
---   Detail, Power): the chip shows the rebirth icon and the rebirths the lane needs (a Robux lane: the Robux icon and
---   its price), Detail "Unlocked" green / "Locked" red, and "xN Power" big in white. The chip's number and the
+--   Lane labels (code5/d2_stations Stations.labels, BRIEF23's superhero lanes: a BillboardGui of plain text with Icon +
+--   Cost, Detail, Power): the rebirth icon and the rebirths the lane needs (a Robux lane: the Robux icon and its price),
+--   Detail "Unlocked" green / "Locked" red, and "Nx Power" big. The chip's number and the
 --   multiplier are rewritten here from the config too (RebirthRules.laneLabel), so the label always says what
 --   Config/Skins.Stations says. A Robux lane (Pass) opens with its game pass (Pass_<Key>, RebirthRules.laneOpen with the
 --   player) and is never blacked out while locked: it is for sale, so it keeps its colours and its premium trim.
@@ -146,18 +145,9 @@ local function track(s)
 	entry.Bag = sign ~= nil and sign:FindFirstChild('Power', true) ~= nil
 	if model:GetAttribute('Silhouette') and not paidLane(s) then
 		entry.Whole = model
-		-- (LOBBY5 r12, CRITIC3: the lane's side walls and its backstop keep their colours, so the black pad, bench, stands
-		-- and targets stand out against them as shapes, like the reference's black figures before their sandbag walls)
-		local function framing(p)
-			local a = p.Parent
-			while a and a ~= model do
-				if a.Name == 'Walls' or a.Name == 'Backstop' then return true end
-				a = a.Parent
-			end
-			return false
-		end
+		-- (brief 29, the user: "fully cover the shooting ranges with black when not unlocked") every part of the lane goes black,
+		-- the backstop and the dummy included, like the reference's black silhouettes
 		for _, p in model:GetDescendants() do
-			if framing(p) then continue end
 			if p:IsA('BasePart') and p.Transparency < 1 then
 				table.insert(entry.Parts, { Part = p, Color = p.Color, Material = p.Material })
 			elseif p:IsA('Texture') or p:IsA('Decal') then
@@ -199,7 +189,7 @@ local function track(s)
 			end
 		end
 		local power = sign:FindFirstChild('Power', true)
-		if power and power:IsA('TextLabel') then power.Text = 'x' .. s.Multiplier .. ' Power' end
+		if power and power:IsA('TextLabel') then power.Text = s.Multiplier .. 'x Power' end
 	end
 	stations[s.Id] = entry
 	return entry
@@ -229,7 +219,7 @@ local function retrack()
 	if found then neighbours() end
 end
 local SILHOUETTE = C(0, 0, 0) -- (flat black on Plastic: SmoothPlastic's sky sheen showed it navy)
-local UNLOCKED, LOCKED = C(40, 235, 90), C(240, 40, 60) -- (the video's green Unlocked and red Locked, as the lanes build them)
+local UNLOCKED, LOCKED = C(40, 235, 90), C(240, 70, 80) -- (the video's green Unlocked and salmon-red Locked, as the lanes build them)
 -- n: your rebirths.
 local function paintStations(n)
 	retrack()

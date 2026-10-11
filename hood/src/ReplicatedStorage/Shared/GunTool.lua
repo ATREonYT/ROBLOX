@@ -42,7 +42,7 @@ function GunTool.build(id: string)
 	local gun = Guns.ById[id] or Guns.ById[Guns.Starter]
 	local tool = Instance.new('Tool')
 	tool.Name = gun.Name
-	tool.ToolTip = gun.Name .. '  (x' .. gun.Multiplier .. ' Power)'
+	tool.ToolTip = gun.Name
 	tool.CanBeDropped = false
 	tool.RequiresHandle = true
 	tool.ManualActivationOnly = true -- Shoot.client fires on its own input; Activated would double up shots

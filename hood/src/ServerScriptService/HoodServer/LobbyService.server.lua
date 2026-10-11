@@ -176,7 +176,49 @@ local function offer(player,pass)
 end
 Players.PlayerRemoving:Connect(function(p) shoeCarry[p]=nil;autoCarry[p]=nil;offered[p]=nil end)
 
----------------------------------------------------------------------------------------------- loop
+---------------------------------------------------------------------------------------------- lobby boards
+-- (brief 29) The three boards (TheBlockV2's Lobby.leaderboard): ten small rows of rank + name | main stat | second stat,
+-- like the references' boards. Each board's model holds three TextLabels with RichText, one line per row: TextLabel (the
+-- rank and the name), Values (the main stat) and Extra (the second stat). An older board with only a TextLabel (the original
+-- Block's) still gets one plain list.
+local BOARD_ROWS=10
+local RANK_COLOR={'#FFD84A','#D0D8E8','#E8A068'}
+local function plain(s) return (tostring(s):gsub('[<>&]','')) end
+local function shortName(n) n=plain(n);local len=utf8.len(n);if len and len>8 then n=n:sub(1,utf8.offset(n,8)-1)..'.' end return n end
+local BOARDS={
+ {Live='PowerLeaderboard',Title='TOP POWER',Sort=function(a,b) return a.Power>b.Power end,
+  Main=function(r) return Format.compact(r.Power) end,Extra=function(r) return tostring(r.Rebirths) end,Empty='Be the first to train!'},
+ {Live='ServerLeaderboard',Title='TOP REBIRTHS',Sort=function(a,b) if a.Rebirths~=b.Rebirths then return a.Rebirths>b.Rebirths end return a.Power>b.Power end,
+  Main=function(r) return tostring(r.Rebirths) end,Extra=function(r) return Format.compact(r.Power) end,Empty='Be the first to train!'},
+ {Live='CashLeaderboard',Title='TOP CASH',Sort=function(a,b) return a.Cash>b.Cash end,Keep=function(r) return r.Cash>0 end,
+  Main=function(r) return Format.compact(r.Cash) end,Extra=function(r) return r.Stage>0 and tostring(r.Stage) or '-' end,Empty='Clear a gate to earn Cash!'},
+}
+local function writeBoard(lobby,spec,rows)
+ local model=lobby:FindFirstChild(spec.Live,true)
+ local label=model and model:FindFirstChild('TextLabel',true)
+ if not label then return end
+ local list={}
+ for _,r in rows do if not spec.Keep or spec.Keep(r) then table.insert(list,r) end end
+ table.sort(list,spec.Sort)
+ local values,extra=model:FindFirstChild('Values',true),model:FindFirstChild('Extra',true)
+ if not (values and extra) then
+  -- (the original Block's single-label board)
+  local lines={spec.Title,'THIS SERVER'}
+  for i=1,math.min(#list,5) do table.insert(lines,string.format('%d. %s  /  %s  %s',i,plain(list[i].Name),spec.Main(list[i]),spec.Extra(list[i]))) end
+  if #list==0 then table.insert(lines,spec.Empty) end
+  label.Text=table.concat(lines,'\n')
+  return
+ end
+ if #list==0 then label.Text=spec.Empty;values.Text='';extra.Text='';return end
+ local names,mains,extras={},{},{}
+ for i=1,math.min(#list,BOARD_ROWS) do
+  local r=list[i]
+  names[i]=string.format('<font color="%s">%d</font>  %s',RANK_COLOR[i] or '#8FA3D8',i,shortName(r.Name))
+  mains[i]=spec.Main(r)
+  extras[i]=spec.Extra(r)
+ end
+ label.Text=table.concat(names,'\n');values.Text=table.concat(mains,'\n');extra.Text=table.concat(extras,'\n')
+end
 local beat=0
 while true do
  local dt=task.wait(0.25)
@@ -192,33 +234,12 @@ while true do
    autoFire(player,profile,lane,station,dt)
    walk(player,n)
    if beat%4==0 then overheadTag(player,profile.Data.Rep,n) end
-   table.insert(rows,{Name=player.DisplayName,Power=profile.Data.Rep,Cash=profile.Data.Cash,Rebirths=n})
+   local waves=profile.Data.Waves
+   table.insert(rows,{Name=player.DisplayName,Power=profile.Data.Rep,Cash=profile.Data.Cash,Rebirths=n,Stage=type(waves)=='table' and tonumber(waves.Cleared) or 0})
   end
  end
  if beat%20==0 then
-  -- The lobby boards: BLOCK LEADERS by rebirths then Power, TOP CASH (when the map has them).
-  table.sort(rows,function(a,b) if a.Rebirths~=b.Rebirths then return a.Rebirths>b.Rebirths end return a.Power>b.Power end)
-  local lines={'BLOCK LEADERS','THIS SERVER'}
-  for i=1,math.min(#rows,5) do table.insert(lines,string.format('%d. %s  /  🔄%d  %s',i,rows[i].Name,rows[i].Rebirths,Format.compact(rows[i].Power))) end
-  if #rows==0 then table.insert(lines,'Be the first to train!') end
-  local board=lobby:FindFirstChild('ServerLeaderboard',true);local label=board and board:FindFirstChild('TextLabel',true)
-  if label then label.Text=table.concat(lines,'\n') end
-  -- TOP POWER (the lobby's third board): Power alone.
-  local powerBoard=lobby:FindFirstChild('PowerLeaderboard',true);local powerLabel=powerBoard and powerBoard:FindFirstChild('TextLabel',true)
-  if powerLabel then
-   table.sort(rows,function(a,b) return a.Power>b.Power end)
-   local power={'TOP POWER','THIS SERVER'}
-   for i=1,math.min(#rows,5) do table.insert(power,string.format('%d. %s  /  %s',i,rows[i].Name,Format.compact(rows[i].Power))) end
-   if #rows==0 then table.insert(power,'Be the first to train!') end
-   powerLabel.Text=table.concat(power,'\n')
-  end
-  local cashBoard=lobby:FindFirstChild('CashLeaderboard',true);local cashLabel=cashBoard and cashBoard:FindFirstChild('TextLabel',true)
-  if cashLabel then
-   table.sort(rows,function(a,b) return a.Cash>b.Cash end)
-   local cash={'TOP CASH','THIS SERVER'}
-   for i=1,math.min(#rows,5) do if rows[i].Cash>0 then table.insert(cash,string.format('%d. %s  /  %s',i,rows[i].Name,Format.compact(rows[i].Cash))) end end
-   if #cash==2 then table.insert(cash,'Clear a gate to earn Cash!') end
-   cashLabel.Text=table.concat(cash,'\n')
-  end
+  -- The lobby boards: TOP POWER, TOP REBIRTHS (rebirths, then Power), TOP CASH (when the map has them).
+  for _,spec in BOARDS do writeBoard(lobby,spec,rows) end
  end
 end

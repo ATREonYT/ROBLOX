@@ -6,22 +6,22 @@
 --          you this run, is below it): the wall is solid for you; the badge reads "Defeat the crew first". Walk into it
 --          and it flashes red and bumps you back.
 --   Open   gate 1 always; any other the moment you beat the crew before it (RunCleared goes up): the haze shatters
---          toward you, the bars and padlock drop, confetti bursts, the camera kicks, "STAGE N OPEN!", and the sign turns
---          compact and low: "STAGE N" over a green "OPEN!" (at eye level from the pads, under the HUD's goal band).
+--          toward you, the bars and padlock drop, confetti bursts, the camera kicks, "STAGE N OPEN!", and the sign's badge
+--          turns green: "OPEN!" (the board itself keeps every line, in place).
 --          Going back to the lobby ends the run: every gate shuts again at once.
--- Only your next gate (the first one ahead of you) shows its sign, so signs never stack down the street; it grows with
--- the distance (up to GrowMax) so it stays readable from the lobby, through the hall's doorway, and its outline
--- thickens to match.
+-- Only your next gate (the first one ahead of you) shows its sign, so signs never stack down the street. (Brief 29: the
+-- sign is a fixed board in the gate's plane (a SurfaceGui, Shared/GATE in the map): it does not grow, shrink, fade, bob or
+-- turn, and nothing here runs per frame for it.)
 -- The pads (parts tagged HoodStagePad, attributes Stage and Kind; the server pays): their own colour a notch darker,
 -- reading the reward over "🔒 Clear the crew!", until that stage's crew is down this run; then lit, with sparkles and
 -- their words: "+10 Cash / Return" (yellow) and
 -- "+100 Cash / 10x Cash" (magenta, with the pass's Robux price while you don't own it), from Shared/PadRules. Their
 -- labels fade and pop with the distance (HoodClient/LabelFade: FadeNear / FadeFar on the label).
--- A cash-out (Cinematic 'CashOut'): "+10 Cash" pops big in the middle of the screen in the lobby, with confetti over you.
+-- A cash-out (Cinematic 'CashOut'): the Cash joins the balance (the HUD's counter ticks), with a little confetti over you.
 -- Map contract (TheBlockV2 stageGate): a Model tagged HoodStageGate (attributes Stage, Required, LineZ, HalfWidth,
 -- Color, Light) with a Barrier part carrying the haze SurfaceGui (Frames named Pane with attributes BaseColor and
--- BaseTransparency); Lock* parts (bars and padlock: BaseTransparency); a BillboardGui named GateSign (attributes
--- BaseW, BaseH, GrowFrom, GrowPow, GrowMax) with TextLabels Title, Sub, Power and Status (the state line); Field*
+-- BaseTransparency); Lock* parts (bars and padlock: BaseTransparency); a SurfaceGui named GateSign (on the SignBoard
+-- part) with TextLabels Title, Sub, Power and Status (the state line) and the Frame StatusPlate; Field*
 -- parts (the emitter track: BaseColor, BaseTransparency). Pads (d_kit stagePad): the slab <Name> and its <Name>Base,
 -- Rim, Top, Chevron parts (BaseColor, BaseMaterial), PadSparkles, and the label <Name>Label > WorldLabel > Title, Sub,
 -- Price.
@@ -55,13 +55,7 @@ local STATUS = {
 	Shut = { 'Defeat the crew first', C(214, 34, 58) },
 	Open = { 'OPEN!', C(36, 168, 80) },
 }
--- (CRITIC3 r1) An open gate's sign is compact and low, so seen from the pads it sits at eye level, under the HUD's goal
--- band: just "STAGE N" over a green "OPEN!" (Recommended / Power only while it is shut), OPEN_H of the sign's height,
--- its foot OPEN_DROP studs lower (no padlock to clear any more). Lines: name -> { x, y, w, h } (0-1 of the sign).
-local OPEN_H, OPEN_DROP = 0.52, 4.6
-local OPEN_LAYOUT = { Title = { 0, 0, 1, 0.62 }, StatusPlate = { 0.27, 0.68, 0.46, 0.32 }, Status = { 0.3, 0.68, 0.4, 0.32 } }
 local gates = {}
-local door -- the hall's doorway (gate 1's attributes DoorHalf, DoorTop, DoorZ): a grown sign must fit through it
 
 local function track(model)
 	if gates[model] or not model:IsDescendantOf(active.Root) then return end
@@ -69,12 +63,7 @@ local function track(model)
 		Model = model, Stage = model:GetAttribute('Stage'), Required = model:GetAttribute('Required') or 0,
 		Z = model:GetAttribute('LineZ'), HalfWidth = model:GetAttribute('HalfWidth') or 20,
 		Color = model:GetAttribute('Color') or C(255, 210, 60), Light = model:GetAttribute('Light') or C(255, 236, 160),
-		OpenHalf = model:GetAttribute('OpenHalf') or 18, OpenTop = model:GetAttribute('OpenTop') or 18.5,
-		FrameHalf = model:GetAttribute('FrameHalf') or 22, FrameTop = model:GetAttribute('FrameTop') or 24,
 	}
-	if model:GetAttribute('DoorHalf') then
-		door = { Half = model:GetAttribute('DoorHalf'), Top = model:GetAttribute('DoorTop') or 30, Z = model:GetAttribute('DoorZ') or 7 }
-	end
 end
 for _, m in CollectionService:GetTagged('HoodStageGate') do track(m) end
 CollectionService:GetInstanceAddedSignal('HoodStageGate'):Connect(track)
@@ -86,43 +75,15 @@ local function collect(e)
 	e.Barrier = e.Model:FindFirstChild('Barrier', true)
 	e.Sign = e.Model:FindFirstChild('GateSign', true)
 	e.Plate = e.Sign and e.Sign:FindFirstChild('StatusPlate')
-	e.Lines, e.Guis, e.Fields, e.Status, e.Locks, e.Strokes = {}, {}, {}, {}, {}, {}
+	e.Guis, e.Fields, e.Status, e.Locks = {}, {}, {}, {}
 	for _, d in e.Model:GetDescendants() do
 		if d:IsA('BasePart') and d.Name:sub(1, 5) == 'Field' then table.insert(e.Fields, d)
 		elseif d:IsA('BasePart') and d.Name:sub(1, 4) == 'Lock' then table.insert(e.Locks, d)
 		elseif d:IsA('TextLabel') and d.Name == 'Status' then table.insert(e.Status, d)
-		elseif d:IsA('TextLabel') and (d.Name == 'Power' or d.Name == 'Sub') and e.Sign and d:IsDescendantOf(e.Sign) then
-			table.insert(e.Lines, d) -- (the sign's own: the pads' labels in the same model have a Sub too)
 		end
 		if d:IsA('SurfaceGui') and d.Parent == e.Barrier then table.insert(e.Guis, d) end
-		-- (the sign's letter outlines: the share of the sign's height their line takes, times its Ink share, gives the
-		-- thickness from the sign's height on screen)
-		if d:IsA('UIStroke') and e.Sign and d:IsDescendantOf(e.Sign) and d.Parent:IsA('TextLabel') then
-			table.insert(e.Strokes, { d, d.Parent })
-		end
-	end
-	-- the sign's lines as built (the shut layout), to go back to (kept from the first look: never a compact one)
-	e.Built = e.Built or {}
-	for name in OPEN_LAYOUT do
-		local x = e.Sign and e.Sign:FindFirstChild(name)
-		if x and x:IsA('GuiObject') and not (e.Built[name] and e.Built[name][1] == x) then e.Built[name] = { x, x.Position, x.Size } end
 	end
 	e.Collected = e.Barrier ~= nil
-end
-
--- The sign's layout: full while shut (as built), compact while open.
-local function layout(e, open)
-	for name, b in e.Built or {} do
-		local x = b[1]
-		local o = OPEN_LAYOUT[name]
-		if open then
-			x.Position, x.Size = UDim2.fromScale(o[1], o[2]), UDim2.fromScale(o[3], o[4])
-		else
-			x.Position, x.Size = b[2], b[3]
-		end
-	end
-	for _, t in e.Lines do t.Visible = not open end
-	e.Grown = nil -- (grow sizes it again)
 end
 
 -- The run as the server tells it: the furthest gate open (RunStage) and the highest stage beaten (RunCleared).
@@ -146,7 +107,7 @@ local function tint(e, toward, amount)
 end
 
 -- The open moment's pieces (defined with the feedback below).
-local opened -- (e): shatter, confetti, kick, the Power line's pop
+local opened -- (e): shatter, confetti, kick, the banner
 
 -- Paint a gate: open or shut for you this run, and whether it carries the sign (your next gate). `moment`: it just
 -- opened in front of you (the crew fell), so it opens with the fanfare.
@@ -183,7 +144,6 @@ local function paint(e, open, signed, moment)
 	local look = STATUS[state]
 	for _, t in e.Status do t.Text = look[1] end
 	if e.Plate then e.Plate.BackgroundColor3 = look[2] end
-	if state ~= was then layout(e, open) end
 	tint(e, nil)
 end
 
@@ -214,96 +174,6 @@ task.spawn(function()
 	while true do
 		repaint()
 		task.wait(0.25)
-	end
-end)
-
--- The sign grows with the distance so it reads from the lobby: base size x clamp((d / GrowFrom)^GrowPow, 1, GrowMax),
--- upward from its foot (it stays clear of the padlock under it), but never past what the openings in front of it leave
--- in view from the camera: the hall's doorway (when you're in the hall), the openings of the gates between you and it,
--- and its own gate's frame outline. Its outlines keep their share of each line's height on your screen (UI2's ~7-11%),
--- so the letters keep a thick dark edge near and far.
-local MARGIN = 0.6
--- Does the sign at scale f stay inside every opening in front of it, as the camera sees it? The sign is a card facing
--- the camera, standing on its foot (map frame); an opening is a rectangle x -half..half, y 0..top in the plane z (map
--- frame) between the camera and the sign: the card's corners, in camera space over depth, must fall inside the
--- opening's corners (its bottom is the ground, which hides the card's foot anyway).
-local function fits(cam, f, w, h, foot, windows)
-	local center = cam:PointToObjectSpace(frame:PointToWorldSpace(foot + Vector3.new(0, h * f / 2, 0)))
-	local depth = -center.Z
-	if depth < 1 then return true end
-	local x0, x1 = (center.X - w * f / 2) / depth, (center.X + w * f / 2) / depth
-	local y1 = (center.Y + h * f / 2) / depth
-	for _, o in windows do
-		local half, top = o[1] - MARGIN, o[2] - MARGIN
-		local lo, hi, roof = -math.huge, math.huge, math.huge
-		for _, k in { { -half, 0 }, { -half, top }, { half, 0 }, { half, top } } do
-			local p = cam:PointToObjectSpace(frame:PointToWorldSpace(Vector3.new(k[1], k[2], o[3])))
-			if -p.Z < 0.5 then return true end -- (an opening beside or behind the camera hides nothing we can judge)
-			local x, y = p.X / -p.Z, p.Y / -p.Z
-			if k[1] < 0 then lo = math.max(lo, x) else hi = math.min(hi, x) end
-			if k[2] > 0 then roof = math.min(roof, y) end
-		end
-		if x0 < lo or x1 > hi or y1 > roof then return false end
-	end
-	return true
-end
--- The largest scale up to f that fits: the hall's doorway (when you're in the hall), the openings of the gates
--- between you and the sign, and its own gate's frame outline (never wider or taller than the frame it stands in).
-local function fit(e, cam, f, w, h, foot)
-	local c = frame:PointToObjectSpace(cam.Position)
-	f = math.min(f, 2 * e.FrameHalf / w, (e.FrameTop - foot.Y) / h)
-	local windows = {}
-	if door and c.Z > door.Z and door.Z > foot.Z then table.insert(windows, { door.Half, door.Top, door.Z }) end
-	for _, o in gates do
-		local z = o.Z and o.Z + 1.5
-		if o ~= e and z and c.Z > z and z > foot.Z then table.insert(windows, { o.OpenHalf, o.OpenTop, z }) end
-	end
-	if f <= 1 or fits(cam, f, w, h, foot, windows) then return math.max(1, f) end
-	local lo, hi = 1, f -- (bisect: the card only gets bigger with f)
-	for _ = 1, 8 do
-		local mid = (lo + hi) / 2
-		if fits(cam, mid, w, h, foot, windows) then lo = mid else hi = mid end
-	end
-	return lo
-end
-local NEAR, NEAR_MIN, NEAR_GONE = 36, 0.45, 9 -- (studs from the camera to the sign)
--- (brief 28) Seen from far (the stage's entry, the lobby) the grown sign's foot meets the tops of the pads' labels in
--- front of its gate: it rises up to LIFT studs from NEAR to NEAR + LIFT_OVER studs away, clear of them.
-local LIFT, LIFT_OVER = 1.6, 30
-local function grow(e, cam)
-	local sign = e.Sign
-	local anchor = sign.Parent
-	if not (anchor and anchor:IsA('BasePart')) then return end
-	local open = e.State == 'Open'
-	local drop = open and OPEN_DROP or 0
-	local at = anchor.CFrame.Position - Vector3.new(0, drop, 0)
-	local d = math.max(1, (cam.CFrame.Position - at).Magnitude)
-	local lift = LIFT * math.clamp((d - NEAR) / LIFT_OVER, 0, 1)
-	at += Vector3.new(0, lift, 0)
-	drop -= lift
-	local w, h = sign:GetAttribute('BaseW') or sign.Size.X.Scale, (sign:GetAttribute('BaseH') or sign.Size.Y.Scale) * (open and OPEN_H or 1)
-	local f = math.clamp((d / (sign:GetAttribute('GrowFrom') or 80)) ^ (sign:GetAttribute('GrowPow') or 1), 1, sign:GetAttribute('GrowMax') or 1)
-	if f > 1 then f = fit(e, cam.CFrame, f, w, h, frame:PointToObjectSpace(at)) end
-	-- (LOOP) Up close the base sign was wider than the screen (cut off under the HUD from the doorway): it shrinks
-	-- inside NEAR studs and is gone as you walk through, like the video's sign fading as you pass.
-	if d < NEAR then f = d <= NEAR_GONE and 0 or math.max(NEAR_MIN, d / NEAR) end
-	if math.abs(f - (e.Grown or 0)) > 0.01 or math.abs(lift - (e.Lift or 0)) > 0.02 then
-		e.Grown, e.Lift = f, lift
-		sign.Size = UDim2.fromScale(w * f, h * f)
-		sign.StudsOffsetWorldSpace = Vector3.new(0, h * f / 2 - drop, 0)
-	end
-	local vh = cam.ViewportSize.Y
-	if vh < 100 then vh = 720 end -- (ViewportSize can read 1 x 1 for a frame at startup)
-	local px = h * f / d * vh / (2 * math.tan(math.rad(cam.FieldOfView) / 2))
-	for _, s in e.Strokes do s[1].Thickness = math.clamp(px * s[2].Size.Y.Scale * (s[2]:GetAttribute('Ink') or 0.1), 1.5, 8) end
-end
-
--- The next gate's sign grows with the distance (every frame while it shows).
-RunService.Heartbeat:Connect(function()
-	local cam = workspace.CurrentCamera
-	if not cam then return end
-	for _, e in gates do
-		if e.Sign and e.Sign.Enabled then grow(e, cam) end
 	end
 end)
 
@@ -433,7 +303,8 @@ local function showBanner(title, detail, color, detailColor)
 	holder.AnchorPoint = Vector2.new(0.5, 0)
 	-- (under Roblox's top bar, the fight's counter and Waves.client's "Hold click to shoot!" line under it)
 	holder.Position = UDim2.new(0.5, 0, 0, 58 + 94 * k)
-	holder.Size = UDim2.fromOffset(480 * k, 86 * k)
+	local plain = detail == '' -- (a banner with no second line, like "STAGE 2 OPEN!")
+	holder.Size = UDim2.fromOffset(480 * k, (plain and 58 or 86) * k)
 	holder.BackgroundTransparency = 1
 	holder:SetAttribute('Title', title)
 	holder.Parent = gui
@@ -458,7 +329,7 @@ local function showBanner(title, detail, color, detailColor)
 	local t = Instance.new('TextLabel')
 	t.Name = 'Title'
 	t.BackgroundTransparency = 1
-	t.Size = UDim2.fromScale(1, 0.6)
+	t.Size = UDim2.fromScale(1, plain and 1 or 0.6)
 	t.FontFace = DISPLAY
 	t.TextScaled = true
 	t.Text = title
@@ -477,6 +348,7 @@ local function showBanner(title, detail, color, detailColor)
 	d.FontFace = DISPLAY
 	d.TextScaled = true
 	d.Text = detail
+	d.Visible = not plain
 	d.TextColor3 = detailColor or C(90, 255, 120)
 	d.Parent = holder
 	local dStroke = stroke(d, C(0, 0, 0), 3.5 * k)
@@ -528,7 +400,7 @@ local function shatter(e)
 end
 
 -- The open moment (the crew before this gate just fell): the haze shatters toward you, confetti, a camera kick, a
--- rising chime and the sign's title pops; the banner says so.
+-- rising chime; the banner says so.
 opened = function(e)
 	shatter(e)
 	local fx = e.Model:FindFirstChild('PassFX', true)
@@ -536,15 +408,9 @@ opened = function(e)
 	Juice.kick(0.45)
 	fovKick()
 	Sound.play(chime, 1 + math.min(e.Stage or 1, 10) * 0.03)
-	local title = e.Sign and e.Sign:FindFirstChild('Title')
-	if title then
-		local s = title:FindFirstChildOfClass('UIScale') or Instance.new('UIScale')
-		s.Parent = title
-		s.Scale = 1.4
-		TweenService:Create(s, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
-	end
+	local title = e.Sign and e.Sign:FindFirstChild('Title') -- (the board itself stays still: the banner says it)
 	local name = title and title:IsA('TextLabel') and title.Text ~= '' and title.Text or ('STAGE ' .. tostring(e.Stage))
-	showBanner(name .. ' OPEN!', 'Cash out on a pad, or walk on!', e.Light, Color3.new(1, 1, 1))
+	showBanner(name .. ' OPEN!', '', e.Light, Color3.new(1, 1, 1))
 end
 -- The boss's crew down (no gate after it): its pads light up.
 player:GetAttributeChangedSignal('RunCleared'):Connect(function()
@@ -573,58 +439,11 @@ local function bump(e, root)
 	if not banner or banner:GetAttribute('Title') ~= why then showBanner(why, "Beat this street's crew to open it", DENIED, Color3.new(1, 1, 1)) end
 end
 
--- A pad paid out (you are back in the lobby): the Cash, big in the middle of the screen in the pads' face (the reference's
--- "+1" trophies rising from you), clear of the goal line at the top: pops in with an overshoot, holds, rises and fades.
-local pop
-local function cashPop(reward, tenX)
-	if pop then pop:Destroy() end
-	local okAbs, abs = pcall(function() return gui.AbsoluteSize end)
-	if not okAbs or typeof(abs) ~= 'Vector2' or abs.X <= 1 then abs = Vector2.new(1280, 720) end
-	local k = (okKit and Kit.scaleFor) and Kit.scaleFor(abs) or 1
-	local holder = Instance.new('Frame')
-	holder.Name = 'CashPop'
-	holder.AnchorPoint = Vector2.new(0.5, 0.5)
-	holder.Position = UDim2.fromScale(0.5, 0.5) -- (the middle: under the goal line and its GOAL DONE moments)
-	holder.Size = UDim2.fromOffset(560 * k, 150 * k)
-	holder.BackgroundTransparency = 1
-	holder.Parent = gui
-	pop = holder
-	local scale = Instance.new('UIScale')
-	scale.Scale = 0.2
-	scale.Parent = holder
-	local function text(name, value, y, h, color, ink)
-		local t = Instance.new('TextLabel')
-		t.Name = name
-		t.BackgroundTransparency = 1
-		t.Position, t.Size = UDim2.fromScale(0, y), UDim2.fromScale(1, h)
-		t.FontFace = Fonts.Number -- (brief 28: was FredokaOne)
-		t.TextScaled = true
-		t.Text = value
-		t.TextColor3 = color
-		t.Parent = holder
-		return t, stroke(t, C(26, 14, 38), ink * k)
-	end
-	local big, bigInk = text('Amount', '+' .. Format.compact(reward) .. ' Cash', 0, 0.66, Color3.new(1, 1, 1), 6)
-	local g = Instance.new('UIGradient')
-	g.Color = ColorSequence.new(C(255, 246, 150), C(255, 196, 24))
-	g.Rotation = 90
-	g.Parent = big
-	local small, smallInk = text('Detail', tenX and '10x Cash! Run banked' or 'Run banked! Spend it, then go again', 0.68, 0.3, Color3.new(1, 1, 1), 3.5)
-	TweenService:Create(scale, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
-	task.delay(1.9, function()
-		if pop ~= holder then return end
-		local fade = TweenInfo.new(0.55, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
-		TweenService:Create(holder, fade, { Position = UDim2.fromScale(0.5, 0.4) }):Play()
-		for _, x in { big, small } do TweenService:Create(x, fade, { TextTransparency = 1 }):Play() end
-		for _, x in { bigInk, smallInk } do TweenService:Create(x, fade, { Transparency = 1 }):Play() end
-		task.delay(0.6, function() if pop == holder then holder:Destroy(); pop = nil end end)
-	end)
-end
+-- A pad paid out (you are back in the lobby): the Cash just joins the balance (HUD.client ticks the counter; brief 29: no
+-- big "+10 Cash" in the middle of the screen any more), with a small gold burst over you.
 Net.get('Cinematic').OnClientEvent:Connect(function(info)
 	if type(info) ~= 'table' or info.Kind ~= 'CashOut' then return end
-	local reward = type(info.Reward) == 'number' and info.Reward or 0
 	local gold = C(255, 214, 40)
-	cashPop(reward, info.TenX == true)
 	task.delay(0.15, function()
 		local character = player.Character
 		local root = character and character:FindFirstChild('HumanoidRootPart')

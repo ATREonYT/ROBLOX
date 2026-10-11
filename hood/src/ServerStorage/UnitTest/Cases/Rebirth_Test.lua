@@ -106,11 +106,11 @@ return function(t)
    end
   end
  end)
- t.test('lane labels read like the reference: rebirths or the Robux price / Unlocked or Locked / xN Power',function()
-  local top,state,power=R.laneLabel(Skins.StationById.Tape,true);t.expect.equal(top,'2');t.expect.equal(state,'Unlocked');t.expect.equal(power,'x4 Power')
-  top,state,power=R.laneLabel(Skins.StationById.Starter,true);t.expect.equal(top,'0');t.expect.equal(power,'x1 Power')
+ t.test('lane labels read like the reference: rebirths or the Robux price / Unlocked or Locked / Nx Power',function()
+  local top,state,power=R.laneLabel(Skins.StationById.Tape,true);t.expect.equal(top,'2');t.expect.equal(state,'Unlocked');t.expect.equal(power,'4x Power')
+  top,state,power=R.laneLabel(Skins.StationById.Starter,true);t.expect.equal(top,'0');t.expect.equal(power,'1x Power')
   local price
-  top,state,power,price=R.laneLabel(Skins.StationById.Gold,false);t.expect.equal(top,R.RobuxMark..'249');t.expect.equal(state,'Locked');t.expect.equal(power,'x250 Power');t.expect.equal(price,249)
+  top,state,power,price=R.laneLabel(Skins.StationById.Gold,false);t.expect.equal(top,R.RobuxMark..'249');t.expect.equal(state,'Locked');t.expect.equal(power,'250x Power');t.expect.equal(price,249)
   top,_,_,price=R.laneLabel(Skins.StationById.Pro,false);t.expect.equal(top,R.RobuxMark..'99');t.expect.equal(price,99)
   -- the Robux sign is U+E002 (Roblox fonts draw it as the Robux icon), the same one the pads' price uses
   t.expect.equal(R.RobuxMark,utf8.char(0xE002));t.expect.equal(top,'\u{E002}99')

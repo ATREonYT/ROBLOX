@@ -1319,6 +1319,21 @@ do
 					dirty = true -- (its turn to build comes next frame)
 				end
 			end
+			-- (brief 29, the user: "the shoe pictures in the inventory are gone") a cell that is on screen but still has no live
+			-- model after 2 s (a build that never came, a viewport that did not show) draws its flat picture instead of an
+			-- empty splat
+			if e.Inside and not e.Live then
+				e.Waiting = e.Waiting or clock
+				if clock - e.Waiting > 2 then
+					showFlat(h, e, true)
+					if not e.Warned then
+						e.Warned = true
+						warn('[UIKit] model3d ' .. tostring(e.Kind) .. ' ' .. tostring(e.Id) .. ' is on screen but not live after 2 s (model built: ' .. tostring(e.Model ~= nil) .. ', failed: ' .. tostring(e.Failed == true) .. ', cap ' .. tostring(stats.Cap) .. '): showing its flat picture')
+					end
+				end
+			else
+				e.Waiting = nil
+			end
 		end
 		stats.Live, stats.Parts, stats.PartsFull, stats.Over, stats.Budget = live, parts, partsFull, over, budget
 		-- free the models longest unseen past the keep
@@ -1331,6 +1346,7 @@ do
 			for i = 1, math.min(#idle, stats.Built - Kit.Model3DKeep) do free(idle[i]) end
 		end
 	end
+	local failedPasses = 0
 	local moving = setmetatable({}, { __mode = 'k' }) -- holder -> true while it spins or eases back
 	local function step(dt)
 		dt = math.min(tonumber(dt) or 0, 0.1)
@@ -1339,7 +1355,20 @@ do
 		if dirty or acc >= Kit.Model3DCheck then
 			dirty, acc = false, 0
 			local ok, err = pcall(pass)
-			if not ok then warn('[UIKit] model3d: ' .. tostring(err)) end
+			if not ok then
+				warn('[UIKit] model3d: ' .. tostring(err))
+				-- (brief 29) a pass that keeps failing leaves every cell as it was, empty: after the second failure in a row they
+				-- all fall back to their flat pictures (and stay there)
+				failedPasses += 1
+				if failedPasses >= 2 then
+					for h, e in registry do
+						e.Failed = true
+						pcall(showFlat, h, e, true)
+					end
+				end
+			else
+				failedPasses = 0
+			end
 		end
 		for h in moving do
 			local e = registry[h]

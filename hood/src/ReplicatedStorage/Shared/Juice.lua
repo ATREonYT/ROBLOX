@@ -80,20 +80,36 @@ end
 
 ---------------------------------------------------------------------------------------------- camera shake
 -- Spring-driven camera bump: kick() pushes the offset; it rings out on its own. One shared controller.
-local shake = { x = Vector3.zero, v = Vector3.zero, bound = false }
+-- (brief 29: every shot used to tilt the camera down a little more.) Roblox's own camera scripts read the camera's last
+-- CFrame to find where you look, so an offset left on it every frame was fed back and added up (a creep that never
+-- returned). The offset is now taken off again just before the camera scripts run each frame (UNDO, one step before
+-- them), so they only ever see the camera you steer; the kick is put on after them and is gone once it rings out.
+local shake = { x = Vector3.zero, v = Vector3.zero, bound = false, undo = false, applied = CFrame.identity }
 function Juice.kick(amount)
 	local a = amount or 0.4
 	-- Units are degrees of camera tilt: a 0.4 kick peaks near 0.6 degrees, a big 0.9 kick near 1.3.
 	shake.v += Vector3.new((math.random() - 0.5) * 2, math.random() * 0.6 + 0.4, 0) * a * 120
+	if not shake.undo then
+		shake.undo = true -- (bound once, for good: a compare and nothing else while no kick is ringing)
+		RunService:BindToRenderStep('HoodCameraKickUndo', Enum.RenderPriority.Camera.Value - 1, function()
+			local cam = workspace.CurrentCamera
+			if cam and shake.applied ~= CFrame.identity then cam.CFrame = cam.CFrame * shake.applied:Inverse() end
+			shake.applied = CFrame.identity
+		end)
+	end
 	if not shake.bound then
 		shake.bound = true
 		RunService:BindToRenderStep('HoodCameraKick', Enum.RenderPriority.Camera.Value + 1, function(dt)
 			shake.x, shake.v = Juice.springStep(shake.x, shake.v, Vector3.zero, 7, 0.35, dt)
 			local cam = workspace.CurrentCamera
-			cam.CFrame *= CFrame.new(shake.x.X * 0.12, shake.x.Y * 0.12, 0) * CFrame.Angles(math.rad(shake.x.Y * 1.5), 0, math.rad(shake.x.X * 1.2))
+			if cam then
+				shake.applied = CFrame.new(shake.x.X * 0.12, shake.x.Y * 0.12, 0) * CFrame.Angles(math.rad(shake.x.Y * 1.5), 0, math.rad(shake.x.X * 1.2))
+				cam.CFrame *= shake.applied
+			end
 			if shake.x.Magnitude < 1e-3 and shake.v.Magnitude < 1e-3 then
+				shake.x, shake.v = Vector3.zero, Vector3.zero
 				RunService:UnbindFromRenderStep('HoodCameraKick')
-				shake.bound = false
+				shake.bound = false -- (the undo step takes this last, tiny offset off on the next frame)
 			end
 		end)
 	end
@@ -417,7 +433,8 @@ function Juice.gunRig(tool)
 	})
 	local light = Instance.new('PointLight')
 	light.Name = 'FlashLight'
-	light.Range, light.Brightness, light.Shadows, light.Enabled = 10, 3, false, false
+	-- (brief 29: a hint of light on the gun and the hand, not a spotlight on the legs and the floor)
+	light.Range, light.Brightness, light.Shadows, light.Enabled = 5, 0.45, false, false
 	light.Parent = muzzle
 	rig.light = light
 	return rig

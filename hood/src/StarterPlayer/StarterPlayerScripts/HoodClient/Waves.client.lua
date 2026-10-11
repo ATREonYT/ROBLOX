@@ -530,7 +530,7 @@ local function shoot()
 	Juice.tracer(from, to, gun.Color, 0.18 + gun.Tier * 0.015)
 	if rig and rig.eject then Juice.casing(worldOf(rig.eject)) end
 	if tool then kick(tool, 0.8 + gun.Tier * 0.05) end
-	Juice.kick(0.06 + gun.Tier * 0.012)
+	Juice.kick(0.035 + gun.Tier * 0.006) -- (brief 29: tiny, and it returns)
 	Juice.burst(to, gun.Color, 0.8)
 	if v.Rig then Juice.flash(v.Rig.Model) end
 	v.FlinchV += 7

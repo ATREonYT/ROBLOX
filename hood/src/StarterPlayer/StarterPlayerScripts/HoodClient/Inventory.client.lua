@@ -57,12 +57,12 @@ W.Overlay.Visible = false
 local backdrop = Kit.new('TextButton', { Name = 'Backdrop', Text = '', AutoButtonColor = false, BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 20, Parent = W.Overlay })
 Kit.new('TextButton', { Name = 'Sink', Text = '', AutoButtonColor = false, BackgroundTransparency = 1, Position = px(L.Fit.X, 0), Size = px(L.W, L.H), ZIndex = 21, Parent = W.Pop })
 
-local state = { Tab = 'Shoes', Index = false, Delete = false, Query = '' }
+local state = { Tab = 'Shoes', Index = false, Delete = false, Fav = false, Sort = 'Best', Query = '' }
 local isOpen = false
 
 ---------------------------------------------------------------------------------------------- small helpers
 local function myRack()
-	return ShoeRules.fromAttributes(player:GetAttribute('ShoesOwned'), player:GetAttribute('ShoesEquipped'), player:GetAttribute('ShoesOpened'))
+	return ShoeRules.fromAttributes(player:GetAttribute('ShoesOwned'), player:GetAttribute('ShoesEquipped'), player:GetAttribute('ShoesOpened'), player:GetAttribute('ShoesFavorites'))
 end
 local function shoeName(id) local s = Shoes.ById[id]; return s and s.Name or tostring(id) end
 -- Odds as people read them: "62%", "9.5%", "0.45%", "0.5%" (no trailing zeros).
@@ -313,7 +313,7 @@ local function paintShoes()
 		end)
 	end
 	IK.divider(page, { Name = 'Line2', Fade = 'both', Position = px(L.Outline + 6, L.Line2Y), Size = px(L.W - 2 * (L.Outline + 6), 7), ZIndex = 25 })
-	local all = IK.stack(rack)
+	local all = IK.sorted(IK.stack(rack), state.Sort, rack) -- (brief 29: stars first, then the sort you picked)
 	local list = IK.search(all, state.Query)
 	local g, rowOf = gridRows(list)
 	if ShoeRules.count(rack) == 0 then
@@ -325,6 +325,7 @@ local function paintShoes()
 		local id = e.Id
 		local rowFrame, row, col, slotPos = rowOf(order)
 		local canRecycle = ShoeRules.canRecycle(rack, id)
+		local starred = rack.Favorites ~= nil and rack.Favorites[id] == true
 		local value = ShoeRules.bonusText(Shoes.bonus(id))
 		local valueColor
 		if state.Delete then
@@ -333,7 +334,7 @@ local function paintShoes()
 			elseif canRecycle then
 				value, valueColor = '+' .. Format.compact(ShoeRules.refund(id)), hex('7CFF4F')
 			else
-				value, valueColor = 'On', hex('B8C0CC')
+				value, valueColor = starred and 'Starred' or 'On', hex('B8C0CC')
 			end
 		end
 		local holder, hit = IK.slot(shoeSlot(id, {
@@ -343,6 +344,14 @@ local function paintShoes()
 		Kit.model3dItemHover(row, col, hit)
 		if stickers[id] then
 			label({ Name = 'New', Text = 'NEW!', TextSize = 20, TextColor3 = hex('7CFF4F'), AnchorPoint = Vector2.new(0.5, 0.5), Position = px(30, 18), Size = px(60, 24), Rotation = -10, ZIndex = 35, Parent = holder })
+		end
+		if starred then
+			-- (brief 29) a starred pair: a gold star at the slot's top left; it is kept out of Recycle
+			local star = Kit.hasIcon('Favorite') and IK.icon({ 'Favorite' }, 40, { ZIndex = 36 }) or label({ Name = 'Star', Text = '★', TextSize = 38, StrokeThickness = 3, TextColor3 = hex('FFD21A'), Size = px(40, 40), ZIndex = 36 })
+			star.Name = 'Star'
+			star.AnchorPoint = Vector2.new(0.5, 0.5)
+			star.Position = px(22, 22)
+			star.Parent = holder
 		end
 		if state.Delete and canRecycle then
 			-- the reference's red X block, small, on every pair you could recycle
@@ -354,9 +363,13 @@ local function paintShoes()
 			show()
 			spinFor(row, nil, col)
 			press(holder)
+			if state.Fav then
+				Net.get('ShoeAction'):FireServer('Favorite', id) -- (the star turns on or off; ShoeFavorites answers with ShoesFavorites)
+				return
+			end
 			if state.Delete then
 				if not canRecycle then
-					say("It's on!")
+					say(starred and 'Starred: kept!' or "It's on!")
 				elseif confirm.Id == id and os.clock() < confirm.Until then
 					confirm.Id = nil
 					Net.get('ShoeAction'):FireServer('Recycle', id)
@@ -838,24 +851,60 @@ do
 	end
 	make('Delete', 'Delete', B.W / 2 - B.Gap / 2, drawnX, function()
 		state.Delete = not state.Delete
+		if state.Delete then state.Fav = false end
 		confirm.Id = nil
 		saying += 1
 		sayLabel.Text = ''
 		refresh(true)
 	end)
+	-- (brief 29) the star is now the favourites mode (it used to be Equip Best, with no word on it): while it is lit, tapping
+	-- a pair stars or unstars it; starred pairs sit first and are kept out of Recycle
 	make('Favorite', 'Favorite', B.W / 2 + B.Gap / 2, drawnStar, function()
+		state.Fav = not state.Fav
+		if state.Fav then state.Delete = false end
+		confirm.Id = nil
+		saying += 1
+		sayLabel.Text = ''
+		if state.Fav then say('Tap a pair to star it', hex('FFD84A')) end
+		refresh(true)
+	end)
+end
+-- (brief 29, the user: "equip best, rarity, favourites buttons in the ui for the shoes") the words on the buttons: EQUIP
+-- BEST (green) and SORT (blue, one tap to the next order) sit in the gap between the Index button and the bar under the
+-- window, on Your Shoes only; the star and the red X on the bar stay as the favourites and recycle modes.
+local actions = {}
+do
+	local B = L.Bar
+	local x0, gap = L.Index.X + L.Index.W + 14, 12
+	local w = math.floor((B.X - x0 - gap - 8) / 2)
+	local best, bestHit = Kit.blockButton({ Name = 'EquipBest', Tone = 'lime', OutlineColor = Kit.Tone.lime.stroke, Width = w, Height = 64, Text = 'Equip Best', TextSize = 28, Studs = false, Outline = 4, Position = px(L.Fit.X + x0, B.Y + 6), ZIndex = 22 })
+	best.Parent = W.Pop
+	local sortBtn, sortHit = Kit.blockButton({ Name = 'SortBy', Tone = IK.Tone.index, OutlineColor = IK.Color.navy, Width = w, Height = 64, Text = 'Sort: Best', TextSize = 26, Studs = false, Outline = 4, Position = px(L.Fit.X + x0 + w + gap, B.Y + 6), ZIndex = 22 })
+	sortBtn.Parent = W.Pop
+	actions.Best, actions.Sort, actions.SortHit = best, sortBtn, sortHit
+	bestHit.Activated:Connect(function()
+		Motion.pop(best, 0.18)
 		local rack = myRack()
-		local best, now = ShoeRules.best(rack, maxEquipped()), ShoeRules.equippedList(rack)
-		local same = #best == #now
-		for i, id in best do if now[i] ~= id then same = false end end
-		if #best == 0 then
+		local top, now = ShoeRules.best(rack, maxEquipped()), ShoeRules.equippedList(rack)
+		local same = #top == #now
+		for i, id in top do if now[i] ~= id then same = false end end
+		if #top == 0 then
 			say('No shoes yet!')
 		elseif same then
 			say('Best pairs on!')
 		else
-			state.Delete = false
+			state.Delete, state.Fav = false, false
 			Net.get('ShoeAction'):FireServer('EquipBest')
 		end
+	end)
+	sortHit.Activated:Connect(function()
+		Motion.pop(sortBtn, 0.18)
+		local modes = IK.SortModes
+		local at = table.find(modes, state.Sort) or 1
+		state.Sort = modes[at % #modes + 1]
+		local text = sortBtn.Body:FindFirstChild('Label')
+		if text and text:IsA('TextLabel') then text.Text = 'Sort: ' .. state.Sort end
+		refresh(true)
 	end)
 end
 
@@ -873,24 +922,28 @@ local function paintChrome()
 		W.SetIcon(HEADER_ICONS[want] or { 'Backpack' })
 	end
 	W.Bar.Visible = state.Tab == 'Shoes' and not state.Index
+	if actions.Best then actions.Best.Visible, actions.Sort.Visible = W.Bar.Visible, W.Bar.Visible end
 	W.Index.Visible = state.Tab == 'Shoes' or state.Index -- (brief 24: the Index is your shoes'; the other tabs stay clean)
 	-- (CRITIC4 r1) the Guns tab shows one gun: no Search box there
 	if W.Search and W.Search.Parent then W.Search.Parent.Visible = state.Index or state.Tab ~= 'Guns' end
 	local idxLabel = W.Index.Body:FindFirstChild('Label')
 	if idxLabel then idxLabel.Text = state.Index and 'Back' or 'Index' end
-	-- recycle mode: the red X block is lit (a bright glow behind it, bigger, tilted) while it's on; no words
-	local del = barButtons.Delete
-	if del then
-		local s = Motion.scaleOf(del)
-		s.Scale = state.Delete and 1.2 or 1
-		del.Rotation = state.Delete and -10 or 0
-		local glow = del:FindFirstChild('Glow')
-		if state.Delete and not glow then
-			glow = blank({ Name = 'Glow', BackgroundTransparency = 0.35, BackgroundColor3 = hex('FFE24A'), AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(1.25, 1.25), ZIndex = 29, Parent = del })
-			Kit.corner(UDim.new(0.5, 0)).Parent = glow
-			Kit.stroke(Kit.Color.black, 3, true).Parent = glow
-		elseif not state.Delete and glow then
-			glow:Destroy()
+	-- recycle mode / favourites mode: the red X block / the star is lit (a bright glow behind it, bigger, tilted) while it's
+	-- on; no words
+	for name, on in { Delete = state.Delete, Favorite = state.Fav } do
+		local btn = barButtons[name]
+		if btn then
+			local s = Motion.scaleOf(btn)
+			s.Scale = on and 1.2 or 1
+			btn.Rotation = on and -10 or 0
+			local glow = btn:FindFirstChild('Glow')
+			if on and not glow then
+				glow = blank({ Name = 'Glow', BackgroundTransparency = 0.35, BackgroundColor3 = hex('FFE24A'), AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(1.25, 1.25), ZIndex = 29, Parent = btn })
+				Kit.corner(UDim.new(0.5, 0)).Parent = glow
+				Kit.stroke(Kit.Color.black, 3, true).Parent = glow
+			elseif not on and glow then
+				glow:Destroy()
+			end
 		end
 	end
 	paintTabs()
@@ -903,7 +956,7 @@ local function keyNow()
 		local fresh = {}
 		for id in stickers do table.insert(fresh, id) end
 		table.sort(fresh)
-		return 'shoes|' .. tostring(player:GetAttribute('ShoesMax')) .. tostring(player:GetAttribute('Pass_ExtraEquip')) .. '|' .. tostring(player:GetAttribute('ShoesOwned')) .. '|' .. tostring(player:GetAttribute('ShoesEquipped')) .. '|' .. state.Query .. '|' .. tostring(state.Delete) .. '|' .. tostring(confirm.Id) .. '|' .. table.concat(fresh, ',')
+		return 'shoes|' .. tostring(player:GetAttribute('ShoesMax')) .. tostring(player:GetAttribute('Pass_ExtraEquip')) .. '|' .. tostring(player:GetAttribute('ShoesOwned')) .. '|' .. tostring(player:GetAttribute('ShoesEquipped')) .. '|' .. state.Query .. '|' .. tostring(state.Delete) .. '|' .. tostring(state.Fav) .. '|' .. state.Sort .. '|' .. tostring(player:GetAttribute('ShoesFavorites')) .. '|' .. tostring(confirm.Id) .. '|' .. table.concat(fresh, ',')
 	end
 	if state.Tab == 'Guns' then
 		return 'guns|' .. tostring(player:GetAttribute('OwnedGuns')) .. '|' .. tostring(player:GetAttribute('EquippedGun')) .. '|' .. tostring(gunView) .. '|' .. state.Query
@@ -948,7 +1001,7 @@ selectTab = function(id)
 	local was = state.Tab
 	state.Tab = id
 	state.Index = false
-	if id ~= 'Shoes' then state.Delete = false end
+	if id ~= 'Shoes' then state.Delete, state.Fav = false, false end
 	if id == 'Shoes' and was ~= 'Shoes' then lookAtShoes() end
 	refresh(true)
 end
@@ -957,7 +1010,7 @@ end
 local function close()
 	if not isOpen then return end
 	isOpen = false
-	state.Delete = false
+	state.Delete, state.Fav = false, false
 	confirm.Id = nil
 	table.clear(stickers)
 	Motion.blur('Inventory', false)
@@ -1031,7 +1084,7 @@ Net.get('ShoeOpened').OnClientEvent:Connect(function(info)
 	for _ in newIds do count += 1 end
 	playerGui:SetAttribute('ShoesNew', count)
 end)
-local watched = { 'ShoesOwned', 'ShoesEquipped', 'ShoesMax', 'OwnedGuns', 'EquippedGun', 'Cash', 'BoostQueue', 'PowerBoost', 'BoostEnds', 'PartyEnds' }
+local watched = { 'ShoesOwned', 'ShoesEquipped', 'ShoesFavorites', 'ShoesMax', 'OwnedGuns', 'EquippedGun', 'Cash', 'BoostQueue', 'PowerBoost', 'BoostEnds', 'PartyEnds' }
 for key in Products.Passes do table.insert(watched, 'Pass_' .. key) end
 for _, key in watched do
 	player:GetAttributeChangedSignal(key):Connect(function()

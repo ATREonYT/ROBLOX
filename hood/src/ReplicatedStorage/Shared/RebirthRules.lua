@@ -132,7 +132,7 @@ function RebirthRules.laneLabel(station: any, open: boolean?): (string, string, 
 	if type(station) ~= 'table' then return '', '', '', nil end
 	local robux = RebirthRules.lanePass(station) ~= nil and type(station.RobuxPrice) == 'number'
 	local top = robux and (RebirthRules.RobuxMark .. tostring(station.RobuxPrice)) or tostring(RebirthRules.laneNeed(station))
-	return top, open and 'Unlocked' or 'Locked', 'x' .. tostring(station.Multiplier) .. ' Power', robux and station.RobuxPrice or nil
+	return top, open and 'Unlocked' or 'Locked', tostring(station.Multiplier) .. 'x Power', robux and station.RobuxPrice or nil
 end
 
 -- Walk speed with n rebirths.

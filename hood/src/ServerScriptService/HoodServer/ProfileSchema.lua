@@ -24,7 +24,7 @@ Schema.Template={
  -- Shoes from the shoe boxes (Shared/ShoeRules): pairs owned by id ({[id]=copies}), the equipped ids (up to 3; the
  -- best is worn, the others follow you) and how many boxes you have opened. Goals.Chain = GoalRules.Chain (a goal
  -- inserted into the chain moves older saves' steps; GoalRules.migrate).
- Shoes={Owned={},Equipped={},Opened=0},
+ Shoes={Owned={},Equipped={},Opened=0,Favorites={}},
  -- (brief 27) The Store's codes used: {[CODE]=os.time used} (HoodServer/Codes: each code once per player).
  Codes={},
 }

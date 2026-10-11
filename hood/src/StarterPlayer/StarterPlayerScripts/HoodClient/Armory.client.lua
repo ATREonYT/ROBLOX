@@ -225,7 +225,7 @@ local function bind(model)
 	if old then old:Destroy() end
 	local prompt = Instance.new('ProximityPrompt')
 	prompt.Name = 'GunPrompt'
-	prompt.ObjectText = gun.Name .. '  (x' .. gun.Multiplier .. ' Power)'
+	prompt.ObjectText = gun.Name -- (brief 29: just the name; the stand's label shows the Power, so the prompt can be small)
 	-- (short: the prompt comes up when you step onto the pad, not from the next one)
 	prompt.MaxActivationDistance = 6
 	prompt.RequiresLineOfSight = false
