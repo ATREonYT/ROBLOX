@@ -96,7 +96,7 @@ local function gunMultiplier() return num('GunMultiplier', Guns.multiplier(playe
 local function totalMultiplier()
 	local v = num('ShotMultiplier', nil)
 	if v and v > 0 then return v end
-	return rebirthMultiplier() * gunMultiplier() * math.max(1, num('ShoeMultiplier', 1)) * (player:GetAttribute('Pass_DoubleRep') == true and 2 or 1)
+	return rebirthMultiplier() * gunMultiplier() * math.max(1, num('ShoeMultiplier', 1)) * (player:GetAttribute('Pass_DoubleRep') == true and 2 or 1) * (1 + num('FriendBoost', 0))
 end
 -- 2 -> "2x", 2.25 -> "2.3x", 1234 -> "1.2Kx"
 local function times(x)
@@ -135,6 +135,44 @@ local function openStore(at)
 		toast('The Store is loading...', 'blue')
 	end
 end
+
+-- (brief 29, P5, "Robux: ?") The side pass buttons show "?" for their price at first. A tap opens Roblox's own purchase
+-- prompt, which ALWAYS shows the real price (nothing here hides it from the buyer); once that prompt is over, bought or
+-- declined, our button shows the real price from then on. With no live prompt to open (the item has no id yet) the price
+-- shows at once. The in-world boards and the Store never use this: they always show their prices.
+local revealed = {} -- [key] = true once our UI shows the real price
+local teasers = {} -- [key] = { Hidden, Shown }
+local function paintTeaser(key)
+	local t = teasers[key]
+	if not t then return end
+	t.Hidden.Visible = revealed[key] ~= true
+	t.Shown.Visible = revealed[key] == true
+end
+local function teaserPrice(key, size, props, parent)
+	local entry = Products.ByKey[key]
+	local hidden = Kit.only('?', size, props)
+	local shown = Kit.only(entry.Price, size, props)
+	hidden.Parent = parent
+	shown.Parent = parent
+	teasers[key] = { Hidden = hidden, Shown = shown }
+	paintTeaser(key)
+end
+local function teaserBuy(key)
+	if not revealed[key] and not Products.canBuy(key) then
+		revealed[key] = true
+		paintTeaser(key)
+	end
+	buy(key)
+end
+pcall(function()
+	MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(_, id)
+		local key = Products.keyFor('Pass', id)
+		if key and teasers[key] and not revealed[key] then
+			revealed[key] = true
+			paintTeaser(key)
+		end
+	end)
+end)
 
 ---------------------------------------------------------------------------------------------- screen
 -- (brief 19 r7) Kit.HidePlayerList (the user's call, default off): the reference shows no player list. CoreGui calls can
@@ -184,6 +222,7 @@ local column = Kit.new('Frame', { Name = 'Actions', BackgroundTransparency = 1, 
 local columnScale = Kit.new('UIScale', { Parent = column }) -- (phones: a little smaller, clear of the thumbstick)
 local actions = {} -- filled with the button callbacks once the windows exist
 local function call(name) return function() if actions[name] then actions[name]() end end end
+local storeBadge -- (the Shop's "!")
 
 local function actionButton(props)
 	local holder, hit, icon, caption = Kit.actionButton(props)
@@ -192,7 +231,7 @@ local function actionButton(props)
 	return holder, icon, caption, hit
 end
 -- (UICRITIC2 r1 #3: the ref's Store block has no dark inner line, its pale rim runs into the fill; the squares keep it)
-local storeButton = actionButton({ Name = 'Store', Tone = 'gold', Width = WIDE_W, Height = WIDE_H, Position = px(0, 0), Text = 'Store', TextSize = 24, LabelY = 0.72, Icon = iconOr('Basket', 'Shop'), Place = 'storeBar', InnerLine = false, OnClick = call('Store') })
+local storeButton = actionButton({ Name = 'Store', Tone = 'gold', Width = WIDE_W, Height = WIDE_H, Position = px(0, 0), Text = 'Shop', TextSize = 24, LabelY = 0.72, Icon = iconOr('Basket', 'Shop'), Place = 'storeBar', InnerLine = false, OnClick = call('Store') })
 do
 	-- (brief 23, HOOK) nothing for sale flashes while a new player settles in: no shine while OnboardingQuiet is on (the
 	-- onboarding's first 300 s of play). The HUD opens no window by itself, and the offer cards never pulse.
@@ -208,6 +247,16 @@ do
 	end
 	player:GetAttributeChangedSignal('OnboardingQuiet'):Connect(paintShine)
 	paintShine()
+end
+-- (brief 29, P5, hud_buttons_skins) the Shop's rainbow "!": only while there is something you have not looked at yet this
+-- session (the Store's first open clears it), never a fake alarm.
+do
+	local badge = Kit.sticker(storeButton, { Name = 'Badge', Text = '!', TextSize = 40, TextColor3 = hex('FF3A1A'), AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(1, -4, 0, 6), Width = 40, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 9 })
+	Kit.new('UIGradient', { Rotation = 45, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, hex('FF4A4A')), ColorSequenceKeypoint.new(0.35, hex('FFD21A')), ColorSequenceKeypoint.new(0.65, hex('4AE04A')), ColorSequenceKeypoint.new(1, hex('4A9BFF')) }), Parent = badge })
+	playerGui:GetAttributeChangedSignal('HoodWindow'):Connect(function()
+		if playerGui:GetAttribute('HoodWindow') == 'Store' then badge.Visible = false end
+	end)
+	storeBadge = badge
 end
 actionButton({ Name = 'World', Tone = 'grass', Width = SQ, Height = SQ, Position = px(GRID_X, ROW1), Text = 'World', TextSize = 22, Icon = iconOr('World', 'Evolve'), Place = 'hud', OnClick = call('World') })
 local rebirthButton = actionButton({ Name = 'Rebirth', Tone = 'coral', Width = SQ, Height = SQ, Position = px(COL2, ROW1), Text = 'Rebirth', TextSize = 19, Icon = 'Rebirth', Place = 'hud', OnClick = call('Rebirth') })
@@ -310,9 +359,8 @@ local function offerCard(key, i, tone, iconId)
 	label({ Name = 'Title', Text = title, TextSize = Kit.fitSize(title, 33, OFFER_W - 24, 14), StrokeThickness = 4, Position = px(4, -1), Size = UDim2.new(1, -8, 1, 0), ZIndex = 7, Parent = holder.Body })
 	hit.Position = px(0, -8)
 	hit.Size = UDim2.new(1, 0, 1, 20)
-	local only = Kit.only(entry.Price, 24, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 1, 1), ZIndex = 8 })
-	only.Parent = holder
-	Motion.button(holder, function() buy(key) end)
+	teaserPrice(key, 24, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 1, 1), ZIndex = 8 }, holder)
+	Motion.button(holder, function() teaserBuy(key) end)
 	return holder
 end
 -- (ICONS' 2x Cash / 2x Power card art once uploaded; the bill stack and the arm until then)
@@ -392,12 +440,13 @@ for i, key in PACKS do
 	price.Parent = holder
 	Motion.button(holder, function() buy(key) end)
 end
-local function paintPacks(need)
+local function paintPacks(need, power)
 	-- (brief 23: one number size on all three, like the reference's "+1B / +10B / +100B": the longest one decides)
+	-- (brief 29, P5: the amount is the larger of the rebirth-based one and a share of your Power now, as the server grants it)
 	local size = 26
 	for _, key in PACKS do
 		local l = packLabels[key]
-		l.Text = '+' .. short(Products.powerAmount(key, need))
+		l.Text = '+' .. short(Products.powerAmount(key, need, power))
 		size = math.min(size, Kit.fitSize(l.Text, 26, PACK_W - 50, 12))
 	end
 	for _, key in PACKS do packLabels[key].TextSize = size end
@@ -410,8 +459,8 @@ do
 		holder.Parent = status
 		-- (the reference's 2x Speed price is all lime: ONLY, the mark and the number)
 		local lime = ColorSequence.new(hex('8CFF5A'), hex('5EE83A'))
-		Kit.only(entry.Price, 19, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 1, 1), ZIndex = 8, OnlyColors = lime, MarkColor = hex('7DF04E'), PriceColors = lime }).Parent = holder
-		Motion.button(holder, function() buy('AutoShoot') end)
+		teaserPrice('AutoShoot', 19, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 1, 1), ZIndex = 8, OnlyColors = lime, MarkColor = hex('7DF04E'), PriceColors = lime }, holder)
+		Motion.button(holder, function() teaserBuy('AutoShoot') end)
 	end
 end
 
@@ -797,28 +846,180 @@ quest.Update = fillQuest
 end -- (Quest window: its locals stay inside, under the 200-local limit Roblox Studio enforces)
 
 do
----------------------------------------------------------------- REWARDS
-local rewards = makePanel('Rewards', 'Rewards', 'Rewards', 'headerCyan', 900, 560, nil, false)
--- (brief 19 r7, UICRITIC P3-15) big studded day cards that fill the body like the Store's (4 + 3, Day 7 a wide gold
--- one), one short line, no grey placeholder button.
-local DAY_W, DAY_H, DAY_GAP = 140, 166, 16
-local days = Kit.new('Frame', { Name = 'Days', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 6), Size = px(4 * DAY_W + 3 * DAY_GAP, 2 * DAY_H + DAY_GAP), ZIndex = 24, Parent = rewards.Well })
--- The day tiles hold icons, so they are built the first time the window opens.
-rewards.Open = function()
-	if days:FindFirstChild('Day1') then return end
+---------------------------------------------------------------- REWARDS (the Daily Rewards, brief 29, P5: the reference's window)
+-- Seven navy cards with a rarity-coloured border (blue, purple, red), "Day N" over the reward and what it is under it; a
+-- claimed day wears a big green tick, today's says "Claim!", Day 7 is the tall card; "Reward ready to claim!" under them.
+-- Everything comes from the server (RetentionService 'State'; the numbers are Shared/RetentionRules and are the ones granted).
+-- After a missed day: "Restore streak" (a small Robux product, its real price on the button) or start again at Day 1.
+local rewards = makePanel('Rewards', 'Daily Rewards', 'Rewards', 'headerCyan', 940, 690, 64, false)
+local CARD_W, CARD_H, CARD_GAP, BIG_W = 184, 170, 12, 230
+local DAYS_W, DAYS_H = 3 * CARD_W + 3 * CARD_GAP + BIG_W, 2 * CARD_H + CARD_GAP
+local days = Kit.new('Frame', { Name = 'Days', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 6), Size = px(DAYS_W, DAYS_H), ZIndex = 24, Parent = rewards.Well })
+local RARITY = { blue = hex('3FA9FF'), purple = hex('A455FF'), red = hex('FF4A3A') }
+local CARD_TONE = { top = hex('243C7C'), base = hex('1A2A5E'), lip = hex('2C4690'), stroke = hex('0B1230') }
+local readyLine = fillText(label({ Name = 'Ready', Text = '', TextSize = 40, StrokeThickness = 5, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, DAYS_H + 12), Size = px(820, 48), ZIndex = 26, Parent = rewards.Well }), hex('B8FF5A'), hex('4FD81A'))
+local noteLine = body(rewards.Well, '', { Name = 'Note', TextSize = 19, Position = px(18, DAYS_H + 64), Size = UDim2.new(1, -300, 0, 50), Align = Enum.TextXAlignment.Left, ZIndex = 26 })
+local restoreSlot = Kit.new('Frame', { Name = 'RestoreSlot', BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -14, 0, DAYS_H + 62), Size = px(250, 54), ZIndex = 26, Parent = rewards.Well })
+local groupSlot = Kit.new('Frame', { Name = 'GroupSlot', BackgroundTransparency = 1, Position = px(14, DAYS_H + 130), Size = UDim2.new(1, -28, 0, 60), ZIndex = 26, Parent = rewards.Well })
+local dailyState, dailyBusy, dailyAt = nil, false, 0
+local function askRetention(action)
+	local ok, res = pcall(function() return Net.get('Retention'):InvokeServer(action) end)
+	return ok and type(res) == 'table' and res or nil
+end
+-- A big green tick out of two bars (the font has no tick; nothing here is an emoji).
+local function checkMark(parent, size, z)
+	local holder = Kit.new('Frame', { Name = 'Check', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, 0), Size = px(size, size), ZIndex = z, Parent = parent })
+	local function bar(w, h, x, y, rot)
+		local f = Kit.new('Frame', { BackgroundColor3 = hex('46E052'), BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(x, 0, y, 0), Size = px(w, h), Rotation = rot, ZIndex = z, Parent = holder })
+		Kit.new('UIStroke', { Color = hex('0E3A14'), Thickness = 4, LineJoinMode = Enum.LineJoinMode.Miter, Parent = f })
+	end
+	bar(size * 0.2, size * 0.46, 0.3, 0.6, 45)
+	bar(size * 0.2, size * 0.78, 0.6, 0.48, -45)
+	return holder
+end
+local function iconOfCard(card)
+	if card.Big then return 'Rewards', 132 end
+	local line = card.Lines[1] or ''
+	if line:find('Cash') then return iconOr('Cash'), 84 end
+	if line:find('^%d+x Power') then return line:find('^3') and 'PotionGold' or 'PotionRed', 88 end
+	return POWER, 84
+end
+local function clock(seconds)
+	seconds = math.max(0, math.floor(seconds))
+	return string.format('%dh %02dm', seconds // 3600, (seconds % 3600) // 60)
+end
+local claimDaily, claimGroup
+local function paintDaily()
+	for _, c in days:GetChildren() do c:Destroy() end
+	local st = dailyState and dailyState.Daily
+	if not st then
+		readyLine.Text = 'Loading...'
+		return
+	end
 	for day = 1, 7 do
-		local big = day == 7
-		local row, col = day <= 4 and 0 or 1, day <= 4 and day - 1 or day - 5
-		local tile = Kit.block({ Name = 'Day' .. day, Tone = big and 'gold' or 'aqua', Width = big and 2 * DAY_W + DAY_GAP or DAY_W, Height = DAY_H, Position = px(col * (DAY_W + DAY_GAP), row * (DAY_H + DAY_GAP)), Outline = 5, RimWidth = 3, Studs = 26, ZIndex = 25 })
+		local card = st.Cards[day]
+		local big = card.Big
+		local claimed, ready
+		if st.Ready then
+			claimed, ready = day < st.Day, day == st.Day
+		else
+			claimed, ready = day <= st.Claimed, false
+		end
+		local col, row = (day - 1) % 3, day <= 3 and 0 or 1
+		local tile = Kit.block({ Name = 'Day' .. day, Tone = CARD_TONE, Width = big and BIG_W or CARD_W, Height = big and DAYS_H or CARD_H, Position = big and px(3 * (CARD_W + CARD_GAP), 0) or px(col * (CARD_W + CARD_GAP), row * (CARD_H + CARD_GAP)), Outline = 5, OutlineColor = RARITY[card.Rarity] or RARITY.blue, Studs = false, Rim = false, Flat = false, ZIndex = 25 })
 		tile.Parent = days
-		label({ Name = 'Day', Text = 'Day ' .. day, TextSize = 28, StrokeThickness = 3.5, Position = px(0, 8), Size = UDim2.new(1, 0, 0, 32), ZIndex = 28, Parent = tile.Body })
-		Kit.icon3d(big and 'Rewards' or 'Cash', big and 112 or 92, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 100), ZIndex = 28 }).Parent = tile.Body
+		label({ Name = 'Day', Text = 'Day ' .. day, TextSize = big and 38 or 30, StrokeThickness = 4, Position = px(0, 8), Size = UDim2.new(1, 0, 0, 36), ZIndex = 28, Parent = tile.Body })
+		local id, size = iconOfCard(card)
+		Kit.icon3d(id, size, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, big and 150 or 84), ZIndex = 28 }).Parent = tile.Body
+		label({ Name = 'What', Text = table.concat(card.Lines, '\n'), TextSize = big and 21 or 17, StrokeThickness = 3, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -8), Size = UDim2.new(1, -10, 0, big and 84 or 40), ZIndex = 28, TextWrapped = true, Parent = tile.Body })
+		if claimed then
+			checkMark(tile.Body, big and 120 or 92, 30).Position = UDim2.new(0.5, 0, 0, big and 150 or 84)
+		elseif ready then
+			fillText(label({ Name = 'Claim', Text = 'Claim!', TextSize = big and 48 or 40, StrokeThickness = 5, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, big and 150 or 84), Size = UDim2.new(1, 0, 0, 52), ZIndex = 31, Parent = tile.Body }), hex('B8FF5A'), hex('4FD81A'))
+			local hit = Kit.new('TextButton', { Name = 'Hit', Text = '', AutoButtonColor = false, BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 33, Parent = tile.Body })
+			hit.Activated:Connect(function() claimDaily() end)
+		end
+	end
+	if st.Ready then
+		readyLine.Text = 'Reward ready to claim!'
+	else
+		readyLine.Text = 'Next reward in ' .. clock((st.Wait or 0) - (os.clock() - dailyAt))
+	end
+	-- a missed day: restore the streak (real price on the button) or start again, said plainly
+	for _, c in restoreSlot:GetChildren() do c:Destroy() end
+	if st.Ready and st.Missed and st.CanRestore then
+		local entry = Products.ByKey.RestoreStreak
+		noteLine.Text = 'You missed a day. Restore your streak to carry on from Day ' .. st.RestoreDay .. ', or just claim Day 1 and start again.'
+		local holder = Kit.robuxButton({ Name = 'Restore', Tone = 'lime', Width = 250, Height = 54, Price = entry.Price, TextSize = 26, ZIndex = 27 })
+		holder.Parent = restoreSlot
+		label({ Name = 'Cap', Text = 'Restore streak', TextSize = 17, StrokeThickness = 3, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 0, -2), Size = px(250, 20), ZIndex = 28, Parent = restoreSlot })
+		Motion.button(holder, function() buy('RestoreStreak') end)
+	elseif st.Ready and st.Missed then
+		noteLine.Text = 'You missed a few days, so the streak starts again at Day 1. Claim it now!'
+	elseif st.Ready then
+		noteLine.Text = 'Come back every day: Day 7 is the big one.'
+	else
+		noteLine.Text = 'Claimed today. Come back tomorrow for the next day.'
+	end
+	-- the Group reward (a one-time gift for being in our Roblox group; only shown once the owner has set a group)
+	for _, c in groupSlot:GetChildren() do c:Destroy() end
+	local g = dailyState.Group
+	if g and g.On then
+		local line = g.Claimed and 'Group reward taken. Thanks for being in the group!' or ('Group reward: join our Roblox group, then press Claim. You get ' .. table.concat(g.Lines, ' + ') .. '.')
+		body(groupSlot, line, { Name = 'GroupText', TextSize = 18, Position = px(0, 0), Size = UDim2.new(1, -200, 1, 0), Align = Enum.TextXAlignment.Left, ZIndex = 26 })
+		if not g.Claimed then
+			local b = Kit.blockButton({ Name = 'GroupClaim', Tone = 'lime', Width = 170, Height = 52, Text = 'Claim', TextSize = 28, ZIndex = 27 })
+			b.AnchorPoint = Vector2.new(1, 0.5)
+			b.Position = UDim2.new(1, 0, 0.5, 0)
+			b.Parent = groupSlot
+			Motion.button(b, function() claimGroup() end)
+		end
 	end
 end
-fillText(label({ Name = 'Soon', Text = 'Daily rewards: soon!', TextSize = 34, StrokeThickness = 4, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -6), Size = px(820, 42), ZIndex = 26, Parent = rewards.Well }), hex('FFF27A'), hex('FFA81A'))
+local function refreshDaily()
+	local res = askRetention('State')
+	if res and res.State then
+		dailyState, dailyAt = res.State, os.clock()
+		paintDaily()
+	end
+end
+claimDaily = function()
+	if dailyBusy then return end
+	dailyBusy = true
+	local res = askRetention('ClaimDaily')
+	dailyBusy = false
+	if res and res.State then
+		dailyState, dailyAt = res.State, os.clock()
+		paintDaily()
+	end
+end
+claimGroup = function()
+	if dailyBusy then return end
+	dailyBusy = true
+	local res = askRetention('ClaimGroup')
+	dailyBusy = false
+	if res and res.State then
+		dailyState, dailyAt = res.State, os.clock()
+		paintDaily()
+	end
+end
+rewards.Open = function()
+	paintDaily()
+	task.spawn(refreshDaily)
+end
+-- Restore Streak bought: ask again once the receipt has been granted.
+pcall(function()
+	MarketplaceService.PromptProductPurchaseFinished:Connect(function(_, id, bought)
+		if bought and Products.keyFor('Product', id) == 'RestoreStreak' then
+			task.delay(2, function() if current == rewards then refreshDaily() end end)
+		end
+	end)
+end)
+task.spawn(function()
+	while task.wait(1) do
+		if current == rewards and dailyState and dailyState.Daily and not dailyState.Daily.Ready then paintDaily() end
+	end
+end)
+-- Retention.client opens the window by itself from the second visit (never on a first join).
+do
+	local open = Instance.new('BindableEvent')
+	open.Name = 'OpenDaily'
+	open.Parent = gui
+	open.Event:Connect(function()
+		if current ~= rewards then openPanel(rewards) end
+	end)
+end
+-- The gift's red "!" while a reward waits.
+do
+	local badge = Kit.sticker(rewardsSpot, { Name = 'Badge', Text = '!', TextSize = 40, TextColor3 = hex('FF3A1A'), AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(1, -6, 0, 10), Width = 40, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 9 })
+	local function paint() badge.Visible = player:GetAttribute('DailyReady') == true end
+	player:GetAttributeChangedSignal('DailyReady'):Connect(paint)
+	paint()
+end
 
 actions.Store = function()
 	closePanel()
+	if storeBadge then storeBadge.Visible = false end
 	openStore()
 end
 actions.Rebirth = function() openPanel(rebirth) end
@@ -994,7 +1195,7 @@ function refresh()
 		fill.Size = UDim2.fromScale(math.clamp(power / need, 0, 1), 1)
 	end
 	setFillTone(ready and 'lime' or 'level')
-	paintPacks(need)
+	paintPacks(need, power)
 	local percent = math.clamp(math.floor(power / need * 100), 0, 100)
 	rebirthBadge.Text = percent .. '%'
 	setRebirthReady(percent >= 100)

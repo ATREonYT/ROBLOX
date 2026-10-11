@@ -21,6 +21,9 @@ Create a pass, set its price, copy its id, and paste it at `Products.Passes.<Key
 | 10x Cash | 199 | `TenXCash` | The pink pad before every gate pays 10x the yellow one (+100 instead of +10 at Stage 1) |
 | Pro Bay | 99 | `RangeVIP1` | Opens PRO BAY, the x100 Power shooting lane, forever |
 | Gold Bay | 249 | `RangeVIP2` | Opens GOLD BAY, the x250 Power shooting lane (the best one), forever |
+| Auto Open | 249 | `AutoOpen` | The box's T button opens box after box by itself (one at a time, stops when you press it or run out of Cash) |
+| 2x Speed | 99 | `Speed2x` | Walk speed exactly x2 |
+| Auto Collect | 149 | `AutoCollect` | A street's pad Cash is paid the moment its crew is down (the 10x pad's amount with the 10x pass); the pad then only takes you back to the lobby. There are no loose drops in the game, so pads are what it collects |
 
 ## Developer products (Monetization → Developer Products)
 
@@ -38,15 +41,17 @@ Create a product, set its price, copy its id, and paste it at `Products.Develope
 | 2x Power Boost | 39 | `RepBoost2x` | 15 minutes of 2x Power |
 | 3x Power Boost | 69 | `RepBoost3x` | 15 minutes of 3x Power |
 | Block Party | 149 | `BlockParty` | 2x Power for everyone in the server, 15 minutes |
-| Tiny Cash Pack | 19 | `TinyCash` | +500 Cash |
-| Small Cash Pack | 49 | `SmallCash` | +1,400 Cash |
-| Medium Cash Pack | 129 | `MediumCash` | +4,000 Cash |
-| Large Cash Pack | 399 | `LargeCash` | +13,500 Cash |
-| Tiny Power Pack | 19 | `PowerPack1` | 0.1x your next rebirth's Power |
-| Small Power Pack | 49 | `PowerPack2` | 0.3x your next rebirth's Power |
-| Medium Power Pack | 129 | `PowerPack3` | 0.9x your next rebirth's Power |
-| Large Power Pack | 399 | `PowerPack4` | 3x your next rebirth's Power |
+| Tiny Cash Pack | 19 | `TinyCash` | +500 Cash at Stage 1, more at later stages (x pad Cash ^ 0.6, Products.cashAmount) |
+| Small Cash Pack | 49 | `SmallCash` | +1,400 Cash at Stage 1, scaled the same way |
+| Medium Cash Pack | 129 | `MediumCash` | +4,000 Cash at Stage 1, scaled the same way |
+| Large Cash Pack | 399 | `LargeCash` | +13,500 Cash at Stage 1, scaled the same way |
+| Tiny Power Pack | 19 | `PowerPack1` | The larger of 0.1x your next rebirth's Power and 0.15x the Power you hold now |
+| Small Power Pack | 49 | `PowerPack2` | The larger of 0.3x your next rebirth's Power and 0.45x what you hold |
+| Medium Power Pack | 129 | `PowerPack3` | The larger of 0.9x your next rebirth's Power and 1.35x what you hold |
+| Large Power Pack | 399 | `PowerPack4` | The larger of 3x your next rebirth's Power and 4.5x what you hold |
 | Skip Rebirth | 99 | `SkipRebirth` | Rebirth now without the Power |
+| 2x Offline | 49 | `OfflineX2` | Doubles the Power you earned while away (the Welcome back card; if you already claimed it, the same amount again) |
+| Restore Streak | 25 | `RestoreStreak` | Keeps the Daily Rewards streak after a missed day (offered only after a miss, in the Daily Rewards window). If there is nothing to restore any more, the buyer gets the next day's reward instead |
 
 ## If you change a price on the website
 
@@ -77,3 +82,11 @@ python3 hood/tools/upload_assets.py
 ```
 
 `hood/art/README_upload.md` explains how. Do it before judging how the UI looks.
+
+## Other things to set (not Robux items)
+
+- **Group reward:** put your Roblox group's id in `hood/src/ServerScriptService/HoodServer/ServerConfig.lua` (`GroupId`, 0 = off).
+  Members get a one-time Cash + 2x Power reward from the Daily Rewards window (`Player:IsInGroup`).
+- **"Robux: ?" teaser:** the HUD's side pass buttons (2x Cash, 2x Power, Auto Fight) show "?" for their price until a tap has
+  opened Roblox's own purchase prompt, which always shows the real price; after it (bought or declined) our button shows the price.
+  The Store and the in-world boards always show prices.

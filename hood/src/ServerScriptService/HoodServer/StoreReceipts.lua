@@ -4,8 +4,13 @@
 --
 -- Grants (Products.Catalog decides which key gets which; each one changes only the profile and attributes, checks
 -- everything that could fail BEFORE the profile changes, and never yields):
---   Power rows      + Products.powerAmount(key, RebirthRules.need(Rebirths)) Power
---   Cash rows       + Products.cashAmount(key) Cash
+--   Power rows      + Products.powerAmount(key, RebirthRules.need(Rebirths), current Power) Power: the larger of the
+--                   rebirth-based amount and a share of the Power you hold (brief 29, P5)
+--   Cash rows       + Products.cashAmount(key, best stage) Cash: scales with the best stage you reached (brief 29, P5)
+--   OfflineX2       (brief 29, P5) 2x Offline Earnings: HoodServer/Retention.offlineDouble
+--   RestoreStreak   (brief 29, P5) keeps the daily streak after a missed day (Retention.restoreStreak). If there is
+--                   nothing to restore any more (the buyer claimed in another tab, or midnight passed), the buyer gets
+--                   the next daily reward's worth instead (Retention.give), never nothing for Robux
 --   Boost rows      timed Power boosts (Products.boostLevels: one for RepBoost2x / RepBoost3x, three for the Boost
 --                   Bundle), each Products.BoostDurationSeconds, queued by HoodServer/Boosts (every level keeps its
 --                   own time, the strongest runs first), kept in the profile (Passes.Boost) so they survive a rejoin
@@ -23,6 +28,7 @@ local RS = game:GetService('ReplicatedStorage')
 local Products = require(RS.Shared.Config.Products)
 local Format = require(RS.Shared.Format)
 local Boosts = require(script.Parent.Boosts)
+local Retention = require(script.Parent.Retention)
 
 local function optional(module)
 	if not module then return nil end
@@ -56,14 +62,14 @@ function StoreReceipts.grants(ctx)
 
 	local function powerPack(player, profile, key)
 		local need = RebirthRules and RebirthRules.need(profile.Data.Rebirths) or 2500
-		local amount = Products.powerAmount(key, need)
+		local amount = Products.powerAmount(key, need, profile.Data.Rep)
 		assert(amount > 0, 'no amount for ' .. key)
 		profile.Data.Rep = math.min(1e12, profile.Data.Rep + amount)
 		setAttribute(player, 'Power', profile.Data.Rep)
 		notice(player, 'Thanks! +' .. Format.compact(amount) .. ' Power')
 	end
 	local function cashPack(player, profile, key)
-		local amount = Products.cashAmount(key)
+		local amount = Products.cashAmount(key, Retention.bestStage(profile.Data))
 		assert(amount > 0, 'no amount for ' .. key)
 		profile.Data.Cash = math.min(1e12, profile.Data.Cash + amount)
 		setAttribute(player, 'Cash', profile.Data.Cash)
@@ -92,6 +98,27 @@ function StoreReceipts.grants(ctx)
 			notice(player, 'Thanks! +' .. minutes .. ' min of ' .. levels[1] .. 'x Power')
 		end
 	end
+	local function offlineX2(player, profile, key)
+		local amount = Retention.offlineDouble(profile)
+		setAttribute(player, 'Power', profile.Data.Rep)
+		notice(player, 'Thanks! 2x Offline: +' .. Format.compact(amount) .. ' Power')
+	end
+	local function restoreStreak(player, profile, key)
+		local ok = Retention.restoreStreak(profile, now())
+		if ok then
+			notice(player, 'Thanks! Your daily streak is safe. Claim your next day!')
+			return
+		end
+		local RetentionRules = require(RS.Shared.RetentionRules)
+		local st = RetentionRules.status(profile.Data, now())
+		local need = RebirthRules and RebirthRules.need(profile.Data.Rebirths) or 2500
+		local reward = RetentionRules.reward(st.Day, need, Retention.bestStage(profile.Data))
+		assert(reward, 'no reward')
+		Retention.give(profile, reward, now())
+		setAttribute(player, 'Cash', profile.Data.Cash)
+		setAttribute(player, 'Power', profile.Data.Rep)
+		notice(player, 'Your streak was already safe, so here is a reward instead: ' .. table.concat(RetentionRules.lines(reward, Format.compact), ' + '))
+	end
 	local function shoeBox(player, profile, key)
 		assert(Shoes and ShoeRules and ShoeOpening, 'Shoes / ShoeRules / ShoeOpening missing')
 		local boxId, count = Products.boxOpen(key)
@@ -115,6 +142,10 @@ function StoreReceipts.grants(ctx)
 				grants[entry.Key] = cashPack
 			elseif entry.Section == 'Box' then
 				grants[entry.Key] = shoeBox
+			elseif type(entry.Offline) == 'number' then
+				grants[entry.Key] = offlineX2
+			elseif entry.Section == 'Streak' then
+				grants[entry.Key] = restoreStreak
 			elseif type(entry.Boost) == 'number' or type(entry.Bundle) == 'table' then
 				grants[entry.Key] = timedBoosts
 			end

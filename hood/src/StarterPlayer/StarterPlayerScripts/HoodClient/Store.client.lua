@@ -461,8 +461,10 @@ end
 local packLabels = {} -- [key] = TextLabel
 local PILE = { 'Tiny', 'Small', 'Medium', 'Large' }
 local function packAmount(entry)
-	if entry.Section == 'Power' then return '+' .. short(Products.powerAmount(entry.Key, rebirthNeed())) .. ' Power' end
-	return '+' .. short(Products.cashAmount(entry.Key)) .. ' Cash'
+	-- (brief 29, P5) Power packs give the larger of the rebirth-based amount and a share of the Power you hold; Cash packs
+	-- scale with your best stage. The same Products functions the server grants with.
+	if entry.Section == 'Power' then return '+' .. short(Products.powerAmount(entry.Key, rebirthNeed(), num('Power', 0))) .. ' Power' end
+	return '+' .. short(Products.cashAmount(entry.Key, num('StagesCleared', 1))) .. ' Cash'
 end
 
 -- Codes (video A's last box): a dark inset, a line, the blue "Enter code" field and the green REDEEM; the server's
@@ -628,7 +630,7 @@ local function build()
 					tile.Art = 'icon:' .. iconOr((section.Id == 'Power' and 'Power' or 'Cash') .. (PILE[i] or 'Large'), artId or '', section.Id == 'Power' and 'Muscle' or 'Cash')
 				end
 				local c = tallCard(tile, x0 + col * (THIRD + GAP), y, block, sub, subColor)
-				if section.Id == 'Power' then packLabels[entry.Key] = c.Body:FindFirstChild('Sub') end
+				if section.Id == 'Power' or section.Id == 'Cash' then packLabels[entry.Key] = c.Body:FindFirstChild('Sub') end
 				sections[entry.Key] = c
 				if col == 2 or i == n then y += TALL_H + GAP end
 			end
@@ -657,7 +659,7 @@ local function paintPacks()
 		if l and l.Parent and entry then l.Text = packAmount(entry) end
 	end
 end
-for _, key in { 'RebirthNeed', 'Rebirths' } do
+for _, key in { 'RebirthNeed', 'Rebirths', 'Power', 'StagesCleared' } do
 	player:GetAttributeChangedSignal(key):Connect(function() if isOpen then paintPacks() end end)
 end
 -- A pass bought (or found owned) while the Store exists: rebuild so its card says Owned.

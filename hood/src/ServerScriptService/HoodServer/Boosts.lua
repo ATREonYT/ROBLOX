@@ -16,9 +16,13 @@ local Boosts = {}
 Boosts.MaxLevel = 10 -- (ShotRules.boost clamps PowerBoost to 1..10 too)
 Boosts.MaxSeconds = 30 * 86400 -- sanity cap per level (a month: far past anything bought)
 
--- x2 with the 2x Power pass, times a running timed boost (PowerBoost, 1..10).
+-- x2 with the 2x Power pass, times a running timed boost (PowerBoost, 1..10), times the Friend boost (brief 29, P5: the
+-- player attribute FriendBoost, +0.1 per friend in the server up to +0.5, set by RetentionService), never above ShotRules.MaxBoost.
 function Boosts.power(player)
-	return ShotRules.boost(player:GetAttribute('Pass_DoubleRep'), player:GetAttribute('PowerBoost'))
+	local base = ShotRules.boost(player:GetAttribute('Pass_DoubleRep'), player:GetAttribute('PowerBoost'))
+	local friend = player:GetAttribute('FriendBoost')
+	if type(friend) ~= 'number' or friend ~= friend then friend = 0 end
+	return math.min(ShotRules.MaxBoost, base * (1 + math.clamp(friend, 0, 0.5)))
 end
 
 -- x2 with the x2 Cash pass, x1.5 with VIP (both: x3).

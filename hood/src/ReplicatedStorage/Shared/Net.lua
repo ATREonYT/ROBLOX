@@ -6,6 +6,8 @@ local definitions={EquipSkin='RemoteEvent',RequestSnapshot='RemoteFunction',Prof
 -- (brief 29, P4) The rank-up screen's remote, and the optional Hot Target bonus's request (HoodServer/HotTarget).
 definitions.RankUp='RemoteEvent'
 definitions.HotTarget='RemoteEvent'
+-- (brief 29, P5) The daily / welcome back / group window's requests (HoodServer/RetentionService).
+definitions.Retention='RemoteFunction'
 function Net.init()
  assert(RunService:IsServer(),'Only server creates network objects')
  local folder=ReplicatedStorage:FindFirstChild('HoodNet')

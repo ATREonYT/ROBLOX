@@ -28,6 +28,7 @@
 -- Honest prices (brief 22): a bundle's WasPrice is what its parts cost bought one by one (a box bundle: Count x the
 -- single box's Price; the Boost Bundle: the sum of its parts' Price), so the struck-through number is a real price.
 -- Nothing here is limited or timed: no "Limited Stock", no countdowns.
+local Balance = require(script.Parent.Balance)
 local Products = {}
 Products.Enabled = true -- master switch: false = every card says "Coming soon!"
 -- The Robux sign in text: U+E002, the character Roblox's own fonts draw as the Robux icon (written ⏣ in our docs; a
@@ -47,6 +48,10 @@ Products.Passes = {
 	TenXCash = 0, -- "10x Cash": the magenta pad before each gate pays 10x the yellow one (Shared/PadRules, StageService)
 	RangeVIP1 = 0, -- "Pro Bay": the x100 Power lane, PRO BAY (Config/Skins.Stations Pass; LobbyService)
 	RangeVIP2 = 0, -- "Gold Bay": the x250 Power lane, GOLD BAY
+	-- (brief 29, P5) the friction-removers
+	AutoOpen = 0, -- "Auto Open": the box's T card opens box after box by itself (Shoes.client; free to stop any time)
+	Speed2x = 0, -- "2x Speed": walk speed x Products.SpeedPassFactor (2), LobbyService.walk
+	AutoCollect = 0, -- "Auto Collect": a street's pad Cash pays the moment its crew is down (StageService), no walk to the pad
 }
 -- Developer product ids (0 = not created yet).
 Products.DeveloperProducts = {
@@ -56,6 +61,9 @@ Products.DeveloperProducts = {
 	BoostBundle = 0, -- (brief 22) two 2x Power boosts + one 3x Power boost
 	BlockParty = 0, -- x2 Power for everyone in the server, 15 minutes
 	SkipRebirth = 0, -- rebirth now without the Power (the Rebirth window shows it only once this id is set)
+	-- (brief 29, P5)
+	OfflineX2 = 0, -- "2x Offline Earnings": doubles what you earned while away (RetentionService / StoreReceipts)
+	RestoreStreak = 0, -- "Restore Streak": keeps the daily-reward streak after a missed day (RetentionRules.restore)
 	-- (brief 21) the Robux shoe boxes on World 1's dais: one roll from the box's own exclusive shoes (Config/Shoes);
 	-- (brief 22) and the Store's Buy 3 / Buy 8 bundles of them
 	ShoeBoxExclusive = 0, -- "Exclusive Box", 99 Robux
@@ -105,10 +113,15 @@ Products.Catalog = {
 	{ Key = 'TenXCash', Kind = 'Pass', Section = 'Gamepass', Title = '10x Cash', Big = '10x\nPads', Detail = 'The pink pad pays 10x Cash', Sub = 'Pink pad x10', Price = 199, Art = 'icon:TenXCash', Tone = 'cardPink', Offer = '10x Cash', Sticker = '10x', Wired = true },
 	{ Key = 'RangeVIP1', Kind = 'Pass', Section = 'Gamepass', Title = 'Pro Bay', Big = 'x100\nPower', Detail = 'Your own x100 Power lane', Sub = 'x100 Power lane', Lane = true, Price = 99, Art = 'icon:ProBay', Tone = 'cardTeal', Offer = 'x100 Lane', Sticker = 'x100', Wired = true },
 	{ Key = 'RangeVIP2', Kind = 'Pass', Section = 'Gamepass', Title = 'Gold Bay', Big = 'x250\nPower', Detail = 'The best lane: x250 Power', Sub = 'x250 Power lane', Lane = true, Price = 249, Art = 'icon:GoldBay', Tone = 'cardGold', Offer = 'x250 Lane', Sticker = 'x250', Wired = true },
+	-- (brief 29, P5) removers of friction: the box's auto button, double walk speed, pads that pay by themselves
+	{ Key = 'AutoOpen', Kind = 'Pass', Section = 'Gamepass', Title = 'Auto Open', Big = 'Open\nNon-Stop', Detail = 'The box T button opens boxes for you', Sub = 'Opens boxes for you', Price = 249, Art = 'icon:TripleOpen', Tone = 'cardTeal', Sticker = 'AUTO', Wired = true },
+	{ Key = 'Speed2x', Kind = 'Pass', Section = 'Gamepass', Title = '2x Speed', Big = 'Run\nFaster', Detail = 'Walk and run twice as fast', Sub = 'Twice as fast', Price = 99, Art = 'icon:Arrow', Tone = 'cardGold', Offer = '2x Speed', Sticker = '2x', Wired = true },
+	{ Key = 'AutoCollect', Kind = 'Pass', Section = 'Gamepass', Title = 'Auto Collect', Big = 'Cash\nCollects Itself', Detail = 'A street\'s pad Cash pays the moment its crew is down', Sub = 'Pads pay by themselves', Price = 149, Art = 'icon:Cash', Tone = 'cardGreen', Offer = 'Auto Collect', Sticker = 'AUTO', Wired = true },
 	-- ~Boosts~ (two 2x + one 3x bought one by one: 39 + 39 + 69 = 147)
 	{ Key = 'BoostBundle', Kind = 'Product', Section = 'Boost', Wide = true, Title = 'Boost Bundle', Detail = '45 minutes of boosts', Sub = 'Two 2x + one 3x', Bundle = { 'RepBoost2x', 'RepBoost2x', 'RepBoost3x' }, Lines = { '- Two 2x Power Boosts', '- One 3x Power Boost' }, Price = 119, WasPrice = 147, Art = 'icon:BoostBundle', Tone = 'rainbow', Wired = true },
 	{ Key = 'RepBoost2x', Kind = 'Product', Section = 'Boost', Title = '2x Power', Detail = '15 minutes', Sub = '15 minutes', Boost = 2, Price = 39, Art = 'icon:PotionRed', Tone = 'cardRed', Wired = true },
 	{ Key = 'RepBoost3x', Kind = 'Product', Section = 'Boost', Title = '3x Power', Detail = '15 minutes', Sub = '15 minutes', Boost = 3, Price = 69, Art = 'icon:PotionGold', Tone = 'cardGold', Wired = true },
+	{ Key = 'OfflineX2', Kind = 'Product', Section = 'Boost', Title = '2x Offline', Detail = 'Doubles the Power you earned while away', Sub = 'Doubles away Power', Price = 49, Art = 'icon:PotionGold', Tone = 'cardGreen', Offline = 2, Wired = true },
 	{ Key = 'BlockParty', Kind = 'Product', Section = 'Boost', Title = 'Block Party', Detail = 'x2 Power for the whole server, 15 min', Sub = 'x2 for everyone', Price = 149, Art = 'icon:BlockParty', Tone = 'cardPurple', Wired = true },
 	-- ~Cash Packs~ (Cash per Robux: 26, 29, 31, 34)
 	{ Key = 'TinyCash', Kind = 'Product', Section = 'Cash', Title = 'Tiny Pack', Price = 19, Art = 'icon:CashTiny', Tone = 'cardGold', Cash = 500, Wired = true },
@@ -120,6 +133,8 @@ Products.Catalog = {
 	{ Key = 'PowerPack2', Kind = 'Product', Section = 'Power', Title = 'Small Pack', Price = 49, Art = 'icon:PowerSmall', Tone = 'cardGold', Pack = 0.3, Wired = true },
 	{ Key = 'PowerPack3', Kind = 'Product', Section = 'Power', Title = 'Medium Pack', Price = 129, Art = 'icon:PowerMedium', Tone = 'cardGold', Pack = 0.9, Wired = true },
 	{ Key = 'PowerPack4', Kind = 'Product', Section = 'Power', Title = 'Large Pack', Price = 399, Art = 'icon:PowerLarge', Tone = 'cardGold', Pack = 3, Wired = true },
+	-- (the Daily Rewards window: offered only after a missed day, with its real price)
+	{ Key = 'RestoreStreak', Kind = 'Product', Section = 'Streak', Title = 'Restore Streak', Detail = 'Keep your daily streak after a missed day', Price = 25, Art = 'icon:Rewards', Tone = 'cardPink', Wired = true },
 	-- (the Rebirth window)
 	{ Key = 'SkipRebirth', Kind = 'Product', Section = 'Rebirth', Title = 'Skip Rebirth', Detail = 'Rebirth now', Price = 99, Art = 'icon:Rebirth', Tone = 'aqua', Wired = true },
 }
@@ -173,21 +188,36 @@ local function nice(n, floor)
 	return math.floor(n / p + 0.5) * p
 end
 
--- Power a pack gives: its Pack fraction of the Power your next rebirth needs (so a pack stays worth the same
--- at every stage of the game), rounded to two figures, at least 100. Client (the label) and server (the grant)
--- both call this with the same `need`.
-function Products.powerAmount(key, need)
+-- (brief 29, P5) Power a pack gives: the LARGER of its Pack share of the Power your next rebirth needs (so a pack is worth
+-- the same at every stage of the game) and its CurrentShare of the Power you hold right now (so a pack is never small
+-- next to what you have), rounded to two figures, at least 100. Client (the label) and server (the grant) both call this
+-- with the same `need` and `current`; a pack never gives less than the rebirth-based amount that was on the card.
+Products.CurrentShare = 1.5 -- x the pack's Pack share, of your current Power
+function Products.powerAmount(key, need, current)
 	local entry = Products.ByKey[key]
 	if not entry or type(entry.Pack) ~= 'number' then return 0 end
 	if type(need) ~= 'number' or need ~= need or need <= 0 then need = 1000 end
-	return nice(need * entry.Pack, 100)
+	local byNeed = need * entry.Pack
+	local byCurrent = 0
+	if type(current) == 'number' and current == current and current > 0 then byCurrent = current * entry.Pack * Products.CurrentShare end
+	return nice(math.max(byNeed, byCurrent), 100)
 end
 
--- Cash a cash pack gives.
-function Products.cashAmount(key)
+-- (brief 29, P5) Cash a cash pack gives at `stage` (the best stage you have reached, 1 when unknown): its base amount x
+-- (that stage's pad Cash / stage 1's pad Cash) ^ 0.6, so a pack keeps buying a similar number of pad runs as the stages
+-- pay more, rounded to two figures. At stage 1 it is exactly the base amount.
+Products.CashScaleExponent = 0.6
+function Products.cashAmount(key, stage)
 	local entry = Products.ByKey[key]
-	return entry and type(entry.Cash) == 'number' and entry.Cash or 0
+	if not entry or type(entry.Cash) ~= 'number' then return 0 end
+	local pads = Balance.PadCash
+	local n = type(stage) == 'number' and stage == stage and math.clamp(math.floor(stage), 1, #pads) or 1
+	if n <= 1 then return entry.Cash end
+	return nice(entry.Cash * (pads[n] / pads[1]) ^ Products.CashScaleExponent, entry.Cash)
 end
+
+-- Walk speed a 2x Speed owner gets: exactly x2 (LobbyService.walk), so the name is the truth.
+Products.SpeedPassFactor = 2
 
 -- The timed boosts a product grants, one entry per boost: { level, ... } (a boost row: its one level; the Boost
 -- Bundle: its parts' levels, in order). Each runs Products.BoostDurationSeconds. Empty for anything else.

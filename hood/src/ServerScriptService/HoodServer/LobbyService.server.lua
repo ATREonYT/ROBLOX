@@ -136,6 +136,8 @@ local function walk(player,n)
  local c=player.Character;local h=c and c:FindFirstChildOfClass('Humanoid')
  if not h then return end
  local speed=RebirthRules.walkSpeed(n)
+ -- (brief 29, P5) the 2x Speed pass: exactly twice as fast (Products.SpeedPassFactor)
+ if player:GetAttribute('Pass_Speed2x')==true then speed=speed*require(game:GetService('ReplicatedStorage').Shared.Config.Products).SpeedPassFactor end
  if c:GetAttribute('RebirthWalkSpeed')~=speed then h.WalkSpeed=speed;c:SetAttribute('RebirthWalkSpeed',speed) end
 end
 

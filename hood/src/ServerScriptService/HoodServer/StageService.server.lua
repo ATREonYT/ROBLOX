@@ -34,6 +34,7 @@ local ActiveMap = require(RS.Shared.ActiveMap)
 local StageRules = require(RS.Shared.StageRules)
 local Products = require(RS.Shared.Config.Products)
 local Boosts = require(script.Parent.Boosts)
+local Format = require(RS.Shared.Format)
 local Runs = require(script.Parent.Runs)
 
 while not RS:GetAttribute('FoundationReady') do task.wait(0.1) end
@@ -150,9 +151,37 @@ local function promptPass(player)
 	notice(player, (entry and entry.Title or '10x Cash') .. ' is coming soon!')
 end
 
+-- (brief 29, P5) The Auto Collect pass: a street's pad Cash is paid the moment its crew is down (the best pad you own, the
+-- 10x one with that pass), once a run. [player] = { [stage] = true }. The pad then only takes you back to the lobby.
+local autoPaid = {}
+local function autoCollect(player, profile)
+	local cleared = Runs.cleared(player)
+	for stage = 1, cleared do
+		local done = autoPaid[player]
+		if not (done and done[stage]) and Runs.claim(player, stage) then
+			autoPaid[player] = done or {}
+			autoPaid[player][stage] = true
+			local reward = Boosts.cashFor(player, padReward(stage, ownsTenX(player)))
+			profile.Data.Cash = math.min(1e12, profile.Data.Cash + reward)
+			player:SetAttribute('Cash', profile.Data.Cash)
+			Data.push(player)
+			notice(player, 'Auto Collect: +' .. Format.compact(reward) .. ' Cash')
+		end
+	end
+end
+Runs.onReset(function(player) autoPaid[player] = nil end)
+
 local function cashOut(player, pad)
 	local profile = Data.get(player)
-	if not profile or not Runs.claim(player, pad.Stage) then return end
+	if not profile then return end
+	if autoPaid[player] and autoPaid[player][pad.Stage] then
+		-- already paid by Auto Collect: no second payment, just the trip back
+		autoPaid[player] = nil
+		teleport(player, 'Lobby', 'pad')
+		stay[player] = nil
+		return
+	end
+	if not Runs.claim(player, pad.Stage) then return end
 	local tenX = pad.Kind == 'TenX'
 	local reward = Boosts.cashFor(player, padReward(pad.Stage, tenX))
 	profile.Data.Cash = math.min(1e12, profile.Data.Cash + reward)
@@ -226,7 +255,7 @@ end
 Players.PlayerAdded:Connect(joined)
 for _, player in Players:GetPlayers() do task.spawn(joined, player) end
 Players.PlayerRemoving:Connect(function(player)
-	promptLimit[player], stay[player], said[player], asked[player], cashOuts[player] = nil, nil, nil, nil, nil
+	promptLimit[player], stay[player], said[player], asked[player], cashOuts[player], autoPaid[player] = nil, nil, nil, nil, nil, nil
 	Runs.forget(player)
 end)
 
@@ -272,6 +301,7 @@ while task.wait(POLL) do
 					character:PivotTo(CFrame.new(back) * (root.CFrame - root.Position))
 				end
 				padCheck(player, root)
+				if player:GetAttribute('Pass_AutoCollect') == true then autoCollect(player, profile) end
 			end
 			Runs.publish(player)
 			local cleared = StageRules.count(gates, profile.Data.ClearedWalls)

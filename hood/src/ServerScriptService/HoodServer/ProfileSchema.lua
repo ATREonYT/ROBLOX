@@ -31,6 +31,10 @@ Schema.Template={
  -- number, so a rebirth, which resets Power, never lowers it). Kept by HoodServer/Levels; HoodServer/ProfileSchema.migrate
  -- fills it for a profile from before it (no version bump: an older server keeps the field as it is).
  BestLevel=1,
+ -- (brief 29, P5) Reasons to come back (Shared/RetentionRules, HoodServer/Retention): visits, when you were last here and the
+ -- Power waiting from time away, the last offline amount (for the 2x Offline product) and whether the group reward was taken.
+ -- DailyStreak (0..7, the day you reached) and LastDaily (os.time of the last claim) are the Daily Rewards'.
+ Retention={Joins=0,LastSeen=0,Pending=0,LastOffline=0,Group=false},
 }
 function Schema.new() return clone(Schema.Template) end
 function Schema.migrate(data)
@@ -67,6 +71,9 @@ function Schema.migrate(data)
  -- Codes (brief 27): a profile from before them gets an empty table; a damaged one is cleaned, never a reason to kick.
  -- No version bump: an older server that loads this profile keeps the field as it is.
  data.Codes=require(script.Parent.Codes).sanitize(data.Codes)
+ -- Retention (brief 29): cleaned like the codes; a profile from before it gets the defaults.
+ data.Retention=require(game.ReplicatedStorage.Shared.RetentionRules).sanitize(data.Retention)
+ if type(data.DailyStreak)=='number' then data.DailyStreak=math.clamp(math.floor(data.DailyStreak),0,7) end
  reconcile(data,Schema.Template)
  -- BestLevel (brief 29): a damaged or missing value is rebuilt from Power and the rebirths (LevelRules.bestOf), never a reason
  -- to kick, and never below what the profile already earned (nobody loses a rank).
@@ -112,6 +119,7 @@ function Schema.validate(data)
  assert(type(s.Opened)=='number' and s.Opened%1==0 and s.Opened>=0,'Invalid Shoes.Opened')
  assert(type(data.Codes)=='table','Invalid Codes')
  assert(type(data.BestLevel)=='number' and data.BestLevel%1==0 and data.BestLevel>=1 and data.BestLevel<=require(game.ReplicatedStorage.Shared.LevelRules).MaxLevel,'Invalid BestLevel')
+ assert(type(data.Retention)=='table' and type(data.Retention.Pending)=='number' and type(data.Retention.LastSeen)=='number' and type(data.Retention.Group)=='boolean','Invalid Retention')
  for code,at in pairs(data.Codes) do assert(type(code)=='string' and type(at)=='number' and at==at and at>=0,'Invalid used code') end
  return true
 end
