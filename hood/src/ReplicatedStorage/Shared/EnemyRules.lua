@@ -43,7 +43,7 @@ EnemyRules.Kinds = {
 	Bruiser = { Name = 'Bruiser', Hp = 2, Speed = 9, Reach = 4.6, Windup = 0.65, Recover = 1.1, Punch = 10, Scale = 1.3 },
 	Boss = { Name = 'Boss', Hp = 7, Speed = 9, Reach = 6, Windup = 0.9, Recover = 1.3, Punch = 14, Scale = 2.1 },
 }
-EnemyRules.FinalBossHp = 10 -- (brief 29) the last stage's boss (World 1's final boss) is tougher than a crew's boss
+EnemyRules.FinalBossHp = 36 -- (brief 29) the last stage's boss (World 1's final boss): three phases, ~40 s at the Recommended Power
 
 -- Who stands in each stage (index order) and where (x, z' past the gate): a loose group in the middle of the street
 -- (brief 23: z' 32..43, so the two pads before the next gate, on the sidewalks from z' 50, stay clear and show from the
@@ -69,7 +69,7 @@ EnemyRules.Lineups = {
 	{ R, G, B, G, R },
 	{ G, B, R, G, X },
 	{ B, R, G, G, R },
-	{ X, G, R, G, B },
+	{ X, G, R, B, R, G },
 }
 EnemyRules.Spots = {
 	{ { -6, 36 }, { 5, 38 }, { -0.5, 32 } },
@@ -87,10 +87,16 @@ EnemyRules.Spots = {
 	{ { -10, 32 }, { -4, 37 }, { 2, 33 }, { 8, 38 }, { 13, 33 } },
 	{ { -12, 36 }, { -6, 32 }, { 6, 33 }, { 11, 37 }, { 0, 41 } },
 	{ { -11, 33 }, { -5, 38 }, { 1, 32 }, { 7, 37 }, { 12, 32 } },
-	{ { 0, 74 }, { -12, 12 }, { 12, 14 }, { -22, 52 }, { 22, 54 } },
+	{ { 0, 74 }, { -10, 14 }, { 10, 16 }, { -24, 92 }, { 0, 92 }, { 24, 92 } },
 }
--- Places goons walk round (map-frame boxes in z', per stage): the Champ Ring and its bleachers in the Boss Yard.
-EnemyRules.Blocks = { [16] = { { -17.5, 21, 17.5, 45.5 } } }
+-- (brief 29, P3b) The Boss Yard is the Harbor Crew's warehouse: two goons guard the door, the boss waits up on the cross
+-- catwalk, and three wait behind the loading dock's roller doors (Reserve = the door: code5/f4_finale DockDoor_n) until
+-- the boss calls them out (its Crew move). A reserve goon never notices you on its own and isn't drawn till it comes out.
+EnemyRules.Reserve = { [16] = { [4] = 1, [5] = 2, [6] = 3 } }
+-- A narrower fight floor where the hall's sides are dressed (the warehouse: |x| <= 31, its yellow lines).
+EnemyRules.ArenaX = { [16] = 31 }
+-- Places goons walk round (map-frame boxes in z', per stage). (brief 29: the Boss Yard's ring is gone; its floor is clear)
+EnemyRules.Blocks = {}
 -- The stage's crew colours (GoonRig reads these): The Block red, Corner Shop green, The Alley purple, The Courts orange,
 -- The Yards yellow, the Boss Yard's boss gold.
 EnemyRules.Crews = { 'Red', 'Red', 'Red', 'Green', 'Green', 'Green', 'Purple', 'Purple', 'Purple', 'Orange', 'Orange', 'Orange', 'Yellow', 'Yellow', 'Yellow', 'Boss' }
@@ -181,6 +187,14 @@ EnemyRules.Moves = {
 	Volley = { Shape = 'Circle', At = 'You', Radius = 4.5, Damage = 15, Reach = 40, Count = 3, Spread = 7, Flight = 0.8 },
 	Leap = { Shape = 'Circle', At = 'You', Radius = 8, Damage = 18, Reach = 36, Jump = true, Flight = 0.6 },
 	Blast = { Shape = 'Cone', Length = 20, Angle = math.rad(70), Damage = 16, Reach = 18 },
+	-- (brief 29, P3b) World 1's final boss, the Harbor Boss, in its warehouse: a forklift sent down a long lane, its
+	-- anchor swung round in a wide cone, cargo containers dropped from the crane onto RED squares where you stand, a
+	-- ground-pound shockwave (a RED ring: hug the boss or get clear), and its crew called out of the loading dock.
+	Forklift = { Shape = 'Line', Length = 44, Width = 7, Damage = 16, Reach = 40, Flight = 0.8 },
+	Anchor = { Shape = 'Cone', Length = 17, Angle = math.rad(120), Damage = 15, Reach = 14 },
+	Containers = { Shape = 'Square', At = 'You', Radius = 4, Damage = 18, Reach = 44, Count = 3, Spread = 9, Flight = 0.9, Drop = true },
+	Shockwave = { Shape = 'Ring', At = 'Self', Radius = 22, Inner = 6, Damage = 16, Reach = 21 },
+	Crew = { Shape = 'Circle', At = 'Docks', Radius = 4, Damage = 0, Reach = 200, Calls = true },
 }
 -- Each boss's moves (phase 1), its rage move (phase 2 adds it), what it throws, and the moves' names on screen.
 EnemyRules.Bosses = {
@@ -198,15 +212,29 @@ EnemyRules.Bosses = {
 		Names = { Throw = 'CRATE TOSS!', Charge = 'HARD HAT CHARGE!', Stomp = 'GROUND POUND!' } },
 	dockhands = { Title = 'The Dockmaster', Moves = { 'Roll', 'Stomp' }, Rage = 'Volley', Prop = 'Barrel',
 		Names = { Roll = 'BARREL ROLL!', Stomp = 'DECK STOMP!', Volley = 'CRATE RAIN!' }, Props = { Volley = 'Crate' } },
-	harbor = { Title = 'The Harbor Boss', Moves = { 'Stomp', 'Charge' }, Rage = 'Volley', Prop = 'Barrel',
-		Names = { Stomp = 'TIDAL STOMP!', Charge = 'HARBOR RUSH!', Volley = 'BARREL STORM!' } },
+	-- (P3b) World 1's final boss: three phases (PhaseAt: under 66 % and 33 % HP), its moves building up (Phase2, Phase3),
+	-- an entrance off the catwalk (Perch: studs up; Waves.client draws the drop through its Entrance seconds of "!").
+	harbor = { Title = 'The Harbor Boss', Final = true, Moves = { 'Forklift', 'Anchor' }, Phase2 = { 'Containers', 'Shockwave' }, Phase3 = { 'Crew' },
+		PhaseAt = { 0.66, 0.33 }, Perch = 18.5, PerchBack = 8, Entrance = 1.8, Rage = 'Shockwave', Prop = 'Barrel', Props = { Forklift = 'Forklift', Containers = 'DropContainer' },
+		Names = { Forklift = 'FORKLIFT CHARGE!', Anchor = 'ANCHOR SWEEP!', Containers = 'CONTAINER DROP!', Shockwave = 'SHOCKWAVE!', Crew = 'CREW, GET HIM!' },
+		Card = 'WORLD 1 FINAL BOSS' },
 }
 -- Telegraph and rest between big moves, by phase: slower and gentler first, quicker at half HP (never under TeleMin).
 function EnemyRules.teleTime(phase: number?): number
-	return math.max(EnemyRules.TeleMin, (phase or 1) >= 2 and 1.1 or 1.4)
+	return math.max(EnemyRules.TeleMin, (phase or 1) >= 3 and 1.0 or (phase or 1) >= 2 and 1.1 or 1.4)
 end
 function EnemyRules.bossRest(phase: number?): number
-	return (phase or 1) >= 2 and 2.6 or 3.8
+	return (phase or 1) >= 3 and 2.2 or (phase or 1) >= 2 and 2.6 or 3.8
+end
+-- The phase a boss is in at `frac` of its HP: the final boss's PhaseAt thresholds (1..3), else angry (2) under RageAt.
+function EnemyRules.phaseFor(look: string?, frac: number): number
+	local b = EnemyRules.bossOf(look)
+	local at = b.PhaseAt or { EnemyRules.RageAt }
+	local phase = 1
+	for _, f in at do
+		if frac <= f then phase += 1 end
+	end
+	return phase
 end
 function EnemyRules.bossOf(look: string?): any
 	return EnemyRules.Bosses[EnemyRules.crewOf(look)] or EnemyRules.Bosses.bullies
@@ -215,6 +243,14 @@ end
 function EnemyRules.movesOf(g: any): { string }
 	local b = EnemyRules.bossOf(g.Look)
 	local list = table.clone(b.Moves)
+	if b.Final then
+		for k, extra in { b.Phase2, b.Phase3 } do
+			if (g.Phase or 1) >= k + 1 then
+				for _, m in extra or {} do table.insert(list, m) end
+			end
+		end
+		return list
+	end
 	if (g.Phase or 1) >= 2 and b.Rage then table.insert(list, b.Rage) end
 	return list
 end
@@ -222,7 +258,7 @@ end
 -- A big move aimed at `you` (map frame) from boss g: { Move, Shape, O (origin), D (unit direction), L, W, R, A, P (circle
 -- centres), Tele, Damage, Flight }, or nil when none fits (you're out of every move's reach). The boss takes its moves
 -- in turn; with one out of reach it tries the next.
-function EnemyRules.planAttack(g: any, you: Vector3, arena: any): any
+function EnemyRules.planAttack(g: any, you: Vector3, arena: any, others: { any }?): any
 	local list = EnemyRules.movesOf(g)
 	local d = flat(you - g.Pos)
 	local dist = d.Magnitude
@@ -231,10 +267,20 @@ function EnemyRules.planAttack(g: any, you: Vector3, arena: any): any
 		local n = ((g.MoveN or 0) + k) % #list + 1
 		local name = list[n]
 		local m = EnemyRules.Moves[name]
-		if m and dist <= m.Reach then
+		-- (the crew call needs someone waiting at the dock)
+		local docks = nil
+		if m and m.At == 'Docks' then
+			docks = {}
+			for _, o in others or {} do
+				if o.Reserve and o.State == EnemyRules.Idle then table.insert(docks, o.Home) end
+			end
+		end
+		if m and dist <= m.Reach and (not docks or #docks > 0) then
 			g.MoveN = n
-			local a = { Move = name, Shape = m.Shape, O = g.Pos, D = dir, L = m.Length, W = m.Width, R = m.Radius, A = m.Angle, Tele = EnemyRules.teleTime(g.Phase), Damage = m.Damage, Flight = m.Flight, Jump = m.Jump }
-			if m.At == 'You' then
+			local a = { Move = name, Shape = m.Shape, O = g.Pos, D = dir, L = m.Length, W = m.Width, R = m.Radius, A = m.Angle, Tele = EnemyRules.teleTime(g.Phase), Damage = m.Damage, Flight = m.Flight, Jump = m.Jump, Ri = m.Inner, Drop = m.Drop, Calls = m.Calls }
+			if docks then
+				a.P = docks
+			elseif m.At == 'You' then
 				a.P = { EnemyRules.clamp(flat(you), arena) }
 				for c = 2, m.Count or 1 do
 					local ang = (c - 1.5) * 2.1 + (g.MoveN or 0)
@@ -251,9 +297,18 @@ end
 
 -- Is the point p (map frame) inside the attack's shape (shrunk by Fair)?
 function EnemyRules.inAttack(a: any, p: Vector3): boolean
-	if not a or typeof(p) ~= 'Vector3' then return false end
+	if not a or typeof(p) ~= 'Vector3' or (a.Damage or 0) <= 0 then return false end
 	local q = flat(p)
 	local fair = EnemyRules.Fair
+	if a.Shape == 'Square' then
+		for _, c in a.P or {} do
+			if math.abs(q.X - c.X) <= a.R - fair and math.abs(q.Z - c.Z) <= a.R - fair then return true end
+		end
+		return false
+	elseif a.Shape == 'Ring' then
+		local d = (q - (a.P and a.P[1] or a.O)).Magnitude
+		return d >= (a.Ri or 0) + fair and d <= a.R - fair
+	end
 	if a.Shape == 'Line' then
 		local rel = q - a.O
 		local along = rel:Dot(a.D)
@@ -330,7 +385,7 @@ function EnemyRules.world(gates: { any }, lastDepth: number?, looks: ((number) -
 		if type(stage) == 'number' and lineup and spots and type(g.Z) == 'number' then
 			local after = gates[n + 1]
 			local far = after and after.Z or (g.Z - (lastDepth or 96))
-			local arena = { X = math.max(6, (g.HalfWidth or 20) - EnemyRules.Edge), Z0 = g.Z - EnemyRules.Margin, Z1 = far + EnemyRules.Margin, Top = g.Z, Blocks = {} }
+			local arena = { X = math.min(EnemyRules.ArenaX[stage] or math.huge, math.max(6, (g.HalfWidth or 20) - EnemyRules.Edge)), Z0 = g.Z - EnemyRules.Margin, Z1 = far + EnemyRules.Margin, Top = g.Z, Blocks = {} }
 			for _, b in EnemyRules.Blocks[stage] or {} do
 				table.insert(arena.Blocks, { b[1], g.Z - b[4], b[3], g.Z - b[2] }) -- {x0, z0, x1, z1} with z0 < z1
 			end
@@ -347,7 +402,7 @@ function EnemyRules.world(gates: { any }, lastDepth: number?, looks: ((number) -
 				local spot = spots[i]
 				if spot then
 					local home = Vector3.new(math.clamp(spot[1], -arena.X, arena.X), 0, math.clamp(g.Z - spot[2], arena.Z1, arena.Z0))
-					list[i] = { Kind = kind, Name = EnemyRules.tagName(stage, kind), Home = home, Look = cast[i], Walkout = (court and home.X > court.Fence.X) or nil }
+					list[i] = { Kind = kind, Name = EnemyRules.tagName(stage, kind), Home = home, Look = cast[i], Walkout = (court and home.X > court.Fence.X) or nil, Reserve = EnemyRules.Reserve[stage] and EnemyRules.Reserve[stage][i] or nil }
 				end
 			end
 			world[stage], arenas[stage] = list, arena
@@ -359,8 +414,8 @@ end
 ---------------------------------------------------------------------------------------------- one goon
 -- A goon: { Kind, Home, Pos (Vector3, map frame, Y 0), State, T (timer), Slot (0..1: where round you it stands),
 -- Look (its HoodEnemies key, brief 29) }.
-function EnemyRules.new(kind: string, home: Vector3, slot: number?, look: string?): any
-	return { Kind = kind, Home = home, Pos = home, State = EnemyRules.Idle, T = 0, Slot = slot or 0, Look = look }
+function EnemyRules.new(kind: string, home: Vector3, slot: number?, look: string?, reserve: number?): any
+	return { Kind = kind, Home = home, Pos = home, State = EnemyRules.Idle, T = 0, Slot = slot or 0, Look = look, Reserve = reserve }
 end
 
 
@@ -420,6 +475,7 @@ function EnemyRules.step(g: any, dt: number, target: Vector3?, now: number, calm
 	local calm = calmUntil and now < calmUntil
 	local t = (target and not calm) and flat(target) or nil
 	if g.State == S.Idle then
+		if g.Reserve then return nil end -- (behind the dock's doors till the boss calls)
 		if t and (t - g.Pos).Magnitude <= (g.Kind == 'Boss' and S.BossNotice or S.Notice) then
 			S.alert(g, 0)
 			return 'notice'
@@ -451,7 +507,7 @@ function EnemyRules.step(g: any, dt: number, target: Vector3?, now: number, calm
 		-- (brief 29) a boss's big move: when it's rested and you're in a move's reach (between punches too)
 		g.CD = (g.CD or S.BossFirst) - dt
 		if g.CD <= 0 and (g.State == S.Chase or g.State == S.Recover) then
-			local atk = S.planAttack(g, t, arena)
+			local atk = S.planAttack(g, t, arena, others)
 			if atk then
 				g.Atk, g.State, g.T = atk, S.Tele, atk.Tele
 				return 'tele'
@@ -465,6 +521,16 @@ function EnemyRules.step(g: any, dt: number, target: Vector3?, now: number, calm
 		local landed = atk ~= nil and S.inAttack(atk, t)
 		g.CD = S.bossRest(g.Phase)
 		g.State, g.T = S.Recover, k.Recover
+		if atk and atk.Calls then
+			-- the crew call: everyone waiting at the dock bursts out, a beat apart
+			local order = 0
+			for _, o in others or {} do
+				if o.Reserve and o.State == S.Idle then
+					S.alert(o, order)
+					order += 1
+				end
+			end
+		end
 		if atk and atk.Move == 'Charge' then
 			-- down the lane (as far as the street lets it)
 			g.DashFrom, g.DashTo = g.Pos, S.clamp(atk.O + atk.D * (atk.L - 2), arena)
@@ -523,6 +589,9 @@ end
 function EnemyRules.alert(g: any, order: number)
 	if g.State ~= EnemyRules.Idle and g.State ~= EnemyRules.Return then return end
 	g.State, g.T = EnemyRules.Alert, EnemyRules.NoticeDelay + 0.12 * (order or 0)
+	-- (brief 29) the final boss makes an entrance (off the catwalk), a reserve goon has its door to roll up first
+	if g.Kind == 'Boss' and g.Pos == g.Home then g.T = EnemyRules.bossOf(g.Look).Entrance or g.T end
+	if g.Reserve then g.T = 0.9 + 0.35 * (order or 0) end
 end
 
 -- One goon noticing calls the rest of its crew (not the Boss: it waits for you), the nearer ones first, each a beat
@@ -530,7 +599,7 @@ end
 function EnemyRules.callPack(goons: { any }, caller: any): { number }
 	local list = {}
 	for i, o in goons do
-		if o ~= caller and o.State == EnemyRules.Idle and o.Kind ~= 'Boss' then table.insert(list, i) end
+		if o ~= caller and o.State == EnemyRules.Idle and o.Kind ~= 'Boss' and not o.Reserve then table.insert(list, i) end
 	end
 	table.sort(list, function(a, b) return (goons[a].Home - caller.Home).Magnitude < (goons[b].Home - caller.Home).Magnitude end)
 	for order, i in list do EnemyRules.alert(goons[i], order) end

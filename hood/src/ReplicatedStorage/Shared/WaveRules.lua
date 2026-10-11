@@ -119,7 +119,7 @@ function WaveRules.spawn(stage: number, enemies: { any }): any
 		local home = type(e) == 'table' and e.Home or Vector3.zero
 		local hp = EnemyRules.maxHp(stage, kind)
 		w.HP[i], w.Max[i] = hp, hp
-		w.Goons[i] = EnemyRules.new(kind, home, (i - 1) / math.max(1, #enemies), type(e) == 'table' and e.Look or nil)
+		w.Goons[i] = EnemyRules.new(kind, home, (i - 1) / math.max(1, #enemies), type(e) == 'table' and e.Look or nil, type(e) == 'table' and e.Reserve or nil)
 	end
 	return w
 end
@@ -134,6 +134,15 @@ function WaveRules.hit(w: any, index: number, damage: number): (boolean, boolean
 	local g = w.Goons and w.Goons[index]
 	if g then g.State = EnemyRules.Down end
 	w.Left = math.max(0, w.Left - 1)
+	-- (brief 29, P3b) World 1's final boss down: its crew gives up (every goon still up is down too) and the wave is won
+	if g and g.Kind == 'Boss' and EnemyRules.bossOf(g.Look).Final then
+		for i, o in w.Goons do
+			if o.State ~= EnemyRules.Down then
+				o.State, w.HP[i] = EnemyRules.Down, 0
+			end
+		end
+		w.Left = 0
+	end
 	if w.Left == 0 then
 		w.Cleared = true
 		return true, true, true
@@ -293,9 +302,13 @@ function Session:shoot(stage: any, index: any, from: Vector3, damage: number): (
 	local hit, downed, cleared = WaveRules.hit(w, index, damage)
 	if not hit then return false, 'down', w, false, false end
 	-- (brief 29) a boss down to half its HP gets angry: phase 2 (its rage move, quicker moves), and it comes at you soon
-	if g.Kind == 'Boss' and not downed and (g.Phase or 1) < 2 and w.HP[index] <= w.Max[index] * EnemyRules.RageAt then
-		g.Phase = 2
-		g.CD = math.min(g.CD or 0, 0.8)
+	-- (P3b) the final boss has three phases (EnemyRules.phaseFor): each comes with its new moves
+	if g.Kind == 'Boss' and not downed then
+		local phase = EnemyRules.phaseFor(g.Look, w.HP[index] / math.max(1, w.Max[index]))
+		if phase > (g.Phase or 1) then
+			g.Phase = phase
+			g.CD = math.min(g.CD or 0, 0.8)
+		end
 	end
 	if not downed then w.Woke = wake(w, index) end
 	if cleared then w.ClearedAt = self.Clock() end

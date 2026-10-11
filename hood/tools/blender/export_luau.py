@@ -352,7 +352,7 @@ def export_props():
 	for p in problems:
 		print('lint:', p)
 	n = write_module(os.path.join(OUT_DIR, 'PropModels.lua'), 'PropModels', prop_models, 'props',
-		'Brief 29 props: what the crew bosses throw and roll (Shared/BossFX), and the basketball court\'s players\' tunnel.',
+		'Brief 29 props: what the crew bosses throw and roll (Shared/BossFX), the basketball court\'s players\' tunnel, and the Boss Yard warehouse kit (forklift, crane hook, pallets, cargo container, lamps).',
 		'thrown props centred on the origin; the tunnel stands on the origin (floor y = 0), its mouth toward -Z',
 		'Root', 'the pivot', ICON_VIEW, lambda m: ['Unit = %s' % num(m.unit)])
 	print('PropModels.lua', n, 'bytes', [(m.id, m.part_count() + 1) for m in prop_models])

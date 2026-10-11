@@ -17,6 +17,9 @@ local EnemyRules = require(RS.Shared.EnemyRules)
 local EnemyModels = {}
 EnemyModels.FolderName = 'HoodEnemyModels'
 EnemyModels.Workers = 2 -- looks built at once
+-- Our size for a look, over the roster's own (the user's files stay as they made them): World 1's final boss stands a
+-- head and more over the crew bosses.
+EnemyModels.Scale = { harbor_boss = 2.2 }
 
 local cached -- EnemyLooks, or false when it is missing or fails to load
 function EnemyModels.looks()
@@ -90,6 +93,7 @@ function EnemyModels.make(key: string, build: any): (Model?, string?)
 	hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
 	pcall(function() hum.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff end)
 	model:SetAttribute('DisplayName', model.Name)
+	if EnemyModels.Scale[key] then pcall(function() model:ScaleTo(EnemyModels.Scale[key]) end) end
 	model:SetAttribute('EnemyKey', key)
 	model.Name = key
 	return model

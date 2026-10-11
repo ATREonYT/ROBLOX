@@ -257,6 +257,7 @@ local function freeShot(where, viewport)
 	if training() or os.clock() - lastFree < 0.1 then return end
 	local stage, left = player:GetAttribute('WaveStage'), player:GetAttribute('WaveLeft')
 	if type(stage) == 'number' and stage > 0 and type(left) == 'number' and left > 0 then return end
+	if player:GetAttribute('WorldBossFight') == true then return end -- (brief 29: on the World Boss pier Waves.client aims)
 	local tool = heldGun()
 	local c = player.Character
 	local root = c and c:FindFirstChild('HumanoidRootPart')

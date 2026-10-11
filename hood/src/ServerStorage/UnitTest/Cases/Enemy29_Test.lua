@@ -115,8 +115,8 @@ return function(t)
  t.test('a boss telegraphs every big move in red at least a second before it lands, and gets angry at half HP',function()
   for _,ph in {1,2} do t.expect.truthy(E.teleTime(ph)>=E.TeleMin and E.TeleMin>=1) end
   t.expect.truthy(E.teleTime(2)<E.teleTime(1) and E.bossRest(2)<E.bossRest(1))
-  for crew in E.Bosses do
-   for _,ph in {1,2} do
+  for crew,b in E.Bosses do
+   for _,ph in (b.Final and {} or {1,2}) do -- (World 1's final boss has its own three phases: Finale29_Test)
     local g={Kind='Boss',Look=crew..'_boss',Pos=Vector3.new(0,0,-40),Phase=ph}
     local moves=E.movesOf(g)
     t.expect.equal(#moves,ph==1 and 2 or 3)

@@ -173,11 +173,22 @@ function FightUI.bossBar(parent)
 	Kit.corner(UDim.new(0, 8)).Parent = fill
 	local grad = Kit.gradient(FightUI.Color.hpTop, FightUI.Color.hp, 0.45)
 	grad.Parent = fill
-	Kit.new('Frame', { Name = 'Half', AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromScale(0.5, 0), Size = UDim2.new(0, 3, 1, 0), BackgroundColor3 = Kit.Color.white, BackgroundTransparency = 0.25, BorderSizePixel = 0, ZIndex = 4, Parent = bar })
+	local half = Kit.new('Frame', { Name = 'Half', AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromScale(0.5, 0), Size = UDim2.new(0, 3, 1, 0), BackgroundColor3 = Kit.Color.white, BackgroundTransparency = 0.25, BorderSizePixel = 0, ZIndex = 4, Parent = bar })
+	-- (brief 29, P3b) a phase bar for World 1's final boss: a notch at each phase line (marks, fractions of its HP) and a
+	-- pip per phase under the bar, lit up to the phase it's in
+	local notches, pips = {}, {}
+	for k = 1, 2 do
+		notches[k] = Kit.new('Frame', { Name = 'PhaseNotch', AnchorPoint = Vector2.new(0.5, 0), Size = UDim2.new(0, 4, 1, 0), BackgroundColor3 = Kit.Color.white, BorderSizePixel = 0, ZIndex = 4, Visible = false, Parent = bar })
+	end
+	for k = 1, 3 do
+		pips[k] = Kit.new('Frame', { Name = 'PhasePip', AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, (k - 2) * 26, 1, 6), Size = px(18, 8), BackgroundColor3 = hex('3A3F55'), BorderSizePixel = 0, Visible = false, ZIndex = 5, Parent = holder })
+		Kit.corner(UDim.new(0, 4)).Parent = pips[k]
+		Kit.stroke(BLACK, 2, true).Parent = pips[k]
+	end
 	local hp = Kit.text({ Name = 'HP', Text = '', TextSize = 22, Stroke = BLACK, StrokeThickness = 2.5, Size = UDim2.fromScale(1, 1), ZIndex = 5, Parent = bar })
 	local phase = Kit.text({ Name = 'Phase', Text = 'PHASE 2!', TextSize = 20, Stroke = BLACK, StrokeThickness = 2.5, TextColor3 = hex('FF8A2A'), AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, 0, 0, 6), Size = px(130, 24), TextXAlignment = Enum.TextXAlignment.Right, Visible = false, ZIndex = 5, Parent = holder })
 	local api = { Gui = holder, Fill = fill }
-	function api.set(text, value, max, stage)
+	function api.set(text, value, max, stage, marks)
 		local m = math.max(1, tonumber(max) or 1)
 		local v = math.clamp(tonumber(value) or 0, 0, m)
 		name.Text = string.upper(tostring(text or 'BOSS'))
@@ -186,6 +197,17 @@ function FightUI.bossBar(parent)
 		hp.Text = hpText(v, m)
 		local angry = (stage or 1) >= 2
 		phase.Visible = angry
+		phase.Text = 'PHASE ' .. tostring(math.floor(stage or 1)) .. '!'
+		local multi = type(marks) == 'table' and #marks > 1
+		half.Visible = not multi
+		for k, n in notches do
+			n.Visible = multi and marks[k] ~= nil
+			if n.Visible then n.Position = UDim2.fromScale(marks[k], 0) end
+		end
+		for k, pip in pips do
+			pip.Visible = multi
+			pip.BackgroundColor3 = (stage or 1) >= k and (k == 3 and hex('FF3A2A') or k == 2 and hex('FF8A2A') or hex('FFD21A')) or hex('3A3F55')
+		end
 		grad.Color = angry and ColorSequence.new(hex('FFB24A'), hex('FF5A1E')) or ColorSequence.new({ ColorSequenceKeypoint.new(0, FightUI.Color.hpTop), ColorSequenceKeypoint.new(0.45, FightUI.Color.hp), ColorSequenceKeypoint.new(1, FightUI.Color.hp) })
 	end
 	function api.show(on)

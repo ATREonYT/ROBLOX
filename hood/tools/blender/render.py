@@ -22,7 +22,7 @@ sys.path.insert(0, HERE)
 tempfile.tempdir = os.environ.get('BK_TMP') or None  # where intermediate render passes go
 
 import bk_blender as bb  # noqa: E402
-from models import guns, icons  # noqa: E402
+from models import guns, icons, props  # noqa: E402
 
 HOOD = os.path.abspath(os.path.join(HERE, '..', '..'))
 OUT_GUNS = os.path.join(HOOD, 'art', 'renders', 'guns')
@@ -92,7 +92,7 @@ def pick(models, ids):
 
 def main():
 	ap = argparse.ArgumentParser()
-	ap.add_argument('what', choices=['guns', 'icons', 'turntable', 'sheets', 'compare', 'all'])
+	ap.add_argument('what', choices=['guns', 'icons', 'props', 'turntable', 'sheets', 'compare', 'all'])
 	ap.add_argument('ids', nargs='*')
 	ap.add_argument('--res', type=int)
 	ap.add_argument('--samples', type=int, default=96)
@@ -111,6 +111,11 @@ def main():
 		out = args.out or OUT_ICONS
 		for m in pick(icons.build_all(), args.ids):
 			render_model(m, os.path.join(out, m.id + '.png'), args.res or 512, args.samples, m.meta.get('view', ICON_VIEW), fill=0.80, lens=60.0, outline=None, glow=0.8)
+	if args.what == 'props':
+		# (brief 29) the props (Models/PropModels.lua): what the bosses throw and the Boss Yard's warehouse kit
+		out = args.out or os.path.join(OUT_SHEETS, 'props')
+		for m in pick(props.build_all(), args.ids):
+			render_model(m, os.path.join(out, m.id + '.png'), args.res or 512, args.samples, ICON_VIEW, fill=0.80, lens=60.0, outline=None, glow=0.8)
 	if args.what in ('turntable', 'all'):
 		# Four angles per gun into a temp folder; only the assembled sheet lands in hood/art/renders.
 		import sheets

@@ -7,6 +7,8 @@
 --   BossFX.impact(at, radius, color?)       a ground ring, dust and sparks at `at` (world)
 --   BossFX.fly(prop, from, to, time, opts)  a thrown (arc) or rolled (opts.roll) prop from -> to (world), landing at time
 --   BossFX.dust(at, scale)                   a dust puff (a charge's trail, a landing)
+--   (brief 29, P3b) shapes Square (the container drop: R = half the side, one per P) and Ring (the shockwave: a band
+--   from Ri to R round P[1]); BossFX.drop(prop, at, time) drops a prop straight down onto `at` (world)
 -- Every part is anchored, non-colliding, non-query, no shadow, in `parent` (HoodGoons).
 local RS = game:GetService('ReplicatedStorage')
 local RunService = game:GetService('RunService')
@@ -118,6 +120,51 @@ function BossFX.telegraph(frame, a, y, parent)
 			table.insert(all, part('Mark', Vector3.new(R * 0.5, 0.12, 0.35), cf * CFrame.new(0, 0.03, 0) * CFrame.Angles(0, math.rad(-45), 0), BossFX.Light, 0.2, nil, holder))
 			fills[k] = function(p) local r = math.max(0.05, (R - 0.35) * p) fill.Size = Vector3.new(0.1, 2 * r, 2 * r) end
 		end
+	elseif a.Shape == 'Square' then
+		-- (brief 29, P3b) the container drop: a red square (R = half its side) where each container comes down, a light
+		-- frame, a cross, and a fill growing from the middle
+		for k, c in a.P or { a.O } do
+			local cf = at(v3(c))
+			local R = a.R or 4
+			table.insert(all, part('Square', Vector3.new(2 * R - 0.6, 0.1, 2 * R - 0.6), cf, BossFX.Red, 0.3, nil, holder))
+			for _, e in { { 0, R - 0.15, 2 * R, 0.3 }, { 0, -R + 0.15, 2 * R, 0.3 }, { R - 0.15, 0, 0.3, 2 * R }, { -R + 0.15, 0, 0.3, 2 * R } } do
+				table.insert(edges, part('SquareEdge', Vector3.new(e[3], 0.12, e[4]), cf * CFrame.new(e[1], 0.01, e[2]), BossFX.Edge, 0.15, nil, holder))
+			end
+			for _, yaw in { 45, -45 } do
+				table.insert(all, part('Mark', Vector3.new(R * 0.9, 0.12, 0.35), cf * CFrame.new(0, 0.03, 0) * CFrame.Angles(0, math.rad(yaw), 0), BossFX.Light, 0.2, nil, holder))
+			end
+			local fill = part('SquareFill', Vector3.new(0.1, 0.11, 0.1), cf * CFrame.new(0, 0.02, 0), BossFX.Red, 0.1, nil, holder)
+			table.insert(all, fill)
+			fills[k] = function(q) local w = math.max(0.1, (2 * R - 0.6) * q) fill.Size = Vector3.new(w, 0.11, w) end
+		end
+	elseif a.Shape == 'Ring' then
+		-- (P3b) the shockwave: a red band between Ri and R round the boss (a ring of flat segments), its light rims, and
+		-- a fill sweeping out from the inner rim; the middle stays clear (the safe spot by the boss)
+		local c = a.P and a.P[1] and v3(a.P[1]) or O
+		local R, Ri = a.R or 20, a.Ri or 6
+		local n = 28
+		local cf = at(c)
+		local mid, band = (R + Ri) / 2, R - Ri
+		for i = 0, n - 1 do
+			local t = (i + 0.5) / n * math.pi * 2
+			local seg = CFrame.Angles(0, t, 0)
+			local outerW, innerW = 2 * math.pi * R / n + 0.1, 2 * math.pi * Ri / n + 0.1
+			table.insert(all, part('RingBand', Vector3.new((outerW + innerW) / 2, 0.1, band - 0.5), cf * seg * CFrame.new(0, 0, -mid), BossFX.Red, 0.32, nil, holder))
+			table.insert(edges, part('RingRim', Vector3.new(outerW, 0.12, 0.3), cf * seg * CFrame.new(0, 0.01, -R + 0.15), BossFX.Edge, 0.15, nil, holder))
+			table.insert(edges, part('RingRim', Vector3.new(innerW, 0.12, 0.3), cf * seg * CFrame.new(0, 0.01, -Ri - 0.15), BossFX.Edge, 0.15, nil, holder))
+		end
+		local wave = {}
+		for i = 0, n - 1 do wave[i] = part('RingFill', Vector3.new(0.1, 0.11, 0.1), cf, BossFX.Red, 0.1, nil, holder) table.insert(all, wave[i]) end
+		fills[1] = function(q)
+			local r = Ri + 0.3 + (band - 0.6) * q
+			local d = (r - Ri - 0.3)
+			for i = 0, n - 1 do
+				local t = (i + 0.5) / n * math.pi * 2
+				local w = 2 * math.pi * ((Ri + r) / 2) / n + 0.1
+				wave[i].Size = Vector3.new(w, 0.11, math.max(0.05, d))
+				wave[i].CFrame = cf * CFrame.Angles(0, t, 0) * CFrame.new(0, 0.02, -(Ri + 0.3 + d / 2))
+			end
+		end
 	elseif a.Shape == 'Cone' then
 		local L, ang = a.L or 18, a.A or math.rad(60)
 		local n = 6
@@ -224,6 +271,11 @@ BossFX.buildProp = buildProp
 
 -- A prop flying from -> to (world) in `time` seconds: a high arc (or along the ground with opts.roll), spinning; it
 -- lands with an impact (opts.radius) and is gone a moment later.
+-- (P3b) A prop dropped from high above straight onto `at` (world), landing at `time`: a container off the crane.
+function BossFX.drop(name, at, time, height)
+	return BossFX.fly(name, at + Vector3.new(0, height or 26, 0), at, time, { drop = true, scale = 1 })
+end
+
 function BossFX.fly(name, from, to, time, opts)
 	opts = opts or {}
 	local model = buildProp(name, opts.scale)
@@ -234,13 +286,15 @@ function BossFX.fly(name, from, to, time, opts)
 		if d:IsA('BasePart') then rel[d] = pivot and pivot.CFrame:Inverse() * d.CFrame or CFrame.identity end
 	end
 	local t0 = os.clock()
-	local height = opts.roll and 0 or math.max(6, (to - from).Magnitude * 0.35)
+	-- (P3b) opts.drop: straight down, speeding up (gravity), no spin; opts.slide: along the ground facing its way, no spin
+	local flat = opts.roll or opts.drop or opts.slide
+	local height = flat and 0 or math.max(6, (to - from).Magnitude * 0.35)
 	local conn
 	local function place(k)
-		local p = from:Lerp(to, k) + Vector3.new(0, height * 4 * k * (1 - k), 0)
-		local spin = opts.roll and CFrame.Angles(-k * time * 14, 0, 0) or CFrame.Angles(k * 9, k * 5, 0)
+		local p = from:Lerp(to, opts.drop and k * k or k) + Vector3.new(0, height * 4 * k * (1 - k), 0)
+		local spin = opts.roll and CFrame.Angles(-k * time * 14, 0, 0) or (opts.drop or opts.slide) and CFrame.identity or CFrame.Angles(k * 9, k * 5, 0)
 		local dir = Vector3.new(to.X - from.X, 0, to.Z - from.Z)
-		local face = dir.Magnitude > 1e-3 and CFrame.lookAt(p, p + dir) or CFrame.new(p)
+		local face = (dir.Magnitude > 1e-3 and not opts.drop) and CFrame.lookAt(p, p + dir) or CFrame.new(p) * CFrame.Angles(0, opts.yaw or 0, 0)
 		local cf = face * spin
 		for d, r in rel do d.CFrame = cf * r end
 	end
@@ -250,8 +304,8 @@ function BossFX.fly(name, from, to, time, opts)
 		if k >= 1 then
 			conn:Disconnect()
 			place(1)
-			if not opts.roll then BossFX.impact(to, opts.radius or 5, opts.color) end
-			task.delay(opts.roll and 0.1 or 0.45, function()
+			if not (opts.roll or opts.slide) then BossFX.impact(to, opts.radius or 5, opts.color) end
+			task.delay((opts.roll or opts.slide) and 0.1 or opts.drop and 0.9 or 0.45, function()
 				for _, d in model:GetDescendants() do
 					if d:IsA('BasePart') then TweenService:Create(d, TweenInfo.new(0.25), { Transparency = 1 }):Play() end
 				end

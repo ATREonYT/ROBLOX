@@ -9,6 +9,13 @@ tunnel stands on the origin (its floor at y = 0), its mouth toward -z.
   Barrel                     a blue oil drum with hoops
   CourtTunnel                the court's players' tunnel: 7.2 wide, 8.6 tall, 7.6 deep; a dark mouth, padded walls in
                              team blue with orange ribs, a roof sign band
+  (brief 29, the Boss Yard warehouse and World 1's final boss)
+  Forklift                   a chunky yellow forklift, 4.6 wide, 7 tall, 10 long, forks toward -z, on the origin; set
+                             dressing, and the one the Harbor Boss shoves down its red lane
+  CraneHook                  a crane's hook block, hanging from the origin (its cable's end) toward -y
+  PalletStack                a pallet of taped cardboard boxes, 4.8 x 4 on the origin
+  DropContainer              a short orange cargo container, 7.5 studs a side, centred (the container drop)
+  HangingLamp                an industrial pendant lamp hanging from the origin, a glowing bulb under a dark shade
 """
 import math
 
@@ -125,7 +132,106 @@ def court_tunnel():
 	return m
 
 
-PROPS = [dodgeball, basketball, money_bag, crate, barrel, court_tunnel]
+def forklift():
+	m = Model('Forklift', 'Forklift', 0.5, kind='prop')
+	tyre, hub = 'ink', 'steel'
+	for x in (-3.9, 3.9):
+		for z, d in ((-4.4, 3.8), (5.0, 3.2)):
+			m.cyl((x, d / 2, z), 1.6, d, tyre, 'smooth', axis='x', name='Wheel')
+			m.cyl((x * 1.03, d / 2, z), 1.7, d * 0.45, hub, 'smooth', axis='x', name='Hub')
+	m.box((0, 3.6, 0.9), (7.2, 3.4, 10.2), 'yellow', 'plastic', name='Body')
+	m.box((0, 2.15, 0.9), (7.4, 0.7, 10.4), 'gun', 'smooth', name='Skirt')
+	m.box((0, 4.25, 6.8), (7.8, 4.6, 2.6), 'gun', 'smooth', name='Counterweight')
+	for k in range(3):
+		m.box((-2.6 + k * 2.6, 4.2, 8.15), (1.0, 4.4, 0.2), 'yellow', 'smooth', name='Hazard')
+	m.box((3.0, 5.6, 8.2), (0.9, 0.7, 0.2), 'red', 'neon', name='TailLight')
+	m.box((-3.0, 5.6, 8.2), (0.9, 0.7, 0.2), 'red', 'neon', name='TailLight')
+	m.box((0, 6.0, 3.0), (3.4, 1.0, 2.8), 'ink', 'smooth', name='Seat')
+	m.box((0, 7.6, 4.2), (3.2, 2.6, 0.8), 'ink', 'smooth', name='SeatBack')
+	m.box((0, 6.6, -1.6), (0.6, 2.4, 0.6), 'gun', 'smooth', rot=euler(-25, 0, 0), name='Column')
+	m.cyl((0, 7.9, -1.0), 0.4, 2.2, 'ink', 'smooth', axis='y', rot=euler(-25, 0, 0), name='SteeringWheel')
+	for x in (-3.3, 3.3):
+		for z in (-2.2, 5.0):
+			m.box((x, 9.3, z), (0.5, 8.0, 0.5), 'gun', 'smooth', name='GuardPost')
+	m.box((0, 13.45, 1.4), (7.2, 0.5, 7.8), 'gun', 'smooth', name='GuardRoof')
+	for z in (-0.6, 1.4, 3.4):
+		m.box((0, 13.8, z), (7.0, 0.3, 0.5), 'gunlight', 'smooth', name='GuardSlat')
+	m.cyl((2.6, 14.3, 4.4), 1.0, 1.2, 'orange', 'neon', axis='y', name='Beacon')
+	for x in (-2.5, 2.5):
+		m.box((x, 7.4, -3.9), (0.9, 14.0, 0.9), 'gunlight', 'smooth', name='MastRail')
+	for y in (1.2, 14.0):
+		m.box((0, y, -3.9), (5.8, 0.7, 0.76), 'gunlight', 'smooth', name='MastBar')
+	m.box((0, 3.4, -4.7), (6.2, 3.0, 0.6), 'gun', 'smooth', name='Carriage')
+	for x in (-1.9, 1.9):
+		m.box((x, 2.85, -5.2), (1.16, 4.0, 0.5), 'gun', 'smooth', name='ForkUpright')
+		m.box((x, 0.55, -8.6), (1.2, 0.5, 7.4), 'gun', 'smooth', name='Fork')
+	return m
+
+
+def crane_hook():
+	m = Model('CraneHook', 'Crane Hook', 0.25, kind='prop')
+	m.box((0, -3.4, 0), (6.4, 6.0, 3.0), 'yellow', 'plastic', name='Block')
+	for sx in (-1, 1):
+		m.box((sx * 3.45, -3.4, 0), (0.6, 6.4, 3.4), 'gun', 'smooth', name='SidePlate')
+		m.cyl((sx * 3.85, -2.6, 0), 0.4, 1.4, 'chrome', 'smooth', axis='x', name='Bolt')
+	m.box((0, -5.4, 0), (6.5, 1.0, 3.1), 'ink', 'smooth', name='Band')
+	m.cyl((0, -0.2, 0), 0.8, 2.4, 'gun', 'smooth', axis='y', name='Swivel')
+	m.cyl((0, -7.6, 0), 2.6, 1.5, 'chrome', 'smooth', axis='y', name='Shank')
+	m.box((-1.5, -10.6, 0), (1.5, 3.8, 1.5), 'steel', 'smooth', name='Hook')
+	m.box((0.1, -12.6, 0), (4.6, 1.5, 1.46), 'steel', 'smooth', name='Hook')
+	m.box((1.75, -11.4, 0), (1.5, 2.6, 1.5), 'steel', 'smooth', rot=euler(0, 0, -12), name='Hook')
+	m.box((0.6, -9.3, 0), (2.6, 0.4, 0.7), 'red', 'smooth', rot=euler(0, 0, -28), name='Latch')
+	return m
+
+
+def pallet_stack():
+	m = Model('PalletStack', 'Pallet Stack', 0.25, kind='prop')
+	W, D = 19.2, 16.0
+	for z in (-D / 2 + 1.2, 0, D / 2 - 1.2):
+		m.box((0, 0.3, z), (W, 0.6, 2.4), 'wooddark', 'plastic', name='Runner')
+		for x in (-W / 2 + 1.4, 0, W / 2 - 1.4):
+			m.box((x, 1.2, z), (2.4, 1.2, 2.4), 'wood', 'plastic', name='Block')
+	for k in range(5):
+		m.box((-W / 2 + 1.6 + k * (W - 3.2) / 4, 2.1, 0), (2.8, 0.6, D), 'woodlight', 'plastic', name='Deck')
+	card, tape = (200, 154, 98), (232, 206, 150)
+	boxes = (((-4.6, -3.8), 9.0, 7.0, 7.4), ((4.6, -3.8), 9.0, 7.0, 7.4), ((-4.6, 3.9), 9.0, 7.0, 7.4), ((4.4, 3.9), 8.6, 6.0, 7.0), ((-2.4, -1.6), 8.4, 5.6, 6.6))
+	for k, ((x, z), w, h, d) in enumerate(boxes):
+		y0 = 2.4 if k < 4 else 9.4
+		m.box((x, y0 + h / 2, z), (w, h, d), card if k % 2 == 0 else (186, 140, 86), 'plastic', name='Carton')
+		m.box((x, y0 + h + 0.03, z), (1.4, 0.1, d + 0.06), tape, 'smooth', name='Tape')
+	return m
+
+
+def drop_container():
+	m = Model('DropContainer', 'Cargo Container', 0.5, kind='prop')
+	S = 15.0
+	body, dark, rib = 'orange', (176, 86, 22), (255, 170, 80)
+	m.box((0, 0, 0), (S - 0.6, S - 0.6, S - 0.6), body, 'plastic', name='Body')
+	e = 1.2
+	for a in (-1, 1):
+		for b in (-1, 1):
+			m.box((a * (S / 2 - e / 2), 0, b * (S / 2 - e / 2)), (e, S - 0.1, e), dark, 'smooth', name='Post')
+			m.box((0, a * (S / 2 - e / 2), b * (S / 2 - e / 2 + 0.02)), (S - 0.1, e, e), dark, 'smooth', name='Rail')
+	for sx in (-1, 1):
+		for z in (-4.2, -1.4, 1.4, 4.2):
+			m.box((sx * (S / 2 - 0.1), 0, z), (0.4, S - 2.6, 1.0), rib, 'smooth', name='Rib')
+	for x in (-2.4, 2.4):
+		m.box((x, 0, -S / 2 + 0.1), (0.5, S - 2.4, 0.5), 'gun', 'smooth', name='DoorBar')
+	m.box((0, 1.0, -S / 2 + 0.05), (4.4, 2.2, 0.2), 'white', 'smooth', name='Label')
+	return m
+
+
+def hanging_lamp():
+	m = Model('HangingLamp', 'Hanging Lamp', 0.25, kind='prop')
+	m.cyl((0, -2.0, 0), 4.0, 0.5, 'ink', 'smooth', axis='y', name='Cord')
+	m.cyl((0, -4.4, 0), 1.0, 2.2, 'gun', 'smooth', axis='y', name='Cap')
+	m.cyl((0, -5.5, 0), 1.4, 6.4, 'gun', 'smooth', axis='y', name='Shade')
+	m.cyl((0, -6.25, 0), 0.2, 6.8, 'gunlight', 'smooth', axis='y', name='Rim')
+	m.ball((0, -6.5, 0), 2.8, (255, 236, 180), 'neon', name='Bulb')
+	return m
+
+
+PROPS = [dodgeball, basketball, money_bag, crate, barrel, court_tunnel, forklift, crane_hook, pallet_stack, drop_container, hanging_lamp]
 
 
 def build_all():

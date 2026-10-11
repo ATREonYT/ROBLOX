@@ -109,7 +109,7 @@ end
 -- The wave you just walked into (or that came back), whole, for your client; restored: a crew you left, made whole.
 local function sendWave(player, stage, w, restored)
 	local enemies = {}
-	for i, e in world[stage] or {} do enemies[i] = { Kind = e.Kind, Name = e.Name, Home = { e.Home.X, e.Home.Z }, Look = e.Look } end
+	for i, e in world[stage] or {} do enemies[i] = { Kind = e.Kind, Name = e.Name, Home = { e.Home.X, e.Home.Z }, Look = e.Look, Reserve = e.Reserve } end
 	stateRemote:FireClient(player, { Kind = 'Wave', Stage = stage, HP = table.clone(w.HP), Max = table.clone(w.Max), Left = w.Left, Enemies = enemies, D = WaveRules.pack(w), Restored = restored or nil })
 end
 -- Where you stand now; on entering a stage with goons its wave (fresh or kept) goes to your client, and the run is on.
@@ -165,7 +165,7 @@ local function tele(player, ev)
 	if not a then return end
 	local points = {}
 	for k, p in a.P or {} do points[k] = xz(p) end
-	stateRemote:FireClient(player, { Kind = 'Tele', Stage = ev.Stage, Index = ev.Index, Move = a.Move, Shape = a.Shape, O = xz(a.O), D = xz(a.D), L = a.L, W = a.W, R = a.R, A = a.A, P = points, T = a.Tele, Flight = a.Flight, Jump = a.Jump, Phase = ev.Phase })
+	stateRemote:FireClient(player, { Kind = 'Tele', Stage = ev.Stage, Index = ev.Index, Move = a.Move, Shape = a.Shape, O = xz(a.O), D = xz(a.D), L = a.L, W = a.W, R = a.R, A = a.A, P = points, T = a.Tele, Flight = a.Flight, Jump = a.Jump, Phase = ev.Phase, Ri = a.Ri, Drop = a.Drop, Calls = a.Calls })
 end
 
 Net.get('WaveShot').OnServerEvent:Connect(function(player, stage, index)

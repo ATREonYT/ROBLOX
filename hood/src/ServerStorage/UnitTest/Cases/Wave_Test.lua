@@ -33,7 +33,7 @@ return function(t)
   t.expect.equal(#E.Lineups,16);t.expect.equal(#E.Spots,16);t.expect.equal(#E.Crews,16)
   for s=1,16 do
    local l=E.Lineups[s]
-   t.expect.truthy(#l>=3 and #l<=5) -- (the video: three a stage; a few more later on, never a crowd)
+   t.expect.truthy(#l>=3 and #l<=(s==16 and 6 or 5)) -- (the video: three a stage; a few more later on, never a crowd; brief 29: the warehouse's three wait behind the dock doors)
    t.expect.equal(#E.Spots[s],#l)
    for _,k in l do t.expect.truthy(E.Kinds[k]~=nil) end
    for i,spot in E.Spots[s] do
@@ -56,7 +56,7 @@ return function(t)
    for _,e in world[s] do t.expect.truthy(e.Home.Z<=a.Z0 and e.Home.Z>=a.Z1 and math.abs(e.Home.X)<=a.X);t.expect.truthy(W.stageAt(gates(),Vector3.new(e.Home.X,3,e.Home.Z))==s) end
   end
   t.expect.equal(world[1][1].Name,'Goon 1');t.expect.equal(world[16][1].Name,'BOSS');t.expect.equal(E.tagName(7,'Runner'),'Runner 7')
-  t.expect.equal(#arenas[16].Blocks,1) -- (the Champ Ring: goons walk round it)
+  t.expect.equal(#arenas[16].Blocks,0) -- (brief 29: the warehouse's fight floor is clear; the Champ Bay stands off it)
  end)
 
  t.test('goons notice you, call their crew, run at you, wind up and punch; a punch out of reach misses',function()
@@ -109,8 +109,8 @@ return function(t)
   local fought=false
   for _=1,math.floor(E.Calm*10)-2 do c.t+=0.1;for _,e in s:tick(0.1,Vector3.new(0,0,-64-30)) do if e.Kind=='punch' or e.Kind=='notice' then fought=true end end end
   t.expect.falsy(fought)
-  -- the boss yard: a step into the Champ Ring's box slides along its side
-  local a=arenas[16];local b=a.Blocks[1]
+  -- a block on the boss yard's floor (a box like the old ring's): a step into it slides along its side
+  local a=table.clone(arenas[16]);a.Blocks={{-17.5,a.Top-45.5,17.5,a.Top-21}};local b=a.Blocks[1]
   local p=E.clamp(Vector3.new(0,0,(b[2]+b[4])/2),a);t.expect.truthy(p.X<=b[1] or p.X>=b[3] or p.Z<=b[2] or p.Z>=b[4])
   local g=E.new('Goon',Vector3.new(0,0,b[4]+3));g.State=E.Chase
   for _=1,120 do E.step(g,0.1,Vector3.new(0,0,b[2]-6),0,nil,a,{g});t.expect.falsy(g.Pos.X>b[1] and g.Pos.X<b[3] and g.Pos.Z>b[2] and g.Pos.Z<b[4]) end

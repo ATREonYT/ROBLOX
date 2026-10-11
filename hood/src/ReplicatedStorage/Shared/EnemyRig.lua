@@ -30,8 +30,10 @@ function EnemyRig.template(look)
 	return folder and folder:FindFirstChild(look) or nil
 end
 
-local function fromTemplate(template, kind, parent)
+local function fromTemplate(template, kind, parent, scaleTo)
 	local model = template:Clone()
+	-- (brief 29, P3b: the World Boss is a crew boss grown huge; Model:ScaleTo scales the clothes and accessories too)
+	if scaleTo then pcall(function() model:ScaleTo(scaleTo) end) end
 	local root = model:FindFirstChild('HumanoidRootPart')
 	local hum = model:FindFirstChildOfClass('Humanoid')
 	local head = model:FindFirstChild('Head')
@@ -80,10 +82,10 @@ local function fromTemplate(template, kind, parent)
 	return rig
 end
 
-function EnemyRig.build(look, kind, crew, variant, parent)
+function EnemyRig.build(look, kind, crew, variant, parent, scaleTo)
 	local template = EnemyRig.template(look)
 	if template then
-		local ok, rig = pcall(fromTemplate, template, kind, parent)
+		local ok, rig = pcall(fromTemplate, template, kind, parent, scaleTo)
 		if ok and rig then
 			rig.Look = look
 			return rig
@@ -149,12 +151,17 @@ local POSES = {
 		Waist = { -0.55 }, Neck = { 0.45 }, LeftHip = { 1.0 }, LeftKnee = { -1.2 }, RightHip = { 0.8 }, RightKnee = { -1.1 } },
 	RollStrike = { LeftShoulder = { 1.45, 0.15, -0.1 }, LeftElbow = { 0.1 }, RightShoulder = { 1.45, -0.15, 0.1 }, RightElbow = { 0.1 },
 		Waist = { -0.3 }, LeftHip = { 0.7 }, LeftKnee = { -0.6 }, RightHip = { -0.2 } },
+	-- (brief 29, P3b) the Harbor Boss's anchor sweep: wound back over its right shoulder, then swung right across
+	AnchorReady = { RightShoulder = { 2.2, -0.9, 0.6 }, RightElbow = { 0.9 }, LeftShoulder = { 2.0, -0.7, 0.3 }, LeftElbow = { 1.1 },
+		Waist = { 0.15, -0.95 }, Neck = { 0.1, 0.4 }, LeftHip = { 0.4 }, LeftKnee = { -0.5 }, RightHip = { -0.2 } },
+	AnchorStrike = { RightShoulder = { 1.3, 0.95, -0.2 }, RightElbow = { 0.15 }, LeftShoulder = { 1.2, 0.9, -0.4 }, LeftElbow = { 0.3 },
+		Waist = { -0.25, 0.95 }, Neck = { -0.1, -0.35 }, LeftHip = { 0.7 }, LeftKnee = { -0.55 }, RightHip = { -0.45 } },
 	roar = { LeftShoulder = { 2.4, 0, -0.95 }, LeftElbow = { 0.9 }, RightShoulder = { 2.4, 0, 0.95 }, RightElbow = { 0.9 },
 		Waist = { 0.35 }, Neck = { 0.45 }, LeftHip = { 0.15 }, RightHip = { -0.15 } },
 	ko = { LeftShoulder = { 2.7, 0, -0.7 }, LeftElbow = { 0.3 }, RightShoulder = { 2.7, 0, 0.7 }, RightElbow = { 0.3 },
 		Neck = { 0.35 }, LeftHip = { 0.5 }, LeftKnee = { -0.5 }, RightHip = { 0.25 }, RightKnee = { -0.2 } },
 }
-local ALIAS = { Volley = 'Throw', Leap = 'Stomp' } -- (Volley throws like Throw; Leap lands like a Stomp)
+local ALIAS = { Volley = 'Throw', Leap = 'Stomp', Shockwave = 'Stomp', Forklift = 'Roll', Containers = 'Throw', Crew = 'Blast' } -- (Volley throws like Throw; Leap lands like a Stomp; P3b: the shockwave is a stomp, the forklift a shove, the crane a wave of the arm, the crew call a shout)
 EnemyRig.Poses = POSES
 
 local JOINTS = { 'Waist', 'Neck', 'LeftShoulder', 'LeftElbow', 'RightShoulder', 'RightElbow', 'LeftHip', 'LeftKnee', 'LeftAnkle', 'RightHip', 'RightKnee', 'RightAnkle' }
