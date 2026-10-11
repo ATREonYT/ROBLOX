@@ -18,6 +18,7 @@ local Format = require(RS.Shared.Format)
 local Guns = require(RS.Shared.Config.Guns)
 local ShotRules = require(RS.Shared.ShotRules)
 local GunTool = require(RS.Shared.GunTool)
+local CharMotion = require(RS.Shared.CharMotion) -- (brief 29: the arms kick with each shot)
 
 local player = Players.LocalPlayer
 
@@ -199,6 +200,7 @@ local function shoot(id)
 	Juice.tracer(from, to, gun.Color, 0.18 + gun.Tier * 0.015)
 	if rig and rig.eject then Juice.casing(worldOf(rig.eject)) end
 	if tool then kick(tool, 0.8 + gun.Tier * 0.05) end
+	CharMotion.shot(0.9 + gun.Tier * 0.03)
 	Juice.kick(0.03 + gun.Tier * 0.005) -- (brief 29: tiny, and it returns: no creep; the shots never stop now)
 	local color = s.Model:GetAttribute('HitColor') or gun.Color
 	Juice.burst(to, color, 0.7 + s.Tier * 0.07)

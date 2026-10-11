@@ -8,6 +8,9 @@
 --   pill.hide()
 --   local tag = FightUI.tag(adornee, name, max)   -- a BillboardGui on the goon's head part (parented to it)
 --   tag.set(hp, max)                    -- the red bar and "40/40"; tag.Gui is the BillboardGui; tag.destroy()
+--   local bar = FightUI.bossBar(parent) -- (brief 29) a boss's big HP bar under the counter: its name in gold over a
+--   bar.set(name, hp, max, phase)       -- wide red bar with "2.1K / 3K", a notch at half (phase 2 starts there; the
+--   bar.show(on)                        -- bar turns orange and "PHASE 2!" shows)
 local TweenService = game:GetService('TweenService')
 local RS = game:GetService('ReplicatedStorage')
 local Kit = require(RS.Shared.UIKit)
@@ -154,6 +157,40 @@ function FightUI.tag(adornee, name, max)
 		hp.Text = hpText(v, m)
 	end
 	function api.destroy() gui:Destroy() end
+	return api
+end
+
+-- (brief 29) A boss's HP bar at the top centre, under the "N LEFT" counter.
+FightUI.BossBarSize = Vector2.new(520, 66)
+function FightUI.bossBar(parent)
+	local size = FightUI.BossBarSize
+	local holder = Kit.new('Frame', { Name = 'BossBar', AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 100), Size = px(size.X, size.Y), BackgroundTransparency = 1, Visible = false, Parent = parent })
+	local name = Kit.text({ Name = 'BossName', Text = 'BOSS', TextSize = 30, Stroke = BLACK, StrokeThickness = 3.5, TextColor3 = hex('FFD21A'), Size = UDim2.new(1, 0, 0, 32), Parent = holder })
+	local bar = Kit.new('Frame', { Name = 'Bar', AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.fromScale(0.5, 1), Size = UDim2.new(1, 0, 0, 30), BackgroundColor3 = FightUI.Color.track, BorderSizePixel = 0, ZIndex = 2, Parent = holder })
+	Kit.corner(UDim.new(0, 8)).Parent = bar
+	Kit.stroke(BLACK, 3.5, true).Parent = bar
+	local fill = Kit.new('Frame', { Name = 'Fill', Size = UDim2.fromScale(1, 1), BackgroundColor3 = Kit.Color.white, BorderSizePixel = 0, ZIndex = 3, Parent = bar })
+	Kit.corner(UDim.new(0, 8)).Parent = fill
+	local grad = Kit.gradient(FightUI.Color.hpTop, FightUI.Color.hp, 0.45)
+	grad.Parent = fill
+	Kit.new('Frame', { Name = 'Half', AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromScale(0.5, 0), Size = UDim2.new(0, 3, 1, 0), BackgroundColor3 = Kit.Color.white, BackgroundTransparency = 0.25, BorderSizePixel = 0, ZIndex = 4, Parent = bar })
+	local hp = Kit.text({ Name = 'HP', Text = '', TextSize = 22, Stroke = BLACK, StrokeThickness = 2.5, Size = UDim2.fromScale(1, 1), ZIndex = 5, Parent = bar })
+	local phase = Kit.text({ Name = 'Phase', Text = 'PHASE 2!', TextSize = 20, Stroke = BLACK, StrokeThickness = 2.5, TextColor3 = hex('FF8A2A'), AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, 0, 0, 6), Size = px(130, 24), TextXAlignment = Enum.TextXAlignment.Right, Visible = false, ZIndex = 5, Parent = holder })
+	local api = { Gui = holder, Fill = fill }
+	function api.set(text, value, max, stage)
+		local m = math.max(1, tonumber(max) or 1)
+		local v = math.clamp(tonumber(value) or 0, 0, m)
+		name.Text = string.upper(tostring(text or 'BOSS'))
+		fill.Size = UDim2.fromScale(v / m, 1)
+		fill.Visible = v > 0
+		hp.Text = hpText(v, m)
+		local angry = (stage or 1) >= 2
+		phase.Visible = angry
+		grad.Color = angry and ColorSequence.new(hex('FFB24A'), hex('FF5A1E')) or ColorSequence.new({ ColorSequenceKeypoint.new(0, FightUI.Color.hpTop), ColorSequenceKeypoint.new(0.45, FightUI.Color.hp), ColorSequenceKeypoint.new(1, FightUI.Color.hp) })
+	end
+	function api.show(on)
+		if holder.Visible ~= on then holder.Visible = on end
+	end
 	return api
 end
 

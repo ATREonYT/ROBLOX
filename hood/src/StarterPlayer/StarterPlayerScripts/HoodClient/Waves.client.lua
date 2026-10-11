@@ -19,6 +19,10 @@
 --   Leaving a stage (brief 24): a crew you walk away from before beating it is whole again (WaveState 'Wave' with
 --     Restored): its HP bars fill back up with a green glint, a knocked-out goon pops back in on its spot in a puff of
 --     smoke, and the rest walk home (a crew still walking when the run ends keeps walking: Reset's Keep).
+--   (brief 29) The goons are the user's HoodEnemies avatars (Shared/EnemyRig clones the server's templates and animates
+--     them from code; today's goon stands in until, or unless, a look is built). A court crew jogs out of the players'
+--     tunnel as you walk in. Bosses: a big HP bar at the top, their big moves telegraphed in RED on the ground
+--     (Shared/BossFX) a second or more before they land, and a roar into phase 2 at half HP.
 local Players = game:GetService('Players')
 local UserInputService = game:GetService('UserInputService')
 local TweenService = game:GetService('TweenService')
@@ -35,7 +39,9 @@ local WaveRules = require(RS.Shared.WaveRules)
 local EnemyRules = require(RS.Shared.EnemyRules)
 local StageRules = require(RS.Shared.StageRules)
 local GunTool = require(RS.Shared.GunTool)
-local GoonRig = require(RS.Shared.GoonRig)
+local CharMotion = require(RS.Shared.CharMotion) -- (brief 29: the arms kick with each shot)
+local EnemyRig = require(RS.Shared.EnemyRig)
+local BossFX = require(RS.Shared.BossFX)
 local FightUI = require(RS.Shared.FightUI)
 local Kit = require(RS.Shared.UIKit)
 local Sound = require(RS.Shared.Config.Sound)
@@ -86,6 +92,8 @@ end)
 local folder = Instance.new('Folder')
 folder.Name = 'HoodGoons'
 folder.Parent = workspace
+BossFX.Parent = folder
+local Boss = {} -- (brief 29: bosses and walk-outs, below)
 
 -- waves[stage] = { Stage, Known (the server told us), Cleared, Goons = { [i] = view } }
 -- view = { Index, Kind, Name, Home, Rig, Tag, Pos (drawn, map frame), Srv (server's), Vel, State, Since (when the state
@@ -175,7 +183,7 @@ local function newView(stage, i, e)
 	local max = EnemyRules.maxHp(stage, e.Kind)
 	return { Stage = stage, Index = i, Kind = e.Kind, Name = e.Name, Home = e.Home, Pos = e.Home, Srv = e.Home, SrvPrev = e.Home, SrvAt = os.clock(),
 		Vel = Vector3.zero, State = EnemyRules.Idle, Since = os.clock(), Hp = max, Max = max, Down = false, Walk = 0, Yaw = 0, Y = nil,
-		Flinch = 0, FlinchV = 0, Variant = stage * 3 + i }
+		Flinch = 0, FlinchV = 0, Variant = stage * 3 + i, Look = e.Look, Walkout = e.Walkout }
 end
 -- The wave of a stage as you'd find it walking in: everyone on their spot, full HP (until the server says otherwise).
 local function waveOf(stage)
@@ -219,10 +227,12 @@ end
 local function buildRig(v)
 	local crew = EnemyRules.Crews[v.Stage] or 'Red'
 	if v.Kind == 'Boss' then crew = 'Boss' end
-	local rig = GoonRig.build(v.Kind, crew, v.Variant, folder)
+	local rig = EnemyRig.build(v.Look, v.Kind, crew, v.Variant, folder)
 	rig.Model:SetAttribute('Stage', v.Stage)
 	rig.Model:SetAttribute('Index', v.Index)
-	local tag = FightUI.tag(rig.Head, v.Name, v.Max)
+	-- (brief 29) the user's enemies carry their own names ("Recess Bully", "Court King")
+	v.Title = rig.R15 and rig.Model:GetAttribute('DisplayName') or (v.Kind == 'Boss' and EnemyRules.bossOf(v.Look).Title) or v.Name
+	local tag = FightUI.tag(rig.Head, v.Title, v.Max)
 	-- (bigger goons carry their tag higher: the Bruiser's and the Boss's heads are bigger)
 	tag.Gui.StudsOffset = (FightUI.TagOffset or Vector3.new(0, 2.6, 0)) + Vector3.new(0, (rig.Scale - 1) * 1.6, 0)
 	v.Rig, v.Tag, v.TagK = rig, tag, nil
@@ -260,7 +270,7 @@ local function applyMoves(w, d, snap)
 			v.SrvPrev, v.Srv, v.SrvAt = v.Srv, p, now
 			if snap then
 				v.Pos = p
-			elseif (v.Pos - p).Magnitude > 12 then
+			elseif (v.Pos - p).Magnitude > 12 and not v.Atk then
 				-- (a jump: snap. One you can see goes in a puff and comes out of one: put back on its spot)
 				if v.Rig and not v.Down then
 					puffAt(toWorld(v.Pos, (v.Y or 0) + 2 * v.Rig.Scale).Position, v.Rig.Scale, 5)
@@ -344,6 +354,7 @@ local function onWave(info)
 		local hp = type(info.HP) == 'table' and info.HP[i] or max
 		local wasDown, was = v.Down, tagHp(v, now)
 		v.Max, v.Hp = max, hp
+		if hp >= max then v.Phase = nil end -- (brief 29: a boss made whole starts calm again)
 		if hp > 0 then
 			if wasDown then
 				-- Back on its spot (a crew you left, made whole): it pops up out of a puff there.
@@ -368,6 +379,7 @@ end
 ---------------------------------------------------------------------------------------------- the HUD
 local gui, root, fit = Kit.screen('HoodWaves', nil, 6)
 local pill = FightUI.pill(root)
+local bossBar = FightUI.bossBar(root)
 -- (LOOP) The first fights teach themselves: while goons are up and you haven't fired for a moment, "Hold click to
 -- shoot!" (or "Hold SHOOT to fire!" on a touch screen) sits under the counter, in the goal line's gold. Only until
 -- you have beaten a couple of stages; the Auto Fight pass needs no telling.
@@ -469,6 +481,7 @@ local function target()
 	return sticky and w.Goons[sticky]
 end
 local function chestOf(v)
+	if v.Rig and v.Rig.R15 and v.Rig.Chest then return v.Rig.Chest.Position end
 	if v.Rig and v.Rig.Head then return v.Rig.Head.Position - Vector3.new(0, 1.4 * v.Rig.Scale, 0) end
 	return toWorld(v.Pos, (v.Y or 0) + 3).Position
 end
@@ -530,6 +543,7 @@ local function shoot()
 	Juice.tracer(from, to, gun.Color, 0.18 + gun.Tier * 0.015)
 	if rig and rig.eject then Juice.casing(worldOf(rig.eject)) end
 	if tool then kick(tool, 0.8 + gun.Tier * 0.05) end
+	CharMotion.shot(0.9 + gun.Tier * 0.03)
 	Juice.kick(0.035 + gun.Tier * 0.006) -- (brief 29: tiny, and it returns)
 	Juice.burst(to, gun.Color, 0.8)
 	if v.Rig then Juice.flash(v.Rig.Model) end
@@ -667,7 +681,9 @@ local function draw(v, dt, now, you)
 		local lead = math.min(now - v.SrvAt, 0.15)
 		local goal = v.Srv + v.Vel * lead
 		local before = v.Pos
-		v.Pos = v.Pos:Lerp(goal, Juice.alpha(14, dt))
+		local scripted = Boss.place(v, now)
+		v.Pos = scripted or v.Pos:Lerp(goal, Juice.alpha(14, dt))
+		if scripted and (v.Pos - before).Magnitude > 1e-3 then v.Heading = yawTo(before, v.Pos) end
 		local moved = (v.Pos - before).Magnitude
 		v.Speed = moved / math.max(dt, 1e-3)
 		v.Walk = (v.Walk + moved / (3.6 * (v.Rig and v.Rig.Scale or 1)) * math.pi) % (2 * math.pi)
@@ -680,42 +696,49 @@ local function draw(v, dt, now, you)
 	if not v.Rig then return end
 	-- Which way it faces: at you while it fights, along its run going home, up the street (toward the way in) at rest.
 	local want
-	local fighting = v.State == S.Alert or v.State == S.Chase or v.State == S.Windup or v.State == S.Recover
-	if fighting and you then want = yawTo(v.Pos, you)
+	local fighting = v.State == S.Alert or v.State == S.Chase or v.State == S.Windup or v.State == S.Recover or v.State == S.Tele or v.State == S.Dash
+	if v.Enter and v.Heading then want = v.Heading
+	elseif v.Atk and v.Atk.Face then want = v.Atk.Face
+	elseif fighting and you then want = yawTo(v.Pos, you)
 	elseif v.State == S.Return and v.Speed and v.Speed > 1 then want = yawTo(v.Pos, v.Srv + v.Vel)
 	elseif v.State == S.Idle then want = (you and (you - v.Pos).Magnitude < S.Notice + 12) and yawTo(v.Pos, you) or 0 end
 	if want and not v.Down then v.Yaw = turn(v.Yaw, want, dt * 9) end
 	-- The pose.
 	v.Flinch, v.FlinchV = Juice.springStep(v.Flinch, v.FlinchV, 0, 3, 0.4, dt)
-	local p = { walk = v.Walk, stride = math.clamp((v.Speed or 0) / 7, 0, 1), flinch = math.clamp(v.Flinch * 0.06, -0.4, 0.5) }
-	if v.State == S.Idle and not v.Down then
+	local p = { walk = v.Walk, stride = math.clamp((v.Speed or 0) / 7, 0, 1), flinch = math.clamp(v.Flinch * 0.06, -0.4, 0.5), idle = now + v.Variant }
+	if v.State == S.Idle and not v.Down and not v.Enter then
 		p.arms = v.Variant % 2
 		p.bob = math.sin(now * 4.2 + v.Variant) * 0.05 * v.Rig.Scale
 		p.look = 0.05
 	elseif fighting and not v.Down then
-		p.guard = 0.75
+		p.guard = v.Rig.R15 and 0.9 or 0.75
 		p.lean = 0.06
+		-- (a boxer's bounce while it squares up)
+		if v.Rig.R15 and (v.Speed or 0) < 2 then p.bob = math.abs(math.sin(now * 6.5 + v.Variant)) * 0.1 * v.Rig.Scale end
 	end
 	if v.Hop then
 		local t = now - v.Hop
 		if t < 0.3 then p.bob = (p.bob or 0) + math.sin(t / 0.3 * math.pi) * 0.7 * v.Rig.Scale else v.Hop = nil end
 	end
 	if v.State == S.Windup and not v.Down then
-		p.windup = math.clamp((now - v.Since) / math.max(0.1, kind.Windup), 0, 1)
-		p.twist = -0.35 * p.windup
+		-- anticipation: eases back into the wind-up, held tense at the end
+		p.windup = EnemyRig.ready((now - v.Since) / math.max(0.1, kind.Windup))
+		p.twist = v.Rig.R15 and 0 or -0.35 * p.windup
 		p.lean = 0.12 - 0.1 * p.windup
 	end
 	if v.Punch then
 		local t = now - v.Punch
-		if t < 0.45 then
-			p.punch = t < 0.08 and t / 0.08 or math.max(0, 1 - (t - 0.08) / 0.37)
-			p.twist = 0.3 * p.punch
-			p.lean = 0.12 + 0.18 * p.punch
+		if t < EnemyRig.StrikeTime then
+			-- the snap, a beat held out, then back to guard with a little overshoot
+			p.punch = EnemyRig.strike(t)
+			p.twist = v.Rig.R15 and 0 or 0.3 * p.punch
+			p.lean = 0.12 + 0.18 * math.max(0, p.punch)
 			p.windup = 0
 		else
 			v.Punch = nil
 		end
 	end
+	Boss.pose(v, p, now)
 	if v.Spawned then
 		local t = now - v.Spawned
 		if t < 0.3 then p.bob = (p.bob or 0) - (1 - t / 0.3) * 1.2 * v.Rig.Scale else v.Spawned = nil end
@@ -724,15 +747,16 @@ local function draw(v, dt, now, you)
 		local t = now - (v.KO or now)
 		p.ko = math.min(1, t / 0.32)
 		p.ko = 1 - (1 - p.ko) ^ 3 -- (falls fast, lands)
+		if t > 0.32 and t < 0.6 then p.ko -= math.sin((t - 0.32) / 0.28 * math.pi) * 0.07 end -- (and bounces once)
 		if v.Stars then v.Stars:spin(t) end
-		if t > 0.95 then poof(v); return end
+		if t > (v.Rig.R15 and 1.15 or 0.95) then poof(v); return end
 	end
 	local at = toWorld(v.Pos, v.Y or 0) * CFrame.Angles(0, v.Yaw, 0)
 	if v.PuffIn then
 		v.PuffIn = nil
 		puffAt(at.Position + Vector3.new(0, 2 * v.Rig.Scale, 0), v.Rig.Scale, 5)
 	end
-	GoonRig.pose(v.Rig, at, p)
+	EnemyRig.pose(v.Rig, at, p)
 	if v.Tag then
 		local on = not v.Down and (v.Stage == current or v.State ~= S.Idle or v.Hp < v.Max or v.Refill ~= nil)
 		if v.Tag.Gui.Enabled ~= on then v.Tag.Gui.Enabled = on end
@@ -740,7 +764,7 @@ local function draw(v, dt, now, you)
 			v.Tag.set(tagHp(v, now), v.Max)
 			-- (LOOP) A crew's tags all say "Goon N", and in a group they stacked into "Goon 1Goon 1": only the goon your
 			-- gun is on (and the Boss) shows its name; the rest show just their HP bar.
-			local named = v.Kind == 'Boss' or (v.Stage == current and v.Index == sticky)
+			local named = (v.Kind == 'Boss' and v.Stage ~= current) or (v.Stage == current and v.Index == sticky)
 			if v.Tag.Name and v.Tag.Name.Visible ~= named then v.Tag.Name.Visible = named end
 			-- (LOOP) The tag is sized in studs, so a goon right by the camera (between it and you) had a bar filling the
 			-- screen: inside TAG_NEAR studs of the camera it shrinks, never bigger on screen than it is at TAG_NEAR.
@@ -756,6 +780,211 @@ local function draw(v, dt, now, you)
 		end
 	end
 end
+
+---------------------------------------------------------------------------------------------- bosses and walk-outs (brief 29)
+local RAGE = Color3.fromRGB(255, 138, 42)
+Boss.teles = {} -- [view] = { T = the red telegraph (BossFX), At, Hit }
+
+-- A court goon waits in the players' tunnel until you walk into its stage, then jogs out to its spot (staggered).
+function Boss.walkout(v, stage, now)
+	if not v.Walkout or v.Out then return end
+	if stage == current or v.State ~= S.Idle or v.Hp < v.Max or v.Down then
+		v.Out = true
+		local a = arenas[stage]
+		if stage == current and v.State == S.Idle and not v.Down and a and a.Tunnel then
+			v.Enter = { At = now + 0.2 + ((v.Index - 1) % 3) * 0.45, From = a.Tunnel, Mid = a.Mouth }
+			v.Pos = a.Tunnel
+		end
+	end
+end
+
+-- Where a goon is drawn when the script says so (nil: follow the server): jogging out of the tunnel, or a boss's leap.
+local JOG = 11
+function Boss.place(v, now)
+	local e = v.Enter
+	if e then
+		if v.State ~= S.Idle then
+			v.Enter = nil
+			return nil
+		end
+		local d = math.max(0, now - e.At) * JOG
+		local s1, s2 = (e.Mid - e.From).Magnitude, (v.Home - e.Mid).Magnitude
+		if d < s1 then return e.From:Lerp(e.Mid, d / math.max(s1, 1e-3)) end
+		if d < s1 + s2 then return e.Mid:Lerp(v.Home, (d - s1) / math.max(s2, 1e-3)) end
+		v.Enter = nil
+		return v.Home
+	end
+	local a = v.Atk
+	if a and a.Jump and a.P1 then
+		local k = (now - (a.Hit - a.Flight)) / a.Flight
+		if k >= 0 and k <= 1 then return a.O:Lerp(a.P1, k) end
+		if k > 1 and now < a.Hit + 0.3 then return a.P1 end
+	end
+	return nil
+end
+
+-- A boss's body through its big move: the ready pose builds up through the telegraph (with a shiver at the end), the
+-- strike snaps as it lands (a thrown thing leaves its hands Flight seconds before), then it recovers. And its roar.
+function Boss.pose(v, p, now)
+	if v.Roar then
+		local t = now - v.Roar
+		if t < 0.9 then
+			p.roar = t < 0.15 and EnemyRig.smooth(t / 0.15) or (t < 0.6 and 1 or 1 - EnemyRig.smooth((t - 0.6) / 0.3))
+			p.tremble = t < 0.6 and 1 or 0
+		else
+			v.Roar = nil
+		end
+	end
+	local a = v.Atk
+	if not a or v.Down then return end
+	local throwing = a.Move == 'Throw' or a.Move == 'Volley' or a.Move == 'Roll'
+	local strikeAt = throwing and (a.Hit - a.Flight) or a.Hit
+	p.move = a.Move
+	if now < strikeAt then
+		local liftOff = a.Jump and (a.Hit - a.Flight) or strikeAt
+		local k = (now - a.At) / math.max(0.1, liftOff - a.At)
+		p.ready = EnemyRig.ready(k)
+		p.tremble = math.clamp((k - 0.7) * 3.3, 0, 1)
+		if a.Jump then
+			if now < liftOff then
+				p.crouch = p.ready * 0.9
+			else
+				local j = (now - liftOff) / a.Flight
+				p.jump = 28 * j * (1 - j) * (v.Rig.Scale or 1)
+				p.ready, p.tremble = 1, 0
+			end
+		end
+	else
+		local t = now - strikeAt
+		local s = EnemyRig.strike(t)
+		p.strike = s
+		p.ready = t < 0.16 and 1 or math.max(0, s)
+		if t > EnemyRig.StrikeTime + (a.Move == 'Charge' and 0.3 or 0) then v.Atk = nil end
+	end
+end
+
+-- 'Tele': the boss winds up and its red shape goes down on the ground; its move's name pops over its head.
+function Boss.tele(v, info)
+	if not v or v.Down then return end
+	local now = os.clock()
+	local T = math.max(0.3, tonumber(info.T) or 1)
+	local O = Vector3.new(info.O and info.O[1] or v.Pos.X, 0, info.O and info.O[2] or v.Pos.Z)
+	local D = Vector3.new(info.D and info.D[1] or 0, 0, info.D and info.D[2] or 1)
+	local a = { Move = info.Move, At = now, Hit = now + T, Flight = tonumber(info.Flight) or 0.6, Jump = info.Jump, O = O, D = D, Info = info }
+	if type(info.P) == 'table' and info.P[1] then a.P1 = Vector3.new(info.P[1][1], 0, info.P[1][2]) end
+	a.Face = yawTo(O, a.P1 and (a.P1 - O).Magnitude > 1 and a.P1 or (O + D))
+	v.Atk = a
+	if Boss.teles[v] then Boss.teles[v].T.finish(false) end
+	local y = v.Y or 0.6
+	if info.Shape == 'Circle' then
+		for _, c in info.P or {} do y = math.max(y, groundAt(v, Vector3.new(c[1], 0, c[2]))) end
+	end
+	Boss.teles[v] = { T = BossFX.telegraph(frame, info, y, folder), At = now, Hit = now + T }
+	local b = EnemyRules.bossOf(v.Look)
+	if v.Rig then
+		Juice.popNumber(v.Rig.Head.Position + Vector3.new(0, 3 * v.Rig.Scale, 0), b.Names[info.Move] or (tostring(info.Move) .. '!'), Color3.fromRGB(255, 76, 64), Kit.Font.display, { size = Vector2.new(7, 1.6), thickness = 3, stroke = BLACK })
+	end
+	play('Tock', 0.55)
+	if not (info.Move == 'Throw' or info.Move == 'Volley' or info.Move == 'Roll') then return end
+	task.delay(math.max(0, T - a.Flight), function()
+		if v.Atk ~= a or v.Down or not v.Rig then return end
+		local prop = (b.Props and b.Props[info.Move]) or b.Prop
+		if info.Move == 'Roll' then
+			local ry = (v.Y or 0.6) + 1
+			BossFX.fly(prop, toWorld(O + D * 2, ry).Position, toWorld(O + D * (info.L or 30), ry).Position, a.Flight + 0.25, { roll = true, scale = 0.9 })
+		else
+			local hand = v.Rig.Chest.Position + Vector3.new(0, 1.4 * v.Rig.Scale, 0)
+			for _, c in info.P or {} do
+				local to = Vector3.new(c[1], 0, c[2])
+				BossFX.fly(prop, hand, toWorld(to, groundAt(v, to) + 0.6).Position, a.Flight, { radius = info.R, scale = 0.9 })
+			end
+		end
+	end)
+end
+
+-- 'Blast': it lands. The shape flashes and goes; a stomp shakes the ground, a charge kicks up dust down its lane.
+function Boss.blast(v, info)
+	local te = v and Boss.teles[v]
+	if te then
+		te.T.finish(info.Landed)
+		Boss.teles[v] = nil
+	end
+	if not v then return end
+	local a = v.Atk
+	local move = info.Move or (a and a.Move)
+	local throwing = move == 'Throw' or move == 'Volley' or move == 'Roll'
+	if a and not throwing then a.Hit = math.min(a.Hit, os.clock()) end
+	local y = (v.Y or 0.6) + 0.1
+	if a and (move == 'Stomp' or move == 'Leap') then
+		BossFX.impact(toWorld(move == 'Leap' and a.P1 or a.O, y).Position, a.Info.R or 8)
+		Juice.kick(0.3)
+	elseif a and move == 'Blast' then
+		for k = 1, 3 do
+			task.delay(k * 0.07, function() BossFX.impact(toWorld(a.O + a.D * (k * (a.Info.L or 18) / 3.3), y).Position, 2.5 + k * 1.6, Color3.fromRGB(110, 200, 255)) end)
+		end
+	elseif a and move == 'Charge' then
+		for k = 0, 4 do
+			task.delay(k * 0.06, function() BossFX.dust(toWorld(a.O + a.D * (k * (a.Info.L or 24) / 5), y + 0.3).Position, 1.1) end)
+		end
+	end
+	if info.Landed then swipe(v) end
+	play('Pop', 0.6)
+end
+
+-- A boss down to half its HP gets fired up: "PHASE 2!", a roar, a ring.
+function Boss.hit(v)
+	if v.Kind ~= 'Boss' or v.Down or (v.Phase or 1) >= 2 or v.Hp <= 0 or v.Hp > v.Max * S.RageAt then return end
+	v.Phase, v.Roar = 2, os.clock()
+	if not v.Rig then return end
+	Juice.popNumber(v.Rig.Head.Position + Vector3.new(0, 3.4 * v.Rig.Scale, 0), 'PHASE 2!', RAGE, Kit.Font.display, { size = Vector2.new(6, 1.8), thickness = 3, stroke = BLACK })
+	BossFX.impact(toWorld(v.Pos, (v.Y or 0.6) + 0.1).Position, 7 * v.Rig.Scale, RAGE)
+	Juice.kick(0.25)
+end
+
+-- Every frame: the telegraphs fill up; a stale one (no 'Blast': the boss was called off) goes.
+function Boss.step(now)
+	for v, te in Boss.teles do
+		te.T.update((now - te.At) / math.max(0.1, te.Hit - te.At))
+		if now > te.Hit + 0.6 or v.Down or v.State == S.Return or v.State == S.Idle then
+			te.T.finish(false)
+			Boss.teles[v] = nil
+			if now < te.Hit then v.Atk = nil end
+		end
+	end
+end
+function Boss.clear()
+	for v, te in Boss.teles do
+		te.T.finish(false)
+		Boss.teles[v] = nil
+		v.Atk = nil
+	end
+end
+
+-- The boss of the stage you stand in: its big HP bar.
+function Boss.hud(_)
+	local w = current > 0 and waves[current]
+	local boss = nil
+	if w then
+		for _, v in w.Goons do
+			if v.Kind == 'Boss' and not v.Down then boss = v end
+		end
+	end
+	if boss then bossBar.set(boss.Title or EnemyRules.bossOf(boss.Look).Title, shownHp(boss), boss.Max, boss.Phase) end
+	bossBar.show(boss ~= nil)
+end
+
+-- A look the server has just built: a goon standing in as today's goon puts it on (while it stands easy).
+task.spawn(function()
+	local models = RS:WaitForChild(EnemyRig.FolderName, 60)
+	if not models then return end
+	models.ChildAdded:Connect(function(m)
+		for _, w in waves do
+			for _, v in w.Goons do
+				if v.Rig and not v.Rig.R15 and v.Look == m.Name and v.State == S.Idle and not v.Down and not v.Enter then dropRig(v) end
+			end
+		end
+	end)
+end)
 
 -- Which goons to draw: the crews near the camera (your fight, the next stage's crew waiting behind its gate); the rest
 -- are not built (or are put away) so nobody pays for goons out of sight.
@@ -793,17 +1022,22 @@ RunService.PreRender:Connect(function(dt)
 		local w = near and waveOf(stage) or waves[stage]
 		if w then
 			for _, v in w.Goons do
-				local dying = v.Down and v.KO and now - v.KO <= 1
-				local show = near and (not v.Down or dying)
+				local dying = v.Down and v.KO and now - v.KO <= 1.2
+				Boss.walkout(v, stage, now)
+				local show = near and (not v.Down or dying) and (not v.Walkout or v.Out)
 				if show and not v.Rig and not v.Down then buildRig(v) end
 				if not show and v.Rig then dropRig(v) end
 				if v.Rig then
-					local busy = v.State ~= S.Idle or v.Down or v.Hop or v.Punch or v.Spawned or v.Refill or v.PuffIn or math.abs(v.FlinchV) > 1e-2 or math.abs(v.Flinch) > 1e-2
+					local busy = v.State ~= S.Idle or v.Down or v.Hop or v.Punch or v.Spawned or v.Refill or v.PuffIn or v.Enter or v.Atk or v.Roar or math.abs(v.FlinchV) > 1e-2 or math.abs(v.Flinch) > 1e-2
+					-- (brief 29) close up, an R15 goon breathes and shifts every frame; further off, 15 times a second
+					busy = busy or (v.Rig.R15 and (toWorld(v.Pos).Position - cam.CFrame.Position).Magnitude < 60)
 					if busy or idleFrame then draw(v, busy and dt or 1 / 15, now, you) end
 				end
 			end
 		end
 	end
+	if idleFrame then Boss.hud(now) end
+	Boss.step(now)
 	if gainCombo and gainCombo.alive and gainCombo.part and r then
 		local camRight = cam.CFrame.RightVector
 		gainCombo.part.CFrame = CFrame.new(r.Position + camRight * 2.4 + Vector3.new(0, 2.6, 0))
@@ -916,6 +1150,7 @@ Net.get('WaveState').OnClientEvent:Connect(function(info)
 		if v then
 			v.Hp = info.HP
 			if info.HP <= 0 then knockOut(v, true) elseif v.Tag then v.Tag.set(shownHp(v), v.Max) end
+			Boss.hit(v)
 		end
 	elseif info.Kind == 'Punch' and type(info.Index) == 'number' then
 		local v = w.Goons[info.Index]
@@ -923,7 +1158,12 @@ Net.get('WaveState').OnClientEvent:Connect(function(info)
 			v.Punch = os.clock()
 			if info.Landed then swipe(v) end
 		end
+	elseif info.Kind == 'Tele' and type(info.Index) == 'number' then
+		Boss.tele(w.Goons[info.Index], info)
+	elseif info.Kind == 'Blast' and type(info.Index) == 'number' then
+		Boss.blast(w.Goons[info.Index], info)
 	elseif info.Kind == 'KO' then
+		Boss.clear()
 		koBanner()
 		table.clear(held)
 		aimed = nil

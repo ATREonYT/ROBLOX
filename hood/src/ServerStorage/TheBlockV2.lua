@@ -6294,8 +6294,28 @@ function District.courts(ctx, i)
 	end
 	for k, bp in ipairs({ { 25, 13.5 }, { 26.4, 15 }, { 40, 30.5 } }) do decor(d:part('Basketball', V(1.2, 1.2, 1.2), CFrame.new(at(bp[1], bp[2]) + V(0, 0.75, 0)), C(236, 112, 40), M.Plastic, Enum.PartType.Ball)) end
 	sbox(d, 'WaterCooler', at(24.4, 44.4), at(25.8, 45.8) + V(0, 2.2, 0), C(40, 120, 220))
-	for _, fl in { { 24, 4.6, 0.6 }, { 60, 4.6, -0.6 }, { 24, 53.4, 2.5 }, { 60, 53.4, -2.5 } } do
+	-- (brief 29: the far-left one stands outside the fence now, clear of the players' tunnel)
+	for _, fl in { { 24, 4.6, 0.6 }, { 60, 4.6, -0.6 }, { 20.4, 54.2, 2.5 }, { 60, 53.4, -2.5 } } do
 		District.floodlight(d, CFrame.lookAt(at(fl[1], fl[2]), at(42, 29)), 26)
+	end
+	-- (brief 29) The players' tunnel in the court's far corner (PropModels 'CourtTunnel', built with BoxKit in Blender's
+	-- kit), its mouth toward the gate: the court crew waits inside and jogs out as you walk in (EnemyRules.Courts: the
+	-- mouth at x 26.6, z' 45.4; Waves.client draws the walk-out). Its walls are solid; the inside stays open.
+	local props = Armory.optional('PropModels')
+	local okT, tunnel = false, nil
+	if props and props.build then okT, tunnel = pcall(props.build, 'CourtTunnel', 1) end
+	if okT and tunnel and tunnel.PrimaryPart then
+		tunnel.Name = 'PlayersTunnel'
+		local goal = d:world(CFrame.new(at(26.6, 50.4) + V(0, 0.2, 0)) * CFrame.Angles(0, math.pi, 0))
+		local delta = goal * tunnel.PrimaryPart.CFrame:Inverse()
+		for _, p in tunnel:GetDescendants() do
+			if p:IsA('BasePart') then
+				p.CFrame = delta * p.CFrame
+				p.Anchored, p.CanTouch, p.CanQuery = true, false, false
+				p.CanCollide = p.Name == 'Wall' or p.Name == 'Back' or p.Name == 'Post'
+			end
+		end
+		tunnel.Parent = d.parent
 	end
 	endBuilding(d, -1, top - ST.endZ, top - SLEN, { wall = P.st.brickLight, roof = 'hip', floors = 3 })
 	endBuilding(d, 1, top - ST.endZ, top - SLEN, { name = 'Clubhouse', wall = P.st.brickDeep, roof = 'flat', floors = 1, h = 14 })

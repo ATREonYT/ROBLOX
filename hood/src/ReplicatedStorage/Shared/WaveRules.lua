@@ -119,7 +119,7 @@ function WaveRules.spawn(stage: number, enemies: { any }): any
 		local home = type(e) == 'table' and e.Home or Vector3.zero
 		local hp = EnemyRules.maxHp(stage, kind)
 		w.HP[i], w.Max[i] = hp, hp
-		w.Goons[i] = EnemyRules.new(kind, home, (i - 1) / math.max(1, #enemies))
+		w.Goons[i] = EnemyRules.new(kind, home, (i - 1) / math.max(1, #enemies), type(e) == 'table' and e.Look or nil)
 	end
 	return w
 end
@@ -152,6 +152,7 @@ function WaveRules.restore(w: any): boolean
 	end
 	if w.Left ~= #w.Max then w.Left, changed = #w.Max, true end
 	for _, g in w.Goons or {} do
+		g.Phase, g.CD, g.Atk = nil, nil, nil -- (brief 29: a boss made whole starts its fight over)
 		if g.State == EnemyRules.Down then
 			g.State, g.T, g.Pos = EnemyRules.Idle, 0, g.Home
 			changed = true
@@ -291,6 +292,11 @@ function Session:shoot(stage: any, index: any, from: Vector3, damage: number): (
 	end
 	local hit, downed, cleared = WaveRules.hit(w, index, damage)
 	if not hit then return false, 'down', w, false, false end
+	-- (brief 29) a boss down to half its HP gets angry: phase 2 (its rage move, quicker moves), and it comes at you soon
+	if g.Kind == 'Boss' and not downed and (g.Phase or 1) < 2 and w.HP[index] <= w.Max[index] * EnemyRules.RageAt then
+		g.Phase = 2
+		g.CD = math.min(g.CD or 0, 0.8)
+	end
 	if not downed then w.Woke = wake(w, index) end
 	if cleared then w.ClearedAt = self.Clock() end
 	return true, nil, w, downed, cleared
@@ -319,6 +325,10 @@ function Session:tick(dt: number, you: Vector3?): ({ any }, { [number]: boolean 
 						table.insert(events, { Stage = stage, Kind = 'punch', Index = i, Landed = landed == true, Damage = EnemyRules.punch(g.Kind) })
 					elseif ev == 'home' then
 						table.insert(events, { Stage = stage, Kind = 'home', Index = i })
+					elseif ev == 'tele' then
+						table.insert(events, { Stage = stage, Kind = 'tele', Index = i, Attack = g.Atk, Phase = g.Phase or 1 })
+					elseif ev == 'blast' then
+						table.insert(events, { Stage = stage, Kind = 'blast', Index = i, Landed = landed == true, Damage = g.Atk and g.Atk.Damage or 0, Attack = g.Atk })
 					end
 					if g.Pos ~= before or g.State ~= was then busy = true end
 				end

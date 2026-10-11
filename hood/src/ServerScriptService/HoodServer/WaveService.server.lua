@@ -30,6 +30,11 @@
 --   { Kind = 'KO', Stage }  your soft respawn;  { Kind = 'Cleared', Stage, Reward, First, Opens (the gate it opened) }
 --   { Kind = 'Reset', Stage = 0, Keep = { stage, ... } }  the run ended: every crew is fresh again (Keep: the crews
 --     still walking home, whole; their Restored 'Wave' follows)
+--   (brief 29) Who they are: the user's HoodEnemies (EnemyLooks.forStage, via HoodServer/EnemyModels, which builds each
+--   look once into ReplicatedStorage.HoodEnemyModels for the clients to clone); 'Wave' carries each goon's Look.
+--   A boss's big moves (EnemyRules.Moves/Bosses): { Kind = 'Tele', Stage, Index, Move, Shape, O, D, L, W, R, A, P, T,
+--   Flight, Jump, Phase } when its red telegraph goes down (T seconds before it lands), then { Kind = 'Blast', Stage,
+--   Index, Move, Damage, Landed } as it lands (Landed: you were still inside; it hurts like a punch, KO included).
 local Players = game:GetService('Players')
 local RS = game:GetService('ReplicatedStorage')
 local CollectionService = game:GetService('CollectionService')
@@ -44,6 +49,9 @@ local ShotRules = require(RS.Shared.ShotRules)
 local RebirthRules = require(RS.Shared.RebirthRules)
 local Boosts = require(script.Parent.Boosts)
 local Runs = require(script.Parent.Runs)
+-- (brief 29: optional, so a server without it still runs today's goons)
+local enemyModels = script.Parent:FindFirstChild('EnemyModels')
+local EnemyModels = enemyModels and require(enemyModels) or nil
 
 while not RS:GetAttribute('FoundationReady') do task.wait(0.1) end
 local active = ActiveMap.get()
@@ -57,11 +65,12 @@ end
 local gates = StageRules.fromModels(models)
 -- No gates on this map: no waves (WaveCleared stays unset).
 if #gates == 0 then return end
-local world, arenas = EnemyRules.world(gates)
+local world, arenas = EnemyRules.world(gates, nil, EnemyModels and EnemyModels.forStage or nil)
 local lastStage = gates[#gates].Stage
 -- (the run counts a stage without goons as beaten; a map with gates and no goons at all opens every gate)
 Runs.setCrews(world, lastStage)
 if next(world) == nil then return end
+if EnemyModels then EnemyModels.start(EnemyModels.keysOf(world)) end
 local gateOf = {}
 for _, g in gates do gateOf[g.Stage] = g end
 
@@ -100,7 +109,7 @@ end
 -- The wave you just walked into (or that came back), whole, for your client; restored: a crew you left, made whole.
 local function sendWave(player, stage, w, restored)
 	local enemies = {}
-	for i, e in world[stage] or {} do enemies[i] = { Kind = e.Kind, Name = e.Name, Home = { e.Home.X, e.Home.Z } } end
+	for i, e in world[stage] or {} do enemies[i] = { Kind = e.Kind, Name = e.Name, Home = { e.Home.X, e.Home.Z }, Look = e.Look } end
 	stateRemote:FireClient(player, { Kind = 'Wave', Stage = stage, HP = table.clone(w.HP), Max = table.clone(w.Max), Left = w.Left, Enemies = enemies, D = WaveRules.pack(w), Restored = restored or nil })
 end
 -- Where you stand now; on entering a stage with goons its wave (fresh or kept) goes to your client, and the run is on.
@@ -135,17 +144,28 @@ local function knockout(player, s, stage)
 	stateRemote:FireClient(player, { Kind = 'KO', Stage = stage })
 end
 
--- A wind-up ended: did it land, and what did it do.
+-- A wind-up ended (or a boss's big move landed): did it land, and what did it do.
 local function punch(player, s, ev)
 	local c, _, h = living(player)
 	local landed = ev.Landed and c ~= nil and ev.Stage == s.Stage and not c:FindFirstChildOfClass('ForceField')
-	stateRemote:FireClient(player, { Kind = 'Punch', Stage = ev.Stage, Index = ev.Index, Damage = landed and ev.Damage or 0, Landed = landed })
+	local blast = ev.Kind == 'blast'
+	stateRemote:FireClient(player, { Kind = blast and 'Blast' or 'Punch', Stage = ev.Stage, Index = ev.Index, Damage = landed and ev.Damage or 0, Landed = landed, Move = blast and ev.Attack and ev.Attack.Move or nil })
 	if not landed then return end
-	if h.Health - ev.Damage <= 0 then
+	local damage = math.clamp(ev.Damage, 0, EnemyRules.MaxPunch)
+	if h.Health - damage <= 0 then
 		knockout(player, s, ev.Stage)
 	else
-		h:TakeDamage(ev.Damage)
+		h:TakeDamage(damage)
 	end
+end
+-- A boss's big move starts: its red telegraph on your screen (map frame x, z pairs).
+local function xz(v) return { math.floor(v.X * 100 + 0.5) / 100, math.floor(v.Z * 100 + 0.5) / 100 } end
+local function tele(player, ev)
+	local a = ev.Attack
+	if not a then return end
+	local points = {}
+	for k, p in a.P or {} do points[k] = xz(p) end
+	stateRemote:FireClient(player, { Kind = 'Tele', Stage = ev.Stage, Index = ev.Index, Move = a.Move, Shape = a.Shape, O = xz(a.O), D = xz(a.D), L = a.L, W = a.W, R = a.R, A = a.A, P = points, T = a.Tele, Flight = a.Flight, Jump = a.Jump, Phase = ev.Phase })
 end
 
 Net.get('WaveShot').OnServerEvent:Connect(function(player, stage, index)
@@ -220,7 +240,8 @@ while true do
 			local you = root and s.Stage ~= 0 and mapPos(root) or nil
 			local events, moved = s:tick(dt, you)
 			for _, ev in events do
-				if ev.Kind == 'punch' then punch(player, s, ev) end
+				if ev.Kind == 'punch' or ev.Kind == 'blast' then punch(player, s, ev)
+				elseif ev.Kind == 'tele' then tele(player, ev) end
 			end
 			for stage in moved do
 				local w = s.Waves[stage]

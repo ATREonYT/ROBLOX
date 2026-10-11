@@ -49,6 +49,9 @@
       "UIKitDemo": {
         "$path": "src/ServerStorage/UIKitDemo.lua"
       },
+      "HoodEnemies": {
+        "$path": "src/ServerStorage/HoodEnemies"
+      },
       "UnitTest": {
         "$path": "src/ServerStorage/UnitTest",
         "$ignoreUnknownInstances": true

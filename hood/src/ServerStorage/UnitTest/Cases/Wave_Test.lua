@@ -44,7 +44,9 @@ return function(t)
     for j=i+1,#E.Spots[s] do local o=E.Spots[s][j];t.expect.truthy((Vector3.new(spot[1],0,spot[2])-Vector3.new(o[1],0,o[2])).Magnitude>=4) end
    end
   end
-  t.expect.equal(E.Lineups[16][1],'Boss');for s=1,15 do t.expect.falsy(table.find(E.Lineups[s],'Boss')) end
+  -- (brief 29) each crew holds two stages: its boss joins on the 2nd (every even stage), the final boss holds the yard
+  t.expect.equal(E.Lineups[16][1],'Boss')
+  for s=1,15 do local n=0 for _,k in E.Lineups[s] do if k=='Boss' then n+=1 end end t.expect.equal(n,s%2==0 and 1 or 0) end
   t.expect.truthy(#E.Lineups[1]==3 and #E.Lineups[16]>=#E.Lineups[15])
   -- The map's gates give every stage its crew, homes inside the stage, and an arena between its two gates.
   local world,arenas=E.world(gates())
@@ -97,7 +99,7 @@ return function(t)
   s:move(nil);t.expect.equal(s.Stage,0)
   local homes=0
   for _=1,200 do c.t+=0.1;for _,e in s:tick(0.1,nil) do if e.Kind=='home' then homes+=1 end end end
-  t.expect.equal(homes,3)
+  t.expect.equal(homes,#w.Goons) -- (stage 2: three goons and, brief 29, their boss)
   for i,g in w.Goons do t.expect.equal(g.State,E.Idle);t.expect.equal(g.Pos,world[2][i].Home) end
   -- a KO: everyone goes home and ignores you for a while, even standing among them
   s:move(2)

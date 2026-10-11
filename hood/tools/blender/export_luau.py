@@ -12,7 +12,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
 import boxkit as bk  # noqa: E402
-from models import guns, icons  # noqa: E402
+from models import guns, icons, props  # noqa: E402
 
 HOOD = os.path.abspath(os.path.join(HERE, '..', '..'))
 OUT_DIR = os.path.join(HOOD, 'src', 'ReplicatedStorage', 'Shared', 'Models')
@@ -327,7 +327,7 @@ def write_module(path, module, models, src, what, origin, root, rootwhy, view, e
 	text = HEADER.format(src=src, what=what, origin=origin)
 	text += 'M.Ids = { %s }\n' % ids
 	text += '-- Paste the uploaded image ids of hood/art/%s renders here (rbxassetid://...).\nM.Images = {\n%s\n}\n' % ('renders/guns' if module == 'GunModels' else 'icons3d', images)
-	text += 'M.Unit = %s -- studs per BoxKit design unit at scale 1 (one stud bump pitch)\n' % num(models[0].unit if module == 'GunModels' else 0.2)
+	text += 'M.Unit = %s -- studs per BoxKit design unit at scale 1 (one stud bump pitch)\n' % num(models[0].unit if module != 'IconModels' else 0.2)
 	text += 'M.Meta = {\n%s\n}\n' % '\n'.join(meta_lines)
 	if module == 'IconModels':
 		text += '-- Ids with their own PNG that reuse another model as the live fallback (build(id) builds the target).\n'
@@ -342,7 +342,26 @@ def write_module(path, module, models, src, what, origin, root, rootwhy, view, e
 	return len(text)
 
 
+def export_props():
+	"""(brief 29) Shared/Models/PropModels.lua only: `export_luau.py --props` (IconModels.lua is hand-maintained now)."""
+	os.makedirs(OUT_DIR, exist_ok=True)
+	prop_models = props.build_all()
+	problems = []
+	for m in prop_models:
+		problems += bk.lint(m)
+	for p in problems:
+		print('lint:', p)
+	n = write_module(os.path.join(OUT_DIR, 'PropModels.lua'), 'PropModels', prop_models, 'props',
+		'Brief 29 props: what the crew bosses throw and roll (Shared/BossFX), and the basketball court\'s players\' tunnel.',
+		'thrown props centred on the origin; the tunnel stands on the origin (floor y = 0), its mouth toward -Z',
+		'Root', 'the pivot', ICON_VIEW, lambda m: ['Unit = %s' % num(m.unit)])
+	print('PropModels.lua', n, 'bytes', [(m.id, m.part_count() + 1) for m in prop_models])
+	return 1 if problems else 0
+
+
 def main():
+	if '--props' in sys.argv:
+		return export_props()
 	os.makedirs(OUT_DIR, exist_ok=True)
 	gun_models = guns.build_all()
 	icon_models = icons.build_all()
@@ -372,6 +391,7 @@ def main():
 		'centred on the origin, fits a 2x2x2 stud box at scale 1, front faces -Z',
 		'Root', 'the centre of the icon', ICON_VIEW, icon_meta, aliases=icons.ALIASES, external=icons.EXTERNAL)
 	print('IconModels.lua', n, 'bytes', [(m.id, m.part_count() + 1) for m in icon_models])
+
 	return 1 if problems else 0
 
 
