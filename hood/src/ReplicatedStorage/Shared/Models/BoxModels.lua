@@ -16,6 +16,7 @@
 -- Every part is Anchored, CanCollide/CanTouch/CanQuery false; studs, neon, glass and small trim cast no shadow.
 -- Scale 1: the tub is 4.4 x 3.4 and 3.1 tall to the lid top; toppers add up to about 3.5 more.
 local BoxModels = {}
+local Fonts = require(script.Parent.Parent.Fonts)
 
 local V, C = Vector3.new, Color3.fromRGB
 local M = Enum.Material
@@ -324,7 +325,7 @@ local function plate(k, t)
 		l.BackgroundTransparency = 1
 		l.Position = UDim2.fromScale(0.06, y)
 		l.Size = UDim2.fromScale(0.88, h)
-		l.Font = font
+		l.FontFace = font
 		l.Text = text
 		l.TextColor3 = color
 		l.TextScaled = true
@@ -338,8 +339,8 @@ local function plate(k, t)
 		end
 		l.Parent = g
 	end
-	line('Name', string.upper(t.Name), t.ink, Enum.Font.LuckiestGuy, 0.1, 0.52, t.inkStroke, 4)
-	line('Sub', 'SHOE BOX', t.sub, Enum.Font.GothamBlack, 0.66, 0.24)
+	line('Name', string.upper(t.Name), t.ink, Fonts.Title, 0.1, 0.52, t.inkStroke, 4) -- (brief 28: Montserrat Black, was LuckiestGuy)
+	line('Sub', 'SHOE BOX', t.sub, Fonts.Title, 0.66, 0.24)
 end
 
 -- The "+1" coin on a side face (sx = 1: +X side, -1: -X side), its mark reading from outside.

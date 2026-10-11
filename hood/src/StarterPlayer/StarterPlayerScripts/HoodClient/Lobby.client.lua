@@ -13,6 +13,7 @@ local RunService = game:GetService('RunService')
 local Skins = require(RS.Shared.Config.Skins)
 local ActiveMap = require(RS.Shared.ActiveMap)
 local RebirthRules = require(RS.Shared.RebirthRules)
+local Fonts = require(RS.Shared.Fonts)
 
 local player = Players.LocalPlayer
 local active = ActiveMap.wait(20)
@@ -21,9 +22,9 @@ local lobby = active.Lobby
 local training = lobby:FindFirstChild('Training') or lobby
 
 local C = Color3.fromRGB
--- (LOBBY6, BRIEF24: "use the same fonts as the references": the lobby's world words are the reference's FredokaOne with a
--- dark outline, the lane stacks' and the boards' font; the screen HUD keeps its own)
-local DISPLAY = Font.fromEnum(Enum.Font.FredokaOne)
+-- (brief 28) The lobby's world words are the references' Montserrat Black (Shared/Fonts' Title; LOBBY6 had FredokaOne)
+-- with a dark outline, like the lane stacks and the boards.
+local DISPLAY = Fonts.Title
 local INK = C(28, 24, 48)
 local function label(parent, name, textSize, color)
 	local t = Instance.new('TextLabel')

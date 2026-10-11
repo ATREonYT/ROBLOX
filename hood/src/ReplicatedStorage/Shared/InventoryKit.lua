@@ -554,7 +554,7 @@ function InventoryKit.frame(root, props)
 		icon.Parent = iconHolder
 	end
 	setIcon(props.Icon or { 'Backpack', 'Sneaker' })
-	local title = label({ Name = 'Title', Text = props.Title or '', TextSize = L.HeaderTitleSize, StrokeThickness = 4.5, TextXAlignment = Enum.TextXAlignment.Left, Position = px(L.TitleX, 2), Size = px(310, L.Header - 2), ZIndex = 30, Parent = header })
+	local title = label({ Name = 'Title', Text = props.Title or '', FontFace = Kit.Font.heading, TextSize = L.HeaderTitleSize, StrokeThickness = 4.5, TextXAlignment = Enum.TextXAlignment.Left, Position = px(L.TitleX, 2), Size = px(310, L.Header - 2), ZIndex = 30, Parent = header })
 	local out = { Overlay = overlay, Fit = fit, Pop = pop, Panel = panel, Header = header, Title = title, Body = body, Content = content, SetIcon = setIcon }
 	if props.Search ~= false then
 		local S = L.Search

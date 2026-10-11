@@ -15,6 +15,7 @@
 -- Kit.bar (studded progress bar), Kit.robux / Kit.robuxButton (the green Robux price button) and Kit.studs.
 -- Used by HoodClient/HUD, Store, Shoes, Goals and Waves; UIKitDemo builds sample screens with the older pieces.
 local Kit = {}
+local Fonts = require(script.Parent.Fonts)
 
 local function hex(h)
 	return Color3.fromRGB(tonumber(h:sub(1, 2), 16), tonumber(h:sub(3, 4), 16), tonumber(h:sub(5, 6), 16))
@@ -109,18 +110,19 @@ Kit.Rarity = {
 	{ name = 'LEGENDARY', color = hex('FFB020') },
 	{ name = 'MYTHIC', color = hex('FF3B5C') },
 }
+-- (brief 28) Every face comes from Shared/Fonts: Montserrat, the family the user's references set their whole UI in
+-- (Fonts.lua has the evidence). Titles, names, buttons and numbers are its Black; window titles and small lines Bold.
+-- The old keys stay so every screen keeps working; `tag` (was PermanentMarker) and `reveal` (was FredokaOne, the shoe
+-- names in the reveal) are the title face now too.
 Kit.Font = {
-	-- (brief 18) The reference UI (user_26-28 and the video) is set in Gotham Black: flat-cut terminals, a straight R leg,
-	-- a flagged 1, mixed case. Every label, number and title uses it; `italic` is the Store's "~Gamepass~"; `body` the
-	-- few small detail lines.
-	display = Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.Heavy),
-	italic = Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.Heavy, Enum.FontStyle.Italic),
-	loud = Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.Heavy),
-	number = Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.Heavy),
-	body = Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.Bold),
-	tag = Font.new('rbxasset://fonts/families/PermanentMarker.json'),
-	-- (brief 24, the lead) the unboxing reveal's pair name and bonus: FredokaOne, the world signs' face
-	reveal = Font.new('rbxasset://fonts/families/FredokaOne.json'),
+	display = Fonts.Title,
+	heading = Fonts.Heading, -- window titles ("Store", "Rebirth"): Bold, as the references' are
+	italic = Fonts.Italic, -- the Store's "~Gamepass~" section heads
+	loud = Fonts.Title,
+	number = Fonts.Number,
+	body = Fonts.Body,
+	tag = Fonts.Title,
+	reveal = Fonts.Title,
 }
 Kit.Text = { title = 40, cta = 30, button = 24, label = 18, small = 15 } -- at the 1280x720 design size
 
@@ -1711,6 +1713,38 @@ function Kit.scaleFor(abs)
 	if math.min(abs.X, abs.Y) <= 500 then k *= 1.3 end
 	return math.clamp(k, 0.5, 1.6)
 end
+-- (brief 28) Phones: no text smaller than Kit.PhoneMinText dp on the screen. Kit.textFloor(container, scale) raises each
+-- label under container whose TextSize x scale (every UIScale above it, the screen's included) is under that, keeping
+-- its own size in the attribute BaseTextSize; with scale nil the raised labels go back to their own size. Labels that
+-- are big enough are never touched (so code that sizes a label itself keeps doing so). TextScaled labels and anything
+-- under an instance with NoTextFloor = true (rows laid out from their text's width, like Kit.only) are left alone.
+Kit.PhoneMinText = 11
+function Kit.textFloor(container, scale, min)
+	min = min or Kit.PhoneMinText
+	for _, d in container:GetDescendants() do
+		if (d:IsA('TextLabel') or d:IsA('TextButton')) and not d.TextScaled then
+			local skip = false
+			local x = d.Parent
+			while x and x ~= container do
+				if x:GetAttribute('NoTextFloor') then skip = true break end
+				x = x.Parent
+			end
+			local base = d:GetAttribute('BaseTextSize')
+			if skip then
+				continue
+			elseif scale and scale > 0 then
+				local want = math.ceil(min / scale - 1e-6)
+				if (base or d.TextSize) < want then
+					if not base then d:SetAttribute('BaseTextSize', d.TextSize) end
+					d.TextSize = want
+				end
+			elseif base then
+				d.TextSize = base
+				d:SetAttribute('BaseTextSize', nil)
+			end
+		end
+	end
+end
 function Kit.screen(name, parent, displayOrder)
 	local gui = new('ScreenGui', {
 		Name = name, ResetOnSpawn = false, IgnoreGuiInset = false, ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
@@ -2364,9 +2398,9 @@ function Kit.robux(size, props)
 	return holder
 end
 
--- The width of a line of display text, for labels laid out next to each other without AutomaticSize: Gotham Black's
--- advance per character in em (measured on its open twin, Montserrat Black), 0.6 em for anything else, plus a stroke's
--- allowance. Rich-text tags are skipped.
+-- The width of a line of display text, for labels laid out next to each other without AutomaticSize: Montserrat Black's
+-- advance per character in em (Fonts.Title; the Bold faces are narrower, so it is safe for them too), 0.6 em for anything
+-- else, plus a stroke's allowance. Rich-text tags are skipped.
 local ADVANCE = {}
 do
 	local widths = { [' '] = 0.30, ['!'] = 0.31, ['"'] = 0.53, ['#'] = 0.74, ['$'] = 0.66, ['%'] = 0.80, ['&'] = 0.78, ["'"] = 0.29, ['('] = 0.38, [')'] = 0.38,
@@ -2408,6 +2442,7 @@ function Kit.only(price, size, props)
 	local onlyW, priceW = Kit.textWidth('ONLY', size), Kit.textWidth(text, size)
 	local glyph = math.floor(size * 1.25) -- (the reference's mark is as tall as the outlined letters)
 	local row = blank({ Name = props.Name or 'Only', AnchorPoint = props.AnchorPoint or Vector2.new(0.5, 0.5), Position = props.Position or UDim2.new(), Size = UDim2.fromOffset(onlyW + glyph + 2 + priceW, size + 6), ZIndex = z })
+	row:SetAttribute('NoTextFloor', true) -- (laid out from its text's width: pick its size instead)
 	if props.Only ~= false then
 		local only = Kit.text({ Name = 'Only', Text = 'ONLY', TextSize = size, Stroke = Kit.Color.black, StrokeThickness = math.max(2, size * 0.14), TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.fromOffset(onlyW, size + 6), ZIndex = z, Parent = row })
 		new('UIGradient', { Color = props.OnlyColors or ColorSequence.new(hex('F2F020'), hex('3CF000')), Parent = only })
@@ -2533,7 +2568,7 @@ function Kit.window(root, props)
 	end
 	local titleSize = props.TitleSize or 80
 	Kit.text({
-		Name = 'Title', Text = props.Title or 'Title', TextSize = titleSize, Stroke = Kit.Color.black, StrokeThickness = math.max(4, titleSize * 0.075),
+		Name = 'Title', Text = props.Title or 'Title', FontFace = Kit.Font.heading, TextSize = titleSize, Stroke = Kit.Color.black, StrokeThickness = math.max(4, titleSize * 0.075),
 		TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(left, 0), Size = UDim2.new(1, -left - hh, 1, 0), ZIndex = 27, Parent = header.Body,
 	})
 	local xs = math.floor(hh * 0.68)
@@ -2616,7 +2651,7 @@ function Kit.shopWindow(root, props)
 	local icon = Kit.icon3d(props.Icon or 'Shop', iconSize, { ZIndex = 31, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(iconSize * 0.36, top - 12), Rotation = -6 })
 	icon.Parent = panel
 	local title = Kit.text({
-		Name = 'Title', Text = props.Title or 'Shop', TextSize = titleSize, Stroke = Kit.Color.black, StrokeThickness = math.max(4, titleSize * 0.075),
+		Name = 'Title', Text = props.Title or 'Shop', FontFace = Kit.Font.heading, TextSize = titleSize, Stroke = Kit.Color.black, StrokeThickness = math.max(4, titleSize * 0.075),
 		-- (its box hugs the letters, so it never sits over the list's first line)
 		TextXAlignment = Enum.TextXAlignment.Left, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.fromOffset(math.floor(iconSize * 0.82), top - 14), Size = UDim2.fromOffset(w * 0.6, math.floor(titleSize * 0.82)), ZIndex = 32, Parent = panel,
 	})

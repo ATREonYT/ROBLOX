@@ -33,6 +33,7 @@ local Skins=require(RS.Shared.Config.Skins)
 local Products=require(RS.Shared.Config.Products)
 local Net=require(RS.Shared.Net)
 local Format=require(RS.Shared.Format)
+local Fonts=require(RS.Shared.Fonts)
 local ActiveMap=require(RS.Shared.ActiveMap)
 while not RS:GetAttribute('FoundationReady') do task.wait(.1) end
 local active=ActiveMap.get();if not active then return end
@@ -44,9 +45,9 @@ Net.get('EquipSkin').OnServerEvent:Connect(function() end)
 
 ---------------------------------------------------------------------------------------------- overhead tag
 -- Like the reference: your name small and white, "<Power> POWER" big in yellow-green, then "🔄 n REBIRTHS" in the
--- rebirth blue, all in the HUD's Gotham Black (LOOP: was LuckiestGuy) with a dark outline. Sized in studs so it
--- shrinks with distance. (Waves.client hides your own on your screen; everyone else sees it.)
-local TAG_FONT=Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.Heavy)
+-- rebirth blue, all in the HUD's Montserrat Black (Shared/Fonts' Title; LOOP: was LuckiestGuy) with a dark outline.
+-- Sized in studs so it shrinks with distance. (Waves.client hides your own on your screen; everyone else sees it.)
+local TAG_FONT=Fonts.Title
 local TAG_ROWS={
  {Name='User',Height=0.3,Color=Color3.fromRGB(240,242,248),Stroke=1.5},
  {Name='Power',Height=0.4,Color=Color3.fromRGB(205,245,70),Stroke=2},

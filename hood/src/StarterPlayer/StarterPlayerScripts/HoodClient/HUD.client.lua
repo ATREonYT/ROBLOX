@@ -332,9 +332,16 @@ local powerRow = Kit.new('Frame', { Name = 'Power', BackgroundTransparency = 1, 
 local powerIcon = Kit.icon3d(POWER, 36, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 0, 0.5, 0), ZIndex = 3 })
 powerIcon.Parent = powerRow
 local powerLabel = fillText(label({ Name = 'Value', Text = '...', TextSize = 24, StrokeThickness = 3.5, TextXAlignment = Enum.TextXAlignment.Left, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 40, 0.5, 0), Size = px(200, 34), ZIndex = 3, Parent = powerRow }), hex('FFE24A'), hex('FF9A10'))
+-- (brief 28) The Power number sits centred over the bar, but never over the multiplier at its left: on phones the
+-- multiplier's words are raised to Kit.PhoneMinText dp and grow toward it.
+local function placePower()
+	local clear = 3 + Kit.textWidth(multiplierLabel.Text, multiplierLabel.TextSize) + 6
+	powerRow.Position = px(math.max(BAR_W / 2, clear + powerRow.Size.X.Offset / 2), BAR_TOP - 25)
+end
 local function centrePower(text)
 	local w = 40 + Kit.textWidth(text, 24)
 	powerRow.Size = px(w, 34)
+	placePower()
 end
 
 -- A running timed boost (StoreService: PowerBoost, and BoostEnds / PartyEnds as os.time) shows over the multiplier
@@ -376,7 +383,8 @@ for i, key in PACKS do
 	holder.Parent = packs
 	Kit.icon3d(POWER, nil, { ZIndex = 6, Place = { Rule = 'pack', W = PACK_W, H = PACK_H, X0 = 3, Y0 = 3 } }).Parent = holder.Body
 	packLabels[key] = label({ Name = 'Amount', Text = '+0', TextSize = 26, StrokeThickness = 3.5, TextXAlignment = Enum.TextXAlignment.Right, Position = px(36, -2), Size = UDim2.new(1, -45, 1, 0), ZIndex = 7, Parent = holder.Body })
-	local price = Kit.only(entry.Price, 16, { Only = false, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 2, 1, 2), ZIndex = 8, MarkColor = hex('A6F02A'), PriceColors = ColorSequence.new(hex('C8FF4A'), hex('5AD81A')) })
+	-- (brief 28: 19, so the price reads at 11 dp or more on a phone)
+	local price = Kit.only(entry.Price, 19, { Only = false, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 2, 1, 2), ZIndex = 8, MarkColor = hex('A6F02A'), PriceColors = ColorSequence.new(hex('C8FF4A'), hex('5AD81A')) })
 	price.Parent = holder
 	Motion.button(holder, function() buy(key) end)
 end
@@ -398,7 +406,7 @@ do
 		holder.Parent = status
 		-- (the reference's 2x Speed price is all lime: ONLY, the mark and the number)
 		local lime = ColorSequence.new(hex('8CFF5A'), hex('5EE83A'))
-		Kit.only(entry.Price, 15, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 1, 1), ZIndex = 8, OnlyColors = lime, MarkColor = hex('7DF04E'), PriceColors = lime }).Parent = holder
+		Kit.only(entry.Price, 19, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 1, 1), ZIndex = 8, OnlyColors = lime, MarkColor = hex('7DF04E'), PriceColors = lime }).Parent = holder
 		Motion.button(holder, function() buy('AutoShoot') end)
 	end
 end
@@ -601,17 +609,20 @@ do
 -- as its badge (the reference's XP shield); the Rebirth button and Skip Rebirth (once its product id is set), 314 x 83.
 -- (Positions are in the window's Content frame: 18 px in from the sides, 132 px down from the top.)
 local RB_W, RB_H = 940, 642
+-- (brief 28) user_27 sets every word of this window in Montserrat Bold (its title, "Rebirth 8", "8x", the red line, the
+-- bar and both buttons measure Bold), not the HUD's Black
+local RB_FONT = Kit.Font.body
 rebirth = makePanel('Rebirth', 'Rebirth', 'Rebirth', 'headerCyan', RB_W, RB_H, 68, false) -- (user_27's header has no gloss bands)
 local rw = rebirth.Well
 local BOX_W, BOX_H, BOX_Y = 285, 87, 77
 local FROM_X, TO_X = 79, 539
-local fromTitle = label({ Name = 'From', Text = 'Rebirth 0', TextSize = 32, StrokeThickness = 4, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(FROM_X + BOX_W / 2, 50), Size = px(BOX_W + 80, 48), ZIndex = 26, Parent = rw })
-local toTitle = label({ Name = 'To', Text = 'Rebirth 1', TextSize = 32, StrokeThickness = 4, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(TO_X + BOX_W / 2, 50), Size = px(BOX_W + 80, 48), ZIndex = 26, Parent = rw })
+local fromTitle = label({ Name = 'From', Text = 'Rebirth 0', FontFace = RB_FONT, TextSize = 32, StrokeThickness = 4, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(FROM_X + BOX_W / 2, 50), Size = px(BOX_W + 80, 48), ZIndex = 26, Parent = rw })
+local toTitle = label({ Name = 'To', Text = 'Rebirth 1', FontFace = RB_FONT, TextSize = 32, StrokeThickness = 4, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(TO_X + BOX_W / 2, 50), Size = px(BOX_W + 80, 48), ZIndex = 26, Parent = rw })
 local function multiplierBox(name, x)
 	local box = Kit.block({ Name = name, Tone = 'aqua', Width = BOX_W, Height = BOX_H, Position = px(x, BOX_Y), Outline = 5, RimWidth = 3, Studs = 20, StudPattern = 'checker', ZIndex = 25 })
 	box.Parent = rw
 	Kit.icon3d(POWER, 78, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 8, 0.5, 0), ZIndex = 28 }).Parent = box.Body
-	local value = label({ Name = 'Value', Text = '1x', TextSize = 38, StrokeThickness = 5, TextXAlignment = Enum.TextXAlignment.Left, Position = px(98, -1), Size = UDim2.new(1, -102, 1, 0), ZIndex = 28, Parent = box.Body })
+	local value = label({ Name = 'Value', Text = '1x', FontFace = RB_FONT, TextSize = 38, StrokeThickness = 5, TextXAlignment = Enum.TextXAlignment.Left, Position = px(98, -1), Size = UDim2.new(1, -102, 1, 0), ZIndex = 28, Parent = box.Body })
 	return value
 end
 local fromValue = multiplierBox('FromBox', FROM_X)
@@ -625,11 +636,12 @@ arrow.AnchorPoint = Vector2.new(0.5, 0.5)
 arrow.Position = px(454, BOX_Y + BOX_H / 2)
 arrow.Parent = rw
 -- (the lane the next rebirth opens, under the right box: "Unlocks BAY 3!")
-local unlockLine = label({ Name = 'Unlock', Text = '', TextSize = 22, TextColor3 = hex('7CFF4F'), StrokeThickness = 3, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(TO_X + BOX_W / 2, BOX_Y + BOX_H + 22), Size = px(BOX_W + 60, 28), ZIndex = 26, Parent = rw })
-label({ Name = 'Warning', Text = 'Rebirth resets your power', TextSize = 32, TextColor3 = hex('F00606'), StrokeThickness = 4, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(452, 228), Size = px(860, 46), ZIndex = 26, Parent = rw })
+local unlockLine = label({ Name = 'Unlock', Text = '', FontFace = RB_FONT, TextSize = 22, TextColor3 = hex('7CFF4F'), StrokeThickness = 3, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(TO_X + BOX_W / 2, BOX_Y + BOX_H + 22), Size = px(BOX_W + 60, 28), ZIndex = 26, Parent = rw })
+label({ Name = 'Warning', Text = 'Rebirth resets your power', FontFace = RB_FONT, TextSize = 32, TextColor3 = hex('F00606'), StrokeThickness = 4, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(452, 228), Size = px(860, 46), ZIndex = 26, Parent = rw })
 local RBAR_X, RBAR_Y, RBAR_W, RBAR_H = 138, 265, 656, 84
 local rebirthBar, rebirthFill, rebirthBarText = Kit.bar({ Name = 'Progress', Width = RBAR_W, Height = RBAR_H, Tone = 'aqua', Value = 0, Text = '0 / 0 Power', TextSize = 36, Position = px(RBAR_X, RBAR_Y), Outline = 5, Studs = 20, ZIndex = 25 })
 rebirthBar.Parent = rw
+if rebirthBarText and rebirthBarText.Text then rebirthBarText.Text.FontFace = RB_FONT end
 -- the badge over the bar's left end (the reference's XP shield, tilted): ICONS' Shield render once uploaded, else a shield
 -- of frames (a square top and a diamond point: black edge, a light blue band, the navy face), the Power arm on it
 local function shield(w, h, z)
@@ -688,7 +700,7 @@ local function rebirthUpdate()
 	rebirthAction = actionIn(rw, rebirthAction, {
 		-- (brief 19) the reference's button is the cyan block whatever the state; not ready, it says what's missing and a tap
 		-- says how to get there (grey only at the last rebirth)
-		Name = 'Action', Tone = 'aqua', Disabled = maxed, Text = text, TextSize = ready and 51 or 40,
+		Name = 'Action', Tone = 'aqua', Disabled = maxed, Text = text, FontFace = RB_FONT, TextSize = ready and 51 or 40,
 		Icon = 'Rebirth', IconSize = 64, IconInset = 22, Width = ACTION_W, Height = ACTION_H, Outline = 5, RimWidth = 3, Studs = 20, StudPattern = 'checker',
 		Position = skip and px(105, ACTION_Y) or px(452 - ACTION_W / 2, ACTION_Y),
 	}, function()
@@ -710,7 +722,7 @@ local function rebirthUpdate()
 	if skip then
 		local entry = Products.ByKey.SkipRebirth
 		skipAction = actionIn(rw, nil, {
-			Name = 'Skip', Tone = 'aqua', Text = 'Skip Rebirth', TextSize = 33, Icon = Kit.iconImage('RebirthSkip') ~= '' and 'RebirthSkip' or 'Rebirth', IconSize = 60, IconInset = 18, Width = ACTION_W, Height = ACTION_H,
+			Name = 'Skip', Tone = 'aqua', Text = 'Skip Rebirth', FontFace = RB_FONT, TextSize = 33, Icon = Kit.iconImage('RebirthSkip') ~= '' and 'RebirthSkip' or 'Rebirth', IconSize = 60, IconInset = 18, Width = ACTION_W, Height = ACTION_H,
 			Outline = 5, RimWidth = 3, Studs = 20, StudPattern = 'checker', Position = px(480, ACTION_Y),
 		}, function() buy('SkipRebirth') end)
 		Kit.only(entry.Price, 46, { Only = false, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 34, 0, 2), ZIndex = 32, MarkColor = hex('A6F02A'), PriceColors = ColorSequence.new(hex('E8FF4A'), hex('8AE82A')) }).Parent = skipAction
@@ -979,6 +991,7 @@ function refresh()
 	centrePower(powerLabel.Text)
 	lastPower = power
 	multiplierLabel.Text = 'Multiplier: ' .. times(totalMultiplier())
+	placePower()
 	local ready = power >= need
 	barText.Left.Text = 'Rebirth ' .. n
 	barText.Right.Text = ready and 'READY!' or (short(power) .. ' / ' .. short(need))
@@ -1106,6 +1119,11 @@ local function relayout()
 	hint.Position = UDim2.new(0.5, 0, 0, HINT_Y)
 	toastY = math.floor(h * 0.16)
 	placeToasts()
+	-- (brief 28) phones: no word under Kit.PhoneMinText dp (the column is scaled once more, by its own UIScale)
+	local floor = phone and k or nil
+	Kit.textFloor(column, floor and floor * columnScale.Scale)
+	for _, box in { status, offers, rewardsSpot, counters } do Kit.textFloor(box, floor) end
+	placePower()
 end
 gui:GetPropertyChangedSignal('AbsoluteSize'):Connect(relayout)
 panelGui:GetPropertyChangedSignal('AbsoluteSize'):Connect(relayout)

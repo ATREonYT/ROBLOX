@@ -78,7 +78,7 @@ for i, trip in StageRules.Trips do
 		AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -(16 + (#StageRules.Trips - i) * 192), 0.5, -8), ZIndex = 31,
 	})
 	holder.Parent = card.Body
-	label({ Name = 'Caption', Text = trip.Caption, TextSize = 17, StrokeThickness = 2.5, TextColor3 = hex('E8FBFF'), AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 1, 2), Size = px(176, 22), ZIndex = 33, Parent = holder })
+	label({ Name = 'Caption', Text = trip.Caption, TextSize = 18, StrokeThickness = 2.5, TextColor3 = hex('E8FBFF'), AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 1, 2), Size = px(176, 22), ZIndex = 33, Parent = holder })
 	Motion.button(holder, function()
 		Net.get('Travel'):FireServer(trip.Target, 1)
 		close()
@@ -107,7 +107,7 @@ for _, w in IK.worlds(0) do
 		c.Parent = content
 		padlock(c.Body, LOCK.W / 2 - 4.5, 38)
 		label({ Name = 'Title', Text = 'World ' .. w.World, TextSize = 26, StrokeThickness = 3.5, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 70), Size = px(LOCK.W, 30), ZIndex = 31, Parent = c.Body })
-		label({ Name = 'Name', Text = w.Name, TextSize = 17, StrokeThickness = 2.5, TextColor3 = hex('C8D0DC'), AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 98), Size = px(LOCK.W - 10, 22), ZIndex = 31, Parent = c.Body })
+		label({ Name = 'Name', Text = w.Name, TextSize = 18, StrokeThickness = 2.5, TextColor3 = hex('C8D0DC'), AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 98), Size = px(LOCK.W - 10, 22), ZIndex = 31, Parent = c.Body })
 		local soon = label({ Name = 'Soon', Text = 'Coming soon', TextSize = 18, StrokeThickness = 2.5, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 118), Size = px(LOCK.W, 22), ZIndex = 31, Parent = c.Body })
 		Kit.new('UIGradient', { Rotation = 90, Color = ColorSequence.new(hex('FFF27A'), hex('FFA81A')), Parent = soon })
 		local hit = Kit.new('TextButton', { Name = 'Hit', Text = '', AutoButtonColor = false, BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 36, Parent = c })

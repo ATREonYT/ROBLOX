@@ -222,4 +222,23 @@ return function(t)
 		e.truthy(w <= rule.W * 81 + 1.5 and hh <= rule.H * 81 + 1.5)
 		models.Images.Backpack = saved
 	end)
+	-- (brief 28) phones: Kit.textFloor raises labels under Kit.PhoneMinText dp and puts them back on a big screen
+	t.test('the phone text floor raises small labels to 11 dp, leaves the rest, and puts them back', function()
+		local K = require(game.ReplicatedStorage.Shared.UIKit)
+		local function lab(size, scaled, parent)
+			local l = Instance.new('TextLabel'); l.TextSize = size; l.TextScaled = scaled or false; l.Text = 'Rebirth'; l.Parent = parent
+			return l
+		end
+		local f = Instance.new('Frame')
+		local small, big, scaled = lab(18, false, f), lab(30, false, f), lab(12, true, f)
+		local row = Instance.new('Frame'); row:SetAttribute('NoTextFloor', true); row.Parent = f
+		local price = lab(15, false, row)
+		K.textFloor(f, 0.6)
+		t.expect.equal(small.TextSize, 19); t.expect.truthy(small.TextSize * 0.6 >= K.PhoneMinText)
+		t.expect.equal(big.TextSize, 30); t.expect.equal(scaled.TextSize, 12); t.expect.equal(price.TextSize, 15)
+		K.textFloor(f, 0.6); t.expect.equal(small.TextSize, 19)
+		big.TextSize = 24 -- (code that sizes a label itself keeps doing so)
+		K.textFloor(f, nil)
+		t.expect.equal(small.TextSize, 18); t.expect.equal(small:GetAttribute('BaseTextSize'), nil); t.expect.equal(big.TextSize, 24)
+	end)
 end

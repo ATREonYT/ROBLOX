@@ -22,7 +22,7 @@ end
 player.CharacterAdded:Connect(faceArrival)
 if player.Character then task.spawn(faceArrival,player.Character) end
 local gui=Instance.new('ScreenGui');gui.Name='BlockWalkthrough';gui.ResetOnSpawn=false;gui.ScreenInsets=Enum.ScreenInsets.CoreUISafeInsets;gui.Parent=player:WaitForChild('PlayerGui')
-local label=Instance.new('TextLabel');label.Name='Location';label.Size=UDim2.new(0,240,0,56);label.Position=UDim2.new(0,14,0,8);label.BackgroundTransparency=0.1;label.BackgroundColor3=Color3.fromRGB(25,39,46);label.TextColor3=Color3.fromRGB(242,220,172);label.Font=Enum.Font.BuilderSansBold;label.TextSize=16;label.Text='THE BLOCK\nYour come-up starts here';label.Parent=gui
+local label=Instance.new('TextLabel');label.Name='Location';label.Size=UDim2.new(0,240,0,56);label.Position=UDim2.new(0,14,0,8);label.BackgroundTransparency=0.1;label.BackgroundColor3=Color3.fromRGB(25,39,46);label.TextColor3=Color3.fromRGB(242,220,172);label.FontFace=require(game:GetService('ReplicatedStorage').Shared.Fonts).Heading;label.TextSize=16;label.Text='THE BLOCK\nYour come-up starts here';label.Parent=gui
 if map:FindFirstChild('SimulatorLobby') then label.Visible=false end
 local corner=Instance.new('UICorner');corner.CornerRadius=UDim.new(0,9);corner.Parent=label
 -- (COMBAT: every game sound is behind Config/Sound, off for now: the street bed and the train rumble are nil while it is.)

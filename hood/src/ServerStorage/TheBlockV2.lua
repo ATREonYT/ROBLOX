@@ -171,7 +171,12 @@ local function light(p, color, brightness, range)
 end
 
 ---------------------------------------------------------------------------------------------- text
-local FONT = { title = Enum.Font.FredokaOne, loud = Enum.Font.LuckiestGuy, body = Enum.Font.GothamBlack, tag = Enum.Font.PermanentMarker }
+-- (brief 28) Every sign is set in the references' Montserrat (Shared/Fonts: its Black for names, numbers and signs; was
+-- FredokaOne, LuckiestGuy, Gotham Black and PermanentMarker). The keys stay for the builders and HoodProps.
+local FONT = (function()
+	local F = require(game:GetService('ReplicatedStorage').Shared.Fonts)
+	return { title = F.Title, loud = F.Title, body = F.Title, tag = F.Title, number = F.Number, small = F.Body }
+end)()
 local function surface(p, face, ppS)
 	local g = Instance.new('SurfaceGui')
 	g.Name = 'Signage'
@@ -182,14 +187,15 @@ local function surface(p, face, ppS)
 	g.Parent = p
 	return g
 end
--- One line of text in a band of the gui (y and h are 0-1), with a clean outline.
+-- One line of text in a band of the gui (y and h are 0-1), with a clean outline. font: a Font (FONT's), or an Enum.Font
+-- (the gate's pixel "Power: X" line).
 local function line(gui, name, value, color, font, y, h, outline, thickness)
 	local t = Instance.new('TextLabel')
 	t.Name = name
 	t.BackgroundTransparency = 1
 	t.Position = UDim2.fromScale(0.04, y)
 	t.Size = UDim2.fromScale(0.92, h)
-	t.Font = font
+	if typeof(font) == 'EnumItem' then t.Font = font else t.FontFace = font or FONT.title end
 	t.Text = value
 	t.TextColor3 = color
 	t.TextScaled = true
@@ -771,11 +777,11 @@ local function teleportPad(g, name, x, z, color, target, label, opts)
 		gui.MaxDistance = 45
 		gui.LightInfluence = 0
 		gui.Parent = anchor
-		-- (the world's text face, the references' FredokaOne, with a near-black outline)
-		line(gui, 'Title', opts.title, C(240, 242, 248), opts.font or Enum.Font.FredokaOne, 0, 0.58, C(16, 18, 30), 3)
-		line(gui, 'Sub', opts.sub or '', opts.labelColor or color, opts.font or Enum.Font.FredokaOne, 0.6, 0.36, C(16, 18, 30), 2)
+		-- (the world's text face, the references' Montserrat Black, with a near-black outline)
+		line(gui, 'Title', opts.title, C(240, 242, 248), opts.font or FONT.title, 0, 0.58, C(16, 18, 30), 3)
+		line(gui, 'Sub', opts.sub or '', opts.labelColor or color, opts.font or FONT.title, 0.6, 0.36, C(16, 18, 30), 2)
 	elseif not opts.bare then
-		billboard(g, V(x, topY + 3, z), 6, 1.4, { { 'Title', label, P.white, opts.font or Enum.Font.FredokaOne, 0, 1 } }).WorldLabel.MaxDistance = 50
+		billboard(g, V(x, topY + 3, z), 6, 1.4, { { 'Title', label, P.white, opts.font or FONT.title, 0, 1 } }).WorldLabel.MaxDistance = 50
 	end
 	return pad
 end
@@ -790,7 +796,10 @@ end
 -- (CRITIC3 r2: "+10 Cash" reads from the gate you came in by, ~60 studs, as the reference's pad words read down the
 -- corridor; the next stage's pads, 64 further, stay hidden)
 -- (Px: a few pixels on top of the studs, so far away the words keep a readable size on screen; up close the studs rule.)
-local PAD_LABEL = { W = 11, H = 4.6, PxW = 72, PxH = 30, Up = 4.4, Near = 60, Far = 80, Ink = C(26, 14, 38) }
+-- (brief 28: the pads stand just in front of their gate, so the label's top meets the gate sign's foot (7.4 studs up)
+-- seen from the stage's entry: it sits a stud lower, with fewer extra pixels, and HoodClient/Stages lifts a far sign a
+-- little, so "+100 Cash", the sign's lines and "+10 Cash" each read on their own.)
+local PAD_LABEL = { W = 11, H = 4.6, PxW = 72, PxH = 22, Up = 3.4, Near = 60, Far = 80, Ink = C(26, 14, 38) }
 local function stagePad(g, name, x, z, color, stage, kind, opts)
 	local pad, parts, topY = padSlab(g, name, x, z, color, opts)
 	pad.CanTouch = true
@@ -808,7 +817,7 @@ local function stagePad(g, name, x, z, color, stage, kind, opts)
 	gui:SetAttribute('FadeNear', PAD_LABEL.Near)
 	gui:SetAttribute('FadeFar', PAD_LABEL.Far)
 	gui.Parent = anchor
-	local font = opts.font or Enum.Font.FredokaOne
+	local font = opts.font or FONT.title
 	local big = line(gui, 'Title', label.big or '', label.color or color, font, 0, 0.52, PAD_LABEL.Ink, 3.5)
 	big:SetAttribute('BaseColor', big.TextColor3)
 	local small = line(gui, 'Sub', label.small or '', P.white, font, 0.5, 0.29, PAD_LABEL.Ink, 2.5)
@@ -1845,8 +1854,8 @@ end
 -- (ECON's Skins.Stations fields: Rebirths, Multiplier, Pass, RobuxPrice). The icon is IconModels.Images.Rebirth / .Robux;
 -- until one is uploaded the chip's text carries a glyph instead (the Glyph attribute). The client repaints Detail as you
 -- rebirth or buy the lane, and Cost and Power from the config (Lobby.client).
--- LOBBY6 (BRIEF24, the user: "promote it better, use the same fonts as the references"): every row in the reference's
--- FredokaOne with a dark outline. A Robux lane's stack is a third bigger (16 x 9.6 studs, its "x250 Power" 4.7 studs
+-- LOBBY6 (BRIEF24, the user: "promote it better, use the same fonts as the references"): every row in the references'
+-- Montserrat Black (brief 28; it was FredokaOne) with a dark outline. A Robux lane's stack is a third bigger (16 x 9.6 studs, its "x250 Power" 4.7 studs
 -- tall) with the reference's Robux chip (a dark chip, a Robux-green rim, the price in white); the best lane (the
 -- highest multiplier, opts.best) also wears a tilted red BEST! sticker at its top right. Same names and rows as every
 -- lane (Chip, Icon, Cost, Detail, Power; BestTag and Best), so Lobby.client and LabelFade treat it like the rest.
@@ -1878,7 +1887,7 @@ function Stations.labels(st, s, t, at, opts)
 		l.Name = name
 		l.BackgroundTransparency = 1
 		l.Position, l.Size = UDim2.fromScale(x, y), UDim2.fromScale(w, h)
-		l.Font = FONT.title -- (the reference's FredokaOne)
+		l.FontFace = FONT.title -- (the references' Montserrat Black)
 		l.Text = value
 		l.TextColor3 = color
 		l.TextScaled = true
@@ -3102,7 +3111,7 @@ end
 -- middle (the best one)"): the armory's whole side is filled the references' way (a big hero statue and a gamepass
 -- display behind it, the TOP leaderboards north of it, a winners' podium south of it, no benches anywhere); PRO BAY
 -- moved to the aisle's mouth by the spawn and GOLD BAY to the middle of the aisle's far end, both glowing in their own
--- colour under big labels, no gates; every world word in the reference's FredokaOne with a dark outline.
+-- colour under big labels, no gates; every world word in the references' Montserrat Black with a dark outline.
 -- The plan, on one grid (map frame, studs; north = -Z), interior x -73..73, z 6..122 (146 x 116):
 --   Spine:  x -9..9 from the Stage 1 door (z 6) to the shoe dais's front step (z 94.4). The spawn is on it at the cross
 --           (0, 55).
@@ -4519,7 +4528,7 @@ end
 ---------------------------------------------------------------------------------------------- pass boards
 -- LOBBY6 (BRIEF24): the reference hall's floor pass boards (ref_hall_a.png's "2x Power / Only 9 / Permanent!" and
 -- "x2 Wins" cards standing by the walk): a bright card on two posts over a dark studded foot, a white rim round it, a
--- glowing strip under it. On the card, all in the reference's FredokaOne with dark outlines: the pass's name big in
+-- glowing strip under it. On the card, all in the references' Montserrat Black with dark outlines: the pass's name big in
 -- white over its icon, its line (Products' Big, "Every Shot") in yellow, and the Robux chip with its price. A hold on
 -- its prompt buys the pass (HoodClient/Lobby: Products.canBuy, else the HUD's "coming soon" toast; an owned pass reads
 -- OWNED and its prompt hides). Names and prices come from Config/Products, so the board and the Store always agree.
@@ -4980,7 +4989,7 @@ function Lobby.leaderboard(L, cf, b)
 	a.WorldLabel:SetAttribute('FadeFar', 150)
 	for _, l in a.WorldLabel:GetChildren() do
 		if l:IsA('TextLabel') then
-			l.Font = FONT.title
+			l.FontFace = FONT.title
 			local s = l:FindFirstChildOfClass('UIStroke')
 			if s then s.Color, s.Thickness = C(40, 16, 6):Lerp(b.color, 0.15), 3.5 end
 		end
@@ -5322,10 +5331,11 @@ local GATE = {
 		{ 8, C(230, 86, 120), 0.54 }, { 3, C(242, 122, 152), 0.5 }, { 0, C(246, 142, 168), 0.5 },
 	},
 	bands = 74, -- quarter-stud bands (5 px each at the haze's 20 pixels per stud)
-	-- The world's text style (brief 24: the references' rounded FredokaOne, like the lobby's labels and the pads): heavy
-	-- letters with a thick near-black outline, colour by meaning: white STAGE N, cyan Recommended (the video's #45E6FF),
-	-- and the state line as a badge, white on red (locked, blocked) or green (open). Only "Power: X" stays in pixels.
-	font = Enum.Font.FredokaOne,
+	-- The world's text style (brief 28: the references' Montserrat Black, like the lobby's labels and the pads; was
+	-- FredokaOne): heavy letters with a thick near-black outline, colour by meaning: white STAGE N, cyan Recommended (the
+	-- video's #45E6FF), and the state line as a badge, white on red (locked, blocked) or green (open). Only "Power: X"
+	-- stays in pixels, as on the reference's corridor sign.
+	font = FONT.title,
 	powerFont = Enum.Font.Arcade, -- the "Power: X" line in pixel letters, like the reference's corridor sign
 	title = C(255, 255, 255), titleInk = C(14, 16, 26),
 	sub = C(69, 230, 255), subInk = C(8, 26, 46),
@@ -5346,7 +5356,7 @@ local GATE = {
 		magenta = { shade = C(184, 16, 186), rim = C(255, 178, 255), label = C(255, 56, 236) },
 		yellow = { shade = C(204, 184, 24), rim = C(255, 255, 196), label = C(255, 232, 36) },
 	},
-	padFont = Enum.Font.FredokaOne,
+	padFont = FONT.title,
 	edge = C(255, 176, 196), -- the haze's lit lip along the top and its side edges
 	-- The frame: studded concrete in three tones, dark recesses, a hazard beam with a darker lip.
 	pillarW = 4, beamH = 3,
@@ -5455,6 +5465,9 @@ function GATE.sign(g, i, req)
 	gui:SetAttribute('GrowFrom', GATE.grow[1])
 	gui:SetAttribute('GrowPow', GATE.grow[2])
 	gui:SetAttribute('GrowMax', GATE.grow[3])
+	-- (brief 28) Built as a player first sees it: HoodClient/Stages shows only your next gate's sign, which from the spawn is
+	-- gate 1's; the others start hidden, so Studio's edit view and the previews never stack the far signs behind it.
+	gui.Enabled = i == 1
 	gui.Parent = anchor
 	local L = {}
 	for _, l in GATE.lines do L[l[1]] = l end
@@ -5466,7 +5479,7 @@ function GATE.sign(g, i, req)
 	grad.Color, grad.Rotation = GATE.titleShade, 90
 	grad.Parent = title
 	put('Sub', 'Recommended', GATE.sub, GATE.subInk)
-	put('Power', 'Power: ' .. compact(req), GATE.sub, GATE.subInk).Font = GATE.powerFont
+	put('Power', 'Power: ' .. compact(req), GATE.sub, GATE.subInk).FontFace = Font.fromEnum(GATE.powerFont) -- FontFace only, so the saved place keeps one face
 	-- The state line on its badge: "Defeat the crew first" while the stage before still has its goons this run (as
 	-- built), "OPEN!" once its crew is down (HoodClient/Stages writes it and the badge colour, and makes an open gate's
 	-- sign compact: the title over the badge).

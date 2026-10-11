@@ -8,6 +8,7 @@ local TweenService = game:GetService('TweenService')
 local Debris = game:GetService('Debris')
 
 local Juice = {}
+local Fonts = require(script.Parent.Fonts)
 
 ---------------------------------------------------------------------------------------------- springs
 -- Semi-implicit spring step. f = frequency (Hz), z = damping ratio (1 = no overshoot, <1 = swings).
@@ -209,7 +210,7 @@ function Juice.popNumber(position, text, color, fontFace, opts)
 	t.Size = UDim2.fromScale(1, 1)
 	t.Text = text
 	t.TextScaled = true -- BillboardGuis are the one place TextScaled is recommended
-	t.FontFace = fontFace or Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.Heavy) -- (LOOP: the HUD's Gotham Black, was LuckiestGuy)
+	t.FontFace = fontFace or Fonts.Number -- (brief 28: the HUD's Montserrat Black)
 	t.TextColor3 = opts.fill or color or Color3.fromRGB(255, 194, 26)
 	local s = Instance.new('UIStroke')
 	s.Color = opts.stroke or Color3.fromRGB(28, 24, 48)
@@ -301,7 +302,7 @@ function Juice.combo(key, at, gain, opts)
 				t.BackgroundTransparency = 1
 				t.Position, t.Size = UDim2.fromScale(0, y), UDim2.fromScale(1, h)
 				t.TextScaled = true
-				t.FontFace = opts.fontFace or Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.Heavy) -- (LOOP: the HUD's Gotham Black, was LuckiestGuy)
+				t.FontFace = opts.fontFace or Fonts.Number -- (brief 28: the HUD's Montserrat Black)
 				local st = Instance.new('UIStroke')
 				st.Parent = t
 				t.Parent = holder

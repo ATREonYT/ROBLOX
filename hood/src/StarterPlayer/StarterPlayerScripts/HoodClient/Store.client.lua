@@ -332,6 +332,7 @@ local function boxCard(rows, y, parent, over)
 			table.insert(items, { Id = sid, Rarity = shoe and shoe.Rarity })
 		end
 		local cy = 102
+		local tagsShown = 0 -- (how many of the row's name tags show: the title hides while any does)
 		local models = Kit.model3dRow('shoe', items, cell, pitch, { ZIndex = z + 1, Position = px(left + pitch / 2 - cell / 2, cy - cell / 2), Priority = 4 })
 		models.Parent = c.Body
 		for i, sid in box.Shoes do
@@ -346,16 +347,23 @@ local function boxCard(rows, y, parent, over)
 				local cl = label({ Name = 'Chance' .. i, Text = pctText(chance), TextSize = 22, StrokeThickness = 3.5, TextColor3 = secret and Color.white or chanceColor(shoe):Lerp(Color.white, 0.25), AnchorPoint = Vector2.new(0.5, 0.5), Position = px(cx, 152), Size = px(pitch + 10, 28), ZIndex = z + 3, Parent = c.Body })
 				if secret then Kit.new('UIGradient', { Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, hex('FF5A7A')), ColorSequenceKeypoint.new(0.35, hex('FFE24A')), ColorSequenceKeypoint.new(0.65, hex('5AE07A')), ColorSequenceKeypoint.new(1, hex('5AB8FF')) }), Parent = cl }) end
 			end
-			-- the name, while the pointer is on it
+			-- the name, while the pointer is on it (brief 28: over the box's title, which steps aside meanwhile, so the two
+			-- never overlap)
 			local tag = label({ Name = 'NameTag', Text = shoe and shoe.Name or sid, TextSize = 18, StrokeThickness = 2.5, AnchorPoint = Vector2.new(0.5, 1), Position = px(cx, 44), Size = px(160, 22), ZIndex = 40, Parent = c.Body })
 			tag.Visible = false
-			hit.MouseEnter:Connect(function() tag.Visible = true end)
-			hit.MouseLeave:Connect(function() tag.Visible = false end)
+			local function show(on)
+				if tag.Visible == on then return end
+				tag.Visible = on
+				tagsShown = math.max(0, tagsShown + (on and 1 or -1))
+				t.Visible = tagsShown == 0
+			end
+			hit.MouseEnter:Connect(function() show(true) end)
+			hit.MouseLeave:Connect(function() show(false) end)
 			hit.Activated:Connect(function()
-				tag.Visible = true
+				show(true)
 				Kit.model3dItemActive(models, i, 'tap', true)
 				task.delay(1.6, function()
-					if tag.Parent then tag.Visible = false end
+					if tag.Parent then show(false) end
 					Kit.model3dItemActive(models, i, 'tap', false)
 				end)
 			end)

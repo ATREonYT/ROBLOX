@@ -36,6 +36,7 @@ local Juice = require(RS.Shared.Juice)
 local Format = require(RS.Shared.Format)
 local Net = require(RS.Shared.Net)
 local StageRules = require(RS.Shared.StageRules)
+local Fonts = require(RS.Shared.Fonts)
 local PadRules = (function()
 	local m = RS.Shared:FindFirstChild('PadRules')
 	local ok, r = pcall(function() return m and require(m) end)
@@ -266,6 +267,9 @@ local function fit(e, cam, f, w, h, foot)
 	return lo
 end
 local NEAR, NEAR_MIN, NEAR_GONE = 36, 0.45, 9 -- (studs from the camera to the sign)
+-- (brief 28) Seen from far (the stage's entry, the lobby) the grown sign's foot meets the tops of the pads' labels in
+-- front of its gate: it rises up to LIFT studs from NEAR to NEAR + LIFT_OVER studs away, clear of them.
+local LIFT, LIFT_OVER = 1.6, 30
 local function grow(e, cam)
 	local sign = e.Sign
 	local anchor = sign.Parent
@@ -274,14 +278,17 @@ local function grow(e, cam)
 	local drop = open and OPEN_DROP or 0
 	local at = anchor.CFrame.Position - Vector3.new(0, drop, 0)
 	local d = math.max(1, (cam.CFrame.Position - at).Magnitude)
+	local lift = LIFT * math.clamp((d - NEAR) / LIFT_OVER, 0, 1)
+	at += Vector3.new(0, lift, 0)
+	drop -= lift
 	local w, h = sign:GetAttribute('BaseW') or sign.Size.X.Scale, (sign:GetAttribute('BaseH') or sign.Size.Y.Scale) * (open and OPEN_H or 1)
 	local f = math.clamp((d / (sign:GetAttribute('GrowFrom') or 80)) ^ (sign:GetAttribute('GrowPow') or 1), 1, sign:GetAttribute('GrowMax') or 1)
 	if f > 1 then f = fit(e, cam.CFrame, f, w, h, frame:PointToObjectSpace(at)) end
 	-- (LOOP) Up close the base sign was wider than the screen (cut off under the HUD from the doorway): it shrinks
 	-- inside NEAR studs and is gone as you walk through, like the video's sign fading as you pass.
 	if d < NEAR then f = d <= NEAR_GONE and 0 or math.max(NEAR_MIN, d / NEAR) end
-	if math.abs(f - (e.Grown or 0)) > 0.01 then
-		e.Grown = f
+	if math.abs(f - (e.Grown or 0)) > 0.01 or math.abs(lift - (e.Lift or 0)) > 0.02 then
+		e.Grown, e.Lift = f, lift
 		sign.Size = UDim2.fromScale(w * f, h * f)
 		sign.StudsOffsetWorldSpace = Vector3.new(0, h * f / 2 - drop, 0)
 	end
@@ -412,8 +419,8 @@ end
 
 -- The banner: pops in with an overshoot, holds, then floats up and fades. (LOOP: it sits just under the fight's
 -- "N LEFT" counter, sized to the screen like the HUD (UIKit's scale), in the HUD's Gotham Black: in the middle of the
--- screen it covered the next gate's sign and the goons running at you.)
-local DISPLAY = Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.Heavy)
+-- screen it covered the next gate's sign and the goons running at you.) (brief 28: Montserrat Black, Shared/Fonts' Title)
+local DISPLAY = Fonts.Title
 local okKit, Kit = pcall(require, RS.Shared.UIKit)
 local banner
 local function showBanner(title, detail, color, detailColor)
@@ -590,7 +597,7 @@ local function cashPop(reward, tenX)
 		t.Name = name
 		t.BackgroundTransparency = 1
 		t.Position, t.Size = UDim2.fromScale(0, y), UDim2.fromScale(1, h)
-		t.Font = Enum.Font.FredokaOne
+		t.FontFace = Fonts.Number -- (brief 28: was FredokaOne)
 		t.TextScaled = true
 		t.Text = value
 		t.TextColor3 = color

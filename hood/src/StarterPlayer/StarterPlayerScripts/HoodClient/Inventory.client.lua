@@ -224,14 +224,21 @@ local function emptyLine(text, y)
 	return t
 end
 -- A name tag over a slot while the pointer is on it (or for a moment after a tap): the reference shows no names.
-local function nameTag(holder, hit, text, color)
-	local tag = label({ Name = 'NameTag', Text = text, TextSize = 18, StrokeThickness = 2.5, TextColor3 = color or Color3.new(1, 1, 1), AnchorPoint = Vector2.new(0.5, 1), Position = px(S.W / 2, S.CY - 50), Size = px(S.W + 40, 22), ZIndex = 40, Parent = holder })
+-- (brief 28: 19 px, so it reads at 11 dp or more in the window on a phone; one shows at a time, wider than its slot)
+-- onShow (optional) is told each time the tag shows or hides (the Index's row title steps aside meanwhile).
+local function nameTag(holder, hit, text, color, onShow)
+	local tag = label({ Name = 'NameTag', Text = text, TextSize = 19, StrokeThickness = 2.5, TextColor3 = color or Color3.new(1, 1, 1), AnchorPoint = Vector2.new(0.5, 1), Position = px(S.W / 2, S.CY - 50), Size = px(S.W + 90, 23), ZIndex = 40, Parent = holder })
 	tag.Visible = false
-	hit.MouseEnter:Connect(function() tag.Visible = true end)
-	hit.MouseLeave:Connect(function() tag.Visible = false end)
+	local function set(on)
+		if tag.Visible == on then return end
+		tag.Visible = on
+		if onShow then onShow(on) end
+	end
+	hit.MouseEnter:Connect(function() set(true) end)
+	hit.MouseLeave:Connect(function() set(false) end)
 	return function()
-		tag.Visible = true
-		task.delay(1.6, function() if tag.Parent then tag.Visible = false end end)
+		set(true)
+		task.delay(1.6, function() if tag.Parent then set(false) end end)
 	end
 end
 local function press(holder)
@@ -393,7 +400,13 @@ local function paintIndex()
 		end
 		if #shown > 0 then
 			local section = blank({ Name = row.Box.Id, Size = px(innerW, 214), LayoutOrder = order, ZIndex = 25, Parent = list })
-			IK.titleLine(section, row.Box.Name .. '  ' .. row.Owned .. '/' .. row.Total, 30, { Width = innerW, ZIndex = 26, TextSize = 26, LineInset = 4 })
+			local rowTitle = IK.titleLine(section, row.Box.Name .. '  ' .. row.Owned .. '/' .. row.Total, 30, { Width = innerW, ZIndex = 26, TextSize = 26, LineInset = 4 })
+			-- (brief 28) a pair's name tag shows just under the row's title: the title steps aside while one shows
+			local tagsShown = 0
+			local function onTag(on)
+				tagsShown = math.max(0, tagsShown + (on and 1 or -1))
+				rowTitle.Visible = tagsShown == 0
+			end
 			-- (brief 27) the box's shoes as ONE 3D row: yours in colour, the rest black silhouettes of the real pairs
 			local under = blank({ Name = 'Under', Size = UDim2.fromScale(1, 1), ZIndex = 25, Parent = section })
 			local ids, dark = {}, ''
@@ -415,7 +428,7 @@ local function paintIndex()
 				})
 				holder.Parent = section
 				if s.Owned then Kit.model3dItemHover(models, i, hit) end
-				local show = nameTag(holder, hit, s.Owned and shoeName(id) or '???')
+				local show = nameTag(holder, hit, s.Owned and shoeName(id) or '???', nil, onTag)
 				hit.Activated:Connect(function()
 					show()
 					if s.Owned then spinFor(models, nil, i) end
@@ -630,7 +643,7 @@ local function paintItems()
 			local chip = Kit.only(entry.Price, 22, { Only = false, ZIndex = 30, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(CW / 2 - 3, CH - 24) })
 			chip.Parent = card.Body
 		end
-		local tag = label({ Name = 'NameTag', Text = entry.Title, TextSize = 18, StrokeThickness = 2.5, AnchorPoint = Vector2.new(0.5, 1), Position = px(CW / 2, -2), Size = px(CW + 60, 22), ZIndex = 40, Parent = card })
+		local tag = label({ Name = 'NameTag', Text = entry.Title, TextSize = 19, StrokeThickness = 2.5, AnchorPoint = Vector2.new(0.5, 1), Position = px(CW / 2, -2), Size = px(CW + 60, 22), ZIndex = 40, Parent = card })
 		tag.Visible = false
 		card.Hit.MouseEnter:Connect(function() tag.Visible = true end)
 		card.Hit.MouseLeave:Connect(function() tag.Visible = false end)
@@ -727,7 +740,7 @@ local function paintBoxes()
 				label({ Name = 'Chance' .. i, Text = pctText(chances[i] or 0), TextSize = 24, StrokeThickness = 3, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(cx + 52, 50 + 98), Size = px(110, 28), ZIndex = 33, Parent = body })
 				local hit = Kit.new('TextButton', { Name = 'Hit_' .. id, Text = '', AutoButtonColor = false, BackgroundTransparency = 1, Position = px(cx, 50), Size = px(104, 120), ZIndex = 36, Parent = body })
 				if not hidden then Kit.model3dItemHover(models, i, hit) end
-				local tag = label({ Name = 'NameTag', Text = hidden and '???' or shoe.Name, TextSize = 16, StrokeThickness = 2.5, AnchorPoint = Vector2.new(0.5, 1), Position = px(cx + 52, 54), Size = px(150, 20), ZIndex = 40, Parent = body })
+				local tag = label({ Name = 'NameTag', Text = hidden and '???' or shoe.Name, TextSize = 19, StrokeThickness = 2.5, AnchorPoint = Vector2.new(0.5, 1), Position = px(cx + 52, 54), Size = px(200, 23), ZIndex = 40, Parent = body })
 				tag.Visible = false
 				hit.MouseEnter:Connect(function() tag.Visible = true end)
 				hit.MouseLeave:Connect(function() tag.Visible = false end)
