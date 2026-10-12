@@ -76,7 +76,7 @@ return function(t)
 		e.truthy((W[2][1] - W[1][1] - W[1][4]) > (W[3][1] - W[2][1] - W[2][4]))
 	end
 
-	t.test('every non-Secret single opens in the world (28c, copy_spec v5): the drop lands at 0.35, 3 shakes (Legendary/Mythic 4), the squeeze, the pop at 2.95 (3.80), the reveal complete by 4.3 s (5.3), auto-close 5-7 s after, the close <= 0.6 s', function()
+	t.test('every non-Secret single opens in the world (28c, copy_spec v5): the drop lands at 0.35, 3 shakes (Legendary/Mythic 4), the squeeze, the pop at 2.95 (3.80), the pair risen and settled by +0.8 s (brief 30), the reveal complete by 4.3 s (5.3), auto-close 5-7 s after, the close <= 0.6 s', function()
 		e.truthy(Cine.InWorld)
 		for _, box in BOXES do
 			for rank = robux(box) and 2 or 1, 5 do
@@ -91,9 +91,10 @@ return function(t)
 				e.near(P.pop[1], lux and 3.8 or 2.95, 0.05)
 				e.near(P.squeeze[1], lux and 3.25 or 2.45, 0.05)
 				e.truthy(P.squeeze[2] <= P.pop[1] and P.squeeze[3] >= 0.8 and P.squeeze[3] <= 0.9)
-				-- the reveal: the pair settled, the words in under the wash, the Power reel done
-				e.truthy(P.accent[1] > P.pop[1] and P.accent[1] <= P.pop[1] + 0.65)
-				e.truthy(P.nameT <= P.pop[1] + 0.1)
+				-- the reveal: the pair risen out of the chest and settled (brief 30: one smooth move, <= 0.8 s), the words and the
+				-- reveal card (P.tap) as it settles, the Power reel done
+				e.truthy(P.accent[1] > P.pop[1] + 0.5 and P.accent[1] <= P.pop[1] + 0.8)
+				e.truthy(P.nameT > P.pop[1] + 0.5 and P.nameT <= P.accent[1] and P.tap <= P.accent[1])
 				e.truthy(P.count[2] <= (lux and 5.3 or 4.3) + 1e-6)
 				e.near(P.count[2] - P.count[1], 0.6, 0.05)
 				-- the hold: until a tap, auto-close 5-7 s after the reveal; the close <= 0.6 s
@@ -297,6 +298,56 @@ return function(t)
 		end
 		return job
 	end
+
+	t.test('the smooth opening (brief 30): the crack widens and leaks light, a column rises, the pair rises out of the chest 0 -> 1.1 -> 1 while the chest sinks and fades, nothing jumps', function()
+		local World = require(RS.Shared.UnboxWorld)
+		local R = Themes.World.Rise
+		e.truthy(R.over >= 1.05 and R.over <= 1.15 and R.scale0 <= 0.1)
+		for _, rank in { 1, 3, 4, 5 } do
+			local job = Cine.play(single('Street', rank), { manual = true })
+			local P = job.Plan
+			local pop, fit = P.pop[1], job.pairFit[1]
+			local box = job.boxes[1]
+			-- (the build-up: before the pop the crack leaks rays and a pool of light glows under the box)
+			while job.T < pop - 0.05 do job:step(1 / 30) end
+			local leaks = 0
+			for _, l in box.leaks do if l.beam.Enabled then leaks += 1 end end
+			e.truthy(leaks >= 3 and box.pool.Enabled)
+			-- (frame by frame through the pop: the pair's scale and place change smoothly, the chest never vanishes at once)
+			local lastS, lastY, lastFade = nil, nil, 0
+			local slotY = job.boxes[1].home:PointToObjectSpace(job:wp(job.slots[1])).Y
+			local peak, colOn = 0, false
+			while job.T < pop + R.len + 0.3 do
+				job:step(1 / 30)
+				local t = job.T
+				if t >= pop then
+					local cf, S = World.pairAt(job, 1, t)
+					e.truthy(cf ~= nil)
+					local y = box.home:PointToObjectSpace(cf * Vector3.new(0, 0, 0)).Y
+					local s = S / fit
+					peak = math.max(peak, s)
+					if lastS then
+						e.truthy(math.abs(s - lastS) <= 0.2)
+						e.truthy(math.abs(y - lastY) <= 0.2 * box.fullH)
+					end
+					lastS, lastY = s, y
+					local _, _, _, lid = World.boxAt(job, 1, t)
+					if lid.hidden then
+						e.truthy(lastFade >= 0.9) -- (gone only once it has faded)
+					else
+						e.truthy((lid.fade or 0) >= lastFade - 1e-6)
+						lastFade = lid.fade or 0
+					end
+					if box.column.core.Enabled then colOn = true end
+				end
+			end
+			e.truthy(peak >= 1.05 and peak <= 1.15)
+			e.near(lastS, 1, 0.02)
+			e.truthy(colOn)
+			e.truthy(lastFade >= 0.9)
+			job:finish()
+		end
+	end)
 
 	t.test('the honest tease: the seam climbs to the true rarity and never past it', function()
 		for _, c in { { 'Street', 1 }, { 'Lava', 3 }, { 'Gold', 5 }, { 'Grail', 4 }, { 'Exclusive', 2 } } do

@@ -55,7 +55,9 @@ end
 
 local function build(layer, name, builder, dim, tapOut, onTap)
 	local holder = A.frame(layer, { Name = name, Box = UDim2.fromScale(1, 1), Z = layer.ZIndex })
-	A.dim(holder, layer.ZIndex, tapOut and onTap or nil, dim or 0.45)
+	-- (brief 30) the dim sits under everything the builder puts in the holder (siblings order by ZIndex), so a window
+	-- built at a lower Z than its layer never ends up behind its own dim
+	A.dim(holder, 0, tapOut and onTap or nil, dim or 0.45)
 	local ok, handle = pcall(builder, holder)
 	if not ok then
 		warn('[ArtWindows] ' .. name .. ': ' .. tostring(handle))

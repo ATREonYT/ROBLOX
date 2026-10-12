@@ -300,8 +300,8 @@ UnboxThemes.Egg = {
 --              rock between them
 --   Ghost      { landing scale, shake scale, opacity, fade (s) }: the translucent copy of the box at each impact
 --   Jolt       the lid's jump at each shake (box heights)
---   Squeeze    { from, to, scale } (SqueezeLux); Pop, PopLux  the pop; Spring  the pair growing in (s: 0.45x to full
---              in 0.1 s, a touch over, settled); SpinLux { s, Legendary turns, Mythic turns }  their extra spin
+--   Squeeze    { from, to, scale } (SqueezeLux); Pop, PopLux  the pop; Spring  (unused since brief 30's Rise);
+--              SpinLux { s, Legendary turns, Mythic turns }  their extra spin (brief 30: the turns, through the rise)
 --   Wash       { Common-Epic peak (white, never a white-out), Legendary/Mythic peak, Quad Out (s) }; Burst  the pop's burst
 --              and ring size by tier
 --   Hold       auto-close after the reveal (s); Close { auto, tap } the fly into the inventory button (s)
@@ -309,6 +309,17 @@ UnboxThemes.Egg = {
 --   Rays       the reference's sunburst: count, reach and peak (pair heights from the centre), Legendary and Mythic
 --              size, deg/s, the core's opacity (low: its breathing low), from (s after the pop), the first fade in and
 --              hold { in, hold } (s), then the breath's period (s)
+--   (brief 30, the smooth opening: no cut from the box to the pair)
+--   Swing      { deg, s }: the lid swings open on its hinge at the pop (Back Out)
+--   Rise       the pair rises out of the open chest through the column: len (s, its spin too; the words and the
+--              reveal card come as it settles), from / apex (box heights from its final middle: inside the chest, above
+--              its rim), apexAt (s, Out Cubic), scale0 -> over at the apex (growing as u^grow, so it clears the rim while
+--              small) -> 1 (a sine settle); the box sinks away under it: sink (box heights; a row's sinkRow) Quad In
+--              from sinkFrom over sinkLen s, shrinking to shrink (a row's shrinkRow), fading from fadeFrom (s), gone at
+--              sinkFrom + sinkLen
+--   FX         UnboxFX: Leak { n rays, len (box heights) per level 1-4, end width (box widths) }; Pool { size (box
+--              widths), opacity } per level; Column { rise (s), height (box heights), core / soft widths (box widths),
+--              hold, fade (s) }; Motes (s after the pop); Shower and Confetti by rank
 UnboxThemes.World = {
 	Box = 0.34, Pair = 0.31, At = 0.47, RowAt = 0.43, Dist = 6.5,
 	Land = 0.35, Fall = 0.25, Stretch = 1.15, Squash = 0.8, Bounce = { 0.06, 0.15 },
@@ -320,13 +331,23 @@ UnboxThemes.World = {
 	Jolt = { 0.035, 0.055, 0.075, 0.095 },
 	Squeeze = { 2.45, 2.9, 0.85 }, SqueezeLux = { 3.25, 3.75, 0.85 },
 	Pop = 2.95, PopLux = 3.8,
-	Swing = { 112, 0.15, 0.3 }, -- (brief 30) at the pop the lid swings open to [1] deg in [2] s; the box is gone by [3] s
+	Swing = { 112, 0.32 },
+	Rise = { len = 0.72, from = -0.1, apex = 0.5, apexAt = 0.4, scale0 = 0.06, over = 1.1, grow = 1.25,
+		sink = 1.6, sinkRow = 0.45, sinkFrom = 0.06, sinkLen = 0.7, shrink = 0.55, shrinkRow = 0.35, fadeFrom = 0.3, fadeFromRow = 0.18 },
+	FX = {
+		Leak = { n = 7, len = { 0.32, 0.5, 0.72, 0.95 }, width = 0.16 },
+		Pool = { size = { 1.0, 1.25, 1.5, 1.8 }, alpha = { 0.82, 0.74, 0.66, 0.56 } },
+		Column = { rise = 0.3, height = 2.3, core = 0.32, soft = 0.9, hold = 0.42, fade = 0.42 },
+		Motes = { 0.03, 0.13, 0.24, 0.36 },
+		Shower = { 10, 14, 18, 24, 30, 30 },
+		Confetti = { 0, 0, 24, 36, 44, 44 },
+	},
 	Spring = 0.25, SpinLux = { 0.6, 2, 2.5 },
-	Wash = { 0.48, 0.85, 0.45 },
+	Wash = { 0.35, 0.7, 0.4 },
 	Burst = { 1, 1.35, 1.65 }, -- (the pop's burst and ring: Common-Epic, Legendary, Mythic)
 	Hold = 5.7, Close = { 0.5, 0.3 },
 	Idle = { 90, 0.03, 0.5 },
-	Rays = { n = 20, reach = 2.3, peak = 1.75, lux = 1.3, mythic = 1.55, turn = 4, core = 0.58, low = 0.3, from = 0.35, cycle = { 1, 0.5 }, period = 3 },
+	Rays = { n = 20, reach = 2.3, peak = 1.75, lux = 1.3, mythic = 1.55, turn = 8, core = 0.58, low = 0.3, from = 0.12, cycle = { 0.55, 0.6 }, period = 3 },
 }
 
 -- The crazy sheet's single-box beats (a Secret's middle; brief 27's premium, to be re-timed to REF28's measures of the

@@ -8,16 +8,20 @@
 --   the box; a low rock from then on (4 -> 8 deg, 2.5 -> 5 Hz); three hop-and-roll shakes on its bottom edge at 0.90 /
 --   1.65 / 2.20 (12 / 18 / 24 deg, L-R-L), each with a 1.12x ghost, the lid jolting up, the seam's light growing in the
 --   honest colour, the seal tape tearing further and a few twinkles; the squeeze 2.45-2.90 (0.85x, rocking hardest); the
---   pop at 2.95: (brief 30) the chest's lid swings open on its hinge, like the open view of the user's box sheets (Back
---   Out to 112 deg in 0.15 s), the open box shrinks away in place (Quart In, gone by +0.3 s) under a soft white wash
---   (Quad Out 0.45 s), and the pair grows in out of it (0.45x to full in 0.1 s), turning steadily (90 deg/s). The
---   reveal, as the soldier game shows it: a soft glow behind the pair, about 20 warm-white rays that fade in over 1 s,
---   hold, fade out and come again, barely turning, 1-2 twinkles; its name, the rarity and "1 in N", NEW! and "Tap
---   anywhere to close!", scaling in under the wash (no Power number: the user). A tap (or 5.7 s after the reveal) flies
---   the pair into the inventory button with a trail (0.5 s; 0.3 after a tap); the HUD comes back (opts.onClose).
+--   pop at 2.95, (brief 30, the user: "smoothly with vfx and graphics like other games", no cut from the box to the
+--   shoes) one continuous move: the chest's lid swings open on its hinge (Back Out to 112 deg in 0.32 s), a column of
+--   the rarity's light rises out of it with motes streaming up, a ring, a sparkle shower and a soft wash; the pair rises
+--   out of the open chest through the column, spinning down from a fast turn, 0 -> 1.1x at the top of its rise -> 1x as
+--   it settles in the middle (0.72 s), while the chest sinks away under it, shrinking and fading (gone by +0.85 s). The
+--   build-up carries it: the lid's crack opens further at each shake, light leaks out of it in rays (the seam's honest
+--   colour) and a pool of light grows under the box (Shared/UnboxFX). The reveal: a soft glow behind the pair, about 20
+--   rays in the rarity's colour that fade in, breathe and slowly turn (8 deg/s), 1-2 twinkles, confetti for Epic and
+--   up; its name, the rarity and "1 in N", NEW! and "Tap anywhere to close!", scaling in as the pair tops out (no Power
+--   number: the user). A tap (or 5.7 s after the reveal) flies the pair into the inventory button with a trail (0.5 s;
+--   0.3 after a tap); the HUD comes back (opts.onClose).
 --   Legendary / Mythic: the box looks like itself (the user: no rainbow box); a fourth, harder shake (pop 3.80), then
---   after the pop a bigger burst, a white wash, ring bursts, an extra spin, bigger rays in the rarity's colour; a
---   Mythic harder and bigger again, with a second ring burst at its reveal. Buy 3 / Buy 8: a row (or two) dropping
+--   after the pop a bigger burst, a brighter wash, ring bursts, an extra spin (2 / 2.5 turns through the rise), bigger
+--   rays; a Mythic harder and bigger again, with a second ring burst at its reveal. Buy 3 / Buy 8: a row (or two) dropping
 --   staggered, shaking together, popping in rising rarity, each pair in its box's place. A Secret: the drop and two
 --   shakes here, then the cue, the cut and the crazy cinematic (UnboxCinematic's chain).
 -- UnboxCinematic installs its internals (UnboxWorld.install) and calls in wherever P.inworld is set.
@@ -26,6 +30,7 @@ local UnboxWorld = {}
 local Shared = script.Parent
 local Themes = require(Shared:WaitForChild('UnboxThemes'))
 local Kit = require(Shared:WaitForChild('UnboxKit'))
+local FX = require(Shared:WaitForChild('UnboxFX'))
 local M, Make, Actor, Ring = Kit.M, Kit.Make, Kit.Actor, Kit.Ring
 local seqOf, nseq = Kit.seq, Kit.nseq
 local V3, CF, ANG = Vector3.new, CFrame.new, CFrame.Angles
@@ -88,20 +93,24 @@ function UnboxWorld.plan(P)
 		P.crouch[i] = P.squeeze[1]
 		P.rise[i] = P.pop[i]
 	end
-	P.riseLen = Wd.Spring
-	P.spinLen, P.spinTurns = Wd.Spring, 1
-	-- (the extra spin: a Legendary's or Mythic's single, and a row's best when it is Legendary or better)
+	-- (brief 30) the pair rises out of the open chest, spinning, and settles in its box's place: Rise.len after its pop
+	local R = Wd.Rise
+	P.riseLen = R.len
+	P.spinLen, P.spinTurns = R.len, 1
+	-- (the extra spin: a Legendary's or Mythic's single, and a row's best when it is Legendary or better: 2 / 2.5 turns
+	-- through the rise)
 	if lux or (n > 1 and P.rank >= 4) then
-		P.spinBest = { Wd.SpinLux[1], Wd.SpinLux[P.rank >= 5 and 3 or 2] }
+		P.spinBest = { R.len, Wd.SpinLux[P.rank >= 5 and 3 or 2] }
 	end
 	for i = 1, n do
-		P.accent[i] = P.pop[i] + ((i == best and P.spinBest) and P.spinBest[1] or Wd.Spring)
+		P.accent[i] = P.pop[i] + R.len
 	end
 	local a = P.accent[best]
 	P.reveal = a
-	-- (the words scale in under the wash; the Power reel ticks for 0.6 s from the reveal)
-	P.banner = P.pop[best] + 0.02
-	P.nameT, P.newT = P.banner, P.pop[best] + 0.2
+	-- (the words scale in as the pair settles, the end of the one move; P.tap and P.nameT are where the UI attaches:
+	-- Shoes.client's reveal card (MOCKUP30) and PityUI's tag wait for them; the Power reel ticks 0.6 s from the reveal)
+	P.banner = a - 0.05
+	P.nameT, P.newT = P.banner, P.banner + 0.18
 	P.count = { a, a + 0.6 }
 	P.tap = P.banner
 	P.out = P.prelude and P.stop + 10 or a + Wd.Hold
@@ -468,6 +477,7 @@ function UnboxWorld.sealRig(box, pieces, home, hingeCF)
 		e.lower = { actor = box.body, idx = find(box.body, pc.lower), h = lw.Y, w = lw.X, edge = home:Inverse() * (pc.lower.CFrame * CF(pc.side * lw.X / 2, -lw.Y / 2, 0)), dir = -1 }
 		e.upper = { actor = box.lid, idx = find(box.lid, pc.upper), h = uw.Y, w = uw.X, edge = hingeCF:Inverse() * (pc.upper.CFrame * CF(pc.side * uw.X / 2, uw.Y / 2, 0)), dir = 1 }
 		e.bridge = pc.bridge
+		e.bridgeIdx = find(box.body, pc.bridge)
 		table.insert(box.seal, e)
 	end
 	box.sealStage = 0
@@ -497,6 +507,8 @@ local function setSeal(box, stage)
 			end
 		end
 		e.bridge.Transparency = sp[3] and 0 or 1
+		-- (the actor's own record too, so the chest's fade at the pop keeps a torn bridge gone)
+		if e.bridgeIdx then box.body.trans[e.bridgeIdx] = sp[3] and 0 or 1 end
 	end
 end
 
@@ -536,8 +548,8 @@ function UnboxWorld.effects(job)
 	-- (the pop's burst and ring grow with the rarity: Legendary x1.35, Mythic x1.65)
 	local B = Themes.World.Burst[P.rank >= 5 and 3 or P.rank == 4 and 2 or 1]
 	job.burst = B
-	-- (the reference's warm white; a Legendary's or Mythic's rays and glow tinted with its colour)
-	local tint = (P.rank >= 4 and P.rank <= 5) and WARM:Lerp(rcol, 0.45) or WARM
+	-- (brief 30: the rays and the glow in the rarity's colour, on the reference's warm white: a Common's stays warm white)
+	local tint = P.rank <= 1 and WARM or WARM:Lerp(rcol, (P.rank >= 4 and P.rank <= 5) and 0.5 or 0.55)
 	-- the landing: a ring of dust puffs round the base and a few sparkles
 	fx.puff = job:emitter('LandPuff', 'smoke', seqOf({ C3(246, 242, 234), C3(220, 214, 204) }), {
 		life = { 0.22, 0.3 }, speed = { W0 * 2, W0 * 3 }, drag = 6, accel = V3(0, H0 * 0.4, 0), spread = Vector2.new(10, 10), direction = Enum.NormalId.Front,
@@ -609,6 +621,8 @@ function UnboxWorld.effects(job)
 		table.insert(job.rays, { tip = tip, beam = b, col = col, j = M.hash(kk, 41) })
 	end
 	job.ambient = {}
+	-- (brief 30) the build-up's light and the burst's column, motes and shower (Shared/UnboxFX)
+	FX.build(job, X)
 end
 
 -- The tear in the sky for a Secret's prelude: a jagged slit in the theme's colour (~8 % of the width) with a glow, where
@@ -694,16 +708,16 @@ function UnboxWorld.beats(job)
 				end)
 			end
 		end
-		-- the pop: the burst, the ring, the glow (a Legendary's bigger, a Mythic's bigger again)
+		-- the pop: the ring (every rarity, brief 30), and a Legendary's or Mythic's burst, glow and chunks (bigger again
+		-- for a Mythic); UnboxFX adds the column, the motes, the shower and the glow puff
 		job:at(P.pop[i], function()
 			local mouth = (box.cf or box.home) * CF(0, box.seamY, 0)
 			local lux = P.ranks[i] >= 4 and P.ranks[i] <= 5
-			-- (Common-Epic: the wash alone, as the reference; Legendary and up add a burst, a glow, the ring and chunks)
+			if big(i) then job:emit(fx.ringBurst, 1, facing(mouth.Position)) end
 			if lux then
 				job:emit(fx.popBurst, 12 * (i == P.best and job.burst or 1), mouth)
 				if big(i) then job:emit(fx.popGlow, 1, facing(mouth.Position)) end
-				-- (Legendary and up: the ring and a few chunks of the box's colours thrown out and away)
-				job:emit(fx.ringBurst, 1, facing(mouth.Position))
+				-- (and a few chunks of the box's colours thrown out and away)
 				local th = P.theme
 				local H = box.topY
 				job:spawn({ kind = 'cube', n = P.n >= 5 and 2 or 5, colors = { th.Color, th.Accent, th.Third }, t0 = P.pop[i], at = mouth, ring = box.W * 0.4, dir = box.home:VectorToWorldSpace(V3(0, 0, 1)), cone = 5,
@@ -711,6 +725,7 @@ function UnboxWorld.beats(job)
 			end
 		end, (not P.multi) or i == P.best)
 	end
+	FX.beats(job, X)
 	-- the hold's twinkles and the close's trail
 	job:at(P.accent[P.best], function() fx.twinkle.Enabled = true; job:recount() end)
 	job:at(P.out, function() fx.twinkle.Enabled = false; fx.trail.Enabled = true; job:recount() end, true)
@@ -787,11 +802,12 @@ local function motion(job, i, t)
 				sy *= 1 - 0.1 * math.sin(v * PI) * red
 			end
 		end
-		-- the lid jolts up as it hops and stays open a crack after (the seam's light shows through)
+		-- the lid jolts up as it hops and stays open a crack after, a little wider each shake (brief 30: the seam's light
+		-- leaks out of it, UnboxFX)
 		if q >= 0 and t < pop then
 			local j = (Wd.Jolt[wi] or Wd.Jolt[#Wd.Jolt]) * H * (P.reduced and 0.6 or 1)
 			lift = math.max(lift, j * M.bump(q, 0.02, 0.16) + j * 0.22)
-			open = math.max(open, (2 + wi) * M.bump(q, 0.02, 0.16))
+			open = math.max(open, (2 + wi) * M.bump(q, 0.02, 0.16) + 2.2 * wi * M.smooth(M.c01(q / 0.16)))
 		end
 	end
 	-- the low rock from the bounce until the squeeze, then at its hardest (10 deg, 6 Hz) through the squeeze
@@ -801,6 +817,7 @@ local function motion(job, i, t)
 		sy *= 1 - (1 - P.squeeze[3]) * q * q
 		roll += RAD(10) * red * math.sin((t - sq0) * 2 * PI * 6) * M.c01((t - sq0) / 0.1)
 		lift = math.max(lift, H * 0.03 + H * 0.02 * math.sin(t * 2 * PI * 9) * q)
+		open = math.max(open, 2.2 * #P.wobSpec + 3 * q + (P.reduced and 0 or 1.5 * math.sin(t * 2 * PI * 9) * q))
 	end
 	local sx = 1 / math.sqrt(sy)
 	local px = (roll > 0 and -1 or 1) * box.W * 0.5
@@ -846,21 +863,29 @@ function UnboxWorld.boxAt(job, i, t)
 	cf = cf + up * punch(job, i, t)
 	local pop = P.pop[i]
 	if t >= pop then
-		-- (brief 30) the lid swings open on its hinge, like the user's open chests: Back Out from shut to Swing[1] deg in
-		-- Swing[2] s; the open box shrinks away where it stands, about its middle, under the wash (Quart In: it holds
-		-- its size while the lid swings, then goes, gone by Swing[3] s) and the pair grows in out of it
+		-- (brief 30) one move, no cut: the lid swings open on its hinge from the crack it had, like the user's open chests
+		-- (Back Out to Swing[1] deg in Swing[2] s); the pair rises out of it (pairAt) while the open chest sinks away under
+		-- it, Quad In from Rise.sinkFrom over Rise.sinkLen s, shrinking about its middle and fading (a row's sinks less
+		-- and fades sooner, clear of the row below)
 		local q = t - pop
-		local sw = Themes.World.Swing or { 112, 0.15, 0.3 }
-		local u = M.c01(q / sw[3])
-		if u >= 0.97 then return job.park, 1, 1, { hidden = true, park = job.park } end
-		local k = 1 - M.inn(u, 4)
-		cf = cf * CF(0, box.fullH * 0.5 * (1 - k), 0)
+		local Wd = Themes.World
+		local R = Wd.Rise
+		local sw = Wd.Swing or { 112, 0.32 }
+		local row = P.multi
+		local d = M.inn(M.c01((q - R.sinkFrom) / R.sinkLen), 2)
+		if q >= R.sinkFrom + R.sinkLen then return job.park, 1, 1, { hidden = true, park = job.park } end
+		local k = M.lerp(1, row and R.shrinkRow or R.shrink, d)
+		cf = cf * CF(0, -box.fullH * (row and R.sinkRow or R.sink) * d + box.fullH * 0.5 * (1 - k), 0)
 		sx, sy = sx * k, sy * k
-		local ang = sw[1] * M.back(q / sw[2], P.reduced and 0 or 1.2)
+		local fadeFrom = row and R.fadeFromRow or R.fadeFrom
+		local fade = M.smooth(M.c01((q - fadeFrom) / (R.sinkFrom + R.sinkLen - fadeFrom)))
+		local open0 = 2.2 * #P.wobSpec + 3
+		local ang = open0 + (sw[1] - open0) * M.back(q / sw[2], P.reduced and 0 or 1.25)
 		local hr = box.hingeRel
 		local hp = hr.Position
-		local hinge = cf * CF(hp.X * sx, hp.Y * sy, hp.Z * sx) * hr.Rotation
-		return cf, sx, sy, { fly = hinge * ANG(RAD(ang), 0, 0), scale = 1 }
+		local lift = box.topY * 0.03 * (1 - M.c01(q / 0.1))
+		local hinge = cf * CF(hp.X * sx, hp.Y * sy + lift, hp.Z * sx) * hr.Rotation
+		return cf, sx, sy, { fly = hinge * ANG(RAD(ang), 0, 0), scale = 1, fade = fade }
 	end
 	-- (the lid: hinged at its back edge, lifted by the jolts)
 	local hr = box.hingeRel
@@ -869,31 +894,43 @@ function UnboxWorld.boxAt(job, i, t)
 	return cf, sx, sy, { fly = hinge * ANG(RAD(lid.open or 0), 0, 0), scale = 1 }
 end
 
--- The pair i: grows in where its box stood (0.45x on the pop's frame to full by 0.12 s, a 1.04 touch, settled by Spring),
--- turning steadily (90 deg/s; a
--- Legendary's or Mythic's first spins 2 / 2.5 turns over 0.6 s), bobbing 3 % at 0.5 Hz once settled. At the close it
--- flies into the inventory button, shrinking.
+-- The pair i (brief 30): rises out of its open chest through the column of light, from inside it (Rise.from box
+-- heights under its final middle, 6 % of its size) up past the rim to the top of its rise (Rise.apex above, Out
+-- Cubic), growing as it goes (small while it clears the rim, 1.1x at Rise.apexAt), then settles down into its place,
+-- 1x (a sine ease) by Rise.len, while the chest sinks away under it; spinning down from a fast turn (1 turn through the rise; a Legendary's or Mythic's 2 / 2.5) into the steady 90
+-- deg/s, which takes over without a jolt; bobbing 3 % at 0.5 Hz once settled. Reduced Motion: no spin, no overshoot.
+-- At the close it flies into the inventory button, shrinking.
 function UnboxWorld.pairAt(job, i, t)
 	local P = job.P
 	local pair, box = job.pairs[i], job.boxes[i]
 	local Wd = Themes.World
+	local R = Wd.Rise
 	if t < P.rise[i] then return nil end
 	local tr = t - P.rise[i]
 	local fit = job.pairFit and job.pairFit[i] or 1
 	local centre = job:wp(job.slots[i])
-	local s
-	if tr < 0.12 then
-		s = 0.45 + 0.55 * M.out(tr / 0.12, 2)
+	local L = P.riseLen or R.len
+	local apex, over = R.apex, R.over
+	if P.reduced then apex, over = 0.08, 1 end
+	local y, s
+	if tr < R.apexAt then
+		local u = tr / R.apexAt
+		y = M.lerp(R.from, apex, M.out(u, 3))
+		s = M.lerp(R.scale0, over, u ^ (R.grow or 1.25))
 	else
-		s = 1 + 0.04 * M.bump(tr, 0.12, math.max(0.05, P.riseLen - 0.12))
+		local u = M.sineInOut((tr - R.apexAt) / math.max(0.05, L - R.apexAt))
+		y = apex * (1 - u)
+		s = M.lerp(over, 1, u)
 	end
+	centre += box.home.UpVector * y * box.fullH
+	-- the spin: n turns that slow to nothing by L (Out Cubic), plus the idle turn ramping in over the second half
 	local turn = RAD(Wd.Idle[1])
-	local yaw = RAD(-25) + turn * tr
 	local spin = i == P.best and P.spinBest
-	if spin then
-		yaw = RAD(-25) + 2 * PI * spin[2] * (1 - M.out(tr / spin[1], 3)) + turn * math.max(0, tr - spin[1])
-	end
-	local idle = math.max(0, tr - (spin and spin[1] or P.riseLen))
+	local turns = P.reduced and 0 or (spin and spin[2] or 1)
+	local r0, r1 = L * 0.5, L
+	local ramp = tr <= r0 and 0 or (tr < r1 and (tr - r0) ^ 2 / (2 * (r1 - r0)) or (r1 - r0) / 2 + (tr - r1))
+	local yaw = RAD(-25) - 2 * PI * turns * (1 - M.out(tr / L, 3)) + turn * ramp
+	local idle = math.max(0, tr - L)
 	local ease = M.smooth(M.c01(idle / 0.4))
 	centre += box.home.UpVector * math.sin(idle * 2 * PI * Wd.Idle[3]) * Wd.Idle[2] * job.pairH * ease
 	-- (a row's best, Legendary or better, steps up 20 % as it lands)
@@ -919,9 +956,9 @@ function UnboxWorld.pairAt(job, i, t)
 end
 
 ---------------------------------------------------------------------------------------------- per frame
--- The seam's light, from the second shake on (the only colour on the box before the pop): in the honest colour, one
--- rarity a shake up to the true one (shake 2 Rare, 3 Epic, 4 Legendary, the squeeze the true one), growing; the theme's
--- own light in a Secret's cue; out at the pop.
+-- The seam's light (the only colour on the box before the pop): a faint white line from the first shake (brief 30),
+-- then in the honest colour, one rarity a shake up to the true one (shake 2 Rare, 3 Epic, 4 Legendary, the squeeze the
+-- true one), growing; the theme's own light in a Secret's cue; out at the pop (the column takes over).
 local function seam(job, i, t)
 	local P, box = job.P, job.boxes[i]
 	local r = box.rank
@@ -930,8 +967,8 @@ local function seam(job, i, t)
 		if t >= w[1] + P.wobOff[i] then show = kk end
 	end
 	local a = 0
-	if show > 1 and t < P.pop[i] + 0.1 then
-		a = math.min(1, 0.35 + 0.25 * (show - 2))
+	if show >= 1 and t < P.pop[i] + 0.1 then
+		a = show == 1 and 0.22 or math.min(1, 0.35 + 0.25 * (show - 2))
 		if t >= P.squeeze[1] then a = 1 end
 		if t >= P.pop[i] then a = 1 - (t - P.pop[i]) / 0.1 end
 	end
@@ -1039,6 +1076,14 @@ function UnboxWorld.frame(job, t)
 	for i, box in job.boxes do
 		local cf, sx, sy, lid = UnboxWorld.boxAt(job, i, t)
 		X.Box.pose(box, cf, sx, sy, lid)
+		box.visible = not lid.hidden
+		-- (brief 30: the open chest fades as it sinks away; written only on change)
+		local fade = lid.fade or 0
+		if box.fadeA ~= fade and not lid.hidden then
+			box.fadeA = fade
+			box.body:fade(fade)
+			box.lid:fade(fade)
+		end
 		bright = math.max(bright, seam(job, i, t))
 		setSeal(box, sealStage(P, i, t))
 		ghostAt(job, i, t)
@@ -1076,6 +1121,7 @@ function UnboxWorld.frame(job, t)
 	end
 	if recount then job:recount() end
 	job.bits:step(t)
+	FX.frame(job, t)
 	UnboxWorld.effectsAt(job, t, bright)
 	for _, fn in job.updaters do fn(t) end
 	UnboxWorld.wordsUpdate(job, t)
@@ -1148,7 +1194,7 @@ function UnboxWorld.effectsAt(job, t, bright)
 	end
 	-- the soft glow behind the pair, from the pop to the close
 	if job.glowHost then
-		local on = pair.pos ~= nil and cam ~= nil and t >= P.pop[P.best] + 0.05 and t < P.out
+		local on = pair.pos ~= nil and cam ~= nil and t >= P.pop[P.best] + 0.2 and t < P.out
 		if on then
 			local fit = job.pairFit and job.pairFit[P.best] or 1
 			job.glowHost.CFrame = CF(pair.pos + (pair.pos - cam.Position).Unit * (pair.depth * fit * 0.7 + 0.05 * job.view.D))
