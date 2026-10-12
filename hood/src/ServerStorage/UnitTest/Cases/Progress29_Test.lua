@@ -1,5 +1,5 @@
 -- Brief 29, P4 (progression, tutorial, optional activity): levels as a curve over Power, ranks tied to the best level,
--- the safe BestLevel migration, every shot paying a little, the tutorial's steps and arrows, the Hot Target caps.
+-- the safe BestLevel migration, every shot paying a little, the Hot Target caps (the tutorial: Tutorial30_Test).
 return function(t)
 	local RS = game:GetService('ReplicatedStorage')
 	local L = require(RS.Shared.LevelRules)
@@ -7,7 +7,6 @@ return function(t)
 	local Rebirth = require(RS.Shared.RebirthRules)
 	local ShotRules = require(RS.Shared.ShotRules)
 	local Goals = require(RS.Shared.GoalRules)
-	local Tut = require(RS.Shared.TutorialRules)
 	local Hot = require(RS.Shared.HotTargetRules)
 	local Schema = require(game.ServerScriptService.HoodServer.ProfileSchema)
 
@@ -117,48 +116,7 @@ return function(t)
 		t.expect.truthy(ShotRules.take(bucket, now + 1)); t.expect.falsy(ShotRules.take(0 / 0 and nil, 0))
 	end)
 
-	t.test('the tutorial: three basics, then it ends and hands over to the goal chain', function()
-		t.expect.equal(Tut.Total, 3)
-		for _, name in { 'Train', 'Door', 'Fight', 'Cash', 'Gift' } do
-			local s = Tut.step(name); t.expect.truthy(s ~= nil); t.expect.truthy(s.Part >= 1 and s.Part <= 3); t.expect.truthy(s.Text ~= '')
-		end
-		t.expect.equal(Tut.step('Train').Part, 1); t.expect.equal(Tut.step('Fight').Part, 2); t.expect.equal(Tut.step('Cash').Part, 3)
-		for _, name in { 'Gun', 'Run', 'Done', 'Nope' } do t.expect.equal(Tut.step(name), nil) end
-		t.expect.equal(Tut.step(nil), nil); t.expect.equal(Tut.step(5), nil)
-		-- every tutorial step the server can report exists in the onboarding machine, in order
-		local O = require(RS.Shared.OnboardingRules)
-		for name in Tut.Steps do t.expect.truthy(O.Index[name] ~= nil) end
-		t.expect.truthy(O.Index.Train < O.Index.Door and O.Index.Door < O.Index.Fight and O.Index.Fight < O.Index.Cash)
-		t.expect.equal(Tut.rich('Walk into <BAY 1> now', nil, '#FFD21F'), 'Walk into <font color="#FFD21F">BAY 1</font> now')
-		t.expect.equal(Tut.rich('Go <gate>!', 5, '#FFD21F'), 'Go <font color="#FFD21F">ga</font>')
-		t.expect.equal(Tut.rich('Go <gate>!', 0), ''); t.expect.equal(Tut.typed(1), 24); t.expect.equal(Tut.typed(-3), 0); t.expect.equal(Tut.typed(0 / 0), 0)
-		local ps = Tut.pieces('a <b> c'); t.expect.equal(#ps, 3); t.expect.truthy(ps[2].Key); t.expect.falsy(ps[1].Key)
-	end)
-
-	t.test('the white arrows lie on the straight line to the target, all pointing exactly at it, and stop short of it', function()
-		local from, to = Vector3.new(0, 5, 0), Vector3.new(30, 9, -40)
-		local points, dir = Tut.arrows(from, to, 0, 4, 9, 3, 3)
-		t.expect.truthy(#points >= 5); t.expect.truthy(#points <= 9)
-		local flat = Vector3.new(to.X, 0, to.Z).Unit
-		t.expect.near(dir.X, flat.X, 1e-6); t.expect.near(dir.Z, flat.Z, 1e-6)
-		for i, p in points do
-			t.expect.equal(p.Y, 5) -- (at your feet's height)
-			-- on the line: the cross product with the direction is zero (no curve)
-			t.expect.near(p.X * flat.Z - p.Z * flat.X, 0, 1e-4)
-			t.expect.truthy(Vector3.new(p.X, 0, p.Z).Magnitude >= 3 - 1e-6)
-			if i > 1 then t.expect.near((p - points[i - 1]).Magnitude, 4, 1e-4) end
-		end
-		local last = points[#points]
-		t.expect.truthy(Vector3.new(to.X - last.X, 0, to.Z - last.Z).Magnitude >= 3 - 1e-6)
-		local flowed = Tut.arrows(from, to, 0.5, 4, 9, 3, 3)
-		t.expect.truthy((flowed[1] - points[1]).Magnitude > 1.9) -- (the phase slides them toward the target)
-		local none, zero = Tut.arrows(from, Vector3.new(1, 5, 1), 0, 4, 9, 3, 3)
-		t.expect.equal(#none, 0); t.expect.equal(zero.Magnitude, 0) -- (there: no arrows)
-		-- the box: on the target when it is on screen, else on the edge toward it
-		local x, y, edge = Tut.boxAt(400, 300, true, 1280, 720, 60); t.expect.equal(x, 400); t.expect.equal(y, 300); t.expect.falsy(edge)
-		x, y, edge = Tut.boxAt(2000, 360, false, 1280, 720, 60); t.expect.truthy(edge); t.expect.near(x, 1220, 1e-6); t.expect.near(y, 360, 1e-6)
-		x, y, edge = Tut.boxAt(-500, -500, true, 1280, 720, 60); t.expect.truthy(edge); t.expect.truthy(x >= 60 and y >= 60)
-	end)
+	-- (brief 30: the tutorial's tests are Tutorial30_Test now, with its new rules)
 
 	t.test('the optional Hot Target is capped hard and is a small bonus', function()
 		local state, now, ok = {}, 10, 0
