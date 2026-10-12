@@ -12,7 +12,8 @@
 -- Wired = true only when the server really grants the item (HoodServer/StoreService: ownership attributes and
 -- receipts) AND the game applies its effect. The client never prompts a purchase for an item that is not Wired, even
 -- with an id: nobody can pay Robux for something that does nothing yet. Flip it when the effect ships.
--- (brief 23) RangeVIP1 / RangeVIP2 (the PRO BAY x100 and GOLD BAY x250 lanes: LobbyService opens and pays a Robux lane
+-- (brief 23) RangeVIP1 / RangeVIP2 (the PRO BAY x100 and GOLD BAY x250 lanes; brief 30: RangeVIP3, the HEAD LANE x500
+-- at the aisle's end: LobbyService opens and pays a Robux lane
 -- only with its Pass_* attribute) and TenXCash (the magenta pad before each gate pays Shared/PadRules.reward(stage, true)
 -- with Pass_TenXCash: StageService).
 -- Wired now: DoubleRep, DoubleCash and VIP (Pass_* attributes; HoodServer/Boosts and the overhead tag apply them), the
@@ -49,6 +50,7 @@ Products.Passes = {
 	TenXCash = 0, -- "10x Cash": the magenta pad before each gate pays 10x the yellow one (Shared/PadRules, StageService)
 	RangeVIP1 = 0, -- "Pro Bay": the x100 Power lane, PRO BAY (Config/Skins.Stations Pass; LobbyService)
 	RangeVIP2 = 0, -- "Gold Bay": the x250 Power lane, GOLD BAY
+	RangeVIP3 = 0, -- (brief 30) "Head Lane": the x500 Power lane that closes the training aisle, on its raised gold platform
 	-- (brief 29, P5) the friction-removers
 	AutoOpen = 0, -- "Auto Open": the box's T card opens box after box by itself (Shoes.client; free to stop any time)
 	Speed2x = 0, -- "2x Speed": walk speed x Products.SpeedPassFactor (2), LobbyService.walk
@@ -138,7 +140,9 @@ Products.Catalog = {
 	-- (brief 23) the 10x Cash pad and the two Robux lanes. A lane row's Price is its station's RobuxPrice (Config/Skins).
 	{ Key = 'TenXCash', Kind = 'Pass', Section = 'Gamepass', Title = '10x Cash', Big = '10x\nPads', Detail = 'The pink pad pays 10x Cash', Sub = 'Pink pad x10', Price = 199, Art = 'icon:TenXCash', Tone = 'cardPink', Offer = '10x Cash', Sticker = '10x', Wired = true },
 	{ Key = 'RangeVIP1', Kind = 'Pass', Section = 'Gamepass', Title = 'Pro Bay', Big = 'x100\nPower', Detail = 'Your own x100 Power lane', Sub = 'x100 Power lane', Lane = true, Price = 99, Art = 'icon:ProBay', Tone = 'cardTeal', Offer = 'x100 Lane', Sticker = 'x100', Wired = true },
-	{ Key = 'RangeVIP2', Kind = 'Pass', Section = 'Gamepass', Title = 'Gold Bay', Big = 'x250\nPower', Detail = 'The best lane: x250 Power', Sub = 'x250 Power lane', Lane = true, Price = 249, Art = 'icon:GoldBay', Tone = 'cardGold', Offer = 'x250 Lane', Sticker = 'x250', Wired = true },
+	{ Key = 'RangeVIP2', Kind = 'Pass', Section = 'Gamepass', Title = 'Gold Bay', Big = 'x250\nPower', Detail = 'Your own x250 Power lane', Sub = 'x250 Power lane', Lane = true, Price = 249, Art = 'icon:GoldBay', Tone = 'cardGold', Offer = 'x250 Lane', Sticker = 'x250', Wired = true },
+	-- (brief 30) the soldier game's third paid lane: the head lane at the aisle's end (the reference's 250x on its gold stage)
+	{ Key = 'RangeVIP3', Kind = 'Pass', Section = 'Gamepass', Title = 'Head Lane', Big = 'x500\nPower', Detail = 'The best lane: x500 Power', Sub = 'x500 Power lane', Lane = true, Price = 699, Art = 'icon:GoldBay', Tone = 'cardGold', Offer = 'x500 Lane', Sticker = 'x500', Wired = true },
 	-- (brief 29, P5) removers of friction: the box's auto button, double walk speed, pads that pay by themselves
 	{ Key = 'AutoOpen', Kind = 'Pass', Section = 'Gamepass', Title = 'Auto Open', Big = 'Open\nNon-Stop', Detail = 'The box T button opens boxes for you', Sub = 'Opens boxes for you', Price = 249, Art = 'icon:AutoOpen', Tone = 'cardTeal', Sticker = 'AUTO', Wired = true },
 	{ Key = 'Speed2x', Kind = 'Pass', Section = 'Gamepass', Title = '2x Speed', Big = 'Run\nFaster', Detail = 'Walk and run twice as fast', Sub = 'Twice as fast', Price = 99, Art = 'icon:Speed2x', Tone = 'cardGold', Offer = '2x Speed', Sticker = '2x', Wired = true },

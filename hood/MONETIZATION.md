@@ -20,7 +20,8 @@ Create a pass, set its price, copy its id, and paste it at `Products.Passes.<Key
 | +1 Shoe Slot | 99 | `ExtraEquip` | Wear 4 pairs of shoes instead of 3 |
 | 10x Cash | 199 | `TenXCash` | The pink pad before every gate pays 10x the yellow one (+100 instead of +10 at Stage 1) |
 | Pro Bay | 99 | `RangeVIP1` | Opens PRO BAY, the x100 Power shooting lane, forever |
-| Gold Bay | 249 | `RangeVIP2` | Opens GOLD BAY, the x250 Power shooting lane (the best one), forever |
+| Gold Bay | 249 | `RangeVIP2` | Opens GOLD BAY, the x250 Power shooting lane, forever |
+| Head Lane | 699 | `RangeVIP3` | Opens the HEAD LANE, the x500 Power shooting lane on the gold stage at the end of the training aisle (the best one), forever |
 | Auto Open | 249 | `AutoOpen` | The box's T button opens box after box by itself (one at a time, stops when you press it or run out of Cash) |
 | 2x Speed | 99 | `Speed2x` | Walk speed exactly x2 |
 | Auto Collect | 149 | `AutoCollect` | A street's pad Cash is paid the moment its crew is down (the 10x pad's amount with the 10x pass); the pad then only takes you back to the lobby. There are no loose drops in the game, so pads are what it collects |

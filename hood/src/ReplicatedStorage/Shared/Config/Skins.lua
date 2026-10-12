@@ -55,6 +55,10 @@ S.Stations={
  {Id='Pro',Name='PRO BAY',Gear='ProBag',Rebirths=0,Multiplier=100,Pass='RangeVIP1',RobuxPrice=99,Required=0,Color=C(40,190,190)},
  {Id='Gold',Name='GOLD BAY',Gear='GoldBag',Rebirths=0,Multiplier=250,Pass='RangeVIP2',RobuxPrice=249,Required=0,Color=C(240,192,56)},
  {Id='Ring',Name='Champ Ring',Gear='Ring',Rebirths=12,Multiplier=75,Required=0,Color=C(230,60,140)},
+ -- (brief 30) the soldier game's third paid lane, closing the training aisle on a raised gold stage: x500 at 699 (the paid
+ -- ladder steps up like the reference's 25x/100x/250x: PRO x100 at 99, GOLD x250 at 249, HEAD x500 at 699).
+ -- Last in the list, after the Champ Ring, so every older lane keeps its place (GoalRules' Range goals count places)
+ {Id='Head',Name='HEAD LANE',Gear='GoldBag',Rebirths=0,Multiplier=500,Pass='RangeVIP3',RobuxPrice=699,Required=0,Color=C(255,214,70)},
 }
 S.StationById={};for _,s in S.Stations do S.StationById[s.Id]=s end
 return S

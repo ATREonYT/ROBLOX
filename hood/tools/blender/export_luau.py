@@ -12,7 +12,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
 import boxkit as bk  # noqa: E402
-from models import guns, icons, props  # noqa: E402
+from models import guns, icons, lobby, props  # noqa: E402
 
 HOOD = os.path.abspath(os.path.join(HERE, '..', '..'))
 OUT_DIR = os.path.join(HOOD, 'src', 'ReplicatedStorage', 'Shared', 'Models')
@@ -359,9 +359,35 @@ def export_props():
 	return 1 if problems else 0
 
 
+def export_lobby():
+	"""(brief 30) Shared/Models/LobbyModels.lua only: `export_luau.py --lobby` (the lobby's product-stand items)."""
+	os.makedirs(OUT_DIR, exist_ok=True)
+	items = lobby.build_all()
+	# (the stands' items are seen at 20-30 studs under the hall's light: a little gloss on the plastic, like the reference's
+	# shiny cartoon props; the other modules keep the plain look)
+	saved = dict(ROBLOX_MAT)
+	ROBLOX_MAT['smooth'] = ('SmoothPlastic', 0.12, 0, True)
+	ROBLOX_MAT['gold'] = ('SmoothPlastic', 0.22, 0, True)
+	problems = []
+	for m in items:
+		problems += bk.lint(m)
+	for p in problems:
+		print('lint:', p)
+	n = write_module(os.path.join(OUT_DIR, 'LobbyModels.lua'), 'LobbyModels', items, 'lobby',
+		'Brief 30 lobby: the items that turn over the product stands (VIP crown, 2x Power dumbbell, cash, crosshair, sneaker, clover, shoe boxes, targets, present, skull).',
+		'every item centred on the origin, fitting a 3.6-stud cube at scale 1 (it turns about its middle)',
+		'Root', 'the pivot', ICON_VIEW, lambda m: ['Unit = %s' % num(m.unit)])
+	ROBLOX_MAT.clear()
+	ROBLOX_MAT.update(saved)
+	print('LobbyModels.lua', n, 'bytes', [(m.id, m.part_count() + 1) for m in items])
+	return 1 if problems else 0
+
+
 def main():
 	if '--props' in sys.argv:
 		return export_props()
+	if '--lobby' in sys.argv:
+		return export_lobby()
 	os.makedirs(OUT_DIR, exist_ok=True)
 	gun_models = guns.build_all()
 	icon_models = icons.build_all()

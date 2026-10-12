@@ -65,7 +65,7 @@ return function(t)
  -- Brief 23: the superhero game's ladder. Six rebirth lanes x1/0, x4/2, x10/4, x20/6, x35/8, x50/10, the Champ Ring
  -- (boss yard) x75/12, and the two best lanes for Robux: PRO BAY x100 (RangeVIP1, 99) and GOLD BAY x250 (RangeVIP2, 249).
  t.test('the lane ladder: rebirth lanes 0..10 and the Champ Ring at 12, then the two Robux lanes on top',function()
-  local want={{'Starter',0,1},{'Tape',2,4},{'Street',4,10},{'Heavy',6,20},{'Speed',8,35},{'DoubleEnd',10,50},{'Pro',0,100,'RangeVIP1',99},{'Gold',0,250,'RangeVIP2',249},{'Ring',12,75}}
+  local want={{'Starter',0,1},{'Tape',2,4},{'Street',4,10},{'Heavy',6,20},{'Speed',8,35},{'DoubleEnd',10,50},{'Pro',0,100,'RangeVIP1',99},{'Gold',0,250,'RangeVIP2',249},{'Ring',12,75},{'Head',0,500,'RangeVIP3',699}}
   t.expect.equal(#Skins.Stations,#want)
   for i,w in want do
    local s=Skins.Stations[i]
@@ -77,9 +77,11 @@ return function(t)
   table.sort(free,function(a,b) return a.Rebirths<b.Rebirths end)
   for i=2,#free do t.expect.truthy(free[i].Rebirths>free[i-1].Rebirths);t.expect.truthy(free[i].Multiplier>free[i-1].Multiplier) end
   t.expect.truthy(Skins.StationById.Pro.Multiplier>topFree);t.expect.truthy(Skins.StationById.Gold.Multiplier>Skins.StationById.Pro.Multiplier)
+  t.expect.truthy(Skins.StationById.Head.Multiplier>Skins.StationById.Gold.Multiplier) -- (brief 30: each paid lane pays more than the cheaper one)
   t.expect.truthy(R.laneOpen(Skins.Stations[1],0));t.expect.falsy(R.laneOpen(Skins.Stations[2],1));t.expect.truthy(R.laneOpen(Skins.Stations[2],2))
   t.expect.equal(R.bestLane(0).Id,'Starter');t.expect.equal(R.bestLane(5).Id,'Street');t.expect.equal(R.bestLane(11).Id,'DoubleEnd');t.expect.equal(R.bestLane(99).Id,'Ring')
   t.expect.equal(R.bestLane(0,{RangeVIP1=true}).Id,'Pro');t.expect.equal(R.bestLane(99,{RangeVIP1=true,RangeVIP2=true}).Id,'Gold');t.expect.equal(R.bestLane(3,{RangeVIP2=true}).Id,'Gold')
+  t.expect.equal(R.bestLane(0,{RangeVIP3=true}).Id,'Head');t.expect.equal(R.bestLane(99,{RangeVIP1=true,RangeVIP2=true,RangeVIP3=true}).Id,'Head')
   t.expect.equal(R.nextUnlock(1).Name,'BAY 2');t.expect.equal(R.nextUnlock(2),nil);t.expect.equal(R.nextUnlock(11).Id,'Ring');t.expect.equal(R.nextUnlock(12),nil)
   t.expect.equal(R.nextLane(3).Id,'Street');t.expect.equal(R.nextLane(10).Id,'Ring');t.expect.equal(R.nextLane(12),nil);t.expect.equal(R.nextLane(0).Id,'Tape')
  end)

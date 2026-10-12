@@ -27,7 +27,7 @@ return function(t)
 	end)
 
 	t.test('the pad passes and the shoe-box passes are all in the store', function()
-		for _, key in { 'DoubleRep', 'DoubleCash', 'AutoShoot', 'VIP', 'Lucky', 'TripleOpen', 'ExtraEquip', 'PowerPack1', 'SmallCash', 'SkipRebirth', 'TenXCash', 'RangeVIP1', 'RangeVIP2' } do
+		for _, key in { 'DoubleRep', 'DoubleCash', 'AutoShoot', 'VIP', 'Lucky', 'TripleOpen', 'ExtraEquip', 'PowerPack1', 'SmallCash', 'SkipRebirth', 'TenXCash', 'RangeVIP1', 'RangeVIP2', 'RangeVIP3' } do
 			t.expect.truthy(Products.ByKey[key] ~= nil)
 		end
 	end)
@@ -83,6 +83,7 @@ return function(t)
 		t.expect.equal(Products.ByKey.TenXCash.Price, 199)
 		t.expect.equal(Products.ByKey.RangeVIP1.Price, 99)
 		t.expect.equal(Products.ByKey.RangeVIP2.Price, 249)
+		t.expect.equal(Products.ByKey.RangeVIP3.Price, 699) -- (brief 30: the head lane)
 		Products.Passes.TenXCash, Products.Passes.RangeVIP1, Products.Passes.RangeVIP2, Products.Enabled = saved[1], saved[2], saved[3], saved[4]
 	end)
 

@@ -714,6 +714,17 @@ local function watchBoards()
 	end
 end
 
+-- (B30) The group reward chest's prompt (e2_lobby Lobby.rewardChest: attribute OpenDaily) opens the Daily Rewards window,
+-- where the group reward is claimed with the daily one (HUD.client's HoodHUD.OpenDaily).
+pcall(function()
+	game:GetService('ProximityPromptService').PromptTriggered:Connect(function(prompt)
+		if prompt:GetAttribute('OpenDaily') ~= true then return end
+		local hud = player.PlayerGui:FindFirstChild('HoodHUD')
+		local ev = hud and hud:FindFirstChild('OpenDaily')
+		if ev and ev:IsA('BindableEvent') then ev:Fire() end
+	end)
+end)
+
 ---------------------------------------------------------------------------------------------- refresh
 local lastPower
 local pulse
