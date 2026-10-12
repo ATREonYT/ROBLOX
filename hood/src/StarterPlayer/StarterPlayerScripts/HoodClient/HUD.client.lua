@@ -251,7 +251,8 @@ do
 	playerGui:GetAttributeChangedSignal('HoodWindow'):Connect(function()
 		if playerGui:GetAttribute('HoodWindow') == 'Store' then badge.Visible = false end
 	end)
-	shoesButton = square({ Name = 'Shoes', Tone = T.pets, Width = S, Height = S, Position = px(0, row1), Text = 'Shoes', TextSize = C.SquareText, Icon = iconOr('Sneaker', 'Shop'), Place = 'hud', OnClick = call('Shoes') })
+	-- MOCKUP30: the user's HUD artboard draws the Shoes tile red (its look wins where it covers a HUD element)
+	shoesButton = square({ Name = 'Shoes', Tone = { top = hex('FF5A66'), base = hex('D8182C'), lip = hex('A00E1E'), stroke = hex('4A0B16'), rim = hex('FFB4BC') }, Width = S, Height = S, Position = px(0, row1), Text = 'Shoes', TextSize = C.SquareText, Icon = iconOr('Sneaker', 'Shop'), Place = 'hud', OnClick = call('Shoes') })
 	local rebirthButton = square({ Name = 'Rebirth', Tone = T.rebirth, Width = S, Height = S, Position = px(col2, row1), Text = 'Rebirth', TextSize = C.SquareText - 1, Icon = 'Rebirth', Place = 'hud', OnClick = call('Rebirth') })
 	square({ Name = 'Items', Tone = T.items, Width = S, Height = S, Position = px(0, row2), Text = 'Items', TextSize = C.SquareText, Icon = iconOr('Backpack', 'Shop'), Place = 'hud', OnClick = call('Items') })
 	square({ Name = 'Skins', Tone = T.skins, Width = S, Height = S, Position = px(col2, row2), Text = 'Skins', TextSize = C.SquareText, Icon = iconOr('SkinsPistol', 'Gun'), Place = 'hud', OnClick = call('Skins') })
@@ -321,6 +322,19 @@ do
 	cr, cashIcon, cashCount = row('Cash', C.Cash, 'Cash')
 	fillText(cashCount, Spec.Text.gold)
 	plus(cr, cashIcon, 15, function() openStore('Cash') end)
+	-- MOCKUP30 BEGIN the user's HUD artboard draws Cash as a stat pill (dark, a green rim, the Cash caption over the
+	-- number); its look wins over the slot, the slot and its names stay (Counters.Cash, Value, Plus)
+	do
+		local pill = Kit.new('Frame', { Name = 'StatPill', BackgroundColor3 = hex('10202E'), BackgroundTransparency = 0.08, BorderSizePixel = 0, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 2, 0.5, 0), Size = px(224, 52), ZIndex = 2, Parent = cr })
+		Kit.corner(12).Parent = pill
+		Kit.stroke(Color.black, 3, true).Parent = pill
+		local rim = Kit.new('Frame', { Name = 'Rim', BackgroundTransparency = 1, Position = px(3, 3), Size = UDim2.new(1, -6, 1, -6), ZIndex = 2, Parent = pill })
+		Kit.corner(9).Parent = rim
+		Kit.stroke(hex('2CE04A'), 3, true).Parent = rim
+		label({ Name = 'Caption', Text = 'Cash', TextSize = 15, StrokeThickness = 3, TextXAlignment = Enum.TextXAlignment.Left, Position = px(C.Cash.TextX, -2), Size = px(120, 18), ZIndex = 4, Parent = cr })
+		cashCount.Position = cashCount.Position + UDim2.fromOffset(0, 7)
+	end
+	-- MOCKUP30 END
 	-- Friend Boost: "+10 % Power per friend here" (RetentionService's FriendBoost) and the green invite "+"
 	local F = C.Friend
 	local fr = Kit.new('Frame', { Name = 'FriendBoost', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0, 0.5), Position = px(0, H - F.Above), Size = px(330, F.Plus + 2), Parent = counters })

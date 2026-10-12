@@ -95,6 +95,30 @@ function ShoeRules.sanitize(shoes: any, slots: number?)
 		end
 	end
 	shoes.Favorites = favorites
+	-- MOCKUP30 BEGIN (brief 30, the user's inventory mockup) Locked pairs (only shoes you own, `true` each: kept out of
+	-- Delete / Recycle like a favourite) and Discovered designs (every design you have ever had, kept even after its last
+	-- pair is recycled: the Collection's discovery, separate from the copies you own). Both are cleaned only when present
+	-- (an older save has neither; ShoeRules.discover adds Discovered, ShoeRules.setLocked adds Locked).
+	if type(shoes.Locked) == 'table' then
+		local locked = {}
+		for id, on in shoes.Locked do
+			if type(id) == 'string' and clean[id] and on == true then locked[id] = true end
+		end
+		shoes.Locked = locked
+	else
+		shoes.Locked = nil
+	end
+	if type(shoes.Discovered) == 'table' then
+		local discovered = {}
+		for id, on in shoes.Discovered do
+			if type(id) == 'string' and Shoes.ById[id] and on == true then discovered[id] = true end
+		end
+		for id in clean do discovered[id] = true end
+		shoes.Discovered = discovered
+	else
+		shoes.Discovered = nil
+	end
+	-- MOCKUP30 END
 	local opened = int(shoes.Opened)
 	shoes.Opened = opened and math.clamp(opened, 0, 1e9) or 0
 	return shoes
@@ -363,6 +387,7 @@ function ShoeRules.canRecycle(shoes, id: any): (boolean, string?)
 	local copies = ShoeRules.copies(shoes, id)
 	if copies == 0 then return false, 'locked' end
 	if type(shoes.Favorites) == 'table' and shoes.Favorites[id] == true then return false, 'favorite' end
+	if type(shoes.Locked) == 'table' and shoes.Locked[id] == true then return false, 'lock' end -- MOCKUP30 (a locked pair)
 	if ShoeRules.equippedCount(shoes, id) >= copies then return false, 'equipped' end
 	return true, nil
 end
@@ -423,11 +448,43 @@ function ShoeRules.setFavorite(shoes, id: any, on: boolean): boolean
 	return true
 end
 
+-- MOCKUP30 BEGIN (brief 30) Lock: on a pair you own, like setFavorite (true when it changed); the locked pairs and the
+-- discovered designs as attributes ('Id,Id' in the boxes' order, '' for none)
+function ShoeRules.setLocked(shoes, id: any, on: boolean): boolean
+	if type(id) ~= 'string' or ShoeRules.copies(shoes, id) == 0 then return false end
+	if type(shoes.Locked) ~= 'table' then shoes.Locked = {} end
+	local was = shoes.Locked[id] == true
+	shoes.Locked[id] = on and true or nil
+	return was ~= on
+end
+local function idsString(set: any): string
+	local parts = {}
+	if type(set) ~= 'table' then return '' end
+	for _, shoe in Shoes.List do
+		if set[shoe.Id] == true then table.insert(parts, shoe.Id) end
+	end
+	return table.concat(parts, ',')
+end
+function ShoeRules.lockedString(shoes): string return idsString(shoes.Locked) end
+-- Every design owned now counts as discovered (adds the Discovered set to an older save). Returns whether it grew.
+function ShoeRules.discover(shoes): boolean
+	if type(shoes.Discovered) ~= 'table' then shoes.Discovered = {} end
+	local grew = false
+	for id, n in shoes.Owned do
+		if n >= 1 and Shoes.ById[id] and shoes.Discovered[id] ~= true then shoes.Discovered[id] = true; grew = true end
+	end
+	return grew
+end
+function ShoeRules.discoveredString(shoes): string return idsString(shoes.Discovered) end
+-- MOCKUP30 END
+
 -- The reverse, for clients: a Shoes table from the ShoesOwned and ShoesEquipped attributes (sanitized); `favorites` (the
--- ShoesFavorites attribute, optional) stars pairs.
-function ShoeRules.fromAttributes(owned: any, equipped: any, opened: any, favorites: any?)
-	local shoes = { Owned = {}, Equipped = {}, Opened = type(opened) == 'number' and opened or 0, Favorites = {} }
+-- ShoesFavorites attribute, optional) stars pairs; `locked` / `discovered` (MOCKUP30: ShoesLocked / ShoesDiscovered).
+function ShoeRules.fromAttributes(owned: any, equipped: any, opened: any, favorites: any?, locked: any?, discovered: any?)
+	local shoes = { Owned = {}, Equipped = {}, Opened = type(opened) == 'number' and opened or 0, Favorites = {}, Locked = {}, Discovered = {} }
 	for id in string.gmatch(type(favorites) == 'string' and favorites or '', '[^,]+') do shoes.Favorites[id] = true end
+	for id in string.gmatch(type(locked) == 'string' and locked or '', '[^,]+') do shoes.Locked[id] = true end -- MOCKUP30
+	for id in string.gmatch(type(discovered) == 'string' and discovered or '', '[^,]+') do shoes.Discovered[id] = true end -- MOCKUP30
 	for id, n in string.gmatch(type(owned) == 'string' and owned or '', '([^,:]+):(%d+)') do shoes.Owned[id] = tonumber(n) end
 	for id in string.gmatch(type(equipped) == 'string' and equipped or '', '[^,]+') do table.insert(shoes.Equipped, id) end
 	return ShoeRules.sanitize(shoes)

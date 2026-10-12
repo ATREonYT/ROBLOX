@@ -180,6 +180,7 @@ local overlay, panel, list = Win.Overlay, Win.Panel, Win.List
 overlay.Visible = false
 local isOpen = false
 local built, giftTarget, closePicker
+local Art -- MOCKUP30 (the Grail Bundle, the gift picker; below)
 ---------------------------------------------------------------------------------------------- motion
 -- Tasteful motion (the references' pops and stagger-ins), all TweenService and one shared Heartbeat: the window pops in
 -- (0.9 > 1.03 > 1), a section's cards and title stagger in, the hero price buttons breathe (scale only, 3%), a slow soft
@@ -330,6 +331,11 @@ local function buy(key)
 		return
 	end
 	local id = Products.idOf(key)
+	-- MOCKUP30: a gift is never sent without its review (the user's gift picker): the review asks first, its Confirm buys
+	if Products.giftable(key) and giftActive() and Art and not Art.Reviewed then
+		Art.gift(key, giftActive())
+		return
+	end
 	-- a gift-able item: tell the server who gets it (or 0: nobody, clearing an old choice) BEFORE the prompt
 	local gift = nil
 	if Products.giftable(key) then
@@ -983,6 +989,130 @@ local function giftBanner(order)
 	Motion.button(cancel, function() giftTarget = nil; rebuild() end)
 end
 
+---------------------------------------------------------------------------------------------- MOCKUP30 BEGIN the Grail Bundle
+-- (brief 30, the user's artboard 01) The Grail Bundle's hero card heads the Featured section (Shared/ShoeScreens.bundleHero:
+-- its three pairs, View Bundle, Gift, the Street / Graffiti box cards and the price line), View Bundle opens THE GRAIL
+-- BUNDLE (bundleDetail: Purchase, Gift a Player, Back) over the Store (Shared/ArtWindows). Purchase is Roblox's own window
+-- once the product is live (Products.canBuy), else "Purchase · Price pending" and disabled; while Roblox's receipt is on
+-- its way the button reads "Purchase pending..."; once the three pairs are in the rack, "Bundle received!" (View Shoes /
+-- Done). Gift a Player: the picker (artboard 06) and its review; nothing is ever sent without the review's Confirm.
+Art = { Windows = require(Shared.ArtWindows), Screens = require(Shared.ShoeScreens), Rules = require(Shared.ShoeUIRules), Pending = false }
+function Art.rackOwned()
+	local owned = {}
+	for id, n in string.gmatch(tostring(player:GetAttribute('ShoesOwned') or ''), '([^,:]+):(%d+)') do owned[id] = tonumber(n) end
+	return owned
+end
+function Art.detail()
+	Art.Windows.dialog('Bundle', function(holder)
+		return Art.Screens.bundleDetail(holder, { purchase = Art.purchase, gift = function() Art.gift('GrailBundle') end, back = function() Art.Windows.closeDialog('Bundle') end,
+			close = function() Art.Windows.closeDialog('Bundle') end, pending = function() return Art.Pending end })
+	end, { tapOut = true, blur = false })
+end
+function Art.purchase()
+	if Art.Pending then return end
+	if not Art.Screens.bundleLive() then
+		notice('The Grail Bundle is coming soon!', 'blue')
+		return
+	end
+	Art.Before = Art.rackOwned()
+	Art.Pending = true
+	Art.Windows.refresh()
+	Art.Reviewed = true
+	buy('GrailBundle')
+	Art.Reviewed = false
+end
+function Art.received()
+	Art.Windows.dialog('BundleReceived', function(holder)
+		local box = Art.Screens.receivedBox(holder, 0, 0, Art.Screens.bundleShoes(), { viewShoes = function()
+			Art.Windows.closeDialog('BundleReceived')
+			local inv = playerGui:FindFirstChild('HoodInventory')
+			local ev = inv and inv:FindFirstChild('Open')
+			if ev then ev:Fire('Shoes') end
+		end, done = function() Art.Windows.closeDialog('BundleReceived') end }, 60)
+		box.AnchorPoint = Vector2.new(0.5, 0.5)
+		box.Position = UDim2.fromScale(0.5, 0.5)
+		Kit.new('UIScale', { Scale = 1.4, Parent = box })
+		return { Box = box }
+	end, { tapOut = true, blur = false })
+end
+-- the gift picker (no key: pick the player first, then a Cash Pack or a box as before) and its review (with a key)
+function Art.gift(key, target)
+	local item = nil
+	local entry = key and Products.ByKey[key]
+	if entry then
+		local shoes = Products.bundleShoes and Products.bundleShoes(key)
+		item = { Key = key, Title = entry.Title, Shoe = shoes and shoes[1] or nil, Box = (not shoes) and (entry.Box or (entry.Art or ''):match('^box:(.+)$')) or nil }
+	end
+	Art.Windows.dialog('Gift', function(holder)
+		return Art.Screens.gift(holder, {
+			item = item, me = player.UserId, target = target, review = target ~= nil and key ~= nil,
+			players = function()
+				local list = {}
+				for _, p in Players:GetPlayers() do
+					if p ~= player then table.insert(list, { UserId = p.UserId, Name = p.DisplayName, User = p.Name }) end
+				end
+				table.sort(list, function(a, b) return string.lower(a.Name) < string.lower(b.Name) end)
+				return list
+			end,
+			pick = (not key) and function(t)
+				local p = Players:GetPlayerByUserId(t.UserId)
+				Art.Windows.closeDialog('Gift')
+				if p and Art.chooseTarget then Art.chooseTarget(p) end
+			end or nil,
+			confirm = function(t)
+				Art.Windows.closeDialog('Gift')
+				giftTarget = { UserId = t.UserId, Name = t.Name, At = os.clock() }
+				Art.Reviewed = true
+				buy(key)
+				Art.Reviewed = false
+			end,
+			back = function() Art.Windows.closeDialog('Gift') end, close = function() Art.Windows.closeDialog('Gift') end,
+		})
+	end, { tapOut = true, blur = false })
+end
+function Art.hero(block, y, e)
+	e = e or Products.ByKey.GrailBundle
+	if not (e and e.Wired == true and e.Key == 'GrailBundle') then return 0 end
+	local k = CW / 867
+	local h = math.floor(654 * k + 0.5)
+	local holder = Kit.new('Frame', { Name = 'GrailBundle', BackgroundTransparency = 1, Position = px(MARGIN, y), Size = px(CW, h), ZIndex = 25, Parent = block })
+	local inner = Kit.new('Frame', { Name = 'Art', BackgroundTransparency = 1, Size = px(867, 654), ZIndex = 25, Parent = holder })
+	Kit.new('UIScale', { Scale = k, Parent = inner })
+	Art.Hero = Art.Screens.bundleHero(inner, { view = Art.detail, gift = function() Art.gift('GrailBundle') end, drops = function(id)
+		local boxes = playerGui:FindFirstChild('HoodBoxes')
+		local ev = boxes and boxes:FindFirstChild('Open')
+		if ev then ev:Fire(id) end
+	end }, 0, 0, 26)
+	table.insert(entrance, { Holder = holder, Section = 'Featured' })
+	sections[e.Key] = holder
+	return h
+end
+pcall(function()
+	MarketplaceService.PromptProductPurchaseFinished:Connect(function(_, productId, bought)
+		if Products.keyFor('Product', productId) ~= 'GrailBundle' or not Art.Pending then return end
+		if not bought then
+			Art.Pending = false
+			Art.Windows.refresh()
+			return
+		end
+		-- the receipt is the server's: wait for the three pairs to land in the rack (once), then say so
+		local before, ids = Art.Before or {}, Art.Screens.bundleShoes()
+		task.spawn(function()
+			local t = 0
+			while t < 30 and not Art.Rules.bundleArrived(before, Art.rackOwned(), ids) do task.wait(0.25) t += 0.25 end
+			Art.Pending = false
+			Art.Windows.refresh()
+			if Art.Rules.bundleArrived(before, Art.rackOwned(), ids) then
+				Art.Windows.closeDialog('Bundle')
+				Art.received()
+			else
+				notice('Your bundle is on its way: it will be in your shoes in a moment.', 'blue')
+			end
+		end)
+	end)
+end)
+-- MOCKUP30 END
+
 local function build()
 	built = true
 	table.clear(priceLabels)
@@ -1030,8 +1160,14 @@ local function build()
 		if section.Id == 'Featured' then
 			for _, entry in items do
 				if type(entry.Shoes) == 'table' then
-					sections[entry.Key] = bundleCard(entry, y, block)
-					y += BUNDLE_H + GAP
+					-- MOCKUP30: MODELS' bundle product drawn as the user's artboard hero (bundleCard stays as the fallback)
+					local heroH = Art.hero(block, y, entry)
+					if heroH > 0 then
+						y += heroH + GAP
+					else
+						sections[entry.Key] = bundleCard(entry, y, block)
+						y += BUNDLE_H + GAP
+					end
 				elseif entry.Section == 'Featured' then
 					sections[entry.Key] = featuredCard(entry.Key, y, block)
 					y += FEAT_H + GAP
@@ -1126,6 +1262,7 @@ local function chooseTarget(p)
 	scrollTo('Cash')
 	notice('Pick a Cash Pack or a Box for ' .. p.DisplayName .. '!', 'green')
 end
+Art.chooseTarget = chooseTarget -- (MOCKUP30: the gift picker's Continue with no item yet)
 -- A small list of the other players in this server (a headshot and a name each); a tap picks one.
 local function openPicker()
 	closePicker()
@@ -1167,7 +1304,7 @@ local function openPicker()
 		row.Activated:Connect(function() chooseTarget(p) end)
 	end
 end
-Motion.button(Win.GiftButton, openPicker)
+Motion.button(Win.GiftButton, function() Art.gift(nil) end) -- MOCKUP30: the user's gift picker (the old one stays as a fallback: openPicker)
 Players.PlayerRemoving:Connect(function(p)
 	if giftTarget and p.UserId == giftTarget.UserId then
 		giftTarget = nil

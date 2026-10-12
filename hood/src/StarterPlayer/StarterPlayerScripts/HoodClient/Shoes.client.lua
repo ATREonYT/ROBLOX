@@ -657,25 +657,29 @@ task.spawn(function()
 	end
 end)
 
----------------------------------------------------------------------------------------------- box keys (P3, brief 29)
--- The reference's egg panel keys (refs29 section 8), flat 2D: three key cards under the box's name and price, each a
--- rounded square with a cream keycap and its label under it: E Open (lime), R Open 3 (yellow), T Auto (cyan). Standing
--- within KEY_RANGE of a box shows them; the keys or a tap/click on a card act. Open 3 and Auto need passes: without the
--- pass the card shows a padlock and the pass's Robux price, and pressing it opens Roblox's own purchase window for the
--- pass (or "coming soon" while it has no id); with it the card shows the box's price (x3 for Open 3).
--- A Robux box ("Exclusive"): the same three cards read Buy, Buy 3 and Buy 8 with the Robux prices of the box's own
--- products (Products ShoeBoxExclusive, ...3, ...8), each Roblox's own purchase window.
--- P5 HOOK: BOX_PASS names the pass behind each locked key. Triple is the existing TripleOpen pass; Auto is the pass P5 adds
--- (Products key AutoOpen, ownership as the player attribute Pass_AutoOpen). Until Products.ByKey.AutoOpen exists the Auto
--- card shows the padlock and "SOON". Auto, once owned, opens this box again and again (one at a time, after each
--- reveal) until you press T again, walk away, or it can't open one (no Cash or no room).
+---------------------------------------------------------------------------------------------- box keys + box windows (MOCKUP30)
+-- (P3, brief 29; restyled brief 30 MOCKUP) Standing within KEY_RANGE of a box shows the reference's egg panel in the
+-- user's artboard look (Shared/ShoeScreens.keyPanel): the box's name and price, its odds 3 + 2, the pity pill, and the
+-- key cards E Single / R Triple / T Auto (a tap or the key). Open 3 and Auto need passes: without one the card shows a
+-- padlock and the pass's Robux price, and pressing it opens Roblox's own purchase window (or "coming soon"). A Robux box
+-- (Chrome, Crown): Buy / Buy 3 / Buy 8 with their products' prices.
+-- The box windows (the user's artboards 02, 03, 07; ShoeScreens.boxes / drops, opened in Shared/ArtWindows): the box
+-- browser and each box's drops (Open 1 / Open 3 / Auto Open / View Odds / Back), from PlayerGui.HoodBoxes.Open
+-- (a BindableEvent: Open:Fire() the browser, Open:Fire(boxId) that box's drops). A Cash box opens only at the box (the
+-- server's rule); from afar the window says where to walk.
+-- Auto Open (the AutoOpen pass): opens the box again and again (one at a time, after each reveal) with Stop always on
+-- screen (the T card, the drops' toggle, the reveal's Stop Opening), and stops by itself at the configured rarity
+-- (ShoeUIRules.AutoStopRank), when the Cash runs out, when the rack is full, or when you walk away.
+-- The reveal (artboard 03 right, ShoeScreens.reveal): the UI layer over the 3D opening, shown where the opening holds on
+-- the pair (its words step aside): Equip (exactly one pair) / Keep (closes it: the pair is already yours) / Open Again /
+-- Stop Opening. Never for the onboarding welcome gift.
 local BOX_PASS = { Triple = 'TripleOpen', Auto = 'AutoOpen' }
 local KEY_RANGE = 11 -- studs from a box's point: the panel shows within this
-local KEY_TONES = { E = Kit.hex('B0F500'), R = Kit.hex('FFF200'), T = Kit.hex('14E8F8') }
 local keysGui, keysRoot = Kit.screen('HoodBoxKeys', player:WaitForChild('PlayerGui'), 6)
-local keysUI = {}
 local keysEntry -- the box entry the panel is up for
 local autoOn = false
+-- (one table for this section's pieces: Shoes.client stays well under Luau's local limit)
+local Art = { Windows = require(Shared.ArtWindows), Screens = require(Shared.ShoeScreens), Rules = require(Shared.ShoeUIRules), AutoBox = nil }
 
 local function passOwned(key) return player:GetAttribute('Pass_' .. key) == true end
 local function passEntry(key) return Products.ByKey and Products.ByKey[key] end
@@ -697,25 +701,60 @@ local function buyProduct(key)
 	local ok = pcall(function() MarketplaceService:PromptProductPurchase(player, Products.idOf(key)) end)
 	if not ok then say('Try again!') end
 end
+-- the box entry you stand at (within the server's open range), or nil
+function Art.near(boxId)
+	local root = rootOf(player.Character)
+	local entry = boxes[boxId]
+	if not root or not entry or not entry.Point.Parent then return nil end
+	return (entry.Point.CFrame.Position - root.CFrame.Position).Magnitude <= ShoeRules.Range and entry or nil
+end
+-- Inventory Full (artboard 06): Manage Shoes opens the inventory, Back closes; nothing is lost either way
+function Art.full()
+	Art.Windows.dialog('InventoryFull', function(holder)
+		local box = Art.Screens.fullBox(holder, 0, 0, { rack = myRack, manage = function()
+			Art.Windows.closeDialog('InventoryFull')
+			local inv = player.PlayerGui:FindFirstChild('HoodInventory')
+			local ev = inv and inv:FindFirstChild('Open')
+			if ev then ev:Fire('Shoes') end
+		end, back = function() Art.Windows.closeDialog('InventoryFull') end }, 60)
+		box.AnchorPoint = Vector2.new(0.5, 0.5)
+		box.Position = UDim2.fromScale(0.5, 0.5)
+		Kit.new('UIScale', { Scale = 1.5, Parent = box })
+		return { Box = box }
+	end, { tapOut = true })
+end
 local function openBox(entry, count)
 	if unboxing then return end
-	if count and count > 1 then
-		Net.get('OpenShoeBox'):FireServer(entry.Box.Id, count)
+	local n = count or 1
+	if ShoeRules.count(myRack()) + n > ShoeRules.MaxOwned then
+		Art.full()
+		return
+	end
+	if n > 1 then
+		Net.get('OpenShoeBox'):FireServer(entry.Box.Id, n)
 	else
 		Net.get('OpenShoeBox'):FireServer(entry.Box.Id)
 	end
 end
 local function stopAuto()
 	autoOn = false
+	Art.AutoBox = nil
+	Art.Windows.refresh()
 end
 local function startAuto(entry)
 	if autoOn then return end
 	autoOn = true
+	Art.AutoBox = entry.Box.Id
+	Art.Windows.refresh()
 	task.spawn(function()
-		while autoOn and keysEntry == entry and entry.Point.Parent do
+		while autoOn and Art.near(entry.Box.Id) do
 			if not unboxing then
 				if cashNow() < entry.Box.Price then
-					say('Not enough Cash for Auto!')
+					say('Auto stopped: not enough Cash')
+					break
+				end
+				if ShoeRules.count(myRack()) + 1 > ShoeRules.MaxOwned then
+					Art.full()
 					break
 				end
 				openBox(entry)
@@ -729,10 +768,11 @@ local function startAuto(entry)
 			end
 			task.wait(0.25)
 		end
-		autoOn = false
+		if autoOn and not Art.near(entry.Box.Id) then say('Auto stopped: you walked away') end
+		stopAuto()
 	end)
 end
--- what each key does for the box (Cash box: Open / Open 3 / Auto; Robux box: Buy / Buy 3 / Buy 8)
+-- what each key does for the box (Cash box: Single / Triple / Auto; Robux box: Buy / Buy 3 / Buy 8)
 local function keyAction(entry, key)
 	local box = entry.Box
 	if box.Robux then
@@ -749,104 +789,79 @@ local function keyAction(entry, key)
 		if not passOwned(BOX_PASS.Auto) then buyPass(BOX_PASS.Auto) elseif autoOn then stopAuto() else startAuto(entry) end
 	end
 end
-
-local function lockIcon(parent)
-	-- a padlock from two frames (no emoji): a rounded body and a shackle ring over it
-	local holder = Kit.new('Frame', { Name = 'Lock', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.42), Size = px(40, 46), ZIndex = 6, Parent = parent })
-	local shackle = Kit.new('Frame', { Name = 'Shackle', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromScale(0.5, 0), Size = px(22, 26), ZIndex = 6, Parent = holder })
-	Kit.corner(UDim.new(0.5, 0)).Parent = shackle
-	Kit.stroke(Color.white, 5, true).Parent = shackle
-	local body = Kit.new('Frame', { Name = 'Body', BackgroundColor3 = Color.white, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.fromScale(0.5, 1), Size = px(36, 26), ZIndex = 7, Parent = holder })
-	Kit.corner(UDim.new(0.2, 0)).Parent = body
-	Kit.stroke(Color.ink, 2.5, true).Parent = body
-	Kit.new('Frame', { Name = 'Keyhole', BackgroundColor3 = Color.ink, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.45), Size = px(6, 11), ZIndex = 8, Parent = body })
-	return holder
-end
-
-local function buildKeys()
-	local panel = Kit.new('Frame', { Name = 'Panel', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -150), Size = px(470, 270), Visible = false, Parent = keysRoot })
-	keysUI.Panel = panel
-	keysUI.Name = Kit.text({ Name = 'Name', Text = '', FontFace = face('Title', Kit.Font.display), TextSize = 40, Stroke = Color.ink, StrokeThickness = 6, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 0), Size = px(470, 48), Parent = panel })
-	keysUI.Price = Kit.text({ Name = 'Price', Text = '', FontFace = face('Title', Kit.Font.display), TextSize = 28, TextColor3 = Kit.hex('FFC800'), Stroke = Color.ink, StrokeThickness = 5, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 46), Size = px(470, 34), Parent = panel })
-	keysUI.Cards = {}
-	for i, key in { 'E', 'R', 'T' } do
-		local card = Kit.new('TextButton', { Name = 'Card' .. key, Text = '', AutoButtonColor = false, BackgroundTransparency = 1, Position = px(8 + (i - 1) * 152, 88), Size = px(144, 176), Parent = panel })
-		local sq = Kit.new('Frame', { Name = 'Square', BackgroundColor3 = KEY_TONES[key], Size = px(144, 124), Parent = card })
-		Kit.corner(UDim.new(0.14, 0)).Parent = sq
-		Kit.stroke(Color.ink, 4, true).Parent = sq
-		local sheen = Kit.new('Frame', { Name = 'Sheen', BackgroundColor3 = Color.white, BackgroundTransparency = 0.7, Position = px(8, 8), Size = px(128, 28), Parent = sq })
-		Kit.corner(UDim.new(0.5, 0)).Parent = sheen
-		local cap = Kit.new('Frame', { Name = 'Keycap', BackgroundColor3 = Color3.fromRGB(255, 246, 220), AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 12), Size = px(62, 62), Parent = sq })
-		Kit.corner(UDim.new(0.2, 0)).Parent = cap
-		Kit.stroke(Color3.fromRGB(70, 62, 50), 3, true).Parent = cap
-		local letter = Kit.text({ Name = 'Letter', Text = key, FontFace = face('Title', Kit.Font.display), TextColor3 = Color3.fromRGB(60, 66, 80), TextSize = 40, Size = UDim2.fromScale(1, 1), Parent = cap })
-		local sub = Kit.text({ Name = 'Sub', Text = '', FontFace = face('Title', Kit.Font.display), TextSize = 24, Stroke = Color.ink, StrokeThickness = 4, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -6), Size = px(136, 30), Parent = sq })
-		local label = Kit.text({ Name = 'Label', Text = '', FontFace = face('Title', Kit.Font.display), TextSize = 28, Stroke = Color.ink, StrokeThickness = 5, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 130), Size = px(144, 38), Parent = card })
-		local lock = lockIcon(sq)
-		lock.Visible = false
-		keysUI.Cards[key] = { Card = card, Square = sq, Letter = letter, Sub = sub, Label = label, Lock = lock, Cap = cap }
-		card.Activated:Connect(function()
-			if keysEntry and not unboxing then keyAction(keysEntry, key) end
-		end)
-	end
-end
-buildKeys()
-keysUI.Pity = PityUI.keyLine(keysUI.Panel) -- (brief 30: the pity line under the price; PityUI.paint fills it)
-
--- paint the cards for the box entry
-local function paintKeys(entry)
-	local box = entry.Box
-	local c = keysUI.Cards
-	keysUI.Name.Text = string.upper(box.Name)
-	PityUI.paint(keysUI.Pity, box.Id, player)
+-- the windows' Open 1 / Open 3 / Auto (a Robux box: its products; a Cash box: at the box only)
+function Art.open(boxId, n)
+	local box = Shoes.BoxById[boxId]
+	if not box then return end
 	if box.Robux then
-		keysUI.Name.TextColor3 = Kit.hex('7CFF4F')
-		keysUI.Price.Text = 'EXCLUSIVE'
-		keysUI.Price.TextColor3 = Kit.hex('B8F838')
-		local labels = { E = { 'Buy', box.Robux }, R = { 'Buy 3', box.Robux .. '3' }, T = { 'Buy 8', box.Robux .. '8' } }
-		for key, spec in labels do
-			local pe = passEntry(spec[2])
-			local card = c[key]
-			card.Label.Text = spec[1]
-			card.Sub.Text = pe and ((Products.RobuxMark or '') .. tostring(pe.Price)) or 'SOON'
-			card.Sub.TextColor3 = Kit.hex('B8F838')
-			card.Square.BackgroundColor3 = KEY_TONES[key]
-			card.Lock.Visible = false
-		end
+		if n == 3 then buyProduct(box.Robux .. '3') else buyBox(box) end
 		return
 	end
-	local afford = cashNow() >= box.Price
-	keysUI.Name.TextColor3 = box.Color and box.Color:Lerp(Color.white, 0.45) or Color.white
-	keysUI.Price.Text = Format.compact(box.Price) .. ' Cash'
-	keysUI.Price.TextColor3 = afford and Kit.hex('FFC800') or Kit.hex('FF7A7A')
-	local function setCard(key, label, sub, lockedKey, subColor)
-		local card = c[key]
-		local locked = lockedKey ~= nil
-		card.Label.Text = label
-		card.Sub.Text = sub
-		card.Sub.TextColor3 = subColor
-		card.Lock.Visible = locked
-		card.Letter.Visible = not locked
-		card.Cap.Visible = not locked
-		card.Square.BackgroundColor3 = locked and KEY_TONES[key]:Lerp(Color3.fromRGB(46, 50, 70), 0.62) or KEY_TONES[key]
+	local entry = Art.near(boxId)
+	if not entry then
+		say('Walk to the ' .. require(Shared.ArtKit).boxName(boxId) .. ' in the hall to open it!')
+		return
 	end
-	local gold = afford and Color.white or Kit.hex('FF7A7A')
-	setCard('E', 'Open', Format.compact(box.Price), nil, gold)
-	-- Open 3: the pass, or the lock and its price
-	if passOwned(BOX_PASS.Triple) then
-		setCard('R', 'Open 3', Format.compact(box.Price * 3), nil, cashNow() >= box.Price * 3 and Color.white or Kit.hex('FF7A7A'))
-	else
-		local pe = passEntry(BOX_PASS.Triple)
-		setCard('R', 'Open 3', pe and ((Products.RobuxMark or '') .. tostring(pe.Price)) or 'SOON', BOX_PASS.Triple, Kit.hex('B8F838'))
-	end
-	-- Auto: the pass (P5's AutoOpen), or the lock and its price (or SOON while the pass has no catalog entry)
-	if passOwned(BOX_PASS.Auto) then
-		setCard('T', autoOn and 'Stop' or 'Auto', autoOn and 'ON' or Format.compact(box.Price), nil, autoOn and Kit.hex('7CFF4F') or Color.white)
-	else
-		local pe = passEntry(BOX_PASS.Auto)
-		setCard('T', 'Auto', pe and ((Products.RobuxMark or '') .. tostring(pe.Price)) or 'SOON', BOX_PASS.Auto, Kit.hex('B8F838'))
-	end
+	if n == 3 and not passOwned(BOX_PASS.Triple) then buyPass(BOX_PASS.Triple) return end
+	openBox(entry, n)
 end
+function Art.auto(boxId)
+	local box = Shoes.BoxById[boxId]
+	if not box or box.Robux then return end
+	if autoOn then stopAuto() return end
+	if not passOwned(BOX_PASS.Auto) then buyPass(BOX_PASS.Auto) return end
+	local entry = Art.near(boxId)
+	if not entry then say('Walk to the ' .. require(Shared.ArtKit).boxName(boxId) .. ' in the hall first!') return end
+	startAuto(entry)
+end
+function Art.ctx(boxId)
+	return {
+		lucky = player:GetAttribute('Pass_Lucky') == true,
+		open = Art.open, auto = Art.auto, autoOn = function() return autoOn end,
+		autoAvailable = function(id) return not (Shoes.BoxById[id] and Shoes.BoxById[id].Robux) end,
+		openState = function(id, n)
+			local box = Shoes.BoxById[id]
+			if not box or box.Robux then return 'normal' end
+			return cashNow() >= box.Price * n and 'normal' or 'disabled'
+		end,
+		back = function() Art.showBoxes() end,
+		close = function() Art.Windows.close() end,
+	}
+end
+function Art.showDrops(boxId)
+	if not Shoes.BoxById[boxId] then return end
+	Art.Windows.open('Boxes', function(holder) return Art.Screens.drops(holder, boxId, Art.ctx(boxId)) end)
+end
+function Art.showBoxes(selected)
+	Art.Windows.open('Boxes', function(holder)
+		return Art.Screens.boxes(holder, {
+			cash = cashNow, selected = selected or (keysEntry and keysEntry.Box.Id) or 'Street',
+			select = function() end, viewDrops = Art.showDrops, open = function(id) Art.open(id, 1) end,
+			openState = function(id, n) return Art.ctx(id).openState(id, n) end,
+			addCash = function()
+				local st = player.PlayerGui:FindFirstChild('HoodStore')
+				local ev = st and st:FindFirstChild('Open')
+				if ev then ev:Fire('Cash') end
+			end,
+			close = function() Art.Windows.close() end,
+		})
+	end)
+end
+do
+	local ev = Instance.new('BindableEvent')
+	ev.Name = 'Open'
+	ev.Event:Connect(function(boxId)
+		if type(boxId) == 'string' and Shoes.BoxById[boxId] then Art.showDrops(boxId) else Art.showBoxes() end
+	end)
+	local holder = Instance.new('Folder')
+	holder.Name = 'HoodBoxes'
+	ev.Parent = holder
+	holder.Parent = player:WaitForChild('PlayerGui')
+end
+
+-- the key panel
+local keysUI = Art.Screens.keyPanel(keysRoot, { press = function(key) if keysEntry and not unboxing then keyAction(keysEntry, key) end end })
+keysUI.Pity = keysUI.PityLine
 local function refreshKeys()
 	local root = rootOf(player.Character)
 	local best, bestD = nil, KEY_RANGE
@@ -859,11 +874,13 @@ local function refreshKeys()
 		end
 	end
 	if best ~= keysEntry then
-		if autoOn then stopAuto() end
+		if autoOn and not best then stopAuto() end
 		keysEntry = best
 	end
-	keysUI.Panel.Visible = best ~= nil
-	if best then paintKeys(best) end
+	keysUI.Holder.Visible = best ~= nil
+	if best then
+		keysUI.paint(best.Box.Id, { cash = cashNow(), lucky = player:GetAttribute('Pass_Lucky') == true, autoOn = autoOn, owned = passOwned, entry = passEntry })
+	end
 end
 task.spawn(function()
 	while true do
@@ -879,6 +896,73 @@ UIS.InputBegan:Connect(function(input, processed)
 	if key then keyAction(keysEntry, key) end
 end)
 
+-- The reveal card over the opening. job: the cinematic's job (nil: show it now, e.g. after a 2D moment). In the world
+-- the opening holds on the pair while the card is up (its words step aside); Keep lets it fly into the HUD.
+function Art.reveal(info, job)
+	if type(info) ~= 'table' or not Shoes.ById[info.Shoe] then return end
+	if Cinematic and Cinematic.isGift and Cinematic.isGift(info, player) then return end
+	local box = Shoes.BoxById[info.Box]
+	-- Auto Open: stop at the configured rarity, the Cash running out, a full rack
+	local stopWhy = autoOn and Art.Rules.autoStop(info, myRack(), cashNow() - 0, box) or nil
+	if stopWhy then
+		stopAuto()
+		if stopWhy == 'rarity' then say('Auto stopped: ' .. Shoes.RarityById[Shoes.ById[info.Shoe].Rarity].Name .. ' pulled!')
+		elseif stopWhy == 'cash' then say('Auto stopped: not enough Cash')
+		elseif stopWhy == 'full' then task.delay(0.2, Art.full) end
+	end
+	local P = job and job.P
+	local held = false
+	local function release()
+		if P and held then
+			held = false
+			pcall(function() job:skip() end)
+		end
+	end
+	local function keep()
+		Art.Windows.closeDialog('Reveal')
+		release()
+	end
+	local handle = Art.Windows.dialog('Reveal', function(holder)
+		return Art.Screens.reveal(holder, info, {
+			lucky = player:GetAttribute('Pass_Lucky') == true,
+			equip = function()
+				if not info.Equipped then Net.get('ShoeAction'):FireServer('Equip', info.Shoe) end
+				keep()
+			end,
+			keep = keep,
+			again = function()
+				keep()
+				Art.Again = info.Box
+			end,
+			stop = function()
+				stopAuto()
+				keep()
+			end,
+			autoOn = function() return autoOn end,
+			againState = function()
+				if box and box.Robux then return 'normal' end
+				return (box and cashNow() >= box.Price) and 'normal' or 'disabled'
+			end,
+		})
+	end, { dim = 0.25, blur = false })
+	if not handle then return end
+	if P and P.inworld and type(P.out) == 'number' then
+		-- hold the opening on the pair while the card is up
+		held = true
+		P.out = math.huge
+		P.done = math.huge
+		if job.stageGui then job.stageGui.Visible = false end
+		task.spawn(function()
+			while held and not job.Done and Art.Windows.dialogName() == 'Reveal' do task.wait(0.1) end
+			if job.stageGui then pcall(function() job.stageGui.Visible = true end) end
+			if Art.Windows.dialogName() == 'Reveal' and not held then Art.Windows.closeDialog('Reveal') end
+			release()
+		end)
+		-- a safety net: the opening never holds for ever (20 s), and Auto keeps going by itself
+		task.delay(20, function() if held then keep() end end)
+	end
+	if autoOn then task.delay(1.4, function() if autoOn and Art.Windows.dialogName() == 'Reveal' then keep() end end) end
+end
 ---------------------------------------------------------------------------------------------- unboxing moment (brief 24)
 -- The user: "make the box opening animation way better, right now there is a half black screen ... maybe just blur the
 -- back and add a nice animation". All 2D now (ART2's flat PNGs, or their flat stand-ins; no 3D model, no dark sheet):
@@ -1648,7 +1732,8 @@ local function playCinematic(info)
 	local abs = momentGui.AbsoluteSize
 	if abs.X >= 2 and abs.Y >= 2 then momentFit(abs) end
 	local done = false
-	local job = Cinematic.play(info, { gui = momentGui, reduced = reducedMotion, closeTarget = shoesButtonPx, onClose = function(j)
+	local job
+	job = Cinematic.play(info, { gui = momentGui, reduced = reducedMotion, closeTarget = shoesButtonPx, onClose = function(j)
 		-- (the HUD slides back as the pair flies into it; not when another opening is waiting)
 		if #queue == 0 then pg:SetAttribute('UnboxingCalm', false) end
 		bumpShoesButton(j.closeLen or j.Plan.closeLen or 0.5)
@@ -1656,6 +1741,8 @@ local function playCinematic(info)
 		if done or j.Failed then return end
 		done = true
 		unboxing = false
+		local P = j.P or j.Plan
+		if not (P and P.inworld) then task.defer(Art.reveal, info, nil) end -- MOCKUP30 (the premium sheet: the card after it)
 		if #queue == 0 then
 			reportDone()
 			pg:SetAttribute('UnboxingCalm', false)
@@ -1670,6 +1757,14 @@ local function playCinematic(info)
 		return nil
 	end
 	pcall(PityUI.revealTag, info, momentRoot, { job = job, reduced = reducedMotion }) -- (GUARANTEED!, brief 30)
+	-- MOCKUP30: the reveal card where the opening holds on the pair (in the world), else once it is over
+	task.spawn(function()
+		local P = job.P or job.Plan
+		if not (P and P.inworld) then return end
+		local at = P.tap or (P.accent and P.accent[P.best]) or 3
+		while not job.Done and (job.t or job.T or 0) < at do task.wait(0.05) end
+		if not job.Done then pcall(Art.reveal, info, job) end
+	end)
 	return job.Plan.total
 end
 Net.get('ProfileUpdated').OnClientEvent:Connect(function(data)
@@ -1678,7 +1773,13 @@ end)
 function drain()
 	if unboxing then return end
 	local info = table.remove(queue, 1)
-	if not info then return end
+	if not info then
+		-- MOCKUP30: the reveal's Open Again, once the opening is over
+		local again = Art.Again
+		Art.Again = nil
+		if again then task.delay(0.35, function() if not unboxing then Art.open(again, 1) end end) end
+		return
+	end
 	local okC, lengthC = pcall(playCinematic, info)
 	if not okC then
 		warn('[Shoes] unboxing cinematic: ' .. tostring(lengthC))

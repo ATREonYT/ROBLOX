@@ -1006,6 +1006,78 @@ selectTab = function(id)
 	refresh(true)
 end
 
+---------------------------------------------------------------------------------------------- the shoe windows (MOCKUP30)
+-- (brief 30, the user's artboards 04 and 05) Your shoes, a pair's detail and the Collection are the user's mockup screens
+-- now (Shared/ShoeScreens in Shared/ArtWindows): Open('Shoes') the inventory (search, sort, filter, capacity, Equip
+-- Best, Lock, Delete with its review), a second tap on a card its detail (Equip / Unequip / Favourite / Lock / Back, the
+-- Shoes / Boxes / Collection tabs), Open('Collection') or Open('Index') the 22 designs. Equip always asks first ("Equip
+-- this pair?"): exactly one pair goes on (a full set swaps out exactly one, the weakest by bonus). Guns and Items stay
+-- in this script's own window below. Everything is asked of the server (ShoeAction); nothing changes here first.
+local Art = { Windows = require(Shared.ArtWindows), Screens = require(Shared.ShoeScreens), Rules = require(Shared.ShoeUIRules) }
+function Art.rack()
+	return ShoeRules.fromAttributes(player:GetAttribute('ShoesOwned'), player:GetAttribute('ShoesEquipped'), player:GetAttribute('ShoesOpened'), player:GetAttribute('ShoesFavorites'), player:GetAttribute('ShoesLocked'), player:GetAttribute('ShoesDiscovered'))
+end
+function Art.slots() return player:GetAttribute('ShoesMax') or ShoeRules.MaxEquipped end
+function Art.act(action, id) Net.get('ShoeAction'):FireServer(action, id) end
+function Art.tab(name)
+	if name == 'Boxes' then
+		local holder = playerGui:FindFirstChild('HoodBoxes')
+		local ev = holder and holder:FindFirstChild('Open')
+		if ev then ev:Fire() end
+	elseif name == 'Collection' then
+		Art.collection()
+	else
+		Art.inventory()
+	end
+end
+function Art.confirmEquip(id)
+	Art.Windows.dialog('ConfirmEquip', function(holder)
+		return Art.Screens.confirm(holder, id, { rack = Art.rack, slots = Art.slots, no = function() Art.Windows.closeDialog('ConfirmEquip') end, yes = function(plan)
+			Art.Windows.closeDialog('ConfirmEquip')
+			if plan.Kind == 'swap' then Art.act('Unequip', plan.Out) end
+			if plan.Kind ~= 'none' then Art.act('Equip', id) end
+		end })
+	end, { tapOut = true })
+end
+function Art.inventory()
+	lookAtShoes()
+	Art.Windows.open('ShoeInventory', function(holder)
+		return Art.Screens.inventory(holder, {
+			rack = Art.rack, slots = Art.slots, close = function() Art.Windows.close() end,
+			equipBest = function() Art.act('EquipBest') end, lock = function(id) Art.act('Lock', id) end,
+			detail = function(id) Art.detail(id) end, tab = Art.tab,
+			delete = function(ids) for _, id in ids do Art.act('Recycle', id) end end,
+			confirmDelete = function(rv, onYes)
+				Art.Windows.dialog('DeleteReview', function(holder2)
+					return Art.Screens.deleteReview(holder2, rv, { no = function() Art.Windows.closeDialog('DeleteReview') end, yes = function()
+						Art.Windows.closeDialog('DeleteReview')
+						onYes()
+					end })
+				end, { tapOut = true })
+			end,
+		})
+	end)
+end
+function Art.detail(id)
+	Art.Windows.open('ShoeInventory', function(holder)
+		return Art.Screens.detail(holder, id, {
+			rack = Art.rack, close = function() Art.Windows.close() end, back = Art.inventory, tab = Art.tab,
+			equip = Art.confirmEquip, unequip = function(i) Art.act('Unequip', i) end,
+			favourite = function(i) Art.act('Favorite', i) end, lock = function(i) Art.act('Lock', i) end,
+		})
+	end)
+end
+function Art.collection()
+	Art.Windows.open('ShoeInventory', function(holder)
+		return Art.Screens.collection(holder, { rack = Art.rack, close = function() Art.Windows.close() end, open = Art.detail })
+	end)
+end
+for _, key in { 'ShoesOwned', 'ShoesEquipped', 'ShoesFavorites', 'ShoesLocked', 'ShoesDiscovered', 'ShoesMax' } do
+	player:GetAttributeChangedSignal(key):Connect(function()
+		if Art.Windows.current() == 'ShoeInventory' or Art.Windows.dialogName() then Art.Windows.refresh() end
+	end)
+end
+
 ---------------------------------------------------------------------------------------------- open / close
 local function close()
 	if not isOpen then return end
@@ -1019,6 +1091,21 @@ local function close()
 	if playerGui:GetAttribute('HoodWindow') == 'Inventory' then playerGui:SetAttribute('HoodWindow', '') end
 end
 local function open(tab)
+	-- MOCKUP30: the shoe screens are the artboards' (above); the HUD's Shoes square toggles them
+	local t = type(tab) == 'string' and string.lower(tab) or (tab == nil and 'shoes') or ''
+	if t == 'shoes' or t == 'collection' or t == 'index' or t == 'boxes' then
+		if isOpen then close() end
+		if Art.Windows.current() == 'ShoeInventory' and t ~= 'boxes' and tab ~= nil then
+			Art.Windows.close()
+		elseif t == 'boxes' then
+			Art.tab('Boxes')
+		elseif t == 'shoes' then
+			Art.inventory()
+		else
+			Art.collection()
+		end
+		return
+	end
 	local id = IK.tabId(tab) or (tab == nil and state.Tab) or 'Shoes'
 	local wantIndex = type(tab) == 'string' and string.lower(tab) == 'index'
 	if isOpen and id == state.Tab and state.Index == wantIndex then
