@@ -66,7 +66,7 @@ KINDS = ('plastic', 'smooth', 'metal', 'neon', 'gold', 'glass')
 
 STUD_D, STUD_H, STUD_EMBED = 0.6, 0.25, 0.02  # classic stud: 0.6 wide, 0.25 tall per 1-DU pitch
 STUD_BEVEL = 0.05
-DEFAULT_BEVEL = {'box': 0.07, 'wedge': 0.05, 'cyl': 0.05, 'prism': 0.06, 'ball': 0.0}
+DEFAULT_BEVEL = {'box': 0.07, 'wedge': 0.05, 'cyl': 0.05, 'prism': 0.06, 'ball': 0.0, 'egg': 0.0}
 
 IDENT = ((1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0))
 
@@ -140,17 +140,20 @@ def to_rgb(color):
 
 
 class Prim:
-	"""One primitive. kind: box | wedge | cyl | prism | ball. Size and shape follow Roblox rules:
+	"""One primitive. kind: box | wedge | cyl | prism | ball | egg. Size and shape follow Roblox rules:
 	cylinders and prisms run along local X, wedges slope up from the front-bottom (-z) edge to the
-	back-top (+z) edge, balls are uniform."""
-	__slots__ = ('kind', 'size', 'pos', 'rot', 'color', 'mat', 'bevel', 'name', 'sides', 'spin', 'stud', 'shadow')
+	back-top (+z) edge, balls are uniform; an egg is an ellipsoid the size of its box (a Block with a
+	Sphere SpecialMesh in Roblox: no upload). tag: optional dict of flags the exporters pass on (brief 30:
+	shaft = rides the lower leg, text = {face, centre} keeps a mark reading the right way when mirrored)."""
+	__slots__ = ('kind', 'size', 'pos', 'rot', 'color', 'mat', 'bevel', 'name', 'sides', 'spin', 'stud', 'shadow', 'tag')
 
-	def __init__(self, kind, size, pos, rot, color, mat, bevel=None, name=None, sides=0, spin=0.0, stud=False, shadow=None):
+	def __init__(self, kind, size, pos, rot, color, mat, bevel=None, name=None, sides=0, spin=0.0, stud=False, shadow=None, tag=None):
 		assert mat in KINDS, mat
 		self.kind, self.size, self.pos, self.rot = kind, tuple(size), tuple(pos), rot
 		self.color, self.mat = to_rgb(color), mat
 		self.bevel = DEFAULT_BEVEL[kind] if bevel is None else bevel
 		self.name, self.sides, self.spin, self.stud, self.shadow = name, sides, spin, stud, shadow
+		self.tag = tag
 
 
 class Model:
@@ -159,6 +162,17 @@ class Model:
 		self.prims = []
 		self.meta = {}
 		self._frame = [(IDENT, (0.0, 0.0, 0.0))]
+		self._tags = [None]
+
+	@contextmanager
+	def tagged(self, **flags):
+		"""Every primitive made inside carries these flags (merged over any outer ones), e.g. shaft=True."""
+		outer = self._tags[-1] or {}
+		self._tags.append(dict(outer, **flags))
+		try:
+			yield self
+		finally:
+			self._tags.pop()
 
 	# ---------- frames: build a sub-assembly in its own local space ----------
 	@contextmanager
@@ -176,6 +190,8 @@ class Model:
 		return add(mat_vec(r0, pos), p0), mat_mul(r0, rot or IDENT)
 
 	def _add(self, prim):
+		if self._tags[-1] and prim.tag is None:
+			prim.tag = dict(self._tags[-1])
 		self.prims.append(prim)
 		return prim
 
@@ -204,6 +220,11 @@ class Model:
 	def ball(self, pos, d, color, mat='smooth', name=None):
 		p, r = self._place(pos, None)
 		return self._add(Prim('ball', (d, d, d), p, r, color, mat, 0.0, name))
+
+	def egg(self, pos, size, color, mat='smooth', rot=None, name=None):
+		"""An ellipsoid filling a box of `size` (feathers, pillows): a Sphere SpecialMesh on a Block in Roblox."""
+		p, r = self._place(pos, rot)
+		return self._add(Prim('egg', size, p, r, color, mat, 0.0, name))
 
 	def stud(self, pos, color, mat='smooth', rot=None, d=STUD_D, h=STUD_H):
 		"""A single stud standing on local +Y (pos is the centre of the stud's base)."""
@@ -246,8 +267,10 @@ class Model:
 		"""Expand to plain Roblox parts in DU: dicts with cls, shape, size, pos, rot, color, mat, name, stud."""
 		out = []
 		for p in self.prims:
-			base = dict(color=p.color, mat=p.mat, name=p.name, stud=p.stud, shadow=p.shadow)
-			if p.kind == 'box':
+			base = dict(color=p.color, mat=p.mat, name=p.name, stud=p.stud, shadow=p.shadow, tag=p.tag)
+			if p.kind == 'egg':
+				out.append(dict(base, cls='Part', shape='Block', mesh='Sphere', size=p.size, pos=p.pos, rot=p.rot))
+			elif p.kind == 'box':
 				out.append(dict(base, cls='Part', shape='Block', size=p.size, pos=p.pos, rot=p.rot))
 			elif p.kind == 'wedge':
 				out.append(dict(base, cls='WedgePart', shape='Wedge', size=p.size, pos=p.pos, rot=p.rot))
@@ -279,6 +302,9 @@ class Model:
 					vals = (c[i] - h, c[i] + h)
 				elif part['shape'] == 'Ball':
 					vals = (c[i] - s[0] / 2, c[i] + s[0] / 2)
+				elif part.get('mesh') == 'Sphere':
+					h = math.sqrt(sum((r[i][j] * s[j] / 2) ** 2 for j in range(3)))
+					vals = (c[i] - h, c[i] + h)
 				else:
 					x, y, z = s[0] / 2, s[1] / 2, s[2] / 2
 					corners = [(-x, -y, -z), (x, -y, -z), (x, -y, z), (-x, -y, z), (-x, y, z), (x, y, z)]
@@ -347,15 +373,32 @@ def _area(poly):
 	return abs(sum(poly[i][0] * poly[(i + 1) % len(poly)][1] - poly[(i + 1) % len(poly)][0] * poly[i][1] for i in range(len(poly)))) / 2
 
 
-def lint(model, min_size=0.001):
+def lint(model, min_size=0.001, pairs=None):
 	"""Problems that show up as artefacts: block faces lying in the same plane and overlapping (they
-	z-fight in Roblox and render as black speckles in Cycles), and parts thinner than Roblox allows."""
+	z-fight in Roblox and render as black speckles in Cycles), and parts thinner than Roblox allows.
+	pairs: a list that receives (part a, part b, the shared face's normal) for each overlap (unshare uses it)."""
 	issues = []
 	parts = model.roblox_parts()
 	for i, p in enumerate(parts):
 		if min(p['size']) * model.unit < min_size:
 			issues.append('%s #%d %s thinner than %.3f studs' % (model.id, i, p['name'], min_size))
-	blocks = [(i, p, _block_faces(p)) for i, p in enumerate(parts) if p['shape'] == 'Block']
+	blocks = [(i, p, _block_faces(p)) for i, p in enumerate(parts) if p['shape'] == 'Block' and not p.get('mesh')]
+	# (brief 30) a cylinder's caps count too: each cap as the square inscribed in its disc (cap on a block top: the
+	# black-wedge case Cycles shows and Roblox z-fights)
+	for i, p in enumerate(parts):
+		if p['shape'] != 'Cylinder':
+			continue
+		r, c, size = p['rot'], p['pos'], p['size']
+		ax = column(r, 0)
+		u, v = column(r, 1), column(r, 2)
+		h = size[1] / 2 * 0.7071
+		faces = []
+		for sgn in (-1, 1):
+			n = scale_v(ax, sgn)
+			fc = add(c, scale_v(n, size[0] / 2))
+			corners = [add(add(fc, scale_v(u, a * h)), scale_v(v, b * h)) for a, b in ((-1, -1), (1, -1), (1, 1), (-1, 1))]
+			faces.append((n, fc, corners))
+		blocks.append((i, p, faces))
 	for a in range(len(blocks)):
 		ia, pa, fa_list = blocks[a]
 		for b in range(a + 1, len(blocks)):
@@ -386,4 +429,44 @@ def lint(model, min_size=0.001):
 						poly = _clip(poly, ra[i], ra[(i + 1) % 4])
 					if len(poly) >= 3 and _area(poly) > 1e-3:
 						issues.append('%s: %s #%d / %s #%d coplanar faces overlap %.3f DU^2' % (model.id, pa['name'], ia, pb['name'], ib, _area(poly)))
+						if pairs is not None:
+							pairs.append((ia, ib, nb))
 	return issues
+
+
+def unshare(model, eps=0.003, passes=6):
+	"""(brief 30) Pull apart faces that share a plane where they overlap: the second part of each pair gives up `eps`
+	on that face (its size shrinks along the face's normal and its centre moves back by half), so nothing z-fights in
+	Roblox or turns black in Cycles. Only for models whose primitives are their parts one to one (no prisms).
+	Returns the issues left."""
+	assert all(p.kind != 'prism' for p in model.prims), 'unshare: prisms expand to several parts'
+	for _ in range(passes):
+		pairs = []
+		left = lint(model, pairs=pairs)
+		if not pairs:
+			return left
+		done = set()
+		for ia, ib, n in pairs:
+			if (ib, n) in done:
+				continue
+			done.add((ib, n))
+			p = model.prims[ib]
+			if p.name in ('Hinge', 'Root'):
+				p = model.prims[ia]
+				if p.name in ('Hinge', 'Root'):
+					continue
+			# the local axis along the face normal
+			best, k = 0.0, 0
+			for i in range(3):
+				d = abs(sum(column(p.rot, i)[j] * n[j] for j in range(3)))
+				if d > best:
+					best, k = d, i
+			if p.kind in ('cyl',) and k != 0:
+				continue
+			size = list(p.size)
+			if size[k] <= 3 * eps:
+				continue
+			size[k] -= eps
+			p.size = tuple(size)
+			p.pos = sub(p.pos, scale_v(n, eps / 2))
+	return lint(model)

@@ -1,30 +1,28 @@
--- BoxModels: the 12 shoe boxes ("eggs" of the shoe system), part-built in Luau (no meshes, no uploads), after the
--- user's mock-up renders (shoes_in/Shoes_And_Boxes_Detailed/<NN>_<Box>_Box/0_<Box>_Box.jpg), tuned to the game's
--- studded toy style: a chunky rounded tub on a darker foot, a "+1" coin on each side, and a lid (rim band, body, bevel
--- cap, big studs) carrying the box's theme topper. (Brief 28 took the name plate off the front, the Store, inventory
--- and reveal show the name, and gave the boxes a finer finish: every piece seated on the one below, no hair-thin
--- parts, one stud size, a soft gloss on the lids and trims, metal that reads as metal.)
--- The two Robux boxes (brief 21: Exclusive and Grail, World 1's "Robux Exclusive" eggs) wear a premium finish the
--- Cash boxes never have: a glowing rainbow band round the tub, a metal (chrome or gold) lid, a big floating topper (a
--- spinning cut diamond; a golden winged sneaker under a rainbow halo), a stronger glow and rainbow sparkles.
--- The Street and Grail toppers are real shoes from the game (ShoeModels.shoe, BoxModels.TopperShoes), so they always
--- look like the shoe as it is in the game; a box never passes 140 parts (a topper shoe drops its smallest pieces if
--- it would).
+-- BoxModels: the shoe boxes ("eggs" of the shoe system), part-built in Luau (no meshes, no uploads).
+-- (brief 30) World 1's boxes are CHESTS with a hinged lid, rebuilt from the user's own render sheets
+-- (brief/ref30/user_models): Street (white and red, a crown), Graffiti (cyan and pink, drips and a tag), Exclusive (shown
+-- as the Chrome Box: navy and white, a cyan diamond), Grail (shown as the Crown Box: purple and gold, a crown and gold
+-- wings) and the Grail Bundle's box (purple, gold and white wings). They are BoxKit models (hood/tools/blender/models/
+-- chests.py) exported as part rows into the sibling module BoxParts (export_wear.py): what the Blender renders and the
+-- UI pictures show is what this builds. Each is hollow (an inside floor and walls) and its lid has an inside plate, so
+-- the lid opens onto an inside like the sheets' open view.
+-- The eight later-world boxes (Frost .. Gold, not built in World 1) keep the earlier kit below (brief 28: a chunky
+-- rounded tub, a "+1" coin on each side, a lid carrying the box's theme topper).
 --   BoxModels.build(boxId, scale?, at?) -> Model   closed box, pivot = bottom centre (PrimaryPart `Root`), front -Z;
 --               built at CFrame `at` (default the origin)
---     .Lid      sub-model (rim, lid, studs, drips and the `Topper` model); its pivot (PrimaryPart `Hinge`) is the
---               hinge on the body's back top edge, so the client can pop it open (see BoxModels.openLid)
---   BoxModels.openLid(model, t)    poses the lid: t = 0 shut .. 1 wide open (about 110 degrees)
+--     .Lid      sub-model (the lid's parts and the `Topper` model: a chest's handle); its pivot (PrimaryPart `Hinge`) is
+--               the hinge on the body's back top edge, so the client can swing it open (see BoxModels.openLid)
+--   BoxModels.openLid(model, t)    poses the lid: t = 0 shut .. 1 wide open (about 110 degrees), like the sheets'
 --   BoxModels.fx(model)            the box's ambient effect (theme particles and a soft light); optional
 --   BoxModels.animate(model)       sets its floating pieces moving (WorldMotion's HoodMotion tag); for boxes on display
---   BoxModels.Ids, BoxModels.Meta[id] = { Name, Color, Accent, Order }, BoxModels.Size (scale-1 studs)
---   BoxModels.TopperShoes[boxId] = the shoe id standing on that box's lid (Street, Grail)
--- Every part is Anchored, CanCollide/CanTouch/CanQuery false; studs, neon, glass and small trim cast no shadow; no
--- part of the box's own is thinner than 0.06 studs at scale 1 (a topper shoe is ShoeModels' model, with its rules).
--- Scale 1: the tub is 4.4 x 3.4 and 3.1 tall to the lid top; toppers add up to about 3.5 more.
+--   BoxModels.Ids, BoxModels.Meta[id] = { Name (the id), Display, Color, Accent, Order }, BoxModels.Size (scale-1 studs)
+--   BoxModels.Seal[boxId] = { Body, Lid, Low } (a chest's): where the reveal's seal tape lies on the front (the tub's and
+--               the lid's front faces in the middle, design studs; the tape's lower end)
+--   BoxModels.TopperShoes (kept empty: no box carries a shoe since brief 30)
+-- Every part is Anchored, CanCollide/CanTouch/CanQuery false; studs, neon, glass and small trim cast no shadow.
+-- Scale 1: the tub is 4.4 x 3.4 and 3.08 tall to the lid top; a handle or topper adds up to about 0.5 (a legacy topper
+-- up to 3.5).
 local BoxModels = {}
-
-local ShoeModels = require(script.Parent.ShoeModels)
 
 local V, C = Vector3.new, Color3.fromRGB
 local M = Enum.Material
@@ -32,7 +30,7 @@ local SM, NEON, GLASS, FOIL = M.SmoothPlastic, M.Neon, M.Glass, M.Foil
 local PI = math.pi
 local WHITE = C(250, 250, 252)
 
-BoxModels.Ids = { 'Street', 'Graffiti', 'Frost', 'Lava', 'Toxic', 'Candy', 'Ocean', 'Gem', 'Galaxy', 'Gold', 'Exclusive', 'Grail' }
+BoxModels.Ids = { 'Street', 'Graffiti', 'Frost', 'Lava', 'Toxic', 'Candy', 'Ocean', 'Gem', 'Galaxy', 'Gold', 'Exclusive', 'Grail', 'GrailBundle' }
 -- the tub (W x D), the body's top (where the lid sits and the hinge is), the lid's cap top
 BoxModels.Size = { W = 4.4, D = 3.4, Body = 2.1, Top = 3.08 }
 local W, D = BoxModels.Size.W, BoxModels.Size.D
@@ -40,10 +38,20 @@ local HW, HD = W / 2, D / 2
 local BODY, TOP = BoxModels.Size.Body, BoxModels.Size.Top
 -- the most parts a box may have (phones: the hall shows several at once)
 local LIMIT = 140
--- the game's own shoes standing on these boxes' lids (Street's white Fresh Canvas, the shoe its topper always was; the
--- Grail's own Secret) and their size (1 = worn)
-BoxModels.TopperShoes = { Street = 'FreshCanvas', Grail = 'TheGrail' }
-local SHOE_SCALE = { Street = 1.85, Grail = 1.5 }
+BoxModels.TopperShoes = {}
+-- (brief 30) the chests: BoxKit part rows (Shared/Models/BoxParts, generated); nil if that module is missing
+local BoxParts
+do
+	local ok, m = pcall(function()
+		local node = script.Parent:FindFirstChild('BoxParts')
+		return node and require(node)
+	end)
+	BoxParts = ok and type(m) == 'table' and m or nil
+end
+BoxModels.Seal = {}
+if BoxParts then
+	for id, b in BoxParts.Boxes do BoxModels.Seal[id] = b.Seal end
+end
 
 ---------------------------------------------------------------------------------------------- kit
 -- A builder frame: parts go into `parent`, positions are design studs (scale 1) in the frame `cf` (already scaled).
@@ -200,21 +208,9 @@ end
 --   lidMat/coinMat        optional materials for the lid body and cap, and the coin (default SmoothPlastic)
 --   premium               a Robux box: the rainbow band round the tub, a stronger glow, rainbow sparkles
 local THEMES = {
-	Street = {
-		Order = 1, Name = 'Street', Color = C(222, 56, 48), Accent = C(255, 132, 116),
-		body = C(242, 242, 246), bodyShade = C(214, 216, 224), foot = C(58, 58, 70),
-		lid = C(220, 54, 46), lidLight = C(238, 82, 70), stud = C(232, 70, 58),
-		rim = C(214, 70, 58), rimMat = NEON,
-		coin = C(34, 34, 42), coinFace = C(58, 58, 70), mark = WHITE,
-	},
-	Graffiti = {
-		Order = 2, Name = 'Graffiti', Color = C(250, 120, 180), Accent = C(255, 168, 206),
-		body = C(246, 242, 246), bodyShade = C(222, 216, 226), foot = C(46, 40, 56),
-		lid = C(34, 30, 42), lidLight = C(48, 44, 58), stud = C(28, 26, 36),
-		rim = C(218, 84, 150), rimMat = NEON,
-		coin = C(238, 98, 160), coinFace = C(252, 130, 184), mark = WHITE,
-		drip = C(255, 162, 204),
-	},
+	-- (brief 30) World 1's chests: only what the box's light, sparkles and pictures read (their looks are BoxParts')
+	Street = { Order = 1, Name = 'Street', Display = 'Street Box', Color = C(222, 56, 48), Accent = C(255, 132, 116) },
+	Graffiti = { Order = 2, Name = 'Graffiti', Display = 'Graffiti Box', Color = C(250, 120, 180), Accent = C(90, 210, 246) },
 	Frost = {
 		Order = 3, Name = 'Frost', Color = C(60, 150, 230), Accent = C(170, 222, 255),
 		body = C(70, 156, 226), bodyShade = C(44, 120, 202), foot = C(26, 86, 160),
@@ -279,28 +275,15 @@ local THEMES = {
 		coin = C(255, 204, 90), coinFace = C(255, 224, 140), mark = WHITE,
 		gold = C(255, 196, 50), wing = C(244, 246, 252), wingShade = C(206, 216, 238),
 	},
-	-- (brief 21) the Robux boxes: a midnight tub with a chrome lid and an ice-blue glow; a royal purple tub with a gold
-	-- lid and a gold glow
-	Exclusive = {
-		Order = 11, Name = 'Exclusive', Color = C(70, 200, 255), Accent = C(190, 240, 255), premium = true,
-		body = C(30, 34, 70), bodyShade = C(22, 24, 52), foot = C(14, 14, 30),
-		lid = C(206, 216, 232), lidLight = C(232, 238, 248), stud = C(196, 206, 224), lidMat = M.Metal,
-		rim = C(70, 214, 255), rimMat = NEON,
-		coin = C(206, 216, 232), coinFace = C(232, 238, 248), mark = C(40, 150, 220), coinMat = M.Metal,
-		gem = C(110, 226, 255), gemLight = C(200, 246, 255), gemCore = C(150, 240, 255),
-	},
-	Grail = {
-		Order = 12, Name = 'Grail', Color = C(170, 80, 255), Accent = C(255, 210, 80), premium = true,
-		body = C(104, 44, 184), bodyShade = C(80, 30, 150), foot = C(46, 18, 96),
-		lid = C(255, 194, 52), lidLight = C(255, 214, 100), stud = C(250, 186, 56), lidMat = FOIL,
-		rim = C(255, 206, 70), rimMat = NEON,
-		coin = C(255, 200, 60), coinFace = C(255, 222, 120), mark = C(104, 44, 184), coinMat = FOIL,
-		gold = C(255, 198, 56), goldDark = C(222, 150, 30), wing = C(250, 250, 255), wingShade = C(214, 222, 242),
-	},
+	-- (brief 21) the Robux boxes; (brief 30) shown as the Chrome Box and the Crown Box (their ids stay: saves, receipts)
+	Exclusive = { Order = 11, Name = 'Exclusive', Display = 'Chrome Box', Color = C(70, 200, 255), Accent = C(190, 240, 255), premium = true },
+	Grail = { Order = 12, Name = 'Grail', Display = 'Crown Box', Color = C(170, 80, 255), Accent = C(255, 210, 80), premium = true },
+	-- (brief 30) the Grail Bundle's box (a Store product, not a box you open): its picture and the bundle's reveal
+	GrailBundle = { Order = 13, Name = 'GrailBundle', Display = 'The Grail Bundle', Color = C(150, 80, 240), Accent = C(255, 206, 70), premium = true },
 }
 BoxModels.Meta = {}
 for id, t in THEMES do
-	BoxModels.Meta[id] = { Name = t.Name, Color = t.Color, Accent = t.Accent, Order = t.Order }
+	BoxModels.Meta[id] = { Name = t.Name, Display = t.Display or (t.Name .. ' Box'), Color = t.Color, Accent = t.Accent, Order = t.Order }
 end
 
 ---------------------------------------------------------------------------------------------- the common box
@@ -407,105 +390,10 @@ local function rainbowBand(k)
 	end
 end
 
--- A real shoe from the game on the lid (ShoeModels' own model, one right shoe): scale k (1 = worn size), its sole on
--- y = at.Y and its footprint centred on at.X, at.Z (design studs, the box's frame), the toe turned by yaw (0 = toe to
--- the front). It goes into the topper as a model named 'Shoe' (its ShoeId attribute names the shoe). Returns the model
--- and the height of its top (design studs).
-local function gameShoe(tk, id, at, yaw, k)
-	local shoe = ShoeModels.shoe(id, 'R', k * tk.s)
-	local fit = shoe.PrimaryPart
-	local lo, hi = V(math.huge, math.huge, math.huge), V(-math.huge, -math.huge, -math.huge)
-	for _, p in shoe:GetDescendants() do
-		if p:IsA('BasePart') and p ~= fit and p.Transparency < 1 then
-			for _, c in { -0.5, 0.5 } do
-				for _, d in { -0.5, 0.5 } do
-					for _, e in { -0.5, 0.5 } do
-						local q = p.CFrame:PointToWorldSpace(p.Size * V(c, d, e))
-						lo, hi = lo:Min(q), hi:Max(q)
-					end
-				end
-			end
-		end
-	end
-	-- (the shoe was built at the origin: its footprint's centre and the sole's bottom go to `at`)
-	local place = tk.cf * CFrame.new(at * tk.s) * CFrame.Angles(0, yaw, 0) * CFrame.new(-(lo.X + hi.X) / 2, -lo.Y, -(lo.Z + hi.Z) / 2)
-	-- (into a plain model of its own: the shoe's Fit box, its pivot as worn, has no place on a lid)
-	local m = Instance.new('Model')
-	m.Name = 'Shoe'
-	for name, v in shoe:GetAttributes() do m:SetAttribute(name, v) end
-	for _, p in shoe:GetDescendants() do
-		if p:IsA('BasePart') and p ~= fit then p.CFrame = place * p.CFrame end
-	end
-	for _, p in shoe:GetChildren() do
-		if p ~= fit then p.Parent = m end
-	end
-	shoe:Destroy()
-	m.Parent = tk.parent
-	return m, at.Y + (hi.Y - lo.Y) / tk.s
-end
-
 ---------------------------------------------------------------------------------------------- toppers
 -- Each takes (k: the box's kit, lk: the lid's kit, tk: the topper's kit, t: the theme). Positions are scale-1 studs
 -- in the box's frame (front -Z), on the lid's cap (y = TOP) or floating over it.
 local TOPPERS = {}
-
--- The box's hero shoe (the game's own model) standing on the lid, toe to the front-right, and tissue paper poking out
--- under the lid.
-function TOPPERS.Street(k, lk, tk, t)
-	studsOn(lk, t, { [2] = true, [3] = true, [4] = true, [7] = true, [8] = true, [9] = true, [12] = true, [13] = true })
-	-- tissue paper folded out over the tub's top edge under the lid (white and salmon sheets): a wedge with its sheer
-	-- face on the tub and its slope falling outward
-	for i, e in { { -1.15, -1, 0 }, { 1.25, -1, 0 }, { -0.35, 1, PI }, { HW, 0.55, -PI / 2 }, { -HW, -0.45, PI / 2 } } do
-		local onFront = e[2] == -1 or e[2] == 1
-		local pos = onFront and V(e[1], BODY - 0.1, e[2] * (HD + 0.15)) or V(e[1] + math.sign(e[1]) * 0.15, BODY - 0.1, e[2])
-		k:wedge('Tissue', CFrame.new(pos) * CFrame.Angles(0, e[3], 0), V(1.15, 0.26, 0.3), i % 2 == 0 and C(255, 250, 248) or C(255, 170, 156), SM).CastShadow = false
-	end
-	-- the Street box's own white sneaker, standing on the lid, toe to the front-right
-	gameShoe(tk, BoxModels.TopperShoes.Street, V(0.1, TOP - 0.01, 0.05), -0.55, SHOE_SCALE.Street)
-end
-
--- A spray can on the black studded lid, paint splats on the tub and lid, pink paint dripping down the front,
--- a puff of pink paint from the nozzle.
-function TOPPERS.Graffiti(k, lk, tk, t)
-	studsOn(lk, t, { [5] = true, [9] = true, [10] = true, [14] = true, [15] = true })
-	-- splats on the tub (flat discs on the faces) and paint streaks on the lid cap
-	local splat = { C(255, 150, 40), C(236, 60, 60), C(60, 112, 232), C(150, 92, 226), C(255, 214, 60), C(80, 200, 120) }
-	for i, e in { { 1, -1.5, 0.55 }, { 1, 1.75, 1.0 }, { 2, -1.85, 1.6 }, { -2, -0.8, 0.7 }, { -2, 0.9, 1.3 }, { 3, 0.4, 0.55 } } do
-		local col = splat[i]
-		if e[1] == 1 then
-			k:cyl('Splat', V(e[2], e[3], -HD - 0.03), 'z', 0.06, 0.95 + 0.08 * i, col, SM)
-			k:cyl('Splat', V(e[2] + 0.45, e[3] - 0.3, -HD - 0.035), 'z', 0.06, 0.45, col, SM)
-		elseif e[1] == 3 then
-			k:cyl('Splat', V(e[2], e[3], HD + 0.03), 'z', 0.06, 1.2, col, SM)
-		else
-			k:cyl('Splat', V(math.sign(e[1]) * (HW + 0.03), e[3], e[2]), 'x', 0.06, 1.15, col, SM)
-			k:cyl('Splat', V(math.sign(e[1]) * (HW + 0.035), e[3] - 0.45, e[2] + 0.4), 'x', 0.06, 0.5, col, SM)
-		end
-	end
-	local cyan, green = C(96, 206, 214), C(116, 214, 84)
-	lk:cyl('PaintBlob', V(-1.35, TOP + 0.02, -0.5), 'y', 0.06, 1.5, cyan, SM)
-	lk:cyl('PaintBlob', V(-0.45, TOP + 0.025, -0.85), 'y', 0.06, 0.9, cyan, SM)
-	lk:span('PaintStreak', V(-2.12, BODY + 0.4, -1.4), V(-1.5, TOP - 0.1, -0.5), cyan, SM)
-	lk:cyl('PaintBlob', V(0.35, TOP + 0.02, 0.5), 'y', 0.06, 1.55, green, SM)
-	lk:cyl('PaintBlob', V(-0.35, TOP + 0.025, 0.95), 'y', 0.06, 0.7, green, SM)
-	lk:cyl('PaintBlob', V(-1.5, TOP + 0.02, 0.95), 'y', 0.06, 0.55, C(150, 110, 230), SM)
-	-- the drips: a pink band over the rim and drips down the front
-	drips(lk, t.drip, SM, { { -1.95, 0.85, 0.4 }, { -1.4, 0.48 }, { -0.85, 0.36 }, { -0.3, 0.46, 0.38 }, { 0.3, 0.34 }, { 0.85, 0.46 }, { 1.4, 0.38 }, { 1.95, 1.05, 0.4 } }, BODY + 0.1)
-	-- the can: a chunky cyan body, a pink band, a pink shoulder and cap, a white nozzle, leaning back a little
-	local c = tk:at(CFrame.new(1.25, TOP, 0.55) * CFrame.Angles(0.1, 0, -0.08))
-	c:cyl('CanBody', V(0, 0.85, 0), 'y', 1.7, 1.44, C(92, 204, 226), SM)
-	c:cyl('CanBand', V(0, 0.9, 0), 'y', 0.5, 1.52, C(240, 86, 150), SM)
-	c:cyl('CanFoot', V(0, 0.08, 0), 'y', 0.16, 1.5, C(66, 166, 194), SM)
-	c:cyl('CanShoulder', V(0, 1.82, 0), 'y', 0.24, 1.16, C(240, 86, 150), SM)
-	c:cyl('CanCap', V(0, 2.08, 0), 'y', 0.3, 0.72, C(250, 120, 176), SM)
-	c:box('CanNozzle', V(0, 2.32, -0.1), V(0.26, 0.2, 0.38), WHITE, SM)
-	c:box('CanShine', V(-0.5, 0.95, -0.42), V(0.12, 1.3, 0.12), C(190, 240, 250), SM, CFrame.Angles(0, 0.7, 0))
-	-- the puff: pink balls trailing off the nozzle to the left, shrinking (bobbing a little on display)
-	local puff = tk:floating('Puff', V(0, TOP + 2.7, 0.35), nil, 0.12, 2.6)
-	for i, e in { { -0.85, 2.55, 0.95 }, { -1.65, 2.75, 0.74 }, { -2.3, 2.85, 0.54 }, { -2.8, 2.9, 0.36 } } do
-		puff:ball('PaintPuff', V(1.25 + e[1], TOP + e[2], 0.35), e[3], C(255, 168, 206), SM).CastShadow = i <= 1
-	end
-end
 
 -- A snow-capped lid with icicles round the rim, a cluster of ice crystals on top and ice spikes off the corners.
 function TOPPERS.Frost(k, lk, tk, t)
@@ -817,59 +705,42 @@ function TOPPERS.Gold(k, lk, tk, t)
 	end
 end
 
--- (brief 21) Exclusive: a big cut diamond spinning over a chrome stand ringed in ice-blue light, with sparkles round
--- it; the rainbow band on the midnight tub.
-function TOPPERS.Exclusive(k, lk, tk, t)
-	studsOn(lk, t, { [3] = true, [7] = true, [8] = true, [9] = true, [13] = true })
-	rainbowBand(k)
-	-- the stand: a chrome drum on the lid with a glowing ring and a cup the diamond's point sits over
-	tk:cyl('Stand', V(0, TOP + 0.14, 0), 'y', 0.28, 1.7, t.lidLight, M.Metal)
-	tk:cyl('StandRing', V(0, TOP + 0.3, 0), 'y', 0.08, 1.82, t.rim, NEON)
-	tk:cyl('StandCup', V(0, TOP + 0.4, 0), 'y', 0.16, 0.9, t.lid, M.Metal)
-	-- the diamond (a brilliant cut, girdle up the middle): a shallow crown of 8 facets under a glowing table, a deep
-	-- pavilion of 8 facets down to a point; two tones so the facets read. It turns slowly and bobs.
-	local gy = TOP + 1.95
-	local gem = tk:floating('Diamond', V(0, gy, 0), 36, 0.14, 2.6)
-	local girdle = CFrame.new(0, gy, 0)
-	gem:frustum('DiamondCrown', girdle, 1.12, 0.66, 0.5, 8, { t.gem, t.gemLight }, SM)
-	gem:cyl('DiamondTable', V(0, gy + 0.52, 0), 'y', 0.06, 1.36, t.gemCore, NEON)
-	gem:frustum('DiamondPavilion', girdle * CFrame.Angles(PI, PI / 8, 0), 1.12, 0.08, 1.05, 8, { t.gemLight, t.gem }, SM)
-	-- sparkles round it (they float with it)
-	for _, e in { { -1.55, 0.45, -0.3, 0.6 }, { 1.5, 0.95, 0.2, 0.5 }, { 1.0, -0.5, -0.9, 0.42 }, { -1.15, 1.2, 0.6, 0.38 } } do
-		gem:sparkle('Sparkle', CFrame.new(e[1], gy + e[2], e[3]) * CFrame.Angles(0, 0.35, 0.2), e[4], WHITE, NEON)
-	end
-end
-
--- (brief 21) Grail: the dream pair, the golden winged Grail shoe on a gold plinth under a spinning rainbow halo, a star
--- by it; the rainbow band on the royal purple tub.
-function TOPPERS.Grail(k, lk, tk, t)
-	studsOn(lk, t, { [2] = true, [3] = true, [4] = true, [7] = true, [8] = true, [9] = true, [12] = true, [13] = true, [14] = true })
-	rainbowBand(k)
-	-- the plinth: a gold drum with a glowing lip
-	tk:cyl('Plinth', V(0, TOP + 0.16, 0.05), 'y', 0.32, 2.5, t.goldDark, FOIL)
-	tk:cyl('PlinthLip', V(0, TOP + 0.35, 0.05), 'y', 0.08, 2.62, t.rim, NEON)
-	-- the Grail shoe itself (golden, winged, rainbow-laced) on the plinth, toe to the front-left
-	local _, shoeTop = gameShoe(tk, BoxModels.TopperShoes.Grail, V(0.05, TOP + 0.39, 0.1), 1.15, SHOE_SCALE.Grail)
-	-- the rainbow halo over it, turning (eight bars, the rainbow's colours running round); a gold star by it
-	-- (where it always hung, unless the shoe stands taller: then just clear of its top, bobbing included)
-	local hy = math.max(TOP + 3.55, shoeTop + 0.45)
-	local halo = tk:floating('Halo', V(0, hy, 0.05), 40, 0.15, 2.4)
-	local hcf = CFrame.new(0, hy, 0.05) * CFrame.Angles(-0.25, 0, 0) -- (front edge down: a ring, not a bar, from above)
-	local n = 8
-	local R = 1.15
-	local len = 2 * R * math.tan(PI / n) + 0.1
-	for j = 0, n - 1 do
-		local u = j * #RAINBOW / n
-		local c = RAINBOW[math.floor(u) % #RAINBOW + 1]:Lerp(RAINBOW[(math.floor(u) + 1) % #RAINBOW + 1], u % 1)
-		halo:make('Part', 'Halo', V(len, 0.16, 0.2), hcf * CFrame.Angles(0, j * 2 * PI / n, 0) * CFrame.new(0, 0, R), c, NEON)
-	end
-	local stars = tk:floating('Stars', V(0, TOP + 2.2, 0), 18, 0.12, 3.0)
-	for _, e in { { -1.85, 1.6, -0.4, 0.62 } } do
-		stars:sparkle('Star', CFrame.new(e[1], TOP + e[2], e[3]) * CFrame.Angles(0, 0.3, 0.15), e[4], C(255, 226, 120), NEON)
-	end
-end
-
 ---------------------------------------------------------------------------------------------- build
+-- (brief 30) A chest from its BoxKit rows: the tub's parts in the model, the lid's in `Lid` (pivot: its Hinge part)
+-- and the handle in `Lid.Topper`. Materials: BoxKit's kinds as Roblox materials (gold = Foil, neon, glass).
+local KIND_MAT = { plastic = M.Plastic, smooth = SM, metal = M.Metal, neon = NEON, gold = FOIL, glass = GLASS }
+local function chest(k, data)
+	local lk, lid = k:model('Lid')
+	local tk = lk:model('Topper')
+	local hinge
+	for _, r in data.Parts do
+		local into = r[12] == 'l' and lk or r[12] == 't' and tk or k
+		local shape = r[1]
+		local rot = BoxParts.Rots[r[10]]
+		local cf = CFrame.new(r[7], r[8], r[9], rot[1], rot[2], rot[3], rot[4], rot[5], rot[6], rot[7], rot[8], rot[9])
+		local kind = BoxParts.Kinds[r[3]]
+		local p = into:make(shape == 'W' and 'WedgePart' or 'Part', r[11], V(r[4], r[5], r[6]), cf, BoxParts.Colors[r[2]], KIND_MAT[kind] or SM)
+		if shape == 'C' then
+			p.Shape = Enum.PartType.Cylinder
+		elseif shape == 'S' then
+			p.Shape = Enum.PartType.Ball
+		elseif shape == 'E' then
+			local mesh = Instance.new('SpecialMesh')
+			mesh.MeshType = Enum.MeshType.Sphere
+			mesh.Parent = p
+		end
+		if kind == 'glass' then p.Transparency = 0.3 end
+		if r[11] == 'Hinge' then
+			hinge = p
+			p.Transparency = 1
+			p.CastShadow = false
+		end
+	end
+	assert(hinge, 'BoxModels: a chest without its Hinge')
+	lid.PrimaryPart = hinge
+	return lid
+end
+
 -- at: where to build it (its pivot), so a caller needs no PivotTo (default: the origin).
 function BoxModels.build(boxId: string, scale: number?, at: CFrame?): Model
 	local t = THEMES[boxId]
@@ -881,26 +752,22 @@ function BoxModels.build(boxId: string, scale: number?, at: CFrame?): Model
 	local root = k:box('Root', V(0, 0, 0), V(1, 0.2, 1), WHITE, SM)
 	root.Transparency = 1
 	model.PrimaryPart = root
-	local lk, tk, lid = common(k, t)
-	TOPPERS[boxId](k, lk, tk, t)
+	local data = BoxParts and BoxParts.Boxes[boxId]
+	local lid
+	if data then
+		lid = chest(k, data)
+	else
+		assert(TOPPERS[boxId], 'BoxModels.build: no model for ' .. tostring(boxId))
+		local lk, tk
+		lk, tk, lid = common(k, t)
+		TOPPERS[boxId](k, lk, tk, t)
+	end
 	lid.WorldPivot = lid.PrimaryPart.CFrame
 	local n = 0
 	for _, d in model:GetDescendants() do
 		if d:IsA('BasePart') then n += 1 end
 	end
-	-- a topper shoe that would take the box past LIMIT drops its smallest pieces (eyelets, tiny trims: unseen at this
-	-- size) until the box fits
-	local shoe = tk.parent:FindFirstChild('Shoe')
-	if n > LIMIT and shoe then
-		local list = {}
-		for _, p in shoe:GetDescendants() do
-			if p:IsA('BasePart') then table.insert(list, p) end
-		end
-		table.sort(list, function(a, b) return a.Size.X * a.Size.Y * a.Size.Z < b.Size.X * b.Size.Y * b.Size.Z end)
-		for i = 1, math.min(n - LIMIT, #list) do list[i]:Destroy() end
-		n = math.min(n, LIMIT)
-		shoe:SetAttribute('Trimmed', true)
-	end
+	assert(n <= LIMIT, 'BoxModels: ' .. boxId .. ' has ' .. n .. ' parts')
 	model:SetAttribute('BoxId', boxId)
 	model:SetAttribute('Parts', n)
 	model:SetAttribute('Scale', s)
@@ -949,6 +816,7 @@ local FX = {
 	Gold = { 'sparkles_main', 'star', C(255, 226, 120), 5, 0.6 },
 	Exclusive = { 'sparkles_main', 'sparkle', C(170, 240, 255), 6, 0.55 },
 	Grail = { 'sparkles_main', 'star', C(255, 226, 120), 6, 0.6 },
+	GrailBundle = { 'sparkles_main', 'star', C(255, 226, 120), 6, 0.6 },
 }
 function BoxModels.fx(model: Model)
 	local id = model:GetAttribute('BoxId')

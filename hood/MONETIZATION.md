@@ -31,12 +31,12 @@ Create a product, set its price, copy its id, and paste it at `Products.Develope
 
 | Name | Price (Robux) | Key in Products.lua | What it gives |
 |---|---|---|---|
-| Exclusive Box | 99 | `ShoeBoxExclusive` | 1 Exclusive Box opening |
-| 3 Exclusive Boxes | 249 | `ShoeBoxExclusive3` | 3 openings (297 if bought one by one) |
-| 8 Exclusive Boxes | 599 | `ShoeBoxExclusive8` | 8 openings (792 if bought one by one) |
-| Grail Box | 199 | `ShoeBoxGrail` | 1 Grail Box opening |
-| 3 Grail Boxes | 499 | `ShoeBoxGrail3` | 3 openings (597 if bought one by one) |
-| 8 Grail Boxes | 1199 | `ShoeBoxGrail8` | 8 openings (1592 if bought one by one) |
+| Chrome Box | 99 | `ShoeBoxExclusive` | 1 Chrome Box opening (brief 30: the Exclusive Box's new name; the key stays) |
+| 3 Chrome Boxes | 249 | `ShoeBoxExclusive3` | 3 openings (297 if bought one by one) |
+| 8 Chrome Boxes | 599 | `ShoeBoxExclusive8` | 8 openings (792 if bought one by one) |
+| Crown Box | 199 | `ShoeBoxGrail` | 1 Crown Box opening (brief 30: the Grail Box's new name; the key stays) |
+| 3 Crown Boxes | 499 | `ShoeBoxGrail3` | 3 openings (597 if bought one by one) |
+| 8 Crown Boxes | 1199 | `ShoeBoxGrail8` | 8 openings (1592 if bought one by one) |
 | Boost Bundle | 119 | `BoostBundle` | Two 2x Power boosts + one 3x Power boost (147 separately) |
 | 2x Power Boost | 39 | `RepBoost2x` | 15 minutes of 2x Power |
 | 3x Power Boost | 69 | `RepBoost3x` | 15 minutes of 3x Power |
@@ -56,13 +56,16 @@ Create a product, set its price, copy its id, and paste it at `Products.Develope
 | Mega Cash Pack | 999 | `MegaCash` | 34,500 Cash (x your best stage): the tall MEGA card with the BEST VALUE ribbon, the most Cash per Robux; giftable |
 | Big Power Pack | 249 | `PowerPackBig` | 1.8x your next rebirth's Power (or 2.7x the Power you hold, whichever is more) |
 | Mega Power Pack | 999 | `PowerPackMega` | 7.8x your next rebirth's Power (or 11.7x the Power you hold, whichever is more) |
-| Street Pack | 399 | `FeaturedPack1` | The weekly Featured pack, one of three (brief 30): 6,000 Cash (x your best stage, like the Cash Packs) + a 3x Power boost for 15 min + 1 Exclusive Box, in one purchase |
-| Grail Pack | 449 | `FeaturedPack2` | The second weekly pack: 4,000 Cash (scaled) + a 3x Power boost for 15 min + 1 Grail Box |
-| Sneaker Pack | 399 | `FeaturedPack3` | The third weekly pack: 12,000 Cash (scaled) + a 2x Power boost for 15 min + 1 Exclusive Box |
+| Street Pack | 399 | `FeaturedPack1` | The weekly Featured pack, one of three (brief 30): 6,000 Cash (x your best stage, like the Cash Packs) + a 3x Power boost for 15 min + 1 Chrome Box, in one purchase |
+| Grail Pack | 449 | `FeaturedPack2` | The second weekly pack: 4,000 Cash (scaled) + a 3x Power boost for 15 min + 1 Crown Box |
+| Sneaker Pack | 399 | `FeaturedPack3` | The third weekly pack: 12,000 Cash (scaled) + a 2x Power boost for 15 min + 1 Chrome Box |
 | Starter Pack | 149 | `StarterPack` | Once per player (brief 30, HUD): 5,000 Cash (x your best stage, like the Cash Packs) + 30 min of 2x Power (two 15 min boosts) + 1 opening of this world's cheapest Robux box. After it is bought, its HUD button and window are gone for good |
 | 3 Spins | 39 | `SpinPack` | 3 spins of the Spin Wheel (brief 30, HUD). They never run out; the free spin still comes every 4 hours |
+| The Grail Bundle | 1499 | `GrailBundle` | One pair each of The Grail, Astro Crown and Platinum Wings, added in one purchase (brief 30). The price is `Products.GrailBundlePrice` (the user's R$1,499); the Store's Featured section shows it with the bundle's own chest. No countdown, no struck-through price, no sale: it is simply on sale at this price |
 
 The Store shows ONE of the three at a time and the pick changes every Monday 00:00 UTC (`Products.featuredAt`, the same for every player; the countdown on the card is real). Create all three products; each always grants exactly what its card says, even if Roblox retries the receipt after the week turned over.
+
+The Grail Bundle (brief 30) is not part of that rotation: it is always in the Featured section, under the week's pack. Its receipt adds the three pairs once per purchase (a retried receipt never adds them twice) and says so in a notice. Until its id is pasted the card shows the price and taps say "coming soon".
 
 Gift A Player (brief 30): the Cash Packs and the Robux boxes can be bought for another player in the server; the server grants it to them (both are told), and if they left it goes to the buyer. Passes, boosts and Power packs are never gifted. No new product is needed for gifting.
 
@@ -96,7 +99,9 @@ Studio shows simple 3D stand-ins for the UI icons until the pictures are uploade
 python3 hood/tools/upload_assets.py
 ```
 
-`hood/art/README_upload.md` explains how. Do it before judging how the UI looks.
+`hood/art/README_upload.md` explains how. Do it before judging how the UI looks. (Brief 30: the World 1 box and shoe
+pictures, `Box_*.png` and `Shoe_*.png`, were re-rendered from the new chests and shoes and `Box_GrailBundle.png` is new;
+the tool sees the changed files and uploads them again, so the ids in IconModels.Images point at the new pictures.)
 
 ## Other things to set (not Robux items)
 

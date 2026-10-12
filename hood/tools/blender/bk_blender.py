@@ -108,6 +108,13 @@ def local_geometry(p):
 		f = [tuple(range(n - 1, -1, -1)), tuple(range(n, 2 * n))]
 		f += [(i, (i + 1) % n, n + (i + 1) % n, n + i) for i in range(n)]
 		return v, f, p.kind == 'cyl'
+	if p.kind == 'egg':
+		bm = bmesh.new()
+		bmesh.ops.create_uvsphere(bm, u_segments=32, v_segments=16, radius=1.0)
+		v = [(vert.co.x * x, vert.co.y * y, vert.co.z * z) for vert in bm.verts]
+		f = [tuple(vert.index for vert in face.verts) for face in bm.faces]
+		bm.free()
+		return v, f, True
 	if p.kind == 'ball':
 		bm = bmesh.new()
 		bmesh.ops.create_uvsphere(bm, u_segments=32, v_segments=16, radius=x)

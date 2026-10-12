@@ -2,7 +2,8 @@
 -- header bar ("EXCLUSIVE SHOP", a blue "Gift A Player" button with a gift, a red X) over a dark scrolling body whose
 -- sections have white italic outlined titles, top to bottom:
 --   FEATURED         the week's pack (one of Products.FeaturedKeys: a painted card, three item tiles with blue value chips,
---                    a big price button) and the Server Boost card (Block Party: "1x > 2x", "+15 minutes", an Info tab).
+--                    a big price button), (brief 30) the Grail Bundle (its chest, The Grail big and its two companion pairs,
+--                    one price) and the Server Boost card (Block Party: "1x > 2x", "+15 minutes", an Info tab).
 --                    The countdown on the pack is REAL: Products.featuredAt rotates it weekly by the clock, the same for
 --                    everyone, and the card really changes to the next pack when it reaches 0. No timer anywhere else.
 --   GAMEPASSES       the coloured 2-column grid: a big icon, an outlined title, a 2-line description, OWNED or the price
@@ -323,7 +324,7 @@ local function buy(key)
 		return
 	end
 	-- (the weekly pack turned over while the window was open: show the new one instead of selling the old)
-	if entry.Section == 'Featured' and Products.featuredAt(nowSec()) ~= key then
+	if entry.Section == 'Featured' and Products.isWeekly(key) and Products.featuredAt(nowSec()) ~= key then
 		notice('The Weekly Deal just changed!', 'blue')
 		if built then rebuild() end
 		return
@@ -823,6 +824,40 @@ local function featuredCard(key, y, parent)
 	shownFeatured = key
 	return c
 end
+-- (brief 30) The Grail Bundle (the user's bundle sheet and handoff): the bundle's own chest on the left (the real 3D
+-- model), The Grail featured largest with its two companion pairs, Astro Crown and Platinum Wings, the same size beside
+-- it, each named; one price button. It is sold at its one real price: no countdown, no struck price, no SAVE badge.
+local BUNDLE_H = 300
+local function bundleCard(entry, y, parent)
+	local tone = entry.Tone or 'cardPurple'
+	local c = card(entry, tone, CW, BUNDLE_H, MARGIN, y, parent)
+	local z = 28
+	addShine(c.Body)
+	local left = math.floor(CW * 0.31)
+	local boxId = (entry.Art or ''):match('^box:(.+)$') or 'GrailBundle'
+	local art = Kit.model3d('box', boxId, Vector2.new(left, BUNDLE_H - 20), { ZIndex = z, Whole = true, Fill = 0.96, MaxReach = 0.99, Overflow = 1, Pitch = 20, Fov = 20, Priority = 5, PreviewKind = 'boxhero' })
+	art.Position = px(4, 10)
+	art.Parent = c.Body
+	local rr = CW - left - 12
+	local mid = left + rr / 2
+	local t = title(c.Body, entry.Title, 40, tone, { Position = px(mid, 4), Width = rr })
+	gradient(t, hex('FFF6B0'), hex('F8CF4A'))
+	label({ Name = 'Sub', Text = entry.Sub or '', TextSize = 21, StrokeThickness = 3, Stroke = Kit.toneOf(tone).stroke or BLACK, AnchorPoint = Vector2.new(0.5, 0), Position = px(mid, 50), Size = px(rr, 26), ZIndex = z + 3, Parent = c.Body })
+	-- the pairs: the first (The Grail) big, the others the same smaller size; a splat in its rarity colour under each
+	local ids = Products.bundleShoes(entry.Key) or {}
+	local slots = { { 0.22, 150 }, { 0.56, 112 }, { 0.84, 112 } }
+	for i, sid in ids do
+		local slot = slots[i] or slots[#slots]
+		local shoe = Shoes and Shoes.ById and Shoes.ById[sid]
+		local cx, cy, size = left + rr * slot[1], 142, slot[2]
+		itemSplat(c.Body, cx, cy, size * Kit.Studio.shoe.Fill, chanceColor(shoe):Lerp(Kit.toneOf(tone).base, 0.15), shoe and shoe.Rank == #(Shoes.Rarities or {}) and 'rainbow' or nil, (i * 53) % 360, z, Kit.toneOf(tone).base)
+		local m = Kit.model3d('shoe', sid, size, { ZIndex = z + 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(cx, cy), Rarity = shoe and shoe.Rarity, Priority = 4 })
+		m.Parent = c.Body
+		label({ Name = 'Name' .. i, Text = shoe and shoe.Name or sid, TextSize = i == 1 and 22 or 19, StrokeThickness = 3, TextColor3 = chanceColor(shoe):Lerp(Color.white, 0.55), AnchorPoint = Vector2.new(0.5, 0), Position = px(cx, cy + size * 0.42), Size = px(rr * 0.34, 24), ZIndex = z + 3, Parent = c.Body })
+	end
+	priceButton(c.Body, entry, 230, 62, px(mid, BUNDLE_H - 12), Vector2.new(0.5, 1), z + 2, nil, { TextSize = 36, Breathe = true })
+	return c
+end
 local function serverCard(entry, y, parent)
 	local c = card(entry, LIME, CW, SERVER_H, MARGIN, y, parent)
 	local z = 28
@@ -970,10 +1005,13 @@ local function build()
 			if entry.Section == section.Id and entry.Wired == true then table.insert(items, entry) end
 		end
 		if section.Id == 'Featured' then
-			-- only the week's pack (Products.featuredAt), then the Server Boost (Block Party)
+			-- only the week's pack (Products.featuredAt), (brief 30) the Grail Bundle, then the Server Boost (Block Party)
 			items = {}
 			local pack = Products.ByKey[(Products.featuredAt(nowSec()))]
 			if pack and pack.Wired == true then table.insert(items, pack) end
+			for _, entry in Products.Catalog do
+				if entry.Section == 'Featured' and type(entry.Shoes) == 'table' and entry.Wired == true then table.insert(items, entry) end
+			end
 			local party = Products.ByKey.BlockParty
 			if party and party.Wired == true then table.insert(items, party) end
 		elseif section.Id == 'Boost' then
@@ -991,7 +1029,10 @@ local function build()
 		local y = 0
 		if section.Id == 'Featured' then
 			for _, entry in items do
-				if entry.Section == 'Featured' then
+				if type(entry.Shoes) == 'table' then
+					sections[entry.Key] = bundleCard(entry, y, block)
+					y += BUNDLE_H + GAP
+				elseif entry.Section == 'Featured' then
 					sections[entry.Key] = featuredCard(entry.Key, y, block)
 					y += FEAT_H + GAP
 				else

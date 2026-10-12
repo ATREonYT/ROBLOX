@@ -69,21 +69,27 @@ Products.DeveloperProducts = {
 	RestoreStreak = 0, -- "Restore Streak": keeps the daily-reward streak after a missed day (RetentionRules.restore)
 	-- (brief 21) the Robux shoe boxes on World 1's dais: one roll from the box's own exclusive shoes (Config/Shoes);
 	-- (brief 22) and the Store's Buy 3 / Buy 8 bundles of them
-	ShoeBoxExclusive = 0, -- "Exclusive Box", 99 Robux
-	ShoeBoxExclusive3 = 0, -- "3 Exclusive Boxes", 249 Robux
-	ShoeBoxExclusive8 = 0, -- "8 Exclusive Boxes", 599 Robux
-	ShoeBoxGrail = 0, -- "Grail Box", 199 Robux
-	ShoeBoxGrail3 = 0, -- "3 Grail Boxes", 499 Robux
-	ShoeBoxGrail8 = 0, -- "8 Grail Boxes", 1199 Robux
+	-- (brief 30: shown as the Chrome Box and the Crown Box; the keys stay, so receipts keep working)
+	ShoeBoxExclusive = 0, -- "Chrome Box", 99 Robux
+	ShoeBoxExclusive3 = 0, -- "3 Chrome Boxes", 249 Robux
+	ShoeBoxExclusive8 = 0, -- "8 Chrome Boxes", 599 Robux
+	ShoeBoxGrail = 0, -- "Crown Box", 199 Robux
+	ShoeBoxGrail3 = 0, -- "3 Crown Boxes", 499 Robux
+	ShoeBoxGrail8 = 0, -- "8 Crown Boxes", 1199 Robux
 	-- (brief 30) the Store's weekly Featured pack: one of these three is on sale at a time (Products.featuredAt)
-	FeaturedPack1 = 0, -- "Street Pack": Cash + a 3x Power boost + an Exclusive Box, 399 Robux
-	FeaturedPack2 = 0, -- "Grail Pack": Cash + a 3x Power boost + a Grail Box, 449 Robux
-	FeaturedPack3 = 0, -- "Sneaker Pack": more Cash + a 2x Power boost + an Exclusive Box, 399 Robux
+	FeaturedPack1 = 0, -- "Street Pack": Cash + a 3x Power boost + a Chrome Box, 399 Robux
+	FeaturedPack2 = 0, -- "Grail Pack": Cash + a 3x Power boost + a Crown Box, 449 Robux
+	FeaturedPack3 = 0, -- "Sneaker Pack": more Cash + a 2x Power boost + a Chrome Box, 399 Robux
 	-- HUD30 BEGIN (brief 30, HUD: the soldier HUD's extras; HoodServer/HudExtras grants them)
 	StarterPack = 0, -- "Starter Pack": a one-time bundle for new players (Cash, 30 min of 2x Power, a Robux box), 149 Robux
 	SpinPack = 0, -- "3 Spins": three more spins of the wheel, 39 Robux
 	-- HUD30 END
+	-- (brief 30) "The Grail Bundle": one pair each of The Grail, Astro Crown and Platinum Wings (Products.GrailBundlePrice)
+	GrailBundle = 0,
 }
+-- (brief 30) The Grail Bundle's price: the one number the catalog row, the Store card and the docs use (the user set it:
+-- R$1,499). It is sold at this price only: no countdown, no struck-through price, no sale.
+Products.GrailBundlePrice = 1499
 Products.BoostDurationSeconds = 900
 
 -- The Store's cards, in order. Kind: 'Pass' | 'Product'. Section: the Store's sections (Products.Sections) or
@@ -108,16 +114,19 @@ Products.Catalog = {
 	-- ~Featured~ (brief 30) the weekly deal: one of the three is on show at a time and the week's pick changes every Monday
 	-- (Products.featuredAt). Each is ONE purchase that grants all three parts: Cash (scales with your best stage, like the
 	-- Cash Packs), a timed Power boost (Boost = its level, BoostDurationSeconds) and Count of the Robux box Box.
-	{ Key = 'FeaturedPack1', Kind = 'Product', Section = 'Featured', Title = 'Street Pack', Sub = 'The Block Starter!', Detail = 'Cash, a 3x Power boost and an Exclusive Box', Price = 399, Cash = 6000, Boost = 3, Box = 'Exclusive', Count = 1, Art = 'icon:BoostBundle', Tone = 'cardPurple', Wired = true },
-	{ Key = 'FeaturedPack2', Kind = 'Product', Section = 'Featured', Title = 'Grail Pack', Sub = 'Chase the Grail!', Detail = 'Cash, a 3x Power boost and a Grail Box', Price = 449, Cash = 4000, Boost = 3, Box = 'Grail', Count = 1, Art = 'icon:BoostBundle', Tone = 'cardBlue', Wired = true },
-	{ Key = 'FeaturedPack3', Kind = 'Product', Section = 'Featured', Title = 'Sneaker Pack', Sub = 'Fresh kicks, fresh Cash!', Detail = 'Lots of Cash, a 2x Power boost and an Exclusive Box', Price = 399, Cash = 12000, Boost = 2, Box = 'Exclusive', Count = 1, Art = 'icon:BoostBundle', Tone = 'cardGold', Wired = true },
+	{ Key = 'FeaturedPack1', Kind = 'Product', Section = 'Featured', Title = 'Street Pack', Sub = 'The Block Starter!', Detail = 'Cash, a 3x Power boost and a Chrome Box', Price = 399, Cash = 6000, Boost = 3, Box = 'Exclusive', Count = 1, Art = 'icon:BoostBundle', Tone = 'cardPurple', Wired = true },
+	{ Key = 'FeaturedPack2', Kind = 'Product', Section = 'Featured', Title = 'Grail Pack', Sub = 'Chase the Grail!', Detail = 'Cash, a 3x Power boost and a Crown Box', Price = 449, Cash = 4000, Boost = 3, Box = 'Grail', Count = 1, Art = 'icon:BoostBundle', Tone = 'cardBlue', Wired = true },
+	-- (brief 30) The Grail Bundle (the user's bundle sheet): ONE purchase that adds one pair each of Shoes (to keep, like
+	-- an opened box's) in one grant. Not part of the weekly rotation: always on show, at its one real price.
+	{ Key = 'GrailBundle', Kind = 'Product', Section = 'Featured', Title = 'The Grail Bundle', Sub = 'One pair each of three dream shoes', Detail = 'The Grail, Astro Crown and Platinum Wings: one pair each', Shoes = { 'TheGrail', 'AstroCrown', 'PlatinumWings' }, Price = Products.GrailBundlePrice, Art = 'box:GrailBundle', Tone = 'cardPurple', Wired = true },
+	{ Key = 'FeaturedPack3', Kind = 'Product', Section = 'Featured', Title = 'Sneaker Pack', Sub = 'Fresh kicks, fresh Cash!', Detail = 'Lots of Cash, a 2x Power boost and a Chrome Box', Price = 399, Cash = 12000, Boost = 2, Box = 'Exclusive', Count = 1, Art = 'icon:BoostBundle', Tone = 'cardGold', Wired = true },
 	-- ~Shoe Boxes~
-	{ Key = 'ShoeBoxExclusive', Kind = 'Product', Section = 'Box', Box = 'Exclusive', Count = 1, Title = 'Exclusive Box', Detail = 'Exclusive shoes, no Commons', Price = 99, Art = 'box:Exclusive', Tone = 'cardBlue', Wired = true },
-	{ Key = 'ShoeBoxExclusive3', Kind = 'Product', Section = 'Box', Box = 'Exclusive', Count = 3, Title = 'Exclusive Box', Detail = '3 Exclusive Boxes', Price = 249, WasPrice = 297, Art = 'box:Exclusive', Tone = 'cardBlue', Wired = true },
-	{ Key = 'ShoeBoxExclusive8', Kind = 'Product', Section = 'Box', Box = 'Exclusive', Count = 8, Title = 'Exclusive Box', Detail = '8 Exclusive Boxes', Price = 599, WasPrice = 792, Art = 'box:Exclusive', Tone = 'cardBlue', Wired = true },
-	{ Key = 'ShoeBoxGrail', Kind = 'Product', Section = 'Box', Box = 'Grail', Count = 1, Title = 'Grail Box', Detail = 'The best exclusive shoes', Price = 199, Art = 'box:Grail', Tone = 'cardPurple', Wired = true },
-	{ Key = 'ShoeBoxGrail3', Kind = 'Product', Section = 'Box', Box = 'Grail', Count = 3, Title = 'Grail Box', Detail = '3 Grail Boxes', Price = 499, WasPrice = 597, Art = 'box:Grail', Tone = 'cardPurple', Wired = true },
-	{ Key = 'ShoeBoxGrail8', Kind = 'Product', Section = 'Box', Box = 'Grail', Count = 8, Title = 'Grail Box', Detail = '8 Grail Boxes', Price = 1199, WasPrice = 1592, Art = 'box:Grail', Tone = 'cardPurple', Wired = true },
+	{ Key = 'ShoeBoxExclusive', Kind = 'Product', Section = 'Box', Box = 'Exclusive', Count = 1, Title = 'Chrome Box', Detail = 'Exclusive shoes, no Commons', Price = 99, Art = 'box:Exclusive', Tone = 'cardBlue', Wired = true },
+	{ Key = 'ShoeBoxExclusive3', Kind = 'Product', Section = 'Box', Box = 'Exclusive', Count = 3, Title = 'Chrome Box', Detail = '3 Chrome Boxes', Price = 249, WasPrice = 297, Art = 'box:Exclusive', Tone = 'cardBlue', Wired = true },
+	{ Key = 'ShoeBoxExclusive8', Kind = 'Product', Section = 'Box', Box = 'Exclusive', Count = 8, Title = 'Chrome Box', Detail = '8 Chrome Boxes', Price = 599, WasPrice = 792, Art = 'box:Exclusive', Tone = 'cardBlue', Wired = true },
+	{ Key = 'ShoeBoxGrail', Kind = 'Product', Section = 'Box', Box = 'Grail', Count = 1, Title = 'Crown Box', Detail = 'The best exclusive shoes', Price = 199, Art = 'box:Grail', Tone = 'cardPurple', Wired = true },
+	{ Key = 'ShoeBoxGrail3', Kind = 'Product', Section = 'Box', Box = 'Grail', Count = 3, Title = 'Crown Box', Detail = '3 Crown Boxes', Price = 499, WasPrice = 597, Art = 'box:Grail', Tone = 'cardPurple', Wired = true },
+	{ Key = 'ShoeBoxGrail8', Kind = 'Product', Section = 'Box', Box = 'Grail', Count = 8, Title = 'Crown Box', Detail = '8 Crown Boxes', Price = 1199, WasPrice = 1592, Art = 'box:Grail', Tone = 'cardPurple', Wired = true },
 	-- ~Gamepass~
 	{ Key = 'DoubleRep', Kind = 'Pass', Section = 'Gamepass', Title = '2x Power', Big = 'Every\nShot', Detail = 'Every shot pays double', Sub = 'On every shot', Lane = true, Price = 199, Art = 'icon:DoublePower', Tone = 'cardGold', Offer = '2x Power', Sticker = '2x', Wired = true },
 	{ Key = 'DoubleCash', Kind = 'Pass', Section = 'Gamepass', Title = '2x Cash', Big = 'Every\nStage', Detail = 'Double Cash from pads and goals', Sub = 'Double pad Cash', Price = 149, Art = 'icon:DoubleCash', Tone = 'cardPurple', Offer = '2x Cash', Sticker = '2x', Wired = true },
@@ -309,6 +318,18 @@ function Products.savings(key)
 	end
 	if not whole or whole <= entry.Price then return nil end
 	return whole, math.floor(100 * (1 - entry.Price / whole) + 0.5)
+end
+
+-- (brief 30) The shoes a bundle product adds, one pair each (a fresh list; nil for anything else).
+function Products.bundleShoes(key)
+	local entry = Products.ByKey[key]
+	if not entry or type(entry.Shoes) ~= 'table' then return nil end
+	return table.clone(entry.Shoes)
+end
+
+-- Is this one of the weekly Featured packs (the rotation), not an always-on Featured product like the Grail Bundle?
+function Products.isWeekly(key)
+	return table.find(Products.FeaturedKeys, key) ~= nil
 end
 
 -- The shoe box a product opens and how many: boxId, count (nil, 0 for anything else).

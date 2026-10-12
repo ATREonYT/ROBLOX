@@ -8,8 +8,9 @@
 --   the box; a low rock from then on (4 -> 8 deg, 2.5 -> 5 Hz); three hop-and-roll shakes on its bottom edge at 0.90 /
 --   1.65 / 2.20 (12 / 18 / 24 deg, L-R-L), each with a 1.12x ghost, the lid jolting up, the seam's light growing in the
 --   honest colour, the seal tape tearing further and a few twinkles; the squeeze 2.45-2.90 (0.85x, rocking hardest); the
---   pop at 2.95: the lid blasts off spinning out of the frame, the box shrinks away in place under a soft white wash
---   (Quad Out 0.45 s), and the pair grows in where it stood (0.45x to full in 0.1 s), turning steadily (90 deg/s). The
+--   pop at 2.95: (brief 30) the chest's lid swings open on its hinge, like the open view of the user's box sheets (Back
+--   Out to 112 deg in 0.15 s), the open box shrinks away in place (Quart In, gone by +0.3 s) under a soft white wash
+--   (Quad Out 0.45 s), and the pair grows in out of it (0.45x to full in 0.1 s), turning steadily (90 deg/s). The
 --   reveal, as the soldier game shows it: a soft glow behind the pair, about 20 warm-white rays that fade in over 1 s,
 --   hold, fade out and come again, barely turning, 1-2 twinkles; its name, the rarity and "1 in N", NEW! and "Tap
 --   anywhere to close!", scaling in under the wash (no Power number: the user). A tap (or 5.7 s after the reveal) flies
@@ -430,6 +431,15 @@ function UnboxWorld.seal(job, model, home, s)
 	local col = (h > 0.09 and h < 0.19 and sat > 0.35) and C3(226, 52, 48) or C3(255, 214, 48)
 	local zb, zl = -(D / 2 + TAPE_T / 2 + 0.01), -(D / 2 + 0.12 + TAPE_T / 2 + 0.01)
 	local lowY0, lidY1 = body - 0.62, top - 0.06
+	-- (brief 30) a chest says where its front faces are in the middle (its latch and panel), how low the tape starts
+	-- and where the lid's top is: the tape lies on them, crossing the latch like a sticker
+	local at = X.BoxModels and X.BoxModels.Seal and X.BoxModels.Seal[P.box]
+	if type(at) == 'table' and at.Body and at.Lid then
+		zb, zl = at.Body - TAPE_T / 2 - 0.01, at.Lid - TAPE_T / 2 - 0.01
+		lowY0 = at.Low or lowY0
+		top = at.Top or top
+		lidY1 = top - 0.06
+	end
 	local pieces = {}
 	for _, side in { -1, 1 } do
 		local x = side * TAPE_W / 4
@@ -437,7 +447,7 @@ function UnboxWorld.seal(job, model, home, s)
 		local lower = Make.part(model, 'Seal', V3(w, body - lowY0, TAPE_T) * s, home * CF(V3(x, (lowY0 + body) / 2, zb) * s), col)
 		local upper = Make.part(lid, 'Seal', V3(w, lidY1 - body - 0.03, TAPE_T) * s, home * CF(V3(x, (body + 0.03 + lidY1) / 2, zl) * s), col)
 		local bridge = Make.part(model, 'Seal', V3(w, 0.2, TAPE_T) * s, home * CF(V3(x, body + 0.02, (zb + zl) / 2) * s) * ANG(RAD(-28), 0, 0), col)
-		Make.part(lid, 'Seal', V3(w, TAPE_T, 0.6) * s, home * CF(V3(x, top + TAPE_T / 2, -(D / 2 + 0.12) + 0.3) * s), col)
+		Make.part(lid, 'Seal', V3(w, TAPE_T, 0.6) * s, home * CF(V3(x, top + TAPE_T / 2, zl + TAPE_T / 2 + 0.31) * s), col)
 		table.insert(pieces, { side = side, lower = lower, upper = upper, bridge = bridge, w = w * s })
 	end
 	return pieces
@@ -836,24 +846,21 @@ function UnboxWorld.boxAt(job, i, t)
 	cf = cf + up * punch(job, i, t)
 	local pop = P.pop[i]
 	if t >= pop then
-		-- the lid blasts off spinning, up and to one side out of the top of the frame (gone by +0.45 s); the box shrinks
-		-- away (gone by +0.3 s)
+		-- (brief 30) the lid swings open on its hinge, like the user's open chests: Back Out from shut to Swing[1] deg in
+		-- Swing[2] s; the open box shrinks away where it stands, about its middle, under the wash (Quart In: it holds
+		-- its size while the lid swings, then goes, gone by Swing[3] s) and the pair grows in out of it
 		local q = t - pop
-		local H = box.fullH
-		local hr = box.hingeRel
-		local hinge = box.home * CF(hr.Position) * hr.Rotation
-		local side = (M.hash(i, 77) > 0.5 and 1 or -1) * H * 1.4 * M.c01(q / 0.45)
-		local rise = H * 2.6 * M.out(M.c01(q / 0.45), 2)
-		local flip = RAD(720) * M.out(M.c01(q / 0.45), 2)
-		local shrink = 1 - M.c01((q - 0.25) / 0.2)
-		lid = { fly = CF(hinge.Position + box.home:VectorToWorldSpace(V3(side, rise, H * 0.3 * M.c01(q / 0.45)))) * hinge.Rotation * ANG(-flip, 0, flip * 0.3), scale = math.max(0.02, shrink) }
-		if shrink <= 0.02 then lid = { hidden = true, park = job.park } end
-		-- (the box shrinks away where it stands, about its middle, under the wash)
-		local u = M.c01(q / 0.3)
-		if u >= 0.97 then return job.park, 1, 1, lid.hidden and lid or { hidden = true, park = job.park } end
-		local k = 1 - M.inn(u, 2)
+		local sw = Themes.World.Swing or { 112, 0.15, 0.3 }
+		local u = M.c01(q / sw[3])
+		if u >= 0.97 then return job.park, 1, 1, { hidden = true, park = job.park } end
+		local k = 1 - M.inn(u, 4)
 		cf = cf * CF(0, box.fullH * 0.5 * (1 - k), 0)
-		return cf, sx * k, sy * k, lid
+		sx, sy = sx * k, sy * k
+		local ang = sw[1] * M.back(q / sw[2], P.reduced and 0 or 1.2)
+		local hr = box.hingeRel
+		local hp = hr.Position
+		local hinge = cf * CF(hp.X * sx, hp.Y * sy, hp.Z * sx) * hr.Rotation
+		return cf, sx, sy, { fly = hinge * ANG(RAD(ang), 0, 0), scale = 1 }
 	end
 	-- (the lid: hinged at its back edge, lifted by the jolts)
 	local hr = box.hingeRel

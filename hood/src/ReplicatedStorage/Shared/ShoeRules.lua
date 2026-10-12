@@ -249,6 +249,16 @@ function ShoeRules.open(shoes, boxId: string, r: number, slots: number?, lucky: 
 	return id, fresh
 end
 
+-- (brief 30) Adds one pair of a given shoe (a bundle's, bought: no roll, no box opened, so Opened stays). Returns
+-- whether it was new for you, or nil for an unknown id. While a slot is free (of `slots`) it goes straight on.
+function ShoeRules.give(shoes, id: any, slots: number?): boolean?
+	if type(id) ~= 'string' or not Shoes.ById[id] then return nil end
+	local fresh = ShoeRules.copies(shoes, id) == 0
+	shoes.Owned[id] = math.min(ShoeRules.copies(shoes, id) + 1, ShoeRules.MaxCopies)
+	if #shoes.Equipped < ShoeRules.slotsOf(slots) then table.insert(shoes.Equipped, id) end
+	return fresh
+end
+
 ---------------------------------------------------------------------------------------------- equipping
 -- Best first: higher Bonus, then rarer, then the pricier box, then by id (a stable order everywhere).
 function ShoeRules.before(a: string, b: string): boolean

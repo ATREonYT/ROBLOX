@@ -6,7 +6,8 @@
 -- (Shared/ShoeRules, Shared/ShotRules).
 --
 -- Worlds (brief 21): every box belongs to one world, two Cash boxes per world. World 1 (this hall) has the two
--- cheapest, Street and Graffiti, plus two Robux boxes (Exclusive, Grail) with their own exclusive shoes. The other
+-- cheapest, Street and Graffiti, plus two Robux boxes (Exclusive, Grail; shown as the Chrome Box and the Crown Box since
+-- brief 30) with their own exclusive shoes. The other
 -- eight are kept for later worlds (W2 Frost, Lava; W3 Toxic, Candy; W4 Ocean, Gem; W5 Galaxy, Gold): they stay in
 -- Boxes/BoxById (saves, shoe art, the Store's pictures) but are not built here and can't be opened here.
 --
@@ -61,23 +62,23 @@ Shoes.TotalWeight = 10000
 Shoes.Rainbow = { C(255, 82, 82), C(255, 170, 40), C(255, 236, 70), C(80, 220, 110), C(60, 170, 255), C(170, 90, 255) }
 
 -- Cash boxes: id, name, Cash price, colour, Base (the Common's bonus, percent), World, then its 6 shoes Common..Secret:
--- { id, name, { main, accent, sole } }.
+-- { id, name, { main, accent, sole } } (the flat stand-ins' colours; brief 30: World 1's match the user's sheets).
 local W = C(246, 246, 242)
 local rows = {
 	{ 'Street', 'Street Box', 25, C(232, 70, 56), 4, 1, {
 		{ 'FreshCanvas', 'Fresh Canvas', { W, C(196, 200, 208), W } },
 		{ 'RedRocket', 'Red Rocket', { C(218, 36, 44), C(255, 206, 40), W } },
 		{ 'Checkmate', 'Checkmate', { C(30, 30, 36), W, C(240, 80, 70) } },
-		{ 'ChromeKicks', 'Chrome Kicks', { C(196, 204, 216), C(232, 56, 64), C(36, 36, 44) } },
-		{ 'StreetAngel', 'Street Angel', { C(230, 186, 70), W, W } },
-		{ 'BlockRoyalty', 'Block Royalty', { C(40, 30, 60), C(255, 196, 48), C(230, 50, 70) } },
+		{ 'ChromeKicks', 'Chrome Kicks', { W, C(244, 64, 112), C(36, 36, 44) } },
+		{ 'StreetAngel', 'Street Angel', { W, C(252, 210, 58), C(252, 210, 58) } },
+		{ 'BlockRoyalty', 'Block Royalty', { C(36, 35, 42), C(255, 196, 48), C(230, 40, 52) } },
 	} },
 	{ 'Graffiti', 'Graffiti Box', 75, C(255, 110, 190), 6, 1, {
 		{ 'SprayTag', 'Spray Tag', { C(255, 120, 190), C(255, 200, 50), W } },
 		{ 'DripTag', 'Drip Tag', { C(50, 200, 220), C(255, 120, 190), W } },
-		{ 'PaintSplash', 'Paint Splash', { C(30, 30, 36), C(120, 230, 90), W } },
+		{ 'PaintSplash', 'Paint Splash', { C(30, 30, 36), C(247, 104, 178), W } },
 		{ 'NeonBomb', 'Neon Bomb', { C(255, 60, 170), C(80, 240, 230), C(36, 36, 44) } },
-		{ 'WildStyle', 'Wild Style', { C(130, 230, 80), C(255, 100, 180), C(250, 250, 250) } },
+		{ 'WildStyle', 'Wild Style', { C(36, 35, 42), C(247, 104, 178), C(140, 230, 96) } },
 		{ 'Masterpiece', 'Masterpiece', { C(70, 40, 120), C(255, 210, 60), C(40, 220, 210) } },
 	} },
 	{ 'Frost', 'Frost Box', 200, C(120, 200, 255), 8, 2, {
@@ -157,15 +158,17 @@ Shoes.nice = nice
 -- premium colourways, Rare..Secret (no Commons), with their own odds. Fair, not pay-to-win: per shoe they sit
 -- between the Lava and Gem boxes and always under the Gold box (Shoe_Test checks it).
 -- id, name, Robux price, developer-product key, colour, Base, Value (recycle base), World, chances Rare..Secret, shoes.
+-- (brief 30) Shown as the Chrome Box (id Exclusive) and the Crown Box (id Grail), as the user's render sheets name them;
+-- the ids and the product keys stay, so saves and receipts keep working.
 local robuxRows = {
-	{ 'Exclusive', 'Exclusive Box', 99, 'ShoeBoxExclusive', C(70, 200, 255), 12, 1000, 1, { 60, 28, 9, 2.5, 0.5 }, {
+	{ 'Exclusive', 'Chrome Box', 99, 'ShoeBoxExclusive', C(70, 200, 255), 12, 1000, 1, { 60, 28, 9, 2.5, 0.5 }, {
 		{ 'SilverStreak', 'Silver Streak', { C(214, 222, 234), C(70, 200, 255), C(60, 64, 80) } },
 		{ 'MidnightChrome', 'Midnight Chrome', { C(34, 36, 52), C(90, 230, 255), C(200, 206, 220) } },
 		{ 'RainbowDrip', 'Rainbow Drip', { W, C(255, 90, 160), C(80, 200, 255) } },
 		{ 'Hologram', 'Hologram', { C(226, 236, 255), C(255, 120, 220), C(110, 240, 230) } },
 		{ 'PlatinumWings', 'Platinum Wings', { C(236, 240, 248), C(120, 220, 255), C(255, 214, 90) } },
 	} },
-	{ 'Grail', 'Grail Box', 199, 'ShoeBoxGrail', C(170, 80, 255), 20, 2000, 1, { 50, 32, 13, 4, 1 }, {
+	{ 'Grail', 'Crown Box', 199, 'ShoeBoxGrail', C(170, 80, 255), 20, 2000, 1, { 50, 32, 13, 4, 1 }, {
 		{ 'GoldenHour', 'Golden Hour', { C(255, 196, 52), C(255, 120, 60), W } },
 		{ 'Starlight', 'Starlight', { C(28, 34, 90), C(255, 214, 80), C(240, 240, 255) } },
 		{ 'SolarFlare', 'Solar Flare', { C(255, 170, 40), C(255, 70, 40), C(60, 30, 20) } },

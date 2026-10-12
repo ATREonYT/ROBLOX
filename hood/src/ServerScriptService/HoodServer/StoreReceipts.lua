@@ -18,6 +18,8 @@
 --   SkipRebirth     RebirthService.rebirth(player, { Free = true })
 --   Featured rows   (brief 30) the weekly pack: Cash (Products.cashAmount, scales with the best stage) + a timed Power boost
 --                   + Count of a Robux box, in ONE grant; everything that can fail runs before the profile changes
+--   Bundle rows     (brief 30, the Grail Bundle: a row with Shoes) one pair each of its shoes (ShoeRules.give), in ONE
+--                   grant: every id is checked before the rack changes; the shoe attributes follow (ShoeOpening.sync)
 --   Box rows        (brief 21/22) opens that Robux shoe box Count times (Products.boxOpen) through
 --                   HoodServer/ShoeOpening.openMany: the same roll, save and unboxing as a Cash box, ONE ShoeOpened
 --                   with all the pairs; no distance, world or rack check (it was paid)
@@ -180,10 +182,34 @@ function StoreReceipts.grants(ctx)
 		notice(player, 'Thanks! ' .. entry.Title .. ': +' .. Format.compact(amount) .. ' Cash, ' .. levels[1] .. 'x Power for ' .. math.floor(seconds / 60 + 0.5) .. ' min and your ' .. box.Name .. '!')
 	end
 
+	-- (brief 30) a shoe bundle: one pair of each of its shoes, in one go (each id checked first, then plain assignments)
+	local function shoeBundle(player, profile, key)
+		local entry = Products.ByKey[key]
+		local ids = Products.bundleShoes(key)
+		assert(entry and ids and #ids > 0 and Shoes and ShoeRules and ShoeOpening, 'Shoes / ShoeRules / ShoeOpening missing')
+		local names = {}
+		for _, id in ids do
+			local shoe = Shoes.ById[id]
+			assert(shoe, 'unknown shoe ' .. tostring(id))
+			table.insert(names, shoe.Name)
+		end
+		local shoes = ShoeRules.sanitize(profile.Data.Shoes)
+		local slots = ShoeOpening.slots(player)
+		for _, id in ids do ShoeRules.give(shoes, id, slots) end
+		profile.Data.Shoes = shoes
+		-- (the pairs are in the profile now: nothing after this may fail the grant)
+		pcall(ShoeOpening.sync, player, profile)
+		local last = table.remove(names)
+		local list = #names > 0 and (table.concat(names, ', ') .. ' and ' .. last) or last
+		notice(player, 'Thanks! ' .. entry.Title .. ': ' .. list .. ' are yours!')
+	end
+
 	local grants = {}
 	for _, entry in Products.Catalog do
 		if entry.Kind == 'Product' then
-			if entry.Section == 'Featured' then
+			if type(entry.Shoes) == 'table' then
+				grants[entry.Key] = shoeBundle
+			elseif entry.Section == 'Featured' then
 				grants[entry.Key] = featuredPack
 			elseif entry.Section == 'Power' then
 				grants[entry.Key] = powerPack

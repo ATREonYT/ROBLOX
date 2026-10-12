@@ -320,6 +320,7 @@ UnboxThemes.World = {
 	Jolt = { 0.035, 0.055, 0.075, 0.095 },
 	Squeeze = { 2.45, 2.9, 0.85 }, SqueezeLux = { 3.25, 3.75, 0.85 },
 	Pop = 2.95, PopLux = 3.8,
+	Swing = { 112, 0.15, 0.3 }, -- (brief 30) at the pop the lid swings open to [1] deg in [2] s; the box is gone by [3] s
 	Spring = 0.25, SpinLux = { 0.6, 2, 2.5 },
 	Wash = { 0.48, 0.85, 0.45 },
 	Burst = { 1, 1.35, 1.65 }, -- (the pop's burst and ring: Common-Epic, Legendary, Mythic)

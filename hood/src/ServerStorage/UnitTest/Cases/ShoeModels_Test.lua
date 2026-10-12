@@ -133,6 +133,59 @@ return function(t)
   for r=2,6 do t.expect.truthy(counts[r]>=counts[r-1]) end
   local m=M.pair('Glacier',1);t.expect.truthy(M.fx(m,'Legendary'));m:Destroy()
  end)
+ -- (brief 30) the 22 World 1 shoes: the user's render sheets as BoxKit rows
+ local W1={'FreshCanvas','RedRocket','Checkmate','ChromeKicks','StreetAngel','BlockRoyalty','SprayTag','DripTag','PaintSplash','NeonBomb','WildStyle','Masterpiece',
+  'SilverStreak','MidnightChrome','RainbowDrip','Hologram','PlatinumWings','GoldenHour','Starlight','SolarFlare','AstroCrown','TheGrail'}
+ local function named(m,name) local n=0 for _,d in m:GetDescendants() do if d:IsA('BasePart') and d.Name==name then n+=1 end end return n end
+ t.test('the 22 World 1 shoes are their BoxKit rows, with the sheets\' anatomy',function()
+  local P=require(game.ReplicatedStorage.Shared.Models.ShoeParts)
+  t.expect.equal(#P.Ids,22)
+  for i,id in W1 do
+   t.expect.equal(P.Ids[i],id)
+   local m=M.shoe(id,'R',1)
+   t.expect.equal(parts(m)-1,#P.Shoes[id]);t.expect.equal(M.Meta[id].Parts,#P.Shoes[id])
+   -- a layered sole, a toe cap, the stepped upper, the lace bed and its bars, the square collar with round corners, the
+   -- lining, the tongue and the heel tab (Astro Crown's crown takes the tab's place)
+   t.expect.truthy(named(m,'Outsole')>=2 and named(m,'Sole')>=2 and named(m,'ToeBox')>=2 and named(m,'Quarter')==3 and named(m,'Eyestay')==1)
+   t.expect.truthy(named(m,'Lace')>=3 and named(m,'Collar')==4 and named(m,'CollarCorner')==4 and named(m,'Lining')==1 and named(m,'Tongue')==1)
+   t.expect.truthy(named(m,'HeelTab')==(id=='AstroCrown' and 0 or 1))
+   m:Destroy()
+  end
+ end)
+ t.test('wings, crowns and spikes where the sheets have them',function()
+  local winged={StreetAngel=true,Hologram=true,PlatinumWings=true,AstroCrown=true,TheGrail=true}
+  local crowned={BlockRoyalty=true,AstroCrown=true}
+  for _,id in W1 do
+   local m=M.shoe(id,'R',1)
+   t.expect.equal(named(m,'Feather')>=4,winged[id]==true)
+   t.expect.equal(named(m,'CrownBand')==1,crowned[id]==true)
+   t.expect.equal(named(m,'Spike')>=8,id=='SolarFlare')
+   m:Destroy()
+  end
+ end)
+ t.test('a worn pair never crosses the body\'s centre line; the marks read the same way on both shoes',function()
+  for _,id in W1 do
+   -- built on a canonical foot: the right shoe stays right of x = -0.5 (its foot's inner face), the left mirrors it
+   local r=M.shoe(id,'R',1);local l=M.shoe(id,'L',1)
+   local lo=math.huge for _,d in r:GetDescendants() do if d:IsA('BasePart') and d.Name~='Fit' then local _,_,_,a,b,c=d.CFrame:GetComponents() lo=math.min(lo,d.CFrame.Position.X-(math.abs(a)*d.Size.X+math.abs(b)*d.Size.Y+math.abs(c)*d.Size.Z)/2) end end
+   t.expect.truthy(lo>=-0.506)
+   r:Destroy();l:Destroy()
+  end
+  -- Fresh Canvas's C: on the left shoe it is the right shoe's C turned 180 degrees about its own upright centre line
+  local spec=M._specs('FreshCanvas')
+  local text
+  for _,s in spec do if s.text then text=s.text break end end
+  t.expect.truthy(text and text.face=='x')
+  local r=M.shoe('FreshCanvas','R',1);local l=M.shoe('FreshCanvas','L',1)
+  local function cs(m) local out={} for _,d in m:GetDescendants() do if d.Name=='MarkC' then table.insert(out,d.CFrame.Position) end end return out end
+  local a,b=cs(r),cs(l)
+  t.expect.equal(#a,3);t.expect.equal(#b,3)
+  for i=1,3 do
+   local zc=text.centre.Z
+   t.expect.truthy(b[i]:FuzzyEq(Vector3.new(-a[i].X,a[i].Y,2*zc-a[i].Z),1e-3))
+  end
+  r:Destroy();l:Destroy()
+ end)
  t.test('viewport frames a pair',function()
   local vf=M.viewport('Comet')
   t.expect.truthy(vf:IsA('ViewportFrame') and vf:FindFirstChildOfClass('Camera') and vf:FindFirstChild('Comet'))
