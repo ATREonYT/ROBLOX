@@ -17,7 +17,9 @@ local ShotRules = {}
 ShotRules.AutoRate = 5 -- shots a second the gun fires by itself in an open lane (paid by the server's clock)
 ShotRules.Burst = 6 -- shots at goons the server lets through at once
 ShotRules.PerSecond = 6 -- and the rate it refills at
-ShotRules.Cooldown = 0.2 -- seconds between shots at goons on the client (5 a second: a little under the server's rate)
+-- FIGHTS30 BEGIN (brief 30, matched side by side to W 31.0-32.9 s: about 3 shots a second in a fight; was 0.2)
+ShotRules.Cooldown = 1 / 3 -- seconds between shots at goons on the client (3 a second: under the server's rate)
+-- FIGHTS30 END
 ShotRules.MaxBoost = 10 -- sanity cap on pass x timed boost
 ShotRules.MaxShoeMultiplier = 100 -- sanity cap (three Secrets from the top box give about x25)
 

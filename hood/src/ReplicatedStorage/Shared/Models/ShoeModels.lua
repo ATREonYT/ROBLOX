@@ -16,7 +16,8 @@
 --
 --   ShoeModels.shoe(id, side, scale) -> Model   one shoe ('L' or 'R'); PrimaryPart `Fit` is an invisible box the size
 --                                              of a canonical R15 foot (1, 0.3, 1), centred where the foot goes, toe -Z
---   ShoeModels.pair(id, scale) -> Model        both shoes side by side (displays, followers); PrimaryPart `Root` sits at
+--   ShoeModels.pair(id, scale) -> Model        both shoes side by side (displays, followers; (brief 31) from the imported
+--                                              mesh Shoe_<Id> when HoodItemMeshes has it); PrimaryPart `Root` sits at
 --                                              the soles' centre, so the pivot is on the ground between the shoes
 --   ShoeModels.wear(character, id, opts?) -> cleanup()
 --                                              welds the pair onto an R15 (feet, and the lower legs for the tongue) or
@@ -55,6 +56,16 @@ do
 	ShoeParts = ok and type(m) == 'table' and m or nil
 end
 ShoeModels.Parts = ShoeParts
+-- (brief 31 MESH) a pair on display comes from its imported mesh when ReplicatedStorage.HoodItemMeshes has it
+-- (Shared/ItemMeshes, Shoe_<Id>, modelled in pair's own frame); worn shoes and everything else stay Parts
+local ItemMeshes
+do
+	local ok, m = pcall(function()
+		local node = script.Parent.Parent:FindFirstChild('ItemMeshes')
+		return node and require(node)
+	end)
+	ItemMeshes = ok and type(m) == 'table' and m or nil
+end
 
 local V, C = Vector3.new, Color3.fromRGB
 local CF, ANG = CFrame.new, CFrame.Angles
@@ -1489,7 +1500,14 @@ function ShoeModels.pair(id: string, scale: number?): Model
 	root.CanQuery = false
 	root.Massless = true
 	root.Parent = m
-	for _, side in { 'L', 'R' } do
+	-- (brief 31 MESH) the imported pair (both shoes, in this frame), else the Part shoes below
+	local mesh = ItemMeshes and ItemMeshes.has('Shoe_' .. d.Id) and select(2, pcall(ItemMeshes.build, 'Shoe_' .. d.Id, CFrame.identity, k))
+	if typeof(mesh) == 'Instance' then
+		for _, c in mesh:GetChildren() do c.Parent = m end
+		mesh:Destroy()
+		m:SetAttribute('Mesh', true)
+	end
+	for _, side in (m:GetAttribute('Mesh') and {} or { 'L', 'R' }) do
 		local shoe = ShoeModels.shoe(d.Id, side, k)
 		local at = CF((side == 'R' and 1 or -1) * ShoeModels.PairGap * k, FIT.Y / 2 * k, 0)
 		for _, p in shoe:GetDescendants() do

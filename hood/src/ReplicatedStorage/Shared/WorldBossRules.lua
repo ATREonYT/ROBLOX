@@ -7,7 +7,8 @@
 -- it, HoodClient/WorldBoss draws it; the unit tests read this.
 local EnemyRules = require(script.Parent.EnemyRules)
 local R = {}
-R.Interval = 8 * 60 -- a boss every 8 minutes of server time (every server agrees: it's the clock, not a timer)
+R.Interval = 4 * 60 -- a boss every 4 minutes of server time (brief 30: the reference's "Next GUNSHIP boss fight in 3:23"
+-- comes every 3-4 minutes; every server agrees: it's the clock, not a timer)
 R.Warn = 45 -- the invite shows this long before it lands
 R.FightTime = 150 -- it leaves after this long
 R.Arena = { X = 0, Z = 330, Half = 34 } -- the pier, map frame (centre and half its side)
@@ -21,6 +22,18 @@ R.Tick = 0.1
 -- Who comes (in turn): the crews' bosses, grown huge (their own moves; the look keys the server builds).
 R.Roster = { 'muscle_boss', 'gangsters_boss', 'dockhands_boss', 'crooks_boss', 'ballers_boss', 'bullies_boss' }
 R.MoveScale = 1.7 -- its moves' shapes are this much bigger than the crew boss's
+-- (brief 30) A giant has more than a crew's one signature move: its own, then a stomp, a throw and a charge, in turn
+-- (each telegraphed in red for at least EnemyRules.TeleMin, like a crew's).
+R.Extra = { 'Stomp', 'Throw', 'Charge' }
+function R.movesFor(look: string): { string }
+	local list = {}
+	for _, m in EnemyRules.bossOf(look).Moves do if not table.find(list, m) then table.insert(list, m) end end
+	for _, m in R.Extra do if not table.find(list, m) then table.insert(list, m) end end
+	return list
+end
+-- (brief 30) The SKIP on the timer (a Robux product: HoodServer/WorldBossService): the next landing moves up to
+-- SkipLead seconds from now (time for the invite), or right after the fight that's on.
+R.SkipLead = 8
 
 -- The schedule: the next landing at or after `now` (server time), and what's on at `now`.
 function R.nextAt(now: number): number
@@ -47,7 +60,11 @@ function R.lookFor(slot: number): string
 	return R.Roster[(math.floor(slot) % #R.Roster) + 1]
 end
 function R.titleOf(look: string): string
-	return 'GIANT ' .. string.upper(EnemyRules.bossOf(look).Title)
+	return 'GIANT ' .. string.upper(EnemyRules.shownName(look))
+end
+-- (brief 30) The name the HUD timer shows: "Next <NAME> boss fight in: m:ss" (the reference's "Next GUNSHIP ...").
+function R.shortName(look: string): string
+	return string.upper(EnemyRules.shownName(look))
 end
 -- Its HP for the players there (their Power), at least MinHp; join(hp, max, power) adds a newcomer's share.
 function R.hpFor(powers: { number }): number

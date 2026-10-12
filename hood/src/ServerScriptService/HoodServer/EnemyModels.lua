@@ -17,9 +17,14 @@ local EnemyRules = require(RS.Shared.EnemyRules)
 local EnemyModels = {}
 EnemyModels.FolderName = 'HoodEnemyModels'
 EnemyModels.Workers = 2 -- looks built at once
--- Our size for a look, over the roster's own (the user's files stay as they made them): World 1's final boss stands a
--- head and more over the crew bosses.
-EnemyModels.Scale = { harbor_boss = 2.2 }
+-- Our size for a look, over the roster's own (the user's files stay as they made them). (brief 30, FIGHTS: the reference's
+-- strongest stage enemies are "the same size as the player (about 1.0-1.1x)": strength reads from the name, the HP
+-- number and the brick bar, never from size; World 1's last, the Harbor crew's strongest, "at most 1.3-1.5x" (bible
+-- 2.4). Was 1.5 from the roster for every crew's strongest and 2.2 for the Harbor's.)
+EnemyModels.Scale = {
+	bullies_boss = 1.15, crooks_boss = 1.15, ballers_boss = 1.15, little_boss = 1.15,
+	gangsters_boss = 1.15, muscle_boss = 1.15, dockhands_boss = 1.15, harbor_boss = 1.4,
+}
 
 local cached -- EnemyLooks, or false when it is missing or fails to load
 function EnemyModels.looks()

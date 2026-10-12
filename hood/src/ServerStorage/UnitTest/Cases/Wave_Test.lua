@@ -29,18 +29,19 @@ return function(t)
   t.expect.equal(E.maxHp(3,'Nope'),E.maxHp(3,'Goon'))
  end)
 
- t.test('every stage has a small crew on its own spots in front of the next gate; the boss waits in the boss yard',function()
+ t.test('every stage has a small crew on its own spots in front of the next gate, its strongest among them',function()
   t.expect.equal(#E.Lineups,16);t.expect.equal(#E.Spots,16);t.expect.equal(#E.Crews,16)
   for s=1,16 do
    local l=E.Lineups[s]
-   t.expect.truthy(#l>=3 and #l<=(s==16 and 6 or 5)) -- (the video: three a stage; a few more later on, never a crowd; brief 29: the warehouse's three wait behind the dock doors)
+   t.expect.truthy(#l>=3 and #l<=(s==16 and 6 or 5)) -- (the video: three a stage; a few more later on, never a crowd; the last stage six)
    t.expect.equal(#E.Spots[s],#l)
    for _,k in l do t.expect.truthy(E.Kinds[k]~=nil) end
    for i,spot in E.Spots[s] do
     t.expect.truthy(math.abs(spot[1])<=34)
-    -- (brief 23) mid-street: they see you come in, and the two pads before the next gate (on the sidewalks from z' 50)
-    -- stay clear of them and show from the stage's entry
-    if s<16 then t.expect.truthy(spot[2]>=30 and spot[2]<=44) end
+    -- (brief 30, bible 2.3) the reference's wave idles 8-12 studs in front of the next gate (z' 64): z' 47..57, on the road
+    -- between that gate's two pads (they stand on the sidewalks, |x| >= 9); a court crew waits on its court (x > 22)
+    if s<16 then t.expect.truthy((spot[2]>=47 and spot[2]<=57 and math.abs(spot[1])<=8) or (s>=10 and s<=12 and spot[1]>22)) end
+    if s==16 then t.expect.truthy(spot[2]>=74 and spot[2]<=90 and math.abs(spot[1])<=9) end
     for j=i+1,#E.Spots[s] do local o=E.Spots[s][j];t.expect.truthy((Vector3.new(spot[1],0,spot[2])-Vector3.new(o[1],0,o[2])).Magnitude>=4) end
    end
   end
@@ -55,7 +56,10 @@ return function(t)
    local a=arenas[s];t.expect.truthy(a.Z0<-(s-1)*64 and a.Z1<a.Z0)
    for _,e in world[s] do t.expect.truthy(e.Home.Z<=a.Z0 and e.Home.Z>=a.Z1 and math.abs(e.Home.X)<=a.X);t.expect.truthy(W.stageAt(gates(),Vector3.new(e.Home.X,3,e.Home.Z))==s) end
   end
-  t.expect.equal(world[1][1].Name,'Goon 1');t.expect.equal(world[16][1].Name,'BOSS');t.expect.equal(E.tagName(7,'Runner'),'Runner 7')
+  -- (brief 30) a crew's strongest goes by its name, never "BOSS"; the last stage's is the Harbor crew's
+  t.expect.equal(world[1][1].Name,'Goon 1');t.expect.equal(world[16][1].Name,'The Harbor Captain');t.expect.equal(E.tagName(7,'Runner'),'Runner 7')
+  t.expect.equal(world[2][4].Name,'Big Bully Brock');t.expect.equal(world[12][4].Name,'Court King')
+  for st=1,16 do for _,e in world[st] do t.expect.falsy(string.find(string.lower(e.Name),'boss',1,true)) end end
   t.expect.equal(#arenas[16].Blocks,0) -- (brief 29: the warehouse's fight floor is clear; the Champ Bay stands off it)
  end)
 
@@ -66,8 +70,9 @@ return function(t)
   -- far away: nothing happens, nobody moves
   local you=Vector3.new(0,0,-1)
   local ev,moved=s:tick(0.1,Vector3.new(0,0,30));t.expect.equal(#ev,0);t.expect.equal(next(moved),nil)
-  -- walk in (a few steps past the gate): the nearest one notices and the whole crew comes, staggered
-  you=Vector3.new(0,0,-12)
+  -- walk up to them (brief 30: the reference's wave charges at about 25 studs, E.Notice): the nearest one notices and the
+  -- whole crew comes, staggered
+  you=Vector3.new(0,0,-30)
   local notices=0
   for _=1,10 do c.t+=0.1;ev=s:tick(0.1,you);for _,e in ev do if e.Kind=='notice' then notices+=1 end end end
   t.expect.equal(notices,3)
@@ -90,8 +95,8 @@ return function(t)
  t.test('goons stay in their stage, walk round the ring, go home when you leave, and are calm after your KO',function()
   local s,c,world,arenas=session();s:move(2)
   local w=s:current()
-  -- you walk in, then run back toward the lobby: they never pass the gate line
-  for _=1,20 do c.t+=0.1;s:tick(0.1,Vector3.new(0,0,-64-14)) end
+  -- you walk up to them (brief 30: they wait at the next gate), then run back toward the lobby: they never pass the gate line
+  for _=1,20 do c.t+=0.1;s:tick(0.1,Vector3.new(0,0,-64-30)) end
   local you=Vector3.new(0,0,-64-2)
   for _=1,80 do c.t+=0.1;s:tick(0.1,you) end
   for _,g in w.Goons do t.expect.truthy(g.Pos.Z<=arenas[2].Z0+1e-6 and g.Pos.Z>=arenas[2].Z1) end
@@ -140,7 +145,7 @@ return function(t)
   -- leave the stage (back through its gate): the hurt goon is whole again, the knocked-out one back on its spot, the
   -- rest walk home; walk back in and nothing you did carries over
   c.t+=1;t.expect.truthy((s:shoot(1,2,w.Goons[2].Pos,1e6)));t.expect.equal(w.Left,2);t.expect.equal(w.Goons[2].State,E.Down)
-  for _=1,12 do c.t+=0.1;s:tick(0.1,Vector3.new(0,0,-20)) end -- (they come at you)
+  for _=1,12 do c.t+=0.1;s:tick(0.1,Vector3.new(0,0,-35)) end -- (they come at you: brief 30, within Notice of the gate they wait at)
   local fresh,whole=s:move(nil)
   t.expect.equal(fresh,nil);t.expect.equal(#whole,1);t.expect.equal(whole[1],w)
   for i=1,3 do t.expect.equal(w.HP[i],w.Max[i]) end

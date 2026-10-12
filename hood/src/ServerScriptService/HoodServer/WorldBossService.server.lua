@@ -86,6 +86,7 @@ local function start(at)
 	end
 	local hp = WB.hpFor(powers)
 	fight = { Look = look, From = at, G = S.new('Boss', Vector3.new(WB.Home[1], 0, WB.Home[2]), 0, look), Hp = hp, Max = hp, Damage = {}, Joined = {} }
+	fight.G.Moves = WB.movesFor(look) -- (brief 30: a giant has more than a crew's one move)
 	for _, e in present() do fight.Joined[e.Player] = true end
 	setAttr('WorldBossLook', look)
 	setAttr('WorldBossTitle', WB.titleOf(look))
@@ -179,6 +180,25 @@ Players.PlayerRemoving:Connect(function(player)
 end)
 
 local due = WB.nextAt(serverNow() + 1)
+-- (brief 30) The SKIP product (StoreReceipts -> StoreService -> this): the next landing moves up to SkipLead seconds from
+-- now, or right after the fight that's on. Everyone in the server gets it.
+do
+	local fn = Instance.new('BindableFunction')
+	fn.Name = 'SkipGrant'
+	fn.OnInvoke = function(player)
+		local now = serverNow()
+		if fight then
+			due = math.max(fight.From + WB.FightTime + 1, math.min(due, fight.From + WB.FightTime + WB.SkipLead))
+		else
+			due = math.min(due, now + WB.SkipLead)
+		end
+		for _, p in Players:GetPlayers() do
+			Net.get('Notice'):FireClient(p, (player and player.DisplayName or 'Someone') .. ' skipped the wait: the World Boss is coming!')
+		end
+		return true
+	end
+	fn.Parent = script
+end
 local beat, lastSent = 0, nil
 while true do
 	local dt = math.min(task.wait(fight and WB.Tick or 0.5), 0.5)

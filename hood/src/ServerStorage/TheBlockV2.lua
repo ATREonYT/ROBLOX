@@ -5694,7 +5694,6 @@ end
 -- Return": yellow on the right ("+10 Cash / Return": the stage's Cash and back to the lobby) and magenta on the left
 -- ("+100 Cash / 10x Cash": ten times that, with the 10x Cash pass), both paying for stage n - 1's crew; each a
 -- three-tone slab on a dark rim with a neon edge, chevrons home and a few sparkles (d_kit's stagePad).
-local BOSS_RED = C(214, 44, 44)
 local GATE = {
 	H = 18.5, -- the wall's height (the reference's wall reaches the end buildings' second floor)
 	pink = C(250, 160, 222), -- the gate's colour (attribute Color: the STAGE CLEARED banner)
@@ -5708,11 +5707,10 @@ local GATE = {
 	},
 	bands = 74, -- quarter-stud bands (5 px each at the haze's 20 pixels per stud)
 	-- The world's text style (brief 28: the references' Montserrat Black, like the lobby's labels and the pads; was
-	-- FredokaOne): heavy letters with a thick near-black outline, colour by meaning: white STAGE N, cyan Recommended (the
-	-- video's #45E6FF), and the state line as a badge, white on red (locked, blocked) or green (open). Only "Power: X"
-	-- stays in pixels, as on the reference's corridor sign.
+	-- FredokaOne): heavy letters with a thick near-black outline, colour by meaning: white STAGE N, cyan Recommended and
+	-- cyan "Power: X" (the video's #45E6FF, both in this one face, brief 30: ref_W30.0_stage1_gate_close), and the
+	-- state line as a badge, white on red (locked, blocked) or green (open).
 	font = FONT.title,
-	powerFont = Enum.Font.Arcade, -- the "Power: X" line in pixel letters, like the reference's corridor sign
 	title = C(255, 255, 255), titleInk = C(14, 16, 26),
 	sub = C(69, 230, 255), subInk = C(8, 26, 46),
 	status = C(255, 255, 255), statusInk = C(40, 6, 14), plate = C(214, 34, 58), plateInk = C(36, 8, 16),
@@ -5844,16 +5842,15 @@ function GATE.sign(g, i, req)
 	local function put(name, text, color, ink)
 		return GATE.text(gui, name, text, L[name][2], L[name][3], color, ink, L[name][4])
 	end
-	local title = put('Title', i > STAGES and 'BOSS YARD' or ('STAGE ' .. i), GATE.title, GATE.titleInk)
+	-- (brief 30) the last stage is "STAGE 16" like the rest (the user: "remove everything saying its a boss")
+	local title = put('Title', 'STAGE ' .. i, GATE.title, GATE.titleInk)
 	local grad = Instance.new('UIGradient')
 	grad.Color, grad.Rotation = GATE.titleShade, 90
 	grad.Parent = title
 	put('Sub', 'Recommended', GATE.sub, GATE.subInk)
-	-- (brief 29, P4: levels instead of strength) The gate says the LEVEL the Recommended Power is (LevelRules.levelOf); the gate's
-	-- Required attribute, the goons' HP and the economy are still in Power.
-	local okLevels, LevelRules = pcall(function() return require(ReplicatedStorage.Shared.LevelRules) end)
-	local powerText = (okLevels and type(LevelRules) == 'table') and ('Level ' .. LevelRules.levelOf(req)) or ('Power: ' .. compact(req))
-	put('Power', powerText, GATE.sub, GATE.subInk).FontFace = Font.fromEnum(GATE.powerFont) -- FontFace only, so the saved place keeps one face
+	-- (brief 30, the user's decision: "Gates show Recommended Power: X, like the reference; Level stays on the HUD bar")
+	-- "Power: X" in the sign's own heavy face, cyan like "Recommended" (ref_W30.0_stage1_gate_close: one face, one colour)
+	put('Power', 'Power: ' .. compact(req), GATE.sub, GATE.subInk)
 	-- The state line on its badge: "Defeat the crew first" while the stage before still has its goons this run (as
 	-- built), "OPEN!" once its crew is down (HoodClient/Stages writes it and the badge colour, and makes an open gate's
 	-- sign compact: the title over the badge).
@@ -5873,8 +5870,17 @@ function GATE.sign(g, i, req)
 	edge.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 	edge.Parent = plate
 	plate.Parent = gui
-	local status = put('Status', i > 1 and 'Defeat the crew first' or 'OPEN!', GATE.status, GATE.statusInk)
-	status.Position, status.Size = UDim2.fromScale(b[1] + 0.03, L.Status[2]), UDim2.fromScale(b[3] - 0.06, L.Status[3])
+	-- (brief 30) the reference's states: a shut gate shows only its white "Defeat the crew first" line mid-barrier, no badge
+	-- (HoodClient/Stages writes "Defeat <name>" where a crew's strongest stands); an open one the STAGE / Recommended /
+	-- Power lines. Built as the player first sees them: gate 1 open, the rest shut.
+	plate.Visible = false
+	local status = put('Status', 'Defeat the crew first', GATE.status, GATE.statusInk)
+	status.Position, status.Size = UDim2.fromScale(0.03, 0.44), UDim2.fromScale(0.94, 0.17)
+	status.Visible = i > 1
+	for _, n in { 'Title', 'Sub', 'Power' } do
+		local l = gui:FindFirstChild(n)
+		if l then l.Visible = i == 1 end
+	end
 	return gui
 end
 -- The frame (stays up once you've cleared the gate): a pillar each side of the opening, standing on the gate line
@@ -5958,18 +5964,9 @@ function GATE.pads(g, stage, x, z, y, w, d)
 			label = { big = big, small = small, price = price, color = look.label } })
 	end
 end
-local function stageGate(ctx, i)
-	local z = gateZ(i)
-	local st = P.street or {}
-	local road, walk, kerb, open, front = st.road or 8.5, st.walk or 8.5, st.kerb or 0.6, st.open or 22, st.front or FRONT
-	local H = GATE.H
-	local req = STAGE_POWER[i]
-	local g, model = ctx:at(CFrame.new(0, 0, z)):group('StageGate' .. i)
-	-- The pillars stand on the grass in front of the end buildings' corners; the wall spans the opening between them.
-	local inner = open - GATE.pillarW
-	GATE.frame(g, inner, open, H)
-	-- The wall: an invisible collider across the opening (solid on the server; HoodClient/Stages lets you through
-	-- once it is open for you this run), carrying the haze on its approach face.
+-- (brief 30, FIGHTS: shared with the warehouse's World 2 door, code5/f4_finale) The wall's see-through haze: an invisible
+-- collider across the opening (-inner..inner, H high) carrying the banded haze on its approach face. Returns the Barrier.
+function GATE.hazeWall(g, inner, H, dense)
 	local barrier = g:box('Barrier', V(-inner, 0, -0.3), V(inner, H, 0.3), GATE.pink, M.SmoothPlastic)
 	barrier.Transparency = 1
 	barrier:SetAttribute('BaseTransparency', 1)
@@ -5990,7 +5987,7 @@ local function stageGate(ctx, i)
 	for n = GATE.bands - 1, 0, -1 do
 		local color, alpha = GATE.hazeAt(H * (1 - (n + 0.5) / GATE.bands))
 		-- (The boss yard's wall is denser: the Champ Ring's glow right behind it would drown it.)
-		if i > STAGES then alpha = 1 - (1 - alpha) * 0.5 end
+		if dense then alpha = 1 - (1 - alpha) * 0.5 end
 		alpha = math.max(alpha, pa)
 		local a = pa < 1 and 1 - (1 - alpha) / (1 - pa) or 0
 		local want = V(color.R, color.G, color.B) * alpha
@@ -6011,6 +6008,21 @@ local function stageGate(ctx, i)
 	-- (ZIndex sets the order in Roblox; parenting the top pane first also keeps preview exporters, which list frames
 	-- in reverse, drawing them in the same order.)
 	for n = 1, #panes do panes[n].Parent = haze end
+	return barrier
+end
+local function stageGate(ctx, i)
+	local z = gateZ(i)
+	local st = P.street or {}
+	local road, walk, kerb, open, front = st.road or 8.5, st.walk or 8.5, st.kerb or 0.6, st.open or 22, st.front or FRONT
+	local H = GATE.H
+	local req = STAGE_POWER[i]
+	local g, model = ctx:at(CFrame.new(0, 0, z)):group('StageGate' .. i)
+	-- The pillars stand on the grass in front of the end buildings' corners; the wall spans the opening between them.
+	local inner = open - GATE.pillarW
+	GATE.frame(g, inner, open, H)
+	-- The wall: an invisible collider across the opening (solid on the server; HoodClient/Stages lets you through
+	-- once it is open for you this run), carrying the haze on its approach face.
+	GATE.hazeWall(g, inner, H, i > STAGES)
 	-- The lock: barrier bars and the padlock (Lock* parts).
 	GATE.lock(g, inner)
 	-- The sign (shown by HoodClient/Stages on your next gate only).
@@ -6283,7 +6295,7 @@ function District.stopSign(d, pos)
 	sbox(t, 'SignPole', V(-0.25, 0, -0.25), V(0.25, 8, 0.25), C(150, 154, 162))
 	local face = sbox(t, 'StopFace', V(-1.3, 8, 0.25), V(1.3, 10.6, 0.5), C(220, 40, 40), true)
 	decor(t:part('StopFace', V(2.6, 2.6, 0.24), CFrame.new(0, 9.3, 0.37) * CFrame.Angles(0, 0, math.rad(45)), C(220, 40, 40), M.Plastic))
-	line(surface(face, Enum.NormalId.Back, 30), 'Stop', 'STOP', P.white, FONT.body, 0.28, 0.44)
+	line(surface(face, Enum.NormalId.Back, 30), 'Stop', 'STOP', P.white, FONT.title, 0.28, 0.44)
 	return t
 end
 -- Ice chest outside a shop: a white studded box with a blue lid and handle bar.
@@ -6811,7 +6823,7 @@ function District.yards(ctx, i)
 	mesh.Transparency = 0.45
 	for _, gz in { 23, 35 } do decor(gate:part('GateWheel', V(0.5, 1.2, 1.2), CFrame.new(fx + 0.05, ST.kerb + 0.6, top - gz), C(30, 32, 36), M.Plastic, Enum.PartType.Cylinder)) end
 	local sign = sbox(gate, 'YardSign', V(fx - 0.5, ST.kerb + 6, top - 26.5), V(fx - 0.3, ST.kerb + 8.6, top - 31.5), P.white, true)
-	line(surface(sign, Enum.NormalId.Left, 30), 'Sign', 'YARD ' .. i, C(200, 40, 40), FONT.body, 0.12, 0.76)
+	line(surface(sign, Enum.NormalId.Left, 30), 'Sign', 'YARD ' .. i, C(200, 40, 40), FONT.title, 0.12, 0.76)
 	local colors = { C(196, 52, 42), C(44, 96, 186), C(46, 150, 90), C(232, 130, 40) }
 	local rows = ({ { { 32, 3, 2 }, { 32, 30, 1 }, { 45, 5, 2 }, { 45, 31, 2 }, { 57, 4, 1 }, { 57, 30, 2 } },
 		{ { 32, 4, 1 }, { 32, 30, 2 }, { 45, 4, 2 }, { 45, 30, 1 }, { 57, 4, 2 }, { 57, 30, 2 } },
@@ -6923,7 +6935,7 @@ local function streetStage(ctx, i)
 	if free(25.8, 34, 3.2) then hedge(d, at(25.8, 34), 6) end
 	local lamp = lantern(d, at(25.5, 50), V(-1, 0, 0))
 	local sign = sbox(lamp, 'StreetSign', V(0.9, 17.4, -2.4), V(1.2, 19.0, -0.2), C(40, 150, 70), true)
-	for _, face in { Enum.NormalId.Right, Enum.NormalId.Left } do line(surface(sign, face, 30), 'Street', 'HOOD ST', P.white, FONT.body, 0.18, 0.64) end
+	for _, face in { Enum.NormalId.Right, Enum.NormalId.Left } do line(surface(sign, face, 30), 'Street', 'HOOD ST', P.white, FONT.title, 0.18, 0.64) end
 	if free(31, 50.5, 4.5) then dumpster(d, CFrame.new(at(31, 50.5)))
 	elseif free(31, 41, 4.5) then dumpster(d, CFrame.new(at(31, 41))) end
 	for k, f in { { 20.6, 17.5 }, { 24, 41 }, { -21, 40 }, { -20, 34 }, { -29.8, 24 }, { 20.8, 62.5 } } do if free(f[1], f[2], 1.2) then flower(d, at(f[1], f[2]), seed + 10 + k) end end
@@ -7016,24 +7028,178 @@ local function bossYard(ctx)
 	local vfx = Armory.optional('HoodVFX')
 	if canvas and vfx then vfx.station(canvas, 9, nil, V(14, 12, 14)) end
 	local bz = BOSS_END + 22
-	local _, pad = fightPad(b, 16, V(0, 0, bz), P.padRed, 6, 14, 'BOSS')
-	local model = pad.parent
-	model.Name = 'BossPad'
-	model:SetAttribute('Boss', true)
-	local glow = decor(b:part('BossRing', V(0.1, 22, 22), CFrame.new(0, 0.05, bz) * CFrame.Angles(0, 0, math.pi / 2), P.bossRing, M.Neon, Enum.PartType.Cylinder))
-	glow.Transparency, glow.CastShadow = 0.25, false
-	decor(b:part('BossRingInner', V(0.11, 18.4, 18.4), CFrame.new(0, 0.06, bz) * CFrame.Angles(0, 0, math.pi / 2), C(176, 178, 184), M.Concrete, Enum.PartType.Cylinder)).CastShadow = false
-	banner(b, 'BOSS', V(0, 13, bz - 4), BOSS_RED, 16)
-	-- (brief 23) The Boss's pads, either side of its pad and clear of the ring's glow: beat the Boss, then cash out here
-	-- like before every gate (stage 16's Cash).
+	-- (brief 30: no BOSS pad, ring or banner: the last stage's strongest is just a strong enemy; the pad marker stays hidden)
+	fightPad(b, 16, V(0, 0, bz), P.padRed, 6, 14, nil, true)
+	-- (brief 23) The stage's pads: beat its crew, then cash out here like before every gate (stage 16's Cash).
 	GATE.pads(b, 16, 15, bz - 7, 0.06, 5.6, 11)
 	for x = -30, 30, 15 do tree(b, V(x, 0, BOSS_END + 4), 600 + x, 1) end
 	return b
 end
 
+---------------------------------------------------------------------------------------------- the strong enemies' arenas
+-- (brief 30, FIGHTS; bible 2.4 "The arena") Where a crew's strongest fights (the even stages: its name on the gate
+-- sign), the street gets that crew's set dressing in the reference's layers: mid, clusters of 2-4 themed props hugging
+-- the yards, the forecourts and the side street (never on the road or the pads' sidewalks: the middle stays clear);
+-- back, a billboard or a water tower on a flat end-building roof over the gate. One theme a crew, nothing random. The
+-- props are BoxKit models (Shared/Models/PropModels, hood/tools/blender/models/props.py), given the map kit's studs on
+-- their big plastic tops. The generic props a theme replaces are taken out first (Arena.clear).
+--   bullies (2)   Big Bully Brock's schoolyard: a school bus on the lawn, its stop arm out; a dodgeball cart; cones
+--   crooks (4)    The Ringleader's getaway: the van in the side street, back doors open on money bags; a safe
+--   muscle (6)    The Foreman's site: scaffold, cement mixer, barriers and cones across the side street
+--   little (8)    Big Shot's alley show: speaker stacks in the service recesses
+--   gangsters (10) Furcoat Frankie's corner: the purple lowrider, burning barrels, a card table
+--   ballers (12)  Court King's court: ball racks at the sidelines
+--   dockhands (14) The Dockmaster's yard edge: drums, bollards, rope coils, cones and tyres
+local Arena = {}
+Arena.Crews = { [2] = 'bullies', [4] = 'crooks', [6] = 'muscle', [8] = 'little', [10] = 'gangsters', [12] = 'ballers', [14] = 'dockhands' }
+Arena.Signs = { -- the crew's sign on the end building's front and its bunting's two colours
+	bullies = { 'RECESS RULES', C(255, 196, 32), C(232, 48, 52) }, crooks = { 'CASH 4 GOLD', C(92, 214, 110), C(255, 206, 64) },
+	muscle = { 'BUILD IT BIG', C(255, 140, 40), C(250, 204, 40) }, little = { 'BIG SHOT LIVE', C(196, 110, 255), C(70, 220, 255) },
+	gangsters = { "FRANKIE'S", C(255, 120, 200), C(150, 70, 220) }, ballers = { 'COURT KINGS', C(255, 150, 40), C(40, 90, 200) },
+	dockhands = { 'HARBOR FREIGHT', C(80, 170, 255), C(250, 204, 40) },
+}
+-- A BoxKit prop at pos (this ctx's frame) turned yaw about Y, anchored; solid: its visible parts collide.
+function Arena.prop(c, id, pos, yaw, scale, solid)
+	local props = Armory.optional('PropModels')
+	local ok, m = false, nil
+	if props and props.build then ok, m = pcall(props.build, id, scale or 1) end
+	if not ok or not m or not m.PrimaryPart then return nil end
+	local delta = c:world(CFrame.new(pos) * CFrame.Angles(0, yaw or 0, 0)) * m.PrimaryPart.CFrame:Inverse()
+	for _, p in m:GetDescendants() do
+		if p:IsA('BasePart') then
+			p.CFrame = delta * p.CFrame
+			p.Anchored, p.CanTouch, p.CanQuery = true, false, false
+			p.CanCollide = solid == true and p.Transparency < 1
+			-- (brief 30, the lead: no stud textures on props until the LOOK agent's recipe lands; smooth toy tops)
+			if p:IsA('Part') then p.TopSurface = S.Smooth end
+		end
+	end
+	m.Parent = c.parent
+	return m
+end
+-- The generic props (models named in `names`) standing in a box of the stage (|x| side s from xa to xb, z' za..zb).
+function Arena.clear(stage, top, names, s, xa, xb, za, zb)
+	for _, m in stage:GetChildren() do
+		if m:IsA('Model') and names[m.Name] then
+			local p = m:FindFirstChildWhichIsA('BasePart', true)
+			if p then
+				local q = V2.Origin:PointToObjectSpace(p.CFrame.Position)
+				local x, zp = q.X * s, top - q.Z
+				if x >= xa and x <= xb and zp >= za and zp <= zb then m:Destroy() end
+			end
+		end
+	end
+end
+-- The back layer, framing the gate the crew waits at (the end buildings are too tall for anything on their roofs to show
+-- from the street): the crew's sign on the left end building's front, lit, and a line of pennant bunting in the crew's
+-- two colours strung across the street over the gate's beam.
+function Arena.backdrop(d, top, crew)
+	local sign = Arena.Signs[crew]
+	if not sign then return end
+	local ST = P.street
+	local zf = top - ST.endZ -- (the end buildings' fronts face back up the street at z' 56)
+	local x0 = -(ST.open + (FRONT - ST.open) / 2)
+	local frameP = sbox(d, 'CrewSignFrame', V(x0 - 6.6, 13.4, zf + 0.05), V(x0 + 6.6, 18.6, zf + 0.45), C(30, 34, 46))
+	local board = sbox(d, 'CrewSign', V(x0 - 6.1, 13.9, zf + 0.45), V(x0 + 6.1, 18.1, zf + 0.6), C(20, 24, 36), true)
+	line(surface(board, Enum.NormalId.Back, 24), 'Sign', sign[1], sign[2], FONT.title, 0.14, 0.72, P.black, 4)
+	for _, dx in { -4.5, 4.5 } do
+		sbox(d, 'CrewSignLampArm', V(x0 + dx - 0.2, 18.6, zf + 0.4), V(x0 + dx + 0.2, 19.0, zf + 1.8), C(46, 50, 60), true)
+		decor(d:box('CrewSignLamp', V(x0 + dx - 0.7, 18.3, zf + 1.4), V(x0 + dx + 0.7, 18.6, zf + 2.2), P.st.lampGlow, M.Neon)).CastShadow = false
+	end
+	local _ = frameP
+	-- the bunting: a cord sagging from end building to end building, a pennant every 2 studs
+	local zb, half, yTop, sag = zf + 2.2, ST.open - 0.4, 26.2, 2.6
+	local function cordY(x) return yTop - sag * (1 - (x / half) ^ 2) end
+	local prev = nil
+	for x = -half, half + 0.01, half / 6 do
+		local p = V(x, cordY(x), zb)
+		if prev then decor(d:bar('BuntingCord', prev, p, 0.12, C(40, 40, 46), M.Plastic)).CastShadow = false end
+		prev = p
+	end
+	local k = 0
+	for x = -half + 1.2, half - 1.2, 2 do
+		k += 1
+		local y = cordY(x)
+		local flag = d:part('Pennant', V(1.15, 1.15, 0.12), CFrame.new(x, y - 0.55, zb) * CFrame.Angles(0, 0, math.rad(45)), k % 2 == 0 and sign[2] or sign[3], M.SmoothPlastic)
+		decor(flag).CastShadow = false
+	end
+end
+local GENERIC = { Hedge = true, TrashBags = true, WheelieBin = true, Dumpster = true, ParkedCar = true }
+function Arena.dress(d, i)
+	local crew = Arena.Crews[i]
+	if not crew then return end
+	local stage = d.parent
+	local top = stageTop(i)
+	local ST = P.street
+	local function at(x, zp, y) return V(x, y or ST.kerb, top - zp) end
+	local a = d:group('Arena')
+	local t = trioOf(i)
+	if crew == 'bullies' then
+		Arena.clear(stage, top, GENERIC, 1, 19.5, 34.4, 20, 48)
+		Arena.prop(a, 'SchoolBus', at(27.4, 35.2), 0, 1, true)
+		Arena.prop(a, 'DodgeballCart', at(21.6, 46.6), math.rad(16), 1)
+		for k, z in { 27, 30.5, 34 } do Arena.prop(a, 'TrafficCone', at(19.7 + (k % 2) * 0.3, z), k * 0.4, 1) end
+		Arena.prop(a, 'DodgeballCart', at(-21.2, 50.8), math.rad(-12), 1)
+		Arena.backdrop(a, top, crew)
+	elseif crew == 'crooks' or crew == 'muscle' then
+		local sa = ({ 28, 30, 27 })[t]
+		local sb = sa + 18
+		if crew == 'muscle' then Arena.clear(stage, top, GENERIC, 1, 20, 62, sa, sb) end
+		if crew == 'crooks' then
+			-- (on the left forecourt, nose to the gate, its back doors open toward you as you come down the street; the
+			-- car in the side street stays)
+			Arena.clear(stage, top, GENERIC, -1, 16.5, 27, 28, 52)
+			Arena.prop(a, 'GetawayVan', at(-21.8, 40.2, ST.kerb + 0.08), 0, 1, true)
+			Arena.prop(a, 'Safe', at(-19.6, 29.2, ST.kerb + 0.08), math.rad(160), 1, true)
+			for k, mb in { { -21.4, 30.4 }, { -23.2, 31.4 }, { -18.9, 31.8 } } do Arena.prop(a, 'MoneyBag', at(mb[1], mb[2], ST.kerb + 1.1), k * 0.7, 1) end
+			Arena.prop(a, 'TrafficCone', at(19.4, 49.6, ST.kerb + 0.08), 0.3, 1)
+		else
+			Arena.prop(a, 'Scaffold', at(33, sb - 2.2, ST.kerb + 0.05), math.pi, 1, true)
+			Arena.prop(a, 'CementMixer', at(42.5, sa + 8, ST.kerb + 0.05), 0.7, 1, true)
+			for _, bz in { sa + 6, sa + 11 } do Arena.prop(a, 'RoadBarrier', at(20.6, bz, ST.kerb + 0.05), math.pi / 2, 1, true) end
+			for k, cz in { sa + 3.6, sb - 3.2, sa + 8.5 } do Arena.prop(a, 'TrafficCone', at(k == 3 and 24.2 or 18.6, cz), k * 0.5, 1) end
+			Arena.prop(a, 'PalletStack', at(-22.6, 45.6), 0.12, 1, true)
+			Arena.prop(a, 'Crate', at(-21.2, 49.6, ST.kerb + 1.3), 0.4, 1, true)
+		end
+		Arena.backdrop(a, top, crew)
+	elseif crew == 'little' then
+		local plan = ({ { 14, 24, 30, 40 }, { 20, 30, 26, 36 }, { 12, 22, 34, 44 } })[t]
+		Arena.clear(stage, top, GENERIC, -1, 20, 31, plan[1], plan[2])
+		Arena.clear(stage, top, GENERIC, 1, 20, 31, plan[3], plan[4])
+		Arena.prop(a, 'SpeakerStack', at(-25.2, (plan[1] + plan[2]) / 2, ST.kerb + 0.08), math.pi / 2, 1, true)
+		Arena.prop(a, 'SpeakerStack', at(25.2, (plan[3] + plan[4]) / 2, ST.kerb + 0.08), -math.pi / 2, 1, true)
+		-- and the show at the alley's end, a stack each side against the walls, facing the street, where the crew waits
+		Arena.clear(stage, top, { WheelieBin = true }, 1, 16, 21, 44, 56)
+		Arena.clear(stage, top, { WheelieBin = true }, -1, 16, 21, 44, 56)
+		Arena.prop(a, 'SpeakerStack', at(18.4, 50.5, ST.kerb + 0.08), -math.pi / 2, 0.8, true)
+		Arena.prop(a, 'SpeakerStack', at(-18.4, 49.0, ST.kerb + 0.08), math.pi / 2, 0.8, true)
+		Arena.backdrop(a, top, crew)
+	elseif crew == 'gangsters' then
+		Arena.prop(a, 'Lowrider', at(-27.6, 41.2), 0, 1, true)
+		for _, fb in { { -20.6, 38.4 }, { -20.8, 52.2 }, { 19.8, 41.5 } } do Arena.prop(a, 'FireBarrel', at(fb[1], fb[2], fb[1] > 0 and ST.kerb + 0.08 or nil), fb[2] * 0.1, 1, true) end
+		Arena.prop(a, 'CardTable', at(-23.4, 25.4), 0.25, 1, true)
+		Arena.backdrop(a, top, crew)
+	elseif crew == 'ballers' then
+		Arena.prop(a, 'BallRack', at(19.6, 38.6, ST.kerb + 0.08), -math.pi / 2, 1, true)
+		Arena.prop(a, 'BallRack', at(-19.8, 31.5), math.pi / 2, 1, true)
+		Arena.prop(a, 'TrafficCone', at(19.4, 33.4, ST.kerb + 0.08), 0.4, 1)
+		Arena.backdrop(a, top, crew)
+	elseif crew == 'dockhands' then
+		for k, br in { { -21.2, 46.6 }, { -22.8, 48.4 }, { -20.8, 49.8 } } do Arena.prop(a, 'Barrel', at(br[1], br[2], ST.kerb + 0.08 + 1.5), k * 0.8, 1, true) end
+		Arena.prop(a, 'RopeCoil', at(-24.6, 51.6, ST.kerb + 0.08), 0.6, 1)
+		for _, bz in { 42.6, 53.8 } do Arena.prop(a, 'Bollard', at(-19.6, bz, ST.kerb + 0.08), 0, 1, true) end
+		for k, cz in { 45.6, 48.8 } do Arena.prop(a, 'TrafficCone', at(19.8 + k * 0.3, cz, ST.kerb + 0.08), k, 1) end
+		Arena.prop(a, 'TireStack', at(21.2, 53.2, ST.kerb + 0.08), 0.3, 1)
+		Arena.backdrop(a, top, crew)
+	end
+end
+
 local function buildStages(ctx)
 	local byLook = { streetStage, District.corner, District.alley, District.courts, District.yards }
-	for i = 1, STAGES do (byLook[lookOf(i)] or streetStage)(ctx, i) end
+	for i = 1, STAGES do
+		local d = (byLook[lookOf(i)] or streetStage)(ctx, i)
+		if d then Arena.dress(d, i) end -- (brief 30: the strong enemies' arenas)
+	end
 	local gates = ctx:group('Gates')
 	for i = 1, STAGES + 1 do stageGate(gates, i) end
 	bossYard(ctx)
@@ -7043,8 +7209,8 @@ end
 -- its own goons, Shared/GoonRig, and the server runs them, WaveService). The map only dresses the spot each crew hangs out
 -- at, so the street reads as their turf: a milk crate with a boombox on it (two speaker cones, a cassette deck, a
 -- stripe in the crew's colour), a second crate to sit on, a few soda cans, and a paint splat in the crew's colour on
--- the sidewalk. The Boss Yard gets the boss's big red armchair behind the BOSS pad. Nothing here blocks the street:
--- everything stands on the sidewalk beside the crew (|x| 10..16) or on the court, behind the goons' line.
+-- the sidewalk. Nothing here blocks the street: everything stands on the sidewalk beside the crew (|x| 10..16) or on
+-- the court, behind the goons' line. (brief 30: the warehouse has no armchair: its strongest is just a strong enemy.)
 -- (The old cartoon target waves are gone; HoodClient/Waves hides any a map built before brief 18 still carries.)
 local Waves = {}
 Waves.Ground = 0.6 -- the sidewalk top (P.street.kerb)
@@ -7184,23 +7350,22 @@ function Waves.build(ctx)
 			Waves.hangout(g, CFrame.new(x, 0, top - zp) * CFrame.Angles(0, yaw, 0), rules.Crews[stage])
 		end
 	end
-	-- The Boss Yard: the boss's armchair behind the BOSS pad, facing the way in.
-	local boss = rules.Spots[STAGES + 1] and rules.Spots[STAGES + 1][1]
-	if boss and not V2.Finale then Waves.throne(all:group('BossThrone'), CFrame.new(boss[1], 0, BOSS_TOP - boss[2] - 9.5) * CFrame.Angles(0, math.pi, 0)) end
 	return all
 end
 V2.Waves = Waves -- (the unit tests and integ_waves read it)
 ---------------------------------------------------------------------------------------------- the finale (brief 29, P3b)
--- Stage 16, the Boss Yard, is the Harbor Crew's warehouse now (the user: "make it a well built warehouse map that doesn't
--- have any boxing ring"): one big corrugated-steel hall in World 1's kit (the Yards' depot blue, studded concrete, the
--- hazard yellow), the stage gate in its front wall. Inside: a clear fight floor (|x| <= 31, marked in yellow, a big
--- anchor painted in the middle), container stacks and pallet racks along the walls, a parked forklift, the CHAMP BAY
--- (the Champ Ring's lane: its TrainingZone, no ring) in the near right corner, catwalks along both walls and a cross
--- catwalk at the back (the Harbor Boss waits up there and drops in: EnemyRules.Finale.Perch), an overhead crane with its
--- hook, hanging lamps under the roof trusses, skylights, and the loading dock along the back wall: three roller doors
--- (DockDoor_1..3, tagged HoodDockDoor) the boss's crew bursts out of (Waves.client rolls them up). The BOSS pad and the
--- Boss's two cash pads stay where they were. The props are BoxKit models (Shared/Models/PropModels, built in Blender's kit).
---   Finale.yard(ctx)           the Boss Yard (f2_stages' bossYard calls it)
+-- Stage 16 is the Harbor Crew's warehouse (the user: "make it a well built warehouse map that doesn't have any boxing
+-- ring"; brief 30: "Warehouse, no extras", "its just a strong last enemy before the second world"): one big
+-- corrugated-steel hall in World 1's kit (the Yards' depot blue, studded concrete, the hazard yellow), the stage gate in
+-- its front wall. Inside: a clear fight floor (|x| <= 31, marked in yellow, a big anchor painted in the middle), container
+-- stacks and pallet racks along the walls, a parked forklift, the CHAMP BAY (the Champ Ring's lane: its TrainingZone, no
+-- ring) in the near right corner, catwalks along both walls and across the back, an overhead crane with its hook,
+-- hanging lamps under the roof trusses, skylights, and the loading dock along the back wall: two roller doors and,
+-- between them, the WORLD 2 door (a stage gate's frame and haze, tagged HoodWorldDoor: HoodClient/Stages writes "Defeat
+-- <name>" on it while the Harbor crew stands, flashes it white when the last one falls, then "WORLD 2 / Coming soon!").
+-- The Harbor crew waits in front of it like every wave; the stage's two cash pads stand before it like every gate's.
+-- (brief 30: no BOSS pad, ring, perch or reserve doors any more.) The props are BoxKit models (Shared/Models/PropModels).
+--   Finale.yard(ctx)           the warehouse, stage 16 (f2_stages' bossYard calls it)
 --   Finale.arena(ctx)          the World Boss pier: a self-contained arena behind the lobby, outside the boundary wall
 --                              (Shared/WorldBossRules.Arena; reached by its JOIN, left by its Lobby pad)
 --   Finale.board(ctx)          the World Boss countdown board (V2.Lobby.Slots.WorldBossBoard when the lobby has one)
@@ -7210,7 +7375,8 @@ Finale.W, Finale.Wall = 47, 1.5 -- the hall's inner half-width and its walls' th
 Finale.EH, Finale.RH = 28, 36 -- eaves and ridge
 Finale.Walk = 18.5 -- the catwalks' deck
 Finale.Perch = 82 -- z' (past the gate) of the cross catwalk
-Finale.Doors = { -24, 0, 24 } -- the dock's roller doors (x)
+Finale.Doors = { -24, 24 } -- the dock's roller doors (x); the World 2 door between them (brief 30)
+Finale.World = { Inner = 9.5, Outer = 13.5, H = 15 } -- the World 2 door's opening and frame (a stage gate's, smaller)
 Finale.Steel = C(84, 106, 150) -- the hall (the Yards' depot blue, deeper)
 Finale.Dark = C(46, 50, 60)
 Finale.Hazard = C(250, 204, 40)
@@ -7314,26 +7480,24 @@ function Finale.yard(ctx)
 		end
 		decor(roof:bar('TrussPost', V(0, EH - 0.4, z), V(0, RH - 0.6, z), 0.5, dark, M.Metal))
 	end
-	-- the fight floor: yellow lines along its sides, hazard stripes at the dock, the Harbor Crew's anchor in the middle
+	-- the floor: yellow walkway lines along its sides and across the near end. (brief 30: the big painted anchor in the
+	-- middle is gone: a centrepiece on an empty floor read as a boss arena; the floor is a warehouse's, its props stand
+	-- in clusters along the walls, bible S6.) Pallet bays: yellow corner marks on the floor under the wall clusters.
 	local fl = b:group('FightFloor')
 	for _, s in { -1, 1 } do decor(fl:box('FloorLine', V(s * 31 - 0.25, 0.08, zp(94)), V(s * 31 + 0.25, 0.12, zp(4)), Finale.Hazard, M.SmoothPlastic)).CastShadow = false end
 	decor(fl:box('FloorLine', V(-31, 0.08, zp(4.25)), V(31, 0.12, zp(3.75)), Finale.Hazard, M.SmoothPlastic)).CastShadow = false
-	local ink = C(226, 230, 238)
-	local cz = zp(44)
-	for _, r in { { V(-0.9, 0.08, cz - 9), V(0.9, 0.11, cz + 8) }, { V(-6, 0.08, cz + 5), V(6, 0.11, cz + 6.6) }, { V(-7, 0.08, cz - 10), V(7, 0.11, cz - 8.4) } } do
-		decor(fl:box('Anchor', r[1], r[2], ink, M.SmoothPlastic)).CastShadow = false
+	for _, bay in { { -1, 81, 91 }, { 1, 81, 91 }, { -1, 40, 46 } } do
+		local s, z0, z1 = bay[1], bay[2], bay[3]
+		for _, zc in { z0, z1 } do
+			decor(fl:box('BayMark', V(s * 22.5 - 0.2, 0.08, zp(zc) - 0.2), V(s * 22.5 + 0.2, 0.12, zp(zc) + 0.2 + (zc == z0 and -2 or 2)), Finale.Hazard, M.SmoothPlastic)).CastShadow = false
+			decor(fl:box('BayMark', V(s * 22.5 - 0.2, 0.08, zp(zc) - 0.2), V(s * 22.5 + s * 2.4, 0.12, zp(zc) + 0.2), Finale.Hazard, M.SmoothPlastic)).CastShadow = false
+		end
 	end
-	for _, s in { -1, 1 } do
-		decor(fl:part('Anchor', V(1.6, 0.03, 5.2), CFrame.new(s * 7.6, 0.095, cz - 7.6) * CFrame.Angles(0, s * math.rad(-35), 0), ink, M.SmoothPlastic)).CastShadow = false
-	end
-	decor(fl:part('AnchorRing', V(0.03, 4.2, 4.2), CFrame.new(0, 0.095, cz + 9.6) * CFrame.Angles(0, 0, math.pi / 2), ink, M.SmoothPlastic, Enum.PartType.Cylinder)).CastShadow = false
-	decor(fl:part('AnchorHole', V(0.04, 2.2, 2.2), CFrame.new(0, 0.1, cz + 9.6) * CFrame.Angles(0, 0, math.pi / 2), Finale.Floor, M.SmoothPlastic, Enum.PartType.Cylinder)).CastShadow = false
 	-- the loading dock: three roller doors in the back wall, bumpers, a dock light and number over each, stripes
 	local dock = b:group('Dock')
 	for k, x in Finale.Doors do
 		local d, dm = dock:group('DockDoor_' .. k)
 		dm:SetAttribute('Dock', k)
-		dm:AddTag('HoodDockDoor')
 		sbox(d, 'DoorFrame', V(x - 6.8, 0, E), V(x + 6.8, 14.4, E + 0.6), dark)
 		local door = d:box('RollerDoor', V(x - 6, 0.08, E + 0.6), V(x + 6, 13.6, E + 0.9), C(178, 184, 194), M.Plastic)
 		door:SetAttribute('Rest', door.CFrame)
@@ -7343,7 +7507,7 @@ function Finale.yard(ctx)
 		local glow = decor(d:box('DockLampGlow', V(x - 1, 14.9, E + 0.2), V(x + 1, 15, E + 1), C(255, 170, 60), M.Neon))
 		glow.CastShadow = false
 		local sign = d:box('DockSign', V(x - 2.4, 16.2, E), V(x + 2.4, 18.4, E + 0.3), Finale.Hazard, M.SmoothPlastic)
-		line(surface(sign, Enum.NormalId.Back, 24), 'Sign', 'DOCK ' .. k, P.black, FONT.title, 0.1, 0.8)
+		line(surface(sign, Enum.NormalId.Back, 24), 'Sign', 'DOCK ' .. (k == 1 and 1 or 3), P.black, FONT.title, 0.1, 0.8)
 		Finale.stripes(d, 'DockStripe', x - 6, x + 6, zp(92.5), 3, 0.08)
 		local _ = lamp
 	end
@@ -7393,7 +7557,7 @@ function Finale.yard(ctx)
 	local vfx = Armory.optional('HoodVFX')
 	if vfx then vfx.station(zone, 9, nil, V(10, 12, 12)) end
 	local _ = bayModel
-	-- catwalks: along both walls and across the back (the Harbor Boss's perch), railings, hangers, a ladder
+	-- catwalks: along both walls and across the back, railings, hangers, a ladder
 	local cw = b:group('Catwalks')
 	local y = Finale.Walk
 	local plate2 = C(92, 98, 112)
@@ -7409,9 +7573,6 @@ function Finale.yard(ctx)
 	for x = -36, 36, 8 do cw:box('RailPost', V(x - 0.15, y, p0 - 0.15), V(x + 0.15, y + 3.4, p0 + 0.15), Finale.Hazard, M.Metal) end
 	decor(cw:bar('Rail', V(-39.5, y + 3.4, p0), V(39.5, y + 3.4, p0), 0.25, Finale.Hazard, M.Metal))
 	for _, x in { -30, -12, 12, 30 } do for _, z in { p0, p1 } do decor(cw:bar('Hanger', V(x, y, z), V(x, EH - 0.4, z), 0.25, dark, M.Metal)) end end
-	local perch = ghost(cw:box('BossPerch', V(-4, y, p1), V(4, y + 0.2, p0), P.white, M.SmoothPlastic))
-	perch.CastShadow = false
-	perch:SetAttribute('Perch', y)
 	for _, s in { -1, 1 } do cw:box('LadderRail', V(-45.6 + s * 1, 0, zp(94.2)), V(-45.6 + s * 1 + 0.3, y + 3, zp(94.5)), Finale.Hazard, M.Metal) end
 	for k = 1, math.floor(y / 1.4) do decor(cw:box('LadderRung', V(-46.6, k * 1.4 - 0.15, zp(94.3)), V(-44.3, k * 1.4 + 0.15, zp(94.4)), Finale.Hazard, M.Metal)) end
 	-- the overhead crane: runways on the columns, a yellow bridge across, the trolley, its cable and hook
@@ -7434,17 +7595,63 @@ function Finale.yard(ctx)
 			if bulb and n % 2 == 1 then light(bulb, C(255, 232, 190), 1.4, 34) end
 		end
 	end
-	-- the BOSS pad (the fight's pad), under the cross catwalk, between the Boss's cash pads
-	local bzp = BOSS_END + 22
-	local _, pad = fightPad(b, 16, V(0, 0.08, bzp), P.padRed, 6, 14, 'BOSS')
-	local padModel = pad.parent
-	padModel.Name = 'BossPad'
-	padModel:SetAttribute('Boss', true)
-	local glow = decor(b:part('BossRing', V(0.1, 22, 22), CFrame.new(0, 0.12, bzp) * CFrame.Angles(0, 0, math.pi / 2), P.bossRing, M.Neon, Enum.PartType.Cylinder))
-	glow.Transparency, glow.CastShadow = 0.25, false
-	decor(b:part('BossRingInner', V(0.11, 18.4, 18.4), CFrame.new(0, 0.13, bzp) * CFrame.Angles(0, 0, math.pi / 2), Finale.Floor, M.Concrete, Enum.PartType.Cylinder)).CastShadow = false
-	GATE.pads(b, 16, 15, bzp - 7, 0.14, 5.6, 11)
+	-- (brief 30) the World 2 door between the dock's roller doors, and the stage's two cash pads before it (like every
+	-- gate's: 3 studs off its line, magenta 10x Cash on the left, yellow Return on the right), clear of its pillars.
+	-- The fight's pad marker stays, hidden (the map's fight list reads it; nothing shows on the floor).
+	-- (brief 30, bible S6) the far end where the crew waits, dressed in tight clusters either side of the World 2 door,
+	-- outside the pads and the crew's spots: drums, a pallet stack and a cone on the left; a cargo container, two
+	-- crates and a barrier on the right (the floor between stays clear)
+	local far = b:group('FarEnd')
+	for k, dp in ipairs({ { -25.6, 86 }, { -27.4, 87.8 }, { -25.2, 89.4 } }) do Arena.prop(far, 'Barrel', V(dp[1], 0.08 + 1.5, zp(dp[2])), k * 0.9, 1, true) end
+	Arena.prop(far, 'PalletStack', V(-31.4, 0.08, zp(84.6)), 0.18, 1, true)
+	Arena.prop(far, 'TrafficCone', V(-22.6, 0.08, zp(82.4)), 0.4, 1)
+	Arena.prop(far, 'DropContainer', V(31.6, 0.08 + 3.75, zp(86.6)), math.rad(4), 1, true)
+	Arena.prop(far, 'Crate', V(25.8, 0.08 + 1.3, zp(89.6)), 0.3, 1, true)
+	Arena.prop(far, 'Crate', V(25.6, 0.08 + 3.9, zp(89.4)), -0.2, 1, true)
+	Arena.prop(far, 'RoadBarrier', V(23.6, 0.08, zp(83.2)), 0.25, 1, true)
+	Finale.worldDoor(b, E + 0.9)
+	GATE.pads(b, 16, Finale.World.Outer + 4, E + 0.9 + 3 + 5.5, 0.14, 5.6, 11)
+	fightPad(b, 16, V(0, 0.08, BOSS_END + 22), P.padRed, 6, 14, nil, true)
 	return b
+end
+
+-- (brief 30) The World 2 door: a stage gate's studded pillars and hazard beam (GATE.frame), its pink haze and its lock
+-- (GATE.hazeWall, GATE.lock) in the back wall, and its sign (a board in the opening, like GATE.sign): the white shut line
+-- "Defeat <name>" (HoodClient/Stages writes the Harbor crew's strongest), then "WORLD 2" / "Coming soon!". World 2 isn't
+-- built, so it stays shut: its lock stays on. Tagged HoodWorldDoor (attributes Stage = the stage whose crew it waits on,
+-- LineZ).
+function Finale.worldDoor(ctx, z)
+	local W = Finale.World
+	local g, model = ctx:at(CFrame.new(0, 0, z)):group('WorldDoor')
+	model:AddTag('HoodWorldDoor')
+	model:SetAttribute('Stage', STAGES + 2) -- (the gate after Stage 16, the warehouse: STAGES counts the 15 street stages)
+	model:SetAttribute('LineZ', z)
+	GATE.frame(g, W.Inner, W.Outer, W.H)
+	GATE.hazeWall(g, W.Inner, W.H, false)
+	GATE.lock(g, W.Inner)
+	local signW, signH = 2 * W.Inner - 1, 7.4
+	local board = ghost(g:part('SignBoard', V(signW, signH, 0.1), CFrame.new(0, 6.6 + signH / 2, GATE.signZ), P.white))
+	board.CastShadow = false
+	local gui = surface(board, Enum.NormalId.Back, GATE.signPPS)
+	gui.Name = 'GateSign'
+	gui.AlwaysOnTop = false
+	local function put(name, text, y, h, color, ink, share)
+		local px = signH * GATE.signPPS * h
+		local t = line(gui, name, text, color, GATE.font, y, h, ink, math.max(3, math.floor(px * share + 0.5)))
+		t.Position, t.Size = UDim2.fromScale(0, y), UDim2.fromScale(1, h)
+		t.TextWrapped = false
+		t.ZIndex = 2
+		return t
+	end
+	local title = put('Title', 'WORLD 2', 0, 0.5, GATE.title, GATE.titleInk, 0.075)
+	local grad = Instance.new('UIGradient')
+	grad.Color, grad.Rotation = GATE.titleShade, 90
+	grad.Parent = title
+	put('Sub', 'Coming soon!', 0.52, 0.3, GATE.sub, GATE.subInk, 0.1)
+	local status = put('Status', 'Defeat the crew first', 0.3, 0.26, GATE.status, GATE.statusInk, 0.1)
+	status.Position, status.Size = UDim2.fromScale(0.02, 0.3), UDim2.fromScale(0.96, 0.26)
+	title.Visible, gui:FindFirstChild('Sub').Visible = false, false
+	return g
 end
 
 ---------------------------------------------------------------------------------------------- the world boss
@@ -7467,12 +7674,28 @@ function Finale.arena(ctx)
 		ghost(a:box('Edge', V(-H - 4, 0, s * (H + 4)), V(H + 4, 14, s * (H + 4) + s * 1), P.white, M.SmoothPlastic))
 		ghost(a:box('Edge', V(s * (H + 4), 0, -H - 4), V(s * (H + 4) + s * 1, 14, H + 4), P.white, M.SmoothPlastic))
 	end
+	-- (brief 30: the reference's detail level, bible 2.4) timber fenders down the deck's sides, mooring bollards (BoxKit)
+	-- along the edges with rope coils by some, dock lamps, crate and drum clusters by the containers, the dockside crane
+	-- on the west edge with its boom over the water, and a tugboat moored off the east side
+	for _, s in { -1, 1 } do
+		sbox(a, 'Fender', V(-H - 4.6, -2.4, s * (H + 4) - 0.6), V(H + 4.6, 0.0, s * (H + 4) + 0.6), C(110, 74, 44))
+		sbox(a, 'Fender', V(s * (H + 4) - 0.6, -2.4, -H - 4.6), V(s * (H + 4) + 0.6, 0.0, H + 4.6), C(110, 74, 44))
+	end
 	for x = -H, H, 12 do
 		for _, s in { -1, 1 } do
-			a:post('Bollard', 0.7, 1.6, V(x, 0.08, s * (H + 2.6)), Finale.Dark, M.Metal)
-			a:post('Bollard', 0.7, 1.6, V(s * (H + 2.6), 0.08, x), Finale.Dark, M.Metal)
+			for _, pos in { V(x, 0.08, s * (H + 2.6)), V(s * (H + 2.6), 0.08, x) } do
+				if not Arena.prop(a, 'Bollard', pos, 0, 1, true) then a:post('Bollard', 0.7, 1.6, pos, Finale.Dark, M.Metal) end
+			end
 		end
 	end
+	for k, rc in ipairs({ { -H + 1.6, H + 2.4 }, { H - 1.4, -H - 2.2 }, { H + 2.4, 12 }, { -H - 2.2, -24 } }) do Arena.prop(a, 'RopeCoil', V(rc[1], 0.08, rc[2]), k * 1.3, 1) end
+	for _, lp in { { 1, -18 }, { 1, 18 }, { -1, 24 } } do Arena.prop(a, 'DockLamp', V(lp[1] * (H + 1.4), 0.08, lp[2]), lp[1] * math.pi / 2, 1, true) end
+	Arena.prop(a, 'DockCrane', V(-H + 10, 0.08, -2), math.pi / 2, 1, true)
+	Arena.prop(a, 'Tugboat', V(H + 17, -2.1, -6), math.rad(4), 1, true)
+	for k, cr in ipairs({ { 22.6, 27.2, 0 }, { 25.4, 26.4, 0 }, { 23.8, 27, 2.6 } }) do Arena.prop(a, 'Crate', V(cr[1], 0.08 + 1.3 + cr[3], cr[2]), k * 0.35, 1, true) end
+	Arena.prop(a, 'PalletStack', V(-24.2, 0.08, 27.4), 0.2, 1, true)
+	Arena.prop(a, 'PalletStack', V(22.6, 0.08, -27.6), -0.15, 1, true)
+	for k, dp in ipairs({ { 25.6, -24.4 }, { 27.2, -22.8 }, { 24.8, -22.4 } }) do Arena.prop(a, 'Barrel', V(dp[1], 0.08 + 1.5, dp[2]), k, 1, true) end
 	local colors = { C(196, 52, 42), C(44, 96, 186), C(46, 150, 90), C(232, 130, 40) }
 	for k, cn in ipairs({ { -1, -1 }, { 1, -1 }, { -1, 1 }, { 1, 1 } }) do
 		District.container(a, CFrame.new(cn[1] * (H - 2), 0.08, cn[2] * (H - 12)) * CFrame.Angles(0, 0, 0), colors[k])

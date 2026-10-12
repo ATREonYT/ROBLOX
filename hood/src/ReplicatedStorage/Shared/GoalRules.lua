@@ -56,11 +56,13 @@ GoalRules.List = {
 	lane('Heavy', 'Range4', 200),
 	{ Id = 'Stage13', Text = 'Reach Stage 13', Where = 'the far end of the street', Reward = 300, Need = { Stages = 13 } },
 	lane('Speed', 'Range5', 400),
-	{ Id = 'Wave15', Text = 'Beat the Stage 15 crew', Where = 'before the Boss Yard', Reward = 500, Need = { Wave = 15 } },
-	{ Id = 'BossYard', Text = 'Reach the Boss Yard', Where = 'past Stage 15', Reward = 750, Need = { Stages = 16 } },
-	{ Id = 'BossWave', Text = 'Beat the Boss', Where = 'past the Champ Ring', Reward = 1000, Need = { Wave = 16 } },
+	-- FIGHTS30 BEGIN (brief 30, FIGHTS: the last stage is just a strong last enemy, "remove everything saying its a boss"; the ids stay)
+	{ Id = 'Wave15', Text = 'Beat the Stage 15 crew', Where = 'before the warehouse', Reward = 500, Need = { Wave = 15 } },
+	{ Id = 'BossYard', Text = 'Reach Stage 16', Where = 'the warehouse past Stage 15', Reward = 750, Need = { Stages = 16 } },
+	{ Id = 'BossWave', Text = 'Beat the Harbor crew', Where = 'in the warehouse, Stage 16', Reward = 1000, Need = { Wave = 16 } },
+	-- FIGHTS30 END
 	lane('DoubleEnd', 'Range6', 1500),
-	lane('Ring', 'Ring', 2500, 'Boss Yard, at %d rebirths'),
+	lane('Ring', 'Ring', 2500, 'Stage 16, at %d rebirths'), -- FIGHTS30 (was 'Boss Yard, at %d rebirths')
 }
 GoalRules.ById = {}
 for i, g in GoalRules.List do

@@ -13,6 +13,10 @@ definitions.GiftTarget='RemoteEvent'
 -- HUD30 BEGIN (brief 30, HUD) the spin wheel, playtime gifts, missions and Starter Pack requests (HoodServer/HudExtrasService).
 definitions.HudExtras='RemoteFunction'
 -- HUD30 END
+-- FIGHTS30 BEGIN
+-- (brief 30, FIGHTS) The revive screen's answers ('No', 'Paying' on/off) and its state back (HoodServer/WaveService).
+definitions.Revive='RemoteEvent'
+-- FIGHTS30 END
 function Net.init()
  assert(RunService:IsServer(),'Only server creates network objects')
  local folder=ReplicatedStorage:FindFirstChild('HoodNet')

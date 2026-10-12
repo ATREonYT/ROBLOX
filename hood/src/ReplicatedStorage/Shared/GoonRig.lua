@@ -24,7 +24,7 @@ GoonRig.Crews = {
 GoonRig.Skins = { C(255, 214, 170), C(222, 164, 112), C(168, 110, 72), C(112, 72, 48), C(244, 190, 140) }
 GoonRig.Ink = C(30, 26, 40)
 
-local Scale = { Goon = 1, Runner = 0.88, Bruiser = 1.3, Boss = 2.1 }
+local Scale = { Goon = 1, Runner = 0.88, Bruiser = 1.2, Boss = 1.15 } -- (brief 30: a crew's strongest is an ordinary-sized enemy, about 1.1x, bible 2.4)
 local Wide = { Goon = 1, Runner = 0.94, Bruiser = 1.18, Boss = 1.12 } -- (torso width on top of the scale)
 
 local function part(model, name, size, color, material, shape)
@@ -145,13 +145,24 @@ function GoonRig.pose(rig, root, p)
 	local walk, stride = p.walk or 0, math.clamp(p.stride or 0, 0, 1)
 	local swing = math.sin(walk) * 0.75 * stride
 	local bob = (p.bob or 0) + math.abs(math.cos(walk)) * 0.18 * stride * s
-	-- Knocked out: the whole body tips back about its heels, flat on the ground at ko = 1.
+	-- Knocked out: the whole body tips back about its heels, flat on the ground at ko = 1. (brief 30) Or onto its front
+	-- (fall 'Forward') or its side ('Twist'); knocked back by a hit (knock: studs in its own frame).
 	local ko = math.clamp(p.ko or 0, 0, 1)
-	local base = root
-	if ko > 0 then base = root * CFrame.new(0, 0, 0.6 * s) * A(ko * math.pi / 2 * 0.98, 0, 0) * CFrame.new(0, 0, -0.6 * s) end
+	local pile = math.clamp(p.pile or 0, 0, 1)
+	local knock = typeof(p.knock) == 'Vector3' and p.knock or Vector3.zero
+	local base = root * CFrame.new(knock.X, 0, knock.Z)
+	if ko > 0 then
+		if p.fall == 'Forward' then
+			base = base * CFrame.new(0, 0, -0.7 * s) * A(-ko * math.pi / 2 * 0.98, 0, 0) * CFrame.new(0, 0, 0.7 * s)
+		elseif p.fall == 'Twist' then
+			base = base * A(0, ko * 0.9, 0) * CFrame.new(-1.0 * s, 0, 0) * A(0, 0, ko * math.pi / 2 * 0.96) * CFrame.new(1.0 * s, 0, 0)
+		else
+			base = base * CFrame.new(0, 0, 0.6 * s) * A(ko * math.pi / 2 * 0.98, 0, 0) * CFrame.new(0, 0, -0.6 * s)
+		end
+	end
 	local hips = base * CFrame.new(0, 2 * s + bob, 0)
 	local lean = (p.lean or 0) + 0.12 * stride - (p.flinch or 0)
-	local waist = hips * A(-lean, (p.twist or 0), 0)
+	local waist = hips * A(-lean, (p.twist or 0) + (p.flinchSide or 0) * 0.5, (p.flinchSide or 0) * 0.3)
 	local frames = {}
 	frames.LegL = hips * CFrame.new(-0.5 * s, 0, 0) * A(swing, 0, 0)
 	frames.LegR = hips * CFrame.new(0.5 * s, 0, 0) * A(-swing, 0, 0)
@@ -160,14 +171,20 @@ function GoonRig.pose(rig, root, p)
 	local shoulderX = (tw + 0.5) * s
 	local crossed = math.clamp(p.arms or 0, 0, 1) * (1 - stride)
 	local punch, windup = math.clamp(p.punch or 0, 0, 1), math.clamp(p.windup or 0, 0, 1)
-	local armSwing = -swing * 0.9
-	local ko2 = ko * 2.6 -- (arms fly up as it falls)
+	local armSwing = -swing * 0.9 + (p.charge or 0) * 1.25 -- (brief 30: arms forward on the run-in)
+	local ko2 = ko * 2.6 * (1 - pile * 0.6) -- (arms fly up as it falls, and drop into the heap)
 	-- Left arm: swings, crosses over the chest at idle, guards up in a fight.
 	frames.ArmL = waist * CFrame.new(-shoulderX, 1.5 * s, 0) * A(armSwing + crossed * 1.35 + (p.guard or 0) * 1.1 + ko2, 0, -0.08 + crossed * 0.62 - ko * 0.3)
 	-- Right arm: pulled back on the wind-up, straight out on the punch.
 	local r = -armSwing + crossed * 1.2 + (p.guard or 0) * 0.7 - windup * 1.1 + punch * (1.65 + windup * 1.1) + ko2
 	frames.ArmR = waist * CFrame.new(shoulderX, 1.5 * s, 0) * A(r, 0, 0.08 - crossed * 0.62 + ko * 0.3)
 	frames.Head = waist * CFrame.new(0, 2 * s, 0) * A(-(p.look or 0) + lean * 0.3, 0, 0)
+	-- (brief 30) in the heap the head lies loose beside the shoulders, like the reference's dead guards
+	if pile > 0 then frames.Head = frames.Head * CFrame.new(1.1 * s * pile, -0.9 * s * pile, (p.fall == 'Forward' and -0.3 or 0.3) * s * pile) * A(0, 0, 1.2 * pile) end
+	if pile > 0 then
+		frames.LegL = frames.LegL * A(-0.9 * pile, 0, -0.3 * pile)
+		frames.ArmR = frames.ArmR * A(-1.2 * pile, 0, 0.6 * pile)
+	end
 	local list = lists[rig]
 	if not list then
 		list = { parts = {}, cframes = {} }

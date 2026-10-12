@@ -1,4 +1,6 @@
--- BoxModels: the shoe boxes ("eggs" of the shoe system), part-built in Luau (no meshes, no uploads).
+-- BoxModels: the shoe boxes ("eggs" of the shoe system), part-built in Luau (no meshes, no uploads); (brief 31) the World 1
+-- chests come from their imported meshes when ReplicatedStorage.HoodItemMeshes has them (Shared/ItemMeshes, Box_<Id>),
+-- with the same Root / Lid / Hinge contract, and from these Parts otherwise.
 -- (brief 30) World 1's boxes are CHESTS with a hinged lid, rebuilt from the user's own render sheets
 -- (brief/ref30/user_models): Street (white and red, a crown), Graffiti (cyan and pink, drips and a tag), Exclusive (shown
 -- as the Chrome Box: navy and white, a cyan diamond), Grail (shown as the Crown Box: purple and gold, a crown and gold
@@ -47,6 +49,16 @@ do
 		return node and require(node)
 	end)
 	BoxParts = ok and type(m) == 'table' and m or nil
+end
+-- (brief 31 MESH) the chests as real meshes when the user has imported them (Shared/ItemMeshes, ReplicatedStorage.
+-- HoodItemMeshes: Box_<Id> with its `Lid`); the BoxParts build below stays the fallback
+local ItemMeshes
+do
+	local ok, m = pcall(function()
+		local node = script.Parent.Parent:FindFirstChild('ItemMeshes')
+		return node and require(node)
+	end)
+	ItemMeshes = ok and type(m) == 'table' and m or nil
 end
 BoxModels.Seal = {}
 if BoxParts then
@@ -746,6 +758,35 @@ local function chest(k, data)
 	return lid
 end
 
+-- (brief 31 MESH) A chest from its imported mesh (ItemMeshes 'Box_<Id>', modelled in BoxModels' own frame and size): the
+-- tub's MeshParts in the model, the lid's (with its handle) in `Lid`, and the same invisible Hinge on the body's back top
+-- edge as the lid's PrimaryPart, so openLid, the seal, the reveal and the box UI treat it exactly like the Part chest.
+-- nil when there is no mesh (or it has no lid), so the caller builds the Parts.
+local function meshChest(k, model, boxId)
+	if not (ItemMeshes and ItemMeshes.has('Box_' .. boxId)) then return nil end
+	local ok, m = pcall(ItemMeshes.build, 'Box_' .. boxId, k.cf, k.s)
+	if not (ok and m) then return nil end
+	local lid = m:FindFirstChild('Lid')
+	if not (lid and lid:IsA('Model')) then
+		m:Destroy()
+		return nil
+	end
+	for _, c in m:GetChildren() do c.Parent = model end
+	m:Destroy()
+	for _, p in model:GetDescendants() do
+		if p:IsA('BasePart') then
+			-- (the chests' gloss, as the Part build gives its paint)
+			if p.Material == SM then p.Reflectance = 0.08 end
+		end
+	end
+	local hinge = k:into(lid):box('Hinge', V(0, BODY, HD), V(0.4, 0.1, 0.1), WHITE, SM)
+	hinge.Transparency = 1
+	hinge.CastShadow = false
+	lid.PrimaryPart = hinge
+	model:SetAttribute('Mesh', true)
+	return lid
+end
+
 -- at: where to build it (its pivot), so a caller needs no PivotTo (default: the origin).
 function BoxModels.build(boxId: string, scale: number?, at: CFrame?): Model
 	local t = THEMES[boxId]
@@ -758,8 +799,10 @@ function BoxModels.build(boxId: string, scale: number?, at: CFrame?): Model
 	root.Transparency = 1
 	model.PrimaryPart = root
 	local data = BoxParts and BoxParts.Boxes[boxId]
-	local lid
-	if data then
+	local lid = data and meshChest(k, model, boxId)
+	if lid then
+		-- (the imported mesh)
+	elseif data then
 		lid = chest(k, data)
 	else
 		assert(TOPPERS[boxId], 'BoxModels.build: no model for ' .. tostring(boxId))

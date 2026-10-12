@@ -87,6 +87,14 @@ id already in `M.Images`, including keys the upload tool added.
    Forward = Z, Up = Y, Path Mode = Copy + Embed Textures, no leaf bones, no animation), triangulates,
    and stays far under the 20,000-triangle mesh limit (largest is about 9,000).
 
+4. **The showcase items as smooth meshes (brief 31).** `export_item_meshes.py` writes ONE FBX with every showcased item
+   (the 5 chests with separate lids, the 10 product-pad items, the 10 gun-stand guns; `--shoes` adds the 22 pairs): rounded
+   bevels, colours in the MeshPart names, no textures. The user imports it once and runs
+   `studio_item_meshes.lua` (generated; edit `studio_item_meshes.template.lua`), which files it into
+   `ReplicatedStorage.HoodItemMeshes`. Steps for the user: `hood/art/MESH_IMPORT.md`. The game reads it through
+   `Shared/ItemMeshes` (BoxModels and ShoeModels use it on their own; the map's pads and gun stands call
+   `ItemMeshes.place`), and falls back to the Parts when it is not there.
+
 ## Uploading the renders
 
 `hood/art/icons3d/*.png` and `hood/art/ui/*.png`: `python3 hood/tools/upload_assets.py` (Open Cloud, writes the ids

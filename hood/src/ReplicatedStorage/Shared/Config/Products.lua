@@ -86,6 +86,12 @@ Products.DeveloperProducts = {
 	StarterPack = 0, -- "Starter Pack": a one-time bundle for new players (Cash, 30 min of 2x Power, a Robux box), 149 Robux
 	SpinPack = 0, -- "3 Spins": three more spins of the wheel, 39 Robux
 	-- HUD30 END
+	-- FIGHTS30 BEGIN
+	-- (brief 30, FIGHTS) the reference's revive screen and its world-boss SKIP (honest: the price shows on the button)
+	Revive = 0, -- "Revive!": knocked out in a stage fight, stand up where you fell with full HP (the free "No" goes back to the stage start)
+	Revenge = 0, -- "Revenge!": that, and the crew you were fighting is knocked out (its gate opens)
+	WorldBossSkip = 0, -- "SKIP" on the World Boss timer: the next World Boss lands now, for everyone in the server
+	-- FIGHTS30 END
 	-- (brief 30) "The Grail Bundle": one pair each of The Grail, Astro Crown and Platinum Wings (Products.GrailBundlePrice)
 	GrailBundle = 0,
 }
@@ -178,6 +184,11 @@ Products.Catalog = {
 	-- HUD30 END
 	-- (the Rebirth window)
 	{ Key = 'SkipRebirth', Kind = 'Product', Section = 'Rebirth', Title = 'Skip Rebirth', Detail = 'Rebirth now', Price = 99, Art = 'icon:Rebirth', Tone = 'aqua', Wired = true },
+	-- FIGHTS30 BEGIN (brief 30, FIGHTS: the revive screen and the World Boss timer; never in the Store's sections)
+	{ Key = 'Revive', Kind = 'Product', Section = 'Fight', Title = 'Revive!', Detail = 'Stand up where you fell with full HP', Price = 15, Art = 'icon:Shield', Tone = 'green', Wired = true },
+	{ Key = 'Revenge', Kind = 'Product', Section = 'Fight', Title = 'Revenge!', Detail = 'Stand up with full HP and knock out the crew', Price = 39, Art = 'icon:Skull', Tone = 'gold', Wired = true },
+	{ Key = 'WorldBossSkip', Kind = 'Product', Section = 'Fight', Title = 'Skip', Detail = 'The next World Boss lands now, for everyone here', Price = 25, Art = 'icon:Skull', Tone = 'blue', Wired = true },
+	-- FIGHTS30 END
 }
 Products.ByKey = {}
 for i, entry in Products.Catalog do

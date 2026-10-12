@@ -20,6 +20,7 @@ local Guns = require(RS.Shared.Config.Guns)
 local ShotRules = require(RS.Shared.ShotRules)
 local GunTool = require(RS.Shared.GunTool)
 local CharMotion = require(RS.Shared.CharMotion) -- (brief 29: the arms kick with each shot)
+local FightFX = require(RS.Shared.FightFX) -- FIGHTS30: the reference's "+N" by your chest and the X on the target
 
 local player = Players.LocalPlayer
 
@@ -200,9 +201,12 @@ local function shoot(id)
 	Juice.muzzle(rig, gun.Color, gunPower)
 	Juice.tracer(from, to, gun.Color, 0.18 + gun.Tier * 0.015)
 	if rig and rig.eject then Juice.casing(worldOf(rig.eject)) end
-	if tool then kick(tool, 0.8 + gun.Tier * 0.05) end
+	-- FIGHTS30 BEGIN (brief 30, matched side by side to W 9.3-12.3 s: the gun barely kicks, the camera doesn't move, a
+	-- white X lands on the target)
+	if tool then kick(tool, (0.8 + gun.Tier * 0.05) * 0.4) end
 	CharMotion.shot(0.9 + gun.Tier * 0.03)
-	Juice.kick(0.03 + gun.Tier * 0.005) -- (brief 29: tiny, and it returns: no creep; the shots never stop now)
+	if there then FightFX.hitX(to) end
+	-- FIGHTS30 END
 	local color = s.Model:GetAttribute('HitColor') or gun.Color
 	Juice.burst(to, color, 0.7 + s.Tier * 0.07)
 	if there then
@@ -218,6 +222,13 @@ local function shoot(id)
 	-- bigger on the top lanes.
 	s.ComboAt = s.ComboAt or Juice.comboAt(s.Main.Model, s.Model)
 	Juice.combo(s.Model, s.ComboAt, gain, { color = color, big = s.Tier >= 5, format = Format.compact })
+	-- FIGHTS30 BEGIN (brief 30: the reference's "+6" with the bicep by your chest every shot, rising and fading, W 9.3 s)
+	if gain > 0 then
+		local cam = workspace.CurrentCamera
+		local right = cam and cam.CFrame.RightVector or Vector3.new(1, 0, 0)
+		FightFX.gain(root.Position - right * 1.6 + Vector3.new(0, 0.6, 0), gain, { text = Format.compact(gain) })
+	end
+	-- FIGHTS30 END
 end
 
 -- The auto-fire clock (brief 18): while you stand in an open lane the gun fires ShotRules.AutoRate times a second by

@@ -134,15 +134,7 @@ function WaveRules.hit(w: any, index: number, damage: number): (boolean, boolean
 	local g = w.Goons and w.Goons[index]
 	if g then g.State = EnemyRules.Down end
 	w.Left = math.max(0, w.Left - 1)
-	-- (brief 29, P3b) World 1's final boss down: its crew gives up (every goon still up is down too) and the wave is won
-	if g and g.Kind == 'Boss' and EnemyRules.bossOf(g.Look).Final then
-		for i, o in w.Goons do
-			if o.State ~= EnemyRules.Down then
-				o.State, w.HP[i] = EnemyRules.Down, 0
-			end
-		end
-		w.Left = 0
-	end
+	-- (brief 30: the last stage is won like every other, when its last enemy falls: no crew giving up with its strongest)
 	if w.Left == 0 then
 		w.Cleared = true
 		return true, true, true
@@ -161,7 +153,7 @@ function WaveRules.restore(w: any): boolean
 	end
 	if w.Left ~= #w.Max then w.Left, changed = #w.Max, true end
 	for _, g in w.Goons or {} do
-		g.Phase, g.CD, g.Atk = nil, nil, nil -- (brief 29: a boss made whole starts its fight over)
+		g.CD, g.Atk = nil, nil -- (a crew's strongest made whole starts its fight over)
 		if g.State == EnemyRules.Down then
 			g.State, g.T, g.Pos = EnemyRules.Idle, 0, g.Home
 			changed = true
@@ -286,8 +278,9 @@ local function wake(w: any, index: number): { number }
 end
 
 -- Returns ok, why (when not ok: 'bad', 'rate', 'stage', 'target', 'range', 'down'), the wave, downed, cleared.
--- `from` is the shooter's position in the map frame (the goons' frame).
-function Session:shoot(stage: any, index: any, from: Vector3, damage: number): (boolean, string?, any, boolean, boolean)
+-- `from` is the shooter's position in the map frame (the goons' frame). (brief 30) melee: a swing, which only counts
+-- within EnemyRules.MeleeRange (+ MeleeSlack) of the goon.
+function Session:shoot(stage: any, index: any, from: Vector3, damage: number, melee: boolean?): (boolean, string?, any, boolean, boolean)
 	if not int(stage) or not int(index) or stage < 1 or stage > WaveRules.MaxStage or index < 1 or index > WaveRules.MaxIndex then
 		return false, 'bad', nil, false, false
 	end
@@ -296,20 +289,12 @@ function Session:shoot(stage: any, index: any, from: Vector3, damage: number): (
 	local w = self.Waves[stage]
 	local g = w and w.Goons and w.Goons[index]
 	if not w or not g then return false, 'target', nil, false, false end
-	if typeof(from) ~= 'Vector3' or (Vector3.new(g.Pos.X - from.X, 0, g.Pos.Z - from.Z)).Magnitude > WaveRules.Range + EnemyRules.Slack then
+	local reach = melee and (EnemyRules.MeleeRange + EnemyRules.MeleeSlack) or (WaveRules.Range + EnemyRules.Slack)
+	if typeof(from) ~= 'Vector3' or (Vector3.new(g.Pos.X - from.X, 0, g.Pos.Z - from.Z)).Magnitude > reach then
 		return false, 'range', w, false, false
 	end
 	local hit, downed, cleared = WaveRules.hit(w, index, damage)
 	if not hit then return false, 'down', w, false, false end
-	-- (brief 29) a boss down to half its HP gets angry: phase 2 (its rage move, quicker moves), and it comes at you soon
-	-- (P3b) the final boss has three phases (EnemyRules.phaseFor): each comes with its new moves
-	if g.Kind == 'Boss' and not downed then
-		local phase = EnemyRules.phaseFor(g.Look, w.HP[index] / math.max(1, w.Max[index]))
-		if phase > (g.Phase or 1) then
-			g.Phase = phase
-			g.CD = math.min(g.CD or 0, 0.8)
-		end
-	end
 	if not downed then w.Woke = wake(w, index) end
 	if cleared then w.ClearedAt = self.Clock() end
 	return true, nil, w, downed, cleared
@@ -339,7 +324,7 @@ function Session:tick(dt: number, you: Vector3?): ({ any }, { [number]: boolean 
 					elseif ev == 'home' then
 						table.insert(events, { Stage = stage, Kind = 'home', Index = i })
 					elseif ev == 'tele' then
-						table.insert(events, { Stage = stage, Kind = 'tele', Index = i, Attack = g.Atk, Phase = g.Phase or 1 })
+						table.insert(events, { Stage = stage, Kind = 'tele', Index = i, Attack = g.Atk })
 					elseif ev == 'blast' then
 						table.insert(events, { Stage = stage, Kind = 'blast', Index = i, Landed = landed == true, Damage = g.Atk and g.Atk.Damage or 0, Attack = g.Atk })
 					end

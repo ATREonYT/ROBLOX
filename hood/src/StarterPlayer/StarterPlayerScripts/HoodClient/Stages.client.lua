@@ -1,17 +1,20 @@
 -- Stage gates and their pads on your screen (brief 23: the run loop).
 -- Each gate is a see-through haze between two pillars under a hazard beam, built SHUT (a red-tinted haze, two
--- hazard-striped barrier bars and a big padlock), with one floating sign in the opening: "STAGE N", "Recommended",
--- "Power: X" (guidance: Power opens nothing) and a state line on a badge (the video's gate).
+-- hazard-striped barrier bars and a big padlock), with one sign in the opening (the video's gate, bible 2.3):
 --   Shut   the crew of the stage before it still stands this run (the server's RunStage, the furthest gate open for
---          you this run, is below it): the wall is solid for you; the badge reads "Defeat the crew first". Walk into it
---          and it flashes red and bumps you back.
---   Open   gate 1 always; any other the moment you beat the crew before it (RunCleared goes up): the haze shatters
---          toward you, the bars and padlock drop, confetti bursts, the camera kicks, "STAGE N OPEN!", and the sign's badge
---          turns green: "OPEN!" (the board itself keeps every line, in place).
+--          you this run, is below it): the wall is solid for you, and the sign is just the reference's white line on the
+--          barrier, "Defeat the crew first" (the reference's "Defeat the wave first"), or "Defeat <name>" where a crew's
+--          strongest stands ("Defeat the Charger"). Walk into it and it flashes red and bumps you back.
+--   Open   gate 1 always; any other the moment you beat the crew before it (RunCleared goes up): (brief 30) the barrier
+--          flashes WHITE (one flash, 0.2 s: the reference's 1-2 frames, kid-safe), the bars and padlock drop, "STAGE N
+--          OPEN!", and the sign switches to the reference's "STAGE N / Recommended / Power: X" (the user: "Recommended
+--          Power: X, like the reference"; your Level stays on the HUD's bar).
 --          Going back to the lobby ends the run: every gate shuts again at once.
--- Only your next gate (the first one ahead of you) shows its sign, so signs never stack down the street. (Brief 29: the
--- sign is a fixed board in the gate's plane (a SurfaceGui, Shared/GATE in the map): it does not grow, shrink, fade, bob or
--- turn, and nothing here runs per frame for it.)
+-- Only your next gate (the first one ahead of you) shows its sign, so signs never stack down the street; through an open
+-- one you also see the shut line of the gate after it (the reference's view through gate 1). (Brief 30) As you walk
+-- through a gate its sign fades to about 40 % (V1 3.5 s, W 36.6-36.8 s). The last stage's far door (the World 2 door,
+-- tagged HoodWorldDoor) reads "Defeat <name>" while the last crew stands, flashes white when it falls, then "WORLD 2 /
+-- Coming soon!" (World 2 isn't built: the door stays shut).
 -- The pads (parts tagged HoodStagePad, attributes Stage and Kind; the server pays): their own colour a notch darker,
 -- reading the reward over "🔒 Clear the crew!", until that stage's crew is down this run; then lit, with sparkles and
 -- their words: "+10 Cash / Return" (yellow) and
@@ -50,11 +53,23 @@ local frame = active.Frame
 
 local C = Color3.fromRGB
 local GO, DENIED = C(76, 214, 130), C(236, 76, 100) -- (a notch softer than pure neon green and red)
--- The sign's state line: its words and its badge's colour per state (white letters, near-black outline).
-local STATUS = {
-	Shut = { 'Defeat the crew first', C(214, 34, 58) },
-	Open = { 'OPEN!', C(36, 168, 80) },
-}
+-- (brief 30) The shut line: "Defeat the crew first", or "Defeat <name>" when the stage before the gate has a crew's
+-- strongest (its shown name, Shared/EnemyRules: never "Boss").
+local EnemyRules = (function()
+	local ok, r = pcall(function() return require(RS.Shared.EnemyRules) end)
+	return ok and type(r) == 'table' and r or nil
+end)()
+local function shutLine(stageBefore)
+	if EnemyRules and type(stageBefore) == 'number' and stageBefore >= 1 then
+		local lineup = EnemyRules.Lineups[stageBefore]
+		if lineup and table.find(lineup, 'Boss') then
+			local who = EnemyRules.looksFor(stageBefore)
+			if who and who.boss then return 'Defeat ' .. EnemyRules.shownName(who.boss) end
+		end
+	end
+	return 'Defeat the crew first'
+end
+local FLASH = 0.2 -- (the white flash on clear: one flash, under the kid-safe 0.25 s)
 local gates = {}
 
 local function track(model)
@@ -75,13 +90,20 @@ local function collect(e)
 	e.Barrier = e.Model:FindFirstChild('Barrier', true)
 	e.Sign = e.Model:FindFirstChild('GateSign', true)
 	e.Plate = e.Sign and e.Sign:FindFirstChild('StatusPlate')
-	e.Guis, e.Fields, e.Status, e.Locks = {}, {}, {}, {}
+	e.Guis, e.Fields, e.Status, e.Locks, e.Lines = {}, {}, {}, {}, {}
 	for _, d in e.Model:GetDescendants() do
 		if d:IsA('BasePart') and d.Name:sub(1, 5) == 'Field' then table.insert(e.Fields, d)
 		elseif d:IsA('BasePart') and d.Name:sub(1, 4) == 'Lock' then table.insert(e.Locks, d)
 		elseif d:IsA('TextLabel') and d.Name == 'Status' then table.insert(e.Status, d)
 		end
 		if d:IsA('SurfaceGui') and d.Parent == e.Barrier then table.insert(e.Guis, d) end
+	end
+	-- (brief 30) the sign's lines (Title, Sub, Power: the open sign) and the shut line (Status)
+	if e.Sign then
+		for _, n in { 'Title', 'Sub', 'Power' } do
+			local l = e.Sign:FindFirstChild(n)
+			if l then table.insert(e.Lines, l) end
+		end
 	end
 	e.Collected = e.Barrier ~= nil
 end
@@ -90,13 +112,15 @@ end
 local function runStage() return tonumber(player:GetAttribute('RunStage')) or 1 end
 local function runCleared() return tonumber(player:GetAttribute('RunCleared')) or 0 end
 
--- The haze in a state: its own red bands, or a red flash when it stops you.
-local function tint(e, toward, amount)
+-- The haze in a state: its own red bands, or a red flash when it stops you; (brief 30) opaque: the white clear flash.
+local function tint(e, toward, amount, opaque)
 	for _, f in e.Guis do
 		for _, pane in f:GetChildren() do
 			if pane:IsA('Frame') then
 				local base = pane:GetAttribute('BaseColor') or pane.BackgroundColor3
 				pane.BackgroundColor3 = toward and base:Lerp(toward, amount) or base
+				local baseT = pane:GetAttribute('BaseTransparency') or pane.BackgroundTransparency
+				pane.BackgroundTransparency = opaque and math.min(baseT, 0.1) or baseT
 			end
 		end
 	end
@@ -111,10 +135,30 @@ local opened -- (e): shatter, confetti, kick, the banner
 
 -- Paint a gate: open or shut for you this run, and whether it carries the sign (your next gate). `moment`: it just
 -- opened in front of you (the crew fell), so it opens with the fanfare.
+-- (brief 30) The sign in its state: shut, only the white "Defeat ..." line on the barrier (no badge); open, "STAGE N /
+-- Recommended / Power: X" and no state line. `signed`: true (your next gate: the whole sign), 'shut' (the gate after an
+-- open one: its shut line only), false.
+local function signState(e, open, signed)
+	if not e.Sign then return end
+	local flashing = e.FlashUntil ~= nil and os.clock() < e.FlashUntil
+	local showOpen = open and signed == true and not flashing
+	local showShut = (not open) and signed ~= false
+	e.Sign.Enabled = showOpen or showShut
+	for _, l in e.Lines do l.Visible = showOpen end
+	if e.Plate then e.Plate.Visible = false end
+	local line = shutLine((e.Stage or 1) - 1)
+	for _, t in e.Status do
+		t.Visible = showShut
+		t.Text = line
+		-- the reference's line sits mid-barrier, white with a dark outline, a little under the sign's title size
+		t.Position, t.Size = UDim2.fromScale(0.03, 0.44), UDim2.fromScale(0.94, 0.17)
+	end
+end
 local function paint(e, open, signed, moment)
 	collect(e)
 	local state = open and 'Open' or 'Shut'
-	if e.State == state and e.Painted == e.Barrier and e.Signed == signed then return end
+	if e.State == state and e.Painted == e.Barrier and e.Signed == signed and not e.FlashDone then return end
+	e.FlashDone = nil
 	local was = e.State
 	e.State, e.Painted, e.Signed = state, e.Barrier, signed
 	local b = e.Barrier
@@ -123,8 +167,9 @@ local function paint(e, open, signed, moment)
 		b.Transparency = b:GetAttribute('BaseTransparency') or 1
 	end
 	if moment and was == 'Shut' and open then opened(e) end
-	for _, g in e.Guis do g.Enabled = not open end
-	if e.Sign then e.Sign.Enabled = signed end
+	local flashing = e.FlashUntil ~= nil and os.clock() < e.FlashUntil
+	for _, g in e.Guis do g.Enabled = (not open) or flashing end
+	signState(e, open, signed)
 	for _, p in e.Fields do p.Transparency = open and 1 or (p:GetAttribute('BaseTransparency') or 0) end
 	-- The lock (bars and padlock) stays while the gate is shut and drops away the moment it opens.
 	for _, tween in e.Fades or {} do tween:Cancel() end
@@ -141,10 +186,7 @@ local function paint(e, open, signed, moment)
 			p.Transparency = 1
 		end
 	end
-	local look = STATUS[state]
-	for _, t in e.Status do t.Text = look[1] end
-	if e.Plate then e.Plate.BackgroundColor3 = look[2] end
-	tint(e, nil)
+	if not flashing then tint(e, nil) end
 end
 
 -- Your next gate: the first one ahead of you down the street (gate 1 from the lobby; none past the last one).
@@ -163,9 +205,16 @@ local function repaint()
 	local open = runStage()
 	local nxt = nextGate()
 	local rose = shownRun ~= nil and open > shownRun
+	-- (the gate after your next one, while your next one is open: you see its shut line through it)
+	local after = nil
+	if nxt and (nxt.Stage or 1) <= open then
+		for _, e in gates do
+			if e.Stage == (nxt.Stage or 0) + 1 then after = e end
+		end
+	end
 	for _, e in gates do
 		local isOpen = (e.Stage or 1) <= open
-		paint(e, isOpen, e == nxt, rose and isOpen and e.Stage > shownRun)
+		paint(e, isOpen, e == nxt or (e == after and 'shut') or false, rose and isOpen and e.Stage > shownRun)
 	end
 	shownRun = open
 end
@@ -399,25 +448,77 @@ local function shatter(e)
 	end
 end
 
--- The open moment (the crew before this gate just fell): the haze shatters toward you, confetti, a camera kick, a
--- rising chime; the banner says so.
+-- (brief 30) The open moment (the crew before this gate just fell): the reference's (W 32.9-33.1 s) barrier goes solid
+-- WHITE for one short flash, then the sign switches to "STAGE N"; a rising chime. (No shards, no confetti, no camera
+-- kick and no banner over the sign: the reference has none; "STAGE N OPEN!" is the CLEAR! chip's line, Waves.client.)
 opened = function(e)
-	shatter(e)
-	local fx = e.Model:FindFirstChild('PassFX', true)
-	if fx and fx:IsA('ParticleEmitter') then fx:Emit(60) end
-	Juice.kick(0.45)
-	fovKick()
+	e.FlashUntil = os.clock() + FLASH
+	for _, g in e.Guis do g.Enabled = true end
+	tint(e, Color3.new(1, 1, 1), 1, true)
+	for _, p in e.Fields do p.Transparency = p:GetAttribute('BaseTransparency') or 0; p.Color = Color3.new(1, 1, 1) end
+	task.delay(FLASH, function()
+		e.FlashDone = true
+		tint(e, nil)
+		for _, p in e.Fields do p.Color = p:GetAttribute('BaseColor') or p.Color end
+		repaint()
+	end)
 	Sound.play(chime, 1 + math.min(e.Stage or 1, 10) * 0.03)
-	local title = e.Sign and e.Sign:FindFirstChild('Title') -- (the board itself stays still: the banner says it)
-	local name = title and title:IsA('TextLabel') and title.Text ~= '' and title.Text or ('STAGE ' .. tostring(e.Stage))
-	showBanner(name .. ' OPEN!', '', e.Light, Color3.new(1, 1, 1))
+	-- (brief 30, r2: no big banner any more: it covered the gate's own "STAGE N" sign, the reference's moment; the
+	-- words "STAGE N OPEN!" sit under the CLEAR! chip at the top, Waves.client)
 end
--- The boss's crew down (no gate after it): its pads light up.
-player:GetAttributeChangedSignal('RunCleared'):Connect(function()
-	local c = runCleared()
-	local last = 0
-	for _, e in gates do last = math.max(last, e.Stage or 0) end
-	if c > 0 and c >= last then showBanner('BOSS BEATEN!', 'Cash out on a pad!', C(255, 210, 60), Color3.new(1, 1, 1)) end
+local _ = shatter
+local _ = fovKick
+
+-- (brief 30) The World 2 door at the end of the last stage (code5/f4_finale, tagged HoodWorldDoor): shut, "Defeat
+-- <name>" while the last crew stands; the moment it falls the haze flashes white (FLASH) and the sign reads "WORLD 2 /
+-- Coming soon!" (World 2 isn't built: the door stays shut, its lock on). A new run shuts it again.
+local doors = {}
+local function trackDoor(m)
+	if doors[m] or not m:IsDescendantOf(active.Root) then return end
+	doors[m] = { Model = m, Stage = m:GetAttribute('Stage') or 17 }
+end
+for _, m in CollectionService:GetTagged('HoodWorldDoor') do trackDoor(m) end
+CollectionService:GetInstanceAddedSignal('HoodWorldDoor'):Connect(trackDoor)
+CollectionService:GetInstanceRemovedSignal('HoodWorldDoor'):Connect(function(m) doors[m] = nil end)
+local function paintDoor(d, moment)
+	collect(d)
+	local won = runCleared() >= (d.Stage - 1)
+	if d.Won == won and d.Painted == d.Barrier then return end
+	local was = d.Won
+	d.Won, d.Painted = won, d.Barrier
+	local title = d.Sign and d.Sign:FindFirstChild('Title')
+	local sub = d.Sign and d.Sign:FindFirstChild('Sub')
+	local function words(open)
+		if title then title.Visible = open end
+		if sub then sub.Visible = open end
+		for _, t in d.Status do
+			t.Visible = not open
+			t.Text = shutLine(d.Stage - 1)
+		end
+	end
+	if won and moment and was == false then
+		words(false)
+		for _, t in d.Status do t.Visible = false end
+		tint(d, Color3.new(1, 1, 1), 1, true)
+		Sound.play(chime, 1.3)
+		task.delay(FLASH, function()
+			tint(d, nil)
+			if d.Won then words(true) end
+		end)
+	else
+		tint(d, nil)
+		words(won)
+	end
+end
+local function repaintDoors(moment)
+	for _, d in doors do paintDoor(d, moment) end
+end
+player:GetAttributeChangedSignal('RunCleared'):Connect(function() repaintDoors(true) end)
+task.spawn(function()
+	while true do
+		repaintDoors(true) -- (a change from shut to won is always the moment: RunCleared only climbs on a kill)
+		task.wait(1)
+	end
 end)
 
 -- Walking through an open gate: a small burst and a chime.
@@ -453,6 +554,20 @@ Net.get('Cinematic').OnClientEvent:Connect(function(info)
 	end)
 end)
 
+-- (brief 30) Walking through a gate its sign fades to about 40 % (the reference's V1 3.5 s, W 36.6-36.8 s): from
+-- FADE_FROM studs before the line to the line itself. Every line and its outline.
+local FADE_FROM, FADE_MOST = 9, 0.6
+local function fadeSign(e, t)
+	if e.Faded == t then return end
+	e.Faded = t
+	for _, l in e.Lines or {} do
+		l.TextTransparency = t
+		local st = l:FindFirstChildOfClass('UIStroke')
+		if st then st.Transparency = t end
+		local g = l:FindFirstChildOfClass('UIGradient')
+		local _ = g
+	end
+end
 -- Watch your own character cross gate lines (stages run toward -Z in the map frame).
 local lastZ
 RunService.Heartbeat:Connect(function()
@@ -464,6 +579,12 @@ RunService.Heartbeat:Connect(function()
 		if e.Z and math.abs(p.X) <= e.HalfWidth then
 			if lastZ and lastZ >= e.Z and p.Z < e.Z and e.State == 'Open' then passed(root.Position) end
 			if e.State == 'Shut' and p.Z > e.Z and p.Z < e.Z + 3 then bump(e, root) end
+		end
+		if e.State == 'Open' and e.Signed == true and e.Z then
+			local dz = p.Z - e.Z
+			fadeSign(e, (dz > 0 and dz < FADE_FROM) and FADE_MOST * (1 - dz / FADE_FROM) or 0)
+		elseif e.Faded and e.Faded ~= 0 then
+			fadeSign(e, 0)
 		end
 	end
 	lastZ = p.Z

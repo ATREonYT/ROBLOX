@@ -108,6 +108,18 @@ local GRANTS = Receipts.grants({
 		assert(RebirthService and type(RebirthService.rebirth) == 'function', 'RebirthService missing')
 		return RebirthService.rebirth(player, { Free = true })
 	end,
+	-- FIGHTS30 BEGIN (brief 30, FIGHTS) the revive screen's products and the World Boss SKIP (BindableFunctions on those services)
+	fight = function(player, how)
+		local svc = script.Parent:FindFirstChild('WaveService')
+		local fn = svc and svc:FindFirstChild('FightGrant')
+		return fn and fn:Invoke(player, how) or false
+	end,
+	skipBoss = function(player)
+		local svc = script.Parent:FindFirstChild('WorldBossService')
+		local fn = svc and svc:FindFirstChild('SkipGrant')
+		return fn and fn:Invoke(player) or false
+	end,
+	-- FIGHTS30 END
 })
 -- (brief 30) Gift A Player: the buyer's client sends its chosen receiver right before the purchase prompt (GiftTarget:
 -- targetUserId or 0 to clear, product key); the receipt reads it (StoreReceipts.setGift / giftFor: fresh for 60 s, the

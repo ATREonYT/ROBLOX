@@ -1,13 +1,20 @@
 -- Stage goons (brief 18): the soldier game's guards, copied as a system and made hood and kid-friendly. Cartoon rival-crew
--- goons stand in a loose group near each stage's far gate, notice you as you walk in ("!"), run at you, wind up and punch
--- (no weapons, no blood), take your shots, and get knocked out with stars and a poof. Pure rules shared by WaveService
--- (the server runs every goon as a plain point, 10 times a second: no Humanoids, no physics), Waves.client (draws your own
--- goons and aims) and the unit tests.
---   Damage per shot = your Power (damage(Power), at least 1). A goon's HP = HpShots x its kind's Hp x the stage's
---   Recommended Power (Balance.StagePower), so at the gate's Power a plain Goon takes HpShots shots ("Goon 1  40/40" at
---   Stage 1, like the video's "Guard 1 40/40") and every stage's goons are tougher than the last: more Power, more range time.
---   A punch takes Punch off your Humanoid's health (Roblox's own health bar). The punch that would finish you is a KO
---   instead (WaveService: back to the stage start, healed, shielded; the goons walk home and keep their HP).
+-- goons stand in a loose group in front of each stage's next gate, run at you when you come near, wind up and punch
+-- (no weapons, no blood), take your shots and swings, and fall into a heap that stays there for the rest of the run.
+-- Pure rules shared by WaveService (the server runs every goon as a plain point, 10 times a second: no Humanoids, no
+-- physics), Waves.client (draws your own goons and aims) and the unit tests.
+--   Damage per shot = your Power (damage(Power), at least 1); a swing (you're in contact: MeleeRange) hits and pays
+--   MeleePay times as much (the reference's "+9" melee next to its "+6" shot). A goon's HP = HpShots x its kind's Hp x
+--   the stage's Recommended Power (Balance.StagePower), so at the gate's Power a plain Goon takes HpShots shots
+--   ("Goon 1  40/40" at Stage 1, like the video's "Guard 1 40/40") and every stage's goons are tougher than the last.
+--   A punch takes Punch off your Humanoid's health (Roblox's own health bar). The punch that would finish you knocks you
+--   down instead (WaveService: the revive screen; "No" puts you back at the stage start, healed; the goons walk home and
+--   keep their HP).
+--   (brief 30) The reference's fight grammar (bible 0.6 / 2.3-2.6): the wave idles 8-12 studs in front of the next gate
+--   and charges you at about 25 studs (Notice), running at about 16 studs a second. The strongest enemy of a crew (Kind
+--   'Boss' in the code, never on screen) is an ordinary-sized named enemy ("Court King", "The Ringleader") with a bigger
+--   HP number and ONE signature attack shown first as a RED shape on the ground for at least TeleMin seconds; it charges
+--   with its crew. No pads, cards, phases or banners. The last stage's (the Harbor crew's) has three of them.
 -- Positions are the map frame's X and Z (stages run toward -Z; z' = studs past a stage's gate line).
 local Balance = require(script.Parent.Config.Balance)
 
@@ -17,13 +24,15 @@ local function flat(v: Vector3): Vector3 return Vector3.new(v.X, 0, v.Z) end
 EnemyRules.Tick = 0.1 -- the server's step (s)
 EnemyRules.FightRange = 28 -- your gun reaches a goon this far (the aim assist's reach)
 EnemyRules.Slack = 10 -- the server allows this much more than FightRange (the goon you see trails the server's a little)
-EnemyRules.Notice = 34 -- a goon notices you this close (or when you shoot it) and calls the rest of its crew (the
--- Boss notices on its own: BossNotice, or a shot)
-EnemyRules.BossNotice = 40
-EnemyRules.NoticeDelay = 0.3 -- a beat between "!" and running (plus a little per goon, so they don't move as one)
+-- (brief 30) The reference's wave runs at you when you are about 20-25 studs away (bible 2.3): one goon noticing calls
+-- its whole crew, the strongest enemy too (they charge as one group, a beat apart).
+EnemyRules.Notice = 25
+EnemyRules.BossNotice = 25 -- (the strongest enemy sees you at the same range: it charges with its crew)
+EnemyRules.NoticeDelay = 0.15 -- a short beat before the first one runs (plus a little per goon, so they don't move as one)
 EnemyRules.Calm = 3 -- after your KO the goons ignore you this long
 EnemyRules.Shield = 3 -- and you wear a ForceField this long
-EnemyRules.HpShots = 6 -- shots a plain Goon takes at its stage's Recommended Power
+EnemyRules.HpShots = 3 -- shots a plain Goon takes at its stage's Recommended Power (brief 30 r3: 3 at 3 shots a second,
+-- the reference's cadence, so a goon lasts about a second, as 6 at 5 a second had it; the reference's guards go in 0.5 s)
 EnemyRules.Margin = 2 -- goons stay this far inside their stage's gate lines
 EnemyRules.Edge = 2 -- and this far inside the street's sides (the gate's HalfWidth)
 EnemyRules.Gap = 2.6 -- goons keep about this far apart (times their scale)
@@ -32,26 +41,55 @@ EnemyRules.MinGap = 0.45 -- ... and never comes closer than this share
 EnemyRules.MaxPunch = 40 -- sanity cap on one punch
 EnemyRules.ReturnMax = 15 -- (brief 24) a goon still not home this long after it turned back (caught on something) is put
 -- back on its spot (Waves.client shows a poof)
+-- (brief 30) Melee, like the reference's scrum: with the goon your gun is on this close you swing instead of shooting
+-- (Waves.client), and the server lets a swing through only this close (plus Slack's share for the goon you see trailing
+-- the server's): it hits and pays MeleePay x a shot.
+EnemyRules.MeleeRange = 5.5
+EnemyRules.MeleeSlack = 3
+EnemyRules.MeleePay = 1.5
 
 -- State codes (WaveState 'Moves' sends them as numbers).
 EnemyRules.Idle, EnemyRules.Alert, EnemyRules.Chase, EnemyRules.Windup, EnemyRules.Recover, EnemyRules.Return, EnemyRules.Down = 0, 1, 2, 3, 4, 5, 6
 
--- The kinds: tag name, HP weight, run speed (you walk 16+), reach, wind-up and recovery (s), punch damage, model scale.
+-- The kinds: tag name, HP weight, run speed (you walk 16; the reference's guards run in at about 16), reach, wind-up and
+-- recovery (s), punch damage, model scale (today's goon only: the user's avatars keep their own size; a crew's strongest
+-- is an ordinary-sized enemy, bible 2.4, so today's stand-in is only a little bigger).
 EnemyRules.Kinds = {
-	Goon = { Name = 'Goon', Hp = 1, Speed = 12, Reach = 3.8, Windup = 0.45, Recover = 0.9, Punch = 7, Scale = 1 },
-	Runner = { Name = 'Runner', Hp = 0.6, Speed = 15, Reach = 3.5, Windup = 0.35, Recover = 0.8, Punch = 5, Scale = 0.88 },
-	Bruiser = { Name = 'Bruiser', Hp = 2, Speed = 9, Reach = 4.6, Windup = 0.65, Recover = 1.1, Punch = 10, Scale = 1.3 },
-	Boss = { Name = 'Boss', Hp = 7, Speed = 9, Reach = 6, Windup = 0.9, Recover = 1.3, Punch = 14, Scale = 2.1 },
+	Goon = { Name = 'Goon', Hp = 1, Speed = 16, Reach = 3.8, Windup = 0.45, Recover = 0.9, Punch = 7, Scale = 1 },
+	Runner = { Name = 'Runner', Hp = 0.6, Speed = 16, Reach = 3.5, Windup = 0.35, Recover = 0.8, Punch = 5, Scale = 0.88 },
+	Bruiser = { Name = 'Bruiser', Hp = 2, Speed = 11.5, Reach = 4.6, Windup = 0.65, Recover = 1.1, Punch = 10, Scale = 1.2 },
+	Boss = { Name = 'Boss', Hp = 7, Speed = 11, Reach = 5, Windup = 0.8, Recover = 1.2, Punch = 12, Scale = 1.15 },
 }
-EnemyRules.FinalBossHp = 36 -- (brief 29) the last stage's boss (World 1's final boss): three phases, ~40 s at the Recommended Power
+EnemyRules.FinalBossHp = 24 -- (brief 29/30) the last stage's strongest enemy (the Harbor crew's): about 30 s at the Recommended Power
 
--- Who stands in each stage (index order) and where (x, z' past the gate): a loose group in the middle of the street
--- (brief 23: z' 32..43, so the two pads before the next gate, on the sidewalks from z' 50, stay clear and show from the
--- stage's entry; the crew notices you as you walk in), each district's group in its own spots. The Block 1-3, Corner
--- Shop 4-6, The Alley 7-9 (narrow: |x| <= 13), The Courts 10-12 (two hang out on the court), The Yards 13-15, the Boss
--- Yard 16 (two goons by the gate, two past the Champ Ring, the boss on the BOSS pad).
+-- (brief 30) More fighting moves, like the reference's scrum: each kind throws a few kinds of hit in turn, each with its
+-- own wind-up (Waves.client and Shared/EnemyRig draw them; the server's timing is the kind's Windup). swingFor(kind, n)
+-- is the n-th swing's name. A goon knocked out falls one of three ways (fallFor), then lies in a heap.
+EnemyRules.Swings = {
+	Goon = { 'Jab', 'Hook', 'Uppercut', 'Kick' },
+	Runner = { 'Jab', 'Kick', 'Shove' },
+	Bruiser = { 'Haymaker', 'Hook', 'Shove' },
+	Boss = { 'Hook', 'Haymaker', 'Uppercut' },
+}
+function EnemyRules.swingFor(kind: string?, n: number?): string
+	local list = EnemyRules.Swings[kind or 'Goon'] or EnemyRules.Swings.Goon
+	return list[(math.floor(n or 0) % #list) + 1]
+end
+EnemyRules.Falls = { 'Back', 'Forward', 'Twist' }
+-- How goon `index` falls: a swing knocks it back; a shot drops it one of the three ways (by its index, so a crew's heap
+-- isn't all alike).
+function EnemyRules.fallFor(index: number?, melee: boolean?): string
+	if melee then return 'Back' end
+	return EnemyRules.Falls[(math.floor(index or 1) % #EnemyRules.Falls) + 1]
+end
+
+-- Who stands in each stage (index order) and where (x, z' past the gate). (brief 30) The reference's wave idles in a
+-- loose group 8-12 studs in front of the next gate (z' 48..57 of a 64-stud stage), on the road between the next gate's
+-- two pads (they stand on the sidewalks), and runs at you when you come within Notice; the court crews still wait in
+-- the players' tunnel and jog out onto the court (EnemyRules.Courts). The Block 1-3, Corner Shop 4-6, The Alley 7-9
+-- (narrow: |x| <= 13), The Courts 10-12, The Yards 13-15, the warehouse 16 (in front of its far door).
 -- (brief 29) Every crew holds two stages (the user's HoodEnemies roster): the 1st is its minions, the 2nd the same
--- minions plus their boss, at the back of the group. So every even stage has a 'Boss'.
+-- minions plus their strongest, at the back of the group. So every even stage has a 'Boss' (its strongest enemy).
 local G, R, B, X = 'Goon', 'Runner', 'Bruiser', 'Boss'
 EnemyRules.Lineups = {
 	{ G, G, G },
@@ -72,35 +110,33 @@ EnemyRules.Lineups = {
 	{ X, G, R, B, R, G },
 }
 EnemyRules.Spots = {
-	{ { -6, 36 }, { 5, 38 }, { -0.5, 32 } },
-	{ { -8, 34 }, { 7, 36 }, { -1, 40 }, { 3, 44 } },
-	{ { -5, 32 }, { 7, 35 }, { 1, 39 } },
-	{ { -9, 32 }, { -2, 37 }, { 5, 33 }, { 2, 43 } },
-	{ { -10, 36 }, { -3, 32 }, { 4, 38 }, { 10, 33 } },
-	{ { -8, 33 }, { -1, 38 }, { 6, 34 }, { 1, 44 } },
-	{ { -6, 32 }, { 0, 37 }, { 6, 33 }, { -2, 42 } },
-	{ { -7, 36 }, { -1, 32 }, { 6, 37 }, { 2, 42 } },
-	{ { -6, 34 }, { 1, 39 }, { 7, 33 }, { -2, 43 } },
-	{ { -7, 34 }, { 27.5, 37 }, { 30.5, 43 }, { 1, 40 } },
-	{ { -8, 36 }, { -1, 32 }, { 27.5, 43 }, { 30.5, 37 } },
-	{ { -6, 33 }, { 27.5, 36 }, { 30.5, 42 }, { 1, 40 } },
-	{ { -10, 32 }, { -4, 37 }, { 2, 33 }, { 8, 38 }, { 13, 33 } },
-	{ { -12, 36 }, { -6, 32 }, { 6, 33 }, { 11, 37 }, { 0, 41 } },
-	{ { -11, 33 }, { -5, 38 }, { 1, 32 }, { 7, 37 }, { 12, 32 } },
-	{ { 0, 74 }, { -10, 14 }, { 10, 16 }, { -24, 92 }, { 0, 92 }, { 24, 92 } },
+	{ { -4.5, 52 }, { 4, 54 }, { 0, 49.5 } },
+	{ { -5.5, 51 }, { 5, 52 }, { -1.5, 48.5 }, { 1, 55.5 } },
+	{ { -4, 50 }, { 5, 52.5 }, { 0.5, 54.5 } },
+	{ { -6, 50 }, { -1, 53 }, { 5, 50.5 }, { 2, 56 } },
+	{ { -6.5, 53 }, { -2.5, 49.5 }, { 3, 54 }, { 6.5, 50 } },
+	{ { -6, 50 }, { -1.5, 53 }, { 5, 51 }, { 2.5, 56.5 } },
+	{ { -5, 49.5 }, { 0.5, 52.5 }, { 5.5, 50 }, { -2.5, 56 } },
+	{ { -5.5, 52 }, { -1, 49 }, { 5, 52.5 }, { 1.5, 56.5 } },
+	{ { -5, 51 }, { 1, 54.5 }, { 6, 50 }, { -1.5, 48 } },
+	{ { -6, 51 }, { 27.5, 37 }, { 30.5, 43 }, { 1, 54 } },
+	{ { -6, 52 }, { -1, 49 }, { 27.5, 43 }, { 30.5, 37 } },
+	{ { -5, 50 }, { 27.5, 36 }, { 30.5, 42 }, { 1, 55 } },
+	{ { -7, 50 }, { -3, 54 }, { 1.5, 49.5 }, { 5.5, 53.5 }, { 7, 49 } },
+	{ { -7, 52 }, { -3, 49 }, { 4, 50 }, { 6.5, 54 }, { 0, 56.5 } },
+	{ { -7, 49.5 }, { -3, 53 }, { 1, 49 }, { 4.5, 53 }, { 7, 49.5 } },
+	{ { 0, 85.5 }, { -7, 81 }, { 7, 82 }, { -3.5, 77 }, { 4, 77.5 }, { -8.5, 88 } },
 }
--- (brief 29, P3b) The Boss Yard is the Harbor Crew's warehouse: two goons guard the door, the boss waits up on the cross
--- catwalk, and three wait behind the loading dock's roller doors (Reserve = the door: code5/f4_finale DockDoor_n) until
--- the boss calls them out (its Crew move). A reserve goon never notices you on its own and isn't drawn till it comes out.
-EnemyRules.Reserve = { [16] = { [4] = 1, [5] = 2, [6] = 3 } }
+-- (brief 29, P3b's reserve crew behind the warehouse's dock doors is gone in brief 30: the Harbor crew stands with its
+-- strongest in front of the far door, like every other wave. The table stays for maps and tests that read it.)
+EnemyRules.Reserve = {}
 -- A narrower fight floor where the hall's sides are dressed (the warehouse: |x| <= 31, its yellow lines).
 EnemyRules.ArenaX = { [16] = 31 }
 -- Places goons walk round (map-frame boxes in z', per stage). (brief 29: the Boss Yard's ring is gone; its floor is clear)
 EnemyRules.Blocks = {}
 -- The stage's crew colours (GoonRig reads these): The Block red, Corner Shop green, The Alley purple, The Courts orange,
--- The Yards yellow, the Boss Yard's boss gold.
+-- The Yards yellow, the warehouse's strongest gold.
 EnemyRules.Crews = { 'Red', 'Red', 'Red', 'Green', 'Green', 'Green', 'Purple', 'Purple', 'Purple', 'Orange', 'Orange', 'Orange', 'Yellow', 'Yellow', 'Yellow', 'Boss' }
-
 
 ---------------------------------------------------------------------------------------------- who they are (brief 29)
 -- The user's HoodEnemies (ServerStorage/HoodEnemies: real Roblox avatars in catalog clothes, 8 crews x 2 stages, each
@@ -166,99 +202,70 @@ function EnemyRules.via(pos: Vector3, goal: Vector3, arena: any): Vector3
 	return goal
 end
 
----------------------------------------------------------------------------------------------- boss fights (brief 29)
--- Every crew's boss has two big moves, and a third once it is down to half HP (phase 2, RageAt): each is shown first
--- as a RED shape on the ground (a lane, a circle, a cone) for Tele seconds (never under TeleMin: kids need time to
--- step out), then it lands: you take its Damage if you are still inside (shrunk by Fair studs: a near miss is a miss).
---   Line (Charge: the boss dashes down the lane; Roll: it sends a ball or barrel down it), Circle round the boss
---   (Stomp), Circle on the spot you stood (Throw: a thrown thing lands there; Volley: three of them; Leap: the boss
---   jumps onto it), Cone in front of it (Blast). In between it still chases and punches.
+---------------------------------------------------------------------------------------------- the strongest enemies
+-- (brief 30, the reference's Charger: bible 2.4) A crew's strongest enemy has ONE signature attack, shown first as a
+-- RED shape on the ground (a lane, a circle, a cone) for Tele seconds (never under TeleMin: kids need time to step
+-- out), then it lands: you take its Damage if you are still inside (shrunk by Fair studs: a near miss is a miss). In
+-- between it chases and punches with its crew. No phases, no rage, no names popping over it.
+--   Line (Charge: it dashes down the lane; Roll: it sends a barrel down it), Circle round it (Stomp), Circle on the spot
+--   you stood (Throw: a thrown thing lands there; Leap: it jumps onto it), Cone in front of it (Blast).
+-- The last stage's (the Harbor crew's, World 1's strongest) has three: a forklift down a long lane, its anchor swung
+-- round in a wide cone, and cargo containers off the crane onto RED squares where you stand.
 EnemyRules.Tele, EnemyRules.Dash = 7, 8 -- (state codes, after Down)
 EnemyRules.TeleMin = 1.0
-EnemyRules.RageAt = 0.5
+EnemyRules.TeleTime = 1.2 -- (the reference's lane shows 0.7 s before it lands; ours a little longer, for kids)
 EnemyRules.Fair = 0.8
 EnemyRules.DashTime = 0.32
-EnemyRules.BossFirst = 1.4 -- its first big move this long after it starts chasing
+EnemyRules.BossFirst = 2.0 -- its first signature move this long after it starts chasing
 EnemyRules.Moves = {
 	Charge = { Shape = 'Line', Length = 26, Width = 5, Damage = 16, Reach = 22 },
 	Roll = { Shape = 'Line', Length = 34, Width = 4.5, Damage = 14, Reach = 30, Flight = 0.6 },
 	Stomp = { Shape = 'Circle', At = 'Self', Radius = 10, Damage = 18, Reach = 13 },
 	Throw = { Shape = 'Circle', At = 'You', Radius = 5.5, Damage = 15, Reach = 40, Flight = 0.75 },
-	Volley = { Shape = 'Circle', At = 'You', Radius = 4.5, Damage = 15, Reach = 40, Count = 3, Spread = 7, Flight = 0.8 },
 	Leap = { Shape = 'Circle', At = 'You', Radius = 8, Damage = 18, Reach = 36, Jump = true, Flight = 0.6 },
 	Blast = { Shape = 'Cone', Length = 20, Angle = math.rad(70), Damage = 16, Reach = 18 },
-	-- (brief 29, P3b) World 1's final boss, the Harbor Boss, in its warehouse: a forklift sent down a long lane, its
-	-- anchor swung round in a wide cone, cargo containers dropped from the crane onto RED squares where you stand, a
-	-- ground-pound shockwave (a RED ring: hug the boss or get clear), and its crew called out of the loading dock.
 	Forklift = { Shape = 'Line', Length = 44, Width = 7, Damage = 16, Reach = 40, Flight = 0.8 },
 	Anchor = { Shape = 'Cone', Length = 17, Angle = math.rad(120), Damage = 15, Reach = 14 },
 	Containers = { Shape = 'Square', At = 'You', Radius = 4, Damage = 18, Reach = 44, Count = 3, Spread = 9, Flight = 0.9, Drop = true },
-	Shockwave = { Shape = 'Ring', At = 'Self', Radius = 22, Inner = 6, Damage = 16, Reach = 21 },
-	Crew = { Shape = 'Circle', At = 'Docks', Radius = 4, Damage = 0, Reach = 200, Calls = true },
 }
--- Each boss's moves (phase 1), its rage move (phase 2 adds it), what it throws, and the moves' names on screen.
+-- Each crew's strongest: Title = its name in the user's roster (EnemyLooks), Shown = the name on screen when the roster's
+-- says "Boss" (the user: "remove everything saying its a boss"), its signature move(s) and what it throws.
 EnemyRules.Bosses = {
-	bullies = { Title = 'Big Bully Brock', Moves = { 'Charge', 'Stomp' }, Rage = 'Throw', Prop = 'Dodgeball',
-		Names = { Charge = 'SHOULDER CHARGE!', Stomp = 'BIG STOMP!', Throw = 'DODGEBALL!' } },
-	crooks = { Title = 'The Ringleader', Moves = { 'Throw', 'Charge' }, Rage = 'Volley', Prop = 'MoneyBag',
-		Names = { Throw = 'MONEY BAG!', Charge = 'SNEAK DASH!', Volley = 'BAG BARRAGE!' } },
-	ballers = { Title = 'Court King', Moves = { 'Stomp', 'Roll' }, Rage = 'Leap', Prop = 'Basketball',
-		Names = { Stomp = 'BALL SHOCKWAVE!', Roll = 'CHEST PASS!', Leap = 'SLAM DUNK!' } },
-	little = { Title = 'Big Shot Boss', Moves = { 'Blast', 'Charge' }, Rage = 'Stomp', Prop = 'Dodgeball',
-		Names = { Blast = 'BOOMBOX BLAST!', Charge = 'BIG SHOT RUSH!', Stomp = 'GROUND POUND!' } },
-	gangsters = { Title = 'Furcoat Frankie', Moves = { 'Stomp', 'Throw' }, Rage = 'Charge', Prop = 'MoneyBag',
-		Names = { Stomp = 'COAT SPIN!', Throw = 'CASH BAG!', Charge = 'FUR RUSH!' } },
-	muscle = { Title = 'The Foreman', Moves = { 'Throw', 'Charge' }, Rage = 'Stomp', Prop = 'Crate',
-		Names = { Throw = 'CRATE TOSS!', Charge = 'HARD HAT CHARGE!', Stomp = 'GROUND POUND!' } },
-	dockhands = { Title = 'The Dockmaster', Moves = { 'Roll', 'Stomp' }, Rage = 'Volley', Prop = 'Barrel',
-		Names = { Roll = 'BARREL ROLL!', Stomp = 'DECK STOMP!', Volley = 'CRATE RAIN!' }, Props = { Volley = 'Crate' } },
-	-- (P3b) World 1's final boss: three phases (PhaseAt: under 66 % and 33 % HP), its moves building up (Phase2, Phase3),
-	-- an entrance off the catwalk (Perch: studs up; Waves.client draws the drop through its Entrance seconds of "!").
-	harbor = { Title = 'The Harbor Boss', Final = true, Moves = { 'Forklift', 'Anchor' }, Phase2 = { 'Containers', 'Shockwave' }, Phase3 = { 'Crew' },
-		PhaseAt = { 0.66, 0.33 }, Perch = 18.5, PerchBack = 8, Entrance = 1.8, Rage = 'Shockwave', Prop = 'Barrel', Props = { Forklift = 'Forklift', Containers = 'DropContainer' },
-		Names = { Forklift = 'FORKLIFT CHARGE!', Anchor = 'ANCHOR SWEEP!', Containers = 'CONTAINER DROP!', Shockwave = 'SHOCKWAVE!', Crew = 'CREW, GET HIM!' },
-		Card = 'WORLD 1 FINAL BOSS' },
+	bullies = { Title = 'Big Bully Brock', Moves = { 'Charge' }, Prop = 'Dodgeball' },
+	crooks = { Title = 'The Ringleader', Moves = { 'Throw' }, Prop = 'MoneyBag' },
+	ballers = { Title = 'Court King', Moves = { 'Leap' }, Prop = 'Basketball' },
+	little = { Title = 'Big Shot Boss', Shown = 'Big Shot', Moves = { 'Blast' }, Prop = 'Dodgeball' },
+	gangsters = { Title = 'Furcoat Frankie', Moves = { 'Stomp' }, Prop = 'MoneyBag' },
+	muscle = { Title = 'The Foreman', Moves = { 'Throw' }, Prop = 'Crate' },
+	dockhands = { Title = 'The Dockmaster', Moves = { 'Roll' }, Prop = 'Barrel' },
+	-- World 1's last stage: the Harbor crew's strongest, in its warehouse
+	harbor = { Title = 'The Harbor Boss', Shown = 'The Harbor Captain', Final = true, Moves = { 'Forklift', 'Anchor', 'Containers' }, Prop = 'Barrel', Props = { Forklift = 'Forklift', Containers = 'DropContainer' } },
 }
--- Telegraph and rest between big moves, by phase: slower and gentler first, quicker at half HP (never under TeleMin).
-function EnemyRules.teleTime(phase: number?): number
-	return math.max(EnemyRules.TeleMin, (phase or 1) >= 3 and 1.0 or (phase or 1) >= 2 and 1.1 or 1.4)
+-- Telegraph and rest between signature moves (the last stage's comes round sooner: it has three).
+function EnemyRules.teleTime(_: any?): number
+	return math.max(EnemyRules.TeleMin, EnemyRules.TeleTime)
 end
-function EnemyRules.bossRest(phase: number?): number
-	return (phase or 1) >= 3 and 2.2 or (phase or 1) >= 2 and 2.6 or 3.8
-end
--- The phase a boss is in at `frac` of its HP: the final boss's PhaseAt thresholds (1..3), else angry (2) under RageAt.
-function EnemyRules.phaseFor(look: string?, frac: number): number
-	local b = EnemyRules.bossOf(look)
-	local at = b.PhaseAt or { EnemyRules.RageAt }
-	local phase = 1
-	for _, f in at do
-		if frac <= f then phase += 1 end
-	end
-	return phase
+function EnemyRules.bossRest(final: any?): number
+	return final and 3.2 or 4.5
 end
 function EnemyRules.bossOf(look: string?): any
 	return EnemyRules.Bosses[EnemyRules.crewOf(look)] or EnemyRules.Bosses.bullies
 end
--- The moves a boss can use now (phase 2 adds its rage move).
+-- The name on screen for a crew's strongest (its tag, the gate's "Defeat <name>").
+function EnemyRules.shownName(look: string?): string
+	local b = EnemyRules.bossOf(look)
+	return b.Shown or b.Title
+end
+-- The moves it can use (a goon carrying its own Moves list, the World Boss's, uses that).
 function EnemyRules.movesOf(g: any): { string }
-	local b = EnemyRules.bossOf(g.Look)
-	local list = table.clone(b.Moves)
-	if b.Final then
-		for k, extra in { b.Phase2, b.Phase3 } do
-			if (g.Phase or 1) >= k + 1 then
-				for _, m in extra or {} do table.insert(list, m) end
-			end
-		end
-		return list
-	end
-	if (g.Phase or 1) >= 2 and b.Rage then table.insert(list, b.Rage) end
-	return list
+	if type(g.Moves) == 'table' and #g.Moves > 0 then return g.Moves end
+	return EnemyRules.bossOf(g.Look).Moves
 end
 
--- A big move aimed at `you` (map frame) from boss g: { Move, Shape, O (origin), D (unit direction), L, W, R, A, P (circle
--- centres), Tele, Damage, Flight }, or nil when none fits (you're out of every move's reach). The boss takes its moves
--- in turn; with one out of reach it tries the next.
-function EnemyRules.planAttack(g: any, you: Vector3, arena: any, others: { any }?): any
+-- A big move aimed at `you` (map frame) from goon g: { Move, Shape, O (origin), D (unit direction), L, W, R, A, P (centres),
+-- Tele, Damage, Flight }, or nil when none fits (you're out of every move's reach). It takes its moves in turn; with one
+-- out of reach it tries the next.
+function EnemyRules.planAttack(g: any, you: Vector3, arena: any, _: { any }?): any
 	local list = EnemyRules.movesOf(g)
 	local d = flat(you - g.Pos)
 	local dist = d.Magnitude
@@ -267,20 +274,10 @@ function EnemyRules.planAttack(g: any, you: Vector3, arena: any, others: { any }
 		local n = ((g.MoveN or 0) + k) % #list + 1
 		local name = list[n]
 		local m = EnemyRules.Moves[name]
-		-- (the crew call needs someone waiting at the dock)
-		local docks = nil
-		if m and m.At == 'Docks' then
-			docks = {}
-			for _, o in others or {} do
-				if o.Reserve and o.State == EnemyRules.Idle then table.insert(docks, o.Home) end
-			end
-		end
-		if m and dist <= m.Reach and (not docks or #docks > 0) then
+		if m and dist <= m.Reach then
 			g.MoveN = n
-			local a = { Move = name, Shape = m.Shape, O = g.Pos, D = dir, L = m.Length, W = m.Width, R = m.Radius, A = m.Angle, Tele = EnemyRules.teleTime(g.Phase), Damage = m.Damage, Flight = m.Flight, Jump = m.Jump, Ri = m.Inner, Drop = m.Drop, Calls = m.Calls }
-			if docks then
-				a.P = docks
-			elseif m.At == 'You' then
+			local a = { Move = name, Shape = m.Shape, O = g.Pos, D = dir, L = m.Length, W = m.Width, R = m.Radius, A = m.Angle, Tele = EnemyRules.teleTime(), Damage = m.Damage, Flight = m.Flight, Jump = m.Jump, Ri = m.Inner, Drop = m.Drop }
+			if m.At == 'You' then
 				a.P = { EnemyRules.clamp(flat(you), arena) }
 				for c = 2, m.Count or 1 do
 					local ang = (c - 1.5) * 2.1 + (g.MoveN or 0)
@@ -294,6 +291,7 @@ function EnemyRules.planAttack(g: any, you: Vector3, arena: any, others: { any }
 	end
 	return nil
 end
+
 
 -- Is the point p (map frame) inside the attack's shape (shrunk by Fair)?
 function EnemyRules.inAttack(a: any, p: Vector3): boolean
@@ -363,9 +361,10 @@ function EnemyRules.punch(kind: string?): number
 	return math.clamp(k.Punch, 0, EnemyRules.MaxPunch)
 end
 
--- The tag over a goon: "Goon 1", "Runner 7", "BOSS" (the video's "Guard 1").
-function EnemyRules.tagName(stage: number, kind: string): string
-	if kind == 'Boss' then return 'BOSS' end
+-- The tag over a goon: "Goon 1", "Runner 7" (the video's "Guard 1"); a crew's strongest by its own name (brief 30: never
+-- "BOSS"), from its look.
+function EnemyRules.tagName(stage: number, kind: string, look: string?): string
+	if kind == 'Boss' then return EnemyRules.shownName(look or (EnemyRules.looksFor(stage).boss)) end
 	local k = EnemyRules.Kinds[kind]
 	return (k and k.Name or kind) .. ' ' .. tostring(stage)
 end
@@ -402,7 +401,7 @@ function EnemyRules.world(gates: { any }, lastDepth: number?, looks: ((number) -
 				local spot = spots[i]
 				if spot then
 					local home = Vector3.new(math.clamp(spot[1], -arena.X, arena.X), 0, math.clamp(g.Z - spot[2], arena.Z1, arena.Z0))
-					list[i] = { Kind = kind, Name = EnemyRules.tagName(stage, kind), Home = home, Look = cast[i], Walkout = (court and home.X > court.Fence.X) or nil, Reserve = EnemyRules.Reserve[stage] and EnemyRules.Reserve[stage][i] or nil }
+					list[i] = { Kind = kind, Name = EnemyRules.tagName(stage, kind, cast[i]), Home = home, Look = cast[i], Walkout = (court and home.X > court.Fence.X) or nil, Reserve = EnemyRules.Reserve[stage] and EnemyRules.Reserve[stage][i] or nil }
 				end
 			end
 			world[stage], arenas[stage] = list, arena
@@ -476,7 +475,7 @@ function EnemyRules.step(g: any, dt: number, target: Vector3?, now: number, calm
 	local t = (target and not calm) and flat(target) or nil
 	if g.State == S.Idle then
 		if g.Reserve then return nil end -- (behind the dock's doors till the boss calls)
-		if t and (t - g.Pos).Magnitude <= (g.Kind == 'Boss' and S.BossNotice or S.Notice) then
+		if t and (t - g.Pos).Magnitude <= S.Notice then
 			S.alert(g, 0)
 			return 'notice'
 		end
@@ -504,7 +503,7 @@ function EnemyRules.step(g: any, dt: number, target: Vector3?, now: number, calm
 	end
 	local dist = (t - g.Pos).Magnitude
 	if g.Kind == 'Boss' and g.State ~= S.Tele and g.State ~= S.Dash and g.State ~= S.Alert then
-		-- (brief 29) a boss's big move: when it's rested and you're in a move's reach (between punches too)
+		-- (brief 29/30) its signature move: when it's rested and you're in the move's reach (between punches too)
 		g.CD = (g.CD or S.BossFirst) - dt
 		if g.CD <= 0 and (g.State == S.Chase or g.State == S.Recover) then
 			local atk = S.planAttack(g, t, arena, others)
@@ -519,18 +518,8 @@ function EnemyRules.step(g: any, dt: number, target: Vector3?, now: number, calm
 		if g.T > 0 then return nil end
 		local atk = g.Atk
 		local landed = atk ~= nil and S.inAttack(atk, t)
-		g.CD = S.bossRest(g.Phase)
+		g.CD = S.bossRest(S.bossOf(g.Look).Final)
 		g.State, g.T = S.Recover, k.Recover
-		if atk and atk.Calls then
-			-- the crew call: everyone waiting at the dock bursts out, a beat apart
-			local order = 0
-			for _, o in others or {} do
-				if o.Reserve and o.State == S.Idle then
-					S.alert(o, order)
-					order += 1
-				end
-			end
-		end
 		if atk and atk.Move == 'Charge' then
 			-- down the lane (as far as the street lets it)
 			g.DashFrom, g.DashTo = g.Pos, S.clamp(atk.O + atk.D * (atk.L - 2), arena)
@@ -585,21 +574,19 @@ function EnemyRules.step(g: any, dt: number, target: Vector3?, now: number, calm
 	return nil
 end
 
--- A goon that saw you (or was shot): "!" and a short beat, then it runs. `order` staggers a group.
+-- A goon that saw you (or was shot): a short beat, then it runs. `order` staggers a group.
 function EnemyRules.alert(g: any, order: number)
 	if g.State ~= EnemyRules.Idle and g.State ~= EnemyRules.Return then return end
 	g.State, g.T = EnemyRules.Alert, EnemyRules.NoticeDelay + 0.12 * (order or 0)
-	-- (brief 29) the final boss makes an entrance (off the catwalk), a reserve goon has its door to roll up first
-	if g.Kind == 'Boss' and g.Pos == g.Home then g.T = EnemyRules.bossOf(g.Look).Entrance or g.T end
 	if g.Reserve then g.T = 0.9 + 0.35 * (order or 0) end
 end
 
--- One goon noticing calls the rest of its crew (not the Boss: it waits for you), the nearer ones first, each a beat
--- later. Returns who was called.
+-- One goon noticing calls the rest of its crew, its strongest too (brief 30: the reference's wave charges as one group),
+-- the nearer ones first, each a beat later. Returns who was called.
 function EnemyRules.callPack(goons: { any }, caller: any): { number }
 	local list = {}
 	for i, o in goons do
-		if o ~= caller and o.State == EnemyRules.Idle and o.Kind ~= 'Boss' and not o.Reserve then table.insert(list, i) end
+		if o ~= caller and o.State == EnemyRules.Idle and not o.Reserve then table.insert(list, i) end
 	end
 	table.sort(list, function(a, b) return (goons[a].Home - caller.Home).Magnitude < (goons[b].Home - caller.Home).Magnitude end)
 	for order, i in list do EnemyRules.alert(goons[i], order) end

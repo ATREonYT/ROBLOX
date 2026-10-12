@@ -1,6 +1,7 @@
 -- (brief 29) The user's enemies in the stages: the roster mapped onto our 16 stages (the spawner asks EnemyLooks.forStage,
 -- the client works the same keys out itself), the template cache and its fallback to today's goon, the court's fence
--- and tunnel, and the bosses' big moves: a red telegraph at least a second before they land, phase 2 at half HP.
+-- and tunnel, and (brief 30) a crew's strongest: one signature move with a red telegraph at least a second before it
+-- lands, no phases.
 return function(t)
  local RS=game:GetService('ReplicatedStorage')
  local E=require(RS.Shared.EnemyRules)
@@ -34,12 +35,15 @@ return function(t)
   -- the client's own world (no EnemyLooks there) matches the server's
   local mine=E.world(gates())
   for s=1,16 do for i,e in world[s] do t.expect.equal(mine[s][i].Look,e.Look) end end
-  -- every boss has its moves, under its own name
+  -- every crew's strongest has its signature move (brief 30: one each; the last stage's three), under its roster name;
+  -- the name on screen never says "Boss"
   for _,crew in E.LookCrews do
    local b=E.Bosses[crew];t.expect.truthy(b~=nil)
    t.expect.equal(b.Title,Looks.info(crew..'_boss').name)
-   t.expect.truthy(#b.Moves>=2 and E.Moves[b.Rage]~=nil)
-   for _,m in b.Moves do t.expect.truthy(E.Moves[m]~=nil and b.Names[m]~=nil) end
+   t.expect.equal(#b.Moves,b.Final and 3 or 1)
+   for _,m in b.Moves do t.expect.truthy(E.Moves[m]~=nil) end
+   t.expect.falsy(string.find(string.lower(E.shownName(crew..'_boss')),'boss',1,true))
+   t.expect.equal(b.Rage,nil);t.expect.equal(b.PhaseAt,nil);t.expect.equal(b.Card,nil);t.expect.equal(b.Perch,nil)
   end
   t.expect.equal(world[16][1].Look,'harbor_boss') -- (the Boss Yard: World 1's final boss)
   t.expect.truthy(E.maxHp(16,'Boss')>E.maxHp(16,'Bruiser') and E.maxHp(2,'Boss')>E.maxHp(2,'Bruiser'))
@@ -112,26 +116,24 @@ return function(t)
   end
  end)
 
- t.test('a boss telegraphs every big move in red at least a second before it lands, and gets angry at half HP',function()
-  for _,ph in {1,2} do t.expect.truthy(E.teleTime(ph)>=E.TeleMin and E.TeleMin>=1) end
-  t.expect.truthy(E.teleTime(2)<E.teleTime(1) and E.bossRest(2)<E.bossRest(1))
+ t.test('a crew\'s strongest telegraphs its one signature move in red at least a second before it lands; no phases',function()
+  t.expect.truthy(E.teleTime()>=E.TeleMin and E.TeleMin>=1)
+  t.expect.truthy(E.bossRest(true)<E.bossRest(false))
   for crew,b in E.Bosses do
-   for _,ph in (b.Final and {} or {1,2}) do -- (World 1's final boss has its own three phases: Finale29_Test)
-    local g={Kind='Boss',Look=crew..'_boss',Pos=Vector3.new(0,0,-40),Phase=ph}
-    local moves=E.movesOf(g)
-    t.expect.equal(#moves,ph==1 and 2 or 3)
-    for n=1,#moves do
-     g.MoveN=n-1
-     local atk=E.planAttack(g,Vector3.new(0,0,-34),nil)
-     t.expect.truthy(atk~=nil and atk.Tele>=1.0 and atk.Damage>0 and atk.Damage<=E.MaxPunch)
-     -- standing where it shows is a hit; well outside it is a miss
-     local inside=atk.Shape=='Line' and atk.O+atk.D*4 or (atk.Shape=='Cone' and atk.O+atk.D*4) or atk.P[1]
-     t.expect.truthy(E.inAttack(atk,inside))
-     t.expect.falsy(E.inAttack(atk,atk.O+Vector3.new(60,0,0)))
-    end
+   local g={Kind='Boss',Look=crew..'_boss',Pos=Vector3.new(0,0,-40)}
+   local moves=E.movesOf(g)
+   t.expect.equal(#moves,b.Final and 3 or 1)
+   for n=1,#moves do
+    g.MoveN=n-1
+    local atk=E.planAttack(g,Vector3.new(0,0,-34),nil)
+    t.expect.truthy(atk~=nil and atk.Tele>=1.0 and atk.Damage>0 and atk.Damage<=E.MaxPunch)
+    -- standing where it shows is a hit; well outside it is a miss
+    local inside=(atk.Shape=='Line' or atk.Shape=='Cone') and atk.O+atk.D*4 or atk.P[1]
+    t.expect.truthy(E.inAttack(atk,inside))
+    t.expect.falsy(E.inAttack(atk,atk.O+Vector3.new(60,0,0)))
    end
   end
-  -- a fight: the boss's first big move comes, then lands no sooner than its telegraph
+  -- a fight: its first signature move comes, then lands no sooner than its telegraph
   local world={[1]={{Kind='Boss',Home=Vector3.new(0,0,-40),Look='ballers_boss'}}}
   local c={t=0};local s=W.session(world,function() return c.t end);s:move(1)
   local you=Vector3.new(0,0,-30)
@@ -165,12 +167,10 @@ return function(t)
    if dodged~=nil then break end
   end
   t.expect.truthy(dodged==true)
-  -- half its HP: phase 2, its rage move joins in
+  -- half its HP: nothing changes (brief 30: no phases, no rage move)
   local w=s:current();local b=w.Goons[1];c.t+=5
-  t.expect.equal(b.Phase,nil)
   s:shoot(1,1,b.Pos+Vector3.new(0,0,5),math.floor(w.Max[1]*0.55))
-  t.expect.equal(b.Phase,2);t.expect.truthy(table.find(E.movesOf(b),'Leap')~=nil)
-  -- made whole again (you left): calm, phase 1
-  W.restore(w);t.expect.equal(b.Phase,nil)
+  t.expect.equal(b.Phase,nil);t.expect.equal(#E.movesOf(b),1)
+  W.restore(w);t.expect.equal(b.CD,nil)
  end)
 end

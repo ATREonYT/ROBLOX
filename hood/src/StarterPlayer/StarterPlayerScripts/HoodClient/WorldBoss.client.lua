@@ -2,6 +2,12 @@
 --   The invite (the reference's top-centre panel): WORLD BOSS, its name in gold, a big countdown and a green JOIN, while
 --     it is about to land or is up and you aren't on the pier (and not in a stage fight). JOIN puts you on the pier.
 --   The lobby's countdown board (tagged HoodWorldBossBoard): its name, NEXT IN m:ss or FIGHT NOW!, a hint.
+--   (brief 30) The reference's top line while you wait (Shared/FightUI.bossTimer): "Next <NAME> boss fight in: m:ss" and
+--     a blue SKIP (the Robux product WorldBossSkip: the next one lands now, for everyone; "Coming soon!" while its id
+--     is 0). It sits in the HUD's TopCentre.BossTimerSlot (FightUI.dock) and hides while the invite is up, while the
+--     fight is on, while you're down and while the fight's "N LEFT" / CLEAR! chip has the top centre (PlayerGui's
+--     FightChip); PlayerGui's BossTimer attribute says when it shows.
+--     The giant's moves are telegraphed in red like a crew's, with no words over it (the reference's grammar).
 --   On the pier while it's up: the giant (Shared/EnemyRig, a crew boss grown with Model:ScaleTo) walking, squaring up,
 --     winding up its punches and big moves (anticipation, snap, recovery), its moves' RED telegraphs (Shared/BossFX),
 --     its HP bar at the top (Shared/FightUI) with your share of the damage; your gun aims at it (Shared/WorldBossView:
@@ -22,6 +28,8 @@ local BossFX = require(RS.Shared.BossFX)
 local FightUI = require(RS.Shared.FightUI)
 local WB = require(RS.Shared.WorldBossRules)
 local View = require(RS.Shared.WorldBossView)
+local FightFX = require(RS.Shared.FightFX)
+local CharMotion = require(RS.Shared.CharMotion)
 
 local player = Players.LocalPlayer
 local active = ActiveMap.wait(20)
@@ -87,6 +95,21 @@ folder.Name = 'HoodWorldBoss'
 folder.Parent = workspace
 local bar = FightUI.bossBar(root)
 bar.Gui.Position = UDim2.new(0.5, 0, 0, 100)
+-- (brief 30) the reference's timer line and its SKIP
+local timer = FightUI.bossTimer(root)
+FightUI.dock(timer.Gui, 'BossTimerSlot', root) -- (the HUD's slot at the top centre, HudSpec.TopCentre)
+local Products = (function()
+	local ok, r = pcall(function() return require(RS.Shared.Config.Products) end)
+	return ok and type(r) == 'table' and r or nil
+end)()
+timer.Skip(function()
+	local ok = Products and Products.canBuy and Products.canBuy('WorldBossSkip')
+	if not ok then
+		timer.note('Coming soon!')
+		return
+	end
+	pcall(function() game:GetService('MarketplaceService'):PromptProductPurchase(player, Products.idOf('WorldBossSkip')) end)
+end)
 local share = Kit.text({ Name = 'Share', Text = '', TextSize = 18, Stroke = BLACK, StrokeThickness = 2, TextColor3 = Color3.fromRGB(69, 230, 255), AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 176), Size = UDim2.fromOffset(300, 22), Visible = false, Parent = root })
 local boss = nil -- { Rig, Look, Pos, Srv, State, Since, Walk, Yaw, Atk = { Move, At, Hit, Flight, T }, Punch }
 local myDamage = 0
@@ -108,6 +131,14 @@ local function ensure()
 	return boss
 end
 local remote = Net.get('WorldBoss')
+-- (brief 30) a hit that lands on you: the reference's small white star on your chest, your body snapping back
+local function hurtYou()
+	local c = player.Character
+	local r = c and c:FindFirstChild('HumanoidRootPart')
+	if not r then return end
+	FightFX.star(r.Position + Vector3.new(0, 0.9, 0) + r.CFrame.LookVector * 0.7, 1.9, 0.1)
+	CharMotion.hurt(1.3)
+end
 remote.OnClientEvent:Connect(function(info)
 	if type(info) ~= 'table' then return end
 	local now = os.clock()
@@ -119,10 +150,7 @@ remote.OnClientEvent:Connect(function(info)
 		tele = BossFX.telegraph(frame, info, 0.08, folder)
 		local T = math.max(0.3, tonumber(info.T) or 1)
 		boss.Atk = { Move = info.Move, At = now, Hit = now + T, Flight = tonumber(info.Flight) or 0.6, Info = info }
-		local b = EnemyRules.bossOf(boss.Look)
-		if boss.Rig and boss.Rig.Head then
-			Juice.popNumber(boss.Rig.Head.Position + Vector3.new(0, 4, 0), (b.Names and b.Names[info.Move]) or (tostring(info.Move) .. '!'), Color3.fromRGB(255, 76, 64), Kit.Font.display, { size = Vector2.new(12, 2.6), thickness = 3, stroke = BLACK })
-		end
+		-- (brief 30: the reference's telegraph is only the red shape: no words pop over it)
 	elseif info.Kind == 'Blast' and boss then
 		if tele then tele.finish(info.Landed) tele = nil end
 		local a = boss.Atk
@@ -130,10 +158,11 @@ remote.OnClientEvent:Connect(function(info)
 			a.Hit = math.min(a.Hit, now)
 			local at = toWorld(boss.Pos, 0.2).Position
 			BossFX.impact(at, (a.Info and a.Info.R) or 12, Color3.fromRGB(255, 200, 90))
-			Juice.kick(0.3)
 		end
+		if info.Landed then hurtYou() end
 	elseif info.Kind == 'Punch' and boss then
 		boss.Punch = now
+		if info.Landed then hurtYou() end
 	elseif info.Kind == 'Down' then
 		if boss and boss.Rig and boss.Rig.Chest then
 			local at = boss.Rig.Chest.Position
@@ -240,6 +269,13 @@ RunService.PreRender:Connect(function(dt)
 	local left = at - serverNow()
 	local fighting = (player:GetAttribute('WaveLeft') or 0) > 0
 	invite.Visible = (ph == 'Invite' or fightOn) and not here and not fighting
+	-- (brief 30) the timer line while you wait (not over the invite, the fight or the revive screen)
+	local look = RS:GetAttribute('WorldBossLook')
+	-- (and, like the reference's top line, it gives way to the fight's "N LEFT" / CLEAR! chip in the same spot)
+	local showTimer = ph == 'Wait' and not here and look ~= nil and player:GetAttribute('Downed') == nil and player.PlayerGui:GetAttribute('FightChip') ~= true
+	timer.show(showTimer)
+	if showTimer then timer.set(WB.shortName(look), left) end
+	if player.PlayerGui:GetAttribute('BossTimer') ~= (showTimer or nil) then player.PlayerGui:SetAttribute('BossTimer', showTimer or nil) end
 	nameLabel.Text = tostring(RS:GetAttribute('WorldBossTitle') or '')
 	clockLabel.Text = fightOn and 'FIGHT!' or WB.clock(left)
 	for _, lines in boards() do

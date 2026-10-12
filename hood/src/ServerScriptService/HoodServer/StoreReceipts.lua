@@ -16,6 +16,8 @@
 --                   own time, the strongest runs first), kept in the profile (Passes.Boost) so they survive a rejoin
 --   BlockParty      x2 Power for everyone in this server for the same time
 --   SkipRebirth     RebirthService.rebirth(player, { Free = true })
+--   Revive/Revenge  (FIGHTS30, brief 30) WaveService's FightGrant: up again from the revive screen (Revenge knocks out the crew too)
+--   WorldBossSkip   (FIGHTS30, brief 30) WorldBossService's SkipGrant: the next World Boss lands now, for everyone in the server
 --   Featured rows   (brief 30) the weekly pack: Cash (Products.cashAmount, scales with the best stage) + a timed Power boost
 --                   + Count of a Robux box, in ONE grant; everything that can fail runs before the profile changes
 --   Bundle rows     (brief 30, the Grail Bundle: a row with Shoes) one pair each of its shoes (ShoeRules.give), in ONE
@@ -272,6 +274,21 @@ function StoreReceipts.grants(ctx)
 		notice(player, 'Thanks! +' .. ExtrasRules.Spin.PackSpins .. ' Spins. Go spin the wheel!')
 	end
 	-- HUD30 END
+	-- FIGHTS30 BEGIN
+	-- (brief 30, FIGHTS) the revive screen's Revive! / Revenge! (HoodServer/WaveService's FightGrant) and the World Boss
+	-- timer's SKIP (HoodServer/WorldBossService's SkipGrant: the next one lands now for everyone)
+	for _, key in { 'Revive', 'Revenge' } do
+		grants[key] = function(player)
+			assert(ctx.fight, 'WaveService missing')
+			assert(ctx.fight(player, key) == true, key .. ' refused')
+			notice(player, key == 'Revive' and 'Revived!' or 'Revenge!')
+		end
+	end
+	grants.WorldBossSkip = function(player)
+		assert(ctx.skipBoss, 'WorldBossService missing')
+		assert(ctx.skipBoss(player) == true, 'skip refused')
+	end
+	-- FIGHTS30 END
 	return grants
 end
 

@@ -1,28 +1,36 @@
 -- The stage goons on your screen (brief 18). The server decides everything (WaveService, Shared/WaveRules and
 -- Shared/EnemyRules); this draws it and aims.
---   Goons: cartoon rival-crew kids (Shared/GoonRig) built here, on your machine only: other players never see your goons,
---     you never see theirs. Each stage's crew stands on its spots in front of the next gate (you can see them waiting from
---     the gate before); once you walk in, the server's moves (WaveState 'Moves', 10 a second) drive them, smoothed: they
---     notice you ("!"), run at you, put their fists up, wind up and punch (a white swipe; Roblox's own health bar and
---     red hurt flash show the damage), flinch and flash white when hit, and a knocked-out goon falls flat on its back,
---     sees stars and vanishes in a poof. Over each: its name and a red HP bar ("Goon 1  40/40", Shared/FightUI: UI2's look).
+--   Goons: the user's HoodEnemies avatars (Shared/EnemyRig; today's goon, Shared/GoonRig, stands in until a look is
+--     built), on your machine only: other players never see your goons, you never see theirs. Each stage's crew waits in a
+--     loose group in front of the next gate (you can see them from the gate before); once you come near, the server's
+--     moves (WaveState 'Moves', 10 a second) drive them, smoothed.
+--   (brief 30) The reference's fight grammar (bible 0.6, 2.3-2.6), copied:
+--     * the wave idles at the next gate and charges you at about 25 studs, running with its arms forward;
+--     * every hit pops a "+N" with the bicep by YOUR body (Shared/FightFX; no damage numbers over the goons), a shot puts
+--       a white X on the goon, a swing (a goon in contact: EnemyRules.MeleeRange) a white impact star and a white
+--       crescent swoosh round you, and pays more (the video's +9 next to +6);
+--     * the goons throw several kinds of punch (a jab, a hook, an uppercut, a kick, a shove, a haymaker: EnemyRules.Swings),
+--       each with its own wind-up; a punch that lands on you is a small white star on your chest and your body snaps back;
+--     * a hit makes the goon flinch away from it (from the side, it twists) and knocks it back a little;
+--     * a knocked-out goon falls one of three ways (back, forward, turning onto its side) and lies there in a dark heap,
+--       its head loose beside it, until the run ends (the reference's piles stay while you walk on);
+--     * the last one down: "CLEAR!" on the counter (the gate's white flash and its sign are HoodClient/Stages');
+--     * a crew's strongest is a named enemy with a bigger, brick-studded HP bar and one signature move telegraphed in RED
+--       on the ground (Shared/BossFX) at least a second before it lands; no boss bar, card, phase or banner anywhere;
+--     * the punch that would finish you knocks you down: the reference's REVIVE? screen (Shared/FightUI.revive) over the
+--       blurred world, counting down 10 s: "Revive!" and "Revenge!" are Robux products (their prices on the buttons),
+--       "No" (or the time running out) is free and puts you back at the stage start.
 --   Shooting: while you stand in a stage with goons up (the server's WaveLeft), with your gun in hand (always): hold the
 --     mouse, R2 or the SHOOT button and it fires at the nearest goon in reach (a soft aim assist that sticks to one goon
---     until it drops), and you turn to face it while you strafe. With the Auto Fight pass (Pass_AutoShoot) it fires on its
---     own. Each shot: muzzle flash, tracer, sparks, recoil, a red damage number over the goon (your Power) and your "+N"
---     Power by you. Shoot.client stands down while you're in a fight.
---   HUD (Shared/FightUI, UI2's look): "💀 N LEFT" at the top centre, green "CLEAR!" with the Cash a clear paid (held a
---     moment; the gate ahead opens with it, HoodClient/Stages); "KNOCKED OUT!" when a punch would have finished you (the
---     server puts you back at the stage start).
---   Runs (brief 23): a beaten crew stays down for the rest of the run; when the run ends (back in the lobby, WaveState
---     'Reset') every crew is drawn fresh again on its spots, the next one waiting behind its gate.
+--     until it drops), and you turn to face it while you strafe; in contact you swing instead. With the Auto Fight pass
+--     (Pass_AutoShoot) it fires on its own. Shoot.client stands down while you're in a fight.
+--   HUD (Shared/FightUI): "N LEFT" with the skull at the top centre, green "CLEAR!" (held a moment).
+--   Runs (brief 23): a beaten crew stays down (in its heaps) for the rest of the run; when the run ends (back in the
+--     lobby, WaveState 'Reset') every crew is drawn fresh again on its spots.
 --   Leaving a stage (brief 24): a crew you walk away from before beating it is whole again (WaveState 'Wave' with
 --     Restored): its HP bars fill back up with a green glint, a knocked-out goon pops back in on its spot in a puff of
 --     smoke, and the rest walk home (a crew still walking when the run ends keeps walking: Reset's Keep).
---   (brief 29) The goons are the user's HoodEnemies avatars (Shared/EnemyRig clones the server's templates and animates
---     them from code; today's goon stands in until, or unless, a look is built). A court crew jogs out of the players'
---     tunnel as you walk in. Bosses: a big HP bar at the top, their big moves telegraphed in RED on the ground
---     (Shared/BossFX) a second or more before they land, and a roar into phase 2 at half HP.
+--   A court crew jogs out of the players' tunnel as you walk in (brief 29).
 local Players = game:GetService('Players')
 local UserInputService = game:GetService('UserInputService')
 local TweenService = game:GetService('TweenService')
@@ -39,9 +47,10 @@ local WaveRules = require(RS.Shared.WaveRules)
 local EnemyRules = require(RS.Shared.EnemyRules)
 local StageRules = require(RS.Shared.StageRules)
 local GunTool = require(RS.Shared.GunTool)
-local CharMotion = require(RS.Shared.CharMotion) -- (brief 29: the arms kick with each shot)
+local CharMotion = require(RS.Shared.CharMotion) -- (brief 29: the arms kick with each shot; brief 30: swings, hurt, down)
 local EnemyRig = require(RS.Shared.EnemyRig)
 local BossFX = require(RS.Shared.BossFX)
+local FightFX = require(RS.Shared.FightFX)
 local WorldBossView = require(RS.Shared.WorldBossView) -- (brief 29, P3b: the World Boss, HoodClient/WorldBoss)
 local FightUI = require(RS.Shared.FightUI)
 local Kit = require(RS.Shared.UIKit)
@@ -94,12 +103,15 @@ local folder = Instance.new('Folder')
 folder.Name = 'HoodGoons'
 folder.Parent = workspace
 BossFX.Parent = folder
-local Boss = {} -- (brief 29: bosses and walk-outs, below)
+FightFX.Parent = folder
+local Boss = {} -- (the strongest enemies' signature moves and the court walk-outs, below)
 
 -- waves[stage] = { Stage, Known (the server told us), Cleared, Goons = { [i] = view } }
 -- view = { Index, Kind, Name, Home, Rig, Tag, Pos (drawn, map frame), Srv (server's), Vel, State, Since (when the state
---   began), Hp, Max, Down, KO (time knocked out), Walk, Yaw, Y (ground), Punch (time of the last punch), Flinch, FlinchV,
---   Refill = { From, At } (the HP bar filling back up), PopIn (puff in when its rig is next built) }
+--   began), Hp, Max, Down, KO (time knocked out), Walk, Yaw, Y (ground), Punch (time of the last punch), Swing (its kind),
+--   Flinch/FlinchV and FlinchS/FlinchSV (back and side springs), Knock/KnockV (the knock-back, studs in its own frame),
+--   Fall (how it fell), Settled (its heap is drawn and still), Refill = { From, At } (the HP bar filling back up),
+--   PopIn (puff in when its rig is next built) }
 local waves = {}
 local popIn = {} -- [stage] = { At, [index] = true }: goons that come back in a puff once their crew is drawn again
 local current = 0 -- the stage you stand in (with goons), the server's WaveStage
@@ -135,56 +147,14 @@ local function tagHp(v, now)
 end
 
 local function toWorld(p, y) return frame * CFrame.new(p.X, y or 0, p.Z) end
-
--- Moments over a goon: a yellow "!" that pops when it notices you, and three "★" circling its head when it is knocked
--- out (UI2's outline style: Kit's display font, a plain black stroke).
 local BLACK = Kit.Color.black or Color3.new(0, 0, 0)
-local function alertOver(head, height)
-	local g = Instance.new('BillboardGui')
-	g.Name = 'GoonAlert'
-	g.Size = UDim2.fromScale(2.2, 2.2)
-	g.StudsOffsetWorldSpace = Vector3.new(0, height, 0)
-	g.LightInfluence, g.AlwaysOnTop, g.MaxDistance = 0, true, 120
-	local t = Kit.text({ Name = 'Mark', Text = '!', Stroke = BLACK, StrokeThickness = 3, TextColor3 = Color3.fromRGB(255, 214, 64), Parent = g })
-	t.TextScaled = true
-	local scale = Kit.new('UIScale', { Scale = 0.2, Parent = t })
-	g.Parent = head
-	TweenService:Create(scale, TweenInfo.new(0.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
-	TweenService:Create(t, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In, 0, false, 0.5), { TextTransparency = 1 }):Play()
-	local st = t:FindFirstChildOfClass('UIStroke')
-	if st then TweenService:Create(st, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In, 0, false, 0.5), { Transparency = 1 }):Play() end
-	task.delay(0.8, function() g:Destroy() end)
-end
-local function starsOver(head, height)
-	local g = Instance.new('BillboardGui')
-	g.Name = 'GoonStars'
-	g.Size = UDim2.fromScale(4, 1.6)
-	g.StudsOffsetWorldSpace = Vector3.new(0, height, 0)
-	g.LightInfluence, g.AlwaysOnTop, g.MaxDistance = 0, true, 120
-	local stars = {}
-	for k = 1, 3 do
-		local t = Kit.text({ Name = 'Star', Text = '★', Stroke = BLACK, StrokeThickness = 2, TextColor3 = Color3.fromRGB(255, 220, 60), AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromScale(0.3, 0.75), Parent = g })
-		t.TextScaled = true
-		stars[k] = t
-	end
-	g.Parent = head
-	local self = { Gui = g }
-	function self:spin(time)
-		for k, t in stars do
-			local a = time * 7 + k * math.pi * 2 / 3
-			t.Position = UDim2.fromScale(0.5 + 0.38 * math.cos(a), 0.5 + 0.22 * math.sin(a))
-			t.ZIndex = math.sin(a) > 0 and 2 or 1
-		end
-	end
-	self:spin(0)
-	return self
-end
 
 local function newView(stage, i, e)
 	local max = EnemyRules.maxHp(stage, e.Kind)
 	return { Stage = stage, Index = i, Kind = e.Kind, Name = e.Name, Home = e.Home, Pos = e.Home, Srv = e.Home, SrvPrev = e.Home, SrvAt = os.clock(),
 		Vel = Vector3.zero, State = EnemyRules.Idle, Since = os.clock(), Hp = max, Max = max, Down = false, Walk = 0, Yaw = 0, Y = nil,
-		Flinch = 0, FlinchV = 0, Variant = stage * 3 + i, Look = e.Look, Walkout = e.Walkout, Reserve = e.Reserve }
+		Flinch = 0, FlinchV = 0, FlinchS = 0, FlinchSV = 0, Knock = Vector3.zero, KnockV = Vector3.zero, SwingN = 0,
+		Variant = stage * 3 + i, Look = e.Look, Walkout = e.Walkout, Reserve = e.Reserve }
 end
 -- The wave of a stage as you'd find it walking in: everyone on their spot, full HP (until the server says otherwise).
 local function waveOf(stage)
@@ -205,7 +175,7 @@ end
 
 local function dropRig(v)
 	if v.Rig then v.Rig.Model:Destroy() end
-	v.Rig, v.Tag, v.Stars = nil, nil, nil
+	v.Rig, v.Tag, v.Settled = nil, nil, nil
 end
 -- A puff of white smoke at `at` (world), `scale` the goon's size: a goon vanishing or popping in.
 local function puffAt(at, scale, count)
@@ -225,19 +195,31 @@ local function puffAt(at, scale, count)
 		task.delay(0.5, function() p:Destroy() end)
 	end
 end
+-- The name over a goon: the user's own names ("Recess Bully", "Court King"); a crew's strongest by EnemyRules.shownName
+-- (brief 30: never "Boss").
+local function titleOf(v, rig)
+	if v.Kind == 'Boss' then return EnemyRules.shownName(v.Look) end
+	return rig and rig.R15 and rig.Model:GetAttribute('DisplayName') or v.Name
+end
 local function buildRig(v)
 	local crew = EnemyRules.Crews[v.Stage] or 'Red'
 	if v.Kind == 'Boss' then crew = 'Boss' end
 	local rig = EnemyRig.build(v.Look, v.Kind, crew, v.Variant, folder)
 	rig.Model:SetAttribute('Stage', v.Stage)
 	rig.Model:SetAttribute('Index', v.Index)
-	-- (brief 29) the user's enemies carry their own names ("Recess Bully", "Court King")
-	v.Title = rig.R15 and rig.Model:GetAttribute('DisplayName') or (v.Kind == 'Boss' and EnemyRules.bossOf(v.Look).Title) or v.Name
-	local tag = FightUI.tag(rig.Head, v.Title, v.Max)
-	-- (bigger goons carry their tag higher: the Bruiser's and the Boss's heads are bigger)
-	tag.Gui.StudsOffset = (FightUI.TagOffset or Vector3.new(0, 2.6, 0)) + Vector3.new(0, (rig.Scale - 1) * 1.6, 0)
+	v.Title = titleOf(v, rig)
+	-- (brief 30) a crew's strongest: a bigger tag, its bar brick-studded (the reference's Charger)
+	local strong = v.Kind == 'Boss'
+	local tag = FightUI.tag(rig.Head, v.Title, v.Max, strong)
+	-- (bigger goons carry their tag higher: the Bruiser's and the strongest's heads are bigger)
+	tag.Gui.StudsOffset = (FightUI.TagOffset or Vector3.new(0, 2.6, 0)) + Vector3.new(0, (rig.Scale - 1) * 1.6 + (strong and 0.5 or 0), 0)
 	v.Rig, v.Tag, v.TagK = rig, tag, nil
 	v.Model = rig.Model
+	-- (brief 30) a heap stays dark when it is drawn again
+	if v.Down then
+		tag.Gui.Enabled = false
+		EnemyRig.darken(rig, 0.72)
+	end
 	-- Back on its spot a moment ago (its crew made whole, or a new run): it pops up out of a puff (draw() puffs once it
 	-- is placed). A crew first drawn later, as you walk up, just stands there.
 	if v.PopIn and os.clock() - v.PopIn < 2 then v.Spawned, v.PuffIn = os.clock(), true end
@@ -247,11 +229,11 @@ end
 ---------------------------------------------------------------------------------------------- the server's word
 local function setState(v, state)
 	if v.State == state then return end
-	local was = v.State
 	v.State, v.Since = state, os.clock()
-	if state == EnemyRules.Alert and (was == EnemyRules.Idle or was == EnemyRules.Return) and v.Rig then
-		alertOver(v.Rig.Head, v.Rig.Head.Size.Y / 2 + 2.6 * v.Rig.Scale)
-		v.Hop = os.clock()
+	-- (brief 30) a new wind-up: the next kind of punch in its turn (a jab, a hook, an uppercut, a kick ...)
+	if state == EnemyRules.Windup then
+		v.SwingN += 1
+		v.Swing = EnemyRules.swingFor(v.Kind, v.SwingN + v.Index)
 	end
 end
 -- snap: the crew was only just drawn (put everyone where the server has them, no puffs).
@@ -271,9 +253,9 @@ local function applyMoves(w, d, snap)
 			v.SrvPrev, v.Srv, v.SrvAt = v.Srv, p, now
 			if snap then
 				v.Pos = p
-			elseif (v.Pos - p).Magnitude > 12 and not v.Atk then
+			elseif (v.Pos - p).Magnitude > 12 and not v.Atk and not v.Down then
 				-- (a jump: snap. One you can see goes in a puff and comes out of one: put back on its spot)
-				if v.Rig and not v.Down then
+				if v.Rig then
 					puffAt(toWorld(v.Pos, (v.Y or 0) + 2 * v.Rig.Scale).Position, v.Rig.Scale, 5)
 					v.PuffIn = true
 				end
@@ -284,61 +266,64 @@ local function applyMoves(w, d, snap)
 	end
 end
 
--- A goon goes down: flat on its back, stars, then a poof and gone.
-local function knockOut(v, animate)
+-- (brief 30) A hit on goon v from `from` (world): it flinches away from the hit (from the side it twists) and is knocked
+-- back a little (a swing a lot more); `power` ~1 a shot, ~2 a swing, more on the hit that knocks it out.
+-- (r3, matched side by side to W 31-33 s: the reference's guards show no stagger at all, only the X and the bar, so the
+-- hit is a small tick: Stagger scales every push)
+local STAGGER = 0.22
+local function impulse(v, from, power)
+	power *= STAGGER
+	if not v.Rig then
+		v.FlinchV += 7 * power
+		return
+	end
+	local at = toWorld(v.Pos).Position
+	local d = Vector3.new(at.X - from.X, 0, at.Z - from.Z)
+	d = d.Magnitude > 1e-3 and d.Unit or Vector3.new(0, 0, 1)
+	-- its own frame: CFrame.Angles(0, Yaw, 0) in the map frame; X its right, Z its back
+	local right = frame:VectorToWorldSpace(Vector3.new(math.cos(v.Yaw), 0, -math.sin(v.Yaw)))
+	local back = frame:VectorToWorldSpace(Vector3.new(math.sin(v.Yaw), 0, math.cos(v.Yaw)))
+	local side, behind = d:Dot(right), d:Dot(back)
+	v.FlinchV += 7 * power * (0.4 + 0.6 * math.max(0, behind))
+	v.FlinchSV += 9 * power * side
+	v.KnockV += Vector3.new(side, 0, behind) * 7 * power
+end
+
+-- A goon goes down: the hit throws it back, it falls one of three ways and settles into its heap (draw()).
+local function knockOut(v, animate, melee)
 	if v.Down then return end
 	v.Down = true
 	v.KO = animate and os.clock() or (os.clock() - 10)
-	if v.Tag then v.Tag.Gui.Enabled = false end
-	if animate and v.Rig then
-		v.Stars = starsOver(v.Rig.Head, 1.2 * v.Rig.Scale)
-		-- (LOOP: up over the tag's height, clear of the red numbers and your "+N" by the goons' chests)
-		Juice.popNumber(v.Rig.Head.Position + Vector3.new(0, 4 * v.Rig.Scale, 0), 'KO!', Color3.fromRGB(255, 220, 60), Kit.Font.display, { size = Vector2.new(3.6, 1.6), thickness = 3, stroke = BLACK })
+	v.Fall = EnemyRules.fallFor(v.Index, melee)
+	v.Settled = nil
+	-- (r3, matched side by side to W 32.8-34.6 s: the reference's heaps lie apart, where each guard dropped, never on
+	-- you) the knock-out hit slides it about 2.5 studs straight away from you as it falls
+	local c = player.Character
+	local r = c and c:FindFirstChild('HumanoidRootPart')
+	if animate and r and v.Rig then
+		local at = toWorld(v.Pos).Position
+		local d = Vector3.new(at.X - r.Position.X, 0, at.Z - r.Position.Z)
+		d = d.Magnitude > 1e-3 and d.Unit or Vector3.new(0, 0, 1)
+		-- (fanned out: one goes left, the next straight, the next right, so the heaps lie apart round you)
+		d = CFrame.Angles(0, (((v.Index or 1) % 3) - 1) * 0.8, 0):VectorToWorldSpace(d)
+		local right = frame:VectorToWorldSpace(Vector3.new(math.cos(v.Yaw), 0, -math.sin(v.Yaw)))
+		local back = frame:VectorToWorldSpace(Vector3.new(math.sin(v.Yaw), 0, math.cos(v.Yaw)))
+		v.KnockV += Vector3.new(d:Dot(right), 0, d:Dot(back)) * 30
 	end
-end
-local function poof(v)
-	if not v.Rig then return end
-	local at = v.Rig.Head.Position - Vector3.new(0, 1.6 * v.Rig.Scale, 0)
-	puffAt(at, v.Rig.Scale)
-	Juice.burst(at + Vector3.new(0, 1, 0), Color3.fromRGB(255, 220, 60), 1.4 * v.Rig.Scale)
-	Juice.shards(at + Vector3.new(0, 1.5, 0), Color3.fromRGB(255, 220, 60), 'confetti')
-	play('Pop', 0.9)
-	dropRig(v)
+	v.Atk = nil
+	if v.Tag then v.Tag.Gui.Enabled = false end
 end
 
--- A punch landing on you (or just missing): the arm snaps out, a white swipe across you, a camera knock.
-local function swipe(v)
+-- (brief 30) A punch landing on you: the reference's small white impact star on your chest, your body snapping back.
+local function landed(v)
 	local c = player.Character
 	local root = c and c:FindFirstChild('HumanoidRootPart')
-	if not root or not v.Rig then return end
-	local from = v.Rig.Head.Position
-	local chest = root.Position + Vector3.new(0, 0.6, 0)
-	local dir = Vector3.new(chest.X - from.X, 0, chest.Z - from.Z)
-	dir = dir.Magnitude > 1e-3 and dir.Unit or Vector3.new(0, 0, -1)
-	local side = dir:Cross(Vector3.new(0, 1, 0))
-	local holder = Instance.new('Part')
-	holder.Name = 'Swipe'
-	holder.Anchored, holder.CanCollide, holder.CanQuery, holder.CanTouch, holder.Transparency = true, false, false, false, 1
-	holder.Size = Vector3.one * 0.2
-	holder.CFrame = CFrame.new(chest)
-	holder.Parent = folder
-	local a0, a1 = Instance.new('Attachment'), Instance.new('Attachment')
-	a0.Position = side * 1.8 + Vector3.new(0, 1.0, 0) - dir * 0.6
-	a1.Position = -side * 1.8 - Vector3.new(0, 0.6, 0) - dir * 0.6
-	a0.Parent, a1.Parent = holder, holder
-	local beam = Instance.new('Beam')
-	beam.Attachment0, beam.Attachment1 = a0, a1
-	beam.Width0, beam.Width1 = 0.9, 0.15
-	beam.CurveSize0, beam.CurveSize1 = -2.2, 2.2
-	beam.Segments = 16
-	beam.FaceCamera = true
-	beam.LightEmission, beam.LightInfluence = 1, 0
-	beam.Color = ColorSequence.new(Color3.new(1, 1, 1))
-	beam.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.6), NumberSequenceKeypoint.new(0.4, 0), NumberSequenceKeypoint.new(1, 0.5) })
-	beam.Parent = holder
-	task.delay(0.14, function() holder:Destroy() end)
-	Juice.burst(chest - dir * 0.8, Color3.new(1, 1, 1), 0.8)
-	Juice.kick(0.55)
+	if not root then return end
+	local from = v and v.Rig and v.Rig.Head.Position or root.Position + root.CFrame.LookVector * 3
+	local d = Vector3.new(root.Position.X - from.X, 0, root.Position.Z - from.Z)
+	d = d.Magnitude > 1e-3 and d.Unit or -root.CFrame.LookVector
+	FightFX.star(root.Position + Vector3.new(0, 0.9, 0) - d * 0.7, 1.7, 0.1)
+	CharMotion.hurt(1)
 	play('Tock', 0.7)
 end
 
@@ -355,11 +340,11 @@ local function onWave(info)
 		local hp = type(info.HP) == 'table' and info.HP[i] or max
 		local wasDown, was = v.Down, tagHp(v, now)
 		v.Max, v.Hp = max, hp
-		if hp >= max then v.Phase = nil end -- (brief 29: a boss made whole starts calm again)
 		if hp > 0 then
 			if wasDown then
 				-- Back on its spot (a crew you left, made whole): it pops up out of a puff there.
-				v.Down, v.KO, v.Stars = false, nil, nil
+				v.Down, v.KO, v.Fall, v.Settled = false, nil, nil, nil
+				v.Knock, v.KnockV = Vector3.zero, Vector3.zero
 				dropRig(v)
 				v.Pos, v.Srv, v.SrvPrev, v.Vel = v.Home, v.Home, v.Home, Vector3.zero
 				v.PopIn = now
@@ -380,47 +365,30 @@ end
 ---------------------------------------------------------------------------------------------- the HUD
 local gui, root, fit = Kit.screen('HoodWaves', nil, 6)
 local pill = FightUI.pill(root)
-local bossBar = FightUI.bossBar(root)
+FightUI.dock(pill.Gui, 'FightChipSlot', root) -- (the HUD's slot at the top centre, HudSpec.TopCentre)
 -- (LOOP) The first fights teach themselves: while goons are up and you haven't fired for a moment, "Hold click to
 -- shoot!" (or "Hold SHOOT to fire!" on a touch screen) sits under the counter, in the goal line's gold. Only until
 -- you have beaten a couple of stages; the Auto Fight pass needs no telling.
 local shootHint = Kit.text({ Name = 'ShootHint', Text = 'Hold click to shoot!', TextSize = 26, Stroke = BLACK, StrokeThickness = 3.5, TextColor3 = Kit.hex('FFD21A'), AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 52), Size = UDim2.fromOffset(460, 32), Visible = false, Parent = root })
 local HINT_UNTIL, HINT_IDLE = 2, 1.2 -- (shown while WaveCleared < HINT_UNTIL, after HINT_IDLE s without a shot)
 local clearUntil = 0 -- (the CLEAR! moment holds the pill until then)
--- "KNOCKED OUT!" over "Train more Power at the ranges!" (UI2's banner style: Kit text, a black stroke, a lit gradient):
--- pops in, holds, floats up and fades.
-local banner
-local function koBanner()
-	if banner then banner:Destroy() end
-	local holder = Kit.new('Frame', { Name = 'FightBanner', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.32), Size = UDim2.fromOffset(680, 150), Parent = root })
-	banner = holder
-	local scale = Kit.new('UIScale', { Scale = 0.3, Parent = holder })
-	-- (LOOP) on a dark see-through backing, like the GOAL DONE moment: it lands over the next gate's sign and the street
-	local back = Kit.new('Frame', { Name = 'Back', BackgroundColor3 = Kit.hex('10131E'), BackgroundTransparency = 0.4, BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, -4), Size = UDim2.new(0.84, 0, 0, 140), ZIndex = 0, Parent = holder })
-	Kit.corner(12).Parent = back
-	local t = Kit.text({ Name = 'Title', Text = 'KNOCKED OUT!', TextSize = 72, Stroke = BLACK, StrokeThickness = 5, Size = UDim2.new(1, 0, 0, 84), Parent = holder })
-	t.TextScaled = true
-	Kit.gradient(Color3.fromRGB(255, 160, 150), Color3.fromRGB(255, 59, 59), 0.5).Parent = t
-	local d = Kit.text({ Name = 'Detail', Text = 'Train more Power at the ranges!', TextSize = 34, Stroke = BLACK, StrokeThickness = 3.5, TextColor3 = Kit.Color.white, Position = UDim2.fromOffset(0, 88), Size = UDim2.new(1, 0, 0, 40), Parent = holder })
-	d.TextScaled = true
-	TweenService:Create(scale, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
-	task.delay(2.2, function()
-		if banner ~= holder then return end
-		local fade = TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
-		TweenService:Create(holder, fade, { Position = UDim2.fromScale(0.5, 0.26) }):Play()
-		TweenService:Create(back, fade, { BackgroundTransparency = 1 }):Play()
-		for _, x in { t, d } do
-			TweenService:Create(x, fade, { TextTransparency = 1 }):Play()
-			local st = x:FindFirstChildOfClass('UIStroke')
-			if st then TweenService:Create(st, fade, { Transparency = 1 }):Play() end
-		end
-		task.delay(0.45, function() if banner == holder then holder:Destroy(); banner = nil end end)
-	end)
+
+-- (brief 30) The revive screen (Shared/FightUI.revive), its prices from Config/Products.
+local Products = (function()
+	local ok, r = pcall(function() return require(RS.Shared.Config.Products) end)
+	return ok and type(r) == 'table' and r or nil
+end)()
+local function priceOf(key)
+	local e = Products and Products.ByKey and Products.ByKey[key]
+	return e and e.Price or nil
 end
+local revive = FightUI.revive(root, { Revive = priceOf('Revive'), Revenge = priceOf('Revenge') })
 
 ---------------------------------------------------------------------------------------------- the gun
+local downed = nil -- (brief 30) you're knocked down: { At, Left, Paused }
 local function training() return ShotRules.counts(player:GetAttribute('TrainingStation')) end
 local function inFight()
+	if downed then return false end
 	local left = player:GetAttribute('WaveLeft')
 	if current == 0 and WorldBossView.Active then return true end -- (the World Boss pier)
 	return current > 0 and type(left) == 'number' and left > 0 and not training()
@@ -464,7 +432,7 @@ local function kick(tool, strength)
 	end)
 end
 
----------------------------------------------------------------------------------------------- shooting
+---------------------------------------------------------------------------------------------- shooting and swinging
 local sticky -- the goon you're on (its index)
 local function rootPart()
 	local c = player.Character
@@ -489,52 +457,68 @@ local function chestOf(v)
 end
 -- The "+N" a hit pays (the server's own sum: ShotRules.pay of your x1 ShotBase off the ranges, times gun and shoes).
 local shoeCarry = {}
-local function gain()
-	-- (brief 29: a hit pays ShotRules.EnemyShare of that, the fraction carried like the server's)
-	return ShotRules.share(ShotRules.pay(player:GetAttribute('ShotBase'), player:GetAttribute('GunMultiplier'), player:GetAttribute('ShoeMultiplier'), shoeCarry), ShotRules.EnemyShare, shoeCarry, 'Enemy')
+local function gain(melee)
+	-- (brief 29: a hit pays ShotRules.EnemyShare of that, the fraction carried like the server's; brief 30: a swing
+	-- EnemyRules.MeleePay times that, in its own carry)
+	local share = ShotRules.EnemyShare * (melee and EnemyRules.MeleePay or 1)
+	return ShotRules.share(ShotRules.pay(player:GetAttribute('ShotBase'), player:GetAttribute('GunMultiplier'), player:GetAttribute('ShoeMultiplier'), shoeCarry), share, shoeCarry, melee and 'Melee' or 'Enemy')
 end
-local DAMAGE_RED = Color3.fromRGB(255, 70, 70)
--- (brief 19, LOOP: in a scrum one red number per shot stacked into a column over the goons) One red number per goon at
--- most every DAMAGE_EVERY seconds: the first shot pops at once, the shots after it add up into the next one.
-local DAMAGE_EVERY = 0.3
-local damageAcc = setmetatable({}, { __mode = 'k' }) -- [goon] = { Sum, Last, Pending, At }
-local function popDamage(v, damage, at)
-	local acc = damageAcc[v]
-	if not acc then
-		acc = { Sum = 0, Last = 0 }
-		damageAcc[v] = acc
-	end
-	acc.Sum += damage
-	acc.At = at
-	if acc.Pending then return end
-	local function flush()
-		acc.Pending = false
-		acc.Last = os.clock()
-		if acc.Sum <= 0 then return end
-		Juice.popNumber(acc.At + Vector3.new(0, 1.6, 0), Format.compact(acc.Sum), DAMAGE_RED, Kit.Font.display, { size = Vector2.new(2.6, 1.1), thickness = 2, stroke = BLACK })
-		acc.Sum = 0
-	end
-	local wait = DAMAGE_EVERY - (os.clock() - acc.Last)
-	if wait <= 0 then
-		flush()
-	else
-		acc.Pending = true
-		task.delay(wait, flush)
-	end
+-- (brief 30) Your "+N" pops by your body, a little to the left of your chest on screen, each one a touch apart (the
+-- reference's "+6" / "+9" with the bicep).
+local gainSide = 0
+local function popGain(r, amount, melee)
+	if amount <= 0 then return end
+	local cam = workspace.CurrentCamera
+	local right = cam and cam.CFrame.RightVector or Vector3.new(1, 0, 0)
+	gainSide = (gainSide + 1) % 3
+	local at = r.Position - right * (1.5 + gainSide * 0.35) + Vector3.new(0, 0.5 + gainSide * 0.3, 0)
+	FightFX.gain(at, amount, { melee = melee, text = Format.compact(amount) })
 end
 
 local last, aimed, aimUntil = 0, nil, 0
-local gainCombo -- (the running "+N" rig: kept by your shoulder as you move)
+local swingN = 0
+local MELEE_EVERY = 0.26 -- (the reference's swings come 0.1-0.2 s apart in the scrum; a touch slower than a shot)
 local function shoot()
-	if os.clock() - last < ShotRules.Cooldown or not inFight() then return false end
+	local meleeNext = false
 	local r = rootPart()
 	-- (P3b) on the World Boss pier the gun fires at the giant: a stand-in view for the shot's look below
 	local boss = current == 0 and WorldBossView.Active and r and WorldBossView.aim(r.Position)
-	Boss.wbView = Boss.wbView or { Boss = true, FlinchV = 0 }
-	local v = boss and Boss.wbView or target()
+	Boss.wbView = Boss.wbView or { Boss = true, FlinchV = 0, FlinchSV = 0, KnockV = Vector3.zero }
+	local v = (not boss) and target() or nil
+	if v and r then
+		local at = toWorld(v.Pos).Position
+		meleeNext = Vector3.new(at.X - r.Position.X, 0, at.Z - r.Position.Z).Magnitude <= EnemyRules.MeleeRange
+	end
+	if os.clock() - last < (meleeNext and MELEE_EVERY or ShotRules.Cooldown) or not inFight() then return false end
+	v = boss and Boss.wbView or v
 	if not r or not v then return false end
 	last = os.clock()
+	aimed, aimUntil = v, os.clock() + 0.45
 	local damage = EnemyRules.damage(player:GetAttribute('Power'))
+	if meleeNext then
+		-- (brief 30) a swing: the reference's close-range hit in the scrum (W 38.2-42.4 s): your arm sweeps across, a white
+		-- crescent swoosh round you, a white star on the goon, and it pays more
+		damage = math.floor(damage * EnemyRules.MeleePay)
+		swingN += 1
+		remote:FireServer(v.Stage, v.Index, true)
+		pending[v.Index] = pending[v.Index] or {}
+		table.insert(pending[v.Index], { damage, os.clock() })
+		CharMotion.melee(swingN)
+		local chest = chestOf(v)
+		local look = Vector3.new(chest.X - r.Position.X, 0, chest.Z - r.Position.Z)
+		look = look.Magnitude > 1e-3 and look.Unit or r.CFrame.LookVector
+		FightFX.swoosh(CFrame.lookAt(r.Position, r.Position + look) * CFrame.new(0, 0.1, -0.4), swingN)
+		play('Tock', 0.9)
+		local hitV = v
+		task.delay(0.08, function()
+			if not hitV.Rig then return end
+			FightFX.star(chestOf(hitV) - look * 0.5, 2.5, 0.1)
+			impulse(hitV, r.Position, 2.2)
+		end)
+		popGain(r, gain(true), true)
+		if v.Tag then v.Tag.set(shownHp(v), v.Max) end
+		return true
+	end
 	if boss then
 		Net.get('WorldBossShot'):FireServer()
 	else
@@ -546,33 +530,23 @@ local function shoot()
 	local gun = Guns.ById[tool and tool:GetAttribute('GunId') or player:GetAttribute('EquippedGun') or ''] or Guns.List[1]
 	local rig = tool and Juice.gunRig(tool)
 	local to = (boss or chestOf(v)) + Vector3.new((math.random() - 0.5) * 0.6, (math.random() - 0.5) * 0.6, 0)
-	aimed, aimUntil = v, os.clock() + 0.45
 	local from = rig and worldOf(rig.muzzle).Position or (r.Position + Vector3.new(0, 1.2, 0))
 	play('Shot', 1.1 - gun.Tier * 0.04)
 	Juice.muzzle(rig, gun.Color, 0.9 + gun.Tier * 0.1)
 	Juice.tracer(from, to, gun.Color, 0.18 + gun.Tier * 0.015)
 	if rig and rig.eject then Juice.casing(worldOf(rig.eject)) end
-	if tool then kick(tool, 0.8 + gun.Tier * 0.05) end
+	if tool then kick(tool, (0.8 + gun.Tier * 0.05) * 0.4) end -- (r3: the reference's gun barely kicks)
 	CharMotion.shot(0.9 + gun.Tier * 0.03)
-	Juice.kick(0.035 + gun.Tier * 0.006) -- (brief 29: tiny, and it returns)
-	Juice.burst(to, gun.Color, 0.8)
-	if v.Rig then Juice.flash(v.Rig.Model) end
-	v.FlinchV += 7
-	play('Tock', 1.1)
-	-- The video's numbers: red damage over the goon, your "+N" Power by you.
-	if boss then WorldBossView.hit(damage, to) end
-	popDamage(v, damage, to)
-	-- your Power: one running "+N" by your shoulder that rolls up while you fire (the ranges' combo), and follows you
-	local cam = workspace.CurrentCamera
-	local right = cam and cam.CFrame.RightVector or Vector3.new(1, 0, 0)
-	local at = r.Position + right * 2.4 + Vector3.new(0, 2.6, 0)
-	local paid = gain()
-	local c = paid > 0 and Juice.combo('HoodFightGain', at, paid, { color = Kit.Color.power, format = Format.compact }) or nil
-	if c and c.part then
-		c.part.CFrame = CFrame.new(at)
-		if c.gui then c.gui.Size = UDim2.fromScale(2.8, 1.6) end -- (smaller than the ranges': it sits right by you)
-		gainCombo = c
+	-- (brief 30) the reference's hit: a white X on the goon and a small white star, no camera shake, no damage numbers
+	FightFX.hitX(to)
+	FightFX.star(to + Vector3.new(0, 0.2, 0), 1.0, 0.07)
+	if boss then
+		WorldBossView.hit(damage, to)
+	else
+		impulse(v, r.Position, 1)
 	end
+	play('Tock', 1.1)
+	popGain(r, gain(false), false)
 	if v.Tag then v.Tag.set(shownHp(v), v.Max) end
 	return true
 end
@@ -686,6 +660,7 @@ local function turn(a, b, maxStep)
 	return a + math.clamp(d, -maxStep, maxStep)
 end
 local S = EnemyRules
+local SETTLE = EnemyRig.FallTime + EnemyRig.PileTime + 0.12 -- (a heap is still after this)
 local function draw(v, dt, now, you)
 	local kind = S.Kinds[v.Kind] or S.Kinds.Goon
 	-- Where: toward the server's spot plus a little of its run (the server's goons trail the real ones by ~0.1 s).
@@ -715,9 +690,17 @@ local function draw(v, dt, now, you)
 	elseif v.State == S.Return and v.Speed and v.Speed > 1 then want = yawTo(v.Pos, v.Srv + v.Vel)
 	elseif v.State == S.Idle then want = (you and (you - v.Pos).Magnitude < S.Notice + 12) and yawTo(v.Pos, you) or 0 end
 	if want and not v.Down then v.Yaw = turn(v.Yaw, want, dt * 9) end
-	-- The pose.
+	-- The pose: the hit springs (back, side) and the knock-back (a spring while it stands; a slide that stops when down)
 	v.Flinch, v.FlinchV = Juice.springStep(v.Flinch, v.FlinchV, 0, 3, 0.4, dt)
-	local p = { walk = v.Walk, stride = math.clamp((v.Speed or 0) / 7, 0, 1), flinch = math.clamp(v.Flinch * 0.06, -0.4, 0.5), idle = now + v.Variant }
+	v.FlinchS, v.FlinchSV = Juice.springStep(v.FlinchS or 0, v.FlinchSV or 0, 0, 3, 0.45, dt)
+	if v.Down then
+		v.Knock += v.KnockV * dt
+		v.KnockV *= math.exp(-9 * dt)
+	else
+		v.Knock, v.KnockV = Juice.springStep(v.Knock, v.KnockV, Vector3.zero, 3.2, 0.7, dt)
+	end
+	local knock = Vector3.new(math.clamp(v.Knock.X, -3.5, 3.5), 0, math.clamp(v.Knock.Z, -1, 3.5))
+	local p = { walk = v.Walk, stride = math.clamp((v.Speed or 0) / 7, 0, 1), flinch = math.clamp(v.Flinch * 0.06, -0.4, 0.5), flinchSide = math.clamp(v.FlinchS * 0.06, -0.5, 0.5), knock = knock, idle = now + v.Variant }
 	if v.State == S.Idle and not v.Down and not v.Enter then
 		p.arms = v.Variant % 2
 		p.bob = math.sin(now * 4.2 + v.Variant) * 0.05 * v.Rig.Scale
@@ -725,15 +708,18 @@ local function draw(v, dt, now, you)
 	elseif fighting and not v.Down then
 		p.guard = v.Rig.R15 and 0.9 or 0.75
 		p.lean = 0.06
+		-- (brief 30) the run-in: arms forward, chest down, like the reference's guards charging at you
+		if v.State == S.Chase and (v.Speed or 0) > 6 then
+			p.charge = math.clamp(((v.Speed or 0) - 6) / 5, 0, 1)
+			p.guard = p.guard * (1 - p.charge)
+			p.lean = 0.06 + 0.16 * p.charge
+		end
 		-- (a boxer's bounce while it squares up)
 		if v.Rig.R15 and (v.Speed or 0) < 2 then p.bob = math.abs(math.sin(now * 6.5 + v.Variant)) * 0.1 * v.Rig.Scale end
 	end
-	if v.Hop then
-		local t = now - v.Hop
-		if t < 0.3 then p.bob = (p.bob or 0) + math.sin(t / 0.3 * math.pi) * 0.7 * v.Rig.Scale else v.Hop = nil end
-	end
 	if v.State == S.Windup and not v.Down then
-		-- anticipation: eases back into the wind-up, held tense at the end
+		-- anticipation: eases back into the wind-up of its punch's kind, held tense at the end
+		p.swing = v.Swing
 		p.windup = EnemyRig.ready((now - v.Since) / math.max(0.1, kind.Windup))
 		p.twist = v.Rig.R15 and 0 or -0.35 * p.windup
 		p.lean = 0.12 - 0.1 * p.windup
@@ -742,6 +728,7 @@ local function draw(v, dt, now, you)
 		local t = now - v.Punch
 		if t < EnemyRig.StrikeTime then
 			-- the snap, a beat held out, then back to guard with a little overshoot
+			p.swing = v.Swing
 			p.punch = EnemyRig.strike(t)
 			p.twist = v.Rig.R15 and 0 or 0.3 * p.punch
 			p.lean = 0.12 + 0.18 * math.max(0, p.punch)
@@ -756,17 +743,18 @@ local function draw(v, dt, now, you)
 		if t < 0.3 then p.bob = (p.bob or 0) - (1 - t / 0.3) * 1.2 * v.Rig.Scale else v.Spawned = nil end
 	end
 	if v.Down then
+		-- (brief 30) the fall, its own way, then the heap; dark, with a little brown dust as it lands; it stays
 		local t = now - (v.KO or now)
-		if v.Slow then t = math.min(t, 1.2) * 0.3 + math.max(0, t - 1.2) end -- (P3b: the final boss falls in slow motion)
-		p.ko = math.min(1, t / 0.32)
-		p.ko = 1 - (1 - p.ko) ^ 3 -- (falls fast, lands)
-		if t > 0.32 and t < 0.6 then p.ko -= math.sin((t - 0.32) / 0.28 * math.pi) * 0.07 end -- (and bounces once)
-		if v.Stars then v.Stars:spin(t) end
-		if t > (v.Rig.R15 and 1.15 or 0.95) then poof(v); return end
+		p.fall = v.Fall or 'Back'
+		p.ko, p.pile = EnemyRig.fallCurve(t)
+		p.guard, p.charge, p.windup, p.punch, p.swing, p.bob = nil, nil, nil, nil, nil, nil
+		if t >= EnemyRig.FallTime * 0.8 and not v.Rig.Dark then
+			EnemyRig.darken(v.Rig, 0.72)
+			if t < EnemyRig.FallTime + 0.2 then FightFX.dust(toWorld(v.Pos + knock, (v.Y or 0) + 0.3).Position, 0.9 * v.Rig.Scale, 5) end
+		end
+		if t >= SETTLE then v.Settled = true end
 	end
-	local up, back = Boss.lift(v, p, now)
-	if up == false then return end -- (a reserve goon, still behind its roller door)
-	local at = toWorld(v.Pos + Vector3.new(0, 0, back or 0), (v.Y or 0) + (up or 0)) * CFrame.Angles(0, v.Yaw, 0)
+	local at = toWorld(v.Pos, v.Y or 0) * CFrame.Angles(0, v.Yaw, 0)
 	if v.PuffIn then
 		v.PuffIn = nil
 		puffAt(at.Position + Vector3.new(0, 2 * v.Rig.Scale, 0), v.Rig.Scale, 5)
@@ -777,9 +765,9 @@ local function draw(v, dt, now, you)
 		if v.Tag.Gui.Enabled ~= on then v.Tag.Gui.Enabled = on end
 		if on then
 			v.Tag.set(tagHp(v, now), v.Max)
-			-- (LOOP) A crew's tags all say "Goon N", and in a group they stacked into "Goon 1Goon 1": only the goon your
-			-- gun is on (and the Boss) shows its name; the rest show just their HP bar.
-			local named = (v.Kind == 'Boss' and v.Stage ~= current) or (v.Stage == current and v.Index == sticky)
+			-- (LOOP) A crew's tags all say their names, and in a group they stacked: only the goon your gun is on (and a
+			-- crew's strongest) shows its name; the rest show just their HP bar.
+			local named = v.Kind == 'Boss' or (v.Stage == current and v.Index == sticky)
 			if v.Tag.Name and v.Tag.Name.Visible ~= named then v.Tag.Name.Visible = named end
 			-- (LOOP) The tag is sized in studs, so a goon right by the camera (between it and you) had a bar filling the
 			-- screen: inside TAG_NEAR studs of the camera it shrinks, never bigger on screen than it is at TAG_NEAR.
@@ -788,7 +776,7 @@ local function draw(v, dt, now, you)
 				local k = math.clamp((v.Rig.Head.Position - cam.CFrame.Position).Magnitude / TAG_NEAR, 0.25, 1)
 				if math.abs(k - (v.TagK or 1)) > 0.02 then
 					v.TagK = k
-					local size = FightUI.TagSize or Vector2.new(4.6, 1.55)
+					local size = v.Kind == 'Boss' and FightUI.StrongSize or FightUI.TagSize or Vector2.new(4.6, 1.55)
 					v.Tag.Gui.Size = UDim2.fromScale(size.X * k, size.Y * k)
 				end
 			end
@@ -796,8 +784,7 @@ local function draw(v, dt, now, you)
 	end
 end
 
----------------------------------------------------------------------------------------------- bosses and walk-outs (brief 29)
-local RAGE = Color3.fromRGB(255, 138, 42)
+---------------------------------------------------------------------------------------------- strongest enemies and walk-outs
 Boss.teles = {} -- [view] = { T = the red telegraph (BossFX), At, Hit }
 
 -- A court goon waits in the players' tunnel until you walk into its stage, then jogs out to its spot (staggered).
@@ -813,7 +800,7 @@ function Boss.walkout(v, stage, now)
 	end
 end
 
--- Where a goon is drawn when the script says so (nil: follow the server): jogging out of the tunnel, or a boss's leap.
+-- Where a goon is drawn when the script says so (nil: follow the server): jogging out of the tunnel, or a leap.
 local JOG = 11
 function Boss.place(v, now)
 	local e = v.Enter
@@ -838,18 +825,9 @@ function Boss.place(v, now)
 	return nil
 end
 
--- A boss's body through its big move: the ready pose builds up through the telegraph (with a shiver at the end), the
--- strike snaps as it lands (a thrown thing leaves its hands Flight seconds before), then it recovers. And its roar.
+-- A strongest enemy's body through its signature move: the ready pose builds up through the telegraph (with a shiver at
+-- the end), the strike snaps as it lands (a thrown thing leaves its hands Flight seconds before), then it recovers.
 function Boss.pose(v, p, now)
-	if v.Roar then
-		local t = now - v.Roar
-		if t < 0.9 then
-			p.roar = t < 0.15 and EnemyRig.smooth(t / 0.15) or (t < 0.6 and 1 or 1 - EnemyRig.smooth((t - 0.6) / 0.3))
-			p.tremble = t < 0.6 and 1 or 0
-		else
-			v.Roar = nil
-		end
-	end
 	local a = v.Atk
 	if not a or v.Down then return end
 	local throwing = Boss.Throwing[a.Move]
@@ -878,7 +856,8 @@ function Boss.pose(v, p, now)
 	end
 end
 
--- 'Tele': the boss winds up and its red shape goes down on the ground; its move's name pops over its head.
+-- 'Tele': it winds up and its red shape goes down on the ground (the reference's lane: no words pop over it).
+Boss.Throwing = { Throw = true, Volley = true, Roll = true, Forklift = true, Containers = true }
 function Boss.tele(v, info)
 	if not v or v.Down then return end
 	local now = os.clock()
@@ -896,16 +875,13 @@ function Boss.tele(v, info)
 	end
 	Boss.teles[v] = { T = BossFX.telegraph(frame, info, y, folder), At = now, Hit = now + T }
 	local b = EnemyRules.bossOf(v.Look)
-	if v.Rig then
-		Juice.popNumber(v.Rig.Head.Position + Vector3.new(0, 3 * v.Rig.Scale, 0), b.Names[info.Move] or (tostring(info.Move) .. '!'), Color3.fromRGB(255, 76, 64), Kit.Font.display, { size = Vector2.new(7, 1.6), thickness = 3, stroke = BLACK })
-	end
 	play('Tock', 0.55)
 	if not Boss.Throwing[info.Move] then return end
 	task.delay(math.max(0, T - a.Flight), function()
 		if v.Atk ~= a or v.Down or not v.Rig then return end
 		local prop = (b.Props and b.Props[info.Move]) or b.Prop
 		if info.Move == 'Forklift' then
-			-- (P3b) a forklift from behind the boss, flat out down the red lane, through the spot as it lands
+			-- (P3b) a forklift from behind it, flat out down the red lane, through the spot as it lands
 			local ry = (v.Y or 0.6) + 0.1
 			BossFX.fly(prop, toWorld(O - D * 8, ry).Position, toWorld(O + D * ((info.L or 40) + 4), ry).Position, a.Flight * 1.6, { slide = true })
 		elseif info.Drop then
@@ -928,7 +904,7 @@ function Boss.tele(v, info)
 	end)
 end
 
--- 'Blast': it lands. The shape flashes and goes; a stomp shakes the ground, a charge kicks up dust down its lane.
+-- 'Blast': it lands. The shape flashes and goes; a stomp rings out over the ground, a charge kicks up dust down its lane.
 function Boss.blast(v, info)
 	local te = v and Boss.teles[v]
 	if te then
@@ -941,21 +917,14 @@ function Boss.blast(v, info)
 	local throwing = Boss.Throwing[move]
 	if a and not throwing then a.Hit = math.min(a.Hit, os.clock()) end
 	local y = (v.Y or 0.6) + 0.1
-	if a and move == 'Shockwave' then
-		-- (P3b) the ground-pound: a wide shockwave rolls out over the red ring
-		BossFX.impact(toWorld(a.O, y).Position, a.Info.R or 22, Color3.fromRGB(255, 200, 90))
-		BossFX.impact(toWorld(a.O, y).Position, (a.Info.Ri or 6) + 2)
-		Juice.kick(0.45)
-	elseif a and move == 'Anchor' then
+	if a and move == 'Anchor' then
 		for k = 0, 4 do
 			local t = -1 + k * 0.5
 			local d = Vector3.new(a.D.X * math.cos(t) - a.D.Z * math.sin(t), 0, a.D.X * math.sin(t) + a.D.Z * math.cos(t))
 			task.delay(k * 0.04, function() BossFX.dust(toWorld(a.O + d * ((a.Info.L or 16) - 3), y + 0.3).Position, 1.3) end)
 		end
-		Juice.kick(0.25)
 	elseif a and (move == 'Stomp' or move == 'Leap') then
 		BossFX.impact(toWorld(move == 'Leap' and a.P1 or a.O, y).Position, a.Info.R or 8)
-		Juice.kick(0.3)
 	elseif a and move == 'Blast' then
 		for k = 1, 3 do
 			task.delay(k * 0.07, function() BossFX.impact(toWorld(a.O + a.D * (k * (a.Info.L or 18) / 3.3), y).Position, 2.5 + k * 1.6, Color3.fromRGB(110, 200, 255)) end)
@@ -965,24 +934,16 @@ function Boss.blast(v, info)
 			task.delay(k * 0.06, function() BossFX.dust(toWorld(a.O + a.D * (k * (a.Info.L or 24) / 5), y + 0.3).Position, 1.1) end)
 		end
 	end
-	if info.Landed then swipe(v) end
+	if info.Landed then
+		landed(v)
+		-- (the reference Pouncer's leap: a green spiral slash wraps the one it lands on)
+		local r = rootPart()
+		if r and move == 'Leap' then FightFX.slash(r.CFrame) end
+	end
 	play('Pop', 0.6)
 end
 
--- A boss down to half its HP gets fired up: "PHASE 2!", a roar, a ring.
-function Boss.hit(v)
-	if v.Kind ~= 'Boss' or v.Down or v.Hp <= 0 then return end
-	-- (P3b: the final boss has three phases, EnemyRules.phaseFor)
-	local phase = S.phaseFor(v.Look, v.Hp / math.max(1, v.Max))
-	if phase <= (v.Phase or 1) then return end
-	v.Phase, v.Roar = phase, os.clock()
-	if not v.Rig then return end
-	Juice.popNumber(v.Rig.Head.Position + Vector3.new(0, 3.4 * v.Rig.Scale, 0), 'PHASE ' .. phase .. '!', phase >= 3 and Color3.fromRGB(255, 70, 50) or RAGE, Kit.Font.display, { size = Vector2.new(6, 1.8), thickness = 3, stroke = BLACK })
-	BossFX.impact(toWorld(v.Pos, (v.Y or 0.6) + 0.1).Position, 7 * v.Rig.Scale, RAGE)
-	Juice.kick(phase >= 3 and 0.4 or 0.25)
-end
-
--- Every frame: the telegraphs fill up; a stale one (no 'Blast': the boss was called off) goes.
+-- Every frame: the telegraphs fill up; a stale one (no 'Blast': it was called off) goes.
 function Boss.step(now)
 	for v, te in Boss.teles do
 		te.T.update((now - te.At) / math.max(0.1, te.Hit - te.At))
@@ -1001,145 +962,6 @@ function Boss.clear()
 	end
 end
 
----------------------------------------------------------------------------------------------- the finale (brief 29, P3b)
--- World 1's final boss, the Harbor Boss, in its warehouse (code5/f4_finale): it waits up on the cross catwalk and drops
--- in as you walk up (EnemyRules.Bosses.harbor: Perch, Entrance) with its name card; its crew waits behind the loading
--- dock's roller doors (Reserve) till it calls them; its defeat is a slow-motion fall, then a big burst and WORLD 1
--- COMPLETE!, then the usual CLEAR! and the Boss's cash pads.
-Boss.Throwing = { Throw = true, Volley = true, Roll = true, Forklift = true, Containers = true }
-Boss.doors = {}
--- A dock's roller door (the map's DockDoor_n) rolls up (open) or down.
-function Boss.door(k, open)
-	local d = Boss.doors[k]
-	if d == nil then
-		d = false
-		for _, m in CollectionService:GetTagged('HoodDockDoor') do
-			if m:GetAttribute('Dock') == k and m:IsDescendantOf(active.Root) then
-				local door = m:FindFirstChild('RollerDoor', true)
-				if door then d = { Door = door, Rest = door:GetAttribute('Rest') or door.CFrame, Size = door.Size, Open = false, Slats = {} } end
-				for _, sl in m:GetDescendants() do if sl.Name == 'DoorSlat' then table.insert(d.Slats, sl) end end
-			end
-		end
-		Boss.doors[k] = d
-	end
-	if not d or d.Open == open then return end
-	d.Open = open
-	local h = open and 1.2 or d.Size.Y
-	local goal = { Size = Vector3.new(d.Size.X, h, d.Size.Z), CFrame = d.Rest * CFrame.new(0, (d.Size.Y - h) / 2, 0) }
-	TweenService:Create(d.Door, TweenInfo.new(0.45, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), goal):Play()
-	for _, sl in d.Slats do sl.Transparency = open and 1 or 0 end
-	if open then play('Pop', 0.4) end
-end
--- The boss's name card: a red band across the screen, its name in gold, what it is under it.
-function Boss.card(title, sub)
-	local band = Kit.new('Frame', { Name = 'BossCard', AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(-0.6, 0.36), Size = UDim2.new(1.2, 0, 0, 118), BackgroundColor3 = Color3.fromRGB(150, 18, 28), BackgroundTransparency = 0.12, BorderSizePixel = 0, Parent = root })
-	Kit.gradient(Color3.fromRGB(214, 34, 44), Color3.fromRGB(120, 10, 20), 0.5).Parent = band
-	local t = Kit.text({ Name = 'Title', Text = string.upper(title), TextSize = 64, Stroke = BLACK, StrokeThickness = 5, TextColor3 = Color3.fromRGB(255, 210, 26), Position = UDim2.new(0, 0, 0, 6), Size = UDim2.new(1, 0, 0, 70), Parent = band })
-	t.TextScaled = false
-	Kit.text({ Name = 'Sub', Text = string.upper(sub or ''), TextSize = 28, Stroke = BLACK, StrokeThickness = 3, TextColor3 = Color3.new(1, 1, 1), Position = UDim2.new(0, 0, 0, 76), Size = UDim2.new(1, 0, 0, 34), Parent = band })
-	TweenService:Create(band, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Position = UDim2.fromScale(0.5, 0.36) }):Play()
-	task.delay(2.4, function()
-		TweenService:Create(band, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Position = UDim2.fromScale(1.6, 0.36) }):Play()
-		task.delay(0.35, function() band:Destroy() end)
-	end)
-	return band
-end
--- Where a goon is drawn above (and behind) its spot: a reserve goon is hidden (false) while it waits at its door; the
--- final boss stands up on its catwalk, and makes its entrance through its "!" (a roar up there, a jump, a heavy landing).
-function Boss.lift(v, p, now)
-	if v.Reserve and v.Rig then
-		local waiting = v.State == S.Idle and not v.Down and (v.Pos - v.Home).Magnitude < 0.8
-		if waiting or (v.Down and v.Rig.Model.Parent == nil) then
-			if v.Rig.Model.Parent then v.Rig.Model.Parent = nil end
-			if v.Tag then v.Tag.Gui.Enabled = false end
-			Boss.door(v.Reserve, false)
-			return false
-		end
-		if not v.Rig.Model.Parent then v.Rig.Model.Parent = folder end
-		if not v.Down then Boss.door(v.Reserve, true) end
-		return 0, 0
-	end
-	local b = v.Kind == 'Boss' and EnemyRules.bossOf(v.Look)
-	if not b or not b.Perch or v.Down or not v.Rig then return 0, 0 end
-	local H, back = b.Perch, -(b.PerchBack or 8)
-	if v.State == S.Idle and (v.Pos - v.Home).Magnitude < 0.8 then
-		v.Entered = nil
-		return H, back
-	end
-	if v.State ~= S.Alert then return 0, 0 end
-	local t = now - v.Since
-	if not v.Entered then
-		v.Entered = now
-		Boss.card(b.Title, b.Card)
-		play('Tock', 0.45)
-	end
-	if t < 0.55 then
-		p.roar = EnemyRig.smooth(t / 0.3)
-		return H, back
-	elseif t < 1.25 then
-		local k = (t - 0.55) / 0.7
-		p.move, p.ready = 'Stomp', 1
-		return H * (1 - k * k) + 5 * math.sin(math.pi * k), back * (1 - k)
-	end
-	if not v.Landed or v.Landed < v.Entered then
-		v.Landed = now
-		local at = toWorld(v.Pos, (v.Y or 0.6) + 0.1).Position
-		BossFX.impact(at, 12, Color3.fromRGB(255, 202, 64))
-		BossFX.dust(at + Vector3.new(0, 1, 0), 2.2)
-		Juice.kick(0.5)
-		play('Pop', 0.45)
-	end
-	p.move, p.strike = 'Stomp', EnemyRig.strike(t - 1.25)
-	return 0, 0
-end
--- The final boss is beaten: a slow-motion fall (the camera pushes in, the screen flashes), then a big burst, then
--- WORLD 1 COMPLETE! (World 2 isn't built: the World window's next world reads "coming soon").
-function Boss.finale(v)
-	v.Slow = true
-	Boss.clear()
-	local cam = workspace.CurrentCamera
-	local fov = cam and cam.FieldOfView or 70
-	if cam then
-		TweenService:Create(cam, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { FieldOfView = fov - 14 }):Play()
-		task.delay(1.1, function() TweenService:Create(cam, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), { FieldOfView = fov }):Play() end)
-	end
-	local flash = Kit.new('Frame', { Name = 'FinaleFlash', Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.25, BorderSizePixel = 0, ZIndex = 20, Parent = root })
-	TweenService:Create(flash, TweenInfo.new(0.6), { BackgroundTransparency = 1 }):Play()
-	task.delay(0.65, function() flash:Destroy() end)
-	play('Pop', 0.35)
-	task.delay(1.1, function()
-		local at = v.Rig and v.Rig.Chest and v.Rig.Chest.Position or toWorld(v.Pos, 4).Position
-		for k = 0, 5 do
-			task.delay(k * 0.07, function()
-				local a = k / 6 * math.pi * 2
-				Juice.burst(at + Vector3.new(math.cos(a) * 3, k * 0.6, math.sin(a) * 3), ({ Color3.fromRGB(255, 210, 26), Color3.fromRGB(255, 120, 40), Color3.new(1, 1, 1) })[k % 3 + 1], 2.4)
-			end)
-		end
-		BossFX.impact(toWorld(v.Pos, (v.Y or 0.6) + 0.1).Position, 16, Color3.fromRGB(255, 210, 26))
-		Juice.shards(at + Vector3.new(0, 4, 0), Kit.hex('FFC21A'), 'confetti')
-		Juice.kick(0.6)
-		play('Pop', 0.7)
-	end)
-	task.delay(1.5, function()
-		local ok, IK = pcall(function() return require(RS.Shared.InventoryKit) end)
-		local nextWorld = ok and IK.WorldNames and IK.WorldNames[2]
-		Boss.card('WORLD 1 COMPLETE!', nextWorld and ('Next: ' .. nextWorld .. ' (coming soon)') or 'You beat the Harbor Boss!')
-	end)
-end
-
--- The boss of the stage you stand in: its big HP bar.
-function Boss.hud(_)
-	local w = current > 0 and waves[current]
-	local boss = nil
-	if w then
-		for _, v in w.Goons do
-			if v.Kind == 'Boss' and not v.Down then boss = v end
-		end
-	end
-	if boss then bossBar.set(boss.Title or EnemyRules.bossOf(boss.Look).Title, shownHp(boss), boss.Max, boss.Phase, EnemyRules.bossOf(boss.Look).PhaseAt) end
-	bossBar.show(boss ~= nil)
-end
-
 -- A look the server has just built: a goon standing in as today's goon puts it on (while it stands easy).
 task.spawn(function()
 	local models = RS:WaitForChild(EnemyRig.FolderName, 60)
@@ -1153,8 +975,110 @@ task.spawn(function()
 	end)
 end)
 
--- Which goons to draw: the crews near the camera (your fight, the next stage's crew waiting behind its gate); the rest
--- are not built (or are put away) so nobody pays for goons out of sight.
+---------------------------------------------------------------------------------------------- knocked down (brief 30)
+-- The reference's knockout (V4 16.1-16.7 s): you fall, and 0.2-0.3 s later the world blurs behind REVIVE?, its
+-- countdown and the three buttons. Your body lies on its back (CharMotion.down: the Root joint; your HumanoidRootPart
+-- is held still, anchored on your machine, so the server's moves still reach it); "Revive!" / "Revenge!" ask Roblox for
+-- the product (Products.canBuy; "Coming soon!" under the button while its id is 0) and tell the server the countdown
+-- waits meanwhile; "No" asks the server to put you back at the stage start. Its answer ('Up') stands you up.
+local Lighting = game:GetService('Lighting')
+local function reviveRemote()
+	local net = RS:FindFirstChild('HoodNet')
+	return net and net:FindFirstChild('Revive') or nil
+end
+local function tellServer(what, on)
+	local r = reviveRemote()
+	if r then r:FireServer(what, on) end
+end
+local blur = nil
+local function setBlur(on)
+	if on and not blur then
+		blur = Instance.new('BlurEffect')
+		blur.Name = 'HoodReviveBlur'
+		blur.Size = 0
+		blur.Parent = Lighting
+		TweenService:Create(blur, TweenInfo.new(0.25), { Size = 14 }):Play()
+	elseif not on and blur then
+		blur:Destroy()
+		blur = nil
+	end
+end
+local function holdRoot(on)
+	local r = rootPart()
+	if r then r.Anchored = on end
+end
+-- (the HUD's one-window-at-a-time state, Shared/HudWindows: the revive screen takes it, so any open window closes, the
+-- HUD steps aside and notices wait, HudToasts; PlayerGui's HoodWindow reads 'Revive' while it is up)
+local HudWindows = (function()
+	local node = RS.Shared:FindFirstChild('HudWindows')
+	local ok, r = pcall(function() return node and require(node) end)
+	return ok and type(r) == 'table' and r or nil
+end)()
+local function takeScreen(on)
+	pcall(function()
+		local pg = player.PlayerGui
+		if on then
+			if HudWindows and HudWindows.current and HudWindows.current() then HudWindows.close() end
+			pg:SetAttribute('HoodWindow', 'Revive')
+		elseif pg:GetAttribute('HoodWindow') == 'Revive' then
+			pg:SetAttribute('HoodWindow', '')
+		end
+	end)
+end
+local function standUp()
+	if not downed then return end
+	downed = nil
+	revive.hide()
+	setBlur(false)
+	CharMotion.down(false)
+	holdRoot(false)
+	takeScreen(false)
+end
+local function knockedDown(seconds)
+	seconds = math.max(1, tonumber(seconds) or 10)
+	downed = { At = os.clock(), Left = seconds, Paused = false }
+	table.clear(held)
+	aimed = nil
+	Boss.clear()
+	CharMotion.down(true)
+	holdRoot(true)
+	local mine = downed
+	task.delay(0.25, function()
+		if downed ~= mine then return end
+		revive.show(seconds - 0.25)
+		setBlur(true)
+		takeScreen(true)
+	end)
+	play('Pop', 0.5)
+end
+local paying = nil -- the product key whose prompt is open
+revive.Choice(function(key)
+	if not downed then return end
+	if key == 'No' then
+		tellServer('No')
+		return
+	end
+	local ok = Products and Products.canBuy and Products.canBuy(key)
+	if not ok then
+		revive.note(key, 'Coming soon!')
+		return
+	end
+	paying = key
+	tellServer('Paying', true)
+	pcall(function() game:GetService('MarketplaceService'):PromptProductPurchase(player, Products.idOf(key)) end)
+end)
+pcall(function()
+	game:GetService('MarketplaceService').PromptProductPurchaseFinished:Connect(function()
+		if paying then
+			paying = nil
+			tellServer('Paying', false)
+		end
+	end)
+end)
+
+---------------------------------------------------------------------------------------------- every frame
+-- Which goons to draw: the crews near the camera (your fight, the next stage's crew waiting behind its gate, the heaps
+-- behind you); the rest are not built (or are put away) so nobody pays for goons out of sight.
 local idleTick = 0
 local function stageNear(stage, camPos)
 	local a = arenas[stage]
@@ -1189,35 +1113,46 @@ RunService.PreRender:Connect(function(dt)
 		local w = near and waveOf(stage) or waves[stage]
 		if w then
 			for _, v in w.Goons do
-				local dying = v.Down and v.KO and now - v.KO <= 1.2
 				Boss.walkout(v, stage, now)
-				local show = near and (not v.Down or dying) and (not v.Walkout or v.Out)
-				if show and not v.Rig and not v.Down then buildRig(v) end
+				local show = near and (not v.Walkout or v.Out)
+				local fresh = false
+				if show and not v.Rig then
+					buildRig(v)
+					fresh = true
+				end
 				if not show and v.Rig then dropRig(v) end
 				if v.Rig then
-					local busy = v.State ~= S.Idle or v.Down or v.Hop or v.Punch or v.Spawned or v.Refill or v.PuffIn or v.Enter or v.Atk or v.Roar or math.abs(v.FlinchV) > 1e-2 or math.abs(v.Flinch) > 1e-2
-					-- (brief 29) close up, an R15 goon breathes and shifts every frame; further off, 15 times a second
-					busy = busy or (v.Rig.R15 and (toWorld(v.Pos).Position - cam.CFrame.Position).Magnitude < 60)
-					if busy or idleFrame then draw(v, busy and dt or 1 / 15, now, you) end
+					local busy = v.State ~= S.Idle or (v.Down and not v.Settled) or v.Hop or v.Punch or v.Spawned or v.Refill or v.PuffIn or v.Enter or v.Atk or math.abs(v.FlinchV) > 1e-2 or math.abs(v.Flinch) > 1e-2 or math.abs(v.FlinchSV or 0) > 1e-2 or v.KnockV.Magnitude > 1e-2 or v.Knock.Magnitude > 1e-2
+					if v.Down and v.Settled then
+						-- a heap is still: drawn once when it is (re)built, then left alone
+						if fresh then draw(v, 1 / 15, now, you) end
+					else
+						-- (brief 29) close up, an R15 goon breathes and shifts every frame; further off, 15 times a second
+						busy = busy or (v.Rig.R15 and (toWorld(v.Pos).Position - cam.CFrame.Position).Magnitude < 60)
+						if busy or idleFrame or fresh then draw(v, busy and dt or 1 / 15, now, you) end
+					end
 				end
 			end
 		end
 	end
-	if idleFrame then Boss.hud(now) end
 	Boss.step(now)
-	if gainCombo and gainCombo.alive and gainCombo.part and r then
-		local camRight = cam.CFrame.RightVector
-		gainCombo.part.CFrame = CFrame.new(r.Position + camRight * 2.4 + Vector3.new(0, 2.6, 0))
-	end
+	-- the revive screen's countdown (it waits while a purchase prompt is open)
+	if downed and not downed.Paused then revive.set(downed.Left - (now - downed.At)) end
 	-- Face the goon you shoot while you fire (you can still strafe and back off).
 	local h = humanoid()
-	if h and r then
-		local facing = aimed and now < aimUntil and not aimed.Down and aimed.Rig
-		if facing then
+	if h and r and not downed then
+		local facing = aimed and now < aimUntil and not aimed.Down and (aimed.Rig or aimed.Boss)
+		if facing and aimed.Rig then
 			if h.AutoRotate then h.AutoRotate = false; h:SetAttribute('WaveAim', true) end
 			local look = toWorld(aimed.Pos).Position
 			local yaw = yawTo(r.Position, look)
-			if yaw then r.CFrame = CFrame.new(r.Position) * CFrame.Angles(0, yaw, 0) end
+			if yaw then
+				-- (brief 30: you turn to the goon over about 0.1 s, never in one frame)
+				local lv = r.CFrame.LookVector
+				local cur = math.atan2(-lv.X, -lv.Z)
+				local d = (yaw - cur + math.pi) % (2 * math.pi) - math.pi
+				r.CFrame = CFrame.new(r.Position) * CFrame.Angles(0, cur + d * (1 - math.exp(-20 * math.min(dt, 0.1))), 0)
+			end
 		elseif h:GetAttribute('WaveAim') then
 			h.AutoRotate = true
 			h:SetAttribute('WaveAim', nil)
@@ -1259,8 +1194,8 @@ for _, name in { 'WaveStage', 'WaveLeft', 'TrainingStation' } do
 end
 
 -- The run ended: every crew stands again, fresh (the views are made again from the map's crews as they come in view):
--- a knocked-out goon (or one caught out of place) pops back in on its spot if its crew is drawn again right away. The
--- crews in `keep` are still walking home, whole again: they walk on (their Restored 'Wave' follows).
+-- a knocked-out goon (or one caught out of place) pops back in on its spot if its crew is drawn again right away; the
+-- heaps go. The crews in `keep` are still walking home, whole again: they walk on (their Restored 'Wave' follows).
 local function resetRun(keep)
 	local kept = {}
 	for _, n in type(keep) == 'table' and keep or {} do
@@ -1298,6 +1233,11 @@ Net.get('WaveState').OnClientEvent:Connect(function(info)
 		resetRun(info.Keep)
 		return
 	end
+	if info.Kind == 'Up' then
+		standUp()
+		refresh()
+		return
+	end
 	local stage = info.Stage
 	if info.Kind == 'Wave' then
 		onWave(info)
@@ -1305,6 +1245,17 @@ Net.get('WaveState').OnClientEvent:Connect(function(info)
 	end
 	local drawn = waves[stage] ~= nil
 	local w = waveOf(stage)
+	if info.Kind == 'KO' then
+		knockedDown(info.For)
+		refresh()
+		return
+	elseif info.Kind == 'Wait' then
+		if downed then
+			downed.Left, downed.At, downed.Paused = tonumber(info.For) or downed.Left, os.clock(), info.Paused == true
+			revive.set(downed.Left)
+		end
+		return
+	end
 	if not w then
 		return
 	elseif info.Kind == 'Moves' and type(info.D) == 'table' then
@@ -1317,40 +1268,37 @@ Net.get('WaveState').OnClientEvent:Connect(function(info)
 		if v then
 			v.Hp = info.HP
 			if info.HP <= 0 then
-				knockOut(v, true)
-				if v.Kind == 'Boss' and EnemyRules.bossOf(v.Look).Final then Boss.finale(v) end
+				-- (brief 30) the hit that knocks it out throws it back harder: a swing hardest
+				local r = rootPart()
+				if r and not v.Down then impulse(v, r.Position, info.Melee and 2.4 or 1.6) end
+				knockOut(v, true, info.Melee == true)
 			elseif v.Tag then v.Tag.set(shownHp(v), v.Max) end
-			Boss.hit(v)
 		end
 	elseif info.Kind == 'Punch' and type(info.Index) == 'number' then
 		local v = w.Goons[info.Index]
 		if v and not v.Down then
 			v.Punch = os.clock()
-			if info.Landed then swipe(v) end
+			if not v.Swing then v.Swing = EnemyRules.swingFor(v.Kind, v.Index) end
+			if info.Landed then landed(v) end
 		end
 	elseif info.Kind == 'Tele' and type(info.Index) == 'number' then
 		Boss.tele(w.Goons[info.Index], info)
 	elseif info.Kind == 'Blast' and type(info.Index) == 'number' then
 		Boss.blast(w.Goons[info.Index], info)
-	elseif info.Kind == 'KO' then
-		Boss.clear()
-		koBanner()
-		table.clear(held)
-		aimed = nil
 	elseif info.Kind == 'Cleared' then
 		w.Cleared = true
-		-- (P3b: the final boss down, its crew gives up with it)
-		for _, g in w.Goons do if not g.Down then knockOut(g, not (g.Rig and g.Rig.Model.Parent == nil)) end end
+		for _, g in w.Goons do if not g.Down then knockOut(g, g.Rig ~= nil) end end
 		local reward = type(info.Reward) == 'number' and info.Reward or 0
-		pill.clear(reward > 0 and ('+' .. Format.compact(reward) .. ' Cash') or nil)
+		-- (brief 30) the reference's CLEAR! chip with its line under it ("Mission complete!"): ours says the gate ahead
+		-- opened, "STAGE N OPEN!" (the user's words), where the big banner over the gate sign used to be
+		local nextStage = type(stage) == 'number' and stage < #EnemyRules.Lineups and ('STAGE ' .. (stage + 1) .. ' OPEN!') or nil
+		pill.clear(reward > 0 and ('+' .. Format.compact(reward) .. ' Cash') or nextStage)
 		-- "CLEAR!" holds a moment, then goes (unless a wave comes back first)
 		local token = os.clock() + 2.4
 		clearUntil = token
 		task.delay(2.45, function()
 			if clearUntil == token and ((player:GetAttribute('WaveLeft') or 0) == 0 or current == 0) then pill.hide() end
 		end)
-		local r = rootPart()
-		if r then Juice.shards(r.Position + Vector3.new(0, 3, 0), Kit.hex('FFC21A'), 'confetti') end
 	end
 end)
 
