@@ -18,6 +18,53 @@ reads at phone size, and wires it into the UI. Then you run the upload command o
 - no words or numbers in the picture ("2x" stickers, prices and names are drawn by the game);
 - no characters from other games or films.
 
+## Brief 30: the new style (use this instead of the older prompt below)
+
+Attach the 3 shop screenshots you sent (Exclusive Shop, the pass cards, the cash packs) as style examples, then write:
+
+> Roblox simulator shop icon of **[OBJECT]**. Glossy, chunky cartoon object in exactly the style of the attached
+> shop icons: bright saturated colours, smooth soft shading with a strong white shine on the top-left, slightly
+> blocky / voxel-like shapes where it suits the object (like the attached four-leaf clover made of cubes), a thick
+> even dark outline around the whole shape, slight three-quarter view from above. One object, centred, filling most
+> of the square, no text or numbers, no ground shadow, transparent background. Square image, 1024 x 1024.
+
+For the Featured backgrounds use the same style, but:
+
+> Wide painted background for a Roblox shop card, **[SCENE]**, in the same glossy cartoon style as the attached
+> "Heaven Pack" card, soft and slightly blurred so items can sit on top, bright and readable, no text, no
+> characters. Wide image, 1536 x 576.
+
+### Brief 30 list (file name = what the game looks for)
+
+| File name | [OBJECT] or [SCENE] |
+|---|---|
+| `DoublePower.png` | a golden flexed strong arm with a lightning bolt |
+| `DoubleCash.png` | two chunky stacks of green dollar bills with a big gold "x2"-shaped sparkle (no text) |
+| `VIP.png` | a gold crown with red and blue gems |
+| `AutoFight.png` | a cartoon submachine gun inside a green circular arrow |
+| `Lucky.png` | a green four-leaf clover made of chunky cubes, with sparkles |
+| `TripleOpen.png` | three small shoe boxes stacked together |
+| `ExtraEquip.png` | a blue sneaker with a green plus badge |
+| `TenXCash.png` | a big green money bag overflowing with bills |
+| `ProBay.png` | a green and white bullseye target on a stand |
+| `GoldBay.png` | a golden bullseye target with a small crown on top |
+| `AutoOpen.png` | a shoe box with its lid popping open and a circular arrow around it |
+| `Speed2x.png` | a sneaker with speed lines and a lightning bolt |
+| `ServerBoost.png` | a big chunky golden lightning bolt made of cubes, with sparkles |
+| `BlockParty.png` | a purple party popper with confetti |
+| `CashTiny.png` | one small stack of green bills and two gold coins |
+| `CashSmall.png` | a money bag with a dollar sign and a few coins |
+| `CashMedium.png` | an open treasure chest full of bills and coins |
+| `CashBig.png` | a blue vault door with bills spilling out |
+| `CashLarge.png` | a big heap of bill stacks, gold coins and money bags |
+| `CashMega.png` | a giant mountain of bill stacks, gold bars and money bags, with sparkles |
+| `PowerTiny.png` … `PowerMega.png` | the same six-step ladder but with red dumbbells, growing from one dumbbell to a glowing mountain |
+| `PotionRed.png` / `PotionGold.png` | a star-shaped glass potion with red / yellow liquid and a gold cork |
+| `Gift.png` | a blue gift box with a red ribbon (the Gift A Player button) |
+| `FeaturedBg_Grail.png` | [SCENE] a golden vault with stacked cash and a glowing shoe box on a plinth |
+| `FeaturedBg_Street.png` | [SCENE] a sunny hood street block party with balloons and a DJ booth |
+| `FeaturedBg_Sneaker.png` | [SCENE] a bright sneaker shop wall with shelves of colourful shoe boxes |
+
 ## The style prompt (use it for every picture, so they all match)
 
 Attach 2 or 3 of the reference screenshots (the HUD buttons, the Store window) to the AI as style examples, then
