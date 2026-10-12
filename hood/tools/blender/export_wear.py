@@ -22,7 +22,7 @@ OUT_DIR = os.path.join(HOOD, 'src', 'ReplicatedStorage', 'Shared', 'Models')
 SHAPE = {'Block': 'B', 'Wedge': 'W', 'Cylinder': 'C', 'Ball': 'S'}
 KINDS = list(bk.KINDS)
 SHOE_MAX = 60
-BOX_MAX = 140
+BOX_MAX = 220
 
 
 class Tables:

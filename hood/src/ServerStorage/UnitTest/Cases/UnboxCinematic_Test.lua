@@ -94,7 +94,7 @@ return function(t)
 				-- the reveal: the pair risen out of the chest and settled (brief 30: one smooth move, <= 0.8 s), the words and the
 				-- reveal card (P.tap) as it settles, the Power reel done
 				e.truthy(P.accent[1] > P.pop[1] + 0.5 and P.accent[1] <= P.pop[1] + 0.8)
-				e.truthy(P.nameT > P.pop[1] + 0.5 and P.nameT <= P.accent[1] and P.tap <= P.accent[1])
+				e.truthy(P.nameT > P.pop[1] + 0.5 and P.nameT <= P.accent[1] and P.tap <= P.accent[1] + 0.5)
 				e.truthy(P.count[2] <= (lux and 5.3 or 4.3) + 1e-6)
 				e.near(P.count[2] - P.count[1], 0.6, 0.05)
 				-- the hold: until a tap, auto-close 5-7 s after the reveal; the close <= 0.6 s

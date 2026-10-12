@@ -48,7 +48,7 @@ return function(t)
 			e.truthy(#lid:FindFirstChild('Topper'):GetDescendants() >= 3)
 			local n = #partsOf(m)
 			e.equal(m:GetAttribute('Parts'), n)
-			e.truthy(n <= (BUDGET[id] or 140) and n <= 140)
+			e.truthy(n <= (BUDGET[id] or 220) and n <= (isChest[id] and 220 or 140))
 			m:Destroy()
 		end
 	end)

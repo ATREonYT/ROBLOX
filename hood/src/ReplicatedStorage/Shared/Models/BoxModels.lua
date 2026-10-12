@@ -37,7 +37,7 @@ local W, D = BoxModels.Size.W, BoxModels.Size.D
 local HW, HD = W / 2, D / 2
 local BODY, TOP = BoxModels.Size.Body, BoxModels.Size.Top
 -- the most parts a box may have (phones: the hall shows several at once)
-local LIMIT = 140
+local LIMIT = 220 -- (brief 30: the chests with their bevel strips and outlined emblems; the later worlds stay <= 140)
 BoxModels.TopperShoes = {}
 -- (brief 30) the chests: BoxKit part rows (Shared/Models/BoxParts, generated); nil if that module is missing
 local BoxParts
@@ -730,6 +730,11 @@ local function chest(k, data)
 			mesh.Parent = p
 		end
 		if kind == 'glass' then p.Transparency = 0.3 end
+		-- (brief 30, "make the boxes look more attractive": the sheets' gloss) a little shine on the paint, more on the
+		-- gold and the metal trim
+		if kind == 'smooth' or kind == 'plastic' then p.Reflectance = 0.08
+		elseif kind == 'gold' then p.Reflectance = 0.2
+		elseif kind == 'metal' then p.Reflectance = 0.15 end
 		if r[11] == 'Hinge' then
 			hinge = p
 			p.Transparency = 1
@@ -791,6 +796,13 @@ end
 -- Set a box on display moving: its floating pieces (the orbit ring, planet, halo, bubbles, paint puff) get WorldMotion's
 -- HoodMotion tag with their Spin/Bob/BobPeriod. Only for boxes that stay put (not one the client is shaking).
 function BoxModels.animate(model: Model)
+	-- (brief 30) a chest on display bobs gently (WorldMotion moves the whole model)
+	local id = model:GetAttribute('BoxId')
+	if id and BoxParts and BoxParts.Boxes[id] then
+		model:SetAttribute('Bob', 0.12 * (model:GetAttribute('Scale') or 1))
+		model:SetAttribute('BobPeriod', 2.8)
+		model:AddTag('HoodMotion')
+	end
 	for _, m in model:GetDescendants() do
 		if m:IsA('Model') and (m:GetAttribute('AnimSpin') or m:GetAttribute('AnimBob')) then
 			m:SetAttribute('Spin', m:GetAttribute('AnimSpin'))
@@ -869,6 +881,37 @@ function BoxModels.fx(model: Model)
 	l.Range = (premium and 10 or 8) * s
 	l.Shadows = false
 	l.Parent = root
+	-- (brief 30) a chest's idle glow: a soft line of its accent colour where the lid meets the tub, with a short light
+	-- from inside it, so the shut chest looks charged
+	if BoxParts and BoxParts.Boxes[id] then
+		local seam = Instance.new('Part')
+		seam.Name = 'SeamGlow'
+		seam.Anchored, seam.CanCollide, seam.CanTouch, seam.CanQuery, seam.CastShadow = true, false, false, false, false
+		seam.Material = NEON
+		seam.Color = THEMES[id].Accent
+		seam.Transparency = 0.45
+		seam.Size = V(W + 0.05, 0.07, D + 0.05) * s
+		seam.CFrame = root.CFrame * CFrame.new(0, (BODY + 0.03) * s, 0)
+		seam.Parent = model
+		local sl = Instance.new('PointLight')
+		sl.Name = 'SeamLight'
+		sl.Color = THEMES[id].Accent
+		sl.Brightness = 0.7
+		sl.Range = 5 * s
+		sl.Shadows = false
+		sl.Parent = seam
+		-- and a soft glow disc under it in its colour (the lead: "vibrant ... nice effects on items")
+		local disc = Instance.new('Part')
+		disc.Name = 'GlowDisc'
+		disc.Shape = Enum.PartType.Cylinder
+		disc.Anchored, disc.CanCollide, disc.CanTouch, disc.CanQuery, disc.CastShadow = true, false, false, false, false
+		disc.Material = NEON
+		disc.Color = THEMES[id].Color
+		disc.Transparency = 0.72
+		disc.Size = V(0.05, W * 1.25, W * 1.25) * s
+		disc.CFrame = root.CFrame * CFrame.new(0, 0.03 * s, 0) * CFrame.Angles(0, 0, math.rad(90))
+		disc.Parent = model
+	end
 end
 
 return BoxModels

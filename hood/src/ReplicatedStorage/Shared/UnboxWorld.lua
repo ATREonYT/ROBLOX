@@ -107,12 +107,12 @@ function UnboxWorld.plan(P)
 	end
 	local a = P.accent[best]
 	P.reveal = a
-	-- (the words scale in as the pair settles, the end of the one move; P.tap and P.nameT are where the UI attaches:
-	-- Shoes.client's reveal card (MOCKUP30) and PityUI's tag wait for them; the Power reel ticks 0.6 s from the reveal)
+	-- (the words glide in as the pair settles, the end of the one move; P.nameT is where the UI attaches (PityUI's tag);
+	-- "Click anywhere to continue" (P.tap) 0.4 s later; no card (brief 30, the user); the Power reel ticks 0.6 s)
 	P.banner = a - 0.05
-	P.nameT, P.newT = P.banner, P.banner + 0.18
+	P.nameT, P.newT = P.banner, P.banner + 0.16
 	P.count = { a, a + 0.6 }
-	P.tap = P.banner
+	P.tap = P.banner + 0.4 -- (brief 30: "Click anywhere to continue" 0.4 s after the name)
 	P.out = P.prelude and P.stop + 10 or a + Wd.Hold
 	P.closeLen = Wd.Close[1]
 	P.group = n > 1 and a - 0.2 or nil
@@ -1280,11 +1280,16 @@ function UnboxWorld.words(job)
 	if P.prelude then return end
 	local best = P.list[P.best]
 	local sd = X.shoeDef(best.Shoe)
+	-- (brief 30, the user: "make it smooth ... just show the shoe, and then say at the bottom, click anywhere to
+	-- continue": no card; each line fades and slides up into place, staggered, and eases back out at the close)
+	W.home = {}
 	local function scaled(l)
 		local sc = Instance.new('UIScale')
-		sc.Scale = 0.01
+		sc.Scale = 1
 		sc.Parent = l
 		W.scales[l] = sc
+		W.home[l] = l.Position
+		X.fadeText(l, 0)
 		return l
 	end
 	W.name = scaled(X.label(stage, { Name = 'Name', Text = sd and sd.Name or tostring(best.Shoe), TextSize = 36, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.66), Size = UDim2.new(1, 0, 0, 46), ZIndex = 32 }))
@@ -1301,7 +1306,7 @@ function UnboxWorld.words(job)
 		end)
 		W.new = scaled(X.label(stage, { Name = 'New', Role = 'heading', Text = 'NEW!', TextSize = 22, TextColor3 = C3(124, 255, 79), AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0.5, wordW * 0.5 + 12, 0.71, -2), Size = UDim2.fromOffset(80, 28), TextXAlignment = Enum.TextXAlignment.Left, Rotation = -8, ZIndex = 33 }))
 	end
-	W.tap = scaled(X.label(stage, { Name = 'Tap', Role = 'heading', Text = 'Tap anywhere to close!', TextSize = 24, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.77), Size = UDim2.new(1, 0, 0, 32), ZIndex = 32 }))
+	W.tap = scaled(X.label(stage, { Name = 'Tap', Role = 'heading', Text = 'Click anywhere to continue', TextSize = 24, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.77), Size = UDim2.new(1, 0, 0, 32), ZIndex = 32 }))
 	-- a row's tags under the other pairs (the rarity word, NEW!), sized from the slot
 	W.tags = {}
 	if P.multi then
@@ -1356,21 +1361,36 @@ function UnboxWorld.wordsUpdate(job, t)
 		if math.abs(f.BackgroundTransparency - tr) > 1e-3 then f.BackgroundTransparency = tr end
 	end
 	if P.prelude or not W.name then return end
-	local closeQ = M.c01((t - P.out) / 0.1)
-	local function pop(l, at)
+	-- each line: in over 0.35 s (Quint Out: it fades in and slides up 22 px into place, a touch of Back on its scale),
+	-- staggered (the name, the rarity 0.08 s later, NEW! 0.16 s, the prompt 0.4 s after the name, which then breathes);
+	-- out over 0.25 s at the close (fading, sliding down)
+	local closeQ = M.c01((t - P.out) / 0.25)
+	local function quint(u) u = M.c01(u) return 1 - (1 - u) ^ 5 end
+	local function glide(l, at, breathe)
 		if not l then return end
 		local u = (t - at) / 0.35
-		local s = u <= 0 and 0.01 or (0.4 + 0.6 * M.back(u, 2.1))
-		s = math.max(0.01, s * (1 - closeQ))
+		local a = quint(u) * (1 - quint(closeQ))
+		local dy = 22 * (1 - quint(u)) + 14 * M.inn(closeQ, 2)
+		local s = u <= 0 and 0.94 or (0.94 + 0.06 * M.back(u, 1.4))
+		if breathe and u >= 1 and closeQ <= 0 then
+			local b = 0.5 + 0.5 * math.sin((t - at - 0.35) * 2 * PI * 0.8)
+			s *= 1 + 0.035 * b
+			a *= 0.78 + 0.22 * b
+		end
 		local sc = W.scales[l]
 		if sc and math.abs(sc.Scale - s) > 1e-4 then sc.Scale = s end
-		X.fadeText(l, (u > 0 and 1 or 0) * (closeQ < 1 and 1 or 0))
+		local h = W.home[l]
+		if h then
+			local pos = UDim2.new(h.X.Scale, h.X.Offset, h.Y.Scale, h.Y.Offset + dy)
+			if l.Position ~= pos then l.Position = pos end
+		end
+		X.fadeText(l, a)
 	end
-	pop(W.name, P.nameT)
-	pop(W.line, P.nameT)
-	pop(W.tap, P.tap)
+	glide(W.name, P.nameT)
+	glide(W.line, P.nameT + 0.08)
+	glide(W.tap, P.tap, true)
 	if W.new then
-		pop(W.new, P.newT)
+		glide(W.new, P.newT)
 		W.new.Rotation = -8
 	end
 	-- a row's tags: under each pair from its reveal

@@ -672,7 +672,8 @@ end)
 -- (ShoeUIRules.AutoStopRank), when the Cash runs out, when the rack is full, or when you walk away.
 -- The reveal (artboard 03 right, ShoeScreens.reveal): the UI layer over the 3D opening, shown where the opening holds on
 -- the pair (its words step aside): Equip (exactly one pair) / Keep (closes it: the pair is already yours) / Open Again /
--- Stop Opening. Never for the onboarding welcome gift.
+-- Stop Opening. Never for the onboarding welcome gift. (brief 30, the user: no longer shown after an opening: the
+-- opening ends on the pair, its name and "Click anywhere to continue"; Auto Open keeps a small Stop pill: Art.stopPill)
 local BOX_PASS = { Triple = 'TripleOpen', Auto = 'AutoOpen' }
 local KEY_RANGE = 11 -- studs from a box's point: the panel shows within this
 local keysGui, keysRoot = Kit.screen('HoodBoxKeys', player:WaitForChild('PlayerGui'), 6)
@@ -736,15 +737,63 @@ local function openBox(entry, count)
 		Net.get('OpenShoeBox'):FireServer(entry.Box.Id)
 	end
 end
+-- (brief 30) Auto Open's own control while it runs: a small "Stop Auto Open" pill over everything (the opening, its
+-- tap-to-continue), the handoff's always-reachable stop; it eases in and out
+function Art.stopPill(on)
+	if on and not Art.pill then
+		local g = Instance.new('ScreenGui')
+		g.Name = 'HoodAutoStop'
+		g.ResetOnSpawn = false
+		g.DisplayOrder = 12
+		local b = Instance.new('TextButton')
+		b.Name = 'StopAuto'
+		b.AnchorPoint = Vector2.new(0.5, 1)
+		b.Position = UDim2.new(0.5, 0, 1, -18)
+		b.Size = UDim2.fromOffset(230, 46)
+		b.BackgroundColor3 = Color3.fromRGB(28, 32, 48)
+		b.BackgroundTransparency = 1
+		b.AutoButtonColor = true
+		b.Text = 'Stop Auto Open'
+		b.TextColor3 = Color3.new(1, 1, 1)
+		b.TextSize = 22
+		b.TextTransparency = 1
+		b.FontFace = Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.Heavy)
+		local corner = Instance.new('UICorner')
+		corner.CornerRadius = UDim.new(1, 0)
+		corner.Parent = b
+		local st = Instance.new('UIStroke')
+		st.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		st.Color = Color3.fromRGB(255, 255, 255)
+		st.Thickness = 2
+		st.Transparency = 1
+		st.Parent = b
+		b.Parent = g
+		g.Parent = player:WaitForChild('PlayerGui')
+		b.Activated:Connect(function() Art.stopAuto() end)
+		Art.pill = g
+		local info = TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
+		TweenService:Create(b, info, { BackgroundTransparency = 0.15, TextTransparency = 0 }):Play()
+		TweenService:Create(st, info, { Transparency = 0.6 }):Play()
+	elseif not on and Art.pill then
+		local g = Art.pill
+		Art.pill = nil
+		local b = g:FindFirstChild('StopAuto')
+		if b then TweenService:Create(b, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.In), { BackgroundTransparency = 1, TextTransparency = 1 }):Play() end
+		task.delay(0.3, function() g:Destroy() end)
+	end
+end
 local function stopAuto()
 	autoOn = false
 	Art.AutoBox = nil
+	Art.stopPill(false)
 	Art.Windows.refresh()
 end
+Art.stopAuto = stopAuto
 local function startAuto(entry)
 	if autoOn then return end
 	autoOn = true
 	Art.AutoBox = entry.Box.Id
+	Art.stopPill(true)
 	Art.Windows.refresh()
 	task.spawn(function()
 		while autoOn and Art.near(entry.Box.Id) do
@@ -898,6 +947,21 @@ end)
 
 -- The reveal card over the opening. job: the cinematic's job (nil: show it now, e.g. after a 2D moment). In the world
 -- the opening holds on the pair while the card is up (its words step aside); Keep lets it fly into the HUD.
+function Art.afterReveal(info, job)
+	if type(info) ~= 'table' or not Shoes.ById[info.Shoe] then return end
+	if not autoOn then return end
+	local box = Shoes.BoxById[info.Box]
+	local stopWhy = Art.Rules.autoStop(info, myRack(), cashNow() - 0, box)
+	if stopWhy then
+		stopAuto()
+		if stopWhy == 'rarity' then say('Auto stopped: ' .. Shoes.RarityById[Shoes.ById[info.Shoe].Rarity].Name .. ' pulled!')
+		elseif stopWhy == 'cash' then say('Auto stopped: not enough Cash')
+		elseif stopWhy == 'full' then task.delay(0.2, Art.full) end
+		return
+	end
+	if job then task.delay(1.2, function() if autoOn and not job.Done then pcall(function() job:skip() end) end end) end
+end
+-- (unused since brief 30: the user asked for no card after an opening; kept for the artboard tests)
 function Art.reveal(info, job)
 	if type(info) ~= 'table' or not Shoes.ById[info.Shoe] then return end
 	if Cinematic and Cinematic.isGift and Cinematic.isGift(info, player) then return end
@@ -1742,7 +1806,7 @@ local function playCinematic(info)
 		done = true
 		unboxing = false
 		local P = j.P or j.Plan
-		if not (P and P.inworld) then task.defer(Art.reveal, info, nil) end -- MOCKUP30 (the premium sheet: the card after it)
+		if not (P and P.inworld) then task.defer(Art.afterReveal, info, nil) end -- (brief 30: no card; Auto Open's checks)
 		if #queue == 0 then
 			reportDone()
 			pg:SetAttribute('UnboxingCalm', false)
@@ -1757,13 +1821,14 @@ local function playCinematic(info)
 		return nil
 	end
 	pcall(PityUI.revealTag, info, momentRoot, { job = job, reduced = reducedMotion }) -- (GUARANTEED!, brief 30)
-	-- MOCKUP30: the reveal card where the opening holds on the pair (in the world), else once it is over
+	-- (brief 30, the user: no card: the pair, its name and "Click anywhere to continue"; the pair is already in the
+	-- inventory) at the reveal: Auto Open's stop checks, and while it runs the opening closes by itself 1.2 s on
 	task.spawn(function()
 		local P = job.P or job.Plan
 		if not (P and P.inworld) then return end
-		local at = P.tap or (P.accent and P.accent[P.best]) or 3
+		local at = P.nameT or (P.accent and P.accent[P.best]) or 3
 		while not job.Done and (job.t or job.T or 0) < at do task.wait(0.05) end
-		if not job.Done then pcall(Art.reveal, info, job) end
+		if not job.Done then pcall(Art.afterReveal, info, job) end
 	end)
 	return job.Plan.total
 end

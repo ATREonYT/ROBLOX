@@ -46,6 +46,13 @@ def P(*c):
 	return tuple(c)
 
 
+def tint(c, k):
+	"""A tone of a colour: k > 0 toward white, k < 0 toward black (the sheets' light top / dark underside)."""
+	t = (255, 255, 255) if k > 0 else (0, 0, 0)
+	k = abs(k)
+	return tuple(int(round(c[i] + (t[i] - c[i]) * k)) for i in range(3))
+
+
 # ---------------------------------------------------------------------------------------------- the kit
 class Chest:
 	def __init__(self, id, name):
@@ -110,6 +117,16 @@ class Chest:
 			else:
 				y0b = y0
 			self.span((-HW - o, y0b, -HD - o), (HW + o, y1, HD + o), color, 'LidBody')
+			# (the sheets' bevels and shading in Parts: a light strip along the lid's top edges, a dark one along its foot)
+			e, hi, lo = 0.09, tint(color, 0.38), tint(color, -0.32)
+			x1, z1 = HW + o + 0.012, HD + o + 0.012
+			self.span((-x1, y1 - e, -z1), (x1, y1 + 0.004, -z1 + e), hi, 'LidEdge')
+			for sx in (-1, 1):
+				self.span((sx * x1, y1 - e + 0.002, -z1 + 0.003), (sx * (x1 - e), y1 + 0.006, z1), hi, 'LidEdge')
+			self.span((-x1 + 0.004, y1 - e + 0.004, z1 - e), (x1 - 0.004, y1 + 0.008, z1), hi, 'LidEdge')
+			self.span((-x1, y0b, -z1), (x1, y0b + e, -z1 + e), lo, 'LidEdge')
+			for sx in (-1, 1):
+				self.span((sx * x1, y0b + 0.002, -z1 + 0.003), (sx * (x1 - e), y0b + e + 0.002, z1), lo, 'LidEdge')
 			self.span((-HW - o + cap_in, y1 - 0.01, -HD - o + cap_in), (HW + o - cap_in, y1 + cap_h, HD + o - cap_in), cap or color, 'LidCap')
 			self.span((-HW + WALL + 0.03, y0 - 0.025, -HD + WALL + 0.03), (HW - WALL - 0.03, y0 + 0.02, HD - WALL - 0.03), inside, 'LidInside')
 
@@ -143,10 +160,13 @@ def front(x, y, proud=0.0):
 
 
 # ---------------------------------------------------------------------------------------------- emblems
-def crown_front(c, x, y, z, size, color, name='Emblem', tips=True, t=0.1):
+def crown_front(c, x, y, z, size, color, name='Emblem', tips=True, t=0.1, outline=True):
 	"""A crown standing on a front face (z = its back plane), like the sheets': a wide band, a body, and three pointed
 	peaks on it (flat triangles: the middle one tallest, the outer two leaning out) with notches down to the body
-	between them and round tips. 8-11 parts."""
+	between them and round tips; raised (1.4x thick) on a dark outline copy 10 % larger, so it pops. 16-22 parts."""
+	if outline:
+		crown_front(c, x, y - size * 0.045, z, size * 1.1, tint(color, -0.6), name + 'Outline', tips, t, False)
+		z, t = z - t, t * 1.4
 	s = size
 	m = c.m
 	c.box((x, y + s * 0.06, z - t / 2), (s * 1.0, s * 0.12, t + 0.008), color, name)           # the band
@@ -198,9 +218,12 @@ def flat_wing(c, cx, cy, z, size, color, mirror=False, name='Wing'):
 			m.egg((sx * ln * size * 0.5, 0.0, 0.0), (ln * size, size * 0.36, 0.1), color, name=name)
 
 
-def star5_front(c, x, y, z, size, color, name='Star', t=0.1):
+def star5_front(c, x, y, z, size, color, name='Star', t=0.1, outline=False):
 	"""A five-point star on a front face (z = its back plane): a pentagon-ish centre disc and five pointed arms, each two
-	wedges back to back (a flat triangle). 11 parts."""
+	wedges back to back (a flat triangle); outline=True raises it on a dark copy 12 % larger (22 parts; off by default: the Graffiti box's viewport budget)."""
+	if outline:
+		star5_front(c, x, y, z, size * 1.12, tint(color, -0.6), name + 'Outline', t, False)
+		z, t = z - t, t * 1.3
 	r = size / 2
 	m = c.m
 	for i in range(5):
