@@ -10,7 +10,8 @@
 --   * attributes for the HUD: SpinFree, SpinNext (os.time of the next free spin), SpinExtra; PlaytimeSeconds (this
 --     session), PlaytimeReady (gifts waiting); MissionsReady (tasks finished, waiting for their Claim); StarterOwned
 --   * the HudExtras RemoteFunction: 'State', 'Spin', 'ClaimGift' (i), 'ClaimMission' (i). The answer is always
---     { Ok, Text, State } (Spin adds Wedge, the index the wheel stops on). A spin's prize is in the profile at once, but
+--     { Ok, Text, State } (Spin adds Wedge, the index the wheel stops on, and Guaranteed: it was the pity-guaranteed big
+--     prize, Shared/PityRules; State.Spin.Pity = { Left, Every } is the counter the window prints). A spin's prize is in the profile at once, but
 --     the screen hears of it (Cash / Power attributes, the notice, a won box's opening) only once the wheel has stopped
 --     (a won boost starts at once: StoreService publishes the profile's boosts every second).
 -- Kid-safe: nothing here opens a window or a purchase prompt by itself; a finished mission is told with one notice, never
@@ -22,6 +23,7 @@ local HudExtras = require(script.Parent.HudExtras)
 local Retention = require(script.Parent.Retention)
 local RateLimiter = require(script.Parent.RateLimiter)
 local Rules = require(RS.Shared.HudExtrasRules)
+local Pity = require(RS.Shared.PityRules)
 local Format = require(RS.Shared.Format)
 local Net = require(RS.Shared.Net)
 
@@ -128,7 +130,9 @@ local function stateOf(player, profile)
 		}
 	end
 	return {
-		Spin = { Free = st.Free, Wait = st.Wait, Extra = st.Extra, Total = st.Total, Wedges = wedges, FreeEvery = Rules.Spin.FreeEvery, Pack = Rules.Spin.PackSpins },
+		-- (brief 30) Pity: spins until the guaranteed big prize (1 = the next spin); the window prints it, the server enforces it
+		Spin = { Free = st.Free, Wait = st.Wait, Extra = st.Extra, Total = st.Total, Wedges = wedges, FreeEvery = Rules.Spin.FreeEvery, Pack = Rules.Spin.PackSpins,
+			Pity = { Left = Pity.wheelLeft(data.Pity), Every = Pity.Wheel.Every } },
 		Playtime = { Seconds = data.Playtime.Seconds, Gifts = gifts, Ready = ready },
 		Missions = { List = tasks, Done = data.Missions.Done, Ready = Rules.missionsReady(data.Missions) },
 		Starter = starter,
@@ -180,7 +184,7 @@ local function answer(player, action, arg)
 	local now = os.time()
 	if action == 'Spin' then
 		if os.clock() < (revealAt[player] or 0) then return reply(player, profile, false, '') end
-		local ok, i, reward = HudExtras.spin(profile, rng:NextNumber(), now)
+		local ok, i, reward, guaranteed = HudExtras.spin(profile, rng:NextNumber(), now)
 		if not ok then
 			return reply(player, profile, false, i == 'busy' and '' or 'No spins right now. A free one comes back soon!')
 		end
@@ -198,6 +202,7 @@ local function answer(player, action, arg)
 		end)
 		local res = reply(player, profile, true, '')
 		res.Wedge = i
+		res.Guaranteed = guaranteed == true -- (brief 30: this spin was the guaranteed big prize: the window tags it)
 		res.Lines = lines(reward)
 		return res
 	elseif action == 'ClaimGift' then

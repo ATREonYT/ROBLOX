@@ -25,6 +25,10 @@ Schema.Template={
  -- best is worn, the others follow you) and how many boxes you have opened. Goals.Chain = GoalRules.Chain (a goal
  -- inserted into the chain moves older saves' steps; GoalRules.migrate).
  Shoes={Owned={},Equipped={},Opened=0,Favorites={}},
+ -- (brief 30, PITY) The visible guarantees (Shared/PityRules): per shoe box the opens since its last Epic+ (a box that is at 0 is
+ -- not stored), and the wheel's spins since its last big prize. HoodServer/ShoeOpening and HudExtras keep it; a profile from before it
+ -- has none, which means 0 everywhere (migrate; no version bump: an older server keeps the field as it is).
+ Pity={Boxes={},Wheel=0},
  -- (brief 27) The Store's codes used: {[CODE]=os.time used} (HoodServer/Codes: each code once per player).
  Codes={},
  -- (brief 29, P4) The best Level you ever reached (Shared/LevelRules: a level is a curve over Power; the rank follows this
@@ -73,6 +77,8 @@ function Schema.migrate(data)
  end
  -- Shoes (added with the shoe boxes): new profiles start with none; a damaged table is cleaned, never a reason to kick.
  data.Shoes=require(game.ReplicatedStorage.Shared.ShoeRules).sanitize(data.Shoes)
+ -- Pity (brief 30): missing means 0 everywhere; a damaged table (or an unknown box, or a count out of range) is cleaned, never a reason to kick.
+ data.Pity=require(game.ReplicatedStorage.Shared.PityRules).sanitize(data.Pity)
  -- Codes (brief 27): a profile from before them gets an empty table; a damaged one is cleaned, never a reason to kick.
  -- No version bump: an older server that loads this profile keeps the field as it is.
  data.Codes=require(script.Parent.Codes).sanitize(data.Codes)
@@ -130,6 +136,8 @@ function Schema.validate(data)
  local on={}
  for _,id in ipairs(s.Equipped) do on[id]=(on[id] or 0)+1;assert((s.Owned[id] or 0)>=on[id],'Equipped shoe not owned') end
  assert(type(s.Opened)=='number' and s.Opened%1==0 and s.Opened>=0,'Invalid Shoes.Opened')
+ assert(type(data.Pity)=='table' and type(data.Pity.Boxes)=='table' and type(data.Pity.Wheel)=='number' and data.Pity.Wheel%1==0 and data.Pity.Wheel>=0,'Invalid Pity')
+ for id,n in pairs(data.Pity.Boxes) do assert(type(id)=='string' and shoes.BoxById[id] and type(n)=='number' and n%1==0 and n>=1,'Invalid Pity box') end
  assert(type(data.Codes)=='table','Invalid Codes')
  assert(type(data.BestLevel)=='number' and data.BestLevel%1==0 and data.BestLevel>=1 and data.BestLevel<=require(game.ReplicatedStorage.Shared.LevelRules).MaxLevel,'Invalid BestLevel')
  assert(type(data.Retention)=='table' and type(data.Retention.Pending)=='number' and type(data.Retention.LastSeen)=='number' and type(data.Retention.Group)=='boolean','Invalid Retention')

@@ -21,6 +21,11 @@
 --       pairs go in at once; nothing after that can fail and nothing yields, so a receipt's grant and its purchase id
 --       go into the same save. No rack check: a paid box is always given (the rack may pass MaxOwned). The caller
 --       pushes the profile (Data.push) and checks whether the box may be opened at all.
+-- (brief 30, PITY) The visible guarantee (Shared/PityRules; the counters are the profile's Pity.Boxes, one per box): every
+-- open without Epic+ counts up that box's counter, the open at the threshold (PityRules.Boxes: 10 Cash boxes, 8 Robux
+-- boxes) rolls among the box's Epic+ entries by their own relative weights, and Epic+ (natural or guaranteed) resets it. A
+-- batch counts its opens in order, one by one, so the 2nd of a x3 can be the guaranteed one. Every open is a pity open,
+-- whichever way it was paid (Cash, a receipt, a won box, the welcome gift). The ShoePity attribute (sync) shows the counters.
 -- ShoeOpened payload (agreed with UI4, brief 22): { Box, Shoe, Rarity, New, Count, Equipped } as always (on a batch:
 -- the best pair of it, so an older client still plays one normal reveal), plus
 --   Shoes    every pair in roll order: { { Shoe, Rarity, New, Count, Equipped } } (one entry on a single open)
@@ -29,11 +34,14 @@
 --   Buy      #Shoes (1, 3 or 8)
 --   Best     the index in Shoes the top-level fields describe
 --   Product  the developer-product key of a Robux open ('ShoeBoxGrail8'), nil for a Cash open
+--   Guaranteed  (brief 30) true on an open that was the guaranteed Epic+ one (per entry of Shoes, and on the top-level
+--            fields for the pair they describe); the reveal shows a GUARANTEED! tag
 local Players = game:GetService('Players')
 local RS = game:GetService('ReplicatedStorage')
 local Net = require(RS.Shared.Net)
 local Shoes = require(RS.Shared.Config.Shoes)
 local ShoeRules = require(RS.Shared.ShoeRules)
+local Pity = require(RS.Shared.PityRules)
 
 local ShoeOpening = {}
 ShoeOpening.MaxBatch = 10 -- the most pairs one open may give (the Store sells 1, 3 and 8)
@@ -115,6 +123,9 @@ function ShoeOpening.sync(player, profile)
 	set(player, 'ShoesMax', slots)
 	set(player, 'ShoesOwned', ShoeRules.ownedString(shoes))
 	set(player, 'ShoesOpened', shoes.Opened)
+	-- (brief 30) the pity counters the box panel and the odds board show ('Street:3,...'; '' = every counter at 0)
+	profile.Data.Pity = Pity.sanitize(profile.Data.Pity)
+	set(player, 'ShoePity', Pity.encode(profile.Data.Pity))
 end
 
 -- Is pair a better than pair b for the reveal's headline? Rarer, then a bigger bonus (the first rolled keeps a tie).
@@ -140,18 +151,24 @@ function ShoeOpening.openMany(player, profile, boxId, n, opts)
 	end
 	local shoes = ShoeRules.sanitize(profile.Data.Shoes)
 	profile.Data.Shoes = shoes
+	-- (brief 30) the pity counter of this box, in order: an open the counter makes due rolls among Epic+ only (and is
+	-- flagged Guaranteed); whatever came out then resets or counts up the counter for the next one in the batch.
+	local pity = Pity.sanitize(profile.Data.Pity)
+	profile.Data.Pity = pity
 	local ids, list, best = {}, {}, 1
 	for i, r in rolls do
 		local before = #shoes.Equipped
-		local id, fresh = ShoeRules.open(shoes, box.Id, r, slots, lucky)
+		local due = Pity.due(pity, box.Id)
+		local id, fresh = ShoeRules.open(shoes, box.Id, r, slots, lucky, due and Pity.minRank() or nil)
+		Pity.record(pity, box.Id, Shoes.ById[id].Rank)
 		ids[i] = id
-		list[i] = { Shoe = id, Rarity = Shoes.ById[id].Rarity, New = fresh, Count = ShoeRules.copies(shoes, id), Equipped = #shoes.Equipped > before }
+		list[i] = { Shoe = id, Rarity = Shoes.ById[id].Rarity, New = fresh, Count = ShoeRules.copies(shoes, id), Equipped = #shoes.Equipped > before, Guaranteed = due }
 		if i > 1 and better(id, ids[best]) then best = i end
 	end
 	-- (from here on nothing may undo the grant: the attributes and messages can't fail it, even for a player who left)
 	local top = list[best]
 	local info = {
-		Box = box.Id, Shoe = top.Shoe, Rarity = top.Rarity, New = top.New, Count = top.Count, Equipped = top.Equipped,
+		Box = box.Id, Shoe = top.Shoe, Rarity = top.Rarity, New = top.New, Count = top.Count, Equipped = top.Equipped, Guaranteed = top.Guaranteed,
 		Shoes = list, Buy = n, Best = best, Product = type(opts.Product) == 'string' and opts.Product or nil,
 	}
 	pcall(ShoeOpening.sync, player, profile)

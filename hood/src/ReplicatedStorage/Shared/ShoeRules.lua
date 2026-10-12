@@ -20,6 +20,9 @@
 --     Lucky                      `lucky` = Epic and rarer shoes weigh LuckyFactor x in a CASH box's roll (renormalised:
 --                                weights, roll, chances take an optional `lucky`); a Robux box's odds never change
 --     Triple Open (TripleOpen)   canOpen's optional `count` = 3: three opens at once, 3x the Price and room for 3
+--   Pity (brief 30; Shared/PityRules): weights, roll, chances and open take an optional `minRank`: only entries of that rank
+--     or better can come out, each by its own weight (renormalised), which is how a guaranteed Epic+ open rolls. The shown
+--     per-open odds (chances without minRank) never change.
 local Shoes = require(script.Parent.Config.Shoes)
 
 local ShoeRules = {}
@@ -119,14 +122,24 @@ end
 ---------------------------------------------------------------------------------------------- boxes
 -- The roll weights of a box, one per shoe in the Shoes order, and their total (nil for an unknown box). `lucky` (the
 -- Lucky pass) makes Epic and rarer weigh LuckyFactor x in a Cash box; a Robux box keeps its published odds.
-function ShoeRules.weights(boxId: any, lucky: any): ({ number }?, number)
+function ShoeRules.weights(boxId: any, lucky: any, minRank: any): ({ number }?, number)
 	local box = type(boxId) == 'string' and Shoes.BoxById[boxId]
 	if not box then return nil, 0 end
 	local boost = lucky == true and not box.Robux
+	-- (brief 30) minRank: entries below it weigh 0 (a guaranteed open). A rank no entry reaches changes nothing.
+	local floor = int(minRank)
+	if floor then
+		local reachable = false
+		for _, id in box.Shoes do
+			if Shoes.ById[id].Rank >= floor then reachable = true end
+		end
+		if not reachable then floor = nil end
+	end
 	local list, total = {}, 0
 	for i, id in box.Shoes do
 		local w = box.Weights[i]
 		if boost and Shoes.ById[id].Rank >= ShoeRules.LuckyRank then w *= ShoeRules.LuckyFactor end
+		if floor and Shoes.ById[id].Rank < floor then w = 0 end
 		list[i] = w
 		total += w
 	end
@@ -135,29 +148,32 @@ end
 
 -- The shoe a uniform roll r in [0, 1) gives from a box (nil for an unknown box), and its rarity. The box's weights
 -- (ShoeRules.weights; without Lucky they add up to Shoes.TotalWeight) split [0, 1) in the Shoes order, commonest first.
-function ShoeRules.roll(boxId: any, r: any, lucky: any): (string?, string?)
+-- With `minRank` (brief 30, a guaranteed open) only entries of that rank or better are in the split, by their own weights.
+function ShoeRules.roll(boxId: any, r: any, lucky: any, minRank: any): (string?, string?)
 	local box = type(boxId) == 'string' and Shoes.BoxById[boxId]
 	if not box then return nil, nil end
-	local weights, total = ShoeRules.weights(boxId, lucky)
+	local weights, total = ShoeRules.weights(boxId, lucky, minRank)
 	if not weights then return nil, nil end
 	local x = (type(r) == 'number' and r == r) and math.clamp(r, 0, 0.999999999) or 0
 	local pick = x * total
 	local acc = 0
+	local last
 	for i, id in box.Shoes do
 		acc += weights[i]
+		if weights[i] > 0 then last = id end
 		if pick < acc then return id, Shoes.ById[id].Rarity end
 	end
-	local first = box.Shoes[1]
-	return first, Shoes.ById[first].Rarity
+	local fallback = last or box.Shoes[1]
+	return fallback, Shoes.ById[fallback].Rarity
 end
 
 -- A box's shoes with their chances (percent), commonest first: { { Id, Rarity, Chance } } (6 on a Cash box, 5 on a
 -- Robux box). With `lucky` (a Lucky pass owner) a Cash box's real, better odds; every odds display passes it.
-function ShoeRules.chances(boxId: any, lucky: any)
+function ShoeRules.chances(boxId: any, lucky: any, minRank: any)
 	local box = type(boxId) == 'string' and Shoes.BoxById[boxId]
 	local list = {}
 	if not box then return list end
-	local weights, total = ShoeRules.weights(boxId, lucky)
+	local weights, total = ShoeRules.weights(boxId, lucky, minRank)
 	if not weights then return list end
 	local exact = total == Shoes.TotalWeight
 	for i, id in box.Shoes do
@@ -222,9 +238,9 @@ end
 
 -- Adds the shoe roll r gives to the rack (call after canOpen or canGrant; the caller takes the Cash). Returns the shoe
 -- id and whether it is a new one for you. While a slot is free (of `slots`, default MaxEquipped) the new pair goes
--- straight on. `lucky`: the Lucky pass's odds (ShoeRules.weights).
-function ShoeRules.open(shoes, boxId: string, r: number, slots: number?, lucky: any): (string?, boolean)
-	local id = ShoeRules.roll(boxId, r, lucky)
+-- straight on. `lucky`: the Lucky pass's odds (ShoeRules.weights). `minRank`: a guaranteed open (Shared/PityRules).
+function ShoeRules.open(shoes, boxId: string, r: number, slots: number?, lucky: any, minRank: any): (string?, boolean)
+	local id = ShoeRules.roll(boxId, r, lucky, minRank)
 	if not id then return nil, false end
 	local fresh = ShoeRules.copies(shoes, id) == 0
 	shoes.Owned[id] = math.min(ShoeRules.copies(shoes, id) + 1, ShoeRules.MaxCopies)

@@ -44,6 +44,7 @@ local Format = require(Shared.Format)
 local Shoes = require(Shared.Config.Shoes)
 local ShoeRules = require(Shared.ShoeRules)
 local Products = require(Shared.Config.Products)
+local PityUI = require(Shared.PityUI) -- (brief 30: the visible pity counters' pieces; the rules are Shared/PityRules)
 
 local player = Players.LocalPlayer
 local Color, Tone = Kit.Color, Kit.Tone
@@ -523,6 +524,7 @@ local function buildBoard(entry)
 		tag.TextScaled = true
 	end
 	for i, id in box.Shoes do cellFor(panel, i, id, rack, #box.Shoes) end
+	PityUI.boardTab(gui, panel, box.Id, player) -- ("Epic+ guaranteed in 7 opens" on a tab under the board)
 	gui.Enabled = false
 	gui.Parent = entry.Point
 	entry.Board = gui
@@ -789,12 +791,14 @@ local function buildKeys()
 	end
 end
 buildKeys()
+keysUI.Pity = PityUI.keyLine(keysUI.Panel) -- (brief 30: the pity line under the price; PityUI.paint fills it)
 
 -- paint the cards for the box entry
 local function paintKeys(entry)
 	local box = entry.Box
 	local c = keysUI.Cards
 	keysUI.Name.Text = string.upper(box.Name)
+	PityUI.paint(keysUI.Pity, box.Id, player)
 	if box.Robux then
 		keysUI.Name.TextColor3 = Kit.hex('7CFF4F')
 		keysUI.Price.Text = 'EXCLUSIVE'
@@ -1338,6 +1342,7 @@ local function play(info)
 	skipRequested = false
 	skip.Activated:Connect(function() skipRequested = true end)
 	local start = os.clock() -- (the moment's clock; a tap moves it on)
+	pcall(PityUI.revealTag, info, momentRoot, { from = T.Text + 0.2, to = tOut, now = function() return os.clock() - start end }) -- (GUARANTEED!, brief 30)
 	local popped, leaving, finished = false, false, false
 	local target -- (where the pairs fly at the end)
 	local function frameAt(t: number)
@@ -1664,6 +1669,7 @@ local function playCinematic(info)
 		unboxing = false
 		return nil
 	end
+	pcall(PityUI.revealTag, info, momentRoot, { job = job, reduced = reducedMotion }) -- (GUARANTEED!, brief 30)
 	return job.Plan.total
 end
 Net.get('ProfileUpdated').OnClientEvent:Connect(function(data)

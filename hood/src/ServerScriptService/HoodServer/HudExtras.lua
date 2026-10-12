@@ -10,6 +10,7 @@ local RS = game:GetService('ReplicatedStorage')
 local Rules = require(RS.Shared.HudExtrasRules)
 local RebirthRules = require(RS.Shared.RebirthRules)
 local Retention = require(script.Parent.Retention)
+local Pity = require(RS.Shared.PityRules)
 
 local HudExtras = {}
 
@@ -37,18 +38,24 @@ function HudExtras.give(profile, reward, now)
 end
 
 ---------------------------------------------------------------------------------------------- spin
--- One spin: true, the wedge index and the reward, or false and why ('none'). r = the roll in [0, 1).
+-- One spin: true, the wedge index, the reward and whether it was the GUARANTEED big prize (brief 30, PITY: the counter
+-- Pity.Wheel made this spin due, so it rolled among the big-prize wedges only, by their own weights), or false and why
+-- ('none'). r = the roll in [0, 1). Whatever lands then resets the counter (the big prize) or counts it up.
 function HudExtras.spin(profile, r, now)
 	local data = HudExtras.tables(profile.Data)
 	local st = Rules.spinState(data.Spin, now)
 	if st.Total <= 0 then return false, 'none' end
 	if data.Spin.PendingBox ~= '' then return false, 'busy' end
-	local i = Rules.pick(r)
+	local pity = Pity.sanitize(data.Pity)
+	local due = Pity.wheelDue(pity)
+	local i = Rules.pick(r, due and Pity.Wheel.Wedges or nil)
 	local reward = HudExtras.reward(profile, Rules.Wedges[i])
 	HudExtras.give(profile, reward, now) -- (may only throw before it changes anything)
 	local ok = Rules.takeSpin(data.Spin, now)
 	assert(ok, 'spin refused')
-	return true, i, reward
+	Pity.wheelRecord(pity, Rules.Wedges[i].Id)
+	data.Pity = pity
+	return true, i, reward, due
 end
 
 ---------------------------------------------------------------------------------------------- playtime

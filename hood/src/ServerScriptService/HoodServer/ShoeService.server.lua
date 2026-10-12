@@ -15,6 +15,9 @@
 --                          count = 3 (brief 22, the Triple Open pass: Pass_TripleOpen) opens three at once for 3x the
 --                          Price, with room for 3 pairs, in one ShoeOpened (Buy = 3); without the pass it is refused.
 --                          A Lucky owner (Pass_Lucky) rolls with the Lucky odds (ShoeRules.chances(boxId, true)).
+--                          (brief 30, PITY) The roll is ShoeOpening's, which keeps the visible pity counter of each box
+--                          (Shared/PityRules): the open at the threshold is guaranteed Epic+. The remote carries no pity
+--                          argument: only the profile's counter decides, never the client.
 --   ShoeAction(action, id) 'Equip' | 'Unequip' | 'EquipBest' | 'Recycle' (a spare pair, for a tenth of its box's
 --                          price), from anywhere, under the action rate limit. Up to ShoesMax pairs on (3; 4 with the
 --                          +1 Shoe Slot pass, Pass_ExtraEquip).
@@ -34,6 +37,8 @@
 --   ShoesMax        pairs you may have on: 3, or 4 with the +1 Shoe Slot pass (brief 22)
 --   ShoesOwned      the rack: 'Id:copies,...' in the boxes' order
 --   ShoesOpened     boxes opened ever
+--   ShoePity        (brief 30) the pity counters: 'Id:opens without Epic+,...' in the boxes' order, a box at 0 left out
+--                   (PityRules.encode / decode); the box panel and the odds board print "Epic+ guaranteed in N opens" from it
 -- ReplicatedStorage attribute ShoeBoxes: true when this map has shoe boxes (GoalService skips the box goal otherwise).
 local Players = game:GetService('Players')
 local RS = game:GetService('ReplicatedStorage')

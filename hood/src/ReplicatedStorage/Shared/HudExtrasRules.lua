@@ -97,15 +97,31 @@ R.Wedges = {
 R.WedgeTotal = 0
 for _, w in R.Wedges do R.WedgeTotal += w.Weight end
 
--- The wedge a roll r in [0, 1) lands on: its index.
-function R.pick(r: any): number
-	local x = math.clamp(number(r, 0), 0, 0.999999) * R.WedgeTotal
-	local acc = 0
-	for i, w in R.Wedges do
-		acc += w.Weight
-		if x < acc then return i end
+-- The wedge a roll r in [0, 1) lands on: its index. `only` (brief 30, the guaranteed big prize: Shared/PityRules.Wheel.Wedges)
+-- limits the roll to those wedge ids, each by its own weight; ids that match no wedge change nothing.
+function R.pick(r: any, only: { string }?): number
+	local total = R.WedgeTotal
+	local from: { string }? = nil
+	if only then
+		local sum = 0
+		for _, w in R.Wedges do
+			if table.find(only, w.Id) then sum += w.Weight end
+		end
+		if sum > 0 then
+			from, total = only, sum
+		end
 	end
-	return #R.Wedges
+	local x = math.clamp(number(r, 0), 0, 0.999999) * total
+	local acc = 0
+	local last = #R.Wedges
+	for i, w in R.Wedges do
+		if not from or table.find(from, w.Id) then
+			acc += w.Weight
+			last = i
+			if x < acc then return i end
+		end
+	end
+	return last
 end
 -- A wedge's chance as text ('24%', '3%').
 function R.chanceText(i: number): string

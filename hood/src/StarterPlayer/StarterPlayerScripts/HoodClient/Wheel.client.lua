@@ -9,6 +9,10 @@
 --     have and when the next free one comes, "3 Spins" for Robux (its real price; Roblox's own prompt), and every prize's
 --     chance (the very numbers the server rolls with). A spin turns the wheel 4.2 s (Quint Out) onto the wedge the server
 --     picked, then the prize pops on it.
+--   * (brief 30, PITY) A line on the Chances heading's row prints the visible guarantee ("Big prize guaranteed in 12 spins", Shared/
+--     PityRules; the server enforces it and sends the counter in the window's state); a spin that was the guaranteed one
+--     gets a small GUARANTEED! tag over its prize. The line holds still while the wheel turns, so it never gives the
+--     prize away early.
 -- Kid-safe and honest: no flashing (the wheel turns, nothing blinks), no fake timer, nothing opens by itself.
 local Players = game:GetService('Players')
 local RS = game:GetService('ReplicatedStorage')
@@ -21,6 +25,7 @@ local Motion = require(Shared.UIMotion)
 local Net = require(Shared.Net)
 local Products = require(Shared.Config.Products)
 local Rules = require(Shared.HudExtrasRules)
+local Pity = require(Shared.PityRules)
 local Spec = require(Shared.HudSpec)
 local Windows = require(Shared.HudWindows)
 local Toasts = require(Shared.HudToasts)
@@ -172,10 +177,15 @@ do
 	Motion.button(packButton, function() buy('SpinPack') end)
 	gradient(label({ Name = 'ChanceHead', Text = 'Chances', TextSize = 24, StrokeThickness = 3.5, TextXAlignment = Enum.TextXAlignment.Left, Position = px(RX, 200), Size = px(400, 28), ZIndex = 26, Parent = well }), hex('9CF4FF'), hex('2EC4F0'))
 	local chances = Kit.new('Frame', { Name = 'Chances', BackgroundTransparency = 1, Position = px(RX, 232), Size = px(420, 210), ZIndex = 26, Parent = well })
+	-- (brief 30) "Big prize guaranteed in 12 spins": the wheel's visible guarantee, on the Chances heading's row, right-aligned
+	local pityLine = label({ Name = 'PityLine', Text = '', TextSize = 17, StrokeThickness = 3, TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = hex('FFD84A'), Position = px(RX + 112, 201), Size = px(308, 26), ZIndex = 26, Parent = well })
+	pityLine.TextScaled = true
+	Kit.new('UITextSizeConstraint', { MaxTextSize = 17, MinTextSize = 10, Parent = pityLine })
 	local prize = Kit.new('Frame', { Name = 'Prize', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(D / 2 + 10, D / 2 + 16), Size = px(420, 140), ZIndex = 40, Visible = false, Parent = well })
 	prize:SetAttribute('NoStagger', true)
 	local prizeText = gradient(label({ Name = 'Text', Text = '', TextSize = 40, StrokeThickness = 5, Size = UDim2.fromScale(1, 1), ZIndex = 41, Parent = prize }), hex('C8FF4A'), hex('5CE01E'))
 	prizeText.TextWrapped = true
+	local guarTag = label({ Name = 'Guaranteed', Text = 'GUARANTEED!', TextSize = 26, StrokeThickness = 4, TextColor3 = hex('FFC800'), AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 0, 4), Size = px(320, 32), Visible = false, ZIndex = 41, Parent = prize })
 	local state, stateAt, spinning = nil, 0, false
 	local angle = 0 -- the wheel's turn now (degrees)
 
@@ -233,6 +243,12 @@ do
 			freeLine.Text = 'Next free spin in ' .. clock(wait)
 			freeLine.TextColor3 = Color.white
 		end
+		-- (brief 30) the guarantee line, still while the wheel turns
+		local pt = sp and sp.Pity
+		if pt and not spinning then
+			pityLine.Text = Pity.wheelLine(pt.Left)
+			pityLine.TextColor3 = (tonumber(pt.Left) or 99) <= 1 and hex('7CFF4F') or hex('FFD84A')
+		end
 		local can = n > 0 and not spinning
 		local l = spinButton:FindFirstChild('Label', true)
 		if l then l.Text = spinning and '...' or 'SPIN!' end
@@ -275,6 +291,7 @@ do
 			prizes.Rotation = angle
 			spinning = false
 			prizeText.Text = 'You won ' .. table.concat(res.Lines or {}, ' + ') .. '!'
+			guarTag.Visible = res.Guaranteed == true
 			prize.Visible = true
 			local s = Motion.scaleOf(prize)
 			s.Scale = 0.3
