@@ -16,9 +16,18 @@
 --                   own time, the strongest runs first), kept in the profile (Passes.Boost) so they survive a rejoin
 --   BlockParty      x2 Power for everyone in this server for the same time
 --   SkipRebirth     RebirthService.rebirth(player, { Free = true })
+--   Featured rows   (brief 30) the weekly pack: Cash (Products.cashAmount, scales with the best stage) + a timed Power boost
+--                   + Count of a Robux box, in ONE grant; everything that can fail runs before the profile changes
 --   Box rows        (brief 21/22) opens that Robux shoe box Count times (Products.boxOpen) through
 --                   HoodServer/ShoeOpening.openMany: the same roll, save and unboxing as a Cash box, ONE ShoeOpened
 --                   with all the pairs; no distance, world or rack check (it was paid)
+-- Gifts (brief 30, "Gift A Player"): the Cash Packs and the Robux boxes (Products.giftable) can be bought for another player
+-- in the server. The buyer's client sends the target right before the purchase prompt (StoreReceipts.setGift, fresh for
+-- GiftFresh seconds); at the receipt, if that player is still here with a profile, the grant goes to THEM (both players are
+-- told), else it goes to the buyer with a clear notice. The receipt id is always the BUYER's (their profile's
+-- ProcessedReceipts), so a retry can never grant twice; a gift that cannot be delivered or fails is granted to the buyer on
+-- the spot, never lost and never left at NotProcessedYet. A Cash gift is worth what the buyer's card showed (their best
+-- stage scales it), not the receiver's.
 -- Once per purchase: the purchase id goes into the profile's ProcessedReceipts together with the grant (same save),
 -- and the receipt is only answered PurchaseGranted once a save holding it has gone through (ProfileStore's
 -- LastSavedData / OnAfterSave). A player who isn't here: NotProcessedYet (Roblox asks again on their next join). One
@@ -43,6 +52,7 @@ local ShoeOpening = optional(script.Parent:FindFirstChild('ShoeOpening'))
 local StoreReceipts = {}
 StoreReceipts.Kept = 100 -- purchase ids remembered per profile
 StoreReceipts.SaveWait = 30 -- seconds to wait for the save that holds a grant before telling Roblox to ask again
+StoreReceipts.GiftFresh = 60 -- seconds a chosen gift target stays valid
 
 -- The grant for every developer product, from the catalog: { [key] = function(player, profile, key) }.
 -- ctx holds the server's side effects (all optional, so the tests can stand in for them):
@@ -60,6 +70,14 @@ function StoreReceipts.grants(ctx)
 	local function now() return ctx.now and ctx.now() or os.time() end
 	local function setAttribute(player, name, value) pcall(player.SetAttribute, player, name, value) end
 
+	-- (brief 30) the words a receiver hears: "Thanks! +5K Cash" for yourself, "Ann gifted you +5K Cash!" for a gift
+	local function thanks(player, opts, text)
+		if opts and opts.From then
+			notice(player, tostring(opts.From.DisplayName or opts.From.Name or 'Someone') .. ' gifted you ' .. text .. '!')
+		else
+			notice(player, 'Thanks! ' .. text)
+		end
+	end
 	local function powerPack(player, profile, key)
 		local need = RebirthRules and RebirthRules.need(profile.Data.Rebirths) or 2500
 		local amount = Products.powerAmount(key, need, profile.Data.Rep)
@@ -68,12 +86,13 @@ function StoreReceipts.grants(ctx)
 		setAttribute(player, 'Power', profile.Data.Rep)
 		notice(player, 'Thanks! +' .. Format.compact(amount) .. ' Power')
 	end
-	local function cashPack(player, profile, key)
-		local amount = Products.cashAmount(key, Retention.bestStage(profile.Data))
+	local function cashPack(player, profile, key, opts)
+		-- (a gift is worth what the BUYER's card showed: their best stage)
+		local amount = Products.cashAmount(key, Retention.bestStage((opts and opts.BuyerProfile or profile).Data))
 		assert(amount > 0, 'no amount for ' .. key)
 		profile.Data.Cash = math.min(1e12, profile.Data.Cash + amount)
 		setAttribute(player, 'Cash', profile.Data.Cash)
-		notice(player, 'Thanks! +' .. Format.compact(amount) .. ' Cash')
+		thanks(player, opts, '+' .. Format.compact(amount) .. ' Cash')
 	end
 	local function timedBoosts(player, profile, key)
 		local levels = Products.boostLevels(key)
@@ -119,24 +138,54 @@ function StoreReceipts.grants(ctx)
 		setAttribute(player, 'Power', profile.Data.Rep)
 		notice(player, 'Your streak was already safe, so here is a reward instead: ' .. table.concat(RetentionRules.lines(reward, Format.compact), ' + '))
 	end
-	local function shoeBox(player, profile, key)
+	local function shoeBox(player, profile, key, opts)
 		assert(Shoes and ShoeRules and ShoeOpening, 'Shoes / ShoeRules / ShoeOpening missing')
 		local boxId, count = Products.boxOpen(key)
 		local box = boxId and Shoes.BoxById[boxId]
 		assert(box and box.Robux and ShoeRules.canGrant(box.Robux) == box, 'no shoe box for ' .. tostring(key))
 		ShoeOpening.openMany(player, profile, box.Id, count, { Product = key })
 		-- (the pairs are in the profile now: nothing after this may fail the grant, or Roblox's retry would give more)
-		if count > 1 then
+		if opts and opts.From then
+			thanks(player, opts, (count > 1 and (count .. ' ' .. box.Name .. 'es') or ('a ' .. box.Name)) .. ', already open')
+		elseif count > 1 then
 			notice(player, 'Thanks! Your ' .. count .. ' ' .. box.Name .. 'es are open!')
 		else
 			notice(player, 'Thanks! Your ' .. box.Name .. ' is open!')
 		end
 	end
+	-- (brief 30) the weekly Featured pack: Cash + a timed boost + a box. Everything that can throw (the boost queue's asserts,
+	-- the box's checks and roll) runs BEFORE the Cash and the boost are written; the box is last of the risky ones, and
+	-- once it has opened only plain assignments follow, so Roblox's retry can never give a part twice.
+	local function featuredPack(player, profile, key)
+		local entry = Products.ByKey[key]
+		assert(entry and Shoes and ShoeRules and ShoeOpening, 'Shoes / ShoeRules / ShoeOpening missing')
+		local levels = Products.boostLevels(key)
+		assert(#levels > 0, 'no boost for ' .. key)
+		local amount = Products.cashAmount(key, Retention.bestStage(profile.Data))
+		assert(amount > 0, 'no amount for ' .. key)
+		local boxId, count = Products.boxOpen(key)
+		local box = boxId and Shoes.BoxById[boxId]
+		assert(box and box.Robux and ShoeRules.canGrant(box.Robux) == box, 'no shoe box for ' .. tostring(key))
+		local seconds = Products.BoostDurationSeconds or 900
+		local t = now()
+		local passes = type(profile.Data.Passes) == 'table' and profile.Data.Passes or {}
+		local boost = passes.Boost
+		for _, level in levels do boost = Boosts.add(boost, level, seconds, t) end -- (pure)
+		ShoeOpening.openMany(player, profile, box.Id, count, { Product = key })
+		profile.Data.Cash = math.min(1e12, profile.Data.Cash + amount)
+		setAttribute(player, 'Cash', profile.Data.Cash)
+		passes.Boost = boost
+		profile.Data.Passes = passes
+		publish(player)
+		notice(player, 'Thanks! ' .. entry.Title .. ': +' .. Format.compact(amount) .. ' Cash, ' .. levels[1] .. 'x Power for ' .. math.floor(seconds / 60 + 0.5) .. ' min and your ' .. box.Name .. '!')
+	end
 
 	local grants = {}
 	for _, entry in Products.Catalog do
 		if entry.Kind == 'Product' then
-			if entry.Section == 'Power' then
+			if entry.Section == 'Featured' then
+				grants[entry.Key] = featuredPack
+			elseif entry.Section == 'Power' then
 				grants[entry.Key] = powerPack
 			elseif entry.Section == 'Cash' then
 				grants[entry.Key] = cashPack
@@ -175,8 +224,9 @@ function StoreReceipts.saved(profile, purchaseId)
 end
 
 -- Grants purchase `purchaseId` of `key` once. true and 'granted' (now) or 'had' (an earlier call did), or false and
--- why ('nogrant': no grant for that key; else the grant's error: nothing was recorded).
-function StoreReceipts.apply(grants, player, profile, key, purchaseId)
+-- why ('nogrant': no grant for that key; else the grant's error: nothing was recorded). gift = { Player, Profile }: the
+-- grant goes to that player (told "<buyer> gifted you ..."), the receipt id stays in the BUYER's profile.
+function StoreReceipts.apply(grants, player, profile, key, purchaseId, gift)
 	local receipts = profile.Data.ProcessedReceipts
 	if type(receipts) ~= 'table' then
 		receipts = {}
@@ -185,11 +235,43 @@ function StoreReceipts.apply(grants, player, profile, key, purchaseId)
 	if table.find(receipts, purchaseId) then return true, 'had' end
 	local grant = key and grants[key]
 	if not grant then return false, 'nogrant' end
-	local ok, err = pcall(grant, player, profile, key)
+	local ok, err
+	if gift then
+		ok, err = pcall(grant, gift.Player, gift.Profile, key, { From = player, BuyerProfile = profile })
+	else
+		ok, err = pcall(grant, player, profile, key)
+	end
 	if not ok then return false, tostring(err) end
 	table.insert(receipts, purchaseId)
 	while #receipts > StoreReceipts.Kept do table.remove(receipts, 1) end
 	return true, 'granted'
+end
+
+-- (brief 30) The chosen gift targets: gifts[buyerUserId] = { Id, Key, At }. setGift stores one (or clears it: targetId nil
+-- or 0), refusing what cannot be gifted; giftFor reads it back at the receipt: the target player and profile when the
+-- choice is for this product, fresh (GiftFresh) and the player is still here with a loaded profile, else nil and why
+-- ('none', 'otherkey', 'stale', 'gone', 'noprofile').
+function StoreReceipts.setGift(gifts, buyerId, targetId, key, now)
+	if type(buyerId) ~= 'number' then return false, 'badbuyer' end
+	if targetId == nil or targetId == 0 then
+		gifts[buyerId] = nil
+		return true, 'cleared'
+	end
+	if type(targetId) ~= 'number' or targetId ~= targetId or targetId == buyerId then return false, 'badtarget' end
+	if type(key) ~= 'string' or not Products.giftable(key) then return false, 'notgiftable' end
+	gifts[buyerId] = { Id = targetId, Key = key, At = now }
+	return true, 'set'
+end
+function StoreReceipts.giftFor(gifts, buyerId, key, now, playerOf, profileOf)
+	local g = gifts[buyerId]
+	if not g then return nil, 'none' end
+	if g.Key ~= key then return nil, 'otherkey' end
+	if now - g.At > StoreReceipts.GiftFresh or now < g.At - 5 then return nil, 'stale' end
+	local target = playerOf(g.Id)
+	if not target then return nil, 'gone' end
+	local profile = profileOf(target)
+	if not profile then return nil, 'noprofile' end
+	return target, profile
 end
 
 -- Saves and waits (up to `wait` seconds, default SaveWait, while the profile is active) for a save that holds
@@ -206,14 +288,36 @@ function StoreReceipts.confirm(profile, purchaseId, wait)
 end
 
 -- ProcessReceipt: the decision for Roblox. deps: playerOf(userId) -> player?, profileOf(player) -> profile?,
--- push(player) (Data.push), grants (StoreReceipts.grants(ctx)), wait (seconds, optional).
+-- push(player) (Data.push), grants (StoreReceipts.grants(ctx)), wait (seconds, optional); brief 30: gifts (the table
+-- setGift fills), now() (os.time), notice(player, text).
 function StoreReceipts.process(info, deps)
 	local player = deps.playerOf(info.PlayerId)
 	local profile = player and deps.profileOf(player)
 	if not profile then return Enum.ProductPurchaseDecision.NotProcessedYet end
 	local key = Products.keyFor('Product', info.ProductId)
 	local purchaseId = tostring(info.PurchaseId)
-	local ok, why = StoreReceipts.apply(deps.grants, player, profile, key, purchaseId)
+	local function tell(p, text) if deps.notice and p then pcall(deps.notice, p, text) end end
+	-- (brief 30) where does a gift-able purchase go? To the chosen player if they are still here, else to the buyer.
+	local gift, giftWhy, targetName
+	if deps.gifts and key and Products.giftable(key) and deps.gifts[player.UserId] then
+		local now = deps.now and deps.now() or os.time()
+		local target, tprofile
+		target, tprofile = StoreReceipts.giftFor(deps.gifts, player.UserId, key, now, deps.playerOf, deps.profileOf)
+		giftWhy = tprofile
+		if target then
+			gift = { Player = target, Profile = tprofile }
+			targetName = tostring(target.DisplayName or target.Name or 'them')
+			giftWhy = nil
+		end
+	end
+	local ok, why = StoreReceipts.apply(deps.grants, player, profile, key, purchaseId, gift)
+	if not ok and gift then
+		-- the receiver's grant failed (nothing was written): the buyer gets it instead, never nothing for Robux
+		warn('[StoreService] Gift ' .. tostring(key) .. ' failed: ' .. why)
+		gift = nil
+		giftWhy = 'failed'
+		ok, why = StoreReceipts.apply(deps.grants, player, profile, key, purchaseId, nil)
+	end
 	if not ok then
 		if why == 'nogrant' then
 			warn('[StoreService] No grant for product ' .. tostring(info.ProductId) .. ' (' .. tostring(key) .. ')')
@@ -222,9 +326,27 @@ function StoreReceipts.process(info, deps)
 		end
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
-	if why == 'granted' and deps.push then deps.push(player) end
-	-- Answer only once a save holding this purchase id has gone through.
-	if StoreReceipts.confirm(profile, purchaseId, deps.wait) then return Enum.ProductPurchaseDecision.PurchaseGranted end
+	if why == 'granted' then
+		if deps.gifts and key and Products.giftable(key) and deps.gifts[player.UserId] then deps.gifts[player.UserId] = nil end
+		if gift then
+			tell(player, 'Your gift is on its way to ' .. targetName .. '!')
+		elseif giftWhy == 'gone' or giftWhy == 'noprofile' then
+			tell(player, 'That player left the server, so it is yours instead!')
+		elseif giftWhy == 'stale' then
+			tell(player, 'The gift took too long to pick, so it is yours instead!')
+		elseif giftWhy == 'failed' then
+			tell(player, 'The gift could not be delivered, so it is yours instead!')
+		end
+		if deps.push then
+			deps.push(player)
+			if gift then deps.push(gift.Player) end
+		end
+	end
+	-- Answer only once a save holding this purchase id has gone through. The receiver's profile is saved too (best effort,
+	-- no wait: a slow or leaving receiver never holds the buyer's receipt hostage; ProfileStore saves it anyway).
+	local saved = StoreReceipts.confirm(profile, purchaseId, deps.wait)
+	if gift and saved and gift.Profile ~= profile and gift.Profile.Save then pcall(function() gift.Profile:Save() end) end
+	if saved then return Enum.ProductPurchaseDecision.PurchaseGranted end
 	return Enum.ProductPurchaseDecision.NotProcessedYet
 end
 

@@ -27,7 +27,8 @@
 --
 -- Honest prices (brief 22): a bundle's WasPrice is what its parts cost bought one by one (a box bundle: Count x the
 -- single box's Price; the Boost Bundle: the sum of its parts' Price), so the struck-through number is a real price.
--- Nothing here is limited or timed: no "Limited Stock", no countdowns.
+-- Nothing here is limited or timed: no "Limited Stock", no made-up countdowns. (Brief 30: the one timer in the Store is the
+-- weekly Featured pack's, and it is real: Products.featuredAt rotates it by the clock for everyone.)
 local Balance = require(script.Parent.Balance)
 local Products = {}
 Products.Enabled = true -- master switch: false = every card says "Coming soon!"
@@ -56,7 +57,9 @@ Products.Passes = {
 -- Developer product ids (0 = not created yet).
 Products.DeveloperProducts = {
 	PowerPack1 = 0, PowerPack2 = 0, PowerPack3 = 0, PowerPack4 = 0, -- +Power, sized from your next rebirth (Products.powerAmount)
+	PowerPackBig = 0, PowerPackMega = 0, -- (brief 30, round 2) Big 249 between Medium and Large, MEGA 999 on top
 	TinyCash = 0, SmallCash = 0, MediumCash = 0, LargeCash = 0, -- +Cash (Products.cashAmount)
+	BigCash = 0, MegaCash = 0, -- (brief 30, round 2) the 5th and 6th Cash Packs: Big 249 between Medium and Large, MEGA 999 on top
 	RepBoost2x = 0, RepBoost3x = 0, -- 15 minutes of 2x / 3x Power
 	BoostBundle = 0, -- (brief 22) two 2x Power boosts + one 3x Power boost
 	BlockParty = 0, -- x2 Power for everyone in the server, 15 minutes
@@ -72,6 +75,10 @@ Products.DeveloperProducts = {
 	ShoeBoxGrail = 0, -- "Grail Box", 199 Robux
 	ShoeBoxGrail3 = 0, -- "3 Grail Boxes", 499 Robux
 	ShoeBoxGrail8 = 0, -- "8 Grail Boxes", 1199 Robux
+	-- (brief 30) the Store's weekly Featured pack: one of these three is on sale at a time (Products.featuredAt)
+	FeaturedPack1 = 0, -- "Street Pack": Cash + a 3x Power boost + an Exclusive Box, 399 Robux
+	FeaturedPack2 = 0, -- "Grail Pack": Cash + a 3x Power boost + a Grail Box, 449 Robux
+	FeaturedPack3 = 0, -- "Sneaker Pack": more Cash + a 2x Power boost + an Exclusive Box, 399 Robux
 }
 Products.BoostDurationSeconds = 900
 
@@ -94,6 +101,12 @@ Products.BoostDurationSeconds = 900
 --   true puts a pass in the 3-up row of big cards (the Power lanes); the other passes are 2-up cards, VIP (Banner) the
 --   wide one.
 Products.Catalog = {
+	-- ~Featured~ (brief 30) the weekly deal: one of the three is on show at a time and the week's pick changes every Monday
+	-- (Products.featuredAt). Each is ONE purchase that grants all three parts: Cash (scales with your best stage, like the
+	-- Cash Packs), a timed Power boost (Boost = its level, BoostDurationSeconds) and Count of the Robux box Box.
+	{ Key = 'FeaturedPack1', Kind = 'Product', Section = 'Featured', Title = 'Street Pack', Sub = 'The Block Starter!', Detail = 'Cash, a 3x Power boost and an Exclusive Box', Price = 399, Cash = 6000, Boost = 3, Box = 'Exclusive', Count = 1, Art = 'icon:BoostBundle', Tone = 'cardPurple', Wired = true },
+	{ Key = 'FeaturedPack2', Kind = 'Product', Section = 'Featured', Title = 'Grail Pack', Sub = 'Chase the Grail!', Detail = 'Cash, a 3x Power boost and a Grail Box', Price = 449, Cash = 4000, Boost = 3, Box = 'Grail', Count = 1, Art = 'icon:BoostBundle', Tone = 'cardBlue', Wired = true },
+	{ Key = 'FeaturedPack3', Kind = 'Product', Section = 'Featured', Title = 'Sneaker Pack', Sub = 'Fresh kicks, fresh Cash!', Detail = 'Lots of Cash, a 2x Power boost and an Exclusive Box', Price = 399, Cash = 12000, Boost = 2, Box = 'Exclusive', Count = 1, Art = 'icon:BoostBundle', Tone = 'cardGold', Wired = true },
 	-- ~Shoe Boxes~
 	{ Key = 'ShoeBoxExclusive', Kind = 'Product', Section = 'Box', Box = 'Exclusive', Count = 1, Title = 'Exclusive Box', Detail = 'Exclusive shoes, no Commons', Price = 99, Art = 'box:Exclusive', Tone = 'cardBlue', Wired = true },
 	{ Key = 'ShoeBoxExclusive3', Kind = 'Product', Section = 'Box', Box = 'Exclusive', Count = 3, Title = 'Exclusive Box', Detail = '3 Exclusive Boxes', Price = 249, WasPrice = 297, Art = 'box:Exclusive', Tone = 'cardBlue', Wired = true },
@@ -114,25 +127,30 @@ Products.Catalog = {
 	{ Key = 'RangeVIP1', Kind = 'Pass', Section = 'Gamepass', Title = 'Pro Bay', Big = 'x100\nPower', Detail = 'Your own x100 Power lane', Sub = 'x100 Power lane', Lane = true, Price = 99, Art = 'icon:ProBay', Tone = 'cardTeal', Offer = 'x100 Lane', Sticker = 'x100', Wired = true },
 	{ Key = 'RangeVIP2', Kind = 'Pass', Section = 'Gamepass', Title = 'Gold Bay', Big = 'x250\nPower', Detail = 'The best lane: x250 Power', Sub = 'x250 Power lane', Lane = true, Price = 249, Art = 'icon:GoldBay', Tone = 'cardGold', Offer = 'x250 Lane', Sticker = 'x250', Wired = true },
 	-- (brief 29, P5) removers of friction: the box's auto button, double walk speed, pads that pay by themselves
-	{ Key = 'AutoOpen', Kind = 'Pass', Section = 'Gamepass', Title = 'Auto Open', Big = 'Open\nNon-Stop', Detail = 'The box T button opens boxes for you', Sub = 'Opens boxes for you', Price = 249, Art = 'icon:TripleOpen', Tone = 'cardTeal', Sticker = 'AUTO', Wired = true },
-	{ Key = 'Speed2x', Kind = 'Pass', Section = 'Gamepass', Title = '2x Speed', Big = 'Run\nFaster', Detail = 'Walk and run twice as fast', Sub = 'Twice as fast', Price = 99, Art = 'icon:Arrow', Tone = 'cardGold', Offer = '2x Speed', Sticker = '2x', Wired = true },
-	{ Key = 'AutoCollect', Kind = 'Pass', Section = 'Gamepass', Title = 'Auto Collect', Big = 'Cash\nCollects Itself', Detail = 'A street\'s pad Cash pays the moment its crew is down', Sub = 'Pads pay by themselves', Price = 149, Art = 'icon:Cash', Tone = 'cardGreen', Offer = 'Auto Collect', Sticker = 'AUTO', Wired = true },
+	{ Key = 'AutoOpen', Kind = 'Pass', Section = 'Gamepass', Title = 'Auto Open', Big = 'Open\nNon-Stop', Detail = 'The box T button opens boxes for you', Sub = 'Opens boxes for you', Price = 249, Art = 'icon:AutoOpen', Tone = 'cardTeal', Sticker = 'AUTO', Wired = true },
+	{ Key = 'Speed2x', Kind = 'Pass', Section = 'Gamepass', Title = '2x Speed', Big = 'Run\nFaster', Detail = 'Walk and run twice as fast', Sub = 'Twice as fast', Price = 99, Art = 'icon:Speed2x', Tone = 'cardGold', Offer = '2x Speed', Sticker = '2x', Wired = true },
+	{ Key = 'AutoCollect', Kind = 'Pass', Section = 'Gamepass', Title = 'Auto Collect', Big = 'Cash\nCollects Itself', Detail = 'A street\'s pad Cash pays the moment its crew is down', Sub = 'Pads pay by themselves', Price = 149, Art = 'icon:CashTiny', Tone = 'cardGreen', Offer = 'Auto Collect', Sticker = 'AUTO', Wired = true },
 	-- ~Boosts~ (two 2x + one 3x bought one by one: 39 + 39 + 69 = 147)
 	{ Key = 'BoostBundle', Kind = 'Product', Section = 'Boost', Wide = true, Title = 'Boost Bundle', Detail = '45 minutes of boosts', Sub = 'Two 2x + one 3x', Bundle = { 'RepBoost2x', 'RepBoost2x', 'RepBoost3x' }, Lines = { '- Two 2x Power Boosts', '- One 3x Power Boost' }, Price = 119, WasPrice = 147, Art = 'icon:BoostBundle', Tone = 'rainbow', Wired = true },
 	{ Key = 'RepBoost2x', Kind = 'Product', Section = 'Boost', Title = '2x Power', Detail = '15 minutes', Sub = '15 minutes', Boost = 2, Price = 39, Art = 'icon:PotionRed', Tone = 'cardRed', Wired = true },
 	{ Key = 'RepBoost3x', Kind = 'Product', Section = 'Boost', Title = '3x Power', Detail = '15 minutes', Sub = '15 minutes', Boost = 3, Price = 69, Art = 'icon:PotionGold', Tone = 'cardGold', Wired = true },
 	{ Key = 'OfflineX2', Kind = 'Product', Section = 'Boost', Title = '2x Offline', Detail = 'Doubles the Power you earned while away', Sub = 'Doubles away Power', Price = 49, Art = 'icon:PotionGold', Tone = 'cardGreen', Offline = 2, Wired = true },
 	{ Key = 'BlockParty', Kind = 'Product', Section = 'Boost', Title = 'Block Party', Detail = 'x2 Power for the whole server, 15 min', Sub = 'x2 for everyone', Price = 149, Art = 'icon:BlockParty', Tone = 'cardPurple', Wired = true },
-	-- ~Cash Packs~ (Cash per Robux: 26, 29, 31, 34)
+	-- ~Cash Packs~ (Cash per Robux: 26.3, 28.6, 31.0, 32.1, 33.8, 34.5)
 	{ Key = 'TinyCash', Kind = 'Product', Section = 'Cash', Title = 'Tiny Pack', Price = 19, Art = 'icon:CashTiny', Tone = 'cardGold', Cash = 500, Wired = true },
 	{ Key = 'SmallCash', Kind = 'Product', Section = 'Cash', Title = 'Small Pack', Price = 49, Art = 'icon:CashSmall', Tone = 'cardGold', Cash = 1400, Wired = true },
 	{ Key = 'MediumCash', Kind = 'Product', Section = 'Cash', Title = 'Medium Pack', Price = 129, Art = 'icon:CashMedium', Tone = 'cardGold', Cash = 4000, Wired = true },
+	{ Key = 'BigCash', Kind = 'Product', Section = 'Cash', Title = 'Big Pack', Price = 249, Art = 'icon:CashBig', Tone = 'cardGold', Cash = 8000, Wired = true },
 	{ Key = 'LargeCash', Kind = 'Product', Section = 'Cash', Title = 'Large Pack', Price = 399, Art = 'icon:CashLarge', Tone = 'cardGold', Cash = 13500, Wired = true },
-	-- ~Power Packs~ (share of the next rebirth per 100 Robux: 0.53, 0.61, 0.70, 0.75)
+	-- (the MEGA pack: 34,500 at 999 Robux, the most Cash per Robux of the six; with a Cash pack this size the Neon Blaster is one purchase away at stage 1, which is the ECON owner's call)
+	{ Key = 'MegaCash', Kind = 'Product', Section = 'Cash', Title = 'Mega Pack', Price = 999, Art = 'icon:CashMega', Tone = 'cardGold', Cash = 34500, Wired = true },
+	-- ~Power Packs~ (share of the next rebirth per 100 Robux: 0.53, 0.61, 0.70, 0.72, 0.75, 0.78)
 	{ Key = 'PowerPack1', Kind = 'Product', Section = 'Power', Title = 'Tiny Pack', Price = 19, Art = 'icon:PowerTiny', Tone = 'cardGold', Pack = 0.1, Wired = true },
 	{ Key = 'PowerPack2', Kind = 'Product', Section = 'Power', Title = 'Small Pack', Price = 49, Art = 'icon:PowerSmall', Tone = 'cardGold', Pack = 0.3, Wired = true },
 	{ Key = 'PowerPack3', Kind = 'Product', Section = 'Power', Title = 'Medium Pack', Price = 129, Art = 'icon:PowerMedium', Tone = 'cardGold', Pack = 0.9, Wired = true },
+	{ Key = 'PowerPackBig', Kind = 'Product', Section = 'Power', Title = 'Big Pack', Price = 249, Art = 'icon:PowerBig', Tone = 'cardGold', Pack = 1.8, Wired = true },
 	{ Key = 'PowerPack4', Kind = 'Product', Section = 'Power', Title = 'Large Pack', Price = 399, Art = 'icon:PowerLarge', Tone = 'cardGold', Pack = 3, Wired = true },
+	{ Key = 'PowerPackMega', Kind = 'Product', Section = 'Power', Title = 'Mega Pack', Price = 999, Art = 'icon:PowerMega', Tone = 'cardGold', Pack = 7.8, Wired = true },
 	-- (the Daily Rewards window: offered only after a missed day, with its real price)
 	{ Key = 'RestoreStreak', Kind = 'Product', Section = 'Streak', Title = 'Restore Streak', Detail = 'Keep your daily streak after a missed day', Price = 25, Art = 'icon:Rewards', Tone = 'cardPink', Wired = true },
 	-- (the Rebirth window)
@@ -145,13 +163,36 @@ for i, entry in Products.Catalog do
 end
 -- The Store's sections, top to bottom (brief 22, the reference's order; brief 27: video A's plain titles, the Robux
 -- boxes first as its "Exclusive"; the Store adds its Codes box after these).
+-- (brief 30, the Exclusive Shop reference) Featured first, then the passes, the packs, the boosts and the boxes.
 Products.Sections = {
-	{ Id = 'Box', Title = 'Exclusive' },
+	{ Id = 'Featured', Title = 'Featured' },
 	{ Id = 'Gamepass', Title = 'Gamepasses' },
-	{ Id = 'Boost', Title = 'Boosts' },
 	{ Id = 'Cash', Title = 'Cash Packs' },
 	{ Id = 'Power', Title = 'Power Packs' },
+	{ Id = 'Boost', Title = 'Boosts' },
+	{ Id = 'Box', Title = 'Boxes' },
 }
+
+-- (brief 30) The weekly Featured pack. A REAL rotation: the same for everyone (it only reads the clock), turning over
+-- every Monday 00:00 UTC (unix time 0 was a Thursday, hence the offset), cycling FeaturedKeys in order. The Store shows a
+-- countdown only because this exists: when it reaches 0 the pack on show really is the next one. Returns the key on sale
+-- at `now` (os.time / GetServerTimeNow), the seconds until it changes, and the week number.
+Products.FeaturedKeys = { 'FeaturedPack1', 'FeaturedPack2', 'FeaturedPack3' }
+Products.FeaturedSeconds = 7 * 86400
+Products.FeaturedOffset = 4 * 86400
+function Products.featuredAt(now)
+	if type(now) ~= 'number' or now ~= now then now = os.time() end
+	local span = Products.FeaturedSeconds
+	local t = math.floor(now) - Products.FeaturedOffset
+	local week = math.floor(t / span)
+	return Products.FeaturedKeys[week % #Products.FeaturedKeys + 1], (week + 1) * span - t, week
+end
+
+-- (brief 30) What "Gift A Player" can send: the Cash Packs and the Robux boxes (never a pass, a boost or a Power pack).
+function Products.giftable(key)
+	local e = Products.ByKey[key]
+	return e ~= nil and e.Kind == 'Product' and e.Wired == true and (e.Section == 'Cash' or e.Section == 'Box')
+end
 
 -- The id for a catalog key (0 when unknown or not set yet).
 function Products.idOf(key)
@@ -263,7 +304,7 @@ end
 -- The shoe box a product opens and how many: boxId, count (nil, 0 for anything else).
 function Products.boxOpen(key)
 	local entry = Products.ByKey[key]
-	if not entry or entry.Section ~= 'Box' or type(entry.Box) ~= 'string' then return nil, 0 end
+	if not entry or (entry.Section ~= 'Box' and entry.Section ~= 'Featured') or type(entry.Box) ~= 'string' then return nil, 0 end
 	return entry.Box, type(entry.Count) == 'number' and entry.Count or 1
 end
 

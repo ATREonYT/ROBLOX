@@ -146,3 +146,20 @@ Re-running `hood/tools/blender/export_luau.py` (which regenerates `IconModels.lu
 | `splat.png` | `Kit.Splat` | white paint splat; tinted with the rarity colour behind a shoe |
 | `splat_rainbow.png` | `Kit.SplatRainbow` | rainbow splat for Secret shoes |
 | `splat_black.png` | `Kit.SplatBlack` | dark splat for the "+n" slot; the UI draws the "+n" text |
+
+## Store pictures (brief 30, SHOP): glossy blocky renders for the Exclusive Shop
+
+Rendered by `hood/tools/blender/icons_store.py` (icons) and `hood/tools/blender/featured_bg.py` (the Featured card backgrounds),
+512 px transparent PNGs / 1536 x 576 opaque banners, in `hood/art/icons3d/`. Every slot asks for its own key (`icon:<Name>`;
+backgrounds `FeaturedBg_<Theme>`), so a picture from the AI guide (`AI_ICONS.md`, "Brief 30") with the same file name drops
+straight in. Until an id is uploaded the nearest existing picture stands in (`ICON_FALLBACK` in Store.client.lua), and the
+Featured cards paint the theme with flat shapes.
+
+| File(s) | What | Until you upload |
+|---|---|---|
+| `CashTiny CashSmall CashMedium CashLarge`, `Lucky`, `DoubleCash`, `DoublePower`, `VIP`, `AutoFight`, `TripleOpen`, `ExtraEquip`, `TenXCash`, `ProBay`, `GoldBay`, `PowerTiny PowerSmall PowerMedium PowerLarge` | same ids as before | the old upload keeps showing; re-uploading replaces it |
+| `CashBig`, `CashMega`, `PowerBig`, `PowerMega` | the new 249 / 999 packs | CashMedium / CashLarge / PowerMedium / PowerLarge |
+| `AutoOpen`, `Speed2x` | the AutoOpen and 2x Speed passes | TripleOpen / Arrow |
+| `ServerBoost` | the Server Boost card (a voxel bolt with x2) | BlockParty |
+| `FeaturedBg_Grail`, `FeaturedBg_Street`, `FeaturedBg_Sneaker` | the three weekly Featured packs' backgrounds (blocky low-poly scenes) | flat painted shapes |
+| `Gift` (not rendered; draw it or use the AI file) | the Gift A Player button's gift | a drawn gift |

@@ -52,6 +52,17 @@ Create a product, set its price, copy its id, and paste it at `Products.Develope
 | Skip Rebirth | 99 | `SkipRebirth` | Rebirth now without the Power |
 | 2x Offline | 49 | `OfflineX2` | Doubles the Power you earned while away (the Welcome back card; if you already claimed it, the same amount again) |
 | Restore Streak | 25 | `RestoreStreak` | Keeps the Daily Rewards streak after a missed day (offered only after a miss, in the Daily Rewards window). If there is nothing to restore any more, the buyer gets the next day's reward instead |
+| Big Cash Pack | 249 | `BigCash` | 8,000 Cash (x your best stage), the 5th Cash Pack; giftable (brief 30, round 2) |
+| Mega Cash Pack | 999 | `MegaCash` | 34,500 Cash (x your best stage): the tall MEGA card with the BEST VALUE ribbon, the most Cash per Robux; giftable |
+| Big Power Pack | 249 | `PowerPackBig` | 1.8x your next rebirth's Power (or 2.7x the Power you hold, whichever is more) |
+| Mega Power Pack | 999 | `PowerPackMega` | 7.8x your next rebirth's Power (or 11.7x the Power you hold, whichever is more) |
+| Street Pack | 399 | `FeaturedPack1` | The weekly Featured pack, one of three (brief 30): 6,000 Cash (x your best stage, like the Cash Packs) + a 3x Power boost for 15 min + 1 Exclusive Box, in one purchase |
+| Grail Pack | 449 | `FeaturedPack2` | The second weekly pack: 4,000 Cash (scaled) + a 3x Power boost for 15 min + 1 Grail Box |
+| Sneaker Pack | 399 | `FeaturedPack3` | The third weekly pack: 12,000 Cash (scaled) + a 2x Power boost for 15 min + 1 Exclusive Box |
+
+The Store shows ONE of the three at a time and the pick changes every Monday 00:00 UTC (`Products.featuredAt`, the same for every player; the countdown on the card is real). Create all three products; each always grants exactly what its card says, even if Roblox retries the receipt after the week turned over.
+
+Gift A Player (brief 30): the Cash Packs and the Robux boxes can be bought for another player in the server; the server grants it to them (both are told), and if they left it goes to the buyer. Passes, boosts and Power packs are never gifted. No new product is needed for gifting.
 
 ## If you change a price on the website
 

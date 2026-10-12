@@ -8,6 +8,8 @@ definitions.RankUp='RemoteEvent'
 definitions.HotTarget='RemoteEvent'
 -- (brief 29, P5) The daily / welcome back / group window's requests (HoodServer/RetentionService).
 definitions.Retention='RemoteFunction'
+-- (brief 30, SHOP) Gift A Player: the buyer's chosen target, sent right before a gift-able purchase prompt (HoodServer/StoreService).
+definitions.GiftTarget='RemoteEvent'
 function Net.init()
  assert(RunService:IsServer(),'Only server creates network objects')
  local folder=ReplicatedStorage:FindFirstChild('HoodNet')

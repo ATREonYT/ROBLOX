@@ -67,8 +67,8 @@ return function(t)
 			table.insert(ids, s.Id)
 			table.insert(titles, s.Title)
 		end
-		t.expect.equal(table.concat(ids, ','), 'Box,Gamepass,Boost,Cash,Power')
-		t.expect.equal(table.concat(titles, ','), 'Exclusive,Gamepasses,Boosts,Cash Packs,Power Packs') -- (brief 27: video A's plain titles)
+		t.expect.equal(table.concat(ids, ','), 'Featured,Gamepass,Cash,Power,Boost,Box')
+		t.expect.equal(table.concat(titles, ','), 'Featured,Gamepasses,Cash Packs,Power Packs,Boosts,Boxes') -- (brief 30: the Exclusive Shop's order)
 		local function honest(text)
 			t.expect.truthy(type(text) ~= 'string' or not string.find(string.lower(text), 'limited', 1, true))
 		end
@@ -174,9 +174,9 @@ return function(t)
 		t.expect.equal(Products.ByKey.RepBoost3x.Title, '3x Power')
 	end)
 
-	t.test('cash packs: Tiny / Small / Medium / Large at 19 / 49 / 129 / 399, a little more Cash per Robux each size, no early-game skip', function()
-		local keys = { 'TinyCash', 'SmallCash', 'MediumCash', 'LargeCash' }
-		local prices = { 19, 49, 129, 399 }
+	t.test('cash packs: Tiny / Small / Medium / Big / Large / Mega at 19 / 49 / 129 / 249 / 399 / 999, a little more Cash per Robux each size, no early-game skip', function()
+		local keys = { 'TinyCash', 'SmallCash', 'MediumCash', 'BigCash', 'LargeCash', 'MegaCash' }
+		local prices = { 19, 49, 129, 249, 399, 999 }
 		local last
 		for i, key in keys do
 			local e = Products.ByKey[key]
@@ -199,10 +199,10 @@ return function(t)
 		t.expect.truthy(Products.cashAmount('LargeCash') < Guns.ById.Diamond.Cost)
 	end)
 
-	t.test('power packs: four sizes, a little more Power per Robux each size', function()
+	t.test('power packs: six sizes (Tiny..Large + Big and Mega), a little more Power per Robux each size', function()
 		local last
-		for i = 1, 4 do
-			local e = Products.ByKey['PowerPack' .. i]
+		for _, key in { 'PowerPack1', 'PowerPack2', 'PowerPack3', 'PowerPackBig', 'PowerPack4', 'PowerPackMega' } do
+			local e = Products.ByKey[key]
 			t.expect.equal(e.Section, 'Power')
 			local per = e.Pack / e.Price
 			if last then t.expect.truthy(per > last and per <= last * 1.2) end

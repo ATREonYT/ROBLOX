@@ -11,7 +11,9 @@
 --     answer live there, so the unit tests run the same code): each purchase is granted exactly once; its id goes into
 --     the profile's ProcessedReceipts in the same save as the grant, and Roblox hears PurchaseGranted only once that
 --     save has gone through. Power and Cash packs, timed boosts and the Boost Bundle, Block Party, Skip Rebirth and the
---     Robux shoe boxes (1, 3 or 8 at once, through HoodServer/ShoeOpening).
+--     Robux shoe boxes (1, 3 or 8 at once, through HoodServer/ShoeOpening), and (brief 30) the weekly Featured pack
+--     (Cash + a boost + a box in one grant). The Cash Packs and the boxes can be gifted to a player in the server (GiftTarget
+--     remote, StoreReceipts gift routing: the receipt id stays the buyer's).
 --   Boost attributes (each second, every player): PowerBoost = the running timed boost x the party (1 when none);
 --   BoostEnds = the os.time the running boost ends (0 when none); PartyEnds = the Block Party's end; BoostQueue =
 --   'Level:Until,...' every boost still to run, in run order ('' when none; HoodServer/Boosts.queueString), for the
@@ -107,15 +109,41 @@ local GRANTS = Receipts.grants({
 		return RebirthService.rebirth(player, { Free = true })
 	end,
 })
+-- (brief 30) Gift A Player: the buyer's client sends its chosen receiver right before the purchase prompt (GiftTarget:
+-- targetUserId or 0 to clear, product key); the receipt reads it (StoreReceipts.setGift / giftFor: fresh for 60 s, the
+-- receiver must still be here). Only what Products.giftable allows (Cash Packs and Robux boxes) is accepted.
+local gifts = {} -- [buyer userId] = { Id, Key, At }
+local lastGiftCall = {} -- [buyer userId] = os.clock (a rate limit: one change per half second)
 local deps = {
 	playerOf = function(userId) return Players:GetPlayerByUserId(userId) end,
 	profileOf = Data.get,
 	push = Data.push,
 	grants = GRANTS,
+	gifts = gifts,
+	notice = notice,
+	now = os.time,
 }
 MarketplaceService.ProcessReceipt = function(info)
 	return Receipts.process(info, deps)
 end
+task.spawn(function()
+	local remote = Net.get('GiftTarget')
+	if not remote then return end
+	remote.OnServerEvent:Connect(function(player, targetId, key)
+		local t = os.clock()
+		if t - (lastGiftCall[player.UserId] or -1) < 0.5 then return end
+		lastGiftCall[player.UserId] = t
+		if targetId ~= nil and targetId ~= 0 then
+			local target = type(targetId) == 'number' and Players:GetPlayerByUserId(targetId)
+			if not target or target == player then return end
+		end
+		Receipts.setGift(gifts, player.UserId, targetId, key, os.time())
+	end)
+end)
+Players.PlayerRemoving:Connect(function(player)
+	gifts[player.UserId] = nil
+	lastGiftCall[player.UserId] = nil
+end)
 
 ---------------------------------------------------------------------------------------------- players
 local function joined(player)
