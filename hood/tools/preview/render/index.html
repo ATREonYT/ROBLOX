@@ -97,11 +97,11 @@ function cornerWedgeGeo(sx, sy, sz) {
 }
 
 // Fonts the game uses, bundled under fonts/ (OFL). Labels whose Font has no file here draw in Arial Black.
-const FONT_FILES = { FredokaOne: ['Fredoka One', 'fonts/FredokaOne-Regular.woff2', 400] };
+const FONT_FILES = { FredokaOne: ['Fredoka One', 'fonts/FredokaOne-Regular.woff2', 400], MontserratBlack: ['Montserrat', 'fonts/Montserrat-Variable.ttf', 900], MontserratBold: ['Montserrat', 'fonts/Montserrat-Variable.ttf', 700] };
 let fontsReady = null;
 function loadFonts() {
   if (!fontsReady) fontsReady = Promise.all(Object.values(FONT_FILES).map(async ([family, url]) => {
-    try { const buf = await (await fetch(url)).arrayBuffer(); const f = new FontFace(family, buf); await f.load(); document.fonts.add(f); }
+    try { const buf = await (await fetch(url)).arrayBuffer(); const f = new FontFace(family, buf, url.endsWith('Variable.ttf') ? { weight: '100 900' } : {}); await f.load(); document.fonts.add(f); }
     catch (e) { console.error('font ' + url + ' failed: ' + e); }
   }));
   return fontsReady;

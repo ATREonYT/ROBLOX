@@ -329,7 +329,14 @@ local function labels(gui)
 				text = l.Text, color = rgb(l.TextColor3), textT = l.TextTransparency, bg = rgb(l.BackgroundColor3), bgT = l.BackgroundTransparency,
 				px = l.Position.X.Scale, py = l.Position.Y.Scale, sx = l.Size.X.Scale, sy = l.Size.Y.Scale,
 				scaled = ok and scaled, size = l.TextSize, stroke = rgb(l.TextStrokeColor3), strokeT = l.TextStrokeTransparency,
-				font = (function() local okF, f = pcall(function() return l.Font.Name end); return okF and f or nil end)(),
+				font = (function()
+					local okF, f = pcall(function() return l.Font.Name end)
+					if okF then return f end
+					-- FontFace-only labels (brief 28: one face game-wide): Montserrat by weight, so previews draw the real font
+					local okM, fam, w = pcall(function() return l.FontFace.Family, l.FontFace.Weight.Name end)
+					if okM and tostring(fam):find('Montserrat') then return (w == 'Black' or w == 'ExtraBold' or w == 'Heavy') and 'MontserratBlack' or 'MontserratBold' end
+					return nil
+				end)(),
 			})
 			local ui = l:FindFirstChildOfClass("UIStroke")
 			if ui then out[#out].stroke = rgb(ui.Color); out[#out].strokeT = ui.Transparency; out[#out].strokeW = ui.Thickness end
