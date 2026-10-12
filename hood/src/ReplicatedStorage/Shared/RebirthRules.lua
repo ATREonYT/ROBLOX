@@ -11,6 +11,7 @@
 local Balance = require(script.Parent.Config.Balance)
 local Skins = require(script.Parent.Config.Skins)
 local Products = require(script.Parent.Config.Products)
+local RobuxText = require(script.Parent.RobuxText) -- (ROBUX) the Robux sign before every Robux price
 
 local RebirthRules = {}
 RebirthRules.Cooldown = 2 -- seconds between rebirth requests the server lets through
@@ -127,11 +128,11 @@ end
 --   state  'Unlocked' / 'Locked'
 --   power  'x4 Power'
 --   price  a Robux lane's RobuxPrice (99), nil on a rebirth lane: for a label that draws its own Robux icon image
-RebirthRules.RobuxMark = Products.RobuxMark
+RebirthRules.RobuxMark = RobuxText.Mark -- (= Products.RobuxMark)
 function RebirthRules.laneLabel(station: any, open: boolean?): (string, string, string, number?)
 	if type(station) ~= 'table' then return '', '', '', nil end
 	local robux = RebirthRules.lanePass(station) ~= nil and type(station.RobuxPrice) == 'number'
-	local top = robux and (RebirthRules.RobuxMark .. tostring(station.RobuxPrice)) or tostring(RebirthRules.laneNeed(station))
+	local top = robux and RobuxText.fmt(station.RobuxPrice) or tostring(RebirthRules.laneNeed(station))
 	return top, open and 'Unlocked' or 'Locked', tostring(station.Multiplier) .. 'x Power', robux and station.RobuxPrice or nil
 end
 

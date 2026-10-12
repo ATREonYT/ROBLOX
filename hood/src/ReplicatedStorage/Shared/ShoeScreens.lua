@@ -35,7 +35,8 @@ local S = {}
 local hex = Kit.hex
 local px = UDim2.fromOffset
 local WHITE = Color3.new(1, 1, 1)
-local MARK = Products.RobuxMark or ''
+local RobuxText = require(Shared.RobuxText) -- (ROBUX) the Robux sign before every Robux price
+local SellFX = require(Shared.SellFX) -- (ROBUX, rule 28: the artboard's stars round the Chrome box)
 
 local function short(n) return Kit.short(math.max(0, math.floor(n or 0))) end
 local function commas(n)
@@ -54,7 +55,7 @@ function S.priceText(boxId, n)
 	if box.Robux then
 		local key = box.Robux .. ((n or 1) > 1 and tostring(n) or '')
 		local e = Products.ByKey[key]
-		return e and (MARK .. commas(e.Price)) or ''
+		return e and RobuxText.fmt(e.Price) or ''
 	end
 	return short(box.Price * (n or 1)) .. ' Cash'
 end
@@ -88,6 +89,11 @@ function S.boxes(parent, ctx)
 		local st = Kit.studs(face, { Pitch = 22, Width = r[3] - 12, Height = r[4] - 12, Shade = 0.86, ZIndex = z })
 		if st and st:IsA('ImageLabel') then A.corner(st, 12) end
 		A.boxArt(face, id, { X = 12, Y = 26, W = 252, H = 206, Z = z })
+		if Shoes.BoxById[id] and Shoes.BoxById[id].Robux then
+			-- (ROBUX) the Robux boxes twinkle, like the artboard's Chrome Box (UI-Artboard-02): stars over the box art only
+			local over = A.frame(face, { Name = 'Stars', X = 12, Y = 26, W = 252, H = 206, Z = z + 2 })
+			SellFX.sparkles(over, { Count = 2, Size = 20, ZIndex = z + 2, Every = 3.2, Inset = 0.12, Color = hex('DFF8FF'), Seed = #id })
+		end
 		A.text(face, fam.Box, { Name = 'Name', Size = 44, X = 230, Y = 6, W = r[3] - 12 - 240, H = 56, Align = 'Right', Z = z, Fit = true })
 		A.shoeArt(face, preview[id], { X = r[3] - 210, Y = 74, W = 175, H = 112, Z = z })
 		A.button(face, { Name = 'ViewDrops', Text = 'View Drops', Tone = 'blue', X = r[3] - 246, Y = 184, W = 218, H = 52, TextSize = 26, Radius = 10, Outline = 4, Z = z, OnClick = function() call(ctx.viewDrops, id) end })
@@ -114,6 +120,10 @@ function S.boxes(parent, ctx)
 		A.boxArt(selIcon, sel, { X = 0, Y = 4, W = 125, H = 86, Z = z })
 		selName.Text = A.boxName(sel)
 		priceText.Text = S.priceText(sel, 1)
+		-- (ROBUX, rule 28) a Robux box's price: big, in lime, the Robux sign first; a Cash note stays small and blue-grey
+		local robuxBox = Shoes.BoxById[sel] and Shoes.BoxById[sel].Robux ~= nil
+		priceText.TextColor3 = robuxBox and hex('B8F838') or hex('B8D4F0')
+		priceText.TextSize = robuxBox and 40 or 24
 		local st = call(ctx.openState, sel, 1) or 'normal'
 		A.setState(open, st == 'disabled' and 'disabled' or 'normal', Shoes.BoxById[sel] and Shoes.BoxById[sel].Robux and 'Buy' or 'Open')
 		S._paintBoxes(cards, sel)
@@ -680,7 +690,7 @@ function S.gift(parent, ctx)
 			rvTitle.Text = 'Send this gift?'
 			local whyText = ({ notgiftable = 'This item can not be gifted yet.', soon = 'This item is coming soon.', unknown = 'Pick an item first.', nobody = 'Pick a player first.', self = 'Pick someone else.' })[rv.Why or ''] or ''
 			rvBody.Text = (rv.Title or 'This item') .. ' for ' .. (target and target.Name or '?') .. '. You pay; they get it right away. Roblox asks you to confirm the purchase.' .. (whyText ~= '' and ('\n' .. whyText) or '')
-			rvPrice.Text = rv.Price and (MARK .. commas(rv.Price)) or ''
+			rvPrice.Text = rv.Price and RobuxText.fmt(rv.Price) or ''
 			A.setText(cont, 'Confirm')
 			A.setState(cont, rv.Ok and 'normal' or 'disabled', 'Confirm')
 		else
@@ -801,7 +811,7 @@ end
 function S.bundleLive() return Products.ByKey.GrailBundle ~= nil and (Products.canBuy('GrailBundle')) == true end
 function S.bundlePrice()
 	local e = Products.ByKey.GrailBundle
-	return e and (MARK .. commas(e.Price)) or ''
+	return e and RobuxText.fmt(e.Price) or ''
 end
 local BUNDLE = function() return Products.bundleShoes and Products.bundleShoes('GrailBundle') or { 'TheGrail', 'AstroCrown', 'PlatinumWings' } end
 S.bundleShoes = BUNDLE
@@ -1073,7 +1083,7 @@ function S.keyPanel(parent, ctx)
 		local owned, entry = st.owned or function() return false end, st.entry or function() return nil end
 		local function robuxSub(key)
 			local e = entry(key)
-			return e and (MARK .. commas(e.Price)) or 'SOON'
+			return e and RobuxText.fmt(e.Price) or 'SOON'
 		end
 		if box.Robux then
 			cardState(cards.E, 'E', 'Buy', robuxSub(box.Robux), false, false, hex('B8F838'))

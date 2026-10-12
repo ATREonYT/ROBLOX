@@ -13,6 +13,7 @@ local RunService = game:GetService('RunService')
 local Skins = require(RS.Shared.Config.Skins)
 local ActiveMap = require(RS.Shared.ActiveMap)
 local RebirthRules = require(RS.Shared.RebirthRules)
+local RobuxText = require(RS.Shared.RobuxText) -- (ROBUX) the Robux sign before every Robux price
 local Fonts = require(RS.Shared.Fonts)
 local LevelRules = require(RS.Shared.LevelRules)
 
@@ -107,7 +108,7 @@ local function watchBoxLabels()
 			local text = g:FindFirstChild(robux and 'Title' or 'Price')
 			if text and text:IsA('TextLabel') then
 				local base = text.Text
-				local glyph = robux and (RebirthRules.RobuxMark or '⏣') or '💵'
+				local glyph = robux and RobuxText.Mark or '💵'
 				iconOrGlyph(d, text, glyph, { 0.04, 0.92 }, function()
 					local gl = text:GetAttribute('Glyph') or ''
 					text.Text = gl ~= '' and (gl .. (robux and '' or ' ') .. base) or base
@@ -130,11 +131,11 @@ local PROMO_NEAR, PROMO_FAR = 80, 120
 -- number (a map built before the icons: the old "FREE" / "🔄 n").
 local function chipText(s, cost)
 	local pass = RebirthRules.lanePass and RebirthRules.lanePass(s)
-	local number = pass and tostring(s.RobuxPrice or '') or tostring(RebirthRules.laneNeed(s))
+	local number = pass and RobuxText.commas(s.RobuxPrice or '') or tostring(RebirthRules.laneNeed(s))
 	local glyph = cost:GetAttribute('Glyph')
 	if glyph == '' then return number end
-	if glyph ~= nil then return pass and (glyph .. number) or (glyph .. ' ' .. number) end
-	if pass then return (RebirthRules.RobuxMark or '') .. number end
+	if glyph ~= nil then return pass and (glyph .. RobuxText.commas(s.RobuxPrice)) or (glyph .. ' ' .. number) end
+	if pass then return RobuxText.fmt(s.RobuxPrice) end
 	return s.Rebirths == 0 and 'FREE' or ('🔄 ' .. s.Rebirths)
 end
 local function paidLane(s) return RebirthRules.lanePass ~= nil and RebirthRules.lanePass(s) ~= nil end
@@ -185,7 +186,7 @@ local function track(s)
 			local icon = sign:FindFirstChild('Icon', true)
 			if icon and icon:IsA('ImageLabel') then
 				-- (the chip spans x 0.33..0.67 of the label: the glyph and the number centre in it)
-				local glyph = paidLane(s) and (RebirthRules.RobuxMark or '⏣') or '🔄'
+				local glyph = paidLane(s) and RobuxText.Mark or '🔄'
 				iconOrGlyph(icon, cost, glyph, { 0.35, 0.3 }, function() cost.Text = chipText(s, cost) end)
 			end
 		end
@@ -690,7 +691,7 @@ local function paintBoard(b)
 	if b.Prompt then b.Prompt.Enabled = not owned end
 	if b.Price then
 		local price = b.Price:GetAttribute('Price')
-		b.Price.Text = owned and 'OWNED' or ((Products and Products.RobuxMark or '') .. tostring(price or ''))
+		b.Price.Text = owned and 'OWNED' or RobuxText.fmt(price or '')
 	end
 end
 local function watchBoards()

@@ -22,6 +22,8 @@ local Kit = require(Shared.UIKit)
 local Motion = require(Shared.UIMotion)
 local Net = require(Shared.Net)
 local Products = require(Shared.Config.Products)
+local RobuxText = require(Shared.RobuxText) -- (ROBUX) the Robux sign before every Robux price
+local Sell = { Style = require(Shared.TextStyle), FX = require(Shared.SellFX) } -- (ROBUX, rules 27-28)
 local Format = require(Shared.Format)
 local Spec = require(Shared.HudSpec)
 local Windows = require(Shared.HudWindows)
@@ -320,9 +322,13 @@ do
 	local slot = slotOf('StarterSlot')
 	if slot and entry then
 		local holder, body = hudButton(slot, function() Windows.toggle(starter) end)
-		label({ Name = 'Caption', Text = 'Starter Pack', TextSize = St.Caption, StrokeThickness = 3.5, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 8), Size = px(150, 24), ZIndex = 4, Parent = body })
+		local caption = label({ Name = 'Caption', Text = 'Starter Pack', TextSize = St.Caption, StrokeThickness = 3.5, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 8), Size = px(150, 24), ZIndex = 4, Parent = body })
 		local crate = Kit.icon3d(Kit.iconOr('StarterCrate', 'Rewards'), St.Icon, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 4), ZIndex = 3 })
 		crate.Parent = body
+		-- (ROBUX, rules 27-28) the reference's Starter Pack: the white outlined caption, the crate bobbing, stars round it
+		Sell.Style.apply(caption, 'white', { Thickness = 3.5, Shadow = true })
+		Motion.bob(crate, 4, 2.4)
+		Sell.FX.sparkles(body, { Count = 2, Size = 16, ZIndex = 5, Every = 3, Inset = 0.15 })
 		local function paint()
 			holder.Visible = player:GetAttribute('StarterOwned') ~= true
 		end
@@ -375,9 +381,9 @@ do
 		-- (the reference's rolling price: it counts up to the real price as the window opens)
 		if opening and buyPrice and entry then
 			buyPrice.Text = '0'
-			Motion.countTo(buyPrice, 0, entry.Price, 0.8, function(v) return tostring(math.floor(v + 0.5)) end)
+			Motion.countTo(buyPrice, 0, entry.Price, 0.8, function(v) return RobuxText.commas(v) end)
 			-- (and it always ends on the real price, even if the roll is cut short)
-			task.delay(0.8, function() if buyPrice.Parent then buyPrice.Text = tostring(entry.Price) end end)
+			task.delay(0.8, function() if buyPrice.Parent then buyPrice.Text = RobuxText.commas(entry.Price) end end)
 		end
 	end
 	table.insert(painters, function() if Windows.current() == starter then paint(false) end end)

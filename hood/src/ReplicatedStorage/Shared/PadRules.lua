@@ -10,6 +10,7 @@
 local Balance = require(script.Parent.Config.Balance)
 local Format = require(script.Parent.Format)
 local Products = require(script.Parent.Config.Products)
+local RobuxText = require(script.Parent.RobuxText) -- (ROBUX) the Robux sign before every Robux price
 
 local PadRules = {}
 PadRules.TenX = 10 -- the magenta pad pays this many times the yellow one
@@ -40,12 +41,12 @@ end
 -- A pad's label lines: big, small, price.
 --   kind 'Return': '+10 Cash', 'Return', nil
 --   kind 'TenX':   '+100 Cash', '10x Cash', and while you don't own the pass its price: the Robux sign and the pass's
---                  Catalog price (Products.RobuxMark .. '199': U+E002, Roblox fonts' Robux sign, which a terminal
+--                  Catalog price (RobuxText.fmt(199) = Products.RobuxMark .. '199': U+E002, Roblox fonts' Robux sign, which a terminal
 --                  prints as nothing); nil when `owned`.
 function PadRules.labels(stage: any, kind: string, owned: boolean?): (string, string, string?)
 	if kind == 'TenX' then
 		local entry = Products.ByKey[PadRules.Pass]
-		local tag = (not owned and entry and type(entry.Price) == 'number') and (Products.RobuxMark .. tostring(entry.Price)) or nil
+		local tag = (not owned and entry and type(entry.Price) == 'number') and RobuxText.fmt(entry.Price) or nil
 		return PadRules.text(PadRules.reward(stage, true)), PadRules.TenX .. 'x ' .. Balance.CashName, tag
 	end
 	return PadRules.text(PadRules.reward(stage, false)), 'Return', nil

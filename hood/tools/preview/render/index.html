@@ -100,7 +100,10 @@ function cornerWedgeGeo(sx, sy, sz) {
 const FONT_FILES = { FredokaOne: ['Fredoka One', 'fonts/FredokaOne-Regular.woff2', 400], MontserratBlack: ['Montserrat', 'fonts/Montserrat-Variable.ttf', 900], MontserratBold: ['Montserrat', 'fonts/Montserrat-Variable.ttf', 700] };
 let fontsReady = null;
 function loadFonts() {
-  if (!fontsReady) fontsReady = Promise.all(Object.values(FONT_FILES).map(async ([family, url]) => {
+  // (ROBUX) U+E002, the Robux sign Roblox's fonts draw: a one-glyph font (fonts/RbxIcon.ttf, a hexagon ring round a square,
+  // cap-height tall) that every label falls back to, so it draws in the text's colour and outline, not as a missing-glyph box
+  const ICON_FONT = ['RbxIcon', 'fonts/RbxIcon.ttf', 400];
+  if (!fontsReady) fontsReady = Promise.all([...Object.values(FONT_FILES), ICON_FONT].map(async ([family, url]) => {
     try { const buf = await (await fetch(url)).arrayBuffer(); const f = new FontFace(family, buf, url.endsWith('Variable.ttf') ? { weight: '100 900' } : {}); await f.load(); document.fonts.add(f); }
     catch (e) { console.error('font ' + url + ' failed: ' + e); }
   }));
@@ -108,7 +111,7 @@ function loadFonts() {
 }
 function cssFont(L, fs) {
   const f = FONT_FILES[L.font];
-  return f ? `${f[2]} ${fs}px '${f[0]}', Arial Black, sans-serif` : `900 ${fs}px Arial Black, Arial, sans-serif`;
+  return f ? `${f[2]} ${fs}px '${f[0]}', 'RbxIcon', Arial Black, sans-serif` : `900 ${fs}px Arial Black, 'RbxIcon', Arial, sans-serif`;
 }
 function textCanvas(lbl, pxW, pxH) {
   const c = document.createElement('canvas'); c.width = Math.max(8, pxW | 0); c.height = Math.max(8, pxH | 0);

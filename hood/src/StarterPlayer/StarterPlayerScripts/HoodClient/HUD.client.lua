@@ -30,6 +30,8 @@ local Skins = require(Shared.Config.Skins)
 local Balance = require(Shared.Config.Balance)
 local Guns = require(Shared.Config.Guns)
 local Products = require(Shared.Config.Products)
+local RobuxText = require(Shared.RobuxText) -- (ROBUX) the Robux sign before every Robux price
+local Sell = { Style = require(Shared.TextStyle), FX = require(Shared.SellFX) } -- (ROBUX, rules 27-28: one local for both)
 local Spec = require(Shared.HudSpec)
 local Windows = require(Shared.HudWindows)
 local Toasts = require(Shared.HudToasts)
@@ -142,6 +144,8 @@ local function teaserPrice(key, size, props, parent)
 	local hidden = Kit.only('?', size, props)
 	local shown = Kit.only(entry.Price, size, props)
 	hidden.Parent, shown.Parent = parent, parent
+	Sell.FX.pulse(hidden, 0.05, 2.4)
+	Sell.FX.pulse(shown, 0.05, 2.4)
 	teasers[key] = { Hidden = hidden, Shown = shown }
 	paintTeaser(key)
 end
@@ -186,8 +190,8 @@ local function fillText(t, colors)
 end
 -- A light band sweeping across something you can buy, every `every` seconds from `delay`; off while a new player settles in.
 local shines = {}
-local function shineOn(face, every, delay)
-	local rec = { Face = face, Every = every, Delay = delay or 0 }
+local function shineOn(face, every, delay, sparkles)
+	local rec = { Face = face, Every = every, Delay = delay or 0, Sparkles = sparkles }
 	table.insert(shines, rec)
 	return rec
 end
@@ -201,7 +205,9 @@ local function paintShines()
 			rec.Off = false
 			task.delay(rec.Delay, function()
 				if rec.Off or not rec.Face.Parent then return end
-				rec.Stop = Motion.shine(rec.Face, rec.Every, UDim.new(0, 3))
+				local stopShine = Motion.shine(rec.Face, rec.Every, UDim.new(0, 3))
+				local stopSparkles = rec.Sparkles and Sell.FX.sparkles(rec.Sparkles.Parent, rec.Sparkles) or nil
+				rec.Stop = function() stopShine(); if stopSparkles then stopSparkles() end end
 			end)
 		end
 	end
@@ -413,7 +419,7 @@ do
 	local function paintAuto()
 		local owned = player:GetAttribute('Pass_AutoShoot') == true
 		local entry = Products.ByKey.AutoShoot
-		autoState.Text = owned and 'ON' or (revealed.AutoShoot and entry and (Products.RobuxMark .. entry.Price) or (Products.RobuxMark .. '?'))
+		autoState.Text = owned and 'ON' or (revealed.AutoShoot and entry and RobuxText.fmt(entry.Price) or (RobuxText.Mark .. '?'))
 		autoState.TextColor3 = owned and hex('7CFF4F') or Color.white
 	end
 	player:GetAttributeChangedSignal('Pass_AutoShoot'):Connect(paintAuto)
@@ -443,13 +449,17 @@ do
 		-- (the reference's trophy / arm / winged shoe: big, centred behind the title and over the card's top edge)
 		local icon = Kit.icon3d(iconId, nil, { ZIndex = 11 - 2 * i, Place = { Rule = Spec.OfferArt, W = O.W, H = O.H, X0 = 3.5, Y0 = 3.5 } })
 		icon.Parent = holder.Body
-		label({ Name = 'Title', Text = title, TextSize = Kit.fitSize(title, O.TitleSize, O.W - 16, 16), StrokeThickness = 4.5, Position = px(2, -2), Size = UDim2.new(1, -4, 1, 0), ZIndex = 12 - 2 * i, Parent = holder.Body })
+		local head = label({ Name = 'Title', Text = title, TextSize = Kit.fitSize(title, O.TitleSize, O.W - 16, 16), StrokeThickness = 4.5, Position = px(2, -2), Size = UDim2.new(1, -4, 1, 0), ZIndex = 12 - 2 * i, Parent = holder.Body })
+		-- (ROBUX, rule 27-28) the reference's "x2 Wins": white to light grey, a thick near-black outline, a dark foot; the
+		-- art bobs gently and a few stars twinkle round the card (ref_W01.0_spawn_view_north)
+		Sell.Style.apply(head, 'white', { Thickness = 4.5, Shadow = true })
+		Motion.bob(icon, 3, 2.2 + 0.3 * i)
 		hit.Position = px(0, -8)
 		hit.Size = UDim2.new(1, 0, 1, 22)
 		local lime = ColorSequence.new(hex('E8FF4A'), hex('4EE020'))
 		teaserPrice(key, O.PriceSize, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 1, 2), ZIndex = 14, OnlyColors = lime, MarkColor = hex('A6F02A'), PriceColors = lime }, holder)
 		Motion.button(holder, function() teaserBuy(key) end)
-		shineOn(holder.Body, 6, 2 + i * 0.5)
+		shineOn(holder.Body, 3.5, 1.2 + i * 0.6, { Parent = holder, Count = 2, Size = 15, ZIndex = 16, Every = 3.2, Seed = i })
 		return holder
 	end
 	-- (the reference's pictures: the Wins trophy, the Power arm, a winged shoe; ours: the Cash stack, the arm with its bolt,

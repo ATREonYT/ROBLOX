@@ -44,6 +44,7 @@ local Format = require(Shared.Format)
 local Shoes = require(Shared.Config.Shoes)
 local ShoeRules = require(Shared.ShoeRules)
 local Products = require(Shared.Config.Products)
+local RobuxText = require(Shared.RobuxText) -- (ROBUX) the Robux sign before every Robux price
 local PityUI = require(Shared.PityUI) -- (brief 30: the visible pity counters' pieces; the rules are Shared/PityRules)
 
 local player = Players.LocalPlayer
@@ -514,7 +515,7 @@ local function buildBoard(entry)
 	Kit.corner(UDim.new(0.5, 0)).Parent = price
 	Kit.stroke(Color.ink, 2.5, true).Parent = price
 	Kit.gradient(Tone.green.top, Tone.green.base, 0.55).Parent = price
-	local priceText = Kit.text({ Name = 'Text', Text = box.Robux and (tostring(box.RobuxPrice) .. ' ROBUX') or (Format.compact(box.Price) .. ' CASH'), Stroke = Tone.green.stroke, Position = UDim2.fromScale(0.08, 0.1), Size = UDim2.fromScale(0.84, 0.8), ZIndex = 3, Parent = price })
+	local priceText = Kit.text({ Name = 'Text', Text = box.Robux and RobuxText.fmt(box.RobuxPrice) or (Format.compact(box.Price) .. ' CASH'), Stroke = Tone.green.stroke, Position = UDim2.fromScale(0.08, 0.1), Size = UDim2.fromScale(0.84, 0.8), ZIndex = 3, Parent = price })
 	priceText.TextScaled = true
 	entry.Price = price
 	if box.Exclusive then
@@ -548,7 +549,7 @@ end
 
 -- A Robux box's prompt: Roblox's purchase once the product is live, "Coming soon!" until then (id 0).
 local function robuxPrompt(box)
-	if Products.canBuy(box.Robux) then return 'Buy  ' .. tostring(box.RobuxPrice) .. ' Robux' end
+	if Products.canBuy(box.Robux) then return 'Buy ' .. RobuxText.fmt(box.RobuxPrice) end
 	return 'Coming soon!'
 end
 local function buyBox(box)

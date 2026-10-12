@@ -2445,6 +2445,7 @@ do
 	for _, row in rows do
 		for i = 1, #row[1] do widths[row[1]:sub(i, i)] = row[2][i] end
 	end
+	widths[utf8.char(0xE002)] = 0.85 -- (ROBUX) the Robux sign (RobuxText.Mark): about a cap-height hexagon and its gap
 	ADVANCE = widths
 end
 function Kit.textWidth(text, size)
@@ -2468,7 +2469,7 @@ end
 function Kit.only(price, size, props)
 	props = props or {}
 	local z = props.ZIndex or 8
-	local text = tostring(price)
+	local text = type(price) == 'number' and require(script.Parent.RobuxText).commas(price) or tostring(price) -- (ROBUX: 1,499)
 	local onlyW, priceW = Kit.textWidth('ONLY', size), Kit.textWidth(text, size)
 	local glyph = math.floor(size * 1.25) -- (the reference's mark is as tall as the outlined letters)
 	local row = blank({ Name = props.Name or 'Only', AnchorPoint = props.AnchorPoint or Vector2.new(0.5, 0.5), Position = props.Position or UDim2.new(), Size = UDim2.fromOffset(onlyW + glyph + 2 + priceW, size + 6), ZIndex = z })
@@ -2501,7 +2502,7 @@ function Kit.robuxButton(props)
 	local h = p.Height or 44
 	local z = (p.ZIndex or 1) + 2
 	local size = p.TextSize or math.floor(h * 0.66)
-	local text = tostring(p.Price or '?')
+	local text = type(p.Price) == 'number' and require(script.Parent.RobuxText).commas(p.Price) or tostring(p.Price or '?') -- (ROBUX: 1,499)
 	local glyph = math.floor(size * 1.12)
 	local tw = Kit.textWidth(text, size)
 	local row = blank({ Name = 'Price', AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(glyph + 2 + tw, h), ZIndex = z, Parent = holder.Body })

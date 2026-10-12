@@ -11,6 +11,7 @@ local MarketplaceService = game:GetService('MarketplaceService')
 local Kit = require(RS.Shared.UIKit)
 local Net = require(RS.Shared.Net)
 local Products = require(RS.Shared.Config.Products)
+local RobuxText = require(RS.Shared.RobuxText)
 local A = require(RS.Shared.ArtKit)
 local Screens = require(RS.Shared.ShoeScreens)
 
@@ -48,7 +49,7 @@ return function(Windows, helpers)
 		restore = function() buy('RestoreStreak') end,
 		restorePrice = function()
 			local e = Products.ByKey.RestoreStreak
-			return e and ((Products.RobuxMark or '') .. tostring(e.Price)) or ''
+			return e and RobuxText.fmt(e.Price) or ''
 		end,
 		waitLeft = function()
 			local d = dailyState and dailyState.Daily

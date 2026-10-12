@@ -26,6 +26,8 @@ local Shared = RS:WaitForChild('Shared')
 local Kit = require(Shared.UIKit)
 local Motion = require(Shared.UIMotion)
 local Products = require(Shared.Config.Products)
+local RobuxText = require(Shared.RobuxText) -- (ROBUX) the Robux sign before every Robux price
+local Sell = { Style = require(Shared.TextStyle), FX = require(Shared.SellFX) } -- (ROBUX, rules 27-28)
 local Balance = require(Shared.Config.Balance)
 
 local function optional(...)
@@ -388,7 +390,7 @@ local function priceButton(parent, entry, w, h, pos, anchor, z, tone, opts)
 	local row = holder.Body:FindFirstChild('Price')
 	if opts.Was and row then
 		local size = opts.WasSize or 22 -- (>= 14 dp on a phone, ~20 px on a PC)
-		local text = tostring(opts.Was)
+		local text = RobuxText.commas(opts.Was) -- (the struck one-by-one price sits beside the signed price, inside the button)
 		local tw = Kit.textWidth(text, size)
 		local total = tw + 6 + row.Size.X.Offset
 		row.AnchorPoint = Vector2.new(0, 0.5)
@@ -416,7 +418,7 @@ local function fetchPrices()
 				if type(price) == 'number' then
 					livePrices[entry.Key] = price
 					for _, l in priceLabels[entry.Key] or {} do
-						if l.Parent then l.Text = tostring(price) end
+						if l.Parent then l.Text = RobuxText.commas(price) end
 					end
 				end
 			end)
@@ -478,7 +480,7 @@ end
 local sections = {} -- [section id, catalog key or box id] = the Frame to scroll to
 local function sectionTitle(text, order)
 	local f = Kit.new('Frame', { Name = 'Title_' .. text, BackgroundTransparency = 1, Size = px(LW, 50), LayoutOrder = order, ZIndex = 24 })
-	label({ Name = 'Text', Text = string.upper(text), TextSize = 32, StrokeThickness = 4.5, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, 2), Size = UDim2.new(1, 0, 0, 44), ZIndex = 25, Parent = f })
+	Sell.Style.apply(label({ Name = 'Text', Text = string.upper(text), TextSize = 32, StrokeThickness = 4.5, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, 2), Size = UDim2.new(1, 0, 0, 44), ZIndex = 25, Parent = f }), 'white', { Thickness = 4.5, Shadow = true })
 	return f
 end
 -- Exclusive: one card per Robux box (video A's egg card). The 3D box, the whole model, fills the card's left part and
@@ -636,9 +638,14 @@ local function passCard(entry, x, y, parent, tone, opts)
 	local ax, aw = 146, HALF - 146 - 12
 	local ink = Kit.toneOf(tone).stroke
 	local t = title(c.Body, entry.Title, 32, tone, { Position = px(ax + aw / 2, 8), Width = aw })
-	t.UIStroke.Thickness = math.max(4, t.TextSize * 0.17)
-	label({ Name = 'Desc', Text = entry.Detail or entry.Sub or '', FontFace = Kit.Font.body, TextSize = (#(entry.Detail or entry.Sub or '') > 34) and 16 or 19, StrokeThickness = 3, Stroke = ink, TextWrapped = true, TextYAlignment = Enum.TextYAlignment.Top,
+	Sell.Style.apply(t, 'white', { Thickness = math.max(4, t.TextSize * 0.17), Shadow = true })
+	local desc = label({ Name = 'Desc', Text = entry.Detail or entry.Sub or '', FontFace = Kit.Font.body, TextSize = (#(entry.Detail or entry.Sub or '') > 34) and 16 or 19, StrokeThickness = 3, Stroke = ink, TextWrapped = true, TextYAlignment = Enum.TextYAlignment.Top,
 		AnchorPoint = Vector2.new(0.5, 0), Position = px(ax + aw / 2, 46), Size = px(aw, 50), ZIndex = z + 2, Parent = c.Body })
+	Sell.Style.apply(desc, 'cyan', { Font = false, Thickness = 3 }) -- (the reference's cyan sub-line: "Equip more pets!")
+	if not owns(entry) then
+		addShine(c.Body)
+		Sell.FX.sparkles(c.Body, { Count = 1, Size = 14, ZIndex = z + 6, Every = 3.4, Inset = 0.1, Seed = #entry.Key })
+	end
 	priceButton(c.Body, entry, math.min(aw, 190), 42, px(ax + aw / 2, HALF_H - 10), Vector2.new(0.5, 1), z + 2, nil, opts.Was and { Was = opts.Was, TextSize = 24 } or nil)
 	infoTab(c, (entry.Info or entry.Detail or '') .. (entry.Kind == 'Pass' and ' Yours forever!' or ''), 8, 6, z + 4)
 	return c
@@ -696,10 +703,10 @@ local function packCard(entry, x, y, w, h, parent, mode)
 	local bw = tall and w - 24 or (wide and 240 or w - 26)
 	local bh = tall and 50 or 42
 	if whole then
-		local wl = label({ Name = 'Was', Text = tostring(whole), TextSize = 22, TextColor3 = hex('FF5A5A'), Stroke = hex('4A0000'), StrokeThickness = 2.5, TextXAlignment = Enum.TextXAlignment.Right, AnchorPoint = Vector2.new(1, 1),
+		local wl = label({ Name = 'Was', Text = RobuxText.commas(whole), TextSize = 22, TextColor3 = hex('FF5A5A'), Stroke = hex('4A0000'), StrokeThickness = 2.5, TextXAlignment = Enum.TextXAlignment.Right, AnchorPoint = Vector2.new(1, 1),
 			Position = px(w - 18, h - 10 - bh - 4), Size = px(120, 26), ZIndex = z + 5, Parent = c.Body })
-		Kit.robux(18, { Color = hex('FF5A5A'), Inner = hex('FF5A5A'), Core = hex('4A0000'), Edge = hex('4A0000'), AnchorPoint = Vector2.new(1, 0.5), Position = px(w - 18 - Kit.textWidth(tostring(whole), 22) - 4, h - 10 - bh - 17), ZIndex = z + 5 }).Parent = c.Body
-		local line = Kit.new('Frame', { Name = 'Strike', BackgroundColor3 = hex('FF2A2A'), BorderSizePixel = 0, AnchorPoint = Vector2.new(1, 0.5), Position = px(w - 16, h - 10 - bh - 17), Size = px(Kit.textWidth(tostring(whole), 22) + 30, 3), Rotation = -6, ZIndex = z + 6, Parent = c.Body })
+		Kit.robux(18, { Color = hex('FF5A5A'), Inner = hex('FF5A5A'), Core = hex('4A0000'), Edge = hex('4A0000'), AnchorPoint = Vector2.new(1, 0.5), Position = px(w - 18 - Kit.textWidth(RobuxText.commas(whole), 22) - 4, h - 10 - bh - 17), ZIndex = z + 5 }).Parent = c.Body
+		local line = Kit.new('Frame', { Name = 'Strike', BackgroundColor3 = hex('FF2A2A'), BorderSizePixel = 0, AnchorPoint = Vector2.new(1, 0.5), Position = px(w - 16, h - 10 - bh - 17), Size = px(Kit.textWidth(RobuxText.commas(whole), 22) + 30, 3), Rotation = -6, ZIndex = z + 6, Parent = c.Body })
 		Kit.stroke(hex('3A0000'), 1, true).Parent = line
 	end
 	priceButton(c.Body, entry, bw, bh, px(w / 2, h - 10), Vector2.new(0.5, 1), z + 5, nil, { TextSize = tall and 30 or nil, Breathe = tall })
@@ -826,6 +833,7 @@ local function featuredCard(key, y, parent)
 	Kit.new('Frame', { Name = 'HandB', BackgroundColor3 = Color.white, BorderSizePixel = 0, AnchorPoint = Vector2.new(0, 0.5), Position = px(11, 11), Size = px(7, 3), ZIndex = z + 2, Parent = clock })
 	countdownLabel = label({ Name = 'Time', Text = fmtLeft(left), TextSize = 19, StrokeThickness = 3, Stroke = hex('1E1E26'), TextXAlignment = Enum.TextXAlignment.Right, Position = px(-12, 0), Size = UDim2.new(1, 0, 1, 0), ZIndex = z + 1, Parent = chip })
 	addShine(c.Body)
+	Sell.FX.sparkles(c.Body, { Count = 3, Size = 18, ZIndex = z + 8, Every = 3, Inset = 0.12 })
 	priceButton(c.Body, entry, 200, 76, px(CW - 14, FEAT_H - 20), Vector2.new(1, 1), z + 2, nil, { TextSize = 40, Breathe = true })
 	shownFeatured = key
 	return c
@@ -839,6 +847,7 @@ local function bundleCard(entry, y, parent)
 	local c = card(entry, tone, CW, BUNDLE_H, MARGIN, y, parent)
 	local z = 28
 	addShine(c.Body)
+	Sell.FX.sparkles(c.Body, { Count = 3, Size = 18, ZIndex = z + 8, Every = 3, Inset = 0.12, Color = hex('FFF3B0') })
 	local left = math.floor(CW * 0.31)
 	local boxId = (entry.Art or ''):match('^box:(.+)$') or 'GrailBundle'
 	local art = Kit.model3d('box', boxId, Vector2.new(left, BUNDLE_H - 20), { ZIndex = z, Whole = true, Fill = 0.96, MaxReach = 0.99, Overflow = 1, Pitch = 20, Fov = 20, Priority = 5, PreviewKind = 'boxhero' })
@@ -868,6 +877,7 @@ local function serverCard(entry, y, parent)
 	local c = card(entry, LIME, CW, SERVER_H, MARGIN, y, parent)
 	local z = 28
 	addShine(c.Body)
+	Sell.FX.sparkles(c.Body, { Count = 2, Size = 18, ZIndex = z + 8, Every = 3, Inset = 0.12 })
 	Kit.icon3d(iconOr('ServerBoost', iconId(entry)), 172, { ZIndex = z, AnchorPoint = Vector2.new(0.5, 0.5), Position = px(88, SERVER_H / 2) }).Parent = c.Body
 	local mid = 372
 	local st = title(c.Body, 'Server Boost', 46, LIME, { Position = px(mid, 2), Width = 330 })
@@ -1345,14 +1355,14 @@ local function startTicker()
 		task.wait(1.4)
 		while isOpen and mine == tickToken do
 			for i, band in shines do
-				task.delay((i - 1) * 0.8, function()
+				task.delay(((i - 1) % 4) * 0.6, function()
 					if band.Parent and isOpen then
 						band.Position = UDim2.new(-0.3, 0, 0.5, 0)
 						Motion.tween(band, 0.9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, { Position = UDim2.new(1.3, 0, 0.5, 0) })
 					end
 				end)
 			end
-			task.wait(5)
+			task.wait(3.5)
 		end
 	end)
 end
