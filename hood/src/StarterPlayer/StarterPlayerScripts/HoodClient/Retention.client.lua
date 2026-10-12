@@ -5,7 +5,7 @@
 --   * Before You Go! (the reference's) when the Roblox menu opens (GuiService.MenuOpened): "You earn Power while offline!",
 --                    IN 8 HOURS +X Power, TOMORROW's daily reward, OK!. A reminder, not a wall: nothing blocks input, it fades
 --                    by itself, at most once every 10 minutes.
---   * Friend Boost   the small chip bottom-left: +10 % Power per friend in the server, up to +50 %, with a "+" to invite.
+--   (brief 30: the Friend Boost line moved into HUD.client's bottom-left block, the reference's place for it)
 --   * Offers         a small "2x Power 15 min" chip after 30 s of grinding at a range, and one after a knock-out, each with
 --                    the REAL price on it, closable, once in a long while, and only for a product that is really on sale
 --                    (Products.canBuy). Nothing counts down, nothing is "limited". None in a new player's first minutes.
@@ -14,7 +14,6 @@ local Players = game:GetService('Players')
 local RS = game:GetService('ReplicatedStorage')
 local GuiService = game:GetService('GuiService')
 local MarketplaceService = game:GetService('MarketplaceService')
-local SocialService = game:GetService('SocialService')
 
 local Shared = RS:WaitForChild('Shared')
 local Kit = require(Shared.UIKit)
@@ -69,39 +68,83 @@ local function fetch()
 end
 
 ---------------------------------------------------------------------------------------------- the two cards
-local CARD_W, CARD_H = 700, 580
+-- (brief 30) Copied from the reference's Before You Go! (ref_ref29_before_you_go.jpg, measured on its 1772 x 1604 crop and
+-- scaled 0.48 so the whole card fits under the top bar): no frame at all, the world dimmed to half; the title in red with a
+-- dark red edge (cap 46 px), a white line under it, two columns (a gold heading, a big picture, a white value), and the
+-- big lime studded OK! button 225 x 88. Motion like the user's phone references: the dim fades in, the title drops in
+-- from 0.6 (Back Out), the columns pop one after the other, the pictures bob, the button pops last and a light band
+-- sweeps it. While a card is up PlayerGui HoodCard names it, so notices keep clear of it (Shared/HudToasts).
+local CARD_W, CARD_H = 640, 640
 local card -- the card on screen (nil when none): { Dim, Kind }
 local function closeCard()
 	local c = card
 	card = nil
-	if c and c.Dim.Parent then c.Dim:Destroy() end
+	if c and c.Dim.Parent then
+		Motion.tween(c.Dim, 0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In, { BackgroundTransparency = 1 })
+		Motion.tween(Motion.scaleOf(c.Holder), 0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In, { Scale = 0.85 })
+		task.delay(0.16, function() c.Dim:Destroy() end)
+	end
+	if playerGui:GetAttribute('HoodCard') == (c and c.Kind) then playerGui:SetAttribute('HoodCard', '') end
 end
--- The dimmed world and the card's frame: title, subtitle and room for two columns. Input passes through the dim
--- (Active false), so nothing is blocked; only the buttons take clicks.
-local function makeCard(kind, title, titleTop, titleBottom, subtitle)
+local function popIn(g, from, delay, time)
+	local s = Motion.scaleOf(g)
+	s.Scale = from
+	task.delay(delay, function() Motion.tween(s, time or 0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out, { Scale = 1 }) end)
+end
+-- The dimmed world and the card: title and subtitle. Input passes through the dim (Active false): nothing is blocked; only
+-- the buttons take clicks.
+local function makeCard(kind, title, titleTop, titleBottom, titleEdge, subtitle)
 	closeCard()
-	local dim = Kit.new('Frame', { Name = kind, BackgroundColor3 = Color.ink, BackgroundTransparency = 0.5, BorderSizePixel = 0, Active = false, Size = UDim2.fromScale(1, 1), ZIndex = 40, Parent = root })
-	local holder = Kit.new('Frame', { Name = 'Card', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = px(CARD_W, CARD_H), ZIndex = 41, Parent = dim })
-	gradient(label({ Name = 'Title', Text = title, TextSize = 84, StrokeThickness = 9, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 0), Size = px(CARD_W, 100), ZIndex = 42, Parent = holder }), titleTop, titleBottom)
-	label({ Name = 'Subtitle', Text = subtitle, TextSize = 38, StrokeThickness = 5, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 104), Size = px(CARD_W, 50), ZIndex = 42, Parent = holder })
-	card = { Dim = dim, Kind = kind, Holder = holder }
+	local dim = Kit.new('Frame', { Name = kind .. 'Dim', BackgroundColor3 = Color.ink, BackgroundTransparency = 1, BorderSizePixel = 0, Active = false, Size = UDim2.fromScale(1, 1), ZIndex = 40, Parent = root })
+	Motion.tween(dim, 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out, { BackgroundTransparency = 0.42 })
+	local holder = Kit.new('Frame', { Name = kind, BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = px(CARD_W, CARD_H), ZIndex = 41, Parent = dim })
+	holder:SetAttribute('DesignW', CARD_W)
+	holder:SetAttribute('DesignH', CARD_H)
+	local fitScale = Kit.new('UIScale', { Name = 'FitScale', Parent = holder })
+	local t = gradient(label({ Name = 'Title', Text = title, TextSize = 66, Stroke = titleEdge, StrokeThickness = 6, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 34), Size = px(CARD_W + 80, 80), ZIndex = 42, Parent = holder }), titleTop, titleBottom)
+	local sub = label({ Name = 'Subtitle', Text = subtitle, TextSize = 32, StrokeThickness = 4.5, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 92), Size = px(CARD_W + 80, 40), ZIndex = 42, Parent = holder })
+	popIn(t, 0.6, 0, 0.32)
+	popIn(sub, 0.7, 0.06, 0.28)
+	card = { Dim = dim, Kind = kind, Holder = holder, FitScale = fitScale }
+	playerGui:SetAttribute('HoodCard', kind)
+	-- (small screens: the card shrinks to fit, never grows)
+	local abs = gui.AbsoluteSize
+	local k = Kit.scaleFor(abs)
+	if abs.Y > 0 then fitScale.Scale = math.min(1, (abs.Y / k - 16) / CARD_H, (abs.X / k - 24) / CARD_W) end
 	return holder
 end
--- One column: a gradient header, a big icon, a value line (and an optional small line).
-local function column(holder, cx, header, headerTop, headerBottom, iconId, value, small)
-	gradient(label({ Name = 'Header', Text = header, TextSize = 34, StrokeThickness = 5, AnchorPoint = Vector2.new(0.5, 0), Position = px(cx, 176), Size = px(300, 42), ZIndex = 42, Parent = holder }), headerTop, headerBottom)
-	Kit.icon3d(iconId, 150, { AnchorPoint = Vector2.new(0.5, 0), Position = px(cx, 222), ZIndex = 42 }).Parent = holder
-	label({ Name = 'Value', Text = value, TextSize = 42, StrokeThickness = 5, AnchorPoint = Vector2.new(0.5, 0), Position = px(cx, 382), Size = px(320, 52), ZIndex = 42, Parent = holder })
-	if small and small ~= '' then label({ Name = 'Small', Text = small, TextSize = 22, StrokeThickness = 3, AnchorPoint = Vector2.new(0.5, 0), Position = px(cx, 432), Size = px(320, 30), ZIndex = 42, Parent = holder }) end
+-- One column: a gold heading, a big picture, a white value (and an optional small line). i: its place in the stagger.
+local function column(holder, cx, i, header, headerTop, headerBottom, iconId, value, small, valueSize)
+	local col = Kit.new('Frame', { Name = 'Column' .. i, BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0), Position = px(cx, 200), Size = px(300, 300), ZIndex = 42, Parent = holder })
+	gradient(label({ Name = 'Header', Text = header, TextSize = 34, StrokeThickness = 4.5, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 22), Size = px(320, 42), ZIndex = 42, Parent = col }), headerTop, headerBottom)
+	local icon = Kit.icon3d(iconId, 128, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 50), ZIndex = 42 })
+	icon.Parent = col
+	Motion.bob(icon, 5, 1.6 + i * 0.2)
+	label({ Name = 'Value', Text = value, TextSize = valueSize or 30, StrokeThickness = 4, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 202), Size = px(330, 44), ZIndex = 42, Parent = col })
+	if small and small ~= '' then label({ Name = 'Small', Text = small, TextSize = 20, StrokeThickness = 3, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 236), Size = px(330, 26), ZIndex = 42, Parent = col }) end
+	popIn(col, 0.5, 0.12 + i * 0.08, 0.3)
+	return col
 end
-local function bigButton(holder, text, tone, cx, w, onClick)
-	local b = Kit.blockButton({ Name = text, Tone = tone, Width = w, Height = 84, Text = text, TextSize = 52, ZIndex = 44 })
+local function bigButton(holder, text, tone, cx, w, onClick, i)
+	local b = Kit.blockButton({ Name = text, Tone = tone, Width = w, Height = 88, Text = text, TextSize = 54, Outline = 6, RimWidth = 3, Studs = 22, Radius = 10, ZIndex = 44 })
 	b.AnchorPoint = Vector2.new(0.5, 0)
-	b.Position = px(cx, 478)
+	b.Position = px(cx, 520)
 	b.Parent = holder
+	local l = b:FindFirstChild('Label', true)
+	if l then
+		local st = l:FindFirstChildOfClass('UIStroke')
+		if st then st.Thickness = 6 end
+	end
 	Motion.button(b, onClick)
+	popIn(b, 0.4, 0.3 + (i or 0) * 0.06, 0.32)
+	task.delay(0.7, function() if b.Parent then Motion.shine(b.Body, 3, UDim.new(0, 8)) end end)
 	return b
 end
+-- a window opening (the HUD's, the Store, the inventory) closes the card: one thing on screen at a time
+playerGui:GetAttributeChangedSignal('HoodWindow'):Connect(function()
+	local w = playerGui:GetAttribute('HoodWindow')
+	if type(w) == 'string' and w ~= '' and card then closeCard() end
+end)
 local function tomorrowText(st)
 	local d = st and st.Daily
 	if not d then return 'a daily reward' end
@@ -119,12 +162,12 @@ local function showBeforeYouGo()
 	local st = state
 	if not st or not st.Offline then return end
 	lastBeforeYouGo = os.clock()
-	local holder = makeCard('BeforeYouGo', 'Before You Go!', hex('FF6A5A'), hex('E02020'), 'You earn Power while offline!')
+	local holder = makeCard('BeforeYouGo', 'Before You Go!', hex('FF5A4A'), hex('F02C2C'), hex('5A0808'), 'You earn Power while offline!')
 	local ready = st.Daily and st.Daily.Ready
-	column(holder, 190, 'IN ' .. st.Offline.CapHours .. ' HOURS', hex('F4F030'), hex('7CE030'), POWER, '+' .. Format.compact(st.Offline.EightHours) .. ' Power', 'Come back to claim it')
-	column(holder, 510, ready and 'TODAY' or 'TOMORROW', hex('FFF04A'), hex('FFB020'), ready and 'Rewards' or 'PotionGold', ready and 'Daily reward' or 'Daily reward', tomorrowText(st))
+	column(holder, 170, 1, 'IN ' .. st.Offline.CapHours .. ' HOURS', hex('FFF24A'), hex('FFC21A'), POWER, '+' .. Format.compact(st.Offline.EightHours) .. ' Power', 'Come back to claim it')
+	column(holder, 470, 2, ready and 'TODAY' or 'TOMORROW', hex('FFF24A'), hex('FFC21A'), ready and 'Rewards' or 'PotionGold', 'Daily reward', tomorrowText(st), 36)
 	local dim = card.Dim
-	bigButton(holder, 'OK!', 'lime', CARD_W / 2, 250, closeCard)
+	bigButton(holder, 'OK!', 'lime', CARD_W / 2, 225, closeCard)
 	-- a reminder, not a wall: it fades by itself
 	task.delay(14, function() if card and card.Dim == dim then closeCard() end end)
 end
@@ -149,13 +192,13 @@ local welcomed = false
 local afterWelcome -- (forward)
 local function showWelcomeBack(st)
 	local pending = st.Offline.Pending
-	local holder = makeCard('WelcomeBack', 'Welcome back!', hex('9CFF5A'), hex('3CC820'), 'You earned Power while you were away!')
-	column(holder, 190, 'WHILE AWAY', hex('F4F030'), hex('7CE030'), POWER, '+' .. Format.compact(pending) .. ' Power', 'Up to ' .. st.Offline.CapHours .. ' hours count')
+	local holder = makeCard('WelcomeBack', 'Welcome back!', hex('C8FF5A'), hex('46D020'), hex('0E3A06'), 'You earned Power while you were away!')
+	column(holder, 170, 1, 'WHILE AWAY', hex('FFF24A'), hex('FFC21A'), POWER, '+' .. Format.compact(pending) .. ' Power', 'Up to ' .. st.Offline.CapHours .. ' hours count')
 	local entry = Products.ByKey.OfflineX2
-	column(holder, 510, '2x OFFLINE', hex('FFF04A'), hex('FFB020'), 'PotionGold', '+' .. Format.compact(pending * 2) .. ' Power', 'Pay once, get it doubled')
+	column(holder, 470, 2, '2x OFFLINE', hex('FFF24A'), hex('FFC21A'), 'PotionGold', '+' .. Format.compact(pending * 2) .. ' Power', 'Pay once, get it doubled')
 	local dim = card.Dim
-	local say = label({ Name = 'Say', Text = '', TextSize = 22, StrokeThickness = 3, AnchorPoint = Vector2.new(0.5, 0), Position = px(CARD_W / 2, 556), Size = px(CARD_W, 26), ZIndex = 44, Parent = holder })
-	bigButton(holder, 'Claim', 'lime', 190, 250, function()
+	local say = label({ Name = 'Say', Text = '', TextSize = 22, StrokeThickness = 3, AnchorPoint = Vector2.new(0.5, 0), Position = px(CARD_W / 2, 614), Size = px(CARD_W, 26), ZIndex = 44, Parent = holder })
+	bigButton(holder, 'Claim', 'lime', 170, 225, function()
 		local res = ask('ClaimOffline')
 		if res and res.State then state, stateAt = res.State, os.clock() end
 		if card and card.Dim == dim then closeCard() end
@@ -163,10 +206,11 @@ local function showWelcomeBack(st)
 	end)
 	if entry then
 		-- the offer, with its real price on the button
-		local b = Kit.robuxButton({ Name = 'X2', Tone = 'gold', Width = 250, Height = 84, Price = entry.Price, TextSize = 46, ZIndex = 44 })
+		local b = Kit.robuxButton({ Name = 'X2', Tone = 'gold', Width = 225, Height = 88, Price = entry.Price, TextSize = 46, Outline = 6, Radius = 10, ZIndex = 44 })
 		b.AnchorPoint = Vector2.new(0.5, 0)
-		b.Position = px(510, 478)
+		b.Position = px(470, 520)
 		b.Parent = holder
+		popIn(b, 0.4, 0.36, 0.32)
 		Motion.button(b, function()
 			local ok, why = buy('OfflineX2')
 			if not ok then say.Text = why end
@@ -185,33 +229,6 @@ pcall(function()
 		end
 	end)
 end)
-
----------------------------------------------------------------------------------------------- friend boost chip
-do
-	local chip = Kit.new('Frame', { Name = 'FriendBoost', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 14, 1, -142), Size = px(330, 34), ZIndex = 5, Parent = root })
-	local text = label({ Name = 'Text', Text = 'Friend Boost: +0%', TextSize = 22, StrokeThickness = 3.5, TextXAlignment = Enum.TextXAlignment.Left, Position = px(0, 0), Size = px(250, 34), ZIndex = 6, Parent = chip })
-	local plus = Kit.blockButton({ Name = 'Invite', Tone = 'lime', Width = 34, Height = 34, Text = '+', TextSize = 26, Outline = 3, Studs = false, ZIndex = 6 })
-	plus.Position = px(238, 0)
-	plus.Parent = chip
-	local function paint()
-		local boost = num('FriendBoost', 0)
-		text.Text = 'Friend Boost: +' .. math.floor(boost * 100 + 0.5) .. '%'
-		text.TextColor3 = boost > 0 and hex('FFE24A') or Color.white
-		plus.Position = px(Kit.textWidth(text.Text, 22) + 12, 0)
-	end
-	player:GetAttributeChangedSignal('FriendBoost'):Connect(paint)
-	paint()
-	-- (the "+" asks Roblox to open its own invite sheet; a player who can't invite just sees nothing happen)
-	Motion.button(plus, function()
-		pcall(function()
-			if SocialService:CanSendGameInviteAsync(player) then SocialService:PromptGameInvite(player) end
-		end)
-	end)
-	-- the chip steps aside with the HUD while a window or the unboxing moment is up
-	local function place() chip.Visible = not windowOpen() end
-	playerGui:GetAttributeChangedSignal('HoodWindow'):Connect(place)
-	playerGui:GetAttributeChangedSignal('Unboxing'):Connect(place)
-end
 
 ---------------------------------------------------------------------------------------------- contextual offers
 -- A small chip: a title, a line, the REAL price on a button, a close X. Gone after `ttl` seconds. At most one at a time.

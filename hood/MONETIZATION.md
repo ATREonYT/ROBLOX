@@ -59,10 +59,14 @@ Create a product, set its price, copy its id, and paste it at `Products.Develope
 | Street Pack | 399 | `FeaturedPack1` | The weekly Featured pack, one of three (brief 30): 6,000 Cash (x your best stage, like the Cash Packs) + a 3x Power boost for 15 min + 1 Exclusive Box, in one purchase |
 | Grail Pack | 449 | `FeaturedPack2` | The second weekly pack: 4,000 Cash (scaled) + a 3x Power boost for 15 min + 1 Grail Box |
 | Sneaker Pack | 399 | `FeaturedPack3` | The third weekly pack: 12,000 Cash (scaled) + a 2x Power boost for 15 min + 1 Exclusive Box |
+| Starter Pack | 149 | `StarterPack` | Once per player (brief 30, HUD): 5,000 Cash (x your best stage, like the Cash Packs) + 30 min of 2x Power (two 15 min boosts) + 1 opening of this world's cheapest Robux box. After it is bought, its HUD button and window are gone for good |
+| 3 Spins | 39 | `SpinPack` | 3 spins of the Spin Wheel (brief 30, HUD). They never run out; the free spin still comes every 4 hours |
 
 The Store shows ONE of the three at a time and the pick changes every Monday 00:00 UTC (`Products.featuredAt`, the same for every player; the countdown on the card is real). Create all three products; each always grants exactly what its card says, even if Roblox retries the receipt after the week turned over.
 
 Gift A Player (brief 30): the Cash Packs and the Robux boxes can be bought for another player in the server; the server grants it to them (both are told), and if they left it goes to the buyer. Passes, boosts and Power packs are never gifted. No new product is needed for gifting.
+
+The HUD's four extras (brief 30): the **Spin Wheel** (top left: one free spin every 4 hours, real time, also while you are away; the window lists each prize's real chance), **Playtime Rewards** (6 gifts at 5 / 10 / 15 / 25 / 40 / 60 minutes played in one visit), **Missions** (3 small tasks at a time, new ones as you finish them) and the **Starter Pack**. Only the Starter Pack and 3 Spins cost Robux; the rest is free. Until their ids are pasted, their buy buttons say "Coming soon!".
 
 ## If you change a price on the website
 

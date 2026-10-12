@@ -79,6 +79,10 @@ Products.DeveloperProducts = {
 	FeaturedPack1 = 0, -- "Street Pack": Cash + a 3x Power boost + an Exclusive Box, 399 Robux
 	FeaturedPack2 = 0, -- "Grail Pack": Cash + a 3x Power boost + a Grail Box, 449 Robux
 	FeaturedPack3 = 0, -- "Sneaker Pack": more Cash + a 2x Power boost + an Exclusive Box, 399 Robux
+	-- HUD30 BEGIN (brief 30, HUD: the soldier HUD's extras; HoodServer/HudExtras grants them)
+	StarterPack = 0, -- "Starter Pack": a one-time bundle for new players (Cash, 30 min of 2x Power, a Robux box), 149 Robux
+	SpinPack = 0, -- "3 Spins": three more spins of the wheel, 39 Robux
+	-- HUD30 END
 }
 Products.BoostDurationSeconds = 900
 
@@ -153,6 +157,12 @@ Products.Catalog = {
 	{ Key = 'PowerPackMega', Kind = 'Product', Section = 'Power', Title = 'Mega Pack', Price = 999, Art = 'icon:PowerMega', Tone = 'cardGold', Pack = 7.8, Wired = true },
 	-- (the Daily Rewards window: offered only after a missed day, with its real price)
 	{ Key = 'RestoreStreak', Kind = 'Product', Section = 'Streak', Title = 'Restore Streak', Detail = 'Keep your daily streak after a missed day', Price = 25, Art = 'icon:Rewards', Tone = 'cardPink', Wired = true },
+	-- HUD30 BEGIN (brief 30, HUD) Shown in their own windows (HoodClient/Extras.client), never in the Store's list. The
+	-- Starter Pack is one purchase per player (HudExtrasService hides it once owned and never prompts it again); its parts are
+	-- Shared/HudExtrasRules.Starter, granted exactly as its card lists them. 3 Spins adds HudExtrasRules.Spin.PackSpins spins.
+	{ Key = 'StarterPack', Kind = 'Product', Section = 'Starter', Title = 'Starter Pack', Detail = 'Cash, 30 min of 2x Power and a Robux shoe box', Price = 149, Art = 'icon:StarterCrate', Tone = 'cardGold', Once = true, Wired = true },
+	{ Key = 'SpinPack', Kind = 'Product', Section = 'Spin', Title = '3 Spins', Detail = 'Three more spins of the wheel', Price = 39, Art = 'icon:SpinWheel', Tone = 'cardPurple', Wired = true },
+	-- HUD30 END
 	-- (the Rebirth window)
 	{ Key = 'SkipRebirth', Kind = 'Product', Section = 'Rebirth', Title = 'Skip Rebirth', Detail = 'Rebirth now', Price = 99, Art = 'icon:Rebirth', Tone = 'aqua', Wired = true },
 }

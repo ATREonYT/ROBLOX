@@ -35,6 +35,11 @@ Schema.Template={
  -- Power waiting from time away, the last offline amount (for the 2x Offline product) and whether the group reward was taken.
  -- DailyStreak (0..7, the day you reached) and LastDaily (os.time of the last claim) are the Daily Rewards'.
  Retention={Joins=0,LastSeen=0,Pending=0,LastOffline=0,Group=false},
+ -- HUD30 BEGIN (brief 30, HUD: Shared/HudExtrasRules) the spin wheel (the next free spin's os.time, bought and won extra
+ -- spins, spins made, a won box still to open), this session's playtime gifts (seconds played, the gifts taken as a bit set,
+ -- the last tick's os.time), the three missions and how many were finished, and whether the Starter Pack was bought.
+ Spin={NextFree=0,Extra=0,Spins=0,PendingBox=''},Playtime={Seconds=0,Claimed=0,LastSeen=0},Missions={List={},Done=0},StarterPack=false,
+ -- HUD30 END
 }
 function Schema.new() return clone(Schema.Template) end
 function Schema.migrate(data)
@@ -74,6 +79,14 @@ function Schema.migrate(data)
  -- Retention (brief 29): cleaned like the codes; a profile from before it gets the defaults.
  data.Retention=require(game.ReplicatedStorage.Shared.RetentionRules).sanitize(data.Retention)
  if type(data.DailyStreak)=='number' then data.DailyStreak=math.clamp(math.floor(data.DailyStreak),0,7) end
+ -- HUD30 BEGIN (brief 30, HUD) the extras: cleaned like the codes; a profile from before them gets the defaults (no version
+ -- bump: an older server keeps the fields as they are). A damaged table is rebuilt, never a reason to kick.
+ do
+  local X=require(game.ReplicatedStorage.Shared.HudExtrasRules)
+  data.Spin=X.sanitizeSpin(data.Spin);data.Playtime=X.sanitizePlaytime(data.Playtime);data.Missions=X.sanitizeMissions(data.Missions)
+  data.StarterPack=data.StarterPack==true
+ end
+ -- HUD30 END
  reconcile(data,Schema.Template)
  -- BestLevel (brief 29): a damaged or missing value is rebuilt from Power and the rebirths (LevelRules.bestOf), never a reason
  -- to kick, and never below what the profile already earned (nobody loses a rank).
@@ -121,6 +134,12 @@ function Schema.validate(data)
  assert(type(data.BestLevel)=='number' and data.BestLevel%1==0 and data.BestLevel>=1 and data.BestLevel<=require(game.ReplicatedStorage.Shared.LevelRules).MaxLevel,'Invalid BestLevel')
  assert(type(data.Retention)=='table' and type(data.Retention.Pending)=='number' and type(data.Retention.LastSeen)=='number' and type(data.Retention.Group)=='boolean','Invalid Retention')
  for code,at in pairs(data.Codes) do assert(type(code)=='string' and type(at)=='number' and at==at and at>=0,'Invalid used code') end
+ -- HUD30 BEGIN
+ assert(type(data.Spin)=='table' and type(data.Spin.NextFree)=='number' and type(data.Spin.Extra)=='number' and data.Spin.Extra>=0,'Invalid Spin')
+ assert(type(data.Playtime)=='table' and type(data.Playtime.Seconds)=='number' and type(data.Playtime.Claimed)=='number','Invalid Playtime')
+ assert(type(data.Missions)=='table' and type(data.Missions.List)=='table' and #data.Missions.List<=3 and type(data.Missions.Done)=='number','Invalid Missions')
+ assert(type(data.StarterPack)=='boolean','Invalid StarterPack')
+ -- HUD30 END
  return true
 end
 function Schema.public(data)

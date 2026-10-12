@@ -126,9 +126,10 @@ Kit.Font = {
 }
 Kit.Text = { title = 40, cta = 30, button = 24, label = 18, small = 15 } -- at the 1280x720 design size
 
--- (brief 19 r7) The reference hides Roblox's player list (nothing at its top right). Ours is the user's call: flip this to
--- true and HUD.client hides it (StarterGui:SetCoreGuiEnabled(PlayerList, false)); the HUD's layout is right either way.
-Kit.HidePlayerList = false
+-- (brief 19 r7) The reference hides Roblox's player list (nothing at its top right). (brief 30, the lead: hidden, like the
+-- reference: the Playtime gift and the Starter Pack sit in that corner) HUD.client hides it
+-- (StarterGui:SetCoreGuiEnabled(PlayerList, false)); false shows it again.
+Kit.HidePlayerList = true
 -- The width (design px) Roblox's player list takes at the top right under the top bar on this screen: ~285 dp with our
 -- two leaderstats on PC; 0 when hidden, and on phones (Roblox keeps it collapsed there).
 function Kit.playerListRoom(abs)
@@ -2330,13 +2331,13 @@ end
 function Kit.actionButton(props)
 	local w, h = props.Width or 81, props.Height or 81
 	local pop = props.Pop or 12
-	local holder, hit = Kit.blockButton({ Name = props.Name, Tone = props.Tone, Width = w, Height = h, Position = props.Position, AnchorPoint = props.AnchorPoint, ZIndex = props.ZIndex, Studs = props.Studs or 15, RimWidth = props.RimWidth or 3, InnerLine = props.InnerLine ~= false })
+	local holder, hit = Kit.blockButton({ Name = props.Name, Tone = props.Tone, Width = w, Height = h, Position = props.Position, AnchorPoint = props.AnchorPoint, ZIndex = props.ZIndex, Studs = props.Studs or 15, RimWidth = props.RimWidth or 3, InnerLine = props.InnerLine ~= false, Radius = props.Radius })
 	local z = (props.ZIndex or 1) + 3
 	local icon
 	local clip
 	if props.Place and not props.IconNode then
 		-- (brief 25) the picture where the reference puts it (Kit.Place[props.Place]): big, popping out of the top
-		local rule = Kit.Place[props.Place]
+		local rule = type(props.Place) == 'table' and props.Place or Kit.Place[props.Place] -- (brief 30: a rule table works too)
 		local place = { Rule = props.Place, W = w, H = h, X0 = 3, Y0 = 3 }
 		if rule and rule.ClipTop then
 			-- clipped at the button's bottom edge (the frame spans the button's width, from ClipTop down)
@@ -2524,7 +2525,7 @@ function Kit.bar(props)
 	local holder = blank({ Name = props.Name or 'Bar', Size = UDim2.fromOffset(w, h), Position = props.Position or UDim2.new(), AnchorPoint = props.AnchorPoint or Vector2.zero, LayoutOrder = props.LayoutOrder or 0, ZIndex = z })
 	-- (brief 19) the empty part is light, like the reference family's level bar (ref1_hall_a: white past the blue fill)
 	local dark = props.Track == 'dark'
-	local track = blank({ Name = 'Track', BackgroundTransparency = dark and 0.25 or 0, BackgroundColor3 = dark and hex('3A3446') or Kit.Color.white, Position = UDim2.fromOffset(O, O), Size = UDim2.new(1, -2 * O, 1, -2 * O), ZIndex = z, Parent = holder })
+	local track = blank({ Name = 'Track', BackgroundTransparency = props.TrackTransparency or (dark and 0.25 or 0), BackgroundColor3 = props.TrackColor or (dark and hex('3A3446') or Kit.Color.white), Position = UDim2.fromOffset(O, O), Size = UDim2.new(1, -2 * O, 1, -2 * O), ZIndex = z, Parent = holder })
 	w, h = w - 2 * O, h - 2 * O
 	if r > 0 then corner(r).Parent = track end
 	stroke(Kit.Color.black, O, true, 0, r > 0 and Enum.LineJoinMode.Round or Enum.LineJoinMode.Miter).Parent = track

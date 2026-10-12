@@ -10,6 +10,9 @@ definitions.HotTarget='RemoteEvent'
 definitions.Retention='RemoteFunction'
 -- (brief 30, SHOP) Gift A Player: the buyer's chosen target, sent right before a gift-able purchase prompt (HoodServer/StoreService).
 definitions.GiftTarget='RemoteEvent'
+-- HUD30 BEGIN (brief 30, HUD) the spin wheel, playtime gifts, missions and Starter Pack requests (HoodServer/HudExtrasService).
+definitions.HudExtras='RemoteFunction'
+-- HUD30 END
 function Net.init()
  assert(RunService:IsServer(),'Only server creates network objects')
  local folder=ReplicatedStorage:FindFirstChild('HoodNet')

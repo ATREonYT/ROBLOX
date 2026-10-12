@@ -6,7 +6,7 @@ return function(t)
 	local UIKit = require(RS.Shared.UIKit)
 
 	t.test('every catalog entry has an id slot, a price, a section and a tone', function()
-		local sections = { Rebirth = true, Streak = true } -- (Rebirth and Streak show in their own windows, not in the Store)
+		local sections = { Rebirth = true, Streak = true, Starter = true, Spin = true } -- (HUD30: Starter and Spin too) -- (Rebirth and Streak show in their own windows, not in the Store)
 		for _, s in Products.Sections do sections[s.Id] = true end
 		local seen = {}
 		for _, e in Products.Catalog do

@@ -13,7 +13,7 @@
 --   M.BoxLidLine           the lid's bottom edge in a Box_<id> PNG, as a fraction of the canvas height from the top
 --                          (M.BoxLidLines[boxId] per box)
 local M = {}
-M.Ids = { 'Shop', 'Rebirth', 'Rewards', 'PVP', 'Evolve', 'Cash', 'Power', 'Trophy', 'Gun', 'Muscle', 'Basket', 'BasketRed', 'Quest', 'Sneaker', 'Robux', 'Shield', 'XP', 'Skull', 'VIP', 'AutoFight', 'Arrow', 'RebirthSkip', 'DoublePower', 'World', 'Backpack', 'ShoePile', 'ShoeBox', 'Delete', 'Favorite', 'Search', 'PotionRed', 'PotionGold', 'BoostBundle', 'CashTiny', 'CashSmall', 'CashMedium', 'CashLarge', 'PowerTiny', 'PowerSmall', 'PowerMedium', 'PowerLarge', 'PowerPack1', 'PowerPack2', 'PowerPack3', 'DoubleCash', 'Lucky', 'TripleOpen', 'ExtraEquip', 'TenXCash', 'ProBay', 'GoldBay', 'BlockParty' }
+M.Ids = { 'Shop', 'Rebirth', 'Rewards', 'PVP', 'Evolve', 'Cash', 'Power', 'Trophy', 'Gun', 'Muscle', 'Basket', 'BasketRed', 'Quest', 'Sneaker', 'Robux', 'Shield', 'XP', 'Skull', 'VIP', 'AutoFight', 'Arrow', 'RebirthSkip', 'DoublePower', 'World', 'Backpack', 'ShoePile', 'ShoeBox', 'Delete', 'Favorite', 'Search', 'PotionRed', 'PotionGold', 'BoostBundle', 'CashTiny', 'CashSmall', 'CashMedium', 'CashLarge', 'PowerTiny', 'PowerSmall', 'PowerMedium', 'PowerLarge', 'PowerPack1', 'PowerPack2', 'PowerPack3', 'DoubleCash', 'Lucky', 'TripleOpen', 'ExtraEquip', 'TenXCash', 'ProBay', 'GoldBay', 'BlockParty', 'SpinWheel', 'SpinWheelDisc', 'PlaytimeGift', 'StarterCrate', 'Missions', 'SkinsPistol', 'Rank' }
 -- The uploaded image ids of the hood/art/icons3d PNGs (rbxassetid://...), written by hood/tools/upload_assets.py.
 M.Images = {
 	Shop = 'rbxassetid://88763591212363', -- Shop
@@ -223,6 +223,15 @@ M.Fallback = {
 	Favorite = { Color = Color3.fromRGB(250, 166, 22), Glyph = 'star' },
 	Search = { Color = Color3.fromRGB(60, 66, 90), Glyph = 'search' },
 	BlockParty = { Color = Color3.fromRGB(150, 80, 232), Glyph = 'star', Accent = Color3.fromRGB(255, 204, 40) },
+	-- HUD30 BEGIN (brief 30, HUD: the soldier HUD's extras, drawn by hood/tools/draw/icons/Hud30.js)
+	SpinWheel = { Color = Color3.fromRGB(255, 184, 26), Glyph = 'cycle' },
+	SpinWheelDisc = { Color = Color3.fromRGB(255, 184, 26), Glyph = 'cycle' },
+	PlaytimeGift = { Color = Color3.fromRGB(154, 62, 242), Glyph = 'gift', Accent = Color3.fromRGB(255, 196, 40) },
+	StarterCrate = { Color = Color3.fromRGB(208, 140, 82), Glyph = 'box' },
+	Missions = { Color = Color3.fromRGB(246, 215, 166), Glyph = 'scroll', Accent = Color3.fromRGB(216, 58, 58) },
+	SkinsPistol = { Color = Color3.fromRGB(63, 106, 58), Glyph = 'gun' },
+	Rank = { Color = Color3.fromRGB(196, 204, 216), Glyph = 'shield', Accent = Color3.fromRGB(255, 201, 40) },
+	-- HUD30 END
 }
 -- (brief 25) Each PNG's drawn content: { x0, y0, x1, y1 } as fractions of the 512 canvas (alpha > 10%, top-left
 -- origin), written by hood/tools/blender/icon_bounds.py after each render batch. UIKit places pictures by it.
@@ -323,6 +332,15 @@ M.Bounds = {
 	VIP = { 0.061, 0.111, 0.939, 0.889 },
 	World = { 0.062, 0.061, 0.936, 0.939 },
 	XP = { 0.100, 0.061, 0.902, 0.939 },
+	-- HUD30 BEGIN
+	SpinWheel = { 0.062, 0.061, 0.936, 0.939 },
+	SpinWheelDisc = { 0.062, 0.061, 0.936, 0.939 },
+	PlaytimeGift = { 0.061, 0.092, 0.939, 0.908 },
+	StarterCrate = { 0.061, 0.123, 0.939, 0.875 },
+	Missions = { 0.061, 0.092, 0.939, 0.908 },
+	SkinsPistol = { 0.061, 0.150, 0.939, 0.850 },
+	Rank = { 0.062, 0.061, 0.936, 0.939 },
+	-- HUD30 END
 }
 -- (brief 25) The PNGs with text baked into the picture: id -> that text. The Store skips its own sticker ('2x', 'x100')
 -- while a PNG whose text is that sticker shows, so a card never carries the label twice ('$' on money or a box's name

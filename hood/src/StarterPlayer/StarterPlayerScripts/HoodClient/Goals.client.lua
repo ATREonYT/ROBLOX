@@ -22,69 +22,60 @@ local player = Players.LocalPlayer
 local Color, Tone = Kit.Color, Kit.Tone
 local px = UDim2.fromOffset
 
-local gui, root, fit = Kit.screen('HoodGoals', nil, 7)
+local Spec = require(RS.Shared.HudSpec)
+local gui, root, fit = Spec.screen('HoodGoals', 7) -- (HudSpec: a reference px is a screen px at 720 tall)
 
 ---------------------------------------------------------------------------------------------- tracker
--- (brief 18) The reference's second timer line ("Next RAID in: 3:26  [SKIP]", user_26): no box, white Gotham Black
--- with a black stroke and the key words in colour; the Cash the goal pays in a chip like its SKIP button (see-through
--- teal, a dark teal edge). One line, like the video's "NEXT GOAL: Hatch an egg - Eggs are in the lobby".
+-- (brief 30, HUD: copied from ref_W49.5 / ref_W45.0, measured at 720 px tall; the lead's r8 note: one short line) The
+-- reference's goal tracker: no box; "NEXT GOAL" in gold (cap 18 px, centred 91 px down the screen = 33 under the top bar)
+-- and 49 px under it ONE short white line, the goal itself (GoalRules keeps every Text to 28 characters), with what it pays
+-- beside it: the Cash picture and "+25" in gold. Where to go is the tutorial's arrows' and the goal list's job (a tap on
+-- the tracker opens HUD.client's Quest window, which lists every goal with its "where").
 local BLACK = Color.black
-local GREEN = '#5CE08A' -- the reference's "DOCTOR DOOM" green
-local LINE_SIZE, CHIP_W, CHIP_H = 25, 84, 30 -- (r7: the reference's second line, cap 26 ref px = text 25 design px)
-local TRACKER_Y = 2 -- (the line's centre on the reference's second line, measured at its size)
--- (brief 19 r7, UICRITIC P2-1) centred and no wider than the reference's line (~620 ref px with its chip = 420 design px)
--- (brief 29, the user: "make the goal ui better, its way too vague") The tracker is three lines now, centred: the gold
--- "NEXT GOAL" with the Cash chip beside it, the goal itself (the key words green) and, under it, where to go or what to do,
--- in light blue, never dropped for lack of room (it shrinks to fit instead). Like the reference's "NEXT GOAL / Reach
--- Level 10 - Train at a target".
-local TRACKER_W, TRACKER_H = 420, 76
-local HEAD_SIZE, WHERE_SIZE = 17, 19
-local tracker = Kit.new('Frame', { Name = 'Goal', AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, TRACKER_Y), Size = px(TRACKER_W, TRACKER_H), BackgroundTransparency = 1, Visible = false, Parent = root })
+local TRACKER_W, TRACKER_Y = 460, 19 -- (the head's top: its centre at 33)
+local HEAD_SIZE, LINE_SIZE, REWARD_SIZE, CASH_ICON = 24, 26, 24, 34
+local LINE_Y = 49 -- (the line's centre under the head's)
+local TRACKER_H = 14 + LINE_Y + 20
+local tracker = Kit.new('TextButton', { Name = 'Goal', Text = '', AutoButtonColor = false, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, TRACKER_Y), Size = px(TRACKER_W, TRACKER_H), BackgroundTransparency = 1, Visible = false, Parent = root })
 local trackerScale = Kit.new('UIScale', { Parent = tracker })
-local head = Kit.text({ Name = 'Head', Text = 'NEXT GOAL', TextSize = HEAD_SIZE, Stroke = BLACK, StrokeThickness = 3, TextColor3 = Kit.hex('FFD84A'), RichText = true, Position = px(0, 0), Size = px(TRACKER_W, 20), ZIndex = 2, Parent = tracker })
-local line = Kit.text({ Name = 'Line', Text = '', TextSize = LINE_SIZE, Stroke = BLACK, StrokeThickness = 3.5, RichText = true, Position = px(0, 20), Size = px(600, 34), ZIndex = 2, Parent = tracker })
-local whereLine = Kit.text({ Name = 'Where', Text = '', TextSize = WHERE_SIZE, Stroke = BLACK, StrokeThickness = 3, TextColor3 = Kit.hex('8FE3FF'), Position = px(0, 54), Size = px(TRACKER_W, 22), ZIndex = 2, Parent = tracker })
-local chip = Kit.new('Frame', { Name = 'Reward', AnchorPoint = Vector2.new(0, 0.5), Position = px(610, 37), Size = px(CHIP_W, CHIP_H), BackgroundColor3 = Kit.hex('3E9A92'), BackgroundTransparency = 0.4, BorderSizePixel = 0, ZIndex = 2, Parent = tracker })
-Kit.corner(2).Parent = chip
-Kit.stroke(Kit.hex('133E48'), 2.5, true).Parent = chip
-Kit.icon3d('Cash', 30, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, -4, 0.5, 0), ZIndex = 3 }).Parent = chip
-local chipText = Kit.text({ Name = 'Cash', Text = '+0', TextSize = 20, Stroke = BLACK, StrokeThickness = 2.5, Position = px(24, 0), Size = UDim2.new(1, -26, 1, 0), ZIndex = 3, Parent = chip })
--- The goal line and its chip sit side by side, centred together (the line sized to its text); the where line under it
--- fits the card's width.
-local function place(plain, withChip, whereText)
-	local width = tracker.Size.X.Offset
-	local room = width - (withChip and CHIP_W + 14 or 0)
-	line.TextSize = Kit.fitSize(plain, LINE_SIZE, room, 14)
+local function gold(t)
+	Kit.new('UIGradient', { Rotation = 90, Color = ColorSequence.new(Kit.hex('FFF27A'), Kit.hex('FFB020')), Parent = t })
+	return t
+end
+local head = gold(Kit.text({ Name = 'Head', Text = 'NEXT GOAL', TextSize = HEAD_SIZE, Stroke = BLACK, StrokeThickness = 3.5, Position = px(0, 0), Size = px(TRACKER_W, 28), ZIndex = 2, Parent = tracker }))
+local row = Kit.new('Frame', { Name = 'Row', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 14 + LINE_Y), Size = px(TRACKER_W, 36), ZIndex = 2, Parent = tracker })
+local line = Kit.text({ Name = 'Line', Text = '', TextSize = LINE_SIZE, Stroke = BLACK, StrokeThickness = 3.5, TextXAlignment = Enum.TextXAlignment.Left, Position = px(0, 0), Size = px(300, 36), ZIndex = 2, Parent = row })
+local cashIcon = Kit.icon3d('Cash', CASH_ICON, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 0, 0.5, 0), ZIndex = 2 })
+cashIcon.Parent = row
+local rewardText = gold(Kit.text({ Name = 'Reward', Text = '', TextSize = REWARD_SIZE, Stroke = BLACK, StrokeThickness = 3.5, TextXAlignment = Enum.TextXAlignment.Left, Position = px(0, 0), Size = px(80, 36), ZIndex = 2, Parent = row }))
+tracker.Activated:Connect(function()
+	local hud = player.PlayerGui:FindFirstChild('HoodHUD')
+	local ev = hud and hud:FindFirstChild('OpenQuest')
+	if ev then ev:Fire() end
+end)
+-- The goal, then the Cash picture and "+25", centred together on one line (shrunk only if it would not fit).
+local function place(text, reward)
+	local rw = reward and Kit.textWidth(reward, REWARD_SIZE) or 0
+	local extra = reward and (8 + CASH_ICON - 4 + rw) or 0
+	local W = tracker.Size.X.Offset
+	row.Size = px(W, 36)
+	line.TextSize = Kit.fitSize(text, LINE_SIZE, W - extra, 14)
 	local stroke = line:FindFirstChildOfClass('UIStroke')
-	if stroke then stroke.Thickness = math.max(2, line.TextSize * 0.125) end
-	local textW = math.min(Kit.textWidth(plain, line.TextSize), room)
-	local total = textW + (withChip and CHIP_W + 14 or 0)
-	local x0 = (width - total) / 2
-	line.Position = px(x0, 20)
-	line.Size = px(textW, 34)
-	chip.Position = px(x0 + textW + 14, 37)
-	head.Size = px(width, 20)
-	whereLine.Size = px(width, 22)
-	whereLine.TextSize = Kit.fitSize(whereText or '', WHERE_SIZE, width - 8, 11)
-	local ws = whereLine:FindFirstChildOfClass('UIStroke')
-	if ws then ws.Thickness = math.max(2, whereLine.TextSize * 0.14) end
+	if stroke then stroke.Thickness = math.max(2.5, line.TextSize * 0.135) end
+	local tw = Kit.textWidth(text, line.TextSize)
+	local total = tw + extra
+	local x0 = (W - total) / 2
+	line.Position = px(x0, 0)
+	line.Size = px(tw, 36)
+	cashIcon.Visible, rewardText.Visible = reward ~= nil, reward ~= nil
+	if reward then
+		cashIcon.Position = UDim2.new(0, x0 + tw + 8, 0.5, 0)
+		rewardText.Text = reward
+		rewardText.Position = px(x0 + tw + 8 + CASH_ICON - 4, 0)
+		rewardText.Size = px(rw, 36)
+	end
 end
 
-local function escape(s) return (tostring(s):gsub('&', '&amp;'):gsub('<', '&lt;'):gsub('>', '&gt;')) end
--- (brief 19 r7) Like the reference's "Next RAID in: 3:26", only the key word is in colour: the name in the goal (from its
--- first capitalised word after the verb: "Stand in BAY 1", "Get the Pump Shotgun"), else its last word ("Buy a gun").
-local function keyed(text)
-	local words = string.split(tostring(text), ' ')
-	local at
-	for i = 2, #words do
-		if words[i]:match('^[%u%d]') then at = i break end
-	end
-	if #words == 1 then at = 1 end
-	at = at or #words
-	local head = table.concat(words, ' ', 1, at - 1)
-	local key = table.concat(words, ' ', at)
-	return (head ~= '' and escape(head) .. ' ' or '') .. '<font color="' .. GREEN .. '">' .. escape(key) .. '</font>'
-end
 local unboxUntil = 0 -- (just after a ShoeOpened, before Shoes.client's unboxing moment sets PlayerGui Unboxing)
 local function unboxing()
 	return os.clock() < unboxUntil or (player:FindFirstChildOfClass('PlayerGui') ~= nil and player.PlayerGui:GetAttribute('Unboxing') == true)
@@ -109,34 +100,27 @@ local function fighting()
 end
 local allDoneAt = nil
 local function paintTracker(pop)
-	local step, text, where, reward = player:GetAttribute('GoalStep'), player:GetAttribute('GoalText'), player:GetAttribute('GoalWhere'), player:GetAttribute('GoalReward')
+	local step, text, reward = player:GetAttribute('GoalStep'), player:GetAttribute('GoalText'), player:GetAttribute('GoalReward')
 	if type(step) ~= 'number' or type(text) ~= 'string' then
 		tracker.Visible = false
 		return
 	end
 	local done = type(reward) ~= 'number' or reward <= 0
-	local whereText = type(where) == 'string' and where or ''
 	if done then
-		-- The whole chain is done: say so for a while, then get out of the way.
+		-- the whole chain is done: say so for a while, then get out of the way
 		allDoneAt = allDoneAt or os.clock()
-		head.Text = ''
-		line.Text = '<font color="' .. GREEN .. '">' .. escape(text) .. '</font>'
-		whereLine.Text = whereText
-		place(text, false, whereText)
-		chip.Visible = false
+		head.Text = 'ALL GOALS DONE!'
+		local where = player:GetAttribute('GoalWhere')
+		line.Text = type(where) == 'string' and where ~= '' and where or 'World 2 is coming soon'
+		place(line.Text, nil)
 		tracker.Visible = not holding and not fighting() and not unboxing() and not boardUp() and os.clock() - allDoneAt < 12
 		if tracker.Visible then task.delay(12.5, function() paintTracker(false) end) end
 		return
 	end
 	allDoneAt = nil
-	-- (brief 29) the gold heading, the goal and, always, where to go or what to do
 	head.Text = 'NEXT GOAL'
-	line.Text = keyed(text)
-	whereLine.Text = whereText
-	place(text, true, whereText)
-	chipText.Text = '+' .. Format.compact(reward)
-	chipText.TextSize = Kit.fitSize(chipText.Text, 20, CHIP_W - 30, 10)
-	chip.Visible = true
+	line.Text = text
+	place(text, '+' .. Format.compact(reward))
 	tracker.Visible = not holding and not fighting() and not unboxing() and not boardUp()
 	if pop and tracker.Visible then
 		trackerScale.Scale = 1.15
@@ -156,7 +140,7 @@ local queue, running = {}, false
 -- (brief 23) the moment's top (the goal line's place: the tracker hides while it is up), its widest, its height with and
 -- without the NEXT GOAL line, and how far its low place stays over the screen's bottom (the HUD's Power count and bar
 -- take the bottom ~175 design px); design px
-local MOMENT_Y, MOMENT_W, MOMENT_H, MOMENT_SHORT, MOMENT_LOW = 2, 640, 96, 64, 184
+local MOMENT_Y, MOMENT_W, MOMENT_H, MOMENT_SHORT, MOMENT_LOW = 19, 640, 210, 110, 184
 local screen = { W = 1280, H = 720, Phone = false } -- (the root's design size and whether it's a phone; relayout keeps it)
 
 -- (brief 23, CRITIC3: GOAL DONE landed on the pads' "+10 Cash / Return" labels at the end of a stage) The stage pads'
@@ -168,7 +152,7 @@ local function padRects()
 	local rects = {}
 	if not cam then return rects end
 	local ok = pcall(function()
-		local k = Kit.scaleFor(gui.AbsoluteSize)
+		local k = Spec.scaleFor(gui.AbsoluteSize)
 		local inset = GuiService:GetGuiInset()
 		local tanHalf = math.tan(math.rad(cam.FieldOfView / 2))
 		local vh = cam.ViewportSize.Y
@@ -229,15 +213,15 @@ local function moment(info)
 	-- sign and the goons), on a dark see-through backing like the video's reward banner, so it reads over anything.)
 	-- (brief 19, LOOP: the backing is as wide as the longest line, not a fixed 700, and darker, so a gate sign's title
 	-- doesn't show through one side of it)
+	-- (brief 30, HUD: ref_W45.0_next_goal_where.jpg at 720 px) "GOAL DONE!" gold (centred 33 under the top bar), the reward
+	-- with its picture in white 63 px under it, "NEXT GOAL" gold 127 under, the next goal and where in white 177 under (it
+	-- wraps like the tracker); no box, no band, the thick outlines carry it.
 	local cashText = '+' .. Format.compact(type(info.Reward) == 'number' and info.Reward or 0) .. ' Cash'
-	local nextPlain = 'NEXT GOAL: ' .. (info.NextText or '') .. ((info.NextWhere or '') ~= '' and (' - ' .. info.NextWhere) or '')
-	local widest = math.max(Kit.textWidth('GOAL DONE!', 30), Kit.textWidth(cashText, 24) + 34, Kit.textWidth(nextPlain, 22))
-	local width = math.clamp(widest + 48, 340, MOMENT_W)
-	-- (brief 19) on phones it keeps clear of the button column (left) and the Rewards gift (top right); (brief 23) and of the
-	-- HUD's counters row at the top left (Rebirths and Cash side by side, x < 340), like the goal line
+	local nextPlain = info.NextText or ''
+	local width = math.clamp(math.max(Kit.textWidth('GOAL DONE!', 26), Kit.textWidth(cashText, 28) + 50, 460) + 20, 340, MOMENT_W)
 	local x = UDim.new(0.5, 0)
 	if screen.Phone then
-		local l, r = 340, screen.W - 370
+		local l, r = 300, screen.W - 330
 		width = math.min(width, r - l)
 		x = UDim.new(0, math.clamp(screen.W / 2, l + width / 2, r - width / 2))
 	end
@@ -245,29 +229,25 @@ local function moment(info)
 	local top, whole = momentPlace(cx, width)
 	local holder = Kit.new('Frame', { Name = 'GoalDone', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(x.Scale, x.Offset, 0, top), Size = px(width, MOMENT_H), Parent = root })
 	local scale = Kit.new('UIScale', { Scale = 0.3, Parent = holder })
-	-- (brief 19 r7, UICRITIC P2-4) the video's look: "GOAL DONE!" gold on the scene, then ONE dark band that fades out at
-	-- both ends holding the reward (the Cash icon and "+20 Cash" in white), then NEXT GOAL and the next line on the scene.
-	-- No card behind it all; the thick strokes keep it readable over anything. (brief 23: tighter, 96 px in all, and the
-	-- NEXT GOAL line is one line: "NEXT GOAL: Step on the yellow pad - by the gate")
-	local back = Kit.new('Frame', { Name = 'Back', BackgroundColor3 = Kit.hex('0E1020'), BackgroundTransparency = 0.3, BorderSizePixel = 0, Position = px(0, 33), Size = UDim2.new(1, 0, 0, 31), ZIndex = 0, Parent = holder })
-	Kit.new('UIGradient', { Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.22, 0), NumberSequenceKeypoint.new(0.78, 0), NumberSequenceKeypoint.new(1, 1) }), Parent = back })
+	local back = nil
 	local function goldText(t)
 		Kit.new('UIGradient', { Rotation = 90, Color = ColorSequence.new(Kit.hex('FFF27A'), Kit.hex('FFB020')), Parent = t })
 		return t
 	end
-	local title = goldText(Kit.text({ Name = 'Title', Text = 'GOAL DONE!', TextSize = 30, Stroke = BLACK, StrokeThickness = 4, Position = px(0, 0), Size = UDim2.new(1, 0, 0, 33), Parent = holder }))
-	local rewardW = 32 + Kit.textWidth(cashText, 24)
-	local rewardRow = Kit.new('Frame', { Name = 'RewardRow', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 33), Size = px(rewardW, 31), ZIndex = 2, Parent = holder })
-	local cashIcon = Kit.icon3d('Cash', 32, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, -4, 0.5, 0), ZIndex = 2 })
+	local title = goldText(Kit.text({ Name = 'Title', Text = 'GOAL DONE!', TextSize = 26, Stroke = BLACK, StrokeThickness = 4, Position = px(0, 0), Size = UDim2.new(1, 0, 0, 28), Parent = holder }))
+	local rewardW = 46 + Kit.textWidth(cashText, 28)
+	local rewardRow = Kit.new('Frame', { Name = 'RewardRow', BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 14 + 63), Size = px(rewardW, 40), ZIndex = 2, Parent = holder })
+	local cashIcon = Kit.icon3d('Cash', 44, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, -6, 0.5, 0), ZIndex = 2 })
 	cashIcon.Parent = rewardRow
-	local reward = Kit.text({ Name = 'Reward', Text = cashText, TextSize = 24, Stroke = BLACK, StrokeThickness = 3.5, TextColor3 = Color.white, TextXAlignment = Enum.TextXAlignment.Left, Position = px(32, 0), Size = UDim2.new(1, -32, 1, 0), ZIndex = 2, Parent = rewardRow })
-	-- (the gold "NEXT GOAL:" and the goal on one line, where to go after it)
-	local nextLine = Kit.text({ Name = 'NextLine', Text = '<font color="#FFD84A">NEXT GOAL:</font> ' .. escape(info.NextText or '') .. ((info.NextWhere or '') ~= '' and (' - ' .. escape(info.NextWhere)) or ''), TextSize = 22, Stroke = BLACK, StrokeThickness = 3.5, RichText = true, Position = px(10, 67), Size = UDim2.new(1, -20, 0, 28), Parent = holder })
-	nextLine.TextScaled = true
-	Kit.new('UITextSizeConstraint', { MaxTextSize = 22, MinTextSize = 12, Parent = nextLine })
-	nextLine.Visible = whole
-	nextLine.TextTransparency = 1
-	nextLine:FindFirstChildOfClass('UIStroke').Transparency = 1
+	local reward = Kit.text({ Name = 'Reward', Text = cashText, TextSize = 28, Stroke = BLACK, StrokeThickness = 4, TextColor3 = Color.white, TextXAlignment = Enum.TextXAlignment.Left, Position = px(46, 0), Size = UDim2.new(1, -46, 1, 0), ZIndex = 2, Parent = rewardRow })
+	local nextHead = goldText(Kit.text({ Name = 'NextHead', Text = 'NEXT GOAL', TextSize = 24, Stroke = BLACK, StrokeThickness = 3.5, Position = px(0, 127), Size = UDim2.new(1, 0, 0, 28), Parent = holder }))
+	local nextLine = Kit.text({ Name = 'NextLine', Text = nextPlain, TextSize = 26, Stroke = BLACK, StrokeThickness = 3.5, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 14 + 127 + 49), Size = px(460, 36), Parent = holder })
+	nextLine.TextSize = Kit.fitSize(nextPlain, 26, 450, 14)
+	for _, t in { nextHead, nextLine } do
+		t.Visible = whole
+		t.TextTransparency = 1
+		t:FindFirstChildOfClass('UIStroke').Transparency = 1
+	end
 	-- Pad labels move with the camera: the moment keeps out of their way while it is up.
 	local alive = true
 	task.spawn(function()
@@ -275,7 +255,7 @@ local function moment(info)
 			task.wait(0.1)
 			if not alive or not holder.Parent then break end
 			local y, w2 = momentPlace(cx, width)
-			nextLine.Visible = w2
+			nextLine.Visible, nextHead.Visible = w2, w2
 			if math.abs(holder.Position.Y.Offset - y) > 1 then
 				TweenService:Create(holder, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Position = UDim2.new(x.Scale, x.Offset, 0, y) }):Play()
 			end
@@ -304,13 +284,15 @@ local function moment(info)
 	end
 	if not hold(0.9) then return stepAside() end
 	local show = TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-	TweenService:Create(nextLine, show, { TextTransparency = 0 }):Play()
-	TweenService:Create(nextLine:FindFirstChildOfClass('UIStroke'), show, { Transparency = 0 }):Play()
+	for _, t in { nextHead, nextLine } do
+		TweenService:Create(t, show, { TextTransparency = 0 }):Play()
+		TweenService:Create(t:FindFirstChildOfClass('UIStroke'), show, { Transparency = 0 }):Play()
+	end
 	Sound.play(chime, 1.2)
 	if not hold(2.9) then return stepAside() end
 	cashIcon.Visible = false
 	alive = false
-	fadeOut(holder, { title, reward, nextLine }, back)
+	fadeOut(holder, { title, reward, nextHead, nextLine }, back)
 	task.wait(0.45)
 	holder:Destroy()
 	holding = false
@@ -383,7 +365,7 @@ local function relayout()
 	local abs = gui.AbsoluteSize
 	if abs.X < 1 or abs.Y < 1 then return end
 	fit(abs)
-	local k = Kit.scaleFor(abs)
+	local k = Spec.scaleFor(abs)
 	local w = abs.X / k
 	screen.W, screen.H, screen.Phone = w, abs.Y / k, math.min(abs.X, abs.Y) <= 500
 	-- (brief 19 r7) Centred like the reference's second line and no wider than it, which keeps it clear of the Rewards gift
@@ -396,10 +378,12 @@ end
 gui:GetPropertyChangedSignal('AbsoluteSize'):Connect(relayout)
 -- (brief 18) the goal line steps away while a window is open, like the reference's top lines and the HUD
 local playerGui = player:WaitForChild('PlayerGui')
-playerGui:GetAttributeChangedSignal('HoodWindow'):Connect(function()
-	local open = playerGui:GetAttribute('HoodWindow')
-	gui.Enabled = not (type(open) == 'string' and open ~= '')
-end)
+local function paintEnabled()
+	local open, card = playerGui:GetAttribute('HoodWindow'), playerGui:GetAttribute('HoodCard')
+	gui.Enabled = not ((type(open) == 'string' and open ~= '') or (type(card) == 'string' and card ~= ''))
+end
+playerGui:GetAttributeChangedSignal('HoodWindow'):Connect(paintEnabled)
+playerGui:GetAttributeChangedSignal('HoodCard'):Connect(paintEnabled) -- (brief 30: and under a Retention card)
 -- (brief 19 r7, UICRITIC P2-5) Shoes.client's unboxing moment owns the top of the screen while PlayerGui's Unboxing is on
 playerGui:GetAttributeChangedSignal('Unboxing'):Connect(function()
 	if playerGui:GetAttribute('Unboxing') ~= true then settleUntil = os.clock() + 0.5 end

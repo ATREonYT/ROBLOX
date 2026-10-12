@@ -8,6 +8,8 @@
 --   ShoeService) or Rebirths.
 --   A Side goal (opening a shoe box) is not on the way anywhere: a player who is past it in the chain gets it as a
 --   detour (Goals.Back = the step to return to once it is done), so nobody skips it and nobody repeats a goal.
+-- (brief 30, HUD: the lead) The HUD shows a goal as ONE short line, Text, at most GoalRules.MaxText characters, with its Cash
+-- beside it, like the reference's "Hatch an egg"; Where stays for the goal list (HUD.client's Quest window) and the tutorial.
 -- The run loop (brief 23) the chain teaches: train in BAY 1, walk to Stage 1, beat its crew (the next gate opens), step
 -- on a pad to cash out (back to the lobby), spend the Cash, then fight further each run.
 local Skins = require(script.Parent.Config.Skins)
@@ -15,6 +17,7 @@ local PadRules = require(script.Parent.PadRules)
 local LevelRules = require(script.Parent.LevelRules) -- (brief 29: goals speak in Levels; the Need stays in Power)
 
 local GoalRules = {}
+GoalRules.MaxText = 28
 
 -- A lane goal reads its lane's name and rebirths from Config/Skins (ECON's ladder), so the words never go stale.
 local function lane(id, goalId, reward, where)

@@ -213,6 +213,39 @@ function StoreReceipts.grants(ctx)
 		local ok, why = ctx.rebirth(player)
 		assert(ok, 'rebirth refused: ' .. tostring(why))
 	end
+	-- HUD30 BEGIN (brief 30, HUD) The Starter Pack (once per player: HudExtrasService never prompts it again once owned; a
+	-- second receipt that arrives anyway is still granted, never lost) and 3 Spins. Like the Featured pack: every check and
+	-- the box's roll run before the Cash and the boosts are written.
+	local HudExtras = optional(script.Parent:FindFirstChild('HudExtras'))
+	local ExtrasRules = optional(RS.Shared:FindFirstChild('HudExtrasRules'))
+	grants.StarterPack = function(player, profile, key)
+		assert(HudExtras and ExtrasRules and Shoes and ShoeOpening, 'HudExtras / Shoes / ShoeOpening missing')
+		local boxId = HudExtras.starterBox(Shoes, Shoes.ActiveWorld)
+		local box = boxId and Shoes.BoxById[boxId]
+		assert(box and box.Robux, 'no Robux box for the Starter Pack')
+		local parts = HudExtras.starterParts(profile, box.Id)
+		local t = now()
+		local passes = type(profile.Data.Passes) == 'table' and profile.Data.Passes or {}
+		local boost = passes.Boost
+		for _, level in parts.Boosts do boost = Boosts.add(boost, level, parts.Seconds, t) end -- (pure)
+		ShoeOpening.openMany(player, profile, box.Id, ExtrasRules.Starter.Boxes)
+		profile.Data.Cash = math.min(1e12, profile.Data.Cash + parts.Cash)
+		setAttribute(player, 'Cash', profile.Data.Cash)
+		passes.Boost = boost
+		profile.Data.Passes = passes
+		profile.Data.StarterPack = true
+		setAttribute(player, 'StarterOwned', true)
+		publish(player)
+		notice(player, 'Thanks! Starter Pack: +' .. Format.compact(parts.Cash) .. ' Cash, 2x Power for ' .. math.floor(#parts.Boosts * parts.Seconds / 60 + 0.5) .. ' min and your ' .. box.Name .. '!')
+	end
+	grants.SpinPack = function(player, profile)
+		assert(HudExtras and ExtrasRules, 'HudExtras missing')
+		local data = HudExtras.tables(profile.Data)
+		ExtrasRules.addSpins(data.Spin, ExtrasRules.Spin.PackSpins)
+		setAttribute(player, 'SpinExtra', data.Spin.Extra)
+		notice(player, 'Thanks! +' .. ExtrasRules.Spin.PackSpins .. ' Spins. Go spin the wheel!')
+	end
+	-- HUD30 END
 	return grants
 end
 

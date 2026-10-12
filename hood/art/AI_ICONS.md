@@ -64,6 +64,13 @@ For the Featured backgrounds use the same style, but:
 | `FeaturedBg_Grail.png` | [SCENE] a golden vault with stacked cash and a glowing shoe box on a plinth |
 | `FeaturedBg_Street.png` | [SCENE] a sunny hood street block party with balloons and a DJ booth |
 | `FeaturedBg_Sneaker.png` | [SCENE] a bright sneaker shop wall with shelves of colourful shoe boxes |
+| `SpinWheel.png` | a prize wheel with eight rainbow wedges, a gold rim with little lights and a gold hub (the HUD's Spin button, top left) |
+| `SpinWheelDisc.png` | the same wheel seen flat from the front, no stand, no pointer (it turns in the Spin window; optional) |
+| `PlaytimeGift.png` | a purple gift box with a gold ribbon and bow, its lid lifting a little, with sparkles (Playtime Rewards) |
+| `StarterCrate.png` | a wooden crate with a blue star potion and a gold trophy leaning on it (the Starter Pack) |
+| `Missions.png` | a rolled paper scroll with a red wax seal (the Missions button) |
+| `SkinsPistol.png` | a chunky dark green cartoon pistol, side view (the HUD's Skins button) |
+| `Rank.png` | a round grey badge with a gold upward chevron (the rank row's icon) |
 
 ## The style prompt (use it for every picture, so they all match)
 
