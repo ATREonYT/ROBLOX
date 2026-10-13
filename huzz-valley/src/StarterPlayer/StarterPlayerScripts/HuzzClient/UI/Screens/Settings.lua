@@ -11,6 +11,7 @@ local Kit = require(UI.Kit)
 local State = require(UI.State)
 local Toast = require(UI.Toast)
 local ModalManager = require(UI.ModalManager)
+local Scale = require(UI.Scale)
 
 local C = Theme.Colors
 local new = Kit.new
@@ -20,8 +21,9 @@ local SettingsScreen = {}
 -- Geometry per tab, measured from the references (06 Social is the approved page; 09/10 are taller with bigger rows).
 local W = 701
 local GEOM = {
-	Social = { H = 258, HH = 40, TabH = 26.5, Tabs = { { 305, 109 }, { 421, 117 }, { 539, 121 } }, Close = Vector2.new(26, 26), Y0 = 47, RowH = 44, Step = 49, TextX = 62 },
-	Audio = { H = 287, HH = 43.5, TabH = 30.5, Tabs = { { 261, 125 }, { 390, 125 }, { 519, 125 } }, Close = Vector2.new(33, 34), Y0 = 54.5, RowH = 52, Step = 56.5, Row4 = 8, TextX = 74, Cell = 59 },
+	-- All whole pixels: Roblox stores UI offsets as integers.
+	Social = { H = 258, HH = 44, TabH = 27, TabText = 15, Tabs = { { 305, 109 }, { 421, 117 }, { 539, 121 } }, Close = Vector2.new(26, 26), Rows = { 48, 97, 146, 195 }, RowH = 44, TextX = 62, TitleSize = 16 },
+	Audio = { H = 287, HH = 47, TabH = 31, TabText = 17, Tabs = { { 261, 125 }, { 390, 125 }, { 519, 125 } }, Close = Vector2.new(31, 31), Rows = { 55, 111, 166, 228 }, RowH = 53, TextX = 74, Cell = 59, TitleSize = 18 },
 }
 GEOM.Controls = GEOM.Audio
 local ROW_X = 12
@@ -37,17 +39,19 @@ end
 
 -- One settings row (window coords). Audio/Controls rows have an icon cell with a divider; Social rows don't.
 local function row(parent: Instance, g, i: number, icon: string, title: string, desc: string, width: number?)
-	local y = g.Y0 + (i - 1) * g.Step + ((g.Row4 and i == 4) and g.Row4 or 0)
-	local r = new("Frame", { Name = "Row" .. i, Position = UDim2.fromOffset(ROW_X, y), Size = UDim2.fromOffset(width or (W - 2 * ROW_X), g.RowH), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = parent }, { Kit.corner(4), Kit.stroke(C.RowBorder, 1) })
-	new("UIGradient", { Rotation = 90, Color = ColorSequence.new(C.RowTop, C.RowBottom), Parent = r })
+	local y = g.Rows[i]
+	local r = new("Frame", { Name = "Row" .. i, Position = UDim2.fromOffset(ROW_X, y), Size = UDim2.fromOffset(width or (W - 2 * ROW_X), g.RowH), BackgroundColor3 = g.Cell and C.CellRow or Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = parent }, { Kit.corner(4), Kit.stroke(C.RowBorder, 1) })
 	if g.Cell then
-		new("Frame", { Name = "Divider", Position = UDim2.fromOffset(g.Cell, 0), Size = UDim2.new(0, 1, 1, 0), BackgroundColor3 = C.CellDivider, BorderSizePixel = 0, Parent = r })
+		-- the icon sits in a darker inset panel (reference 09/10)
+		new("Frame", { Name = "IconCell", Position = UDim2.fromOffset(2, 2), Size = UDim2.new(0, g.Cell - 2, 1, -4), BackgroundColor3 = C.IconCell, BorderSizePixel = 0, Parent = r }, { Kit.corner(3) })
+	else
+		new("UIGradient", { Rotation = 90, Color = ColorSequence.new(C.RowTop, C.RowBottom), Parent = r })
 	end
-	local iconSize = g.Cell and 34 or 30
-	Kit.icon(icon, { Name = "Icon", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0, (g.Cell or 44) / 2, 0.5, 0), Size = UDim2.fromOffset(iconSize, iconSize), Parent = r })
-	local ty = g.RowH >= 50 and 7 or 3
-	Kit.name({ Name = "Title", Text = title, TextSize = Theme.Text.Row, Position = UDim2.fromOffset(g.TextX, ty), Size = UDim2.fromOffset(300, 22), Parent = r })
-	Kit.text({ Name = "Desc", Text = desc, TextSize = 13, TextColor3 = C.SubText, Position = UDim2.fromOffset(g.TextX, ty + 21), Size = UDim2.fromOffset(300, 16), TextWrapped = false, Parent = r })
+	local iconSize = g.Cell and 37 or 30
+	Kit.icon(icon, { Name = "Icon", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0, g.Cell and math.floor((g.Cell + 2) / 2) or 27, 0.5, 0), Size = UDim2.fromOffset(iconSize, iconSize), ZIndex = 2, Parent = r })
+	local ty = g.Cell and 8 or 3
+	Kit.name({ Name = "Title", Text = title, TextSize = g.TitleSize, Position = UDim2.fromOffset(g.TextX, ty), Size = UDim2.fromOffset(300, 22), Parent = r })
+	Kit.text({ Name = "Desc", Text = desc, TextSize = 13, TextColor3 = C.SubText, Position = UDim2.fromOffset(g.TextX, ty + (g.Cell and 22 or 24)), Size = UDim2.fromOffset(300, 16), TextWrapped = false, Parent = r })
 	return r, y
 end
 
@@ -66,7 +70,7 @@ local function onOff(r: Frame, key: string, x: number, wOn: number, xOff: number
 	local seg = Kit.segmented(r, {
 		{ Value = true, Text = "ON", X = x - ROW_X, Width = wOn, Selected = "Action" },
 		{ Value = false, Text = "OFF", X = xOff - ROW_X, Width = wOff },
-	}, (r.Size.Y.Offset - h) / 2, h, function(v) save(key, v) end, textSize)
+	}, math.floor((r.Size.Y.Offset - h) / 2), h, function(v) save(key, v) end, textSize)
 	table.insert(syncers, function() seg.set(State.setting(key) == true) end)
 end
 
@@ -145,7 +149,7 @@ local function buildControls(page: Frame)
 	end
 	keyRow(1, "ControlsDash", "Dash", "Quick movement boost.", nil, "SPACE")
 	keyRow(2, "ControlsMenu", "Open Menu", "Open the main menu.", "MenuKey")
-	keyRow(3, "DancesNote", "Dances", "Play your unlocked dances.", nil, "G")
+	keyRow(3, "AudioMusic", "Dances", "Play your unlocked dances.", nil, "G")
 	local r, y = row(page, g, 4, "ControlsKeyboard", "Show Key Hints", "Show key hints on screen while playing.", 531 - ROW_X)
 	onOff(r, "ShowKeyHints", 335, 95, 437, 89, 35, 18)
 	-- Reset Bindings sits in its own cell to the right of the row.
@@ -169,7 +173,7 @@ end
 
 function SettingsScreen.build(parent: Instance)
 	local g0 = GEOM.Social
-	local window = Kit.window({ Name = "Settings", Title = "SETTINGS", Icon = "SettingsGear", Width = W, Height = g0.H, HeaderHeight = g0.HH, TitleWidth = 173, StudsTo = 257, Parent = parent, OnClose = function() ModalManager.close() end })
+	local window = Kit.window({ Name = "Settings", Title = "SETTINGS", Icon = "SettingsGear", Width = W, Height = g0.H, HeaderHeight = g0.HH, TitleSize = 30, TitleWidth = 157, StudsTo = 297, Parent = parent, OnClose = function() ModalManager.close() end })
 	local pages = {}
 	for name, build in { Audio = buildAudio, Controls = buildControls, Social = buildSocial } do
 		local page = new("Frame", { Name = name, Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Visible = false, Parent = window.Panel })
@@ -180,27 +184,31 @@ function SettingsScreen.build(parent: Instance)
 	local defs = {
 		{ Key = "Audio", Text = "AUDIO" }, { Key = "Controls", Text = "CONTROLS" }, { Key = "Social", Text = "SOCIAL" },
 	}
-	for i, d in defs do d.X, d.Width = g0.Tabs[i][1] - 3.5, g0.Tabs[i][2] end
+	for i, d in defs do d.X, d.Width = g0.Tabs[i][1] - 4, g0.Tabs[i][2] end
 	-- The window takes each tab's measured size (the references for Audio/Controls are taller than Social).
 	local function layout(key: string)
 		local g = GEOM[key]
 		window.Height = g.H
 		window.Holder.Size = UDim2.fromOffset(W, g.H)
-		window.Header.Size = UDim2.new(1, -7, 0, g.HH - 3.5)
-		local ih = g.HH - 3.5
-		window.Header.Studs.Position = UDim2.fromOffset(window.Header.Studs.Position.X.Offset, math.floor(ih / 2) - 6)
+		window.Header.Size = UDim2.new(1, -8, 0, g.HH - 4)
+		local ih = g.HH - 4
+		-- studs fill the gap between the title and the first tab, which differs per tab
+		window.Header.Studs:Destroy()
+		Kit.studs(window.Header, 58 + 157 + 6, g.Tabs[1][1] - 8, math.floor(ih / 2) - 6)
 		window.Close.Instance.Size = UDim2.fromOffset(g.Close.X, g.Close.Y)
 		for i, d in defs do
 			local b = tabs.buttons[d.Key].Instance
-			b.Position = UDim2.fromOffset(g.Tabs[i][1] - 3.5, (ih - g.TabH) / 2)
+			b.Position = UDim2.fromOffset(g.Tabs[i][1] - 4, math.floor((ih - g.TabH) / 2))
 			b.Size = UDim2.fromOffset(g.Tabs[i][2], g.TabH)
+			b.Content.Label.TextSize = g.TabText
 		end
+		window.Holder.FitScale.Scale = Scale.window(W, g.H)
 	end
 	local function show(key: string)
 		for name, page in pages do page.Visible = name == key end
 		layout(key)
 	end
-	tabs = Kit.tabs(window.Header, defs, 0, g0.TabH, show, 20, "HeaderTab")
+	tabs = Kit.tabs(window.Header, defs, 0, g0.TabH, show, g0.TabText, "HeaderTab")
 	local function sync() for _, f in syncers do f() end end
 	State.changed(sync)
 	sync()

@@ -69,7 +69,7 @@ function Kit.title(props: { [string]: any }): TextLabel
 	props.TextWrapped = false
 	local l = Kit.text(props)
 	if l.Parent then
-		local sh = shadowOf(l, C.TitleShadow, 0, 1.5)
+		local sh = shadowOf(l, C.TitleShadow, 0, 2)
 		new("UIStroke", { Color = C.TitleShadow, Thickness = 1.2, Parent = sh })
 	end
 	new("UIStroke", { Color = C.TitleStroke, Thickness = 1.2, Parent = l })
@@ -241,7 +241,7 @@ export type Window = {
 -- StudsTo (x where the studs end), CloseSize, PanelColor, Parent, OnClose. Content goes in Panel (window coords).
 function Kit.window(props: { [string]: any }): Window
 	local w, h, hh = props.Width, props.Height, props.HeaderHeight or 47
-	local inset = 3.5
+	local inset = 4 -- the reference frame is 3.5 px; Roblox offsets are whole pixels
 	local holder = new("Frame", { Name = props.Name, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(w, h), BackgroundTransparency = 1, Visible = false, Parent = props.Parent })
 	new("UIScale", { Name = "FitScale", Parent = holder })
 	local group = new("CanvasGroup", { Name = "Group", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Visible = false, Parent = holder })
@@ -253,17 +253,14 @@ function Kit.window(props: { [string]: any }): Window
 	for _, k in C.HeaderGradient do table.insert(g, ColorSequenceKeypoint.new(k[1], k[2])) end
 	new("UIGradient", { Name = "Gloss", Rotation = 90, Color = ColorSequence.new(g), Parent = header })
 	new("Frame", { Name = "TopLine", Position = UDim2.fromOffset(2, 0), Size = UDim2.new(1, -4, 0, 1), BackgroundColor3 = C.HeaderTop, BorderSizePixel = 0, Parent = header })
-	-- The kit's own stud tile, faint across the whole header (as the kit asks), under the raised stud row.
-	local tile = new("ImageLabel", { Name = "StudTexture", BackgroundTransparency = 1, Image = Assets.StudTile, ScaleType = Enum.ScaleType.Tile, TileSize = UDim2.fromOffset(Theme.StudTile, Theme.StudTile), Size = UDim2.fromScale(1, 1), Parent = header })
-	tile:SetAttribute("PreviewFile", "assets/textures/square-stud-tile.png")
 	local ih = hh - inset
-	local iconSize = math.min(36, ih - 8)
+	local iconSize = ih - 4
 	Kit.icon(props.Icon, { Name = "TitleIcon", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 9, 0.5, 0), Size = UDim2.fromOffset(iconSize, iconSize), Parent = header })
 	local titleX = props.TitleX or 58
-	local title = Kit.title({ Name = "Title", Text = props.Title, TextSize = props.TitleSize, Position = UDim2.fromOffset(titleX, 0), Size = UDim2.new(0, 10, 1, -2), AutomaticSize = Enum.AutomaticSize.X, Parent = header })
+	local title = Kit.title({ Name = "Title", Text = props.Title, TextSize = props.TitleSize, Position = UDim2.fromOffset(titleX, props.TitleOffsetY or 0), Size = UDim2.new(0, 10, 1, -2), AutomaticSize = Enum.AutomaticSize.X, Parent = header })
 	local titleEnd = titleX + (props.TitleWidth or math.ceil(#props.Title * (props.TitleSize or Theme.Text.Title) * 0.7)) + 10
 	Kit.studs(header, titleEnd, props.StudsTo or (w - 56), math.floor(ih / 2) - 6)
-	local cs = props.CloseSize or Vector2.new(33, 34)
+	local cs = props.CloseSize or Vector2.new(31, 31) -- plus the 1.5 px rim: about 33 outside, as measured
 	local close = Kit.closeButton({ Position = UDim2.new(1, -7, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), Size = UDim2.fromOffset(cs.X, cs.Y), Parent = header, OnClose = nil, OnClick = props.OnClose })
 	local body = new("Frame", { Name = "Body", Position = UDim2.fromOffset(0, hh), Size = UDim2.new(1, 0, 1, -hh), BackgroundTransparency = 1, Parent = panel })
 	return { Holder = holder, Group = group, OpenScale = openScale, Panel = panel, Header = header, Body = body, Close = close, Title = title, Width = w, Height = h }
@@ -298,10 +295,17 @@ end
 function Kit.pill(props: { [string]: any })
 	local w, h = props.Width or 110, props.Height or 31
 	local f = new("Frame", { Name = props.Name or "Pill", Position = props.Position, Size = UDim2.fromOffset(w, h), AnchorPoint = props.AnchorPoint or Vector2.zero, BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = props.Parent }, { Kit.corner(5), Kit.stroke(C.PillRim, 1) })
-	-- two-tone fill: a slightly lighter top half over a darker foot (the reference's glossy pill)
-	new("UIGradient", { Rotation = 90, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromHex("1B2A44")), ColorSequenceKeypoint.new(0.5, Color3.fromHex("1B2A44")), ColorSequenceKeypoint.new(0.51, Color3.fromHex("0B192F")), ColorSequenceKeypoint.new(1, Color3.fromHex("162647")) }), Parent = f })
-	Kit.icon(props.Icon, { Name = "Icon", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, -3, 0.5, 0), Size = UDim2.fromOffset(h + 3, h + 3), Parent = f })
-	local amount = Kit.text({ Name = "Amount", Text = "0", FontFace = Theme.Fonts.Number, TextSize = props.TextSize or 15, Position = UDim2.fromOffset(h + 4, 0), Size = UDim2.new(1, -(h + 4) - 30, 1, 0), TextWrapped = false, Parent = f })
+	if props.Split then
+		-- HUD pills: lighter top, darker foot from about two thirds down (reference 13)
+		new("UIGradient", { Rotation = 90, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromHex("1B2A44")), ColorSequenceKeypoint.new(0.65, Color3.fromHex("1B2A44")), ColorSequenceKeypoint.new(0.67, Color3.fromHex("0B192F")), ColorSequenceKeypoint.new(1, Color3.fromHex("162647")) }), Parent = f })
+	else
+		-- header pills: a smooth gradient (reference 01)
+		new("UIGradient", { Rotation = 90, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromHex("152247")), ColorSequenceKeypoint.new(0.5, Color3.fromHex("162B51")), ColorSequenceKeypoint.new(1, Color3.fromHex("19284C")) }), Parent = f })
+	end
+	local s = h - 6
+	Kit.icon(props.Icon, { Name = "Icon", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 4, 0.5, 0), Size = UDim2.fromOffset(s, s), Parent = f })
+	-- the amount is centred between the icon and the + button
+	local amount = Kit.text({ Name = "Amount", Text = "0", FontFace = Theme.Fonts.Number, TextSize = props.TextSize or 15, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(s + 6, 0), Size = UDim2.new(1, -(s + 6) - 29, 1, 0), TextWrapped = false, Parent = f })
 	local plus = Kit.button({ Name = "Plus", Text = "+", Style = props.PlusStyle or "Plus", TextSize = 24, FontFace = Theme.Fonts.Number, Corner = 3, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -1, 0.5, 0), Size = UDim2.fromOffset(26, h - 2), Parent = f })
 	return { Instance = f, plus = plus, setAmount = function(text: string) amount.Text = text end }
 end

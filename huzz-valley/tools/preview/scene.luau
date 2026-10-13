@@ -9,7 +9,7 @@ player.Parent = Players
 Players.LocalPlayer = player
 local pg = Instance.new("PlayerGui"); pg.Parent = player
 if cfg.SCALE then workspace:SetAttribute("UIPreviewScale", tonumber(cfg.SCALE)) end
-if cfg.ROUND then workspace:SetAttribute("NextRoundAt", os.time() + tonumber(cfg.ROUND)) end
+if cfg.ROUND then workspace:SetAttribute("NextRoundAt", workspace:GetServerTimeNow() + tonumber(cfg.ROUND) + 0.5) end
 __runScript(game.ServerScriptService.HuzzServer.Bootstrap)
 task.wait(0.1)
 __fireOn(Players, "PlayerAdded", player)

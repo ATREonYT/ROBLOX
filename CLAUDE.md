@@ -47,4 +47,8 @@ This file loads in every session, so keep it short. Each game folder has its own
   - the checks assert the rules;
   - the HTML renderer draws exported ScreenGuis next to the reference.
   - Lune 0.10.5 comes from the lune-org GitHub releases. Playwright and Chromium are already installed in cloud sessions.
+- **Roblox UI rules the preview won't show you:**
+  - UDim offsets are whole numbers, so never use half pixels;
+  - ClipsDescendants clips square and ignores UICorner, so round the image itself;
+  - a ScrollingFrame clips its children's outside UIStroke rims, so give them padding.
 - Cloud sessions can't reach Studio. Only the owner can confirm the final look and the real purchase prompts.

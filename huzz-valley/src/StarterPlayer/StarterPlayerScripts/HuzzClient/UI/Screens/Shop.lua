@@ -22,6 +22,7 @@ local Shop = {}
 
 local W, H = 701, 315
 local BODY_Y, BODY_X, BODY_W = 94, 18, 668
+local RIM = 4 -- padding inside the scrolling body so card rims (and the cosmetics cards' -2 x) aren't clipped
 
 local pending: { [string]: boolean } = {}
 local livePrice: { [string]: number } = {}
@@ -84,7 +85,7 @@ end
 local function buyButton(parent: Instance, p, props)
 	local b = Kit.button({ Name = "Buy", Parent = parent, Position = props.Position, Size = props.Size, AnchorPoint = props.AnchorPoint, TextSize = props.TextSize or T.Button, IconAfter = true, IconSize = props.IconSize or 22, Gap = 6, Corner = props.Corner })
 	local textSize = props.TextSize or T.Button
-	local badge = Kit.text({ Name = "RobuxBadge", Text = Format.RobuxMark, FontFace = Theme.Fonts.Number, TextSize = math.floor(textSize * 1.5), TextColor3 = C.RobuxBadge, TextXAlignment = Enum.TextXAlignment.Center, AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), TextWrapped = false, LayoutOrder = 1, Parent = b.Instance:FindFirstChild("Content") })
+	local badge = Kit.text({ Name = "RobuxBadge", Text = Format.RobuxMark, FontFace = Theme.Fonts.Number, TextSize = math.floor(textSize * (props.BadgeScale or 1.5)), TextColor3 = C.RobuxBadge, TextXAlignment = Enum.TextXAlignment.Center, AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), TextWrapped = false, LayoutOrder = 1, Parent = b.Instance:FindFirstChild("Content") })
 	local icon: ImageLabel? = nil
 	local function refresh()
 		if not b.Instance.Parent then return end
@@ -108,9 +109,13 @@ end
 
 -- Product picture: the kit's own art for this product, filling the block at the left of a row/card. The rounding
 -- is on the image itself (ClipsDescendants clips square in Roblox, so a rounded parent alone would show corners).
+-- Only the left corners are rounded: a square copy, clipped to the right of the corner radius, covers the right ones.
 local function art(parent: Instance, p, size: Vector2)
+	local r = 4
 	local f = new("Frame", { Name = "Art", Size = UDim2.fromOffset(size.X, size.Y), BackgroundTransparency = 1, Parent = parent })
-	Kit.corner(4).Parent = Kit.art(p.Art, { Name = "Picture", Size = UDim2.fromScale(1, 1), Parent = f })
+	Kit.corner(r).Parent = Kit.art(p.Art, { Name = "Picture", Size = UDim2.fromScale(1, 1), Parent = f })
+	local right = new("Frame", { Name = "Right", Position = UDim2.fromOffset(r, 0), Size = UDim2.new(1, -r, 1, 0), BackgroundTransparency = 1, ClipsDescendants = true, Parent = f })
+	Kit.art(p.Art, { Name = "Picture", Position = UDim2.fromOffset(-r, 0), Size = UDim2.fromOffset(size.X, size.Y), Parent = right })
 	return f
 end
 
@@ -131,15 +136,15 @@ local function buildPasses(body: Frame)
 		art(row, p, Vector2.new(171, h))
 		Kit.name({ Name = "Name", Text = p.Name, TextSize = T.Name, Position = UDim2.fromOffset(183, 9), Size = UDim2.fromOffset(150, 32), Parent = row })
 		Kit.text({ Name = "Blurb", Text = p.Blurb, TextSize = T.Blurb, Position = UDim2.fromOffset(183, 44), Size = UDim2.fromOffset(140, 42), TextYAlignment = Enum.TextYAlignment.Top, LineHeight = 1.0, Parent = row })
-		new("Frame", { Name = "Divider", Position = UDim2.fromOffset(327, 22), Size = UDim2.fromOffset(2, 54), BackgroundColor3 = C.Divider, BorderSizePixel = 0, Parent = row })
-		local bx = p.Giftable and -10 or 0 -- rows with a gift button start their benefits 10 px further left
+		new("Frame", { Name = "Divider", Position = UDim2.fromOffset(327, 15), Size = UDim2.fromOffset(2, h - 29), BackgroundColor3 = C.Groove, BorderSizePixel = 0, Parent = row })
+		local bx = p.Giftable and -10 or 0 -- rows with a gift button start their benefit text 10 px further left
 		for j, b in p.Benefits or {} do
-			local by = 19 + (j - 1) * 33
-			Kit.icon(b.Icon, { Name = "BenefitIcon" .. j, Position = UDim2.fromOffset(343 + bx, by), Size = UDim2.fromOffset(26, 26), Parent = row })
+			local by = if i == 1 then 19 + (j - 1) * 33 else 25 + (j - 1) * 34
+			Kit.icon(b.Icon, { Name = "BenefitIcon" .. j, Position = UDim2.fromOffset(343, by), Size = UDim2.fromOffset(26, 26), Parent = row })
 			Kit.text({ Name = "Benefit" .. j, Text = b.Text, TextSize = T.Label, Position = UDim2.fromOffset(392 + bx, by), Size = UDim2.fromOffset(112, 26), TextWrapped = false, Parent = row })
 		end
 		if p.Giftable then
-			buyButton(row, p, { Position = UDim2.new(1, -63, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), Size = UDim2.fromOffset(103, 51), TextSize = 25 })
+			buyButton(row, p, { Position = UDim2.new(1, -63, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), Size = UDim2.fromOffset(103, 51), TextSize = 27, BadgeScale = 1.7 })
 			-- Fully purple gift button with the kit's gift art centred at its normal size (the gift itself still says
 			-- "unavailable" until the Gift Picker exists).
 			local gift = Kit.button({ Name = "Gift", Style = "Gift", Text = "", Position = UDim2.new(1, -11, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), Size = UDim2.fromOffset(44, 51), Parent = row })
@@ -155,14 +160,14 @@ end
 
 -- Cosmetics: 2 x 2 cards (reference 07).
 local function buildCosmetics(body: Frame)
-	local cw, ch = 321, 101
+	local cw, ch = 331, 101
 	for i, p in Products.Cosmetics do
 		local col, rowN = (i - 1) % 2, (i - 1) // 2
-		local c = card(body, p.Key, Vector2.new(3 + col * (cw + 10), rowN * (ch + 8)), Vector2.new(cw, ch))
+		local c = card(body, p.Key, Vector2.new(-2 + col * (cw + 10), rowN * (ch + 8)), Vector2.new(cw, ch))
 		art(c, p, Vector2.new(160, ch))
-		Kit.name({ Name = "Name", Text = p.Name, TextSize = 18, Position = UDim2.fromOffset(170, 7), Size = UDim2.fromOffset(cw - 178, 24), Parent = c })
-		Kit.text({ Name = "Blurb", Text = p.Blurb, TextSize = 14, Position = UDim2.fromOffset(170, 30), Size = UDim2.fromOffset(cw - 178, 32), TextYAlignment = Enum.TextYAlignment.Top, Parent = c })
-		buyButton(c, p, { Position = UDim2.new(0, 170, 1, -8), AnchorPoint = Vector2.new(0, 1), Size = UDim2.fromOffset(cw - 178, 30), TextSize = 17, IconSize = 18 })
+		Kit.name({ Name = "Name", Text = p.Name, TextSize = 17, Position = UDim2.fromOffset(170, 6), Size = UDim2.fromOffset(cw - 178, 22), Parent = c })
+		Kit.text({ Name = "Blurb", Text = p.Blurb, TextSize = 14, LineHeight = 0.9, Position = UDim2.fromOffset(170, 31), Size = UDim2.fromOffset(cw - 178, 28), TextYAlignment = Enum.TextYAlignment.Top, Parent = c })
+		buyButton(c, p, { Position = UDim2.new(0, 170, 1, -8), AnchorPoint = Vector2.new(0, 1), Size = UDim2.fromOffset(cw - 178, 30), TextSize = 19, IconSize = 22 })
 	end
 end
 
@@ -206,7 +211,7 @@ local function buildCoins(body: Frame)
 		shadow.Name, shadow.TextColor3, shadow.TextTransparency, shadow.Position = "BlurbShadow", C.TextShadow, 0.5, blurb.Position + UDim2.fromOffset(0, 1)
 		shadow.Parent = c
 		blurb.ZIndex = 2
-		local b = buyButton(c, p, { Position = UDim2.fromOffset(d.ButtonX, 177), Size = UDim2.fromOffset(d.ButtonW, 35), TextSize = 18, Style = "CoinAction", Corner = 4 })
+		local b = buyButton(c, p, { Position = UDim2.fromOffset(d.ButtonX, 175), Size = UDim2.fromOffset(d.ButtonW, 35), TextSize = 20, Style = "CoinAction", Corner = 4 })
 		-- the reference's 1 px lighter bevel just inside the dark rim, all the way round
 		new("Frame", { Name = "Bevel", BackgroundTransparency = 1, Position = UDim2.fromOffset(1, 1), Size = UDim2.new(1, -2, 1, -2), ZIndex = b.Instance.ZIndex, Parent = b.Instance }, { Kit.corner(2), Kit.stroke(C.CoinBuyBevel, 1) })
 	end
@@ -215,13 +220,15 @@ end
 local BUILD = { Passes = buildPasses, Cosmetics = buildCosmetics, Coins = buildCoins }
 
 function Shop.build(parent: Instance)
-	local window = Kit.window({ Name = "Shop", Title = "SHOP", Icon = "ShopCart", Width = W, Height = H, TitleWidth = 101, StudsTo = 352, Parent = parent, OnClose = function() ModalManager.close() end })
+	local window = Kit.window({ Name = "Shop", Title = "SHOP", Icon = "ShopCart", Width = W, Height = H, TitleX = 63, TitleOffsetY = 3, TitleWidth = 101, StudsTo = 352, Parent = parent, OnClose = function() ModalManager.close() end })
 	local panel, header = window.Panel, window.Header
 	local coins = Kit.pill({ Name = "Coins", Icon = "CurrencyCoin", Position = UDim2.fromOffset(357, 6), Width = 121, Parent = header })
 	local gems = Kit.pill({ Name = "Gems", Icon = "CurrencyGem", Position = UDim2.fromOffset(493, 6), Width = 108, Parent = header })
 	Kit.studs(header, 612, 650, 16)
 
-	local body = new("ScrollingFrame", { Name = "Products", Position = UDim2.fromOffset(BODY_X, BODY_Y), Size = UDim2.fromOffset(BODY_W + 6, H - BODY_Y - 10), BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 4, ScrollBarImageColor3 = C.Border, CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y, ScrollingDirection = Enum.ScrollingDirection.Y, Parent = panel })
+	local body = new("ScrollingFrame", { Name = "Products", Position = UDim2.fromOffset(BODY_X, BODY_Y), Size = UDim2.fromOffset(BODY_W + 6, H - BODY_Y - 10), BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 4, ScrollBarImageColor3 = C.RowBorder, CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y, ScrollingDirection = Enum.ScrollingDirection.Y, Parent = panel })
+	-- The cards' rims are drawn outside the cards, and a ScrollingFrame clips square: give them room on every side.
+	Kit.pad(RIM, RIM, RIM, RIM).Parent = body
 
 	local tabs
 	local function show(key: string)
@@ -229,9 +236,9 @@ function Shop.build(parent: Instance)
 		for _, ch in body:GetChildren() do if ch:IsA("GuiObject") then ch:Destroy() end end
 		body.CanvasPosition = Vector2.zero
 		if key == "Coins" then -- the coin cards follow reference 08's own margins
-			body.Position, body.Size = UDim2.fromOffset(COIN_BODY.X, COIN_BODY.Y), UDim2.fromOffset(W - 2 * COIN_BODY.X, COIN_BODY.H)
+			body.Position, body.Size = UDim2.fromOffset(COIN_BODY.X - RIM, COIN_BODY.Y - RIM), UDim2.fromOffset(W - 2 * COIN_BODY.X + 2 * RIM, COIN_BODY.H + 2 * RIM)
 		else
-			body.Position, body.Size = UDim2.fromOffset(BODY_X, BODY_Y), UDim2.fromOffset(BODY_W + 6, H - BODY_Y - 10)
+			body.Position, body.Size = UDim2.fromOffset(BODY_X - RIM, BODY_Y - RIM), UDim2.fromOffset(BODY_W + 6 + 2 * RIM, H - BODY_Y - 10 + 2 * RIM)
 		end
 		BUILD[key](body)
 	end

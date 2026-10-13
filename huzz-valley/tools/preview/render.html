@@ -29,7 +29,8 @@ function measure(t, px) { const f = fontOf(t.font); ctx.font = `${f.weight} ${px
 
 function sized(n, pw, ph, k) {
   const s = (n.mods && n.mods.scale) || 1, kk = k * s;
-  let w = pw * n.size[0] + n.size[1] * kk, h = ph * n.size[2] + n.size[3] * kk;
+  // Roblox stores UDim offsets as whole numbers, so round them like it does.
+  let w = pw * n.size[0] + Math.round(n.size[1]) * kk, h = ph * n.size[2] + Math.round(n.size[3]) * kk;
   if (n.text && (n.auto === 'X' || n.auto === 'XY')) {
     const pad = n.mods.pad ? (n.mods.pad[0][1] + n.mods.pad[1][1]) * kk : 0;
     w = Math.max(w, measure(n.text, n.text.size * kk) + pad + 1);
@@ -105,8 +106,8 @@ function draw(n, parentEl, rect, k, parentAbs) {
   } else {
     for (const p of placed) {
       const c = p.c;
-      p.x = cx + cw * c.pos[0] + c.pos[1] * kk - c.anchor[0] * p.w;
-      p.y = cy + ch * c.pos[2] + c.pos[3] * kk - c.anchor[1] * p.h;
+      p.x = cx + cw * c.pos[0] + Math.round(c.pos[1]) * kk - c.anchor[0] * p.w;
+      p.y = cy + ch * c.pos[2] + Math.round(c.pos[3]) * kk - c.anchor[1] * p.h;
     }
   }
   placed.map((p, i) => ({ p, i })).sort((a, b) => (a.p.c.z - b.p.c.z) || (a.i - b.i))

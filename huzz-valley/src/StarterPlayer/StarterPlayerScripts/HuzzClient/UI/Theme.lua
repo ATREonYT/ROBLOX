@@ -34,7 +34,7 @@ Theme.Colors = {
 	Ink = hex("141B33"),
 	Pill = hex("16264A"), PillRim = hex("1B2355"),
 	Plus = hex("5B54C4"), PlusTop = hex("6362C3"), PlusRim = hex("1E1C60"), HudPlus = hex("4F53B5"),
-	Divider = hex("4A6488"), CellDivider = hex("132B43"),
+	Divider = hex("4A6488"), Groove = hex("16273F"), CellRow = hex("18334E"), IconCell = hex("12293F"), CellDivider = hex("132B43"),
 	Track = hex("315177"), TrackFill = hex("8482F5"), TrackRim = hex("08172B"), Knob = hex("C6C3FC"), KnobRim = hex("1A2560"),
 	KeyBox = hex("172E48"), KeyBoxRim = hex("365984"), PercentBox = hex("0F253A"),
 	MenuRow = hex("172E48"), MenuRowTop = hex("234170"),
@@ -62,10 +62,9 @@ Theme.Fonts = {
 }
 
 -- Text sizes (reference px).
-Theme.Text = { Title = 33, Tab = 19, Name = 23, Blurb = 17, Label = 14, Button = 20, Small = 11, Row = 17 }
+Theme.Text = { Title = 33, Tab = 18, Name = 21, Blurb = 17, Label = 14, Button = 20, Small = 11, Row = 17 }
 
 Theme.Corner = 3
-Theme.StudTile = 24 -- reference px per stud tile (the texture has one bevelled stud per tile)
 Theme.Motion = { Hover = 0.10, Press = 0.07, Open = 0.20, Close = 0.14, Tab = 0.12 }
 
 return Theme

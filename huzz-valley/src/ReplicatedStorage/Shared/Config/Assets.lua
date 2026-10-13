@@ -64,9 +64,6 @@ Assets.Art = {
 	Vip = "",            -- assets/art/vip.png
 }
 
--- The kit's square stud tile (design/textures/square-stud-tile.png), tiled along the purple headers.
-Assets.StudTile = "" -- assets/textures/square-stud-tile.png
-
 -- "Avatar" is not an uploaded image: rows that use it show the viewing player's own avatar (Roblox thumbnail).
 function Assets.icon(name: string): string
 	return (Assets.Icons :: any)[name] or ""

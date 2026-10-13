@@ -15,7 +15,7 @@ MainMenu.Entries = {
 	{ Key = "Shop", Text = "Shop", Icon = "ShopCart" },
 	{ Key = "Index", Text = "Index", Icon = "CollectionBook" },
 	{ Key = "Tiers", Text = "Tiers", Icon = "TierCrown" },
-	{ Key = "Dances", Text = "Dances", Icon = "DancesNote" },
+	{ Key = "Dances", Text = "Dances", Icon = "AudioMusic" },
 	{ Key = "Progression", Text = "Progression", Icon = "RewardsTrophy" },
 	{ Key = "Settings", Text = "Settings", Icon = "SettingsGear" },
 }
@@ -26,15 +26,15 @@ function MainMenu.go(key: string, arg: any?)
 end
 
 function MainMenu.build(parent: Instance)
-	local window = Kit.window({ Name = "Menu", Title = "MENU", Icon = "MainMenuLines", Width = W, Height = H, HeaderHeight = 36, TitleX = 40, TitleSize = 26, TitleWidth = 84, StudsTo = 158, CloseSize = Vector2.new(30, 30), PanelColor = C.MenuPanel, Parent = parent, OnClose = function() ModalManager.close() end })
+	local window = Kit.window({ Name = "Menu", Title = "MENU", Icon = "MainMenuLines", Width = W, Height = H, HeaderHeight = 40, TitleX = 46, TitleSize = 26, TitleWidth = 84, StudsTo = 158, CloseSize = Vector2.new(30, 30), PanelColor = C.MenuPanel, Parent = parent, OnClose = function() ModalManager.close() end })
 	window.Holder.AnchorPoint = Vector2.new(0, 0)
 	window.Holder.Position = UDim2.fromScale(0.04, 0.04) -- reference 12: top-left at (31, 13) of the 768 x 329 page
 	for i, e in MainMenu.Entries do
-		local b = Kit.button({ Name = e.Key, Style = "MenuRow", Text = "", Position = UDim2.fromOffset(9, 44.5 + (i - 1) * 37.6), Size = UDim2.fromOffset(W - 17, 34.5), Corner = 3, Parent = window.Panel })
+		local b = Kit.button({ Name = e.Key, Style = "MenuRow", Text = "", Position = UDim2.fromOffset(9, 45 + (i - 1) * 38), Size = UDim2.fromOffset(W - 17, 34), Corner = 3, Parent = window.Panel })
 		b.Instance:FindFirstChild("Content"):Destroy()
 		Kit.icon(e.Icon, { Name = "Icon", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 10, 0.5, 0), Size = UDim2.fromOffset(30, 30), Parent = b.Instance })
-		Kit.text({ Name = "Label", Text = e.Text, FontFace = Theme.Fonts.Name, TextSize = 16, Position = UDim2.fromOffset(48, 0), Size = UDim2.new(1, -72, 1, 0), TextWrapped = false, Parent = b.Instance })
-		Kit.text({ Name = "Chevron", Text = ">", FontFace = Theme.Fonts.Heading, TextSize = 22, TextColor3 = C.Text, TextXAlignment = Enum.TextXAlignment.Right, Position = UDim2.new(1, -24, 0, 0), Size = UDim2.fromOffset(14, 34), Parent = b.Instance })
+		Kit.text({ Name = "Label", Text = e.Text, FontFace = Theme.Fonts.Name, TextSize = 15, Position = UDim2.fromOffset(48, 0), Size = UDim2.new(1, -72, 1, 0), TextWrapped = false, Parent = b.Instance })
+		Kit.text({ Name = "Chevron", Text = ">", FontFace = Theme.Fonts.Tab, TextSize = 28, TextColor3 = C.Text, TextXAlignment = Enum.TextXAlignment.Right, Position = UDim2.new(1, -24, 0, 0), Size = UDim2.fromOffset(14, 34), Parent = b.Instance })
 		b.onClick(function() MainMenu.go(e.Key) end)
 		if i == 1 then window.FirstRow = b.Instance end
 	end
