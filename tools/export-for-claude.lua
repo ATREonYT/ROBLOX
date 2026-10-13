@@ -19,7 +19,7 @@ for _,name in ipairs(svcs) do
   end
  end
 end
-local text="HOOD EXPORT: "..n.." scripts"..table.concat(out).."\n\n===== OBJECT TREE =====\n"..table.concat(tree,"\n")
+local text="GAME EXPORT: "..n.." scripts"..table.concat(out).."\n\n===== OBJECT TREE =====\n"..table.concat(tree,"\n")
 local eq="==" while text:find("]"..eq.."]",1,true) do eq=eq.."=" end
 local folder=Instance.new("Folder") folder.Name="ClaudeExport" folder.Parent=ss
 local parts=0

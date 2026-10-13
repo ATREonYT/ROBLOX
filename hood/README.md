@@ -58,7 +58,7 @@ folder. Two things to know for this game:
 
 ## Sending Claude a fresh copy
 
-`tools/export-for-claude.lua` is the command that made this copy. Paste
+[`tools/export-for-claude.lua`](../tools/export-for-claude.lua) is the command that made this copy. Paste
 it into Studio's **Command Bar** and press Enter, then copy each
 `ServerStorage → ClaudeExport → PartN` into the chat. Delete the
 `ClaudeExport` folder afterwards — it never runs in your game.

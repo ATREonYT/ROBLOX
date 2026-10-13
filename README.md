@@ -11,3 +11,11 @@ Games built together with Claude, one at a time.
 
 Each game folder has its own README with step-by-step setup instructions —
 no coding experience needed.
+
+## Sending Claude a game from Studio
+
+[`tools/export-for-claude.lua`](tools/export-for-claude.lua) works for any
+place. Open the place in Studio, paste the whole file into **View →
+Command Bar**, and press Enter. Then copy each
+`ServerStorage → ClaudeExport → PartN` into the chat. Delete the
+`ClaudeExport` folder afterwards — it never runs in your game.
