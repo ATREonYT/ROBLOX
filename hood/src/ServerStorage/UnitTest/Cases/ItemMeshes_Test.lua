@@ -192,4 +192,153 @@ return function(t)
 			e.truthy(m:FindFirstChild('RedRocket_L') and m:FindFirstChild('RedRocket_R'))
 		end)
 	end)
+
+	-- (brief 32) the user's blocky designs: every packaged id, the fitting rule, textures/glow/collision, guns
+	t.test('brief 32: the package ids are all in ItemMeshes.Design with sane sizes', function()
+		local Guns = require(RS.Shared.Config.Guns)
+		local Products = require(RS.Shared.Config.Products)
+		local D = IM.Design
+		local n = 0
+		for id, d in D do
+			n += 1
+			local s = d.Max - d.Min
+			e.truthy(s.X > 0.2 and s.Y > 0.2 and s.Z > 0.2 and s.Magnitude < 40)
+			e.truthy(d.Collision == 'solid' or d.Collision == 'prop' or d.Collision == 'gun')
+			if id:match('^Gun_') then
+				e.equal(d.Collision, 'gun')
+				e.truthy(d.Muzzle and d.Muzzle.Z <= d.Min.Z + 0.05) -- the muzzle is the front (-Z) end
+				e.truthy(d.Min.Z < 0 and d.Max.Z > 0 and d.Min.Y < 0) -- the grip is the origin
+			else
+				e.near(d.Min.Y, 0, 1e-3) -- props stand on their bottom centre
+				e.near((d.Min.X + d.Max.X) / 2, 0, 0.05)
+			end
+		end
+		e.equal(n, 57)
+		for _, g in Guns.List do
+			e.truthy(D['Gun_' .. g.Id] and not D['Gun_' .. g.Id].Exclusive)
+		end
+		for _, x in { 'NeonViper', 'GalaxyRay', 'InfernoCannon', 'Frostbite', 'RoyalCrown' } do
+			e.truthy(D['Gun_' .. x] and D['Gun_' .. x].Exclusive)
+			e.falsy(Guns.ById[x]) -- packaged only: not a game gun (yet)
+		end
+		local pads = 0
+		for _, p in Products.Catalog do
+			if type(p) == 'table' and p.Kind == 'Pass' and D['Pad_' .. tostring(p.Key)] then pads += 1 end
+		end
+		e.equal(pads, 10)
+		for _, id in { 'Pad_Base', 'Gate_Stage1', 'Board_Boxes', 'Pedestal_Box', 'Stand_Guns', 'Board_Leaderboard', 'Chest_Codes',
+			'Chest_GroupReward', 'Stand_SpinWheel', 'Portal_World2', 'Spawn_Pad', 'Target_Dummy', 'Scn_Tree_1', 'Scn_Tree_2',
+			'Scn_Bush_1', 'Scn_Cliff_Block', 'Scn_Building_1', 'Scn_Building_2', 'Scn_Building_3', 'Scn_Building_4', 'Scn_Hydrant' } do
+			e.truthy(D[id])
+		end
+		e.near(IM.size('Scn_Cliff_Block').X, 16, 1e-3)
+		e.near(IM.size('Tree_1').Y, D.Scn_Tree_1.Max.Y, 1e-6) -- the user's file name is an alias
+		e.truthy(IM.size('GunStand_AK') == IM.size('Gun_AK'))
+		e.near(IM.muzzle('Gun_AK').Z, D.Gun_AK.Muzzle.Z, 1e-6)
+	end)
+
+	t.test('brief 32: the fitting rule keeps proportions (box, largest side, design size)', function()
+		local ds = IM.size('Scn_Building_2')
+		local k, got = IM.fit('Scn_Building_2', V(10, 100, 100))
+		e.near(got.X, 10, 1e-3)
+		e.near(got.Y / got.X, ds.Y / ds.X, 1e-4)
+		local k2, got2 = IM.fit('Scn_Building_2', 11)
+		e.near(math.max(got2.X, got2.Y, got2.Z), 11, 1e-3)
+		e.truthy(k2 > 0 and k > 0)
+		local k3, got3 = IM.fit('Scn_Building_2')
+		e.equal(k3, 1)
+		e.truthy(got3 == ds)
+	end)
+
+	-- a fake import of new-style items: textured bodies, glow parts, the gate's Colliders, a gun
+	local function newFolder()
+		local f = Instance.new('Folder')
+		f.Name = 'HoodItemMeshes'
+		local gate = Instance.new('Model')
+		gate.Name = 'Gate_Stage1'
+		gate:SetAttribute('Collision', 'solid')
+		meshPart('Gate_Stage1', V(20.2, 14.17, 4.7) * K, OFF + V(0, 7.085, -0.15) * K, gate)
+		local c = meshPart('Collider', V(5.7, 10, 4.7) * K, OFF + V(7.25, 5, -0.15) * K, gate)
+		c.Transparency = 1
+		gate.Parent = f
+		local b = Instance.new('Model')
+		b.Name = 'Scn_Building_1'
+		local d = IM.Design.Scn_Building_1
+		meshPart('Scn_Building_1', (d.Max - d.Min) * K, OFF + (d.Max + d.Min) / 2 * K, b)
+		b.Parent = f
+		local pad = Instance.new('Model')
+		pad.Name = 'Pad_Base'
+		meshPart('Pad_Base', V(8.12, 1.385, 8.12) * K, OFF + V(0, 0.6925, 0) * K, pad)
+		meshPart('Pad_Base_Glow_2FD6FF', V(6.66, 0.2, 6.66) * K, OFF + V(0, 0.99, 0) * K, pad)
+		pad.Parent = f
+		local vip = Instance.new('Model')
+		vip.Name = 'Pad_VIP'
+		local dv = IM.Design.Pad_VIP
+		meshPart('Pad_VIP', (dv.Max - dv.Min) * K, OFF + (dv.Max + dv.Min) / 2 * K, vip)
+		vip.Parent = f
+		local gun = Instance.new('Model')
+		gun.Name = 'Gun_AK'
+		local dg = IM.Design.Gun_AK
+		gun:SetAttribute('DesignMin', dg.Min)
+		gun:SetAttribute('DesignMax', dg.Max)
+		gun:SetAttribute('Muzzle', dg.Muzzle)
+		gun:SetAttribute('Collision', 'gun')
+		meshPart('Gun_AK', (dg.Max - dg.Min) * K, OFF + (dg.Max + dg.Min) / 2 * K, gun)
+		gun.Parent = f
+		return f
+	end
+
+	t.test('brief 32: glow is Neon in its colour, solid items collide (through Colliders when they have them), props do not', function()
+		with(newFolder(), function()
+			local pad = IM.place('Pad_Base', CFrame.new(0, 3, 0), nil, nil, nil)
+			local lo, hi = bounds(pad)
+			e.near(hi.X - lo.X, 8.12, 1e-3) -- no size: the design size
+			e.near(lo.Y, 3, 1e-3)
+			local glow = pad:FindFirstChild('Pad_Base_Glow_2FD6FF')
+			e.truthy(glow.Material == Enum.Material.Neon and glow.Color == Color3.fromHex('2FD6FF') and not glow.CanCollide)
+			e.truthy(pad.Pad_Base.CanCollide and pad.Pad_Base.Anchored) -- a slab players stand on
+			local gate = IM.place('Gate_Stage1', CFrame.new(), V(100, 100, 100), nil, nil)
+			e.falsy(gate.Gate_Stage1.CanCollide) -- the opening stays walkable
+			e.truthy(gate.Collider.CanCollide and gate.Collider.Transparency == 1)
+			local glo, ghi = bounds(gate) -- (Colliders are invisible: the visible box)
+			e.near(math.max(ghi.X - glo.X, ghi.Y - glo.Y, ghi.Z - glo.Z), 100, 1e-3)
+			e.near(gate.Collider.Size.Y, 10 * 100 / 20.2, 1e-3)
+			local b = IM.place('Building_1', CFrame.new(), 30, nil, nil) -- (the user's file name)
+			e.truthy(b and b.Scn_Building_1.CanCollide)
+			local v = IM.place('Pad_VIP', CFrame.new(), 4, nil, nil)
+			e.falsy(v.Pad_VIP.CanCollide or v.Pad_VIP.CanTouch or v.Pad_VIP.CanQuery)
+		end)
+	end)
+
+	t.test('brief 32: guns use the mesh when imported (grip at the Handle, muzzle forward), Parts otherwise', function()
+		local GM = require(RS.Shared.Models.GunModels)
+		local GT = require(RS.Shared.GunTool)
+		with(Instance.new('Folder'), function()
+			local m = GM.build('AK', 1)
+			e.falsy(m:GetAttribute('Mesh'))
+			local tool = GT.build('AK')
+			e.falsy(tool:GetAttribute('Mesh'))
+			e.near(tool.Handle.Muzzle.CFrame.Position.Z, GM.Meta.AK.Muzzle.Z, 1e-3)
+		end)
+		with(newFolder(), function()
+			local m = GM.build('AK', 2)
+			e.truthy(m:GetAttribute('Mesh'))
+			e.truthy(m.PrimaryPart and m.PrimaryPart.Name == 'Handle' and m.PrimaryPart.CFrame.Position.Magnitude < 1e-6)
+			local body = m:FindFirstChild('Gun_AK')
+			e.truthy(body and body.Massless and not body.CanCollide)
+			local lo, hi = bounds(m)
+			local dg = IM.Design.Gun_AK
+			e.near(lo.Z, dg.Min.Z * 2, 1e-3) -- design studs x scale, grip at the origin
+			e.near(hi.Y, dg.Max.Y * 2, 1e-3)
+			e.near(m:GetAttribute('Muzzle').Z, dg.Muzzle.Z * 2, 1e-4)
+			e.falsy(GM.build('AK', 1, true):GetAttribute('Mesh')) -- partsOnly
+			e.falsy(GM.build('Pistol', 1):GetAttribute('Mesh')) -- no mesh for it: Parts
+			local tool = GT.build('AK')
+			e.truthy(tool:GetAttribute('Mesh') and tool.Handle.Name == 'Handle')
+			e.near(tool.Handle.Muzzle.CFrame.Position.Z, dg.Muzzle.Z, 1e-3)
+			for _, p in tool:GetDescendants() do
+				if p:IsA('BasePart') then e.truthy(not p.Anchored and p.Massless and not p.CanCollide) end
+			end
+		end)
+	end)
 end

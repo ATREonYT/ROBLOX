@@ -585,7 +585,48 @@ local function makePart(row, s: number): BasePart
 	return part
 end
 
-function M.build(id: string, scale: number?): Model
+-- (brief 32) The user's blocky gun designs as real meshes: when ReplicatedStorage.HoodItemMeshes has Gun_<id> (the one-time
+-- Studio import, hood/art/MESH_IMPORT.md), build() returns that mesh in the same contract (an invisible Handle at the grip
+-- as PrimaryPart and pivot, muzzle toward -Z, the design's own stud size times `scale`, attribute Muzzle = the muzzle
+-- point at that scale, attribute Mesh = true). build(id, scale, true) always gives these Parts (the fallback).
+local ItemMeshes
+local function meshGun(id: string, s: number): Model?
+	if ItemMeshes == nil then
+		local ok, m = pcall(function()
+			local node = script.Parent.Parent:FindFirstChild('ItemMeshes')
+			return node and require(node)
+		end)
+		ItemMeshes = ok and type(m) == 'table' and m or false
+	end
+	if not (ItemMeshes and ItemMeshes.has('Gun_' .. id)) then return nil end
+	local ok, model = pcall(ItemMeshes.build, 'Gun_' .. id, CFrame.identity, s)
+	if not ok or not model then return nil end
+	model.Name = id
+	local root = Instance.new('Part')
+	root.Name = 'Handle'
+	root.Size = Vector3.new(0.2, 0.2, 0.2) * s
+	root.CFrame = CFrame.new()
+	root.Transparency = 1
+	root.CastShadow = false
+	root.Anchored = true
+	root.CanCollide = false
+	root.CanTouch = false
+	root.CanQuery = false
+	root.Parent = model
+	model.PrimaryPart = root
+	local muzzle = ItemMeshes.muzzle and ItemMeshes.muzzle('Gun_' .. id)
+	model:SetAttribute('ModelId', id)
+	model:SetAttribute('Scale', s)
+	model:SetAttribute('Mesh', true)
+	model:SetAttribute('Muzzle', (muzzle or (M.Meta[id] and M.Meta[id].Muzzle) or Vector3.new(0, 0.3, -1)) * s)
+	return model
+end
+
+function M.build(id: string, scale: number?, partsOnly: boolean?): Model
+	if not partsOnly then
+		local mesh = meshGun(id, scale or 1)
+		if mesh then return mesh end
+	end
 	local rows = DATA[id]
 	assert(rows, 'GunModels: unknown id ' .. tostring(id))
 	local s = scale or 1

@@ -50,9 +50,13 @@ function GunTool.build(id: string)
 	tool:SetAttribute('GunId', gun.Id)
 	local scale = GunTool.scale(gun.Id)
 	local handle
+	local meshMuzzle = nil
 	if M then
+		-- (brief 32) M.build gives the user's blocky gun mesh when it is imported (same grip origin, muzzle -Z), else Parts
 		local model = M.weld(M.build(gun.Id, scale))
 		handle = model.PrimaryPart
+		meshMuzzle = model:GetAttribute('Mesh') and model:GetAttribute('Muzzle') or nil
+		if meshMuzzle then tool:SetAttribute('Mesh', true) end
 		for _, child in model:GetChildren() do child.Parent = tool end
 		model:Destroy()
 		if M.Images and M.Images[gun.Id] and M.Images[gun.Id] ~= '' then tool.TextureId = M.Images[gun.Id] end
@@ -72,11 +76,16 @@ function GunTool.build(id: string)
 	local meta = M and M.Meta and M.Meta[gun.Id]
 	local muzzle = Instance.new('Attachment')
 	muzzle.Name = 'Muzzle'
-	muzzle.CFrame = CFrame.new((meta and meta.Muzzle or Vector3.new(0, 0.1, -0.7)) * scale)
+	if typeof(meshMuzzle) == 'Vector3' then
+		muzzle.CFrame = CFrame.new(meshMuzzle) -- (already at `scale`)
+	else
+		muzzle.CFrame = CFrame.new((meta and meta.Muzzle or Vector3.new(0, 0.1, -0.7)) * scale)
+	end
 	muzzle.Parent = handle
 	local eject = Instance.new('Attachment')
 	eject.Name = 'Eject'
-	eject.CFrame = CFrame.new(Vector3.new(0.1, (meta and meta.Muzzle.Y or 0.3) * 0.9, -0.25) * scale)
+	local muzzleY = typeof(meshMuzzle) == 'Vector3' and meshMuzzle.Y / scale or (meta and meta.Muzzle.Y or 0.3)
+	eject.CFrame = CFrame.new(Vector3.new(0.1, muzzleY * 0.9, -0.25) * scale)
 	eject.Parent = handle
 	return tool
 end

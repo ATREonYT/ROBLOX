@@ -1,78 +1,83 @@
-# Import the item meshes (once, about 5 minutes)
+# Put your blocky models into the game (once, about 10 minutes)
 
-This turns the boxes, the product-pad items and the gun-stand guns into smooth, rounded 3D models.
-You do it once. If you skip it, the game still works and shows the block-built versions.
+These steps bring your designs into the game: the Robux pad prizes, the lobby pieces, the plaza trees and buildings, and the guns.
+You only do this once. Until you do it, the game still works and shows the old block-built versions.
 
-You need: Roblox Studio on your Mac, your game place open, and this repo on your Mac.
+**You need:** Roblox Studio on your Mac, your game open in Studio, and this project folder on your Mac.
 
-## 1. Open the 3D Importer
+## Step 1: Import the 4 model files
 
-1. In Studio, open your place.
-2. Click **File** (top menu bar) > **Import 3D...**
-3. Pick `hood/art/models/items/HoodItemMeshes.fbx` and click **Open**.
+1. In Studio, click **File** in the top menu bar, then **Import 3D...**
+2. Go to the project folder, then `hood` > `art` > `models` > `items`.
+3. Hold **Cmd** and click all four files: `Items_Pads.glb`, `Items_Lobby.glb`, `Items_Scenery.glb`, `Items_Guns.glb`.
+   Click **Open**. (If Studio only takes one file, do steps 1 to 5 four times, once for each file.)
+4. The import window has settings on the right. Check these and leave everything else as it is:
 
-## 2. Settings (right-hand panel of the import window)
+   | Setting | Set it to |
+   |---|---|
+   | Import Only As Model | **on** |
+   | Upload to Roblox | **on** (this uploads the colours too) |
+   | Set Pivot to Scene Origin | **on** |
+   | Anchored | **on** |
+   | World Forward | **Front** |
+   | World Up | **Top** |
+   | Scale Unit | **Stud** |
+   | Merge Meshes | **off** |
 
-Set these, leave everything else as it is:
+5. Click **Import** (bottom right) and wait until it finishes.
+   Rows of colourful models appear in the Workspace: a row of guns, a row of pad prizes, a row of lobby pieces and a row of trees and buildings.
 
-| Section | Setting | Value |
-|---|---|---|
-| File General | Import Only As Model | **on** |
-| File General | Upload to Roblox | **on** |
-| File General | Set Pivot to Scene Origin | **on** |
-| File General | Anchored | **on** |
-| File Transform | World Forward | **Front** |
-| File Transform | World Up | **Top** |
-| File Geometry | Scale Unit | **Stud** |
-| File Geometry | Merge Meshes | **off** |
+## Step 2: Run the setup script
 
-Click **Import** (bottom right). Wait until the spinner stops: there are about 180 pieces (25 items), so it can take a few minutes.
-A big grey model appears in the Workspace, with the items standing in rows. Grey is fine: step 3 colours them.
+1. Click **View** in the top bar, then **Command Bar**. A long text box opens at the bottom of Studio.
+2. On your Mac, open `hood/tools/blender/studio_item_meshes.lua` with **TextEdit**.
+   Press **Cmd+A** (select all), then **Cmd+C** (copy).
+3. Click into Studio's Command Bar, press **Cmd+V** (paste), then press **Return**.
 
-## 3. Run the setup script
+The script tidies everything up. It moves every model into **ReplicatedStorage > HoodItemMeshes** and makes the glowing parts glow.
+It also makes the big things (buildings, cliffs, the gate pillars, the stands) solid, and lets players walk through the small ones.
 
-1. Click **View** (top bar) > **Command Bar**. A long text box opens at the bottom.
-2. On your Mac, open `hood/tools/blender/studio_item_meshes.lua` in TextEdit.
-   Press **Cmd+A**, then **Cmd+C**.
-3. Click into Studio's Command Bar, press **Cmd+V**, then **Return**.
+## Step 3: Check it worked
 
-The script moves every item into **ReplicatedStorage > HoodItemMeshes** (one model per item), colours it, and
-deletes the empty imported model.
+1. Click **View > Output**. You should see these two lines:
+   `[HoodItemMeshes] done: 57 items ...` and `[HoodItemMeshes] all 57 items are in. Now File > Save to Roblox.`
+   - If it says **still to import** with some names, one of the four files is missing. Do Step 1 for that file, then Step 2 again.
+2. In the **Explorer**, open **ReplicatedStorage > HoodItemMeshes**. You should see `Gun_AK`, `Pad_VIP`, `Gate_Stage1`, `Scn_Tree_1` and more.
+   Click `Pad_Base`: its ring is glowing blue.
+3. Press **Play**. Your gun is the new blocky gun, and the gun stand shows the new guns.
+4. Click **File > Save to Roblox** (or **Publish to Roblox**) so the models stay.
 
-## 4. Check it worked
+## If something looks wrong
 
-1. Click **View > Output**. You should see:
-   `[HoodItemMeshes] done: 25 items, 178 MeshParts in ReplicatedStorage.HoodItemMeshes`
-   and `[HoodItemMeshes] all items have the right shape.`
-2. In the **Explorer**, open **ReplicatedStorage > HoodItemMeshes**. You should see `Box_Street`, `Box_Grail`,
-   `Pad_VIP`, `GunStand_AK` and the rest. Click `Box_Street`: it is red and white, and has a `Lid`.
-3. Press **Play**. The boxes on the dais, the pad items and the guns now have smooth rounded edges.
-4. **File > Save to Roblox** (or **Publish to Roblox**) so the meshes stay.
-
-If the Output says an item "came in turned", delete the HoodItemMeshes folder, and do steps 1-3 again with
-World Forward = Front and World Up = Top.
+- **A model is plain white or grey (no colours).** Its colour picture did not come in.
+  1. Delete **ReplicatedStorage > HoodItemMeshes**.
+  2. Do Step 1 again, and make sure **Upload to Roblox** is **on**. Then do Step 2.
+  3. The Output names the parts without colours. They have a yellow line saying `came in without their colour texture`.
+- **The colours look smeared or blurry at the edges.** Take a screenshot and send it to the developer. The colour pictures can be made sharper. Everything still works.
+- **Something does not glow.** Run Step 2 again. It sets every `_Glow_` part to Neon again.
+- **The Output says a model "came in turned or stretched".**
+  1. Delete **ReplicatedStorage > HoodItemMeshes**.
+  2. Do Step 1 again with **World Forward = Front** and **World Up = Top**, then do Step 2.
+- **You want the old block versions back.** Delete **ReplicatedStorage > HoodItemMeshes**. Nothing else changes.
 
 ## Good to know
 
-- To go back to the block-built items, delete **ReplicatedStorage > HoodItemMeshes**. Nothing else changes.
-- Rojo sync leaves the folder alone (it only manages `ReplicatedStorage.Shared`).
-- When the items change in Blender, re-export (below), import again, and run the script again: it replaces the old
-  items.
-- A place rebuilt from scratch with `tools/place/build_place.sh` has no meshes: import them again there.
-- The meshes need no textures, so only the meshes are uploaded (step 2's "Upload to Roblox"). There is no
-  `.rbxmx` route: a MeshPart cannot carry its mesh in a file without that upload. An Open Cloud upload script was not
-  added either: it would upload the FBX as a Model asset that you then still have to insert into the place, so the
-  importer is fewer steps.
+- Rojo never touches HoodItemMeshes. It only manages `ReplicatedStorage.Shared`.
+- If a model changes later: import its file again, then run Step 2 again. Step 2 replaces the old copies.
+- The chests (code chest, group chest and the shoe boxes) stay the block-built ones the game already has.
+- The 5 Robux guns (Neon Viper, Galaxy Ray, Inferno Cannon, Frostbite and Royal Crown) come in too. They are not for sale in the game yet.
 
 ## For developers
 
 ```sh
-blenv/bin/python hood/tools/blender/export_item_meshes.py            # all items -> the FBX, manifest.json, the script
-blenv/bin/python hood/tools/blender/export_item_meshes.py --list     # the item ids
-blenv/bin/python hood/tools/blender/export_item_meshes.py --shoes    # also the 22 World 1 pairs (off by default: little gain)
-blenv/bin/python hood/tools/blender/export_item_meshes.py Box_ --obj /tmp/meshes   # some items, + preview OBJs
+# rebuild the package from the designer's folders (each holding Guns/ RobuxPads/ Lobby/ PlazaScenery/ ShootingRanges/ with glb/)
+python3 hood/tools/blender/build_item_package.py --src <designs a> --src <designs r> --src <designs s>
+#   -> hood/art/models/items/Items_{Pads,Lobby,Scenery,Guns}.glb + manifest.json,
+#      hood/tools/blender/studio_item_meshes.lua (from the .template.lua) and ItemMeshes.Design in Shared/ItemMeshes.lua
+$PY hood/tools/blender/icons_glb.py          # the Gun_* and pass icons from the GLBs -> hood/art/icons3d (then upload_assets.py)
 ```
 
-The code side is `Shared/ItemMeshes.lua`: `ItemMeshes.place(id, cf, size, parent, fallbackFn)` clones the item (its
-bottom centre on `cf`, fitted to `size`) or calls the Part build; `BoxModels.build` and `ShoeModels.pair` use the
-mesh by themselves when it is there.
+- The code side is `Shared/ItemMeshes.lua`.
+  - `ItemMeshes.place(id, cf, size?, parent, fallbackFn)` puts the model's bottom centre on `cf`. `size` can be a box (the model fits inside it, proportions kept), a number (its longest side), or nil (the design size). Without the import it calls the Part build instead.
+  - `GunModels.build` returns the gun mesh when there is one, so the held gun, the hip gun and the gun stand use it.
+- The mesh files are GLB (glTF), not FBX. Studio's importer reads glTF's embedded palette textures and node names directly, and it needs no unit fix.

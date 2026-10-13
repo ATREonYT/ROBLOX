@@ -1,4 +1,8 @@
-"""The showcase items as real 3D meshes (brief 31 MESH): one FBX the user imports ONCE into Studio, plus the setup
+"""SUPERSEDED (brief 32): the import package is now the user's own blocky designs, built by build_item_package.py
+(Items_*.glb + manifest.json + studio_item_meshes.lua). This BoxKit exporter writes over those files, so it only runs
+with --legacy (e.g. for preview OBJs of the Part-built chests: --legacy --obj DIR).
+
+The showcase items as real 3D meshes (brief 31 MESH): one FBX the user imports ONCE into Studio, plus the setup
 script that files the import into ReplicatedStorage.HoodItemMeshes (one Model per item id). The game clones them through
 Shared/ItemMeshes (BoxModels, ShoeModels and the map's pads and gun stands); the Part builds stay as the fallback.
 
@@ -545,6 +549,10 @@ def write_lua(manifest):
 
 
 def main(argv):
+	if '--legacy' not in argv:
+		print('export_item_meshes.py is superseded by build_item_package.py (brief 32); pass --legacy to run it anyway')
+		return 2
+	argv = [a for a in argv if a != '--legacy']
 	obj_dir = None
 	if '--obj' in argv:
 		i = argv.index('--obj')

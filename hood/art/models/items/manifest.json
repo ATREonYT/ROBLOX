@@ -1,3465 +1,3193 @@
 {
- "items": {
-  "Box_Exclusive": {
-   "min": [
-    -2.3580000400543213,
-    0.0,
-    -2.0209999084472656
-   ],
-   "max": [
-    2.3580000400543213,
-    3.5,
-    1.8200000524520874
-   ],
-   "tris": 2812,
-   "parts": [
-    {
-     "name": "Box_Exclusive__Body__SmoothPlastic_1c2032",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "1c2032",
-     "centre": [
-      0.0,
-      1.2099999487400055,
-      0.0
-     ],
-     "size": [
-      4.400000095367432,
-      1.7799999117851257,
-      3.4000000953674316
-     ],
-     "tris": 220
-    },
-    {
-     "name": "Box_Exclusive__Body__SmoothPlastic_22cef8",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "22cef8",
-     "centre": [
-      0.0,
-      1.197507232427597,
-      -0.7399999797344208
-     ],
-     "size": [
-      4.619999885559082,
-      1.8049853444099426,
-      2.3799999356269836
-     ],
-     "tris": 396
-    },
-    {
-     "name": "Box_Exclusive__Body__SmoothPlastic_282e48",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "282e48",
-     "centre": [
-      0.0,
-      1.2009999603033066,
-      0.0
-     ],
-     "size": [
-      4.47599983215332,
-      1.7579999268054962,
-      3.4760000705718994
-     ],
-     "tris": 176
-    },
-    {
-     "name": "Box_Exclusive__Body__SmoothPlastic_384264",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "384264",
-     "centre": [
-      0.0,
-      1.2884999513626099,
-      -1.6949999928474426
-     ],
-     "size": [
-      2.0999999046325684,
-      1.5769999027252197,
-      0.18999993801116943
-     ],
-     "tris": 44
-    },
-    {
-     "name": "Box_Exclusive__Body__SmoothPlastic_78e8ff",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "78e8ff",
-     "centre": [
-      0.0,
-      1.0,
-      -1.9500000476837158
-     ],
-     "size": [
-      0.8065260052680969,
-      0.8065259456634521,
-      0.06599998474121094
-     ],
-     "tris": 44
-    },
-    {
-     "name": "Box_Exclusive__Body__SmoothPlastic_e0e6ee",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "e0e6ee",
-     "centre": [
-      0.0,
-      0.25,
-      0.0
-     ],
-     "size": [
-      4.639999866485596,
-      0.5,
-      3.640000104904175
-     ],
-     "tris": 860
-    },
-    {
-     "name": "Box_Exclusive__Body__SmoothPlastic_ecfaff",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "ecfaff",
-     "centre": [
-      0.0,
-      1.2000000178813934,
-      -1.6180380582809448
-     ],
-     "size": [
-      4.716000080108643,
-      0.9121320843696594,
-      0.5199239253997803
-     ],
-     "tris": 72
-    },
-    {
-     "name": "Box_Exclusive__Body__SmoothPlastic_f0fcff",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "f0fcff",
-     "centre": [
-      -0.1000000000349246,
-      1.1200000047683716,
-      -1.987999975681305
-     ],
-     "size": [
-      0.19798989885021,
-      0.19798994064331055,
-      0.06599986553192139
-     ],
-     "tris": 12
-    },
-    {
-     "name": "Box_Exclusive__Lid__SmoothPlastic_1c2032",
-     "group": "Lid",
-     "material": "SmoothPlastic",
-     "color": "1c2032",
-     "centre": [
-      0.0,
-      2.6122500896453857,
-      0.0
-     ],
-     "size": [
-      4.639999866485596,
-      1.0954999923706055,
-      3.640000104904175
-     ],
-     "tris": 220
-    },
-    {
-     "name": "Box_Exclusive__Lid__SmoothPlastic_22cef8",
-     "group": "Lid",
-     "material": "SmoothPlastic",
-     "color": "22cef8",
-     "centre": [
-      0.0,
-      3.2699999809265137,
-      0.2499999962747097
-     ],
-     "size": [
-      1.0,
-      0.46000003814697266,
-      0.25999999791383743
-     ],
-     "tris": 176
-    },
-    {
-     "name": "Box_Exclusive__Lid__SmoothPlastic_282e48",
-     "group": "Lid",
-     "material": "SmoothPlastic",
-     "color": "282e48",
-     "centre": [
-      0.0,
-      2.9950000047683716,
-      0.0
-     ],
-     "size": [
-      4.400000095367432,
-      0.1699998378753662,
-      3.4000000953674316
-     ],
-     "tris": 44
-    },
-    {
-     "name": "Box_Exclusive__Lid__SmoothPlastic_384264",
-     "group": "Lid",
-     "material": "SmoothPlastic",
-     "color": "384264",
-     "centre": [
-      0.0,
-      2.6079999208450317,
-      -0.5750000178813934
-     ],
-     "size": [
-      4.579999923706055,
-      1.003999948501587,
-      2.550000011920929
-     ],
-     "tris": 176
-    },
-    {
-     "name": "Box_Exclusive__Lid__SmoothPlastic_c4ccd8",
-     "group": "Lid",
-     "material": "SmoothPlastic",
-     "color": "c4ccd8",
-     "centre": [
-      0.0,
-      2.5800000429153442,
-      0.0
-     ],
-     "size": [
-      4.636000156402588,
-      0.2404162883758545,
-      3.635999917984009
-     ],
-     "tris": 96
-    },
-    {
-     "name": "Box_Exclusive__Lid__SmoothPlastic_e0e6ee",
-     "group": "Lid",
-     "material": "SmoothPlastic",
-     "color": "e0e6ee",
-     "centre": [
-      0.0,
-      2.625,
-      -0.019999980926513672
-     ],
-     "size": [
-      4.519999980926514,
-      1.0500001907348633,
-      3.559999942779541
-     ],
-     "tris": 276
-    }
-   ],
-   "hinge": [
-    0.0,
-    2.1,
-    1.7
-   ],
-   "kind": "box"
+ "about": "The user's blocky designs (brief 32) as game ids. Studs, front -Z; pivot = bottom centre (props) or the grip (guns). size/min/max = the design bounds the game fits by (Shared/ItemMeshes). Import: hood/art/MESH_IMPORT.md.",
+ "packages": {
+  "Items_Pads.glb": {
+   "items": 11,
+   "bytes": 2027152,
+   "triangles": 63476
   },
-  "Box_Graffiti": {
-   "min": [
-    -2.378000020980835,
-    0.0,
-    -1.9199999570846558
-   ],
-   "max": [
-    2.378000020980835,
-    3.5,
-    1.878000020980835
-   ],
-   "tris": 5132,
-   "parts": [
-    {
-     "name": "Box_Graffiti__Body__SmoothPlastic_10beec",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "10beec",
-     "centre": [
-      0.0,
-      1.1809999644756317,
-      0.0
-     ],
-     "size": [
-      4.47599983215332,
-      1.797999918460846,
-      3.4760000705718994
-     ],
-     "tris": 176
-    },
-    {
-     "name": "Box_Graffiti__Body__SmoothPlastic_1ea0d6",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "1ea0d6",
-     "centre": [
-      0.0,
-      1.1899999529123306,
-      0.0
-     ],
-     "size": [
-      4.400000095367432,
-      1.8199999034404755,
-      3.4000000953674316
-     ],
-     "tris": 220
-    },
-    {
-     "name": "Box_Graffiti__Body__SmoothPlastic_f6f6f8",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "f6f6f8",
-     "centre": [
-      0.0,
-      0.856377899646759,
-      -0.0480000376701355
-     ],
-     "size": [
-      4.599999904632568,
-      1.712755799293518,
-      3.6959999799728394
-     ],
-     "tris": 1876
-    },
-    {
-     "name": "Box_Graffiti__Body__SmoothPlastic_fa4aa0",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "fa4aa0",
-     "centre": [
-      0.0,
-      1.5749999284744263,
-      -0.49794718623161316
-     ],
-     "size": [
-      4.573999881744385,
-      1.0499999523162842,
-      2.5861056447029114
-     ],
-     "tris": 880
-    },
-    {
-     "name": "Box_Graffiti__Body__SmoothPlastic_fa6ebe",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "fa6ebe",
-     "centre": [
-      -0.29999999701976776,
-      0.8373024761676788,
-      -1.7820000052452087
-     ],
-     "size": [
-      1.4199999868869781,
-      1.345395028591156,
-      0.0700000524520874
-     ],
-     "tris": 292
-    },
-    {
-     "name": "Box_Graffiti__Body__SmoothPlastic_fcde46",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "fcde46",
-     "centre": [
-      0.0,
-      1.0521603524684906,
-      -0.49000000953674316
-     ],
-     "size": [
-      4.625999927520752,
-      1.0043206810951233,
-      2.7200000286102295
-     ],
-     "tris": 524
-    },
-    {
-     "name": "Box_Graffiti__Lid__SmoothPlastic_10beec",
-     "group": "Lid",
-     "material": "SmoothPlastic",
-     "color": "10beec",
-     "centre": [
-      0.0,
-      3.2699999809265137,
-      0.2499999962747097
-     ],
-     "size": [
-      1.0,
-      0.46000003814697266,
-      0.25999999791383743
-     ],
-     "tris": 176
-    },
-    {
-     "name": "Box_Graffiti__Lid__SmoothPlastic_d6d8e0",
-     "group": "Lid",
-     "material": "SmoothPlastic",
-     "color": "d6d8e0",
-     "centre": [
-      0.0,
-      2.050000011920929,
-      -1.8799999952316284
-     ],
-     "size": [
-      0.5199999809265137,
-      0.2600001096725464,
-      0.07999992370605469
-     ],
-     "tris": 44
-    },
-    {
-     "name": "Box_Graffiti__Lid__SmoothPlastic_e0e2e8",
-     "group": "Lid",
-     "material": "SmoothPlastic",
-     "color": "e0e2e8",
-     "centre": [
-      0.0,
-      2.7200000286102295,
-      -1.8849999904632568
-     ],
-     "size": [
-      1.2000000476837158,
-      0.09999990463256836,
-      0.06599998474121094
-     ],
-     "tris": 24
-    },
-    {
-     "name": "Box_Graffiti__Lid__SmoothPlastic_ec5aaa",
-     "group": "Lid",
-     "material": "SmoothPlastic",
-     "color": "ec5aaa",
-     "centre": [
-      0.0,
-      2.0975000858306885,
-      0.0
-     ],
-     "size": [
-      3.740000009536743,
-      0.06599998474121094,
-      2.740000009536743
-     ],
-     "tris": 44
-    },
-    {
-     "name": "Box_Graffiti__Lid__SmoothPlastic_f43c96",
-     "group": "Lid",
-     "material": "SmoothPlastic",
-     "color": "f43c96",
-     "centre": [
-      0.0,
-      2.5399999618530273,
-      0.0
-     ],
-     "size": [
-      4.639999866485596,
-      0.9200000762939453,
-      3.640000104904175
-     ],
-     "tris": 432
-    },
-    {
-     "name": "Box_Graffiti__Lid__SmoothPlastic_f6f6f8",
-     "group": "Lid",
-     "material": "SmoothPlastic",
-     "color": "f6f6f8",
-     "centre": [
-      0.0,
-      2.319999933242798,
-      -1.800000011920929
-     ],
-     "size": [
-      1.3600000143051147,
-      1.0799999237060547,
-      0.12000000476837158
-     ],
-     "tris": 44
-    },
-    {
-     "name": "Box_Graffiti__Lid__SmoothPlastic_fa4aa0",
-     "group": "Lid",
-     "material": "SmoothPlastic",
-     "color": "fa4aa0",
-     "centre": [
-      0.0,
-      2.5899999141693115,
-      0.0
-     ],
-     "size": [
-      4.519999980926514,
-      0.9800000190734863,
-      3.5199999809265137
-     ],
-     "tris": 152
-    },
-    {
-     "name": "Box_Graffiti__Lid__SmoothPlastic_fcde46",
-     "group": "Lid",
-     "material": "SmoothPlastic",
-     "color": "fcde46",
-     "centre": [
-      0.0,
-      2.6649999618530273,
-      0.0
-     ],
-     "size": [
-      4.75600004196167,
-      0.8899998664855957,
-      3.75600004196167
-     ],
-     "tris": 248
-    }
-   ],
-   "hinge": [
-    0.0,
-    2.1,
-    1.7
-   ],
-   "kind": "box"
+  "Items_Lobby.glb": {
+   "items": 11,
+   "bytes": 2027560,
+   "triangles": 56252
   },
-  "Box_Grail": {
-   "min": [
-    -3.5245866775512695,
-    0.0,
-    -1.9299999475479126
-   ],
-   "max": [
-    3.5425758361816406,
-    3.5714027881622314,
-    1.878000020980835
-   ],
-   "tris": 5464,
-   "parts": [
-    {
-     "name": "Box_Grail__Body__SmoothPlastic_5622a8",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "5622a8",
-     "centre": [
-      0.0,
-      1.2199999541044235,
-      0.0
-     ],
-     "size": [
-      4.400000095367432,
-      1.7599999010562897,
-      3.4000000953674316
-     ],
-     "tris": 220
-    },
-    {
-     "name": "Box_Grail__Body__SmoothPlastic_6e2ece",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "6e2ece",
-     "centre": [
-      0.0,
-      1.2109999656677246,
-      0.0
-     ],
-     "size": [
-      4.47599983215332,
-      1.7379999160766602,
-      3.4760000705718994
-     ],
-     "tris": 176
-    },
-    {
-     "name": "Box_Grail__Body__SmoothPlastic_8c4ce2",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "8c4ce2",
-     "centre": [
-      0.0,
-      1.350000023841858,
-      0.0
-     ],
-     "size": [
-      4.665999889373779,
-      1.2000000476837158,
-      3.6659998893737793
-     ],
-     "tris": 352
-    },
-    {
-     "name": "Box_Grail__Body__SmoothPlastic_e2a018",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "e2a018",
-     "centre": [
-      0.0,
-      0.2515000000130385,
-      0.0
-     ],
-     "size": [
-      4.639999866485596,
-      0.49699999997392297,
-      3.640000104904175
-     ],
-     "tris": 752
-    },
-    {
-     "name": "Box_Grail__Body__SmoothPlastic_fcce2e",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "fcce2e",
-     "centre": [
-      0.008994579315185547,
-      1.7857013940811157,
-      0.0
-     ],
-     "size": [
-      7.06716251373291,
-      3.5714027881622314,
-      3.75600004196167
-     ],
-     "tris": 2368
-    },
-    {
-     "name": "Box_Grail__Body__SmoothPlastic_ffe26e",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "ffe26e",
-     "centre": [
-      0.006000041961669922,
-      1.2173747420310974,
-      -0.4253098592162132
-     ],
-     "size": [
-      6.194736957550049,
-      1.8708254098892212,
-      0.5189088135957718
-     ],
-     "tris": 264
-    },
-    {
-     "name": "Box_Grail__Lid__SmoothPlastic_5622a8",
-     "group": "Lid",
-     "material": "SmoothPlastic",
-     "color": "5622a8",
-     "centre": [
-      0.0,
-      2.587249994277954,
-      0.0
-     ],
-     "size": [
-      4.639999866485596,
-      1.0454998016357422,
-      3.640000104904175
-     ],
-     "tris": 796
-    },
-    {
-     "name": "Box_Grail__Lid__SmoothPlastic_6e2ece",
-     "group": "Lid",
-     "material": "SmoothPlastic",
-     "color": "6e2ece",
-     "centre": [
-      0.0,
-      2.6390000581741333,
-      0.0
-     ],
-     "size": [
-      4.519999980926514,
-      0.6419999599456787,
-      3.5199999809265137
-     ],
-     "tris": 188
-    },
-    {
-     "name": "Box_Grail__Lid__SmoothPlastic_8c4ce2",
-     "group": "Lid",
-     "material": "SmoothPlastic",
-     "color": "8c4ce2",
-     "centre": [
-      0.0,
-      3.0149999856948853,
-      0.0
-     ],
-     "size": [
-      3.5199999809265137,
-      0.12999987602233887,
-      2.5199999809265137
-     ],
-     "tris": 44
-    },
-    {
-     "name": "Box_Grail__Lid__SmoothPlastic_e2a018",
-     "group": "Lid",
-     "material": "SmoothPlastic",
-     "color": "e2a018",
-     "centre": [
-      0.0,
-      2.2850000858306885,
-      -1.8949999809265137
-     ],
-     "size": [
-      0.3199999928474426,
-      0.26999998092651367,
-      0.06999993324279785
-     ],
-     "tris": 12
-    },
-    {
-     "name": "Box_Grail__Lid__SmoothPlastic_fcce2e",
-     "group": "Lid",
-     "material": "SmoothPlastic",
-     "color": "fcce2e",
-     "centre": [
-      0.0,
-      2.6514999866485596,
-      -0.050000011920928955
-     ],
-     "size": [
-      4.559999942779541,
-      1.6970000267028809,
-      3.659999966621399
-     ],
-     "tris": 292
-    }
-   ],
-   "hinge": [
-    0.0,
-    2.1,
-    1.7
-   ],
-   "kind": "box"
+  "Items_Scenery.glb": {
+   "items": 20,
+   "bytes": 4486236,
+   "triangles": 127460
   },
-  "Box_GrailBundle": {
-   "min": [
-    -2.3320000171661377,
-    0.0,
-    -1.9448000192642212
-   ],
-   "max": [
-    2.3320000171661377,
-    3.359999895095825,
-    1.7899999618530273
-   ],
-   "tris": 5520,
-   "parts": [
-    {
-     "name": "Box_GrailBundle__Body__SmoothPlastic_6226aa",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "6226aa",
-     "centre": [
-      0.0,
-      1.1499999538064003,
-      0.0
-     ],
-     "size": [
-      4.400000095367432,
-      1.8999999016523361,
-      3.4000000953674316
-     ],
-     "tris": 476
-    },
-    {
-     "name": "Box_GrailBundle__Body__SmoothPlastic_7e32d6",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "7e32d6",
-     "centre": [
-      0.0,
-      1.0399999618530273,
-      0.0
-     ],
-     "size": [
-      4.559999942779541,
-      2.0799999237060547,
-      3.559999942779541
-     ],
-     "tris": 220
-    },
-    {
-     "name": "Box_GrailBundle__Body__SmoothPlastic_a060f0",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "a060f0",
-     "centre": [
-      0.0,
-      1.3199999928474426,
-      -1.699999988079071
-     ],
-     "size": [
-      2.0,
-      1.399999976158142,
-      0.19999992847442627
-     ],
-     "tris": 44
-    },
-    {
-     "name": "Box_GrailBundle__Body__SmoothPlastic_f6f6f8",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "f6f6f8",
-     "centre": [
-      0.0,
-      1.2135435193777084,
-      -0.03100001811981201
-     ],
-     "size": [
-      4.664000034332275,
-      1.9870870411396027,
-      3.6019999980926514
-     ],
-     "tris": 2192
-    },
-    {
-     "name": "Box_GrailBundle__Body__SmoothPlastic_faca3c",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "faca3c",
-     "centre": [
-      0.0,
-      1.2589999586343765,
-      -0.07740002870559692
-     ],
-     "size": [
-      4.579999923706055,
-      1.6819998919963837,
-      3.7347999811172485
-     ],
-     "tris": 1832
-    },
-    {
-     "name": "Box_GrailBundle__Lid__SmoothPlastic_6226aa",
-     "group": "Lid",
-     "material": "SmoothPlastic",
-     "color": "6226aa",
-     "centre": [
-      0.0,
-      2.0975000858306885,
-      0.0
-     ],
-     "size": [
-      3.740000009536743,
-      0.06599998474121094,
-      2.740000009536743
-     ],
-     "tris": 44
-    },
-    {
-     "name": "Box_GrailBundle__Lid__SmoothPlastic_7e32d6",
-     "group": "Lid",
-     "material": "SmoothPlastic",
-     "color": "7e32d6",
-     "centre": [
-      0.0,
-      2.5719799995422363,
-      0.0
-     ],
-     "size": [
-      4.519999980926514,
-      0.9439601898193359,
-      3.5199999809265137
-     ],
-     "tris": 316
-    },
-    {
-     "name": "Box_GrailBundle__Lid__SmoothPlastic_a060f0",
-     "group": "Lid",
-     "material": "SmoothPlastic",
-     "color": "a060f0",
-     "centre": [
-      0.0,
-      3.1149998903274536,
-      0.0
-     ],
-     "size": [
-      3.880000114440918,
-      0.49000000953674316,
-      2.880000114440918
-     ],
-     "tris": 264
-    },
-    {
-     "name": "Box_GrailBundle__Lid__SmoothPlastic_dea41e",
-     "group": "Lid",
-     "material": "SmoothPlastic",
-     "color": "dea41e",
-     "centre": [
-      0.0,
-      1.965000033378601,
-      -1.8949999809265137
-     ],
-     "size": [
-      0.5600000023841858,
-      0.37000012397766113,
-      0.06999993324279785
-     ],
-     "tris": 44
-    },
-    {
-     "name": "Box_GrailBundle__Lid__SmoothPlastic_faca3c",
-     "group": "Lid",
-     "material": "SmoothPlastic",
-     "color": "faca3c",
-     "centre": [
-      0.0,
-      2.3749999403953552,
-      -1.5699999928474426
-     ],
-     "size": [
-      1.0,
-      1.4499999284744263,
-      0.6200000047683716
-     ],
-     "tris": 88
-    }
-   ],
-   "hinge": [
-    0.0,
-    2.1,
-    1.7
-   ],
-   "kind": "box"
-  },
-  "Box_Street": {
-   "min": [
-    -2.328000068664551,
-    0.0,
-    -1.9391999244689941
-   ],
-   "max": [
-    2.328000068664551,
-    3.5,
-    1.8279999494552612
-   ],
-   "tris": 5076,
-   "parts": [
-    {
-     "name": "Box_Street__Body__SmoothPlastic_c4121c",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "c4121c",
-     "centre": [
-      0.0,
-      0.22149999882094562,
-      0.0
-     ],
-     "size": [
-      4.599999904632568,
-      0.4369999975897372,
-      3.5999999046325684
-     ],
-     "tris": 752
-    },
-    {
-     "name": "Box_Street__Body__SmoothPlastic_dcdee4",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "dcdee4",
-     "centre": [
-      0.0,
-      1.1999999582767487,
-      0.0
-     ],
-     "size": [
-      4.400000095367432,
-      1.7999998927116394,
-      3.4000000953674316
-     ],
-     "tris": 476
-    },
-    {
-     "name": "Box_Street__Body__SmoothPlastic_e21e28",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "e21e28",
-     "centre": [
-      0.0,
-      1.0449999570846558,
-      -0.07959997653961182
-     ],
-     "size": [
-      4.559999942779541,
-      2.0899999141693115,
-      3.7191998958587646
-     ],
-     "tris": 1944
-    },
-    {
-     "name": "Box_Street__Body__SmoothPlastic_e6e6ec",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "e6e6ec",
-     "centre": [
-      0.0,
-      1.1699999868869781,
-      -1.7599999904632568
-     ],
-     "size": [
-      2.876084566116333,
-      1.4599999785423279,
-      0.06599998474121094
-     ],
-     "tris": 144
-    },
-    {
-     "name": "Box_Street__Body__SmoothPlastic_f0363e",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "f0363e",
-     "centre": [
-      0.0,
-      1.2900000214576721,
-      0.0
-     ],
-     "size": [
-      4.656000137329102,
-      1.3000000715255737,
-      3.6559998989105225
-     ],
-     "tris": 264
-    },
-    {
-     "name": "Box_Street__Body__SmoothPlastic_f6f6f8",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "f6f6f8",
-     "centre": [
-      0.0,
-      1.1814999729394913,
-      0.02499997615814209
-     ],
-     "size": [
-      4.585999965667725,
-      1.7569999396800995,
-      3.5360000133514404
-     ],
-     "tris": 176
-    },
-    {
-     "name": "Box_Street__Body__SmoothPlastic_fac82c",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "fac82c",
-     "centre": [
-      0.0,
-      1.1200000047683716,
-      -1.7949999570846558
-     ],
-     "size": [
-      4.010000228881836,
-      0.16000008583068848,
-      0.06599998474121094
-     ],
-     "tris": 24
-    },
-    {
-     "name": "Box_Street__Body__SmoothPlastic_fcde46",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "fcde46",
-     "centre": [
-      0.0,
-      1.5,
-      -0.050000011920928955
-     ],
-     "size": [
-      4.599999904632568,
-      0.5,
-      1.0
-     ],
-     "tris": 88
-    },
-    {
-     "name": "Box_Street__Lid__SmoothPlastic_dcdee4",
-     "group": "Lid",
-     "material": "SmoothPlastic",
-     "color": "dcdee4",
-     "centre": [
-      0.0,
-      2.0975000858306885,
-      0.0
-     ],
-     "size": [
-      3.740000009536743,
-      0.06599998474121094,
-      2.740000009536743
-     ],
-     "tris": 44
-    },
-    {
-     "name": "Box_Street__Lid__SmoothPlastic_e21e28",
-     "group": "Lid",
-     "material": "SmoothPlastic",
-     "color": "e21e28",
-     "centre": [
-      0.0,
-      2.7799999713897705,
-      -0.010000050067901611
-     ],
-     "size": [
-      4.619999885559082,
-      1.440000057220459,
-      3.6399999856948853
-     ],
-     "tris": 792
-    },
-    {
-     "name": "Box_Street__Lid__SmoothPlastic_ececf0",
-     "group": "Lid",
-     "material": "SmoothPlastic",
-     "color": "ececf0",
-     "centre": [
-      0.0,
-      2.5,
-      -0.5664999783039093
-     ],
-     "size": [
-      4.636000156402588,
-      0.1700000762939453,
-      2.50299996137619
-     ],
-     "tris": 72
-    },
-    {
-     "name": "Box_Street__Lid__SmoothPlastic_f44046",
-     "group": "Lid",
-     "material": "SmoothPlastic",
-     "color": "f44046",
-     "centre": [
-      0.0,
-      2.7799999713897705,
-      -1.8550000190734863
-     ],
-     "size": [
-      1.2300000190734863,
-      0.13000011444091797,
-      0.06599998474121094
-     ],
-     "tris": 24
-    },
-    {
-     "name": "Box_Street__Lid__SmoothPlastic_f6f6f8",
-     "group": "Lid",
-     "material": "SmoothPlastic",
-     "color": "f6f6f8",
-     "centre": [
-      0.0,
-      2.5899999141693115,
-      0.0
-     ],
-     "size": [
-      4.519999980926514,
-      0.9800000190734863,
-      3.5199999809265137
-     ],
-     "tris": 232
-    },
-    {
-     "name": "Box_Street__Lid__SmoothPlastic_fac82c",
-     "group": "Lid",
-     "material": "SmoothPlastic",
-     "color": "fac82c",
-     "centre": [
-      0.0,
-      2.4499999284744263,
-      -1.8650000095367432
-     ],
-     "size": [
-      0.8399999737739563,
-      0.3399999141693115,
-      0.08999991416931152
-     ],
-     "tris": 44
-    }
-   ],
-   "hinge": [
-    0.0,
-    2.1,
-    1.7
-   ],
-   "kind": "box"
-  },
-  "GunStand_AK": {
-   "min": [
-    -0.17400000989437103,
-    -0.7901965379714966,
-    -2.75600004196167
-   ],
-   "max": [
-    0.2240000069141388,
-    0.7850000262260437,
-    1.2463918924331665
-   ],
-   "tris": 1176,
-   "parts": [
-    {
-     "name": "GunStand_AK__Body__Metal_3a3e48",
-     "group": "Body",
-     "material": "Metal",
-     "color": "3a3e48",
-     "centre": [
-      0.0,
-      0.272643581032753,
-      -0.5693040490150452
-     ],
-     "size": [
-      0.3100000023841858,
-      1.0247128903865814,
-      3.6313918828964233
-     ],
-     "tris": 332
-    },
-    {
-     "name": "GunStand_AK__Body__Metal_5c6370",
-     "group": "Body",
-     "material": "Metal",
-     "color": "5c6370",
-     "centre": [
-      0.01149999350309372,
-      0.5309999883174896,
-      -1.1599999740719795
-     ],
-     "size": [
-      0.31300000846385956,
-      0.3579999804496765,
-      2.7599999755620956
-     ],
-     "tris": 164
-    },
-    {
-     "name": "GunStand_AK__Body__Metal_ccd2da",
-     "group": "Body",
-     "material": "Metal",
-     "color": "ccd2da",
-     "centre": [
-      0.18400000780820847,
-      0.5000000149011612,
-      -0.09999999962747097
-     ],
-     "size": [
-      0.07999999821186066,
-      0.07600006461143494,
-      0.11000000312924385
-     ],
-     "tris": 12
-    },
-    {
-     "name": "GunStand_AK__Body__SmoothPlastic_121318",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "121318",
-     "centre": [
-      0.0,
-      0.30476444214582443,
-      -1.4496421739459038
-     ],
-     "size": [
-      0.09510565549135208,
-      0.3504711538553238,
-      2.6127157360315323
-     ],
-     "tris": 48
-    },
-    {
-     "name": "GunStand_AK__Body__SmoothPlastic_14aad2",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "14aad2",
-     "centre": [
-      0.0,
-      -0.6574209034442902,
-      -0.8682265281677246
-     ],
-     "size": [
-      0.25600001215934753,
-      0.26555126905441284,
-      0.34298253059387207
-     ],
-     "tris": 44
-    },
-    {
-     "name": "GunStand_AK__Body__SmoothPlastic_3ce6ff",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "3ce6ff",
-     "centre": [
-      0.0,
-      0.019759178161621094,
-      -0.825980544090271
-     ],
-     "size": [
-      0.2880000174045563,
-      1.4604816436767578,
-      3.8280389308929443
-     ],
-     "tris": 268
-    },
-    {
-     "name": "GunStand_AK__Body__SmoothPlastic_764224",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "764224",
-     "centre": [
-      0.0,
-      0.06829945743083954,
-      -0.7096540555357933
-     ],
-     "size": [
-      0.34800001978874207,
-      0.6874010860919952,
-      1.8206921368837357
-     ],
-     "tris": 132
-    },
-    {
-     "name": "GunStand_AK__Body__SmoothPlastic_b26838",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "b26838",
-     "centre": [
-      0.0,
-      0.2609553635120392,
-      -0.26046139001846313
-     ],
-     "size": [
-      0.33000001311302185,
-      0.9380893111228943,
-      2.8790773153305054
-     ],
-     "tris": 176
-    }
-   ],
-   "kind": "gun"
-  },
-  "GunStand_Blaster": {
-   "min": [
-    -0.40389931201934814,
-    -0.3590029776096344,
-    -2.1059999465942383
-   ],
-   "max": [
-    0.40389931201934814,
-    1.0651148557662964,
-    0.4699999988079071
-   ],
-   "tris": 2120,
-   "parts": [
-    {
-     "name": "GunStand_Blaster__Body__Glass_c46eff",
-     "group": "Body",
-     "material": "Glass",
-     "color": "c46eff",
-     "centre": [
-      0.0,
-      0.8700000047683716,
-      0.10000000149011612
-     ],
-     "size": [
-      0.25,
-      0.25,
-      0.48000000417232513
-     ],
-     "tris": 124
-    },
-    {
-     "name": "GunStand_Blaster__Body__Metal_3a3e48",
-     "group": "Body",
-     "material": "Metal",
-     "color": "3a3e48",
-     "centre": [
-      0.0,
-      0.5424999929964542,
-      -0.7349999696016312
-     ],
-     "size": [
-      0.3400000035762787,
-      0.944999985396862,
-      2.4099999368190765
-     ],
-     "tris": 600
-    },
-    {
-     "name": "GunStand_Blaster__Body__Neon_c46eff",
-     "group": "Body",
-     "material": "Neon",
-     "color": "c46eff",
-     "centre": [
-      0.0,
-      0.3814224600791931,
-      -0.8779999762773514
-     ],
-     "size": [
-      0.4400000274181366,
-      1.0971550941467285,
-      2.455999940633774
-     ],
-     "tris": 792
-    },
-    {
-     "name": "GunStand_Blaster__Body__SmoothPlastic_202228",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "202228",
-     "centre": [
-      0.0,
-      0.0,
-      0.0
-     ],
-     "size": [
-      0.25999999046325684,
-      0.5839080214500427,
-      0.41935813426971436
-     ],
-     "tris": 108
-    },
-    {
-     "name": "GunStand_Blaster__Body__SmoothPlastic_a056e2",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "a056e2",
-     "centre": [
-      0.0,
-      0.353055939078331,
-      -0.6446628123521805
-     ],
-     "size": [
-      0.8077986240386963,
-      1.4241178333759308,
-      1.7906742990016937
-     ],
-     "tris": 296
-    },
-    {
-     "name": "GunStand_Blaster__Body__SmoothPlastic_f2f3f5",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "f2f3f5",
-     "centre": [
-      0.0,
-      0.5199999958276749,
-      -0.9249999523162842
-     ],
-     "size": [
-      0.4000000059604645,
-      0.47999998927116394,
-      2.3299999237060547
-     ],
-     "tris": 200
-    }
-   ],
-   "kind": "gun"
-  },
-  "GunStand_Deagle": {
-   "min": [
-    -0.1860000044107437,
-    -0.43761178851127625,
-    -1.621999979019165
-   ],
-   "max": [
-    0.1860000044107437,
-    0.9100000262260437,
-    0.43264275789260864
-   ],
-   "tris": 1368,
-   "parts": [
-    {
-     "name": "GunStand_Deagle__Body__Foil_de961c",
-     "group": "Body",
-     "material": "Foil",
-     "color": "de961c",
-     "centre": [
-      0.0,
-      0.6000000089406967,
-      -0.6370000094175339
-     ],
-     "size": [
-      0.35600000619888306,
-      0.21000006794929504,
-      1.686000019311905
-     ],
-     "tris": 352
-    },
-    {
-     "name": "GunStand_Deagle__Body__Foil_ffc430",
-     "group": "Body",
-     "material": "Foil",
-     "color": "ffc430",
-     "centre": [
-      0.0,
-      0.20176424086093903,
-      -0.6400000005960464
-     ],
-     "size": [
-      0.3400000035762787,
-      1.2787520587444305,
-      1.920000046491623
-     ],
-     "tris": 672
-    },
-    {
-     "name": "GunStand_Deagle__Body__Glass_3ce6ff",
-     "group": "Body",
-     "material": "Glass",
-     "color": "3ce6ff",
-     "centre": [
-      0.0,
-      0.5999999940395355,
-      -0.35999999940395355
-     ],
-     "size": [
-      0.3720000088214874,
-      0.1697055697441101,
-      0.16970565915107727
-     ],
-     "tris": 24
-    },
-    {
-     "name": "GunStand_Deagle__Body__Glass_e83034",
-     "group": "Body",
-     "material": "Glass",
-     "color": "e83034",
-     "centre": [
-      0.0,
-      0.03881182987242937,
-      -0.009676873683929443
-     ],
-     "size": [
-      0.3440000116825104,
-      0.1152652557939291,
-      0.11526525020599365
-     ],
-     "tris": 24
-    },
-    {
-     "name": "GunStand_Deagle__Body__SmoothPlastic_121318",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "121318",
-     "centre": [
-      0.0,
-      0.5070777796208858,
-      -0.6659999787807465
-     ],
-     "size": [
-      0.20000000298023224,
-      0.8058444932103157,
-      1.9120000004768372
-     ],
-     "tris": 144
-    },
-    {
-     "name": "GunStand_Deagle__Body__SmoothPlastic_202228",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "202228",
-     "centre": [
-      0.0,
-      0.21133790910243988,
-      0.0880989134311676
-     ],
-     "size": [
-      0.2900000214576721,
-      1.1467941105365753,
-      0.6890876889228821
-     ],
-     "tris": 152
-    }
-   ],
-   "kind": "gun"
-  },
-  "GunStand_Diamond": {
-   "min": [
-    -0.35541707277297974,
-    -0.3931557536125183,
-    -2.4600000381469727
-   ],
-   "max": [
-    0.35541707277297974,
-    1.2844696044921875,
-    0.39000001549720764
-   ],
-   "tris": 2132,
-   "parts": [
-    {
-     "name": "GunStand_Diamond__Body__Foil_de961c",
-     "group": "Body",
-     "material": "Foil",
-     "color": "de961c",
-     "centre": [
-      0.0,
-      -0.20283201709389687,
-      -0.5159187465906143
-     ],
-     "size": [
-      0.30000001192092896,
-      0.3806474730372429,
-      1.5559343993663788
-     ],
-     "tris": 88
-    },
-    {
-     "name": "GunStand_Diamond__Body__Foil_ffc430",
-     "group": "Body",
-     "material": "Foil",
-     "color": "ffc430",
-     "centre": [
-      0.0,
-      0.34194299578666687,
-      -1.0250000208616257
-     ],
-     "size": [
-      0.7108341455459595,
-      1.3069482445716858,
-      2.8300000727176666
-     ],
-     "tris": 876
-    },
-    {
-     "name": "GunStand_Diamond__Body__Glass_3caaf0",
-     "group": "Body",
-     "material": "Glass",
-     "color": "3caaf0",
-     "centre": [
-      0.0,
-      0.6400000005960464,
-      -1.0
-     ],
-     "size": [
-      0.5245108008384705,
-      0.5600000321865082,
-      2.5199999809265137
-     ],
-     "tris": 420
-    },
-    {
-     "name": "GunStand_Diamond__Body__Glass_78e6ff",
-     "group": "Body",
-     "material": "Glass",
-     "color": "78e6ff",
-     "centre": [
-      0.037300243973731995,
-      0.603910569101572,
-      -0.9743920117616653
-     ],
-     "size": [
-      0.5853995382785797,
-      1.361118070781231,
-      2.131215900182724
-     ],
-     "tris": 428
-    },
-    {
-     "name": "GunStand_Diamond__Body__Neon_3ce6ff",
-     "group": "Body",
-     "material": "Neon",
-     "color": "3ce6ff",
-     "centre": [
-      0.0,
-      0.47207775339484215,
-      -1.1400000229477882
-     ],
-     "size": [
-      0.4000000059604645,
-      0.7358444407582283,
-      2.640000030398369
-     ],
-     "tris": 320
-    }
-   ],
-   "kind": "gun"
-  },
-  "GunStand_Minigun": {
-   "min": [
-    -0.29200002551078796,
-    -0.2881793975830078,
-    -2.574000120162964
-   ],
-   "max": [
-    0.6850000023841858,
-    1.1600000858306885,
-    0.4400000274181366
-   ],
-   "tris": 2236,
-   "parts": [
-    {
-     "name": "GunStand_Minigun__Body__Foil_e8b048",
-     "group": "Body",
-     "material": "Foil",
-     "color": "e8b048",
-     "centre": [
-      0.48999999463558197,
-      0.5640000104904175,
-      -0.3200000002980232
-     ],
-     "size": [
-      0.2600000202655792,
-      0.08399999141693115,
-      0.39988873898983
-     ],
-     "tris": 228
-    },
-    {
-     "name": "GunStand_Minigun__Body__Metal_3a3e48",
-     "group": "Body",
-     "material": "Metal",
-     "color": "3a3e48",
-     "centre": [
-      0.07500000298023224,
-      0.5900000147521496,
-      -0.9699999243021011
-     ],
-     "size": [
-      0.6500000059604645,
-      1.000000037252903,
-      2.8199999034404755
-     ],
-     "tris": 652
-    },
-    {
-     "name": "GunStand_Minigun__Body__Metal_ccd2da",
-     "group": "Body",
-     "material": "Metal",
-     "color": "ccd2da",
-     "centre": [
-      0.0,
-      0.580000028014183,
-      -1.7000000774860382
-     ],
-     "size": [
-      0.43412676453590393,
-      0.3971281349658966,
-      1.7200002074241638
-     ],
-     "tris": 456
-    },
-    {
-     "name": "GunStand_Minigun__Body__Neon_e83034",
-     "group": "Body",
-     "material": "Neon",
-     "color": "e83034",
-     "centre": [
-      0.0,
-      0.5799999982118607,
-      -2.420000195503235
-     ],
-     "size": [
-      0.49000000953674316,
-      0.4899999797344208,
-      0.04999995231628418
-     ],
-     "tris": 124
-    },
-    {
-     "name": "GunStand_Minigun__Body__Neon_ff8c28",
-     "group": "Body",
-     "material": "Neon",
-     "color": "ff8c28",
-     "centre": [
-      0.0,
-      0.5800000131130219,
-      -0.2799999788403511
-     ],
-     "size": [
-      0.5840000510215759,
-      0.3240000605583191,
-      0.8799999803304672
-     ],
-     "tris": 176
-    },
-    {
-     "name": "GunStand_Minigun__Body__SmoothPlastic_121318",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "121318",
-     "centre": [
-      0.0,
-      0.4383598044514656,
-      -1.4094186201691628
-     ],
-     "size": [
-      0.3846718668937683,
-      0.6284085363149643,
-      2.3291629999876022
-     ],
-     "tris": 228
-    },
-    {
-     "name": "GunStand_Minigun__Body__SmoothPlastic_202228",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "202228",
-     "centre": [
-      0.0,
-      0.43591034412384033,
-      -0.3123626112937927
-     ],
-     "size": [
-      0.25999999046325684,
-      1.4481794834136963,
-      1.0064057111740112
-     ],
-     "tris": 132
-    },
-    {
-     "name": "GunStand_Minigun__Body__SmoothPlastic_48542e",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "48542e",
-     "centre": [
-      0.49000000953674316,
-      0.48999999463558197,
-      -0.3200000049546361
-     ],
-     "size": [
-      0.38999998569488525,
-      0.0599999725818634,
-      0.5900000091642141
-     ],
-     "tris": 44
-    },
-    {
-     "name": "GunStand_Minigun__Body__SmoothPlastic_627040",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "627040",
-     "centre": [
-      0.49000000953674316,
-      0.25,
-      -0.32000001333653927
-     ],
-     "size": [
-      0.36000001430511475,
-      0.4399999976158142,
-      0.5600000210106373
-     ],
-     "tris": 44
-    },
-    {
-     "name": "GunStand_Minigun__Body__SmoothPlastic_e83034",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "e83034",
-     "centre": [
-      0.0,
-      0.5800000429153442,
-      -0.2800000011920929
-     ],
-     "size": [
-      0.5600000023841858,
-      0.5600000619888306,
-      1.0400000214576721
-     ],
-     "tris": 108
-    },
-    {
-     "name": "GunStand_Minigun__Body__SmoothPlastic_ffd634",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "ffd634",
-     "centre": [
-      0.6720000207424164,
-      0.2200000062584877,
-      -0.320000022649765
-     ],
-     "size": [
-      0.012000024318695068,
-      0.09000001847743988,
-      0.5200000405311584
-     ],
-     "tris": 44
-    }
-   ],
-   "kind": "gun"
-  },
-  "GunStand_Pistol": {
-   "min": [
-    -0.1510000079870224,
-    -0.4384157657623291,
-    -1.0720000267028809
-   ],
-   "max": [
-    0.15399999916553497,
-    0.7420000433921814,
-    0.425578236579895
-   ],
-   "tris": 1264,
-   "parts": [
-    {
-     "name": "GunStand_Pistol__Body__Metal_3a3e48",
-     "group": "Body",
-     "material": "Metal",
-     "color": "3a3e48",
-     "centre": [
-      0.0,
-      0.13035288453102112,
-      -0.3172109127044678
-     ],
-     "size": [
-      0.2900000214576721,
-      1.1375373005867004,
-      1.4855782985687256
-     ],
-     "tris": 164
-    },
-    {
-     "name": "GunStand_Pistol__Body__SmoothPlastic_121318",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "121318",
-     "centre": [
-      0.021000001579523087,
-      0.43622976541519165,
-      -0.38850000500679016
-     ],
-     "size": [
-      0.2540000006556511,
-      0.6115405559539795,
-      1.3670000433921814
-     ],
-     "tris": 160
-    },
-    {
-     "name": "GunStand_Pistol__Body__SmoothPlastic_707680",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "707680",
-     "centre": [
-      0.0,
-      0.36500002071261406,
-      -0.31800002604722977
-     ],
-     "size": [
-      0.29600000381469727,
-      0.5500000491738319,
-      1.1240000575780869
-     ],
-     "tris": 460
-    },
-    {
-     "name": "GunStand_Pistol__Body__SmoothPlastic_764224",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "764224",
-     "centre": [
-      0.0,
-      0.01940593123435974,
-      -0.004838436841964722
-     ],
-     "size": [
-      0.2720000147819519,
-      0.5179003477096558,
-      0.33580684661865234
-     ],
-     "tris": 88
-    },
-    {
-     "name": "GunStand_Pistol__Body__SmoothPlastic_7c4c30",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "7c4c30",
-     "centre": [
-      0.0,
-      0.0,
-      0.0
-     ],
-     "size": [
-      0.24800001084804535,
-      0.7249799966812134,
-      0.49190035462379456
-     ],
-     "tris": 108
-    },
-    {
-     "name": "GunStand_Pistol__Body__SmoothPlastic_8a4222",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "8a4222",
-     "centre": [
-      0.14400000125169754,
-      0.49000000953674316,
-      -0.4599999934434891
-     ],
-     "size": [
-      0.019999995827674866,
-      0.07200002670288086,
-      0.1199999749660492
-     ],
-     "tris": 44
-    },
-    {
-     "name": "GunStand_Pistol__Body__SmoothPlastic_969ca6",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "969ca6",
-     "centre": [
-      0.0,
-      0.560000017285347,
-      -0.3200000077486038
-     ],
-     "size": [
-      0.2800000011920929,
-      0.23999997973442078,
-      1.2800000607967377
-     ],
-     "tris": 108
-    },
-    {
-     "name": "GunStand_Pistol__Body__SmoothPlastic_be622e",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "be622e",
-     "centre": [
-      0.0,
-      0.4740000218153,
-      -0.5450000166893005
-     ],
-     "size": [
-      0.3020000159740448,
-      0.35200002789497375,
-      0.4700000286102295
-     ],
-     "tris": 132
-    }
-   ],
-   "kind": "gun"
-  },
-  "GunStand_Revolver": {
-   "min": [
-    -0.23599998652935028,
-    -0.3838804364204407,
-    -1.1759999990463257
-   ],
-   "max": [
-    0.23599998652935028,
-    0.788095235824585,
-    0.29246124625205994
-   ],
-   "tris": 1724,
-   "parts": [
-    {
-     "name": "GunStand_Revolver__Body__Metal_3a3e48",
-     "group": "Body",
-     "material": "Metal",
-     "color": "3a3e48",
-     "centre": [
-      0.0,
-      -0.29666151106357574,
-      0.13064438570290804
-     ],
-     "size": [
-      0.25999999046325684,
-      0.17443785071372986,
-      0.3236337210983038
-     ],
-     "tris": 44
-    },
-    {
-     "name": "GunStand_Revolver__Body__Metal_5c6370",
-     "group": "Body",
-     "material": "Metal",
-     "color": "5c6370",
-     "centre": [
-      0.0,
-      0.4300000071525574,
-      -0.45650000870227814
-     ],
-     "size": [
-      0.47199997305870056,
-      0.43388402462005615,
-      0.3630000054836273
-     ],
-     "tris": 300
-    },
-    {
-     "name": "GunStand_Revolver__Body__Metal_ccd2da",
-     "group": "Body",
-     "material": "Metal",
-     "color": "ccd2da",
-     "centre": [
-      0.0,
-      0.3882885118946433,
-      -0.4730602279305458
-     ],
-     "size": [
-      0.46000000834465027,
-      0.7166325766593218,
-      1.3738797158002853
-     ],
-     "tris": 360
-    },
-    {
-     "name": "GunStand_Revolver__Body__SmoothPlastic_121318",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "121318",
-     "centre": [
-      0.0,
-      0.523047611117363,
-      -0.8959999978542328
-     ],
-     "size": [
-      0.30471524596214294,
-      0.530095249414444,
-      0.5600000023841858
-     ],
-     "tris": 324
-    },
-    {
-     "name": "GunStand_Revolver__Body__SmoothPlastic_4cd964",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "4cd964",
-     "centre": [
-      0.0,
-      0.38750000298023224,
-      -0.5350000448524952
-     ],
-     "size": [
-      0.25999999046325684,
-      0.7150000035762787,
-      1.2500000819563866
-     ],
-     "tris": 500
-    },
-    {
-     "name": "GunStand_Revolver__Body__SmoothPlastic_b26838",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "b26838",
-     "centre": [
-      0.0,
-      0.0,
-      0.0
-     ],
-     "size": [
-      0.24000000953674316,
-      0.6392322182655334,
-      0.47898489236831665
-     ],
-     "tris": 108
-    },
-    {
-     "name": "GunStand_Revolver__Body__SmoothPlastic_ce844a",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "ce844a",
-     "centre": [
-      0.0,
-      0.009271830320358276,
-      -0.0037460625171661377
-     ],
-     "size": [
-      0.2640000283718109,
-      0.48123395442962646,
-      0.3541411757469177
-     ],
-     "tris": 88
-    }
-   ],
-   "kind": "gun"
-  },
-  "GunStand_Shotgun": {
-   "min": [
-    -0.18200001120567322,
-    -0.3480949103832245,
-    -2.371999979019165
-   ],
-   "max": [
-    0.3100000023841858,
-    0.64000004529953,
-    1.2078429460525513
-   ],
-   "tris": 1464,
-   "parts": [
-    {
-     "name": "GunStand_Shotgun__Body__Foil_e8b048",
-     "group": "Body",
-     "material": "Foil",
-     "color": "e8b048",
-     "centre": [
-      0.25,
-      0.21000000089406967,
-      -0.4599999859929085
-     ],
-     "size": [
-      0.12000000476837158,
-      0.060000017285346985,
-      0.5341267436742783
-     ],
-     "tris": 144
-    },
-    {
-     "name": "GunStand_Shotgun__Body__Metal_3a3e48",
-     "group": "Body",
-     "material": "Metal",
-     "color": "3a3e48",
-     "centre": [
-      0.051069535315036774,
-      0.3325000051409006,
-      -1.239999957382679
-     ],
-     "size": [
-      0.3018609434366226,
-      0.5650000087916851,
-      2.199999913573265
-     ],
-     "tris": 252
-    },
-    {
-     "name": "GunStand_Shotgun__Body__Metal_5c6370",
-     "group": "Body",
-     "material": "Metal",
-     "color": "5c6370",
-     "centre": [
-      0.0,
-      0.5100000351667404,
-      -2.3100000619888306
-     ],
-     "size": [
-      0.2282535582780838,
-      0.24000003933906555,
-      0.08999991416931152
-     ],
-     "tris": 36
-    },
-    {
-     "name": "GunStand_Shotgun__Body__SmoothPlastic_121318",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "121318",
-     "centre": [
-      0.054517246782779694,
-      0.34707777574658394,
-      -1.2759999856352806
-     ],
-     "size": [
-      0.2269655019044876,
-      0.5258444771170616,
-      2.191999986767769
-     ],
-     "tris": 92
-    },
-    {
-     "name": "GunStand_Shotgun__Body__SmoothPlastic_764224",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "764224",
-     "centre": [
-      0.0,
-      0.27000000700354576,
-      -1.440000057220459
-     ],
-     "size": [
-      0.36400002241134644,
-      0.3240000084042549,
-      0.4440000057220459
-     ],
-     "tris": 132
-    },
-    {
-     "name": "GunStand_Shotgun__Body__SmoothPlastic_aa55ff",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "aa55ff",
-     "centre": [
-      0.0,
-      0.14595256745815277,
-      -0.39107853174209595
-     ],
-     "size": [
-      0.320000022649765,
-      0.9880949556827545,
-      3.1978429555892944
-     ],
-     "tris": 328
-    },
-    {
-     "name": "GunStand_Shotgun__Body__SmoothPlastic_b26838",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "b26838",
-     "centre": [
-      0.0,
-      0.07691898941993713,
-      -0.32445400953292847
-     ],
-     "size": [
-      0.3499999940395355,
-      0.709682047367096,
-      2.911091923713684
-     ],
-     "tris": 176
-    },
-    {
-     "name": "GunStand_Shotgun__Body__SmoothPlastic_d6282c",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "d6282c",
-     "centre": [
-      0.25,
-      0.3700000047683716,
-      -0.4599999934434891
-     ],
-     "size": [
-      0.11599999666213989,
-      0.25999999046325684,
-      0.5303225219249725
-     ],
-     "tris": 304
-    }
-   ],
-   "kind": "gun"
-  },
-  "GunStand_Tommy": {
-   "min": [
-    -0.17999999225139618,
-    -0.3641841411590576,
-    -2.386000156402588
-   ],
-   "max": [
-    0.21500001847743988,
-    0.6860000491142273,
-    1.2166552543640137
-   ],
-   "tris": 1556,
-   "parts": [
-    {
-     "name": "GunStand_Tommy__Body__Metal_3a3e48",
-     "group": "Body",
-     "material": "Metal",
-     "color": "3a3e48",
-     "centre": [
-      0.0,
-      0.12790793180465698,
-      -1.0399999842047691
-     ],
-     "size": [
-      0.320000022649765,
-      0.9841841459274292,
-      2.4799999743700027
-     ],
-     "tris": 376
-    },
-    {
-     "name": "GunStand_Tommy__Body__Metal_5c6370",
-     "group": "Body",
-     "material": "Metal",
-     "color": "5c6370",
-     "centre": [
-      0.0,
-      0.42000000178813934,
-      -1.3199999928474426
-     ],
-     "size": [
-      0.2800000011920929,
-      0.2800000011920929,
-      0.36000001430511475
-     ],
-     "tris": 620
-    },
-    {
-     "name": "GunStand_Tommy__Body__Metal_ccd2da",
-     "group": "Body",
-     "material": "Metal",
-     "color": "ccd2da",
-     "centre": [
-      0.01750001311302185,
-      0.24000000208616257,
-      -0.6488987654447556
-     ],
-     "size": [
-      0.39500001072883606,
-      0.6300000101327896,
-      0.36779752373695374
-     ],
-     "tris": 88
-    },
-    {
-     "name": "GunStand_Tommy__Body__SmoothPlastic_121318",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "121318",
-     "centre": [
-      0.0,
-      0.3565777540206909,
-      -1.2986686378717422
-     ],
-     "size": [
-      0.09510565549135208,
-      0.484844446182251,
-      2.1746630370616913
-     ],
-     "tris": 60
-    },
-    {
-     "name": "GunStand_Tommy__Body__SmoothPlastic_b26838",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "b26838",
-     "centre": [
-      0.0,
-      0.07100914418697357,
-      -0.3676266670227051
-     ],
-     "size": [
-      0.25999999046325684,
-      0.699072927236557,
-      3.044849157333374
-     ],
-     "tris": 176
-    },
-    {
-     "name": "GunStand_Tommy__Body__SmoothPlastic_ff5ac8",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "ff5ac8",
-     "centre": [
-      0.0,
-      0.2222677618265152,
-      -0.5766724348068237
-     ],
-     "size": [
-      0.3100000023841858,
-      0.9274645745754242,
-      3.586655378341675
-     ],
-     "tris": 236
-    }
-   ],
-   "kind": "gun"
-  },
-  "GunStand_Uzi": {
-   "min": [
-    -0.2160000056028366,
-    -0.8744238615036011,
-    -1.3560000658035278
-   ],
-   "max": [
-    0.2160000056028366,
-    0.8550000190734863,
-    0.5699999928474426
-   ],
-   "tris": 1320,
-   "parts": [
-    {
-     "name": "GunStand_Uzi__Body__Metal_3a3e48",
-     "group": "Body",
-     "material": "Metal",
-     "color": "3a3e48",
-     "centre": [
-      0.0,
-      -0.12781164050102234,
-      -0.3850000202655792
-     ],
-     "size": [
-      0.4000000059604645,
-      1.3656232953071594,
-      1.9100000262260437
-     ],
-     "tris": 228
-    },
-    {
-     "name": "GunStand_Uzi__Body__Metal_5c6370",
-     "group": "Body",
-     "material": "Metal",
-     "color": "5c6370",
-     "centre": [
-      0.0,
-      0.3424999825656414,
-      -0.39499999582767487
-     ],
-     "size": [
-      0.4320000112056732,
-      0.5049999728798866,
-      1.4899999797344208
-     ],
-     "tris": 200
-    },
-    {
-     "name": "GunStand_Uzi__Body__SmoothPlastic_121318",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "121318",
-     "centre": [
-      0.06617464497685432,
-      0.3252297341823578,
-      -0.6380000300705433
-     ],
-     "size": [
-      0.2236507162451744,
-      0.38954049348831177,
-      1.436000071465969
-     ],
-     "tris": 124
-    },
-    {
-     "name": "GunStand_Uzi__Body__SmoothPlastic_202228",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "202228",
-     "centre": [
-      0.0,
-      0.2213001400232315,
-      -0.2600000202655792
-     ],
-     "size": [
-      0.2900000214576721,
-      1.0553997457027435,
-      1.2800000309944153
-     ],
-     "tris": 240
-    },
-    {
-     "name": "GunStand_Uzi__Body__SmoothPlastic_3a3e48",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "3a3e48",
-     "centre": [
-      0.0,
-      0.41999999433755875,
-      -0.2799999713897705
-     ],
-     "size": [
-      0.3400000035762787,
-      0.5599999874830246,
-      1.5199999809265137
-     ],
-     "tris": 216
-    },
-    {
-     "name": "GunStand_Uzi__Body__SmoothPlastic_409cff",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "409cff",
-     "centre": [
-      0.0,
-      -0.009711921215057373,
-      -0.28999999165534973
-     ],
-     "size": [
-      0.35600000619888306,
-      1.7294238805770874,
-      1.4300000071525574
-     ],
-     "tris": 312
-    }
-   ],
-   "kind": "gun"
-  },
-  "Pad_AutoCollect": {
-   "min": [
-    -1.4741486310958862,
-    0.0,
-    -0.4189927875995636
-   ],
-   "max": [
-    1.4741486310958862,
-    4.0,
-    0.4189927875995636
-   ],
-   "tris": 1420,
-   "parts": [
-    {
-     "name": "Pad_AutoCollect__Body__SmoothPlastic_e2e8f2",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "e2e8f2",
-     "centre": [
-      0.0,
-      2.5803353786468506,
-      0.0
-     ],
-     "size": [
-      2.9482972621917725,
-      0.5275778770446777,
-      0.8379855751991272
-     ],
-     "tris": 568
-    },
-    {
-     "name": "Pad_AutoCollect__Body__SmoothPlastic_e82838",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "e82838",
-     "centre": [
-      0.0,
-      1.160671353340149,
-      -4.470348358154297e-08
-     ],
-     "size": [
-      2.916066884994507,
-      2.321342706680298,
-      0.8057554066181183
-     ],
-     "tris": 520
-    },
-    {
-     "name": "Pad_AutoCollect__Body__SmoothPlastic_ffc428",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "ffc428",
-     "centre": [
-      0.0,
-      3.520383596420288,
-      -0.19184651970863342
-     ],
-     "size": [
-      0.9592325687408447,
-      0.9592328071594238,
-      0.1534772515296936
-     ],
-     "tris": 332
-    }
-   ],
-   "kind": "pad",
-   "icon": "Magnet"
-  },
-  "Pad_AutoOpen": {
-   "min": [
-    -2.0,
-    0.0,
-    -0.8896321654319763
-   ],
-   "max": [
-    2.0,
-    3.7080726623535156,
-    0.8896321654319763
-   ],
-   "tris": 1108,
-   "parts": [
-    {
-     "name": "Pad_AutoOpen__Body__SmoothPlastic_2882f0",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "2882f0",
-     "centre": [
-      -0.1508255898952484,
-      1.5550001859664917,
-      -0.17692965269088745
-     ],
-     "size": [
-      2.1929309964179993,
-      0.9868190288543701,
-      1.3157585859298706
-     ],
-     "tris": 108
-    },
-    {
-     "name": "Pad_AutoOpen__Body__SmoothPlastic_46ce3e",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "46ce3e",
-     "centre": [
-      0.0,
-      1.8540363311767578,
-      0.7201783955097198
-     ],
-     "size": [
-      4.0,
-      3.7080726623535156,
-      0.33890753984451294
-     ],
-     "tris": 784
-    },
-    {
-     "name": "Pad_AutoOpen__Body__SmoothPlastic_6ebeff",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "6ebeff",
-     "centre": [
-      -0.15082550048828125,
-      2.158056139945984,
-      -0.17692965269088745
-     ],
-     "size": [
-      2.302577495574951,
-      0.3070104122161865,
-      1.4254050254821777
-     ],
-     "tris": 108
-    },
-    {
-     "name": "Pad_AutoOpen__Body__SmoothPlastic_fafaff",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "fafaff",
-     "centre": [
-      -0.15082556009292603,
-      1.6646467447280884,
-      -0.8567382097244263
-     ],
-     "size": [
-      0.9868189096450806,
-      0.37279820442199707,
-      0.0657879114151001
-     ],
-     "tris": 108
-    }
-   ],
-   "kind": "pad",
-   "icon": "AutoOpen"
-  },
-  "Pad_AutoShoot": {
-   "min": [
-    -2.0,
-    0.0,
-    -0.5686877965927124
-   ],
-   "max": [
-    2.0,
-    3.7147903442382812,
-    0.5686877369880676
-   ],
-   "tris": 1648,
-   "parts": [
-    {
-     "name": "Pad_AutoShoot__Body__SmoothPlastic_2e4696",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "2e4696",
-     "centre": [
-      0.06526681780815125,
-      1.3986461162567139,
-      -0.17984145134687424
-     ],
-     "size": [
-      1.7196865677833557,
-      1.9109225273132324,
-      0.7776926904916763
-     ],
-     "tris": 540
-    },
-    {
-     "name": "Pad_AutoShoot__Body__SmoothPlastic_46ce3e",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "46ce3e",
-     "centre": [
-      0.17180532217025757,
-      1.8573951721191406,
-      0.4034280553460121
-     ],
-     "size": [
-      3.656389355659485,
-      3.7147903442382812,
-      0.330519363284111
-     ],
-     "tris": 784
-    },
-    {
-     "name": "Pad_AutoShoot__Body__SmoothPlastic_96aacc",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "96aacc",
-     "centre": [
-      -0.4689176082611084,
-      1.945818841457367,
-      -0.13123562932014465
-     ],
-     "size": [
-      3.062164783477783,
-      1.069327473640442,
-      0.874904215335846
-     ],
-     "tris": 324
-    }
-   ],
-   "kind": "pad",
-   "icon": "AutoFight"
-  },
-  "Pad_DoubleCash": {
-   "min": [
-    -2.001974582672119,
-    0.011704310774803162,
-    -1.8435208797454834
-   ],
-   "max": [
-    2.0002970695495605,
-    1.441506028175354,
-    1.8480503559112549
-   ],
-   "tris": 4846,
-   "parts": [
-    {
-     "name": "Pad_DoubleCash__Body__SmoothPlastic_2c963c",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "2c963c",
-     "centre": [
-      -0.022856831550598145,
-      0.4370010979473591,
-      0.3145233392715454
-     ],
-     "size": [
-      3.958235502243042,
-      0.7217356190085411,
-      2.946931838989258
-     ],
-     "tris": 174
-    },
-    {
-     "name": "Pad_DoubleCash__Body__SmoothPlastic_34a042",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "34a042",
-     "centre": [
-      0.44682303071022034,
-      0.9162568747997284,
-      0.35708141326904297
-     ],
-     "size": [
-      2.039898097515106,
-      0.30982619524002075,
-      1.893035650253296
-     ],
-     "tris": 1022
-    },
-    {
-     "name": "Pad_DoubleCash__Body__SmoothPlastic_5cce4c",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "5cce4c",
-     "centre": [
-      0.02075350284576416,
-      0.8318141400814056,
-      0.4238553047180176
-     ],
-     "size": [
-      3.9590871334075928,
-      0.32722967863082886,
-      2.8483901023864746
-     ],
-     "tris": 50
-    },
-    {
-     "name": "Pad_DoubleCash__Body__SmoothPlastic_ecffdc",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "ecffdc",
-     "centre": [
-      0.4497387707233429,
-      0.9444895088672638,
-      0.33786939084529877
-     ],
-     "size": [
-      1.2225977778434753,
-      0.3157884478569031,
-      1.4670853912830353
-     ],
-     "tris": 2798
-    },
-    {
-     "name": "Pad_DoubleCash__Body__SmoothPlastic_ff9618",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "ff9618",
-     "centre": [
-      -0.5681475847959518,
-      0.5356787964701653,
-      0.35815536975860596
-     ],
-     "size": [
-      1.6022490561008453,
-      1.0479489713907242,
-      2.553834915161133
-     ],
-     "tris": 50
-    },
-    {
-     "name": "Pad_DoubleCash__Body__SmoothPlastic_ffc428",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "ffc428",
-     "centre": [
-      -0.7216570638120174,
-      0.8698260933160782,
-      -1.255366325378418
-     ],
-     "size": [
-      1.480842538177967,
-      1.1433598697185516,
-      1.1763091087341309
-     ],
-     "tris": 752
-    }
-   ],
-   "kind": "pad",
-   "icon": "DoubleCash"
-  },
-  "Pad_DoubleRep": {
-   "min": [
-    -2.0,
-    0.0,
-    -0.676694393157959
-   ],
-   "max": [
-    2.0000264644622803,
-    2.870112419128418,
-    0.6765450239181519
-   ],
-   "tris": 4846,
-   "parts": [
-    {
-     "name": "Pad_DoubleRep__Body__SmoothPlastic_b0bed2",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "b0bed2",
-     "centre": [
-      0.23578864336013794,
-      0.842460036277771,
-      0.18098027259111404
-     ],
-     "size": [
-      2.9733983278274536,
-      0.3964519500732422,
-      0.39645181596279144
-     ],
-     "tris": 416
-    },
-    {
-     "name": "Pad_DoubleRep__Body__SmoothPlastic_e83440",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "e83440",
-     "centre": [
-      0.23578953742980957,
-      0.842460036277771,
-      0.18098028004169464
-     ],
-     "size": [
-      3.369840145111084,
-      1.684920072555542,
-      0.9911294877529144
-     ],
-     "tris": 266
-    },
-    {
-     "name": "Pad_DoubleRep__Body__SmoothPlastic_fafaff",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "fafaff",
-     "centre": [
-      0.23578661680221558,
-      0.8424600064754486,
-      0.18098027259111404
-     ],
-     "size": [
-      3.5284796953201294,
-      0.39645177125930786,
-      0.39645181596279144
-     ],
-     "tris": 714
-    },
-    {
-     "name": "Pad_DoubleRep__Body__SmoothPlastic_ffcc28",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "ffcc28",
-     "centre": [
-      -1.1022350490093231,
-      2.180484652519226,
-      -0.527454674243927
-     ],
-     "size": [
-      1.7955299019813538,
-      1.3792555332183838,
-      0.29847943782806396
-     ],
-     "tris": 3450
-    }
-   ],
-   "kind": "pad",
-   "icon": "DoublePower"
-  },
-  "Pad_ExtraEquip": {
-   "min": [
-    -2.000000238418579,
-    0.0,
-    -0.6805902719497681
-   ],
-   "max": [
-    2.0,
-    2.712368965148926,
-    0.6805902123451233
-   ],
-   "tris": 2604,
-   "parts": [
-    {
-     "name": "Pad_ExtraEquip__Body__SmoothPlastic_2878f0",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "2878f0",
-     "centre": [
-      0.4033374786376953,
-      0.9270944595336914,
-      0.011022090911865234
-     ],
-     "size": [
-      2.987304210662842,
-      1.3391363620758057,
-      1.2361259460449219
-     ],
-     "tris": 216
-    },
-    {
-     "name": "Pad_ExtraEquip__Body__SmoothPlastic_46d63e",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "46d63e",
-     "centre": [
-      -1.2963355779647827,
-      2.008704423904419,
-      -0.42589686065912247
-     ],
-     "size": [
-      1.4073293209075928,
-      1.4073290824890137,
-      0.5093868225812912
-     ],
-     "tris": 1740
-    },
-    {
-     "name": "Pad_ExtraEquip__Body__SmoothPlastic_fafaff",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "fafaff",
-     "centre": [
-      0.35183221101760864,
-      0.8537744283676147,
-      0.011022090911865234
-     ],
-     "size": [
-      3.2963355779647827,
-      1.7075488567352295,
-      1.3391362428665161
-     ],
-     "tris": 540
-    },
-    {
-     "name": "Pad_ExtraEquip__Body__SmoothPlastic_ffd228",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "ffd228",
-     "centre": [
-      0.3518322706222534,
-      0.6180629730224609,
-      -0.6276429295539856
-     ],
-     "size": [
-      2.4722518920898438,
-      0.18541884422302246,
-      0.06180620193481445
-     ],
-     "tris": 108
-    }
-   ],
-   "kind": "pad",
-   "icon": "ExtraEquip"
-  },
-  "Pad_Lucky": {
-   "min": [
-    -1.7135461568832397,
-    0.0,
-    -0.31332656741142273
-   ],
-   "max": [
-    1.7135461568832397,
-    3.9998178482055664,
-    0.31286537647247314
-   ],
-   "tris": 4848,
-   "parts": [
-    {
-     "name": "Pad_Lucky__Body__SmoothPlastic_4ace3e",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "4ace3e",
-     "centre": [
-      0.0,
-      1.9999089241027832,
-      0.04318348318338394
-     ],
-     "size": [
-      3.4270923137664795,
-      3.9998178482055664,
-      0.5393637865781784
-     ],
-     "tris": 1180
-    },
-    {
-     "name": "Pad_Lucky__Body__SmoothPlastic_60e04c",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "60e04c",
-     "centre": [
-      7.283687591552734e-05,
-      2.2862716615200043,
-      -0.2265576869249344
-     ],
-     "size": [
-      2.9029417037963867,
-      2.903269112110138,
-      0.17353776097297668
-     ],
-     "tris": 3668
-    }
-   ],
-   "kind": "pad",
-   "icon": "Lucky"
-  },
-  "Pad_Speed2x": {
-   "min": [
-    -2.0,
-    0.0,
-    -0.495902419090271
-   ],
-   "max": [
-    2.0,
-    3.683928966522217,
-    0.4957452416419983
-   ],
-   "tris": 4844,
-   "parts": [
-    {
-     "name": "Pad_Speed2x__Body__SmoothPlastic_28aa3c",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "28aa3c",
-     "centre": [
-      0.499878466129303,
-      1.503039002418518,
-      0.23424789123237133
-     ],
-     "size": [
-      3.000243067741394,
-      0.47167515754699707,
-      0.5229947008192539
-     ],
-     "tris": 538
-    },
-    {
-     "name": "Pad_Speed2x__Body__SmoothPlastic_43bc46",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "43bc46",
-     "centre": [
-      0.013615250587463379,
-      1.9893020391464233,
-      0.23424788657575846
-     ],
-     "size": [
-      3.0002431869506836,
-      0.47167515754699707,
-      0.5229947101324797
-     ],
-     "tris": 538
-    },
-    {
-     "name": "Pad_Speed2x__Body__SmoothPlastic_5fcf50",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "5fcf50",
-     "centre": [
-      -0.4726477861404419,
-      2.4755650758743286,
-      0.23424788378179073
-     ],
-     "size": [
-      3.0002431869506836,
-      0.47167515754699707,
-      0.5229947157204151
-     ],
-     "tris": 538
-    },
-    {
-     "name": "Pad_Speed2x__Body__SmoothPlastic_7ae15a",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "7ae15a",
-     "centre": [
-      0.013615250587463379,
-      2.961828112602234,
-      0.23424788285046816
-     ],
-     "size": [
-      3.0002431869506836,
-      0.47167515754699707,
-      0.5229947175830603
-     ],
-     "tris": 538
-    },
-    {
-     "name": "Pad_Speed2x__Body__SmoothPlastic_96f464",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "96f464",
-     "centre": [
-      0.499878466129303,
-      3.4480912685394287,
-      0.23424787819385529
-     ],
-     "size": [
-      3.000243067741394,
-      0.47167539596557617,
-      0.522994726896286
-     ],
-     "tris": 538
-    },
-    {
-     "name": "Pad_Speed2x__Body__SmoothPlastic_ffcc28",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "ffcc28",
-     "centre": [
-      -1.0561633631587029,
-      0.7250181436538696,
-      -0.33900395780801773
-     ],
-     "size": [
-      1.8876732736825943,
-      1.4500362873077393,
-      0.31379692256450653
-     ],
-     "tris": 2154
-    }
-   ],
-   "kind": "pad",
-   "icon": "Speed2x"
-  },
-  "Pad_TripleOpen": {
-   "min": [
-    -2.000000238418579,
-    0.0,
-    -0.7659811973571777
-   ],
-   "max": [
-    2.0,
-    2.9147040843963623,
-    0.7659605741500854
-   ],
-   "tris": 5016,
-   "parts": [
-    {
-     "name": "Pad_TripleOpen__Body__SmoothPlastic_2882f0",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "2882f0",
-     "centre": [
-      -0.8719838447868824,
-      1.2197531759738922,
-      0.11069601774215698
-     ],
-     "size": [
-      1.8040610179305077,
-      0.7863175272941589,
-      1.1555708646774292
-     ],
-     "tris": 108
-    },
-    {
-     "name": "Pad_TripleOpen__Body__SmoothPlastic_6ebeff",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "6ebeff",
-     "centre": [
-      -0.8719838261604309,
-      1.700280487537384,
-      0.11069601774215698
-     ],
-     "size": [
-      1.8997489213943481,
-      0.24463212490081787,
-      1.2512589693069458
-     ],
-     "tris": 108
-    },
-    {
-     "name": "Pad_TripleOpen__Body__SmoothPlastic_e83c46",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "e83c46",
-     "centre": [
-      1.0501256436109543,
-      1.2197531759738922,
-      0.11069601774215698
-     ],
-     "size": [
-      1.804061084985733,
-      0.7863175272941589,
-      1.1555708646774292
-     ],
-     "tris": 108
-    },
-    {
-     "name": "Pad_TripleOpen__Body__SmoothPlastic_fafaff",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "fafaff",
-     "centre": [
-      0.08907091617584229,
-      1.8531755208969116,
-      -0.4003763645887375
-     ],
-     "size": [
-      2.707730293273926,
-      1.3891608715057373,
-      0.16593244671821594
-     ],
-     "tris": 240
-    },
-    {
-     "name": "Pad_TripleOpen__Body__SmoothPlastic_ff7878",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "ff7878",
-     "centre": [
-      1.0501255616545677,
-      1.700280487537384,
-      0.11069601774215698
-     ],
-     "size": [
-      1.8997488766908646,
-      0.24463212490081787,
-      1.2512589693069458
-     ],
-     "tris": 108
-    },
-    {
-     "name": "Pad_TripleOpen__Body__SmoothPlastic_ff961e",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "ff961e",
-     "centre": [
-      0.08907085657119751,
-      2.311860740184784,
-      0.1980646550655365
-     ],
-     "size": [
-      1.7473721504211426,
-      0.7863174676895142,
-      1.0484233498573303
-     ],
-     "tris": 108
-    },
-    {
-     "name": "Pad_TripleOpen__Body__SmoothPlastic_ffcc28",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "ffcc28",
-     "centre": [
-      -1.2651427090168,
-      0.5644885897636414,
-      -0.6438732743263245
-     ],
-     "size": [
-      1.4697150588035583,
-      1.1289771795272827,
-      0.24421584606170654
-     ],
-     "tris": 4128
-    },
-    {
-     "name": "Pad_TripleOpen__Body__SmoothPlastic_ffce5a",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "ffce5a",
-     "centre": [
-      0.0890708863735199,
-      2.792388081550598,
-      0.1980646401643753
-     ],
-     "size": [
-      1.834740698337555,
-      0.24463200569152832,
-      1.1357918679714203
-     ],
-     "tris": 108
-    }
-   ],
-   "kind": "pad",
-   "icon": "TripleOpen"
-  },
-  "Pad_VIP": {
-   "min": [
-    -2.0,
-    0.0,
-    -1.9907951354980469
-   ],
-   "max": [
-    2.0,
-    2.4476566314697266,
-    1.9907951354980469
-   ],
-   "tris": 2912,
-   "parts": [
-    {
-     "name": "Pad_VIP__Body__SmoothPlastic_2896ff",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "2896ff",
-     "centre": [
-      0.0,
-      0.6106628477573395,
-      0.0
-     ],
-     "size": [
-      2.9385745525360107,
-      0.4204563498497009,
-      2.9201648235321045
-     ],
-     "tris": 80
-    },
-    {
-     "name": "Pad_VIP__Body__SmoothPlastic_e29614",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "e29614",
-     "centre": [
-      0.0,
-      0.16017386317253113,
-      0.0
-     ],
-     "size": [
-      3.844172477722168,
-      0.32034772634506226,
-      3.844172477722168
-     ],
-     "tris": 384
-    },
-    {
-     "name": "Pad_VIP__Body__SmoothPlastic_e81e48",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "e81e48",
-     "centre": [
-      0.0,
-      0.6106628477573395,
-      0.0
-     ],
-     "size": [
-      4.0,
-      0.4204563498497009,
-      3.9815902709960938
-     ],
-     "tris": 80
-    },
-    {
-     "name": "Pad_VIP__Body__SmoothPlastic_ffc828",
-     "group": "Body",
-     "material": "SmoothPlastic",
-     "color": "ffc828",
-     "centre": [
-      0.0,
-      1.2288337349891663,
-      0.0
-     ],
-     "size": [
-      3.6239333152770996,
-      2.4376457929611206,
-      3.6239333152770996
-     ],
-     "tris": 2368
-    }
-   ],
-   "kind": "pad",
-   "icon": "VIP"
+  "Items_Guns.glb": {
+   "items": 15,
+   "bytes": 1104380,
+   "triangles": 40780
   }
- }
+ },
+ "items": [
+  {
+   "id": "Pad_Base",
+   "category": "Pads",
+   "source": "RobuxPads/glb/Pad_Base.glb",
+   "size": [
+    8.12,
+    1.385,
+    8.12
+   ],
+   "min": [
+    -4.06,
+    0,
+    -4.06
+   ],
+   "max": [
+    4.06,
+    1.385,
+    4.06
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [
+    "Pad_Base_Glow_2FD6FF"
+   ],
+   "triangles": 5004,
+   "meshes": [
+    {
+     "name": "Pad_Base",
+     "tris": 4976,
+     "kind": "body",
+     "min": [
+      -4.06,
+      0,
+      -4.06
+     ],
+     "max": [
+      4.06,
+      1.385,
+      4.06
+     ]
+    },
+    {
+     "name": "Pad_Base_Glow_2FD6FF",
+     "tris": 28,
+     "kind": "glow",
+     "min": [
+      -3.33,
+      0.89,
+      -3.33
+     ],
+     "max": [
+      3.33,
+      1.09,
+      3.33
+     ],
+     "color": "2FD6FF"
+    }
+   ],
+   "collision": "solid",
+   "package": "Items_Pads.glb",
+   "package_offset": [
+    -46.885,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Pad_VIP",
+   "category": "Pads",
+   "source": "RobuxPads/glb/Pad_VIP.glb",
+   "size": [
+    4.46,
+    3.595,
+    3.842
+   ],
+   "min": [
+    -2.23,
+    0,
+    -1.921
+   ],
+   "max": [
+    2.23,
+    3.595,
+    1.921
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 7424,
+   "meshes": [
+    {
+     "name": "Pad_VIP",
+     "tris": 7424,
+     "kind": "body",
+     "min": [
+      -2.23,
+      0,
+      -1.921
+     ],
+     "max": [
+      2.23,
+      3.595,
+      1.921
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Pads.glb",
+   "package_offset": [
+    -36.595,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Pad_DoubleCash",
+   "category": "Pads",
+   "source": "RobuxPads/glb/Pad_DoubleCash.glb",
+   "size": [
+    4.963,
+    3.47,
+    2.387
+   ],
+   "min": [
+    -2.482,
+    0,
+    -1.198
+   ],
+   "max": [
+    2.482,
+    3.47,
+    1.189
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 6528,
+   "meshes": [
+    {
+     "name": "Pad_DoubleCash",
+     "tris": 6528,
+     "kind": "body",
+     "min": [
+      -2.482,
+      0,
+      -1.198
+     ],
+     "max": [
+      2.482,
+      3.47,
+      1.189
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Pads.glb",
+   "package_offset": [
+    -27.883,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Pad_DoubleRep",
+   "category": "Pads",
+   "source": "RobuxPads/glb/Pad_DoubleRep.glb",
+   "size": [
+    4.705,
+    2.665,
+    3.033
+   ],
+   "min": [
+    -2.352,
+    0,
+    -1.516
+   ],
+   "max": [
+    2.352,
+    2.665,
+    1.516
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 4156,
+   "meshes": [
+    {
+     "name": "Pad_DoubleRep",
+     "tris": 4156,
+     "kind": "body",
+     "min": [
+      -2.352,
+      0,
+      -1.516
+     ],
+     "max": [
+      2.352,
+      2.665,
+      1.516
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Pads.glb",
+   "package_offset": [
+    -19.049,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Pad_AutoShoot",
+   "category": "Pads",
+   "source": "RobuxPads/glb/Pad_AutoShoot.glb",
+   "size": [
+    4.896,
+    5.181,
+    1.598
+   ],
+   "min": [
+    -2.464,
+    0,
+    -0.799
+   ],
+   "max": [
+    2.432,
+    5.181,
+    0.799
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 6420,
+   "meshes": [
+    {
+     "name": "Pad_AutoShoot",
+     "tris": 6420,
+     "kind": "body",
+     "min": [
+      -2.464,
+      0,
+      -0.799
+     ],
+     "max": [
+      2.432,
+      5.181,
+      0.799
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Pads.glb",
+   "package_offset": [
+    -10.233,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Pad_AutoCollect",
+   "category": "Pads",
+   "source": "RobuxPads/glb/Pad_AutoCollect.glb",
+   "size": [
+    5.607,
+    3.565,
+    1.444
+   ],
+   "min": [
+    -2.803,
+    0,
+    -0.722
+   ],
+   "max": [
+    2.803,
+    3.565,
+    0.722
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 4380,
+   "meshes": [
+    {
+     "name": "Pad_AutoCollect",
+     "tris": 4380,
+     "kind": "body",
+     "min": [
+      -2.803,
+      0,
+      -0.722
+     ],
+     "max": [
+      2.803,
+      3.565,
+      0.722
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Pads.glb",
+   "package_offset": [
+    -0.998,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Pad_AutoOpen",
+   "category": "Pads",
+   "source": "RobuxPads/glb/Pad_AutoOpen.glb",
+   "size": [
+    4.896,
+    5.181,
+    1.623
+   ],
+   "min": [
+    -2.464,
+    0,
+    -0.812
+   ],
+   "max": [
+    2.432,
+    5.181,
+    0.812
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 7364,
+   "meshes": [
+    {
+     "name": "Pad_AutoOpen",
+     "tris": 7364,
+     "kind": "body",
+     "min": [
+      -2.464,
+      0,
+      -0.812
+     ],
+     "max": [
+      2.432,
+      5.181,
+      0.812
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Pads.glb",
+   "package_offset": [
+    8.269,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Pad_TripleOpen",
+   "category": "Pads",
+   "source": "RobuxPads/glb/Pad_TripleOpen.glb",
+   "size": [
+    4.67,
+    4.704,
+    3.053
+   ],
+   "min": [
+    -2.335,
+    0,
+    -1.527
+   ],
+   "max": [
+    2.335,
+    4.704,
+    1.527
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 8944,
+   "meshes": [
+    {
+     "name": "Pad_TripleOpen",
+     "tris": 8944,
+     "kind": "body",
+     "min": [
+      -2.335,
+      0,
+      -1.527
+     ],
+     "max": [
+      2.335,
+      4.704,
+      1.527
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Pads.glb",
+   "package_offset": [
+    17.036,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Pad_Lucky",
+   "category": "Pads",
+   "source": "RobuxPads/glb/Pad_Lucky.glb",
+   "size": [
+    3.973,
+    4.517,
+    1.775
+   ],
+   "min": [
+    -1.986,
+    0,
+    -0.888
+   ],
+   "max": [
+    1.986,
+    4.517,
+    0.888
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 3172,
+   "meshes": [
+    {
+     "name": "Pad_Lucky",
+     "tris": 3172,
+     "kind": "body",
+     "min": [
+      -1.986,
+      0,
+      -0.888
+     ],
+     "max": [
+      1.986,
+      4.517,
+      0.888
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Pads.glb",
+   "package_offset": [
+    25.358,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Pad_Speed2x",
+   "category": "Pads",
+   "source": "RobuxPads/glb/Pad_Speed2x.glb",
+   "size": [
+    5.763,
+    3.31,
+    3.671
+   ],
+   "min": [
+    -2.886,
+    0,
+    -1.851
+   ],
+   "max": [
+    2.877,
+    3.31,
+    1.82
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 6368,
+   "meshes": [
+    {
+     "name": "Pad_Speed2x",
+     "tris": 6368,
+     "kind": "body",
+     "min": [
+      -2.886,
+      0,
+      -1.851
+     ],
+     "max": [
+      2.877,
+      3.31,
+      1.82
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Pads.glb",
+   "package_offset": [
+    34.23,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Pad_ExtraEquip",
+   "category": "Pads",
+   "source": "RobuxPads/glb/Pad_ExtraEquip.glb",
+   "size": [
+    5.838,
+    2.83,
+    3.183
+   ],
+   "min": [
+    -2.924,
+    0,
+    -1.596
+   ],
+   "max": [
+    2.914,
+    2.83,
+    1.586
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 3716,
+   "meshes": [
+    {
+     "name": "Pad_ExtraEquip",
+     "tris": 3716,
+     "kind": "body",
+     "min": [
+      -2.924,
+      0,
+      -1.596
+     ],
+     "max": [
+      2.914,
+      2.83,
+      1.586
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Pads.glb",
+   "package_offset": [
+    44.03,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Gate_Stage1",
+   "category": "Lobby",
+   "source": "Lobby/glb/Gate_Stage1.glb",
+   "size": [
+    20.2,
+    14.17,
+    4.7
+   ],
+   "min": [
+    -10.1,
+    0,
+    -2.5
+   ],
+   "max": [
+    10.1,
+    14.17,
+    2.2
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 5204,
+   "meshes": [
+    {
+     "name": "Gate_Stage1",
+     "tris": 5204,
+     "kind": "body",
+     "min": [
+      -10.1,
+      0,
+      -2.5
+     ],
+     "max": [
+      10.1,
+      14.17,
+      2.2
+     ]
+    }
+   ],
+   "collision": "solid",
+   "colliders": [
+    {
+     "centre": [
+      -7.25,
+      5,
+      -0.15
+     ],
+     "size": [
+      5.7,
+      10,
+      4.7
+     ]
+    },
+    {
+     "centre": [
+      7.25,
+      5,
+      -0.15
+     ],
+     "size": [
+      5.7,
+      10,
+      4.7
+     ]
+    },
+    {
+     "centre": [
+      0,
+      12.1,
+      -0.15
+     ],
+     "size": [
+      20.2,
+      4.1,
+      4.4
+     ]
+    }
+   ],
+   "package": "Items_Lobby.glb",
+   "package_offset": [
+    -69.06,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Board_Boxes",
+   "category": "Lobby",
+   "source": "Lobby/glb/Board_Boxes.glb",
+   "size": [
+    16.3,
+    10.1,
+    2.4
+   ],
+   "min": [
+    -8.15,
+    0,
+    -1.2
+   ],
+   "max": [
+    8.15,
+    10.1,
+    1.2
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 6532,
+   "meshes": [
+    {
+     "name": "Board_Boxes",
+     "tris": 6532,
+     "kind": "body",
+     "min": [
+      -8.15,
+      0,
+      -1.2
+     ],
+     "max": [
+      8.15,
+      10.1,
+      1.2
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Lobby.glb",
+   "package_offset": [
+    -46.81,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Pedestal_Box",
+   "category": "Lobby",
+   "source": "Lobby/glb/Pedestal_Box.glb",
+   "size": [
+    7.0,
+    1.102,
+    7.0
+   ],
+   "min": [
+    -3.5,
+    0,
+    -3.5
+   ],
+   "max": [
+    3.5,
+    1.102,
+    3.5
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [
+    "Pedestal_Box_Glow_2FD6FF"
+   ],
+   "triangles": 3228,
+   "meshes": [
+    {
+     "name": "Pedestal_Box",
+     "tris": 3200,
+     "kind": "body",
+     "min": [
+      -3.5,
+      0,
+      -3.5
+     ],
+     "max": [
+      3.5,
+      1.102,
+      3.5
+     ]
+    },
+    {
+     "name": "Pedestal_Box_Glow_2FD6FF",
+     "tris": 28,
+     "kind": "glow",
+     "min": [
+      -3.32,
+      0.25,
+      -3.32
+     ],
+     "max": [
+      3.32,
+      0.45,
+      3.32
+     ],
+     "color": "2FD6FF"
+    }
+   ],
+   "collision": "solid",
+   "package": "Items_Lobby.glb",
+   "package_offset": [
+    -31.16,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Stand_Guns",
+   "category": "Lobby",
+   "source": "Lobby/glb/Stand_Guns.glb",
+   "size": [
+    14.6,
+    11.276,
+    6.811
+   ],
+   "min": [
+    -7.3,
+    0,
+    -4.111
+   ],
+   "max": [
+    7.3,
+    11.276,
+    2.7
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 6668,
+   "meshes": [
+    {
+     "name": "Stand_Guns",
+     "tris": 6668,
+     "kind": "body",
+     "min": [
+      -7.3,
+      0,
+      -4.111
+     ],
+     "max": [
+      7.3,
+      11.276,
+      2.7
+     ]
+    }
+   ],
+   "collision": "solid",
+   "package": "Items_Lobby.glb",
+   "package_offset": [
+    -16.36,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Board_Leaderboard",
+   "category": "Lobby",
+   "source": "Lobby/glb/Board_Leaderboard.glb",
+   "size": [
+    8.5,
+    12.15,
+    3.4
+   ],
+   "min": [
+    -4.25,
+    0,
+    -1.7
+   ],
+   "max": [
+    4.25,
+    12.15,
+    1.7
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 3396,
+   "meshes": [
+    {
+     "name": "Board_Leaderboard",
+     "tris": 3396,
+     "kind": "body",
+     "min": [
+      -4.25,
+      0,
+      -1.7
+     ],
+     "max": [
+      4.25,
+      12.15,
+      1.7
+     ]
+    }
+   ],
+   "collision": "solid",
+   "package": "Items_Lobby.glb",
+   "package_offset": [
+    -0.81,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Chest_Codes",
+   "category": "Lobby",
+   "source": "Lobby/glb/Chest_Codes.glb",
+   "size": [
+    4.74,
+    3.99,
+    3.64
+   ],
+   "min": [
+    -2.37,
+    0,
+    -1.87
+   ],
+   "max": [
+    2.37,
+    3.99,
+    1.77
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 5412,
+   "meshes": [
+    {
+     "name": "Chest_Codes",
+     "tris": 5412,
+     "kind": "body",
+     "min": [
+      -2.37,
+      0,
+      -1.87
+     ],
+     "max": [
+      2.37,
+      3.99,
+      1.77
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Lobby.glb",
+   "package_offset": [
+    9.81,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Chest_GroupReward",
+   "category": "Lobby",
+   "source": "Lobby/glb/Chest_GroupReward.glb",
+   "size": [
+    4.74,
+    3.99,
+    3.64
+   ],
+   "min": [
+    -2.37,
+    0,
+    -1.87
+   ],
+   "max": [
+    2.37,
+    3.99,
+    1.77
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 5764,
+   "meshes": [
+    {
+     "name": "Chest_GroupReward",
+     "tris": 5764,
+     "kind": "body",
+     "min": [
+      -2.37,
+      0,
+      -1.87
+     ],
+     "max": [
+      2.37,
+      3.99,
+      1.77
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Lobby.glb",
+   "package_offset": [
+    18.55,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Stand_SpinWheel",
+   "category": "Lobby",
+   "source": "Lobby/glb/Stand_SpinWheel.glb",
+   "size": [
+    6.6,
+    8.085,
+    3.55
+   ],
+   "min": [
+    -3.3,
+    0,
+    -1.55
+   ],
+   "max": [
+    3.3,
+    8.085,
+    2.0
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 5988,
+   "meshes": [
+    {
+     "name": "Stand_SpinWheel",
+     "tris": 2724,
+     "kind": "body",
+     "min": [
+      -3.3,
+      0,
+      -1.55
+     ],
+     "max": [
+      3.3,
+      8.085,
+      2.0
+     ]
+    },
+    {
+     "name": "Stand_SpinWheel_Wheel",
+     "tris": 3264,
+     "kind": "body",
+     "min": [
+      -2.988,
+      1.212,
+      -0.75
+     ],
+     "max": [
+      2.988,
+      7.188,
+      0.25
+     ],
+     "at": [
+      0,
+      4.2,
+      0
+     ]
+    }
+   ],
+   "collision": "solid",
+   "package": "Items_Lobby.glb",
+   "package_offset": [
+    28.22,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Portal_World2",
+   "category": "Lobby",
+   "source": "Lobby/glb/Portal_World2.glb",
+   "size": [
+    16.4,
+    14.136,
+    5.46
+   ],
+   "min": [
+    -8.2,
+    0,
+    -3.56
+   ],
+   "max": [
+    8.2,
+    14.136,
+    1.9
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [
+    "Portal_World2_Glow_7A2EFF",
+    "Portal_World2_Glow_FF4FD8"
+   ],
+   "triangles": 9000,
+   "meshes": [
+    {
+     "name": "Portal_World2",
+     "tris": 8784,
+     "kind": "body",
+     "min": [
+      -8.2,
+      0,
+      -3.56
+     ],
+     "max": [
+      8.2,
+      14.136,
+      1.9
+     ]
+    },
+    {
+     "name": "Portal_World2_Glow_7A2EFF",
+     "tris": 36,
+     "kind": "glow",
+     "min": [
+      -4.6,
+      0,
+      -0.15
+     ],
+     "max": [
+      4.6,
+      11.8,
+      0.15
+     ],
+     "color": "7A2EFF"
+    },
+    {
+     "name": "Portal_World2_Glow_FF4FD8",
+     "tris": 180,
+     "kind": "glow",
+     "min": [
+      -6.55,
+      1.75,
+      -1.86
+     ],
+     "max": [
+      6.55,
+      12.8,
+      -0.14
+     ],
+     "color": "FF4FD8"
+    }
+   ],
+   "collision": "solid",
+   "package": "Items_Lobby.glb",
+   "package_offset": [
+    43.72,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Spawn_Pad",
+   "category": "Lobby",
+   "source": "Lobby/glb/Spawn_Pad.glb",
+   "size": [
+    12.0,
+    1.17,
+    12.0
+   ],
+   "min": [
+    -6.0,
+    0,
+    -6.0
+   ],
+   "max": [
+    6.0,
+    1.17,
+    6.0
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 2568,
+   "meshes": [
+    {
+     "name": "Spawn_Pad",
+     "tris": 2568,
+     "kind": "body",
+     "min": [
+      -6.0,
+      0,
+      -6.0
+     ],
+     "max": [
+      6.0,
+      1.17,
+      6.0
+     ]
+    }
+   ],
+   "collision": "solid",
+   "package": "Items_Lobby.glb",
+   "package_offset": [
+    61.92,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Target_Dummy",
+   "category": "Lobby",
+   "source": "ShootingRanges/glb/Target_Dummy.glb",
+   "size": [
+    3.24,
+    4.998,
+    2.5
+   ],
+   "min": [
+    -1.62,
+    0,
+    -1.25
+   ],
+   "max": [
+    1.62,
+    4.998,
+    1.25
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 2492,
+   "meshes": [
+    {
+     "name": "Target_Dummy",
+     "tris": 2492,
+     "kind": "body",
+     "min": [
+      -1.62,
+      0,
+      -1.25
+     ],
+     "max": [
+      1.62,
+      4.998,
+      1.25
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Lobby.glb",
+   "package_offset": [
+    73.54,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Scn_Tree_1",
+   "category": "Scenery",
+   "source": "PlazaScenery/glb/Tree_1.glb",
+   "size": [
+    10.6,
+    13.502,
+    7.4
+   ],
+   "min": [
+    -5.3,
+    0,
+    -3.7
+   ],
+   "max": [
+    5.3,
+    13.502,
+    3.7
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 4884,
+   "meshes": [
+    {
+     "name": "Scn_Tree_1",
+     "tris": 4884,
+     "kind": "body",
+     "min": [
+      -5.3,
+      0,
+      -3.7
+     ],
+     "max": [
+      5.3,
+      13.502,
+      3.7
+     ]
+    }
+   ],
+   "collision": "solid",
+   "package": "Items_Scenery.glb",
+   "package_offset": [
+    -119.56,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Scn_Tree_2",
+   "category": "Scenery",
+   "source": "PlazaScenery/glb/Tree_2.glb",
+   "size": [
+    8.7,
+    14.502,
+    7.0
+   ],
+   "min": [
+    -4.35,
+    0,
+    -3.5
+   ],
+   "max": [
+    4.35,
+    14.502,
+    3.5
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 3172,
+   "meshes": [
+    {
+     "name": "Scn_Tree_2",
+     "tris": 3172,
+     "kind": "body",
+     "min": [
+      -4.35,
+      0,
+      -3.5
+     ],
+     "max": [
+      4.35,
+      14.502,
+      3.5
+     ]
+    }
+   ],
+   "collision": "solid",
+   "package": "Items_Scenery.glb",
+   "package_offset": [
+    -105.91,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Scn_Bush_1",
+   "category": "Scenery",
+   "source": "PlazaScenery/glb/Bush_1.glb",
+   "size": [
+    3.2,
+    2.368,
+    2.64
+   ],
+   "min": [
+    -1.6,
+    0,
+    -1.32
+   ],
+   "max": [
+    1.6,
+    2.368,
+    1.32
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 2208,
+   "meshes": [
+    {
+     "name": "Scn_Bush_1",
+     "tris": 2208,
+     "kind": "body",
+     "min": [
+      -1.6,
+      0,
+      -1.32
+     ],
+     "max": [
+      1.6,
+      2.368,
+      1.32
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Scenery.glb",
+   "package_offset": [
+    -95.96,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Scn_Cliff_Block",
+   "category": "Scenery",
+   "source": "PlazaScenery/glb/Cliff_Block.glb",
+   "size": [
+    16.0,
+    12.17,
+    16.0
+   ],
+   "min": [
+    -8.0,
+    0,
+    -8.0
+   ],
+   "max": [
+    8.0,
+    12.17,
+    8.0
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 12404,
+   "meshes": [
+    {
+     "name": "Scn_Cliff_Block",
+     "tris": 8204,
+     "kind": "body",
+     "min": [
+      -8.0,
+      0,
+      -8.0
+     ],
+     "max": [
+      8.0,
+      12,
+      8.0
+     ]
+    },
+    {
+     "name": "Scn_Cliff_Block_2",
+     "tris": 4200,
+     "kind": "body",
+     "min": [
+      -7.3,
+      8,
+      -2.3
+     ],
+     "max": [
+      7.3,
+      12.17,
+      7.633
+     ]
+    }
+   ],
+   "collision": "solid",
+   "package": "Items_Scenery.glb",
+   "package_offset": [
+    -82.36,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Scn_Building_1",
+   "category": "Scenery",
+   "source": "PlazaScenery/glb/Building_1.glb",
+   "size": [
+    19.05,
+    15.97,
+    14.95
+   ],
+   "min": [
+    -9.525,
+    0,
+    -7.465
+   ],
+   "max": [
+    9.525,
+    15.97,
+    7.485
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 15312,
+   "meshes": [
+    {
+     "name": "Scn_Building_1",
+     "tris": 9484,
+     "kind": "body",
+     "min": [
+      -9.525,
+      0,
+      -7.465
+     ],
+     "max": [
+      9.075,
+      14.4,
+      7.485
+     ]
+    },
+    {
+     "name": "Scn_Building_1_2",
+     "tris": 5828,
+     "kind": "body",
+     "min": [
+      -8.025,
+      1.4,
+      -5.565
+     ],
+     "max": [
+      9.525,
+      15.97,
+      6.085
+     ]
+    }
+   ],
+   "collision": "solid",
+   "package": "Items_Scenery.glb",
+   "package_offset": [
+    -60.835,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Scn_Building_2",
+   "category": "Scenery",
+   "source": "PlazaScenery/glb/Building_2.glb",
+   "size": [
+    19.15,
+    21.95,
+    14.4
+   ],
+   "min": [
+    -9.575,
+    0,
+    -7.2
+   ],
+   "max": [
+    9.575,
+    21.95,
+    7.2
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 21920,
+   "meshes": [
+    {
+     "name": "Scn_Building_2",
+     "tris": 9484,
+     "kind": "body",
+     "min": [
+      -9.575,
+      0,
+      -5.95
+     ],
+     "max": [
+      9.225,
+      18.2,
+      7.2
+     ]
+    },
+    {
+     "name": "Scn_Building_2_2",
+     "tris": 7200,
+     "kind": "body",
+     "min": [
+      -7.575,
+      0,
+      -7.2
+     ],
+     "max": [
+      9.575,
+      21.95,
+      5.2
+     ]
+    },
+    {
+     "name": "Scn_Building_2_3",
+     "tris": 5236,
+     "kind": "body",
+     "min": [
+      -8.475,
+      5.8,
+      -6.4
+     ],
+     "max": [
+      8.125,
+      21.17,
+      6.1
+     ]
+    }
+   ],
+   "collision": "solid",
+   "package": "Items_Scenery.glb",
+   "package_offset": [
+    -37.735,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Scn_Building_3",
+   "category": "Scenery",
+   "source": "PlazaScenery/glb/Building_3.glb",
+   "size": [
+    19.05,
+    17,
+    14.75
+   ],
+   "min": [
+    -9.525,
+    0,
+    -7.362
+   ],
+   "max": [
+    9.525,
+    17,
+    7.388
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 15436,
+   "meshes": [
+    {
+     "name": "Scn_Building_3",
+     "tris": 9484,
+     "kind": "body",
+     "min": [
+      -9.525,
+      0,
+      -7.362
+     ],
+     "max": [
+      9.175,
+      14.6,
+      7.388
+     ]
+    },
+    {
+     "name": "Scn_Building_3_2",
+     "tris": 5952,
+     "kind": "body",
+     "min": [
+      -8.025,
+      1.5,
+      -3.712
+     ],
+     "max": [
+      9.525,
+      17,
+      5.888
+     ]
+    }
+   ],
+   "collision": "solid",
+   "package": "Items_Scenery.glb",
+   "package_offset": [
+    -14.635,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Scn_Building_4",
+   "category": "Scenery",
+   "source": "PlazaScenery/glb/Building_4.glb",
+   "size": [
+    21.05,
+    14.18,
+    15.2
+   ],
+   "min": [
+    -10.525,
+    0,
+    -7.6
+   ],
+   "max": [
+    10.525,
+    14.18,
+    7.6
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 16140,
+   "meshes": [
+    {
+     "name": "Scn_Building_4",
+     "tris": 9164,
+     "kind": "body",
+     "min": [
+      -10.525,
+      0,
+      -7.6
+     ],
+     "max": [
+      10.525,
+      12.81,
+      7.6
+     ]
+    },
+    {
+     "name": "Scn_Building_4_2",
+     "tris": 6976,
+     "kind": "body",
+     "min": [
+      -9.025,
+      6.75,
+      -5.625
+     ],
+     "max": [
+      10.175,
+      14.18,
+      6.1
+     ]
+    }
+   ],
+   "collision": "solid",
+   "package": "Items_Scenery.glb",
+   "package_offset": [
+    9.415,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Scn_Hydrant",
+   "category": "Scenery",
+   "source": "PlazaScenery/glb/Hydrant.glb",
+   "size": [
+    2.48,
+    3.06,
+    2.26
+   ],
+   "min": [
+    -1.24,
+    0,
+    -1.13
+   ],
+   "max": [
+    1.24,
+    3.06,
+    1.13
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 2132,
+   "meshes": [
+    {
+     "name": "Scn_Hydrant",
+     "tris": 2132,
+     "kind": "body",
+     "min": [
+      -1.24,
+      0,
+      -1.13
+     ],
+     "max": [
+      1.24,
+      3.06,
+      1.13
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Scenery.glb",
+   "package_offset": [
+    25.18,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Scn_StreetLamp",
+   "category": "Scenery",
+   "source": "PlazaScenery/glb/StreetLamp.glb",
+   "size": [
+    4.7,
+    8.427,
+    2.0
+   ],
+   "min": [
+    -2.35,
+    0,
+    -1
+   ],
+   "max": [
+    2.35,
+    8.427,
+    1.0
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [
+    "Scn_StreetLamp_Glow_FFD84A"
+   ],
+   "triangles": 1968,
+   "meshes": [
+    {
+     "name": "Scn_StreetLamp",
+     "tris": 1956,
+     "kind": "body",
+     "min": [
+      -2.35,
+      0,
+      -1
+     ],
+     "max": [
+      2.35,
+      8.427,
+      1.0
+     ]
+    },
+    {
+     "name": "Scn_StreetLamp_Glow_FFD84A",
+     "tris": 12,
+     "kind": "glow",
+     "min": [
+      -2.05,
+      5.9,
+      -0.6
+     ],
+     "max": [
+      -0.55,
+      6.85,
+      0.6
+     ],
+     "color": "FFD84A"
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Scenery.glb",
+   "package_offset": [
+    32.77,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Scn_Bench",
+   "category": "Scenery",
+   "source": "PlazaScenery/glb/Bench.glb",
+   "size": [
+    4.7,
+    2.75,
+    2.24
+   ],
+   "min": [
+    -2.35,
+    0,
+    -1.12
+   ],
+   "max": [
+    2.35,
+    2.75,
+    1.12
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 2088,
+   "meshes": [
+    {
+     "name": "Scn_Bench",
+     "tris": 2088,
+     "kind": "body",
+     "min": [
+      -2.35,
+      0,
+      -1.12
+     ],
+     "max": [
+      2.35,
+      2.75,
+      1.12
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Scenery.glb",
+   "package_offset": [
+    41.47,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Scn_TrashCan",
+   "category": "Scenery",
+   "source": "PlazaScenery/glb/TrashCan.glb",
+   "size": [
+    2.24,
+    3.65,
+    2.255
+   ],
+   "min": [
+    -1.12,
+    0,
+    -1.128
+   ],
+   "max": [
+    1.12,
+    3.65,
+    1.128
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 1948,
+   "meshes": [
+    {
+     "name": "Scn_TrashCan",
+     "tris": 1948,
+     "kind": "body",
+     "min": [
+      -1.12,
+      0,
+      -1.128
+     ],
+     "max": [
+      1.12,
+      3.65,
+      1.128
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Scenery.glb",
+   "package_offset": [
+    48.94,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Scn_Barrel",
+   "category": "Scenery",
+   "source": "PlazaScenery/glb/Barrel.glb",
+   "size": [
+    2.06,
+    3.04,
+    2.125
+   ],
+   "min": [
+    -1.03,
+    0,
+    -1.062
+   ],
+   "max": [
+    1.03,
+    3.04,
+    1.062
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 1504,
+   "meshes": [
+    {
+     "name": "Scn_Barrel",
+     "tris": 1504,
+     "kind": "body",
+     "min": [
+      -1.03,
+      0,
+      -1.062
+     ],
+     "max": [
+      1.03,
+      3.04,
+      1.062
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Scenery.glb",
+   "package_offset": [
+    55.09,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Scn_Crate",
+   "category": "Scenery",
+   "source": "PlazaScenery/glb/Crate.glb",
+   "size": [
+    2.7,
+    2.508,
+    2.7
+   ],
+   "min": [
+    -1.35,
+    0,
+    -1.35
+   ],
+   "max": [
+    1.35,
+    2.508,
+    1.35
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 3440,
+   "meshes": [
+    {
+     "name": "Scn_Crate",
+     "tris": 3440,
+     "kind": "body",
+     "min": [
+      -1.35,
+      0,
+      -1.35
+     ],
+     "max": [
+      1.35,
+      2.508,
+      1.35
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Scenery.glb",
+   "package_offset": [
+    61.47,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Scn_Cone",
+   "category": "Scenery",
+   "source": "PlazaScenery/glb/Cone.glb",
+   "size": [
+    2.7,
+    2.56,
+    2.7
+   ],
+   "min": [
+    -1.35,
+    0,
+    -1.35
+   ],
+   "max": [
+    1.35,
+    2.56,
+    1.35
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 1240,
+   "meshes": [
+    {
+     "name": "Scn_Cone",
+     "tris": 1240,
+     "kind": "body",
+     "min": [
+      -1.35,
+      0,
+      -1.35
+     ],
+     "max": [
+      1.35,
+      2.56,
+      1.35
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Scenery.glb",
+   "package_offset": [
+    68.17,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Scn_Fence",
+   "category": "Scenery",
+   "source": "PlazaScenery/glb/Fence.glb",
+   "size": [
+    8,
+    4.627,
+    0.92
+   ],
+   "min": [
+    -4,
+    0,
+    -0.46
+   ],
+   "max": [
+    4,
+    4.627,
+    0.46
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 2076,
+   "meshes": [
+    {
+     "name": "Scn_Fence",
+     "tris": 2076,
+     "kind": "body",
+     "min": [
+      -4,
+      0,
+      -0.46
+     ],
+     "max": [
+      4,
+      4.627,
+      0.46
+     ]
+    }
+   ],
+   "collision": "solid",
+   "package": "Items_Scenery.glb",
+   "package_offset": [
+    77.52,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Scn_Sandbag",
+   "category": "Scenery",
+   "source": "PlazaScenery/glb/Sandbag.glb",
+   "size": [
+    4.68,
+    1.718,
+    1.28
+   ],
+   "min": [
+    -2.34,
+    0,
+    -0.64
+   ],
+   "max": [
+    2.34,
+    1.718,
+    0.64
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 2396,
+   "meshes": [
+    {
+     "name": "Scn_Sandbag",
+     "tris": 2396,
+     "kind": "body",
+     "min": [
+      -2.34,
+      0,
+      -0.64
+     ],
+     "max": [
+      2.34,
+      1.718,
+      0.64
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Scenery.glb",
+   "package_offset": [
+    87.86,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Scn_Car",
+   "category": "Scenery",
+   "source": "PlazaScenery/glb/Car.glb",
+   "size": [
+    5.26,
+    4.685,
+    10
+   ],
+   "min": [
+    -2.63,
+    0,
+    -5
+   ],
+   "max": [
+    2.63,
+    4.685,
+    5
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 5304,
+   "meshes": [
+    {
+     "name": "Scn_Car",
+     "tris": 5304,
+     "kind": "body",
+     "min": [
+      -2.63,
+      0,
+      -5
+     ],
+     "max": [
+      2.63,
+      4.685,
+      5
+     ]
+    }
+   ],
+   "collision": "solid",
+   "package": "Items_Scenery.glb",
+   "package_offset": [
+    96.83,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Scn_Hoop",
+   "category": "Scenery",
+   "source": "PlazaScenery/glb/Hoop.glb",
+   "size": [
+    5.4,
+    9.985,
+    5.4
+   ],
+   "min": [
+    -2.7,
+    0,
+    -2.7
+   ],
+   "max": [
+    2.7,
+    9.985,
+    2.7
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 2532,
+   "meshes": [
+    {
+     "name": "Scn_Hoop",
+     "tris": 2532,
+     "kind": "body",
+     "min": [
+      -2.7,
+      0,
+      -2.7
+     ],
+     "max": [
+      2.7,
+      9.985,
+      2.7
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Scenery.glb",
+   "package_offset": [
+    106.16,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Scn_GraffitiWall",
+   "category": "Scenery",
+   "source": "PlazaScenery/glb/GraffitiWall.glb",
+   "size": [
+    8,
+    5.385,
+    1.441
+   ],
+   "min": [
+    -4,
+    0,
+    -0.721
+   ],
+   "max": [
+    4,
+    5.385,
+    0.721
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 9356,
+   "meshes": [
+    {
+     "name": "Scn_GraffitiWall",
+     "tris": 9356,
+     "kind": "body",
+     "min": [
+      -4,
+      0,
+      -0.721
+     ],
+     "max": [
+      4,
+      5.385,
+      0.721
+     ]
+    }
+   ],
+   "collision": "solid",
+   "package": "Items_Scenery.glb",
+   "package_offset": [
+    116.86,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Gun_Pistol",
+   "category": "Guns",
+   "source": "Guns/glb/Gun_Pistol.glb",
+   "size": [
+    0.46,
+    1.579,
+    1.842
+   ],
+   "min": [
+    -0.23,
+    -0.538,
+    -1.475
+   ],
+   "max": [
+    0.23,
+    1.041,
+    0.367
+   ],
+   "pivot": "grip (origin), muzzle -Z",
+   "glow": [],
+   "triangles": 1300,
+   "meshes": [
+    {
+     "name": "Gun_Pistol",
+     "tris": 1300,
+     "kind": "body",
+     "min": [
+      -0.23,
+      -0.538,
+      -1.475
+     ],
+     "max": [
+      0.23,
+      1.041,
+      0.367
+     ]
+    }
+   ],
+   "collision": "gun",
+   "muzzle": [
+    0.0,
+    0.731,
+    -1.475
+   ],
+   "exclusive": false,
+   "package": "Items_Guns.glb",
+   "package_offset": [
+    -35.193,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Gun_Revolver",
+   "category": "Guns",
+   "source": "Guns/glb/Gun_Revolver.glb",
+   "size": [
+    0.72,
+    1.661,
+    2.216
+   ],
+   "min": [
+    -0.36,
+    -0.512,
+    -1.833
+   ],
+   "max": [
+    0.36,
+    1.149,
+    0.383
+   ],
+   "pivot": "grip (origin), muzzle -Z",
+   "glow": [],
+   "triangles": 1916,
+   "meshes": [
+    {
+     "name": "Gun_Revolver",
+     "tris": 1916,
+     "kind": "body",
+     "min": [
+      -0.36,
+      -0.512,
+      -1.833
+     ],
+     "max": [
+      0.36,
+      1.149,
+      0.383
+     ]
+    }
+   ],
+   "collision": "gun",
+   "muzzle": [
+    0.0,
+    0.836,
+    -1.833
+   ],
+   "exclusive": false,
+   "package": "Items_Guns.glb",
+   "package_offset": [
+    -30.603,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Gun_Uzi",
+   "category": "Guns",
+   "source": "Guns/glb/Gun_Uzi.glb",
+   "size": [
+    0.5,
+    1.725,
+    1.92
+   ],
+   "min": [
+    -0.25,
+    -0.582,
+    -1.226
+   ],
+   "max": [
+    0.25,
+    1.143,
+    0.694
+   ],
+   "pivot": "grip (origin), muzzle -Z",
+   "glow": [],
+   "triangles": 1744,
+   "meshes": [
+    {
+     "name": "Gun_Uzi",
+     "tris": 1744,
+     "kind": "body",
+     "min": [
+      -0.25,
+      -0.582,
+      -1.226
+     ],
+     "max": [
+      0.25,
+      1.143,
+      0.694
+     ]
+    }
+   ],
+   "collision": "gun",
+   "muzzle": [
+    0.0,
+    0.693,
+    -1.226
+   ],
+   "exclusive": false,
+   "package": "Items_Guns.glb",
+   "package_offset": [
+    -25.993,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Gun_Shotgun",
+   "category": "Guns",
+   "source": "Guns/glb/Gun_Shotgun.glb",
+   "size": [
+    0.52,
+    1.156,
+    3.65
+   ],
+   "min": [
+    -0.26,
+    -0.395,
+    -2.524
+   ],
+   "max": [
+    0.26,
+    0.761,
+    1.126
+   ],
+   "pivot": "grip (origin), muzzle -Z",
+   "glow": [],
+   "triangles": 2456,
+   "meshes": [
+    {
+     "name": "Gun_Shotgun",
+     "tris": 2456,
+     "kind": "body",
+     "min": [
+      -0.26,
+      -0.395,
+      -2.524
+     ],
+     "max": [
+      0.26,
+      0.761,
+      1.126
+     ]
+    }
+   ],
+   "collision": "gun",
+   "muzzle": [
+    0.0,
+    0.541,
+    -2.524
+   ],
+   "exclusive": false,
+   "package": "Items_Guns.glb",
+   "package_offset": [
+    -21.483,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Gun_Tommy",
+   "category": "Guns",
+   "source": "Guns/glb/Gun_Tommy.glb",
+   "size": [
+    0.46,
+    1.35,
+    3.54
+   ],
+   "min": [
+    -0.23,
+    -0.497,
+    -2.348
+   ],
+   "max": [
+    0.23,
+    0.853,
+    1.192
+   ],
+   "pivot": "grip (origin), muzzle -Z",
+   "glow": [],
+   "triangles": 2912,
+   "meshes": [
+    {
+     "name": "Gun_Tommy",
+     "tris": 2912,
+     "kind": "body",
+     "min": [
+      -0.23,
+      -0.497,
+      -2.348
+     ],
+     "max": [
+      0.23,
+      0.853,
+      1.192
+     ]
+    }
+   ],
+   "collision": "gun",
+   "muzzle": [
+    0.0,
+    0.503,
+    -2.348
+   ],
+   "exclusive": false,
+   "package": "Items_Guns.glb",
+   "package_offset": [
+    -16.993,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Gun_AK",
+   "category": "Guns",
+   "source": "Guns/glb/Gun_AK.glb",
+   "size": [
+    0.44,
+    1.331,
+    3.68
+   ],
+   "min": [
+    -0.22,
+    -0.566,
+    -2.446
+   ],
+   "max": [
+    0.22,
+    0.765,
+    1.234
+   ],
+   "pivot": "grip (origin), muzzle -Z",
+   "glow": [],
+   "triangles": 2444,
+   "meshes": [
+    {
+     "name": "Gun_AK",
+     "tris": 2444,
+     "kind": "body",
+     "min": [
+      -0.22,
+      -0.566,
+      -2.446
+     ],
+     "max": [
+      0.22,
+      0.765,
+      1.234
+     ]
+    }
+   ],
+   "collision": "gun",
+   "muzzle": [
+    0.0,
+    0.421,
+    -2.446
+   ],
+   "exclusive": false,
+   "package": "Items_Guns.glb",
+   "package_offset": [
+    -12.543,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Gun_Deagle",
+   "category": "Guns",
+   "source": "Guns/glb/Gun_Deagle.glb",
+   "size": [
+    0.57,
+    1.766,
+    2.16
+   ],
+   "min": [
+    -0.285,
+    -0.581,
+    -1.721
+   ],
+   "max": [
+    0.285,
+    1.185,
+    0.439
+   ],
+   "pivot": "grip (origin), muzzle -Z",
+   "glow": [],
+   "triangles": 1956,
+   "meshes": [
+    {
+     "name": "Gun_Deagle",
+     "tris": 1956,
+     "kind": "body",
+     "min": [
+      -0.285,
+      -0.581,
+      -1.721
+     ],
+     "max": [
+      0.285,
+      1.185,
+      0.439
+     ]
+    }
+   ],
+   "collision": "gun",
+   "muzzle": [
+    0.0,
+    0.825,
+    -1.721
+   ],
+   "exclusive": false,
+   "package": "Items_Guns.glb",
+   "package_offset": [
+    -8.038,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Gun_Minigun",
+   "category": "Guns",
+   "source": "Guns/glb/Gun_Minigun.glb",
+   "size": [
+    0.82,
+    1.68,
+    3.296
+   ],
+   "min": [
+    -0.4,
+    -0.417,
+    -3.044
+   ],
+   "max": [
+    0.42,
+    1.263,
+    0.251
+   ],
+   "pivot": "grip (origin), muzzle -Z",
+   "glow": [],
+   "triangles": 4156,
+   "meshes": [
+    {
+     "name": "Gun_Minigun",
+     "tris": 4156,
+     "kind": "body",
+     "min": [
+      -0.4,
+      -0.417,
+      -3.044
+     ],
+     "max": [
+      0.42,
+      1.263,
+      0.251
+     ]
+    }
+   ],
+   "collision": "gun",
+   "muzzle": [
+    0.0,
+    0.582,
+    -3.044
+   ],
+   "exclusive": false,
+   "package": "Items_Guns.glb",
+   "package_offset": [
+    -3.353,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Gun_Blaster",
+   "category": "Guns",
+   "source": "Guns/glb/Gun_Blaster.glb",
+   "size": [
+    0.52,
+    1.939,
+    2.49
+   ],
+   "min": [
+    -0.26,
+    -0.502,
+    -2.094
+   ],
+   "max": [
+    0.26,
+    1.437,
+    0.396
+   ],
+   "pivot": "grip (origin), muzzle -Z",
+   "glow": [
+    "Gun_Blaster_Glow_6A1BFF"
+   ],
+   "triangles": 1228,
+   "meshes": [
+    {
+     "name": "Gun_Blaster",
+     "tris": 1132,
+     "kind": "body",
+     "min": [
+      -0.25,
+      -0.502,
+      -2.064
+     ],
+     "max": [
+      0.25,
+      1.437,
+      0.396
+     ]
+    },
+    {
+     "name": "Gun_Blaster_Glow_6A1BFF",
+     "tris": 96,
+     "kind": "glow",
+     "min": [
+      -0.26,
+      0.397,
+      -2.094
+     ],
+     "max": [
+      0.26,
+      1.377,
+      -0.004
+     ],
+     "color": "6A1BFF"
+    }
+   ],
+   "collision": "gun",
+   "muzzle": [
+    0.0,
+    0.617,
+    -2.094
+   ],
+   "exclusive": false,
+   "package": "Items_Guns.glb",
+   "package_offset": [
+    1.327,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Gun_Diamond",
+   "category": "Guns",
+   "source": "Guns/glb/Gun_Diamond.glb",
+   "size": [
+    0.64,
+    2.026,
+    2.82
+   ],
+   "min": [
+    -0.32,
+    -0.502,
+    -2.324
+   ],
+   "max": [
+    0.32,
+    1.524,
+    0.496
+   ],
+   "pivot": "grip (origin), muzzle -Z",
+   "glow": [
+    "Gun_Diamond_Glow_36E8FF"
+   ],
+   "triangles": 2912,
+   "meshes": [
+    {
+     "name": "Gun_Diamond",
+     "tris": 2900,
+     "kind": "body",
+     "min": [
+      -0.32,
+      -0.502,
+      -2.304
+     ],
+     "max": [
+      0.32,
+      1.524,
+      0.496
+     ]
+    },
+    {
+     "name": "Gun_Diamond_Glow_36E8FF",
+     "tris": 12,
+     "kind": "glow",
+     "min": [
+      -0.14,
+      0.457,
+      -2.324
+     ],
+     "max": [
+      0.14,
+      0.737,
+      -2.294
+     ],
+     "color": "36E8FF"
+    }
+   ],
+   "collision": "gun",
+   "muzzle": [
+    0.0,
+    0.597,
+    -2.324
+   ],
+   "exclusive": false,
+   "package": "Items_Guns.glb",
+   "package_offset": [
+    5.907,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Gun_NeonViper",
+   "category": "Guns",
+   "source": "Guns/glb/Gun_NeonViper.glb",
+   "size": [
+    1.17,
+    1.985,
+    3.775
+   ],
+   "min": [
+    -0.585,
+    -0.45,
+    -2.842
+   ],
+   "max": [
+    0.585,
+    1.535,
+    0.933
+   ],
+   "pivot": "grip (origin), muzzle -Z",
+   "glow": [
+    "Gun_NeonViper_Glow_5CFF3A",
+    "Gun_NeonViper_Glow_FF3D8F"
+   ],
+   "triangles": 3996,
+   "meshes": [
+    {
+     "name": "Gun_NeonViper",
+     "tris": 3660,
+     "kind": "body",
+     "min": [
+      -0.585,
+      -0.45,
+      -2.527
+     ],
+     "max": [
+      0.585,
+      1.535,
+      0.933
+     ]
+    },
+    {
+     "name": "Gun_NeonViper_Glow_5CFF3A",
+     "tris": 24,
+     "kind": "glow",
+     "min": [
+      -0.38,
+      1.215,
+      -2.137
+     ],
+     "max": [
+      0.38,
+      1.495,
+      -1.887
+     ],
+     "color": "5CFF3A"
+    },
+    {
+     "name": "Gun_NeonViper_Glow_FF3D8F",
+     "tris": 312,
+     "kind": "glow",
+     "min": [
+      -0.505,
+      0.155,
+      -2.842
+     ],
+     "max": [
+      0.505,
+      1.395,
+      0.793
+     ],
+     "color": "FF3D8F"
+    }
+   ],
+   "collision": "gun",
+   "muzzle": [
+    0.0,
+    0.955,
+    -2.842
+   ],
+   "exclusive": true,
+   "package": "Items_Guns.glb",
+   "package_offset": [
+    10.812,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Gun_GalaxyRay",
+   "category": "Guns",
+   "source": "Guns/glb/Gun_GalaxyRay.glb",
+   "size": [
+    1.458,
+    1.749,
+    3.099
+   ],
+   "min": [
+    -0.729,
+    -0.484,
+    -2.753
+   ],
+   "max": [
+    0.729,
+    1.265,
+    0.346
+   ],
+   "pivot": "grip (origin), muzzle -Z",
+   "glow": [
+    "Gun_GalaxyRay_Glow_36E8FF"
+   ],
+   "triangles": 2392,
+   "meshes": [
+    {
+     "name": "Gun_GalaxyRay",
+     "tris": 2248,
+     "kind": "body",
+     "min": [
+      -0.729,
+      -0.484,
+      -2.693
+     ],
+     "max": [
+      0.729,
+      1.265,
+      0.346
+     ]
+    },
+    {
+     "name": "Gun_GalaxyRay_Glow_36E8FF",
+     "tris": 144,
+     "kind": "glow",
+     "min": [
+      -0.34,
+      0.367,
+      -2.753
+     ],
+     "max": [
+      0.34,
+      1.137,
+      0.127
+     ],
+     "color": "36E8FF"
+    }
+   ],
+   "collision": "gun",
+   "muzzle": [
+    0.0,
+    0.604,
+    -2.753
+   ],
+   "exclusive": true,
+   "package": "Items_Guns.glb",
+   "package_offset": [
+    16.126,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Gun_InfernoCannon",
+   "category": "Guns",
+   "source": "Guns/glb/Gun_InfernoCannon.glb",
+   "size": [
+    0.887,
+    1.686,
+    3.785
+   ],
+   "min": [
+    -0.443,
+    -0.437,
+    -2.957
+   ],
+   "max": [
+    0.443,
+    1.249,
+    0.828
+   ],
+   "pivot": "grip (origin), muzzle -Z",
+   "glow": [
+    "Gun_InfernoCannon_Glow_FF5A0F",
+    "Gun_InfernoCannon_Glow_FFA51E"
+   ],
+   "triangles": 3588,
+   "meshes": [
+    {
+     "name": "Gun_InfernoCannon",
+     "tris": 3068,
+     "kind": "body",
+     "min": [
+      -0.443,
+      -0.437,
+      -2.182
+     ],
+     "max": [
+      0.443,
+      1.249,
+      0.828
+     ]
+    },
+    {
+     "name": "Gun_InfernoCannon_Glow_FF5A0F",
+     "tris": 420,
+     "kind": "glow",
+     "min": [
+      -0.39,
+      0.129,
+      -2.957
+     ],
+     "max": [
+      0.39,
+      1.029,
+      0.028
+     ],
+     "color": "FF5A0F"
+    },
+    {
+     "name": "Gun_InfernoCannon_Glow_FFA51E",
+     "tris": 100,
+     "kind": "glow",
+     "min": [
+      -0.34,
+      0.398,
+      -2.607
+     ],
+     "max": [
+      0.34,
+      0.86,
+      -0.032
+     ],
+     "color": "FFA51E"
+    }
+   ],
+   "collision": "gun",
+   "muzzle": [
+    0.0,
+    0.786,
+    -2.957
+   ],
+   "exclusive": true,
+   "package": "Items_Guns.glb",
+   "package_offset": [
+    21.298,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Gun_Frostbite",
+   "category": "Guns",
+   "source": "Guns/glb/Gun_Frostbite.glb",
+   "size": [
+    0.571,
+    1.908,
+    3.84
+   ],
+   "min": [
+    -0.265,
+    -0.409,
+    -2.688
+   ],
+   "max": [
+    0.307,
+    1.499,
+    1.152
+   ],
+   "pivot": "grip (origin), muzzle -Z",
+   "glow": [
+    "Gun_Frostbite_Glow_3FB8FF"
+   ],
+   "triangles": 3728,
+   "meshes": [
+    {
+     "name": "Gun_Frostbite",
+     "tris": 3596,
+     "kind": "body",
+     "min": [
+      -0.265,
+      -0.409,
+      -2.492
+     ],
+     "max": [
+      0.307,
+      1.499,
+      1.152
+     ]
+    },
+    {
+     "name": "Gun_Frostbite_Glow_3FB8FF",
+     "tris": 132,
+     "kind": "glow",
+     "min": [
+      -0.25,
+      -0.227,
+      -2.688
+     ],
+     "max": [
+      0.25,
+      1.444,
+      -0.027
+     ],
+     "color": "3FB8FF"
+    }
+   ],
+   "collision": "gun",
+   "muzzle": [
+    0.0,
+    0.503,
+    -2.688
+   ],
+   "exclusive": true,
+   "package": "Items_Guns.glb",
+   "package_offset": [
+    26.006,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Gun_RoyalCrown",
+   "category": "Guns",
+   "source": "Guns/glb/Gun_RoyalCrown.glb",
+   "size": [
+    1.11,
+    1.489,
+    3.8
+   ],
+   "min": [
+    -0.555,
+    -0.421,
+    -2.851
+   ],
+   "max": [
+    0.555,
+    1.067,
+    0.949
+   ],
+   "pivot": "grip (origin), muzzle -Z",
+   "glow": [
+    "Gun_RoyalCrown_Glow_FF1844"
+   ],
+   "triangles": 4052,
+   "meshes": [
+    {
+     "name": "Gun_RoyalCrown",
+     "tris": 3860,
+     "kind": "body",
+     "min": [
+      -0.555,
+      -0.421,
+      -2.831
+     ],
+     "max": [
+      0.555,
+      0.962,
+      0.949
+     ]
+    },
+    {
+     "name": "Gun_RoyalCrown_Glow_FF1844",
+     "tris": 192,
+     "kind": "glow",
+     "min": [
+      -0.54,
+      -0.127,
+      -2.851
+     ],
+     "max": [
+      0.54,
+      1.067,
+      0.83
+     ],
+     "color": "FF1844"
+    }
+   ],
+   "collision": "gun",
+   "muzzle": [
+    0.0,
+    0.663,
+    -2.851
+   ],
+   "exclusive": true,
+   "package": "Items_Guns.glb",
+   "package_offset": [
+    30.868,
+    0,
+    0
+   ]
+  }
+ ]
 }

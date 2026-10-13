@@ -87,13 +87,14 @@ id already in `M.Images`, including keys the upload tool added.
    Forward = Z, Up = Y, Path Mode = Copy + Embed Textures, no leaf bones, no animation), triangulates,
    and stays far under the 20,000-triangle mesh limit (largest is about 9,000).
 
-4. **The showcase items as smooth meshes (brief 31).** `export_item_meshes.py` writes ONE FBX with every showcased item
-   (the 5 chests with separate lids, the 10 product-pad items, the 10 gun-stand guns; `--shoes` adds the 22 pairs): rounded
-   bevels, colours in the MeshPart names, no textures. The user imports it once and runs
-   `studio_item_meshes.lua` (generated; edit `studio_item_meshes.template.lua`), which files it into
-   `ReplicatedStorage.HoodItemMeshes`. Steps for the user: `hood/art/MESH_IMPORT.md`. The game reads it through
-   `Shared/ItemMeshes` (BoxModels and ShoeModels use it on their own; the map's pads and gun stands call
-   `ItemMeshes.place`), and falls back to the Parts when it is not there.
+4. **The user's blocky designs as meshes (brief 32; replaces brief 31's FBX).** `build_item_package.py` (plain python3)
+   merges the designer's per-object .glb files into four import files, `hood/art/models/items/Items_{Pads,Lobby,Scenery,Guns}.glb`
+   (57 ids: pad prizes + Pad_Base, the lobby hero pieces, Target_Dummy, the plaza scenery Scn_*, the 10 shop guns + the 5
+   Robux guns), writes `manifest.json`, regenerates `studio_item_meshes.lua` (edit `studio_item_meshes.template.lua`) and the
+   `ItemMeshes.Design` table. The user imports the four files once and runs the script (`hood/art/MESH_IMPORT.md`); the game
+   reads `ReplicatedStorage.HoodItemMeshes` through `Shared/ItemMeshes` (`GunModels.build` uses the gun meshes on its own)
+   and falls back to the Parts. `icons_glb.py` renders the Gun_* and pass icons from the same GLBs.
+   `export_item_meshes.py` (brief 31's BoxKit FBX) only runs with `--legacy`.
 
 ## Uploading the renders
 
