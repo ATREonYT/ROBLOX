@@ -130,7 +130,8 @@ Kit.Styles = {
 	Segment = style(C.Segment, C.Text, C.SegmentTop, C.TabRim),
 	Slate = style(C.Slate, C.Text, C.SlateTop, C.TabRim),
 	Close = { Idle = C.Close, Hover = lighten(C.Close, 0.1), Pressed = darken(C.Close, 0.1), Text = C.Text, Top = C.CloseTop, Rim = C.CloseRim },
-	Gift = style(C.Gift, C.Text),
+	-- fill is white so the purple UIGradient (#B84FFA -> #9925F9) shows as measured; hover/press dim it slightly
+	Gift = { Idle = Color3.new(1, 1, 1), Hover = Color3.fromRGB(245, 240, 255), Pressed = Color3.fromRGB(215, 205, 230), Text = C.Text, Top = Color3.fromHex("C774FB"), Rim = C.GiftRim },
 	Plus = style(C.Plus, C.Text, C.PlusTop, C.PlusRim),
 	HudPlus = style(C.HudPlus, C.Text, C.PlusTop, C.PlusRim),
 	Row = style(C.Row, C.Text, C.RowBorder, C.RowBorder),

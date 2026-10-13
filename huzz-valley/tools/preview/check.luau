@@ -77,10 +77,11 @@ MM.open("Shop", "Cosmetics")
 local products = gui.Shop.Group.Panel.Products
 local function label(key) return products[key].Buy.Content.Label.Text end
 check("owned cosmetic says OWNED", label("SunsetTrail") == "OWNED")
-check("not-on-sale says SOON", label("CrownPose") == "SOON")
+check("not-on-sale shows its price", label("CrownPose") == "99")
 __fireOn(products.BlossomAura.Buy, "Activated")
+__fireOn(products.CrownPose.Buy, "Activated")
 task.wait(0.05)
-check("item without an ID never prompts", #_G.__prompts == 0)
+check("items without an ID or not on sale never prompt", #_G.__prompts == 0)
 MM.close()
 
 print(string.format("checks: %d ok, %d failed", ok, failed))

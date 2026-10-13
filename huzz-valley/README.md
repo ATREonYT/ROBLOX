@@ -29,7 +29,7 @@ All of these work against a real save system. When you're happy with how they lo
    2. **Sunset Trail** and **Blossom Aura** are Developer Products.
    3. Put each ID into `src/ReplicatedStorage/Shared/Config/Products.lua` (`Id = ...`). Until then their buttons say the item isn't on sale and never open a purchase.
    4. Prices there are placeholders. Roblox's live price shows automatically once an ID is set.
-3. **Things that need assets before they can go on sale** show **SOON** for now:
+3. **Things that need assets before they can go on sale** show their price, but only say "coming soon" when tapped:
    - Dance Pack: the 4 dance animations;
    - Crown Pose: a pose animation;
    - Midnight Outfit: the clothing;

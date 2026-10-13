@@ -31,7 +31,7 @@ This file loads in every session, so keep it short. Each game folder has its own
   - no fake timers, scarcity or stock;
   - at most 1 flash per second;
   - paid random items show their odds and a pity counter, and never have hidden odds;
-  - never sell something that gives nothing yet (show it as SOON).
+  - never sell something that gives nothing yet. It may show its price, but tapping it only says "coming soon" and never opens a purchase.
 - **Purchases are granted only on the server:**
   - one ProcessReceipt in the place;
   - grant once per PurchaseId;

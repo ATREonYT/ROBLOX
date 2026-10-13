@@ -20,7 +20,8 @@ Theme.Colors = {
 	SelectedTab = hex("FCCB76"), SelectedTabTop = hex("F8E58C"), SelectedRim = hex("3A2A12"),
 	Segment = hex("375071"), SegmentTop = hex("445C7D"),
 	Action = hex("7E7CEF"), ActionHover = hex("8E8CF5"), ActionPressed = hex("6C69DA"), ActionTop = hex("8C8CF6"), ActionRim = hex("1F2347"),
-	Gift = hex("9B3FE0"),
+	GiftTop = hex("B84FFA"), GiftBottom = hex("9925F9"), GiftRim = hex("3B0A6A"), -- the purple gift button (gradient)
+	RobuxBadge = hex("1F2350"), -- the dark Robux mark on price buttons
 	Disabled = hex("717992"), DisabledTop = hex("7E869E"),
 	Slate = hex("556585"), SlateTop = hex("637493"),
 	Text = hex("F4F3FA"),

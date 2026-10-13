@@ -23,7 +23,7 @@ A Roblox game based on Huss Valley: rounds where players steal and hold the lead
   - search fields and small labels: Montserrat Medium.
   - All of these live in `UI/Theme.lua` as `Theme.Fonts`.
 - **Every colour and size is measured** from the references (the critic report's numbers are in `UI/Theme.lua`). Settings deliberately resizes per tab, because its references differ (Social 258 tall, Audio/Controls 287).
-- **Robux prices:** the big pass button uses U+E002, Roblox's own Robux glyph (`Format.robux`). Cosmetics and coins write "99 Robux", as the reference does. Never use the kit's mockup hexagon.
+- **Robux prices:** every Robux price wears the Robux badge: U+E002, Roblox's own Robux mark, in dark navy before the number. Never use the kit's mockup hexagon (not official).
 
 ## Code map (`src/`, Rojo)
 - `ReplicatedStorage/Shared`:
@@ -67,4 +67,4 @@ A Roblox game based on Huss Valley: rounds where players steal and hold the lead
   - outfit assets;
   - coin-stack art;
   - a petal texture.
-- **Decided:** coin packs stay SOON until coins can buy something; Dance Pack stays SOON until the dances exist; gifting is disabled until the Gift Picker and its backend exist.
+- **Decided:** not-on-sale items show their price (Robux badge) but only say "coming soon" when tapped. Coin packs stay off sale until coins can buy something; Dance Pack until the dances exist; gifting is disabled until the Gift Picker and its backend exist.

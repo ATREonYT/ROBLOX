@@ -1,6 +1,7 @@
 -- Shop (design/pages/01, 07, 08): Passes / Cosmetics / Coins tabs over one stationary window.
 -- Buy buttons only open Roblox's purchase prompt; the server grants (ShopService). Each button shows exactly one
--- state: price (buyable), "..." (prompt open), OWNED, or SOON (the item's content isn't in the game yet).
+-- state: Robux badge + price, "..." (prompt open) or OWNED. Items that aren't on sale yet show their price like the
+-- reference but only say "coming soon" when tapped; they never open a purchase.
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 
@@ -28,12 +29,12 @@ local livePrice: { [string]: number } = {}
 local function priceOf(p) return livePrice[p.Key] or p.Price end
 
 -- One buy button's look for a product right now.
-local function buttonState(p, wordPrice: boolean?): (string, string, string?)
-	if State.owns(p.Key) then return "OWNED", "Disabled", "CheckEquipped" end
-	if pending[p.Key] then return "...", "Disabled", nil end
-	if Products.status(p) == "Soon" then return "SOON", "Disabled", nil end
-	-- The reference writes "99 Robux" on cosmetics and coins, and the Robux sign + number on the big pass button.
-	return if wordPrice then Format.commas(priceOf(p)) .. " Robux" else Format.robux(priceOf(p)), "Action", nil
+-- Returns text, style, icon, and whether the Robux badge shows. Every Robux price wears the badge (Roblox's own
+-- Robux mark, U+E002). Items not on sale yet still show their price like the reference, but never open a purchase.
+local function buttonState(p): (string, string, string?, boolean)
+	if State.owns(p.Key) then return "OWNED", "Disabled", "CheckEquipped", false end
+	if pending[p.Key] then return "...", "Disabled", nil, false end
+	return Format.commas(priceOf(p)), "Action", nil, true
 end
 
 local refreshButtons: { () -> () } = {}
@@ -42,7 +43,7 @@ local function buy(p)
 	if State.owns(p.Key) or pending[p.Key] then return end
 	local status = Products.status(p)
 	if status == "Soon" then
-		Toast.show(p.Name .. " is coming soon.")
+		Toast.show(p.Name .. " is coming soon.") -- shown with its price, but never sold until it gives something
 		return
 	elseif status == "NoId" then
 		Toast.show("This item isn't on sale yet.")
@@ -81,11 +82,14 @@ end
 
 -- The price/owned button, kept in sync with ownership and pending state.
 local function buyButton(parent: Instance, p, props)
-	local b = Kit.button({ Name = "Buy", Parent = parent, Position = props.Position, Size = props.Size, AnchorPoint = props.AnchorPoint, TextSize = props.TextSize or T.Button, IconAfter = true, IconSize = props.IconSize or 22 })
+	local b = Kit.button({ Name = "Buy", Parent = parent, Position = props.Position, Size = props.Size, AnchorPoint = props.AnchorPoint, TextSize = props.TextSize or T.Button, IconAfter = true, IconSize = props.IconSize or 22, Gap = 6 })
+	local textSize = props.TextSize or T.Button
+	local badge = Kit.text({ Name = "RobuxBadge", Text = Format.RobuxMark, FontFace = Theme.Fonts.Number, TextSize = math.floor(textSize * 1.25), TextColor3 = C.RobuxBadge, TextXAlignment = Enum.TextXAlignment.Center, AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), TextWrapped = false, LayoutOrder = 1, Parent = b.Instance:FindFirstChild("Content") })
 	local icon: ImageLabel? = nil
 	local function refresh()
 		if not b.Instance.Parent then return end
-		local text, style, iconName = buttonState(p, props.WordPrice)
+		local text, style, iconName, priced = buttonState(p)
+		badge.Visible = priced
 		b.setText(text)
 		b.setFont(if text:find("%d") then Theme.Fonts.Number else Theme.Fonts.Button) -- prices: Montserrat Bold
 		b.setStyle(style)
@@ -135,7 +139,12 @@ local function buildPasses(body: Frame)
 		end
 		if p.Giftable then
 			buyButton(row, p, { Position = UDim2.new(1, -63, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), Size = UDim2.fromOffset(103, 51), TextSize = 25 })
-			local gift = Kit.button({ Name = "Gift", Style = "Disabled", Icon = "GiftAction", IconSize = 32, Position = UDim2.new(1, -11, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), Size = UDim2.fromOffset(44, 51), Parent = row })
+			-- Fully purple gift button with the kit's gift art centred at its normal size (the gift itself still says
+			-- "unavailable" until the Gift Picker exists).
+			local gift = Kit.button({ Name = "Gift", Style = "Gift", Text = "", Position = UDim2.new(1, -11, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), Size = UDim2.fromOffset(44, 51), Parent = row })
+			gift.Instance:FindFirstChild("Content"):Destroy()
+			new("UIGradient", { Rotation = 90, Color = ColorSequence.new(C.GiftTop, C.GiftBottom), Parent = gift.Instance })
+			Kit.icon("GiftAction", { Name = "Icon", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(34, 41), Parent = gift.Instance })
 			gift.onClick(function() Toast.show("Gifting unavailable for now.") end)
 		else
 			buyButton(row, p, { Position = UDim2.new(1, -11, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), Size = UDim2.fromOffset(135, 41), TextSize = 24, IconSize = 26 })
@@ -152,7 +161,7 @@ local function buildCosmetics(body: Frame)
 		art(c, p, Vector2.new(160, ch))
 		Kit.name({ Name = "Name", Text = p.Name, TextSize = 18, Position = UDim2.fromOffset(170, 7), Size = UDim2.fromOffset(cw - 178, 24), Parent = c })
 		Kit.text({ Name = "Blurb", Text = p.Blurb, TextSize = 14, Position = UDim2.fromOffset(170, 30), Size = UDim2.fromOffset(cw - 178, 32), TextYAlignment = Enum.TextYAlignment.Top, Parent = c })
-		buyButton(c, p, { Position = UDim2.new(0, 170, 1, -8), AnchorPoint = Vector2.new(0, 1), Size = UDim2.fromOffset(cw - 178, 30), TextSize = 17, IconSize = 18, WordPrice = true })
+		buyButton(c, p, { Position = UDim2.new(0, 170, 1, -8), AnchorPoint = Vector2.new(0, 1), Size = UDim2.fromOffset(cw - 178, 30), TextSize = 17, IconSize = 18 })
 	end
 end
 
@@ -165,7 +174,7 @@ local function buildCoins(body: Frame)
 		a.BackgroundColor3 = C.CoinArt
 		Kit.name({ Name = "Name", Text = p.Name, TextSize = 20, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(0, 112), Size = UDim2.new(1, 0, 0, 26), Parent = c })
 		Kit.text({ Name = "Blurb", Text = p.Blurb, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(8, 137), Size = UDim2.new(1, -16, 0, 30), Parent = c })
-		buyButton(c, p, { Position = UDim2.new(0.5, 0, 1, -6), AnchorPoint = Vector2.new(0.5, 1), Size = UDim2.new(1, -22, 0, 36), TextSize = 20, IconSize = 20, WordPrice = true })
+		buyButton(c, p, { Position = UDim2.new(0.5, 0, 1, -6), AnchorPoint = Vector2.new(0.5, 1), Size = UDim2.new(1, -22, 0, 36), TextSize = 20, IconSize = 20 })
 	end
 end
 
