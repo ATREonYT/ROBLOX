@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+<defs>
+  <g id="s"><path d="M30 70 L226 70 L226 112 A18 18 0 0 0 226 148 L226 190 L30 190 L30 148 A18 18 0 0 0 30 112 Z"/></g>
+  <clipPath id="clip"><path d="M30 70 L226 70 L226 112 A18 18 0 0 0 226 148 L226 190 L30 190 L30 148 A18 18 0 0 0 30 112 Z"/></clipPath>
+</defs>
+<g transform="translate(0,6)" opacity="0.28"><use href="#s" fill="#1C1830" stroke="#1C1830" stroke-width="34" stroke-linejoin="round" stroke-linecap="round"/></g>
+<use href="#s" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="34" stroke-linejoin="round" stroke-linecap="round"/>
+<use href="#s" fill="#1C1830" stroke="#1C1830" stroke-width="16" stroke-linejoin="round" stroke-linecap="round"/>
+<g clip-path="url(#clip)">
+<path d="M30 70 L226 70 L226 112 A18 18 0 0 0 226 148 L226 190 L30 190 L30 148 A18 18 0 0 0 30 112 Z" fill="#2F9BFF"/><rect x="30" y="160" width="196" height="30" fill="#1A5FB4"/>
+<path d="M172 78 L172 182" stroke="#BFE3FF" stroke-width="7" stroke-dasharray="12 10"/>
+<text x="100" y="146" font-family="Luckiest Guy" font-size="44" text-anchor="middle" fill="#FFFFFF" stroke="#1A5FB4" stroke-width="5" paint-order="stroke">CODE</text>
+<rect x="40" y="80" width="120" height="8" rx="4" fill="#7CCBFF"/></g>
+</svg>

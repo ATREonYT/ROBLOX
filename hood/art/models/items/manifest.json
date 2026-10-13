@@ -1,0 +1,3193 @@
+{
+ "about": "The user's blocky designs (brief 32) as game ids. Studs, front -Z; pivot = bottom centre (props) or the grip (guns). size/min/max = the design bounds the game fits by (Shared/ItemMeshes). Import: hood/art/MESH_IMPORT.md.",
+ "packages": {
+  "Items_Pads.glb": {
+   "items": 11,
+   "bytes": 2027152,
+   "triangles": 63476
+  },
+  "Items_Lobby.glb": {
+   "items": 11,
+   "bytes": 2027560,
+   "triangles": 56252
+  },
+  "Items_Scenery.glb": {
+   "items": 20,
+   "bytes": 4486236,
+   "triangles": 127460
+  },
+  "Items_Guns.glb": {
+   "items": 15,
+   "bytes": 1104380,
+   "triangles": 40780
+  }
+ },
+ "items": [
+  {
+   "id": "Pad_Base",
+   "category": "Pads",
+   "source": "RobuxPads/glb/Pad_Base.glb",
+   "size": [
+    8.12,
+    1.385,
+    8.12
+   ],
+   "min": [
+    -4.06,
+    0,
+    -4.06
+   ],
+   "max": [
+    4.06,
+    1.385,
+    4.06
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [
+    "Pad_Base_Glow_2FD6FF"
+   ],
+   "triangles": 5004,
+   "meshes": [
+    {
+     "name": "Pad_Base",
+     "tris": 4976,
+     "kind": "body",
+     "min": [
+      -4.06,
+      0,
+      -4.06
+     ],
+     "max": [
+      4.06,
+      1.385,
+      4.06
+     ]
+    },
+    {
+     "name": "Pad_Base_Glow_2FD6FF",
+     "tris": 28,
+     "kind": "glow",
+     "min": [
+      -3.33,
+      0.89,
+      -3.33
+     ],
+     "max": [
+      3.33,
+      1.09,
+      3.33
+     ],
+     "color": "2FD6FF"
+    }
+   ],
+   "collision": "solid",
+   "package": "Items_Pads.glb",
+   "package_offset": [
+    -46.885,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Pad_VIP",
+   "category": "Pads",
+   "source": "RobuxPads/glb/Pad_VIP.glb",
+   "size": [
+    4.46,
+    3.595,
+    3.842
+   ],
+   "min": [
+    -2.23,
+    0,
+    -1.921
+   ],
+   "max": [
+    2.23,
+    3.595,
+    1.921
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 7424,
+   "meshes": [
+    {
+     "name": "Pad_VIP",
+     "tris": 7424,
+     "kind": "body",
+     "min": [
+      -2.23,
+      0,
+      -1.921
+     ],
+     "max": [
+      2.23,
+      3.595,
+      1.921
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Pads.glb",
+   "package_offset": [
+    -36.595,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Pad_DoubleCash",
+   "category": "Pads",
+   "source": "RobuxPads/glb/Pad_DoubleCash.glb",
+   "size": [
+    4.963,
+    3.47,
+    2.387
+   ],
+   "min": [
+    -2.482,
+    0,
+    -1.198
+   ],
+   "max": [
+    2.482,
+    3.47,
+    1.189
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 6528,
+   "meshes": [
+    {
+     "name": "Pad_DoubleCash",
+     "tris": 6528,
+     "kind": "body",
+     "min": [
+      -2.482,
+      0,
+      -1.198
+     ],
+     "max": [
+      2.482,
+      3.47,
+      1.189
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Pads.glb",
+   "package_offset": [
+    -27.883,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Pad_DoubleRep",
+   "category": "Pads",
+   "source": "RobuxPads/glb/Pad_DoubleRep.glb",
+   "size": [
+    4.705,
+    2.665,
+    3.033
+   ],
+   "min": [
+    -2.352,
+    0,
+    -1.516
+   ],
+   "max": [
+    2.352,
+    2.665,
+    1.516
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 4156,
+   "meshes": [
+    {
+     "name": "Pad_DoubleRep",
+     "tris": 4156,
+     "kind": "body",
+     "min": [
+      -2.352,
+      0,
+      -1.516
+     ],
+     "max": [
+      2.352,
+      2.665,
+      1.516
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Pads.glb",
+   "package_offset": [
+    -19.049,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Pad_AutoShoot",
+   "category": "Pads",
+   "source": "RobuxPads/glb/Pad_AutoShoot.glb",
+   "size": [
+    4.896,
+    5.181,
+    1.598
+   ],
+   "min": [
+    -2.464,
+    0,
+    -0.799
+   ],
+   "max": [
+    2.432,
+    5.181,
+    0.799
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 6420,
+   "meshes": [
+    {
+     "name": "Pad_AutoShoot",
+     "tris": 6420,
+     "kind": "body",
+     "min": [
+      -2.464,
+      0,
+      -0.799
+     ],
+     "max": [
+      2.432,
+      5.181,
+      0.799
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Pads.glb",
+   "package_offset": [
+    -10.233,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Pad_AutoCollect",
+   "category": "Pads",
+   "source": "RobuxPads/glb/Pad_AutoCollect.glb",
+   "size": [
+    5.607,
+    3.565,
+    1.444
+   ],
+   "min": [
+    -2.803,
+    0,
+    -0.722
+   ],
+   "max": [
+    2.803,
+    3.565,
+    0.722
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 4380,
+   "meshes": [
+    {
+     "name": "Pad_AutoCollect",
+     "tris": 4380,
+     "kind": "body",
+     "min": [
+      -2.803,
+      0,
+      -0.722
+     ],
+     "max": [
+      2.803,
+      3.565,
+      0.722
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Pads.glb",
+   "package_offset": [
+    -0.998,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Pad_AutoOpen",
+   "category": "Pads",
+   "source": "RobuxPads/glb/Pad_AutoOpen.glb",
+   "size": [
+    4.896,
+    5.181,
+    1.623
+   ],
+   "min": [
+    -2.464,
+    0,
+    -0.812
+   ],
+   "max": [
+    2.432,
+    5.181,
+    0.812
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 7364,
+   "meshes": [
+    {
+     "name": "Pad_AutoOpen",
+     "tris": 7364,
+     "kind": "body",
+     "min": [
+      -2.464,
+      0,
+      -0.812
+     ],
+     "max": [
+      2.432,
+      5.181,
+      0.812
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Pads.glb",
+   "package_offset": [
+    8.269,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Pad_TripleOpen",
+   "category": "Pads",
+   "source": "RobuxPads/glb/Pad_TripleOpen.glb",
+   "size": [
+    4.67,
+    4.704,
+    3.053
+   ],
+   "min": [
+    -2.335,
+    0,
+    -1.527
+   ],
+   "max": [
+    2.335,
+    4.704,
+    1.527
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 8944,
+   "meshes": [
+    {
+     "name": "Pad_TripleOpen",
+     "tris": 8944,
+     "kind": "body",
+     "min": [
+      -2.335,
+      0,
+      -1.527
+     ],
+     "max": [
+      2.335,
+      4.704,
+      1.527
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Pads.glb",
+   "package_offset": [
+    17.036,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Pad_Lucky",
+   "category": "Pads",
+   "source": "RobuxPads/glb/Pad_Lucky.glb",
+   "size": [
+    3.973,
+    4.517,
+    1.775
+   ],
+   "min": [
+    -1.986,
+    0,
+    -0.888
+   ],
+   "max": [
+    1.986,
+    4.517,
+    0.888
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 3172,
+   "meshes": [
+    {
+     "name": "Pad_Lucky",
+     "tris": 3172,
+     "kind": "body",
+     "min": [
+      -1.986,
+      0,
+      -0.888
+     ],
+     "max": [
+      1.986,
+      4.517,
+      0.888
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Pads.glb",
+   "package_offset": [
+    25.358,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Pad_Speed2x",
+   "category": "Pads",
+   "source": "RobuxPads/glb/Pad_Speed2x.glb",
+   "size": [
+    5.763,
+    3.31,
+    3.671
+   ],
+   "min": [
+    -2.886,
+    0,
+    -1.851
+   ],
+   "max": [
+    2.877,
+    3.31,
+    1.82
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 6368,
+   "meshes": [
+    {
+     "name": "Pad_Speed2x",
+     "tris": 6368,
+     "kind": "body",
+     "min": [
+      -2.886,
+      0,
+      -1.851
+     ],
+     "max": [
+      2.877,
+      3.31,
+      1.82
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Pads.glb",
+   "package_offset": [
+    34.23,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Pad_ExtraEquip",
+   "category": "Pads",
+   "source": "RobuxPads/glb/Pad_ExtraEquip.glb",
+   "size": [
+    5.838,
+    2.83,
+    3.183
+   ],
+   "min": [
+    -2.924,
+    0,
+    -1.596
+   ],
+   "max": [
+    2.914,
+    2.83,
+    1.586
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 3716,
+   "meshes": [
+    {
+     "name": "Pad_ExtraEquip",
+     "tris": 3716,
+     "kind": "body",
+     "min": [
+      -2.924,
+      0,
+      -1.596
+     ],
+     "max": [
+      2.914,
+      2.83,
+      1.586
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Pads.glb",
+   "package_offset": [
+    44.03,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Gate_Stage1",
+   "category": "Lobby",
+   "source": "Lobby/glb/Gate_Stage1.glb",
+   "size": [
+    20.2,
+    14.17,
+    4.7
+   ],
+   "min": [
+    -10.1,
+    0,
+    -2.5
+   ],
+   "max": [
+    10.1,
+    14.17,
+    2.2
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 5204,
+   "meshes": [
+    {
+     "name": "Gate_Stage1",
+     "tris": 5204,
+     "kind": "body",
+     "min": [
+      -10.1,
+      0,
+      -2.5
+     ],
+     "max": [
+      10.1,
+      14.17,
+      2.2
+     ]
+    }
+   ],
+   "collision": "solid",
+   "colliders": [
+    {
+     "centre": [
+      -7.25,
+      5,
+      -0.15
+     ],
+     "size": [
+      5.7,
+      10,
+      4.7
+     ]
+    },
+    {
+     "centre": [
+      7.25,
+      5,
+      -0.15
+     ],
+     "size": [
+      5.7,
+      10,
+      4.7
+     ]
+    },
+    {
+     "centre": [
+      0,
+      12.1,
+      -0.15
+     ],
+     "size": [
+      20.2,
+      4.1,
+      4.4
+     ]
+    }
+   ],
+   "package": "Items_Lobby.glb",
+   "package_offset": [
+    -69.06,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Board_Boxes",
+   "category": "Lobby",
+   "source": "Lobby/glb/Board_Boxes.glb",
+   "size": [
+    16.3,
+    10.1,
+    2.4
+   ],
+   "min": [
+    -8.15,
+    0,
+    -1.2
+   ],
+   "max": [
+    8.15,
+    10.1,
+    1.2
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 6532,
+   "meshes": [
+    {
+     "name": "Board_Boxes",
+     "tris": 6532,
+     "kind": "body",
+     "min": [
+      -8.15,
+      0,
+      -1.2
+     ],
+     "max": [
+      8.15,
+      10.1,
+      1.2
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Lobby.glb",
+   "package_offset": [
+    -46.81,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Pedestal_Box",
+   "category": "Lobby",
+   "source": "Lobby/glb/Pedestal_Box.glb",
+   "size": [
+    7.0,
+    1.102,
+    7.0
+   ],
+   "min": [
+    -3.5,
+    0,
+    -3.5
+   ],
+   "max": [
+    3.5,
+    1.102,
+    3.5
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [
+    "Pedestal_Box_Glow_2FD6FF"
+   ],
+   "triangles": 3228,
+   "meshes": [
+    {
+     "name": "Pedestal_Box",
+     "tris": 3200,
+     "kind": "body",
+     "min": [
+      -3.5,
+      0,
+      -3.5
+     ],
+     "max": [
+      3.5,
+      1.102,
+      3.5
+     ]
+    },
+    {
+     "name": "Pedestal_Box_Glow_2FD6FF",
+     "tris": 28,
+     "kind": "glow",
+     "min": [
+      -3.32,
+      0.25,
+      -3.32
+     ],
+     "max": [
+      3.32,
+      0.45,
+      3.32
+     ],
+     "color": "2FD6FF"
+    }
+   ],
+   "collision": "solid",
+   "package": "Items_Lobby.glb",
+   "package_offset": [
+    -31.16,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Stand_Guns",
+   "category": "Lobby",
+   "source": "Lobby/glb/Stand_Guns.glb",
+   "size": [
+    14.6,
+    11.276,
+    6.811
+   ],
+   "min": [
+    -7.3,
+    0,
+    -4.111
+   ],
+   "max": [
+    7.3,
+    11.276,
+    2.7
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 6668,
+   "meshes": [
+    {
+     "name": "Stand_Guns",
+     "tris": 6668,
+     "kind": "body",
+     "min": [
+      -7.3,
+      0,
+      -4.111
+     ],
+     "max": [
+      7.3,
+      11.276,
+      2.7
+     ]
+    }
+   ],
+   "collision": "solid",
+   "package": "Items_Lobby.glb",
+   "package_offset": [
+    -16.36,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Board_Leaderboard",
+   "category": "Lobby",
+   "source": "Lobby/glb/Board_Leaderboard.glb",
+   "size": [
+    8.5,
+    12.15,
+    3.4
+   ],
+   "min": [
+    -4.25,
+    0,
+    -1.7
+   ],
+   "max": [
+    4.25,
+    12.15,
+    1.7
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 3396,
+   "meshes": [
+    {
+     "name": "Board_Leaderboard",
+     "tris": 3396,
+     "kind": "body",
+     "min": [
+      -4.25,
+      0,
+      -1.7
+     ],
+     "max": [
+      4.25,
+      12.15,
+      1.7
+     ]
+    }
+   ],
+   "collision": "solid",
+   "package": "Items_Lobby.glb",
+   "package_offset": [
+    -0.81,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Chest_Codes",
+   "category": "Lobby",
+   "source": "Lobby/glb/Chest_Codes.glb",
+   "size": [
+    4.74,
+    3.99,
+    3.64
+   ],
+   "min": [
+    -2.37,
+    0,
+    -1.87
+   ],
+   "max": [
+    2.37,
+    3.99,
+    1.77
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 5412,
+   "meshes": [
+    {
+     "name": "Chest_Codes",
+     "tris": 5412,
+     "kind": "body",
+     "min": [
+      -2.37,
+      0,
+      -1.87
+     ],
+     "max": [
+      2.37,
+      3.99,
+      1.77
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Lobby.glb",
+   "package_offset": [
+    9.81,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Chest_GroupReward",
+   "category": "Lobby",
+   "source": "Lobby/glb/Chest_GroupReward.glb",
+   "size": [
+    4.74,
+    3.99,
+    3.64
+   ],
+   "min": [
+    -2.37,
+    0,
+    -1.87
+   ],
+   "max": [
+    2.37,
+    3.99,
+    1.77
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 5764,
+   "meshes": [
+    {
+     "name": "Chest_GroupReward",
+     "tris": 5764,
+     "kind": "body",
+     "min": [
+      -2.37,
+      0,
+      -1.87
+     ],
+     "max": [
+      2.37,
+      3.99,
+      1.77
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Lobby.glb",
+   "package_offset": [
+    18.55,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Stand_SpinWheel",
+   "category": "Lobby",
+   "source": "Lobby/glb/Stand_SpinWheel.glb",
+   "size": [
+    6.6,
+    8.085,
+    3.55
+   ],
+   "min": [
+    -3.3,
+    0,
+    -1.55
+   ],
+   "max": [
+    3.3,
+    8.085,
+    2.0
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 5988,
+   "meshes": [
+    {
+     "name": "Stand_SpinWheel",
+     "tris": 2724,
+     "kind": "body",
+     "min": [
+      -3.3,
+      0,
+      -1.55
+     ],
+     "max": [
+      3.3,
+      8.085,
+      2.0
+     ]
+    },
+    {
+     "name": "Stand_SpinWheel_Wheel",
+     "tris": 3264,
+     "kind": "body",
+     "min": [
+      -2.988,
+      1.212,
+      -0.75
+     ],
+     "max": [
+      2.988,
+      7.188,
+      0.25
+     ],
+     "at": [
+      0,
+      4.2,
+      0
+     ]
+    }
+   ],
+   "collision": "solid",
+   "package": "Items_Lobby.glb",
+   "package_offset": [
+    28.22,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Portal_World2",
+   "category": "Lobby",
+   "source": "Lobby/glb/Portal_World2.glb",
+   "size": [
+    16.4,
+    14.136,
+    5.46
+   ],
+   "min": [
+    -8.2,
+    0,
+    -3.56
+   ],
+   "max": [
+    8.2,
+    14.136,
+    1.9
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [
+    "Portal_World2_Glow_7A2EFF",
+    "Portal_World2_Glow_FF4FD8"
+   ],
+   "triangles": 9000,
+   "meshes": [
+    {
+     "name": "Portal_World2",
+     "tris": 8784,
+     "kind": "body",
+     "min": [
+      -8.2,
+      0,
+      -3.56
+     ],
+     "max": [
+      8.2,
+      14.136,
+      1.9
+     ]
+    },
+    {
+     "name": "Portal_World2_Glow_7A2EFF",
+     "tris": 36,
+     "kind": "glow",
+     "min": [
+      -4.6,
+      0,
+      -0.15
+     ],
+     "max": [
+      4.6,
+      11.8,
+      0.15
+     ],
+     "color": "7A2EFF"
+    },
+    {
+     "name": "Portal_World2_Glow_FF4FD8",
+     "tris": 180,
+     "kind": "glow",
+     "min": [
+      -6.55,
+      1.75,
+      -1.86
+     ],
+     "max": [
+      6.55,
+      12.8,
+      -0.14
+     ],
+     "color": "FF4FD8"
+    }
+   ],
+   "collision": "solid",
+   "package": "Items_Lobby.glb",
+   "package_offset": [
+    43.72,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Spawn_Pad",
+   "category": "Lobby",
+   "source": "Lobby/glb/Spawn_Pad.glb",
+   "size": [
+    12.0,
+    1.17,
+    12.0
+   ],
+   "min": [
+    -6.0,
+    0,
+    -6.0
+   ],
+   "max": [
+    6.0,
+    1.17,
+    6.0
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 2568,
+   "meshes": [
+    {
+     "name": "Spawn_Pad",
+     "tris": 2568,
+     "kind": "body",
+     "min": [
+      -6.0,
+      0,
+      -6.0
+     ],
+     "max": [
+      6.0,
+      1.17,
+      6.0
+     ]
+    }
+   ],
+   "collision": "solid",
+   "package": "Items_Lobby.glb",
+   "package_offset": [
+    61.92,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Target_Dummy",
+   "category": "Lobby",
+   "source": "ShootingRanges/glb/Target_Dummy.glb",
+   "size": [
+    3.24,
+    4.998,
+    2.5
+   ],
+   "min": [
+    -1.62,
+    0,
+    -1.25
+   ],
+   "max": [
+    1.62,
+    4.998,
+    1.25
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 2492,
+   "meshes": [
+    {
+     "name": "Target_Dummy",
+     "tris": 2492,
+     "kind": "body",
+     "min": [
+      -1.62,
+      0,
+      -1.25
+     ],
+     "max": [
+      1.62,
+      4.998,
+      1.25
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Lobby.glb",
+   "package_offset": [
+    73.54,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Scn_Tree_1",
+   "category": "Scenery",
+   "source": "PlazaScenery/glb/Tree_1.glb",
+   "size": [
+    10.6,
+    13.502,
+    7.4
+   ],
+   "min": [
+    -5.3,
+    0,
+    -3.7
+   ],
+   "max": [
+    5.3,
+    13.502,
+    3.7
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 4884,
+   "meshes": [
+    {
+     "name": "Scn_Tree_1",
+     "tris": 4884,
+     "kind": "body",
+     "min": [
+      -5.3,
+      0,
+      -3.7
+     ],
+     "max": [
+      5.3,
+      13.502,
+      3.7
+     ]
+    }
+   ],
+   "collision": "solid",
+   "package": "Items_Scenery.glb",
+   "package_offset": [
+    -119.56,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Scn_Tree_2",
+   "category": "Scenery",
+   "source": "PlazaScenery/glb/Tree_2.glb",
+   "size": [
+    8.7,
+    14.502,
+    7.0
+   ],
+   "min": [
+    -4.35,
+    0,
+    -3.5
+   ],
+   "max": [
+    4.35,
+    14.502,
+    3.5
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 3172,
+   "meshes": [
+    {
+     "name": "Scn_Tree_2",
+     "tris": 3172,
+     "kind": "body",
+     "min": [
+      -4.35,
+      0,
+      -3.5
+     ],
+     "max": [
+      4.35,
+      14.502,
+      3.5
+     ]
+    }
+   ],
+   "collision": "solid",
+   "package": "Items_Scenery.glb",
+   "package_offset": [
+    -105.91,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Scn_Bush_1",
+   "category": "Scenery",
+   "source": "PlazaScenery/glb/Bush_1.glb",
+   "size": [
+    3.2,
+    2.368,
+    2.64
+   ],
+   "min": [
+    -1.6,
+    0,
+    -1.32
+   ],
+   "max": [
+    1.6,
+    2.368,
+    1.32
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 2208,
+   "meshes": [
+    {
+     "name": "Scn_Bush_1",
+     "tris": 2208,
+     "kind": "body",
+     "min": [
+      -1.6,
+      0,
+      -1.32
+     ],
+     "max": [
+      1.6,
+      2.368,
+      1.32
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Scenery.glb",
+   "package_offset": [
+    -95.96,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Scn_Cliff_Block",
+   "category": "Scenery",
+   "source": "PlazaScenery/glb/Cliff_Block.glb",
+   "size": [
+    16.0,
+    12.17,
+    16.0
+   ],
+   "min": [
+    -8.0,
+    0,
+    -8.0
+   ],
+   "max": [
+    8.0,
+    12.17,
+    8.0
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 12404,
+   "meshes": [
+    {
+     "name": "Scn_Cliff_Block",
+     "tris": 8204,
+     "kind": "body",
+     "min": [
+      -8.0,
+      0,
+      -8.0
+     ],
+     "max": [
+      8.0,
+      12,
+      8.0
+     ]
+    },
+    {
+     "name": "Scn_Cliff_Block_2",
+     "tris": 4200,
+     "kind": "body",
+     "min": [
+      -7.3,
+      8,
+      -2.3
+     ],
+     "max": [
+      7.3,
+      12.17,
+      7.633
+     ]
+    }
+   ],
+   "collision": "solid",
+   "package": "Items_Scenery.glb",
+   "package_offset": [
+    -82.36,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Scn_Building_1",
+   "category": "Scenery",
+   "source": "PlazaScenery/glb/Building_1.glb",
+   "size": [
+    19.05,
+    15.97,
+    14.95
+   ],
+   "min": [
+    -9.525,
+    0,
+    -7.465
+   ],
+   "max": [
+    9.525,
+    15.97,
+    7.485
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 15312,
+   "meshes": [
+    {
+     "name": "Scn_Building_1",
+     "tris": 9484,
+     "kind": "body",
+     "min": [
+      -9.525,
+      0,
+      -7.465
+     ],
+     "max": [
+      9.075,
+      14.4,
+      7.485
+     ]
+    },
+    {
+     "name": "Scn_Building_1_2",
+     "tris": 5828,
+     "kind": "body",
+     "min": [
+      -8.025,
+      1.4,
+      -5.565
+     ],
+     "max": [
+      9.525,
+      15.97,
+      6.085
+     ]
+    }
+   ],
+   "collision": "solid",
+   "package": "Items_Scenery.glb",
+   "package_offset": [
+    -60.835,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Scn_Building_2",
+   "category": "Scenery",
+   "source": "PlazaScenery/glb/Building_2.glb",
+   "size": [
+    19.15,
+    21.95,
+    14.4
+   ],
+   "min": [
+    -9.575,
+    0,
+    -7.2
+   ],
+   "max": [
+    9.575,
+    21.95,
+    7.2
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 21920,
+   "meshes": [
+    {
+     "name": "Scn_Building_2",
+     "tris": 9484,
+     "kind": "body",
+     "min": [
+      -9.575,
+      0,
+      -5.95
+     ],
+     "max": [
+      9.225,
+      18.2,
+      7.2
+     ]
+    },
+    {
+     "name": "Scn_Building_2_2",
+     "tris": 7200,
+     "kind": "body",
+     "min": [
+      -7.575,
+      0,
+      -7.2
+     ],
+     "max": [
+      9.575,
+      21.95,
+      5.2
+     ]
+    },
+    {
+     "name": "Scn_Building_2_3",
+     "tris": 5236,
+     "kind": "body",
+     "min": [
+      -8.475,
+      5.8,
+      -6.4
+     ],
+     "max": [
+      8.125,
+      21.17,
+      6.1
+     ]
+    }
+   ],
+   "collision": "solid",
+   "package": "Items_Scenery.glb",
+   "package_offset": [
+    -37.735,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Scn_Building_3",
+   "category": "Scenery",
+   "source": "PlazaScenery/glb/Building_3.glb",
+   "size": [
+    19.05,
+    17,
+    14.75
+   ],
+   "min": [
+    -9.525,
+    0,
+    -7.362
+   ],
+   "max": [
+    9.525,
+    17,
+    7.388
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 15436,
+   "meshes": [
+    {
+     "name": "Scn_Building_3",
+     "tris": 9484,
+     "kind": "body",
+     "min": [
+      -9.525,
+      0,
+      -7.362
+     ],
+     "max": [
+      9.175,
+      14.6,
+      7.388
+     ]
+    },
+    {
+     "name": "Scn_Building_3_2",
+     "tris": 5952,
+     "kind": "body",
+     "min": [
+      -8.025,
+      1.5,
+      -3.712
+     ],
+     "max": [
+      9.525,
+      17,
+      5.888
+     ]
+    }
+   ],
+   "collision": "solid",
+   "package": "Items_Scenery.glb",
+   "package_offset": [
+    -14.635,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Scn_Building_4",
+   "category": "Scenery",
+   "source": "PlazaScenery/glb/Building_4.glb",
+   "size": [
+    21.05,
+    14.18,
+    15.2
+   ],
+   "min": [
+    -10.525,
+    0,
+    -7.6
+   ],
+   "max": [
+    10.525,
+    14.18,
+    7.6
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 16140,
+   "meshes": [
+    {
+     "name": "Scn_Building_4",
+     "tris": 9164,
+     "kind": "body",
+     "min": [
+      -10.525,
+      0,
+      -7.6
+     ],
+     "max": [
+      10.525,
+      12.81,
+      7.6
+     ]
+    },
+    {
+     "name": "Scn_Building_4_2",
+     "tris": 6976,
+     "kind": "body",
+     "min": [
+      -9.025,
+      6.75,
+      -5.625
+     ],
+     "max": [
+      10.175,
+      14.18,
+      6.1
+     ]
+    }
+   ],
+   "collision": "solid",
+   "package": "Items_Scenery.glb",
+   "package_offset": [
+    9.415,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Scn_Hydrant",
+   "category": "Scenery",
+   "source": "PlazaScenery/glb/Hydrant.glb",
+   "size": [
+    2.48,
+    3.06,
+    2.26
+   ],
+   "min": [
+    -1.24,
+    0,
+    -1.13
+   ],
+   "max": [
+    1.24,
+    3.06,
+    1.13
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 2132,
+   "meshes": [
+    {
+     "name": "Scn_Hydrant",
+     "tris": 2132,
+     "kind": "body",
+     "min": [
+      -1.24,
+      0,
+      -1.13
+     ],
+     "max": [
+      1.24,
+      3.06,
+      1.13
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Scenery.glb",
+   "package_offset": [
+    25.18,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Scn_StreetLamp",
+   "category": "Scenery",
+   "source": "PlazaScenery/glb/StreetLamp.glb",
+   "size": [
+    4.7,
+    8.427,
+    2.0
+   ],
+   "min": [
+    -2.35,
+    0,
+    -1
+   ],
+   "max": [
+    2.35,
+    8.427,
+    1.0
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [
+    "Scn_StreetLamp_Glow_FFD84A"
+   ],
+   "triangles": 1968,
+   "meshes": [
+    {
+     "name": "Scn_StreetLamp",
+     "tris": 1956,
+     "kind": "body",
+     "min": [
+      -2.35,
+      0,
+      -1
+     ],
+     "max": [
+      2.35,
+      8.427,
+      1.0
+     ]
+    },
+    {
+     "name": "Scn_StreetLamp_Glow_FFD84A",
+     "tris": 12,
+     "kind": "glow",
+     "min": [
+      -2.05,
+      5.9,
+      -0.6
+     ],
+     "max": [
+      -0.55,
+      6.85,
+      0.6
+     ],
+     "color": "FFD84A"
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Scenery.glb",
+   "package_offset": [
+    32.77,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Scn_Bench",
+   "category": "Scenery",
+   "source": "PlazaScenery/glb/Bench.glb",
+   "size": [
+    4.7,
+    2.75,
+    2.24
+   ],
+   "min": [
+    -2.35,
+    0,
+    -1.12
+   ],
+   "max": [
+    2.35,
+    2.75,
+    1.12
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 2088,
+   "meshes": [
+    {
+     "name": "Scn_Bench",
+     "tris": 2088,
+     "kind": "body",
+     "min": [
+      -2.35,
+      0,
+      -1.12
+     ],
+     "max": [
+      2.35,
+      2.75,
+      1.12
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Scenery.glb",
+   "package_offset": [
+    41.47,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Scn_TrashCan",
+   "category": "Scenery",
+   "source": "PlazaScenery/glb/TrashCan.glb",
+   "size": [
+    2.24,
+    3.65,
+    2.255
+   ],
+   "min": [
+    -1.12,
+    0,
+    -1.128
+   ],
+   "max": [
+    1.12,
+    3.65,
+    1.128
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 1948,
+   "meshes": [
+    {
+     "name": "Scn_TrashCan",
+     "tris": 1948,
+     "kind": "body",
+     "min": [
+      -1.12,
+      0,
+      -1.128
+     ],
+     "max": [
+      1.12,
+      3.65,
+      1.128
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Scenery.glb",
+   "package_offset": [
+    48.94,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Scn_Barrel",
+   "category": "Scenery",
+   "source": "PlazaScenery/glb/Barrel.glb",
+   "size": [
+    2.06,
+    3.04,
+    2.125
+   ],
+   "min": [
+    -1.03,
+    0,
+    -1.062
+   ],
+   "max": [
+    1.03,
+    3.04,
+    1.062
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 1504,
+   "meshes": [
+    {
+     "name": "Scn_Barrel",
+     "tris": 1504,
+     "kind": "body",
+     "min": [
+      -1.03,
+      0,
+      -1.062
+     ],
+     "max": [
+      1.03,
+      3.04,
+      1.062
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Scenery.glb",
+   "package_offset": [
+    55.09,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Scn_Crate",
+   "category": "Scenery",
+   "source": "PlazaScenery/glb/Crate.glb",
+   "size": [
+    2.7,
+    2.508,
+    2.7
+   ],
+   "min": [
+    -1.35,
+    0,
+    -1.35
+   ],
+   "max": [
+    1.35,
+    2.508,
+    1.35
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 3440,
+   "meshes": [
+    {
+     "name": "Scn_Crate",
+     "tris": 3440,
+     "kind": "body",
+     "min": [
+      -1.35,
+      0,
+      -1.35
+     ],
+     "max": [
+      1.35,
+      2.508,
+      1.35
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Scenery.glb",
+   "package_offset": [
+    61.47,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Scn_Cone",
+   "category": "Scenery",
+   "source": "PlazaScenery/glb/Cone.glb",
+   "size": [
+    2.7,
+    2.56,
+    2.7
+   ],
+   "min": [
+    -1.35,
+    0,
+    -1.35
+   ],
+   "max": [
+    1.35,
+    2.56,
+    1.35
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 1240,
+   "meshes": [
+    {
+     "name": "Scn_Cone",
+     "tris": 1240,
+     "kind": "body",
+     "min": [
+      -1.35,
+      0,
+      -1.35
+     ],
+     "max": [
+      1.35,
+      2.56,
+      1.35
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Scenery.glb",
+   "package_offset": [
+    68.17,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Scn_Fence",
+   "category": "Scenery",
+   "source": "PlazaScenery/glb/Fence.glb",
+   "size": [
+    8,
+    4.627,
+    0.92
+   ],
+   "min": [
+    -4,
+    0,
+    -0.46
+   ],
+   "max": [
+    4,
+    4.627,
+    0.46
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 2076,
+   "meshes": [
+    {
+     "name": "Scn_Fence",
+     "tris": 2076,
+     "kind": "body",
+     "min": [
+      -4,
+      0,
+      -0.46
+     ],
+     "max": [
+      4,
+      4.627,
+      0.46
+     ]
+    }
+   ],
+   "collision": "solid",
+   "package": "Items_Scenery.glb",
+   "package_offset": [
+    77.52,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Scn_Sandbag",
+   "category": "Scenery",
+   "source": "PlazaScenery/glb/Sandbag.glb",
+   "size": [
+    4.68,
+    1.718,
+    1.28
+   ],
+   "min": [
+    -2.34,
+    0,
+    -0.64
+   ],
+   "max": [
+    2.34,
+    1.718,
+    0.64
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 2396,
+   "meshes": [
+    {
+     "name": "Scn_Sandbag",
+     "tris": 2396,
+     "kind": "body",
+     "min": [
+      -2.34,
+      0,
+      -0.64
+     ],
+     "max": [
+      2.34,
+      1.718,
+      0.64
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Scenery.glb",
+   "package_offset": [
+    87.86,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Scn_Car",
+   "category": "Scenery",
+   "source": "PlazaScenery/glb/Car.glb",
+   "size": [
+    5.26,
+    4.685,
+    10
+   ],
+   "min": [
+    -2.63,
+    0,
+    -5
+   ],
+   "max": [
+    2.63,
+    4.685,
+    5
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 5304,
+   "meshes": [
+    {
+     "name": "Scn_Car",
+     "tris": 5304,
+     "kind": "body",
+     "min": [
+      -2.63,
+      0,
+      -5
+     ],
+     "max": [
+      2.63,
+      4.685,
+      5
+     ]
+    }
+   ],
+   "collision": "solid",
+   "package": "Items_Scenery.glb",
+   "package_offset": [
+    96.83,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Scn_Hoop",
+   "category": "Scenery",
+   "source": "PlazaScenery/glb/Hoop.glb",
+   "size": [
+    5.4,
+    9.985,
+    5.4
+   ],
+   "min": [
+    -2.7,
+    0,
+    -2.7
+   ],
+   "max": [
+    2.7,
+    9.985,
+    2.7
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 2532,
+   "meshes": [
+    {
+     "name": "Scn_Hoop",
+     "tris": 2532,
+     "kind": "body",
+     "min": [
+      -2.7,
+      0,
+      -2.7
+     ],
+     "max": [
+      2.7,
+      9.985,
+      2.7
+     ]
+    }
+   ],
+   "collision": "prop",
+   "package": "Items_Scenery.glb",
+   "package_offset": [
+    106.16,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Scn_GraffitiWall",
+   "category": "Scenery",
+   "source": "PlazaScenery/glb/GraffitiWall.glb",
+   "size": [
+    8,
+    5.385,
+    1.441
+   ],
+   "min": [
+    -4,
+    0,
+    -0.721
+   ],
+   "max": [
+    4,
+    5.385,
+    0.721
+   ],
+   "pivot": "bottom centre (origin), front -Z",
+   "glow": [],
+   "triangles": 9356,
+   "meshes": [
+    {
+     "name": "Scn_GraffitiWall",
+     "tris": 9356,
+     "kind": "body",
+     "min": [
+      -4,
+      0,
+      -0.721
+     ],
+     "max": [
+      4,
+      5.385,
+      0.721
+     ]
+    }
+   ],
+   "collision": "solid",
+   "package": "Items_Scenery.glb",
+   "package_offset": [
+    116.86,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Gun_Pistol",
+   "category": "Guns",
+   "source": "Guns/glb/Gun_Pistol.glb",
+   "size": [
+    0.46,
+    1.579,
+    1.842
+   ],
+   "min": [
+    -0.23,
+    -0.538,
+    -1.475
+   ],
+   "max": [
+    0.23,
+    1.041,
+    0.367
+   ],
+   "pivot": "grip (origin), muzzle -Z",
+   "glow": [],
+   "triangles": 1300,
+   "meshes": [
+    {
+     "name": "Gun_Pistol",
+     "tris": 1300,
+     "kind": "body",
+     "min": [
+      -0.23,
+      -0.538,
+      -1.475
+     ],
+     "max": [
+      0.23,
+      1.041,
+      0.367
+     ]
+    }
+   ],
+   "collision": "gun",
+   "muzzle": [
+    0.0,
+    0.731,
+    -1.475
+   ],
+   "exclusive": false,
+   "package": "Items_Guns.glb",
+   "package_offset": [
+    -35.193,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Gun_Revolver",
+   "category": "Guns",
+   "source": "Guns/glb/Gun_Revolver.glb",
+   "size": [
+    0.72,
+    1.661,
+    2.216
+   ],
+   "min": [
+    -0.36,
+    -0.512,
+    -1.833
+   ],
+   "max": [
+    0.36,
+    1.149,
+    0.383
+   ],
+   "pivot": "grip (origin), muzzle -Z",
+   "glow": [],
+   "triangles": 1916,
+   "meshes": [
+    {
+     "name": "Gun_Revolver",
+     "tris": 1916,
+     "kind": "body",
+     "min": [
+      -0.36,
+      -0.512,
+      -1.833
+     ],
+     "max": [
+      0.36,
+      1.149,
+      0.383
+     ]
+    }
+   ],
+   "collision": "gun",
+   "muzzle": [
+    0.0,
+    0.836,
+    -1.833
+   ],
+   "exclusive": false,
+   "package": "Items_Guns.glb",
+   "package_offset": [
+    -30.603,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Gun_Uzi",
+   "category": "Guns",
+   "source": "Guns/glb/Gun_Uzi.glb",
+   "size": [
+    0.5,
+    1.725,
+    1.92
+   ],
+   "min": [
+    -0.25,
+    -0.582,
+    -1.226
+   ],
+   "max": [
+    0.25,
+    1.143,
+    0.694
+   ],
+   "pivot": "grip (origin), muzzle -Z",
+   "glow": [],
+   "triangles": 1744,
+   "meshes": [
+    {
+     "name": "Gun_Uzi",
+     "tris": 1744,
+     "kind": "body",
+     "min": [
+      -0.25,
+      -0.582,
+      -1.226
+     ],
+     "max": [
+      0.25,
+      1.143,
+      0.694
+     ]
+    }
+   ],
+   "collision": "gun",
+   "muzzle": [
+    0.0,
+    0.693,
+    -1.226
+   ],
+   "exclusive": false,
+   "package": "Items_Guns.glb",
+   "package_offset": [
+    -25.993,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Gun_Shotgun",
+   "category": "Guns",
+   "source": "Guns/glb/Gun_Shotgun.glb",
+   "size": [
+    0.52,
+    1.156,
+    3.65
+   ],
+   "min": [
+    -0.26,
+    -0.395,
+    -2.524
+   ],
+   "max": [
+    0.26,
+    0.761,
+    1.126
+   ],
+   "pivot": "grip (origin), muzzle -Z",
+   "glow": [],
+   "triangles": 2456,
+   "meshes": [
+    {
+     "name": "Gun_Shotgun",
+     "tris": 2456,
+     "kind": "body",
+     "min": [
+      -0.26,
+      -0.395,
+      -2.524
+     ],
+     "max": [
+      0.26,
+      0.761,
+      1.126
+     ]
+    }
+   ],
+   "collision": "gun",
+   "muzzle": [
+    0.0,
+    0.541,
+    -2.524
+   ],
+   "exclusive": false,
+   "package": "Items_Guns.glb",
+   "package_offset": [
+    -21.483,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Gun_Tommy",
+   "category": "Guns",
+   "source": "Guns/glb/Gun_Tommy.glb",
+   "size": [
+    0.46,
+    1.35,
+    3.54
+   ],
+   "min": [
+    -0.23,
+    -0.497,
+    -2.348
+   ],
+   "max": [
+    0.23,
+    0.853,
+    1.192
+   ],
+   "pivot": "grip (origin), muzzle -Z",
+   "glow": [],
+   "triangles": 2912,
+   "meshes": [
+    {
+     "name": "Gun_Tommy",
+     "tris": 2912,
+     "kind": "body",
+     "min": [
+      -0.23,
+      -0.497,
+      -2.348
+     ],
+     "max": [
+      0.23,
+      0.853,
+      1.192
+     ]
+    }
+   ],
+   "collision": "gun",
+   "muzzle": [
+    0.0,
+    0.503,
+    -2.348
+   ],
+   "exclusive": false,
+   "package": "Items_Guns.glb",
+   "package_offset": [
+    -16.993,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Gun_AK",
+   "category": "Guns",
+   "source": "Guns/glb/Gun_AK.glb",
+   "size": [
+    0.44,
+    1.331,
+    3.68
+   ],
+   "min": [
+    -0.22,
+    -0.566,
+    -2.446
+   ],
+   "max": [
+    0.22,
+    0.765,
+    1.234
+   ],
+   "pivot": "grip (origin), muzzle -Z",
+   "glow": [],
+   "triangles": 2444,
+   "meshes": [
+    {
+     "name": "Gun_AK",
+     "tris": 2444,
+     "kind": "body",
+     "min": [
+      -0.22,
+      -0.566,
+      -2.446
+     ],
+     "max": [
+      0.22,
+      0.765,
+      1.234
+     ]
+    }
+   ],
+   "collision": "gun",
+   "muzzle": [
+    0.0,
+    0.421,
+    -2.446
+   ],
+   "exclusive": false,
+   "package": "Items_Guns.glb",
+   "package_offset": [
+    -12.543,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Gun_Deagle",
+   "category": "Guns",
+   "source": "Guns/glb/Gun_Deagle.glb",
+   "size": [
+    0.57,
+    1.766,
+    2.16
+   ],
+   "min": [
+    -0.285,
+    -0.581,
+    -1.721
+   ],
+   "max": [
+    0.285,
+    1.185,
+    0.439
+   ],
+   "pivot": "grip (origin), muzzle -Z",
+   "glow": [],
+   "triangles": 1956,
+   "meshes": [
+    {
+     "name": "Gun_Deagle",
+     "tris": 1956,
+     "kind": "body",
+     "min": [
+      -0.285,
+      -0.581,
+      -1.721
+     ],
+     "max": [
+      0.285,
+      1.185,
+      0.439
+     ]
+    }
+   ],
+   "collision": "gun",
+   "muzzle": [
+    0.0,
+    0.825,
+    -1.721
+   ],
+   "exclusive": false,
+   "package": "Items_Guns.glb",
+   "package_offset": [
+    -8.038,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Gun_Minigun",
+   "category": "Guns",
+   "source": "Guns/glb/Gun_Minigun.glb",
+   "size": [
+    0.82,
+    1.68,
+    3.296
+   ],
+   "min": [
+    -0.4,
+    -0.417,
+    -3.044
+   ],
+   "max": [
+    0.42,
+    1.263,
+    0.251
+   ],
+   "pivot": "grip (origin), muzzle -Z",
+   "glow": [],
+   "triangles": 4156,
+   "meshes": [
+    {
+     "name": "Gun_Minigun",
+     "tris": 4156,
+     "kind": "body",
+     "min": [
+      -0.4,
+      -0.417,
+      -3.044
+     ],
+     "max": [
+      0.42,
+      1.263,
+      0.251
+     ]
+    }
+   ],
+   "collision": "gun",
+   "muzzle": [
+    0.0,
+    0.582,
+    -3.044
+   ],
+   "exclusive": false,
+   "package": "Items_Guns.glb",
+   "package_offset": [
+    -3.353,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Gun_Blaster",
+   "category": "Guns",
+   "source": "Guns/glb/Gun_Blaster.glb",
+   "size": [
+    0.52,
+    1.939,
+    2.49
+   ],
+   "min": [
+    -0.26,
+    -0.502,
+    -2.094
+   ],
+   "max": [
+    0.26,
+    1.437,
+    0.396
+   ],
+   "pivot": "grip (origin), muzzle -Z",
+   "glow": [
+    "Gun_Blaster_Glow_6A1BFF"
+   ],
+   "triangles": 1228,
+   "meshes": [
+    {
+     "name": "Gun_Blaster",
+     "tris": 1132,
+     "kind": "body",
+     "min": [
+      -0.25,
+      -0.502,
+      -2.064
+     ],
+     "max": [
+      0.25,
+      1.437,
+      0.396
+     ]
+    },
+    {
+     "name": "Gun_Blaster_Glow_6A1BFF",
+     "tris": 96,
+     "kind": "glow",
+     "min": [
+      -0.26,
+      0.397,
+      -2.094
+     ],
+     "max": [
+      0.26,
+      1.377,
+      -0.004
+     ],
+     "color": "6A1BFF"
+    }
+   ],
+   "collision": "gun",
+   "muzzle": [
+    0.0,
+    0.617,
+    -2.094
+   ],
+   "exclusive": false,
+   "package": "Items_Guns.glb",
+   "package_offset": [
+    1.327,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Gun_Diamond",
+   "category": "Guns",
+   "source": "Guns/glb/Gun_Diamond.glb",
+   "size": [
+    0.64,
+    2.026,
+    2.82
+   ],
+   "min": [
+    -0.32,
+    -0.502,
+    -2.324
+   ],
+   "max": [
+    0.32,
+    1.524,
+    0.496
+   ],
+   "pivot": "grip (origin), muzzle -Z",
+   "glow": [
+    "Gun_Diamond_Glow_36E8FF"
+   ],
+   "triangles": 2912,
+   "meshes": [
+    {
+     "name": "Gun_Diamond",
+     "tris": 2900,
+     "kind": "body",
+     "min": [
+      -0.32,
+      -0.502,
+      -2.304
+     ],
+     "max": [
+      0.32,
+      1.524,
+      0.496
+     ]
+    },
+    {
+     "name": "Gun_Diamond_Glow_36E8FF",
+     "tris": 12,
+     "kind": "glow",
+     "min": [
+      -0.14,
+      0.457,
+      -2.324
+     ],
+     "max": [
+      0.14,
+      0.737,
+      -2.294
+     ],
+     "color": "36E8FF"
+    }
+   ],
+   "collision": "gun",
+   "muzzle": [
+    0.0,
+    0.597,
+    -2.324
+   ],
+   "exclusive": false,
+   "package": "Items_Guns.glb",
+   "package_offset": [
+    5.907,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Gun_NeonViper",
+   "category": "Guns",
+   "source": "Guns/glb/Gun_NeonViper.glb",
+   "size": [
+    1.17,
+    1.985,
+    3.775
+   ],
+   "min": [
+    -0.585,
+    -0.45,
+    -2.842
+   ],
+   "max": [
+    0.585,
+    1.535,
+    0.933
+   ],
+   "pivot": "grip (origin), muzzle -Z",
+   "glow": [
+    "Gun_NeonViper_Glow_5CFF3A",
+    "Gun_NeonViper_Glow_FF3D8F"
+   ],
+   "triangles": 3996,
+   "meshes": [
+    {
+     "name": "Gun_NeonViper",
+     "tris": 3660,
+     "kind": "body",
+     "min": [
+      -0.585,
+      -0.45,
+      -2.527
+     ],
+     "max": [
+      0.585,
+      1.535,
+      0.933
+     ]
+    },
+    {
+     "name": "Gun_NeonViper_Glow_5CFF3A",
+     "tris": 24,
+     "kind": "glow",
+     "min": [
+      -0.38,
+      1.215,
+      -2.137
+     ],
+     "max": [
+      0.38,
+      1.495,
+      -1.887
+     ],
+     "color": "5CFF3A"
+    },
+    {
+     "name": "Gun_NeonViper_Glow_FF3D8F",
+     "tris": 312,
+     "kind": "glow",
+     "min": [
+      -0.505,
+      0.155,
+      -2.842
+     ],
+     "max": [
+      0.505,
+      1.395,
+      0.793
+     ],
+     "color": "FF3D8F"
+    }
+   ],
+   "collision": "gun",
+   "muzzle": [
+    0.0,
+    0.955,
+    -2.842
+   ],
+   "exclusive": true,
+   "package": "Items_Guns.glb",
+   "package_offset": [
+    10.812,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Gun_GalaxyRay",
+   "category": "Guns",
+   "source": "Guns/glb/Gun_GalaxyRay.glb",
+   "size": [
+    1.458,
+    1.749,
+    3.099
+   ],
+   "min": [
+    -0.729,
+    -0.484,
+    -2.753
+   ],
+   "max": [
+    0.729,
+    1.265,
+    0.346
+   ],
+   "pivot": "grip (origin), muzzle -Z",
+   "glow": [
+    "Gun_GalaxyRay_Glow_36E8FF"
+   ],
+   "triangles": 2392,
+   "meshes": [
+    {
+     "name": "Gun_GalaxyRay",
+     "tris": 2248,
+     "kind": "body",
+     "min": [
+      -0.729,
+      -0.484,
+      -2.693
+     ],
+     "max": [
+      0.729,
+      1.265,
+      0.346
+     ]
+    },
+    {
+     "name": "Gun_GalaxyRay_Glow_36E8FF",
+     "tris": 144,
+     "kind": "glow",
+     "min": [
+      -0.34,
+      0.367,
+      -2.753
+     ],
+     "max": [
+      0.34,
+      1.137,
+      0.127
+     ],
+     "color": "36E8FF"
+    }
+   ],
+   "collision": "gun",
+   "muzzle": [
+    0.0,
+    0.604,
+    -2.753
+   ],
+   "exclusive": true,
+   "package": "Items_Guns.glb",
+   "package_offset": [
+    16.126,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Gun_InfernoCannon",
+   "category": "Guns",
+   "source": "Guns/glb/Gun_InfernoCannon.glb",
+   "size": [
+    0.887,
+    1.686,
+    3.785
+   ],
+   "min": [
+    -0.443,
+    -0.437,
+    -2.957
+   ],
+   "max": [
+    0.443,
+    1.249,
+    0.828
+   ],
+   "pivot": "grip (origin), muzzle -Z",
+   "glow": [
+    "Gun_InfernoCannon_Glow_FF5A0F",
+    "Gun_InfernoCannon_Glow_FFA51E"
+   ],
+   "triangles": 3588,
+   "meshes": [
+    {
+     "name": "Gun_InfernoCannon",
+     "tris": 3068,
+     "kind": "body",
+     "min": [
+      -0.443,
+      -0.437,
+      -2.182
+     ],
+     "max": [
+      0.443,
+      1.249,
+      0.828
+     ]
+    },
+    {
+     "name": "Gun_InfernoCannon_Glow_FF5A0F",
+     "tris": 420,
+     "kind": "glow",
+     "min": [
+      -0.39,
+      0.129,
+      -2.957
+     ],
+     "max": [
+      0.39,
+      1.029,
+      0.028
+     ],
+     "color": "FF5A0F"
+    },
+    {
+     "name": "Gun_InfernoCannon_Glow_FFA51E",
+     "tris": 100,
+     "kind": "glow",
+     "min": [
+      -0.34,
+      0.398,
+      -2.607
+     ],
+     "max": [
+      0.34,
+      0.86,
+      -0.032
+     ],
+     "color": "FFA51E"
+    }
+   ],
+   "collision": "gun",
+   "muzzle": [
+    0.0,
+    0.786,
+    -2.957
+   ],
+   "exclusive": true,
+   "package": "Items_Guns.glb",
+   "package_offset": [
+    21.298,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Gun_Frostbite",
+   "category": "Guns",
+   "source": "Guns/glb/Gun_Frostbite.glb",
+   "size": [
+    0.571,
+    1.908,
+    3.84
+   ],
+   "min": [
+    -0.265,
+    -0.409,
+    -2.688
+   ],
+   "max": [
+    0.307,
+    1.499,
+    1.152
+   ],
+   "pivot": "grip (origin), muzzle -Z",
+   "glow": [
+    "Gun_Frostbite_Glow_3FB8FF"
+   ],
+   "triangles": 3728,
+   "meshes": [
+    {
+     "name": "Gun_Frostbite",
+     "tris": 3596,
+     "kind": "body",
+     "min": [
+      -0.265,
+      -0.409,
+      -2.492
+     ],
+     "max": [
+      0.307,
+      1.499,
+      1.152
+     ]
+    },
+    {
+     "name": "Gun_Frostbite_Glow_3FB8FF",
+     "tris": 132,
+     "kind": "glow",
+     "min": [
+      -0.25,
+      -0.227,
+      -2.688
+     ],
+     "max": [
+      0.25,
+      1.444,
+      -0.027
+     ],
+     "color": "3FB8FF"
+    }
+   ],
+   "collision": "gun",
+   "muzzle": [
+    0.0,
+    0.503,
+    -2.688
+   ],
+   "exclusive": true,
+   "package": "Items_Guns.glb",
+   "package_offset": [
+    26.006,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "Gun_RoyalCrown",
+   "category": "Guns",
+   "source": "Guns/glb/Gun_RoyalCrown.glb",
+   "size": [
+    1.11,
+    1.489,
+    3.8
+   ],
+   "min": [
+    -0.555,
+    -0.421,
+    -2.851
+   ],
+   "max": [
+    0.555,
+    1.067,
+    0.949
+   ],
+   "pivot": "grip (origin), muzzle -Z",
+   "glow": [
+    "Gun_RoyalCrown_Glow_FF1844"
+   ],
+   "triangles": 4052,
+   "meshes": [
+    {
+     "name": "Gun_RoyalCrown",
+     "tris": 3860,
+     "kind": "body",
+     "min": [
+      -0.555,
+      -0.421,
+      -2.831
+     ],
+     "max": [
+      0.555,
+      0.962,
+      0.949
+     ]
+    },
+    {
+     "name": "Gun_RoyalCrown_Glow_FF1844",
+     "tris": 192,
+     "kind": "glow",
+     "min": [
+      -0.54,
+      -0.127,
+      -2.851
+     ],
+     "max": [
+      0.54,
+      1.067,
+      0.83
+     ],
+     "color": "FF1844"
+    }
+   ],
+   "collision": "gun",
+   "muzzle": [
+    0.0,
+    0.663,
+    -2.851
+   ],
+   "exclusive": true,
+   "package": "Items_Guns.glb",
+   "package_offset": [
+    30.868,
+    0,
+    0
+   ]
+  }
+ ]
+}

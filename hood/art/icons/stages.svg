@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+<defs>
+  <g id="s"><rect x="114" y="96" width="28" height="140" rx="6"/><path d="M24 40 L196 40 L234 74 L196 108 L24 108 Z"/></g>
+  <clipPath id="clip"><rect x="114" y="96" width="28" height="140" rx="6"/><path d="M24 40 L196 40 L234 74 L196 108 L24 108 Z"/></clipPath>
+</defs>
+<g transform="translate(0,6)" opacity="0.28"><use href="#s" fill="#1C1830" stroke="#1C1830" stroke-width="34" stroke-linejoin="round" stroke-linecap="round"/></g>
+<use href="#s" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="34" stroke-linejoin="round" stroke-linecap="round"/>
+<use href="#s" fill="#1C1830" stroke="#1C1830" stroke-width="16" stroke-linejoin="round" stroke-linecap="round"/>
+<g clip-path="url(#clip)">
+<rect x="114" y="96" width="28" height="140" fill="#8A93A3"/><rect x="130" y="96" width="12" height="140" fill="#5E6676"/>
+<path d="M24 40 L196 40 L234 74 L196 108 L24 108 Z" fill="#2E9E5B"/><path d="M24 92 L212 92 L196 108 L24 108 Z" fill="#1F7442"/>
+<path d="M36 52 L190 52 L218 74 L190 96 L36 96 Z" fill="none" stroke="#FFFFFF" stroke-width="5"/>
+<text x="118" y="88" font-family="Luckiest Guy" font-size="38" text-anchor="middle" fill="#FFFFFF">GO</text></g>
+</svg>

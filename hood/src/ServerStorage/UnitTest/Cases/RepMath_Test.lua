@@ -17,5 +17,5 @@ return function(t)
  -- Friend bonus is capped at fifty percent.
  t.test('caps friend bonus',function() t.expect.near(M.getRepPerTick(S.new(),maps.ById.Block,{Friends=50}),1.5) end)
  -- Independent multipliers compose under a known scenario.
- t.test('combines evolution rebirth and verified pass',function() local p=S.new();p.Evolution.Block=2;p.Rebirths=2;t.expect.equal(M.getRepPerTick(p,maps.ById.Block,{DoubleRep=true}),6) end)
+ t.test('combines evolution rebirth and verified pass',function() local p=S.new();p.Evolution.Block=2;p.Rebirths=2;t.expect.equal(M.getRepPerTick(p,maps.ById.Block,{DoubleRep=true}),9) end) -- (evolution 2 x1.5, 2 rebirths x3 (RebirthRules), the pass x2)
 end
