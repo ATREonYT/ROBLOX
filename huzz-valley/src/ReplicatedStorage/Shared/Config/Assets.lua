@@ -3,7 +3,8 @@
 --
 -- To fill these in: Studio > Asset Manager (View tab) > Bulk Import > pick every file in huzz-valley/assets/icons.
 -- Then right-click each imported image > Copy ID, and paste it between the quotes below as "rbxassetid://<number>".
--- The PNGs are the owner's exact icon files from the UI kit (design/exact-pixel-icon-references), unchanged.
+-- The PNGs are the owner's exact icon files from the UI kit (design/exact-pixel-icon-references), same pixels and
+-- size, with only the baked-in background made transparent (tools/icons/clear_background.py).
 local Assets = {}
 
 Assets.Icons = {

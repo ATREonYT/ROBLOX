@@ -54,7 +54,7 @@ A Roblox game based on Huss Valley: rounds where players steal and hold the lead
   - the Robux glyph draws small;
   - the avatar is a grey stand-in;
   - icons come from `assets/icons` even before they're imported.
-- `assets/icons` are the owner's icon files from the kit, used as they are. **Don't redraw or alter them** (the owner's call).
+- `assets/icons` are the owner's icon files from the kit with only their baked-in background cleared (`python3 tools/icons/clear_background.py`, with per-icon settings in the script). **Never redraw or upscale them** (the owner's call).
 
 ## Open items (owner's checklist lives in `README.md`)
 - **Built:** golden slice (Lobby HUD, Menu, Shop with 3 tabs, Settings with 3 tabs), waiting for the owner's look check in Studio.
