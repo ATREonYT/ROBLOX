@@ -17,9 +17,14 @@ local new = Kit.new
 
 local SettingsScreen = {}
 
-local W, H = 701, 262
-local ROW_X, ROW_W, ROW_H, ROW_Y0, ROW_STEP = 12, 677, 44, 52, 49
-local COL = { A = 405, B = 501, C = 597 } -- left edges of the three choice buttons (window coords)
+-- Geometry per tab, measured from the references (06 Social is the approved page; 09/10 are taller with bigger rows).
+local W = 701
+local GEOM = {
+	Social = { H = 258, HH = 40, TabH = 26.5, Tabs = { { 305, 109 }, { 421, 117 }, { 539, 121 } }, Close = Vector2.new(26, 26), Y0 = 47, RowH = 44, Step = 49, TextX = 62 },
+	Audio = { H = 287, HH = 43.5, TabH = 30.5, Tabs = { { 261, 125 }, { 390, 125 }, { 519, 125 } }, Close = Vector2.new(33, 34), Y0 = 54.5, RowH = 52, Step = 56.5, Row4 = 8, TextX = 74, Cell = 59 },
+}
+GEOM.Controls = GEOM.Audio
+local ROW_X = 12
 
 local syncers: { () -> () } = {}
 
@@ -30,35 +35,43 @@ local function save(key: string, value: any)
 	end)
 end
 
-local function row(parent: Instance, i: number, icon: string, title: string, desc: string)
-	local r = new("Frame", { Name = "Row" .. i, Position = UDim2.fromOffset(ROW_X, ROW_Y0 + (i - 1) * ROW_STEP), Size = UDim2.fromOffset(ROW_W, ROW_H), BackgroundColor3 = C.Row, BackgroundTransparency = Theme.Transparency.Row, BorderSizePixel = 0, Parent = parent }, { Kit.corner(4), Kit.stroke(C.RowBorder, 1, 0.35) })
-	Kit.icon(icon, { Name = "Icon", Position = UDim2.fromOffset(12, 7), Size = UDim2.fromOffset(30, 30), Parent = r })
-	Kit.name({ Name = "Title", Text = title, TextSize = 16, Position = UDim2.fromOffset(56, 4), Size = UDim2.fromOffset(330, 20), TextWrapped = false, Parent = r })
-	Kit.text({ Name = "Desc", Text = desc, TextSize = 12.5, TextColor3 = C.SubText, Position = UDim2.fromOffset(56, 23), Size = UDim2.fromOffset(330, 16), TextWrapped = false, Parent = r })
-	return r
+-- One settings row (window coords). Audio/Controls rows have an icon cell with a divider; Social rows don't.
+local function row(parent: Instance, g, i: number, icon: string, title: string, desc: string, width: number?)
+	local y = g.Y0 + (i - 1) * g.Step + ((g.Row4 and i == 4) and g.Row4 or 0)
+	local r = new("Frame", { Name = "Row" .. i, Position = UDim2.fromOffset(ROW_X, y), Size = UDim2.fromOffset(width or (W - 2 * ROW_X), g.RowH), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = parent }, { Kit.corner(4), Kit.stroke(C.RowBorder, 1) })
+	new("UIGradient", { Rotation = 90, Color = ColorSequence.new(C.RowTop, C.RowBottom), Parent = r })
+	if g.Cell then
+		new("Frame", { Name = "Divider", Position = UDim2.fromOffset(g.Cell, 0), Size = UDim2.new(0, 1, 1, 0), BackgroundColor3 = C.CellDivider, BorderSizePixel = 0, Parent = r })
+	end
+	local iconSize = g.Cell and 34 or 30
+	Kit.icon(icon, { Name = "Icon", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0, (g.Cell or 44) / 2, 0.5, 0), Size = UDim2.fromOffset(iconSize, iconSize), Parent = r })
+	local ty = g.RowH >= 50 and 7 or 3
+	Kit.name({ Name = "Title", Text = title, TextSize = Theme.Text.Row, Position = UDim2.fromOffset(g.TextX, ty), Size = UDim2.fromOffset(300, 22), Parent = r })
+	Kit.text({ Name = "Desc", Text = desc, TextSize = 13, TextColor3 = C.SubText, Position = UDim2.fromOffset(g.TextX, ty + 21), Size = UDim2.fromOffset(300, 16), TextWrapped = false, Parent = r })
+	return r, y
 end
 
 -- Three-way choice (Everyone / Friends / Nobody).
 local function choice(r: Frame, key: string)
 	local seg = Kit.segmented(r, {
-		{ Value = "Everyone", Text = "Everyone", X = COL.A - ROW_X, Width = 89 },
-		{ Value = "Friends", Text = "Friends", X = COL.B - ROW_X, Width = 89 },
-		{ Value = "Nobody", Text = "Nobody", X = COL.C - ROW_X, Width = 80 },
-	}, 7, 30, function(v) save(key, v) end)
+		{ Value = "Everyone", Text = "Everyone", X = 391 - ROW_X, Width = 94 },
+		{ Value = "Friends", Text = "Friends", X = 491 - ROW_X, Width = 93 },
+		{ Value = "Nobody", Text = "Nobody", X = 590 - ROW_X, Width = 93 },
+	}, 8, 28, function(v) save(key, v) end, 15)
 	table.insert(syncers, function() seg.set(State.setting(key)) end)
 end
 
--- ON / OFF (selected ON is periwinkle, selected OFF is peach, as in the reference).
-local function onOff(r: Frame, key: string, x: number?, wOn: number?, wOff: number?)
-	local x0 = (x or COL.A) - ROW_X
+-- ON / OFF (selected ON is periwinkle, selected OFF is peach, as in the reference). x/widths in window coords.
+local function onOff(r: Frame, key: string, x: number, wOn: number, xOff: number, wOff: number, h: number, textSize: number)
 	local seg = Kit.segmented(r, {
-		{ Value = true, Text = "ON", X = x0, Width = wOn or 136, Selected = "Action" },
-		{ Value = false, Text = "OFF", X = x0 + (wOn or 136) + 8, Width = wOff or 128 },
-	}, 7, 30, function(v) save(key, v) end)
+		{ Value = true, Text = "ON", X = x - ROW_X, Width = wOn, Selected = "Action" },
+		{ Value = false, Text = "OFF", X = xOff - ROW_X, Width = wOff },
+	}, (r.Size.Y.Offset - h) / 2, h, function(v) save(key, v) end, textSize)
 	table.insert(syncers, function() seg.set(State.setting(key) == true) end)
 end
 
 local function buildAudio(page: Frame)
+	local g = GEOM.Audio
 	local defs = {
 		{ "MasterVolume", "AudioSpeaker", "Master Volume", "Overall game volume." },
 		{ "MusicVolume", "AudioMusic", "Music Volume", "Background music volume." },
@@ -66,11 +79,12 @@ local function buildAudio(page: Frame)
 	}
 	for i, d in defs do
 		local key = d[1]
-		local r = row(page, i, d[2], d[3], d[4])
-		local pct = Kit.text({ Name = "Percent", Text = "", FontFace = Theme.Fonts.Number, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Center, BackgroundTransparency = 0.2, BackgroundColor3 = C.Pill, Position = UDim2.fromOffset(COL.C - ROW_X, 7), Size = UDim2.fromOffset(80, 30), Parent = r })
+		local r = row(page, g, i, d[2], d[3], d[4])
+		local pct = Kit.text({ Name = "Percent", Text = "", FontFace = Theme.Fonts.Number, TextSize = 16, TextXAlignment = Enum.TextXAlignment.Center, BackgroundTransparency = 0, BackgroundColor3 = C.PercentBox, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 591 - ROW_X, 0.5, 0), Size = UDim2.fromOffset(88, 34), Parent = r })
 		Kit.corner(3).Parent = pct
+		Kit.stroke(C.KeyBoxRim, 1, 0.4).Parent = pct
 		local slider = Kit.slider({
-			Name = "Slider", Parent = r, Position = UDim2.fromOffset(COL.A - ROW_X, 17), Size = UDim2.fromOffset(COL.C - COL.A - 22, 10),
+			Name = "Slider", Parent = r, Position = UDim2.new(0, 302 - ROW_X, 0.5, -7), Size = UDim2.fromOffset(267, 14),
 			onChange = function(v)
 				pct.Text = v .. "%"
 				State.data.Settings[key] = v -- apply now (Main listens); saved on release
@@ -84,16 +98,18 @@ local function buildAudio(page: Frame)
 			pct.Text = v .. "%"
 		end)
 	end
-	local r = row(page, 4, "Monitor", "Mute While Unfocused", "Mute audio when the game window is not active.")
-	onOff(r, "MuteUnfocused")
+	local r = row(page, g, 4, "Monitor", "Mute While Unfocused", "Mute audio when the game window is not active.")
+	onOff(r, "MuteUnfocused", 437, 118, 564, 116, 35, 18)
 end
 
 local function buildControls(page: Frame)
+	local g = GEOM.Controls
 	local function keyRow(i: number, icon: string, title: string, desc: string, key: string?, fixed: string?)
-		local r = row(page, i, icon, title, desc)
-		local box = Kit.text({ Name = "Key", Text = fixed or "", FontFace = Theme.Fonts.Button, TextSize = 15, TextXAlignment = Enum.TextXAlignment.Center, BackgroundTransparency = 0.1, BackgroundColor3 = C.Pill, Position = UDim2.fromOffset(COL.A - ROW_X, 7), Size = UDim2.fromOffset(150, 30), Parent = r })
+		local r = row(page, g, i, icon, title, desc)
+		local box = Kit.text({ Name = "Key", Text = fixed or "", FontFace = Theme.Fonts.Button, TextSize = 17, TextXAlignment = Enum.TextXAlignment.Center, BackgroundTransparency = 0, BackgroundColor3 = C.KeyBox, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 397 - ROW_X, 0.5, 0), Size = UDim2.fromOffset(133, 33), Parent = r })
 		Kit.corner(3).Parent = box
-		local change = Kit.button({ Name = "Change", Text = key and "Change" or "SOON", Style = key and "Action" or "Disabled", TextSize = 15, Corner = 3, Position = UDim2.fromOffset(COL.C - ROW_X - 30, 7), Size = UDim2.fromOffset(110, 30), Parent = r })
+		Kit.stroke(C.KeyBoxRim, 1).Parent = box
+		local change = Kit.button({ Name = "Change", Text = key and "Change" or "SOON", Style = key and "Action" or "Disabled", TextSize = 17, Corner = 3, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 545 - ROW_X, 0.5, 0), Size = UDim2.fromOffset(138, 34), Parent = r })
 		if not key then
 			box.TextTransparency = 0.5
 			change.onClick(function() Toast.show(title .. " arrives with matches.") end)
@@ -130,9 +146,12 @@ local function buildControls(page: Frame)
 	keyRow(1, "ControlsDash", "Dash", "Quick movement boost.", nil, "SPACE")
 	keyRow(2, "ControlsMenu", "Open Menu", "Open the main menu.", "MenuKey")
 	keyRow(3, "DancesNote", "Dances", "Play your unlocked dances.", nil, "G")
-	local r = row(page, 4, "ControlsKeyboard", "Show Key Hints", "Show key hints on screen while playing.")
-	onOff(r, "ShowKeyHints", COL.A, 71, 71)
-	local reset = Kit.button({ Name = "Reset", Text = "Reset Bindings", Style = "Tab", TextSize = 14, Corner = 3, Position = UDim2.fromOffset(COL.C - ROW_X - 30, 7), Size = UDim2.fromOffset(110, 30), Parent = r })
+	local r, y = row(page, g, 4, "ControlsKeyboard", "Show Key Hints", "Show key hints on screen while playing.", 531 - ROW_X)
+	onOff(r, "ShowKeyHints", 335, 95, 437, 89, 35, 18)
+	-- Reset Bindings sits in its own cell to the right of the row.
+	local cell = new("Frame", { Name = "ResetCell", Position = UDim2.fromOffset(535, y), Size = UDim2.fromOffset(157, g.RowH), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = page }, { Kit.corner(4), Kit.stroke(C.RowBorder, 1) })
+	new("UIGradient", { Rotation = 90, Color = ColorSequence.new(C.RowTop, C.RowBottom), Parent = cell })
+	local reset = Kit.button({ Name = "Reset", Text = "Reset Bindings", Style = "Slate", TextSize = 17, Corner = 3, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(140, 40), Parent = cell })
 	reset.onClick(function()
 		for _, k in Settings.KeyFields do save(k, Settings.Defaults[k]) end
 		Toast.show("Key bindings reset.")
@@ -140,30 +159,48 @@ local function buildControls(page: Frame)
 end
 
 local function buildSocial(page: Frame)
-	choice(row(page, 1, "InventoryVisibility", "Inventory visibility", "Who can see your owned characters and cosmetics?"), "InventoryVisibility")
-	choice(row(page, 2, "Envelope", "Invite requests", "Who can send you party invites?"), "InviteRequests")
-	onOff(row(page, 3, "CompanionEffects", "Show companion effects", "Show visual effects from your equipped companion."), "CompanionEffects")
-	onOff(row(page, 4, "Monitor", "Reduced motion", "Minimise camera motion and visual effects."), "ReducedMotion")
+	local g = GEOM.Social
+	choice(row(page, g, 1, "InventoryVisibility", "Inventory visibility", "Who can see your owned characters and cosmetics?"), "InventoryVisibility")
+	choice(row(page, g, 2, "Envelope", "Invite requests", "Who can send you party invites?"), "InviteRequests")
+	onOff(row(page, g, 3, "CompanionEffects", "Show companion effects", "Show visual effects from your equipped companion."), "CompanionEffects", 391, 140, 540, 143, 30, 16)
+	onOff(row(page, g, 4, "Monitor", "Reduced motion", "Minimise camera motion and visual effects."), "ReducedMotion", 391, 140, 540, 143, 30, 16)
+	Kit.text({ Name = "SaveNote", Text = "Changes save automatically.", TextSize = 14, TextColor3 = C.NoteText, TextXAlignment = Enum.TextXAlignment.Right, AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -16, 1, -3), Size = UDim2.fromOffset(300, 16), Parent = page })
 end
 
 function SettingsScreen.build(parent: Instance)
-	local window = Kit.window({ Name = "Settings", Title = "SETTINGS", Icon = "SettingsGear", Width = W, Height = H, StudsTo = 268, Parent = parent, OnClose = function() ModalManager.close() end })
+	local g0 = GEOM.Social
+	local window = Kit.window({ Name = "Settings", Title = "SETTINGS", Icon = "SettingsGear", Width = W, Height = g0.H, HeaderHeight = g0.HH, TitleWidth = 173, StudsTo = 257, Parent = parent, OnClose = function() ModalManager.close() end })
 	local pages = {}
 	for name, build in { Audio = buildAudio, Controls = buildControls, Social = buildSocial } do
 		local page = new("Frame", { Name = name, Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Visible = false, Parent = window.Panel })
 		build(page)
 		pages[name] = page
 	end
-	Kit.text({ Name = "SaveNote", Text = "Changes save automatically.", TextSize = 10.5, TextColor3 = C.SubText, TextXAlignment = Enum.TextXAlignment.Right, AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -14, 1, -2), Size = UDim2.fromOffset(300, 16), Parent = window.Panel })
 	local tabs
+	local defs = {
+		{ Key = "Audio", Text = "AUDIO" }, { Key = "Controls", Text = "CONTROLS" }, { Key = "Social", Text = "SOCIAL" },
+	}
+	for i, d in defs do d.X, d.Width = g0.Tabs[i][1] - 3.5, g0.Tabs[i][2] end
+	-- The window takes each tab's measured size (the references for Audio/Controls are taller than Social).
+	local function layout(key: string)
+		local g = GEOM[key]
+		window.Height = g.H
+		window.Holder.Size = UDim2.fromOffset(W, g.H)
+		window.Header.Size = UDim2.new(1, -7, 0, g.HH - 3.5)
+		local ih = g.HH - 3.5
+		window.Header.Studs.Position = UDim2.fromOffset(window.Header.Studs.Position.X.Offset, math.floor(ih / 2) - 6)
+		window.Close.Instance.Size = UDim2.fromOffset(g.Close.X, g.Close.Y)
+		for i, d in defs do
+			local b = tabs.buttons[d.Key].Instance
+			b.Position = UDim2.fromOffset(g.Tabs[i][1] - 3.5, (ih - g.TabH) / 2)
+			b.Size = UDim2.fromOffset(g.Tabs[i][2], g.TabH)
+		end
+	end
 	local function show(key: string)
 		for name, page in pages do page.Visible = name == key end
+		layout(key)
 	end
-	tabs = Kit.tabs(window.Header, {
-		{ Key = "Audio", Text = "AUDIO", X = 276, Width = 128 },
-		{ Key = "Controls", Text = "CONTROLS", X = 409, Width = 128 },
-		{ Key = "Social", Text = "SOCIAL", X = 542, Width = 108 },
-	}, 8, 31, show, 15)
+	tabs = Kit.tabs(window.Header, defs, 0, g0.TabH, show, 20, "HeaderTab")
 	local function sync() for _, f in syncers do f() end end
 	State.changed(sync)
 	sync()

@@ -13,7 +13,7 @@ Settings.Defaults = {
 	MuteUnfocused = true,
 	-- Controls (KeyCode names)
 	MenuKey = "M",
-	ShowKeyHints = true,
+	ShowKeyHints = false, -- off by default: the lobby reference shows no key badges
 	-- Social
 	InventoryVisibility = "Friends",
 	InviteRequests = "Friends",

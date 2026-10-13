@@ -45,7 +45,8 @@ function draw(n, parentEl, rect, k, parentAbs) {
   const m = n.mods || {}, kk = rect.kk;
   if (n.bgT < 1) {
     if (m.grad && m.grad.on) {
-      const stops = arr(m.grad.c).map(s => `${rgba([s[1], s[2], s[3]], n.bgT)} ${s[0] * 100}%`).join(',');
+      // Roblox multiplies a UIGradient's colours with BackgroundColor3.
+      const stops = arr(m.grad.c).map(s => `${rgba([s[1] * n.bg[0], s[2] * n.bg[1], s[3] * n.bg[2]], n.bgT)} ${s[0] * 100}%`).join(',');
       el.style.background = `linear-gradient(${m.grad.rot + 90}deg, ${stops})`;
     } else el.style.background = rgba(n.bg, n.bgT);
   }

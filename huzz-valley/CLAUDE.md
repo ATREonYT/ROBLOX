@@ -22,7 +22,8 @@ A Roblox game based on Huss Valley: rounds where players steal and hold the lead
   - prices, currencies and XP: Montserrat Bold;
   - search fields and small labels: Montserrat Medium.
   - All of these live in `UI/Theme.lua` as `Theme.Fonts`.
-- **Robux prices** use U+E002, Roblox's own Robux glyph (`Format.robux`). Never use the kit's mockup hexagon.
+- **Every colour and size is measured** from the references (the critic report's numbers are in `UI/Theme.lua`). Settings deliberately resizes per tab, because its references differ (Social 258 tall, Audio/Controls 287).
+- **Robux prices:** the big pass button uses U+E002, Roblox's own Robux glyph (`Format.robux`). Cosmetics and coins write "99 Robux", as the reference does. Never use the kit's mockup hexagon.
 
 ## Code map (`src/`, Rojo)
 - `ReplicatedStorage/Shared`:

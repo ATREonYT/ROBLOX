@@ -20,7 +20,7 @@ local new = Kit.new
 local Shop = {}
 
 local W, H = 701, 315
-local BODY_Y, BODY_X, BODY_W = 91, 18, 668
+local BODY_Y, BODY_X, BODY_W = 94, 18, 668
 
 local pending: { [string]: boolean } = {}
 local livePrice: { [string]: number } = {}
@@ -109,66 +109,74 @@ local function art(parent: Instance, p, size: Vector2)
 	return f
 end
 
-local function card(parent: Instance, name: string, pos: Vector2, size: Vector2)
-	return new("Frame", { Name = name, Position = UDim2.fromOffset(pos.X, pos.Y), Size = UDim2.fromOffset(size.X, size.Y), BackgroundColor3 = C.Row, BackgroundTransparency = Theme.Transparency.Row, BorderSizePixel = 0, Parent = parent }, { Kit.corner(5), Kit.stroke(C.RowBorder, 1.5, 0.2) })
+-- A row/card: #213451 -> #243954 fill with a 1 px #2E4669 rim (coin cards: #193A5C with a 1.5 px #2C5786 rim).
+local function card(parent: Instance, name: string, pos: Vector2, size: Vector2, coin: boolean?)
+	local f = new("Frame", { Name = name, Position = UDim2.fromOffset(pos.X, pos.Y), Size = UDim2.fromOffset(size.X, size.Y), BackgroundColor3 = coin and C.CoinCard or Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = parent }, { Kit.corner(4), Kit.stroke(coin and C.CoinCardRim or C.RowBorder, coin and 1.5 or 1) })
+	if not coin then new("UIGradient", { Rotation = 90, Color = ColorSequence.new(C.RowTop, C.RowBottom), Parent = f }) end
+	return f
 end
 
 -- Passes: broad rows (reference 01).
 local function buildPasses(body: Frame)
+	local y = 0
 	for i, p in Products.Passes do
-		local row = card(body, p.Key, Vector2.new(0, (i - 1) * 108), Vector2.new(BODY_W, 98))
-		art(row, p, Vector2.new(171, 98))
-		Kit.name({ Name = "Name", Text = p.Name, TextSize = T.Name, Position = UDim2.fromOffset(183, 10), Size = UDim2.fromOffset(140, 32), Parent = row })
+		local h = i == 1 and 97 or 103 -- the reference's two rows differ slightly
+		local row = card(body, p.Key, Vector2.new(0, y), Vector2.new(BODY_W, h))
+		y += h + 10
+		art(row, p, Vector2.new(171, h))
+		Kit.name({ Name = "Name", Text = p.Name, TextSize = T.Name, Position = UDim2.fromOffset(183, 9), Size = UDim2.fromOffset(150, 32), Parent = row })
 		Kit.text({ Name = "Blurb", Text = p.Blurb, TextSize = T.Blurb, Position = UDim2.fromOffset(183, 44), Size = UDim2.fromOffset(140, 42), TextYAlignment = Enum.TextYAlignment.Top, LineHeight = 1.0, Parent = row })
 		new("Frame", { Name = "Divider", Position = UDim2.fromOffset(327, 22), Size = UDim2.fromOffset(2, 54), BackgroundColor3 = C.Divider, BorderSizePixel = 0, Parent = row })
+		local bx = p.Giftable and -10 or 0 -- rows with a gift button start their benefits 10 px further left
 		for j, b in p.Benefits or {} do
-			local y = 19 + (j - 1) * 33
-			Kit.icon(b.Icon, { Name = "BenefitIcon" .. j, Position = UDim2.fromOffset(343, y), Size = UDim2.fromOffset(26, 26), Parent = row })
-			Kit.text({ Name = "Benefit" .. j, Text = b.Text, TextSize = T.Label, Position = UDim2.fromOffset(392, y), Size = UDim2.fromOffset(112, 26), TextWrapped = false, Parent = row })
+			local by = 19 + (j - 1) * 33
+			Kit.icon(b.Icon, { Name = "BenefitIcon" .. j, Position = UDim2.fromOffset(343 + bx, by), Size = UDim2.fromOffset(26, 26), Parent = row })
+			Kit.text({ Name = "Benefit" .. j, Text = b.Text, TextSize = T.Label, Position = UDim2.fromOffset(392 + bx, by), Size = UDim2.fromOffset(112, 26), TextWrapped = false, Parent = row })
 		end
 		if p.Giftable then
-			buyButton(row, p, { Position = UDim2.new(1, -63, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), Size = UDim2.fromOffset(102, 47), TextSize = 25 })
-			local gift = Kit.button({ Name = "Gift", Style = "Disabled", Icon = "GiftBenefit", IconSize = 30, Position = UDim2.new(1, -11, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), Size = UDim2.fromOffset(44, 47), Parent = row })
+			buyButton(row, p, { Position = UDim2.new(1, -63, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), Size = UDim2.fromOffset(103, 51), TextSize = 25 })
+			local gift = Kit.button({ Name = "Gift", Style = "Disabled", Icon = "GiftAction", IconSize = 32, Position = UDim2.new(1, -11, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), Size = UDim2.fromOffset(44, 51), Parent = row })
 			gift.onClick(function() Toast.show("Gifting unavailable for now.") end)
 		else
-			buyButton(row, p, { Position = UDim2.new(1, -11, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), Size = UDim2.fromOffset(135, 41), TextSize = 22 })
+			buyButton(row, p, { Position = UDim2.new(1, -11, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), Size = UDim2.fromOffset(135, 41), TextSize = 24, IconSize = 26 })
 		end
 	end
 end
 
 -- Cosmetics: 2 x 2 cards (reference 07).
 local function buildCosmetics(body: Frame)
-	local cw, ch = (BODY_W - 10) / 2, 101
+	local cw, ch = 321, 101
 	for i, p in Products.Cosmetics do
 		local col, rowN = (i - 1) % 2, (i - 1) // 2
-		local c = card(body, p.Key, Vector2.new(col * (cw + 10), rowN * (ch + 10)), Vector2.new(cw, ch))
-		art(c, p, Vector2.new(140, ch))
-		Kit.name({ Name = "Name", Text = p.Name, TextSize = 18, Position = UDim2.fromOffset(150, 8), Size = UDim2.fromOffset(cw - 158, 24), Parent = c })
-		Kit.text({ Name = "Blurb", Text = p.Blurb, TextSize = 14, Position = UDim2.fromOffset(150, 32), Size = UDim2.fromOffset(cw - 158, 32), TextYAlignment = Enum.TextYAlignment.Top, Parent = c })
-		buyButton(c, p, { Position = UDim2.new(0, 150, 1, -8), AnchorPoint = Vector2.new(0, 1), Size = UDim2.fromOffset(cw - 160, 25), TextSize = 15, IconSize = 16, WordPrice = true })
+		local c = card(body, p.Key, Vector2.new(3 + col * (cw + 10), rowN * (ch + 8)), Vector2.new(cw, ch))
+		art(c, p, Vector2.new(160, ch))
+		Kit.name({ Name = "Name", Text = p.Name, TextSize = 18, Position = UDim2.fromOffset(170, 7), Size = UDim2.fromOffset(cw - 178, 24), Parent = c })
+		Kit.text({ Name = "Blurb", Text = p.Blurb, TextSize = 14, Position = UDim2.fromOffset(170, 30), Size = UDim2.fromOffset(cw - 178, 32), TextYAlignment = Enum.TextYAlignment.Top, Parent = c })
+		buyButton(c, p, { Position = UDim2.new(0, 170, 1, -8), AnchorPoint = Vector2.new(0, 1), Size = UDim2.fromOffset(cw - 178, 30), TextSize = 17, IconSize = 18, WordPrice = true })
 	end
 end
 
 -- Coins: 3 tall cards (reference 08).
 local function buildCoins(body: Frame)
-	local cw, ch = (BODY_W - 20) / 3, 212
+	local cw, ch = (BODY_W - 20) / 3, 211
 	for i, p in Products.Coins do
-		local c = card(body, p.Key, Vector2.new((i - 1) * (cw + 10), 0), Vector2.new(cw, ch))
-		art(c, p, Vector2.new(cw, 106))
-		Kit.name({ Name = "Name", Text = p.Name, TextSize = 20, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(0, 110), Size = UDim2.new(1, 0, 0, 26), Parent = c })
-		Kit.text({ Name = "Blurb", Text = p.Blurb, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(8, 136), Size = UDim2.new(1, -16, 0, 30), Parent = c })
-		buyButton(c, p, { Position = UDim2.new(0.5, 0, 1, -9), AnchorPoint = Vector2.new(0.5, 1), Size = UDim2.new(1, -18, 0, 28), TextSize = 16, IconSize = 18, WordPrice = true })
+		local c = card(body, p.Key, Vector2.new((i - 1) * (cw + 10), 0), Vector2.new(cw, ch), true)
+		local a = art(c, p, Vector2.new(cw, 106))
+		a.BackgroundColor3 = C.CoinArt
+		Kit.name({ Name = "Name", Text = p.Name, TextSize = 20, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(0, 112), Size = UDim2.new(1, 0, 0, 26), Parent = c })
+		Kit.text({ Name = "Blurb", Text = p.Blurb, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(8, 137), Size = UDim2.new(1, -16, 0, 30), Parent = c })
+		buyButton(c, p, { Position = UDim2.new(0.5, 0, 1, -6), AnchorPoint = Vector2.new(0.5, 1), Size = UDim2.new(1, -22, 0, 36), TextSize = 20, IconSize = 20, WordPrice = true })
 	end
 end
 
 local BUILD = { Passes = buildPasses, Cosmetics = buildCosmetics, Coins = buildCoins }
 
 function Shop.build(parent: Instance)
-	local window = Kit.window({ Name = "Shop", Title = "SHOP", Icon = "ShopCart", Width = W, Height = H, StudsTo = 352, Parent = parent, OnClose = function() ModalManager.close() end })
+	local window = Kit.window({ Name = "Shop", Title = "SHOP", Icon = "ShopCart", Width = W, Height = H, TitleWidth = 101, StudsTo = 352, Parent = parent, OnClose = function() ModalManager.close() end })
 	local panel, header = window.Panel, window.Header
-	local coins = Kit.pill({ Name = "Coins", Icon = "CurrencyCoin", Position = UDim2.fromOffset(360, 8), Width = 112, Parent = header })
-	local gems = Kit.pill({ Name = "Gems", Icon = "CurrencyGem", Position = UDim2.fromOffset(490, 8), Width = 112, Parent = header })
-	Kit.studs(header, 610, 650, 18)
+	local coins = Kit.pill({ Name = "Coins", Icon = "CurrencyCoin", Position = UDim2.fromOffset(357, 6), Width = 121, Parent = header })
+	local gems = Kit.pill({ Name = "Gems", Icon = "CurrencyGem", Position = UDim2.fromOffset(493, 6), Width = 108, Parent = header })
+	Kit.studs(header, 612, 650, 16)
 
 	local body = new("ScrollingFrame", { Name = "Products", Position = UDim2.fromOffset(BODY_X, BODY_Y), Size = UDim2.fromOffset(BODY_W + 6, H - BODY_Y - 10), BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 4, ScrollBarImageColor3 = C.Border, CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y, ScrollingDirection = Enum.ScrollingDirection.Y, Parent = panel })
 
@@ -180,10 +188,10 @@ function Shop.build(parent: Instance)
 		BUILD[key](body)
 	end
 	tabs = Kit.tabs(panel, {
-		{ Key = "Passes", Text = "PASSES", X = 14, Width = 204 },
-		{ Key = "Cosmetics", Text = "COSMETICS", X = 226, Width = 211 },
-		{ Key = "Coins", Text = "COINS", X = 446, Width = 239 },
-	}, 51, 30, show)
+		{ Key = "Passes", Text = "PASSES", X = 16, Width = 187 },
+		{ Key = "Cosmetics", Text = "COSMETICS", X = 207, Width = 230 },
+		{ Key = "Coins", Text = "COINS", X = 441, Width = 246 },
+	}, 54, 30, show)
 
 	local function openTab(key: string)
 		if tabs.selected() ~= key then tabs.select(key); show(key) end
