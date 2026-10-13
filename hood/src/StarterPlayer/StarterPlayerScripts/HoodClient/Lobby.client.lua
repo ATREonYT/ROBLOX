@@ -122,11 +122,11 @@ local stations = {}
 -- (LABELS) Label bands in studs from the camera: every lane's stack reads from the spawn and the aisle mouth (LOBBY5 r12,
 -- CRITIC3: the Robux lanes at the aisle's far end sell, so they must read from the spawn too: 60 -> 90, over LabelFade's
 -- lane band 45 -> 75); the next lane to open from further; a middle lane's stack only up close.
-local LANE_NEAR, LANE_FAR = 60, 90
+local LANE_NEAR, LANE_FAR = 24, 34 -- (B31 PLAZA, critic 3: a lane's stack reads up close; from the spawn the silhouettes carry it)
 local GOAL_NEAR, GOAL_FAR, MIDDLE_NEAR, MIDDLE_FAR, NEXT_LIFT = 65, 105, 14, 22, Vector3.new(0, 6.5, 0)
 -- (LOBBY6) a Robux lane's big stack reads from further still: GOLD BAY at the aisle's far end is ~60 studs from the spawn
 -- and the armory, and both Robux lanes sell from across the hall
-local PROMO_NEAR, PROMO_FAR = 80, 120
+local PROMO_NEAR, PROMO_FAR = 30, 44 -- (B31 PLAZA: the Robux lanes from the aisle's mouth, not across the plaza)
 -- The chip's text: the number alone next to the label's icon (its Glyph attribute is ''), else the glyph and the
 -- number (a map built before the icons: the old "FREE" / "🔄 n").
 local function chipText(s, cost)
@@ -691,7 +691,7 @@ local function paintBoard(b)
 	if b.Prompt then b.Prompt.Enabled = not owned end
 	if b.Price then
 		local price = b.Price:GetAttribute('Price')
-		b.Price.Text = owned and 'OWNED' or RobuxText.fmt(price or '')
+		b.Price.Text = owned and 'OWNED' or ('ONLY ' .. RobuxText.fmt(price or '')) -- (B31 PLAZA: the reference's "ONLY <price>")
 	end
 end
 local function watchBoards()

@@ -310,6 +310,12 @@ do
 		task.spawn(refresh)
 	end
 	win.Update = paintSide
+	-- (B31 PLAZA) the plaza's spin wheel stand (code5 e3_plaza Lobby.spinStand: a prompt with attribute OpenSpin) opens this window
+	pcall(function()
+		game:GetService('ProximityPromptService').PromptTriggered:Connect(function(prompt)
+			if prompt:GetAttribute('OpenSpin') == true and Windows.current() ~= win then Windows.open(win) end
+		end)
+	end)
 	task.spawn(function()
 		while true do
 			task.wait(1)
