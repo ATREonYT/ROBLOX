@@ -40,7 +40,10 @@ Theme.Colors = {
 	MenuRow = hex("172E48"), MenuRowTop = hex("234170"),
 	HudTop = hex("2B3575"), HudMid = hex("212E5E"), HudBottom = hex("152242"), HudHighlight = hex("46599A"), HudRing = hex("050D33"),
 	Banner = hex("7553E8"), BannerSeam = hex("5D3DCB"), BannerRim = hex("161C36"),
-	CoinCard = hex("193A5C"), CoinCardRim = hex("2C5786"), CoinArt = hex("163968"),
+	-- Coin cards (reference 08): 1 px rim, art on top, a fill that darkens just under the art, periwinkle price button.
+	CoinCardRim = hex("2D5380"), CoinCardShade = hex("12283F"), CoinCard = hex("19314C"), CoinCardBottom = hex("18304B"),
+	CoinText = hex("FFFFFF"), CoinBlurb = hex("EDF5FA"),
+	CoinBuy = hex("7977EE"), CoinBuyTop = hex("8A89F6"), CoinBuyBevel = hex("8486F2"), CoinBuyRim = hex("0A1227"),
 }
 
 Theme.Transparency = { Panel = 0, Header = 0, Body = 0.25, Row = 0 } -- the reference panels are opaque

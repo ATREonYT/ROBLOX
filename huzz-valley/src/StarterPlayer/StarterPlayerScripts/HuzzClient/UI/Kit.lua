@@ -123,6 +123,7 @@ local function style(fill: Color3, text: Color3, top: Color3?, rim: Color3?)
 end
 Kit.Styles = {
 	Action = { Idle = C.Action, Hover = C.ActionHover, Pressed = C.ActionPressed, Text = C.Text, Top = C.ActionTop, Rim = C.ActionRim },
+	CoinAction = { Idle = C.CoinBuy, Hover = lighten(C.CoinBuy, 0.10), Pressed = darken(C.CoinBuy, 0.10), Text = C.Text, Top = C.CoinBuyTop, Rim = C.CoinBuyRim }, -- coin cards (08)
 	Disabled = { Idle = C.Disabled, Hover = C.Disabled, Pressed = C.Disabled, Text = C.Text, Top = C.DisabledTop, Rim = C.ActionRim },
 	Selected = style(C.SelectedTab, C.DarkText, C.SelectedTabTop, C.SelectedRim),
 	Tab = style(C.InactiveTab, C.Text, C.InactiveTabTop, C.TabRim),

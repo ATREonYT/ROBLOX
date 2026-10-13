@@ -82,9 +82,9 @@ end
 
 -- The price/owned button, kept in sync with ownership and pending state.
 local function buyButton(parent: Instance, p, props)
-	local b = Kit.button({ Name = "Buy", Parent = parent, Position = props.Position, Size = props.Size, AnchorPoint = props.AnchorPoint, TextSize = props.TextSize or T.Button, IconAfter = true, IconSize = props.IconSize or 22, Gap = 6 })
+	local b = Kit.button({ Name = "Buy", Parent = parent, Position = props.Position, Size = props.Size, AnchorPoint = props.AnchorPoint, TextSize = props.TextSize or T.Button, IconAfter = true, IconSize = props.IconSize or 22, Gap = 6, Corner = props.Corner })
 	local textSize = props.TextSize or T.Button
-	local badge = Kit.text({ Name = "RobuxBadge", Text = Format.RobuxMark, FontFace = Theme.Fonts.Number, TextSize = math.floor(textSize * 1.25), TextColor3 = C.RobuxBadge, TextXAlignment = Enum.TextXAlignment.Center, AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), TextWrapped = false, LayoutOrder = 1, Parent = b.Instance:FindFirstChild("Content") })
+	local badge = Kit.text({ Name = "RobuxBadge", Text = Format.RobuxMark, FontFace = Theme.Fonts.Number, TextSize = math.floor(textSize * 1.5), TextColor3 = C.RobuxBadge, TextXAlignment = Enum.TextXAlignment.Center, AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), TextWrapped = false, LayoutOrder = 1, Parent = b.Instance:FindFirstChild("Content") })
 	local icon: ImageLabel? = nil
 	local function refresh()
 		if not b.Instance.Parent then return end
@@ -92,7 +92,7 @@ local function buyButton(parent: Instance, p, props)
 		badge.Visible = priced
 		b.setText(text)
 		b.setFont(if text:find("%d") then Theme.Fonts.Number else Theme.Fonts.Button) -- prices: Montserrat Bold
-		b.setStyle(style)
+		b.setStyle(if style == "Action" and props.Style then props.Style else style)
 		if iconName and not icon then
 			icon = Kit.icon(iconName, { Name = "Icon", Size = UDim2.fromOffset(props.IconSize or 22, props.IconSize or 22), LayoutOrder = 3, Parent = b.Instance:FindFirstChild("Content") })
 		elseif not iconName and icon then
@@ -106,17 +106,18 @@ local function buyButton(parent: Instance, p, props)
 	return b
 end
 
--- Product picture: the kit's own art for this product, filling the block (left of rows, top of coin cards).
+-- Product picture: the kit's own art for this product, filling the block at the left of a row/card. The rounding
+-- is on the image itself (ClipsDescendants clips square in Roblox, so a rounded parent alone would show corners).
 local function art(parent: Instance, p, size: Vector2)
-	local f = new("Frame", { Name = "Art", Size = UDim2.fromOffset(size.X, size.Y), BackgroundColor3 = Color3.fromHex("2D4F8E"), BorderSizePixel = 0, ClipsDescendants = true, Parent = parent }, { Kit.corner(4) })
-	Kit.art(p.Art, { Name = "Picture", Size = UDim2.fromScale(1, 1), Parent = f })
+	local f = new("Frame", { Name = "Art", Size = UDim2.fromOffset(size.X, size.Y), BackgroundTransparency = 1, Parent = parent })
+	Kit.corner(4).Parent = Kit.art(p.Art, { Name = "Picture", Size = UDim2.fromScale(1, 1), Parent = f })
 	return f
 end
 
--- A row/card: #213451 -> #243954 fill with a 1 px #2E4669 rim (coin cards: #193A5C with a 1.5 px #2C5786 rim).
-local function card(parent: Instance, name: string, pos: Vector2, size: Vector2, coin: boolean?)
-	local f = new("Frame", { Name = name, Position = UDim2.fromOffset(pos.X, pos.Y), Size = UDim2.fromOffset(size.X, size.Y), BackgroundColor3 = coin and C.CoinCard or Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = parent }, { Kit.corner(4), Kit.stroke(coin and C.CoinCardRim or C.RowBorder, coin and 1.5 or 1) })
-	if not coin then new("UIGradient", { Rotation = 90, Color = ColorSequence.new(C.RowTop, C.RowBottom), Parent = f }) end
+-- A row/card: #213451 -> #243954 fill with a 1 px #2E4669 rim.
+local function card(parent: Instance, name: string, pos: Vector2, size: Vector2)
+	local f = new("Frame", { Name = name, Position = UDim2.fromOffset(pos.X, pos.Y), Size = UDim2.fromOffset(size.X, size.Y), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = parent }, { Kit.corner(4), Kit.stroke(C.RowBorder, 1) })
+	new("UIGradient", { Rotation = 90, Color = ColorSequence.new(C.RowTop, C.RowBottom), Parent = f })
 	return f
 end
 
@@ -165,16 +166,49 @@ local function buildCosmetics(body: Frame)
 	end
 end
 
--- Coins: 3 tall cards (reference 08).
+-- Coins: 3 tall cards (reference 08), measured card by card. The reference's cards differ slightly in width and
+-- button inset, so each card keeps its own numbers. X is window-relative inside the coin body; the window is 3 px
+-- narrower than the reference, taken out of the two gaps and the last card. The reference page is 9 px taller than
+-- the window, so every vertical number is the reference's times 0.96 (card 225 -> 216 tall; the art crops 1-2 px).
+local COIN_BODY = { X = 15, Y = 91, H = H - 91 - 6 } -- the cards' rims sit 1 px inside this
+local COIN_CARDS = {
+	{ X = 16, W = 209, ButtonX = 9, ButtonW = 189, TextDX = 0 },
+	{ X = 237, W = 206, ButtonX = 8, ButtonW = 189, TextDX = 1 },
+	{ X = 455, W = 230, ButtonX = 13, ButtonW = 205, TextDX = 3 },
+}
+local COIN_H, COIN_ART_H = 216, 106
+
+-- The kit's art, top corners rounded to the card's inner radius and bottom corners square: one rounded copy, and a
+-- square copy clipped to everything below the corners (ClipsDescendants clips square, so no background shows).
+local function coinArt(parent: Instance, p, w: number, h: number)
+	local r = 4
+	local panel = new("Frame", { Name = "Art", Size = UDim2.fromOffset(w, h), BackgroundTransparency = 1, Parent = parent })
+	Kit.corner(r).Parent = Kit.art(p.Art, { Name = "Picture", Size = UDim2.fromScale(1, 1), Parent = panel })
+	local lower = new("Frame", { Name = "Lower", Position = UDim2.fromOffset(0, r), Size = UDim2.new(1, 0, 1, -r), BackgroundTransparency = 1, ClipsDescendants = true, Parent = panel })
+	Kit.art(p.Art, { Name = "Picture", Position = UDim2.fromOffset(0, -r), Size = UDim2.fromOffset(w, h), Parent = lower })
+	return panel
+end
+
 local function buildCoins(body: Frame)
-	local cw, ch = (BODY_W - 20) / 3, 211
+	local artEnd = COIN_ART_H / COIN_H
 	for i, p in Products.Coins do
-		local c = card(body, p.Key, Vector2.new((i - 1) * (cw + 10), 0), Vector2.new(cw, ch), true)
-		local a = art(c, p, Vector2.new(cw, 106))
-		a.BackgroundColor3 = C.CoinArt
-		Kit.name({ Name = "Name", Text = p.Name, TextSize = 20, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(0, 112), Size = UDim2.new(1, 0, 0, 26), Parent = c })
-		Kit.text({ Name = "Blurb", Text = p.Blurb, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(8, 137), Size = UDim2.new(1, -16, 0, 30), Parent = c })
-		buyButton(c, p, { Position = UDim2.new(0.5, 0, 1, -6), AnchorPoint = Vector2.new(0.5, 1), Size = UDim2.new(1, -22, 0, 36), TextSize = 20, IconSize = 20 })
+		local d = COIN_CARDS[i]
+		local c = new("Frame", { Name = p.Key, Position = UDim2.fromOffset(d.X - COIN_BODY.X, 1), Size = UDim2.fromOffset(d.W, COIN_H), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = body }, { Kit.corner(4), Kit.stroke(C.CoinCardRim, 1) })
+		new("UIGradient", { Rotation = 90, Parent = c, Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, C.CoinCardShade), ColorSequenceKeypoint.new(artEnd, C.CoinCardShade),
+			ColorSequenceKeypoint.new(artEnd + 0.07, C.CoinCard), ColorSequenceKeypoint.new(0.85, C.CoinCardBottom),
+			ColorSequenceKeypoint.new(1, C.CoinCard),
+		}) })
+		coinArt(c, p, d.W, COIN_ART_H)
+		Kit.name({ Name = "Name", Text = p.Name, TextSize = 20, TextColor3 = C.CoinText, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(d.TextDX, 109), Size = UDim2.new(1, 0, 0, 26), Parent = c })
+		local blurb = Kit.text({ Name = "Blurb", Text = p.Blurb, TextSize = 13, TextColor3 = C.CoinBlurb, TextXAlignment = Enum.TextXAlignment.Center, TextYAlignment = Enum.TextYAlignment.Top, LineHeight = 1.05, Position = UDim2.fromOffset(d.TextDX, 138), Size = UDim2.new(1, 0, 0, 32), Parent = c })
+		local shadow = blurb:Clone() -- the reference's descriptions sit on the same soft drop as the names
+		shadow.Name, shadow.TextColor3, shadow.TextTransparency, shadow.Position = "BlurbShadow", C.TextShadow, 0.5, blurb.Position + UDim2.fromOffset(0, 1)
+		shadow.Parent = c
+		blurb.ZIndex = 2
+		local b = buyButton(c, p, { Position = UDim2.fromOffset(d.ButtonX, 177), Size = UDim2.fromOffset(d.ButtonW, 35), TextSize = 18, Style = "CoinAction", Corner = 4 })
+		-- the reference's 1 px lighter bevel just inside the dark rim, all the way round
+		new("Frame", { Name = "Bevel", BackgroundTransparency = 1, Position = UDim2.fromOffset(1, 1), Size = UDim2.new(1, -2, 1, -2), ZIndex = b.Instance.ZIndex, Parent = b.Instance }, { Kit.corner(2), Kit.stroke(C.CoinBuyBevel, 1) })
 	end
 end
 
@@ -194,13 +228,18 @@ function Shop.build(parent: Instance)
 		refreshButtons = {}
 		for _, ch in body:GetChildren() do if ch:IsA("GuiObject") then ch:Destroy() end end
 		body.CanvasPosition = Vector2.zero
+		if key == "Coins" then -- the coin cards follow reference 08's own margins
+			body.Position, body.Size = UDim2.fromOffset(COIN_BODY.X, COIN_BODY.Y), UDim2.fromOffset(W - 2 * COIN_BODY.X, COIN_BODY.H)
+		else
+			body.Position, body.Size = UDim2.fromOffset(BODY_X, BODY_Y), UDim2.fromOffset(BODY_W + 6, H - BODY_Y - 10)
+		end
 		BUILD[key](body)
 	end
 	tabs = Kit.tabs(panel, {
 		{ Key = "Passes", Text = "PASSES", X = 16, Width = 187 },
 		{ Key = "Cosmetics", Text = "COSMETICS", X = 207, Width = 230 },
 		{ Key = "Coins", Text = "COINS", X = 441, Width = 246 },
-	}, 54, 30, show)
+	}, 52, 30, show) -- y 52: the tab row's top in references 01, 07 and 08 (51 window-relative, plus its 1 px rim)
 
 	local function openTab(key: string)
 		if tabs.selected() ~= key then tabs.select(key); show(key) end
