@@ -128,8 +128,10 @@ return function(t)
 		t.expect.falsy(Hot.take(nil, 1))
 		t.expect.equal(Hot.boost(0, 100), 1); t.expect.equal(Hot.boost(200, 100), 2); t.expect.equal(Hot.boost(100, 100), 1); t.expect.equal(Hot.boost('x', 5), 1)
 		t.expect.equal(Hot.gain(5, 1), 10); t.expect.equal(Hot.gain(5, 2), 20); t.expect.equal(Hot.gain(5, 99), 20); t.expect.equal(Hot.gain(-3, 1), 0)
-		-- never more than 40 shots' worth a minute against the range's 300 (5 a second): a pastime, not a way to play
-		t.expect.truthy(Hot.PerMinute * Hot.Shots <= 0.15 * 60 * ShotRules.AutoRate)
+		-- never more than 40 shots' worth a minute against the range's 300 shots' worth (brief 32: 2 shots a second, each
+		-- worth AutoValue shots: the same Power a minute as 5 plain shots a second): a pastime, not a way to play
+		t.expect.equal(ShotRules.AutoRate * ShotRules.AutoValue, 5)
+		t.expect.truthy(Hot.PerMinute * Hot.Shots <= 0.15 * 60 * ShotRules.AutoRate * ShotRules.AutoValue)
 		t.expect.equal(Hot.BoostSeconds, 600)
 	end)
 end

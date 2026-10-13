@@ -47,6 +47,26 @@ TutorialRules.Steps = {
 }
 TutorialRules.Order = { 'Train', 'Door', 'Fight', 'Cash', 'Gift' }
 
+-- (brief 32, FEEL) A hint is never cut off mid-word: a new line waits until the one on screen has been typed out and read
+-- for HintHold seconds (filmed: "BAY 1 shoots for you!" was replaced by "Go to STAGE 1!" before it finished typing).
+TutorialRules.HintHold = 0.9
+-- Seconds the line on screen (`text`, shown since `since`) still holds at `now` (0: a new line may take its place).
+function TutorialRules.holdLeft(text, since, now)
+	if type(text) ~= 'string' or type(since) ~= 'number' or type(now) ~= 'number' then return 0 end
+	local _, n = TutorialRules.plain(text)
+	return math.max(0, since + n / TutorialRules.TypeRate + TutorialRules.HintHold - now)
+end
+-- (brief 32, FEEL) The fight's line ("Hold click to shoot the crew!") leaves once you have got it: the first goon of the
+-- crew falls, or FightHintFor seconds pass. The reference shows no hint in a fight at all (W 30-34 s): the box in the
+-- middle of the screen sat over the crew and over you while you fought.
+TutorialRules.FightHintFor = 3
+-- Still show the fight's line? seconds: since the Fight step began; leftAtStart / leftNow: the crew standing then and now.
+function TutorialRules.fightHintOn(seconds, leftAtStart, leftNow)
+	if type(seconds) ~= 'number' or seconds ~= seconds or seconds >= TutorialRules.FightHintFor then return false end
+	if type(leftAtStart) == 'number' and type(leftNow) == 'number' and leftNow < leftAtStart then return false end
+	return true
+end
+
 -- The world step for an OnboardingStep, or nil (Gun, Run, Done, junk).
 function TutorialRules.step(onboardingStep)
 	if type(onboardingStep) ~= 'string' then return nil end
@@ -358,6 +378,10 @@ TutorialRules.Hint = {
 	DockH = 54, DockPad = 26, DockGap = 8, -- (docked over a window's button: compact, just over the box)
 	FadeIn = 0.13,
 	FadeOut = 0.2,
+	-- (brief 32, FEEL) The WORLD steps' line (walk to BAY 1, the gate, the pad, the gift; no box): the compact strip, a little
+	-- lower. Filmed with the follow camera, the full box at 63 % sat on your own character (the reference's sits on its
+	-- soldier's legs, V4 7.0 s): here it clears your body and stays above the Power and Level row.
+	WorldY = 0.705,
 }
 
 -- The text size that keeps `text` on one line in the hint (`fit` measures it: function(text, size) -> width px).

@@ -1100,7 +1100,8 @@ RunService.PreRender:Connect(function(dt)
 		idleTick = 0
 		ownTag(not inFight())
 		local learning = (player:GetAttribute('WaveCleared') or 0) < HINT_UNTIL
-		local want = learning and inFight() and not autoFight() and now - last > HINT_IDLE
+		-- (brief 32, FEEL: not while the tutorial's own hint says the same thing, in a new player's first fight)
+		local want = learning and inFight() and not autoFight() and now - last > HINT_IDLE and player:GetAttribute('OnboardingStep') ~= 'Fight'
 		if want and shootHint.Visible == false then
 			local okT, touch = pcall(function() return UserInputService.TouchEnabled and not UserInputService.MouseEnabled end)
 			touch = okT and touch
@@ -1180,7 +1181,9 @@ local function refresh()
 		pill.hide()
 	end
 	local on = inFight()
-	button.Visible = on
+	-- (brief 32, FEEL: the round SHOOT button is a touch control; with a mouse the reference shows none, W 31 s)
+	local okT, touchOnly = pcall(function() return UserInputService.TouchEnabled and not UserInputService.MouseEnabled end)
+	button.Visible = on and (not okT or touchOnly == true)
 	ownTag(not on)
 	if on then
 		refreshEquip()

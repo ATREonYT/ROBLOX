@@ -21,7 +21,11 @@ return function(t)
  -- pays nothing (the source is checked where it can be read: the offline harness, the command bar).
  t.test('auto-shoot: an open lane fires AutoRate shots a second on the server clock; nothing else pays',function()
   local Skins=require(RS.Shared.Config.Skins);t.expect.equal(Skins.gain,nil)
-  t.expect.truthy(ShotRules.AutoRate>=3 and ShotRules.AutoRate<=7)
+  -- (brief 32: the reference's 2 shots a second, each worth AutoValue shots: the same Power a second as 5 plain shots)
+  t.expect.truthy(ShotRules.AutoRate>=1.5 and ShotRules.AutoRate<=3)
+  t.expect.equal(ShotRules.AutoRate*ShotRules.AutoValue,5)
+  local vc,sum={},0;for _=1,10 do local v=ShotRules.autoValue(1,vc);t.expect.truthy(v==2 or v==3);sum+=v end;t.expect.equal(sum,25)
+  t.expect.equal(ShotRules.autoValue(4,{}),10);t.expect.equal(ShotRules.autoValue(0,{}),0);t.expect.equal(ShotRules.autoValue(0/0,{}),0);t.expect.equal(ShotRules.autoValue(2,nil),5)
   -- ten seconds in BAY 1 on 0.25 s ticks: exactly AutoRate x 10 shots (the first one on the first tick)
   local carry,n={},0
   local first=ShotRules.autoShots(carry,0.25,'Starter');t.expect.truthy(first>=1)

@@ -246,7 +246,8 @@ end
 R.Missions = { Slots = 3 }
 R.Tasks = {
 	Goons = { Text = 'Defeat %d goons', Goals = { 10, 20, 35, 50 }, Cash = 250 },
-	Shots = { Text = 'Shoot %d times at a range', Goals = { 150, 250, 400, 600 }, Cash = 200 },
+	-- (brief 32: the range fires 2 a second, not 5, so the goals are 0.4 x what they were: the same minutes of training)
+	Shots = { Text = 'Shoot %d times at a range', Goals = { 60, 100, 160, 240 }, Cash = 200 },
 	Boxes = { Text = 'Open %d shoe boxes', One = 'Open a shoe box', Goals = { 1, 2, 3, 5 }, Cash = 300 },
 	Clears = { Text = 'Beat %d stage crews', One = 'Beat a stage crew', Goals = { 1, 2, 3, 4 }, Cash = 350 },
 	CashOuts = { Text = 'Step on %d cash pads', One = 'Step on a cash pad', Goals = { 1, 2, 3, 4 }, Cash = 250 },

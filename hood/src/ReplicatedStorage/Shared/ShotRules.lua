@@ -14,7 +14,10 @@ local Balance = require(script.Parent.Config.Balance)
 local RebirthRules = require(script.Parent.RebirthRules)
 
 local ShotRules = {}
-ShotRules.AutoRate = 5 -- shots a second the gun fires by itself in an open lane (paid by the server's clock)
+-- (brief 32, FEEL: the reference's lanes fire about 2 shots a second, W 9.0-12.0 s; ours fired 5. The lead's call: 2 a
+-- second, each worth AutoValue x a shot, so the Power a second on a range is exactly what it was: 2 x 2.5 = 5 shots' worth.)
+ShotRules.AutoRate = 2 -- shots a second the gun fires by itself in an open lane (paid by the server's clock)
+ShotRules.AutoValue = 2.5 -- what one of those shots pays, in shots (ShotRules.autoValue)
 ShotRules.Burst = 6 -- shots at goons the server lets through at once
 ShotRules.PerSecond = 6 -- and the rate it refills at
 -- FIGHTS30 BEGIN (brief 30, matched side by side to W 31.0-32.9 s: about 3 shots a second in a fight; was 0.2)
@@ -81,6 +84,18 @@ function ShotRules.autoShots(carry: any, dt: any, station: any, cap: number?): n
 	local shots = math.min(math.floor(acc + 1e-7), cap or 3)
 	carry.Auto = math.min(acc - shots, 1)
 	return shots
+end
+
+-- What one auto-fire shot pays: AutoValue x `paid` (one shot's whole Power, from pay), the fraction carried in
+-- carry.Value ({} per player) so it is exact over time (x2.5 pays 2, 3, 2, 3 ... on a 1-Power shot). Without carry it rounds.
+function ShotRules.autoValue(paid: any, carry: any): number
+	local p = math.max(0, number(paid, 0))
+	if p <= 0 then return 0 end
+	if type(carry) ~= 'table' then return math.floor(p * ShotRules.AutoValue + 0.5) end
+	local acc = math.clamp(number(carry.Value, 0), 0, 0.999999) + p * ShotRules.AutoValue
+	local due = math.floor(acc + 1e-7)
+	carry.Value = math.max(0, acc - due)
+	return due
 end
 
 -- Which target a shot goes to. Every other shot the main one, the others take turns; a target that is away (a

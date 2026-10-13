@@ -9,7 +9,7 @@ local LevelRules = require(RS.Shared.LevelRules)
 local FightFX = require(RS.Shared.FightFX)
 
 local player = Players.LocalPlayer
-local Gap = 1.4
+local Gap = 3 -- (brief 32: early levels come every few shots; filmed, a burst every 1.4 s hid you for most of your first 6 s)
 local lastLevel, lastBurst = nil, -10
 
 local function onPower()
@@ -19,6 +19,9 @@ local function onPower()
 	local up = lastLevel ~= nil and level > lastLevel
 	lastLevel = level -- (a rebirth lowers it: no burst, just the new base)
 	if not up or player:GetAttribute('ReducedMotion') == true then return end
+	-- (brief 32: not under the loading cover, where it played unseen and was still fading when the cover lifted)
+	local pg = player:FindFirstChild('PlayerGui')
+	if pg and pg:FindFirstChild('HoodLoading') then return end
 	if os.clock() - lastBurst < Gap then return end
 	local c = player.Character
 	local root = c and c:FindFirstChild('HumanoidRootPart')

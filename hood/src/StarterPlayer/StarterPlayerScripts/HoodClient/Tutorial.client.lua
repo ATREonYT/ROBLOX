@@ -660,8 +660,8 @@ local function inviteBottom()
 	if not (inv and inv:IsA('GuiObject') and inv.Visible) then return nil end
 	return inv.AbsolutePosition.Y + inv.AbsoluteSize.Y + insetOf(wb).Y
 end
-local hintDock, hintDockText, hintLow = nil, nil, nil
-local function placeHint(dockTop)
+local hintDock, hintDockText, hintLow, hintWorld = nil, nil, nil, nil
+local function placeHint(dockTop, world)
 	local k = Kit.scaleFor(hintGui.AbsoluteSize)
 	local low
 	if not dockTop then
@@ -669,9 +669,18 @@ local function placeHint(dockTop)
 		local full = hintGui.AbsoluteSize.Y
 		if under and full > 1 and full * H.Y - H.H / 2 * k < under + 8 then low = math.floor((under + 8) / k + H.H / 2 + 0.5) end
 	end
-	if dockTop == hintDock and low == hintLow and (not dockTop or hintDockText == hintState.Text) then return end
-	if (dockTop == nil) ~= (hintDock == nil) or low ~= hintLow then setHintAlpha(0) end -- (a clean cut to the other place, then it fades in)
-	hintDock, hintDockText, hintLow = dockTop, hintState.Text, low
+	world = world == true and not dockTop
+	if dockTop == hintDock and low == hintLow and world == hintWorld and ((not dockTop and not world) or hintDockText == hintState.Text) then return end
+	if (dockTop == nil) ~= (hintDock == nil) or low ~= hintLow or world ~= hintWorld then setHintAlpha(0) end -- (a clean cut to the other place, then it fades in)
+	hintDock, hintDockText, hintLow, hintWorld = dockTop, hintState.Text, low, world
+	if world and not low then
+		-- (brief 32) the world steps: the compact strip under your character (TutorialRules.Hint.WorldY)
+		local plainW = Rules.plain(hintState.Text or '')
+		local ww = math.min(H.W, Kit.textWidth(plainW, hintText.TextSize) + 2 * H.DockPad)
+		hint.AnchorPoint, hint.Size = V2(0.5, 0.5), px(ww, H.DockH)
+		hint.Position = UDim2.fromScale(0.5, H.WorldY)
+		return
+	end
 	if not dockTop then
 		hint.AnchorPoint, hint.Size = V2(0.5, 0.5), px(H.W, H.H)
 		hint.Position = low and UDim2.new(0.5, 0, 0, low) or UDim2.fromScale(0.5, H.Y)
@@ -705,6 +714,7 @@ local worldShown = nil
 local rayFor = nil -- (the character the floor rays leave out, set once per character)
 local endedAt = nil
 local leg = { At = -1, Kind = nil, Hub = false, Passed = {} }
+local fight = { Since = nil, Left = nil } -- (brief 32: when the Fight step began, and the crew standing then)
 
 local function mirrorInsets(sg)
 	if not sg then return end
@@ -827,12 +837,23 @@ local function onFrame(dt)
 		end
 	elseif worldStep and not busyScreen and window() == '' then
 		text = Rules.worldHint(stepName, stepName == 'Train' and inLane(), touchOnly())
+		-- (brief 32) the fight's line leaves once you have got it (the first goon down, or a few seconds)
+		if stepName == 'Fight' then
+			if fight.Since == nil then fight.Since, fight.Left = now, num(attr('WaveLeft')) end
+			if not Rules.fightHintOn(now - fight.Since, fight.Left, num(attr('WaveLeft'))) then text = nil end
+		else
+			fight.Since, fight.Left = nil, nil
+		end
+		-- (brief 32) a new line waits until the one on screen has been typed out and read
+		if text and hintState.Text and text ~= hintState.Text and hintState.Alpha > 0 and Rules.holdLeft(hintState.Text, hintState.Since, now) > 0 then
+			text = hintState.Text
+		end
 	end
 	if text then sayHint(text, (boxed and lock.At) or now) end
 	if boxed and info.Box == 'Window' and lock.Top then
 		placeHint(math.floor(lock.Top + insetOf(focusGui).Y + 0.5))
 	elseif text then
-		placeHint(nil)
+		placeHint(nil, info == nil)
 	end
 	local want = text ~= nil
 	if want then

@@ -290,7 +290,7 @@ while true do
 				-- the range's auto-fire: AutoRate shots a second in an open lane
 				local station = player:GetAttribute('TrainingStation')
 				if ShotRules and type(station) == 'string' and station ~= '' and not station:find('^Locked:') then
-					local c = (carry[player] or 0) + dt * (ShotRules.AutoRate or 5)
+					local c = (carry[player] or 0) + dt * (ShotRules.AutoRate or 2)
 					local n = math.floor(c)
 					carry[player] = c - n
 					if n > 0 then count(player, 'Shots', n) end

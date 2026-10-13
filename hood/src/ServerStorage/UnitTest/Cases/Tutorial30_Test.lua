@@ -261,4 +261,18 @@ return function(t)
 		aim = Tut.gateAim(Vector3.new(-80, 0, 9), 2, -64, nil, nil)
 		t.expect.near(aim.X, 2, E); t.expect.near(aim.Z, -64, E) -- (no doorway: the gate)
 	end)
+	-- (brief 32, FEEL) a line is never cut off: it holds until typed out and read; the fight's line leaves once you got it
+	t.test('the hint holds until it is read; the fight line leaves at the first goon down', function()
+		local text = '<BAY 1> shoots for you!' -- (21 characters: 0.66 s of typing)
+		t.expect.near(Tut.holdLeft(text, 10, 10), 21 / Tut.TypeRate + Tut.HintHold, 1e-6)
+		t.expect.truthy(Tut.holdLeft(text, 10, 10.6) > 0)
+		t.expect.equal(Tut.holdLeft(text, 10, 10 + 21 / Tut.TypeRate + Tut.HintHold + 0.01), 0)
+		t.expect.equal(Tut.holdLeft(nil, 10, 11), 0); t.expect.equal(Tut.holdLeft(text, nil, 11), 0)
+		t.expect.truthy(Tut.fightHintOn(0, 3, 3)); t.expect.truthy(Tut.fightHintOn(2.9, 3, 3))
+		t.expect.falsy(Tut.fightHintOn(1, 3, 2)) -- (the first one fell)
+		t.expect.falsy(Tut.fightHintOn(Tut.FightHintFor, 3, 3)); t.expect.falsy(Tut.fightHintOn(0 / 0, 3, 3))
+		t.expect.truthy(Tut.fightHintOn(1, nil, nil))
+		-- the world steps' strip sits under your character and above the Power and Level row
+		t.expect.truthy(Tut.Hint.WorldY > Tut.Hint.Y and Tut.Hint.WorldY < 0.75); t.expect.truthy(Tut.Hint.DockH < Tut.Hint.H)
+	end)
 end

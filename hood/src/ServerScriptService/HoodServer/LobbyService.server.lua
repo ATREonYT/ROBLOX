@@ -2,7 +2,7 @@
 -- original Block's SimulatorLobby, or The Block V2). Brief 17:
 --   * Power comes from shots only: here at the ranges, and at the stage goons (WaveService). At the ranges your gun
 --     fires on its own (brief 18): while you stand in an open lane's shooter's box this server pays ShotRules.AutoRate
---     shots a second on its own clock (ShotRules.autoShots; nobody clicks, no remote), each paying ShotRules: ShotBase x
+--     shots a second (each worth ShotRules.AutoValue shots: brief 32) on its own clock (ShotRules.autoShots; nobody clicks, no remote), each paying ShotRules: ShotBase x
 --     the lane's Multiplier x your rebirth multiplier x boosts, x your gun, x your shoes (their fraction carries to the
 --     next shot). Shoot.client shows the same shots. A lane opens at its Rebirths (Config/Skins.Stations); a locked lane
 --     doesn't fire. The old Shoot remote is still there but pays nothing (old clients, no double pay).
@@ -166,7 +166,7 @@ local function autoFire(player,profile,lane,station,dt)
  local per=ShotRules.perShot(lane,n,Boosts.power(player))
  local gun,shoes=player:GetAttribute('GunMultiplier'),player:GetAttribute('ShoeMultiplier')
  local pay=0
- for _=1,shots do pay+=ShotRules.pay(per,gun,shoes,shoeCarry[player]) end
+ for _=1,shots do pay+=ShotRules.autoValue(ShotRules.pay(per,gun,shoes,shoeCarry[player]),autoCarry[player]) end -- (FEEL 32: each worth AutoValue shots)
  profile.Data.Rep=math.min(1e12,profile.Data.Rep+pay)
  profile.Data.Onboarding.Trained=true
  RebirthService.publish(player,profile.Data) -- (Power and RebirthReady at once, so the counter climbs with every shot)

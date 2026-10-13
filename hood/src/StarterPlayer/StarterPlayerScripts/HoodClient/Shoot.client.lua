@@ -216,12 +216,10 @@ local function shoot(id)
 		play(hit, hit == 'Ding' and (1 + 0.07 * s.Tier) or 1)
 		Juice.flash(target.Model)
 	end
-	local gain = ShotRules.pay(player:GetAttribute('ShotBase'), player:GetAttribute('GunMultiplier'), player:GetAttribute('ShoeMultiplier'), shoeCarry)
-	-- One running "+N" per lane over the main target's top edge and to its right (the stream of shots rolls it up and
-	-- counts the hits instead of piling numbers on the target): white outlined in a dark shade of the lane's colour,
-	-- bigger on the top lanes.
-	s.ComboAt = s.ComboAt or Juice.comboAt(s.Main.Model, s.Model)
-	Juice.combo(s.Model, s.ComboAt, gain, { color = color, big = s.Tier >= 5, format = Format.compact })
+	-- (brief 32: 2 shots a second, each worth ShotRules.AutoValue shots, the fraction carried as the server does)
+	local gain = ShotRules.autoValue(ShotRules.pay(player:GetAttribute('ShotBase'), player:GetAttribute('GunMultiplier'), player:GetAttribute('ShoeMultiplier'), shoeCarry), shoeCarry)
+	-- (brief 32, FEEL: the running "+N / N HITS" over the target is gone: the reference's lane shows one number only, the
+	-- "+6" with the bicep by your chest, W 9.0-12.0 s; two numbers a shot read as clutter in the side by side)
 	-- FIGHTS30 BEGIN (brief 30: the reference's "+6" with the bicep by your chest every shot, rising and fading, W 9.3 s)
 	if gain > 0 then
 		local cam = workspace.CurrentCamera

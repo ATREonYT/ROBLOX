@@ -45,19 +45,48 @@ Kit.new('UIGradient', { Rotation = 90, Transparency = NumberSequence.new({ Numbe
 bloom.Visible = false
 
 local lastLevel, toastFrom, toastToken, lastBloom = nil, nil, 0, -10
+-- (brief 32, FEEL) Where the toast sits: just under whatever the goal line has up at the top centre (its NEXT GOAL tracker,
+-- or the bigger GOAL DONE moment), never on top of its words: filmed, "Level 1 > Level 2" sat on "Reach Level 6 in BAY 1".
+local function toastY()
+	local goals = playerGui:FindFirstChild('HoodGoals')
+	local bottom = nil
+	if goals and goals.Enabled ~= false then
+		for _, name in { 'GoalDone', 'Goal' } do
+			for _, d in goals:GetDescendants() do
+				if d.Name == name and d:IsA('GuiObject') and d.Visible and d.AbsoluteSize.Y > 0 then
+					local cx = d.AbsolutePosition.X + d.AbsoluteSize.X / 2
+					local mid = goals.AbsoluteSize.X / 2
+					if math.abs(cx - mid) < goals.AbsoluteSize.X * 0.2 and d.AbsolutePosition.Y < goals.AbsoluteSize.Y * 0.5 then
+						bottom = math.max(bottom or 0, d.AbsolutePosition.Y + d.AbsoluteSize.Y)
+					end
+				end
+			end
+		end
+	end
+	local k = (toast.AbsoluteSize.Y > 0) and (toast.AbsoluteSize.Y / TOAST_H) or 1
+	if not bottom or k <= 0 then return TOAST_Y end
+	local y = (bottom + 6 * k - root.AbsolutePosition.Y) / k
+	return math.max(TOAST_Y, math.floor(y + 0.5))
+end
 local function levelUp(from, to)
-	toastFrom = (toast.Visible and toastFrom) or from
+	local wasShown = toast.Visible
+	toastFrom = (wasShown and toastFrom) or from
 	toastText.Text = 'Level ' .. toastFrom .. '  >  Level ' .. to
 	toast.Visible = true
-	toast.BackgroundTransparency = 0
-	toastText.TextTransparency = 0
 	local st = toastText:FindFirstChildOfClass('UIStroke')
-	if st then st.Transparency = 0 end
+	-- (brief 32: it eases in, 0.15 s, rather than appearing whole in one frame)
+	local fadeIn = wasShown and 0.08 or 0.15
+	tween(toast, fadeIn, { BackgroundTransparency = 0 })
+	tween(toastText, fadeIn, { TextTransparency = 0 })
+	if st then tween(st, fadeIn, { Transparency = 0 }) end
 	toastToken += 1
 	local mine = toastToken
-	if not reduced() then
-		toast.Position = UDim2.new(0.5, 0, 0, TOAST_Y - 8)
-		tween(toast, 0.18, { Position = UDim2.new(0.5, 0, 0, TOAST_Y) }, Enum.EasingStyle.Back)
+	local y = toastY()
+	if reduced() then
+		toast.Position = UDim2.new(0.5, 0, 0, y)
+	else
+		if not wasShown then toast.Position = UDim2.new(0.5, 0, 0, y - 8) end
+		tween(toast, 0.18, { Position = UDim2.new(0.5, 0, 0, y) }, Enum.EasingStyle.Back)
 		if os.clock() - lastBloom >= 1.2 then -- one flash, 0.25 s at most, never more than one a second
 			lastBloom = os.clock()
 			bloom.Visible, bloom.BackgroundTransparency = true, 0.45

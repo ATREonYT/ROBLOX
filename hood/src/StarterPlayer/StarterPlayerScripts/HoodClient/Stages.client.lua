@@ -130,6 +130,48 @@ local function tint(e, toward, amount, opaque)
 	end
 end
 
+-- (brief 32, FEEL) The clear flash eases off instead of snapping back: white at once (the reference's 1-2 frames), then the
+-- haze returns to its own colour over FLASH seconds on a Quad curve, frame-rate independent (it reads the clock, not frames).
+-- One flash, under the kid-safe 0.25 s. done() runs at the end.
+local function flashOut(e, seconds, done, clears) -- (clears: the haze fades all the way out, the gate is opening)
+	local t0 = os.clock()
+	local WHITE = Color3.new(1, 1, 1)
+	local conn
+	local function step()
+		local k = math.clamp((os.clock() - t0) / seconds, 0, 1)
+		local a = (1 - k) * (1 - k)
+		if k >= 1 then
+			if conn then conn:Disconnect() end
+			-- (an opening gate: its haze is put away first, so the shut look never shows for a frame on the way out)
+			if clears then for _, g in e.Guis do g.Enabled = false end end
+			if done then done() end
+			tint(e, nil)
+			return
+		end
+		-- (the haze panes: from opaque white back to their own see-through colour)
+		for _, f in e.Guis do
+			for _, pane in f:GetChildren() do
+				if pane:IsA('Frame') then
+					local base = pane:GetAttribute('BaseColor') or pane.BackgroundColor3
+					local baseT = clears and 1 or (pane:GetAttribute('BaseTransparency') or pane.BackgroundTransparency)
+					pane.BackgroundColor3 = clears and WHITE or base:Lerp(WHITE, a) -- (opening: white fading to nothing, never back through red)
+					pane.BackgroundTransparency = baseT + (math.min(pane:GetAttribute('BaseTransparency') or baseT, 0.1) - baseT) * a
+				end
+			end
+		end
+		for _, p in e.Fields do
+			local base = p:GetAttribute('BaseColor') or p.Color
+			p.Color = clears and WHITE or base:Lerp(WHITE, a)
+			if clears then
+				local bt = p:GetAttribute('BaseTransparency') or 0
+				p.Transparency = 1 + (bt - 1) * a
+			end
+		end
+	end
+	tint(e, WHITE, 1, true)
+	conn = RunService.Heartbeat:Connect(step)
+end
+
 -- The open moment's pieces (defined with the feedback below).
 local opened -- (e): shatter, confetti, kick, the banner
 
@@ -454,14 +496,12 @@ end
 opened = function(e)
 	e.FlashUntil = os.clock() + FLASH
 	for _, g in e.Guis do g.Enabled = true end
-	tint(e, Color3.new(1, 1, 1), 1, true)
-	for _, p in e.Fields do p.Transparency = p:GetAttribute('BaseTransparency') or 0; p.Color = Color3.new(1, 1, 1) end
-	task.delay(FLASH, function()
-		e.FlashDone = true
-		tint(e, nil)
+	for _, p in e.Fields do p.Transparency = p:GetAttribute('BaseTransparency') or 0 end
+	flashOut(e, FLASH, function()
+		e.FlashDone, e.FlashUntil = true, nil
 		for _, p in e.Fields do p.Color = p:GetAttribute('BaseColor') or p.Color end
 		repaint()
-	end)
+	end, true)
 	Sound.play(chime, 1 + math.min(e.Stage or 1, 10) * 0.03)
 	-- (brief 30, r2: no big banner any more: it covered the gate's own "STAGE N" sign, the reference's moment; the
 	-- words "STAGE N OPEN!" sit under the CLEAR! chip at the top, Waves.client)
@@ -499,10 +539,8 @@ local function paintDoor(d, moment)
 	if won and moment and was == false then
 		words(false)
 		for _, t in d.Status do t.Visible = false end
-		tint(d, Color3.new(1, 1, 1), 1, true)
 		Sound.play(chime, 1.3)
-		task.delay(FLASH, function()
-			tint(d, nil)
+		flashOut(d, FLASH, function()
 			if d.Won then words(true) end
 		end)
 	else
