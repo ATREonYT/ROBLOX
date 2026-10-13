@@ -1,0 +1,120 @@
+<!doctype html>
+<!-- Draws a ScreenGui exported by harness.luau (exportUI JSON) the way Roblox lays it out: UDim2 sizes, anchors,
+     UIScale, UIPadding, UIListLayout, UICorner, UIStroke, UIGradient, CanvasGroup, text and icons.
+     An approximation for judging layout, proportions, colour and type; Studio is the final word. -->
+<html><head><meta charset="utf-8"><style>
+@font-face { font-family: Montserrat; src: url(fonts/Montserrat-Variable.ttf); font-weight: 100 900; }
+@font-face { font-family: RobotoCondensed; src: url(fonts/RobotoCondensed.ttf); font-weight: 100 900; }
+@font-face { font-family: RbxIcon; src: url(fonts/RbxIcon.ttf); }
+html, body { margin: 0; background: #000; }
+#stage { position: relative; overflow: hidden; }
+#bg { position: absolute; inset: -40px; background-size: cover; filter: blur(14px) brightness(.8); }
+.n { position: absolute; box-sizing: border-box; }
+.t { position: absolute; inset: 0; display: flex; overflow: visible; }
+</style></head><body><div id="stage"><div id="bg"></div></div>
+<script>
+const WEIGHT = { Thin: 100, ExtraLight: 200, Light: 300, Regular: 400, Medium: 500, SemiBold: 600, Bold: 700, ExtraBold: 800, Heavy: 900 };
+const rgba = (c, t = 0) => `rgba(${Math.round(c[0] * 255)},${Math.round(c[1] * 255)},${Math.round(c[2] * 255)},${(1 - t).toFixed(3)})`;
+const arr = v => Array.isArray(v) ? v : Object.values(v || {}); // Lune encodes an empty table as {}
+const kebab = s => s.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
+function fontOf(f) {
+  if (f && f.family) {
+    const fam = f.family.split('/').pop().replace('.json', '');
+    return { family: `${fam}, RbxIcon, sans-serif`, weight: WEIGHT[f.weight] || 400 };
+  }
+  return { family: 'Arial, RbxIcon, sans-serif', weight: 400 };
+}
+const ctx = document.createElement('canvas').getContext('2d');
+function measure(t, px) { const f = fontOf(t.font); ctx.font = `${f.weight} ${px}px ${f.family}`; return Math.max(...t.t.split('\n').map(l => ctx.measureText(l).width)); }
+
+function sized(n, pw, ph, k) {
+  const s = (n.mods && n.mods.scale) || 1, kk = k * s;
+  let w = pw * n.size[0] + n.size[1] * kk, h = ph * n.size[2] + n.size[3] * kk;
+  if (n.text && (n.auto === 'X' || n.auto === 'XY')) {
+    const pad = n.mods.pad ? (n.mods.pad[0][1] + n.mods.pad[1][1]) * kk : 0;
+    w = Math.max(w, measure(n.text, n.text.size * kk) + pad + 1);
+  }
+  return { w, h, kk };
+}
+
+function draw(n, parentEl, rect, k, parentAbs) {
+  if (n.vis === false) return;
+  const el = document.createElement('div'); el.className = 'n'; el.dataset.name = n.n;
+  el.style.left = (rect.x - parentAbs.x) + 'px'; el.style.top = (rect.y - parentAbs.y) + 'px';
+  el.style.width = rect.w + 'px'; el.style.height = rect.h + 'px';
+  const m = n.mods || {}, kk = rect.kk;
+  if (n.bgT < 1) {
+    if (m.grad && m.grad.on) {
+      const stops = arr(m.grad.c).map(s => `${rgba([s[1], s[2], s[3]], n.bgT)} ${s[0] * 100}%`).join(',');
+      el.style.background = `linear-gradient(${m.grad.rot + 90}deg, ${stops})`;
+    } else el.style.background = rgba(n.bg, n.bgT);
+  }
+  if (m.corner) el.style.borderRadius = Math.min(m.corner[0] * Math.min(rect.w, rect.h) + m.corner[1] * kk, Math.min(rect.w, rect.h) / 2) + 'px';
+  if (n.rot) el.style.transform = `rotate(${n.rot}deg)`;
+  if (n.clip || n.c === 'ScrollingFrame' || n.c === 'CanvasGroup') el.style.overflow = 'hidden';
+  if (n.groupT !== undefined) el.style.opacity = 1 - n.groupT;
+  const strokeOnText = m.stroke && m.stroke.on && n.text && m.stroke.mode !== 'Border';
+  if (m.stroke && m.stroke.on && !strokeOnText) el.style.boxShadow = `0 0 0 ${m.stroke.th * kk}px ${rgba(m.stroke.c, m.stroke.t)}`;
+  if (n.img) {
+    const icon = n.attrs && n.attrs.Icon;
+    const im = document.createElement('div'); im.className = 't';
+    let src = null;
+    if (icon === 'Avatar') src = 'avatar.svg'; else if (icon) src = `../../assets/icons/${kebab(icon)}.png`;
+    if (src) { im.style.background = `url("${src}") center/${n.img.st === 'Stretch' ? '100% 100%' : 'contain'} no-repeat`; im.style.opacity = 1 - n.img.t; }
+    el.appendChild(im);
+  }
+  if (n.text && n.text.t !== '') {
+    const t = n.text, tx = document.createElement('div'); tx.className = 't';
+    const f = fontOf(t.font), pad = m.pad;
+    if (pad) { tx.style.paddingLeft = pad[0][1] * kk + 'px'; tx.style.paddingRight = pad[1][1] * kk + 'px'; }
+    tx.style.fontFamily = f.family; tx.style.fontWeight = f.weight; tx.style.fontSize = t.size * kk + 'px';
+    tx.style.lineHeight = (t.lh || 1) * 1.12; tx.style.color = rgba(t.color, t.tT);
+    tx.style.whiteSpace = t.wrap ? 'pre-wrap' : 'pre';
+    tx.style.justifyContent = { Left: 'flex-start', Center: 'center', Right: 'flex-end' }[t.xa];
+    tx.style.alignItems = { Top: 'flex-start', Center: 'center', Bottom: 'flex-end' }[t.ya];
+    tx.style.textAlign = t.xa.toLowerCase();
+    if (strokeOnText) { tx.style.webkitTextStroke = `${m.stroke.th * 2 * kk}px ${rgba(m.stroke.c, m.stroke.t)}`; tx.style.paintOrder = 'stroke fill'; }
+    const span = document.createElement('span'); span.textContent = t.t; tx.appendChild(span); el.appendChild(tx);
+  }
+  parentEl.appendChild(el);
+  // Children: content box after padding, then list layout or free placement. Siblings drawn in ZIndex order.
+  let cx = rect.x, cy = rect.y, cw = rect.w, ch = rect.h;
+  if (m.pad && !n.text) {
+    const p = m.pad;
+    const l = p[0][0] * rect.w + p[0][1] * kk, r = p[1][0] * rect.w + p[1][1] * kk, tp = p[2][0] * rect.h + p[2][1] * kk, b = p[3][0] * rect.h + p[3][1] * kk;
+    cx += l; cy += tp; cw -= l + r; ch -= tp + b;
+  }
+  const kids = arr(n.kids).filter(c => c.vis !== false);
+  const placed = kids.map(c => ({ c, ...sized(c, cw, ch, kk) }));
+  if (m.list) {
+    const L = m.list, horiz = L.dir === 'Horizontal', gap = L.pad[0] * (horiz ? cw : ch) + L.pad[1] * kk;
+    const order = placed.map((p, i) => ({ p, i })).sort((a, b) => L.sort === 'LayoutOrder' ? (a.p.c.order - b.p.c.order) || (a.i - b.i) : a.p.c.n.localeCompare(b.p.c.n)).map(o => o.p);
+    const total = order.reduce((s, p) => s + (horiz ? p.w : p.h), 0) + gap * Math.max(0, order.length - 1);
+    const main = horiz ? { Left: 0, Center: (cw - total) / 2, Right: cw - total }[L.h] : { Top: 0, Center: (ch - total) / 2, Bottom: ch - total }[L.v];
+    let at = main;
+    for (const p of order) {
+      if (horiz) { p.x = cx + at; p.y = cy + { Top: 0, Center: (ch - p.h) / 2, Bottom: ch - p.h }[L.v]; at += p.w + gap; }
+      else { p.y = cy + at; p.x = cx + { Left: 0, Center: (cw - p.w) / 2, Right: cw - p.w }[L.h]; at += p.h + gap; }
+    }
+  } else {
+    for (const p of placed) {
+      const c = p.c;
+      p.x = cx + cw * c.pos[0] + c.pos[1] * kk - c.anchor[0] * p.w;
+      p.y = cy + ch * c.pos[2] + c.pos[3] * kk - c.anchor[1] * p.h;
+    }
+  }
+  placed.map((p, i) => ({ p, i })).sort((a, b) => (a.p.c.z - b.p.c.z) || (a.i - b.i))
+    .forEach(({ p }) => draw(p.c, el, { x: p.x, y: p.y, w: p.w, h: p.h, kk: p.kk }, kk, rect));
+}
+
+window.renderUI = async (tree, W, H, bgUrl) => {
+  const stage = document.getElementById('stage'); stage.style.width = W + 'px'; stage.style.height = H + 'px';
+  if (bgUrl) document.getElementById('bg').style.backgroundImage = `url("${bgUrl}")`;
+  await document.fonts.load('900 20px Montserrat'); await document.fonts.load('700 20px RobotoCondensed'); await document.fonts.load('400 20px RobotoCondensed'); await document.fonts.load('20px RbxIcon');
+  const root = { x: 0, y: 0, w: W, h: H, kk: 1 };
+  for (const kid of arr(tree.kids).sort((a, b) => a.z - b.z)) {
+    const s = sized(kid, W, H, 1);
+    draw(kid, stage, { x: W * kid.pos[0] + kid.pos[1] - kid.anchor[0] * s.w, y: H * kid.pos[2] + kid.pos[3] - kid.anchor[1] * s.h, w: s.w, h: s.h, kk: s.kk }, 1, root);
+  }
+};
+</script></body></html>

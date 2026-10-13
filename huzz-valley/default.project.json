@@ -1,0 +1,17 @@
+{
+  "name": "HuzzValley",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "Shared": { "$path": "src/ReplicatedStorage/Shared" }
+    },
+    "ServerScriptService": {
+      "HuzzServer": { "$path": "src/ServerScriptService/HuzzServer" }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "HuzzClient": { "$path": "src/StarterPlayer/StarterPlayerScripts/HuzzClient" }
+      }
+    }
+  }
+}
