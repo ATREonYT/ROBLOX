@@ -33,7 +33,7 @@ Theme.Colors = {
 	Track = hex("3A5277"),
 }
 
-Theme.Transparency = { Panel = 0.12, Header = 0.0, Body = 0.25, Row = 0.1 }
+Theme.Transparency = { Panel = 0.20, Header = 0.05, Body = 0.25, Row = 0.1 } -- Panel/Header from the kit's Theme.luau
 
 local CONDENSED = "rbxasset://fonts/families/RobotoCondensed.json"
 local MONTSERRAT = "rbxasset://fonts/families/Montserrat.json"
@@ -52,6 +52,7 @@ Theme.Fonts = {
 Theme.Text = { Title = 29, Tab = 17, Name = 21, Blurb = 17, Label = 14, Button = 20, Small = 11, Row = 15 }
 
 Theme.Corner = 4
+Theme.StudTile = 24 -- reference px per stud tile (the texture has one bevelled stud per tile)
 Theme.Motion = { Hover = 0.10, Press = 0.07, Open = 0.20, Close = 0.14, Tab = 0.12 }
 
 return Theme

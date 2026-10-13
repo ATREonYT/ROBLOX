@@ -21,7 +21,9 @@ This file loads in every session, so keep it short. Each game folder has its own
    - Never claim a placeholder or a missing integration is finished.
 5. **Check the data before "fixing" a scare.** Read the history and measure first; odd results are often a camera angle or an earlier request from the owner.
 6. **When merging agents' work,** copy only the files each agent changed onto the current HEAD. Never copy an agent's older copy of a file that changed since.
-7. **Anything worth keeping goes in the repo.** The session's temp folder vanishes. Commit tools, previews and notes.
+7. **"One-to-one" means one-to-one.** Match the reference exactly (sizes, colours, textures, bevels, text treatment), not "close in spirit". Measure it, then check it with a fresh critic agent.
+8. **Use the owner's own assets as they are** (icons, images, models from their kits). Don't redraw, regenerate or "clean up" them unless asked; say plainly what their limits are.
+9. **Anything worth keeping goes in the repo.** The session's temp folder vanishes. Commit tools, previews and notes.
 
 ## Never
 - **Never invent asset, product, Game Pass or animation IDs.** Leave them as 0 or empty with a clear note, and list them on the owner's checklist.

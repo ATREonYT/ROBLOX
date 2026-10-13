@@ -326,7 +326,7 @@ function exportUI(result, OUT)
 			end
 			if inst:IsA("ImageLabel") or inst:IsA("ImageButton") then
 				local r = get(inst, "SliceCenter", nil)
-				n.img = { id = get(inst, "Image", ""), color = rgb(get(inst, "ImageColor3", Color3.new(1, 1, 1))), t = get(inst, "ImageTransparency", 0), st = get(inst, "ScaleType", Enum.ScaleType.Stretch).Name }
+				n.img = { id = get(inst, "Image", ""), color = rgb(get(inst, "ImageColor3", Color3.new(1, 1, 1))), t = get(inst, "ImageTransparency", 0), st = get(inst, "ScaleType", Enum.ScaleType.Stretch).Name, tile = udim2(get(inst, "TileSize", UDim2.fromScale(1, 1))) }
 			end
 		else
 			n.insets = get(inst, "ScreenInsets", Enum.ScreenInsets.CoreUISafeInsets).Name

@@ -3,8 +3,7 @@
 --
 -- To fill these in: Studio > Asset Manager (View tab) > Bulk Import > pick every file in huzz-valley/assets/icons.
 -- Then right-click each imported image > Copy ID, and paste it between the quotes below as "rbxassetid://<number>".
--- The PNGs are cut out from the kit's exact-pixel reference crops (tools/icons/cutout.py): reconstructions, not
--- the original artwork, and small (about 4x the reference size).
+-- The PNGs are the owner's exact icon files from the UI kit (design/exact-pixel-icon-references), unchanged.
 local Assets = {}
 
 Assets.Icons = {
@@ -51,9 +50,29 @@ Assets.Icons = {
 	XpBadge = "",             -- xp-badge.png
 }
 
+-- Product pictures, cropped unchanged from the kit's pages (design/pages 01, 07, 08). Import them the same way.
+Assets.Art = {
+	BlossomAura = "",    -- assets/art/blossom-aura.png
+	Coins2000 = "",      -- assets/art/coins-2000.png
+	Coins500 = "",       -- assets/art/coins-500.png
+	Coins5000 = "",      -- assets/art/coins-5000.png
+	CrownPose = "",      -- assets/art/crown-pose.png
+	DancePack = "",      -- assets/art/dance-pack.png
+	MidnightOutfit = "", -- assets/art/midnight-outfit.png
+	SunsetTrail = "",    -- assets/art/sunset-trail.png
+	Vip = "",            -- assets/art/vip.png
+}
+
+-- The kit's square stud tile (design/textures/square-stud-tile.png), tiled along the purple headers.
+Assets.StudTile = "" -- assets/textures/square-stud-tile.png
+
 -- "Avatar" is not an uploaded image: rows that use it show the viewing player's own avatar (Roblox thumbnail).
 function Assets.icon(name: string): string
 	return (Assets.Icons :: any)[name] or ""
+end
+
+function Assets.art(name: string): string
+	return (Assets.Art :: any)[name] or ""
 end
 
 return Assets

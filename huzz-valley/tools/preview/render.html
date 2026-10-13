@@ -59,8 +59,13 @@ function draw(n, parentEl, rect, k, parentAbs) {
     const icon = n.attrs && n.attrs.Icon;
     const im = document.createElement('div'); im.className = 't';
     let src = null;
-    if (icon === 'Avatar') src = 'avatar.svg'; else if (icon) src = `../../assets/icons/${kebab(icon)}.png`;
-    if (src) { im.style.background = `url("${src}") center/${n.img.st === 'Stretch' ? '100% 100%' : 'contain'} no-repeat`; im.style.opacity = 1 - n.img.t; }
+    const file = n.attrs && n.attrs.PreviewFile;
+    if (icon === 'Avatar') src = 'avatar.svg'; else if (file) src = `../../${file}`;
+    const fit = { Stretch: '100% 100%', Crop: 'cover', Fit: 'contain' }[n.img.st] || 'contain';
+    if (src && n.img.st === 'Tile' && n.img.tile) im.style.background = `url("${src}") 0 0/${n.img.tile[1] * kk}px ${n.img.tile[3] * kk}px repeat`;
+    else if (src) im.style.background = `url("${src}") center/${fit} no-repeat`;
+    if (src) im.style.opacity = 1 - n.img.t;
+    if (m.corner) im.style.borderRadius = 'inherit';
     el.appendChild(im);
   }
   if (n.text && n.text.t !== '') {

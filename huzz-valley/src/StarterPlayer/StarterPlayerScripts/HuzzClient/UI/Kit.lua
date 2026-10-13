@@ -62,6 +62,11 @@ function Kit.name(props: { [string]: any }): TextLabel
 	return Kit.text(props)
 end
 
+-- "CurrencyCoin" -> "currency-coin" (the asset file names).
+local function kebab(name: string): string
+	return (name:gsub("(%l)(%u)", "%1-%2"):gsub("(%a)(%d)", "%1-%2"):lower())
+end
+
 -- An icon from Config/Assets. Blank until its image is imported (the "Icon" attribute names it for the preview).
 -- "Avatar" shows the local player's avatar (Roblox thumbnail, no upload needed).
 function Kit.icon(name: string, props: { [string]: any }?): ImageLabel
@@ -73,6 +78,16 @@ function Kit.icon(name: string, props: { [string]: any }?): ImageLabel
 	for k, v in props or {} do p[k] = v end
 	local img = new("ImageLabel", p)
 	img:SetAttribute("Icon", name)
+	if name ~= "Avatar" then img:SetAttribute("PreviewFile", "assets/icons/" .. kebab(name) .. ".png") end
+	return img
+end
+
+-- A product picture from Config/Assets.Art (cropped from the kit's pages); fills its frame like the reference.
+function Kit.art(name: string, props: { [string]: any }?): ImageLabel
+	local p: { [string]: any } = { BackgroundTransparency = 1, ScaleType = Enum.ScaleType.Crop, Image = Assets.art(name) }
+	for k, v in props or {} do p[k] = v end
+	local img = new("ImageLabel", p)
+	img:SetAttribute("PreviewFile", "assets/art/" .. kebab(name) .. ".png")
 	return img
 end
 
@@ -158,13 +173,14 @@ function Kit.closeButton(props: { [string]: any }): Button
 	return b
 end
 
--- Faint square studs along the purple header (the reference's stud trim). Native frames, no texture.
+-- The stud trim along a purple header: the kit's square-stud-tile texture, tiled (one stud per tile).
 function Kit.studs(parent: Instance, x0: number, x1: number, y: number)
-	local strip = new("Frame", { Name = "Studs", BackgroundTransparency = 1, ClipsDescendants = true, Position = UDim2.fromOffset(x0, y), Size = UDim2.fromOffset(math.max(0, x1 - x0), 10), Parent = parent },
-		{ Kit.list(Enum.FillDirection.Horizontal, 8, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Center) })
-	for i = 1, math.max(0, math.floor((x1 - x0) / 18)) do
-		new("Frame", { Name = "Stud", LayoutOrder = i, Size = UDim2.fromOffset(10, 10), BackgroundColor3 = C.HeaderStud, BackgroundTransparency = 0.15, BorderSizePixel = 0, Parent = strip }, { Kit.corner(2) })
-	end
+	local strip = new("ImageLabel", {
+		Name = "Studs", BackgroundTransparency = 1, Image = Assets.StudTile, ScaleType = Enum.ScaleType.Tile,
+		TileSize = UDim2.fromOffset(Theme.StudTile, Theme.StudTile), Position = UDim2.fromOffset(x0, y + 5 - Theme.StudTile / 2),
+		Size = UDim2.fromOffset(math.max(0, math.floor((x1 - x0) / Theme.StudTile) * Theme.StudTile), Theme.StudTile), Parent = parent,
+	})
+	strip:SetAttribute("PreviewFile", "assets/textures/square-stud-tile.png")
 	return strip
 end
 

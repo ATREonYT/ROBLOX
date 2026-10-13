@@ -28,11 +28,12 @@ local livePrice: { [string]: number } = {}
 local function priceOf(p) return livePrice[p.Key] or p.Price end
 
 -- One buy button's look for a product right now.
-local function buttonState(p): (string, string, string?)
+local function buttonState(p, wordPrice: boolean?): (string, string, string?)
 	if State.owns(p.Key) then return "OWNED", "Disabled", "CheckEquipped" end
 	if pending[p.Key] then return "...", "Disabled", nil end
 	if Products.status(p) == "Soon" then return "SOON", "Disabled", nil end
-	return Format.robux(priceOf(p)), "Action", nil
+	-- The reference writes "99 Robux" on cosmetics and coins, and the Robux sign + number on the big pass button.
+	return if wordPrice then Format.commas(priceOf(p)) .. " Robux" else Format.robux(priceOf(p)), "Action", nil
 end
 
 local refreshButtons: { () -> () } = {}
@@ -84,9 +85,9 @@ local function buyButton(parent: Instance, p, props)
 	local icon: ImageLabel? = nil
 	local function refresh()
 		if not b.Instance.Parent then return end
-		local text, style, iconName = buttonState(p)
+		local text, style, iconName = buttonState(p, props.WordPrice)
 		b.setText(text)
-		b.setFont(text:sub(1, #Format.RobuxMark) == Format.RobuxMark and Theme.Fonts.Number or Theme.Fonts.Button) -- prices: Montserrat Bold
+		b.setFont(if text:find("%d") then Theme.Fonts.Number else Theme.Fonts.Button) -- prices: Montserrat Bold
 		b.setStyle(style)
 		if iconName and not icon then
 			icon = Kit.icon(iconName, { Name = "Icon", Size = UDim2.fromOffset(props.IconSize or 22, props.IconSize or 22), LayoutOrder = 3, Parent = b.Instance:FindFirstChild("Content") })
@@ -101,14 +102,10 @@ local function buyButton(parent: Instance, p, props)
 	return b
 end
 
--- Art block on the left of a row: the player's avatar with the product's icon in front (no catalogue models yet).
-local function art(parent: Instance, p, size: Vector2, iconSize: number)
+-- Product picture: the kit's own art for this product, filling the block (left of rows, top of coin cards).
+local function art(parent: Instance, p, size: Vector2)
 	local f = new("Frame", { Name = "Art", Size = UDim2.fromOffset(size.X, size.Y), BackgroundColor3 = Color3.fromHex("2D4F8E"), BorderSizePixel = 0, ClipsDescendants = true, Parent = parent }, { Kit.corner(4) })
-	new("UIGradient", { Rotation = 90, Color = ColorSequence.new(Color3.fromHex("3A63A8"), Color3.fromHex("1F3A6E")), Parent = f })
-	Kit.icon("Avatar", { Name = "Avatar", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, 4, 1, 6), Size = UDim2.fromOffset(size.Y * 1.05, size.Y * 1.05), Parent = f })
-	if p.Icon ~= "Avatar" then
-		Kit.icon(p.Icon, { Name = "ProductIcon", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 8, 0.5, 4), Size = UDim2.fromOffset(iconSize, iconSize), ZIndex = 2, Parent = f })
-	end
+	Kit.art(p.Art, { Name = "Picture", Size = UDim2.fromScale(1, 1), Parent = f })
 	return f
 end
 
@@ -120,7 +117,7 @@ end
 local function buildPasses(body: Frame)
 	for i, p in Products.Passes do
 		local row = card(body, p.Key, Vector2.new(0, (i - 1) * 108), Vector2.new(BODY_W, 98))
-		art(row, p, Vector2.new(171, 98), 58)
+		art(row, p, Vector2.new(171, 98))
 		Kit.name({ Name = "Name", Text = p.Name, TextSize = T.Name, Position = UDim2.fromOffset(183, 10), Size = UDim2.fromOffset(140, 32), Parent = row })
 		Kit.text({ Name = "Blurb", Text = p.Blurb, TextSize = T.Blurb, Position = UDim2.fromOffset(183, 44), Size = UDim2.fromOffset(140, 42), TextYAlignment = Enum.TextYAlignment.Top, LineHeight = 1.0, Parent = row })
 		new("Frame", { Name = "Divider", Position = UDim2.fromOffset(327, 22), Size = UDim2.fromOffset(2, 54), BackgroundColor3 = C.Divider, BorderSizePixel = 0, Parent = row })
@@ -145,10 +142,10 @@ local function buildCosmetics(body: Frame)
 	for i, p in Products.Cosmetics do
 		local col, rowN = (i - 1) % 2, (i - 1) // 2
 		local c = card(body, p.Key, Vector2.new(col * (cw + 10), rowN * (ch + 10)), Vector2.new(cw, ch))
-		art(c, p, Vector2.new(112, ch), 0)
-		Kit.name({ Name = "Name", Text = p.Name, TextSize = 18, Position = UDim2.fromOffset(122, 8), Size = UDim2.fromOffset(cw - 130, 24), Parent = c })
-		Kit.text({ Name = "Blurb", Text = p.Blurb, TextSize = 14, Position = UDim2.fromOffset(122, 32), Size = UDim2.fromOffset(cw - 130, 32), TextYAlignment = Enum.TextYAlignment.Top, Parent = c })
-		buyButton(c, p, { Position = UDim2.new(0, 122, 1, -8), AnchorPoint = Vector2.new(0, 1), Size = UDim2.fromOffset(cw - 132, 25), TextSize = 15, IconSize = 16 })
+		art(c, p, Vector2.new(140, ch))
+		Kit.name({ Name = "Name", Text = p.Name, TextSize = 18, Position = UDim2.fromOffset(150, 8), Size = UDim2.fromOffset(cw - 158, 24), Parent = c })
+		Kit.text({ Name = "Blurb", Text = p.Blurb, TextSize = 14, Position = UDim2.fromOffset(150, 32), Size = UDim2.fromOffset(cw - 158, 32), TextYAlignment = Enum.TextYAlignment.Top, Parent = c })
+		buyButton(c, p, { Position = UDim2.new(0, 150, 1, -8), AnchorPoint = Vector2.new(0, 1), Size = UDim2.fromOffset(cw - 160, 25), TextSize = 15, IconSize = 16, WordPrice = true })
 	end
 end
 
@@ -157,11 +154,10 @@ local function buildCoins(body: Frame)
 	local cw, ch = (BODY_W - 20) / 3, 212
 	for i, p in Products.Coins do
 		local c = card(body, p.Key, Vector2.new((i - 1) * (cw + 10), 0), Vector2.new(cw, ch))
-		local s = 50 + i * 12
-		Kit.icon(p.Icon, { Name = "Art", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(cw / 2, 56), Size = UDim2.fromOffset(s, s), Parent = c })
+		art(c, p, Vector2.new(cw, 106))
 		Kit.name({ Name = "Name", Text = p.Name, TextSize = 20, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(0, 110), Size = UDim2.new(1, 0, 0, 26), Parent = c })
 		Kit.text({ Name = "Blurb", Text = p.Blurb, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(8, 136), Size = UDim2.new(1, -16, 0, 30), Parent = c })
-		buyButton(c, p, { Position = UDim2.new(0.5, 0, 1, -9), AnchorPoint = Vector2.new(0.5, 1), Size = UDim2.new(1, -18, 0, 28), TextSize = 16, IconSize = 18 })
+		buyButton(c, p, { Position = UDim2.new(0.5, 0, 1, -9), AnchorPoint = Vector2.new(0.5, 1), Size = UDim2.new(1, -18, 0, 28), TextSize = 16, IconSize = 18, WordPrice = true })
 	end
 end
 
