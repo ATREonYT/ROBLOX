@@ -49,6 +49,39 @@ Lune: <https://lune-org.github.io>. The harness runs the game offline (no Studio
 - **Look rules with numbers:** `hood/docs/LOOK_RECIPE.md`. The critic's checklist is `hood/docs/CRITIC_POINTS.md`.
 - **Renderer version caveat:** the renderer that draws the owner's GLB designs (r14) lived only in a past session. If it's needed, extend `hood/tools/preview/render` with three.js GLTFLoader for ids in `hood/art/models/items/manifest.json`.
 
+## Lessons learned building this with the owner (read these; they cost a lot to learn)
+1. **The owner judges by eye, against the reference.**
+   - Every visual change gets ONE side-by-side, ours next to the reference, from the same camera angle.
+   - Never say "matches the reference" without that picture.
+   - Motion (animations, effects) is judged on a 30 fps MP4, not on stills.
+2. **Prove it small before scaling.** Build a "golden slice" (spawn + 2 lanes + one pad) first, get a yes, then roll it out. Full rebuilds that miss waste days.
+3. **What made it look "dead" or "AI slop":**
+   - `SurfaceType.Studs` everywhere (hard black and white noise). Use faint, tone-on-tone studs on walkable ground only.
+   - A grey or cold palette ("calm" was misread as grey). Big warm, saturated fields with loud items work; neon doesn't.
+   - Flat light with no shadows. Use the `HoodToy` sun.
+   - Too many labels, tiny items, and stray props.
+4. **Objects: the owner's own designs beat anything we model.** If an object looks weak, ask the owner for a design batch rather than iterating our Part builds. Claude Design must be told "BLOCKY: built only from bevelled cuboids", not "low poly", which gives faceted or rounded blobs.
+5. **Agents grade themselves too kindly.** Before showing the owner, have a fresh critic (one that didn't build it) compare against the reference and list the worst gaps first.
+6. **Check the data before "fixing" a scare.** "Fallen" objects were a steep camera angle, and a "?" price was the owner's own earlier request. Read the history and measure first.
+7. **The preview renderer can lie** (fonts, the Robux sign drawn as a box, shadows, particles). Fix the renderer, not the game, and say what only Studio can show.
+8. **Merging agents' work:**
+   - Agents work in their own copies.
+   - Only copy the files each agent changed, onto the current HEAD.
+   - Never copy an agent's older version of a file that changed on HEAD since. That once almost reverted the tutorial.
+   - When gameplay rules change, the play-test tools change with them; stale tools give false failures.
+9. **Kid-safe is non-negotiable.**
+   - The owner once asked for hidden better odds for new players. That was refused (not allowed for paid random items) and replaced by a visible pity counter.
+   - No fake timers or scarcity.
+10. **The owner is very token-conscious.**
+    - Few agents, reused for follow-ups; no render loops.
+    - Short status lines; one deliverable per change.
+    - Anything worth keeping goes in the repo, not the session's temp folder (it vanishes).
+11. **Talking with the owner.**
+    - Use plain words and no code jargon. The owner writes short messages and changes direction (warehouse → plaza → warehouse around the plaza layout).
+    - For a direction change, ask ONE quick multiple-choice question, with the recommended option first. Otherwise act and report.
+    - Always state honestly what is still worse than the reference.
+12. **The place file:** `build_place.sh` makes a fresh `.rbxl`, so anything the owner imported in Studio (the design meshes) is lost unless it's saved to the repo as an `.rbxm` and included in the build. If the owner sends `hood/art/models/items/HoodItemMeshes.rbxm`, make `build_place` include it.
+
 ## Release
 `hood/RELEASE.md` is the owner's step-by-step checklist: import, icons, Robux items, tests, publish.
 
