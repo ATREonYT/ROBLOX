@@ -84,5 +84,30 @@ task.wait(0.05)
 check("items without an ID or not on sale never prompt", #_G.__prompts == 0)
 MM.close()
 
+-- Companions, dances, rewards and quests (ActionService / ProgressService).
+local ProgressService = require(HS.ProgressService)
+local function act(...) local r, why = State.action(...); task.wait(0.2); return r, why end
+check("starter companion owned and equipped", profile.Data.Characters.Aiko ~= nil and profile.Data.Equipped == "Aiko")
+check("starter dance owned", State.data.Dances.Step == true)
+check("can't equip a companion you don't own", (act("Equip", "Ren")) == false and profile.Data.Equipped == "Aiko")
+check("unequip works", (act("Unequip")) == true and profile.Data.Equipped == "")
+check("equip an owned companion", (act("Equip", "Aiko")) == true and profile.Data.Equipped == "Aiko")
+check("favourite a companion", (act("FavoriteCharacter", "Hina", true)) == true and profile.Data.FavChars.Hina == true)
+check("favourite a dance", (act("FavoriteDance", "Spin", true)) == true and profile.Data.FavDances.Spin == true)
+check("bad action refused", (act("GiveMeCoins", 999)) == false)
+local coins = profile.Data.Coins
+check("level 1 reward claims once", (act("ClaimReward", 1)) == true and profile.Data.Coins == coins + 100 and (act("ClaimReward", 1)) == false and profile.Data.Coins == coins + 100)
+check("level 2 reward locked at level 1", (act("ClaimReward", 2)) == false)
+check("unfinished quest can't be claimed", (act("ClaimQuest", "Steals")) == false and profile.Data.XP == 0)
+ProgressService.addStat(player, "Steals", 3)
+check("finished quest gives XP once", (act("ClaimQuest", "Steals")) == true and profile.Data.XP == 100 and (act("ClaimQuest", "Steals")) == false and profile.Data.XP == 100)
+check("client can't add stats", (act("addStat", "Steals", 99)) == false)
+check("dance pack pass grants its dances", (function()
+	DataService.setExtra(player, "Passes", { DancePack = true }); task.wait(0.1)
+	local ok2 = State.data.Dances.Wave == true
+	DataService.setExtra(player, "Passes", { VIP = true }); task.wait(0.1)
+	return ok2
+end)())
+
 print(string.format("checks: %d ok, %d failed", ok, failed))
 return nil

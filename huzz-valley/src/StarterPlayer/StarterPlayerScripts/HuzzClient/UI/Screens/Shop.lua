@@ -21,7 +21,7 @@ local new = Kit.new
 
 local Shop = {}
 
-local W, H = 701, 315
+local W, H = 701, 320 -- every main window shares this size
 local BODY_Y, BODY_X, BODY_W = 94, 18, 668
 local RIM = 4 -- padding inside the scrolling body so card rims (and the cosmetics cards' -2 x) aren't clipped
 

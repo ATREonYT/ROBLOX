@@ -21,11 +21,9 @@ local SettingsScreen = {}
 
 -- Geometry per tab, measured from the references (06 Social is the approved page; 09/10 are taller with bigger rows).
 local W = 701
-local GEOM = {
-	-- All whole pixels: Roblox stores UI offsets as integers.
-	Social = { H = 258, HH = 44, TabH = 27, TabText = 15, Tabs = { { 305, 109 }, { 421, 117 }, { 539, 121 } }, Close = Vector2.new(26, 26), Rows = { 48, 97, 146, 195 }, RowH = 44, TextX = 62, TitleSize = 16 },
-	Audio = { H = 287, HH = 47, TabH = 31, TabText = 17, Tabs = { { 261, 125 }, { 390, 125 }, { 519, 125 } }, Close = Vector2.new(31, 31), Rows = { 55, 111, 166, 228 }, RowH = 53, TextX = 74, Cell = 59, TitleSize = 18 },
-}
+-- One geometry for every tab, so the window never changes size (all main windows are 701 x 320).
+local G = { H = 320, HH = 47, TabH = 31, TabText = 17, Tabs = { { 261, 125 }, { 390, 125 }, { 519, 125 } }, Close = Vector2.new(31, 31), Rows = { 56, 119, 182, 245 }, RowH = 54, TextX = 74, Cell = 59, TitleSize = 18 }
+local GEOM = { Social = G, Audio = G }
 GEOM.Controls = GEOM.Audio
 local ROW_X = 12
 
@@ -62,7 +60,7 @@ local function choice(r: Frame, key: string)
 		{ Value = "Everyone", Text = "Everyone", X = 391 - ROW_X, Width = 94 },
 		{ Value = "Friends", Text = "Friends", X = 491 - ROW_X, Width = 93 },
 		{ Value = "Nobody", Text = "Nobody", X = 590 - ROW_X, Width = 93 },
-	}, 8, 28, function(v) save(key, v) end, 15)
+	}, math.floor((r.Size.Y.Offset - 30) / 2), 30, function(v) save(key, v) end, 15)
 	table.insert(syncers, function() seg.set(State.setting(key)) end)
 end
 

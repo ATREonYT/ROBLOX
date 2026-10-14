@@ -9,6 +9,7 @@ local State = {}
 
 State.data = {
 	Coins = 0, Gems = 0, Passes = {}, Cosmetics = {}, Settings = table.clone(Settings.Defaults), Loaded = false,
+	Characters = {}, Equipped = "", FavChars = {}, Dances = {}, FavDances = {}, XP = 0, Claimed = {}, Stats = {}, QuestsClaimed = {},
 }
 
 local listeners: { (any) -> () } = {}
@@ -52,6 +53,13 @@ function State.setSetting(key: string, value: any): (boolean, string?)
 		emit()
 	end
 	return ok, why
+end
+
+-- Asks the server to do something (equip, favourite, claim). Returns ok, message. The new state arrives by itself.
+function State.action(verb: string, ...: any): (boolean, string?)
+	local ok, result, why = pcall(function(...) return (Net.get("Action") :: RemoteFunction):InvokeServer(verb, ...) end, ...)
+	if not ok then return false, "Couldn't reach the server." end
+	return result == true, why
 end
 
 function State.start()

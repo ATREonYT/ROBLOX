@@ -16,9 +16,11 @@ local DataService = require(HuzzServer.DataService)
 local ShopService = require(HuzzServer.ShopService)
 local SettingsService = require(HuzzServer.SettingsService)
 local CosmeticsService = require(HuzzServer.CosmeticsService)
+local ActionService = require(HuzzServer.ActionService)
 
 DataService.start()
 SettingsService.start()
 ShopService.start()
 CosmeticsService.start()
+ActionService.start()
 DataService.onChanged = CosmeticsService.refresh

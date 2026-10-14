@@ -31,7 +31,7 @@ function Scale.hud(h: number): number
 	if f then return f end
 	local vp = viewport()
 	local screen = math.min(vp.X / 1920, vp.Y / 1080)
-	return math.min(math.max(screen, 0.4) * HUD_K, vp.Y / h)
+	return math.min(math.max(screen, 0.4) * HUD_K * 0.72, vp.Y / h) -- 0.72: the owner asked for smaller HUD buttons
 end
 
 -- Keeps a UIScale updated as the screen changes. compute() returns the scale.

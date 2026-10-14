@@ -3,6 +3,7 @@
 --   GetState       RemoteFunction  client -> server: ask for the current state (on join)
 --   SetSetting     RemoteFunction  client -> server: (key, value) -> ok, message
 --   BuyWithCoins   RemoteFunction  client -> server: (productKey) -> ok, message (no coin items yet; validated anyway)
+--   Action         RemoteFunction  client -> server: (verb, ...) -> ok, message (equip, favourite, claim; see ActionService)
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -13,6 +14,7 @@ local SPEC = {
 	GetState = "RemoteFunction",
 	SetSetting = "RemoteFunction",
 	BuyWithCoins = "RemoteFunction",
+	Action = "RemoteFunction",
 }
 
 local folder: Folder

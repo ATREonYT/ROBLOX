@@ -143,7 +143,8 @@ Kit.Styles = {
 	HudPlus = style(C.HudPlus, C.Text, C.PlusTop, C.PlusRim),
 	Row = style(C.Row, C.Text, C.RowBorder, C.RowBorder),
 	MenuRow = style(C.MenuRow, C.Text, C.MenuRowTop, C.MenuRowTop),
-	Hud = { Idle = C.HudMid, Hover = lighten(C.HudMid, 0.1), Pressed = darken(C.HudMid, 0.1), Text = C.Text, Top = C.HudHighlight, Rim = C.HudRing },
+	-- HUD buttons are white tinted by their navy UIGradient, so these fills only brighten/dim that gradient
+	Hud = { Idle = Color3.fromRGB(235, 235, 242), Hover = Color3.new(1, 1, 1), Pressed = Color3.fromRGB(200, 200, 212), Text = C.Text, Top = C.HudHighlight, Rim = C.HudRing },
 }
 
 -- Places a button by its usual top-left (or given anchor) position, but anchors it at its centre, so the hover and

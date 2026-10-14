@@ -7,6 +7,8 @@ local RunService = game:GetService("RunService")
 local ProfileStore = require(script.Parent.Vendor.ProfileStore)
 local Settings = require(game:GetService("ReplicatedStorage").Shared.Config.Settings)
 local Net = require(game:GetService("ReplicatedStorage").Shared.Net)
+local Characters = require(game:GetService("ReplicatedStorage").Shared.Config.Characters)
+local Dances = require(game:GetService("ReplicatedStorage").Shared.Config.Dances)
 
 local DataService = {}
 
@@ -18,6 +20,15 @@ DataService.Template = {
 	Cosmetics = {}, -- [key] = true for bought cosmetics
 	Settings = table.clone(Settings.Defaults),
 	Receipts = {}, -- recent developer-product PurchaseIds, so a receipt is never granted twice
+	Characters = {}, -- [id] = os.time() when acquired
+	Equipped = "", -- equipped companion id ("" = none)
+	FavChars = {}, -- [id] = true
+	Dances = {}, -- [id] = true (owned outright; the Dance Pack pass adds its dances on top)
+	FavDances = {}, -- [id] = true
+	XP = 0,
+	Claimed = {}, -- [tostring(level)] = true for claimed track rewards
+	Stats = {}, -- quest counters: Steals, HoldSeconds, Jukes, Rounds
+	QuestsClaimed = {}, -- [questId] = true
 }
 
 local STORE_NAME = "HuzzValley_Player_v1"
@@ -40,12 +51,32 @@ function DataService.snapshot(player: Player)
 		Cosmetics = table.clone(d.Cosmetics),
 		Passes = table.clone(ex.Passes or {}),
 		Settings = table.clone(d.Settings),
+		Characters = table.clone(d.Characters),
+		Equipped = d.Equipped,
+		FavChars = table.clone(d.FavChars),
+		Dances = DataService.ownedDances(player),
+		FavDances = table.clone(d.FavDances),
+		XP = d.XP,
+		Claimed = table.clone(d.Claimed),
+		Stats = table.clone(d.Stats),
+		QuestsClaimed = table.clone(d.QuestsClaimed),
 	}
 end
 
 local function push(player: Player)
 	local snap = DataService.snapshot(player)
 	if snap then stateRemote:FireClient(player, snap) end
+end
+
+-- Dances the player can use: owned outright, plus the Dance Pack's dances while they own the pass.
+function DataService.ownedDances(player: Player)
+	local profile = profiles[player]
+	local owned = profile and table.clone(profile.Data.Dances) or {}
+	local passes = extras[player] and extras[player].Passes
+	if passes and passes.DancePack then
+		for _, d in Dances.List do if d.Pack then owned[d.Id] = true end end
+	end
+	return owned
 end
 
 function DataService.get(player: Player)
@@ -97,6 +128,14 @@ local function onPlayerAdded(player: Player)
 		if clean[k] ~= nil and Settings.validate(k, v) ~= nil then clean[k] = v end
 	end
 	profile.Data.Settings = clean
+	-- Starter companion and dance for every player (also fills them in for older saves).
+	for _, c in Characters.List do
+		if c.Starter and not profile.Data.Characters[c.Id] then profile.Data.Characters[c.Id] = os.time() end
+		if c.Starter and profile.Data.Equipped == "" then profile.Data.Equipped = c.Id end
+	end
+	for _, d in Dances.List do
+		if d.Starter then profile.Data.Dances[d.Id] = true end
+	end
 	profile.OnSessionEnd:Connect(function()
 		profiles[player] = nil
 		if player.Parent == Players then player:Kick("Your save was opened somewhere else. Please rejoin.") end

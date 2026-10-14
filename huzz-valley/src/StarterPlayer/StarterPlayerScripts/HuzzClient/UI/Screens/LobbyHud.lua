@@ -31,7 +31,7 @@ end
 local function squareButton(parent: Instance, name: string, icon: string, y: number, onClick: () -> ())
 	local b = Kit.button({ Name = name, Style = "Hud", Text = "", Position = UDim2.fromOffset(25, y), Size = UDim2.fromOffset(66, 57), Corner = 5, RimThickness = 1.5, Parent = parent })
 	b.Instance:FindFirstChild("Content"):Destroy()
-	b.Instance.BackgroundColor3 = Color3.new(1, 1, 1)
+	b.Instance.BackgroundColor3 = Kit.Styles.Hud.Idle
 	new("UIGradient", { Rotation = 90, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, C.HudTop), ColorSequenceKeypoint.new(0.5, C.HudMid), ColorSequenceKeypoint.new(1, C.HudBottom) }), Parent = b.Instance })
 	-- icon centred in the space above the label
 	Kit.icon(icon, { Name = "Icon", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 22), Size = UDim2.fromOffset(36, 36), Parent = b.Instance })
@@ -59,8 +59,8 @@ function LobbyHud.build(parent: Instance)
 	gems.plus.onClick(function() Toast.show("Gem packs aren't for sale.") end)
 
 	local topRight = group(root, "TopRight", Vector2.new(1, 0), UDim2.fromScale(1, 0), Vector2.new(84, 70))
-	local gear = Kit.button({ Name = "Settings", Style = "Hud", Text = "", Position = UDim2.fromOffset(1, 31), Size = UDim2.fromOffset(53, 44), Corner = 5, Icon = "SettingsGear", IconSize = 30, RimThickness = 1.5, Parent = topRight })
-	gear.Instance.BackgroundColor3 = Color3.new(1, 1, 1)
+	local gear = Kit.button({ Name = "Settings", Style = "Hud", Text = "", Position = UDim2.fromOffset(23, 8), Size = UDim2.fromOffset(53, 44), Corner = 5, Icon = "SettingsGear", IconSize = 30, RimThickness = 1.5, Parent = topRight })
+	gear.Instance.BackgroundColor3 = Kit.Styles.Hud.Idle
 	new("UIGradient", { Rotation = 90, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, C.HudTop), ColorSequenceKeypoint.new(0.5, C.HudMid), ColorSequenceKeypoint.new(1, C.HudBottom) }), Parent = gear.Instance })
 	gear.onClick(function() ModalManager.toggle("Settings") end)
 
@@ -104,9 +104,12 @@ function LobbyHud.build(parent: Instance)
 	}
 	local home = {}
 	for g in away do home[g] = g.Position end
+	-- A full window moves the whole HUD away; the Menu side panel only replaces the side buttons.
 	ModalManager.changed(function(current)
+		local side = ModalManager.isSide(current)
 		for g, off in away do
-			Motion.tween(g, "hud", Theme.Motion.Hud, { Position = current and home[g] + off or home[g] }, current and Enum.EasingStyle.Quad or Enum.EasingStyle.Quint)
+			local hide = current ~= nil and (not side or g == left)
+			Motion.tween(g, "hud", Theme.Motion.Hud, { Position = hide and home[g] + off or home[g] }, hide and Enum.EasingStyle.Quad or Enum.EasingStyle.Quint)
 		end
 	end)
 	return root
