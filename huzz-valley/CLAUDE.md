@@ -47,7 +47,7 @@ A Roblox game based on Huss Valley: rounds where players steal and hold the lead
 
 ## Checks and previews (run before every commit)
 - Put Lune on PATH: `/root/bin/lune`, or download 0.10.5 to `/root/bin`.
-- `sh tools/preview/check.sh` must print `checks: N ok, 0 failed` (23 at the time of writing).
+- `sh tools/preview/check.sh` runs all three check files and must show 0 failed (37 + 33 + 29 at the time of writing).
 - `NODE_PATH=/opt/node22/lib/node_modules sh tools/preview/shots.sh <outDir> [names]` renders each screen under its reference page at 2x. Names: shop-passes, shop-cosmetics, shop-coins, settings-social, settings-audio, settings-controls, menu, lobby-hud.
 - Copy the ones that changed to `docs/previews/` as JPEG.
 - The renderer approximates Roblox:
@@ -65,14 +65,16 @@ A Roblox game based on Huss Valley: rounds where players steal and hold the lead
 `sh tools/place/build_place.sh` rebuilds `places/HuzzValley.rbxl` (all scripts plus a baseplate). Rebuild it whenever `src/` changes, so the owner can always just open the file.
 
 ## Open items (owner's checklist lives in `README.md`)
-- **Built:** golden slice (Lobby HUD, Menu, Shop with 3 tabs, Settings with 3 tabs), waiting for the owner's look check in Studio.
-- **Next:** roll the same Kit out to Index, Dances, Progression (Rewards and Quests), Tiers, Map Vote, Recruitment, Results and Gift Picker. Pages that need gameplay wait for the round system.
+- **Built:** Lobby HUD, Menu (a side panel over the HUD's side buttons), Shop, Settings, Character Index, Tiers, Dances and Progression (Rewards and Quests). Every main window is 701 x 320.
+- **Next:** the round-driven pages (Map Vote, Recruitment, Results, Match HUD) and the Gift Picker. These need the round system and the gifting backend first.
 - **Missing from the owner:**
-  - icon images imported in Studio;
+  - sharp icon files: transparent PNGs of at least 256 px, named as in the kit (the kit's crops are only 30-60 px);
   - Game Pass and Developer Product IDs;
-  - companion models;
   - dance and pose animations;
-  - outfit assets;
-  - coin-stack art;
-  - a petal texture.
-- **Decided:** not-on-sale items show their price (Robux badge) but only say "coming soon" when tapped. Coin packs stay off sale until coins can buy something; Dance Pack until the dances exist; gifting is disabled until the Gift Picker and its backend exist.
+  - companion models;
+  - outfit assets.
+- **Decided:**
+  - not-on-sale items show their price but only say "coming soon" when tapped;
+  - Aiko and Step are the starter companion and dance;
+  - quests count real match events only;
+  - there are no timers.

@@ -69,7 +69,7 @@ check("HUD slides away while open", gui.LobbyHud.Left.Position.X.Offset <= -300)
 MM.close()
 for _ = 1, 10 do __stepTweens(0.05) end
 check("close returns to play", MM.current() == nil and gui.LobbyHud.Left.Position.X.Offset == 0 and player:GetAttribute("MenuOpen") == false)
-check("unbuilt screens refuse to open", MM.open("Dances") == false)
+check("unbuilt screens refuse to open", MM.open("MapVote") == false)
 
 -- Shop buttons: owned shows OWNED, unconfigured shows a price but never prompts, not-on-sale shows SOON.
 _G.__prompts = {}

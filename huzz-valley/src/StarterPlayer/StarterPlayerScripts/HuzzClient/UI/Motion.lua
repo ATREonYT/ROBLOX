@@ -95,6 +95,7 @@ function Motion.stagger(items: { GuiObject })
 		else
 			item.Position = target + UDim2.fromOffset(0, 14)
 			task.delay((i - 1) * Theme.Motion.Stagger, function()
+				if not item.Parent then return end -- a tab switch removed it meanwhile
 				Motion.tween(item, "slide", Theme.Motion.Slide, { Position = target }, Enum.EasingStyle.Quint)
 			end)
 		end

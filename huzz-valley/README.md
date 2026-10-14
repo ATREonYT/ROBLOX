@@ -4,7 +4,8 @@ The UI for Huzz Valley, built from your Huzz-Valley-UI-V2 kit (kept in `design/`
 - the **Lobby HUD**;
 - the **Main Menu**;
 - the **Shop**, with its Passes, Cosmetics and Coins tabs;
-- **Settings**, with its Audio, Controls and Social tabs.
+- **Settings**, with its Audio, Controls and Social tabs;
+- the **Character Index**, **Tiers**, **Dances** and **Progression** (Rewards and Quests) pages ([pictures](docs/previews/new-pages.jpg)).
 
 All of these work against a real save system. When you're happy with how they look in Studio, the same parts get used to build the other pages.
 

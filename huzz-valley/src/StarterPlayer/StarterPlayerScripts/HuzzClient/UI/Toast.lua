@@ -29,8 +29,8 @@ function Toast.show(text: string, seconds: number?)
 	Motion.tween(label, "toastMove", 0.3, { Position = UDim2.new(0.5, 0, 0, 12) }, Enum.EasingStyle.Back)
 	task.delay(seconds or 2.4, function()
 		if serial ~= mine then return end
-		local t = Motion.tween(label, "toast", 0.2, { TextTransparency = 1, BackgroundTransparency = 1 })
-		if t then t.Completed:Wait() end
+		Motion.tween(label, "toast", 0.2, { TextTransparency = 1, BackgroundTransparency = 1 })
+		task.wait(0.2)
 		if serial == mine then label.Visible = false end
 	end)
 end
