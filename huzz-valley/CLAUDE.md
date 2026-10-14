@@ -49,7 +49,7 @@ A Roblox game based on Huss Valley: rounds where players steal and hold the lead
 ## Checks and previews (run before every commit)
 - Put Lune on PATH: `/root/bin/lune`, or download 0.10.5 to `/root/bin`.
 - `sh tools/preview/check.sh` runs all three check files and must show 0 failed (39 + 34 + 29, plus 37 built from nothing, at the time of writing).
-- `NODE_PATH=/opt/node22/lib/node_modules sh tools/preview/shots.sh <outDir> [names]` renders each screen under its reference page at 2x. Names: shop-passes, shop-cosmetics, shop-coins, settings-social, settings-audio, settings-controls, menu, lobby-hud, dances, index, progression, tiers.
+- `NODE_PATH=/opt/node22/lib/node_modules sh tools/preview/shots.sh <outDir> [names]` renders each screen under its reference page at 2x. Names: shop-passes, shop-cosmetics, shop-coins, settings-social, settings-audio, settings-controls, menu, lobby-hud, dances, index, progression, quests, tiers.
 - Copy the ones that changed to `docs/previews/` as JPEG.
 - The renderer approximates Roblox:
   - the Robux glyph draws small;
@@ -57,7 +57,7 @@ A Roblox game based on Huss Valley: rounds where players steal and hold the lead
   - icons come from `assets/icons` even before they're imported.
 - **Packed picture names** come from the file names (`tier-crown-mtb` → `TierCrownMtb`), so code must use that spelling. The renderer finds files without caring about capitals, so a wrong name only shows up in Studio; `check_index_tiers` checks the crowns.
 - **Pictures (`assets/art`) and 7 icons** come from the owner's sharp pack `design/sharp/Huzz-Valley-UI-Sharp.zip` (see-through renders, 1254 px squares), brought in by `python3 tools/icons/import_sharp.py`. That script only frames each picture to its slot's shape (top crop, centre crop or fit with margins) and sizes it to 2x the slot (crowns 3x). The name map and slot shapes are in the script. The pictures have no backgrounds, so cards draw a blue gradient behind them. Card pictures have no printed badges or stars, so badges are live, in one spot.
-- **Icons:** most of `assets/icons` (about 180-210 px) come from the owner's sharp sheet `design/icons-hd/owner-icon-sheet.webp`, cut by `python3 tools/icons/slice_sheet.py` (the name map is in the script). Lock, search, play, stop, xp-badge, currency-plus and controls-menu come from the sharp pack. The outline star, the equipped tick, the sneaker and the navy shirt (`shirt-equip`, for EQUIP/UNEQUIP) come from `design/sharp/Huzz-Valley-Additional-Icons.zip`; both packs are imported by `import_sharp.py`. The rest are still small kit crops cleared by `clear_background.py`: the filled star, quests-clipboard, stopwatch, tag-fist, the white shirt (shop benefit), gift-benefit, music-benefit. The pack's hearts were a mix-up and are unused. Running `clear_background.py` overwrites the sheet icons, so run `slice_sheet.py` after it. **Never redraw or upscale them** (the owner's call). `pack_images.py` shrinks the packed in-game copies to 128 px.
+- **Icons:** most of `assets/icons` (about 180-210 px) come from the owner's sharp sheet `design/icons-hd/owner-icon-sheet.webp`, cut by `python3 tools/icons/slice_sheet.py` (the name map is in the script). Lock, search, play, stop, xp-badge, currency-plus and controls-menu come from the sharp pack. The outline star, the equipped tick, the sneaker and the navy shirt (`shirt-equip`, for EQUIP/UNEQUIP) come from `design/sharp/Huzz-Valley-Additional-Icons.zip`. The fist, stopwatch and players (quest icons) come from `design/sharp/Huzz-Valley-Quest-Icons.zip`. All packs are imported by `import_sharp.py`. The rest are still small kit crops cleared by `clear_background.py`: the filled star, quests-clipboard, the white shirt (shop benefit), gift-benefit and music-benefit. The pack's hearts were a mix-up and are unused. Running `clear_background.py` overwrites the sheet icons, so run `slice_sheet.py` after it. **Never redraw or upscale them** (the owner's call). `pack_images.py` shrinks the packed in-game icons to 192 px (sharp on Retina screens, where icons show at about 200 px).
 
 ## Studio safety
 - Lune's built-in copy of the Roblox API is older than Roblox (it lacks EditableImage, for example), so a clean harness run does not prove the code runs in Studio.
@@ -75,6 +75,7 @@ A Roblox game based on Huss Valley: rounds where players steal and hold the lead
   - Make parts with `Kit.new`/Kit helpers and a `Parent`.
   - Never use `x.Parent = y` in screens; use `Kit.attach(x, y)` and use the part it returns.
   - A list that the code refills must clear its old children first (the saved example cards included).
+  - Siblings with the same name must be identical: a saved part is matched by name, and same-named siblings can come back in any order. Give differing ones their own names (as `Kit.studs` does: Studs, Studs2...). The "nothing doubled" check catches mistakes.
   - A position that depends on the device (the top bar, phones) is assigned after creation, so it applies to saved parts too.
 - **Checks:** `check.sh` runs everything on the saved UI, plus `check.luau` once built from nothing (`HUZZ_FRESH=1`). It also checks that nothing is doubled and that a Studio edit survives.
 - **Owner's edits:** the owner's Studio edits live only in their place. Regenerating `HuzzUI.rbxm` starts from the code again. Before changing UI code after they have edited in Studio, ask for their export (`tools/export-for-claude.lua`) and copy their changes into the code.
@@ -96,7 +97,7 @@ A Roblox game based on Huss Valley: rounds where players steal and hold the lead
 - **Built:** Lobby HUD, Menu (a side panel over the HUD's side buttons), Shop, Settings, Character Index, Tiers, Dances and Progression (Rewards and Quests). Every main window is 701 x 320.
 - **Next:** the round-driven pages (Map Vote, Recruitment, Results, Match HUD) and the Gift Picker. These need the round system and the gifting backend first.
 - **Missing from the owner:**
-  - sharp versions of the 7 icons still from the kit crops (list under Checks and previews), including the filled star;
+  - sharp versions of the 5 icons still from the kit crops (list under Checks and previews), including the filled star;
   - big preview pictures for Step and Wave (the Index preview uses each character's whole-body render);
   - running `tools/studio/upload-images.lua` and sending back the ImageIds text;
   - Game Pass and Developer Product IDs;

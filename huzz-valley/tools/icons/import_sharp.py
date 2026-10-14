@@ -62,6 +62,10 @@ ICONS2 = {
     'favourite-outline': 'favourite-outline.png', 'check-equipped': 'check-equipped.png', 'sneaker': 'sneaker.png',
     'shirt-equip': 'shirt-benefit.png',
 }
+# The third pack (design/sharp/Huzz-Valley-Quest-Icons.zip): the quest icons. Its sneaker and XP badge are the same
+# files as above.
+ZIP3, ROOT3 = 'design/sharp/Huzz-Valley-Quest-Icons.zip', 'Huzz-Valley-Quest-Icons/'
+ICONS3 = {'tag-fist': 'tag-fist.png', 'stopwatch': 'stopwatch.png', 'players': 'players.png'}
 ICONS = {
     'lock': 'icons/lock.png', 'search': 'icons/search.png', 'play': 'icons/play.png', 'stop': 'icons/stop.png',
     'xp-badge': 'icons/xp-badge.png', 'currency-plus': 'icons/currency-plus.png', 'controls-menu': 'icons/main-menu-lines.png',
@@ -101,10 +105,11 @@ for name, src in ICONS.items():
     im = im.crop(im.getbbox())
     im.thumbnail((256, 256), Image.LANCZOS)
     im.save(f'assets/icons/{name}.png')
-z2 = zipfile.ZipFile(ZIP2)
-for name, src in ICONS2.items():
-    im = Image.open(io.BytesIO(z2.read(ROOT2 + src))).convert('RGBA')
-    im = im.crop(im.getbbox())
-    im.thumbnail((256, 256), Image.LANCZOS)
-    im.save(f'assets/icons/{name}.png')
-print('imported', len(ART), 'pictures and', len(ICONS) + len(ICONS2), 'icons')
+for zpath, root, icons in ((ZIP2, ROOT2, ICONS2), (ZIP3, ROOT3, ICONS3)):
+    zz = zipfile.ZipFile(zpath)
+    for name, src in icons.items():
+        im = Image.open(io.BytesIO(zz.read(root + src))).convert('RGBA')
+        im = im.crop(im.getbbox())
+        im.thumbnail((256, 256), Image.LANCZOS)
+        im.save(f'assets/icons/{name}.png')
+print('imported', len(ART), 'pictures and', len(ICONS) + len(ICONS2) + len(ICONS3), 'icons')

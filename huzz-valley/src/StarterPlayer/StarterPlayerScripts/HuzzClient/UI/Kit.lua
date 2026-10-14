@@ -299,7 +299,13 @@ end
 -- The stud trim on a purple header: raised studs 9 x 11 on a 22 px pitch (lighter top, darker foot, 1 px shadow),
 -- as measured on the reference.
 function Kit.studs(parent: Instance, x0: number, x1: number, y: number)
-	local strip = new("Frame", { Name = "Studs", BackgroundTransparency = 1, Position = UDim2.fromOffset(x0, y), Size = UDim2.fromOffset(math.max(0, x1 - x0), 12), Parent = parent },
+	-- Each strip in a parent gets its own name (Studs, Studs2, ...), so a saved strip is always reused by the same
+	-- call: two same-named strips could swap places when the StarterGui copy is reused.
+	local n = 0
+	for _, ch in parent:GetChildren() do
+		if used[ch] and ch.Name:match("^Studs%d*$") then n += 1 end
+	end
+	local strip = new("Frame", { Name = if n == 0 then "Studs" else "Studs" .. (n + 1), BackgroundTransparency = 1, Position = UDim2.fromOffset(x0, y), Size = UDim2.fromOffset(math.max(0, x1 - x0), 12), Parent = parent },
 		{ Kit.list(Enum.FillDirection.Horizontal, 13, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top) })
 	for i = 1, math.max(0, math.floor((x1 - x0 + 13) / 22)) do
 		local stud = new("Frame", { Name = "Stud", LayoutOrder = i, Size = UDim2.fromOffset(9, 11), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = strip }, { Kit.corner(2) })

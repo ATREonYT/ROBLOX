@@ -6,9 +6,10 @@ import base64, os
 from PIL import Image
 
 OUT = 'src/ReplicatedStorage/Shared/Images'
-# Icons show at most about 100 screen px, so the packed copy is shrunk to fit 128 px (smooth resampling) to keep the
+# Icons show at most about 100 points, which is about 200 px on a sharp (Retina) screen, so the packed copy is shrunk
+# to fit 192 px (smooth resampling): sharp there, while keeping the
 # game small. The full-size files in assets/ stay as they are.
-MAX_ICON = 128
+MAX_ICON = 192
 # Icons from the owner's sheet that no screen uses yet: kept in assets/, not packed into the game.
 UNUSED = {'arrow-next', 'play-tile', 'plus-tile', 'monitor-small', 'social-chat'}
 
