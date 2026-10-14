@@ -48,15 +48,16 @@ A Roblox game based on Huss Valley: rounds where players steal and hold the lead
 
 ## Checks and previews (run before every commit)
 - Put Lune on PATH: `/root/bin/lune`, or download 0.10.5 to `/root/bin`.
-- `sh tools/preview/check.sh` runs all three check files and must show 0 failed (39 + 33 + 29, plus 37 built from nothing, at the time of writing).
+- `sh tools/preview/check.sh` runs all three check files and must show 0 failed (39 + 34 + 29, plus 37 built from nothing, at the time of writing).
 - `NODE_PATH=/opt/node22/lib/node_modules sh tools/preview/shots.sh <outDir> [names]` renders each screen under its reference page at 2x. Names: shop-passes, shop-cosmetics, shop-coins, settings-social, settings-audio, settings-controls, menu, lobby-hud, dances, index, progression, tiers.
 - Copy the ones that changed to `docs/previews/` as JPEG.
 - The renderer approximates Roblox:
   - the Robux glyph draws small;
   - the avatar is a grey stand-in;
   - icons come from `assets/icons` even before they're imported.
+- **Packed picture names** come from the file names (`tier-crown-mtb` → `TierCrownMtb`), so code must use that spelling. The renderer finds files without caring about capitals, so a wrong name only shows up in Studio; `check_index_tiers` checks the crowns.
 - **Pictures (`assets/art`) and 7 icons** come from the owner's sharp pack `design/sharp/Huzz-Valley-UI-Sharp.zip` (see-through renders, 1254 px squares), brought in by `python3 tools/icons/import_sharp.py`. That script only frames each picture to its slot's shape (top crop, centre crop or fit with margins) and sizes it to 2x the slot (crowns 3x). The name map and slot shapes are in the script. The pictures have no backgrounds, so cards draw a blue gradient behind them. Card pictures have no printed badges or stars, so badges are live, in one spot.
-- **Icons:** most of `assets/icons` (about 180-210 px) come from the owner's sharp sheet `design/icons-hd/owner-icon-sheet.webp`, cut by `python3 tools/icons/slice_sheet.py` (the name map is in the script). Lock, search, play, stop, xp-badge, currency-plus and controls-menu come from the sharp pack. The rest are still small kit crops cleared by `clear_background.py`: check-equipped, the favourite stars (the pack's hearts were a mix-up, so they're unused), quests-clipboard, stopwatch, tag-fist, shirt, sneaker, gift-benefit, music-benefit. Running `clear_background.py` overwrites the sheet icons, so run `slice_sheet.py` after it. **Never redraw or upscale them** (the owner's call). `pack_images.py` shrinks the packed in-game copies to 128 px.
+- **Icons:** most of `assets/icons` (about 180-210 px) come from the owner's sharp sheet `design/icons-hd/owner-icon-sheet.webp`, cut by `python3 tools/icons/slice_sheet.py` (the name map is in the script). Lock, search, play, stop, xp-badge, currency-plus and controls-menu come from the sharp pack. The outline star, the equipped tick, the sneaker and the navy shirt (`shirt-equip`, for EQUIP/UNEQUIP) come from `design/sharp/Huzz-Valley-Additional-Icons.zip`; both packs are imported by `import_sharp.py`. The rest are still small kit crops cleared by `clear_background.py`: the filled star, quests-clipboard, stopwatch, tag-fist, the white shirt (shop benefit), gift-benefit, music-benefit. The pack's hearts were a mix-up and are unused. Running `clear_background.py` overwrites the sheet icons, so run `slice_sheet.py` after it. **Never redraw or upscale them** (the owner's call). `pack_images.py` shrinks the packed in-game copies to 128 px.
 
 ## Studio safety
 - Lune's built-in copy of the Roblox API is older than Roblox (it lacks EditableImage, for example), so a clean harness run does not prove the code runs in Studio.
@@ -82,7 +83,7 @@ A Roblox game based on Huss Valley: rounds where players steal and hold the lead
   - Items inside lists (shop items, character and dance cards, rewards, quests) are redrawn by the code, so Studio edits there don't stay.
 
 ## Screen layout (owner's calls)
-- The HUD's side buttons are centred on the left edge. The Menu side panel opens in that same spot (centred on the left edge) and replaces them.
+- The HUD's side buttons are Index, Shop, Dances and Menu (the owner swapped Tiers for Shop; Tiers stays in the Menu). They are centred on the left edge. The Menu side panel opens in that same spot (centred on the left edge) and replaces them.
 - The gear sits in Roblox's top bar row: 44 px tall, 12 px from the right edge, lined up with Roblox's own buttons. On touch devices the coin and gem pills move into that row too, so the thumbstick has the bottom-left.
 - Windows fit the ScreenGui's own area (`Scale.setRoot`), which is below the top bar and inside a phone's safe area.
 - No dim layer behind windows: on phones it left grey bands at the sides. The blur alone covers the screen.
@@ -95,7 +96,7 @@ A Roblox game based on Huss Valley: rounds where players steal and hold the lead
 - **Built:** Lobby HUD, Menu (a side panel over the HUD's side buttons), Shop, Settings, Character Index, Tiers, Dances and Progression (Rewards and Quests). Every main window is 701 x 320.
 - **Next:** the round-driven pages (Map Vote, Recruitment, Results, Match HUD) and the Gift Picker. These need the round system and the gifting backend first.
 - **Missing from the owner:**
-  - sharp versions of the 9 icons still from the kit crops (list under Checks and previews), including the favourite stars;
+  - sharp versions of the 7 icons still from the kit crops (list under Checks and previews), including the filled star;
   - big preview pictures for Step and Wave (the Index preview uses each character's whole-body render);
   - running `tools/studio/upload-images.lua` and sending back the ImageIds text;
   - Game Pass and Developer Product IDs;

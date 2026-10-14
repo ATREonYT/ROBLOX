@@ -325,7 +325,7 @@ function Index.build(parent: Instance)
 			action.setEnabled(newKey ~= "Locked")
 			if actionIcon then actionIcon:Destroy() end
 			local locked = newKey == "Locked"
-			actionIcon = Kit.icon(locked and "Lock" or "ShirtBenefit", { Name = "Icon", Size = UDim2.fromOffset(locked and 18 or 26, locked and 21 or 24), LayoutOrder = 1, ImageColor3 = locked and Color3.new(1, 1, 1) or COL.EquipText, ZIndex = 3, Parent = action.Instance:FindFirstChild("Content") })
+			actionIcon = Kit.icon(locked and "Lock" or "ShirtEquip", { Name = "Icon", Size = UDim2.fromOffset(locked and 18 or 26, locked and 21 or 24), LayoutOrder = 1, ImageColor3 = locked and Color3.new(1, 1, 1) or COL.EquipText, ZIndex = 3, Parent = action.Instance:FindFirstChild("Content") })
 		end
 	end
 

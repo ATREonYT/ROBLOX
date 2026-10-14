@@ -43,6 +43,7 @@ Assets.Icons = {
 	Search = "",              -- search.png
 	SettingsGear = "",        -- settings-gear.png
 	ShirtBenefit = "",        -- shirt-benefit.png
+	ShirtEquip = "",          -- shirt-equip.png
 	ShopCart = "",            -- shop-cart.png
 	Sneaker = "",             -- sneaker.png
 	Stop = "",                -- stop.png

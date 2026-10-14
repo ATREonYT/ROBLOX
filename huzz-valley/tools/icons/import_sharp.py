@@ -54,6 +54,14 @@ ART = {  # game name: (file in the pack, mode, slot w, slot h)
 # Icons: trimmed to the drawing and stored at 256 px (pack_images.py shrinks the in-game copy to 128).
 # Kept from the earlier icon sheet: cart, book, note, trophy, coin, gem. The favourites stay the kit's stars (the
 # pack's hearts were a mix-up in the request; the reference uses stars).
+# The second pack (design/sharp/Huzz-Valley-Additional-Icons.zip): the star, tick, sneaker and a navy shirt for the
+# EQUIP / UNEQUIP button. The shop's "Exclusive Cosmetics" row keeps the kit's white shirt (navy would vanish on the
+# dark card).
+ZIP2, ROOT2 = 'design/sharp/Huzz-Valley-Additional-Icons.zip', 'Huzz-Valley-Additional-Icons/'
+ICONS2 = {
+    'favourite-outline': 'favourite-outline.png', 'check-equipped': 'check-equipped.png', 'sneaker': 'sneaker.png',
+    'shirt-equip': 'shirt-benefit.png',
+}
 ICONS = {
     'lock': 'icons/lock.png', 'search': 'icons/search.png', 'play': 'icons/play.png', 'stop': 'icons/stop.png',
     'xp-badge': 'icons/xp-badge.png', 'currency-plus': 'icons/currency-plus.png', 'controls-menu': 'icons/main-menu-lines.png',
@@ -93,4 +101,10 @@ for name, src in ICONS.items():
     im = im.crop(im.getbbox())
     im.thumbnail((256, 256), Image.LANCZOS)
     im.save(f'assets/icons/{name}.png')
-print('imported', len(ART), 'pictures and', len(ICONS), 'icons')
+z2 = zipfile.ZipFile(ZIP2)
+for name, src in ICONS2.items():
+    im = Image.open(io.BytesIO(z2.read(ROOT2 + src))).convert('RGBA')
+    im = im.crop(im.getbbox())
+    im.thumbnail((256, 256), Image.LANCZOS)
+    im.save(f'assets/icons/{name}.png')
+print('imported', len(ART), 'pictures and', len(ICONS) + len(ICONS2), 'icons')

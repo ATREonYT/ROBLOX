@@ -99,5 +99,14 @@ check("VIEW IN INDEX opens the Index filtered to SUB 5", MM.current() == "Index"
 DataService.update(player, function(d) d.Characters.Sora = os.time() end); settle()
 MM.open("Tiers"); settle()
 check("tier counts update when ownership changes", count(tp.Sub3) == "1 / 1")
+-- Every tier row shows its crown (each crown picture exists under the name the Tiers page asks for).
+local crownsOk = true
+for _, row in tp:GetDescendants() do
+	if row.Name == "Crown" and row:IsA("ImageLabel") then
+		local art = row:GetAttribute("Art")
+		if not game.ReplicatedStorage.Shared.Images.Art:FindFirstChild(art) then crownsOk = false; print("missing crown " .. tostring(art)) end
+	end
+end
+check("every tier crown has a picture", crownsOk)
 print(string.format("index checks: %d ok, %d failed", ok, failed))
 return gui

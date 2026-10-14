@@ -43,7 +43,12 @@ local function look(tier: string)
 	return { Name = c, Fill = c }
 end
 -- crown art cropped from page 11 (assets/art/tier-crown-*.png)
-local function crownArt(tier: string): string return "TierCrown" .. tier end
+-- The packed crown names (from assets/art/tier-crown-<tier>.png): TierCrownSub1, TierCrownMtb, TierCrownTrueEve...
+local CROWN_ART = {
+	Sub1 = "TierCrownSub1", Sub3 = "TierCrownSub3", Sub5 = "TierCrownSub5", MTB = "TierCrownMtb", HTB = "TierCrownHtb",
+	Stacy = "TierCrownStacy", TrueEve = "TierCrownTrueEve",
+}
+local function crownArt(tier: string): string return CROWN_ART[tier] or "TierCrown" .. tier end
 
 -- The picture shown for a character in the panel: the kit's page-11 art for Aiko, else its card art.
 local PANEL_ART = { Aiko = "CharAikoTiers" }
