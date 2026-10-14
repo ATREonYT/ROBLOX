@@ -65,10 +65,10 @@ local gui = player.PlayerGui.HuzzUI
 check("switching hides the old window", gui.Shop.Visible == false and gui.Settings.Visible == true)
 check("menu flag set", player:GetAttribute("MenuOpen") == true)
 for _ = 1, 10 do __stepTweens(0.05) end
-check("HUD hidden while open", gui.LobbyHud.Visible == false)
+check("HUD slides away while open", gui.LobbyHud.Left.Position.X.Offset <= -300)
 MM.close()
 for _ = 1, 10 do __stepTweens(0.05) end
-check("close returns to play", MM.current() == nil and gui.LobbyHud.Visible == true and player:GetAttribute("MenuOpen") == false)
+check("close returns to play", MM.current() == nil and gui.LobbyHud.Left.Position.X.Offset == 0 and player:GetAttribute("MenuOpen") == false)
 check("unbuilt screens refuse to open", MM.open("Dances") == false)
 
 -- Shop buttons: owned shows OWNED, unconfigured shows a price but never prompts, not-on-sale shows SOON.

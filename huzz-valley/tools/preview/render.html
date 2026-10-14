@@ -116,6 +116,7 @@ function draw(n, parentEl, rect, k, parentAbs) {
 
 window.renderUI = async (tree, W, H, bgUrl) => {
   const stage = document.getElementById('stage'); stage.style.width = W + 'px'; stage.style.height = H + 'px';
+  for (const el of [...stage.children]) if (el.id !== 'bg') el.remove(); // a fresh frame each call
   if (bgUrl) document.getElementById('bg').style.backgroundImage = `url("${bgUrl}")`;
   await document.fonts.load('900 20px Montserrat'); await document.fonts.load('700 20px RobotoCondensed'); await document.fonts.load('400 20px RobotoCondensed'); await document.fonts.load('20px RbxIcon');
   const root = { x: 0, y: 0, w: W, h: H, kk: 1 };

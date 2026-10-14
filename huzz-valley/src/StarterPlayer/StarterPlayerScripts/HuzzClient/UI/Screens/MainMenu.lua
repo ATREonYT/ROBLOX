@@ -29,6 +29,7 @@ function MainMenu.build(parent: Instance)
 	local window = Kit.window({ Name = "Menu", Title = "MENU", Icon = "MainMenuLines", Width = W, Height = H, HeaderHeight = 40, TitleX = 46, TitleSize = 26, TitleWidth = 84, StudsTo = 158, CloseSize = Vector2.new(30, 30), PanelColor = C.MenuPanel, Parent = parent, OnClose = function() ModalManager.close() end })
 	window.Holder.AnchorPoint = Vector2.new(0, 0)
 	window.Holder.Position = UDim2.fromScale(0.04, 0.04) -- reference 12: top-left at (31, 13) of the 768 x 329 page
+	local rows = {}
 	for i, e in MainMenu.Entries do
 		local b = Kit.button({ Name = e.Key, Style = "MenuRow", Text = "", Position = UDim2.fromOffset(9, 45 + (i - 1) * 38), Size = UDim2.fromOffset(W - 17, 34), Corner = 3, Parent = window.Panel })
 		b.Instance:FindFirstChild("Content"):Destroy()
@@ -37,8 +38,9 @@ function MainMenu.build(parent: Instance)
 		Kit.text({ Name = "Chevron", Text = ">", FontFace = Theme.Fonts.Tab, TextSize = 28, TextColor3 = C.Text, TextXAlignment = Enum.TextXAlignment.Right, Position = UDim2.new(1, -24, 0, 0), Size = UDim2.fromOffset(14, 34), Parent = b.Instance })
 		b.onClick(function() MainMenu.go(e.Key) end)
 		if i == 1 then window.FirstRow = b.Instance end
+		table.insert(rows, b.Instance)
 	end
-	ModalManager.register("Menu", { window = window, firstSelect = function() return window.FirstRow end })
+	ModalManager.register("Menu", { window = window, firstSelect = function() return window.FirstRow end, items = function() return rows end })
 	return window
 end
 

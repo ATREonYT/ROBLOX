@@ -64,7 +64,7 @@ local function hide(name: string, instant: boolean?)
 		w.Holder.Visible = false
 		return
 	end
-	Motion.close(w.Group, function()
+	Motion.close(w.Group, w.OpenScale, function()
 		if current ~= name then w.Holder.Visible = false end
 	end)
 end
@@ -83,7 +83,8 @@ function ModalManager.open(name: string, arg: any?)
 	local w = s.window
 	w.Holder.Visible = true
 	if s.onOpen then s.onOpen(arg) end
-	Motion.open(w.Group, w.OpenScale, UDim2.fromScale(0, 0))
+	Motion.open(w.Group, w.OpenScale, UDim2.fromScale(0.5, 0.5))
+	if s.items then Motion.stagger(s.items()) end
 	if not previous then setOpenFlag(true) else for _, fn in listeners do task.spawn(fn, current) end end
 	if UserInputService.GamepadEnabled and s.firstSelect then GuiService.SelectedObject = s.firstSelect() end
 	return true

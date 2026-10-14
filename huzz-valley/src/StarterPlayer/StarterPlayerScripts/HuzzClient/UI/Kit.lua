@@ -140,6 +140,16 @@ Kit.Styles = {
 	Hud = { Idle = C.HudMid, Hover = lighten(C.HudMid, 0.1), Pressed = darken(C.HudMid, 0.1), Text = C.Text, Top = C.HudHighlight, Rim = C.HudRing },
 }
 
+-- Places a button by its usual top-left (or given anchor) position, but anchors it at its centre, so the hover and
+-- press scale grows and squishes around the middle. Offsets are rounded (Roblox stores whole pixels).
+function Kit.place(btn: GuiObject, pos: UDim2, size: UDim2, anchor: Vector2?)
+	local a = anchor or Vector2.zero
+	local dx, dy = 0.5 - a.X, 0.5 - a.Y
+	btn.Size = size
+	btn.AnchorPoint = Vector2.new(0.5, 0.5)
+	btn.Position = UDim2.new(pos.X.Scale + dx * size.X.Scale, math.round(pos.X.Offset + dx * size.X.Offset), pos.Y.Scale + dy * size.Y.Scale, math.round(pos.Y.Offset + dy * size.Y.Offset))
+end
+
 export type Button = {
 	Instance: TextButton,
 	setStyle: (string) -> (),
@@ -156,11 +166,11 @@ function Kit.button(props: { [string]: any }): Button
 	local styleName = props.Style or "Action"
 	local st = Kit.Styles[styleName]
 	local btn: TextButton = new("TextButton", {
-		Name = props.Name or "Button", Size = props.Size, Position = props.Position or UDim2.new(),
-		AnchorPoint = props.AnchorPoint or Vector2.zero, LayoutOrder = props.LayoutOrder or 0,
+		Name = props.Name or "Button", LayoutOrder = props.LayoutOrder or 0,
 		AutoButtonColor = false, BorderSizePixel = 0, Text = "", BackgroundColor3 = st.Idle,
 		Selectable = true, ZIndex = props.ZIndex or 1,
 	}, { Kit.corner(props.Corner) })
+	Kit.place(btn, props.Position or UDim2.new(), props.Size, props.AnchorPoint)
 	local rim = Kit.stroke(st.Rim, props.RimThickness or 1)
 	rim.Name = "Rim"
 	rim.Parent = btn
@@ -178,18 +188,23 @@ function Kit.button(props: { [string]: any }): Button
 		local s = props.IconSize or 22
 		Kit.icon(props.Icon, { Name = "Icon", Size = UDim2.fromOffset(s, s), LayoutOrder = props.IconAfter and 3 or 1, ZIndex = btn.ZIndex, Parent = row })
 	end
+	-- an icon-only button keeps its icon dead centre (an empty label would still take a gap in the row)
+	label.Visible = (props.Text or "") ~= ""
 	local enabled = true
 	local api = {} :: any
 	local refresh = Motion.bindButton(btn, function(state) return Kit.Styles[styleName][state] end)
 	function api.setStyle(name: string)
 		styleName = name
 		local s2 = Kit.Styles[name]
-		label.TextColor3 = s2.Text
+		Motion.tween(label, "text", Theme.Motion.Tab, { TextColor3 = s2.Text })
 		top.BackgroundColor3 = s2.Top
 		rim.Color = s2.Rim
 		refresh()
 	end
-	function api.setText(t: string) label.Text = t end
+	function api.setText(t: string)
+		label.Text = t
+		label.Visible = t ~= ""
+	end
 	function api.setFont(f: Font) label.FontFace = f end
 	function api.setEnabled(on: boolean)
 		enabled = on
@@ -244,7 +259,8 @@ function Kit.window(props: { [string]: any }): Window
 	local inset = 4 -- the reference frame is 3.5 px; Roblox offsets are whole pixels
 	local holder = new("Frame", { Name = props.Name, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(w, h), BackgroundTransparency = 1, Visible = false, Parent = props.Parent })
 	new("UIScale", { Name = "FitScale", Parent = holder })
-	local group = new("CanvasGroup", { Name = "Group", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Visible = false, Parent = holder })
+	-- anchored at its centre so the open/close scale grows from the middle
+	local group = new("CanvasGroup", { Name = "Group", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Visible = false, Parent = holder })
 	local openScale = new("UIScale", { Name = "OpenScale", Parent = group })
 	local panel = new("Frame", { Name = "Panel", Size = UDim2.fromScale(1, 1), BackgroundColor3 = C.Frame, BorderSizePixel = 0, Parent = group }, { Kit.corner(6) })
 	new("Frame", { Name = "Fill", Position = UDim2.fromOffset(inset, inset), Size = UDim2.new(1, -2 * inset, 1, -2 * inset), BackgroundColor3 = props.PanelColor or C.Panel, BorderSizePixel = 0, Parent = panel }, { Kit.corner(3) })

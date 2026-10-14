@@ -12,6 +12,7 @@ local State = require(UI.State)
 local Toast = require(UI.Toast)
 local ModalManager = require(UI.ModalManager)
 local Scale = require(UI.Scale)
+local Motion = require(UI.Motion)
 
 local C = Theme.Colors
 local new = Kit.new
@@ -195,18 +196,24 @@ function SettingsScreen.build(parent: Instance)
 		-- studs fill the gap between the title and the first tab, which differs per tab
 		window.Header.Studs:Destroy()
 		Kit.studs(window.Header, 58 + 157 + 6, g.Tabs[1][1] - 8, math.floor(ih / 2) - 6)
-		window.Close.Instance.Size = UDim2.fromOffset(g.Close.X, g.Close.Y)
+		Kit.place(window.Close.Instance, UDim2.new(1, -7, 0.5, 0), UDim2.fromOffset(g.Close.X, g.Close.Y), Vector2.new(1, 0.5))
 		for i, d in defs do
 			local b = tabs.buttons[d.Key].Instance
-			b.Position = UDim2.fromOffset(g.Tabs[i][1] - 4, math.floor((ih - g.TabH) / 2))
-			b.Size = UDim2.fromOffset(g.Tabs[i][2], g.TabH)
+			Kit.place(b, UDim2.fromOffset(g.Tabs[i][1] - 4, math.floor((ih - g.TabH) / 2)), UDim2.fromOffset(g.Tabs[i][2], g.TabH))
 			b.Content.Label.TextSize = g.TabText
 		end
 		window.Holder.FitScale.Scale = Scale.window(W, g.H)
 	end
+	local function rows(key: string)
+		local list = {}
+		for _, ch in pages[key]:GetChildren() do if ch:IsA("Frame") then table.insert(list, ch) end end
+		table.sort(list, function(a, b) return (a:GetAttribute("HomePosition") or a.Position).Y.Offset < (b:GetAttribute("HomePosition") or b.Position).Y.Offset end)
+		return list
+	end
 	local function show(key: string)
 		for name, page in pages do page.Visible = name == key end
 		layout(key)
+		Motion.stagger(rows(key))
 	end
 	tabs = Kit.tabs(window.Header, defs, 0, g0.TabH, show, g0.TabText, "HeaderTab")
 	local function sync() for _, f in syncers do f() end end

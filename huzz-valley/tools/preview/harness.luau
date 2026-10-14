@@ -306,7 +306,10 @@ function exportUI(result, OUT)
 	local function node(inst)
 		local n = { c = inst.ClassName, n = inst.Name, kids = {}, mods = {} }
 		local okA, attrs = pcall(function() return inst:GetAttributes() end)
-		if okA and next(attrs) then n.attrs = attrs end
+		if okA and next(attrs) then
+			n.attrs = {}
+			for k, v in attrs do if type(v) ~= "userdata" then n.attrs[k] = v end end -- (JSON can't hold UDim2 etc.)
+		end
 		if inst:IsA("GuiObject") then
 			n.pos = udim2(get(inst, "Position", UDim2.new())); n.size = udim2(get(inst, "Size", UDim2.new()))
 			local a = get(inst, "AnchorPoint", Vector2.new()); n.anchor = { a.X, a.Y }

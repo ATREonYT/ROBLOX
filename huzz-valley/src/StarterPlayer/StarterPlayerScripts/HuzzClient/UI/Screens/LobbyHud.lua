@@ -11,6 +11,7 @@ local State = require(UI.State)
 local Scale = require(UI.Scale)
 local Toast = require(UI.Toast)
 local ModalManager = require(UI.ModalManager)
+local Motion = require(UI.Motion)
 local MainMenu = require(script.Parent.MainMenu)
 
 local C = Theme.Colors
@@ -32,7 +33,8 @@ local function squareButton(parent: Instance, name: string, icon: string, y: num
 	b.Instance:FindFirstChild("Content"):Destroy()
 	b.Instance.BackgroundColor3 = Color3.new(1, 1, 1)
 	new("UIGradient", { Rotation = 90, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, C.HudTop), ColorSequenceKeypoint.new(0.5, C.HudMid), ColorSequenceKeypoint.new(1, C.HudBottom) }), Parent = b.Instance })
-	Kit.icon(icon, { Name = "Icon", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 4), Size = UDim2.fromOffset(38, 38), Parent = b.Instance })
+	-- icon centred in the space above the label
+	Kit.icon(icon, { Name = "Icon", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 22), Size = UDim2.fromOffset(36, 36), Parent = b.Instance })
 	Kit.text({ Name = "Label", Text = name, FontFace = Theme.Fonts.Label, TextSize = 13.5, TextXAlignment = Enum.TextXAlignment.Center, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -4), Size = UDim2.new(1, 0, 0, 14), Parent = b.Instance })
 	b.onClick(onClick)
 	return b
@@ -95,7 +97,18 @@ function LobbyHud.build(parent: Instance)
 	end
 	State.changed(sync)
 	sync(State.data)
-	ModalManager.changed(function(current) root.Visible = current == nil end)
+	-- While a window is open the HUD slides off to its edges, and slides back when it closes.
+	local away = {
+		[left] = UDim2.fromOffset(-400, 0), [bottom] = UDim2.fromOffset(0, 200),
+		[topRight] = UDim2.fromOffset(400, 0), [top] = UDim2.fromOffset(0, -250),
+	}
+	local home = {}
+	for g in away do home[g] = g.Position end
+	ModalManager.changed(function(current)
+		for g, off in away do
+			Motion.tween(g, "hud", Theme.Motion.Hud, { Position = current and home[g] + off or home[g] }, current and Enum.EasingStyle.Quad or Enum.EasingStyle.Quint)
+		end
+	end)
 	return root
 end
 

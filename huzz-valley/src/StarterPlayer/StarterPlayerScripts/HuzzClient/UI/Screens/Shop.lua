@@ -14,6 +14,7 @@ local Kit = require(UI.Kit)
 local State = require(UI.State)
 local Toast = require(UI.Toast)
 local ModalManager = require(UI.ModalManager)
+local Motion = require(UI.Motion)
 
 local C, T = Theme.Colors, Theme.Text
 local new = Kit.new
@@ -230,6 +231,13 @@ function Shop.build(parent: Instance)
 	-- The cards' rims are drawn outside the cards, and a ScrollingFrame clips square: give them room on every side.
 	Kit.pad(RIM, RIM, RIM, RIM).Parent = body
 
+	-- the cards in reading order (top to bottom, left to right), for the slide-in
+	local function cards()
+		local list = {}
+		for _, ch in body:GetChildren() do if ch:IsA("GuiObject") then table.insert(list, ch) end end
+		table.sort(list, function(a, b) return a.Position.Y.Offset * 10000 + a.Position.X.Offset < b.Position.Y.Offset * 10000 + b.Position.X.Offset end)
+		return list
+	end
 	local tabs
 	local function show(key: string)
 		refreshButtons = {}
@@ -241,6 +249,7 @@ function Shop.build(parent: Instance)
 			body.Position, body.Size = UDim2.fromOffset(BODY_X - RIM, BODY_Y - RIM), UDim2.fromOffset(BODY_W + 6 + 2 * RIM, H - BODY_Y - 10 + 2 * RIM)
 		end
 		BUILD[key](body)
+		Motion.stagger(cards())
 	end
 	tabs = Kit.tabs(panel, {
 		{ Key = "Passes", Text = "PASSES", X = 16, Width = 187 },
@@ -282,6 +291,7 @@ function Shop.build(parent: Instance)
 		window = window,
 		onOpen = function(tab) openTab(tab or tabs.selected() or "Passes") end,
 		firstSelect = function() return tabs.buttons.Passes.Instance end,
+		items = cards,
 	})
 	tabs.select("Passes")
 	show("Passes")
