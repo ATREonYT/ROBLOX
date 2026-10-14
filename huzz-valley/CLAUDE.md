@@ -48,14 +48,15 @@ A Roblox game based on Huss Valley: rounds where players steal and hold the lead
 
 ## Checks and previews (run before every commit)
 - Put Lune on PATH: `/root/bin/lune`, or download 0.10.5 to `/root/bin`.
-- `sh tools/preview/check.sh` runs all three check files and must show 0 failed (37 + 33 + 29 at the time of writing).
-- `NODE_PATH=/opt/node22/lib/node_modules sh tools/preview/shots.sh <outDir> [names]` renders each screen under its reference page at 2x. Names: shop-passes, shop-cosmetics, shop-coins, settings-social, settings-audio, settings-controls, menu, lobby-hud, dances.
+- `sh tools/preview/check.sh` runs all three check files and must show 0 failed (39 + 33 + 29, plus 37 built from nothing, at the time of writing).
+- `NODE_PATH=/opt/node22/lib/node_modules sh tools/preview/shots.sh <outDir> [names]` renders each screen under its reference page at 2x. Names: shop-passes, shop-cosmetics, shop-coins, settings-social, settings-audio, settings-controls, menu, lobby-hud, dances, index, progression, tiers.
 - Copy the ones that changed to `docs/previews/` as JPEG.
 - The renderer approximates Roblox:
   - the Robux glyph draws small;
   - the avatar is a grey stand-in;
   - icons come from `assets/icons` even before they're imported.
-- **Icons:** most of `assets/icons` (about 180-210 px) come from the owner's sharp sheet `design/icons-hd/owner-icon-sheet.webp`, cut by `python3 tools/icons/slice_sheet.py` (the name map is in the script). The rest are still the small kit crops cleared by `clear_background.py`: currency-plus, controls-menu, check-equipped, favourites, lock, search, play/stop, xp-badge, quests-clipboard, stopwatch, tag-fist, shirt, sneaker, gift-benefit, music-benefit. Running `clear_background.py` overwrites the sheet icons, so run `slice_sheet.py` after it. **Never redraw or upscale them** (the owner's call). `pack_images.py` shrinks the packed in-game copies to 128 px.
+- **Pictures (`assets/art`) and 7 icons** come from the owner's sharp pack `design/sharp/Huzz-Valley-UI-Sharp.zip` (see-through renders, 1254 px squares), brought in by `python3 tools/icons/import_sharp.py`. That script only frames each picture to its slot's shape (top crop, centre crop or fit with margins) and sizes it to 2x the slot (crowns 3x). The name map and slot shapes are in the script. The pictures have no backgrounds, so cards draw a blue gradient behind them. Card pictures have no printed badges or stars, so badges are live, in one spot.
+- **Icons:** most of `assets/icons` (about 180-210 px) come from the owner's sharp sheet `design/icons-hd/owner-icon-sheet.webp`, cut by `python3 tools/icons/slice_sheet.py` (the name map is in the script). Lock, search, play, stop, xp-badge, currency-plus and controls-menu come from the sharp pack. The rest are still small kit crops cleared by `clear_background.py`: check-equipped, the favourite stars (the pack's hearts were a mix-up, so they're unused), quests-clipboard, stopwatch, tag-fist, shirt, sneaker, gift-benefit, music-benefit. Running `clear_background.py` overwrites the sheet icons, so run `slice_sheet.py` after it. **Never redraw or upscale them** (the owner's call). `pack_images.py` shrinks the packed in-game copies to 128 px.
 
 ## Studio safety
 - Lune's built-in copy of the Roblox API is older than Roblox (it lacks EditableImage, for example), so a clean harness run does not prove the code runs in Studio.
@@ -93,8 +94,8 @@ A Roblox game based on Huss Valley: rounds where players steal and hold the lead
 - **Built:** Lobby HUD, Menu (a side panel over the HUD's side buttons), Shop, Settings, Character Index, Tiers, Dances and Progression (Rewards and Quests). Every main window is 701 x 320.
 - **Next:** the round-driven pages (Map Vote, Recruitment, Results, Match HUD) and the Gift Picker. These need the round system and the gifting backend first.
 - **Missing from the owner:**
-  - sharp versions of the icons still from the kit crops (list under Checks and previews);
-  - sharp versions of the pictures in `assets/art` (all are small crops from the kit pages: character and dance cards, tier crowns, shop pictures, rewards);
+  - sharp versions of the 9 icons still from the kit crops (list under Checks and previews), including the favourite stars;
+  - big preview pictures for Ren, Sora, Step and Wave (only Aiko and Shuffle have them);
   - Game Pass and Developer Product IDs;
   - dance and pose animations;
   - companion models;

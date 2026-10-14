@@ -53,7 +53,7 @@ The whole UI is in **StarterGui > HuzzUI** as normal parts you can click and cha
    - coin packs: they turn on once coins can buy something.
 
 ## What's honest about this build
-- **Icons:** 24 come from your sharp icon sheet (`design/icons-hd`), used unchanged. About 15 small ones (plus, lock, hearts, search, play/stop, XP, the quest and shop-benefit icons, and the white Open Menu lines) are still the small kit crops and can look soft. Send sharp versions of those to finish the job.
+- **Pictures and icons:** almost all are now your sharp files (`design/sharp` and `design/icons-hd`), used as drawn and only trimmed to fit their spots. Nine small icons are still the soft kit crops: the favourite stars, the equipped tick, the quest clipboard, stopwatch, fist, shirt, sneaker, small gift and small music note. Your pictures have see-through backgrounds, so the cards show a blue backdrop behind them.
 - **Product pictures** show your own avatar, because there are no companion models yet. The coin cards use the coin icon instead of the gold-cube stacks.
 - **The next-round timer** only appears once a round system exists. It never shows a made-up countdown.
 - **Gifting** says "unavailable" until the Gift Picker is built.

@@ -34,6 +34,7 @@ local COL = {
 	Card = hex("1E3A66"), CardRim = hex("3E6699"), Band = hex("10233F"), Selected = hex("F5DF55"),
 	Field = hex("1B2B54"), FieldRim = hex("0E1C44"), FieldTop = hex("2C3D6E"), FieldText = hex("E3E8F7"), Hint = hex("C3CBE6"),
 	PreviewTop = hex("26395E"), PreviewBottom = hex("182640"), PreviewLine = hex("3A5585"),
+	ArtTop = hex("3557A0"), ArtBottom = hex("223B6E"),
 	Menu = hex("1B2B54"), MenuPick = hex("2C4475"),
 }
 
@@ -182,7 +183,8 @@ function DancesScreen.build(parent: Instance)
 	local preview = new("Frame", { Name = "Preview", Position = UDim2.fromOffset(PREVIEW.X, PREVIEW.Y), Size = UDim2.fromOffset(PREVIEW.W, PREVIEW.H), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = panel }, { Kit.corner(6), Kit.stroke(COL.CardRim, 1) })
 	new("UIGradient", { Rotation = 90, Color = ColorSequence.new(COL.PreviewTop, COL.PreviewBottom), Parent = preview })
 	new("Frame", { Name = "TopLine", Position = UDim2.fromOffset(6, 1), Size = UDim2.new(1, -12, 0, 1), BackgroundColor3 = COL.PreviewLine, BorderSizePixel = 0, Parent = preview })
-	local artBox = new("Frame", { Name = "ArtBox", Position = UDim2.fromOffset(PREVIEW.Pad, PREVIEW.Pad), Size = UDim2.fromOffset(PREVIEW.W - 2 * PREVIEW.Pad, PREVIEW.ArtH), BackgroundColor3 = COL.Band, BorderSizePixel = 0, Parent = preview }, { Kit.corner(5), Kit.stroke(COL.CardRim, 1) })
+	local artBox = new("Frame", { Name = "ArtBox", Position = UDim2.fromOffset(PREVIEW.Pad, PREVIEW.Pad), Size = UDim2.fromOffset(PREVIEW.W - 2 * PREVIEW.Pad, PREVIEW.ArtH), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = preview }, { Kit.corner(5), Kit.stroke(COL.CardRim, 1) })
+	new("UIGradient", { Rotation = 90, Color = ColorSequence.new(COL.ArtTop, COL.ArtBottom), Parent = artBox }) -- blue backdrop behind the see-through picture
 	local textX, textW = PREVIEW.Pad + 4, PREVIEW.W - 2 * PREVIEW.Pad - 8
 	local previewName = Kit.name({ Name = "DanceName", Text = "", TextSize = 20, Position = UDim2.fromOffset(textX, PREVIEW.Pad + PREVIEW.ArtH + 8), Size = UDim2.fromOffset(textW, 24), Parent = preview })
 	local previewBlurb = Kit.text({ Name = "Blurb", Text = "", TextSize = 15, LineHeight = 1.0, TextColor3 = C.SubText, TextYAlignment = Enum.TextYAlignment.Top, Position = UDim2.fromOffset(textX, PREVIEW.Pad + PREVIEW.ArtH + 34), Size = UDim2.fromOffset(textW, 36), Parent = preview })
@@ -229,7 +231,8 @@ function DancesScreen.build(parent: Instance)
 
 	local function card(d, x: number, y: number)
 		local mine = owned(d.Id)
-		local c = new("TextButton", { Name = d.Id, Text = "", AutoButtonColor = false, Position = UDim2.fromOffset(x, y), Size = UDim2.fromOffset(GRID.CardW, GRID.CardH), BackgroundColor3 = COL.Card, BorderSizePixel = 0, Parent = grid }, { Kit.corner(4) })
+		local c = new("TextButton", { Name = d.Id, Text = "", AutoButtonColor = false, Position = UDim2.fromOffset(x, y), Size = UDim2.fromOffset(GRID.CardW, GRID.CardH), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = grid }, { Kit.corner(4) })
+		new("UIGradient", { Rotation = 90, Color = ColorSequence.new(COL.ArtTop, COL.ArtBottom), Parent = c }) -- blue backdrop behind the see-through picture
 		local rim = Kit.stroke(COL.CardRim, 1)
 		rim = Kit.attach(rim, c)
 		Motion.bindButton(c, function() return nil end)
