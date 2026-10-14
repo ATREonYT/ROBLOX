@@ -54,7 +54,7 @@ A Roblox game based on Huss Valley: rounds where players steal and hold the lead
   - the Robux glyph draws small;
   - the avatar is a grey stand-in;
   - icons come from `assets/icons` even before they're imported.
-- `assets/icons` are the owner's icon files from the kit with only their baked-in background cleared (`python3 tools/icons/clear_background.py`, with per-icon settings in the script). **Never redraw or upscale them** (the owner's call).
+- **Icons:** most of `assets/icons` (about 180-210 px) come from the owner's sharp sheet `design/icons-hd/owner-icon-sheet.webp`, cut by `python3 tools/icons/slice_sheet.py` (the name map is in the script). The rest are still the small kit crops cleared by `clear_background.py`: currency-plus, controls-menu, check-equipped, favourites, lock, search, play/stop, xp-badge, quests-clipboard, stopwatch, tag-fist, shirt, sneaker, gift-benefit, music-benefit. Running `clear_background.py` overwrites the sheet icons, so run `slice_sheet.py` after it. **Never redraw or upscale them** (the owner's call). `pack_images.py` shrinks the packed in-game copies to 128 px.
 
 ## Studio safety
 - Lune's built-in copy of the Roblox API is older than Roblox (it lacks EditableImage, for example), so a clean harness run does not prove the code runs in Studio.
@@ -68,7 +68,7 @@ A Roblox game based on Huss Valley: rounds where players steal and hold the lead
 - **Built:** Lobby HUD, Menu (a side panel over the HUD's side buttons), Shop, Settings, Character Index, Tiers, Dances and Progression (Rewards and Quests). Every main window is 701 x 320.
 - **Next:** the round-driven pages (Map Vote, Recruitment, Results, Match HUD) and the Gift Picker. These need the round system and the gifting backend first.
 - **Missing from the owner:**
-  - sharp icon files: transparent PNGs of at least 256 px, named as in the kit (the kit's crops are only 30-60 px);
+  - sharp versions of the icons still from the kit crops (list under Checks and previews);
   - Game Pass and Developer Product IDs;
   - dance and pose animations;
   - companion models;

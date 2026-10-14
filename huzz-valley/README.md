@@ -43,7 +43,7 @@ All of these work against a real save system. When you're happy with how they lo
    - coin packs: they turn on once coins can buy something.
 
 ## What's honest about this build
-- **Icons** are your exact files from the kit, used unchanged. They are small (about 30-60 px) and have their background baked in. On a background of a different colour, a square edge can show, and at big sizes they look a bit soft.
+- **Icons:** 24 come from your sharp icon sheet (`design/icons-hd`), used unchanged. About 15 small ones (plus, lock, hearts, search, play/stop, XP, the quest and shop-benefit icons, and the white Open Menu lines) are still the small kit crops and can look soft. Send sharp versions of those to finish the job.
 - **Product pictures** show your own avatar, because there are no companion models yet. The coin cards use the coin icon instead of the gold-cube stacks.
 - **The next-round timer** only appears once a round system exists. It never shows a made-up countdown.
 - **Gifting** says "unavailable" until the Gift Picker is built.
