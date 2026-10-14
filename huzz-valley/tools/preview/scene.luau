@@ -35,5 +35,7 @@ if cfg.SCREEN and cfg.SCREEN ~= "Hud" then
 	assert(MM.open(cfg.SCREEN, cfg.TAB), "no screen " .. tostring(cfg.SCREEN))
 end
 for _ = 1, 40 do __stepTweens(0.05) end
+task.wait(0.6) -- staggered slide-ins start on real-time delays; let them start, then finish them
+for _ = 1, 40 do __stepTweens(0.05) end
 task.wait(0.1)
 return pg:WaitForChild("HuzzUI")
