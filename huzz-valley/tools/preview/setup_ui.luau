@@ -63,6 +63,7 @@ return ProfileStore
 
 -- Engine properties Lune knows but has no value for.
 pcall(function() game:GetService("UserInputService").GamepadEnabled = false end)
+pcall(function() game:GetService("UserInputService").TouchEnabled = false end)
 roblox.implementProperty("SoundService", "ChildAdded", function(self) return sig(self, "ChildAdded") end)
 pcall(function()
 	local cam = Instance.new("Camera")

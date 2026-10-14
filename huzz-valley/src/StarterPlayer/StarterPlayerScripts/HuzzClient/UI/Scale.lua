@@ -7,9 +7,19 @@ local Scale = {}
 local WINDOW_K = 1920 / 1056 -- reference window px -> 1920 px (1.82, from PAGE-POSITIONS.md)
 local HUD_K = 1920 / 768 -- the HUD references are full screens 768 wide
 
+local root: GuiBase2d? = nil
+
+-- The area the UI may use: the ScreenGui's own size (below Roblox's top bar and inside a phone's safe area),
+-- or the whole screen before the ScreenGui is known.
 local function viewport(): Vector2
+	if root and root.AbsoluteSize.X > 0 then return root.AbsoluteSize end
 	local cam = workspace.CurrentCamera
 	return cam and cam.ViewportSize or Vector2.new(1920, 1080)
+end
+
+-- Main calls this with the UI's ScreenGui, so windows fit the space a phone really leaves them.
+function Scale.setRoot(gui: GuiBase2d)
+	root = gui
 end
 
 local function forced(): number?
@@ -22,7 +32,7 @@ function Scale.window(w: number, h: number): number
 	if f then return f end
 	local vp = viewport()
 	local screen = math.min(vp.X / 1920, vp.Y / 1080)
-	local fit = math.min(vp.X * 0.96 / w, vp.Y * 0.9 / h)
+	local fit = math.min(vp.X * 0.96 / w, vp.Y * 0.94 / h)
 	return math.min(fit, math.max(screen, 0.6) * WINDOW_K)
 end
 
@@ -34,6 +44,11 @@ function Scale.hud(h: number): number
 	return math.min(math.max(screen, 0.4) * HUD_K * 0.72, vp.Y / h) -- 0.72: the owner asked for smaller HUD buttons
 end
 
+-- For things sized in real screen points, like the top bar row that lines up with Roblox's own buttons.
+function Scale.points(v: number): number
+	return forced() or v
+end
+
 -- Keeps a UIScale updated as the screen changes. compute() returns the scale.
 function Scale.bind(uiScale: UIScale, compute: () -> number)
 	local function update() uiScale.Scale = compute() end
@@ -43,6 +58,7 @@ function Scale.bind(uiScale: UIScale, compute: () -> number)
 		if cam then cam:GetPropertyChangedSignal("ViewportSize"):Connect(update) end
 	end
 	hook()
+	if root then root:GetPropertyChangedSignal("AbsoluteSize"):Connect(update) end
 	workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function() hook(); update() end)
 	workspace:GetAttributeChangedSignal("UIPreviewScale"):Connect(update)
 end

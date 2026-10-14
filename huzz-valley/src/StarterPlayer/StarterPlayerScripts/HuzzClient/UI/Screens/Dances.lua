@@ -27,13 +27,13 @@ local DancesScreen = {}
 local W, H = 701, 320 -- every main window shares this size
 local RIM = 4 -- room inside the scrolling grid for the cards' rims and the 3 px selected outline
 local GRID = { X = 17, Y = 86, CardW = 180, CardH = 105, GapX = 9, GapY = 9, Band = 29 }
-local PREVIEW = { X = 400, Y = 47, W = 297, H = 262, ArtY = 17, ArtW = 212, ArtH = 206 }
+local PREVIEW = { X = 400, Y = 47, W = 297, H = 262, Pad = 10, ArtH = 132, Gap = 9, BtnH = 38 }
 
 -- Measured from reference 03.
 local COL = {
 	Card = hex("1E3A66"), CardRim = hex("3E6699"), Band = hex("10233F"), Selected = hex("F5DF55"),
 	Field = hex("1B2B54"), FieldRim = hex("0E1C44"), FieldTop = hex("2C3D6E"), FieldText = hex("E3E8F7"), Hint = hex("C3CBE6"),
-	PreviewTop = hex("213350"), PreviewMid = hex("1E3049"), Floor = hex("B9785E"), FloorBottom = hex("D6936F"),
+	PreviewTop = hex("26395E"), PreviewBottom = hex("182640"), PreviewLine = hex("3A5585"),
 	Menu = hex("1B2B54"), MenuPick = hex("2C4475"),
 }
 
@@ -177,23 +177,24 @@ function DancesScreen.build(parent: Instance)
 	Kit.pad(RIM, RIM, RIM, RIM).Parent = grid
 	local empty = Kit.text({ Name = "Empty", Text = "", TextSize = 16, TextColor3 = C.SubText, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(GRID.X, GRID.Y + 70), Size = UDim2.fromOffset(2 * GRID.CardW + GRID.GapX, 40), Visible = false, Parent = panel })
 
-	-- The preview: the selected dance large on the left of the pane, its name and a line of help on the right.
-	local preview = new("Frame", { Name = "Preview", Position = UDim2.fromOffset(PREVIEW.X, PREVIEW.Y), Size = UDim2.fromOffset(PREVIEW.W, PREVIEW.H), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = panel }, { Kit.corner(3) })
-	-- the art's blurred backdrop continues to the right, with its orange floor along the bottom (reference 03)
-	local floorAt = (PREVIEW.ArtY + 169) / PREVIEW.H -- where the floor starts in the art
-	new("UIGradient", { Rotation = 90, Parent = preview, Color = ColorSequence.new({
-		ColorSequenceKeypoint.new(0, COL.PreviewTop), ColorSequenceKeypoint.new(floorAt - 0.04, COL.PreviewMid),
-		ColorSequenceKeypoint.new(floorAt + 0.02, COL.Floor), ColorSequenceKeypoint.new(1, COL.FloorBottom),
-	}) })
-	local artBox = new("Frame", { Name = "ArtBox", Position = UDim2.fromOffset(0, PREVIEW.ArtY), Size = UDim2.fromOffset(PREVIEW.ArtW, PREVIEW.ArtH), BackgroundTransparency = 1, Parent = preview })
-	local previewName = Kit.name({ Name = "DanceName", Text = "", TextSize = 20, Position = UDim2.fromOffset(PREVIEW.ArtW + 3, PREVIEW.ArtY + 80), Size = UDim2.fromOffset(PREVIEW.W - PREVIEW.ArtW - 6, 26), Parent = preview })
-	local previewBlurb = Kit.text({ Name = "Blurb", Text = "", TextSize = 15, LineHeight = 1.0, TextYAlignment = Enum.TextYAlignment.Top, Position = UDim2.fromOffset(PREVIEW.ArtW + 3, PREVIEW.ArtY + 107), Size = UDim2.fromOffset(PREVIEW.W - PREVIEW.ArtW - 6, 64), Parent = preview })
+	-- The preview: a navy card with the selected dance's picture on top, its name and a line of help underneath, and
+	-- Play and Stop side by side along the bottom (equal widths, inside the card).
+	local preview = new("Frame", { Name = "Preview", Position = UDim2.fromOffset(PREVIEW.X, PREVIEW.Y), Size = UDim2.fromOffset(PREVIEW.W, PREVIEW.H), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = panel }, { Kit.corner(6), Kit.stroke(COL.CardRim, 1) })
+	new("UIGradient", { Rotation = 90, Color = ColorSequence.new(COL.PreviewTop, COL.PreviewBottom), Parent = preview })
+	new("Frame", { Name = "TopLine", Position = UDim2.fromOffset(6, 1), Size = UDim2.new(1, -12, 0, 1), BackgroundColor3 = COL.PreviewLine, BorderSizePixel = 0, Parent = preview })
+	local artBox = new("Frame", { Name = "ArtBox", Position = UDim2.fromOffset(PREVIEW.Pad, PREVIEW.Pad), Size = UDim2.fromOffset(PREVIEW.W - 2 * PREVIEW.Pad, PREVIEW.ArtH), BackgroundColor3 = COL.Band, BorderSizePixel = 0, Parent = preview }, { Kit.corner(5), Kit.stroke(COL.CardRim, 1) })
+	local textX, textW = PREVIEW.Pad + 4, PREVIEW.W - 2 * PREVIEW.Pad - 8
+	local previewName = Kit.name({ Name = "DanceName", Text = "", TextSize = 20, Position = UDim2.fromOffset(textX, PREVIEW.Pad + PREVIEW.ArtH + 8), Size = UDim2.fromOffset(textW, 24), Parent = preview })
+	local previewBlurb = Kit.text({ Name = "Blurb", Text = "", TextSize = 15, LineHeight = 1.0, TextColor3 = C.SubText, TextYAlignment = Enum.TextYAlignment.Top, Position = UDim2.fromOffset(textX, PREVIEW.Pad + PREVIEW.ArtH + 34), Size = UDim2.fromOffset(textW, 36), Parent = preview })
 
-	local play = Kit.button({ Name = "Play", Text = "PLAY", Icon = "Play", IconSize = 20, Gap = 14, TextSize = 23, Style = "Action", Position = UDim2.fromOffset(412, 270), Size = UDim2.fromOffset(148, 37), Parent = panel })
-	local stop = Kit.button({ Name = "Stop", Text = "STOP", Icon = "Stop", IconSize = 18, Gap = 14, TextSize = 23, Style = "Slate", Position = UDim2.fromOffset(575, 270), Size = UDim2.fromOffset(109, 37), Parent = panel })
+	local btnW = math.floor((PREVIEW.W - 2 * PREVIEW.Pad - PREVIEW.Gap) / 2)
+	local btnY = PREVIEW.Y + PREVIEW.H - PREVIEW.Pad - PREVIEW.BtnH
+	local play = Kit.button({ Name = "Play", Text = "PLAY", Icon = "Play", IconSize = 18, Gap = 10, TextSize = 21, Style = "Action", Position = UDim2.fromOffset(PREVIEW.X + PREVIEW.Pad, btnY), Size = UDim2.fromOffset(btnW, PREVIEW.BtnH), Parent = panel })
+	local stop = Kit.button({ Name = "Stop", Text = "STOP", Icon = "Stop", IconSize = 16, Gap = 10, TextSize = 21, Style = "Slate", Position = UDim2.fromOffset(PREVIEW.X + PREVIEW.W - PREVIEW.Pad - btnW, btnY), Size = UDim2.fromOffset(btnW, PREVIEW.BtnH), Parent = panel })
 
 	local function showPreview()
-		for _, ch in artBox:GetChildren() do ch:Destroy() end
+		local old = artBox:FindFirstChild("Picture")
+		if old then old:Destroy() end
 		local d = selected and Dances.get(selected)
 		if not d then
 			previewName.Text = ""
@@ -203,12 +204,10 @@ function DancesScreen.build(parent: Instance)
 		local mine = owned(d.Id)
 		local big = mine and PREVIEW_ART[d.Id]
 		if big then
-			Kit.art(big, { Name = "Picture", Size = UDim2.fromScale(1, 1), Parent = artBox })
+			Kit.corner(5).Parent = Kit.art(big, { Name = "Picture", Size = UDim2.fromScale(1, 1), Parent = artBox })
 		else
-			-- no large picture for this dance yet: its card picture, framed like a card
-			local pic = Kit.art(if mine and d.Art then d.Art else "DanceLocked", { Name = "Picture", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 4, 0.5, -10), Size = UDim2.fromOffset(196, 78), Parent = artBox })
-			Kit.corner(4).Parent = pic
-			Kit.stroke(COL.CardRim, 1).Parent = pic
+			-- no large picture for this dance yet: its card picture fills the frame
+			Kit.corner(5).Parent = Kit.art(if mine and d.Art then d.Art else "DanceLocked", { Name = "Picture", Size = UDim2.fromScale(1, 1), Parent = artBox })
 		end
 		previewName.Text = d.Name
 		previewBlurb.Text = if mine then "Play this dance with your avatar." else "Locked. " .. (if rewardLevel(d.Id) then "Reach Level " .. rewardLevel(d.Id) .. "." elseif d.Pack then "Dance Pack." else "")

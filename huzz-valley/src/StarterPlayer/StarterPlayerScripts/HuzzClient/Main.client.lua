@@ -10,6 +10,7 @@ local Motion = require(UI.Motion)
 local State = require(UI.State)
 local Toast = require(UI.Toast)
 local ModalManager = require(UI.ModalManager)
+local Scale = require(UI.Scale)
 local Screens = UI.Screens
 
 local player = Players.LocalPlayer
@@ -19,6 +20,7 @@ gui.ResetOnSpawn = false
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.ScreenInsets = Enum.ScreenInsets.CoreUISafeInsets
 gui.Parent = player:WaitForChild("PlayerGui")
+Scale.setRoot(gui)
 
 -- Each part starts on its own: if one fails, the rest still work and the problem shows on screen.
 Report.mount(gui)

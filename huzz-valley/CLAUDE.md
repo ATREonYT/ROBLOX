@@ -22,7 +22,7 @@ A Roblox game based on Huss Valley: rounds where players steal and hold the lead
   - prices, currencies and XP: Montserrat Bold;
   - search fields and small labels: Montserrat Medium.
   - All of these live in `UI/Theme.lua` as `Theme.Fonts`.
-- **Every colour and size is measured** from the references (the critic report's numbers are in `UI/Theme.lua`). Settings deliberately resizes per tab, because its references differ (Social 258 tall, Audio/Controls 287).
+- **Every colour and size is measured** from the references (the critic report's numbers are in `UI/Theme.lua`). Every main window is 701 x 320 (the owner asked for one size), so Settings no longer resizes per tab.
 - **Robux prices:** every Robux price wears the Robux badge: U+E002, Roblox's own Robux mark, in dark navy before the number. Never use the kit's mockup hexagon (not official).
 
 ## Code map (`src/`, Rojo)
@@ -48,7 +48,7 @@ A Roblox game based on Huss Valley: rounds where players steal and hold the lead
 ## Checks and previews (run before every commit)
 - Put Lune on PATH: `/root/bin/lune`, or download 0.10.5 to `/root/bin`.
 - `sh tools/preview/check.sh` runs all three check files and must show 0 failed (37 + 33 + 29 at the time of writing).
-- `NODE_PATH=/opt/node22/lib/node_modules sh tools/preview/shots.sh <outDir> [names]` renders each screen under its reference page at 2x. Names: shop-passes, shop-cosmetics, shop-coins, settings-social, settings-audio, settings-controls, menu, lobby-hud.
+- `NODE_PATH=/opt/node22/lib/node_modules sh tools/preview/shots.sh <outDir> [names]` renders each screen under its reference page at 2x. Names: shop-passes, shop-cosmetics, shop-coins, settings-social, settings-audio, settings-controls, menu, lobby-hud, dances.
 - Copy the ones that changed to `docs/previews/` as JPEG.
 - The renderer approximates Roblox:
   - the Robux glyph draws small;
@@ -60,6 +60,13 @@ A Roblox game based on Huss Valley: rounds where players steal and hold the lead
 - Lune's built-in copy of the Roblox API is older than Roblox (it lacks EditableImage, for example), so a clean harness run does not prove the code runs in Studio.
 - Main.client starts every part through `Report.run`: a failing part can't stop the others, and any error shows in a red box on screen for the owner to screenshot.
 - Images draw in-game from `Shared/Images` (EditableImage) until IDs are uploaded. Re-run `python3 tools/icons/pack_images.py` after changing anything in `assets/`.
+
+## Screen layout (owner's calls)
+- The HUD's side buttons are centred on the left edge.
+- The gear sits in Roblox's top bar row: 44 px tall, 12 px from the right edge, lined up with Roblox's own buttons. On touch devices the coin and gem pills move into that row too, so the thumbstick has the bottom-left.
+- Windows fit the ScreenGui's own area (`Scale.setRoot`), which is below the top bar and inside a phone's safe area.
+- No dim layer behind windows: on phones it left grey bands at the sides. The blur alone covers the screen.
+- The Dances preview is a navy card (picture, name, help line) with equal Play and Stop buttons inside it. There is no brown floor.
 
 ## Place file
 `sh tools/place/build_place.sh` rebuilds `places/HuzzValley.rbxl` (all scripts plus a baseplate). Rebuild it whenever `src/` changes, so the owner can always just open the file.

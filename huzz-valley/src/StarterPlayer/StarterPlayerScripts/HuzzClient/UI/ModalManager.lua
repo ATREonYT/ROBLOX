@@ -16,9 +16,8 @@ local screens: { [string]: Screen } = {}
 local current: string? = nil
 local listeners: { (string?) -> () } = {}
 local blur: BlurEffect
-local dim: Frame?
 
--- Updates the open flag, tells listeners, and blurs/dims the world only for full windows (a side panel such as
+-- Updates the open flag, tells listeners, and blurs the world only for full windows (a side panel such as
 -- the Menu sits over the HUD's side buttons and leaves the game in view).
 local function changed()
 	local p = Players.LocalPlayer
@@ -26,7 +25,6 @@ local function changed()
 	for _, fn in listeners do task.spawn(fn, current) end
 	local full = current ~= nil and not (screens[current] and screens[current].side)
 	Motion.tween(blur, "blur", 0.2, { Size = full and 8 or 0 })
-	if dim then Motion.tween(dim, "dim", 0.2, { BackgroundTransparency = full and 0.75 or 1 }) end
 end
 
 function ModalManager.mount(screenGui: ScreenGui)
@@ -34,15 +32,8 @@ function ModalManager.mount(screenGui: ScreenGui)
 	blur.Name = "HuzzMenuBlur"
 	blur.Size = 0
 	blur.Parent = Lighting
-	local d = Instance.new("Frame")
-	d.Name = "Dim"
-	d.BackgroundColor3 = Color3.new(0, 0, 0)
-	d.BackgroundTransparency = 1
-	d.BorderSizePixel = 0
-	d.Size = UDim2.fromScale(1, 1)
-	d.ZIndex = 0
-	d.Parent = screenGui
-	dim = d
+	-- No dim layer: on phones it only covered the safe area and left grey bands at the sides. The blur alone
+	-- covers the whole screen.
 	UserInputService.InputBegan:Connect(function(input, processed)
 		if not current then return end
 		if input.KeyCode == Enum.KeyCode.ButtonB or (input.KeyCode == Enum.KeyCode.Escape and not processed) then

@@ -1,7 +1,9 @@
--- Lobby HUD (design/pages/13): left column (Index, Tiers, Dances, Menu), coin and gem balances bottom-left,
--- settings top-right, and the next-round countdown top-centre. Hidden while a window is open.
+-- Lobby HUD (design/pages/13): left column (Index, Tiers, Dances, Menu) centred on the left edge, coin and gem
+-- balances bottom-left (in the top bar row on phones), settings in the top bar row at the right, and the next-round countdown top-centre. Hidden while a window is open.
 -- The countdown only shows when the round system sets Workspace attribute "NextRoundAt" (server time, seconds);
 -- there is no round system yet, so it stays hidden rather than showing a made-up timer.
+local GuiService = game:GetService("GuiService")
+local UserInputService = game:GetService("UserInputService")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Format = require(Shared.Format)
 local UI = script.Parent.Parent
@@ -20,10 +22,19 @@ local new = Kit.new
 local LobbyHud = {}
 local PAGE_H = 347
 
-local function group(parent: Instance, name: string, anchor: Vector2, pos: UDim2, size: Vector2)
+local function group(parent: Instance, name: string, anchor: Vector2, pos: UDim2, size: Vector2, fixed: number?)
 	local f = new("Frame", { Name = name, AnchorPoint = anchor, Position = pos, Size = UDim2.fromOffset(size.X, size.Y), BackgroundTransparency = 1, Parent = parent })
-	Scale.bind(new("UIScale", { Parent = f }), function() return Scale.hud(PAGE_H) end)
+	Scale.bind(new("UIScale", { Parent = f }), function() return if fixed then Scale.points(fixed) else Scale.hud(PAGE_H) end)
 	return f
+end
+
+-- Roblox's top bar sits above the UI's area. Its buttons are 44 px tall and 12 px in from the edge, so the gear
+-- (and the balances on phones) line up with them in the same row, at the same margin from the right edge.
+local TOPBAR_BUTTON, TOPBAR_MARGIN = 44, 12
+local function topbarY(): number
+	local ok, inset = pcall(function() return GuiService:GetGuiInset() end)
+	local h = if ok and inset then inset.Y else 0
+	return if h >= TOPBAR_BUTTON then -h + math.floor((h - TOPBAR_BUTTON) / 2) else TOPBAR_MARGIN
 end
 
 -- A square HUD button with its label underneath (reference: 69 x 59).
@@ -43,7 +54,8 @@ end
 function LobbyHud.build(parent: Instance)
 	local root = new("Frame", { Name = "LobbyHud", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Parent = parent })
 
-	local left = group(root, "Left", Vector2.new(0, 0), UDim2.fromScale(0, 0), Vector2.new(100, 300))
+	-- The side buttons span y 32-290; a 322-tall group puts them exactly in the middle of the left edge.
+	local left = group(root, "Left", Vector2.new(0, 0.5), UDim2.fromScale(0, 0.5), Vector2.new(100, 322))
 	squareButton(left, "Index", "CollectionBook", 32, function() MainMenu.go("Index") end)
 	squareButton(left, "Tiers", "TierCrown", 98, function() MainMenu.go("Tiers") end)
 	squareButton(left, "Dances", "DancesNote", 164, function() MainMenu.go("Dances") end)
@@ -52,14 +64,20 @@ function LobbyHud.build(parent: Instance)
 	local hint = Kit.text({ Name = "KeyHint", Text = "", FontFace = Theme.Fonts.Button, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Center, TextColor3 = C.DarkText, BackgroundTransparency = 0, BackgroundColor3 = C.SelectedTab, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(1, -2, 0, 4), Size = UDim2.fromOffset(16, 16), ZIndex = 3, Parent = menu.Instance })
 	Kit.corner(3).Parent = hint
 
-	local bottom = group(root, "Balances", Vector2.new(0, 1), UDim2.fromScale(0, 1), Vector2.new(300, 50))
+	local barY = topbarY()
+	-- Balances sit bottom-left like the reference; on phones that is where the thumbstick goes, so there they move up
+	-- into the top bar row, left of the gear.
+	local touch = UserInputService.TouchEnabled
+	local bottom = if touch
+		then group(root, "Balances", Vector2.new(1, 0), UDim2.new(1, -(TOPBAR_MARGIN + 52 + 8) + 8, 0, barY + TOPBAR_BUTTON / 2 - 16 - 7), Vector2.new(300, 50), 1)
+		else group(root, "Balances", Vector2.new(0, 1), UDim2.fromScale(0, 1), Vector2.new(300, 50))
 	local coins = Kit.pill({ Name = "Coins", Icon = "CurrencyCoin", Position = UDim2.fromOffset(23, 7), Width = 131, Height = 32, TextSize = 14, PlusStyle = "HudPlus", Split = true, Parent = bottom })
 	local gems = Kit.pill({ Name = "Gems", Icon = "CurrencyGem", Position = UDim2.fromOffset(161, 7), Width = 131, Height = 32, TextSize = 14, PlusStyle = "HudPlus", Split = true, Parent = bottom })
 	coins.plus.onClick(function() ModalManager.open("Shop", "Coins") end)
 	gems.plus.onClick(function() Toast.show("Gem packs aren't for sale.") end)
 
-	local topRight = group(root, "TopRight", Vector2.new(1, 0), UDim2.fromScale(1, 0), Vector2.new(84, 70))
-	local gear = Kit.button({ Name = "Settings", Style = "Hud", Text = "", Position = UDim2.fromOffset(23, 8), Size = UDim2.fromOffset(53, 44), Corner = 5, Icon = "SettingsGear", IconSize = 30, RimThickness = 1.5, Parent = topRight })
+	local topRight = group(root, "TopRight", Vector2.new(1, 0), UDim2.new(1, -TOPBAR_MARGIN, 0, barY), Vector2.new(52, TOPBAR_BUTTON), 1)
+	local gear = Kit.button({ Name = "Settings", Style = "Hud", Text = "", Position = UDim2.fromOffset(0, 0), Size = UDim2.fromOffset(52, TOPBAR_BUTTON), Corner = 8, Icon = "SettingsGear", IconSize = 30, RimThickness = 1.5, Parent = topRight })
 	gear.Instance.BackgroundColor3 = Kit.Styles.Hud.Idle
 	new("UIGradient", { Rotation = 90, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, C.HudTop), ColorSequenceKeypoint.new(0.5, C.HudMid), ColorSequenceKeypoint.new(1, C.HudBottom) }), Parent = gear.Instance })
 	gear.onClick(function() ModalManager.toggle("Settings") end)
@@ -99,7 +117,7 @@ function LobbyHud.build(parent: Instance)
 	sync(State.data)
 	-- While a window is open the HUD slides off to its edges, and slides back when it closes.
 	local away = {
-		[left] = UDim2.fromOffset(-400, 0), [bottom] = UDim2.fromOffset(0, 200),
+		[left] = UDim2.fromOffset(-400, 0), [bottom] = UDim2.fromOffset(0, if touch then -200 else 200),
 		[topRight] = UDim2.fromOffset(400, 0), [top] = UDim2.fromOffset(0, -250),
 	}
 	local home = {}
