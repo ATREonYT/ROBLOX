@@ -51,4 +51,5 @@ This file loads in every session, so keep it short. Each game folder has its own
   - UDim offsets are whole numbers, so never use half pixels;
   - ClipsDescendants clips square and ignores UICorner, so round the image itself;
   - a ScrollingFrame clips its children's outside UIStroke rims, so give them padding.
+- **A clean offline run doesn't prove Studio works:** Lune's copy of the Roblox API is outdated. Start each UI part separately, so one failure can't stop the rest, and show errors on screen, so the owner can screenshot them.
 - Cloud sessions can't reach Studio. Only the owner can confirm the final look and the real purchase prompts.
