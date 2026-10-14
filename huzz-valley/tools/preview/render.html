@@ -63,6 +63,8 @@ function draw(n, parentEl, rect, k, parentAbs) {
     let src = null;
     const file = n.attrs && n.attrs.PreviewFile;
     if (icon === 'Avatar') src = 'avatar.svg'; else if (file) src = `../../${file}`;
+    // STUDIO mode: show only what Studio shows today — an image with no uploaded ID stays blank.
+    if (window.STUDIO && !n.img.id) src = null;
     const fit = { Stretch: '100% 100%', Crop: 'cover', Fit: 'contain' }[n.img.st] || 'contain';
     if (src && n.img.st === 'Tile' && n.img.tile) im.style.background = `url("${src}") 0 0/${n.img.tile[1] * kk}px ${n.img.tile[3] * kk}px repeat`;
     else if (src) im.style.background = `url("${src}") center/${fit} no-repeat`;
