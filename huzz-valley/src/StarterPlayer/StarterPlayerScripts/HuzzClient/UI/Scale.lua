@@ -12,7 +12,8 @@ local root: GuiBase2d? = nil
 -- The area the UI may use: the ScreenGui's own size (below Roblox's top bar and inside a phone's safe area),
 -- or the whole screen before the ScreenGui is known.
 local function viewport(): Vector2
-	if root and root.AbsoluteSize.X > 0 then return root.AbsoluteSize end
+	local ok, size = pcall(function() return root and root.AbsoluteSize end) -- (the offline preview may not know it)
+	if ok and size and size.X > 0 then return size end
 	local cam = workspace.CurrentCamera
 	return cam and cam.ViewportSize or Vector2.new(1920, 1080)
 end

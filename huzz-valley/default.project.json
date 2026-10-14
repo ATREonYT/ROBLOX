@@ -3,15 +3,24 @@
   "tree": {
     "$className": "DataModel",
     "ReplicatedStorage": {
-      "Shared": { "$path": "src/ReplicatedStorage/Shared" }
+      "Shared": {
+        "$path": "src/ReplicatedStorage/Shared"
+      }
     },
     "ServerScriptService": {
-      "HuzzServer": { "$path": "src/ServerScriptService/HuzzServer" }
+      "HuzzServer": {
+        "$path": "src/ServerScriptService/HuzzServer"
+      }
     },
     "StarterPlayer": {
       "StarterPlayerScripts": {
-        "HuzzClient": { "$path": "src/StarterPlayer/StarterPlayerScripts/HuzzClient" }
+        "HuzzClient": {
+          "$path": "src/StarterPlayer/StarterPlayerScripts/HuzzClient"
+        }
       }
+    },
+    "StarterGui": {
+      "$path": "src/StarterGui"
     }
   }
 }

@@ -114,7 +114,7 @@ end
 local function art(parent: Instance, p, size: Vector2)
 	local r = 4
 	local f = new("Frame", { Name = "Art", Size = UDim2.fromOffset(size.X, size.Y), BackgroundTransparency = 1, Parent = parent })
-	Kit.corner(r).Parent = Kit.art(p.Art, { Name = "Picture", Size = UDim2.fromScale(1, 1), Parent = f })
+	Kit.attach(Kit.corner(r), Kit.art(p.Art, { Name = "Picture", Size = UDim2.fromScale(1, 1), Parent = f }))
 	local right = new("Frame", { Name = "Right", Position = UDim2.fromOffset(r, 0), Size = UDim2.new(1, -r, 1, 0), BackgroundTransparency = 1, ClipsDescendants = true, Parent = f })
 	Kit.art(p.Art, { Name = "Picture", Position = UDim2.fromOffset(-r, 0), Size = UDim2.fromOffset(size.X, size.Y), Parent = right })
 	return f
@@ -189,7 +189,7 @@ local COIN_H, COIN_ART_H = 216, 106
 local function coinArt(parent: Instance, p, w: number, h: number)
 	local r = 4
 	local panel = new("Frame", { Name = "Art", Size = UDim2.fromOffset(w, h), BackgroundTransparency = 1, Parent = parent })
-	Kit.corner(r).Parent = Kit.art(p.Art, { Name = "Picture", Size = UDim2.fromScale(1, 1), Parent = panel })
+	Kit.attach(Kit.corner(r), Kit.art(p.Art, { Name = "Picture", Size = UDim2.fromScale(1, 1), Parent = panel }))
 	local lower = new("Frame", { Name = "Lower", Position = UDim2.fromOffset(0, r), Size = UDim2.new(1, 0, 1, -r), BackgroundTransparency = 1, ClipsDescendants = true, Parent = panel })
 	Kit.art(p.Art, { Name = "Picture", Position = UDim2.fromOffset(0, -r), Size = UDim2.fromOffset(w, h), Parent = lower })
 	return panel
@@ -210,7 +210,7 @@ local function buildCoins(body: Frame)
 		local blurb = Kit.text({ Name = "Blurb", Text = p.Blurb, TextSize = 13, TextColor3 = C.CoinBlurb, TextXAlignment = Enum.TextXAlignment.Center, TextYAlignment = Enum.TextYAlignment.Top, LineHeight = 1.05, Position = UDim2.fromOffset(d.TextDX, 138), Size = UDim2.new(1, 0, 0, 32), Parent = c })
 		local shadow = blurb:Clone() -- the reference's descriptions sit on the same soft drop as the names
 		shadow.Name, shadow.TextColor3, shadow.TextTransparency, shadow.Position = "BlurbShadow", C.TextShadow, 0.5, blurb.Position + UDim2.fromOffset(0, 1)
-		shadow.Parent = c
+		shadow = Kit.attach(shadow, c)
 		blurb.ZIndex = 2
 		local b = buyButton(c, p, { Position = UDim2.fromOffset(d.ButtonX, 175), Size = UDim2.fromOffset(d.ButtonW, 35), TextSize = 20, Style = "CoinAction", Corner = 4 })
 		-- the reference's 1 px lighter bevel just inside the dark rim, all the way round
@@ -229,7 +229,7 @@ function Shop.build(parent: Instance)
 
 	local body = new("ScrollingFrame", { Name = "Products", Position = UDim2.fromOffset(BODY_X, BODY_Y), Size = UDim2.fromOffset(BODY_W + 6, H - BODY_Y - 10), BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 4, ScrollBarImageColor3 = C.RowBorder, CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y, ScrollingDirection = Enum.ScrollingDirection.Y, Parent = panel })
 	-- The cards' rims are drawn outside the cards, and a ScrollingFrame clips square: give them room on every side.
-	Kit.pad(RIM, RIM, RIM, RIM).Parent = body
+	Kit.attach(Kit.pad(RIM, RIM, RIM, RIM), body)
 
 	-- the cards in reading order (top to bottom, left to right), for the slide-in
 	local function cards()

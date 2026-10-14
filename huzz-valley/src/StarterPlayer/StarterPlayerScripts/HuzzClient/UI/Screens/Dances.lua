@@ -174,7 +174,7 @@ function DancesScreen.build(parent: Instance)
 
 	-- The grid. A ScrollingFrame clips square and would cut the cards' outside rims, so it is padded by RIM.
 	local grid = new("ScrollingFrame", { Name = "Grid", Position = UDim2.fromOffset(GRID.X - RIM, GRID.Y - RIM), Size = UDim2.fromOffset(2 * GRID.CardW + GRID.GapX + 2 * RIM, 2 * GRID.CardH + GRID.GapY + 2 * RIM), BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 4, ScrollBarImageColor3 = C.RowBorder, CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y, ScrollingDirection = Enum.ScrollingDirection.Y, Parent = panel })
-	Kit.pad(RIM, RIM, RIM, RIM).Parent = grid
+	Kit.attach(Kit.pad(RIM, RIM, RIM, RIM), grid)
 	local empty = Kit.text({ Name = "Empty", Text = "", TextSize = 16, TextColor3 = C.SubText, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(GRID.X, GRID.Y + 70), Size = UDim2.fromOffset(2 * GRID.CardW + GRID.GapX, 40), Visible = false, Parent = panel })
 
 	-- The preview: a navy card with the selected dance's picture on top, its name and a line of help underneath, and
@@ -204,10 +204,10 @@ function DancesScreen.build(parent: Instance)
 		local mine = owned(d.Id)
 		local big = mine and PREVIEW_ART[d.Id]
 		if big then
-			Kit.corner(5).Parent = Kit.art(big, { Name = "Picture", Size = UDim2.fromScale(1, 1), Parent = artBox })
+			Kit.attach(Kit.corner(5), Kit.art(big, { Name = "Picture", Size = UDim2.fromScale(1, 1), Parent = artBox }))
 		else
 			-- no large picture for this dance yet: its card picture fills the frame
-			Kit.corner(5).Parent = Kit.art(if mine and d.Art then d.Art else "DanceLocked", { Name = "Picture", Size = UDim2.fromScale(1, 1), Parent = artBox })
+			Kit.attach(Kit.corner(5), Kit.art(if mine and d.Art then d.Art else "DanceLocked", { Name = "Picture", Size = UDim2.fromScale(1, 1), Parent = artBox }))
 		end
 		previewName.Text = d.Name
 		previewBlurb.Text = if mine then "Play this dance with your avatar." else "Locked. " .. (if rewardLevel(d.Id) then "Reach Level " .. rewardLevel(d.Id) .. "." elseif d.Pack then "Dance Pack." else "")
@@ -231,11 +231,11 @@ function DancesScreen.build(parent: Instance)
 		local mine = owned(d.Id)
 		local c = new("TextButton", { Name = d.Id, Text = "", AutoButtonColor = false, Position = UDim2.fromOffset(x, y), Size = UDim2.fromOffset(GRID.CardW, GRID.CardH), BackgroundColor3 = COL.Card, BorderSizePixel = 0, Parent = grid }, { Kit.corner(4) })
 		local rim = Kit.stroke(COL.CardRim, 1)
-		rim.Parent = c
+		rim = Kit.attach(rim, c)
 		Motion.bindButton(c, function() return nil end)
 		-- the picture runs a few px under the name band, so its rounded bottom corners never show
 		local pic = Kit.art(if mine and d.Art then d.Art else "DanceLocked", { Name = "Picture", Position = UDim2.fromOffset(1, 1), Size = UDim2.fromOffset(GRID.CardW - 2, GRID.CardH - GRID.Band + 3), Parent = c })
-		Kit.corner(3).Parent = pic
+		Kit.attach(Kit.corner(3), pic)
 		local band = new("Frame", { Name = "Band", Position = UDim2.new(0, 1, 1, -GRID.Band - 1), Size = UDim2.new(1, -2, 0, GRID.Band), BackgroundColor3 = COL.Band, BackgroundTransparency = 0.12, BorderSizePixel = 0, ZIndex = 2, Parent = c }, { Kit.corner(3) })
 		Kit.name({ Name = "Name", Text = d.Name, TextSize = 17, Position = UDim2.fromOffset(9, 0), Size = UDim2.new(1, -16, 1, -2), ZIndex = 3, Parent = band })
 		-- favourite star: filled when favourited; an outline on the selected card so it can be favourited

@@ -12,8 +12,11 @@ local function refresh()
 end
 
 function Report.mount(parent: Instance)
+	local old = parent:FindFirstChild("ProblemReport")
+	if old then old:Destroy() end
 	local l = Instance.new("TextLabel")
 	l.Name = "ProblemReport"
+	l:SetAttribute("RuntimeOnly", true) -- never saved into StarterGui
 	l.BackgroundColor3 = Color3.fromRGB(120, 10, 30)
 	l.BackgroundTransparency = 0.1
 	l.TextColor3 = Color3.new(1, 1, 1)
@@ -45,7 +48,7 @@ end
 
 -- Runs fn; an error is reported instead of stopping everything after it. Returns ok, result.
 function Report.run(name: string, fn: (...any) -> any, ...: any)
-	local ok, result = xpcall(fn, debug.traceback, ...)
+	local ok, result = xpcall(fn, function(e) return debug.traceback(tostring(e)) end, ...)
 	if not ok then Report.problem(name, result) end
 	return ok, result
 end

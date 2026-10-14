@@ -8,6 +8,7 @@ player.UserId = 1
 player.Parent = Players
 Players.LocalPlayer = player
 local pg = Instance.new("PlayerGui"); pg.Parent = player
+__copyStarterGui(player)
 if cfg.SCALE then workspace:SetAttribute("UIPreviewScale", tonumber(cfg.SCALE)) end
 if cfg.ROUND then workspace:SetAttribute("NextRoundAt", workspace:GetServerTimeNow() + tonumber(cfg.ROUND) + 0.5) end
 __runScript(game.ServerScriptService.HuzzServer.Bootstrap)

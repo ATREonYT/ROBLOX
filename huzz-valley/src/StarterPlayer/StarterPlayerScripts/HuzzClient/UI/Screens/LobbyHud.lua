@@ -62,7 +62,7 @@ function LobbyHud.build(parent: Instance)
 	local menu = squareButton(left, "Menu", "MainMenuLines", 233, function() ModalManager.toggle("Menu") end)
 	menu.Instance.Icon.Size = UDim2.fromOffset(30, 30) -- the lines icon reads bigger than the others
 	local hint = Kit.text({ Name = "KeyHint", Text = "", FontFace = Theme.Fonts.Button, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Center, TextColor3 = C.DarkText, BackgroundTransparency = 0, BackgroundColor3 = C.SelectedTab, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(1, -2, 0, 4), Size = UDim2.fromOffset(16, 16), ZIndex = 3, Parent = menu.Instance })
-	Kit.corner(3).Parent = hint
+	Kit.attach(Kit.corner(3), hint)
 
 	local barY = topbarY()
 	-- Balances sit bottom-left like the reference; on phones that is where the thumbstick goes, so there they move up
@@ -77,6 +77,12 @@ function LobbyHud.build(parent: Instance)
 	gems.plus.onClick(function() Toast.show("Gem packs aren't for sale.") end)
 
 	local topRight = group(root, "TopRight", Vector2.new(1, 0), UDim2.new(1, -TOPBAR_MARGIN, 0, barY), Vector2.new(52, TOPBAR_BUTTON), 1)
+	-- These follow Roblox's top bar on this device, so they are set here even when the saved StarterGui part is used.
+	topRight.Position = UDim2.new(1, -TOPBAR_MARGIN, 0, barY)
+	if touch then
+		bottom.AnchorPoint = Vector2.new(1, 0)
+		bottom.Position = UDim2.new(1, -(TOPBAR_MARGIN + 52 + 8) + 8, 0, barY + TOPBAR_BUTTON / 2 - 16 - 7)
+	end
 	local gear = Kit.button({ Name = "Settings", Style = "Hud", Text = "", Position = UDim2.fromOffset(0, 0), Size = UDim2.fromOffset(52, TOPBAR_BUTTON), Corner = 8, Icon = "SettingsGear", IconSize = 30, RimThickness = 1.5, Parent = topRight })
 	gear.Instance.BackgroundColor3 = Kit.Styles.Hud.Idle
 	new("UIGradient", { Rotation = 90, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, C.HudTop), ColorSequenceKeypoint.new(0.5, C.HudMid), ColorSequenceKeypoint.new(1, C.HudBottom) }), Parent = gear.Instance })

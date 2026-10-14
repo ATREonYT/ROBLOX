@@ -111,7 +111,7 @@ function Tiers.build(parent: Instance)
 		local btn = new("TextButton", { Name = tier, Text = "", AutoButtonColor = false, Selectable = true, Position = UDim2.fromOffset(ROW.X, ROW.Y + (i - 1) * (ROW.H + ROW.Gap)), Size = UDim2.fromOffset(ROW.W, ROW.H), BackgroundColor3 = COL.Row, BorderSizePixel = 0, Parent = panel }, { Kit.corner(4) })
 		local rim = Kit.stroke(COL.RowRim, 1)
 		rim.Name = "Rim"
-		rim.Parent = btn
+		rim = Kit.attach(rim, btn)
 		Motion.bindButton(btn, function() return nil end)
 		Kit.art(crownArt(tier), { Name = "Crown", ScaleType = Enum.ScaleType.Fit, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 7, 0.5, 0), Size = UDim2.fromOffset(25, 23), Parent = btn })
 		-- the name; TRUE EVE wears two colours like the reference
@@ -203,7 +203,7 @@ function Tiers.build(parent: Instance)
 				props.ScaleType = full and Enum.ScaleType.Crop or Enum.ScaleType.Fit
 				return Kit.art(artName, props)
 			end
-			Kit.corner(r).Parent = img({ Name = "Picture", Size = UDim2.fromScale(1, 1), Parent = artHolder })
+			Kit.attach(Kit.corner(r), img({ Name = "Picture", Size = UDim2.fromScale(1, 1), Parent = artHolder }))
 			local right = new("Frame", { Name = "Right", Position = UDim2.fromOffset(r, 0), Size = UDim2.new(1, -r, 1, 0), BackgroundTransparency = 1, ClipsDescendants = true, Parent = artHolder })
 			img({ Name = "Picture", Position = UDim2.fromOffset(-r, 0), Size = UDim2.fromOffset(ART_W, PANEL.H - 2), Parent = right })
 		end

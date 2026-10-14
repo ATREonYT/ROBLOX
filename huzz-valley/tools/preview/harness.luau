@@ -249,6 +249,18 @@ local function load(dir, parent)
 			local folder = parent:FindFirstChild(name)
 			if not folder then folder = Instance.new("Folder"); folder.Name = name; folder.Parent = parent end
 			load(path, folder)
+		elseif name:match("%.rbxmx?$") then
+			-- a saved model (e.g. the UI in StarterGui/HuzzUI.rbxm), as Rojo loads it
+			for _, inst in roblox.deserializeModel(fs.readFile(path)) do
+				-- Roblox files leave out properties at their default; Lune then has no value for them, so fill the
+				-- ones the UI reads.
+				for _, d in inst:GetDescendants() do
+					if d:IsA("ImageLabel") or d:IsA("ImageButton") then
+						if not pcall(function() return d.Image end) then d.Image = "" end
+					end
+				end
+				inst.Parent = parent
+			end
 		elseif name:match("%.lua$") or name:match("%.luau$") then
 			local base, kind = name:match("^(.-)%.(server)%.luau?$")
 			if not base then base, kind = name:match("^(.-)%.(client)%.luau?$") end
@@ -474,6 +486,14 @@ function base.__runScript(inst)
 		if not ok then print("[script error] " .. inst:GetFullName() .. ": " .. err) end
 	end)
 end
+-- Roblox copies StarterGui into each player's PlayerGui when they join; do the same. HUZZ_FRESH=1 skips it, to
+-- test the UI building itself from nothing.
+base.__fresh = process.env.HUZZ_FRESH == "1"
+function base.__copyStarterGui(player)
+	if process.env.HUZZ_FRESH == "1" then return end
+	local pg = player:FindFirstChildOfClass("PlayerGui")
+	for _, ch in game:GetService("StarterGui"):GetChildren() do ch:Clone().Parent = pg end
+end
 function base.require(target)
 	if cache[target] ~= nil then return cache[target] end
 	assert(typeof(target) == "Instance" and target:IsA("ModuleScript"), "require expects a ModuleScript")
@@ -685,17 +705,10 @@ local okRun, result = pcall(luau.load(SNIPPET, { debugName = "snippet", environm
 if not okRun then print("[harness] snippet error: " .. tostring(result)); process.exit(1) end -- (SYSTEM: exit, so background loops in the scripts under test don't keep Lune alive)
 if result ~= nil then print("snippet returned:", typeof(result) == "table" and serde.encode("json", result) or tostring(result)) end
 
--- HOOD_PLACE_OUT=<file.rbxl|file.rbxlx>: save the DataModel (scripts plus whatever the snippet built) as a place
--- Studio can open. The harness's own helper services are dropped first.
-local placeOut = process.env.HOOD_PLACE_OUT
-if placeOut and placeOut ~= "" then
-	for _, name in { "ChangeHistoryService", "Selection", "RunService" } do
-		local s = game:FindFirstChildOfClass(name)
-		if s then pcall(function() s.Parent = nil end) end
-	end
-	-- Lune keeps `x.Font = Enum.Font.Y` as its own EnumItem property, which place files store as FontFace; turn
-	-- it into the Font value Studio expects (FontFace set directly is kept).
-	for _, d in game:GetDescendants() do
+-- Lune keeps `x.Font = Enum.Font.Y` as its own EnumItem property, which Roblox files store as FontFace; turn it
+-- into the Font value Studio expects (FontFace set directly is kept).
+local function fixFonts(root)
+	for _, d in root:GetDescendants() do
 		if d:IsA("TextLabel") or d:IsA("TextButton") or d:IsA("TextBox") then
 			local ok, v = pcall(function() return d.Font end)
 			if ok and typeof(v) == "EnumItem" then
@@ -704,6 +717,31 @@ if placeOut and placeOut ~= "" then
 			end
 		end
 	end
+end
+
+-- HUZZ_UI_OUT=<file.rbxm>: save the player's built UI (PlayerGui.HuzzUI) as a model for StarterGui, so the owner
+-- gets real, editable UI parts in Studio. Parts marked RuntimeOnly (the error box) are left out.
+local uiOut = process.env.HUZZ_UI_OUT
+if uiOut and uiOut ~= "" then
+	local gui = game:GetService("Players").LocalPlayer:FindFirstChildOfClass("PlayerGui"):FindFirstChild("HuzzUI")
+	assert(gui, "no PlayerGui.HuzzUI to save")
+	local drop = {}
+	for _, d in gui:GetDescendants() do if d:GetAttribute("RuntimeOnly") then table.insert(drop, d) end end
+	for _, d in drop do d:Destroy() end
+	fixFonts(gui)
+	fs.writeFile(uiOut, roblox.serializeModel({ gui }))
+	print("saved UI:", uiOut)
+end
+
+-- HOOD_PLACE_OUT=<file.rbxl|file.rbxlx>: save the DataModel (scripts plus whatever the snippet built) as a place
+-- Studio can open. The harness's own helper services are dropped first.
+local placeOut = process.env.HOOD_PLACE_OUT
+if placeOut and placeOut ~= "" then
+	for _, name in { "ChangeHistoryService", "Selection", "RunService" } do
+		local s = game:FindFirstChildOfClass(name)
+		if s then pcall(function() s.Parent = nil end) end
+	end
+	fixFonts(game)
 	fs.writeFile(placeOut, roblox.serializePlace(game, placeOut:match("%.rbxlx$") ~= nil))
 	print("saved place:", placeOut)
 end

@@ -4,6 +4,7 @@ local Players = game:GetService("Players")
 local player = Instance.new("Player"); player.Name = "Tester"; player.UserId = 1; player.Parent = Players
 Players.LocalPlayer = player
 Instance.new("PlayerGui").Parent = player
+__copyStarterGui(player)
 __runScript(game.ServerScriptService.HuzzServer.Bootstrap)
 task.wait(0.1)
 __fireOn(Players, "PlayerAdded", player)

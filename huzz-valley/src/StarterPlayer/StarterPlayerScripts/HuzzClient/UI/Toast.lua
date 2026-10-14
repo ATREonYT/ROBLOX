@@ -14,8 +14,8 @@ function Toast.mount(parent: Instance)
 		FontFace = Theme.Fonts.Button, TextSize = 20, BackgroundColor3 = Theme.Colors.Pill, BackgroundTransparency = 1,
 		TextTransparency = 1, ZIndex = 50, TextWrapped = false, Visible = false, Parent = parent,
 	})
-	Kit.corner(6).Parent = label
-	Kit.pad(16, 16, 0, 0).Parent = label
+	Kit.attach(Kit.corner(6), label)
+	Kit.attach(Kit.pad(16, 16, 0, 0), label)
 end
 
 function Toast.show(text: string, seconds: number?)

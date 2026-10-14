@@ -43,6 +43,7 @@ A Roblox game based on Huss Valley: rounds where players steal and hold the lead
   - `UI/Kit` (the only component set: window, tabs, button, pill, segmented, slider);
   - `UI/ModalManager` (one window at a time; the player's `MenuOpen` attribute tells gameplay to ignore menu clicks);
   - `UI/Screens/*`.
+- `StarterGui/HuzzUI.rbxm`: the whole UI as real parts the owner edits in Studio. It is **generated**: `build_place.sh` builds the UI from the scripts and saves it there. Never edit it by hand.
 - **Sizes are reference px** (as measured on the 768-wide pages). `UI/Scale.lua` applies one UIScale per window, about 1.82x at 1920x1080.
 
 ## Checks and previews (run before every commit)
@@ -61,6 +62,23 @@ A Roblox game based on Huss Valley: rounds where players steal and hold the lead
 - Main.client starts every part through `Report.run`: a failing part can't stop the others, and any error shows in a red box on screen for the owner to screenshot.
 - Images draw in-game from `Shared/Images` (EditableImage) until IDs are uploaded. Re-run `python3 tools/icons/pack_images.py` after changing anything in `assets/`.
 
+## UI in StarterGui (owner's call)
+- **How it works:** Roblox copies `StarterGui.HuzzUI` into PlayerGui, and the screens reuse those parts instead of making new ones. `Kit.new` reuses an unused saved child with the same class and name (its "twin").
+- **What the saved part keeps vs what the code sets:**
+  - the saved part keeps its look (`Kit.LOOK`: position, size, colours, fonts, images, corners), so Studio edits show in the game;
+  - the code still sets text, visibility and behaviour.
+  - With no saved UI, the same code builds everything from nothing.
+- **Rules for screen code:**
+  - Make parts with `Kit.new`/Kit helpers and a `Parent`.
+  - Never use `x.Parent = y` in screens; use `Kit.attach(x, y)` and use the part it returns.
+  - A list that the code refills must clear its old children first (the saved example cards included).
+  - A position that depends on the device (the top bar, phones) is assigned after creation, so it applies to saved parts too.
+- **Checks:** `check.sh` runs everything on the saved UI, plus `check.luau` once built from nothing (`HUZZ_FRESH=1`). It also checks that nothing is doubled and that a Studio edit survives.
+- **Owner's edits:** the owner's Studio edits live only in their place. Regenerating `HuzzUI.rbxm` starts from the code again. Before changing UI code after they have edited in Studio, ask for their export (`tools/export-for-claude.lua`) and copy their changes into the code.
+- **Limits:**
+  - Icons look blank in Studio's edit mode: they are drawn when the game runs, until real image IDs are set.
+  - Items inside lists (shop items, character and dance cards, rewards, quests) are redrawn by the code, so Studio edits there don't stay.
+
 ## Screen layout (owner's calls)
 - The HUD's side buttons are centred on the left edge.
 - The gear sits in Roblox's top bar row: 44 px tall, 12 px from the right edge, lined up with Roblox's own buttons. On touch devices the coin and gem pills move into that row too, so the thumbstick has the bottom-left.
@@ -76,6 +94,7 @@ A Roblox game based on Huss Valley: rounds where players steal and hold the lead
 - **Next:** the round-driven pages (Map Vote, Recruitment, Results, Match HUD) and the Gift Picker. These need the round system and the gifting backend first.
 - **Missing from the owner:**
   - sharp versions of the icons still from the kit crops (list under Checks and previews);
+  - sharp versions of the pictures in `assets/art` (all are small crops from the kit pages: character and dance cards, tier crowns, shop pictures, rewards);
   - Game Pass and Developer Product IDs;
   - dance and pose animations;
   - companion models;

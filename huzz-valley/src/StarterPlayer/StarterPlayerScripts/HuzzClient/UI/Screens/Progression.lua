@@ -121,7 +121,7 @@ local function buildRewards(page: Frame, refreshers: { () -> () })
 		local x = 12 + (i - 1) * (CARD_W + CARD_GAP)
 		local card = panel(free, "Reward" .. r.Level, x, 27, CARD_W, 66, COL.Card, COL.CardRim, COL.CardBottom)
 		local pic = Kit.art(rewardArt(r), { Name = "Picture", Position = UDim2.fromOffset(1, 1), Size = UDim2.fromOffset(72, 64), Parent = card })
-		Kit.corner(3).Parent = pic
+		Kit.attach(Kit.corner(3), pic)
 		Kit.name({ Name = "Name", Text = r.Name, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(71, 6), Size = UDim2.fromOffset(CARD_W - 73, 22), Parent = card })
 		local holder = new("Frame", { Name = "State", BackgroundTransparency = 1, Position = UDim2.fromOffset(76, 33), Size = UDim2.fromOffset(CARD_W - 82, 25), Parent = card })
 		local shown = ""
@@ -207,11 +207,11 @@ local function buildQuests(page: Frame, refreshers: { () -> () })
 		local barW = textW - 50
 		local bar, set = segBar(card, "Progress", tx, barY, barW, barH, 5, 3, COL.SegFill, COL.QuestEmpty)
 		local count = Kit.text({ Name = "Count", Text = "", FontFace = Theme.Fonts.Number, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Center, BackgroundTransparency = 0, BackgroundColor3 = COL.CountBox, Position = UDim2.fromOffset(tx + barW + 5, barY - 1), Size = UDim2.fromOffset(textW - barW - 5, barH + 2), TextWrapped = false, Parent = card })
-		Kit.corner(3).Parent = count
+		Kit.attach(Kit.corner(3), count)
 		-- finished: one solid bar with the count inside, next to CLAIM (or CLAIMED once claimed)
 		local doneW = textW - 84
 		local done = Kit.text({ Name = "DoneBar", Text = "", FontFace = Theme.Fonts.Number, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Center, BackgroundTransparency = 0, BackgroundColor3 = COL.Done, Position = UDim2.fromOffset(tx, barY - 1), Size = UDim2.fromOffset(doneW, barH + 2), TextWrapped = false, Visible = false, Parent = card })
-		Kit.corner(3).Parent = done
+		Kit.attach(Kit.corner(3), done)
 		local holder = new("Frame", { Name = "State", BackgroundTransparency = 1, Position = UDim2.fromOffset(tx + doneW + 6, barY + math.floor(barH / 2) - 16), Size = UDim2.fromOffset(textW - doneW - 6, 32), Parent = card })
 		local shown = ""
 		table.insert(refreshers, function()
@@ -280,7 +280,7 @@ local function buildLevelBar(parent: Instance, refreshers: { () -> () })
 			for _, ch in nextArt:GetChildren() do ch:Destroy() end
 			if want then
 				local pic = Kit.art(want, { Name = "Picture", Size = UDim2.fromScale(1, 1), Parent = nextArt })
-				Kit.corner(3).Parent = pic
+				Kit.attach(Kit.corner(3), pic)
 			end
 		end
 	end)

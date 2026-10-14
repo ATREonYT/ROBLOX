@@ -17,6 +17,16 @@ All of these work against a real save system. When you're happy with how they lo
 2. Double-click it, or in Studio use **File → Open from File**. Press **Play**.
 3. To make it your real Huzz Valley game, use **File → Publish to Roblox As** and pick your Huzz Valley place. Your current place is empty, so nothing gets lost.
 
+## Editing the UI in Studio
+The whole UI is in **StarterGui > HuzzUI** as normal parts you can click and change.
+- The HUD (side buttons, coins, gear) shows straight away. Each window (Shop, Settings, Index, and so on) is hidden: tick its **Visible** box to see it while you edit, then untick it again.
+- **What stays in the game:** changes to position, size, colours, fonts, images and corners.
+- **What the scripts still set:** text and on/off states.
+- **Icons look empty while editing.** The game draws them when it runs. Upload an icon and paste its ID into the image's **Image** box to see it in Studio too.
+- **What doesn't stay:** edits to items inside lists (shop items, character and dance cards, rewards and quests), because the game redraws them. Tell me what you want changed there.
+- **Before you ask me for UI changes after editing in Studio,** send me your export (the usual `tools/export-for-claude.lua` steps). Each new game file I make starts from my copy, so your edits need to come to me first.
+- **If you use Rojo:** connecting Rojo replaces StarterGui > HuzzUI with my copy, so save your edits and send them to me first.
+
 ## Getting it into Studio with Rojo (for live updates)
 1. In GitHub Desktop, switch to the **HUZZ-VALLEY** branch and click **Pull**.
 2. Follow [ROJO-SETUP.md](../ROJO-SETUP.md), running `rojo serve` from this `huzz-valley` folder.

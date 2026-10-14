@@ -14,15 +14,70 @@ local ImageLoader = require(script.Parent.ImageLoader)
 local C = Theme.Colors
 local Kit = {}
 
+-- The UI lives in StarterGui as real parts the owner can edit in Studio. The scripts don't build a second copy:
+-- when a part is made under a parent that already has an unused saved part of the same class and name (its
+-- "twin"), the saved part is reused. Its look (LOOK below: position, size, colours, fonts, images, corners...)
+-- stays as saved, so Studio edits show in the game; everything else (text, visibility, behaviour) comes from the
+-- scripts. A fresh parent has no twins, so the same code also builds the UI from nothing.
+local used = setmetatable({}, { __mode = "k" }) -- parts made or reused this session (never reused twice)
+local reusedSet = setmetatable({}, { __mode = "k" })
+Kit.LOOK = {
+	Position = true, Size = true, AnchorPoint = true, BackgroundColor3 = true, BackgroundTransparency = true,
+	BorderSizePixel = true, TextColor3 = true, TextSize = true, FontFace = true, TextStrokeColor3 = true,
+	TextStrokeTransparency = true, TextXAlignment = true, TextYAlignment = true, TextScaled = true, TextWrapped = true,
+	LineHeight = true, Image = true, ImageColor3 = true, ImageTransparency = true, ScaleType = true, CornerRadius = true,
+	Color = true, Thickness = true, Transparency = true, Rotation = true, PaddingLeft = true, PaddingRight = true,
+	PaddingTop = true, PaddingBottom = true, Padding = true, CellSize = true, CellPadding = true, AspectRatio = true,
+	ScrollBarThickness = true, ScrollBarImageColor3 = true,
+}
+-- Small style pieces (corners, rims, gradients, layouts): a saved one is reused even when the code made its own.
+local MODIFIERS = {
+	UICorner = true, UIStroke = true, UIGradient = true, UIPadding = true, UIListLayout = true, UIGridLayout = true,
+	UIScale = true, UIAspectRatioConstraint = true, UISizeConstraint = true, UITextSizeConstraint = true,
+}
+
+local function twin(parent: Instance, class: string, name: string): Instance?
+	for _, ch in parent:GetChildren() do
+		if not used[ch] and ch.ClassName == class and ch.Name == name then return ch end
+	end
+	return nil
+end
+
+-- True when the part came from StarterGui (so its saved look wins over the code's).
+function Kit.reused(inst: Instance): boolean
+	return reusedSet[inst] == true
+end
+
+-- Puts a part the code made into `parent`, reusing a saved twin instead when there is one. For style pieces the
+-- saved twin is kept (and returned); anything bigger is replaced by the code's part. Use the returned part.
+function Kit.attach(child: Instance, parent: Instance): Instance
+	local saved = twin(parent, child.ClassName, child.Name)
+	if saved then
+		if MODIFIERS[child.ClassName] and #child:GetChildren() == 0 then
+			child:Destroy()
+			used[saved] = true
+			reusedSet[saved] = true
+			return saved
+		end
+		saved:Destroy()
+	end
+	used[child] = true
+	child.Parent = parent
+	return child
+end
+
 -- Instance helper: Kit.new("Frame", { Size = ..., Parent = ... }, { children }). Parent is set last.
 function Kit.new(class: string, props: { [string]: any }?, children: { Instance }?): any
-	local inst = Instance.new(class)
-	local parent
+	local parent = props and props.Parent
+	local inst = parent and twin(parent, class, props.Name or class)
+	local reused = inst ~= nil
+	if inst then reusedSet[inst] = true else inst = Instance.new(class) end
+	used[inst] = true
 	for k, v in props or {} do
-		if k == "Parent" then parent = v else (inst :: any)[k] = v end
+		if k ~= "Parent" and not (reused and Kit.LOOK[k]) then (inst :: any)[k] = v end
 	end
-	for _, child in children or {} do child.Parent = inst end
-	if parent then inst.Parent = parent end
+	for _, child in children or {} do Kit.attach(child, inst) end
+	if parent and not reused then inst.Parent = parent end
 	return inst
 end
 local new = Kit.new
@@ -57,7 +112,7 @@ local function shadowOf(label: TextLabel, color: Color3, transparency: number, d
 	sh.Position = label.Position + UDim2.fromOffset(0, dy)
 	sh.ZIndex = label.ZIndex
 	label.ZIndex += 1
-	sh.Parent = label.Parent
+	sh = Kit.attach(sh, label.Parent) :: TextLabel
 	label:GetPropertyChangedSignal("Text"):Connect(function() sh.Text = label.Text end)
 	label:GetPropertyChangedSignal("Visible"):Connect(function() sh.Visible = label.Visible end)
 	return sh
@@ -103,10 +158,11 @@ function Kit.icon(name: string, props: { [string]: any }?): ImageLabel
 	end
 	for k, v in props or {} do p[k] = v end
 	local img = new("ImageLabel", p)
+	if name == "Avatar" or (img.Image == "" and p.Image ~= "") then img.Image = p.Image end -- this player's avatar, or an ID added to Config/Assets after saving
 	img:SetAttribute("Icon", name)
 	if name ~= "Avatar" then
 		img:SetAttribute("PreviewFile", "assets/icons/" .. kebab(name) .. ".png")
-		ImageLoader.apply(img, "Icons", name, p.Image)
+		ImageLoader.apply(img, "Icons", name, img.Image)
 	end
 	return img
 end
@@ -116,8 +172,9 @@ function Kit.art(name: string, props: { [string]: any }?): ImageLabel
 	local p: { [string]: any } = { BackgroundTransparency = 1, ScaleType = Enum.ScaleType.Crop, Image = Assets.art(name) }
 	for k, v in props or {} do p[k] = v end
 	local img = new("ImageLabel", p)
+	if img.Image == "" and p.Image ~= "" then img.Image = p.Image end
 	img:SetAttribute("PreviewFile", "assets/art/" .. kebab(name) .. ".png")
-	ImageLoader.apply(img, "Art", name, p.Image)
+	ImageLoader.apply(img, "Art", name, img.Image)
 	return img
 end
 
@@ -175,22 +232,21 @@ function Kit.button(props: { [string]: any }): Button
 	local btn: TextButton = new("TextButton", {
 		Name = props.Name or "Button", LayoutOrder = props.LayoutOrder or 0,
 		AutoButtonColor = false, BorderSizePixel = 0, Text = "", BackgroundColor3 = st.Idle,
-		Selectable = true, ZIndex = props.ZIndex or 1,
+		Selectable = true, ZIndex = props.ZIndex or 1, Parent = props.Parent,
 	}, { Kit.corner(props.Corner) })
-	Kit.place(btn, props.Position or UDim2.new(), props.Size, props.AnchorPoint)
+	if not Kit.reused(btn) then Kit.place(btn, props.Position or UDim2.new(), props.Size, props.AnchorPoint) end
 	local rim = Kit.stroke(st.Rim, props.RimThickness or 1)
 	rim.Name = "Rim"
-	rim.Parent = btn
+	rim = Kit.attach(rim, btn) :: UIStroke
 	local top = new("Frame", { Name = "TopLine", BackgroundColor3 = st.Top, BorderSizePixel = 0, Position = UDim2.fromOffset(2, 0), Size = UDim2.new(1, -4, 0, 1), ZIndex = btn.ZIndex, Parent = btn })
+	local row = new("Frame", { Name = "Content", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = btn.ZIndex, Parent = btn },
+		{ Kit.list(Enum.FillDirection.Horizontal, props.Gap or 8, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center) })
 	local label = Kit.text({
 		Name = "Label", Text = props.Text or "", FontFace = props.FontFace or Theme.Fonts.Button,
 		TextSize = props.TextSize or Theme.Text.Button, TextXAlignment = Enum.TextXAlignment.Center,
 		TextColor3 = st.Text, AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0),
-		TextWrapped = false, LayoutOrder = 2, ZIndex = btn.ZIndex,
+		TextWrapped = false, LayoutOrder = 2, ZIndex = btn.ZIndex, Parent = row,
 	})
-	local row = new("Frame", { Name = "Content", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = btn.ZIndex },
-		{ Kit.list(Enum.FillDirection.Horizontal, props.Gap or 8, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center), label })
-	row.Parent = btn
 	if props.Icon then
 		local s = props.IconSize or 22
 		Kit.icon(props.Icon, { Name = "Icon", Size = UDim2.fromOffset(s, s), LayoutOrder = props.IconAfter and 3 or 1, ZIndex = btn.ZIndex, Parent = row })
@@ -226,7 +282,6 @@ function Kit.button(props: { [string]: any }): Button
 	end)
 	if props.OnClick then api.onClick(props.OnClick) end
 	api.Instance = btn
-	btn.Parent = props.Parent
 	return api :: Button
 end
 

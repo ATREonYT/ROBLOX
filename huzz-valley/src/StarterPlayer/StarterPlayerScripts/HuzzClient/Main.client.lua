@@ -14,12 +14,19 @@ local Scale = require(UI.Scale)
 local Screens = UI.Screens
 
 local player = Players.LocalPlayer
-local gui = Instance.new("ScreenGui")
-gui.Name = "HuzzUI"
+local playerGui = player:WaitForChild("PlayerGui")
+-- The UI is saved in StarterGui as real parts (edit them in Studio); Roblox copies it into PlayerGui and the screens
+-- below reuse those parts instead of making new ones. If it's missing, the same code builds the whole UI itself.
+local gui = playerGui:FindFirstChild("HuzzUI")
+if not gui and game:GetService("StarterGui"):FindFirstChild("HuzzUI") then gui = playerGui:WaitForChild("HuzzUI", 10) end
+if not gui then
+	gui = Instance.new("ScreenGui")
+	gui.Name = "HuzzUI"
+end
 gui.ResetOnSpawn = false
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.ScreenInsets = Enum.ScreenInsets.CoreUISafeInsets
-gui.Parent = player:WaitForChild("PlayerGui")
+gui.Parent = playerGui
 Scale.setRoot(gui)
 
 -- Each part starts on its own: if one fails, the rest still work and the problem shows on screen.

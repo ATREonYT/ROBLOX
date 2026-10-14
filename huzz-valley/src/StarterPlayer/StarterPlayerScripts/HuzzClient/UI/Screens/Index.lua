@@ -127,8 +127,8 @@ local function badge(parent: Instance, tier: string, pos: UDim2, minW: number, h
 		TextXAlignment = Enum.TextXAlignment.Center, TextWrapped = false, BackgroundTransparency = 0, BackgroundColor3 = tierColor(tier),
 		AnchorPoint = Vector2.new(1, 0), Position = pos, Size = UDim2.fromOffset(minW, h), AutomaticSize = Enum.AutomaticSize.X, ZIndex = z, Parent = parent,
 	})
-	Kit.corner(3).Parent = b
-	Kit.pad(6, 6, 0, 0).Parent = b
+	Kit.attach(Kit.corner(3), b)
+	Kit.attach(Kit.pad(6, 6, 0, 0), b)
 	return b
 end
 
@@ -140,7 +140,7 @@ local function picture(parent: Instance, c, isOwned: boolean, w: number, h: numb
 	local holder = new("Frame", { Name = "Art", Size = UDim2.fromOffset(w, h), BackgroundColor3 = COL.ArtBack, BackgroundTransparency = artName and 1 or 0, BorderSizePixel = 0, Parent = parent })
 	local r = 4
 	if artName then
-		Kit.corner(r).Parent = Kit.art(artName, { Name = "Picture", Size = UDim2.fromScale(1, 1), Parent = holder })
+		Kit.attach(Kit.corner(r), Kit.art(artName, { Name = "Picture", Size = UDim2.fromScale(1, 1), Parent = holder }))
 		-- square copies cover the corners that should stay square
 		if not rounded.bottom then
 			local lower = new("Frame", { Name = "Lower", Position = UDim2.fromOffset(0, r), Size = UDim2.new(1, 0, 1, -r), BackgroundTransparency = 1, ClipsDescendants = true, Parent = holder })
@@ -148,7 +148,7 @@ local function picture(parent: Instance, c, isOwned: boolean, w: number, h: numb
 		end
 	else
 		-- owned, but the kit has no picture for this character yet (honest placeholder)
-		Kit.corner(r).Parent = holder
+		Kit.attach(Kit.corner(r), holder)
 		Kit.text({ Name = "NoArt", Text = "Picture coming soon", TextSize = math.floor(13 * scale), TextColor3 = C.SubText, TextXAlignment = Enum.TextXAlignment.Center, Size = UDim2.fromScale(1, 1), Parent = holder })
 	end
 	local info = artName and ART[artName] or { BadgeX = CW, BadgeR = 3, BadgeH = 22, Star = Vector2.new(5, 4) }
@@ -172,7 +172,7 @@ local function card(parent: Instance, c, x: number, y: number): Card
 	local btn = new("TextButton", { Name = c.Id, Text = "", AutoButtonColor = false, Selectable = true, Position = UDim2.fromOffset(x, y), Size = UDim2.fromOffset(CW, CH), BackgroundColor3 = COL.Band, BorderSizePixel = 0, Parent = parent }, { Kit.corner(4) })
 	local rim = Kit.stroke(COL.CardRim, 1)
 	rim.Name = "Rim"
-	rim.Parent = btn
+	rim = Kit.attach(rim, btn)
 	Motion.bindButton(btn, function() return nil end) -- hover lift and press squish; the fill stays
 	local body = new("Frame", { Name = "Body", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = btn })
 	local name = Kit.name({ Name = "Name", Text = c.Name, TextSize = 16, Position = UDim2.fromOffset(9, ART_H), Size = UDim2.fromOffset(80, CH - ART_H), Parent = btn })
@@ -275,7 +275,7 @@ function Index.build(parent: Instance)
 	local nameRow = new("Frame", { Name = "NameRow", Position = UDim2.fromOffset(565, 117), Size = UDim2.fromOffset(128, 32), BackgroundTransparency = 1, ZIndex = 3, Parent = panel },
 		{ Kit.list(Enum.FillDirection.Horizontal, 9, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Center) })
 	local nameLabel = Kit.name({ Name = "Name", Text = "", TextSize = 26, AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.fromOffset(0, 32), LayoutOrder = 1, ZIndex = 3 })
-	nameLabel.Parent = nameRow
+	nameLabel = Kit.attach(nameLabel, nameRow)
 	local nameBadge: TextLabel? = nil
 	local statusRow = new("Frame", { Name = "StatusRow", Position = UDim2.fromOffset(565, 155), Size = UDim2.fromOffset(130, 25), BackgroundTransparency = 1, ZIndex = 3, Parent = panel },
 		{ Kit.list(Enum.FillDirection.Horizontal, 7, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Center) })
@@ -302,7 +302,7 @@ function Index.build(parent: Instance)
 			for _, ch in previewArt:GetChildren() do if ch:IsA("GuiObject") then ch:Destroy() end end
 			local full = isOwned and FULL_ART[c.Id]
 			if full then
-				Kit.corner(3).Parent = Kit.art(full, { Name = "Picture", Size = UDim2.fromOffset(216, 238), Parent = previewArt })
+				Kit.attach(Kit.corner(3), Kit.art(full, { Name = "Picture", Size = UDim2.fromOffset(216, 238), Parent = previewArt }))
 			else
 				local s = 1.3
 				local frame = new("Frame", { Name = "Framed", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(108, 70), Size = UDim2.fromOffset(math.round(CW * s), math.round(ART_H * s)), BackgroundTransparency = 1, Parent = previewArt }, { Kit.stroke(COL.CardRim, 1) })
@@ -348,7 +348,8 @@ function Index.build(parent: Instance)
 		local key = table.concat(ids, ",")
 		if key ~= lastKey then
 			lastKey = key
-			for _, cd in cards do cd.Instance:Destroy() end
+			-- (all cards, including example ones saved in StarterGui)
+			for _, ch in grid:GetChildren() do if ch:IsA("GuiObject") then ch:Destroy() end end
 			cards = {}
 			for i, c in list do
 				local col, row = (i - 1) % 2, (i - 1) // 2

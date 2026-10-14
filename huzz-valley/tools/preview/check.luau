@@ -14,6 +14,11 @@ P.Source = P.Source:gsub('(Key = "SunsetTrail".-Id = )0', '%1111'):gsub('(Key = 
 local player = Instance.new("Player"); player.Name = "Tester"; player.UserId = 1; player.Parent = Players
 Players.LocalPlayer = player
 Instance.new("PlayerGui").Parent = player
+__copyStarterGui(player)
+-- When the UI saved in StarterGui is used, an edit made to it in Studio must survive into the game.
+local savedUI = game:GetService("StarterGui"):FindFirstChild("HuzzUI")
+local reusing = savedUI ~= nil and not __fresh
+if reusing then player.PlayerGui.HuzzUI.LobbyHud.Left.Index.Label.TextSize = 20 end
 __runScript(game.ServerScriptService.HuzzServer.Bootstrap)
 task.wait(0.1)
 __fireOn(Players, "PlayerAdded", player)
@@ -27,6 +32,11 @@ task.wait(0.3)
 local UI = game.StarterPlayer.StarterPlayerScripts.HuzzClient.UI
 local State, MM = require(UI.State), require(UI.ModalManager)
 check("client got state", State.data.Loaded == true)
+if reusing then
+	local g = player.PlayerGui.HuzzUI
+	check("the StarterGui UI is reused, not doubled", #g:GetDescendants() == #savedUI:GetDescendants() + 2) -- + the error box and its padding
+	check("a Studio edit to a saved part stays in the game", g.LobbyHud.Left.Index.Label.TextSize == 20)
+end
 
 -- Receipts: granted once, only for products on sale, and only answered after saving.
 local receipt = { PlayerId = 1, ProductId = 111, PurchaseId = "p1" }

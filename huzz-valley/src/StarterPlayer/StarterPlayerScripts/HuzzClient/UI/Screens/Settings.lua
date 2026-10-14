@@ -84,8 +84,8 @@ local function buildAudio(page: Frame)
 		local key = d[1]
 		local r = row(page, g, i, d[2], d[3], d[4])
 		local pct = Kit.text({ Name = "Percent", Text = "", FontFace = Theme.Fonts.Number, TextSize = 16, TextXAlignment = Enum.TextXAlignment.Center, BackgroundTransparency = 0, BackgroundColor3 = C.PercentBox, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 591 - ROW_X, 0.5, 0), Size = UDim2.fromOffset(88, 34), Parent = r })
-		Kit.corner(3).Parent = pct
-		Kit.stroke(C.KeyBoxRim, 1, 0.4).Parent = pct
+		Kit.attach(Kit.corner(3), pct)
+		Kit.attach(Kit.stroke(C.KeyBoxRim, 1, 0.4), pct)
 		local slider = Kit.slider({
 			Name = "Slider", Parent = r, Position = UDim2.new(0, 302 - ROW_X, 0.5, -7), Size = UDim2.fromOffset(267, 14),
 			onChange = function(v)
@@ -110,8 +110,8 @@ local function buildControls(page: Frame)
 	local function keyRow(i: number, icon: string, title: string, desc: string, key: string?, fixed: string?)
 		local r = row(page, g, i, icon, title, desc)
 		local box = Kit.text({ Name = "Key", Text = fixed or "", FontFace = Theme.Fonts.Button, TextSize = 17, TextXAlignment = Enum.TextXAlignment.Center, BackgroundTransparency = 0, BackgroundColor3 = C.KeyBox, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 397 - ROW_X, 0.5, 0), Size = UDim2.fromOffset(133, 33), Parent = r })
-		Kit.corner(3).Parent = box
-		Kit.stroke(C.KeyBoxRim, 1).Parent = box
+		Kit.attach(Kit.corner(3), box)
+		Kit.attach(Kit.stroke(C.KeyBoxRim, 1), box)
 		local change = Kit.button({ Name = "Change", Text = key and "Change" or "SOON", Style = key and "Action" or "Disabled", TextSize = 17, Corner = 3, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 545 - ROW_X, 0.5, 0), Size = UDim2.fromOffset(138, 34), Parent = r })
 		if not key then
 			box.TextTransparency = 0.5
