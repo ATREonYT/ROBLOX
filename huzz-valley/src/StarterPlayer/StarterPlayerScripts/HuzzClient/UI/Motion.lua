@@ -101,7 +101,7 @@ function Motion.stagger(items: { GuiObject })
 	end
 end
 
--- Window open: fades in while growing from 0.85 with a soft overshoot, rising 10 px. `group` is the window's
+-- Window open: fades in while growing from 0.8 with a soft overshoot, rising 16 px. `group` is the window's
 -- CanvasGroup (anchored at its centre), `scale` its open UIScale.
 function Motion.open(group: CanvasGroup, scale: UIScale, basePos: UDim2)
 	group.Visible = true
@@ -109,11 +109,11 @@ function Motion.open(group: CanvasGroup, scale: UIScale, basePos: UDim2)
 		group.GroupTransparency, scale.Scale, group.Position = 0, 1, basePos
 		return
 	end
-	group.GroupTransparency, scale.Scale = 1, 0.85
-	group.Position = basePos + UDim2.fromOffset(0, 10)
-	Motion.tween(group, "fade", Theme.Motion.Open * 0.7, { GroupTransparency = 0 })
+	group.GroupTransparency, scale.Scale = 1, 0.8
+	group.Position = basePos + UDim2.fromOffset(0, 16)
+	Motion.tween(group, "fade", Theme.Motion.Open * 0.6, { GroupTransparency = 0 }, Enum.EasingStyle.Sine)
 	Motion.tween(group, "move", Theme.Motion.Open, { Position = basePos }, Enum.EasingStyle.Quint)
-	Motion.tween(scale, "open", Theme.Motion.Open, { Scale = 1 }, SPRING)
+	Motion.tween(scale, "open", Theme.Motion.Open, { Scale = 1 }, Enum.EasingStyle.Back)
 end
 
 -- Window close: shrinks to 0.9 and fades out quickly, then hides.

@@ -65,6 +65,6 @@ Theme.Fonts = {
 Theme.Text = { Title = 33, Tab = 18, Name = 21, Blurb = 17, Label = 14, Button = 20, Small = 11, Row = 17 }
 
 Theme.Corner = 3
-Theme.Motion = { Hover = 0.12, Press = 0.08, Release = 0.28, Open = 0.34, Close = 0.16, Tab = 0.15, Stagger = 0.035, Slide = 0.32, Hud = 0.3 }
+Theme.Motion = { Hover = 0.15, Press = 0.09, Release = 0.35, Open = 0.5, Close = 0.2, Tab = 0.2, Stagger = 0.05, Slide = 0.45, Hud = 0.4 }
 
 return Theme
