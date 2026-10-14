@@ -19,6 +19,7 @@ function Toast.mount(parent: Instance)
 end
 
 function Toast.show(text: string, seconds: number?)
+	if not label then return end
 	serial += 1
 	local mine = serial
 	label.Text = text

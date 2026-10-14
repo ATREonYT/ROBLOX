@@ -56,6 +56,11 @@ A Roblox game based on Huss Valley: rounds where players steal and hold the lead
   - icons come from `assets/icons` even before they're imported.
 - `assets/icons` are the owner's icon files from the kit with only their baked-in background cleared (`python3 tools/icons/clear_background.py`, with per-icon settings in the script). **Never redraw or upscale them** (the owner's call).
 
+## Studio safety
+- Lune's built-in copy of the Roblox API is older than Roblox (it lacks EditableImage, for example), so a clean harness run does not prove the code runs in Studio.
+- Main.client starts every part through `Report.run`: a failing part can't stop the others, and any error shows in a red box on screen for the owner to screenshot.
+- Images draw in-game from `Shared/Images` (EditableImage) until IDs are uploaded. Re-run `python3 tools/icons/pack_images.py` after changing anything in `assets/`.
+
 ## Place file
 `sh tools/place/build_place.sh` rebuilds `places/HuzzValley.rbxl` (all scripts plus a baseplate). Rebuild it whenever `src/` changes, so the owner can always just open the file.
 

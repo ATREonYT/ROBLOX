@@ -27,7 +27,7 @@ All of these work against a real save system. When you're happy with how they lo
 - Open **Settings** with the gear and change things. The changes stay while you play in Studio. Studio uses test saves, so they reset when you press Stop.
 
 ## Your checklist (things only you can do)
-1. **Import the icons.** They stay blank in Studio until you do this.
+1. **Icons and pictures are built in.** They show without uploading anything. Uploading them later is optional (it loads a little faster):
    1. Go to **View → Asset Manager → Bulk Import** and select every PNG in `huzz-valley/assets/icons`.
    2. Right-click each imported image, choose **Copy ID**, and paste it into `src/ReplicatedStorage/Shared/Config/Assets.lua` next to its name, like `"rbxassetid://123..."`. You can also just send me the list of names and IDs.
 2. **Create the Robux items** on the Creator Dashboard after you publish:

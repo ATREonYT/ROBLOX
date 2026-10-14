@@ -1,5 +1,6 @@
 --!strict
--- Image IDs for the UI icons. Empty = not imported yet: the icon stays blank in Studio (nothing is faked).
+-- Image IDs for the UI icons and pictures. Optional: while an ID is empty, the game draws the image itself from the
+-- pixels packed into Shared/Images (tools/icons/pack_images.py). Uploaded IDs load faster and use less memory.
 --
 -- To fill these in: Studio > Asset Manager (View tab) > Bulk Import > pick every file in huzz-valley/assets/icons.
 -- Then right-click each imported image > Copy ID, and paste it between the quotes below as "rbxassetid://<number>".

@@ -8,6 +8,8 @@ local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Assets = require(Shared.Config.Assets)
 local Theme = require(script.Parent.Theme)
 local Motion = require(script.Parent.Motion)
+local Report = require(script.Parent.Report)
+local ImageLoader = require(script.Parent.ImageLoader)
 
 local C = Theme.Colors
 local Kit = {}
@@ -102,7 +104,10 @@ function Kit.icon(name: string, props: { [string]: any }?): ImageLabel
 	for k, v in props or {} do p[k] = v end
 	local img = new("ImageLabel", p)
 	img:SetAttribute("Icon", name)
-	if name ~= "Avatar" then img:SetAttribute("PreviewFile", "assets/icons/" .. kebab(name) .. ".png") end
+	if name ~= "Avatar" then
+		img:SetAttribute("PreviewFile", "assets/icons/" .. kebab(name) .. ".png")
+		ImageLoader.apply(img, "Icons", name, p.Image)
+	end
 	return img
 end
 
@@ -112,6 +117,7 @@ function Kit.art(name: string, props: { [string]: any }?): ImageLabel
 	for k, v in props or {} do p[k] = v end
 	local img = new("ImageLabel", p)
 	img:SetAttribute("PreviewFile", "assets/art/" .. kebab(name) .. ".png")
+	ImageLoader.apply(img, "Art", name, p.Image)
 	return img
 end
 
@@ -215,7 +221,7 @@ function Kit.button(props: { [string]: any }): Button
 	function api.onClick(fn) table.insert(handlers, fn) end
 	btn.Activated:Connect(function()
 		if not enabled then return end
-		for _, fn in handlers do task.spawn(fn) end
+		for _, fn in handlers do task.spawn(Report.run, "Button " .. btn.Name, fn) end
 	end)
 	if props.OnClick then api.onClick(props.OnClick) end
 	api.Instance = btn

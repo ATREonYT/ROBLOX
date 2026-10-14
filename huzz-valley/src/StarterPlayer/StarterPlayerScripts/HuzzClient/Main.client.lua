@@ -5,6 +5,7 @@ local TextChatService = game:GetService("TextChatService")
 local UserInputService = game:GetService("UserInputService")
 
 local UI = script.Parent:WaitForChild("UI")
+local Report = require(UI:WaitForChild("Report"))
 local Motion = require(UI.Motion)
 local State = require(UI.State)
 local Toast = require(UI.Toast)
@@ -19,13 +20,14 @@ gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.ScreenInsets = Enum.ScreenInsets.CoreUISafeInsets
 gui.Parent = player:WaitForChild("PlayerGui")
 
-ModalManager.mount(gui)
-require(Screens.LobbyHud).build(gui)
-require(Screens.MainMenu).build(gui)
-require(Screens.Shop).build(gui)
-require(Screens.Settings).build(gui)
-Toast.mount(gui)
-State.start()
+-- Each part starts on its own: if one fails, the rest still work and the problem shows on screen.
+Report.mount(gui)
+Report.run("Window manager", ModalManager.mount, gui)
+Report.run("Toast", Toast.mount, gui)
+for _, name in { "LobbyHud", "MainMenu", "Shop", "Settings" } do
+	Report.run(name, function() require(Screens:WaitForChild(name)).build(gui) end)
+end
+Report.run("State", State.start)
 
 -- Audio: Master / Music / Effects sound groups (made by the server's Bootstrap).
 local focused = true
