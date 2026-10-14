@@ -62,6 +62,7 @@ A Roblox game based on Huss Valley: rounds where players steal and hold the lead
 - Lune's built-in copy of the Roblox API is older than Roblox (it lacks EditableImage, for example), so a clean harness run does not prove the code runs in Studio.
 - Main.client starts every part through `Report.run`: a failing part can't stop the others, and any error shows in a red box on screen for the owner to screenshot.
 - Images draw in-game from `Shared/Images` (EditableImage) until IDs are uploaded. Re-run `python3 tools/icons/pack_images.py` after changing anything in `assets/`.
+- **Uploading:** `tools/studio/upload-images.lua` (owner pastes it into the Command Bar) uploads every packed image with `AssetService:CreateAssetAsync`, writes `Config/ImageIds` (checked first by `Config/Assets`), and fills `Image` on StarterGui parts by their `Icon`/`Art` attribute. It is untested here: cloud sessions can't reach Roblox (apis.roblox.com is blocked). When the owner sends their ImageIds text, commit it to `src/ReplicatedStorage/Shared/Config/ImageIds.lua` and rebuild, so the StarterGui copy carries the IDs.
 
 ## UI in StarterGui (owner's call)
 - **How it works:** Roblox copies `StarterGui.HuzzUI` into PlayerGui, and the screens reuse those parts instead of making new ones. `Kit.new` reuses an unused saved child with the same class and name (its "twin").
@@ -81,7 +82,7 @@ A Roblox game based on Huss Valley: rounds where players steal and hold the lead
   - Items inside lists (shop items, character and dance cards, rewards, quests) are redrawn by the code, so Studio edits there don't stay.
 
 ## Screen layout (owner's calls)
-- The HUD's side buttons are centred on the left edge.
+- The HUD's side buttons are centred on the left edge. The Menu side panel opens in that same spot (centred on the left edge) and replaces them.
 - The gear sits in Roblox's top bar row: 44 px tall, 12 px from the right edge, lined up with Roblox's own buttons. On touch devices the coin and gem pills move into that row too, so the thumbstick has the bottom-left.
 - Windows fit the ScreenGui's own area (`Scale.setRoot`), which is below the top bar and inside a phone's safe area.
 - No dim layer behind windows: on phones it left grey bands at the sides. The blur alone covers the screen.
@@ -95,7 +96,8 @@ A Roblox game based on Huss Valley: rounds where players steal and hold the lead
 - **Next:** the round-driven pages (Map Vote, Recruitment, Results, Match HUD) and the Gift Picker. These need the round system and the gifting backend first.
 - **Missing from the owner:**
   - sharp versions of the 9 icons still from the kit crops (list under Checks and previews), including the favourite stars;
-  - big preview pictures for Ren, Sora, Step and Wave (only Aiko and Shuffle have them);
+  - big preview pictures for Step and Wave (the Index preview uses each character's whole-body render);
+  - running `tools/studio/upload-images.lua` and sending back the ImageIds text;
   - Game Pass and Developer Product IDs;
   - dance and pose animations;
   - companion models;

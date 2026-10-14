@@ -38,9 +38,12 @@ The whole UI is in **StarterGui > HuzzUI** as normal parts you can click and cha
 - Open **Settings** with the gear and change things. The changes stay while you play in Studio. Studio uses test saves, so they reset when you press Stop.
 
 ## Your checklist (things only you can do)
-1. **Icons and pictures are built in.** They show without uploading anything. Uploading them later is optional (it loads a little faster):
-   1. Go to **View → Asset Manager → Bulk Import** and select every PNG in `huzz-valley/assets/icons`.
-   2. Right-click each imported image, choose **Copy ID**, and paste it into `src/ReplicatedStorage/Shared/Config/Assets.lua` next to its name, like `"rbxassetid://123..."`. You can also just send me the list of names and IDs.
+1. **Upload the pictures once, so they show everywhere, including StarterGui while you edit:**
+   1. Open the place in Studio (not while playing) and open **View → Command Bar**.
+   2. Paste all of `huzz-valley/tools/studio/upload-images.lua` into it, press Enter, and wait for **Done** in the Output window.
+   3. Save, then send me the text of **ReplicatedStorage → Shared → Config → ImageIds**, so my next game file has them too.
+   - New pictures can stay grey for a few minutes while Roblox checks them.
+   - If it shows red errors, send me a screenshot.
 2. **Create the Robux items** on the Creator Dashboard after you publish:
    1. **VIP** is a Game Pass (it gives the [VIP] chat tag).
    2. **Sunset Trail** and **Blossom Aura** are Developer Products.

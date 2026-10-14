@@ -173,6 +173,7 @@ function Kit.art(name: string, props: { [string]: any }?): ImageLabel
 	for k, v in props or {} do p[k] = v end
 	local img = new("ImageLabel", p)
 	if img.Image == "" and p.Image ~= "" then img.Image = p.Image end
+	img:SetAttribute("Art", name)
 	img:SetAttribute("PreviewFile", "assets/art/" .. kebab(name) .. ".png")
 	ImageLoader.apply(img, "Art", name, img.Image)
 	return img
