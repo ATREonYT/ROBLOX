@@ -56,6 +56,9 @@ A Roblox game based on Huss Valley: rounds where players steal and hold the lead
   - icons come from `assets/icons` even before they're imported.
 - `assets/icons` are the owner's icon files from the kit with only their baked-in background cleared (`python3 tools/icons/clear_background.py`, with per-icon settings in the script). **Never redraw or upscale them** (the owner's call).
 
+## Place file
+`sh tools/place/build_place.sh` rebuilds `places/HuzzValley.rbxl` (all scripts plus a baseplate). Rebuild it whenever `src/` changes, so the owner can always just open the file.
+
 ## Open items (owner's checklist lives in `README.md`)
 - **Built:** golden slice (Lobby HUD, Menu, Shop with 3 tabs, Settings with 3 tabs), waiting for the owner's look check in Studio.
 - **Next:** roll the same Kit out to Index, Dances, Progression (Rewards and Quests), Tiers, Map Vote, Recruitment, Results and Gift Picker. Pages that need gameplay wait for the round system.

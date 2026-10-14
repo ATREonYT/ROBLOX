@@ -10,7 +10,13 @@ All of these work against a real save system. When you're happy with how they lo
 
 ![Ours under each reference](docs/previews/overview.jpg)
 
-## Getting it into Studio
+## Quickest way: open the ready-made game file
+`places/HuzzValley.rbxl` has all the scripts plus a simple grass baseplate. You don't need Rojo.
+1. On your Mac, open it on GitHub (branch **HUZZ-VALLEY**, folder `huzz-valley/places`) and click **Download raw file**. Or pull in GitHub Desktop and find it in the folder.
+2. Double-click it, or in Studio use **File → Open from File**. Press **Play**.
+3. To make it your real Huzz Valley game, use **File → Publish to Roblox As** and pick your Huzz Valley place. Your current place is empty, so nothing gets lost.
+
+## Getting it into Studio with Rojo (for live updates)
 1. In GitHub Desktop, switch to the **HUZZ-VALLEY** branch and click **Pull**.
 2. Follow [ROJO-SETUP.md](../ROJO-SETUP.md), running `rojo serve` from this `huzz-valley` folder.
 3. Open your Huzz Valley place, then go to **Plugins → Rojo → Connect** and press **Play**.
