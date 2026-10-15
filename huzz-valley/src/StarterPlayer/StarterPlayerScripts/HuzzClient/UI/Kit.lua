@@ -19,8 +19,22 @@ local Kit = {}
 -- "twin"), the saved part is reused. Its look (LOOK below: position, size, colours, fonts, images, corners...)
 -- stays as saved, so Studio edits show in the game; everything else (text, visibility, behaviour) comes from the
 -- scripts. A fresh parent has no twins, so the same code also builds the UI from nothing.
-local used = setmetatable({}, { __mode = "k" }) -- parts made or reused this session (never reused twice)
-local reusedSet = setmetatable({}, { __mode = "k" })
+-- Parts made or reused this session (never reused twice), and which of them came from StarterGui. These are plain
+-- tables, not weak ones: a weak table can drop a part while it still exists (when no script holds it), which made
+-- the reuse random. Entries go when the part is destroyed.
+local used: { [Instance]: boolean } = {}
+local reusedSet: { [Instance]: boolean } = {}
+local function mark(inst: Instance, reused: boolean)
+	if reused then reusedSet[inst] = true end
+	if used[inst] then return end
+	used[inst] = true
+	pcall(function()
+		inst.Destroying:Connect(function()
+			used[inst] = nil
+			reusedSet[inst] = nil
+		end)
+	end)
+end
 Kit.LOOK = {
 	Position = true, Size = true, AnchorPoint = true, BackgroundColor3 = true, BackgroundTransparency = true,
 	BorderSizePixel = true, TextColor3 = true, TextSize = true, FontFace = true, TextStrokeColor3 = true,
@@ -55,13 +69,12 @@ function Kit.attach(child: Instance, parent: Instance): Instance
 	if saved then
 		if MODIFIERS[child.ClassName] and #child:GetChildren() == 0 then
 			child:Destroy()
-			used[saved] = true
-			reusedSet[saved] = true
+			mark(saved, true)
 			return saved
 		end
 		saved:Destroy()
 	end
-	used[child] = true
+	mark(child, false)
 	child.Parent = parent
 	return child
 end
@@ -71,8 +84,8 @@ function Kit.new(class: string, props: { [string]: any }?, children: { Instance 
 	local parent = props and props.Parent
 	local inst = parent and twin(parent, class, props.Name or class)
 	local reused = inst ~= nil
-	if inst then reusedSet[inst] = true else inst = Instance.new(class) end
-	used[inst] = true
+	if not inst then inst = Instance.new(class) end
+	mark(inst, reused)
 	for k, v in props or {} do
 		if k ~= "Parent" and not (reused and Kit.LOOK[k]) then (inst :: any)[k] = v end
 	end

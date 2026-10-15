@@ -63,6 +63,7 @@ A Roblox game based on Huss Valley: rounds where players steal and hold the lead
 - Lune's built-in copy of the Roblox API is older than Roblox (it lacks EditableImage, for example), so a clean harness run does not prove the code runs in Studio.
 - Main.client starts every part through `Report.run`: a failing part can't stop the others, and any error shows in a red box on screen for the owner to screenshot.
 - Images draw in-game from `Shared/Images` (EditableImage) until IDs are uploaded. Re-run `python3 tools/icons/pack_images.py` after changing anything in `assets/`.
+- **Pictures in Studio's edit mode:** `src/ServerStorage/HuzzStudioTools/ShowPictures.server.lua` is a Studio helper (installed once with right-click > Save as Local Plugin). While editing, it draws the packed pixels onto StarterGui images by their `Icon`/`Art` attribute (`ImageContent`, display only, not saved). Scripts in ServerStorage never run in the game. It is untested here (needs Studio).
 - **Uploading:** `tools/studio/upload-images.lua` (owner pastes it into the Command Bar) uploads every packed image with `AssetService:CreateAssetAsync`, writes `Config/ImageIds` (checked first by `Config/Assets`), and fills `Image` on StarterGui parts by their `Icon`/`Art` attribute. It is untested here: cloud sessions can't reach Roblox (apis.roblox.com is blocked). When the owner sends their ImageIds text, commit it to `src/ReplicatedStorage/Shared/Config/ImageIds.lua` and rebuild, so the StarterGui copy carries the IDs.
 
 ## UI in StarterGui (owner's call)
@@ -75,12 +76,13 @@ A Roblox game based on Huss Valley: rounds where players steal and hold the lead
   - Make parts with `Kit.new`/Kit helpers and a `Parent`.
   - Never use `x.Parent = y` in screens; use `Kit.attach(x, y)` and use the part it returns.
   - A list that the code refills must clear its old children first (the saved example cards included).
+  - Kit's used/reused bookkeeping uses plain tables cleared on `Destroying`, never weak tables. Weak tables with Instance keys drop entries at random (in Roblox and in Lune), which made the reuse random.
   - Siblings with the same name must be identical: a saved part is matched by name, and same-named siblings can come back in any order. Give differing ones their own names (as `Kit.studs` does: Studs, Studs2...). The "nothing doubled" check catches mistakes.
   - A position that depends on the device (the top bar, phones) is assigned after creation, so it applies to saved parts too.
 - **Checks:** `check.sh` runs everything on the saved UI, plus `check.luau` once built from nothing (`HUZZ_FRESH=1`). It also checks that nothing is doubled and that a Studio edit survives.
 - **Owner's edits:** the owner's Studio edits live only in their place. Regenerating `HuzzUI.rbxm` starts from the code again. Before changing UI code after they have edited in Studio, ask for their export (`tools/export-for-claude.lua`) and copy their changes into the code.
 - **Limits:**
-  - Icons look blank in Studio's edit mode: they are drawn when the game runs, until real image IDs are set.
+  - Icons look blank in Studio's edit mode unless the ShowPictures helper is installed or real image IDs are set.
   - Items inside lists (shop items, character and dance cards, rewards, quests) are redrawn by the code, so Studio edits there don't stay.
 
 ## Screen layout (owner's calls)

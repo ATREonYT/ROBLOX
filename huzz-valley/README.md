@@ -22,7 +22,10 @@ The whole UI is in **StarterGui > HuzzUI** as normal parts you can click and cha
 - The HUD (side buttons, coins, gear) shows straight away. Each window (Shop, Settings, Index, and so on) is hidden: tick its **Visible** box to see it while you edit, then untick it again.
 - **What stays in the game:** changes to position, size, colours, fonts, images and corners.
 - **What the scripts still set:** text and on/off states.
-- **Icons look empty while editing.** The game draws them when it runs. Upload an icon and paste its ID into the image's **Image** box to see it in Studio too.
+- **To see every icon and picture while editing (no Play needed), install the helper once:**
+  1. In the Explorer, open **ServerStorage → HuzzStudioTools**.
+  2. Right-click **ShowPictures**, choose **Save as Local Plugin...**, then press **Save**.
+  3. From then on, the pictures appear in StarterGui whenever you open the place. If they don't, close and reopen the place.
 - **What doesn't stay:** edits to items inside lists (shop items, character and dance cards, rewards and quests), because the game redraws them. Tell me what you want changed there.
 - **Before you ask me for UI changes after editing in Studio,** send me your export (the usual `tools/export-for-claude.lua` steps). Each new game file I make starts from my copy, so your edits need to come to me first.
 - **If you use Rojo:** connecting Rojo replaces StarterGui > HuzzUI with my copy, so save your edits and send them to me first.
