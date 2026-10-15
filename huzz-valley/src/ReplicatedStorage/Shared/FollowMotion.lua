@@ -16,7 +16,8 @@ local FollowMotion = {}
 local exp, atan2, pi = math.exp, math.atan2, math.pi
 
 -- info: root (her anchored root part), motors (her Motor6Ds), from (start position of her root,
--- or nil to start at her spot), rootHeight (root above her feet), seed
+-- or nil to start at her spot), rootHeight (root above her feet), seed,
+-- animated (true = her limbs come from uploaded animations, so only move and turn her)
 function FollowMotion.new(info)
 	return {
 		root = info.root,
@@ -27,6 +28,8 @@ function FollowMotion.new(info)
 		fall = 0,
 		yaw = nil,
 		rootHeight = info.rootHeight or 3,
+		animated = info.animated,
+		speed = 0,
 	}
 end
 
@@ -70,8 +73,11 @@ function FollowMotion.step(rec, dt, t, leaderCF, groundAt, watch)
 	rec.yaw = if rec.yaw then turnToward(rec.yaw, targetYaw, 1 - exp(-dt * 10)) else targetYaw
 	rec.root.CFrame = CFrame.new(pos) * CFrame.Angles(0, rec.yaw, 0)
 
-	local distance = if watch then (watch - pos).Magnitude else math.huge
-	GirlMotion.walk(rec.girl, rec.joints, dt, t, { speed = speed, stride = F.Stride, target = watch, distance = distance })
+	rec.speed = speed
+	if not rec.animated then
+		local distance = if watch then (watch - pos).Magnitude else math.huge
+		GirlMotion.walk(rec.girl, rec.joints, dt, t, { speed = speed, stride = F.Stride, target = watch, distance = distance })
+	end
 end
 
 return FollowMotion

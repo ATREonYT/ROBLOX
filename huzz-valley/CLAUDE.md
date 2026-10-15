@@ -143,6 +143,13 @@ The UI golden slice and its backend are built (saving, coins and gems, shop purc
 - **Owner's motion calls:** no wiggle while carried (`Carried.Moods = false`, `Inertia = 0`, critically
   damped springs, small bob, no roll); the prize just stands normally (`Idle.Wave/Bounce = false`). The livelier
   version is still there behind those switches.
+- **Coming from the owner: much better walking animations** (players and girls). Nothing should depend on
+  the current walk:
+  - player walk, run and idle IDs go in `Config/Animations` (the carry arms and lean are layered on top);
+  - the follower girl plays `GirlIdle`/`GirlWalk`/`GirlRun` when set (blended and speed-matched in
+    `CarryAnimator`), otherwise the procedural `GirlMotion.walk`;
+  - retune `Carry.Bob.StepsPerStud`, `Carry.Follow.Stride` and `GirlWalkSpeed`/`GirlRunSpeed` to the new
+    animations.
 - **To do (owner: "keep that in mind"):** a Huss action. On a key or mobile button, play the owner's huss
   animation; while carrying, throw her up a little and catch her when the huss ends (a server-validated remote
   sets a toss time on the carry model, and CarryMotion animates the flight up and back). Wait for the owner's

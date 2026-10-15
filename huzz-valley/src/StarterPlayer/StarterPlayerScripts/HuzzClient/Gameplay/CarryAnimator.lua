@@ -122,19 +122,65 @@ function M.start()
 		return best, bestDist
 	end
 
+	-- The owner's girl walk/run/idle animations (Config/Animations), played on this client.
+	local function loadGirlTracks(model)
+		if Animations.GirlWalk == "" then
+			return nil
+		end
+		local humanoid = model:FindFirstChildOfClass("Humanoid")
+		local animator = humanoid and (humanoid:FindFirstChildOfClass("Animator") or Instance.new("Animator", humanoid))
+		if not animator then
+			return nil
+		end
+		local tracks = {}
+		for key, id in { Idle = Animations.GirlIdle, Walk = Animations.GirlWalk, Run = Animations.GirlRun } do
+			if id ~= "" then
+				local animation = Instance.new("Animation")
+				animation.AnimationId = id
+				local ok, track = pcall(animator.LoadAnimation, animator, animation)
+				if ok then
+					track.Looped = true
+					track:Play(0.2, 0.001)
+					tracks[key] = track
+				end
+			end
+		end
+		return tracks
+	end
+
+	-- Blends idle / walk / run by her speed and plays them at a matching rate.
+	local function driveGirlTracks(tracks, speed)
+		local walkSpeed, runSpeed = Animations.GirlWalkSpeed, Animations.GirlRunSpeed
+		local run = if tracks.Run then math.clamp((speed - walkSpeed) / (runSpeed - walkSpeed), 0, 1) else 0
+		local moving = math.clamp(speed / 2, 0, 1)
+		local weights = { Idle = 1 - moving, Walk = moving * (1 - run), Run = moving * run }
+		for key, track in tracks do
+			track:AdjustWeight(math.max(weights[key], 0.001), 0.15)
+		end
+		if tracks.Walk then
+			tracks.Walk:AdjustSpeed(math.max(speed, 1) / walkSpeed)
+		end
+		if tracks.Run then
+			tracks.Run:AdjustSpeed(math.max(speed, 1) / runSpeed)
+		end
+	end
+
 	local function startFollower(model)
 		local root = model.PrimaryPart
 		if not root then
 			return
 		end
+		local tracks = loadGirlTracks(model)
 		local rec = FollowMotion.new({
 			root = root,
 			motors = motorsOf(model),
 			from = root.Position,
 			rootHeight = model:GetAttribute("RootHeight"),
 			seed = seedOf(model),
+			animated = tracks ~= nil,
 		})
 		rec.leaderId = model:GetAttribute("Follow")
+		rec.tracks = tracks
 		followers[model] = rec
 	end
 
@@ -198,6 +244,9 @@ function M.start()
 				FollowMotion.step(rec, dt, now, leaderRoot.CFrame, function(p)
 					return groundAt(p, leaderRoot.Position.Y)
 				end, head and head.Position)
+				if rec.tracks then
+					driveGirlTracks(rec.tracks, rec.speed)
+				end
 			end
 		end
 		for model, p in prizes do
