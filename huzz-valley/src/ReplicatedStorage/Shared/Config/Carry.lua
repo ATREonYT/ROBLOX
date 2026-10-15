@@ -21,19 +21,19 @@ return {
 
 	Bob = {
 		StepsPerStud = 0.15, -- footsteps per stud walked (match the walk animation)
-		Height = 0.16,
-		Roll = 3.5, -- side-to-side rock per step
-		ElbowFlex = 7,
+		Height = 0.06, -- kept small: the owner asked for no wiggle
+		Roll = 0, -- side-to-side rock per step
+		ElbowFlex = 3,
 	},
 
 	-- Inertia: she lags behind speed changes and turns, then wobbles back.
 	Spring = {
-		Frequency = 6.5,
-		Damping = 0.42,
-		Lag = 0.012, -- studs of lag per stud/s^2 of acceleration
-		MaxLag = 0.45,
-		Tilt = 28, -- degrees of tilt per stud of lag
-		TurnLag = 0.06, -- radians of yaw lag per radian/s of turning
-		MaxTurnLag = 0.35,
+		Frequency = 5,
+		Damping = 0.9, -- 1 = no wobble back and forth
+		Lag = 0.005, -- studs of lag per stud/s^2 of acceleration
+		MaxLag = 0.2,
+		Tilt = 15, -- degrees of tilt per stud of lag
+		TurnLag = 0.02, -- radians of yaw lag per radian/s of turning
+		MaxTurnLag = 0.12,
 	},
 }

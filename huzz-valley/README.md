@@ -12,11 +12,11 @@ All of these work against a real save system. When you're happy with how they lo
 ![Ours under each reference](docs/previews/overview.jpg)
 
 ## The game: rounds and carrying a girl
-1. After the **next-round countdown**, a girl is rolled by rarity (Common → Secret) and stands on the far side.
-   One random player is the **catcher** (in the middle). Everyone else runs from side A.
-2. The **first runner across picks her up**: she flies into their hands, and they carry her over their head.
-   Tagged runners wait on the bench and **catch next round**. Each round runs the other way, and the first one
-   across takes her again.
+1. After the **next-round countdown**, a girl is rolled by rarity (Common → Secret) and **stands in the
+   middle**. One random player is the **catcher** (also in the middle). Everyone else runs from side A.
+2. The **first runner to walk up to her picks her up**: she flies into their hands, and they carry her over
+   their head to the other side. Tagged runners wait on the bench and **catch next round**. Each round runs
+   the other way. (`GirlSpot = "SafeZone"` in `Config/Round.lua` switches back to "first one across gets her".)
 3. **A catcher who tags her holder steals her.** The next runner across rescues her, and the round after that is
    the **final round**: if that runner crosses again, they win her; if they're tagged, that catcher wins her.
    If every runner is caught, whoever holds her wins. The winner gets her in their **Index**. Quests count

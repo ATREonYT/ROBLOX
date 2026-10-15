@@ -152,7 +152,11 @@ end
 local function showPrize()
 	clearPrize()
 	if girl then
-		prize = GirlService.display(girl, zones[goalName], zones.Middle.Position, Workspace)
+		-- In the middle (Config.GirlSpot "Middle"), facing the runners' side; or on the far side.
+		local inMiddle = Config.GirlSpot == "Middle"
+		local spot = if inMiddle then zones.Middle else zones[goalName]
+		local face = if inMiddle then zones[MapService.startFor(match and match.round or 1)].Position else zones.Middle.Position
+		prize = GirlService.display(girl, spot, face, Workspace)
 	end
 end
 
@@ -161,7 +165,7 @@ local function girlPosition(id)
 end
 
 -- How she reacts to her new carrier.
-local MOODS = { FirstAcross = "Excited", Rescued = "Excited", Stolen = "Struggle", Reassigned = "Struggle" }
+local MOODS = { FirstAcross = "Excited", Grabbed = "Excited", Rescued = "Excited", Stolen = "Struggle", Reassigned = "Struggle" }
 
 local function moveGirlTo(fromId, toId, reason)
 	local from = girlPosition(fromId)
@@ -194,10 +198,11 @@ function handlers.GirlMoved(e)
 	local to, g = nameOf(e.to), girl.name
 	local messages = {
 		FirstAcross = { `{to} grabbed {g}!`, GOLD },
+		Grabbed = { `{to} grabbed {g}! Carry her across!`, GOLD },
 		Stolen = { `{to} STOLE {g}! Cross to take her back!`, RED },
 		Rescued = { `{to} rescued {g}! Next round is the FINAL round!`, GOLD },
 		Reassigned = { `{to} now holds {g}`, RED },
-		Dropped = { `{g} was dropped! First across takes her`, GOLD },
+		Dropped = { if Config.GirlSpot == "Middle" then `{g} was dropped! She's back in the middle` else `{g} was dropped! First across takes her`, GOLD },
 	}
 	local m = messages[e.reason]
 	if m then
@@ -245,6 +250,17 @@ end
 local function step()
 	local goal = zones[goalName]
 	local start = zones[MapService.startFor(match.round)]
+	-- A runner who walks up to her (waiting in the middle) picks her up.
+	if prize and match.holder == nil then
+		local at = prize:GetBoundingBox().Position
+		for id, status in match.status do
+			local root = status == "Active" and rootOf(id)
+			if root and (root.Position - at).Magnitude <= Config.GrabRange then
+				apply(Rules.grab(match, id))
+				break
+			end
+		end
+	end
 	for id, status in match.status do
 		if status == "Active" then
 			local root = rootOf(id)
@@ -293,7 +309,7 @@ local function runRound()
 	end
 	syncAll()
 	if match.holder == nil then
-		showPrize() -- she waits on the far side
+		showPrize() -- she waits in the middle (or on the far side)
 	end
 	apply(events)
 	setStage("Countdown", Config.CountdownTime)
@@ -352,7 +368,7 @@ local function runGame()
 		table.insert(ids, id)
 	end
 	local catcher = if #ids >= 2 then ids[math.random(#ids)] else nil
-	match = Rules.newGame(ids, catcher, { maxRounds = Config.MaxRounds })
+	match = Rules.newGame(ids, catcher, { maxRounds = Config.MaxRounds, pickup = if Config.GirlSpot == "Middle" then "Middle" else "SafeZone" })
 	State:SetAttribute("GirlName", girl.name)
 	State:SetAttribute("GirlRarity", girl.rarity)
 	State:SetAttribute("HolderId", 0)

@@ -12,6 +12,12 @@ return {
 	GameOverTime = 8,
 	MaxRounds = 12, -- safety net: whoever holds the girl then wins
 
+	-- Where the girl waits: "Middle" = she stands in the middle and the first runner to
+	-- walk up to her picks her up (then carries her across); "SafeZone" = she waits on
+	-- the far side and the first runner across gets her.
+	GirlSpot = "Middle",
+	GrabRange = 6, -- studs from her centre to a runner's root
+
 	TagRange = 5.5, -- studs between root parts
 	StartZoneSafe = true, -- catchers can't tag runners still standing in their start zone
 

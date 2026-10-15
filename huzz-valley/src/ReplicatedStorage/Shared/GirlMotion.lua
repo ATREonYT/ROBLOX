@@ -125,6 +125,9 @@ function GirlMotion.carried(s, J, dt, t, ctx)
 	local C = Config.Carried
 	local gWorld = Vector3.new(0, -C.Gravity, 0) - ctx.accel * C.Inertia
 	local mood, age = ctx.mood or "Calm", ctx.moodAge or 99
+	if not C.Moods then
+		mood = "Still"
+	end
 
 	-- How much of each overlay plays right now
 	local excited = if mood == "Excited" then envelope(age, C.Excited.Time, 0.15, 0.5) else 0
@@ -133,7 +136,7 @@ function GirlMotion.carried(s, J, dt, t, ctx)
 	if mood == "Struggle" then
 		struggle = math.max(envelope(age, C.Struggle.Time, 0.1, 0.5), if age > C.Struggle.Time then burst(s, "struggle", t, C.Struggle.Every, C.Struggle.Burst) else 0)
 	end
-	local calm = if mood == "Calm" or (mood == "Excited" and excited == 0) then 1 else 0
+	local calm = if mood == "Calm" or (mood == "Excited" and excited == 0) then 1 else 0 -- "Still" = none of these
 	local kick = math.max(excited, cheer * 0.6, calm * burst(s, "kick", t, C.Calm.Kick.Every, C.Calm.Kick.Time) * 0.8)
 	local waveOne = calm * burst(s, "wave", t, C.Calm.Wave.Every, C.Calm.Wave.Time)
 	local waveBoth = math.max(excited, cheer)
@@ -184,7 +187,10 @@ function GirlMotion.carried(s, J, dt, t, ctx)
 	local neck = J.Neck
 	if neck and neck.Part0 then
 		local v = neck.Part0.CFrame:VectorToObjectSpace(ctx.forward)
-		local yaw = clamp(math.atan2(-v.X, -v.Z), rad(-75), rad(75)) * C.LookAhead + rad(20) * sin(t * 0.7) * sin(t * 0.31)
+		local yaw = clamp(math.atan2(-v.X, -v.Z), rad(-75), rad(75)) * C.LookAhead
+		if C.LookAround then
+			yaw += rad(20) * sin(t * 0.7) * sin(t * 0.31)
+		end
 		local pitch = clamp(math.atan2(v.Y, Vector3.new(v.X, 0, v.Z).Magnitude), rad(-40), rad(40)) * C.LookAhead
 		yaw += rad(30) * sin(t * 2 * pi * 4) * struggle
 		pitch += rad(12) * math.max(waveBoth, waveOne) -- lifts her head to wave
@@ -201,14 +207,14 @@ function GirlMotion.idle(s, J, dt, t, ctx)
 	local dist = ctx.distance or math.huge
 	local shift = sin(t * 2 * pi / I.SwaySeconds)
 	local sway = rad(I.Sway) * shift
-	local excite = spring(s, "excite", if dist < I.BounceDistance then 1 else 0, dt, 1.5, 1)
+	local excite = spring(s, "excite", if I.Bounce and dist < I.BounceDistance then 1 else 0, dt, 1.5, 1)
 	local hop = abs(sin(t * 2 * pi * 1.6)) * 0.45 * excite
 
 	-- A wave when a runner comes close (at most every 6 s), and now and then anyway
 	local waveLen = 2.2
 	s.lastWave = s.lastWave or -99
 	s.nextWave = s.nextWave or (t + I.WaveEvery[1] * random(s))
-	if t - s.lastWave > 6 and (dist < I.WaveDistance or t > s.nextWave) then
+	if I.Wave and t - s.lastWave > 6 and (dist < I.WaveDistance or t > s.nextWave) then
 		s.lastWave = t
 		s.nextWave = t + I.WaveEvery[1] + (I.WaveEvery[2] - I.WaveEvery[1]) * random(s)
 	end
@@ -233,7 +239,7 @@ function GirlMotion.idle(s, J, dt, t, ctx)
 	-- Head: watches the nearest runner, a little tilt
 	local neck = J.Neck
 	if neck and neck.Part0 then
-		local yaw, pitch = rad(25) * sin(t * 0.4), 0
+		local yaw, pitch = rad(12) * sin(t * 0.3), 0
 		if ctx.target and dist < I.LookDistance then
 			local head = neck.Part0.CFrame * neck.C0
 			local v = head:VectorToObjectSpace(ctx.target - head.Position)
@@ -241,7 +247,7 @@ function GirlMotion.idle(s, J, dt, t, ctx)
 			yaw = clamp(math.atan2(-v.X, -v.Z), rad(-65), rad(65))
 			pitch = clamp(math.atan2(v.Y, Vector3.new(v.X, 0, v.Z).Magnitude), rad(-30), rad(30))
 		end
-		local tilt = rad(5) * sin(t * 0.7) + rad(8) * wave - sway * 0.6
+		local tilt = rad(2) * sin(t * 0.5) + rad(8) * wave - sway * 0.6
 		set(neck, CFrame.Angles(0, spring(s, "iy", yaw, dt, 2, 0.8), 0) * CFrame.Angles(spring(s, "ipt", pitch, dt, 2, 0.8), 0, tilt))
 	end
 end

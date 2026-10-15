@@ -98,7 +98,8 @@ The UI golden slice and its backend are built (saving, coins and gems, shop purc
 
 ## Gameplay (round loop and carry)
 - **Rules (owner's design):**
-  - The first runner across each round takes the girl.
+  - She stands in the middle (`Config/Round.GirlSpot = "Middle"`, owner's call): the first runner to walk up
+    to her grabs her and must carry her across. ("SafeZone" = the old rule: the first runner across takes her.)
   - Tagged runners, runners still out at the timeout and runners who die all catch next round.
   - Rounds alternate ZoneA ↔ ZoneB.
   - A catcher who tags her holder steals her. The first runner across rescues her, and the round after is Final:
@@ -134,6 +135,13 @@ The UI golden slice and its backend are built (saving, coins and gems, shop purc
     It tells its own writes from the Animator's by reading the Transform back (CFrames are float32).
   - `RoundHud` is a stand-in, to be rebuilt with Kit as the Match HUD page.
   - `AvatarAnimations` swaps in the IDs from `Config/Animations`.
+- **Owner's motion calls:** no wiggle while carried (`Carried.Moods = false`, `Inertia = 0`, critically
+  damped springs, small bob, no roll); the prize just stands normally (`Idle.Wave/Bounce = false`). The livelier
+  version is still there behind those switches.
+- **To do (owner: "keep that in mind"):** a Huss action. On a key or mobile button, play the owner's huss
+  animation; while carrying, throw her up a little and catch her when the huss ends (a server-validated remote
+  sets a toss time on the carry model, and CarryMotion animates the flight up and back). Wait for the owner's
+  huss animation IDs.
 - **Girl animations (owner asked for all three, "make them good"):** `Shared/GirlMotion` (pure) holds her
   motion: `carried` (limbs fall toward gravity minus her real acceleration, plus moods Excited, Struggle,
   Cheer and Calm, set by the server through the carry model's `Mood`/`MoodAt`) and `idle` (the prize:

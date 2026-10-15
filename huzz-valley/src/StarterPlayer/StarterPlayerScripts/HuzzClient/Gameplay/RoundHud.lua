@@ -170,7 +170,9 @@ function M.start()
 			elseif holding then
 				role.Text, role.TextColor3 = `Carry {girl} across — first one across keeps her!`, GOLD
 			else
-				role.Text, role.TextColor3 = "RUNNER — reach the other side!", Color3.new(1, 1, 1)
+				local free = (State:GetAttribute("HolderId") or 0) == 0
+				role.Text = if free and Config.GirlSpot == "Middle" and girl ~= "" then `RUNNER — grab {girl} in the middle, then reach the other side!` else "RUNNER — reach the other side!"
+				role.TextColor3 = Color3.new(1, 1, 1)
 			end
 		else
 			role.Text = if stage == "Waiting" or stage == "Intermission" then "" else "Spectating — you'll join the next game"
@@ -186,7 +188,7 @@ function M.start()
 		stripe.BackgroundColor3 = color
 		girlName.Text = girl
 		local who = nameOf(State:GetAttribute("HolderId"))
-		holder.Text = if who then "Held by " .. who else "Waiting across the field"
+		holder.Text = if who then "Held by " .. who elseif Config.GirlSpot == "Middle" then "Waiting in the middle" else "Waiting across the field"
 		holder.TextColor3 = if who then GOLD else Color3.fromRGB(190, 196, 255)
 	end
 	for _, name in { "GirlName", "GirlRarity", "HolderId" } do
