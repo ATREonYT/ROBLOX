@@ -25,7 +25,9 @@ The whole UI is in **StarterGui > HuzzUI** as normal parts you can click and cha
 - **To see every icon and picture while editing (no Play needed), install the helper once:**
   1. In the Explorer, open **ServerStorage → HuzzStudioTools**.
   2. Right-click **ShowPictures**, choose **Save as Local Plugin...**, then press **Save**.
-  3. From then on, the pictures appear in StarterGui whenever you open the place. If they don't, close and reopen the place.
+  3. Open the **Plugins** tab at the top of Studio. A **Huzz Valley** group with two buttons should be there.
+  4. **Show Pictures** draws everything while you edit (it also runs by itself when the place opens). **Upload Pictures** uploads them to Roblox once, so they show everywhere for good; then save, and send me the text of ReplicatedStorage → Shared → Config → ImageIds.
+  5. Open **View → Output**. The helper writes what it did on lines starting with **[Huzz]**. If pictures still don't show, send me a screenshot of that window.
 - **What doesn't stay:** edits to items inside lists (shop items, character and dance cards, rewards and quests), because the game redraws them. Tell me what you want changed there.
 - **Before you ask me for UI changes after editing in Studio,** send me your export (the usual `tools/export-for-claude.lua` steps). Each new game file I make starts from my copy, so your edits need to come to me first.
 - **If you use Rojo:** connecting Rojo replaces StarterGui > HuzzUI with my copy, so save your edits and send them to me first.

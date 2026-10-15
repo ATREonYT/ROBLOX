@@ -63,7 +63,11 @@ A Roblox game based on Huss Valley: rounds where players steal and hold the lead
 - Lune's built-in copy of the Roblox API is older than Roblox (it lacks EditableImage, for example), so a clean harness run does not prove the code runs in Studio.
 - Main.client starts every part through `Report.run`: a failing part can't stop the others, and any error shows in a red box on screen for the owner to screenshot.
 - Images draw in-game from `Shared/Images` (EditableImage) until IDs are uploaded. Re-run `python3 tools/icons/pack_images.py` after changing anything in `assets/`.
-- **Pictures in Studio's edit mode:** `src/ServerStorage/HuzzStudioTools/ShowPictures.server.lua` is a Studio helper (installed once with right-click > Save as Local Plugin). While editing, it draws the packed pixels onto StarterGui images by their `Icon`/`Art` attribute (`ImageContent`, display only, not saved). Scripts in ServerStorage never run in the game. It is untested here (needs Studio).
+- **Pictures in Studio's edit mode:** `src/ServerStorage/HuzzStudioTools/ShowPictures.server.lua` is a Studio helper, installed once with right-click > Save as Local Plugin. It adds a "Huzz Valley" toolbar:
+  - **Show Pictures** draws the packed pixels onto StarterGui images by their `Icon`/`Art` attribute (`ImageContent`, display only). It also runs when the place opens.
+  - **Upload Pictures** does the same as `upload-images.lua`.
+  - It reports in Output on lines starting with `[Huzz]`, and scripts in ServerStorage never run in the game.
+  - It is untested here because it needs Studio. The first owner test showed nothing, either because it wasn't installed or because of a silent failure, which is why it now reports.
 - **Uploading:** `tools/studio/upload-images.lua` (owner pastes it into the Command Bar) uploads every packed image with `AssetService:CreateAssetAsync`, writes `Config/ImageIds` (checked first by `Config/Assets`), and fills `Image` on StarterGui parts by their `Icon`/`Art` attribute. It is untested here: cloud sessions can't reach Roblox (apis.roblox.com is blocked). When the owner sends their ImageIds text, commit it to `src/ReplicatedStorage/Shared/Config/ImageIds.lua` and rebuild, so the StarterGui copy carries the IDs.
 
 ## UI in StarterGui (owner's call)
