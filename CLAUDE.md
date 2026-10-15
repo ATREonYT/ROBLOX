@@ -24,6 +24,14 @@ This file loads in every session, so keep it short. Each game folder has its own
 7. **"One-to-one" means one-to-one.** Match the reference exactly (sizes, colours, textures, bevels, text treatment), not "close in spirit". Measure it, then check it with a fresh critic agent.
 8. **Use the owner's own assets as they are** (icons, images, models from their kits). Don't redraw, regenerate or "clean up" them unless asked; say plainly what their limits are.
 9. **Anything worth keeping goes in the repo.** The session's temp folder vanishes. Commit tools, previews and notes.
+10. **The owner tests a ready-made place file.** After every change, rebuild `<game>/places/<Game>.rbxl` and give the "Download raw file" link with the steps to try it.
+11. **UI lives in StarterGui as real parts** (the owner's call), so the owner can see and edit it in Studio:
+    - the code builds the UI and the place build saves it as `src/StarterGui/<Gui>.rbxm`;
+    - at runtime the scripts reuse those saved parts instead of building a second copy;
+    - see the game's `CLAUDE.md` for the rules.
+12. **Get sharp art early.** Crops from a mockup page are blurry. Ask the owner for transparent PNGs of at least 256 px, named like the kit, and keep their zips in `design/`.
+    - Pack icons at 192 px or more: the owner's Mac has a Retina screen.
+    - Prefer one tiled texture over many small parts (the owner asked for this with the header studs).
 
 ## Never
 - **Never invent asset, product, Game Pass or animation IDs.** Leave them as 0 or empty with a clear note, and list them on the owner's checklist.
@@ -50,6 +58,11 @@ This file loads in every session, so keep it short. Each game folder has its own
 - **Roblox UI rules the preview won't show you:**
   - UDim offsets are whole numbers, so never use half pixels;
   - ClipsDescendants clips square and ignores UICorner, so round the image itself;
-  - a ScrollingFrame clips its children's outside UIStroke rims, so give them padding.
+  - a ScrollingFrame clips its children's outside UIStroke rims, so give them padding;
+  - never key a weak table by Instance: entries vanish at random while the part still exists;
+  - picture names are case-sensitive in Roblox, while the preview finds files regardless of case, so check names with a test;
+  - Studio's editor only shows uploaded images (`rbxassetid`). Pixels drawn by scripts (EditableImage) appear only in Play, or through a Studio helper plugin.
 - **A clean offline run doesn't prove Studio works:** Lune's copy of the Roblox API is outdated. Start each UI part separately, so one failure can't stop the rest, and show errors on screen, so the owner can screenshot them.
-- Cloud sessions can't reach Studio. Only the owner can confirm the final look and the real purchase prompts.
+- **Cloud sessions can't reach Studio or Roblox's web APIs** (apis.roblox.com is blocked), so they can't upload images or check the real game.
+  - Only the owner can confirm the final look and the real purchase prompts.
+  - Anything that must run in Studio (uploads, helpers) ships as a Command Bar script or a "Save as Local Plugin" script. It reports in Output on lines starting with a tag, so the owner can screenshot the result.
