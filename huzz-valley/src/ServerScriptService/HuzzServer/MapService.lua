@@ -103,7 +103,9 @@ function MapService.init()
 		if d.Name == C.ZoneA and asPart(d) and not seen[d.Parent] then
 			local box = d.Parent
 			seen[box] = true
-			local name = if box == Workspace then "Main" else box.Name
+			-- Named after its folder; a folder just called "Zones" takes its parent's name.
+			local named = if box.Name:lower():find("zone") and box.Parent ~= Workspace then box.Parent else box
+			local name = if named == Workspace then "Main" else named.Name
 			addMap(name, box, asPart(d), asPart(box:FindFirstChild(C.ZoneB)), asPart(box:FindFirstChild(C.Middle)), asPart(box:FindFirstChild(C.Bench)))
 		end
 	end
