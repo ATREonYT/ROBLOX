@@ -47,6 +47,7 @@ Assets.Icons = {
 	ShopCart = "",            -- shop-cart.png
 	Sneaker = "",             -- sneaker.png
 	Stop = "",                -- stop.png
+	StudTile = "",            -- stud-tile.png (header stud texture, drawn by tools/icons/make_stud_tile.py)
 	Stopwatch = "",           -- stopwatch.png
 	TagFist = "",             -- tag-fist.png
 	TierCrown = "",           -- tier-crown.png

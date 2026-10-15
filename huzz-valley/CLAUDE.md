@@ -12,7 +12,7 @@ A Roblox game based on Huss Valley: rounds where players steal and hold the lead
   - `IMPLEMENTATION-PROMPT.md` has the full rules;
   - `CHARACTER-REPLACEMENT-MAP.md` has the model slots.
 - Read only the page you're building.
-- **Colours:** purple header with faint square studs; peach selected tab, navy inactive; periwinkle actions (never green); slate for done or disabled; small red close square.
+- **Colours:** purple header with faint square studs (one tiled texture per strip: `assets/icons/stud-tile.png` from `tools/icons/make_stud_tile.py`; the owner asked for a texture instead of one part per stud); peach selected tab, navy inactive; periwinkle actions (never green); slate for done or disabled; small red close square.
 - **Fonts (the owner's table; don't change them):**
   - window headings: Montserrat Black (Heavy) in caps with a thin dark outline;
   - names and product titles: Montserrat Bold, no outline;
@@ -86,7 +86,7 @@ A Roblox game based on Huss Valley: rounds where players steal and hold the lead
 - **Checks:** `check.sh` runs everything on the saved UI, plus `check.luau` once built from nothing (`HUZZ_FRESH=1`). It also checks that nothing is doubled and that a Studio edit survives.
 - **Owner's edits:** the owner's Studio edits live only in their place. Regenerating `HuzzUI.rbxm` starts from the code again. Before changing UI code after they have edited in Studio, ask for their export (`tools/export-for-claude.lua`) and copy their changes into the code.
 - **Limits:**
-  - Icons look blank in Studio's edit mode unless the ShowPictures helper is installed or real image IDs are set.
+  - Icons, pictures and the header studs (a texture) look blank in Studio's edit mode unless the ShowPictures helper is installed or real image IDs are set.
   - Items inside lists (shop items, character and dance cards, rewards, quests) are redrawn by the code, so Studio edits there don't stay.
 
 ## Screen layout (owner's calls)

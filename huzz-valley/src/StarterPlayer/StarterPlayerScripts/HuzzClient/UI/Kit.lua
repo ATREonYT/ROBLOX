@@ -309,8 +309,9 @@ function Kit.closeButton(props: { [string]: any }): Button
 	return b
 end
 
--- The stud trim on a purple header: raised studs 9 x 11 on a 22 px pitch (lighter top, darker foot, 1 px shadow),
--- as measured on the reference.
+-- The stud trim on a purple header: one tiled image (assets/icons/stud-tile.png, made by
+-- tools/icons/make_stud_tile.py) repeated across the strip, so a strip is a single part instead of one per stud.
+-- 9 px raised square studs on a 22 px pitch, as measured on the reference.
 function Kit.studs(parent: Instance, x0: number, x1: number, y: number)
 	-- Each strip in a parent gets its own name (Studs, Studs2, ...), so a saved strip is always reused by the same
 	-- call: two same-named strips could swap places when the StarterGui copy is reused.
@@ -318,14 +319,13 @@ function Kit.studs(parent: Instance, x0: number, x1: number, y: number)
 	for _, ch in parent:GetChildren() do
 		if used[ch] and ch.Name:match("^Studs%d*$") then n += 1 end
 	end
-	local strip = new("Frame", { Name = if n == 0 then "Studs" else "Studs" .. (n + 1), BackgroundTransparency = 1, Position = UDim2.fromOffset(x0, y), Size = UDim2.fromOffset(math.max(0, x1 - x0), 12), Parent = parent },
-		{ Kit.list(Enum.FillDirection.Horizontal, 13, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top) })
-	for i = 1, math.max(0, math.floor((x1 - x0 + 13) / 22)) do
-		local stud = new("Frame", { Name = "Stud", LayoutOrder = i, Size = UDim2.fromOffset(9, 11), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = strip }, { Kit.corner(2) })
-		new("UIGradient", { Rotation = 90, Color = ColorSequence.new(C.Stud, C.StudBottom), Parent = stud })
-		new("Frame", { Name = "Shadow", Position = UDim2.new(0, 1, 1, 0), Size = UDim2.new(1, -2, 0, 1), BackgroundColor3 = C.StudShadow, BorderSizePixel = 0, Parent = stud })
-	end
-	return strip
+	local count = math.max(0, math.floor((x1 - x0 + 13) / 22))
+	return Kit.icon("StudTile", {
+		Name = if n == 0 then "Studs" else "Studs" .. (n + 1),
+		ScaleType = Enum.ScaleType.Tile, TileSize = UDim2.fromOffset(22, 12),
+		Position = UDim2.fromOffset(x0, y), Size = UDim2.fromOffset(math.max(0, count * 22 - 13), 12),
+		Visible = count > 0, Parent = parent,
+	})
 end
 
 export type Window = {
