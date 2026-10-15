@@ -125,6 +125,7 @@ local function place(id)
 	local middle = zones.Middle.Position
 	local zone, lookAt
 	if not role then
+		-- Waiting for the next game: the Lobby part if there is one, else where they are.
 		zone, lookAt = (match and zones.Bench) or zones.Lobby, middle
 	else
 		local start, goal = zones[MapService.startFor(match.round)], zones[goalName]
@@ -373,6 +374,12 @@ local function finishGame()
 end
 
 local function runGame()
+	local map = MapService.pick()
+	State:SetAttribute("Map", map.name)
+	if #MapService.maps > 1 then
+		announce(`Map: {map.name}`, Color3.new(1, 1, 1), true)
+		task.wait(1.5)
+	end
 	girl = GirlService.roll()
 	GirlService.prepare(girl) -- rebuilds her as R15 the first time (Config/Round.GirlRig)
 	local ids = {}

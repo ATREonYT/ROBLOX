@@ -1,4 +1,13 @@
--- Finds the round's zones in the owner's map, or builds a plain test field.
+--[[
+	Finds the owner's maps and picks one per game.
+	A map is any folder or model in Workspace holding parts named ZoneA, ZoneB
+	and Middle (optional: Bench). Make one set per map, e.g.
+	  Workspace > Graveyard > ZoneA, ZoneB, Middle
+	  Workspace > Field > ZoneA, ZoneB, Middle
+	The map's name is that folder's name. A part named Lobby anywhere is
+	where players wait between games. With no zones at all, a plain test
+	field is built so the game still runs.
+]]
 local CollectionService = game:GetService("CollectionService")
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -6,7 +15,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage.Shared.Config.Round)
 
 local MapService = {}
-MapService.zones = {}
+MapService.zones = {} -- the current map's zones (filled in place, so callers can keep the table)
+MapService.maps = {} -- { name, ZoneA, ZoneB, Middle, Bench? }
+local lastPicked
 
 local function asPart(item)
 	if item and item:IsA("BasePart") then
@@ -75,19 +86,57 @@ local function buildTestField()
 	return folder
 end
 
+local function addMap(name, container, a, b, middle, bench)
+	if a and b and middle then
+		table.insert(MapService.maps, { name = name, ZoneA = a, ZoneB = b, Middle = middle, Bench = bench })
+		print(`[Huzz] Map found: {name}`)
+	elseif container then
+		warn(`[Huzz] {container:GetFullName()} has a ZoneA but is missing ZoneB or Middle: skipped`)
+	end
+end
+
 function MapService.init()
-	local z = MapService.zones
-	z.ZoneA, z.ZoneB, z.Middle = find("ZoneA"), find("ZoneB"), find("Middle")
-	if not (z.ZoneA and z.ZoneB and z.Middle) then
-		if not Config.Map.BuildTestField then
-			error("[Huzz] Map is missing ZoneA, ZoneB or Middle (see Config/Round.lua > Map)")
+	local C = Config.Map
+	-- Every container holding a ZoneA (plus its ZoneB and Middle) is a map.
+	local seen = {}
+	for _, d in Workspace:GetDescendants() do
+		if d.Name == C.ZoneA and asPart(d) and not seen[d.Parent] then
+			local box = d.Parent
+			seen[box] = true
+			local name = if box == Workspace then "Main" else box.Name
+			addMap(name, box, asPart(d), asPart(box:FindFirstChild(C.ZoneB)), asPart(box:FindFirstChild(C.Middle)), asPart(box:FindFirstChild(C.Bench)))
+		end
+	end
+	-- Single-map tags (HuzzZoneA, HuzzZoneB, HuzzMiddle), as before.
+	if #MapService.maps == 0 then
+		addMap("Main", nil, find("ZoneA"), find("ZoneB"), find("Middle"), find("Bench"))
+	end
+	if #MapService.maps == 0 then
+		if not C.BuildTestField then
+			error("[Huzz] No map has ZoneA, ZoneB and Middle (see Config/Round.lua > Map)")
 		end
 		warn("[Huzz] No ZoneA/ZoneB/Middle in the map: building the test field")
 		local field = buildTestField()
-		z.ZoneA, z.ZoneB, z.Middle, z.Bench = field.ZoneA, field.ZoneB, field.Middle, field.Bench
+		addMap("Test Field", field, field.ZoneA, field.ZoneB, field.Middle, field.Bench)
 	end
-	z.Bench = z.Bench or find("Bench")
-	z.Lobby = find("Lobby") or z.ZoneA
+	local lobby = Workspace:FindFirstChild(C.Lobby, true)
+	MapService.lobby = asPart(CollectionService:GetTagged("HuzzLobby")[1]) or asPart(lobby)
+	MapService.pick()
+end
+
+-- Chooses this game's map: random, never the same one twice in a row.
+function MapService.pick()
+	local maps = MapService.maps
+	local choice = maps[math.random(#maps)]
+	if #maps > 1 then
+		while choice == lastPicked do
+			choice = maps[math.random(#maps)]
+		end
+	end
+	lastPicked = choice
+	local z = MapService.zones
+	z.ZoneA, z.ZoneB, z.Middle, z.Bench, z.Lobby = choice.ZoneA, choice.ZoneB, choice.Middle, choice.Bench, MapService.lobby
+	return choice
 end
 
 -- Inside the zone's footprint; generous upward so jumping still counts.

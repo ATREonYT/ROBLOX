@@ -39,14 +39,15 @@ return {
 		Thief = 17.5, -- a catcher she's following (she walks behind him, so no slowdown)
 	},
 
-	-- Map parts, found by CollectionService tag ("Huzz" .. name, e.g. HuzzZoneA)
-	-- or else by name anywhere in Workspace. Bench and Lobby are optional.
+	-- Map parts. Each map is a folder or model in Workspace holding ZoneA, ZoneB and
+	-- Middle (and optionally Bench); every game picks one of the maps at random.
+	-- Lobby (anywhere) is where players wait between games; without it they stay put.
 	Map = {
 		ZoneA = "ZoneA", -- one side; round 1 starts here
 		ZoneB = "ZoneB", -- the other side; round 1's safe zone
 		Middle = "Middle", -- where catchers spawn
 		Bench = "Bench", -- where caught runners wait out the round
-		Lobby = "Lobby", -- where everyone waits between games (falls back to ZoneA)
+		Lobby = "Lobby", -- where everyone waits between games (optional)
 		BuildTestField = true, -- no zones found: build a plain test field so the game still runs
 	},
 

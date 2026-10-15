@@ -22,9 +22,11 @@ All of these work against a real save system. When you're happy with how they lo
    If every runner is caught, whoever holds her wins. The winner gets her in their **Index**. Quests count
    Steals, hold time and matches played.
 
-**Set up your map:** name 3 parts `ZoneA`, `ZoneB` and `Middle` (or tag them `HuzzZoneA`, `HuzzZoneB` and
-`HuzzMiddle`). They can be invisible and non-colliding. `Bench` (fenced off, for caught players) and `Lobby` are
-optional. With no zones, the game builds a sandy test field so you can try it right away.
+**Set up your maps:** in each map, make a folder named after the map (e.g. `Graveyard`) holding 3 parts named
+`ZoneA`, `ZoneB` and `Middle`. They can be invisible (Transparency 1) and non-colliding. Every game picks one of
+your maps at random (never the same one twice in a row) and announces it. Rounds alternate sides: A → B, then
+B → A, and so on. A part named `Lobby` anywhere is where players wait between games. With no zones, the game
+builds a sandy test field so you can try it right away.
 **Girls:** put them in `ServerStorage → AnimeGirls → <rarity folder> → <girl model>`. Until then, 4 grey
 stand-in rigs are used.
 **Try it:** press **Play** for solo mode (cross, then cross back to win), or use **Test → Clients and Servers →
