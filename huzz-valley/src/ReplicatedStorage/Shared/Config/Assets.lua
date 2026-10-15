@@ -2,10 +2,11 @@
 -- Image IDs for the UI icons and pictures. Optional: while an ID is empty, the game draws the image itself from the
 -- pixels packed into Shared/Images (tools/icons/pack_images.py). Uploaded IDs load faster and use less memory.
 --
--- To fill these in: Studio > Asset Manager (View tab) > Bulk Import > pick every file in huzz-valley/assets/icons.
--- Then right-click each imported image > Copy ID, and paste it between the quotes below as "rbxassetid://<number>".
+-- The easy way to fill them in: run tools/studio/upload-images.lua in Studio's Command Bar. It uploads every image
+-- and writes the IDs into Config/ImageIds (checked first). IDs typed below by hand also work.
 -- The PNGs are the owner's exact icon files from the UI kit (design/exact-pixel-icon-references), same pixels and
 -- size, with only the baked-in background made transparent (tools/icons/clear_background.py).
+local Uploaded = require(script.Parent.ImageIds) :: { [string]: string }
 local Assets = {}
 
 Assets.Icons = {
@@ -42,9 +43,11 @@ Assets.Icons = {
 	Search = "",              -- search.png
 	SettingsGear = "",        -- settings-gear.png
 	ShirtBenefit = "",        -- shirt-benefit.png
+	ShirtEquip = "",          -- shirt-equip.png
 	ShopCart = "",            -- shop-cart.png
 	Sneaker = "",             -- sneaker.png
 	Stop = "",                -- stop.png
+	StudTile = "",            -- stud-tile.png (header stud texture, drawn by tools/icons/make_stud_tile.py)
 	Stopwatch = "",           -- stopwatch.png
 	TagFist = "",             -- tag-fist.png
 	TierCrown = "",           -- tier-crown.png
@@ -67,10 +70,14 @@ Assets.Art = {
 
 -- "Avatar" is not an uploaded image: rows that use it show the viewing player's own avatar (Roblox thumbnail).
 function Assets.icon(name: string): string
+	local id = Uploaded["Icons/" .. name]
+	if id and id ~= "" then return id end
 	return (Assets.Icons :: any)[name] or ""
 end
 
 function Assets.art(name: string): string
+	local id = Uploaded["Art/" .. name]
+	if id and id ~= "" then return id end
 	return (Assets.Art :: any)[name] or ""
 end
 

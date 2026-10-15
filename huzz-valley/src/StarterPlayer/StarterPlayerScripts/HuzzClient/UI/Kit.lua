@@ -19,8 +19,22 @@ local Kit = {}
 -- "twin"), the saved part is reused. Its look (LOOK below: position, size, colours, fonts, images, corners...)
 -- stays as saved, so Studio edits show in the game; everything else (text, visibility, behaviour) comes from the
 -- scripts. A fresh parent has no twins, so the same code also builds the UI from nothing.
-local used = setmetatable({}, { __mode = "k" }) -- parts made or reused this session (never reused twice)
-local reusedSet = setmetatable({}, { __mode = "k" })
+-- Parts made or reused this session (never reused twice), and which of them came from StarterGui. These are plain
+-- tables, not weak ones: a weak table can drop a part while it still exists (when no script holds it), which made
+-- the reuse random. Entries go when the part is destroyed.
+local used: { [Instance]: boolean } = {}
+local reusedSet: { [Instance]: boolean } = {}
+local function mark(inst: Instance, reused: boolean)
+	if reused then reusedSet[inst] = true end
+	if used[inst] then return end
+	used[inst] = true
+	pcall(function()
+		inst.Destroying:Connect(function()
+			used[inst] = nil
+			reusedSet[inst] = nil
+		end)
+	end)
+end
 Kit.LOOK = {
 	Position = true, Size = true, AnchorPoint = true, BackgroundColor3 = true, BackgroundTransparency = true,
 	BorderSizePixel = true, TextColor3 = true, TextSize = true, FontFace = true, TextStrokeColor3 = true,
@@ -55,13 +69,12 @@ function Kit.attach(child: Instance, parent: Instance): Instance
 	if saved then
 		if MODIFIERS[child.ClassName] and #child:GetChildren() == 0 then
 			child:Destroy()
-			used[saved] = true
-			reusedSet[saved] = true
+			mark(saved, true)
 			return saved
 		end
 		saved:Destroy()
 	end
-	used[child] = true
+	mark(child, false)
 	child.Parent = parent
 	return child
 end
@@ -71,8 +84,8 @@ function Kit.new(class: string, props: { [string]: any }?, children: { Instance 
 	local parent = props and props.Parent
 	local inst = parent and twin(parent, class, props.Name or class)
 	local reused = inst ~= nil
-	if inst then reusedSet[inst] = true else inst = Instance.new(class) end
-	used[inst] = true
+	if not inst then inst = Instance.new(class) end
+	mark(inst, reused)
 	for k, v in props or {} do
 		if k ~= "Parent" and not (reused and Kit.LOOK[k]) then (inst :: any)[k] = v end
 	end
@@ -173,6 +186,7 @@ function Kit.art(name: string, props: { [string]: any }?): ImageLabel
 	for k, v in props or {} do p[k] = v end
 	local img = new("ImageLabel", p)
 	if img.Image == "" and p.Image ~= "" then img.Image = p.Image end
+	img:SetAttribute("Art", name)
 	img:SetAttribute("PreviewFile", "assets/art/" .. kebab(name) .. ".png")
 	ImageLoader.apply(img, "Art", name, img.Image)
 	return img
@@ -295,17 +309,23 @@ function Kit.closeButton(props: { [string]: any }): Button
 	return b
 end
 
--- The stud trim on a purple header: raised studs 9 x 11 on a 22 px pitch (lighter top, darker foot, 1 px shadow),
--- as measured on the reference.
+-- The stud trim on a purple header: one tiled image (assets/icons/stud-tile.png, made by
+-- tools/icons/make_stud_tile.py) repeated across the strip, so a strip is a single part instead of one per stud.
+-- 9 px raised square studs on a 22 px pitch, as measured on the reference.
 function Kit.studs(parent: Instance, x0: number, x1: number, y: number)
-	local strip = new("Frame", { Name = "Studs", BackgroundTransparency = 1, Position = UDim2.fromOffset(x0, y), Size = UDim2.fromOffset(math.max(0, x1 - x0), 12), Parent = parent },
-		{ Kit.list(Enum.FillDirection.Horizontal, 13, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Top) })
-	for i = 1, math.max(0, math.floor((x1 - x0 + 13) / 22)) do
-		local stud = new("Frame", { Name = "Stud", LayoutOrder = i, Size = UDim2.fromOffset(9, 11), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = strip }, { Kit.corner(2) })
-		new("UIGradient", { Rotation = 90, Color = ColorSequence.new(C.Stud, C.StudBottom), Parent = stud })
-		new("Frame", { Name = "Shadow", Position = UDim2.new(0, 1, 1, 0), Size = UDim2.new(1, -2, 0, 1), BackgroundColor3 = C.StudShadow, BorderSizePixel = 0, Parent = stud })
+	-- Each strip in a parent gets its own name (Studs, Studs2, ...), so a saved strip is always reused by the same
+	-- call: two same-named strips could swap places when the StarterGui copy is reused.
+	local n = 0
+	for _, ch in parent:GetChildren() do
+		if used[ch] and ch.Name:match("^Studs%d*$") then n += 1 end
 	end
-	return strip
+	local count = math.max(0, math.floor((x1 - x0 + 13) / 22))
+	return Kit.icon("StudTile", {
+		Name = if n == 0 then "Studs" else "Studs" .. (n + 1),
+		ScaleType = Enum.ScaleType.Tile, TileSize = UDim2.fromOffset(22, 12),
+		Position = UDim2.fromOffset(x0, y), Size = UDim2.fromOffset(math.max(0, count * 22 - 13), 12),
+		Visible = count > 0, Parent = parent,
+	})
 end
 
 export type Window = {

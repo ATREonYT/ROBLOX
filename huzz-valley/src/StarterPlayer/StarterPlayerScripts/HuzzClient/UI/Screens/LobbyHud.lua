@@ -1,4 +1,4 @@
--- Lobby HUD (design/pages/13): left column (Index, Tiers, Dances, Menu) centred on the left edge, coin and gem
+-- Lobby HUD (design/pages/13): left column (Index, Shop, Dances, Menu; the owner swapped Tiers for Shop) centred on the left edge, coin and gem
 -- balances bottom-left (in the top bar row on phones), settings in the top bar row at the right, and the next-round countdown top-centre. Hidden while a window is open.
 -- The countdown only shows when the round system sets Workspace attribute "NextRoundAt" (server time, seconds);
 -- there is no round system yet, so it stays hidden rather than showing a made-up timer.
@@ -57,7 +57,7 @@ function LobbyHud.build(parent: Instance)
 	-- The side buttons span y 32-290; a 322-tall group puts them exactly in the middle of the left edge.
 	local left = group(root, "Left", Vector2.new(0, 0.5), UDim2.fromScale(0, 0.5), Vector2.new(100, 322))
 	squareButton(left, "Index", "CollectionBook", 32, function() MainMenu.go("Index") end)
-	squareButton(left, "Tiers", "TierCrown", 98, function() MainMenu.go("Tiers") end)
+	squareButton(left, "Shop", "ShopCart", 98, function() MainMenu.go("Shop") end) -- (Tiers stays in the Menu; the Index filters by tier)
 	squareButton(left, "Dances", "DancesNote", 164, function() MainMenu.go("Dances") end)
 	local menu = squareButton(left, "Menu", "MainMenuLines", 233, function() ModalManager.toggle("Menu") end)
 	menu.Instance.Icon.Size = UDim2.fromOffset(30, 30) -- the lines icon reads bigger than the others

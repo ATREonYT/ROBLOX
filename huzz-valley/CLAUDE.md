@@ -2,7 +2,7 @@
 
 A Roblox game based on Huss Valley: rounds where players steal and hold the lead, plus collectible anime companions ranked in tiers (Sub1, Sub3, Sub5, MTB, HTB, Stacy, True Eve), dances, quests and cosmetics. Work on the branch the session names (`HUZZ-VALLEY` so far).
 
-**Gameplay doesn't exist yet.** Only the UI golden slice and its backend are built: saving, coins and gems, shop purchases and settings.
+The UI golden slice and its backend are built (saving, coins and gems, shop purchases, settings), and so is the core round loop with the overhead girl carry (see Gameplay).
 
 ## Design authority
 - The design kit is in `design/`:
@@ -12,7 +12,7 @@ A Roblox game based on Huss Valley: rounds where players steal and hold the lead
   - `IMPLEMENTATION-PROMPT.md` has the full rules;
   - `CHARACTER-REPLACEMENT-MAP.md` has the model slots.
 - Read only the page you're building.
-- **Colours:** purple header with faint square studs; peach selected tab, navy inactive; periwinkle actions (never green); slate for done or disabled; small red close square.
+- **Colours:** purple header with faint square studs (one tiled texture per strip: `assets/icons/stud-tile.png` from `tools/icons/make_stud_tile.py`; the owner asked for a texture instead of one part per stud); peach selected tab, navy inactive; periwinkle actions (never green); slate for done or disabled; small red close square.
 - **Fonts (the owner's table; don't change them):**
   - window headings: Montserrat Black (Heavy) in caps with a thin dark outline;
   - names and product titles: Montserrat Bold, no outline;
@@ -48,19 +48,27 @@ A Roblox game based on Huss Valley: rounds where players steal and hold the lead
 
 ## Checks and previews (run before every commit)
 - Put Lune on PATH: `/root/bin/lune`, or download 0.10.5 to `/root/bin`.
-- `sh tools/preview/check.sh` runs all three check files and must show 0 failed (37 + 33 + 29 at the time of writing).
-- `NODE_PATH=/opt/node22/lib/node_modules sh tools/preview/shots.sh <outDir> [names]` renders each screen under its reference page at 2x. Names: shop-passes, shop-cosmetics, shop-coins, settings-social, settings-audio, settings-controls, menu, lobby-hud, dances.
+- `sh tools/preview/check.sh` runs all three check files and must show 0 failed (39 + 34 + 29, plus 37 built from nothing, at the time of writing).
+- `NODE_PATH=/opt/node22/lib/node_modules sh tools/preview/shots.sh <outDir> [names]` renders each screen under its reference page at 2x. Names: shop-passes, shop-cosmetics, shop-coins, settings-social, settings-audio, settings-controls, menu, lobby-hud, dances, index, progression, quests, tiers.
 - Copy the ones that changed to `docs/previews/` as JPEG.
 - The renderer approximates Roblox:
   - the Robux glyph draws small;
   - the avatar is a grey stand-in;
   - icons come from `assets/icons` even before they're imported.
-- **Icons:** most of `assets/icons` (about 180-210 px) come from the owner's sharp sheet `design/icons-hd/owner-icon-sheet.webp`, cut by `python3 tools/icons/slice_sheet.py` (the name map is in the script). The rest are still the small kit crops cleared by `clear_background.py`: currency-plus, controls-menu, check-equipped, favourites, lock, search, play/stop, xp-badge, quests-clipboard, stopwatch, tag-fist, shirt, sneaker, gift-benefit, music-benefit. Running `clear_background.py` overwrites the sheet icons, so run `slice_sheet.py` after it. **Never redraw or upscale them** (the owner's call). `pack_images.py` shrinks the packed in-game copies to 128 px.
+- **Packed picture names** come from the file names (`tier-crown-mtb` → `TierCrownMtb`), so code must use that spelling. The renderer finds files without caring about capitals, so a wrong name only shows up in Studio; `check_index_tiers` checks the crowns.
+- **Pictures (`assets/art`) and 7 icons** come from the owner's sharp pack `design/sharp/Huzz-Valley-UI-Sharp.zip` (see-through renders, 1254 px squares), brought in by `python3 tools/icons/import_sharp.py`. That script only frames each picture to its slot's shape (top crop, centre crop or fit with margins) and sizes it to 2x the slot (crowns 3x). The name map and slot shapes are in the script. The pictures have no backgrounds, so cards draw a blue gradient behind them. Card pictures have no printed badges or stars, so badges are live, in one spot.
+- **Icons:** most of `assets/icons` (about 180-210 px) come from the owner's sharp sheet `design/icons-hd/owner-icon-sheet.webp`, cut by `python3 tools/icons/slice_sheet.py` (the name map is in the script). Lock, search, play, stop, xp-badge, currency-plus and controls-menu come from the sharp pack. The outline star, the equipped tick, the sneaker and the navy shirt (`shirt-equip`, for EQUIP/UNEQUIP) come from `design/sharp/Huzz-Valley-Additional-Icons.zip`. The fist, stopwatch and players (quest icons) come from `design/sharp/Huzz-Valley-Quest-Icons.zip`. All packs are imported by `import_sharp.py`. The rest are still small kit crops cleared by `clear_background.py`: the filled star, quests-clipboard, the white shirt (shop benefit), gift-benefit and music-benefit. The pack's hearts were a mix-up and are unused. Running `clear_background.py` overwrites the sheet icons, so run `slice_sheet.py` after it. **Never redraw or upscale them** (the owner's call). `pack_images.py` shrinks the packed in-game icons to 192 px (sharp on Retina screens, where icons show at about 200 px).
 
 ## Studio safety
 - Lune's built-in copy of the Roblox API is older than Roblox (it lacks EditableImage, for example), so a clean harness run does not prove the code runs in Studio.
 - Main.client starts every part through `Report.run`: a failing part can't stop the others, and any error shows in a red box on screen for the owner to screenshot.
 - Images draw in-game from `Shared/Images` (EditableImage) until IDs are uploaded. Re-run `python3 tools/icons/pack_images.py` after changing anything in `assets/`.
+- **Pictures in Studio's edit mode:** `src/ServerStorage/HuzzStudioTools/ShowPictures.server.lua` is a Studio helper, installed once with right-click > Save as Local Plugin. It adds a "Huzz Valley" toolbar:
+  - **Show Pictures** draws the packed pixels onto StarterGui images by their `Icon`/`Art` attribute (`ImageContent`, display only). It also runs when the place opens.
+  - **Upload Pictures** does the same as `upload-images.lua`.
+  - It reports in Output on lines starting with `[Huzz]`, and scripts in ServerStorage never run in the game.
+  - It is untested here because it needs Studio. The first owner test showed nothing, either because it wasn't installed or because of a silent failure, which is why it now reports.
+- **Uploading:** `tools/studio/upload-images.lua` (owner pastes it into the Command Bar) uploads every packed image with `AssetService:CreateAssetAsync`, writes `Config/ImageIds` (checked first by `Config/Assets`), and fills `Image` on StarterGui parts by their `Icon`/`Art` attribute. It is untested here: cloud sessions can't reach Roblox (apis.roblox.com is blocked). When the owner sends their ImageIds text, commit it to `src/ReplicatedStorage/Shared/Config/ImageIds.lua` and rebuild, so the StarterGui copy carries the IDs.
 
 ## UI in StarterGui (owner's call)
 - **How it works:** Roblox copies `StarterGui.HuzzUI` into PlayerGui, and the screens reuse those parts instead of making new ones. `Kit.new` reuses an unused saved child with the same class and name (its "twin").
@@ -72,29 +80,78 @@ A Roblox game based on Huss Valley: rounds where players steal and hold the lead
   - Make parts with `Kit.new`/Kit helpers and a `Parent`.
   - Never use `x.Parent = y` in screens; use `Kit.attach(x, y)` and use the part it returns.
   - A list that the code refills must clear its old children first (the saved example cards included).
+  - Kit's used/reused bookkeeping uses plain tables cleared on `Destroying`, never weak tables. Weak tables with Instance keys drop entries at random (in Roblox and in Lune), which made the reuse random.
+  - Siblings with the same name must be identical: a saved part is matched by name, and same-named siblings can come back in any order. Give differing ones their own names (as `Kit.studs` does: Studs, Studs2...). The "nothing doubled" check catches mistakes.
   - A position that depends on the device (the top bar, phones) is assigned after creation, so it applies to saved parts too.
 - **Checks:** `check.sh` runs everything on the saved UI, plus `check.luau` once built from nothing (`HUZZ_FRESH=1`). It also checks that nothing is doubled and that a Studio edit survives.
 - **Owner's edits:** the owner's Studio edits live only in their place. Regenerating `HuzzUI.rbxm` starts from the code again. Before changing UI code after they have edited in Studio, ask for their export (`tools/export-for-claude.lua`) and copy their changes into the code.
 - **Limits:**
-  - Icons look blank in Studio's edit mode: they are drawn when the game runs, until real image IDs are set.
+  - Icons, pictures and the header studs (a texture) look blank in Studio's edit mode unless the ShowPictures helper is installed or real image IDs are set.
   - Items inside lists (shop items, character and dance cards, rewards, quests) are redrawn by the code, so Studio edits there don't stay.
 
 ## Screen layout (owner's calls)
-- The HUD's side buttons are centred on the left edge.
+- The HUD's side buttons are Index, Shop, Dances and Menu (the owner swapped Tiers for Shop; Tiers stays in the Menu). They are centred on the left edge. The Menu side panel opens in that same spot (centred on the left edge) and replaces them.
 - The gear sits in Roblox's top bar row: 44 px tall, 12 px from the right edge, lined up with Roblox's own buttons. On touch devices the coin and gem pills move into that row too, so the thumbstick has the bottom-left.
 - Windows fit the ScreenGui's own area (`Scale.setRoot`), which is below the top bar and inside a phone's safe area.
 - No dim layer behind windows: on phones it left grey bands at the sides. The blur alone covers the screen.
 - The Dances preview is a navy card (picture, name, help line) with equal Play and Stop buttons inside it. There is no brown floor.
+
+## Gameplay (round loop and carry)
+- **Rules (owner's design):**
+  - The first runner across each round takes the girl.
+  - Tagged runners, runners still out at the timeout and runners who die all catch next round.
+  - Rounds alternate ZoneA ↔ ZoneB.
+  - A catcher who tags her holder steals her. The first runner across rescues her, and the round after is Final:
+    - the holder crosses and wins her;
+    - or the holder is tagged and the tagger wins her (on a timeout, the thief wins).
+  - The holder as the only runner left = Final. No runners left = the holder wins.
+  - Solo (Studio Play): no catcher; cross, then cross back to win.
+- **`Shared/RoundRules`** is a pure state machine that returns events; `tests/RoundRules.spec.luau` covers it.
+  Change rules there first, with a test.
+- **`HuzzServer/RoundService.server`** is its own Script, not started by Bootstrap: the UI harness runs Bootstrap,
+  and an endless round loop would hang `check.sh`.
+  - It turns rule events into world actions (`handlers`).
+  - State goes in attributes on the `Round` remote (`Net`).
+  - It sets Workspace `NextRoundAt`, which the Lobby HUD banner counts down to.
+  - It saves through `DataService.update`: the winner's girl goes in `Characters[model name]`, and it adds the
+    `Stats` Steals, HoldSeconds and Rounds.
+- **`MapService`** finds the zones by tag or name, or builds a test field.
+- **`GirlService`** handles the collection (`ServerStorage/AnimeGirls/<Rarity>/<Model>` or a `Rarity` attribute)
+  and the rarity roll.
+  - `makeCopy` strips scripts, switches her Humanoid off, scales her to `Carry.GirlLength`, and welds parts that
+    aren't joined yet.
+  - It walks the joint graph by hand, because anchored parts have no assemblies and doubling Motor6Ds with welds
+    would lock her limbs.
+- **`CarryService`** adds a Motor6D from the carrier's torso to her root.
+  - She lives in `Workspace.HuzzCarried`, never inside the character, so walk animations can't bind her joints.
+  - `Shared/CarryMath` holds the hold height and arm pose, shared by the server and the client so they agree.
+    `tests/CarryMath.spec.luau` checks the directions on a stock R15 rig.
+- **`HuzzClient/StartGameplay`** starts `Gameplay/*` through `Report.run`.
+  - `CarryAnimator` sets Motor6D.Transform in PreSimulation, after the animations:
+    - the carry joint: the pickup flight, the step bob and the inertia spring;
+    - the carrier's shoulders and elbows: the pose, plus `AnimBlend` of the playing animation;
+    - her limbs: dangling toward gravity.
+    It tells its own writes from the Animator's by reading the Transform back (CFrames are float32).
+  - `RoundHud` is a stand-in, to be rebuilt with Kit as the Match HUD page.
+  - `AvatarAnimations` swaps in the IDs from `Config/Animations`.
+- **`sh tools/check.sh`** compiles every script and runs both specs. Run it with `tools/preview/check.sh`.
+- **Not seen in Studio yet:** physics ownership of the welded girl and the Animator ordering. Ask the owner how
+  the carry feels before tuning blind.
+- **Waiting on the owner:** their girls and map (a `.rbxl` in `places/`, or `tools/studio/export-girls-and-map.lua`
+  output). Check every girl (scale, rig, dangle) before tuning. Their rarities are Common → Secret, but the Index
+  uses tiers (Sub1 → TrueEve) and `Config/Characters.List`: ask how they map, and add the girls to that list so
+  the Index shows them.
 
 ## Place file
 `sh tools/place/build_place.sh` rebuilds `places/HuzzValley.rbxl` (all scripts plus a baseplate). Rebuild it whenever `src/` changes, so the owner can always just open the file.
 
 ## Open items (owner's checklist lives in `README.md`)
 - **Built:** Lobby HUD, Menu (a side panel over the HUD's side buttons), Shop, Settings, Character Index, Tiers, Dances and Progression (Rewards and Quests). Every main window is 701 x 320.
-- **Next:** the round-driven pages (Map Vote, Recruitment, Results, Match HUD) and the Gift Picker. These need the round system and the gifting backend first.
+- **Next:** the round-driven pages (Map Vote, Recruitment, Results, Match HUD) on top of the round system; the Gift Picker (needs the gifting backend).
 - **Missing from the owner:**
-  - sharp versions of the icons still from the kit crops (list under Checks and previews);
-  - sharp versions of the pictures in `assets/art` (all are small crops from the kit pages: character and dance cards, tier crowns, shop pictures, rewards);
+  - sharp versions of the 5 icons still from the kit crops (list under Checks and previews), including the filled star;
+  - big preview pictures for Step and Wave (the Index preview uses each character's whole-body render);
+  - running `tools/studio/upload-images.lua` and sending back the ImageIds text;
   - Game Pass and Developer Product IDs;
   - dance and pose animations;
   - companion models;

@@ -21,6 +21,11 @@
     },
     "StarterGui": {
       "$path": "src/StarterGui"
+    },
+    "ServerStorage": {
+      "HuzzStudioTools": {
+        "$path": "src/ServerStorage/HuzzStudioTools"
+      }
     }
   }
 }

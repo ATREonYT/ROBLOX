@@ -27,6 +27,19 @@ local function decode(s: string): buffer
 	return out
 end
 
+-- A new EditableImage holding the packed pixels (kind = "Icons" or "Art"). Errors if it can't be made here.
+-- (Also used by tools/studio/upload-images.lua to upload each image once.)
+function ImageLoader.editable(kind: string, name: string): EditableImage
+	local folder = Images:FindFirstChild(kind)
+	local module = folder and folder:FindFirstChild(name)
+	assert(module, "no packed image " .. kind .. "/" .. name)
+	local d = require(module)
+	local size = Vector2.new(d.W, d.H)
+	local image = AssetService:CreateEditableImage({ Size = size })
+	image:WritePixelsBuffer(Vector2.zero, size, decode(d.Data))
+	return image
+end
+
 local cache: { [string]: any } = {}
 local warned = false
 
@@ -40,13 +53,7 @@ function ImageLoader.content(kind: string, name: string): any
 		cache[key] = false
 		return nil
 	end
-	local ok, result = pcall(function()
-		local d = require(module)
-		local size = Vector2.new(d.W, d.H)
-		local image = AssetService:CreateEditableImage({ Size = size })
-		image:WritePixelsBuffer(Vector2.zero, size, decode(d.Data))
-		return Content.fromObject(image)
-	end)
+	local ok, result = pcall(function() return Content.fromObject(ImageLoader.editable(kind, name)) end)
 	if not ok and not warned then
 		warned = true
 		warn("[HuzzUI] built-in images can't be drawn on this device (" .. tostring(result) .. "); upload them to show them")

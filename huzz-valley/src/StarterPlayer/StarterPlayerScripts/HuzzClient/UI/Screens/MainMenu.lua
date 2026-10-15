@@ -27,9 +27,12 @@ end
 
 function MainMenu.build(parent: Instance)
 	local window = Kit.window({ Name = "Menu", Title = "MENU", Icon = "MainMenuLines", Width = W, Height = H, HeaderHeight = 40, TitleX = 46, TitleSize = 26, TitleWidth = 84, StudsTo = 158, CloseSize = Vector2.new(30, 30), PanelColor = C.MenuPanel, Parent = parent, OnClose = function() ModalManager.close() end })
-	-- A side panel: it opens where the HUD's side buttons are (they slide away under it); the game stays in view.
-	window.Holder.AnchorPoint = Vector2.new(0, 0)
-	window.Holder.Position = UDim2.fromOffset(12, 12)
+	-- A side panel: it opens in the HUD's side-button spot, centred on the left edge, and the buttons slide away
+	-- under it; the game stays in view. (A position moved in Studio is kept.)
+	if not Kit.reused(window.Holder) then
+		window.Holder.AnchorPoint = Vector2.new(0, 0.5)
+		window.Holder.Position = UDim2.new(0, 12, 0.5, 0)
+	end
 	local rows = {}
 	for i, e in MainMenu.Entries do
 		local b = Kit.button({ Name = e.Key, Style = "MenuRow", Text = "", Position = UDim2.fromOffset(9, 45 + (i - 1) * 38), Size = UDim2.fromOffset(W - 17, 34), Corner = 3, Parent = window.Panel })

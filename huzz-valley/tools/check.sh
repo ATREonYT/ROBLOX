@@ -1,0 +1,5 @@
+#!/bin/sh
+# Syntax-checks every script and runs the tests. Needs Lune 0.10.5 on PATH or in /root/bin.
+cd "$(dirname "$0")/.." || exit 1
+LUNE=$(command -v lune || echo /root/bin/lune)
+"$LUNE" run tools/syntax.luau && "$LUNE" run tests/RoundRules.spec.luau && "$LUNE" run tests/CarryMath.spec.luau

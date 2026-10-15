@@ -27,7 +27,7 @@ local W, H = 701, 320 -- every main window shares this size
 -- Colours measured on page 02 that the shared theme doesn't have.
 local COL = {
 	Field = hex("1E3057"), Drop = hex("1A284E"), FieldRim = hex("0E1836"), Placeholder = hex("C3CBE3"),
-	CardRim = hex("2D5380"), Band = hex("182C45"), ArtBack = hex("223B6E"), Select = hex("FCE24A"),
+	CardRim = hex("2D5380"), Band = hex("182C45"), ArtBack = hex("223B6E"), ArtTop = hex("3557A0"), Select = hex("FCE24A"),
 	Status = hex("D5D8F2"), Equipped = hex("C7C9F9"), LockedText = hex("9AA6BF"),
 	Info = hex("1E314A"), Rule = hex("3A4F70"), PreviewBack = hex("1B2D4A"),
 	Equip = hex("8C8FEA"), EquipText = hex("0A0D3A"), Menu = hex("16264A"), MenuRim = hex("2E4669"),
@@ -42,15 +42,11 @@ Kit.Styles.IndexFav = look(hex("274570"), C.Text, hex("34557F"), hex("3D5F8C")) 
 Kit.Styles.IndexDrop = look(COL.Drop, C.Text, hex("24345C"), COL.FieldRim) -- Tier / Sort fields
 Kit.Styles.IndexItem = look(COL.Menu, C.Text, COL.Menu, COL.Menu) -- dropdown rows
 
--- Where each crop's printed badge and star sit, in card px (card art 151 x 83). The live badge is drawn at least
--- as wide/tall as the printed one so it fully covers it; StarCover hides a printed star under the live one.
-local ART = {
-	CharAiko = { BadgeX = 113, BadgeR = 0, BadgeH = 22, Star = Vector2.new(4, 3), StarCover = hex("2A4592") },
-	CharRen = { BadgeX = 98, BadgeR = 3, BadgeH = 24, Star = Vector2.new(5, 4) },
-	CharSora = { BadgeX = 106, BadgeR = 0, BadgeH = 28, Star = Vector2.new(5, 4) },
-	CharLocked = { BadgeX = 101, BadgeR = 0, BadgeH = 29, Star = Vector2.new(2, 5), StarCover = hex("283C5B") },
-}
-local FULL_ART = { Aiko = "CharAikoFull" } -- the big preview picture, where the kit has one
+-- The card pictures are the owner's clean see-through renders (no printed badge or star), so every card uses the
+-- same live badge and star spots, in card px (card art 151 x 83).
+local CARD_ART = { BadgeX = 101, BadgeR = 3, BadgeH = 22, Star = Vector2.new(5, 4) }
+-- The big preview picture (whole character); locked characters show the silhouette.
+local FULL_ART = { Aiko = "CharAikoFull", Ren = "CharRenFull", Sora = "CharSoraFull" }
 
 -- Grid geometry (window px): two columns of 151 x 112 cards, measured from page 02.
 local GRID = { X = 12, Y = 80, W = 333, H = H - 80 - 4, Pad = 6 }
@@ -133,12 +129,15 @@ local function badge(parent: Instance, tier: string, pos: UDim2, minW: number, h
 end
 
 -- The character picture with only its top corners rounded (one rounded copy plus a square copy clipped below the
--- corners: ClipsDescendants clips square in Roblox), the live tier badge over the printed one, and a cover over a
--- printed star. scale = picture size / card art size. Returns the art's info (for the star position).
+-- corners: ClipsDescendants clips square in Roblox) on its blue backdrop, and the live tier badge. scale = picture size / card art size. Returns the art's info (for the star position).
 local function picture(parent: Instance, c, isOwned: boolean, w: number, h: number, scale: number, rounded: { top: boolean, bottom: boolean })
 	local artName = if isOwned then c.Art else "CharLocked"
-	local holder = new("Frame", { Name = "Art", Size = UDim2.fromOffset(w, h), BackgroundColor3 = COL.ArtBack, BackgroundTransparency = artName and 1 or 0, BorderSizePixel = 0, Parent = parent })
+	-- a blue backdrop behind the see-through picture (lighter at the top, like the reference's card scenes)
+	local holder = new("Frame", { Name = "Art", Size = UDim2.fromOffset(w, h), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = parent })
+	new("UIGradient", { Rotation = 90, Color = ColorSequence.new(COL.ArtTop, COL.ArtBack), Parent = holder })
 	local r = 4
+	Kit.attach(Kit.corner(r), holder)
+	new("Frame", { Name = "SquareFoot", Position = UDim2.new(0, 0, 1, -r), Size = UDim2.new(1, 0, 0, r), BackgroundColor3 = COL.ArtBack, BorderSizePixel = 0, Visible = not rounded.bottom, Parent = holder })
 	if artName then
 		Kit.attach(Kit.corner(r), Kit.art(artName, { Name = "Picture", Size = UDim2.fromScale(1, 1), Parent = holder }))
 		-- square copies cover the corners that should stay square
@@ -148,17 +147,12 @@ local function picture(parent: Instance, c, isOwned: boolean, w: number, h: numb
 		end
 	else
 		-- owned, but the kit has no picture for this character yet (honest placeholder)
-		Kit.attach(Kit.corner(r), holder)
 		Kit.text({ Name = "NoArt", Text = "Picture coming soon", TextSize = math.floor(13 * scale), TextColor3 = C.SubText, TextXAlignment = Enum.TextXAlignment.Center, Size = UDim2.fromScale(1, 1), Parent = holder })
 	end
-	local info = artName and ART[artName] or { BadgeX = CW, BadgeR = 3, BadgeH = 22, Star = Vector2.new(5, 4) }
+	local info = CARD_ART
 	local right = math.round(info.BadgeR * scale)
 	local minW = math.max(36, math.round((CW - info.BadgeR - info.BadgeX) * scale))
 	badge(holder, c.Tier, UDim2.new(1, -right, 0, 0), minW, math.round(info.BadgeH * scale), math.round(15 * scale), 3)
-	if info.StarCover then
-		local s = math.round(28 * scale)
-		new("Frame", { Name = "StarCover", Position = UDim2.fromOffset(math.round((info.Star.X - 1) * scale), math.round((info.Star.Y - 1) * scale)), Size = UDim2.fromOffset(s, s), BackgroundColor3 = info.StarCover, BorderSizePixel = 0, ZIndex = 2, Parent = holder }, { Kit.corner(math.round(8 * scale)) })
-	end
 	return holder, info
 end
 
@@ -295,12 +289,12 @@ function Index.build(parent: Instance)
 		for _, g in { previewArt, info, favBig.Instance, nameRow, statusRow, action.Instance } do g.Visible = visible end
 		if not c then return end
 		local isOwned, isEq, isFav = owned(c.Id), equipped(c.Id), favourite(c.Id)
-		-- picture: the kit's full-size art when there is one, otherwise the card picture framed in the middle
+		-- picture: the whole character (or the locked silhouette); a character with no big picture shows its card
 		local key = c.Id .. (isOwned and "+" or "-")
 		if key ~= shownPreview then
 			shownPreview = key
 			for _, ch in previewArt:GetChildren() do if ch:IsA("GuiObject") then ch:Destroy() end end
-			local full = isOwned and FULL_ART[c.Id]
+			local full = if isOwned then FULL_ART[c.Id] else "CharLockedFull"
 			if full then
 				Kit.attach(Kit.corner(3), Kit.art(full, { Name = "Picture", Size = UDim2.fromOffset(216, 238), Parent = previewArt }))
 			else
@@ -331,7 +325,7 @@ function Index.build(parent: Instance)
 			action.setEnabled(newKey ~= "Locked")
 			if actionIcon then actionIcon:Destroy() end
 			local locked = newKey == "Locked"
-			actionIcon = Kit.icon(locked and "Lock" or "ShirtBenefit", { Name = "Icon", Size = UDim2.fromOffset(locked and 18 or 26, locked and 21 or 24), LayoutOrder = 1, ImageColor3 = locked and Color3.new(1, 1, 1) or COL.EquipText, ZIndex = 3, Parent = action.Instance:FindFirstChild("Content") })
+			actionIcon = Kit.icon(locked and "Lock" or "ShirtEquip", { Name = "Icon", Size = UDim2.fromOffset(locked and 18 or 26, locked and 21 or 24), LayoutOrder = 1, ImageColor3 = locked and Color3.new(1, 1, 1) or COL.EquipText, ZIndex = 3, Parent = action.Instance:FindFirstChild("Content") })
 		end
 	end
 
