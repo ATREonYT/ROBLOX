@@ -39,8 +39,8 @@ const ground = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000), new THREE.Mes
 ground.rotation.x = -Math.PI / 2;
 ground.receiveShadow = true;
 scene.add(ground);
-const grid = new THREE.GridHelper(400, 100, '#b49a62', '#b49a62'); // 4-stud cells
-grid.material.transparent = true; grid.material.opacity = 0.25; grid.position.y = 0.01;
+const grid = new THREE.GridHelper(400, 100, '#a88c55', '#a88c55'); // 4-stud cells
+grid.material.transparent = true; grid.material.opacity = 0.45; grid.position.y = 0.01;
 scene.add(grid);
 const unit = new THREE.BoxGeometry(1, 1, 1);
 const pool = [];
