@@ -18,6 +18,7 @@ local GirlService = require(script.Parent.GirlService)
 local CarryService = require(script.Parent.CarryService)
 local DataService = require(script.Parent.DataService)
 local KnockdownService = require(script.Parent.KnockdownService)
+local MapVoteService = require(script.Parent.MapVoteService)
 
 require(script.Parent.SafetyService).clean()
 MapService.init()
@@ -59,7 +60,7 @@ local function setStage(stage, seconds)
 	State:SetAttribute("Stage", stage)
 	State:SetAttribute("EndsAt", if seconds then Workspace:GetServerTimeNow() + seconds else 0)
 	-- The Lobby HUD's "next round" banner counts down to this.
-	Workspace:SetAttribute("NextRoundAt", if stage == "Intermission" then State:GetAttribute("EndsAt") else nil)
+	Workspace:SetAttribute("NextRoundAt", if stage == "Intermission" or stage == "Voting" then State:GetAttribute("EndsAt") else nil)
 end
 
 local function humanoidOf(id)
@@ -123,7 +124,7 @@ local function place(id)
 	end
 	local role = match and match.roles[id]
 	local status = match and match.status[id]
-	local middle = zones.Middle.Position
+	local middle = if zones.Middle then zones.Middle.Position elseif zones.Lobby then zones.Lobby.Position else Vector3.zero
 	local zone, lookAt
 	if not role then
 		-- Waiting for the next game: the Lobby part if there is one, else where they are.
@@ -328,6 +329,7 @@ local function runRound()
 	if match.holder == nil then
 		showPrize() -- she waits in the middle (or on the far side)
 	end
+	announce(`ROUND {match.round}`, Color3.new(1, 1, 1), true)
 	apply(events)
 	setStage("Countdown", Config.CountdownTime)
 	task.wait(Config.CountdownTime)
@@ -378,12 +380,6 @@ local function finishGame()
 end
 
 local function runGame()
-	local map = MapService.pick()
-	State:SetAttribute("Map", map.name)
-	if #MapService.maps > 1 then
-		announce(`Map: {map.name}`, Color3.new(1, 1, 1), true)
-		task.wait(1.5)
-	end
 	girl = GirlService.roll()
 	GirlService.prepare(girl) -- rebuilds her as R15 the first time (Config/Round.GirlRig)
 	local ids = {}
@@ -414,9 +410,11 @@ local function cleanUp()
 	State:SetAttribute("HolderId", 0)
 	State:SetAttribute("Round", 0)
 	for id in byId do
-		place(id)
+		place(id) -- everyone back to the lobby
 	end
 	syncAll()
+	MapService.unload()
+	State:SetAttribute("Map", "")
 end
 
 -- Players
@@ -481,17 +479,39 @@ local function playerCount()
 end
 local minPlayers = if RunService:IsStudio() then Config.StudioMinPlayers else Config.MinPlayers
 
-while true do
-	setStage("Waiting")
-	while playerCount() < minPlayers do
-		task.wait(1)
+local function enough()
+	return playerCount() >= minPlayers
+end
+
+-- Between games: everyone votes on two maps (one map: a short wait instead), the winner
+-- appears in front of the lobby and everyone in the server is moved onto it.
+local function chooseMap()
+	if #MapService.maps >= 2 then
+		local a, b = MapService.candidates()
+		setStage("Voting", Config.VoteTime)
+		local winner = MapVoteService.run(a.name, b.name, Config.VoteTime, enough)
+		return winner and MapService.byName(winner)
 	end
 	setStage("Intermission", Config.IntermissionTime)
 	local deadline = os.clock() + Config.IntermissionTime
-	while os.clock() < deadline and playerCount() >= minPlayers do
+	while os.clock() < deadline and enough() do
 		task.wait(0.25)
 	end
-	if playerCount() >= minPlayers then
+	return enough() and MapService.maps[1] or nil
+end
+
+while true do
+	setStage("Waiting")
+	while not enough() do
+		task.wait(1)
+	end
+	local map = chooseMap()
+	if map and enough() then
+		MapService.load(map)
+		State:SetAttribute("Map", map.display)
+		setStage("Loading", Config.LoadTime)
+		announce(`Map: {map.display}`, Color3.new(1, 1, 1), true)
+		task.wait(Config.LoadTime)
 		local ok, err = xpcall(runGame, debug.traceback)
 		if not ok then
 			warn("[Huzz] Game stopped by an error: " .. tostring(err))

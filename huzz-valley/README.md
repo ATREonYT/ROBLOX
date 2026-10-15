@@ -36,6 +36,13 @@ size, tilt, arms, bounce, sway, dangling limbs) and `Shared/Config/Animations.lu
 walk/run/idle IDs). The carry sits on top of any walk animation: she rides on the torso and only the arms
 are posed, so new animations need no code changes.
 
+## Easiest way to play YOUR game with everything in it
+Download **`places/HuzzValley-yours.rbxl`**
+(https://github.com/ATREonYT/ROBLOX/raw/HUZZ-VALLEY/huzz-valley/places/HuzzValley-yours.rbxl). It's your own place
+(your maps, girls and lobby) with every script already inside, so it needs no Rojo. Open it in Studio, save it as
+your working copy, and press Play. When you change your map or girls, save, copy it to `places/HUSSANIME.rbxl` and
+push, and I'll rebuild this file.
+
 ## Quickest way: open the ready-made game file
 `places/HuzzValley.rbxl` has all the scripts plus a simple grass baseplate. You don't need Rojo.
 1. On your Mac, open it on GitHub (branch **HUZZ-VALLEY**, folder `huzz-valley/places`) and click **Download raw file**. Or pull in GitHub Desktop and find it in the folder.

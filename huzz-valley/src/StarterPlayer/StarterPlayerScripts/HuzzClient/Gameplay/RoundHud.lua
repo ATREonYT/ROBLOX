@@ -126,6 +126,8 @@ function M.start()
 	local STAGE_TEXT = {
 		Waiting = "WAITING FOR PLAYERS",
 		Intermission = "NEXT GAME",
+		Voting = "VOTE FOR A MAP",
+		Loading = "GET READY",
 		Countdown = "GET READY",
 		Running = "ROUND %d",
 		RoundOver = "ROUND OVER",
@@ -141,7 +143,7 @@ function M.start()
 			label ..= string.format("  %d:%02d", secs // 60, secs % 60)
 		end
 		status.Text = label
-		pill.Visible = stage ~= "Intermission" -- the Lobby HUD's banner shows that countdown
+		pill.Visible = stage ~= "Intermission" and stage ~= "Voting" -- the Lobby HUD's banner and the vote window show those
 
 		if stage == "Countdown" then
 			local count = math.ceil(left)
@@ -177,7 +179,7 @@ function M.start()
 				role.TextColor3 = Color3.new(1, 1, 1)
 			end
 		else
-			role.Text = if stage == "Waiting" or stage == "Intermission" then "" else "Spectating — you'll join the next game"
+			role.Text = if stage == "Waiting" or stage == "Intermission" or stage == "Voting" or stage == "Loading" then "" else "Watching — you'll play in the next game"
 			role.TextColor3 = Color3.fromRGB(200, 200, 210)
 		end
 	end)

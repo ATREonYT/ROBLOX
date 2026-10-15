@@ -121,6 +121,18 @@ The UI golden slice and its backend are built (saving, coins and gems, shop purc
   - It sets Workspace `NextRoundAt`, which the Lobby HUD banner counts down to.
   - It saves through `DataService.update`: the winner's girl goes in `Characters[model name]`, and it adds the
     `Stats` Steals, HoldSeconds and Rounds.
+- **Between games (owner's call):** a map vote (`Screens/MapVote`, design page 15, ModalManager window, opens on
+  Stage "Voting"; `MapVoteService`: one vote per player, a new vote replaces the old, ties random). The winner is
+  copied in front of the lobby island (`MapService.load`: maps live in `ReplicatedStorage.HuzzMaps` from server
+  start; placed `Map.Gap` past the lobby edge on the side facing where the maps were built, the run axis crossing
+  left to right; an optional `MapSpot` part overrides that) and removed after the game.
+  - Players who join mid-game stay in the lobby watching.
+  - The status pill and a banner show the round number.
+  - Vote cards show a live ViewportFrame of each map, with its scripts stripped.
+  - The map icon is a soft crop of page 15 (`assets/icons/map.png`) until the owner sends a sharp one.
+- **The owner tests `places/HuzzValley-yours.rbxl`** (Rojo never connected for them): `build_yours.luau` swaps
+  every script and the saved UI into their `places/HUSSANIME.rbxl`. `build_place.sh` makes it when that file
+  exists. When they push a newer HUSSANIME.rbxl, rebuild.
 - **The owner's maps** are in `Workspace/Maps`: Base_Map, BasketBall_Map (no Zone B, so one is mirrored) and
   Halloween_Map, plus `Spawn` (the SpawnBaseplate lobby).
   - Zones are named "Zone A"/"Zone B", 8 studs tall, floating, unanchored. Names match loosely, zones are

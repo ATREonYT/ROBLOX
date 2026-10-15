@@ -5,7 +5,9 @@
 --   BuyWithCoins   RemoteFunction  client -> server: (productKey) -> ok, message (no coin items yet; validated anyway)
 --   Action         RemoteFunction  client -> server: (verb, ...) -> ok, message (equip, favourite, claim; see ActionService)
 --   Round          RemoteEvent     server -> client: (kind, data) round moments; its attributes are the round state
---                                  (Stage, EndsAt, Round, Phase, Goal, GirlName, GirlRarity, HolderId; see RoundService)
+--                                  (Stage, EndsAt, Round, Phase, Goal, GirlName, GirlRarity, HolderId, Map; and while
+--                                  voting VoteA, VoteB, VoteCountA, VoteCountB; see RoundService and MapVoteService)
+--   Vote           RemoteEvent     client -> server: (mapName) the player's map vote; a new vote replaces the old one
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -18,6 +20,7 @@ local SPEC = {
 	BuyWithCoins = "RemoteFunction",
 	Action = "RemoteFunction",
 	Round = "RemoteEvent",
+	Vote = "RemoteEvent",
 }
 
 local folder: Folder

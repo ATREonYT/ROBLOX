@@ -29,6 +29,15 @@ end
 for k, v in cfg.SETTINGS or {} do
 	DataService.update(player, function(d) d.Settings[k] = v end)
 end
+-- VOTE="mapA,mapB,countA,countB,myVote": a map vote in progress (page 15)
+if cfg.VOTE then
+	local v = string.split(cfg.VOTE, ",")
+	local round = game.ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Round")
+	round:SetAttribute("VoteA", v[1]); round:SetAttribute("VoteB", v[2])
+	round:SetAttribute("VoteCountA", tonumber(v[3])); round:SetAttribute("VoteCountB", tonumber(v[4]))
+	round:SetAttribute("EndsAt", workspace:GetServerTimeNow() + 8.5)
+	if v[5] then player:SetAttribute("HuzzVote", v[5]) end
+end
 __runScript(game.StarterPlayer.StarterPlayerScripts.HuzzClient.Main)
 task.wait(0.3)
 local MM = require(game.StarterPlayer.StarterPlayerScripts.HuzzClient.UI.ModalManager)

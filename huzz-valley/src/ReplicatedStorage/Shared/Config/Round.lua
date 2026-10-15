@@ -5,7 +5,9 @@ return {
 	-- (no catcher, cross twice to win). Test > Clients and Servers for real rounds.
 	StudioMinPlayers = 1,
 
-	IntermissionTime = 15,
+	IntermissionTime = 15, -- the wait before a game when there's only one map (no vote)
+	VoteTime = 15, -- the map vote between games (design page 15)
+	LoadTime = 3, -- after the vote: the map appears, everyone is moved onto it
 	CountdownTime = 4, -- everyone frozen in place before GO
 	RoundTime = 45, -- runners still out when it ends count as caught
 	RoundEndPause = 4,
@@ -49,6 +51,8 @@ return {
 		Bench = "Bench", -- where caught runners wait out the round
 		Lobby = "Lobby", -- where everyone waits between games (optional; else the SpawnBaseplate)
 		MiddleSpawn = 20, -- catchers start within this many studs of the Middle's centre
+		Gap = 30, -- studs between the lobby island and the map copied in front of it
+		Names = {}, -- names shown in the vote, e.g. { Base_Map = "The Field" } (default: the folder name without "_Map")
 		BuildTestField = true, -- no zones found: build a plain test field so the game still runs
 	},
 
