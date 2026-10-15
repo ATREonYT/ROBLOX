@@ -18,6 +18,13 @@ function Model:FindFirstChild(name)
 	return self.parts[name]
 end
 
+-- Roblox's CFrame.lookAt (Lune 0.10.5's own faces the opposite way, so scenes use this one).
+function Rig.lookAt(pos, target)
+	local look = (target - pos).Unit
+	local right = look:Cross(Vector3.new(0, 1, 0)).Unit
+	return CFrame.fromMatrix(pos, right, right:Cross(look), -look)
+end
+
 -- A Motor6D. Use it for extra joints too (a carried rig's root welded to this rig's torso).
 function Rig.motor(name, part0, part1, c0, c1)
 	local m = { Name = name, Part0 = part0, Part1 = part1, C0 = c0 or CFrame.identity, C1 = c1 or CFrame.identity, Transform = CFrame.identity, Parent = part1 }

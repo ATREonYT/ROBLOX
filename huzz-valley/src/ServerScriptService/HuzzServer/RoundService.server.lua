@@ -160,14 +160,17 @@ local function girlPosition(id)
 	return (id and CarryService.position(byId[id])) or (prize and prize:GetBoundingBox().Position) or nil
 end
 
-local function moveGirlTo(fromId, toId)
+-- How she reacts to her new carrier.
+local MOODS = { FirstAcross = "Excited", Rescued = "Excited", Stolen = "Struggle", Reassigned = "Struggle" }
+
+local function moveGirlTo(fromId, toId, reason)
 	local from = girlPosition(fromId)
 	if fromId and byId[fromId] then
 		CarryService.remove(byId[fromId])
 	end
 	clearPrize()
 	if toId and byId[toId] then
-		CarryService.give(byId[toId], girl, from)
+		CarryService.give(byId[toId], girl, from, MOODS[reason] or "Excited")
 	end
 	State:SetAttribute("HolderId", toId or 0)
 end
@@ -180,7 +183,7 @@ function handlers.GirlMoved(e)
 	if e.from and e.to then
 		addStat(e.to, "Steals", 1) -- took her from someone
 	end
-	moveGirlTo(e.from, e.to)
+	moveGirlTo(e.from, e.to, e.reason)
 	if not e.to then
 		showPrize()
 	end
@@ -328,8 +331,9 @@ local function finishGame()
 			d.Characters[girl.id] = d.Characters[girl.id] or os.time()
 		end)
 		if match.holder ~= winnerId then
-			moveGirlTo(match.holder, winnerId)
+			moveGirlTo(match.holder, winnerId, "Won")
 		end
+		CarryService.setMood(winner, "Cheer")
 		RoundNet:FireAllClients("Win", { winner = winnerId, name = winner.DisplayName, girl = girl.name, rarity = girl.rarity })
 	else
 		RoundNet:FireAllClients("Win", { girl = girl.name, rarity = girl.rarity })
@@ -342,6 +346,7 @@ end
 
 local function runGame()
 	girl = GirlService.roll()
+	GirlService.prepare(girl) -- rebuilds her as R15 the first time (Config/Round.GirlRig)
 	local ids = {}
 	for id in byId do
 		table.insert(ids, id)
@@ -390,7 +395,7 @@ local function onCharacter(player, character)
 		if match and match.roles[id] then
 			place(id)
 			if match.holder == id and not CarryService.get(player) then
-				CarryService.give(player, girl, nil)
+				CarryService.give(player, girl, nil, if match.phase == "Stolen" then "Struggle" else "Calm")
 			end
 		end
 		syncPlayer(id)

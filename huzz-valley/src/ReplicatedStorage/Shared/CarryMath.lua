@@ -5,9 +5,35 @@ local Carry = require(script.Parent.Config.Carry)
 local CarryMath = {}
 local rad, cos = math.rad, math.cos
 
--- Arm joints of an R15 or R6 character. sign is -1 for the right arm, +1 for
--- the left, so mirrored angles share one formula.
+-- Avatars on Roblox's newer joints use AnimationConstraints (attachments
+-- instead of C0/C1). This makes one read and write like a Motor6D.
+function CarryMath.joint(item)
+	if not item or item.ClassName ~= "AnimationConstraint" then
+		return item
+	end
+	return setmetatable({}, {
+		__index = function(_, key)
+			if key == "C0" then
+				return item.Attachment0.CFrame
+			elseif key == "C1" then
+				return item.Attachment1.CFrame
+			elseif key == "Part0" then
+				return item.Attachment0 and item.Attachment0.Parent
+			elseif key == "Part1" then
+				return item.Attachment1 and item.Attachment1.Parent
+			end
+			return item[key]
+		end,
+		__newindex = function(_, key, value)
+			item[key] = value
+		end,
+	})
+end
+
+-- Arm and waist joints of an R15 or R6 character. sign is -1 for the right
+-- arm, +1 for the left, so mirrored angles share one formula.
 function CarryMath.rig(character)
+	local joint = CarryMath.joint
 	local torso = character:FindFirstChild("UpperTorso")
 	if torso then
 		local function side(name, sign)
@@ -18,17 +44,23 @@ function CarryMath.rig(character)
 				sign = sign,
 				upper = upper,
 				hand = hand,
-				shoulder = upper and upper:FindFirstChild(name .. "Shoulder"),
-				elbow = lower and lower:FindFirstChild(name .. "Elbow"),
-				wrist = hand and hand:FindFirstChild(name .. "Wrist"),
+				shoulder = upper and joint(upper:FindFirstChild(name .. "Shoulder")),
+				elbow = lower and joint(lower:FindFirstChild(name .. "Elbow")),
+				wrist = hand and joint(hand:FindFirstChild(name .. "Wrist")),
 			}
 		end
-		return { kind = "R15", torso = torso, head = character:FindFirstChild("Head"), arms = { side("Right", -1), side("Left", 1) } }
+		return {
+			kind = "R15",
+			torso = torso,
+			head = character:FindFirstChild("Head"),
+			waist = joint(torso:FindFirstChild("Waist")),
+			arms = { side("Right", -1), side("Left", 1) },
+		}
 	end
 	torso = character:FindFirstChild("Torso")
 	if torso then
 		local function side(name, sign)
-			return { sign = sign, upper = character:FindFirstChild(name .. " Arm"), shoulder = torso:FindFirstChild(name .. " Shoulder") }
+			return { sign = sign, upper = character:FindFirstChild(name .. " Arm"), shoulder = joint(torso:FindFirstChild(name .. " Shoulder")) }
 		end
 		return { kind = "R6", torso = torso, head = character:FindFirstChild("Head"), arms = { side("Right", -1), side("Left", 1) } }
 	end
@@ -54,7 +86,7 @@ end
 -- Top of the head (plus room for hair) above the torso centre.
 local function headTop(rig)
 	local head = rig.head
-	local neck = head and (head:FindFirstChild("Neck") or rig.torso:FindFirstChild("Neck"))
+	local neck = head and CarryMath.joint(head:FindFirstChild("Neck") or rig.torso:FindFirstChild("Neck"))
 	if not neck then
 		return rig.torso.Size.Y * 0.5 + 1.2
 	end
@@ -70,8 +102,8 @@ function CarryMath.holdHeight(rig, girlDepth)
 	local shoulderY, reach
 	if arm.shoulder and arm.elbow and arm.wrist and arm.hand then
 		shoulderY = arm.shoulder.C0.Position.Y
-		local upperLen = (arm.shoulder.C1.Position - arm.elbow.C0.Position).Magnitude
-		local lowerLen = (arm.elbow.C1.Position - arm.wrist.C0.Position).Magnitude + arm.hand.Size.Y * 0.5
+		local upperLen = math.abs(arm.shoulder.C1.Position.Y - arm.elbow.C0.Position.Y)
+		local lowerLen = math.abs(arm.elbow.C1.Position.Y - arm.wrist.C0.Position.Y) + arm.hand.Size.Y * 0.5
 		reach = upperLen * tilt * cos(rad(a.Spread)) + lowerLen * tilt * cos(rad(a.ElbowBend - a.Spread))
 	elseif arm.shoulder and arm.upper then
 		shoulderY = arm.shoulder.C0.Position.Y

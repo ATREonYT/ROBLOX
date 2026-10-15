@@ -2,7 +2,7 @@
 -- The pose sits on top of whatever walk/run/huss animation is playing: the
 -- girl is attached to the torso, so she follows its bob and sway for free.
 return {
-	GirlLength = 4.8, -- her height before she's laid down (models are scaled to it)
+	GirlLength = 5.4, -- her height before she's laid down (models are scaled to it; a default avatar is about 5.2-5.9)
 	HeadToLeft = true, -- which shoulder her head points over
 	Rotation = Vector3.new(20, 0, 0), -- extra tilt; +X turns her face toward the camera
 	Forward = 0, -- move her forward (-) or back (+)
@@ -35,15 +35,5 @@ return {
 		Tilt = 28, -- degrees of tilt per stud of lag
 		TurnLag = 0.06, -- radians of yaw lag per radian/s of turning
 		MaxTurnLag = 0.35,
-	},
-
-	-- Limbs of rigged girls hang toward the ground and swing a little.
-	Dangle = {
-		Arms = 0.45, -- 0 = keep the model's pose, 1 = hang straight down
-		Legs = 0.2,
-		Head = 0.15,
-		Knees = 16,
-		Elbows = 10,
-		Swing = 9,
 	},
 }

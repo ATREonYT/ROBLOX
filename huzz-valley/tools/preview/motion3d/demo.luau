@@ -39,11 +39,11 @@ for f = 0, FPS * SECONDS - 1 do
 	-- Drop the hips so the straighter leg keeps its foot on the ground.
 	M.Root.Transform = CFrame.new(0, -LEG * (1 - cos(swing)), 0)
 
-	rig.root.CFrame = CFrame.lookAt(pos + Vector3.new(0, Rig.REST_HEIGHT, 0), pos + Vector3.new(0, Rig.REST_HEIGHT, 0) + dir)
+	rig.root.CFrame = Rig.lookAt(pos + Vector3.new(0, Rig.REST_HEIGHT, 0), pos + Vector3.new(0, Rig.REST_HEIGHT, 0) + dir)
 	Rig.fk(rig)
 
 	-- Roblox-style follow camera: ~12 studs back, 5 up, swung 35 degrees off straight-behind (a 3/4 view).
-	local back = (CFrame.Angles(0, rad(35), 0) * CFrame.lookAt(Vector3.zero, dir)).LookVector * -12
+	local back = (CFrame.Angles(0, rad(35), 0) * Rig.lookAt(Vector3.zero, dir)).LookVector * -12
 	local target = pos + back + Vector3.new(0, 5 + Rig.REST_HEIGHT, 0)
 	camPos = if camPos then camPos:Lerp(target, 0.15) else target
 	scene:frame(camPos, pos + Vector3.new(0, Rig.REST_HEIGHT + 1, 0))

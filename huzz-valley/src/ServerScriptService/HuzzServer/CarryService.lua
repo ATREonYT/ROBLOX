@@ -6,7 +6,8 @@
 
 	She lives in Workspace.HuzzCarried, not inside the character, so the
 	carrier's walk animations never grab her joints. Attributes on her model:
-	Carrier (UserId), Start (server time), From (Vector3: where she flies in from).
+	Carrier (UserId), Start (server time), From (Vector3: where she flies in from),
+	Mood ("Calm" | "Excited" | "Struggle" | "Cheer") and MoodAt (server time).
 ]]
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -51,7 +52,16 @@ function CarryService.removeAll()
 	end
 end
 
-function CarryService.give(player, girl, fromPosition)
+-- How she feels about her carrier (Shared/GirlMotion plays it).
+function CarryService.setMood(player, mood)
+	local model = CarryService.get(player)
+	if model then
+		model:SetAttribute("Mood", mood)
+		model:SetAttribute("MoodAt", Workspace:GetServerTimeNow())
+	end
+end
+
+function CarryService.give(player, girl, fromPosition, mood)
 	CarryService.remove(player)
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
@@ -70,6 +80,8 @@ function CarryService.give(player, girl, fromPosition)
 	model:SetAttribute("GirlName", girl.name)
 	model:SetAttribute("Start", Workspace:GetServerTimeNow())
 	model:SetAttribute("From", fromPosition)
+	model:SetAttribute("Mood", mood or "Calm")
+	model:SetAttribute("MoodAt", Workspace:GetServerTimeNow())
 
 	local motor = Instance.new("Motor6D")
 	motor.Name = "HuzzCarryMotor"

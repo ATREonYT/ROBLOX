@@ -3,11 +3,16 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local CollectionService = game:GetService("CollectionService")
+
 local Config = require(ReplicatedStorage.Shared.Config.Round)
 local Carry = require(ReplicatedStorage.Shared.Config.Carry)
+local GirlNames = require(ReplicatedStorage.Shared.Config.GirlNames)
 
 local GirlService = {}
-GirlService.catalog = {} -- { name, rarity, template }
+GirlService.catalog = {} -- { id, name, rarity, template }
+local seen = {}
+local countByRarity = {}
 
 local rarityByName = {}
 for _, r in Config.Rarities do
@@ -19,12 +24,20 @@ function GirlService.rarity(name)
 end
 
 local function addGirl(model, folderRarity)
-	if not model:FindFirstChildWhichIsA("BasePart", true) then
+	-- Each girl once, even if she's in the folder twice.
+	if seen[model.Name] or not model:FindFirstChildWhichIsA("BasePart", true) then
 		return
 	end
+	seen[model.Name] = true
 	local rarity = model:GetAttribute("Rarity") or folderRarity or "Common"
-	-- id = the model's name, the key saved in the player's Characters (Index)
-	table.insert(GirlService.catalog, { id = model.Name, name = model:GetAttribute("DisplayName") or model.Name, rarity = rarity, template = model })
+	countByRarity[rarity] = (countByRarity[rarity] or 0) + 1
+	-- id = the model's name, the key saved in the player's Characters (Index). The shown
+	-- name comes from Config/GirlNames (the models are named after the avatars' owners).
+	local name = model:GetAttribute("DisplayName") or GirlNames[model.Name]
+	if not name or name == "" then
+		name = `{rarity} Girl {countByRarity[rarity]}`
+	end
+	table.insert(GirlService.catalog, { id = model.Name, name = name, rarity = rarity, template = model })
 end
 
 -- Default R15 rigs in rarity colours, so the game runs before the real girls are in.
@@ -123,6 +136,55 @@ local function nameTag(model, girl, root, offsetY)
 end
 
 --[[
+	Rebuilds an R6 girl as R15 from her HumanoidDescription (same clothes, hair
+	and body), so she gets elbows and knees for the animations. Done once per girl,
+	the first time she's rolled; if Roblox can't build her, the original is kept.
+]]
+function GirlService.prepare(girl)
+	if girl.prepared or Config.GirlRig ~= "R15" then
+		return
+	end
+	girl.prepared = true
+	local humanoid = girl.template:FindFirstChildOfClass("Humanoid")
+	local desc = humanoid and humanoid:FindFirstChildOfClass("HumanoidDescription")
+	if not desc or humanoid.RigType == Enum.HumanoidRigType.R15 then
+		return
+	end
+	local ok, result = pcall(Players.CreateHumanoidModelFromDescription, Players, desc:Clone(), Enum.HumanoidRigType.R15)
+	if ok and result then
+		result.Name = girl.id
+		girl.template = result
+	else
+		warn(`[Huzz] Couldn't rebuild {girl.name} as R15 ({result}); using her original model`)
+	end
+end
+
+-- Avatars on Roblox's newer joints use AnimationConstraints (some doubled up).
+-- The copy gets one plain Motor6D per joint instead, which every part of the game animates.
+local function useMotors(model)
+	local done = {}
+	for _, d in model:GetDescendants() do
+		if d.ClassName == "AnimationConstraint" then
+			local a0, a1 = d.Attachment0, d.Attachment1
+			local part0, part1 = a0 and a0.Parent, a1 and a1.Parent
+			if part0 and part1 and part0:IsA("BasePart") and part1:IsA("BasePart") and not done[part1] then
+				done[part1] = true
+				local motor = Instance.new("Motor6D")
+				motor.Name = d.Name
+				motor.Part0, motor.Part1 = part0, part1
+				motor.C0, motor.C1 = a0.CFrame, a1.CFrame
+				motor.Parent = part1
+			end
+		end
+	end
+	for _, d in model:GetDescendants() do
+		if d.ClassName == "AnimationConstraint" or d:IsA("BallSocketConstraint") or d:IsA("NoCollisionConstraint") then
+			d:Destroy()
+		end
+	end
+end
+
+--[[
 	A copy of the girl ready to weld or display: scripts removed, scaled to
 	Carry.GirlLength, every part joined to one root, no collisions, and any
 	Humanoid switched off so it never fights the carrier's physics.
@@ -131,6 +193,7 @@ end
 ]]
 function GirlService.makeCopy(girl, parent)
 	local model = girl.template:Clone()
+	useMotors(model)
 	for _, d in model:GetDescendants() do
 		if d:IsA("BaseScript") or d:IsA("ModuleScript") or d:IsA("BillboardGui") and d.Name == "HuzzNameTag" then
 			d:Destroy()
@@ -221,6 +284,13 @@ function GirlService.display(girl, zone, lookAt, parent)
 	local target = CFrame.lookAt(top + Vector3.new(0, size.Y * 0.5, 0), Vector3.new(lookAt.X, top.Y + size.Y * 0.5, lookAt.Z))
 	model:PivotTo(target * centre:ToObjectSpace(model:GetPivot()))
 	model.Name = "HuzzPrize"
+	-- Only her root stays anchored, so every client can animate her joints (HuzzClient/Gameplay/CarryAnimator).
+	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") and d ~= model.PrimaryPart then
+			d.Anchored = false
+		end
+	end
+	CollectionService:AddTag(model, "HuzzPrize")
 	return model
 end
 

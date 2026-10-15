@@ -33,14 +33,17 @@ return {
 		BuildTestField = true, -- no zones found: build a plain test field so the game still runs
 	},
 
-	-- Folders holding the girl models, checked in order. Each girl is a Model,
-	-- either inside a rarity folder (AnimeGirls/Legendary/Yuki) or carrying a
-	-- "Rarity" attribute. Rigs (with Motor6Ds) get dangling limbs when carried.
+	-- The owner's "ANIME GIRLS" folder (Workspace, or moved to ServerStorage):
+	-- one folder per rarity (ANIME GIRLS/Legendary/<girl model>), or a "Rarity"
+	-- attribute on the model. A girl in the folder twice counts once.
 	GirlFolders = {
-		{ "ServerStorage", "AnimeGirls" },
-		{ "ReplicatedStorage", "AnimeGirls" },
-		{ "Workspace", "AnimeGirls" },
+		{ "Workspace", "ANIME GIRLS" },
+		{ "ServerStorage", "ANIME GIRLS" },
+		{ "ReplicatedStorage", "ANIME GIRLS" },
 	},
+	-- "R15": every girl is rebuilt as R15 from her own HumanoidDescription when she's
+	-- first picked (same look, plus elbows and knees). "Original" keeps her model as is.
+	GirlRig = "R15",
 
 	-- Weight = how often the round's girl comes from this rarity
 	-- (only rarities that have girls count).

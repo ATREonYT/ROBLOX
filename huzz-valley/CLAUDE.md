@@ -134,7 +134,26 @@ The UI golden slice and its backend are built (saving, coins and gems, shop purc
     It tells its own writes from the Animator's by reading the Transform back (CFrames are float32).
   - `RoundHud` is a stand-in, to be rebuilt with Kit as the Match HUD page.
   - `AvatarAnimations` swaps in the IDs from `Config/Animations`.
-- **`sh tools/check.sh`** compiles every script and runs both specs. Run it with `tools/preview/check.sh`.
+- **Girl animations (owner asked for all three, "make them good"):** `Shared/GirlMotion` (pure) holds her
+  motion: `carried` (limbs fall toward gravity minus her real acceleration, plus moods Excited, Struggle,
+  Cheer and Calm, set by the server through the carry model's `Mood`/`MoodAt`) and `idle` (the prize:
+  weight shift, watching the nearest player, waving, bouncing). `Shared/CarryMotion` (pure) holds the carry
+  joint, the arms and the waist lean; `Gameplay/CarryAnimator` only feeds them parts. Tunables:
+  `Config/GirlMotion`.
+- **The owner's girls:** `Workspace/ANIME GIRLS/<Rarity>/CAC_R6_<username>_<id>`: 36 unique (4 listed twice;
+  counted once), all R6 except one R15 Secret built on doubled AnimationConstraints.
+  - `GirlService.prepare` rebuilds the rolled girl as R15 from her HumanoidDescription (`Config/Round.GirlRig`).
+  - `makeCopy` swaps AnimationConstraints for Motor6Ds.
+  - Model names are real usernames, so the shown name comes from `Config/GirlNames` (empty = "<Rarity> Girl n").
+  - The owner's place file is `places/HUSSANIME.rbxl`; read it with Lune `roblox.deserializePlace`.
+- **3D motion preview:** `tools/preview/motion3d`. `sh video.sh girls_scene.luau out.mp4` runs the real
+  CarryMotion/GirlMotion on mock rigs and renders a 30 fps MP4 (three.js in Chromium). `ORBIT=1` keeps the
+  carrier still and circles the camera. Lune's `CFrame.lookAt` faces backwards: use `Rig.lookAt`.
+- **Security:** the owner's Basket Ball Hoop free models carried a scam ("Model corruption detected… paste into
+  the Command Bar", a `Dependencies/Utilities/CoreValidation` script inside the mesh) that installs a
+  backdoor. Scan any place file the owner sends for scripts that use `GetObjects`, `HttpEnabled`, `require(<id>)`,
+  `getfenv` or `loadstring`.
+- **`sh tools/check.sh`** compiles every script and runs the specs. Run it with `tools/preview/check.sh`.
 - **Not seen in Studio yet:** physics ownership of the welded girl and the Animator ordering. Ask the owner how
   the carry feels before tuning blind.
 - **Waiting on the owner:** their girls and map (a `.rbxl` in `places/`, or `tools/studio/export-girls-and-map.lua`

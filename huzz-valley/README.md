@@ -83,7 +83,11 @@ The whole UI is in **StarterGui > HuzzUI** as normal parts you can click and cha
      with GitHub Desktop (under 100 MB); or
    - paste `huzz-valley/tools/studio/export-girls-and-map.lua` into the Command Bar and send me the text of each
      `ServerStorage → ClaudeExport → PartN`.
-4. **Things that need assets before they can go on sale** show their price, but only say "coming soon" when tapped:
+4. **Delete the Basket Ball Hoop models.** They hide a scam that pops up "Model corruption detected… paste this
+   into the Command Bar". Never paste it: it gives a stranger control of your game.
+5. **Name your girls** in `src/ReplicatedStorage/Shared/Config/GirlNames.lua` (their model names are the avatar
+   owners' usernames, so the game shows "Common Girl 1" and so on until you do).
+6. **Things that need assets before they can go on sale** show their price, but only say "coming soon" when tapped:
    - Dance Pack: the 4 dance animations;
    - Crown Pose: a pose animation;
    - Midnight Outfit: the clothing;
