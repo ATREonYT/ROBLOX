@@ -252,4 +252,27 @@ function GirlMotion.idle(s, J, dt, t, ctx)
 	end
 end
 
+--[[ Walking behind a catcher. ctx: speed (studs/s), stride (studs per two steps),
+	target/distance (as idle: who to watch when she stands still) ]]
+function GirlMotion.walk(s, J, dt, t, ctx)
+	s.phase = (s.phase or 0) + ctx.speed * dt * 2 * pi / ctx.stride
+	local amount = spring(s, "walk", clamp(ctx.speed / 10, 0, 1.2), dt, 3, 1)
+	if amount < 0.03 then
+		GirlMotion.idle(s, J, dt, t, ctx)
+		return
+	end
+	local phase = s.phase
+	local swing = rad(30) * sin(phase) * amount
+	set(J.Root, CFrame.new(0, (abs(sin(phase)) - 0.5) * 0.1 * amount, 0) * CFrame.Angles(rad(3) * amount, rad(4) * sin(phase) * amount, 0))
+	set(J.Waist, CFrame.Angles(0, -rad(6) * sin(phase) * amount, 0))
+	for side, sign in { L = -1, R = 1 } do
+		local legSwing = if side == "R" then swing else -swing
+		set(J[side .. "Hip"], CFrame.Angles(legSwing, 0, 0))
+		set(J[side .. "Knee"], CFrame.Angles(-rad(50) * math.max(0, (if side == "R" then -1 else 1) * sin(phase)) * amount, 0, 0))
+		set(J[side .. "Shoulder"], limb(-legSwing * 0.8, sign * rad(5)))
+		set(J[side .. "Elbow"], CFrame.Angles(rad(12 + 15 * amount), 0, 0))
+	end
+	set(J.Neck, CFrame.Angles(-rad(3) * amount, 0, 0))
+end
+
 return GirlMotion

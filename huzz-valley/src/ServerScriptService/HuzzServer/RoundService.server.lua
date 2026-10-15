@@ -173,8 +173,11 @@ local function moveGirlTo(fromId, toId, reason)
 		CarryService.remove(byId[fromId])
 	end
 	clearPrize()
-	if toId and byId[toId] then
-		CarryService.give(byId[toId], girl, from, MOODS[reason] or "Excited")
+	local to = toId and byId[toId]
+	if to and match and match.roles[toId] == "Catcher" then
+		CarryService.follow(to, girl, from) -- a catcher who caught her carrier: she falls down and follows him
+	elseif to then
+		CarryService.give(to, girl, from, MOODS[reason] or "Excited")
 	end
 	State:SetAttribute("HolderId", toId or 0)
 end
@@ -197,12 +200,12 @@ function handlers.GirlMoved(e)
 	State:SetAttribute("Phase", match.phase)
 	local to, g = nameOf(e.to), girl.name
 	local messages = {
-		FirstAcross = { `{to} grabbed {g}!`, GOLD },
+		FirstAcross = { `{to} got {g}!`, GOLD },
 		Grabbed = { `{to} grabbed {g}! Carry her across!`, GOLD },
-		Stolen = { `{to} STOLE {g}! Cross to take her back!`, RED },
+		Stolen = { `{to} caught her carrier! {g} follows {to} now. Cross first to take her back!`, RED },
 		Rescued = { `{to} rescued {g}! Next round is the FINAL round!`, GOLD },
 		Reassigned = { `{to} now holds {g}`, RED },
-		Dropped = { if Config.GirlSpot == "Middle" then `{g} was dropped! She's back in the middle` else `{g} was dropped! First across takes her`, GOLD },
+		Dropped = { if Config.Pickup == "Grab" then `{g} was dropped! She's back in the middle` else `{g} was dropped! First across gets her`, GOLD },
 	}
 	local m = messages[e.reason]
 	if m then
@@ -251,7 +254,7 @@ local function step()
 	local goal = zones[goalName]
 	local start = zones[MapService.startFor(match.round)]
 	-- A runner who walks up to her (waiting in the middle) picks her up.
-	if prize and match.holder == nil then
+	if Config.Pickup == "Grab" and prize and match.holder == nil then
 		local at = prize:GetBoundingBox().Position
 		for id, status in match.status do
 			local root = status == "Active" and rootOf(id)
@@ -368,7 +371,7 @@ local function runGame()
 		table.insert(ids, id)
 	end
 	local catcher = if #ids >= 2 then ids[math.random(#ids)] else nil
-	match = Rules.newGame(ids, catcher, { maxRounds = Config.MaxRounds, pickup = if Config.GirlSpot == "Middle" then "Middle" else "SafeZone" })
+	match = Rules.newGame(ids, catcher, { maxRounds = Config.MaxRounds, pickup = Config.Pickup })
 	State:SetAttribute("GirlName", girl.name)
 	State:SetAttribute("GirlRarity", girl.rarity)
 	State:SetAttribute("HolderId", 0)
@@ -411,7 +414,11 @@ local function onCharacter(player, character)
 		if match and match.roles[id] then
 			place(id)
 			if match.holder == id and not CarryService.get(player) then
-				CarryService.give(player, girl, nil, if match.phase == "Stolen" then "Struggle" else "Calm")
+				if match.roles[id] == "Catcher" then
+					CarryService.follow(player, girl, nil)
+				else
+					CarryService.give(player, girl, nil, "Calm")
+				end
 			end
 		end
 		syncPlayer(id)

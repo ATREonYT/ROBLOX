@@ -98,8 +98,13 @@ The UI golden slice and its backend are built (saving, coins and gems, shop purc
 
 ## Gameplay (round loop and carry)
 - **Rules (owner's design):**
-  - She stands in the middle (`Config/Round.GirlSpot = "Middle"`, owner's call): the first runner to walk up
-    to her grabs her and must carry her across. ("SafeZone" = the old rule: the first runner across takes her.)
+  - She stands in the middle while nobody has her (`Config/Round.GirlSpot`). The first runner across gets her
+    automatically: she appears overhead, with no pickup (`Pickup = "FirstAcross"`, `Carry.PickupTime = 0`, the
+    owner's call). `Pickup = "Grab"` (walk up to her in the middle) is built and tested but off.
+  - A catcher never carries her. When a catcher tags her carrier, she falls down and follows that catcher on foot
+    (`CarryService.follow` makes an anchored-root model tagged `HuzzFollower`; `Shared/FollowMotion` walks her on
+    every client; the server only estimates where she is, for the next transfer). That covers the thief, a
+    catcher inheriting her, and a catcher winning her.
   - Tagged runners, runners still out at the timeout and runners who die all catch next round.
   - Rounds alternate ZoneA ↔ ZoneB.
   - A catcher who tags her holder steals her. The first runner across rescues her, and the round after is Final:
@@ -154,7 +159,8 @@ The UI golden slice and its backend are built (saving, coins and gems, shop purc
   - `makeCopy` swaps AnimationConstraints for Motor6Ds.
   - Model names are real usernames, so the shown name comes from `Config/GirlNames` (empty = "<Rarity> Girl n").
   - The owner's place file is `places/HUSSANIME.rbxl`; read it with Lune `roblox.deserializePlace`.
-- **3D motion preview:** `tools/preview/motion3d`. `sh video.sh girls_scene.luau out.mp4` runs the real
+- **3D motion preview:** `tools/preview/motion3d`. `follow_scene.luau` shows the tag and the follow;
+  `sh video.sh girls_scene.luau out.mp4` runs the real
   CarryMotion/GirlMotion on mock rigs and renders a 30 fps MP4 (three.js in Chromium). `ORBIT=1` keeps the
   carrier still and circles the camera. Lune's `CFrame.lookAt` faces backwards: use `Rig.lookAt`.
 - **Security:** the owner's Basket Ball Hoop free models carried a scam ("Model corruption detected… paste into

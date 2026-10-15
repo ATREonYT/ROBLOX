@@ -12,11 +12,12 @@ return {
 	GameOverTime = 8,
 	MaxRounds = 12, -- safety net: whoever holds the girl then wins
 
-	-- Where the girl waits: "Middle" = she stands in the middle and the first runner to
-	-- walk up to her picks her up (then carries her across); "SafeZone" = she waits on
-	-- the far side and the first runner across gets her.
-	GirlSpot = "Middle",
-	GrabRange = 6, -- studs from her centre to a runner's root
+	-- How a runner gets her (owner's call): "FirstAcross" = the first runner into the safe
+	-- zone gets her automatically (she appears over their head). "Grab" = the first runner
+	-- to walk up to her where she waits picks her up.
+	Pickup = "FirstAcross",
+	GirlSpot = "Middle", -- where she stands while nobody has her: "Middle" or "SafeZone" (the far side)
+	GrabRange = 6, -- "Grab" only: studs from her centre to a runner's root
 
 	TagRange = 5.5, -- studs between root parts
 	StartZoneSafe = true, -- catchers can't tag runners still standing in their start zone
@@ -25,7 +26,7 @@ return {
 		Runner = 16,
 		Catcher = 17.5,
 		Holder = 15, -- a runner carrying the girl
-		Thief = 16, -- a catcher carrying the girl
+		Thief = 17.5, -- a catcher she's following (she walks behind him, so no slowdown)
 	},
 
 	-- Map parts, found by CollectionService tag ("Huzz" .. name, e.g. HuzzZoneA)

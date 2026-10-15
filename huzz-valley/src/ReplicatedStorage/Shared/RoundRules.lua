@@ -7,10 +7,10 @@
 	Runner status during a round: "Active" | "Safe" | "Caught".
 
 	Phases of the girl:
-	  Open      - nobody or a runner holds her. With pickup "Middle" (default) she
-	              waits in the middle and the first runner to reach her grabs her;
-	              with pickup "SafeZone" the first runner across each round takes
-	              her. A catcher who tags her holder steals her.
+	  Open      - nobody or a runner holds her. With pickup "FirstAcross" (default)
+	              the first runner across each round gets her automatically; with
+	              pickup "Grab" the first runner to reach her (waiting in the
+	              middle) grabs her. A catcher who tags her holder steals her.
 	  Stolen    - a catcher (the thief) holds her. The first runner across
 	              rescues her, and the next round is the final round.
 	  FinalNext - rescued this round; turns into Final when the next round starts.
@@ -62,7 +62,7 @@ local function moveGirl(s, to, reason, events)
 	table.insert(events, { type = "GirlMoved", from = from, to = to, reason = reason })
 end
 
--- opts: { random = function(n) -> 1..n, maxRounds = number, pickup = "Middle" | "SafeZone" }
+-- opts: { random = function(n) -> 1..n, maxRounds = number, pickup = "FirstAcross" | "Grab" }
 function RoundRules.newGame(ids, catcherId, opts)
 	opts = opts or {}
 	local s = {
@@ -77,7 +77,7 @@ function RoundRules.newGame(ids, catcherId, opts)
 		winner = nil,
 		reason = nil,
 		maxRounds = opts.maxRounds or math.huge,
-		pickup = opts.pickup or "Middle",
+		pickup = opts.pickup or "FirstAcross",
 		random = opts.random or math.random,
 	}
 	for _, id in ids do
@@ -152,7 +152,7 @@ function RoundRules.reachSafe(s, id)
 	elseif s.firstSafe == nil then
 		s.firstSafe = id
 		if s.phase == "Open" then
-			if s.pickup == "SafeZone" and s.holder ~= id then
+			if s.pickup == "FirstAcross" and s.holder ~= id then
 				moveGirl(s, id, "FirstAcross", events)
 			end
 		elseif s.phase == "Stolen" then
@@ -163,10 +163,10 @@ function RoundRules.reachSafe(s, id)
 	return events
 end
 
--- A runner reached her where she waits (pickup "Middle").
+-- A runner reached her where she waits (pickup "Grab").
 function RoundRules.grab(s, id)
 	local events = {}
-	if s.over or s.pickup ~= "Middle" or s.phase ~= "Open" or s.holder ~= nil then
+	if s.over or s.pickup ~= "Grab" or s.phase ~= "Open" or s.holder ~= nil then
 		return events
 	end
 	if s.roles[id] ~= "Runner" or s.status[id] ~= "Active" then

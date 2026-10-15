@@ -33,7 +33,7 @@ local function game(n, maxRounds, pickup)
 	for i = 1, n do
 		table.insert(ids, i)
 	end
-	local s = Rules.newGame(ids, 1, { random = first, maxRounds = maxRounds, pickup = pickup or "SafeZone" })
+	local s = Rules.newGame(ids, 1, { random = first, maxRounds = maxRounds, pickup = pickup or "FirstAcross" })
 	Rules.startRound(s)
 	return s
 end
@@ -197,7 +197,7 @@ test("runner dying with the girl in an open round drops her", function()
 end)
 
 test("solo test: cross, then cross again to win", function()
-	local s = Rules.newGame({ 7 }, nil, { random = first, pickup = "SafeZone" })
+	local s = Rules.newGame({ 7 }, nil, { random = first, pickup = "FirstAcross" })
 	Rules.startRound(s)
 	Rules.reachSafe(s, 7)
 	Rules.endRound(s, false)
@@ -207,7 +207,7 @@ test("solo test: cross, then cross again to win", function()
 end)
 
 test("solo test: time out in the final round, nobody wins", function()
-	local s = Rules.newGame({ 7 }, nil, { random = first, pickup = "SafeZone" })
+	local s = Rules.newGame({ 7 }, nil, { random = first, pickup = "FirstAcross" })
 	Rules.startRound(s)
 	Rules.reachSafe(s, 7)
 	Rules.endRound(s, false)
@@ -266,9 +266,9 @@ test("no tagging from non-catchers or of safe runners", function()
 	eq(#Rules.tag(s, 1, 3), 0)
 end)
 
--- Pickup "Middle": she waits in the middle and the first runner to reach her grabs her.
-test("middle: crossing without her takes nothing; first runner to reach her grabs her", function()
-	local s = game(4, nil, "Middle")
+-- Pickup "Grab": she waits in the middle and the first runner to reach her grabs her.
+test("grab: crossing without her takes nothing; first runner to reach her grabs her", function()
+	local s = game(4, nil, "Grab")
 	eq(has(Rules.reachSafe(s, 4), "GirlMoved"), nil, "crossing empty-handed moves nothing")
 	eq(#Rules.grab(s, 1), 0, "catchers can't grab")
 	eq(#Rules.grab(s, 4), 0, "safe runners can't grab")
@@ -284,8 +284,8 @@ test("middle: crossing without her takes nothing; first runner to reach her grab
 	eq(s.holder, 2)
 end)
 
-test("middle: tag steals her, first across rescues, final round as before", function()
-	local s = game(3, nil, "Middle")
+test("grab: tag steals her, first across rescues, final round as before", function()
+	local s = game(3, nil, "Grab")
 	Rules.grab(s, 2)
 	Rules.tag(s, 1, 2)
 	eq(s.phase, "Stolen")
@@ -295,8 +295,8 @@ test("middle: tag steals her, first across rescues, final round as before", func
 	eq(has(ev, "FinalRound").runner, 3)
 end)
 
-test("middle: dropped by the clock, she waits to be grabbed again", function()
-	local s = game(4, nil, "Middle")
+test("grab: dropped by the clock, she waits to be grabbed again", function()
+	local s = game(4, nil, "Grab")
 	Rules.grab(s, 2)
 	Rules.reachSafe(s, 3)
 	Rules.reachSafe(s, 4)
@@ -306,8 +306,8 @@ test("middle: dropped by the clock, she waits to be grabbed again", function()
 	eq(has(Rules.grab(s, 3), "GirlMoved").to, 3)
 end)
 
-test("middle: solo grabs, crosses, crosses back to win", function()
-	local s = Rules.newGame({ 7 }, nil, { random = first })
+test("grab: solo grabs, crosses, crosses back to win", function()
+	local s = Rules.newGame({ 7 }, nil, { random = first, pickup = "Grab" })
 	Rules.startRound(s)
 	Rules.grab(s, 7)
 	Rules.reachSafe(s, 7)

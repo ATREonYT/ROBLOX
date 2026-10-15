@@ -158,7 +158,7 @@ function M.start()
 		local holding = State:GetAttribute("HolderId") == player.UserId
 		local girl = State:GetAttribute("GirlName") or ""
 		if myRole == "Catcher" then
-			role.Text = if holding then `You have {girl}! Keep tagging runners` else "CATCHER — tag the runners!"
+			role.Text = if holding then `{girl} is following you! Keep tagging runners` else "CATCHER — tag the runners!"
 			role.TextColor3 = RED
 		elseif myRole == "Runner" then
 			if myStatus == "Safe" then
@@ -171,7 +171,9 @@ function M.start()
 				role.Text, role.TextColor3 = `Carry {girl} across — first one across keeps her!`, GOLD
 			else
 				local free = (State:GetAttribute("HolderId") or 0) == 0
-				role.Text = if free and Config.GirlSpot == "Middle" and girl ~= "" then `RUNNER — grab {girl} in the middle, then reach the other side!` else "RUNNER — reach the other side!"
+				role.Text = if girl == "" then "RUNNER — reach the other side!"
+					elseif Config.Pickup == "Grab" and free then `RUNNER — grab {girl} in the middle, then reach the other side!`
+					else `RUNNER — first one across gets {girl}!`
 				role.TextColor3 = Color3.new(1, 1, 1)
 			end
 		else

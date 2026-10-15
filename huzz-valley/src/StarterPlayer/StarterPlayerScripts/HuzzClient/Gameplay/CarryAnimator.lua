@@ -4,7 +4,9 @@
 	preview runs. This script feeds them real parts every frame:
 	  - every carried girl (Workspace.HuzzCarried): the pickup flight, the carrier's
 	    raised arms and lean, and her limbs and mood (model attributes Mood, MoodAt);
-	  - the prize girl (tag "HuzzPrize"): her idle, watching the nearest player.
+	  - the prize girl (tag "HuzzPrize"): her idle, watching the nearest player;
+	  - a girl following a catcher (tag "HuzzFollower", Shared/FollowMotion): she drops
+	    to the ground, then walks or runs behind him and stands when he stops.
 	It writes Motor6D.Transform in PreSimulation, after Roblox's animations, so
 	walk, run and huss animations keep the legs. An upper-body animation ID in
 	Config/Animations.CarryArms replaces the scripted arms.
@@ -23,11 +25,13 @@ function M.start()
 	local CarryMath = require(Shared.CarryMath)
 	local CarryMotion = require(Shared.CarryMotion)
 	local GirlMotion = require(Shared.GirlMotion)
+	local FollowMotion = require(Shared.FollowMotion)
 
 	local folder = Workspace:WaitForChild("HuzzCarried")
 	local useArmAnimation = Animations.CarryArms ~= ""
 	local carries = {} -- model -> { rec, model, humanoid, armTrack }
 	local prizes = {} -- model -> { state, joints, root }
+	local followers = {} -- model -> FollowMotion record (+ leaderId)
 
 	local function motorsOf(model, except)
 		local list = {}
@@ -118,6 +122,31 @@ function M.start()
 		return best, bestDist
 	end
 
+	local function startFollower(model)
+		local root = model.PrimaryPart
+		if not root then
+			return
+		end
+		local rec = FollowMotion.new({
+			root = root,
+			motors = motorsOf(model),
+			from = root.Position,
+			rootHeight = model:GetAttribute("RootHeight"),
+			seed = seedOf(model),
+		})
+		rec.leaderId = model:GetAttribute("Follow")
+		followers[model] = rec
+	end
+
+	-- Ground height under a point, ignoring every character and girl.
+	local rayParams = RaycastParams.new()
+	rayParams.FilterType = Enum.RaycastFilterType.Exclude
+	local function groundAt(from, above)
+		local origin = Vector3.new(from.X, math.max(from.Y, above) + 6, from.Z)
+		local hit = Workspace:Raycast(origin, Vector3.new(0, -80, 0), rayParams)
+		return hit and hit.Position.Y
+	end
+
 	folder.ChildAdded:Connect(function(model)
 		task.spawn(startCarry, model)
 	end)
@@ -132,6 +161,13 @@ function M.start()
 	for _, model in CollectionService:GetTagged("HuzzPrize") do
 		startPrize(model)
 	end
+	CollectionService:GetInstanceAddedSignal("HuzzFollower"):Connect(startFollower)
+	CollectionService:GetInstanceRemovedSignal("HuzzFollower"):Connect(function(model)
+		followers[model] = nil
+	end)
+	for _, model in CollectionService:GetTagged("HuzzFollower") do
+		startFollower(model)
+	end
 
 	RunService.PreSimulation:Connect(function(dt)
 		dt = math.clamp(dt, 1 / 240, 1 / 15)
@@ -143,6 +179,25 @@ function M.start()
 			else
 				local moodAt = model:GetAttribute("MoodAt") or rec.start
 				CarryMotion.step(rec, dt, now, model:GetAttribute("Mood"), now - moodAt)
+			end
+		end
+		if next(followers) then
+			local ignore = { folder, Workspace:FindFirstChild("HuzzFollowers") }
+			for _, p in Players:GetPlayers() do
+				table.insert(ignore, p.Character)
+			end
+			rayParams.FilterDescendantsInstances = ignore
+		end
+		for model, rec in followers do
+			local leader = Players:GetPlayerByUserId(rec.leaderId or 0)
+			local leaderRoot = leader and leader.Character and leader.Character:FindFirstChild("HumanoidRootPart")
+			if not model.Parent then
+				followers[model] = nil
+			elseif leaderRoot then
+				local head = leader.Character:FindFirstChild("Head")
+				FollowMotion.step(rec, dt, now, leaderRoot.CFrame, function(p)
+					return groundAt(p, leaderRoot.Position.Y)
+				end, head and head.Position)
 			end
 		end
 		for model, p in prizes do

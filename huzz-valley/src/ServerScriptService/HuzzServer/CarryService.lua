@@ -9,19 +9,26 @@
 	Carrier (UserId), Start (server time), From (Vector3: where she flies in from),
 	Mood ("Calm" | "Excited" | "Struggle" | "Cheer") and MoodAt (server time).
 ]]
+local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
+local Carry = require(ReplicatedStorage.Shared.Config.Carry)
 local CarryMath = require(ReplicatedStorage.Shared.CarryMath)
 local GirlService = require(script.Parent.GirlService)
 
 local CarryService = {}
-local carried = {} -- Player -> model
+local carried = {} -- Player -> model (carried overhead, or following on foot)
 
-local folder = Workspace:FindFirstChild("HuzzCarried") or Instance.new("Folder")
-folder.Name = "HuzzCarried"
-folder.Parent = Workspace
+local function makeFolder(name)
+	local f = Workspace:FindFirstChild(name) or Instance.new("Folder")
+	f.Name = name
+	f.Parent = Workspace
+	return f
+end
+local folder = makeFolder("HuzzCarried")
+local followFolder = makeFolder("HuzzFollowers")
 
 function CarryService.get(player)
 	local model = carried[player]
@@ -32,9 +39,14 @@ function CarryService.get(player)
 	return nil
 end
 
--- Where she is right now (for the next pickup's flight).
+-- Where she is right now (for the next transfer). A follower is moved by each
+-- client, so the server uses the spot she walks to behind the catcher.
 function CarryService.position(player)
 	local model = CarryService.get(player)
+	if model and model:GetAttribute("Follow") then
+		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		return root and (root.CFrame * CFrame.new(Carry.Follow.Offset)).Position + Vector3.new(0, model:GetAttribute("RootHeight") or 3, 0)
+	end
 	return model and model:GetBoundingBox().Position
 end
 
@@ -44,6 +56,49 @@ function CarryService.remove(player)
 	if model then
 		model:Destroy()
 	end
+end
+
+local function dropWithCarrier(player, humanoid, model)
+	humanoid.Died:Once(function()
+		if carried[player] == model then
+			CarryService.remove(player)
+		end
+	end)
+end
+
+--[[
+	She walks behind this player (a catcher who caught her carrier) instead of
+	being carried. fromPosition: where she starts (on the old carrier's head,
+	so she falls down first), or nil for her spot behind him. Her root stays
+	anchored and every client walks her (HuzzClient/Gameplay/CarryAnimator).
+	Attributes: Follow (UserId), RootHeight (root above her feet).
+]]
+function CarryService.follow(player, girl, fromPosition)
+	CarryService.remove(player)
+	local character = player.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	local leader = character and character:FindFirstChild("HumanoidRootPart")
+	if not (leader and humanoid and humanoid.Health > 0) then
+		return nil
+	end
+	local model, root, centre, size = GirlService.makeCopy(girl, followFolder)
+	model.Name = "Follower_" .. player.Name
+	local rootHeight = root.Position.Y - (centre.Position.Y - size.Y / 2)
+	local start = fromPosition or (leader.CFrame * CFrame.new(Carry.Follow.Offset)).Position
+	local yaw = select(2, leader.CFrame:ToEulerAnglesYXZ())
+	-- Upright, her root at the start point (the clients take it from there).
+	model:PivotTo(CFrame.new(start) * CFrame.Angles(0, yaw, 0) * root.CFrame:ToObjectSpace(model:GetPivot()))
+	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") and d ~= root then
+			d.Anchored = false
+		end
+	end
+	model:SetAttribute("Follow", player.UserId)
+	model:SetAttribute("RootHeight", rootHeight)
+	CollectionService:AddTag(model, "HuzzFollower")
+	carried[player] = model
+	dropWithCarrier(player, humanoid, model)
+	return model
 end
 
 function CarryService.removeAll()
@@ -98,11 +153,7 @@ function CarryService.give(player, girl, fromPosition, mood)
 	carried[player] = model
 
 	-- She goes down with her carrier; RoundService re-gives her on respawn.
-	humanoid.Died:Once(function()
-		if carried[player] == model then
-			CarryService.remove(player)
-		end
-	end)
+	dropWithCarrier(player, humanoid, model)
 	return model
 end
 

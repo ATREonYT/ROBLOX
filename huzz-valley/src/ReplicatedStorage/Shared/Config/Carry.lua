@@ -9,7 +9,7 @@ return {
 	Sink = 0.2, -- how far she sinks into the hands
 	HairRoom = 0.3, -- she never sits lower than the head top plus this
 
-	PickupTime = 0.55, -- flight from the ground/previous holder up overhead
+	PickupTime = 0, -- 0 = she appears overhead at once (owner's call); e.g. 0.55 = she flies in from where she was
 	ArcHeight = 3.5,
 
 	Arms = {
@@ -35,5 +35,15 @@ return {
 		Tilt = 15, -- degrees of tilt per stud of lag
 		TurnLag = 0.02, -- radians of yaw lag per radian/s of turning
 		MaxTurnLag = 0.12,
+	},
+
+	-- A catcher who steals her doesn't carry her: she walks along behind him.
+	Follow = {
+		Offset = Vector3.new(3.5, 0, 1.5), -- where she aims to be, from the catcher (right, up, behind): beside him, so she never blocks his camera
+		Catchup = 6, -- how hard she closes the gap (higher = keeps closer when he runs)
+		MaxSpeed = 30, -- studs per second
+		StopDistance = 1, -- within this of her spot she stands still
+		TeleportDistance = 60, -- further than this (he teleported) and she pops to her spot
+		Stride = 4.2, -- studs per full walk cycle (two steps)
 	},
 }

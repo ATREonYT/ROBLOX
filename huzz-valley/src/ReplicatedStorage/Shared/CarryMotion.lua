@@ -141,7 +141,7 @@ function CarryMotion.step(rec, dt, now, mood, moodAge)
 		* CFrame.Angles(rad(S.Tilt * L.Z), rec.yaw, rad(-S.Tilt * L.X) + rad(B.Roll) * step * amount)
 
 	-- Pickup: she flies in upright from where she was, arcs, and settles into the hold.
-	local p = clamp((now - rec.start) / Carry.PickupTime, 0, 1)
+	local p = if Carry.PickupTime > 0 then clamp((now - rec.start) / Carry.PickupTime, 0, 1) else 1
 	if p < 1 then
 		local frame = torso.CFrame * CFrame.new(motor.C0.Position)
 		local startCF = CFrame.new(frame:PointToObjectSpace(rec.from)) * rec.c0rot:Inverse()
