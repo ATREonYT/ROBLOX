@@ -17,6 +17,7 @@ local MapService = require(script.Parent.MapService)
 local GirlService = require(script.Parent.GirlService)
 local CarryService = require(script.Parent.CarryService)
 local DataService = require(script.Parent.DataService)
+local KnockdownService = require(script.Parent.KnockdownService)
 
 MapService.init()
 GirlService.init()
@@ -99,7 +100,7 @@ local function syncPlayer(id)
 	p:SetAttribute("HuzzStatus", match and match.status[id] or "")
 	local h = humanoidOf(id)
 	if h then
-		local still = frozen and match and match.roles[id] ~= nil
+		local still = (frozen and match and match.roles[id] ~= nil) or KnockdownService.isDown(p)
 		h.WalkSpeed = if still then 0 else speedFor(id)
 		h.JumpHeight = if still then 0 else StarterPlayer.CharacterJumpHeight
 		h.JumpPower = if still then 0 else StarterPlayer.CharacterJumpPower
@@ -214,13 +215,20 @@ function handlers.GirlMoved(e)
 end
 
 function handlers.Caught(e)
+	-- Falls flat where they were caught and lies there until the next round
+	-- (or, with Knockdown off, goes to the bench).
+	if Config.Knockdown.Enabled and byId[e.id] then
+		KnockdownService.down(byId[e.id])
+	end
 	syncPlayer(e.id)
 	RoundNet:FireAllClients("Caught", { catcher = e.by, runner = e.id })
-	task.delay(0.6, function()
-		if match and match.status[e.id] == "Caught" then
-			place(e.id)
-		end
-	end)
+	if not Config.Knockdown.Enabled then
+		task.delay(0.6, function()
+			if match and match.status[e.id] == "Caught" then
+				place(e.id)
+			end
+		end)
+	end
 end
 
 function handlers.Safe(e)
@@ -307,6 +315,7 @@ local function runRound()
 	State:SetAttribute("Phase", match.phase)
 
 	frozen = true
+	KnockdownService.upAll()
 	for id in match.roles do
 		place(id)
 	end
@@ -386,6 +395,7 @@ local function runGame()
 end
 
 local function cleanUp()
+	KnockdownService.upAll()
 	CarryService.removeAll()
 	clearPrize()
 	match, girl, frozen = nil, nil, false

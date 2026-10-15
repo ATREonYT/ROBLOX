@@ -164,7 +164,7 @@ function M.start()
 			if myStatus == "Safe" then
 				role.Text, role.TextColor3 = "SAFE! You run again next round", Color3.fromRGB(110, 230, 150)
 			elseif myStatus == "Caught" then
-				role.Text, role.TextColor3 = "CAUGHT — you'll be a catcher next round", Color3.fromRGB(200, 200, 210)
+				role.Text, role.TextColor3 = "CAUGHT! You'll get up as a catcher next round", Color3.fromRGB(200, 200, 210)
 			elseif holding and State:GetAttribute("Phase") == "Final" then
 				role.Text, role.TextColor3 = `FINAL ROUND — cross with {girl} to win her!`, GOLD
 			elseif holding then

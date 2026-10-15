@@ -3,7 +3,7 @@
 local Gameplay = script.Parent:WaitForChild("Gameplay")
 local Report = require(script.Parent:WaitForChild("UI"):WaitForChild("Report"))
 
-for _, name in { "AvatarAnimations", "CarryAnimator", "RoundHud" } do
+for _, name in { "AvatarAnimations", "CarryAnimator", "Knockdown", "RoundHud" } do
 	task.spawn(Report.run, name, function()
 		require(Gameplay:WaitForChild(name)).start()
 	end)

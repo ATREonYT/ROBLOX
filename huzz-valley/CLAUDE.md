@@ -140,6 +140,11 @@ The UI golden slice and its backend are built (saving, coins and gems, shop purc
     It tells its own writes from the Animator's by reading the Transform back (CFrames are float32).
   - `RoundHud` is a stand-in, to be rebuilt with Kit as the Match HUD page.
   - `AvatarAnimations` swaps in the IDs from `Config/Animations`.
+- **Caught runners fall flat and lie there until the next round** (owner's call; `Config/Round.Knockdown`;
+  `Enabled = false` = the old bench teleport). `KnockdownService` anchors the root and sets the character's
+  `DownedAt`/`DownedFeet`/`DownedHeight`, lying bodies collide with nothing (the `HuzzDowned` group), and the
+  next round's `upAll()` stands them up. `Gameplay/Knockdown` plays `Shared/DownMotion` (a plank fall over the
+  feet, a bounce, then the sprawl).
 - **Owner's motion calls:** no wiggle while carried (`Carried.Moods = false`, `Inertia = 0`, critically
   damped springs, small bob, no roll); the prize just stands normally (`Idle.Wave/Bounce = false`). The livelier
   version is still there behind those switches.

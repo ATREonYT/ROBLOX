@@ -1,4 +1,5 @@
--- A catcher tags the runner carrying her: she falls down and follows the catcher (Shared/FollowMotion).
+-- A catcher tags the runner carrying her: he falls flat and lies there (Shared/DownMotion), she drops
+-- down and follows the catcher (Shared/FollowMotion).
 --   0-1.8 s  the runner carries her, the catcher chases
 --   1.8 s    tag: she drops off the runner's head and follows the catcher
 --   1.8-10 s the catcher runs, turns, stops, walks, stops; she keeps up and stands when he stops
@@ -12,6 +13,7 @@ local SHARED = "huzz-valley/src/ReplicatedStorage/Shared/"
 local CarryMath = Env.load(SHARED .. "CarryMath.lua")
 local CarryMotion = Env.load(SHARED .. "CarryMotion.lua")
 local FollowMotion = Env.load(SHARED .. "FollowMotion.lua")
+local DownMotion = Env.load(SHARED .. "DownMotion.lua")
 local Carry = Env.load(SHARED .. "Config/Carry.lua")
 
 local FPS, DT, SECONDS = 30, 1 / 30, 10
@@ -87,7 +89,7 @@ local centre, size = bounds(girl)
 
 local carry = Rig.motor("HuzzCarryMotor", runner.parts.UpperTorso, girl.root, CarryMath.holdC0(CarryMath.rig(runner), size.Z), centre)
 local carryRec = CarryMotion.new({ motor = carry, rig = CarryMath.rig(runner), root = runner.root, girlMotors = girl.motors, start = -10, seed = 7 })
-local follow = nil
+local follow, down, downFeet = nil, nil, nil
 
 local R = mover(Vector3.new(0, 0, 0), 0)
 local C = mover(Vector3.new(-3, 0, 12), 0)
@@ -98,7 +100,15 @@ for f = 0, SECONDS * FPS - 1 do
 		move(runner, R, 15)
 		move(catcher, C, 19, rad(-6))
 	else
-		move(runner, R, 0) -- caught: in the game he's sent to the bench
+		-- Caught: he falls flat where he was and lies there (KnockdownService + DownMotion)
+		walkAnim(runner, R.phase, 0)
+		if not down then
+			down = DownMotion.new(runner.motors)
+			local dir = Vector3.new(-sin(-R.facing), 0, -cos(-R.facing))
+			downFeet = Rig.lookAt(R.pos, R.pos + dir)
+		end
+		DownMotion.step(down, t - TAG_AT)
+		runner.root.CFrame = DownMotion.rootCFrame(downFeet, Rig.REST_HEIGHT, t - TAG_AT)
 		local turn = if t > 3.6 and t < 5 then rad(60) elseif t > 7.4 and t < 8.2 then rad(-90) else 0
 		local speed = if t < 5.6 then 18 elseif t < 6.2 then 0 elseif t > 7.2 and t < 9 then 8 else 0
 		if t >= 5.6 and t < 5.75 then C.speed = 0 end

@@ -15,7 +15,7 @@ All of these work against a real save system. When you're happy with how they lo
 1. After the **next-round countdown**, a girl is rolled by rarity (Common → Secret) and **stands in the
    middle**. One random player is the **catcher** (also in the middle). Everyone else runs from side A.
 2. The **first runner across gets her automatically**: she appears over their head and they carry her.
-   Tagged runners wait on the bench and **catch next round**. Each round runs the other way.
+   Tagged runners **fall flat on the floor and lie there**, then get up as **catchers next round**. Each round runs the other way.
 3. **A catcher who tags her holder steals her:** she falls down and follows that catcher around on foot. The
    next runner across rescues her, and the round after that is
    the **final round**: if that runner crosses again, they win her; if they're tagged, that catcher wins her.

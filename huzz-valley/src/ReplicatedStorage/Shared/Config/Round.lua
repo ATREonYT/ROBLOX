@@ -20,6 +20,16 @@ return {
 	GrabRange = 6, -- "Grab" only: studs from her centre to a runner's root
 
 	TagRange = 5.5, -- studs between root parts
+
+	-- A caught runner falls flat on their face and lies there until the next round
+	-- (owner's call). Enabled = false sends them to the Bench part instead.
+	Knockdown = {
+		Enabled = true,
+		FallTime = 0.45, -- seconds from standing to flat
+		Bounce = 6, -- degrees of bounce when they hit the floor
+		Lift = 0.5, -- torso thickness: how far the body lies above the floor
+		ArmsForward = 160, -- arms out in front of the head (degrees from hanging)
+	},
 	StartZoneSafe = true, -- catchers can't tag runners still standing in their start zone
 
 	Speeds = {
