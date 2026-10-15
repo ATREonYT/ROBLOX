@@ -277,10 +277,9 @@ function GirlService.makeCopy(girl, parent)
 	return model, root, centre, size
 end
 
--- Standing on a zone as the round's prize.
-function GirlService.display(girl, zone, lookAt, parent)
+-- Standing on the floor at `top` (a point on the ground) as the round's prize.
+function GirlService.display(girl, top, lookAt, parent)
 	local model, _, centre, size = GirlService.makeCopy(girl, parent)
-	local top = zone.CFrame:PointToWorldSpace(Vector3.new(0, zone.Size.Y * 0.5, 0))
 	local target = CFrame.lookAt(top + Vector3.new(0, size.Y * 0.5, 0), Vector3.new(lookAt.X, top.Y + size.Y * 0.5, lookAt.Z))
 	model:PivotTo(target * centre:ToObjectSpace(model:GetPivot()))
 	model.Name = "HuzzPrize"

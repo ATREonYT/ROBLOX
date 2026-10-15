@@ -95,18 +95,58 @@ local function addMap(name, container, a, b, middle, bench)
 	end
 end
 
+-- Names match loosely: "Zone A", "zonea" and "ZoneA" are all ZoneA.
+local function key(name)
+	return (string.gsub(name, "[%s_%-]", "")):lower()
+end
+
+local function childNamed(box, name)
+	local want = key(name)
+	for _, c in box:GetChildren() do
+		if key(c.Name) == want then
+			return asPart(c)
+		end
+	end
+	return nil
+end
+
+local zoneParts = {} -- every zone part, so floor checks look through them
+
+local function prepare(zone)
+	if zone then
+		-- Zones are markers: anchored (or they'd fall through the map), not solid.
+		zone.Anchored = true
+		zone.CanCollide = false
+		zone.CanTouch = false
+		table.insert(zoneParts, zone)
+	end
+	return zone
+end
+
 function MapService.init()
 	local C = Config.Map
 	-- Every container holding a ZoneA (plus its ZoneB and Middle) is a map.
 	local seen = {}
 	for _, d in Workspace:GetDescendants() do
-		if d.Name == C.ZoneA and asPart(d) and not seen[d.Parent] then
+		if key(d.Name) == key(C.ZoneA) and asPart(d) and not seen[d.Parent] then
 			local box = d.Parent
 			seen[box] = true
 			-- Named after its folder; a folder just called "Zones" takes its parent's name.
 			local named = if box.Name:lower():find("zone") and box.Parent ~= Workspace then box.Parent else box
 			local name = if named == Workspace then "Main" else named.Name
-			addMap(name, box, asPart(d), asPart(box:FindFirstChild(C.ZoneB)), asPart(box:FindFirstChild(C.Middle)), asPart(box:FindFirstChild(C.Bench)))
+			local zoneA, zoneB, middle = asPart(d), childNamed(box, C.ZoneB), childNamed(box, C.Middle)
+			if zoneA and middle and not zoneB then
+				-- No ZoneB: mirror ZoneA across the Middle (same size), so the map still works.
+				zoneB = zoneA:Clone()
+				zoneB:ClearAllChildren()
+				zoneB.Name = "ZoneB (mirrored)"
+				local m, p = middle.CFrame.Position, zoneA.CFrame.Position
+				zoneB.CFrame = zoneA.CFrame.Rotation + Vector3.new(2 * m.X - p.X, p.Y, 2 * m.Z - p.Z)
+				zoneB.Transparency = 1
+				zoneB.Parent = box
+				warn(`[Huzz] {name} has no ZoneB: using one mirrored from ZoneA across the Middle`)
+			end
+			addMap(name, box, prepare(zoneA), prepare(zoneB), prepare(middle), prepare(childNamed(box, C.Bench)))
 		end
 	end
 	-- Single-map tags (HuzzZoneA, HuzzZoneB, HuzzMiddle), as before.
@@ -121,8 +161,18 @@ function MapService.init()
 		local field = buildTestField()
 		addMap("Test Field", field, field.ZoneA, field.ZoneB, field.Middle, field.Bench)
 	end
-	local lobby = Workspace:FindFirstChild(C.Lobby, true)
-	MapService.lobby = asPart(CollectionService:GetTagged("HuzzLobby")[1]) or asPart(lobby)
+	-- Where players wait between games: a part named Lobby, else the SpawnBaseplate.
+	local lobby, base
+	for _, d in Workspace:GetDescendants() do
+		if d:IsA("BasePart") then
+			if key(d.Name) == key(C.Lobby) then
+				lobby = lobby or d
+			elseif key(d.Name) == "spawnbaseplate" then
+				base = base or d
+			end
+		end
+	end
+	MapService.lobby = asPart(CollectionService:GetTagged("HuzzLobby")[1]) or lobby or base
 	MapService.pick()
 end
 
@@ -148,12 +198,33 @@ function MapService.inZone(zone, position)
 	return math.abs(p.X) <= half.X and math.abs(p.Z) <= half.Z and p.Y >= -half.Y - 4 and p.Y <= half.Y + 14
 end
 
--- A random standing spot on top of the zone, facing lookAt.
-function MapService.spot(zone, lookAt)
+-- The floor height under a point (ignoring zones, players and girls), or nil.
+function MapService.ground(position, from)
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	local ignore = table.clone(zoneParts)
+	for _, name in { "HuzzCarried", "HuzzFollowers" } do
+		table.insert(ignore, Workspace:FindFirstChild(name))
+	end
+	for _, p in game:GetService("Players"):GetPlayers() do
+		table.insert(ignore, p.Character)
+	end
+	params.FilterDescendantsInstances = ignore
+	local top = from or (position.Y + 20)
+	local hit = Workspace:Raycast(Vector3.new(position.X, top, position.Z), Vector3.new(0, -(top - position.Y) - 60, 0), params)
+	return hit and hit.Position.Y
+end
+
+-- A random standing spot in the zone, on the floor under it, facing lookAt.
+-- maxSpread limits how far from the zone's centre (catchers stay in the real middle).
+function MapService.spot(zone, lookAt, maxSpread)
 	local half = zone.Size * 0.5
-	local inset = Vector3.new(math.max(half.X - 3, 0), 0, math.max(half.Z - 3, 0))
-	local local_ = Vector3.new((math.random() * 2 - 1) * inset.X, half.Y + 3.2, (math.random() * 2 - 1) * inset.Z)
-	local pos = zone.CFrame:PointToWorldSpace(local_)
+	local spread = maxSpread or math.huge
+	local inset = Vector3.new(math.min(math.max(half.X - 3, 0), spread), 0, math.min(math.max(half.Z - 3, 0), spread))
+	local local_ = Vector3.new((math.random() * 2 - 1) * inset.X, half.Y, (math.random() * 2 - 1) * inset.Z)
+	local top = zone.CFrame:PointToWorldSpace(local_)
+	local floor = MapService.ground(top - Vector3.new(0, zone.Size.Y, 0), top.Y + 2)
+	local pos = Vector3.new(top.X, (floor or top.Y) + 3.2, top.Z)
 	local flat = lookAt and Vector3.new(lookAt.X, pos.Y, lookAt.Z)
 	if flat and (flat - pos).Magnitude > 0.1 then
 		return CFrame.lookAt(pos, flat)

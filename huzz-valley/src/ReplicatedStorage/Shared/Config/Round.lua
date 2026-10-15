@@ -47,7 +47,8 @@ return {
 		ZoneB = "ZoneB", -- the other side; round 1's safe zone
 		Middle = "Middle", -- where catchers spawn
 		Bench = "Bench", -- where caught runners wait out the round
-		Lobby = "Lobby", -- where everyone waits between games (optional)
+		Lobby = "Lobby", -- where everyone waits between games (optional; else the SpawnBaseplate)
+		MiddleSpawn = 20, -- catchers start within this many studs of the Middle's centre
 		BuildTestField = true, -- no zones found: build a plain test field so the game still runs
 	},
 

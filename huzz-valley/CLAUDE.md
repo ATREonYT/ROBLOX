@@ -121,6 +121,13 @@ The UI golden slice and its backend are built (saving, coins and gems, shop purc
   - It sets Workspace `NextRoundAt`, which the Lobby HUD banner counts down to.
   - It saves through `DataService.update`: the winner's girl goes in `Characters[model name]`, and it adds the
     `Stats` Steals, HoldSeconds and Rounds.
+- **The owner's maps** are in `Workspace/Maps`: Base_Map, BasketBall_Map (no Zone B, so one is mirrored) and
+  Halloween_Map, plus `Spawn` (the SpawnBaseplate lobby).
+  - Zones are named "Zone A"/"Zone B", 8 studs tall, floating, unanchored. Names match loosely, zones are
+    anchored at start, and spawns and the girl use the floor under a zone (`MapService.ground`).
+  - Middle covers the whole field, so catchers spawn within `Map.MiddleSpawn` of its centre.
+  - `lune run huzz-valley/tools/check_maps.luau` checks a new place file.
+  - `SafetyService` strips the CoreValidation scam on start (the hoops are still in BasketBall_Map).
 - **`MapService`:** every folder/model in Workspace holding ZoneA + ZoneB + Middle is a map (named after the
   folder). `pick()` chooses one per game at random, never the same twice in a row, and fills `MapService.zones` in
   place, so RoundService's `zones` table stays valid. One global `Lobby`. Falls back to the old single-map tags,

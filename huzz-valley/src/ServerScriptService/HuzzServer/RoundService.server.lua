@@ -19,6 +19,7 @@ local CarryService = require(script.Parent.CarryService)
 local DataService = require(script.Parent.DataService)
 local KnockdownService = require(script.Parent.KnockdownService)
 
+require(script.Parent.SafetyService).clean()
 MapService.init()
 GirlService.init()
 
@@ -131,6 +132,8 @@ local function place(id)
 		local start, goal = zones[MapService.startFor(match.round)], zones[goalName]
 		if role == "Catcher" then
 			zone, lookAt = zones.Middle, start.Position
+			c:PivotTo(MapService.spot(zone, lookAt, Config.Map.MiddleSpawn))
+			return
 		elseif status == "Caught" then
 			zone, lookAt = zones.Bench, middle
 		elseif status == "Safe" then
@@ -158,7 +161,8 @@ local function showPrize()
 		local inMiddle = Config.GirlSpot == "Middle"
 		local spot = if inMiddle then zones.Middle else zones[goalName]
 		local face = if inMiddle then zones[MapService.startFor(match and match.round or 1)].Position else zones.Middle.Position
-		prize = GirlService.display(girl, spot, face, Workspace)
+		local floor = MapService.ground(spot.Position, spot.Position.Y + spot.Size.Y / 2) or (spot.Position.Y - spot.Size.Y / 2)
+		prize = GirlService.display(girl, Vector3.new(spot.Position.X, floor, spot.Position.Z), face, Workspace)
 	end
 end
 
@@ -428,6 +432,9 @@ local function onCharacter(player, character)
 		end
 	end)
 	task.defer(function()
+		if not (match and match.roles[id]) then
+			place(id) -- waiting for the next game: to the lobby
+		end
 		if match and match.roles[id] then
 			place(id)
 			if match.holder == id and not CarryService.get(player) then
