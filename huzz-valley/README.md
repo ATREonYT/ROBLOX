@@ -11,6 +11,29 @@ All of these work against a real save system. When you're happy with how they lo
 
 ![Ours under each reference](docs/previews/overview.jpg)
 
+## The game: rounds and carrying a girl
+1. After the **next-round countdown**, a girl is rolled by rarity (Common → Secret) and stands on the far side.
+   One random player is the **catcher** (in the middle). Everyone else runs from side A.
+2. The **first runner across picks her up**: she flies into their hands, and they carry her over their head.
+   Tagged runners wait on the bench and **catch next round**. Each round runs the other way, and the first one
+   across takes her again.
+3. **A catcher who tags her holder steals her.** The next runner across rescues her, and the round after that is
+   the **final round**: if that runner crosses again, they win her; if they're tagged, that catcher wins her.
+   If every runner is caught, whoever holds her wins. The winner gets her in their **Index**. Quests count
+   Steals, hold time and matches played.
+
+**Set up your map:** name 3 parts `ZoneA`, `ZoneB` and `Middle` (or tag them `HuzzZoneA`, `HuzzZoneB` and
+`HuzzMiddle`). They can be invisible and non-colliding. `Bench` (fenced off, for caught players) and `Lobby` are
+optional. With no zones, the game builds a sandy test field so you can try it right away.
+**Girls:** put them in `ServerStorage → AnimeGirls → <rarity folder> → <girl model>`. Until then, 4 grey
+stand-in rigs are used.
+**Try it:** press **Play** for solo mode (cross, then cross back to win), or use **Test → Clients and Servers →
+3 players** for real rounds.
+**Tune it:** `Shared/Config/Round.lua` (timings, speeds, rarities), `Shared/Config/Carry.lua` (how she's held:
+size, tilt, arms, bounce, sway, dangling limbs) and `Shared/Config/Animations.lua` (your Huss Valley
+walk/run/idle IDs). The carry sits on top of any walk animation: she rides on the torso and only the arms
+are posed, so new animations need no code changes.
+
 ## Quickest way: open the ready-made game file
 `places/HuzzValley.rbxl` has all the scripts plus a simple grass baseplate. You don't need Rojo.
 1. On your Mac, open it on GitHub (branch **HUZZ-VALLEY**, folder `huzz-valley/places`) and click **Download raw file**. Or pull in GitHub Desktop and find it in the folder.
@@ -54,7 +77,13 @@ The whole UI is in **StarterGui > HuzzUI** as normal parts you can click and cha
    2. **Sunset Trail** and **Blossom Aura** are Developer Products.
    3. Put each ID into `src/ReplicatedStorage/Shared/Config/Products.lua` (`Id = ...`). Until then their buttons say the item isn't on sale and never open a purchase.
    4. Prices there are placeholders. Roblox's live price shows automatically once an ID is set.
-3. **Things that need assets before they can go on sale** show their price, but only say "coming soon" when tapped:
+3. **Send me your girls and map**, so I can check every girl in the carry (size, how her limbs hang, rarity names)
+   before tuning. Either:
+   - save the place (File → **Save to File As** → `HuzzValley-full.rbxl`) into `huzz-valley/places/` and push it
+     with GitHub Desktop (under 100 MB); or
+   - paste `huzz-valley/tools/studio/export-girls-and-map.lua` into the Command Bar and send me the text of each
+     `ServerStorage → ClaudeExport → PartN`.
+4. **Things that need assets before they can go on sale** show their price, but only say "coming soon" when tapped:
    - Dance Pack: the 4 dance animations;
    - Crown Pose: a pose animation;
    - Midnight Outfit: the clothing;
@@ -63,7 +92,10 @@ The whole UI is in **StarterGui > HuzzUI** as normal parts you can click and cha
 ## What's honest about this build
 - **Pictures and icons:** almost all are now your sharp files (`design/sharp` and `design/icons-hd`), used as drawn and only trimmed to fit their spots. Five small icons are still the soft kit crops: the filled favourite star, the quest clipboard (Progression's title), the white shirt in the shop, the small gift and the small music note. Your pictures have see-through backgrounds, so the cards show a blue backdrop behind them.
 - **Product pictures** show your own avatar, because there are no companion models yet. The coin cards use the coin icon instead of the gold-cube stacks.
-- **The next-round timer** only appears once a round system exists. It never shows a made-up countdown.
+- **The next-round timer** now runs from the real round system. The in-round HUD (timer, your role, the girl and
+  who holds her) is a plain stand-in until the Match HUD page is built from the kit.
+- **The carry** has been checked offline (the pose maths and every round rule have tests), but not yet in Studio.
+  Tell me how it feels.
 - **Gifting** says "unavailable" until the Gift Picker is built.
 - **The Social settings** save and are checked on the server, but nothing in the game shows inventories or sends invites yet.
 - **The Controls tab:** Dash and Dances show SOON until those exist. The Open Menu key can be changed now.

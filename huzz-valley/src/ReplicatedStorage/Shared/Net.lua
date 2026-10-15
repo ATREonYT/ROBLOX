@@ -4,6 +4,8 @@
 --   SetSetting     RemoteFunction  client -> server: (key, value) -> ok, message
 --   BuyWithCoins   RemoteFunction  client -> server: (productKey) -> ok, message (no coin items yet; validated anyway)
 --   Action         RemoteFunction  client -> server: (verb, ...) -> ok, message (equip, favourite, claim; see ActionService)
+--   Round          RemoteEvent     server -> client: (kind, data) round moments; its attributes are the round state
+--                                  (Stage, EndsAt, Round, Phase, Goal, GirlName, GirlRarity, HolderId; see RoundService)
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -15,6 +17,7 @@ local SPEC = {
 	SetSetting = "RemoteFunction",
 	BuyWithCoins = "RemoteFunction",
 	Action = "RemoteFunction",
+	Round = "RemoteEvent",
 }
 
 local folder: Folder

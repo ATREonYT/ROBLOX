@@ -2,7 +2,7 @@
 
 A Roblox game based on Huss Valley: rounds where players steal and hold the lead, plus collectible anime companions ranked in tiers (Sub1, Sub3, Sub5, MTB, HTB, Stacy, True Eve), dances, quests and cosmetics. Work on the branch the session names (`HUZZ-VALLEY` so far).
 
-**Gameplay doesn't exist yet.** Only the UI golden slice and its backend are built: saving, coins and gems, shop purchases and settings.
+The UI golden slice and its backend are built (saving, coins and gems, shop purchases, settings), and so is the core round loop with the overhead girl carry (see Gameplay).
 
 ## Design authority
 - The design kit is in `design/`:
@@ -96,12 +96,58 @@ A Roblox game based on Huss Valley: rounds where players steal and hold the lead
 - No dim layer behind windows: on phones it left grey bands at the sides. The blur alone covers the screen.
 - The Dances preview is a navy card (picture, name, help line) with equal Play and Stop buttons inside it. There is no brown floor.
 
+## Gameplay (round loop and carry)
+- **Rules (owner's design):**
+  - The first runner across each round takes the girl.
+  - Tagged runners, runners still out at the timeout and runners who die all catch next round.
+  - Rounds alternate ZoneA ↔ ZoneB.
+  - A catcher who tags her holder steals her. The first runner across rescues her, and the round after is Final:
+    - the holder crosses and wins her;
+    - or the holder is tagged and the tagger wins her (on a timeout, the thief wins).
+  - The holder as the only runner left = Final. No runners left = the holder wins.
+  - Solo (Studio Play): no catcher; cross, then cross back to win.
+- **`Shared/RoundRules`** is a pure state machine that returns events; `tests/RoundRules.spec.luau` covers it.
+  Change rules there first, with a test.
+- **`HuzzServer/RoundService.server`** is its own Script, not started by Bootstrap: the UI harness runs Bootstrap,
+  and an endless round loop would hang `check.sh`.
+  - It turns rule events into world actions (`handlers`).
+  - State goes in attributes on the `Round` remote (`Net`).
+  - It sets Workspace `NextRoundAt`, which the Lobby HUD banner counts down to.
+  - It saves through `DataService.update`: the winner's girl goes in `Characters[model name]`, and it adds the
+    `Stats` Steals, HoldSeconds and Rounds.
+- **`MapService`** finds the zones by tag or name, or builds a test field.
+- **`GirlService`** handles the collection (`ServerStorage/AnimeGirls/<Rarity>/<Model>` or a `Rarity` attribute)
+  and the rarity roll.
+  - `makeCopy` strips scripts, switches her Humanoid off, scales her to `Carry.GirlLength`, and welds parts that
+    aren't joined yet.
+  - It walks the joint graph by hand, because anchored parts have no assemblies and doubling Motor6Ds with welds
+    would lock her limbs.
+- **`CarryService`** adds a Motor6D from the carrier's torso to her root.
+  - She lives in `Workspace.HuzzCarried`, never inside the character, so walk animations can't bind her joints.
+  - `Shared/CarryMath` holds the hold height and arm pose, shared by the server and the client so they agree.
+    `tests/CarryMath.spec.luau` checks the directions on a stock R15 rig.
+- **`HuzzClient/StartGameplay`** starts `Gameplay/*` through `Report.run`.
+  - `CarryAnimator` sets Motor6D.Transform in PreSimulation, after the animations:
+    - the carry joint: the pickup flight, the step bob and the inertia spring;
+    - the carrier's shoulders and elbows: the pose, plus `AnimBlend` of the playing animation;
+    - her limbs: dangling toward gravity.
+    It tells its own writes from the Animator's by reading the Transform back (CFrames are float32).
+  - `RoundHud` is a stand-in, to be rebuilt with Kit as the Match HUD page.
+  - `AvatarAnimations` swaps in the IDs from `Config/Animations`.
+- **`sh tools/check.sh`** compiles every script and runs both specs. Run it with `tools/preview/check.sh`.
+- **Not seen in Studio yet:** physics ownership of the welded girl and the Animator ordering. Ask the owner how
+  the carry feels before tuning blind.
+- **Waiting on the owner:** their girls and map (a `.rbxl` in `places/`, or `tools/studio/export-girls-and-map.lua`
+  output). Check every girl (scale, rig, dangle) before tuning. Their rarities are Common → Secret, but the Index
+  uses tiers (Sub1 → TrueEve) and `Config/Characters.List`: ask how they map, and add the girls to that list so
+  the Index shows them.
+
 ## Place file
 `sh tools/place/build_place.sh` rebuilds `places/HuzzValley.rbxl` (all scripts plus a baseplate). Rebuild it whenever `src/` changes, so the owner can always just open the file.
 
 ## Open items (owner's checklist lives in `README.md`)
 - **Built:** Lobby HUD, Menu (a side panel over the HUD's side buttons), Shop, Settings, Character Index, Tiers, Dances and Progression (Rewards and Quests). Every main window is 701 x 320.
-- **Next:** the round-driven pages (Map Vote, Recruitment, Results, Match HUD) and the Gift Picker. These need the round system and the gifting backend first.
+- **Next:** the round-driven pages (Map Vote, Recruitment, Results, Match HUD) on top of the round system; the Gift Picker (needs the gifting backend).
 - **Missing from the owner:**
   - sharp versions of the 5 icons still from the kit crops (list under Checks and previews), including the filled star;
   - big preview pictures for Step and Wave (the Index preview uses each character's whole-body render);
