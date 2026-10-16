@@ -5,9 +5,6 @@
     "ReplicatedStorage": {
       "Shared": {
         "$path": "src/ReplicatedStorage/Shared"
-      },
-      "HuzzAnimations": {
-        "$path": "src/ReplicatedStorage/HuzzAnimations.rbxm"
       }
     },
     "ServerScriptService": {
@@ -28,6 +25,9 @@
     "ServerStorage": {
       "HuzzStudioTools": {
         "$path": "src/ServerStorage/HuzzStudioTools"
+      },
+      "HuzzAnimations": {
+        "$path": "src/ServerStorage/HuzzAnimations.rbxm"
       }
     }
   }

@@ -13,11 +13,18 @@ function M.start()
 
 	local Shared = ReplicatedStorage:WaitForChild("Shared")
 	local Library = require(Shared.AnimationLibrary)
+	local Animations = require(Shared.Config.Animations)
 	local RunMotion = require(Shared.RunMotion)
 	local Frame = require(script.Parent.Frame)
-	if Library.has("Run") then
-		return -- (the owner's run plays instead: Gameplay/AvatarAnimations, and the dash: Gameplay/Dash)
+	-- The owner's run plays instead (Gameplay/AvatarAnimations, the dash: Gameplay/Dash). Published: for everyone.
+	-- Only Studio's temporary copy: that ID works on this screen alone, so other players still get the scripted run.
+	if Animations.Run ~= "" then
+		return
 	end
+	if game:GetService("RunService"):IsStudio() then
+		ReplicatedStorage:WaitForChild("HuzzAnimations", 5) -- (Bootstrap copies the raw ones over in Studio)
+	end
+	local skipMine = Library.has("Run")
 
 	local carried = Workspace:WaitForChild("HuzzCarried")
 	local recs = {} -- Player -> { character, rec }
@@ -37,6 +44,9 @@ function M.start()
 			end
 		end
 		for _, p in Players:GetPlayers() do
+			if skipMine and p == Players.LocalPlayer then
+				continue
+			end
 			local character = p.Character
 			local r = recs[p]
 			-- (Re)build when the character changes, its joints were replaced, or it wasn't complete yet.

@@ -12,6 +12,16 @@ for _, name in { "Music", "Effects" } do
 	g.Parent = master
 end
 
+-- Studio only: the owner's raw animations go where clients can play them (Shared/AnimationLibrary). In the live
+-- game they stay in ServerStorage (published IDs are used there), so nobody downloads 2.7 MB for nothing.
+if game:GetService("RunService"):IsStudio() then
+	local raw = game:GetService("ServerStorage"):FindFirstChild("HuzzAnimations")
+	local RS = game:GetService("ReplicatedStorage")
+	if raw and not RS:FindFirstChild("HuzzAnimations") then
+		raw:Clone().Parent = RS
+	end
+end
+
 local DataService = require(HuzzServer.DataService)
 local ShopService = require(HuzzServer.ShopService)
 local SettingsService = require(HuzzServer.SettingsService)

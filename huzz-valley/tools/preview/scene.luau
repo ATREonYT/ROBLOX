@@ -100,7 +100,7 @@ if cfg.ROUNDHUD then
 	-- (one ScreenGui is exported: the round HUD's root goes into the main UI for the picture)
 	pg:WaitForChild("HuzzRoundHud").Root.Parent = pg:WaitForChild("HuzzUI")
 	round:SetAttribute("Stage", "Running")
-	__fireOn(round, "OnClientEvent", "Announce", { text = "Messi reached safety!", color = Color3.fromRGB(110, 236, 140) })
+	__fireOn(round, "OnClientEvent", "Announce", { text = "Messi is safe", color = Color3.fromRGB(110, 236, 140) })
 	Hud.refresh()
 end
 -- ROLL=<seconds into the spin>: the girl roller, with a made-up strip of the placeholder names.

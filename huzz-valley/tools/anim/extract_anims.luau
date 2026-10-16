@@ -1,5 +1,6 @@
--- Pulls the game's animations out of the owner's files into src/ReplicatedStorage/HuzzAnimations.rbxm (a Folder of
--- KeyframeSequences that Rojo and the place build put in ReplicatedStorage):
+-- Pulls the game's animations out of the owner's files into src/ServerStorage/HuzzAnimations.rbxm (a Folder of
+-- KeyframeSequences that Rojo and the place build put in ServerStorage; in Studio, Bootstrap copies it to
+-- ReplicatedStorage so clients can play them, and in the live game nobody downloads it):
 --   design/anims/movement-pack.rbxl  (Skater Studios' "15+ R15 Movement Animations" pack, licence in the zip):
 --     Idle, Walk, Run (the pack's Sprint: hunched, big arms, like Huss Valley), Jump, Fall, Climb
 --   design/anims/200-dances.rbxl  (the owner's 200 dances): the 25 in DANCES below, renamed Dance_<Id>
@@ -12,7 +13,7 @@ local roblox = require("@lune/roblox")
 local Instance, CFrame, Enum = roblox.Instance, roblox.CFrame, roblox.Enum
 
 local DIR = "huzz-valley/design/anims/"
-local OUT = "huzz-valley/src/ReplicatedStorage/HuzzAnimations.rbxm"
+local OUT = "huzz-valley/src/ServerStorage/HuzzAnimations.rbxm"
 
 -- Id (the game's name) = the dance's name in 200-dances.rbxl. Display names live in Config/Dances.
 local DANCES = {

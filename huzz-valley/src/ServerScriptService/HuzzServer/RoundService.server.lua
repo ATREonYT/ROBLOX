@@ -392,16 +392,6 @@ local function step(dt)
 			end
 		end
 	end
-	-- Safe runners stay across: the gate stops them, and anyone who got round it (a dash, a push) goes back in.
-	for id, status in match.status do
-		local root = status == "Safe" and rootOf(id)
-		if root and goal then
-			local back = MapService.keepIn(goal, root.Position)
-			if back and (back - root.Position).Magnitude > 2 then
-				root.Parent:PivotTo(CFrame.new(back) * root.CFrame.Rotation)
-			end
-		end
-	end
 	-- Rescues: an Active runner next to a downed one fills their bar; walking away lets it drain.
 	for downedId, status in match.status do
 		if status == "Downed" then
@@ -438,6 +428,25 @@ local function step(dt)
 	end
 end
 
+-- Safe runners stay across (owner's call): the goal's gate stops them, and anyone who got round it (a dash, a
+-- push) goes back in. Every frame of the round, not only while running (a Hero safe after the solo run waits
+-- through the countdown too).
+local function keepSafe()
+	local goal = goalName and zones[goalName]
+	if not goal then
+		return
+	end
+	for id, status in match.status do
+		local root = status == "Safe" and rootOf(id)
+		if root then
+			local back = MapService.keepIn(goal, root.Position)
+			if back and (back - root.Position).Magnitude > 2 then
+				root.Parent:PivotTo(CFrame.new(back) * root.CFrame.Rotation)
+			end
+		end
+	end
+end
+
 -- Runners waiting on the line stay on their spot (anyone pushed or sneaking off goes back).
 local function keepOnLine()
 	for id in frozen do
@@ -455,6 +464,7 @@ local function play(seconds, done, live)
 	while os.clock() < deadline and not (done and done()) and not match.over do
 		local dt = RunService.Heartbeat:Wait()
 		keepOnLine()
+		keepSafe()
 		if live then
 			if match.holder then
 				holdSeconds += dt
@@ -574,7 +584,7 @@ local function runRound()
 		MapService.holdStart(startName, true)
 		PowerService.clear() -- (traps laid during the Hero run don't stay for everyone's run)
 		syncAll()
-		task.wait(0.8)
+		play(0.8)
 	end
 
 	-- Nobody left to run (the only runner was the Hero): straight to the round's end.

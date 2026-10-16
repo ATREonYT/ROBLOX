@@ -22,7 +22,7 @@ local CARD = { X = { 18, 247, 476 }, Y = 60, W = 207, H = 176 }
 local CARDS = {
 	{ Icon = "Sneaker", Title = "RUN ACROSS", Text = "Reach the SAFE ZONE across the map without getting stabbed." },
 	{ Icon = "Players", Title = "SAVE FRIENDS", Text = "Someone down? Stand next to them to pick them back up." },
-	{ Icon = "CollectionBook", Title = "BE THE HERO", Text = "Picked? Go HERO and cross alone. Make it and she's yours." },
+	{ Icon = "TierCrown", Title = "BE THE HERO", Text = "Picked? Go HERO and cross alone. Make it and you carry her!" },
 }
 
 local function card(parent: Instance, i: number, def)

@@ -13,6 +13,9 @@ function M.start()
 	local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 	local Library = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("AnimationLibrary"))
+	if game:GetService("RunService"):IsStudio() then
+		ReplicatedStorage:WaitForChild("HuzzAnimations", 5) -- (Bootstrap copies the raw ones over in Studio)
+	end
 
 	local SLOTS = {
 		{ "walk", "WalkAnim", "Walk" },

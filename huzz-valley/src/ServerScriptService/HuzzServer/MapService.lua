@@ -660,7 +660,8 @@ function MapService.holdGoal(goalName, on)
 	setUpGroups() -- (again each round: KnockdownService may have registered its group after us)
 	local centre, out, length = edge(zone)
 	local h = Config.Map.WallHeight
-	local base = CFrame.lookAt(centre, centre + out) + out * 2 -- just outside the zone, on the field side
+	local base = CFrame.lookAt(centre, centre + out) + out * 3.5 -- outside the zone with a gap, so a runner's trailing arm
+	-- isn't inside it at the moment they turn Safe (a shove)
 	gate = Instance.new("Folder")
 	gate.Name = "HuzzGoalGate"
 	local block = markPart({

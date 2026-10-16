@@ -13,7 +13,7 @@ local ours = roblox.deserializePlace(fs.readFile(ROOT .. "HuzzValley.rbxl"))
 local SWAP = {
 	{ "ServerScriptService", "HuzzServer" },
 	{ "ReplicatedStorage", "Shared" },
-	{ "ReplicatedStorage", "HuzzAnimations" }, -- (the owner's animations: tools/anim/extract_anims.luau)
+	{ "ServerStorage", "HuzzAnimations" }, -- (the owner's animations: tools/anim/extract_anims.luau)
 	{ "StarterPlayer", "StarterPlayerScripts", "HuzzClient" },
 	{ "StarterGui", "HuzzUI" },
 	{ "ServerStorage", "HuzzStudioTools" },

@@ -60,9 +60,6 @@ Theme.Fonts = {
 	Body = Font.new(CONDENSED, Enum.FontWeight.Regular), -- descriptions, quest instructions
 	Number = Font.new(MONTSERRAT, Enum.FontWeight.Bold), -- prices, currencies, XP numbers
 	Label = Font.new(MONTSERRAT, Enum.FontWeight.Medium), -- search fields, smaller labels
-	-- In-round HUD (the match screen): a chunky cartoon face for big words, a round friendly one for lines.
-	Display = Font.new("rbxasset://fonts/families/LuckiestGuy.json"), -- timer, role, banners, countdown
-	Round = Font.new("rbxasset://fonts/families/FredokaOne.json"), -- role lines, prize card, hints
 }
 
 -- Text sizes (reference px).

@@ -155,9 +155,10 @@ the icons itself. To make them work everywhere for good, upload them once (Plugi
    2. In Asset Manager → **Audio**, select them all and drag them into **Workspace**.
    3. Paste `huzz-valley/tools/studio/collect-sound-ids.lua` into the Command Bar and send me the Output lines
       that start with `[HuzzSfx]`. Then delete the sounds you dragged in.
-9. **Publish the animations** (needed for the live game; Studio already plays them): paste
+9. **Publish the animations** (needed for the live game: until then the dances say "coming soon" there and
+   the walk/run stay Roblox's. Studio already plays them, best tested solo). Paste
    `huzz-valley/tools/studio/publish-animations.lua` into the Command Bar and send me the `[HuzzAnim]` lines. If it
-   says some couldn't publish, right-click those in **ReplicatedStorage → HuzzAnimations** → **Save to Roblox...**
+   says some couldn't publish, right-click those in **ServerStorage → HuzzAnimations** → **Save to Roblox...**
    and send me their IDs. Publish them under the account (or group) that owns the game, or they won't play.
 10. **Dance names:** most of the 25 dances are copies of other games' emotes, so they have our own names in
     `Shared/Config/Dances.lua` (Citrus Groove, Shock Shuffle...). Rename any you like. The movement pack's licence

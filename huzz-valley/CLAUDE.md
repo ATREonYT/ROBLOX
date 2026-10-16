@@ -21,7 +21,8 @@ eye. Branch `HUZZ-VALLEY`. Read the section you need; the owner's own words are 
 - `ReplicatedStorage/Shared`: `RoundRules` (pure rules, tested), `AuraLook`, `CinematicShot`, `RunMotion`,
   `CarryMotion`, `GirlMotion`, `FollowMotion`, `AnimationLibrary`, `Net`, `Config/*` (Round, Run, Powers, Dances,
   Animations, SoundIds, GirlLooks, GirlNames, Products, Settings...).
-- `ReplicatedStorage/HuzzAnimations.rbxm`: the owner's animations as raw KeyframeSequences (generated, §6).
+- `ServerStorage/HuzzAnimations.rbxm`: the owner's animations as raw KeyframeSequences (generated, §6; copied to
+  ReplicatedStorage by Bootstrap in Studio only).
 - `ServerScriptService/HuzzServer`: `RoundService.server` (the loop; its own Script), `MapService`, `GirlService`,
   `CarryService`, `KnockdownService`, `PowerService`, `NameTagService`, `CompanionService`, `DataService`
   (ProfileStore; all writes via `update()`), `ShopService`, `SettingsService`, `Bootstrap`.
@@ -56,7 +57,7 @@ eye. Branch `HUZZ-VALLEY`. Read the section you need; the owner's own words are 
   the start zone; `Rescue.Shield` after).
 - **Safe gate:** `MapService.holdGoal` puts an invisible block on the goal line in collision group
   `HuzzSafeWall`, which only collides with `HuzzSafe` (Safe runners' parts: `MapService.setSafe` from
-  `syncPlayer`); `step()` also pulls back anyone who got round it.
+  `syncPlayer`); `keepSafe()` pulls back anyone who got round it, every frame of the round.
 - Speeds: the server sets `WalkSpeed` and the cap `HuzzSpeed` on the Humanoid; `Gameplay/Sprint` ramps your
   own speed from `Run.StartSpeed` to the cap over `Run.Ramp` while you hold a direction (0 stays 0).
 - State lives in attributes: Round remote (Stage, EndsAt, Round, Goal, Streak, Crossings, PickId, PickAt,
@@ -77,7 +78,7 @@ eye. Branch `HUZZ-VALLEY`. Read the section you need; the owner's own words are 
 
 ## 6. Animations (the owner's files)
 - `tools/anim/extract_anims.luau` reads `design/anims/movement-pack.rbxl` and `200-dances.rbxl` and writes
-  `src/ReplicatedStorage/HuzzAnimations.rbxm`: Idle, Walk, Run (the pack's hunched Sprint), Jump, Fall, Climb,
+  `src/ServerStorage/HuzzAnimations.rbxm`: Idle, Walk, Run (the pack's hunched Sprint), Jump, Fall, Climb,
   Dash (built: Sprint pose + forward lunge, arms back) and `Dance_<Id>` for the 25 in `Config/Dances` (names are
   ours; the originals are other games' emote names).
 - `Shared/AnimationLibrary.id(name, published)`: the published ID, else **in Studio only** a temporary ID from

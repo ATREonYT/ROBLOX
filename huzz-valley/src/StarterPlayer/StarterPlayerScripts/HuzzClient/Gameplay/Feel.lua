@@ -105,12 +105,14 @@ function M.start()
 	end)
 
 	local camera = Workspace.CurrentCamera
-	local baseFov = if camera then camera.FieldOfView else 70
 	local extra = 0 -- the FOV we've added (eased)
 	local myLastDash = nil
 	Frame.on(5, function(dt)
 		dt = math.clamp(dt, 1 / 240, 1 / 15)
 		local now = Workspace:GetServerTimeNow()
+		if Workspace.CurrentCamera ~= camera then
+			extra = 0 -- (a new camera starts clean: never take our extra off a camera we didn't add it to)
+		end
 		camera = Workspace.CurrentCamera
 		local myRoot = nil
 
@@ -188,7 +190,6 @@ function M.start()
 		end
 		camera.FieldOfView += nextExtra - extra
 		extra = nextExtra
-		_ = baseFov
 	end)
 end
 

@@ -51,7 +51,7 @@ function DanceWheel.build(parent: Instance)
 	local player = Players.LocalPlayer
 	local root = new("Frame", { Name = "DanceWheel", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(SIZE, SIZE), BackgroundTransparency = 1, Visible = false, ZIndex = 30, Parent = parent })
 	local fit = new("UIScale", { Name = "FitScale", Parent = root })
-	Scale.bind(fit, function() return Scale.hud(PAGE_H) * 1.25 end)
+	Scale.bind(fit, function() return Scale.hud(PAGE_H) end) -- (fits a phone: the whole 560 box, title and hint inside)
 	local pop = new("UIScale", { Name = "Pop", Parent = new("Frame", { Name = "Holder", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ZIndex = 30, Parent = root }) })
 	local holder = pop.Parent :: Frame
 
@@ -70,8 +70,8 @@ function DanceWheel.build(parent: Instance)
 	local stop = Kit.button({ Name = "Stop", Text = "STOP", TextSize = 16, Style = "Action", Position = UDim2.fromOffset(24, 128), Size = UDim2.fromOffset(140, 34), ZIndex = 32, Parent = disc })
 
 	-- heading and hint
-	Kit.title({ Name = "Title", Text = "DANCES", TextSize = 30, Position = UDim2.fromOffset(18, 14), Size = UDim2.fromOffset(170, 36), ZIndex = 32, Parent = holder })
-	local hint = Kit.text({ Name = "Hint", Text = "", FontFace = F.Button, TextSize = 15, TextColor3 = C.NoteText, TextXAlignment = Enum.TextXAlignment.Center, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, 4), Size = UDim2.fromOffset(SIZE, 20), TextWrapped = false, ZIndex = 32, Parent = holder })
+	Kit.title({ Name = "Title", Text = "DANCES", TextSize = 30, Position = UDim2.fromOffset(18, 18), Size = UDim2.fromOffset(170, 36), ZIndex = 32, Parent = holder })
+	local hint = Kit.text({ Name = "Hint", Text = "", FontFace = F.Button, TextSize = 15, TextColor3 = C.NoteText, TextXAlignment = Enum.TextXAlignment.Center, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -2), Size = UDim2.fromOffset(SIZE, 20), TextWrapped = false, ZIndex = 32, Parent = holder })
 	Kit.attach(Kit.stroke(C.Frame, 1.2), hint)
 	local close = Kit.closeButton({ AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -40, 0, 30), Parent = holder })
 
@@ -98,7 +98,8 @@ function DanceWheel.build(parent: Instance)
 			s.label.Text = if d then d.Name else "EMPTY"
 			s.label.TextTransparency = if d then 0 else 0.5
 			local isOn = d ~= nil and d.Id == playing
-			s.sub.Text = if isOn then "PLAYING · WALK AWAY" elseif d then "" else "STAR ONE IN MY DANCES"
+			local ready = d ~= nil and DancePlayer.ready(d.Id)
+			s.sub.Text = if isOn then "PLAYING · WALK AWAY" elseif d and not ready then "COMING SOON" elseif d then "" else "STAR ONE IN MY DANCES"
 			s.sub.TextColor3 = if isOn then GREEN else C.SubText
 			s.label.Position = UDim2.fromOffset(8, if s.sub.Text == "" then 18 else 10)
 			if s.rim then
@@ -164,7 +165,7 @@ function DanceWheel.build(parent: Instance)
 	UserInputService.InputBegan:Connect(function(input, processed)
 		if UserInputService:GetFocusedTextBox() then return end
 		local k = input.KeyCode
-		if (k == Enum.KeyCode.G and not processed) or k == Enum.KeyCode.ButtonY then
+		if not processed and (k == Enum.KeyCode.G or k == Enum.KeyCode.ButtonY) then
 			setOpen(not open)
 		elseif open and k == Enum.KeyCode.Escape then
 			setOpen(false)
