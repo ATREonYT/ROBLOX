@@ -108,6 +108,7 @@ function M.start()
 		local c = player.Character
 		return Config.TagMode == "Stab" and player:GetAttribute("HuzzRole") == "Catcher" and RoundNet:GetAttribute("Stage") == "Running"
 			and c ~= nil and c:FindFirstChild("HuzzKnife") ~= nil and not busy()
+			and (player:GetAttribute("DizzyUntil") or 0) <= Workspace:GetServerTimeNow() -- a popped Heart Shield
 	end
 	local function myGirl()
 		for _, model in carried:GetChildren() do

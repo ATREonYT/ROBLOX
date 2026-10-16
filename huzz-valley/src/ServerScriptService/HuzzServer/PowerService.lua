@@ -41,11 +41,11 @@ local function stateOf(id)
 	return s
 end
 
-local function folder()
-	local f = Workspace:FindFirstChild("HuzzTraps")
+local function folder(name)
+	local f = Workspace:FindFirstChild(name)
 	if not f then
 		f = Instance.new("Folder")
-		f.Name = "HuzzTraps"
+		f.Name = name
 		f.Parent = Workspace
 	end
 	return f
@@ -103,16 +103,17 @@ local function removeShield(id)
 	local p = ctx.playerOf(id)
 	if p then
 		p:SetAttribute("ShieldUntil", nil)
-		local bubble = p.Character and p.Character:FindFirstChild("HuzzShield")
-		if bubble then
-			bubble:Destroy()
-		end
+	end
+	if s.bubble then
+		s.bubble:Destroy()
+		s.bubble = nil
 	end
 end
 
 local function boost(id, amount, seconds)
 	local s = stateOf(id)
 	s.boost, s.boostUntil = amount, now() + seconds
+	s.trailUntil = math.max(s.trailUntil or 0, s.boostUntil)
 	-- A pink trail behind them while it lasts.
 	local p = ctx.playerOf(id)
 	local root = ctx.rootOf(id)
@@ -133,11 +134,18 @@ local function boost(id, amount, seconds)
 		trail.Transparency = NumberSequence.new(0.35, 1)
 		trail.LightEmission = 0.5
 		trail.Parent = root
-		task.delay(seconds, function()
-			for _, item in { trail, a0, a1 } do
-				item:Destroy()
+		-- Gone when the last boost ends (a second boost can stretch it).
+		local function finish()
+			local left = (s.trailUntil or 0) - now()
+			if left > 0.05 then
+				task.delay(left, finish)
+			else
+				for _, item in { trail, a0, a1 } do
+					item:Destroy()
+				end
 			end
-		end)
+		end
+		task.delay(seconds, finish)
 	end
 	ctx.sync(id)
 	return p
@@ -163,7 +171,9 @@ function USE.HeartShield(id, def)
 		local weld = Instance.new("WeldConstraint")
 		weld.Part0, weld.Part1 = root, bubble
 		weld.Parent = bubble
-		bubble.Parent = root.Parent
+		-- Outside the character, so the team outline (a Highlight on the character) doesn't ring it.
+		bubble.Parent = folder("HuzzShields")
+		s.bubble = bubble
 	end
 	return true
 end
@@ -236,7 +246,7 @@ function USE.LoveTrap(id, def)
 	heart.Text = "💘"
 	heart.TextScaled = true
 	heart.Parent = gui
-	model.Parent = folder()
+	model.Parent = folder("HuzzTraps")
 	table.insert(traps, { model = model, owner = id, at = at, untilT = now() + def.Lasts })
 	return true
 end
@@ -297,6 +307,10 @@ function PowerService.start(context)
 	ctx = context
 	Net.get("Power").OnServerEvent:Connect(use)
 	Players.PlayerRemoving:Connect(function(p)
+		local s = state[p.UserId]
+		if s and s.bubble then
+			s.bubble:Destroy()
+		end
 		state[p.UserId] = nil
 	end)
 end
@@ -322,6 +336,7 @@ function PowerService.clear()
 		if p then
 			p:SetAttribute("PowerReady1", nil)
 			p:SetAttribute("PowerReady2", nil)
+			p:SetAttribute("DizzyUntil", nil)
 		end
 	end
 	state = {}
@@ -372,6 +387,10 @@ function PowerService.blocks(catcherId, runnerId)
 	if catcherId then
 		local c = stateOf(catcherId)
 		c.dizzyUntil = now() + def.Dizzy
+		local catcher = ctx.playerOf(catcherId)
+		if catcher then
+			catcher:SetAttribute("DizzyUntil", c.dizzyUntil) -- the STAB button goes dark meanwhile
+		end
 		badge(catcherId, "HuzzDizzy", "💫 DIZZY", Color3.fromRGB(255, 230, 120), def.Dizzy)
 		ctx.sync(catcherId)
 	end

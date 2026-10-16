@@ -32,7 +32,8 @@ local PADS = { Enum.KeyCode.ButtonL1, Enum.KeyCode.ButtonR1 }
 
 local function card(parent: Instance, slot: number)
 	local b = new("TextButton", {
-		Name = "Card" .. slot, Position = UDim2.fromOffset((slot - 1) * (CARD.W + CARD.Gap), 0), Size = UDim2.fromOffset(CARD.W, CARD.H),
+		Name = "Card" .. slot, AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(CARD.W, CARD.H),
+		Position = UDim2.fromOffset((slot - 1) * (CARD.W + CARD.Gap) + CARD.W / 2, CARD.H / 2), -- centred: presses shrink evenly
 		BackgroundColor3 = Color3.new(1, 1, 1), AutoButtonColor = false, Text = "", BorderSizePixel = 0, Parent = parent,
 	}, { Kit.corner(8) })
 	new("UIGradient", { Name = "Shade", Rotation = 90, Color = ColorSequence.new(C.RowTop, C.Panel), Parent = b })
@@ -84,6 +85,11 @@ function PowerBar.build(parent: Instance)
 	})
 	Scale.bind(new("UIScale", { Name = "FitScale", Parent = bar }), function() return Scale.hud(PAGE_H) * 0.72 end)
 	local cards = { card(bar, 1), card(bar, 2) }
+	-- Phones have no Q / E: hide the key pills there.
+	local touchOnly = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+	for _, c in cards do
+		(c.key.Parent :: GuiObject).Visible = not touchOnly
+	end
 
 	local function powersNow(): { string }?
 		return Powers[player:GetAttribute("HuzzRole") or ""]

@@ -26,6 +26,7 @@ Settings.ReservedKeys = {
 	W = true, A = true, S = true, D = true, Space = true, Escape = true, Tab = true, Slash = true, Backquote = true,
 	Up = true, Down = true, Left = true, Right = true, I = true, O = true, LeftShift = true, RightShift = true,
 	Return = true, Backspace = true, F9 = true, F10 = true, F11 = true, F12 = true,
+	Q = true, E = true, H = true, -- the powers and the huss
 }
 Settings.KeyFields = { "MenuKey" }
 

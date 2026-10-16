@@ -11,6 +11,7 @@ local State = require(UI.State)
 local Toast = require(UI.Toast)
 local ModalManager = require(UI.ModalManager)
 local Scale = require(UI.Scale)
+local SettingsConfig = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared").Config.Settings)
 local Screens = UI.Screens
 
 local player = Players.LocalPlayer
@@ -64,7 +65,10 @@ applyAudio()
 UserInputService.InputBegan:Connect(function(input, processed)
 	if processed or input.UserInputType ~= Enum.UserInputType.Keyboard then return end
 	if UserInputService:GetFocusedTextBox() then return end
-	if input.KeyCode.Name == State.setting("MenuKey") then ModalManager.toggle("Menu") end
+	-- A key saved before Q / E / H became the round moves' keys falls back to M.
+	local menuKey = State.setting("MenuKey")
+	if SettingsConfig.ReservedKeys[menuKey] then menuKey = "M" end
+	if input.KeyCode.Name == menuKey then ModalManager.toggle("Menu") end
 end)
 
 -- VIP chat tag: the server sets the "VIP" attribute from real Game Pass ownership.

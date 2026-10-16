@@ -77,8 +77,10 @@ local function row(parent: Instance, i: number, girl: { name: string, rarity: st
 	local secret = girl.rarity == "Secret"
 	local f = Instance.new("Frame")
 	f.Name = "Row" .. i
-	f.Position = UDim2.fromOffset(0, MID_Y - (i - 1) * PITCH)
-	f.Size = UDim2.fromOffset(REEL.W, ROW.H)
+	-- Anchored at its centre so the pop grows evenly, and inset so its rim isn't clipped by the reel.
+	f.AnchorPoint = Vector2.new(0.5, 0.5)
+	f.Position = UDim2.fromOffset(REEL.W / 2, MID_Y + ROW.H / 2 - (i - 1) * PITCH)
+	f.Size = UDim2.fromOffset(REEL.W - 12, ROW.H)
 	f.BackgroundColor3 = if secret then Color3.fromRGB(14, 14, 20) else C.Row
 	f.BorderSizePixel = 0
 	f:SetAttribute("RuntimeOnly", true)
@@ -152,6 +154,7 @@ function GirlRoll.build(parent: Instance)
 	local window = Kit.window({
 		Name = "GirlRoll", Title = "TODAY'S GIRL", Icon = "TierCrown", Width = W, Height = H, HeaderHeight = HEADER,
 		TitleSize = 19, TitleX = 46, TitleWidth = 146, StudsTo = W - 50, CloseSize = Vector2.new(26, 26),
+		Flat = true, -- the portraits are ViewportFrames: keep them out of a CanvasGroup
 		Parent = parent, OnClose = function() GirlRoll.hide() end,
 	})
 	local holder, group = window.Holder, window.Group
@@ -178,11 +181,11 @@ function GirlRoll.build(parent: Instance)
 	-- The gold middle slot: a rim round the middle row and a pointer on each side.
 	local slotY = REEL.Y + MID_Y
 	local slot = new("Frame", {
-		Name = "Slot", Position = UDim2.fromOffset(REEL.X - 3, slotY - 3), Size = UDim2.fromOffset(REEL.W + 6, ROW.H + 6),
+		Name = "Slot", Position = UDim2.fromOffset(REEL.X + 3, slotY - 3), Size = UDim2.fromOffset(REEL.W - 6, ROW.H + 6),
 		BackgroundTransparency = 1, ZIndex = 5, Parent = panel,
 	}, { Kit.corner(8) })
 	local slotRim = Kit.attach(Kit.stroke(GOLD, 2.5), slot) :: UIStroke
-	for name, x in { PointerLeft = REEL.X - 4, PointerRight = REEL.X + REEL.W + 4 } do
+	for name, x in { PointerLeft = REEL.X + 3, PointerRight = REEL.X + REEL.W - 3 } do
 		local tri = new("Frame", {
 			Name = name, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(x, slotY + ROW.H / 2), Size = UDim2.fromOffset(12, 12),
 			Rotation = 45, BackgroundColor3 = GOLD, BorderSizePixel = 0, ZIndex = 6, Parent = panel,
@@ -205,16 +208,17 @@ function GirlRoll.build(parent: Instance)
 	-- Her model goes into the row's picture only while the row is near the window.
 	local function setLoaded(r, on: boolean)
 		if r.loaded == on then return end
-		r.loaded = on
 		if on then
 			girls = girls or ReplicatedStorage:FindFirstChild("HuzzGirls")
 			local source = girls and r.key and girls:FindFirstChild(r.key)
-			if source then
+			if source then -- (not there yet = try again next frame)
+				r.loaded = true
 				local copy = source:Clone()
 				copy.Parent = r.picture
 				frame(r.picture, copy)
 			end
 		else
+			r.loaded = false
 			for _, c in r.picture:GetChildren() do
 				if c:IsA("Model") then c:Destroy() end
 			end

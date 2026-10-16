@@ -132,7 +132,8 @@ The UI golden slice and its backend are built (saving, coins and gems, shop purc
     window, scaled to 0.62 of a window) runs a reel of rows (ViewportFrame portrait, name, rarity pill, chance)
     and stops on the game's girl in the gold middle slot. Portraits come from `ReplicatedStorage.HuzzGirls`
     (`GirlService.publish`: script-free copies keyed G1, G2..., never the usernames); only rows near the window
-    hold a model. `Shared/GirlRoll` (pure, `tests/GirlRoll.spec.luau`)
+    hold a model. Its window is `Kit.window{Flat = true}` (a Frame, not a CanvasGroup) because ViewportFrames may
+    not draw inside a CanvasGroup; MapVote's map pictures still sit in one, so check them in Studio. `Shared/GirlRoll` (pure, `tests/GirlRoll.spec.luau`)
     picks her by rarity weight, then evenly, and builds the strip from honest picks (no planted near-misses).
     The server puts {cells, stop, start, spin, odds} as JSON in the Round remote's `RollData` attribute (so
     mid-roll joiners see it; cleared after); she's rebuilt as R15 during the spin.
@@ -208,7 +209,9 @@ The UI golden slice and its backend are built (saving, coins and gems, shop purc
   Charm Wave (E: slows runners in reach). `HuzzServer/PowerService` decides everything (RoundService gives it
   a ctx and asks `speedOf`, `stuck`, `canStab`, `blocks`); lasting visuals are made on the server, bursts go out
   as `Power` messages (`Gameplay/PowerEffects`). The hotbar is `Screens/PowerBar` (kit cards, bottom centre;
-  reads `PowerReady1/2` and `ShieldUntil`). Icons are emoji until the owner sends PNGs.
+  reads `PowerReady1/2` and `ShieldUntil`; `DizzyUntil` darkens STAB). Q, E and H are reserved keys (the Menu key
+  can't take them). The shield bubble lives in `Workspace.HuzzShields`, outside the character, so the team
+  Highlight doesn't outline it. Icons are emoji until the owner sends PNGs.
 - **Full-game simulation (`tools/sim/round_sim.luau`, run by `tools/check.sh`):** the real RoundService,
   PowerService, RoundRules, GirlRoll and configs on fake services with a virtual clock and bots who run,
   chase, stab, use powers, huss, cheat round the start wall, leave and join. It checks the stage order, the

@@ -342,7 +342,8 @@ function Kit.window(props: { [string]: any }): Window
 	local holder = new("Frame", { Name = props.Name, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(w, h), BackgroundTransparency = 1, Visible = false, Parent = props.Parent })
 	new("UIScale", { Name = "FitScale", Parent = holder })
 	-- anchored at its centre so the open/close scale grows from the middle
-	local group = new("CanvasGroup", { Name = "Group", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Visible = false, Parent = holder })
+	-- Flat = a plain Frame instead of a CanvasGroup (no open fade), for windows with ViewportFrames that must show.
+	local group = new(if props.Flat then "Frame" else "CanvasGroup", { Name = "Group", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Visible = false, Parent = holder })
 	local openScale = new("UIScale", { Name = "OpenScale", Parent = group })
 	local panel = new("Frame", { Name = "Panel", Size = UDim2.fromScale(1, 1), BackgroundColor3 = C.Frame, BorderSizePixel = 0, Parent = group }, { Kit.corner(6) })
 	new("Frame", { Name = "Fill", Position = UDim2.fromOffset(inset, inset), Size = UDim2.new(1, -2 * inset, 1, -2 * inset), BackgroundColor3 = props.PanelColor or C.Panel, BorderSizePixel = 0, Parent = panel }, { Kit.corner(3) })
