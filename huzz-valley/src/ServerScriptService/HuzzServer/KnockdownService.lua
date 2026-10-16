@@ -110,5 +110,18 @@ end
 game:GetService("Players").PlayerRemoving:Connect(function(player)
 	downed[player] = nil
 end)
+-- A downed player who resets: their old body's entry goes (RoundService lays the new one down again).
+local function watchPlayer(player)
+	player.CharacterRemoving:Connect(function(character)
+		local entry = downed[player]
+		if entry and entry.character == character then
+			downed[player] = nil
+		end
+	end)
+end
+game:GetService("Players").PlayerAdded:Connect(watchPlayer)
+for _, p in game:GetService("Players"):GetPlayers() do
+	watchPlayer(p)
+end
 
 return KnockdownService

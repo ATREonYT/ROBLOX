@@ -496,6 +496,12 @@ local function simulate(opts)
 
 	local saves = {}
 	local DataService = {}
+	function DataService.waitFor(p)
+		return saves[p]
+	end
+	function DataService.get(p)
+		return nil
+	end
 	function DataService.update(p, fn)
 		saves[p] = saves[p] or { Stats = {}, Characters = {} }
 		fn(saves[p])
@@ -619,7 +625,7 @@ local function simulate(opts)
 				if e.data.name == "TrapSprung" then stats.sprung += 1 end
 			elseif e.kind == "Rescued" then
 				stats.rescues += 1
-			elseif e.kind == "Announce" and type(e.data.text) == "string" and e.data.text:find("survived the Hero run") then
+			elseif e.kind == "Announce" and type(e.data.text) == "string" and e.data.text:find("survived the Hero attempt") then
 				stats.heroSurvived += 1
 			elseif e.kind == "Win" then
 				stats.wins += 1

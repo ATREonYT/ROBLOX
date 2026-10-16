@@ -80,7 +80,7 @@ return {
 	Map = {
 		ZoneA = "ZoneA", -- one side; round 1 starts here
 		ZoneB = "ZoneB", -- the other side; round 1's safe zone
-		LineupGap = 4, -- studs between runners standing on the line
+		LineupGap = 5, -- studs between runners standing on the line (a visible gap, as in the reference)
 		Middle = "Middle", -- where catchers spawn
 		Bench = "Bench", -- where caught runners wait out the round
 		Lobby = "Lobby", -- where everyone waits between games (optional; else the SpawnBaseplate)

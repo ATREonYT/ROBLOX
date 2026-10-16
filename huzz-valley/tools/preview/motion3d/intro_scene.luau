@@ -55,7 +55,7 @@ local function headOf(r)
 end
 
 -- the camera, as the game moves it: each new shot is reached with Shot.transition, then the shot moves it
-local eye, look = Shot.behind(me.rig.root.CFrame, headOf(me).Position)
+local eye, look = Shot.behind(line.LookVector, headOf(me).Position)
 local key, fromEye, fromLook, moveStart = nil, eye, look, 0
 for f = 0, math.floor(SECONDS * FPS) - 1 do
 	local t = f * DT
@@ -82,7 +82,7 @@ for f = 0, math.floor(SECONDS * FPS) - 1 do
 		picked.rig.root.CFrame = Rig.lookAt(p, p + Vector3.new(0, 0, -1))
 		RunMotion.step(picked.rec, DT, picked.speed, true, false)
 		Rig.fk(picked.rig)
-		te, tl = Shot.behind(me.rig.root.CFrame, headOf(me).Position)
+		te, tl = Shot.behind(line.LookVector, headOf(me).Position)
 	end
 	if k ~= key then
 		key, fromEye, fromLook, moveStart = k, eye, look, t

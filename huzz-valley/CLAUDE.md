@@ -105,8 +105,10 @@ The UI golden slice and its backend are built (saving, coins and gems, shop purc
     `Pick.ChooseTime` = random) → **Chosen** → **HeroRun** (only if Hero: they cross alone, everyone else
     waits frozen on the line; catchers hunt them) → **Countdown** 3-2-1 → **Running** (everyone) → RoundOver.
   - A stab **downs** a runner where they stand (`KnockdownService`). A runner still out on the field who stands
-    next to them for `Rescue.Time` rescues them (`Rescue.Shield` seconds of no-stab after). Anyone still down
-    at the end joins the catchers. Runners still out at the timeout count as caught.
+    next to them for `Rescue.Time` rescues them (`Rescue.Shield` seconds of no-stab after; not from inside the
+    start zone, where stabs can't reach). Anyone still down at the end joins the catchers. Runners still out
+    at the timeout count as caught. A downed player who resets is laid down again where they fell.
+    Powers don't work while frozen on the line; traps from the Hero run are cleared before everyone runs.
   - Runners win by getting **everyone across `Crossings` (3) rounds in a row** (a round with anyone down
     resets the streak); catchers win when no runners are left (or after `MaxRounds`).
   - **The girl:** floats over the map (showcase) until a Hero survives the solo run: she comes down onto
@@ -194,7 +196,9 @@ The UI golden slice and its backend are built (saving, coins and gems, shop purc
     (hops computed backwards from `PickId`, so every screen agrees) → medium shot of them while they choose →
     push in on Chosen → glide back behind you. Black bars, two built-in `rbxasset://sounds` (swap for your own).
     The shots are pure maths in `Shared/CinematicShot`; `motion3d/intro_scene.luau` films them
-    (`docs/previews/intro-camera.mp4`).
+    (`docs/previews/intro-camera.mp4`). Kid-safe: the hopping glow is an outline only, at most ~6 hops a
+    second; the fill comes on once it lands. The Highlight lives in the camera. `HuzzCinematic` stays on
+    through the glide back (which faces the way the round runs), so shift lock can't turn you backwards.
   - `AvatarAnimations` swaps in the IDs from `Config/Animations`.
 - **Stabbed runners fall flat and lie there until rescued or the next round** (owner's call;
   `Config/Round.Knockdown`). `KnockdownService` anchors the root and sets the character's

@@ -34,7 +34,7 @@ function Shot.hops(total)
 	local times, t = {}, 0
 	while true do
 		local f = t / total
-		t += 0.055 + 0.32 * f * f
+		t += 0.17 + 0.3 * f * f -- (never faster than about 6 a second; the glow is an outline while it hops)
 		if t >= total then
 			break
 		end
@@ -75,9 +75,9 @@ function Shot.transition(fromEye, fromLook, toEye, toLook, a)
 end
 Shot.TransitionTime = 0.9
 
--- The hand-back: behind and above your own character, looking the way you face.
-function Shot.behind(root, headPosition)
-	local back = root.LookVector
+-- The hand-back: behind and above your own character, looking `facing` (the way the round runs).
+function Shot.behind(facing, headPosition)
+	local back = Vector3.new(facing.X, 0, facing.Z).Unit
 	return headPosition - back * 11 + Vector3.new(0, 3.5, 0), headPosition + back * 6
 end
 

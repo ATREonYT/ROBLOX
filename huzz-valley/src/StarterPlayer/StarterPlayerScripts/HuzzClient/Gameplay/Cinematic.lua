@@ -106,7 +106,7 @@ function M.start()
 	highlight.OutlineTransparency = 0
 	highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
 	highlight.Enabled = false
-	highlight.Parent = gui
+	highlight.Parent = Workspace.CurrentCamera -- (local only; a Highlight draws from the 3D world)
 
 	local camera = Workspace.CurrentCamera
 	local playing = false
@@ -127,12 +127,17 @@ function M.start()
 		highlight.Enabled = false
 		highlight.Adornee = nil
 		setBars(false)
-		player:SetAttribute("HuzzCinematic", false)
 		-- Glide back behind our own character, then hand the camera back to Roblox.
 		local head, root = headOf(player), rootOf(player)
 		camera = Workspace.CurrentCamera
+		-- Face the way the round runs (across the field), not back at the camera: runners look across, catchers
+		-- look at the runners. HuzzCinematic stays on until the glide ends, so shift lock doesn't turn you first.
+		local line = round:GetAttribute("LineCF")
+		local facing = if typeof(line) ~= "CFrame" then (root and root.CFrame.LookVector or Vector3.zAxis)
+			elseif player:GetAttribute("HuzzRole") == "Catcher" then -line.LookVector else line.LookVector
 		if not (head and root) then
 			camera.CameraType = Enum.CameraType.Custom
+			player:SetAttribute("HuzzCinematic", false)
 			return
 		end
 		local startEye, startLook = current()
@@ -144,15 +149,16 @@ function M.start()
 				conn:Disconnect()
 				return
 			end
-			local h, r = headOf(player), rootOf(player)
-			if h and r then
-				local goalEye, goalLook = Shot.behind(r.CFrame, h.Position)
+			local h = headOf(player)
+			if h then
+				local goalEye, goalLook = Shot.behind(facing, h.Position)
 				local e, l = Shot.transition(startEye, startLook, goalEye, goalLook, math.min(a, 1))
 				camera.CFrame = CFrame.lookAt(e, l)
 			end
 			if a >= 1 then
 				conn:Disconnect()
 				camera.CameraType = Enum.CameraType.Custom
+				player:SetAttribute("HuzzCinematic", false)
 			end
 		end)
 	end
@@ -204,7 +210,7 @@ function M.start()
 				local index, n = Shot.hopIndex(t, roulette, #runners, final)
 				highlight.Adornee = runners[index].player.Character
 				highlight.Enabled = true
-				highlight.FillTransparency = 0.5
+				highlight.FillTransparency = 1 -- an outline while it hops (no flashing fill)
 				if n ~= lastHop then
 					lastHop = n
 					sound("rbxasset://sounds/electronicpingshort.wav", 0.22, 0.9 + n * 0.025)
@@ -219,7 +225,7 @@ function M.start()
 				toEye, toLook = Shot.face(line, head.CFrame, stage == "Chosen")
 				highlight.Adornee = picked.Character
 				highlight.Enabled = true
-				highlight.FillTransparency = 0.78
+				highlight.FillTransparency = 0.7 -- landed: a soft gold glow
 			else
 				key = "Sweep"
 				toEye, toLook = Shot.sweep(line, half, 0.5, 1)

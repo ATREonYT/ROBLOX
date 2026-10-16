@@ -99,8 +99,9 @@ function HeroChoice.build(parent: Instance)
 
 	UserInputService.InputBegan:Connect(function(input, processed)
 		if processed or UserInputService:GetFocusedTextBox() then return end
-		if input.KeyCode == Enum.KeyCode.One then pick(true)
-		elseif input.KeyCode == Enum.KeyCode.Two then pick(false) end
+		local k = input.KeyCode
+		if k == Enum.KeyCode.One or k == Enum.KeyCode.DPadLeft or k == Enum.KeyCode.ButtonL1 then pick(true)
+		elseif k == Enum.KeyCode.Two or k == Enum.KeyCode.DPadRight or k == Enum.KeyCode.ButtonR1 then pick(false) end
 	end)
 
 	local wasVisible = false
@@ -108,7 +109,7 @@ function HeroChoice.build(parent: Instance)
 		local now = Workspace:GetServerTimeNow()
 		local openAt = (round:GetAttribute("PickAt") or 0) + Config.Pick.Roulette
 		local show = round:GetAttribute("Stage") == "Picking" and round:GetAttribute("PickId") == player.UserId
-			and now >= openAt - 0.2 and player:GetAttribute("MenuOpen") ~= true
+			and now >= openAt - 0.2 -- (even over an open menu: it's your turn)
 		panel.Visible = show == true
 		if player:GetAttribute("HuzzChoosing") ~= (show == true) then
 			player:SetAttribute("HuzzChoosing", show == true) -- (local only: shift lock frees the mouse)

@@ -67,7 +67,8 @@ function M.start()
 		altHeld = false -- (Alt-Tab away never sends the release)
 	end)
 	player.CharacterAdded:Connect(function()
-		active = false -- the new character starts free; the next frame sets it up again
+		active = true
+		setActive(false) -- the new character starts free (pointer back); the next frame sets it up again
 	end)
 
 	RunService:BindToRenderStep("HuzzShiftLock", Enum.RenderPriority.Camera.Value + 1, function()

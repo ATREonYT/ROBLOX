@@ -89,11 +89,11 @@ function M.start()
 	local top = make("Frame", { Name = "Top", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(640, 4), Size = UDim2.fromOffset(1000, 120), BackgroundTransparency = 1, Parent = root })
 	local roundLabel = text({ Name = "Round", Position = UDim2.fromOffset(0, 0), Size = UDim2.new(1, 0, 0, 18), FontFace = ROUND, TextSize = 15, TextColor3 = MUTED, Text = "" }, 1.5)
 	roundLabel.Parent = top
-	local message = text({ Name = "Message", Position = UDim2.fromOffset(0, 18), Size = UDim2.new(1, 0, 0, 40), FontFace = DISPLAY, TextSize = 31, Text = "" }, 3)
+	local message = text({ Name = "Message", Position = UDim2.fromOffset(0, 18), Size = UDim2.new(1, 0, 0, 34), FontFace = DISPLAY, TextSize = 26, Text = "" }, 2.5)
 	message.Parent = top
-	local sub = text({ Name = "Sub", Position = UDim2.fromOffset(0, 60), Size = UDim2.new(1, 0, 0, 22), FontFace = ROUND, TextSize = 18, Text = "" }, 1.5)
+	local sub = text({ Name = "Sub", Position = UDim2.fromOffset(0, 54), Size = UDim2.new(1, 0, 0, 18), FontFace = ROUND, TextSize = 15, TextColor3 = MUTED, RichText = true, Text = "" }, 1.2)
 	sub.Parent = top
-	local pips = make("Frame", { Name = "Streak", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(500, 86), Size = UDim2.fromOffset(160, 18), BackgroundTransparency = 1, Parent = top }, {
+	local pips = make("Frame", { Name = "Streak", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(500, 75), Size = UDim2.fromOffset(160, 16), BackgroundTransparency = 1, Parent = top }, {
 		make("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center, VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder }),
 	})
 	local pipLabel = text({ Name = "Label", Size = UDim2.fromOffset(78, 18), FontFace = ROUND, TextSize = 13, TextColor3 = MUTED, Text = "IN A ROW", LayoutOrder = 0 }, 1.2)
@@ -171,8 +171,8 @@ function M.start()
 	local function setMessage(msg, color)
 		message.Text = msg
 		message.TextColor3 = color or WHITE
-		message.TextSize = 37
-		TweenService:Create(message, TweenInfo.new(0.28, Enum.EasingStyle.Back), { TextSize = 31 }):Play()
+		message.TextSize = 31
+		TweenService:Create(message, TweenInfo.new(0.28, Enum.EasingStyle.Back), { TextSize = 26 }):Play()
 	end
 
 	local function nameOf(id)
@@ -212,14 +212,14 @@ function M.start()
 			else
 				word, line = "WATCHING", "you're in the next game"
 			end
-			local parts = { word }
+			local c = ROLE_COLOR[word] or WHITE
+			local parts = { string.format('<font color="#%02X%02X%02X">%s</font>', math.round(c.R * 255), math.round(c.G * 255), math.round(c.B * 255), word) }
 			if line then table.insert(parts, line) end
 			if TIMED[stage] then
 				local secs = math.ceil(left)
 				table.insert(parts, string.format("%d:%02d", secs // 60, secs % 60))
 			end
 			sub.Text = table.concat(parts, "  ·  ")
-			sub.TextColor3 = ROLE_COLOR[word] or WHITE
 			-- in a row: filled pips for crossings done, hollow for the ones still to go
 			local goal = State:GetAttribute("Crossings") or Config.Crossings
 			local streak = State:GetAttribute("Streak") or 0

@@ -282,8 +282,8 @@ end
 local function use(player, slot)
 	local id = player.UserId
 	local match = ctx.match()
-	if type(slot) ~= "number" or not match or match.over or not ctx.running() then
-		return
+	if type(slot) ~= "number" or not match or match.over or not ctx.running() or (ctx.frozen and ctx.frozen(id)) then
+		return -- (not while waiting on the line)
 	end
 	local name = powerIn(id, slot)
 	if not name or (match.roles[id] == "Runner" and match.status[id] ~= "Active") or ctx.isDown(player) then

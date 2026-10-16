@@ -91,7 +91,13 @@ function draw(n, parentEl, rect, k, parentAbs) {
     // UIStroke on text: a ring of shadows (like Roblox's outside outline; -webkit-text-stroke breaks fonts with overlapping shapes)
     let ring = '';
     if (strokeOnText) { const r = m.stroke.th * kk, c = rgba(m.stroke.c, m.stroke.t); ring = Array.from({ length: 16 }, (_, i) => `${(Math.cos(i * Math.PI / 8) * r).toFixed(2)}px ${(Math.sin(i * Math.PI / 8) * r).toFixed(2)}px 0 ${c}`).join(','); tx.style.textShadow = ring; }
-    const span = document.createElement('span'); span.textContent = t.t; tx.appendChild(span); el.appendChild(tx);
+    const span = document.createElement('span');
+    if (t.rich) { // RichText: only <font color="#rrggbb">, <b> and <i> (escaped text otherwise)
+      const esc = t.t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      span.innerHTML = esc.replace(/&lt;font color="(#[0-9A-Fa-f]{6})"&gt;/g, '<span style="color:$1">').replace(/&lt;\/font&gt;/g, '</span>')
+        .replace(/&lt;(\/?[bi])&gt;/g, '<$1>');
+    } else span.textContent = t.t;
+    tx.appendChild(span); el.appendChild(tx);
     // A UIGradient on a see-through label tints its text (Roblox multiplies it with TextColor3).
     if (m.grad && m.grad.on && n.bgT >= 1) {
       const cs = arr(m.grad.c);

@@ -258,7 +258,7 @@ function handlers.Choice(e)
 	State:SetAttribute("PickChoice", if e.hero then "Hero" else "Chicken")
 	syncAll()
 	if e.hero then
-		announce(`{nameOf(e.id)} chose HERO! They cross alone first.`, GOLD, true)
+		announce(`{nameOf(e.id)} chose HERO: they run first!`, GOLD, true)
 	else
 		announce(`{nameOf(e.id)} chose CHICKEN! Everyone runs together.`, WHITE, true)
 	end
@@ -267,7 +267,7 @@ end
 function handlers.HeroResult(e)
 	State:SetAttribute("HeroResult", if e.survived then "Survived" else "Fell")
 	if e.survived then
-		announce(`{nameOf(e.id)} survived the Hero run!`, GREEN, true)
+		announce(`{nameOf(e.id)} survived the Hero attempt!`, GREEN, true)
 		local p = byId[e.id]
 		if p and Config.HeroBonus > 0 then
 			DataService.update(p, function(d)
@@ -278,10 +278,16 @@ function handlers.HeroResult(e)
 	end
 end
 
+local fellAt = {} -- downed id -> where their body lies (so a reset lays the new body down there again)
 function handlers.Caught(e)
 	-- Falls flat where they were caught; another runner can help them up.
-	if byId[e.id] then
-		KnockdownService.down(byId[e.id])
+	local p = byId[e.id]
+	local root = rootOf(e.id)
+	if root then
+		fellAt[e.id] = root.CFrame
+	end
+	if p then
+		KnockdownService.down(p)
 	end
 	rescueTime[e.id] = nil
 	syncPlayer(e.id)
@@ -393,9 +399,11 @@ local function step(dt)
 			local at = if typeof(feet) == "CFrame" then feet.Position elseif body then body.Position else nil
 			local helper = nil
 			if at then
+				local start = zones[MapService.startFor(match.round)]
 				for id, st in match.status do
 					local root = st == "Active" and not frozen[id] and rootOf(id)
-					if root and (root.Position - at).Magnitude <= Config.Rescue.Range then
+					-- (from inside the start zone they couldn't be stabbed: no risk-free rescues)
+					if root and (root.Position - at).Magnitude <= Config.Rescue.Range and not (start and MapService.inZone(start, root.Position)) then
 						helper = id
 						break
 					end
@@ -485,7 +493,7 @@ local function runRound()
 	if match.round == 1 then
 		announce(`Get everyone across {match.goal} times in a row to win!`, WHITE)
 	else
-		announce(`Round {match.round}: {match.streak} of {match.goal} in a row. Cross to the other side!`, WHITE)
+		announce(`Get ready: cross to the opposite safe side! ({match.streak} of {match.goal} in a row)`, WHITE)
 	end
 	play(Config.LineupTime)
 
@@ -497,10 +505,10 @@ local function runRound()
 		local P = Config.Pick
 		State:SetAttribute("PickAt", Workspace:GetServerTimeNow())
 		setStage("Picking", P.Roulette + P.ChooseTime)
-		announce("Picking a runner: Chicken or Hero?", GOLD)
+		announce("Picking a runner for Chicken or Hero...", GOLD)
 		task.delay(P.Roulette, function()
 			if match and match.picked and not match.choice then
-				announce(`{nameOf(match.picked)} is choosing: Chicken or Hero?`, WHITE)
+				announce(`{nameOf(match.picked)}: Chicken or Hero?`, WHITE)
 			end
 		end)
 		play(P.Roulette + P.ChooseTime, function()
@@ -527,7 +535,7 @@ local function runRound()
 		MapService.holdStart(startName, false)
 		syncAll()
 		setStage("HeroRun", Config.HeroTime)
-		announce(`{nameOf(hero)}: cross alone!`, GOLD)
+		announce(`{nameOf(hero)} chose HERO: cross alone!`, GOLD)
 		local timedOut = play(Config.HeroTime, function()
 			return match.status[hero] ~= "Active" or match.hero ~= hero
 		end, true)
@@ -550,6 +558,7 @@ local function runRound()
 			place(hero) -- (timed out: back to the line)
 		end
 		MapService.holdStart(startName, true)
+		PowerService.clear() -- (traps laid during the Hero run don't stay for everyone's run)
 		syncAll()
 		task.wait(0.8)
 	end
@@ -574,7 +583,7 @@ local function runRound()
 	table.clear(frozen)
 	syncAll()
 	setStage("Running", Config.RoundTime)
-	announce("RUN! Reach the other side!", WHITE)
+	announce("RUN! Reach the opposite safe side!", WHITE)
 	play(Config.RoundTime, function()
 		return Rules.isRoundOver(match)
 	end, true)
@@ -672,6 +681,7 @@ local function cleanUp()
 	table.clear(rescueTime)
 	table.clear(protectedUntil)
 	table.clear(lineSpots)
+	table.clear(fellAt)
 	State:SetAttribute("GirlName", "")
 	State:SetAttribute("HolderId", 0)
 	State:SetAttribute("Round", 0)
@@ -740,6 +750,9 @@ PowerService.start({
 		return byId[id]
 	end,
 	isDown = KnockdownService.isDown,
+	frozen = function(id)
+		return frozen[id] == true
+	end,
 	sync = function(id)
 		syncPlayer(id)
 	end,
@@ -820,6 +833,10 @@ local function onCharacter(player, character)
 	end)
 	task.defer(function()
 		place(id) -- the lobby, the middle or their spot on the line
+		if match and match.status[id] == "Downed" and fellAt[id] then
+			character:PivotTo(fellAt[id]) -- reset while down: lie down again where they fell
+			KnockdownService.down(player)
+		end
 		if match and match.roles[id] then
 			if match.holder == id and not CarryService.get(player) then
 				if match.roles[id] == "Catcher" then
@@ -837,6 +854,10 @@ local function onPlayer(player)
 	byId[player.UserId] = player
 	player:SetAttribute("HuzzRole", "Lobby")
 	player.DevEnableMouseLock = false -- our own shift lock (Gameplay/ShiftLock, Alt) replaces Roblox's Shift one
+	task.spawn(function()
+		DataService.waitFor(player, 20)
+		syncPlayer(player.UserId) -- the name tag's level and wins once the save has loaded
+	end)
 	player.CharacterAdded:Connect(function(c)
 		onCharacter(player, c)
 	end)
