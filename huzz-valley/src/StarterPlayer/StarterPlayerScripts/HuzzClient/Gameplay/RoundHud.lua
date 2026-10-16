@@ -515,8 +515,11 @@ function M.start()
 				sayLine("Caught")
 				flash.BackgroundTransparency = 0.6 -- (one flash, well under one a second)
 				TweenService:Create(flash, TweenInfo.new(0.6), { BackgroundTransparency = 1 }):Play()
-				show(banner, "YOU'RE DOWN", RED, 1.8, 60)
+				-- second chance used up: say so plainly (owner: "after that if he gets caught its over")
+				show(banner, if data.final then "YOU'RE OUT" else "YOU'RE DOWN", RED, 1.8, 60)
+				if data.final then setMessage("No second chance: you join the catchers next round", RED) end
 				Sfx.play("caught")
+				Sfx.play("knock_down")
 			elseif data.catcher == player.UserId then
 				show(small, `Got {nameOf(data.runner) or "one"}!`, RED, 1.6)
 				sayLine("Got")
@@ -525,8 +528,9 @@ function M.start()
 		elseif kind == "Rescued" then
 			if data.runner == player.UserId then
 				show(banner, "BACK UP!", GREEN, 1.6, 64)
+				setMessage("Second chance! Get caught again and you're out", GREEN)
 				sayLine("Rescued")
-				Sfx.play("rescue")
+				Sfx.play("revive")
 			elseif data.by == player.UserId then
 				show(small, `You saved {nameOf(data.runner) or "them"}!`, GREEN, 1.8)
 				sayLine("Rescuer")

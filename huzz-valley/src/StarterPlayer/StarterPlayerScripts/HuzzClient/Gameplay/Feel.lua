@@ -77,6 +77,10 @@ function M.start()
 		streaks[i] = { bar = bar, angle = angle, phase = (i * 0.37) % 1 }
 	end
 	local streakClock = 0
+	-- a soft wind bed that rises with your speed (silent until the owner uploads speed_wind)
+	local wind = Sfx.loop("speed_wind")
+	local windLevel = if wind then wind.Volume else 0
+	if wind then wind.Volume = 0 end
 	gui.Parent = player:WaitForChild("PlayerGui")
 	local function speedLines()
 		if calm() then
@@ -201,6 +205,7 @@ function M.start()
 		-- the wind streaks: in from about 70% of top speed, drifting outward on a loop
 		streakClock += dt
 		local show = math.clamp((sprint - 0.7) / 0.3, 0, 1)
+		if wind then wind.Volume = windLevel * math.clamp((sprint - 0.4) / 0.6, 0, 1) end
 		for _, st in streaks do
 			if show <= 0 then
 				st.bar.BackgroundTransparency = 1

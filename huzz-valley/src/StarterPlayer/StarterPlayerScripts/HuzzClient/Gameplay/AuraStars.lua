@@ -141,7 +141,7 @@ function M.start()
 			e:Emit(24)
 			task.delay(1.5, function() p:Destroy() end)
 		end
-		Sfx.play(if (data.value or 1) > 1 then "reward" else "coin")
+		Sfx.play("aura_pickup", { pitch = if (data.value or 1) > 1 then 0.9 else 1 })
 		Toast.show(`+{data.value or 1} Aura`)
 	end)
 end
