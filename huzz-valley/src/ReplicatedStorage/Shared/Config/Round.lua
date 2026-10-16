@@ -5,8 +5,8 @@ return {
 	-- (no catcher, cross twice to win). Test > Clients and Servers for real rounds.
 	StudioMinPlayers = 1,
 
-	IntermissionTime = 15, -- the wait before a game when there's only one map (no vote)
-	VoteTime = 15, -- the map vote between games (design page 15)
+	IntermissionTime = 25, -- the wait before a game when there's only one map (no vote; owner: time to shop)
+	VoteTime = 30, -- the map vote between games (owner: a bit longer, so people can shop; the vote tucks away)
 	-- After the vote the new map replaces the old one and the girl roller (a small reel at the top of
 	-- the screen) runs: Cells girls go past top to bottom, slowing over SpinTime, stopping on the girl at Stop.
 	Roll = { Time = 7.5, SpinTime = 5.5, Cells = 30, Stop = 26 },

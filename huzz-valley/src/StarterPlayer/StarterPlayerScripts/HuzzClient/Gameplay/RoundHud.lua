@@ -41,7 +41,7 @@ function M.start()
 	local F, C = Theme.Fonts, Theme.Colors
 	local INK = C.Frame -- outlines and shadows: the kit's frame navy
 	local RED = Color3.fromRGB(255, 92, 110)
-	local GOLD = Color3.fromRGB(255, 200, 70)
+	local GOLD = C.Accent -- (owner: no gold; the one accent is Huss Valley green)
 	local GREEN = Color3.fromRGB(96, 232, 140)
 	local BLUE = Color3.fromRGB(104, 170, 255)
 	local MUTED = C.SubText
@@ -126,7 +126,6 @@ function M.start()
 	Kit.studs(plate, 10, 56, 13)
 	Kit.studs(plate, PLATE_W - 56, PLATE_W - 10, 13)
 	local roundLabel = text({ Name = "Round", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 64, 0.5, 0), Size = UDim2.fromOffset(110, 30), FontFace = F.Heading, TextSize = 21, TextXAlignment = Enum.TextXAlignment.Left, Text = "", Parent = plate }, 1.2)
-	make("UIGradient", { Name = "Band", Rotation = 90, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, WHITE), ColorSequenceKeypoint.new(0.5, C.TitleBand), ColorSequenceKeypoint.new(1, WHITE) }), Parent = roundLabel })
 	roundLabel.Outline.Color = C.TitleStroke
 	local clockBox = make("Frame", { Name = "Clock", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -62, 0.5, 0), Size = UDim2.fromOffset(66, 26), BackgroundColor3 = C.Pill, Parent = plate }, { corner(4), rim(1, C.PillRim) })
 	local clock = text({ Name = "Time", Size = UDim2.fromScale(1, 1), FontFace = F.Number, TextSize = 18, Text = "", Parent = clockBox }, 0)
@@ -173,11 +172,11 @@ function M.start()
 	local function bannerLabel(name, y, w, h, size, outline)
 		local shadow = make("TextLabel", {
 			Name = name .. "Shadow", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(640, y + 4), Size = UDim2.fromOffset(w, h),
-			BackgroundTransparency = 1, FontFace = F.Heading, TextSize = size, TextWrapped = true, TextColor3 = C.TitleShadow, TextTransparency = 1, Text = "", Parent = root,
+			BackgroundTransparency = 1, FontFace = F.Big, TextSize = size, TextWrapped = true, TextColor3 = C.TitleShadow, TextTransparency = 1, Text = "", Parent = root,
 		})
 		local label = text({
 			Name = name, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(640, y), Size = UDim2.fromOffset(w, h),
-			FontFace = F.Heading, TextSize = size, TextWrapped = true, Text = "", TextTransparency = 1, Parent = root,
+			FontFace = F.Big, TextSize = size, TextWrapped = true, Text = "", TextTransparency = 1, Parent = root,
 		}, outline)
 		label.Outline.Color = C.TitleShadow
 		local shine = make("UIGradient", { Name = "Shine", Rotation = 90, Parent = label })
@@ -200,9 +199,8 @@ function M.start()
 		local label = b.label
 		local c = color or WHITE
 		label.Text, b.shadow.Text = msg, msg
-		label.TextColor3 = WHITE
-		-- white at the top, a light band, then the message colour at the foot (the kit title's banding, coloured)
-		b.shine.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, WHITE), ColorSequenceKeypoint.new(0.45, WHITE:Lerp(c, 0.35)), ColorSequenceKeypoint.new(1, c) })
+		b.shine.Enabled = false -- (Huss Valley: one solid colour, thick dark outline, no gradient)
+		label.TextColor3 = c
 		local size = textSize or b.size
 		label.TextSize, b.shadow.TextSize = size, size
 		label.TextTransparency, b.stroke.Transparency, b.shadow.TextTransparency = 0, 0, 0.35
@@ -243,7 +241,7 @@ function M.start()
 	local function key(k, pad)
 		return `<font color="#FFFFFF"><b>{if keyboard then k else pad}</b></font>`
 	end
-	local ROLE_COLOR = { RUNNER = BLUE, CATCHER = RED, HERO = GOLD, SAFE = GREEN, DOWN = Color3.fromRGB(255, 160, 90), CARRYING = Color3.fromRGB(255, 150, 200), WATCHING = MUTED }
+	local ROLE_COLOR = { RUNNER = BLUE, CATCHER = RED, HERO = WHITE, SAFE = GREEN, DOWN = Color3.fromRGB(255, 160, 90), CARRYING = Color3.fromRGB(255, 150, 200), WATCHING = MUTED }
 	local TIMED = { HeroRun = true, Running = true, Picking = true }
 	M.extraHelp = nil -- (Gameplay/Onboarding can put a first-game tip here)
 	local lastCount
@@ -308,7 +306,7 @@ function M.start()
 		if stage == "Countdown" then
 			local count = math.ceil(left)
 			if count ~= lastCount and count > 0 then
-				show(banner, tostring(count), Color3.fromRGB(255, 226, 120), 0.8, 110)
+				show(banner, tostring(count), WHITE, 0.8, 110)
 				Sfx.play("countdown_tick", { pitch = 1 + (3 - math.min(count, 3)) * 0.06 })
 			end
 			lastCount = count
@@ -371,7 +369,7 @@ function M.start()
 		girlName.Text = girl
 		local who = nameOf(State:GetAttribute("HolderId"))
 		holder.Text = if who then `{who} has her` else "Up for grabs"
-		holder.TextColor3 = if who then GOLD else MUTED
+		holder.TextColor3 = if who then WHITE else MUTED
 		setPortrait(girl)
 	end
 	for _, name in { "GirlName", "GirlRarity", "HolderId" } do
@@ -539,7 +537,7 @@ function M.start()
 			sayLine("Safe")
 			Sfx.play("safe")
 		elseif kind == "Bonus" then
-			show(small, `+{data.coins} coins`, GOLD, 2.4)
+			show(small, `+{data.coins} coins`, WHITE, 2.4)
 			Sfx.play("coin")
 		elseif kind == "Win" then
 			local team = if data.team == "Runners" then "RUNNERS WIN" else "CATCHERS WIN"

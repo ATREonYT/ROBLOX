@@ -74,7 +74,7 @@ local function badge(id, name, text, color, seconds)
 	label.BackgroundTransparency = 1
 	label.Text = text
 	label.TextScaled = true
-	label.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Heavy)
+	label.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Heavy)
 	label.TextColor3 = color
 	label.Parent = gui
 	local stroke = Instance.new("UIStroke")

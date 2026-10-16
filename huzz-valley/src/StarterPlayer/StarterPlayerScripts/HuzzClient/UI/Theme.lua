@@ -15,10 +15,11 @@ Theme.Colors = {
 	Header = hex("7C5CF6"), HeaderTop = hex("C4B4FF"),
 	HeaderGradient = { { 0, hex("A38DFF") }, { 0.45, hex("7F60F8") }, { 1, hex("6440E6") } },
 	Stud = hex("9576F9"), StudBottom = hex("7D61EB"), StudShadow = hex("6951D0"),
-	TitleStroke = hex("2A1488"), TitleShadow = hex("1B0B5E"), TitleBand = hex("DADDF2"),
+	TitleStroke = hex("0B0F24"), TitleShadow = hex("0B0F24"), TitleBand = hex("DADDF2"),
 	InactiveTab = hex("2A4580"), InactiveTabTop = hex("3E5EA0"), TabRim = hex("0D1640"),
 	HeaderTab = hex("243F74"), HeaderTabRim = hex("10133F"),
-	SelectedTab = hex("FFC247"), SelectedTabTop = hex("FFE89A"), SelectedRim = hex("5A3206"),
+	SelectedTab = hex("38C95A"), SelectedTabTop = hex("8DF29A"), SelectedRim = hex("0E3F1A"), -- Huss Valley green (owner: no gold)
+	Accent = hex("5BE07A"), -- the one bright colour: selected things, progress, good news,
 	Segment = hex("324E86"), SegmentTop = hex("4766A6"),
 	Action = hex("7466FF"), ActionHover = hex("8678FF"), ActionPressed = hex("5E50E8"), ActionTop = hex("ABA3FF"), ActionRim = hex("1C1562"),
 	GiftTop = hex("B84FFA"), GiftBottom = hex("9925F9"), GiftRim = hex("3B0A6A"), -- the purple gift button (gradient)
@@ -31,7 +32,7 @@ Theme.Colors = {
 	DarkText = hex("182542"),
 	TextShadow = hex("0A1426"),
 	Close = hex("FF3355"), CloseTop = hex("FF6B83"), CloseBottom = hex("DE1240"), CloseRim = hex("3A0520"),
-	Progress = hex("FFC83D"),
+	Progress = hex("5BE07A"),
 	Ink = hex("141B33"),
 	Pill = hex("141F48"), PillRim = hex("1B2355"),
 	Plus = hex("6A5BF2"), PlusTop = hex("9A8FFF"), PlusRim = hex("1C1562"), HudPlus = hex("5E52E6"),
@@ -49,17 +50,18 @@ Theme.Colors = {
 
 Theme.Transparency = { Panel = 0, Header = 0.06, Body = 0.22, Row = 0.12 } -- owner: "make the UI more transparent" (the world shows through the window bodies)
 
-local CONDENSED = "rbxasset://fonts/families/RobotoCondensed.json"
-local MONTSERRAT = "rbxasset://fonts/families/Montserrat.json"
--- The owner's font table (one role per kind of text):
+-- One font, as Huss Valley (owner: "use the same fonts as Huss Valley, it's simple and feels nice"): Roblox's
+-- own Gotham, in a few weights. White text with a dark outline; big moments in Black Italic.
+local GOTHAM = "rbxasset://fonts/families/GothamSSm.json"
 Theme.Fonts = {
-	Heading = Font.new(MONTSERRAT, Enum.FontWeight.Heavy), -- SHOP, DANCES, PROGRESSION: Montserrat Black, uppercase, thin dark outline
-	Name = Font.new(MONTSERRAT, Enum.FontWeight.Bold), -- character names, product titles: no outline
-	Tab = Font.new(CONDENSED, Enum.FontWeight.Bold), -- OWNED, COSMETICS, QUESTS: uppercase
-	Button = Font.new(CONDENSED, Enum.FontWeight.Bold), -- CLAIM, PLAY, UNEQUIP: consistent size, minimal outline
-	Body = Font.new(CONDENSED, Enum.FontWeight.Regular), -- descriptions, quest instructions
-	Number = Font.new(MONTSERRAT, Enum.FontWeight.Bold), -- prices, currencies, XP numbers
-	Label = Font.new(MONTSERRAT, Enum.FontWeight.Medium), -- search fields, smaller labels
+	Heading = Font.new(GOTHAM, Enum.FontWeight.Heavy), -- window titles: SHOP, DANCES (caps, dark outline)
+	Name = Font.new(GOTHAM, Enum.FontWeight.Bold), -- names, product titles, the message line
+	Tab = Font.new(GOTHAM, Enum.FontWeight.Bold), -- tabs (caps)
+	Button = Font.new(GOTHAM, Enum.FontWeight.Bold), -- buttons (caps, thin outline)
+	Body = Font.new(GOTHAM, Enum.FontWeight.Medium), -- descriptions, help lines
+	Number = Font.new(GOTHAM, Enum.FontWeight.Bold), -- prices, coins, timers
+	Label = Font.new(GOTHAM, Enum.FontWeight.Medium), -- search fields, small labels
+	Big = Font.new(GOTHAM, Enum.FontWeight.Heavy, Enum.FontStyle.Italic), -- 3-2-1, GO!, SAFE, wins
 }
 
 -- Text sizes (reference px).

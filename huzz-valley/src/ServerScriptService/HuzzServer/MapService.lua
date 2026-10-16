@@ -559,7 +559,7 @@ function MapService.showGoal(goalName)
 			label.BackgroundTransparency = 1
 			label.Text = "SAFE ZONE"
 			label.TextScaled = true
-			label.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Heavy)
+			label.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Heavy)
 			label.TextColor3 = Color3.fromRGB(64, 255, 92)
 			label.Parent = gui
 			local stroke = Instance.new("UIStroke")

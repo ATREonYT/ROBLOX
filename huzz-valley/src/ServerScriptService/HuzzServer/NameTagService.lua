@@ -11,24 +11,24 @@ local DataService = require(script.Parent.DataService)
 
 local NameTags = {}
 
--- The lobby kit's faces (UI/Theme.Fonts): Montserrat Black for the big HERO / CHICKEN, Montserrat Bold for
--- the name, Roboto Condensed Bold for the role, Montserrat Medium for the level line.
-local MONTSERRAT, CONDENSED = "rbxasset://fonts/families/Montserrat.json", "rbxasset://fonts/families/RobotoCondensed.json"
-local DISPLAY = Font.new(MONTSERRAT, Enum.FontWeight.Heavy)
-local BOLD = Font.new(MONTSERRAT, Enum.FontWeight.Bold)
-local ROUND = Font.new(CONDENSED, Enum.FontWeight.Bold)
-local SMALL = Font.new(MONTSERRAT, Enum.FontWeight.Medium)
+-- Gotham, as Huss Valley's tags: Black Italic for the big HERO / CHICKEN, Bold for the name and role,
+-- Medium for the level line.
+local GOTHAM = "rbxasset://fonts/families/GothamSSm.json"
+local DISPLAY = Font.new(GOTHAM, Enum.FontWeight.Heavy, Enum.FontStyle.Italic)
+local BOLD = Font.new(GOTHAM, Enum.FontWeight.Bold)
+local ROUND = Font.new(GOTHAM, Enum.FontWeight.Bold)
+local SMALL = Font.new(GOTHAM, Enum.FontWeight.Medium)
 local INK = Color3.fromRGB(10, 20, 51) -- (the kit's frame navy)
 
 local TITLES = {
 	Runner = { "RUNNER", Color3.fromRGB(110, 184, 255) },
 	Catcher = { "CATCHER", Color3.fromRGB(255, 92, 104) },
-	Hero = { "HERO", Color3.fromRGB(255, 214, 70) },
+	Hero = { "HERO", Color3.fromRGB(91, 224, 122) },
 	Safe = { "SAFE", Color3.fromRGB(110, 236, 140) },
 	Downed = { "HELP!", Color3.fromRGB(255, 160, 90) },
 }
 local BADGES = {
-	HERO = Color3.fromRGB(255, 214, 70),
+	HERO = Color3.fromRGB(91, 224, 122),
 	CHICKEN = Color3.fromRGB(255, 244, 222),
 }
 

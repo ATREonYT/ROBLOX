@@ -34,7 +34,7 @@ local PREVIEW = { X = 400, Y = 47, W = 297, H = 262, Pad = 10, ArtH = 132, Gap =
 
 -- Measured from reference 03.
 local COL = {
-	Card = hex("1E3A66"), CardRim = hex("3E6699"), Band = hex("10233F"), Selected = hex("F5DF55"),
+	Card = hex("1E3A66"), CardRim = hex("3E6699"), Band = hex("10233F"), Selected = Theme.Colors.Accent,
 	Field = hex("1B2B54"), FieldRim = hex("0E1C44"), FieldTop = hex("2C3D6E"), FieldText = hex("E3E8F7"), Hint = hex("C3CBE6"),
 	PreviewTop = hex("26395E"), PreviewBottom = hex("182640"), PreviewLine = hex("3A5585"),
 	ArtTop = hex("3557A0"), ArtBottom = hex("223B6E"),

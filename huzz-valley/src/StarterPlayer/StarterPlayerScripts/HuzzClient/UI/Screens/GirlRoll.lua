@@ -29,7 +29,7 @@ local REEL = { X = 10, Y = HEADER + 10, W = 300, H = 192 } -- three rows show; t
 local ROW = { H = 58, Gap = 6 }
 local PITCH = ROW.H + ROW.Gap
 local MID_Y = REEL.H / 2 - ROW.H / 2 -- top of the middle slot, in reel coordinates
-local GOLD = C.Progress
+local GOLD = C.Accent -- (the middle slot: Huss Valley green)
 local SCREEN_TOP = 6
 local LOAD_ROWS = 2.6 -- rows this far from the middle get their model; further ones drop it
 

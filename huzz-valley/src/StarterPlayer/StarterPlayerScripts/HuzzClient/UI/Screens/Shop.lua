@@ -151,7 +151,8 @@ local function buildPasses(body: Frame)
 		for j, b in p.Benefits or {} do
 			local by = if i == 1 then 19 + (j - 1) * 33 else 25 + (j - 1) * 34
 			Kit.icon(b.Icon, { Name = "BenefitIcon" .. j, Position = UDim2.fromOffset(343, by), Size = UDim2.fromOffset(26, 26), Parent = row })
-			Kit.text({ Name = "Benefit" .. j, Text = b.Text, TextSize = T.Label, Position = UDim2.fromOffset(392 + bx, by), Size = UDim2.fromOffset(112, 26), TextWrapped = false, Parent = row })
+			local benefit = Kit.text({ Name = "Benefit" .. j, Text = b.Text, TextSize = T.Label, TextScaled = true, Position = UDim2.fromOffset(392 + bx, by), Size = UDim2.fromOffset(112, 26), TextWrapped = false, Parent = row })
+			new("UITextSizeConstraint", { Name = "Fit", MaxTextSize = math.round(T.Label * 0.86), Parent = benefit }) -- (shrinks a long line to its column)
 		end
 		if p.Giftable then
 			buyButton(row, p, { Position = UDim2.new(1, -63, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), Size = UDim2.fromOffset(103, 51), TextSize = 27, BadgeScale = 1.7 })

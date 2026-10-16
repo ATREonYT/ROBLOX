@@ -31,7 +31,7 @@ local W, H = 701, 320 -- every main window shares this size
 -- Colours measured on page 02 that the shared theme doesn't have.
 local COL = {
 	Field = hex("1E3057"), Drop = hex("1A284E"), FieldRim = hex("0E1836"), Placeholder = hex("C3CBE3"),
-	CardRim = hex("2D5380"), Band = hex("182C45"), ArtBack = hex("223B6E"), ArtTop = hex("3557A0"), Select = hex("FCE24A"),
+	CardRim = hex("2D5380"), Band = hex("182C45"), ArtBack = hex("223B6E"), ArtTop = hex("3557A0"), Select = Theme.Colors.Accent,
 	Status = hex("D5D8F2"), Equipped = hex("C7C9F9"), LockedText = hex("9AA6BF"),
 	Info = hex("1E314A"), Rule = hex("3A4F70"), PreviewBack = hex("1B2D4A"),
 	Equip = hex("8C8FEA"), EquipText = hex("0A0D3A"), Menu = hex("16264A"), MenuRim = hex("2E4669"),

@@ -6,9 +6,12 @@ eye. Branch `HUZZ-VALLEY`. Read the section you need; the owner's own words are 
 ## 1. Owner's standing calls (don't undo without asking)
 - **The loop is Huss Valley's** (videos 32fe8d21, 87565d66; `docs/previews/hv-reference-*.jpg`). Girls add a
   prize layer on top; they never change the rules.
-- **Look:** the kit in `design/` is the base, but the owner asked for **richer colours** ("bland, AI"), **more
-  see-through** panels and a **studded texture over whole panels everywhere** (not stud strips). Kit fonts
-  everywhere, in game too: no Luckiest Guy / Fredoka.
+- **Look = Huss Valley's** (owner: "use the same fonts as Huss Valley, it's simple and feels nice"; "let go of
+  that gold tone"): **one font, Roblox's Gotham** (`GothamSSm`: Black for titles, Bold for names/buttons, Medium
+  for lines, Black Italic for big moments), **white text with a dark outline**, no gradient-banded titles, **no
+  gold**: the one accent is **Huss Valley green** (`Theme.Colors.Accent`; selected tabs, your vote, progress,
+  good news). The kit's purple/navy panels stay, see-through, with a studded texture over whole panels.
+  The preview has no Gotham (not free): it draws Montserrat, its look-alike.
 - **Text:** short, game-like, no dashes, no "AI" phrasing ("Messi is safe", "Got one!", "GO! Get across!").
 - **Small HUD** (`Scale.HUD_SIZE = 0.55`); lobby side buttons and coin pills slide away during rounds.
 - **Controls:** Space = dash (no jump in rounds); hold W = walk building into a run; G = dance wheel; Q/E = powers;
@@ -49,6 +52,7 @@ eye. Branch `HUZZ-VALLEY`. Read the section you need; the owner's own words are 
   keep the saved look (use `HUZZ_FRESH=1` after style changes).
 
 ## 4. The round (`RoundRules` + `RoundService`)
+- Lobby time (owner: "a bit more, so people can buy things, not too long"): `VoteTime` 30 s, `IntermissionTime` 25 s.
 - Stages: Waiting → Voting (map vote) → Rolling (girl roller) → per round: Lineup → Picking (HERO/CHICKEN, 8 s,
   else random) → Chosen → HeroRun (only the Hero and catchers unfrozen) → Countdown → Running → RoundOver;
   GameOver. Runners win with everyone across `Crossings` (3) rounds in a row; downed runners left at the end join
@@ -65,16 +69,18 @@ eye. Branch `HUZZ-VALLEY`. Read the section you need; the owner's own words are 
   HuzzFrozen, ProtectedUntil, DashReady, PowerReady1/2). Local-only: HuzzCinematic, HuzzChoosing, HuzzWheel.
 - `announce(text, colour, big)` = the message line (big = centre banner). Copy rules in §1.
 
-## 5. In-game screens (all kit-styled)
+## 5. In-game screens (Huss Valley look on the kit panels)
 - `Gameplay/RoundHud` (code-built, 1280x720 scaled): round plate (purple header: ROUND n + clock; navy strip: role
   chip + IN A ROW bars), message bar, help line (control tips in your first two games), prize card, centre banners, the
   companion's reaction bubble, and team outlines (Highlights: red catchers, blue runners, yellow Hero, green safe).
-- `Screens/HeroChoice` (gold HERO / violet CHICKEN cards), `Screens/PowerBar`, `Screens/DanceWheel` (G),
+- `Screens/HeroChoice` (green HERO / violet CHICKEN cards), `Screens/NextMap` (after you vote, the vote tucks into a
+  "NEXT MAP" panel at the top left: both maps, votes, your pick in green, time left, an arrow back to the full vote;
+  the winner shows for a few seconds; owner's HV reference), `Screens/PowerBar`, `Screens/DanceWheel` (G),
   `Screens/Welcome` (How to Play: auto-opens once, saves the `TutorialDone` setting; also in the Menu).
 - `Gameplay/Cinematic`: the line-up camera and the hopping pick highlight (outline only while hopping).
 - `Gameplay/Feel`: sprint FOV widening, dash FOV kick + speed lines (one per dash), footstep dust, step sound.
   Off with Reduced Motion (dust stays).
-- `NameTagService`: kit fonts; role title, name, "Lv. N · W wins", HELP! + rescue bar, big HERO/CHICKEN.
+- `NameTagService`: Gotham (as Huss Valley); role title, name, "Lv. N · W wins", HELP! + rescue bar, big HERO/CHICKEN.
 
 ## 6. Animations (the owner's files)
 - `tools/anim/extract_anims.luau` reads `design/anims/movement-pack.rbxl` and `200-dances.rbxl` and writes

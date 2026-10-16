@@ -41,6 +41,15 @@ end
 __runScript(game.StarterPlayer.StarterPlayerScripts.HuzzClient.Main)
 task.wait(0.3)
 local MM = require(game.StarterPlayer.StarterPlayerScripts.HuzzClient.UI.ModalManager)
+-- NEXTMAP=true (with VOTE=...): the vote running, its window closed: the NEXT MAP panel at the top left.
+if cfg.NEXTMAP then
+	local round = game.ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Round")
+	round:SetAttribute("Stage", "Voting")
+	task.wait(0.1)
+	MM.close()
+	task.wait(0.1)
+	require(game.StarterPlayer.StarterPlayerScripts.HuzzClient.UI.Screens.NextMap).refresh()
+end
 -- POWERS="Runner"|"Catcher": a round running, slot 1 used up, slot 2 ready.
 if cfg.POWERS then
 	local round = game.ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Round")

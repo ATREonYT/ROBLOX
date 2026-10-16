@@ -29,7 +29,7 @@ function M.start()
 	local player = Players.LocalPlayer
 
 	local SHOTS = { Lineup = true, Picking = true, Chosen = true }
-	local GOLD = Color3.fromRGB(255, 214, 70)
+	local GOLD = Color3.fromRGB(255, 255, 255) -- (the pick glow: clean white, owner: no gold)
 
 	-- Letterbox bars.
 	local gui = Instance.new("ScreenGui")

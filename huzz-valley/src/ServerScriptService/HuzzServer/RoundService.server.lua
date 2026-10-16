@@ -38,7 +38,7 @@ local RoundNet = Net.get("Round") :: RemoteEvent
 local State = RoundNet
 local zones = MapService.zones
 local WHITE = Color3.new(1, 1, 1)
-local GOLD = Color3.fromRGB(255, 205, 80)
+local GOLD = Color3.fromRGB(91, 224, 122) -- (the good-news accent: Huss Valley green; owner: no gold)
 local RED = Color3.fromRGB(255, 96, 96)
 local GREEN = Color3.fromRGB(110, 236, 140)
 

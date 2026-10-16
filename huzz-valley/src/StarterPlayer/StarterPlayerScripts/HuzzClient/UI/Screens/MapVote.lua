@@ -25,7 +25,7 @@ local W, H = 701, 320 -- every main window shares this size
 -- Measured on page 15 (668 x 289 window), scaled to 701 x 320.
 local CARD = { X = { 24, 358 }, Y = 58, W = 319, H = 252, Name = 160, Votes = 187, BtnY = 203, BtnH = 39, BtnInset = 25 }
 local COL = {
-	Rim = hex("3F7CDB"), RimSelected = hex("FDE355"), Card = hex("1C2440"), Shade = hex("161E36"),
+	Rim = hex("3F7CDB"), RimSelected = Theme.Colors.Accent, Card = hex("1C2440"), Shade = hex("161E36"),
 	Pill = hex("1B2A57"), PillRim = hex("0E1A44"),
 }
 
@@ -123,7 +123,13 @@ function MapVote.build(parent: Instance)
 	local names = { "", "" }
 	for i = 1, 2 do
 		cards[i] = card(window.Body.Parent :: Instance, i, function()
-			if names[i] ~= "" then vote:FireServer(names[i]) end
+			if names[i] ~= "" then
+				vote:FireServer(names[i])
+				-- (owner: after voting the vote tucks into the NEXT MAP panel at the top left, Screens/NextMap)
+				task.delay(0.45, function()
+					if ModalManager.current() == "MapVote" then ModalManager.close() end
+				end)
+			end
 		end)
 	end
 

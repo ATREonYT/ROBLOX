@@ -27,6 +27,7 @@ shot map-vote 15-map-vote 1536 656 '{SCREEN="MapVote", SCALE=2, VOTE="Base_Map,H
 shot girl-roll 15-map-vote 1536 656 '{SCREEN="Hud", SCALE=2, ROLL=6.5}'
 shot power-bar 13-lobby-hud 1536 694 '{SCREEN="Hud", SCALE=2, POWERS="Runner"}'
 shot hero-choice 13-lobby-hud 1536 694 '{SCREEN="Hud", SCALE=2, HERO=true}'
+shot next-map 13-lobby-hud 1536 694 '{SCREEN="Hud", SCALE=2, NEXTMAP=true, VOTE="Base_Map,Halloween_Map,3,5,Halloween_Map"}'
 shot dance-wheel 13-lobby-hud 1536 694 '{SCREEN="Hud", SCALE=2, WHEEL=true}'
 shot welcome 13-lobby-hud 1536 694 '{SCREEN="Welcome", SCALE=2}'
 shot round-hud 13-lobby-hud 1536 694 '{SCREEN="Hud", SCALE=2, ROUNDHUD="Hero"}'

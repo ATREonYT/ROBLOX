@@ -29,9 +29,9 @@ local CARD = { W = 190, H = 112, Gap = 22 }
 local PAGE_H = 347 -- the HUD reference height (as LobbyHud)
 local C = Theme.Colors
 local INK = C.Frame
--- The kit's two loud colours (owner: match the lobby UI): HERO in the selected-tab gold, CHICKEN in the action violet.
+-- HERO in Huss Valley green, CHICKEN in the kit's action violet; white words with a dark outline (no gold: owner).
 local LOOKS = {
-	Hero = { Top = C.SelectedTabTop, Bottom = rgb(255, 170, 40), Text = rgb(58, 30, 4), Line = rgb(92, 50, 6), Rim = C.SelectedRim, Outline = false },
+	Hero = { Top = C.SelectedTabTop, Bottom = C.SelectedTab, Text = Color3.new(1, 1, 1), Line = rgb(236, 255, 238), Rim = C.SelectedRim, Outline = true },
 	Chicken = { Top = C.ActionTop, Bottom = C.ActionPressed, Text = Color3.new(1, 1, 1), Line = rgb(236, 234, 255), Rim = C.ActionRim, Outline = true },
 }
 
@@ -76,10 +76,9 @@ function HeroChoice.build(parent: Instance)
 	})
 	Scale.bind(new("UIScale", { Name = "FitScale", Parent = panel }), function() return Scale.hud(PAGE_H) * 0.8 end)
 	local title = new("TextLabel", {
-		Name = "Hint", Text = "HERO OR CHICKEN?", FontFace = F.Heading, TextSize = 30, TextColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1,
+		Name = "Hint", Text = "HERO OR CHICKEN?", FontFace = F.Big, TextSize = 30, TextColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1,
 		Size = UDim2.new(1, 0, 0, 38), Parent = panel,
 	}, { new("UIStroke", { Name = "Outline", Color = C.TitleShadow, Thickness = 2.5, LineJoinMode = Enum.LineJoinMode.Round }) })
-	new("UIGradient", { Name = "Shine", Rotation = 90, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)), ColorSequenceKeypoint.new(0.5, C.TitleBand), ColorSequenceKeypoint.new(1, Color3.new(1, 1, 1)) }), Parent = title })
 	-- the time left: a bar that empties (and the seconds)
 	local timer = new("Frame", { Name = "Timer", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 44), Size = UDim2.fromOffset(260, 12), BackgroundColor3 = INK, BackgroundTransparency = 0.1, BorderSizePixel = 0, Parent = panel }, { Kit.corner(6), new("UIStroke", { Color = INK, Thickness = 2 }) })
 	local fill = new("Frame", { Name = "Fill", Size = UDim2.fromScale(1, 1), BackgroundColor3 = C.Progress, BorderSizePixel = 0, Parent = timer }, { Kit.corner(6) })

@@ -36,6 +36,7 @@ function MapVoteService.run(nameA, nameB, seconds, stillGoing)
 	for _, p in Players:GetPlayers() do
 		p:SetAttribute("HuzzVote", nil)
 	end
+	RoundNet:SetAttribute("VoteWinner", nil) -- (Screens/NextMap shows the winner once it's set)
 	RoundNet:SetAttribute("VoteA", nameA)
 	RoundNet:SetAttribute("VoteB", nameB)
 	recount()
@@ -58,6 +59,7 @@ function MapVoteService.run(nameA, nameB, seconds, stillGoing)
 	for _, p in Players:GetPlayers() do
 		p:SetAttribute("HuzzVote", nil)
 	end
+	RoundNet:SetAttribute("VoteWinner", winner)
 	return winner
 end
 

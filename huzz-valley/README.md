@@ -12,7 +12,8 @@ All of these work against a real save system. When you're happy with how they lo
 ![Ours under each reference](docs/previews/overview.jpg)
 
 ## The game: Huss Valley's loop, with the anime girls
-1. **Between games** everyone votes for one of two maps. The winner **replaces the map in front of the lobby**
+1. **Between games** (about 30 seconds, time to visit the shop) everyone votes for one of two maps. After you
+   vote, the vote tucks into a small **NEXT MAP** panel at the top left (the arrow opens it again). The winner **replaces the map in front of the lobby**
    (the last one stays there until then). Then a **small roller at the top of the screen** runs from top to
    bottom and stops on the game's girl. She then floats **big over the map** for the whole game, turning slowly
    in a column of light with sparkles and her rating (stars, name, rarity) over her head. Each roller row shows
@@ -167,7 +168,7 @@ the icons itself. To make them work everywhere for good, upload them once (Plugi
 ## What's honest about this build
 - **Pictures and icons:** almost all are now your sharp files (`design/sharp` and `design/icons-hd`), used as drawn and only trimmed to fit their spots. Five small icons are still the soft kit crops: the filled favourite star, the quest clipboard (Progression's title), the white shirt in the shop, the small gift and the small music note. Your pictures have see-through backgrounds, so the cards show a blue backdrop behind them.
 - **Product pictures** show your own avatar, because there are no companion models yet. The coin cards use the coin icon instead of the gold-cube stacks.
-- **The in-round screen** now uses the kit's look (purple plate, navy strip, kit fonts). It isn't from a kit
+- **The in-round screen** uses the kit's panels with Huss Valley's font (Gotham) and green accent. It isn't from a kit
   page, since the kit has no Match HUD page.
 - **The studded texture** is drawn by us (`tools/icons/make_stud_pattern.py`); it shows after the pictures are
   uploaded (checklist step 1), like the other icons.

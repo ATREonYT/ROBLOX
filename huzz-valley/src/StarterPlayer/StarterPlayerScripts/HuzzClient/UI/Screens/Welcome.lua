@@ -37,7 +37,7 @@ local function card(parent: Instance, i: number, def)
 	Kit.icon(def.Icon, { Name = "Icon", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(56, 56), Parent = back })
 	-- the step number: a small gold square in the corner (the selected tab's gold)
 	new("TextLabel", {
-		Name = "Step", Text = tostring(i), FontFace = F.Number, TextSize = 16, TextColor3 = C.DarkText, BackgroundColor3 = C.SelectedTab,
+		Name = "Step", Text = tostring(i), FontFace = F.Number, TextSize = 16, TextColor3 = C.Text, BackgroundColor3 = C.SelectedTab,
 		Position = UDim2.fromOffset(8, 8), Size = UDim2.fromOffset(26, 26), Parent = f,
 	}, { Kit.corner(4), Kit.stroke(C.SelectedRim, 1) })
 	Kit.name({ Name = "Title", Text = def.Title, TextSize = 19, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(0, 98), Size = UDim2.new(1, 0, 0, 24), Parent = f })

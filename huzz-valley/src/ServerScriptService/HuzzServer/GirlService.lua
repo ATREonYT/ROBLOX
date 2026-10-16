@@ -156,7 +156,7 @@ local function nameTag(model, girl, root, offsetY)
 		t.Text = text
 		t.TextColor3 = color
 		t.TextScaled = true
-		t.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", weight)
+		t.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", weight)
 		local stroke = Instance.new("UIStroke")
 		stroke.Thickness = 1.5
 		stroke.Color = Color3.fromRGB(20, 18, 40)
@@ -395,7 +395,7 @@ function GirlService.showcase(girl, at, parent)
 		t.Text = text
 		t.TextColor3 = color3
 		t.TextScaled = true
-		t.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", weight)
+		t.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", weight)
 		local stroke = Instance.new("UIStroke")
 		stroke.Thickness = 2.5
 		stroke.Color = Color3.fromRGB(20, 18, 40)

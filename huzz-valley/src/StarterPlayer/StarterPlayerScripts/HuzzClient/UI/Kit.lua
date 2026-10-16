@@ -107,12 +107,22 @@ function Kit.list(dir: Enum.FillDirection, padding: number, h: Enum.HorizontalAl
 	return new("UIListLayout", { FillDirection = dir, Padding = UDim.new(0, padding), SortOrder = Enum.SortOrder.LayoutOrder, HorizontalAlignment = h or Enum.HorizontalAlignment.Left, VerticalAlignment = v or Enum.VerticalAlignment.Top })
 end
 
+-- Gotham (the one font now, as Huss Valley) is about 15% wider than the narrow Roboto Condensed the body, tab and
+-- button sizes were measured with, so those roles draw a little smaller and every layout still fits.
+local NARROW = 0.86
+local function narrowRole(font: any): boolean
+	return rawequal(font, Theme.Fonts.Body) or rawequal(font, Theme.Fonts.Button) or rawequal(font, Theme.Fonts.Tab)
+end
+
 function Kit.text(props: { [string]: any }): TextLabel
 	local p = {
 		BackgroundTransparency = 1, FontFace = Theme.Fonts.Body, TextColor3 = C.Text, TextSize = Theme.Text.Blurb,
 		TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Center, TextWrapped = true,
 	}
 	for k, v in props do p[k] = v end
+	if narrowRole(p.FontFace) then
+		p.TextSize = math.max(8, math.round(p.TextSize * NARROW))
+	end
 	return new("TextLabel", p)
 end
 
@@ -132,19 +142,17 @@ local function shadowOf(label: TextLabel, color: Color3, transparency: number, d
 	return sh
 end
 
--- A window heading (SHOP, SETTINGS): Montserrat Black caps, white with a lavender band through the middle, a thin
--- indigo outline and a heavier indigo drop underneath (all measured from the reference).
+-- A window heading (SHOP, SETTINGS): Gotham Black caps, plain white with a dark outline and a soft drop (Huss Valley).
 function Kit.title(props: { [string]: any }): TextLabel
 	props.FontFace = props.FontFace or Theme.Fonts.Heading
 	props.TextSize = props.TextSize or Theme.Text.Title
 	props.TextWrapped = false
 	local l = Kit.text(props)
 	if l.Parent then
-		local sh = shadowOf(l, C.TitleShadow, 0, 2)
+		local sh = shadowOf(l, C.TitleShadow, 0.45, 2)
 		new("UIStroke", { Color = C.TitleShadow, Thickness = 1.2, Parent = sh })
 	end
-	new("UIStroke", { Color = C.TitleStroke, Thickness = 1.2, Parent = l })
-	new("UIGradient", { Rotation = 90, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)), ColorSequenceKeypoint.new(0.5, C.TitleBand), ColorSequenceKeypoint.new(1, Color3.new(1, 1, 1)) }), Parent = l })
+	new("UIStroke", { Color = C.TitleStroke, Thickness = 2, LineJoinMode = Enum.LineJoinMode.Round, Parent = l }) -- (Huss Valley: plain white, dark outline)
 	return l
 end
 
@@ -203,7 +211,7 @@ Kit.Styles = {
 	Action = { Idle = C.Action, Hover = C.ActionHover, Pressed = C.ActionPressed, Text = C.Text, Top = C.ActionTop, Rim = C.ActionRim },
 	CoinAction = { Idle = C.CoinBuy, Hover = lighten(C.CoinBuy, 0.10), Pressed = darken(C.CoinBuy, 0.10), Text = C.Text, Top = C.CoinBuyTop, Rim = C.CoinBuyRim }, -- coin cards (08)
 	Disabled = { Idle = C.Disabled, Hover = C.Disabled, Pressed = C.Disabled, Text = C.Text, Top = C.DisabledTop, Rim = C.ActionRim },
-	Selected = style(C.SelectedTab, C.DarkText, C.SelectedTabTop, C.SelectedRim),
+	Selected = style(C.SelectedTab, C.Text, C.SelectedTabTop, C.SelectedRim),
 	Tab = style(C.InactiveTab, C.Text, C.InactiveTabTop, C.TabRim),
 	HeaderTab = style(C.HeaderTab, C.Text, C.InactiveTabTop, C.HeaderTabRim),
 	Segment = style(C.Segment, C.Text, C.SegmentTop, C.TabRim),
