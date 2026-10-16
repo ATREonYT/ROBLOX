@@ -10,7 +10,7 @@ local new = Kit.new
 
 local MainMenu = {}
 
-local W, H = 199, 275 -- measured on reference 12
+local W = 199 -- measured on reference 12 (275 tall with its 6 rows; one row is 38)
 MainMenu.Entries = {
 	{ Key = "Shop", Text = "Shop", Icon = "ShopCart" },
 	{ Key = "Index", Text = "Index", Icon = "CollectionBook" },
@@ -18,9 +18,12 @@ MainMenu.Entries = {
 	{ Key = "Dances", Text = "Dances", Icon = "AudioMusic" },
 	{ Key = "Progression", Text = "Progression", Icon = "RewardsTrophy" },
 	{ Key = "Settings", Text = "Settings", Icon = "SettingsGear" },
+	{ Key = "Welcome", Text = "How to Play", Icon = "Players" },
 }
 
 -- Opens a screen by key, or explains that it isn't built yet.
+local H = 47 + #MainMenu.Entries * 38
+
 function MainMenu.go(key: string, arg: any?)
 	if not ModalManager.open(key, arg) then Toast.show(key .. " is coming in the next build.") end
 end

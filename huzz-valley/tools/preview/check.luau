@@ -98,12 +98,12 @@ MM.close()
 local ProgressService = require(HS.ProgressService)
 local function act(...) local r, why = State.action(...); task.wait(0.2); return r, why end
 check("starter companion owned and equipped", profile.Data.Characters.Aiko ~= nil and profile.Data.Equipped == "Aiko")
-check("starter dance owned", State.data.Dances.Step == true)
+check("starter dance owned", State.data.Dances.Floss == true)
 check("can't equip a companion you don't own", (act("Equip", "Ren")) == false and profile.Data.Equipped == "Aiko")
 check("unequip works", (act("Unequip")) == true and profile.Data.Equipped == "")
 check("equip an owned companion", (act("Equip", "Aiko")) == true and profile.Data.Equipped == "Aiko")
 check("favourite a companion", (act("FavoriteCharacter", "Hina", true)) == true and profile.Data.FavChars.Hina == true)
-check("favourite a dance", (act("FavoriteDance", "Spin", true)) == true and profile.Data.FavDances.Spin == true)
+check("favourite a dance", (act("FavoriteDance", "Robot", true)) == true and profile.Data.FavDances.Robot == true)
 check("bad action refused", (act("GiveMeCoins", 999)) == false)
 local coins = profile.Data.Coins
 check("level 1 reward claims once", (act("ClaimReward", 1)) == true and profile.Data.Coins == coins + 100 and (act("ClaimReward", 1)) == false and profile.Data.Coins == coins + 100)
@@ -114,7 +114,7 @@ check("finished quest gives XP once", (act("ClaimQuest", "Steals")) == true and 
 check("client can't add stats", (act("addStat", "Steals", 99)) == false)
 check("dance pack pass grants its dances", (function()
 	DataService.setExtra(player, "Passes", { DancePack = true }); task.wait(0.1)
-	local ok2 = State.data.Dances.Wave == true
+	local ok2 = State.data.Dances.SwingTime == true and State.data.Dances.Toprock == true
 	DataService.setExtra(player, "Passes", { VIP = true }); task.wait(0.1)
 	return ok2
 end)())

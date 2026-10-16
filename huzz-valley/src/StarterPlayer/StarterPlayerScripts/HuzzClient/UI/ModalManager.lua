@@ -8,6 +8,7 @@ local GuiService = game:GetService("GuiService")
 
 local Motion = require(script.Parent.Motion)
 local Scale = require(script.Parent.Scale)
+local Sfx = require(script.Parent.Parent.Gameplay.Sfx)
 
 local ModalManager = {}
 
@@ -59,6 +60,7 @@ local function hide(name: string, instant: boolean?)
 		w.Holder.Visible = false
 		return
 	end
+	Sfx.play("ui_close")
 	Motion.close(w.Group, w.OpenScale, function()
 		if current ~= name then w.Holder.Visible = false end
 	end)
@@ -78,6 +80,7 @@ function ModalManager.open(name: string, arg: any?)
 	local w = s.window
 	w.Holder.Visible = true
 	if s.onOpen then s.onOpen(arg) end
+	Sfx.play("ui_open")
 	Motion.open(w.Group, w.OpenScale, UDim2.fromScale(0.5, 0.5))
 	if s.items then Motion.stagger(s.items()) end
 	changed()

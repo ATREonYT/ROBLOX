@@ -1,12 +1,14 @@
 --[[
 	The anime girls in the world, on this screen (owner's call: "make the anime girl characters feel more
 	included"):
-	  - Your equipped girl (the player's HuzzCompanion attribute, CompanionService) floats beside you as a small
-	    companion in the lobby, bobbing and leaning as you move, with her effects (Shared/AuraLook "Companion").
-	    In a round she steps aside (the round's own girl is the prize) until you're safe across: then she pops
-	    out and cheers beside you.
-	  - Equip a Rare or better girl and YOU get her aura, in the lobby and in rounds (the owner's reference:
-	    flames on your hands, dark wisps, crescent slashes as she gets rarer; "Player").
+	  - Your equipped girl (the player's HuzzCompanion attribute, CompanionService) walks behind you on the
+	    ground as a small companion (owner: "walk behind you, not fly"): Shared/FollowMotion moves her (the
+	    same code as the girl who follows a catcher) with Config/GirlMotion.Companion, walking when you walk,
+	    running when you run, standing and looking round when you stop; her effects are Shared/AuraLook
+	    "Companion". In a round she steps aside (the round's own girl is the prize) until you're safe across:
+	    then she appears beside you on the ground and hops and cheers.
+	  - Equip a girl and YOU get her aura, in the lobby and in rounds (the owner's reference: flames on your
+	    hands, dark wisps, crescent slashes), small for Common to Epic and growing with rarity ("Player").
 	  - The big girl over the map wears her aura at 3x ("Showcase", tag HuzzShowcase).
 	  - The round's girl, carried or following a catcher, glows with her "Companion" look.
 	Everyone's are drawn by every client (Gameplay/AuraFX), only near the camera; other players' are drawn
@@ -25,10 +27,12 @@ function M.start()
 	local AuraLook = require(Shared.AuraLook)
 	local Looks = require(Shared.Config.GirlLooks)
 	local Round = require(Shared.Config.Round)
+	local FollowMotion = require(Shared.FollowMotion)
+	local Companion = require(Shared.Config.GirlMotion).Companion
 	local AuraFX = require(script.Parent.AuraFX)
 
 	local NEAR = 170 -- studs from the camera: effects further away are switched off
-	local COMPANION_HEIGHT = 2.8 -- studs tall, about half your height (owner: "a smaller character")
+	local COMPANION_HEIGHT = Companion.Height
 
 	local rarityColor = {}
 	for _, r in Round.Rarities do
@@ -63,7 +67,7 @@ function M.start()
 	end
 
 	-- Players: their aura and their companion.
-	local states = {} -- Player -> { key, auraFor, aura, companion = {model, handle, pos, offset, size} }
+	local states = {} -- Player -> { key, auraFor, aura, companion = {model, handle, walk, groundAt, ...} }
 	local function clearAura(s)
 		if s.aura then
 			s.aura.destroy()
@@ -78,7 +82,44 @@ function M.start()
 		end
 	end
 
-	local function makeCompanion(key, rarity, lite)
+	local clock, frameNo = 0, 0
+
+	-- Ground under her: one ray straight down, through every character and girl (only things you can stand on).
+	local rayParams = RaycastParams.new()
+	rayParams.FilterType = Enum.RaycastFilterType.Exclude
+	rayParams.RespectCanCollide = true
+	local rayFilterAt = -math.huge
+	local function refreshRayFilter()
+		local ignore = { folder }
+		for _, name in { "HuzzCarried", "HuzzFollowers" } do
+			local f = Workspace:FindFirstChild(name)
+			if f then
+				table.insert(ignore, f)
+			end
+		end
+		for _, p in Players:GetPlayers() do
+			if p.Character then
+				table.insert(ignore, p.Character)
+			end
+		end
+		rayParams.FilterDescendantsInstances = ignore
+	end
+
+	-- The lowest point of her body (feet), for how high her root stands off the ground.
+	local function bodyBottom(model)
+		local low = math.huge
+		for _, d in model:GetDescendants() do
+			if d:IsA("BasePart") and not d:FindFirstAncestorOfClass("Accessory") and d.Name ~= "HumanoidRootPart" then
+				low = math.min(low, d.CFrame.Position.Y - d.Size.Y / 2)
+			end
+		end
+		return low
+	end
+
+	--[[ A small copy of her that walks: her root part stays anchored (moved by Shared/FollowMotion), every
+		other part hangs off it on its joints, unanchored, so the Motor6D poses (Shared/GirlMotion) move her
+		legs and arms (as GirlService.makeCopy + CarryAnimator do for the girl who follows a catcher). ]]
+	local function makeCompanion(key, rarity, lite, seed)
 		local girls = ReplicatedStorage:FindFirstChild("HuzzGirls")
 		local source = girls and girls:FindFirstChild(key)
 		if not (source and source:IsA("Model")) then
@@ -86,19 +127,104 @@ function M.start()
 		end
 		local model = source:Clone()
 		model.Name = "Companion"
+		-- (the R15 Secret is built on AnimationConstraints: swap them for Motor6Ds, as GirlService does)
+		local done = {}
 		for _, d in model:GetDescendants() do
-			if d:IsA("BasePart") then
-				d.Anchored, d.CanCollide, d.CanQuery, d.CanTouch, d.CastShadow = true, false, false, false, false
+			if d.ClassName == "AnimationConstraint" then
+				local a0, a1 = d.Attachment0, d.Attachment1
+				local part0, part1 = a0 and a0.Parent, a1 and a1.Parent
+				if part0 and part1 and part0:IsA("BasePart") and part1:IsA("BasePart") and not done[part1] then
+					done[part1] = true
+					local motor = Instance.new("Motor6D")
+					motor.Name = d.Name
+					motor.Part0, motor.Part1 = part0, part1
+					motor.C0, motor.C1 = a0.CFrame, a1.CFrame
+					motor.Parent = part1
+				end
 			end
 		end
+		for _, d in model:GetDescendants() do
+			if d.ClassName == "AnimationConstraint" or d:IsA("BallSocketConstraint") or d:IsA("NoCollisionConstraint") then
+				d:Destroy()
+			end
+		end
+		local root = model:FindFirstChild("HumanoidRootPart") or model.PrimaryPart
+		if not (root and root:IsA("BasePart")) then
+			return nil
+		end
+		model.PrimaryPart = root
 		local _, size = model:GetBoundingBox()
 		model:ScaleTo(model:GetScale() * COMPANION_HEIGHT / math.max(bodyHeight(model) or size.Y, 1))
-		local box, newSize = model:GetBoundingBox()
-		local offset = box:ToObjectSpace(model:GetPivot()) -- her pivot from her centre
+		local _, newSize = model:GetBoundingBox()
+		local rootHeight = root.Position.Y - bodyBottom(model)
+		if rootHeight ~= rootHeight or rootHeight <= 0 or rootHeight > COMPANION_HEIGHT then
+			rootHeight = COMPANION_HEIGHT * 0.5
+		end
+
+		-- Parts joined to her root (through Motor6Ds and welds) hang off it; anything loose gets welded on.
+		local links = {}
+		local function link(a, b)
+			if a and b then
+				links[a] = links[a] or {}
+				links[b] = links[b] or {}
+				table.insert(links[a], b)
+				table.insert(links[b], a)
+			end
+		end
+		local motors = {}
+		for _, d in model:GetDescendants() do
+			if d:IsA("JointInstance") or d:IsA("WeldConstraint") then
+				link(d.Part0, d.Part1)
+				if d:IsA("Motor6D") then
+					table.insert(motors, d)
+				end
+			end
+		end
+		local joined, queue = { [root] = true }, { root }
+		while #queue > 0 do
+			for _, other in links[table.remove(queue)] or {} do
+				if not joined[other] then
+					joined[other] = true
+					table.insert(queue, other)
+				end
+			end
+		end
+		for _, d in model:GetDescendants() do
+			if d:IsA("BasePart") then
+				d.CanCollide, d.CanQuery, d.CanTouch, d.CastShadow, d.Massless = false, false, false, false, true
+				d.Anchored = d == root
+				if not joined[d] and d ~= root then
+					local weld = Instance.new("WeldConstraint")
+					weld.Part0, weld.Part1 = root, d
+					weld.Parent = d
+				end
+			end
+		end
+		local humanoid = model:FindFirstChildOfClass("Humanoid")
+		if humanoid then
+			humanoid.EvaluateStateMachine = false
+			humanoid.PlatformStand = true
+			humanoid.BreakJointsOnDeath = false
+			humanoid.RequiresNeck = false
+			humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+			humanoid.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff
+		end
 		model.Parent = folder
 		local spec = AuraLook.build(lookOf(source:GetAttribute("Id"), rarity), rarity, "Companion")
 		spec.scale = COMPANION_HEIGHT / 5
-		return { model = model, handle = AuraFX.attach(model, spec, { lite = lite }), offset = offset, size = newSize, pos = nil, face = nil, lean = 0 }
+		local walk = FollowMotion.new({ root = root, motors = motors, rootHeight = rootHeight, seed = seed, config = Companion })
+		local c = { model = model, handle = AuraFX.attach(model, spec, { lite = lite }), size = newSize, walk = walk, ground = nil, leaderY = 0 }
+		-- The ground under her: one ray a frame for yours, every other frame for other players' companions.
+		function c.groundAt(at)
+			if lite and frameNo % 2 == 1 and c.ground then
+				return c.ground
+			end
+			local top = math.max(at.Y, c.leaderY) + 4
+			local hit = Workspace:Raycast(Vector3.new(at.X, top, at.Z), Vector3.new(0, -60, 0), rayParams)
+			c.ground = hit and hit.Position.Y
+			return c.ground
+		end
+		return c
 	end
 
 	local function stateOf(p)
@@ -110,7 +236,6 @@ function M.start()
 		return s
 	end
 
-	local clock = 0
 	local function updatePlayer(p, s, dt)
 		local character = p.Character
 		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
@@ -121,9 +246,9 @@ function M.start()
 		local girls = ReplicatedStorage:FindFirstChild("HuzzGirls")
 		local source = girls and key ~= "" and girls:FindFirstChild(key)
 
-		-- the aura on the player (Rare and up)
+		-- the aura on the player (every rarity: Common is just a few faint motes)
 		local lite = p ~= Players.LocalPlayer
-		local wantAura = alive and source ~= nil and (AuraLook.RANK[rarity] or 0) >= 3
+		local wantAura = alive and source ~= nil and (AuraLook.RANK[rarity] or 0) >= 1
 		local auraFor = if wantAura then key else nil
 		if s.auraFor ~= auraFor or s.auraChar ~= character then
 			clearAura(s)
@@ -152,24 +277,25 @@ function M.start()
 		end
 		s.key = key
 		if allowed and not s.companion and far < 150 then
-			s.companion = makeCompanion(key, rarity, lite)
+			s.companion = makeCompanion(key, rarity, lite, p.UserId)
 		end
 		local c = s.companion
+		if c and not c.model.Parent then
+			clearCompanion(s) -- (something removed her)
+			c = nil
+		end
 		if c then
-			-- over your right shoulder, a little behind, bobbing; she eases after you and leans as you move
-			local bob = if cheering then math.abs(math.sin(clock * 5)) * 0.9 else math.sin(clock * 2.2 + p.UserId % 7) * 0.25
-			local target = (root.CFrame * CFrame.new(2.4, 0.9 + bob, 1.8)).Position
-			local k = 1 - math.exp(-dt * 6)
-			local before = c.pos or target
-			c.pos = before:Lerp(target, k)
-			local vel = (c.pos - before) / math.max(dt, 1 / 240)
-			local flat = Vector3.new(vel.X, 0, vel.Z)
-			local look = root.CFrame.LookVector
-			local face = if flat.Magnitude > 2 then flat.Unit else Vector3.new(look.X, 0, look.Z).Unit
-			c.face = if c.face then c.face:Lerp(face, k).Unit else face
-			c.lean += (math.clamp(flat.Magnitude * 1.2, 0, 16) - c.lean) * k
-			local cf = CFrame.lookAt(c.pos, c.pos + c.face) * CFrame.Angles(-math.rad(c.lean), 0, math.sin(clock * 1.3) * 0.05)
-			c.model:PivotTo(cf * c.offset)
+			-- She walks on the ground behind you (Shared/FollowMotion); a new character (respawn) = a fresh
+			-- start at her spot, and so does a teleport (FollowMotion: further than TeleportDistance).
+			local w = c.walk
+			if c.char ~= character then
+				c.char, w.pos = character, nil
+				refreshRayFilter() -- (so the ray never lands on the new character)
+			end
+			w.cheer = cheering
+			c.leaderY = root.Position.Y
+			local head = character:FindFirstChild("Head")
+			FollowMotion.step(w, dt, clock, root.CFrame, c.groundAt, head and head.Position)
 			c.handle.step(dt)
 		end
 	end
@@ -233,7 +359,13 @@ function M.start()
 	end)
 
 	RunService.RenderStepped:Connect(function(dt)
+		dt = math.clamp(dt, 1 / 240, 1 / 15)
 		clock += dt
+		frameNo += 1
+		if clock - rayFilterAt > 0.5 then
+			rayFilterAt = clock
+			refreshRayFilter()
+		end
 		for _, p in Players:GetPlayers() do
 			updatePlayer(p, stateOf(p), dt)
 		end

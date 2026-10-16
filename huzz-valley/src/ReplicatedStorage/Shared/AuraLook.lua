@@ -5,12 +5,18 @@
 
 	Owner's reference (video cf007d44): glowing flames on both hands with dark smoky wisps, and crescent
 	slashes flicking round the body. Ours takes that and themes it per girl (Config/GirlLooks: her element and
-	two colours) and grows it with her rarity:
-	  Player     on YOU when she's equipped, from Rare up: hand flames (Rare), + dark wisps and her element's
-	             particles round you (Epic), + crescent slashes (Legendary 1.2/s, Mythic 1.8/s, Secret 2.4/s),
-	             + a smoky aura at your feet (Secret).
-	  Companion  on HER as the small companion beside you (every rarity): soft stars and her element's
-	             particles, a little light; small hand flames from Legendary up.
+	two colours) and grows it with her rarity (owner: "not so strong on commons, rares, epics, just little"):
+	  Player     on YOU when she's equipped:
+	               Common/Uncommon  a few faint tiny motes in her colours drifting up from your feet; no light.
+	               Rare             + her element's motes (petals, snow, embers...) softly round you; a faint glow.
+	               Epic             + small soft hand flames (no white cores, no wisps, no slashes).
+	               Legendary        the old Epic look: hand flames, dark wisps and shards, her element round you,
+	                                and slashes at a gentle 0.7 a second.
+	               Mythic/Secret    the full look: bigger flames, crescent slashes 2.2/2.8 a second; Secret adds
+	                                a smoky aura at your feet.
+	  Companion  on HER, the small companion walking behind you, the same ladder: motes (Common/Uncommon),
+	             + element and a little light (Rare), + soft hand flames (Epic), stars, element and full hand
+	             flames (Legendary up).
 	  Showcase   on the big her over the map: the full Player look at 3x, her element all round her, slashes.
 	Elements: Flame (embers), Frost (snow), Sakura (petals and hearts), Night (heavy dark wisps), Holy (feathers
 	and gold stars), Storm (fast sparks), Nature (leaves), Water (bubbles); Sparkle = no look set.
@@ -19,7 +25,9 @@
 	  colors = { {t, Color3}, ... }, light (LightEmission 0-1), rate (per second), life = {min, max},
 	  speed = {min, max}, spread (degrees round straight up), size = { {t, studs}, ... },
 	  alpha = { {t, transparency}, ... }, accel = {x, y, z}, drag, rot = {min, max}, spin = {min, max},
-	  z = ZOffset (studs drawn closer to the camera: the hand flames sit in front of the arm, as in the reference) }.
+	  z = ZOffset (studs drawn closer to the camera: the hand flames sit in front of the arm, as in the reference),
+	  inherit = VelocityInheritance (0-1: the hand flames and wisps keep up with you when you run instead of
+	  streaming back over the companion walking behind you) }.
 	Sizes, speeds and acceleration are for a 5-stud character; the builder multiplies them by the scale.
 ]]
 local AuraLook = {}
@@ -70,24 +78,30 @@ function AuraLook.lookFor(looks, id, rarityColor)
 end
 
 -- Flames wrapped round each hand (big, slow, in front of the arm) with a hot white core.
-local function handFlames(look, rank, k)
+-- soft (Epic): small, see-through, a low rate and no white core: just a little flicker on each hand.
+local function handFlames(look, rank, k, soft)
 	local c1, c2 = look.Colors[1], look.Colors[2]
 	local list = {}
-	local grow = 1 + 0.1 * math.max(0, rank - 3)
+	local grow = if soft then 0.45 else 1 + 0.1 * math.max(0, rank - 3)
 	for _, hand in { "RightHand", "LeftHand" } do
 		table.insert(list, {
 			name = "Flame" .. hand, at = hand, texture = "Flame",
-			colors = { { 0, c1 }, { 0.5, c1:Lerp(c2, 0.4) }, { 1, c2 } }, light = 1,
-			rate = (40 + 10 * math.max(0, rank - 3)) * k, life = { 0.3, 0.6 }, speed = { 1, 2.2 }, spread = 50,
-			size = { { 0, 1.6 * grow }, { 0.4, 2.3 * grow }, { 1, 0.6 } }, alpha = { { 0, 0.3 }, { 0.5, 0.45 }, { 1, 1 } },
-			accel = { 0, 5, 0 }, drag = 2, rot = { -15, 15 }, spin = { -30, 30 }, z = 1.5,
+			colors = { { 0, c1 }, { 0.5, c1:Lerp(c2, 0.4) }, { 1, c2 } }, light = if soft then 0.6 else 1,
+			rate = (if soft then 9 else 40 + 10 * math.max(0, rank - 3)) * k, life = { 0.3, 0.6 },
+			speed = if soft then { 0.5, 1.1 } else { 1, 2.2 }, spread = 50,
+			size = { { 0, 1.6 * grow }, { 0.4, 2.3 * grow }, { 1, 0.6 * grow } },
+			alpha = if soft then { { 0, 0.6 }, { 0.5, 0.7 }, { 1, 1 } } else { { 0, 0.3 }, { 0.5, 0.45 }, { 1, 1 } },
+			accel = if soft then { 0, 3, 0 } else { 0, 5, 0 }, drag = 2, rot = { -15, 15 }, spin = { -30, 30 }, z = 1.5, inherit = 0.85,
 		})
+		if soft then
+			continue
+		end
 		table.insert(list, {
 			name = "Core" .. hand, at = hand, texture = "Flame",
 			colors = { { 0, c1:Lerp(WHITE, 0.25) }, { 1, c1 } }, light = 1,
 			rate = (10 + 3 * math.max(0, rank - 3)) * k, life = { 0.18, 0.35 }, speed = { 0.2, 0.6 }, spread = 180,
 			size = { { 0, 0.7 * grow }, { 1, 0.2 } }, alpha = { { 0, 0.55 }, { 1, 1 } },
-			accel = { 0, 3, 0 }, drag = 3, rot = { -20, 20 }, spin = { -40, 40 }, z = 1.8,
+			accel = { 0, 3, 0 }, drag = 3, rot = { -20, 20 }, spin = { -40, 40 }, z = 1.8, inherit = 0.85,
 		})
 	end
 	return list
@@ -103,30 +117,33 @@ local function darkWisps(look, rank, k)
 			colors = { { 0, deep }, { 1, deep:Lerp(BLACK, 0.5) } }, light = 0,
 			rate = (14 + 3 * math.max(0, rank - 4)) * k, life = { 0.5, 0.9 }, speed = { 0.8, 2 }, spread = 180,
 			size = { { 0, 1.5 }, { 1, 2.6 } }, alpha = { { 0, 0.2 }, { 1, 1 } },
-			accel = { 0, 2.5, 0 }, drag = 2, rot = { 0, 360 }, spin = { -40, 40 }, z = 1.6,
+			accel = { 0, 2.5, 0 }, drag = 2, rot = { 0, 360 }, spin = { -40, 40 }, z = 1.6, inherit = 0.7,
 		})
 		table.insert(list, {
 			name = "Shard" .. hand, at = hand, texture = "Shard",
 			colors = { { 0, deep }, { 1, deep } }, light = 0,
 			rate = (16 + 4 * math.max(0, rank - 4)) * k, life = { 0.35, 0.7 }, speed = { 3, 6 }, spread = 180,
 			size = { { 0, 0.85 }, { 1, 0.25 } }, alpha = { { 0, 0 }, { 1, 1 } },
-			accel = { 0, -2, 0 }, drag = 3, rot = { 0, 360 }, spin = { -300, 300 }, z = 1.2,
+			accel = { 0, -2, 0 }, drag = 3, rot = { 0, 360 }, spin = { -300, 300 }, z = 1.2, inherit = 0.6,
 		})
 	end
 	return list
 end
 
-local function elementField(look, rank, at, radiusSpeed, rateBase, k)
+-- Her element's particles round the body. soft (Rare, Epic): a few at a time, smaller and see-through.
+local function elementField(look, rank, at, radiusSpeed, rateBase, k, soft)
 	local e = ELEMENTS[look.Element] or ELEMENTS.Sparkle
 	local c1, c2 = look.Colors[1], look.Colors[2]
 	local list = {}
+	local size = if soft then e.size * 0.6 else e.size
 	for i, tex in e.textures do
 		table.insert(list, {
 			name = "Element" .. i, at = at, texture = tex,
 			colors = { { 0, c1:Lerp(WHITE, 0.3) }, { 1, c2 } }, light = e.light,
-			rate = (rateBase + 2.5 * rank) * k / #e.textures, life = { 1.4, 2.6 },
+			rate = (if soft then rateBase else rateBase + 2.5 * rank) * k / #e.textures, life = { 1.4, 2.6 },
 			speed = { e.speed[1] + radiusSpeed, e.speed[2] + radiusSpeed }, spread = 180,
-			size = { { 0, 0 }, { 0.15, e.size }, { 0.85, e.size }, { 1, 0 } }, alpha = { { 0, 0.1 }, { 0.8, 0.3 }, { 1, 1 } },
+			size = { { 0, 0 }, { 0.15, size }, { 0.85, size }, { 1, 0 } },
+			alpha = if soft then { { 0, 0.45 }, { 0.8, 0.6 }, { 1, 1 } } else { { 0, 0.1 }, { 0.8, 0.3 }, { 1, 1 } },
 			accel = e.accel, drag = 1.2, rot = { 0, 360 }, spin = { -e.spin, e.spin },
 		})
 	end
@@ -143,9 +160,20 @@ local function stars(look, rank, at, k)
 	}
 end
 
+-- Common and up: a few faint, tiny motes in her colours drifting up from the feet (almost nothing).
+local function motes(look, rank, at, k)
+	return {
+		name = "Motes", at = at, texture = "Star",
+		colors = { { 0, look.Colors[1]:Lerp(WHITE, 0.5) }, { 1, look.Colors[1] } }, light = 0.6,
+		rate = (2 + 0.5 * math.min(rank, 3)) * k, life = { 1.2, 2 }, speed = { 0.3, 0.8 }, spread = 40,
+		size = { { 0, 0 }, { 0.25, 0.22 }, { 1, 0 } }, alpha = { { 0, 0.55 }, { 0.6, 0.65 }, { 1, 1 } },
+		accel = { 0, 0.8, 0 }, drag = 1.5, rot = { 0, 360 }, spin = { -60, 60 },
+	}
+end
+
 -- Crescent slashes: how many a second, their size, and their two colours (bright core, dark edge).
 local function slashes(look, rank, k)
-	local per = ({ [5] = 1.6, [6] = 2.2, [7] = 2.8 })[math.min(rank, 7)] or 0
+	local per = ({ [5] = 0.7, [6] = 2.2, [7] = 2.8 })[math.min(rank, 7)] or 0
 	if per <= 0 then
 		return nil
 	end
@@ -158,7 +186,7 @@ end
 
 --[[
 	kind: "Player" | "Companion" | "Showcase". Returns { emitters = {...}, slashes = {...} or nil, light = {...} or
-	nil, scale }; nil when there's nothing to show (a Common girl's Player look).
+	nil, scale }. Every rarity shows something (Common: a few faint motes).
 ]]
 function AuraLook.build(look, rarity, kind)
 	local rank = AuraLook.RANK[rarity or ""] or 1
@@ -170,11 +198,20 @@ function AuraLook.build(look, rarity, kind)
 	end
 	local c1 = look.Colors[1]
 	if kind == "Player" then
-		if rank < 3 then
-			return nil
+		-- Everyone gets the motes; each rarity adds a little (the ladder in the header).
+		table.insert(out.emitters, motes(look, rank, "Feet", 1))
+		if rank >= 3 and rank <= 4 then
+			add(elementField(look, rank, "Body", 0.6, if rank == 3 then 3 else 4, 1, true))
 		end
-		add(handFlames(look, rank, 1))
-		if rank >= 4 then
+		if rank == 4 then
+			add(handFlames(look, rank, 1, true))
+		elseif rank == 5 then
+			-- the old Epic look, with gentle slashes
+			add(handFlames(look, 4, 1))
+			add(darkWisps(look, 4, 1))
+			add(elementField(look, 4, "Body", 0.8, 1, 1))
+		elseif rank >= 6 then
+			add(handFlames(look, rank, 1))
 			add(darkWisps(look, rank, 1))
 			add(elementField(look, rank, "Body", 0.8, 1, 1))
 		end
@@ -188,14 +225,25 @@ function AuraLook.build(look, rarity, kind)
 				rot = { 0, 360 }, spin = { -30, 30 },
 			})
 		end
-		out.light = { color = c1, brightness = 0.8 + 0.25 * (rank - 3), range = 8 + 2 * (rank - 3), at = "Body" }
-	elseif kind == "Companion" then
-		table.insert(out.emitters, stars(look, rank, "Body", 1))
-		add(elementField(look, rank, "Body", 0.5, 1.5, 1))
-		if rank >= 5 then
-			add(handFlames(look, rank, 0.6))
+		if rank == 3 or rank == 4 then
+			out.light = { color = c1, brightness = 0.25 + 0.15 * (rank - 3), range = 6, at = "Body" } -- a faint glow
+		elseif rank >= 5 then
+			out.light = { color = c1, brightness = 0.8 + 0.25 * (rank - 4), range = 8 + 2 * (rank - 4), at = "Body" }
 		end
-		out.light = { color = c1, brightness = 0.6 + 0.15 * rank, range = 6 + rank, at = "Body" }
+	elseif kind == "Companion" then
+		table.insert(out.emitters, motes(look, rank, "Feet", 1))
+		if rank >= 3 and rank <= 4 then
+			add(elementField(look, rank, "Body", 0.4, if rank == 3 then 3 else 4, 1, true))
+			if rank == 4 then
+				add(handFlames(look, rank, 0.7, true))
+			end
+			out.light = { color = c1, brightness = 0.3 + 0.15 * (rank - 3), range = 5, at = "Body" }
+		elseif rank >= 5 then
+			table.insert(out.emitters, stars(look, rank, "Body", 1))
+			add(elementField(look, rank, "Body", 0.5, 1.5, 1))
+			add(handFlames(look, rank, 0.6))
+			out.light = { color = c1, brightness = 0.6 + 0.15 * rank, range = 6 + rank, at = "Body" }
+		end
 	elseif kind == "Showcase" then
 		local r = math.max(rank, 5)
 		add(handFlames(look, r, 1))

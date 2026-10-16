@@ -28,18 +28,25 @@ All of these work against a real save system. When you're happy with how they lo
    comes down onto your shoulders, plus 25 coins. **Chicken** means everyone runs together.
 4. **RUN!** Catchers **stab** (click, or the STAB button on a phone). A stabbed runner **falls down** where they
    are. Stand next to a downed runner to **rescue** them (a bar fills over their head). Anyone still down at the
-   end of the round **joins the catchers**, and the "in a row" count starts again.
+   end of the round **joins the catchers**, and the "in a row" count starts again. Once you're **safe across,
+   you stay across**: an invisible gate on the goal line stops you walking back into the middle.
 5. **The girl:** a catcher who stabs her carrier **steals her** (she follows him). The next Hero who makes it
    takes her back. When the game ends she goes home with the winning side, into their **Index**.
    - Controls in a round: **no mouse pointer** (shift lock); **hold Alt** to get the pointer back. **Space**
-     dashes, **H** tosses her, and you can't jump.
-   - The top of the screen shows what just happened ("Messi reached safety!"), your role and the time left
-     ([picture](docs/previews/round-hud.png)).
+     dashes (with its own lunge move), and you can't jump. Hold **W** and you set off at a walk that builds
+     into the full run over about a second ([video](docs/previews/moves-walk-run-dash.mp4)).
+   - **G** opens the **dance wheel** anywhere: 8 of your dances round a circle (favourites first), press a number
+     or click; walk away to stop ([picture](docs/previews/dance-wheel.jpg)). All **25 dances** from your file are
+     in the Dances window too, with your own avatar dancing in the preview.
+   - The top of the screen is a small kit plate: ROUND 2 and the clock, your role, the "in a row" bars, and one
+     line for what just happened ("Messi is safe") ([picture](docs/previews/round-hud.jpg)). The lobby buttons
+     and coin pills slide away while you play.
    - Name tags over everyone show their role, level and wins. Outlines: catchers **red**, runners **blue**,
      the Hero **yellow**, safe runners **green**.
-6. **Your anime girls:** equip one in the **Index** and a small her floats at your shoulder in the lobby, glowing
-   in her own colours. A **Rare or better** girl also gives **you** her aura: flames on your hands, dark smoke,
-   and crescent slashes for Legendary and up ([video](docs/previews/girl-auras.mp4),
+6. **Your anime girls:** equip one in the **Index** and a small her **walks behind you** in the lobby, glowing
+   in her own colours. You get her aura too, growing with her rarity: just a few faint sparkles for Common, a
+   soft glow for Rare, small hand flames for Epic, and the full flames, smoke and crescent slashes only from
+   Legendary up ([video](docs/previews/girl-auras.mp4),
    [next to your reference](docs/previews/girl-auras-vs-reference.jpg)). In rounds she reacts to what you do.
    The girl over the map now wears her aura big, with nothing under her feet.
 7. **Powers** (free, fresh every round; Q and E, or tap the cards at the bottom of the screen):
@@ -49,8 +56,12 @@ All of these work against a real save system. When you're happy with how they lo
      **Charm Wave** (a ring of hearts that slows runners near you).
    - Tune them in `Shared/Config/Powers.lua` (times, speeds, sizes, cooldowns).
 
-The stab and huss moves are placeholders until your Huss Valley animations come in: put their IDs in
-`Shared/Config/Animations.lua` (`Stab`, `Huss`) and they play instead. ([video](docs/previews/stab-and-huss.mp4))
+8. **New players** get a short **How to Play** card the first time they join (also in the Menu)
+   ([picture](docs/previews/welcome.jpg)).
+
+**Animations:** your walk, run, idle, jump, fall and climb come from your movement pack, the dash move is built
+from its Sprint, and the 25 dances from your dance file. In **Studio** they play straight away. For the live
+game they must be published once (checklist step 9). The stab is still a scripted placeholder.
 
 **Set up your maps:** in each map, make a folder named after the map (e.g. `Graveyard`) holding 3 parts named
 `ZoneA`, `ZoneB` and `Middle`. They can be invisible (Transparency 1) and non-colliding. Every game picks one of
@@ -133,19 +144,36 @@ the icons itself. To make them work everywhere for good, upload them once (Plugi
 6. **Icons for the 4 powers:** the cards show emoji (💖 ⚡ 💘 💞) until you send 4 see-through PNGs (256 px or
    bigger) named heart-shield, rizz-rush, love-trap and charm-wave.
 7. **Things that need assets before they can go on sale** show their price, but only say "coming soon" when tapped:
-   - Dance Pack: the 4 dance animations;
+   - Dance Pack: its Game Pass ID (its 4 dances are in now: Swing Time, Bounce Bounce, Squat Kick, Toprock);
    - Crown Pose: a pose animation;
    - Midnight Outfit: the clothing;
    - coin packs: they turn on once coins can buy something.
 
+8. **Upload the 24 new sound effects** (made for this game, in `huzz-valley/assets/sfx`; until then a few
+   Roblox stand-in sounds play and the rest are silent):
+   1. Studio → **Window → Asset Manager → Bulk Import**, and pick every file in `huzz-valley/assets/sfx`.
+   2. In Asset Manager → **Audio**, select them all and drag them into **Workspace**.
+   3. Paste `huzz-valley/tools/studio/collect-sound-ids.lua` into the Command Bar and send me the Output lines
+      that start with `[HuzzSfx]`. Then delete the sounds you dragged in.
+9. **Publish the animations** (needed for the live game; Studio already plays them): paste
+   `huzz-valley/tools/studio/publish-animations.lua` into the Command Bar and send me the `[HuzzAnim]` lines. If it
+   says some couldn't publish, right-click those in **ReplicatedStorage → HuzzAnimations** → **Save to Roblox...**
+   and send me their IDs. Publish them under the account (or group) that owns the game, or they won't play.
+10. **Dance names:** most of the 25 dances are copies of other games' emotes, so they have our own names in
+    `Shared/Config/Dances.lua` (Citrus Groove, Shock Shuffle...). Rename any you like. The movement pack's licence
+    is in `design/anims/movement-pack.zip`; check it allows use in a published game.
+
 ## What's honest about this build
 - **Pictures and icons:** almost all are now your sharp files (`design/sharp` and `design/icons-hd`), used as drawn and only trimmed to fit their spots. Five small icons are still the soft kit crops: the filled favourite star, the quest clipboard (Progression's title), the white shirt in the shop, the small gift and the small music note. Your pictures have see-through backgrounds, so the cards show a blue backdrop behind them.
 - **Product pictures** show your own avatar, because there are no companion models yet. The coin cards use the coin icon instead of the gold-cube stacks.
-- **The next-round timer** now runs from the real round system. The in-round HUD (timer, your role, the girl and
-  who holds her) is a plain stand-in until the Match HUD page is built from the kit.
+- **The in-round screen** now uses the kit's look (purple plate, navy strip, kit fonts). It isn't from a kit
+  page, since the kit has no Match HUD page.
+- **The studded texture** is drawn by us (`tools/icons/make_stud_pattern.py`); it shows after the pictures are
+  uploaded (checklist step 1), like the other icons.
+- **Sounds** are ours, made from scratch; nobody has listened to them in the game yet. Tell me which ones to change.
 - **The carry** has been checked offline (the pose maths and every round rule have tests), but not yet in Studio.
   Tell me how it feels.
 - **Gifting** says "unavailable" until the Gift Picker is built.
 - **The Social settings** save and are checked on the server, but nothing in the game shows inventories or sends invites yet.
-- **The Controls tab:** Dash and Dances show SOON until those exist. The Open Menu key can be changed now.
+- **The Controls tab:** Dash (Space) and Dances (G) work and say FIXED: those two keys can't be changed. The Open Menu key can be changed now.
 - **The pictures above come from an offline preview, not Studio.** Fonts and layout are close; the Robux sign and the blur behind windows are approximate. Your look in Studio is the real test.

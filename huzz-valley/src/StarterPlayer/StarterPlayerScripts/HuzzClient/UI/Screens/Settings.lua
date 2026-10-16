@@ -112,7 +112,7 @@ local function buildControls(page: Frame)
 		local box = Kit.text({ Name = "Key", Text = fixed or "", FontFace = Theme.Fonts.Button, TextSize = 17, TextXAlignment = Enum.TextXAlignment.Center, BackgroundTransparency = 0, BackgroundColor3 = C.KeyBox, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 397 - ROW_X, 0.5, 0), Size = UDim2.fromOffset(133, 33), Parent = r })
 		Kit.attach(Kit.corner(3), box)
 		Kit.attach(Kit.stroke(C.KeyBoxRim, 1), box)
-		local change = Kit.button({ Name = "Change", Text = key and "Change" or "SOON", Style = key and "Action" or "Disabled", TextSize = 17, Corner = 3, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 545 - ROW_X, 0.5, 0), Size = UDim2.fromOffset(138, 34), Parent = r })
+		local change = Kit.button({ Name = "Change", Text = key and "Change" or "FIXED", Style = key and "Action" or "Disabled", TextSize = 17, Corner = 3, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 545 - ROW_X, 0.5, 0), Size = UDim2.fromOffset(138, 34), Parent = r })
 		if not key then
 			box.TextTransparency = 0.5
 			change.onClick(function() Toast.show(title .. " arrives with matches.") end)

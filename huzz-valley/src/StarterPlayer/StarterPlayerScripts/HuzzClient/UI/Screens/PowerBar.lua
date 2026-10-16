@@ -40,6 +40,8 @@ local function card(parent: Instance, slot: number)
 		BackgroundColor3 = Color3.new(1, 1, 1), AutoButtonColor = false, Text = "", BorderSizePixel = 0, Parent = parent,
 	}, { Kit.corner(8) })
 	new("UIGradient", { Name = "Shade", Rotation = 90, Color = ColorSequence.new(C.RowTop, C.Panel), Parent = b })
+	b.BackgroundTransparency = 0.12 -- (see-through and studded, as the rest of the kit)
+	Kit.studPattern(b, 0.35)
 	local rim = Kit.stroke(C.RowBorder, 2)
 	rim.Name = "Rim"
 	rim = Kit.attach(rim, b) :: UIStroke

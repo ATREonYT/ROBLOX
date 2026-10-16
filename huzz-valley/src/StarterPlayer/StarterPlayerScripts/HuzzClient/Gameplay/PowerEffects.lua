@@ -13,6 +13,8 @@ function M.start()
 	local ReplicatedStorage = game:GetService("ReplicatedStorage")
 	local TweenService = game:GetService("TweenService")
 	local Workspace = game:GetService("Workspace")
+	local Players = game:GetService("Players")
+	local Sfx = require(script.Parent.Sfx)
 
 	local Net = require(ReplicatedStorage:WaitForChild("Shared").Net)
 	local RoundNet = Net.get("Round") :: RemoteEvent
@@ -69,6 +71,11 @@ function M.start()
 
 	RoundNet.OnClientEvent:Connect(function(kind, data)
 		if kind ~= "Power" or type(data) ~= "table" then return end
+		local mine = data.id == Players.LocalPlayer.UserId
+		local SOUND = { HeartShield = "heart_shield", RizzRush = "power_rush", CharmWave = "power_rush", LoveTrap = "heart_shield", ShieldPop = "heart_shield" }
+		if SOUND[data.name] and (mine or data.by == Players.LocalPlayer.UserId) then
+			Sfx.play(SOUND[data.name])
+		end
 		local at = data.at
 		if typeof(at) ~= "Vector3" then return end
 		if data.name == "CharmWave" then

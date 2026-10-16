@@ -22,7 +22,6 @@ local SPEC = {
 	Round = "RemoteEvent",
 	Vote = "RemoteEvent",
 	Stab = "RemoteEvent",
-	Huss = "RemoteEvent",
 	Power = "RemoteEvent",
 	Hero = "RemoteEvent",
 	Dash = "RemoteEvent",

@@ -103,6 +103,7 @@ function AuraFX.attach(model, spec, opts)
 			p.Rotation = NumberRange.new(e.rot[1], e.rot[2])
 			p.RotSpeed = NumberRange.new(e.spin[1], e.spin[2])
 			p.ZOffset = (e.z or 0) * scale
+			p.VelocityInheritance = e.inherit or 0
 			p.Parent = att
 			table.insert(emitters, p)
 		end

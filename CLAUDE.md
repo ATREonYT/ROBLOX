@@ -67,6 +67,10 @@ This file loads in every session, so keep it short. Each game folder has its own
   - picture names are case-sensitive in Roblox, while the preview finds files regardless of case, so check names with a test;
   - Studio's editor only shows uploaded images (`rbxassetid`). Pixels drawn by scripts (EditableImage) appear only in Play, or through a Studio helper plugin.
 - **A clean offline run doesn't prove Studio works:** Lune's copy of the Roblox API is outdated. Start each UI part separately, so one failure can't stop the rest, and show errors on screen, so the owner can screenshot them.
+- **Animations from the owner's files** are raw KeyframeSequences: extract them with Lune into a `.rbxm`, play them
+  in Studio with `KeyframeSequenceProvider` (temporary IDs, Studio only), preview them with
+  `tools/preview/motion3d/anim_scene.luau`, and give the owner a publish helper for the live game.
+- **Sounds:** make our own (`huzz-valley/tools/sfx/make_sfx.py`); the owner uploads them and sends back the IDs.
 - **Cloud sessions can't reach Studio or Roblox's web APIs** (apis.roblox.com is blocked), so they can't upload images or check the real game.
   - Only the owner can confirm the final look and the real purchase prompts.
   - Anything that must run in Studio (uploads, helpers) ships as a Command Bar script or a "Save as Local Plugin" script. It reports in Output on lines starting with a tag, so the owner can screenshot the result.

@@ -5,6 +5,9 @@
     "ReplicatedStorage": {
       "Shared": {
         "$path": "src/ReplicatedStorage/Shared"
+      },
+      "HuzzAnimations": {
+        "$path": "src/ReplicatedStorage/HuzzAnimations.rbxm"
       }
     },
     "ServerScriptService": {

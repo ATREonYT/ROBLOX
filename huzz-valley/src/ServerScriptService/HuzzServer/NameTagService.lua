@@ -11,10 +11,14 @@ local DataService = require(script.Parent.DataService)
 
 local NameTags = {}
 
-local DISPLAY = Font.new("rbxasset://fonts/families/LuckiestGuy.json")
-local BOLD = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold)
-local ROUND = Font.new("rbxasset://fonts/families/FredokaOne.json")
-local INK = Color3.fromRGB(16, 14, 38)
+-- The lobby kit's faces (UI/Theme.Fonts): Montserrat Black for the big HERO / CHICKEN, Montserrat Bold for
+-- the name, Roboto Condensed Bold for the role, Montserrat Medium for the level line.
+local MONTSERRAT, CONDENSED = "rbxasset://fonts/families/Montserrat.json", "rbxasset://fonts/families/RobotoCondensed.json"
+local DISPLAY = Font.new(MONTSERRAT, Enum.FontWeight.Heavy)
+local BOLD = Font.new(MONTSERRAT, Enum.FontWeight.Bold)
+local ROUND = Font.new(CONDENSED, Enum.FontWeight.Bold)
+local SMALL = Font.new(MONTSERRAT, Enum.FontWeight.Medium)
+local INK = Color3.fromRGB(10, 20, 51) -- (the kit's frame navy)
 
 local TITLES = {
 	Runner = { "RUNNER", Color3.fromRGB(110, 184, 255) },
@@ -45,7 +49,7 @@ end
 local function build(head)
 	local gui = Instance.new("BillboardGui")
 	gui.Name = "HuzzTag"
-	gui.Size = UDim2.new(7, 0, 3.4, 0) -- studs: smaller further away, like the reference
+	gui.Size = UDim2.new(6.4, 0, 3.1, 0) -- studs: smaller further away, like the reference
 	gui.StudsOffsetWorldSpace = Vector3.new(0, 3.1, 0)
 	gui.MaxDistance = 140
 	gui.LightInfluence = 0
@@ -55,7 +59,7 @@ local function build(head)
 	badge.Parent = gui
 	label({ Name = "Title", Text = "", FontFace = ROUND, Position = UDim2.fromScale(0.15, 0), Size = UDim2.fromScale(0.7, 0.22) }).Parent = gui
 	label({ Name = "PlayerName", Text = "", FontFace = BOLD, TextColor3 = Color3.new(1, 1, 1), Position = UDim2.fromScale(0, 0.22), Size = UDim2.fromScale(1, 0.4) }).Parent = gui
-	label({ Name = "Sub", Text = "", FontFace = BOLD, TextColor3 = Color3.fromRGB(205, 210, 230), Position = UDim2.fromScale(0.2, 0.62), Size = UDim2.fromScale(0.6, 0.18) }).Parent = gui
+	label({ Name = "Sub", Text = "", FontFace = SMALL, TextColor3 = Color3.fromRGB(205, 210, 230), Position = UDim2.fromScale(0.2, 0.62), Size = UDim2.fromScale(0.6, 0.18) }).Parent = gui
 	-- the rescue bar (downed runners only)
 	local bar = Instance.new("Frame")
 	bar.Name = "Rescue"

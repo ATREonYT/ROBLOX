@@ -111,9 +111,18 @@ end
 -- Product picture: the kit's own art for this product, filling the block at the left of a row/card. The rounding
 -- is on the image itself (ClipsDescendants clips square in Roblox, so a rounded parent alone would show corners).
 -- Only the left corners are rounded: a square copy, clipped to the right of the corner radius, covers the right ones.
+-- A lit backdrop behind the see-through pictures (as the kit's cards have): blue at the top left into deep indigo.
+local function backdrop(f: Instance, r: number)
+	new("Frame", { Name = "Backdrop", Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 0, Parent = f }, {
+		Kit.corner(r),
+		new("UIGradient", { Rotation = 60, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromHex("4F78EC")), ColorSequenceKeypoint.new(0.55, Color3.fromHex("3B47B8")), ColorSequenceKeypoint.new(1, Color3.fromHex("2A2475")) }) }),
+	})
+end
+
 local function art(parent: Instance, p, size: Vector2)
 	local r = 4
 	local f = new("Frame", { Name = "Art", Size = UDim2.fromOffset(size.X, size.Y), BackgroundTransparency = 1, Parent = parent })
+	backdrop(f, r)
 	Kit.attach(Kit.corner(r), Kit.art(p.Art, { Name = "Picture", Size = UDim2.fromScale(1, 1), Parent = f }))
 	local right = new("Frame", { Name = "Right", Position = UDim2.fromOffset(r, 0), Size = UDim2.new(1, -r, 1, 0), BackgroundTransparency = 1, ClipsDescendants = true, Parent = f })
 	Kit.art(p.Art, { Name = "Picture", Position = UDim2.fromOffset(-r, 0), Size = UDim2.fromOffset(size.X, size.Y), Parent = right })
@@ -189,6 +198,7 @@ local COIN_H, COIN_ART_H = 216, 106
 local function coinArt(parent: Instance, p, w: number, h: number)
 	local r = 4
 	local panel = new("Frame", { Name = "Art", Size = UDim2.fromOffset(w, h), BackgroundTransparency = 1, Parent = parent })
+	backdrop(panel, r)
 	Kit.attach(Kit.corner(r), Kit.art(p.Art, { Name = "Picture", Size = UDim2.fromScale(1, 1), Parent = panel }))
 	local lower = new("Frame", { Name = "Lower", Position = UDim2.fromOffset(0, r), Size = UDim2.new(1, 0, 1, -r), BackgroundTransparency = 1, ClipsDescendants = true, Parent = panel })
 	Kit.art(p.Art, { Name = "Picture", Position = UDim2.fromOffset(0, -r), Size = UDim2.fromOffset(w, h), Parent = lower })

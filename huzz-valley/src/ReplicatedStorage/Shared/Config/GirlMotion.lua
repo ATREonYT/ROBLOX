@@ -38,6 +38,26 @@ return {
 		SwaySeconds = 4.5,
 	},
 
+	-- Your equipped girl as a small companion walking behind you on the ground (owner: "make the anime girls
+	-- walk behind you, not fly"). HuzzClient/Gameplay/Auras moves her with Shared/FollowMotion and these.
+	Companion = {
+		Height = 2.8, -- studs tall, about half your height (owner: "a smaller character")
+		Offset = Vector3.new(1.5, 0, 3.5), -- her spot from you (right, up, behind)
+		CheerOffset = Vector3.new(2.2, 0, 1), -- once you're safe in a round: beside you
+		MatchSpeed = true, -- walks at your speed (then closes the gap), so she never trails far behind
+		Catchup = 3, -- how hard she closes the gap to her spot
+		MaxSpeed = 36, -- studs per second (players run at 20-26)
+		StopDistance = 0.6,
+		MaxLag = 10, -- never further than this from her spot
+		TeleportDistance = 40, -- further (you teleported or respawned) and she pops to her spot
+		StartOnGround = true, -- she appears standing on the ground there (never dropping in)
+		Stride = 2.2, -- studs per full walk cycle at her size
+		MaxCadence = 2.8, -- walk cycles a second at most: faster than this her stride grows instead
+		RunFrom = 9, -- studs/s: from walking...
+		RunTo = 17, -- ...to a full run (leaning, knees up, arms pumping)
+		HopHeight = 0.55, -- her cheer hops, studs
+	},
+
 	-- Added on top of the carrier's walk animation (R15 Waist joint).
 	Carrier = {
 		Lean = 5, -- leaning back under her weight

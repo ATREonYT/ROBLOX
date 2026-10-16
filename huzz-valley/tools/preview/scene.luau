@@ -52,6 +52,13 @@ if cfg.POWERS then
 	require(game.StarterPlayer.StarterPlayerScripts.HuzzClient.UI.Screens.PowerBar).refresh()
 end
 -- HERO=true: the picked runner's Chicken or Hero choice (5 seconds left), with the power tiles under it.
+-- WHEEL=true: the G dance wheel open, with two favourites and one dance playing.
+if cfg.WHEEL then
+	local State = require(game.StarterPlayer.StarterPlayerScripts.HuzzClient.UI.State)
+	State.data.FavDances = { SwingTime = true, Robot = true }
+	State.data.Dances.SwingTime, State.data.Dances.Robot = true, true
+	require(game.StarterPlayer.StarterPlayerScripts.HuzzClient.UI.Screens.DanceWheel).setOpen(true)
+end
 if cfg.HERO then
 	local round = game.ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Round")
 	local Config = require(game.ReplicatedStorage.Shared.Config.Round)

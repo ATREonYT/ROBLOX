@@ -136,10 +136,13 @@ local function syncPlayer(id)
 	p:SetAttribute("HuzzStatus", match and match.status[id] or "")
 	p:SetAttribute("HuzzHero", match ~= nil and match.hero == id) -- this round's Hero (yellow outline)
 	p:SetAttribute("HuzzFrozen", frozen[id] == true) -- on the line, waiting (no dash, no powers)
+	-- Safe runners stay across (owner's call): their parts bump into the goal's gate (MapService.holdGoal).
+	MapService.setSafe(p.Character, match ~= nil and not match.over and match.status[id] == "Safe")
 	local h = humanoidOf(id)
 	if h then
 		local still = KnockdownService.isDown(p) or PowerService.stuck(id) or frozen[id] == true
 		h.WalkSpeed = if still then 0 else PowerService.speedOf(id, speedFor(id))
+		h:SetAttribute("HuzzSpeed", h.WalkSpeed) -- the top speed: Gameplay/Sprint builds up to it from a walk
 		-- No jumping in a round (owner's call): Space is the huss dash instead.
 		local noJump = still or (match ~= nil and match.roles[id] ~= nil)
 		h.JumpHeight = if noJump then 0 else StarterPlayer.CharacterJumpHeight
@@ -258,16 +261,16 @@ function handlers.Choice(e)
 	State:SetAttribute("PickChoice", if e.hero then "Hero" else "Chicken")
 	syncAll()
 	if e.hero then
-		announce(`{nameOf(e.id)} chose HERO: they run first!`, GOLD, true)
+		announce(`{nameOf(e.id)} goes HERO!`, GOLD, true)
 	else
-		announce(`{nameOf(e.id)} chose CHICKEN! Everyone runs together.`, WHITE, true)
+		announce(`{nameOf(e.id)} chose CHICKEN. Everyone runs!`, WHITE, true)
 	end
 end
 
 function handlers.HeroResult(e)
 	State:SetAttribute("HeroResult", if e.survived then "Survived" else "Fell")
 	if e.survived then
-		announce(`{nameOf(e.id)} survived the Hero attempt!`, GREEN, true)
+		announce(`{nameOf(e.id)} made the Hero run!`, GREEN, true)
 		local p = byId[e.id]
 		if p and Config.HeroBonus > 0 then
 			DataService.update(p, function(d)
@@ -293,9 +296,9 @@ function handlers.Caught(e)
 	syncPlayer(e.id)
 	RoundNet:FireAllClients("Caught", { catcher = e.by, runner = e.id })
 	if e.by then
-		announce(`{nameOf(e.id)} was caught by {nameOf(e.by)}!`, RED)
+		announce(`{nameOf(e.by)} got {nameOf(e.id)}`, RED)
 	else
-		announce(`{nameOf(e.id)} was caught!`, RED)
+		announce(`{nameOf(e.id)} is down`, RED)
 	end
 end
 
@@ -310,14 +313,14 @@ function handlers.Rescued(e)
 	end
 	syncPlayer(e.id)
 	RoundNet:FireAllClients("Rescued", { runner = e.id, by = e.by })
-	announce(`{nameOf(e.by)} rescued {nameOf(e.id)}!`, GREEN)
+	announce(`{nameOf(e.by)} saved {nameOf(e.id)}`, GREEN)
 	addStat(e.by, "Rescues", 1)
 end
 
 function handlers.Safe(e)
 	syncPlayer(e.id)
 	if State:GetAttribute("Stage") == "Running" then
-		announce(`{nameOf(e.id)} reached safety!`, GREEN)
+		announce(`{nameOf(e.id)} is safe`, GREEN)
 	end
 	if byId[e.id] then
 		RoundNet:FireClient(byId[e.id], "Safe", {})
@@ -327,7 +330,7 @@ end
 function handlers.Streak(e)
 	State:SetAttribute("Streak", e.count)
 	if e.count < e.goal then
-		announce(`Everyone made it! {e.count} of {e.goal} in a row`, GOLD, true)
+		announce(`Clean round! {e.count} of {e.goal} in a row`, GOLD, true)
 	end
 end
 
@@ -341,12 +344,12 @@ function handlers.JoinCatchers(e)
 		table.insert(names, nameOf(id))
 	end
 	local who = if #names <= 3 then table.concat(names, ", ") else `{#names} runners`
-	announce(`{who} {if #names == 1 then "joins" else "join"} the catchers!`, RED, true)
+	announce(`{who} {if #names == 1 then "joins" else "join"} the catchers`, RED, true)
 end
 
 function handlers.NewCatcher(e)
 	syncPlayer(e.id)
-	announce(`{nameOf(e.id)} is a catcher now!`, RED)
+	announce(`{nameOf(e.id)} is a catcher now`, RED)
 end
 
 local function apply(events)
@@ -386,6 +389,16 @@ local function step(dt)
 						end
 					end
 				end
+			end
+		end
+	end
+	-- Safe runners stay across: the gate stops them, and anyone who got round it (a dash, a push) goes back in.
+	for id, status in match.status do
+		local root = status == "Safe" and rootOf(id)
+		if root and goal then
+			local back = MapService.keepIn(goal, root.Position)
+			if back and (back - root.Position).Magnitude > 2 then
+				root.Parent:PivotTo(CFrame.new(back) * root.CFrame.Rotation)
 			end
 		end
 	end
@@ -472,6 +485,7 @@ local function runRound()
 	-- Lineup: runners shoulder to shoulder on their line, facing across; catchers in the middle.
 	KnockdownService.upAll()
 	MapService.showGoal(goalName)
+	MapService.holdGoal(goalName, true)
 	MapService.holdStart(startName, true)
 	local runners = runnersWith("Active")
 	local line, length, spots = MapService.lineup(startName, #runners)
@@ -491,9 +505,9 @@ local function runRound()
 	apply(events)
 	setStage("Lineup", Config.LineupTime)
 	if match.round == 1 then
-		announce(`Get everyone across {match.goal} times in a row to win!`, WHITE)
+		announce(`Get everyone across {match.goal} rounds in a row`, WHITE)
 	else
-		announce(`Get ready: cross to the opposite safe side! ({match.streak} of {match.goal} in a row)`, WHITE)
+		announce(`Line up. {match.streak} of {match.goal} in a row so far`, WHITE)
 	end
 	play(Config.LineupTime)
 
@@ -505,10 +519,10 @@ local function runRound()
 		local P = Config.Pick
 		State:SetAttribute("PickAt", Workspace:GetServerTimeNow())
 		setStage("Picking", P.Roulette + P.ChooseTime)
-		announce("Picking a runner for Chicken or Hero...", GOLD)
+		announce("Picking a runner...", GOLD)
 		task.delay(P.Roulette, function()
 			if match and match.picked and not match.choice then
-				announce(`{nameOf(match.picked)}: Chicken or Hero?`, WHITE)
+				announce(`{nameOf(match.picked)}: HERO or CHICKEN?`, WHITE)
 			end
 		end)
 		play(P.Roulette + P.ChooseTime, function()
@@ -535,13 +549,13 @@ local function runRound()
 		MapService.holdStart(startName, false)
 		syncAll()
 		setStage("HeroRun", Config.HeroTime)
-		announce(`{nameOf(hero)} chose HERO: cross alone!`, GOLD)
+		announce(`{nameOf(hero)}'s solo run!`, GOLD)
 		local timedOut = play(Config.HeroTime, function()
 			return match.status[hero] ~= "Active" or match.hero ~= hero
 		end, true)
 		if timedOut and match.hero == hero then
 			Rules.heroTimeout(match)
-			announce(`{nameOf(hero)} ran out of time! Back to the group.`, WHITE)
+			announce(`{nameOf(hero)} ran out of time`, WHITE)
 		end
 		if match.over then
 			return
@@ -583,7 +597,7 @@ local function runRound()
 	table.clear(frozen)
 	syncAll()
 	setStage("Running", Config.RoundTime)
-	announce("RUN! Reach the opposite safe side!", WHITE)
+	announce("GO! Get across!", WHITE)
 	play(Config.RoundTime, function()
 		return Rules.isRoundOver(match)
 	end, true)
@@ -674,6 +688,7 @@ local function cleanUp()
 		showcase = nil
 	end
 	MapService.holdStart(nil, false)
+	MapService.holdGoal(nil, false)
 	PowerService.clear()
 	MapService.showGoal(nil) -- the lines stay on the map, the SAFE ZONE sign goes out
 	match, girl = nil, nil
@@ -801,22 +816,6 @@ Net.get("Dash").OnServerEvent:Connect(function(player, dir, at)
 	player:SetAttribute("DashReady", start + Config.Dash.Cooldown)
 	c:SetAttribute("DashDir", flat.Unit)
 	c:SetAttribute("DashAt", start)
-end)
-
--- Hussing: her carrier throws her up and catches her (every client plays it from HussAt, server
--- time). The client sends the time it started on its screen so its own view never jumps.
-Net.get("Huss").OnServerEvent:Connect(function(player, at)
-	local model = CarryService.get(player)
-	if not (model and model:GetAttribute("Carrier") == player.UserId) or KnockdownService.isDown(player) then
-		return
-	end
-	local now = Workspace:GetServerTimeNow()
-	local start = if type(at) == "number" and at == at then math.clamp(at, now - 0.15, now) else now
-	local previous = model:GetAttribute("HussAt")
-	if previous and start < previous + Carry.Huss.Time + Config.HussCooldown - 0.15 then
-		return
-	end
-	model:SetAttribute("HussAt", start)
 end)
 
 -- Players

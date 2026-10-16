@@ -4,9 +4,9 @@ local ok, failed = 0, 0
 local function check(name, cond)
 	if cond then ok += 1; print("ok   " .. name) else failed += 1; print("FAIL " .. name) end
 end
--- give Wave a pretend animation id so the "has an id" path can be tried
+-- give Robot (the reward-track dance) a pretend animation id so the "has an id" path can be tried
 local D = game.ReplicatedStorage.Shared.Config.Dances
-D.Source = D.Source:gsub('(Id = "Wave", Name = "Wave", AnimationId = )""', '%1"rbxassetid://1"')
+D.Source = D.Source:gsub('(Id = "Robot", Name = "Robot", AnimationId = )""', '%1"rbxassetid://1"')
 
 local player = Instance.new("Player"); player.Name = "Tester"; player.UserId = 1; player.Parent = Players
 Players.LocalPlayer = player
@@ -35,54 +35,66 @@ local function names(grid)
 	return table.concat(out, ",")
 end
 
--- DANCES
+-- DANCES (the 25 from the owner's dance file: 20 for everyone, Robot from the reward track, 4 in the Dance Pack)
+local Dances = require(game.ReplicatedStorage.Shared.Config.Dances)
+local function expected(filter, desc)
+	local list = {}
+	for _, d in Dances.List do if filter(d) then table.insert(list, d) end end
+	table.sort(list, function(a, b) if desc then return a.Name > b.Name end return a.Name < b.Name end)
+	local out = {}
+	for _, d in list do table.insert(out, d.Id) end
+	return table.concat(out, ",")
+end
+local all = expected(function() return true end)
+check("there are 25 dances", #Dances.List == 25)
 check("Dances opens", MM.open("Dances") == true and gui.Dances.Visible)
 local panel = gui.Dances.Group.Panel
 local grid = panel.Grid
-check("All shows every dance, A-Z", names(grid) == "Shuffle,Spin,Step,Wave")
+check("All shows every dance, A-Z", names(grid) == all)
 click(panel.OwnedTab)
-check("Owned tab shows only owned (Step)", names(grid) == "Step")
+check("Owned tab shows the 20 everyone has", names(grid) == expected(function(d) return d.Starter == true end))
 click(panel.FavouritesTab)
 check("Favourites tab empty with a hint", names(grid) == "" and panel.Empty.Visible)
 click(panel.AllTab)
-click(grid.Spin)
-check("selecting a card fills the preview", panel.Preview.DanceName.Text == "Spin")
-click(grid.Spin.Star)
+click(grid.SwingTime)
+check("selecting a card fills the preview", panel.Preview.DanceName.Text == "Swing Time")
+click(grid.SwingTime.Star)
 task.wait(0.3)
-check("star favourites the dance (server saved)", profile.Data.FavDances.Spin == true)
+check("star favourites the dance (server saved)", profile.Data.FavDances.SwingTime == true)
 click(panel.FavouritesTab)
-check("favourite shows under Favourites", names(grid) == "Spin")
+check("favourite shows under Favourites", names(grid) == "SwingTime")
 click(panel.AllTab)
 click(panel.Play)
 check("Play on a locked dance explains how to get it", toast():find("Dance Pack") ~= nil)
 print("  toast: " .. toast())
-click(grid.Step)
+click(grid.Floss)
 click(panel.Play)
-check("Play with no animation says so", toast() == "This dance's animation hasn't been added yet.")
+check("Play with no published animation says so", toast():find("published") ~= nil)
+print("  toast: " .. toast())
 local header = gui.Dances.Group.Panel.Header
 header.Search.Box.Text = "sh"
 __fireOn(header.Search.Box, "Prop_Text") -- the offline engine copy doesn't fire property signals itself
 task.wait(0.1)
-check("search filters", names(grid) == "Shuffle")
+check("search filters", names(grid) == expected(function(d) return string.find(string.lower(d.Name), "sh", 1, true) ~= nil end))
 header.Search.Box.Text = ""
 __fireOn(header.Search.Box, "Prop_Text")
 task.wait(0.1)
-check("clearing the search shows all again", names(grid) == "Shuffle,Spin,Step,Wave" and header.Search.Hint.Visible)
+check("clearing the search shows all again", names(grid) == all and header.Search.Hint.Visible)
 click(header.Sort)
 check("sort menu opens", panel.SortMenu.Visible)
 click(panel.SortMenu.ZToA)
-check("Z-A sort", names(grid) == "Wave,Step,Spin,Shuffle" and not panel.SortMenu.Visible and header.Sort.Label.Text == "Sort: Name Z - A")
--- own Wave (pretend id) and play it on a character with an Animator
-DataService.update(player, function(d) d.Dances.Wave = true end)
+check("Z-A sort", names(grid) == expected(function() return true end, true) and not panel.SortMenu.Visible and header.Sort.Label.Text == "Sort: Name Z - A")
+-- own Robot (pretend id) and play it on a character with an Animator
+DataService.update(player, function(d) d.Dances.Robot = true end)
 task.wait(0.2)
 local char = Instance.new("Model"); char.Name = "Tester"
 local hum = Instance.new("Humanoid"); hum.Parent = char
 Instance.new("Animator").Parent = hum
 char.Parent = workspace
 player.Character = char
-click(grid.Wave)
+click(grid.Robot)
 click(panel.Play)
-print("  toast after playing Wave with an id: " .. toast())
+print("  toast after playing Robot with an id: " .. toast())
 click(panel.Stop)
 check("Stop runs without error", true)
 MM.close()

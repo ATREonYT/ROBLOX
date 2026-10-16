@@ -15,6 +15,34 @@ local Workspace = game:GetService("Workspace")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Net = require(Shared.Net)
 local Config = require(Shared.Config.Round)
+local Sfx = require(script.Parent.Sfx)
+local Library = require(Shared.AnimationLibrary)
+
+-- The dash move from the owner's pack (HuzzAnimations.Dash, built from its Sprint: a low lunge, arms flung
+-- back), played on your own character so it replicates; without it, RunAnimator draws the scripted pose.
+local dashTrack: AnimationTrack? = nil
+local dashFor: Instance? = nil
+local function playDashMove(h: Humanoid)
+	local id = Library.id("Dash")
+	if id == "" then return end
+	if dashFor ~= h then
+		dashFor, dashTrack = h, nil
+		local animator = h:FindFirstChildOfClass("Animator")
+		if animator then
+			local a = Instance.new("Animation")
+			a.AnimationId = id
+			local ok, t = pcall(function() return animator:LoadAnimation(a) end)
+			if ok and t then
+				t.Priority = Enum.AnimationPriority.Action
+				t.Looped = false
+				dashTrack = t
+			end
+		end
+	end
+	if dashTrack then
+		dashTrack:Play(0.05, 1, 1.15)
+	end
+end
 
 local player = Players.LocalPlayer
 local lastLocal = -math.huge
@@ -46,6 +74,8 @@ function Dash.try()
 	c:SetAttribute("DashDir", dir) -- on this screen at once; the server sets the same for everyone
 	c:SetAttribute("DashAt", at)
 	Net.get("Dash"):FireServer(dir, at)
+	Sfx.play("dash")
+	playDashMove(h)
 
 	-- The push: hold this ground speed for a moment, then let the walk take over again.
 	local attachment = Instance.new("Attachment")

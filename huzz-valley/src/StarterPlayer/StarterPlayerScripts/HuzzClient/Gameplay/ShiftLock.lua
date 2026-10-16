@@ -78,6 +78,7 @@ function M.start()
 		local inRound = (role == "Runner" or role == "Catcher") and PLAYING[round:GetAttribute("Stage") or ""] == true
 		local on = inRound and not altHeld and alive and player:GetAttribute("MenuOpen") ~= true
 			and player:GetAttribute("HuzzChoosing") ~= true and player:GetAttribute("HuzzCinematic") ~= true
+			and player:GetAttribute("HuzzWheel") ~= true -- (the G dance wheel needs the mouse)
 		setActive(on)
 		if not on then
 			return

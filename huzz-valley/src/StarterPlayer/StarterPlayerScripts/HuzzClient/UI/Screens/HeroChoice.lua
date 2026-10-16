@@ -27,10 +27,12 @@ local HeroChoice = {}
 local W, H = 420, 196
 local CARD = { W = 190, H = 112, Gap = 22 }
 local PAGE_H = 347 -- the HUD reference height (as LobbyHud)
-local INK = rgb(16, 14, 38)
+local C = Theme.Colors
+local INK = C.Frame
+-- The kit's two loud colours (owner: match the lobby UI): HERO in the selected-tab gold, CHICKEN in the action violet.
 local LOOKS = {
-	Hero = { Top = rgb(255, 230, 130), Bottom = rgb(240, 160, 28), Text = rgb(74, 40, 0), Line = rgb(110, 62, 6) },
-	Chicken = { Top = rgb(255, 250, 238), Bottom = rgb(238, 218, 184), Text = rgb(122, 64, 18), Line = rgb(128, 90, 52) },
+	Hero = { Top = C.SelectedTabTop, Bottom = rgb(255, 170, 40), Text = rgb(58, 30, 4), Line = rgb(92, 50, 6), Rim = C.SelectedRim, Outline = false },
+	Chicken = { Top = C.ActionTop, Bottom = C.ActionPressed, Text = Color3.new(1, 1, 1), Line = rgb(236, 234, 255), Rim = C.ActionRim, Outline = true },
 }
 
 local function choiceCard(parent: Instance, name: string, key: string, word: string, x: number, y: number, onClick: () -> ())
@@ -41,22 +43,22 @@ local function choiceCard(parent: Instance, name: string, key: string, word: str
 		BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = parent,
 	}, { Kit.corner(16) })
 	new("UIGradient", { Name = "Fill", Rotation = 90, Color = ColorSequence.new(look.Top, look.Bottom), Parent = btn })
-	new("UIStroke", { Name = "Rim", Thickness = 3, Color = INK, Transparency = 0.1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = btn })
+	new("UIStroke", { Name = "Rim", Thickness = 3, Color = look.Rim, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = btn })
 	new("Frame", { Name = "Gloss", Position = UDim2.fromOffset(14, 4), Size = UDim2.new(1, -28, 0, 8), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.55, BorderSizePixel = 0, Parent = btn }, { Kit.corner(4) })
 	local keyDot = new("TextLabel", {
-		Name = "Key", Text = key, FontFace = F.Display, TextSize = 18, TextColor3 = Color3.new(1, 1, 1), BackgroundColor3 = INK,
-		Position = UDim2.fromOffset(-9, -9), Size = UDim2.fromOffset(30, 30), ZIndex = 3, Parent = btn,
-	}, { new("UICorner", { CornerRadius = UDim.new(0.5, 0) }), new("UIStroke", { Thickness = 2, Color = Color3.new(1, 1, 1), ApplyStrokeMode = Enum.ApplyStrokeMode.Border }) })
+		Name = "Key", Text = key, FontFace = F.Number, TextSize = 16, TextColor3 = Color3.new(1, 1, 1), BackgroundColor3 = C.Pill,
+		Position = UDim2.fromOffset(-8, -8), Size = UDim2.fromOffset(26, 26), ZIndex = 3, Parent = btn,
+	}, { new("UICorner", { CornerRadius = UDim.new(0, 5) }), new("UIStroke", { Thickness = 1.5, Color = C.Frame, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }) })
 	new("TextLabel", {
-		Name = "Word", Text = word, FontFace = F.Display, TextSize = 38, TextColor3 = look.Text, BackgroundTransparency = 1,
+		Name = "Word", Text = word, FontFace = F.Heading, TextSize = 32, TextColor3 = look.Text, BackgroundTransparency = 1,
 		Position = UDim2.fromOffset(0, 16), Size = UDim2.new(1, 0, 0, 40), ZIndex = 2, Parent = btn,
-	})
+	}, { new("UIStroke", { Name = "Outline", Color = look.Rim, Thickness = 1.5, Enabled = look.Outline }) })
 	local line1 = new("TextLabel", {
-		Name = "Line", Text = "", FontFace = F.Round, TextSize = 15, TextColor3 = look.Line, BackgroundTransparency = 1, TextTruncate = Enum.TextTruncate.AtEnd,
+		Name = "Line", Text = "", FontFace = F.Button, TextSize = 16, TextColor3 = look.Line, BackgroundTransparency = 1, TextTruncate = Enum.TextTruncate.AtEnd,
 		Position = UDim2.fromOffset(10, 60), Size = UDim2.new(1, -20, 0, 18), ZIndex = 2, Parent = btn,
 	})
 	local line2 = new("TextLabel", {
-		Name = "Line2", Text = "", FontFace = F.Round, TextSize = 13, TextColor3 = look.Line, TextTransparency = 0.15, BackgroundTransparency = 1, TextTruncate = Enum.TextTruncate.AtEnd,
+		Name = "Line2", Text = "", FontFace = F.Body, TextSize = 14, TextColor3 = look.Line, TextTransparency = 0.1, BackgroundTransparency = 1, TextTruncate = Enum.TextTruncate.AtEnd,
 		Position = UDim2.fromOffset(10, 80), Size = UDim2.new(1, -20, 0, 16), ZIndex = 2, Parent = btn,
 	})
 	btn.Activated:Connect(onClick)
@@ -74,14 +76,14 @@ function HeroChoice.build(parent: Instance)
 	})
 	Scale.bind(new("UIScale", { Name = "FitScale", Parent = panel }), function() return Scale.hud(PAGE_H) * 0.8 end)
 	local title = new("TextLabel", {
-		Name = "Hint", Text = "CHICKEN OR HERO?", FontFace = F.Display, TextSize = 34, TextColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1,
+		Name = "Hint", Text = "HERO OR CHICKEN?", FontFace = F.Heading, TextSize = 30, TextColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1,
 		Size = UDim2.new(1, 0, 0, 38), Parent = panel,
-	}, { new("UIStroke", { Name = "Outline", Color = INK, Thickness = 3, LineJoinMode = Enum.LineJoinMode.Round }) })
-	new("UIGradient", { Name = "Shine", Rotation = 90, Color = ColorSequence.new(Color3.new(1, 1, 1), rgb(255, 222, 130)), Parent = title })
+	}, { new("UIStroke", { Name = "Outline", Color = C.TitleShadow, Thickness = 2.5, LineJoinMode = Enum.LineJoinMode.Round }) })
+	new("UIGradient", { Name = "Shine", Rotation = 90, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)), ColorSequenceKeypoint.new(0.5, C.TitleBand), ColorSequenceKeypoint.new(1, Color3.new(1, 1, 1)) }), Parent = title })
 	-- the time left: a bar that empties (and the seconds)
-	local timer = new("Frame", { Name = "Timer", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 44), Size = UDim2.fromOffset(260, 12), BackgroundColor3 = INK, BackgroundTransparency = 0.25, BorderSizePixel = 0, Parent = panel }, { Kit.corner(6) })
-	local fill = new("Frame", { Name = "Fill", Size = UDim2.fromScale(1, 1), BackgroundColor3 = rgb(255, 214, 70), BorderSizePixel = 0, Parent = timer }, { Kit.corner(6) })
-	local secs = new("TextLabel", { Name = "Seconds", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(1, 8, 0.5, 0), Size = UDim2.fromOffset(40, 20), Text = "", FontFace = F.Display, TextSize = 18, TextColor3 = Color3.new(1, 1, 1), TextXAlignment = Enum.TextXAlignment.Left, BackgroundTransparency = 1, Parent = timer },
+	local timer = new("Frame", { Name = "Timer", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 44), Size = UDim2.fromOffset(260, 12), BackgroundColor3 = INK, BackgroundTransparency = 0.1, BorderSizePixel = 0, Parent = panel }, { Kit.corner(6), new("UIStroke", { Color = INK, Thickness = 2 }) })
+	local fill = new("Frame", { Name = "Fill", Size = UDim2.fromScale(1, 1), BackgroundColor3 = C.Progress, BorderSizePixel = 0, Parent = timer }, { Kit.corner(6) })
+	local secs = new("TextLabel", { Name = "Seconds", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(1, 8, 0.5, 0), Size = UDim2.fromOffset(40, 20), Text = "", FontFace = F.Number, TextSize = 18, TextColor3 = Color3.new(1, 1, 1), TextXAlignment = Enum.TextXAlignment.Left, BackgroundTransparency = 1, Parent = timer },
 		{ new("UIStroke", { Color = INK, Thickness = 2 }) })
 
 	local sent = nil
@@ -123,13 +125,12 @@ function HeroChoice.build(parent: Instance)
 		if not show then return end
 		local left = math.max(0, (round:GetAttribute("EndsAt") or now) - now)
 		fill.Size = UDim2.fromScale(math.clamp(left / Config.Pick.ChooseTime, 0, 1), 1)
-		fill.BackgroundColor3 = if left <= 3 then rgb(255, 110, 110) else rgb(255, 214, 70)
+		fill.BackgroundColor3 = if left <= 3 then rgb(255, 110, 120) else C.Progress
 		secs.Text = tostring(math.ceil(left))
-		local girl = round:GetAttribute("GirlName") or "her"
-		hero.line.Text = "Cross alone first"
-		hero.line2.Text = if round:GetAttribute("HolderId") == player.UserId then `Make it: +{Config.HeroBonus} coins` else `Make it: win {girl}!`
-		chicken.line.Text = "Run with everyone"
-		chicken.line2.Text = "Play it safe"
+		hero.line.Text = "Run first. Alone."
+		hero.line2.Text = if round:GetAttribute("HolderId") == player.UserId then `Make it: +{Config.HeroBonus} coins` else "Make it and she's yours"
+		chicken.line.Text = "Run with the group"
+		chicken.line2.Text = "The safe call"
 	end
 	RunService.RenderStepped:Connect(refresh)
 	HeroChoice.refresh = refresh -- (the offline preview calls it)

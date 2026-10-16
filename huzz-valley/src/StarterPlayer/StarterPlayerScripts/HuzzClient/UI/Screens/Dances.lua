@@ -2,7 +2,8 @@
 -- card grid, with the selected dance shown large on the right. PLAY performs the dance on the player's own avatar
 -- (the character's Animator, so other players see it too); STOP ends it. Starting another dance stops the last one,
 -- and the dance stops on respawn and when the window closes. A dance whose animation the owner hasn't supplied yet
--- (AnimationId "") says so and never pretends to play. Locked dances can't be played.
+-- says so and never pretends to play. Locked dances can't be played. The preview shows your own avatar doing the
+-- selected dance (a copy in a ViewportFrame), so the 25 dances need no pictures.
 -- Layout numbers are reference px (design/pages/03, window-relative; that page's header is the same 47 px).
 local Players = game:GetService("Players")
 
@@ -10,6 +11,7 @@ local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Dances = require(Shared.Config.Dances)
 local Products = require(Shared.Config.Products)
 local Progression = require(Shared.Config.Progression)
+local AnimationLibrary = require(Shared.AnimationLibrary)
 local UI = script.Parent.Parent
 local Theme = require(UI.Theme)
 local Kit = require(UI.Kit)
@@ -17,6 +19,7 @@ local State = require(UI.State)
 local Toast = require(UI.Toast)
 local ModalManager = require(UI.ModalManager)
 local Motion = require(UI.Motion)
+local DancePlayer = require(UI.DancePlayer)
 
 local C = Theme.Colors
 local new = Kit.new
@@ -67,44 +70,16 @@ local function howToGet(d): string
 	return d.Name .. " can't be unlocked yet."
 end
 
--- Performing on the live avatar --------------------------------------------------------------------------------
-local track: AnimationTrack? = nil
-
-local function stopDance()
-	local t = track
-	track = nil
-	if t then pcall(function() t:Stop(0.2) end) end
-end
-
+-- Performing on the live avatar (UI/DancePlayer: walking away stops it, as the G wheel's dances) --------------
 local function playDance(d)
 	if not owned(d.Id) then
 		Toast.show(howToGet(d))
 		return
 	end
-	if d.AnimationId == "" then
-		Toast.show("This dance's animation hasn't been added yet.")
-		return
-	end
-	local character = Players.LocalPlayer and Players.LocalPlayer.Character
-	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-	local animator = humanoid and humanoid:FindFirstChildOfClass("Animator")
-	if not animator then
-		Toast.show("Your avatar isn't ready yet.")
-		return
-	end
-	stopDance()
-	local animation = Instance.new("Animation")
-	animation.AnimationId = d.AnimationId
-	local ok, loaded = pcall(function() return (animator :: Animator):LoadAnimation(animation) end)
-	if not ok or not loaded then
-		Toast.show("That dance couldn't load.")
-		return
-	end
-	loaded.Looped = true
-	loaded.Priority = Enum.AnimationPriority.Action
-	loaded:Play(0.2)
-	track = loaded
+	local ok, why = DancePlayer.play(d.Id)
+	if not ok then Toast.show(why or "That dance couldn't play.") end
 end
+local stopDance = DancePlayer.stop
 
 -- Header fields ----------------------------------------------------------------------------------------------------
 -- A dark field in the purple header (search, sort): navy fill, dark rim, a faint lighter top line.
@@ -194,6 +169,56 @@ function DancesScreen.build(parent: Instance)
 	local play = Kit.button({ Name = "Play", Text = "PLAY", Icon = "Play", IconSize = 18, Gap = 10, TextSize = 21, Style = "Action", Position = UDim2.fromOffset(PREVIEW.X + PREVIEW.Pad, btnY), Size = UDim2.fromOffset(btnW, PREVIEW.BtnH), Parent = panel })
 	local stop = Kit.button({ Name = "Stop", Text = "STOP", Icon = "Stop", IconSize = 16, Gap = 10, TextSize = 21, Style = "Slate", Position = UDim2.fromOffset(PREVIEW.X + PREVIEW.W - PREVIEW.Pad - btnW, btnY), Size = UDim2.fromOffset(btnW, PREVIEW.BtnH), Parent = panel })
 
+	-- Your avatar doing the selected dance: a copy of your character in a ViewportFrame (a WorldModel inside, so
+	-- its Animator runs), seen from the front. Rebuilt only when the dance or your character changes.
+	local stage = new("ViewportFrame", { Name = "Stage", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Ambient = Color3.fromRGB(180, 180, 200), LightColor = Color3.fromRGB(255, 250, 240), LightDirection = Vector3.new(-0.5, -1, -0.8), Visible = false, Parent = artBox }, { Kit.corner(5) })
+	local shownDance, shownChar = nil, nil
+	local function showDancer(d): boolean
+		local player = Players.LocalPlayer
+		local character = player and player.Character
+		local id = AnimationLibrary.id("Dance_" .. d.Id, d.AnimationId)
+		if not character or id == "" then
+			stage.Visible = false
+			return false
+		end
+		stage.Visible = true
+		if shownDance == d.Id and shownChar == character then return true end
+		shownDance, shownChar = d.Id, character
+		for _, ch in stage:GetChildren() do
+			if not ch:IsA("UICorner") then ch:Destroy() end
+		end
+		local ok = pcall(function()
+			local world = Instance.new("WorldModel")
+			world.Parent = stage
+			local was = character.Archivable
+			character.Archivable = true
+			local copy = character:Clone()
+			character.Archivable = was
+			for _, x in copy:GetDescendants() do
+				if x:IsA("LuaSourceContainer") or x:IsA("BillboardGui") or x:IsA("ParticleEmitter") or x:IsA("Highlight") then x:Destroy() end
+			end
+			local root = copy:FindFirstChild("HumanoidRootPart") :: BasePart
+			root.Anchored = true
+			copy:PivotTo(CFrame.new(0, 0, 0))
+			copy.Parent = world
+			local cam = Instance.new("Camera")
+			cam.FieldOfView = 34
+			cam.CFrame = CFrame.lookAt(Vector3.new(0, 0.6, -11.5), Vector3.new(0, -0.2, 0))
+			cam.Parent = stage
+			stage.CurrentCamera = cam
+			local humanoid = copy:FindFirstChildOfClass("Humanoid") :: Humanoid
+			humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+			local animator = humanoid:FindFirstChildOfClass("Animator") or Instance.new("Animator", humanoid)
+			local animation = Instance.new("Animation")
+			animation.AnimationId = id
+			local t = (animator :: Animator):LoadAnimation(animation)
+			t.Looped = true
+			t:Play(0)
+		end)
+		if not ok then stage.Visible = false end
+		return ok
+	end
+
 	local function showPreview()
 		local old = artBox:FindFirstChild("Picture")
 		if old then old:Destroy() end
@@ -201,18 +226,26 @@ function DancesScreen.build(parent: Instance)
 		if not d then
 			previewName.Text = ""
 			previewBlurb.Text = "Pick a dance."
+			stage.Visible = false
 			return
 		end
 		local mine = owned(d.Id)
 		local big = mine and PREVIEW_ART[d.Id]
-		if big then
+		if mine and showDancer(d) then
+			-- (your avatar is dancing it)
+		elseif big then
 			Kit.attach(Kit.corner(5), Kit.art(big, { Name = "Picture", Size = UDim2.fromScale(1, 1), Parent = artBox }))
 		else
-			-- no large picture for this dance yet: its card picture fills the frame
-			Kit.attach(Kit.corner(5), Kit.art(if mine and d.Art then d.Art else "DanceLocked", { Name = "Picture", Size = UDim2.fromScale(1, 1), Parent = artBox }))
+			-- no picture and no avatar to show (not published yet, outside Studio): the note, or the locked silhouette
+			if mine and not d.Art then
+				Kit.icon("DancesNote", { Name = "Picture", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(84, 84), Parent = artBox })
+			else
+				Kit.attach(Kit.corner(5), Kit.art(if mine and d.Art then d.Art else "DanceLocked", { Name = "Picture", Size = UDim2.fromScale(1, 1), Parent = artBox }))
+			end
 		end
 		previewName.Text = d.Name
-		previewBlurb.Text = if mine then "Play this dance with your avatar." else "Locked. " .. (if rewardLevel(d.Id) then "Reach Level " .. rewardLevel(d.Id) .. "." elseif d.Pack then "Dance Pack." else "")
+		if not mine then stage.Visible = false end
+		previewBlurb.Text = if mine then "Press PLAY, or G anywhere for your dance wheel." else "Locked. " .. (if rewardLevel(d.Id) then "Reach Level " .. rewardLevel(d.Id) .. "." elseif d.Pack then "Dance Pack." else "")
 	end
 
 	local cards: { [string]: any } = {}
@@ -237,8 +270,13 @@ function DancesScreen.build(parent: Instance)
 		rim = Kit.attach(rim, c)
 		Motion.bindButton(c, function() return nil end)
 		-- the picture runs a few px under the name band, so its rounded bottom corners never show
-		local pic = Kit.art(if mine and d.Art then d.Art else "DanceLocked", { Name = "Picture", Position = UDim2.fromOffset(1, 1), Size = UDim2.fromOffset(GRID.CardW - 2, GRID.CardH - GRID.Band + 3), Parent = c })
-		Kit.attach(Kit.corner(3), pic)
+		if mine and not d.Art then
+			-- no picture for this dance: the music note, big, on the blue backdrop
+			Kit.icon("DancesNote", { Name = "Note", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, math.floor((GRID.CardH - GRID.Band) / 2) + 1), Size = UDim2.fromOffset(52, 52), Parent = c })
+		else
+			local pic = Kit.art(if mine and d.Art then d.Art else "DanceLocked", { Name = "Picture", Position = UDim2.fromOffset(1, 1), Size = UDim2.fromOffset(GRID.CardW - 2, GRID.CardH - GRID.Band + 3), Parent = c })
+			Kit.attach(Kit.corner(3), pic)
+		end
 		local band = new("Frame", { Name = "Band", Position = UDim2.new(0, 1, 1, -GRID.Band - 1), Size = UDim2.new(1, -2, 0, GRID.Band), BackgroundColor3 = COL.Band, BackgroundTransparency = 0.12, BorderSizePixel = 0, ZIndex = 2, Parent = c }, { Kit.corner(3) })
 		Kit.name({ Name = "Name", Text = d.Name, TextSize = 17, Position = UDim2.fromOffset(9, 0), Size = UDim2.new(1, -16, 1, -2), ZIndex = 3, Parent = band })
 		-- favourite star: filled when favourited; an outline on the selected card so it can be favourited
@@ -327,8 +365,7 @@ function DancesScreen.build(parent: Instance)
 	-- A new character starts without the old dance; forget the old track.
 	local player = Players.LocalPlayer
 	if player then
-		player.CharacterAdded:Connect(stopDance)
-		pcall(function() player.CharacterRemoving:Connect(stopDance) end) -- (missing from the offline preview's API copy)
+		player.CharacterAdded:Connect(function() task.defer(showPreview) end) -- (the stage copies the new avatar)
 	end
 
 	State.changed(function() rebuild(false) end)
@@ -344,7 +381,6 @@ function DancesScreen.build(parent: Instance)
 		end,
 		onClose = function()
 			setMenu(false)
-			stopDance()
 		end,
 		firstSelect = function() return tabs.buttons.All.Instance end,
 		items = items,

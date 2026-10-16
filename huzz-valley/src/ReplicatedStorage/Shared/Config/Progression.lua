@@ -9,7 +9,7 @@ Progression.XPPerLevel = 300 -- every level takes the same XP
 Progression.Rewards = {
 	{ Level = 1, Kind = "Coins", Amount = 100, Name = "100 Coins", Art = "CurrencyCoin" },
 	{ Level = 2, Kind = "Gems", Amount = 25, Name = "25 Gems", Art = "CurrencyGem" },
-	{ Level = 3, Kind = "Dance", Id = "Wave", Name = "Wave Dance", Art = "DanceWave" },
+	{ Level = 3, Kind = "Dance", Id = "Robot", Name = "Robot Dance", Art = "DancesNote" },
 	{ Level = 4, Kind = "Outfit", Id = "AikoStyle", Name = "Aiko Style", Art = "OutfitAiko", Unavailable = true },
 }
 

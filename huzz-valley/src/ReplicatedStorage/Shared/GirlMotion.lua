@@ -9,6 +9,8 @@
 	  Cheer (won) or Calm (kicks her feet and waves now and then).
 	idle(): standing as the prize. Shifts her weight, breathes, watches the
 	  nearest runner, waves, and bounces when someone is close.
+	walk(): walking or running (a girl following a catcher, your companion).
+	cheer(): little hops on the ground, arms up (your companion when you're safe).
 
 	Joints are found by their Part1 name, so R6 and R15 both work. Poses are
 	written in the parent part's space (x right, y up, -z forward) and
@@ -253,7 +255,8 @@ function GirlMotion.idle(s, J, dt, t, ctx)
 end
 
 --[[ Walking behind a catcher. ctx: speed (studs/s), stride (studs per two steps),
-	target/distance (as idle: who to watch when she stands still) ]]
+	target/distance (as idle: who to watch when she stands still),
+	run (optional, 0-1: blends in a run: leaning, knees up, arms bent and pumping; the companion uses it) ]]
 function GirlMotion.walk(s, J, dt, t, ctx)
 	s.phase = (s.phase or 0) + ctx.speed * dt * 2 * pi / ctx.stride
 	local amount = spring(s, "walk", clamp(ctx.speed / 10, 0, 1.2), dt, 3, 1)
@@ -261,18 +264,51 @@ function GirlMotion.walk(s, J, dt, t, ctx)
 		GirlMotion.idle(s, J, dt, t, ctx)
 		return
 	end
+	local run = spring(s, "run", clamp(ctx.run or 0, 0, 1), dt, 3, 1) * math.min(1, amount)
 	local phase = s.phase
-	local swing = rad(30) * sin(phase) * amount
-	set(J.Root, CFrame.new(0, (abs(sin(phase)) - 0.5) * 0.1 * amount, 0) * CFrame.Angles(rad(3) * amount, rad(4) * sin(phase) * amount, 0))
-	set(J.Waist, CFrame.Angles(0, -rad(6) * sin(phase) * amount, 0))
+	local swing = rad(30 + 14 * run) * sin(phase) * amount
+	set(J.Root, CFrame.new(0, (abs(sin(phase)) - 0.5) * (0.1 + 0.12 * run) * amount, 0) * CFrame.Angles(rad(3 + 9 * run) * amount, rad(4) * sin(phase) * amount, 0))
+	set(J.Waist, CFrame.Angles(rad(4) * run, -rad(6) * sin(phase) * amount, 0))
 	for side, sign in { L = -1, R = 1 } do
 		local legSwing = if side == "R" then swing else -swing
 		set(J[side .. "Hip"], CFrame.Angles(legSwing, 0, 0))
-		set(J[side .. "Knee"], CFrame.Angles(-rad(50) * math.max(0, (if side == "R" then -1 else 1) * sin(phase)) * amount, 0, 0))
-		set(J[side .. "Shoulder"], limb(-legSwing * 0.8, sign * rad(5)))
-		set(J[side .. "Elbow"], CFrame.Angles(rad(12 + 15 * amount), 0, 0))
+		set(J[side .. "Knee"], CFrame.Angles(-rad(50 + 35 * run) * math.max(0, (if side == "R" then -1 else 1) * sin(phase)) * amount, 0, 0))
+		set(J[side .. "Shoulder"], limb(-legSwing * (0.8 + 0.3 * run), sign * rad(5 + 5 * run)))
+		set(J[side .. "Elbow"], CFrame.Angles(rad(12 + 15 * amount + 55 * run), 0, 0))
 	end
-	set(J.Neck, CFrame.Angles(-rad(3) * amount, 0, 0))
+	set(J.Neck, CFrame.Angles(-rad(3 + 5 * run) * amount, 0, 0))
+end
+
+--[[ Cheering on the ground (your companion once you're safe across in a round): little hops with both arms
+	up and waving, knees bending as she lands. Returns how high her feet are off the ground now (0-1 of a full
+	hop); the caller lifts her by that times her hop height, so she always lands back on the ground. ]]
+function GirlMotion.cheer(s, J, dt, t, ctx)
+	local period = 0.62
+	local u = ((t + (s.seed % 100) * 0.013) % period) / period
+	local air = 0.62 -- the part of each hop in the air; the rest is the landing crouch
+	local hop, crouch = 0, 0
+	if u < air then
+		local a = u / air
+		hop = 4 * a * (1 - a)
+	else
+		crouch = sin((u - air) / (1 - air) * pi)
+	end
+	local on = math.min(1, (s.cheerAge or 0) / 0.25)
+	s.cheerAge = (s.cheerAge or 0) + dt
+	local pump = sin(t * 2 * pi / period)
+	set(J.Root, CFrame.new(0, 0, 0) * CFrame.Angles(-rad(4) * crouch * on, 0, 0))
+	set(J.Waist, CFrame.Angles(-rad(3) * on, 0, rad(3) * sin(t * 3)))
+	for side, sign in { L = -1, R = 1 } do
+		-- arms up in a V, pumping with each hop
+		local r = sign * rad(145 + 12 * pump) * on
+		set(J[side .. "Shoulder"], limb(spring(s, side .. "cp", rad(10) * on, dt, 5, 0.7), spring(s, side .. "cr", r, dt, 5, 0.7)))
+		set(J[side .. "Elbow"], CFrame.Angles(rad(15 + 15 * crouch) * on, 0, 0))
+		-- knees bend on landing, legs tuck a little in the air
+		set(J[side .. "Hip"], limb(rad(20 * crouch + 10 * hop) * on, sign * rad(3)))
+		set(J[side .. "Knee"], CFrame.Angles(-rad(40 * crouch + 25 * hop) * on, 0, 0))
+	end
+	set(J.Neck, CFrame.Angles(rad(10) * on, 0, rad(6) * pump * on))
+	return hop * on
 end
 
 return GirlMotion

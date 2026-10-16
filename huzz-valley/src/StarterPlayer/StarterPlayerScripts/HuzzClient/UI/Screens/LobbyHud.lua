@@ -43,6 +43,7 @@ local function squareButton(parent: Instance, name: string, icon: string, y: num
 	local b = Kit.button({ Name = name, Style = "Hud", Text = "", Position = UDim2.fromOffset(25, y), Size = UDim2.fromOffset(66, 57), Corner = 5, RimThickness = 1.5, Parent = parent })
 	b.Instance:FindFirstChild("Content"):Destroy()
 	b.Instance.BackgroundColor3 = Kit.Styles.Hud.Idle
+	b.Instance.BackgroundTransparency = 0.1
 	new("UIGradient", { Rotation = 90, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, C.HudTop), ColorSequenceKeypoint.new(0.5, C.HudMid), ColorSequenceKeypoint.new(1, C.HudBottom) }), Parent = b.Instance })
 	-- icon centred in the space above the label
 	Kit.icon(icon, { Name = "Icon", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 22), Size = UDim2.fromOffset(36, 36), Parent = b.Instance })
@@ -92,6 +93,7 @@ function LobbyHud.build(parent: Instance)
 	-- Reference 13: a purple bar with a darker seam low down, a dark rim, two studs at each end, "NEXT ROUND" small
 	-- and the clock bigger.
 	local banner = new("Frame", { Name = "NextRound", Position = UDim2.fromOffset(3, 24), Size = UDim2.fromOffset(255, 36), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Visible = false, Parent = top }, { Kit.corner(6), Kit.stroke(C.BannerRim, 2) })
+	Kit.studPattern(banner, 0.4)
 	new("UIGradient", { Rotation = 90, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, C.Banner), ColorSequenceKeypoint.new(0.72, C.Banner), ColorSequenceKeypoint.new(0.75, C.BannerSeam), ColorSequenceKeypoint.new(1, C.BannerSeam) }), Parent = banner })
 	Kit.studs(banner, 10, 40, 12)
 	Kit.studs(banner, 222, 249, 12)
@@ -129,13 +131,27 @@ function LobbyHud.build(parent: Instance)
 	local home = {}
 	for g in away do home[g] = g.Position end
 	-- A full window moves the whole HUD away; the Menu side panel only replaces the side buttons.
-	ModalManager.changed(function(current)
+	-- In a round the side buttons and the coin pills slide away too (owner: the in-game screen felt cluttered;
+	-- Huss Valley shows only the round), and slide back in the lobby. The gear stays.
+	local player = game:GetService("Players").LocalPlayer
+	local current = nil
+	local function inRound()
+		local role = player:GetAttribute("HuzzRole")
+		return role == "Runner" or role == "Catcher"
+	end
+	local function place()
 		local side = ModalManager.isSide(current)
+		local playing = inRound()
 		for g, off in away do
-			local hide = current ~= nil and (not side or g == left)
+			local hide = (current ~= nil and (not side or g == left)) or (playing and (g == left or g == bottom))
 			Motion.tween(g, "hud", Theme.Motion.Hud, { Position = hide and home[g] + off or home[g] }, hide and Enum.EasingStyle.Quad or Enum.EasingStyle.Quint)
 		end
+	end
+	ModalManager.changed(function(now)
+		current = now
+		place()
 	end)
+	player:GetAttributeChangedSignal("HuzzRole"):Connect(place)
 	return root
 end
 

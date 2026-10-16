@@ -1,21 +1,27 @@
--- Swaps the default walk/run/idle/jump/fall animations for the IDs in
--- Config/Animations. Roblox's Animate script reloads when these change, and
--- the tracks replicate, so everyone sees your Huss Valley walk.
+--[[
+	Your avatar's walk, run, idle, jump, fall and climb become the owner's animations (the movement pack in
+	ReplicatedStorage.HuzzAnimations, or their published IDs: Shared/AnimationLibrary). Roblox's Animate script
+	plays them (and the tracks replicate, so everyone sees them): it blends Walk into Run as you speed up, which
+	Gameplay/Sprint makes a smooth build-up while you hold a direction (owner: "slowly fade from walking into
+	running"). With nothing to play (live game, not published yet) Roblox's defaults stay and Gameplay/RunAnimator
+	draws the scripted Huss Valley run instead.
+]]
 local M = {}
 
 function M.start()
 	local Players = game:GetService("Players")
 	local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-	local Animations = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("Animations"))
+	local Library = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("AnimationLibrary"))
 
 	local SLOTS = {
-		{ "walk", "WalkAnim", Animations.Walk },
-		{ "run", "RunAnim", Animations.Run },
-		{ "idle", "Animation1", Animations.Idle },
-		{ "idle", "Animation2", Animations.Idle },
-		{ "jump", "JumpAnim", Animations.Jump },
-		{ "fall", "FallAnim", Animations.Fall },
+		{ "walk", "WalkAnim", "Walk" },
+		{ "run", "RunAnim", "Run" },
+		{ "idle", "Animation1", "Idle" },
+		{ "idle", "Animation2", "Idle" },
+		{ "jump", "JumpAnim", "Jump" },
+		{ "fall", "FallAnim", "Fall" },
+		{ "climb", "ClimbAnim", "Climb" },
 	}
 
 	local function apply(character)
@@ -24,11 +30,12 @@ function M.start()
 			return
 		end
 		for _, slot in SLOTS do
-			if slot[3] ~= "" then
+			local id = Library.id(slot[3])
+			if id ~= "" then
 				local group = animate:WaitForChild(slot[1], 5)
 				local animation = group and group:FindFirstChild(slot[2])
 				if animation then
-					animation.AnimationId = slot[3]
+					animation.AnimationId = id
 				end
 			end
 		end

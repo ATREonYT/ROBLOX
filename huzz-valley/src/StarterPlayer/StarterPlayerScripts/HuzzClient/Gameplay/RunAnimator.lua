@@ -1,8 +1,8 @@
 --[[
 	Plays the Huss Valley run and the huss dash (Shared/RunMotion) on every R15 character on this
 	client, so everyone sees everyone run and dash the same way (the dash from the character's
-	DashAt/DashDir attributes, Gameplay/Dash). Off when the owner's run animation is set
-	(Config/Animations.Run). A carrier keeps the carry arms (CarryAnimator layers after this).
+	DashAt/DashDir attributes, Gameplay/Dash). Off when the owner's run can play (Shared/AnimationLibrary:
+	published, or raw in Studio). A carrier keeps the carry arms (CarryAnimator layers after this).
 ]]
 local M = {}
 
@@ -12,11 +12,11 @@ function M.start()
 	local Workspace = game:GetService("Workspace")
 
 	local Shared = ReplicatedStorage:WaitForChild("Shared")
-	local Animations = require(Shared.Config.Animations)
+	local Library = require(Shared.AnimationLibrary)
 	local RunMotion = require(Shared.RunMotion)
 	local Frame = require(script.Parent.Frame)
-	if Animations.Run ~= "" then
-		return
+	if Library.has("Run") then
+		return -- (the owner's run plays instead: Gameplay/AvatarAnimations, and the dash: Gameplay/Dash)
 	end
 
 	local carried = Workspace:WaitForChild("HuzzCarried")

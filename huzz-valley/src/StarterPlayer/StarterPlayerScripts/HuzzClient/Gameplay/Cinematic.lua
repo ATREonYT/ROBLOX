@@ -61,18 +61,7 @@ function M.start()
 		end
 	end
 
-	-- Small sounds from Roblox's own library (no uploaded IDs needed; swap in your own any time).
-	local function sound(id, volume, pitch)
-		local s = Instance.new("Sound")
-		s.SoundId = id
-		s.Volume = volume
-		s.PlaybackSpeed = pitch or 1
-		s.Parent = gui
-		s:Play()
-		s.Ended:Once(function()
-			s:Destroy()
-		end)
-	end
+	local Sfx = require(script.Parent.Sfx)
 
 	local function rootOf(p)
 		local c = p and p.Character
@@ -213,13 +202,13 @@ function M.start()
 				highlight.FillTransparency = 1 -- an outline while it hops (no flashing fill)
 				if n ~= lastHop then
 					lastHop = n
-					sound("rbxasset://sounds/electronicpingshort.wav", 0.22, 0.9 + n * 0.025)
+					Sfx.play("roulette_tick", { pitch = 0.92 + math.min(n, 12) * 0.012 })
 				end
 			elseif head then
 				-- Zoom in on the picked runner's face (a little closer once they've chosen).
 				if lastHop ~= -1 then
 					lastHop = -1
-					sound("rbxasset://sounds/swoosh.wav", 0.45)
+					Sfx.play("pick_land")
 				end
 				key = if stage == "Chosen" then "Chosen" else "Face"
 				toEye, toLook = Shot.face(line, head.CFrame, stage == "Chosen")

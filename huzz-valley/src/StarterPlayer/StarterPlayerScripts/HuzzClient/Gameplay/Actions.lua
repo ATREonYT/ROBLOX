@@ -1,10 +1,7 @@
 --[[
-	The two round moves:
-	  STAB (catchers, while a round runs): left click, a gamepad's R2, or the STAB button.
-	  HUSS (whoever carries her overhead): H, a gamepad's X, or the HUSS button.
-	Both play at once on your own screen and are checked by the server (RoundService):
-	a stab tags the nearest runner in reach, a huss sets HussAt on the carried girl so
-	every client plays the throw (CarryAnimator / Shared/CarryMotion).
+	The catchers' move: STAB (while a round runs): left click, a gamepad's R2, or the STAB button.
+	It plays at once on your own screen and is checked by the server (RoundService), which tags the
+	nearest runner in reach. (The girl toss is gone: owner's call.)
 
 	Also plays everyone's stab (Shared/StabMotion, or Config/Animations.Stab when set)
 	and lights the knife's slash trail. Buttons sit bottom right, above a phone's jump
@@ -22,16 +19,14 @@ function M.start()
 	local Shared = ReplicatedStorage:WaitForChild("Shared")
 	local Net = require(Shared.Net)
 	local Config = require(Shared.Config.Round)
-	local Carry = require(Shared.Config.Carry)
 	local Animations = require(Shared.Config.Animations)
 	local CarryMath = require(Shared.CarryMath)
 	local StabMotion = require(Shared.StabMotion)
+	local Sfx = require(script.Parent.Sfx)
 
 	local player = Players.LocalPlayer
 	local RoundNet = Net.get("Round") :: RemoteEvent
 	local StabNet = Net.get("Stab") :: RemoteEvent
-	local HussNet = Net.get("Huss") :: RemoteEvent
-	local carried = Workspace:WaitForChild("HuzzCarried")
 
 	-- Everyone's stabs, keyed by Player (never by a character Instance in a weak table).
 	local stabs = {} -- Player -> { rec, character, trail, track }
@@ -99,7 +94,7 @@ function M.start()
 	end)
 
 	-- What you can do right now.
-	local lastStab, lastHuss = -math.huge, -math.huge
+	local lastStab = -math.huge
 	local function busy()
 		local c = player.Character
 		return player:GetAttribute("MenuOpen") == true or c == nil or c:GetAttribute("DownedAt") ~= nil
@@ -112,38 +107,14 @@ function M.start()
 			and c ~= nil and c:FindFirstChild("HuzzKnife") ~= nil and not busy()
 			and (player:GetAttribute("DizzyUntil") or 0) <= Workspace:GetServerTimeNow() -- a popped Heart Shield
 	end
-	local function myGirl()
-		for _, model in carried:GetChildren() do
-			if model:GetAttribute("Carrier") == player.UserId then
-				return model
-			end
-		end
-		return nil
-	end
-	local function canHuss()
-		return myGirl() ~= nil and not busy()
-	end
-	local function hussReady()
-		return os.clock() - lastHuss >= Carry.Huss.Time + Config.HussCooldown
-	end
-
 	local function stab()
 		if canStab() and os.clock() - lastStab >= Config.Stab.Cooldown then
 			lastStab = os.clock()
 			playStab(player)
+			Sfx.play("stab")
 			StabNet:FireServer()
 		end
 	end
-	local function huss()
-		local girl = myGirl()
-		if girl and not busy() and hussReady() then
-			lastHuss = os.clock()
-			local at = Workspace:GetServerTimeNow()
-			girl:SetAttribute("HussAt", at) -- on this screen at once; the server sets the same time for everyone
-			HussNet:FireServer(at)
-		end
-	end
-
 	UserInputService.InputBegan:Connect(function(input, processed)
 		if processed or UserInputService:GetFocusedTextBox() then
 			return
@@ -151,16 +122,16 @@ function M.start()
 		local t, key = input.UserInputType, input.KeyCode
 		if t == Enum.UserInputType.MouseButton1 or key == Enum.KeyCode.ButtonR2 then
 			stab()
-		elseif key == Enum.KeyCode.H or key == Enum.KeyCode.ButtonX then
-			huss()
 		end
 	end)
 
 	-- On-screen buttons (the kit's periwinkle action style).
-	local DISPLAY = Font.new("rbxasset://fonts/families/LuckiestGuy.json") -- (Theme.Fonts.Display / Round)
-	local ROUNDED = Font.new("rbxasset://fonts/families/FredokaOne.json")
-	local ACTION, ACTION_TOP, RIM = Color3.fromHex("7E7CEF"), Color3.fromHex("8C8CF6"), Color3.fromHex("1F2347")
-	local SLATE = Color3.fromHex("556585")
+	local Theme = require(script.Parent.Parent.UI.Theme)
+	local DISPLAY = Theme.Fonts.Heading -- (the kit's faces)
+	local ROUNDED = Theme.Fonts.Button
+	local C = Theme.Colors
+	local ACTION, ACTION_TOP, RIM = C.Action, C.ActionTop, C.ActionRim
+	local SLATE = C.Slate
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "HuzzActions"
 	gui.ResetOnSpawn = false
@@ -219,17 +190,12 @@ function M.start()
 	end
 	local y0 = if touch then -150 else -110
 	local stabButton, paintStab = button("Stab", "STAB", "CLICK", y0, stab)
-	local hussButton, paintHuss = button("Huss", "TOSS", "PRESS H", y0, huss) -- the girl toss (Space is the huss dash)
 	gui.Parent = player:WaitForChild("PlayerGui")
 
 	RunService.RenderStepped:Connect(function()
 		stabButton.Visible = canStab()
-		hussButton.Visible = canHuss()
 		if stabButton.Visible then
 			paintStab(os.clock() - lastStab >= Config.Stab.Cooldown)
-		end
-		if hussButton.Visible then
-			paintHuss(hussReady())
 		end
 	end)
 end

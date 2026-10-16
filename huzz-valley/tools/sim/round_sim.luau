@@ -248,7 +248,7 @@ local function simulate(opts)
 	clock, queue, errors = 0, {}, {}
 	math.randomseed(opts.seed or 1)
 	local rng = { NextNumber = function() return math.random() end }
-	local stats = { stages = {}, games = 0, wins = 0, stabs = 0, tags = 0, powers = {}, blocks = 0, sprung = 0, charmed = 0, husses = 0, kept = 0,
+	local stats = { stages = {}, games = 0, wins = 0, stabs = 0, tags = 0, powers = {}, blocks = 0, sprung = 0, charmed = 0, husses = 0, kept = 0, safeOutside = 0,
 		rescues = 0, picks = 0, heroes = 0, heroSurvived = 0, timeoutPicks = 0, runnerWins = 0, catcherWins = 0 }
 	local problems = {}
 	local seen = {}
@@ -336,7 +336,7 @@ local function simulate(opts)
 		return new("Part", { CFrame = CFrame.new(x, 4, z), Size = Vector3.new(sx, 8, sz) })
 	end
 	local zones = {}
-	local loads, unloads, wallOn, goalShown = 0, 0, nil, nil
+	local loads, unloads, wallOn, goalShown, gateOn = 0, 0, nil, nil, nil
 	local MapService = {
 		zones = zones,
 		maps = { { name = "Base_Map", display = "Base" }, { name = "Halloween_Map", display = "Halloween" }, { name = "BasketBall_Map", display = "BasketBall" } },
@@ -409,6 +409,10 @@ local function simulate(opts)
 	function MapService.showGoal(name)
 		goalShown = name
 	end
+	function MapService.holdGoal(name, on)
+		gateOn = if on then name else nil
+	end
+	function MapService.setSafe() end
 	-- As MapService.lineup: a row just behind the zone's edge that faces the middle, looking across.
 	function MapService.lineup(zoneName, count)
 		local zone, middle = zones[zoneName], zones.Middle
@@ -625,7 +629,7 @@ local function simulate(opts)
 				if e.data.name == "TrapSprung" then stats.sprung += 1 end
 			elseif e.kind == "Rescued" then
 				stats.rescues += 1
-			elseif e.kind == "Announce" and type(e.data.text) == "string" and e.data.text:find("survived the Hero attempt") then
+			elseif e.kind == "Announce" and type(e.data.text) == "string" and e.data.text:find("made the Hero run") then
 				stats.heroSurvived += 1
 			elseif e.kind == "Win" then
 				stats.wins += 1
@@ -723,7 +727,9 @@ local function simulate(opts)
 						local root = p.Character.HumanoidRootPart
 						local start = zones[MapService.startFor(Round:GetAttribute("Round"))]
 						local back = MapService.keepIn(start, root.Position)
-						if back and (back - root.Position).Magnitude > 1.5 then
+						-- (3 studs: this runs a frame or two after GO, when a fast runner is already a step over the line;
+						-- anyone who got round the wall is far further out)
+						if back and (back - root.Position).Magnitude > 3 then
 							problem(`{p.Name} left the start zone before GO`)
 						end
 					end
@@ -818,6 +824,19 @@ local function simulate(opts)
 					end
 				end
 			end
+			-- Safe runners try to wander back into the middle now and then (owner: they must stay across).
+			local goalName = Round:GetAttribute("Goal")
+			local safeNow = p:GetAttribute("HuzzStatus") == "Safe" and (st == "Running" or st == "HeroRun")
+			if safeNow and goalName and zones[goalName] then
+				local out = MapService.keepIn(zones[goalName], root.Position)
+				if out and (out - root.Position).Magnitude > 4 then
+					stats.safeOutside += 1
+					problem(`{p.Name} got back out of the safe zone`)
+				end
+				if rng:NextNumber() < 0.5 then
+					target = zones.Middle.CFrame.Position
+				end
+			end
 			if target and h.WalkSpeed > 0 and not KnockdownService.isDown(p) then
 				local d = target - root.Position
 				d = Vector3.new(d.X, 0, d.Z)
@@ -829,24 +848,21 @@ local function simulate(opts)
 						local back = MapService.keepIn(zones[wallOn], nextPos)
 						if back then nextPos = root.Position end
 					end
+					-- The goal's gate stops safe runners (its collision group); "cheat" bots get round it.
+					local slips = bot.kind == "cheat" or p.UserId % 3 == 0 -- (a dash or a shove: some get round it)
+					if safeNow and gateOn == goalName and not slips and MapService.keepIn(zones[goalName], nextPos) then
+						nextPos = root.Position
+					end
 					root.CFrame = lookAt(nextPos, nextPos + d.Unit)
 				end
 			end
-			-- Powers and hussing now and then.
+			-- Powers now and then.
 			if st == "Running" and rng:NextNumber() < 0.04 then
 				local slot = if rng:NextNumber() < 0.5 then 1 else 2
 				local ready = p:GetAttribute("PowerReady" .. slot)
 				if ready and ready >= 0 and ready <= now then
 					remotes.Power.OnServerEvent:Fire(p, slot)
 				end
-			end
-			local girl = carried[p]
-			if girl and girl:GetAttribute("Carrier") == p.UserId and rng:NextNumber() < 0.02 then
-				local before = girl:GetAttribute("HussAt")
-				remotes.Huss.OnServerEvent:Fire(p, now)
-				task.defer(function()
-					if girl:GetAttribute("HussAt") ~= before then stats.husses += 1 end
-				end)
 			end
 		end
 		-- She's always somewhere sensible.
@@ -946,7 +962,6 @@ report("4 players, 10 minutes", s, p, {
 	{ "several games finished", function(x) return x.wins >= 3 end },
 	{ "stabs tag runners", function(x) return x.tags >= 5 end },
 	{ "all four powers used", function(x) return x.powers.HeartShield and x.powers.RizzRush and x.powers.LoveTrap and x.powers.CharmWave end },
-	{ "huss happens", function(x) return x.husses >= 1 end },
 	{ "every round has a pick", function(x) return x.picks >= 6 end },
 	{ "Hero runs happen and some make it", function(x) return x.heroes >= 2 and x.heroSurvived >= 1 end },
 	{ "catchers win some", function(x) return x.catcherWins >= 1 end },

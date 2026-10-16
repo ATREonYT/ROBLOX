@@ -48,7 +48,6 @@ return {
 	},
 	TagRange = 5.5, -- "Touch" only: studs between root parts
 
-	HussCooldown = 0.4, -- seconds after a toss ends before the next (Carry.Huss.Time is the toss itself)
 
 	-- The huss (owner's call): Space during a round dashes you the way you're moving (forward, back, left or
 	-- right). Jumping is off in rounds. Speed in studs per second for Time seconds; Cooldown before the next.

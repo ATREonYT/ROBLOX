@@ -1,6 +1,8 @@
 -- The Huss Valley run and huss dash (Shared/RunMotion), matched to the owner's reference video, built in
 -- until the owner's own animations are uploaded (Config/Animations.Run). Degrees, studs, seconds.
 return {
+	StartSpeed = 9, -- you set off at this speed (a walk) and build up to full speed... (Gameplay/Sprint)
+	Ramp = 1.1, -- ...over this many seconds of holding a direction
 	From = 14, -- below this speed: Roblox's own walk
 	Full = 20, -- from this speed on: the full run (runners go 24)
 	Stride = 9.5, -- studs per full stride (two steps): smaller = quicker steps

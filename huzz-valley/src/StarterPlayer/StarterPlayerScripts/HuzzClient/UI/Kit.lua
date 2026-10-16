@@ -10,6 +10,7 @@ local Theme = require(script.Parent.Theme)
 local Motion = require(script.Parent.Motion)
 local Report = require(script.Parent.Report)
 local ImageLoader = require(script.Parent.ImageLoader)
+local Sfx = require(script.Parent.Parent.Gameplay.Sfx)
 
 local C = Theme.Colors
 local Kit = {}
@@ -207,15 +208,15 @@ Kit.Styles = {
 	HeaderTab = style(C.HeaderTab, C.Text, C.InactiveTabTop, C.HeaderTabRim),
 	Segment = style(C.Segment, C.Text, C.SegmentTop, C.TabRim),
 	Slate = style(C.Slate, C.Text, C.SlateTop, C.TabRim),
-	Close = { Idle = C.Close, Hover = lighten(C.Close, 0.1), Pressed = darken(C.Close, 0.1), Text = C.Text, Top = C.CloseTop, Rim = C.CloseRim },
+	Close = { Idle = C.Close, Hover = lighten(C.Close, 0.1), Pressed = darken(C.Close, 0.1), Text = C.Text, Top = C.CloseTop, Rim = C.CloseRim, NoShade = true },
 	-- fill is white so the purple UIGradient (#B84FFA -> #9925F9) shows as measured; hover/press dim it slightly
-	Gift = { Idle = Color3.new(1, 1, 1), Hover = Color3.fromRGB(245, 240, 255), Pressed = Color3.fromRGB(215, 205, 230), Text = C.Text, Top = Color3.fromHex("C774FB"), Rim = C.GiftRim },
+	Gift = { Idle = Color3.new(1, 1, 1), Hover = Color3.fromRGB(245, 240, 255), Pressed = Color3.fromRGB(215, 205, 230), Text = C.Text, Top = Color3.fromHex("C774FB"), Rim = C.GiftRim, NoShade = true },
 	Plus = style(C.Plus, C.Text, C.PlusTop, C.PlusRim),
 	HudPlus = style(C.HudPlus, C.Text, C.PlusTop, C.PlusRim),
 	Row = style(C.Row, C.Text, C.RowBorder, C.RowBorder),
 	MenuRow = style(C.MenuRow, C.Text, C.MenuRowTop, C.MenuRowTop),
 	-- HUD buttons are white tinted by their navy UIGradient, so these fills only brighten/dim that gradient
-	Hud = { Idle = Color3.fromRGB(235, 235, 242), Hover = Color3.new(1, 1, 1), Pressed = Color3.fromRGB(200, 200, 212), Text = C.Text, Top = C.HudHighlight, Rim = C.HudRing },
+	Hud = { Idle = Color3.fromRGB(235, 235, 242), Hover = Color3.new(1, 1, 1), Pressed = Color3.fromRGB(200, 200, 212), Text = C.Text, Top = C.HudHighlight, Rim = C.HudRing, NoShade = true },
 }
 
 -- Places a button by its usual top-left (or given anchor) position, but anchors it at its centre, so the hover and
@@ -252,6 +253,13 @@ function Kit.button(props: { [string]: any }): Button
 	local rim = Kit.stroke(st.Rim, props.RimThickness or 1)
 	rim.Name = "Rim"
 	rim = Kit.attach(rim, btn) :: UIStroke
+	-- the shade (owner: "bland"): full colour on top, about a fifth darker at the foot, like a lit glossy key
+	if not st.NoShade then
+		new("UIGradient", { Name = "Shade", Rotation = 90, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)), ColorSequenceKeypoint.new(0.5, Color3.fromRGB(236, 236, 240)), ColorSequenceKeypoint.new(1, Color3.fromRGB(196, 196, 208)) }), Parent = btn })
+	end
+	if styleName ~= "Close" and styleName ~= "Gift" then
+		Kit.studPattern(btn, 0.22) -- (the studded look on every button: owner's call)
+	end
 	local top = new("Frame", { Name = "TopLine", BackgroundColor3 = st.Top, BorderSizePixel = 0, Position = UDim2.fromOffset(2, 0), Size = UDim2.new(1, -4, 0, 1), ZIndex = btn.ZIndex, Parent = btn })
 	local row = new("Frame", { Name = "Content", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = btn.ZIndex, Parent = btn },
 		{ Kit.list(Enum.FillDirection.Horizontal, props.Gap or 8, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center) })
@@ -261,6 +269,8 @@ function Kit.button(props: { [string]: any }): Button
 		TextColor3 = st.Text, AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0),
 		TextWrapped = false, LayoutOrder = 2, ZIndex = btn.ZIndex, Parent = row,
 	})
+	-- the owner's table: buttons have a minimal outline (light labels only; dark text on gold stays clean)
+	local outline = new("UIStroke", { Name = "Outline", Color = st.Rim, Thickness = 1, Transparency = 0.35, Enabled = st.Text.R + st.Text.G + st.Text.B > 1.5, Parent = label })
 	if props.Icon then
 		local s = props.IconSize or 22
 		Kit.icon(props.Icon, { Name = "Icon", Size = UDim2.fromOffset(s, s), LayoutOrder = props.IconAfter and 3 or 1, ZIndex = btn.ZIndex, Parent = row })
@@ -276,6 +286,7 @@ function Kit.button(props: { [string]: any }): Button
 		Motion.tween(label, "text", Theme.Motion.Tab, { TextColor3 = s2.Text })
 		top.BackgroundColor3 = s2.Top
 		rim.Color = s2.Rim
+		outline.Color, outline.Enabled = s2.Rim, s2.Text.R + s2.Text.G + s2.Text.B > 1.5
 		refresh()
 	end
 	function api.setText(t: string)
@@ -291,6 +302,7 @@ function Kit.button(props: { [string]: any }): Button
 	local handlers = {}
 	function api.onClick(fn) table.insert(handlers, fn) end
 	btn.Activated:Connect(function()
+		Sfx.play(if enabled then "ui_click" else "ui_error")
 		if not enabled then return end
 		for _, fn in handlers do task.spawn(Report.run, "Button " .. btn.Name, fn) end
 	end)
@@ -324,8 +336,25 @@ function Kit.studs(parent: Instance, x0: number, x1: number, y: number)
 		Name = if n == 0 then "Studs" else "Studs" .. (n + 1),
 		ScaleType = Enum.ScaleType.Tile, TileSize = UDim2.fromOffset(22, 12),
 		Position = UDim2.fromOffset(x0, y), Size = UDim2.fromOffset(math.max(0, count * 22 - 13), 12),
-		Visible = count > 0, Parent = parent,
+		Visible = false, Parent = parent, -- (owner: the whole panel is studded now, Kit.studPattern; strips stay hidden)
 	})
+end
+
+-- The studded texture over a whole panel (owner's call: "the whole thing to have a studded background, everywhere
+-- in the UI"): assets/icons/stud-pattern.png (tools/icons/make_stud_pattern.py), one raised square stud per 24 px
+-- tile, white/black with alpha so it suits any colour. strength 0-1 (default 0.5). It copies the parent's rounded
+-- corners (ClipsDescendants would clip square). Under everything else in the parent (ZIndex as the parent's).
+function Kit.studPattern(parent: GuiObject, strength: number?)
+	local img = Kit.icon("StudPattern", {
+		Name = "StudPattern", ScaleType = Enum.ScaleType.Tile, TileSize = UDim2.fromOffset(24, 24),
+		Size = UDim2.fromScale(1, 1), ImageTransparency = 1 - (strength or 0.5), ZIndex = parent.ZIndex,
+		Parent = parent,
+	})
+	local corner = parent:FindFirstChildOfClass("UICorner")
+	if corner and not img:FindFirstChildOfClass("UICorner") then
+		Kit.attach(new("UICorner", { CornerRadius = corner.CornerRadius }), img)
+	end
+	return img
 end
 
 export type Window = {
@@ -345,9 +374,16 @@ function Kit.window(props: { [string]: any }): Window
 	-- Flat = a plain Frame instead of a CanvasGroup (no open fade), for windows with ViewportFrames that must show.
 	local group = new(if props.Flat then "Frame" else "CanvasGroup", { Name = "Group", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Visible = false, Parent = holder })
 	local openScale = new("UIScale", { Name = "OpenScale", Parent = group })
-	local panel = new("Frame", { Name = "Panel", Size = UDim2.fromScale(1, 1), BackgroundColor3 = C.Frame, BorderSizePixel = 0, Parent = group }, { Kit.corner(6) })
-	new("Frame", { Name = "Fill", Position = UDim2.fromOffset(inset, inset), Size = UDim2.new(1, -2 * inset, 1, -2 * inset), BackgroundColor3 = props.PanelColor or C.Panel, BorderSizePixel = 0, Parent = panel }, { Kit.corner(3) })
-	local header = new("Frame", { Name = "Header", Position = UDim2.fromOffset(inset, inset), Size = UDim2.new(1, -2 * inset, 0, hh - inset), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = panel }, { Kit.corner(3) })
+	-- (owner: more see-through) the dark frame is a stroke round the body, so the body itself can let the world show
+	local panel = new("Frame", { Name = "Panel", Size = UDim2.fromScale(1, 1), BackgroundColor3 = C.Frame, BackgroundTransparency = 1, BorderSizePixel = 0, Parent = group }, { Kit.corner(6) })
+	local fill = new("Frame", { Name = "Fill", Position = UDim2.fromOffset(inset, inset), Size = UDim2.new(1, -2 * inset, 1, -2 * inset), BackgroundColor3 = props.PanelColor or C.Panel, BackgroundTransparency = Theme.Transparency.Body, BorderSizePixel = 0, Parent = panel }, {
+		Kit.corner(3),
+		new("UIStroke", { Name = "Frame", Color = C.Frame, Thickness = inset, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+		new("UIGradient", { Name = "Depth", Rotation = 90, Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(178, 182, 204)) }),
+	})
+	Kit.studPattern(fill, 0.3)
+	local header = new("Frame", { Name = "Header", Position = UDim2.fromOffset(inset, inset), Size = UDim2.new(1, -2 * inset, 0, hh - inset), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = Theme.Transparency.Header, BorderSizePixel = 0, Parent = panel }, { Kit.corner(3) })
+	Kit.studPattern(header, 0.45)
 	local g = {}
 	for _, k in C.HeaderGradient do table.insert(g, ColorSequenceKeypoint.new(k[1], k[2])) end
 	new("UIGradient", { Name = "Gloss", Rotation = 90, Color = ColorSequence.new(g), Parent = header })
@@ -396,11 +432,13 @@ function Kit.pill(props: { [string]: any })
 	local f = new("Frame", { Name = props.Name or "Pill", Position = props.Position, Size = UDim2.fromOffset(w, h), AnchorPoint = props.AnchorPoint or Vector2.zero, BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = props.Parent }, { Kit.corner(5), Kit.stroke(C.PillRim, 1) })
 	if props.Split then
 		-- HUD pills: lighter top, darker foot from about two thirds down (reference 13)
-		new("UIGradient", { Rotation = 90, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromHex("1B2A44")), ColorSequenceKeypoint.new(0.65, Color3.fromHex("1B2A44")), ColorSequenceKeypoint.new(0.67, Color3.fromHex("0B192F")), ColorSequenceKeypoint.new(1, Color3.fromHex("162647")) }), Parent = f })
+		new("UIGradient", { Rotation = 90, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromHex("1F2F5C")), ColorSequenceKeypoint.new(0.65, Color3.fromHex("1B2A54")), ColorSequenceKeypoint.new(0.67, Color3.fromHex("0E1738")), ColorSequenceKeypoint.new(1, Color3.fromHex("141F48")) }), Parent = f })
 	else
 		-- header pills: a smooth gradient (reference 01)
-		new("UIGradient", { Rotation = 90, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromHex("152247")), ColorSequenceKeypoint.new(0.5, Color3.fromHex("162B51")), ColorSequenceKeypoint.new(1, Color3.fromHex("19284C")) }), Parent = f })
+		new("UIGradient", { Rotation = 90, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromHex("1C2C5E")), ColorSequenceKeypoint.new(0.5, Color3.fromHex("16244F")), ColorSequenceKeypoint.new(1, Color3.fromHex("111B40")) }), Parent = f })
 	end
+	f.BackgroundTransparency = 0.1
+	Kit.studPattern(f, 0.3)
 	local s = h - 6
 	Kit.icon(props.Icon, { Name = "Icon", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 4, 0.5, 0), Size = UDim2.fromOffset(s, s), Parent = f })
 	-- the amount is centred between the icon and the + button

@@ -19,6 +19,7 @@
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
+local PhysicsService = game:GetService("PhysicsService")
 
 local Config = require(ReplicatedStorage.Shared.Config.Round)
 
@@ -28,6 +29,7 @@ MapService.maps = {} -- { name, box (stored container), fixed (test field: used 
 MapService.current = nil -- the loaded map's entry
 local loaded -- the copy in Workspace
 local marks, wall -- the current map's safe lines and sign, and the start-line wall before GO
+local gate -- the goal line's gate: only runners already safe bump into it (holdGoal)
 local lastPicked
 local zoneParts = {} -- every zone part, so floor checks look through them
 
@@ -440,10 +442,10 @@ function MapService.load(entry)
 end
 
 function MapService.unload()
-	for _, item in { marks, wall } do
+	for _, item in { marks, wall, gate } do
 		item:Destroy()
 	end
-	marks, wall = nil, nil
+	marks, wall, gate = nil, nil, nil
 	if loaded then
 		loaded:Destroy()
 		loaded = nil
@@ -617,6 +619,83 @@ function MapService.holdStart(startName, on)
 		})
 	end
 	wall.Parent = loaded or Workspace
+end
+
+--[[
+	The goal's gate (owner: once you're across you stay across, you can't wander back into the middle): a
+	thick invisible block on the goal line in the "HuzzSafeWall" collision group, which only collides with the
+	"HuzzSafe" group (the parts of runners who are Safe: MapService.setSafe). Runners still running pass straight
+	through it. What everyone sees is a very faint green glass strip with a glowing top: the finish line.
+]]
+local SAFE, SAFE_WALL = "HuzzSafe", "HuzzSafeWall"
+pcall(function()
+	PhysicsService:RegisterCollisionGroup(SAFE)
+	PhysicsService:RegisterCollisionGroup(SAFE_WALL)
+end)
+local function setUpGroups()
+	pcall(function()
+		for _, g in PhysicsService:GetRegisteredCollisionGroups() do
+			local name = g.name
+			if name ~= SAFE and name ~= SAFE_WALL then
+				-- a safe runner collides with everything a normal part does; the gate only with safe runners
+				PhysicsService:CollisionGroupSetCollidable(SAFE, name, PhysicsService:CollisionGroupsAreCollidable("Default", name))
+				PhysicsService:CollisionGroupSetCollidable(SAFE_WALL, name, false)
+			end
+		end
+		PhysicsService:CollisionGroupSetCollidable(SAFE, SAFE, true)
+		PhysicsService:CollisionGroupSetCollidable(SAFE_WALL, SAFE_WALL, false)
+		PhysicsService:CollisionGroupSetCollidable(SAFE_WALL, SAFE, true)
+	end)
+end
+
+function MapService.holdGoal(goalName, on)
+	if gate then
+		gate:Destroy()
+		gate = nil
+	end
+	local zone = goalName and MapService.zones[goalName]
+	if not (on and zone and MapService.zones.Middle) then
+		return
+	end
+	setUpGroups() -- (again each round: KnockdownService may have registered its group after us)
+	local centre, out, length = edge(zone)
+	local h = Config.Map.WallHeight
+	local base = CFrame.lookAt(centre, centre + out) + out * 2 -- just outside the zone, on the field side
+	gate = Instance.new("Folder")
+	gate.Name = "HuzzGoalGate"
+	local block = markPart({
+		Name = "Block", Size = Vector3.new(length + 2, h, 4), CFrame = base + Vector3.new(0, h / 2, 0),
+		CanCollide = true, Transparency = 1, Parent = gate,
+	})
+	block.CollisionGroup = SAFE_WALL
+	local glassH, green = 4, Color3.fromRGB(110, 255, 150)
+	local face = CFrame.lookAt(centre, centre + out) + out * 0.3
+	markPart({
+		Name = "Glass", Size = Vector3.new(length, glassH, 0.15), CFrame = face + Vector3.new(0, glassH / 2, 0),
+		Color = green, Material = Enum.Material.Glass, Transparency = 0.9, Parent = gate,
+	})
+	markPart({
+		Name = "Edge", Size = Vector3.new(length, 0.14, 0.2), CFrame = face + Vector3.new(0, glassH, 0),
+		Color = green, Material = Enum.Material.Neon, Transparency = 0.45, Parent = gate,
+	})
+	gate.Parent = loaded or Workspace
+end
+
+-- Puts a character's parts in the safe group (true) or back to Default (false). Parts in another group
+-- (a knocked-down body's) are left alone.
+function MapService.setSafe(character, on)
+	if not character then
+		return
+	end
+	for _, d in character:GetDescendants() do
+		if d:IsA("BasePart") then
+			if on and d.CollisionGroup == "Default" then
+				d.CollisionGroup = SAFE
+			elseif not on and d.CollisionGroup == SAFE then
+				d.CollisionGroup = "Default"
+			end
+		end
+	end
 end
 
 --[[

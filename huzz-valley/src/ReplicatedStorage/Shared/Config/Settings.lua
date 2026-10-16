@@ -19,6 +19,7 @@ Settings.Defaults = {
 	InviteRequests = "Friends",
 	CompanionEffects = true,
 	ReducedMotion = false,
+	TutorialDone = false, -- set when How to Play is closed the first time (Screens/Welcome)
 }
 
 -- Keys the game or Roblox already uses, so a binding can't take them.
@@ -26,7 +27,7 @@ Settings.ReservedKeys = {
 	W = true, A = true, S = true, D = true, Space = true, Escape = true, Tab = true, Slash = true, Backquote = true,
 	Up = true, Down = true, Left = true, Right = true, I = true, O = true, LeftShift = true, RightShift = true,
 	Return = true, Backspace = true, F9 = true, F10 = true, F11 = true, F12 = true,
-	Q = true, E = true, H = true, -- the powers and the huss
+	Q = true, E = true, G = true, -- the powers and the dance wheel
 }
 Settings.KeyFields = { "MenuKey" }
 
@@ -37,7 +38,7 @@ local function isChoice(v) return type(v) == "string" and table.find(Settings.Ch
 local VALID: { [string]: (any) -> boolean } = {
 	MasterVolume = isVolume, MusicVolume = isVolume, EffectsVolume = isVolume, MuteUnfocused = isBool,
 	ShowKeyHints = isBool, InventoryVisibility = isChoice, InviteRequests = isChoice, CompanionEffects = isBool,
-	ReducedMotion = isBool,
+	ReducedMotion = isBool, TutorialDone = isBool,
 	MenuKey = function(v)
 		if type(v) ~= "string" or Settings.ReservedKeys[v] then return false end
 		return (pcall(function() return (Enum.KeyCode :: any)[v] end))
