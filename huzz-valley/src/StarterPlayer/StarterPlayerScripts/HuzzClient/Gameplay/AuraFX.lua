@@ -66,7 +66,10 @@ local function anchor(model, at, scale)
 	return find("UpperTorso", "Torso", "HumanoidRootPart"), CFrame.identity
 end
 
-function AuraFX.attach(model, spec)
+-- opts.lite (other players' auras and companions): half the particles, no white cores or shards, no light,
+-- so a full server stays smooth on phones.
+function AuraFX.attach(model, spec, opts)
+	local lite = opts and opts.lite == true
 	local scale = spec.scale or 1
 	local made = {}
 	local emitters = {}
@@ -76,8 +79,9 @@ function AuraFX.attach(model, spec)
 	end
 
 	for _, e in spec.emitters do
+		local skip = lite and (string.sub(e.name, 1, 4) == "Core" or string.sub(e.name, 1, 5) == "Shard")
 		local part, offset = anchor(model, e.at, scale)
-		if part then
+		if part and not skip then
 			local att = keep(Instance.new("Attachment"))
 			att.Name = "HuzzAura" .. e.name
 			att.CFrame = offset
@@ -88,7 +92,7 @@ function AuraFX.attach(model, spec)
 			p.Color = colorSeq(e.colors)
 			p.LightEmission = e.light
 			p.LightInfluence = if e.light > 0.5 then 0 else 1
-			p.Rate = e.rate
+			p.Rate = e.rate * (if lite then 0.5 else 1)
 			p.Lifetime = NumberRange.new(e.life[1], e.life[2])
 			p.Speed = NumberRange.new(e.speed[1] * scale, e.speed[2] * scale)
 			p.SpreadAngle = Vector2.new(e.spread, e.spread)
@@ -105,8 +109,9 @@ function AuraFX.attach(model, spec)
 	end
 
 	local body = anchor(model, "Body", scale)
-	if spec.light and body then
-		local light = keep(Instance.new("PointLight"))
+	local light = nil
+	if spec.light and body and not lite then
+		light = keep(Instance.new("PointLight"))
 		light.Name = "HuzzAuraLight"
 		light.Color = spec.light.color
 		light.Brightness = spec.light.brightness
@@ -115,34 +120,46 @@ function AuraFX.attach(model, spec)
 		light.Parent = body
 	end
 
-	-- Crescent slashes: a small pool, reused.
+	-- Crescent slashes: a small pool, reused. Each is two halves (start-middle, middle-end) so it's thick in the
+	-- middle and sharp at both ends; each half is a bright core drawn over a wider dark edge.
 	local slashes, clock, spawnAt, seed = {}, 0, 0, math.random(1, 100000)
 	local S = spec.slashes
 	if S and body then
-		for i = 1, math.ceil(S.rate * S.life) + 2 do
-			local a0 = keep(Instance.new("Attachment"))
-			a0.Name = "HuzzSlash" .. i .. "A"
-			a0.Parent = body
-			local a1 = keep(Instance.new("Attachment"))
-			a1.Name = "HuzzSlash" .. i .. "B"
-			a1.Parent = body
-			local beams = {}
-			for _, layer in { { "Edge", S.edge, 0, 1.9 }, { "Core", S.core, 1, 1 } } do
-				local b = keep(Instance.new("Beam"))
-				b.Name = "HuzzSlash" .. layer[1]
-				b.Attachment0, b.Attachment1 = a0, a1
-				b.Color = ColorSequence.new(layer[2])
-				b.LightEmission = layer[3]
-				b.LightInfluence = 1 - layer[3]
-				b.FaceCamera = true
-				b.Segments = 18
-				b.Width0 = 0
-				b.Enabled = false
-				b.Parent = body
-				beams[layer[1]] = { beam = b, widthMult = layer[4] }
+		local count = math.ceil(S.rate * (if lite then 0.5 else 1) * S.life) + 2
+		for i = 1, count do
+			local atts = {}
+			for j, tag in { "A", "M", "B" } do
+				local a = keep(Instance.new("Attachment"))
+				a.Name = "HuzzSlash" .. i .. tag
+				a.Parent = body
+				atts[j] = a
 			end
-			slashes[i] = { a0 = a0, a1 = a1, beams = beams, born = -1, seed = 0 }
+			local beams = {}
+			for half = 1, 2 do
+				for _, layer in { { "Edge", S.edge, 0, 1.7, 0 }, { "Core", S.core, 0.6, 1, 0.05 } } do
+					local b = keep(Instance.new("Beam"))
+					b.Name = "HuzzSlash" .. layer[1] .. half
+					b.Attachment0, b.Attachment1 = atts[half], atts[half + 1]
+					b.Color = ColorSequence.new(layer[2])
+					b.LightEmission = layer[3]
+					b.LightInfluence = if layer[3] > 0 then 0 else 1
+					b.ZOffset = layer[5] -- (the core always on top of its dark edge)
+					b.FaceCamera = true
+					b.Segments = 12
+					b.Enabled = false
+					b.Parent = body
+					table.insert(beams, { beam = b, widthMult = layer[4], half = half, edge = layer[1] == "Edge" })
+				end
+			end
+			slashes[i] = { atts = atts, beams = beams, born = -1, seed = 0 }
 		end
+	end
+	local rate = if S then S.rate * (if lite then 0.5 else 1) else 0
+
+	local function frame(pos, tangent)
+		local side = tangent:Cross(Vector3.new(0, 1, 0))
+		side = if side.Magnitude > 0.01 then side.Unit else Vector3.new(1, 0, 0)
+		return CFrame.fromMatrix(pos, tangent, side:Cross(tangent))
 	end
 
 	local handle = { enabled = true }
@@ -152,7 +169,7 @@ function AuraFX.attach(model, spec)
 		end
 		clock += dt
 		if clock >= spawnAt then
-			spawnAt = clock + (0.6 + math.random() * 0.8) / S.rate
+			spawnAt = clock + (0.6 + math.random() * 0.8) / rate
 			for _, s in slashes do
 				if s.born < 0 then
 					seed += 1
@@ -170,23 +187,20 @@ function AuraFX.attach(model, spec)
 						b.beam.Enabled = false
 					end
 				else
-					local p0, p1, t0, t1, curve, alpha, width = AuraLook.slash(S, s.seed, age, body.CFrame.Position, scale)
-					local function frame(pos, tangent)
-						local side = tangent:Cross(Vector3.new(0, 1, 0))
-						side = if side.Magnitude > 0.01 then side.Unit else Vector3.new(1, 0, 0)
-						return CFrame.fromMatrix(pos, tangent, side:Cross(tangent))
-					end
-					s.a0.WorldCFrame = frame(p0, t0)
-					s.a1.WorldCFrame = frame(p1, t1)
-					for name, b in s.beams do
+					local p0, pm, p1, t0, tm, t1, curve, alpha, width =
+						AuraLook.slash(S, s.seed, age, body.CFrame.Position, scale)
+					s.atts[1].WorldCFrame = frame(p0, t0)
+					s.atts[2].WorldCFrame = frame(pm, tm)
+					s.atts[3].WorldCFrame = frame(p1, t1)
+					for _, b in s.beams do
 						local beam = b.beam
 						beam.CurveSize0, beam.CurveSize1 = curve, curve
-						beam.Width1 = width * b.widthMult
-						-- the tail fades out; the edge sits a little fainter than the core
-						local a = math.clamp(alpha + (if name == "Edge" then 0.15 else 0), 0, 1)
-						beam.Transparency = NumberSequence.new({
-							NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.45, math.min(1, a + 0.35)), NumberSequenceKeypoint.new(1, a),
-						})
+						local w = width * b.widthMult
+						-- sharp at the outer ends, thick where the halves meet
+						beam.Width0 = if b.half == 1 then 0 else w
+						beam.Width1 = if b.half == 1 then w else 0
+						local a = math.clamp(alpha + (if b.edge then 0.15 else 0), 0, 1)
+						beam.Transparency = NumberSequence.new(a)
 						beam.Enabled = true
 					end
 				end
@@ -200,6 +214,9 @@ function AuraFX.attach(model, spec)
 		handle.enabled = on
 		for _, p in emitters do
 			p.Enabled = on
+		end
+		if light then
+			light.Enabled = on
 		end
 		if not on then
 			for _, s in slashes do

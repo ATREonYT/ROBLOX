@@ -95,16 +95,27 @@ d.ellipse((28, 28, S - 28, S - 28), outline=255, width=14)
 d.ellipse((70, 62, 104, 96), fill=255)
 finish(m, 'bubble', glow=8)
 
-# Flame: a soft teardrop tongue (brighter core)
+# Flame: a tall ragged fire with three tongues (the main one and two smaller ones leaning out), tips up.
 m = canvas(); d = ImageDraw.Draw(m)
-pts = []
-for i in range(200):
-    t = math.pi * 2 * i / 200
-    w = 60 * (1 + math.cos(t)) / 2
-    pts.append((S / 2 + math.sin(t) * w * 1.1, S / 2 + 40 - math.cos(t) * 100 - (1 - math.cos(t)) * 10))
-d.polygon(pts, fill=255)
-m = m.filter(ImageFilter.GaussianBlur(6)).transpose(Image.FLIP_TOP_BOTTOM)  # (the tip points up)
-finish(m, 'flame', glow=16)
+import random
+random.seed(4)
+def tongue(cx, base, height, width, lean):
+    pts = []
+    for i in range(121):
+        t = i / 120  # 0 = left foot, 0.5 = tip, 1 = right foot
+        side = -1 if t < 0.5 else 1
+        h = 1 - abs(t - 0.5) * 2  # 0 at the feet, 1 at the tip
+        w = width * (1 - h) ** 0.8 * (1 + 0.25 * math.sin(h * 9 + side))  # ragged edges
+        x = cx + side * w + lean * h * h * height
+        y = base - h * height
+        pts.append((x, y))
+    d.polygon(pts, fill=255)
+tongue(S / 2, S - 30, 200, 62, 0.0)
+tongue(S / 2 - 40, S - 40, 120, 30, -0.25)
+tongue(S / 2 + 42, S - 36, 135, 30, 0.22)
+d.ellipse((S / 2 - 70, S - 95, S / 2 + 70, S - 20), fill=255)
+m = m.filter(ImageFilter.GaussianBlur(3))
+finish(m, 'flame', glow=10)
 
 # Wisp: a soft smoke puff
 m = canvas(); d = ImageDraw.Draw(m)

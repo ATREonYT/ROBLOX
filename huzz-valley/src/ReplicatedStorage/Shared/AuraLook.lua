@@ -78,13 +78,13 @@ local function handFlames(look, rank, k)
 		table.insert(list, {
 			name = "Flame" .. hand, at = hand, texture = "Flame",
 			colors = { { 0, c1 }, { 0.5, c1:Lerp(c2, 0.4) }, { 1, c2 } }, light = 1,
-			rate = (44 + 10 * math.max(0, rank - 3)) * k, life = { 0.3, 0.6 }, speed = { 0.8, 1.8 }, spread = 180,
-			size = { { 0, 1.7 * grow }, { 0.4, 2.3 * grow }, { 1, 0.5 } }, alpha = { { 0, 0.3 }, { 0.5, 0.45 }, { 1, 1 } },
-			accel = { 0, 4, 0 }, drag = 3, rot = { -30, 30 }, spin = { -60, 60 }, z = 1.5,
+			rate = (40 + 10 * math.max(0, rank - 3)) * k, life = { 0.3, 0.6 }, speed = { 1, 2.2 }, spread = 50,
+			size = { { 0, 1.6 * grow }, { 0.4, 2.3 * grow }, { 1, 0.6 } }, alpha = { { 0, 0.3 }, { 0.5, 0.45 }, { 1, 1 } },
+			accel = { 0, 5, 0 }, drag = 2, rot = { -15, 15 }, spin = { -30, 30 }, z = 1.5,
 		})
 		table.insert(list, {
 			name = "Core" .. hand, at = hand, texture = "Flame",
-			colors = { { 0, c1:Lerp(WHITE, 0.5) }, { 1, c1 } }, light = 1,
+			colors = { { 0, c1:Lerp(WHITE, 0.25) }, { 1, c1 } }, light = 1,
 			rate = (10 + 3 * math.max(0, rank - 3)) * k, life = { 0.18, 0.35 }, speed = { 0.2, 0.6 }, spread = 180,
 			size = { { 0, 0.7 * grow }, { 1, 0.2 } }, alpha = { { 0, 0.55 }, { 1, 1 } },
 			accel = { 0, 3, 0 }, drag = 3, rot = { -20, 20 }, spin = { -40, 40 }, z = 1.8,
@@ -101,15 +101,15 @@ local function darkWisps(look, rank, k)
 		table.insert(list, {
 			name = "Wisp" .. hand, at = hand, texture = "Wisp",
 			colors = { { 0, deep }, { 1, deep:Lerp(BLACK, 0.5) } }, light = 0,
-			rate = (12 + 3 * math.max(0, rank - 4)) * k, life = { 0.5, 0.9 }, speed = { 0.8, 2 }, spread = 180,
-			size = { { 0, 1.1 }, { 1, 2 } }, alpha = { { 0, 0.35 }, { 1, 1 } },
+			rate = (14 + 3 * math.max(0, rank - 4)) * k, life = { 0.5, 0.9 }, speed = { 0.8, 2 }, spread = 180,
+			size = { { 0, 1.5 }, { 1, 2.6 } }, alpha = { { 0, 0.2 }, { 1, 1 } },
 			accel = { 0, 2.5, 0 }, drag = 2, rot = { 0, 360 }, spin = { -40, 40 }, z = 1.6,
 		})
 		table.insert(list, {
 			name = "Shard" .. hand, at = hand, texture = "Shard",
 			colors = { { 0, deep }, { 1, deep } }, light = 0,
-			rate = (12 + 4 * math.max(0, rank - 4)) * k, life = { 0.35, 0.7 }, speed = { 3, 6 }, spread = 180,
-			size = { { 0, 0.55 }, { 1, 0.15 } }, alpha = { { 0, 0.05 }, { 1, 1 } },
+			rate = (16 + 4 * math.max(0, rank - 4)) * k, life = { 0.35, 0.7 }, speed = { 3, 6 }, spread = 180,
+			size = { { 0, 0.85 }, { 1, 0.25 } }, alpha = { { 0, 0 }, { 1, 1 } },
 			accel = { 0, -2, 0 }, drag = 3, rot = { 0, 360 }, spin = { -300, 300 }, z = 1.2,
 		})
 	end
@@ -203,6 +203,9 @@ function AuraLook.build(look, rarity, kind)
 		add(elementField(look, r, "Body", 1.4, 6, 1.6))
 		table.insert(out.emitters, stars(look, r, "Body", 2))
 		out.slashes = slashes(look, r, 1)
+		if out.slashes then
+			out.slashes.rate = math.min(out.slashes.rate, 1) -- (everyone sees her: calm, kid-safe)
+		end
 		out.light = { color = c1, brightness = 2.5, range = 26, at = "Body" }
 		out.scale = 3
 	end
@@ -217,8 +220,10 @@ end
 
 --[[
 	One crescent slash, `age` seconds into its `life`, round `centre` (a Vector3) at `scale`: an arc on a tilted
-	circle that sweeps round as it fades. Returns startPoint, endPoint, startTangent, endTangent, curve (how far
-	the Beam's control points sit along the tangents), alpha (0 = solid, 1 = gone), width.
+	circle that sweeps round as it fades, thick in the middle and sharp at both ends (drawn as two halves).
+	Returns the start, middle and end points, their tangents, the control-point distance for each half
+	(Beam CurveSize), alpha (0 = solid, 1 = gone) and the width at the middle.
+	Kid-safe: it fades in over 0.2 s (never a pop), then fades out.
 ]]
 function AuraLook.slash(spec, seed, age, centre, scale)
 	local t = math.clamp(age / spec.life, 0, 1)
@@ -233,8 +238,9 @@ function AuraLook.slash(spec, seed, age, centre, scale)
 	local height = (rand(seed, 4) - 0.35) * 1.6 * scale
 	local span = math.rad(spec.span) * (0.8 + rand(seed, 5) * 0.4)
 	local dir = if rand(seed, 6) < 0.5 then 1 else -1
-	local a0 = rand(seed, 7) * math.pi * 2 + dir * math.rad(80) * (1 - (1 - t) ^ 2) -- sweeps round, easing out
-	local a1 = a0 + dir * span * (0.35 + 0.65 * math.min(1, t * 3)) -- the arc grows out quickly
+	local a0 = rand(seed, 7) * math.pi * 2 + dir * math.rad(70) * (1 - (1 - t) ^ 2) -- sweeps round, easing out
+	local a1 = a0 + dir * span * (0.45 + 0.55 * math.min(1, t * 2.5)) -- the arc grows out
+	local am = (a0 + a1) / 2
 	local c = centre + Vector3.new(0, height, 0)
 	local function at(a)
 		return c + (u * math.cos(a) + v * math.sin(a)) * r
@@ -242,9 +248,10 @@ function AuraLook.slash(spec, seed, age, centre, scale)
 	local function tangent(a)
 		return (u * -math.sin(a) + v * math.cos(a)) * dir
 	end
-	local curve = 4 / 3 * math.tan(math.abs(a1 - a0) / 4) * r
-	local alpha = if t < 0.12 then 1 - t / 0.12 else ((t - 0.12) / 0.88) ^ 2.5 -- (stays solid, then fades)
-	return at(a0), at(a1), tangent(a0), tangent(a1), curve, alpha, spec.width * scale * (1 - 0.5 * t)
+	local curve = 4 / 3 * math.tan(math.abs(am - a0) / 4) * r
+	local fadeIn = 0.2 / spec.life
+	local alpha = if t < fadeIn then 1 - t / fadeIn else ((t - fadeIn) / (1 - fadeIn)) ^ 2
+	return at(a0), at(am), at(a1), tangent(a0), tangent(am), tangent(a1), curve, alpha, spec.width * scale * (1 - 0.4 * t)
 end
 
 return AuraLook

@@ -265,6 +265,12 @@ The UI golden slice and its backend are built (saving, coins and gems, shop purc
     feather, snow, leaf, bubble, glow), packed as `Images/Fx` and uploaded with the other pictures
     (`Fx/<Name>` in ImageIds). Until uploaded, Roblox's built-in `rbxasset://textures/particles/` fire,
     smoke and sparkles stand in.
+  - Critic fixes: slashes are two halves (sharp at both ends), the core Beam has ZOffset 0.05 over its dark
+    edge, they fade in over 0.2 s (kid-safe) and the showcase's are capped at 1 a second; other players' auras
+    and companions are "lite" (half the particles, no white cores or shards, no light); `setEnabled` also
+    switches the light; companions appear inside 150 studs and go past 190; her size is measured on body parts
+    only; Fx shapes are packed at 64 px (every client downloads them). In a round your companion pops out
+    and cheers (bouncing) once you're safe across.
   - In rounds your girl reacts: `RoundHud` shows her face and a speech bubble (bottom left) on Safe,
     Rescued, a rescue you made, Caught, a catch, Hero and the win.
   - Preview: `motion3d/aura_scene.luau` simulates the same data (sprites + ribbons in `render.mjs`):

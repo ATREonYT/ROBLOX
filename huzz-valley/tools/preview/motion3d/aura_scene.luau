@@ -20,7 +20,8 @@ local SHOWS = {
 	{ "CAC_R6_ixKatsu_358858", "Mythic" }, -- Megumin
 }
 local EACH = 4
-local SECONDS = EACH * #SHOWS
+local SKY = 4 -- then the girl over the map, filmed from the field below (the disc under her is gone)
+local SECONDS = EACH * #SHOWS + SKY
 
 local scene = Scene.new()
 local player = scene:addRig(Rig.r15("Player", { shirt = "#1d1f2a", pants = "#16171f", hair = "#3a5bd0" }))
@@ -42,6 +43,19 @@ end
 -- (Lune has no Random: a small seeded one)
 local state = 7
 local rng = {}
+-- the big her over the map: a 3x pink stand-in rig, 34 studs up
+local big = scene:addRig(Rig.r15("Showcase", { shirt = "#f06aa8", pants = "#3b2f5c", skin = "#f8dccb", hair = "#b88cf0" }))
+for _, p in big.parts do p.Size *= 3 end
+for _, m in big.motors do
+	m.C0 = CFrame.new(m.C0.Position * 3) * m.C0.Rotation
+	m.C1 = CFrame.new(m.C1.Position * 3) * m.C1.Rotation
+end
+for _, d in big.decor do
+	d.offset = CFrame.new(d.offset.Position * 3) * d.offset.Rotation
+	d.Size *= 3
+end
+big.root.CFrame = CFrame.new(0, -500, 0)
+Rig.fk(big)
 function rng:NextNumber()
 	state = (state * 1103515245 + 12345) % 2147483648
 	return state / 2147483648
@@ -145,18 +159,20 @@ local function drawSystem(sys, sprites, ribbons)
 		if age <= S.life then
 			table.insert(keep, sl)
 			local centre = anchorPos(sys.rig, "Body", scale)
-			local p0, p1, t0, t1, curve, alpha, width = AuraLook.slash(S, sl.seed, age, centre, scale)
-			local c0, c1 = p0 + t0 * curve, p1 - t1 * curve
-			for _, layer in { { S.edge, 1.9, 0.15, false }, { S.core, 1, 0, true } } do
+			local p0, pm, p1, t0, tm, t1, curve, alpha, width = AuraLook.slash(S, sl.seed, age, centre, scale)
+			for _, layer in { { S.edge, 1.7, 0.15, false }, { S.core, 1, 0, true } } do
 				local pts, w, a = {}, {}, {}
-				for k = 0, 16 do
-					local u = k / 16
-					local b = p0 * (1 - u) ^ 3 + c0 * 3 * (1 - u) ^ 2 * u + c1 * 3 * (1 - u) * u ^ 2 + p1 * u ^ 3
-					table.insert(pts, { b.X, b.Y, b.Z })
-					table.insert(w, width * layer[2] * u)
-					local tr = if u < 0.45 then 1 + (math.min(1, alpha + layer[3] + 0.35) - 1) * (u / 0.45)
-						else math.min(1, alpha + layer[3] + 0.35) + ((alpha + layer[3]) - math.min(1, alpha + layer[3] + 0.35)) * ((u - 0.45) / 0.55)
-					table.insert(a, math.clamp(1 - tr, 0, 1))
+				for half = 1, 2 do
+					local A, B = if half == 1 then p0 else pm, if half == 1 then pm else p1
+					local tA, tB = if half == 1 then t0 else tm, if half == 1 then tm else t1
+					local c0, c1 = A + tA * curve, B - tB * curve
+					for k = (if half == 1 then 0 else 1), 8 do
+						local u = k / 8
+						local b = A * (1 - u) ^ 3 + c0 * 3 * (1 - u) ^ 2 * u + c1 * 3 * (1 - u) * u ^ 2 + B * u ^ 3
+						table.insert(pts, { b.X, b.Y, b.Z })
+						table.insert(w, width * layer[2] * (if half == 1 then u else 1 - u))
+						table.insert(a, math.clamp(1 - (alpha + layer[3]), 0, 1))
+					end
 				end
 				table.insert(ribbons, { pts = pts, w = w, a = a, c = hex(layer[1]), add = layer[4] })
 			end
@@ -171,7 +187,17 @@ cam = Vector3.new(1.4, 3.9, -8.6)
 for f = 0, SECONDS * FPS - 1 do
 	local t = f * DT
 	local i = math.floor(t / EACH) + 1
-	if i ~= shown then
+	local skyShot = i > #SHOWS
+	if skyShot and shown <= #SHOWS then
+		shown = i
+		for _, s in systems do s.on = false end
+		local look = AuraLook.lookFor(Looks, SHOWS[#SHOWS][1], nil)
+		local spec = AuraLook.build(look, SHOWS[#SHOWS][2], "Showcase")
+		local at = Vector3.new(0, 34 + Rig.REST_HEIGHT * 3, -24)
+		big.root.CFrame = Rig.lookAt(at, at + Vector3.new(0, 0, 1))
+		Rig.fk(big)
+		table.insert(systems, system(big, spec))
+	elseif not skyShot and i ~= shown then
 		shown = i
 		for _, s in systems do s.on = false end -- the last look's particles die away naturally
 		local id, rarity = SHOWS[i][1], SHOWS[i][2]
@@ -198,6 +224,12 @@ for f = 0, SECONDS * FPS - 1 do
 		if s.on or #s.particles > 0 or #s.slashes > 0 then table.insert(live, s) end
 	end
 	systems = live
-	scene:frame(cam, Vector3.new(-0.3, 3.4, 0), { sprites = sprites, ribbons = ribbons })
+	if skyShot then
+		big.root.CFrame = Rig.lookAt(Vector3.new(0, 34 + Rig.REST_HEIGHT * 3 + math.sin(t * 1.5) * 0.6, -24), Vector3.new(math.sin(t * 0.35) * 5, 34 + Rig.REST_HEIGHT * 3, -19))
+		Rig.fk(big)
+		scene:frame(Vector3.new(7, 4, 14), Vector3.new(0, 36, -24), { sprites = sprites, ribbons = ribbons })
+	else
+		scene:frame(cam, Vector3.new(-0.3, 3.4, 0), { sprites = sprites, ribbons = ribbons })
+	end
 end
 scene:save(nil, FPS, 1024, 768, { sky = "#5c6672", ground = "#2c333c", grid = false })

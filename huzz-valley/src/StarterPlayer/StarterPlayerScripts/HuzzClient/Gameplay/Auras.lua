@@ -3,12 +3,14 @@
 	included"):
 	  - Your equipped girl (the player's HuzzCompanion attribute, CompanionService) floats beside you as a small
 	    companion in the lobby, bobbing and leaning as you move, with her effects (Shared/AuraLook "Companion").
-	    In a round she steps aside (the round's own girl is the prize).
+	    In a round she steps aside (the round's own girl is the prize) until you're safe across: then she pops
+	    out and cheers beside you.
 	  - Equip a Rare or better girl and YOU get her aura, in the lobby and in rounds (the owner's reference:
 	    flames on your hands, dark wisps, crescent slashes as she gets rarer; "Player").
 	  - The big girl over the map wears her aura at 3x ("Showcase", tag HuzzShowcase).
 	  - The round's girl, carried or following a catcher, glows with her "Companion" look.
-	Everyone's are drawn by every client (Gameplay/AuraFX), only near the camera.
+	Everyone's are drawn by every client (Gameplay/AuraFX), only near the camera; other players' are drawn
+	"lite" (half the particles, no light) so a full server stays smooth on phones.
 ]]
 local M = {}
 
@@ -40,9 +42,24 @@ function M.start()
 	folder.Name = "HuzzCompanions"
 	folder.Parent = Workspace
 
-	local function near(position)
+	local function distance(position)
 		local cam = Workspace.CurrentCamera
-		return cam ~= nil and (cam.CFrame.Position - position).Magnitude < NEAR
+		return if cam then (cam.CFrame.Position - position).Magnitude else math.huge
+	end
+	local function near(position)
+		return distance(position) < NEAR
+	end
+
+	-- Her height without hair, hats or wings (as GirlService.bodyBounds): the body parts only.
+	local function bodyHeight(model)
+		local low, high = math.huge, -math.huge
+		for _, d in model:GetDescendants() do
+			if d:IsA("BasePart") and not d:FindFirstAncestorOfClass("Accessory") and d.Name ~= "HumanoidRootPart" then
+				local y, h = d.CFrame.Position.Y, d.Size.Y / 2
+				low, high = math.min(low, y - h), math.max(high, y + h)
+			end
+		end
+		return if high > low then high - low else nil
 	end
 
 	-- Players: their aura and their companion.
@@ -61,7 +78,7 @@ function M.start()
 		end
 	end
 
-	local function makeCompanion(key, rarity)
+	local function makeCompanion(key, rarity, lite)
 		local girls = ReplicatedStorage:FindFirstChild("HuzzGirls")
 		local source = girls and girls:FindFirstChild(key)
 		if not (source and source:IsA("Model")) then
@@ -75,13 +92,13 @@ function M.start()
 			end
 		end
 		local _, size = model:GetBoundingBox()
-		model:ScaleTo(model:GetScale() * COMPANION_HEIGHT / math.max(size.Y, 1))
+		model:ScaleTo(model:GetScale() * COMPANION_HEIGHT / math.max(bodyHeight(model) or size.Y, 1))
 		local box, newSize = model:GetBoundingBox()
 		local offset = box:ToObjectSpace(model:GetPivot()) -- her pivot from her centre
 		model.Parent = folder
 		local spec = AuraLook.build(lookOf(source:GetAttribute("Id"), rarity), rarity, "Companion")
 		spec.scale = COMPANION_HEIGHT / 5
-		return { model = model, handle = AuraFX.attach(model, spec), offset = offset, size = newSize, pos = nil, face = nil, lean = 0 }
+		return { model = model, handle = AuraFX.attach(model, spec, { lite = lite }), offset = offset, size = newSize, pos = nil, face = nil, lean = 0 }
 	end
 
 	local function stateOf(p)
@@ -105,14 +122,16 @@ function M.start()
 		local source = girls and key ~= "" and girls:FindFirstChild(key)
 
 		-- the aura on the player (Rare and up)
+		local lite = p ~= Players.LocalPlayer
 		local wantAura = alive and source ~= nil and (AuraLook.RANK[rarity] or 0) >= 3
-		local auraFor = wantAura and (key .. "|" .. tostring(character)) or nil
-		if s.auraFor ~= auraFor then
+		local auraFor = if wantAura then key else nil
+		if s.auraFor ~= auraFor or s.auraChar ~= character then
 			clearAura(s)
+			s.auraChar = character
 			if auraFor then
 				local spec = AuraLook.build(lookOf(source:GetAttribute("Id"), rarity), rarity, "Player")
 				if spec then
-					s.aura, s.auraFor = AuraFX.attach(character, spec), auraFor
+					s.aura, s.auraFor = AuraFX.attach(character, spec, { lite = lite }), auraFor
 				end
 			end
 		end
@@ -124,18 +143,21 @@ function M.start()
 		-- the companion beside them (not in a round)
 		local role = p:GetAttribute("HuzzRole")
 		local inRound = role == "Runner" or role == "Catcher"
-		local wantCompanion = alive and source ~= nil and not inRound and near(root.Position)
-		if s.companion and (not wantCompanion or s.key ~= key) then
+		local cheering = inRound and p:GetAttribute("HuzzStatus") == "Safe"
+		-- made inside 150 studs, removed past 190 (no rebuilding over and over at the edge)
+		local far = if root then distance(root.Position) else math.huge
+		local allowed = alive and source ~= nil and (not inRound or cheering)
+		if s.companion and (not allowed or s.key ~= key or far > 190) then
 			clearCompanion(s)
 		end
 		s.key = key
-		if wantCompanion and not s.companion then
-			s.companion = makeCompanion(key, rarity)
+		if allowed and not s.companion and far < 150 then
+			s.companion = makeCompanion(key, rarity, lite)
 		end
 		local c = s.companion
 		if c then
 			-- over your right shoulder, a little behind, bobbing; she eases after you and leans as you move
-			local bob = math.sin(clock * 2.2 + p.UserId % 7) * 0.25
+			local bob = if cheering then math.abs(math.sin(clock * 5)) * 0.9 else math.sin(clock * 2.2 + p.UserId % 7) * 0.25
 			local target = (root.CFrame * CFrame.new(2.4, 0.9 + bob, 1.8)).Position
 			local k = 1 - math.exp(-dt * 6)
 			local before = c.pos or target
@@ -154,6 +176,7 @@ function M.start()
 
 	-- Girl models in the world: the showcase over the map, the round's girl carried or following.
 	local worldAuras = {} -- Model -> handle
+	local worldConns = {} -- Model -> its AncestryChanged connection
 	local function watchModel(model, kind)
 		if worldAuras[model] or not model:IsA("Model") then
 			return
@@ -166,11 +189,16 @@ function M.start()
 		if kind == "Companion" then
 			spec.scale = 1 -- (full size: the round's girl)
 		end
-		worldAuras[model] = AuraFX.attach(model, spec)
-		model.AncestryChanged:Connect(function()
+		worldAuras[model] = AuraFX.attach(model, spec, { lite = kind ~= "Showcase" })
+		if worldConns[model] then
+			worldConns[model]:Disconnect()
+		end
+		worldConns[model] = model.AncestryChanged:Connect(function()
 			if not model:IsDescendantOf(Workspace) and worldAuras[model] then
 				worldAuras[model].destroy()
 				worldAuras[model] = nil
+				worldConns[model]:Disconnect()
+				worldConns[model] = nil
 			end
 		end)
 	end
