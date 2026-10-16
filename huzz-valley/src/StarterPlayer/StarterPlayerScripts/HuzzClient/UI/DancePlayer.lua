@@ -107,7 +107,7 @@ function DancePlayer.play(id: string): (boolean, string?)
 	local beat = partnerStart(id) or now
 	if beat < now then
 		task.spawn(function()
-			for _ = 1, 40 do -- (wait for the animation to load)
+			for _ = 1, 200 do -- (wait up to 5 s for the animation to load: a published one can take a moment)
 				if made.Length > 0 or track ~= made then break end
 				task.wait(0.025)
 			end

@@ -125,16 +125,20 @@ function ActionService.start()
 	-- dance"): the character carries the dance it's doing and when it started (server time). UI/DancePlayer starts
 	-- the same dance on the same beat as anyone near you already doing it. Only dances you own.
 	local danceRemote = Net.get("Dance") :: RemoteEvent
+	local lastDance: { [Player]: number } = {}
+	Players.PlayerRemoving:Connect(function(p) lastDance[p] = nil end)
 	danceRemote.OnServerEvent:Connect(function(player, id, startAt)
 		local character = player.Character
 		if not character then return end
-		if id == nil then
+		local now0 = os.clock()
+		if lastDance[player] and now0 - lastDance[player] < 0.1 then return end
+		lastDance[player] = now0
+		-- (stopped, or a dance that can't be yours: clear it, so nobody syncs to an old dance)
+		if id == nil or type(id) ~= "string" or not Dances.get(id) or not DataService.ownedDances(player)[id] then
 			character:SetAttribute("HuzzDance", nil)
 			character:SetAttribute("HuzzDanceAt", nil)
 			return
 		end
-		local profile = DataService.get(player)
-		if type(id) ~= "string" or not Dances.get(id) or not (profile and profile.Data.Dances[id]) then return end
 		local now = workspace:GetServerTimeNow()
 		if type(startAt) ~= "number" or startAt ~= startAt or startAt > now + 1 or startAt < now - 3600 then
 			startAt = now

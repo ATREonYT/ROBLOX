@@ -209,36 +209,41 @@ end
 	(a gap in a map's floor, a glitch through a wall) is put straight back on it at the nearest point inside the
 	walls, a moment later; anyone falling far below the lobby goes back to the lobby spawn.
 ]]
+local MARGIN = 8 -- studs past the walls that still count as the field (less than Config.Map.Gap to the lobby)
+
+local function catchOne(player: Player)
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if not (root and root:IsA("BasePart")) then return end
+	local pos = root.Position
+	local back
+	if field then
+		local l = field.frame:PointToObjectSpace(pos)
+		local over = l.X > field.lo.X - MARGIN and l.X < field.hi.X + MARGIN and l.Z > field.lo.Z - MARGIN and l.Z < field.hi.Z + MARGIN
+		if over and pos.Y < field.floor - 12 then
+			local x = math.clamp(l.X, field.lo.X + 4, field.hi.X - 4)
+			local z = math.clamp(l.Z, field.lo.Z + 4, field.hi.Z - 4)
+			local w = field.frame:PointToWorldSpace(Vector3.new(x, 0, z))
+			back = Vector3.new(w.X, field.floor + 3.5, w.Z)
+		end
+	end
+	local lobby = MapService.lobby
+	if not back and lobby and pos.Y < lobby.Position.Y - 60 then
+		local spawn = Workspace:FindFirstChild("HuzzLobbySpawn")
+		back = (if spawn and spawn:IsA("BasePart") then spawn.Position else lobby.Position + Vector3.new(0, lobby.Size.Y / 2, 0)) + Vector3.new(0, 4, 0)
+	end
+	if back then
+		root.AssemblyLinearVelocity = Vector3.zero
+		character:PivotTo(CFrame.new(back) * root.CFrame.Rotation)
+	end
+end
+
 function MapService.catchFalls()
 	local Players = game:GetService("Players")
 	while true do
 		task.wait(0.25)
 		for _, player in Players:GetPlayers() do
-			local character = player.Character
-			local root = character and character:FindFirstChild("HumanoidRootPart")
-			if root and root:IsA("BasePart") then
-				local pos = root.Position
-				local back
-				if field then
-					local l = field.frame:PointToObjectSpace(pos)
-					local near = l.X > field.lo.X - 60 and l.X < field.hi.X + 60 and l.Z > field.lo.Z - 60 and l.Z < field.hi.Z + 60
-					if near and pos.Y < field.floor - 12 then
-						local x = math.clamp(l.X, field.lo.X + 4, field.hi.X - 4)
-						local z = math.clamp(l.Z, field.lo.Z + 4, field.hi.Z - 4)
-						local w = field.frame:PointToWorldSpace(Vector3.new(x, 0, z))
-						back = Vector3.new(w.X, field.floor + 3.5, w.Z)
-					end
-				end
-				local lobby = MapService.lobby
-				if not back and lobby and pos.Y < lobby.Position.Y - 60 then
-					local spawn = Workspace:FindFirstChild("HuzzLobbySpawn")
-					back = (if spawn and spawn:IsA("BasePart") then spawn.Position else lobby.Position + Vector3.new(0, lobby.Size.Y / 2, 0)) + Vector3.new(0, 4, 0)
-				end
-				if back then
-					root.AssemblyLinearVelocity = Vector3.zero
-					character:PivotTo(CFrame.new(back) * root.CFrame.Rotation)
-				end
-			end
+			pcall(catchOne, player) -- (one odd character can't stop the net for everyone)
 		end
 	end
 end
@@ -434,7 +439,7 @@ local function boundary(model, a, b, middle)
 	local function floorAt(x, z)
 		local w = frame:PointToWorldSpace(Vector3.new(x, 0, z))
 		local gy = MapService.ground(Vector3.new(w.X, floorY, w.Z), floorY + 6)
-		return gy ~= nil and math.abs(gy - floorY) <= 1.5
+		return gy ~= nil and gy >= floorY - 1.5 -- (a prop or a raised pad is still floor: only a hole or a drop ends it)
 	end
 	local function reach(axis, dir, from, to, lanes)
 		local best = to

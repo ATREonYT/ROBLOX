@@ -105,7 +105,17 @@ local function pose(model: Model, posed: { [string]: CFrame })
 		table.insert(edges[b], { other = a, place = fromB })
 	end
 	for _, j in model:GetDescendants() do
-		if j:IsA("JointInstance") and j.Part0 and j.Part1 then
+		if j.ClassName == "AnimationConstraint" then
+			-- avatars on Roblox's newer joints: like a Motor6D with its attachments as C0 / C1
+			local a0, a1 = (j :: any).Attachment0, (j :: any).Attachment1
+			local p0 = a0 and a0.Parent
+			local p1 = a1 and a1.Parent
+			if p0 and p1 and p0:IsA("BasePart") and p1:IsA("BasePart") then
+				local t = posed[p1.Name] or CFrame.new()
+				local c0, c1 = a0.CFrame, a1.CFrame
+				link(p0, p1, function(a) return a.CFrame * c0 * t * c1:Inverse() end, function(b) return b.CFrame * c1 * t:Inverse() * c0:Inverse() end)
+			end
+		elseif j:IsA("JointInstance") and j.Part0 and j.Part1 then
 			local p0, p1 = j.Part0 :: BasePart, j.Part1 :: BasePart
 			local t = if j:IsA("Motor6D") then (posed[p1.Name] or CFrame.new()) else CFrame.new()
 			local c0, c1 = j.C0, j.C1
@@ -116,6 +126,7 @@ local function pose(model: Model, posed: { [string]: CFrame })
 			link(p0, p1, function(a) return a.CFrame * rel end, function(b) return b.CFrame * rel:Inverse() end)
 		end
 	end
+	local rootWas = root.CFrame
 	root.CFrame = CFrame.new()
 	local done = { [root] = true }
 	local queue, i = { root }, 1
@@ -131,11 +142,20 @@ local function pose(model: Model, posed: { [string]: CFrame })
 		end
 	end
 	for _, p in model:GetDescendants() do
-		if p:IsA("BasePart") then p.Anchored = true end
+		if p:IsA("BasePart") then
+			-- a part no joint reaches (held some other way) keeps its place relative to the body
+			if not done[p] then p.CFrame = rootWas:ToObjectSpace(p.CFrame) end
+			p.Anchored = true
+		end
 	end
 end
 
 local templates: { [string]: { char: Model, model: Model } } = {}
+-- (accessories that finish loading after the first pictures: draw them again with the full look)
+local me = Players.LocalPlayer
+if me then
+	pcall(function() me.CharacterAppearanceLoaded:Connect(function() table.clear(templates) end) end)
+end
 
 -- Your character in this dance's pose (a template to clone), or nil.
 local function posedModel(id: string): Model?
