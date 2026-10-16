@@ -10,19 +10,27 @@ return {
 	-- After the vote the new map replaces the old one and the girl roller (a small reel at the top of
 	-- the screen) runs: Cells girls go past top to bottom, slowing over SpinTime, stopping on the girl at Stop.
 	Roll = { Time = 7.5, SpinTime = 5.5, Cells = 30, Stop = 26 },
-	CountdownTime = 5, -- before GO: runners wait behind the start line (they can walk around in their zone)
+	-- Huss Valley's loop, one to one (owner's call; Shared/RoundRules): runners line up on their safe line,
+	-- one random runner picks HERO (crosses alone first) or CHICKEN, then everyone runs. Stabbed runners
+	-- go down and can be rescued; anyone still down at the end joins the catchers. Runners win by getting
+	-- everyone across Crossings rounds in a row; catchers win when no runners are left.
+	Crossings = 3,
+	LineupTime = 3.5, -- runners stand in a row on their line, facing across (the round's goal shows)
+	-- The pick (owner's call): the camera sweeps the line, a highlight hops between runners for Roulette
+	-- seconds and lands on one at random; the camera zooms in and they get ChooseTime seconds to pick
+	-- (no answer = a random pick). ShowTime: everyone sees what they chose.
+	Pick = { Enabled = true, Roulette = 2.8, ChooseTime = 8, ShowTime = 2.6 },
+	HeroTime = 20, -- the Hero's solo crossing (everyone else waits on the line)
+	HeroBonus = 25, -- coins for a Hero who makes it across (and the girl comes down to them)
+	CountdownTime = 3, -- 3, 2, 1, GO (everyone on the line)
 	RoundTime = 45, -- runners still out when it ends count as caught
-	RoundEndPause = 4,
+	RoundEndPause = 3.5,
 	GameOverTime = 8,
-	MaxRounds = 12, -- safety net: whoever holds the girl then wins
-
-	-- How a runner gets her (owner's call): "FirstAcross" = the first runner into the safe
-	-- zone gets her automatically (she appears over their head). "Grab" = the first runner
-	-- to walk up to her where she waits picks her up.
-	Pickup = "FirstAcross",
-	-- Where she is while nobody has her: "Sky" = only the big showpiece over the map (owner's call), "Middle"
-	-- = standing in the middle, "SafeZone" = on the far side.
-	GirlSpot = "Sky",
+	MaxRounds = 12, -- safety net: catchers win
+	-- Rescue (as in Huss Valley): a runner still out on the field stands within Range studs of a downed
+	-- runner for Time seconds to get them back up.
+	-- Rescued runners can't be stabbed for Shield seconds (no camping the downed).
+	Rescue = { Range = 5.5, Time = 1.2, Shield = 2 },
 	-- The game's girl, big, floating over the middle of the map for the whole game (owner's call).
 	Showcase = {
 		Scale = 3, -- times her normal size
@@ -31,8 +39,6 @@ return {
 		Bob = 0.6, -- studs up and down
 		Sparkles = 14, -- per second
 	},
-	GrabRange = 6, -- "Grab" only: studs from her centre to a runner's root
-
 	-- How catchers tag (owner's call): "Stab" = they hold a knife and click / tap STAB to stab a runner
 	-- in reach; "Touch" = running into a runner (TagRange) tags them.
 	TagMode = "Stab",
@@ -43,19 +49,15 @@ return {
 	},
 	TagRange = 5.5, -- "Touch" only: studs between root parts
 
-	-- Hero or Chicken (owner's call): during the countdown each runner picks. Only a Hero can take the girl by
-	-- crossing first or rescue her; if no Hero makes it across, the first runner across gets her after all.
-	Heroes = true,
 	HussCooldown = 0.4, -- seconds after a toss ends before the next (Carry.Huss.Time is the toss itself)
 
 	-- The huss (owner's call): Space during a round dashes you the way you're moving (forward, back, left or
 	-- right). Jumping is off in rounds. Speed in studs per second for Time seconds; Cooldown before the next.
 	Dash = { Speed = 72, Time = 0.24, Cooldown = 2.5 },
 
-	-- A caught runner falls flat on their face and lies there until the next round
-	-- (owner's call). Enabled = false sends them to the Bench part instead.
+	-- A caught runner falls flat on their face and lies there until rescued or the next round
+	-- (owner's call).
 	Knockdown = {
-		Enabled = true,
 		FallTime = 0.45, -- seconds from standing to flat
 		Bounce = 6, -- degrees of bounce when they hit the floor
 		Lift = 0.5, -- torso thickness: how far the body lies above the floor
@@ -78,6 +80,7 @@ return {
 	Map = {
 		ZoneA = "ZoneA", -- one side; round 1 starts here
 		ZoneB = "ZoneB", -- the other side; round 1's safe zone
+		LineupGap = 4, -- studs between runners standing on the line
 		Middle = "Middle", -- where catchers spawn
 		Bench = "Bench", -- where caught runners wait out the round
 		Lobby = "Lobby", -- where everyone waits between games (optional; else the SpawnBaseplate)

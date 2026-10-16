@@ -1,9 +1,10 @@
 --[[
 	Shift lock while you're in a round (owner's call; never in the lobby): the mouse stays in the middle,
 	the camera sits over your shoulder and you face where the camera looks. Hold Alt to let go of it for
-	as long as you hold it. It lets go of the
-	mouse whenever a window is open (MenuOpen) or the Hero / Chicken pick shows (HuzzChoosing), and does
-	nothing on phones and tablets.
+	as long as you hold it. The mouse pointer is hidden while it's on (owner's call: no cursor in the game;
+	Alt brings it back). It lets go of the mouse whenever a window is open (MenuOpen), the Chicken or Hero
+	pick shows (HuzzChoosing) or the round's intro camera plays (HuzzCinematic), and does nothing on
+	phones and tablets.
 	Roblox's own Shift-key mouse lock is switched off by the server (DevEnableMouseLock), so the two
 	never fight.
 ]]
@@ -21,7 +22,7 @@ function M.start()
 	local active = false
 	local Net = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared").Net)
 	local round = Net.get("Round") :: RemoteEvent
-	local PLAYING = { Countdown = true, Running = true, RoundOver = true }
+	local PLAYING = { HeroRun = true, Countdown = true, Running = true, RoundOver = true }
 
 	if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
 		return
@@ -43,6 +44,7 @@ function M.start()
 			h.AutoRotate = not on
 			h.CameraOffset = if on then OFFSET else Vector3.zero
 		end
+		UserInputService.MouseIconEnabled = not on -- no pointer while it's on
 		if not on then
 			UserInputService.MouseBehavior = Enum.MouseBehavior.Default
 		end
@@ -74,7 +76,7 @@ function M.start()
 		local role = player:GetAttribute("HuzzRole")
 		local inRound = (role == "Runner" or role == "Catcher") and PLAYING[round:GetAttribute("Stage") or ""] == true
 		local on = inRound and not altHeld and alive and player:GetAttribute("MenuOpen") ~= true
-			and player:GetAttribute("HuzzChoosing") ~= true
+			and player:GetAttribute("HuzzChoosing") ~= true and player:GetAttribute("HuzzCinematic") ~= true
 		setActive(on)
 		if not on then
 			return

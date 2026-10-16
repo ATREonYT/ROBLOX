@@ -619,6 +619,34 @@ function MapService.holdStart(startName, on)
 	wall.Parent = loaded or Workspace
 end
 
+--[[
+	The line-up (Huss Valley): runners stand shoulder to shoulder just behind their safe line, facing
+	across. Returns the line's CFrame (on the floor at its middle, looking across the field), its length,
+	and `count` spots (CFrames for the root): one row centred on the middle, a second row behind if it's full.
+]]
+function MapService.lineup(zoneName, count)
+	local zone = MapService.zones[zoneName]
+	if not (zone and MapService.zones.Middle) then
+		return nil, 0, {}
+	end
+	local centre, out, length = edge(zone)
+	local line = CFrame.lookAt(centre, centre + out)
+	local gap = Config.Map.LineupGap or 4
+	local perRow = math.max(1, math.floor((length - 6) / gap) + 1)
+	local spots = {}
+	for i = 1, count do
+		local row = (i - 1) // perRow
+		local inRow = math.min(perRow, count - row * perRow)
+		local k = (i - 1) % perRow
+		local x = (k - (inRow - 1) / 2) * gap
+		local at = line * CFrame.new(x, 0, 2.5 + row * 4) -- (CFrame z points back, away from the field)
+		local floor = MapService.ground(at.Position, at.Position.Y + 6) or at.Position.Y
+		local pos = Vector3.new(at.Position.X, floor + 3.2, at.Position.Z)
+		spots[i] = CFrame.lookAt(pos, pos + out)
+	end
+	return line, length, spots
+end
+
 -- The same point pulled back inside the zone (1.5 studs in from the edges), or nil if already in.
 function MapService.keepIn(zone, position)
 	if MapService.inZone(zone, position) then

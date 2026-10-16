@@ -12,6 +12,10 @@ This file loads in every session, so keep it short. Each game folder has its own
   - At most 2 render rounds per change, and one picture per change, only when there's something to judge.
   - Don't re-derive what this file or the game's `CLAUDE.md` already says.
 
+## Game feel
+- Read `GAME-FEEL.md` before building a new game: copy the reference loop exactly, give each round a
+  cinematic moment, use one message line, name tags, rescues, sharp controls and small UI.
+
 ## How we build
 1. **Golden slice first.** Build the smallest piece that proves the look and feel, get a yes, then roll it out. Full builds that miss waste days.
 2. **The reference is the authority.** Every visual change gets ONE side-by-side (ours next to the reference, same size and framing). Never say "matches" without that picture. Judge motion on a 30 fps video, not stills.

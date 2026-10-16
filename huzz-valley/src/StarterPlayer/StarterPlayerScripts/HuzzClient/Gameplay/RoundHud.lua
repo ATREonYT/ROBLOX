@@ -1,9 +1,11 @@
 --[[
-	Round HUD: the timer pill, your role badge (gold HERO, cream CHICKEN, red CATCHER...), the girl
-	up for grabs (her picture, rarity and who has her), big announcements, and faint outlines on
-	everyone in the game: catchers red, runners blue (as in the reference).
+	Round HUD, laid out like Huss Valley's: at the top centre "ROUND 01", one big message line (the latest
+	thing that happened: "Messi reached safety!" in green, "Sabtwinl was caught by Danilo!" in red...),
+	and under it your role and the time left ("RUNNER · 0:23"), plus the "in a row" pips (everyone across
+	3 rounds in a row wins). Big moments (3-2-1-GO, wins) also show in the middle of the screen. The prize
+	card (top left) shows the girl, her rarity and who has her. Faint outlines show every player's side:
+	catchers red, runners blue, the Hero yellow, safe runners green.
 	Fonts: Luckiest Guy for big words, Fredoka One for lines. Laid out at 1280 x 720 and scaled.
-	Built in code for now; it moves into the owner's UI kit with the Match HUD page.
 ]]
 local M = {}
 
@@ -27,10 +29,12 @@ function M.start()
 	local ROUND = Font.new("rbxasset://fonts/families/FredokaOne.json") -- (Theme.Fonts.Round)
 	local INK = Color3.fromRGB(16, 14, 38) -- outlines and shadows
 	local GLASS = Color3.fromRGB(20, 22, 52)
-	local RED = Color3.fromRGB(255, 84, 96)
+	local RED = Color3.fromRGB(255, 96, 96)
 	local GOLD = Color3.fromRGB(255, 205, 80)
-	local GREEN = Color3.fromRGB(96, 232, 140)
+	local GREEN = Color3.fromRGB(110, 236, 140)
+	local BLUE = Color3.fromRGB(110, 184, 255)
 	local MUTED = Color3.fromRGB(196, 200, 226)
+	local WHITE = Color3.new(1, 1, 1)
 
 	local rarityColor = {}
 	for _, r in Config.Rarities do
@@ -60,11 +64,11 @@ function M.start()
 	-- Text with a dark outline (and an optional top-to-bottom shine). Fixed sizes: the whole HUD scales together.
 	local function text(props, outline, shine)
 		props.BackgroundTransparency = 1
-		props.TextColor3 = props.TextColor3 or Color3.new(1, 1, 1)
+		props.TextColor3 = props.TextColor3 or WHITE
 		props.TextWrapped = props.TextWrapped or false
 		local kids = { make("UIStroke", { Name = "Outline", Thickness = outline or 2, Color = INK, LineJoinMode = Enum.LineJoinMode.Round }) }
 		if shine then
-			table.insert(kids, make("UIGradient", { Name = "Shine", Rotation = 90, Color = ColorSequence.new(Color3.new(1, 1, 1), shine) }))
+			table.insert(kids, make("UIGradient", { Name = "Shine", Rotation = 90, Color = ColorSequence.new(WHITE, shine) }))
 		end
 		return make("TextLabel", props, kids)
 	end
@@ -81,67 +85,42 @@ function M.start()
 	end
 	refit()
 
-	-- Timer pill, top centre: a dark glass capsule, the stage on the left, the clock big on the right.
-	local pill = make("Frame", {
-		Name = "Timer", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(640, 62), Size = UDim2.fromOffset(250, 54),
-		BackgroundColor3 = Color3.new(1, 1, 1), Parent = root,
-	}, { corner(0.5), gradient(Color3.fromRGB(46, 42, 104), GLASS), rim(2.5, Color3.fromRGB(150, 136, 255), 0.25) })
-	make("Frame", { Name = "Gloss", Position = UDim2.fromOffset(18, 3), Size = UDim2.new(1, -36, 0, 6), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.8, Parent = pill }, { corner(0.5) })
-	local stageText = text({ Name = "Stage", Position = UDim2.fromOffset(22, 0), Size = UDim2.new(0, 110, 1, 0), FontFace = ROUND, TextSize = 19, TextColor3 = MUTED, TextXAlignment = Enum.TextXAlignment.Left, Parent = pill }, 1.5)
-	local clock = text({ Name = "Clock", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -20, 0, 3), Size = UDim2.new(0, 110, 1, 0), FontFace = DISPLAY, TextSize = 36, TextXAlignment = Enum.TextXAlignment.Right, Parent = pill }, 2.5, Color3.fromRGB(214, 206, 255))
-	local divider = make("Frame", { Name = "Divider", Position = UDim2.new(0.5, 0, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(2, 26), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.8, BorderSizePixel = 0, Parent = pill })
-
-	-- Role badge under it: a coloured tag with your role in big letters, and one short line beside it.
-	local ROLE_LOOK = {
-		Catcher = { Color3.fromRGB(255, 92, 104), Color3.fromRGB(196, 26, 56), Color3.new(1, 1, 1) },
-		Hero = { Color3.fromRGB(255, 226, 120), Color3.fromRGB(240, 162, 30), Color3.fromRGB(74, 40, 0) },
-		Chicken = { Color3.fromRGB(255, 249, 236), Color3.fromRGB(240, 222, 190), Color3.fromRGB(122, 64, 18) },
-		Runner = { Color3.fromRGB(110, 184, 255), Color3.fromRGB(40, 112, 230), Color3.new(1, 1, 1) },
-		Carrying = { Color3.fromRGB(255, 150, 200), Color3.fromRGB(226, 66, 140), Color3.new(1, 1, 1) },
-		Safe = { Color3.fromRGB(130, 240, 160), Color3.fromRGB(34, 172, 92), Color3.fromRGB(8, 60, 30) },
-		Caught = { Color3.fromRGB(176, 182, 204), Color3.fromRGB(110, 116, 142), Color3.new(1, 1, 1) },
-		Watching = { Color3.fromRGB(176, 182, 204), Color3.fromRGB(110, 116, 142), Color3.new(1, 1, 1) },
-	}
-	local roleRow = make("Frame", {
-		Name = "Role", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(640, 126), Size = UDim2.fromOffset(0, 38),
-		AutomaticSize = Enum.AutomaticSize.X, BackgroundColor3 = GLASS, BackgroundTransparency = 0.25, Parent = root,
-	}, { corner(0.5), rim(2, INK, 0.3), make("UIPadding", { PaddingLeft = UDim.new(0, 4), PaddingRight = UDim.new(0, 18) }),
-		make("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, 12), SortOrder = Enum.SortOrder.LayoutOrder }) })
-	local tag = make("Frame", { Name = "Tag", Size = UDim2.fromOffset(0, 30), AutomaticSize = Enum.AutomaticSize.X, BackgroundColor3 = Color3.new(1, 1, 1), LayoutOrder = 1, Parent = roleRow },
-		{ corner(0.5), make("UIPadding", { PaddingLeft = UDim.new(0, 14), PaddingRight = UDim.new(0, 14) }) })
-	local tagFill = make("UIGradient", { Rotation = 90, Parent = tag })
-	local tagRim = make("UIStroke", { Thickness = 2, Color = INK, Transparency = 0.2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = tag })
-	local roleWord = make("TextLabel", { Name = "Word", Size = UDim2.fromOffset(0, 30), AutomaticSize = Enum.AutomaticSize.X, BackgroundTransparency = 1, FontFace = DISPLAY, TextSize = 24, Text = "", Parent = tag })
-	-- (widths measured as well as automatic, so the row is right from the first frame)
-	local function widthOf(str, font, size)
-		local ok, v = pcall(function()
-			local params = Instance.new("GetTextBoundsParams")
-			params.Text, params.Font, params.Size, params.Width = str, font, size, 2000
-			return TextService:GetTextBoundsAsync(params).X
-		end)
-		-- (offline there's no TextService: a rough width per font)
-		return math.ceil(if ok and type(v) == "number" then v else #str * size * (if font == DISPLAY then 0.62 else 0.47))
+	-- Top centre: ROUND 01, the message line, your role and time, the streak.
+	local top = make("Frame", { Name = "Top", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(640, 4), Size = UDim2.fromOffset(1000, 120), BackgroundTransparency = 1, Parent = root })
+	local roundLabel = text({ Name = "Round", Position = UDim2.fromOffset(0, 0), Size = UDim2.new(1, 0, 0, 18), FontFace = ROUND, TextSize = 15, TextColor3 = MUTED, Text = "" }, 1.5)
+	roundLabel.Parent = top
+	local message = text({ Name = "Message", Position = UDim2.fromOffset(0, 18), Size = UDim2.new(1, 0, 0, 40), FontFace = DISPLAY, TextSize = 31, Text = "" }, 3)
+	message.Parent = top
+	local sub = text({ Name = "Sub", Position = UDim2.fromOffset(0, 60), Size = UDim2.new(1, 0, 0, 22), FontFace = ROUND, TextSize = 18, Text = "" }, 1.5)
+	sub.Parent = top
+	local pips = make("Frame", { Name = "Streak", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(500, 86), Size = UDim2.fromOffset(160, 18), BackgroundTransparency = 1, Parent = top }, {
+		make("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center, VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder }),
+	})
+	local pipLabel = text({ Name = "Label", Size = UDim2.fromOffset(78, 18), FontFace = ROUND, TextSize = 13, TextColor3 = MUTED, Text = "IN A ROW", LayoutOrder = 0 }, 1.2)
+	pipLabel.Parent = pips
+	local pipDots = {}
+	for i = 1, 5 do
+		pipDots[i] = make("Frame", { Name = "Pip" .. i, Size = UDim2.fromOffset(12, 12), BackgroundColor3 = GOLD, LayoutOrder = i, Visible = false, Parent = pips }, { corner(0.5), rim(1.5, INK, 0.1) })
 	end
-	local roleLine = text({ Name = "Line", Size = UDim2.fromOffset(0, 30), AutomaticSize = Enum.AutomaticSize.X, FontFace = ROUND, TextSize = 19, Text = "", LayoutOrder = 2, Parent = roleRow }, 1.5)
 
 	-- Prize card, top left: her picture, her name and rarity, and who has her.
 	local card = make("Frame", {
-		Name = "Prize", Position = UDim2.fromOffset(176, 10), Size = UDim2.fromOffset(276, 84), BackgroundColor3 = Color3.new(1, 1, 1), Visible = false, Parent = root, -- (right of the lobby's side buttons)
+		Name = "Prize", Position = UDim2.fromOffset(176, 10), Size = UDim2.fromOffset(250, 76), BackgroundColor3 = WHITE, Visible = false, Parent = root, -- (right of the lobby's side buttons)
 	}, { corner(14), gradient(Color3.fromRGB(40, 38, 92), GLASS) })
 	local cardRim = rim(2.5, GOLD, 0.15)
 	cardRim.Parent = card
 	local glow = make("Frame", { Name = "Glow", Size = UDim2.fromScale(1, 1), BackgroundColor3 = GOLD, Parent = card }, {
 		corner(14), make("UIGradient", { Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.6), NumberSequenceKeypoint.new(0.45, 1), NumberSequenceKeypoint.new(1, 1) }) }),
 	})
-	local portrait = make("ViewportFrame", { Name = "Portrait", Position = UDim2.fromOffset(8, 8), Size = UDim2.fromOffset(68, 68), BackgroundColor3 = Color3.fromRGB(26, 24, 60), Ambient = Color3.fromRGB(170, 170, 190), LightDirection = Vector3.new(-0.4, -1, -0.6), Parent = card }, { corner(12) })
+	local portrait = make("ViewportFrame", { Name = "Portrait", Position = UDim2.fromOffset(7, 7), Size = UDim2.fromOffset(62, 62), BackgroundColor3 = Color3.fromRGB(26, 24, 60), Ambient = Color3.fromRGB(170, 170, 190), LightDirection = Vector3.new(-0.4, -1, -0.6), Parent = card }, { corner(12) })
 	local portraitRim = rim(2, GOLD, 0.2)
 	portraitRim.Parent = portrait
-	local rarityChip = make("TextLabel", { Name = "Rarity", Position = UDim2.fromOffset(88, 8), Size = UDim2.fromOffset(0, 20), AutomaticSize = Enum.AutomaticSize.X, BackgroundColor3 = GOLD, FontFace = DISPLAY, TextSize = 15, TextColor3 = INK, Text = "", Parent = card },
-		{ corner(0.5), make("UIPadding", { PaddingLeft = UDim.new(0, 9), PaddingRight = UDim.new(0, 9), PaddingTop = UDim.new(0, 2) }) })
-	local girlName = text({ Name = "GirlName", Position = UDim2.fromOffset(88, 30), Size = UDim2.new(1, -96, 0, 28), FontFace = DISPLAY, TextSize = 25, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = card }, 2.5, Color3.fromRGB(255, 226, 150))
-	local holder = text({ Name = "Holder", Position = UDim2.fromOffset(88, 58), Size = UDim2.new(1, -96, 0, 20), FontFace = ROUND, TextSize = 15, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = card }, 1.5)
+	local rarityChip = make("TextLabel", { Name = "Rarity", Position = UDim2.fromOffset(80, 7), Size = UDim2.fromOffset(0, 18), AutomaticSize = Enum.AutomaticSize.X, BackgroundColor3 = GOLD, FontFace = DISPLAY, TextSize = 13, TextColor3 = INK, Text = "", Parent = card },
+		{ corner(0.5), make("UIPadding", { PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8), PaddingTop = UDim.new(0, 2) }) })
+	local girlName = text({ Name = "GirlName", Position = UDim2.fromOffset(80, 27), Size = UDim2.new(1, -88, 0, 24), FontFace = DISPLAY, TextSize = 22, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = card }, 2.5, Color3.fromRGB(255, 226, 150))
+	local holder = text({ Name = "Holder", Position = UDim2.fromOffset(80, 52), Size = UDim2.new(1, -88, 0, 18), FontFace = ROUND, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = card }, 1.5)
 
-	-- Big centre messages: a chunky shining word with a soft drop shadow, and a smaller line under it.
+	-- Big centre messages: a chunky shining word with a soft drop shadow.
 	local function bannerLabel(name, y, w, h, size, outline)
 		local shadow = make("TextLabel", {
 			Name = name .. "Shadow", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(640, y + 4), Size = UDim2.fromOffset(w, h),
@@ -154,8 +133,8 @@ function M.start()
 		local shine = make("UIGradient", { Name = "Shine", Rotation = 90, Parent = label })
 		return { label = label, stroke = label:FindFirstChild("Outline"), shadow = shadow, shine = shine, size = size }
 	end
-	local banner = bannerLabel("Banner", 232, 860, 120, 50, 4)
-	local small = bannerLabel("Small", 300, 640, 40, 26, 2.5)
+	local banner = bannerLabel("Banner", 250, 900, 130, 52, 4)
+	local small = bannerLabel("Small", 330, 700, 44, 28, 2.5)
 	local flash = make("Frame", { Name = "Flash", Size = UDim2.fromScale(1, 1), BackgroundColor3 = RED, BackgroundTransparency = 1, ZIndex = 0, Parent = gui })
 
 	gui.Parent = player:WaitForChild("PlayerGui")
@@ -164,13 +143,13 @@ function M.start()
 		cam:GetPropertyChangedSignal("ViewportSize"):Connect(refit)
 	end
 
-	local function show(b, message, color, hold, textSize)
+	local function show(b, msg, color, hold, textSize)
 		local label = b.label
-		local c = color or Color3.new(1, 1, 1)
-		label.Text, b.shadow.Text = message, message
-		label.TextColor3 = Color3.new(1, 1, 1)
+		local c = color or WHITE
+		label.Text, b.shadow.Text = msg, msg
+		label.TextColor3 = WHITE
 		-- white at the top shading into the message colour
-		b.shine.Color = ColorSequence.new(Color3.new(1, 1, 1):Lerp(c, 0.25), c)
+		b.shine.Color = ColorSequence.new(WHITE:Lerp(c, 0.25), c)
 		local size = textSize or b.size
 		label.TextTransparency, b.stroke.Transparency, b.shadow.TextTransparency = 0, 0, 0.55
 		label.TextSize, b.shadow.TextSize = math.round(size * 1.25), math.round(size * 1.25)
@@ -188,113 +167,78 @@ function M.start()
 		end)
 	end
 
+	-- The top message line: the latest message stays (as in Huss Valley), popping in when it changes.
+	local function setMessage(msg, color)
+		message.Text = msg
+		message.TextColor3 = color or WHITE
+		message.TextSize = 37
+		TweenService:Create(message, TweenInfo.new(0.28, Enum.EasingStyle.Back), { TextSize = 31 }):Play()
+	end
+
 	local function nameOf(id)
 		local p = id and id ~= 0 and Players:GetPlayerByUserId(id)
 		return p and p.DisplayName
 	end
 
-	-- Stage, timer and role, refreshed every frame
-	local STAGE_TEXT = {
-		Waiting = "WAITING FOR PLAYERS",
-		Intermission = "NEXT GAME",
-		Voting = "VOTE FOR A MAP",
-		Rolling = "ROLLING A GIRL",
-		Loading = "GET READY",
-		Countdown = "GET READY",
-		Running = "ROUND %d",
-		RoundOver = "ROUND OVER",
-		GameOver = "GAME OVER",
-	}
+	local ROLE_COLOR = { RUNNER = BLUE, CATCHER = RED, HERO = GOLD, SAFE = GREEN, DOWN = Color3.fromRGB(255, 160, 90), CARRYING = Color3.fromRGB(255, 150, 200), WATCHING = MUTED }
+	local TIMED = { HeroRun = true, Running = true, Picking = true }
 	local lastCount
-	local shownRole
 	local function refresh()
 		local stage = State:GetAttribute("Stage") or "Waiting"
-		local left = math.max(0, (State:GetAttribute("EndsAt") or 0) - Workspace:GetServerTimeNow())
-		local label = string.format(STAGE_TEXT[stage] or stage, State:GetAttribute("Round") or 0)
-		local timed = stage == "Running"
-		if timed then
-			local secs = math.ceil(left)
-			stageText.Text = label
-			clock.Text = string.format("%d:%02d", secs // 60, secs % 60)
-			-- the last 10 seconds turn red
-			clock.TextColor3 = if secs <= 10 then Color3.fromRGB(255, 120, 120) else Color3.new(1, 1, 1)
-		else
-			stageText.Text = ""
-			clock.Text = label
-			clock.TextColor3 = Color3.new(1, 1, 1)
+		local now = Workspace:GetServerTimeNow()
+		local left = math.max(0, (State:GetAttribute("EndsAt") or 0) - now)
+		local inGame = (State:GetAttribute("Round") or 0) > 0 and stage ~= "Waiting" and stage ~= "Voting" and stage ~= "Intermission" and stage ~= "Rolling"
+		top.Visible = inGame
+		if inGame then
+			roundLabel.Text = string.format("ROUND %02d", State:GetAttribute("Round") or 0)
+			local myRole, myStatus = player:GetAttribute("HuzzRole"), player:GetAttribute("HuzzStatus")
+			local holding = State:GetAttribute("HolderId") == player.UserId
+			local word, line
+			if myRole == "Catcher" then
+				word = "CATCHER"
+				line = if holding then "she's following you" else nil
+			elseif myRole == "Runner" then
+				if myStatus == "Downed" then
+					word, line = "DOWN", "a runner can rescue you"
+				elseif myStatus == "Safe" then
+					word, line = "SAFE", "you made it"
+				elseif player:GetAttribute("HuzzHero") then
+					word, line = "HERO", "cross alone"
+				elseif holding then
+					word, line = "CARRYING", "get her across"
+				else
+					word = "RUNNER"
+				end
+			else
+				word, line = "WATCHING", "you're in the next game"
+			end
+			local parts = { word }
+			if line then table.insert(parts, line) end
+			if TIMED[stage] then
+				local secs = math.ceil(left)
+				table.insert(parts, string.format("%d:%02d", secs // 60, secs % 60))
+			end
+			sub.Text = table.concat(parts, "  ·  ")
+			sub.TextColor3 = ROLE_COLOR[word] or WHITE
+			-- in a row: filled pips for crossings done, hollow for the ones still to go
+			local goal = State:GetAttribute("Crossings") or Config.Crossings
+			local streak = State:GetAttribute("Streak") or 0
+			for i, dot in pipDots do
+				dot.Visible = i <= goal
+				dot.BackgroundColor3 = if i <= streak then GOLD else INK
+				dot.BackgroundTransparency = if i <= streak then 0 else 0.35
+			end
 		end
-		stageText.Visible, divider.Visible = timed, timed
-		clock.AnchorPoint = if timed then Vector2.new(1, 0) else Vector2.new(0.5, 0)
-		clock.Position = if timed then UDim2.new(1, -20, 0, 3) else UDim2.new(0.5, 0, 0, 3)
-		clock.TextSize = if timed then 36 else 26
-		clock.TextXAlignment = if timed then Enum.TextXAlignment.Right else Enum.TextXAlignment.Center
-		clock.Size = if timed then UDim2.new(0, 110, 1, 0) else UDim2.new(1, -24, 1, 0)
-		pill.Size = UDim2.fromOffset(if timed then 250 else math.max(250, #label * 17 + 60), 54)
-		pill.Visible = stage ~= "Intermission" and stage ~= "Voting" and stage ~= "Rolling" -- the Lobby HUD, the vote window and the roller show those
 
 		if stage == "Countdown" then
 			local count = math.ceil(left)
 			if count ~= lastCount and count > 0 then
-				show(banner, tostring(count), Color3.fromRGB(255, 226, 120), 0.8, 96)
+				show(banner, tostring(count), Color3.fromRGB(255, 226, 120), 0.8, 104)
 			end
 			lastCount = count
 		elseif lastCount and stage == "Running" then
 			lastCount = nil
-			show(banner, "GO!", GREEN, 0.8, 96)
-		end
-
-		local myRole, myStatus = player:GetAttribute("HuzzRole"), player:GetAttribute("HuzzStatus")
-		local holding = State:GetAttribute("HolderId") == player.UserId
-		local girl = State:GetAttribute("GirlName") or ""
-		local look, word, line
-		if myRole == "Catcher" then
-			local stab = Config.TagMode == "Stab"
-			look, word = "Catcher", "CATCHER"
-			line = if holding then `{girl} is with you. Stop them all!` else (if stab then "Stab the runners!" else "Tag the runners!")
-		elseif myRole == "Runner" then
-			if myStatus == "Safe" then
-				look, word, line = "Safe", "SAFE", "You made it! Run again next round"
-			elseif myStatus == "Caught" then
-				look, word, line = "Caught", "CAUGHT", "Next round you're a catcher"
-			elseif holding and State:GetAttribute("Phase") == "Final" then
-				look, word, line = "Carrying", "FINAL RUN", `Cross with {girl} to win her!`
-			elseif holding then
-				look, word, line = "Carrying", "CARRYING", `Get {girl} across!`
-			else
-				local free = (State:GetAttribute("HolderId") or 0) == 0
-				local isHero = player:GetAttribute("HuzzHero") == true
-				if girl == "" then
-					look, word, line = "Runner", "RUNNER", "Reach the other side!"
-				elseif Config.Heroes and isHero then
-					look, word, line = "Hero", "HERO", `First Hero across wins {girl}!`
-				elseif Config.Heroes then
-					look, word, line = "Chicken", "CHICKEN", "Just make it across!"
-				elseif Config.Pickup == "Grab" and free then
-					look, word, line = "Runner", "RUNNER", `Grab {girl}, then run!`
-				else
-					look, word, line = "Runner", "RUNNER", `First across wins {girl}!`
-				end
-			end
-		elseif not (stage == "Waiting" or stage == "Intermission" or stage == "Voting" or stage == "Loading" or stage == "Rolling") then
-			look, word, line = "Watching", "WATCHING", "You're in the next game"
-		end
-		roleRow.Visible = look ~= nil
-		if look then
-			if line ~= roleLine.Text then
-				roleLine.Text = line
-				shownRole = nil
-			end
-			if look .. word ~= shownRole then
-				shownRole = look .. word
-				local wordW, lineW = widthOf(word, DISPLAY, 24), widthOf(line, ROUND, 19)
-				roleWord.Size, tag.Size = UDim2.fromOffset(wordW, 30), UDim2.fromOffset(wordW + 28, 30)
-				roleLine.Size = UDim2.fromOffset(lineW, 30)
-				roleRow.Size = UDim2.fromOffset(4 + wordW + 28 + 12 + lineW + 18, 38)
-				local l = ROLE_LOOK[look]
-				tagFill.Color = ColorSequence.new(l[1], l[2])
-				roleWord.Text, roleWord.TextColor3 = word, l[3]
-				tagRim.Color = l[2]:Lerp(INK, 0.6)
-			end
+			show(banner, "GO!", GREEN, 0.9, 110)
 		end
 	end
 	RunService.RenderStepped:Connect(refresh)
@@ -322,10 +266,10 @@ function M.start()
 			end
 		end
 		portrait.Visible = model ~= nil
-		local x = if model then 88 else 18
-		rarityChip.Position = UDim2.fromOffset(x, 8)
-		girlName.Position, holder.Position = UDim2.fromOffset(x, 30), UDim2.fromOffset(x, 58)
-		girlName.Size, holder.Size = UDim2.new(1, -x - 8, 0, 28), UDim2.new(1, -x - 8, 0, 20)
+		local x = if model then 80 else 16
+		rarityChip.Position = UDim2.fromOffset(x, 7)
+		girlName.Position, holder.Position = UDim2.fromOffset(x, 27), UDim2.fromOffset(x, 52)
+		girlName.Size, holder.Size = UDim2.new(1, -x - 8, 0, 24), UDim2.new(1, -x - 8, 0, 18)
 		if not model then
 			return
 		end
@@ -347,11 +291,10 @@ function M.start()
 		local color = rarityColor[rarity] or GOLD
 		cardRim.Color, portraitRim.Color, glow.BackgroundColor3, rarityChip.BackgroundColor3 = color, color, color, color
 		rarityChip.Text = string.upper(rarity)
-		rarityChip.TextColor3 = if color.R * 0.3 + color.G * 0.59 + color.B * 0.11 > 0.55 then INK else Color3.new(1, 1, 1)
+		rarityChip.TextColor3 = if color.R * 0.3 + color.G * 0.59 + color.B * 0.11 > 0.55 then INK else WHITE
 		girlName.Text = girl
 		local who = nameOf(State:GetAttribute("HolderId"))
-		holder.Text = if who then `Held by {who}` elseif Config.GirlSpot == "Sky" then "First one across wins her!"
-			elseif Config.GirlSpot == "Middle" then "Waiting in the middle" else "Waiting across the field"
+		holder.Text = if who then `With {who}` else "A Hero who makes it wins her"
 		holder.TextColor3 = if who then GOLD else MUTED
 		setPortrait(girl)
 	end
@@ -361,11 +304,11 @@ function M.start()
 	refreshCard()
 
 	-- Outlines (as in the reference): a faint red line round catchers, blue round runners still out,
-	-- yellow round Heroes, green round runners safe across the line. Caught runners lying on the floor lose theirs.
+	-- yellow round the Hero, green round runners safe across the line. Downed runners lose theirs.
 	local OUTLINE_RED = Color3.fromRGB(255, 64, 64)
 	local OUTLINE_BLUE = Color3.fromRGB(64, 150, 255)
-	local OUTLINE_GREEN = Color3.fromRGB(70, 230, 120) -- made it to the safe zone (owner's call)
-	local OUTLINE_YELLOW = Color3.fromRGB(255, 214, 70) -- a Hero this round (owner's call)
+	local OUTLINE_GREEN = Color3.fromRGB(70, 230, 120)
+	local OUTLINE_YELLOW = Color3.fromRGB(255, 214, 70)
 	local highlights = {}
 	local function refreshHighlight(p)
 		local character = p.Character
@@ -373,7 +316,7 @@ function M.start()
 		local color = if r == "Catcher" then OUTLINE_RED
 			elseif r == "Runner" and st == "Safe" then OUTLINE_GREEN
 			elseif r == "Runner" and st == "Active" and p:GetAttribute("HuzzHero") then OUTLINE_YELLOW
-			elseif r == "Runner" and st ~= "Caught" then OUTLINE_BLUE
+			elseif r == "Runner" and st == "Active" then OUTLINE_BLUE
 			else nil
 		local h = highlights[p]
 		if not character or not color then
@@ -417,32 +360,58 @@ function M.start()
 		end
 	end)
 
+	-- Small sounds from Roblox's own library (no uploaded IDs; swap in your own any time).
+	local function sound(id, volume, pitch)
+		local s = make("Sound", { SoundId = id, Volume = volume, PlaybackSpeed = pitch or 1, Parent = gui })
+		s:Play()
+		s.Ended:Once(function()
+			s:Destroy()
+		end)
+	end
+
 	-- Moments from the server
 	RoundNet.OnClientEvent:Connect(function(kind, data)
 		if kind == "Announce" then
+			setMessage(data.text, data.color)
 			if data.big then
-				show(banner, data.text, data.color)
-			else
-				show(small, data.text, data.color)
+				show(small, data.text, data.color, 2.8)
 			end
 		elseif kind == "Caught" then
 			if data.runner == player.UserId then
-				flash.BackgroundTransparency = 0.55
+				flash.BackgroundTransparency = 0.6 -- (one flash, well under one a second)
 				TweenService:Create(flash, TweenInfo.new(0.6), { BackgroundTransparency = 1 }):Play()
-				show(small, if nameOf(data.catcher) then `Caught by {nameOf(data.catcher)}!` else "Caught!", RED)
+				show(banner, "YOU'RE DOWN!", RED, 1.8, 60)
+				sound("rbxasset://sounds/uuhhh.mp3", 0.5)
 			elseif data.catcher == player.UserId then
-				show(small, `You got {nameOf(data.runner) or "a runner"}!`, RED)
+				show(small, `You got {nameOf(data.runner) or "a runner"}!`, RED, 1.6)
 			end
+		elseif kind == "Rescued" then
+			if data.runner == player.UserId then
+				show(banner, "RESCUED!", GREEN, 1.6, 64)
+			elseif data.by == player.UserId then
+				show(small, `You rescued {nameOf(data.runner) or "a runner"}!`, GREEN, 1.8)
+			end
+		elseif kind == "Safe" then
+			show(banner, "SAFE!", GREEN, 1.4, 72)
+			sound("rbxasset://sounds/electronicpingshort.wav", 0.4, 1.3)
+		elseif kind == "Bonus" then
+			show(small, `+{data.coins} coins!`, GOLD, 2.4)
 		elseif kind == "Win" then
+			local team = if data.team == "Runners" then "RUNNERS WIN!" else "CATCHERS WIN!"
+			local teamColor = if data.team == "Runners" then BLUE else RED
+			show(banner, team, teamColor, 3.2, 76)
+			setMessage(team, teamColor)
 			local color = rarityColor[data.rarity] or GOLD
-			if data.winner == player.UserId then
-				show(banner, `YOU WON {string.upper(data.girl)}!`, color, 5, 64)
-				show(small, "She's in your Index now", Color3.new(1, 1, 1), 5)
-			elseif data.name then
-				show(banner, `{data.name} wins {data.girl}!`, color, 5)
-			else
-				show(banner, `Nobody won {data.girl} this time`, MUTED, 5)
-			end
+			task.delay(3.4, function()
+				if data.winner == player.UserId then
+					show(banner, `YOU WON {string.upper(data.girl)}!`, color, 4, 64)
+					show(small, "She's in your Index now", WHITE, 4)
+				elseif data.name then
+					show(banner, `{data.name} takes {data.girl} home!`, color, 4)
+				else
+					show(banner, `Nobody won {data.girl} this time`, MUTED, 4)
+				end
+			end)
 		end
 	end)
 end

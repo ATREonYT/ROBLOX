@@ -97,21 +97,23 @@ The UI golden slice and its backend are built (saving, coins and gems, shop purc
 - The Dances preview is a navy card (picture, name, help line) with equal Play and Stop buttons inside it. There is no brown floor.
 
 ## Gameplay (round loop and carry)
-- **Rules (owner's design):**
-  - She stands in the middle while nobody has her (`Config/Round.GirlSpot`). The first runner across gets her
-    automatically: she appears overhead, with no pickup (`Pickup = "FirstAcross"`, `Carry.PickupTime = 0`, the
-    owner's call). `Pickup = "Grab"` (walk up to her in the middle) is built and tested but off.
-  - A catcher never carries her. When a catcher tags her carrier, she falls down and follows that catcher on foot
-    (`CarryService.follow` makes an anchored-root model tagged `HuzzFollower`; `Shared/FollowMotion` walks her on
-    every client; the server only estimates where she is, for the next transfer). That covers the thief, a
-    catcher inheriting her, and a catcher winning her.
-  - Tagged runners, runners still out at the timeout and runners who die all catch next round.
-  - Rounds alternate ZoneA ↔ ZoneB.
-  - A catcher who tags her holder steals her. The first runner across rescues her, and the round after is Final:
-    - the holder crosses and wins her;
-    - or the holder is tagged and the tagger wins her (on a timeout, the thief wins).
-  - The holder as the only runner left = Final. No runners left = the holder wins.
-  - Solo (Studio Play): no catcher; cross, then cross back to win.
+- **Rules: Huss Valley one to one, with the girl built in (owner's call, video 32fe8d21;
+  `docs/previews/hv-reference-*.jpg`):**
+  - One random lead catcher with a knife; everyone else runs. Rounds alternate ZoneA ↔ ZoneB.
+  - Each round: **Lineup** (runners shoulder to shoulder on their safe line, facing across, frozen;
+    `MapService.lineup`) → **Picking** (one random runner chooses HERO or CHICKEN; no answer in
+    `Pick.ChooseTime` = random) → **Chosen** → **HeroRun** (only if Hero: they cross alone, everyone else
+    waits frozen on the line; catchers hunt them) → **Countdown** 3-2-1 → **Running** (everyone) → RoundOver.
+  - A stab **downs** a runner where they stand (`KnockdownService`). A runner still out on the field who stands
+    next to them for `Rescue.Time` rescues them (`Rescue.Shield` seconds of no-stab after). Anyone still down
+    at the end joins the catchers. Runners still out at the timeout count as caught.
+  - Runners win by getting **everyone across `Crossings` (3) rounds in a row** (a round with anyone down
+    resets the streak); catchers win when no runners are left (or after `MaxRounds`).
+  - **The girl:** floats over the map (showcase) until a Hero survives the solo run: she comes down onto
+    their shoulders (+`HeroBonus` coins). Stabbing her carrier steals her (she follows that catcher); the next
+    surviving Hero takes her back. At the end she goes home with the winning side: whoever on it holds her,
+    else the last surviving Hero (runners) or the lead catcher (catchers). The showcase hides while she's held.
+  - Solo (Studio Play): no catcher; three crossings win.
 - **`Shared/RoundRules`** is a pure state machine that returns events; `tests/RoundRules.spec.luau` covers it.
   Change rules there first, with a test.
 - **`HuzzServer/RoundService.server`** is its own Script, not started by Bootstrap: the UI harness runs Bootstrap,
@@ -120,7 +122,13 @@ The UI golden slice and its backend are built (saving, coins and gems, shop purc
   - State goes in attributes on the `Round` remote (`Net`).
   - It sets Workspace `NextRoundAt`, which the Lobby HUD banner counts down to.
   - It saves through `DataService.update`: the winner's girl goes in `Characters[model name]`, and it adds the
-    `Stats` Steals, HoldSeconds and Rounds.
+    `Stats` Steals, HoldSeconds, Rounds, Rescues and Wins (the winning side).
+  - Round attributes for clients: Stage, EndsAt, Round, Goal, Streak, Crossings, PickId, PickAt, PickChoice,
+    HeroResult, LineCF, LineLength, HolderId, GirlName, GirlRarity, Winners. Player attributes: HuzzRole,
+    HuzzStatus (Active/Safe/Downed), HuzzHero, HuzzFrozen, ProtectedUntil.
+  - Messages: `announce(text, colour, big)` = the top message line on every screen (big = also a centre banner).
+  - `NameTagService`: Huss Valley tags over every head (role title, name, "Lv. N · W wins"; HELP! and a rescue
+    bar when down; big HERO / CHICKEN over the picked runner). Roblox's own name is hidden.
 - **Between games (owner's call):** a map vote (`Screens/MapVote`, design page 15, ModalManager window, opens on
   Stage "Voting"; `MapVoteService`: one vote per player, a new vote replaces the old, ties random). The winner is
   copied in front of the lobby island (`MapService.load`: maps live in `ReplicatedStorage.HuzzMaps` from server
@@ -175,16 +183,23 @@ The UI golden slice and its backend are built (saving, coins and gems, shop purc
     - the carrier's shoulders and elbows: the pose, plus `AnimBlend` of the playing animation;
     - her limbs: dangling toward gravity.
     It tells its own writes from the Animator's by reading the Transform back (CFrames are float32).
-  - `RoundHud` (built in code, laid out at 1280 x 720 and scaled): timer pill, role badge (gold HERO, cream
-    CHICKEN, red CATCHER, blue RUNNER, pink CARRYING, green SAFE, grey CAUGHT), prize card with her portrait
-    (ViewportFrame from `HuzzGirls`), banners with a shine and a drop shadow. Fonts: Luckiest Guy for big words,
-    Fredoka One for lines (`Theme.Fonts.Display` / `Round`; the preview has both in `tools/preview/fonts`).
-    Preview: `shots.sh <out> round-hud` (`ROUNDHUD="Hero"|"Chicken"|"Catcher"`). Copy: short, no dashes.
+  - `RoundHud` (built in code, laid out at 1280 x 720 and scaled), Huss Valley's layout: top centre "ROUND 01",
+    the message line (latest event, coloured), "ROLE · line · 0:23", "IN A ROW" pips; prize card top left with
+    her portrait (ViewportFrame from `HuzzGirls`); centre banners (3-2-1-GO, SAFE!, YOU'RE DOWN!, RESCUED!,
+    RUNNERS/CATCHERS WIN!). Fonts: Luckiest Guy for big words, Fredoka One for lines (`Theme.Fonts.Display` /
+    `Round`; the preview has both in `tools/preview/fonts`). Preview: `shots.sh <out> round-hud hero-choice`.
+    Copy: short, no dashes.
+  - `Cinematic` (the intro camera, owner's call): Lineup shot behind the line → swing up and over to the front →
+    slide along the line while a gold Highlight hops between runners (slowing) and lands on the picked one
+    (hops computed backwards from `PickId`, so every screen agrees) → medium shot of them while they choose →
+    push in on Chosen → glide back behind you. Black bars, two built-in `rbxasset://sounds` (swap for your own).
+    The shots are pure maths in `Shared/CinematicShot`; `motion3d/intro_scene.luau` films them
+    (`docs/previews/intro-camera.mp4`).
   - `AvatarAnimations` swaps in the IDs from `Config/Animations`.
-- **Caught runners fall flat and lie there until the next round** (owner's call; `Config/Round.Knockdown`;
-  `Enabled = false` = the old bench teleport). `KnockdownService` anchors the root and sets the character's
-  `DownedAt`/`DownedFeet`/`DownedHeight`, lying bodies collide with nothing (the `HuzzDowned` group), and the
-  next round's `upAll()` stands them up. `Gameplay/Knockdown` plays `Shared/DownMotion` (a plank fall over the
+- **Stabbed runners fall flat and lie there until rescued or the next round** (owner's call;
+  `Config/Round.Knockdown`). `KnockdownService` anchors the root and sets the character's
+  `DownedAt`/`DownedFeet`/`DownedHeight`, lying bodies collide with nothing (the `HuzzDowned` group);
+  `up(player)` (a rescue) or the next round's `upAll()` stands them up. `Gameplay/Knockdown` plays `Shared/DownMotion` (a plank fall over the
   feet, a bounce, then the sprawl).
 - **Owner's motion calls:** no wiggle while carried (`Carried.Moods = false`, `Inertia = 0`, critically
   damped springs, small bob, no roll); the prize just stands normally (`Idle.Wave/Bounce = false`). The livelier
@@ -247,20 +262,21 @@ The UI golden slice and its backend are built (saving, coins and gems, shop purc
   APIs" (the warning says so); uploading (`upload-images.lua` or the plugin's Upload Pictures) removes the need.
 - **Full-game simulation (`tools/sim/round_sim.luau`, run by `tools/check.sh`):** the real RoundService,
   PowerService, RoundRules, GirlRoll and configs on fake services with a virtual clock and bots who run,
-  chase, stab, use powers, huss, cheat round the start wall, leave and join. It checks the stage order, the
-  roller data, the map swap, knives, the start wall, traps, the holder and the saved winner, in 7 setups.
+  chase, stab, rescue, answer (or ignore) the Chicken or Hero pick, use powers, huss, cheat round the start
+  wall, leave and join. It checks the stage order, the pick, that only the Hero moves in a Hero run, that
+  nobody moves on the line, name tags, the roller data, the map swap, knives, traps, the holder, the showcase
+  and the saved winner, in 7 setups; both sides must win sometimes.
   Breaking keepRunnersIn or the knives makes it fail (checked). It can't see physics, animation or UI.
-- **Hero or Chicken (owner's call, `Config/Round.Heroes`):** in the countdown each runner not carrying her picks
-  (`Screens/HeroChoice`: a gold HERO card and a cream CHICKEN card above the power tiles, keys 1 and 2; `Hero` remote, only during Countdown). Only a Hero (or
-  her holder, always a Hero) takes her by crossing first or rescues her; if no Hero crossed by the end of the
-  round, the first runner across gets her ("NoHero"/"NoHeroRescue", owner: "if they don't win, the others can").
-  Rules in `RoundRules` (`setHero`, `canTake`, tested). Player attribute `HuzzHero`.
+- **Chicken or Hero (Huss Valley, owner's call):** only the picked runner sees `Screens/HeroChoice` (after the
+  roulette): a gold HERO card and a cream CHICKEN card, keys 1 and 2, and a bar running down the time left.
+  The `Hero` remote only counts from the picked runner during Picking (`RoundRules.choose`).
 - **Shift lock (owner's call):** `Gameplay/ShiftLock` locks the mouse, puts the camera over the shoulder
-  (`Humanoid.CameraOffset`) and turns you with the camera, only while you're in a round (never in the lobby);
-  holding Alt frees it until you let go; it lets go while a window is open or the Hero pick shows
-  (`HuzzChoosing`); off on touch devices. The server sets `DevEnableMouseLock = false`.
+  (`Humanoid.CameraOffset`) and turns you with the camera, only while you're in a round (never in the lobby),
+  with **no mouse pointer** (`MouseIconEnabled`; owner: "remove the cursor in game"); holding Alt brings the
+  pointer back until you let go; it lets go while a window is open, the Chicken or Hero pick shows
+  (`HuzzChoosing`) or the intro camera plays (`HuzzCinematic`); off on touch devices. The server sets `DevEnableMouseLock = false`.
 - **Outlines (reference video + owner):** `RoundHud` puts a faint Highlight (outline only, 0.35 transparent) on
-  everyone in the game: catchers red, runners blue, Heroes yellow, safe runners green, none on caught runners. Roblox draws at most 31
+  everyone in the game: catchers red, runners blue, the Hero yellow, safe runners green, none on downed runners. Roblox draws at most 31
   Highlights at once, so servers over 31 players lose some outlines.
 - **Girl animations (owner asked for all three, "make them good"):** `Shared/GirlMotion` (pure) holds her
   motion: `carried` (limbs fall toward gravity minus her real acceleration, plus moods Excited, Struggle,
@@ -297,6 +313,8 @@ The UI golden slice and its backend are built (saving, coins and gems, shop purc
   A dash is refused while WalkSpeed is 0 (stuck in a Love Trap, knocked down). The basketball drop lines up
   map bottoms with the island's bottom, like the other maps (its court top is below the lobby's raised floor,
   as Halloween's and Base's are; measured). Check: `tools/preview/check_girl_index.luau`.
+- **Smaller HUD buttons (owner asked twice):** `Scale.hud` uses `HUD_SIZE = 0.55`; the preview's forced scale
+  applies it too, so previews show the real size.
 - **Maps sit on the floor:** `MapService.placement` drops a map whose lowest visible part is above the lobby's
   floor (BasketBall was floating ~7 studs). The showcase girl is at `Showcase.Height = 34`.
 

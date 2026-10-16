@@ -1,7 +1,11 @@
 --[[
-	The core loop: intermission -> rounds -> a winner takes the girl home.
-	RoundRules decides everything; this script moves players, watches the
-	zones and tags, and turns rule events into carries, messages and saves.
+	The core loop, Huss Valley one to one (owner's call) with the anime girl built in:
+	  vote -> girl roller -> rounds -> one side wins and the girl goes home with them.
+	Each round: Lineup (runners in a row on their line) -> Picking (a random runner chooses HERO or
+	CHICKEN; clients play the camera sweep, Gameplay/Cinematic) -> Chosen -> HeroRun (a Hero crosses
+	alone) -> Countdown -> Running (everyone; stabbed runners go down, others can rescue them) ->
+	RoundOver. RoundRules decides everything; this script moves players, watches the zones, stabs and
+	rescues, and turns rule events into carries, messages, name tags and saves.
 ]]
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
@@ -23,6 +27,7 @@ local KnockdownService = require(script.Parent.KnockdownService)
 local MapVoteService = require(script.Parent.MapVoteService)
 local KnifeService = require(script.Parent.KnifeService)
 local PowerService = require(script.Parent.PowerService)
+local NameTags = require(script.Parent.NameTagService)
 
 require(script.Parent.SafetyService).clean()
 MapService.init()
@@ -32,15 +37,19 @@ GirlService.init()
 local RoundNet = Net.get("Round") :: RemoteEvent
 local State = RoundNet
 local zones = MapService.zones
+local WHITE = Color3.new(1, 1, 1)
 local GOLD = Color3.fromRGB(255, 205, 80)
-local RED = Color3.fromRGB(255, 90, 90)
+local RED = Color3.fromRGB(255, 96, 96)
+local GREEN = Color3.fromRGB(110, 236, 140)
 
 local byId = {} -- UserId -> Player
 local match = nil -- RoundRules state while a game runs
 local girl = nil -- this game's girl {name, rarity, template}
-local prize = nil -- her display model while nobody holds her (GirlSpot "Middle"/"SafeZone")
-local showcase = nil -- the big her floating over the map for the whole game (GirlSpot "Sky")
+local showcase = nil -- the big her floating over the map while nobody has her
 local goalName = "ZoneB"
+local frozen = {} -- id -> true: standing still on the line (lineup, pick, the Hero's solo run, countdown)
+local rescueTime = {} -- downed id -> seconds someone has been helping them up
+local protectedUntil = {} -- id -> os.clock() until which a just-rescued runner can't be stabbed
 
 -- Quest counters (Config/Progression) and the Index, saved through DataService.
 local function addStat(id, stat, amount)
@@ -83,6 +92,7 @@ local function nameOf(id)
 	return if p then p.DisplayName else "Someone"
 end
 
+-- The message line at the top of everyone's screen (as in Huss Valley); big = also a centre banner.
 local function announce(text, color, big)
 	RoundNet:FireAllClients("Announce", { text = text, color = color, big = big })
 end
@@ -97,6 +107,26 @@ local function speedFor(id)
 	return Config.Speeds[role]
 end
 
+local function tagLook(id)
+	if not match then
+		return nil
+	end
+	local role, status = match.roles[id], match.status[id]
+	if role == "Catcher" then
+		return "Catcher"
+	elseif role == "Runner" then
+		if status == "Downed" then
+			return "Downed"
+		elseif status == "Safe" then
+			return "Safe"
+		elseif match.hero == id then
+			return "Hero"
+		end
+		return "Runner"
+	end
+	return nil
+end
+
 local function syncPlayer(id)
 	local p = byId[id]
 	if not p then
@@ -104,12 +134,13 @@ local function syncPlayer(id)
 	end
 	p:SetAttribute("HuzzRole", match and match.roles[id] or "Lobby")
 	p:SetAttribute("HuzzStatus", match and match.status[id] or "")
-	p:SetAttribute("HuzzHero", match ~= nil and match.hero[id] == true) -- Hero this round (yellow outline)
+	p:SetAttribute("HuzzHero", match ~= nil and match.hero == id) -- this round's Hero (yellow outline)
+	p:SetAttribute("HuzzFrozen", frozen[id] == true) -- on the line, waiting (no dash, no powers)
 	local h = humanoidOf(id)
 	if h then
-		local still = KnockdownService.isDown(p) or PowerService.stuck(id)
+		local still = KnockdownService.isDown(p) or PowerService.stuck(id) or frozen[id] == true
 		h.WalkSpeed = if still then 0 else PowerService.speedOf(id, speedFor(id))
-		-- No jumping in a round (owner's call): Space is the huss instead (the dash below).
+		-- No jumping in a round (owner's call): Space is the huss dash instead.
 		local noJump = still or (match ~= nil and match.roles[id] ~= nil)
 		h.JumpHeight = if noJump then 0 else StarterPlayer.CharacterJumpHeight
 		h.JumpPower = if noJump then 0 else StarterPlayer.CharacterJumpPower
@@ -123,6 +154,11 @@ local function syncPlayer(id)
 			KnifeService.take(c)
 		end
 	end
+	local badge = nil
+	if match and match.picked == id and match.choice then
+		badge = string.upper(match.choice)
+	end
+	NameTags.set(p, tagLook(id), badge, rescueTime[id] and rescueTime[id] / Config.Rescue.Time)
 end
 
 local function syncAll()
@@ -131,7 +167,19 @@ local function syncAll()
 	end
 end
 
--- Puts a player where their role belongs this round.
+local function runnersWith(status)
+	local list = {}
+	for id, st in match.status do
+		if st == status then
+			table.insert(list, id)
+		end
+	end
+	table.sort(list)
+	return list
+end
+
+-- Puts a player where their role belongs (lobby, middle, or their spot in the line-up).
+local lineSpots = {}
 local function place(id)
 	local p = byId[id]
 	local c = p and p.Character
@@ -139,72 +187,41 @@ local function place(id)
 		return
 	end
 	local role = match and match.roles[id]
-	local status = match and match.status[id]
 	local middle = if zones.Middle then zones.Middle.Position elseif zones.Lobby then zones.Lobby.Position else Vector3.zero
-	local zone, lookAt
 	if not role then
-		-- Waiting for the next game: the Lobby part if there is one, else where they are.
-		zone, lookAt = (match and zones.Bench) or zones.Lobby, middle
-	else
-		local start, goal = zones[MapService.startFor(match.round)], zones[goalName]
-		if role == "Catcher" then
-			zone, lookAt = zones.Middle, start.Position
-			c:PivotTo(MapService.spot(zone, lookAt, Config.Map.MiddleSpawn))
-			return
-		elseif status == "Caught" then
-			zone, lookAt = zones.Bench, middle
-		elseif status == "Safe" then
-			zone, lookAt = goal, middle
-		else
-			zone, lookAt = start, goal.Position
+		local zone = (match and zones.Bench) or zones.Lobby
+		if zone then
+			c:PivotTo(MapService.spot(zone, middle))
 		end
-	end
-	if zone then
-		c:PivotTo(MapService.spot(zone, lookAt))
-	end
-end
-
-local function clearPrize()
-	if prize then
-		prize:Destroy()
-		prize = nil
+	elseif role == "Catcher" then
+		c:PivotTo(MapService.spot(zones.Middle, zones[MapService.startFor(match.round)].Position, Config.Map.MiddleSpawn))
+	elseif lineSpots[id] and match.status[id] == "Active" then
+		c:PivotTo(lineSpots[id])
 	end
 end
 
-local function showPrize()
-	clearPrize()
-	if girl and Config.GirlSpot ~= "Sky" then
-		-- In the middle (Config.GirlSpot "Middle"), facing the runners' side; or on the far side.
-		local inMiddle = Config.GirlSpot == "Middle"
-		local spot = if inMiddle then zones.Middle else zones[goalName]
-		local face = if inMiddle then zones[MapService.startFor(match and match.round or 1)].Position else zones.Middle.Position
-		local floor = MapService.ground(spot.Position, spot.Position.Y + spot.Size.Y / 2) or (spot.Position.Y - spot.Size.Y / 2)
-		prize = GirlService.display(girl, Vector3.new(spot.Position.X, floor, spot.Position.Z), face, Workspace)
+-- Her big showpiece over the map is there while nobody has her.
+local function showcaseVisible(on)
+	if showcase then
+		showcase.Parent = if on then Workspace else nil
 	end
-end
-
-local function girlPosition(id)
-	return (id and CarryService.position(byId[id])) or (prize and prize:GetBoundingBox().Position) or nil
 end
 
 -- How she reacts to her new carrier.
-local MOODS = {
-	FirstAcross = "Excited", Grabbed = "Excited", Rescued = "Excited", NoHero = "Excited", NoHeroRescue = "Excited",
-	Stolen = "Struggle", Reassigned = "Struggle",
-}
+local MOODS = { Hero = "Excited", Stolen = "Struggle", Reassigned = "Struggle" }
 
 local function moveGirlTo(fromId, toId, reason)
-	local from = girlPosition(fromId)
+	local from = (fromId and CarryService.position(byId[fromId])) or (showcase and showcase:GetPivot().Position) or nil
 	if fromId and byId[fromId] then
 		CarryService.remove(byId[fromId])
 	end
-	clearPrize()
 	local to = toId and byId[toId]
 	if to and match and match.roles[toId] == "Catcher" then
-		CarryService.follow(to, girl, from) -- a catcher who caught her carrier: she falls down and follows him
+		CarryService.follow(to, girl, from) -- a catcher who stabbed her carrier: she follows him on foot
 	elseif to then
 		CarryService.give(to, girl, from, MOODS[reason] or "Excited")
 	end
+	showcaseVisible(toId == nil)
 	State:SetAttribute("HolderId", toId or 0)
 end
 
@@ -217,57 +234,108 @@ function handlers.GirlMoved(e)
 		addStat(e.to, "Steals", 1) -- took her from someone
 	end
 	moveGirlTo(e.from, e.to, e.reason)
-	if not e.to then
-		showPrize()
-	end
 	for _, id in { e.from, e.to } do
 		syncPlayer(id)
 	end
-	State:SetAttribute("Phase", match.phase)
 	local to, g = nameOf(e.to), girl.name
 	local messages = {
-		FirstAcross = { `{to} got {g}!`, GOLD },
-		Grabbed = { `{to} grabbed {g}! Carry her across!`, GOLD },
-		Stolen = { `{to} stole {g}! Cross first to win her back!`, RED },
-		Rescued = { `{to} saved {g}! FINAL ROUND next!`, GOLD },
-		NoHero = { `No Hero made it! {to} gets {g}!`, GOLD },
-		NoHeroRescue = { `No Hero made it! {to} saves {g}! FINAL ROUND next!`, GOLD },
+		Hero = { `{to} won {g} over! Keep her safe!`, GOLD },
+		Stolen = { `{to} stole {g}!`, RED },
 		Reassigned = { `{to} has {g} now`, RED },
-		Dropped = { if Config.Pickup == "Grab" then `{g} was dropped! She's back in the middle` else `{g} was dropped! First across gets her`, GOLD },
+		Dropped = { `{g} floats back up!`, GOLD },
 	}
 	local m = messages[e.reason]
 	if m then
-		announce(m[1], m[2], true)
+		task.delay(if e.reason == "Hero" then 1.4 else 0, announce, m[1], m[2], e.reason == "Hero")
+	end
+end
+
+function handlers.Picked(e)
+	State:SetAttribute("PickId", e.id)
+end
+
+function handlers.Choice(e)
+	State:SetAttribute("PickChoice", if e.hero then "Hero" else "Chicken")
+	syncAll()
+	if e.hero then
+		announce(`{nameOf(e.id)} chose HERO! They cross alone first.`, GOLD, true)
+	else
+		announce(`{nameOf(e.id)} chose CHICKEN! Everyone runs together.`, WHITE, true)
+	end
+end
+
+function handlers.HeroResult(e)
+	State:SetAttribute("HeroResult", if e.survived then "Survived" else "Fell")
+	if e.survived then
+		announce(`{nameOf(e.id)} survived the Hero run!`, GREEN, true)
+		local p = byId[e.id]
+		if p and Config.HeroBonus > 0 then
+			DataService.update(p, function(d)
+				d.Coins = (d.Coins or 0) + Config.HeroBonus
+			end)
+			RoundNet:FireClient(p, "Bonus", { coins = Config.HeroBonus })
+		end
 	end
 end
 
 function handlers.Caught(e)
-	-- Falls flat where they were caught and lies there until the next round
-	-- (or, with Knockdown off, goes to the bench).
-	if Config.Knockdown.Enabled and byId[e.id] then
+	-- Falls flat where they were caught; another runner can help them up.
+	if byId[e.id] then
 		KnockdownService.down(byId[e.id])
 	end
+	rescueTime[e.id] = nil
 	syncPlayer(e.id)
 	RoundNet:FireAllClients("Caught", { catcher = e.by, runner = e.id })
-	if not Config.Knockdown.Enabled then
-		task.delay(0.6, function()
-			if match and match.status[e.id] == "Caught" then
-				place(e.id)
-			end
-		end)
+	if e.by then
+		announce(`{nameOf(e.id)} was caught by {nameOf(e.by)}!`, RED)
+	else
+		announce(`{nameOf(e.id)} was caught!`, RED)
 	end
+end
+
+function handlers.Rescued(e)
+	rescueTime[e.id] = nil
+	protectedUntil[e.id] = os.clock() + Config.Rescue.Shield
+	if byId[e.id] then
+		byId[e.id]:SetAttribute("ProtectedUntil", Workspace:GetServerTimeNow() + Config.Rescue.Shield)
+	end
+	if byId[e.id] then
+		KnockdownService.up(byId[e.id])
+	end
+	syncPlayer(e.id)
+	RoundNet:FireAllClients("Rescued", { runner = e.id, by = e.by })
+	announce(`{nameOf(e.by)} rescued {nameOf(e.id)}!`, GREEN)
+	addStat(e.by, "Rescues", 1)
 end
 
 function handlers.Safe(e)
 	syncPlayer(e.id)
+	if State:GetAttribute("Stage") == "Running" then
+		announce(`{nameOf(e.id)} reached safety!`, GREEN)
+	end
 	if byId[e.id] then
-		RoundNet:FireClient(byId[e.id], "Announce", { text = "SAFE!", color = Color3.fromRGB(110, 230, 150) })
+		RoundNet:FireClient(byId[e.id], "Safe", {})
 	end
 end
 
-function handlers.FinalRound(e)
-	State:SetAttribute("Phase", "Final")
-	announce(`FINAL ROUND! {nameOf(e.runner)} must cross with {girl.name}!`, GOLD, true)
+function handlers.Streak(e)
+	State:SetAttribute("Streak", e.count)
+	if e.count < e.goal then
+		announce(`Everyone made it! {e.count} of {e.goal} in a row`, GOLD, true)
+	end
+end
+
+function handlers.StreakLost()
+	State:SetAttribute("Streak", 0)
+end
+
+function handlers.JoinCatchers(e)
+	local names = {}
+	for _, id in e.ids do
+		table.insert(names, nameOf(id))
+	end
+	local who = if #names <= 3 then table.concat(names, ", ") else `{#names} runners`
+	announce(`{who} {if #names == 1 then "joins" else "join"} the catchers!`, RED, true)
 end
 
 function handlers.NewCatcher(e)
@@ -284,23 +352,11 @@ local function apply(events)
 	end
 end
 
--- One frame of a running round: who's across, who got tagged.
-local function step()
+-- One frame of play: who's across, who's being rescued (catchers stab through the Stab remote).
+local function step(dt)
 	local goal = zones[goalName]
-	local start = zones[MapService.startFor(match.round)]
-	-- A runner who walks up to her (waiting in the middle) picks her up.
-	if Config.Pickup == "Grab" and prize and match.holder == nil then
-		local at = prize:GetBoundingBox().Position
-		for id, status in match.status do
-			local root = status == "Active" and rootOf(id)
-			if root and (root.Position - at).Magnitude <= Config.GrabRange then
-				apply(Rules.grab(match, id))
-				break
-			end
-		end
-	end
 	for id, status in match.status do
-		if status == "Active" then
+		if status == "Active" and not frozen[id] then
 			local root = rootOf(id)
 			if root and MapService.inZone(goal, root.Position) then
 				apply(Rules.reachSafe(match, id))
@@ -310,43 +366,83 @@ local function step()
 			end
 		end
 	end
-	if Config.TagMode == "Stab" then
-		return -- catchers tag by stabbing (the Stab remote below)
-	end
-	for catcherId, role in match.roles do
-		local catcher = role == "Catcher" and PowerService.canStab(catcherId) and rootOf(catcherId)
-		if catcher then
-			for runnerId, status in match.status do
-				local runner = status == "Active" and rootOf(runnerId)
-				if
-					runner
-					and (runner.Position - catcher.Position).Magnitude <= Config.TagRange
-					and not (Config.StartZoneSafe and MapService.inZone(start, runner.Position))
-				then
-					if not PowerService.blocks(catcherId, runnerId) then
-						apply(Rules.tag(match, catcherId, runnerId))
-					end
-					if match.over then
-						return
+	if Config.TagMode ~= "Stab" then
+		local start = zones[MapService.startFor(match.round)]
+		for catcherId, role in match.roles do
+			local catcher = role == "Catcher" and not frozen[catcherId] and PowerService.canStab(catcherId) and rootOf(catcherId)
+			if catcher then
+				for runnerId, status in match.status do
+					local runner = status == "Active" and not frozen[runnerId] and (protectedUntil[runnerId] or 0) <= os.clock() and rootOf(runnerId)
+					if runner and (runner.Position - catcher.Position).Magnitude <= Config.TagRange
+						and not (Config.StartZoneSafe and MapService.inZone(start, runner.Position)) then
+						if not PowerService.blocks(catcherId, runnerId) then
+							apply(Rules.tag(match, catcherId, runnerId))
+						end
 					end
 				end
 			end
 		end
 	end
-end
-
--- Anyone who got round the start wall goes back behind the line.
-local function keepRunnersIn(zone)
-	if not zone then
-		return
-	end
-	for id, status in match.status do
-		local root = status == "Active" and rootOf(id)
-		local back = root and MapService.keepIn(zone, root.Position)
-		if back then
-			root.Parent:PivotTo(CFrame.new(back) * root.CFrame.Rotation)
+	-- Rescues: an Active runner next to a downed one fills their bar; walking away lets it drain.
+	for downedId, status in match.status do
+		if status == "Downed" then
+			local p = byId[downedId]
+			local c = p and p.Character
+			local feet = c and c:GetAttribute("DownedFeet")
+			local body = c and c:FindFirstChild("HumanoidRootPart")
+			local at = if typeof(feet) == "CFrame" then feet.Position elseif body then body.Position else nil
+			local helper = nil
+			if at then
+				for id, st in match.status do
+					local root = st == "Active" and not frozen[id] and rootOf(id)
+					if root and (root.Position - at).Magnitude <= Config.Rescue.Range then
+						helper = id
+						break
+					end
+				end
+			end
+			local before = rescueTime[downedId]
+			if helper then
+				rescueTime[downedId] = (before or 0) + dt
+				if rescueTime[downedId] >= Config.Rescue.Time then
+					apply(Rules.rescue(match, helper, downedId))
+				else
+					syncPlayer(downedId)
+				end
+			elseif before then
+				rescueTime[downedId] = if before > dt * 2 then before - dt * 2 else nil
+				syncPlayer(downedId)
+			end
 		end
 	end
+end
+
+-- Runners waiting on the line stay on their spot (anyone pushed or sneaking off goes back).
+local function keepOnLine()
+	for id in frozen do
+		local root = match.status[id] == "Active" and lineSpots[id] and rootOf(id)
+		if root and (root.Position - lineSpots[id].Position).Magnitude > 3 then
+			root.Parent:PivotTo(lineSpots[id])
+		end
+	end
+end
+
+-- Waits `seconds` (or until done() says so). live = play is on: powers, crossings, rescues.
+-- Returns true when the time ran out.
+local function play(seconds, done, live)
+	local deadline = os.clock() + seconds
+	while os.clock() < deadline and not (done and done()) and not match.over do
+		local dt = RunService.Heartbeat:Wait()
+		keepOnLine()
+		if live then
+			if match.holder then
+				holdSeconds += dt
+			end
+			PowerService.step()
+			step(dt)
+		end
+	end
+	return os.clock() >= deadline
 end
 
 local function runRound()
@@ -356,47 +452,136 @@ local function runRound()
 		return
 	end
 	goalName = MapService.goalFor(match.round)
+	local startName = MapService.startFor(match.round)
 	State:SetAttribute("Round", match.round)
 	State:SetAttribute("Goal", goalName)
-	State:SetAttribute("Phase", match.phase)
+	State:SetAttribute("Streak", match.streak)
+	State:SetAttribute("PickId", 0)
+	State:SetAttribute("PickChoice", "")
+	State:SetAttribute("HeroResult", "")
+	table.clear(rescueTime)
 
-	-- Before GO: runners stand behind their start line (a see-through wall holds it; they can
-	-- walk around in their zone), catchers in the middle. SAFE ZONE marks the line to reach.
-	local startName = MapService.startFor(match.round)
+	-- Lineup: runners shoulder to shoulder on their line, facing across; catchers in the middle.
 	KnockdownService.upAll()
 	MapService.showGoal(goalName)
 	MapService.holdStart(startName, true)
+	local runners = runnersWith("Active")
+	local line, length, spots = MapService.lineup(startName, #runners)
+	table.clear(lineSpots)
+	for i, id in runners do
+		lineSpots[id] = spots[i]
+	end
+	State:SetAttribute("LineCF", line)
+	State:SetAttribute("LineLength", length)
+	table.clear(frozen)
 	for id in match.roles do
+		frozen[id] = true -- catchers wait too, until the Hero runs
 		place(id)
 	end
 	PowerService.newRound()
 	syncAll()
-	if match.holder == nil then
-		showPrize() -- she waits in the middle (or on the far side)
-	end
-	announce(`ROUND {match.round}`, Color3.new(1, 1, 1), true)
 	apply(events)
-	setStage("Countdown", Config.CountdownTime)
-	local go = os.clock() + Config.CountdownTime
-	while os.clock() < go do
-		RunService.Heartbeat:Wait()
-		keepRunnersIn(zones[startName])
+	setStage("Lineup", Config.LineupTime)
+	if match.round == 1 then
+		announce(`Get everyone across {match.goal} times in a row to win!`, WHITE)
+	else
+		announce(`Round {match.round}: {match.streak} of {match.goal} in a row. Cross to the other side!`, WHITE)
 	end
+	play(Config.LineupTime)
+
+	-- Picking: one random runner chooses HERO or CHICKEN (no answer in time = a random pick).
+	if Config.Pick.Enabled then
+		apply(Rules.pickRunner(match))
+	end
+	if match.picked then
+		local P = Config.Pick
+		State:SetAttribute("PickAt", Workspace:GetServerTimeNow())
+		setStage("Picking", P.Roulette + P.ChooseTime)
+		announce("Picking a runner: Chicken or Hero?", GOLD)
+		task.delay(P.Roulette, function()
+			if match and match.picked and not match.choice then
+				announce(`{nameOf(match.picked)} is choosing: Chicken or Hero?`, WHITE)
+			end
+		end)
+		play(P.Roulette + P.ChooseTime, function()
+			return match.choice ~= nil or match.picked == nil
+		end)
+		if match.picked and not match.choice then
+			apply(Rules.choose(match, match.picked, nil))
+		end
+		if match.choice then
+			setStage("Chosen", P.ShowTime)
+			play(P.ShowTime)
+		end
+	end
+
+	-- The Hero's solo crossing: everyone else waits on the line and watches.
+	if match.hero then
+		local hero = match.hero
+		frozen[hero] = nil
+		for id, role in match.roles do
+			if role == "Catcher" then
+				frozen[id] = nil
+			end
+		end
+		MapService.holdStart(startName, false)
+		syncAll()
+		setStage("HeroRun", Config.HeroTime)
+		announce(`{nameOf(hero)}: cross alone!`, GOLD)
+		local timedOut = play(Config.HeroTime, function()
+			return match.status[hero] ~= "Active" or match.hero ~= hero
+		end, true)
+		if timedOut and match.hero == hero then
+			Rules.heroTimeout(match)
+			announce(`{nameOf(hero)} ran out of time! Back to the group.`, WHITE)
+		end
+		if match.over then
+			return
+		end
+		-- catchers back to the middle for a fair start
+		for id, role in match.roles do
+			if role == "Catcher" then
+				frozen[id] = true
+				place(id)
+			end
+		end
+		if match.status[hero] == "Active" then
+			frozen[hero] = true
+			place(hero) -- (timed out: back to the line)
+		end
+		MapService.holdStart(startName, true)
+		syncAll()
+		task.wait(0.8)
+	end
+
+	-- Nobody left to run (the only runner was the Hero): straight to the round's end.
+	if Rules.isRoundOver(match) then
+		saveHold()
+		PowerService.clear()
+		apply(Rules.endRound(match, false))
+		syncAll()
+		if not match.over then
+			setStage("RoundOver", Config.RoundEndPause)
+			task.wait(Config.RoundEndPause)
+		end
+		return
+	end
+
+	-- 3, 2, 1, GO! Everyone runs.
+	setStage("Countdown", Config.CountdownTime)
+	play(Config.CountdownTime)
 	MapService.holdStart(startName, false)
+	table.clear(frozen)
 	syncAll()
 	setStage("Running", Config.RoundTime)
-	local deadline = os.clock() + Config.RoundTime
-	while not Rules.isRoundOver(match) and os.clock() < deadline do
-		local dt = RunService.Heartbeat:Wait()
-		if match.holder then
-			holdSeconds += dt
-		end
-		PowerService.step()
-		step()
-	end
+	announce("RUN! Reach the other side!", WHITE)
+	play(Config.RoundTime, function()
+		return Rules.isRoundOver(match)
+	end, true)
 	saveHold()
 	PowerService.clear() -- traps and effects end with the round
 	apply(Rules.endRound(match, not Rules.isRoundOver(match)))
+	table.clear(rescueTime)
 	syncAll()
 	if not match.over then
 		setStage("RoundOver", Config.RoundEndPause)
@@ -407,8 +592,11 @@ end
 local function finishGame()
 	local winnerId = match.winner
 	local winner = winnerId and byId[winnerId]
-	for id in match.roles do
+	for id, role in match.roles do
 		addStat(id, "Rounds", 1) -- "Complete 3 matches"
+		if (match.team == "Runners" and role == "Runner") or (match.team == "Catchers" and role == "Catcher") then
+			addStat(id, "Wins", 1)
+		end
 	end
 	if winner then
 		-- Into the winner's collection: the Index shows every id in Characters.
@@ -419,11 +607,13 @@ local function finishGame()
 			moveGirlTo(match.holder, winnerId, "Won")
 		end
 		CarryService.setMood(winner, "Cheer")
-		RoundNet:FireAllClients("Win", { winner = winnerId, name = winner.DisplayName, girl = girl.name, rarity = girl.rarity })
-	else
-		RoundNet:FireAllClients("Win", { girl = girl.name, rarity = girl.rarity })
 	end
+	RoundNet:FireAllClients("Win", {
+		team = match.team, winner = winnerId, name = winner and winner.DisplayName, girl = girl.name, rarity = girl.rarity,
+	})
 	State:SetAttribute("HolderId", winnerId or 0)
+	State:SetAttribute("Winners", match.team or "")
+	table.clear(frozen)
 	syncAll() -- knives away
 	setStage("GameOver", Config.GameOverTime)
 	task.wait(Config.GameOverTime)
@@ -451,10 +641,12 @@ local function runGame()
 		table.insert(ids, id)
 	end
 	local catcher = if #ids >= 2 then ids[math.random(#ids)] else nil
-	match = Rules.newGame(ids, catcher, { maxRounds = Config.MaxRounds, pickup = Config.Pickup, heroes = Config.Heroes })
+	match = Rules.newGame(ids, catcher, { maxRounds = Config.MaxRounds, crossings = Config.Crossings })
 	State:SetAttribute("GirlName", girl.name)
 	State:SetAttribute("GirlRarity", girl.rarity)
 	State:SetAttribute("HolderId", 0)
+	State:SetAttribute("Crossings", Config.Crossings)
+	State:SetAttribute("Winners", "")
 	announce(`{girl.name} is up for grabs!`, GirlService.rarity(girl.rarity).Color, true)
 	if catcher then
 		task.delay(1.5, announce, `{nameOf(catcher)} is the CATCHER!`, RED, true)
@@ -468,7 +660,6 @@ end
 local function cleanUp()
 	KnockdownService.upAll()
 	CarryService.removeAll()
-	clearPrize()
 	if showcase then
 		showcase:Destroy()
 		showcase = nil
@@ -477,9 +668,15 @@ local function cleanUp()
 	PowerService.clear()
 	MapService.showGoal(nil) -- the lines stay on the map, the SAFE ZONE sign goes out
 	match, girl = nil, nil
+	table.clear(frozen)
+	table.clear(rescueTime)
+	table.clear(protectedUntil)
+	table.clear(lineSpots)
 	State:SetAttribute("GirlName", "")
 	State:SetAttribute("HolderId", 0)
 	State:SetAttribute("Round", 0)
+	State:SetAttribute("PickId", 0)
+	State:SetAttribute("Streak", 0)
 	for id in byId do
 		place(id) -- everyone back to the lobby
 	end
@@ -492,7 +689,8 @@ end
 local lastStab = {}
 Net.get("Stab").OnServerEvent:Connect(function(player)
 	local id = player.UserId
-	if not (match and not match.over and match.roles[id] == "Catcher" and State:GetAttribute("Stage") == "Running") then
+	local stage = State:GetAttribute("Stage")
+	if not (match and not match.over and match.roles[id] == "Catcher" and (stage == "Running" or stage == "HeroRun") and not frozen[id]) then
 		return
 	end
 	if Config.TagMode ~= "Stab" or KnockdownService.isDown(player) or not PowerService.canStab(id) then
@@ -512,7 +710,7 @@ Net.get("Stab").OnServerEvent:Connect(function(player)
 	local look = me.CFrame.LookVector
 	local best, bestDistance = nil, Config.Stab.Range
 	for runnerId, status in match.status do
-		local root = status == "Active" and rootOf(runnerId)
+		local root = status == "Active" and not frozen[runnerId] and (protectedUntil[runnerId] or 0) <= now and rootOf(runnerId)
 		if root then
 			local offset = root.Position - me.Position
 			local flat = Vector3.new(offset.X, 0, offset.Z)
@@ -534,7 +732,8 @@ PowerService.start({
 		return match
 	end,
 	running = function()
-		return State:GetAttribute("Stage") == "Running"
+		local stage = State:GetAttribute("Stage")
+		return stage == "Running" or stage == "HeroRun"
 	end,
 	rootOf = rootOf,
 	playerOf = function(id)
@@ -553,13 +752,11 @@ PowerService.start({
 	end,
 })
 
--- Hero or Chicken (Config.Heroes): runners pick during the countdown; only Heroes can take her, unless
--- no Hero makes it across (Shared/RoundRules). Locked at GO.
+-- Hero or Chicken: only the picked runner, while the pick is open (Shared/RoundRules.choose).
 Net.get("Hero").OnServerEvent:Connect(function(player, isHero)
 	local id = player.UserId
-	if match and not match.over and Config.Heroes and State:GetAttribute("Stage") == "Countdown" and type(isHero) == "boolean" then
-		Rules.setHero(match, id, isHero)
-		syncPlayer(id)
+	if match and not match.over and match.picked == id and State:GetAttribute("Stage") == "Picking" and type(isHero) == "boolean" then
+		apply(Rules.choose(match, id, isHero))
 	end
 end)
 
@@ -569,10 +766,11 @@ end)
 Net.get("Dash").OnServerEvent:Connect(function(player, dir, at)
 	local id = player.UserId
 	local c = player.Character
-	if not (match and not match.over and match.roles[id] and c and State:GetAttribute("Stage") == "Running") then
+	local stage = State:GetAttribute("Stage")
+	if not (match and not match.over and match.roles[id] and c and (stage == "Running" or stage == "HeroRun")) then
 		return
 	end
-	if KnockdownService.isDown(player) or PowerService.stuck(id) or match.status[id] == "Caught" then
+	if KnockdownService.isDown(player) or PowerService.stuck(id) or frozen[id] or match.status[id] == "Downed" then
 		return
 	end
 	if typeof(dir) ~= "Vector3" or dir ~= dir then
@@ -621,11 +819,8 @@ local function onCharacter(player, character)
 		end
 	end)
 	task.defer(function()
-		if not (match and match.roles[id]) then
-			place(id) -- waiting for the next game: to the lobby
-		end
+		place(id) -- the lobby, the middle or their spot on the line
 		if match and match.roles[id] then
-			place(id)
 			if match.holder == id and not CarryService.get(player) then
 				if match.roles[id] == "Catcher" then
 					CarryService.follow(player, girl, nil)
@@ -659,6 +854,9 @@ Players.PlayerRemoving:Connect(function(player)
 	if match then
 		apply(Rules.removePlayer(match, player.UserId))
 	end
+	frozen[player.UserId] = nil
+	rescueTime[player.UserId] = nil
+	protectedUntil[player.UserId] = nil
 	byId[player.UserId] = nil
 end)
 

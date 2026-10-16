@@ -37,12 +37,14 @@ function Scale.window(w: number, h: number): number
 	return math.min(fit, math.max(screen, 0.6) * WINDOW_K)
 end
 
+local HUD_SIZE = 0.55 -- the owner asked twice for smaller HUD buttons (1, then 0.72, now 0.55)
+
 function Scale.hud(h: number): number
 	local f = forced()
-	if f then return f end
+	if f then return f * HUD_SIZE end -- (the preview's 2x page = a 1536-wide screen: the same size as in the game)
 	local vp = viewport()
 	local screen = math.min(vp.X / 1920, vp.Y / 1080)
-	return math.min(math.max(screen, 0.4) * HUD_K * 0.72, vp.Y / h) -- 0.72: the owner asked for smaller HUD buttons
+	return math.min(math.max(screen, 0.4) * HUD_K * HUD_SIZE, vp.Y / h)
 end
 
 -- For things sized in real screen points, like the top bar row that lines up with Roblox's own buttons.

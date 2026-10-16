@@ -105,7 +105,7 @@ for f = 0, SECONDS * FPS - 1 do
 
 	-- The grab, as in RoundService.step: the first runner within GrabRange of her centre.
 	local girlCentre = (girl.root.CFrame * centre).Position
-	if not rec and (ORBIT and t > 1 or (carrier.root.CFrame.Position - girlCentre).Magnitude <= Round.GrabRange) then
+	if not rec and (ORBIT and t > 1 or (carrier.root.CFrame.Position - girlCentre).Magnitude <= 6) then -- (the old grab range)
 		for _, m in girl.motors do m.Transform = CFrame.identity end
 		rec = CarryMotion.new({
 			motor = carry, rig = CarryMath.rig(carrier), root = carrier.root, girlMotors = girl.motors,

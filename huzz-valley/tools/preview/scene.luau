@@ -51,14 +51,20 @@ if cfg.POWERS then
 	player:SetAttribute("PowerReady2", 0)
 	require(game.StarterPlayer.StarterPlayerScripts.HuzzClient.UI.Screens.PowerBar).refresh()
 end
--- HERO=true: the countdown, picking Hero or Chicken (Hero picked), with the power tiles under it.
+-- HERO=true: the picked runner's Chicken or Hero choice (5 seconds left), with the power tiles under it.
 if cfg.HERO then
 	local round = game.ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Round")
-	round:SetAttribute("Stage", "Countdown")
+	local Config = require(game.ReplicatedStorage.Shared.Config.Round)
+	local now = workspace:GetServerTimeNow()
+	round:SetAttribute("Stage", "Picking")
+	round:SetAttribute("Round", 1)
 	round:SetAttribute("GirlName", "Sakura Hoshino")
+	round:SetAttribute("PickId", player.UserId)
+	round:SetAttribute("PickAt", now - Config.Pick.Roulette - (Config.Pick.ChooseTime - 5))
+	round:SetAttribute("EndsAt", now + 5)
 	player:SetAttribute("HuzzRole", "Runner")
 	player:SetAttribute("HuzzStatus", "Active")
-	player:SetAttribute("HuzzHero", true)
+	player:SetAttribute("HuzzFrozen", true)
 	player:SetAttribute("PowerReady1", 0)
 	player:SetAttribute("PowerReady2", 0)
 	local Screens = game.StarterPlayer.StarterPlayerScripts.HuzzClient.UI.Screens
@@ -70,7 +76,9 @@ if cfg.ROUNDHUD then
 	local round = game.ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Round")
 	round:SetAttribute("Stage", "Running")
 	round:SetAttribute("Round", 2)
-	round:SetAttribute("EndsAt", workspace:GetServerTimeNow() + 84.5)
+	round:SetAttribute("Streak", 1)
+	round:SetAttribute("Crossings", 3)
+	round:SetAttribute("EndsAt", workspace:GetServerTimeNow() + 23.5)
 	round:SetAttribute("GirlName", "Sakura Hoshino")
 	round:SetAttribute("GirlRarity", "Legendary")
 	player:SetAttribute("HuzzRole", if cfg.ROUNDHUD == "Catcher" then "Catcher" else "Runner")
@@ -85,7 +93,8 @@ if cfg.ROUNDHUD then
 	-- (one ScreenGui is exported: the round HUD's root goes into the main UI for the picture)
 	pg:WaitForChild("HuzzRoundHud").Root.Parent = pg:WaitForChild("HuzzUI")
 	round:SetAttribute("Stage", "Running")
-	__fireOn(round, "OnClientEvent", "Announce", { text = "Sakura Hoshino is up for grabs!", color = Color3.fromRGB(255, 190, 60), big = true })
+	__fireOn(round, "OnClientEvent", "Announce", { text = "Messi reached safety!", color = Color3.fromRGB(110, 236, 140) })
+	Hud.refresh()
 end
 -- ROLL=<seconds into the spin>: the girl roller, with a made-up strip of the placeholder names.
 if cfg.ROLL then

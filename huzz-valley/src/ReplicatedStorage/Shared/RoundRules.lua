@@ -1,35 +1,33 @@
 --[[
-	The game's rules as a pure state machine (no Roblox calls), so every case
-	is unit tested in tests/RoundRules.spec.luau. RoundService feeds it what
-	happens in the world and acts on the events it returns.
+	The game's rules as a pure state machine (no Roblox calls), so every case is unit tested in
+	tests/RoundRules.spec.luau. RoundService feeds it what happens in the world and acts on the events
+	it returns. Players are ids (UserIds).
 
-	Players are ids (UserIds). Roles: "Runner" | "Catcher".
-	Runner status during a round: "Active" | "Safe" | "Caught".
+	Huss Valley's loop, one to one (owner's call), with the anime girl built in:
+	  - One random player starts as the (lead) catcher; everyone else runs.
+	  - Each round the runners line up on their safe line. One runner is picked at random and chooses
+	    HERO or CHICKEN (no answer in time = a random pick). A Hero crosses ALONE first while everyone
+	    else waits; Chicken skips that. Then everyone runs for the other side.
+	  - A stabbed runner is DOWNED where they fall. Another runner still out on the field can rescue them
+	    (stand next to them). Anyone still down when the round ends joins the catchers.
+	  - Runners win by getting EVERYONE across `crossings` (3) rounds in a row; a round where anyone
+	    ends up caught resets the streak. Catchers win when no runners are left (or after maxRounds).
+	The girl (floats over the map until someone wins her over):
+	  - A Hero who survives the solo crossing gets her: she comes down onto their shoulders (from the sky,
+	    or from the catcher who stole her).
+	  - A catcher who stabs her carrier steals her: she follows that catcher around.
+	  - When the game ends she goes home with the winning side: whoever on that side holds her; if
+	    nobody does, the runners' last successful Hero (else a random runner who made it), or the lead
+	    catcher (else the catcher with the most catches).
 
-	Phases of the girl:
-	  Open      - nobody or a runner holds her. With pickup "FirstAcross" (default)
-	              the first runner across each round gets her automatically; with
-	              pickup "Grab" the first runner to reach her (waiting in the
-	              middle) grabs her. A catcher who tags her holder steals her.
-	  Stolen    - a catcher (the thief) holds her. The first runner across
-	              rescues her, and the next round is the final round.
-	  FinalNext - rescued this round; turns into Final when the next round starts.
-	  Final     - her holder must cross once more: across = he wins her,
-	              caught = the catcher who tagged him wins her.
-	A round where her holder is the only runner left is also Final.
-	When no runners are left, whoever holds her wins her.
-
-	Hero mode (opts.heroes, owner's call): each round runners pick Hero or Chicken (setHero) before GO.
-	Only a Hero (or whoever already holds her) can take her by crossing first, grab her, or rescue her;
-	Chickens just try to get across. Picking nothing = Chicken. If no Hero made it across by the end of
-	the round, the first runner across gets her after all (owner: "if they don't win, the others can"):
-	reason "NoHero" (or "NoHeroRescue" when she was stolen, which makes the next round Final).
-
+	Runner status during a round: "Active" (still to cross) | "Safe" (across) | "Downed" (stabbed).
 	Every function returns a list of events:
-	  {type="RoundStarted", round}       {type="FinalRound", runner}
-	  {type="NewCatcher", id}            {type="Safe", id}
-	  {type="Caught", id, by}            {type="GirlMoved", from, to, reason}
-	  {type="Win", winner, reason}       (winner may be nil: nobody gets her)
+	  {type="RoundStarted", round}            {type="NewCatcher", id}       {type="JoinCatchers", ids}
+	  {type="Picked", id}                     {type="Choice", id, hero}     {type="HeroResult", id, survived}
+	  {type="Safe", id}                       {type="Caught", id, by}       {type="Rescued", id, by}
+	  {type="Streak", count, goal}            {type="StreakLost", count}
+	  {type="GirlMoved", from, to, reason}    (reason: "Hero" | "Stolen" | "Dropped" | "Reassigned")
+	  {type="Win", team, winner, reason}      (team "Runners" | "Catchers"; winner = who gets her, may be nil)
 ]]
 
 local RoundRules = {}
@@ -52,40 +50,78 @@ local function pick(s, list)
 	return list[s.random(#list)]
 end
 
-local function finish(s, winner, reason, events)
-	if s.over then
-		return
-	end
-	s.over = true
-	s.winner = winner
-	s.reason = reason
-	table.insert(events, { type = "Win", winner = winner, reason = reason })
-end
-
 local function moveGirl(s, to, reason, events)
 	local from = s.holder
+	if from == to then
+		return
+	end
 	s.holder = to
 	table.insert(events, { type = "GirlMoved", from = from, to = to, reason = reason })
 end
 
--- opts: { random = function(n) -> 1..n, maxRounds = number, pickup = "FirstAcross" | "Grab", heroes = bool }
+-- Who takes her home when `team` wins.
+local function girlWinner(s, team)
+	local role = if team == "Runners" then "Runner" else "Catcher"
+	if s.holder and s.roles[s.holder] == role then
+		return s.holder
+	end
+	if team == "Runners" then
+		if s.lastHero and s.roles[s.lastHero] == "Runner" then
+			return s.lastHero
+		end
+		local made = {}
+		for _, id in idsWithRole(s, "Runner") do
+			if s.status[id] == "Safe" then
+				table.insert(made, id)
+			end
+		end
+		return pick(s, if #made > 0 then made else idsWithRole(s, "Runner"))
+	end
+	if s.lead and s.roles[s.lead] == "Catcher" then
+		return s.lead
+	end
+	local best, most = nil, -1
+	for _, id in idsWithRole(s, "Catcher") do
+		local n = s.catches[id] or 0
+		if n > most then
+			best, most = id, n
+		end
+	end
+	return best
+end
+
+local function finish(s, team, reason, events)
+	if s.over then
+		return
+	end
+	s.over = true
+	s.team = team
+	s.reason = reason
+	s.winner = girlWinner(s, team)
+	table.insert(events, { type = "Win", team = team, winner = s.winner, reason = reason })
+end
+
+-- opts: { random = function(n) -> 1..n, crossings = 3, maxRounds = number }
 function RoundRules.newGame(ids, catcherId, opts)
 	opts = opts or {}
 	local s = {
 		round = 0,
-		phase = "Open",
-		holder = nil,
-		thief = nil,
 		roles = {},
 		status = {},
-		firstSafe = nil,
+		catches = {}, -- catcher id -> runners downed this game
+		holder = nil, -- who has the girl (a runner on their shoulders, or a catcher she follows)
+		lead = catcherId, -- the first catcher
+		picked = nil, -- this round's runner who chooses Hero or Chicken
+		choice = nil, -- nil (not chosen yet) | "Hero" | "Chicken"
+		hero = nil, -- this round's Hero (while their solo crossing counts)
+		lastHero = nil, -- the latest Hero who made it across
+		streak = 0, -- full crossings in a row
+		goal = opts.crossings or 3,
 		over = false,
+		team = nil,
 		winner = nil,
 		reason = nil,
 		maxRounds = opts.maxRounds or math.huge,
-		pickup = opts.pickup or "FirstAcross",
-		heroMode = opts.heroes == true,
-		hero = {}, -- this round's Heroes
 		random = opts.random or math.random,
 	}
 	for _, id in ids do
@@ -99,7 +135,7 @@ function RoundRules.startRound(s)
 	if s.over then
 		return events
 	end
-	-- Runners who didn't make it across last round catch from now on.
+	-- Runners still down at the end of the last round catch from now on.
 	if s.round > 0 then
 		for id, role in s.roles do
 			if role == "Runner" and s.status[id] ~= "Safe" then
@@ -108,17 +144,15 @@ function RoundRules.startRound(s)
 		end
 	end
 	s.round += 1
-	s.firstSafe = nil
 	s.status = {}
-	s.hero = {}
-	s.firstAny = nil
+	s.picked, s.choice, s.hero = nil, nil, nil
 
 	local runners = idsWithRole(s, "Runner")
 	if #runners == 0 then
-		finish(s, s.holder, "AllCaught", events)
+		finish(s, "Catchers", "AllCaught", events)
 		return events
 	end
-	-- Every catcher left: a runner (not her holder) takes over.
+	-- Every catcher left the server: a runner (not her carrier) takes over.
 	if #runners >= 2 and #idsWithRole(s, "Catcher") == 0 then
 		local pool = {}
 		for _, id in runners do
@@ -128,39 +162,56 @@ function RoundRules.startRound(s)
 		end
 		local id = pick(s, pool)
 		s.roles[id] = "Catcher"
+		s.lead = s.lead or id
 		table.insert(events, { type = "NewCatcher", id = id })
 		runners = idsWithRole(s, "Runner")
 	end
 	for _, id in runners do
 		s.status[id] = "Active"
 	end
-	if s.holder and s.roles[s.holder] == "Runner" then
-		s.hero[s.holder] = true -- carrying her makes you a Hero
-	end
-
-	if s.phase == "FinalNext" then
-		s.phase = "Final"
-	elseif s.phase == "Open" and s.holder ~= nil and #runners == 1 and runners[1] == s.holder then
-		s.phase = "Final"
-	end
 	table.insert(events, { type = "RoundStarted", round = s.round })
-	if s.phase == "Final" then
-		table.insert(events, { type = "FinalRound", runner = s.holder })
+	return events
+end
+
+-- The runner who chooses Hero or Chicken this round (any runner, her carrier too).
+function RoundRules.pickRunner(s)
+	local events = {}
+	if s.over or s.picked then
+		return events
+	end
+	local pool = {}
+	for _, id in idsWithRole(s, "Runner") do
+		if s.status[id] == "Active" then
+			table.insert(pool, id)
+		end
+	end
+	local id = pick(s, pool)
+	if id then
+		s.picked = id
+		table.insert(events, { type = "Picked", id = id })
 	end
 	return events
 end
 
--- Hero or Chicken for this round (before GO; RoundService only asks during the countdown).
-function RoundRules.setHero(s, id, isHero)
-	if s.roles[id] == "Runner" and s.status[id] == "Active" and s.holder ~= id then
-		s.hero[id] = isHero == true or nil
+-- The picked runner's answer (isHero nil = they ran out of time: a random pick).
+function RoundRules.choose(s, id, isHero)
+	local events = {}
+	if s.over or s.picked ~= id or s.choice ~= nil or s.status[id] ~= "Active" then
+		return events
 	end
-	return {}
+	if isHero == nil then
+		isHero = s.random(2) == 1
+	end
+	s.choice = if isHero then "Hero" else "Chicken"
+	s.hero = if isHero then id else nil
+	table.insert(events, { type = "Choice", id = id, hero = isHero == true })
+	return events
 end
 
--- Can this runner take her (by crossing first, grabbing or rescuing)?
-function RoundRules.canTake(s, id)
-	return not s.heroMode or s.hero[id] == true or s.holder == id
+-- The Hero's solo crossing ran out of time without a result: they just run with everyone.
+function RoundRules.heroTimeout(s)
+	s.hero = nil
+	return {}
 end
 
 function RoundRules.reachSafe(s, id)
@@ -170,36 +221,12 @@ function RoundRules.reachSafe(s, id)
 	end
 	s.status[id] = "Safe"
 	table.insert(events, { type = "Safe", id = id })
-	s.firstAny = s.firstAny or id
-
-	if s.phase == "Final" then
-		if id == s.holder then
-			finish(s, id, "Crossed", events)
-		end
-	elseif s.firstSafe == nil and RoundRules.canTake(s, id) then
-		s.firstSafe = id -- the first runner across who may take her (in hero mode: the first Hero)
-		if s.phase == "Open" then
-			if s.pickup == "FirstAcross" and s.holder ~= id then
-				moveGirl(s, id, "FirstAcross", events)
-			end
-		elseif s.phase == "Stolen" then
-			moveGirl(s, id, "Rescued", events)
-			s.phase = "FinalNext"
-		end
+	if s.hero == id then
+		s.hero = nil
+		s.lastHero = id
+		table.insert(events, { type = "HeroResult", id = id, survived = true })
+		moveGirl(s, id, "Hero", events) -- the reward: she comes down to the Hero
 	end
-	return events
-end
-
--- A runner reached her where she waits (pickup "Grab").
-function RoundRules.grab(s, id)
-	local events = {}
-	if s.over or s.pickup ~= "Grab" or s.phase ~= "Open" or s.holder ~= nil then
-		return events
-	end
-	if s.roles[id] ~= "Runner" or s.status[id] ~= "Active" or not RoundRules.canTake(s, id) then
-		return events
-	end
-	moveGirl(s, id, "Grabbed", events)
 	return events
 end
 
@@ -212,16 +239,18 @@ function RoundRules.tag(s, catcherId, runnerId)
 	if catcherId ~= nil and s.roles[catcherId] ~= "Catcher" then
 		return events
 	end
-	s.status[runnerId] = "Caught"
+	s.status[runnerId] = "Downed"
+	if catcherId then
+		s.catches[catcherId] = (s.catches[catcherId] or 0) + 1
+	end
 	table.insert(events, { type = "Caught", id = runnerId, by = catcherId })
-
+	if s.hero == runnerId then
+		s.hero = nil
+		table.insert(events, { type = "HeroResult", id = runnerId, survived = false })
+	end
 	if runnerId == s.holder then
-		if s.phase == "Final" then
-			finish(s, catcherId or s.thief or pick(s, idsWithRole(s, "Catcher")), "Caught", events)
-		elseif catcherId ~= nil then
+		if catcherId then
 			moveGirl(s, catcherId, "Stolen", events)
-			s.phase = "Stolen"
-			s.thief = catcherId
 		else
 			moveGirl(s, nil, "Dropped", events)
 		end
@@ -229,6 +258,24 @@ function RoundRules.tag(s, catcherId, runnerId)
 	return events
 end
 
+-- A runner still out on the field helps a downed runner up.
+function RoundRules.rescue(s, rescuerId, downedId)
+	local events = {}
+	if s.over or rescuerId == downedId then
+		return events
+	end
+	if s.roles[rescuerId] ~= "Runner" or s.status[rescuerId] ~= "Active" then
+		return events
+	end
+	if s.roles[downedId] ~= "Runner" or s.status[downedId] ~= "Downed" then
+		return events
+	end
+	s.status[downedId] = "Active"
+	table.insert(events, { type = "Rescued", id = downedId, by = rescuerId })
+	return events
+end
+
+-- Over when nobody is still out there running (the downed can't move; nobody's left to rescue them).
 function RoundRules.isRoundOver(s)
 	if s.over then
 		return true
@@ -254,30 +301,30 @@ function RoundRules.endRound(s, timedOut)
 				end
 			end
 		end
-		if s.over then
-			return events
-		end
 	end
-	-- Hero mode: nobody who could take her made it, so the first runner across does.
-	local first = s.firstAny
-	if s.heroMode and s.firstSafe == nil and first and s.status[first] == "Safe" then
-		if s.phase == "Open" and s.pickup == "FirstAcross" and s.holder ~= first then
-			moveGirl(s, first, "NoHero", events)
-		elseif s.phase == "Stolen" then
-			moveGirl(s, first, "NoHeroRescue", events)
-			s.phase = "FinalNext"
-		end
-	end
-	local safe = 0
-	for _, status in s.status do
-		if status == "Safe" then
+	local downed, safe = {}, 0
+	for _, id in idsWithRole(s, "Runner") do
+		if s.status[id] == "Safe" then
 			safe += 1
+		elseif s.status[id] == "Downed" then
+			table.insert(downed, id)
 		end
 	end
-	if safe == 0 then
-		finish(s, s.holder, "AllCaught", events)
+	if #downed == 0 then
+		s.streak += 1
+		table.insert(events, { type = "Streak", count = s.streak, goal = s.goal })
+	else
+		local lost = s.streak
+		s.streak = 0
+		table.insert(events, { type = "StreakLost", count = lost })
+		table.insert(events, { type = "JoinCatchers", ids = downed })
+	end
+	if s.streak >= s.goal then
+		finish(s, "Runners", "Crossed", events)
+	elseif safe == 0 then
+		finish(s, "Catchers", "AllCaught", events)
 	elseif s.round >= s.maxRounds then
-		finish(s, s.holder, "MaxRounds", events)
+		finish(s, "Catchers", "MaxRounds", events)
 	end
 	return events
 end
@@ -287,24 +334,28 @@ function RoundRules.removePlayer(s, id)
 	if s.roles[id] == nil then
 		return events
 	end
+	local wasCatcher = s.roles[id] == "Catcher"
 	s.roles[id] = nil
 	s.status[id] = nil
-	if s.thief == id then
-		s.thief = nil
+	s.catches[id] = nil
+	if s.picked == id then
+		s.picked = nil
+	end
+	if s.hero == id then
+		s.hero = nil
+	end
+	if s.lastHero == id then
+		s.lastHero = nil
+	end
+	if s.lead == id then
+		s.lead = nil
 	end
 	if s.over or s.holder ~= id then
 		return events
 	end
-	if s.phase == "Final" or s.phase == "FinalNext" then
-		s.holder = nil
-		finish(s, s.thief or pick(s, idsWithRole(s, "Catcher")), "HolderLeft", events)
-	elseif s.phase == "Stolen" then
+	if wasCatcher then
 		local heir = pick(s, idsWithRole(s, "Catcher"))
-		moveGirl(s, heir, "Reassigned", events)
-		s.thief = heir
-		if heir == nil then
-			s.phase = "Open"
-		end
+		moveGirl(s, heir, if heir then "Reassigned" else "Dropped", events)
 	else
 		moveGirl(s, nil, "Dropped", events)
 	end

@@ -106,7 +106,9 @@ function M.start()
 	end
 	local function canStab()
 		local c = player.Character
-		return Config.TagMode == "Stab" and player:GetAttribute("HuzzRole") == "Catcher" and RoundNet:GetAttribute("Stage") == "Running"
+		local stage = RoundNet:GetAttribute("Stage")
+		return Config.TagMode == "Stab" and player:GetAttribute("HuzzRole") == "Catcher" and (stage == "Running" or stage == "HeroRun")
+			and player:GetAttribute("HuzzFrozen") ~= true
 			and c ~= nil and c:FindFirstChild("HuzzKnife") ~= nil and not busy()
 			and (player:GetAttribute("DizzyUntil") or 0) <= Workspace:GetServerTimeNow() -- a popped Heart Shield
 	end

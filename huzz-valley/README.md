@@ -11,35 +11,32 @@ All of these work against a real save system. When you're happy with how they lo
 
 ![Ours under each reference](docs/previews/overview.jpg)
 
-## The game: rounds and carrying a girl
+## The game: Huss Valley's loop, with the anime girls
 1. **Between games** everyone votes for one of two maps. The winner **replaces the map in front of the lobby**
    (the last one stays there until then). Then a **small roller at the top of the screen** runs from top to
    bottom and stops on the game's girl. She then floats **big over the map** for the whole game, turning slowly
    in a column of light with sparkles and her rating (stars, name, rarity) over her head. Each roller row shows
    the girl's real model, her name, her rarity and that
    rarity's real chance. Every row is a fair pick (Common → Secret, from `Config/Round.Rarities`).
-2. Everyone is moved onto the map. Maps go in the way you built them: Halloween with its Mausoleum away from
-   the lobby, Basketball with its open side facing the lobby (`Map.FarSide` and `Map.OpenSide` in
-   `Config/Round.lua`). Invisible walls stop anyone jumping off. Everyone runs faster now, with a Huss Valley
-   style sprint ([video](docs/previews/huss-run.mp4)). Runners wait on their side behind the **start line** (a see-through wall
-   until GO; they can walk around in their zone). One random player is the **catcher**, in the middle with a
-   **knife**. The girl floats over the map. A white line marks each side, and **SAFE ZONE** shows the line
-   to reach.
-3. Catchers **stab** (click, or the STAB button on a phone) to tag a runner in reach. Tagged runners **fall flat
-   and lie there**, then get up as **catchers next round**. The **first runner across gets her automatically**:
-   she appears over their head. Press **H** (or TOSS) to toss her up: she twirls, he flexes, and he catches her.
-   Press **Space** to **huss**: a quick dash the way you're running (forward, back, left or right), with its
-   cooldown on the HUSS tile at the bottom. You can't jump during a round. Each round runs the other way.
-4. **A catcher who stabs her holder steals her:** she falls down and follows that catcher around on foot. The
-   next runner across rescues her, and the round after that is the **final round**: if that runner crosses
-   again, they win her; if they're tagged, that catcher wins her. If every runner is caught, whoever holds her
-   wins. The winner gets her in their **Index**.
-5. Outlines: catchers **red**, runners **blue**, Heroes **yellow**, runners safe across the line **green**.
-   During the countdown each runner picks **HERO** (goes for the girl) or **CHICKEN** (just gets across): only
-   a Hero can take her by crossing first or rescue her, but if no Hero makes it, the first runner across gets
-   her anyway. In a round you play in **shift lock** (not in the lobby); **hold Alt** to free the mouse.
-   Every girl you win stays in your **Index**, drawn from her real model; ones you haven't won show as a
-   dark shape. The round screen has new fonts and colours ([picture](docs/previews/round-hud.png)).
+2. Everyone is moved onto the map ([how Huss Valley does it](docs/previews/hv-reference-1.jpg)). One random player is the **catcher**, in the
+   middle with a **knife**; everyone else runs. The girl floats over the map. **Runners win by getting everyone
+   across 3 rounds in a row**; catchers win by catching every runner.
+3. **Every round starts with the line-up:** runners stand side by side on their safe line. The camera sweeps
+   along them, a gold glow hops from runner to runner and lands on one at random, and zooms in
+   ([video](docs/previews/intro-camera.mp4)). That runner picks **HERO** or **CHICKEN** on their screen (8
+   seconds, or it picks for them). A **Hero crosses alone first** while everyone watches. Make it and the girl
+   comes down onto your shoulders, plus 25 coins. **Chicken** means everyone runs together.
+4. **RUN!** Catchers **stab** (click, or the STAB button on a phone). A stabbed runner **falls down** where they
+   are. Stand next to a downed runner to **rescue** them (a bar fills over their head). Anyone still down at the
+   end of the round **joins the catchers**, and the "in a row" count starts again.
+5. **The girl:** a catcher who stabs her carrier **steals her** (she follows him). The next Hero who makes it
+   takes her back. When the game ends she goes home with the winning side, into their **Index**.
+   - Controls in a round: **no mouse pointer** (shift lock); **hold Alt** to get the pointer back. **Space**
+     dashes, **H** tosses her, and you can't jump.
+   - The top of the screen shows what just happened ("Messi reached safety!"), your role and the time left
+     ([picture](docs/previews/round-hud.png)).
+   - Name tags over everyone show their role, level and wins. Outlines: catchers **red**, runners **blue**,
+     the Hero **yellow**, safe runners **green**.
 6. **Powers** (free, fresh every round; Q and E, or tap the cards at the bottom of the screen):
    - Runners: **Heart Shield** (a pink bubble that blocks one stab; the catcher gets dizzy and you get a burst
      of speed; once per round) and **Rizz Rush** (a speed burst with a pink trail).

@@ -1,12 +1,13 @@
--- Hero or Chicken (owner's call, Config/Round.Heroes): during the countdown every runner who isn't carrying her
--- picks. HERO goes for the girl (only Heroes can take her by crossing first, unless no Hero makes it) and glows
--- yellow; CHICKEN just tries to get across. Picking nothing = Chicken. Two cards above the power tiles (a gold
--- HERO card, a cream CHICKEN card; the picked one is lit with a white rim and a PICKED tag, the other dimmed);
--- keys 1 and 2. While it shows, shift lock lets go of the mouse (the "HuzzChoosing" attribute) so you can click.
+-- Chicken or Hero (Huss Valley, owner's call): each round one runner is picked at random (the camera zooms in on
+-- them, Gameplay/Cinematic) and only they see this: a gold HERO card (cross alone first; make it and the girl
+-- comes down to you, plus coins) and a cream CHICKEN card (run with everyone), keys 1 and 2, and a bar running
+-- down the time left (Config/Round.Pick.ChooseTime). No answer in time = the server picks at random.
+-- While it shows, shift lock lets go of the mouse (the "HuzzChoosing" attribute) so you can click.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Net = require(Shared.Net)
@@ -23,8 +24,8 @@ local rgb = Color3.fromRGB
 
 local HeroChoice = {}
 
-local W, H = 372, 124
-local CARD = { W = 172, H = 88, Gap = 26 }
+local W, H = 420, 196
+local CARD = { W = 190, H = 112, Gap = 22 }
 local PAGE_H = 347 -- the HUD reference height (as LobbyHud)
 local INK = rgb(16, 14, 38)
 local LOOKS = {
@@ -32,45 +33,35 @@ local LOOKS = {
 	Chicken = { Top = rgb(255, 250, 238), Bottom = rgb(238, 218, 184), Text = rgb(122, 64, 18), Line = rgb(128, 90, 52) },
 }
 
-local function choiceCard(parent: Instance, name: string, key: string, word: string, x: number, onClick: () -> ())
+local function choiceCard(parent: Instance, name: string, key: string, word: string, x: number, y: number, onClick: () -> ())
 	local look = LOOKS[name]
 	local btn = new("TextButton", {
 		Name = name, Text = "", AutoButtonColor = false, AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromOffset(x + CARD.W / 2, H - CARD.H / 2), Size = UDim2.fromOffset(CARD.W, CARD.H),
+		Position = UDim2.fromOffset(x + CARD.W / 2, y + CARD.H / 2), Size = UDim2.fromOffset(CARD.W, CARD.H),
 		BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = parent,
-	}, { Kit.corner(14) })
+	}, { Kit.corner(16) })
 	new("UIGradient", { Name = "Fill", Rotation = 90, Color = ColorSequence.new(look.Top, look.Bottom), Parent = btn })
-	local rim = new("UIStroke", { Name = "Rim", Thickness = 3, Color = INK, Transparency = 0.15, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = btn })
-	new("Frame", { Name = "Gloss", Position = UDim2.fromOffset(12, 4), Size = UDim2.new(1, -24, 0, 9), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.6, BorderSizePixel = 0, Parent = btn }, { Kit.corner(10) })
-	-- the key to press, in a dark circle at the top left
+	new("UIStroke", { Name = "Rim", Thickness = 3, Color = INK, Transparency = 0.1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = btn })
+	new("Frame", { Name = "Gloss", Position = UDim2.fromOffset(14, 4), Size = UDim2.new(1, -28, 0, 8), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.55, BorderSizePixel = 0, Parent = btn }, { Kit.corner(4) })
 	local keyDot = new("TextLabel", {
-		Name = "Key", Text = key, FontFace = F.Display, TextSize = 17, TextColor3 = Color3.new(1, 1, 1), BackgroundColor3 = INK,
-		Position = UDim2.fromOffset(-8, -8), Size = UDim2.fromOffset(28, 28), ZIndex = 3, Parent = btn,
+		Name = "Key", Text = key, FontFace = F.Display, TextSize = 18, TextColor3 = Color3.new(1, 1, 1), BackgroundColor3 = INK,
+		Position = UDim2.fromOffset(-9, -9), Size = UDim2.fromOffset(30, 30), ZIndex = 3, Parent = btn,
 	}, { new("UICorner", { CornerRadius = UDim.new(0.5, 0) }), new("UIStroke", { Thickness = 2, Color = Color3.new(1, 1, 1), ApplyStrokeMode = Enum.ApplyStrokeMode.Border }) })
-	local wordLabel = new("TextLabel", {
-		Name = "Word", Text = word, FontFace = F.Display, TextSize = 34, TextColor3 = look.Text, BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(0, 18), Size = UDim2.new(1, 0, 0, 36), ZIndex = 2, Parent = btn,
+	new("TextLabel", {
+		Name = "Word", Text = word, FontFace = F.Display, TextSize = 38, TextColor3 = look.Text, BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(0, 16), Size = UDim2.new(1, 0, 0, 40), ZIndex = 2, Parent = btn,
 	})
-	local line = new("TextLabel", {
+	local line1 = new("TextLabel", {
 		Name = "Line", Text = "", FontFace = F.Round, TextSize = 15, TextColor3 = look.Line, BackgroundTransparency = 1, TextTruncate = Enum.TextTruncate.AtEnd,
-		Position = UDim2.fromOffset(8, 56), Size = UDim2.new(1, -16, 0, 20), ZIndex = 2, Parent = btn,
+		Position = UDim2.fromOffset(10, 60), Size = UDim2.new(1, -20, 0, 18), ZIndex = 2, Parent = btn,
 	})
-	local picked = new("TextLabel", {
-		Name = "Picked", Text = "PICKED", FontFace = F.Display, TextSize = 14, TextColor3 = INK, BackgroundColor3 = Color3.new(1, 1, 1),
-		AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0), Size = UDim2.fromOffset(70, 22), ZIndex = 3, Visible = false, Parent = btn,
-	}, { new("UICorner", { CornerRadius = UDim.new(0.5, 0) }), new("UIStroke", { Thickness = 2, Color = INK, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }) })
-	-- dims the card you didn't pick
-	local shade = new("Frame", { Name = "Shade", Size = UDim2.fromScale(1, 1), BackgroundColor3 = INK, BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 4, Parent = btn }, { Kit.corner(14) })
+	local line2 = new("TextLabel", {
+		Name = "Line2", Text = "", FontFace = F.Round, TextSize = 13, TextColor3 = look.Line, TextTransparency = 0.15, BackgroundTransparency = 1, TextTruncate = Enum.TextTruncate.AtEnd,
+		Position = UDim2.fromOffset(10, 80), Size = UDim2.new(1, -20, 0, 16), ZIndex = 2, Parent = btn,
+	})
 	btn.Activated:Connect(onClick)
-	local function set(on: boolean)
-		rim.Color = if on then Color3.new(1, 1, 1) else INK
-		rim.Thickness = if on then 4 else 3
-		rim.Transparency = if on then 0 else 0.15
-		picked.Visible = on
-		shade.BackgroundTransparency = if on then 1 else 0.72
-		btn.Size = if on then UDim2.fromOffset(CARD.W + 8, CARD.H + 4) else UDim2.fromOffset(CARD.W, CARD.H)
-	end
-	return { Instance = btn, set = set, line = line, word = wordLabel, key = keyDot }
+	Motion.bindButton(btn, function() return nil end)
+	return { Instance = btn, line = line1, line2 = line2, key = keyDot }
 end
 
 function HeroChoice.build(parent: Instance)
@@ -78,27 +69,32 @@ function HeroChoice.build(parent: Instance)
 	local round = Net.get("Round") :: RemoteEvent
 	local remote = Net.get("Hero") :: RemoteEvent
 	local panel = new("Frame", {
-		Name = "HeroChoice", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -104), Size = UDim2.fromOffset(W, H),
+		Name = "HeroChoice", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -60), Size = UDim2.fromOffset(W, H),
 		BackgroundTransparency = 1, Visible = false, Parent = parent,
 	})
-	Scale.bind(new("UIScale", { Name = "FitScale", Parent = panel }), function()
-		local s = Scale.hud(PAGE_H) * 0.72
-		-- sits just above the power tiles (PowerBar: 62 px tall, 10 px off the bottom, the same scale)
-		panel.Position = UDim2.new(0.5, 0, 1, -math.round(10 + 62 * s + 12 * s))
-		return s
-	end)
-	local hint = new("TextLabel", {
-		Name = "Hint", Text = "HERO OR CHICKEN?", FontFace = F.Display, TextSize = 24, TextColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1,
-		Size = UDim2.new(1, 0, 0, 28), Parent = panel,
-	}, { new("UIStroke", { Name = "Outline", Color = INK, Thickness = 2.5, LineJoinMode = Enum.LineJoinMode.Round }) })
+	Scale.bind(new("UIScale", { Name = "FitScale", Parent = panel }), function() return Scale.hud(PAGE_H) * 0.8 end)
+	local title = new("TextLabel", {
+		Name = "Hint", Text = "CHICKEN OR HERO?", FontFace = F.Display, TextSize = 34, TextColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1,
+		Size = UDim2.new(1, 0, 0, 38), Parent = panel,
+	}, { new("UIStroke", { Name = "Outline", Color = INK, Thickness = 3, LineJoinMode = Enum.LineJoinMode.Round }) })
+	new("UIGradient", { Name = "Shine", Rotation = 90, Color = ColorSequence.new(Color3.new(1, 1, 1), rgb(255, 222, 130)), Parent = title })
+	-- the time left: a bar that empties (and the seconds)
+	local timer = new("Frame", { Name = "Timer", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 44), Size = UDim2.fromOffset(260, 12), BackgroundColor3 = INK, BackgroundTransparency = 0.25, BorderSizePixel = 0, Parent = panel }, { Kit.corner(6) })
+	local fill = new("Frame", { Name = "Fill", Size = UDim2.fromScale(1, 1), BackgroundColor3 = rgb(255, 214, 70), BorderSizePixel = 0, Parent = timer }, { Kit.corner(6) })
+	local secs = new("TextLabel", { Name = "Seconds", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(1, 8, 0.5, 0), Size = UDim2.fromOffset(40, 20), Text = "", FontFace = F.Display, TextSize = 18, TextColor3 = Color3.new(1, 1, 1), TextXAlignment = Enum.TextXAlignment.Left, BackgroundTransparency = 1, Parent = timer },
+		{ new("UIStroke", { Color = INK, Thickness = 2 }) })
 
+	local sent = nil
 	local function pick(isHero: boolean)
-		if panel.Visible then remote:FireServer(isHero) end
+		if panel.Visible and sent == nil then
+			sent = isHero
+			remote:FireServer(isHero)
+		end
 	end
-	local x0 = W / 2 - CARD.Gap / 2 - CARD.W
+	local y = H - CARD.H
+	local hero = choiceCard(panel, "Hero", "1", "HERO", W / 2 - CARD.Gap / 2 - CARD.W, y, function() pick(true) end)
+	local chicken = choiceCard(panel, "Chicken", "2", "CHICKEN", W / 2 + CARD.Gap / 2, y, function() pick(false) end)
 	local touchOnly = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled -- (no keys to show)
-	local hero = choiceCard(panel, "Hero", "1", "HERO", x0, function() pick(true) end)
-	local chicken = choiceCard(panel, "Chicken", "2", "CHICKEN", W / 2 + CARD.Gap / 2, function() pick(false) end)
 	hero.key.Visible, chicken.key.Visible = not touchOnly, not touchOnly
 
 	UserInputService.InputBegan:Connect(function(input, processed)
@@ -107,27 +103,32 @@ function HeroChoice.build(parent: Instance)
 		elseif input.KeyCode == Enum.KeyCode.Two then pick(false) end
 	end)
 
-	local shownHero = nil
+	local wasVisible = false
 	local function refresh()
-		local show = Config.Heroes and round:GetAttribute("Stage") == "Countdown" and player:GetAttribute("HuzzRole") == "Runner"
-			and player:GetAttribute("HuzzStatus") == "Active" and round:GetAttribute("HolderId") ~= player.UserId
-			and player:GetAttribute("MenuOpen") ~= true
+		local now = Workspace:GetServerTimeNow()
+		local openAt = (round:GetAttribute("PickAt") or 0) + Config.Pick.Roulette
+		local show = round:GetAttribute("Stage") == "Picking" and round:GetAttribute("PickId") == player.UserId
+			and now >= openAt - 0.2 and player:GetAttribute("MenuOpen") ~= true
 		panel.Visible = show == true
 		if player:GetAttribute("HuzzChoosing") ~= (show == true) then
 			player:SetAttribute("HuzzChoosing", show == true) -- (local only: shift lock frees the mouse)
 		end
-		if not show then return end
-		local isHero = player:GetAttribute("HuzzHero") == true
-		if isHero ~= shownHero then
-			local first = shownHero == nil
-			shownHero = isHero
-			hero.set(isHero)
-			chicken.set(not isHero)
-			if not first then Motion.pop((if isHero then hero else chicken).Instance) end
+		if show and not wasVisible then
+			sent = nil
+			Motion.pop(hero.Instance)
+			Motion.pop(chicken.Instance)
 		end
+		wasVisible = show == true
+		if not show then return end
+		local left = math.max(0, (round:GetAttribute("EndsAt") or now) - now)
+		fill.Size = UDim2.fromScale(math.clamp(left / Config.Pick.ChooseTime, 0, 1), 1)
+		fill.BackgroundColor3 = if left <= 3 then rgb(255, 110, 110) else rgb(255, 214, 70)
+		secs.Text = tostring(math.ceil(left))
 		local girl = round:GetAttribute("GirlName") or "her"
-		hero.line.Text = `Go for {girl}`
-		chicken.line.Text = "Just get across"
+		hero.line.Text = "Cross alone first"
+		hero.line2.Text = if round:GetAttribute("HolderId") == player.UserId then `Make it: +{Config.HeroBonus} coins` else `Make it: win {girl}!`
+		chicken.line.Text = "Run with everyone"
+		chicken.line2.Text = "Play it safe"
 	end
 	RunService.RenderStepped:Connect(refresh)
 	HeroChoice.refresh = refresh -- (the offline preview calls it)

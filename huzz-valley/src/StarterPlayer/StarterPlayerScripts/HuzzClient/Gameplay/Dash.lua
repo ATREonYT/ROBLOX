@@ -24,7 +24,9 @@ function Dash.ready(): boolean
 	local round = Net.get("Round") :: RemoteEvent
 	local role, status = player:GetAttribute("HuzzRole"), player:GetAttribute("HuzzStatus")
 	local c = player.Character
-	return round:GetAttribute("Stage") == "Running" and (role == "Runner" or role == "Catcher") and status ~= "Caught"
+	local stage = round:GetAttribute("Stage")
+	return (stage == "Running" or stage == "HeroRun") and (role == "Runner" or role == "Catcher") and status ~= "Downed"
+		and player:GetAttribute("HuzzFrozen") ~= true
 		and c ~= nil and c:GetAttribute("DownedAt") == nil and player:GetAttribute("MenuOpen") ~= true
 		and Workspace:GetServerTimeNow() >= (player:GetAttribute("DashReady") or 0)
 		and os.clock() - lastLocal >= Config.Dash.Cooldown - 0.1

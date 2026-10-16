@@ -248,7 +248,8 @@ local function simulate(opts)
 	clock, queue, errors = 0, {}, {}
 	math.randomseed(opts.seed or 1)
 	local rng = { NextNumber = function() return math.random() end }
-	local stats = { stages = {}, games = 0, wins = 0, stabs = 0, tags = 0, powers = {}, blocks = 0, sprung = 0, charmed = 0, husses = 0, kept = 0 }
+	local stats = { stages = {}, games = 0, wins = 0, stabs = 0, tags = 0, powers = {}, blocks = 0, sprung = 0, charmed = 0, husses = 0, kept = 0,
+		rescues = 0, picks = 0, heroes = 0, heroSurvived = 0, timeoutPicks = 0, runnerWins = 0, catcherWins = 0 }
 	local problems = {}
 	local seen = {}
 	local function problem(msg)
@@ -408,6 +409,21 @@ local function simulate(opts)
 	function MapService.showGoal(name)
 		goalShown = name
 	end
+	-- As MapService.lineup: a row just behind the zone's edge that faces the middle, looking across.
+	function MapService.lineup(zoneName, count)
+		local zone, middle = zones[zoneName], zones.Middle
+		local d = middle.CFrame.Position - zone.CFrame.Position
+		local out = Vector3.new(d.X, 0, d.Z).Unit
+		local along = Vector3.new(-out.Z, 0, out.X)
+		local depth = math.abs(out.X) * zone.Size.X / 2 + math.abs(out.Z) * zone.Size.Z / 2
+		local centre = zone.CFrame.Position + out * depth + Vector3.new(0, -4, 0)
+		local spots = {}
+		for i = 1, count do
+			local pos = centre - out * 2.5 + along * ((i - 1 - (count - 1) / 2) * 4) + Vector3.new(0, 3.2, 0)
+			spots[i] = lookAt(pos, pos + out)
+		end
+		return lookAt(centre, centre + out), 60, spots
+	end
 
 	-- Fake girls: the real fair roll on a small catalogue.
 	local catalog = {}
@@ -436,6 +452,9 @@ local function simulate(opts)
 		showcases += 1
 		local m = new("Model", { Name = "HuzzShowcase", CFrame = CFrame.new(at) })
 		m.Parent = workspace
+		function m:GetPivot()
+			return self.CFrame
+		end
 		return m
 	end
 	local prizeModel
@@ -492,6 +511,9 @@ local function simulate(opts)
 	function KnockdownService.upAll()
 		downed = {}
 	end
+	function KnockdownService.up(p)
+		downed[p] = nil
+	end
 	local MapVoteService = {}
 	function MapVoteService.run(a, b, seconds)
 		task.wait(seconds)
@@ -510,6 +532,11 @@ local function simulate(opts)
 		return c._knife == true
 	end
 	local SafetyService = { clean = function() end }
+	-- Name tags: remembers what each player's tag says, for the checks.
+	local tags = {}
+	local NameTagService = { set = function(player, look, badge, rescue)
+		tags[player] = { look = look, badge = badge, rescue = rescue }
+	end }
 
 	-- The module tree the scripts require from.
 	local baseEnv = {
@@ -531,6 +558,7 @@ local function simulate(opts)
 	local modules = {
 		MapService = MapService, GirlService = GirlService, CarryService = CarryService, DataService = DataService,
 		KnockdownService = KnockdownService, MapVoteService = MapVoteService, KnifeService = KnifeService, SafetyService = SafetyService,
+		NameTagService = NameTagService,
 	}
 	local Shared = { Config = { Round = Config, Carry = Carry, Powers = Powers }, RoundRules = RoundRules, Net = Net, GirlRoll = GirlRoll }
 	local sharedNode = setmetatable({}, { __index = function(_, k)
@@ -589,10 +617,13 @@ local function simulate(opts)
 				stats.powers[e.data.name] = (stats.powers[e.data.name] or 0) + 1
 				if e.data.name == "ShieldPop" then stats.blocks += 1 end
 				if e.data.name == "TrapSprung" then stats.sprung += 1 end
-			elseif e.kind == "Announce" and type(e.data.text) == "string" and e.data.text:find("No Hero made it") then
-				stats.noHero = (stats.noHero or 0) + 1
+			elseif e.kind == "Rescued" then
+				stats.rescues += 1
+			elseif e.kind == "Announce" and type(e.data.text) == "string" and e.data.text:find("survived the Hero run") then
+				stats.heroSurvived += 1
 			elseif e.kind == "Win" then
 				stats.wins += 1
+				if e.data.team == "Runners" then stats.runnerWins += 1 elseif e.data.team == "Catchers" then stats.catcherWins += 1 end
 				if e.data.winner then
 					local p = nil
 					for q in bots do
@@ -614,10 +645,14 @@ local function simulate(opts)
 		Waiting = { Voting = true, Intermission = true },
 		Voting = { Rolling = true, Waiting = true },
 		Intermission = { Rolling = true, Waiting = true },
-		Rolling = { Countdown = true, GameOver = true, Waiting = true, Voting = true },
+		Rolling = { Lineup = true, GameOver = true, Waiting = true, Voting = true },
+		Lineup = { Picking = true, Countdown = true, GameOver = true },
+		Picking = { Chosen = true },
+		Chosen = { HeroRun = true, Countdown = true },
+		HeroRun = { Countdown = true, RoundOver = true, GameOver = true },
 		Countdown = { Running = true },
 		Running = { RoundOver = true, GameOver = true },
-		RoundOver = { Countdown = true, GameOver = true },
+		RoundOver = { Lineup = true, GameOver = true },
 		GameOver = { Waiting = true, Voting = true },
 	}
 	local lastStage = nil
@@ -643,6 +678,38 @@ local function simulate(opts)
 			if lastStage == "Rolling" then
 				stats.games += 1
 			end
+			if st == "Picking" then
+				stats.picks += 1
+				local id = Round:GetAttribute("PickId")
+				local picked = nil
+				for q in bots do if q.UserId == id then picked = q end end
+				if not picked then
+					problem("Picking with no picked player: " .. tostring(id))
+				elseif picked:GetAttribute("HuzzRole") ~= "Runner" or picked:GetAttribute("HuzzStatus") ~= "Active" then
+					problem("the picked player isn't an Active runner")
+				end
+			elseif st == "HeroRun" then
+				stats.heroes += 1
+				-- only the Hero (and catchers) may move; everyone else waits on the line
+				for q in bots do
+					local h = q.Character and q.Character:FindFirstChildOfClass("Humanoid")
+					if q:GetAttribute("HuzzRole") == "Runner" and not q:GetAttribute("HuzzHero") and h and h.WalkSpeed ~= 0 then
+						problem(`{q.Name} can move during someone else's Hero run`)
+					end
+				end
+			elseif st == "Chosen" and lastStage == "Picking" and (Round:GetAttribute("PickChoice") or "") == "" then
+				problem("Chosen with no choice")
+			end
+			if st == "Lineup" or st == "Countdown" then
+				task.defer(function()
+					for q in bots do
+						local h = q.Character and q.Character:FindFirstChildOfClass("Humanoid")
+						if q:GetAttribute("HuzzStatus") == "Active" and h and h.WalkSpeed ~= 0 then
+							problem(`{q.Name} can move during {st}`)
+						end
+					end
+				end)
+			end
 			if st == "Running" then
 				-- The start wall must have kept every runner on their side.
 				for p in bots do
@@ -663,8 +730,9 @@ local function simulate(opts)
 		for _, c in workspace:GetChildren() do
 			if c.Name == "HuzzShowcase" then shown += 1 end
 		end
-		if (st == "Countdown" or st == "Running") and shown ~= 1 then
-			problem(`{shown} big girls over the map during a game (should be 1)`)
+		local held = (Round:GetAttribute("HolderId") or 0) ~= 0
+		if (st == "Countdown" or st == "Running") and shown ~= (if held then 0 else 1) then
+			problem(`{shown} big girls over the map during a game (should be {if held then 0 else 1}: she's {if held then "held" else "free"})`)
 		elseif (st == "Voting" or st == "Waiting") and shown ~= 0 then
 			problem("the big girl stayed after the game")
 		end
@@ -678,26 +746,56 @@ local function simulate(opts)
 				continue
 			end
 			-- Knives: catchers in a running game hold one, nobody else.
-			local playing = st == "Countdown" or st == "Running" or st == "RoundOver"
+			local playing = st == "Countdown" or st == "Running" or st == "RoundOver" or st == "Lineup" or st == "HeroRun"
 			if playing and role == "Catcher" and not c._knife and Config.TagMode == "Stab" then
 				problem(`catcher {p.Name} has no knife`)
 			elseif role ~= "Catcher" and c._knife then
 				problem(`{role} {p.Name} holds a knife`)
 			end
+			local tag = tags[p]
+			if status == "Downed" and not (tag and tag.look == "Downed") then
+				problem(`{p.Name} is down but their tag says {tag and tag.look}`)
+			elseif role == "Catcher" and st == "Running" and not (tag and tag.look == "Catcher") then
+				problem(`catcher {p.Name}'s tag says {tag and tag.look}`)
+			end
 			if PowerService.stuck(p.UserId) and h.WalkSpeed ~= 0 then
 				problem(`{p.Name} is stuck in a trap but can still move`)
 			end
-			-- Hero or Chicken during the countdown (about half each).
-			if st == "Countdown" and role == "Runner" and bot.pickedRound ~= Round:GetAttribute("Round") then
+			-- Hero or Chicken: the picked bot answers after a moment (some let the timer run out).
+			if st == "Picking" and Round:GetAttribute("PickId") == p.UserId and bot.pickedRound ~= Round:GetAttribute("Round") then
 				bot.pickedRound = Round:GetAttribute("Round")
-				remotes.Hero.OnServerEvent:Fire(p, rng:NextNumber() < 0.5)
+				-- someone else trying to answer is ignored
+				for q in bots do
+					if q ~= p then remotes.Hero.OnServerEvent:Fire(q, true) end
+				end
+				if rng:NextNumber() < 0.75 then
+					local hero = rng:NextNumber() < 0.6
+					task.delay(Config.Pick.Roulette + rng:NextNumber() * 3, function()
+						remotes.Hero.OnServerEvent:Fire(p, hero)
+					end)
+				else
+					stats.timeoutPicks += 1
+				end
 			end
-			-- Move.
+			-- Move: runners head across (a few go and help up a downed runner nearby first).
 			local target = nil
-			if (st == "Countdown" or st == "Running") and role == "Runner" and status == "Active" then
+			if (st == "Running" or st == "HeroRun") and role == "Runner" and status == "Active" then
 				local goal = zones[Round:GetAttribute("Goal") or "ZoneB"]
 				target = goal and goal.CFrame.Position + Vector3.new(0, -4 + 3.2, (bot.seed - 0.5) * 60)
-			elseif st == "Running" and role == "Catcher" then
+				if st == "Running" and bot.seed < 0.6 then
+					for q in bots do
+						local qc = q.Character
+						if q ~= p and q:GetAttribute("HuzzStatus") == "Downed" and qc then
+							local feet = qc:GetAttribute("DownedFeet")
+							local at = if typeof(feet) == "CFrame" then feet.Position else qc.HumanoidRootPart.Position
+							if (at - root.Position).Magnitude < 30 then
+								target = at
+								break
+							end
+						end
+					end
+				end
+			elseif (st == "Running" or st == "HeroRun") and role == "Catcher" then
 				local best, bd = nil, math.huge
 				for q in bots do
 					if q:GetAttribute("HuzzStatus") == "Active" and q.Character then
@@ -824,7 +922,8 @@ local function report(name, stats, problems, expect)
 		table.insert(powerList, k .. "=" .. v)
 	end
 	table.sort(powerList)
-	print(string.format("%-34s games %d, wins %d, stabs %d, tags %d, husses %d, no-hero handovers %d, powers: %s", name, stats.games, stats.wins, stats.stabs, stats.tags, stats.husses, stats.noHero or 0, table.concat(powerList, " ")))
+	print(string.format("%-34s games %d (runners %d, catchers %d), stabs %d, tags %d, rescues %d, picks %d (timed out %d), hero runs %d (made it %d), husses %d, powers: %s",
+		name, stats.games, stats.runnerWins, stats.catcherWins, stats.stabs, stats.tags, stats.rescues, stats.picks, stats.timeoutPicks, stats.heroes, stats.heroSurvived, stats.husses, table.concat(powerList, " ")))
 	for _, check in expect or {} do
 		if not check[2](stats) then
 			table.insert(problems, "expected: " .. check[1])
@@ -842,16 +941,20 @@ report("4 players, 10 minutes", s, p, {
 	{ "stabs tag runners", function(x) return x.tags >= 5 end },
 	{ "all four powers used", function(x) return x.powers.HeartShield and x.powers.RizzRush and x.powers.LoveTrap and x.powers.CharmWave end },
 	{ "huss happens", function(x) return x.husses >= 1 end },
+	{ "every round has a pick", function(x) return x.picks >= 6 end },
+	{ "Hero runs happen and some make it", function(x) return x.heroes >= 2 and x.heroSurvived >= 1 end },
+	{ "catchers win some", function(x) return x.catcherWins >= 1 end },
 })
 s, p = simulate({ players = 6, seconds = 900, seed = 7, config = function(c) c.Stab.Range = 9 end })
 report("6 players, 15 minutes", s, p, {
 	{ "games finish", function(x) return x.wins >= 3 end },
 	{ "a shield blocks a stab", function(x) return x.blocks >= 1 end },
+	{ "runners rescue each other", function(x) return x.rescues >= 3 end },
 })
 s, p = simulate({ players = 2, seconds = 400, seed = 3 })
-report("2 players", s, p, { { "games finish", function(x) return x.wins >= 2 end } })
+report("2 players", s, p, { { "games finish", function(x) return x.wins >= 2 end }, { "runners win some", function(x) return x.runnerWins >= 1 end } })
 s, p = simulate({ players = 1, seconds = 300, seed = 4, studio = true })
-report("1 player (Studio Play)", s, p, { { "solo games finish", function(x) return x.wins >= 2 end } })
+report("1 player (Studio Play)", s, p, { { "solo games finish (3 crossings)", function(x) return x.wins >= 2 and x.runnerWins == x.wins end } })
 s, p = simulate({ players = 4, cheater = true, seconds = 300, seed = 5 })
 report("a runner walks round the start wall", s, p, { { "games finish", function(x) return x.wins >= 1 end } })
 s, p = simulate({ players = 5, seconds = 500, seed = 6, leaveAt = 60, joinAt = 50 })

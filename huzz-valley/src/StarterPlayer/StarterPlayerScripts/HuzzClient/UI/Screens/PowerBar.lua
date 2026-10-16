@@ -83,7 +83,7 @@ function PowerBar.build(parent: Instance)
 		Name = "PowerBar", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -10), Size = UDim2.fromOffset(W, CARD.H),
 		BackgroundTransparency = 1, Visible = false, Parent = parent,
 	})
-	Scale.bind(new("UIScale", { Name = "FitScale", Parent = bar }), function() return Scale.hud(PAGE_H) * 0.72 end)
+	Scale.bind(new("UIScale", { Name = "FitScale", Parent = bar }), function() return Scale.hud(PAGE_H) * 0.94 end) -- (the tiles keep their size: Scale.hud itself got smaller)
 	local cards = { card(bar, 1), card(bar, 2), card(bar, 3) }
 	local Dash = require(script.Parent.Parent.Parent:WaitForChild("Gameplay"):WaitForChild("Dash"))
 	local HUSS = { Icon = "💨", Name = "Huss", Cooldown = RoundConfig.Dash.Cooldown }
@@ -129,7 +129,8 @@ function PowerBar.build(parent: Instance)
 		local list = powersNow()
 		local stage = round:GetAttribute("Stage")
 		local status = player:GetAttribute("HuzzStatus")
-		local playing = list ~= nil and (stage == "Countdown" or stage == "Running") and status ~= "Caught" and status ~= "Safe"
+		local waiting = player:GetAttribute("HuzzFrozen") == true -- on the line (the Hero's run, the countdown)
+		local playing = list ~= nil and (stage == "Countdown" or stage == "Running" or stage == "HeroRun") and status ~= "Downed" and status ~= "Safe"
 			and player:GetAttribute("PowerReady1") ~= nil
 		bar.Visible = playing
 		if not playing then shown = nil; return end
@@ -147,7 +148,7 @@ function PowerBar.build(parent: Instance)
 			local ready = player:GetAttribute(if slot == 3 then "DashReady" else "PowerReady" .. slot) or 0
 			local shieldOn = list[slot] == "HeartShield" and (player:GetAttribute("ShieldUntil") or 0) > now
 			local text, frac = "", 0
-			if stage == "Countdown" then
+			if waiting then
 				text, frac = "", 1
 			elseif shieldOn then
 				local left = (player:GetAttribute("ShieldUntil") :: number) - now
@@ -163,7 +164,7 @@ function PowerBar.build(parent: Instance)
 			c.cover.BackgroundTransparency = if shieldOn then 0.55 else 0.3
 			c.count.Visible = text ~= ""
 			c.count.Text = text
-			local isReady = frac <= 0 and stage == "Running"
+			local isReady = frac <= 0 and not waiting
 			c.rim.Color = if shieldOn then PINK elseif isReady then C.Action else C.RowBorder
 		end
 	end
