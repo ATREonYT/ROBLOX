@@ -365,7 +365,7 @@ function Shop.build(parent: Instance)
 		if tabs.selected() ~= key then tabs.select(key); show(key) end
 	end
 	coins.plus.onClick(function() openTab("Coins") end)
-	gems.plus.onClick(function() Toast.show("Aura comes from wins and the reward track. Crates that use it are coming soon.") end)
+	gems.plus.onClick(function() Toast.show("Get Aura from the stars on the field, by winning games and from quests.") end)
 
 	State.changed(function(data)
 		coins.setAmount(Format.commas(data.Coins))

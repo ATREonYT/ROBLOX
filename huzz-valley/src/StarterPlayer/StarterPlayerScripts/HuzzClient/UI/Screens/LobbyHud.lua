@@ -78,7 +78,10 @@ function LobbyHud.build(parent: Instance)
 	local gemIcon = gems.Instance:FindFirstChild("Icon")
 	if gemIcon and gemIcon:IsA("ImageLabel") then gemIcon.ImageColor3 = Color3.new(1, 1, 1) end
 	coins.plus.onClick(function() ModalManager.open("Shop", "Coins") end)
-	gems.plus.onClick(function() Toast.show("Gem packs aren't for sale.") end)
+	gems.plus.onClick(function() -- (Aura isn't sold: where it comes from, and the quests that give it)
+		Toast.show("Get Aura from the stars on the field, by winning games and from quests.")
+		ModalManager.open("Progression", "Quests")
+	end)
 
 	local topRight = group(root, "TopRight", Vector2.new(1, 0), UDim2.new(1, -TOPBAR_MARGIN, 0, barY), Vector2.new(52, TOPBAR_BUTTON), 1)
 	-- These follow Roblox's top bar on this device, so they are set here even when the saved StarterGui part is used.
