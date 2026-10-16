@@ -32,6 +32,7 @@ local marks, wall -- the current map's safe lines and sign, and the start-line w
 local gate -- the goal line's gate: only runners already safe bump into it (holdGoal)
 local lastPicked
 local zoneParts = {} -- every zone part, so floor checks look through them
+local field -- the loaded map's walled field { frame, lo, hi, floor } (boundary), for putting fallers back
 
 local function asPart(item)
 	if item and item:IsA("BasePart") then
@@ -200,6 +201,46 @@ function MapService.init()
 		s.Parent = Workspace
 	end
 	MapService.zones.Lobby = MapService.lobby
+	task.spawn(MapService.catchFalls)
+end
+
+--[[
+	The safety net under the walls (owner: "so people can't fall down"): anyone who still drops off the field
+	(a gap in a map's floor, a glitch through a wall) is put straight back on it at the nearest point inside the
+	walls, a moment later; anyone falling far below the lobby goes back to the lobby spawn.
+]]
+function MapService.catchFalls()
+	local Players = game:GetService("Players")
+	while true do
+		task.wait(0.25)
+		for _, player in Players:GetPlayers() do
+			local character = player.Character
+			local root = character and character:FindFirstChild("HumanoidRootPart")
+			if root and root:IsA("BasePart") then
+				local pos = root.Position
+				local back
+				if field then
+					local l = field.frame:PointToObjectSpace(pos)
+					local near = l.X > field.lo.X - 60 and l.X < field.hi.X + 60 and l.Z > field.lo.Z - 60 and l.Z < field.hi.Z + 60
+					if near and pos.Y < field.floor - 12 then
+						local x = math.clamp(l.X, field.lo.X + 4, field.hi.X - 4)
+						local z = math.clamp(l.Z, field.lo.Z + 4, field.hi.Z - 4)
+						local w = field.frame:PointToWorldSpace(Vector3.new(x, 0, z))
+						back = Vector3.new(w.X, field.floor + 3.5, w.Z)
+					end
+				end
+				local lobby = MapService.lobby
+				if not back and lobby and pos.Y < lobby.Position.Y - 60 then
+					local spawn = Workspace:FindFirstChild("HuzzLobbySpawn")
+					back = (if spawn and spawn:IsA("BasePart") then spawn.Position else lobby.Position + Vector3.new(0, lobby.Size.Y / 2, 0)) + Vector3.new(0, 4, 0)
+				end
+				if back then
+					root.AssemblyLinearVelocity = Vector3.zero
+					character:PivotTo(CFrame.new(back) * root.CFrame.Rotation)
+				end
+			end
+		end
+	end
 end
 
 function MapService.byName(name)
@@ -363,8 +404,12 @@ local function placement(middle, open, model)
 	return CFrame.lookAt(centre, centre - front) -- the open side looks back at the lobby
 end
 
--- Invisible walls round the field (ZoneA, Middle and ZoneB), so nobody jumps off the map.
+-- Invisible walls round the field (ZoneA, Middle and ZoneB), so nobody jumps or falls off the map. They stand at
+-- the floor's real edge (inside the zone boxes when those overhang the floor).
 local function boundary(model, a, b, middle)
+	for _, zone in { a, b, middle } do -- (the floor checks look through the zone boxes)
+		if not table.find(zoneParts, zone) then table.insert(zoneParts, zone) end
+	end
 	local mid = middle.CFrame.Position
 	local run = Vector3.new(b.CFrame.Position.X - a.CFrame.Position.X, 0, b.CFrame.Position.Z - a.CFrame.Position.Z).Unit
 	local side = run:Cross(Vector3.yAxis).Unit
@@ -384,6 +429,41 @@ local function boundary(model, a, b, middle)
 	local y = floorY - mid.Y - 2 + height / 2
 	local folder = Instance.new("Folder")
 	folder.Name = "HuzzBounds"
+	-- The zone boxes can be bigger than the floor (owner: people fell off past the walls): bring each side in to
+	-- where the floor really ends, read along three lanes (the nearest edge wins, so no lane is left open).
+	local function floorAt(x, z)
+		local w = frame:PointToWorldSpace(Vector3.new(x, 0, z))
+		local gy = MapService.ground(Vector3.new(w.X, floorY, w.Z), floorY + 6)
+		return gy ~= nil and math.abs(gy - floorY) <= 1.5
+	end
+	local function reach(axis, dir, from, to, lanes)
+		local best = to
+		for _, lane in lanes do
+			local last, found = from, false
+			local v = from
+			while (to - v) * dir > 0 do
+				local nextV = v + 2 * dir
+				if (to - nextV) * dir < 0 then nextV = to end
+				local ok = if axis == "x" then floorAt(nextV, lane) else floorAt(lane, nextV)
+				if not ok then break end
+				last, found, v = nextV, true, nextV
+			end
+			if found and (last - best) * dir < 0 then best = last end
+		end
+		return best
+	end
+	do
+		local cx, cz = (hi.X + lo.X) / 2, (hi.Z + lo.Z) / 2
+		local lanesZ = { cz, lo.Z + (hi.Z - lo.Z) * 0.2, lo.Z + (hi.Z - lo.Z) * 0.8 }
+		local lanesX = { cx, lo.X + (hi.X - lo.X) * 0.2, lo.X + (hi.X - lo.X) * 0.8 }
+		local nlo = Vector3.new(reach("x", -1, cx, lo.X, lanesZ), lo.Y, reach("z", -1, cz, lo.Z, lanesX))
+		local nhi = Vector3.new(reach("x", 1, cx, hi.X, lanesZ), hi.Y, reach("z", 1, cz, hi.Z, lanesX))
+		-- (only when the floor was read on both sides and leaves a real field)
+		if nhi.X - nlo.X > 20 and nhi.Z - nlo.Z > 10 then
+			lo, hi = nlo, nhi
+		end
+	end
+	field = { frame = frame, lo = lo, hi = hi, floor = floorY }
 	local lengthX, lengthZ = hi.X - lo.X, hi.Z - lo.Z
 	local midX, midZ = (hi.X + lo.X) / 2, (hi.Z + lo.Z) / 2
 	for _, w in {
@@ -446,6 +526,7 @@ function MapService.unload()
 		item:Destroy()
 	end
 	marks, wall, gate = nil, nil, nil
+	field = nil
 	if loaded then
 		loaded:Destroy()
 		loaded = nil

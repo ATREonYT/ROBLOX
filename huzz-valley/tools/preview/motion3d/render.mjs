@@ -51,7 +51,7 @@ grid.visible = ${data.grid === false ? 'false' : 'true'};
 const loader = new THREE.TextureLoader();
 const tex = {};
 for (const n of ${JSON.stringify(fs.readdirSync(path.join(here, '../../../assets/fx')).map(f => f.replace('.png', '')))}) tex[n] = loader.load('./fx/' + n + '.png');
-for (const n of ['aura-star', 'aura-ring']) tex[n] = loader.load('./icons/' + n + '.png'); // (the lobby's Aura stars)
+for (const n of ['aura-star', 'aura-star-white']) tex[n] = loader.load('./icons/' + n + '.png'); // (the lobby's Aura stars)
 const sprites = [];
 const ribbonMeshes = [];
 const unit = new THREE.BoxGeometry(1, 1, 1);

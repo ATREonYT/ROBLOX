@@ -51,5 +51,10 @@ for _, d in theirs:GetDescendants() do
 end
 print("scam scripts removed: " .. removed)
 
+-- Future lighting (crisper light and shadows; Roblox drops to simpler lighting on weak devices by itself). Scripts
+-- can't set Technology, so it's set here; the rest of the look is Config/Look (HuzzServer/LookService).
+local okTech, errTech = pcall(function() theirs:GetService("Lighting").Technology = roblox.Enum.Technology.Future end)
+print(if okTech then "lighting: Future" else "lighting: couldn't set Technology (" .. tostring(errTech) .. ")")
+
 fs.writeFile(ROOT .. "HuzzValley-yours.rbxl", roblox.serializePlace(theirs))
 print("saved " .. ROOT .. "HuzzValley-yours.rbxl")

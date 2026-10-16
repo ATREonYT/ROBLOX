@@ -74,7 +74,7 @@ function HeroChoice.build(parent: Instance)
 		Name = "HeroChoice", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -60), Size = UDim2.fromOffset(W, H),
 		BackgroundTransparency = 1, Visible = false, Parent = parent,
 	})
-	Scale.bind(new("UIScale", { Name = "FitScale", Parent = panel }), function() return Scale.hud(PAGE_H) * 0.8 end)
+	Scale.bind(new("UIScale", { Name = "FitScale", Parent = panel }), function() return Scale.hud(PAGE_H) * 0.6 end) -- (owner: "make the choosing hero or chicken boxes smaller"; was 0.8)
 	local title = new("TextLabel", {
 		Name = "Hint", Text = "HERO OR CHICKEN?", FontFace = F.Big, TextSize = 30, TextColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1,
 		Size = UDim2.new(1, 0, 0, 38), Parent = panel,

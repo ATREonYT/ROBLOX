@@ -66,13 +66,14 @@ return {
 	},
 	StartZoneSafe = true, -- catchers can't tag runners still standing in their start zone
 
-	-- Faster than Roblox's 16 (owner: "make the people run quicker"), Huss Valley pace.
+	-- Faster than Roblox's 16 (owner: "make the people run quicker", and again: "make the running quicker at max
+	-- speed"; was 20/24/26/23/26). Top speeds: Gameplay/Sprint builds up to them from a walk.
 	Speeds = {
-		Lobby = 20, -- everyone not in a game
-		Runner = 24,
-		Catcher = 26,
-		Holder = 23, -- a runner carrying the girl
-		Thief = 26, -- a catcher she's following (she walks behind him, so no slowdown)
+		Lobby = 22, -- everyone not in a game
+		Runner = 28,
+		Catcher = 30,
+		Holder = 27, -- a runner carrying the girl
+		Thief = 30, -- a catcher she's following (she walks behind him, so no slowdown)
 	},
 
 	-- Map parts. Each map is a folder or model in Workspace holding ZoneA, ZoneB and
@@ -113,15 +114,16 @@ return {
 	-- first picked (same look, plus elbows and knees). "Original" keeps her model as is.
 	GirlRig = "Original", -- owner: the R15 rebuild came out deformed, so the girls stay exactly as built
 
-	-- Weight = how often the round's girl comes from this rarity
-	-- (only rarities that have girls count).
+	-- Weight = how often the round's girl comes from this rarity (only rarities that have girls count).
+	-- Raised from 50/25/13/7/3.5/1.2/0.3 on the owner's request (too many Commons): out of 100 rounds about
+	-- 28 Common, 24 Uncommon, 20 Rare, 14 Epic, 8 Legendary, 4.5 Mythic, 1.5 Secret.
 	Rarities = {
-		{ Name = "Common", Weight = 50, Color = Color3.fromRGB(196, 202, 214) },
-		{ Name = "Uncommon", Weight = 25, Color = Color3.fromRGB(111, 214, 120) },
-		{ Name = "Rare", Weight = 13, Color = Color3.fromRGB(86, 156, 255) },
-		{ Name = "Epic", Weight = 7, Color = Color3.fromRGB(176, 104, 255) },
-		{ Name = "Legendary", Weight = 3.5, Color = Color3.fromRGB(255, 190, 60) },
-		{ Name = "Mythic", Weight = 1.2, Color = Color3.fromRGB(255, 84, 120) },
-		{ Name = "Secret", Weight = 0.3, Color = Color3.fromRGB(30, 30, 30) },
+		{ Name = "Common", Weight = 28, Color = Color3.fromRGB(196, 202, 214) },
+		{ Name = "Uncommon", Weight = 24, Color = Color3.fromRGB(111, 214, 120) },
+		{ Name = "Rare", Weight = 20, Color = Color3.fromRGB(86, 156, 255) },
+		{ Name = "Epic", Weight = 14, Color = Color3.fromRGB(176, 104, 255) },
+		{ Name = "Legendary", Weight = 8, Color = Color3.fromRGB(255, 190, 60) },
+		{ Name = "Mythic", Weight = 4.5, Color = Color3.fromRGB(255, 84, 120) },
+		{ Name = "Secret", Weight = 1.5, Color = Color3.fromRGB(30, 30, 30) },
 	},
 }

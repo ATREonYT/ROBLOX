@@ -1,5 +1,5 @@
--- The lobby's Aura stars (Gameplay/AuraStars), drawn the way the game draws them: a 4.2-stud billboard with a
--- halo, two turning orbit rings and the crystal, sparkles, and a glow on the floor; bobbing. A player walks up.
+-- The lobby's Aura stars (Gameplay/AuraStars), drawn the way the game draws them: a 4.2-stud billboard with the
+-- owner's star (purple as drawn, others tinted from the white copy), a soft halo, sparkles, a floor glow; bobbing.
 -- Purple, White (worth 3) and Rainbow (worth 10). sh video.sh aura_star_scene.luau out.mp4
 local roblox = require("@lune/roblox")
 local CFrame, Vector3 = roblox.CFrame, roblox.Vector3
@@ -44,10 +44,8 @@ for f = 0, SECONDS * FPS - 1 do
 		local p = s.at + Vector3.new(0, math.sin(t * 1.8 + i) * 0.28, 0)
 		local P = { p.X, p.Y, p.Z }
 		local size = 4.2
-		table.insert(sprites, { p = P, s = size * 1.25, c = col, a = 0.4, t = "aura-star", r = 0, add = true })
-		table.insert(sprites, { p = P, s = size * 1.15, c = col, a = 0.85, t = "aura-ring", r = (t * 28) % 360, add = true })
-		table.insert(sprites, { p = P, s = size * (0.72 + math.sin(t * 2.6) * 0.03), c = col, a = 1, t = "aura-star", r = 0, add = false })
-		table.insert(sprites, { p = P, s = size * 1.0, c = col, a = 0.65, t = "aura-ring", r = 35 - (t * 20) % 360, add = true })
+		table.insert(sprites, { p = P, s = size * 1.3, c = col, a = 0.22, t = "aura-star-white", r = 0, add = true })
+		table.insert(sprites, { p = P, s = size * (1 + math.sin(t * 2.6) * 0.03), c = if i == 1 then "#ffffff" else col, a = 1, t = if i == 1 then "aura-star" else "aura-star-white", r = math.sin(t * 0.9) * 6, add = false })
 		-- sparkles
 		if rnd() < 0.25 then table.insert(sparks, { p = p, v = Vector3.new(rnd() - 0.5, rnd() - 0.3, rnd() - 0.5) * 2.4, age = 0, c = col }) end
 	end

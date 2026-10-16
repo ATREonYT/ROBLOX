@@ -305,7 +305,7 @@ function Shop.build(parent: Instance)
 	local coins = Kit.pill({ Name = "Coins", Icon = "CurrencyCoin", Position = UDim2.fromOffset(357, 6), Width = 121, Parent = header })
 	local gems = Kit.pill({ Name = "Aura", Icon = "AuraStar", Position = UDim2.fromOffset(493, 6), Width = 108, Parent = header })
 	local gemIcon = gems.Instance:FindFirstChild("Icon")
-	if gemIcon and gemIcon:IsA("ImageLabel") then gemIcon.ImageColor3 = Color3.fromRGB(196, 140, 255) end -- (stand-in Aura star)
+	if gemIcon and gemIcon:IsA("ImageLabel") then gemIcon.ImageColor3 = Color3.new(1, 1, 1) end -- (the owner's Aura star, as drawn)
 	Kit.studs(header, 612, 650, 16)
 
 	local body = new("ScrollingFrame", { Name = "Products", Position = UDim2.fromOffset(BODY_X, BODY_Y), Size = UDim2.fromOffset(BODY_W + 6, H - BODY_Y - 10), BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 4, ScrollBarImageColor3 = C.RowBorder, CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y, ScrollingDirection = Enum.ScrollingDirection.Y, Parent = panel })

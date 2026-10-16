@@ -73,10 +73,10 @@ function LobbyHud.build(parent: Instance)
 		then group(root, "Balances", Vector2.new(1, 0), UDim2.new(1, -(TOPBAR_MARGIN + 52 + 8) + 8, 0, barY + TOPBAR_BUTTON / 2 - 16 - 7), Vector2.new(300, 50), 1)
 		else group(root, "Balances", Vector2.new(0, 1), UDim2.fromScale(0, 1), Vector2.new(300, 50))
 	local coins = Kit.pill({ Name = "Coins", Icon = "CurrencyCoin", Position = UDim2.fromOffset(23, 7), Width = 131, Height = 32, TextSize = 14, PlusStyle = "HudPlus", Split = true, Parent = bottom })
-	local gems = Kit.pill({ Name = "Aura", Icon = "AuraStar", -- (a stand-in star, tinted purple, until the owner sends their Aura icon)
+	local gems = Kit.pill({ Name = "Aura", Icon = "AuraStar", -- (the owner's Aura star, as drawn)
 		 Position = UDim2.fromOffset(161, 7), Width = 131, Height = 32, TextSize = 14, PlusStyle = "HudPlus", Split = true, Parent = bottom })
 	local gemIcon = gems.Instance:FindFirstChild("Icon")
-	if gemIcon and gemIcon:IsA("ImageLabel") then gemIcon.ImageColor3 = Color3.fromRGB(196, 140, 255) end
+	if gemIcon and gemIcon:IsA("ImageLabel") then gemIcon.ImageColor3 = Color3.new(1, 1, 1) end
 	coins.plus.onClick(function() ModalManager.open("Shop", "Coins") end)
 	gems.plus.onClick(function() Toast.show("Gem packs aren't for sale.") end)
 

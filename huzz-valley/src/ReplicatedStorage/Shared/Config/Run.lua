@@ -2,7 +2,8 @@
 -- until the owner's own animations are uploaded (Config/Animations.Run). Degrees, studs, seconds.
 return {
 	StartSpeed = 9, -- you set off at this speed (a walk) and build up to full speed... (Gameplay/Sprint)
-	Ramp = 1.1, -- ...over this many seconds of holding a direction
+	Ramp = 1.2, -- ...reaching ~95% of it after this many seconds of holding a direction (eases out: quick at first,
+	-- then settling gently into the top speed, so there is no jolt at either end)
 	From = 14, -- below this speed: Roblox's own walk
 	Full = 20, -- from this speed on: the full run (runners go 24)
 	Stride = 9.5, -- studs per full stride (two steps): smaller = quicker steps
@@ -29,7 +30,7 @@ return {
 		MoveFrom = 0.4, MoveFull = 3, -- studs/s: idle fades into the walk between these
 		RunFrom = 11, RunFull = 18, -- studs/s: the walk fades into the run between these
 		WalkAt = 8, WalkRate = { 0.75, 1.3 }, -- the walk plays at 1x at WalkAt studs/s, kept within these rates
-		RunAt = 22, RunRate = { 0.85, 1.1 }, -- the run too: calm, never frantic (a little foot slide, as HV)
+		RunAt = 25, RunRate = { 0.85, 1.15 }, -- the run too: calm, never frantic (a little foot slide, as HV)
 		WalkPhase = 0.8, RunPhase = 0.245, -- where each loop has the right leg forward (keeps the feet in step)
 		AirIn = 0.08, AirOut = 0.18, -- seconds: jump/fall/climb fade in and out
 		JumpHold = 0.32, -- seconds the jump pose plays before the fall takes over

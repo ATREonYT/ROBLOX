@@ -1,9 +1,9 @@
 --[[
-	Draws the lobby's Aura stars (HuzzServer/AuraPickupService, tag "HuzzAuraStar") on this screen, after the
-	owner's Aura sheet: a glowing four-point crystal in its colour, two orbit rings turning slowly round it,
-	sparkles, a soft light and a glow on the floor; it bobs gently. Rainbow stars drift through the colours slowly
-	(never a flash). Collecting one (E) pops it: a burst of sparkles, a sound and "+1 Aura".
-	The star and ring pictures are stand-ins (tools/icons/make_aura_star.py) until the owner sends their own.
+	Draws the lobby's Aura stars (HuzzServer/AuraPickupService, tag "HuzzAuraStar") on this screen with the
+	owner's Aura star (design/aura): the purple one as drawn, the other colours from its all-white copy, tinted. A
+	soft halo behind it breathes, sparkles, a soft light and a glow on the floor; it bobs and sways gently. Rainbow
+	stars drift through the colours slowly (never a flash). Collecting one (E) pops it: a burst of sparkles, a sound
+	and "+1 Aura".
 	Only stars near the camera animate.
 ]]
 local M = {}
@@ -39,15 +39,13 @@ function M.start()
 		gui.MaxDistance = NEAR
 		gui.Adornee = star
 		gui.Parent = star
-		local function img(name, icon, size, transparency, z)
-			local l = Kit.icon(icon, { Name = name, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(size, size), ImageColor3 = color, ImageTransparency = transparency, ZIndex = z, Parent = gui })
+		local asDrawn = kind.Name == "Purple" -- (the owner drew the purple one; the rest tint the white copy)
+		local function img(name, icon, size, transparency, z, tint)
+			local l = Kit.icon(icon, { Name = name, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(size, size), ImageColor3 = tint, ImageTransparency = transparency, ZIndex = z, Parent = gui })
 			return l
 		end
-		local halo = img("Halo", "AuraStar", 1.25, 0.6, 1)
-		local ringA = img("RingA", "AuraRing", 1.15, 0.15, 2)
-		local core = img("Star", "AuraStar", 0.72, 0, 3)
-		local ringB = img("RingB", "AuraRing", 1.0, 0.35, 4)
-		ringB.Rotation = 35
+		local halo = img("Halo", "AuraStarWhite", 1.3, 0.8, 1, color)
+		local core = img("Star", if asDrawn then "AuraStar" else "AuraStarWhite", 1, 0, 2, if asDrawn then Color3.new(1, 1, 1) else color)
 		-- sparkles and a light, on an attachment at the star
 		local att = Instance.new("Attachment")
 		att.Name = "AuraFx"
@@ -81,7 +79,7 @@ function M.start()
 		floor.Size = Vector3.new(0.06, 3.4, 3.4)
 		floor.CFrame = CFrame.new(star.Position - Vector3.new(0, Config.Height - 0.05, 0)) * CFrame.Angles(0, 0, math.rad(90))
 		floor.Parent = star
-		looks[star] = { gui = gui, halo = halo, ringA = ringA, ringB = ringB, core = core, sparkles = sparkles, light = light, floor = floor, kind = kind, seed = math.random() * 10 }
+		looks[star] = { gui = gui, halo = halo, core = core, sparkles = sparkles, light = light, floor = floor, kind = kind, seed = math.random() * 10 }
 	end
 
 	local function forget(star)
@@ -105,13 +103,13 @@ function M.start()
 			elseif cam and (cam.CFrame.Position - star.Position).Magnitude < NEAR then
 				local t = clock + l.seed
 				l.gui.StudsOffset = Vector3.new(0, math.sin(t * 1.8) * 0.28, 0) -- bob
-				l.ringA.Rotation = (t * 28) % 360 -- the rings turn slowly, opposite ways
-				l.ringB.Rotation = 35 - (t * 20) % 360
-				local pulse = 0.72 + math.sin(t * 2.6) * 0.03
+				l.core.Rotation = math.sin(t * 0.9) * 6 -- a gentle sway
+				local pulse = 1 + math.sin(t * 2.6) * 0.03
 				l.core.Size = UDim2.fromScale(pulse, pulse)
+				l.halo.ImageTransparency = 0.78 + math.sin(t * 1.3) * 0.06 -- the halo breathes slowly
 				if l.kind.Rainbow then
 					local c = Color3.fromHSV((t * 0.12) % 1, 0.55, 1) -- a slow drift through the colours, no flashing
-					l.core.ImageColor3, l.halo.ImageColor3, l.ringA.ImageColor3, l.ringB.ImageColor3 = c, c, c, c
+					l.core.ImageColor3, l.halo.ImageColor3 = c, c
 					l.light.Color, l.floor.Color = c, c
 				end
 			end

@@ -2,7 +2,7 @@
 	Walk first, then run (owner: "make the animations slowly fade in from walking when you press W to running
 	if you continue holding it, just like in the references"). When you start moving you set off at a walk
 	and build up to your full speed (the server's HuzzSpeed on your Humanoid, RoundService) over Config/Run
-	Ramp seconds, easing in; let go for a moment and the next start is a walk again. Gameplay/Locomotion cross-fades
+	Ramp seconds, easing out (quick to get going, settling softly into the top); let go for a moment and the next start is a walk again. Gameplay/Locomotion cross-fades
 	the owner's Walk into their Run by speed, so the legs follow the build-up on their own.
 	Only your own character (movement is yours to run); a speed of 0 (frozen on the line, stuck, down) is kept.
 ]]
@@ -19,7 +19,9 @@ function M.start()
 	local GRACE = 0.18 -- seconds you can let go (a quick turn) and keep your speed
 
 	local player = Players.LocalPlayer
-	local held, idle = 0, math.huge
+	local idle = math.huge
+	local speed = START -- the speed being built up (follows the cap smoothly)
+	local TAU = RAMP / 3 -- (an easing that gets 95% of the way in RAMP seconds)
 
 	RunService.Heartbeat:Connect(function(dt)
 		local character = player.Character
@@ -33,20 +35,24 @@ function M.start()
 		end
 		if h.MoveDirection.Magnitude > 0.1 then
 			idle = 0
-			held += dt
 		else
 			idle += dt
 			if idle > GRACE then
-				held = 0
+				speed = START -- (stopped: the next start is a walk again)
 			end
 		end
 		local want
 		if cap <= START then
 			want = cap
+			speed = cap
 		else
-			local u = math.clamp(held / RAMP, 0, 1)
-			local eased = u * u * (3 - 2 * u) -- smooth: gentle at the start and the top
-			want = START + (cap - START) * eased
+			if idle == 0 then
+				-- ease out toward the top: quick to get going, then settling softly (no jolt at either end);
+				-- a lower cap (carrying, slowed) is followed down just as smoothly
+				speed += (cap - speed) * (1 - math.exp(-dt / TAU))
+			end
+			speed = math.clamp(speed, START, cap)
+			want = speed
 		end
 		if math.abs(h.WalkSpeed - want) > 0.01 then
 			h.WalkSpeed = want
