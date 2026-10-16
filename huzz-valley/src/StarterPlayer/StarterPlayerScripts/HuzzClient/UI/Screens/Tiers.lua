@@ -11,6 +11,7 @@ local Kit = require(UI.Kit)
 local State = require(UI.State)
 local ModalManager = require(UI.ModalManager)
 local Motion = require(UI.Motion)
+local GirlPicture = require(UI.GirlPicture)
 
 local C = Theme.Colors
 local F = Theme.Fonts
@@ -103,7 +104,7 @@ local function countLabel(parent: Instance, props)
 end
 
 function Tiers.build(parent: Instance)
-	local window = Kit.window({ Name = "Tiers", Title = "MOGGING TIERS", Icon = "TierCrown", Width = W, Height = H, TitleSize = 24, TitleX = 63, TitleOffsetY = 1, TitleWidth = 208, Parent = parent, OnClose = function() ModalManager.close() end })
+	local window = Kit.window({ Name = "Tiers", Flat = true, Title = "MOGGING TIERS", Icon = "TierCrown", Width = W, Height = H, TitleSize = 24, TitleX = 63, TitleOffsetY = 1, TitleWidth = 208, Parent = parent, OnClose = function() ModalManager.close() end })
 	local panel = window.Panel
 
 	-- Tier rows (page 11 #3), highest tier first.
@@ -198,9 +199,14 @@ function Tiers.build(parent: Instance)
 			end
 		end
 		local artName = if pick then (PANEL_ART[pick.Id] or pick.Art or "CharLocked") else "CharLocked"
-		if artName ~= shownArt then
-			shownArt = artName
+		local girlKey = pick and pick.Model -- a won anime girl: her 3D model (UI/GirlPicture)
+		if (girlKey or artName) ~= shownArt then
+			shownArt = girlKey or artName
 			for _, ch in artHolder:GetChildren() do ch:Destroy() end
+		end
+		if girlKey then
+			if not artHolder:FindFirstChild("Model") then GirlPicture.draw(artHolder, girlKey, true, true) end
+		elseif artName == shownArt and not artHolder:FindFirstChild("Picture") then
 			-- left corners rounded, right edge square (a rounded copy plus a square copy clipped right of the corners)
 			local r = 3
 			local full = PANEL_ART[pick and pick.Id or ""] ~= nil

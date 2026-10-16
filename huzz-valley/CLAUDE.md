@@ -291,8 +291,12 @@ The UI golden slice and its backend are built (saving, coins and gems, shop purc
   `ReplicatedStorage.HuzzGirls` copy; `Config/Characters.addGirls` lists them on the server (so Equip/Favourite
   accept them) and on the client (the Index tops up on open and on save changes). Rarity → tier: Common Sub1,
   Uncommon Sub3, Rare Sub5, Epic MTB, Legendary HTB, Mythic Stacy, Secret TrueEve; the badge shows the rarity.
-  Pictures are ViewportFrames of her model (locked = unlit silhouette), so the Index window is `Flat` (a Frame,
-  not a CanvasGroup; it grows in without the fade). Check: `tools/preview/check_girl_index.luau`.
+  Pictures are ViewportFrames of her model (`UI/GirlPicture`; locked = unlit silhouette), so the Index and
+  Tiers windows are `Flat` (a Frame, not a CanvasGroup; they grow in without the fade). Index cards are kept per
+  character and moved/hidden on filter changes (rebuilding ~40 models per search key would hitch phones).
+  A dash is refused while WalkSpeed is 0 (stuck in a Love Trap, knocked down). The basketball drop lines up
+  map bottoms with the island's bottom, like the other maps (its court top is below the lobby's raised floor,
+  as Halloween's and Base's are; measured). Check: `tools/preview/check_girl_index.luau`.
 - **Maps sit on the floor:** `MapService.placement` drops a map whose lowest visible part is above the lobby's
   floor (BasketBall was floating ~7 studs). The showcase girl is at `Showcase.Height = 34`.
 

@@ -35,7 +35,7 @@ function Dash.try()
 	local c = player.Character
 	local h = c and c:FindFirstChildOfClass("Humanoid")
 	local root = h and h.RootPart
-	if not (root and not root.Anchored) then return end
+	if not (root and not root.Anchored) or h.WalkSpeed <= 0 then return end -- (0 = stuck in a trap or frozen)
 	local move = h.MoveDirection
 	local dir = if move.Magnitude > 0.1 then move else root.CFrame.LookVector
 	dir = Vector3.new(dir.X, 0, dir.Z).Unit

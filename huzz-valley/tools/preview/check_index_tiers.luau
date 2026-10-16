@@ -29,7 +29,7 @@ local panel = gui.Index.Group.Panel
 local grid, action = panel.Grid, panel.EquipAction
 local function cardIds()
 	local list = {}
-	for _, ch in grid:GetChildren() do if ch:IsA("TextButton") then table.insert(list, { ch.Name, ch.Position.Y.Offset * 1000 + ch.Position.X.Offset }) end end
+	for _, ch in grid:GetChildren() do if ch:IsA("TextButton") and ch.Visible then table.insert(list, { ch.Name, ch.Position.Y.Offset * 1000 + ch.Position.X.Offset }) end end
 	table.sort(list, function(a, b) return a[2] < b[2] end)
 	local names = {}
 	for _, v in list do table.insert(names, v[1]) end

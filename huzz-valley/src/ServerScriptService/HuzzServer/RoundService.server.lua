@@ -583,10 +583,10 @@ Net.get("Dash").OnServerEvent:Connect(function(player, dir, at)
 		return
 	end
 	local now = Workspace:GetServerTimeNow()
-	if now < (player:GetAttribute("DashReady") or 0) - 0.2 then
+	if now < (player:GetAttribute("DashReady") or 0) - 0.05 then -- (a little slack for clock drift)
 		return -- still cooling down
 	end
-	local start = if type(at) == "number" and at == at then math.clamp(at, now - 0.4, now) else now
+	local start = if type(at) == "number" and at == at then math.clamp(at, now - 0.15, now) else now
 	player:SetAttribute("DashReady", start + Config.Dash.Cooldown)
 	c:SetAttribute("DashDir", flat.Unit)
 	c:SetAttribute("DashAt", start)
@@ -600,7 +600,7 @@ Net.get("Huss").OnServerEvent:Connect(function(player, at)
 		return
 	end
 	local now = Workspace:GetServerTimeNow()
-	local start = if type(at) == "number" and at == at then math.clamp(at, now - 0.4, now) else now
+	local start = if type(at) == "number" and at == at then math.clamp(at, now - 0.15, now) else now
 	local previous = model:GetAttribute("HussAt")
 	if previous and start < previous + Carry.Huss.Time + Config.HussCooldown - 0.15 then
 		return

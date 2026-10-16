@@ -53,7 +53,7 @@ local function card(parent: Instance, slot: number)
 		TextWrapped = false, TextTruncate = Enum.TextTruncate.AtEnd, Position = UDim2.new(0, 3, 1, -19), Size = UDim2.new(1, -6, 0, 14), Parent = b,
 	})
 	local key = new("Frame", {
-		Name = "Key", AnchorPoint = Vector2.new(if slot == 3 then 1 else 0.5, 0.5), Position = UDim2.new(1, if slot == 3 then 4 else -4, 0, 4),
+		Name = "Key", AnchorPoint = Vector2.new(if slot == 3 then 1 else 0.5, 0.5), Position = UDim2.new(1, if slot == 3 then 0 else -4, 0, 4), -- (SPACE ends at the tile's edge)
 		Size = UDim2.fromOffset(if slot == 3 then 40 else 17, 16),
 		BackgroundColor3 = C.Pill, BorderSizePixel = 0, ZIndex = 5, Parent = b,
 	}, { Kit.corner(4) })

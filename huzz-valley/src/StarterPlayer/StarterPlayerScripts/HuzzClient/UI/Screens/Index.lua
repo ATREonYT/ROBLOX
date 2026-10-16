@@ -17,6 +17,7 @@ local State = require(UI.State)
 local Toast = require(UI.Toast)
 local ModalManager = require(UI.ModalManager)
 local Motion = require(UI.Motion)
+local GirlPicture = require(UI.GirlPicture)
 
 local C = Theme.Colors
 local F = Theme.Fonts
@@ -80,39 +81,9 @@ RARITY_COLOR.Secret = hex("2A1840")
 local function badgeText(c): string return if c.Rarity then string.upper(c.Rarity) else tierName(c.Tier) end
 local function badgeColor(c): Color3 return if c.Rarity then (RARITY_COLOR[c.Rarity] or C.Slate) else tierColor(c.Tier) end
 
--- A girl's picture: her still model in a ViewportFrame. whole = head to toe (the preview), else head and shoulders
--- (a card). Locked girls are drawn unlit, as a dark silhouette.
-local girlFolder = ReplicatedStorage:FindFirstChild("HuzzGirls")
+-- A girl's picture: her still model in a ViewportFrame (UI/GirlPicture).
 local function girlPicture(parent: Instance, c, isOwned: boolean, whole: boolean): ViewportFrame?
-	local source = girlFolder and girlFolder:FindFirstChild(c.Model)
-	if not (source and source:IsA("Model")) then return nil end
-	local vp = new("ViewportFrame", { Name = "Model", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Parent = parent })
-	vp:SetAttribute("RuntimeOnly", true)
-	local model = source:Clone()
-	model.Parent = vp
-	if isOwned then
-		vp.Ambient, vp.LightColor, vp.LightDirection = Color3.fromRGB(170, 170, 185), Color3.new(1, 1, 1), Vector3.new(-0.4, -1, -0.6)
-	else
-		vp.Ambient, vp.LightColor, vp.ImageColor3 = Color3.new(0, 0, 0), Color3.new(0, 0, 0), hex("0B1426")
-	end
-	local cam = Instance.new("Camera")
-	cam.FieldOfView = 30
-	cam.Parent = vp
-	vp.CurrentCamera = cam
-	local head = model:FindFirstChild("Head", true)
-	local look = if head and head:IsA("BasePart") then head.CFrame.LookVector else model:GetPivot().LookVector
-	look = Vector3.new(look.X, 0, look.Z)
-	look = if look.Magnitude > 0.01 then look.Unit else Vector3.new(0, 0, -1)
-	if whole or not (head and head:IsA("BasePart")) then
-		local okBox, cf, size = pcall(model.GetBoundingBox, model)
-		if not okBox then cf, size = model:GetPivot(), Vector3.new(2, 5, 1) end
-		local dist = (size.Y / 2) / math.tan(math.rad(15)) * 1.12
-		cam.CFrame = CFrame.lookAt(cf.Position + look * dist + Vector3.new(0, size.Y * 0.04, 0), cf.Position)
-	else
-		local at = head.CFrame.Position - Vector3.new(0, 0.55, 0)
-		cam.CFrame = CFrame.lookAt(at + look * 6.4 + Vector3.new(0, 0.6, 0), at)
-	end
-	return vp
+	return GirlPicture.draw(parent, c.Model, isOwned, whole)
 end
 
 -- The filtered, sorted list for the current view (search is case-insensitive and plain text, not a pattern).
@@ -207,7 +178,8 @@ end
 -- Grid cards ------------------------------------------------------------------------------------------------------
 
 type Card = { Instance: TextButton, Id: string, refresh: () -> () }
-local cards: { Card } = {}
+local cards: { Card } = {} -- the shown cards, in grid order
+local cardById: { [string]: Card } = {}
 local onSelect: (string) -> () = function() end
 
 local function card(parent: Instance, c, x: number, y: number): Card
@@ -395,12 +367,32 @@ function Index.build(parent: Instance)
 		local key = table.concat(ids, ",")
 		if key ~= lastKey then
 			lastKey = key
-			-- (all cards, including example ones saved in StarterGui)
-			for _, ch in grid:GetChildren() do if ch:IsA("GuiObject") then ch:Destroy() end end
+			-- Cards are kept per character and only moved or hidden (each girl's card holds her 3D model, too
+			-- costly to rebuild on every search key). Example cards saved in StarterGui are cleared once.
+			if not next(cardById) then
+				for _, ch in grid:GetChildren() do if ch:IsA("GuiObject") then ch:Destroy() end end
+			end
+			local shown = {}
 			cards = {}
 			for i, c in list do
 				local col, row = (i - 1) % 2, (i - 1) // 2
-				table.insert(cards, card(grid, c, GRID.Pad + col * (CW + GAP_X), GRID.Pad + row * (CH + GAP_Y)))
+				local x, y = GRID.Pad + col * (CW + GAP_X), GRID.Pad + row * (CH + GAP_Y)
+				local cd = cardById[c.Id]
+				if cd then
+					-- (a slide-in in progress, or Motion.stagger's remembered spot, would put it back)
+					Motion.tween(cd.Instance, "slide", 0, { Position = UDim2.fromOffset(x, y) })
+					cd.Instance:SetAttribute("HomePosition", UDim2.fromOffset(x, y))
+					cd.refresh()
+				else
+					cd = card(grid, c, x, y)
+					cardById[c.Id] = cd
+				end
+				cd.Instance.Visible = true
+				shown[c.Id] = true
+				table.insert(cards, cd)
+			end
+			for id, cd in cardById do
+				if not shown[id] then cd.Instance.Visible = false end
 			end
 			local rows = math.ceil(#list / 2)
 			grid.CanvasSize = UDim2.fromOffset(0, rows > 0 and (2 * GRID.Pad + rows * CH + (rows - 1) * GAP_Y) or 0)
@@ -540,7 +532,7 @@ function Index.build(parent: Instance)
 	-- Girls replicate a moment after joining, so the list is topped up whenever the window opens or your save
 	-- changes (a girl you just won is always in the folder by then).
 	local function syncGirls()
-		girlFolder = girlFolder or ReplicatedStorage:FindFirstChild("HuzzGirls")
+		local girlFolder = GirlPicture.folder()
 		if girlFolder and Characters.addGirls(girlFolder) then
 			lastKey, shownPreview = nil, ""
 		end

@@ -41,7 +41,7 @@ local function choiceCard(parent: Instance, name: string, key: string, word: str
 	}, { Kit.corner(14) })
 	new("UIGradient", { Name = "Fill", Rotation = 90, Color = ColorSequence.new(look.Top, look.Bottom), Parent = btn })
 	local rim = new("UIStroke", { Name = "Rim", Thickness = 3, Color = INK, Transparency = 0.15, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = btn })
-	new("Frame", { Name = "Gloss", Position = UDim2.fromOffset(10, 5), Size = UDim2.new(1, -20, 0, 22), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.7, BorderSizePixel = 0, Parent = btn }, { Kit.corner(10) })
+	new("Frame", { Name = "Gloss", Position = UDim2.fromOffset(12, 4), Size = UDim2.new(1, -24, 0, 9), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.6, BorderSizePixel = 0, Parent = btn }, { Kit.corner(10) })
 	-- the key to press, in a dark circle at the top left
 	local keyDot = new("TextLabel", {
 		Name = "Key", Text = key, FontFace = F.Display, TextSize = 17, TextColor3 = Color3.new(1, 1, 1), BackgroundColor3 = INK,
@@ -49,11 +49,11 @@ local function choiceCard(parent: Instance, name: string, key: string, word: str
 	}, { new("UICorner", { CornerRadius = UDim.new(0.5, 0) }), new("UIStroke", { Thickness = 2, Color = Color3.new(1, 1, 1), ApplyStrokeMode = Enum.ApplyStrokeMode.Border }) })
 	local wordLabel = new("TextLabel", {
 		Name = "Word", Text = word, FontFace = F.Display, TextSize = 34, TextColor3 = look.Text, BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(0, 14), Size = UDim2.new(1, 0, 0, 36), ZIndex = 2, Parent = btn,
+		Position = UDim2.fromOffset(0, 18), Size = UDim2.new(1, 0, 0, 36), ZIndex = 2, Parent = btn,
 	})
 	local line = new("TextLabel", {
 		Name = "Line", Text = "", FontFace = F.Round, TextSize = 15, TextColor3 = look.Line, BackgroundTransparency = 1, TextTruncate = Enum.TextTruncate.AtEnd,
-		Position = UDim2.fromOffset(8, 52), Size = UDim2.new(1, -16, 0, 20), ZIndex = 2, Parent = btn,
+		Position = UDim2.fromOffset(8, 56), Size = UDim2.new(1, -16, 0, 20), ZIndex = 2, Parent = btn,
 	})
 	local picked = new("TextLabel", {
 		Name = "Picked", Text = "PICKED", FontFace = F.Display, TextSize = 14, TextColor3 = INK, BackgroundColor3 = Color3.new(1, 1, 1),
@@ -67,7 +67,7 @@ local function choiceCard(parent: Instance, name: string, key: string, word: str
 		rim.Thickness = if on then 4 else 3
 		rim.Transparency = if on then 0 else 0.15
 		picked.Visible = on
-		shade.BackgroundTransparency = if on then 1 else 0.5
+		shade.BackgroundTransparency = if on then 1 else 0.72
 		btn.Size = if on then UDim2.fromOffset(CARD.W + 8, CARD.H + 4) else UDim2.fromOffset(CARD.W, CARD.H)
 	end
 	return { Instance = btn, set = set, line = line, word = wordLabel, key = keyDot }
@@ -96,8 +96,10 @@ function HeroChoice.build(parent: Instance)
 		if panel.Visible then remote:FireServer(isHero) end
 	end
 	local x0 = W / 2 - CARD.Gap / 2 - CARD.W
+	local touchOnly = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled -- (no keys to show)
 	local hero = choiceCard(panel, "Hero", "1", "HERO", x0, function() pick(true) end)
 	local chicken = choiceCard(panel, "Chicken", "2", "CHICKEN", W / 2 + CARD.Gap / 2, function() pick(false) end)
+	hero.key.Visible, chicken.key.Visible = not touchOnly, not touchOnly
 
 	UserInputService.InputBegan:Connect(function(input, processed)
 		if processed or UserInputService:GetFocusedTextBox() then return end

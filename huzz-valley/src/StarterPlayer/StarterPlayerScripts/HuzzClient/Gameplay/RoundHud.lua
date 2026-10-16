@@ -86,7 +86,7 @@ function M.start()
 		Name = "Timer", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(640, 62), Size = UDim2.fromOffset(250, 54),
 		BackgroundColor3 = Color3.new(1, 1, 1), Parent = root,
 	}, { corner(0.5), gradient(Color3.fromRGB(46, 42, 104), GLASS), rim(2.5, Color3.fromRGB(150, 136, 255), 0.25) })
-	make("Frame", { Name = "Gloss", Position = UDim2.fromOffset(14, 4), Size = UDim2.new(1, -28, 0, 16), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.88, Parent = pill }, { corner(0.5) })
+	make("Frame", { Name = "Gloss", Position = UDim2.fromOffset(18, 3), Size = UDim2.new(1, -36, 0, 6), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.8, Parent = pill }, { corner(0.5) })
 	local stageText = text({ Name = "Stage", Position = UDim2.fromOffset(22, 0), Size = UDim2.new(0, 110, 1, 0), FontFace = ROUND, TextSize = 19, TextColor3 = MUTED, TextXAlignment = Enum.TextXAlignment.Left, Parent = pill }, 1.5)
 	local clock = text({ Name = "Clock", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -20, 0, 3), Size = UDim2.new(0, 110, 1, 0), FontFace = DISPLAY, TextSize = 36, TextXAlignment = Enum.TextXAlignment.Right, Parent = pill }, 2.5, Color3.fromRGB(214, 206, 255))
 	local divider = make("Frame", { Name = "Divider", Position = UDim2.new(0.5, 0, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(2, 26), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.8, BorderSizePixel = 0, Parent = pill })
@@ -119,7 +119,8 @@ function M.start()
 			params.Text, params.Font, params.Size, params.Width = str, font, size, 2000
 			return TextService:GetTextBoundsAsync(params).X
 		end)
-		return math.ceil(if ok and type(v) == "number" then v else #str * size * 0.6)
+		-- (offline there's no TextService: a rough width per font)
+		return math.ceil(if ok and type(v) == "number" then v else #str * size * (if font == DISPLAY then 0.62 else 0.47))
 	end
 	local roleLine = text({ Name = "Line", Size = UDim2.fromOffset(0, 30), AutomaticSize = Enum.AutomaticSize.X, FontFace = ROUND, TextSize = 19, Text = "", LayoutOrder = 2, Parent = roleRow }, 1.5)
 
