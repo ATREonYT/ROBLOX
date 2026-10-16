@@ -183,7 +183,7 @@ function M.start()
 				role.TextColor3 = Color3.new(1, 1, 1)
 			end
 		else
-			role.Text = if stage == "Waiting" or stage == "Intermission" or stage == "Voting" or stage == "Loading" then "" else "Watching — you'll play in the next game"
+			role.Text = if stage == "Waiting" or stage == "Intermission" or stage == "Voting" or stage == "Loading" or stage == "Rolling" then "" else "Watching — you'll play in the next game"
 			role.TextColor3 = Color3.fromRGB(200, 200, 210)
 		end
 	end)

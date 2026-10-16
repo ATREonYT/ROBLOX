@@ -31,6 +31,7 @@ function M.start()
 	local folder = Workspace:WaitForChild("HuzzCarried")
 	local useArmAnimation = Animations.CarryArms ~= ""
 	local useHussAnimation = Animations.Huss ~= ""
+	local playHuss
 	local carries = {} -- model -> { rec, model, humanoid, armTrack }
 	local prizes = {} -- model -> { state, joints, root }
 	local followers = {} -- model -> FollowMotion record (+ leaderId)
@@ -100,6 +101,31 @@ function M.start()
 			end
 		end
 		carries[model] = c
+	end
+
+	-- The owner's huss animation (Config/Animations.Huss) on your own carrier when a huss starts;
+	-- it replicates to everyone like any animation on your character. Her throw stays scripted.
+	local hussTrack, hussHumanoid = nil, nil
+	function playHuss(c)
+		if not useHussAnimation or c.humanoid.Parent ~= Players.LocalPlayer.Character then
+			return
+		end
+		if hussHumanoid ~= c.humanoid then
+			hussTrack, hussHumanoid = nil, c.humanoid
+			local animator = c.humanoid:FindFirstChildOfClass("Animator")
+			if animator then
+				local animation = Instance.new("Animation")
+				animation.AnimationId = Animations.Huss
+				local ok, track = pcall(animator.LoadAnimation, animator, animation)
+				if ok then
+					track.Priority = Enum.AnimationPriority.Action
+					hussTrack = track
+				end
+			end
+		end
+		if hussTrack then
+			hussTrack:Play(0.1)
+		end
 	end
 
 	local function startPrize(model)
@@ -227,6 +253,10 @@ function M.start()
 			else
 				local moodAt = model:GetAttribute("MoodAt") or rec.start
 				local hussAt = model:GetAttribute("HussAt")
+				if hussAt and hussAt ~= c.hussAt then
+					c.hussAt = hussAt
+					playHuss(c)
+				end
 				CarryMotion.step(rec, dt, now, model:GetAttribute("Mood"), now - moodAt, hussAt and now - hussAt, useHussAnimation)
 			end
 		end

@@ -1,8 +1,9 @@
 -- The girl roller (after the map vote): a strip of girl names in a kit window at the top of the screen. It spins
 -- fast, slows down and stops on this game's girl, then her card lights up in her rarity colour. Every name on the
 -- strip is a real, fairly drawn girl (the server builds the strip with Shared/GirlRoll), and the bottom row shows
--- each rarity's real chance. Shown by the server's "Roll" message on the Round remote; it's not a menu, so the game
--- carries on behind it and it closes by itself when the roll is over.
+-- each rarity's real chance. Shown while the Round remote's RollData attribute holds a roll (JSON, so players who
+-- join mid-roll see it too); it's not a menu, so the game carries on behind it and it closes when the roll is over.
+local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
@@ -281,12 +282,21 @@ function GirlRoll.build(parent: Instance)
 	end
 
 	local round = Net.get("Round") :: RemoteEvent
-	round.OnClientEvent:Connect(function(kind, data)
-		if kind == "Roll" then GirlRoll.show(data) end
-	end)
+	local function onRoll()
+		local raw = round:GetAttribute("RollData")
+		local ok, roll = pcall(HttpService.JSONDecode, HttpService, if type(raw) == "string" and raw ~= "" then raw else "null")
+		if ok and type(roll) == "table" and roll.cells then
+			GirlRoll.show(roll)
+		else
+			GirlRoll.hide()
+		end
+	end
+	round:GetAttributeChangedSignal("RollData"):Connect(onRoll)
 	round:GetAttributeChangedSignal("Stage"):Connect(function()
-		if round:GetAttribute("Stage") ~= "Rolling" then GirlRoll.hide() end
+		local stage = round:GetAttribute("Stage")
+		if stage ~= "Rolling" and stage ~= nil then GirlRoll.hide() end
 	end)
+	task.defer(onRoll)
 	RunService.RenderStepped:Connect(function()
 		if current then GirlRoll.render(Workspace:GetServerTimeNow()) end
 	end)

@@ -131,8 +131,8 @@ The UI golden slice and its backend are built (saving, coins and gems, shop purc
     (a kit window at the top of the screen, not a ModalManager window) spins a strip of names and stops on
     the game's girl, then shows each rarity's real chance. `Shared/GirlRoll` (pure, `tests/GirlRoll.spec.luau`)
     picks her by rarity weight, then evenly, and builds the strip from honest picks (no planted near-misses).
-    The server sends `Roll` {cells, stop, start, spin, odds} and resends it to mid-roll joiners; she's rebuilt
-    as R15 during the spin.
+    The server puts {cells, stop, start, spin, odds} as JSON in the Round remote's `RollData` attribute (so
+    mid-roll joiners see it; cleared after); she's rebuilt as R15 during the spin.
   - Players who join mid-game stay in the lobby watching.
   - The status pill and a banner show the round number.
   - Vote cards show a live ViewportFrame of each map, with its scripts stripped.
@@ -200,7 +200,8 @@ The UI golden slice and its backend are built (saving, coins and gems, shop purc
   (`Config/Animations.Stab`/`Huss`: with an ID the track plays and the scripted arms step aside; her throw stays
   scripted). `motion3d/action_scene.luau` renders both (`docs/previews/stab-and-huss.mp4`).
 - **Outlines (reference video):** `RoundHud` puts a faint Highlight (outline only, 0.35 transparent) on
-  everyone in the game: catchers red, runners blue, none on caught runners.
+  everyone in the game: catchers red, runners blue, none on caught runners. Roblox draws at most 31
+  Highlights at once, so servers over 31 players lose some outlines.
 - **Girl animations (owner asked for all three, "make them good"):** `Shared/GirlMotion` (pure) holds her
   motion: `carried` (limbs fall toward gravity minus her real acceleration, plus moods Excited, Struggle,
   Cheer and Calm, set by the server through the carry model's `Mood`/`MoodAt`) and `idle` (the prize:

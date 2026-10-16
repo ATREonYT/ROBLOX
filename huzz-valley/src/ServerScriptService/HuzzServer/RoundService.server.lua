@@ -3,6 +3,7 @@
 	RoundRules decides everything; this script moves players, watches the
 	zones and tags, and turns rule events into carries, messages and saves.
 ]]
+local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -38,7 +39,6 @@ local match = nil -- RoundRules state while a game runs
 local girl = nil -- this game's girl {name, rarity, template}
 local prize = nil -- her display model while nobody holds her
 local goalName = "ZoneB"
-local lastRoll = nil -- the roller strip being shown (sent again to anyone who joins mid-roll)
 
 -- Quest counters (Config/Progression) and the Index, saved through DataService.
 local function addStat(id, stat, amount)
@@ -439,6 +439,7 @@ local function cleanUp()
 	CarryService.removeAll()
 	clearPrize()
 	MapService.holdStart(nil, false)
+	MapService.showGoal(nil) -- the lines stay on the map, the SAFE ZONE sign goes out
 	match, girl = nil, nil
 	State:SetAttribute("GirlName", "")
 	State:SetAttribute("HolderId", 0)
@@ -540,9 +541,6 @@ end
 local function onPlayer(player)
 	byId[player.UserId] = player
 	player:SetAttribute("HuzzRole", "Lobby")
-	if lastRoll and State:GetAttribute("Stage") == "Rolling" then
-		RoundNet:FireClient(player, "Roll", lastRoll) -- joined mid-roll: see the rest of it
-	end
 	player.CharacterAdded:Connect(function(c)
 		onCharacter(player, c)
 	end)
@@ -605,9 +603,10 @@ local function rollGirl()
 	for i, g in cells do
 		list[i] = { name = g.name, rarity = g.rarity }
 	end
-	lastRoll = { cells = list, stop = R.Stop, start = Workspace:GetServerTimeNow(), spin = R.SpinTime, odds = odds }
+	-- In an attribute (not a message), so players who join mid-roll see it too.
+	local roll = { cells = list, stop = R.Stop, start = Workspace:GetServerTimeNow(), spin = R.SpinTime, odds = odds }
+	State:SetAttribute("RollData", HttpService:JSONEncode(roll))
 	setStage("Rolling", R.Time)
-	RoundNet:FireAllClients("Roll", lastRoll)
 	local ready = false
 	task.spawn(function()
 		local ok, err = pcall(GirlService.prepare, girl)
@@ -621,7 +620,7 @@ local function rollGirl()
 	while not ready and os.clock() < waitUntil do
 		task.wait(0.1)
 	end
-	lastRoll = nil
+	State:SetAttribute("RollData", "")
 end
 
 while true do
