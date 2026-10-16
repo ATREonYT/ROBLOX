@@ -11,6 +11,7 @@ local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared.Config.Round)
+local Carry = require(Shared.Config.Carry)
 local Rules = require(Shared.RoundRules)
 local Net = require(Shared.Net)
 local MapService = require(script.Parent.MapService)
@@ -19,6 +20,7 @@ local CarryService = require(script.Parent.CarryService)
 local DataService = require(script.Parent.DataService)
 local KnockdownService = require(script.Parent.KnockdownService)
 local MapVoteService = require(script.Parent.MapVoteService)
+local KnifeService = require(script.Parent.KnifeService)
 
 require(script.Parent.SafetyService).clean()
 MapService.init()
@@ -36,7 +38,7 @@ local match = nil -- RoundRules state while a game runs
 local girl = nil -- this game's girl {name, rarity, template}
 local prize = nil -- her display model while nobody holds her
 local goalName = "ZoneB"
-local frozen = false
+local lastRoll = nil -- the roller strip being shown (sent again to anyone who joins mid-roll)
 
 -- Quest counters (Config/Progression) and the Index, saved through DataService.
 local function addStat(id, stat, amount)
@@ -102,10 +104,19 @@ local function syncPlayer(id)
 	p:SetAttribute("HuzzStatus", match and match.status[id] or "")
 	local h = humanoidOf(id)
 	if h then
-		local still = (frozen and match and match.roles[id] ~= nil) or KnockdownService.isDown(p)
+		local still = KnockdownService.isDown(p)
 		h.WalkSpeed = if still then 0 else speedFor(id)
 		h.JumpHeight = if still then 0 else StarterPlayer.CharacterJumpHeight
 		h.JumpPower = if still then 0 else StarterPlayer.CharacterJumpPower
+	end
+	-- Catchers hold a knife (Config.TagMode "Stab"); everyone else's hands are empty.
+	local c = p.Character
+	if c then
+		if match and not match.over and match.roles[id] == "Catcher" and Config.TagMode == "Stab" then
+			KnifeService.give(c)
+		else
+			KnifeService.take(c)
+		end
 	end
 end
 
@@ -289,6 +300,9 @@ local function step()
 			end
 		end
 	end
+	if Config.TagMode == "Stab" then
+		return -- catchers tag by stabbing (the Stab remote below)
+	end
 	for catcherId, role in match.roles do
 		local catcher = role == "Catcher" and rootOf(catcherId)
 		if catcher then
@@ -309,6 +323,20 @@ local function step()
 	end
 end
 
+-- Anyone who got round the start wall goes back behind the line.
+local function keepRunnersIn(zone)
+	if not zone then
+		return
+	end
+	for id, status in match.status do
+		local root = status == "Active" and rootOf(id)
+		local back = root and MapService.keepIn(zone, root.Position)
+		if back then
+			root.Parent:PivotTo(CFrame.new(back) * root.CFrame.Rotation)
+		end
+	end
+end
+
 local function runRound()
 	local events = Rules.startRound(match)
 	if match.over then
@@ -320,8 +348,12 @@ local function runRound()
 	State:SetAttribute("Goal", goalName)
 	State:SetAttribute("Phase", match.phase)
 
-	frozen = true
+	-- Before GO: runners stand behind their start line (a see-through wall holds it; they can
+	-- walk around in their zone), catchers in the middle. SAFE ZONE marks the line to reach.
+	local startName = MapService.startFor(match.round)
 	KnockdownService.upAll()
+	MapService.showGoal(goalName)
+	MapService.holdStart(startName, true)
 	for id in match.roles do
 		place(id)
 	end
@@ -332,9 +364,12 @@ local function runRound()
 	announce(`ROUND {match.round}`, Color3.new(1, 1, 1), true)
 	apply(events)
 	setStage("Countdown", Config.CountdownTime)
-	task.wait(Config.CountdownTime)
-
-	frozen = false
+	local go = os.clock() + Config.CountdownTime
+	while os.clock() < go do
+		RunService.Heartbeat:Wait()
+		keepRunnersIn(zones[startName])
+	end
+	MapService.holdStart(startName, false)
 	syncAll()
 	setStage("Running", Config.RoundTime)
 	local deadline = os.clock() + Config.RoundTime
@@ -374,14 +409,12 @@ local function finishGame()
 		RoundNet:FireAllClients("Win", { girl = girl.name, rarity = girl.rarity })
 	end
 	State:SetAttribute("HolderId", winnerId or 0)
-	frozen = false
+	syncAll() -- knives away
 	setStage("GameOver", Config.GameOverTime)
 	task.wait(Config.GameOverTime)
 end
 
 local function runGame()
-	girl = GirlService.roll()
-	GirlService.prepare(girl) -- rebuilds her as R15 the first time (Config/Round.GirlRig)
 	local ids = {}
 	for id in byId do
 		table.insert(ids, id)
@@ -405,7 +438,8 @@ local function cleanUp()
 	KnockdownService.upAll()
 	CarryService.removeAll()
 	clearPrize()
-	match, girl, frozen = nil, nil, false
+	MapService.holdStart(nil, false)
+	match, girl = nil, nil
 	State:SetAttribute("GirlName", "")
 	State:SetAttribute("HolderId", 0)
 	State:SetAttribute("Round", 0)
@@ -413,9 +447,65 @@ local function cleanUp()
 		place(id) -- everyone back to the lobby
 	end
 	syncAll()
-	MapService.unload()
-	State:SetAttribute("Map", "")
+	-- The map stays in front of the lobby until the next vote picks its replacement.
 end
+
+-- Catchers stab (click / tap STAB). The client plays the move at once and tells us; we check the
+-- catcher may stab now and tag the nearest runner in reach in front of them.
+local lastStab = {}
+Net.get("Stab").OnServerEvent:Connect(function(player)
+	local id = player.UserId
+	if not (match and not match.over and match.roles[id] == "Catcher" and State:GetAttribute("Stage") == "Running") then
+		return
+	end
+	if Config.TagMode ~= "Stab" or KnockdownService.isDown(player) then
+		return
+	end
+	local now = os.clock()
+	if lastStab[id] and now - lastStab[id] < Config.Stab.Cooldown * 0.8 then
+		return -- faster than the button allows
+	end
+	lastStab[id] = now
+	local me = rootOf(id)
+	if not me then
+		return
+	end
+	RoundNet:FireAllClients("Stab", { id = id }) -- everyone else sees the stab
+	local start = zones[MapService.startFor(match.round)]
+	local look = me.CFrame.LookVector
+	local best, bestDistance = nil, Config.Stab.Range
+	for runnerId, status in match.status do
+		local root = status == "Active" and rootOf(runnerId)
+		if root then
+			local offset = root.Position - me.Position
+			local flat = Vector3.new(offset.X, 0, offset.Z)
+			local inFront = flat.Magnitude < 3.5 or look:Dot(flat.Unit) > -0.2 -- generous: runners lag on screen
+			local safe = Config.StartZoneSafe and start and MapService.inZone(start, root.Position)
+			if offset.Magnitude <= bestDistance and math.abs(offset.Y) < 8 and inFront and not safe then
+				best, bestDistance = runnerId, offset.Magnitude
+			end
+		end
+	end
+	if best then
+		apply(Rules.tag(match, id, best))
+	end
+end)
+
+-- Hussing: her carrier throws her up and catches her (every client plays it from HussAt, server
+-- time). The client sends the time it started on its screen so its own view never jumps.
+Net.get("Huss").OnServerEvent:Connect(function(player, at)
+	local model = CarryService.get(player)
+	if not (model and model:GetAttribute("Carrier") == player.UserId) or KnockdownService.isDown(player) then
+		return
+	end
+	local now = Workspace:GetServerTimeNow()
+	local start = if type(at) == "number" and at == at then math.clamp(at, now - 0.4, now) else now
+	local previous = model:GetAttribute("HussAt")
+	if previous and start < previous + Carry.Huss.Time + Config.HussCooldown - 0.15 then
+		return
+	end
+	model:SetAttribute("HussAt", start)
+end)
 
 -- Players
 local function onCharacter(player, character)
@@ -450,6 +540,9 @@ end
 local function onPlayer(player)
 	byId[player.UserId] = player
 	player:SetAttribute("HuzzRole", "Lobby")
+	if lastRoll and State:GetAttribute("Stage") == "Rolling" then
+		RoundNet:FireClient(player, "Roll", lastRoll) -- joined mid-roll: see the rest of it
+	end
 	player.CharacterAdded:Connect(function(c)
 		onCharacter(player, c)
 	end)
@@ -463,6 +556,7 @@ for _, p in Players:GetPlayers() do
 	onPlayer(p)
 end
 Players.PlayerRemoving:Connect(function(player)
+	lastStab[player.UserId] = nil
 	if match then
 		apply(Rules.removePlayer(match, player.UserId))
 	end
@@ -500,6 +594,36 @@ local function chooseMap()
 	return enough() and MapService.maps[1] or nil
 end
 
+-- The girl roller: everyone watches a strip of girl names spin at the top of the screen and stop
+-- on this game's girl. She's picked first (fairly: Shared/GirlRoll), and every other name on the
+-- strip is an honest pick too. Meanwhile she's rebuilt as R15 (Config/Round.GirlRig).
+local function rollGirl()
+	girl = GirlService.roll()
+	local R = Config.Roll
+	local cells, odds = GirlService.strip(girl, R.Cells, R.Stop)
+	local list = {}
+	for i, g in cells do
+		list[i] = { name = g.name, rarity = g.rarity }
+	end
+	lastRoll = { cells = list, stop = R.Stop, start = Workspace:GetServerTimeNow(), spin = R.SpinTime, odds = odds }
+	setStage("Rolling", R.Time)
+	RoundNet:FireAllClients("Roll", lastRoll)
+	local ready = false
+	task.spawn(function()
+		local ok, err = pcall(GirlService.prepare, girl)
+		if not ok then
+			warn("[Huzz] Couldn't rebuild " .. girl.name .. ": " .. tostring(err))
+		end
+		ready = true
+	end)
+	task.wait(R.Time)
+	local waitUntil = os.clock() + 10
+	while not ready and os.clock() < waitUntil do
+		task.wait(0.1)
+	end
+	lastRoll = nil
+end
+
 while true do
 	setStage("Waiting")
 	while not enough() do
@@ -507,11 +631,11 @@ while true do
 	end
 	local map = chooseMap()
 	if map and enough() then
+		-- The winning map replaces the one in front of the lobby, then the girl roller spins.
 		MapService.load(map)
 		State:SetAttribute("Map", map.display)
-		setStage("Loading", Config.LoadTime)
 		announce(`Map: {map.display}`, Color3.new(1, 1, 1), true)
-		task.wait(Config.LoadTime)
+		rollGirl()
 		local ok, err = xpcall(runGame, debug.traceback)
 		if not ok then
 			warn("[Huzz] Game stopped by an error: " .. tostring(err))

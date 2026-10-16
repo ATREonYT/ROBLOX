@@ -24,3 +24,4 @@ shot progression 04-progression-rewards 1536 700 '{SCREEN="Progression", TAB="Re
 shot tiers 11-tier-index 1536 700 '{SCREEN="Tiers", SCALE=2}'
 shot quests 05-progression-quests 1536 700 '{SCREEN="Progression", TAB="Quests", SCALE=2}'
 shot map-vote 15-map-vote 1536 656 '{SCREEN="MapVote", SCALE=2, VOTE="Base_Map,Halloween_Map,3,5,Halloween_Map"}'
+shot girl-roll 15-map-vote 1536 656 '{SCREEN="Hud", SCALE=2, ROLL=6.5}'

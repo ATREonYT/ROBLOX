@@ -26,6 +26,10 @@ return {
 		ElbowFlex = 3,
 	},
 
+	-- Hussing (H / the HUSS button while carrying her): he throws her up, she twirls, he does
+	-- his huss move under her, and catches her. Time in seconds, Height in studs above the hold.
+	Huss = { Time = 1.6, Height = 7, Spins = 1 },
+
 	-- Inertia: she lags behind speed changes and turns, then wobbles back.
 	Spring = {
 		Frequency = 5,

@@ -41,6 +41,25 @@ end
 __runScript(game.StarterPlayer.StarterPlayerScripts.HuzzClient.Main)
 task.wait(0.3)
 local MM = require(game.StarterPlayer.StarterPlayerScripts.HuzzClient.UI.ModalManager)
+-- ROLL=<seconds into the spin>: the girl roller, with a made-up strip of the placeholder names.
+if cfg.ROLL then
+	local rarities = { "Common", "Common", "Uncommon", "Common", "Rare", "Common", "Uncommon", "Epic", "Common", "Legendary" }
+	local cells = {}
+	for i = 1, 46 do
+		local r = rarities[(i * 7) % #rarities + 1]
+		cells[i] = { name = `{r} Girl {(i % 4) + 1}`, rarity = r }
+	end
+	cells[40] = { name = "Sakura Hoshino", rarity = "Epic" }
+	cells[39] = { name = "Mythic Girl 1", rarity = "Mythic" }
+	cells[41] = { name = "Secret Girl 1", rarity = "Secret" }
+	local odds = { { name = "Common", chance = 50 }, { name = "Uncommon", chance = 25 }, { name = "Rare", chance = 13 },
+		{ name = "Epic", chance = 7 }, { name = "Legendary", chance = 3.5 }, { name = "Mythic", chance = 1.2 }, { name = "Secret", chance = 0.3 } }
+	local Roll = require(game.StarterPlayer.StarterPlayerScripts.HuzzClient.UI.Screens.GirlRoll)
+	local start = workspace:GetServerTimeNow() - tonumber(cfg.ROLL)
+	Roll.show({ cells = cells, stop = 40, start = start, spin = 5.5, odds = odds })
+	for _ = 1, 20 do __stepTweens(0.05) end
+	Roll.render(workspace:GetServerTimeNow())
+end
 if cfg.SCREEN and cfg.SCREEN ~= "Hud" then
 	assert(MM.open(cfg.SCREEN, cfg.TAB), "no screen " .. tostring(cfg.SCREEN))
 end

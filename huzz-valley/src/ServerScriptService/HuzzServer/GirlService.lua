@@ -8,6 +8,7 @@ local CollectionService = game:GetService("CollectionService")
 local Config = require(ReplicatedStorage.Shared.Config.Round)
 local Carry = require(ReplicatedStorage.Shared.Config.Carry)
 local GirlNames = require(ReplicatedStorage.Shared.Config.GirlNames)
+local GirlRoll = require(ReplicatedStorage.Shared.GirlRoll)
 
 local GirlService = {}
 GirlService.catalog = {} -- { id, name, rarity, template }
@@ -84,26 +85,18 @@ function GirlService.init()
 	print(`[Huzz] {#GirlService.catalog} girls in the collection`)
 end
 
--- Weighted by rarity (only rarities that have girls), then even within it.
+-- Weighted by rarity (only rarities that have girls), then even within it (Shared/GirlRoll).
+local rng = Random.new()
+local function rand()
+	return rng:NextNumber()
+end
 function GirlService.roll()
-	local groups, total = {}, 0
-	for _, girl in GirlService.catalog do
-		local g = groups[girl.rarity]
-		if not g then
-			g = { weight = GirlService.rarity(girl.rarity).Weight, list = {} }
-			groups[girl.rarity] = g
-			total += g.weight
-		end
-		table.insert(g.list, girl)
-	end
-	local roll = math.random() * total
-	for _, g in groups do
-		roll -= g.weight
-		if roll <= 0 then
-			return g.list[math.random(#g.list)]
-		end
-	end
-	return GirlService.catalog[math.random(#GirlService.catalog)]
+	return GirlRoll.pick(GirlService.catalog, Config.Rarities, rand)
+end
+
+-- The roller strip shown to everyone: honest picks with the winner at `at`, plus the real odds.
+function GirlService.strip(winner, length, at)
+	return GirlRoll.strip(GirlService.catalog, Config.Rarities, winner, length, at, rand), GirlRoll.odds(GirlService.catalog, Config.Rarities)
 end
 
 local function nameTag(model, girl, root, offsetY)

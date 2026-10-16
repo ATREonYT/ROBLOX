@@ -101,8 +101,44 @@ function CarryMotion.release(rec)
 	end
 end
 
+--[[
+	The huss, age seconds after it started (Carry.Huss): a quick dip, then he throws her
+	up; she twirls once along her length while he hits his huss move under her (arms out
+	to a double flex, chest pumping); his arms go back up in time and he catches her with
+	a soft give at the knees of the elbows. Returns nil when no huss is playing, else
+	lift (studs up), spin (radians), flex (0..1: arms in the huss pose), give (0..1).
+]]
+function CarryMotion.huss(age)
+	local H = Carry.Huss
+	local u = if age then age / H.Time else -1
+	if u < 0 or u >= 1 then
+		return nil
+	end
+	local launch, land = 0.1, 0.84
+	local lift, spin, give = 0, 0, 0
+	if u < launch then
+		give = sin(math.pi / 2 * u / launch)
+		lift = -0.45 * give
+	elseif u < land then
+		local f = (u - launch) / (land - launch)
+		lift = H.Height * 4 * f * (1 - f) - 0.45 * (1 - f) ^ 4
+		spin = 2 * math.pi * (H.Spins or 1) * (f * f * (3 - 2 * f))
+	else
+		give = sin(math.pi * (u - land) / (1 - land))
+		lift = -0.55 * give
+	end
+	local function ramp(a, b)
+		local x = clamp((u - a) / (b - a), 0, 1)
+		return x * x * (3 - 2 * x)
+	end
+	local flex = ramp(0.13, 0.3) * (1 - ramp(0.6, 0.78))
+	return lift, spin, flex, give, u
+end
+
 -- now: the same clock as rec.start. mood/moodAge: see GirlMotion.carried.
-function CarryMotion.step(rec, dt, now, mood, moodAge)
+-- hussAge: seconds since his huss started (nil = none). hussAnimated: an uploaded Huss
+-- animation plays his move, so the scripted arms step aside while she's in the air.
+function CarryMotion.step(rec, dt, now, mood, moodAge, hussAge, hussAnimated)
 	local root, motor = rec.root, rec.motor
 	local torso = rec.rig.torso
 	local rootCF = root.CFrame
@@ -148,20 +184,38 @@ function CarryMotion.step(rec, dt, now, mood, moodAge)
 		local e = 1 - (1 - p) ^ 3
 		hold = startCF:Lerp(hold, e) + frame:VectorToObjectSpace(Vector3.yAxis) * Carry.ArcHeight * sin(math.pi * p)
 	end
+	-- The huss: up she goes (straight up from his hands), twirling, and back down into them.
+	local lift, spin, hussFlex, give, hu = CarryMotion.huss(hussAge)
+	if lift then
+		local up = (torso.CFrame * CFrame.new(motor.C0.Position)):VectorToObjectSpace(Vector3.yAxis)
+		hold = (hold + up * lift) * CFrame.Angles(spin, 0, 0)
+	end
 	motor.Transform = rec.c0rot:Inverse() * hold * rec.c0rot
 
 	-- Carrier: arms up as she arrives, elbows flexing with each step; a lean back under her weight.
+	-- During a huss the arms swing out to a double flex while she's in the air, then back up to catch.
+	hussFlex, give = hussFlex or 0, give or 0
 	if not rec.useArmAnimation then
-		local weight = clamp(p * 1.8, 0, 1)
-		local flex = math.abs(step) * B.ElbowFlex * amount
+		local weight = clamp(p * 1.8, 0, 1) * (if hussAnimated then 1 - hussFlex else 1)
+		local flex = math.abs(step) * B.ElbowFlex * amount + give * 30
+		local pump = if lift then sin(hu * 2 * math.pi * 6.5) else 0
 		for _, arm in rec.rig.arms do
-			poseJoint(rec, arm.shoulder, CarryMath.shoulderPose(arm.sign, 1), weight)
-			poseJoint(rec, arm.elbow, CarryMath.elbowPose(arm.sign, Carry.Arms.ElbowBend + flex), weight)
+			local shoulder, elbow = CarryMath.shoulderPose(arm.sign, 1), CarryMath.elbowPose(arm.sign, Carry.Arms.ElbowBend + flex)
+			if hussFlex > 0 then
+				local out = CFrame.Angles(0, 0, rad(arm.sign * (86 + 5 * pump))) * CFrame.Angles(rad(180), 0, 0)
+				shoulder = shoulder:Lerp(out, hussFlex)
+				elbow = elbow:Lerp(CarryMath.elbowPose(arm.sign, 104 + 14 * pump), hussFlex)
+			end
+			poseJoint(rec, arm.shoulder, shoulder, weight)
+			poseJoint(rec, arm.elbow, elbow, weight)
 		end
 	end
 	local G = GirlConfig.Carrier
+	local groove = if lift then hussFlex * sin(hu * 2 * math.pi * 3.25) else 0
 	addJoint(rec, rec.rig.waist, CFrame.Angles(
-		rad(G.Lean * clamp(p * 1.8, 0, 1) + G.StepDip * math.abs(step) * amount), 0, rad(G.StepRoll) * step * amount))
+		rad(G.Lean * clamp(p * 1.8, 0, 1) + G.StepDip * math.abs(step) * amount + 7 * hussFlex + 5 * groove - 4 * give),
+		rad(12 * groove),
+		rad(G.StepRoll) * step * amount))
 
 	-- Her own motion, driven by how her body actually moves (flight, bob, sway, turns).
 	local girlRoot = motor.Part1

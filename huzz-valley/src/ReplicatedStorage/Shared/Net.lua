@@ -21,6 +21,8 @@ local SPEC = {
 	Action = "RemoteFunction",
 	Round = "RemoteEvent",
 	Vote = "RemoteEvent",
+	Stab = "RemoteEvent",
+	Huss = "RemoteEvent",
 }
 
 local folder: Folder

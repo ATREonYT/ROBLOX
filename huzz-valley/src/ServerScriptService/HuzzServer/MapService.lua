@@ -26,6 +26,7 @@ MapService.zones = {} -- the loaded map's zones (filled in place, so callers can
 MapService.maps = {} -- { name, box (stored container), fixed (test field: used where it is) }
 MapService.current = nil -- the loaded map's entry
 local loaded -- the copy in Workspace
+local marks, wall -- the current map's safe lines and sign, and the start-line wall before GO
 local lastPicked
 local zoneParts = {} -- every zone part, so floor checks look through them
 
@@ -250,7 +251,7 @@ local function placement(middle, runAxis)
 	for _, m in MapService.maps do
 		local p = select(3, zonesOf(m.box, m.name, true))
 		if p then
-			away += p.CFrame.Position - lobby.Position
+			away += p.CFrame.Position - lobby.CFrame.Position
 		end
 	end
 	away = Vector3.new(away.X, 0, away.Z)
@@ -269,7 +270,7 @@ local function placement(middle, runAxis)
 	local across = runAxis:Cross(Vector3.yAxis).Unit
 	local midLocal = middle.CFrame:VectorToObjectSpace(across)
 	local mapHalf = math.abs(midLocal.X) * middle.Size.X / 2 + math.abs(midLocal.Z) * middle.Size.Z / 2
-	local centre = lobby.Position + front * (lobbyHalf + Config.Map.Gap + mapHalf)
+	local centre = lobby.CFrame.Position + front * (lobbyHalf + Config.Map.Gap + mapHalf)
 	centre = Vector3.new(centre.X, mid.Y, centre.Z) -- the map keeps its own height
 	return CFrame.lookAt(centre, centre + right)
 end
@@ -308,6 +309,10 @@ function MapService.load(entry)
 end
 
 function MapService.unload()
+	for _, item in { marks, wall } do
+		item:Destroy()
+	end
+	marks, wall = nil, nil
 	if loaded then
 		loaded:Destroy()
 		loaded = nil
@@ -356,6 +361,121 @@ function MapService.spot(zone, lookAt, maxSpread)
 		return CFrame.lookAt(pos, flat)
 	end
 	return CFrame.new(pos)
+end
+
+-- A zone's edge that faces the middle: its centre, the way out (toward the middle) and its length.
+-- Zones are boxes (they may be turned), so the edge is the box face most in line with the middle.
+local function edge(zone)
+	local middle = MapService.zones.Middle
+	local zc = zone.CFrame
+	local d = zc:PointToObjectSpace(middle.CFrame.Position)
+	local half = zone.Size * 0.5
+	local useX = math.abs(d.X) / math.max(half.X, 0.1) >= math.abs(d.Z) / math.max(half.Z, 0.1)
+	local sign = if useX then (if d.X >= 0 then 1 else -1) else (if d.Z >= 0 then 1 else -1)
+	local localOut = if useX then Vector3.new(sign, 0, 0) else Vector3.new(0, 0, sign)
+	local centre = zc:PointToWorldSpace(if useX then Vector3.new(sign * half.X, 0, 0) else Vector3.new(0, 0, sign * half.Z))
+	local length = if useX then zone.Size.Z else zone.Size.X
+	local floor = MapService.ground(centre, centre.Y + half.Y + 1) or (centre.Y - half.Y)
+	return Vector3.new(centre.X, floor, centre.Z), zc:VectorToWorldSpace(localOut), length
+end
+
+local function markPart(props)
+	local p = Instance.new("Part")
+	p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch, p.CastShadow = true, false, false, false, false
+	p.Material = Enum.Material.SmoothPlastic
+	p.TopSurface, p.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
+	for k, v in props do
+		p[k] = v
+	end
+	return p
+end
+
+--[[
+	The safe lines: a white line on the floor where each zone meets the field, and a green
+	SAFE ZONE sign over the line of the side runners must reach this round (as in the
+	reference). Config.Map.SafeLines = false turns them off (for maps with painted lines).
+]]
+function MapService.showGoal(goalName)
+	local z = MapService.zones
+	if not (z.ZoneA and z.ZoneB and z.Middle) or Config.Map.SafeLines == false then
+		return
+	end
+	if not (marks and marks.Parent) then
+		marks = Instance.new("Folder")
+		marks.Name = "HuzzSafeLines"
+		for _, name in { "ZoneA", "ZoneB" } do
+			local centre, out, length = edge(z[name])
+			markPart({
+				Name = "SafeLine" .. name, Size = Vector3.new(length, 0.06, Config.Map.LineWidth),
+				CFrame = CFrame.lookAt(centre, centre + out) + Vector3.new(0, 0.05, 0),
+				Color = Color3.new(1, 1, 1), Parent = marks,
+			})
+			local signPart = markPart({
+				Name = "Sign" .. name, Size = Vector3.new(1, 1, 1), Transparency = 1,
+				CFrame = CFrame.new(centre + Vector3.new(0, Config.Map.SignHeight, 0)), Parent = marks,
+			})
+			local gui = Instance.new("BillboardGui")
+			gui.Name = "SafeZone"
+			gui.Size = UDim2.new(18, 0, 3.2, 0) -- studs: shrinks with distance like the reference sign
+			gui.LightInfluence = 0
+			gui.MaxDistance = 600
+			gui.Enabled = false
+			gui.Parent = signPart
+			local label = Instance.new("TextLabel")
+			label.Size = UDim2.fromScale(1, 1)
+			label.BackgroundTransparency = 1
+			label.Text = "SAFE ZONE"
+			label.TextScaled = true
+			label.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Heavy)
+			label.TextColor3 = Color3.fromRGB(64, 255, 92)
+			label.Parent = gui
+			local stroke = Instance.new("UIStroke")
+			stroke.Thickness = 3
+			stroke.Color = Color3.fromRGB(10, 60, 20)
+			stroke.Parent = label
+		end
+		marks.Parent = loaded or Workspace
+	end
+	for _, name in { "ZoneA", "ZoneB" } do
+		local sign = marks:FindFirstChild("Sign" .. name)
+		if sign then
+			sign.SafeZone.Enabled = name == goalName
+		end
+	end
+end
+
+--[[
+	Before GO: a see-through wall on the start line keeps runners in their zone (they can still
+	walk around in it), and keepIn() puts back anyone who found a way round it.
+]]
+function MapService.holdStart(startName, on)
+	if wall then
+		wall:Destroy()
+		wall = nil
+	end
+	local zone = MapService.zones[startName]
+	if not (on and zone and MapService.zones.Middle) then
+		return
+	end
+	local centre, out, length = edge(zone)
+	local h = Config.Map.WallHeight
+	wall = markPart({
+		Name = "HuzzStartWall", Size = Vector3.new(length + 2, h, 1),
+		CFrame = CFrame.lookAt(centre, centre + out) + out * 0.5 + Vector3.new(0, h / 2, 0),
+		CanCollide = true, Material = Enum.Material.ForceField, Color = Color3.fromRGB(120, 190, 255),
+		Parent = loaded or Workspace,
+	})
+end
+
+-- The same point pulled back inside the zone (1.5 studs in from the edges), or nil if already in.
+function MapService.keepIn(zone, position)
+	if MapService.inZone(zone, position) then
+		return nil
+	end
+	local p = zone.CFrame:PointToObjectSpace(position)
+	local half = zone.Size * 0.5 - Vector3.new(1.5, 0, 1.5)
+	local inside = Vector3.new(math.clamp(p.X, -half.X, half.X), p.Y, math.clamp(p.Z, -half.Z, half.Z))
+	return zone.CFrame:PointToWorldSpace(inside)
 end
 
 function MapService.goalFor(round)

@@ -7,8 +7,10 @@ return {
 
 	IntermissionTime = 15, -- the wait before a game when there's only one map (no vote)
 	VoteTime = 15, -- the map vote between games (design page 15)
-	LoadTime = 3, -- after the vote: the map appears, everyone is moved onto it
-	CountdownTime = 4, -- everyone frozen in place before GO
+	-- After the vote the new map replaces the old one and the girl roller spins at the top of
+	-- the screen: Cells names go past, slowing down over SpinTime and stopping on the girl at Stop.
+	Roll = { Time = 7.5, SpinTime = 5.5, Cells = 46, Stop = 40 },
+	CountdownTime = 5, -- before GO: runners wait behind the start line (they can walk around in their zone)
 	RoundTime = 45, -- runners still out when it ends count as caught
 	RoundEndPause = 4,
 	GameOverTime = 8,
@@ -21,7 +23,16 @@ return {
 	GirlSpot = "Middle", -- where she stands while nobody has her: "Middle" or "SafeZone" (the far side)
 	GrabRange = 6, -- "Grab" only: studs from her centre to a runner's root
 
-	TagRange = 5.5, -- studs between root parts
+	-- How catchers tag (owner's call): "Stab" = they hold a knife and click / tap STAB to stab a runner
+	-- in reach; "Touch" = running into a runner (TagRange) tags them.
+	TagMode = "Stab",
+	Stab = {
+		Range = 7.5, -- studs from the catcher's root to the runner's (a little generous: other players lag on screen)
+		Cooldown = 0.6, -- seconds between stabs, hit or miss
+		Time = 0.36, -- how long the stab move lasts
+	},
+	TagRange = 5.5, -- "Touch" only: studs between root parts
+	HussCooldown = 0.4, -- seconds after a huss ends before the next (Carry.Huss.Time is the huss itself)
 
 	-- A caught runner falls flat on their face and lies there until the next round
 	-- (owner's call). Enabled = false sends them to the Bench part instead.
@@ -53,6 +64,10 @@ return {
 		MiddleSpawn = 20, -- catchers start within this many studs of the Middle's centre
 		Gap = 30, -- studs between the lobby island and the map copied in front of it
 		Names = {}, -- names shown in the vote, e.g. { Base_Map = "The Field" } (default: the folder name without "_Map")
+		SafeLines = true, -- a white line where each zone meets the field, and SAFE ZONE over the goal's line
+		LineWidth = 0.8,
+		SignHeight = 9, -- the SAFE ZONE sign above the line (studs)
+		WallHeight = 30, -- the see-through wall that holds runners on the start line until GO
 		BuildTestField = true, -- no zones found: build a plain test field so the game still runs
 	},
 

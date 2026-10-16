@@ -125,7 +125,14 @@ The UI golden slice and its backend are built (saving, coins and gems, shop purc
   Stage "Voting"; `MapVoteService`: one vote per player, a new vote replaces the old, ties random). The winner is
   copied in front of the lobby island (`MapService.load`: maps live in `ReplicatedStorage.HuzzMaps` from server
   start; placed `Map.Gap` past the lobby edge on the side facing where the maps were built, the run axis crossing
-  left to right; an optional `MapSpot` part overrides that) and removed after the game.
+  left to right; an optional `MapSpot` part overrides that). It stays there after the game and is swapped
+  out only when the next vote picks its replacement (owner's call).
+  - **Girl roller (owner's call):** after the vote, Stage "Rolling" (`Config/Round.Roll`): `Screens/GirlRoll`
+    (a kit window at the top of the screen, not a ModalManager window) spins a strip of names and stops on
+    the game's girl, then shows each rarity's real chance. `Shared/GirlRoll` (pure, `tests/GirlRoll.spec.luau`)
+    picks her by rarity weight, then evenly, and builds the strip from honest picks (no planted near-misses).
+    The server sends `Roll` {cells, stop, start, spin, odds} and resends it to mid-roll joiners; she's rebuilt
+    as R15 during the spin.
   - Players who join mid-game stay in the lobby watching.
   - The status pill and a banner show the round number.
   - Vote cards show a live ViewportFrame of each map, with its scripts stripped.
@@ -177,10 +184,23 @@ The UI golden slice and its backend are built (saving, coins and gems, shop purc
     `CarryAnimator`), otherwise the procedural `GirlMotion.walk`;
   - retune `Carry.Bob.StepsPerStud`, `Carry.Follow.Stride` and `GirlWalkSpeed`/`GirlRunSpeed` to the new
     animations.
-- **To do (owner: "keep that in mind"):** a Huss action. On a key or mobile button, play the owner's huss
-  animation; while carrying, throw her up a little and catch her when the huss ends (a server-validated remote
-  sets a toss time on the carry model, and CarryMotion animates the flight up and back). Wait for the owner's
-  huss animation IDs.
+- **Zones (owner's call):** white safe lines on the zone edges facing the middle and a green SAFE ZONE billboard
+  over the goal's line (`MapService.showGoal`, `Config/Round.Map.SafeLines`). Before GO runners can walk in their
+  start zone but a ForceField wall stands on the start line (`MapService.holdStart`) and `keepIn` puts back
+  anyone who gets round it. `tools/check_maps.luau` checks the lines on the owner's maps.
+- **Stabbing (owner's call, `Config/Round.TagMode = "Stab"`; "Touch" = the old run-into tag):** catchers hold a
+  knife welded to the right hand (`KnifeService`; a `ServerStorage.HuzzKnife` model replaces it). Click, R2 or the
+  STAB button (`Gameplay/Actions`) plays `Shared/StabMotion` at once and fires `Stab`; the server checks role,
+  stage, cooldown and tags the nearest Active runner within `Stab.Range` roughly in front (not in the start
+  zone). Other clients play it from the `Stab` message.
+- **Hussing (owner's call):** the overhead carrier presses H, X or HUSS; the client sets `HussAt` (server time)
+  on the carried model for itself and sends it, and the server checks and sets the same value. `CarryMotion.huss`
+  throws her up (`Carry.Huss`), twirls her, swings his arms to a double flex with chest pumps, and catches her.
+- **Placeholder moves:** the stab and huss are scripted until the owner's animations arrive
+  (`Config/Animations.Stab`/`Huss`: with an ID the track plays and the scripted arms step aside; her throw stays
+  scripted). `motion3d/action_scene.luau` renders both (`docs/previews/stab-and-huss.mp4`).
+- **Outlines (reference video):** `RoundHud` puts a faint Highlight (outline only, 0.35 transparent) on
+  everyone in the game: catchers red, runners blue, none on caught runners.
 - **Girl animations (owner asked for all three, "make them good"):** `Shared/GirlMotion` (pure) holds her
   motion: `carried` (limbs fall toward gravity minus her real acceleration, plus moods Excited, Struggle,
   Cheer and Calm, set by the server through the carry model's `Mood`/`MoodAt`) and `idle` (the prize:

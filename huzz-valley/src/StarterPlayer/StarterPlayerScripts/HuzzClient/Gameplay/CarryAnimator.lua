@@ -3,7 +3,8 @@
 	Shared/CarryMotion and Shared/GirlMotion, which is the same code the offline
 	preview runs. This script feeds them real parts every frame:
 	  - every carried girl (Workspace.HuzzCarried): the pickup flight, the carrier's
-	    raised arms and lean, and her limbs and mood (model attributes Mood, MoodAt);
+	    raised arms and lean, her limbs and mood (model attributes Mood, MoodAt), and
+	    the huss throw and catch (HussAt: server time it started);
 	  - the prize girl (tag "HuzzPrize"): her idle, watching the nearest player;
 	  - a girl following a catcher (tag "HuzzFollower", Shared/FollowMotion): she drops
 	    to the ground, then walks or runs behind him and stands when he stops.
@@ -29,6 +30,7 @@ function M.start()
 
 	local folder = Workspace:WaitForChild("HuzzCarried")
 	local useArmAnimation = Animations.CarryArms ~= ""
+	local useHussAnimation = Animations.Huss ~= ""
 	local carries = {} -- model -> { rec, model, humanoid, armTrack }
 	local prizes = {} -- model -> { state, joints, root }
 	local followers = {} -- model -> FollowMotion record (+ leaderId)
@@ -224,7 +226,8 @@ function M.start()
 				stopCarry(model)
 			else
 				local moodAt = model:GetAttribute("MoodAt") or rec.start
-				CarryMotion.step(rec, dt, now, model:GetAttribute("Mood"), now - moodAt)
+				local hussAt = model:GetAttribute("HussAt")
+				CarryMotion.step(rec, dt, now, model:GetAttribute("Mood"), now - moodAt, hussAt and now - hussAt, useHussAnimation)
 			end
 		end
 		if next(followers) then

@@ -12,15 +12,26 @@ All of these work against a real save system. When you're happy with how they lo
 ![Ours under each reference](docs/previews/overview.jpg)
 
 ## The game: rounds and carrying a girl
-1. After the **next-round countdown**, a girl is rolled by rarity (Common → Secret) and **stands in the
-   middle**. One random player is the **catcher** (also in the middle). Everyone else runs from side A.
-2. The **first runner across gets her automatically**: she appears over their head and they carry her.
-   Tagged runners **fall flat on the floor and lie there**, then get up as **catchers next round**. Each round runs the other way.
-3. **A catcher who tags her holder steals her:** she falls down and follows that catcher around on foot. The
-   next runner across rescues her, and the round after that is
-   the **final round**: if that runner crosses again, they win her; if they're tagged, that catcher wins her.
-   If every runner is caught, whoever holds her wins. The winner gets her in their **Index**. Quests count
-   Steals, hold time and matches played.
+1. **Between games** everyone votes for one of two maps. The winner **replaces the map in front of the lobby**
+   (the last one stays there until then). Then a **roller spins at the top of the screen** and stops on the
+   game's girl. Every name on it is a fair pick, and the bottom row shows each rarity's real chance (Common →
+   Secret, from `Config/Round.Rarities`).
+2. Everyone is moved onto the map. Runners wait on their side behind the **start line** (a see-through wall
+   until GO; they can walk around in their zone). One random player is the **catcher**, in the middle with a
+   **knife**. The girl **stands in the middle**. A white line marks each side, and **SAFE ZONE** shows the line
+   to reach.
+3. Catchers **stab** (click, or the STAB button on a phone) to tag a runner in reach. Tagged runners **fall flat
+   and lie there**, then get up as **catchers next round**. The **first runner across gets her automatically**:
+   she appears over their head. Press **H** (or HUSS) to **huss**: he throws her up, she twirls, he flexes, and
+   he catches her. Each round runs the other way.
+4. **A catcher who stabs her holder steals her:** she falls down and follows that catcher around on foot. The
+   next runner across rescues her, and the round after that is the **final round**: if that runner crosses
+   again, they win her; if they're tagged, that catcher wins her. If every runner is caught, whoever holds her
+   wins. The winner gets her in their **Index**.
+5. Catchers have a faint **red outline** and runners a faint **blue** one, as in your video.
+
+The stab and huss moves are placeholders until your Huss Valley animations come in: put their IDs in
+`Shared/Config/Animations.lua` (`Stab`, `Huss`) and they play instead. ([video](docs/previews/stab-and-huss.mp4))
 
 **Set up your maps:** in each map, make a folder named after the map (e.g. `Graveyard`) holding 3 parts named
 `ZoneA`, `ZoneB` and `Middle`. They can be invisible (Transparency 1) and non-colliding. Every game picks one of

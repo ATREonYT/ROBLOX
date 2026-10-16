@@ -33,7 +33,7 @@ Scale.setRoot(gui)
 Report.mount(gui)
 Report.run("Window manager", ModalManager.mount, gui)
 Report.run("Toast", Toast.mount, gui)
-for _, name in { "LobbyHud", "MainMenu", "Shop", "Settings", "Index", "Tiers", "Dances", "Progression", "MapVote" } do
+for _, name in { "LobbyHud", "MainMenu", "Shop", "Settings", "Index", "Tiers", "Dances", "Progression", "MapVote", "GirlRoll" } do
 	local module = Screens:FindFirstChild(name)
 	if module then Report.run(name, function() require(module).build(gui) end) end
 end

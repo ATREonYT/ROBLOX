@@ -1,6 +1,7 @@
 --[[
 	Round HUD: stage and timer, your role, the girl up for grabs and who holds
-	her, big announcements, and outlines on catchers (red) and her holder (gold).
+	her, big announcements, and faint outlines on everyone in the game: catchers red,
+	runners blue (as in the reference).
 	Built in code for now; it moves into the owner's UI kit with the Match HUD page.
 ]]
 local M = {}
@@ -127,6 +128,7 @@ function M.start()
 		Waiting = "WAITING FOR PLAYERS",
 		Intermission = "NEXT GAME",
 		Voting = "VOTE FOR A MAP",
+		Rolling = "ROLLING A GIRL",
 		Loading = "GET READY",
 		Countdown = "GET READY",
 		Running = "ROUND %d",
@@ -143,7 +145,7 @@ function M.start()
 			label ..= string.format("  %d:%02d", secs // 60, secs % 60)
 		end
 		status.Text = label
-		pill.Visible = stage ~= "Intermission" and stage ~= "Voting" -- the Lobby HUD's banner and the vote window show those
+		pill.Visible = stage ~= "Intermission" and stage ~= "Voting" and stage ~= "Rolling" -- the Lobby HUD, the vote window and the roller show those
 
 		if stage == "Countdown" then
 			local count = math.ceil(left)
@@ -160,7 +162,9 @@ function M.start()
 		local holding = State:GetAttribute("HolderId") == player.UserId
 		local girl = State:GetAttribute("GirlName") or ""
 		if myRole == "Catcher" then
-			role.Text = if holding then `{girl} is following you! Keep tagging runners` else "CATCHER — tag the runners!"
+			local stab = Config.TagMode == "Stab"
+			role.Text = if holding then `{girl} is following you! Keep {if stab then "stabbing" else "tagging"} runners`
+				else `CATCHER — {if stab then "stab" else "tag"} the runners!`
 			role.TextColor3 = RED
 		elseif myRole == "Runner" then
 			if myStatus == "Safe" then
@@ -200,14 +204,17 @@ function M.start()
 	end
 	refreshCard()
 
-	-- Outlines: catchers red, her holder gold
+	-- Outlines (as in the reference): a faint red line round catchers and a faint blue one round
+	-- runners still in the round. Caught runners lying on the floor lose theirs.
+	local OUTLINE_RED = Color3.fromRGB(255, 64, 64)
+	local OUTLINE_BLUE = Color3.fromRGB(64, 150, 255)
 	local highlights = {}
 	local function refreshHighlight(p)
 		local character = p.Character
-		local isHolder = State:GetAttribute("HolderId") == p.UserId
-		local isCatcher = p:GetAttribute("HuzzRole") == "Catcher"
+		local r, st = p:GetAttribute("HuzzRole"), p:GetAttribute("HuzzStatus")
+		local color = if r == "Catcher" then OUTLINE_RED elseif r == "Runner" and st ~= "Caught" then OUTLINE_BLUE else nil
 		local h = highlights[p]
-		if not character or not (isHolder or isCatcher) then
+		if not character or not color then
 			if h then
 				h:Destroy()
 				highlights[p] = nil
@@ -218,16 +225,20 @@ function M.start()
 			if h then
 				h:Destroy()
 			end
-			h = make("Highlight", { FillTransparency = 0.85, OutlineTransparency = 0, DepthMode = Enum.HighlightDepthMode.Occluded, Parent = character })
+			h = make("Highlight", {
+				Name = "HuzzOutline", FillTransparency = 1, OutlineTransparency = 0.35,
+				DepthMode = Enum.HighlightDepthMode.Occluded, Parent = character,
+			})
 			highlights[p] = h
 		end
-		local color = if isHolder then GOLD else RED
 		h.OutlineColor, h.FillColor = color, color
 	end
 	local function watch(p)
-		p:GetAttributeChangedSignal("HuzzRole"):Connect(function()
-			refreshHighlight(p)
-		end)
+		for _, attr in { "HuzzRole", "HuzzStatus" } do
+			p:GetAttributeChangedSignal(attr):Connect(function()
+				refreshHighlight(p)
+			end)
+		end
 		p.CharacterAdded:Connect(function()
 			task.defer(refreshHighlight, p)
 		end)
@@ -241,11 +252,6 @@ function M.start()
 		if highlights[p] then
 			highlights[p]:Destroy()
 			highlights[p] = nil
-		end
-	end)
-	State:GetAttributeChangedSignal("HolderId"):Connect(function()
-		for _, p in Players:GetPlayers() do
-			refreshHighlight(p)
 		end
 	end)
 
