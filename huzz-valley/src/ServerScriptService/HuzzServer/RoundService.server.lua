@@ -296,12 +296,15 @@ function handlers.Caught(e)
 	end
 	rescueTime[e.id] = nil
 	syncPlayer(e.id)
-	RoundNet:FireAllClients("Caught", { catcher = e.by, runner = e.id })
-	if e.by then
+	RoundNet:FireAllClients("Caught", { catcher = e.by, runner = e.id, final = e.final })
+	if e.final then
+		announce(`{nameOf(e.id)} is out: no second chance`, RED)
+	elseif e.by then
 		announce(`{nameOf(e.by)} got {nameOf(e.id)}`, RED)
 	else
 		announce(`{nameOf(e.id)} is down`, RED)
 	end
+	if byId[e.id] then byId[e.id]:SetAttribute("HuzzLastChance", e.final == true) end
 end
 
 function handlers.Rescued(e)
@@ -394,9 +397,10 @@ local function step(dt)
 			end
 		end
 	end
-	-- Rescues: an Active runner next to a downed one fills their bar; walking away lets it drain.
+	-- Rescues: an Active runner next to a downed one fills their bar; walking away lets it drain. Someone who has
+	-- used their second chance can't be helped up again.
 	for downedId, status in match.status do
-		if status == "Downed" then
+		if status == "Downed" and not match.rescued[downedId] then
 			local p = byId[downedId]
 			local c = p and p.Character
 			local feet = c and c:GetAttribute("DownedFeet")
@@ -736,6 +740,32 @@ end
 -- Catchers stab (click / tap STAB). The client plays the move at once and tells us; we check the
 -- catcher may stab now and tag the nearest runner in reach in front of them.
 local lastStab = {}
+-- Stab the nearest runner within range of the catcher (front only for the knife: runners lag on screen, so a
+-- little behind still counts). Shields, the safe start zone and a fresh rescue protect. True when someone was hit.
+local function stabNear(id, me: BasePart, range: number, front: boolean): boolean
+	local now = os.clock()
+	local start = zones[MapService.startFor(match.round)]
+	local look = me.CFrame.LookVector
+	local best, bestDistance = nil, range
+	for runnerId, status in match.status do
+		local root = status == "Active" and not frozen[runnerId] and (protectedUntil[runnerId] or 0) <= now and rootOf(runnerId)
+		if root then
+			local offset = root.Position - me.Position
+			local flat = Vector3.new(offset.X, 0, offset.Z)
+			local inFront = not front or flat.Magnitude < 3.5 or look:Dot(flat.Unit) > -0.2
+			local safe = Config.StartZoneSafe and start and MapService.inZone(start, root.Position)
+			if offset.Magnitude <= bestDistance and math.abs(offset.Y) < 8 and inFront and not safe then
+				best, bestDistance = runnerId, offset.Magnitude
+			end
+		end
+	end
+	if best and not PowerService.blocks(id, best) then
+		apply(Rules.tag(match, id, best))
+		return true
+	end
+	return false
+end
+
 Net.get("Stab").OnServerEvent:Connect(function(player)
 	local id = player.UserId
 	local stage = State:GetAttribute("Stage")
@@ -755,24 +785,47 @@ Net.get("Stab").OnServerEvent:Connect(function(player)
 		return
 	end
 	RoundNet:FireAllClients("Stab", { id = id }) -- everyone else sees the stab
-	local start = zones[MapService.startFor(match.round)]
-	local look = me.CFrame.LookVector
-	local best, bestDistance = nil, Config.Stab.Range
-	for runnerId, status in match.status do
-		local root = status == "Active" and not frozen[runnerId] and (protectedUntil[runnerId] or 0) <= now and rootOf(runnerId)
-		if root then
-			local offset = root.Position - me.Position
-			local flat = Vector3.new(offset.X, 0, offset.Z)
-			local inFront = flat.Magnitude < 3.5 or look:Dot(flat.Unit) > -0.2 -- generous: runners lag on screen
-			local safe = Config.StartZoneSafe and start and MapService.inZone(start, root.Position)
-			if offset.Magnitude <= bestDistance and math.abs(offset.Y) < 8 and inFront and not safe then
-				best, bestDistance = runnerId, offset.Magnitude
+	stabNear(id, me, Config.Stab.Range, true)
+end)
+
+-- The catcher's lunge (Config.Lunge): the client leaps at once (Gameplay/Dash) and tells us; we check it's allowed,
+-- set the Space cooldown, show the stab to everyone, and for HitWindow seconds stab the first runner within
+-- HitRange of the catcher (shields and the safe start zone still count).
+local lastLunge = {}
+Net.get("Lunge").OnServerEvent:Connect(function(player)
+	local id = player.UserId
+	local c = player.Character
+	local stage = State:GetAttribute("Stage")
+	if not (c and match and not match.over and match.roles[id] == "Catcher" and (stage == "Running" or stage == "HeroRun") and not frozen[id]) then
+		return
+	end
+	if KnockdownService.isDown(player) or not PowerService.canStab(id) or PowerService.stuck(id) then
+		return
+	end
+	local now = Workspace:GetServerTimeNow()
+	if now < (player:GetAttribute("DashReady") or 0) - 0.05 or (lastLunge[id] and os.clock() - lastLunge[id] < Config.Lunge.Cooldown * 0.8) then
+		return -- still cooling down
+	end
+	lastLunge[id] = os.clock()
+	player:SetAttribute("DashReady", now + Config.Lunge.Cooldown)
+	c:SetAttribute("LungeAt", now) -- (every screen plays the leap)
+	RoundNet:FireAllClients("Stab", { id = id, lunge = true }) -- (the stab move, on the catcher's own screen too)
+	if Config.TagMode ~= "Stab" then
+		return -- (touch mode: the leap is just a leap; touching tags as always)
+	end
+	task.spawn(function()
+		local t0 = os.clock()
+		while os.clock() - t0 < Config.Lunge.HitWindow do
+			local me = rootOf(id)
+			if not (me and match and not match.over and match.roles[id] == "Catcher") then
+				return
 			end
+			if stabNear(id, me, Config.Lunge.HitRange, false) then
+				return -- (one runner per lunge)
+			end
+			task.wait(0.03)
 		end
-	end
-	if best and not PowerService.blocks(id, best) then
-		apply(Rules.tag(match, id, best))
-	end
+	end)
 end)
 
 -- Round powers (Config/Powers, HuzzServer/PowerService).

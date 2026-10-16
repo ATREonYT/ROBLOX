@@ -7,6 +7,8 @@
 	sets DashAt/DashDir on your character so everyone sees it, and DashReady on you for the cooldown tile
 	(Screens/PowerBar). The move itself is the owner-pack-style DashLeft / DashRight animation (tools/anim/
 	extract_anims.luau) on your Animator, so it replicates; without them RunAnimator draws the scripted pose.
+	CATCHERS in a round lunge instead (owner: "when they press space they jump and haul at the runner"): a low leap
+	forward the way they face (Config/Round.Lunge); the server stabs any runner they reach during it.
 ]]
 local Dash = {}
 
@@ -103,7 +105,37 @@ function Dash.ready(): boolean
 		and player:GetAttribute("HuzzFrozen") ~= true
 		and c ~= nil and c:GetAttribute("DownedAt") == nil and player:GetAttribute("MenuOpen") ~= true
 		and Workspace:GetServerTimeNow() >= (player:GetAttribute("DashReady") or 0)
-		and os.clock() - lastLocal >= Config.Dash.Cooldown - 0.1
+		and os.clock() - lastLocal >= (if role == "Catcher" and playing then Config.Lunge.Cooldown else Config.Dash.Cooldown) - 0.1
+end
+
+-- The catcher's lunge: a hop and a hard push forward (the way you're running, else the way you face).
+local function lunge(c: Model, h: Humanoid, root: BasePart)
+	lastLocal = os.clock()
+	local dir = if h.MoveDirection.Magnitude > 0.2 then h.MoveDirection else root.CFrame.LookVector
+	dir = Vector3.new(dir.X, 0, dir.Z)
+	if dir.Magnitude < 0.1 then return end
+	dir = dir.Unit
+	Net.get("Lunge"):FireServer()
+	Sfx.play("lunge")
+	local v = root.AssemblyLinearVelocity
+	root.AssemblyLinearVelocity = Vector3.new(v.X, Config.Lunge.Up, v.Z) -- (the hop: jumping itself is off)
+	local attachment = Instance.new("Attachment")
+	attachment.Name = "HuzzLunge"
+	attachment.Parent = root
+	local push = Instance.new("LinearVelocity")
+	push.Name = "HuzzLunge"
+	push.Attachment0 = attachment
+	push.RelativeTo = Enum.ActuatorRelativeTo.World
+	push.VelocityConstraintMode = Enum.VelocityConstraintMode.Plane
+	push.PrimaryTangentAxis = Vector3.xAxis
+	push.SecondaryTangentAxis = Vector3.zAxis
+	push.PlaneVelocity = Vector2.new(dir.X, dir.Z) * Config.Lunge.Speed
+	push.MaxForce = 1e6
+	push.Parent = root
+	task.delay(Config.Lunge.Time, function()
+		push:Destroy()
+		attachment:Destroy()
+	end)
 end
 
 function Dash.try()
@@ -112,6 +144,11 @@ function Dash.try()
 	local h = c and c:FindFirstChildOfClass("Humanoid")
 	local root = h and h.RootPart
 	if not (root and not root.Anchored) or h.WalkSpeed <= 0 then return end -- (0 = stuck in a trap or frozen)
+	local stage = (Net.get("Round") :: RemoteEvent):GetAttribute("Stage")
+	if player:GetAttribute("HuzzRole") == "Catcher" and (stage == "Running" or stage == "HeroRun") then
+		lunge(c, h, root)
+		return
+	end
 	local side = Dash.side(root, h.MoveDirection)
 	local right = root.CFrame.RightVector
 	local dir = Vector3.new(right.X, 0, right.Z).Unit * side

@@ -10,6 +10,8 @@
 	    else waits; Chicken skips that. Then everyone runs for the other side.
 	  - A stabbed runner is DOWNED where they fall. Another runner still out on the field can rescue them
 	    (stand next to them). Anyone still down when the round ends joins the catchers.
+	  - One second chance per game (owner): a runner can be rescued once; caught again after that, nobody can
+	    help them up ("Caught" carries final = true) and they join the catchers when the round ends.
 	  - Runners win by getting EVERYONE across `crossings` (3) rounds in a row; a round where anyone
 	    ends up caught resets the streak. Catchers win when no runners are left (or after maxRounds).
 	The girl (floats over the map until someone wins her over):
@@ -109,6 +111,7 @@ function RoundRules.newGame(ids, catcherId, opts)
 		roles = {},
 		status = {},
 		catches = {}, -- catcher id -> runners downed this game
+		rescued = {}, -- runner id -> true once they've had their second chance this game
 		holder = nil, -- who has the girl (a runner on their shoulders, or a catcher she follows)
 		lead = catcherId, -- the first catcher
 		picked = nil, -- this round's runner who chooses Hero or Chicken
@@ -243,7 +246,7 @@ function RoundRules.tag(s, catcherId, runnerId)
 	if catcherId then
 		s.catches[catcherId] = (s.catches[catcherId] or 0) + 1
 	end
-	table.insert(events, { type = "Caught", id = runnerId, by = catcherId })
+	table.insert(events, { type = "Caught", id = runnerId, by = catcherId, final = s.rescued[runnerId] == true })
 	if s.hero == runnerId then
 		s.hero = nil
 		table.insert(events, { type = "HeroResult", id = runnerId, survived = false })
@@ -270,6 +273,10 @@ function RoundRules.rescue(s, rescuerId, downedId)
 	if s.roles[downedId] ~= "Runner" or s.status[downedId] ~= "Downed" then
 		return events
 	end
+	if s.rescued[downedId] then
+		return events -- (their second chance is used up)
+	end
+	s.rescued[downedId] = true
 	s.status[downedId] = "Active"
 	table.insert(events, { type = "Rescued", id = downedId, by = rescuerId })
 	return events

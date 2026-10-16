@@ -55,6 +55,10 @@ return {
 	-- The huss (owner's call): Space during a round dashes you the way you're moving (forward, back, left or
 	-- right). Jumping is off in rounds. Speed in studs per second for Time seconds; Cooldown before the next.
 	Dash = { Speed = 72, Time = 0.24, Cooldown = 2.5 },
+	-- Catchers' Space (owner: "when they press space they jump and haul at the runner, and if they go into them,
+	-- they get stabbed"): a leap forward the way they face. Any runner they reach during the leap (HitWindow
+	-- seconds, within HitRange studs) is stabbed, the same as the knife. Shares the Space cooldown tile.
+	Lunge = { Speed = 56, Up = 18, Time = 0.36, Cooldown = 3, HitRange = 4.8, HitWindow = 0.5 },
 
 	-- A caught runner falls flat on their face and lies there until rescued or the next round
 	-- (owner's call).

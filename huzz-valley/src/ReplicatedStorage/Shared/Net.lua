@@ -29,6 +29,7 @@ local SPEC = {
 	Hero = "RemoteEvent",
 	Dash = "RemoteEvent",
 	Dance = "RemoteEvent",
+	Lunge = "RemoteEvent",
 }
 
 local folder: Folder

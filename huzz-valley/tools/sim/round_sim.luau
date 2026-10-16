@@ -817,7 +817,15 @@ local function simulate(opts)
 				end
 				if best then
 					target = best.Character.HumanoidRootPart.Position
-					if bd < Config.Stab.Range - 1 and clock - bot.lastStab > Config.Stab.Cooldown then
+					if bot.seed > 0.5 and Config.TagMode == "Stab" then
+						-- half the catcher bots only lunge (Space), never the knife
+						if bd < Config.Lunge.HitRange - 0.5 and clock - bot.lastStab > Config.Lunge.Cooldown then
+						bot.lastStab = clock
+						stats.lunges = (stats.lunges or 0) + 1
+						root.CFrame = lookAt(root.Position, Vector3.new(target.X, root.Position.Y, target.Z))
+						remotes.Lunge.OnServerEvent:Fire(p)
+						end
+					elseif bd < Config.Stab.Range - 1 and clock - bot.lastStab > Config.Stab.Cooldown then
 						bot.lastStab = clock
 						root.CFrame = lookAt(root.Position, Vector3.new(target.X, root.Position.Y, target.Z))
 						remotes.Stab.OnServerEvent:Fire(p)
@@ -944,8 +952,8 @@ local function report(name, stats, problems, expect)
 		table.insert(powerList, k .. "=" .. v)
 	end
 	table.sort(powerList)
-	print(string.format("%-34s games %d (runners %d, catchers %d), stabs %d, tags %d, rescues %d, picks %d (timed out %d), hero runs %d (made it %d), husses %d, powers: %s",
-		name, stats.games, stats.runnerWins, stats.catcherWins, stats.stabs, stats.tags, stats.rescues, stats.picks, stats.timeoutPicks, stats.heroes, stats.heroSurvived, stats.husses, table.concat(powerList, " ")))
+	print(string.format("%-34s games %d (runners %d, catchers %d), stabs %d, tags %d, rescues %d, picks %d (timed out %d), hero runs %d (made it %d), husses %d, lunges %d, powers: %s",
+		name, stats.games, stats.runnerWins, stats.catcherWins, stats.stabs, stats.tags, stats.rescues, stats.picks, stats.timeoutPicks, stats.heroes, stats.heroSurvived, stats.husses, stats.lunges or 0, table.concat(powerList, " ")))
 	for _, check in expect or {} do
 		if not check[2](stats) then
 			table.insert(problems, "expected: " .. check[1])

@@ -82,7 +82,7 @@ function M.start()
 	end)
 
 	RoundNet.OnClientEvent:Connect(function(kind, data)
-		if kind == "Stab" and data.id ~= player.UserId then
+		if kind == "Stab" and (data.id ~= player.UserId or data.lunge) then
 			local p = Players:GetPlayerByUserId(data.id)
 			if p then
 				playStab(p)
