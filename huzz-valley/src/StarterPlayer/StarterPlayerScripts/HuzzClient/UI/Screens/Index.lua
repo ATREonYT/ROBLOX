@@ -50,7 +50,7 @@ Kit.Styles.IndexItem = look(COL.Menu, C.Text, COL.Menu, COL.Menu) -- dropdown ro
 -- same live badge and star spots, in card px (card art 151 x 83).
 local CARD_ART = { BadgeX = 101, BadgeR = 3, BadgeH = 22, Star = Vector2.new(5, 4) }
 -- The big preview picture (whole character); locked characters show the silhouette.
-local FULL_ART = { Aiko = "CharAikoFull", Ren = "CharRenFull", Sora = "CharSoraFull" }
+local FULL_ART: { [string]: string } = {} -- (the kit's mock-up companions had full pictures; won girls draw their model)
 
 -- Grid geometry (window px): two columns of 151 x 112 cards, measured from page 02.
 local GRID = { X = 12, Y = 80, W = 333, H = H - 80 - 4, Pad = 6 }

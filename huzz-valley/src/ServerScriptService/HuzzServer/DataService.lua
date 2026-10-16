@@ -137,6 +137,20 @@ local function onPlayerAdded(player: Player)
 		if clean[k] ~= nil and Settings.validate(k, v) ~= nil then clean[k] = v end
 	end
 	profile.Data.Settings = clean
+	-- The kit's placeholder companions are gone: drop them from old saves (unless a real girl has that id).
+	local girls = game:GetService("ReplicatedStorage"):FindFirstChild("HuzzGirls")
+	local GirlIds = {}
+	if girls then
+		for _, m in girls:GetChildren() do
+			local gid = m:GetAttribute("Id")
+			if type(gid) == "string" then GirlIds[gid] = true end
+		end
+	end
+	for id in Characters.Retired do
+		if profile.Data.Characters[id] and not GirlIds[id] then profile.Data.Characters[id] = nil end
+		if profile.Data.FavChars and profile.Data.FavChars[id] and not GirlIds[id] then profile.Data.FavChars[id] = nil end
+	end
+	if Characters.Retired[profile.Data.Equipped] and not GirlIds[profile.Data.Equipped] then profile.Data.Equipped = "" end
 	-- Starter companion and dance for every player (also fills them in for older saves).
 	for _, c in Characters.List do
 		if c.Starter and not profile.Data.Characters[c.Id] then profile.Data.Characters[c.Id] = os.time() end

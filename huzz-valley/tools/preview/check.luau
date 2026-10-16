@@ -97,12 +97,20 @@ MM.close()
 -- Companions, dances, rewards and quests (ActionService / ProgressService).
 local ProgressService = require(HS.ProgressService)
 local function act(...) local r, why = State.action(...); task.wait(0.2); return r, why end
-check("starter companion owned and equipped", profile.Data.Characters.Aiko ~= nil and profile.Data.Equipped == "Aiko")
+-- Companions are only the girls you win: two test girls, one owned.
+local Characters = require(game.ReplicatedStorage.Shared.Config.Characters)
+local testGirls = Instance.new("Folder")
+for _, g in { { "g_mika", "Mika", "Epic" }, { "g_rin", "Rin", "Rare" } } do
+	local m = Instance.new("Model"); m.Name = g[1]; m:SetAttribute("Id", g[1]); m:SetAttribute("Name", g[2]); m:SetAttribute("Rarity", g[3]); m.Parent = testGirls
+end
+Characters.addGirls(testGirls)
+check("no placeholder companions (Aiko, Ren, Sora, Hina gone)", Characters.get("Aiko") == nil and Characters.get("Hina") == nil and profile.Data.Characters.Aiko == nil and profile.Data.Equipped == "")
+require(HS.DataService).update(player, function(d) d.Characters.g_mika = os.time() end)
 check("starter dance owned", State.data.Dances.Floss == true)
-check("can't equip a companion you don't own", (act("Equip", "Ren")) == false and profile.Data.Equipped == "Aiko")
+check("can't equip a companion you don't own", (act("Equip", "g_rin")) == false and profile.Data.Equipped == "")
+check("equip an owned companion", (act("Equip", "g_mika")) == true and profile.Data.Equipped == "g_mika")
 check("unequip works", (act("Unequip")) == true and profile.Data.Equipped == "")
-check("equip an owned companion", (act("Equip", "Aiko")) == true and profile.Data.Equipped == "Aiko")
-check("favourite a companion", (act("FavoriteCharacter", "Hina", true)) == true and profile.Data.FavChars.Hina == true)
+check("favourite a companion", (act("FavoriteCharacter", "g_rin", true)) == true and profile.Data.FavChars.g_rin == true)
 check("favourite a dance", (act("FavoriteDance", "Robot", true)) == true and profile.Data.FavDances.Robot == true)
 check("bad action refused", (act("GiveMeCoins", 999)) == false)
 local coins = profile.Data.Coins

@@ -44,7 +44,7 @@ end
 
 -- Default R15 rigs in rarity colours, so the game runs before the real girls are in.
 local function addPlaceholders()
-	local list = { { "Aiko", "Common" }, { "Hana", "Rare" }, { "Yuki", "Legendary" }, { "Sakura", "Secret" } }
+	local list = { { "Mei", "Common" }, { "Hana", "Rare" }, { "Yuki", "Legendary" }, { "Sakura", "Secret" } }
 	for _, entry in list do
 		local ok, model = pcall(function()
 			local desc = Instance.new("HumanoidDescription")

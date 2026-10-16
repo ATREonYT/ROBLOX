@@ -1,7 +1,8 @@
 -- The owner's animations (KeyframeSequences in a .rbxl), each on its own rig in a row, looping, filmed from
 -- 3/4 front. ANIM_FILE=<place.rbxl> ANIM_NAMES="Walk,Run,Run V2" [SECONDS=4] sh video.sh anim_scene.luau out.mp4
 -- ANIM_UNDER=<text> only takes animations whose full name contains it (the pack has cut-down duplicates);
--- ANIM_VIEW=side films them side on, in a row, to compare runs.
+-- ANIM_VIEW=side films them side on, in a row, to compare runs; ANIM_VIEW=back from behind and above, like the
+-- game's camera.
 local fs = require("@lune/fs")
 local process = require("@lune/process")
 local roblox = require("@lune/roblox")
@@ -56,6 +57,8 @@ for f = 0, SECONDS * 30 - 1 do
 	if process.env.ANIM_VIEW == "side" then
 		local mid = (#names - 1) * 2.25
 		scene:frame(Vector3.new(mid, 2.8, -(#names * 2.4 + 4)), Vector3.new(mid, 2.4, 0))
+	elseif process.env.ANIM_VIEW == "back" then
+		scene:frame(Vector3.new(0, 7, width * 0.5 + 6), Vector3.new(0, 2.2, 0))
 	elseif rows > 1 then
 		scene:frame(Vector3.new(0, 16, -18), Vector3.new(0, 1, rows * 2.6))
 	else

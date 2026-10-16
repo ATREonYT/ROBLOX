@@ -116,8 +116,7 @@ check("card now says CLAIMED", free.Reward1.State:FindFirstChild("Claimed") ~= n
 check("can't claim twice", (State.action("ClaimReward", 1)) == false and profile.Data.Coins == coins + 100)
 click(free.Reward2.State.Locked)
 check("tapping Locked explains", toast():find("Level 2") ~= nil)
-click(pp.Rewards.BonusCosmetics.Bonus1.Locked)
-check("bonus cards stay locked", toast():find("can't be earned yet") ~= nil)
+check("no bonus row while nothing can be earned", pp.Rewards:FindFirstChild("BonusCosmetics") == nil)
 
 -- quests
 click(pp.Header.QuestsTab)

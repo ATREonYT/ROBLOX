@@ -2,7 +2,7 @@
 -- KeyframeSequences that Rojo and the place build put in ServerStorage; in Studio, Bootstrap copies it to
 -- ReplicatedStorage so clients can play them, and in the live game nobody downloads it):
 --   design/anims/movement-pack.rbxl  (Skater Studios' "15+ R15 Movement Animations" pack, licence in the zip):
---     Idle, Walk, Run (the pack's Sprint: hunched, big arms, like Huss Valley), Jump, Fall, Climb
+--     Idle, Walk, Run (the pack's Sprint as it is: hunched, big arm swings, like Huss Valley), Jump, Fall, Climb
 --   design/anims/200-dances.rbxl  (the owner's 200 dances): the 25 in DANCES below, renamed Dance_<Id>
 --   DashLeft, DashRight: made here (the huss is sideways only, like Huss Valley): a low hop-slide that way.
 -- In Studio the game plays them straight from these (KeyframeSequenceProvider, Shared/AnimationLibrary); for the
@@ -71,32 +71,9 @@ for _, m in MOVES do
 	print(string.format("%-14s <- %s", m[1], m[2]))
 end
 
--- Huss Valley's run holds both arms forward, fists in front of the chest, pumping only a little (the owner's
--- reference video 87565d66), where the pack's Sprint swings them wide. Keep the Sprint's legs, hunch and bounce;
--- on every keyframe put the arms in that hold with a quarter of the Sprint's own swing on top.
-do
-	local rad = math.rad
-	local PUMP = 0.25
-	local HOLD = {
-		RightUpperArm = CFrame.Angles(rad(48), rad(-18), rad(-14)),
-		LeftUpperArm = CFrame.Angles(rad(48), rad(18), rad(14)),
-		RightLowerArm = CFrame.Angles(rad(72), 0, 0),
-		LeftLowerArm = CFrame.Angles(rad(72), 0, 0),
-		RightHand = CFrame.Angles(0, 0, 0),
-		LeftHand = CFrame.Angles(0, 0, 0),
-	}
-	for _, k in made.Run:GetChildren() do
-		if k.ClassName == "Keyframe" then
-			for _, p in k:GetDescendants() do
-				local hold = p.ClassName == "Pose" and HOLD[p.Name]
-				if hold then
-					p.CFrame = hold * CFrame.identity:Lerp(p.CFrame, PUMP)
-				end
-			end
-		end
-	end
-	print("Run            <- arms held forward (Huss Valley), a quarter of the Sprint's swing")
-end
+-- Run keeps the pack Sprint's own arms: big swings forward and back, elbows bent, like Huss Valley's run (the
+-- owner's videos 87565d66 and 1fbb6d13). (An earlier version held the fists in front of the chest: the owner
+-- saw stiff crossed arms and asked for the swing back.)
 
 -- The huss (sideways only, like Huss Valley): DashLeft and DashRight, built here on the Idle's first pose, matched
 -- to the owner's reference video (87565d66, 0.6-1.8 s and 3.6-5.4 s): a compact sideways throw. Low and hunched,

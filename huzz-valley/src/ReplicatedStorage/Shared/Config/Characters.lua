@@ -18,11 +18,10 @@ Characters.TierColors = {
 	MTB = Color3.fromHex("A23BE8"), HTB = Color3.fromHex("E07A2A"), Stacy = Color3.fromHex("E5245A"), TrueEve = Color3.fromHex("F2B636"),
 }
 
+-- Only the anime girls you win (added by addGirls below). The kit's four mock-up companions (Aiko, Ren, Sora,
+-- Hina) were placeholders and are gone (owner's call); DataService drops them from old saves.
+Characters.Retired = { Aiko = true, Ren = true, Sora = true, Hina = true }
 Characters.List = {
-	{ Id = "Aiko", Name = "Aiko", Tier = "MTB", Art = "CharAiko", Starter = true, Source = "Your first companion.", Order = 1 },
-	{ Id = "Ren", Name = "Ren", Tier = "Sub5", Art = "CharRen", Source = "Unlock through matches.", Order = 2 },
-	{ Id = "Sora", Name = "Sora", Tier = "Sub3", Art = "CharSora", Source = "Unlock through matches.", Order = 3 },
-	{ Id = "Hina", Name = "Hina", Tier = "Stacy", Art = nil, Source = "Unlock through matches.", Order = 4 },
 } :: { Character }
 
 local byId: { [string]: Character } = {}

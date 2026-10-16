@@ -52,7 +52,7 @@ local CROWN_ART = {
 local function crownArt(tier: string): string return CROWN_ART[tier] or "TierCrown" .. tier end
 
 -- The picture shown for a character in the panel: the kit's page-11 art for Aiko, else its card art.
-local PANEL_ART = { Aiko = "CharAikoTiers" }
+local PANEL_ART: { [string]: string } = {}
 
 local ROW = { X = 13, Y = 55, W = 352, H = 33, Gap = 4 }
 local SEGMENTS = 5

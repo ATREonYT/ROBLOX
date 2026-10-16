@@ -509,7 +509,27 @@ local function edge(zone)
 	local centre = zc:PointToWorldSpace(if useX then Vector3.new(sign * half.X, 0, 0) else Vector3.new(0, 0, sign * half.Z))
 	local length = if useX then zone.Size.Z else zone.Size.X
 	local floor = MapService.ground(centre, centre.Y + half.Y + 1) or (centre.Y - half.Y)
-	return Vector3.new(centre.X, floor, centre.Z), zc:VectorToWorldSpace(localOut), length
+	local out = zc:VectorToWorldSpace(localOut)
+	-- Zone boxes are often wider than the floor: trim the line to where there is floor at this height, so the
+	-- line, the start wall and the goal gate never stick out past the map's edge or through its fences.
+	local along = out:Cross(Vector3.yAxis)
+	along = if along.Magnitude > 0.01 then along.Unit else Vector3.xAxis
+	local function reach(dir)
+		local d = 0
+		while d + 2 <= length / 2 do
+			local p = Vector3.new(centre.X, floor, centre.Z) + along * (dir * (d + 2))
+			local y = MapService.ground(p, floor + 6)
+			if not y or math.abs(y - floor) > 1.5 then break end
+			d += 2
+		end
+		return d
+	end
+	local plus, minus = reach(1), reach(-1)
+	if plus + minus >= 8 then -- (keep the zone's own length when the floor can't be read, e.g. no floor yet)
+		local mid = Vector3.new(centre.X, floor, centre.Z) + along * ((plus - minus) / 2)
+		return mid, out, plus + minus
+	end
+	return Vector3.new(centre.X, floor, centre.Z), out, length
 end
 
 local function markPart(props)

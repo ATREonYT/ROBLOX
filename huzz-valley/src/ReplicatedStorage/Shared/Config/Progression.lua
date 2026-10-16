@@ -10,16 +10,12 @@ Progression.Rewards = {
 	{ Level = 1, Kind = "Coins", Amount = 100, Name = "100 Coins", Art = "CurrencyCoin" },
 	{ Level = 2, Kind = "Aura", Amount = 25, Name = "25 Aura", Art = "CurrencyGem" },
 	{ Level = 3, Kind = "Dance", Id = "Robot", Name = "Robot", Art = "DanceWave" },
-	{ Level = 4, Kind = "Outfit", Id = "AikoStyle", Name = "Aiko Style", Art = "OutfitAiko", Unavailable = true },
+	{ Level = 4, Kind = "Coins", Amount = 250, Name = "250 Coins", Art = "CurrencyCoin" },
 }
 
--- Bonus cosmetics row: shown, but not obtainable yet (no system grants them).
-Progression.Bonus = {
-	{ Name = "Ren Outfit", Art = "BonusRenOutfit" },
-	{ Name = "Sora", Art = "BonusSora" },
-	{ Name = "Silver Hair", Art = "BonusSilverHair" },
-	{ Name = "Aiko Outfit", Art = "BonusAikoOutfit" },
-}
+-- Bonus cosmetics row: things you can't earn yet. Empty, so the row is hidden (the kit's mock-up outfits were
+-- placeholders). Add { Name, Art } entries once real ones exist.
+Progression.Bonus = {}
 
 -- Quests count real match events reported by gameplay (ProgressService.addStat). They don't reset on a timer.
 Progression.Quests = {

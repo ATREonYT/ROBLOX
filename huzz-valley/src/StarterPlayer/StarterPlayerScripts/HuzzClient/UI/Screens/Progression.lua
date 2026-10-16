@@ -173,7 +173,9 @@ local function buildRewards(page: Frame, refreshers: { () -> () })
 		for i, r in Progression.Rewards do hexes[i](level >= r.Level) end
 	end)
 
-	-- Bonus cosmetics: shown like the reference, but nothing grants them yet, so they stay locked.
+	-- Bonus cosmetics: shown like the reference, but nothing grants them yet, so they stay locked. Hidden while the
+	-- list is empty.
+	if #Progression.Bonus == 0 then return end
 	local bonus = panel(page, "BonusCosmetics", BODY_X, 188, BODY_W, 91, COL.Section, COL.SectionRim)
 	sectionLabel(bonus, "BONUS COSMETICS", 5)
 	for i, b in Progression.Bonus do

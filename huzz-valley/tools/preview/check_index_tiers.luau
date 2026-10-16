@@ -4,6 +4,16 @@ local ok, failed = 0, 0
 local function check(name, cond)
 	if cond then ok += 1; print("ok   " .. name) else failed += 1; print("FAIL " .. name) end
 end
+-- Four won girls as test data (companions are only the girls you win). Ids and tiers as the checks below expect:
+-- Hina Mythic (STACY), Aiko Epic (MTB), Ren Rare (SUB 5), Sora Uncommon (SUB 3).
+local RS = game:GetService("ReplicatedStorage")
+local girls = Instance.new("Folder"); girls.Name = "HuzzGirls"; girls.Parent = RS
+for i, g in { { "Aiko", "Epic" }, { "Ren", "Rare" }, { "Sora", "Uncommon" }, { "Hina", "Mythic" } } do
+	local m = Instance.new("Model"); m.Name = "G" .. i
+	local head = Instance.new("Part"); head.Name = "Head"; head.Parent = m
+	m:SetAttribute("Id", g[1]); m:SetAttribute("Name", g[1]); m:SetAttribute("Rarity", g[2]); m.Parent = girls
+end
+require(RS.Shared.Config.Characters).addGirls(girls)
 local player = Instance.new("Player"); player.Name = "Tester"; player.UserId = 1; player.Parent = Players
 Players.LocalPlayer = player
 Instance.new("PlayerGui").Parent = player
@@ -15,7 +25,10 @@ task.wait(0.2)
 local HS = game.ServerScriptService.HuzzServer
 local DataService = require(HS.DataService)
 local profile = DataService.get(player)
-DataService.update(player, function(d) d.Characters.Ren = os.time() + 5 end) -- a second owned companion, newer than Aiko
+DataService.update(player, function(d)
+	d.Characters.Aiko = os.time(); d.Equipped = "Aiko"
+	d.Characters.Ren = os.time() + 5 -- a second owned companion, newer than Aiko
+end)
 __runScript(game.StarterPlayer.StarterPlayerScripts.HuzzClient.Main)
 task.wait(0.3)
 local UI = game.StarterPlayer.StarterPlayerScripts.HuzzClient.UI
@@ -81,7 +94,8 @@ click(panel.Sort); click(panel.DropdownMenu.NameZA)
 check("sort name Z-A", cardIds() == "Sora,Ren,Hina,Aiko")
 click(grid.Hina)
 check("locked Hina: LOCKED and disabled", label(action) == "LOCKED" and action:GetAttribute("Disabled") == true and panel.StatusRow.Text.Text == "Locked")
-check("locked card shows the silhouette, not coloured art", grid.Hina.Body.Art.Picture:GetAttribute("PreviewFile") == "assets/art/char-locked.png")
+local hinaVp = grid.Hina:FindFirstChild("Model", true)
+check("locked card shows a dark silhouette, not her colours", hinaVp ~= nil and hinaVp.ImageColor3 == Color3.fromHex("0B1426"))
 click(action)
 check("locked can't be equipped", profile.Data.Equipped == "Ren")
 

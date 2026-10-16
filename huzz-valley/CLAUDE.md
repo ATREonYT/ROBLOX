@@ -84,9 +84,13 @@ eye. Branch `HUZZ-VALLEY`. Read the section you need; the owner's own words are 
 
 ## 6. Animations (the owner's files)
 - `tools/anim/extract_anims.luau` reads `design/anims/movement-pack.rbxl` and `200-dances.rbxl` and writes
-  `src/ServerStorage/HuzzAnimations.rbxm`: Idle, Walk, Run (the pack's hunched Sprint), Jump, Fall, Climb,
+  `src/ServerStorage/HuzzAnimations.rbxm`: Idle, Walk, Run (the pack's hunched Sprint, its own big arm swing: the owner rejected arms held in front;
+  `docs/previews/run-arms-vs-hv.jpg`), Jump, Fall, Climb,
   DashLeft/DashRight (built: the sideways huss, matched to the owner's HV video; `docs/previews/huss-vs-reference.jpg`) and `Dance_<Id>` for the 25 in `Config/Dances` (names are
   ours; the originals are other games' emote names).
+- Dance cards: your avatar frozen at each dance's most telling second (`Config/DancePoses`, made by
+  `tools/preview/motion3d/dance_poses.luau`); the selected card dances; locked = dark silhouette. Only where the
+  dance can play (Studio, or once published); otherwise the music note.
 - `Shared/AnimationLibrary.id(name, published)`: the published ID, else **in Studio only** a temporary ID from
   `KeyframeSequenceProvider:RegisterKeyframeSequence`, else "". So Studio tests play everything now; the live game
   needs `tools/studio/publish-animations.lua` (owner) and the IDs pasted into `Config/Animations` / `Config/Dances`.
@@ -105,6 +109,10 @@ eye. Branch `HUZZ-VALLEY`. Read the section you need; the owner's own words are 
   (sound-alikes, never the originals). `GirlService` copies/scales/publishes them (`ReplicatedStorage.HuzzGirls`).
 - Prize: floats over the map as a 3x showcase with her aura (no disc); a surviving Hero carries her; a catcher who
   stabs the carrier steals her (she follows); she goes home with the winning side (Index).
+- Companions are only the girls you win: the kit's mock-up four (Aiko, Ren, Sora, Hina) were removed on the owner's
+  request (`Characters.Retired`; `DataService` drops them from old saves). No starter companion.
+- Safe lines, the start wall and the goal gate are trimmed to the floor (`MapService` `edge()`), so they never stick
+  out past a map's edge when its zone box is wider than the floor.
 - Effects: `Config/GirlLooks` (element + 2 colours per girl) → `Shared/AuraLook` (pure specs by rarity: Common
   faint motes ... Mythic/Secret full flames, wisps, slashes) → `Gameplay/AuraFX` (emitters, light, pooled slash
   beams) → `Gameplay/Auras` (your aura; others' "lite"; within 170 studs). Check: `tools/preview/check_girl_fx.luau`.
