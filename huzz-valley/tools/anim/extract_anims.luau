@@ -4,7 +4,7 @@
 --   design/anims/movement-pack.rbxl  (Skater Studios' "15+ R15 Movement Animations" pack, licence in the zip):
 --     Idle, Walk, Run (the pack's Sprint: hunched, big arms, like Huss Valley), Jump, Fall, Climb
 --   design/anims/200-dances.rbxl  (the owner's 200 dances): the 25 in DANCES below, renamed Dance_<Id>
---   Dash: made here from the pack's Sprint: a low forward lunge with the arms swept back (the huss dash).
+--   DashLeft, DashRight: made here (the huss is sideways only, like Huss Valley): a low hop-slide that way.
 -- In Studio the game plays them straight from these (KeyframeSequenceProvider, Shared/AnimationLibrary); for the
 -- live game the owner publishes them once (tools/studio/publish-animations.lua) and the IDs go in Config/Animations.
 -- Run from the repo root: lune run huzz-valley/tools/anim/extract_anims.luau
@@ -65,62 +65,111 @@ local function add(seq, name, priority, loop)
 end
 
 local pack = roblox.deserializePlace(fs.readFile(DIR .. "movement-pack.rbxl"))
-local sprint
+local made = {}
 for _, m in MOVES do
-	local seq = add(find(pack, m[2], "All Animations"), m[1], m[3], m[1] ~= "Jump")
-	if m[1] == "Run" then sprint = seq end
+	made[m[1]] = add(find(pack, m[2], "All Animations"), m[1], m[3], m[1] ~= "Jump")
 	print(string.format("%-14s <- %s", m[1], m[2]))
 end
 
--- The dash: three keyframes built from the Sprint's pose a quarter of the way through its loop (one leg reaching),
--- leaning hard forward and low, arms flung back, then easing back toward the run.
+-- Huss Valley's run holds both arms forward, fists in front of the chest, pumping only a little (the owner's
+-- reference video 87565d66), where the pack's Sprint swings them wide. Keep the Sprint's legs, hunch and bounce;
+-- on every keyframe put the arms in that hold with a quarter of the Sprint's own swing on top.
 do
-	local frames = {}
-	for _, k in sprint:GetChildren() do
-		if k.ClassName == "Keyframe" then table.insert(frames, k) end
-	end
-	table.sort(frames, function(a, b) return a.Time < b.Time end)
-	local length = frames[#frames].Time
-	local reach = frames[1]
-	for _, k in frames do
-		if k.Time <= length * 0.25 then reach = k end
-	end
 	local rad = math.rad
-	-- extra rotation per part at the lunge (forward lean is a negative X turn on the root)
-	local LUNGE = {
-		LowerTorso = CFrame.new(0, -0.45, -0.2) * CFrame.Angles(rad(-26), 0, 0),
-		UpperTorso = CFrame.Angles(rad(-12), 0, 0),
-		Head = CFrame.Angles(rad(16), 0, 0),
-		RightUpperArm = CFrame.Angles(rad(-55), 0, rad(-12)),
-		LeftUpperArm = CFrame.Angles(rad(-55), 0, rad(12)),
-		RightLowerArm = CFrame.Angles(rad(-20), 0, 0),
-		LeftLowerArm = CFrame.Angles(rad(-20), 0, 0),
+	local PUMP = 0.25
+	local HOLD = {
+		RightUpperArm = CFrame.Angles(rad(48), rad(-18), rad(-14)),
+		LeftUpperArm = CFrame.Angles(rad(48), rad(18), rad(14)),
+		RightLowerArm = CFrame.Angles(rad(72), 0, 0),
+		LeftLowerArm = CFrame.Angles(rad(72), 0, 0),
+		RightHand = CFrame.Angles(0, 0, 0),
+		LeftHand = CFrame.Angles(0, 0, 0),
 	}
-	local dash = Instance.new("KeyframeSequence")
-	dash.Name = "Dash"
-	dash.Loop = false
-	dash.Priority = Enum.AnimationPriority.Action
-	local function keyframe(t, amount, style, dir)
-		local k = reach:Clone()
-		k.Time = t
-		for _, p in k:GetDescendants() do
-			if p.ClassName == "Pose" then
-				local extra = LUNGE[p.Name]
-				if extra and amount > 0 then
-					p.CFrame = p.CFrame * CFrame.identity:Lerp(extra, amount)
+	for _, k in made.Run:GetChildren() do
+		if k.ClassName == "Keyframe" then
+			for _, p in k:GetDescendants() do
+				local hold = p.ClassName == "Pose" and HOLD[p.Name]
+				if hold then
+					p.CFrame = hold * CFrame.identity:Lerp(p.CFrame, PUMP)
 				end
-				p.EasingStyle = Enum.PoseEasingStyle[style]
-				p.EasingDirection = Enum.PoseEasingDirection[dir]
 			end
 		end
-		k.Parent = dash
 	end
-	keyframe(0, 0.2, "Cubic", "Out")
-	keyframe(0.1, 1, "Linear", "In")
-	keyframe(0.24, 0.9, "Cubic", "InOut")
-	keyframe(0.45, 0, "Linear", "In")
-	dash.Parent = folder
-	print("Dash           <- built from Sprint")
+	print("Run            <- arms held forward (Huss Valley), a quarter of the Sprint's swing")
+end
+
+-- The huss (sideways only, like Huss Valley): DashLeft and DashRight, built here on the Idle's first pose, matched
+-- to the owner's reference video (87565d66, 0.6-1.8 s and 3.6-5.4 s): a compact sideways throw. Low and hunched,
+-- the body tips ~38° into the way you go, the hips shift that way, only the outside leg kicks out while the inside
+-- one stays bent under you, and the arms keep the run's hold in front of the chest (the outside one lifts a bit).
+-- ~0.45 s, Action priority, not looped (Gameplay/Dash plays the right one).
+do
+	local idle = folder:FindFirstChild("Idle")
+	local first
+	for _, k in idle:GetChildren() do
+		if k.ClassName == "Keyframe" and (not first or k.Time < first.Time) then first = k end
+	end
+	local rad = math.rad
+	-- side = 1 for right (+x), -1 for left. Poses are in the parent part's space: x right, y up, -z forward;
+	-- a positive turn about z tips the top toward -x (left), a positive turn about x swings a limb forward.
+	local function pose(side)
+		local lead, trail = if side > 0 then "Right" else "Left", if side > 0 then "Left" else "Right"
+		-- arms keep the run's hold (fists in front of the chest), the outside one lifting a little
+		local hold = {
+			Right = CFrame.Angles(rad(48), rad(-18), rad(-14)),
+			Left = CFrame.Angles(rad(48), rad(18), rad(14)),
+		}
+		return {
+			-- a compact throw: ~38° into the way you go, low and still hunched forward
+			LowerTorso = CFrame.new(0.3 * side, -0.5, 0) * CFrame.Angles(rad(-12), rad(-5 * side), rad(-32 * side)),
+			UpperTorso = CFrame.Angles(rad(-8), rad(4 * side), rad(-6 * side)),
+			Head = CFrame.Angles(rad(12), 0, rad(28 * side)), -- (head stays upright-ish, looking ahead)
+			-- the inside leg stays under you, bent, foot near the ground...
+			[lead .. "UpperLeg"] = CFrame.Angles(rad(30), 0, rad(30 * side)),
+			[lead .. "LowerLeg"] = CFrame.Angles(rad(-52), 0, 0),
+			[lead .. "Foot"] = CFrame.Angles(rad(18), 0, rad(-12 * side)),
+			-- ...only the outside leg kicks out to the side
+			[trail .. "UpperLeg"] = CFrame.Angles(rad(8), 0, rad(-34 * side)),
+			[trail .. "LowerLeg"] = CFrame.Angles(rad(-18), 0, 0),
+			[trail .. "Foot"] = CFrame.Angles(0, 0, rad(14 * side)),
+			[lead .. "UpperArm"] = hold[lead],
+			[lead .. "LowerArm"] = CFrame.Angles(rad(72), 0, 0),
+			[trail .. "UpperArm"] = CFrame.Angles(0, 0, rad(-18 * side)) * hold[trail],
+			[trail .. "LowerArm"] = CFrame.Angles(rad(60), 0, 0),
+		}
+	end
+	for _, dir in { { "DashLeft", -1 }, { "DashRight", 1 } } do
+		local extra = pose(dir[2])
+		local seq = Instance.new("KeyframeSequence")
+		seq.Name = dir[1]
+		seq.Loop = false
+		seq.Priority = Enum.AnimationPriority.Action
+		local function keyframe(t, amount, style, edir, lift)
+			local k = first:Clone()
+			k.Time = t
+			for _, p in k:GetDescendants() do
+				if p.ClassName == "Pose" then
+					local e = extra[p.Name]
+					if e and amount > 0 then
+						p.CFrame = p.CFrame * CFrame.identity:Lerp(e, amount)
+					end
+					if p.Name == "LowerTorso" and lift then
+						p.CFrame = CFrame.new(0, lift, 0) * p.CFrame
+					end
+					p.EasingStyle = Enum.PoseEasingStyle[style]
+					p.EasingDirection = Enum.PoseEasingDirection[edir]
+				end
+			end
+			k.Parent = seq
+		end
+		keyframe(0, 0.35, "Cubic", "Out") -- (already leaning as it starts)
+		keyframe(0.06, 1, "Cubic", "Out", 0.12) -- push off: a small lift
+		keyframe(0.15, 1, "Cubic", "InOut") -- low, leaning into it
+		keyframe(0.27, 0.9, "Cubic", "Out")
+		keyframe(0.4, 0, "Linear", "In") -- then eases quickly back into the run
+		seq.Parent = folder
+		print(string.format("%-14s <- built (sideways huss)", dir[1]))
+	end
 end
 
 local dances = roblox.deserializePlace(fs.readFile(DIR .. "200-dances.rbxl"))
