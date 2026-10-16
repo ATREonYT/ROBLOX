@@ -16,6 +16,7 @@ local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared.Config.Round)
+local CoinShop = require(ReplicatedStorage.Shared.Config.CoinShop)
 local Carry = require(Shared.Config.Carry)
 local Rules = require(Shared.RoundRules)
 local Net = require(Shared.Net)
@@ -152,7 +153,9 @@ local function syncPlayer(id)
 	local c = p.Character
 	if c then
 		if match and not match.over and match.roles[id] == "Catcher" and Config.TagMode == "Stab" then
-			KnifeService.give(c)
+			local profile = DataService.get(p)
+			local wear = profile and profile.Data.Wear
+			KnifeService.give(c, wear and wear.Knife and CoinShop.get(wear.Knife)) -- (a coin-shop knife skin)
 		else
 			KnifeService.take(c)
 		end
@@ -627,8 +630,20 @@ local function finishGame()
 	local winner = winnerId and byId[winnerId]
 	for id, role in match.roles do
 		addStat(id, "Rounds", 1) -- "Complete 3 matches"
-		if (match.team == "Runners" and role == "Runner") or (match.team == "Catchers" and role == "Catcher") then
+		local won = (match.team == "Runners" and role == "Runner") or (match.team == "Catchers" and role == "Catcher")
+		if won then
 			addStat(id, "Wins", 1)
+		end
+		-- pay for the game: coins for playing, more and a little Aura for winning
+		local p = byId[id]
+		local pay = Config.Pay
+		if p and pay then
+			local coins, aura = pay.Played + (if won then pay.Won else 0), if won then pay.WonAura else 0
+			DataService.update(p, function(d)
+				d.Coins = (d.Coins or 0) + coins
+				d.Aura = (d.Aura or 0) + aura
+			end)
+			RoundNet:FireClient(p, "Bonus", { coins = coins, aura = aura, late = true })
 		end
 	end
 	if winner then
@@ -798,9 +813,11 @@ Net.get("Hero").OnServerEvent:Connect(function(player, isHero)
 	end
 end)
 
--- The huss (owner's call): a dash the way you're moving. The client moves its own character at once
--- (Gameplay/Dash) and tells us; we check it's allowed and set DashAt/DashDir on the character so every
--- client plays the dash pose, and the player's DashReady (server time) for the cooldown tile.
+-- The huss (owner's call, like Huss Valley): a dash to the left or right of the way you face, never forward or
+-- back. The client moves its own character at once (Gameplay/Dash) and tells us; we check it's allowed, turn the
+-- direction into pure left or right of the character's facing (anything that isn't clearly sideways is refused),
+-- and set DashAt/DashDir on the character so every client plays the move, and DashReady (server time) for the
+-- cooldown tile.
 Net.get("Dash").OnServerEvent:Connect(function(player, dir, at)
 	local id = player.UserId
 	local c = player.Character
@@ -815,9 +832,21 @@ Net.get("Dash").OnServerEvent:Connect(function(player, dir, at)
 		return
 	end
 	local flat = Vector3.new(dir.X, 0, dir.Z)
-	if flat.Magnitude < 0.1 then
+	local root = c:FindFirstChild("HumanoidRootPart")
+	if flat.Magnitude < 0.1 or not root then
 		return
 	end
+	-- sideways only: project onto the character's right; mostly forward/back (or a stale facing) is refused
+	local right = Vector3.new(root.CFrame.RightVector.X, 0, root.CFrame.RightVector.Z)
+	if right.Magnitude < 0.1 then
+		return
+	end
+	right = right.Unit
+	local across = flat.Unit:Dot(right)
+	if math.abs(across) < 0.5 then
+		return
+	end
+	flat = right * (if across > 0 then 1 else -1)
 	local now = Workspace:GetServerTimeNow()
 	if now < (player:GetAttribute("DashReady") or 0) - 0.05 then -- (a little slack for clock drift)
 		return -- still cooling down

@@ -5,10 +5,10 @@ local Progression = {}
 Progression.XPPerLevel = 300 -- every level takes the same XP
 
 -- Free reward track: reaching Level unlocks the reward; the player claims it.
---   Kind: "Coins" | "Gems" | "Dance" | "Outfit"   (Outfit rewards stay unavailable until the outfit exists)
+--   Kind: "Coins" | "Aura" | "Dance" | "Outfit"   (Outfit rewards stay unavailable until the outfit exists)
 Progression.Rewards = {
 	{ Level = 1, Kind = "Coins", Amount = 100, Name = "100 Coins", Art = "CurrencyCoin" },
-	{ Level = 2, Kind = "Gems", Amount = 25, Name = "25 Gems", Art = "CurrencyGem" },
+	{ Level = 2, Kind = "Aura", Amount = 25, Name = "25 Aura", Art = "CurrencyGem" },
 	{ Level = 3, Kind = "Dance", Id = "Robot", Name = "Robot", Art = "DanceWave" },
 	{ Level = 4, Kind = "Outfit", Id = "AikoStyle", Name = "Aiko Style", Art = "OutfitAiko", Unavailable = true },
 }

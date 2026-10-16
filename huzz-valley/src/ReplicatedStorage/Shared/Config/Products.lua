@@ -50,12 +50,12 @@ Products.Cosmetics = {
 } :: { Product }
 
 Products.Coins = {
-	{ Key = "Coins500", Kind = "Coins", Name = "500 Coins", Blurb = "Get 500 coins\nto spend in game.", Id = 0, Price = 49, Amount = 500, OnSale = false, Icon = "CurrencyCoin", Art = "Coins500", Why = "coins have nothing to buy yet" },
-	{ Key = "Coins2000", Kind = "Coins", Name = "2,000 Coins", Blurb = "Get 2,000 coins\nto spend in game.", Id = 0, Price = 149, Amount = 2000, OnSale = false, Icon = "CurrencyCoin", Art = "Coins2000", Why = "coins have nothing to buy yet" },
-	{ Key = "Coins5000", Kind = "Coins", Name = "5,000 Coins", Blurb = "Get 5,000 coins\nto spend in game.", Id = 0, Price = 299, Amount = 5000, OnSale = false, Icon = "CurrencyCoin", Art = "Coins5000", Why = "coins have nothing to buy yet" },
+	{ Key = "Coins500", Kind = "Coins", Name = "500 Coins", Blurb = "Get 500 coins\nto spend in game.", Id = 0, Price = 49, Amount = 500, OnSale = false, Icon = "CurrencyCoin", Art = "Coins500", Why = "needs its Developer Product ID" },
+	{ Key = "Coins2000", Kind = "Coins", Name = "2,000 Coins", Blurb = "Get 2,000 coins\nto spend in game.", Id = 0, Price = 149, Amount = 2000, OnSale = false, Icon = "CurrencyCoin", Art = "Coins2000", Why = "needs its Developer Product ID" },
+	{ Key = "Coins5000", Kind = "Coins", Name = "5,000 Coins", Blurb = "Get 5,000 coins\nto spend in game.", Id = 0, Price = 299, Amount = 5000, OnSale = false, Icon = "CurrencyCoin", Art = "Coins5000", Why = "needs its Developer Product ID" },
 } :: { Product }
 
-Products.Tabs = { "Passes", "Cosmetics", "Coins" }
+Products.Tabs = { "Passes", "Cosmetics", "Items", "Coins" } -- (Items: the coin shop, Config/CoinShop)
 
 local byKey: { [string]: Product } = {}
 local byId: { [string]: Product } = {}

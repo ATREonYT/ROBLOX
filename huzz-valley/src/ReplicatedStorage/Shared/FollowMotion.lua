@@ -13,7 +13,8 @@
 	settings (info.config = Config/GirlMotion.Companion): she matches your
 	speed, never trails more than MaxLag, her stride grows when she runs (so
 	her small legs don't blur), and rec.cheer = true makes her hop and cheer
-	when she stands (beside you, at CheerOffset).
+	when she stands (beside you, at CheerOffset); rec.beside = true brings her to that spot too (dancing with
+	you: Gameplay/CompanionDance poses her on top).
 ]]
 local Carry = require(script.Parent.Config.Carry)
 local GirlMotion = require(script.Parent.GirlMotion)
@@ -50,7 +51,7 @@ end
 -- watch: the head position she looks at when standing (or nil).
 function FollowMotion.step(rec, dt, t, leaderCF, groundAt, watch)
 	local F = rec.config or Carry.Follow
-	local offset = if rec.cheer and F.CheerOffset then F.CheerOffset else F.Offset
+	local offset = if (rec.cheer or rec.beside) and F.CheerOffset then F.CheerOffset else F.Offset
 	local spot = (leaderCF * CFrame.new(offset)).Position
 	local jumped = rec.pos and (Vector3.new(spot.X, 0, spot.Z) - Vector3.new(rec.pos.X, 0, rec.pos.Z)).Magnitude > F.TeleportDistance
 	if not rec.pos or jumped then

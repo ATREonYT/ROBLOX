@@ -99,7 +99,7 @@ end
 -- Reward pictures: the coin and gem rewards use the kit's stacks from page 04; the rest use their configured art.
 local function rewardArt(r): string
 	if r.Kind == "Coins" then return "RewardCoins" end
-	if r.Kind == "Gems" then return "RewardGems" end
+	if r.Kind == "Aura" then return "RewardGems" end -- (the kit's gem picture stands in for Aura)
 	return r.Art
 end
 

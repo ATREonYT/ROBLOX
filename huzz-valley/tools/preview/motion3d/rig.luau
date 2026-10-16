@@ -88,6 +88,63 @@ function Rig.r15(name, colors)
 end
 Rig.REST_HEIGHT = REST_HEIGHT
 
+-- Mock R6 blocky rig (most anime girls are R6), with Roblox's real R6 joint frames: every R6 joint's C0/C1 is
+-- turned 90° (unlike R15's), so code that poses R6 joints is tested against the real thing. Root part centre 3
+-- studs up. Parts: Torso, Head, Left Arm, Right Arm, Left Leg, Right Leg.
+function Rig.r6(name, colors)
+	colors = colors or {}
+	local shirt, pants = colors.shirt or "#e85d9a", colors.pants or "#3b2a5a"
+	local skin, hair, eyes = colors.skin or "#f6d3b8", colors.hair or "#f2b6d0", colors.eyes or "#2a1a40"
+	local rig = setmetatable({ Name = name, parts = {}, motors = {}, decor = {} }, Model)
+	local function part(n, size, color)
+		local p = setmetatable({ Name = n, Size = size, CFrame = CFrame.identity, Color = color, joints = {}, rig = rig }, Part)
+		rig.parts[n] = p
+		return p
+	end
+	local P = rig.parts
+	part("HumanoidRootPart", Vector3.new(2, 2, 1), "#ffffff").hidden = true
+	part("Torso", Vector3.new(2, 2, 1), shirt)
+	part("Head", Vector3.new(1.25, 1.25, 1.25), skin)
+	part("Left Arm", Vector3.new(1, 2, 1), skin)
+	part("Right Arm", Vector3.new(1, 2, 1), skin)
+	part("Left Leg", Vector3.new(1, 2, 1), pants)
+	part("Right Leg", Vector3.new(1, 2, 1), pants)
+	local function cf(x, y, z, ...) return CFrame.new(x, y, z, ...) end
+	local function joint(n, p0, p1, c0, c1)
+		table.insert(rig.motors, Rig.motor(n, P[p0], P[p1], c0, c1))
+	end
+	joint("RootJoint", "HumanoidRootPart", "Torso", cf(0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 1, 0), cf(0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 1, 0))
+	joint("Neck", "Torso", "Head", cf(0, 1, 0, -1, 0, 0, 0, 0, 1, 0, 1, 0), cf(0, -0.625, 0, -1, 0, 0, 0, 0, 1, 0, 1, 0))
+	joint("Right Shoulder", "Torso", "Right Arm", cf(1, 0.5, 0, 0, 0, 1, 0, 1, 0, -1, 0, 0), cf(-0.5, 0.5, 0, 0, 0, 1, 0, 1, 0, -1, 0, 0))
+	joint("Left Shoulder", "Torso", "Left Arm", cf(-1, 0.5, 0, 0, 0, -1, 0, 1, 0, 1, 0, 0), cf(0.5, 0.5, 0, 0, 0, -1, 0, 1, 0, 1, 0, 0))
+	joint("Right Hip", "Torso", "Right Leg", cf(1, -1, 0, 0, 0, 1, 0, 1, 0, -1, 0, 0), cf(0.5, 1, 0, 0, 0, 1, 0, 1, 0, -1, 0, 0))
+	joint("Left Hip", "Torso", "Left Leg", cf(-1, -1, 0, 0, 0, -1, 0, 1, 0, 1, 0, 0), cf(-0.5, 1, 0, 0, 0, -1, 0, 1, 0, 1, 0, 0))
+	local head = P.Head
+	local function deco(offset, size, color) table.insert(rig.decor, { part = head, offset = offset, Size = size, Color = color }) end
+	deco(CFrame.new(-0.26, 0.05, -0.64), Vector3.new(0.18, 0.3, 0.04), eyes)
+	deco(CFrame.new(0.26, 0.05, -0.64), Vector3.new(0.18, 0.3, 0.04), eyes)
+	deco(CFrame.new(0, 0.5, 0.08), Vector3.new(1.4, 0.4, 1.35), hair)
+	deco(CFrame.new(0, -0.2, 0.62), Vector3.new(1.4, 1.6, 0.2), hair) -- long hair down the back
+	rig.root = P.HumanoidRootPart
+	rig.root.CFrame = CFrame.new(0, 3, 0)
+	Rig.fk(rig)
+	return rig
+end
+
+-- Scales a rig (parts, joints, face) by k, as Model:ScaleTo does.
+function Rig.scale(rig, k)
+	for _, p in rig.parts do p.Size *= k end
+	for _, m in rig.motors do
+		m.C0 = CFrame.new(m.C0.Position * k) * m.C0.Rotation
+		m.C1 = CFrame.new(m.C1.Position * k) * m.C1.Rotation
+	end
+	for _, d in rig.decor do
+		d.offset = CFrame.new(d.offset.Position * k) * d.offset.Rotation
+		d.Size *= k
+	end
+	Rig.fk(rig)
+end
+
 -- Forward kinematics, breadth-first from rig.root: Part1.CFrame = Part0.CFrame * C0 * Transform * C1:Inverse().
 -- extraMotors join other rigs on (e.g. Rig.motor("Carry", carrier.parts.UpperTorso, girl.root, c0)); list those
 -- rigs in otherRigs so their own joints solve too, after their root is placed.

@@ -1,15 +1,19 @@
 --[[
-	The huss (owner's call): during a round, Space (gamepad A, or the HUSS tile) dashes you the way you're
-	moving: forward, back, left or right, or forward when you stand still. Jumping is off in rounds, so
-	Space is free. Your own character moves at once (a short LinearVelocity on your root); the server checks
-	it (RoundService, "Dash") and sets DashAt/DashDir on your character so everyone sees the dash pose
-	(Shared/RunMotion), and DashReady on you for the cooldown tile (Screens/PowerBar).
+	The huss (owner's call, like Huss Valley): during a round, Space (gamepad A, or the HUSS tile) throws you
+	sideways: left or right of the way you face, never forward or back (owner: "make the hussing be only left or
+	right"). A / stick left = left, D / stick right = right; with no sideways input you go to the side you last
+	moved or hussed toward (right at first). Jumping is off in rounds, so Space is free. Your own character moves
+	at once (a short LinearVelocity on your root); the server checks it (RoundService, "Dash": sideways only) and
+	sets DashAt/DashDir on your character so everyone sees it, and DashReady on you for the cooldown tile
+	(Screens/PowerBar). The move itself is the owner-pack-style DashLeft / DashRight animation (tools/anim/
+	extract_anims.luau) on your Animator, so it replicates; without them RunAnimator draws the scripted pose.
 ]]
 local Dash = {}
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ContextActionService = game:GetService("ContextActionService")
+local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
@@ -18,34 +22,75 @@ local Config = require(Shared.Config.Round)
 local Sfx = require(script.Parent.Sfx)
 local Library = require(Shared.AnimationLibrary)
 
--- The dash move from the owner's pack (HuzzAnimations.Dash, built from its Sprint: a low lunge, arms flung
--- back), played on your own character so it replicates; without it, RunAnimator draws the scripted pose.
-local dashTrack: AnimationTrack? = nil
-local dashFor: Instance? = nil
-local function playDashMove(h: Humanoid)
-	local id = Library.id("Dash")
+local FADE_OUT = 0.12 -- seconds: the move hands back to the run this long before it ends (no snap)
+
+local tracks: { [string]: AnimationTrack } = {}
+local tracksFor: Instance? = nil
+local function playMove(h: Humanoid, side: number)
+	local name = if side < 0 then "DashLeft" else "DashRight"
+	local id = Library.id(name)
 	if id == "" then return end
-	if dashFor ~= h then
-		dashFor, dashTrack = h, nil
+	if tracksFor ~= h then
+		tracksFor, tracks = h, {}
+	end
+	local t = tracks[name]
+	if not t then
 		local animator = h:FindFirstChildOfClass("Animator")
-		if animator then
-			local a = Instance.new("Animation")
-			a.AnimationId = id
-			local ok, t = pcall(function() return animator:LoadAnimation(a) end)
-			if ok and t then
-				t.Priority = Enum.AnimationPriority.Action
-				t.Looped = false
-				dashTrack = t
-			end
-		end
+		if not animator then return end
+		local a = Instance.new("Animation")
+		a.Name = "Huzz" .. name
+		a.AnimationId = id
+		local ok, made = pcall(function() return animator:LoadAnimation(a) end)
+		if not (ok and made) then return end
+		made.Priority = Enum.AnimationPriority.Action
+		made.Looped = false
+		tracks[name] = made
+		t = made
 	end
-	if dashTrack then
-		dashTrack:Play(0.05, 1, 1.15)
+	for other, track in tracks do
+		if other ~= name and track.IsPlaying then track:Stop(0.05) end
 	end
+	t:Play(0.04, 1, 1)
+	local length = if t.Length > 0 then t.Length else 0.44
+	task.delay(math.max(0.05, length - FADE_OUT), function()
+		if t.IsPlaying then t:Stop(FADE_OUT) end
+	end)
 end
 
 local player = Players.LocalPlayer
 local lastLocal = -math.huge
+local lastSide = 1 -- 1 = right, -1 = left: where you last moved or hussed sideways (right at first)
+
+-- Roblox's own controls: the raw stick / WASD (x = -1 left ... 1 right), whichever way you face.
+local controls = nil
+task.spawn(function()
+	pcall(function()
+		local scripts = player and player:WaitForChild("PlayerScripts", 10)
+		local module = scripts and scripts:WaitForChild("PlayerModule", 10)
+		if module then
+			controls = (require :: any)(module):GetControls()
+		end
+	end)
+end)
+local function sideways(root: BasePart, move: Vector3): number
+	if controls then
+		local ok, v = pcall(function() return controls:GetMoveVector() end)
+		if ok and typeof(v) == "Vector3" and math.abs(v.X) > 0.3 then
+			return v.X
+		end
+	end
+	local right = root.CFrame.RightVector
+	return Vector3.new(move.X, 0, move.Z):Dot(Vector3.new(right.X, 0, right.Z).Unit)
+end
+
+-- Which side a huss goes: A/D (stick left/right), else the side you last went.
+function Dash.side(root: BasePart, move: Vector3): number
+	local across = sideways(root, move)
+	if math.abs(across) > 0.3 then
+		return if across > 0 then 1 else -1
+	end
+	return lastSide
+end
 
 -- Can I dash right now? (the server checks the same and has the last word)
 function Dash.ready(): boolean
@@ -66,16 +111,17 @@ function Dash.try()
 	local h = c and c:FindFirstChildOfClass("Humanoid")
 	local root = h and h.RootPart
 	if not (root and not root.Anchored) or h.WalkSpeed <= 0 then return end -- (0 = stuck in a trap or frozen)
-	local move = h.MoveDirection
-	local dir = if move.Magnitude > 0.1 then move else root.CFrame.LookVector
-	dir = Vector3.new(dir.X, 0, dir.Z).Unit
+	local side = Dash.side(root, h.MoveDirection)
+	local right = root.CFrame.RightVector
+	local dir = Vector3.new(right.X, 0, right.Z).Unit * side
+	lastSide = side
 	lastLocal = os.clock()
 	local at = Workspace:GetServerTimeNow()
 	c:SetAttribute("DashDir", dir) -- on this screen at once; the server sets the same for everyone
 	c:SetAttribute("DashAt", at)
 	Net.get("Dash"):FireServer(dir, at)
 	Sfx.play("dash")
-	playDashMove(h)
+	playMove(h, side)
 
 	-- The push: hold this ground speed for a moment, then let the walk take over again.
 	local attachment = Instance.new("Attachment")
@@ -88,7 +134,11 @@ function Dash.try()
 	push.VelocityConstraintMode = Enum.VelocityConstraintMode.Plane
 	push.PrimaryTangentAxis = Vector3.xAxis
 	push.SecondaryTangentAxis = Vector3.zAxis
-	push.PlaneVelocity = Vector2.new(dir.X, dir.Z) * Config.Dash.Speed
+	-- sideways, keeping whatever forward run you had (the huss never adds forward or back)
+	local look = Vector3.new(root.CFrame.LookVector.X, 0, root.CFrame.LookVector.Z).Unit
+	local ahead = math.clamp(root.AssemblyLinearVelocity:Dot(look), 0, h.WalkSpeed)
+	local v = dir * Config.Dash.Speed + look * ahead
+	push.PlaneVelocity = Vector2.new(v.X, v.Z)
 	push.MaxForce = 1e6
 	push.Parent = root
 	task.delay(Config.Dash.Time, function()
@@ -115,6 +165,18 @@ function Dash.start()
 			ContextActionService:UnbindAction("HuzzDash")
 		end
 	end
+	-- remember the side you last moved toward (A or D), for a huss with no sideways input
+	RunService.Heartbeat:Connect(function()
+		local c = player.Character
+		local h = c and c:FindFirstChildOfClass("Humanoid")
+		local root = h and h.RootPart
+		if root and h.MoveDirection.Magnitude > 0.1 then
+			local across = sideways(root, h.MoveDirection)
+			if math.abs(across) > 0.3 then
+				lastSide = if across > 0 then 1 else -1
+			end
+		end
+	end)
 	player:GetAttributeChangedSignal("HuzzRole"):Connect(update)
 	round:GetAttributeChangedSignal("Stage"):Connect(update)
 	update()

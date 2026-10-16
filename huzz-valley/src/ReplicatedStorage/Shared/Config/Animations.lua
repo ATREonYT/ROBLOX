@@ -2,9 +2,9 @@
 -- KeyframeSequences (ReplicatedStorage.HuzzAnimations, from the movement pack and the dance file; see
 -- Shared/AnimationLibrary): Studio plays those directly, so these can stay empty while testing in Studio. For the
 -- live game, publish them once (tools/studio/publish-animations.lua prints this file filled in).
--- Walk/Run/Idle/Jump/Fall/Climb replace the default Animate script's animations on your own character (they
--- replicate): Walk at low speed blending into Run as you speed up (Gameplay/Sprint ramps the speed while you hold
--- W). Dash is the huss dash (Space), played over the run.
+-- Walk/Run/Idle/Jump/Fall/Climb play on your own character (Gameplay/Locomotion, they replicate): cross-faded by
+-- your speed (Gameplay/Sprint ramps it while you hold W). DashLeft/DashRight are the huss (Space, sideways only),
+-- played over the run.
 return {
 	Walk = "",
 	Run = "",
@@ -12,7 +12,8 @@ return {
 	Jump = "",
 	Fall = "",
 	Climb = "",
-	Dash = "",
+	DashLeft = "",
+	DashRight = "",
 
 	-- Optional: an upper-body carry animation (Action priority, looped). When
 	-- set, it replaces the scripted arm pose; bob, sway and pickup stay scripted.

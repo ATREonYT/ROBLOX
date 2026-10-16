@@ -22,6 +22,9 @@ return {
 	Pick = { Enabled = true, Roulette = 2.8, ChooseTime = 8, ShowTime = 2.6 },
 	HeroTime = 20, -- the Hero's solo crossing (everyone else waits on the line)
 	HeroBonus = 25, -- coins for a Hero who makes it across (and the girl comes down to them)
+	-- End-of-game pay (owner: coins must be worth earning; the coin shop is Config/CoinShop). Aura is the rarer one:
+	-- crates cost it (Config/Crates), so it only comes from wins and the reward track.
+	Pay = { Played = 15, Won = 35, WonAura = 3 },
 	CountdownTime = 3, -- 3, 2, 1, GO (everyone on the line)
 	RoundTime = 45, -- runners still out when it ends count as caught
 	RoundEndPause = 3.5,

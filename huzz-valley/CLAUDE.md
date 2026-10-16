@@ -85,13 +85,17 @@ eye. Branch `HUZZ-VALLEY`. Read the section you need; the owner's own words are 
 ## 6. Animations (the owner's files)
 - `tools/anim/extract_anims.luau` reads `design/anims/movement-pack.rbxl` and `200-dances.rbxl` and writes
   `src/ServerStorage/HuzzAnimations.rbxm`: Idle, Walk, Run (the pack's hunched Sprint), Jump, Fall, Climb,
-  Dash (built: Sprint pose + forward lunge, arms back) and `Dance_<Id>` for the 25 in `Config/Dances` (names are
+  DashLeft/DashRight (built: the sideways huss, matched to the owner's HV video; `docs/previews/huss-vs-reference.jpg`) and `Dance_<Id>` for the 25 in `Config/Dances` (names are
   ours; the originals are other games' emote names).
 - `Shared/AnimationLibrary.id(name, published)`: the published ID, else **in Studio only** a temporary ID from
   `KeyframeSequenceProvider:RegisterKeyframeSequence`, else "". So Studio tests play everything now; the live game
   needs `tools/studio/publish-animations.lua` (owner) and the IDs pasted into `Config/Animations` / `Config/Dances`.
-- `Gameplay/AvatarAnimations` swaps them into Roblox's Animate (walk blends into run by speed); `RunAnimator`'s
-  scripted run only runs when no Run animation is available. `Gameplay/Dash` plays Dash on your character.
+- `Gameplay/Locomotion` (own character, when the pack can play) replaces Animate's walk/run: Idle/Walk/Run blended by
+  a smoothed speed (`Shared/LocomotionMix`, rate capped ~1.1x so the sprint stays calm), Jump/Fall/Climb faded in,
+  a small lean into turns. `RunAnimator`'s scripted run covers anything without animations. **Huss = sideways
+  only** (owner): `Gameplay/Dash` picks left/right (A/D, else the last side), the server forces pure sideways.
+- `Gameplay/CompanionDance`: your girl dances your dance, retargeted onto her R6 body (`Shared/DanceRetarget`,
+  `Shared/KeyframeSampler`). Companions and the round girl are in the `HuzzCompanion` collision group (no bumping).
 - `UI/DancePlayer`: one dance at a time on your Animator; walking away stops it. Starter = 20 dances, Robot =
   reward level 3, Dance Pack pass = Swing Time, Bounce Bounce, Squat Kick, Toprock.
 - The stab is still scripted (`StabMotion`) until the owner sends one. `CarryMotion.huss` is dead code (toss removed).
@@ -117,12 +121,22 @@ eye. Branch `HUZZ-VALLEY`. Read the section you need; the owner's own words are 
 - Icons/art come from the owner's sharp packs; never redraw them. Packed names are PascalCase of file names and
   case-sensitive in Roblox.
 
-## 9. Sounds
+## 9. Currencies, coin shop, crates
+- **Coins** (earned: `Config/Round.Pay` per game, more for a win; Hero bonus; quests) buy **looks only** in the
+  Shop's ITEMS tab (`Config/CoinShop`: trails, name colours, knife skins, all made from colours in code). Server:
+  `ActionService` `BuyWithCoins` / `Wear` (one item per slot in `data.Wear`); shown by `CosmeticsService`
+  (trails), `NameTagService` (name colour) and `KnifeService.give(character, skin)`.
+- **Aura** = Huss Valley's gems (owner's call; old `Gems` saves migrate in `DataService`): from wins
+  (`Pay.WonAura`) and the reward track. It pays for **crates** (`Config/Crates`, empty until the owner adds them;
+  `Shared/CrateRoll` pure maths with shown odds and a pity counter, `tests/CrateRoll.spec.luau`; server
+  `ActionService.OpenCrate`; no crate UI yet). The gem icon stands in for Aura until the owner sends one.
+
+## 10. Sounds
 - 24 sounds made from scratch by `tools/sfx/make_sfx.py` → `assets/sfx/*.ogg` (list in `assets/sfx/README.md`).
 - `Gameplay/Sfx.play(name, {volume, pitch, at})` with per-sound levels; `Config/SoundIds` empty until the owner
   uploads (Asset Manager bulk import + `tools/studio/collect-sound-ids.lua`); a few built-in stand-ins meanwhile.
 
-## 10. Studio-only truths and the owner's steps
+## 11. Studio-only truths and the owner's steps
 - The cloud can't reach Roblox: uploads (images, sounds, animations) and real purchases are the owner's steps
   (README checklist). Studio helpers report on lines tagged `[Huzz]`, `[HuzzSfx]`, `[HuzzAnim]`.
 - Not yet seen in Studio: the safe gate's collision groups, the walk→run ramp feel, the dance preview viewport,
@@ -131,7 +145,7 @@ eye. Branch `HUZZ-VALLEY`. Read the section you need; the owner's own words are 
   (their Basket Ball Hoop models carried a scam; `SafetyService` strips it).
 - ProfileStore runs in Mock mode in Studio (progress resets on Stop): on purpose.
 
-## 11. Open items
+## 12. Open items
 - Owner: upload pictures, sounds and animations; Game Pass / product IDs; power icons (4 PNGs); a stab animation;
   maybe rename dances; confirm the movement pack licence allows a published game.
 - Us: a Match HUD/results page from the kit (none exists yet); the Gift Picker; the 5 remaining soft icons.

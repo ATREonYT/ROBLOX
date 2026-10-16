@@ -34,7 +34,7 @@ All of these work against a real save system. When you're happy with how they lo
 5. **The girl:** a catcher who stabs her carrier **steals her** (she follows him). The next Hero who makes it
    takes her back. When the game ends she goes home with the winning side, into their **Index**.
    - Controls in a round: **no mouse pointer** (shift lock); **hold Alt** to get the pointer back. **Space**
-     dashes (with its own lunge move), and you can't jump. Hold **W** and you set off at a walk that builds
+     is the **huss**: a sideways dash, left or right (A/D picks the side), and you can't jump. Hold **W** and you set off at a walk that builds
      into the full run over about a second ([video](docs/previews/moves-walk-run-dash.mp4)).
    - **G** opens the **dance wheel** anywhere: 8 of your dances round a circle (favourites first), press a number
      or click; walk away to stop ([picture](docs/previews/dance-wheel.jpg)). All **25 dances** from your file are
@@ -57,7 +57,11 @@ All of these work against a real save system. When you're happy with how they lo
      **Charm Wave** (a ring of hearts that slows runners near you).
    - Tune them in `Shared/Config/Powers.lua` (times, speeds, sizes, cooldowns).
 
-8. **New players** get a short **How to Play** card the first time they join (also in the Menu)
+8. **Coins** buy looks in the Shop's **ITEMS** tab: trails, name colours and knife skins (catchers). You earn
+   coins every game, more when your side wins. **Aura** (Huss Valley's gems) comes from wins and the reward track,
+   and will open **crates** once you design them (`Shared/Config/Crates.lua` has a ready example; every crate shows
+   its odds and a pity counter).
+9. **New players** get a short **How to Play** card the first time they join (also in the Menu)
    ([picture](docs/previews/welcome.jpg)).
 
 **Animations:** your walk, run, idle, jump, fall and climb come from your movement pack, the dash move is built
@@ -164,6 +168,9 @@ the icons itself. To make them work everywhere for good, upload them once (Plugi
 10. **Dance names:** most of the 25 dances are copies of other games' emotes, so they have our own names in
     `Shared/Config/Dances.lua` (Citrus Groove, Shock Shuffle...). Rename any you like. The movement pack's licence
     is in `design/anims/movement-pack.zip`; check it allows use in a published game.
+11. **An Aura icon:** a see-through PNG (256 px or bigger) named `currency-aura`. The gem picture stands in.
+12. **Your crates:** what's in each, its Aura price and the odds (copy the example in `Shared/Config/Crates.lua`,
+    or tell me and I'll fill it in).
 
 ## What's honest about this build
 - **Pictures and icons:** almost all are now your sharp files (`design/sharp` and `design/icons-hd`), used as drawn and only trimmed to fit their spots. Five small icons are still the soft kit crops: the filled favourite star, the quest clipboard (Progression's title), the white shirt in the shop, the small gift and the small music note. Your pictures have see-through backgrounds, so the cards show a blue backdrop behind them.

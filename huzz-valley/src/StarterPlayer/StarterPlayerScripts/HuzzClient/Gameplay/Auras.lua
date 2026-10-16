@@ -6,7 +6,9 @@
 	    same code as the girl who follows a catcher) with Config/GirlMotion.Companion, walking when you walk,
 	    running when you run, standing and looking round when you stop; her effects are Shared/AuraLook
 	    "Companion". In a round she steps aside (the round's own girl is the prize) until you're safe across:
-	    then she appears beside you on the ground and hops and cheers.
+	    then she appears beside you on the ground and hops and cheers. When you dance she steps beside you and
+	    dances too (Gameplay/CompanionDance). She never bumps anyone: her parts are in the "HuzzCompanion"
+	    collision group (Bootstrap), which collides with nothing (a Humanoid turns CanCollide back on by itself).
 	  - Equip a girl and YOU get her aura, in the lobby and in rounds (the owner's reference: flames on your
 	    hands, dark wisps, crescent slashes), small for Common to Epic and growing with rarity ("Player").
 	  - The big girl over the map wears her aura at 3x ("Showcase", tag HuzzShowcase).
@@ -30,6 +32,33 @@ function M.start()
 	local FollowMotion = require(Shared.FollowMotion)
 	local Companion = require(Shared.Config.GirlMotion).Companion
 	local AuraFX = require(script.Parent.AuraFX)
+	local CompanionDance = require(script.Parent.CompanionDance)
+	CompanionDance.start()
+	local GROUP = "HuzzCompanion"
+
+	-- No girl ever bumps or blocks a player: every part in the group that collides with nothing, now and later.
+	local function ghost(part)
+		if part:IsA("BasePart") then
+			part.CanCollide, part.CanTouch, part.CanQuery = false, false, false
+			pcall(function() part.CollisionGroup = GROUP end)
+		end
+	end
+	local ghosted = {} -- Model -> connection
+	local function ghostModel(model)
+		if ghosted[model] then
+			return
+		end
+		for _, d in model:GetDescendants() do
+			ghost(d)
+		end
+		ghosted[model] = model.DescendantAdded:Connect(ghost)
+		model.Destroying:Connect(function()
+			if ghosted[model] then
+				ghosted[model]:Disconnect()
+				ghosted[model] = nil
+			end
+		end)
+	end
 
 	local NEAR = 170 -- studs from the camera: effects further away are switched off
 	local COMPANION_HEIGHT = Companion.Height
@@ -76,6 +105,7 @@ function M.start()
 	end
 	local function clearCompanion(s)
 		if s.companion then
+			CompanionDance.forget(s.companion.player)
 			s.companion.handle.destroy()
 			s.companion.model:Destroy()
 			s.companion = nil
@@ -192,6 +222,7 @@ function M.start()
 		for _, d in model:GetDescendants() do
 			if d:IsA("BasePart") then
 				d.CanCollide, d.CanQuery, d.CanTouch, d.CastShadow, d.Massless = false, false, false, false, true
+				pcall(function() d.CollisionGroup = GROUP end)
 				d.Anchored = d == root
 				if not joined[d] and d ~= root then
 					local weld = Instance.new("WeldConstraint")
@@ -278,6 +309,9 @@ function M.start()
 		s.key = key
 		if allowed and not s.companion and far < 150 then
 			s.companion = makeCompanion(key, rarity, lite, p.UserId)
+			if s.companion then
+				s.companion.player = p
+			end
 		end
 		local c = s.companion
 		if c and not c.model.Parent then
@@ -292,10 +326,13 @@ function M.start()
 				c.char, w.pos = character, nil
 				refreshRayFilter() -- (so the ray never lands on the new character)
 			end
-			w.cheer = cheering
+			local dancing = CompanionDance.active(p)
+			w.cheer = cheering and not dancing
+			w.beside = dancing -- (she steps up beside you to dance)
 			c.leaderY = root.Position.Y
 			local head = character:FindFirstChild("Head")
 			FollowMotion.step(w, dt, clock, root.CFrame, c.groundAt, head and head.Position)
+			CompanionDance.step(p, character, w.joints, dt, COMPANION_HEIGHT, w.speed < 6)
 			c.handle.step(dt)
 		end
 	end
@@ -316,6 +353,9 @@ function M.start()
 			spec.scale = 1 -- (full size: the round's girl)
 		end
 		worldAuras[model] = AuraFX.attach(model, spec, { lite = kind ~= "Showcase" })
+		if kind == "Companion" then
+			ghostModel(model) -- (the round's girl, carried or following, never blocks anyone either)
+		end
 		if worldConns[model] then
 			worldConns[model]:Disconnect()
 		end
@@ -332,6 +372,11 @@ function M.start()
 		task.defer(watchModel, model, "Showcase")
 	end
 	CollectionService:GetInstanceAddedSignal("HuzzShowcase"):Connect(showcaseAdded)
+	-- the round's prize girl standing on the map: no bumping into her
+	CollectionService:GetInstanceAddedSignal("HuzzPrize"):Connect(ghostModel)
+	for _, m in CollectionService:GetTagged("HuzzPrize") do
+		ghostModel(m)
+	end
 	for _, m in CollectionService:GetTagged("HuzzShowcase") do
 		showcaseAdded(m)
 	end

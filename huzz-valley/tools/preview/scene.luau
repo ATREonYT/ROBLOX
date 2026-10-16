@@ -18,7 +18,7 @@ task.wait(0.2)
 local DataService = require(game.ServerScriptService.HuzzServer.DataService)
 DataService.update(player, function(d)
 	d.Coins = tonumber(cfg.COINS) or 12450
-	d.Gems = tonumber(cfg.GEMS) or 320
+	d.Aura = tonumber(cfg.GEMS) or 320
 	for key in string.gmatch(cfg.OWN or "", "[^,]+") do d.Cosmetics[key] = true end
 end)
 if cfg.PASSES then

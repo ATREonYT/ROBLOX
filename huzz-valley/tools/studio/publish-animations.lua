@@ -14,7 +14,7 @@ if not folder then
 	return
 end
 
-local MOVES = { "Walk", "Run", "Idle", "Jump", "Fall", "Climb", "Dash" }
+local MOVES = { "Walk", "Run", "Idle", "Jump", "Fall", "Climb", "DashLeft", "DashRight" }
 local ids, failed = {}, {}
 for _, seq in folder:GetChildren() do
 	if seq:IsA("KeyframeSequence") then

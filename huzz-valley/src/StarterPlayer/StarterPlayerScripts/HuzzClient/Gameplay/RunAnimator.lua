@@ -16,7 +16,7 @@ function M.start()
 	local Animations = require(Shared.Config.Animations)
 	local RunMotion = require(Shared.RunMotion)
 	local Frame = require(script.Parent.Frame)
-	-- The owner's run plays instead (Gameplay/AvatarAnimations, the dash: Gameplay/Dash). Published: for everyone.
+	-- The owner's run plays instead (Gameplay/Locomotion, the huss: Gameplay/Dash). Published: for everyone.
 	-- Only Studio's temporary copy: that ID works on this screen alone, so other players still get the scripted run.
 	if Animations.Run ~= "" then
 		return

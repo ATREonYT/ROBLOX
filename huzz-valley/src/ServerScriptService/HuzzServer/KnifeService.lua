@@ -72,7 +72,9 @@ function KnifeService.has(character)
 end
 
 -- Into the right hand, blade pointing down and a little forward (it comes up level in the stab).
-function KnifeService.give(character)
+-- skin (optional): a Config/CoinShop Knife item: its blade, guard and pommel take its colours, the blade glows a
+-- little, and the slash streak matches.
+function KnifeService.give(character, skin)
 	if not character or KnifeService.has(character) then
 		return
 	end
@@ -82,6 +84,20 @@ function KnifeService.give(character)
 	end
 	local model = template()
 	model.Name = NAME
+	if skin and not ServerStorage:FindFirstChild(NAME) then
+		local a, b = skin.Colors[1], skin.Colors[#skin.Colors]
+		for _, d in model:GetDescendants() do
+			if d:IsA("BasePart") then
+				if d.Name == "Blade" or d.Name == "Tip" then
+					d.Color, d.Material, d.Reflectance = a, Enum.Material.Neon, 0
+					d.Transparency = 0.05
+				elseif d.Name == "Guard" or d.Name == "Pommel" then
+					d.Color = b
+				end
+			end
+		end
+		model:SetAttribute("Skin", skin.Key)
+	end
 	local handle = model:FindFirstChild("Handle", true)
 	for _, d in model:GetDescendants() do
 		if d:IsA("BasePart") then
@@ -107,7 +123,7 @@ function KnifeService.give(character)
 		trail.Lifetime = 0.16
 		trail.MinLength = 0
 		trail.LightEmission = 0.6
-		trail.Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(255, 120, 200))
+		trail.Color = if skin then ColorSequence.new(Color3.new(1, 1, 1), skin.Colors[#skin.Colors]) else ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(255, 120, 200))
 		trail.Transparency = NumberSequence.new(0.25, 1)
 		trail.Enabled = false
 		trail.Parent = handle

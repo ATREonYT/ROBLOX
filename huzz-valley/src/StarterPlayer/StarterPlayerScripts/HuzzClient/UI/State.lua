@@ -8,7 +8,7 @@ local Net = require(Shared.Net)
 local State = {}
 
 State.data = {
-	Coins = 0, Gems = 0, Passes = {}, Cosmetics = {}, Settings = table.clone(Settings.Defaults), Loaded = false,
+	Coins = 0, Aura = 0, Wear = {}, Pity = {}, Passes = {}, Cosmetics = {}, Settings = table.clone(Settings.Defaults), Loaded = false,
 	Characters = {}, Equipped = "", FavChars = {}, Dances = {}, FavDances = {}, XP = 0, Claimed = {}, Stats = {}, QuestsClaimed = {},
 }
 

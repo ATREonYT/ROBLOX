@@ -537,8 +537,13 @@ function M.start()
 			sayLine("Safe")
 			Sfx.play("safe")
 		elseif kind == "Bonus" then
-			show(small, `+{data.coins} coins`, WHITE, 2.4)
-			Sfx.play("coin")
+			local text = `+{data.coins} coins` .. (if (data.aura or 0) > 0 then `  +{data.aura} Aura` else "")
+			if data.late then
+				task.delay(7.6, show, small, text, GOLD, 3) -- (after the win banners)
+			else
+				show(small, text, WHITE, 2.4)
+			end
+			task.delay(if data.late then 7.6 else 0, Sfx.play, "coin")
 		elseif kind == "Win" then
 			local team = if data.team == "Runners" then "RUNNERS WIN" else "CATCHERS WIN"
 			local teamColor = if data.team == "Runners" then BLUE else RED

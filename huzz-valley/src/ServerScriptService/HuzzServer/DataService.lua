@@ -16,8 +16,10 @@ DataService.onChanged = nil :: ((Player) -> ())? -- set by Bootstrap (cosmetics 
 
 DataService.Template = {
 	Coins = 0,
-	Gems = 0,
-	Cosmetics = {}, -- [key] = true for bought cosmetics
+	Aura = 0, -- the premium currency (Huss Valley's gems; owner's call). Crates cost Aura (Config/Crates)
+	Cosmetics = {}, -- [key] = true for bought cosmetics (Robux ones and Config/CoinShop items)
+	Wear = {}, -- [slot] = the worn coin-shop item (Trail, Tag, Knife); nil = none
+	Pity = {}, -- [crateId] = opens since that crate's top prize (Config/Crates; shown to the player)
 	Settings = table.clone(Settings.Defaults),
 	Receipts = {}, -- recent developer-product PurchaseIds, so a receipt is never granted twice
 	Characters = {}, -- [id] = os.time() when acquired
@@ -47,7 +49,9 @@ function DataService.snapshot(player: Player)
 	local ex = extras[player] or {}
 	return {
 		Coins = d.Coins,
-		Gems = d.Gems,
+		Aura = d.Aura,
+		Wear = table.clone(d.Wear),
+		Pity = table.clone(d.Pity),
 		Cosmetics = table.clone(d.Cosmetics),
 		Passes = table.clone(ex.Passes or {}),
 		Settings = table.clone(d.Settings),
@@ -122,6 +126,11 @@ local function onPlayerAdded(player: Player)
 	end
 	profile:AddUserId(player.UserId)
 	profile:Reconcile()
+	-- Gems became Aura (owner's call): anything saved as gems carries over.
+	if type(profile.Data.Gems) == "number" then
+		profile.Data.Aura = (profile.Data.Aura or 0) + profile.Data.Gems
+		profile.Data.Gems = nil
+	end
 	-- Drop settings that no longer exist and fix any saved value that is no longer allowed.
 	local clean = table.clone(Settings.Defaults)
 	for k, v in profile.Data.Settings do

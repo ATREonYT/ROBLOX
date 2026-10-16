@@ -1,10 +1,11 @@
 --[[
 	Your avatar's walk, run, idle, jump, fall and climb become the owner's animations (the movement pack in
-	ReplicatedStorage.HuzzAnimations, or their published IDs: Shared/AnimationLibrary). Roblox's Animate script
-	plays them (and the tracks replicate, so everyone sees them): it blends Walk into Run as you speed up, which
-	Gameplay/Sprint makes a smooth build-up while you hold a direction (owner: "slowly fade from walking into
-	running"). With nothing to play (live game, not published yet) Roblox's defaults stay and Gameplay/RunAnimator
-	draws the scripted Huss Valley run instead.
+	ReplicatedStorage.HuzzAnimations, or their published IDs: Shared/AnimationLibrary).
+	  - When Idle, Walk and Run can all play: Gameplay/Locomotion plays them itself (Roblox's Animate switched
+	    off), cross-faded smoothly by your speed (owner: "make it more smooth just like in Huss Valley").
+	  - Otherwise whatever there is gets swapped into Roblox's Animate script.
+	The tracks replicate, so everyone sees them. With nothing to play (live game, not published yet) Roblox's
+	defaults stay and Gameplay/RunAnimator draws the scripted Huss Valley run instead.
 ]]
 local M = {}
 
@@ -15,6 +16,12 @@ function M.start()
 	local Library = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("AnimationLibrary"))
 	if game:GetService("RunService"):IsStudio() then
 		ReplicatedStorage:WaitForChild("HuzzAnimations", 5) -- (Bootstrap copies the raw ones over in Studio)
+	end
+
+	local Locomotion = require(script.Parent.Locomotion)
+	if Locomotion.available() then
+		Locomotion.start()
+		return
 	end
 
 	local SLOTS = {

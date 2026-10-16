@@ -7,6 +7,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Progression = require(ReplicatedStorage.Shared.Config.Progression)
+local CoinShop = require(ReplicatedStorage.Shared.Config.CoinShop)
 local DataService = require(script.Parent.DataService)
 
 local NameTags = {}
@@ -101,6 +102,21 @@ function NameTags.set(player, look, badge, rescue)
 	gui.PlayerName.Text = player.DisplayName
 	local profile = DataService.get(player)
 	local data = profile and profile.Data
+	-- a coin-shop name colour (Config/CoinShop "Tag"): one colour, or a gradient across the name
+	local tag = data and data.Wear and data.Wear.Tag and CoinShop.get(data.Wear.Tag)
+	local nameGradient = gui.PlayerName:FindFirstChild("TagGradient")
+	if tag and #tag.Colors > 1 and tag.Colors[1] ~= tag.Colors[2] then
+		gui.PlayerName.TextColor3 = Color3.new(1, 1, 1)
+		if not nameGradient then
+			nameGradient = Instance.new("UIGradient")
+			nameGradient.Name = "TagGradient"
+			nameGradient.Parent = gui.PlayerName
+		end
+		nameGradient.Color = CoinShop.sequence(tag)
+	else
+		gui.PlayerName.TextColor3 = if tag then tag.Colors[1] else Color3.new(1, 1, 1)
+		if nameGradient then nameGradient:Destroy() end
+	end
 	if data then
 		local level = Progression.level(data.XP or 0)
 		local wins = (data.Stats and data.Stats.Wins) or 0

@@ -119,5 +119,17 @@ check("dance pack pass grants its dances", (function()
 	return ok2
 end)())
 
+-- The coin shop (Config/CoinShop) and Aura: the server checks the price, takes the coins and wears the item.
+DataService.update(player, function(d) d.Coins = 100 end); task.wait(0.1)
+check("coin shop: can't buy without the coins", (act("BuyWithCoins", "MintTrail")) == false and profile.Data.Cosmetics.MintTrail == nil and profile.Data.Coins == 100)
+DataService.update(player, function(d) d.Coins = 1000 end); task.wait(0.1)
+check("coin shop: buying takes the price and wears it", (act("BuyWithCoins", "MintTrail")) == true and profile.Data.Coins == 600 and profile.Data.Cosmetics.MintTrail == true and profile.Data.Wear.Trail == "MintTrail")
+check("coin shop: can't buy it twice", (act("BuyWithCoins", "MintTrail")) == false and profile.Data.Coins == 600)
+check("coin shop: take it off and wear it again", (act("Wear", "Trail", nil)) == true and profile.Data.Wear.Trail == nil and (act("Wear", "Trail", "MintTrail")) == true and profile.Data.Wear.Trail == "MintTrail")
+check("coin shop: can't wear what you don't own", (act("Wear", "Tag", "TagPink")) == false)
+check("coin shop: can't wear an item in the wrong slot", (act("Wear", "Knife", "MintTrail")) == false)
+check("Aura: gems became Aura and the client sees it", State.data.Aura ~= nil and profile.Data.Gems == nil)
+check("crates: an unknown crate can't be opened", (act("OpenCrate", "Nope")) == false)
+
 print(string.format("checks: %d ok, %d failed", ok, failed))
 return nil

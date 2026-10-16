@@ -2,8 +2,8 @@
 	Walk first, then run (owner: "make the animations slowly fade in from walking when you press W to running
 	if you continue holding it, just like in the references"). When you start moving you set off at a walk
 	and build up to your full speed (the server's HuzzSpeed on your Humanoid, RoundService) over Config/Run
-	Ramp seconds, easing in; let go for a moment and the next start is a walk again. Roblox's Animate script
-	blends the owner's Walk into their Run by speed, so the legs follow the build-up on their own.
+	Ramp seconds, easing in; let go for a moment and the next start is a walk again. Gameplay/Locomotion cross-fades
+	the owner's Walk into their Run by speed, so the legs follow the build-up on their own.
 	Only your own character (movement is yours to run); a speed of 0 (frozen on the line, stuck, down) is kept.
 ]]
 local M = {}

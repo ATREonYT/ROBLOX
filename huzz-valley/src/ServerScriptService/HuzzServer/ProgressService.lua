@@ -23,7 +23,7 @@ function ProgressService.claimReward(player: Player, level: any): (boolean, stri
 		if data.Claimed[key] then why = "Already claimed."; return end
 		if Progression.level(data.XP) < reward.Level then why = "Reach level " .. reward.Level .. " first."; return end
 		if reward.Kind == "Coins" then data.Coins += reward.Amount
-		elseif reward.Kind == "Gems" then data.Gems += reward.Amount
+		elseif reward.Kind == "Aura" then data.Aura += reward.Amount
 		elseif reward.Kind == "Dance" and Dances.get(reward.Id) then data.Dances[reward.Id] = true
 		else why = "That reward can't be given yet."; return end
 		data.Claimed[key] = true

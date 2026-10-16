@@ -7,6 +7,7 @@ local Players = game:GetService("Players")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Products = require(Shared.Config.Products)
+local CoinShop = require(Shared.Config.CoinShop)
 local Format = require(Shared.Format)
 local UI = script.Parent.Parent
 local Theme = require(UI.Theme)
@@ -229,13 +230,80 @@ local function buildCoins(body: Frame)
 	end
 end
 
-local BUILD = { Passes = buildPasses, Cosmetics = buildCosmetics, Coins = buildCoins }
+-- ITEMS: the coin shop (Config/CoinShop; owner: "make the coins usable"). Looks only: trails, name colours and
+-- knife skins, three to a row. Each card shows a preview in the item's own colours, its name and slot, and one
+-- button: the coin price (buy and wear it), WEAR (owned), or WEARING (tap to take it off). The server decides.
+local ITEM = { W = 216, H = 92, Gap = 10, Swatch = 64 }
+local function swatch(parent: Instance, item: CoinShop.Item)
+	local f = new("Frame", { Name = "Swatch", Position = UDim2.fromOffset(10, 14), Size = UDim2.fromOffset(ITEM.Swatch, ITEM.Swatch), BackgroundColor3 = C.Frame, BackgroundTransparency = 0.3, BorderSizePixel = 0, Parent = parent }, { Kit.corner(8) })
+	if item.Slot == "Trail" then
+		-- a streak fading out behind a runner: the colours along it, solid at the front
+		local streak = new("Frame", { Name = "Streak", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(1, -12, 0, 22), Rotation = -20, BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = f }, { Kit.corner(11) })
+		new("UIGradient", { Name = "Colours", Color = CoinShop.sequence(item), Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.85), NumberSequenceKeypoint.new(0.6, 0.15), NumberSequenceKeypoint.new(1, 0) }), Parent = streak })
+	elseif item.Slot == "Tag" then
+		local word = Kit.text({ Name = "Word", Text = "Aa", FontFace = Theme.Fonts.Heading, TextSize = 28, TextXAlignment = Enum.TextXAlignment.Center, TextColor3 = item.Colors[1], Size = UDim2.fromScale(1, 1), Parent = f })
+		new("UIStroke", { Name = "Outline", Color = C.Frame, Thickness = 1.5, Parent = word })
+		if #item.Colors > 2 then
+			word.TextColor3 = Color3.new(1, 1, 1)
+			new("UIGradient", { Name = "Colours", Color = CoinShop.sequence(item), Parent = word })
+		end
+	else
+		-- a little knife: the blade in the skin's colour, the guard and handle under it
+		local knife = new("Frame", { Name = "Knife", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(14, 52), Rotation = 35, BackgroundTransparency = 1, Parent = f })
+		new("Frame", { Name = "Blade", Size = UDim2.fromOffset(14, 30), BackgroundColor3 = item.Colors[1], BorderSizePixel = 0, Parent = knife }, { Kit.corner(7) })
+		new("Frame", { Name = "Guard", Position = UDim2.fromOffset(-5, 30), Size = UDim2.fromOffset(24, 5), BackgroundColor3 = item.Colors[#item.Colors], BorderSizePixel = 0, Parent = knife }, { Kit.corner(2) })
+		new("Frame", { Name = "Handle", Position = UDim2.fromOffset(3, 35), Size = UDim2.fromOffset(8, 17), BackgroundColor3 = C.Ink, BorderSizePixel = 0, Parent = knife }, { Kit.corner(3) })
+	end
+	return f
+end
+
+local function buildItems(body: Frame)
+	local list = table.clone(CoinShop.Items)
+	table.sort(list, function(a, b) return a.Order < b.Order end)
+	for i, item in list do
+		local col, rowN = (i - 1) % 3, (i - 1) // 3
+		local c = card(body, item.Key, Vector2.new(-2 + col * (ITEM.W + ITEM.Gap), rowN * (ITEM.H + 8)), Vector2.new(ITEM.W, ITEM.H))
+		swatch(c, item)
+		Kit.name({ Name = "Name", Text = item.Name, TextSize = 16, Position = UDim2.fromOffset(84, 10), Size = UDim2.fromOffset(ITEM.W - 92, 20), Parent = c })
+		Kit.text({ Name = "Slot", Text = CoinShop.SlotNames[item.Slot], FontFace = Theme.Fonts.Label, TextSize = 12, TextColor3 = C.SubText, Position = UDim2.fromOffset(84, 31), Size = UDim2.fromOffset(ITEM.W - 92, 16), TextWrapped = false, Parent = c })
+		local b = Kit.button({ Name = "Buy", Text = "", Icon = "CurrencyCoin", IconSize = 20, Gap = 6, TextSize = 17, FontFace = Theme.Fonts.Number, Style = "Action", Position = UDim2.fromOffset(84, 52), Size = UDim2.fromOffset(ITEM.W - 94, 30), Parent = c })
+		local icon = b.Instance:FindFirstChild("Icon", true) :: GuiObject?
+		local function refresh()
+			local owned = State.data.Cosmetics[item.Key] == true
+			local worn = (State.data.Wear or {})[item.Slot] == item.Key
+			if icon then icon.Visible = not owned end
+			if not owned then
+				b.setText(Format.commas(item.Price))
+				b.setStyle(if (State.data.Coins or 0) >= item.Price then "Action" else "Disabled")
+			else
+				b.setText(if worn then "WEARING" else "WEAR")
+				b.setStyle(if worn then "Selected" else "Tab")
+			end
+		end
+		b.onClick(function()
+			local owned = State.data.Cosmetics[item.Key] == true
+			local ok, why
+			if not owned then
+				ok, why = State.action("BuyWithCoins", item.Key)
+				Toast.show(if ok then `{item.Name} is yours!` else (why or "Couldn't buy that."))
+			else
+				local worn = (State.data.Wear or {})[item.Slot] == item.Key
+				ok, why = State.action("Wear", item.Slot, if worn then nil else item.Key)
+				if not ok then Toast.show(why or "Couldn't change that.") end
+			end
+		end)
+		table.insert(refreshButtons, refresh)
+		refresh()
+	end
+end
+
+local BUILD = { Passes = buildPasses, Cosmetics = buildCosmetics, Items = buildItems, Coins = buildCoins }
 
 function Shop.build(parent: Instance)
 	local window = Kit.window({ Name = "Shop", Title = "SHOP", Icon = "ShopCart", Width = W, Height = H, TitleX = 63, TitleOffsetY = 3, TitleWidth = 101, StudsTo = 352, Parent = parent, OnClose = function() ModalManager.close() end })
 	local panel, header = window.Panel, window.Header
 	local coins = Kit.pill({ Name = "Coins", Icon = "CurrencyCoin", Position = UDim2.fromOffset(357, 6), Width = 121, Parent = header })
-	local gems = Kit.pill({ Name = "Gems", Icon = "CurrencyGem", Position = UDim2.fromOffset(493, 6), Width = 108, Parent = header })
+	local gems = Kit.pill({ Name = "Aura", Icon = "CurrencyGem", Position = UDim2.fromOffset(493, 6), Width = 108, Parent = header })
 	Kit.studs(header, 612, 650, 16)
 
 	local body = new("ScrollingFrame", { Name = "Products", Position = UDim2.fromOffset(BODY_X, BODY_Y), Size = UDim2.fromOffset(BODY_W + 6, H - BODY_Y - 10), BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 4, ScrollBarImageColor3 = C.RowBorder, CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y, ScrollingDirection = Enum.ScrollingDirection.Y, Parent = panel })
@@ -263,24 +331,25 @@ function Shop.build(parent: Instance)
 		Motion.stagger(cards())
 	end
 	tabs = Kit.tabs(panel, {
-		{ Key = "Passes", Text = "PASSES", X = 16, Width = 187 },
-		{ Key = "Cosmetics", Text = "COSMETICS", X = 207, Width = 230 },
-		{ Key = "Coins", Text = "COINS", X = 441, Width = 246 },
+		{ Key = "Passes", Text = "PASSES", X = 16, Width = 150 },
+		{ Key = "Cosmetics", Text = "COSMETICS", X = 170, Width = 170 },
+		{ Key = "Items", Text = "ITEMS", X = 344, Width = 170 }, -- the coin shop
+		{ Key = "Coins", Text = "COINS", X = 518, Width = 169 },
 	}, 52, 30, show) -- y 52: the tab row's top in references 01, 07 and 08 (51 window-relative, plus its 1 px rim)
 
 	local function openTab(key: string)
 		if tabs.selected() ~= key then tabs.select(key); show(key) end
 	end
 	coins.plus.onClick(function() openTab("Coins") end)
-	gems.plus.onClick(function() Toast.show("Gem packs aren't for sale.") end)
+	gems.plus.onClick(function() Toast.show("Aura comes from wins and the reward track. Crates that use it are coming soon.") end)
 
 	State.changed(function(data)
 		coins.setAmount(Format.commas(data.Coins))
-		gems.setAmount(Format.commas(data.Gems))
+		gems.setAmount(Format.commas(data.Aura or 0))
 		for _, f in refreshButtons do f() end
 	end)
 	coins.setAmount(Format.commas(State.data.Coins))
-	gems.setAmount(Format.commas(State.data.Gems))
+	gems.setAmount(Format.commas(State.data.Aura or 0))
 
 	MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, id) if player == Players.LocalPlayer then onPromptClosed(id, true) end end)
 	MarketplaceService.PromptProductPurchaseFinished:Connect(function(userId, id) if Players.LocalPlayer and userId == Players.LocalPlayer.UserId then onPromptClosed(id, false) end end)

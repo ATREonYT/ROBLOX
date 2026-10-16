@@ -22,6 +22,30 @@ if game:GetService("RunService"):IsStudio() then
 	end
 end
 
+-- "HuzzCompanion": the anime girls who walk with you or the catcher (Gameplay/Auras puts their parts in it on each
+-- screen; owner: "make the little character not collide with the user"). A Humanoid turns collisions back on for
+-- some body parts, so CanCollide alone isn't enough: this group collides with nothing at all. Other services
+-- register their groups later (MapService, KnockdownService), so it's set again for a while.
+do
+	local PhysicsService = game:GetService("PhysicsService")
+	local COMPANION = "HuzzCompanion"
+	pcall(function() PhysicsService:RegisterCollisionGroup(COMPANION) end)
+	local function noCollisions()
+		pcall(function()
+			for _, g in PhysicsService:GetRegisteredCollisionGroups() do
+				PhysicsService:CollisionGroupSetCollidable(COMPANION, g.name, false)
+			end
+		end)
+	end
+	noCollisions()
+	task.spawn(function()
+		for _ = 1, 30 do
+			task.wait(10)
+			noCollisions()
+		end
+	end)
+end
+
 local DataService = require(HuzzServer.DataService)
 local ShopService = require(HuzzServer.ShopService)
 local SettingsService = require(HuzzServer.SettingsService)

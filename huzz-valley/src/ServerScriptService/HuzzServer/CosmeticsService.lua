@@ -3,7 +3,9 @@
 --   BlossomAura  soft pink sparkles around the body (Roblox's built-in sparkle texture until a petal texture
 --                is uploaded; set PETAL_TEXTURE then).
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local DataService = require(script.Parent.DataService)
+local CoinShop = require(ReplicatedStorage.Shared.Config.CoinShop)
 
 local CosmeticsService = {}
 
@@ -51,20 +53,65 @@ local function blossomAura(root: BasePart)
 	e.Parent = root
 end
 
-local BUILDERS = { SunsetTrail = sunsetTrail, BlossomAura = blossomAura }
+-- A coin-shop trail (Config/CoinShop): the same shape as Sunset Trail, in the item's colours.
+local function coinTrail(root: BasePart, item: CoinShop.Item)
+	local a0 = Instance.new("Attachment")
+	a0.Name = "WornTrailTop"
+	a0.Position = Vector3.new(0, 0.6, 0.4)
+	a0.Parent = root
+	local a1 = Instance.new("Attachment")
+	a1.Name = "WornTrailBottom"
+	a1.Position = Vector3.new(0, -0.9, 0.4)
+	a1.Parent = root
+	local t = Instance.new("Trail")
+	t.Name = "WornTrail"
+	t:SetAttribute("Item", item.Key)
+	t.Attachment0, t.Attachment1 = a0, a1
+	t.Color = CoinShop.sequence(item)
+	t.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.15), NumberSequenceKeypoint.new(1, 1) })
+	t.Lifetime = if item.Rainbow then 0.6 else 0.45
+	t.MinLength = 0.1
+	t.LightEmission = 0.35
+	t.FaceCamera = true
+	t.Parent = root
+end
+
+local function clearTrails(root: BasePart)
+	for _, name in { "SunsetTrail", "SunsetTrailTop", "SunsetTrailBottom", "WornTrail", "WornTrailTop", "WornTrailBottom" } do
+		local x = root:FindFirstChild(name)
+		while x do
+			x:Destroy()
+			x = root:FindFirstChild(name)
+		end
+	end
+end
 
 local function apply(player: Player)
 	local character = player.Character
 	local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
 	local profile = DataService.get(player)
 	if not root or not profile then return end
-	for key, build in BUILDERS do
-		local has = root:FindFirstChild(key)
-		if profile.Data.Cosmetics[key] and not has then
-			build(root)
-		elseif not profile.Data.Cosmetics[key] and has then
-			has:Destroy()
+	local data = profile.Data
+	-- one trail at a time: the worn one (a coin item or Sunset Trail); owners of Sunset Trail wear it by default
+	local wear = data.Wear or {}
+	local trailKey = wear.Trail
+	if trailKey == nil and data.Cosmetics.SunsetTrail then trailKey = "SunsetTrail" end
+	if trailKey and not data.Cosmetics[trailKey] then trailKey = nil end
+	local current = root:FindFirstChild("WornTrail") and root.WornTrail:GetAttribute("Item") or (root:FindFirstChild("SunsetTrail") and "SunsetTrail")
+	if current ~= trailKey then
+		clearTrails(root)
+		if trailKey == "SunsetTrail" then
+			sunsetTrail(root)
+		elseif trailKey and CoinShop.get(trailKey) then
+			coinTrail(root, CoinShop.get(trailKey) :: CoinShop.Item)
 		end
+	end
+	-- Blossom Aura: always on while owned
+	local has = root:FindFirstChild("BlossomAura")
+	if data.Cosmetics.BlossomAura and not has then
+		blossomAura(root)
+	elseif not data.Cosmetics.BlossomAura and has then
+		has:Destroy()
 	end
 end
 
