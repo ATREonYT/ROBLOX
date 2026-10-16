@@ -156,12 +156,11 @@ the icons itself. To make them work everywhere for good, upload them once (Plugi
    - Midnight Outfit: the clothing;
    - coin packs: they turn on once coins can buy something.
 
-8. **Upload the 24 new sound effects** (made for this game, in `huzz-valley/assets/sfx`; until then a few
-   Roblox stand-in sounds play and the rest are silent):
-   1. Studio → **Window → Asset Manager → Bulk Import**, and pick every file in `huzz-valley/assets/sfx`.
-   2. In Asset Manager → **Audio**, select them all and drag them into **Workspace**.
-   3. Paste `huzz-valley/tools/studio/collect-sound-ids.lua` into the Command Bar and send me the Output lines
-      that start with `[HuzzSfx]`. Then delete the sounds you dragged in.
+8. **Upload the 34 sound effects** (ours, in `huzz-valley/assets/sfx`. Hear them all first in
+   `huzz-valley/docs/previews/sfx-preview.ogg`. Until you upload, Studio plays a few soft Roblox sounds instead):
+   1. In Studio: **View → Asset Manager → Bulk Import**, and pick every file in `huzz-valley/assets/sfx`.
+   2. In Asset Manager, right-click each sound → **Copy ID**.
+   3. Send me the names and IDs (or paste each ID next to its name in `Shared/Config/SoundIds.lua`).
 9. **Publish the animations** (needed for the live game: until then the dances say "coming soon" there and
    the walk/run stay Roblox's. Studio already plays them, best tested solo). Paste
    `huzz-valley/tools/studio/publish-animations.lua` into the Command Bar and send me the `[HuzzAnim]` lines. If it
@@ -181,7 +180,8 @@ the icons itself. To make them work everywhere for good, upload them once (Plugi
   page, since the kit has no Match HUD page.
 - **The studded texture** is drawn by us (`tools/icons/make_stud_pattern.py`); it shows after the pictures are
   uploaded (checklist step 1), like the other icons.
-- **Sounds** are ours, made from scratch; nobody has listened to them in the game yet. Tell me which ones to change.
+- **Sounds** are ours, made from scratch, remade warm and soft (no high pings). They are measured, not yet heard in
+  the game: listen to `docs/previews/sfx-preview.ogg` and tell me which ones to change.
 - **The carry** has been checked offline (the pose maths and every round rule have tests), but not yet in Studio.
   Tell me how it feels.
 - **Gifting** says "unavailable" until the Gift Picker is built.

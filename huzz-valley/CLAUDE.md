@@ -160,9 +160,11 @@ eye. Branch `HUZZ-VALLEY`. Read the section you need; the owner's own words are 
   Preview: `docs/previews/aura-stars.mp4`.
 
 ## 10. Sounds
-- 24 sounds made from scratch by `tools/sfx/make_sfx.py` → `assets/sfx/*.ogg` (list in `assets/sfx/README.md`).
-- `Gameplay/Sfx.play(name, {volume, pitch, at})` with per-sound levels; `Config/SoundIds` empty until the owner
-  uploads (Asset Manager bulk import + `tools/studio/collect-sound-ids.lua`); a few built-in stand-ins meanwhile.
+- 34 sounds made from scratch by `tools/sfx/make_sfx.py` → `assets/sfx/*.ogg` (list in `assets/sfx/README.md`)
+  + `docs/previews/sfx-preview.ogg` (all in a row). Owner: "not some random high pitch sounds": warm, C major
+  pentatonic, centroid under 2.5 kHz, even loudness; the script prints peak/loudness/centroid per file.
+- `Gameplay/Sfx.play(name, {volume, pitch, at})` (LEVEL = the mix), `Sfx.loop` for `speed_wind`. `Config/SoundIds`
+  empty until the owner uploads (Asset Manager bulk import, Copy ID). Built-in stand-ins meanwhile: never pitch > 1.1.
 
 ## 11. Studio-only truths and the owner's steps
 - The cloud can't reach Roblox: uploads (images, sounds, animations) and real purchases are the owner's steps

@@ -2,11 +2,9 @@
 	The game's sound effects (owner: "make these sound effects better"). Our own sounds, made by
 	tools/sfx/make_sfx.py into assets/sfx/<name>.ogg (see assets/sfx/README.md).
 
-	Every ID is empty until the owner uploads them (cloud sessions can't reach Roblox). How:
-	  1. Studio > Window > Asset Manager > Bulk Import: pick every file in huzz-valley/assets/sfx.
-	  2. In Asset Manager > Audio, select them all and drag them into Workspace.
-	  3. Paste tools/studio/collect-sound-ids.lua into the Command Bar: it prints this file filled in
-	     (lines starting with [HuzzSfx]); send that text to Claude, or paste it over this file.
+	Every ID is empty until the owner uploads them (cloud sessions can't reach Roblox). How (also in README.md):
+	  1. Studio > View > Asset Manager > Bulk Import: pick every file in huzz-valley/assets/sfx.
+	  2. Right-click each sound > Copy ID, and paste it here next to its name (or send the list to Claude).
 	While an ID is empty the game plays Roblox's own stand-in (Gameplay/Sfx FALLBACK) or nothing.
 ]]
 return {
@@ -34,4 +32,14 @@ return {
 	step = "",
 	heart_shield = "",
 	power_rush = "",
+	spin_tick = "",
+	spin_win = "",
+	spin_big_win = "",
+	lunge = "",
+	trap_set = "",
+	trap_snap = "",
+	knock_down = "",
+	revive = "",
+	aura_pickup = "",
+	speed_wind = "", -- a loop: play it with Gameplay/Sfx.loop
 }
