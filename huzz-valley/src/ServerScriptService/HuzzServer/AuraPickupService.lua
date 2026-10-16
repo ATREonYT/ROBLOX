@@ -1,8 +1,9 @@
 --[[
-	Aura stars in the lobby (Config/AuraStars): keeps Count stars floating near the lobby spawn, each with a
-	ProximityPrompt (E, "Collect Aura"). The server decides everything: who's close enough, that the star still
-	exists (first press wins), and the pay (DataService). A collected star's spot refills after a short wait.
-	The look (glow, rings, sparkles, bobbing) is drawn on every client (Gameplay/AuraStars, tag "HuzzAuraStar").
+	Aura stars (Config/AuraStars): keeps Count stars floating over the playing field while a map is loaded (else
+	round the lobby spawn). Run into one and it's collected: the server checks every player's distance to every
+	star ten times a second (first one there wins) and pays (DataService). A collected star refills elsewhere after a
+	short wait; when the map changes, the stars move to the new field. The look (glow, sparkles, bobbing) is drawn on
+	every client (Gameplay/AuraStars, tag "HuzzAuraStar").
 ]]
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -38,6 +39,10 @@ local function centre(): Vector3?
 end
 
 local function spot(): Vector3?
+	if MapService.current then
+		local p = MapService.fieldSpot(6)
+		if p then return p + Vector3.new(0, Config.Height, 0) end
+	end
 	local c = centre()
 	if not c then return nil end
 	for _ = 1, 8 do
@@ -54,8 +59,6 @@ end
 local spawnOne
 local function collect(star: BasePart, player: Player)
 	if not star.Parent then return end -- (someone else got it first)
-	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
-	if not root or (root.Position - star.Position).Magnitude > Config.Range + 4 then return end
 	local value = star:GetAttribute("Value") or 1
 	local at = star.Position
 	local kind = star:GetAttribute("Kind")
@@ -80,19 +83,34 @@ function spawnOne()
 	star.CFrame = CFrame.new(at)
 	star:SetAttribute("Kind", kind.Name)
 	star:SetAttribute("Value", kind.Value)
-	local prompt = Instance.new("ProximityPrompt")
-	prompt.Name = "Collect"
-	prompt.ActionText = "Collect Aura"
-	prompt.ObjectText = `+{kind.Value} Aura`
-	prompt.KeyboardKeyCode = Enum.KeyCode.E
-	prompt.GamepadKeyCode = Enum.KeyCode.ButtonX
-	prompt.HoldDuration = 0
-	prompt.MaxActivationDistance = Config.Range
-	prompt.RequiresLineOfSight = false
-	prompt.Parent = star
-	prompt.Triggered:Connect(function(player) collect(star, player) end)
 	CollectionService:AddTag(star, "HuzzAuraStar")
+	star:SetAttribute("Map", if MapService.current then MapService.current.name else "")
 	star.Parent = folder
+end
+
+-- Ten times a second: anyone close enough to a star collects it; stars left from an old map move to the new one.
+local function watch()
+	local Players = game:GetService("Players")
+	while true do
+		task.wait(0.1)
+		local mapName = if MapService.current then MapService.current.name else ""
+		for _, star in folder:GetChildren() do
+			if star:IsA("BasePart") then
+				if star:GetAttribute("Map") ~= mapName then
+					star:Destroy() -- (the map changed: this one belonged to the old field or the lobby)
+					task.defer(spawnOne)
+				else
+					for _, player in Players:GetPlayers() do
+						local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+						if root and root:IsA("BasePart") and (root.Position - star.Position).Magnitude <= Config.Range then
+							collect(star, player)
+							break
+						end
+					end
+				end
+			end
+		end
+	end
 end
 
 function AuraPickupService.start()
@@ -110,6 +128,7 @@ function AuraPickupService.start()
 			spawnOne()
 			task.wait(0.2)
 		end
+		watch()
 	end)
 end
 

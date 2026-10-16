@@ -144,10 +144,9 @@ local function syncPlayer(id)
 		local still = KnockdownService.isDown(p) or PowerService.stuck(id) or frozen[id] == true
 		h.WalkSpeed = if still then 0 else PowerService.speedOf(id, speedFor(id))
 		h:SetAttribute("HuzzSpeed", h.WalkSpeed) -- the top speed: Gameplay/Sprint builds up to it from a walk
-		-- No jumping in a round (owner's call): Space is the huss dash instead.
-		local noJump = still or (match ~= nil and match.roles[id] ~= nil)
-		h.JumpHeight = if noJump then 0 else StarterPlayer.CharacterJumpHeight
-		h.JumpPower = if noJump then 0 else StarterPlayer.CharacterJumpPower
+		-- No jumping anywhere (owner: "remove the jumping from the lobby"): Space is the huss instead.
+		h.JumpHeight = 0
+		h.JumpPower = 0
 	end
 	-- Catchers hold a knife (Config.TagMode "Stab"); everyone else's hands are empty.
 	local c = p.Character
@@ -822,10 +821,13 @@ Net.get("Dash").OnServerEvent:Connect(function(player, dir, at)
 	local id = player.UserId
 	local c = player.Character
 	local stage = State:GetAttribute("Stage")
-	if not (match and not match.over and match.roles[id] and c and (stage == "Running" or stage == "HeroRun")) then
+	-- in a game: only while running; in the lobby (not in the game) any time (owner: no jumping in the lobby,
+	-- keep the huss)
+	local playing = match ~= nil and not match.over and match.roles[id] ~= nil
+	if not c or (playing and not (stage == "Running" or stage == "HeroRun")) then
 		return
 	end
-	if KnockdownService.isDown(player) or PowerService.stuck(id) or frozen[id] or match.status[id] == "Downed" then
+	if KnockdownService.isDown(player) or PowerService.stuck(id) or frozen[id] or (playing and match.status[id] == "Downed") then
 		return
 	end
 	if typeof(dir) ~= "Vector3" or dir ~= dir then

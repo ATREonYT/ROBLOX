@@ -186,15 +186,16 @@ function DanceWheel.build(parent: Instance)
 			refresh()
 			root.Visible, outside.Visible = true, true
 			-- grows in from the middle (no bounce), and the slots glide out one after another, clockwise
-			pop.Scale = 0.86
-			TweenService:Create(pop, TweenInfo.new(0.24, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+			-- one smooth move: the whole wheel grows from 0.9 while every slot glides out together (no stagger, so
+			-- nothing jitters on a slow frame)
+			pop.Scale = 0.9
+			local ease = TweenInfo.new(0.22, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+			TweenService:Create(pop, ease, { Scale = 1 }):Play()
 			local centre = UDim2.fromOffset(SIZE / 2, SIZE / 2)
-			for i, sl in slots do
-				sl.circle.Position = sl.home:Lerp(centre, 0.4)
+			for _, sl in slots do
+				sl.circle.Position = sl.home:Lerp(centre, 0.22)
 				sl.grow.Scale = 1
-				task.delay((i - 1) * 0.02, function()
-					TweenService:Create(sl.circle, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), { Position = sl.home }):Play()
-				end)
+				TweenService:Create(sl.circle, ease, { Position = sl.home }):Play()
 			end
 			Sfx.play("ui_open")
 		else
@@ -233,7 +234,11 @@ function DanceWheel.build(parent: Instance)
 	end)
 	outside.Activated:Connect(function() setOpen(false) end)
 	DancePlayer.changed(function() if open then refresh() end end)
-	State.changed(function() if open then refresh() end end)
+	-- The slot pictures are made ahead, while the wheel is shut (when your dances or your avatar change), so
+	-- pressing G only plays the opening (owner: "make the dance menu open smoothly without the glitches").
+	State.changed(function() task.defer(refresh) end)
+	player.CharacterAdded:Connect(function() task.delay(1.5, refresh) end)
+	pcall(function() player.CharacterAppearanceLoaded:Connect(function() task.delay(0.2, refresh) end) end)
 	ModalManager.changed(function(current) if current then setOpen(false) end end)
 	player:GetAttributeChangedSignal("HuzzChoosing"):Connect(function()
 		if player:GetAttribute("HuzzChoosing") == true then setOpen(false) end

@@ -60,6 +60,7 @@ function MapVoteService.run(nameA, nameB, seconds, stillGoing)
 		p:SetAttribute("HuzzVote", nil)
 	end
 	RoundNet:SetAttribute("VoteWinner", winner)
+	pcall(function() require(script.Parent.MapService).paintLobby(winner) end) -- (the lobby floor turns into the map's)
 	return winner
 end
 

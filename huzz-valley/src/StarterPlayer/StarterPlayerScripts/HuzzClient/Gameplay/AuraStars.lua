@@ -2,7 +2,7 @@
 	Draws the lobby's Aura stars (HuzzServer/AuraPickupService, tag "HuzzAuraStar") on this screen with the
 	owner's Aura star (design/aura): the purple one as drawn, the other colours from its all-white copy, tinted. A
 	soft halo behind it breathes, sparkles, a soft light and a glow on the floor; it bobs and sways gently. Rainbow
-	stars drift through the colours slowly (never a flash). Collecting one (E) pops it: a burst of sparkles, a sound
+	stars drift through the colours slowly (never a flash). Collecting one (run into it) pops it: a burst of sparkles, a sound
 	and "+1 Aura".
 	Only stars near the camera animate.
 ]]

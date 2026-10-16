@@ -1,14 +1,16 @@
 --[[
 	The small things that make running feel quick and expensive (owner: "make the running/game feel more
 	premium... see the feel in Huss Valley"), on this screen only:
-	  - the camera widens a little as you reach full sprint and kicks wider for a moment when you dash, easing
-	    back (never snapping), so speed reads without anything on screen;
+	  - the camera widens as you build up to full sprint (owner: "when you are running full speed make the screen
+	    make you feel like you are running quick") and kicks wider for a moment when you dash, easing back (never
+	    snapping); near full speed soft wind streaks drift outward round the screen edge (fading in and out with
+	    your speed, never flashing);
 	  - a dash draws a ring of thin speed lines round the screen edge for a quarter of a second (one per dash;
 	    the dash cooldown keeps it far under one flash a second);
 	  - every runner near you kicks up a little dust each step and a puff when they dash; your own steps make
 	    a quiet sound (Sfx "step").
-	Only in a round (the lobby stays calm), never while the intro camera has the view, and off with the
-	Reduced Motion setting (camera and lines; the dust stays).
+	The sprint feel works in the lobby too; the dust only in a round. Never while the intro camera has the view, and
+	off with the Reduced Motion setting (camera, lines and streaks; the dust stays).
 ]]
 local M = {}
 
@@ -24,7 +26,7 @@ function M.start()
 	local Frame = require(script.Parent.Frame)
 
 	local player = Players.LocalPlayer
-	local SPRINT_FOV = 6 -- extra degrees at full sprint
+	local SPRINT_FOV = 11 -- extra degrees at full sprint (was 6: the owner couldn't feel it)
 	local DASH_FOV = 9 -- extra degrees at the start of a dash, easing out over DASH_TIME
 	local DASH_TIME = 0.45
 	local NEAR = 120 -- studs: dust only for runners this close to the camera
@@ -58,6 +60,23 @@ function M.start()
 		bar.Parent = gui
 		lines[i] = bar
 	end
+	-- Wind streaks for full sprint: thin bars round the edge that drift outward on a loop; their see-through
+	-- follows your speed smoothly.
+	local streaks = {}
+	for i = 1, 14 do
+		local angle = (i / 14) * math.pi * 2 + 0.11 * (i % 3)
+		local bar = Instance.new("Frame")
+		bar.Name = "Streak" .. i
+		bar.AnchorPoint = Vector2.new(0.5, 0.5)
+		bar.Size = UDim2.new(0.09 + (i % 4) * 0.025, 0, 0, if i % 2 == 0 then 2 else 1)
+		bar.Rotation = math.deg(angle)
+		bar.BackgroundColor3 = Color3.new(1, 1, 1)
+		bar.BackgroundTransparency = 1
+		bar.BorderSizePixel = 0
+		bar.Parent = gui
+		streaks[i] = { bar = bar, angle = angle, phase = (i * 0.37) % 1 }
+	end
+	local streakClock = 0
 	gui.Parent = player:WaitForChild("PlayerGui")
 	local function speedLines()
 		if calm() then
@@ -155,12 +174,16 @@ function M.start()
 			return
 		end
 		local want = 0
+		local sprint = 0 -- 0 = walking, 1 = flat out
 		local character = player.Character
 		local cinematic = player:GetAttribute("HuzzCinematic") == true or camera.CameraType == Enum.CameraType.Scriptable
-		if myRoot and inRound(player) and not cinematic and not calm() then
+		if myRoot and not cinematic and not calm() then
 			local v = myRoot.AssemblyLinearVelocity
 			local speed = Vector3.new(v.X, 0, v.Z).Magnitude
-			want = math.clamp((speed - Run.From) / math.max(Run.Full - Run.From, 1), 0, 1) * SPRINT_FOV
+			local h = character and character:FindFirstChildOfClass("Humanoid")
+			local cap = (h and h:GetAttribute("HuzzSpeed")) or (h and h.WalkSpeed) or 20
+			sprint = math.clamp((speed - Run.From) / math.max(cap - Run.From, 4), 0, 1) ^ 1.4
+			want = sprint * SPRINT_FOV
 			local dashAt = character and character:GetAttribute("DashAt")
 			if type(dashAt) == "number" then
 				local age = now - dashAt
@@ -173,6 +196,20 @@ function M.start()
 						speedLines()
 					end
 				end
+			end
+		end
+		-- the wind streaks: in from about 70% of top speed, drifting outward on a loop
+		streakClock += dt
+		local show = math.clamp((sprint - 0.7) / 0.3, 0, 1)
+		for _, st in streaks do
+			if show <= 0 then
+				st.bar.BackgroundTransparency = 1
+			else
+				local u = (streakClock * 1.6 + st.phase) % 1
+				local r = 0.36 + u * 0.16
+				st.bar.Position = UDim2.fromScale(0.5 + math.cos(st.angle) * r, 0.5 + math.sin(st.angle) * r)
+				-- fade in and out along each pass, so nothing pops
+				st.bar.BackgroundTransparency = 1 - show * 0.35 * math.sin(u * math.pi)
 			end
 		end
 		if cinematic then

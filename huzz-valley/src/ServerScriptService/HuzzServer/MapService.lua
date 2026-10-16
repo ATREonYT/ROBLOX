@@ -209,6 +209,89 @@ end
 	(a gap in a map's floor, a glitch through a wall) is put straight back on it at the nearest point inside the
 	walls, a moment later; anyone falling far below the lobby goes back to the lobby spawn.
 ]]
+-- The floor runners stand on in a map: the visible part found most often right under a 5 x 5 grid of points across
+-- its field (ZoneA to ZoneB; a single point can land on a court line or a path). Read from the stored copy, so it
+-- works before the map is in the world. The part, or nil.
+local function floorPart(box: Instance): BasePart?
+	local a, b, middle = zonesOf(box, "", true)
+	if not (a and b and middle) then return nil end
+	local pa, pb, y = a.CFrame.Position, b.CFrame.Position, middle.CFrame.Position.Y
+	local run = Vector3.new(pb.X - pa.X, 0, pb.Z - pa.Z)
+	if run.Magnitude < 1 then return nil end
+	local side = run:Cross(Vector3.yAxis).Unit
+	local parts = {}
+	for _, p in box:GetDescendants() do
+		if p:IsA("BasePart") and p ~= a and p ~= b and p ~= middle and p.Transparency < 0.9 then table.insert(parts, p) end
+	end
+	local votes = {}
+	for i = 0, 4 do
+		for j = -2, 2 do
+			local pt = Vector3.new(pa.X, y, pa.Z) + run * (0.1 + i * 0.2) + side * (j * middle.Size.Z * 0.18)
+			local best, bestTop
+			for _, p in parts do
+				local l = p.CFrame:PointToObjectSpace(pt)
+				local top = p.CFrame.Position.Y + p.Size.Y / 2
+				if math.abs(l.X) <= p.Size.X / 2 and math.abs(l.Z) <= p.Size.Z / 2 and top <= y + 2 and (not bestTop or top > bestTop) then
+					best, bestTop = p, top
+				end
+			end
+			if best then votes[best] = (votes[best] or 0) + 1 end
+		end
+	end
+	local top, n = nil, 0
+	for p, c in votes do
+		if c > n then top, n = p, c end
+	end
+	return top
+end
+
+--[[
+	The lobby floor takes on the chosen map's floor (owner: "when a map gets selected make the ground floor the same
+	as the map's, for example the Halloween one, make it the same orange"): its colour fades over a second, its
+	material switches, and the map floor's textures (the Halloween grass is orange from its Texture) are copied on,
+	with the lobby's own textures hidden meanwhile. Called when the vote picks a map (MapVoteService) and when a map
+	loads.
+]]
+function MapService.paintLobby(mapName: string)
+	local entry = MapService.byName(mapName)
+	local lobby = MapService.lobby
+	if not (entry and lobby) then return end
+	local floor = floorPart(entry.box)
+	if not floor then return end
+	lobby.Material = floor.Material
+	pcall(function() lobby.MaterialVariant = floor.MaterialVariant end)
+	game:GetService("TweenService"):Create(lobby, TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Color = floor.Color }):Play()
+	for _, c in lobby:GetChildren() do
+		if c:GetAttribute("HuzzMapLook") then
+			c:Destroy()
+		elseif c:IsA("Decal") then -- (Texture is a Decal too) the lobby's own: hidden while a map's look is on
+			if c:GetAttribute("HuzzOwnTransparency") == nil then c:SetAttribute("HuzzOwnTransparency", c.Transparency) end
+			c.Transparency = 1
+		end
+	end
+	for _, c in floor:GetChildren() do
+		if c:IsA("Decal") then
+			local copy = c:Clone()
+			copy:SetAttribute("HuzzMapLook", true)
+			copy.Parent = lobby
+		end
+	end
+end
+
+-- A random spot on the loaded map's field floor, at least inset studs inside its walls (Aura stars), or nil.
+function MapService.fieldSpot(inset: number): Vector3?
+	if not field then return nil end
+	local lo, hi = field.lo, field.hi
+	for _ = 1, 8 do
+		local x = lo.X + inset + math.random() * math.max(hi.X - lo.X - 2 * inset, 0)
+		local z = lo.Z + inset + math.random() * math.max(hi.Z - lo.Z - 2 * inset, 0)
+		local w = field.frame:PointToWorldSpace(Vector3.new(x, 0, z))
+		local y = MapService.ground(Vector3.new(w.X, field.floor, w.Z), field.floor + 6)
+		if y and math.abs(y - field.floor) < 2 then return Vector3.new(w.X, y, w.Z) end
+	end
+	return nil
+end
+
 local MARGIN = 8 -- studs past the walls that still count as the field (less than Config.Map.Gap to the lobby)
 
 local function catchOne(player: Player)
@@ -523,6 +606,7 @@ function MapService.load(entry)
 	local z = MapService.zones
 	z.ZoneA, z.ZoneB, z.Middle, z.Bench = prepare(a), prepare(b), prepare(middle), prepare(bench)
 	MapService.current = entry
+	if not entry.fixed then pcall(MapService.paintLobby, entry.name) end
 	return entry
 end
 

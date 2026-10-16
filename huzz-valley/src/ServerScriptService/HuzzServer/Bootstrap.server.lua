@@ -61,6 +61,11 @@ ActionService.start()
 CompanionService.start()
 require(HuzzServer.AuraPickupService).start() -- Aura stars to collect in the lobby (Config/AuraStars)
 require(HuzzServer.LookService).apply() -- the lighting look: colour grade, bloom, sun rays, haze (Config/Look)
+-- No jumping anywhere (owner): Space is the huss in the lobby too (RoundService keeps every Humanoid at 0).
+pcall(function()
+	game:GetService("StarterPlayer").CharacterJumpHeight = 0
+	game:GetService("StarterPlayer").CharacterJumpPower = 0
+end)
 DataService.onChanged = function(player)
 	CosmeticsService.refresh(player)
 	CompanionService.refresh(player) -- (the equipped anime girl follows you: Gameplay/Auras)

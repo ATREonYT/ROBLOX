@@ -71,6 +71,10 @@ end
 function AuraFX.attach(model, spec, opts)
 	local lite = opts and opts.lite == true
 	local scale = spec.scale or 1
+	-- The big showcase girl over the map (scale > 1.5) glows far less (owner: "too much light shining down"): her
+	-- light stays small and soft, and her effects add less light (bloom makes bright particles flare).
+	local big = scale > 1.5
+	local glow = if big then 0.45 else 1
 	local made = {}
 	local emitters = {}
 	local function keep(inst)
@@ -90,7 +94,7 @@ function AuraFX.attach(model, spec, opts)
 			p.Name = e.name
 			p.Texture = texture(e.texture)
 			p.Color = colorSeq(e.colors)
-			p.LightEmission = e.light
+			p.LightEmission = e.light * glow
 			p.LightInfluence = if e.light > 0.5 then 0 else 1
 			p.Rate = e.rate * (if lite then 0.5 else 1)
 			p.Lifetime = NumberRange.new(e.life[1], e.life[2])
@@ -115,8 +119,8 @@ function AuraFX.attach(model, spec, opts)
 		light = keep(Instance.new("PointLight"))
 		light.Name = "HuzzAuraLight"
 		light.Color = spec.light.color
-		light.Brightness = spec.light.brightness
-		light.Range = spec.light.range * scale
+		light.Brightness = spec.light.brightness * (if big then 0.3 else 1)
+		light.Range = if big then math.min(spec.light.range * 1.3, 10) else spec.light.range * scale
 		light.Shadows = false
 		light.Parent = body
 	end
@@ -142,7 +146,7 @@ function AuraFX.attach(model, spec, opts)
 					b.Name = "HuzzSlash" .. layer[1] .. half
 					b.Attachment0, b.Attachment1 = atts[half], atts[half + 1]
 					b.Color = ColorSequence.new(layer[2])
-					b.LightEmission = layer[3]
+					b.LightEmission = layer[3] * glow
 					b.LightInfluence = if layer[3] > 0 then 0 else 1
 					b.ZOffset = layer[5] -- (the core always on top of its dark edge)
 					b.FaceCamera = true

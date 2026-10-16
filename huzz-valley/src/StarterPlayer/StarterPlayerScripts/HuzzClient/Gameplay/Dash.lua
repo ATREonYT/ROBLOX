@@ -98,7 +98,8 @@ function Dash.ready(): boolean
 	local role, status = player:GetAttribute("HuzzRole"), player:GetAttribute("HuzzStatus")
 	local c = player.Character
 	local stage = round:GetAttribute("Stage")
-	return (stage == "Running" or stage == "HeroRun") and (role == "Runner" or role == "Catcher") and status ~= "Downed"
+	local playing = role == "Runner" or role == "Catcher"
+	return (not playing or stage == "Running" or stage == "HeroRun") and status ~= "Downed"
 		and player:GetAttribute("HuzzFrozen") ~= true
 		and c ~= nil and c:GetAttribute("DownedAt") == nil and player:GetAttribute("MenuOpen") ~= true
 		and Workspace:GetServerTimeNow() >= (player:GetAttribute("DashReady") or 0)
@@ -147,13 +148,13 @@ function Dash.try()
 	end)
 end
 
--- Space / A only while you're in a round (jumping is off there); the lobby keeps its jump.
+-- Space / A is the huss everywhere: in a round and in the lobby (owner: "remove the jumping from the lobby, and keep
+-- the huss"); jumping is off for everyone.
 function Dash.start()
 	local round = Net.get("Round") :: RemoteEvent
 	local bound = false
 	local function update()
-		local role = player:GetAttribute("HuzzRole")
-		local inGame = (role == "Runner" or role == "Catcher") and round:GetAttribute("Stage") ~= "GameOver"
+		local inGame = true
 		if inGame and not bound then
 			bound = true
 			ContextActionService:BindActionAtPriority("HuzzDash", function(_, state)
