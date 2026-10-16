@@ -120,21 +120,31 @@ check("no bonus row while nothing can be earned", pp.Rewards:FindFirstChild("Bon
 
 -- quests
 click(pp.Header.QuestsTab)
-local steals = pp.Quests.Steals
-check("unfinished quest shows progress, no CLAIM", steals.State:FindFirstChild("Claim") == nil and steals.Count.Visible and steals.Count.Text == "0 / 3")
-local okq, why = State.action("ClaimQuest", "Steals")
+-- lore quests: chapter 1 shows first, with its story
+check("chapter 1 shows its two quests and its story", pp.Quests.Chapter.Title.Text:find("CHAPTER 1") ~= nil and pp.Quests.Cards:FindFirstChild("Q1Rounds") ~= nil and pp.Quests.Cards:FindFirstChild("Q1Cross") ~= nil and #pp.Quests.Lore.Text.Text > 20)
+local rounds = pp.Quests.Cards.Q1Rounds
+check("unfinished quest shows progress, no CLAIM", rounds.State:FindFirstChild("Claim") == nil and rounds.Count.Visible and rounds.Count.Text == "0 / 3")
+local okq, why = State.action("ClaimQuest", "Q1Rounds")
 check("server refuses an unfinished quest", okq == false and profile.Data.XP == 0)
 print("  refused: " .. tostring(why))
-ProgressService.addStat(player, "Steals", 3)
+ProgressService.addStat(player, "AuraStars", 99)
+check("a later chapter's quest can't be claimed yet", (State.action("ClaimQuest", "Q2Stars")) == false and not profile.Data.Cosmetics.RookieKnife)
+ProgressService.addStat(player, "Rounds", 3)
 task.wait(0.3)
-check("finished quest shows CLAIM and 3 / 3", steals.State:FindFirstChild("Claim") ~= nil and steals.DoneBar.Text == "3 / 3")
-click(steals.State.Claim)
+check("finished quest shows CLAIM and 3 / 3", rounds.State:FindFirstChild("Claim") ~= nil and rounds.DoneBar.Text == "3 / 3")
+local coinsBefore = profile.Data.Coins
+click(rounds.State.Claim)
 task.wait(0.2)
-check("CLAIM gives 100 XP once", profile.Data.XP == 100 and steals.State:FindFirstChild("Claimed") ~= nil and (State.action("ClaimQuest", "Steals")) == false and profile.Data.XP == 100)
+check("CLAIM gives 100 XP and 150 coins once", profile.Data.XP == 100 and profile.Data.Coins == coinsBefore + 150 and rounds.State:FindFirstChild("Claimed") ~= nil and (State.action("ClaimQuest", "Q1Rounds")) == false and profile.Data.XP == 100)
 check("level bar updates", pp.LevelBar.Level.Xp.Text == "100" and pp.LevelBar.Level.LevelText.Text == "LEVEL 1")
-ProgressService.addStat(player, "HoldSeconds", 99)
+ProgressService.addStat(player, "Crossings", 99)
 task.wait(0.3)
-check("progress caps at the target", pp.Quests.Hold.DoneBar.Text == "30 / 30")
+check("progress caps at the target", pp.Quests.Cards.Q1Cross.DoneBar.Text == "5 / 5")
+check("claiming the chapter's last quest opens chapter 2", (State.action("ClaimQuest", "Q1Cross")) == true)
+task.wait(0.3)
+check("chapter 2 shows", pp.Quests.Chapter.Title.Text:find("CHAPTER 2") ~= nil and pp.Quests.Cards:FindFirstChild("Q2Stars") ~= nil)
+check("a quest knife is given and worn", (State.action("ClaimQuest", "Q2Stars")) == true and profile.Data.Cosmetics.RookieKnife == true and profile.Data.Wear.Knife == "RookieKnife")
+check("quest knives can't be bought", (State.action("BuyWithCoins", "HunterKnife")) == false)
 MM.close()
 print(string.format("buttons: %d ok, %d failed", ok, failed))
 return nil

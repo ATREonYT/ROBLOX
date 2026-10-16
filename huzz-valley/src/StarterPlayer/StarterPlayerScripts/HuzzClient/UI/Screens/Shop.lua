@@ -287,8 +287,11 @@ local function buildItems(body: Frame)
 		local function refresh()
 			local owned = State.data.Cosmetics[item.Key] == true
 			local worn = (State.data.Wear or {})[item.Slot] == item.Key
-			if icon then icon.Visible = not owned end
-			if not owned then
+			if icon then icon.Visible = not owned and not item.Unlock end
+			if not owned and item.Unlock then
+				b.setText("EARN IT") -- (quest knives: never sold; the tap says where)
+				b.setStyle("Disabled")
+			elseif not owned then
 				b.setText(Format.commas(item.Price))
 				b.setStyle(if (State.data.Coins or 0) >= item.Price then "Action" else "Disabled")
 			else
@@ -299,7 +302,10 @@ local function buildItems(body: Frame)
 		b.onClick(function()
 			local owned = State.data.Cosmetics[item.Key] == true
 			local ok, why
-			if not owned then
+			if not owned and item.Unlock then
+				Toast.show(`{item.Name}: {item.Unlock}`)
+				return
+			elseif not owned then
 				ok, why = State.action("BuyWithCoins", item.Key)
 				Toast.show(if ok then `{item.Name} is yours!` else (why or "Couldn't buy that."))
 			else

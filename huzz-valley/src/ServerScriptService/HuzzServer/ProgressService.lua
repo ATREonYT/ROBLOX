@@ -38,7 +38,15 @@ function ProgressService.claimQuest(player: Player, id: any): (boolean, string?)
 	local ok, why = false, nil
 	DataService.update(player, function(data)
 		if data.QuestsClaimed[quest.Id] then why = "Already claimed."; return end
+		if quest.Chapter and Progression.currentChapter(data.QuestsClaimed) < quest.Chapter then why = "Finish the chapter before first."; return end
 		if (data.Stats[quest.Stat] or 0) < quest.Target then why = "Not finished yet."; return end
+		local r = quest.Reward
+		if r and r.Kind == "Coins" then data.Coins = (data.Coins or 0) + r.Amount
+		elseif r and r.Kind == "Aura" then data.Aura = (data.Aura or 0) + r.Amount
+		elseif r and r.Kind == "Knife" then
+			data.Cosmetics[r.Id] = true
+			data.Wear.Knife = r.Id -- (wear it straight away; change it in the shop's ITEMS tab)
+		end
 		data.QuestsClaimed[quest.Id] = true
 		data.XP += quest.XP
 		ok = true

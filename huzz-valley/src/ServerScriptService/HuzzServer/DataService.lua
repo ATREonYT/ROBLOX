@@ -29,7 +29,7 @@ DataService.Template = {
 	FavDances = {}, -- [id] = true
 	XP = 0,
 	Claimed = {}, -- [tostring(level)] = true for claimed track rewards
-	Stats = {}, -- quest counters: Steals, HoldSeconds, Jukes, Rounds
+	Stats = {}, -- quest counters (Config/Progression.Stats): Rounds, Crossings, AuraStars, Heroes, Rescues, ...
 	QuestsClaimed = {}, -- [questId] = true
 }
 

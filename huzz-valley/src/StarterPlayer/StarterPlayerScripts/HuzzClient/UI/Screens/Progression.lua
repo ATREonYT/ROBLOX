@@ -192,10 +192,10 @@ end
 -- QUESTS ----------------------------------------------------------------------------------------------------------
 local QW, QH = 333, 109
 
-local function buildQuests(page: Frame, refreshers: { () -> () })
-	for i, q in Progression.Quests do
-		local col, row = (i - 1) % 2, (i - 1) // 2
-		local card = panel(page, q.Id, BODY_X + col * (QW + BODY_W - 2 * QW), 52 + row * (QH + 9), QW, QH, COL.Quest, COL.QuestRim)
+-- One quest card at (x, y): icon, name, its reward, the progress bar and CLAIM / CLAIMED, XP on the right.
+local function questCard(page: Instance, q, x: number, y: number, refreshers: { () -> () })
+	do
+		local card = panel(page, q.Id, x, y, QW, QH, COL.Quest, COL.QuestRim)
 		new("Frame", { Name = "IconCell", Position = UDim2.fromOffset(1, 1), Size = UDim2.new(0, 64, 1, -2), BackgroundColor3 = COL.IconCell, BorderSizePixel = 0, Parent = card }, { Kit.corner(3) })
 		Kit.icon(q.Icon, { Name = "Icon", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0, 33, 0.5, 0), Size = UDim2.fromOffset(46, 46), Parent = card })
 		local xpCell = new("Frame", { Name = "XpCell", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -1, 0, 1), Size = UDim2.new(0, 60, 1, -2), BackgroundColor3 = COL.XpCell, BorderSizePixel = 0, Parent = card }, { Kit.corner(3) })
@@ -204,7 +204,7 @@ local function buildQuests(page: Frame, refreshers: { () -> () })
 		local tx = 76
 		local textW = QW - tx - 70
 		Kit.name({ Name = "Name", Text = q.Name, TextSize = 16, Position = UDim2.fromOffset(tx, 16), Size = UDim2.fromOffset(textW, 24), Parent = card })
-		Kit.text({ Name = "Blurb", Text = q.Blurb, TextSize = 14, TextColor3 = C.SubText, Position = UDim2.fromOffset(tx, 41), Size = UDim2.fromOffset(textW, 20), TextWrapped = false, Parent = card })
+		Kit.text({ Name = "Blurb", Text = "Reward: " .. Progression.rewardText(q), TextSize = 14, TextColor3 = C.Accent, Position = UDim2.fromOffset(tx, 41), Size = UDim2.fromOffset(textW, 20), TextWrapped = false, Parent = card })
 		local barY, barH = 69, 17
 		local barW = textW - 50
 		local bar, set = segBar(card, "Progress", tx, barY, barW, barH, 5, 3, COL.SegFill, COL.QuestEmpty)
@@ -237,7 +237,7 @@ local function buildQuests(page: Frame, refreshers: { () -> () })
 				b.onClick(function()
 					b.setEnabled(false)
 					b.setText("...")
-					claim("ClaimQuest", q.Id, "+" .. q.XP .. " XP!")
+					claim("ClaimQuest", q.Id, `+{Progression.rewardText(q)} and {q.XP} XP!`)
 				end)
 				Motion.pop(holder)
 			elseif kind == "Claimed" then
@@ -245,6 +245,41 @@ local function buildQuests(page: Frame, refreshers: { () -> () })
 			end
 		end)
 	end
+end
+
+-- Quests (owner: lore quests): the chapter you're on, its two quests, and its story underneath. Chapters open one
+-- after another (the server checks the same); when they're all done the last one stays, with a note.
+local function buildQuests(page: Frame, refreshers: { () -> () })
+	local strip = panel(page, "Chapter", BODY_X, 50, BODY_W, 26, COL.Section, COL.SectionRim)
+	local chapterTitle = Kit.name({ Name = "Title", Text = "", TextSize = 15, Position = UDim2.fromOffset(10, 1), Size = UDim2.new(1, -120, 1, -2), Parent = strip })
+	local chapterNo = Kit.text({ Name = "Number", Text = "", FontFace = Theme.Fonts.Number, TextSize = 13, TextColor3 = C.SubText, TextXAlignment = Enum.TextXAlignment.Right, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -10, 0, 4), Size = UDim2.fromOffset(100, 18), TextWrapped = false, Parent = strip })
+	local cards = new("Frame", { Name = "Cards", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = page })
+	local loreY = 80 + QH + 7
+	local lore = panel(page, "Lore", BODY_X, loreY, BODY_W, 279 - loreY, COL.Section, COL.SectionRim)
+	Kit.text({ Name = "Heading", Text = "THE STORY", FontFace = Theme.Fonts.Heading, TextSize = 13, TextColor3 = C.Accent, Position = UDim2.fromOffset(12, 7), Size = UDim2.fromOffset(200, 16), TextWrapped = false, Parent = lore })
+	local loreText = Kit.text({ Name = "Text", Text = "", FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Medium, Enum.FontStyle.Italic), TextSize = 15, LineHeight = 1.05, TextColor3 = C.Text, TextWrapped = true, TextYAlignment = Enum.TextYAlignment.Top, Position = UDim2.fromOffset(12, 26), Size = UDim2.new(1, -24, 1, -50), Parent = lore })
+	local nextLine = Kit.text({ Name = "Next", Text = "", TextSize = 13, TextColor3 = C.SubText, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 12, 1, -6), Size = UDim2.new(1, -24, 0, 16), TextWrapped = false, Parent = lore })
+	local built, cardRefreshers = nil, {}
+	table.insert(refreshers, function()
+		local current = Progression.currentChapter(State.data.QuestsClaimed)
+		local shown = math.min(current, #Progression.Chapters)
+		if built ~= shown then
+			built = shown
+			cardRefreshers = {}
+			for _, ch in cards:GetChildren() do ch:Destroy() end
+			local chapter = Progression.Chapters[shown]
+			for i, q in chapter.Quests do
+				questCard(cards, q, BODY_X + (i - 1) * (QW + BODY_W - 2 * QW), 80, cardRefreshers)
+			end
+			chapterTitle.Text = `CHAPTER {shown}: {string.upper(chapter.Title)}`
+		end
+		loreText.Text = Progression.Chapters[shown].Lore
+		nextLine.Text = if current > #Progression.Chapters then "The story so far is complete: more chapters are coming."
+			elseif shown < #Progression.Chapters then `Claim both quests to open chapter {shown + 1}: {Progression.Chapters[shown + 1].Title}.`
+			else "Claim both quests to finish the story."
+		chapterNo.Text = string.format("%d / %d", shown, #Progression.Chapters)
+		for _, f in cardRefreshers do f() end
+	end)
 end
 
 -- The level bar shared by both tabs: LEVEL n · xp / 300 XP, a 10-part bar, and the next reward.

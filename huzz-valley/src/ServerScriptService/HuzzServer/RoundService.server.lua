@@ -148,15 +148,18 @@ local function syncPlayer(id)
 		h.JumpHeight = 0
 		h.JumpPower = 0
 	end
-	-- Catchers hold a knife (Config.TagMode "Stab"); everyone else's hands are empty.
+	-- Catchers hold a knife (Config.TagMode "Stab"); everyone else wears theirs on their back.
 	local c = p.Character
+	local profile = DataService.get(p)
+	local wear = profile and profile.Data.Wear
+	local knifeSkin = wear and wear.Knife and CoinShop.get(wear.Knife) or nil
 	if c then
 		if match and not match.over and match.roles[id] == "Catcher" and Config.TagMode == "Stab" then
-			local profile = DataService.get(p)
-			local wear = profile and profile.Data.Wear
-			KnifeService.give(c, wear and wear.Knife and CoinShop.get(wear.Knife)) -- (a coin-shop knife skin)
+			KnifeService.takeBack(c)
+			KnifeService.give(c, knifeSkin) -- (in hand, with their knife skin)
 		else
 			KnifeService.take(c)
+			KnifeService.giveBack(c, knifeSkin) -- everyone else wears theirs on their back
 		end
 	end
 	local badge = nil
@@ -273,6 +276,7 @@ function handlers.HeroResult(e)
 	State:SetAttribute("HeroResult", if e.survived then "Survived" else "Fell")
 	if e.survived then
 		announce(`{nameOf(e.id)} made the Hero run!`, GREEN, true)
+		addStat(e.id, "Heroes", 1) -- (lore quest: Brave Heart)
 		local p = byId[e.id]
 		if p and Config.HeroBonus > 0 then
 			DataService.update(p, function(d)
@@ -305,6 +309,7 @@ function handlers.Caught(e)
 		announce(`{nameOf(e.id)} is down`, RED)
 	end
 	if byId[e.id] then byId[e.id]:SetAttribute("HuzzLastChance", e.final == true) end
+	if e.by then addStat(e.by, "Catches", 1) end -- (lore quest: The Hunter)
 end
 
 function handlers.Rescued(e)
@@ -324,6 +329,7 @@ end
 
 function handlers.Safe(e)
 	syncPlayer(e.id)
+	addStat(e.id, "Crossings", 1) -- (lore quest: cross safely)
 	if State:GetAttribute("Stage") == "Running" then
 		announce(`{nameOf(e.id)} is safe`, GREEN)
 	end

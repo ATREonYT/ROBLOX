@@ -1,5 +1,7 @@
 --[[
-	Catchers hold a knife in their right hand (as in the reference). It's a model welded to the
+	Catchers hold a knife in their right hand (as in the reference); everyone else wears theirs on their back
+	(owner: "the catchers run with a knife, and everyone even the runners have a knife mounted on their backs").
+	Both use the knife skin you wear (Config/CoinShop, slot Knife). It's a model welded to the
 	hand, not a Tool, so there's nothing to equip or drop and no backpack. HuzzClient/Gameplay/Stab
 	plays the stab and lights the blade's trail.
 
@@ -71,13 +73,68 @@ function KnifeService.has(character)
 	return character ~= nil and character:FindFirstChild(NAME) ~= nil
 end
 
+local BACK = "HuzzBackKnife"
+local function skinOf(skin) return if skin then skin.Key else "" end
+
+-- Your knife on your back, blade up over one shoulder, in your skin (replaced when the skin changes).
+function KnifeService.giveBack(character, skin)
+	if not character then return end
+	local old = character:FindFirstChild(BACK)
+	if old and old:GetAttribute("Skin") == skinOf(skin) then return end
+	if old then old:Destroy() end
+	local torso = character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso")
+	if not (torso and torso:IsA("BasePart")) then return end
+	local model = template()
+	model.Name = BACK
+	model:SetAttribute("Skin", skinOf(skin))
+	if skin and not ServerStorage:FindFirstChild(NAME) then
+		local a, b = skin.Colors[1], skin.Colors[#skin.Colors]
+		for _, d in model:GetDescendants() do
+			if d:IsA("BasePart") then
+				if d.Name == "Blade" or d.Name == "Tip" then
+					d.Color, d.Material, d.Reflectance = a, Enum.Material.Neon, 0
+				elseif d.Name == "Guard" or d.Name == "Pommel" then
+					d.Color = b
+				end
+			end
+		end
+	end
+	local handle = model:FindFirstChild("Handle", true)
+	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") then
+			d.Anchored, d.CanCollide, d.CanQuery, d.CanTouch, d.Massless = false, false, false, false, true
+		end
+	end
+	local weld = Instance.new("Weld")
+	weld.Name = "BackMount"
+	weld.Part0 = torso
+	weld.Part1 = handle
+	-- behind the torso (+Z is the back), handle low on one side, blade up over the other shoulder
+	weld.C0 = CFrame.new(0.15, -0.05, torso.Size.Z / 2 + 0.12) * CFrame.Angles(0, 0, math.rad(-35))
+	weld.Parent = handle
+	for _, d in model:GetDescendants() do
+		if d:IsA("Trail") then d:Destroy() end
+	end
+	model.Parent = character
+end
+
+function KnifeService.takeBack(character)
+	local knife = character and character:FindFirstChild(BACK)
+	if knife then knife:Destroy() end
+end
+
 -- Into the right hand, blade pointing down and a little forward (it comes up level in the stab).
 -- skin (optional): a Config/CoinShop Knife item: its blade, guard and pommel take its colours, the blade glows a
 -- little, and the slash streak matches.
 function KnifeService.give(character, skin)
-	if not character or KnifeService.has(character) then
+	if not character then
 		return
 	end
+	local held = character:FindFirstChild(NAME)
+	if held and (held:GetAttribute("Skin") or "") == skinOf(skin) then
+		return
+	end
+	if held then held:Destroy() end
 	local hand = character:FindFirstChild("RightHand") or character:FindFirstChild("Right Arm")
 	if not hand then
 		return

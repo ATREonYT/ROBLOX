@@ -63,7 +63,10 @@ local function collect(star: BasePart, player: Player)
 	local at = star.Position
 	local kind = star:GetAttribute("Kind")
 	star:Destroy()
-	DataService.update(player, function(d) d.Aura = (d.Aura or 0) + value end)
+	DataService.update(player, function(d)
+		d.Aura = (d.Aura or 0) + value
+		d.Stats.AuraStars = (d.Stats.AuraStars or 0) + 1 -- (lore quest: Star Catcher)
+	end)
 	Net.get("Round"):FireClient(player, "AuraCollected", { value = value, kind = kind, at = at })
 	task.delay(rng:NextNumber(Config.Respawn[1], Config.Respawn[2]), spawnOne)
 end

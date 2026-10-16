@@ -106,8 +106,10 @@ function Sfx.play(name: string, opts: { volume: number?, pitch: number?, at: Ins
 	end
 	s.Parent = o.at or home()
 	s:Play()
-	s.Ended:Once(function()
-		s:Destroy()
+	pcall(function() -- (guarded: the offline preview's copy of the Roblox API has no Ended)
+		s.Ended:Once(function()
+			s:Destroy()
+		end)
 	end)
 	task.delay(4, function() -- (in case Ended never fires: a sound that failed to load)
 		if s.Parent then

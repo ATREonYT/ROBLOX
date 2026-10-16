@@ -538,6 +538,12 @@ local function simulate(opts)
 			c._knife = nil
 		end
 	end
+	function KnifeService.giveBack(c)
+		c._backKnife = true
+	end
+	function KnifeService.takeBack(c)
+		c._backKnife = nil
+	end
 	function KnifeService.has(c)
 		return c._knife == true
 	end
