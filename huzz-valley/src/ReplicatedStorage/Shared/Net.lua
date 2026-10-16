@@ -23,6 +23,7 @@ local SPEC = {
 	Vote = "RemoteEvent",
 	Stab = "RemoteEvent",
 	Huss = "RemoteEvent",
+	Power = "RemoteEvent",
 }
 
 local folder: Folder

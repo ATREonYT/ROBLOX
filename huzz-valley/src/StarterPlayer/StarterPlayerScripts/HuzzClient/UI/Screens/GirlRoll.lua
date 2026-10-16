@@ -1,8 +1,10 @@
--- The girl roller (after the map vote): a strip of girl names in a kit window at the top of the screen. It spins
--- fast, slows down and stops on this game's girl, then her card lights up in her rarity colour. Every name on the
--- strip is a real, fairly drawn girl (the server builds the strip with Shared/GirlRoll), and the bottom row shows
--- each rarity's real chance. Shown while the Round remote's RollData attribute holds a roll (JSON, so players who
--- join mid-roll see it too); it's not a menu, so the game carries on behind it and it closes when the roll is over.
+-- The girl roller (after the map vote), owner's design: a small kit window at the top of the screen with a reel
+-- that runs from top to bottom like a slot machine. Each row shows the girl's real model (a live picture of her
+-- copy in ReplicatedStorage.HuzzGirls), her name, her rarity and that rarity's real chance. It slows down and
+-- stops with this game's girl in the gold middle slot, which then lights up in her rarity colour.
+-- Every row is a fair draw (the server builds the reel with Shared/GirlRoll). Shown while the Round remote's
+-- RollData attribute holds a roll (JSON, so players who join mid-roll see it too); it isn't a menu, so the game
+-- carries on behind it, and it closes when the roll is over.
 local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -22,13 +24,14 @@ local new = Kit.new
 
 local GirlRoll = {}
 
-local W, H = 701, 200
-local WELL = { X = 14, Y = 57, W = 673, H = 96 } -- the dark strip the names pass through (window coords)
-local CELL = { W = 118, H = 78, Gap = 8 }
-local PITCH = CELL.W + CELL.Gap
-local ODDS_Y = 172
+local W, H, HEADER = 320, 254, 40
+local REEL = { X = 10, Y = HEADER + 10, W = 300, H = 192 } -- three rows show; the middle one is the pick
+local ROW = { H = 58, Gap = 6 }
+local PITCH = ROW.H + ROW.Gap
+local MID_Y = REEL.H / 2 - ROW.H / 2 -- top of the middle slot, in reel coordinates
 local GOLD = C.Progress
 local SCREEN_TOP = 6
+local LOAD_ROWS = 2.6 -- rows this far from the middle get their model; further ones drop it
 
 local rarityColor = {}
 for _, r in Config.Rarities do
@@ -36,188 +39,221 @@ for _, r in Config.Rarities do
 end
 local function colorOf(rarity: string): Color3
 	local c = rarityColor[rarity] or Color3.new(1, 1, 1)
-	-- Secret is near-black: on the navy cards it reads as a white rim on black.
-	return if (c.R + c.G + c.B) < 0.4 then Color3.new(1, 1, 1) else c
+	return if (c.R + c.G + c.B) < 0.4 then Color3.new(1, 1, 1) else c -- Secret (near-black) shows as white
 end
 
-local function cell(parent: Instance, i: number, girl: { name: string, rarity: string }): Frame
+local function chanceText(chance: number?): string
+	if not chance then return "" end
+	return if chance >= 10 then string.format("%d%%", math.floor(chance + 0.5))
+		elseif chance >= 1 then string.format("%.1f%%", chance) else string.format("%.2f%%", chance)
+end
+
+local function label(props: { [string]: any }): TextLabel
+	local l = Instance.new("TextLabel")
+	l.BackgroundTransparency = 1
+	for k, v in props do (l :: any)[k] = v end
+	return l
+end
+
+-- Her portrait: head and shoulders, from the front.
+local function frame(viewport: ViewportFrame, model: Model)
+	local head = model:FindFirstChild("Head", true) :: BasePart?
+	local cam = viewport.CurrentCamera or Instance.new("Camera")
+	cam.FieldOfView = 30
+	cam.Parent = viewport
+	viewport.CurrentCamera = cam
+	if head then
+		local at = head.Position - Vector3.new(0, 0.45, 0)
+		local look = head.CFrame.LookVector
+		cam.CFrame = CFrame.lookAt(at + look * 6.2 + Vector3.new(0, 0.5, 0), at)
+	else
+		local cf, size = model:GetBoundingBox()
+		cam.CFrame = CFrame.lookAt(cf.Position + cf.LookVector * size.Magnitude * 1.6, cf.Position)
+	end
+end
+
+local function row(parent: Instance, i: number, girl: { name: string, rarity: string, key: string? }, chance: number?)
 	local color = colorOf(girl.rarity)
 	local secret = girl.rarity == "Secret"
 	local f = Instance.new("Frame")
-	f.Name = "Cell" .. i
-	f.AnchorPoint = Vector2.new(0.5, 0.5)
-	f.Position = UDim2.fromOffset((i - 1) * PITCH + CELL.W / 2, WELL.H / 2)
-	f.Size = UDim2.fromOffset(CELL.W, CELL.H)
+	f.Name = "Row" .. i
+	f.Position = UDim2.fromOffset(0, MID_Y - (i - 1) * PITCH)
+	f.Size = UDim2.fromOffset(REEL.W, ROW.H)
 	f.BackgroundColor3 = if secret then Color3.fromRGB(14, 14, 20) else C.Row
 	f.BorderSizePixel = 0
 	f:SetAttribute("RuntimeOnly", true)
 	Instance.new("UICorner", f).CornerRadius = UDim.new(0, 6)
 	local rim = Instance.new("UIStroke")
 	rim.Name = "Rim"
-	rim.Color = C.RowBorder:Lerp(color, 0.35)
+	rim.Color = C.RowBorder:Lerp(color, 0.3)
 	rim.Thickness = 1.5
 	rim.Parent = f
-	Instance.new("UIScale", f).Name = "Pop"
-	-- A glow of her rarity colour rising from the bottom, and a solid band along it.
-	local glow = Instance.new("Frame")
-	glow.Name = "Glow"
-	glow.Size = UDim2.fromScale(1, 1)
-	glow.BackgroundColor3 = color
-	glow.BorderSizePixel = 0
-	glow.Parent = f
-	Instance.new("UICorner", glow).CornerRadius = UDim.new(0, 6)
+	-- Her rarity colour washes in from the left behind her picture.
+	local wash = Instance.new("Frame")
+	wash.Name = "Wash"
+	wash.Size = UDim2.fromScale(1, 1)
+	wash.BackgroundColor3 = color
+	wash.BorderSizePixel = 0
+	wash.Parent = f
+	Instance.new("UICorner", wash).CornerRadius = UDim.new(0, 6)
 	local fade = Instance.new("UIGradient")
-	fade.Rotation = 90
 	fade.Transparency = NumberSequence.new({
-		NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.45, 0.88), NumberSequenceKeypoint.new(1, if secret then 0.7 else 0.5),
+		NumberSequenceKeypoint.new(0, if secret then 0.55 else 0.45), NumberSequenceKeypoint.new(0.4, 0.9), NumberSequenceKeypoint.new(1, 1),
 	})
-	fade.Parent = glow
-	local band = Instance.new("Frame")
-	band.Name = "Band"
-	band.AnchorPoint = Vector2.new(0.5, 1)
-	band.Position = UDim2.new(0.5, 0, 1, -4)
-	band.Size = UDim2.new(1, -16, 0, 4)
-	band.BackgroundColor3 = color
-	band.BorderSizePixel = 0
-	band.Parent = f
-	Instance.new("UICorner", band).CornerRadius = UDim.new(0, 2)
-	local name = Instance.new("TextLabel")
-	name.Name = "GirlName"
-	name.BackgroundTransparency = 1
-	name.Position = UDim2.fromOffset(6, 8)
-	name.Size = UDim2.new(1, -12, 0, 38)
-	name.FontFace = Theme.Fonts.Name
-	name.Text = girl.name
-	name.TextColor3 = C.Text
-	name.TextScaled = true
-	name.TextWrapped = true
-	name.Parent = f
-	local cap = Instance.new("UITextSizeConstraint")
-	cap.MaxTextSize = 19
-	cap.Parent = name
-	local rarity = Instance.new("TextLabel")
-	rarity.Name = "Rarity"
-	rarity.BackgroundTransparency = 1
-	rarity.Position = UDim2.fromOffset(6, 48)
-	rarity.Size = UDim2.new(1, -12, 0, 16)
-	rarity.FontFace = Theme.Fonts.Tab
-	rarity.Text = string.upper(girl.rarity)
-	rarity.TextColor3 = color
-	rarity.TextSize = 14
-	rarity.Parent = f
-	local rarityStroke = Instance.new("UIStroke")
-	rarityStroke.Color, rarityStroke.Thickness = C.TextShadow, 1
-	rarityStroke.Parent = rarity
+	fade.Parent = wash
+	local pic = Instance.new("ViewportFrame")
+	pic.Name = "Picture"
+	pic.Position = UDim2.fromOffset(5, 4)
+	pic.Size = UDim2.fromOffset(ROW.H - 8, ROW.H - 8)
+	pic.BackgroundColor3 = C.IconCell
+	pic.BackgroundTransparency = 0.2
+	pic.Ambient = Color3.fromRGB(190, 190, 205)
+	pic.LightColor = Color3.fromRGB(255, 250, 240)
+	pic.LightDirection = Vector3.new(-0.4, -1, -0.8)
+	pic.Parent = f
+	Instance.new("UICorner", pic).CornerRadius = UDim.new(0, 5)
+	local x = ROW.H + 4
+	label({
+		Name = "GirlName", Position = UDim2.fromOffset(x, 6), Size = UDim2.new(1, -x - 8, 0, 22), FontFace = Theme.Fonts.Name,
+		Text = girl.name, TextColor3 = C.Text, TextSize = 17, TextTruncate = Enum.TextTruncate.AtEnd,
+		TextXAlignment = Enum.TextXAlignment.Left, Parent = f,
+	})
+	-- The rarity in a coloured pill, then its chance.
+	local rarityText = string.upper(girl.rarity)
+	local pillW = math.ceil(#rarityText * 7.6) + 14
+	local pill = Instance.new("Frame")
+	pill.Name = "RarityPill"
+	pill.Position = UDim2.fromOffset(x, 32)
+	pill.Size = UDim2.fromOffset(pillW, 19)
+	pill.BackgroundColor3 = if secret then Color3.fromRGB(10, 10, 14) else color
+	pill.BorderSizePixel = 0
+	pill.Parent = f
+	Instance.new("UICorner", pill).CornerRadius = UDim.new(0, 5)
+	if secret then
+		local s = Instance.new("UIStroke")
+		s.Color, s.Thickness = Color3.new(1, 1, 1), 1
+		s.Parent = pill
+	end
+	local dark = (color.R * 0.3 + color.G * 0.59 + color.B * 0.11) > 0.62
+	label({
+		Name = "Rarity", Size = UDim2.fromScale(1, 1), FontFace = Theme.Fonts.Tab, Text = rarityText, TextSize = 13,
+		TextColor3 = if dark and not secret then C.DarkText else Color3.new(1, 1, 1), Parent = pill,
+	})
+	label({
+		Name = "Chance", Position = UDim2.fromOffset(x + pillW + 6, 32), Size = UDim2.fromOffset(60, 19), FontFace = Theme.Fonts.Label,
+		Text = chanceText(chance), TextSize = 13, TextColor3 = C.SubText, TextXAlignment = Enum.TextXAlignment.Left, Parent = f,
+	})
+	Instance.new("UIScale", f).Name = "Pop"
 	f.Parent = parent
-	return f
+	return { frame = f, picture = pic, key = girl.key, loaded = false }
 end
 
 function GirlRoll.build(parent: Instance)
 	local window = Kit.window({
-		Name = "GirlRoll", Title = "TODAY'S GIRL", Icon = "TierCrown", Width = W, Height = H, TitleSize = 24, TitleX = 63,
-		TitleWidth = 182, StudsTo = W - 236, Parent = parent, OnClose = function() GirlRoll.hide() end,
+		Name = "GirlRoll", Title = "TODAY'S GIRL", Icon = "TierCrown", Width = W, Height = H, HeaderHeight = HEADER,
+		TitleSize = 19, TitleX = 46, TitleWidth = 146, StudsTo = W - 50, CloseSize = Vector2.new(26, 26),
+		Parent = parent, OnClose = function() GirlRoll.hide() end,
 	})
 	local holder, group = window.Holder, window.Group
 	holder.AnchorPoint = Vector2.new(0.5, 0)
 	holder.Position = UDim2.new(0.5, 0, 0, SCREEN_TOP)
-	local fit = holder:FindFirstChild("FitScale") :: UIScale
-	Scale.bind(fit, function() return Scale.window(W, H) * 0.78 end) -- a banner, a bit smaller than a menu window
+	Scale.bind(holder:FindFirstChild("FitScale") :: UIScale, function() return Scale.window(W, H) * 0.62 end) -- small, as asked
 
-	-- "ROLLING..." then the winner's rarity, in a navy pill in the header (like the vote's timer).
-	local pill = new("Frame", {
-		Name = "Status", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -46, 0.5, 0), Size = UDim2.fromOffset(170, 30),
-		BackgroundColor3 = C.Pill, BorderSizePixel = 0, Parent = window.Header,
-	}, { Kit.corner(6) })
-	Kit.attach(Kit.stroke(C.PillRim, 1.5), pill)
-	local status = Kit.text({
-		Name = "Text", Text = "ROLLING...", FontFace = Theme.Fonts.Button, TextSize = 17, TextXAlignment = Enum.TextXAlignment.Center,
-		Size = UDim2.fromScale(1, 1), Parent = pill,
-	})
-
-	-- The well: a dark groove the cards slide through, faded at both ends, with a gold pointer in the middle.
 	local panel = window.Body.Parent :: Instance
-	local well = new("Frame", {
-		Name = "Well", Position = UDim2.fromOffset(WELL.X, WELL.Y), Size = UDim2.fromOffset(WELL.W, WELL.H),
+	local reel = new("Frame", {
+		Name = "Reel", Position = UDim2.fromOffset(REEL.X, REEL.Y), Size = UDim2.fromOffset(REEL.W, REEL.H),
 		BackgroundColor3 = C.Groove, BorderSizePixel = 0, ClipsDescendants = true, Parent = panel,
 	})
-	Kit.attach(Kit.stroke(C.RowBorder, 1.5), well)
-	local track = new("Frame", { Name = "Track", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Parent = well })
-	for side, x in { Left = 0, Right = 1 } do
+	local track = new("Frame", { Name = "Track", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Parent = reel })
+	-- The reel fades out at the top and bottom, so rows slide in and out of view.
+	for side, y in { Top = 0, Bottom = 1 } do
 		local edge = new("Frame", {
-			Name = "Fade" .. side, AnchorPoint = Vector2.new(x, 0), Position = UDim2.fromScale(x, 0), Size = UDim2.new(0, 70, 1, 0),
-			BackgroundColor3 = C.Groove, BorderSizePixel = 0, ZIndex = 3, Parent = well,
+			Name = "Fade" .. side, AnchorPoint = Vector2.new(0, y), Position = UDim2.fromScale(0, y), Size = UDim2.new(1, 0, 0, 44),
+			BackgroundColor3 = C.Groove, BorderSizePixel = 0, ZIndex = 3, Parent = reel,
 		})
 		new("UIGradient", {
-			Name = "Fade",
-			Transparency = NumberSequence.new(if x == 0 then 0 else 1, if x == 0 then 1 else 0),
-			Parent = edge,
+			Name = "Fade", Rotation = 90, Transparency = NumberSequence.new(if y == 0 then 0 else 1, if y == 0 then 1 else 0), Parent = edge,
 		})
 	end
-	local mid = WELL.X + WELL.W / 2
-	for name, y in { PointerTop = WELL.Y, PointerBottom = WELL.Y + WELL.H } do
+	-- The gold middle slot: a rim round the middle row and a pointer on each side.
+	local slotY = REEL.Y + MID_Y
+	local slot = new("Frame", {
+		Name = "Slot", Position = UDim2.fromOffset(REEL.X - 3, slotY - 3), Size = UDim2.fromOffset(REEL.W + 6, ROW.H + 6),
+		BackgroundTransparency = 1, ZIndex = 5, Parent = panel,
+	}, { Kit.corner(8) })
+	local slotRim = Kit.attach(Kit.stroke(GOLD, 2.5), slot) :: UIStroke
+	for name, x in { PointerLeft = REEL.X - 4, PointerRight = REEL.X + REEL.W + 4 } do
 		local tri = new("Frame", {
-			Name = name, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(mid, y), Size = UDim2.fromOffset(17, 17),
-			Rotation = 45, BackgroundColor3 = GOLD, BorderSizePixel = 0, ZIndex = 5, Parent = panel,
+			Name = name, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(x, slotY + ROW.H / 2), Size = UDim2.fromOffset(12, 12),
+			Rotation = 45, BackgroundColor3 = GOLD, BorderSizePixel = 0, ZIndex = 6, Parent = panel,
 		})
 		Kit.attach(Kit.stroke(C.SelectedRim, 1.5), tri)
 	end
 
-	-- Each rarity's real chance, centred along the bottom.
-	local odds = new("Frame", {
-		Name = "Odds", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(W / 2, ODDS_Y), Size = UDim2.fromOffset(W - 40, 22),
-		BackgroundTransparency = 1, Parent = panel,
-	}, { Kit.list(Enum.FillDirection.Horizontal, 11, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center) })
-
-	local current = nil -- the roll being shown
+	local current = nil
 	local landed = false
-	local cells = {}
+	local rows = {}
+	local girls = ReplicatedStorage:FindFirstChild("HuzzGirls")
 
 	local function clear()
 		for _, c in track:GetChildren() do
 			if c:GetAttribute("RuntimeOnly") then c:Destroy() end
 		end
-		for _, c in odds:GetChildren() do
-			if c:GetAttribute("RuntimeOnly") then c:Destroy() end
-		end
-		cells = {}
+		rows = {}
 	end
 
-	-- Where the strip is at server time t: cell 3 under the pointer at the start, the winner at the end,
-	-- slowing down like a real spinner (ease-out). The stop lands a little off-centre, the same on every screen.
+	-- Her model goes into the row's picture only while the row is near the window.
+	local function setLoaded(r, on: boolean)
+		if r.loaded == on then return end
+		r.loaded = on
+		if on then
+			girls = girls or ReplicatedStorage:FindFirstChild("HuzzGirls")
+			local source = girls and r.key and girls:FindFirstChild(r.key)
+			if source then
+				local copy = source:Clone()
+				copy.Parent = r.picture
+				frame(r.picture, copy)
+			end
+		else
+			for _, c in r.picture:GetChildren() do
+				if c:IsA("Model") then c:Destroy() end
+			end
+		end
+	end
+
+	-- How far the reel has run at server time t (in px): the row after the first in the slot at the start,
+	-- the winner at the end, slowing down like a real reel (ease-out), with a tiny overshoot settle.
 	local function offsetAt(roll, t)
 		local p = math.clamp((t - roll.start) / roll.spin, 0, 1)
 		local e = 1 - (1 - p) ^ 4
-		local nudge = ((roll.start * 7.31) % 1 - 0.5) * CELL.W * 0.5
-		local from, to = 2 * PITCH, (roll.stop - 1) * PITCH + nudge
+		local from, to = 2 * PITCH, (roll.stop - 1) * PITCH
 		return from + (to - from) * e, p
 	end
 
 	function GirlRoll.render(t: number)
 		local roll = current
 		if not roll then return end
-		local x, p = offsetAt(roll, t)
-		track.Position = UDim2.fromOffset(math.floor(WELL.W / 2 - CELL.W / 2 - x + 0.5), 0)
-		-- The card under the pointer swells a little as it passes.
-		for i, f in cells do
-			local d = math.abs((i - 1) * PITCH - x) / PITCH
-			local pop = f:FindFirstChild("Pop") :: UIScale
+		local y, p = offsetAt(roll, t)
+		track.Position = UDim2.fromOffset(0, math.floor(y + 0.5))
+		for i, r in rows do
+			local rowsAway = math.abs((i - 1) * PITCH - y) / PITCH
+			setLoaded(r, rowsAway <= LOAD_ROWS)
+			local pop = r.frame:FindFirstChild("Pop") :: UIScale
 			if pop and not (landed and i == roll.stop) then
-				pop.Scale = 1 + 0.06 * math.max(0, 1 - d)
+				pop.Scale = 1 + 0.04 * math.max(0, 1 - rowsAway)
 			end
 		end
 		if p >= 1 and not landed then
 			landed = true
-			local win = cells[roll.stop]
-			local girl = roll.cells[roll.stop]
-			local color = colorOf(girl.rarity)
-			status.Text = string.upper(girl.rarity) .. "!"
+			local win = rows[roll.stop]
+			local color = colorOf(roll.cells[roll.stop].rarity)
+			slotRim.Color = color
 			if win then
-				local rim = win:FindFirstChild("Rim") :: UIStroke
-				rim.Color, rim.Thickness = color, 3
-				win.ZIndex = 2
-				local pop = win:FindFirstChild("Pop") :: UIScale
-				pop.Scale = 1.16
-				TweenService:Create(pop, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1.1 }):Play()
+				local rim = win.frame:FindFirstChild("Rim") :: UIStroke
+				rim.Color, rim.Thickness = color, 2.5
+				local pop = win.frame:FindFirstChild("Pop") :: UIScale
+				pop.Scale = 1.1
+				TweenService:Create(pop, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1.03 }):Play()
 			end
 		end
 	end
@@ -225,43 +261,12 @@ function GirlRoll.build(parent: Instance)
 	function GirlRoll.show(roll)
 		current, landed = roll, false
 		clear()
+		slotRim.Color = GOLD
+		local chances = {}
+		for _, o in roll.odds or {} do chances[o.name] = o.chance end
 		for i, girl in roll.cells do
-			cells[i] = cell(track, i, girl)
+			rows[i] = row(track, i, girl, chances[girl.rarity])
 		end
-		for i, o in roll.odds or {} do
-			local color = colorOf(o.name)
-			local chance = if o.chance >= 10 then string.format("%d%%", math.floor(o.chance + 0.5))
-				elseif o.chance >= 1 then string.format("%.1f%%", o.chance) else string.format("%.2f%%", o.chance)
-			-- "COMMON 50%": the rarity in its colour, then its chance (two labels side by side).
-			local item = Instance.new("Frame")
-			item.Name = "Odds" .. i
-			item.LayoutOrder = i
-			item.BackgroundTransparency = 1
-			-- Widths measured for these fonts at 13 px (the preview can't auto-size).
-			local nameW, chanceW = math.ceil(#o.name * 7.8) + 2, math.ceil(#chance * 8) + 2
-			item.Size = UDim2.fromOffset(nameW + 4 + chanceW, 20)
-			item:SetAttribute("RuntimeOnly", true)
-			local row = Instance.new("UIListLayout")
-			row.FillDirection = Enum.FillDirection.Horizontal
-			row.Padding = UDim.new(0, 4)
-			row.VerticalAlignment = Enum.VerticalAlignment.Center
-			row.SortOrder = Enum.SortOrder.LayoutOrder
-			row.Parent = item
-			for j, part in { { string.upper(o.name), color, Theme.Fonts.Tab }, { chance, C.SubText, Theme.Fonts.Label } } do
-				local label = Instance.new("TextLabel")
-				label.Name = if j == 1 then "Rarity" else "Chance"
-				label.LayoutOrder = j
-				label.BackgroundTransparency = 1
-				label.Size = UDim2.fromOffset(if j == 1 then nameW else chanceW, 20)
-				label.FontFace = part[3]
-				label.TextSize = 13
-				label.TextColor3 = part[2]
-				label.Text = part[1]
-				label.Parent = item
-			end
-			item.Parent = odds
-		end
-		status.Text = "ROLLING..."
 		GirlRoll.render(Workspace:GetServerTimeNow())
 		holder.Visible, group.Visible = true, true
 		holder.Position = UDim2.new(0.5, 0, 0, -2 * H - 20)
@@ -284,7 +289,9 @@ function GirlRoll.build(parent: Instance)
 	local round = Net.get("Round") :: RemoteEvent
 	local function onRoll()
 		local raw = round:GetAttribute("RollData")
-		local ok, roll = pcall(HttpService.JSONDecode, HttpService, if type(raw) == "string" and raw ~= "" then raw else "null")
+		local ok, roll = pcall(function()
+			return if type(raw) == "string" and raw ~= "" then HttpService:JSONDecode(raw) else nil
+		end)
 		if ok and type(roll) == "table" and roll.cells then
 			GirlRoll.show(roll)
 		else
@@ -296,11 +303,11 @@ function GirlRoll.build(parent: Instance)
 		local stage = round:GetAttribute("Stage")
 		if stage ~= "Rolling" and stage ~= nil then GirlRoll.hide() end
 	end)
-	task.defer(onRoll)
 	RunService.RenderStepped:Connect(function()
 		if current then GirlRoll.render(Workspace:GetServerTimeNow()) end
 	end)
 	holder.Visible = false
+	task.defer(onRoll)
 	return window
 end
 

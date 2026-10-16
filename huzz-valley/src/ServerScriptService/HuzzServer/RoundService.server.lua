@@ -22,6 +22,7 @@ local DataService = require(script.Parent.DataService)
 local KnockdownService = require(script.Parent.KnockdownService)
 local MapVoteService = require(script.Parent.MapVoteService)
 local KnifeService = require(script.Parent.KnifeService)
+local PowerService = require(script.Parent.PowerService)
 
 require(script.Parent.SafetyService).clean()
 MapService.init()
@@ -104,8 +105,8 @@ local function syncPlayer(id)
 	p:SetAttribute("HuzzStatus", match and match.status[id] or "")
 	local h = humanoidOf(id)
 	if h then
-		local still = KnockdownService.isDown(p)
-		h.WalkSpeed = if still then 0 else speedFor(id)
+		local still = KnockdownService.isDown(p) or PowerService.stuck(id)
+		h.WalkSpeed = if still then 0 else PowerService.speedOf(id, speedFor(id))
 		h.JumpHeight = if still then 0 else StarterPlayer.CharacterJumpHeight
 		h.JumpPower = if still then 0 else StarterPlayer.CharacterJumpPower
 	end
@@ -304,7 +305,7 @@ local function step()
 		return -- catchers tag by stabbing (the Stab remote below)
 	end
 	for catcherId, role in match.roles do
-		local catcher = role == "Catcher" and rootOf(catcherId)
+		local catcher = role == "Catcher" and PowerService.canStab(catcherId) and rootOf(catcherId)
 		if catcher then
 			for runnerId, status in match.status do
 				local runner = status == "Active" and rootOf(runnerId)
@@ -313,7 +314,9 @@ local function step()
 					and (runner.Position - catcher.Position).Magnitude <= Config.TagRange
 					and not (Config.StartZoneSafe and MapService.inZone(start, runner.Position))
 				then
-					apply(Rules.tag(match, catcherId, runnerId))
+					if not PowerService.blocks(catcherId, runnerId) then
+						apply(Rules.tag(match, catcherId, runnerId))
+					end
 					if match.over then
 						return
 					end
@@ -357,6 +360,7 @@ local function runRound()
 	for id in match.roles do
 		place(id)
 	end
+	PowerService.newRound()
 	syncAll()
 	if match.holder == nil then
 		showPrize() -- she waits in the middle (or on the far side)
@@ -378,9 +382,11 @@ local function runRound()
 		if match.holder then
 			holdSeconds += dt
 		end
+		PowerService.step()
 		step()
 	end
 	saveHold()
+	PowerService.clear() -- traps and effects end with the round
 	apply(Rules.endRound(match, not Rules.isRoundOver(match)))
 	syncAll()
 	if not match.over then
@@ -439,6 +445,7 @@ local function cleanUp()
 	CarryService.removeAll()
 	clearPrize()
 	MapService.holdStart(nil, false)
+	PowerService.clear()
 	MapService.showGoal(nil) -- the lines stay on the map, the SAFE ZONE sign goes out
 	match, girl = nil, nil
 	State:SetAttribute("GirlName", "")
@@ -459,8 +466,8 @@ Net.get("Stab").OnServerEvent:Connect(function(player)
 	if not (match and not match.over and match.roles[id] == "Catcher" and State:GetAttribute("Stage") == "Running") then
 		return
 	end
-	if Config.TagMode ~= "Stab" or KnockdownService.isDown(player) then
-		return
+	if Config.TagMode ~= "Stab" or KnockdownService.isDown(player) or not PowerService.canStab(id) then
+		return -- (dizzy from a Heart Shield: no stabbing for a moment)
 	end
 	local now = os.clock()
 	if lastStab[id] and now - lastStab[id] < Config.Stab.Cooldown * 0.8 then
@@ -487,10 +494,35 @@ Net.get("Stab").OnServerEvent:Connect(function(player)
 			end
 		end
 	end
-	if best then
+	if best and not PowerService.blocks(id, best) then
 		apply(Rules.tag(match, id, best))
 	end
 end)
+
+-- Round powers (Config/Powers, HuzzServer/PowerService).
+PowerService.start({
+	match = function()
+		return match
+	end,
+	running = function()
+		return State:GetAttribute("Stage") == "Running"
+	end,
+	rootOf = rootOf,
+	playerOf = function(id)
+		return byId[id]
+	end,
+	isDown = KnockdownService.isDown,
+	sync = function(id)
+		syncPlayer(id)
+	end,
+	startZone = function()
+		return match and zones[MapService.startFor(match.round)]
+	end,
+	inZone = MapService.inZone,
+	ground = function(position)
+		return MapService.ground(position, position.Y + 2)
+	end,
+})
 
 -- Hussing: her carrier throws her up and catches her (every client plays it from HussAt, server
 -- time). The client sends the time it started on its screen so its own view never jumps.
@@ -601,7 +633,7 @@ local function rollGirl()
 	local cells, odds = GirlService.strip(girl, R.Cells, R.Stop)
 	local list = {}
 	for i, g in cells do
-		list[i] = { name = g.name, rarity = g.rarity }
+		list[i] = { name = g.name, rarity = g.rarity, key = g.key }
 	end
 	-- In an attribute (not a message), so players who join mid-roll see it too.
 	local roll = { cells = list, stop = R.Stop, start = Workspace:GetServerTimeNow(), spin = R.SpinTime, odds = odds }

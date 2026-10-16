@@ -82,7 +82,44 @@ function GirlService.init()
 	if #GirlService.catalog == 0 then
 		addPlaceholders()
 	end
+	GirlService.publish()
 	print(`[Huzz] {#GirlService.catalog} girls in the collection`)
+end
+
+--[[
+	Picture copies for the girl roller: every girl as a still model in ReplicatedStorage.HuzzGirls,
+	named by a short key (G1, G2... never the avatar owner's username), with no scripts, so each
+	client can show her in a ViewportFrame. The roll's cells carry the key.
+]]
+function GirlService.publish()
+	local folder = ReplicatedStorage:FindFirstChild("HuzzGirls")
+	if folder then
+		folder:ClearAllChildren()
+	else
+		folder = Instance.new("Folder")
+		folder.Name = "HuzzGirls"
+		folder.Parent = ReplicatedStorage
+	end
+	for i, girl in GirlService.catalog do
+		girl.key = "G" .. i
+		local ok, copy = pcall(function()
+			return girl.template:Clone()
+		end)
+		if ok and copy then
+			for _, d in copy:GetDescendants() do
+				if d:IsA("LuaSourceContainer") then
+					d:Destroy()
+				elseif d:IsA("BasePart") then
+					d.Anchored, d.CanCollide, d.CanQuery, d.CanTouch = true, false, false, false
+				elseif d:IsA("Humanoid") then
+					d.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+				end
+			end
+			copy.Name = girl.key
+			copy:SetAttribute("Rarity", girl.rarity)
+			copy.Parent = folder
+		end
+	end
 end
 
 -- Weighted by rarity (only rarities that have girls), then even within it (Shared/GirlRoll).

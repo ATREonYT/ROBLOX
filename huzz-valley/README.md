@@ -13,9 +13,9 @@ All of these work against a real save system. When you're happy with how they lo
 
 ## The game: rounds and carrying a girl
 1. **Between games** everyone votes for one of two maps. The winner **replaces the map in front of the lobby**
-   (the last one stays there until then). Then a **roller spins at the top of the screen** and stops on the
-   game's girl. Every name on it is a fair pick, and the bottom row shows each rarity's real chance (Common →
-   Secret, from `Config/Round.Rarities`).
+   (the last one stays there until then). Then a **small roller at the top of the screen** runs from top to
+   bottom and stops on the game's girl. Each row shows the girl's real model, her name, her rarity and that
+   rarity's real chance. Every row is a fair pick (Common → Secret, from `Config/Round.Rarities`).
 2. Everyone is moved onto the map. Runners wait on their side behind the **start line** (a see-through wall
    until GO; they can walk around in their zone). One random player is the **catcher**, in the middle with a
    **knife**. The girl **stands in the middle**. A white line marks each side, and **SAFE ZONE** shows the line
@@ -29,6 +29,12 @@ All of these work against a real save system. When you're happy with how they lo
    again, they win her; if they're tagged, that catcher wins her. If every runner is caught, whoever holds her
    wins. The winner gets her in their **Index**.
 5. Catchers have a faint **red outline** and runners a faint **blue** one, as in your video.
+6. **Powers** (free, fresh every round; Q and E, or tap the cards at the bottom of the screen):
+   - Runners: **Heart Shield** (a pink bubble that blocks one stab; the catcher gets dizzy and you get a burst
+     of speed; once per round) and **Rizz Rush** (a speed burst with a pink trail).
+   - Catchers: **Love Trap** (drop a heart trap; the first runner who steps on it is stuck for a moment) and
+     **Charm Wave** (a ring of hearts that slows runners near you).
+   - Tune them in `Shared/Config/Powers.lua` (times, speeds, sizes, cooldowns).
 
 The stab and huss moves are placeholders until your Huss Valley animations come in: put their IDs in
 `Shared/Config/Animations.lua` (`Stab`, `Huss`) and they play instead. ([video](docs/previews/stab-and-huss.mp4))
@@ -107,7 +113,9 @@ The whole UI is in **StarterGui > HuzzUI** as normal parts you can click and cha
    into the Command Bar". Never paste it: it gives a stranger control of your game.
 5. **Name your girls** in `src/ReplicatedStorage/Shared/Config/GirlNames.lua` (their model names are the avatar
    owners' usernames, so the game shows "Common Girl 1" and so on until you do).
-6. **Things that need assets before they can go on sale** show their price, but only say "coming soon" when tapped:
+6. **Icons for the 4 powers:** the cards show emoji (💖 ⚡ 💘 💞) until you send 4 see-through PNGs (256 px or
+   bigger) named heart-shield, rizz-rush, love-trap and charm-wave.
+7. **Things that need assets before they can go on sale** show their price, but only say "coming soon" when tapped:
    - Dance Pack: the 4 dance animations;
    - Crown Pose: a pose animation;
    - Midnight Outfit: the clothing;

@@ -7,9 +7,9 @@ return {
 
 	IntermissionTime = 15, -- the wait before a game when there's only one map (no vote)
 	VoteTime = 15, -- the map vote between games (design page 15)
-	-- After the vote the new map replaces the old one and the girl roller spins at the top of
-	-- the screen: Cells names go past, slowing down over SpinTime and stopping on the girl at Stop.
-	Roll = { Time = 7.5, SpinTime = 5.5, Cells = 46, Stop = 40 },
+	-- After the vote the new map replaces the old one and the girl roller (a small reel at the top of
+	-- the screen) runs: Cells girls go past top to bottom, slowing over SpinTime, stopping on the girl at Stop.
+	Roll = { Time = 7.5, SpinTime = 5.5, Cells = 30, Stop = 26 },
 	CountdownTime = 5, -- before GO: runners wait behind the start line (they can walk around in their zone)
 	RoundTime = 45, -- runners still out when it ends count as caught
 	RoundEndPause = 4,

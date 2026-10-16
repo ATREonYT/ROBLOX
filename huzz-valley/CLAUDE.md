@@ -127,9 +127,12 @@ The UI golden slice and its backend are built (saving, coins and gems, shop purc
   start; placed `Map.Gap` past the lobby edge on the side facing where the maps were built, the run axis crossing
   left to right; an optional `MapSpot` part overrides that). It stays there after the game and is swapped
   out only when the next vote picks its replacement (owner's call).
-  - **Girl roller (owner's call):** after the vote, Stage "Rolling" (`Config/Round.Roll`): `Screens/GirlRoll`
-    (a kit window at the top of the screen, not a ModalManager window) spins a strip of names and stops on
-    the game's girl, then shows each rarity's real chance. `Shared/GirlRoll` (pure, `tests/GirlRoll.spec.luau`)
+  - **Girl roller (owner's call: small, top of the screen, top-to-bottom, real models):** after the vote,
+    Stage "Rolling" (`Config/Round.Roll`): `Screens/GirlRoll` (a 320 x 254 kit window, not a ModalManager
+    window, scaled to 0.62 of a window) runs a reel of rows (ViewportFrame portrait, name, rarity pill, chance)
+    and stops on the game's girl in the gold middle slot. Portraits come from `ReplicatedStorage.HuzzGirls`
+    (`GirlService.publish`: script-free copies keyed G1, G2..., never the usernames); only rows near the window
+    hold a model. `Shared/GirlRoll` (pure, `tests/GirlRoll.spec.luau`)
     picks her by rarity weight, then evenly, and builds the strip from honest picks (no planted near-misses).
     The server puts {cells, stop, start, spin, odds} as JSON in the Round remote's `RollData` attribute (so
     mid-roll joiners see it; cleared after); she's rebuilt as R15 during the spin.
@@ -199,6 +202,18 @@ The UI golden slice and its backend are built (saving, coins and gems, shop purc
 - **Placeholder moves:** the stab and huss are scripted until the owner's animations arrive
   (`Config/Animations.Stab`/`Huss`: with an ID the track plays and the scripted arms step aside; her throw stays
   scripted). `motion3d/action_scene.luau` renders both (`docs/previews/stab-and-huss.mp4`).
+- **Powers (owner's call: "like Huss Valley but our own spice"):** `Config/Powers` lists them; runners get Heart
+  Shield (Q: bubble blocks one stab, the catcher is dizzy and can't stab, the runner gets a burst; once per round)
+  and Rizz Rush (E: speed burst); catchers get Love Trap (Q: heart trap, a runner who steps in is stuck) and
+  Charm Wave (E: slows runners in reach). `HuzzServer/PowerService` decides everything (RoundService gives it
+  a ctx and asks `speedOf`, `stuck`, `canStab`, `blocks`); lasting visuals are made on the server, bursts go out
+  as `Power` messages (`Gameplay/PowerEffects`). The hotbar is `Screens/PowerBar` (kit cards, bottom centre;
+  reads `PowerReady1/2` and `ShieldUntil`). Icons are emoji until the owner sends PNGs.
+- **Full-game simulation (`tools/sim/round_sim.luau`, run by `tools/check.sh`):** the real RoundService,
+  PowerService, RoundRules, GirlRoll and configs on fake services with a virtual clock and bots who run,
+  chase, stab, use powers, huss, cheat round the start wall, leave and join. It checks the stage order, the
+  roller data, the map swap, knives, the start wall, traps, the holder and the saved winner, in 7 setups.
+  Breaking keepRunnersIn or the knives makes it fail (checked). It can't see physics, animation or UI.
 - **Outlines (reference video):** `RoundHud` puts a faint Highlight (outline only, 0.35 transparent) on
   everyone in the game: catchers red, runners blue, none on caught runners. Roblox draws at most 31
   Highlights at once, so servers over 31 players lose some outlines.
@@ -222,7 +237,7 @@ The UI golden slice and its backend are built (saving, coins and gems, shop purc
   the Command Bar", a `Dependencies/Utilities/CoreValidation` script inside the mesh) that installs a
   backdoor. Scan any place file the owner sends for scripts that use `GetObjects`, `HttpEnabled`, `require(<id>)`,
   `getfenv` or `loadstring`.
-- **`sh tools/check.sh`** compiles every script and runs the specs. Run it with `tools/preview/check.sh`.
+- **`sh tools/check.sh`** compiles every script, runs the specs and the full-game simulation. Run it with `tools/preview/check.sh`.
 - **Not seen in Studio yet:** physics ownership of the welded girl and the Animator ordering. Ask the owner how
   the carry feels before tuning blind.
 - **Waiting on the owner:** their girls and map (a `.rbxl` in `places/`, or `tools/studio/export-girls-and-map.lua`
