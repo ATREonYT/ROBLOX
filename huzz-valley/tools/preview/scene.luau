@@ -51,6 +51,20 @@ if cfg.POWERS then
 	player:SetAttribute("PowerReady2", 0)
 	require(game.StarterPlayer.StarterPlayerScripts.HuzzClient.UI.Screens.PowerBar).refresh()
 end
+-- HERO=true: the countdown, picking Hero or Chicken (Hero picked), with the power tiles under it.
+if cfg.HERO then
+	local round = game.ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Round")
+	round:SetAttribute("Stage", "Countdown")
+	round:SetAttribute("GirlName", "Sakura Hoshino")
+	player:SetAttribute("HuzzRole", "Runner")
+	player:SetAttribute("HuzzStatus", "Active")
+	player:SetAttribute("HuzzHero", true)
+	player:SetAttribute("PowerReady1", 0)
+	player:SetAttribute("PowerReady2", 0)
+	local Screens = game.StarterPlayer.StarterPlayerScripts.HuzzClient.UI.Screens
+	require(Screens.HeroChoice).refresh()
+	require(Screens.PowerBar).refresh()
+end
 -- ROLL=<seconds into the spin>: the girl roller, with a made-up strip of the placeholder names.
 if cfg.ROLL then
 	local rarities = { "Common", "Common", "Uncommon", "Common", "Rare", "Common", "Uncommon", "Epic", "Common", "Legendary" }

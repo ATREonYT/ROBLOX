@@ -104,6 +104,7 @@ local function syncPlayer(id)
 	end
 	p:SetAttribute("HuzzRole", match and match.roles[id] or "Lobby")
 	p:SetAttribute("HuzzStatus", match and match.status[id] or "")
+	p:SetAttribute("HuzzHero", match ~= nil and match.hero[id] == true) -- Hero this round (yellow outline)
 	local h = humanoidOf(id)
 	if h then
 		local still = KnockdownService.isDown(p) or PowerService.stuck(id)
@@ -185,7 +186,10 @@ local function girlPosition(id)
 end
 
 -- How she reacts to her new carrier.
-local MOODS = { FirstAcross = "Excited", Grabbed = "Excited", Rescued = "Excited", Stolen = "Struggle", Reassigned = "Struggle" }
+local MOODS = {
+	FirstAcross = "Excited", Grabbed = "Excited", Rescued = "Excited", NoHero = "Excited", NoHeroRescue = "Excited",
+	Stolen = "Struggle", Reassigned = "Struggle",
+}
 
 local function moveGirlTo(fromId, toId, reason)
 	local from = girlPosition(fromId)
@@ -224,6 +228,8 @@ function handlers.GirlMoved(e)
 		Grabbed = { `{to} grabbed {g}! Carry her across!`, GOLD },
 		Stolen = { `{to} caught her carrier! {g} follows {to} now. Cross first to take her back!`, RED },
 		Rescued = { `{to} rescued {g}! Next round is the FINAL round!`, GOLD },
+		NoHero = { `No Hero made it! {to} was first across and gets {g}!`, GOLD },
+		NoHeroRescue = { `No Hero made it! {to} was first across and rescues {g}! Next round is the FINAL round!`, GOLD },
 		Reassigned = { `{to} now holds {g}`, RED },
 		Dropped = { if Config.Pickup == "Grab" then `{g} was dropped! She's back in the middle` else `{g} was dropped! First across gets her`, GOLD },
 	}
@@ -443,7 +449,7 @@ local function runGame()
 		table.insert(ids, id)
 	end
 	local catcher = if #ids >= 2 then ids[math.random(#ids)] else nil
-	match = Rules.newGame(ids, catcher, { maxRounds = Config.MaxRounds, pickup = Config.Pickup })
+	match = Rules.newGame(ids, catcher, { maxRounds = Config.MaxRounds, pickup = Config.Pickup, heroes = Config.Heroes })
 	State:SetAttribute("GirlName", girl.name)
 	State:SetAttribute("GirlRarity", girl.rarity)
 	State:SetAttribute("HolderId", 0)
@@ -545,6 +551,16 @@ PowerService.start({
 	end,
 })
 
+-- Hero or Chicken (Config.Heroes): runners pick during the countdown; only Heroes can take her, unless
+-- no Hero makes it across (Shared/RoundRules). Locked at GO.
+Net.get("Hero").OnServerEvent:Connect(function(player, isHero)
+	local id = player.UserId
+	if match and not match.over and Config.Heroes and State:GetAttribute("Stage") == "Countdown" and type(isHero) == "boolean" then
+		Rules.setHero(match, id, isHero)
+		syncPlayer(id)
+	end
+end)
+
 -- Hussing: her carrier throws her up and catches her (every client plays it from HussAt, server
 -- time). The client sends the time it started on its screen so its own view never jumps.
 Net.get("Huss").OnServerEvent:Connect(function(player, at)
@@ -594,6 +610,7 @@ end
 local function onPlayer(player)
 	byId[player.UserId] = player
 	player:SetAttribute("HuzzRole", "Lobby")
+	player.DevEnableMouseLock = false -- our own shift lock (Gameplay/ShiftLock, Alt) replaces Roblox's Shift one
 	player.CharacterAdded:Connect(function(c)
 		onCharacter(player, c)
 	end)

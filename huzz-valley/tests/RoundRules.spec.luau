@@ -316,6 +316,44 @@ test("grab: solo grabs, crosses, crosses back to win", function()
 	eq(has(Rules.reachSafe(s, 7), "Win").winner, 7)
 end)
 
+test("heroes: a chicken across first doesn't get her, the first hero does", function()
+	local s = Rules.newGame({ 1, 2, 3 }, 1, { random = first, heroes = true })
+	Rules.startRound(s)
+	Rules.setHero(s, 3, true)
+	eq(has(Rules.reachSafe(s, 2), "GirlMoved"), nil)
+	eq(has(Rules.reachSafe(s, 3), "GirlMoved").to, 3)
+end)
+
+test("heroes: no hero across, the first chicken gets her at the end of the round", function()
+	local s = Rules.newGame({ 1, 2, 3 }, 1, { random = first, heroes = true })
+	Rules.startRound(s)
+	Rules.setHero(s, 3, true)
+	Rules.reachSafe(s, 2) -- chicken
+	Rules.tag(s, 1, 3) -- the hero is caught
+	local ev = Rules.endRound(s, false)
+	local moved = has(ev, "GirlMoved")
+	eq(moved.to, 2)
+	eq(moved.reason, "NoHero")
+end)
+
+test("heroes: her holder is always a hero; a stolen girl goes to a chicken if no hero crosses", function()
+	local s = Rules.newGame({ 1, 2, 3, 4 }, 1, { random = first, heroes = true })
+	Rules.startRound(s)
+	Rules.setHero(s, 2, true)
+	Rules.reachSafe(s, 2)
+	Rules.reachSafe(s, 3)
+	Rules.tag(s, 1, 4)
+	Rules.endRound(s, false)
+	Rules.startRound(s)
+	eq(s.hero[2], true) -- holding her makes 2 a hero
+	Rules.tag(s, 1, 2) -- 1 steals her
+	eq(s.phase, "Stolen")
+	Rules.reachSafe(s, 3) -- a chicken
+	local ev = Rules.endRound(s, false)
+	eq(has(ev, "GirlMoved").reason, "NoHeroRescue")
+	eq(s.phase, "FinalNext")
+end)
+
 print(`{passed} passed, {failed} failed`)
 if failed > 0 then
 	error("tests failed")

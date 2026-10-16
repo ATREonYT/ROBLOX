@@ -240,8 +240,16 @@ The UI golden slice and its backend are built (saving, coins and gems, shop purc
   chase, stab, use powers, huss, cheat round the start wall, leave and join. It checks the stage order, the
   roller data, the map swap, knives, the start wall, traps, the holder and the saved winner, in 7 setups.
   Breaking keepRunnersIn or the knives makes it fail (checked). It can't see physics, animation or UI.
-- **Outlines (reference video):** `RoundHud` puts a faint Highlight (outline only, 0.35 transparent) on
-  everyone in the game: catchers red, runners blue, none on caught runners. Roblox draws at most 31
+- **Hero or Chicken (owner's call, `Config/Round.Heroes`):** in the countdown each runner not carrying her picks
+  (`Screens/HeroChoice`: two kit buttons, keys 1 and 2; `Hero` remote, only during Countdown). Only a Hero (or
+  her holder, always a Hero) takes her by crossing first or rescues her; if no Hero crossed by the end of the
+  round, the first runner across gets her ("NoHero"/"NoHeroRescue", owner: "if they don't win, the others can").
+  Rules in `RoundRules` (`setHero`, `canTake`, tested). Player attribute `HuzzHero`.
+- **Shift lock (owner's call):** `Gameplay/ShiftLock` locks the mouse, puts the camera over the shoulder
+  (`Humanoid.CameraOffset`) and turns you with the camera; Alt toggles it; it lets go while a window is open or
+  the Hero pick shows (`HuzzChoosing`); off on touch devices. The server sets `DevEnableMouseLock = false`.
+- **Outlines (reference video + owner):** `RoundHud` puts a faint Highlight (outline only, 0.35 transparent) on
+  everyone in the game: catchers red, runners blue, Heroes yellow, safe runners green, none on caught runners. Roblox draws at most 31
   Highlights at once, so servers over 31 players lose some outlines.
 - **Girl animations (owner asked for all three, "make them good"):** `Shared/GirlMotion` (pure) holds her
   motion: `carried` (limbs fall toward gravity minus her real acceleration, plus moods Excited, Struggle,

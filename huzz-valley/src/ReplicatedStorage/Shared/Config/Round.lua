@@ -42,6 +42,10 @@ return {
 		Time = 0.36, -- how long the stab move lasts
 	},
 	TagRange = 5.5, -- "Touch" only: studs between root parts
+
+	-- Hero or Chicken (owner's call): during the countdown each runner picks. Only a Hero can take the girl by
+	-- crossing first or rescue her; if no Hero makes it across, the first runner across gets her after all.
+	Heroes = true,
 	HussCooldown = 0.4, -- seconds after a huss ends before the next (Carry.Huss.Time is the huss itself)
 
 	-- A caught runner falls flat on their face and lies there until the next round

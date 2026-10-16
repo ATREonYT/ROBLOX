@@ -177,10 +177,13 @@ function M.start()
 				role.Text, role.TextColor3 = `Carry {girl} across — first one across keeps her!`, GOLD
 			else
 				local free = (State:GetAttribute("HolderId") or 0) == 0
+				local isHero = player:GetAttribute("HuzzHero") == true
 				role.Text = if girl == "" then "RUNNER — reach the other side!"
+					elseif Config.Heroes and isHero then `HERO — first Hero across gets {girl}!`
+					elseif Config.Heroes then "CHICKEN — just get across safely"
 					elseif Config.Pickup == "Grab" and free then `RUNNER — grab {girl} in the middle, then reach the other side!`
 					else `RUNNER — first one across gets {girl}!`
-				role.TextColor3 = Color3.new(1, 1, 1)
+				role.TextColor3 = if Config.Heroes and isHero then GOLD else Color3.new(1, 1, 1)
 			end
 		else
 			role.Text = if stage == "Waiting" or stage == "Intermission" or stage == "Voting" or stage == "Loading" or stage == "Rolling" then "" else "Watching — you'll play in the next game"
@@ -205,15 +208,21 @@ function M.start()
 	end
 	refreshCard()
 
-	-- Outlines (as in the reference): a faint red line round catchers and a faint blue one round
-	-- runners still in the round. Caught runners lying on the floor lose theirs.
+	-- Outlines (as in the reference): a faint red line round catchers, blue round runners still out,
+	-- yellow round Heroes, green round runners safe across the line. Caught runners lying on the floor lose theirs.
 	local OUTLINE_RED = Color3.fromRGB(255, 64, 64)
 	local OUTLINE_BLUE = Color3.fromRGB(64, 150, 255)
+	local OUTLINE_GREEN = Color3.fromRGB(70, 230, 120) -- made it to the safe zone (owner's call)
+	local OUTLINE_YELLOW = Color3.fromRGB(255, 214, 70) -- a Hero this round (owner's call)
 	local highlights = {}
 	local function refreshHighlight(p)
 		local character = p.Character
 		local r, st = p:GetAttribute("HuzzRole"), p:GetAttribute("HuzzStatus")
-		local color = if r == "Catcher" then OUTLINE_RED elseif r == "Runner" and st ~= "Caught" then OUTLINE_BLUE else nil
+		local color = if r == "Catcher" then OUTLINE_RED
+			elseif r == "Runner" and st == "Safe" then OUTLINE_GREEN
+			elseif r == "Runner" and st == "Active" and p:GetAttribute("HuzzHero") then OUTLINE_YELLOW
+			elseif r == "Runner" and st ~= "Caught" then OUTLINE_BLUE
+			else nil
 		local h = highlights[p]
 		if not character or not color then
 			if h then
@@ -235,7 +244,7 @@ function M.start()
 		h.OutlineColor, h.FillColor = color, color
 	end
 	local function watch(p)
-		for _, attr in { "HuzzRole", "HuzzStatus" } do
+		for _, attr in { "HuzzRole", "HuzzStatus", "HuzzHero" } do
 			p:GetAttributeChangedSignal(attr):Connect(function()
 				refreshHighlight(p)
 			end)

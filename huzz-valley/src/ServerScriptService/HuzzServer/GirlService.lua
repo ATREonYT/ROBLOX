@@ -339,7 +339,7 @@ end
 ]]
 function GirlService.showcase(girl, at, parent)
 	local S = Config.Showcase
-	local model, root = GirlService.makeCopy(girl, parent)
+	local model, root = GirlService.makeCopy(girl, nil) -- built out of the world; parented when complete
 	model.Name = "HuzzShowcase"
 	local tag = model:FindFirstChild("HuzzNameTag")
 	if tag then
@@ -392,12 +392,12 @@ function GirlService.showcase(girl, at, parent)
 	-- A soft column of light from the ring up past her head.
 	local base = Instance.new("Attachment")
 	base.Name = "BeamBase"
+	base.Parent = aura -- parented first: WorldPosition needs to know its part
 	base.WorldPosition = feet
-	base.Parent = aura
 	local top = Instance.new("Attachment")
 	top.Name = "BeamTop"
-	top.WorldPosition = feet + Vector3.new(0, size.Y * 1.6, 0)
 	top.Parent = aura
+	top.WorldPosition = feet + Vector3.new(0, size.Y * 1.6, 0)
 	local beam = Instance.new("Beam")
 	beam.Attachment0, beam.Attachment1 = base, top
 	beam.Width0, beam.Width1 = radius * 2, radius * 0.6
@@ -447,6 +447,7 @@ function GirlService.showcase(girl, at, parent)
 	end
 	model:SetAttribute("Base", model:GetPivot())
 	CollectionService:AddTag(model, "HuzzShowcase")
+	model.Parent = parent
 	return model
 end
 

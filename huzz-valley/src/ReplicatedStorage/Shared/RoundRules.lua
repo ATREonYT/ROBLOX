@@ -19,6 +19,12 @@
 	A round where her holder is the only runner left is also Final.
 	When no runners are left, whoever holds her wins her.
 
+	Hero mode (opts.heroes, owner's call): each round runners pick Hero or Chicken (setHero) before GO.
+	Only a Hero (or whoever already holds her) can take her by crossing first, grab her, or rescue her;
+	Chickens just try to get across. Picking nothing = Chicken. If no Hero made it across by the end of
+	the round, the first runner across gets her after all (owner: "if they don't win, the others can"):
+	reason "NoHero" (or "NoHeroRescue" when she was stolen, which makes the next round Final).
+
 	Every function returns a list of events:
 	  {type="RoundStarted", round}       {type="FinalRound", runner}
 	  {type="NewCatcher", id}            {type="Safe", id}
@@ -62,7 +68,7 @@ local function moveGirl(s, to, reason, events)
 	table.insert(events, { type = "GirlMoved", from = from, to = to, reason = reason })
 end
 
--- opts: { random = function(n) -> 1..n, maxRounds = number, pickup = "FirstAcross" | "Grab" }
+-- opts: { random = function(n) -> 1..n, maxRounds = number, pickup = "FirstAcross" | "Grab", heroes = bool }
 function RoundRules.newGame(ids, catcherId, opts)
 	opts = opts or {}
 	local s = {
@@ -78,6 +84,8 @@ function RoundRules.newGame(ids, catcherId, opts)
 		reason = nil,
 		maxRounds = opts.maxRounds or math.huge,
 		pickup = opts.pickup or "FirstAcross",
+		heroMode = opts.heroes == true,
+		hero = {}, -- this round's Heroes
 		random = opts.random or math.random,
 	}
 	for _, id in ids do
@@ -102,6 +110,8 @@ function RoundRules.startRound(s)
 	s.round += 1
 	s.firstSafe = nil
 	s.status = {}
+	s.hero = {}
+	s.firstAny = nil
 
 	local runners = idsWithRole(s, "Runner")
 	if #runners == 0 then
@@ -124,6 +134,9 @@ function RoundRules.startRound(s)
 	for _, id in runners do
 		s.status[id] = "Active"
 	end
+	if s.holder and s.roles[s.holder] == "Runner" then
+		s.hero[s.holder] = true -- carrying her makes you a Hero
+	end
 
 	if s.phase == "FinalNext" then
 		s.phase = "Final"
@@ -137,6 +150,19 @@ function RoundRules.startRound(s)
 	return events
 end
 
+-- Hero or Chicken for this round (before GO; RoundService only asks during the countdown).
+function RoundRules.setHero(s, id, isHero)
+	if s.roles[id] == "Runner" and s.status[id] == "Active" and s.holder ~= id then
+		s.hero[id] = isHero == true or nil
+	end
+	return {}
+end
+
+-- Can this runner take her (by crossing first, grabbing or rescuing)?
+function RoundRules.canTake(s, id)
+	return not s.heroMode or s.hero[id] == true or s.holder == id
+end
+
 function RoundRules.reachSafe(s, id)
 	local events = {}
 	if s.over or s.roles[id] ~= "Runner" or s.status[id] ~= "Active" then
@@ -144,13 +170,14 @@ function RoundRules.reachSafe(s, id)
 	end
 	s.status[id] = "Safe"
 	table.insert(events, { type = "Safe", id = id })
+	s.firstAny = s.firstAny or id
 
 	if s.phase == "Final" then
 		if id == s.holder then
 			finish(s, id, "Crossed", events)
 		end
-	elseif s.firstSafe == nil then
-		s.firstSafe = id
+	elseif s.firstSafe == nil and RoundRules.canTake(s, id) then
+		s.firstSafe = id -- the first runner across who may take her (in hero mode: the first Hero)
 		if s.phase == "Open" then
 			if s.pickup == "FirstAcross" and s.holder ~= id then
 				moveGirl(s, id, "FirstAcross", events)
@@ -169,7 +196,7 @@ function RoundRules.grab(s, id)
 	if s.over or s.pickup ~= "Grab" or s.phase ~= "Open" or s.holder ~= nil then
 		return events
 	end
-	if s.roles[id] ~= "Runner" or s.status[id] ~= "Active" then
+	if s.roles[id] ~= "Runner" or s.status[id] ~= "Active" or not RoundRules.canTake(s, id) then
 		return events
 	end
 	moveGirl(s, id, "Grabbed", events)
@@ -229,6 +256,16 @@ function RoundRules.endRound(s, timedOut)
 		end
 		if s.over then
 			return events
+		end
+	end
+	-- Hero mode: nobody who could take her made it, so the first runner across does.
+	local first = s.firstAny
+	if s.heroMode and s.firstSafe == nil and first and s.status[first] == "Safe" then
+		if s.phase == "Open" and s.pickup == "FirstAcross" and s.holder ~= first then
+			moveGirl(s, first, "NoHero", events)
+		elseif s.phase == "Stolen" then
+			moveGirl(s, first, "NoHeroRescue", events)
+			s.phase = "FinalNext"
 		end
 	end
 	local safe = 0

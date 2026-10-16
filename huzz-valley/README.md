@@ -33,7 +33,10 @@ All of these work against a real save system. When you're happy with how they lo
    next runner across rescues her, and the round after that is the **final round**: if that runner crosses
    again, they win her; if they're tagged, that catcher wins her. If every runner is caught, whoever holds her
    wins. The winner gets her in their **Index**.
-5. Catchers have a faint **red outline** and runners a faint **blue** one, as in your video.
+5. Outlines: catchers **red**, runners **blue**, Heroes **yellow**, runners safe across the line **green**.
+   During the countdown each runner picks **HERO** (goes for the girl) or **CHICKEN** (just gets across): only
+   a Hero can take her by crossing first or rescue her, but if no Hero makes it, the first runner across gets
+   her anyway. You play in **shift lock**; press **Alt** to turn it off or on.
 6. **Powers** (free, fresh every round; Q and E, or tap the cards at the bottom of the screen):
    - Runners: **Heart Shield** (a pink bubble that blocks one stab; the catcher gets dizzy and you get a burst
      of speed; once per round) and **Rizz Rush** (a speed burst with a pink trail).

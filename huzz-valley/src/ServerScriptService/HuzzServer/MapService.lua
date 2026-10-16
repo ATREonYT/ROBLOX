@@ -396,9 +396,6 @@ function MapService.load(entry)
 		local open = openSide(model, middle, run, entry.name)
 		model.WorldPivot = CFrame.lookAt(mid, mid + open)
 		model:PivotTo(placement(middle, open))
-		if Config.Map.BoundsHeight > 0 then
-			boundary(model, a, b, middle)
-		end
 		for _, d in model:GetDescendants() do
 			if d:IsA("SpawnLocation") then
 				d.Enabled = false -- players respawn in the lobby, not on the map
@@ -406,6 +403,9 @@ function MapService.load(entry)
 		end
 		model.Parent = Workspace
 		loaded = model
+		if Config.Map.BoundsHeight > 0 then
+			boundary(model, a, b, middle) -- after it's in the world, so the floor check hits the map
+		end
 	end
 	local a, b, middle, bench = zonesOf(model, entry.name, true)
 	local z = MapService.zones

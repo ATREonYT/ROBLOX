@@ -37,18 +37,22 @@ function M.start()
 		for _, p in Players:GetPlayers() do
 			local character = p.Character
 			local r = recs[p]
-			if r and r.character ~= character then
+			-- (Re)build when the character changes, its joints were replaced, or it wasn't complete yet.
+			if r and (r.character ~= character or not (r.rec and r.rec.joints.root.Parent)) then
 				r = nil
 			end
 			if character and not r then
 				local rec = RunMotion.new(character)
-				r = rec and { character = character, rec = rec } or { character = character }
-				recs[p] = r
+				if rec then
+					r = { character = character, rec = rec }
+					recs[p] = r
+				end
 			end
 			local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
-			if r and r.rec and root and not character:GetAttribute("DownedAt") then
+			if r and root then
 				local v = root.AssemblyLinearVelocity
-				local speed = Vector3.new(v.X, 0, v.Z).Magnitude
+				-- Knocked down: speed 0, so the sprint fades out under the fall instead of snapping off.
+				local speed = if character:GetAttribute("DownedAt") then 0 else Vector3.new(v.X, 0, v.Z).Magnitude
 				RunMotion.step(r.rec, dt, speed, math.abs(v.Y) < 10, carriers[p.UserId] == true)
 			end
 		end

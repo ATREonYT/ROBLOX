@@ -35,7 +35,7 @@ function RunMotion.new(character)
 		end
 		joints[key] = joint
 	end
-	return { joints = joints, phase = 0, weight = 0, written = {}, base = {} }
+	return { joints = joints, phase = 0, weight = 0, arms = 1, written = {}, base = {} }
 end
 
 local function animated(rec, motor)
@@ -45,9 +45,9 @@ local function animated(rec, motor)
 	return anim
 end
 
-local function write(rec, motor, pose)
+local function write(rec, motor, pose, weight)
 	local anim = animated(rec, motor)
-	motor.Transform = anim:Lerp(pose, rec.weight)
+	motor.Transform = anim:Lerp(pose, weight or rec.weight)
 	rec.written[motor] = motor.Transform -- read back: Roblox stores CFrames as float32
 end
 
@@ -60,7 +60,10 @@ end
 function RunMotion.step(rec, dt, speed, grounded, carrying)
 	local C = Config
 	local target = if grounded then clamp((speed - C.From) / (C.Full - C.From), 0, 1) else 0
-	rec.weight += (target - rec.weight) * (1 - math.exp(-dt * 10))
+	local blend = 1 - math.exp(-dt * 10)
+	rec.weight += (target - rec.weight) * blend
+	-- The arms hand over to the carry smoothly when she's picked up or dropped.
+	rec.arms += ((if carrying then 0 else 1) - rec.arms) * blend
 	if rec.weight < 0.01 then
 		if next(rec.written) then
 			RunMotion.release(rec)
@@ -90,12 +93,13 @@ function RunMotion.step(rec, dt, speed, grounded, carrying)
 		write(rec, leg[3], inJoint(leg[3], angles(-18 * max(0, -swing) + 10 * max(0, swing))))
 	end
 
-	-- Arms: pumping, bent at the elbow, opposite to the legs.
-	if not carrying then
+	-- Arms: pumping, bent at the elbow, opposite to the legs (faded out while she's carried).
+	local armWeight = rec.weight * rec.arms
+	if armWeight > 0.01 then
 		for _, arm in { { J.rShoulder, J.rElbow, 0, -1 }, { J.lShoulder, J.lElbow, pi, 1 } } do
 			local swing = sin(p + arm[3])
-			write(rec, arm[1], inJoint(arm[1], angles(-C.ArmSwing * swing + 12, 0, arm[4] * 8)))
-			write(rec, arm[2], inJoint(arm[2], angles(C.Elbow + 15 * swing)))
+			write(rec, arm[1], inJoint(arm[1], angles(-C.ArmSwing * swing + 12, 0, arm[4] * 8)), armWeight)
+			write(rec, arm[2], inJoint(arm[2], angles(C.Elbow + 15 * swing)), armWeight)
 		end
 	end
 end

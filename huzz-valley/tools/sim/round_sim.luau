@@ -589,6 +589,8 @@ local function simulate(opts)
 				stats.powers[e.data.name] = (stats.powers[e.data.name] or 0) + 1
 				if e.data.name == "ShieldPop" then stats.blocks += 1 end
 				if e.data.name == "TrapSprung" then stats.sprung += 1 end
+			elseif e.kind == "Announce" and type(e.data.text) == "string" and e.data.text:find("No Hero made it") then
+				stats.noHero = (stats.noHero or 0) + 1
 			elseif e.kind == "Win" then
 				stats.wins += 1
 				if e.data.winner then
@@ -684,6 +686,11 @@ local function simulate(opts)
 			end
 			if PowerService.stuck(p.UserId) and h.WalkSpeed ~= 0 then
 				problem(`{p.Name} is stuck in a trap but can still move`)
+			end
+			-- Hero or Chicken during the countdown (about half each).
+			if st == "Countdown" and role == "Runner" and bot.pickedRound ~= Round:GetAttribute("Round") then
+				bot.pickedRound = Round:GetAttribute("Round")
+				remotes.Hero.OnServerEvent:Fire(p, rng:NextNumber() < 0.5)
 			end
 			-- Move.
 			local target = nil
@@ -817,7 +824,7 @@ local function report(name, stats, problems, expect)
 		table.insert(powerList, k .. "=" .. v)
 	end
 	table.sort(powerList)
-	print(string.format("%-34s games %d, wins %d, stabs %d, tags %d, husses %d, powers: %s", name, stats.games, stats.wins, stats.stabs, stats.tags, stats.husses, table.concat(powerList, " ")))
+	print(string.format("%-34s games %d, wins %d, stabs %d, tags %d, husses %d, no-hero handovers %d, powers: %s", name, stats.games, stats.wins, stats.stabs, stats.tags, stats.husses, stats.noHero or 0, table.concat(powerList, " ")))
 	for _, check in expect or {} do
 		if not check[2](stats) then
 			table.insert(problems, "expected: " .. check[1])
