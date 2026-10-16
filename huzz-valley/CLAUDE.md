@@ -129,7 +129,13 @@ eye. Branch `HUZZ-VALLEY`. Read the section you need; the owner's own words are 
 - **Aura** = Huss Valley's gems (owner's call; old `Gems` saves migrate in `DataService`): from wins
   (`Pay.WonAura`) and the reward track. It pays for **crates** (`Config/Crates`, empty until the owner adds them;
   `Shared/CrateRoll` pure maths with shown odds and a pity counter, `tests/CrateRoll.spec.luau`; server
-  `ActionService.OpenCrate`; no crate UI yet). The gem icon stands in for Aura until the owner sends one.
+  `ActionService.OpenCrate`; no crate UI yet).
+- **Aura stars in the lobby** (owner's sheet: purple 4-point crystal, orbit rings, colour kinds): `Config/AuraStars`
+  (count, kinds, values, weights) → `AuraPickupService` (server: spawns tagged `HuzzAuraStar` parts near the lobby
+  spawn, ProximityPrompt E "Collect Aura", checks distance, adds Aura, respawns) → `Gameplay/AuraStars` (client
+  look: billboard star + turning rings, sparkles, light, floor glow; Rainbow drifts slowly). Lobby only: rounds keep
+  their power-ups. Star/ring pictures (`AuraStar`/`AuraRing` icons, also the Aura pills) are stand-ins from
+  `tools/icons/make_aura_star.py` until the owner sends theirs. Preview: `docs/previews/aura-stars.mp4`.
 
 ## 10. Sounds
 - 24 sounds made from scratch by `tools/sfx/make_sfx.py` → `assets/sfx/*.ogg` (list in `assets/sfx/README.md`).

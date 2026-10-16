@@ -51,6 +51,7 @@ grid.visible = ${data.grid === false ? 'false' : 'true'};
 const loader = new THREE.TextureLoader();
 const tex = {};
 for (const n of ${JSON.stringify(fs.readdirSync(path.join(here, '../../../assets/fx')).map(f => f.replace('.png', '')))}) tex[n] = loader.load('./fx/' + n + '.png');
+for (const n of ['aura-star', 'aura-ring']) tex[n] = loader.load('./icons/' + n + '.png'); // (the lobby's Aura stars)
 const sprites = [];
 const ribbonMeshes = [];
 const unit = new THREE.BoxGeometry(1, 1, 1);
@@ -132,6 +133,7 @@ page.on('pageerror', (e) => console.error('page error:', e.message));
 await page.route('http://motion3d.local/**', (route) => {
   const name = new URL(route.request().url()).pathname;
   if (name === '/index.html') return route.fulfill({ contentType: 'text/html', body: PAGE });
+  if (name.startsWith('/icons/')) return route.fulfill({ contentType: 'image/png', body: fs.readFileSync(path.join(here, '../../../assets/icons', path.basename(name))) });
   if (name.startsWith('/fx/')) return route.fulfill({ contentType: 'image/png', body: fs.readFileSync(path.join(here, '../../../assets/fx', path.basename(name))) });
   route.fulfill({ contentType: 'text/javascript', body: fs.readFileSync(path.join(here, 'vendor', 'three.module.min.js')) });
 });

@@ -61,6 +61,7 @@ All of these work against a real save system. When you're happy with how they lo
    coins every game, more when your side wins. **Aura** (Huss Valley's gems) comes from wins and the reward track,
    and will open **crates** once you design them (`Shared/Config/Crates.lua` has a ready example; every crate shows
    its odds and a pity counter).
+   Glowing **Aura stars** float around the lobby: walk up and press **E** to collect (+1, White +3, Rainbow +10).
 9. **New players** get a short **How to Play** card the first time they join (also in the Menu)
    ([picture](docs/previews/welcome.jpg)).
 
@@ -168,7 +169,8 @@ the icons itself. To make them work everywhere for good, upload them once (Plugi
 10. **Dance names:** most of the 25 dances are copies of other games' emotes, so they have our own names in
     `Shared/Config/Dances.lua` (Citrus Groove, Shock Shuffle...). Rename any you like. The movement pack's licence
     is in `design/anims/movement-pack.zip`; check it allows use in a published game.
-11. **An Aura icon:** a see-through PNG (256 px or bigger) named `currency-aura`. The gem picture stands in.
+11. **An Aura icon:** a see-through PNG (256 px or bigger) named `currency-aura`, plus an all-white copy
+    (`currency-aura-white`) so the game can tint the coloured stars. A star I drew stands in for now.
 12. **Your crates:** what's in each, its Aura price and the odds (copy the example in `Shared/Config/Crates.lua`,
     or tell me and I'll fill it in).
 
