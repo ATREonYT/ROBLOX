@@ -1,6 +1,7 @@
 --[[
-	Plays the Huss Valley sprint (Shared/RunMotion) on every R15 character on this client, so
-	everyone sees everyone run the same way. Off when the owner's run animation is set
+	Plays the Huss Valley run and the huss dash (Shared/RunMotion) on every R15 character on this
+	client, so everyone sees everyone run and dash the same way (the dash from the character's
+	DashAt/DashDir attributes, Gameplay/Dash). Off when the owner's run animation is set
 	(Config/Animations.Run). A carrier keeps the carry arms (CarryAnimator layers after this).
 ]]
 local M = {}
@@ -27,6 +28,7 @@ function M.start()
 
 	Frame.on(10, function(dt)
 		dt = math.clamp(dt, 1 / 240, 1 / 15)
+		local now = Workspace:GetServerTimeNow()
 		local carriers = {}
 		for _, model in carried:GetChildren() do
 			local id = model:GetAttribute("Carrier")
@@ -53,7 +55,15 @@ function M.start()
 				local v = root.AssemblyLinearVelocity
 				-- Knocked down: speed 0, so the sprint fades out under the fall instead of snapping off.
 				local speed = if character:GetAttribute("DownedAt") then 0 else Vector3.new(v.X, 0, v.Z).Magnitude
-				RunMotion.step(r.rec, dt, speed, math.abs(v.Y) < 10, carriers[p.UserId] == true)
+				-- The huss dash: its age and its direction in the body's frame (x right, z forward).
+				local dashAt, dashDir = character:GetAttribute("DashAt"), character:GetAttribute("DashDir")
+				local age, localDir = nil, nil
+				if type(dashAt) == "number" and typeof(dashDir) == "Vector3" then
+					age = now - dashAt
+					local d = root.CFrame:VectorToObjectSpace(dashDir)
+					localDir = Vector3.new(d.X, 0, -d.Z)
+				end
+				RunMotion.step(r.rec, dt, speed, math.abs(v.Y) < 10, carriers[p.UserId] == true, age, localDir)
 			end
 		end
 	end)

@@ -9,6 +9,7 @@ local Config = require(ReplicatedStorage.Shared.Config.Round)
 local Carry = require(ReplicatedStorage.Shared.Config.Carry)
 local GirlNames = require(ReplicatedStorage.Shared.Config.GirlNames)
 local GirlRoll = require(ReplicatedStorage.Shared.GirlRoll)
+local Characters = require(ReplicatedStorage.Shared.Config.Characters)
 
 local GirlService = {}
 GirlService.catalog = {} -- { id, name, rarity, template }
@@ -83,6 +84,7 @@ function GirlService.init()
 		addPlaceholders()
 	end
 	GirlService.publish()
+	Characters.addGirls(ReplicatedStorage:FindFirstChild("HuzzGirls")) -- won girls can be equipped / favourited
 	print(`[Huzz] {#GirlService.catalog} girls in the collection`)
 end
 
@@ -117,6 +119,8 @@ function GirlService.publish()
 			end
 			copy.Name = girl.key
 			copy:SetAttribute("Rarity", girl.rarity)
+			copy:SetAttribute("Id", girl.id) -- her save key, for the Index (Config/Characters.addGirls)
+			copy:SetAttribute("Name", girl.name)
 			copy.Parent = folder
 		end
 	end

@@ -155,7 +155,8 @@ function M.start()
 	end)
 
 	-- On-screen buttons (the kit's periwinkle action style).
-	local CONDENSED = Font.new("rbxasset://fonts/families/RobotoCondensed.json", Enum.FontWeight.Bold)
+	local DISPLAY = Font.new("rbxasset://fonts/families/LuckiestGuy.json") -- (Theme.Fonts.Display / Round)
+	local ROUNDED = Font.new("rbxasset://fonts/families/FredokaOne.json")
 	local ACTION, ACTION_TOP, RIM = Color3.fromHex("7E7CEF"), Color3.fromHex("8C8CF6"), Color3.fromHex("1F2347")
 	local SLATE = Color3.fromHex("556585")
 	local gui = Instance.new("ScreenGui")
@@ -189,7 +190,7 @@ function M.start()
 		text.BackgroundTransparency = 1
 		text.Size = UDim2.new(1, -10, if touch then 0.42 else 0.62, 0)
 		text.Position = UDim2.new(0, 5, if touch then 0.24 else 0.06, 0)
-		text.FontFace = CONDENSED
+		text.FontFace = DISPLAY
 		text.Text = label
 		text.TextScaled = true
 		text.TextColor3 = Color3.new(1, 1, 1)
@@ -201,7 +202,7 @@ function M.start()
 		small.BackgroundTransparency = 1
 		small.Size = UDim2.new(1, -10, 0.26, 0)
 		small.Position = UDim2.new(0, 5, if touch then 0.64 else 0.66, 0)
-		small.FontFace = CONDENSED
+		small.FontFace = ROUNDED
 		small.Text = if touch then "" else hint
 		small.TextScaled = true
 		small.TextColor3 = Color3.fromRGB(226, 228, 255)
@@ -216,7 +217,7 @@ function M.start()
 	end
 	local y0 = if touch then -150 else -110
 	local stabButton, paintStab = button("Stab", "STAB", "CLICK", y0, stab)
-	local hussButton, paintHuss = button("Huss", "HUSS", "PRESS H", y0, huss)
+	local hussButton, paintHuss = button("Huss", "TOSS", "PRESS H", y0, huss) -- the girl toss (Space is the huss dash)
 	gui.Parent = player:WaitForChild("PlayerGui")
 
 	RunService.RenderStepped:Connect(function()

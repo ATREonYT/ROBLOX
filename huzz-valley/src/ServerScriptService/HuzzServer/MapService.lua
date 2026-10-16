@@ -297,9 +297,26 @@ local function openSide(box, middle, run, name)
 end
 MapService.openSide = openSide
 
+-- The lowest bottom of the visible parts in a folder or model (zones and markers don't count).
+local function lowest(container)
+	local low = math.huge
+	for _, d in container:GetDescendants() do
+		if d:IsA("BasePart") and d.Transparency < 1 then
+			local k = key(d.Name)
+			if k ~= "zonea" and k ~= "zoneb" and k ~= "middle" and k ~= "bench" then
+				local cf, h = d.CFrame, d.Size / 2
+				local extent = math.abs(cf.RightVector.Y) * h.X + math.abs(cf.UpVector.Y) * h.Y + math.abs(cf.LookVector.Y) * h.Z
+				low = math.min(low, cf.Position.Y - extent)
+			end
+		end
+	end
+	return low
+end
+
 -- Where the map's middle goes: MapSpot if there is one, else just in front of the lobby, turned so its
--- open side (see openSide) faces the lobby. The map keeps its own height.
-local function placement(middle, open)
+-- open side (see openSide) faces the lobby. A map built floating higher than the lobby island's ground is
+-- lowered to stand on it (owner: the basketball map floated); one built lower keeps its height.
+local function placement(middle, open, model)
 	local spot = MapService.mapSpot
 	if spot then
 		return spot.CFrame
@@ -332,7 +349,15 @@ local function placement(middle, open)
 	local midLocal = middle.CFrame:VectorToObjectSpace(open)
 	local mapHalf = math.abs(midLocal.X) * middle.Size.X / 2 + math.abs(midLocal.Z) * middle.Size.Z / 2
 	local centre = lobby.CFrame.Position + front * (lobbyHalf + Config.Map.Gap + mapHalf)
-	centre = Vector3.new(centre.X, mid.Y, centre.Z)
+	local drop = 0
+	if model then
+		local island = if lobby.Parent and lobby.Parent ~= Workspace then lobby.Parent else lobby
+		local mapLow, groundLow = lowest(model), math.min(lowest(island), lobby.CFrame.Position.Y - lobby.Size.Y / 2)
+		if mapLow < math.huge and groundLow < math.huge and mapLow > groundLow then
+			drop = mapLow - groundLow
+		end
+	end
+	centre = Vector3.new(centre.X, mid.Y - drop, centre.Z)
 	return CFrame.lookAt(centre, centre - front) -- the open side looks back at the lobby
 end
 
@@ -395,7 +420,7 @@ function MapService.load(entry)
 		local run = Vector3.new(b.CFrame.Position.X - a.CFrame.Position.X, 0, b.CFrame.Position.Z - a.CFrame.Position.Z).Unit
 		local open = openSide(model, middle, run, entry.name)
 		model.WorldPivot = CFrame.lookAt(mid, mid + open)
-		model:PivotTo(placement(middle, open))
+		model:PivotTo(placement(middle, open, model))
 		for _, d in model:GetDescendants() do
 			if d:IsA("SpawnLocation") then
 				d.Enabled = false -- players respawn in the lobby, not on the map

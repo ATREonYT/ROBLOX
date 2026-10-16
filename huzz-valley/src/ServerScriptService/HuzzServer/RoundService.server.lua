@@ -109,8 +109,10 @@ local function syncPlayer(id)
 	if h then
 		local still = KnockdownService.isDown(p) or PowerService.stuck(id)
 		h.WalkSpeed = if still then 0 else PowerService.speedOf(id, speedFor(id))
-		h.JumpHeight = if still then 0 else StarterPlayer.CharacterJumpHeight
-		h.JumpPower = if still then 0 else StarterPlayer.CharacterJumpPower
+		-- No jumping in a round (owner's call): Space is the huss instead (the dash below).
+		local noJump = still or (match ~= nil and match.roles[id] ~= nil)
+		h.JumpHeight = if noJump then 0 else StarterPlayer.CharacterJumpHeight
+		h.JumpPower = if noJump then 0 else StarterPlayer.CharacterJumpPower
 	end
 	-- Catchers hold a knife (Config.TagMode "Stab"); everyone else's hands are empty.
 	local c = p.Character
@@ -226,11 +228,11 @@ function handlers.GirlMoved(e)
 	local messages = {
 		FirstAcross = { `{to} got {g}!`, GOLD },
 		Grabbed = { `{to} grabbed {g}! Carry her across!`, GOLD },
-		Stolen = { `{to} caught her carrier! {g} follows {to} now. Cross first to take her back!`, RED },
-		Rescued = { `{to} rescued {g}! Next round is the FINAL round!`, GOLD },
-		NoHero = { `No Hero made it! {to} was first across and gets {g}!`, GOLD },
-		NoHeroRescue = { `No Hero made it! {to} was first across and rescues {g}! Next round is the FINAL round!`, GOLD },
-		Reassigned = { `{to} now holds {g}`, RED },
+		Stolen = { `{to} stole {g}! Cross first to win her back!`, RED },
+		Rescued = { `{to} saved {g}! FINAL ROUND next!`, GOLD },
+		NoHero = { `No Hero made it! {to} gets {g}!`, GOLD },
+		NoHeroRescue = { `No Hero made it! {to} saves {g}! FINAL ROUND next!`, GOLD },
+		Reassigned = { `{to} has {g} now`, RED },
 		Dropped = { if Config.Pickup == "Grab" then `{g} was dropped! She's back in the middle` else `{g} was dropped! First across gets her`, GOLD },
 	}
 	local m = messages[e.reason]
@@ -453,7 +455,7 @@ local function runGame()
 	State:SetAttribute("GirlName", girl.name)
 	State:SetAttribute("GirlRarity", girl.rarity)
 	State:SetAttribute("HolderId", 0)
-	announce(`Today's girl: {girl.name}  ({girl.rarity})`, GirlService.rarity(girl.rarity).Color, true)
+	announce(`{girl.name} is up for grabs!`, GirlService.rarity(girl.rarity).Color, true)
 	if catcher then
 		task.delay(1.5, announce, `{nameOf(catcher)} is the CATCHER!`, RED, true)
 	end
@@ -559,6 +561,35 @@ Net.get("Hero").OnServerEvent:Connect(function(player, isHero)
 		Rules.setHero(match, id, isHero)
 		syncPlayer(id)
 	end
+end)
+
+-- The huss (owner's call): a dash the way you're moving. The client moves its own character at once
+-- (Gameplay/Dash) and tells us; we check it's allowed and set DashAt/DashDir on the character so every
+-- client plays the dash pose, and the player's DashReady (server time) for the cooldown tile.
+Net.get("Dash").OnServerEvent:Connect(function(player, dir, at)
+	local id = player.UserId
+	local c = player.Character
+	if not (match and not match.over and match.roles[id] and c and State:GetAttribute("Stage") == "Running") then
+		return
+	end
+	if KnockdownService.isDown(player) or PowerService.stuck(id) or match.status[id] == "Caught" then
+		return
+	end
+	if typeof(dir) ~= "Vector3" or dir ~= dir then
+		return
+	end
+	local flat = Vector3.new(dir.X, 0, dir.Z)
+	if flat.Magnitude < 0.1 then
+		return
+	end
+	local now = Workspace:GetServerTimeNow()
+	if now < (player:GetAttribute("DashReady") or 0) - 0.2 then
+		return -- still cooling down
+	end
+	local start = if type(at) == "number" and at == at then math.clamp(at, now - 0.4, now) else now
+	player:SetAttribute("DashReady", start + Config.Dash.Cooldown)
+	c:SetAttribute("DashDir", flat.Unit)
+	c:SetAttribute("DashAt", start)
 end)
 
 -- Hussing: her carrier throws her up and catches her (every client plays it from HussAt, server

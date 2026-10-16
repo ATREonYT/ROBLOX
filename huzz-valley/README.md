@@ -27,8 +27,9 @@ All of these work against a real save system. When you're happy with how they lo
    to reach.
 3. Catchers **stab** (click, or the STAB button on a phone) to tag a runner in reach. Tagged runners **fall flat
    and lie there**, then get up as **catchers next round**. The **first runner across gets her automatically**:
-   she appears over their head. Press **H** (or HUSS) to **huss**: he throws her up, she twirls, he flexes, and
-   he catches her. Each round runs the other way.
+   she appears over their head. Press **H** (or TOSS) to toss her up: she twirls, he flexes, and he catches her.
+   Press **Space** to **huss**: a quick dash the way you're running (forward, back, left or right), with its
+   cooldown on the HUSS tile at the bottom. You can't jump during a round. Each round runs the other way.
 4. **A catcher who stabs her holder steals her:** she falls down and follows that catcher around on foot. The
    next runner across rescues her, and the round after that is the **final round**: if that runner crosses
    again, they win her; if they're tagged, that catcher wins her. If every runner is caught, whoever holds her
@@ -36,7 +37,9 @@ All of these work against a real save system. When you're happy with how they lo
 5. Outlines: catchers **red**, runners **blue**, Heroes **yellow**, runners safe across the line **green**.
    During the countdown each runner picks **HERO** (goes for the girl) or **CHICKEN** (just gets across): only
    a Hero can take her by crossing first or rescue her, but if no Hero makes it, the first runner across gets
-   her anyway. You play in **shift lock**; press **Alt** to turn it off or on.
+   her anyway. In a round you play in **shift lock** (not in the lobby); **hold Alt** to free the mouse.
+   Every girl you win stays in your **Index**, drawn from her real model; ones you haven't won show as a
+   dark shape. The round screen has new fonts and colours ([picture](docs/previews/round-hud.png)).
 6. **Powers** (free, fresh every round; Q and E, or tap the cards at the bottom of the screen):
    - Runners: **Heart Shield** (a pink bubble that blocks one stab; the catcher gets dizzy and you get a burst
      of speed; once per round) and **Rizz Rush** (a speed burst with a pink trail).

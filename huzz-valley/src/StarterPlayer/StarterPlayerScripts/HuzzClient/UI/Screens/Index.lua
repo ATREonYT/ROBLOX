@@ -5,8 +5,11 @@
 -- Art: the kit's own pictures cropped from page 02 (assets/art/char-*.png) until real companion models exist.
 -- Those crops still carry the kit's printed tier badge (and Aiko's star), so the live badge/star are drawn exactly
 -- over them (ART below says where), and a locked card always shows the kit's dark silhouette, never coloured art.
-local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+-- Anime girls you win in rounds are listed too (Config/Characters.addGirls), drawn live from their real models.
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Characters = require(Shared.Config.Characters)
+local RoundConfig = require(Shared.Config.Round)
 local UI = script.Parent.Parent
 local Theme = require(UI.Theme)
 local Kit = require(UI.Kit)
@@ -70,6 +73,47 @@ local function equipped(id: string): boolean return State.data.Equipped == id en
 local function favourite(id: string): boolean return State.data.FavChars[id] == true end
 local function tierName(tier: string): string return Characters.TierNames[tier] or tier end
 local function tierColor(tier: string): Color3 return Characters.TierColors[tier] or C.Slate end
+-- A girl's badge says her roller rarity in its colour (Secret is near-black, so it gets a deep violet).
+local RARITY_COLOR = {}
+for _, r in RoundConfig.Rarities do RARITY_COLOR[r.Name] = r.Color end
+RARITY_COLOR.Secret = hex("2A1840")
+local function badgeText(c): string return if c.Rarity then string.upper(c.Rarity) else tierName(c.Tier) end
+local function badgeColor(c): Color3 return if c.Rarity then (RARITY_COLOR[c.Rarity] or C.Slate) else tierColor(c.Tier) end
+
+-- A girl's picture: her still model in a ViewportFrame. whole = head to toe (the preview), else head and shoulders
+-- (a card). Locked girls are drawn unlit, as a dark silhouette.
+local girlFolder = ReplicatedStorage:FindFirstChild("HuzzGirls")
+local function girlPicture(parent: Instance, c, isOwned: boolean, whole: boolean): ViewportFrame?
+	local source = girlFolder and girlFolder:FindFirstChild(c.Model)
+	if not (source and source:IsA("Model")) then return nil end
+	local vp = new("ViewportFrame", { Name = "Model", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Parent = parent })
+	vp:SetAttribute("RuntimeOnly", true)
+	local model = source:Clone()
+	model.Parent = vp
+	if isOwned then
+		vp.Ambient, vp.LightColor, vp.LightDirection = Color3.fromRGB(170, 170, 185), Color3.new(1, 1, 1), Vector3.new(-0.4, -1, -0.6)
+	else
+		vp.Ambient, vp.LightColor, vp.ImageColor3 = Color3.new(0, 0, 0), Color3.new(0, 0, 0), hex("0B1426")
+	end
+	local cam = Instance.new("Camera")
+	cam.FieldOfView = 30
+	cam.Parent = vp
+	vp.CurrentCamera = cam
+	local head = model:FindFirstChild("Head", true)
+	local look = if head and head:IsA("BasePart") then head.CFrame.LookVector else model:GetPivot().LookVector
+	look = Vector3.new(look.X, 0, look.Z)
+	look = if look.Magnitude > 0.01 then look.Unit else Vector3.new(0, 0, -1)
+	if whole or not (head and head:IsA("BasePart")) then
+		local okBox, cf, size = pcall(model.GetBoundingBox, model)
+		if not okBox then cf, size = model:GetPivot(), Vector3.new(2, 5, 1) end
+		local dist = (size.Y / 2) / math.tan(math.rad(15)) * 1.12
+		cam.CFrame = CFrame.lookAt(cf.Position + look * dist + Vector3.new(0, size.Y * 0.04, 0), cf.Position)
+	else
+		local at = head.CFrame.Position - Vector3.new(0, 0.55, 0)
+		cam.CFrame = CFrame.lookAt(at + look * 6.4 + Vector3.new(0, 0.6, 0), at)
+	end
+	return vp
+end
 
 -- The filtered, sorted list for the current view (search is case-insensitive and plain text, not a pattern).
 local function visibleList(): { any }
@@ -117,10 +161,10 @@ end
 
 -- A tier badge: coloured, white condensed caps. Never narrower/shorter than minW x h (AutomaticSize grows it to
 -- fit longer names), anchored at its top-right corner.
-local function badge(parent: Instance, tier: string, pos: UDim2, minW: number, h: number, textSize: number, z: number)
+local function badge(parent: Instance, c, pos: UDim2, minW: number, h: number, textSize: number, z: number)
 	local b = Kit.text({
-		Name = "TierBadge", Text = tierName(tier), FontFace = F.Button, TextSize = textSize, TextColor3 = Color3.new(1, 1, 1),
-		TextXAlignment = Enum.TextXAlignment.Center, TextWrapped = false, BackgroundTransparency = 0, BackgroundColor3 = tierColor(tier),
+		Name = "TierBadge", Text = badgeText(c), FontFace = F.Button, TextSize = textSize, TextColor3 = Color3.new(1, 1, 1),
+		TextXAlignment = Enum.TextXAlignment.Center, TextWrapped = false, BackgroundTransparency = 0, BackgroundColor3 = badgeColor(c),
 		AnchorPoint = Vector2.new(1, 0), Position = pos, Size = UDim2.fromOffset(minW, h), AutomaticSize = Enum.AutomaticSize.X, ZIndex = z, Parent = parent,
 	})
 	Kit.attach(Kit.corner(3), b)
@@ -131,14 +175,18 @@ end
 -- The character picture with only its top corners rounded (one rounded copy plus a square copy clipped below the
 -- corners: ClipsDescendants clips square in Roblox) on its blue backdrop, and the live tier badge. scale = picture size / card art size. Returns the art's info (for the star position).
 local function picture(parent: Instance, c, isOwned: boolean, w: number, h: number, scale: number, rounded: { top: boolean, bottom: boolean })
-	local artName = if isOwned then c.Art else "CharLocked"
+	local artName = if c.Model then nil elseif isOwned then c.Art else "CharLocked"
 	-- a blue backdrop behind the see-through picture (lighter at the top, like the reference's card scenes)
 	local holder = new("Frame", { Name = "Art", Size = UDim2.fromOffset(w, h), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = parent })
 	new("UIGradient", { Rotation = 90, Color = ColorSequence.new(COL.ArtTop, COL.ArtBack), Parent = holder })
 	local r = 4
 	Kit.attach(Kit.corner(r), holder)
 	new("Frame", { Name = "SquareFoot", Position = UDim2.new(0, 0, 1, -r), Size = UDim2.new(1, 0, 0, r), BackgroundColor3 = COL.ArtBack, BorderSizePixel = 0, Visible = not rounded.bottom, Parent = holder })
-	if artName then
+	if c.Model then
+		if not girlPicture(holder, c, isOwned, false) then
+			Kit.text({ Name = "NoArt", Text = "?", TextSize = math.floor(30 * scale), TextColor3 = C.SubText, TextXAlignment = Enum.TextXAlignment.Center, Size = UDim2.fromScale(1, 1), Parent = holder })
+		end
+	elseif artName then
 		Kit.attach(Kit.corner(r), Kit.art(artName, { Name = "Picture", Size = UDim2.fromScale(1, 1), Parent = holder }))
 		-- square copies cover the corners that should stay square
 		if not rounded.bottom then
@@ -152,7 +200,7 @@ local function picture(parent: Instance, c, isOwned: boolean, w: number, h: numb
 	local info = CARD_ART
 	local right = math.round(info.BadgeR * scale)
 	local minW = math.max(36, math.round((CW - info.BadgeR - info.BadgeX) * scale))
-	badge(holder, c.Tier, UDim2.new(1, -right, 0, 0), minW, math.round(info.BadgeH * scale), math.round(15 * scale), 3)
+	badge(holder, c, UDim2.new(1, -right, 0, 0), minW, math.round(info.BadgeH * scale), math.round(15 * scale), 3)
 	return holder, info
 end
 
@@ -233,7 +281,7 @@ local function chevron(parent: Instance, order: number, color: Color3?, size: nu
 end
 
 function Index.build(parent: Instance)
-	local window = Kit.window({ Name = "Index", Title = "CHARACTER INDEX", Icon = "CollectionBook", Width = W, Height = H, TitleSize = 21, TitleX = 58, TitleOffsetY = 1, TitleWidth = 219, StudsTo = 300, Parent = parent, OnClose = function() ModalManager.close() end })
+	local window = Kit.window({ Name = "Index", Flat = true, Title = "CHARACTER INDEX", Icon = "CollectionBook", Width = W, Height = H, TitleSize = 21, TitleX = 58, TitleOffsetY = 1, TitleWidth = 219, StudsTo = 300, Parent = parent, OnClose = function() ModalManager.close() end })
 	local panel = window.Panel
 
 	-- Header: search, tier and sort (page 02 #3-#5, measured; the window is 7 px narrower than the page's, taken
@@ -294,8 +342,13 @@ function Index.build(parent: Instance)
 		if key ~= shownPreview then
 			shownPreview = key
 			for _, ch in previewArt:GetChildren() do if ch:IsA("GuiObject") then ch:Destroy() end end
-			local full = if isOwned then FULL_ART[c.Id] else "CharLockedFull"
-			if full then
+			local full = if c.Model then nil elseif isOwned then FULL_ART[c.Id] else "CharLockedFull"
+			local girl = c.Model and new("Frame", { Name = "Girl", Size = UDim2.fromOffset(216, 238), BackgroundTransparency = 1, Parent = previewArt })
+			if girl and girlPicture(girl, c, isOwned, true) then
+				-- her rarity glows up from the floor behind her
+				local glow = new("Frame", { Name = "Glow", ZIndex = 0, Size = UDim2.fromScale(1, 1), BackgroundColor3 = badgeColor(c), BorderSizePixel = 0, Parent = girl }, { Kit.corner(3) })
+				new("UIGradient", { Rotation = -90, Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.55), NumberSequenceKeypoint.new(0.6, 1), NumberSequenceKeypoint.new(1, 1) }), Parent = glow })
+			elseif full then
 				Kit.attach(Kit.corner(3), Kit.art(full, { Name = "Picture", Size = UDim2.fromOffset(216, 238), Parent = previewArt }))
 			else
 				local s = 1.3
@@ -305,7 +358,7 @@ function Index.build(parent: Instance)
 		end
 		nameLabel.Text = c.Name
 		if nameBadge then nameBadge:Destroy() end
-		nameBadge = badge(nameRow, c.Tier, UDim2.new(), 47, 28, 18, 3)
+		nameBadge = badge(nameRow, c, UDim2.new(), 47, 28, 18, 3)
 		;(nameBadge :: TextLabel).AnchorPoint = Vector2.zero
 		;(nameBadge :: TextLabel).LayoutOrder = 2
 		if statusIcon then statusIcon:Destroy() end
@@ -484,13 +537,26 @@ function Index.build(parent: Instance)
 		if not ok then Toast.show(why or "That didn't work. Try again.") end
 	end)
 
-	State.changed(function() refresh(false) end)
+	-- Girls replicate a moment after joining, so the list is topped up whenever the window opens or your save
+	-- changes (a girl you just won is always in the folder by then).
+	local function syncGirls()
+		girlFolder = girlFolder or ReplicatedStorage:FindFirstChild("HuzzGirls")
+		if girlFolder and Characters.addGirls(girlFolder) then
+			lastKey, shownPreview = nil, ""
+		end
+	end
+	State.changed(function()
+		syncGirls()
+		refresh(false)
+	end)
+	syncGirls()
 
 	ModalManager.register("Index", {
 		window = window,
 		-- arg = { Tier = "MTB" } opens the index filtered to that tier (from the Tiers page)
 		onOpen = function(arg)
 			closeMenu()
+			syncGirls()
 			if type(arg) == "table" and type(arg.Tier) == "string" and table.find(Characters.Tiers, arg.Tier) then
 				view.Tab, view.Search, view.Tier = "All", "", arg.Tier
 				box.Text = ""

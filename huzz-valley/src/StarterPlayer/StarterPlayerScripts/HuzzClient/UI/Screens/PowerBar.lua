@@ -1,5 +1,6 @@
 -- The power hotbar (Config/Powers), bottom centre while you play a round, in the spirit of Huss Valley's ability
--- cards but in our kit and small (owner's call): two navy square tiles with the power's icon, name and key (Q / E). Tap a card or
+-- cards but in our kit and small (owner's call): navy square tiles with the power's icon, name and key (Q / E),
+-- and a third for the huss dash (Space; Gameplay/Dash) with its cooldown from the player's DashReady. Tap a card or
 -- press its key (gamepad L1 / R1) to use it. The server decides (HuzzServer/PowerService) and sends the result back
 -- as the player's PowerReady1/PowerReady2 attributes (server time the slot is ready; -1 = used up this round), which
 -- the cards count down. A Heart Shield that's on shows on its card until it runs out or pops.
@@ -12,6 +13,7 @@ local Workspace = game:GetService("Workspace")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Net = require(Shared.Net)
 local Powers = require(Shared.Config.Powers)
+local RoundConfig = require(Shared.Config.Round)
 local UI = script.Parent.Parent
 local Theme = require(UI.Theme)
 local Kit = require(UI.Kit)
@@ -24,7 +26,7 @@ local hex = Color3.fromHex
 local PowerBar = {}
 
 local CARD = { W = 62, H = 62, Gap = 10 } -- small square tiles (owner: centred, taking less space)
-local W = 2 * CARD.W + CARD.Gap
+local W = 3 * CARD.W + 2 * CARD.Gap -- Q power, E power, and the huss dash (Space)
 local PAGE_H = 347 -- the HUD reference height (as LobbyHud)
 local PINK = hex("FF6EBE")
 local KEYS = { Enum.KeyCode.Q, Enum.KeyCode.E }
@@ -51,12 +53,13 @@ local function card(parent: Instance, slot: number)
 		TextWrapped = false, TextTruncate = Enum.TextTruncate.AtEnd, Position = UDim2.new(0, 3, 1, -19), Size = UDim2.new(1, -6, 0, 14), Parent = b,
 	})
 	local key = new("Frame", {
-		Name = "Key", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(1, -4, 0, 4), Size = UDim2.fromOffset(17, 16),
+		Name = "Key", AnchorPoint = Vector2.new(if slot == 3 then 1 else 0.5, 0.5), Position = UDim2.new(1, if slot == 3 then 4 else -4, 0, 4),
+		Size = UDim2.fromOffset(if slot == 3 then 40 else 17, 16),
 		BackgroundColor3 = C.Pill, BorderSizePixel = 0, ZIndex = 5, Parent = b,
 	}, { Kit.corner(4) })
 	Kit.attach(Kit.stroke(C.PillRim, 1.5), key)
 	local keyText = Kit.text({
-		Name = "Text", Text = Powers.Keys[slot], FontFace = Theme.Fonts.Number, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Center,
+		Name = "Text", Text = if slot == 3 then "SPACE" else Powers.Keys[slot], FontFace = Theme.Fonts.Number, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Center,
 		Size = UDim2.fromScale(1, 1), ZIndex = 5, Parent = key,
 	})
 	-- The cooldown: a dark cover that shrinks away, with the seconds left on top.
@@ -81,7 +84,9 @@ function PowerBar.build(parent: Instance)
 		BackgroundTransparency = 1, Visible = false, Parent = parent,
 	})
 	Scale.bind(new("UIScale", { Name = "FitScale", Parent = bar }), function() return Scale.hud(PAGE_H) * 0.72 end)
-	local cards = { card(bar, 1), card(bar, 2) }
+	local cards = { card(bar, 1), card(bar, 2), card(bar, 3) }
+	local Dash = require(script.Parent.Parent.Parent:WaitForChild("Gameplay"):WaitForChild("Dash"))
+	local HUSS = { Icon = "💨", Name = "Huss", Cooldown = RoundConfig.Dash.Cooldown }
 	-- Phones have no Q / E: hide the key pills there.
 	local touchOnly = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 	for _, c in cards do
@@ -101,7 +106,15 @@ function PowerBar.build(parent: Instance)
 		remote:FireServer(slot)
 	end
 	for slot, c in cards do
-		c.button.Activated:Connect(function() use(slot) end)
+		c.button.Activated:Connect(function()
+			if slot == 3 then
+				c.press.Scale = 0.94
+				task.delay(0.08, function() c.press.Scale = 1 end)
+				Dash.try()
+			else
+				use(slot)
+			end
+		end)
 	end
 	UserInputService.InputBegan:Connect(function(input, processed)
 		if processed or UserInputService:GetFocusedTextBox() then return end
@@ -124,14 +137,14 @@ function PowerBar.build(parent: Instance)
 		if shown ~= roleKey then
 			shown = roleKey
 			for slot, c in cards do
-				local def = Powers[list[slot]]
+				local def = if slot == 3 then HUSS else Powers[list[slot]]
 				c.icon.Text, c.name.Text = def.Icon, string.upper(def.Name)
 			end
 		end
 		local now = Workspace:GetServerTimeNow()
 		for slot, c in cards do
-			local def = Powers[list[slot]]
-			local ready = player:GetAttribute("PowerReady" .. slot) or 0
+			local def = if slot == 3 then HUSS else Powers[list[slot]]
+			local ready = player:GetAttribute(if slot == 3 then "DashReady" else "PowerReady" .. slot) or 0
 			local shieldOn = list[slot] == "HeartShield" and (player:GetAttribute("ShieldUntil") or 0) > now
 			local text, frac = "", 0
 			if stage == "Countdown" then

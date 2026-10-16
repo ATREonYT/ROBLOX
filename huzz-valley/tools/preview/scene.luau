@@ -65,6 +65,28 @@ if cfg.HERO then
 	require(Screens.HeroChoice).refresh()
 	require(Screens.PowerBar).refresh()
 end
+-- ROUNDHUD="Hero"|"Chicken"|"Catcher": a round running with the in-round HUD (timer, role, prize card), a banner.
+if cfg.ROUNDHUD then
+	local round = game.ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Round")
+	round:SetAttribute("Stage", "Running")
+	round:SetAttribute("Round", 2)
+	round:SetAttribute("EndsAt", workspace:GetServerTimeNow() + 84.5)
+	round:SetAttribute("GirlName", "Sakura Hoshino")
+	round:SetAttribute("GirlRarity", "Legendary")
+	player:SetAttribute("HuzzRole", if cfg.ROUNDHUD == "Catcher" then "Catcher" else "Runner")
+	player:SetAttribute("HuzzStatus", if cfg.ROUNDHUD == "Catcher" then "" else "Active")
+	player:SetAttribute("HuzzHero", cfg.ROUNDHUD == "Hero")
+	player:SetAttribute("PowerReady1", 0)
+	player:SetAttribute("PowerReady2", 0)
+	local Hud = require(game.StarterPlayer.StarterPlayerScripts.HuzzClient.Gameplay.RoundHud)
+	Hud.start()
+	Hud.refresh()
+	require(game.StarterPlayer.StarterPlayerScripts.HuzzClient.UI.Screens.PowerBar).refresh()
+	-- (one ScreenGui is exported: the round HUD's root goes into the main UI for the picture)
+	pg:WaitForChild("HuzzRoundHud").Root.Parent = pg:WaitForChild("HuzzUI")
+	round:SetAttribute("Stage", "Running")
+	__fireOn(round, "OnClientEvent", "Announce", { text = "Sakura Hoshino is up for grabs!", color = Color3.fromRGB(255, 190, 60), big = true })
+end
 -- ROLL=<seconds into the spin>: the girl roller, with a made-up strip of the placeholder names.
 if cfg.ROLL then
 	local rarities = { "Common", "Common", "Uncommon", "Common", "Rare", "Common", "Uncommon", "Epic", "Common", "Legendary" }

@@ -106,6 +106,12 @@ end
 -- CanvasGroup (anchored at its centre), `scale` its open UIScale.
 function Motion.open(group: CanvasGroup, scale: UIScale, basePos: UDim2)
 	group.Visible = true
+	if not group:IsA("CanvasGroup") then -- a Flat window (ViewportFrames inside): grow in, no fade
+		group.Position = basePos
+		scale.Scale = if Motion.reduced then 1 else 0.85
+		if not Motion.reduced then Motion.tween(scale, "open", Theme.Motion.Open, { Scale = 1 }, Enum.EasingStyle.Back) end
+		return
+	end
 	if Motion.reduced then
 		group.GroupTransparency, scale.Scale, group.Position = 0, 1, basePos
 		return
@@ -120,6 +126,11 @@ end
 -- Window close: shrinks to 0.9 and fades out quickly, then hides.
 function Motion.close(group: CanvasGroup, scale: UIScale?, done: () -> ())
 	if scale and not Motion.reduced then Motion.tween(scale, "open", Theme.Motion.Close, { Scale = 0.9 }, Enum.EasingStyle.Quad) end
+	if not group:IsA("CanvasGroup") then -- a Flat window: no fade, so hide it at once
+		group.Visible = false
+		done()
+		return
+	end
 	local t = Motion.tween(group, "fade", Theme.Motion.Close, { GroupTransparency = 1 }, Enum.EasingStyle.Quad)
 	if not t then
 		group.Visible = false

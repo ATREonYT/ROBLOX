@@ -1,5 +1,6 @@
--- The Huss Valley sprint (Shared/RunMotion) over a stand-in run: 0-4 s a runner speeds up from a walk to a
--- full sprint, side on; 4-8 s a carrier sprints with her overhead (the carry arms layered on the run).
+-- The Huss Valley run and huss dash (Shared/RunMotion) over a stand-in run: 0-5.4 s a runner speeds up from a
+-- walk to the full run, filmed from the front, dashing forward (2.2 s), right (3.0), left (3.8) and back (4.6);
+-- 5.4-8 s a carrier runs with her overhead (the carry arms layered on the run).
 -- sh video.sh run_scene.luau out.mp4
 local roblox = require("@lune/roblox")
 local CFrame, Vector3 = roblox.CFrame, roblox.Vector3
@@ -87,27 +88,35 @@ local carryRec = CarryMotion.new({ motor = carry, rig = carryRig, root = carrier
 local runRec = RunMotion.new(runner)
 local carryRun = RunMotion.new(carrier)
 carrier.root.CFrame = CFrame.new(Vector3.new(200, Rig.REST_HEIGHT, 0))
-local R = mover(Vector3.new(0, 0, 0), rad(90))
+local R = mover(Vector3.new(0, 0, 0), rad(180))
 local K = mover(Vector3.new(200, 0, 0), rad(90))
+-- the dashes during part one: forward, right, left, back (direction in the body's frame: x right, z forward)
+local DASHES = { { 2.2, Vector3.new(0, 0, 1) }, { 3.0, Vector3.new(1, 0, 0) }, { 3.8, Vector3.new(-1, 0, 0) }, { 4.6, Vector3.new(0, 0, -1) } }
 local camPos
 for f = 0, SECONDS * FPS - 1 do
 	local t = f * DT
-	if t < 4 then
-		local target = if t < 0.8 then 8 else 24
+	if t < 5.4 then
+		local target = if t < 0.6 then 8 else 24
 		move(runner, R, target)
-		RunMotion.step(runRec, DT, R.speed, true, false)
+		local age, dir = nil, nil
+		for _, d in DASHES do
+			if t >= d[1] and t < d[1] + 0.5 then age, dir = t - d[1], d[2] end
+		end
+		RunMotion.step(runRec, DT, R.speed, true, false, age, dir)
 		Rig.fk(runner)
 		Rig.fk(carrier, { carry }, { girl })
-		local tgt = R.pos + Vector3.new(0, 3.5, -13)
-		camPos = if camPos then camPos:Lerp(tgt, 0.15) else tgt
-		scene:frame(camPos, R.pos + Vector3.new(0, 2.8, 0))
+		-- in front of him and a little to the side, looking back at him (as the reference films its runner)
+		local fwd = Vector3.new(-math.sin(-R.facing), 0, -math.cos(-R.facing))
+		local tgt = R.pos + fwd * 11 + Vector3.new(4, 4, 0)
+		camPos = if camPos then camPos:Lerp(tgt, 0.2) else tgt
+		scene:frame(camPos, R.pos + Vector3.new(0, 2.6, 0))
 	else
 		move(carrier, K, 23)
 		RunMotion.step(carryRun, DT, K.speed, true, true)
 		CarryMotion.step(carryRec, DT, t, "Calm", 99)
 		Rig.fk(carrier, { carry }, { girl })
 		local tgt = K.pos + Vector3.new(-3, 5, -15)
-		camPos = if t - DT < 4 then tgt else camPos:Lerp(tgt, 0.15)
+		camPos = if t - DT < 5.4 then tgt else camPos:Lerp(tgt, 0.15)
 		scene:frame(camPos, K.pos + Vector3.new(0, 4.5, 0))
 	end
 end

@@ -1,6 +1,7 @@
 --[[
-	Shift lock while you play (owner's call): the mouse stays in the middle, the camera sits over your
-	shoulder and you face where the camera looks. Alt switches it off and on again. It lets go of the
+	Shift lock while you're in a round (owner's call; never in the lobby): the mouse stays in the middle,
+	the camera sits over your shoulder and you face where the camera looks. Hold Alt to let go of it for
+	as long as you hold it. It lets go of the
 	mouse whenever a window is open (MenuOpen) or the Hero / Chicken pick shows (HuzzChoosing), and does
 	nothing on phones and tablets.
 	Roblox's own Shift-key mouse lock is switched off by the server (DevEnableMouseLock), so the two
@@ -16,8 +17,11 @@ function M.start()
 
 	local player = Players.LocalPlayer
 	local OFFSET = Vector3.new(1.75, 0, 0) -- over the right shoulder, as Roblox's shift lock
-	local wanted = true -- Alt flips this
+	local altHeld = false
 	local active = false
+	local Net = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared").Net)
+	local round = Net.get("Round") :: RemoteEvent
+	local PLAYING = { Countdown = true, Running = true, RoundOver = true }
 
 	if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
 		return
@@ -44,17 +48,21 @@ function M.start()
 		end
 	end
 
-	UserInputService.InputBegan:Connect(function(input, processed)
-		if processed or UserInputService:GetFocusedTextBox() then
-			return
+	local function isAlt(input)
+		return input.KeyCode == Enum.KeyCode.LeftAlt or input.KeyCode == Enum.KeyCode.RightAlt
+	end
+	UserInputService.InputBegan:Connect(function(input)
+		if isAlt(input) then
+			altHeld = true
 		end
-		if input.KeyCode == Enum.KeyCode.LeftAlt or input.KeyCode == Enum.KeyCode.RightAlt then
-			wanted = not wanted
-			local ok, Toast = pcall(require, script.Parent.Parent.UI.Toast)
-			if ok then
-				Toast.show(if wanted then "Shift lock on (Alt to turn off)" else "Shift lock off (Alt to turn on)", 1.5)
-			end
+	end)
+	UserInputService.InputEnded:Connect(function(input)
+		if isAlt(input) then
+			altHeld = false
 		end
+	end)
+	UserInputService.WindowFocusReleased:Connect(function()
+		altHeld = false -- (Alt-Tab away never sends the release)
 	end)
 	player.CharacterAdded:Connect(function()
 		active = false -- the new character starts free; the next frame sets it up again
@@ -63,7 +71,10 @@ function M.start()
 	RunService:BindToRenderStep("HuzzShiftLock", Enum.RenderPriority.Camera.Value + 1, function()
 		local h, root = humanoidAndRoot()
 		local alive = h ~= nil and h.Health > 0 and root ~= nil
-		local on = wanted and alive and player:GetAttribute("MenuOpen") ~= true and player:GetAttribute("HuzzChoosing") ~= true
+		local role = player:GetAttribute("HuzzRole")
+		local inRound = (role == "Runner" or role == "Catcher") and PLAYING[round:GetAttribute("Stage") or ""] == true
+		local on = inRound and not altHeld and alive and player:GetAttribute("MenuOpen") ~= true
+			and player:GetAttribute("HuzzChoosing") ~= true
 		setActive(on)
 		if not on then
 			return

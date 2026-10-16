@@ -6,6 +6,8 @@
 @font-face { font-family: Montserrat; src: url(fonts/Montserrat-Variable.ttf); font-weight: 100 900; }
 @font-face { font-family: RobotoCondensed; src: url(fonts/RobotoCondensed.ttf); font-weight: 100 900; }
 @font-face { font-family: RbxIcon; src: url(fonts/RbxIcon.ttf); }
+@font-face { font-family: LuckiestGuy; src: url(fonts/LuckiestGuy.ttf); }
+@font-face { font-family: FredokaOne; src: url(fonts/Fredoka.ttf); font-weight: 100 900; }
 html, body { margin: 0; background: #000; }
 #stage { position: relative; overflow: hidden; background: radial-gradient(ellipse at 50% 40%, #c9774a 0%, #8a4b3a 45%, #3b2a3f 100%); }
 #bg { position: absolute; inset: -40px; background-size: cover; filter: blur(14px) brightness(.8); }
@@ -20,7 +22,7 @@ const kebab = s => s.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
 function fontOf(f) {
   if (f && f.family) {
     const fam = f.family.split('/').pop().replace('.json', '');
-    return { family: `${fam}, RbxIcon, sans-serif`, weight: WEIGHT[f.weight] || 400 };
+    return { family: `${fam}, RbxIcon, sans-serif`, weight: fam === 'FredokaOne' ? 600 : (WEIGHT[f.weight] || 400) }; // (Fredoka One ~ Fredoka SemiBold)
   }
   return { family: 'Arial, RbxIcon, sans-serif', weight: 400 };
 }
@@ -86,8 +88,17 @@ function draw(n, parentEl, rect, k, parentAbs) {
     tx.style.justifyContent = { Left: 'flex-start', Center: 'center', Right: 'flex-end' }[t.xa];
     tx.style.alignItems = { Top: 'flex-start', Center: 'center', Bottom: 'flex-end' }[t.ya];
     tx.style.textAlign = t.xa.toLowerCase();
-    if (strokeOnText) { tx.style.webkitTextStroke = `${m.stroke.th * 2 * kk}px ${rgba(m.stroke.c, m.stroke.t)}`; tx.style.paintOrder = 'stroke fill'; }
+    // UIStroke on text: a ring of shadows (like Roblox's outside outline; -webkit-text-stroke breaks fonts with overlapping shapes)
+    let ring = '';
+    if (strokeOnText) { const r = m.stroke.th * kk, c = rgba(m.stroke.c, m.stroke.t); ring = Array.from({ length: 16 }, (_, i) => `${(Math.cos(i * Math.PI / 8) * r).toFixed(2)}px ${(Math.sin(i * Math.PI / 8) * r).toFixed(2)}px 0 ${c}`).join(','); tx.style.textShadow = ring; }
     const span = document.createElement('span'); span.textContent = t.t; tx.appendChild(span); el.appendChild(tx);
+    // A UIGradient on a see-through label tints its text (Roblox multiplies it with TextColor3).
+    if (m.grad && m.grad.on && n.bgT >= 1) {
+      const cs = arr(m.grad.c);
+      const stops = cs.map(s => `${rgba([s[1] * t.color[0], s[2] * t.color[1], s[3] * t.color[2]], t.tT)} ${s[0] * 100}%`).join(',');
+      span.style.background = `linear-gradient(${m.grad.rot + 90}deg, ${stops})`; span.style.webkitBackgroundClip = 'text'; span.style.color = 'transparent';
+      if (ring) { tx.style.textShadow = 'none'; const under = span.cloneNode(true); under.style.cssText = `position:absolute;color:transparent;text-shadow:${ring};background:none`; tx.style.position = 'absolute'; tx.insertBefore(under, span); span.style.position = 'relative'; }
+    }
   }
   parentEl.appendChild(el);
   // Children: content box after padding, then list layout or free placement. Siblings drawn in ZIndex order.

@@ -175,7 +175,11 @@ The UI golden slice and its backend are built (saving, coins and gems, shop purc
     - the carrier's shoulders and elbows: the pose, plus `AnimBlend` of the playing animation;
     - her limbs: dangling toward gravity.
     It tells its own writes from the Animator's by reading the Transform back (CFrames are float32).
-  - `RoundHud` is a stand-in, to be rebuilt with Kit as the Match HUD page.
+  - `RoundHud` (built in code, laid out at 1280 x 720 and scaled): timer pill, role badge (gold HERO, cream
+    CHICKEN, red CATCHER, blue RUNNER, pink CARRYING, green SAFE, grey CAUGHT), prize card with her portrait
+    (ViewportFrame from `HuzzGirls`), banners with a shine and a drop shadow. Fonts: Luckiest Guy for big words,
+    Fredoka One for lines (`Theme.Fonts.Display` / `Round`; the preview has both in `tools/preview/fonts`).
+    Preview: `shots.sh <out> round-hud` (`ROUNDHUD="Hero"|"Chicken"|"Catcher"`). Copy: short, no dashes.
   - `AvatarAnimations` swaps in the IDs from `Config/Animations`.
 - **Caught runners fall flat and lie there until the next round** (owner's call; `Config/Round.Knockdown`;
   `Enabled = false` = the old bench teleport). `KnockdownService` anchors the root and sets the character's
@@ -230,7 +234,13 @@ The UI golden slice and its backend are built (saving, coins and gems, shop purc
   speed (`From`/`Full`) on every R15 character (`Gameplay/RunAnimator`). `Gameplay/Frame` runs every scripted
   pose in order after Roblox's animations: run 10, carry 20, stab 30, knockdown 40. A carrier keeps the carry
   arms and leans less. `motion3d/run_scene.luau` renders it (`docs/previews/huss-run.mp4`). Speeds went up
-  (runners 24, catchers 26, lobby 20). The H throw-and-catch is still there.
+  (runners 24, catchers 26, lobby 20). Matched to the owner's video 87565d66: hunched, high knees, arms wide.
+- **Huss dash (owner's call: Space):** in a round, Space (gamepad A) dashes the way you're moving (facing if
+  still): `Gameplay/Dash` pushes the root with a LinearVelocity (`Config/Round.Dash` Speed/Time/Cooldown) and
+  tells the server (`Dash` remote), which checks the cooldown and sets `DashReady` (player) and `DashAt`/`DashDir`
+  (character) so every client plays the lunge/side slide/hop back (`RunMotion` dash pose). No jumping in rounds
+  (the server zeroes JumpHeight/JumpPower for anyone with a role). The third power tile is HUSS with its
+  cooldown. The girl toss moved to H only (button "TOSS").
 - **Blur:** the map vote window opens with no blur (`noBlur` in ModalManager); the owner's place has DepthOfField
   switched off already.
 - **Icons in game:** they come from EditableImage, which needs Game Settings > Security > "Allow Mesh / Image
@@ -241,13 +251,14 @@ The UI golden slice and its backend are built (saving, coins and gems, shop purc
   roller data, the map swap, knives, the start wall, traps, the holder and the saved winner, in 7 setups.
   Breaking keepRunnersIn or the knives makes it fail (checked). It can't see physics, animation or UI.
 - **Hero or Chicken (owner's call, `Config/Round.Heroes`):** in the countdown each runner not carrying her picks
-  (`Screens/HeroChoice`: two kit buttons, keys 1 and 2; `Hero` remote, only during Countdown). Only a Hero (or
+  (`Screens/HeroChoice`: a gold HERO card and a cream CHICKEN card above the power tiles, keys 1 and 2; `Hero` remote, only during Countdown). Only a Hero (or
   her holder, always a Hero) takes her by crossing first or rescues her; if no Hero crossed by the end of the
   round, the first runner across gets her ("NoHero"/"NoHeroRescue", owner: "if they don't win, the others can").
   Rules in `RoundRules` (`setHero`, `canTake`, tested). Player attribute `HuzzHero`.
 - **Shift lock (owner's call):** `Gameplay/ShiftLock` locks the mouse, puts the camera over the shoulder
-  (`Humanoid.CameraOffset`) and turns you with the camera; Alt toggles it; it lets go while a window is open or
-  the Hero pick shows (`HuzzChoosing`); off on touch devices. The server sets `DevEnableMouseLock = false`.
+  (`Humanoid.CameraOffset`) and turns you with the camera, only while you're in a round (never in the lobby);
+  holding Alt frees it until you let go; it lets go while a window is open or the Hero pick shows
+  (`HuzzChoosing`); off on touch devices. The server sets `DevEnableMouseLock = false`.
 - **Outlines (reference video + owner):** `RoundHud` puts a faint Highlight (outline only, 0.35 transparent) on
   everyone in the game: catchers red, runners blue, Heroes yellow, safe runners green, none on caught runners. Roblox draws at most 31
   Highlights at once, so servers over 31 players lose some outlines.
@@ -275,9 +286,15 @@ The UI golden slice and its backend are built (saving, coins and gems, shop purc
 - **Not seen in Studio yet:** physics ownership of the welded girl and the Animator ordering. Ask the owner how
   the carry feels before tuning blind.
 - **Waiting on the owner:** their girls and map (a `.rbxl` in `places/`, or `tools/studio/export-girls-and-map.lua`
-  output). Check every girl (scale, rig, dangle) before tuning. Their rarities are Common → Secret, but the Index
-  uses tiers (Sub1 → TrueEve) and `Config/Characters.List`: ask how they map, and add the girls to that list so
-  the Index shows them.
+  output). Check every girl (scale, rig, dangle) before tuning.
+- **Won girls in the Index:** `GirlService.publish` puts `Id` (her save key), `Name` and `Rarity` on each
+  `ReplicatedStorage.HuzzGirls` copy; `Config/Characters.addGirls` lists them on the server (so Equip/Favourite
+  accept them) and on the client (the Index tops up on open and on save changes). Rarity → tier: Common Sub1,
+  Uncommon Sub3, Rare Sub5, Epic MTB, Legendary HTB, Mythic Stacy, Secret TrueEve; the badge shows the rarity.
+  Pictures are ViewportFrames of her model (locked = unlit silhouette), so the Index window is `Flat` (a Frame,
+  not a CanvasGroup; it grows in without the fade). Check: `tools/preview/check_girl_index.luau`.
+- **Maps sit on the floor:** `MapService.placement` drops a map whose lowest visible part is above the lobby's
+  floor (BasketBall was floating ~7 studs). The showcase girl is at `Showcase.Height = 34`.
 
 ## Place file
 `sh tools/place/build_place.sh` rebuilds `places/HuzzValley.rbxl` (all scripts plus a baseplate). Rebuild it whenever `src/` changes, so the owner can always just open the file.

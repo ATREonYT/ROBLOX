@@ -26,7 +26,7 @@ return {
 	-- The game's girl, big, floating over the middle of the map for the whole game (owner's call).
 	Showcase = {
 		Scale = 3, -- times her normal size
-		Height = 18, -- studs from the field's floor up to her feet
+		Height = 34, -- studs from the field's floor up to her feet (owner: higher)
 		Spin = 0.35, -- radians per second (a slow turn)
 		Bob = 0.6, -- studs up and down
 		Sparkles = 14, -- per second
@@ -46,7 +46,11 @@ return {
 	-- Hero or Chicken (owner's call): during the countdown each runner picks. Only a Hero can take the girl by
 	-- crossing first or rescue her; if no Hero makes it across, the first runner across gets her after all.
 	Heroes = true,
-	HussCooldown = 0.4, -- seconds after a huss ends before the next (Carry.Huss.Time is the huss itself)
+	HussCooldown = 0.4, -- seconds after a toss ends before the next (Carry.Huss.Time is the toss itself)
+
+	-- The huss (owner's call): Space during a round dashes you the way you're moving (forward, back, left or
+	-- right). Jumping is off in rounds. Speed in studs per second for Time seconds; Cooldown before the next.
+	Dash = { Speed = 72, Time = 0.24, Cooldown = 2.5 },
 
 	-- A caught runner falls flat on their face and lies there until the next round
 	-- (owner's call). Enabled = false sends them to the Bench part instead.
