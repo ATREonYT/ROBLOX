@@ -7,10 +7,11 @@
 	and Middle (names match loosely: "Zone A" works; optional: Bench), e.g.
 	  Workspace > Maps > Halloween_Map > Zone A, Zone B, Middle
 	At start every map moves to ReplicatedStorage.HuzzMaps (so clients can show
-	it in the vote cards). load(map) copies it in front of the lobby, turned so
-	runners cross left to right as seen from the lobby; unload() removes it.
-	A part named MapSpot (optional) sets exactly where the map's middle goes
-	and which way it runs (its front face points from ZoneA to ZoneB).
+	it in the vote cards). load(map) copies it in front of the lobby as it was
+	built, only turned so its open side faces the lobby (openSide), with invisible
+	walls round the field; unload() removes it.
+	A part named MapSpot (optional) sets exactly where the map's middle goes;
+	its front face points the way the open side should face.
 
 	The lobby is a part named Lobby, else the SpawnBaseplate. With no zones at
 	all a plain test field is built in place so the game still runs.
@@ -234,9 +235,71 @@ function MapService.pick()
 	return choice
 end
 
--- Where the map's middle goes and which way it runs: MapSpot if there is one, else
--- just in front of the lobby, its run crossing left to right as seen from the lobby.
-local function placement(middle, runAxis)
+-- The middle of a group of parts (a model's pivot without needing one).
+local function centroid(item)
+	if item:IsA("BasePart") then
+		return item.CFrame.Position
+	end
+	local sum, n = Vector3.zero, 0
+	for _, d in item:GetDescendants() do
+		if d:IsA("BasePart") then
+			sum += d.CFrame.Position
+			n += 1
+		end
+	end
+	return if n > 0 then sum / n else nil
+end
+
+--[[
+	Which long side of the field should face the lobby (owner's call: people in the lobby watch
+	through the open side). Returns that side's outward direction (flat, as the map was built).
+	  1. Config.Map.FarSide[name] names a landmark (e.g. Halloween's "Mausoleum") that goes on the
+	     far side, away from the lobby.
+	  2. Config.Map.OpenSide[name] = true: the side with fewer tall things along it (fences, walls)
+	     faces the lobby; when both are much the same, the side that faced it as built.
+	  3. Anything else keeps the side that faced the lobby as built (owner: maps came out flipped).
+]]
+local function openSide(box, middle, run, name)
+	local mid = middle.CFrame.Position
+	local side = run:Cross(Vector3.yAxis).Unit
+	local midLocal = middle.CFrame:VectorToObjectSpace(side)
+	local half = math.abs(midLocal.X) * middle.Size.X / 2 + math.abs(midLocal.Z) * middle.Size.Z / 2
+	local far = Config.Map.FarSide and Config.Map.FarSide[name]
+	local landmark = far and box:FindFirstChild(far, true)
+	local at = landmark and centroid(landmark)
+	if at then
+		return if (at - mid):Dot(side) > 0 then -side else side
+	end
+	local sign = 1
+	local lobby = MapService.lobby
+	if lobby and (lobby.CFrame.Position - mid):Dot(side) < 0 then
+		sign = -1 -- as built, the other side faced the lobby
+	end
+	if not (Config.Map.OpenSide and Config.Map.OpenSide[name]) then
+		return side * sign
+	end
+	local cover = { [1] = 0, [-1] = 0 }
+	for _, d in box:GetDescendants() do
+		if d:IsA("BasePart") and d ~= middle and d.Transparency < 1 then
+			local rel = d.CFrame.Position - mid
+			local across = rel:Dot(side)
+			local top = rel.Y + d.Size.Y / 2
+			if top > 4 and math.abs(across) > half * 0.6 and math.abs(across) < half + 40 then
+				local s = if across > 0 then 1 else -1
+				cover[s] += math.max(d.Size.X, d.Size.Z) * math.min(top, 30)
+			end
+		end
+	end
+	if cover[sign] > cover[-sign] * 1.15 + 50 then
+		sign = -sign
+	end
+	return side * sign
+end
+MapService.openSide = openSide
+
+-- Where the map's middle goes: MapSpot if there is one, else just in front of the lobby, turned so its
+-- open side (see openSide) faces the lobby. The map keeps its own height.
+local function placement(middle, open)
 	local spot = MapService.mapSpot
 	if spot then
 		return spot.CFrame
@@ -244,7 +307,7 @@ local function placement(middle, runAxis)
 	local lobby = MapService.lobby
 	local mid = middle.CFrame.Position
 	if not lobby then
-		return CFrame.lookAt(mid, mid + runAxis) -- no lobby: the map stays where it was built
+		return CFrame.lookAt(mid, mid + open) -- no lobby: the map stays where it was built
 	end
 	-- "In front": the side of the lobby that faces where the maps were built.
 	local away = Vector3.zero
@@ -263,19 +326,58 @@ local function placement(middle, runAxis)
 		end
 	end
 	front = Vector3.new(front.X, 0, front.Z).Unit
-	local right = front:Cross(Vector3.yAxis).Unit
 	-- Distance: the lobby's half-depth + a gap + the map's half-depth (across its run).
 	local lobbyLocal = lobby.CFrame:VectorToObjectSpace(front)
 	local lobbyHalf = math.abs(lobbyLocal.X) * lobby.Size.X / 2 + math.abs(lobbyLocal.Z) * lobby.Size.Z / 2
-	local across = runAxis:Cross(Vector3.yAxis).Unit
-	local midLocal = middle.CFrame:VectorToObjectSpace(across)
+	local midLocal = middle.CFrame:VectorToObjectSpace(open)
 	local mapHalf = math.abs(midLocal.X) * middle.Size.X / 2 + math.abs(midLocal.Z) * middle.Size.Z / 2
 	local centre = lobby.CFrame.Position + front * (lobbyHalf + Config.Map.Gap + mapHalf)
-	centre = Vector3.new(centre.X, mid.Y, centre.Z) -- the map keeps its own height
-	return CFrame.lookAt(centre, centre + right)
+	centre = Vector3.new(centre.X, mid.Y, centre.Z)
+	return CFrame.lookAt(centre, centre - front) -- the open side looks back at the lobby
 end
 
--- Copies a map in front of the lobby and makes it the current map.
+-- Invisible walls round the field (ZoneA, Middle and ZoneB), so nobody jumps off the map.
+local function boundary(model, a, b, middle)
+	local mid = middle.CFrame.Position
+	local run = Vector3.new(b.CFrame.Position.X - a.CFrame.Position.X, 0, b.CFrame.Position.Z - a.CFrame.Position.Z).Unit
+	local side = run:Cross(Vector3.yAxis).Unit
+	local lo, hi = Vector3.new(math.huge, math.huge, math.huge), Vector3.new(-math.huge, -math.huge, -math.huge)
+	for _, part in { a, b, middle } do
+		local h = part.Size / 2
+		for _, c in { Vector3.new(-1, -1, -1), Vector3.new(1, -1, -1), Vector3.new(-1, 1, -1), Vector3.new(1, 1, -1),
+			Vector3.new(-1, -1, 1), Vector3.new(1, -1, 1), Vector3.new(-1, 1, 1), Vector3.new(1, 1, 1) } do
+			local w = part.CFrame:PointToWorldSpace(h * c) - mid
+			local p = Vector3.new(w:Dot(run), w.Y, w:Dot(side))
+			lo, hi = lo:Min(p), hi:Max(p)
+		end
+	end
+	local frame = CFrame.fromMatrix(mid, run, Vector3.yAxis, side) -- x = along the run, z = across (right-handed)
+	local floorY = MapService.ground(mid, mid.Y + middle.Size.Y) or (mid.Y + lo.Y)
+	local height = Config.Map.BoundsHeight
+	local y = floorY - mid.Y - 2 + height / 2
+	local folder = Instance.new("Folder")
+	folder.Name = "HuzzBounds"
+	local lengthX, lengthZ = hi.X - lo.X, hi.Z - lo.Z
+	local midX, midZ = (hi.X + lo.X) / 2, (hi.Z + lo.Z) / 2
+	for _, w in {
+		{ CFrame.new(lo.X - 1, y, midZ), Vector3.new(2, height, lengthZ + 4) },
+		{ CFrame.new(hi.X + 1, y, midZ), Vector3.new(2, height, lengthZ + 4) },
+		{ CFrame.new(midX, y, lo.Z - 1), Vector3.new(lengthX + 4, height, 2) },
+		{ CFrame.new(midX, y, hi.Z + 1), Vector3.new(lengthX + 4, height, 2) },
+	} do
+		local p = Instance.new("Part")
+		p.Name = "Wall"
+		p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch, p.CastShadow = true, true, false, false, false
+		p.Transparency = 1
+		p.Size = w[2]
+		p.CFrame = frame * w[1]
+		p.Parent = folder
+	end
+	folder.Parent = model
+end
+
+-- Copies a map in front of the lobby (as it was built, its open side facing the lobby) and makes it
+-- the current map.
 function MapService.load(entry)
 	MapService.unload()
 	lastPicked = entry
@@ -291,8 +393,12 @@ function MapService.load(entry)
 		local a, b, middle = zonesOf(model, entry.name, true)
 		local mid = middle.CFrame.Position
 		local run = Vector3.new(b.CFrame.Position.X - a.CFrame.Position.X, 0, b.CFrame.Position.Z - a.CFrame.Position.Z).Unit
-		model.WorldPivot = CFrame.lookAt(mid, mid + run)
-		model:PivotTo(placement(middle, run))
+		local open = openSide(model, middle, run, entry.name)
+		model.WorldPivot = CFrame.lookAt(mid, mid + open)
+		model:PivotTo(placement(middle, open))
+		if Config.Map.BoundsHeight > 0 then
+			boundary(model, a, b, middle)
+		end
 		for _, d in model:GetDescendants() do
 			if d:IsA("SpawnLocation") then
 				d.Enabled = false -- players respawn in the lobby, not on the map
@@ -459,12 +565,33 @@ function MapService.holdStart(startName, on)
 	end
 	local centre, out, length = edge(zone)
 	local h = Config.Map.WallHeight
-	wall = markPart({
-		Name = "HuzzStartWall", Size = Vector3.new(length + 2, h, 1),
-		CFrame = CFrame.lookAt(centre, centre + out) + out * 0.5 + Vector3.new(0, h / 2, 0),
-		CanCollide = true, Material = Enum.Material.ForceField, Color = Color3.fromRGB(120, 190, 255),
-		Parent = loaded or Workspace,
+	local base = CFrame.lookAt(centre, centre + out) + out * 0.5 -- on the line, x along it
+	wall = Instance.new("Folder")
+	wall.Name = "HuzzStartWall"
+	-- What stops you: tall and invisible, so nobody jumps over it.
+	markPart({
+		Name = "Block", Size = Vector3.new(length + 2, h, 1), CFrame = base + Vector3.new(0, h / 2, 0),
+		CanCollide = true, Transparency = 1, Parent = wall,
 	})
+	-- What you see: a faint strip of blue glass with a glowing top edge and thin posts.
+	local glassH, blue = 5, Color3.fromRGB(120, 200, 255)
+	markPart({
+		Name = "Glass", Size = Vector3.new(length, glassH, 0.2), CFrame = base + Vector3.new(0, glassH / 2, 0),
+		Color = blue, Material = Enum.Material.Glass, Transparency = 0.82, Parent = wall,
+	})
+	markPart({
+		Name = "Edge", Size = Vector3.new(length, 0.18, 0.24), CFrame = base + Vector3.new(0, glassH, 0),
+		Color = blue, Material = Enum.Material.Neon, Transparency = 0.25, Parent = wall,
+	})
+	local posts = math.max(2, math.floor(length / 16) + 1)
+	for i = 0, posts - 1 do
+		local x = -length / 2 + length * i / (posts - 1)
+		markPart({
+			Name = "Post", Size = Vector3.new(0.18, glassH, 0.24), CFrame = base * CFrame.new(x, glassH / 2, 0),
+			Color = blue, Material = Enum.Material.Neon, Transparency = 0.45, Parent = wall,
+		})
+	end
+	wall.Parent = loaded or Workspace
 end
 
 -- The same point pulled back inside the zone (1.5 studs in from the edges), or nil if already in.

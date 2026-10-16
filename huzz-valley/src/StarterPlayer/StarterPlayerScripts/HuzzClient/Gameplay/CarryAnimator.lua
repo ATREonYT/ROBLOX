@@ -18,7 +18,6 @@ function M.start()
 	local CollectionService = game:GetService("CollectionService")
 	local Players = game:GetService("Players")
 	local ReplicatedStorage = game:GetService("ReplicatedStorage")
-	local RunService = game:GetService("RunService")
 	local Workspace = game:GetService("Workspace")
 
 	local Shared = ReplicatedStorage:WaitForChild("Shared")
@@ -27,6 +26,7 @@ function M.start()
 	local CarryMotion = require(Shared.CarryMotion)
 	local GirlMotion = require(Shared.GirlMotion)
 	local FollowMotion = require(Shared.FollowMotion)
+	local RoundConfig = require(Shared.Config.Round)
 
 	local folder = Workspace:WaitForChild("HuzzCarried")
 	local useArmAnimation = Animations.CarryArms ~= ""
@@ -243,7 +243,7 @@ function M.start()
 		startFollower(model)
 	end
 
-	RunService.PreSimulation:Connect(function(dt)
+	require(script.Parent.Frame).on(20, function(dt)
 		dt = math.clamp(dt, 1 / 240, 1 / 15)
 		local now = Workspace:GetServerTimeNow()
 		for model, c in carries do
@@ -280,6 +280,14 @@ function M.start()
 				if rec.tracks then
 					driveGirlTracks(rec.tracks, rec.speed)
 				end
+			end
+		end
+		-- The big girl over the map turns slowly and floats up and down.
+		for _, model in CollectionService:GetTagged("HuzzShowcase") do
+			local base = model:GetAttribute("Base")
+			if typeof(base) == "CFrame" and model.Parent then
+				local S = RoundConfig.Showcase
+				model:PivotTo(base * CFrame.new(0, math.sin(now * 1.1) * S.Bob, 0) * CFrame.Angles(0, (now * S.Spin) % (2 * math.pi), 0))
 			end
 		end
 		for model, p in prizes do

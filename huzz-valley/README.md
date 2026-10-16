@@ -14,11 +14,16 @@ All of these work against a real save system. When you're happy with how they lo
 ## The game: rounds and carrying a girl
 1. **Between games** everyone votes for one of two maps. The winner **replaces the map in front of the lobby**
    (the last one stays there until then). Then a **small roller at the top of the screen** runs from top to
-   bottom and stops on the game's girl. Each row shows the girl's real model, her name, her rarity and that
+   bottom and stops on the game's girl. She then floats **big over the map** for the whole game, turning slowly
+   in a column of light with sparkles and her rating (stars, name, rarity) over her head. Each roller row shows
+   the girl's real model, her name, her rarity and that
    rarity's real chance. Every row is a fair pick (Common → Secret, from `Config/Round.Rarities`).
-2. Everyone is moved onto the map. Runners wait on their side behind the **start line** (a see-through wall
+2. Everyone is moved onto the map. Maps go in the way you built them: Halloween with its Mausoleum away from
+   the lobby, Basketball with its open side facing the lobby (`Map.FarSide` and `Map.OpenSide` in
+   `Config/Round.lua`). Invisible walls stop anyone jumping off. Everyone runs faster now, with a Huss Valley
+   style sprint ([video](docs/previews/huss-run.mp4)). Runners wait on their side behind the **start line** (a see-through wall
    until GO; they can walk around in their zone). One random player is the **catcher**, in the middle with a
-   **knife**. The girl **stands in the middle**. A white line marks each side, and **SAFE ZONE** shows the line
+   **knife**. The girl floats over the map. A white line marks each side, and **SAFE ZONE** shows the line
    to reach.
 3. Catchers **stab** (click, or the STAB button on a phone) to tag a runner in reach. Tagged runners **fall flat
    and lie there**, then get up as **catchers next round**. The **first runner across gets her automatically**:
@@ -90,6 +95,10 @@ The whole UI is in **StarterGui > HuzzUI** as normal parts you can click and cha
 - Press **M**, or click **Menu**.
 - Open the **Shop** and switch tabs.
 - Open **Settings** with the gear and change things. The changes stay while you play in Studio. Studio uses test saves, so they reset when you press Stop.
+
+## If the icons don't show in Play
+In Studio: **Home → Game Settings → Security → turn on "Allow Mesh / Image APIs" → Save.** That lets the game draw
+the icons itself. To make them work everywhere for good, upload them once (Plugins → Huzz Valley → Upload Pictures).
 
 ## Your checklist (things only you can do)
 1. **Upload the pictures once, so they show everywhere, including StarterGui while you edit:**

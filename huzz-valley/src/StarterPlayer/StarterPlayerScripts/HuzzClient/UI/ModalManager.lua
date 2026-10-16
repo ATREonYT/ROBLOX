@@ -11,7 +11,7 @@ local Scale = require(script.Parent.Scale)
 
 local ModalManager = {}
 
-type Screen = { window: any, onOpen: ((any) -> ())?, onClose: (() -> ())?, firstSelect: (() -> GuiObject?)?, items: (() -> { GuiObject })?, side: boolean? }
+type Screen = { window: any, onOpen: ((any) -> ())?, onClose: (() -> ())?, firstSelect: (() -> GuiObject?)?, items: (() -> { GuiObject })?, side: boolean?, noBlur: boolean? }
 local screens: { [string]: Screen } = {}
 local current: string? = nil
 local listeners: { (string?) -> () } = {}
@@ -23,7 +23,8 @@ local function changed()
 	local p = Players.LocalPlayer
 	if p then p:SetAttribute("MenuOpen", current ~= nil) end
 	for _, fn in listeners do task.spawn(fn, current) end
-	local full = current ~= nil and not (screens[current] and screens[current].side)
+	local s = current and screens[current]
+	local full = s ~= nil and not (s.side or s.noBlur) -- noBlur: windows that pop up by themselves (the map vote)
 	Motion.tween(blur, "blur", 0.2, { Size = full and 8 or 0 })
 end
 

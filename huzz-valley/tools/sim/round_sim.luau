@@ -431,6 +431,13 @@ local function simulate(opts)
 	function GirlService.rarity(n)
 		return { Name = n, Color = Color3.new(1, 1, 1) }
 	end
+	local showcases = 0
+	function GirlService.showcase(_, at)
+		showcases += 1
+		local m = new("Model", { Name = "HuzzShowcase", CFrame = CFrame.new(at) })
+		m.Parent = workspace
+		return m
+	end
 	local prizeModel
 	function GirlService.display(_, at)
 		prizeModel = new("Model", { CFrame = CFrame.new(at) })
@@ -650,6 +657,15 @@ local function simulate(opts)
 			lastStage = st
 		end
 		watchEvents()
+		local shown = 0
+		for _, c in workspace:GetChildren() do
+			if c.Name == "HuzzShowcase" then shown += 1 end
+		end
+		if (st == "Countdown" or st == "Running") and shown ~= 1 then
+			problem(`{shown} big girls over the map during a game (should be 1)`)
+		elseif (st == "Voting" or st == "Waiting") and shown ~= 0 then
+			problem("the big girl stayed after the game")
+		end
 		local now = 1000 + clock
 		for p, bot in bots do
 			local c = p.Character

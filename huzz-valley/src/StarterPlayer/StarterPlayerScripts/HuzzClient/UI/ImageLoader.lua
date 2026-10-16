@@ -56,7 +56,8 @@ function ImageLoader.content(kind: string, name: string): any
 	local ok, result = pcall(function() return Content.fromObject(ImageLoader.editable(kind, name)) end)
 	if not ok and not warned then
 		warned = true
-		warn("[HuzzUI] built-in images can't be drawn on this device (" .. tostring(result) .. "); upload them to show them")
+		warn("[HuzzUI] The icons can't be drawn (" .. tostring(result) .. "). Fix: Home > Game Settings > Security > turn on"
+			.. " 'Allow Mesh / Image APIs', then Save; or upload them once (Plugins > Huzz Valley > Upload Pictures).")
 	end
 	cache[key] = ok and result or false
 	return ok and result or nil

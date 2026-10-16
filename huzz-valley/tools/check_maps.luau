@@ -76,12 +76,30 @@ for _, m in MapService.maps do
 		end
 	end
 	MapService.holdStart("ZoneA", true)
-	local wall = ws:FindFirstChild("HuzzStartWall")
+	local wall = ws:FindFirstChild("HuzzStartWall").Block
 	local inside = MapService.inZone(z.ZoneA, wall.CFrame.Position - wall.CFrame.LookVector * 0.6)
 	print(string.format("  %-10s start wall %.1f wide, its zone side is in ZoneA: %s", m.name, wall.Size.X, tostring(not inside and "no (outside)" or "yes")))
 	MapService.holdStart("ZoneA", false)
 	if ws:FindFirstChild("HuzzStartWall") then problems += 1 print("  PROBLEM wall not removed") end
 	local back = MapService.keepIn(z.ZoneA, mid)
 	if not (back and MapService.inZone(z.ZoneA, back)) then problems += 1 print("  PROBLEM keepIn") end
+end
+-- Which side of each map faces the lobby (the open side; Halloween's Mausoleum on the far side).
+for _, m in MapService.maps do
+	local f = zonesIn(m.box)
+	local a, b, mid = f.ZoneA.CFrame.Position, f.ZoneB.CFrame.Position, f.Middle.CFrame.Position
+	local run = (b - a) * roblox.Vector3.new(1, 0, 1)
+	local open = MapService.openSide(m.box, f.Middle, run.Unit, m.name)
+	local asBuilt = (MapService.lobby.CFrame.Position - mid):Dot(open) > 0
+	local note = ""
+	local maus = m.box:FindFirstChild("Mausoleum", true)
+	if maus then
+		local sum, n = roblox.Vector3.new(0, 0, 0), 0
+		for _, d in maus:GetDescendants() do if d:IsA("BasePart") then sum += d.CFrame.Position; n += 1 end end
+		local far = ((sum / n) - mid):Dot(open) < 0
+		note = if far then ", Mausoleum on the far side" else ", MAUSOLEUM FACES THE LOBBY"
+		if not far then problems += 1 end
+	end
+	print(string.format("  %-15s faces the lobby with %s%s", m.name, if asBuilt then "the side that faced it as built" else "its other side (turned round)", note))
 end
 print(if problems == 0 then "map marks ok" else problems .. " problems")

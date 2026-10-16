@@ -69,7 +69,7 @@ function M.start()
 		end
 	end
 
-	RunService.PreSimulation:Connect(function()
+	require(script.Parent.Frame).on(30, function()
 		local now = os.clock()
 		for p, s in stabs do
 			local character = s.character

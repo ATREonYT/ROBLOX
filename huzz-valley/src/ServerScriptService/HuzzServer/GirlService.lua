@@ -214,6 +214,29 @@ local function useMotors(model)
 	end
 end
 
+-- Her body's box (head, torso, arms and legs: no hats, hair, wings or other accessories) in her root's
+-- frame. Sizes and the hold use this, so a big hat or wings can't shrink her or push her off-centre.
+local function bodyBounds(model, root)
+	local frame = root.CFrame
+	local lo, hi
+	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") and d ~= root and d.Transparency < 1 and not d:FindFirstAncestorWhichIsA("Accoutrement") then
+			local h = d.Size / 2
+			for _, c in { Vector3.new(-1, -1, -1), Vector3.new(1, -1, -1), Vector3.new(-1, 1, -1), Vector3.new(1, 1, -1),
+				Vector3.new(-1, -1, 1), Vector3.new(1, -1, 1), Vector3.new(-1, 1, 1), Vector3.new(1, 1, 1) } do
+				local p = frame:PointToObjectSpace(d.CFrame:PointToWorldSpace(h * c))
+				lo = if lo then lo:Min(p) else p
+				hi = if hi then hi:Max(p) else p
+			end
+		end
+	end
+	if not lo then
+		return model:GetBoundingBox()
+	end
+	return frame * CFrame.new((lo + hi) / 2), hi - lo
+end
+GirlService.bodyBounds = bodyBounds
+
 --[[
 	A copy of the girl ready to weld or display: scripts removed, scaled to
 	Carry.GirlLength, every part joined to one root, no collisions, and any
@@ -262,7 +285,7 @@ function GirlService.makeCopy(girl, parent)
 	end
 	model.Parent = parent
 
-	local height = model:GetExtentsSize().Y
+	local height = select(2, bodyBounds(model, root)).Y -- her body, not her hat
 	if height > 0.1 then
 		model:ScaleTo(model:GetScale() * Carry.GirlLength / height)
 	end
@@ -302,9 +325,129 @@ function GirlService.makeCopy(girl, parent)
 		end
 	end
 
-	local centre, size = model:GetBoundingBox()
+	local centre, size = bodyBounds(model, root)
 	nameTag(model, girl, root, size.Y * 0.5 + 1.2)
 	return model, root, centre, size
+end
+
+--[[
+	The game's girl as a big showpiece floating over the map (owner's call, instead of her standing in
+	the middle): `at` is where her feet float. Scaled up (Config/Round.Showcase), standing in a column of
+	light in her rarity colour, with sparkles round her, a glowing ring under her feet and her rating
+	over her head (stars by rarity, her name, her rarity). Everything is anchored; every client spins
+	and bobs her slowly (tag "HuzzShowcase", HuzzClient/Gameplay/CarryAnimator).
+]]
+function GirlService.showcase(girl, at, parent)
+	local S = Config.Showcase
+	local model, root = GirlService.makeCopy(girl, parent)
+	model.Name = "HuzzShowcase"
+	local tag = model:FindFirstChild("HuzzNameTag")
+	if tag then
+		tag:Destroy()
+	end
+	model:ScaleTo(model:GetScale() * S.Scale)
+	local centre, size = bodyBounds(model, root)
+	model:PivotTo(CFrame.new(at + Vector3.new(0, size.Y / 2, 0)) * centre:ToObjectSpace(model:GetPivot()))
+	centre, size = bodyBounds(model, root)
+	local rarity = GirlService.rarity(girl.rarity)
+	local color = if rarity.Name == "Secret" then Color3.fromRGB(235, 235, 255) else rarity.Color
+	local feet = centre.Position - Vector3.new(0, size.Y / 2, 0)
+	local radius = math.max(size.X, size.Z) * 0.9 + 2
+
+	local function part(name, props)
+		local p = Instance.new("Part")
+		p.Name = name
+		p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch, p.CastShadow = true, false, false, false, false
+		for k, v in props do
+			p[k] = v
+		end
+		p.Parent = model
+		return p
+	end
+	-- Glowing rings under her feet.
+	part("Ring", {
+		Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.3, radius * 2, radius * 2), Material = Enum.Material.Neon,
+		Color = color, Transparency = 0.35, CFrame = CFrame.new(feet - Vector3.new(0, 0.6, 0)) * CFrame.Angles(0, 0, math.rad(90)),
+	})
+	part("Halo", {
+		Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.2, radius * 2.8, radius * 2.8), Material = Enum.Material.Neon,
+		Color = color, Transparency = 0.75, CFrame = CFrame.new(feet - Vector3.new(0, 0.9, 0)) * CFrame.Angles(0, 0, math.rad(90)),
+	})
+	-- Sparkles all round her, and her light.
+	local aura = part("Aura", { Size = size + Vector3.new(2, 2, 2), Transparency = 1, CFrame = centre })
+	local sparkles = Instance.new("ParticleEmitter")
+	sparkles.Name = "Sparkles"
+	sparkles.Color = ColorSequence.new(Color3.new(1, 1, 1), color)
+	sparkles.LightEmission = 1
+	sparkles.Rate = S.Sparkles
+	sparkles.Lifetime = NumberRange.new(1.5, 3)
+	sparkles.Speed = NumberRange.new(0.5, 2)
+	sparkles.SpreadAngle = Vector2.new(180, 180)
+	sparkles.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.2, 0.9), NumberSequenceKeypoint.new(1, 0) })
+	sparkles.Transparency = NumberSequence.new(0.1, 1)
+	sparkles.Parent = aura
+	local light = Instance.new("PointLight")
+	light.Color, light.Brightness, light.Range = color, 2, 40
+	light.Parent = aura
+	-- A soft column of light from the ring up past her head.
+	local base = Instance.new("Attachment")
+	base.Name = "BeamBase"
+	base.WorldPosition = feet
+	base.Parent = aura
+	local top = Instance.new("Attachment")
+	top.Name = "BeamTop"
+	top.WorldPosition = feet + Vector3.new(0, size.Y * 1.6, 0)
+	top.Parent = aura
+	local beam = Instance.new("Beam")
+	beam.Attachment0, beam.Attachment1 = base, top
+	beam.Width0, beam.Width1 = radius * 2, radius * 0.6
+	beam.Color = ColorSequence.new(color)
+	beam.Transparency = NumberSequence.new(0.7, 1)
+	beam.LightEmission = 1
+	beam.FaceCamera = true
+	beam.Parent = aura
+
+	-- Her rating over her head: stars by rarity (Common 1 ... Secret 7), her name, her rarity.
+	local order = 1
+	for i, r in Config.Rarities do
+		if r.Name == girl.rarity then
+			order = i
+		end
+	end
+	local gui = Instance.new("BillboardGui")
+	gui.Name = "Rating"
+	gui.Size = UDim2.new(S.Scale * 4.6, 0, S.Scale * 2.2, 0) -- studs: it grows and shrinks with her
+	gui.StudsOffsetWorldSpace = Vector3.new(0, size.Y / 2 + S.Scale * 1.4, 0)
+	gui.LightInfluence = 0
+	gui.MaxDistance = 2000
+	gui.Parent = aura
+	local function label(text, y, h, color3, weight)
+		local t = Instance.new("TextLabel")
+		t.BackgroundTransparency = 1
+		t.Size = UDim2.new(1, 0, h, 0)
+		t.Position = UDim2.fromScale(0, y)
+		t.Text = text
+		t.TextColor3 = color3
+		t.TextScaled = true
+		t.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", weight)
+		local stroke = Instance.new("UIStroke")
+		stroke.Thickness = 2.5
+		stroke.Color = Color3.fromRGB(20, 18, 40)
+		stroke.Parent = t
+		t.Parent = gui
+	end
+	label(string.rep("★", order) .. string.rep("☆", #Config.Rarities - order), 0, 0.3, Color3.fromRGB(255, 214, 92), Enum.FontWeight.Heavy)
+	label(girl.name, 0.3, 0.42, Color3.new(1, 1, 1), Enum.FontWeight.Heavy)
+	label(string.upper(rarity.Name), 0.72, 0.28, color, Enum.FontWeight.Bold)
+
+	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") then
+			d.Anchored = true
+		end
+	end
+	model:SetAttribute("Base", model:GetPivot())
+	CollectionService:AddTag(model, "HuzzShowcase")
+	return model
 end
 
 -- Standing on the floor at `top` (a point on the ground) as the round's prize.

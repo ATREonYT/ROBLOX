@@ -20,14 +20,24 @@ return {
 	-- zone gets her automatically (she appears over their head). "Grab" = the first runner
 	-- to walk up to her where she waits picks her up.
 	Pickup = "FirstAcross",
-	GirlSpot = "Middle", -- where she stands while nobody has her: "Middle" or "SafeZone" (the far side)
+	-- Where she is while nobody has her: "Sky" = only the big showpiece over the map (owner's call), "Middle"
+	-- = standing in the middle, "SafeZone" = on the far side.
+	GirlSpot = "Sky",
+	-- The game's girl, big, floating over the middle of the map for the whole game (owner's call).
+	Showcase = {
+		Scale = 3, -- times her normal size
+		Height = 18, -- studs from the field's floor up to her feet
+		Spin = 0.35, -- radians per second (a slow turn)
+		Bob = 0.6, -- studs up and down
+		Sparkles = 14, -- per second
+	},
 	GrabRange = 6, -- "Grab" only: studs from her centre to a runner's root
 
 	-- How catchers tag (owner's call): "Stab" = they hold a knife and click / tap STAB to stab a runner
 	-- in reach; "Touch" = running into a runner (TagRange) tags them.
 	TagMode = "Stab",
 	Stab = {
-		Range = 7.5, -- studs from the catcher's root to the runner's (a little generous: other players lag on screen)
+		Range = 8.5, -- studs from the catcher's root to the runner's (a little generous: other players lag on screen)
 		Cooldown = 0.6, -- seconds between stabs, hit or miss
 		Time = 0.36, -- how long the stab move lasts
 	},
@@ -45,11 +55,13 @@ return {
 	},
 	StartZoneSafe = true, -- catchers can't tag runners still standing in their start zone
 
+	-- Faster than Roblox's 16 (owner: "make the people run quicker"), Huss Valley pace.
 	Speeds = {
-		Runner = 16,
-		Catcher = 17.5,
-		Holder = 15, -- a runner carrying the girl
-		Thief = 17.5, -- a catcher she's following (she walks behind him, so no slowdown)
+		Lobby = 20, -- everyone not in a game
+		Runner = 24,
+		Catcher = 26,
+		Holder = 23, -- a runner carrying the girl
+		Thief = 26, -- a catcher she's following (she walks behind him, so no slowdown)
 	},
 
 	-- Map parts. Each map is a folder or model in Workspace holding ZoneA, ZoneB and
@@ -67,7 +79,13 @@ return {
 		SafeLines = true, -- a white line where each zone meets the field, and SAFE ZONE over the goal's line
 		LineWidth = 0.8,
 		SignHeight = 9, -- the SAFE ZONE sign above the line (studs)
-		WallHeight = 30, -- the see-through wall that holds runners on the start line until GO
+		WallHeight = 40, -- the start-line wall that holds runners until GO (invisible; a faint glass strip shows it)
+		BoundsHeight = 60, -- invisible walls round the field so nobody jumps off the map (0 = none)
+		-- Maps go in as built, facing the lobby the way they faced it in Studio, except: FarSide names a
+		-- landmark that must end up away from the lobby; OpenSide = true picks the side with fewer fences and
+		-- walls to face the lobby, so people there can watch (owner's calls).
+		FarSide = { Halloween_Map = "Mausoleum" },
+		OpenSide = { BasketBall_Map = true },
 		BuildTestField = true, -- no zones found: build a plain test field so the game still runs
 	},
 
@@ -81,7 +99,7 @@ return {
 	},
 	-- "R15": every girl is rebuilt as R15 from her own HumanoidDescription when she's
 	-- first picked (same look, plus elbows and knees). "Original" keeps her model as is.
-	GirlRig = "R15",
+	GirlRig = "Original", -- owner: the R15 rebuild came out deformed, so the girls stay exactly as built
 
 	-- Weight = how often the round's girl comes from this rarity
 	-- (only rarities that have girls count).

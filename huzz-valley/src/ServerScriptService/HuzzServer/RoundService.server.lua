@@ -38,7 +38,8 @@ local RED = Color3.fromRGB(255, 90, 90)
 local byId = {} -- UserId -> Player
 local match = nil -- RoundRules state while a game runs
 local girl = nil -- this game's girl {name, rarity, template}
-local prize = nil -- her display model while nobody holds her
+local prize = nil -- her display model while nobody holds her (GirlSpot "Middle"/"SafeZone")
+local showcase = nil -- the big her floating over the map for the whole game (GirlSpot "Sky")
 local goalName = "ZoneB"
 
 -- Quest counters (Config/Progression) and the Index, saved through DataService.
@@ -89,7 +90,7 @@ end
 local function speedFor(id)
 	local role = match and match.roles[id]
 	if not role then
-		return StarterPlayer.CharacterWalkSpeed
+		return Config.Speeds.Lobby or StarterPlayer.CharacterWalkSpeed
 	elseif match.holder == id then
 		return if role == "Catcher" then Config.Speeds.Thief else Config.Speeds.Holder
 	end
@@ -169,7 +170,7 @@ end
 
 local function showPrize()
 	clearPrize()
-	if girl then
+	if girl and Config.GirlSpot ~= "Sky" then
 		-- In the middle (Config.GirlSpot "Middle"), facing the runners' side; or on the far side.
 		local inMiddle = Config.GirlSpot == "Middle"
 		local spot = if inMiddle then zones.Middle else zones[goalName]
@@ -420,7 +421,23 @@ local function finishGame()
 	task.wait(Config.GameOverTime)
 end
 
+-- The big showpiece of this game's girl over the middle of the map.
+local function showShowcase()
+	local m = zones.Middle
+	if not (girl and m) then
+		return
+	end
+	local floor = MapService.ground(m.Position, m.Position.Y + m.Size.Y / 2) or (m.Position.Y - m.Size.Y / 2)
+	local ok, result = pcall(GirlService.showcase, girl, Vector3.new(m.Position.X, floor + Config.Showcase.Height, m.Position.Z), Workspace)
+	if ok then
+		showcase = result
+	else
+		warn("[Huzz] Couldn't show the girl over the map: " .. tostring(result))
+	end
+end
+
 local function runGame()
+	showShowcase()
 	local ids = {}
 	for id in byId do
 		table.insert(ids, id)
@@ -444,6 +461,10 @@ local function cleanUp()
 	KnockdownService.upAll()
 	CarryService.removeAll()
 	clearPrize()
+	if showcase then
+		showcase:Destroy()
+		showcase = nil
+	end
 	MapService.holdStart(nil, false)
 	PowerService.clear()
 	MapService.showGoal(nil) -- the lines stay on the map, the SAFE ZONE sign goes out

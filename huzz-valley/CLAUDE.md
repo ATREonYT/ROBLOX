@@ -124,8 +124,12 @@ The UI golden slice and its backend are built (saving, coins and gems, shop purc
 - **Between games (owner's call):** a map vote (`Screens/MapVote`, design page 15, ModalManager window, opens on
   Stage "Voting"; `MapVoteService`: one vote per player, a new vote replaces the old, ties random). The winner is
   copied in front of the lobby island (`MapService.load`: maps live in `ReplicatedStorage.HuzzMaps` from server
-  start; placed `Map.Gap` past the lobby edge on the side facing where the maps were built, the run axis crossing
-  left to right; an optional `MapSpot` part overrides that). It stays there after the game and is swapped
+  start; placed `Map.Gap` past the lobby edge on the side facing where the maps were built). Maps go in **as
+  built** (owner: turning them came out "flipped"), only turned so the right long side faces the lobby
+  (`openSide`: `Map.FarSide` names a landmark that goes away from the lobby, Halloween's Mausoleum;
+  `Map.OpenSide` maps pick the side with fewer fences, BasketBall; others keep the side that faced the lobby
+  as built). Invisible walls (`Map.BoundsHeight`) ring the field so nobody jumps off. An optional `MapSpot`
+  part overrides the placement. `check_maps.luau` prints which side faces the lobby. It stays there after the game and is swapped
   out only when the next vote picks its replacement (owner's call).
   - **Girl roller (owner's call: small, top of the screen, top-to-bottom, real models):** after the vote,
     Stage "Rolling" (`Config/Round.Roll`): `Screens/GirlRoll` (a 320 x 254 kit window, not a ModalManager
@@ -190,8 +194,9 @@ The UI golden slice and its backend are built (saving, coins and gems, shop purc
     animations.
 - **Zones (owner's call):** white safe lines on the zone edges facing the middle and a green SAFE ZONE billboard
   over the goal's line (`MapService.showGoal`, `Config/Round.Map.SafeLines`). Before GO runners can walk in their
-  start zone but a ForceField wall stands on the start line (`MapService.holdStart`) and `keepIn` puts back
-  anyone who gets round it. `tools/check_maps.luau` checks the lines on the owner's maps.
+  start zone but a wall stands on the start line (`MapService.holdStart`: an invisible 40-stud block plus a
+  faint blue glass strip with a neon edge and posts, owner asked for faint) and `keepIn` puts back anyone who
+  gets round it. `tools/check_maps.luau` checks the lines on the owner's maps.
 - **Stabbing (owner's call, `Config/Round.TagMode = "Stab"`; "Touch" = the old run-into tag):** catchers hold a
   knife welded to the right hand (`KnifeService`; a `ServerStorage.HuzzKnife` model replaces it). Click, R2 or the
   STAB button (`Gameplay/Actions`) plays `Shared/StabMotion` at once and fires `Stab`; the server checks role,
@@ -212,6 +217,24 @@ The UI golden slice and its backend are built (saving, coins and gems, shop purc
   reads `PowerReady1/2` and `ShieldUntil`; `DizzyUntil` darkens STAB). Q, E and H are reserved keys (the Menu key
   can't take them). The shield bubble lives in `Workspace.HuzzShields`, outside the character, so the team
   Highlight doesn't outline it. Icons are emoji until the owner sends PNGs.
+- **The girl over the map (owner's call, replaces the girl standing in the middle; `GirlSpot = "Sky"`):**
+  `GirlService.showcase` puts a 3x copy of the game's girl `Showcase.Height` above the middle for the whole
+  game, in her rarity colour: two neon rings, sparkles (default ParticleEmitter texture, no asset IDs), a
+  PointLight, a Beam column and a "Rating" billboard (stars 1-7 by rarity, name, rarity). Anchored; every
+  client turns and bobs it (`CarryAnimator`, tag `HuzzShowcase`, attribute `Base`).
+- **Girls stay as built (owner: the R15 rebuild came out deformed):** `GirlRig = "Original"` (they're R6). Sizes,
+  the hold and the showcase use `GirlService.bodyBounds` (body parts only), so hats, hair and wings can't shrink
+  them or push the hold off-centre.
+- **The Huss Valley sprint (owner's call):** `Shared/RunMotion` (pure, tuned in `Config/Run`) leans into the run,
+  long strides with a high knee fold, arms pumping, shoulders twisting, a bounce; it blends in above walking
+  speed (`From`/`Full`) on every R15 character (`Gameplay/RunAnimator`). `Gameplay/Frame` runs every scripted
+  pose in order after Roblox's animations: run 10, carry 20, stab 30, knockdown 40. A carrier keeps the carry
+  arms and leans less. `motion3d/run_scene.luau` renders it (`docs/previews/huss-run.mp4`). Speeds went up
+  (runners 24, catchers 26, lobby 20). The H throw-and-catch is still there.
+- **Blur:** the map vote window opens with no blur (`noBlur` in ModalManager); the owner's place has DepthOfField
+  switched off already.
+- **Icons in game:** they come from EditableImage, which needs Game Settings > Security > "Allow Mesh / Image
+  APIs" (the warning says so); uploading (`upload-images.lua` or the plugin's Upload Pictures) removes the need.
 - **Full-game simulation (`tools/sim/round_sim.luau`, run by `tools/check.sh`):** the real RoundService,
   PowerService, RoundRules, GirlRoll and configs on fake services with a virtual clock and bots who run,
   chase, stab, use powers, huss, cheat round the start wall, leave and join. It checks the stage order, the

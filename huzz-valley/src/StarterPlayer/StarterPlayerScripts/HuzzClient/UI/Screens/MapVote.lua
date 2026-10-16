@@ -175,6 +175,7 @@ function MapVote.build(parent: Instance)
 
 	ModalManager.register("MapVote", {
 		window = window,
+		noBlur = true, -- it opens by itself for everyone; keep the world sharp behind it (owner: too blurry)
 		onOpen = refresh,
 		firstSelect = function() return cards[1].button.Instance end,
 		items = function() return { cards[1].frame, cards[2].frame } end,

@@ -9,7 +9,6 @@ local M = {}
 function M.start()
 	local Players = game:GetService("Players")
 	local ReplicatedStorage = game:GetService("ReplicatedStorage")
-	local RunService = game:GetService("RunService")
 	local Workspace = game:GetService("Workspace")
 
 	local DownMotion = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("DownMotion"))
@@ -25,7 +24,7 @@ function M.start()
 		return list
 	end
 
-	RunService.PreSimulation:Connect(function()
+	require(script.Parent.Frame).on(40, function()
 		local now = Workspace:GetServerTimeNow()
 		local seen = {}
 		for _, player in Players:GetPlayers() do

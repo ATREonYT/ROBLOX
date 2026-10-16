@@ -196,7 +196,8 @@ function M.start()
 		stripe.BackgroundColor3 = color
 		girlName.Text = girl
 		local who = nameOf(State:GetAttribute("HolderId"))
-		holder.Text = if who then "Held by " .. who elseif Config.GirlSpot == "Middle" then "Waiting in the middle" else "Waiting across the field"
+		holder.Text = if who then "Held by " .. who elseif Config.GirlSpot == "Sky" then "First one across gets her!"
+			elseif Config.GirlSpot == "Middle" then "Waiting in the middle" else "Waiting across the field"
 		holder.TextColor3 = if who then GOLD else Color3.fromRGB(190, 196, 255)
 	end
 	for _, name in { "GirlName", "GirlRarity", "HolderId" } do
