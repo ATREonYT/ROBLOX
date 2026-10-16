@@ -1,10 +1,13 @@
--- The dance wheel (owner's call, Huss Valley's emote wheel): press G (gamepad Y) anywhere and a ring of 8 dance
--- slots pops up round a centre disc. Your favourite dances fill the slots first (star them in the Dances window),
--- then the rest you own. Click a slot, or press its number, to dance; the playing one glows green. The centre
--- shows what's playing, MY DANCES (opens the Dances window) and STOP. Walking away stops the dance
--- (UI/DancePlayer). G, Esc or the X closes it. While it shows, shift lock lets go of the mouse ("HuzzWheel").
+-- The dance wheel (owner's reference: another game's taunt wheel): press G (gamepad Y) anywhere and 8 round,
+-- see-through slots pop up round a big centre circle. Each slot shows your avatar frozen mid-dance (UI/DancePose),
+-- its name and its number. Your favourite dances fill the slots first (star them in the Dances window), then the
+-- rest you own; an empty slot opens your dances. Hover (or select) a slot and the centre says what it is; click it,
+-- or press its number, to dance; click the playing one again to stop. Walking away stops it too (UI/DancePlayer).
+-- G, Esc or a click outside closes it. No dimming and no fading layer (the old CanvasGroup lagged): it grows in
+-- from the middle and the slots glide out. While it shows, shift lock lets go of the mouse ("HuzzWheel").
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Dances = require(Shared.Config.Dances)
@@ -16,21 +19,25 @@ local State = require(UI.State)
 local Toast = require(UI.Toast)
 local ModalManager = require(UI.ModalManager)
 local DancePlayer = require(UI.DancePlayer)
+local DancePose = require(UI.DancePose)
 local Sfx = require(UI.Parent.Gameplay.Sfx)
 
 local C = Theme.Colors
 local F = Theme.Fonts
 local new = Kit.new
-local TweenService = game:GetService("TweenService")
 
 local DanceWheel = {}
 
 local SIZE = 560 -- the whole wheel, reference px (scaled like the HUD)
-local RING = 400 -- the ring's diameter
-local SLOT = Vector2.new(150, 58)
+local RING = 412 -- the circle the slots' centres sit on
+local SLOT = 124 -- a slot's diameter
+local CENTRE = 236 -- the centre circle's diameter
 local SLOTS = 8
 local PAGE_H = 347 -- the HUD reference height (as LobbyHud)
-local GREEN = Color3.fromRGB(96, 232, 140)
+local GLASS = Color3.fromRGB(8, 10, 18) -- the see-through dark of the circles
+local GLASS_T = 0.55 -- (owner: "more transparent in places like these")
+local RIM_LIGHT = Color3.fromRGB(200, 205, 220)
+local GREEN = C.Accent
 
 -- Favourites first, then the other owned dances, in the list's order.
 local function wheelDances(): { any }
@@ -47,84 +54,124 @@ local function wheelDances(): { any }
 	return list
 end
 
+-- A see-through dark circle with a thick black rim and a thin light rim inside it (as the reference).
+local function glassCircle(props: { [string]: any }, diameter: number): (Frame, UIStroke)
+	local f = new("Frame", props)
+	f.Size = UDim2.fromOffset(diameter, diameter)
+	f.AnchorPoint = Vector2.new(0.5, 0.5)
+	f.BackgroundColor3 = GLASS
+	f.BackgroundTransparency = GLASS_T
+	f.BorderSizePixel = 0
+	new("UICorner", { CornerRadius = UDim.new(0.5, 0), Parent = f })
+	local outer = new("UIStroke", { Name = "Rim", Color = Color3.new(0, 0, 0), Thickness = 4, Transparency = 0.05, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = f })
+	local inner = new("Frame", { Name = "InnerRim", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(1, -6, 1, -6), BackgroundTransparency = 1, ZIndex = f.ZIndex, Parent = f })
+	new("UICorner", { CornerRadius = UDim.new(0.5, 0), Parent = inner })
+	new("UIStroke", { Color = RIM_LIGHT, Thickness = 2, Transparency = 0.55, Parent = inner })
+	return f, outer
+end
+
+local function outlined(label: TextLabel, thickness: number)
+	new("UIStroke", { Name = "Outline", Color = Color3.fromRGB(10, 12, 20), Thickness = thickness, Parent = label })
+	return label
+end
+
 function DanceWheel.build(parent: Instance)
 	local player = Players.LocalPlayer
-	-- the screen dims behind the wheel (fades with it), so the dances read over any map
-	local dim = new("Frame", { Name = "DanceWheelDim", Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 1, BorderSizePixel = 0, Visible = false, ZIndex = 29, Parent = parent })
-	local root = new("Frame", { Name = "DanceWheel", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(SIZE, SIZE), BackgroundTransparency = 1, Visible = false, ZIndex = 30, Parent = parent })
+	-- a click anywhere outside the wheel closes it
+	local outside = new("TextButton", { Name = "DanceWheelOutside", Text = "", AutoButtonColor = false, Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Visible = false, ZIndex = 29, Parent = parent })
+	local root = new("Frame", { Name = "DanceWheel", Active = true, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(SIZE, SIZE), BackgroundTransparency = 1, Visible = false, ZIndex = 30, Parent = parent })
 	local fit = new("UIScale", { Name = "FitScale", Parent = root })
-	Scale.bind(fit, function() return Scale.hud(PAGE_H) end) -- (fits a phone: the whole 560 box, title and hint inside)
-	-- a CanvasGroup, so the whole wheel fades in and out as one piece
-	local holder = new("CanvasGroup", { Name = "Holder", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ZIndex = 30, Parent = root })
+	Scale.bind(fit, function() return Scale.hud(PAGE_H) end) -- (fits a phone: the whole 560 box)
+	local holder = new("Frame", { Name = "Holder", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ZIndex = 30, Parent = root })
 	local pop = new("UIScale", { Name = "Pop", Parent = holder })
 
-	-- the ring: a thin see-through circle behind the slots
-	local ring = new("Frame", { Name = "Ring", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(RING, RING), BackgroundColor3 = C.Frame, BackgroundTransparency = 0.55, ZIndex = 30, Parent = holder }, { new("UICorner", { CornerRadius = UDim.new(0.5, 0) }) })
-	Kit.attach(Kit.stroke(C.RowBorder, 3, 0.2), ring)
-	Kit.studPattern(ring, 0.25)
-
-	-- the centre disc: what's playing, MY DANCES, STOP
-	local disc = new("Frame", { Name = "Centre", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(188, 188), BackgroundColor3 = C.Panel, BackgroundTransparency = 0.15, ZIndex = 31, Parent = holder }, { new("UICorner", { CornerRadius = UDim.new(0.5, 0) }) })
-	Kit.attach(Kit.stroke(C.Frame, 3), disc)
-	Kit.studPattern(disc, 0.25)
-	local nowLabel = Kit.text({ Name = "Now", Text = "", FontFace = F.Button, TextSize = 13, TextColor3 = C.SubText, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(14, 28), Size = UDim2.new(1, -28, 0, 16), ZIndex = 32, Parent = disc })
-	local nowName = Kit.name({ Name = "Playing", Text = "", TextSize = 19, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(10, 46), Size = UDim2.new(1, -20, 0, 26), ZIndex = 32, Parent = disc })
-	local mine = Kit.button({ Name = "MyDances", Text = "MY DANCES", TextSize = 15, Style = "Tab", Position = UDim2.fromOffset(24, 88), Size = UDim2.fromOffset(140, 32), ZIndex = 32, Parent = disc })
-	local stop = Kit.button({ Name = "Stop", Text = "STOP", TextSize = 16, Style = "Action", Position = UDim2.fromOffset(24, 128), Size = UDim2.fromOffset(140, 34), ZIndex = 32, Parent = disc })
-
-	-- heading and hint
-	Kit.title({ Name = "Title", Text = "DANCES", TextSize = 30, Position = UDim2.fromOffset(18, 18), Size = UDim2.fromOffset(170, 36), ZIndex = 32, Parent = holder })
-	local hint = Kit.text({ Name = "Hint", Text = "", FontFace = F.Button, TextSize = 15, TextColor3 = C.NoteText, TextXAlignment = Enum.TextXAlignment.Center, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -2), Size = UDim2.fromOffset(SIZE, 20), TextWrapped = false, ZIndex = 32, Parent = holder })
-	new("UIStroke", { Name = "Outline", Color = C.Frame, Thickness = 1.2, Parent = hint }) -- (around the letters)
-	local close = Kit.closeButton({ AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -40, 0, 30), Parent = holder })
+	-- the centre circle: the hovered (or playing) dance's name, a line under it, and the hint
+	local disc = glassCircle({ Name = "Centre", Position = UDim2.fromScale(0.5, 0.5), ZIndex = 31, Parent = holder }, CENTRE)
+	local title = outlined(new("TextLabel", { Name = "Title", Text = "", FontFace = F.Heading, TextSize = 28, TextColor3 = Color3.new(1, 1, 1), TextWrapped = true, BackgroundTransparency = 1, Position = UDim2.fromOffset(22, 58), Size = UDim2.new(1, -44, 0, 62), ZIndex = 32, Parent = disc }), 2)
+	local line = outlined(new("TextLabel", { Name = "Line", Text = "", FontFace = F.Heading, TextSize = 21, TextColor3 = GREEN, BackgroundTransparency = 1, Position = UDim2.fromOffset(16, 124), Size = UDim2.new(1, -32, 0, 26), ZIndex = 32, Parent = disc }), 1.5)
+	local hint = outlined(new("TextLabel", { Name = "Hint", Text = "", FontFace = F.Button, TextSize = 15, TextColor3 = Color3.fromRGB(225, 228, 238), BackgroundTransparency = 1, Position = UDim2.fromOffset(16, 158), Size = UDim2.new(1, -32, 0, 20), ZIndex = 32, Parent = disc }), 1)
+	local all = new("TextButton", { Name = "AllDances", Text = "ALL DANCES", FontFace = F.Button, TextSize = 13, TextColor3 = Color3.new(1, 1, 1), AutoButtonColor = false, BackgroundColor3 = GLASS, BackgroundTransparency = 0.25, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 186), Size = UDim2.fromOffset(110, 24), ZIndex = 32, Parent = disc }, { new("UICorner", { CornerRadius = UDim.new(0.5, 0) }), new("UIStroke", { Color = RIM_LIGHT, Thickness = 1, Transparency = 0.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }) })
 
 	-- the slots round the ring, 1 at the top, clockwise
 	local slots = {}
+	local hovered: number? = nil
+	local refresh: () -> ()
 	for i = 1, SLOTS do
 		local a = math.rad(-90 + (i - 1) * (360 / SLOTS))
-		local cx, cy = SIZE / 2 + math.cos(a) * RING / 2, SIZE / 2 + math.sin(a) * RING / 2
-		local b = Kit.button({ Name = "Slot" .. i, Text = "", Style = "Row", Position = UDim2.fromOffset(math.round(cx - SLOT.X / 2), math.round(cy - SLOT.Y / 2)), Size = UDim2.fromOffset(SLOT.X, SLOT.Y), Corner = 6, ZIndex = 32, Parent = holder })
-		local num = Kit.text({ Name = "Key", Text = tostring(i), FontFace = F.Number, TextSize = 13, TextColor3 = C.Accent, Position = UDim2.fromOffset(8, 4), Size = UDim2.fromOffset(16, 14), ZIndex = 33, Parent = b.Instance })
-		local label = Kit.name({ Name = "DanceName", Text = "", TextSize = 16, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(8, 10), Size = UDim2.new(1, -16, 0, 22), ZIndex = 33, Parent = b.Instance })
-		local sub = Kit.text({ Name = "Sub", Text = "", FontFace = F.Button, TextSize = 12, TextColor3 = C.SubText, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(8, 33), Size = UDim2.new(1, -16, 0, 16), TextWrapped = false, ZIndex = 33, Parent = b.Instance })
-		local rim = b.Instance:FindFirstChild("Rim") :: UIStroke
-		-- hover: the slot grows a little and its rim lights up
-		local grow = new("UIScale", { Name = "Hover", Parent = b.Instance })
-		b.Instance.MouseEnter:Connect(function()
-			TweenService:Create(grow, TweenInfo.new(0.16, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Scale = 1.07 }):Play()
-			if rim and slots[i] and slots[i].dance ~= DancePlayer.current() then rim.Color = C.Text end
+		local home = UDim2.fromOffset(math.round(SIZE / 2 + math.cos(a) * RING / 2), math.round(SIZE / 2 + math.sin(a) * RING / 2))
+		local circle, rim = glassCircle({ Name = "Slot" .. i, Position = home, ZIndex = 32, Parent = holder }, SLOT)
+		local button = new("TextButton", { Name = "Hit", Text = "", AutoButtonColor = false, BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 36, Parent = circle })
+		local num = outlined(new("TextLabel", { Name = "Key", Text = tostring(i), FontFace = F.Heading, TextSize = 22, TextColor3 = GREEN, BackgroundTransparency = 1, Position = UDim2.fromOffset(10, 4), Size = UDim2.fromOffset(22, 24), ZIndex = 35, Parent = circle }), 1.5)
+		local label = outlined(new("TextLabel", { Name = "DanceName", Text = "", FontFace = F.Heading, TextSize = 15, TextColor3 = Color3.new(1, 1, 1), TextScaled = true, TextWrapped = false, BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -13), Size = UDim2.new(1, -26, 0, 18), ZIndex = 35, Parent = circle }), 1.5)
+		new("UITextSizeConstraint", { MaxTextSize = 16, MinTextSize = 9, Parent = label }) -- (long names shrink to stay inside the circle)
+		local grow = new("UIScale", { Name = "Hover", Parent = circle })
+		local s = { circle = circle, button = button, rim = rim, label = label, num = num, grow = grow, home = home, dance = nil, pictureDance = nil, pictureChar = nil }
+		slots[i] = s
+		button.MouseEnter:Connect(function()
+			hovered = i
+			Sfx.play("ui_hover")
+			TweenService:Create(grow, TweenInfo.new(0.14, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Scale = 1.08 }):Play()
+			refresh()
 		end)
-		b.Instance.MouseLeave:Connect(function()
-			TweenService:Create(grow, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Scale = 1 }):Play()
-			if rim and slots[i] and slots[i].dance ~= DancePlayer.current() then rim.Color = C.RowBorder end
+		button.MouseLeave:Connect(function()
+			if hovered == i then hovered = nil end
+			TweenService:Create(grow, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+			refresh()
 		end)
-		slots[i] = { button = b, label = label, sub = sub, num = num, rim = rim, dance = nil, home = b.Instance.Position }
 	end
 
 	local open = false
-	local function refresh()
+	function refresh()
 		local list = wheelDances()
 		local playing = DancePlayer.current()
+		local character = player.Character
 		for i, s in slots do
 			local d = list[i]
 			s.dance = d and d.Id
-			s.label.Text = if d then d.Name else "EMPTY"
-			s.label.TextTransparency = if d then 0 else 0.5
+			s.label.Text = if d then d.Name else ""
 			local isOn = d ~= nil and d.Id == playing
-			local ready = d ~= nil and DancePlayer.ready(d.Id)
-			s.sub.Text = if isOn then "PLAYING · WALK AWAY" elseif d and not ready then "COMING SOON" elseif d then "" else "STAR ONE IN MY DANCES"
-			s.sub.TextColor3 = if isOn then GREEN else C.SubText
-			s.label.Position = UDim2.fromOffset(8, if s.sub.Text == "" then 18 else 10)
-			if s.rim then
-				s.rim.Color = if isOn then GREEN else C.RowBorder
-				s.rim.Thickness = if isOn then 3 else 1
+			s.rim.Color = if isOn or hovered == i then GREEN else Color3.new(0, 0, 0)
+			s.rim.Thickness = if isOn then 5 else 4
+			-- the picture: your avatar in this dance's pose (rebuilt only when the dance or your avatar changes)
+			if (d and d.Id) ~= s.pictureDance or character ~= s.pictureChar then
+				s.pictureDance, s.pictureChar = d and d.Id, character
+				local old = s.circle:FindFirstChild("Dancer")
+				if old then old:Destroy() end
+				local oldNote = s.circle:FindFirstChild("Note")
+				if oldNote then oldNote:Destroy() end
+				if d then
+					local circle = s.circle
+					local function note()
+						Kit.icon("DancesNote", { Name = "Note", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(SLOT / 2, SLOT / 2 - 10), Size = UDim2.fromOffset(46, 46), ZIndex = 33, Parent = circle })
+					end
+					if character then
+						DancePose.picture(circle, d.Id, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(SLOT / 2, SLOT / 2 - 8), Size = UDim2.fromOffset(84, 84), ZIndex = 33 }, false, note)
+					else
+						note()
+					end
+				end
 			end
 		end
-		local d = playing and Dances.get(playing)
-		nowLabel.Text = if d then "NOW PLAYING" else "PICK A DANCE"
-		nowName.Text = if d then d.Name else ""
-		stop.setStyle(if d then "Action" else "Disabled")
-		hint.Text = if UserInputService.TouchEnabled then "TAP A DANCE · WALK AWAY TO STOP" else "CLICK OR PRESS 1-8 · WALK AWAY TO STOP · G TO CLOSE"
+		-- the centre: what you're pointing at, else what's playing
+		local focus = hovered and slots[hovered]
+		local fd = focus and focus.dance and Dances.get(focus.dance)
+		local pd = playing and Dances.get(playing)
+		if fd then
+			title.Text = fd.Name
+			local ready = DancePlayer.ready(fd.Id)
+			line.Text = if fd.Id == playing then "Playing · click to stop" elseif not ready then "Coming soon" else "Click to dance"
+		elseif focus then
+			title.Text = "Empty slot"
+			line.Text = "Star dances to add them"
+		elseif pd then
+			title.Text = pd.Name
+			line.Text = "Playing"
+		else
+			title.Text = "Dances"
+			line.Text = "Pick a dance"
+		end
+		line.TextColor3 = if fd and not DancePlayer.ready(fd.Id) then Color3.fromRGB(190, 196, 214) else GREEN
+		hint.Text = if UserInputService.TouchEnabled then "Tap a dance" else "Click a dance (1-8)"
 	end
 
 	local function setOpen(on: boolean)
@@ -135,33 +182,26 @@ function DanceWheel.build(parent: Instance)
 		local token = {}
 		root:SetAttribute("Token", tostring(token))
 		if on then
+			hovered = nil
 			refresh()
-			root.Visible, dim.Visible = true, true
-			-- smooth open: the wheel fades in growing from 0.9 (no bounce), the screen dims, and the slots glide out
-			-- from the middle one after another, clockwise
-			holder.GroupTransparency, pop.Scale, dim.BackgroundTransparency = 1, 0.9, 1
-			local ease = TweenInfo.new(0.32, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
-			TweenService:Create(holder, ease, { GroupTransparency = 0 }):Play()
-			TweenService:Create(pop, ease, { Scale = 1 }):Play()
-			TweenService:Create(dim, ease, { BackgroundTransparency = 0.55 }):Play()
+			root.Visible, outside.Visible = true, true
+			-- grows in from the middle (no bounce), and the slots glide out one after another, clockwise
+			pop.Scale = 0.86
+			TweenService:Create(pop, TweenInfo.new(0.24, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), { Scale = 1 }):Play()
 			local centre = UDim2.fromOffset(SIZE / 2, SIZE / 2)
 			for i, sl in slots do
-				local home = sl.home
-				sl.button.Instance.Position = home:Lerp(centre, 0.35)
-				task.delay((i - 1) * 0.025, function()
-					TweenService:Create(sl.button.Instance, TweenInfo.new(0.38, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), { Position = home }):Play()
+				sl.circle.Position = sl.home:Lerp(centre, 0.4)
+				sl.grow.Scale = 1
+				task.delay((i - 1) * 0.02, function()
+					TweenService:Create(sl.circle, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), { Position = sl.home }):Play()
 				end)
 			end
 			Sfx.play("ui_open")
 		else
-			-- smooth close: a quick fade and a slight shrink, then gone
-			local ease = TweenInfo.new(0.16, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
-			TweenService:Create(holder, ease, { GroupTransparency = 1 }):Play()
-			TweenService:Create(pop, ease, { Scale = 0.95 }):Play()
-			TweenService:Create(dim, ease, { BackgroundTransparency = 1 }):Play()
-			task.delay(0.17, function()
+			TweenService:Create(pop, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Scale = 0.9 }):Play()
+			task.delay(0.12, function()
 				if root:GetAttribute("Token") == tostring(token) then
-					root.Visible, dim.Visible = false, false
+					root.Visible, outside.Visible = false, false
 				end
 			end)
 			Sfx.play("ui_close")
@@ -177,6 +217,7 @@ function DanceWheel.build(parent: Instance)
 			return
 		end
 		local ok, why = DancePlayer.toggle(s.dance)
+		Sfx.play(if ok then "ui_click" else "ui_error")
 		if not ok then
 			Toast.show(why or "That dance couldn't play.")
 			return
@@ -184,14 +225,13 @@ function DanceWheel.build(parent: Instance)
 		setOpen(false)
 	end
 	for i, s in slots do
-		s.button.onClick(function() playSlot(i) end)
+		s.button.Activated:Connect(function() playSlot(i) end)
 	end
-	mine.onClick(function()
+	all.Activated:Connect(function()
 		setOpen(false)
 		ModalManager.open("Dances")
 	end)
-	stop.onClick(function() DancePlayer.stop() end)
-	close.onClick(function() setOpen(false) end)
+	outside.Activated:Connect(function() setOpen(false) end)
 	DancePlayer.changed(function() if open then refresh() end end)
 	State.changed(function() if open then refresh() end end)
 	ModalManager.changed(function(current) if current then setOpen(false) end end)

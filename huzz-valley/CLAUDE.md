@@ -63,7 +63,8 @@ eye. Branch `HUZZ-VALLEY`. Read the section you need; the owner's own words are 
   `HuzzSafeWall`, which only collides with `HuzzSafe` (Safe runners' parts: `MapService.setSafe` from
   `syncPlayer`); `keepSafe()` pulls back anyone who got round it, every frame of the round.
 - Speeds: the server sets `WalkSpeed` and the cap `HuzzSpeed` on the Humanoid; `Gameplay/Sprint` ramps your
-  own speed from `Run.StartSpeed` to the cap over `Run.Ramp` while you hold a direction (0 stays 0).
+  own speed from `Run.StartSpeed` to the cap, easing out (~95% after `Run.Ramp`), while you hold a direction (0 stays
+  0). Top speeds in `Config/Round.Speeds` (raised twice on the owner's request: runners 28, catchers 30).
 - State lives in attributes: Round remote (Stage, EndsAt, Round, Goal, Streak, Crossings, PickId, PickAt,
   PickChoice, HolderId, GirlName, GirlRarity, LineCF...) and players (HuzzRole, HuzzStatus, HuzzHero,
   HuzzFrozen, ProtectedUntil, DashReady, PowerReady1/2). Local-only: HuzzCinematic, HuzzChoosing, HuzzWheel.
@@ -88,9 +89,15 @@ eye. Branch `HUZZ-VALLEY`. Read the section you need; the owner's own words are 
   `docs/previews/run-arms-vs-hv.jpg`), Jump, Fall, Climb,
   DashLeft/DashRight (built: the sideways huss, matched to the owner's HV video; `docs/previews/huss-vs-reference.jpg`) and `Dance_<Id>` for the 25 in `Config/Dances` (names are
   ours; the originals are other games' emote names).
-- Dance cards: your avatar frozen at each dance's most telling second (`Config/DancePoses`, made by
-  `tools/preview/motion3d/dance_poses.luau`); the selected card dances; locked = dark silhouette. Only where the
-  dance can play (Studio, or once published); otherwise the music note.
+- Dance pictures (`UI/DancePose`): a still copy of your avatar posed by hand from the dance's KeyframeSequence at its
+  most telling second (`Config/DancePoses`, made by `tools/preview/motion3d/dance_poses.luau`). No Animator, so
+  they never lag (the first version ran 25 live animations and lagged). Used by the Dances cards (locked = dark
+  silhouette) and the wheel's slots; the music note when the dance can't be read (live, before publishing).
+- Dance wheel (`Screens/DanceWheel`, owner's taunt-wheel reference: `docs/previews/dance-wheel-vs-reference.jpg`):
+  8 see-through dark circles round a big centre circle that names the hovered dance; no dimming, no CanvasGroup.
+- Dancing in step: the `Dance` remote → `ActionService` sets `HuzzDance` / `HuzzDanceAt` (server time) on your
+  character; `UI/DancePlayer` starts the same dance on the beat of the nearest dancer within 30 studs doing it, and
+  your companion follows your track's time. (Studio's temporary animation IDs don't show on other test clients.)
 - `Shared/AnimationLibrary.id(name, published)`: the published ID, else **in Studio only** a temporary ID from
   `KeyframeSequenceProvider:RegisterKeyframeSequence`, else "". So Studio tests play everything now; the live game
   needs `tools/studio/publish-animations.lua` (owner) and the IDs pasted into `Config/Animations` / `Config/Dances`.
@@ -112,7 +119,14 @@ eye. Branch `HUZZ-VALLEY`. Read the section you need; the owner's own words are 
 - Companions are only the girls you win: the kit's mock-up four (Aiko, Ren, Sora, Hina) were removed on the owner's
   request (`Characters.Retired`; `DataService` drops them from old saves). No starter companion.
 - Safe lines, the start wall and the goal gate are trimmed to the floor (`MapService` `edge()`), so they never stick
-  out past a map's edge when its zone box is wider than the floor.
+  out past a map's edge when its zone box is wider than the floor. The invisible walls round the field
+  (`boundary()`) stand at the floor's real edge too, and `MapService.catchFalls()` puts anyone who still drops below
+  the field back on it (or, far below the lobby, back at the lobby spawn).
+- The look (`Config/Look` → `HuzzServer/LookService`): colour grade, bloom, sun rays, light haze, lifted shadows
+  (owner: "the filters that make the game feel premium"); the place build sets Lighting.Technology = Future.
+- Shop passes follow the owner's pass banners (`design/shop/pass-banners.png`, art cropped into `vip` /
+  `dance-pack`): navy glass rows with a rim and button in each pass's `Accent` (`Products`), styles `PassViolet` /
+  `PassPink` (`docs/previews/shop-passes-vs-banner.jpg`).
 - Effects: `Config/GirlLooks` (element + 2 colours per girl) → `Shared/AuraLook` (pure specs by rarity: Common
   faint motes ... Mythic/Secret full flames, wisps, slashes) → `Gameplay/AuraFX` (emitters, light, pooled slash
   beams) → `Gameplay/Auras` (your aura; others' "lite"; within 170 studs). Check: `tools/preview/check_girl_fx.luau`.
@@ -138,12 +152,12 @@ eye. Branch `HUZZ-VALLEY`. Read the section you need; the owner's own words are 
   (`Pay.WonAura`) and the reward track. It pays for **crates** (`Config/Crates`, empty until the owner adds them;
   `Shared/CrateRoll` pure maths with shown odds and a pity counter, `tests/CrateRoll.spec.luau`; server
   `ActionService.OpenCrate`; no crate UI yet).
-- **Aura stars in the lobby** (owner's sheet: purple 4-point crystal, orbit rings, colour kinds): `Config/AuraStars`
+- **Aura stars in the lobby** (owner's star: `design/aura`, packed as `AuraStar` and `AuraStarWhite`): `Config/AuraStars`
   (count, kinds, values, weights) → `AuraPickupService` (server: spawns tagged `HuzzAuraStar` parts near the lobby
   spawn, ProximityPrompt E "Collect Aura", checks distance, adds Aura, respawns) → `Gameplay/AuraStars` (client
-  look: billboard star + turning rings, sparkles, light, floor glow; Rainbow drifts slowly). Lobby only: rounds keep
-  their power-ups. Star/ring pictures (`AuraStar`/`AuraRing` icons, also the Aura pills) are stand-ins from
-  `tools/icons/make_aura_star.py` until the owner sends theirs. Preview: `docs/previews/aura-stars.mp4`.
+  look: the purple star as drawn, other colours tint the white copy; halo, sparkles, light, floor glow; Rainbow
+  drifts slowly). Lobby only: rounds keep their power-ups. The Aura pills use `AuraStar` untinted.
+  Preview: `docs/previews/aura-stars.mp4`.
 
 ## 10. Sounds
 - 24 sounds made from scratch by `tools/sfx/make_sfx.py` → `assets/sfx/*.ogg` (list in `assets/sfx/README.md`).

@@ -2,6 +2,8 @@
 -- One dance at a time; starting another replaces it. Like Huss Valley's emotes, walking away stops it (after a
 -- short grace, so the key press that started it can't), and so does a new character.
 -- The animation comes from Shared/AnimationLibrary: the published ID, or in Studio the raw one.
+-- In step: when someone within SYNC_RANGE is already doing the same dance (their character's HuzzDance /
+-- HuzzDanceAt, set by the server from the Dance remote), yours starts on their beat, so you dance together.
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
@@ -10,7 +12,29 @@ local Dances = require(Shared.Config.Dances)
 local AnimationLibrary = require(Shared.AnimationLibrary)
 local State = require(script.Parent.State)
 
+local Net = require(Shared.Net)
+
 local DancePlayer = {}
+local SYNC_RANGE = 30 -- studs
+
+-- When a dancer near you started this dance (server time), or nil.
+local function partnerStart(id: string): number?
+	local me = Players.LocalPlayer
+	local mine = me and me.Character
+	local root = mine and mine:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if not root then return nil end
+	local best, bestDist
+	for _, p in Players:GetPlayers() do
+		local c = p.Character
+		local r = c and c:FindFirstChild("HumanoidRootPart") :: BasePart?
+		local at = c and c:GetAttribute("HuzzDanceAt")
+		if p ~= me and r and c:GetAttribute("HuzzDance") == id and type(at) == "number" then
+			local d = (r.Position - root.Position).Magnitude
+			if d <= SYNC_RANGE and (not bestDist or d < bestDist) then best, bestDist = at, d end
+		end
+	end
+	return best
+end
 
 local track: AnimationTrack? = nil
 local playing: string? = nil
@@ -27,6 +51,14 @@ end
 
 function DancePlayer.current(): string?
 	return playing
+end
+
+-- Where your dance is now (seconds into it), or nil: your companion follows it, so she stays in step too.
+function DancePlayer.position(): number?
+	local t = track
+	if not t then return nil end
+	local ok, pos = pcall(function() return t.TimePosition end)
+	return if ok then pos else nil
 end
 
 function DancePlayer.owned(id: string): boolean
@@ -48,6 +80,7 @@ function DancePlayer.stop()
 	local t = track
 	track, playing = nil, nil
 	if t then pcall(function() t:Stop(0.25) end) end
+	pcall(function() (Net.get("Dance") :: RemoteEvent):FireServer(nil) end)
 	emit()
 end
 
@@ -69,6 +102,21 @@ function DancePlayer.play(id: string): (boolean, string?)
 	made.Priority = Enum.AnimationPriority.Action
 	made:Play(0.25)
 	track, playing, startedAt = made, id, os.clock()
+	-- on the beat of anyone near already doing it, else from now
+	local now = workspace:GetServerTimeNow()
+	local beat = partnerStart(id) or now
+	if beat < now then
+		task.spawn(function()
+			for _ = 1, 40 do -- (wait for the animation to load)
+				if made.Length > 0 or track ~= made then break end
+				task.wait(0.025)
+			end
+			if track == made and made.Length > 0 then
+				made.TimePosition = (workspace:GetServerTimeNow() - beat) % made.Length
+			end
+		end)
+	end
+	pcall(function() (Net.get("Dance") :: RemoteEvent):FireServer(id, beat) end)
 	emit()
 	return true
 end

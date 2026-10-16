@@ -31,12 +31,12 @@ local Products = {}
 Products.Passes = {
 	{
 		Key = "VIP", Kind = "Pass", Name = "VIP", Blurb = "Exclusive chat tag\nand cosmetics.",
-		Id = 0, Price = 199, OnSale = true, Icon = "VipCrown", Art = "Vip",
+		Id = 0, Price = 199, OnSale = true, Icon = "VipCrown", Art = "Vip", Accent = Color3.fromHex("7C6CF2"), ButtonStyle = "PassViolet",
 		Benefits = { { Icon = "ChatBenefit", Text = "VIP Chat Tag" }, { Icon = "ShirtBenefit", Text = "Exclusive Cosmetics" } },
 	},
 	{
 		Key = "DancePack", Kind = "Pass", Name = "Dance Pack", Blurb = "4 dances +\nthemed items.",
-		Id = 0, Price = 149, OnSale = false, Icon = "DancesNote", Art = "DancePack", Giftable = true,
+		Id = 0, Price = 149, OnSale = false, Icon = "DancesNote", Art = "DancePack", Giftable = true, Accent = Color3.fromHex("E85BC4"), ButtonStyle = "PassPink",
 		Benefits = { { Icon = "MusicBenefit", Text = "4 Exclusive Dances" }, { Icon = "GiftBenefit", Text = "Dance Themed Items" } },
 		Why = "needs the 4 dance animations",
 	},

@@ -36,8 +36,9 @@ All of these work against a real save system. When you're happy with how they lo
    - Controls in a round: **no mouse pointer** (shift lock); **hold Alt** to get the pointer back. **Space**
      is the **huss**: a sideways dash, left or right (A/D picks the side), and you can't jump. Hold **W** and you set off at a walk that builds
      into the full run over about a second ([video](docs/previews/moves-walk-run-dash.mp4)).
-   - **G** opens the **dance wheel** anywhere: 8 of your dances round a circle (favourites first), press a number
-     or click; walk away to stop ([picture](docs/previews/dance-wheel.jpg)). All **25 dances** from your file are
+   - **G** opens the **dance wheel** anywhere: 8 see-through circles with your avatar mid-dance (favourites first),
+     press a number or click; walk away to stop ([picture](docs/previews/dance-wheel-vs-reference.jpg)). Start the
+     same dance next to someone who's doing it and you dance in step. All **25 dances** from your file are
      in the Dances window too, with your own avatar dancing in the preview.
    - The top of the screen is a small kit plate: ROUND 2 and the clock, your role, the "in a row" bars, and one
      line for what just happened ("Messi is safe") ([picture](docs/previews/round-hud.jpg)). The lobby buttons
@@ -169,8 +170,7 @@ the icons itself. To make them work everywhere for good, upload them once (Plugi
 10. **Dance names:** most of the 25 dances are copies of other games' emotes, so they have our own names in
     `Shared/Config/Dances.lua` (Citrus Groove, Shock Shuffle...). Rename any you like. The movement pack's licence
     is in `design/anims/movement-pack.zip`; check it allows use in a published game.
-11. **An Aura icon:** a see-through PNG (256 px or bigger) named `currency-aura`, plus an all-white copy
-    (`currency-aura-white`) so the game can tint the coloured stars. A star I drew stands in for now.
+11. **Aura icon:** done, your star is in (the HUD, the shop and the lobby stars).
 12. **Your crates:** what's in each, its Aura price and the odds (copy the example in `Shared/Config/Crates.lua`,
     or tell me and I'll fill it in).
 

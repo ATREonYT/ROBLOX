@@ -220,6 +220,9 @@ Kit.Styles = {
 	-- fill is white so the purple UIGradient (#B84FFA -> #9925F9) shows as measured; hover/press dim it slightly
 	Gift = { Idle = Color3.new(1, 1, 1), Hover = Color3.fromRGB(245, 240, 255), Pressed = Color3.fromRGB(215, 205, 230), Text = C.Text, Top = Color3.fromHex("C774FB"), Rim = C.GiftRim, NoShade = true },
 	Plus = style(C.Plus, C.Text, C.PlusTop, C.PlusRim),
+	-- the shop's pass rows, after the owner's pass banners (design/shop/pass-banners.png)
+	PassViolet = style(Color3.fromHex("6E5BF2"), C.Text, Color3.fromHex("9C8CFF"), Color3.fromHex("2E2385")),
+	PassPink = style(Color3.fromHex("E24FA8"), C.Text, Color3.fromHex("FF8AD0"), Color3.fromHex("7E1C5C")),
 	HudPlus = style(C.HudPlus, C.Text, C.PlusTop, C.PlusRim),
 	Row = style(C.Row, C.Text, C.RowBorder, C.RowBorder),
 	MenuRow = style(C.MenuRow, C.Text, C.MenuRowTop, C.MenuRowTop),

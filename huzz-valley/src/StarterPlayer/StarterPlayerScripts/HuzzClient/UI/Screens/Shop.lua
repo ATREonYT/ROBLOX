@@ -137,17 +137,33 @@ local function card(parent: Instance, name: string, pos: Vector2, size: Vector2)
 	return f
 end
 
--- Passes: broad rows (reference 01).
+-- Passes: broad rows, after the owner's pass banners (design/shop/pass-banners.png): deep see-through navy with a
+-- glowing rim in the pass's colour, the banner's character picture at the left, a big title with a soft colour
+-- fade and a short line under it, the blurb tinted, and the price button in the same colour.
 local function buildPasses(body: Frame)
 	local y = 0
 	for i, p in Products.Passes do
 		local h = i == 1 and 97 or 103 -- the reference's two rows differ slightly
+		local accent = p.Accent or C.Action
 		local row = card(body, p.Key, Vector2.new(0, y), Vector2.new(BODY_W, h))
+		row.BackgroundTransparency = Theme.Transparency.Row
+		local fill = row:FindFirstChildOfClass("UIGradient")
+		if fill then fill.Color = ColorSequence.new(Color3.fromHex("1A1B3D"), Color3.fromHex("121331")) end
+		local rim = row:FindFirstChildOfClass("UIStroke")
+		if rim then rim.Color, rim.Thickness = accent, 2 end
+		-- a soft glow of the pass's colour from the left, behind everything
+		new("Frame", { Name = "Glow", Size = UDim2.new(0.55, 0, 1, 0), BackgroundColor3 = accent, BackgroundTransparency = 0.78, BorderSizePixel = 0, ZIndex = 0, Parent = row }, {
+			Kit.corner(4), new("UIGradient", { Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(1, 1) }) }),
+		})
 		y += h + 10
 		art(row, p, Vector2.new(171, h))
-		Kit.name({ Name = "Name", Text = p.Name, TextSize = T.Name, Position = UDim2.fromOffset(183, 9), Size = UDim2.fromOffset(150, 32), Parent = row })
-		Kit.text({ Name = "Blurb", Text = p.Blurb, TextSize = T.Blurb, Position = UDim2.fromOffset(183, 44), Size = UDim2.fromOffset(140, 42), TextYAlignment = Enum.TextYAlignment.Top, LineHeight = 1.0, Parent = row })
-		new("Frame", { Name = "Divider", Position = UDim2.fromOffset(327, 15), Size = UDim2.fromOffset(2, h - 29), BackgroundColor3 = C.Groove, BorderSizePixel = 0, Parent = row })
+		local title = Kit.name({ Name = "Name", Text = string.upper(p.Name), FontFace = Theme.Fonts.Heading, TextSize = if #p.Name > 6 then 20 else 27, TextWrapped = false, Position = UDim2.fromOffset(183, 9), Size = UDim2.fromOffset(140, 32), Parent = row }) -- (long names smaller, so DANCE PACK ends before the divider)
+		new("UIGradient", { Rotation = 90, Color = ColorSequence.new(Color3.new(1, 1, 1), accent:Lerp(Color3.new(1, 1, 1), 0.55)), Parent = title })
+		new("Frame", { Name = "Underline", Position = UDim2.fromOffset(184, 42), Size = UDim2.fromOffset(120, 2), BackgroundColor3 = accent, BorderSizePixel = 0, Parent = row }, {
+			new("UIGradient", { Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(1, 1) }) }),
+		})
+		Kit.text({ Name = "Blurb", Text = p.Blurb, TextSize = T.Blurb, TextColor3 = accent:Lerp(Color3.new(1, 1, 1), 0.7), Position = UDim2.fromOffset(183, 49), Size = UDim2.fromOffset(140, 42), TextYAlignment = Enum.TextYAlignment.Top, LineHeight = 1.0, Parent = row })
+		new("Frame", { Name = "Divider", Position = UDim2.fromOffset(327, 15), Size = UDim2.fromOffset(2, h - 29), BackgroundColor3 = accent, BackgroundTransparency = 0.45, BorderSizePixel = 0, Parent = row })
 		local bx = p.Giftable and -10 or 0 -- rows with a gift button start their benefit text 10 px further left
 		for j, b in p.Benefits or {} do
 			local by = if i == 1 then 19 + (j - 1) * 33 else 25 + (j - 1) * 34
@@ -156,7 +172,7 @@ local function buildPasses(body: Frame)
 			new("UITextSizeConstraint", { Name = "Fit", MaxTextSize = math.round(T.Label * 0.86), Parent = benefit }) -- (shrinks a long line to its column)
 		end
 		if p.Giftable then
-			buyButton(row, p, { Position = UDim2.new(1, -63, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), Size = UDim2.fromOffset(103, 51), TextSize = 27, BadgeScale = 1.7 })
+			buyButton(row, p, { Position = UDim2.new(1, -63, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), Size = UDim2.fromOffset(103, 51), TextSize = 27, BadgeScale = 1.7, Style = p.ButtonStyle })
 			-- Fully purple gift button with the kit's gift art centred at its normal size (the gift itself still says
 			-- "unavailable" until the Gift Picker exists).
 			local gift = Kit.button({ Name = "Gift", Style = "Gift", Text = "", Position = UDim2.new(1, -11, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), Size = UDim2.fromOffset(44, 51), Parent = row })
@@ -165,7 +181,7 @@ local function buildPasses(body: Frame)
 			Kit.icon("GiftAction", { Name = "Icon", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(34, 41), Parent = gift.Instance })
 			gift.onClick(function() Toast.show("Gifting unavailable for now.") end)
 		else
-			buyButton(row, p, { Position = UDim2.new(1, -11, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), Size = UDim2.fromOffset(135, 41), TextSize = 24, IconSize = 26 })
+			buyButton(row, p, { Position = UDim2.new(1, -11, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), Size = UDim2.fromOffset(135, 41), TextSize = 24, IconSize = 26, Style = p.ButtonStyle })
 		end
 	end
 end

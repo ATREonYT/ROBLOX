@@ -120,6 +120,28 @@ function ActionService.start()
 		return fn(player, ...)
 	end
 	Players.PlayerRemoving:Connect(function(p) last[p] = nil end)
+
+	-- Dancing in step (owner: "make dances sync when someone is dancing and someone comes close and starts the same
+	-- dance"): the character carries the dance it's doing and when it started (server time). UI/DancePlayer starts
+	-- the same dance on the same beat as anyone near you already doing it. Only dances you own.
+	local danceRemote = Net.get("Dance") :: RemoteEvent
+	danceRemote.OnServerEvent:Connect(function(player, id, startAt)
+		local character = player.Character
+		if not character then return end
+		if id == nil then
+			character:SetAttribute("HuzzDance", nil)
+			character:SetAttribute("HuzzDanceAt", nil)
+			return
+		end
+		local profile = DataService.get(player)
+		if type(id) ~= "string" or not Dances.get(id) or not (profile and profile.Data.Dances[id]) then return end
+		local now = workspace:GetServerTimeNow()
+		if type(startAt) ~= "number" or startAt ~= startAt or startAt > now + 1 or startAt < now - 3600 then
+			startAt = now
+		end
+		character:SetAttribute("HuzzDance", id)
+		character:SetAttribute("HuzzDanceAt", startAt)
+	end)
 end
 
 return ActionService

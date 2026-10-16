@@ -4,8 +4,8 @@
 -- and the dance stops on respawn and when the window closes. A dance whose animation the owner hasn't supplied yet
 -- says so and never pretends to play. Locked dances can't be played. The preview shows your own avatar doing the
 -- selected dance (a copy in a ViewportFrame), so the 25 dances need no pictures. Each card shows your avatar frozen
--- in that dance's most telling moment (Config/DancePoses, from tools/preview/motion3d/dance_poses.luau), and the
--- selected card dances; a locked dance shows that pose as a dark silhouette.
+-- in that dance's most telling moment (UI/DancePose: a still picture, nothing animating, so the grid never lags);
+-- a locked dance shows that pose as a dark silhouette.
 -- Layout numbers are reference px (design/pages/03, window-relative; that page's header is the same 47 px).
 local Players = game:GetService("Players")
 
@@ -14,7 +14,6 @@ local Dances = require(Shared.Config.Dances)
 local Products = require(Shared.Config.Products)
 local Progression = require(Shared.Config.Progression)
 local AnimationLibrary = require(Shared.AnimationLibrary)
-local DancePoses = require(Shared.Config.DancePoses)
 local UI = script.Parent.Parent
 local Theme = require(UI.Theme)
 local Kit = require(UI.Kit)
@@ -23,6 +22,7 @@ local Toast = require(UI.Toast)
 local ModalManager = require(UI.ModalManager)
 local Motion = require(UI.Motion)
 local DancePlayer = require(UI.DancePlayer)
+local DancePose = require(UI.DancePose)
 
 local C = Theme.Colors
 local new = Kit.new
@@ -272,88 +272,8 @@ function DancesScreen.build(parent: Instance)
 		end)
 	end
 
-	-- Card dancers: one avatar copy per dance, kept between redraws of the grid (rebuilt when your character
-	-- changes), frozen on its pose; the selected card's copy dances. Built one per frame so opening never hitches.
-	-- A dance that can't play here (not published yet, outside Studio) keeps the music note.
-	local dancers: { [string]: { vp: ViewportFrame, char: Model, track: AnimationTrack? } } = {}
-	local broken: { [string]: Model } = {} -- dances whose copy couldn't be built for this character: the note
 	local function note(parent: Instance)
 		Kit.icon("DancesNote", { Name = "Note", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, math.floor((GRID.CardH - GRID.Band) / 2) + 1), Size = UDim2.fromOffset(52, 52), Parent = parent })
-	end
-	local function freeze(e, dance: boolean, poseAt: number)
-		local track = e.track
-		if not track then return end
-		if dance then
-			track:AdjustSpeed(1)
-		else
-			track:AdjustSpeed(0)
-			if track.Length > 0 then track.TimePosition = math.min(poseAt, track.Length - 0.01) end
-		end
-	end
-	local function cardDancer(d, parent: GuiObject, mine: boolean, selectedNow: boolean): boolean
-		local character = Players.LocalPlayer and Players.LocalPlayer.Character
-		local id = AnimationLibrary.id("Dance_" .. d.Id, d.AnimationId)
-		if not character or id == "" or broken[d.Id] == character then return false end
-		local e = dancers[d.Id]
-		if e and e.char ~= character then
-			e.vp:Destroy()
-			e = nil
-		end
-		local poseAt = DancePoses[d.Id] or 0
-		if not e then
-			local vp = new("ViewportFrame", { Name = "Dancer", BackgroundTransparency = 1, Ambient = Color3.fromRGB(180, 180, 200), LightColor = Color3.fromRGB(255, 250, 240), LightDirection = Vector3.new(-0.5, -1, -0.8) })
-			vp:SetAttribute("RuntimeOnly", true)
-			local entry = { vp = vp, char = character, track = nil }
-			dancers[d.Id] = entry
-			e = entry
-			task.spawn(function()
-				task.wait(0.03 * (d.Order or 1)) -- (one copy per frame or so)
-				if dancers[d.Id] ~= entry then return end
-				local ok, err = pcall(function()
-					local world = Instance.new("WorldModel")
-					world.Parent = vp
-					local copy = avatarCopy(character)
-					copy.Parent = world
-					local cam = Instance.new("Camera")
-					cam.FieldOfView = 30
-					cam.CFrame = CFrame.lookAt(Vector3.new(-2.6, 0.9, -12.5), Vector3.new(0, -0.3, 0))
-					cam.Parent = vp
-					vp.CurrentCamera = cam
-					local humanoid = copy:FindFirstChildOfClass("Humanoid") :: Humanoid
-					local animator = humanoid:FindFirstChildOfClass("Animator") or Instance.new("Animator", humanoid)
-					local animation = Instance.new("Animation")
-					animation.AnimationId = id
-					local track = (animator :: Animator):LoadAnimation(animation)
-					track.Looped = true
-					track:Play(0)
-					entry.track = track
-					for _ = 1, 60 do -- (wait for it to load, then freeze on the pose)
-						if track.Length > 0 then break end
-						task.wait(0.05)
-					end
-					freeze(entry, selected == d.Id, poseAt)
-				end)
-				if not ok and dancers[d.Id] == entry then
-					warn(`[HuzzUI] The {d.Name} card shows the note: {err}`)
-					local host = vp.Parent
-					vp:Destroy()
-					dancers[d.Id] = nil
-					broken[d.Id] = character
-					if host then note(host) end
-				end
-			end)
-		end
-		e.vp.Position = UDim2.fromOffset(1, 1)
-		e.vp.Size = UDim2.fromOffset(GRID.CardW - 2, GRID.CardH - GRID.Band)
-		-- locked: the same pose as a dark silhouette (like the Index's locked girls)
-		if mine then
-			e.vp.Ambient, e.vp.LightColor, e.vp.ImageColor3 = Color3.fromRGB(180, 180, 200), Color3.fromRGB(255, 250, 240), Color3.new(1, 1, 1)
-		else
-			e.vp.Ambient, e.vp.LightColor, e.vp.ImageColor3 = Color3.new(0, 0, 0), Color3.new(0, 0, 0), hex("0B1426")
-		end
-		e.vp.Parent = parent
-		freeze(e, selectedNow, poseAt)
-		return true
 	end
 
 	local function card(d, x: number, y: number)
@@ -364,8 +284,9 @@ function DancesScreen.build(parent: Instance)
 		rim = Kit.attach(rim, c)
 		Motion.bindButton(c, function() return nil end)
 		-- the picture runs a few px under the name band, so its rounded bottom corners never show
-		if not d.Art and cardDancer(d, c, mine, selected == d.Id) then
-			-- (your avatar, frozen mid-dance)
+		if not d.Art and Players.LocalPlayer and Players.LocalPlayer.Character then
+			-- your avatar, frozen mid-dance (the note if the dance can't be read)
+			DancePose.picture(c, d.Id, { Position = UDim2.fromOffset(1, 1), Size = UDim2.fromOffset(GRID.CardW - 2, GRID.CardH - GRID.Band) }, not mine, function() note(c) end)
 		elseif mine and not d.Art then
 			-- no picture for this dance: the music note, big, on the blue backdrop
 			note(c)
@@ -381,8 +302,6 @@ function DancesScreen.build(parent: Instance)
 		local outline = Kit.icon("FavouriteOutline", { Name = "Outline", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(24, 23), ZIndex = 3, Parent = star })
 		local api = {}
 		function api.setSelected(on: boolean)
-			local e = dancers[d.Id]
-			if e then freeze(e, on, DancePoses[d.Id] or 0) end
 			rim.Color = if on then COL.Selected else COL.CardRim
 			rim.Thickness = if on then 3 else 1
 			local fav = favourite(d.Id)
@@ -426,7 +345,6 @@ function DancesScreen.build(parent: Instance)
 
 	function rebuild(animate: boolean?)
 		cards = {}
-		for _, e in dancers do e.vp.Parent = nil end -- (kept for the new cards)
 		for _, ch in grid:GetChildren() do if ch:IsA("GuiObject") then ch:Destroy() end end
 		local list = visible()
 		for i, d in list do

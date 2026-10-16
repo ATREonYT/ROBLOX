@@ -8,6 +8,9 @@
 --                                  (Stage, EndsAt, Round, Phase, Goal, GirlName, GirlRarity, HolderId, Map; and while
 --                                  voting VoteA, VoteB, VoteCountA, VoteCountB; see RoundService and MapVoteService)
 --   Vote           RemoteEvent     client -> server: (mapName) the player's map vote; a new vote replaces the old one
+--   Dance          RemoteEvent     client -> server: (danceId?, startAt) the dance you started (nil = stopped) and its
+--                                  start in server time; ActionService puts both on your character (HuzzDance,
+--                                  HuzzDanceAt) so people who start the same dance nearby dance in step
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -25,6 +28,7 @@ local SPEC = {
 	Power = "RemoteEvent",
 	Hero = "RemoteEvent",
 	Dash = "RemoteEvent",
+	Dance = "RemoteEvent",
 }
 
 local folder: Folder

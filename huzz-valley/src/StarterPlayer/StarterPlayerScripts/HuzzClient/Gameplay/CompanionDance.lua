@@ -23,7 +23,7 @@ local Retarget = require(Shared.DanceRetarget)
 local FADE = 0.3 -- seconds in and out
 local R15_HEIGHT = 5.2 -- an R15 avatar, for scaling the hips' bounce to her size
 
-local mine = { id = nil :: string?, at = 0 } -- your dance (UI/DancePlayer)
+local mine = { id = nil :: string?, at = 0, pos = nil :: (() -> number?)? } -- your dance (UI/DancePlayer)
 local anims = {} -- dance id -> sampled anim, or false (couldn't read it), or "loading"
 local byAnimId: { [string]: string }? = nil -- AnimationId -> dance id (for other players' tracks)
 local records = {} -- Player -> { weight, id, t, procedural, scanAt }
@@ -108,6 +108,7 @@ function CompanionDance.start()
 			end
 		end)
 		mine.id = DancePlayer.current()
+		mine.pos = DancePlayer.position
 	end
 end
 
@@ -129,7 +130,7 @@ function CompanionDance.step(p: Player, character: Model?, J, dt: number, height
 	local id, at = nil, nil
 	if p == Players.LocalPlayer then
 		id = mine.id
-		at = if id then os.clock() - mine.at else nil
+		at = if id then ((mine.pos and mine.pos()) or (os.clock() - mine.at)) else nil -- (your track's time: in step)
 	elseif character then
 		local now = os.clock()
 		if now - r.scanAt > 0.25 then
