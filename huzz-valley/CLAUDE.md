@@ -240,11 +240,35 @@ The UI golden slice and its backend are built (saving, coins and gems, shop purc
   reads `PowerReady1/2` and `ShieldUntil`; `DizzyUntil` darkens STAB). Q, E and H are reserved keys (the Menu key
   can't take them). The shield bubble lives in `Workspace.HuzzShields`, outside the character, so the team
   Highlight doesn't outline it. Icons are emoji until the owner sends PNGs.
-- **The girl over the map (owner's call, replaces the girl standing in the middle; `GirlSpot = "Sky"`):**
-  `GirlService.showcase` puts a 3x copy of the game's girl `Showcase.Height` above the middle for the whole
-  game, in her rarity colour: two neon rings, sparkles (default ParticleEmitter texture, no asset IDs), a
-  PointLight, a Beam column and a "Rating" billboard (stars 1-7 by rarity, name, rarity). Anchored; every
-  client turns and bobs it (`CarryAnimator`, tag `HuzzShowcase`, attribute `Base`).
+- **The girl over the map (owner's call):** `GirlService.showcase` puts a 3x copy of the game's girl
+  `Showcase.Height` above the middle while nobody holds her, with only a "Rating" billboard (stars 1-7, name,
+  rarity). No rings or disc under her (owner: they hid her from below); her effects are her aura at 3x
+  ("Showcase", drawn by clients). Anchored; every client turns and bobs it (`CarryAnimator`, tag
+  `HuzzShowcase`, attribute `Base`).
+- **The girls' effects (owner's reference video cf007d44: an aura of flames on both hands, dark wisps and
+  shards, crescent slashes; "take it and make it better per character"):**
+  - `Config/GirlLooks`: each girl's element (Flame, Frost, Sakura, Night, Holy, Storm, Nature, Water) and two
+    colours, picked by hand from who she is (accessory names: Megumin, Rukia, Aqua, Zero Two, Nazuna...), since
+    her real colours are in clothing pictures the game can't read. Missing = rarity colour + Sparkle.
+  - `Shared/AuraLook` (pure data): kinds Player (on you, Rare and up: hand flames + white cores; Epic +
+    dark wisps, flying shards and her element round you; Legendary/Mythic/Secret + crescent slashes 1.6/2.2/2.8
+    a second; Secret + smoke at the feet), Companion (on her: stars, her element, light; hand flames from
+    Legendary), Showcase (the full look at 3x). `AuraLook.slash` is the slash maths.
+  - `Gameplay/AuraFX` builds it on this client (ParticleEmitters on Attachments, a PointLight, pooled Beams for
+    the slashes: core over a dark edge, bent with CurveSize, swept and faded each frame). `Gameplay/Auras`
+    puts it on everyone near the camera (170 studs): your aura (lobby and rounds; off while downed), your
+    companion (lobby only: a 2.8-stud copy of her from `HuzzGirls` floating over your right shoulder, easing
+    after you, leaning as you move), the showcase, and the round's carried/following girl.
+  - `HuzzServer/CompanionService` sets the player attributes `HuzzCompanion` (her `HuzzGirls` key) and
+    `HuzzCompanionRarity` from the equipped character (DataService.onChanged and on join).
+  - Particle shapes are ours (`tools/fx/make_fx.py` → `assets/fx`: flame, wisp, shard, star, heart, petal,
+    feather, snow, leaf, bubble, glow), packed as `Images/Fx` and uploaded with the other pictures
+    (`Fx/<Name>` in ImageIds). Until uploaded, Roblox's built-in `rbxasset://textures/particles/` fire,
+    smoke and sparkles stand in.
+  - In rounds your girl reacts: `RoundHud` shows her face and a speech bubble (bottom left) on Safe,
+    Rescued, a rescue you made, Caught, a catch, Hero and the win.
+  - Preview: `motion3d/aura_scene.luau` simulates the same data (sprites + ribbons in `render.mjs`):
+    `docs/previews/girl-auras.mp4` and `girl-auras-vs-reference.jpg`. Check: `tools/preview/check_girl_fx.luau`.
 - **Girls stay as built (owner: the R15 rebuild came out deformed):** `GirlRig = "Original"` (they're R6). Sizes,
   the hold and the showcase use `GirlService.bodyBounds` (body parts only), so hats, hair and wings can't shrink
   them or push the hold off-centre.

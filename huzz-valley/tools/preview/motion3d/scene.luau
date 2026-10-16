@@ -36,7 +36,8 @@ local function snap(out, cf, size, color)
 end
 
 -- Snapshots every box as it is now. Run Rig.fk first.
-function Scene:frame(cameraPos, lookAt)
+-- extra (optional): { sprites = {...}, ribbons = {...} } as render.mjs describes.
+function Scene:frame(cameraPos, lookAt, extra)
 	local boxes = {}
 	for _, rig in self.rigs do
 		for _, b in Rig.boxes(rig) do snap(boxes, b.CFrame, b.Size, b.Color) end
@@ -45,13 +46,17 @@ function Scene:frame(cameraPos, lookAt)
 	table.insert(self.frames, {
 		camera = { pos = { r4(cameraPos.X), r4(cameraPos.Y), r4(cameraPos.Z) }, look = { r4(lookAt.X), r4(lookAt.Y), r4(lookAt.Z) } },
 		boxes = boxes,
+		sprites = extra and extra.sprites or nil,
+		ribbons = extra and extra.ribbons or nil,
 	})
 end
 
 -- path defaults to $MOTION3D_DIR/frames.json (set by video.sh), else ./frames.json.
-function Scene:save(path, fps, w, h)
+-- look (optional): { sky = "#hex", ground = "#hex", grid = false }
+function Scene:save(path, fps, w, h, look)
 	path = path or ((process.env.MOTION3D_DIR or ".") .. "/frames.json")
-	fs.writeFile(path, serde.encode("json", { fps = fps or 30, width = w or 1280, height = h or 720, frames = self.frames }))
+	look = look or {}
+	fs.writeFile(path, serde.encode("json", { fps = fps or 30, width = w or 1280, height = h or 720, frames = self.frames, sky = look.sky, ground = look.ground, grid = look.grid }))
 	print(`frames: {#self.frames} -> {path}`)
 end
 

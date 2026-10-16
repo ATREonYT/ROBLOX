@@ -37,7 +37,12 @@ All of these work against a real save system. When you're happy with how they lo
      ([picture](docs/previews/round-hud.png)).
    - Name tags over everyone show their role, level and wins. Outlines: catchers **red**, runners **blue**,
      the Hero **yellow**, safe runners **green**.
-6. **Powers** (free, fresh every round; Q and E, or tap the cards at the bottom of the screen):
+6. **Your anime girls:** equip one in the **Index** and a small her floats at your shoulder in the lobby, glowing
+   in her own colours. A **Rare or better** girl also gives **you** her aura: flames on your hands, dark smoke,
+   and crescent slashes for Legendary and up ([video](docs/previews/girl-auras.mp4),
+   [next to your reference](docs/previews/girl-auras-vs-reference.jpg)). In rounds she reacts to what you do.
+   The girl over the map now wears her aura big, with nothing under her feet.
+7. **Powers** (free, fresh every round; Q and E, or tap the cards at the bottom of the screen):
    - Runners: **Heart Shield** (a pink bubble that blocks one stab; the catcher gets dizzy and you get a burst
      of speed; once per round) and **Rizz Rush** (a speed burst with a pink trail).
    - Catchers: **Love Trap** (drop a heart trap; the first runner who steps on it is stuck for a moment) and

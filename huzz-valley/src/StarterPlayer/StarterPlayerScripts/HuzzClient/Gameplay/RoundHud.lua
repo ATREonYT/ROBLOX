@@ -303,6 +303,70 @@ function M.start()
 	end
 	refreshCard()
 
+	-- Your equipped girl reacts (owner: "make the anime girls feel more included"): her face and a speech bubble,
+	-- bottom left, for a moment when something happens to you.
+	local LINES = {
+		Safe = { "You made it!", "So fast!", "That's my runner!" },
+		Rescued = { "Up you get!", "Phew, close one!", "Don't scare me like that!" },
+		Rescuer = { "My hero!", "So brave!", "Nice save!" },
+		Caught = { "Nooo!", "Get back up!", "Someone help!" },
+		Got = { "Got one!", "Too easy!", "Nobody escapes!" },
+		Hero = { "Go, Hero!", "You can do it!", "Show them!" },
+		Win = { "We won!", "Yay, we did it!", "Best team ever!" },
+		Lose = { "Next time!", "So close...", "We'll get them!" },
+	}
+	local Looks = require(Shared.Config.GirlLooks)
+	local bubbleCard = make("Frame", { Name = "Companion", Position = UDim2.fromOffset(176, 548), Size = UDim2.fromOffset(250, 72), BackgroundTransparency = 1, Visible = false, Parent = root })
+	local face = make("ViewportFrame", { Name = "Face", Size = UDim2.fromOffset(72, 72), BackgroundColor3 = Color3.fromRGB(26, 24, 60), Ambient = Color3.fromRGB(170, 170, 190), LightDirection = Vector3.new(-0.4, -1, -0.6), Parent = bubbleCard }, { corner(0.5) })
+	local faceRim = rim(3, GOLD, 0)
+	faceRim.Parent = face
+	local bubble = make("Frame", { Name = "Bubble", Position = UDim2.fromOffset(82, 12), Size = UDim2.fromOffset(0, 40), AutomaticSize = Enum.AutomaticSize.X, BackgroundColor3 = WHITE, Parent = bubbleCard },
+		{ corner(14), rim(2.5, INK, 0.1), make("UIPadding", { PaddingLeft = UDim.new(0, 14), PaddingRight = UDim.new(0, 14) }) })
+	local said = make("TextLabel", { Name = "Line", Size = UDim2.fromOffset(0, 40), AutomaticSize = Enum.AutomaticSize.X, BackgroundTransparency = 1, FontFace = ROUND, TextSize = 18, TextColor3 = INK, Text = "", Parent = bubble })
+	local faceKey = nil
+	local function sayLine(event)
+		local key = player:GetAttribute("HuzzCompanion") or ""
+		local girls = ReplicatedStorage:FindFirstChild("HuzzGirls")
+		local model = girls and key ~= "" and girls:FindFirstChild(key)
+		if not model then
+			return
+		end
+		if faceKey ~= key then
+			faceKey = key
+			for _, ch in face:GetChildren() do
+				if ch:IsA("Model") or ch:IsA("Camera") then ch:Destroy() end
+			end
+			local copy = model:Clone()
+			copy.Parent = face
+			local head = copy:FindFirstChild("Head", true)
+			local camera = make("Camera", { FieldOfView = 30, Parent = face })
+			face.CurrentCamera = camera
+			if head and head:IsA("BasePart") then
+				local at = head.CFrame.Position - Vector3.new(0, 0.2, 0)
+				camera.CFrame = CFrame.lookAt(at + head.CFrame.LookVector * 4.2 + Vector3.new(0, 0.3, 0), at)
+			end
+			local look = Looks[model:GetAttribute("Id") or ""]
+			faceRim.Color = if look then look.Colors[1] else (rarityColor[model:GetAttribute("Rarity") or ""] or GOLD)
+		end
+		local list = LINES[event]
+		said.Text = list[math.random(#list)]
+		bubbleCard.Visible = true
+		bubbleCard.Position = UDim2.fromOffset(176, 562)
+		TweenService:Create(bubbleCard, TweenInfo.new(0.3, Enum.EasingStyle.Back), { Position = UDim2.fromOffset(176, 548) }):Play()
+		local token = {}
+		bubbleCard:SetAttribute("Token", tostring(token))
+		task.delay(2.6, function()
+			if bubbleCard:GetAttribute("Token") == tostring(token) then
+				bubbleCard.Visible = false
+			end
+		end)
+	end
+	State:GetAttributeChangedSignal("PickChoice"):Connect(function()
+		if State:GetAttribute("PickChoice") == "Hero" and State:GetAttribute("PickId") == player.UserId then
+			sayLine("Hero")
+		end
+	end)
+
 	-- Outlines (as in the reference): a faint red line round catchers, blue round runners still out,
 	-- yellow round the Hero, green round runners safe across the line. Downed runners lose theirs.
 	local OUTLINE_RED = Color3.fromRGB(255, 64, 64)
@@ -378,21 +442,26 @@ function M.start()
 			end
 		elseif kind == "Caught" then
 			if data.runner == player.UserId then
+				sayLine("Caught")
 				flash.BackgroundTransparency = 0.6 -- (one flash, well under one a second)
 				TweenService:Create(flash, TweenInfo.new(0.6), { BackgroundTransparency = 1 }):Play()
 				show(banner, "YOU'RE DOWN!", RED, 1.8, 60)
 				sound("rbxasset://sounds/uuhhh.mp3", 0.5)
 			elseif data.catcher == player.UserId then
 				show(small, `You got {nameOf(data.runner) or "a runner"}!`, RED, 1.6)
+				sayLine("Got")
 			end
 		elseif kind == "Rescued" then
 			if data.runner == player.UserId then
 				show(banner, "RESCUED!", GREEN, 1.6, 64)
+				sayLine("Rescued")
 			elseif data.by == player.UserId then
 				show(small, `You rescued {nameOf(data.runner) or "a runner"}!`, GREEN, 1.8)
+				sayLine("Rescuer")
 			end
 		elseif kind == "Safe" then
 			show(banner, "SAFE!", GREEN, 1.4, 72)
+			sayLine("Safe")
 			sound("rbxasset://sounds/electronicpingshort.wav", 0.4, 1.3)
 		elseif kind == "Bonus" then
 			show(small, `+{data.coins} coins!`, GOLD, 2.4)
@@ -400,6 +469,10 @@ function M.start()
 			local team = if data.team == "Runners" then "RUNNERS WIN!" else "CATCHERS WIN!"
 			local teamColor = if data.team == "Runners" then BLUE else RED
 			show(banner, team, teamColor, 3.2, 76)
+			local mine = player:GetAttribute("HuzzRole")
+			if mine == "Runner" or mine == "Catcher" then
+				sayLine(if (data.team == "Runners") == (mine == "Runner") then "Win" else "Lose")
+			end
 			setMessage(team, teamColor)
 			local color = rarityColor[data.rarity] or GOLD
 			task.delay(3.4, function()

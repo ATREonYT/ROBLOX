@@ -101,7 +101,7 @@ local function uploadPictures()
 	end
 	say("Uploading pictures... this takes about a minute. Studio may ask you to confirm.")
 	local uploaded, skipped, failed = 0, 0, {}
-	for _, kind in { "Icons", "Art" } do
+	for _, kind in { "Icons", "Art", "Fx" } do
 		for _, module in Shared.Images[kind]:GetChildren() do
 			local key = kind .. "/" .. module.Name
 			if ids[key] and ids[key] ~= "" then

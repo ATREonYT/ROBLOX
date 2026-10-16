@@ -25,7 +25,7 @@ if game.CreatorType == Enum.CreatorType.Group and game.CreatorId > 0 then
 end
 
 local uploaded, skipped, failed = 0, 0, {}
-for _, kind in { "Icons", "Art" } do
+for _, kind in { "Icons", "Art", "Fx" } do -- (Fx: the girls' particle shapes, Shared/AuraLook)
 	for _, module in Shared.Images[kind]:GetChildren() do
 		local key = kind .. "/" .. module.Name
 		if ids[key] and ids[key] ~= "" then

@@ -18,7 +18,7 @@ def pascal(stem):
     return ''.join(w.capitalize() for w in stem.split('-'))
 
 
-for kind, src in (('Icons', 'assets/icons'), ('Art', 'assets/art')):
+for kind, src in (('Icons', 'assets/icons'), ('Art', 'assets/art'), ('Fx', 'assets/fx')):
     dst = os.path.join(OUT, kind)
     os.makedirs(dst, exist_ok=True)
     for f in os.listdir(dst):

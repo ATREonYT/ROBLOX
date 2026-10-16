@@ -250,6 +250,8 @@ GirlService.bodyBounds = bodyBounds
 ]]
 function GirlService.makeCopy(girl, parent)
 	local model = girl.template:Clone()
+	model:SetAttribute("Id", girl.id) -- (clients theme her effects by these: Shared/AuraLook)
+	model:SetAttribute("Rarity", girl.rarity)
 	useMotors(model)
 	for _, d in model:GetDescendants() do
 		if d:IsA("BaseScript") or d:IsA("ModuleScript") or d:IsA("BillboardGui") and d.Name == "HuzzNameTag" then
@@ -355,8 +357,6 @@ function GirlService.showcase(girl, at, parent)
 	centre, size = bodyBounds(model, root)
 	local rarity = GirlService.rarity(girl.rarity)
 	local color = if rarity.Name == "Secret" then Color3.fromRGB(235, 235, 255) else rarity.Color
-	local feet = centre.Position - Vector3.new(0, size.Y / 2, 0)
-	local radius = math.max(size.X, size.Z) * 0.9 + 2
 
 	local function part(name, props)
 		local p = Instance.new("Part")
@@ -368,48 +368,10 @@ function GirlService.showcase(girl, at, parent)
 		p.Parent = model
 		return p
 	end
-	-- Glowing rings under her feet.
-	part("Ring", {
-		Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.3, radius * 2, radius * 2), Material = Enum.Material.Neon,
-		Color = color, Transparency = 0.35, CFrame = CFrame.new(feet - Vector3.new(0, 0.6, 0)) * CFrame.Angles(0, 0, math.rad(90)),
-	})
-	part("Halo", {
-		Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.2, radius * 2.8, radius * 2.8), Material = Enum.Material.Neon,
-		Color = color, Transparency = 0.75, CFrame = CFrame.new(feet - Vector3.new(0, 0.9, 0)) * CFrame.Angles(0, 0, math.rad(90)),
-	})
-	-- Sparkles all round her, and her light.
+	-- Nothing under her feet any more (owner: the rings hid her from below). Her effects (flames on her
+	-- hands, her element all round her, crescent slashes, her light) are drawn by every client from her look
+	-- (Gameplay/Auras + Shared/AuraLook, kind "Showcase"); this part only carries her rating board.
 	local aura = part("Aura", { Size = size + Vector3.new(2, 2, 2), Transparency = 1, CFrame = centre })
-	local sparkles = Instance.new("ParticleEmitter")
-	sparkles.Name = "Sparkles"
-	sparkles.Color = ColorSequence.new(Color3.new(1, 1, 1), color)
-	sparkles.LightEmission = 1
-	sparkles.Rate = S.Sparkles
-	sparkles.Lifetime = NumberRange.new(1.5, 3)
-	sparkles.Speed = NumberRange.new(0.5, 2)
-	sparkles.SpreadAngle = Vector2.new(180, 180)
-	sparkles.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.2, 0.9), NumberSequenceKeypoint.new(1, 0) })
-	sparkles.Transparency = NumberSequence.new(0.1, 1)
-	sparkles.Parent = aura
-	local light = Instance.new("PointLight")
-	light.Color, light.Brightness, light.Range = color, 2, 40
-	light.Parent = aura
-	-- A soft column of light from the ring up past her head.
-	local base = Instance.new("Attachment")
-	base.Name = "BeamBase"
-	base.Parent = aura -- parented first: WorldPosition needs to know its part
-	base.WorldPosition = feet
-	local top = Instance.new("Attachment")
-	top.Name = "BeamTop"
-	top.Parent = aura
-	top.WorldPosition = feet + Vector3.new(0, size.Y * 1.6, 0)
-	local beam = Instance.new("Beam")
-	beam.Attachment0, beam.Attachment1 = base, top
-	beam.Width0, beam.Width1 = radius * 2, radius * 0.6
-	beam.Color = ColorSequence.new(color)
-	beam.Transparency = NumberSequence.new(0.7, 1)
-	beam.LightEmission = 1
-	beam.FaceCamera = true
-	beam.Parent = aura
 
 	-- Her rating over her head: stars by rarity (Common 1 ... Secret 7), her name, her rarity.
 	local order = 1

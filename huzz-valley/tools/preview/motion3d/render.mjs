@@ -1,6 +1,9 @@
 // Draws a frames JSON (from scene.luau) with three.js in headless Chromium, then encodes an H.264 MP4.
 // Usage: node render.mjs frames.json out.mp4   (needs NODE_PATH with playwright, and ffmpeg)
 // Frame boxes: {p:[x,y,z] centre, r:[9] row-major rotation, s:[sx,sy,sz], c:"#rrggbb"}. Roblox axes (Y up, -Z forward).
+// Optional per frame: sprites [{p, s (width, studs), c, a (opacity), t (assets/fx name), r (rotation deg), add (glow)}]
+// and ribbons [{pts [[x,y,z]...], w [widths], a [opacities], c, add}] (camera-facing strips: the slashes).
+// Optional at the top: sky, ground (colours), grid (false to hide).
 import { createRequire } from 'module';
 import fs from 'fs';
 import os from 'os';
@@ -25,8 +28,9 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.body.appendChild(renderer.domElement);
 const scene = new THREE.Scene();
-scene.background = new THREE.Color('#9fd0f5');
-scene.fog = new THREE.Fog('#9fd0f5', 80, 220);
+const SKY = ${JSON.stringify(data.sky || '#9fd0f5')}, GROUND = ${JSON.stringify(data.ground || '#e3cf9c')};
+scene.background = new THREE.Color(SKY);
+scene.fog = new THREE.Fog(SKY, 80, 220);
 const camera = new THREE.PerspectiveCamera(70, ${W} / ${H}, 0.1, 500); // Roblox default FOV
 scene.add(new THREE.HemisphereLight('#dff0ff', '#b89c70', 1.6));
 const sun = new THREE.DirectionalLight('#fff6e8', 1.8);
@@ -35,13 +39,20 @@ sun.shadow.mapSize.set(2048, 2048);
 Object.assign(sun.shadow.camera, { left: -25, right: 25, top: 25, bottom: -25, near: 1, far: 120 });
 sun.shadow.bias = -0.0005;
 scene.add(sun, sun.target);
-const ground = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000), new THREE.MeshLambertMaterial({ color: '#e3cf9c' }));
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000), new THREE.MeshLambertMaterial({ color: GROUND }));
 ground.rotation.x = -Math.PI / 2;
 ground.receiveShadow = true;
 scene.add(ground);
 const grid = new THREE.GridHelper(400, 100, '#a88c55', '#a88c55'); // 4-stud cells
 grid.material.transparent = true; grid.material.opacity = 0.45; grid.position.y = 0.01;
 scene.add(grid);
+grid.visible = ${data.grid === false ? 'false' : 'true'};
+// particle pictures (assets/fx), loaded once
+const loader = new THREE.TextureLoader();
+const tex = {};
+for (const n of ${JSON.stringify(fs.readdirSync(path.join(here, '../../../assets/fx')).map(f => f.replace('.png', '')))}) tex[n] = loader.load('./fx/' + n + '.png');
+const sprites = [];
+const ribbonMeshes = [];
 const unit = new THREE.BoxGeometry(1, 1, 1);
 const pool = [];
 const m = new THREE.Matrix4(), sc = new THREE.Matrix4();
@@ -61,6 +72,48 @@ window.draw = (f) => {
     mesh.visible = true;
   });
   for (let i = f.boxes.length; i < pool.length; i++) pool[i].visible = false;
+  const asList = (v) => (Array.isArray(v) ? v : []); // (Lune writes an empty list as {})
+  const sp = asList(f.sprites);
+  sp.forEach((q, i) => {
+    let s = sprites[i];
+    if (!s) { s = sprites[i] = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthWrite: false })); scene.add(s); }
+    const mat = s.material;
+    const want = tex[(q.t || 'glow').toLowerCase()] || tex.glow;
+    if (mat.map !== want) { mat.map = want; mat.needsUpdate = true; }
+    const blend = q.add ? THREE.AdditiveBlending : THREE.NormalBlending;
+    if (mat.blending !== blend) { mat.blending = blend; mat.needsUpdate = true; }
+    mat.color.set(q.c); mat.opacity = q.a; mat.rotation = (q.r || 0) * Math.PI / 180;
+    s.position.set(q.p[0], q.p[1], q.p[2]); s.scale.set(q.s, q.s, 1); s.visible = true;
+  });
+  for (let i = sp.length; i < sprites.length; i++) sprites[i].visible = false;
+  const rb = asList(f.ribbons);
+  rb.forEach((q, i) => {
+    let mesh = ribbonMeshes[i];
+    if (!mesh) {
+      mesh = ribbonMeshes[i] = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, side: THREE.DoubleSide }));
+      scene.add(mesh);
+    }
+    const n = q.pts.length, pos = new Float32Array(n * 2 * 3), col = new Float32Array(n * 2 * 4), idx = [];
+    const c = new THREE.Color(q.c), cam = new THREE.Vector3(...f.camera.pos);
+    for (let k = 0; k < n; k++) {
+      const p = new THREE.Vector3(...q.pts[k]);
+      const a = new THREE.Vector3(...q.pts[Math.max(0, k - 1)]), b = new THREE.Vector3(...q.pts[Math.min(n - 1, k + 1)]);
+      const dir = b.sub(a).normalize(), view = cam.clone().sub(p).normalize();
+      const side = new THREE.Vector3().crossVectors(dir, view).normalize().multiplyScalar(q.w[k] / 2);
+      [p.clone().add(side), p.clone().sub(side)].forEach((v, j) => {
+        pos.set([v.x, v.y, v.z], (k * 2 + j) * 3);
+        col.set([c.r, c.g, c.b, q.a[k]], (k * 2 + j) * 4);
+      });
+      if (k < n - 1) idx.push(k * 2, k * 2 + 1, k * 2 + 2, k * 2 + 1, k * 2 + 3, k * 2 + 2);
+    }
+    mesh.geometry.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    mesh.geometry.setAttribute('color', new THREE.BufferAttribute(col, 4));
+    mesh.geometry.setIndex(idx);
+    mesh.material.blending = q.add ? THREE.AdditiveBlending : THREE.NormalBlending;
+    mesh.material.needsUpdate = true;
+    mesh.visible = true;
+  });
+  for (let i = rb.length; i < ribbonMeshes.length; i++) ribbonMeshes[i].visible = false;
   const [cx, cy, cz] = f.camera.pos, [lx, ly, lz] = f.camera.look;
   camera.position.set(cx, cy, cz);
   camera.lookAt(lx, ly, lz);
@@ -79,6 +132,7 @@ page.on('pageerror', (e) => console.error('page error:', e.message));
 await page.route('http://motion3d.local/**', (route) => {
   const name = new URL(route.request().url()).pathname;
   if (name === '/index.html') return route.fulfill({ contentType: 'text/html', body: PAGE });
+  if (name.startsWith('/fx/')) return route.fulfill({ contentType: 'image/png', body: fs.readFileSync(path.join(here, '../../../assets/fx', path.basename(name))) });
   route.fulfill({ contentType: 'text/javascript', body: fs.readFileSync(path.join(here, 'vendor', 'three.module.min.js')) });
 });
 await page.goto('http://motion3d.local/index.html');

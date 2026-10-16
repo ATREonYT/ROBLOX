@@ -37,7 +37,6 @@ return {
 		Height = 34, -- studs from the field's floor up to her feet (owner: higher)
 		Spin = 0.35, -- radians per second (a slow turn)
 		Bob = 0.6, -- studs up and down
-		Sparkles = 14, -- per second
 	},
 	-- How catchers tag (owner's call): "Stab" = they hold a knife and click / tap STAB to stab a runner
 	-- in reach; "Touch" = running into a runner (TagRange) tags them.

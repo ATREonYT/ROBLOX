@@ -17,10 +17,15 @@ local ShopService = require(HuzzServer.ShopService)
 local SettingsService = require(HuzzServer.SettingsService)
 local CosmeticsService = require(HuzzServer.CosmeticsService)
 local ActionService = require(HuzzServer.ActionService)
+local CompanionService = require(HuzzServer.CompanionService)
 
 DataService.start()
 SettingsService.start()
 ShopService.start()
 CosmeticsService.start()
 ActionService.start()
-DataService.onChanged = CosmeticsService.refresh
+CompanionService.start()
+DataService.onChanged = function(player)
+	CosmeticsService.refresh(player)
+	CompanionService.refresh(player) -- (the equipped anime girl follows you: Gameplay/Auras)
+end
