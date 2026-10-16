@@ -31,6 +31,11 @@ DataService.Template = {
 	Claimed = {}, -- [tostring(level)] = true for claimed track rewards
 	Stats = {}, -- quest counters (Config/Progression.Stats): Rounds, Crossings, AuraStars, Heroes, Rescues, ...
 	QuestsClaimed = {}, -- [questId] = true
+	-- Spin the Wheel (SpinService, Shared/SpinRules)
+	Spins = 0, -- owned (bought) spins
+	FreeSpinAt = 0, -- os.time() when the next free spin is ready (0 = ready)
+	SpinPity = 0, -- spins since the last Legendary (shown: "Guaranteed Legendary in N spins")
+	Boosts = { Coins = 0, Aura = 0 }, -- [kind] = os.time() its x2 lasts until
 }
 
 local STORE_NAME = "HuzzValley_Player_v1"
@@ -64,6 +69,10 @@ function DataService.snapshot(player: Player)
 		Claimed = table.clone(d.Claimed),
 		Stats = table.clone(d.Stats),
 		QuestsClaimed = table.clone(d.QuestsClaimed),
+		Spins = d.Spins or 0,
+		FreeSpinAt = d.FreeSpinAt or 0,
+		SpinPity = d.SpinPity or 0,
+		Boosts = table.clone(d.Boosts or {}),
 	}
 end
 

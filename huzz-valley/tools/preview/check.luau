@@ -9,7 +9,7 @@ end
 
 -- Pretend the owner created two products (the shipped config has every Id = 0).
 local P = game.ReplicatedStorage.Shared.Config.Products
-P.Source = P.Source:gsub('(Key = "SunsetTrail".-Id = )0', '%1111'):gsub('(Key = "VIP".-Id = )0', '%1222')
+P.Source = P.Source:gsub('(Key = "SunsetTrail".-Id = )0', '%1111'):gsub('(Key = "VIP".-Id = )0', '%1222'):gsub('(Key = "Spins10".-Id = )0', '%1333')
 
 local player = Instance.new("Player"); player.Name = "Tester"; player.UserId = 1; player.Parent = Players
 Players.LocalPlayer = player
@@ -138,6 +138,79 @@ check("coin shop: can't wear what you don't own", (act("Wear", "Tag", "TagPink")
 check("coin shop: can't wear an item in the wrong slot", (act("Wear", "Knife", "MintTrail")) == false)
 check("Aura: gems became Aura and the client sees it", State.data.Aura ~= nil and profile.Data.Gems == nil)
 check("crates: an unknown crate can't be opened", (act("OpenCrate", "Nope")) == false)
+
+-- Spin the Wheel (SpinService, Shared/SpinRules, Screens/SpinWheel): one free spin per 15 minutes, owned spins
+-- count down, bought spins only through ProcessReceipt, a pack without an ID never prompts.
+local Wheel = require(game.ReplicatedStorage.Shared.Config.SpinWheel)
+local SpinRules = require(game.ReplicatedStorage.Shared.SpinRules)
+local SpinService = require(HS.SpinService)
+local spinRemote = game.ReplicatedStorage.Remotes.Spin
+local function spinNow(n) task.wait(0.85); local a, b = spinRemote:InvokeServer(n); task.wait(0.1); return a, b end
+local d0 = profile.Data
+check("spin: a new save has its free spin", d0.FreeSpinAt == 0 and d0.Spins == 0 and SpinRules.available(State.data, os.time()) == 1)
+local worth = function() return d0.Coins + d0.Aura * 10 + (d0.Boosts.Coins or 0) + (if d0.Cosmetics.SpinKnife then 1 else 0) end
+local w0 = worth()
+local okS, res = spinNow(1)
+check("spin: the free spin works and gives a prize", okS == true and res.usedFree == true and #res.rolls == 1 and worth() > w0)
+check("spin: next free spin in 15 minutes", math.abs(d0.FreeSpinAt - (os.time() + Wheel.FreeEvery)) <= 2 and State.data.FreeSpinAt == d0.FreeSpinAt)
+check("spin: the client is told which slice", Wheel.Items[res.rolls[res.land].Slot].Key == res.rolls[res.land].Key)
+local before = d0.FreeSpinAt
+okS, res = spinNow(1)
+check("spin: no second free spin", okS == false and d0.FreeSpinAt == before and type(res) == "string")
+DataService.update(player, function(d) d.Spins = 3 end)
+okS = spinNow(1)
+check("spin: an owned spin counts down", okS == true and d0.Spins == 2 and d0.FreeSpinAt == before)
+okS = spinNow(5)
+check("spin: x5 refused with 2 spins", okS == false and d0.Spins == 2)
+check("spin: odd counts refused", (spinNow(7)) == false and (spinNow("lots")) == false and d0.Spins == 2)
+DataService.update(player, function(d) d.Spins = 12 end)
+okS, res = spinNow(10)
+check("spin: x10 gives 10 prizes", okS == true and #res.rolls == 10 and d0.Spins == 2 and res.rolls[res.land] ~= nil)
+DataService.update(player, function(d) d.Boosts.Coins = os.time() + 60 end)
+check("spin: x2 Coins boost doubles round pay", SpinService.boost(player, "Coins") == 2 and SpinService.boost(player, "Aura") == 1)
+check("spin: the Spin Knife can't be bought with coins", (act("BuyWithCoins", "SpinKnife")) == false)
+-- buying spins: granted once per receipt, only by the server
+local spins0 = d0.Spins
+check("spin: a spins receipt grants 10 spins", MarketplaceService.ProcessReceipt({ PlayerId = 1, ProductId = 333, PurchaseId = "s1" }) == Enum.ProductPurchaseDecision.PurchaseGranted and d0.Spins == spins0 + 10)
+check("spin: the same receipt again grants nothing", MarketplaceService.ProcessReceipt({ PlayerId = 1, ProductId = 333, PurchaseId = "s1" }) == Enum.ProductPurchaseDecision.PurchaseGranted and d0.Spins == spins0 + 10)
+-- the screen: opens from the HUD button and the lobby wheel; the pack without an ID never prompts
+__fireOn(gui.LobbyHud.Right.Spin, "Activated")
+task.wait(0.1)
+check("spin: the HUD SPIN button opens the wheel", MM.current() == "SpinWheel" and gui.SpinWheel.Visible == true)
+local sw = gui.SpinWheel.Group
+_G.__prompts = {}
+__fireOn(sw.Right.BuySpins1, "Activated")
+task.wait(0.05)
+check("spin: buying with no product ID never prompts", #_G.__prompts == 0 and gui.Toast.Text:find("coming soon") ~= nil)
+__fireOn(sw.Right.BuySpins10, "Activated")
+task.wait(0.05)
+check("spin: a set-up pack opens Roblox's prompt", #_G.__prompts == 1 and _G.__prompts[1][2] == 333)
+check("spin: Spin! shows the count", sw.Bottom.Spin.Content.Label.Text == `Spin! ({d0.Spins})`)
+check("spin: the pity counter shows", sw.Bottom.Pity.Count.Text:find("spin") ~= nil)
+check("spin: the odds list shows every slice", #sw.OddsList:GetChildren() >= 8 and sw.OddsList.Row8.Chance.Text:match("%%$") ~= nil)
+MM.close()
+local model = Instance.new("Model"); model.Name = "Spin The Wheel"
+local wheelPart = Instance.new("Part"); wheelPart.Name = "Base"; wheelPart.Parent = model
+model.Parent = workspace
+__fireOn(workspace, "DescendantAdded", model)
+task.wait(0.1)
+local prompt = wheelPart:FindFirstChild("HuzzSpinPrompt")
+check("spin: the owner's wheel gets a prompt and a click", prompt ~= nil and prompt.ActionText == "Spin the Wheel" and wheelPart:FindFirstChild("HuzzSpinClick") ~= nil)
+if prompt then __fireOn(prompt, "Triggered", player) end
+task.wait(0.1)
+check("spin: using the wheel opens the screen", MM.current() == "SpinWheel")
+-- a spin on the screen lands on the server's slice and shows the prize
+DataService.update(player, function(d) d.FreeSpinAt = 0 end)
+task.wait(0.1)
+__fireOn(sw.Bottom.Spin, "Activated")
+task.wait(0.2)
+check("spin: buttons wait while it spins", sw.Bottom.Spin.Content.Label.Text == "Spinning..." and sw.Bottom.Spin:GetAttribute("Disabled") == true)
+task.wait(4.7)
+__fireOn(game:GetService("RunService"), "RenderStepped", 1 / 60)
+task.wait(0.8)
+local landed = Wheel.Items[SpinRules.slotAt(sw.Wheel.Disc.Rotation)]
+check("spin: the wheel stops on the prize it shows", sw.Reward.Visible == true and sw.Reward.One.PrizeName.Text:find(landed.Name, 1, true) == 1)
+MM.close()
 
 print(string.format("checks: %d ok, %d failed", ok, failed))
 return nil

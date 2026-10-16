@@ -76,6 +76,12 @@ function draw(n, parentEl, rect, k, parentAbs) {
     if (src && n.img.st === 'Tile' && n.img.tile) im.style.background = `url("${src}") 0 0/${n.img.tile[1] * kk}px ${n.img.tile[3] * kk}px repeat`;
     else if (src) im.style.background = `url("${src}") center/${fit} no-repeat`;
     if (src) im.style.opacity = 1 - n.img.t;
+    // ImageColor3 multiplies the picture's colours (Roblox): multiply over the colour, cut to the picture's alpha.
+    const tint = n.img.color && arr(n.img.color);
+    if (src && tint && tint.length === 3 && tint.some(v => v < 0.999) && n.img.st !== 'Tile') {
+      im.style.backgroundColor = rgba(tint); im.style.backgroundBlendMode = 'multiply';
+      im.style.webkitMaskImage = `url("${src}")`; im.style.webkitMaskSize = fit; im.style.webkitMaskPosition = 'center'; im.style.webkitMaskRepeat = 'no-repeat';
+    }
     if (m.corner) im.style.borderRadius = 'inherit';
     el.appendChild(im);
   }

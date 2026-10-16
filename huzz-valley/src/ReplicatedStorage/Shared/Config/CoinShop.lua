@@ -7,8 +7,10 @@
 	  Colors two or three colours (a gradient); Rainbow = cycles through the colours.
 	  Price  coins. Tune freely; the earn rate is in Config/Round (coins per round) and the quests.
 	One item per slot is worn at a time; buying one wears it. Sunset Trail (a Robux cosmetic) is a Trail too.
+	NotForSale: won elsewhere (the Spin Knife is the Spin the Wheel's Legendary): never sold for coins, and the ITEMS
+	tab only shows it once you own it.
 ]]
-export type Item = { Key: string, Slot: "Trail" | "Tag" | "Knife", Name: string, Price: number, Colors: { Color3 }, Rainbow: boolean?, Order: number, Unlock: string? }
+export type Item = { Key: string, Slot: "Trail" | "Tag" | "Knife", Name: string, Price: number, Colors: { Color3 }, Rainbow: boolean?, Order: number, NotForSale: boolean?, Unlock: string? }
 
 local rgb = Color3.fromRGB
 local CoinShop = {}
@@ -35,6 +37,7 @@ CoinShop.Items = {
 	{ Key = "RookieKnife", Slot = "Knife", Name = "Rookie Knife", Price = 0, Unlock = "Quest: Star Catcher", Colors = { rgb(255, 230, 140), rgb(255, 170, 60) }, Order = 12 },
 	{ Key = "HunterKnife", Slot = "Knife", Name = "Hunter Knife", Price = 0, Unlock = "Quest: The Hunter", Colors = { rgb(255, 120, 110), rgb(150, 20, 40) }, Order = 13 },
 	{ Key = "MoonlitKnife", Slot = "Knife", Name = "Moonlit Knife", Price = 0, Unlock = "Quest: Legend of the Valley", Colors = { rgb(220, 235, 255), rgb(120, 140, 255), rgb(200, 120, 255) }, Rainbow = true, Order = 14 },
+	{ Key = "SpinKnife", Slot = "Knife", Name = "Spin Knife", Price = 0, NotForSale = true, Colors = { rgb(255, 80, 180), rgb(130, 90, 255), rgb(80, 220, 255) }, Rainbow = true, Order = 15 }, -- (Spin the Wheel only)
 } :: { Item }
 
 local byKey: { [string]: Item } = {}

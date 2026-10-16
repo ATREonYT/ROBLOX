@@ -51,6 +51,7 @@ function VERBS.BuyWithCoins(player, key)
 	local item = type(key) == "string" and CoinShop.get(key)
 	if not item then return false, "Unknown item." end
 	if item.Unlock then return false, `Earn it: {item.Unlock}.` end -- (quest / wheel items aren't sold)
+	if item.NotForSale then return false, "That one comes from the Spin the Wheel." end
 	local ok, why = false, nil
 	DataService.update(player, function(data)
 		if data.Cosmetics[key] then why = "You own this already."; return end

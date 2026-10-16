@@ -21,6 +21,16 @@ DataService.update(player, function(d)
 	d.Aura = tonumber(cfg.GEMS) or 320
 	for key in string.gmatch(cfg.OWN or "", "[^,]+") do d.Cosmetics[key] = true end
 end)
+-- SPINS=n, FREEIN=seconds to the free spin, PITY=spins since a Legendary, BOOST=seconds of x2 coins: the Spin the
+-- Wheel's saved state (SCREEN="SpinWheel").
+if cfg.SPINS then
+	DataService.update(player, function(d)
+		d.Spins = tonumber(cfg.SPINS)
+		d.FreeSpinAt = os.time() + (tonumber(cfg.FREEIN) or 0)
+		d.SpinPity = tonumber(cfg.PITY) or 0
+		d.Boosts = { Coins = os.time() + (tonumber(cfg.BOOST) or 0), Aura = 0 }
+	end)
+end
 if cfg.PASSES then
 	local owned = {}
 	for key in string.gmatch(cfg.PASSES, "[^,]+") do owned[key] = true end

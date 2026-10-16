@@ -6,6 +6,7 @@ local GuiService = game:GetService("GuiService")
 local UserInputService = game:GetService("UserInputService")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Format = require(Shared.Format)
+local SpinRules = require(Shared.SpinRules)
 local UI = script.Parent.Parent
 local Theme = require(UI.Theme)
 local Kit = require(UI.Kit)
@@ -62,6 +63,20 @@ function LobbyHud.build(parent: Instance)
 	squareButton(left, "Dances", "DancesNote", 164, function() MainMenu.go("Dances") end)
 	local menu = squareButton(left, "Menu", "MainMenuLines", 233, function() ModalManager.toggle("Menu") end)
 	menu.Instance.Icon.Size = UDim2.fromOffset(30, 30) -- the lines icon reads bigger than the others
+	-- Right edge: SPIN opens the Spin the Wheel (Screens/SpinWheel); a green FREE tag while a free spin waits.
+	local right = group(root, "Right", Vector2.new(1, 0.5), UDim2.fromScale(1, 0.5), Vector2.new(100, 322))
+	local spin = squareButton(right, "Spin", "SpinWheel", 132, function() ModalManager.open("SpinWheel") end)
+	if not Kit.reused(spin.Instance) then -- (mirrors the left column)
+		spin.Instance.Position = UDim2.fromOffset(100 - 25 - 33, spin.Instance.Position.Y.Offset)
+	end
+	local freeTag = Kit.text({ Name = "FreeTag", Text = "FREE", FontFace = Theme.Fonts.Button, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Center, TextColor3 = C.DarkText, BackgroundTransparency = 0, BackgroundColor3 = C.SelectedTab, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(4, 4), Size = UDim2.fromOffset(38, 17), ZIndex = 3, Visible = false, Parent = spin.Instance })
+	Kit.attach(Kit.corner(4), freeTag)
+	task.spawn(function()
+		while root.Parent do
+			freeTag.Visible = State.data.Loaded == true and SpinRules.available(State.data, workspace:GetServerTimeNow()) == 1
+			task.wait(1)
+		end
+	end)
 	local hint = Kit.text({ Name = "KeyHint", Text = "", FontFace = Theme.Fonts.Button, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Center, TextColor3 = C.DarkText, BackgroundTransparency = 0, BackgroundColor3 = C.SelectedTab, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(1, -2, 0, 4), Size = UDim2.fromOffset(16, 16), ZIndex = 3, Parent = menu.Instance })
 	Kit.attach(Kit.corner(3), hint)
 
@@ -131,7 +146,7 @@ function LobbyHud.build(parent: Instance)
 	sync(State.data)
 	-- While a window is open the HUD slides off to its edges, and slides back when it closes.
 	local away = {
-		[left] = UDim2.fromOffset(-400, 0), [bottom] = UDim2.fromOffset(0, if touch then -200 else 200),
+		[left] = UDim2.fromOffset(-400, 0), [right] = UDim2.fromOffset(400, 0), [bottom] = UDim2.fromOffset(0, if touch then -200 else 200),
 		[topRight] = UDim2.fromOffset(400, 0), [top] = UDim2.fromOffset(0, -250),
 	}
 	local home = {}
@@ -149,7 +164,7 @@ function LobbyHud.build(parent: Instance)
 		local side = ModalManager.isSide(current)
 		local playing = inRound()
 		for g, off in away do
-			local hide = (current ~= nil and (not side or g == left)) or (playing and (g == left or g == bottom))
+			local hide = (current ~= nil and (not side or g == left)) or (playing and (g == left or g == right or g == bottom))
 			Motion.tween(g, "hud", Theme.Motion.Hud, { Position = hide and home[g] + off or home[g] }, hide and Enum.EasingStyle.Quad or Enum.EasingStyle.Quint)
 		end
 	end

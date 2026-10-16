@@ -40,6 +40,9 @@ local function grant(data, product): boolean
 	elseif product.Kind == "Cosmetic" then
 		data.Cosmetics[product.Key] = true
 		return true
+	elseif product.Kind == "Spins" then -- Spin the Wheel spins (SpinService)
+		data.Spins = (data.Spins or 0) + (product.Amount or 0)
+		return true
 	end
 	return false
 end

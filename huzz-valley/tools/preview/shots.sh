@@ -7,7 +7,8 @@ REF=../../design/pages
 shot() { # name, reference page, width, height, options
 	[ -n "$ONLY" ] && case " $ONLY " in *" $1 "*) ;; *) return ;; esac
 	sh run.sh "$OUT/$1.json" "$5" 2>&1 | grep -iE 'error|\[warn\]' && echo "($1 had errors)"
-	node shoot.js "$OUT/$1.json" "$OUT/$1.png" "$3" "$4" "$REF/$2.png"
+	case $2 in */*) R=$2 ;; *) R=$REF/$2.png ;; esac # (a path: a reference outside design/pages)
+	node shoot.js "$OUT/$1.json" "$OUT/$1.png" "$3" "$4" "$R"
 }
 ONLY="$*"
 shot shop-passes 01-shop-passes 1536 710 '{SCREEN="Shop", TAB="Passes", SCALE=2, PASSES="VIP"}'
@@ -32,3 +33,4 @@ shot next-map 13-lobby-hud 1536 694 '{SCREEN="Hud", SCALE=2, NEXTMAP=true, VOTE=
 shot dance-wheel 13-lobby-hud 1536 694 '{SCREEN="Hud", SCALE=2, WHEEL=true}'
 shot welcome 13-lobby-hud 1536 694 '{SCREEN="Welcome", SCALE=2}'
 shot round-hud 13-lobby-hud 1536 694 '{SCREEN="Hud", SCALE=2, ROUNDHUD="Hero"}'
+shot spin-wheel ../../design/spin-wheel-reference.webp 1536 936 '{SCREEN="SpinWheel", SCALE=1.2, SPINS=25, FREEIN=887, PITY=28}'

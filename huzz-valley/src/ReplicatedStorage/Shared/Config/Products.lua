@@ -12,7 +12,7 @@
 export type Benefit = { Icon: string, Text: string }
 export type Product = {
 	Key: string,
-	Kind: "Pass" | "Cosmetic" | "Coins",
+	Kind: "Pass" | "Cosmetic" | "Coins" | "Spins",
 	Name: string,
 	Blurb: string,
 	Id: number,
@@ -21,7 +21,7 @@ export type Product = {
 	Icon: string,
 	Benefits: { Benefit }?,
 	Art: string,
-	Amount: number?, -- Coins packs: how many coins it gives
+	Amount: number?, -- Coins packs: how many coins it gives; Spins packs: how many spins
 	Giftable: boolean?,
 	Why: string?, -- OnSale = false: what is missing, for the owner's checklist
 }
@@ -55,11 +55,19 @@ Products.Coins = {
 	{ Key = "Coins5000", Kind = "Coins", Name = "5,000 Coins", Blurb = "Get 5,000 coins\nto spend in game.", Id = 0, Price = 299, Amount = 5000, OnSale = false, Icon = "CurrencyCoin", Art = "Coins5000", Why = "needs its Developer Product ID" },
 } :: { Product }
 
+-- Spin the Wheel spins (Screens/SpinWheel's purple buttons; the owner's prices). Developer Products: create them on
+-- the Creator Dashboard and put each ID here. While Id = 0 the button shows its price and only says "coming soon".
+Products.Spins = {
+	{ Key = "Spins1", Kind = "Spins", Name = "1 Spin", Blurb = "One more spin\non the wheel.", Id = 0, Price = 48, Amount = 1, OnSale = true, Icon = "SpinWheel", Art = "" },
+	{ Key = "Spins10", Kind = "Spins", Name = "10 Spins", Blurb = "Ten more spins\non the wheel.", Id = 0, Price = 340, Amount = 10, OnSale = true, Icon = "SpinWheel", Art = "" },
+	{ Key = "Spins100", Kind = "Spins", Name = "100 Spins", Blurb = "A hundred spins\non the wheel.", Id = 0, Price = 1200, Amount = 100, OnSale = true, Icon = "SpinWheel", Art = "" },
+} :: { Product }
+
 Products.Tabs = { "Passes", "Cosmetics", "Items", "Coins" } -- (Items: the coin shop, Config/CoinShop)
 
 local byKey: { [string]: Product } = {}
 local byId: { [string]: Product } = {}
-for _, list in { Products.Passes, Products.Cosmetics, Products.Coins } do
+for _, list in { Products.Passes, Products.Cosmetics, Products.Coins, Products.Spins } do
 	for _, p in list do
 		assert(not byKey[p.Key], "duplicate product key " .. p.Key)
 		byKey[p.Key] = p

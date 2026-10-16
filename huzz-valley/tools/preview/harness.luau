@@ -9,6 +9,8 @@ local task = require("@lune/task")
 local process = require("@lune/process")
 
 local SRC, OUT, SNIPPET, SETUP = process.args[1], process.args[2], process.args[3], process.args[4]
+-- "@path": read the snippet from a file (handy where "$(cat file)" can't be used)
+if SNIPPET and string.sub(SNIPPET, 1, 1) == "@" then SNIPPET = fs.readFile(string.sub(SNIPPET, 2)) end
 local __exportPartsImpl
 local Instance, Vector3, CFrame, Color3, Enum = roblox.Instance, roblox.Vector3, roblox.CFrame, roblox.Color3, roblox.Enum
 

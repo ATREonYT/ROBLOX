@@ -648,6 +648,7 @@ local function finishGame()
 		local pay = Config.Pay
 		if p and pay then
 			local coins, aura = pay.Played + (if won then pay.Won else 0), if won then pay.WonAura else 0
+			coins *= require(script.Parent.SpinService).boost(p, "Coins") -- Spin the Wheel's "x2 Coins" while it lasts
 			DataService.update(p, function(d)
 				d.Coins = (d.Coins or 0) + coins
 				d.Aura = (d.Aura or 0) + aura

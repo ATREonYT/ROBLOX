@@ -274,7 +274,10 @@ local function swatch(parent: Instance, item: CoinShop.Item)
 end
 
 local function buildItems(body: Frame)
-	local list = table.clone(CoinShop.Items)
+	local list = {}
+	for _, item in CoinShop.Items do -- (prizes such as the Spin Knife show only once you own them)
+		if not item.NotForSale or State.data.Cosmetics[item.Key] then table.insert(list, item) end
+	end
 	table.sort(list, function(a, b) return a.Order < b.Order end)
 	for i, item in list do
 		local col, rowN = (i - 1) % 3, (i - 1) // 3

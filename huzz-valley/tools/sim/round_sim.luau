@@ -575,6 +575,7 @@ local function simulate(opts)
 		MapService = MapService, GirlService = GirlService, CarryService = CarryService, DataService = DataService,
 		KnockdownService = KnockdownService, MapVoteService = MapVoteService, KnifeService = KnifeService, SafetyService = SafetyService,
 		NameTagService = NameTagService,
+		SpinService = { boost = function() return 1 end }, -- (the Spin the Wheel's x2 Coins: none in the sim)
 	}
 	local Shared = { Config = { Round = Config, Carry = Carry, Powers = Powers }, RoundRules = RoundRules, Net = Net, GirlRoll = GirlRoll }
 	local sharedNode = setmetatable({}, { __index = function(_, k)

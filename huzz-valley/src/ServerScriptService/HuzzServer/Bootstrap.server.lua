@@ -60,6 +60,7 @@ CosmeticsService.start()
 ActionService.start()
 CompanionService.start()
 require(HuzzServer.AuraPickupService).start() -- Aura stars to collect in the lobby (Config/AuraStars)
+require(HuzzServer.SpinService).start() -- Spin the Wheel: a free spin every 15 min, bought spins (Config/SpinWheel)
 require(HuzzServer.LookService).apply() -- the lighting look: colour grade, bloom, sun rays, haze (Config/Look)
 -- No jumping anywhere (owner): Space is the huss in the lobby too (RoundService keeps every Humanoid at 0).
 pcall(function()

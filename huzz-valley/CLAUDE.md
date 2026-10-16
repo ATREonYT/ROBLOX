@@ -45,7 +45,8 @@ eye. Branch `HUZZ-VALLEY`. Read the section you need; the owner's own words are 
   what they test). Rebuild after every change and give the raw download link.
 - UI pictures: `NODE_PATH=$(npm root -g) sh tools/preview/shots.sh <out> <names>` (reference on top, ours below).
   `HUZZ_FRESH=1` builds from code instead of the saved UI. Names include round-hud, hero-choice, welcome,
-  dance-wheel, dances, shop-passes, shop-coins, progression, lobby-hud, menu, index, map-vote, power-bar.
+  dance-wheel, dances, shop-passes, shop-coins, progression, lobby-hud, menu, index, map-vote, power-bar, spin-wheel.
+  Where `sh`/`$(cat ...)` is refused, pass the snippet as a file: `lune run harness.luau ../../src <out|-> @file.luau setup_ui.luau`.
 - 3D videos: `tools/preview/motion3d` (`sh video.sh <scene> <out.mp4>`). `anim_scene.luau` plays any
   KeyframeSequence file (`ANIM_FILE=... ANIM_NAMES=a,b` or `ANIM_PREFIX=Dance_`) via `kfs.luau`, as Roblox would.
 - Renderer limits: no `AutomaticSize` on frames (size chips by hand), the Robux glyph is small, saved-UI previews
@@ -140,6 +141,9 @@ eye. Branch `HUZZ-VALLEY`. Read the section you need; the owner's own words are 
   `Kit.window` = see-through studded body with a stroke frame; `Kit.studPattern(frame, strength)` everywhere else.
   The texture is `assets/icons/stud-pattern.png` (`tools/icons/make_stud_pattern.py`), packed by `pack_images.py`.
 - Every main window is 701 x 320. One window at a time (`ModalManager`; sets `MenuOpen`).
+- **Lune can't save `UICorner.CornerRadius`**: every saved corner comes back as Roblox's default 8 px (circles become
+  rounded squares in StarterGui and, via reuse, in Play). `Screens/SpinWheel` re-sets its circles at runtime; other
+  screens' circles (DanceWheel...) still have this problem.
 - Icons/art come from the owner's sharp packs; never redraw them. Packed names are PascalCase of file names and
   case-sensitive in Roblox.
 
@@ -158,6 +162,16 @@ eye. Branch `HUZZ-VALLEY`. Read the section you need; the owner's own words are 
   look: the purple star as drawn, other colours tint the white copy; halo, sparkles, light, floor glow; Rainbow
   drifts slowly). Lobby only: rounds keep their power-ups. The Aura pills use `AuraStar` untinted.
   Preview: `docs/previews/aura-stars.mp4`.
+
+- **Spin the Wheel** (owner: "make it give more", a free spin every 15 min, buy 1/10/100 spins for 48/340/1200;
+  reference `design/spin-wheel-reference.webp`, ours vs it: `docs/previews/spin-wheel-vs-reference.jpg`):
+  `Config/SpinWheel` (8 slices, Weight = exact %, pity 40 → Legendary "Spin Knife", owned = 1500 coins) →
+  `Shared/SpinRules` (pure: free first then owned spins, prizes, landing maths; `tests/SpinWheel.spec.luau`) →
+  `HuzzServer/SpinService` (`Spin` remote rolls with `CrateRoll`; finds the owner's wheel model by name "spin"+"wheel"
+  or tag `HuzzSpinWheel`, adds an E prompt + ClickDetector → `SpinOpen`) → `Screens/SpinWheel` (1280x720, buttons in the
+  reference's spots; the "Daily Discount" spot is our pity counter, never a fake discount) + HUD `Right/Spin` (FREE tag).
+  Saves: `Spins`, `FreeSpinAt`, `SpinPity`, `Boosts.Coins` (x2 round coins in RoundService). Packs: `Products.Spins`
+  (Id 0 = "coming soon", granted only in ShopService's ProcessReceipt). Spin Knife = `CoinShop` `NotForSale`.
 
 ## 10. Sounds
 - 34 sounds made from scratch by `tools/sfx/make_sfx.py` → `assets/sfx/*.ogg` (list in `assets/sfx/README.md`)

@@ -11,6 +11,8 @@
 --   Dance          RemoteEvent     client -> server: (danceId?, startAt) the dance you started (nil = stopped) and its
 --                                  start in server time; ActionService puts both on your character (HuzzDance,
 --                                  HuzzDanceAt) so people who start the same dance nearby dance in step
+--   Spin           RemoteFunction  client -> server: (count) spin the wheel 1, 5 or 10 times -> ok, result or why
+--   SpinOpen       RemoteEvent     server -> client: open the Spin the Wheel screen (you used the wheel in the lobby)
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -30,6 +32,8 @@ local SPEC = {
 	Dash = "RemoteEvent",
 	Dance = "RemoteEvent",
 	Lunge = "RemoteEvent",
+	Spin = "RemoteFunction",
+	SpinOpen = "RemoteEvent",
 }
 
 local folder: Folder
