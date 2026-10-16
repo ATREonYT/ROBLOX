@@ -1,5 +1,5 @@
 -- The power hotbar (Config/Powers), bottom centre while you play a round, in the spirit of Huss Valley's ability
--- cards but in our kit: two navy cards with the power's icon, name, what it does and its key (Q / E). Tap a card or
+-- cards but in our kit and small (owner's call): two navy square tiles with the power's icon, name and key (Q / E). Tap a card or
 -- press its key (gamepad L1 / R1) to use it. The server decides (HuzzServer/PowerService) and sends the result back
 -- as the player's PowerReady1/PowerReady2 attributes (server time the slot is ready; -1 = used up this round), which
 -- the cards count down. A Heart Shield that's on shows on its card until it runs out or pops.
@@ -23,13 +23,14 @@ local hex = Color3.fromHex
 
 local PowerBar = {}
 
-local CARD = { W = 184, H = 62, Gap = 12 }
+local CARD = { W = 62, H = 62, Gap = 10 } -- small square tiles (owner: centred, taking less space)
 local W = 2 * CARD.W + CARD.Gap
 local PAGE_H = 347 -- the HUD reference height (as LobbyHud)
 local PINK = hex("FF6EBE")
 local KEYS = { Enum.KeyCode.Q, Enum.KeyCode.E }
 local PADS = { Enum.KeyCode.ButtonL1, Enum.KeyCode.ButtonR1 }
 
+-- One tile: the power's icon, its name under it, the key in the top corner.
 local function card(parent: Instance, slot: number)
 	local b = new("TextButton", {
 		Name = "Card" .. slot, AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(CARD.W, CARD.H),
@@ -41,26 +42,22 @@ local function card(parent: Instance, slot: number)
 	rim.Name = "Rim"
 	rim = Kit.attach(rim, b) :: UIStroke
 	local press = new("UIScale", { Name = "Press", Parent = b })
-	local well = new("Frame", {
-		Name = "IconWell", Position = UDim2.fromOffset(7, 7), Size = UDim2.fromOffset(48, 48), BackgroundColor3 = C.IconCell, BorderSizePixel = 0, Parent = b,
-	}, { Kit.corner(6) })
 	local icon = Kit.text({
-		Name = "Icon", Text = "", TextSize = 30, FontFace = Theme.Fonts.Name, TextXAlignment = Enum.TextXAlignment.Center,
-		Size = UDim2.fromScale(1, 1), Parent = well,
+		Name = "Icon", Text = "", TextSize = 28, FontFace = Theme.Fonts.Name, TextXAlignment = Enum.TextXAlignment.Center,
+		Position = UDim2.fromOffset(0, 4), Size = UDim2.new(1, 0, 0, 36), Parent = b,
 	})
-	local name = Kit.name({ Name = "PowerName", Text = "", TextSize = 15, Position = UDim2.fromOffset(63, 8), Size = UDim2.fromOffset(112, 20), Parent = b })
-	local blurb = Kit.text({
-		Name = "Blurb", Text = "", TextSize = 13, TextColor3 = C.SubText, Position = UDim2.fromOffset(63, 30), Size = UDim2.fromOffset(88, 26),
-		TextYAlignment = Enum.TextYAlignment.Top, Parent = b,
+	local name = Kit.text({
+		Name = "PowerName", Text = "", FontFace = Theme.Fonts.Tab, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Center,
+		TextWrapped = false, TextTruncate = Enum.TextTruncate.AtEnd, Position = UDim2.new(0, 3, 1, -19), Size = UDim2.new(1, -6, 0, 14), Parent = b,
 	})
 	local key = new("Frame", {
-		Name = "Key", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -7, 1, -7), Size = UDim2.fromOffset(22, 20),
-		BackgroundColor3 = C.Pill, BorderSizePixel = 0, Parent = b,
-	}, { Kit.corner(5) })
+		Name = "Key", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(1, -4, 0, 4), Size = UDim2.fromOffset(17, 16),
+		BackgroundColor3 = C.Pill, BorderSizePixel = 0, ZIndex = 5, Parent = b,
+	}, { Kit.corner(4) })
 	Kit.attach(Kit.stroke(C.PillRim, 1.5), key)
 	local keyText = Kit.text({
-		Name = "Text", Text = Powers.Keys[slot], FontFace = Theme.Fonts.Number, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Center,
-		Size = UDim2.fromScale(1, 1), Parent = key,
+		Name = "Text", Text = Powers.Keys[slot], FontFace = Theme.Fonts.Number, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Center,
+		Size = UDim2.fromScale(1, 1), ZIndex = 5, Parent = key,
 	})
 	-- The cooldown: a dark cover that shrinks away, with the seconds left on top.
 	local cover = new("Frame", {
@@ -68,11 +65,11 @@ local function card(parent: Instance, slot: number)
 		BackgroundColor3 = hex("0A1222"), BackgroundTransparency = 0.3, BorderSizePixel = 0, ZIndex = 3, Visible = false, Parent = b,
 	}, { Kit.corner(8) })
 	local count = Kit.text({
-		Name = "Count", Text = "", FontFace = Theme.Fonts.Number, TextSize = 24, TextXAlignment = Enum.TextXAlignment.Center,
+		Name = "Count", Text = "", FontFace = Theme.Fonts.Number, TextSize = 18, TextXAlignment = Enum.TextXAlignment.Center,
 		Size = UDim2.fromScale(1, 1), ZIndex = 4, Visible = false, Parent = b,
 	})
 	new("UIStroke", { Name = "Outline", Color = C.TextShadow, Thickness = 1.5, Parent = count })
-	return { button = b, rim = rim, press = press, icon = icon, name = name, blurb = blurb, key = keyText, cover = cover, count = count }
+	return { button = b, rim = rim, press = press, icon = icon, name = name, key = keyText, cover = cover, count = count }
 end
 
 function PowerBar.build(parent: Instance)
@@ -128,7 +125,7 @@ function PowerBar.build(parent: Instance)
 			shown = roleKey
 			for slot, c in cards do
 				local def = Powers[list[slot]]
-				c.icon.Text, c.name.Text, c.blurb.Text = def.Icon, def.Name, def.Text
+				c.icon.Text, c.name.Text = def.Icon, string.upper(def.Name)
 			end
 		end
 		local now = Workspace:GetServerTimeNow()

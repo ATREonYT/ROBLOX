@@ -208,7 +208,7 @@ The UI golden slice and its backend are built (saving, coins and gems, shop purc
   and Rizz Rush (E: speed burst); catchers get Love Trap (Q: heart trap, a runner who steps in is stuck) and
   Charm Wave (E: slows runners in reach). `HuzzServer/PowerService` decides everything (RoundService gives it
   a ctx and asks `speedOf`, `stuck`, `canStab`, `blocks`); lasting visuals are made on the server, bursts go out
-  as `Power` messages (`Gameplay/PowerEffects`). The hotbar is `Screens/PowerBar` (kit cards, bottom centre;
+  as `Power` messages (`Gameplay/PowerEffects`). The hotbar is `Screens/PowerBar` (two small square kit tiles, 62 px, bottom centre: owner asked for smaller;
   reads `PowerReady1/2` and `ShieldUntil`; `DizzyUntil` darkens STAB). Q, E and H are reserved keys (the Menu key
   can't take them). The shield bubble lives in `Workspace.HuzzShields`, outside the character, so the team
   Highlight doesn't outline it. Icons are emoji until the owner sends PNGs.
