@@ -29,6 +29,17 @@ gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.ScreenInsets = Enum.ScreenInsets.CoreUISafeInsets
 gui.Parent = playerGui
 Scale.setRoot(gui)
+-- Rounded corners: our save tool can't write a UICorner's size the way every Studio reads it, so each saved corner
+-- also carries its size in the attribute HuzzRadius. Put it back where the corner came out at Roblox's 8 px default
+-- (a corner the owner changed in Studio keeps their size).
+pcall(function()
+	for _, d in gui:GetDescendants() do
+		local r = d:IsA("UICorner") and d:GetAttribute("HuzzRadius")
+		if typeof(r) == "UDim" and d.CornerRadius == UDim.new(0, 8) and r ~= d.CornerRadius then
+			(d :: UICorner).CornerRadius = r
+		end
+	end
+end)
 
 -- Each part starts on its own: if one fails, the rest still work and the problem shows on screen.
 Report.mount(gui)

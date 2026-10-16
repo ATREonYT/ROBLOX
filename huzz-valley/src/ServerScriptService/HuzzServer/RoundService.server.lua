@@ -308,7 +308,6 @@ function handlers.Caught(e)
 	else
 		announce(`{nameOf(e.id)} is down`, RED)
 	end
-	if byId[e.id] then byId[e.id]:SetAttribute("HuzzLastChance", e.final == true) end
 	if e.by then addStat(e.by, "Catches", 1) end -- (lore quest: The Hunter)
 end
 
@@ -766,7 +765,10 @@ local function stabNear(id, me: BasePart, range: number, front: boolean): boolea
 			end
 		end
 	end
-	if best and not PowerService.blocks(id, best) then
+	if best then
+		if PowerService.blocks(id, best) then
+			return true -- (a Heart Shield took it: that ends the stab or the lunge)
+		end
 		apply(Rules.tag(match, id, best))
 		return true
 	end
@@ -824,7 +826,9 @@ Net.get("Lunge").OnServerEvent:Connect(function(player)
 		local t0 = os.clock()
 		while os.clock() - t0 < Config.Lunge.HitWindow do
 			local me = rootOf(id)
-			if not (me and match and not match.over and match.roles[id] == "Catcher") then
+			local st = State:GetAttribute("Stage")
+			if not (me and match and not match.over and match.roles[id] == "Catcher" and (st == "Running" or st == "HeroRun"))
+				or frozen[id] or KnockdownService.isDown(player) or not PowerService.canStab(id) then
 				return
 			end
 			if stabNear(id, me, Config.Lunge.HitRange, false) then

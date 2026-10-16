@@ -106,7 +106,7 @@ local function watch()
 					for _, player in Players:GetPlayers() do
 						local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 						if root and root:IsA("BasePart") and (root.Position - star.Position).Magnitude <= Config.Range then
-							collect(star, player)
+							pcall(collect, star, player) -- (one failed pickup can't stop the others)
 							break
 						end
 					end

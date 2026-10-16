@@ -141,6 +141,7 @@ function KnifeService.give(character, skin)
 	end
 	local model = template()
 	model.Name = NAME
+	model:SetAttribute("Skin", skinOf(skin)) -- (always: a custom knife with a skin isn't rebuilt every sync)
 	if skin and not ServerStorage:FindFirstChild(NAME) then
 		local a, b = skin.Colors[1], skin.Colors[#skin.Colors]
 		for _, d in model:GetDescendants() do

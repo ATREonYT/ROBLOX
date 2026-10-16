@@ -351,7 +351,7 @@ function exportUI(result, OUT)
 		end
 		for _, ch in inst:GetChildren() do
 			local cls = ch.ClassName
-			if cls == "UICorner" then n.mods.corner = udim(get(ch, "CornerRadius", UDim.new(0, 8)))
+			if cls == "UICorner" then n.mods.corner = udim(get(ch, "CornerRadius", nil) or (ch:GetAttribute("HuzzRadius")) or get(ch, "TopLeftRadius", UDim.new(0, 8)))
 			elseif cls == "UIStroke" then
 				local g = ch:FindFirstChildOfClass("UIGradient")
 				n.mods.stroke = { c = rgb(get(ch, "Color", Color3.new())), t = get(ch, "Transparency", 0), th = get(ch, "Thickness", 1), mode = get(ch, "ApplyStrokeMode", Enum.ApplyStrokeMode.Contextual).Name, on = get(ch, "Enabled", true), grad = g and gradient(g) or nil }
@@ -731,6 +731,14 @@ if uiOut and uiOut ~= "" then
 	for _, d in gui:GetDescendants() do if d:GetAttribute("RuntimeOnly") then table.insert(drop, d) end end
 	for _, d in drop do d:Destroy() end
 	fixFonts(gui)
+	-- Lune writes a corner's size only under the newer per-corner names, so keep it in an attribute too
+	-- (HuzzClient/Main puts it back when the game starts).
+	for _, d in gui:GetDescendants() do
+		if d.ClassName == "UICorner" then
+			local ok, r = pcall(function() return d.CornerRadius end)
+			if ok and r then d:SetAttribute("HuzzRadius", r) end
+		end
+	end
 	fs.writeFile(uiOut, roblox.serializeModel({ gui }))
 	print("saved UI:", uiOut)
 end

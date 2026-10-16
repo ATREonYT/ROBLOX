@@ -195,7 +195,15 @@ function Dash.start()
 		if inGame and not bound then
 			bound = true
 			ContextActionService:BindActionAtPriority("HuzzDash", function(_, state)
-				if state == Enum.UserInputState.Begin then Dash.try() end
+				if state == Enum.UserInputState.Begin then
+					-- sitting (a bench or seat): Space stands you up, as Roblox's jump would
+					local h = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+					if h and h.Sit then
+						h.Sit = false
+					else
+						Dash.try()
+					end
+				end
 				return Enum.ContextActionResult.Sink
 			end, false, Enum.ContextActionPriority.High.Value, Enum.KeyCode.Space, Enum.KeyCode.ButtonA)
 		elseif not inGame and bound then

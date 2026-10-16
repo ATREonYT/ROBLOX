@@ -34,9 +34,9 @@ CoinShop.Items = {
 	{ Key = "CandyKnife", Slot = "Knife", Name = "Candy Knife", Price = 800, Colors = { rgb(255, 160, 215), rgb(255, 90, 170) }, Order = 10 },
 	{ Key = "ShadowKnife", Slot = "Knife", Name = "Shadow Knife", Price = 1500, Colors = { rgb(40, 34, 60), rgb(170, 90, 255) }, Order = 11 },
 	-- Quest knives: earned in the lore quests (Config/Progression), never sold. Unlock says where they come from.
-	{ Key = "RookieKnife", Slot = "Knife", Name = "Rookie Knife", Price = 0, Unlock = "Quest: Star Catcher", Colors = { rgb(255, 230, 140), rgb(255, 170, 60) }, Order = 12 },
-	{ Key = "HunterKnife", Slot = "Knife", Name = "Hunter Knife", Price = 0, Unlock = "Quest: The Hunter", Colors = { rgb(255, 120, 110), rgb(150, 20, 40) }, Order = 13 },
-	{ Key = "MoonlitKnife", Slot = "Knife", Name = "Moonlit Knife", Price = 0, Unlock = "Quest: Legend of the Valley", Colors = { rgb(220, 235, 255), rgb(120, 140, 255), rgb(200, 120, 255) }, Rainbow = true, Order = 14 },
+	{ Key = "RookieKnife", Slot = "Knife", Name = "Rookie Knife", Price = 0, Unlock = "Quest: Collect 15 Aura stars (chapter 2)", Colors = { rgb(255, 230, 140), rgb(255, 170, 60) }, Order = 12 },
+	{ Key = "HunterKnife", Slot = "Knife", Name = "Hunter Knife", Price = 0, Unlock = "Quest: Catch 10 runners (chapter 3)", Colors = { rgb(255, 120, 110), rgb(150, 20, 40) }, Order = 13 },
+	{ Key = "MoonlitKnife", Slot = "Knife", Name = "Moonlit Knife", Price = 0, Unlock = "Quest: Win 10 games (chapter 4)", Colors = { rgb(220, 235, 255), rgb(120, 140, 255), rgb(200, 120, 255) }, Rainbow = true, Order = 14 },
 	{ Key = "SpinKnife", Slot = "Knife", Name = "Spin Knife", Price = 0, NotForSale = true, Colors = { rgb(255, 80, 180), rgb(130, 90, 255), rgb(80, 220, 255) }, Rainbow = true, Order = 15 }, -- (Spin the Wheel only)
 } :: { Item }
 

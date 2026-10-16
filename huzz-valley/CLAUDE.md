@@ -14,8 +14,12 @@ eye. Branch `HUZZ-VALLEY`. Read the section you need; the owner's own words are 
   The preview has no Gotham (not free): it draws Montserrat, its look-alike.
 - **Text:** short, game-like, no dashes, no "AI" phrasing ("Messi is safe", "Got one!", "GO! Get across!").
 - **Small HUD** (`Scale.HUD_SIZE = 0.55`); lobby side buttons and coin pills slide away during rounds.
-- **Controls:** Space = dash (no jump in rounds); hold W = walk building into a run; G = dance wheel; Q/E = powers;
-  click = stab; no mouse pointer in rounds (shift lock), Alt brings it back. **No girl toss** (removed).
+- **Controls:** **no jumping anywhere**; Space = the sideways huss (lobby too), but a **catcher's Space in a round is
+  a lunge** forward that stabs whoever it reaches (`Config/Round.Lunge`); hold W = walk building into a run (the
+  camera widens and wind streaks show near top speed, `Gameplay/Feel`); G = dance wheel; Q/E = powers (catchers'
+  Q = Love Trap); click = stab; no mouse pointer in rounds (shift lock), Alt brings it back. **No girl toss**.
+- **Knives:** everyone wears their knife (coin-shop / quest / wheel skin) on the back; catchers hold it in a round
+  (`KnifeService.give` / `giveBack`, from `syncPlayer`).
 - **Safe means safe:** once across you stay across (goal gate). During a Hero run only the Hero (and catchers) move.
 - **Girls:** the equipped one **walks behind you** on the ground; effects are **tiny below Legendary**.
 - **Never invent IDs** (assets, sounds, animations, passes). Empty + a checklist line in `README.md`.
@@ -58,8 +62,12 @@ eye. Branch `HUZZ-VALLEY`. Read the section you need; the owner's own words are 
   else random) → Chosen → HeroRun (only the Hero and catchers unfrozen) → Countdown → Running → RoundOver;
   GameOver. Runners win with everyone across `Crossings` (3) rounds in a row; downed runners left at the end join
   the catchers.
-- Stab downs a runner (`KnockdownService`); a runner standing by them for `Rescue.Time` revives them (not from
-  the start zone; `Rescue.Shield` after).
+- Stab (or a catcher's lunge) downs a runner (`KnockdownService`); a runner standing by them for `Rescue.Time`
+  revives them (not from the start zone; `Rescue.Shield` after). **One second chance per game**: a runner can be
+  revived once; caught again = out (`RoundRules` `rescued`, `Caught.final`), joins the catchers at round end.
+- Aura stars float over the field while a map is loaded (lobby otherwise) and collect when you run through them
+  (`AuraPickupService`, `MapService.fieldSpot`). When a map wins the vote, the lobby floor takes its floor's colour,
+  material and textures (`MapService.paintLobby`). Walls stand at the floor's real edge, plus `catchFalls`.
 - **Safe gate:** `MapService.holdGoal` puts an invisible block on the goal line in collision group
   `HuzzSafeWall`, which only collides with `HuzzSafe` (Safe runners' parts: `MapService.setSafe` from
   `syncPlayer`); `keepSafe()` pulls back anyone who got round it, every frame of the round.
@@ -141,9 +149,10 @@ eye. Branch `HUZZ-VALLEY`. Read the section you need; the owner's own words are 
   `Kit.window` = see-through studded body with a stroke frame; `Kit.studPattern(frame, strength)` everywhere else.
   The texture is `assets/icons/stud-pattern.png` (`tools/icons/make_stud_pattern.py`), packed by `pack_images.py`.
 - Every main window is 701 x 320. One window at a time (`ModalManager`; sets `MenuOpen`).
-- **Lune can't save `UICorner.CornerRadius`**: every saved corner comes back as Roblox's default 8 px (circles become
-  rounded squares in StarterGui and, via reuse, in Play). `Screens/SpinWheel` re-sets its circles at runtime; other
-  screens' circles (DanceWheel...) still have this problem.
+- **Lune can't save `UICorner.CornerRadius`** (it writes only the newer per-corner names, which Studio may not
+  read). So the place build also stores each corner's size in the attribute `HuzzRadius` (tools/preview/harness.luau)
+  and `HuzzClient/Main` puts it back at start wherever a corner came out at the 8 px default. Studio's editor may
+  still show 8 px corners until Play.
 - Icons/art come from the owner's sharp packs; never redraw them. Packed names are PascalCase of file names and
   case-sensitive in Roblox.
 
@@ -173,6 +182,11 @@ eye. Branch `HUZZ-VALLEY`. Read the section you need; the owner's own words are 
   Saves: `Spins`, `FreeSpinAt`, `SpinPity`, `Boosts.Coins` (x2 round coins in RoundService). Packs: `Products.Spins`
   (Id 0 = "coming soon", granted only in ShopService's ProcessReceipt). Spin Knife = `CoinShop` `NotForSale`.
 
+- **Lore quests** (`Config/Progression.Chapters`): 4 chapters x 2 quests with a story line; a chapter opens when
+  the one before is claimed (server-checked in `ProgressService.claimQuest`). Rewards: coins, Aura, or a quest-only
+  knife (`CoinShop` items with `Unlock`, never sold). Stats come from real events (`addStat`: Rounds, Crossings,
+  AuraStars, Heroes, Rescues, Catches, HoldSeconds, Wins). Screen: `Screens/Progression` QUESTS = chapter view.
+
 ## 10. Sounds
 - 34 sounds made from scratch by `tools/sfx/make_sfx.py` → `assets/sfx/*.ogg` (list in `assets/sfx/README.md`)
   + `docs/previews/sfx-preview.ogg` (all in a row). Owner: "not some random high pitch sounds": warm, C major
@@ -190,6 +204,7 @@ eye. Branch `HUZZ-VALLEY`. Read the section you need; the owner's own words are 
 - ProfileStore runs in Mock mode in Studio (progress resets on Stop): on purpose.
 
 ## 12. Open items
-- Owner: upload pictures, sounds and animations; Game Pass / product IDs; power icons (4 PNGs); a stab animation;
+- Owner: upload pictures, sounds and animations; Game Pass / product IDs (incl. the 3 spin packs); power icons
+  (4 PNGs); a stab animation; their 3D knife renders; an export of their spin wheel model (to match its colours);
   maybe rename dances; confirm the movement pack licence allows a published game.
 - Us: a Match HUD/results page from the kit (none exists yet); the Gift Picker; the 5 remaining soft icons.
