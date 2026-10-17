@@ -416,14 +416,16 @@ function GirlService.showcase(girl, at, parent)
 	spot.Face, spot.Angle, spot.Brightness, spot.Range = Enum.NormalId.Top, 70, 1.4, size.Y * 0.9
 	spot.Color, spot.Shadows = color:Lerp(Color3.new(1, 1, 1), 0.55), false
 	spot.Parent = up
-	-- a key light in front of her and a rim light in her colour behind; they turn with her
-	local function lamp(name, offset, brightness, tint)
+	-- a key light in front of her and a rim light in her colour behind; they turn with her. The key light sits low
+	-- in front (players look up at her from the field, and she still read dark from there) and brighter, with a
+	-- short range and no shadows; nothing lights her from above (owner: "too much light shining down").
+	local function lamp(name, offset, brightness, tint, range)
 		local holder = part(name, { Size = Vector3.new(0.2, 0.2, 0.2), Transparency = 1, CFrame = centre * offset })
 		local light = Instance.new("PointLight")
-		light.Brightness, light.Range, light.Color, light.Shadows = brightness, size.Y * 0.75, tint, false
+		light.Brightness, light.Range, light.Color, light.Shadows = brightness, range or size.Y * 0.75, tint, false
 		light.Parent = holder
 	end
-	lamp("KeyLight", CFrame.new(0, size.Y * 0.12, -(size.Z / 2 + size.Y * 0.3)), 1.3, Color3.fromRGB(255, 244, 236))
+	lamp("KeyLight", CFrame.new(0, -size.Y * 0.3, -(size.Z / 2 + size.Y * 0.3)), 2.2, Color3.fromRGB(255, 244, 236), size.Y * 0.7)
 	lamp("RimLight", CFrame.new(0, size.Y * 0.2, size.Z / 2 + size.Y * 0.3), 1.1, color:Lerp(Color3.new(1, 1, 1), 0.3))
 
 	-- Her rating over her head: stars by rarity (Common 1 ... Secret 7), her name, her rarity.
@@ -437,9 +439,10 @@ function GirlService.showcase(girl, at, parent)
 	gui.Name = "Rating"
 	-- studs (it grows and shrinks with her) plus a floor in pixels, so it still reads from the far end of the field
 	gui.Size = UDim2.new(S.Scale * 6, 110, S.Scale * 2.4, 44)
-	-- (its bottom edge sits half a stud x scale over her head, however big the pixel floor makes it: never on her)
+	-- (its bottom edge sits 1.8 studs x scale over her head, however big the pixel floor makes it: seen from below,
+	-- the front of her head and hair rises on screen and cut through the line at half a stud)
 	gui.SizeOffset = Vector2.new(0, 0.5)
-	gui.StudsOffsetWorldSpace = Vector3.new(0, size.Y / 2 + S.Scale * 0.5, 0)
+	gui.StudsOffsetWorldSpace = Vector3.new(0, size.Y / 2 + S.Scale * 1.8, 0)
 	gui.LightInfluence = 0
 	gui.MaxDistance = 2000
 	gui.Parent = aura

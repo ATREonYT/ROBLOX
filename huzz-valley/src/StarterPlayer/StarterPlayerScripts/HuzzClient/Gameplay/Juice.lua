@@ -6,8 +6,8 @@
 	  - someone gets caught: a quick burst of red sparks with a white core where they fell;
 	  - someone is saved: a ring of green light lifts off the floor round them, sparkles drifting up inside it;
 	  - the game is won: hearts and sparkles in the girl's rarity colour rise round the winner (she flies to them).
-	On your own screen the camera shakes (owner: "make the game more cinematic ... more screenshake"): hard when YOU
-	are caught, firm when YOU catch someone, a bump at GO, all fading out fast (none on a huss or lunge: Huss Valley has none). While you
+	On your own screen the camera shakes (owner: "make the game more cinematic ... more screenshake"): firm when YOU
+	are caught (0.4: the red tint already says it) or catch someone, a bump at GO, all fading out fast (none on a huss or lunge: Huss Valley has none). While you
 	run, the screen edges glow red as a catcher closes in (owner: "a red glow if a catcher is getting near"),
 	stronger the closer they are, with a slow heartbeat swell (about once a second, never a flash) when they're right
 	on you. Bursts never flash the screen; the shake and the swell are off with the Reduced Motion setting (the glow
@@ -136,7 +136,7 @@ function M.start()
 				})
 			end
 			if data.runner == player.UserId then
-				shake(0.7, 0.4)
+				shake(0.4, 0.4) -- (was 0.7: with the red tint, the words and the fall it stacked up too much)
 			elseif data.catcher == player.UserId then
 				shake(0.4, 0.25)
 			end
