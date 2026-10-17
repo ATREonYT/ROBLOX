@@ -10,7 +10,8 @@
 	is getting near"), stronger the closer they are, with a slow heartbeat swell (about once a second, never a
 	flash) when they're right on you. Rings and bursts never flash the screen; the shake and the swell are off with
 	the Reduced Motion setting (the glow stays: it tells you something). RoundHud keeps the words (SAFE!, FIRST!,
-	YOU'RE DOWN); this file only adds the world.
+	YOU'RE DOWN); this file only adds the world. Also: a huss leaves a short white streak behind whoever does it, and
+	getting caught drains the colour from your screen with a red tint for half a second (one per catch).
 ]]
 local M = {}
 
@@ -186,6 +187,57 @@ function M.start()
 		local role = player:GetAttribute("HuzzRole")
 		if round:GetAttribute("Stage") == "Running" and (role == "Runner" or role == "Catcher") then shake(0.3, 0.3) end
 	end)
+	-- Getting caught: the screen loses its colour and tints red, then eases back (one per catch, never a flash).
+	local Lighting = game:GetService("Lighting")
+	local hit = Lighting:FindFirstChild("HuzzHit") or Instance.new("ColorCorrectionEffect")
+	hit.Name = "HuzzHit"
+	hit.Parent = Lighting
+	local function hurt()
+		if calm() then return end
+		hit.TintColor, hit.Saturation, hit.Contrast = Color3.fromRGB(255, 170, 170), -0.6, 0.1
+		TweenService:Create(hit, TweenInfo.new(0.7, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { TintColor = Color3.new(1, 1, 1), Saturation = 0, Contrast = 0 }):Play()
+	end
+	Net.get("Round").OnClientEvent:Connect(function(kind, data)
+		if kind == "Caught" and type(data) == "table" and data.runner == player.UserId then hurt() end
+	end)
+
+	-- A huss leaves a short white streak behind the one doing it (everyone near sees it).
+	local function streak(c: Model)
+		local root = c:FindFirstChild("HumanoidRootPart")
+		if not (root and root:IsA("BasePart") and near(root.Position)) then return end
+		local a0, a1 = Instance.new("Attachment"), Instance.new("Attachment")
+		a0.Position, a1.Position = Vector3.new(0, 1.2, 0), Vector3.new(0, -1.6, 0)
+		a0.Parent, a1.Parent = root, root
+		local t = Instance.new("Trail")
+		t.Name = "HuzzHussTrail"
+		t.Attachment0, t.Attachment1 = a0, a1
+		t.Lifetime = 0.22
+		t.LightEmission = 0.5
+		t.Color = ColorSequence.new(Color3.new(1, 1, 1))
+		t.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 1) })
+		t.WidthScale = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(1, 0.2) })
+		t.FaceCamera = true
+		t.Parent = root
+		task.delay(0.3, function() t.Enabled = false end)
+		task.delay(0.6, function()
+			t:Destroy(); a0:Destroy(); a1:Destroy()
+		end)
+	end
+	local function watchStreaks(c: Model)
+		local last = 0 -- (your own huss sets DashAt twice: here, then from the server)
+		c:GetAttributeChangedSignal("DashAt"):Connect(function()
+			if os.clock() - last < 0.5 then return end
+			last = os.clock()
+			streak(c)
+		end)
+	end
+	local function watchPlayer(p: Player)
+		p.CharacterAdded:Connect(watchStreaks)
+		if p.Character then watchStreaks(p.Character) end
+	end
+	Players.PlayerAdded:Connect(watchPlayer)
+	for _, p in Players:GetPlayers() do watchPlayer(p) end
+
 	local function watchMoves(c: Model)
 		local lastDash = 0
 		c:GetAttributeChangedSignal("DashAt"):Connect(function()

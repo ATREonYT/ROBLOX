@@ -181,7 +181,8 @@ Owner's own words are in quotes. Read only the section you need.
   runner safe each round gets "FIRST!" (RoundService `First` event after their Safe; RoundHud banner / small line).
 - Oct 17 round 2 ("more cinematic", "less ui", "cutscenes dont cut out"): Juice shakes harder (caught 0.7, catch
   0.4, GO, own huss/lunge) and the screen edges glow red as a catcher comes within 40 studs (`HuzzDanger`, 1 Hz swell
-  close up); no letterbox bars in `Cinematic`; while running the prize card, the gear (not on touch: no Menu key)
+  close up), getting caught tints your screen red for 0.7 s (`HuzzHit` ColorCorrection), and a huss leaves a short white
+  trail; no letterbox bars in `Cinematic`; while running the prize card, the gear (not on touch: no Menu key)
   and Roblox's player list step aside. Footsteps are ours (`Feel`, Sfx "step", lobby too; Roblox's "Running" muted;
   stand-in thud until the owner uploads `step`). Button clicks: preloaded UI sounds, mouse clicks sound on press.
   Girl names (`Config/GirlNames`): real character names now (owner, after asking about copyright: "make the names
@@ -259,6 +260,8 @@ Owner's own words are in quotes. Read only the section you need.
   report on Output lines tagged `[Huzz]`, `[HuzzSfx]`, `[HuzzAnim]`.
 - Not yet seen in Studio: the Oct 17 UI shine/rays/spin and Juice bursts, the new lighting, stars in the playing zone, the move between lobbies after the vote (instant, no fade yet), the lunge feel, sprint feel, lobby repaint, knife positions, spin animation, dance
   pictures on real avatars, dance sync across two clients (needs published dances).
+- **Testing rounds solo shows little:** alone you are a runner with no catcher (no red glow, no catches). Test with
+  Studio Test tab > Clients and Servers, 2 or 3 players, and wait for the vote (about a minute).
 - ProfileStore is in Mock mode in Studio (progress resets on Stop): on purpose.
 - Scan any place the owner sends for scam scripts (`GetObjects`, `require(<id>)`, `loadstring`, HTTP);
   `SafetyService` strips the known Basket Ball Hoop one.
