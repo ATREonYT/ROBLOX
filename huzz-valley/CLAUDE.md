@@ -195,6 +195,9 @@ Owner's own words are in quotes. Read only the section you need.
 - **Pay:** 15 coins a game, 35 for a win, +3 Aura on a win, Hero bonus 25; x2 while a wheel boost lasts.
 - **Girl odds** (`Config/Round.Rarities`, raised: "I'm only getting commons"): Common 28, Uncommon 24, Rare 20,
   Epic 14, Legendary 8, Mythic 4.5, Secret 1.5.
+- **News vs big moments** (feel study, Oct 17): RoundService `announce(text, color)` only writes the message line
+  (no "big" flag; colour = green good news, red caught/out, white news, rarity colour for the prize). Centre words
+  are RoundHud's own: 3-2-1, GO!, SAFE!, FIRST!, YOU'RE DOWN/OUT, BACK UP!, the win and "<girl> IS YOURS".
 - State lives in attributes (Round remote: Stage, EndsAt, Goal, Streak, PickId, HolderId, VoteWinner...; players:
   HuzzRole, HuzzStatus, DashReady, ProtectedUntil...; characters: DashAt/Dir, LungeAt, HuzzDance/At).
 
@@ -314,6 +317,16 @@ Owner's own words are in quotes. Read only the section you need.
   waits; its icon spins and FREE breathes). Parts are saved twins but invisible until the loop starts; Reduced
   Motion stops all (`Effects.setCalm` from Main). Previews park streaks off the edge; `SHINE=0` freezes mid-sweep.
   Colours kept as the kit (Huss Valley look): the owner left a palette switch optional.
+- **Round HUD** (`Gameplay/RoundHud`, built by code at runtime, not a saved twin; `docs/previews/feel-ui-after.jpg`):
+  text only at the top like Huss Valley: "ROUND 2 · 1 OF 3 IN A ROW" (14), the message line (Gotham Heavy, TextScaled
+  14-36 in a 512 x 38 box = 40% wide, 3 px dark outline, no panel, instant swap; outside a game it shows 5 s below
+  the NEXT ROUND plate), "Runner · 0:21" (16), a help line only for new players. **`Theme.MessageColour`** (default
+  true) colours the message words; false = always white (owner asked; earlier he wanted white everywhere). Big
+  words at y 194 of 720 (27%); 3-2-1-GO drawn each frame from EndsAt (pop 1.4 to 1 in 0.15 s, fade by 0.94 s; GO!
+  green 124). Prize card hidden in Countdown/HeroRun/Running. Own name tag faded, hidden in camera shots
+  (`HuzzCinematic`/`HuzzChoosing`; a HERO/CHICKEN word stays) and near the top lines. Outlines 0.55 see-through,
+  no fill. Today's Girl roller (`Screens/GirlRoll`): right edge under the gear, 0.5 of a window. Check:
+  `tools/preview/check_round_hud.luau`; shots `round-hud-runner`, `round-count`; picture `feel_ui_after.py`.
 
 ## 11. Economy: coins, Aura, shop, wheel, quests
 - **Coins** buy looks in the Shop's ITEMS tab (`Config/CoinShop`: trails, name colours, knife skins). Items with

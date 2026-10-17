@@ -34,4 +34,6 @@ shot dance-wheel 13-lobby-hud 1536 694 '{SCREEN="Hud", SCALE=2, WHEEL=true}'
 shot how-to-play none 1536 694 '{SCREEN="HowToPlay", SCALE=2}' # (vs the Oct 17 mockup: side_by_side.py how-to-play)
 shot results 13-lobby-hud 1536 694 '{SCREEN="Results", SCALE=2, RESULTS="Win"}'
 shot round-hud 13-lobby-hud 1536 694 '{SCREEN="Hud", SCALE=2, ROUNDHUD="Hero"}'
+shot round-hud-runner none 1536 694 '{SCREEN="Hud", SCALE=2, ROUNDHUD="Runner", MESSAGE="Messi reached safety!"}' # (feel-ui-after.jpg)
+shot round-count none 1536 694 '{SCREEN="Hud", SCALE=2, ROUNDHUD="Runner", COUNT=2.6}' # (3-2-1: "3" settled)
 shot spin-wheel ../../design/spin-wheel-reference.webp 1536 936 '{SCREEN="SpinWheel", SCALE=1.2, SPINS=25, FREEIN=887, PITY=28}'

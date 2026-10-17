@@ -119,8 +119,15 @@ if cfg.ROUNDHUD then
 	-- (one ScreenGui is exported: the round HUD's root goes into the main UI for the picture)
 	pg:WaitForChild("HuzzRoundHud").Root.Parent = pg:WaitForChild("HuzzUI")
 	round:SetAttribute("Stage", "Running")
-	__fireOn(round, "OnClientEvent", "Announce", { text = "Messi is safe", color = Color3.fromRGB(110, 236, 140) })
+	__fireOn(round, "OnClientEvent", "Announce", { text = cfg.MESSAGE or "Messi is safe", color = Color3.fromRGB(110, 236, 140) })
 	Hud.refresh()
+	-- COUNT=<seconds left>: the 3-2-1 instead (e.g. 2.6 = "3" settled after its pop), with the line-up news
+	if cfg.COUNT then
+		__fireOn(round, "OnClientEvent", "Announce", { text = "Messi chose CHICKEN. Everyone runs!", color = Color3.new(1, 1, 1) })
+		round:SetAttribute("Stage", "Countdown")
+		round:SetAttribute("EndsAt", workspace:GetServerTimeNow() + tonumber(cfg.COUNT))
+		Hud.refresh()
+	end
 end
 -- ROLL=<seconds into the spin>: the girl roller, with a made-up strip of the placeholder names.
 if cfg.ROLL then

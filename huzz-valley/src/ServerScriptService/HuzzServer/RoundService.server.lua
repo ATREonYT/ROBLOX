@@ -108,9 +108,11 @@ local function nameOf(id)
 	return if p then p.DisplayName else "Someone"
 end
 
--- The message line at the top of everyone's screen (as in Huss Valley); big = also a centre banner.
-local function announce(text, color, big)
-	RoundNet:FireAllClients("Announce", { text = text, color = color, big = big })
+-- The message line at the top of everyone's screen (as in Huss Valley), in the news colour: green good news, red
+-- caught / out, white news (RoundHud colours the words while Theme.MessageColour is on). News never takes the
+-- middle of the screen: centre words are only the big moments RoundHud draws itself (3-2-1, SAFE!, YOU'RE OUT, wins).
+local function announce(text, color)
+	RoundNet:FireAllClients("Announce", { text = text, color = color })
 end
 
 -- The fastest catcher this round: the Practice Bot's own speed when it's the catcher.
@@ -295,16 +297,16 @@ function handlers.Choice(e)
 	State:SetAttribute("PickChoice", if e.hero then "Hero" else "Chicken")
 	syncAll()
 	if e.hero then
-		announce(`{nameOf(e.id)} goes HERO!`, GOLD, true)
+		announce(`{nameOf(e.id)} goes HERO!`, GOLD)
 	else
-		announce(`{nameOf(e.id)} chose CHICKEN. Everyone runs!`, WHITE, true)
+		announce(`{nameOf(e.id)} chose CHICKEN. Everyone runs!`, WHITE)
 	end
 end
 
 function handlers.HeroResult(e)
 	State:SetAttribute("HeroResult", if e.survived then "Survived" else "Fell")
 	if e.survived then
-		announce(`{nameOf(e.id)} made the Hero run!`, GREEN, true)
+		announce(`{nameOf(e.id)} made the Hero run!`, GREEN)
 		addStat(e.id, "Heroes", 1) -- (lore quest: Brave Heart)
 		local p = byId[e.id]
 		if p and Config.HeroBonus > 0 then
@@ -381,7 +383,7 @@ end
 function handlers.Streak(e)
 	State:SetAttribute("Streak", e.count)
 	if e.count < e.goal then
-		announce(`Clean round! {e.count} of {e.goal} in a row`, GOLD, true)
+		announce(`Clean round! {e.count} of {e.goal} in a row`, GOLD)
 	end
 end
 
@@ -395,7 +397,7 @@ function handlers.JoinCatchers(e)
 		table.insert(names, nameOf(id))
 	end
 	local who = if #names <= 3 then table.concat(names, ", ") else `{#names} runners`
-	announce(`{who} {if #names == 1 then "joins" else "join"} the catchers`, RED, true)
+	announce(`{who} {if #names == 1 then "joins" else "join"} the catchers`, RED)
 end
 
 function handlers.NewCatcher(e)
@@ -597,7 +599,7 @@ local function watchLastRunner(roundRunners)
 			-- (a moment after the catch or crossing that made them last, so that line gets read first)
 			task.delay(0.8, function()
 				if lastRunner == id then
-					announce(`{nameOf(id)} is the last runner!`, GOLD, true)
+					announce(`{nameOf(id)} is the last runner!`, WHITE)
 				end
 			end)
 		end
@@ -710,7 +712,7 @@ local function runRound()
 		State:SetAttribute("PickAt", Workspace:GetServerTimeNow() - (P.Roulette - roulette))
 		setStage("Picking", roulette + P.ChooseTime)
 		if roulette > 0 then
-			announce("Picking a runner...", GOLD)
+			announce("Picking a runner...", WHITE)
 		end
 		task.delay(roulette, function()
 			if match and match.picked and not match.choice then
@@ -742,7 +744,7 @@ local function runRound()
 		MapService.holdStart(startName, false)
 		syncAll()
 		setStage("HeroRun", Config.HeroTime)
-		announce(`{nameOf(hero)}'s solo run!`, GOLD)
+		announce(`{nameOf(hero)}'s solo run!`, WHITE)
 		local H = Config.Hurry
 		local timedOut = play(Config.HeroTime, function()
 			return match.status[hero] ~= "Active" or match.hero ~= hero
@@ -818,7 +820,7 @@ local function runRound()
 		wait = H.Wait,
 		onStall = function()
 			if hurry(H.Time) then
-				announce("Hurry! Run or you're out", RED, true)
+				announce("Hurry! Run or you're out", RED)
 			end
 		end,
 	})
@@ -963,8 +965,8 @@ local function runGame()
 		end)
 		showcase:SetAttribute("RevealAt", Workspace:GetServerTimeNow())
 		setStage("Reveal", SecretReveal.LENGTH)
-		announce("Something rare is coming...", Color3.fromRGB(190, 170, 255), true)
-		task.delay(SecretReveal.LAND, announce, `SECRET: {girl.name}!`, Color3.fromRGB(150, 110, 255), true)
+		announce("Something rare is coming...", Color3.fromRGB(190, 170, 255))
+		task.delay(SecretReveal.LAND, announce, `SECRET: {girl.name}!`, Color3.fromRGB(150, 110, 255))
 		task.wait(SecretReveal.LENGTH)
 	end
 	local ids = {}
@@ -978,11 +980,11 @@ local function runGame()
 	State:SetAttribute("HolderId", 0)
 	State:SetAttribute("Crossings", Config.Crossings)
 	State:SetAttribute("Winners", "")
-	announce(`{girl.name} is up for grabs!`, GirlService.rarity(girl.rarity).Color, true)
+	announce(`{girl.name} is up for grabs!`, GirlService.rarity(girl.rarity).Color)
 	if catcher then
-		task.delay(1.5, announce, `{nameOf(catcher)} is the CATCHER!`, RED, true)
+		task.delay(1.5, announce, `{nameOf(catcher)} is the CATCHER!`, RED)
 	elseif Config.Bot.Enabled then
-		task.delay(1.5, announce, `{Config.Bot.Name} is the CATCHER!`, RED, true)
+		task.delay(1.5, announce, `{Config.Bot.Name} is the CATCHER!`, RED)
 	end
 	while not match.over do
 		runRound()
@@ -1395,7 +1397,7 @@ while true do
 			end
 		end
 		State:SetAttribute("Map", map.display)
-		announce(`Map: {map.display}`, Color3.new(1, 1, 1), true)
+		announce(`Map: {map.display}`, Color3.new(1, 1, 1))
 		rollGirl()
 		local ok, err = xpcall(runGame, debug.traceback)
 		if not ok then

@@ -50,6 +50,11 @@ Theme.Colors = {
 
 Theme.Transparency = { Panel = 0, Header = 0.06, Body = 0.32, Row = 0.18 } -- owner: "make the UI more transparent" (twice; was Body 0.22, Row 0.12): the world shows through the window bodies
 
+-- THE MESSAGE LINE COLOUR SWITCH (the big line at the top in a round, Gameplay/RoundHud). true = the words
+-- themselves take the news colour, as Huss Valley does: green safe / saved, red caught / out, white news, the
+-- girl's rarity colour for the prize. false = always white (the owner's earlier "white text everywhere" call).
+Theme.MessageColour = true
+
 -- One font, as Huss Valley (owner: "use the same fonts as Huss Valley, it's simple and feels nice"): Roblox's
 -- own Gotham, in a few weights. White text with a dark outline; big moments in Black Italic.
 local GOTHAM = "rbxasset://fonts/families/GothamSSm.json"
