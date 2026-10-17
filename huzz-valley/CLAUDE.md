@@ -82,7 +82,8 @@ Owner's own words are in quotes. Read only the section you need.
 ## 4. Checks, previews, builds (Lune 0.10.5 at `/root/bin/lune`; run before every commit)
 - `PATH=/root/bin:$PATH bash tools/check.sh`: compiles every script; specs (RoundRules, CarryMath, GirlMotion,
   GirlMoves, StabMotion, DownMotion, GirlRoll, CrateRoll, SpinWheel); **the full-game simulation** (`tools/sim/round_sim.luau`: real server code, bots
-  that run, stab, lunge, rescue, use powers; 7 setups). Its stubs (e.g. `KnifeService`) must get any new function
+  that run, stab, lunge, rescue, use powers; 7 setups). `lune run huzz-valley/tools/sim/round_sim.luau audit` (repo root) prints the
+  loop numbers (stage times, waiting, win rates by player count, on the real map size) for `docs/loop-audit.md`. Its stubs (e.g. `KnifeService`) must get any new function
   RoundService calls, or games stop with "attempt to call a nil value".
 - `PATH=/root/bin:$PATH bash tools/preview/check.sh`: UI checks on the saved UI, then built from nothing.
   It prints harness errors too ("snippet error"): a silent missing count means a check script crashed.

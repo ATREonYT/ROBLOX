@@ -15,6 +15,9 @@ local serde = require("@lune/serde")
 local Vector3, CFrame, Color3 = roblox.Vector3, roblox.CFrame, roblox.Color3
 -- Roblox's CFrame.lookAt (Lune's faces the other way).
 local function lookAt(pos, target)
+	if (target - pos).Magnitude < 1e-4 then
+		return CFrame.new(pos) -- (no direction: a NaN here would stick to the body for good)
+	end
 	local look = (target - pos).Unit
 	local right = look:Cross(Vector3.new(0, 1, 0)).Unit
 	return CFrame.fromMatrix(pos, right, right:Cross(look), -look)
@@ -249,7 +252,10 @@ local function simulate(opts)
 	math.randomseed(opts.seed or 1)
 	local rng = { NextNumber = function() return math.random() end }
 	local stats = { stages = {}, games = 0, wins = 0, stabs = 0, tags = 0, powers = {}, blocks = 0, sprung = 0, charmed = 0, husses = 0, kept = 0, safeOutside = 0,
-		rescues = 0, picks = 0, heroes = 0, heroSurvived = 0, timeoutPicks = 0, runnerWins = 0, catcherWins = 0 }
+		rescues = 0, picks = 0, heroes = 0, heroSurvived = 0, timeoutPicks = 0, runnerWins = 0, catcherWins = 0,
+		-- loop audit (tools/sim/round_sim.luau audit): seconds per stage, player-seconds per kind of wait, rounds
+		stageTime = {}, wait = {}, rounds = 0, runTimeouts = 0, runTime = 0, heroTimeouts = 0, maxRoundGames = 0,
+		gameLengths = {}, roundsPerGame = {}, hurries = 0, heroEarly = 0, lastAlone = 0 }
 	local problems = {}
 	local seen = {}
 	local function problem(msg)
@@ -381,7 +387,12 @@ local function simulate(opts)
 		MapService.unload(true)
 		loads += 1
 		last = entry
-		zones.ZoneA, zones.ZoneB, zones.Middle = box(-60, 0, 20, 80), box(60, 0, 20, 80), box(0, 0, 100, 80)
+		if opts.realField then
+			-- the owner's maps (tools/check_maps.luau): safe lines about 280 studs apart, 165 long
+			zones.ZoneA, zones.ZoneB, zones.Middle = box(-150, 0, 20, 165), box(150, 0, 20, 165), box(0, 0, 280, 165)
+		else
+			zones.ZoneA, zones.ZoneB, zones.Middle = box(-60, 0, 20, 80), box(60, 0, 20, 80), box(0, 0, 100, 80)
+		end
 		MapService.current = entry
 	end
 	function MapService.unload(fromLoad)
@@ -668,6 +679,14 @@ local function simulate(opts)
 				stats.rescues += 1
 			elseif e.kind == "Announce" and type(e.data.text) == "string" and e.data.text:find("made the Hero run") then
 				stats.heroSurvived += 1
+			elseif e.kind == "Announce" and type(e.data.text) == "string" and e.data.text:find("ran out of time") then
+				stats.heroTimeouts += 1
+			elseif e.kind == "Announce" and type(e.data.text) == "string" and e.data.text:find("didn't go") then
+				stats.heroEarly += 1
+			elseif e.kind == "Announce" and type(e.data.text) == "string" and e.data.text:find("Hurry") then
+				stats.hurries += 1
+			elseif e.kind == "Announce" and type(e.data.text) == "string" and e.data.text:find("last runner") then
+				stats.lastAlone += 1
 			elseif e.kind == "Win" then
 				stats.wins += 1
 				if e.data.team == "Runners" then stats.runnerWins += 1 elseif e.data.team == "Catchers" then stats.catcherWins += 1 end
@@ -711,9 +730,61 @@ local function simulate(opts)
 	local function stage()
 		return Round:GetAttribute("Stage")
 	end
+	-- What a player is doing this frame, for the loop audit: "play" (can run, chase or rescue), or a kind of waiting.
+	local function waitKind(p, st)
+		local role, status = p:GetAttribute("HuzzRole"), p:GetAttribute("HuzzStatus")
+		if st == "Waiting" or st == "Voting" or st == "Intermission" then
+			return "lobby"
+		elseif role ~= "Runner" and role ~= "Catcher" and st ~= "Rolling" and st ~= "Reveal" then
+			return "lateJoin" -- joined mid-game: waits in the lobby for the next one
+		elseif st == "Running" or st == "HeroRun" then
+			if role == "Catcher" then
+				return "play"
+			elseif status == "Safe" then
+				return "safe"
+			elseif status == "Downed" then
+				return "down"
+			elseif st == "HeroRun" and not p:GetAttribute("HuzzHero") then
+				return "heroWatch"
+			end
+			return "play"
+		end
+		return "cutscene" -- roller, line-up, pick, countdown, round over, game over
+	end
+	local stageStart, gameStart, gameRounds = 0, nil, 0
 	local function botFrame(dt)
 		local st = stage()
+		if st then
+			stats.stageTime[st] = (stats.stageTime[st] or 0) + dt
+		end
+		for p, bot in bots do
+			if bot.kind ~= "afk" then
+				local k = waitKind(p, st)
+				stats.wait[k] = (stats.wait[k] or 0) + dt
+			end
+		end
 		if st ~= lastStage then
+			local spent = clock - stageStart
+			stageStart = clock
+			if lastStage == "Running" then
+				stats.runTime += spent
+				if spent >= Config.RoundTime - 0.2 then
+					stats.runTimeouts += 1
+				end
+			end
+			if st == "Rolling" then
+				gameStart, gameRounds = clock, 0
+			elseif st == "Lineup" then
+				stats.rounds += 1
+				gameRounds += 1
+			elseif lastStage == "GameOver" and gameStart then
+				table.insert(stats.gameLengths, clock - gameStart)
+				table.insert(stats.roundsPerGame, gameRounds)
+				if gameRounds >= Config.MaxRounds then
+					stats.maxRoundGames += 1
+				end
+				gameStart = nil
+			end
 			table.insert(stats.stages, st)
 			if lastStage and not (ALLOWED[lastStage] and ALLOWED[lastStage][st]) then
 				problem(`stage {lastStage} -> {st} is not allowed`)
@@ -809,6 +880,19 @@ local function simulate(opts)
 			end
 		end
 		local now = 1000 + clock
+		-- Catchers see where a runner was about 0.33 s ago (a kid's reaction plus the network): a trail of 10 frames.
+		for q, b in bots do
+			local r = q.Character and q.Character:FindFirstChild("HumanoidRootPart")
+			b.trail = b.trail or {}
+			if r then
+				table.insert(b.trail, r.Position)
+				if #b.trail > 10 then table.remove(b.trail, 1) end
+			end
+		end
+		local function seen(q)
+			local b = bots[q]
+			return b and b.trail and b.trail[1] or q.Character.HumanoidRootPart.Position
+		end
 		for p, bot in bots do
 			local c = p.Character
 			local h = c and c:FindFirstChildOfClass("Humanoid")
@@ -840,7 +924,7 @@ local function simulate(opts)
 				for q in bots do
 					if q ~= p then remotes.Hero.OnServerEvent:Fire(q, true) end
 				end
-				if rng:NextNumber() < 0.75 then
+				if bot.kind ~= "afk" and rng:NextNumber() < 0.75 then
 					local hero = rng:NextNumber() < 0.6
 					task.delay(Config.Pick.Roulette + rng:NextNumber() * 3, function()
 						remotes.Hero.OnServerEvent:Fire(p, hero)
@@ -853,7 +937,7 @@ local function simulate(opts)
 			local target = nil
 			if (st == "Running" or st == "HeroRun") and role == "Runner" and status == "Active" then
 				local goal = zones[Round:GetAttribute("Goal") or "ZoneB"]
-				target = goal and goal.CFrame.Position + Vector3.new(0, -4 + 3.2, (bot.seed - 0.5) * 60)
+				target = goal and goal.CFrame.Position + Vector3.new(0, -4 + 3.2, (bot.seed - 0.5) * (goal.Size.Z - 20))
 				if st == "Running" and bot.seed < 0.6 then
 					for q in bots do
 						local qc = q.Character
@@ -871,24 +955,55 @@ local function simulate(opts)
 				local best, bd = nil, math.huge
 				for q in bots do
 					if q:GetAttribute("HuzzStatus") == "Active" and q.Character then
-						local d = (q.Character.HumanoidRootPart.Position - root.Position).Magnitude
+						local d = (seen(q) - root.Position).Magnitude
 						if d < bd then best, bd = q, d end
 					end
 				end
 				if best then
-					target = best.Character.HumanoidRootPart.Position
+					target = seen(best)
 					if bot.seed > 0.5 and Config.TagMode == "Stab" then
-						-- half the catcher bots only lunge (Space), never the knife
-						if bd < Config.Lunge.HitRange - 0.5 and clock - bot.lastStab > Config.Lunge.Cooldown then
+						-- half the catcher bots only lunge (Space), never the knife: the leap covers ground, so they
+						-- jump from about Speed x Time away (Gameplay/Dash moves the catcher; here the bot moves itself)
+						local L = Config.Lunge
+						if bd < L.Speed * L.Time * 0.6 + L.HitRange and clock - bot.lastStab > L.Cooldown then
 						bot.lastStab = clock
 						stats.lunges = (stats.lunges or 0) + 1
 						root.CFrame = lookAt(root.Position, Vector3.new(target.X, root.Position.Y, target.Z))
+						local before = c:GetAttribute("LungeAt")
 						remotes.Lunge.OnServerEvent:Fire(p)
+						if c:GetAttribute("LungeAt") ~= before then
+							bot.leapUntil, bot.leapDir, bot.leapSpeed = clock + L.Time, root.CFrame.LookVector, L.Speed
+						end
 						end
 					elseif bd < Config.Stab.Range - 1 and clock - bot.lastStab > Config.Stab.Cooldown then
 						bot.lastStab = clock
 						root.CFrame = lookAt(root.Position, Vector3.new(target.X, root.Position.Y, target.Z))
 						remotes.Stab.OnServerEvent:Fire(p)
+					end
+				end
+			end
+			-- The huss (Space): most runner bots dash sideways, away from a catcher closing in.
+			if st == "Running" and role == "Runner" and status == "Active" and bot.seed < 0.8 and bot.kind ~= "afk" and h.WalkSpeed > 0 then
+				local threat, td = nil, 9
+				for q in bots do
+					if q:GetAttribute("HuzzRole") == "Catcher" and q.Character then
+						local d = (q.Character.HumanoidRootPart.Position - root.Position).Magnitude
+						if d < td then threat, td = q.Character.HumanoidRootPart.Position, d end
+					end
+				end
+				if practice and practice.Parent then
+					local d = (practice.HumanoidRootPart.Position - root.Position).Magnitude
+					if d < td then threat, td = practice.HumanoidRootPart.Position, d end
+				end
+				if threat and now >= (p:GetAttribute("DashReady") or 0) then
+					local look = root.CFrame.LookVector
+					local right = Vector3.new(-look.Z, 0, look.X).Unit
+					local away = if (threat - root.Position):Dot(right) > 0 then -right else right
+					local before = c:GetAttribute("DashAt")
+					remotes.Dash.OnServerEvent:Fire(p, away, now, look)
+					if c:GetAttribute("DashAt") ~= before then
+						stats.husses += 1
+						bot.leapUntil, bot.leapDir, bot.leapSpeed = clock + Config.Dash.Time, away, Config.Dash.Speed
 					end
 				end
 			end
@@ -905,11 +1020,22 @@ local function simulate(opts)
 					target = zones.Middle.CFrame.Position
 				end
 			end
-			if target and h.WalkSpeed > 0 and not KnockdownService.isDown(p) then
+			if bot.kind == "afk" then
+				target = nil -- (away from the keyboard: never moves)
+			end
+			-- Gameplay/Sprint: a walk (9) building to the top speed, about 95% after Run.Ramp (1.2 s)
+			local moving = target and h.WalkSpeed > 0 and not KnockdownService.isDown(p)
+			bot.runFor = if moving then (bot.runFor or 0) + dt else 0
+			local speed = math.min(h.WalkSpeed, 9 + (h.WalkSpeed - 9) * (1 - math.exp(-bot.runFor / 0.4)))
+			if moving and bot.leapUntil and clock < bot.leapUntil and (st == "Running" or st == "HeroRun") then
+				-- mid huss or mid lunge: the move carries them
+				local nextPos = root.Position + bot.leapDir * bot.leapSpeed * dt
+				root.CFrame = lookAt(nextPos, nextPos + root.CFrame.LookVector)
+			elseif moving then
 				local d = target - root.Position
 				d = Vector3.new(d.X, 0, d.Z)
 				if d.Magnitude > 0.5 then
-					local nextPos = root.Position + d.Unit * math.min(d.Magnitude, h.WalkSpeed * dt)
+					local nextPos = root.Position + d.Unit * math.min(d.Magnitude, speed * dt)
 					-- The start wall: honest bots stop at their line; "cheat" bots walk round it.
 					local startName = if Round:GetAttribute("Round") then MapService.startFor(Round:GetAttribute("Round")) else nil
 					if wallOn and startName == wallOn and bot.kind ~= "cheat" and role == "Runner" then
@@ -951,6 +1077,9 @@ local function simulate(opts)
 	-- Start everything.
 	for _ = 1, opts.players do
 		addPlayer()
+	end
+	for _ = 1, opts.afk or 0 do
+		addPlayer("afk")
 	end
 	if opts.cheater then
 		addPlayer("cheat")
@@ -1002,6 +1131,77 @@ local function simulate(opts)
 		problem(`the map was removed {unloads} times outside a swap (it should stay until the next vote)`)
 	end
 	return stats, problems, joiner
+end
+
+------------------------------------------------------------------ loop audit
+-- lune run huzz-valley/tools/sim/round_sim.luau audit   (numbers for huzz-valley/docs/loop-audit.md; real map size)
+local process = require("@lune/process")
+if process.args[1] == "audit" then
+	local SEEDS, SECONDS = tonumber(process.args[2]) or 8, 1800
+	local function sum(t)
+		local n = 0
+		for _, v in t do n += v end
+		return n
+	end
+	local rows, waits, stages = {}, {}, {}
+	local setups = {
+		{ "1 (+ bot)", { players = 1 } }, { "2", { players = 2 } }, { "4", { players = 4 } }, { "8", { players = 8 } },
+		{ "12", { players = 12 } }, { "6 + 1 AFK", { players = 5, afk = 1 } },
+	}
+	local STAGES = { "Voting", "Rolling", "Lineup", "Picking", "Chosen", "HeroRun", "Countdown", "Running", "RoundOver", "GameOver" }
+	local KINDS = { "play", "cutscene", "heroWatch", "safe", "down", "lobby", "lateJoin" }
+	for _, setup in setups do
+		local all = { games = 0, runnerWins = 0, catcherWins = 0, botWins = 0, lastAlone = 0, heroes = 0, heroSurvived = 0, rescues = 0, rounds = 0,
+			runTimeouts = 0, runTime = 0, heroTimeouts = 0, heroEarly = 0, maxRoundGames = 0, tags = 0, husses = 0, hurries = 0,
+			stageTime = {}, wait = {}, lengths = {}, rpg = {} }
+		local problems = 0
+		for seed = 1, SEEDS do
+			local o = table.clone(setup[2])
+			o.seed, o.seconds, o.realField = seed * 11, SECONDS, true
+			local st, pr = simulate(o)
+			problems += #pr
+			for k, v in all do
+				if type(v) == "number" and type(st[k]) == "number" then all[k] += st[k] end
+			end
+			for k, v in st.stageTime do all.stageTime[k] = (all.stageTime[k] or 0) + v end
+			for k, v in st.wait do all.wait[k] = (all.wait[k] or 0) + v end
+			for _, v in st.gameLengths do table.insert(all.lengths, v) end
+			for _, v in st.roundsPerGame do table.insert(all.rpg, v) end
+		end
+		local g = math.max(#all.lengths, 1)
+		local won = all.runnerWins + all.catcherWins
+		local pct = function(a, b) return if b > 0 then string.format("%d%%", math.floor(a / b * 100 + 0.5)) else "-" end
+		table.insert(rows, string.format("| %s | %d | %.0f s | %.1f | %s | %s (bot %s) | %s | %s | %.1f | %.1f s | %s | %d | %d |",
+			setup[1], #all.lengths, sum(all.lengths) / g, sum(all.rpg) / g, pct(all.runnerWins, won), pct(all.catcherWins, won), pct(all.botWins, won),
+			pct(all.heroSurvived, all.heroes), pct(all.heroTimeouts, all.heroes), all.rescues / g, all.runTime / math.max(all.rounds, 1),
+			pct(all.runTimeouts, all.rounds), all.maxRoundGames, problems))
+		local sline = { "| " .. setup[1] }
+		for _, k in STAGES do table.insert(sline, string.format("%.1f", (all.stageTime[k] or 0) / g)) end
+		table.insert(stages, table.concat(sline, " | ") .. " |")
+		local total = 0
+		for _, k in KINDS do total += all.wait[k] or 0 end
+		local wline = { "| " .. setup[1] }
+		for _, k in KINDS do table.insert(wline, pct(all.wait[k] or 0, total)) end
+		table.insert(waits, table.concat(wline, " | ") .. " |")
+	end
+	print(`Loop audit: {SEEDS} runs x {SECONDS / 60} minutes per setup, the owner's map size (lines 280 studs apart)`)
+	print("")
+	print("| Players | Games | Game length | Rounds/game | Runners win | Catchers win | Hero runs made | Hero runs timed out | Rescues/game | Running stage/round | Rounds hit the clock | Games hit MaxRounds | Sim problems |")
+	print("|---|---|---|---|---|---|---|---|---|---|---|---|---|")
+	for _, r in rows do print(r) end
+	print("")
+	print("Seconds per game in each stage (Voting = the lobby between games)")
+	print("")
+	print("| Players | " .. table.concat(STAGES, " | ") .. " |")
+	print("|---" .. string.rep("|---", #STAGES) .. "|")
+	for _, r in stages do print(r) end
+	print("")
+	print("Share of each player's time (play = can run, chase or rescue; AFK players not counted)")
+	print("")
+	print("| Players | " .. table.concat(KINDS, " | ") .. " |")
+	print("|---" .. string.rep("|---", #KINDS) .. "|")
+	for _, r in waits do print(r) end
+	process.exit(0)
 end
 
 ------------------------------------------------------------------ scenarios
