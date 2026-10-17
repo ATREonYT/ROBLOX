@@ -157,7 +157,8 @@ Owner's own words are in quotes. Read only the section you need.
   through `stabNear()`: shields, the safe start zone and a fresh rescue protect; a Heart Shield ends the lunge.
 - **Downed and revived:** a downed runner lies still (`KnockdownService`); a runner beside them for 1.2 s revives
   them. **One second chance per game** (`RoundRules` `rescued`): caught again = `Caught.final` → "YOU'RE OUT", no
-  rescue; joins the catchers at round end. Their tag says OUT (grey) instead of HELP!, so nobody runs over for nothing;
+  rescue; joins the catchers at round end. Their tag says OUT (grey) instead of HELP!, so nobody runs over for nothing (a downed tag shows to 250 studs, HELP! / OUT
+  big; other tags hide past 80);
   `HuzzOut` on the player makes their HUD say "OUT. You join the catchers next round".
 - **Practice Bot** (`HuzzServer/PracticeBot`, `Config/Round.Bot`; owner picked "Yes, add bots", Oct 17): any round
   with runners and no catcher (alone, or the only catcher left) gets a server NPC catcher named "Practice Bot"
@@ -216,11 +217,14 @@ Owner's own words are in quotes. Read only the section you need.
   0.35 s, a 0.15 s fade; white core → pink → purple. Shield: a bubble bursts out; Rush: a ring standing up behind you
   and white speed lines; Trap: the glow drops and a ring slams round the trap; Charm Wave: a ring gathers, then two
   rings run out (its slow lands when they do: PowerService waits `Fx.WindUp`). Each has a sound; others' powers pop
-  their name over them; your Q/E tile squashes on press and glows pink when the server takes it. All plain neon parts
+  their name over them (root +7, clear of their name tag); during the wind-up the caster strikes a cast pose (both arms
+  forward and up 60°, a 10° lean: `Run.Cast`, drawn by `RunMotion` on everyone via `RunAnimator`, local attributes
+  HuzzCastAt/Len); your Q/E tile squashes on press and glows pink when the server takes it. Charm Wave: 16 pieces a
+  ring, no haze, every ring's pieces moved with one `Workspace:BulkMoveTo` a frame (`Burst.bulkMove`). All plain neon parts
   (`Gameplay/Burst`: real rings of short pieces, glow orbs, world text), so nothing waits for an upload. Film:
   `motion3d/power_scene.luau` → `docs/previews/powers.mp4`, `feel-powers-after.jpg` (`tools/preview/powers_vs_og.py`).
-- Oct 17 round 2 ("more cinematic", "less ui", "cutscenes dont cut out"): Juice shakes harder (caught 0.7, catch
-  0.4, GO) and the screen edges glow red as a catcher comes within 40 studs (`HuzzDanger`, 1 Hz swell
+- Oct 17 round 2 ("more cinematic", "less ui", "cutscenes dont cut out"): Juice shakes harder (caught 0.4, was 0.7: it stacked
+  with the red tint; catch 0.4, GO) and the screen edges glow red as a catcher comes within 40 studs (`HuzzDanger`, 1 Hz swell
   close up), getting caught tints your screen red for 0.7 s (`HuzzHit` ColorCorrection) (the huss's white trail is gone:
   `Feel` draws HV's thin speed lines); no letterbox bars in `Cinematic`; while running the prize card, the gear (not on touch: no Menu key)
   and Roblox's player list step aside. Footsteps are ours (`Feel`, Sfx "step", lobby too; Roblox's "Running" muted;
@@ -238,18 +242,21 @@ Owner's own words are in quotes. Read only the section you need.
     streaks or line ring. A huss draws 6 thin white Beams riding with whoever husses (`RunMotion.hussLines`,
     `Run.Dash.Lines`), seen by everyone near. Dust, steps, a `speed_wind` loop. Reduced Motion turns off the FOV.
   - Round camera (`Gameplay/Cinematic` + `Shared/CinematicShot`): the hand-back lands where Roblox's camera will be
-    (zoom 12, 14° down, shift-lock offset; zoom pinned for that moment), then zoom is capped at 22 in rounds; the
+    (zoom 12, 14° down, the shift-lock offset only when `ShiftLock.wouldLock()`: same test as ShiftLock, so not with
+    Alt held, a menu open or the dance wheel up; zoom pinned for that moment), then zoom is capped at 22 in rounds; the
     lobby keeps the place's limits. You are ~31% of the screen tall, the horizon ~32% from the top.
   - Shot changes: one 0.25 s quart swing that orbits round and over the runners (`Shot.transition`, at least 4
     studs over heads), the eye pulled in front of walls and the floor (`clear()`). Secret cutscene hand-back: a
-    0.2 s dip to black and a cut under it (no fly-back).
+    0.2 s dip to black; once fully black the camera goes back to Roblox (Custom) behind where you stand now (your old
+    angle and distance), black holds 2 frames, then lifts (no fly-back, no cut on a clear screen).
   - Film: `HUSS_ONLY=1 sh video.sh ramp_scene.luau out.mp4`, sheet `motion3d/huss_sheet.py` →
     `docs/previews/feel-huss-after.jpg`. Not seen in Studio yet.
 - The big showcase girl over the map (`GirlService.showcase`, study gap 12: she read as a dark blob) stands on a small
   stand with a glowing band in her rarity colour (never wider than her stance: "the rings hid her from below"; inside
-  her Aura box, so the cutscene's bounds don't change), a key light in front, a rim light behind, a soft glow up from
-  the stand (short ranges: "too much light shining down"), and her name big in her rarity colour over her head (a
-  pixel floor so it reads from the far end; stars white, no gold). Only her root is anchored: every client plays the
+  her Aura box, so the cutscene's bounds don't change), a key light low in front (-0.3 x her height, Brightness 2.2: she
+  read dark from the field), a rim light behind, a soft glow up from the stand (short ranges, nothing above her: "too
+  much light shining down"), and her name big in her rarity colour over her head (1.8 studs x scale
+  above it, so her head doesn't cut the line seen from below; a pixel floor so it reads from the far end; stars white). Only her root is anchored: every client plays the
   pack's Idle on her (`CarryAnimator`) and hides the stand and its lights during the Secret cutscene. Her aura glows
   softly (`AuraFX`: scale > 1.5 → small light). Your companion steps in and out behind a puff of sparkles (`Auras`).
   Smoke tests: `tools/preview/smoke_showcase.luau`, `smoke_feel_fx.luau` (harness).
@@ -266,8 +273,11 @@ Owner's own words are in quotes. Read only the section you need.
   `RunFull` 21). The pack Sprint at `RunAt` 25 is ~4.6 steps/s at runner speed, HV's rate; the scripted run and
   footsteps match it (`Run.Stride` 12, was 9.5). Scripted arms out 10° (was 22).
 - **The huss pose is `Shared/RunMotion`'s for everyone, you too** (`Gameplay/RunAnimator` draws only the huss on your
-  own character when your run is the pack's): crouch 0.5, hips shifted and leaning 28° (`Run.Dash` SideRoll 20 +
-  SideWaist 6), held to 0.30 s, upright by ~0.42 s. The built DashLeft/DashRight (38° lean) plays only once the owner
+  own character when your run is the pack's): a wide low crouch (Oct 17 critic: "a stiff tilt"): Crouch 0.75 (head
+  drops 19%), leaning ~28° mostly at the waist (`Run.Dash` SideRoll 12 + SideWaist 14), outside leg out 55°, inside
+  thigh up 45° and out 42°, knee -80; held to 0.30 s, upright by ~0.42 s. Still narrower and higher than HV's flat
+  straddle (`docs/previews/feel-huss-after.jpg`). Your own huss's server DashAt is ignored within 0.6 s of your
+  local one (`RunMotion.dashAt`, local attribute HuzzMyDashAt), so a laggy echo never restarts the lean or lines. The built DashLeft/DashRight (38° lean) plays only once the owner
   publishes a run (`Config/Animations.Run`); re-extract with a smaller lean before then.
 - **The girls on the pack** (`Shared/GirlMoves`, no upload needed): Bootstrap copies Idle/Walk/Run to
   `ReplicatedStorage.HuzzGirlMoves` in Studio AND live (~180 KB); the follower girl, your companion (both via
@@ -318,13 +328,15 @@ Owner's own words are in quotes. Read only the section you need.
   Motion stops all (`Effects.setCalm` from Main). Previews park streaks off the edge; `SHINE=0` freezes mid-sweep.
   Colours kept as the kit (Huss Valley look): the owner left a palette switch optional.
 - **Round HUD** (`Gameplay/RoundHud`, built by code at runtime, not a saved twin; `docs/previews/feel-ui-after.jpg`):
-  text only at the top like Huss Valley: "ROUND 2 · 1 OF 3 IN A ROW" (14), the message line (Gotham Heavy, TextScaled
-  14-36 in a 512 x 38 box = 40% wide, 3 px dark outline, no panel, instant swap; outside a game it shows 5 s below
-  the NEXT ROUND plate), "Runner · 0:21" (16), a help line only for new players. **`Theme.MessageColour`** (default
+  text only at the top like Huss Valley, IgnoreGuiInset: "ROUND 2 · 1 OF 3 IN A ROW" (14) in Roblox's top-bar row
+  (y 5-20 of 720, centred), the message line (Gotham Heavy, TextScaled 14-27 in a 512 x 28 box = 40% wide, 3 px dark
+  outline, no panel, instant swap; outside a game it shows 5 s below the NEXT ROUND plate), "Runner · 0:21" (14,
+  ends y 62 = 8.6%; HV 8.8%), a help line only in the player's very first round. The prize card sits under the top bar. **`Theme.MessageColour`** (default
   true) colours the message words; false = always white (owner asked; earlier he wanted white everywhere). Big
   words at y 194 of 720 (27%); 3-2-1-GO drawn each frame from EndsAt (pop 1.4 to 1 in 0.15 s, fade by 0.94 s; GO!
   green 124). Prize card hidden in Countdown/HeroRun/Running. Own name tag faded, hidden in camera shots
-  (`HuzzCinematic`/`HuzzChoosing`; a HERO/CHICKEN word stays) and near the top lines. Outlines 0.55 see-through,
+  (`HuzzCinematic`/`HuzzChoosing`; a HERO/CHICKEN word stays) and from HeroRun through RoundOver (it sat where the
+  centre words print). Outlines 0.55 see-through,
   no fill. Today's Girl roller (`Screens/GirlRoll`): right edge under the gear, 0.5 of a window. Check:
   `tools/preview/check_round_hud.luau`; shots `round-hud-runner`, `round-count`; picture `feel_ui_after.py`.
 
