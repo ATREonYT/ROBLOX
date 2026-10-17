@@ -11,6 +11,14 @@
 -- Run it from Studio's Command Bar with this one line (it lives in the place, so nothing to copy from files):
 --   require(game.ServerStorage.HuzzStudioTools.UploadPictures)()
 return function()
+	-- (Pressing Run again while it works would upload everything twice.)
+	if _G.HuzzUploading then
+		warn("[Huzz] Already uploading: wait for the Done line.")
+		return
+	end
+	_G.HuzzUploading = true
+	local okAll, errAll = pcall(function()
+	print("[Huzz] Uploading pictures... (lines appear as each one is done)")
 	local AssetService = game:GetService("AssetService")
 	local StudioService = game:GetService("StudioService")
 	local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
@@ -38,7 +46,17 @@ return function()
 		return Shared.Images:FindFirstChild(kind)
 	end
 
+	-- Pictures are made with EditableImage, which Studio blocks until Game Settings > Security > Allow Mesh / Image
+	-- APIs is on: check once and say so straight away instead of failing every picture quietly.
+	local canDraw, why = pcall(function() AssetService:CreateEditableImage({ Size = Vector2.new(2, 2) }):Destroy() end)
+	if not canDraw then
+		warn("[Huzz] Can't make pictures here: " .. tostring(why))
+		warn("[Huzz] Fix: Home > Game Settings > Security > turn on 'Allow Mesh / Image APIs', click Save, then press Run again.")
+		return
+	end
+
 	local uploaded, skipped, failed = 0, 0, {}
+	local tried = 0
 	for _, kind in { "Icons", "Art", "Fx" } do
 		local folder = folderOf(kind)
 		for _, module in (if folder then folder:GetChildren() else {}) do
@@ -48,7 +66,8 @@ return function()
 				continue
 			end
 			local lastError
-			for _ = 1, 3 do
+			tried += 1
+			for _ = 1, 2 do
 				local ok, err = pcall(function()
 					local image = ImageLoader.editable(kind, module.Name, module)
 					local result, assetId = AssetService:CreateAssetAsync(image, Enum.AssetType.Image, {
@@ -63,10 +82,15 @@ return function()
 				end)
 				if ok then lastError = nil break end
 				lastError = err
-				task.wait(2)
+				task.wait(1)
 			end
 			if lastError then
 				table.insert(failed, key .. ": " .. tostring(lastError))
+				warn("[Huzz] couldn't upload " .. key .. ": " .. tostring(lastError))
+				if #failed >= 3 and uploaded == 0 then -- (the same problem for every picture: stop and say so)
+					warn("[Huzz] Stopped: the first pictures all failed. Send Claude a screenshot of these lines.")
+					return
+				end
 			else
 				uploaded += 1
 				print("[Huzz] uploaded " .. key .. " -> " .. ids[key])
@@ -115,4 +139,7 @@ return function()
 		for _, f in failed do warn("  " .. f) end
 	end
 	print("[Huzz] Next: File > Save, then send Claude ReplicatedStorage > Shared > Config > ImageIds (or its text).")
+	end)
+	_G.HuzzUploading = false
+	if not okAll then warn("[Huzz] The uploader stopped with an error: " .. tostring(errAll)) end
 end
