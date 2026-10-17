@@ -39,7 +39,7 @@ local function snap(out, cf, size, color, b)
 end
 
 -- Snapshots every box as it is now. Run Rig.fk first.
--- extra (optional): { sprites, ribbons, lights, caption, fov, grades, overlay, env } as render.mjs describes.
+-- extra (optional): { sprites, ribbons, lights, caption, fov, grades, overlay, env, bloom } as render.mjs describes.
 -- A rig's `look` table (Emit...) and a box's Shape/Neon/Alpha/Add/Emit/Hidden fields are passed on too.
 function Scene:frame(cameraPos, lookAt, extra)
 	local boxes = {}
@@ -60,6 +60,7 @@ function Scene:frame(cameraPos, lookAt, extra)
 		grades = extra and extra.grades or nil,
 		overlay = extra and extra.overlay or nil,
 		env = extra and extra.env or nil,
+		bloom = extra and extra.bloom or nil,
 	})
 end
 

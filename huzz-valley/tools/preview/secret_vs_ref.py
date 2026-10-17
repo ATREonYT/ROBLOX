@@ -8,16 +8,27 @@ from PIL import Image, ImageDraw, ImageFont
 STILLS, OUT = sys.argv[1], sys.argv[2]
 REF = 'design/vfx/ref3/vfx-reference-oct17.mp4'
 VIEW = (8, 88, 905, 522)  # the reference's 3D view inside the Studio window
-# (beat, reference second, our cutscene second) -- ours are secret_scene's STILL_AT times
+# (beat, reference second, our cutscene second) -- ours are secret_scene's STILL_AT times; docs/secret-beats.md
 BEATS = [
-    ('first beam of light', 1.25, 1.0),
-    ('twin beams + slashes', 1.75, 1.85),
-    ('eyes open between the beams', 2.75, 2.5),
-    ('impact: radial manga lines', 6.75, 2.74),
-    ('burst', 12.25, 2.85),
-    ('shards round her', 11.25, 3.2),
-    ('hero shot, butterflies', 9.75, 3.6),
-    ('aftermath', 13.75, 6.0),
+    ('starburst', 0.5, 0.5),
+    ('first beam strikes', 1.0, 1.0),
+    ('ladder beam + slashes', 1.6, 1.6),
+    ('twin beams', 2.05, 2.05),
+    ('eyes between the beams', 2.45, 2.47),
+    ('impact: rays + sparkles', 2.8, 2.8),
+    ('bloom haze', 3.05, 3.0),
+    ('calm wide shot', 3.6, 3.6),
+    ('slashes round her, smoke', 4.95, 4.95),
+    ('over the shoulder', 5.9, 5.9),
+    ('star flare', 6.75, 6.75),
+    ('speed streaks', 8.0, 8.0),
+    ('face close-up', 9.65, 9.65),
+    ('red streak lines', 10.5, 10.5),
+    ('butterfly swarm', 11.1, 11.1),
+    ('flare grows', 11.8, 11.9),
+    ('the burst', 12.3, 12.3),
+    ('pink cloud', 12.7, 12.7),
+    ('back to night', 13.6, 13.6),
 ]
 W = 640
 H = round(W * (VIEW[3] - VIEW[1]) / (VIEW[2] - VIEW[0]))

@@ -6,7 +6,8 @@
 // sq (Squash), v (velocity: VelocityParallel streaks)}], ribbons [{pts [[x,y,z]...], w [widths], a [opacities], c, cs
 // (a colour per point), add, t (texture along the strip)}] (camera-facing strips: slashes, trails), lights [{p, c, b
 // (Brightness), r (Range)}] (PointLights, up to 4) and caption (text drawn top left).
-// Optional per frame too: env {sky, dim} (sky colour and daylight strength for that frame), fov (degrees, default 70), grades [{b, c, s, tint}] (ColorCorrectionEffects in order: Brightness
+// Optional per frame too: bloom {i, size, th} (an imitation of BloomEffect: a thresholded blur, screen-blended),
+// env {sky (zenith), horizon, fog [near, far], amb (ambient colour), stars (0-1), dim} (sky colour and daylight strength for that frame), fov (degrees, default 70), grades [{b, c, s, tint}] (ColorCorrectionEffects in order: Brightness
 // added, Contrast, Saturation, TintColor multiplied, drawn over everything like Roblox's), overlay {bg, lines [{a (deg),
 // w, len, c, x, y (offsets)}], fade [[pos, transparency]...]} (a full-screen ScreenGui frame: lines in a 2400 px square centred on the
 // screen, each from the square's edge inwards, see Gameplay/SecretReveal's impact frame). Boxes may add sh ("ball"),
@@ -36,8 +37,16 @@ const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffe
 renderer.setSize(${W}, ${H});
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-document.body.appendChild(renderer.domElement);
-document.body.insertAdjacentHTML('beforeend', '<svg width="0" height="0" style="position:absolute"><filter id="grade" color-interpolation-filters="sRGB"><feColorMatrix id="gradeM" type="matrix" values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 1 0"/></filter></svg>');
+// the picture: the 3D canvas and a bloom canvas over it (screen blend), both under the colour grade
+const stage = document.createElement('div');
+stage.style.cssText = 'position:fixed;left:0;top:0;width:${W}px;height:${H}px;isolation:isolate';
+document.body.appendChild(stage);
+stage.appendChild(renderer.domElement);
+const bloomC = document.createElement('canvas');
+bloomC.width = ${W}; bloomC.height = ${H};
+bloomC.style.cssText = 'position:absolute;left:0;top:0;mix-blend-mode:screen;opacity:0';
+stage.appendChild(bloomC);
+document.body.insertAdjacentHTML('beforeend', '<svg width="0" height="0" style="position:absolute"><filter id="grade" color-interpolation-filters="sRGB"><feColorMatrix id="gradeM" type="matrix" values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 1 0"/></filter><filter id="thr" color-interpolation-filters="sRGB"><feComponentTransfer><feFuncR id="thrR" type="linear" slope="1" intercept="0"/><feFuncG id="thrG" type="linear" slope="1" intercept="0"/><feFuncB id="thrB" type="linear" slope="1" intercept="0"/></feComponentTransfer></filter></svg>');
 const overlay = document.createElement('canvas');
 overlay.width = ${W}; overlay.height = ${H};
 overlay.style.cssText = 'position:fixed;left:0;top:0;display:none';
@@ -84,6 +93,22 @@ const ground = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000), new THREE.Mes
 ground.rotation.x = -Math.PI / 2;
 ground.receiveShadow = true;
 scene.add(ground);
+// a sky dome (zenith and horizon colours per frame: Atmosphere) and a star field (Sky.StarCount at night)
+const skyGeo = new THREE.SphereGeometry(450, 32, 16);
+const skyCol = new Float32Array(skyGeo.attributes.position.count * 3);
+skyGeo.setAttribute('color', new THREE.BufferAttribute(skyCol, 3));
+const skyDome = new THREE.Mesh(skyGeo, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, fog: false, depthWrite: false }));
+skyDome.visible = false; skyDome.renderOrder = -10;
+scene.add(skyDome);
+const starPos = [];
+for (let i = 0; i < 2500; i++) {
+  const u = Math.random() * 2 * Math.PI, v = Math.pow(Math.random(), 0.7) * 0.5 * Math.PI;
+  starPos.push(Math.cos(u) * Math.cos(v) * 420, Math.sin(v) * 420 + 5, Math.sin(u) * Math.cos(v) * 420);
+}
+const starGeo = new THREE.BufferGeometry();
+starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
+const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({ color: '#ffffff', size: 1.6, sizeAttenuation: false, transparent: true, opacity: 0, fog: false, depthWrite: false }));
+scene.add(stars);
 const grid = new THREE.GridHelper(400, 100, '#a88c55', '#a88c55'); // 4-stud cells
 grid.material.transparent = true; grid.material.opacity = 0.45; grid.position.y = 0.01;
 scene.add(grid);
@@ -243,16 +268,33 @@ window.draw = (f) => {
   for (let i = rb.length; i < ribbonMeshes.length; i++) ribbonMeshes[i].visible = false;
   const [cx, cy, cz] = f.camera.pos, [lx, ly, lz] = f.camera.look;
   if (f.env) { // a per-frame sky colour and daylight (Lighting.ClockTime changing)
-    scene.background.set(f.env.sky); scene.fog.color.set(f.env.sky);
-    hemi.intensity = 1.6 * f.env.dim; sun.intensity = 1.8 * f.env.dim;
+    const e = f.env;
+    scene.background.set(e.sky); scene.fog.color.set(e.horizon || e.sky);
+    if (e.fog) { scene.fog.near = e.fog[0]; scene.fog.far = e.fog[1]; }
+    hemi.intensity = 1.6 * e.dim; sun.intensity = 1.8 * e.dim;
+    if (e.amb) { hemi.color.set(e.amb); hemi.groundColor.set(e.amb).multiplyScalar(0.5); }
+    if (e.horizon) { // zenith colour at the top of the dome, the horizon colour round its middle
+      skyDome.visible = true;
+      const zc = new THREE.Color(e.sky), hc = new THREE.Color(e.horizon), c = new THREE.Color();
+      const pos = skyGeo.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        const y = Math.max(0, pos.getY(i) / 450);
+        c.copy(hc).lerp(zc, Math.min(1, Math.pow(y, 0.6) * 1.15));
+        skyCol[i * 3] = c.r; skyCol[i * 3 + 1] = c.g; skyCol[i * 3 + 2] = c.b;
+      }
+      skyGeo.attributes.color.needsUpdate = true;
+    }
+    stars.material.opacity = e.stars || 0;
   }
+  skyDome.position.set(f.camera.pos[0], 0, f.camera.pos[2]);
+  stars.position.set(f.camera.pos[0], 0, f.camera.pos[2]);
   camera.fov = f.fov || 70;
   camera.updateProjectionMatrix();
   // the colour grades, over everything (as Roblox's post effects)
   let G = [[1, 0, 0, 0, 0], [0, 1, 0, 0, 0], [0, 0, 1, 0, 0], [0, 0, 0, 1, 0]];
   for (const g of asList(f.grades)) G = mul(gradeMatrix(g), G);
   document.getElementById('gradeM').setAttribute('values', G.map((r) => r.join(' ')).join(' '));
-  renderer.domElement.style.filter = 'url(#grade)';
+  stage.style.filter = 'url(#grade)';
   // a full-screen ScreenGui frame (the impact frame)
   const o = f.overlay;
   overlay.style.display = o ? 'block' : 'none';
@@ -277,6 +319,24 @@ window.draw = (f) => {
   sun.target.position.set(lx, 0, lz); // shadow box follows what the camera looks at
   sun.position.set(lx + 30, 60, lz + 20);
   renderer.render(scene, camera);
+  // bloom (an imitation of Roblox's BloomEffect): what's brighter than the threshold, blurred, screen-blended on top
+  const bl = f.bloom;
+  if (bl && bl.i > 0) {
+    const t0 = Math.min(0.92, Math.max(0.3, 0.55 + (bl.th - 0.9) * 0.5));
+    for (const id of ['thrR', 'thrG', 'thrB']) {
+      const el = document.getElementById(id);
+      el.setAttribute('slope', String(1 / (1 - t0))); el.setAttribute('intercept', String(-t0 / (1 - t0)));
+    }
+    const ctx = bloomC.getContext('2d');
+    ctx.clearRect(0, 0, ${W}, ${H});
+    ctx.filter = 'url(#thr) blur(' + Math.round(bl.size * 0.55) + 'px)';
+    ctx.drawImage(renderer.domElement, 0, 0);
+    ctx.drawImage(renderer.domElement, 0, 0); // (twice: a fuller glow)
+    ctx.filter = 'none';
+    bloomC.style.opacity = String(Math.min(1, bl.i * 0.75));
+  } else {
+    bloomC.style.opacity = '0';
+  }
 };
 Promise.all(loads).then(() => { window.ready = true; });
 </script></body></html>`;

@@ -652,6 +652,121 @@ def beam_glow():
     img.putalpha(Image.fromarray(np.repeat(al[:, None], W, axis=1), 'L'))
     img.save(os.path.join(OUT, 'beam-glow.png'))
 
+# --- The Secret cutscene's second set (owner, Oct 17: "make the cutscene look one to one as the reference"; beats in
+# docs/secret-beats.md). Soft where the reference glows, numpy-drawn. --------------------------------------------------------
+def _save_np(al, name):
+    al = (np.clip(al, 0, 1) * 255).round().astype(np.uint8)
+    img = Image.new('RGBA', (al.shape[1], al.shape[0]), (255, 255, 255, 0))
+    img.putalpha(Image.fromarray(al, 'L'))
+    img.save(os.path.join(OUT, name + '.png'))
+
+
+# beam ladder (256 x 64, wraps along a Beam): a soft band with four glowing blocks across it, like the reference's
+# 1.6 s "ladder" beam
+def beam_ladder():
+    W, H = 256, 64
+    y, x = np.mgrid[0:H, 0:W]
+    v = np.abs(y - (H - 1) / 2) / (H / 2)
+    band = np.clip(1 - v, 0, 1) ** 2 * 0.55
+    u = (x % 64) / 64
+    block = ((u > 0.18) & (u < 0.5) & (v < 0.82)).astype(float)
+    rim = ((u > 0.12) & (u < 0.56) & (v < 0.92)).astype(float) * 0.55
+    core = ((u > 0.24) & (u < 0.44) & (v < 0.6)).astype(float)
+    al = np.maximum(band, np.maximum(rim * 0.65, np.maximum(block * 0.8, core)))
+    _save_np(al, 'beam-ladder')
+
+
+# lightning (512 x 64, wraps along a Beam): a jagged white line with a glow, both ends at the middle so it tiles
+def lightning():
+    W, H = 512, 64
+    rnd = random.Random(31)
+    pts = [(0.0, 0.0), (1.0, 0.0)]
+    disp = 0.95
+    for _ in range(7):
+        nxt = [pts[0]]
+        for (u0, v0), (u1, v1) in zip(pts, pts[1:]):
+            nxt += [((u0 + u1) / 2, (v0 + v1) / 2 + rnd.uniform(-disp, disp)), (u1, v1)]
+        pts = nxt
+        disp *= 0.55
+    xs = np.arange(W) / (W - 1)
+    centre = np.interp(xs, [p[0] for p in pts], [p[1] for p in pts])
+    centre = np.clip(centre, -0.7, 0.7)
+    y = np.arange(H)[:, None]
+    dist = np.abs((y - (H - 1) / 2) / (H / 2) - centre[None, :])
+    al = np.maximum(np.clip(1 - dist / 0.09, 0, 1), np.clip(1 - dist / 0.55, 0, 1) ** 2 * 0.5)
+    _save_np(al, 'lightning')
+
+
+# nebula (256): a soft cloud of light, for big slow haze in the night sky and the pink burst cloud
+def nebula():
+    N = 256
+    rnd = np.random.default_rng(5)
+    y, x = np.mgrid[0:N, 0:N] / (N - 1) * 2 - 1
+    al = np.zeros((N, N))
+    for _ in range(18):
+        cx, cy = rnd.uniform(-0.55, 0.55, 2)
+        r = rnd.uniform(0.15, 0.35)
+        al += np.exp(-((x - cx) ** 2 + (y - cy) ** 2) / (2 * r * r)) * rnd.uniform(0.2, 0.45)
+    img = Image.fromarray((rnd.random((N // 16, N // 16)) * 255).astype(np.uint8), 'L').resize((N, N), Image.BICUBIC)
+    noise = np.asarray(img.filter(ImageFilter.GaussianBlur(8))) / 255
+    fall = np.clip(1 - np.hypot(x, y), 0, 1)
+    _save_np(np.clip(al, 0, 0.85) * (0.4 + 0.6 * noise) * fall * 1.2, 'nebula')
+
+
+# crystal (128): a long faceted shard, one side a step brighter (the reference's floating crystals)
+def crystal():
+    C = 128 * K
+    a = new(C); d = ImageDraw.Draw(a)
+    h = C / 2
+    top, bot, w = C * 0.06, C * 0.94, C * 0.17
+    left = [(h, top), (h - w, C * 0.36), (h - w * 0.8, C * 0.7), (h, bot)]
+    right = [(h, top), (h + w, C * 0.36), (h + w * 0.8, C * 0.7), (h, bot)]
+    d.polygon(left, fill=BODY)
+    d.polygon(right, fill=CORE)
+    d.line([(h - w, C * 0.36), (h, C * 0.42), (h + w, C * 0.36)], fill=EDGE, width=2 * K)
+    halo = a.filter(ImageFilter.GaussianBlur(6 * K)).point(lambda v: int(v * 0.6))
+    save_alpha(lighter(a, halo), 'crystal', (128, 128))
+
+
+# bokeh (128): a soft out-of-focus mote, a little brighter at the rim
+def bokeh():
+    N = 128
+    y, x = np.mgrid[0:N, 0:N]
+    r = np.hypot(x - (N - 1) / 2, y - (N - 1) / 2) / (N / 2 - 3)
+    disc_ = np.clip((1 - r) / 0.12, 0, 1)
+    rim = np.exp(-((r - 0.86) ** 2) / 0.004) * 0.35
+    _save_np(disc_ * 0.6 + rim, 'bokeh')
+
+
+# star flare (256): a four-point lens flare, long thin spikes and a bright core (the reference's 2.75 s and 12 s)
+def star_flare():
+    N = 256
+    y, x = np.mgrid[0:N, 0:N] / (N - 1) * 2 - 1
+    r = np.hypot(x, y)
+    spikes = np.exp(-np.abs(y) / 0.012) * np.clip(1 - np.abs(x), 0, 1) ** 1.6 + np.exp(-np.abs(x) / 0.012) * np.clip(1 - np.abs(y), 0, 1) ** 1.6
+    d1, d2 = np.abs(x - y) / 1.414, np.abs(x + y) / 1.414
+    diag = (np.exp(-d1 / 0.01) + np.exp(-d2 / 0.01)) * np.clip(1 - r / 0.55, 0, 1) ** 2 * 0.6
+    core = np.clip(1 - r / 0.22, 0, 1) ** 2 + np.clip(1 - r / 0.08, 0, 1)
+    _save_np(spikes + diag + core, 'star-flare')
+
+
+# rays (512): light rays bursting out from the middle, uneven widths and lengths, fading outwards
+def rays():
+    N = 512
+    rnd = random.Random(12)
+    y, x = np.mgrid[0:N, 0:N] / (N - 1) * 2 - 1
+    r = np.hypot(x, y)
+    ang = np.arctan2(y, x)
+    al = np.zeros((N, N))
+    for _ in range(26):
+        a0 = rnd.uniform(-math.pi, math.pi)
+        wid = rnd.uniform(0.012, 0.05)
+        ln = rnd.uniform(0.55, 1.0)
+        da = np.abs((ang - a0 + math.pi) % TAU - math.pi)
+        al = np.maximum(al, np.clip(1 - da / wid, 0, 1) * np.clip(1 - r / ln, 0, 1) * np.clip(r / 0.08, 0, 1))
+    _save_np(al, 'rays')
+
+
 # --- butterfly (2x2 sheet, 256): seen from above, one wing beat (open, half, edge-on, half). Owner's Oct 17 VFX
 # reference (design/vfx/ref3): blue butterflies drift round the Secret girl after she lands ----------------------------------
 def butterfly_frame(i, n, C):
@@ -680,6 +795,7 @@ def butterfly_frame(i, n, C):
 
 
 crescent(); ring_hard(); ring_soft(); spark(); swirl(); swirl_strip(); streak(); sigil(); crown(); moon(); glow(); beam_glow()
+beam_ladder(); lightning(); nebula(); crystal(); bokeh(); star_flare(); rays()
 sheet('burst-star', 2, 256, 10, burst_frame)
 sheet('twinkle', 2, 128, 8, twinkle_frame)
 sheet('bolt', 2, 256, 10, bolt_frame)

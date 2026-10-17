@@ -204,7 +204,27 @@ do
 	m.PrimaryPart = m.HumanoidRootPart
 	local base = CFrame.new(0, 40, 0)
 	m:PivotTo(base)
-	game.Lighting.ClockTime = 14.2 -- (Lune's Lighting starts without one; the cutscene makes it night and back)
+	-- the game's own look on Lighting (LookService), to check the cutscene puts every value back exactly
+	local L = game.Lighting
+	L.ClockTime, L.Brightness = 14.2, 2.8 -- (Lune's Lighting starts without them)
+	L.Ambient, L.OutdoorAmbient = Color3.fromRGB(92, 96, 112), Color3.fromRGB(138, 140, 156)
+	for _, c in L:GetChildren() do c:Destroy() end
+	local atmo = Instance.new("Atmosphere")
+	atmo.Density, atmo.Offset, atmo.Haze, atmo.Glare = 0.2, 0.1, 0.3, 0
+	atmo.Color, atmo.Decay = Color3.fromRGB(199, 225, 255), Color3.fromRGB(106, 150, 220)
+	atmo.Parent = L
+	local bloom = Instance.new("BloomEffect")
+	bloom.Intensity, bloom.Size, bloom.Threshold = 0.55, 22, 1.5
+	bloom.Parent = L
+	local function snapshot()
+		local out = {}
+		for _, key in { "ClockTime", "Brightness", "Ambient", "OutdoorAmbient" } do out["L." .. key] = L[key] end
+		for _, key in { "Density", "Offset", "Haze", "Glare", "Color", "Decay" } do out["A." .. key] = atmo[key] end
+		for _, key in { "Intensity", "Size", "Threshold" } do out["B." .. key] = bloom[key] end
+		out.children = #L:GetChildren()
+		return out
+	end
+	local before = snapshot()
 	local okBuild, step, cleanup = pcall(Reveal.build, m, base)
 	check("secret reveal builds: " .. tostring(step), okBuild)
 	if okBuild then
@@ -219,28 +239,44 @@ do
 		check("secret reveal plays: " .. tostring(err), okRun)
 		check("she's hidden until the impact", hidden == true)
 		check("she ends at her height over the map", lastH ~= nil and math.abs(lastH - Timing.height(Timing.LENGTH, 34)) < 0.01)
-		check("only one brightness pulse", (function()
-			local pulses, was = 0, false
+		check("brightness pulses at most once a second (kid-safe)", (function()
+			local starts, was = {}, false
 			for t = 0, Timing.LENGTH, 1 / 60 do
 				local _, _, _, p = Timing.grade(t)
 				local on = p > 0.05
-				if on and not was then pulses += 1 end
+				if on and not was then table.insert(starts, t) end
 				was = on
 			end
-			return pulses == 1
+			for i = 2, #starts do
+				if starts[i] - starts[i - 1] < 1 then return false end
+			end
+			return #starts >= 1 and #starts <= 3
 		end)())
 		check("night during the build-up", Timing.clock(1, 14.2) == Timing.NIGHT and Timing.clock(Timing.LENGTH, 14.2) == 14.2)
 		check("the sun comes back up evenly (no jump over dawn)", (function()
-			local last = Timing.clock(Timing.RISE, 14.2)
-			for t = Timing.RISE, Timing.RISE + Timing.BACK, 1 / 60 do
+			local last = Timing.clock(Timing.DAWN, 14.2)
+			for t = Timing.DAWN, Timing.DAWN + Timing.BACK, 1 / 60 do
 				local c = Timing.clock(t, 14.2)
 				if c >= 5.3 and c <= 7.1 and last >= 5.3 and c - last > 0.06 then return false end
 				last = c
 			end
 			return true
 		end)())
+		local during = L.ClockTime
+		step(5, Vector3.new(0, 0, 1))
+		local nightOn = L.ClockTime == Timing.NIGHT and atmo.Haze > 1 and bloom.Intensity > 1
 		cleanup()
-		check("secret reveal cleans up", workspace:FindFirstChild("HuzzSecretReveal") == nil and game.Lighting:FindFirstChild("HuzzSecretGrade") == nil and math.abs(game.Lighting.ClockTime - 14.2) < 1e-3)
+		check("secret reveal cleans up", workspace:FindFirstChild("HuzzSecretReveal") == nil and game.Lighting:FindFirstChild("HuzzSecretGrade") == nil and #workspace.Terrain:GetChildren() == 0)
+		check("the night look is on during the cutscene", nightOn and during ~= nil)
+		local after = snapshot()
+		local same = true
+		for key, v in before do
+			if after[key] ~= v then
+				same = false
+				print("  Lighting not restored: " .. key .. " " .. tostring(v) .. " -> " .. tostring(after[key]))
+			end
+		end
+		check("Lighting restored exactly after the cutscene", same)
 	end
 end
 

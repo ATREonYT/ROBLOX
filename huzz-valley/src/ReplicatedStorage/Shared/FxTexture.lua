@@ -24,6 +24,9 @@ FxTexture.FALLBACK = {
 	Swirl = SPARKLE, SwirlStrip = SPARKLE, FlameSheet = FIRE, ShockSheet = SPARKLE, SlashSheet = SPARKLE, Bolt = SPARKLE,
 	Streak = SPARKLE, Sigil = SPARKLE, Crown = SPARKLE, Moon = SPARKLE, Butterfly = SPARKLE,
 	BeamGlow = SPARKLE, -- (soft across, even along: beams wrap it without beads; the Secret cutscene)
+	-- the Secret cutscene's second set (docs/secret-beats.md): beams stay solid light until uploaded
+	BeamLadder = SPARKLE, Lightning = SPARKLE, Nebula = SMOKE, Crystal = SPARKLE, Bokeh = SPARKLE, StarFlare = SPARKLE,
+	Rays = SPARKLE,
 }
 
 -- Flipbook layouts of the sheets (each picture is square; a 2x2 or 4x4 grid of frames).

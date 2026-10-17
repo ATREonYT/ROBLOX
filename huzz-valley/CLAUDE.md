@@ -306,10 +306,11 @@ Owner's own words are in quotes. Read only the section you need.
   from uploaded IDs; until the owner uploads, stand-ins show and shapes gated by `FxTexture.ready` stay hidden.
 - **Secret cutscene:** `Shared/SecretReveal` (timeline, pure) + `Gameplay/SecretReveal` (effects, camera); the server
   sets `RevealAt` and the `Reveal` stage. Test in Studio with `Config/Round.StudioTestRarity = "Secret"`.
-  Oct 17 reference (`design/vfx/ref3`): twin light beams, crossing slashes, glowing eyes, a 0.09 s manga impact frame
-  (ScreenGui, skipped with Reduced Motion), shards/streaks/butterflies (wait for upload), night on your screen until
-  she rises (`SecretReveal.clock`, sunrise back). Film: `motion3d/secret_scene.luau` runs the real module on Lune
-  instances (`docs/previews/secret-cutscene.mp4`, `-slow`, sheet `secret-vs-ref3.jpg` via `tools/preview/secret_vs_ref.py`).
+  14.5 s, shot by shot after the Oct 17 reference (`design/vfx/ref3`, beat sheet `docs/secret-beats.md`): a local night
+  look (Lighting/Atmosphere/Bloom/Sky/grade, put back exactly; checked) until 13.4, layered beams, eyes, rays, flares,
+  speed streaks, swarm, burst; ever-present motes/crystals/nebula. Film `motion3d/secret_scene.luau` (real module; its
+  bloom and sky are imitations) → `docs/previews/secret-cutscene.mp4`, `-slow`, `secret-vs-ref3.jpg` (`secret_vs_ref.py`),
+  `secret-vs-ref3.mp4` (`secret_vs_ref_video.sh`); flashes: `tools/preview/flash_check.py <film>`.
 - **Crates** (`Config/Crates`, `Shared/CrateRoll` with odds + pity) are plumbed but empty until the owner designs them.
 
 ## 12. Sounds

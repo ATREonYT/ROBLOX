@@ -190,7 +190,14 @@ function load(path)
 end
 local Reveal = load(SHARED .. "SecretReveal.lua")
 local Look = load(SHARED .. "Config/Look.lua")
-Lighting.ClockTime = Look.Lighting.ClockTime
+-- the game's Lighting as HuzzServer/LookService leaves it (the cutscene changes it and must put it back)
+for key, v in Look.Lighting do pcall(function() (Lighting :: any)[key] = v end) end
+for cls, props in { ColorCorrectionEffect = Look.ColorCorrection, BloomEffect = Look.Bloom, SunRaysEffect = Look.SunRays, Atmosphere = Look.Atmosphere } do
+	local inst = Instance.new(cls)
+	inst.Name = "Huzz" .. cls
+	for key, v in props do pcall(function() (inst :: any)[key] = v end) end
+	inst.Parent = Lighting
+end
 local M = load(SRC .. "/StarterPlayer/StarterPlayerScripts/HuzzClient/Gameplay/SecretReveal.lua")
 
 
@@ -438,7 +445,8 @@ local B = Look.ColorCorrection
 local baseGrade = { b = B.Brightness, c = B.Contrast, s = B.Saturation, tint = hex(B.TintColor) }
 local boxes = {}
 local stills = {}
-local STILL_AT = { 0.3, 1.0, 1.5, 1.85, 2.3, 2.5, 2.74, 2.85, 3.2, 3.6, 4.6, 6.0, 7.2 }
+-- the contact-sheet beats (tools/preview/secret_vs_ref.py pairs them with the reference)
+local STILL_AT = { 0.5, 1.0, 1.6, 2.05, 2.47, 2.8, 3.0, 3.6, 4.95, 5.9, 6.75, 8.0, 9.65, 10.5, 11.1, 11.9, 12.3, 12.7, 13.6 }
 local total = math.floor((Reveal.LENGTH + PRE + POST) * FPS)
 player.Character = character
 M.start()
@@ -477,7 +485,7 @@ for f = 0, total - 1 do
 		if b:IsA("Beam") then drawBeam(b, t, ribbons) end
 	end
 	local grades = { baseGrade }
-	local cc = Lighting:FindFirstChild("HuzzSecretGrade")
+	local cc = Lighting:FindFirstChild("HuzzSecretGrade") -- (Look's own grade is baseGrade)
 	if cc then table.insert(grades, { b = cc.Brightness, c = cc.Contrast, s = cc.Saturation, tint = hex(cc.TintColor) }) end
 	local okO, overlay = pcall(overlayOf, frameGui) -- (gone after the cleanup)
 	if not okO then overlay = nil end
@@ -490,17 +498,33 @@ for f = 0, total - 1 do
 	for _, s in STILL_AT do
 		if t >= s - DT / 2 and t < s + DT / 2 - 1e-6 then table.insert(stills, f) end
 	end
-	-- the sky for Lighting.ClockTime (an emulation of Roblox's day cycle: dark navy at night, warm at dawn)
+	-- the sky (an IMITATION of Roblox's: the day cycle from Lighting.ClockTime, dark navy at night and warm at dawn;
+	-- the Atmosphere's Color, Haze and Density tint the horizon and the sky and bring the fog in; Sky.StarCount
+	-- gives the stars; OutdoorAmbient lights the ground at night)
 	local clockNow = Lighting.ClockTime
 	local elev = math.sin((clockNow - 6) / 12 * math.pi) -- (the sun's height: 1 at noon, -1 at midnight)
 	local day = math.clamp(elev * 3 + 0.2, 0, 1)
-	local skyC = Color3.fromRGB(14, 20, 52):Lerp(Color3.fromRGB(159, 208, 245), day)
-	skyC = skyC:Lerp(Color3.fromRGB(235, 150, 120), math.clamp(1 - math.abs(elev - 0.08) / 0.18, 0, 1) * 0.6)
-	local env = { sky = hex(skyC), dim = 0.3 + 0.7 * day }
+	local atmo = Lighting:FindFirstChildOfClass("Atmosphere")
+	local haze = if atmo then math.clamp(atmo.Haze / 2.4, 0, 1) * math.clamp(atmo.Density / 0.42, 0, 1) else 0
+	local aCol = if atmo then atmo.Color else Color3.new(0.6, 0.7, 0.9)
+	local function scale(c, x) return Color3.new(c.R * x, c.G * x, c.B * x) end
+	local zen = Color3.fromRGB(9, 11, 34):Lerp(scale(aCol, 0.32), 0.65 * haze)
+	local hor = Color3.fromRGB(18, 22, 58):Lerp(scale(aCol, 0.62), 0.85 * haze)
+	zen = zen:Lerp(Color3.fromRGB(110, 170, 235), day)
+	hor = hor:Lerp(Color3.fromRGB(199, 225, 255), day)
+	hor = hor:Lerp(Color3.fromRGB(235, 150, 120), math.clamp(1 - math.abs(elev - 0.08) / 0.18, 0, 1) * 0.6)
+	local skyInst = Lighting:FindFirstChildOfClass("Sky")
+	local starCount = if skyInst then skyInst.StarCount else 3000
+	local okA, outdoor = pcall(function() return Lighting.OutdoorAmbient end)
+	local amb = (if okA then outdoor else Color3.fromRGB(138, 140, 156)):Lerp(Color3.fromRGB(223, 240, 255), day)
+	local env = { sky = hex(zen), horizon = hex(hor), dim = 0.2 + 0.8 * day, amb = hex(amb), stars = r3((1 - day) * starCount / 5000 * 0.9),
+		fog = { 40, 520 - 340 * haze * (1 - day) } }
+	local bl = Lighting:FindFirstChildOfClass("BloomEffect")
+	local bloom = if bl then { i = r3(bl.Intensity), size = r3(bl.Size), th = r3(bl.Threshold) } else nil
 	local cf = camera.CFrame
 	scene:frame(cf.Position, cf.Position + cf.LookVector * 10, {
 		sprites = sprites, ribbons = ribbons, lights = lights, fov = camera.FieldOfView, grades = grades, overlay = overlay,
-		caption = string.format("%.2f s", t), env = env,
+		caption = string.format("%.2f s", t), env = env, bloom = bloom,
 	})
 end
 scene:save(nil, FPS, 1280, 720, { sky = "#9fd0f5", ground = "#5aa64c", grid = false, stills = stills })
