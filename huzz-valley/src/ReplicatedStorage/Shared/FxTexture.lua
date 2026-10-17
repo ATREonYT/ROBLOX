@@ -22,7 +22,7 @@ FxTexture.FALLBACK = {
 	-- the anime set (hard cel shapes: docs/vfx-guide.md section 3)
 	Crescent = SPARKLE, RingHard = SPARKLE, RingSoft = SPARKLE, BurstStar = SPARKLE, Twinkle = SPARKLE, Spark = SPARKLE,
 	Swirl = SPARKLE, SwirlStrip = SPARKLE, FlameSheet = FIRE, ShockSheet = SPARKLE, SlashSheet = SPARKLE, Bolt = SPARKLE,
-	Streak = SPARKLE, Sigil = SPARKLE, Crown = SPARKLE, Moon = SPARKLE,
+	Streak = SPARKLE, Sigil = SPARKLE, Crown = SPARKLE, Moon = SPARKLE, Butterfly = SPARKLE,
 }
 
 -- Flipbook layouts of the sheets (each picture is square; a 2x2 or 4x4 grid of frames).
@@ -33,6 +33,7 @@ FxTexture.SHEETS = {
 	FlameSheet = Enum.ParticleFlipbookLayout.Grid4x4,
 	ShockSheet = Enum.ParticleFlipbookLayout.Grid4x4,
 	SlashSheet = Enum.ParticleFlipbookLayout.Grid4x4,
+	Butterfly = Enum.ParticleFlipbookLayout.Grid2x2,
 }
 
 local function uploaded(name: string): string?

@@ -17,7 +17,7 @@ UNUSED = {'arrow-next', 'play-tile', 'plus-tile', 'monitor-small', 'social-chat'
 # Effect textures keep their real size (flipbook frames need every pixel; the owner's screen is Retina), capped at
 # 1024 for flipbook sheets (Shared/FxTexture.SHEETS) and 512 for single shapes.
 FX_OUT = 'src/ServerStorage/HuzzImages/Fx'
-FX_SHEETS = {'burst-star', 'twinkle', 'bolt', 'flame-sheet', 'shock-sheet', 'slash-sheet'}
+FX_SHEETS = {'burst-star', 'twinkle', 'bolt', 'flame-sheet', 'shock-sheet', 'slash-sheet', 'butterfly'}
 OLD_FX = os.path.join(OUT, 'Fx')  # (where they used to be packed)
 if os.path.isdir(OLD_FX):
     for f in os.listdir(OLD_FX):

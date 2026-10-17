@@ -57,7 +57,7 @@ local function emitter(parent, props)
 	e.Rate = 0
 	for k, v in props do
 		if k == "Picture" then
-			FxTexture.flipbook(e, v[1], v[2])
+			FxTexture.flipbook(e, v[1], v[2], v[3])
 		else
 			e[k] = v
 		end
@@ -127,6 +127,88 @@ function M.build(model: Model, base: CFrame)
 		table.insert(pillar, { beam = b, width = def[2] })
 	end
 
+	-- The owner's Oct 17 reference (design/vfx/ref3): two tall beams of light close either side of the orb (a white
+	-- core in a wide violet glow, both leaning the same way and bowing a little outwards), bright lines slashing
+	-- across between them, then two glowing eyes opening in the dark where she'll appear. Placed every frame from
+	-- the camera's side. Framing checked with tools/preview/secret_sketch.py.
+	local anchors = {}
+	local function anchor()
+		local a = Instance.new("Attachment")
+		a.Parent = Workspace.Terrain
+		table.insert(anchors, a)
+		return a
+	end
+	local beams = {}
+	local function lightBeam(a0, a1, color, light, texture, speed)
+		local b = Instance.new("Beam")
+		b.Attachment0, b.Attachment1 = a0, a1
+		b.Color = ColorSequence.new(color)
+		b.LightEmission, b.LightInfluence = light, 0
+		b.Texture = if FxTexture.ready(texture) then FxTexture.get(texture) else "" -- (solid light until uploaded)
+		b.TextureMode = Enum.TextureMode.Wrap
+		b.TextureLength = 8
+		b.TextureSpeed = speed
+		b.FaceCamera = true
+		b.Segments = 24
+		b.Width0, b.Width1 = 0, 0
+		b.Parent = Workspace.Terrain
+		table.insert(beams, b)
+		return b
+	end
+	local crescents = {}
+	for _, side in { -1, 1 } do
+		local a0, a1 = anchor(), anchor()
+		table.insert(crescents, { side = side, a0 = a0, a1 = a1, glow = lightBeam(a0, a1, VIOLET, 0.7, "Glow", 0), core = lightBeam(a0, a1, WHITE, 1, "SwirlStrip", -3) })
+	end
+	local SLASH = rgb(255, 70, 150)
+	local slashes = {}
+	for i, at in Reveal.SLASHES do
+		local a0, a1 = anchor(), anchor()
+		local sl = { at = at, i = i, a0 = a0, a1 = a1, glow = lightBeam(a0, a1, SLASH, 0.8, "Glow", 0), core = lightBeam(a0, a1, WHITE, 1, "Glow", 0) }
+		for _, b in { sl.glow, sl.core } do -- (pointed ends: a beam can only taper one way, so its ends fade out)
+			b.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.3, 0), NumberSequenceKeypoint.new(0.7, 0), NumberSequenceKeypoint.new(1, 1) })
+		end
+		table.insert(slashes, sl)
+	end
+	for _, c in crescents do c.glow.Transparency = NumberSequence.new(0.25) end
+	local eyeAt = orbAt + Vector3.new(0, size.Y * 0.28, 0)
+	local eyeGap = math.max(size.X * 0.12, 0.6 * k)
+	local eyes = {}
+	for _, side in { -1, 1 } do
+		local eye = part({ Name = "Eye", Shape = Enum.PartType.Ball, Material = Enum.Material.Neon, Color = PINK, Size = Vector3.one * 0.9 * k, Transparency = 1 }, folder)
+		local flare = part({ Name = "Flare", Material = Enum.Material.Neon, Color = rgb(255, 160, 225), Size = Vector3.one * 0.05, Transparency = 1 }, folder)
+		table.insert(eyes, { side = side, eye = eye, flare = flare })
+	end
+
+	-- the impact frame: a split second of dark manga lines bursting from the middle on white (Reduced Motion: none)
+	local frameGui = Instance.new("ScreenGui")
+	frameGui.Name, frameGui.IgnoreGuiInset, frameGui.DisplayOrder, frameGui.Enabled, frameGui.ResetOnSpawn = "HuzzImpactFrame", true, 60, false, false
+	local paper = Instance.new("Frame")
+	paper.Size, paper.BackgroundColor3, paper.BorderSizePixel = UDim2.fromScale(1, 1), rgb(250, 246, 255), 0
+	paper.Parent = frameGui
+	local burst = Instance.new("Frame")
+	burst.AnchorPoint, burst.Position, burst.Size, burst.BackgroundTransparency = Vector2.new(0.5, 0.5), UDim2.fromScale(0.5, 0.5), UDim2.fromOffset(2400, 2400), 1
+	burst.Parent = paper
+	local rnd = Random.new(7)
+	for i = 1, 26 do
+		local a = (i - 1) / 26 * 360 + rnd:NextNumber(-5, 5)
+		local w = rnd:NextInteger(8, 46)
+		local len = rnd:NextInteger(820, 1180)
+		local line = Instance.new("Frame")
+		line.AnchorPoint = Vector2.new(0.5, 0.5)
+		line.Size = UDim2.fromOffset(w, len)
+		line.Rotation = a
+		local r = 1200 - len / 2 -- (from the outer edge inwards; its centre sits this far out)
+		line.Position = UDim2.fromOffset(math.round(1200 + math.sin(math.rad(a)) * r), math.round(1200 - math.cos(math.rad(a)) * r))
+		line.BackgroundColor3, line.BorderSizePixel = rgb(24, 10, 40), 0
+		local fade = Instance.new("UIGradient") -- (solid at the screen's edge, gone before the middle)
+		fade.Rotation = 90
+		fade.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.55, 0.1), NumberSequenceKeypoint.new(1, 1) })
+		fade.Parent = line
+		line.Parent = burst
+	end
+	frameGui.Parent = if player then player:WaitForChild("PlayerGui") else nil
+
 	-- the impact: one emitter part at the orb, one on the ground
 	local blast = part({ Name = "Blast", Transparency = 1, Size = Vector3.one, CFrame = CFrame.new(orbAt) }, folder)
 	local star = emitter(blast, { Picture = { "BurstStar", "Random" }, Color = seq(WHITE, PINK), LightEmission = 1, Brightness = 2,
@@ -139,6 +221,14 @@ function M.build(model: Model, base: CFrame)
 	local shock = emitter(blast, { Picture = { "ShockSheet", "OneShot" }, Color = seq(WHITE, CYAN), LightEmission = 1,
 		Size = nseq({ { 0, 6 * k }, { 1, 18 * k } }), Transparency = nseq({ { 0, 0 }, { 0.7, 0.1 }, { 1, 1 } }),
 		Lifetime = NumberRange.new(0.4), Speed = NumberRange.new(0), ZOffset = 1 })
+	local shards = emitter(blast, { Picture = { "Shard" }, Color = seq(WHITE, PINK, CYAN), LightEmission = 1, Brightness = 1.6,
+		Size = nseq({ { 0, 1.4 * k }, { 1, 0.4 * k } }), Transparency = nseq({ { 0, 0 }, { 0.8, 0.1 }, { 1, 1 } }),
+		Lifetime = NumberRange.new(0.8, 1.4), Speed = NumberRange.new(20 * k, 40 * k), Drag = 3, SpreadAngle = Vector2.new(180, 180),
+		Rotation = NumberRange.new(0, 360), RotSpeed = NumberRange.new(-300, 300), Acceleration = Vector3.new(0, -6 * k, 0) })
+	local streaks = emitter(blast, { Picture = { "Streak" }, Color = seq(WHITE, PINK, VIOLET), LightEmission = 1, Brightness = 2,
+		Orientation = Enum.ParticleOrientation.VelocityParallel, Size = nseq({ { 0, 1.2 * k }, { 1, 0.3 * k } }),
+		Squash = nseq({ { 0, 3 }, { 1, 4 } }), Transparency = nseq({ { 0, 0 }, { 0.6, 0.2 }, { 1, 1 } }),
+		Lifetime = NumberRange.new(0.25, 0.4), Speed = NumberRange.new(70 * k, 110 * k), SpreadAngle = Vector2.new(180, 180) })
 	local floor = part({ Name = "Floor", Transparency = 1, Size = Vector3.one, CFrame = CFrame.new(ground + Vector3.new(0, 0.3, 0)) }, folder)
 	local flat = { Orientation = Enum.ParticleOrientation.VelocityPerpendicular, EmissionDirection = Enum.NormalId.Top, Speed = NumberRange.new(0.01), SpreadAngle = Vector2.zero }
 	local function flatEmitter(props)
@@ -158,6 +248,11 @@ function M.build(model: Model, base: CFrame)
 		Shape = Enum.ParticleEmitterShape.Disc, ShapeStyle = Enum.ParticleEmitterShapeStyle.Surface, ShapePartial = 1,
 		ShapeInOut = Enum.ParticleEmitterShapeInOut.Outward, Size = nseq({ { 0, 2 * k }, { 1, 5 * k } }),
 		Transparency = nseq({ { 0, 0.4 }, { 1, 1 } }), Lifetime = NumberRange.new(0.5, 0.8), Speed = NumberRange.new(14 * k, 22 * k), Drag = 4 })
+	local butterflies = emitter(floor, { Picture = { "Butterfly", "Loop", 14 }, Color = seq(rgb(160, 215, 255), rgb(110, 160, 255)),
+		LightEmission = 0.6, Brightness = 1.4, Shape = Enum.ParticleEmitterShape.Disc, ShapeStyle = Enum.ParticleEmitterShapeStyle.Surface,
+		Size = nseq({ { 0, 0 }, { 0.1, 1.1 * k }, { 0.85, 1.1 * k }, { 1, 0 } }), Transparency = nseq({ { 0, 0.1 }, { 1, 0.4 } }),
+		Lifetime = NumberRange.new(3, 4.5), Speed = NumberRange.new(2 * k, 4 * k), Acceleration = Vector3.new(0, 1.5 * k, 0),
+		SpreadAngle = Vector2.new(60, 60), Rotation = NumberRange.new(-25, 25), RotSpeed = NumberRange.new(-20, 20), Drag = 0.5 })
 	floor.Size = Vector3.new(6 * k, 0.2, 6 * k)
 	local dome = part({ Name = "Dome", Shape = Enum.PartType.Ball, Material = Enum.Material.ForceField, Color = PINK, Size = Vector3.one * 2, CFrame = CFrame.new(ground), Transparency = 1 }, folder)
 	local hiStroke = Instance.new("Highlight")
@@ -172,7 +267,7 @@ function M.build(model: Model, base: CFrame)
 	grade.Name = "HuzzSecretGrade"
 	grade.Parent = Lighting
 
-	local all = { rush, star, sparks, shock, groundRing, landRing, sigil, dust }
+	local all = { rush, star, sparks, shock, groundRing, landRing, sigil, dust, shards, streaks, butterflies }
 	local fired = {}
 	local function once(name, fn)
 		if not fired[name] then fired[name] = true; fn() end
@@ -206,6 +301,44 @@ function M.build(model: Model, base: CFrame)
 				Sfx.play("secret_riser") -- (ends in silence right before the impact: the hit sounds louder)
 			end)
 		end
+		-- the crescents, the slashes and the eyes (from the camera's side: `dir` points from the spot to the camera)
+		local up = Vector3.new(0, 1, 0)
+		local side = dir:Cross(up)
+		side = if side.Magnitude > 0.1 then side.Unit else Vector3.new(1, 0, 0)
+		local grow = math.clamp((t - Reveal.CRESCENTS) / 0.45, 0, 1)
+		local cw = (1 - (1 - grow) ^ 3) * (1 - math.clamp((t - Reveal.LAND) / 1.2, 0, 1))
+		local tall = 46 * k * math.max(grow, 0.02)
+		for _, c in crescents do
+			local out = side * c.side
+			local foot = ground + out * 3.8 * k
+			local lean = math.rad(12)
+			-- a beam bends towards its attachments' X axes: both lean outwards at the ends, so it bows outwards
+			c.a0.WorldCFrame = CFrame.fromMatrix(foot, up * math.cos(lean) + out * math.sin(lean), dir)
+			c.a1.WorldCFrame = CFrame.fromMatrix(foot + up * tall - side * 0.12 * tall, up * math.cos(lean) - out * math.sin(lean), dir)
+			for _, b in { c.glow, c.core } do b.CurveSize0, b.CurveSize1 = tall * 0.3, tall * 0.3 end
+			c.glow.Width0, c.glow.Width1 = 6 * k * cw, 3 * k * cw
+			c.core.Width0, c.core.Width1 = 1.2 * k * cw, 0.6 * k * cw
+		end
+		local heights = { 2.5, -1.5, 4.2, -3.2 }
+		for _, sl in slashes do
+			local v = Reveal.slash(t, sl.at)
+			local flip = if sl.i % 2 == 0 then -1 else 1
+			local mid = orbAt + up * heights[sl.i] * k + side * math.max(0, t - sl.at) * 30 * k * flip
+			sl.a0.WorldPosition = mid - side * 24 * k + up * 4 * k * flip
+			sl.a1.WorldPosition = mid + side * 24 * k - up * 4 * k * flip
+			sl.glow.Width0, sl.glow.Width1 = 1.8 * k * v, 1.8 * k * v
+			sl.core.Width0, sl.core.Width1 = 0.4 * k * v, 0.4 * k * v
+		end
+		local ev = if t >= Reveal.EYES and t < Reveal.IMPACT then math.clamp((t - Reveal.EYES) / 0.25, 0, 1) else 0
+		for _, e in eyes do
+			local p = eyeAt + side * e.side * eyeGap
+			e.eye.CFrame = CFrame.new(p)
+			e.eye.Transparency = 1 - ev
+			e.flare.CFrame = CFrame.fromMatrix(p, side, up)
+			e.flare.Size = Vector3.new(math.max(3.5 * k * ev, 0.05), 0.2 * k, 0.2 * k)
+			e.flare.Transparency = 1 - 0.9 * ev
+		end
+		frameGui.Enabled = Reveal.impactFrame(t, calm)
 		-- the impact
 		if t >= Reveal.IMPACT then
 			once("impact", function()
@@ -214,6 +347,8 @@ function M.build(model: Model, base: CFrame)
 				-- (the rings are our own pictures: they wait for the upload rather than show a sparkle blob)
 				if FxTexture.ready("ShockSheet") then shock:Emit(1) end
 				if FxTexture.ready("RingHard") then groundRing:Emit(1) end
+				if FxTexture.ready("Shard") then shards:Emit(28) end
+				if FxTexture.ready("Streak") then streaks:Emit(30) end
 				hiStroke.FillTransparency, hiStroke.OutlineTransparency = 0, 0
 				Sfx.play("secret_impact")
 			end)
@@ -225,6 +360,7 @@ function M.build(model: Model, base: CFrame)
 			once("land", function()
 				if FxTexture.ready("RingSoft") then landRing:Emit(1) end
 				dust:Emit(14)
+				butterflies.Rate = if FxTexture.ready("Butterfly") then 4 else 0
 				Sfx.play("secret_land")
 				sigil.Rate = 0
 			end)
@@ -232,6 +368,7 @@ function M.build(model: Model, base: CFrame)
 			dome.Size = Vector3.one * (2 + 12 * (1 - (1 - x) ^ 3)) * k
 			dome.Transparency = if x >= 1 then 1 else 0.2 + 0.8 * x
 		end
+		if t >= Reveal.RISE + 1 then butterflies.Rate = 0 end
 		-- her: hidden until the impact, then dropping, standing, rising (facing the camera, then turning slowly)
 		local h = Reveal.height(t, Config.Showcase.Height)
 		if h then
@@ -245,13 +382,16 @@ function M.build(model: Model, base: CFrame)
 		local b, s, tint, pulse = Reveal.grade(t)
 		grade.Brightness = b + (if calm then 0 else 0.22 * pulse)
 		grade.Saturation = s
-		grade.TintColor = WHITE:Lerp(rgb(225, 215, 255), tint)
+		grade.TintColor = WHITE:Lerp(rgb(205, 180, 255), tint)
 		return orbAt, h
 	end
 
 	local function cleanup()
 		folder:Destroy()
 		grade:Destroy()
+		frameGui:Destroy()
+		for _, b in beams do b:Destroy() end
+		for _, a in anchors do a:Destroy() end
 		base0:Destroy()
 		top0:Destroy()
 		for _, p in pillar do p.beam:Destroy() end

@@ -642,6 +642,32 @@ def glow():
     img.putalpha(Image.fromarray(al, 'L'))
     img.save(os.path.join(OUT, 'glow.png'))
 
+# --- butterfly (2x2 sheet, 256): seen from above, one wing beat (open, half, edge-on, half). Owner's Oct 17 VFX
+# reference (design/vfx/ref3): blue butterflies drift round the Secret girl after she lands ----------------------------------
+def butterfly_frame(i, n, C):
+    a = new(C); d = ImageDraw.Draw(a)
+    h = C / 2
+    sx = (1.0, 0.62, 0.22, 0.62)[i]  # how wide the wings look as they beat
+
+    def wing(cx, cy, rx, ry, ang, fill):
+        pts = []
+        for k in range(120):
+            t = TAU * k / 120
+            x, y = math.cos(t) * rx, math.sin(t) * ry
+            ca, sa = math.cos(ang), math.sin(ang)
+            pts.append((h + (cx + x * ca - y * sa) * sx, h + cy + x * sa + y * ca))
+        d.polygon(pts, fill=fill)
+
+    for side in (-1, 1):
+        wing(side * C * 0.21, -C * 0.10, C * 0.22, C * 0.15, side * -0.55, BODY)  # upper wings
+        wing(side * C * 0.15, C * 0.13, C * 0.13, C * 0.10, side * 0.6, BODY)    # lower wings
+        wing(side * C * 0.22, -C * 0.11, C * 0.12, C * 0.07, side * -0.55, CORE)  # bright inner panes
+        wing(side * C * 0.15, C * 0.13, C * 0.06, C * 0.05, side * 0.6, CORE)
+    d.ellipse((h - C * 0.022, h - C * 0.20, h + C * 0.022, h + C * 0.22), fill=CORE)  # body
+    for side in (-1, 1):  # antennae
+        d.line([(h, h - C * 0.19), (h + side * C * 0.07 * sx, h - C * 0.30)], fill=CORE, width=int(C * 0.012))
+    return a
+
 
 crescent(); ring_hard(); ring_soft(); spark(); swirl(); swirl_strip(); streak(); sigil(); crown(); moon(); glow()
 sheet('burst-star', 2, 256, 10, burst_frame)
@@ -650,4 +676,5 @@ sheet('bolt', 2, 256, 10, bolt_frame)
 sheet('flame-sheet', 4, 256, 10, flame_frame)
 sheet('shock-sheet', 4, 256, 10, shock_frame)
 sheet('slash-sheet', 4, 256, 10, slash_frame)
+sheet('butterfly', 2, 256, 10, butterfly_frame)
 print('fx drawn:', sorted(os.listdir(OUT)))

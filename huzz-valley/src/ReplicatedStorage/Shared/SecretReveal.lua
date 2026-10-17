@@ -7,15 +7,18 @@
 	  0.0  wide shot of the middle of the map; the world dims and cools; a hum starts
 	  0.4  an orb of light grows over the spot, sparks rush into it, lights circle it faster and faster, a pillar
 	       of light rises; the camera pushes in
+	  1.2  two curved crescents of light rise either side; from 1.75 bright lines slash across between them
+	  2.05 two glowing eyes open in the dark where she'll appear (the owner's Oct 17 reference, design/vfx/ref3)
 	  2.6  everything holds for a split second (the hit-stop)
-	  2.72 IMPACT: the orb bursts (star burst, sparks, shock ring), she appears as a white silhouette in the air;
-	       one soft brightness pulse (the only flash: kid-safe), the camera kicks out
+	  2.72 IMPACT: a split-second manga impact frame (dark lines on white), then the orb bursts (star burst,
+	       sparks, crystal shards, speed streaks, shock ring); she appears as a white silhouette in the air; a soft
+	       brightness pulse right after (frame and pulse are one moment: the only flash, kid-safe); camera kicks out
 	  2.72 she drops to the ground ...
 	  3.1  ... and lands: a ring and a dome burst out, dust; the camera cuts low to her
-	  3.1  slow orbit round her while the world's colour comes back
+	  3.1  slow orbit round her while the world's colour comes back; blue butterflies drift up round her
 	  5.0  she floats up to her place over the map (where she stays all game); the camera tilts up after her
 	  7.0  the camera eases back to you (no hard cut, no black bars), and the game goes on
-	Reduced Motion: the same shots without shake or the kick, and no brightness pulse.
+	Reduced Motion: the same shots without shake, the kick, the impact frame or the brightness pulse.
 ]]
 local SecretReveal = {}
 
@@ -26,6 +29,10 @@ SecretReveal.IMPACT = 2.72
 SecretReveal.LAND = 3.1
 SecretReveal.RISE = 5.0
 SecretReveal.RETURN = 7.0
+SecretReveal.CRESCENTS = 1.2 -- two curved beams of light rise on either side of the orb (owner's Oct 17 reference)
+SecretReveal.SLASHES = { 1.75, 1.95, 2.15, 2.35 } -- bright lines slash across between them, one after another
+SecretReveal.EYES = 2.05 -- two glowing eyes open in the dark where she'll appear, until the impact
+SecretReveal.FRAME = 0.09 -- the impact frame: a split second of black-on-white manga lines (the cutscene's one flash)
 SecretReveal.ORB_HEIGHT = 8 -- studs over the landing spot, scaled with her (Config/Round.Showcase.Scale / 3)
 
 local function clamp01(x: number): number
@@ -71,7 +78,20 @@ function SecretReveal.grade(t: number): (number, number, number, number)
 		local x = (t - SecretReveal.IMPACT) / 0.45
 		pulse = if x < 0.11 then x / 0.11 else 1 - smooth((x - 0.11) / 0.89)
 	end
-	return -0.12 * dim, -0.35 * dim, dim, pulse
+	return -0.18 * dim, -0.35 * dim, dim, pulse
+end
+
+-- Is the impact frame on screen? (one short hold right at the impact; never with Reduced Motion)
+function SecretReveal.impactFrame(t: number, calm: boolean): boolean
+	return not calm and t >= SecretReveal.IMPACT and t < SecretReveal.IMPACT + SecretReveal.FRAME
+end
+
+-- How bright one crossing slash is (0..1): it snaps on, then thins out over a third of a second.
+function SecretReveal.slash(t: number, at: number): number
+	local x = t - at
+	if x < 0 or x > 0.4 then return 0 end
+	if x < 0.04 then return x / 0.04 end
+	return 1 - smooth((x - 0.04) / 0.36)
 end
 
 -- The camera's field of view: pushes in during the build-up, kicks out at the impact, settles.
