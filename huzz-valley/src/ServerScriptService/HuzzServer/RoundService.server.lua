@@ -292,6 +292,8 @@ function handlers.HeroResult(e)
 				d.Coins = (d.Coins or 0) + Config.HeroBonus
 			end)
 			RoundNet:FireClient(p, "Bonus", { coins = Config.HeroBonus })
+			tally[e.id] = tally[e.id] or {}
+			tally[e.id].BonusCoins = (tally[e.id].BonusCoins or 0) + Config.HeroBonus -- (shown on the results screen)
 		end
 	end
 end
@@ -702,7 +704,8 @@ local function finishGame()
 				outcome = if botWon then "Bot" elseif won then "Win" else "Lose",
 				girl = girl.name, rarity = girl.rarity, gotGirl = winnerId == id,
 				crossed = t.Crossings or 0, catches = t.Catches or 0, rescues = t.Rescues or 0, heroes = t.Heroes or 0,
-				coins = coins, aura = aura,
+				-- everything this game paid: the game's pay, a Hero bonus, and Aura from stars on the field
+				coins = coins + (t.BonusCoins or 0), aura = aura + (p:GetAttribute("HuzzGameAura") or 0),
 			})
 		end
 	end
@@ -745,6 +748,9 @@ end
 
 local function runGame()
 	table.clear(tally)
+	for _, p in Players:GetPlayers() do
+		p:SetAttribute("HuzzGameAura", 0) -- (AuraPickupService adds the stars collected this game)
+	end
 	showShowcase()
 	local ids = {}
 	for id in byId do

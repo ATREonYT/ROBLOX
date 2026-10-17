@@ -31,6 +31,8 @@ local frozen = true
 local goAt, pauseUntil, nextThink = 0, 0, 0
 local stuckAt, stuckPos, dodgeUntil, dodgeTo = 0, nil, 0, nil -- (walked into a wall: step round it for a moment)
 local route, routeAt, routing, nextRoute = nil, 1, false, 0 -- a path round walls (PathfindingService waypoints)
+local routeFor = nil -- the runner the current path leads to
+local routeAsk = 0 -- bumped whenever a path in the works goes stale (moved, frozen, removed)
 local tracks = {} -- { run = AnimationTrack?, idle = AnimationTrack? }
 local warned = false
 
@@ -139,6 +141,7 @@ end
 
 function PracticeBot.place(at: CFrame)
 	home = at
+	route, nextRoute, routeAsk = nil, 0, routeAsk + 1 -- (an old path from where it was is no use now)
 	if PracticeBot.active() then model:PivotTo(at) end
 end
 
@@ -147,6 +150,7 @@ function PracticeBot.setFrozen(on: boolean)
 	if on == frozen then return end
 	frozen = on
 	if not on then goAt = os.clock() + B.Reaction end
+	route, nextRoute, routeAsk = nil, 0, routeAsk + 1
 	if model then model:SetAttribute("HuzzFrozen", on) end -- (the red screen glow ignores it only while it waits)
 	setSpeed(false)
 end
@@ -156,7 +160,7 @@ function PracticeBot.remove()
 	model, humanoid, root = nil, nil, nil
 	table.clear(tracks)
 	frozen = true
-	route = nil
+	route, routeAsk = nil, routeAsk + 1
 end
 
 -- True when nothing solid stands between the bot and `to` (people don't count): then it just runs straight there.
@@ -169,6 +173,8 @@ local function clearLine(to: Vector3): boolean
 			if p.Character then table.insert(skip, p.Character) end
 		end
 		params.FilterDescendantsInstances = skip
+		params.RespectCanCollide = true -- (zone boxes and see-through props don't block it)
+		params.CollisionGroup = "Default"
 		local from = root.Position
 		local hit = Workspace:Raycast(from, to - from, params)
 		return hit and hit.Instance.CanCollide and hit.Instance.Transparency < 1 -- (invisible walls are the field's edge)
@@ -180,6 +186,7 @@ end
 local function findRoute(to: Vector3)
 	if routing then return end
 	routing = true
+	local ask = routeAsk
 	task.spawn(function()
 		local ok, waypoints = pcall(function()
 			local path = PathfindingService:CreatePath({ AgentRadius = 2, AgentHeight = 5, AgentCanJump = false })
@@ -187,7 +194,7 @@ local function findRoute(to: Vector3)
 			return if path.Status == Enum.PathStatus.Success then path:GetWaypoints() else nil
 		end)
 		routing = false
-		if ok and waypoints and #waypoints > 1 and root then
+		if ok and waypoints and #waypoints > 1 and root and ask == routeAsk then
 			route, routeAt = waypoints, 2
 		end
 	end)
@@ -243,6 +250,9 @@ function PracticeBot.step(targets: { BasePart }, stab: (BasePart) -> boolean, fa
 		return
 	end
 	-- Something solid between it and the runner: follow a path round it (refreshed every second).
+	if best ~= routeFor then -- (a different runner: the old path leads the wrong way)
+		route, nextRoute, routeAsk, routeFor = nil, 0, routeAsk + 1, best
+	end
 	local goal = if best then best.Position else if home then home.Position else nil
 	if goal and not clearLine(goal) then
 		if now >= nextRoute then

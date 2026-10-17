@@ -49,6 +49,7 @@ local function collect(star: BasePart, player: Player)
 		d.Stats.AuraStars = (d.Stats.AuraStars or 0) + 1 -- (lore quest: Star Catcher)
 	end)
 	Net.get("Round"):FireClient(player, "AuraCollected", { value = value, kind = kind, at = at })
+	player:SetAttribute("HuzzGameAura", (player:GetAttribute("HuzzGameAura") or 0) + value) -- (the results screen)
 	task.delay(rng:NextNumber(Config.Respawn[1], Config.Respawn[2]), spawnOne)
 end
 

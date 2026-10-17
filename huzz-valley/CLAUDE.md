@@ -153,7 +153,8 @@ Owner's own words are in quotes. Read only the section you need.
   (default blocky body from `CreateHumanoidModelFromDescription`, grey with a red shirt, tag CATCHER / BOT, a knife).
   Speed 24 (< runner 28), stabs within 5 studs through `stabNear(nil, ...)`, 1.2 s breather after each stab. If it
   downs everyone nobody wins ("THE BOT WINS", no girl, no winner's pay). With it, one player starts a game in the
-  live game too (`minPlayers` 1). Red outline like catchers; sidesteps when stuck (no pathfinding). The sim tests it
+  live game too (`minPlayers` 1). Red outline like catchers; round walls it follows a PathfindingService path (computed in a
+  task.spawn when a raycast to the target hits something solid), and sidesteps when stuck. The sim tests it
   with a fake body.
 - **Powers** (free each round, `Config/Powers`): runners Heart Shield + Rizz Rush; catchers Love Trap + Charm Wave.
 - **Speeds** (`Config/Round.Speeds`, raised twice: lobby 22, runner 28, catcher 30, holder 27). `Gameplay/Sprint`
@@ -172,6 +173,11 @@ Owner's own words are in quotes. Read only the section you need.
 - **Map look:** when a map wins the vote, `MapService.paintLobby` gives the lobby floor that map's floor colour,
   material and textures (the floor = the part found most under a 5x5 grid over the field; Halloween's orange is a
   Texture on its grass).
+- **Results screen** (`Screens/Results`, Oct 17): after a game, once back in the lobby with nothing open (it waits out the map vote) a
+  GAME OVER window: YOU WIN / YOU LOST / THE BOT WINS, who got the girl, cards for crossed / caught / saved / hero
+  runs (this game only: RoundService `tally`, filled by `addStat`) and the coins + Aura earned (Round remote
+  "Results", per player; coins include a Hero bonus, Aura the stars collected: player attribute `HuzzGameAura`).
+  Preview: `shots.sh <out> results`.
 - **Pay:** 15 coins a game, 35 for a win, +3 Aura on a win, Hero bonus 25; x2 while a wheel boost lasts.
 - **Girl odds** (`Config/Round.Rarities`, raised: "I'm only getting commons"): Common 28, Uncommon 24, Rare 20,
   Epic 14, Legendary 8, Mythic 4.5, Secret 1.5.
@@ -248,7 +254,8 @@ Owner's own words are in quotes. Read only the section you need.
   real free spin every 15 min; packs of 1/10/100 for 48/340/1200 Robux (Developer Products, Id 0 until the owner
   creates them, granted only in ShopService's ProcessReceipt). Odds shown: 100 coins 28%, 250 coins 22%, 25 Aura
   16%, x2 Coins 15 min 12%, 500 coins 10%, 60 Aura 7%, 1,000 coins 4%, Spin Knife 1%; a Legendary is guaranteed by
-  spin 40 (pity shown where the reference had a fake "daily discount"). Opens from the owner's wheel model (name
+  spin 40 (pity shown where the reference had a fake "daily discount"). While an x2 Coins boost lasts, a green
+  "x2 COINS 12:33" tag sits over the HUD coin pill (`LobbyHud`, from the saved `Boosts.Coins` end time). Opens from the owner's wheel model (name
   contains "spin" + "wheel", or tag `HuzzSpinWheel`) or the SPIN button.
 - **Lore quests** (`Config/Progression.Chapters`): 4 chapters x 2 quests with a story line, opened in order
   (server-checked). Rewards: coins, Aura and three quest-only knives (Rookie, Hunter, Moonlit). Stats from real
@@ -279,7 +286,6 @@ Owner's own words are in quotes. Read only the section you need.
   colours); their 3D knife renders; power icons; a stab animation; crate contents; dance names; movement pack licence.
 - Owner's place notes (Oct 17): no Uncommon girls yet (the rarity is skipped until there are some); a plank path
   near the Halloween lobby and a basketball hoop sit loose in Workspace (not in a map folder).
-- Us: whatever the owner's next round of fixes asks for first; then a match results screen, the Gift Picker, a HUD
-  timer for the x2 Coins boost, more lore chapters.
+- Us: whatever the owner's next round of fixes asks for first; then the Gift Picker, more lore chapters.
 - Everything in sections 7 to 12 is the current version, open to change: tuning numbers (speeds, odds, prices,
   lunge, wheel prizes), looks and feel are first passes waiting for the owner's verdict in Studio.

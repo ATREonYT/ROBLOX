@@ -86,7 +86,7 @@ end
 
 function Results.build(parent: Instance)
 	local player = Players.LocalPlayer
-	window = Kit.window({ Name = "Results", Title = "GAME OVER", Icon = "RewardsTrophy", Width = W, Height = H, TitleWidth = 220, Parent = parent, OnClose = function() ModalManager.close() end })
+	window = Kit.window({ Name = "Results", Title = "GAME OVER", Icon = "RewardsTrophy", Width = W, Height = H, TitleWidth = 220, Flat = true, Parent = parent, OnClose = function() ModalManager.close() end })
 	local panel = window.Panel
 	title = Kit.name({ Name = "Outcome", Text = "YOU WIN!", TextSize = 34, FontFace = F.Big, TextColor3 = C.Accent, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(0, 52), Size = UDim2.new(1, 0, 0, 38), Parent = panel })
 	line = Kit.name({ Name = "Line", Text = "Your team won", TextSize = 18, TextColor3 = C.SubText, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(20, 90), Size = UDim2.new(1, -40, 0, 24), Parent = panel })
@@ -105,24 +105,34 @@ function Results.build(parent: Instance)
 		items = function() return cards end,
 	})
 
-	-- After a game: fill it, then open it once the banners are done (only if nothing else is open by then).
-	local seq = 0
+	-- After a game: fill it, then open it once the banners are done, the moment you're in the lobby with nothing
+	-- else open (the map vote pops up right after a game; the results wait until you've voted and it tucks away).
+	-- A new game starting first drops them.
+	local waiting, readyAt = false, 0
+	local function tryOpen()
+		if not waiting or os.clock() < readyAt then return end
+		local role = player:GetAttribute("HuzzRole")
+		if role == "Runner" or role == "Catcher" then
+			if os.clock() > readyAt + 2 then waiting = false end -- (already in the next game: too late for them)
+			return
+		end
+		if ModalManager.current() == nil then
+			waiting = false
+			ModalManager.open("Results")
+		end
+	end
 	Net.get("Round").OnClientEvent:Connect(function(kind, data)
 		if kind ~= "Results" or type(data) ~= "table" then return end
-		seq += 1
-		local mine = seq
 		Results.fill(data)
-		task.delay(DELAY, function()
-			for _ = 1, 12 do -- (back in the lobby first: wait up to 6 s more for it)
-				if mine ~= seq then return end
-				local role = player:GetAttribute("HuzzRole")
-				if role ~= "Runner" and role ~= "Catcher" then
-					if ModalManager.current() == nil then ModalManager.open("Results") end
-					return
-				end
-				task.wait(0.5)
-			end
-		end)
+		waiting, readyAt = true, os.clock() + DELAY
+		task.delay(DELAY, tryOpen)
+	end)
+	ModalManager.changed(function() task.delay(0.3, tryOpen) end)
+	task.spawn(function()
+		while window.Holder.Parent do
+			task.wait(1)
+			tryOpen()
+		end
 	end)
 	return window
 end

@@ -7,10 +7,14 @@ local Theme = require(script.Parent.Theme)
 local Motion = {}
 Motion.reduced = false
 
-local running: { [Instance]: { [string]: Tween } } = setmetatable({}, { __mode = "k" }) :: any
+-- (a plain table: weak tables keyed by an Instance lose entries at random in Roblox; each entry leaves with its part)
+local running: { [Instance]: { [string]: Tween } } = {}
 
 function Motion.tween(inst: Instance, channel: string, time: number, props: { [string]: any }, style: Enum.EasingStyle?)
-	running[inst] = running[inst] or {}
+	if not running[inst] then
+		running[inst] = {}
+		inst.Destroying:Connect(function() running[inst] = nil end)
+	end
 	local old = running[inst][channel]
 	if old then old:Cancel() end
 	if Motion.reduced or time <= 0 then
