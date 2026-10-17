@@ -23,7 +23,7 @@ local SECONDS = T_BACK + 4
 
 local scene = Scene.new()
 -- the field, the safe line, the far line
-scene:addBox(CFrame.new(0, -0.1, -30), Vector3.new(90, 0.2, 80), "#3fae55")
+scene:addBox(CFrame.new(0, -0.08, -30), Vector3.new(90, 0.2, 80), "#3fae55") -- (top just above the renderer's ground: no flicker)
 scene:addBox(CFrame.new(0, 0.02, 0), Vector3.new(40, 0.06, 0.6), "#ffffff")
 scene:addBox(CFrame.new(0, 0.02, -60), Vector3.new(40, 0.06, 0.6), "#ffffff")
 local line = Rig.lookAt(Vector3.new(0, 0, 0), Vector3.new(0, 0, -1)) -- looking across the field (-Z)
