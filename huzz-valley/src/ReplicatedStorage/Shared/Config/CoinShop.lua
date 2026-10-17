@@ -20,7 +20,7 @@
 	Pose and Outfit are the Robux cosmetics' slots (Crown Pose, Midnight Outfit in Config/Products).
 ]]
 export type Earn = { Rarity: string?, Stat: string?, Count: number?, Girls: number? }
-export type Item = { Key: string, Slot: "Trail" | "Tag" | "Knife" | "Aura" | "Title", Name: string, Price: number, Colors: { Color3 }, Rainbow: boolean?, Order: number, NotForSale: boolean?, Unlock: string?, Earn: Earn?, Rarity: string? }
+export type Item = { Key: string, Slot: "Trail" | "Tag" | "Knife" | "Aura" | "Title", Name: string, Price: number, Colors: { Color3 }, Rainbow: boolean?, Order: number, NotForSale: boolean?, Unlock: string?, Earn: Earn?, Rarity: string?, Art: string? }
 
 local Products = require(script.Parent.Products)
 
@@ -35,15 +35,15 @@ local SECRET = { rgb(150, 110, 255), rgb(255, 90, 200), rgb(90, 220, 255) }
 
 CoinShop.Items = {
 	-- Trails
-	{ Key = "MintTrail", Slot = "Trail", Name = "Mint Trail", Price = 400, Colors = { rgb(140, 255, 210), rgb(60, 200, 160) }, Order = 1 },
-	{ Key = "OceanTrail", Slot = "Trail", Name = "Ocean Trail", Price = 750, Colors = { rgb(120, 220, 255), rgb(40, 110, 255) }, Order = 2 },
-	{ Key = "CandyTrail", Slot = "Trail", Name = "Candy Trail", Price = 1000, Colors = { rgb(255, 150, 210), rgb(170, 120, 255) }, Order = 3 },
-	{ Key = "GalaxyTrail", Slot = "Trail", Name = "Galaxy Trail", Price = 2500, Colors = { rgb(120, 90, 255), rgb(255, 90, 200), rgb(90, 220, 255) }, Rainbow = true, Order = 4 },
+	{ Key = "MintTrail", Art = "ItemMintTrail", Slot = "Trail", Name = "Mint Trail", Price = 400, Colors = { rgb(140, 255, 210), rgb(60, 200, 160) }, Order = 1 },
+	{ Key = "OceanTrail", Art = "ItemOceanTrail", Slot = "Trail", Name = "Ocean Trail", Price = 750, Colors = { rgb(120, 220, 255), rgb(40, 110, 255) }, Order = 2 },
+	{ Key = "CandyTrail", Art = "ItemCandyTrail", Slot = "Trail", Name = "Candy Trail", Price = 1000, Colors = { rgb(255, 150, 210), rgb(170, 120, 255) }, Order = 3 },
+	{ Key = "GalaxyTrail", Art = "ItemGalaxyTrail", Slot = "Trail", Name = "Galaxy Trail", Price = 2500, Colors = { rgb(120, 90, 255), rgb(255, 90, 200), rgb(90, 220, 255) }, Rainbow = true, Order = 4 },
 	-- Name colours
-	{ Key = "TagPink", Slot = "Tag", Name = "Pink Name", Price = 300, Colors = { rgb(255, 130, 200), rgb(255, 130, 200) }, Order = 5 },
-	{ Key = "TagSky", Slot = "Tag", Name = "Sky Name", Price = 300, Colors = { rgb(110, 210, 255), rgb(110, 210, 255) }, Order = 6 },
-	{ Key = "TagLime", Slot = "Tag", Name = "Lime Name", Price = 300, Colors = { rgb(150, 245, 110), rgb(150, 245, 110) }, Order = 7 },
-	{ Key = "TagRainbow", Slot = "Tag", Name = "Rainbow Name", Price = 1500, Colors = { rgb(255, 110, 110), rgb(255, 220, 90), rgb(110, 240, 140), rgb(110, 180, 255), rgb(200, 120, 255) }, Rainbow = true, Order = 8 },
+	{ Key = "TagPink", Art = "ItemPinkName", Slot = "Tag", Name = "Pink Name", Price = 300, Colors = { rgb(255, 130, 200), rgb(255, 130, 200) }, Order = 5 },
+	{ Key = "TagSky", Art = "ItemSkyName", Slot = "Tag", Name = "Sky Name", Price = 300, Colors = { rgb(110, 210, 255), rgb(110, 210, 255) }, Order = 6 },
+	{ Key = "TagLime", Art = "ItemLimeName", Slot = "Tag", Name = "Lime Name", Price = 300, Colors = { rgb(150, 245, 110), rgb(150, 245, 110) }, Order = 7 },
+	{ Key = "TagRainbow", Art = "ItemRainbowName", Slot = "Tag", Name = "Rainbow Name", Price = 1500, Colors = { rgb(255, 110, 110), rgb(255, 220, 90), rgb(110, 240, 140), rgb(110, 180, 255), rgb(200, 120, 255) }, Rainbow = true, Order = 8 },
 	-- Knives (catchers)
 	{ Key = "IceKnife", Slot = "Knife", Name = "Ice Knife", Price = 800, Colors = { rgb(170, 230, 255), rgb(60, 160, 255) }, Order = 9 },
 	{ Key = "CandyKnife", Slot = "Knife", Name = "Candy Knife", Price = 800, Colors = { rgb(255, 160, 215), rgb(255, 90, 170) }, Order = 10 },
@@ -54,18 +54,18 @@ CoinShop.Items = {
 	{ Key = "MoonlitKnife", Slot = "Knife", Name = "Moonlit Knife", Price = 0, Unlock = "Quest: Win 10 games (chapter 4)", Colors = { rgb(220, 235, 255), rgb(120, 140, 255), rgb(200, 120, 255) }, Rainbow = true, Order = 14 },
 	{ Key = "SpinKnife", Slot = "Knife", Name = "Spin Knife", Price = 0, NotForSale = true, Colors = { rgb(255, 80, 180), rgb(130, 90, 255), rgb(80, 220, 255) }, Rainbow = true, Order = 15 }, -- (Spin the Wheel only)
 	-- Rewards from the girls you get (rarest first, so they lead the ITEMS tab) and from playing well.
-	{ Key = "TitleSecret", Slot = "Title", Name = "Keeper of Secrets", Price = 0, Rarity = "Secret", Earn = { Rarity = "Secret" }, Unlock = "Get a Secret girl", Colors = SECRET, Rainbow = true, Order = -30 },
-	{ Key = "AuraSecret", Slot = "Aura", Name = "Void Halo", Price = 0, Rarity = "Secret", Earn = { Rarity = "Secret" }, Unlock = "Get a Secret girl", Colors = SECRET, Rainbow = true, Order = -29 },
-	{ Key = "TrailSecret", Slot = "Trail", Name = "Secret Comet", Price = 0, Rarity = "Secret", Earn = { Rarity = "Secret" }, Unlock = "Get a Secret girl", Colors = SECRET, Rainbow = true, Order = -28 },
-	{ Key = "TitleMythic", Slot = "Title", Name = "Mythic Charmer", Price = 0, Rarity = "Mythic", Earn = { Rarity = "Mythic" }, Unlock = "Get a Mythic girl", Colors = { MYTHIC, rgb(255, 170, 200) }, Order = -27 },
-	{ Key = "AuraMythic", Slot = "Aura", Name = "Mythic Blaze", Price = 0, Rarity = "Mythic", Earn = { Rarity = "Mythic" }, Unlock = "Get a Mythic girl", Colors = { rgb(255, 150, 190), MYTHIC, rgb(150, 20, 70) }, Order = -26 },
-	{ Key = "TrailMythic", Slot = "Trail", Name = "Mythic Streak", Price = 0, Rarity = "Mythic", Earn = { Rarity = "Mythic" }, Unlock = "Get a Mythic girl", Colors = { rgb(255, 200, 220), MYTHIC, rgb(150, 20, 70) }, Order = -25 },
-	{ Key = "TitleLegend", Slot = "Title", Name = "Legend Hunter", Price = 0, Rarity = "Legendary", Earn = { Rarity = "Legendary" }, Unlock = "Get a Legendary girl", Colors = { LEGEND, rgb(255, 240, 190) }, Order = -24 },
-	{ Key = "AuraLegend", Slot = "Aura", Name = "Legend Glow", Price = 0, Rarity = "Legendary", Earn = { Rarity = "Legendary" }, Unlock = "Get a Legendary girl", Colors = { rgb(255, 245, 200), LEGEND, rgb(255, 130, 40) }, Order = -23 },
-	{ Key = "TrailLegend", Slot = "Trail", Name = "Legend Streak", Price = 0, Rarity = "Legendary", Earn = { Rarity = "Legendary" }, Unlock = "Get a Legendary girl", Colors = { rgb(255, 250, 220), LEGEND, rgb(255, 130, 40) }, Order = -22 },
-	{ Key = "TitleCollector", Slot = "Title", Name = "Girl Collector", Price = 0, Earn = { Girls = 10 }, Unlock = "Own 10 girls", Colors = { rgb(255, 150, 210), rgb(255, 150, 210) }, Order = -21 },
-	{ Key = "TitleHero", Slot = "Title", Name = "Huss Hero", Price = 0, Earn = { Stat = "Heroes", Count = 10 }, Unlock = "Make 10 hero runs", Colors = { rgb(91, 224, 122), rgb(91, 224, 122) }, Order = -20 },
-	{ Key = "TitleGuardian", Slot = "Title", Name = "Guardian", Price = 0, Earn = { Stat = "Rescues", Count = 25 }, Unlock = "Save 25 friends", Colors = { rgb(110, 210, 255), rgb(110, 210, 255) }, Order = -19 },
+	{ Key = "TitleSecret", Slot = "Title", Name = "Keeper of Secrets", Price = 0, Rarity = "Secret", Earn = { Rarity = "Secret" }, Unlock = "Get a Secret girl", Colors = SECRET, Rainbow = true, Order = 16 },
+	{ Key = "AuraSecret", Art = "ItemVoidHalo", Slot = "Aura", Name = "Void Halo", Price = 0, Rarity = "Secret", Earn = { Rarity = "Secret" }, Unlock = "Get a Secret girl", Colors = SECRET, Rainbow = true, Order = 17 },
+	{ Key = "TrailSecret", Art = "ItemSecretComet", Slot = "Trail", Name = "Secret Comet", Price = 0, Rarity = "Secret", Earn = { Rarity = "Secret" }, Unlock = "Get a Secret girl", Colors = SECRET, Rainbow = true, Order = 18 },
+	{ Key = "TitleMythic", Slot = "Title", Name = "Mythic Charmer", Price = 0, Rarity = "Mythic", Earn = { Rarity = "Mythic" }, Unlock = "Get a Mythic girl", Colors = { MYTHIC, rgb(255, 170, 200) }, Order = 19 },
+	{ Key = "AuraMythic", Art = "ItemMythicBlaze", Slot = "Aura", Name = "Mythic Blaze", Price = 0, Rarity = "Mythic", Earn = { Rarity = "Mythic" }, Unlock = "Get a Mythic girl", Colors = { rgb(255, 150, 190), MYTHIC, rgb(150, 20, 70) }, Order = 20 },
+	{ Key = "TrailMythic", Art = "ItemMythicStreak", Slot = "Trail", Name = "Mythic Streak", Price = 0, Rarity = "Mythic", Earn = { Rarity = "Mythic" }, Unlock = "Get a Mythic girl", Colors = { rgb(255, 200, 220), MYTHIC, rgb(150, 20, 70) }, Order = 21 },
+	{ Key = "TitleLegend", Slot = "Title", Name = "Legend Hunter", Price = 0, Rarity = "Legendary", Earn = { Rarity = "Legendary" }, Unlock = "Get a Legendary girl", Colors = { LEGEND, rgb(255, 240, 190) }, Order = 22 },
+	{ Key = "AuraLegend", Art = "ItemLegendGlow", Slot = "Aura", Name = "Legend Glow", Price = 0, Rarity = "Legendary", Earn = { Rarity = "Legendary" }, Unlock = "Get a Legendary girl", Colors = { rgb(255, 245, 200), LEGEND, rgb(255, 130, 40) }, Order = 23 },
+	{ Key = "TrailLegend", Art = "ItemLegendStreak", Slot = "Trail", Name = "Legend Streak", Price = 0, Rarity = "Legendary", Earn = { Rarity = "Legendary" }, Unlock = "Get a Legendary girl", Colors = { rgb(255, 250, 220), LEGEND, rgb(255, 130, 40) }, Order = 24 },
+	{ Key = "TitleCollector", Slot = "Title", Name = "Girl Collector", Price = 0, Earn = { Girls = 10 }, Unlock = "Own 10 girls", Colors = { rgb(255, 150, 210), rgb(255, 150, 210) }, Order = 25 },
+	{ Key = "TitleHero", Slot = "Title", Name = "Huss Hero", Price = 0, Earn = { Stat = "Heroes", Count = 10 }, Unlock = "Make 10 hero runs", Colors = { rgb(91, 224, 122), rgb(91, 224, 122) }, Order = 26 },
+	{ Key = "TitleGuardian", Slot = "Title", Name = "Guardian", Price = 0, Earn = { Stat = "Rescues", Count = 25 }, Unlock = "Save 25 friends", Colors = { rgb(110, 210, 255), rgb(110, 210, 255) }, Order = 27 },
 } :: { Item }
 
 local byKey: { [string]: Item } = {}

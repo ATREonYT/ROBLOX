@@ -261,10 +261,11 @@ local function buildCoins(body: Frame)
 	end
 end
 
--- ITEMS: the coin shop (Config/CoinShop; owner: "make the coins usable"). Looks only: trails, name colours and
--- knife skins, three to a row. Each card shows a preview in the item's own colours, its name and slot, and one
--- button: the coin price (buy and wear it), WEAR (owned), or WEARING (tap to take it off). The server decides.
-local ITEM = { W = 216, H = 92, Gap = 10, Swatch = 64 }
+-- ITEMS: the coin shop (Config/CoinShop; owner: "make the coins usable"). Looks only: trails, name colours, knife
+-- skins and the girls' rewards. Picture cards after the owner's Oct 17 mockup (design/ui-oct17): four to a row, the
+-- name and slot on top, a big picture (Config/CoinShop Art; drawn here for items without one), and one button: the
+-- coin price (buy and wear it), WEAR (owned), or WEARING (tap to take it off). The server decides.
+local ITEM = { W = 161, H = 170, Gap = 8, ArtY = 39, ArtH = 89, Swatch = 64, Fill = Color3.fromHex("0B1C3E"), FillBottom = Color3.fromHex("0A1537"), Rim = Color3.fromHex("2B4E8C"), Slot = Color3.fromHex("AEB4F0") }
 local rarityColor = {}
 for _, r in RoundConfig.Rarities do rarityColor[r.Name] = r.Color end
 rarityColor.Secret = Color3.fromRGB(150, 110, 255) -- (near-black in the roller; violet reads on the dark window)
@@ -314,22 +315,41 @@ local function buildItems(body: Frame)
 	end
 	table.sort(list, function(a, b) return a.Order < b.Order end)
 	for i, item in list do
-		local col, rowN = (i - 1) % 3, (i - 1) // 3
-		local c = card(body, item.Key, Vector2.new(-2 + col * (ITEM.W + ITEM.Gap), rowN * (ITEM.H + 8)), Vector2.new(ITEM.W, ITEM.H))
+		local col, rowN = (i - 1) % 4, (i - 1) // 4
+		local c = new("Frame", { Name = item.Key, Position = UDim2.fromOffset(-2 + col * (ITEM.W + ITEM.Gap), rowN * (ITEM.H + ITEM.Gap)), Size = UDim2.fromOffset(ITEM.W, ITEM.H), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = body }, { Kit.corner(6), Kit.stroke(ITEM.Rim, 2) })
+		new("UIGradient", { Rotation = 90, Color = ColorSequence.new(ITEM.Fill, ITEM.FillBottom), Parent = c })
 		local tint = item.Rarity and rarityColor[item.Rarity]
-		if tint then -- the girls' rewards: a rim and a glow in the rarity's colour, so they stand out
+		if tint then -- the girls' rewards: a rim in the rarity's colour, so they stand out
 			local rim = c:FindFirstChildOfClass("UIStroke")
 			if rim then rim.Color, rim.Thickness = tint, 2 end
-			new("Frame", { Name = "Glow", Size = UDim2.new(0.6, 0, 1, 0), BackgroundColor3 = tint, BackgroundTransparency = 0.8, BorderSizePixel = 0, ZIndex = 0, Parent = c }, {
-				Kit.corner(4), new("UIGradient", { Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(1, 1) }) }),
+		end
+		if tint or not item.Art then -- a soft glow from the top in the item's colour (pictures carry their own glow)
+			new("Frame", { Name = "Glow", Size = UDim2.new(1, 0, 0.75, 0), BackgroundColor3 = tint or item.Colors[1], BackgroundTransparency = if tint then 0.8 else 0.86, BorderSizePixel = 0, ZIndex = 0, Parent = c }, {
+				Kit.corner(6), new("UIGradient", { Rotation = 90, Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(1, 1) }) }),
 			})
 		end
-		swatch(c, item)
-		Kit.name({ Name = "Name", Text = item.Name, TextSize = 16, Position = UDim2.fromOffset(84, 10), Size = UDim2.fromOffset(ITEM.W - 92, 20), Parent = c })
+		if item.Art then
+			Kit.art(item.Art, { Name = "Picture", Position = UDim2.fromOffset(2, ITEM.ArtY), Size = UDim2.fromOffset(ITEM.W - 4, ITEM.ArtH), Parent = c })
+		elseif item.Slot == "Title" then
+			-- the title itself, big, in its colours (as it shows over your name)
+			local word = Kit.text({ Name = "Word", Text = string.upper(item.Name), FontFace = Theme.Fonts.Heading, TextScaled = true, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Center, TextColor3 = item.Colors[1], Position = UDim2.fromOffset(12, ITEM.ArtY + 14), Size = UDim2.fromOffset(ITEM.W - 24, ITEM.ArtH - 28), Parent = c })
+			new("UIStroke", { Name = "Outline", Color = C.Frame, Thickness = 2, Parent = word })
+			if #item.Colors > 2 then
+				word.TextColor3 = Color3.new(1, 1, 1)
+				new("UIGradient", { Name = "Colours", Color = CoinShop.sequence(item), Parent = word })
+			end
+		else
+			-- no picture yet (knives): the drawn swatch, bigger, in the middle of the picture area
+			local holder = new("Frame", { Name = "Drawn", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, ITEM.ArtY + 45), Size = UDim2.fromOffset(84, 84), BackgroundTransparency = 1, Parent = c })
+			local sw = swatch(holder, item)
+			sw.Position, sw.Size, sw.BackgroundTransparency = UDim2.new(), UDim2.fromScale(1, 1), 1
+			new("UIScale", { Scale = 1.6, Parent = sw:FindFirstChild("Knife") or sw })
+		end
+		Kit.name({ Name = "Name", Text = item.Name, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(4, 7), Size = UDim2.fromOffset(ITEM.W - 8, 18), Parent = c })
 		local slotText = CoinShop.SlotNames[item.Slot]
 		if item.Rarity then slotText = string.upper(item.Rarity) .. " · " .. slotText end
-		Kit.text({ Name = "Slot", Text = slotText, FontFace = Theme.Fonts.Label, TextSize = 12, TextColor3 = tint or C.SubText, Position = UDim2.fromOffset(84, 31), Size = UDim2.fromOffset(ITEM.W - 92, 16), TextWrapped = false, Parent = c })
-		local b = Kit.button({ Name = "Buy", Text = "", Icon = "CurrencyCoin", IconSize = 20, Gap = 6, TextSize = 17, FontFace = Theme.Fonts.Number, Style = "Action", Position = UDim2.fromOffset(84, 52), Size = UDim2.fromOffset(ITEM.W - 94, 30), Parent = c })
+		Kit.text({ Name = "Slot", Text = slotText, FontFace = Theme.Fonts.Label, TextSize = 11, TextColor3 = tint or ITEM.Slot, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(4, 25), Size = UDim2.fromOffset(ITEM.W - 8, 12), TextWrapped = false, Parent = c })
+		local b = Kit.button({ Name = "Buy", Text = "", Icon = "CurrencyCoin", IconSize = 26, Gap = 8, TextSize = 20, FontFace = Theme.Fonts.Number, Style = "ItemBuy", Corner = 5, Position = UDim2.fromOffset(7, ITEM.H - 42), Size = UDim2.fromOffset(ITEM.W - 14, 36), Parent = c })
 		local icon = b.Instance:FindFirstChild("Icon", true) :: GuiObject?
 		local function refresh()
 			local owned = State.data.Cosmetics[item.Key] == true
@@ -340,7 +360,7 @@ local function buildItems(body: Frame)
 				b.setStyle("Disabled")
 			elseif not owned then
 				b.setText(Format.commas(item.Price))
-				b.setStyle(if (State.data.Coins or 0) >= item.Price then "Action" else "Disabled")
+				b.setStyle(if (State.data.Coins or 0) >= item.Price then "ItemBuy" else "Disabled")
 			else
 				b.setText(if worn then "WEARING" else "WEAR")
 				b.setStyle(if worn then "Selected" else "Tab")
