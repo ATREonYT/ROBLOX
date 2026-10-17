@@ -172,19 +172,20 @@ function M.build(model: Model, base: CFrame)
 	end
 	for _, c in crescents do c.glow.Transparency = NumberSequence.new(0.25) end
 	local eyeAt = orbAt + Vector3.new(0, size.Y * 0.28, 0)
-	local eyeGap = math.max(size.X * 0.12, 0.6 * k)
+	local eyeGap = math.max(size.X * 0.2, 1.6 * k)
 	local eyes = {}
 	for _, side in { -1, 1 } do
-		local eye = part({ Name = "Eye", Shape = Enum.PartType.Ball, Material = Enum.Material.Neon, Color = PINK, Size = Vector3.one * 0.9 * k, Transparency = 1 }, folder)
+		local eye = part({ Name = "Eye", Material = Enum.Material.Neon, Color = PINK, Size = Vector3.new(2.6 * k, 0.55 * k, 0.3 * k), Transparency = 1 }, folder)
 		local flare = part({ Name = "Flare", Material = Enum.Material.Neon, Color = rgb(255, 160, 225), Size = Vector3.one * 0.05, Transparency = 1 }, folder)
 		table.insert(eyes, { side = side, eye = eye, flare = flare })
 	end
 
-	-- the impact frame: a split second of dark manga lines bursting from the middle on white (Reduced Motion: none)
+	-- the impact frame: a split second of pink manga lines bursting in from the edges on deep violet (not white: the
+	-- reference's impact is pink on dark, and it's gentler on the eyes). Reduced Motion: none.
 	local frameGui = Instance.new("ScreenGui")
 	frameGui.Name, frameGui.IgnoreGuiInset, frameGui.DisplayOrder, frameGui.Enabled, frameGui.ResetOnSpawn = "HuzzImpactFrame", true, 60, false, false
 	local paper = Instance.new("Frame")
-	paper.Size, paper.BackgroundColor3, paper.BorderSizePixel = UDim2.fromScale(1, 1), rgb(250, 246, 255), 0
+	paper.Size, paper.BackgroundColor3, paper.BorderSizePixel = UDim2.fromScale(1, 1), rgb(34, 10, 58), 0
 	paper.Parent = frameGui
 	local burst = Instance.new("Frame")
 	burst.AnchorPoint, burst.Position, burst.Size, burst.BackgroundTransparency = Vector2.new(0.5, 0.5), UDim2.fromScale(0.5, 0.5), UDim2.fromOffset(2400, 2400), 1
@@ -200,7 +201,7 @@ function M.build(model: Model, base: CFrame)
 		line.Rotation = a
 		local r = 1200 - len / 2 -- (from the outer edge inwards; its centre sits this far out)
 		line.Position = UDim2.fromOffset(math.round(1200 + math.sin(math.rad(a)) * r), math.round(1200 - math.cos(math.rad(a)) * r))
-		line.BackgroundColor3, line.BorderSizePixel = rgb(24, 10, 40), 0
+		line.BackgroundColor3, line.BorderSizePixel = rgb(255, 150, 215), 0
 		local fade = Instance.new("UIGradient") -- (solid at the screen's edge, gone before the middle)
 		fade.Rotation = 90
 		fade.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.55, 0.1), NumberSequenceKeypoint.new(1, 1) })
@@ -251,7 +252,7 @@ function M.build(model: Model, base: CFrame)
 	local butterflies = emitter(floor, { Picture = { "Butterfly", "Loop", 14 }, Color = seq(rgb(160, 215, 255), rgb(110, 160, 255)),
 		LightEmission = 0.6, Brightness = 1.4, Shape = Enum.ParticleEmitterShape.Disc, ShapeStyle = Enum.ParticleEmitterShapeStyle.Surface,
 		Size = nseq({ { 0, 0 }, { 0.1, 1.1 * k }, { 0.85, 1.1 * k }, { 1, 0 } }), Transparency = nseq({ { 0, 0.1 }, { 1, 0.4 } }),
-		Lifetime = NumberRange.new(3, 4.5), Speed = NumberRange.new(2 * k, 4 * k), Acceleration = Vector3.new(0, 1.5 * k, 0),
+		Lifetime = NumberRange.new(2, 2.5), Speed = NumberRange.new(2 * k, 4 * k), Acceleration = Vector3.new(0, 1.5 * k, 0),
 		SpreadAngle = Vector2.new(60, 60), Rotation = NumberRange.new(-25, 25), RotSpeed = NumberRange.new(-20, 20), Drag = 0.5 })
 	floor.Size = Vector3.new(6 * k, 0.2, 6 * k)
 	local dome = part({ Name = "Dome", Shape = Enum.PartType.Ball, Material = Enum.Material.ForceField, Color = PINK, Size = Vector3.one * 2, CFrame = CFrame.new(ground), Transparency = 1 }, folder)
@@ -292,8 +293,9 @@ function M.build(model: Model, base: CFrame)
 			o.a0.WorldPosition = orbAt + off + Vector3.new(0, 0.18, 0)
 			o.a1.WorldPosition = orbAt + off - Vector3.new(0, 0.18, 0)
 		end
-		-- the pillar: grows during the build-up, thins out after the landing
-		local pw = if t < Reveal.IMPACT then math.clamp((t - Reveal.BUILD) / 1.2, 0, 1) else 1 - math.clamp((t - Reveal.LAND) / 1.6, 0, 1)
+		-- the pillar: grows during the build-up, makes way for the crescents (the gap between them stays dark, like the
+		-- reference), comes back with the impact and thins out after the landing
+		local pw = if t < Reveal.IMPACT then math.clamp((t - Reveal.BUILD) / 1.2, 0, 1) * (1 - math.clamp((t - Reveal.CRESCENTS) / 0.4, 0, 1)) else 1 - math.clamp((t - Reveal.LAND) / 1.6, 0, 1)
 		for _, p in pillar do p.beam.Width0, p.beam.Width1 = p.width * pw, p.width * pw * 0.7 end
 		if t >= Reveal.BUILD - 0.1 then
 			once("sigil", function()
@@ -332,10 +334,12 @@ function M.build(model: Model, base: CFrame)
 		local ev = if t >= Reveal.EYES and t < Reveal.IMPACT then math.clamp((t - Reveal.EYES) / 0.25, 0, 1) else 0
 		for _, e in eyes do
 			local p = eyeAt + side * e.side * eyeGap
-			e.eye.CFrame = CFrame.new(p)
+			-- slanted slits (inner ends lower, a fierce look), opening from a line
+			e.eye.CFrame = CFrame.fromMatrix(p, side, up) * CFrame.Angles(0, 0, math.rad(-14 * e.side))
+			e.eye.Size = Vector3.new(2.6 * k, math.max(0.55 * k * ev, 0.05), 0.3 * k)
 			e.eye.Transparency = 1 - ev
 			e.flare.CFrame = CFrame.fromMatrix(p, side, up)
-			e.flare.Size = Vector3.new(math.max(3.5 * k * ev, 0.05), 0.2 * k, 0.2 * k)
+			e.flare.Size = Vector3.new(math.max(8 * k * ev, 0.05), 0.22 * k, 0.22 * k)
 			e.flare.Transparency = 1 - 0.9 * ev
 		end
 		frameGui.Enabled = Reveal.impactFrame(t, calm)
@@ -368,7 +372,7 @@ function M.build(model: Model, base: CFrame)
 			dome.Size = Vector3.one * (2 + 12 * (1 - (1 - x) ^ 3)) * k
 			dome.Transparency = if x >= 1 then 1 else 0.2 + 0.8 * x
 		end
-		if t >= Reveal.RISE + 1 then butterflies.Rate = 0 end
+		if t >= Reveal.RISE then butterflies.Rate = 0 end -- (the last ones fade out before the cutscene ends)
 		-- her: hidden until the impact, then dropping, standing, rising (facing the camera, then turning slowly)
 		local h = Reveal.height(t, Config.Showcase.Height)
 		if h then
@@ -380,7 +384,7 @@ function M.build(model: Model, base: CFrame)
 		end
 		-- the world's colour
 		local b, s, tint, pulse = Reveal.grade(t)
-		grade.Brightness = b + (if calm then 0 else 0.22 * pulse)
+		grade.Brightness = b + (if calm then 0 else 0.12 * pulse)
 		grade.Saturation = s
 		grade.TintColor = WHITE:Lerp(rgb(205, 180, 255), tint)
 		return orbAt, h
@@ -417,6 +421,8 @@ function M.start()
 			return
 		end
 		local camera = Workspace.CurrentCamera
+		player:SetAttribute("HuzzCinematic", true)
+		RunService.RenderStepped:Wait() -- (Gameplay/Feel hands back its sprint widening first, so it isn't kept for good)
 		local startCF, startFov = camera.CFrame, camera.FieldOfView
 		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
 		local from = if root then root.Position - ground else Vector3.new(0, 0, 1)

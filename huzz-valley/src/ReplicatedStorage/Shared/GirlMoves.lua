@@ -59,6 +59,19 @@ GirlMoves.stanceSide = stanceSide
 	R15 foot instead (same spot forward/back and sideways, as a share of the leg); the R15 foot's height is lost
 	(a leg swinging through hangs straight down). Rewrites the pose's UpperLeg turn and straightens LowerLeg;
 	DanceRetarget then aims the R6 leg along it. Returns each leg's aim (in the LowerTorso's space). ]]
+-- The pack's sprint tips the body far forward; on an R6 girl's straight legs that reads as falling over. This caps
+-- the body's tilt (lower torso and chest together) at `maxDeg`, turning the lower torso back by the excess.
+local function capLean(pose, maxDeg: number)
+	local lower = pose.LowerTorso
+	if not lower then return end
+	local up = (lower * (pose.UpperTorso or CFrame.identity)).UpVector
+	local tilt = math.acos(math.clamp(up.Y, -1, 1))
+	local excess = tilt - math.rad(maxDeg)
+	local axis = Vector3.new(0, 1, 0):Cross(up)
+	if excess <= 0 or axis.Magnitude < 1e-4 then return end
+	pose.LowerTorso = CFrame.new(lower.Position) * CFrame.fromAxisAngle(axis.Unit, -excess) * lower.Rotation
+end
+
 local function footOverFoot(pose)
 	local aims = {}
 	for side, name in { L = "Left", R = "Right" } do
@@ -272,6 +285,7 @@ function GirlMoves.step(s, J, dt: number, speed: number, look: CFrame?)
 		Retarget.apply(J, pose, 1, s.scale) -- (R15 girl: the pack as it is)
 		return w
 	end
+	capLean(pose, 30)
 	footOverFoot(pose)
 	Retarget.apply(J, pose, 1, s.scale)
 	-- the lock: the animation's own surge within each step, so the planted foot stays put

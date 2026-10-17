@@ -46,8 +46,9 @@ end
 -- Dances.MaxFavourites of them (old ids that no longer exist are dropped and don't count).
 function VERBS.FavoriteDance(player, id, on)
 	if type(id) ~= "string" or not Dances.get(id) or type(on) ~= "boolean" then return false, "Unknown dance." end
-	local ok, why = true, nil
+	local ok, why = false, "Your save isn't ready yet."
 	DataService.update(player, function(data)
+		ok, why = true, nil
 		local count = 0
 		for fav in data.FavDances do
 			if Dances.get(fav) then count += 1 else data.FavDances[fav] = nil end

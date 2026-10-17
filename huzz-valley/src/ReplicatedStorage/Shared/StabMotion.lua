@@ -28,7 +28,7 @@ local rad = math.rad
 local KEYS = {
 	{ at = 0.00, shoulder = { 0, 0, 0 }, elbow = { 0, 0, 0 }, wrist = { 0, 0, 0 }, off = { 0, 0, 0 }, offElbow = { 0, 0, 0 }, waist = { 0, 0, 0 }, neck = { 0, 0, 0 } },
 	-- anticipation: coiled (right shoulder back = turned right, -y)
-	{ at = 0.26, ease = "out", shoulder = { -38, 0, 18 }, elbow = { 118, 0, 0 }, wrist = { 28, 0, 0 }, off = { 34, 0, 0 }, offElbow = { 62, 0, 0 }, waist = { 7, -24, 0 }, neck = { -3, 20, 0 } },
+	{ at = 0.26, ease = "out", shoulder = { -45, 0, 30 }, elbow = { 85, 0, 0 }, wrist = { 0, 0, 0 }, off = { 34, 0, 0 }, offElbow = { 62, 0, 0 }, waist = { 7, -24, 0 }, neck = { -3, 20, 0 } },
 	-- thrust: full reach (turned left into it, leaning in)
 	{ at = 0.405, ease = "in", shoulder = { 94, 0, -6 }, elbow = { -2, 0, 0 }, wrist = { -30, 0, 0 }, off = { -28, 0, 0 }, offElbow = { 96, 0, 0 }, waist = { -13, 28, 0 }, neck = { 6, -24, 0 } },
 	-- the hit: a small settle back from the overshoot, then held
