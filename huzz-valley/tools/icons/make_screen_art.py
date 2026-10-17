@@ -1,5 +1,6 @@
 # Cuts the pictures for the Oct 17 screens out of the owner's mockups (design/ui-oct17) into assets/art:
 #   coin-pack-500/2000/5000.png  the Shop COINS cards' coin pile, bag and chest (shop-items-coins-dances.png, bottom left)
+#   dance-fx-glow/core.png       the DANCES cards' glowing notes and sparkles (drawn here, see below)
 # PLACEHOLDERS: the crops are about 280 px wide, soft on a Retina screen; swap in the owner's sharp PNGs when they come.
 # The mockup bakes each card's title into its picture; the title's box is painted over from the rows just above and
 # below it (the card glow is smooth there), so our own title can sit on top without a ghost.
@@ -47,4 +48,53 @@ COINS = {
 for key, ((x0, x1), title) in COINS.items():
     clean = erase(SHOP, title)
     feather(clean.crop((x0, COIN_TOP, x1, COIN_BOTTOM)), left=1, right=1, top=1, bottom=5).save(OUT % ('coin-pack-' + key))
+
+# DANCES cards (made by us, after the mockup's glowing notes): white shapes the game tints with each dance's colour.
+#   dance-fx-glow.png  the soft glow (floor light, halos round two music notes and four sparkles), tinted full colour
+#   dance-fx-core.png  the crisp notes and sparkles on top, tinted a lighter shade
+from PIL import ImageDraw
+
+
+def star(d, cx, cy, r, w):
+    # a four point sparkle
+    d.polygon([(cx, cy - r), (cx + w, cy - w), (cx + r, cy), (cx + w, cy + w), (cx, cy + r), (cx - w, cy + w), (cx - r, cy), (cx - w, cy - w)], fill=255)
+
+
+def note(h, beamed):
+    # a music note h px tall, drawn from shapes (a tilted round head, a thin stem, a flag or a beam to a second note)
+    im = Image.new('L', (round(h * (1.0 if beamed else 0.7)), h), 0)
+    d = ImageDraw.Draw(im)
+    hw, hh, stem = h * 0.30, h * 0.22, max(2, round(h * 0.07))
+    heads = [(hw * 0.55, h - hh * 0.6)] + ([(im.width - hw * 0.5, h - hh * 0.6 - h * 0.12)] if beamed else [])
+    for x, y in heads:
+        head = Image.new('L', (round(hw * 1.4), round(hw * 1.4)), 0)
+        ImageDraw.Draw(head).ellipse((head.width / 2 - hw / 2, head.height / 2 - hh / 2, head.width / 2 + hw / 2, head.height / 2 + hh / 2), fill=255)
+        head = head.rotate(25, resample=Image.BICUBIC)
+        im.paste(255, (round(x - head.width / 2), round(y - head.height / 2)), head)
+        d.rectangle((x + hw / 2 - stem, h * 0.08 + (y - heads[0][1]), x + hw / 2, y - hh * 0.1), fill=255)
+    x0 = heads[0][0] + hw / 2
+    if beamed:
+        x1 = heads[1][0] + hw / 2
+        d.polygon([(x0 - stem, h * 0.06), (x1, h * 0.06 - h * 0.12), (x1, h * 0.06 - h * 0.12 + h * 0.13), (x0 - stem, h * 0.19)], fill=255)
+    else:
+        d.polygon([(x0 - stem, h * 0.08), (x0 + h * 0.10, h * 0.20), (x0 + h * 0.22, h * 0.38), (x0 + h * 0.13, h * 0.46), (x0 + h * 0.14, h * 0.34), (x0, h * 0.27)], fill=255)
+    return im
+
+
+FX_W, FX_H, SS = 360, 220, 4
+core = Image.new('L', (FX_W * SS, FX_H * SS), 0)
+d = ImageDraw.Draw(core)
+for cx, cy, h, rot, beamed in ((0.17, 0.30, 0.34, 10, True), (0.84, 0.52, 0.32, -8, False)):
+    n = note(round(h * FX_H * SS), beamed).rotate(rot, expand=True, resample=Image.BICUBIC)
+    core.paste(255, (round(cx * FX_W * SS - n.width / 2), round(cy * FX_H * SS - n.height / 2)), n)
+for cx, cy, r in ((0.30, 0.62, 0.050), (0.70, 0.20, 0.045), (0.10, 0.70, 0.030), (0.90, 0.25, 0.030)):
+    star(d, cx * FX_W * SS, cy * FX_H * SS, r * FX_H * SS * 1.6, r * FX_H * SS * 0.28)
+core = core.resize((FX_W, FX_H), Image.LANCZOS)
+floor = Image.new('L', (FX_W, FX_H), 0)
+ImageDraw.Draw(floor).ellipse((FX_W * 0.2, FX_H * 0.84, FX_W * 0.8, FX_H * 0.98), fill=200)
+glow = np.maximum(np.asarray(core.filter(ImageFilter.GaussianBlur(7)), np.float32) * 1.6,
+                  np.asarray(floor.filter(ImageFilter.GaussianBlur(9)), np.float32))
+for name, alpha in (('dance-fx-glow', glow), ('dance-fx-core', np.asarray(core, np.float32))):
+    a = np.clip(alpha, 0, 255).astype(np.uint8)
+    Image.fromarray(np.dstack([np.full_like(a, 255)] * 3 + [a]), 'RGBA').save(OUT % name)
 print('screen art made')

@@ -26,7 +26,7 @@ DataService.Template = {
 	Equipped = "", -- equipped companion id ("" = none)
 	FavChars = {}, -- [id] = true
 	Dances = {}, -- [id] = true (owned outright; the Dance Pack pass adds its dances on top)
-	FavDances = {}, -- [id] = true
+	FavDances = {}, -- [id] = true (saved favourites; ActionService FavoriteDance checks the id and caps the count)
 	XP = 0,
 	Claimed = {}, -- [tostring(level)] = true for claimed track rewards
 	Stats = {}, -- quest counters (Config/Progression.Stats): Rounds, Crossings, AuraStars, Heroes, Rescues, ...

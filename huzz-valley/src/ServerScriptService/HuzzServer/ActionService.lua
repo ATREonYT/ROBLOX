@@ -42,10 +42,23 @@ function VERBS.FavoriteCharacter(player, id, on)
 	return true
 end
 
+-- Favourite dances (saved; the Dances window's FAVOURITES tab and the G wheel). Only real dance ids, at most
+-- Dances.MaxFavourites of them (old ids that no longer exist are dropped and don't count).
 function VERBS.FavoriteDance(player, id, on)
 	if type(id) ~= "string" or not Dances.get(id) or type(on) ~= "boolean" then return false, "Unknown dance." end
-	DataService.update(player, function(data) data.FavDances[id] = on or nil end)
-	return true
+	local ok, why = true, nil
+	DataService.update(player, function(data)
+		local count = 0
+		for fav in data.FavDances do
+			if Dances.get(fav) then count += 1 else data.FavDances[fav] = nil end
+		end
+		if on and not data.FavDances[id] and count >= Dances.MaxFavourites then
+			ok, why = false, `You can have up to {Dances.MaxFavourites} favourites. Unstar one first.`
+			return
+		end
+		data.FavDances[id] = on or nil
+	end)
+	return ok, why
 end
 
 -- The coin shop (Config/CoinShop): looks only. Buying checks the price here, takes the coins and wears it.

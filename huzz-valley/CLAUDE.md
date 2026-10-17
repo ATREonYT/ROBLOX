@@ -235,7 +235,12 @@ Owner's own words are in quotes. Read only the section you need.
   their beat). `Gameplay/CompanionDance` puts your dance on your R6 girl at your track's time.
 - **Dance pictures** (`UI/DancePose`): your avatar posed by hand from the KeyframeSequence at the dance's best
   second, walking every joint (Motor6D, Weld, WeldConstraint, AnimationConstraint) and anchoring it. **No Animator,
-  so no lag** (25 live animated viewports lagged). Used by the Dances cards and the wheel; note icon as fallback.
+  so no lag** (25 live animated viewports lagged). Used by the Dances cards and the wheel; note icon as fallback
+  on the wheel. The **Dances window** follows the Oct 17 mockup (`docs/previews/dances-vs-mockup.jpg`): 3 column
+  cards glowing in each dance's `Config/Dances` Color (our `dance-fx-*` notes), a `Blurb` line under the big picture,
+  and a white blocky stand-in figure in the same pose (`dance-still-*`: `motion3d/dance_stills.luau` +
+  `tools/icons/make_dance_stills.py`, re-run when the dances change) until your avatar's picture is ready.
+  Favourites: saved `FavDances`, server-capped at `Dances.MaxFavourites` (12).
 - **Dance wheel** (`Screens/DanceWheel`, the owner's taunt-wheel reference): 8 see-through dark circles round a big
   centre circle; pictures built ahead while closed; opens with one smooth grow (no CanvasGroup, no stagger).
 

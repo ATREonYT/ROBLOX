@@ -20,7 +20,7 @@ shot settings-audio 09-settings-audio 1536 636 '{SCREEN="Settings", TAB="Audio",
 shot settings-controls 10-settings-controls 1536 636 '{SCREEN="Settings", TAB="Controls", SCALE=2}'
 shot menu 12-main-menu 1536 658 '{SCREEN="Menu", SCALE=2}'
 shot lobby-hud 13-lobby-hud 1536 694 '{SCREEN="Hud", SCALE=2, ROUND=17}'
-shot dances 03-dances 1536 700 '{SCREEN="Dances", SCALE=2}'
+shot dances none 1536 700 '{SCREEN="Dances", SCALE=2}' # (vs the Oct 17 mockup: side_by_side.py dances)
 shot index 02-character-index 1536 700 '{SCREEN="Index", SCALE=2}'
 shot progression 04-progression-rewards 1536 700 '{SCREEN="Progression", TAB="Rewards", SCALE=2}'
 shot tiers 11-tier-index 1536 700 '{SCREEN="Tiers", SCALE=2}'
