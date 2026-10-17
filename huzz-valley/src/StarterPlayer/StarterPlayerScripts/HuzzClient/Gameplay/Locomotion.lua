@@ -8,8 +8,9 @@
 	  - jump / fall / climb fade in over them in the lobby;
 	  - a little lean into turns and into speeding up on top (Motor6D.Transform, Gameplay/Frame order 12: after
 	    Roblox's animations and the scripted run, before the carry, the stab and the knockdown).
-	Tracks on your own Animator replicate, so other players see the same. Dances and the huss dash are Action
-	tracks: they play over all this (the lean holds still while they do). AvatarAnimations starts this only when
+	Tracks on your own Animator replicate, so other players see the same. Dances and the stab are Action tracks: they
+	play over all this (the lean holds still while they do); so does the huss (drawn by Gameplay/RunAnimator from
+	DashAt, Config/Run.Dash.Length), so its quick turn and push don't tip the body. AvatarAnimations starts this only when
 	the owner's Idle, Walk and Run can all play (otherwise Roblox's Animate stays, with their animations swapped in).
 ]]
 local Locomotion = {}
@@ -17,8 +18,11 @@ local Locomotion = {}
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local Workspace = game:GetService("Workspace")
+
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Library = require(Shared.AnimationLibrary)
+local DASH_LENGTH = require(Shared.Config.Run).Dash.Length
 local Mix = require(Shared.LocomotionMix)
 local Frame = require(script.Parent.Frame)
 
@@ -171,7 +175,9 @@ local function attach(character: Model)
 		-- the lean on top
 		if rootJoint and rootJoint.Parent then
 			local now = os.clock()
-			local quiet = if downed or actionPlaying(now) or mode ~= "ground" then 1 else 0
+			local dashAt = character:GetAttribute("DashAt")
+			local hussing = type(dashAt) == "number" and Workspace:GetServerTimeNow() - dashAt < DASH_LENGTH + 0.1
+			local quiet = if downed or hussing or actionPlaying(now) or mode ~= "ground" then 1 else 0
 			local look = root.CFrame.LookVector
 			local roll, pitch = Mix.lean(mix, dt, math.atan2(-look.X, -look.Z), quiet)
 			local pose = rootJoint.Transform

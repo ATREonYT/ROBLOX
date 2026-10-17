@@ -60,13 +60,16 @@ return {
 	TagRange = 5.5, -- "Touch" only: studs between root parts
 
 
-	-- The huss (owner's call): Space during a round dashes you the way you're moving (forward, back, left or
-	-- right). Jumping is off in rounds. Speed in studs per second for Time seconds; Cooldown before the next.
-	Dash = { Speed = 72, Time = 0.24, Cooldown = 2.5 },
+	-- The huss (owner's call): Space throws you left or right on your screen. Jumping is off. The push eases every
+	-- frame from Speed down to EndSpeed (studs/s) over Time seconds (Shared/RunMotion.pushSpeed), then the run takes
+	-- over: Huss Valley's ~0.30 s and ~10 studs (docs/feel-study.md gap 7; was a flat 72 for 0.24 s = 17 studs, a snap).
+	-- 0.30 x (20 + 30/3) = 9 studs, plus a little carry. Cooldown before the next.
+	Dash = { Speed = 50, EndSpeed = 20, Time = 0.30, Cooldown = 2.5 },
 	-- Catchers' Space (owner: "when they press space they jump and haul at the runner, and if they go into them,
-	-- they get stabbed"): a leap forward the way they face. Any runner they reach during the leap (HitWindow
-	-- seconds, within HitRange studs) is stabbed, the same as the knife. Shares the Space cooldown tile.
-	Lunge = { Speed = 56, Up = 18, Time = 0.36, Cooldown = 3, HitRange = 4.8, HitWindow = 0.5 },
+	-- they get stabbed"): a leap forward the way they face, a hard burst that eases off (Speed to EndSpeed over
+	-- Time: 0.38 x (40 + 32/3) = 19 studs, the old flat 56 x 0.36 reach). Any runner they reach during the leap
+	-- (HitWindow seconds, within HitRange studs) is stabbed, the same as the knife. Shares the Space cooldown tile.
+	Lunge = { Speed = 72, EndSpeed = 40, Up = 18, Time = 0.38, Cooldown = 3, HitRange = 4.8, HitWindow = 0.5 },
 
 	-- A caught runner falls flat on their face and lies there until rescued or the next round
 	-- (owner's call).

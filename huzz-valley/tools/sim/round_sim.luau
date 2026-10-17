@@ -1010,14 +1010,14 @@ local function simulate(opts)
 						-- half the catcher bots only lunge (Space), never the knife: the leap covers ground, so they
 						-- jump from about Speed x Time away (Gameplay/Dash moves the catcher; here the bot moves itself)
 						local L = Config.Lunge
-						if bd < L.Speed * L.Time * 0.6 + L.HitRange and clock - bot.lastStab > L.Cooldown then
+						if bd < ((L.EndSpeed or L.Speed) + (L.Speed - (L.EndSpeed or L.Speed)) / 3) * L.Time * 0.6 + L.HitRange and clock - bot.lastStab > L.Cooldown then
 						bot.lastStab = clock
 						stats.lunges = (stats.lunges or 0) + 1
 						root.CFrame = lookAt(root.Position, Vector3.new(target.X, root.Position.Y, target.Z))
 						local before = c:GetAttribute("LungeAt")
 						remotes.Lunge.OnServerEvent:Fire(p)
 						if c:GetAttribute("LungeAt") ~= before then
-							bot.leapUntil, bot.leapDir, bot.leapSpeed = clock + L.Time, root.CFrame.LookVector, L.Speed
+							bot.leapUntil, bot.leapDir, bot.leapSpeed = clock + L.Time, root.CFrame.LookVector, (L.EndSpeed or L.Speed) + (L.Speed - (L.EndSpeed or L.Speed)) / 3 -- (the eased push's mean speed)
 						end
 						end
 					elseif bd < Config.Stab.Range - 1 and clock - bot.lastStab > Config.Stab.Cooldown then
@@ -1048,7 +1048,7 @@ local function simulate(opts)
 					remotes.Dash.OnServerEvent:Fire(p, away, now, look)
 					if c:GetAttribute("DashAt") ~= before then
 						stats.husses += 1
-						bot.leapUntil, bot.leapDir, bot.leapSpeed = clock + Config.Dash.Time, away, Config.Dash.Speed
+						bot.leapUntil, bot.leapDir, bot.leapSpeed = clock + Config.Dash.Time, away, (Config.Dash.EndSpeed or Config.Dash.Speed) + (Config.Dash.Speed - (Config.Dash.EndSpeed or Config.Dash.Speed)) / 3
 					end
 				end
 			end

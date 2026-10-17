@@ -1214,12 +1214,13 @@ Net.get("Dash").OnServerEvent:Connect(function(player, dir, at, look)
 		return
 	end
 	-- sideways only: project onto the character's right; mostly forward/back (or a stale facing) is refused. The
-	-- client turns to face its camera just before a huss and sends that facing, which we haven't seen yet: we take it
-	-- when it's within 110 degrees of the facing we have (a real turn, not a made-up direction).
+	-- client turns toward its camera's line as it husses and sends that facing, which we haven't seen yet: we take it
+	-- when it's within 150 degrees of the facing we have (the client turns at most 90 degrees, plus lag; past 150 our own
+	-- facing is nearly the same line, so the sideways check below still passes: no angle is refused by mistake).
 	local facing = root.CFrame.LookVector
 	if typeof(look) == "Vector3" and look == look then
 		local flatLook, flatFacing = Vector3.new(look.X, 0, look.Z), Vector3.new(facing.X, 0, facing.Z)
-		if flatLook.Magnitude > 0.1 and flatFacing.Magnitude > 0.1 and flatLook.Unit:Dot(flatFacing.Unit) > math.cos(math.rad(110)) then
+		if flatLook.Magnitude > 0.1 and flatFacing.Magnitude > 0.1 and flatLook.Unit:Dot(flatFacing.Unit) > math.cos(math.rad(150)) then
 			facing = flatLook.Unit
 		end
 	end

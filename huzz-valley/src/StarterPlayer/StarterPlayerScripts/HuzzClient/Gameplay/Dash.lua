@@ -1,14 +1,18 @@
 --[[
-	The huss (owner's call, like Huss Valley): during a round, Space (gamepad A, or the HUSS tile) throws you
-	sideways: left or right of the way you face, never forward or back (owner: "make the hussing be only left or
-	right"). A / stick left = left, D / stick right = right; with no sideways input you go to the side you last
-	moved or hussed toward (right at first). Jumping is off in rounds, so Space is free. Your own character moves
-	at once (a short LinearVelocity on your root); the server checks it (RoundService, "Dash": sideways only) and
-	sets DashAt/DashDir on your character so everyone sees it, and DashReady on you for the cooldown tile
-	(Screens/PowerBar). The move itself is the owner-pack-style DashLeft / DashRight animation (tools/anim/
-	extract_anims.luau) on your Animator, so it replicates; without them RunAnimator draws the scripted pose.
+	The huss (owner's call, like Huss Valley): Space (gamepad A, or the HUSS tile) throws you left or right ON YOUR
+	SCREEN (the camera's right), never forward or back (owner: "make the hussing be only left or right"; "it only
+	goes one way"). A / stick left = left, D / stick right = right; with no sideways input you go to the side you
+	last moved or hussed toward (right at first). Jumping is off, so Space is free.
+	Smooth like Huss Valley (owner: "make the hussing more smooth"; docs/feel-study.md gap 7): the push eases every
+	frame from Config/Round.Dash Speed to EndSpeed over Time (~0.30 s, ~9 studs, Shared/RunMotion.pushSpeed), keeping
+	whatever run you had, then the run takes over. The body is never snapped round: it eases (0.08 s) to whichever
+	way along the camera's line is nearer (so at most a quarter turn, and none in shift lock), and the huss is a
+	lean to that side. The pose is Shared/RunMotion's (Gameplay/RunAnimator draws it on everyone, you too), unless
+	the owner publishes a run (Config/Animations.Run): then the DashLeft / DashRight animation plays here.
+	The server checks it (RoundService, "Dash": sideways only) and sets DashAt/DashDir on your character so everyone
+	sees it, and DashReady on you for the cooldown tile (Screens/PowerBar).
 	CATCHERS in a round lunge instead (owner: "when they press space they jump and haul at the runner"): a low leap
-	forward the way they face (Config/Round.Lunge); the server stabs any runner they reach during it.
+	forward the way they face, a hard burst easing off (Config/Round.Lunge); the server stabs any runner they reach.
 ]]
 local Dash = {}
 
@@ -23,6 +27,10 @@ local Net = require(Shared.Net)
 local Config = require(Shared.Config.Round)
 local Sfx = require(script.Parent.Sfx)
 local Library = require(Shared.AnimationLibrary)
+local RunMotion = require(Shared.RunMotion)
+local PUBLISHED_RUN = require(Shared.Config.Animations).Run ~= "" -- (then Gameplay/RunAnimator is off: play the track)
+local TURN = 0.08 -- seconds the body takes to turn for a huss (eased, never a snap)
+local TRACK_SPEED = 0.9 -- the published DashLeft/Right (0.4 s) a little slower: its lean held to 0.30 s, like HV
 
 local FADE_OUT = 0.12 -- seconds: the move hands back to the run this long before it ends (no snap)
 
@@ -52,8 +60,8 @@ local function playMove(h: Humanoid, side: number)
 	for other, track in tracks do
 		if other ~= name and track.IsPlaying then track:Stop(0.05) end
 	end
-	t:Play(0.04, 1, 1)
-	local length = if t.Length > 0 then t.Length else 0.44
+	t:Play(0.04, 1, TRACK_SPEED)
+	local length = (if t.Length > 0 then t.Length else 0.4) / TRACK_SPEED
 	task.delay(math.max(0.05, length - FADE_OUT), function()
 		if t.IsPlaying then t:Stop(FADE_OUT) end
 	end)
@@ -74,6 +82,18 @@ task.spawn(function()
 		end
 	end)
 end)
+-- The camera's right along the ground (the huss goes along it), else the body's.
+local function screenRight(root: BasePart): Vector3
+	local cam = Workspace.CurrentCamera
+	local r = if cam then cam.CFrame.RightVector else root.CFrame.RightVector
+	r = Vector3.new(r.X, 0, r.Z)
+	if r.Magnitude < 0.1 then
+		r = Vector3.new(root.CFrame.RightVector.X, 0, root.CFrame.RightVector.Z)
+	end
+	return r.Unit
+end
+-- How much you're pushing right on your screen (-1 left ... 1 right): the stick / A-D (already screen-relative),
+-- else your move direction against the camera's right.
 local function sideways(root: BasePart, move: Vector3): number
 	if controls then
 		local ok, v = pcall(function() return controls:GetMoveVector() end)
@@ -81,8 +101,83 @@ local function sideways(root: BasePart, move: Vector3): number
 			return v.X
 		end
 	end
-	local right = root.CFrame.RightVector
-	return Vector3.new(move.X, 0, move.Z):Dot(Vector3.new(right.X, 0, right.Z).Unit)
+	return Vector3.new(move.X, 0, move.Z):Dot(screenRight(root))
+end
+
+-- A push along the ground that eases from cfg.Speed to cfg.EndSpeed over cfg.Time (Shared/RunMotion.pushSpeed),
+-- set every frame, plus a steady `carry` velocity (the run you already had). Gone when it ends.
+local function push(root: BasePart, name: string, dir: Vector3, carry: Vector3, cfg)
+	local attachment = Instance.new("Attachment")
+	attachment.Name = name
+	attachment.Parent = root
+	local lv = Instance.new("LinearVelocity")
+	lv.Name = name
+	lv.Attachment0 = attachment
+	lv.RelativeTo = Enum.ActuatorRelativeTo.World
+	lv.VelocityConstraintMode = Enum.VelocityConstraintMode.Plane
+	lv.PrimaryTangentAxis = Vector3.xAxis
+	lv.SecondaryTangentAxis = Vector3.zAxis
+	lv.MaxForce = 1e6
+	local start = os.clock()
+	local function set(): boolean
+		local speed = RunMotion.pushSpeed(cfg, os.clock() - start)
+		if not speed or not root.Parent then
+			return false
+		end
+		local v = dir * speed + carry
+		lv.PlaneVelocity = Vector2.new(v.X, v.Z)
+		return true
+	end
+	set()
+	lv.Parent = root
+	local conn
+	conn = RunService.Heartbeat:Connect(function()
+		if not set() then
+			conn:Disconnect()
+			lv:Destroy()
+			attachment:Destroy()
+		end
+	end)
+end
+
+-- Turn the body to face `facing` over TURN seconds (eased), then hold it there until `holdUntil` (os.clock) and
+-- give the turning back to Roblox. Shift lock already faces the camera: nothing to do then.
+local turning = 0
+local function easeTurn(c: Model, h: Humanoid, root: BasePart, facing: Vector3, holdUntil: number)
+	if player:GetAttribute("HuzzShiftLock") == true then
+		return
+	end
+	local from = Vector3.new(root.CFrame.LookVector.X, 0, root.CFrame.LookVector.Z)
+	if from.Magnitude < 0.1 then
+		return
+	end
+	local a0 = math.atan2(-from.X, -from.Z)
+	local delta = math.atan2(-facing.X, -facing.Z) - a0
+	delta = (delta + math.pi) % (2 * math.pi) - math.pi
+	h.AutoRotate = false
+	turning += 1
+	local mine = turning
+	local start = os.clock()
+	local conn
+	conn = RunService.Heartbeat:Connect(function()
+		if mine ~= turning or not root.Parent or root.Anchored then
+			conn:Disconnect()
+			return
+		end
+		local now = os.clock()
+		local u = math.clamp((now - start) / TURN, 0, 1)
+		local s = 1 - (1 - u) * (1 - u) -- (quick, then settling)
+		if player:GetAttribute("HuzzShiftLock") ~= true then
+			root.CFrame = CFrame.new(root.Position) * CFrame.Angles(0, a0 + delta * s, 0)
+		end
+		if now >= holdUntil then
+			conn:Disconnect()
+			if h.Parent and not h.AutoRotate and player:GetAttribute("HuzzShiftLock") ~= true
+				and c:GetAttribute("DownedAt") == nil and player:GetAttribute("HuzzStatus") ~= "Downed" then
+				h.AutoRotate = true -- (a knockdown in the meantime keeps its own hold on turning)
+			end
+		end
+	end)
 end
 
 -- Which side a huss goes: A/D (stick left/right), else the side you last went.
@@ -119,23 +214,7 @@ local function lunge(c: Model, h: Humanoid, root: BasePart)
 	Sfx.play("lunge")
 	local v = root.AssemblyLinearVelocity
 	root.AssemblyLinearVelocity = Vector3.new(v.X, Config.Lunge.Up, v.Z) -- (the hop: jumping itself is off)
-	local attachment = Instance.new("Attachment")
-	attachment.Name = "HuzzLunge"
-	attachment.Parent = root
-	local push = Instance.new("LinearVelocity")
-	push.Name = "HuzzLunge"
-	push.Attachment0 = attachment
-	push.RelativeTo = Enum.ActuatorRelativeTo.World
-	push.VelocityConstraintMode = Enum.VelocityConstraintMode.Plane
-	push.PrimaryTangentAxis = Vector3.xAxis
-	push.SecondaryTangentAxis = Vector3.zAxis
-	push.PlaneVelocity = Vector2.new(dir.X, dir.Z) * Config.Lunge.Speed
-	push.MaxForce = 1e6
-	push.Parent = root
-	task.delay(Config.Lunge.Time, function()
-		push:Destroy()
-		attachment:Destroy()
-	end)
+	push(root, "HuzzLunge", dir, Vector3.zero, Config.Lunge) -- (a hard burst easing off, not a flat shove and a cut)
 end
 
 function Dash.try()
@@ -149,57 +228,39 @@ function Dash.try()
 		lunge(c, h, root)
 		return
 	end
-	-- Face the way the camera looks first, so the huss goes left or right on your screen (owner: "make the huss
-	-- better because it only goes one way": without shift lock you face the way you walk, so A and D both threw
-	-- you back toward the camera). The facing is held for the move, then Roblox turns you as usual again.
-	local cam = Workspace.CurrentCamera
-	local camLook = cam and Vector3.new(cam.CFrame.LookVector.X, 0, cam.CFrame.LookVector.Z)
-	if camLook and camLook.Magnitude > 0.1 then
-		root.CFrame = CFrame.lookAt(root.Position, root.Position + camLook.Unit)
-		if h.AutoRotate then
-			h.AutoRotate = false
-			task.delay(Config.Dash.Time + 0.05, function()
-				if h.Parent and not h.AutoRotate and player:GetAttribute("HuzzShiftLock") ~= true
-					and c:GetAttribute("DownedAt") == nil and player:GetAttribute("HuzzStatus") ~= "Downed" then
-					h.AutoRotate = true -- (a knockdown in the meantime keeps its own hold on turning)
-				end
-			end)
-		end
-	end
+	-- Left or right on your screen (owner: "make the huss better because it only goes one way": without shift lock
+	-- you face the way you walk, so A and D both threw you back toward the camera): along the camera's right.
 	local side = Dash.side(root, h.MoveDirection)
-	local right = root.CFrame.RightVector
-	local dir = Vector3.new(right.X, 0, right.Z).Unit * side
+	local right = screenRight(root)
+	local dir = right * side
 	lastSide = side
+	-- The body turns (eased, never snapped) to whichever way along the camera's line is nearer, so the move is a
+	-- sideways lean for it: at most a quarter turn (facing the camera is fine: then it leans to its own left).
+	local look = Vector3.new(root.CFrame.LookVector.X, 0, root.CFrame.LookVector.Z)
+	local facing = Vector3.new(right.Z, 0, -right.X) -- (the camera's look along the ground)
+	if look.Magnitude > 0.1 and look:Dot(facing) < 0 then
+		facing = -facing
+	end
+	easeTurn(c, h, root, facing, os.clock() + Config.Dash.Time + 0.05)
 	lastLocal = os.clock()
 	local at = Workspace:GetServerTimeNow()
 	c:SetAttribute("DashDir", dir) -- on this screen at once; the server sets the same for everyone
 	c:SetAttribute("DashAt", at)
-	Net.get("Dash"):FireServer(dir, at, root.CFrame.LookVector) -- (the facing we just turned to: the server may not have it yet)
+	Net.get("Dash"):FireServer(dir, at, facing) -- (the facing we're turning to: the server may not have it yet)
 	Sfx.play("dash")
-	playMove(h, side)
+	if PUBLISHED_RUN then
+		local trackSide = if dir:Dot(Vector3.new(-facing.Z, 0, facing.X)) > 0 then 1 else -1 -- (the body's own side)
+		playMove(h, trackSide)
+	end
 
-	-- The push: hold this ground speed for a moment, then let the walk take over again.
-	local attachment = Instance.new("Attachment")
-	attachment.Name = "HuzzDash"
-	attachment.Parent = root
-	local push = Instance.new("LinearVelocity")
-	push.Name = "HuzzDash"
-	push.Attachment0 = attachment
-	push.RelativeTo = Enum.ActuatorRelativeTo.World
-	push.VelocityConstraintMode = Enum.VelocityConstraintMode.Plane
-	push.PrimaryTangentAxis = Vector3.xAxis
-	push.SecondaryTangentAxis = Vector3.zAxis
-	-- sideways, keeping whatever forward run you had (the huss never adds forward or back)
-	local look = Vector3.new(root.CFrame.LookVector.X, 0, root.CFrame.LookVector.Z).Unit
-	local ahead = math.clamp(root.AssemblyLinearVelocity:Dot(look), 0, h.WalkSpeed)
-	local v = dir * Config.Dash.Speed + look * ahead
-	push.PlaneVelocity = Vector2.new(v.X, v.Z)
-	push.MaxForce = 1e6
-	push.Parent = root
-	task.delay(Config.Dash.Time, function()
-		push:Destroy()
-		attachment:Destroy()
-	end)
+	-- The push: sideways, easing off, keeping whatever run you had across it (the huss never adds forward or back).
+	local v = root.AssemblyLinearVelocity
+	local carry = Vector3.new(v.X, 0, v.Z)
+	carry -= dir * carry:Dot(dir)
+	if carry.Magnitude > h.WalkSpeed then
+		carry = carry.Unit * h.WalkSpeed
+	end
+	push(root, "HuzzDash", dir, carry, Config.Dash)
 end
 
 -- Space / A is the huss everywhere: in a round and in the lobby (owner: "remove the jumping from the lobby, and keep

@@ -1,8 +1,10 @@
 --[[
 	Plays the Huss Valley run and the huss dash (Shared/RunMotion) on every R15 character on this
 	client, so everyone sees everyone run and dash the same way (the dash from the character's
-	DashAt/DashDir attributes, Gameplay/Dash). Off when the owner's run can play (Shared/AnimationLibrary:
-	published, or raw in Studio). A carrier keeps the carry arms (CarryAnimator layers after this).
+	DashAt/DashDir attributes, Gameplay/Dash). Off when the owner's run is published (Config/Animations.Run). When
+	only Studio's raw copy plays on your own character (Gameplay/Locomotion), your run is theirs but the huss is
+	still drawn here, so your huss is the same tuned move everyone else sees (Config/Run.Dash). A carrier keeps the
+	carry arms (CarryAnimator layers after this).
 ]]
 local M = {}
 
@@ -44,9 +46,7 @@ function M.start()
 			end
 		end
 		for _, p in Players:GetPlayers() do
-			if skipMine and p == Players.LocalPlayer then
-				continue
-			end
+			local dashOnly = skipMine and p == Players.LocalPlayer -- (your run is the pack's: only the huss here)
 			local character = p.Character
 			local r = recs[p]
 			-- (Re)build when the character changes, its joints were replaced, or it wasn't complete yet.
@@ -64,14 +64,16 @@ function M.start()
 			if r and root then
 				local v = root.AssemblyLinearVelocity
 				-- Knocked down: speed 0, so the sprint fades out under the fall instead of snapping off.
-				local speed = if character:GetAttribute("DownedAt") then 0 else Vector3.new(v.X, 0, v.Z).Magnitude
+				local speed = if character:GetAttribute("DownedAt") or dashOnly then 0 else Vector3.new(v.X, 0, v.Z).Magnitude
 				-- The huss dash: its age and its direction in the body's frame (x right, z forward).
 				local dashAt, dashDir = character:GetAttribute("DashAt"), character:GetAttribute("DashDir")
 				local age, localDir = nil, nil
 				if type(dashAt) == "number" and typeof(dashDir) == "Vector3" then
 					age = now - dashAt
+					-- sideways only: which side of the body it goes (Gameplay/Dash turns the body at most 90 degrees over
+					-- the first frames, never past the side, so this never flips mid-move)
 					local d = root.CFrame:VectorToObjectSpace(dashDir)
-					localDir = Vector3.new(d.X, 0, -d.Z)
+					localDir = Vector3.new(if d.X >= 0 then 1 else -1, 0, 0)
 				end
 				RunMotion.step(r.rec, dt, speed, math.abs(v.Y) < 10, carriers[p.UserId] == true, age, localDir)
 			end

@@ -3,10 +3,14 @@
 	  Run:  low and hunched, leaning hard into it; high knees with the heel folding up behind; the arms
 	        swing wide and high (the fist comes up to the head) against the legs; the body rolls from
 	        side to side and the shoulders twist against the hips; a bounce on every step.
-	  Huss: a quick low dash the way you're moving: forward = a deep lunge with the arms flung back;
-	        sideways = a low slide, leaning into it, the outside leg stretched out; back = a hop back,
-	        leaning away, arms forward.
+	  Huss: Huss Valley's compact sideways throw (docs/previews/feel-huss.jpg): crouched, hips shifted and the
+	        body leaning ~28 degrees into the move from the first frame, the outside leg kicked out, the inside
+	        one bent under you, fists kept in front; held to 0.30 s, upright by ~0.40 s (Config/Run.Dash). It owns
+	        every joint while it plays, over the scripted run or over the owner's pack run (your own character
+	        too: Gameplay/RunAnimator), so everyone sees the same huss. (Forward and back poses stay for old saves
+	        of DashDir but the huss is sideways only.)
 	Walking pace keeps Roblox's own walk; the run blends in with speed.
+	pushSpeed: the huss's (and the lunge's) ground speed `age` seconds in, easing from Speed to EndSpeed.
 
 	Pure maths on R15 joints, so the offline preview runs this exact code; HuzzClient/Gameplay/
 	RunAnimator feeds it every character. Written to Motor6D.Transform after Roblox's animations; the
@@ -73,6 +77,46 @@ local function dashWeight(age)
 	return smooth(age / D.In) * (1 - smooth((age - (D.Length - D.Out)) / D.Out))
 end
 
+-- The ground speed of a push (Config/Round.Dash or .Lunge: Speed, EndSpeed, Time) `age` seconds in, or nil once it's
+-- over: a hard start easing out (quad) to EndSpeed, so the move bursts and then settles instead of a flat push and a cut.
+function RunMotion.pushSpeed(cfg, age)
+	if age < 0 or age >= cfg.Time then
+		return nil
+	end
+	local u = 1 - age / cfg.Time
+	local finish = cfg.EndSpeed or cfg.Speed
+	return finish + (cfg.Speed - finish) * u * u
+end
+
+-- How far a push carries you (studs), for the checks and the simulation.
+function RunMotion.pushDistance(cfg)
+	local finish = cfg.EndSpeed or cfg.Speed
+	return cfg.Time * (finish + (cfg.Speed - finish) / 3)
+end
+
+-- The huss's speed lines (Config/Run.Dash.Lines), `age` seconds in: thin lines riding with the body, trailing
+-- behind it along the move (`dir`, world), each from `from` back to `to`, `alpha` opaque at its head (a quarter of
+-- that at its tail). They draw out over the first 0.06 s, hold their length like HV's, and fade out at the end; nil
+-- once they're over.
+-- Gameplay/Feel draws them as Beams; the offline film draws the same.
+function RunMotion.hussLines(rootCF, dir, age)
+	local L = Config.Dash.Lines
+	if age < 0 or age >= L.Time then
+		return nil
+	end
+	local k = smooth(age / 0.06)
+	local alpha = 0.9 * clamp((L.Time - age) / (L.Time * 0.4), 0, 1)
+	local look = rootCF.LookVector
+	local forward = Vector3.new(look.X, 0, look.Z)
+	forward = if forward.Magnitude > 0.01 then forward.Unit else Vector3.zero
+	local out = {}
+	for _, l in ipairs(L) do
+		local from = rootCF.Position + Vector3.new(0, l[1], 0) + forward * l[2] - dir * L.Gap
+		table.insert(out, { from = from, to = from - dir * (L.Length * l[3] * k), alpha = alpha })
+	end
+	return out
+end
+
 -- The run pose at phase p (radians of the stride). Returns joint -> {pose, which weight}.
 local function runPose(J, p, carrying)
 	local C = Config
@@ -109,19 +153,27 @@ local function dashPose(J, dir, carrying)
 	local poses = {}
 	local side = if abs(dir.X) > abs(dir.Z) then (if dir.X > 0 then 1 else -1) else 0
 	if side ~= 0 then
-		-- A low slide sideways: lean and roll into it, the outside leg stretched out, arms out to balance.
-		local lead = if side > 0 then J.rHip else J.lHip
-		local trail = if side > 0 then J.lHip else J.rHip
-		poses[J.root] = CFrame.new(0, -D.Crouch, 0) * CarryMath.inJoint(J.root, angles(-12, 0, -side * D.SideRoll))
-		poses[J.waist] = CarryMath.inJoint(J.waist, angles(-10, side * 10, side * 12))
-		poses[lead] = CarryMath.inJoint(lead, angles(20, 0, side * -D.SideSplay))
-		poses[trail] = CarryMath.inJoint(trail, angles(-10, 0, side * D.SideSplay * 0.6))
-		poses[J.rKnee] = CarryMath.inJoint(J.rKnee, angles(if side > 0 then -55 else -10))
-		poses[J.lKnee] = CarryMath.inJoint(J.lKnee, angles(if side > 0 then -10 else -55))
-		poses[J.rShoulder] = CarryMath.inJoint(J.rShoulder, angles(20, 0, -70))
-		poses[J.lShoulder] = CarryMath.inJoint(J.lShoulder, angles(20, 0, 70))
-		poses[J.rElbow] = CarryMath.inJoint(J.rElbow, angles(30))
-		poses[J.lElbow] = CarryMath.inJoint(J.lElbow, angles(30))
+		-- Huss Valley's sideways throw (the pose the built DashLeft/DashRight had, tools/anim/extract_anims.luau, with
+		-- the lean brought to HV's ~28 degrees): low, hips shifted and tipped into the move, the inside leg bent
+		-- under you, the outside one kicked out, fists held in front like the run, the head nearly upright.
+		local right = side > 0
+		local leadHip, leadKnee, leadAnkle = if right then J.rHip else J.lHip, if right then J.rKnee else J.lKnee, if right then J.rAnkle else J.lAnkle
+		local trailHip, trailKnee, trailAnkle = if right then J.lHip else J.rHip, if right then J.lKnee else J.rKnee, if right then J.lAnkle else J.rAnkle
+		poses[J.root] = CFrame.new(D.SideShift * side, -D.Crouch, 0) * CarryMath.inJoint(J.root, angles(-12, -5 * side, -D.SideRoll * side))
+		poses[J.waist] = CarryMath.inJoint(J.waist, angles(-8, 4 * side, -D.SideWaist * side))
+		poses[J.neck] = CarryMath.inJoint(J.neck, angles(12, 0, D.SideHead * side))
+		poses[leadHip] = CarryMath.inJoint(leadHip, angles(30, 0, 30 * side))
+		poses[leadKnee] = CarryMath.inJoint(leadKnee, angles(-52))
+		poses[leadAnkle] = CarryMath.inJoint(leadAnkle, angles(18, 0, -12 * side))
+		poses[trailHip] = CarryMath.inJoint(trailHip, angles(8, 0, -D.SideSplay * side))
+		poses[trailKnee] = CarryMath.inJoint(trailKnee, angles(-18))
+		poses[trailAnkle] = CarryMath.inJoint(trailAnkle, angles(0, 0, 14 * side))
+		local holdR, holdL = angles(48, -18, -14), angles(48, 18, 14)
+		local leadArm, trailArm = if right then J.rShoulder else J.lShoulder, if right then J.lShoulder else J.rShoulder
+		poses[leadArm] = CarryMath.inJoint(leadArm, if right then holdR else holdL)
+		poses[trailArm] = CarryMath.inJoint(trailArm, angles(0, 0, -18 * side) * (if right then holdL else holdR))
+		poses[if right then J.rElbow else J.lElbow] = CarryMath.inJoint(if right then J.rElbow else J.lElbow, angles(72))
+		poses[if right then J.lElbow else J.rElbow] = CarryMath.inJoint(if right then J.lElbow else J.rElbow, angles(60))
 	elseif dir.Z >= 0 then
 		-- A deep lunge forward, arms flung back.
 		poses[J.root] = CFrame.new(0, -D.Crouch, 0) * CarryMath.inJoint(J.root, angles(-D.LungeLean, 0, 0))

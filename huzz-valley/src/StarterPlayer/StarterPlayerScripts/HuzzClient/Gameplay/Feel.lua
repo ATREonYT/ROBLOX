@@ -1,35 +1,33 @@
 --[[
 	The small things that make running feel quick and expensive (owner: "make the running/game feel more
 	premium... see the feel in Huss Valley"), on this screen only:
-	  - the camera widens as you build up to full sprint (owner: "when you are running full speed make the screen
-	    make you feel like you are running quick") and kicks wider for a moment when you dash, easing back (never
-	    snapping); near full speed soft wind streaks drift outward round the screen edge (fading in and out with
-	    your speed, never flashing);
-	  - a dash draws a ring of thin speed lines round the screen edge for a quarter of a second (one per dash;
-	    the dash cooldown keeps it far under one flash a second);
+	  - the camera widens a touch (2 degrees) at full sprint (owner: "when you are running full speed make the screen
+	    make you feel like you are running quick"), easing in and out. Huss Valley's camera stays calm (no visible
+	    FOV change, no kick on the huss: docs/feel-study.md gap 6), so it was cut from 11 degrees and the 9 degree
+	    huss kick and the screen-edge wind streaks and line ring are gone;
+	  - a huss draws 5-6 thin white speed lines in the world behind whoever does it, for ~0.3 s (Config/Run.Dash.Lines;
+	    everyone near sees them, like Huss Valley's), and nothing on the screen itself;
 	  - every runner near you kicks up a little dust each step and a puff when they dash;
 	  - footsteps are our own sound (Sfx "step"), lobby too, for you and anyone near; Roblox's own running sound
 	    is muted (owner: "add a running sound, not the base sound running that roblox has").
 	The sprint feel works in the lobby too; the dust only in a round. Never while the intro camera has the view, and
-	off with the Reduced Motion setting (camera, lines and streaks; the dust stays).
+	off with the Reduced Motion setting (the camera; the lines and dust stay: they're in the world, not the view).
 ]]
 local M = {}
 
 function M.start()
 	local Players = game:GetService("Players")
 	local ReplicatedStorage = game:GetService("ReplicatedStorage")
-	local TweenService = game:GetService("TweenService")
 	local Workspace = game:GetService("Workspace")
 
 	local Run = require(ReplicatedStorage:WaitForChild("Shared").Config.Run)
+	local RunMotion = require(ReplicatedStorage.Shared.RunMotion)
 	local State = require(script.Parent.Parent.UI.State)
 	local Sfx = require(script.Parent.Sfx)
 	local Frame = require(script.Parent.Frame)
 
 	local player = Players.LocalPlayer
-	local SPRINT_FOV = 11 -- extra degrees at full sprint (was 6: the owner couldn't feel it)
-	local DASH_FOV = 9 -- extra degrees at the start of a dash, easing out over DASH_TIME
-	local DASH_TIME = 0.45
+	local SPRINT_FOV = 2 -- extra degrees at full sprint (was 11; Huss Valley shows none: a calm camera)
 	local NEAR = 120 -- studs: dust only for runners this close to the camera
 
 	local function inRound(p)
@@ -40,56 +38,52 @@ function M.start()
 		return State.setting("ReducedMotion") == true
 	end
 
-	-- Speed lines: thin white bars pointing at the middle of the screen, round the edge.
-	local gui = Instance.new("ScreenGui")
-	gui.Name = "HuzzFeel"
-	gui.IgnoreGuiInset = true
-	gui.ResetOnSpawn = false
-	gui.DisplayOrder = 1
-	local lines = {}
-	for i = 1, 18 do
-		local angle = (i / 18) * math.pi * 2 + (i % 2) * 0.09
-		local bar = Instance.new("Frame")
-		bar.Name = "Line" .. i
-		bar.AnchorPoint = Vector2.new(0.5, 0.5)
-		bar.Position = UDim2.fromScale(0.5 + math.cos(angle) * 0.47, 0.5 + math.sin(angle) * 0.47)
-		bar.Size = UDim2.new(0.16 + (i % 3) * 0.04, 0, 0, 2 + i % 2)
-		bar.Rotation = math.deg(angle)
-		bar.BackgroundColor3 = Color3.new(1, 1, 1)
-		bar.BackgroundTransparency = 1
-		bar.BorderSizePixel = 0
-		bar.Parent = gui
-		lines[i] = bar
-	end
-	-- Wind streaks for full sprint: thin bars round the edge that drift outward on a loop; their see-through
-	-- follows your speed smoothly.
-	local streaks = {}
-	for i = 1, 14 do
-		local angle = (i / 14) * math.pi * 2 + 0.11 * (i % 3)
-		local bar = Instance.new("Frame")
-		bar.Name = "Streak" .. i
-		bar.AnchorPoint = Vector2.new(0.5, 0.5)
-		bar.Size = UDim2.new(0.09 + (i % 4) * 0.025, 0, 0, if i % 2 == 0 then 2 else 1)
-		bar.Rotation = math.deg(angle)
-		bar.BackgroundColor3 = Color3.new(1, 1, 1)
-		bar.BackgroundTransparency = 1
-		bar.BorderSizePixel = 0
-		bar.Parent = gui
-		streaks[i] = { bar = bar, angle = angle, phase = (i * 0.37) % 1 }
-	end
-	local streakClock = 0
 	-- a soft wind bed that rises with your speed (silent until the owner uploads speed_wind)
 	local wind = Sfx.loop("speed_wind")
 	local windLevel = if wind then wind.Volume else 0
 	if wind then wind.Volume = 0 end
-	gui.Parent = player:WaitForChild("PlayerGui")
-	local function speedLines()
-		if calm() then
-			return
+
+	-- The huss's speed lines (Config/Run.Dash.Lines, laid out by Shared/RunMotion.hussLines): 5-6 thin white Beams
+	-- riding with whoever husses, trailing behind along the move, holding their length and then fading out,
+	-- like Huss Valley's (docs/previews/feel-huss.jpg). Moved every frame below; gone after Lines.Time.
+	local LINES = Run.Dash.Lines
+	local terrain = Workspace:FindFirstChildOfClass("Terrain") or Workspace
+	local hussing = {} -- { root, dir, at, beams = { {a0, a1, beam} } }
+	local function hussLines(root: BasePart, dir: Vector3, at: number)
+		local set = { root = root, dir = dir, at = at, beams = {} }
+		for i = 1, #LINES do
+			local a0, a1 = Instance.new("Attachment"), Instance.new("Attachment")
+			a0.Name, a1.Name = "HuzzHussLine", "HuzzHussLine"
+			a0.Parent, a1.Parent = terrain, terrain
+			local b = Instance.new("Beam")
+			b.Name = "HuzzHussLine" .. i
+			b.Attachment0, b.Attachment1 = a0, a1
+			b.FaceCamera = true
+			b.Width0, b.Width1 = LINES.Width, LINES.Width * 0.7
+			b.Segments = 1
+			b.LightEmission = 0.3
+			b.LightInfluence = 0
+			b.Color = ColorSequence.new(Color3.new(1, 1, 1))
+			b.Transparency = NumberSequence.new(1)
+			b.Parent = a0
+			set.beams[i] = { a0, a1, b }
 		end
-		for _, bar in lines do
-			bar.BackgroundTransparency = 0.55
-			TweenService:Create(bar, TweenInfo.new(0.28, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundTransparency = 1 }):Play()
+		table.insert(hussing, set)
+	end
+	local function moveLines(now: number)
+		for i = #hussing, 1, -1 do
+			local set = hussing[i]
+			local lines = set.root.Parent and RunMotion.hussLines(set.root.CFrame, set.dir, now - set.at)
+			if not lines then
+				for _, b in set.beams do b[1]:Destroy(); b[2]:Destroy() end
+				table.remove(hussing, i)
+			else
+				for k, l in lines do
+					local b = set.beams[k]
+					b[1].WorldPosition, b[2].WorldPosition = l.from, l.to
+					b[3].Transparency = NumberSequence.new(1 - l.alpha, 1 - l.alpha * 0.25)
+				end
+			end
 		end
 	end
 
@@ -130,7 +124,9 @@ function M.start()
 
 	local camera = Workspace.CurrentCamera
 	local extra = 0 -- the FOV we've added (eased)
-	local myLastDash = nil
+	local heldSprint = 0 -- the sprint before a huss (held through it)
+	local lastLines = {} -- Player -> the DashAt we drew lines for
+	Players.PlayerRemoving:Connect(function(p) lastLines[p] = nil end)
 	-- Roblox's default character sounds (RbxCharacterSounds) put a "Running" sound in every root part: keep it silent.
 	local function muteRunning(character: Model)
 		local function mute(s: Instance)
@@ -185,6 +181,20 @@ function M.start()
 					stepped[p] = 0
 				end
 			end
+			-- the huss's speed lines, lobby too (your own huss sets DashAt twice: here, then from the server)
+			local hussAt = character and character:GetAttribute("DashAt")
+			local hussDir = character and character:GetAttribute("DashDir")
+			if root and camera and type(hussAt) == "number" and typeof(hussDir) == "Vector3" then
+				local last = lastLines[p]
+				-- (others' huss reaches us a little late: draw what's left of it)
+				if (last == nil or hussAt - last > 0.5) and now - hussAt < LINES.Time - 0.08
+					and (camera.CFrame.Position - root.Position).Magnitude < NEAR then
+					hussLines(root, hussDir, hussAt)
+				end
+				if last == nil or hussAt - last > 0.5 then
+					lastLines[p] = hussAt
+				end
+			end
 			if root and inRound(p) and not character:GetAttribute("DownedAt") and camera
 				and (camera.CFrame.Position - root.Position).Magnitude < NEAR then
 				local d = dustFor(p, character, root)
@@ -213,6 +223,8 @@ function M.start()
 			end
 		end
 
+		moveLines(now)
+
 		-- The camera: only our own, in a round, while the normal camera has the view.
 		if not camera then
 			return
@@ -227,36 +239,14 @@ function M.start()
 			local h = character and character:FindFirstChildOfClass("Humanoid")
 			local cap = (h and h:GetAttribute("HuzzSpeed")) or (h and h.WalkSpeed) or 20
 			sprint = math.clamp((speed - Run.From) / math.max(cap - Run.From, 4), 0, 1) ^ 1.4
-			want = sprint * SPRINT_FOV
 			local dashAt = character and character:GetAttribute("DashAt")
-			if type(dashAt) == "number" then
-				local age = now - dashAt
-				if age >= 0 and age < DASH_TIME then
-					want += DASH_FOV * (1 - age / DASH_TIME) ^ 2
-				end
-				if dashAt ~= myLastDash then
-					myLastDash = dashAt
-					if age < 0.3 then
-						speedLines()
-					end
-				end
+			if type(dashAt) == "number" and now - dashAt < Run.Dash.Length + 0.1 then
+				sprint = heldSprint -- (the huss's burst of speed changes nothing: the camera stays steady)
 			end
+			heldSprint = sprint
+			want = sprint * SPRINT_FOV
 		end
-		-- the wind streaks: in from about 70% of top speed, drifting outward on a loop
-		streakClock += dt
-		local show = math.clamp((sprint - 0.7) / 0.3, 0, 1)
 		if wind then wind.Volume = windLevel * math.clamp((sprint - 0.4) / 0.6, 0, 1) end
-		for _, st in streaks do
-			if show <= 0 then
-				st.bar.BackgroundTransparency = 1
-			else
-				local u = (streakClock * 1.6 + st.phase) % 1
-				local r = 0.36 + u * 0.16
-				st.bar.Position = UDim2.fromScale(0.5 + math.cos(st.angle) * r, 0.5 + math.sin(st.angle) * r)
-				-- fade in and out along each pass, so nothing pops
-				st.bar.BackgroundTransparency = 1 - show * 0.35 * math.sin(u * math.pi)
-			end
-		end
 		if cinematic then
 			-- the intro camera sets its own view: hand back exactly what we added and stay out of its way
 			if extra ~= 0 then
