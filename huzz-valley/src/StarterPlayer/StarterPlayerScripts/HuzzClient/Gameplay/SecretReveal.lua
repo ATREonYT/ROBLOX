@@ -105,6 +105,14 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 	table.insert(junk, folder)
 	local up = Vector3.new(0, 1, 0)
 	local rnd = Random.new(11)
+	-- her key light: the night would leave her almost black; the reference keeps her pale and lit in violet
+	local keyPart = Instance.new("Part")
+	keyPart.Name, keyPart.Anchored, keyPart.CanCollide, keyPart.CanQuery, keyPart.CanTouch = "KeyLight", true, false, false, false
+	keyPart.Transparency, keyPart.Size = 1, Vector3.one
+	keyPart.Parent = folder
+	local keyLight = Instance.new("PointLight")
+	keyLight.Color, keyLight.Brightness, keyLight.Range, keyLight.Shadows, keyLight.Enabled = Color3.fromRGB(230, 210, 255), 2.2, 18 * k, false, false
+	keyLight.Parent = keyPart
 
 	-- the night: remember every Lighting value we touch, make what's missing (and remove it after)
 	local saved, made = {}, {}
@@ -487,6 +495,8 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 
 	local function step(t: number, dir: Vector3, cam: CFrame?)
 		local calm = Motion.reduced
+		keyLight.Enabled = t >= Reveal.IMPACT
+		if keyLight.Enabled then keyPart.Position = model:GetPivot().Position + dir * 6 * k + up * mid * 0.4 end
 		local side = dir:Cross(up)
 		side = if side.Magnitude > 0.1 then side.Unit else Vector3.new(1, 0, 0)
 		-- the camera's picture plane (rays, flares and streaks are laid out in it); from `dir` if no camera given
