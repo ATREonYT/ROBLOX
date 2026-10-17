@@ -2,8 +2,10 @@
 	Name tags over every player (and the Practice Bot), as in Huss Valley: a small coloured title (their role this round),
 	the name in bold, "Lv. 6 · 8 wins" under it, at Huss Valley's proportions (title and level line each under half
 	the name's height; feel-study gap 1: ours had the title as big as the name). Tags further than 80 studs from
-	your camera hide, so a full field doesn't fill the screen with names (the team outlines still show who is who).
-	Your own tag is faded and hidden during camera shots on your screen only (Gameplay/RoundHud). Downed runners show HELP! and a bar that fills while
+	your camera hide, so a full field doesn't fill the screen with names (the team outlines still show who is who);
+	a downed runner's tag shows to 250 studs with HELP! / OUT big, so everyone sees who needs saving.
+	Your own tag is faded, and hidden in camera shots and from the Hero run to the round's end, on your screen only
+	(Gameplay/RoundHud). Downed runners show HELP! and a bar that fills while
 	someone rescues them; downed with the second chance used, OUT (nobody can help them up). The picked runner's choice shows big over their head (HERO / CHICKEN).
 	Made on the server (everyone sees the same); Roblox's own name over the head is hidden.
 ]]
@@ -88,6 +90,32 @@ local function build(head)
 	return gui
 end
 
+-- A downed runner's tag is seen across the whole field (the HELP! is the call to come and save them; OUT tells
+-- everyone not to bother): MaxDistance 250, a pixel floor on its size so it stays readable far away, and HELP! / OUT
+-- as the big row (0.42 of the tag, ~1.1 studs, instead of 0.52 studs) with the name under it and no level line.
+local function layout(gui, down: boolean)
+	if gui:GetAttribute("Down") == down then
+		return
+	end
+	gui:SetAttribute("Down", down)
+	gui.MaxDistance = if down then 250 else 80
+	gui.Size = if down then UDim2.new(5.6, 90, 2.6, 42) else UDim2.new(5.6, 0, 2.6, 0)
+	if down then
+		gui.Title.Position, gui.Title.Size = UDim2.fromScale(0, 0), UDim2.fromScale(1, 0.42)
+		gui.PlayerName.Position, gui.PlayerName.Size = UDim2.fromScale(0.1, 0.45), UDim2.fromScale(0.8, 0.28)
+		gui.Rescue.Position, gui.Rescue.Size = UDim2.fromScale(0.5, 0.78), UDim2.fromScale(0.6, 0.12)
+	else
+		gui.Title.Position, gui.Title.Size = UDim2.fromScale(0.05, 0), UDim2.fromScale(0.9, 0.2)
+		gui.PlayerName.Position, gui.PlayerName.Size = UDim2.fromScale(0, 0.22), UDim2.fromScale(1, 0.44)
+		gui.Rescue.Position, gui.Rescue.Size = UDim2.fromScale(0.5, 0.88), UDim2.fromScale(0.55, 0.09)
+	end
+	gui.Sub.Visible = not down
+	local stroke = gui.Title:FindFirstChildOfClass("UIStroke")
+	if stroke then
+		stroke.Thickness = if down then 2.5 else 1.5
+	end
+end
+
 -- look: "Runner" | "Catcher" | "Hero" | "Safe" | "Downed" | "Out" | nil (lobby: no title). badge: "HERO" | "CHICKEN" | nil.
 -- rescue: 0..1 while someone is helping them up.
 function NameTags.set(player, look, badge, rescue)
@@ -152,6 +180,7 @@ function NameTags.set(player, look, badge, rescue)
 	gui.Badge.TextColor3 = BADGES[badge or ""] or Color3.new(1, 1, 1)
 	gui.Rescue.Visible = look == "Downed" and (rescue or 0) > 0
 	gui.Rescue.Fill.Size = UDim2.fromScale(math.clamp(rescue or 0, 0, 1), 1)
+	layout(gui, look == "Downed" or look == "Out")
 end
 
 -- After the save changes (a new title or name colour): redraws a lobby tag. A tag in a game keeps its role, and

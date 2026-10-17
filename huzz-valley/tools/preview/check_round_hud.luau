@@ -43,7 +43,7 @@ local message = root:FindFirstChild("Message")
 check("message line exists", message ~= nil and message:IsA("TextLabel"))
 check("message line: no panel behind it", message.BackgroundTransparency == 1 and #message:GetChildren() <= 2)
 check("message line: 40% of the screen wide", message.Size.X.Offset == 512)
-check("message line: words fit the box (TextScaled, 14 to 36)", message.TextScaled == true and message:FindFirstChildOfClass("UITextSizeConstraint").MaxTextSize == 36)
+check("message line: words fit the box (TextScaled, 14 to 27)", message.TextScaled == true and message:FindFirstChildOfClass("UITextSizeConstraint").MaxTextSize == 27)
 check("message line: dark outline 3 px", message:FindFirstChild("Outline").Thickness >= 3)
 
 local GREEN = Color3.fromRGB(110, 236, 140)
@@ -52,10 +52,10 @@ __fireOn(round, "OnClientEvent", "Announce", { text = "Messi is safe", color = G
 Hud.refresh()
 check("news shows on the message line", message.Visible and message.Text == "Messi is safe")
 check("MessageColour on: the words take the news colour", Theme.MessageColour ~= true or near(message.TextColor3, GREEN))
-check("short news is big (36)", message.TextSize == 36)
+check("short news is big (27)", message.TextSize == 27)
 __fireOn(round, "OnClientEvent", "Announce", { text = "Get everyone across 3 rounds in a row", color = Color3.new(1, 1, 1) })
 Hud.refresh()
-check("long news fits the 40% box (smaller)", message.TextSize < 36 and message.TextSize >= 14)
+check("long news fits the 40% box (smaller)", message.TextSize < 27 and message.TextSize >= 14)
 -- a near-black rarity colour (Secret) is lifted so it reads on the dark outline
 __fireOn(round, "OnClientEvent", "Announce", { text = "Marin is up for grabs!", color = Color3.fromRGB(20, 20, 30) })
 local c = message.TextColor3
@@ -81,20 +81,25 @@ __fireOn(round, "OnClientEvent", "Caught", { runner = 1, final = false })
 __stepTweens(0.3)
 check("a new big word survives the last one's fade", banner.Text == "YOU'RE DOWN" and banner.TextTransparency == 0)
 
--- the top is text only (no panels), and about 9% of the screen tall without the help line
+-- the top is text only (no panels), HV's 9% of the screen tall without the help line, the round line in Roblox's top bar row
 round:SetAttribute("Stage", "Running") -- (the harness's own server loop moves on while we wait: set it again)
 round:SetAttribute("Round", 1)
 round:SetAttribute("EndsAt", workspace:GetServerTimeNow() + 30)
 player:SetAttribute("HuzzRole", "Runner")
 player:SetAttribute("HuzzStatus", "Active")
+player:SetAttribute("HuzzHero", nil) -- (the harness's server may have picked us as the Hero meanwhile: "Hero" line)
+player:SetAttribute("HuzzOut", nil)
+round:SetAttribute("HolderId", 0)
 Hud.refresh()
 local top = root:FindFirstChild("Top")local panels = 0
 for _, d in top:GetDescendants() do
 	if d:IsA("Frame") and d.BackgroundTransparency < 1 then panels += 1 end
 end
 check("top of screen: text only, no panels", panels == 0)
-check("top lines: round, role and time", string.find(top.Round.Text, "ROUND 1") ~= nil and string.find(top.Role.Text, "Runner") ~= nil and string.find(top.Role.Text, "0:") ~= nil)
-check("top lines end by 75 of 720 (role line)", top.Role.Position.Y.Offset + top.Role.Size.Y.Offset <= 75)
+check("top lines: round, role and time", string.find(top.Round.Text, "ROUND 1") ~= nil and string.find(top.Role.Text, "Runner") ~= nil and string.find(top.Role.Text, "%d:%d%d") ~= nil) -- (any clock: the harness's server time drifts from the wall clock)
+check("top lines end by 9% of the screen (65 of 720, role line)", top.Role.Position.Y.Offset + top.Role.Size.Y.Offset <= 65)
+check("HUD ignores the top bar inset; round line in the top bar row", hud.IgnoreGuiInset == true and top.Round.Position.Y.Offset + top.Round.Size.Y.Offset / 2 <= 16)
+check("role line text 14", top.Role.TextSize == 14)
 __fireOn(round, "Attr_Stage")
 check("prize card hidden while running", root.Prize.Visible == false)
 round:SetAttribute("GirlName", "Sakura Hoshino") -- (the harness's own server loop may have moved on: set it again)

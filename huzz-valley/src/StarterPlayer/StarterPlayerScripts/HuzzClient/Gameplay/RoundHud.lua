@@ -1,21 +1,22 @@
 --[[
 	The in-round screen, laid out like Huss Valley's top of screen (docs/feel-study.md gaps 1, 2, 10; owner: "make
 	it feel like the references ... more smooth"). Text only at the top, no panels:
-	  - "ROUND 2 · 1 OF 3 IN A ROW" small (green round, white streak);
-	  - under it THE MESSAGE LINE: the latest news, big (fits a box 40% of the screen wide, up to ~5% of its height),
+	  - "ROUND 2 · 1 OF 3 IN A ROW" small (green round, white streak), in Roblox's top-bar row (IgnoreGuiInset);
+	  - under it THE MESSAGE LINE: the latest news, big (fits a box 40% of the screen wide, text 14 to 27),
 	    white with a dark outline, swapped instantly. Its words take the news colour (green safe / saved, red
 	    caught, white news, the girl's rarity colour) while Theme.MessageColour is true (the one switch; false =
 	    always white). Outside a game it still shows for a few seconds ("Map: Halloween", "C.C. is up for grabs!"),
 	    lower down so it clears the lobby's NEXT ROUND plate;
-	  - under that "Runner · 0:21" small, and a help line only when there's something to do.
+	  - under that "Runner · 0:21" small, and a help line only in the player's very first round. The whole cluster
+	    ends at 8.6% of the screen (HV 8.8%).
 	  - top left the prize card (her picture, name, who has her), never while people run.
 	  - Centre words only for the big moments (3-2-1, GO!, SAFE!, YOU'RE DOWN / OUT, BACK UP!, the win), 27% from
 	    the top so they never print on your own character or name tag. Everything else is the message line.
 	  - 3-2-1-GO is drawn every frame from the server's EndsAt (no tweens to fight): each number pops in from 1.4x
 	    over 0.15 s, holds, then shrinks and fades before the next; GO! is bigger and green. One pop a second.
 	Your own name tag (made by HuzzServer/NameTagService) is faded, as in Huss Valley, and hidden while the round's
-	camera shots play (HuzzCinematic / HuzzChoosing; a HERO / CHICKEN word over your head stays, alone) or when it
-	would reach the top lines.
+	camera shots play (HuzzCinematic / HuzzChoosing; a HERO / CHICKEN word over your head stays, alone) and from the
+	Hero run to the round's end (HeroRun, Countdown, Running, RoundOver: it sat where the centre words print).
 	Thin team outlines (Highlight, no fill, outline 0.55 see-through): catchers red, runners dark blue, the Hero
 	yellow, safe runners green. Laid out at 1280 x 720 and scaled. Gotham only, no gold.
 ]]
@@ -36,10 +37,11 @@ function M.start()
 	local Scale = require(UI.Scale)
 	local Sfx = require(script.Parent.Sfx)
 	local UIState = require(UI.State)
-	-- The control tips (stab, powers, dash) show in a player's first two games only, then the line stays quiet.
-	local function newPlayer()
+	-- The help line (tips, "Wait here"...) shows only in a player's very first round, then the line stays quiet
+	-- (feel study: HV's top cluster is 8.8% of the screen; the help line pushed ours past that).
+	local function firstRound(state)
 		local stats = UIState.data.Stats or {}
-		return (stats.Rounds or 0) < 2 -- (Stats.Rounds counts finished games)
+		return (stats.Rounds or 0) == 0 and (state:GetAttribute("Round") or 0) <= 1 -- (Stats.Rounds counts finished games)
 	end
 
 	local player = Players.LocalPlayer
@@ -115,7 +117,14 @@ function M.start()
 		return f
 	end
 
-	local gui = make("ScreenGui", { Name = "HuzzRoundHud", ResetOnSpawn = false, IgnoreGuiInset = false, DisplayOrder = 5 })
+	-- IgnoreGuiInset: the round line sits in Roblox's own top-bar row (centred; Roblox's buttons are at the sides),
+	-- so the whole top cluster fits in HV's 9% of the screen.
+	local gui = make("ScreenGui", { Name = "HuzzRoundHud", ResetOnSpawn = false, IgnoreGuiInset = true, DisplayOrder = 5 })
+	-- Roblox's top bar height in pixels (0 offline): the prize card and the lobby message keep clear of it.
+	local function insetY(): number
+		local ok, inset = pcall(function() return game:GetService("GuiService"):GetGuiInset() end)
+		return if ok and typeof(inset) == "Vector2" then inset.Y else 0
+	end
 	-- Everything is laid out for a 1280 x 720 screen and scaled to yours (from the top centre).
 	local root = make("Frame", { Name = "Root", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromScale(0.5, 0), Size = UDim2.fromOffset(1280, 720), BackgroundTransparency = 1, Parent = gui })
 	local fit = make("UIScale", { Name = "Fit", Parent = root })
@@ -127,15 +136,16 @@ function M.start()
 	end
 	refit()
 
-	-- Top centre, text only (Huss Valley: "ROUND 01" small, the news big, "Safe · 0:21" small; 9% of the screen).
-	-- Heights in this 720-tall layout: round line 3-19, message 19-57 (40% wide), role line 57-75, help 77-95.
-	local MSG_W, MSG_H, MSG_MAX, MSG_MIN = 512, 38, 36, 14
-	local top = make("Frame", { Name = "Top", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(640, 0), Size = UDim2.fromOffset(700, 100), BackgroundTransparency = 1, Parent = root })
-	local roundLabel = text({ Name = "Round", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(350, 3), Size = UDim2.fromOffset(600, 16), FontFace = F.Heading, TextSize = 14, TextColor3 = C.Accent, RichText = true, Text = "", Parent = top }, 1.5)
-	local roleLine = text({ Name = "Role", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(350, 57), Size = UDim2.fromOffset(600, 18), FontFace = F.Name, TextSize = 16, RichText = true, Text = "", Parent = top }, 1.5)
-	local help = text({ Name = "Help", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(350, 77), Size = UDim2.fromOffset(700, 18), FontFace = F.Body, TextSize = 14, TextColor3 = C.NoteText, RichText = true, Text = "", Parent = top }, 1.2)
+	-- Top centre, text only (Huss Valley: "ROUND 01" small, the news big, "Safe · 0:21" small; 8.8% of the screen).
+	-- Heights in this 720-tall layout (from the very top of the screen): round line 5-20 (in Roblox's top-bar row,
+	-- centre y ~13), message 20-48 (40% wide), role line 48-62 (8.6%), help 63-77 (first round only).
+	local MSG_W, MSG_H, MSG_MAX, MSG_MIN = 512, 28, 27, 14
+	local top = make("Frame", { Name = "Top", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(640, 0), Size = UDim2.fromOffset(700, 80), BackgroundTransparency = 1, Parent = root })
+	local roundLabel = text({ Name = "Round", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(350, 5), Size = UDim2.fromOffset(600, 15), FontFace = F.Heading, TextSize = 14, TextColor3 = C.Accent, RichText = true, Text = "", Parent = top }, 1.5)
+	local roleLine = text({ Name = "Role", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(350, 48), Size = UDim2.fromOffset(600, 14), FontFace = F.Name, TextSize = 14, RichText = true, Text = "", Parent = top }, 1.5)
+	local help = text({ Name = "Help", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(350, 63), Size = UDim2.fromOffset(700, 14), FontFace = F.Body, TextSize = 13, TextColor3 = C.NoteText, RichText = true, Text = "", Parent = top }, 1.2)
 	-- The message line sits in root (not in Top) so it can show outside a game too, lower down there.
-	local MSG_Y_GAME = 19
+	local MSG_Y_GAME = 20
 	local message = text({
 		Name = "Message", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromOffset(640, MSG_Y_GAME), Size = UDim2.fromOffset(MSG_W, MSG_H),
 		FontFace = F.Heading, TextSize = MSG_MAX, TextScaled = true, Text = "", Visible = false, Parent = root,
@@ -144,7 +154,8 @@ function M.start()
 	make("UITextSizeConstraint", { MaxTextSize = MSG_MAX, MinTextSize = MSG_MIN, Parent = message })
 
 	-- Prize card, top left: a small kit window (purple header with PRIZE and her rarity, navy body).
-	local card = make("Frame", { Name = "Prize", Position = UDim2.fromOffset(20, 10), Size = UDim2.fromOffset(250, 92), BackgroundTransparency = 1, Visible = false, Parent = root })
+	local CARD_Y = 10 -- (under Roblox's top bar: refit adds its height, the HUD ignores the inset)
+	local card = make("Frame", { Name = "Prize", Position = UDim2.fromOffset(20, CARD_Y), Size = UDim2.fromOffset(250, 92), BackgroundTransparency = 1, Visible = false, Parent = root })
 	local cardBody = panel({ Name = "Body", Position = UDim2.fromOffset(0, 22), Size = UDim2.new(1, 0, 1, -22), Parent = card })
 	local cardHead = header({ Name = "Head", Size = UDim2.new(1, 0, 0, 28), Parent = card })
 	local prizeWord = text({ Name = "Title", Position = UDim2.fromOffset(10, 0), Size = UDim2.new(0, 70, 1, 0), FontFace = F.Heading, TextSize = 16, TextXAlignment = Enum.TextXAlignment.Left, Text = "PRIZE", Parent = cardHead }, 1)
@@ -188,9 +199,16 @@ function M.start()
 	ModalManager.changed(function(now)
 		gui.Enabled = now == nil or ModalManager.isSide(now)
 	end)
+	local function placeCard()
+		card.Position = UDim2.fromOffset(20, CARD_Y + math.ceil(insetY() / math.max(fit.Scale, 0.01)))
+	end
+	placeCard()
 	local cam = Workspace.CurrentCamera
 	if cam then
-		cam:GetPropertyChangedSignal("ViewportSize"):Connect(refit)
+		cam:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+			refit()
+			placeCard()
+		end)
 	end
 
 	-- A big word: pops in from 1.4x (0.18 s, Back out), holds, then shrinks and fades (0.3 s). A new word cancels
@@ -290,7 +308,7 @@ function M.start()
 		end
 		return c
 	end
-	-- Roblox fits the words to the box itself (TextScaled, 14 to 36); TextSize is set to about the same, for the
+	-- Roblox fits the words to the box itself (TextScaled, 14 to 27); TextSize is set to about the same, for the
 	-- offline preview, which draws TextSize.
 	local function fitSize(msg)
 		local w = 0
@@ -330,7 +348,7 @@ function M.start()
 		local inGame = (State:GetAttribute("Round") or 0) > 0 and stage ~= "Waiting" and stage ~= "Voting" and stage ~= "Intermission" and stage ~= "Rolling"
 		top.Visible = inGame
 		-- the message: under the round line in a game; outside one, below the lobby's NEXT ROUND plate for a while
-		local lobbyY = math.ceil(64 * Scale.hud(347) / math.max(fit.Scale, 0.01)) + 6
+		local lobbyY = math.ceil((insetY() + 64 * Scale.hud(347)) / math.max(fit.Scale, 0.01)) + 6 -- (the plate is under the top bar)
 		message.Position = UDim2.fromOffset(640, if inGame then MSG_Y_GAME else lobbyY)
 		if not inGame and message.Text ~= "" and os.clock() - messageAt >= LOBBY_MESSAGE_TIME then
 			message.Text = "" -- (so the next game doesn't open on the last game's news)
@@ -345,7 +363,7 @@ function M.start()
 			local word, line
 			if myRole == "Catcher" then
 				word = "Catcher"
-				line = if (stage == "Running" or stage == "HeroRun") and newPlayer() then `{key("Click", "R2")} to stab · {key("Q", "L1")} {key("E", "R1")} powers` else nil
+				line = if (stage == "Running" or stage == "HeroRun") then `{key("Click", "R2")} to stab · {key("Q", "L1")} {key("E", "R1")} powers` else nil
 			elseif myRole == "Runner" then
 				if myStatus == "Downed" and player:GetAttribute("HuzzOut") then
 					word, line = "Out", "You join the catchers next round"
@@ -360,13 +378,13 @@ function M.start()
 				else
 					word = "Runner"
 					line = if stage == "HeroRun" then "Hero's run. Wait on the line."
-						elseif stage == "Running" and newPlayer() then `Reach the <font color="#60E88C"><b>SAFE ZONE</b></font> · {key("Space", "A")} to dash`
+						elseif stage == "Running" then `Reach the <font color="#60E88C"><b>SAFE ZONE</b></font> · {key("Space", "A")} to dash`
 						else nil
 				end
 			else
 				word, line = "Watching", "You're in next game."
 			end
-			help.Text = M.extraHelp or line or ""
+			help.Text = if firstRound(State) then M.extraHelp or line or "" else ""
 			if TIMED[stage] then
 				local secs = math.ceil(left)
 				local clock = string.format("%d:%02d", secs // 60, secs % 60)
@@ -417,8 +435,9 @@ function M.start()
 	M.refresh = refresh -- (the offline preview calls it)
 
 	-- Your own name tag: faded as in Huss Valley, gone while the round's camera shots play (the pick shot put it
-	-- 6% tall right under the top lines), and gone when it would reach the top lines. Others' tags stay as made.
+	-- 6% tall right under the top lines), and gone from the Hero run to the round's end. Others' tags stay as made.
 	local OWN_TAG_FADE = 0.35
+	local OWN_TAG_HIDDEN = { HeroRun = true, Countdown = true, Running = true, RoundOver = true }
 	local ownTag
 	local function styleOwnTag(tag)
 		for _, name in { "Title", "PlayerName", "Sub" } do -- (not the HERO / CHICKEN word: that one stays bold)
@@ -450,15 +469,9 @@ function M.start()
 		local camera = Workspace.CurrentCamera
 		local shot = player:GetAttribute("HuzzCinematic") == true or player:GetAttribute("HuzzChoosing") == true
 			or (camera ~= nil and camera.CameraType == Enum.CameraType.Scriptable)
-		local clear = true
-		if not shot and camera then
-			local ok, point = pcall(function()
-				return camera:WorldToViewportPoint(head.Position + Vector3.new(0, 4.5, 0)) -- (the tag's top)
-			end)
-			if ok and point and point.Z > 0 then
-				clear = point.Y > camera.ViewportSize.Y * 0.16 -- (below the top lines: 9% plus Roblox's bar)
-			end
-		end
+		-- from the Hero run to the round's end your own tag is gone: the round camera puts it 23-40% from the top,
+		-- right where 3-2-1, SAFE! and YOU'RE DOWN print
+		local clear = not OWN_TAG_HIDDEN[State:GetAttribute("Stage") or ""]
 		-- in a shot your tag goes, except a HERO / CHICKEN word over your head (the push-in shows it), alone
 		local badge = tag:FindFirstChild("Badge")
 		local wordOnly = shot and badge ~= nil and badge.Visible
