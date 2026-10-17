@@ -66,19 +66,58 @@ function Shot.face(line, head, chosen)
 	return head.Position + face * dist + Vector3.new(0, 1.4, 0), head.Position - Vector3.new(0, 1.3, 0)
 end
 
--- Moving from one shot to the next over `a` (0..1): eased, and lifted up and over in between so the camera
--- never flies through the runners.
-function Shot.transition(fromEye, fromLook, toEye, toLook, a)
-	local s = Shot.smooth(a)
-	local lift = math.clamp((toEye - fromEye).Magnitude * 0.3, 0, 12) * math.sin(math.pi * s)
-	return fromEye:Lerp(toEye, s) + Vector3.new(0, lift, 0), fromLook:Lerp(toLook, s)
+-- Quart in-out: the swing between shots (Huss Valley's: one quick swing, then the shot holds).
+function Shot.swing(x)
+	x = math.clamp(x, 0, 1)
+	return if x < 0.5 then 8 * x ^ 4 else 1 - (2 - 2 * x) ^ 4 / 2
 end
-Shot.TransitionTime = 0.9
 
--- The hand-back: behind and above your own character, looking `facing` (the way the round runs).
-function Shot.behind(facing, headPosition)
-	local back = Vector3.new(facing.X, 0, facing.Z).Unit
-	return headPosition - back * 11 + Vector3.new(0, 3.5, 0), headPosition + back * 6
+-- Moving from one shot to the next over `a` (0..1), Huss Valley's way (docs/feel-study.md gap 4): one quick
+-- swing that goes ROUND and OVER, never through. The eye orbits the point between the two looks (so it swings round
+-- the runners instead of diving through them, and never ends up straight above them looking down), rises with the
+-- distance, and with `clearY` (the height of the runners' heads) it is at least 4 studs over heads mid-swing.
+-- The look point glides between the two. Walls and the floor: Gameplay/Cinematic pulls the eye in front of them.
+function Shot.transition(fromEye, fromLook, toEye, toLook, a, clearY)
+	local s = Shot.swing(a)
+	local look = fromLook:Lerp(toLook, s)
+	local pivot = fromLook:Lerp(toLook, 0.5)
+	local f, t = fromEye - pivot, toEye - pivot
+	local rf, rt = Vector3.new(f.X, 0, f.Z).Magnitude, Vector3.new(t.X, 0, t.Z).Magnitude
+	local eye
+	if rf > 1 and rt > 1 then
+		local af, at = math.atan2(f.Z, f.X), math.atan2(t.Z, t.X)
+		local d = (at - af + math.pi) % (2 * math.pi) - math.pi -- (the short way round)
+		local ang, r = af + d * s, rf + (rt - rf) * s
+		eye = pivot + Vector3.new(math.cos(ang) * r, f.Y + (t.Y - f.Y) * s, math.sin(ang) * r)
+	else
+		eye = fromEye:Lerp(toEye, s)
+	end
+	local dist = (toEye - fromEye).Magnitude
+	local arc = math.sin(math.pi * s)
+	local y = eye.Y + math.clamp(dist * 0.3, 0, 12) * arc
+	if clearY and dist > 6 then
+		local base = fromEye.Y + (toEye.Y - fromEye.Y) * s
+		y = math.max(y, base + math.max(0, clearY + 4 - base) * arc)
+	end
+	return Vector3.new(eye.X, y, eye.Z), look
+end
+Shot.TransitionTime = 0.25 -- seconds (HV 0.2 to 0.3; was 0.9, a slow drift)
+Shot.HandBackTime = 0.3 -- the swing back behind you
+
+-- Your own camera in a round, as Huss Valley frames it (gap 5: you're about a third of the screen tall, the horizon
+-- ~30% from the top): Gameplay/Cinematic hands back exactly here, then caps the zoom.
+Shot.RoundZoom = 12 -- studs from the focus (the lobby sits further back)
+Shot.RoundPitch = 14 -- degrees looking down (at FOV 70 that puts the horizon ~32% from the top)
+Shot.RoundMaxZoom = 22 -- how far you can scroll out in a round
+Shot.FocusHeight = 1.5 -- Roblox's camera looks at this point over the root part (R15)
+
+-- The hand-back: where Roblox's own camera will sit once it takes over: RoundZoom behind `focus` (your root part +
+-- FocusHeight, plus the shift-lock offset), looking `facing` (the way the round runs) RoundPitch degrees down.
+function Shot.behind(facing, focus)
+	local flat = Vector3.new(facing.X, 0, facing.Z).Unit
+	local p = math.rad(Shot.RoundPitch)
+	local dir = flat * math.cos(p) - Vector3.new(0, math.sin(p), 0)
+	return focus - dir * Shot.RoundZoom, focus
 end
 
 return Shot

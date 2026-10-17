@@ -8,7 +8,13 @@
 	           server picked at random; the hops are worked out backwards so every screen lands on them).
 	           Then it zooms in on their face and holds while they choose (Screens/HeroChoice).
 	  Chosen   a little push in on them while HERO / CHICKEN shows over their head (the name tag).
-	Then the camera glides back behind your own character and Roblox's camera takes over.
+	Then the camera swings back behind your own character and Roblox's camera takes over.
+	Moves between shots are Huss Valley's (docs/feel-study.md gap 4): one quick 0.25 s swing that goes round and over
+	the runners (Shot.transition), then the shot holds; the eye is pulled in front of any wall or the floor it would go
+	behind (clear(), like Gameplay/SecretReveal's), so it never flies through the map, the runners or you.
+	The hand-back lands exactly where Roblox's camera will be (Shot.behind: 12 studs back, 14 degrees down, the
+	shift-lock offset included), with the zoom set to 12 for that moment, so nothing pops when it takes over. In a
+	round the zoom is capped at 22 (Shot.RoundMaxZoom); the lobby keeps the place's own limits (gap 5).
 	No black bars (owner: "when the cutscenes happen, the top and bottom of your screen dont cut out"): the
 	shots use the whole screen. Players in the lobby keep their own camera.
 	Sets the local player attribute "HuzzCinematic" while it plays (ShiftLock lets go of the mouse).
@@ -33,6 +39,67 @@ function M.start()
 	local GOLD = Color3.fromRGB(255, 255, 255) -- (the pick glow: clean white, owner: no gold)
 
 	local Sfx = require(script.Parent.Sfx)
+	local UserInputService = game:GetService("UserInputService")
+
+	-- The zoom: the place's own limits in the lobby; capped in a round; pinned to RoundZoom for the hand-back.
+	local lobbyMin, lobbyMax = player.CameraMinZoomDistance, player.CameraMaxZoomDistance
+	local ROUND = { Lineup = true, Picking = true, Chosen = true, HeroRun = true, Countdown = true, Running = true, RoundOver = true }
+	local pinned = false -- (the hand-back holds the zoom at RoundZoom for a moment)
+	local function setZoom(min, max)
+		if player.CameraMinZoomDistance ~= min or player.CameraMaxZoomDistance ~= max then
+			pcall(function()
+				player.CameraMaxZoomDistance = math.max(max, player.CameraMinZoomDistance)
+				player.CameraMinZoomDistance = min
+				player.CameraMaxZoomDistance = max
+			end)
+		end
+	end
+	local function zoomLimits()
+		if pinned then
+			return
+		end
+		local role = player:GetAttribute("HuzzRole")
+		local inRound = (role == "Runner" or role == "Catcher") and ROUND[round:GetAttribute("Stage") or ""] == true
+		if inRound then
+			setZoom(math.min(lobbyMin, Shot.RoundZoom), math.min(lobbyMax, Shot.RoundMaxZoom))
+		else
+			setZoom(lobbyMin, lobbyMax)
+		end
+	end
+
+	-- Pull an eye in front of anything solid between it and what it looks at (walls, props, the floor); runners and
+	-- see-through or non-solid parts (zone boxes, the safe gate) don't count.
+	local rayParams = RaycastParams.new()
+	rayParams.FilterType = Enum.RaycastFilterType.Exclude
+	local function clear(eye: Vector3, look: Vector3): Vector3
+		local v = eye - look
+		if v.Magnitude < 0.5 then
+			return eye
+		end
+		local skip = {}
+		for _, p in Players:GetPlayers() do
+			if p.Character then table.insert(skip, p.Character) end
+		end
+		local bot = Workspace:FindFirstChild("HuzzBot", true)
+		if bot then table.insert(skip, bot) end
+		for _ = 1, 6 do
+			rayParams.FilterDescendantsInstances = skip
+			local ok, hit = pcall(function() return Workspace:Raycast(look, v, rayParams) end)
+			if not (ok and hit) then
+				return eye
+			end
+			local part = hit.Instance
+			if part:IsA("BasePart") and (not part.CanCollide or part.Transparency > 0.9) then
+				table.insert(skip, part) -- (look past it)
+			else
+				return hit.Position - v.Unit * 1
+			end
+		end
+		return eye
+	end
+	local function clearY(line)
+		return if typeof(line) == "CFrame" then line.Position.Y + 5.5 else nil -- (the runners' heads)
+	end
 
 	local function rootOf(p)
 		local c = p and p.Character
@@ -86,44 +153,67 @@ function M.start()
 		playing = false
 		highlight.Enabled = false
 		highlight.Adornee = nil
-		-- Glide back behind our own character, then hand the camera back to Roblox.
-		local head, root = headOf(player), rootOf(player)
+		-- Swing back behind our own character, then hand the camera back to Roblox.
+		local root = rootOf(player)
 		camera = Workspace.CurrentCamera
 		-- Face the way the round runs (across the field), not back at the camera: runners look across, catchers
 		-- look at the runners. HuzzCinematic stays on until the glide ends, so shift lock doesn't turn you first.
 		local line = round:GetAttribute("LineCF")
 		local facing = if typeof(line) ~= "CFrame" then (root and root.CFrame.LookVector or Vector3.zAxis)
 			elseif player:GetAttribute("HuzzRole") == "Catcher" then -line.LookVector else line.LookVector
-		if not (head and root) then
+		if not root then
 			camera.CameraType = Enum.CameraType.Custom
 			player:SetAttribute("HuzzCinematic", false)
+			pinned = false
+			zoomLimits()
 			return
 		end
+		-- Shift lock (desktop) will put the camera over your right shoulder: aim for that spot already.
+		local shoulder = if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then 0 else 1.75
+		local flat = Vector3.new(facing.X, 0, facing.Z).Unit
+		local right = Vector3.new(-flat.Z, 0, flat.X)
 		local startEye, startLook = current()
+		local floorY = clearY(line)
 		local start = os.clock()
+		local handed = 0 -- frames since the swing landed
+		pinned = true
+		setZoom(Shot.RoundZoom, Shot.RoundZoom) -- (Roblox's camera starts at exactly this distance: no pop)
 		local conn
 		conn = RunService.RenderStepped:Connect(function()
-			local a = (os.clock() - start) / 0.8
 			if playing then
 				conn:Disconnect()
 				return
 			end
-			local h = headOf(player)
-			if h then
-				local goalEye, goalLook = Shot.behind(facing, h.Position)
-				local e, l = Shot.transition(startEye, startLook, goalEye, goalLook, math.min(a, 1))
+			local a = (os.clock() - start) / Shot.HandBackTime
+			local r = rootOf(player)
+			if r and handed < 2 then -- (once Roblox's camera has it, never write over it)
+				local focus = r.Position + Vector3.new(0, Shot.FocusHeight, 0) + right * shoulder
+				local goalEye, goalLook = Shot.behind(facing, focus)
+				local e, l = Shot.transition(startEye, startLook, goalEye, goalLook, math.min(a, 1), floorY)
+				if a < 1 then
+					e = clear(e, l)
+				end
 				camera.CFrame = CFrame.lookAt(e, l)
 			end
 			if a >= 1 then
-				conn:Disconnect()
-				camera.CameraType = Enum.CameraType.Custom
-				player:SetAttribute("HuzzCinematic", false)
+				-- landed: let shift lock set itself up for a frame while we still hold the view, then hand over
+				handed += 1
+				if handed == 1 then
+					player:SetAttribute("HuzzCinematic", false)
+				elseif handed == 2 then
+					camera.CameraType = Enum.CameraType.Custom
+				elseif handed >= 4 then
+					conn:Disconnect()
+					pinned = false
+					zoomLimits()
+				end
 			end
 		end)
 	end
 
 	RunService:BindToRenderStep("HuzzCinematic", Enum.RenderPriority.Camera.Value + 2, function()
 		camera = Workspace.CurrentCamera
+		zoomLimits()
 		local stage = round:GetAttribute("Stage") or ""
 		local role = player:GetAttribute("HuzzRole")
 		local line = round:GetAttribute("LineCF")
@@ -138,6 +228,8 @@ function M.start()
 			shotKey = nil
 			eye, look = current()
 			player:SetAttribute("HuzzCinematic", true)
+			pinned = true
+			setZoom(Shot.RoundZoom, Shot.RoundZoom) -- (already at the round's distance when it hands back)
 		end
 		camera.CameraType = Enum.CameraType.Scriptable
 		local half = math.clamp((round:GetAttribute("LineLength") or 40) / 2, 8, 40)
@@ -195,7 +287,8 @@ function M.start()
 		end
 		local a = (os.clock() - moveStart) / Shot.TransitionTime
 		if a < 1 then
-			eye, look = Shot.transition(fromEye, fromLook, toEye, toLook, a)
+			eye, look = Shot.transition(fromEye, fromLook, toEye, toLook, a, clearY(line))
+			eye = clear(eye, look)
 		else
 			eye, look = toEye, toLook
 		end

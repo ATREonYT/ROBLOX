@@ -214,11 +214,27 @@ Owner's own words are in quotes. Read only the section you need.
   stand-in thud until the owner uploads `step`). Button clicks: preloaded UI sounds, mouse clicks sound on press.
   Girl names (`Config/GirlNames`): real character names now (owner, after asking about copyright: "make the names
   normal again, don't use similar ones"); 10 unknown girls keep plain invented names until the owner names them.
-- `Gameplay/Feel`: the camera widens up to 11° at full sprint (lobby too), a dash kick, soft wind streaks drifting
-  outward near top speed (never flashing), dust and steps in rounds, a `speed_wind` loop. Off with Reduced Motion.
+- **Movement and camera vs Huss Valley** (Oct 17, `docs/feel-study.md` gaps 4-9 and 14; spec `tests/Movement.spec`):
+  - `Gameplay/Sprint`: you set off at `Run.StartSpeed` 16 and reach the cap in ~0.5 s (`Ramp`; was 9 over 1.2 s).
+  - The huss (`Gameplay/Dash`): left/right along the **camera's** right; the body eases (0.08 s) to the nearer way
+    along the camera's line (never a snap, at most a quarter turn; none in shift lock). The push eases every frame
+    from `Round.Dash` Speed 50 to EndSpeed 20 over 0.30 s (`RunMotion.pushSpeed`: 9 studs; was a flat 72 for 0.24 s).
+    The server takes the sent facing within 150° (was 110°). The lunge eases the same way (72 to 40 over 0.38 s,
+    19 studs, the old reach).
+  - `Gameplay/Feel`: +2° FOV at full sprint (was 11°), held through a huss; no huss FOV kick, no screen-edge
+    streaks or line ring. A huss draws 6 thin white Beams riding with whoever husses (`RunMotion.hussLines`,
+    `Run.Dash.Lines`), seen by everyone near. Dust, steps, a `speed_wind` loop. Reduced Motion turns off the FOV.
+  - Round camera (`Gameplay/Cinematic` + `Shared/CinematicShot`): the hand-back lands where Roblox's camera will be
+    (zoom 12, 14° down, shift-lock offset; zoom pinned for that moment), then zoom is capped at 22 in rounds; the
+    lobby keeps the place's limits. You are ~31% of the screen tall, the horizon ~32% from the top.
+  - Shot changes: one 0.25 s quart swing that orbits round and over the runners (`Shot.transition`, at least 4
+    studs over heads), the eye pulled in front of walls and the floor (`clear()`). Secret cutscene hand-back: a
+    0.2 s dip to black and a cut under it (no fly-back).
+  - Film: `HUSS_ONLY=1 sh video.sh ramp_scene.luau out.mp4`, sheet `motion3d/huss_sheet.py` →
+    `docs/previews/feel-huss-after.jpg`. Not seen in Studio yet.
 - The big showcase girl over the map glows softly (`AuraFX`: scale > 1.5 → small light, less LightEmission;
   "too much light shining down").
-- `Gameplay/Cinematic` (line-up camera), `Gameplay/RoundHud` (round plate, message line, banners, "Second chance!"),
+- `Gameplay/Cinematic` (line-up camera, above), `Gameplay/RoundHud` (round plate, message line, banners, "Second chance!"),
   `Screens/HeroChoice` (60% size: "make the boxes smaller"), `Screens/NextMap` (your vote tucks into a NEXT MAP panel).
 
 ## 9. Animations (the owner's files)
@@ -227,7 +243,13 @@ Owner's own words are in quotes. Read only the section you need.
   compact sideways lean), and 25 `Dance_<Id>` (our own names; the originals are other games' emotes).
 - `Shared/AnimationLibrary.id`: published ID, else in Studio a temporary ID (KeyframeSequenceProvider), else "".
   Temporary IDs play only on the client that made them. The live game needs `tools/studio/publish-animations.lua`.
-- `Gameplay/Locomotion` blends Idle/Walk/Run by smoothed speed; walk fades into run as you hold W.
+- `Gameplay/Locomotion` blends Idle/Walk/Run by smoothed speed; walk fades into run as you hold W (`RunFrom` 13 to
+  `RunFull` 21). The pack Sprint at `RunAt` 25 is ~4.6 steps/s at runner speed, HV's rate; the scripted run and
+  footsteps match it (`Run.Stride` 12, was 9.5). Scripted arms out 10° (was 22).
+- **The huss pose is `Shared/RunMotion`'s for everyone, you too** (`Gameplay/RunAnimator` draws only the huss on your
+  own character when your run is the pack's): crouch 0.5, hips shifted and leaning 28° (`Run.Dash` SideRoll 20 +
+  SideWaist 6), held to 0.30 s, upright by ~0.42 s. The built DashLeft/DashRight (38° lean) plays only once the owner
+  publishes a run (`Config/Animations.Run`); re-extract with a smaller lean before then.
 - **The girls on the pack** (`Shared/GirlMoves`, no upload needed): Bootstrap copies Idle/Walk/Run to
   `ReplicatedStorage.HuzzGirlMoves` in Studio AND live (~180 KB); the follower girl, your companion (both via
   `FollowMotion` `rec.moves`) and the prize's idle play them by hand, retargeted to R6 (`DanceRetarget`), blended by

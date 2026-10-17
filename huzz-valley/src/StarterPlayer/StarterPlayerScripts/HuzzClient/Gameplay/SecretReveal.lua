@@ -17,6 +17,8 @@
 	              lines, a butterfly swarm, a crackling flare, then the burst (rays, a pink cloud) and she rises
 	Flashes: soft pulses only at the impact, the swell and the burst (more than a second apart; kid-safe).
 	Reduced Motion (Settings): no shake, kicks, impact frame, pulses or crackle. No black bars (owner).
+	The hand-back (the last 0.5 s): a quick dip to black and a cut to your own camera under it, not a fly-back
+	(docs/feel-study.md gap 14: the old 0.3 s fly-back went through a wall and the sky). A dark dip, not a flash.
 	Pictures: Shared/FxTexture (our set once uploaded; until then beams are solid light and particles use Roblox's
 	built-in sparkle and smoke). Filmed offline: tools/preview/motion3d/secret_scene.luau.
 ]]
@@ -849,8 +851,23 @@ function M.start()
 			if okHit and hit then return hit.Position - v.Unit * 1 end
 			return eye
 		end
+		-- the dip to black for the hand-back (a plain black frame over everything; ours alone)
+		local dip = Instance.new("ScreenGui")
+		dip.Name = "HuzzRevealDip"
+		dip.IgnoreGuiInset = true
+		dip.ResetOnSpawn = false
+		dip.DisplayOrder = 100
+		local black = Instance.new("Frame")
+		black.Size = UDim2.fromScale(1, 1)
+		black.BackgroundColor3 = Color3.new(0, 0, 0)
+		black.BackgroundTransparency = 1
+		black.BorderSizePixel = 0
+		black.Parent = dip
+		dip.Parent = player:FindFirstChildOfClass("PlayerGui")
+		local DOWN = 0.2 -- seconds to black after RETURN; the cut happens under it, then it lifts until LENGTH
 		local function finish()
 			RunService:UnbindFromRenderStep("HuzzSecretReveal")
+			dip:Destroy()
 			pcall(cleanup)
 			model:SetAttribute("HuzzRevealing", nil)
 			camera.FieldOfView = startFov
@@ -870,11 +887,15 @@ function M.start()
 				eye = clear(eye, look)
 				local cf = CFrame.lookAt(eye, look)
 				local fov = Reveal.fov(t, Motion.reduced)
-				if t > Reveal.RETURN then -- ease back to where your camera was
-					local x = math.clamp((t - Reveal.RETURN) / (Reveal.LENGTH - Reveal.RETURN), 0, 1)
-					x = 1 - (1 - x) ^ 3
-					cf = cf:Lerp(startCF, x)
-					fov = fov + (startFov - fov) * x
+				if t > Reveal.RETURN then -- dip to black, cut back to where your camera was under it, lift
+					local x = t - Reveal.RETURN
+					if x < DOWN then
+						black.BackgroundTransparency = 1 - (x / DOWN) ^ 2
+					else
+						cf, fov = startCF, startFov
+						local up = math.clamp((x - DOWN) / (Reveal.LENGTH - Reveal.RETURN - DOWN), 0, 1)
+						black.BackgroundTransparency = up * up
+					end
 				end
 				local shake = if Motion.reduced then 0 else Reveal.shake(t)
 				if shake > 0 then
