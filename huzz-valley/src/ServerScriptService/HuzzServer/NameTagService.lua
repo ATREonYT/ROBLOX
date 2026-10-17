@@ -1,5 +1,5 @@
 --[[
-	Name tags over every player, as in Huss Valley: a small coloured title (their role this round),
+	Name tags over every player (and the Practice Bot), as in Huss Valley: a small coloured title (their role this round),
 	the name in bold, "Lv. 6 · 8 wins" under it. Downed runners show HELP! and a bar that fills while
 	someone rescues them. The picked runner's choice shows big over their head (HERO / CHICKEN).
 	Made on the server (everyone sees the same); Roblox's own name over the head is hidden.
@@ -127,6 +127,22 @@ function NameTags.set(player, look, badge, rescue)
 	gui.Badge.TextColor3 = BADGES[badge or ""] or Color3.new(1, 1, 1)
 	gui.Rescue.Visible = look == "Downed" and (rescue or 0) > 0
 	gui.Rescue.Fill.Size = UDim2.fromScale(math.clamp(rescue or 0, 0, 1), 1)
+end
+
+-- The Practice Bot's tag (HuzzServer/PracticeBot): CATCHER over its name, and "BOT" where players show their level.
+function NameTags.bot(character: Model, name: string)
+	local head = character:FindFirstChild("Head")
+	if not head then
+		return
+	end
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if humanoid then
+		humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+	end
+	local gui = head:FindFirstChild("HuzzTag") or build(head)
+	gui.Title.Text, gui.Title.TextColor3 = TITLES.Catcher[1], TITLES.Catcher[2]
+	gui.PlayerName.Text, gui.PlayerName.TextColor3 = name, Color3.new(1, 1, 1)
+	gui.Sub.Text = "BOT"
 end
 
 return NameTags

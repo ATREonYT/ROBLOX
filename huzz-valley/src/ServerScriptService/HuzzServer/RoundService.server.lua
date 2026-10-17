@@ -29,6 +29,7 @@ local MapVoteService = require(script.Parent.MapVoteService)
 local KnifeService = require(script.Parent.KnifeService)
 local PowerService = require(script.Parent.PowerService)
 local NameTags = require(script.Parent.NameTagService)
+local PracticeBot = require(script.Parent.PracticeBot)
 
 require(script.Parent.SafetyService).clean()
 MapService.init()
@@ -51,6 +52,9 @@ local goalName = "ZoneB"
 local frozen = {} -- id -> true: standing still on the line (lineup, pick, the Hero's solo run, countdown)
 local rescueTime = {} -- downed id -> seconds someone has been helping them up
 local protectedUntil = {} -- id -> os.clock() until which a just-rescued runner can't be stabbed
+local botPlayed = false -- the Practice Bot caught for this game (then it, not a player, wins if every runner is down)
+local botTagging = false -- true while the Practice Bot's stab is being applied (so the message names it)
+local botStep -- (set once stabNear exists, further down)
 
 -- Quest counters (Config/Progression) and the Index, saved through DataService.
 local function addStat(id, stat, amount)
@@ -300,11 +304,13 @@ function handlers.Caught(e)
 	end
 	rescueTime[e.id] = nil
 	syncPlayer(e.id)
-	RoundNet:FireAllClients("Caught", { catcher = e.by, runner = e.id, final = e.final })
+	RoundNet:FireAllClients("Caught", { catcher = e.by, runner = e.id, final = e.final, bot = botTagging or nil })
 	if e.final then
 		announce(`{nameOf(e.id)} is out: no second chance`, RED)
 	elseif e.by then
 		announce(`{nameOf(e.by)} got {nameOf(e.id)}`, RED)
+	elseif botTagging then
+		announce(`{Config.Bot.Name} got {nameOf(e.id)}`, RED)
 	else
 		announce(`{nameOf(e.id)} is down`, RED)
 	end
@@ -490,6 +496,7 @@ local function play(seconds, done, live)
 			end
 			PowerService.step()
 			step(dt)
+			if not match.over and botStep then botStep() end
 		end
 	end
 	return os.clock() >= deadline
@@ -529,6 +536,19 @@ local function runRound()
 		frozen[id] = true -- catchers wait too, until the Hero runs
 		place(id)
 	end
+	-- Nobody catching (alone, or the only catcher left): the Practice Bot catches this round.
+	local anyCatcher = false
+	for _, role in match.roles do
+		if role == "Catcher" then anyCatcher = true end
+	end
+	if Config.Bot.Enabled and not anyCatcher and #runners > 0 and zones.Middle then
+		if PracticeBot.spawn(MapService.spot(zones.Middle, zones[startName].Position, Config.Map.MiddleSpawn)) then
+			botPlayed = true
+		end
+	else
+		PracticeBot.remove()
+	end
+	PracticeBot.setFrozen(true)
 	PowerService.newRound()
 	syncAll()
 	apply(events)
@@ -575,6 +595,7 @@ local function runRound()
 				frozen[id] = nil
 			end
 		end
+		PracticeBot.setFrozen(false)
 		MapService.holdStart(startName, false)
 		syncAll()
 		setStage("HeroRun", Config.HeroTime)
@@ -595,6 +616,10 @@ local function runRound()
 				frozen[id] = true
 				place(id)
 			end
+		end
+		PracticeBot.setFrozen(true)
+		if zones.Middle then
+			PracticeBot.place(MapService.spot(zones.Middle, zones[startName].Position, Config.Map.MiddleSpawn))
 		end
 		if match.status[hero] == "Active" then
 			frozen[hero] = true
@@ -624,12 +649,14 @@ local function runRound()
 	play(Config.CountdownTime)
 	MapService.holdStart(startName, false)
 	table.clear(frozen)
+	PracticeBot.setFrozen(false)
 	syncAll()
 	setStage("Running", Config.RoundTime)
 	announce("GO! Get across!", WHITE)
 	play(Config.RoundTime, function()
 		return Rules.isRoundOver(match)
 	end, true)
+	PracticeBot.setFrozen(true)
 	saveHold()
 	PowerService.clear() -- traps and effects end with the round
 	apply(Rules.endRound(match, not Rules.isRoundOver(match)))
@@ -642,11 +669,14 @@ local function runRound()
 end
 
 local function finishGame()
-	local winnerId = match.winner
+	PracticeBot.remove()
+	-- The Practice Bot downed everyone: it wins, so no player does (no girl, no winner's pay).
+	local botWon = botPlayed and match.team == "Catchers"
+	local winnerId = if botWon then nil else match.winner
 	local winner = winnerId and byId[winnerId]
 	for id, role in match.roles do
 		addStat(id, "Rounds", 1) -- "Complete 3 matches"
-		local won = (match.team == "Runners" and role == "Runner") or (match.team == "Catchers" and role == "Catcher")
+		local won = not botWon and ((match.team == "Runners" and role == "Runner") or (match.team == "Catchers" and role == "Catcher"))
 		if won then
 			addStat(id, "Wins", 1)
 		end
@@ -674,7 +704,8 @@ local function finishGame()
 		CarryService.setMood(winner, "Cheer")
 	end
 	RoundNet:FireAllClients("Win", {
-		team = match.team, winner = winnerId, name = winner and winner.DisplayName, girl = girl.name, rarity = girl.rarity,
+		team = match.team, winner = winnerId, name = if botWon then nil else winner and winner.DisplayName, -- ("Nobody wins her")
+		girl = girl.name, rarity = girl.rarity, bot = botWon or nil,
 	})
 	State:SetAttribute("HolderId", winnerId or 0)
 	State:SetAttribute("Winners", match.team or "")
@@ -715,6 +746,8 @@ local function runGame()
 	announce(`{girl.name} is up for grabs!`, GirlService.rarity(girl.rarity).Color, true)
 	if catcher then
 		task.delay(1.5, announce, `{nameOf(catcher)} is the CATCHER!`, RED, true)
+	elseif Config.Bot.Enabled then
+		task.delay(1.5, announce, `{Config.Bot.Name} is the CATCHER!`, RED, true)
 	end
 	while not match.over do
 		runRound()
@@ -723,6 +756,8 @@ local function runGame()
 end
 
 local function cleanUp()
+	PracticeBot.remove()
+	botPlayed = false
 	KnockdownService.upAll()
 	CarryService.removeAll()
 	if showcase then
@@ -781,6 +816,30 @@ local function stabNear(id, me: BasePart, range: number, front: boolean): boolea
 		return true
 	end
 	return false
+end
+
+-- The Practice Bot's frame: it chases the runners a catcher could stab right now and stabs within its reach.
+function botStep()
+	if not PracticeBot.active() then
+		return
+	end
+	local start = zones[MapService.startFor(match.round)]
+	local now = os.clock()
+	local targets = {}
+	for id, status in match.status do
+		local root = status == "Active" and not frozen[id] and (protectedUntil[id] or 0) <= now and rootOf(id)
+		if root and not (Config.StartZoneSafe and start and MapService.inZone(start, root.Position)) then
+			table.insert(targets, root)
+		end
+	end
+	local m = zones.Middle
+	local fallY = if m then m.Position.Y - m.Size.Y / 2 - 30 else nil
+	PracticeBot.step(targets, function(me)
+		botTagging = true
+		local ok, hit = pcall(stabNear, nil, me, Config.Bot.Reach, false)
+		botTagging = false
+		return ok and hit
+	end, fallY)
 end
 
 Net.get("Stab").OnServerEvent:Connect(function(player)
@@ -1010,7 +1069,8 @@ local function playerCount()
 	end
 	return n
 end
-local minPlayers = if RunService:IsStudio() then Config.StudioMinPlayers else Config.MinPlayers
+-- (with the Practice Bot one player is enough, live too: the owner picked bots so a round works alone)
+local minPlayers = if RunService:IsStudio() then Config.StudioMinPlayers elseif Config.Bot.Enabled then 1 else Config.MinPlayers
 
 local function enough()
 	return playerCount() >= minPlayers

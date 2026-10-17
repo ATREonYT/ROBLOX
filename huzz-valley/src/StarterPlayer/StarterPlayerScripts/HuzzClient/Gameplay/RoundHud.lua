@@ -564,12 +564,13 @@ function M.start()
 			end
 			task.delay(if data.late then 7.6 else 0, Sfx.play, "coin")
 		elseif kind == "Win" then
-			local team = if data.team == "Runners" then "RUNNERS WIN" else "CATCHERS WIN"
+			-- (the Practice Bot downing everyone is its win, never a player's)
+			local team = if data.bot then "THE BOT WINS" elseif data.team == "Runners" then "RUNNERS WIN" else "CATCHERS WIN"
 			local teamColor = if data.team == "Runners" then BLUE else RED
 			show(banner, team, teamColor, 3.2, 76)
 			local mine = player:GetAttribute("HuzzRole")
 			if mine == "Runner" or mine == "Catcher" then
-				local won = (data.team == "Runners") == (mine == "Runner")
+				local won = not data.bot and (data.team == "Runners") == (mine == "Runner")
 				sayLine(if won then "Win" else "Lose")
 				Sfx.play(if won then "round_win" else "round_lose")
 			end

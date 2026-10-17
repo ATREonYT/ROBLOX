@@ -16,6 +16,7 @@
 local M = {}
 
 function M.start()
+	local CollectionService = game:GetService("CollectionService")
 	local Players = game:GetService("Players")
 	local ReplicatedStorage = game:GetService("ReplicatedStorage")
 	local RunService = game:GetService("RunService")
@@ -296,6 +297,10 @@ function M.start()
 					local r = rootOf(p.UserId)
 					if r then nearest = math.min(nearest, (r.Position - me.Position).Magnitude) end
 				end
+			end
+			for _, bot in CollectionService:GetTagged("HuzzBot") do -- (the Practice Bot catches too)
+				local r = bot:GetAttribute("HuzzFrozen") ~= true and bot:FindFirstChild("HumanoidRootPart")
+				if r and r:IsA("BasePart") then nearest = math.min(nearest, (r.Position - me.Position).Magnitude) end
 			end
 			want = math.clamp((FAR - nearest) / (FAR - CLOSE), 0, 1)
 		end

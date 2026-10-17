@@ -69,7 +69,7 @@ Owner's own words are in quotes. Read only the section you need.
   SpinWheel, AuraStars, Progression, Characters, GirlLooks, GirlNames, Settings...).
 - `ServerScriptService/HuzzServer`: `RoundService.server` (the loop), `MapService`, `MapVoteService`, `GirlService`,
   `CarryService`, `KnockdownService`, `PowerService`, `KnifeService`, `NameTagService`, `CompanionService`,
-  `CosmeticsService`, `AuraPickupService`, `SpinService`, `LookService`, `ActionService` (UI verbs + Dance remote),
+  `CosmeticsService`, `AuraPickupService`, `PracticeBot`, `SpinService`, `LookService`, `ActionService` (UI verbs + Dance remote),
   `ProgressService`, `ShopService` (the one ProcessReceipt), `DataService` (ProfileStore; writes only via
   `update()`; `onChanged` hook), `SafetyService`, `Bootstrap`.
 - `StarterPlayerScripts/HuzzClient`: `Main` (UI screens, each in `Report.run`), `StartGameplay` (Gameplay/*),
@@ -148,6 +148,13 @@ Owner's own words are in quotes. Read only the section you need.
 - **Downed and revived:** a downed runner lies still (`KnockdownService`); a runner beside them for 1.2 s revives
   them. **One second chance per game** (`RoundRules` `rescued`): caught again = `Caught.final` → "YOU'RE OUT", no
   rescue; joins the catchers at round end.
+- **Practice Bot** (`HuzzServer/PracticeBot`, `Config/Round.Bot`; owner picked "Yes, add bots", Oct 17): any round
+  with runners and no catcher (alone, or the only catcher left) gets a server NPC catcher named "Practice Bot"
+  (default blocky body from `CreateHumanoidModelFromDescription`, grey with a red shirt, tag CATCHER / BOT, a knife).
+  Speed 24 (< runner 28), stabs within 5 studs through `stabNear(nil, ...)`, 1.2 s breather after each stab. If it
+  downs everyone nobody wins ("THE BOT WINS", no girl, no winner's pay). With it, one player starts a game in the
+  live game too (`minPlayers` 1). Red outline like catchers; sidesteps when stuck (no pathfinding). The sim tests it
+  with a fake body.
 - **Powers** (free each round, `Config/Powers`): runners Heart Shield + Rizz Rush; catchers Love Trap + Charm Wave.
 - **Speeds** (`Config/Round.Speeds`, raised twice: lobby 22, runner 28, catcher 30, holder 27). `Gameplay/Sprint`
   eases out from a walk (9) to the cap (~95% after `Run.Ramp` 1.2 s). Run animation rate caps keep it calm.
@@ -258,10 +265,10 @@ Owner's own words are in quotes. Read only the section you need.
 ## 13. Studio-only truths
 - The cloud can't reach Roblox: uploads, real purchases and the final look are the owner's steps. Studio helpers
   report on Output lines tagged `[Huzz]`, `[HuzzSfx]`, `[HuzzAnim]`.
-- Not yet seen in Studio: the Oct 17 UI shine/rays/spin and Juice bursts, the new lighting, stars in the playing zone, the move between lobbies after the vote (instant, no fade yet), the lunge feel, sprint feel, lobby repaint, knife positions, spin animation, dance
+- Not yet seen in Studio: the Practice Bot (its walk, run animation, knife), the Oct 17 UI shine/rays/spin and Juice bursts, the new lighting, stars in the playing zone, the move between lobbies after the vote (instant, no fade yet), the lunge feel, sprint feel, lobby repaint, knife positions, spin animation, dance
   pictures on real avatars, dance sync across two clients (needs published dances).
-- **Testing rounds solo shows little:** alone you are a runner with no catcher (no red glow, no catches). Test with
-  Studio Test tab > Clients and Servers, 2 or 3 players, and wait for the vote (about a minute).
+- **Testing rounds:** alone, the Practice Bot catches. For real players, Studio Test tab > Clients and Servers,
+  2 or 3 players, and wait for the vote (about a minute).
 - ProfileStore is in Mock mode in Studio (progress resets on Stop): on purpose.
 - Scan any place the owner sends for scam scripts (`GetObjects`, `require(<id>)`, `loadstring`, HTTP);
   `SafetyService` strips the known Basket Ball Hoop one.

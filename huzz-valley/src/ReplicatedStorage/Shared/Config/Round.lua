@@ -1,8 +1,8 @@
 -- Round rules and timings. Every number the owner may want to tune lives here.
 return {
-	MinPlayers = 2,
-	-- Studio's Play button starts one player: let them test the carry alone
-	-- (no catcher, cross twice to win). Test > Clients and Servers for real rounds.
+	MinPlayers = 2, -- (1 while Bot.Enabled: the Practice Bot catches for a player alone)
+	-- Studio's Play button starts one player: the Practice Bot catches (Bot below).
+	-- Test > Clients and Servers for rounds with real players.
 	StudioMinPlayers = 1,
 
 	IntermissionTime = 25, -- the wait before a game when there's only one map (no vote; owner: time to shop)
@@ -69,6 +69,20 @@ return {
 		ArmsForward = 160, -- arms out in front of the head (degrees from hanging)
 	},
 	StartZoneSafe = true, -- catchers can't tag runners still standing in their start zone
+
+	-- The Practice Bot (HuzzServer/PracticeBot; owner picked "Yes, add bots" so a round works alone): a catcher that
+	-- joins any round with runners and no catcher. Slower than a sprinting runner (28) so the huss and a straight run
+	-- beat it; it never wins a girl and is never paid.
+	Bot = {
+		Enabled = true,
+		Name = "Practice Bot",
+		Speed = 24, -- studs a second
+		Reach = 5, -- studs: it stabs a runner this close (the server sees it exactly, so no lag allowance)
+		Pause = 1.2, -- seconds it stands still after each stab
+		Reaction = 0.6, -- seconds after GO before it moves
+		Think = 0.15, -- seconds between picking where to run
+		Lead = 0.35, -- seconds it aims ahead of a runner (less when they're far)
+	},
 
 	-- Faster than Roblox's 16 (owner: "make the people run quicker", and again: "make the running quicker at max
 	-- speed"; was 20/24/26/23/26). Top speeds: Gameplay/Sprint builds up to them from a walk.

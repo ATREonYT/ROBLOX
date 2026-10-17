@@ -566,7 +566,7 @@ local function simulate(opts)
 	local tags = {}
 	local NameTagService = { set = function(player, look, badge, rescue)
 		tags[player] = { look = look, badge = badge, rescue = rescue }
-	end }
+	end, bot = function() end }
 
 	-- The module tree the scripts require from.
 	local baseEnv = {
@@ -610,6 +610,18 @@ local function simulate(opts)
 	end
 	PowerService = loadScript("ServerScriptService/HuzzServer/PowerService.lua")()
 	modules.PowerService = PowerService
+	-- The Practice Bot: the real module with a stand-in body that botFrame walks where it's told.
+	local practice = nil
+	local PracticeBot = loadScript("ServerScriptService/HuzzServer/PracticeBot.lua")()
+	PracticeBot.makeBody = function()
+		local m = new("Model", { Name = "Practice Bot" })
+		new("Part", { Name = "HumanoidRootPart", CFrame = CFrame.new(0, 3, 0) }).Parent = m
+		new("Part", { Name = "Head" }).Parent = m
+		new("Humanoid", { Health = 100, WalkSpeed = 0, MoveTo = function(self, at) rawget(self, "_props").Goal = at end }).Parent = m
+		practice = m
+		return m
+	end
+	modules.PracticeBot = PracticeBot
 
 	-- Players and their bots
 	local nextId = 100
@@ -642,6 +654,7 @@ local function simulate(opts)
 		for _, e in roundEvents do
 			if e.kind == "Caught" then
 				stats.tags += 1
+				if e.data.bot then stats.botTags = (stats.botTags or 0) + 1 end
 			elseif e.kind == "Stab" then
 				stats.stabs += 1
 			elseif e.kind == "Power" then
@@ -655,6 +668,10 @@ local function simulate(opts)
 			elseif e.kind == "Win" then
 				stats.wins += 1
 				if e.data.team == "Runners" then stats.runnerWins += 1 elseif e.data.team == "Catchers" then stats.catcherWins += 1 end
+				if e.data.bot then
+					stats.botWins = (stats.botWins or 0) + 1
+					if e.data.winner then problem("the Practice Bot won but a player got the girl") end
+				end
 				if e.data.winner then
 					local p = nil
 					for q in bots do
@@ -768,6 +785,24 @@ local function simulate(opts)
 			problem(`{shown} big girls over the map during a game (should be {if held then 0 else 1}: she's {if held then "held" else "free"})`)
 		elseif (st == "Voting" or st == "Waiting") and shown ~= 0 then
 			problem("the big girl stayed after the game")
+		end
+		-- The Practice Bot walks where its Humanoid was told, at its WalkSpeed; it's only there during a game.
+		if practice and practice.Parent then
+			if st == "Voting" or st == "Waiting" or st == "Intermission" then
+				problem("the Practice Bot stayed after the game")
+			end
+			local h, root = practice:FindFirstChildOfClass("Humanoid"), practice.HumanoidRootPart
+			local goal = h.Goal
+			if goal and h.WalkSpeed > 0 then
+				stats.botMoves = (stats.botMoves or 0) + 1
+				local d = goal - root.Position
+				d = Vector3.new(d.X, 0, d.Z)
+				if d.Magnitude > 0.3 then
+					root.CFrame = CFrame.new(root.Position + d.Unit * math.min(d.Magnitude, h.WalkSpeed * dt))
+				end
+			elseif h.WalkSpeed > 0 and st ~= "Running" and st ~= "HeroRun" then
+				problem("the Practice Bot moves outside play (" .. tostring(st) .. ")")
+			end
 		end
 		local now = 1000 + clock
 		for p, bot in bots do
@@ -1004,7 +1039,14 @@ report("6 players, 15 minutes", s, p, {
 s, p = simulate({ players = 2, seconds = 400, seed = 3 })
 report("2 players", s, p, { { "games finish", function(x) return x.wins >= 2 end }, { "runners win some", function(x) return x.runnerWins >= 1 end } })
 s, p = simulate({ players = 1, seconds = 300, seed = 4, studio = true })
-report("1 player (Studio Play)", s, p, { { "solo games finish (3 crossings)", function(x) return x.wins >= 2 and x.runnerWins == x.wins end } })
+report("1 player (Studio Play, Practice Bot)", s, p, {
+	{ "solo games finish", function(x) return x.wins >= 2 end },
+	{ "the Practice Bot chases and catches", function(x) return (x.botMoves or 0) > 0 and (x.botTags or 0) >= 1 end },
+	{ "only the bot wins when the solo runner is caught", function(x) return x.catcherWins == (x.botWins or 0) end },
+})
+print(string.format("   (Practice Bot: %d catches, %d wins, solo runner %d wins)", s.botTags or 0, s.botWins or 0, s.runnerWins))
+s, p = simulate({ players = 4, seconds = 300, seed = 9 })
+report("4 players: no Practice Bot", s, p, { { "the bot stays out of games with a catcher", function(x) return (x.botMoves or 0) == 0 end } })
 s, p = simulate({ players = 4, cheater = true, seconds = 300, seed = 5 })
 report("a runner walks round the start wall", s, p, { { "games finish", function(x) return x.wins >= 1 end } })
 s, p = simulate({ players = 5, seconds = 500, seed = 6, leaveAt = 60, joinAt = 50 })
