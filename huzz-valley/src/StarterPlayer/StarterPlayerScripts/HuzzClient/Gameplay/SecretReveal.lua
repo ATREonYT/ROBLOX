@@ -116,7 +116,7 @@ function M.build(model: Model, base: CFrame)
 	local base0 = Instance.new("Attachment"); base0.WorldPosition = ground; base0.Parent = Workspace.Terrain
 	local top0 = Instance.new("Attachment"); top0.WorldPosition = ground + Vector3.new(0, 90, 0); top0.Parent = Workspace.Terrain
 	local pillar = {}
-	for _, def in { { WHITE, 2.2 * k, 1, "BeamGlow", 0 }, { VIOLET, 6 * k, 0.6, "BeamGlow", 0 }, { CYAN, 4 * k, 1, "SwirlStrip", -2 } } do
+	for _, def in { { WHITE, 2.2 * k, 1, "BeamGlow", 0 }, { VIOLET, 6 * k, 0.6, "BeamGlow", 0 }, { rgb(225, 130, 255), 4 * k, 1, "BeamGlow", 0 } } do -- (all soft glow, magenta-violet like the reference: no stripes)
 		local b = Instance.new("Beam")
 		b.Attachment0, b.Attachment1 = base0, top0
 		b.Color = ColorSequence.new(def[1])
@@ -163,7 +163,7 @@ function M.build(model: Model, base: CFrame)
 	local crescents = {}
 	for _, side in { -1, 1 } do
 		local a0, a1 = anchor(), anchor()
-		table.insert(crescents, { side = side, a0 = a0, a1 = a1, glow = lightBeam(a0, a1, VIOLET, 0.7, "BeamGlow", 0), core = lightBeam(a0, a1, WHITE, 1, "SwirlStrip", -3) })
+		table.insert(crescents, { side = side, a0 = a0, a1 = a1, glow = lightBeam(a0, a1, rgb(190, 70, 255), 0.75, "BeamGlow", 0), core = lightBeam(a0, a1, rgb(255, 225, 250), 1, "BeamGlow", 0) })
 	end
 	local SLASH = rgb(255, 70, 150)
 	local slashes = {}
