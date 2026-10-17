@@ -1,210 +1,196 @@
 # Huzz Valley: project memory
 
-Huss Valley's crossing game, one to one, with collectible anime girls built in. Kid audience, owner judges by
-eye. Branch `HUZZ-VALLEY`. Read the section you need; the owner's own words are in quotes.
+Huss Valley's crossing game, one to one, with collectible anime girls on top. Kid audience. The owner is a
+non-coder on a Mac (Studio, GitHub Desktop, Rojo) who judges by eye, writes short messages and sends reference
+videos/pictures. Branch `HUZZ-VALLEY`, folder `huzz-valley/`. The root `CLAUDE.md` rules (plain words, golden slice,
+reference side by side, honest gaps, never invent IDs, kid-safe, purchases server-only) always apply.
+Owner's own words are in quotes. Read only the section you need.
+
+> **Work in progress, not a final state.** The game is mid-build and the owner has said plenty still needs fixing.
+> This file is a running notebook of where things stand today, not a finished design: **the owner's newest message
+> always beats anything written here.** When something changes, update the section it belongs to (and drop what's
+> no longer true) in the same commit. Things marked as feeling right have mostly only been checked offline; expect
+> them to be reworked once the owner tries them in Studio.
 
 ## 1. Owner's standing calls (don't undo without asking)
-- **The loop is Huss Valley's** (videos 32fe8d21, 87565d66; `docs/previews/hv-reference-*.jpg`). Girls add a
-  prize layer on top; they never change the rules.
-- **Look = Huss Valley's** (owner: "use the same fonts as Huss Valley, it's simple and feels nice"; "let go of
-  that gold tone"): **one font, Roblox's Gotham** (`GothamSSm`: Black for titles, Bold for names/buttons, Medium
-  for lines, Black Italic for big moments), **white text with a dark outline**, no gradient-banded titles, **no
-  gold**: the one accent is **Huss Valley green** (`Theme.Colors.Accent`; selected tabs, your vote, progress,
-  good news). The kit's purple/navy panels stay, see-through, with a studded texture over whole panels.
-  The preview has no Gotham (not free): it draws Montserrat, its look-alike.
-- **Text:** short, game-like, no dashes, no "AI" phrasing ("Messi is safe", "Got one!", "GO! Get across!").
-- **Small HUD** (`Scale.HUD_SIZE = 0.55`); lobby side buttons and coin pills slide away during rounds.
-- **Controls:** **no jumping anywhere**; Space = the sideways huss (lobby too), but a **catcher's Space in a round is
-  a lunge** forward that stabs whoever it reaches (`Config/Round.Lunge`); hold W = walk building into a run (the
-  camera widens and wind streaks show near top speed, `Gameplay/Feel`); G = dance wheel; Q/E = powers (catchers'
-  Q = Love Trap); click = stab; no mouse pointer in rounds (shift lock), Alt brings it back. **No girl toss**.
-- **Knives:** everyone wears their knife (coin-shop / quest / wheel skin) on the back; catchers hold it in a round
-  (`KnifeService.give` / `giveBack`, from `syncPlayer`).
-- **Safe means safe:** once across you stay across (goal gate). During a Hero run only the Hero (and catchers) move.
-- **Girls:** the equipped one **walks behind you** on the ground; effects are **tiny below Legendary**.
-- **Never invent IDs** (assets, sounds, animations, passes). Empty + a checklist line in `README.md`.
+- **The loop is Huss Valley's** (their videos 32fe8d21 and 87565d66; frames in `docs/previews/hv-reference-*.jpg`).
+  The girls are a prize layer on top; they never change the rules.
+- **Look = Huss Valley's** ("use the same fonts as Huss Valley, it's simple and feels nice"; "let go of that gold
+  tone"; gold "looks so AI"): one font, Roblox's **Gotham** (`GothamSSm`: Heavy titles, Bold names/buttons, Medium
+  lines, Heavy Italic for big moments); **white text with a dark outline**; **no gold anywhere**; the one accent is
+  **Huss Valley green** (`Theme.Colors.Accent` 5BE07A). Kit purple/navy panels stay, **see-through** ("make the UI
+  more transparent", asked twice: `Theme.Transparency` Body 0.32 / Row 0.18) with a **studded texture over whole
+  panels** (not stud strips). A second reference for polish: their video 9233ecef of another game (bright,
+  saturated, crisp, glowing): aim for "a mix of this and Huss Valley".
+- **Text:** short and game-like, no dashes, no "AI" phrasing ("Messi is safe", "Got one!", "YOU'RE OUT").
+- **Controls:** **no jumping anywhere**. Space = the sideways huss (left/right only, lobby too); a **catcher's Space
+  in a round is a lunge** that stabs whoever it reaches; hold W = walk building into a run; G = dance wheel;
+  Q/E = powers (catcher Q = Love Trap = the traps); click = stab; shift lock in rounds (Alt frees the mouse).
+- **No girl toss** (removed). **Safe means safe:** once across you stay across. During a Hero run only the Hero and
+  catchers move.
+- **Companions are only girls you win** (the kit's Aiko/Ren/Sora/Hina mock-ups were removed). The equipped girl
+  walks behind you on the ground, doesn't collide with you, and dances when you dance. Effects tiny below Legendary.
+- **Knives:** everyone wears one on the back; catchers hold theirs in a round. The owner will send 3D knife renders.
+- **Aura** = Huss Valley's gems. **Coins** buy looks (the owner picked "Coin cosmetics shop").
+- **Never invent IDs** (assets, sounds, animations, passes, products): leave 0/"" and add a README checklist line.
 
-## 2. Where things are (`src/`, Rojo `default.project.json`)
-- `ReplicatedStorage/Shared`: `RoundRules` (pure rules, tested), `AuraLook`, `CinematicShot`, `RunMotion`,
-  `CarryMotion`, `GirlMotion`, `FollowMotion`, `AnimationLibrary`, `Net`, `Config/*` (Round, Run, Powers, Dances,
-  Animations, SoundIds, GirlLooks, GirlNames, Products, Settings...).
-- `ServerStorage/HuzzAnimations.rbxm`: the owner's animations as raw KeyframeSequences (generated, §6; copied to
-  ReplicatedStorage by Bootstrap in Studio only).
-- `ServerScriptService/HuzzServer`: `RoundService.server` (the loop; its own Script), `MapService`, `GirlService`,
-  `CarryService`, `KnockdownService`, `PowerService`, `NameTagService`, `CompanionService`, `DataService`
-  (ProfileStore; all writes via `update()`), `ShopService`, `SettingsService`, `Bootstrap`.
-- `StarterPlayerScripts/HuzzClient`: `Main` (UI screens via `Report.run`), `StartGameplay` (Gameplay/*),
-  `UI/{Kit,Theme,Scale,Motion,ModalManager,State,DancePlayer}`, `UI/Screens/*`, `Gameplay/*`.
-- `StarterGui/HuzzUI.rbxm`: **generated** by `build_place.sh`; never edit by hand.
-- `design/`: kit pages, the owner's sharp art/icon zips, `anims/` (their movement pack + 200-dance file).
+## 2. How we work with this owner (lessons so far)
+- Give status in short plain lines; one picture per change; end with the download link
+  `https://github.com/atreonyt/roblox/raw/HUZZ-VALLEY/huzz-valley/places/HuzzValley-yours.rbxl` and how to try it.
+- **Watch their videos frame by frame before changing anything they show** (ffmpeg contact sheets at 10 fps,
+  cropped to the character). Examples that went wrong first: the run arms (we held them in front; Huss Valley
+  swings them), the huss (first version was a cartwheel; theirs is a compact sideways lean).
+- **Measure before "fixing" a scare:** the "walls missing" report turned out to be walls in the wrong place; the
+  "high pitch sounds" were Roblox's ping played as a stand-in, pitched up.
+- Big lists: split into tasks; use worktree agents only for self-contained parts (sounds, spin wheel), tell them
+  exactly which files they may touch, then **cherry-pick** their commit and hand-merge the shared files
+  (Net, ActionService, CoinShop, DataService, Products, RoundService). Binary files (HuzzUI.rbxm, places): take
+  ours and rebuild.
+- **Always run a fresh critic agent** on new code before reporting; it found real bugs every time (shield vs lunge,
+  Dance Pack sync, fall net pulling lobby players, props shrinking walls, avatar joints).
+- Report honestly: what's still worse than the reference, what only Studio can show, what's a stand-in.
 
-## 3. Checks, previews, builds (run before every commit; Lune at `/root/bin/lune`)
-- `PATH=/root/bin:$PATH bash tools/check.sh`: compiles every script, RoundRules/CarryMath/GirlMotion/GirlRoll
-  specs and the **full-game simulation** (`tools/sim/round_sim.luau`: real server code, bots, 7 setups; checks
-  stage order, freezing, Hero-only runs, safe runners staying across, tags, the girl...). Prove a new sim check by
-  breaking the code once and seeing it fail.
+## 3. Where things are (`src/`, Rojo `default.project.json`)
+- `ReplicatedStorage/Shared`: pure, tested logic (`RoundRules`, `CrateRoll`, `SpinRules`, `GirlRoll`, `CarryMath`,
+  `KeyframeSampler`, `DanceRetarget`, `LocomotionMix`, `AuraLook`...), `Net` (every remote), `AnimationLibrary`,
+  `Config/*` (Round, Run, Look, Powers, Dances, DancePoses, Animations, SoundIds, Products, CoinShop, Crates,
+  SpinWheel, AuraStars, Progression, Characters, GirlLooks, GirlNames, Settings...).
+- `ServerScriptService/HuzzServer`: `RoundService.server` (the loop), `MapService`, `MapVoteService`, `GirlService`,
+  `CarryService`, `KnockdownService`, `PowerService`, `KnifeService`, `NameTagService`, `CompanionService`,
+  `CosmeticsService`, `AuraPickupService`, `SpinService`, `LookService`, `ActionService` (UI verbs + Dance remote),
+  `ProgressService`, `ShopService` (the one ProcessReceipt), `DataService` (ProfileStore; writes only via
+  `update()`; `onChanged` hook), `SafetyService`, `Bootstrap`.
+- `StarterPlayerScripts/HuzzClient`: `Main` (UI screens, each in `Report.run`), `StartGameplay` (Gameplay/*),
+  `UI/{Kit,Theme,Scale,Motion,ModalManager,State,DancePlayer,DancePose,Toast}`, `UI/Screens/*`, `Gameplay/*`.
+- `ServerStorage/HuzzAnimations.rbxm` (generated), `StarterGui/HuzzUI.rbxm` (generated: never edit by hand).
+- `design/`: kit pages, the owner's art zips, `anims/` (movement pack + 200 dances), `aura/`, `shop/`, references.
+- `places/HUSSANIME.rbxl` = the owner's own place (maps, girls, lobby) as of Oct 15; `HuzzValley-yours.rbxl` = it
+  with all our code and UI swapped in (what the owner tests).
+
+## 4. Checks, previews, builds (Lune 0.10.5 at `/root/bin/lune`; run before every commit)
+- `PATH=/root/bin:$PATH bash tools/check.sh`: compiles every script; specs (RoundRules, CarryMath, GirlMotion,
+  GirlRoll, CrateRoll, SpinWheel); **the full-game simulation** (`tools/sim/round_sim.luau`: real server code, bots
+  that run, stab, lunge, rescue, use powers; 7 setups). Its stubs (e.g. `KnifeService`) must get any new function
+  RoundService calls, or games stop with "attempt to call a nil value".
 - `PATH=/root/bin:$PATH bash tools/preview/check.sh`: UI checks on the saved UI, then built from nothing.
-- `PATH=/root/bin:$PATH LUNE=/root/bin/lune sh tools/place/build_place.sh`: regenerates `HuzzUI.rbxm`,
-  `places/HuzzValley.rbxl` and **`places/HuzzValley-yours.rbxl`** (the owner's place with everything swapped in:
-  what they test). Rebuild after every change and give the raw download link.
-- UI pictures: `NODE_PATH=$(npm root -g) sh tools/preview/shots.sh <out> <names>` (reference on top, ours below).
-  `HUZZ_FRESH=1` builds from code instead of the saved UI. Names include round-hud, hero-choice, welcome,
-  dance-wheel, dances, shop-passes, shop-coins, progression, lobby-hud, menu, index, map-vote, power-bar, spin-wheel.
-  Where `sh`/`$(cat ...)` is refused, pass the snippet as a file: `lune run harness.luau ../../src <out|-> @file.luau setup_ui.luau`.
-- 3D videos: `tools/preview/motion3d` (`sh video.sh <scene> <out.mp4>`). `anim_scene.luau` plays any
-  KeyframeSequence file (`ANIM_FILE=... ANIM_NAMES=a,b` or `ANIM_PREFIX=Dance_`) via `kfs.luau`, as Roblox would.
-- Renderer limits: no `AutomaticSize` on frames (size chips by hand), the Robux glyph is small, saved-UI previews
-  keep the saved look (use `HUZZ_FRESH=1` after style changes).
+  It prints harness errors too ("snippet error"): a silent missing count means a check script crashed.
+- `PATH=/root/bin:$PATH LUNE=/root/bin/lune sh tools/place/build_place.sh`: regenerates `HuzzUI.rbxm`, both places,
+  and sets Lighting.Technology = Future in the owner's place. Rebuild after every change.
+- UI pictures: `cd tools/preview && NODE_PATH=$(npm root -g) LUNE=/root/bin/lune HUZZ_FRESH=1 sh shots.sh <out> <name>`
+  (names in `shots.sh`: dance-wheel, shop-passes, shop-items, quests, spin-wheel, round-hud, hero-choice...).
+  The preview draws Montserrat for Gotham, has no AutomaticSize, and ignores UITextSizeConstraint with TextScaled.
+- 3D videos: `tools/preview/motion3d` (`sh video.sh <scene.luau> <out.mp4>`): `anim_scene.luau` plays any
+  KeyframeSequence (`ANIM_FILE`, `ANIM_NAMES`, `ANIM_VIEW=back|side`); `dance_poses.luau` picks each dance's pose
+  and writes `Config/DancePoses`; `aura_star_scene.luau`. Render.mjs loads `assets/fx` and two `assets/icons`.
+- Ad-hoc harness tests: `lune run harness.luau ../../src - "$(cat test.luau)" setup_ui.luau`. Fake a character
+  with Motor6Ds to test posing; stub `AnimationLibrary.id` to force code paths.
+- Owner's place inspection with Lune (`deserializePlace`): maps are in `Workspace.Maps` (Base_Map, BasketBall_Map,
+  Halloween_Map; zone parts named case/space-insensitively), the lobby floor is `Maps.Spawn.SpawnBaseplate`.
 
-## 4. The round (`RoundRules` + `RoundService`)
-- Lobby time (owner: "a bit more, so people can buy things, not too long"): `VoteTime` 30 s, `IntermissionTime` 25 s.
-- Stages: Waiting → Voting (map vote) → Rolling (girl roller) → per round: Lineup → Picking (HERO/CHICKEN, 8 s,
-  else random) → Chosen → HeroRun (only the Hero and catchers unfrozen) → Countdown → Running → RoundOver;
-  GameOver. Runners win with everyone across `Crossings` (3) rounds in a row; downed runners left at the end join
-  the catchers.
-- Stab (or a catcher's lunge) downs a runner (`KnockdownService`); a runner standing by them for `Rescue.Time`
-  revives them (not from the start zone; `Rescue.Shield` after). **One second chance per game**: a runner can be
-  revived once; caught again = out (`RoundRules` `rescued`, `Caught.final`), joins the catchers at round end.
-- Aura stars float over the field while a map is loaded (lobby otherwise) and collect when you run through them
-  (`AuraPickupService`, `MapService.fieldSpot`). When a map wins the vote, the lobby floor takes its floor's colour,
-  material and textures (`MapService.paintLobby`). Walls stand at the floor's real edge, plus `catchFalls`.
-- **Safe gate:** `MapService.holdGoal` puts an invisible block on the goal line in collision group
-  `HuzzSafeWall`, which only collides with `HuzzSafe` (Safe runners' parts: `MapService.setSafe` from
-  `syncPlayer`); `keepSafe()` pulls back anyone who got round it, every frame of the round.
-- Speeds: the server sets `WalkSpeed` and the cap `HuzzSpeed` on the Humanoid; `Gameplay/Sprint` ramps your
-  own speed from `Run.StartSpeed` to the cap, easing out (~95% after `Run.Ramp`), while you hold a direction (0 stays
-  0). Top speeds in `Config/Round.Speeds` (raised twice on the owner's request: runners 28, catchers 30).
-- State lives in attributes: Round remote (Stage, EndsAt, Round, Goal, Streak, Crossings, PickId, PickAt,
-  PickChoice, HolderId, GirlName, GirlRarity, LineCF...) and players (HuzzRole, HuzzStatus, HuzzHero,
-  HuzzFrozen, ProtectedUntil, DashReady, PowerReady1/2). Local-only: HuzzCinematic, HuzzChoosing, HuzzWheel.
-- `announce(text, colour, big)` = the message line (big = centre banner). Copy rules in §1.
+## 5. The round (`Shared/RoundRules` + `RoundService`)
+- Lobby: `VoteTime` 30 s, `IntermissionTime` 25 s ("a bit more, so people can buy things, not too long").
+- Stages: Waiting → Voting → Rolling (girl roller) → per round: Lineup → Picking (HERO/CHICKEN, 8 s) → Chosen →
+  HeroRun → Countdown → Running → RoundOver; GameOver. Runners win with everyone across 3 rounds in a row.
+- **Catching:** click stab (`Stab` remote) or a catcher's **lunge** (`Lunge` remote, `Config/Round.Lunge`: Speed 56,
+  Up 18, HitRange 4.8 for 0.5 s, cooldown 3 s shared with the Space tile `DashReady`; stab mode only). Both go
+  through `stabNear()`: shields, the safe start zone and a fresh rescue protect; a Heart Shield ends the lunge.
+- **Downed and revived:** a downed runner lies still (`KnockdownService`); a runner beside them for 1.2 s revives
+  them. **One second chance per game** (`RoundRules` `rescued`): caught again = `Caught.final` → "YOU'RE OUT", no
+  rescue; joins the catchers at round end.
+- **Powers** (free each round, `Config/Powers`): runners Heart Shield + Rizz Rush; catchers Love Trap + Charm Wave.
+- **Speeds** (`Config/Round.Speeds`, raised twice: lobby 22, runner 28, catcher 30, holder 27). `Gameplay/Sprint`
+  eases out from a walk (9) to the cap (~95% after `Run.Ramp` 1.2 s). Run animation rate caps keep it calm.
+- **Safe gate:** invisible goal-line block in collision group `HuzzSafeWall`, colliding only with `HuzzSafe`
+  (safe runners), plus `keepSafe()` every frame.
+- **Field edges:** safe lines, start wall and goal gate are trimmed to the real floor (`MapService` `edge()`); the
+  invisible walls (`boundary()`) stand at the floor's edge (a prop doesn't count as an edge); `catchFalls()` puts
+  anyone below the field back on it (only within 8 studs of it) or far below the lobby back to its spawn.
+- **Map look:** when a map wins the vote, `MapService.paintLobby` gives the lobby floor that map's floor colour,
+  material and textures (the floor = the part found most under a 5x5 grid over the field; Halloween's orange is a
+  Texture on its grass).
+- **Pay:** 15 coins a game, 35 for a win, +3 Aura on a win, Hero bonus 25; x2 while a wheel boost lasts.
+- **Girl odds** (`Config/Round.Rarities`, raised: "I'm only getting commons"): Common 28, Uncommon 24, Rare 20,
+  Epic 14, Legendary 8, Mythic 4.5, Secret 1.5.
+- State lives in attributes (Round remote: Stage, EndsAt, Goal, Streak, PickId, HolderId, VoteWinner...; players:
+  HuzzRole, HuzzStatus, DashReady, ProtectedUntil...; characters: DashAt/Dir, LungeAt, HuzzDance/At).
 
-## 5. In-game screens (Huss Valley look on the kit panels)
-- `Gameplay/RoundHud` (code-built, 1280x720 scaled): round plate (purple header: ROUND n + clock; navy strip: role
-  chip + IN A ROW bars), message bar, help line (control tips in your first two games), prize card, centre banners, the
-  companion's reaction bubble, and team outlines (Highlights: red catchers, blue runners, yellow Hero, green safe).
-- `Screens/HeroChoice` (green HERO / violet CHICKEN cards), `Screens/NextMap` (after you vote, the vote tucks into a
-  "NEXT MAP" panel at the top left: both maps, votes, your pick in green, time left, an arrow back to the full vote;
-  the winner shows for a few seconds; owner's HV reference), `Screens/PowerBar`, `Screens/DanceWheel` (G),
-  `Screens/Welcome` (How to Play: auto-opens once, saves the `TutorialDone` setting; also in the Menu).
-- `Gameplay/Cinematic`: the line-up camera and the hopping pick highlight (outline only while hopping).
-- `Gameplay/Feel`: sprint FOV widening, dash FOV kick + speed lines (one per dash), footstep dust, step sound.
-  Off with Reduced Motion (dust stays).
-- `NameTagService`: Gotham (as Huss Valley); role title, name, "Lv. N · W wins", HELP! + rescue bar, big HERO/CHICKEN.
+## 6. Feel and look
+- `Config/Look` → `HuzzServer/LookService` ("find the filters that make the game feel premium"): colour grade
+  (+saturation, +contrast), bloom, soft sun rays, light haze, lifted cool shadows, early-afternoon sun.
+- `Gameplay/Feel`: the camera widens up to 11° at full sprint (lobby too), a dash kick, soft wind streaks drifting
+  outward near top speed (never flashing), dust and steps in rounds, a `speed_wind` loop. Off with Reduced Motion.
+- The big showcase girl over the map glows softly (`AuraFX`: scale > 1.5 → small light, less LightEmission;
+  "too much light shining down").
+- `Gameplay/Cinematic` (line-up camera), `Gameplay/RoundHud` (round plate, message line, banners, "Second chance!"),
+  `Screens/HeroChoice` (60% size: "make the boxes smaller"), `Screens/NextMap` (your vote tucks into a NEXT MAP panel).
 
-## 6. Animations (the owner's files)
-- `tools/anim/extract_anims.luau` reads `design/anims/movement-pack.rbxl` and `200-dances.rbxl` and writes
-  `src/ServerStorage/HuzzAnimations.rbxm`: Idle, Walk, Run (the pack's hunched Sprint, its own big arm swing: the owner rejected arms held in front;
-  `docs/previews/run-arms-vs-hv.jpg`), Jump, Fall, Climb,
-  DashLeft/DashRight (built: the sideways huss, matched to the owner's HV video; `docs/previews/huss-vs-reference.jpg`) and `Dance_<Id>` for the 25 in `Config/Dances` (names are
-  ours; the originals are other games' emote names).
-- Dance pictures (`UI/DancePose`): a still copy of your avatar posed by hand from the dance's KeyframeSequence at its
-  most telling second (`Config/DancePoses`, made by `tools/preview/motion3d/dance_poses.luau`). No Animator, so
-  they never lag (the first version ran 25 live animations and lagged). Used by the Dances cards (locked = dark
-  silhouette) and the wheel's slots; the music note when the dance can't be read (live, before publishing).
-- Dance wheel (`Screens/DanceWheel`, owner's taunt-wheel reference: `docs/previews/dance-wheel-vs-reference.jpg`):
-  8 see-through dark circles round a big centre circle that names the hovered dance; no dimming, no CanvasGroup.
-- Dancing in step: the `Dance` remote → `ActionService` sets `HuzzDance` / `HuzzDanceAt` (server time) on your
-  character; `UI/DancePlayer` starts the same dance on the beat of the nearest dancer within 30 studs doing it, and
-  your companion follows your track's time. (Studio's temporary animation IDs don't show on other test clients.)
-- `Shared/AnimationLibrary.id(name, published)`: the published ID, else **in Studio only** a temporary ID from
-  `KeyframeSequenceProvider:RegisterKeyframeSequence`, else "". So Studio tests play everything now; the live game
-  needs `tools/studio/publish-animations.lua` (owner) and the IDs pasted into `Config/Animations` / `Config/Dances`.
-- `Gameplay/Locomotion` (own character, when the pack can play) replaces Animate's walk/run: Idle/Walk/Run blended by
-  a smoothed speed (`Shared/LocomotionMix`, rate capped ~1.1x so the sprint stays calm), Jump/Fall/Climb faded in,
-  a small lean into turns. `RunAnimator`'s scripted run covers anything without animations. **Huss = sideways
-  only** (owner): `Gameplay/Dash` picks left/right (A/D, else the last side), the server forces pure sideways.
-- `Gameplay/CompanionDance`: your girl dances your dance, retargeted onto her R6 body (`Shared/DanceRetarget`,
-  `Shared/KeyframeSampler`). Companions and the round girl are in the `HuzzCompanion` collision group (no bumping).
-- `UI/DancePlayer`: one dance at a time on your Animator; walking away stops it. Starter = 20 dances, Robot =
-  reward level 3, Dance Pack pass = Swing Time, Bounce Bounce, Squat Kick, Toprock.
-- The stab is still scripted (`StabMotion`) until the owner sends one. `CarryMotion.huss` is dead code (toss removed).
+## 7. Animations (the owner's files)
+- `tools/anim/extract_anims.luau` → `ServerStorage/HuzzAnimations.rbxm`: Idle, Walk, **Run = the pack's Sprint as
+  it is** (big arm swings; `docs/previews/run-arms-vs-hv.jpg`), Jump, Fall, Climb, **DashLeft/DashRight** (built: a
+  compact sideways lean), and 25 `Dance_<Id>` (our own names; the originals are other games' emotes).
+- `Shared/AnimationLibrary.id`: published ID, else in Studio a temporary ID (KeyframeSequenceProvider), else "".
+  Temporary IDs play only on the client that made them. The live game needs `tools/studio/publish-animations.lua`.
+- `Gameplay/Locomotion` blends Idle/Walk/Run by smoothed speed; walk fades into run as you hold W.
+- Dances: `UI/DancePlayer` (one at a time; walking stops it; **in step**: the `Dance` remote puts HuzzDance /
+  HuzzDanceAt (server time) on your character, and starting the same dance within 30 studs of a dancer joins
+  their beat). `Gameplay/CompanionDance` puts your dance on your R6 girl at your track's time.
+- **Dance pictures** (`UI/DancePose`): your avatar posed by hand from the KeyframeSequence at the dance's best
+  second, walking every joint (Motor6D, Weld, WeldConstraint, AnimationConstraint) and anchoring it. **No Animator,
+  so no lag** (25 live animated viewports lagged). Used by the Dances cards and the wheel; note icon as fallback.
+- **Dance wheel** (`Screens/DanceWheel`, the owner's taunt-wheel reference): 8 see-through dark circles round a big
+  centre circle; pictures built ahead while closed; opens with one smooth grow (no CanvasGroup, no stagger).
 
-## 7. The girls
-- Collection: `Workspace/ANIME GIRLS/<Rarity>/CAC_R6_<user>_<id>` (36, R6). Shown names: `Config/GirlNames`
-  (sound-alikes, never the originals). `GirlService` copies/scales/publishes them (`ReplicatedStorage.HuzzGirls`).
-- Prize: floats over the map as a 3x showcase with her aura (no disc); a surviving Hero carries her; a catcher who
-  stabs the carrier steals her (she follows); she goes home with the winning side (Index).
-- Companions are only the girls you win: the kit's mock-up four (Aiko, Ren, Sora, Hina) were removed on the owner's
-  request (`Characters.Retired`; `DataService` drops them from old saves). No starter companion.
-- Safe lines, the start wall and the goal gate are trimmed to the floor (`MapService` `edge()`), so they never stick
-  out past a map's edge when its zone box is wider than the floor. The invisible walls round the field
-  (`boundary()`) stand at the floor's real edge too, and `MapService.catchFalls()` puts anyone who still drops below
-  the field back on it (or, far below the lobby, back at the lobby spawn).
-- The look (`Config/Look` → `HuzzServer/LookService`): colour grade, bloom, sun rays, light haze, lifted shadows
-  (owner: "the filters that make the game feel premium"); the place build sets Lighting.Technology = Future.
-- Shop passes follow the owner's pass banners (`design/shop/pass-banners.png`, art cropped into `vip` /
-  `dance-pack`): navy glass rows with a rim and button in each pass's `Accent` (`Products`), styles `PassViolet` /
-  `PassPink` (`docs/previews/shop-passes-vs-banner.jpg`).
-- Effects: `Config/GirlLooks` (element + 2 colours per girl) → `Shared/AuraLook` (pure specs by rarity: Common
-  faint motes ... Mythic/Secret full flames, wisps, slashes) → `Gameplay/AuraFX` (emitters, light, pooled slash
-  beams) → `Gameplay/Auras` (your aura; others' "lite"; within 170 studs). Check: `tools/preview/check_girl_fx.luau`.
-- Companion: walks on the ground ~3.5 studs behind you (`FollowMotion` + `GirlMotion`, `Config/GirlMotion.
-  Companion`), hidden in rounds until you're Safe, then hops and cheers.
+## 8. UI rules (UI lives in StarterGui as real parts: owner's call)
+- Build with `Kit.new` / helpers and `Parent`; saved parts are reused by name ("twins"), and the saved look wins.
+- Windows 701 x 320, one at a time (`ModalManager`). `Kit.button` adds shade, outline and stud texture.
+- **Never use CanvasGroup for animation** (it lagged). Fade with scale/position tweens instead.
+- **Rounded corners:** Lune writes `UICorner.CornerRadius` only under newer per-corner names that Studio may not
+  read, so the build also stores the size in attribute `HuzzRadius` and `HuzzClient/Main` restores it at start.
+- Roblox gotchas the preview won't show: whole-pixel offsets; ClipsDescendants ignores UICorner; never key weak
+  tables by Instance; picture names are case-sensitive; guard APIs Lune lacks (`Sound.Ended`,
+  `CharacterAppearanceLoaded`, `LoadAnimation`, `ViewportFrame.CurrentCamera` reads) with `pcall`.
+- Icons/art: the owner's files, used as drawn (`tools/icons/pack_images.py`, icons packed at 192 px).
+- Shop passes copy the owner's banners (`design/shop/pass-banners.png`): navy glass rows, coloured rim and button
+  per pass (`Products` `Accent`, Kit styles `PassViolet` / `PassPink`).
 
-## 8. UI kit rules (UI lives in StarterGui as real parts: owner's call)
-- Build with `Kit.new`/helpers and `Parent`; never `x.Parent = y` in screens (`Kit.attach`). Saved parts are
-  reused by name ("twins"), so same-named siblings must be identical; lists clear old children first.
-- Look: `UI/Theme` colours/fonts/transparency; `Kit.button` adds the shade gradient, outline and stud texture;
-  `Kit.window` = see-through studded body with a stroke frame; `Kit.studPattern(frame, strength)` everywhere else.
-  The texture is `assets/icons/stud-pattern.png` (`tools/icons/make_stud_pattern.py`), packed by `pack_images.py`.
-- Every main window is 701 x 320. One window at a time (`ModalManager`; sets `MenuOpen`).
-- **Lune can't save `UICorner.CornerRadius`** (it writes only the newer per-corner names, which Studio may not
-  read). So the place build also stores each corner's size in the attribute `HuzzRadius` (tools/preview/harness.luau)
-  and `HuzzClient/Main` puts it back at start wherever a corner came out at the 8 px default. Studio's editor may
-  still show 8 px corners until Play.
-- Icons/art come from the owner's sharp packs; never redraw them. Packed names are PascalCase of file names and
-  case-sensitive in Roblox.
-
-## 9. Currencies, coin shop, crates
-- **Coins** (earned: `Config/Round.Pay` per game, more for a win; Hero bonus; quests) buy **looks only** in the
-  Shop's ITEMS tab (`Config/CoinShop`: trails, name colours, knife skins, all made from colours in code). Server:
-  `ActionService` `BuyWithCoins` / `Wear` (one item per slot in `data.Wear`); shown by `CosmeticsService`
-  (trails), `NameTagService` (name colour) and `KnifeService.give(character, skin)`.
-- **Aura** = Huss Valley's gems (owner's call; old `Gems` saves migrate in `DataService`): from wins
-  (`Pay.WonAura`) and the reward track. It pays for **crates** (`Config/Crates`, empty until the owner adds them;
-  `Shared/CrateRoll` pure maths with shown odds and a pity counter, `tests/CrateRoll.spec.luau`; server
-  `ActionService.OpenCrate`; no crate UI yet).
-- **Aura stars in the lobby** (owner's star: `design/aura`, packed as `AuraStar` and `AuraStarWhite`): `Config/AuraStars`
-  (count, kinds, values, weights) → `AuraPickupService` (server: spawns tagged `HuzzAuraStar` parts near the lobby
-  spawn, ProximityPrompt E "Collect Aura", checks distance, adds Aura, respawns) → `Gameplay/AuraStars` (client
-  look: the purple star as drawn, other colours tint the white copy; halo, sparkles, light, floor glow; Rainbow
-  drifts slowly). Lobby only: rounds keep their power-ups. The Aura pills use `AuraStar` untinted.
-  Preview: `docs/previews/aura-stars.mp4`.
-
-- **Spin the Wheel** (owner: "make it give more", a free spin every 15 min, buy 1/10/100 spins for 48/340/1200;
-  reference `design/spin-wheel-reference.webp`, ours vs it: `docs/previews/spin-wheel-vs-reference.jpg`):
-  `Config/SpinWheel` (8 slices, Weight = exact %, pity 40 → Legendary "Spin Knife", owned = 1500 coins) →
-  `Shared/SpinRules` (pure: free first then owned spins, prizes, landing maths; `tests/SpinWheel.spec.luau`) →
-  `HuzzServer/SpinService` (`Spin` remote rolls with `CrateRoll`; finds the owner's wheel model by name "spin"+"wheel"
-  or tag `HuzzSpinWheel`, adds an E prompt + ClickDetector → `SpinOpen`) → `Screens/SpinWheel` (1280x720, buttons in the
-  reference's spots; the "Daily Discount" spot is our pity counter, never a fake discount) + HUD `Right/Spin` (FREE tag).
-  Saves: `Spins`, `FreeSpinAt`, `SpinPity`, `Boosts.Coins` (x2 round coins in RoundService). Packs: `Products.Spins`
-  (Id 0 = "coming soon", granted only in ShopService's ProcessReceipt). Spin Knife = `CoinShop` `NotForSale`.
-
-- **Lore quests** (`Config/Progression.Chapters`): 4 chapters x 2 quests with a story line; a chapter opens when
-  the one before is claimed (server-checked in `ProgressService.claimQuest`). Rewards: coins, Aura, or a quest-only
-  knife (`CoinShop` items with `Unlock`, never sold). Stats come from real events (`addStat`: Rounds, Crossings,
-  AuraStars, Heroes, Rescues, Catches, HoldSeconds, Wins). Screen: `Screens/Progression` QUESTS = chapter view.
+## 9. Economy: coins, Aura, shop, wheel, quests
+- **Coins** buy looks in the Shop's ITEMS tab (`Config/CoinShop`: trails, name colours, knife skins). Items with
+  `Unlock` (quest knives) or `NotForSale` (Spin Knife) are never sold.
+- **Aura stars** (owner's star art in `design/aura`, packed `AuraStar` + white `AuraStarWhite` for tinting):
+  float over the field while a map is loaded (lobby otherwise); **run through one to collect** (server checks
+  distance 10x a second). +1, White +3, Rainbow +10. The Aura "+" buttons explain where Aura comes from.
+- **Spin the Wheel** (`Config/SpinWheel`, `Shared/SpinRules`, `HuzzServer/SpinService`, `Screens/SpinWheel`): a
+  real free spin every 15 min; packs of 1/10/100 for 48/340/1200 Robux (Developer Products, Id 0 until the owner
+  creates them, granted only in ShopService's ProcessReceipt). Odds shown: 100 coins 28%, 250 coins 22%, 25 Aura
+  16%, x2 Coins 15 min 12%, 500 coins 10%, 60 Aura 7%, 1,000 coins 4%, Spin Knife 1%; a Legendary is guaranteed by
+  spin 40 (pity shown where the reference had a fake "daily discount"). Opens from the owner's wheel model (name
+  contains "spin" + "wheel", or tag `HuzzSpinWheel`) or the SPIN button.
+- **Lore quests** (`Config/Progression.Chapters`): 4 chapters x 2 quests with a story line, opened in order
+  (server-checked). Rewards: coins, Aura and three quest-only knives (Rookie, Hunter, Moonlit). Stats from real
+  events: Rounds, Crossings, AuraStars, Heroes, Rescues, Catches, HoldSeconds, Wins.
+- **Crates** (`Config/Crates`, `Shared/CrateRoll` with odds + pity) are plumbed but empty until the owner designs them.
 
 ## 10. Sounds
-- 34 sounds made from scratch by `tools/sfx/make_sfx.py` → `assets/sfx/*.ogg` (list in `assets/sfx/README.md`)
-  + `docs/previews/sfx-preview.ogg` (all in a row). Owner: "not some random high pitch sounds": warm, C major
-  pentatonic, centroid under 2.5 kHz, even loudness; the script prints peak/loudness/centroid per file.
-- `Gameplay/Sfx.play(name, {volume, pitch, at})` (LEVEL = the mix), `Sfx.loop` for `speed_wind`. `Config/SoundIds`
-  empty until the owner uploads (Asset Manager bulk import, Copy ID). Built-in stand-ins meanwhile: never pitch > 1.1.
+- 34 sounds made from scratch (`tools/sfx/make_sfx.py` → `assets/sfx/*.ogg`; all in a row in
+  `docs/previews/sfx-preview.ogg`): warm, C major pentatonic, brightness under 2.5 kHz, even loudness.
+- `Gameplay/Sfx.play(name, {volume, pitch, at})`, `Sfx.loop("speed_wind")`. `Config/SoundIds` stays "" until the
+  owner bulk-imports the files in Asset Manager and sends the IDs (`tools/studio/collect-sound-ids.lua` prints
+  them). Built-in stand-ins meanwhile, never pitched above 1.1; silence beats a squeaky ping.
 
-## 11. Studio-only truths and the owner's steps
-- The cloud can't reach Roblox: uploads (images, sounds, animations) and real purchases are the owner's steps
-  (README checklist). Studio helpers report on lines tagged `[Huzz]`, `[HuzzSfx]`, `[HuzzAnim]`.
-- Not yet seen in Studio: the safe gate's collision groups, the walk→run ramp feel, the dance preview viewport,
-  the companion's walk on R6 girls, temporary animation IDs on the client. Ask how they feel before retuning.
-- Security: scan any place the owner sends for `GetObjects`, `require(<id>)`, `getfenv`, `loadstring`, HTTP
-  (their Basket Ball Hoop models carried a scam; `SafetyService` strips it).
-- ProfileStore runs in Mock mode in Studio (progress resets on Stop): on purpose.
+## 11. Studio-only truths
+- The cloud can't reach Roblox: uploads, real purchases and the final look are the owner's steps. Studio helpers
+  report on Output lines tagged `[Huzz]`, `[HuzzSfx]`, `[HuzzAnim]`.
+- Not yet seen in Studio: the lunge feel, sprint feel, lobby repaint, knife positions, spin animation, dance
+  pictures on real avatars, dance sync across two clients (needs published dances).
+- ProfileStore is in Mock mode in Studio (progress resets on Stop): on purpose.
+- Scan any place the owner sends for scam scripts (`GetObjects`, `require(<id>)`, `loadstring`, HTTP);
+  `SafetyService` strips the known Basket Ball Hoop one.
 
-## 12. Open items
-- Owner: upload pictures, sounds and animations; Game Pass / product IDs (incl. the 3 spin packs); power icons
-  (4 PNGs); a stab animation; their 3D knife renders; an export of their spin wheel model (to match its colours);
-  maybe rename dances; confirm the movement pack licence allows a published game.
-- Us: a Match HUD/results page from the kit (none exists yet); the Gift Picker; the 5 remaining soft icons.
+## 12. Open items (a running list; add to it as the owner reports more)
+- Owner: Game Pass IDs (VIP 199, Dance Pack 149) and Developer Product IDs (Sunset Trail, Blossom Aura, coin
+  packs, spins 1/10/100); upload sounds, pictures and animations; an export of their spin wheel model (match its
+  colours); their 3D knife renders; power icons; a stab animation; crate contents; dance names; movement pack licence.
+- Us: whatever the owner's next round of fixes asks for first; then a match results screen, the Gift Picker, a HUD
+  timer for the x2 Coins boost, more lore chapters.
+- Everything in sections 5 to 10 is the current version, open to change: tuning numbers (speeds, odds, prices,
+  lunge, wheel prizes), looks and feel are first passes waiting for the owner's verdict in Studio.
