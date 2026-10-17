@@ -127,11 +127,13 @@ function M.start()
 
 	local highlight = Instance.new("Highlight")
 	highlight.Name = "HuzzPickGlow"
+	-- (a thin outline and no fill, like Huss Valley's: the old solid rim on top of everything looked loud, feel study
+	-- gap 11; white, not HV's yellow: the owner said no gold)
 	highlight.FillColor = GOLD
-	highlight.FillTransparency = 0.55
-	highlight.OutlineColor = Color3.new(1, 1, 1)
-	highlight.OutlineTransparency = 0
-	highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+	highlight.FillTransparency = 1
+	highlight.OutlineColor = GOLD
+	highlight.OutlineTransparency = 0.3
+	highlight.DepthMode = Enum.HighlightDepthMode.Occluded
 	highlight.Enabled = false
 	highlight.Parent = Workspace.CurrentCamera -- (local only; a Highlight draws from the 3D world)
 

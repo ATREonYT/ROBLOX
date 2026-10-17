@@ -928,14 +928,14 @@ function MapService.holdStart(startName, on)
 	})
 	markPart({
 		Name = "Edge", Size = Vector3.new(length, 0.18, 0.24), CFrame = base + Vector3.new(0, glassH, 0),
-		Color = blue, Material = Enum.Material.Neon, Transparency = 0.25, Parent = wall,
+		Color = blue, Material = Enum.Material.Neon, Transparency = 0.5, Parent = wall, -- (dimmer: it cut across chests, feel study gap 11)
 	})
 	local posts = math.max(2, math.floor(length / 16) + 1)
 	for i = 0, posts - 1 do
 		local x = -length / 2 + length * i / (posts - 1)
 		markPart({
 			Name = "Post", Size = Vector3.new(0.18, glassH, 0.24), CFrame = base * CFrame.new(x, glassH / 2, 0),
-			Color = blue, Material = Enum.Material.Neon, Transparency = 0.45, Parent = wall,
+			Color = blue, Material = Enum.Material.Neon, Transparency = 0.65, Parent = wall,
 		})
 	end
 	wall.Parent = loaded or Workspace

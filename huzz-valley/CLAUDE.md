@@ -253,7 +253,7 @@ Owner's own words are in quotes. Read only the section you need.
   pack's Idle on her (`CarryAnimator`) and hides the stand and its lights during the Secret cutscene. Her aura glows
   softly (`AuraFX`: scale > 1.5 → small light). Your companion steps in and out behind a puff of sparkles (`Auras`).
   Smoke tests: `tools/preview/smoke_showcase.luau`, `smoke_feel_fx.luau` (harness).
-- `Gameplay/Cinematic` (line-up camera, above), `Gameplay/RoundHud` (round plate, message line, banners, "Second chance!"),
+- `Gameplay/Cinematic` (line-up camera, above), `Gameplay/RoundHud` (text-only top, coloured message line, big banners only for big moments; section 7/10),
   `Screens/HeroChoice` (60% size: "make the boxes smaller"), `Screens/NextMap` (your vote tucks into a NEXT MAP panel).
 
 ## 9. Animations (the owner's files)
