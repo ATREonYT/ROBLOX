@@ -53,7 +53,10 @@ local goalName = "ZoneB"
 local frozen = {} -- id -> true: standing still on the line (lineup, pick, the Hero's solo run, countdown)
 local rescueTime = {} -- downed id -> seconds someone has been helping them up
 local protectedUntil = {} -- id -> os.clock() until which a just-rescued runner can't be stabbed
-local botPlayed = false -- the Practice Bot caught for this game (then it, not a player, wins if every runner is down)
+local botPlayed = false -- the Practice Bot catches this round (then it, not a player, wins if every runner is down)
+local botPlayers = nil -- who played its last game ("1,5,9"): someone new = it starts again at Config.Bot.Speed
+local botNews = nil -- "slower" / "faster": said when its next game starts
+local botChecked = nil -- the match whose players it last checked
 local botTagging = false -- true while the Practice Bot's stab is being applied (so the message names it)
 local botStabShownAt = -math.huge -- (os.clock) when clients were last told to play the bot's stab
 local botStep -- (set once stabNear exists, further down)
@@ -110,12 +113,18 @@ local function announce(text, color, big)
 	RoundNet:FireAllClients("Announce", { text = text, color = color, big = big })
 end
 
+-- The fastest catcher this round: the Practice Bot's own speed when it's the catcher.
+local function catcherTop()
+	return if botPlayed and PracticeBot.active() then PracticeBot.speed() else Config.Speeds.Catcher
+end
+
 local function speedFor(id)
 	local role = match and match.roles[id]
 	if not role then
 		return Config.Speeds.Lobby or StarterPlayer.CharacterWalkSpeed
 	elseif lastRunner == id and Config.Speeds.LastRunner then
-		return Config.Speeds.LastRunner
+		-- the catch-up: up to the real catcher's speed, never past it (and never slower than a runner)
+		return math.max(Config.Speeds.Runner, math.min(Config.Speeds.LastRunner, catcherTop()))
 	elseif match.holder == id then
 		return if role == "Catcher" then Config.Speeds.Thief else Config.Speeds.Holder
 	end
@@ -151,6 +160,8 @@ local function syncPlayer(id)
 	p:SetAttribute("HuzzRole", match and match.roles[id] or "Lobby")
 	p:SetAttribute("HuzzStatus", match and match.status[id] or "")
 	p:SetAttribute("HuzzHero", match ~= nil and match.hero == id) -- this round's Hero (yellow outline)
+	-- down with the second chance used: nobody can help them up (RoundHud says OUT)
+	p:SetAttribute("HuzzOut", match ~= nil and match.status[id] == "Downed" and match.rescued[id] == true)
 	p:SetAttribute("HuzzFrozen", frozen[id] == true) -- on the line, waiting (no dash, no powers)
 	-- Safe runners stay across (owner's call): their parts bump into the goal's gate (MapService.holdGoal).
 	MapService.setSafe(p.Character, match ~= nil and not match.over and match.status[id] == "Safe")
@@ -158,6 +169,9 @@ local function syncPlayer(id)
 	if h then
 		local still = KnockdownService.isDown(p) or PowerService.stuck(id) or frozen[id] == true
 		h.WalkSpeed = if still then 0 else PowerService.speedOf(id, speedFor(id))
+		if lastRunner == id and not still then
+			h.WalkSpeed = math.min(h.WalkSpeed, catcherTop() + 4) -- (Rizz Rush on top of the catch-up: capped)
+		end
 		h:SetAttribute("HuzzSpeed", h.WalkSpeed) -- the top speed: Gameplay/Sprint builds up to it from a walk
 		-- No jumping anywhere (owner: "remove the jumping from the lobby"): Space is the huss instead.
 		h.JumpHeight = 0
@@ -508,26 +522,55 @@ local function hurry(seconds)
 	return false
 end
 
--- Calls onStall once when the runners still to cross (or only `only`) have all stood in the start zone, where
--- nobody can stab them, for `wait` seconds in a row (Config.Hurry; Shared/RoundRules.stalling).
-local function stallWatch(only, wait, onStall)
-	local still, fired = 0, false
+-- Calls w.onStall once when the runners still to cross (or only w.only) have all stood in the start zone, where
+-- nobody can stab them, for w.wait seconds in a row (Config.Hurry; Shared/RoundRules.stalling). It starts counting
+-- w.delay seconds in, and calls w.onWarn once at w.warnAt seconds of waiting. It doesn't count while one of them is
+-- stuck in a trap or held on the line, and starts again while a catcher (or the bot) is within 10 studs of the
+-- zone: waiting for a camper to move is sensible, not a stall. After 10 s of camping in a row it counts anyway (both
+-- sides are just waiting; and catchers hover next to an AFK runner, which would stall the round for good).
+local function nearZone(zone, position)
+	local back = MapService.keepIn(zone, position)
+	return back == nil or (Vector3.new(back.X, 0, back.Z) - Vector3.new(position.X, 0, position.Z)).Magnitude <= 10
+end
+local function stallWatch(w)
+	local still, age, campFor, fired, warned = 0, 0, 0, false, false
 	return function(dt)
 		local start = zones[MapService.startFor(match.round)]
-		if fired or not start then
+		age += dt
+		if fired or not start or age < (w.delay or 0) then
 			return
 		end
 		local inStart = {}
 		for id, status in match.status do
+			if status == "Active" and (w.only == nil or id == w.only) and (PowerService.stuck(id) or frozen[id]) then
+				return -- (a trap or the line holds them: not their choice)
+			end
 			local root = status == "Active" and rootOf(id)
 			if root and MapService.inZone(start, root.Position) then
 				inStart[id] = true
 			end
 		end
-		still = if Rules.stalling(match, inStart, only) then still + dt else 0
-		if still >= wait then
+		local camped = false
+		for id, role in match.roles do
+			local root = role == "Catcher" and rootOf(id)
+			if root and nearZone(start, root.Position) then
+				camped = true
+			end
+		end
+		local bot = botPlayed and PracticeBot.position()
+		if bot and nearZone(start, bot) then
+			camped = true
+		end
+		campFor = if camped then campFor + dt else 0
+		local excused = camped and campFor < 10
+		still = if not excused and Rules.stalling(match, inStart, w.only) then still + dt else 0
+		if w.onWarn and not warned and still >= w.warnAt then
+			warned = true
+			w.onWarn()
+		end
+		if still >= w.wait then
 			fired = true
-			onStall()
+			w.onStall()
 		end
 	end
 end
@@ -622,10 +665,26 @@ local function runRound()
 		if role == "Catcher" then anyCatcher = true end
 	end
 	if Config.Bot.Enabled and not anyCatcher and #runners > 0 and zones.Middle then
-		if PracticeBot.spawn(MapService.spot(zones.Middle, zones[startName].Position, Config.Map.MiddleSpawn)) then
-			botPlayed = true
+		botPlayed = PracticeBot.spawn(MapService.spot(zones.Middle, zones[startName].Position, Config.Map.MiddleSpawn))
+		if botPlayed and botChecked ~= match then -- (its first round this game)
+			botChecked = match
+			-- it adapts to the kids playing it: someone new in the game = it starts again at Config.Bot.Speed
+			local ids = {}
+			for id in match.roles do
+				table.insert(ids, id)
+			end
+			table.sort(ids)
+			local key = table.concat(ids, ",")
+			if key ~= botPlayers then
+				botPlayers, botNews = key, nil
+				PracticeBot.reset()
+			elseif botNews then
+				announce(`{Config.Bot.Name} is {botNews} this game`, WHITE)
+			end
+			botNews = nil
 		end
 	else
+		botPlayed = false
 		PracticeBot.remove()
 	end
 	PracticeBot.setFrozen(true)
@@ -687,11 +746,23 @@ local function runRound()
 		local H = Config.Hurry
 		local timedOut = play(Config.HeroTime, function()
 			return match.status[hero] ~= "Active" or match.hero ~= hero
-		end, true, H and stallWatch(hero, H.HeroWait, function()
-			-- the Hero never left the start (AFK, or scared): no solo run, everyone runs
-			Rules.heroTimeout(match)
-			announce(`{nameOf(hero)} didn't go. Everyone runs!`, WHITE)
-		end))
+		end, true, H and stallWatch({
+			only = hero,
+			wait = H.HeroWait,
+			delay = 1, -- (the camera comes back to them first)
+			warnAt = 3,
+			onWarn = function()
+				local p = byId[hero]
+				if p then
+					RoundNet:FireClient(p, "Announce", { text = "Go now!", color = GOLD })
+				end
+			end,
+			onStall = function()
+				-- the Hero never left the start (AFK, or scared): no solo run, everyone runs
+				Rules.heroTimeout(match)
+				announce(`{nameOf(hero)} didn't go. Everyone runs!`, WHITE)
+			end,
+		}))
 		if timedOut and match.hero == hero then
 			Rules.heroTimeout(match)
 			announce(`{nameOf(hero)} ran out of time`, WHITE)
@@ -743,11 +814,14 @@ local function runRound()
 	setStage("Running", Config.RoundTime)
 	announce("GO! Get across!", WHITE)
 	local H = Config.Hurry
-	local stalled = H and stallWatch(nil, H.Wait, function()
-		if hurry(H.Time) then
-			announce("Hurry! Run or you're out", RED, true)
-		end
-	end)
+	local stalled = H and stallWatch({
+		wait = H.Wait,
+		onStall = function()
+			if hurry(H.Time) then
+				announce("Hurry! Run or you're out", RED, true)
+			end
+		end,
+	})
 	local roundRunners = #runnersWith("Active")
 	play(Config.RoundTime, function()
 		return Rules.isRoundOver(match)
@@ -776,10 +850,10 @@ local function finishGame()
 	PracticeBot.remove()
 	-- The Practice Bot downed everyone: it wins, so no player does (no girl, no winner's pay).
 	local botWon = botPlayed and match.team == "Catchers"
-	-- It adapts to whoever plays it (Config.Bot.Step): slower after a win, faster after a loss.
-	local botChange = botPlayed and PracticeBot.result(botWon)
-	if botChange then
-		task.delay(3, announce, `{Config.Bot.Name} gets {botChange} next game`, WHITE)
+	-- It adapts to whoever plays it (Config.Bot.Step): slower after a win, faster after a loss (said when its next
+	-- game starts). Only when it was the catcher in the last round.
+	if botPlayed then
+		botNews = PracticeBot.result(botWon)
 	end
 	local winnerId = if botWon then nil else match.winner
 	local winner = winnerId and byId[winnerId]
@@ -1199,6 +1273,10 @@ for _, p in Players:GetPlayers() do
 end
 Players.PlayerRemoving:Connect(function(player)
 	lastStab[player.UserId] = nil
+	if #Players:GetPlayers() <= 1 then
+		botPlayers, botNews = nil, nil -- (the server empties: the Practice Bot starts again for the next kid)
+		PracticeBot.reset()
+	end
 	if match then
 		apply(Rules.removePlayer(match, player.UserId))
 	end

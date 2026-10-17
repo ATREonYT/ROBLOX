@@ -64,6 +64,10 @@ Share of each player's time:
 | 6 | Runners down with no second chance show OUT (grey), not HELP! | HELP! on a lost cause | OUT |
 | 7 | The Practice Bot adapts: 2 slower after it wins, 2 faster after it loses (18 to 28), its reach scales with it, and the message line says so | kid alone: 82% (steers) / 11% (beginner) | 57% / 25% |
 
+Critic fixes after these numbers: the stall clock ignores trapped runners, a catcher or the bot within 10 studs of
+the start zone buys 10 s (AFK game re-run: rounds hitting the clock still about 0%, Hero runs out of time 1%), the
+Hero gets "Go now!", the last runner's boost never beats the real catcher, the bot resets for new players.
+
 Share of each player's time after: frozen 45 to 46% with 2+ players (was 47 to 49%), safe and waiting in the AFK
 game 6% (was 12%).
 

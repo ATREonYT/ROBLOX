@@ -147,20 +147,24 @@ Owner's own words are in quotes. Read only the section you need.
   2, RoundEndPause 2.5, and one runner on the line skips the roulette (PickAt is set back so clients skip it too).
 - **Stalls** (`Config/Round.Hurry`, `RoundRules.stalling`): everyone still to cross standing in the start zone for 5 s
   → the clock drops to 6 s ("Hurry! Run or you're out"; `hurry()` moves EndsAt too). A Hero still in the start
-  zone after 6 s loses the solo run ("X didn't go. Everyone runs!"). Stops AFK runners stalling rounds.
+  zone after 6 s loses the solo run ("X didn't go. Everyone runs!"; counting starts 1 s in, "Go now!" to the Hero at
+  3 s). Not counted while trapped or on the line; a catcher or the bot within 10 studs of the zone buys 10 s.
 - **Last runner** (`RoundRules.lastRunner`, `Speeds.LastRunner` 30): in a round that started with 2+ runners, the
-  only one still out is called out once ("X is the last runner!") and runs as fast as a catcher.
+  only one still out is called out once ("X is the last runner!") and runs as fast as the real catcher (the bot's
+  speed when it catches; never under 28); with Rizz Rush capped at catcher + 4.
 - **Catching:** click stab (`Stab` remote) or a catcher's **lunge** (`Lunge` remote, `Config/Round.Lunge`: Speed 56,
   Up 18, HitRange 4.8 for 0.5 s, cooldown 3 s shared with the Space tile `DashReady`; stab mode only). Both go
   through `stabNear()`: shields, the safe start zone and a fresh rescue protect; a Heart Shield ends the lunge.
 - **Downed and revived:** a downed runner lies still (`KnockdownService`); a runner beside them for 1.2 s revives
   them. **One second chance per game** (`RoundRules` `rescued`): caught again = `Caught.final` → "YOU'RE OUT", no
-  rescue; joins the catchers at round end. Their tag says OUT (grey) instead of HELP!, so nobody runs over for nothing.
+  rescue; joins the catchers at round end. Their tag says OUT (grey) instead of HELP!, so nobody runs over for nothing;
+  `HuzzOut` on the player makes their HUD say "OUT. You join the catchers next round".
 - **Practice Bot** (`HuzzServer/PracticeBot`, `Config/Round.Bot`; owner picked "Yes, add bots", Oct 17): any round
   with runners and no catcher (alone, or the only catcher left) gets a server NPC catcher named "Practice Bot"
   (default blocky body from `CreateHumanoidModelFromDescription`, grey with a red shirt, tag CATCHER / BOT, a knife).
   Starts at Speed 24 and adapts (`Bot.Step` 2 slower after it wins a game, faster after it loses, 18 to 28; its
-  Reach 5 scales with it; the message line says "gets slower/faster next game"), stabs through `stabNear(nil, ...)`,
+  Reach 5 scales with it; "is slower/faster this game" when its next game starts; back to 24 when the game's
+  players change or the server empties; only games where it caught the last round count), stabs through `stabNear(nil, ...)`,
   1.2 s breather after each stab. If it
   downs everyone nobody wins ("THE BOT WINS", no girl, no winner's pay). With it, one player starts a game in the
   live game too (`minPlayers` 1). Red outline like catchers; round walls it follows a PathfindingService path (computed in a

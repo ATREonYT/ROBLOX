@@ -266,7 +266,9 @@ function M.start()
 				word = "CATCHER"
 				line = if (stage == "Running" or stage == "HeroRun") and newPlayer() then `{key("Click", "R2")} to stab · {key("Q", "L1")} {key("E", "R1")} powers` else nil
 			elseif myRole == "Runner" then
-				if myStatus == "Downed" then
+				if myStatus == "Downed" and player:GetAttribute("HuzzOut") then
+					word, line = "OUT", "You join the catchers next round"
+				elseif myStatus == "Downed" then
 					word, line = "DOWN", "Hold on. A runner can pick you up."
 				elseif myStatus == "Safe" then
 					word, line = "SAFE", "You're across. Wait here."
@@ -397,6 +399,7 @@ function M.start()
 		Rescued = { "Phew!", "Back up!", "Close one!" },
 		Rescuer = { "Clutch!", "Nice save!", "Saved 'em!" },
 		Caught = { "Ouch!", "Hang on!", "Help's coming!" },
+		Out = { "Oh no!", "So close!", "Next time!" }, -- (caught on the last chance: nobody's coming)
 		Got = { "Gotcha!", "Too slow!", "Got one!" },
 		Hero = { "Go go go!", "You got this!", "Solo time!" },
 		Win = { "GG!", "We did it!", "Let's go!" },
@@ -525,7 +528,7 @@ function M.start()
 			end
 		elseif kind == "Caught" then
 			if data.runner == player.UserId then
-				sayLine("Caught")
+				sayLine(if data.final then "Out" else "Caught")
 				flash.BackgroundTransparency = 0.6 -- (one flash, well under one a second)
 				TweenService:Create(flash, TweenInfo.new(0.6), { BackgroundTransparency = 1 }):Play()
 				-- second chance used up: say so plainly (owner: "after that if he gets caught its over")

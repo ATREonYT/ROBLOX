@@ -79,6 +79,12 @@ local speed = B.Speed
 function PracticeBot.speed(): number
 	return speed
 end
+function PracticeBot.reset()
+	speed = B.Speed
+end
+function PracticeBot.position(): Vector3?
+	return if PracticeBot.active() then root.Position else nil
+end
 function PracticeBot.result(botWon: boolean): string?
 	local before = speed
 	local step = B.Step or 0
@@ -230,13 +236,13 @@ function PracticeBot.step(targets: { BasePart }, stab: (BasePart) -> boolean, fa
 	-- the run plays while it moves (sped up with its speed), the idle while it stands
 	if tracks.run then
 		local v = root.AssemblyLinearVelocity
-		local speed = if typeof(v) == "Vector3" then Vector3.new(v.X, 0, v.Z).Magnitude else 0
-		if speed > 2 and not tracks.run.IsPlaying then
+		local vel = if typeof(v) == "Vector3" then Vector3.new(v.X, 0, v.Z).Magnitude else 0
+		if vel > 2 and not tracks.run.IsPlaying then
 			tracks.run:Play(0.2)
-		elseif speed <= 2 and tracks.run.IsPlaying then
+		elseif vel <= 2 and tracks.run.IsPlaying then
 			tracks.run:Stop(0.2)
 		end
-		if tracks.run.IsPlaying then tracks.run:AdjustSpeed(math.clamp(speed / 16, 0.6, 1.8)) end
+		if tracks.run.IsPlaying then tracks.run:AdjustSpeed(math.clamp(vel / 16, 0.6, 1.8)) end
 	end
 	if not go then return end
 	local best, bestD = nil, math.huge
