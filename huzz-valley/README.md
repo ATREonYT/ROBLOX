@@ -127,15 +127,17 @@ In Studio: **Home → Game Settings → Security → turn on "Allow Mesh / Image
 the icons itself. To make them work everywhere for good, upload them once (Plugins → Huzz Valley → Upload Pictures).
 
 ## Your checklist (things only you can do)
-1. **Upload the pictures once, so they show everywhere, including StarterGui while you edit:**
-   1. Open the place in Studio (not while playing) and open **View → Command Bar**.
-   2. Paste all of `huzz-valley/tools/studio/upload-images.lua` into it, press Enter, and wait for **Done** in the Output window.
-   3. Save, then send me the text of **ReplicatedStorage → Shared → Config → ImageIds**, so my next game file has them too.
+1. **Upload the pictures and sounds once.** Click-by-click steps: `huzz-valley/docs/STUDIO-STEPS.md`.
+   1. Pictures: turn on **Game Settings → Security → Allow Mesh / Image APIs**, then in the Command Bar run
+      `require(game.ServerStorage.HuzzStudioTools.UploadPictures)()` and wait for `[Huzz] Done`.
+   2. Save, then send me the text of **ReplicatedStorage → Shared → Config → ImageIds**, so my next game file has them too.
+   - Until then the effects use Roblox's own soft sparkles, and the shapes that only look right as our pictures
+     (rings, shards, streaks, butterflies, the Secret girl's beams' texture) stay hidden.
    - New pictures can stay grey for a few minutes while Roblox checks them.
-   - If it shows red errors, send me a screenshot.
 2. **Create the Robux items** on the Creator Dashboard after you publish:
-   1. **VIP** is a Game Pass (it gives the [VIP] chat tag).
-   2. **Sunset Trail** and **Blossom Aura** are Developer Products.
+   1. **VIP** and **Dance Pack** are Game Passes (VIP gives the [VIP] chat tag).
+   2. **Sunset Trail**, **Blossom Aura**, **Crown Pose**, **Midnight Outfit** and the three **coin packs** (500, 2,000
+      and 5,000 coins) are Developer Products.
    3. Put each ID into `src/ReplicatedStorage/Shared/Config/Products.lua` (`Id = ...`). Until then their buttons say the item isn't on sale and never open a purchase.
    4. Prices there are placeholders. Roblox's live price shows automatically once an ID is set.
    5. **Spin the Wheel spins** are three Developer Products: **Buy 1 Spin (48 Robux)**, **Buy 10 Spins (340 Robux)**
@@ -162,11 +164,12 @@ the icons itself. To make them work everywhere for good, upload them once (Plugi
    - Midnight Outfit: the clothing;
    - coin packs: they turn on once coins can buy something.
 
-8. **Upload the 34 sound effects** (ours, in `huzz-valley/assets/sfx`. Hear them all first in
+8. **Upload the 37 sound effects** (ours, in `huzz-valley/assets/sfx`. Hear them all first in
    `huzz-valley/docs/previews/sfx-preview.ogg`. Until you upload, Studio plays a few soft Roblox sounds instead):
-   1. In Studio: **View → Asset Manager → Bulk Import**, and pick every file in `huzz-valley/assets/sfx`.
-   2. In Asset Manager, right-click each sound → **Copy ID**.
-   3. Send me the names and IDs (or paste each ID next to its name in `Shared/Config/SoundIds.lua`).
+   1. In Studio: **View → Asset Manager → Bulk Import**, and pick every `.ogg` file in `huzz-valley/assets/sfx`.
+   2. Drag them all from Asset Manager's Audio folder onto the 3D view, then in the Command Bar run
+      `require(game.ServerStorage.HuzzStudioTools.CollectSoundIds)()`.
+   3. Send me the `[HuzzSfx]` lines from Output.
 9. **Publish the animations** (needed for the live game: until then the dances say "coming soon" there and
    the walk/run stay Roblox's. Studio already plays them, best tested solo). Paste
    `huzz-valley/tools/studio/publish-animations.lua` into the Command Bar and send me the `[HuzzAnim]` lines. If it
