@@ -3,8 +3,8 @@
 	It plays at once on your own screen and is checked by the server (RoundService), which tags the
 	nearest runner in reach. (The girl toss is gone: owner's call.)
 
-	Also plays everyone's stab (Shared/StabMotion, or Config/Animations.Stab when set)
-	and lights the knife's slash trail. Buttons sit bottom right, above a phone's jump
+	Also plays everyone's stab (Shared/StabMotion, or Config/Animations.Stab when set), the Practice Bot's
+	too (RoundService sends "Stab" with bot = true), and lights the knife's slash trail. Buttons sit bottom right, above a phone's jump
 	button, and only show when the move is available.
 ]]
 local M = {}
@@ -28,11 +28,12 @@ function M.start()
 	local RoundNet = Net.get("Round") :: RemoteEvent
 	local StabNet = Net.get("Stab") :: RemoteEvent
 
-	-- Everyone's stabs, keyed by Player (never by a character Instance in a weak table).
-	local stabs = {} -- Player -> { rec, character, trail, track }
+	-- Everyone's stabs, keyed by Player, or "bot" for the Practice Bot (never by a character Instance in a weak table).
+	local stabs = {} -- Player | "bot" -> { rec, character, trail, track }
 
-	local function playStab(p)
-		local character = p.Character
+	-- ago: how far into the move to start (the bot's stab arrives after its hit, so it starts near the thrust)
+	local function playStab(p, model: Model?, ago: number?)
+		local character = model or (typeof(p) == "Instance" and (p :: Player).Character or nil)
 		local rig = character and CarryMath.rig(character)
 		if not (rig and rig.kind == "R15") then
 			return
@@ -45,7 +46,7 @@ function M.start()
 			s = { rec = StabMotion.new(rig, character:FindFirstChild("HumanoidRootPart")), character = character }
 			stabs[p] = s
 		end
-		StabMotion.play(s.rec, os.clock())
+		StabMotion.play(s.rec, os.clock() - (ago or 0))
 		if Animations.Stab ~= "" then
 			local humanoid = character:FindFirstChildOfClass("Humanoid")
 			local animator = humanoid and humanoid:FindFirstChildOfClass("Animator")
@@ -68,7 +69,7 @@ function M.start()
 		local now = os.clock()
 		for p, s in stabs do
 			local character = s.character
-			if not character.Parent or p.Parent == nil then
+			if not character.Parent or (typeof(p) == "Instance" and p.Parent == nil) then
 				stabs[p] = nil
 			else
 				local playing = StabMotion.step(s.rec, now, Animations.Stab == "")
@@ -82,7 +83,13 @@ function M.start()
 	end)
 
 	RoundNet.OnClientEvent:Connect(function(kind, data)
-		if kind == "Stab" and (data.id ~= player.UserId or data.lunge) then
+		if kind == "Stab" and data.bot then
+			local CollectionService = game:GetService("CollectionService")
+			local bot = CollectionService:GetTagged("HuzzBot")[1]
+			if bot and bot:IsA("Model") then
+				playStab("bot", bot, if data.hit then 0.12 else 0)
+			end
+		elseif kind == "Stab" and (data.id ~= player.UserId or data.lunge) then
 			local p = Players:GetPlayerByUserId(data.id)
 			if p then
 				playStab(p)

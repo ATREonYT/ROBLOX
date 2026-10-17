@@ -55,6 +55,7 @@ local rescueTime = {} -- downed id -> seconds someone has been helping them up
 local protectedUntil = {} -- id -> os.clock() until which a just-rescued runner can't be stabbed
 local botPlayed = false -- the Practice Bot caught for this game (then it, not a player, wins if every runner is down)
 local botTagging = false -- true while the Practice Bot's stab is being applied (so the message names it)
+local botStabShownAt = -math.huge -- (os.clock) when clients were last told to play the bot's stab
 local botStep -- (set once stabNear exists, further down)
 local tally = {} -- id -> { Crossings = n, Catches = n, ... } this game only (the results screen at the end)
 
@@ -876,6 +877,13 @@ function botStep()
 		botTagging = true
 		local ok, hit = pcall(stabNear, nil, me, Config.Bot.Reach, false)
 		botTagging = false
+		-- everyone sees the bot's stab too (Gameplay/Actions plays it on the HuzzBot model): on a hit, and at
+		-- most once a stab cooldown while it keeps trying (a shield or the safe zone stopping it)
+		local now = os.clock()
+		if Config.TagMode == "Stab" and ((ok and hit) or now - botStabShownAt >= Config.Stab.Cooldown) then
+			botStabShownAt = now
+			RoundNet:FireAllClients("Stab", { bot = true, hit = ok and hit or nil })
+		end
 		return ok and hit
 	end, fallY)
 end

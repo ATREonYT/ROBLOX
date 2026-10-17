@@ -81,7 +81,7 @@ Owner's own words are in quotes. Read only the section you need.
 
 ## 4. Checks, previews, builds (Lune 0.10.5 at `/root/bin/lune`; run before every commit)
 - `PATH=/root/bin:$PATH bash tools/check.sh`: compiles every script; specs (RoundRules, CarryMath, GirlMotion,
-  GirlMoves, StabMotion, GirlRoll, CrateRoll, SpinWheel); **the full-game simulation** (`tools/sim/round_sim.luau`: real server code, bots
+  GirlMoves, StabMotion, DownMotion, GirlRoll, CrateRoll, SpinWheel); **the full-game simulation** (`tools/sim/round_sim.luau`: real server code, bots
   that run, stab, lunge, rescue, use powers; 7 setups). Its stubs (e.g. `KnifeService`) must get any new function
   RoundService calls, or games stop with "attempt to call a nil value".
 - `PATH=/root/bin:$PATH bash tools/preview/check.sh`: UI checks on the saved UI, then built from nothing.
@@ -226,7 +226,10 @@ Owner's own words are in quotes. Read only the section you need.
   turns and leans into it, free arm snaps back), a 0.1 s held hit, follow-through. The knife arm is raised by the
   run's hunch so it stabs level while sprinting; the head counter-turns to stay on the target. Written after the
   animations (Frame order 30), so it sits over the run. Spec `tests/StabMotion.spec`, video `docs/previews/stab.mp4`
-  (`motion3d/stab_scene.luau`).
+  (`motion3d/stab_scene.luau`). The Practice Bot's stab shows too: RoundService sends "Stab" `{ bot = true }` on a
+  hit (and at most once a cooldown while it keeps trying); `Gameplay/Actions` plays it on the `HuzzBot` model.
+- **Getting up** (`DownMotion.rise`, `Gameplay/Knockdown`): the server stands a revived player up at once; the
+  client tips the body back down about the feet and eases it up over 0.4 s (no pop). Spec `tests/DownMotion.spec`.
 - Dances: `UI/DancePlayer` (one at a time; walking stops it; **in step**: the `Dance` remote puts HuzzDance /
   HuzzDanceAt (server time) on your character, and starting the same dance within 30 studs of a dancer joins
   their beat). `Gameplay/CompanionDance` puts your dance on your R6 girl at your track's time.

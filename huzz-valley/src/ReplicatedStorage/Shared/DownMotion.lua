@@ -75,6 +75,38 @@ function DownMotion.step(rec, t)
 	end
 end
 
+--[[ Getting up (revived, or the round ended): the server stands the root part straight up at once, so without
+	this the body would pop from lying flat to standing in one frame. For RISE seconds the body is tipped back
+	down about the feet (Root joint) and the limbs keep the sprawl, both easing out to the animation.
+	age: seconds since they got up; height: root above the feet when standing (DownedHeight). ]]
+DownMotion.RISE = 0.4
+function DownMotion.rise(rec, age, height)
+	local w = 1 - clamp(age / DownMotion.RISE, 0, 1)
+	w = w * w * (3 - 2 * w)
+	local function own(m, target)
+		local current = m.Transform
+		local anim = if rec.written[m] == current then rec.base[m] else current
+		rec.base[m] = anim
+		m.Transform = target(anim)
+		rec.written[m] = m.Transform
+	end
+	for key, m in rec.joints do
+		local pose = sprawl(key)
+		if pose then
+			local r = m.C0.Rotation
+			own(m, function(anim) return anim:Lerp(r:Inverse() * pose * r, w) end)
+		end
+	end
+	local root = rec.joints.Root
+	if root and height then
+		-- in the root part's space: tipped forward about the feet, lifted by the torso's thickness
+		local tip = CFrame.new(0, -height, 0) * CFrame.Angles(-rad(90) * w, 0, 0) * CFrame.new(0, height, 0)
+		local pivot = CFrame.new(0, Config.Knockdown.Lift * w, 0) * tip
+		own(root, function(anim) return root.C0:Inverse() * pivot * root.C0 * anim end)
+	end
+	return w > 0
+end
+
 -- Gives the joints back to the animations (when they get up).
 function DownMotion.release(rec)
 	for m, base in rec.base do

@@ -2,7 +2,9 @@
 	Plays a caught player's fall and keeps them lying flat (Shared/DownMotion)
 	while their character has the DownedAt attribute (set by the server's
 	KnockdownService). Runs after Roblox's animations each frame, so the limbs
-	blend from whatever animation was playing into the sprawl.
+	blend from whatever animation was playing into the sprawl. When they get up
+	(revived, round over) the server stands them up at once; DownMotion.rise
+	eases the body up from the floor over 0.4 s instead of popping upright.
 ]]
 local M = {}
 
@@ -38,7 +40,9 @@ function M.start()
 					rec = DownMotion.new(jointsOf(character))
 					active[character] = rec
 				end
+				rec.risingAt = nil -- (downed again while getting up)
 				local feet, height = character:GetAttribute("DownedFeet"), character:GetAttribute("DownedHeight")
+				rec.height = height or rec.height
 				if feet and height then
 					root.CFrame = DownMotion.rootCFrame(feet, height, now - at)
 				end
@@ -47,8 +51,12 @@ function M.start()
 		end
 		for character, rec in active do
 			if not seen[character] then
-				active[character] = nil
-				DownMotion.release(rec)
+				-- getting up: eases from lying flat back to standing (no pop), then hands the joints back
+				rec.risingAt = rec.risingAt or os.clock()
+				if not character.Parent or not DownMotion.rise(rec, os.clock() - rec.risingAt, rec.height) then
+					active[character] = nil
+					DownMotion.release(rec)
+				end
 			end
 		end
 	end)
