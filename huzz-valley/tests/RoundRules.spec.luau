@@ -380,6 +380,43 @@ test("nothing happens after the game is over", function()
 	eq(#Rules.reachSafe(s, 2), 0)
 end)
 
+test("stalling: only when every runner still to cross is in the start zone", function()
+	local s = game(4) -- runners 2, 3, 4
+	eq(Rules.stalling(s, {}), false, "nobody in the start")
+	eq(Rules.stalling(s, { [2] = true, [3] = true }), false, "one runner is out on the field")
+	eq(Rules.stalling(s, { [2] = true, [3] = true, [4] = true }), true, "all three wait in the start")
+	Rules.reachSafe(s, 3)
+	Rules.tag(s, 1, 4)
+	eq(Rules.stalling(s, { [2] = true }), true, "the last one still to cross waits (safe and downed don't count)")
+	Rules.reachSafe(s, 2)
+	eq(Rules.stalling(s, { [2] = true }), false, "nobody left to cross")
+end)
+
+test("stalling: a Hero's solo run only looks at the Hero", function()
+	local s = game(4)
+	Rules.pickRunner(s)
+	Rules.choose(s, s.picked, true)
+	local hero = s.hero
+	eq(Rules.stalling(s, { [hero] = true }, hero), true, "the Hero stays in the start")
+	local walked = { [2] = true, [3] = true, [4] = true }
+	walked[hero] = nil
+	eq(Rules.stalling(s, walked, hero), false, "the Hero went (the others wait on the line)")
+end)
+
+test("last runner: the only runner still out, else nil", function()
+	local s = game(4)
+	eq(Rules.lastRunner(s), nil, "three still out")
+	Rules.reachSafe(s, 2)
+	eq(Rules.lastRunner(s), nil, "two still out")
+	Rules.tag(s, 1, 3)
+	eq(Rules.lastRunner(s), 4, "runner 4 is the last one out")
+	Rules.rescue(s, 4, 3)
+	eq(Rules.lastRunner(s), nil, "a rescue brings a second runner back")
+	Rules.reachSafe(s, 3)
+	Rules.reachSafe(s, 4)
+	eq(Rules.lastRunner(s), nil, "nobody left")
+end)
+
 print(`RoundRules: {passed} passed, {failed} failed`)
 if failed > 0 then
 	error("RoundRules tests failed")

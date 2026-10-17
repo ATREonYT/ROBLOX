@@ -15,11 +15,12 @@ return {
 	-- go down and can be rescued; anyone still down at the end joins the catchers. Runners win by getting
 	-- everyone across Crossings rounds in a row; catchers win when no runners are left.
 	Crossings = 3,
-	LineupTime = 3.5, -- runners stand in a row on their line, facing across (the round's goal shows)
+	LineupTime = 3, -- runners stand in a row on their line, facing across (the round's goal shows; was 3.5)
 	-- The pick (owner's call): the camera sweeps the line, a highlight hops between runners for Roulette
 	-- seconds and lands on one at random; the camera zooms in and they get ChooseTime seconds to pick
 	-- (no answer = a random pick). ShowTime: everyone sees what they chose.
-	Pick = { Enabled = true, Roulette = 2.8, ChooseTime = 8, ShowTime = 2.6 },
+	-- (loop audit, Oct 17: half of everyone's time was spent standing still, so ChooseTime 8 -> 6, ShowTime 2.6 -> 2)
+	Pick = { Enabled = true, Roulette = 2.8, ChooseTime = 6, ShowTime = 2 },
 	HeroTime = 20, -- the Hero's solo crossing (everyone else waits on the line)
 	HeroBonus = 25, -- coins for a Hero who makes it across (and the girl comes down to them)
 	-- End-of-game pay (owner: coins must be worth earning; the coin shop is Config/CoinShop). Aura is the rarer one:
@@ -27,7 +28,11 @@ return {
 	Pay = { Played = 15, Won = 35, WonAura = 3 },
 	CountdownTime = 3, -- 3, 2, 1, GO (everyone on the line)
 	RoundTime = 45, -- runners still out when it ends count as caught
-	RoundEndPause = 3.5,
+	RoundEndPause = 2.5, -- (was 3.5: pure waiting)
+	-- A stalled round (loop audit: an AFK runner made every round run the full clock): when every runner still to
+	-- cross has stood in the start zone (where nobody can stab them) for Wait seconds, the clock drops to Time
+	-- seconds ("Hurry!"). A Hero who stays in the start zone for HeroWait seconds loses the solo run: everyone runs.
+	Hurry = { Wait = 5, Time = 6, HeroWait = 6 },
 	GameOverTime = 8,
 	MaxRounds = 12, -- safety net: catchers win
 	-- Rescue (as in Huss Valley): a runner still out on the field stands within Range studs of a downed
@@ -79,8 +84,14 @@ return {
 	Bot = {
 		Enabled = true,
 		Name = "Practice Bot",
-		Speed = 24, -- studs a second
-		Reach = 5, -- studs: it stabs a runner this close (the server sees it exactly, so no lag allowance)
+		Speed = 24, -- studs a second (where it starts)
+		-- It adapts to the kids playing it (loop audit, Oct 17: how often a kid alone beat it swung from 14% to 82%
+		-- with how well they steer): Step slower after it wins a game, Step faster after it loses, between MinSpeed and
+		-- MaxSpeed (never faster than a runner's 28). The message line says so.
+		MinSpeed = 18,
+		MaxSpeed = 28,
+		Step = 2,
+		Reach = 5, -- studs at Speed 24: it stabs a runner this close (no lag allowance); scales with its speed
 		Pause = 1.2, -- seconds it stands still after each stab
 		Reaction = 0.6, -- seconds after GO before it moves
 		Think = 0.15, -- seconds between picking where to run
@@ -94,6 +105,7 @@ return {
 		Runner = 28,
 		Catcher = 30,
 		Holder = 27, -- a runner carrying the girl
+		LastRunner = 30, -- the only runner still out on the field (a catch-up: as fast as a catcher)
 		Thief = 30, -- a catcher she's following (she walks behind him, so no slowdown)
 	},
 

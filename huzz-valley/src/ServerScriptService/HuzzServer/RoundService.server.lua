@@ -58,6 +58,7 @@ local botTagging = false -- true while the Practice Bot's stab is being applied 
 local botStabShownAt = -math.huge -- (os.clock) when clients were last told to play the bot's stab
 local botStep -- (set once stabNear exists, further down)
 local tally = {} -- id -> { Crossings = n, Catches = n, ... } this game only (the results screen at the end)
+local lastRunner = nil -- the only runner still out on the field while running (Speeds.LastRunner: a catch-up)
 
 -- Quest counters (Config/Progression) and the Index, saved through DataService.
 local function addStat(id, stat, amount)
@@ -113,6 +114,8 @@ local function speedFor(id)
 	local role = match and match.roles[id]
 	if not role then
 		return Config.Speeds.Lobby or StarterPlayer.CharacterWalkSpeed
+	elseif lastRunner == id and Config.Speeds.LastRunner then
+		return Config.Speeds.LastRunner
 	elseif match.holder == id then
 		return if role == "Catcher" then Config.Speeds.Thief else Config.Speeds.Holder
 	end
@@ -128,7 +131,8 @@ local function tagLook(id)
 		return "Catcher"
 	elseif role == "Runner" then
 		if status == "Downed" then
-			return "Downed"
+			-- second chance used: OUT, so nobody runs over to help (loop audit: HELP! sent them to a lost cause)
+			return if match.rescued[id] then "Out" else "Downed"
 		elseif status == "Safe" then
 			return "Safe"
 		elseif match.hero == id then
@@ -491,11 +495,75 @@ local function keepOnLine()
 	end
 end
 
--- Waits `seconds` (or until done() says so). live = play is on: powers, crossings, rescues.
--- Returns true when the time ran out.
-local function play(seconds, done, live)
-	local deadline = os.clock() + seconds
-	while os.clock() < deadline and not (done and done()) and not match.over do
+-- Waits `seconds` (or until done() says so). live = play is on: powers, crossings, rescues. onFrame(dt) runs every
+-- frame. Returns true when the time ran out. hurry() can bring the end closer (the clock on screen follows).
+local playUntil = 0
+local function hurry(seconds)
+	local at = os.clock() + seconds
+	if at < playUntil then
+		playUntil = at
+		State:SetAttribute("EndsAt", Workspace:GetServerTimeNow() + seconds)
+		return true
+	end
+	return false
+end
+
+-- Calls onStall once when the runners still to cross (or only `only`) have all stood in the start zone, where
+-- nobody can stab them, for `wait` seconds in a row (Config.Hurry; Shared/RoundRules.stalling).
+local function stallWatch(only, wait, onStall)
+	local still, fired = 0, false
+	return function(dt)
+		local start = zones[MapService.startFor(match.round)]
+		if fired or not start then
+			return
+		end
+		local inStart = {}
+		for id, status in match.status do
+			local root = status == "Active" and rootOf(id)
+			if root and MapService.inZone(start, root.Position) then
+				inStart[id] = true
+			end
+		end
+		still = if Rules.stalling(match, inStart, only) then still + dt else 0
+		if still >= wait then
+			fired = true
+			onStall()
+		end
+	end
+end
+
+-- The last runner out on the field (Shared/RoundRules.lastRunner): faster, and everyone hears about it once a round.
+local calledMatch, calledRound = nil, nil -- the game and round the "last runner" line was said in
+local function watchLastRunner(roundRunners)
+	local id = Rules.lastRunner(match)
+	if id == lastRunner then
+		return
+	end
+	if roundRunners < 2 then
+		return -- (alone from the start: no "last runner" moment)
+	end
+	local before = lastRunner
+	lastRunner = id
+	if before then
+		syncPlayer(before)
+	end
+	if id then
+		syncPlayer(id)
+		if not (calledMatch == match and calledRound == match.round) then
+			calledMatch, calledRound = match, match.round
+			-- (a moment after the catch or crossing that made them last, so that line gets read first)
+			task.delay(0.8, function()
+				if lastRunner == id then
+					announce(`{nameOf(id)} is the last runner!`, GOLD, true)
+				end
+			end)
+		end
+	end
+end
+
+local function play(seconds, done, live, onFrame)
+	playUntil = os.clock() + seconds
+	while os.clock() < playUntil and not (done and done()) and not match.over do
 		local dt = RunService.Heartbeat:Wait()
 		keepOnLine()
 		keepSafe()
@@ -507,8 +575,11 @@ local function play(seconds, done, live)
 			step(dt)
 			if not match.over and botStep then botStep() end
 		end
+		if onFrame and not match.over then
+			onFrame(dt)
+		end
 	end
-	return os.clock() >= deadline
+	return os.clock() >= playUntil
 end
 
 local function runRound()
@@ -575,15 +646,19 @@ local function runRound()
 	end
 	if match.picked then
 		local P = Config.Pick
-		State:SetAttribute("PickAt", Workspace:GetServerTimeNow())
-		setStage("Picking", P.Roulette + P.ChooseTime)
-		announce("Picking a runner...", GOLD)
-		task.delay(P.Roulette, function()
+		-- one runner on the line: no roulette to watch (loop audit: dead time), their choice opens straight away
+		local roulette = if #runnersWith("Active") > 1 then P.Roulette else 0
+		State:SetAttribute("PickAt", Workspace:GetServerTimeNow() - (P.Roulette - roulette))
+		setStage("Picking", roulette + P.ChooseTime)
+		if roulette > 0 then
+			announce("Picking a runner...", GOLD)
+		end
+		task.delay(roulette, function()
 			if match and match.picked and not match.choice then
 				announce(`{nameOf(match.picked)}: HERO or CHICKEN?`, WHITE)
 			end
 		end)
-		play(P.Roulette + P.ChooseTime, function()
+		play(roulette + P.ChooseTime, function()
 			return match.choice ~= nil or match.picked == nil
 		end)
 		if match.picked and not match.choice then
@@ -609,9 +684,14 @@ local function runRound()
 		syncAll()
 		setStage("HeroRun", Config.HeroTime)
 		announce(`{nameOf(hero)}'s solo run!`, GOLD)
+		local H = Config.Hurry
 		local timedOut = play(Config.HeroTime, function()
 			return match.status[hero] ~= "Active" or match.hero ~= hero
-		end, true)
+		end, true, H and stallWatch(hero, H.HeroWait, function()
+			-- the Hero never left the start (AFK, or scared): no solo run, everyone runs
+			Rules.heroTimeout(match)
+			announce(`{nameOf(hero)} didn't go. Everyone runs!`, WHITE)
+		end))
 		if timedOut and match.hero == hero then
 			Rules.heroTimeout(match)
 			announce(`{nameOf(hero)} ran out of time`, WHITE)
@@ -662,9 +742,24 @@ local function runRound()
 	syncAll()
 	setStage("Running", Config.RoundTime)
 	announce("GO! Get across!", WHITE)
+	local H = Config.Hurry
+	local stalled = H and stallWatch(nil, H.Wait, function()
+		if hurry(H.Time) then
+			announce("Hurry! Run or you're out", RED, true)
+		end
+	end)
+	local roundRunners = #runnersWith("Active")
 	play(Config.RoundTime, function()
 		return Rules.isRoundOver(match)
-	end, true)
+	end, true, function(dt)
+		if stalled then stalled(dt) end
+		watchLastRunner(roundRunners)
+	end)
+	if lastRunner then
+		local id = lastRunner
+		lastRunner = nil
+		syncPlayer(id)
+	end
 	PracticeBot.setFrozen(true)
 	saveHold()
 	PowerService.clear() -- traps and effects end with the round
@@ -681,6 +776,11 @@ local function finishGame()
 	PracticeBot.remove()
 	-- The Practice Bot downed everyone: it wins, so no player does (no girl, no winner's pay).
 	local botWon = botPlayed and match.team == "Catchers"
+	-- It adapts to whoever plays it (Config.Bot.Step): slower after a win, faster after a loss.
+	local botChange = botPlayed and PracticeBot.result(botWon)
+	if botChange then
+		task.delay(3, announce, `{Config.Bot.Name} gets {botChange} next game`, WHITE)
+	end
 	local winnerId = if botWon then nil else match.winner
 	local winner = winnerId and byId[winnerId]
 	for id, role in match.roles do
@@ -808,6 +908,7 @@ local function cleanUp()
 	PowerService.clear()
 	MapService.showGoal(nil) -- the lines stay on the map, the SAFE ZONE sign goes out
 	match, girl = nil, nil
+	lastRunner = nil
 	table.clear(frozen)
 	table.clear(rescueTime)
 	table.clear(protectedUntil)

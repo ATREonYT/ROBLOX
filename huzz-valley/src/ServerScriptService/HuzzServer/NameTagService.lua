@@ -1,7 +1,7 @@
 --[[
 	Name tags over every player (and the Practice Bot), as in Huss Valley: a small coloured title (their role this round),
 	the name in bold, "Lv. 6 · 8 wins" under it. Downed runners show HELP! and a bar that fills while
-	someone rescues them. The picked runner's choice shows big over their head (HERO / CHICKEN).
+	someone rescues them; downed with the second chance used, OUT (nobody can help them up). The picked runner's choice shows big over their head (HERO / CHICKEN).
 	Made on the server (everyone sees the same); Roblox's own name over the head is hidden.
 ]]
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -27,6 +27,7 @@ local TITLES = {
 	Hero = { "HERO", Color3.fromRGB(91, 224, 122) },
 	Safe = { "SAFE", Color3.fromRGB(110, 236, 140) },
 	Downed = { "HELP!", Color3.fromRGB(255, 160, 90) },
+	Out = { "OUT", Color3.fromRGB(176, 180, 196) }, -- down with the second chance used: nobody can help them up
 }
 local BADGES = {
 	HERO = Color3.fromRGB(91, 224, 122),
@@ -83,7 +84,7 @@ local function build(head)
 	return gui
 end
 
--- look: "Runner" | "Catcher" | "Hero" | "Safe" | "Downed" | nil (lobby: no title). badge: "HERO" | "CHICKEN" | nil.
+-- look: "Runner" | "Catcher" | "Hero" | "Safe" | "Downed" | "Out" | nil (lobby: no title). badge: "HERO" | "CHICKEN" | nil.
 -- rescue: 0..1 while someone is helping them up.
 function NameTags.set(player, look, badge, rescue)
 	local character = player.Character

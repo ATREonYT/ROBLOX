@@ -22,7 +22,8 @@ local function lookAt(pos, target)
 	local right = look:Cross(Vector3.new(0, 1, 0)).Unit
 	return CFrame.fromMatrix(pos, right, right:Cross(look), -look)
 end
-local SRC = "huzz-valley/src/"
+-- HUZZ_SRC=<folder>/ runs another copy of src (e.g. an older commit, for before/after numbers)
+local SRC = require("@lune/process").env.HUZZ_SRC or "huzz-valley/src/"
 
 ------------------------------------------------------------------ virtual clock and task library
 local clock = 0
@@ -718,7 +719,7 @@ local function simulate(opts)
 		Rolling = { Lineup = true, GameOver = true, Waiting = true, Voting = true, Reveal = true },
 		Reveal = { Lineup = true, GameOver = true, Waiting = true }, -- (a Secret girl's arrival cutscene)
 		Lineup = { Picking = true, Countdown = true, GameOver = true },
-		Picking = { Chosen = true },
+		Picking = { Chosen = true, Countdown = true, RoundOver = true, GameOver = true }, -- (the picked runner left)
 		Chosen = { HeroRun = true, Countdown = true },
 		HeroRun = { Countdown = true, RoundOver = true, GameOver = true },
 		Countdown = { Running = true },
@@ -868,6 +869,14 @@ local function simulate(opts)
 			end
 			local h, root = practice:FindFirstChildOfClass("Humanoid"), practice.HumanoidRootPart
 			local goal = h.Goal
+			if h.WalkSpeed > 0 and Config.Bot.MinSpeed then
+				-- it adapts to the kids (Config.Bot Step), always between MinSpeed and MaxSpeed
+				stats.botSpeeds = stats.botSpeeds or {}
+				stats.botSpeeds[h.WalkSpeed] = true
+				if h.WalkSpeed < Config.Bot.MinSpeed or h.WalkSpeed > Config.Bot.MaxSpeed then
+					problem("the Practice Bot runs at " .. h.WalkSpeed)
+				end
+			end
 			if goal and h.WalkSpeed > 0 then
 				stats.botMoves = (stats.botMoves or 0) + 1
 				local d = goal - root.Position
@@ -909,10 +918,24 @@ local function simulate(opts)
 				problem(`{role} {p.Name} holds a knife`)
 			end
 			local tag = tags[p]
-			if status == "Downed" and not (tag and tag.look == "Downed") then
+			if status == "Downed" and not (tag and (tag.look == "Downed" or tag.look == "Out")) then
 				problem(`{p.Name} is down but their tag says {tag and tag.look}`)
 			elseif role == "Catcher" and st == "Running" and not (tag and tag.look == "Catcher") then
 				problem(`catcher {p.Name}'s tag says {tag and tag.look}`)
+			end
+			-- The last runner out on the field runs at the catch-up speed (Speeds.LastRunner); nobody else does.
+			if st == "Running" and role == "Runner" and status == "Active" and Config.Speeds.LastRunner then
+				local others = 0
+				for q in bots do
+					if q ~= p and q:GetAttribute("HuzzStatus") == "Active" then others += 1 end
+				end
+				local base = PowerService.speedOf(p.UserId, Config.Speeds.LastRunner)
+				if others == 0 and h.WalkSpeed == base and not PowerService.stuck(p.UserId) then
+					stats.lastBoosted = (stats.lastBoosted or 0) + 1
+				elseif others > 0 and h.WalkSpeed == base and Config.Speeds.LastRunner ~= Config.Speeds.Runner
+					and h.WalkSpeed ~= PowerService.speedOf(p.UserId, Config.Speeds.Runner) then
+					problem(`{p.Name} runs at the last runner's speed with {others} others still out`)
+				end
 			end
 			if PowerService.stuck(p.UserId) and h.WalkSpeed ~= 0 then
 				problem(`{p.Name} is stuck in a trap but can still move`)
@@ -938,10 +961,32 @@ local function simulate(opts)
 			if (st == "Running" or st == "HeroRun") and role == "Runner" and status == "Active" then
 				local goal = zones[Round:GetAttribute("Goal") or "ZoneB"]
 				target = goal and goal.CFrame.Position + Vector3.new(0, -4 + 3.2, (bot.seed - 0.5) * (goal.Size.Z - 20))
+				-- most kids curve away from a catcher ahead of them (within 25 studs) instead of running into it
+				local threat, td = nil, 25
+				for q in bots do
+					if q:GetAttribute("HuzzRole") == "Catcher" and q.Character then
+						local d = (seen(q) - root.Position).Magnitude
+						if d < td then threat, td = seen(q), d end
+					end
+				end
+				if practice and practice.Parent then
+					local d = (practice.HumanoidRootPart.Position - root.Position).Magnitude
+					if d < td then threat, td = practice.HumanoidRootPart.Position, d end
+				end
+				if target and threat and bot.seed < 0.8 and bot.kind ~= "weak" then
+					local toGoal = Vector3.new(target.X - root.Position.X, 0, target.Z - root.Position.Z)
+					local toThreat = Vector3.new(threat.X - root.Position.X, 0, threat.Z - root.Position.Z)
+					if toGoal.Magnitude > 1 and toThreat.Magnitude > 0.5 and toGoal.Unit:Dot(toThreat.Unit) > 0.3 then
+						local side = Vector3.new(-toGoal.Unit.Z, 0, toGoal.Unit.X)
+						if side:Dot(toThreat) > 0 then side = -side end
+						target = root.Position + (toGoal.Unit + side * 1.2).Unit * 20
+					end
+				end
 				if st == "Running" and bot.seed < 0.6 then
 					for q in bots do
 						local qc = q.Character
-						if q ~= p and q:GetAttribute("HuzzStatus") == "Downed" and qc then
+						-- (an OUT tag: second chance used, nobody can help them up)
+						if q ~= p and q:GetAttribute("HuzzStatus") == "Downed" and qc and not (tags[q] and tags[q].look == "Out") then
 							local feet = qc:GetAttribute("DownedFeet")
 							local at = if typeof(feet) == "CFrame" then feet.Position else qc.HumanoidRootPart.Position
 							if (at - root.Position).Magnitude < 30 then
@@ -983,7 +1028,7 @@ local function simulate(opts)
 				end
 			end
 			-- The huss (Space): most runner bots dash sideways, away from a catcher closing in.
-			if st == "Running" and role == "Runner" and status == "Active" and bot.seed < 0.8 and bot.kind ~= "afk" and h.WalkSpeed > 0 then
+			if st == "Running" and role == "Runner" and status == "Active" and bot.seed < 0.8 and bot.kind == "normal" and h.WalkSpeed > 0 then
 				local threat, td = nil, 9
 				for q in bots do
 					if q:GetAttribute("HuzzRole") == "Catcher" and q.Character then
@@ -1081,6 +1126,9 @@ local function simulate(opts)
 	for _ = 1, opts.afk or 0 do
 		addPlayer("afk")
 	end
+	for _ = 1, opts.weak or 0 do
+		addPlayer("weak") -- (a beginner: runs straight across, never steers or husses)
+	end
 	if opts.cheater then
 		addPlayer("cheat")
 	end
@@ -1145,12 +1193,15 @@ if process.args[1] == "audit" then
 	end
 	local rows, waits, stages = {}, {}, {}
 	local setups = {
-		{ "1 (+ bot)", { players = 1 } }, { "2", { players = 2 } }, { "4", { players = 4 } }, { "8", { players = 8 } },
+		{ "1 (+ bot)", { players = 1 } }, { "1 beginner (+ bot)", { players = 0, weak = 1 } }, { "2", { players = 2 } }, { "4", { players = 4 } }, { "8", { players = 8 } },
 		{ "12", { players = 12 } }, { "6 + 1 AFK", { players = 5, afk = 1 } },
 	}
 	local STAGES = { "Voting", "Rolling", "Lineup", "Picking", "Chosen", "HeroRun", "Countdown", "Running", "RoundOver", "GameOver" }
 	local KINDS = { "play", "cutscene", "heroWatch", "safe", "down", "lobby", "lateJoin" }
 	for _, setup in setups do
+		if process.args[3] and not setup[1]:find(process.args[3], 1, true) then
+			continue
+		end
 		local all = { games = 0, runnerWins = 0, catcherWins = 0, botWins = 0, lastAlone = 0, heroes = 0, heroSurvived = 0, rescues = 0, rounds = 0,
 			runTimeouts = 0, runTime = 0, heroTimeouts = 0, heroEarly = 0, maxRoundGames = 0, tags = 0, husses = 0, hurries = 0,
 			stageTime = {}, wait = {}, lengths = {}, rpg = {} }
@@ -1171,10 +1222,10 @@ if process.args[1] == "audit" then
 		local g = math.max(#all.lengths, 1)
 		local won = all.runnerWins + all.catcherWins
 		local pct = function(a, b) return if b > 0 then string.format("%d%%", math.floor(a / b * 100 + 0.5)) else "-" end
-		table.insert(rows, string.format("| %s | %d | %.0f s | %.1f | %s | %s (bot %s) | %s | %s | %.1f | %.1f s | %s | %d | %d |",
+		table.insert(rows, string.format("| %s | %d | %.0f s | %.1f | %s | %s (bot %s) | %s | %s | %.1f | %.1f s | %s | %d | %d | %d | %d |",
 			setup[1], #all.lengths, sum(all.lengths) / g, sum(all.rpg) / g, pct(all.runnerWins, won), pct(all.catcherWins, won), pct(all.botWins, won),
 			pct(all.heroSurvived, all.heroes), pct(all.heroTimeouts, all.heroes), all.rescues / g, all.runTime / math.max(all.rounds, 1),
-			pct(all.runTimeouts, all.rounds), all.maxRoundGames, problems))
+			pct(all.runTimeouts, all.rounds), all.maxRoundGames, all.hurries, all.heroEarly, problems))
 		local sline = { "| " .. setup[1] }
 		for _, k in STAGES do table.insert(sline, string.format("%.1f", (all.stageTime[k] or 0) / g)) end
 		table.insert(stages, table.concat(sline, " | ") .. " |")
@@ -1186,8 +1237,8 @@ if process.args[1] == "audit" then
 	end
 	print(`Loop audit: {SEEDS} runs x {SECONDS / 60} minutes per setup, the owner's map size (lines 280 studs apart)`)
 	print("")
-	print("| Players | Games | Game length | Rounds/game | Runners win | Catchers win | Hero runs made | Hero runs timed out | Rescues/game | Running stage/round | Rounds hit the clock | Games hit MaxRounds | Sim problems |")
-	print("|---|---|---|---|---|---|---|---|---|---|---|---|---|")
+	print("| Players | Games | Game length | Rounds/game | Runners win | Catchers win | Hero runs made | Hero runs timed out | Rescues/game | Running stage/round | Rounds hit the clock | Games hit MaxRounds | Hurry calls | Heroes who didn't go | Sim problems |")
+	print("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|")
 	for _, r in rows do print(r) end
 	print("")
 	print("Seconds per game in each stage (Voting = the lobby between games)")
@@ -1225,8 +1276,8 @@ local function report(name, stats, problems, expect)
 	failed += #problems
 end
 
-local s, p = simulate({ players = 4, seconds = 600, seed = 1 })
-report("4 players, 10 minutes", s, p, {
+local s, p = simulate({ players = 4, seconds = 1200, seed = 1 })
+report("4 players, 20 minutes", s, p, {
 	{ "several games finished", function(x) return x.wins >= 3 end },
 	{ "stabs tag runners", function(x) return x.tags >= 5 end },
 	{ "all four powers used", function(x) return x.powers.HeartShield and x.powers.RizzRush and x.powers.LoveTrap and x.powers.CharmWave end },
@@ -1234,19 +1285,25 @@ report("4 players, 10 minutes", s, p, {
 	{ "Hero runs happen and some make it", function(x) return x.heroes >= 2 and x.heroSurvived >= 1 end },
 	{ "catchers win some", function(x) return x.catcherWins >= 1 end },
 })
-s, p = simulate({ players = 6, seconds = 900, seed = 7, config = function(c) c.Stab.Range = 9 end })
-report("6 players, 15 minutes", s, p, {
+s, p = simulate({ players = 6, seconds = 1500, seed = 7, config = function(c) c.Stab.Range = 9 end })
+report("6 players, 25 minutes", s, p, {
 	{ "games finish", function(x) return x.wins >= 3 end },
+	{ "the last runner is called out and runs faster", function(x) return x.lastAlone >= 1 and (x.lastBoosted or 0) > 0 end },
 	{ "a shield blocks a stab", function(x) return x.blocks >= 1 end },
 	{ "runners rescue each other", function(x) return x.rescues >= 3 end },
 })
 s, p = simulate({ players = 2, seconds = 400, seed = 3 })
 report("2 players", s, p, { { "games finish", function(x) return x.wins >= 2 end }, { "runners win some", function(x) return x.runnerWins >= 1 end } })
-s, p = simulate({ players = 1, seconds = 300, seed = 4, studio = true })
+s, p = simulate({ players = 1, seconds = 900, seed = 4, studio = true })
 report("1 player (Studio Play, Practice Bot)", s, p, {
 	{ "solo games finish", function(x) return x.wins >= 2 end },
 	{ "the Practice Bot chases and catches", function(x) return (x.botMoves or 0) > 0 and (x.botTags or 0) >= 1 end },
 	{ "only the bot wins when the solo runner is caught", function(x) return x.catcherWins == (x.botWins or 0) end },
+	{ "the Practice Bot changes speed after a game", function(x)
+		local n = 0
+		for _ in x.botSpeeds or {} do n += 1 end
+		return n >= 2
+	end },
 })
 print(string.format("   (Practice Bot: %d catches, %d wins, solo runner %d wins)", s.botTags or 0, s.botWins or 0, s.runnerWins))
 s, p = simulate({ players = 4, seconds = 300, seed = 9 })
@@ -1255,7 +1312,15 @@ s, p = simulate({ players = 4, cheater = true, seconds = 300, seed = 5 })
 report("a runner walks round the start wall", s, p, { { "games finish", function(x) return x.wins >= 1 end } })
 s, p = simulate({ players = 5, seconds = 500, seed = 6, leaveAt = 60, joinAt = 50 })
 report("holder leaves, someone joins mid-game", s, p, { { "games still finish", function(x) return x.wins >= 2 end } })
-s, p = simulate({ players = 4, seconds = 300, seed = 8, config = function(c) c.TagMode = "Touch" end })
+s, p = simulate({ players = 4, afk = 1, seconds = 600, seed = 2 })
+report("an AFK runner (never moves)", s, p, {
+	{ "games finish", function(x) return x.wins >= 2 end },
+	{ "the clock drops when only the AFK runner is left (Hurry)", function(x) return x.hurries >= 1 end },
+	{ "no round runs the whole clock", function(x) return x.runTimeouts == 0 end },
+	{ "no Hero run runs out of time: an AFK Hero loses it early", function(x) return x.heroTimeouts == 0 end },
+})
+print(string.format("   (hurries %d, AFK Heroes cut short %d, last runner called %d, boosted frames %d)", s.hurries, s.heroEarly, s.lastAlone, s.lastBoosted or 0))
+s, p = simulate({ players = 4, seconds = 600, seed = 8, config = function(c) c.TagMode = "Touch" end })
 report("Touch mode (no stabbing)", s, p, { { "touch tags", function(x) return x.tags >= 3 and x.stabs == 0 end } })
 
 print(if failed == 0 then "simulation ok" else failed .. " problems")

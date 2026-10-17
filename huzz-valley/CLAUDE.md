@@ -141,18 +141,27 @@ Owner's own words are in quotes. Read only the section you need.
 
 ## 7. The round (`Shared/RoundRules` + `RoundService`)
 - Lobby: `VoteTime` 30 s, `IntermissionTime` 25 s ("a bit more, so people can buy things, not too long").
-- Stages: Waiting → Voting → Rolling (girl roller) → per round: Lineup → Picking (HERO/CHICKEN, 8 s) → Chosen →
+- Stages: Waiting → Voting → Rolling (girl roller) → per round: Lineup → Picking (HERO/CHICKEN, 6 s) → Chosen →
   HeroRun → Countdown → Running → RoundOver; GameOver. Runners win with everyone across 3 rounds in a row.
+  Loop audit (Oct 17, `docs/loop-audit.md`): half of everyone's time was frozen, so Lineup 3 s, ChooseTime 6, ShowTime
+  2, RoundEndPause 2.5, and one runner on the line skips the roulette (PickAt is set back so clients skip it too).
+- **Stalls** (`Config/Round.Hurry`, `RoundRules.stalling`): everyone still to cross standing in the start zone for 5 s
+  → the clock drops to 6 s ("Hurry! Run or you're out"; `hurry()` moves EndsAt too). A Hero still in the start
+  zone after 6 s loses the solo run ("X didn't go. Everyone runs!"). Stops AFK runners stalling rounds.
+- **Last runner** (`RoundRules.lastRunner`, `Speeds.LastRunner` 30): in a round that started with 2+ runners, the
+  only one still out is called out once ("X is the last runner!") and runs as fast as a catcher.
 - **Catching:** click stab (`Stab` remote) or a catcher's **lunge** (`Lunge` remote, `Config/Round.Lunge`: Speed 56,
   Up 18, HitRange 4.8 for 0.5 s, cooldown 3 s shared with the Space tile `DashReady`; stab mode only). Both go
   through `stabNear()`: shields, the safe start zone and a fresh rescue protect; a Heart Shield ends the lunge.
 - **Downed and revived:** a downed runner lies still (`KnockdownService`); a runner beside them for 1.2 s revives
   them. **One second chance per game** (`RoundRules` `rescued`): caught again = `Caught.final` → "YOU'RE OUT", no
-  rescue; joins the catchers at round end.
+  rescue; joins the catchers at round end. Their tag says OUT (grey) instead of HELP!, so nobody runs over for nothing.
 - **Practice Bot** (`HuzzServer/PracticeBot`, `Config/Round.Bot`; owner picked "Yes, add bots", Oct 17): any round
   with runners and no catcher (alone, or the only catcher left) gets a server NPC catcher named "Practice Bot"
   (default blocky body from `CreateHumanoidModelFromDescription`, grey with a red shirt, tag CATCHER / BOT, a knife).
-  Speed 24 (< runner 28), stabs within 5 studs through `stabNear(nil, ...)`, 1.2 s breather after each stab. If it
+  Starts at Speed 24 and adapts (`Bot.Step` 2 slower after it wins a game, faster after it loses, 18 to 28; its
+  Reach 5 scales with it; the message line says "gets slower/faster next game"), stabs through `stabNear(nil, ...)`,
+  1.2 s breather after each stab. If it
   downs everyone nobody wins ("THE BOT WINS", no girl, no winner's pay). With it, one player starts a game in the
   live game too (`minPlayers` 1). Red outline like catchers; round walls it follows a PathfindingService path (computed in a
   task.spawn when a raycast to the target hits something solid), and sidesteps when stuck. The sim tests it

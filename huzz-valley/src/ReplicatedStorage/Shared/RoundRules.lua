@@ -295,6 +295,42 @@ function RoundRules.isRoundOver(s)
 	return true
 end
 
+-- A stalled round: every runner still to cross (or only `only`, the Hero on their solo run) stands in the start
+-- zone, where nobody can stab them (someone AFK, or too scared to go). RoundService then shortens the clock.
+-- inStart: id -> true for the runners standing in their start zone.
+function RoundRules.stalling(s, inStart, only)
+	if s.over then
+		return false
+	end
+	local any = false
+	for id, status in s.status do
+		if status == "Active" and (only == nil or id == only) then
+			if not inStart[id] then
+				return false
+			end
+			any = true
+		end
+	end
+	return any
+end
+
+-- The only runner still out on the field (nil when none or several): they get a catch-up (Config Speeds.LastRunner).
+function RoundRules.lastRunner(s)
+	if s.over then
+		return nil
+	end
+	local last = nil
+	for id, status in s.status do
+		if status == "Active" then
+			if last then
+				return nil
+			end
+			last = id
+		end
+	end
+	return last
+end
+
 function RoundRules.endRound(s, timedOut)
 	local events = {}
 	if s.over then

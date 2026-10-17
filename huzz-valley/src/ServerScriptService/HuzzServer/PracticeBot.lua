@@ -73,8 +73,24 @@ local function animate(h: Humanoid, anims: { [string]: Animation })
 	if tracks.idle then tracks.idle:Play() end
 end
 
+-- It adapts to the kids playing it (Config.Bot MinSpeed / MaxSpeed / Step): slower after it wins a game, faster
+-- after it loses. Returns "slower" / "faster" when its speed changed (for the message line), else nil.
+local speed = B.Speed
+function PracticeBot.speed(): number
+	return speed
+end
+function PracticeBot.result(botWon: boolean): string?
+	local before = speed
+	local step = B.Step or 0
+	speed = math.clamp(speed + (if botWon then -step else step), B.MinSpeed or B.Speed, B.MaxSpeed or B.Speed)
+	if speed == before then
+		return nil
+	end
+	return if speed < before then "slower" else "faster"
+end
+
 local function setSpeed(on: boolean)
-	if humanoid then humanoid.WalkSpeed = if on then B.Speed else 0 end
+	if humanoid then humanoid.WalkSpeed = if on then speed else 0 end
 	if not on and humanoid and root then humanoid:MoveTo(root.Position) end
 end
 
@@ -228,7 +244,7 @@ function PracticeBot.step(targets: { BasePart }, stab: (BasePart) -> boolean, fa
 		local d = (t.Position - root.Position).Magnitude
 		if d < bestD then best, bestD = t, d end
 	end
-	if best and bestD <= B.Reach then
+	if best and bestD <= B.Reach * speed / B.Speed then -- (its reach grows and shrinks with its speed)
 		if stab(root) then
 			pauseUntil = now + B.Pause -- (a breather after each stab: kids get a chance to run)
 			setSpeed(false)
