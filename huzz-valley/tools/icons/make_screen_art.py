@@ -1,6 +1,7 @@
 # Cuts the pictures for the Oct 17 screens out of the owner's mockups (design/ui-oct17) into assets/art:
 #   coin-pack-500/2000/5000.png  the Shop COINS cards' coin pile, bag and chest (shop-items-coins-dances.png, bottom left)
 #   dance-fx-glow/core.png       the DANCES cards' glowing notes and sparkles (drawn here, see below)
+#   how-to-play-1/2/3.png        the HOW TO PLAY cards' pictures (how-to-play.png)
 # PLACEHOLDERS: the crops are about 280 px wide, soft on a Retina screen; swap in the owner's sharp PNGs when they come.
 # The mockup bakes each card's title into its picture; the title's box is painted over from the rows just above and
 # below it (the card glow is smooth there), so our own title can sit on top without a ghost.
@@ -97,4 +98,12 @@ glow = np.maximum(np.asarray(core.filter(ImageFilter.GaussianBlur(7)), np.float3
 for name, alpha in (('dance-fx-glow', glow), ('dance-fx-core', np.asarray(core, np.float32))):
     a = np.clip(alpha, 0, 255).astype(np.uint8)
     Image.fromarray(np.dstack([np.full_like(a, 255)] * 3 + [a]), 'RGBA').save(OUT % name)
+
+# HOW TO PLAY cards (how-to-play.png): the picture under each card's text, cut to our card's picture shape (217 x 123
+# points: our window is much shorter than the mockup's, so each crop keeps the middle of the action: the runner's
+# head to his knees, the girl and the downed boy with the plus, the crown and both heads).
+HOW = Image.open('design/ui-oct17/how-to-play.png').convert('RGB')
+for n, (x0, x1, y0) in enumerate(((46, 467, 405), (494, 906, 430), (931, 1343, 365)), 1):
+    h = round((x1 - x0) * 123 / 217)
+    feather(HOW.crop((x0, y0, x1, y0 + h)), left=2, right=2, top=18, bottom=3).save(OUT % ('how-to-play-%d' % n))
 print('screen art made')

@@ -60,6 +60,44 @@ local function open(name: string, tab: string?): boolean
 	return okOpen
 end
 
+-- HOW TO PLAY: opens by itself on the first join, closing saves that, and the Menu opens it again
+task.wait(1.6)
+check("How to Play opens by itself on the first join", MM.current() == "HowToPlay" and gui.HowToPlay.Visible)
+MM.close()
+task.wait(0.4)
+check("closing it saves that it was seen", profile.Data.Settings.TutorialDone == true)
+local menu = gui:FindFirstChild("Menu")
+local entry = menu and menu:FindFirstChild("HowToPlay", true)
+check("the Menu has a How to Play entry", entry ~= nil)
+if entry then
+	MM.open("Menu")
+	task.wait(0.1)
+	click(entry)
+	for _ = 1, 40 do __stepTweens(0.05) end
+end
+check("the Menu's How to Play opens it", MM.current() == "HowToPlay")
+local hp = gui.HowToPlay.Group.Panel
+local titles = { "RUN ACROSS", "SAVE FRIENDS", "BE THE HERO" }
+for i, t in titles do
+	local c = hp:FindFirstChild("Card" .. i)
+	check("card " .. i .. " " .. t, c ~= nil and c.Title.Text == t and c.Step.Digit.Text == tostring(i) and c.Picture:GetAttribute("Art") == "HowToPlay" .. i and #c.Blurb.Text > 20)
+end
+local keyText = {}
+for _, d in hp.Keys:GetDescendants() do if d:IsA("TextLabel") then table.insert(keyText, d.Text) end end
+local allKeys = table.concat(keyText, " | ")
+check("keys: Space dashes (catchers lunge)", hp.Keys.Key1.Cap.Key.Text == "Space" and hp.Keys.Key1.Label.Text == "Dash" and hp.Keys.Key1.Sub.Text:lower():find("lunge") ~= nil)
+check("keys: Q uses a power", hp.Keys.Key2.Cap.Key.Text == "Q" and hp.Keys.Key2.Label.Text == "Use Power")
+check("keys: click stabs (catchers)", hp.Keys.Key3:FindFirstChild("Mouse") ~= nil and hp.Keys.Key3.Label.Text == "Click" and hp.Keys.Key3.Sub.Text == "Stab (Catchers)")
+check("keys: Alt frees the mouse", hp.Keys.Key4.Cap.Key.Text == "Alt" and hp.Keys.Key4.Label.Text == "Free Mouse")
+check("no jumping anywhere", not allKeys:lower():find("jump"))
+local _, _, kw, kh = box(hp.Keys, hp)
+local kx, ky = box(hp.Keys, hp)
+check("the key row and cards sit inside the window", kx >= 12 and ky + kh <= 320 - 6 and kx + kw <= 701 - 12 and hp.Card3.Position.X.Offset + hp.Card3.Size.X.Offset <= 701 - 12)
+check("HOW TO PLAY: whole pixels only", wholePixels(gui.HowToPlay))
+MM.close()
+task.wait(0.4)
+check("it doesn't pop up again by itself", MM.current() == nil)
+
 check("Shop opens on COINS", open("Shop", "Coins") and gui.Shop.Visible)
 local shop = gui.Shop.Group.Panel
 local products = shop.Products

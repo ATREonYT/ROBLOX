@@ -18,7 +18,7 @@ MainMenu.Entries = {
 	{ Key = "Dances", Text = "Dances", Icon = "AudioMusic" },
 	{ Key = "Progression", Text = "Progression", Icon = "RewardsTrophy" },
 	{ Key = "Settings", Text = "Settings", Icon = "SettingsGear" },
-	{ Key = "Welcome", Text = "How to Play", Icon = "Players" },
+	{ Key = "HowToPlay", Text = "How to Play", Icon = "Players" },
 }
 
 -- Opens a screen by key, or explains that it isn't built yet.

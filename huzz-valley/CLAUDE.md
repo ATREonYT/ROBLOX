@@ -322,8 +322,11 @@ Owner's own words are in quotes. Read only the section you need.
   colours); their 3D knife renders; power icons; a stab animation; crate contents; dance names; movement pack licence.
 - Owner's place notes (Oct 17): no Uncommon girls yet (the rarity is skipped until there are some); a plank path
   near the Halloween lobby and a basketball hoop sit loose in Workspace (not in a map folder).
-- Owner (Oct 17): new Shop ITEMS/COINS/DANCES and HOW TO PLAY mockups in `design/ui-oct17` (next); his Secret
-  cutscene reference (not sent yet). Not seen in Studio: Crown Pose, Midnight cape, worn auras, the cutscene.
+- Owner (Oct 17): Shop ITEMS/COINS, DANCES and HOW TO PLAY (`Screens/HowToPlay`, was `Welcome`: first join +
+  Menu) built from the `design/ui-oct17` mockups (`docs/previews/*-vs-mockup.jpg`, `tools/preview/side_by_side.py`,
+  checks in `tools/preview/check_oct17.luau`). Their pictures are mockup crops (placeholders): ask for sharp PNGs.
+  His Secret cutscene reference (not sent yet). Not seen in Studio: Crown Pose, Midnight cape, worn auras, the
+  cutscene, the Oct 17 screens.
 - Us: whatever the owner's next round of fixes asks for first; then the Gift Picker, more lore chapters.
 - Everything in sections 7 to 12 is the current version, open to change: tuning numbers (speeds, odds, prices,
   lunge, wheel prizes), looks and feel are first passes waiting for the owner's verdict in Studio.

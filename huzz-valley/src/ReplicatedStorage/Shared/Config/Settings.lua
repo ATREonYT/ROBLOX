@@ -19,7 +19,7 @@ Settings.Defaults = {
 	InviteRequests = "Friends",
 	CompanionEffects = true,
 	ReducedMotion = false,
-	TutorialDone = false, -- set when How to Play is closed the first time (Screens/Welcome)
+	TutorialDone = false, -- set when How to Play is closed the first time (Screens/HowToPlay)
 }
 
 -- Keys the game or Roblox already uses, so a binding can't take them.

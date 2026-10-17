@@ -31,7 +31,7 @@ shot power-bar 13-lobby-hud 1536 694 '{SCREEN="Hud", SCALE=2, POWERS="Runner"}'
 shot hero-choice 13-lobby-hud 1536 694 '{SCREEN="Hud", SCALE=2, HERO=true}'
 shot next-map 13-lobby-hud 1536 694 '{SCREEN="Hud", SCALE=2, NEXTMAP=true, VOTE="Base_Map,Halloween_Map,3,5,Halloween_Map"}'
 shot dance-wheel 13-lobby-hud 1536 694 '{SCREEN="Hud", SCALE=2, WHEEL=true}'
-shot welcome 13-lobby-hud 1536 694 '{SCREEN="Welcome", SCALE=2}'
+shot how-to-play none 1536 694 '{SCREEN="HowToPlay", SCALE=2}' # (vs the Oct 17 mockup: side_by_side.py how-to-play)
 shot results 13-lobby-hud 1536 694 '{SCREEN="Results", SCALE=2, RESULTS="Win"}'
 shot round-hud 13-lobby-hud 1536 694 '{SCREEN="Hud", SCALE=2, ROUNDHUD="Hero"}'
 shot spin-wheel ../../design/spin-wheel-reference.webp 1536 936 '{SCREEN="SpinWheel", SCALE=1.2, SPINS=25, FREEIN=887, PITY=28}'
