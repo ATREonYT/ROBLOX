@@ -1,6 +1,9 @@
 --[[
 	Name tags over every player (and the Practice Bot), as in Huss Valley: a small coloured title (their role this round),
-	the name in bold, "Lv. 6 · 8 wins" under it. Downed runners show HELP! and a bar that fills while
+	the name in bold, "Lv. 6 · 8 wins" under it, at Huss Valley's proportions (title and level line each under half
+	the name's height; feel-study gap 1: ours had the title as big as the name). Tags further than 80 studs from
+	your camera hide, so a full field doesn't fill the screen with names (the team outlines still show who is who).
+	Your own tag is faded and hidden during camera shots on your screen only (Gameplay/RoundHud). Downed runners show HELP! and a bar that fills while
 	someone rescues them; downed with the second chance used, OUT (nobody can help them up). The picked runner's choice shows big over their head (HERO / CHICKEN).
 	Made on the server (everyone sees the same); Roblox's own name over the head is hidden.
 ]]
@@ -51,23 +54,24 @@ end
 local function build(head)
 	local gui = Instance.new("BillboardGui")
 	gui.Name = "HuzzTag"
-	gui.Size = UDim2.new(6.4, 0, 3.1, 0) -- studs: smaller further away, like the reference
-	gui.StudsOffsetWorldSpace = Vector3.new(0, 3.1, 0)
-	gui.MaxDistance = 140
+	gui.Size = UDim2.new(5.6, 0, 2.6, 0) -- studs: smaller further away, like the reference (was 6.4 x 3.1)
+	gui.StudsOffsetWorldSpace = Vector3.new(0, 3.0, 0)
+	gui.MaxDistance = 80 -- (was 140)
 	gui.LightInfluence = 0
 	gui.AlwaysOnTop = false
 	gui.ResetOnSpawn = false
 	local badge = label({ Name = "Badge", Text = "", FontFace = DISPLAY, Position = UDim2.fromScale(0, -0.75), Size = UDim2.fromScale(1, 0.7), Visible = false })
 	badge.Parent = gui
-	label({ Name = "Title", Text = "", FontFace = ROUND, Position = UDim2.fromScale(0.15, 0), Size = UDim2.fromScale(0.7, 0.22) }).Parent = gui
-	label({ Name = "PlayerName", Text = "", FontFace = BOLD, TextColor3 = Color3.new(1, 1, 1), Position = UDim2.fromScale(0, 0.22), Size = UDim2.fromScale(1, 0.4) }).Parent = gui
-	label({ Name = "Sub", Text = "", FontFace = SMALL, TextColor3 = Color3.fromRGB(205, 210, 230), Position = UDim2.fromScale(0.2, 0.62), Size = UDim2.fromScale(0.6, 0.18) }).Parent = gui
+	-- rows (of the tag's height): title 0-0.2, name 0.22-0.66, level line 0.68-0.86, rescue bar 0.88
+	label({ Name = "Title", Text = "", FontFace = ROUND, Position = UDim2.fromScale(0.05, 0), Size = UDim2.fromScale(0.9, 0.2) }).Parent = gui
+	label({ Name = "PlayerName", Text = "", FontFace = BOLD, TextColor3 = Color3.new(1, 1, 1), Position = UDim2.fromScale(0, 0.22), Size = UDim2.fromScale(1, 0.44) }).Parent = gui
+	label({ Name = "Sub", Text = "", FontFace = SMALL, TextColor3 = Color3.fromRGB(205, 210, 230), Position = UDim2.fromScale(0.1, 0.68), Size = UDim2.fromScale(0.8, 0.18) }).Parent = gui
 	-- the rescue bar (downed runners only)
 	local bar = Instance.new("Frame")
 	bar.Name = "Rescue"
 	bar.AnchorPoint = Vector2.new(0.5, 0)
-	bar.Position = UDim2.fromScale(0.5, 0.84)
-	bar.Size = UDim2.fromScale(0.55, 0.1)
+	bar.Position = UDim2.fromScale(0.5, 0.88)
+	bar.Size = UDim2.fromScale(0.55, 0.09)
 	bar.BackgroundColor3 = INK
 	bar.BackgroundTransparency = 0.3
 	bar.Visible = false

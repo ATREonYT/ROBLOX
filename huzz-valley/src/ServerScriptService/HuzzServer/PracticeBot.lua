@@ -143,8 +143,8 @@ function PracticeBot.spawn(at: CFrame): boolean
 	pcall(function()
 		local outline = Instance.new("Highlight")
 		outline.Name = "HuzzOutline"
-		outline.FillTransparency, outline.OutlineTransparency = 1, 0.35
-		outline.OutlineColor, outline.FillColor = Color3.fromRGB(255, 64, 64), Color3.fromRGB(255, 64, 64)
+		outline.FillTransparency, outline.OutlineTransparency = 1, 0.55 -- (thin and see-through, as Huss Valley's; was 0.35)
+		outline.OutlineColor, outline.FillColor = Color3.fromRGB(235, 50, 60), Color3.fromRGB(235, 50, 60)
 		outline.DepthMode = Enum.HighlightDepthMode.Occluded
 		outline.Parent = m
 	end)
