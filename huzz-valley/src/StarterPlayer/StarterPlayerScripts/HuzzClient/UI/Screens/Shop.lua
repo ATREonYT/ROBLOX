@@ -1,6 +1,6 @@
 -- Shop (design/pages/01, 07, 08): Passes / Cosmetics / Coins tabs over one stationary window.
 -- Buy buttons only open Roblox's purchase prompt; the server grants (ShopService). Each button shows exactly one
--- state: Robux badge + price, "..." (prompt open) or OWNED. Items that aren't on sale yet show their price like the
+-- state: Robux badge + price, "..." (prompt open) or OWNED (a cosmetic you own: WEAR / WEARING, tap to switch). Items that aren't on sale yet show their price like the
 -- reference but only say "coming soon" when tapped; they never open a purchase.
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
@@ -8,6 +8,7 @@ local Players = game:GetService("Players")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Products = require(Shared.Config.Products)
 local CoinShop = require(Shared.Config.CoinShop)
+local RoundConfig = require(Shared.Config.Round)
 local Format = require(Shared.Format)
 local UI = script.Parent.Parent
 local Theme = require(UI.Theme)
@@ -36,6 +37,10 @@ local function priceOf(p) return livePrice[p.Key] or p.Price end
 -- Returns text, style, icon, and whether the Robux badge shows. Every Robux price wears the badge (Roblox's own
 -- Robux mark, U+E002). Items not on sale yet still show their price like the reference, but never open a purchase.
 local function buttonState(p): (string, string, string?, boolean)
+	if State.owns(p.Key) and p.Slot then -- a cosmetic you own: put it on or take it off here
+		if CoinShop.worn(State.data, p.Slot) == p.Key then return "WEARING", "Selected", nil, false end
+		return "WEAR", "Tab", nil, false
+	end
 	if State.owns(p.Key) then return "OWNED", "Disabled", "CheckEquipped", false end
 	if pending[p.Key] then return "...", "Disabled", nil, false end
 	return Format.commas(priceOf(p)), "Action", nil, true
@@ -44,6 +49,12 @@ end
 local refreshButtons: { () -> () } = {}
 
 local function buy(p)
+	if State.owns(p.Key) and p.Slot then
+		local worn = CoinShop.worn(State.data, p.Slot) == p.Key
+		local ok, why = State.action("Wear", p.Slot, if worn then nil else p.Key)
+		if not ok then Toast.show(why or "Couldn't change that.") end
+		return
+	end
 	if State.owns(p.Key) or pending[p.Key] then return end
 	local status = Products.status(p)
 	if status == "Soon" then
@@ -254,12 +265,31 @@ end
 -- knife skins, three to a row. Each card shows a preview in the item's own colours, its name and slot, and one
 -- button: the coin price (buy and wear it), WEAR (owned), or WEARING (tap to take it off). The server decides.
 local ITEM = { W = 216, H = 92, Gap = 10, Swatch = 64 }
+local rarityColor = {}
+for _, r in RoundConfig.Rarities do rarityColor[r.Name] = r.Color end
+rarityColor.Secret = Color3.fromRGB(150, 110, 255) -- (near-black in the roller; violet reads on the dark window)
 local function swatch(parent: Instance, item: CoinShop.Item)
 	local f = new("Frame", { Name = "Swatch", Position = UDim2.fromOffset(10, 14), Size = UDim2.fromOffset(ITEM.Swatch, ITEM.Swatch), BackgroundColor3 = C.Frame, BackgroundTransparency = 0.3, BorderSizePixel = 0, Parent = parent }, { Kit.corner(8) })
 	if item.Slot == "Trail" then
 		-- a streak fading out behind a runner: the colours along it, solid at the front
 		local streak = new("Frame", { Name = "Streak", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(1, -12, 0, 22), Rotation = -20, BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = f }, { Kit.corner(11) })
 		new("UIGradient", { Name = "Colours", Color = CoinShop.sequence(item), Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.85), NumberSequenceKeypoint.new(0.6, 0.15), NumberSequenceKeypoint.new(1, 0) }), Parent = streak })
+	elseif item.Slot == "Aura" then
+		-- a glowing ring with a bright core: the aura's colours round it
+		local ring = new("Frame", { Name = "Ring", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(46, 46), BackgroundTransparency = 1, Parent = f }, { Kit.corner(23) })
+		new("UIStroke", { Name = "Glow", Color = Color3.new(1, 1, 1), Thickness = 5, Parent = ring }, {
+			new("UIGradient", { Name = "Colours", Rotation = 45, Color = CoinShop.sequence(item) }),
+		})
+		local core = new("Frame", { Name = "Core", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(20, 20), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = f }, { Kit.corner(10) })
+		new("UIGradient", { Name = "Colours", Rotation = 90, Color = ColorSequence.new(Color3.new(1, 1, 1), item.Colors[1]), Parent = core })
+	elseif item.Slot == "Title" then
+		-- the title itself, small, in its colours (as it shows over your name)
+		local word = Kit.text({ Name = "Word", Text = string.upper(item.Name), FontFace = Theme.Fonts.Heading, TextScaled = true, TextXAlignment = Enum.TextXAlignment.Center, TextColor3 = item.Colors[1], Position = UDim2.fromOffset(4, 16), Size = UDim2.new(1, -8, 0, 32), Parent = f })
+		new("UIStroke", { Name = "Outline", Color = C.Frame, Thickness = 1.5, Parent = word })
+		if #item.Colors > 2 then
+			word.TextColor3 = Color3.new(1, 1, 1)
+			new("UIGradient", { Name = "Colours", Color = CoinShop.sequence(item), Parent = word })
+		end
 	elseif item.Slot == "Tag" then
 		local word = Kit.text({ Name = "Word", Text = "Aa", FontFace = Theme.Fonts.Heading, TextSize = 28, TextXAlignment = Enum.TextXAlignment.Center, TextColor3 = item.Colors[1], Size = UDim2.fromScale(1, 1), Parent = f })
 		new("UIStroke", { Name = "Outline", Color = C.Frame, Thickness = 1.5, Parent = word })
@@ -286,14 +316,24 @@ local function buildItems(body: Frame)
 	for i, item in list do
 		local col, rowN = (i - 1) % 3, (i - 1) // 3
 		local c = card(body, item.Key, Vector2.new(-2 + col * (ITEM.W + ITEM.Gap), rowN * (ITEM.H + 8)), Vector2.new(ITEM.W, ITEM.H))
+		local tint = item.Rarity and rarityColor[item.Rarity]
+		if tint then -- the girls' rewards: a rim and a glow in the rarity's colour, so they stand out
+			local rim = c:FindFirstChildOfClass("UIStroke")
+			if rim then rim.Color, rim.Thickness = tint, 2 end
+			new("Frame", { Name = "Glow", Size = UDim2.new(0.6, 0, 1, 0), BackgroundColor3 = tint, BackgroundTransparency = 0.8, BorderSizePixel = 0, ZIndex = 0, Parent = c }, {
+				Kit.corner(4), new("UIGradient", { Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(1, 1) }) }),
+			})
+		end
 		swatch(c, item)
 		Kit.name({ Name = "Name", Text = item.Name, TextSize = 16, Position = UDim2.fromOffset(84, 10), Size = UDim2.fromOffset(ITEM.W - 92, 20), Parent = c })
-		Kit.text({ Name = "Slot", Text = CoinShop.SlotNames[item.Slot], FontFace = Theme.Fonts.Label, TextSize = 12, TextColor3 = C.SubText, Position = UDim2.fromOffset(84, 31), Size = UDim2.fromOffset(ITEM.W - 92, 16), TextWrapped = false, Parent = c })
+		local slotText = CoinShop.SlotNames[item.Slot]
+		if item.Rarity then slotText = string.upper(item.Rarity) .. " · " .. slotText end
+		Kit.text({ Name = "Slot", Text = slotText, FontFace = Theme.Fonts.Label, TextSize = 12, TextColor3 = tint or C.SubText, Position = UDim2.fromOffset(84, 31), Size = UDim2.fromOffset(ITEM.W - 92, 16), TextWrapped = false, Parent = c })
 		local b = Kit.button({ Name = "Buy", Text = "", Icon = "CurrencyCoin", IconSize = 20, Gap = 6, TextSize = 17, FontFace = Theme.Fonts.Number, Style = "Action", Position = UDim2.fromOffset(84, 52), Size = UDim2.fromOffset(ITEM.W - 94, 30), Parent = c })
 		local icon = b.Instance:FindFirstChild("Icon", true) :: GuiObject?
 		local function refresh()
 			local owned = State.data.Cosmetics[item.Key] == true
-			local worn = (State.data.Wear or {})[item.Slot] == item.Key
+			local worn = CoinShop.worn(State.data, item.Slot) == item.Key
 			if icon then icon.Visible = not owned and not item.Unlock end
 			if not owned and item.Unlock then
 				b.setText("EARN IT") -- (quest knives: never sold; the tap says where)
@@ -316,7 +356,7 @@ local function buildItems(body: Frame)
 				ok, why = State.action("BuyWithCoins", item.Key)
 				Toast.show(if ok then `{item.Name} is yours!` else (why or "Couldn't buy that."))
 			else
-				local worn = (State.data.Wear or {})[item.Slot] == item.Key
+				local worn = CoinShop.worn(State.data, item.Slot) == item.Key
 				ok, why = State.action("Wear", item.Slot, if worn then nil else item.Key)
 				if not ok then Toast.show(why or "Couldn't change that.") end
 			end
@@ -375,7 +415,24 @@ function Shop.build(parent: Instance)
 	coins.plus.onClick(function() openTab("Coins") end)
 	gems.plus.onClick(function() Toast.show("Get Aura from the stars on the field, by winning games and from quests.") end)
 
+	-- A reward you've just earned (Config/CoinShop Earn): say so once, and where to find it.
+	local known: { [string]: boolean }? = nil
 	State.changed(function(data)
+		if data.Loaded then
+			local first = known == nil
+			known = known or {}
+			local names = {}
+			for _, item in CoinShop.Items do
+				if item.Earn and data.Cosmetics[item.Key] and not (known :: any)[item.Key] then
+					(known :: any)[item.Key] = true
+					table.insert(names, item.Name)
+				end
+			end
+			if not first and #names > 0 then
+				local list = if #names == 1 then names[1] else table.concat(names, ", ", 1, #names - 1) .. " and " .. names[#names]
+				Toast.show(`You unlocked {list}! Wear {if #names == 1 then "it" else "them"} from Shop > Items.`)
+			end
+		end
 		coins.setAmount(Format.commas(data.Coins))
 		gems.setAmount(Format.commas(data.Aura or 0))
 		for _, f in refreshButtons do f() end

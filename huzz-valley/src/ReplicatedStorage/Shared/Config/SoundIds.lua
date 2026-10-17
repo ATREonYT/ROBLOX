@@ -42,4 +42,7 @@ return {
 	revive = "",
 	aura_pickup = "",
 	speed_wind = "", -- a loop: play it with Gameplay/Sfx.loop
+	secret_riser = "",
+	secret_impact = "",
+	secret_land = "",
 }

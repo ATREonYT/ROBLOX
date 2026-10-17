@@ -86,7 +86,7 @@ _G.__prompts = {}
 MM.open("Shop", "Cosmetics")
 local products = gui.Shop.Group.Panel.Products
 local function label(key) return products[key].Buy.Content.Label.Text end
-check("owned cosmetic says OWNED", label("SunsetTrail") == "OWNED")
+check("owned cosmetic you wear says WEARING", label("SunsetTrail") == "WEARING")
 check("not-on-sale shows its price", label("CrownPose") == "99")
 __fireOn(products.BlossomAura.Buy, "Activated")
 __fireOn(products.CrownPose.Buy, "Activated")
@@ -133,8 +133,15 @@ check("coin shop: can't buy without the coins", (act("BuyWithCoins", "MintTrail"
 DataService.update(player, function(d) d.Coins = 1000 end); task.wait(0.1)
 check("coin shop: buying takes the price and wears it", (act("BuyWithCoins", "MintTrail")) == true and profile.Data.Coins == 600 and profile.Data.Cosmetics.MintTrail == true and profile.Data.Wear.Trail == "MintTrail")
 check("coin shop: can't buy it twice", (act("BuyWithCoins", "MintTrail")) == false and profile.Data.Coins == 600)
-check("coin shop: take it off and wear it again", (act("Wear", "Trail", nil)) == true and profile.Data.Wear.Trail == nil and (act("Wear", "Trail", "MintTrail")) == true and profile.Data.Wear.Trail == "MintTrail")
+check("coin shop: take it off and wear it again", (act("Wear", "Trail", nil)) == true and profile.Data.Wear.Trail == "" and (act("Wear", "Trail", "MintTrail")) == true and profile.Data.Wear.Trail == "MintTrail")
 check("coin shop: can't wear what you don't own", (act("Wear", "Tag", "TagPink")) == false)
+-- Robux cosmetics go in their own slot; the girls' rewards are earned, worn if the slot is empty, never bought.
+check("cosmetics: a Robux trail can be worn and taken off", (act("Wear", "Trail", "SunsetTrail")) == (profile.Data.Cosmetics.SunsetTrail == true))
+check("cosmetics: a cosmetic only fits its own slot", (act("Wear", "Aura", "SunsetTrail")) == false)
+check("rewards: never sold for coins", (act("BuyWithCoins", "TitleSecret")) == false and profile.Data.Cosmetics.TitleSecret == nil)
+DataService.update(player, function(d) d.Stats.Heroes = 10 end); task.wait(0.3)
+check("rewards: 10 hero runs earn the Huss Hero title, worn", profile.Data.Cosmetics.TitleHero == true and profile.Data.Wear.Title == "TitleHero")
+check("rewards: a title needs no Secret girl to be locked", profile.Data.Cosmetics.TitleSecret == nil)
 check("coin shop: can't wear an item in the wrong slot", (act("Wear", "Knife", "MintTrail")) == false)
 check("Aura: gems became Aura and the client sees it", State.data.Aura ~= nil and profile.Data.Gems == nil)
 check("crates: an unknown crate can't be opened", (act("OpenCrate", "Nope")) == false)

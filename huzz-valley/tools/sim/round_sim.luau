@@ -330,6 +330,7 @@ local function simulate(opts)
 	local Powers = loadShared("ReplicatedStorage/Shared/Config/Powers.lua")
 	local RoundRules = loadShared("ReplicatedStorage/Shared/RoundRules.lua")
 	local GirlRoll = loadShared("ReplicatedStorage/Shared/GirlRoll.lua")
+	local SecretReveal = loadShared("ReplicatedStorage/Shared/SecretReveal.lua")
 
 	-- Fake map: ZoneA on the left, ZoneB on the right, Middle between, the lobby far away.
 	local function box(x, z, sx, sz)
@@ -593,7 +594,7 @@ local function simulate(opts)
 		NameTagService = NameTagService,
 		SpinService = { boost = function() return 1 end }, -- (the Spin the Wheel's x2 Coins: none in the sim)
 	}
-	local Shared = { Config = { Round = Config, Carry = Carry, Powers = Powers }, RoundRules = RoundRules, Net = Net, GirlRoll = GirlRoll }
+	local Shared = { Config = { Round = Config, Carry = Carry, Powers = Powers }, RoundRules = RoundRules, Net = Net, GirlRoll = GirlRoll, SecretReveal = SecretReveal }
 	local sharedNode = setmetatable({}, { __index = function(_, k)
 		return Shared[k]
 	end })
@@ -695,7 +696,8 @@ local function simulate(opts)
 		Waiting = { Voting = true, Intermission = true },
 		Voting = { Rolling = true, Waiting = true },
 		Intermission = { Rolling = true, Waiting = true },
-		Rolling = { Lineup = true, GameOver = true, Waiting = true, Voting = true },
+		Rolling = { Lineup = true, GameOver = true, Waiting = true, Voting = true, Reveal = true },
+		Reveal = { Lineup = true, GameOver = true, Waiting = true }, -- (a Secret girl's arrival cutscene)
 		Lineup = { Picking = true, Countdown = true, GameOver = true },
 		Picking = { Chosen = true },
 		Chosen = { HeroRun = true, Countdown = true },

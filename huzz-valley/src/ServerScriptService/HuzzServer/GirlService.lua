@@ -132,6 +132,13 @@ local function rand()
 	return rng:NextNumber()
 end
 function GirlService.roll()
+	-- Studio test (Config/Round.StudioTestRarity, e.g. "Secret" to see her arrival cutscene): Studio only, never live.
+	local test = Config.StudioTestRarity
+	if type(test) == "string" and test ~= "" and game:GetService("RunService"):IsStudio() then
+		for _, g in GirlService.catalog do
+			if g.rarity == test then return g end
+		end
+	end
 	return GirlRoll.pick(GirlService.catalog, Config.Rarities, rand)
 end
 

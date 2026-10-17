@@ -28,15 +28,30 @@ local function decode(s: string): buffer
 end
 
 -- A new EditableImage holding the packed pixels (kind = "Icons" or "Art"). Errors if it can't be made here.
--- (Also used by tools/studio/upload-images.lua to upload each image once.)
-function ImageLoader.editable(kind: string, name: string): EditableImage
+-- (Also used by tools/studio/upload-images.lua to upload each image once; it passes `module` for the effect
+-- textures, which live in ServerStorage > HuzzImages > Fx.)
+function ImageLoader.editable(kind: string, name: string, module: Instance?): EditableImage
 	local folder = Images:FindFirstChild(kind)
-	local module = folder and folder:FindFirstChild(name)
+	module = module or (folder and folder:FindFirstChild(name))
 	assert(module, "no packed image " .. kind .. "/" .. name)
 	local d = require(module)
 	local size = Vector2.new(d.W, d.H)
 	local image = AssetService:CreateEditableImage({ Size = size })
-	image:WritePixelsBuffer(Vector2.zero, size, decode(d.Data))
+	local pixels = decode(d.Data)
+	if d.Mask then -- (effect shapes: white, packed as runs of (count, alpha) bytes by tools/icons/pack_images.py)
+		local rgba = buffer.create(d.W * d.H * 4)
+		local o = 0
+		for i = 0, buffer.len(pixels) - 2, 2 do
+			local count, a = buffer.readu8(pixels, i), buffer.readu8(pixels, i + 1)
+			local px = 0xFFFFFF + a * 0x1000000 -- (little-endian RGBA: R, G, B = 255, then the alpha)
+			for _ = 1, count do
+				buffer.writeu32(rgba, o, px)
+				o += 4
+			end
+		end
+		pixels = rgba
+	end
+	image:WritePixelsBuffer(Vector2.zero, size, pixels)
 	return image
 end
 

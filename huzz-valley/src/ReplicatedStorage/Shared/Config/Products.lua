@@ -23,6 +23,7 @@ export type Product = {
 	Art: string,
 	Amount: number?, -- Coins packs: how many coins it gives; Spins packs: how many spins
 	Giftable: boolean?,
+	Slot: string?, -- Cosmetics: where it's worn (Config/CoinShop.Slots); owners tap WEAR / WEARING in the Shop
 	Why: string?, -- OnSale = false: what is missing, for the owner's checklist
 }
 
@@ -43,10 +44,10 @@ Products.Passes = {
 } :: { Product }
 
 Products.Cosmetics = {
-	{ Key = "SunsetTrail", Kind = "Cosmetic", Name = "Sunset Trail", Blurb = "Warm trail effect\nfor your avatar.", Id = 0, Price = 99, OnSale = true, Icon = "Avatar", Art = "SunsetTrail" },
-	{ Key = "BlossomAura", Kind = "Cosmetic", Name = "Blossom Aura", Blurb = "Gentle petals\nthat follow you.", Id = 0, Price = 99, OnSale = true, Icon = "Avatar", Art = "BlossomAura" },
-	{ Key = "CrownPose", Kind = "Cosmetic", Name = "Crown Pose", Blurb = "Victory pose\nfor your avatar.", Id = 0, Price = 99, OnSale = false, Icon = "Avatar", Art = "CrownPose", Why = "needs the victory pose animation" },
-	{ Key = "MidnightOutfit", Kind = "Cosmetic", Name = "Midnight Outfit", Blurb = "Sleek dark look\nfor any occasion.", Id = 0, Price = 99, OnSale = false, Icon = "Avatar", Art = "MidnightOutfit", Why = "needs the outfit's clothing assets" },
+	{ Key = "SunsetTrail", Kind = "Cosmetic", Slot = "Trail", Name = "Sunset Trail", Blurb = "Warm trail effect\nfor your avatar.", Id = 0, Price = 99, OnSale = true, Icon = "Avatar", Art = "SunsetTrail" },
+	{ Key = "BlossomAura", Kind = "Cosmetic", Slot = "Aura", Name = "Blossom Aura", Blurb = "Gentle petals\nthat follow you.", Id = 0, Price = 99, OnSale = true, Icon = "Avatar", Art = "BlossomAura" },
+	{ Key = "CrownPose", Kind = "Cosmetic", Slot = "Pose", Name = "Crown Pose", Blurb = "Victory pose\nfor your avatar.", Id = 0, Price = 99, OnSale = true, Icon = "Avatar", Art = "CrownPose" },
+	{ Key = "MidnightOutfit", Kind = "Cosmetic", Slot = "Outfit", Name = "Midnight Outfit", Blurb = "Sleek dark look\nfor any occasion.", Id = 0, Price = 99, OnSale = true, Icon = "Avatar", Art = "MidnightOutfit" },
 } :: { Product }
 
 Products.Coins = {

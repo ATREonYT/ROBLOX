@@ -96,14 +96,34 @@ function NameTags.set(player, look, badge, rescue)
 		humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
 	end
 	local gui = head:FindFirstChild("HuzzTag") or build(head)
-	local title = TITLES[look]
-	gui.Title.Text = if title then title[1] else ""
-	gui.Title.TextColor3 = if title then title[2] else Color3.new(1, 1, 1)
-	gui.PlayerName.Text = player.DisplayName
+	gui:SetAttribute("Look", look)
 	local profile = DataService.get(player)
 	local data = profile and profile.Data
+	-- the title line: your role in a game; in the lobby, the title you wear (Config/CoinShop "Title" rewards)
+	local title = TITLES[look]
+	local worn = not title and data and CoinShop.worn(data, "Title")
+	local earned = worn and CoinShop.get(worn)
+	local titleGradient = gui.Title:FindFirstChild("TitleGradient")
+	if earned then
+		gui.Title.Text = string.upper(earned.Name)
+		gui.Title.TextColor3 = if #earned.Colors > 2 then Color3.new(1, 1, 1) else earned.Colors[1]
+		if #earned.Colors > 2 and not titleGradient then
+			titleGradient = Instance.new("UIGradient")
+			titleGradient.Name = "TitleGradient"
+			titleGradient.Parent = gui.Title
+		end
+		if titleGradient then
+			if #earned.Colors > 2 then titleGradient.Color = CoinShop.sequence(earned) else titleGradient:Destroy() end
+		end
+	else
+		gui.Title.Text = if title then title[1] else ""
+		gui.Title.TextColor3 = if title then title[2] else Color3.new(1, 1, 1)
+		if titleGradient then titleGradient:Destroy() end
+	end
+	gui.PlayerName.Text = player.DisplayName
 	-- a coin-shop name colour (Config/CoinShop "Tag"): one colour, or a gradient across the name
-	local tag = data and data.Wear and data.Wear.Tag and CoinShop.get(data.Wear.Tag)
+	local tagKey = data and CoinShop.worn(data, "Tag")
+	local tag = tagKey and CoinShop.get(tagKey)
 	local nameGradient = gui.PlayerName:FindFirstChild("TagGradient")
 	if tag and #tag.Colors > 1 and tag.Colors[1] ~= tag.Colors[2] then
 		gui.PlayerName.TextColor3 = Color3.new(1, 1, 1)
@@ -127,6 +147,16 @@ function NameTags.set(player, look, badge, rescue)
 	gui.Badge.TextColor3 = BADGES[badge or ""] or Color3.new(1, 1, 1)
 	gui.Rescue.Visible = look == "Downed" and (rescue or 0) > 0
 	gui.Rescue.Fill.Size = UDim2.fromScale(math.clamp(rescue or 0, 0, 1), 1)
+end
+
+-- After the save changes (a new title or name colour): redraws a lobby tag. A tag in a game keeps its role, and
+-- the next round sync redraws it anyway.
+function NameTags.restyle(player)
+	local head = player.Character and player.Character:FindFirstChild("Head")
+	local gui = head and head:FindFirstChild("HuzzTag")
+	if gui and gui:GetAttribute("Look") == nil and not gui.Badge.Visible then
+		NameTags.set(player, nil, nil, nil)
+	end
 end
 
 -- The Practice Bot's tag (HuzzServer/PracticeBot): CATCHER over its name, and "BOT" where players show their level.

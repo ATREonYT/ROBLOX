@@ -35,6 +35,9 @@ return {
 	-- Rescued runners can't be stabbed for Shield seconds (no camping the downed).
 	Rescue = { Range = 5.5, Time = 1.2, Shield = 2 },
 	-- The game's girl, big, floating over the middle of the map for the whole game (owner's call).
+	-- Studio testing only (ignored in the live game): every roll picks a girl of this rarity, e.g. "Secret" to see
+	-- the Secret girl's arrival cutscene every game. "" = the normal fair roll.
+	StudioTestRarity = "",
 	Showcase = {
 		Scale = 3, -- times her normal size
 		Height = 34, -- studs from the field's floor up to her feet (owner: higher)

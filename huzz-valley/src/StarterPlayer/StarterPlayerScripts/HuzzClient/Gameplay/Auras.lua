@@ -9,6 +9,7 @@
 	    then she appears beside you on the ground and hops and cheers. When you dance she steps beside you and
 	    dances too (Gameplay/CompanionDance). She never bumps anyone: her parts are in the "HuzzCompanion"
 	    collision group (Bootstrap), which collides with nothing (a Humanoid turns CanCollide back on by itself).
+	  - An aura you wear (Shop: Blossom Aura, or a Legendary / Mythic / Secret girl's reward) shows on you instead.
 	  - Equip a girl and YOU get her aura, in the lobby and in rounds (the owner's reference: flames on your
 	    hands, dark wisps, crescent slashes), small for Common to Epic and growing with rarity ("Player").
 	  - The big girl over the map wears her aura at 3x ("Showcase", tag HuzzShowcase).
@@ -277,15 +278,17 @@ function M.start()
 		local girls = ReplicatedStorage:FindFirstChild("HuzzGirls")
 		local source = girls and key ~= "" and girls:FindFirstChild(key)
 
-		-- the aura on the player (every rarity: Common is just a few faint motes)
+		-- the aura on the player (every rarity: Common is just a few faint motes). An aura they wear (the Blossom
+		-- Aura or a girl's reward: the character's HuzzAura, HuzzServer/CosmeticsService) takes its place.
 		local lite = p ~= Players.LocalPlayer
+		local worn = character and character:GetAttribute("HuzzAura")
 		local wantAura = alive and source ~= nil and (AuraLook.RANK[rarity] or 0) >= 1
-		local auraFor = if wantAura then key else nil
+		local auraFor = if alive and type(worn) == "string" then "worn:" .. worn elseif wantAura then key else nil
 		if s.auraFor ~= auraFor or s.auraChar ~= character then
 			clearAura(s)
 			s.auraChar = character
 			if auraFor then
-				local spec = AuraLook.build(lookOf(source:GetAttribute("Id"), rarity), rarity, "Player")
+				local spec = if type(worn) == "string" then AuraLook.worn(worn) else AuraLook.build(lookOf(source:GetAttribute("Id"), rarity), rarity, "Player")
 				if spec then
 					s.aura, s.auraFor = AuraFX.attach(character, spec, { lite = lite }), auraFor
 				end

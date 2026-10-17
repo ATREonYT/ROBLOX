@@ -3,8 +3,8 @@
 -- press Enter, and wait for "Done" in the Output window (about a minute). Run it again any time: images that
 -- already have an ID are skipped.
 -- What it does:
---   1. uploads each built-in picture (ReplicatedStorage > Shared > Images) to your Roblox account (or your group,
---      if the place belongs to one);
+--   1. uploads each built-in picture (ReplicatedStorage > Shared > Images, and the effect textures in
+--      ServerStorage > HuzzImages > Fx) to your Roblox account (or your group, if the place belongs to one);
 --   2. writes the new IDs into ReplicatedStorage > Shared > Config > ImageIds, which the game reads;
 --   3. puts each ID on the matching image in StarterGui > HuzzUI, so you see the pictures while editing.
 -- New uploads are checked by Roblox first, so a picture can stay grey for a few minutes.
@@ -24,9 +24,21 @@ if game.CreatorType == Enum.CreatorType.Group and game.CreatorId > 0 then
 	creatorType, creatorId = Enum.AssetCreatorType.Group, game.CreatorId
 end
 
+-- Where each kind of picture is packed. Fx (the effect textures, Shared/FxTexture) sits in ServerStorage so players
+-- never download it; an older place may still have it in Shared > Images > Fx.
+local function folderOf(kind: string): Instance?
+	if kind == "Fx" then
+		local images = game:GetService("ServerStorage"):FindFirstChild("HuzzImages")
+		local fx = images and images:FindFirstChild("Fx")
+		if fx then return fx end
+	end
+	return Shared.Images:FindFirstChild(kind)
+end
+
 local uploaded, skipped, failed = 0, 0, {}
-for _, kind in { "Icons", "Art", "Fx" } do -- (Fx: the girls' particle shapes, Shared/AuraLook)
-	for _, module in Shared.Images[kind]:GetChildren() do
+for _, kind in { "Icons", "Art", "Fx" } do
+	local folder = folderOf(kind)
+	for _, module in (if folder then folder:GetChildren() else {}) do
 		local key = kind .. "/" .. module.Name
 		if ids[key] and ids[key] ~= "" then
 			skipped += 1
@@ -35,7 +47,7 @@ for _, kind in { "Icons", "Art", "Fx" } do -- (Fx: the girls' particle shapes, S
 		local lastError
 		for _ = 1, 3 do
 			local ok, err = pcall(function()
-				local image = ImageLoader.editable(kind, module.Name)
+				local image = ImageLoader.editable(kind, module.Name, module)
 				local result, assetId = AssetService:CreateAssetAsync(image, Enum.AssetType.Image, {
 					Name = "HuzzValley " .. module.Name,
 					Description = "Huzz Valley UI picture",
@@ -66,7 +78,7 @@ for key in ids do table.insert(keys, key) end
 table.sort(keys)
 local lines = {
 	"-- Uploaded image IDs, written by tools/studio/upload-images.lua (run once in Studio's Command Bar).",
-	"-- Keys are \"Icons/<Name>\" and \"Art/<Name>\". Config/Assets checks here first.",
+	"-- Keys are \"Icons/<Name>\", \"Art/<Name>\" and \"Fx/<Name>\". Config/Assets and Shared/FxTexture check here first.",
 	"return {",
 }
 for _, key in keys do table.insert(lines, string.format('\t["%s"] = "%s",', key, ids[key])) end

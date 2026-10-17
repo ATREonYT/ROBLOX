@@ -252,7 +252,7 @@ function M.start()
 		-- The big girl over the map turns slowly and floats up and down.
 		for _, model in CollectionService:GetTagged("HuzzShowcase") do
 			local base = model:GetAttribute("Base")
-			if typeof(base) == "CFrame" and model.Parent then
+			if typeof(base) == "CFrame" and model.Parent and not model:GetAttribute("HuzzRevealing") then -- (Gameplay/SecretReveal moves her while it plays)
 				local S = RoundConfig.Showcase
 				model:PivotTo(base * CFrame.new(0, math.sin(now * 1.1) * S.Bob, 0) * CFrame.Angles(0, (now * S.Spin) % (2 * math.pi), 0))
 			end

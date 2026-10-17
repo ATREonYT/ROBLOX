@@ -5,6 +5,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Characters = require(ReplicatedStorage.Shared.Config.Characters)
 local Dances = require(ReplicatedStorage.Shared.Config.Dances)
 local CoinShop = require(ReplicatedStorage.Shared.Config.CoinShop)
+local Products = require(ReplicatedStorage.Shared.Config.Products)
+local CrownPose = require(ReplicatedStorage.Shared.CrownPose)
 local Crates = require(ReplicatedStorage.Shared.Config.Crates)
 local CrateRoll = require(ReplicatedStorage.Shared.CrateRoll)
 local Net = require(ReplicatedStorage.Shared.Net)
@@ -64,20 +66,32 @@ function VERBS.BuyWithCoins(player, key)
 	return ok, why
 end
 
--- Wear an owned item in its slot, or take the slot off (key = nil with a slot name).
+-- Wear an owned item in its slot, or take the slot off (key = nil with a slot name). Robux cosmetics (Config/Products)
+-- go in their own slot (Sunset Trail: Trail, Blossom Aura: Aura, Crown Pose: Pose, Midnight Outfit: Outfit).
 function VERBS.Wear(player, slot, key)
 	if type(slot) ~= "string" or not table.find(CoinShop.Slots, slot) then return false, "Unknown slot." end
 	if key ~= nil then
 		local item = type(key) == "string" and CoinShop.get(key)
-		local robuxTrail = key == "SunsetTrail" and slot == "Trail"
-		if not robuxTrail and not (item and item.Slot == slot) then return false, "That doesn't go there." end
+		local product = type(key) == "string" and Products.get(key)
+		local fits = (item and item.Slot == slot) or (product and product.Kind == "Cosmetic" and product.Slot == slot)
+		if not fits then return false, "That doesn't go there." end
 	end
 	local ok, why = false, nil
 	DataService.update(player, function(data)
 		if key ~= nil and not data.Cosmetics[key] then why = "You don't own this yet."; return end
-		data.Wear[slot] = key
+		data.Wear[slot] = if key == nil then "" else key -- ("" = taken off on purpose: Config/CoinShop.worn)
 		ok = true
 	end)
+	if ok and slot == "Pose" and key ~= nil then -- (put it on and you strike it once, so you see what you got)
+		task.delay(0.3, function()
+			local c = player.Character
+			local now = workspace:GetServerTimeNow()
+			-- (once per pose length at most: tapping WEAR fast never restarts it for the whole server)
+			if c and c:GetAttribute("HuzzPose") == key and now - (c:GetAttribute("HuzzPoseAt") or 0) > CrownPose.LENGTH + 0.5 then
+				c:SetAttribute("HuzzPoseAt", now)
+			end
+		end)
+	end
 	return ok, why
 end
 

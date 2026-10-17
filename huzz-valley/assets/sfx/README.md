@@ -49,3 +49,6 @@ volume. `speed_wind` is a loop: play it with `Sfx.loop`.
 | `revive.ogg` | 1.05 | 0:34.0 | Gentle rising swell into a warm chord and kalimba run when someone gets back up. |
 | `aura_pickup.ogg` | 0.80 | 0:35.5 | Satisfying thunk plus a bell and sparkle run for grabbing Aura. |
 | `speed_wind.ogg` | 2.00 | 0:36.7 | Soft wind bed for running fast (2 s, loops seamlessly; play it with Sfx.loop). |
+| `secret_riser.ogg` | 2.30 | 0:41.2 | The Secret girl's build-up: a dark hum and an airy whoosh rising together for 2.3 s into silence. |
+| `secret_impact.ogg` | 2.20 | 0:43.9 | The Secret girl bursts out: a deep soft boom, a bright bell chord and sparkles (not harsh). |
+| `secret_land.ogg` | 1.20 | 0:46.6 | She lands: a soft heavy thump with a shimmering ring spreading out. |

@@ -1,9 +1,13 @@
 // Draws a frames JSON (from scene.luau) with three.js in headless Chromium, then encodes an H.264 MP4.
 // Usage: node render.mjs frames.json out.mp4   (needs NODE_PATH with playwright, and ffmpeg)
 // Frame boxes: {p:[x,y,z] centre, r:[9] row-major rotation, s:[sx,sy,sz], c:"#rrggbb"}. Roblox axes (Y up, -Z forward).
-// Optional per frame: sprites [{p, s (width, studs), c, a (opacity), t (assets/fx name), r (rotation deg), add (glow)}]
-// and ribbons [{pts [[x,y,z]...], w [widths], a [opacities], c, add}] (camera-facing strips: the slashes).
-// Optional at the top: sky, ground (colours), grid (false to hide).
+// Optional per frame: sprites [{p, s (width, studs), c, a (opacity), t (assets/fx name, PascalCase or kebab), r (rotation
+// deg), add (glow), b (Brightness), g + f (flipbook grid and frame, 0 = top left), flat (a level quad, not camera-facing),
+// sq (Squash), v (velocity: VelocityParallel streaks)}], ribbons [{pts [[x,y,z]...], w [widths], a [opacities], c, cs
+// (a colour per point), add, t (texture along the strip)}] (camera-facing strips: slashes, trails), lights [{p, c, b
+// (Brightness), r (Range)}] (PointLights, up to 4) and caption (text drawn top left).
+// Optional at the top: sky, ground (colours), grid (false to hide), dim (0-1: daylight strength, for evening scenes),
+// stills [frame numbers, 0-based]: with MOTION3D_KEEP=<dir> those frames are also kept there as still_<n>.png.
 import { createRequire } from 'module';
 import fs from 'fs';
 import os from 'os';
@@ -32,8 +36,9 @@ const SKY = ${JSON.stringify(data.sky || '#9fd0f5')}, GROUND = ${JSON.stringify(
 scene.background = new THREE.Color(SKY);
 scene.fog = new THREE.Fog(SKY, 80, 220);
 const camera = new THREE.PerspectiveCamera(70, ${W} / ${H}, 0.1, 500); // Roblox default FOV
-scene.add(new THREE.HemisphereLight('#dff0ff', '#b89c70', 1.6));
-const sun = new THREE.DirectionalLight('#fff6e8', 1.8);
+const DIM = ${data.dim ?? 1};
+scene.add(new THREE.HemisphereLight(DIM < 1 ? '#9fb0e0' : '#dff0ff', DIM < 1 ? '#40384a' : '#b89c70', 1.6 * DIM));
+const sun = new THREE.DirectionalLight(DIM < 1 ? '#c8d4ff' : '#fff6e8', 1.8 * DIM);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
 Object.assign(sun.shadow.camera, { left: -25, right: 25, top: 25, bottom: -25, near: 1, far: 120 });
@@ -47,11 +52,42 @@ const grid = new THREE.GridHelper(400, 100, '#a88c55', '#a88c55'); // 4-stud cel
 grid.material.transparent = true; grid.material.opacity = 0.45; grid.position.y = 0.01;
 scene.add(grid);
 grid.visible = ${data.grid === false ? 'false' : 'true'};
-// particle pictures (assets/fx), loaded once
+// particle pictures (assets/fx), loaded once; found by file name ('flame-sheet') or game name ('FlameSheet')
 const loader = new THREE.TextureLoader();
 const tex = {};
-for (const n of ${JSON.stringify(fs.readdirSync(path.join(here, '../../../assets/fx')).map(f => f.replace('.png', '')))}) tex[n] = loader.load('./fx/' + n + '.png');
-for (const n of ['aura-star', 'aura-star-white']) tex[n] = loader.load('./icons/' + n + '.png'); // (the lobby's Aura stars)
+const loads = [];
+const addTex = (n, url) => {
+  let t;
+  loads.push(new Promise((ok) => { t = loader.load(url, ok, undefined, ok); }));
+  t.colorSpace = THREE.SRGBColorSpace;
+  tex[n] = tex[n.replace(/-/g, '')] = t;
+};
+for (const n of ${JSON.stringify(fs.readdirSync(path.join(here, '../../../assets/fx')).filter(f => f.endsWith('.png')).map(f => f.replace('.png', '')))}) addTex(n, './fx/' + n + '.png');
+for (const n of ['aura-star', 'aura-star-white']) addTex(n, './icons/' + n + '.png'); // (the lobby's Aura stars)
+const pick = (name) => tex[(name || 'glow').toLowerCase()] || tex.glow;
+// one frame of a flipbook sheet (Roblox reads frames left to right, top to bottom)
+const frames = {};
+const frameOf = (name, g, f) => {
+  const base = pick(name);
+  if (!g) return base;
+  const key = (name || '').toLowerCase() + '#' + g + '#' + f;
+  let t = frames[key];
+  if (!t) {
+    t = frames[key] = base.clone();
+    t.repeat.set(1 / g, 1 / g);
+    t.offset.set((f % g) / g, 1 - (Math.floor(f / g) + 1) / g);
+    t.needsUpdate = true;
+  }
+  return t;
+};
+const lights = [];
+for (let i = 0; i < 4; i++) { const l = new THREE.PointLight('#ffffff', 0, 10, 1); scene.add(l); lights.push(l); } // (a fixed count: no shader rebuilds)
+const caption = document.createElement('div');
+caption.style.cssText = 'position:fixed;left:18px;top:14px;font:700 22px/1.2 Helvetica,Arial,sans-serif;color:#fff;text-shadow:0 2px 3px #000,0 0 2px #000';
+document.body.appendChild(caption);
+const flats = [];
+const flatGeo = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2); // level, facing up
+const proj = new THREE.Vector3(), proj2 = new THREE.Vector3();
 const sprites = [];
 const ribbonMeshes = [];
 const unit = new THREE.BoxGeometry(1, 1, 1);
@@ -79,14 +115,49 @@ window.draw = (f) => {
     let s = sprites[i];
     if (!s) { s = sprites[i] = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthWrite: false })); scene.add(s); }
     const mat = s.material;
-    const want = tex[(q.t || 'glow').toLowerCase()] || tex.glow;
+    const want = frameOf(q.t, q.g, q.f || 0);
     if (mat.map !== want) { mat.map = want; mat.needsUpdate = true; }
     const blend = q.add ? THREE.AdditiveBlending : THREE.NormalBlending;
     if (mat.blending !== blend) { mat.blending = blend; mat.needsUpdate = true; }
-    mat.color.set(q.c); mat.opacity = q.a; mat.rotation = (q.r || 0) * Math.PI / 180;
-    s.position.set(q.p[0], q.p[1], q.p[2]); s.scale.set(q.s, q.s, 1); s.visible = true;
+    mat.color.set(q.c).multiplyScalar(q.b || 1); mat.opacity = q.a;
+    let rot = (q.r || 0) * Math.PI / 180;
+    if (q.v) { // VelocityParallel: the picture's top points along its flight on screen
+      proj.set(q.p[0], q.p[1], q.p[2]).project(camera);
+      proj2.set(q.p[0] + q.v[0], q.p[1] + q.v[1], q.p[2] + q.v[2]).project(camera);
+      rot = Math.atan2((proj2.y - proj.y) * ${H}, (proj2.x - proj.x) * ${W}) - Math.PI / 2;
+    }
+    mat.rotation = rot;
+    const k = q.sq ? Math.pow(2, q.sq) : 1; // Squash > 0: taller and narrower
+    s.position.set(q.p[0], q.p[1], q.p[2]); s.scale.set(q.s / k, q.s * k, 1); s.visible = !q.flat;
   });
   for (let i = sp.length; i < sprites.length; i++) sprites[i].visible = false;
+  // level quads (orient Flat: sigils, rings, halos), turning about the vertical with their rotation
+  let nf = 0;
+  sp.forEach((q) => {
+    if (!q.flat) return;
+    let mesh = flats[nf];
+    if (!mesh) {
+      mesh = flats[nf] = new THREE.Mesh(flatGeo, new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, side: THREE.DoubleSide }));
+      scene.add(mesh);
+    }
+    nf++;
+    const mat = mesh.material;
+    const want = frameOf(q.t, q.g, q.f || 0);
+    if (mat.map !== want) { mat.map = want; mat.needsUpdate = true; }
+    const blend = q.add ? THREE.AdditiveBlending : THREE.NormalBlending;
+    if (mat.blending !== blend) { mat.blending = blend; mat.needsUpdate = true; }
+    mat.color.set(q.c).multiplyScalar(q.b || 1); mat.opacity = q.a;
+    mesh.position.set(q.p[0], q.p[1], q.p[2]); mesh.rotation.set(0, -(q.r || 0) * Math.PI / 180, 0);
+    mesh.scale.set(q.s, 1, q.s); mesh.visible = true;
+  });
+  for (let i = nf; i < flats.length; i++) flats[i].visible = false;
+  const ls = asList(f.lights);
+  lights.forEach((l, i) => {
+    const q = ls[i];
+    if (!q) { l.intensity = 0; return; }
+    l.position.set(q.p[0], q.p[1], q.p[2]); l.color.set(q.c); l.intensity = q.b * 30; l.distance = q.r; l.decay = 1;
+  });
+  caption.textContent = f.caption || '';
   const rb = asList(f.ribbons);
   rb.forEach((q, i) => {
     let mesh = ribbonMeshes[i];
@@ -94,22 +165,26 @@ window.draw = (f) => {
       mesh = ribbonMeshes[i] = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, side: THREE.DoubleSide }));
       scene.add(mesh);
     }
-    const n = q.pts.length, pos = new Float32Array(n * 2 * 3), col = new Float32Array(n * 2 * 4), idx = [];
+    const n = q.pts.length, pos = new Float32Array(n * 2 * 3), col = new Float32Array(n * 2 * 4), uv = new Float32Array(n * 2 * 2), idx = [];
     const c = new THREE.Color(q.c), cam = new THREE.Vector3(...f.camera.pos);
     for (let k = 0; k < n; k++) {
       const p = new THREE.Vector3(...q.pts[k]);
       const a = new THREE.Vector3(...q.pts[Math.max(0, k - 1)]), b = new THREE.Vector3(...q.pts[Math.min(n - 1, k + 1)]);
       const dir = b.sub(a).normalize(), view = cam.clone().sub(p).normalize();
       const side = new THREE.Vector3().crossVectors(dir, view).normalize().multiplyScalar(q.w[k] / 2);
+      if (q.cs) c.set(q.cs[k]);
       [p.clone().add(side), p.clone().sub(side)].forEach((v, j) => {
         pos.set([v.x, v.y, v.z], (k * 2 + j) * 3);
         col.set([c.r, c.g, c.b, q.a[k]], (k * 2 + j) * 4);
+        uv.set([k / Math.max(1, n - 1), 1 - j], (k * 2 + j) * 2); // (Trail Stretch: the picture runs newest to oldest)
       });
       if (k < n - 1) idx.push(k * 2, k * 2 + 1, k * 2 + 2, k * 2 + 1, k * 2 + 3, k * 2 + 2);
     }
     mesh.geometry.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     mesh.geometry.setAttribute('color', new THREE.BufferAttribute(col, 4));
+    mesh.geometry.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
     mesh.geometry.setIndex(idx);
+    mesh.material.map = q.t ? pick(q.t) : null;
     mesh.material.blending = q.add ? THREE.AdditiveBlending : THREE.NormalBlending;
     mesh.material.needsUpdate = true;
     mesh.visible = true;
@@ -122,7 +197,7 @@ window.draw = (f) => {
   sun.position.set(lx + 30, 60, lz + 20);
   renderer.render(scene, camera);
 };
-window.ready = true;
+Promise.all(loads).then(() => { window.ready = true; });
 </script></body></html>`;
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'motion3d-'));
@@ -139,9 +214,14 @@ await page.route('http://motion3d.local/**', (route) => {
 });
 await page.goto('http://motion3d.local/index.html');
 await page.waitForFunction(() => window.ready === true);
+const keep = process.env.MOTION3D_KEEP;
+const stills = new Set(Array.isArray(data.stills) ? data.stills : []);
+if (keep) fs.mkdirSync(keep, { recursive: true });
 for (let i = 0; i < data.frames.length; i++) {
   await page.evaluate((f) => window.draw(f), data.frames[i]);
-  await page.screenshot({ path: path.join(tmp, `f_${String(i + 1).padStart(4, '0')}.png`) });
+  const shot = path.join(tmp, `f_${String(i + 1).padStart(4, '0')}.png`);
+  await page.screenshot({ path: shot });
+  if (keep && stills.has(i)) fs.copyFileSync(shot, path.join(keep, `still_${i}.png`));
 }
 await browser.close();
 execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-framerate', String(fps), '-i', path.join(tmp, 'f_%04d.png'),

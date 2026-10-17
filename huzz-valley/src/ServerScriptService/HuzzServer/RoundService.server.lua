@@ -29,6 +29,7 @@ local MapVoteService = require(script.Parent.MapVoteService)
 local KnifeService = require(script.Parent.KnifeService)
 local PowerService = require(script.Parent.PowerService)
 local NameTags = require(script.Parent.NameTagService)
+local SecretReveal = require(ReplicatedStorage.Shared.SecretReveal)
 local PracticeBot = require(script.Parent.PracticeBot)
 
 require(script.Parent.SafetyService).clean()
@@ -686,6 +687,12 @@ local function finishGame()
 		local won = not botWon and ((match.team == "Runners" and role == "Runner") or (match.team == "Catchers" and role == "Catcher"))
 		if won then
 			addStat(id, "Wins", 1)
+			-- Crown Pose (a Robux cosmetic): winners who wear it strike it (HuzzClient/Gameplay/CrownPose)
+			local c = byId[id] and byId[id].Character
+			local now = workspace:GetServerTimeNow()
+			if c and c:GetAttribute("HuzzPose") == "CrownPose" and now - (c:GetAttribute("HuzzPoseAt") or 0) > 4 then
+				c:SetAttribute("HuzzPoseAt", now)
+			end
 		end
 		-- pay for the game: coins for playing, more and a little Aura for winning
 		local p = byId[id]
@@ -753,6 +760,15 @@ local function runGame()
 		p:SetAttribute("HuzzGameAura", 0) -- (AuraPickupService adds the stars collected this game)
 	end
 	showShowcase()
+	-- A Secret girl arrives with a cutscene on every screen (HuzzClient/Gameplay/SecretReveal): she bursts out of an
+	-- orb of light, lands in the middle of the map and floats up to her place, then the game goes on.
+	if girl.rarity == "Secret" and showcase then
+		showcase:SetAttribute("RevealAt", Workspace:GetServerTimeNow())
+		setStage("Reveal", SecretReveal.LENGTH)
+		announce("Something rare is coming...", Color3.fromRGB(190, 170, 255), true)
+		task.delay(SecretReveal.LAND, announce, `SECRET: {girl.name}!`, Color3.fromRGB(150, 110, 255), true)
+		task.wait(SecretReveal.LENGTH)
+	end
 	local ids = {}
 	for id in byId do
 		table.insert(ids, id)

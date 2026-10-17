@@ -67,8 +67,12 @@ pcall(function()
 	game:GetService("StarterPlayer").CharacterJumpHeight = 0
 	game:GetService("StarterPlayer").CharacterJumpPower = 0
 end)
+local RewardService = require(HuzzServer.RewardService)
+RewardService.start() -- titles and looks from the girls you get (Config/CoinShop rewards)
 DataService.onChanged = function(player)
+	if #RewardService.sync(player) > 0 then return end -- (it changed the save: this runs again with the rewards)
 	CosmeticsService.refresh(player)
+	require(HuzzServer.NameTagService).restyle(player) -- (a new title or name colour shows in the lobby straight away)
 	CompanionService.refresh(player) -- (the equipped anime girl follows you: Gameplay/Auras)
 	-- a newly worn knife skin shows on your back straight away (a catcher's hand knife updates at the next sync)
 	local c = player.Character

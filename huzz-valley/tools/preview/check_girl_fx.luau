@@ -33,11 +33,50 @@ for _, kind in { "Player", "Companion", "Showcase" } do
 			handle.setEnabled(false)
 			handle.destroy()
 			local left = 0
-			for _, d in m:GetDescendants() do if d.Name:find("HuzzAura") or d.Name:find("HuzzSlash") then left += 1 end end
+			for _, d in m:GetDescendants() do if d.Name:find("HuzzAura") or d.Name:find("HuzzSlash") or d.Name:find("HuzzOrb") then left += 1 end end
 			check(kind .. " cleans up", left == 0)
 		end
 	end
 end
+
+-- The auras you wear (Shop: Blossom Aura; the girls' rewards): build, step (orbs circle, beats burst), clean up.
+-- Before the owner uploads our pictures, the flat shapes (magic circle, rings, halo) and the lightning stay off.
+do
+	local m = rig()
+	local handle = AuraFX.attach(m, AuraLook.worn("AuraSecret"))
+	local flat = 0
+	for _, d in m:GetDescendants() do
+		if d:IsA("ParticleEmitter") and (d.Orientation == Enum.ParticleOrientation.VelocityPerpendicular or d.Name == "Crackle") then flat += 1 end
+	end
+	check("before the upload: no stand-in blobs for circles, rings or lightning", flat == 0)
+	handle.destroy()
+end
+local ImageIds = require(RS.Shared.Config.ImageIds)
+for _, name in { "Sigil", "RingSoft", "RingHard", "Bolt", "Streak" } do ImageIds["Fx/" .. name] = "1" end -- (as if uploaded)
+for _, key in { "BlossomAura", "AuraLegend", "AuraMythic", "AuraSecret" } do
+	local spec = AuraLook.worn(key)
+	check(key .. " has a look", spec ~= nil)
+	local m = rig()
+	local okAttach, handle = pcall(AuraFX.attach, m, spec)
+	check(key .. " builds", okAttach)
+	if okAttach then
+		local okStep, err = pcall(function() for _ = 1, 120 do handle.step(1 / 30) end end)
+		check(key .. " steps: " .. tostring(err), okStep)
+		local orbs, flat = 0, 0
+		for _, d in m:GetDescendants() do
+			if d:IsA("Trail") then orbs += 1 end
+			if d:IsA("ParticleEmitter") and d.Orientation == Enum.ParticleOrientation.VelocityPerpendicular then flat += 1 end
+		end
+		check(key .. " orbs match the look", orbs == (if spec.orbs then spec.orbs.count else 0))
+		check(key .. " flat layers lie flat", flat >= (if key == "AuraSecret" or key == "AuraMythic" then 2 else 1))
+		handle.destroy()
+		local left = 0
+		for _, d in m:GetDescendants() do if d.Name:find("HuzzAura") or d.Name:find("HuzzSlash") or d.Name:find("HuzzOrb") then left += 1 end end
+		check(key .. " cleans up", left == 0)
+	end
+end
+for _, name in { "Sigil", "RingSoft", "RingHard", "Bolt", "Streak" } do ImageIds["Fx/" .. name] = nil end
+check("an unknown worn aura draws nothing", AuraLook.worn("Nope") == nil)
 
 -- The rarity ladder, for every element (and a girl with no look set).
 local RARITIES = { "Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Secret" }
@@ -154,6 +193,44 @@ do
 	end)
 	rose = highest > ROOT_H + 0.2
 	check(`companion hops when she cheers ({lowest} - {highest})`, rose and lowest < ROOT_H + 0.05 and highest <= ROOT_H + Companion.HopHeight + 0.01)
+end
+
+-- The Secret girl's arrival (Gameplay/SecretReveal): builds on a stand-in showcase, plays the whole timeline,
+-- puts her back where she floats for the game, and cleans up.
+do
+	local Reveal = require(game.StarterPlayer.StarterPlayerScripts.HuzzClient.Gameplay.SecretReveal)
+	local Timing = require(RS.Shared.SecretReveal)
+	local m = rig()
+	m.PrimaryPart = m.HumanoidRootPart
+	local base = CFrame.new(0, 40, 0)
+	m:PivotTo(base)
+	local okBuild, step, cleanup = pcall(Reveal.build, m, base)
+	check("secret reveal builds: " .. tostring(step), okBuild)
+	if okBuild then
+		local hidden, lastH
+		local okRun, err = pcall(function()
+			for t = 0, Timing.LENGTH, 1 / 30 do
+				local _, h = step(t, Vector3.new(0, 0, 1))
+				if t < Timing.IMPACT then hidden = (hidden ~= false) and m:GetPivot().Position.Y < -1000 end
+				lastH = h
+			end
+		end)
+		check("secret reveal plays: " .. tostring(err), okRun)
+		check("she's hidden until the impact", hidden == true)
+		check("she ends at her height over the map", lastH ~= nil and math.abs(lastH - Timing.height(Timing.LENGTH, 34)) < 0.01)
+		check("only one brightness pulse", (function()
+			local pulses, was = 0, false
+			for t = 0, Timing.LENGTH, 1 / 60 do
+				local _, _, _, p = Timing.grade(t)
+				local on = p > 0.05
+				if on and not was then pulses += 1 end
+				was = on
+			end
+			return pulses == 1
+		end)())
+		cleanup()
+		check("secret reveal cleans up", workspace:FindFirstChild("HuzzSecretReveal") == nil and game.Lighting:FindFirstChild("HuzzSecretGrade") == nil)
+	end
 end
 
 print(`fx smoke: {ok} ok, {failed} failed`)

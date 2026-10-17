@@ -26,6 +26,7 @@ local LEVEL = {
 	spin_tick = { 0.3, 0.02 }, spin_win = { 0.55, 0 }, spin_big_win = { 0.65, 0 },
 	lunge = { 0.5, 0.04 }, trap_set = { 0.45, 0 }, trap_snap = { 0.55, 0 }, knock_down = { 0.55, 0 },
 	revive = { 0.55, 0 }, aura_pickup = { 0.5, 0.02 }, speed_wind = { 0.22, 0 },
+	secret_riser = { 0.55, 0 }, secret_impact = { 0.65, 0 }, secret_land = { 0.55, 0 },
 }
 
 -- Roblox's own sounds standing in until ours are uploaded: { id, volume multiplier, pitch }.

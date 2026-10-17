@@ -715,6 +715,39 @@ def speed_wind():
     return level(norm(x))
 
 
+@sound("secret_riser", "The Secret girl's build-up: a dark hum and an airy whoosh rising together for 2.3 s into silence.")
+def secret_riser():
+    d = 2.3
+    x = 0.5 * whoosh(d, 180, 3200, peak=0.92, octaves=1.1, seed=131, lp=5000)
+    t = tt(d)
+    hum = warm(glide(55, 110, d, 2.2), d, attack=0.4, decay=0.05, hold=d - 0.5, vib=0.004)
+    add(x, hum * (0.6 + 0.4 * t / d), 0, 0.6)
+    add(x, pad(["C4", "G4", "C5"], d, attack=1.6, decay=0.1, hold=0.4, detune=0.006), 0, 0.5)
+    return finish(reverb(x, 0.2), d, lp=6000, fout=0.04)
+
+
+@sound("secret_impact", "The Secret girl bursts out: a deep soft boom, a bright bell chord and sparkles (not harsh).")
+def secret_impact():
+    d = 2.2
+    x = thunk(140, 38, 0.7, decay=0.25)
+    add(x, 0.35 * whoosh(0.5, 2400, 300, peak=0.15, seed=132, lp=4000), 0, 1)
+    for n in ["C5", "E5", "G5", "C6"]:
+        add(x, ebell(n, 1.6, decay=0.6), 0.01, 0.3)
+    add(x, pad(["C3", "G3", "C4", "E4"], 1.8, attack=0.02, decay=0.9, hold=0.2), 0.0, 0.7)
+    twinkle(x, ["G6", "C7", "E6", "G6", "C7"], 0.1, gap=0.07, level=0.15)
+    return finish(reverb(x, 0.28, tail=0.6), d, lp=6000, drive=1.1, fout=0.4)
+
+
+@sound("secret_land", "She lands: a soft heavy thump with a shimmering ring spreading out.")
+def secret_land():
+    d = 1.2
+    x = thunk(110, 40, 0.45, decay=0.14)
+    add(x, 0.3 * whoosh(0.6, 900, 200, peak=0.1, seed=133, lp=2500), 0, 1)
+    add(x, ebell("G5", 1.0, decay=0.4), 0.03, 0.25)
+    twinkle(x, ["C6", "E6", "G6"], 0.1, gap=0.08, level=0.12)
+    return finish(reverb(x, 0.22), d, lp=5000, fout=0.3)
+
+
 # ================================================================== output + checks
 def write_wav(path, x):
     pcm = np.clip(np.round(x * 32767), -32768, 32767).astype("<i2")

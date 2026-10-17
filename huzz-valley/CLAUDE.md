@@ -117,7 +117,7 @@ Owner's own words are in quotes. Read only the section you need.
   (per-player `last*` tables) and writes. Saved data only via `DataService.update(player, fn)`; new saved fields go
   in `DataService.Template` (`Reconcile` fills them for old saves). UI verbs go through `ActionService` `VERBS`.
 - **Round state is attributes,** not extra remotes (section 7). Read them with `GetAttributeChangedSignal`.
-- **Generated, never hand-edit:** `Shared/Images/**` (`tools/icons/pack_images.py`), `StarterGui/HuzzUI.rbxm` and
+- **Generated, never hand-edit:** `Shared/Images/**` and `ServerStorage/HuzzImages/**` (`tools/icons/pack_images.py`), `StarterGui/HuzzUI.rbxm` and
   `places/*.rbxl` (`build_place.sh`), `ServerStorage/HuzzAnimations.rbxm` (`tools/anim/extract_anims.luau`),
   `Config/DancePoses` (`motion3d/dance_poses.luau`), `Config/ImageIds` (written by the owner's upload helper).
 - **Guard Studio-only APIs** with `pcall` so the Lune harness and Studio both run (list in section 10).
@@ -260,6 +260,15 @@ Owner's own words are in quotes. Read only the section you need.
 - **Lore quests** (`Config/Progression.Chapters`): 4 chapters x 2 quests with a story line, opened in order
   (server-checked). Rewards: coins, Aura and three quest-only knives (Rookie, Hunter, Moonlit). Stats from real
   events: Rounds, Crossings, AuraStars, Heroes, Rescues, Catches, HoldSeconds, Wins.
+- **Cosmetic slots** (`CoinShop.Slots`: Trail, Tag, Knife, Aura, Title, Pose, Outfit; read with `CoinShop.worn(data, slot)`:
+  `""` = taken off on purpose, nil = an owned Robux cosmetic of that slot is worn). Robux cosmetics carry `Slot` in
+  `Config/Products`. **Rewards** (`Earn` items, Price 0): Secret/Mythic/Legendary girls give a title, aura and trail;
+  Girl Collector, Huss Hero, Guardian from stats. `RewardService.sync` grants them (never over a paid look).
+  Worn auras: `AuraLook.worn`; Crown Pose: `Shared/CrownPose` + `Gameplay/CrownPose` (cooldown); Midnight = tint + cape.
+- **Effect pictures** (`assets/fx`, `tools/fx/make_fx.py`, guide `docs/vfx-guide.md`) load through `Shared/FxTexture`
+  from uploaded IDs; until the owner uploads, stand-ins show and shapes gated by `FxTexture.ready` stay hidden.
+- **Secret cutscene:** `Shared/SecretReveal` (timeline, pure) + `Gameplay/SecretReveal` (effects, camera); the server
+  sets `RevealAt` and the `Reveal` stage. Test in Studio with `Config/Round.StudioTestRarity = "Secret"`.
 - **Crates** (`Config/Crates`, `Shared/CrateRoll` with odds + pity) are plumbed but empty until the owner designs them.
 
 ## 12. Sounds
@@ -286,6 +295,8 @@ Owner's own words are in quotes. Read only the section you need.
   colours); their 3D knife renders; power icons; a stab animation; crate contents; dance names; movement pack licence.
 - Owner's place notes (Oct 17): no Uncommon girls yet (the rarity is skipped until there are some); a plank path
   near the Halloween lobby and a basketball hoop sit loose in Workspace (not in a map folder).
+- Owner (Oct 17): new Shop ITEMS/COINS/DANCES and HOW TO PLAY mockups in `design/ui-oct17` (next); his Secret
+  cutscene reference (not sent yet). Not seen in Studio: Crown Pose, Midnight cape, worn auras, the cutscene.
 - Us: whatever the owner's next round of fixes asks for first; then the Gift Picker, more lore chapters.
 - Everything in sections 7 to 12 is the current version, open to change: tuning numbers (speeds, odds, prices,
   lunge, wheel prizes), looks and feel are first passes waiting for the owner's verdict in Studio.

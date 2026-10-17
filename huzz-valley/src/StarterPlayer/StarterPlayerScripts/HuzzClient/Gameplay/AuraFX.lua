@@ -11,14 +11,11 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AuraLook = require(Shared.AuraLook)
-local ImageIds = require(Shared.Config.ImageIds)
+local FxTexture = require(Shared.FxTexture) -- (our pictures once uploaded; Roblox's stand-ins until then)
 
 local AuraFX = {}
 
-local function texture(name)
-	local id = ImageIds["Fx/" .. name]
-	return if id and id ~= "" then id else AuraLook.TEXTURES[name]
-end
+local WHITE = Color3.new(1, 1, 1)
 
 local function colorSeq(list)
 	local keys = {}
@@ -77,6 +74,7 @@ function AuraFX.attach(model, spec, opts)
 	local glow = if big then 0.45 else 1
 	local made = {}
 	local emitters = {}
+	local beats = {}
 	local function keep(inst)
 		table.insert(made, inst)
 		return inst
@@ -84,15 +82,18 @@ function AuraFX.attach(model, spec, opts)
 
 	for _, e in spec.emitters do
 		local skip = lite and (string.sub(e.name, 1, 4) == "Core" or string.sub(e.name, 1, 5) == "Shard")
+		-- Shapes that only work as our own pictures (a magic circle, a ring, a halo, lightning) wait for the upload:
+		-- Roblox's stand-in sparkle would lie under you as a big blob.
+		if (e.orient == "Flat" or e.texture == "Bolt") and not FxTexture.ready(e.texture) then skip = true end
 		local part, offset = anchor(model, e.at, scale)
 		if part and not skip then
 			local att = keep(Instance.new("Attachment"))
 			att.Name = "HuzzAura" .. e.name
-			att.CFrame = offset
+			att.CFrame = offset * CFrame.new(0, (e.offset or 0) * scale, 0)
 			att.Parent = part
 			local p = Instance.new("ParticleEmitter")
 			p.Name = e.name
-			p.Texture = texture(e.texture)
+			if e.flip then FxTexture.flipbook(p, e.texture, e.flip, e.fps) else p.Texture = FxTexture.get(e.texture) end
 			p.Color = colorSeq(e.colors)
 			p.LightEmission = e.light * glow
 			p.LightInfluence = if e.light > 0.5 then 0 else 1
@@ -108,6 +109,24 @@ function AuraFX.attach(model, spec, opts)
 			p.RotSpeed = NumberRange.new(e.spin[1], e.spin[2])
 			p.ZOffset = (e.z or 0) * scale
 			p.VelocityInheritance = e.inherit or 0
+			p.Brightness = e.bright or 1
+			if e.squash then p.Squash = numberSeq(e.squash) end
+			if e.locked then p.LockedToPart = true end
+			if e.orient == "Flat" then
+				-- lies flat on the ground (or level over the head): a sigil or a halo (docs/vfx-guide.md 2.1)
+				p.Orientation = Enum.ParticleOrientation.VelocityPerpendicular
+				p.EmissionDirection = Enum.NormalId.Top
+				p.Speed = NumberRange.new(0.01)
+				p.SpreadAngle = Vector2.zero
+				p.Acceleration = Vector3.zero
+				p.LockedToPart = true
+			elseif e.orient == "Streak" then
+				p.Orientation = Enum.ParticleOrientation.VelocityParallel
+			end
+			if e.every then -- bursts on a beat (step) instead of a steady rate
+				p.Rate = 0
+				table.insert(beats, { emitter = p, every = e.every, count = e.count or 1, next = math.random() * e.every })
+			end
 			p.Parent = att
 			table.insert(emitters, p)
 		end
@@ -123,6 +142,45 @@ function AuraFX.attach(model, spec, opts)
 		light.Range = if big then math.min(spec.light.range * 1.3, 10) else spec.light.range * scale
 		light.Shadows = false
 		light.Parent = body
+	end
+
+	-- Orbs circling the body: each a glowing dot (a short-lived glow stream) with a trail behind it.
+	local orbs = {}
+	local O = spec.orbs
+	if O and body then
+		local count = if lite then math.max(1, math.floor(O.count / 2)) else O.count
+		for i = 1, count do
+			local top, bottom, centre = keep(Instance.new("Attachment")), keep(Instance.new("Attachment")), keep(Instance.new("Attachment"))
+			top.Name, bottom.Name, centre.Name = "HuzzOrbTop" .. i, "HuzzOrbBottom" .. i, "HuzzOrb" .. i
+			top.Parent, bottom.Parent, centre.Parent = body, body, body
+			local trail = keep(Instance.new("Trail"))
+			trail.Name = "HuzzOrbTrail" .. i
+			trail.Attachment0, trail.Attachment1 = top, bottom
+			if FxTexture.ready("Streak") then -- (a plain glowing ribbon until our streak picture is uploaded)
+				trail.Texture = FxTexture.get("Streak")
+				trail.TextureMode = Enum.TextureMode.Stretch
+			end
+			trail.Color = colorSeq({ { 0, WHITE }, { 0.25, O.colors[2] }, { 1, O.colors[3] } })
+			trail.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.1), NumberSequenceKeypoint.new(1, 1) })
+			trail.WidthScale = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(1, 0) })
+			trail.Lifetime = O.trail or 0.35
+			trail.LightEmission, trail.LightInfluence = glow, 0
+			trail.FaceCamera = true
+			trail.Parent = body
+			local dot = Instance.new("ParticleEmitter")
+			dot.Name = "Dot"
+			dot.Texture = FxTexture.get("Glow")
+			dot.Color = colorSeq({ { 0, WHITE }, { 1, O.colors[2] } })
+			dot.LightEmission, dot.LightInfluence, dot.Brightness = glow, 0, 2
+			dot.Size = numberSeq({ { 0, O.size }, { 1, O.size * 0.4 } }, scale)
+			dot.Transparency = numberSeq({ { 0, 0.1 }, { 1, 1 } })
+			dot.Lifetime = NumberRange.new(0.12, 0.18)
+			dot.Rate = 40
+			dot.Speed = NumberRange.new(0)
+			dot.Parent = centre
+			table.insert(emitters, dot)
+			table.insert(orbs, { top = top, bottom = bottom, centre = centre, trail = trail, phase = (i - 1) / count * math.pi * 2, tilt = (i % 2 * 2 - 1) * math.rad(O.tilt or 0) })
+		end
 	end
 
 	-- Crescent slashes: a small pool, reused. Each is two halves (start-middle, middle-end) so it's thick in the
@@ -169,10 +227,32 @@ function AuraFX.attach(model, spec, opts)
 
 	local handle = { enabled = true }
 	function handle.step(dt)
-		if not (S and body and body.Parent and handle.enabled) then
+		if not (body and body.Parent and handle.enabled) then
 			return
 		end
 		clock += dt
+		for _, b in beats do
+			if clock >= b.next then
+				b.next = clock + b.every
+				b.emitter:Emit(b.count)
+			end
+		end
+		if O then
+			local c = body.CFrame.Position
+			for _, o in orbs do
+				local a = clock * O.speed + o.phase
+				local flat = Vector3.new(math.cos(a), 0, math.sin(a)) * O.radius * scale
+				local tilted = CFrame.Angles(o.tilt, 0, 0):VectorToWorldSpace(flat)
+				local pos = c + tilted + Vector3.new(0, (O.height or 0.3) + math.sin(clock * 2 * math.pi * 1.3 + o.phase) * (O.bob or 0.4), 0) * scale
+				local h = 0.16 * scale
+				o.centre.WorldPosition = pos
+				o.top.WorldPosition = pos + Vector3.new(0, h, 0)
+				o.bottom.WorldPosition = pos - Vector3.new(0, h, 0)
+			end
+		end
+		if not S then
+			return
+		end
 		if clock >= spawnAt then
 			spawnAt = clock + (0.6 + math.random() * 0.8) / rate
 			for _, s in slashes do
@@ -223,6 +303,9 @@ function AuraFX.attach(model, spec, opts)
 		if light then
 			light.Enabled = on
 		end
+		for _, o in orbs do
+			o.trail.Enabled = on
+		end
 		if not on then
 			for _, s in slashes do
 				s.born = -1
@@ -238,7 +321,9 @@ function AuraFX.attach(model, spec, opts)
 		end
 		table.clear(made)
 		table.clear(slashes)
-		S = nil
+		table.clear(orbs)
+		table.clear(beats)
+		S, O = nil, nil
 	end
 	return handle
 end

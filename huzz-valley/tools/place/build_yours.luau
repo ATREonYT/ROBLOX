@@ -17,6 +17,7 @@ local SWAP = {
 	{ "StarterPlayer", "StarterPlayerScripts", "HuzzClient" },
 	{ "StarterGui", "HuzzUI" },
 	{ "ServerStorage", "HuzzStudioTools" },
+	{ "ServerStorage", "HuzzImages" }, -- (effect textures for the upload helper: tools/icons/pack_images.py)
 }
 local function at(game, path)
 	local inst = game:GetService(path[1])

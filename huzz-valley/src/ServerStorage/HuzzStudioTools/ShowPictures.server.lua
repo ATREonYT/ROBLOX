@@ -102,7 +102,14 @@ local function uploadPictures()
 	say("Uploading pictures... this takes about a minute. Studio may ask you to confirm.")
 	local uploaded, skipped, failed = 0, 0, {}
 	for _, kind in { "Icons", "Art", "Fx" } do
-		for _, module in Shared.Images[kind]:GetChildren() do
+		-- (Fx, the effect textures, is packed in ServerStorage > HuzzImages > Fx so players never download it; an older
+		-- place may still have it in Shared > Images > Fx.)
+		local folder = Shared.Images:FindFirstChild(kind)
+		if kind == "Fx" then
+			local images = game:GetService("ServerStorage"):FindFirstChild("HuzzImages")
+			folder = (images and images:FindFirstChild("Fx")) or folder
+		end
+		for _, module in (if folder then folder:GetChildren() else {}) do
 			local key = kind .. "/" .. module.Name
 			if ids[key] and ids[key] ~= "" then
 				skipped += 1
@@ -111,7 +118,7 @@ local function uploadPictures()
 			local lastError
 			for _ = 1, 3 do
 				local ok, err = pcall(function()
-					local image = ImageLoader.editable(kind, module.Name)
+					local image = ImageLoader.editable(kind, module.Name, module)
 					local result, assetId = AssetService:CreateAssetAsync(image, Enum.AssetType.Image, {
 						Name = "HuzzValley " .. module.Name,
 						Description = "Huzz Valley UI picture",
@@ -140,7 +147,7 @@ local function uploadPictures()
 	table.sort(keys)
 	local lines = {
 		"-- Uploaded image IDs, written by the Huzz Valley Studio helper (Upload Pictures).",
-		"-- Keys are \"Icons/<Name>\" and \"Art/<Name>\". Config/Assets checks here first.",
+		"-- Keys are \"Icons/<Name>\", \"Art/<Name>\" and \"Fx/<Name>\". Config/Assets and Shared/FxTexture check here first.",
 		"return {",
 	}
 	for _, key in keys do table.insert(lines, string.format('\t["%s"] = "%s",', key, ids[key])) end

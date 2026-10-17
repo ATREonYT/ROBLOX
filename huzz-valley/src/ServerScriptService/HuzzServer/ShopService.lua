@@ -39,6 +39,7 @@ local function grant(data, product): boolean
 		return true
 	elseif product.Kind == "Cosmetic" then
 		data.Cosmetics[product.Key] = true
+		if product.Slot then data.Wear[product.Slot] = product.Key end -- (a new buy is worn straight away)
 		return true
 	elseif product.Kind == "Spins" then -- Spin the Wheel spins (SpinService)
 		data.Spins = (data.Spins or 0) + (product.Amount or 0)
@@ -102,7 +103,10 @@ function ShopService.start()
 			if product.Kind == "Cosmetic" and data.Cosmetics[product.Key] then message = "You already own this."; return end
 			if data.Coins < product.CoinPrice then return end
 			data.Coins -= product.CoinPrice
-			if product.Kind == "Cosmetic" then data.Cosmetics[product.Key] = true end
+			if product.Kind == "Cosmetic" then
+				data.Cosmetics[product.Key] = true
+				if product.Slot then data.Wear[product.Slot] = product.Key end
+			end
 			result, message = true, nil
 		end)
 		return result, message
