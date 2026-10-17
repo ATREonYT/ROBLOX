@@ -6,6 +6,12 @@
 // sq (Squash), v (velocity: VelocityParallel streaks)}], ribbons [{pts [[x,y,z]...], w [widths], a [opacities], c, cs
 // (a colour per point), add, t (texture along the strip)}] (camera-facing strips: slashes, trails), lights [{p, c, b
 // (Brightness), r (Range)}] (PointLights, up to 4) and caption (text drawn top left).
+// Optional per frame too: env {sky, dim} (sky colour and daylight strength for that frame), fov (degrees, default 70), grades [{b, c, s, tint}] (ColorCorrectionEffects in order: Brightness
+// added, Contrast, Saturation, TintColor multiplied, drawn over everything like Roblox's), overlay {bg, lines [{a (deg),
+// w, len, c, x, y (offsets)}], fade [[pos, transparency]...]} (a full-screen ScreenGui frame: lines in a 2400 px square centred on the
+// screen, each from the square's edge inwards, see Gameplay/SecretReveal's impact frame). Boxes may add sh ("ball"),
+// n (Neon: unlit), a (opacity), add (additive) and e (0-1: a white Highlight fill). Ribbons may add u (a texture
+// coordinate per point, wrapping: Beam TextureMode Wrap).
 // Optional at the top: sky, ground (colours), grid (false to hide), dim (0-1: daylight strength, for evening scenes),
 // stills [frame numbers, 0-based]: with MOTION3D_KEEP=<dir> those frames are also kept there as still_<n>.png.
 import { createRequire } from 'module';
@@ -31,13 +37,43 @@ renderer.setSize(${W}, ${H});
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.body.appendChild(renderer.domElement);
+document.body.insertAdjacentHTML('beforeend', '<svg width="0" height="0" style="position:absolute"><filter id="grade" color-interpolation-filters="sRGB"><feColorMatrix id="gradeM" type="matrix" values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 1 0"/></filter></svg>');
+const overlay = document.createElement('canvas');
+overlay.width = ${W}; overlay.height = ${H};
+overlay.style.cssText = 'position:fixed;left:0;top:0;display:none';
+document.body.appendChild(overlay);
+// one ColorCorrectionEffect as a 4x5 matrix: tint (multiply), brightness (add), contrast (about 0.5), saturation
+const gradeMatrix = (g) => {
+  const b = g.b || 0, c = 1 + (g.c || 0), s = 1 + (g.s || 0);
+  const L = [0.2126, 0.7152, 0.0722];
+  const tv = (() => { const h = (g.tint || '#ffffff').replace('#', ''); return [0, 2, 4].map((i) => parseInt(h.substr(i, 2), 16) / 255); })();
+  const M = [];
+  for (let r = 0; r < 3; r++) {
+    const row = [0, 0, 0, 0, 0];
+    for (let k = 0; k < 3; k++) row[k] = c * ((1 - s) * L[k] * tv[k] + (r === k ? s * tv[k] : 0));
+    row[4] = c * b + 0.5 * (1 - c);
+    M.push(row);
+  }
+  M.push([0, 0, 0, 1, 0]);
+  return M;
+};
+const mul = (A, B) => { // A after B (4x5 affine)
+  const R = [];
+  for (let r = 0; r < 4; r++) {
+    const row = [0, 0, 0, 0, A[r][4]];
+    for (let k = 0; k < 4; k++) { for (let j = 0; j < 5; j++) row[j] += A[r][k] * B[k][j]; }
+    R.push(row);
+  }
+  return R;
+};
 const scene = new THREE.Scene();
 const SKY = ${JSON.stringify(data.sky || '#9fd0f5')}, GROUND = ${JSON.stringify(data.ground || '#e3cf9c')};
 scene.background = new THREE.Color(SKY);
 scene.fog = new THREE.Fog(SKY, 80, 220);
 const camera = new THREE.PerspectiveCamera(70, ${W} / ${H}, 0.1, 500); // Roblox default FOV
 const DIM = ${data.dim ?? 1};
-scene.add(new THREE.HemisphereLight(DIM < 1 ? '#9fb0e0' : '#dff0ff', DIM < 1 ? '#40384a' : '#b89c70', 1.6 * DIM));
+const hemi = new THREE.HemisphereLight(DIM < 1 ? '#9fb0e0' : '#dff0ff', DIM < 1 ? '#40384a' : '#b89c70', 1.6 * DIM);
+scene.add(hemi);
 const sun = new THREE.DirectionalLight(DIM < 1 ? '#c8d4ff' : '#fff6e8', 1.8 * DIM);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
@@ -60,6 +96,7 @@ const addTex = (n, url) => {
   let t;
   loads.push(new Promise((ok) => { t = loader.load(url, ok, undefined, ok); }));
   t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = THREE.RepeatWrapping; // (Beam Wrap: ribbons with u past 1 repeat the picture)
   tex[n] = tex[n.replace(/-/g, '')] = t;
 };
 for (const n of ${JSON.stringify(fs.readdirSync(path.join(here, '../../../assets/fx')).filter(f => f.endsWith('.png')).map(f => f.replace('.png', '')))}) addTex(n, './fx/' + n + '.png');
@@ -91,6 +128,7 @@ const proj = new THREE.Vector3(), proj2 = new THREE.Vector3();
 const sprites = [];
 const ribbonMeshes = [];
 const unit = new THREE.BoxGeometry(1, 1, 1);
+const ball = new THREE.SphereGeometry(0.5, 32, 16);
 const pool = [];
 const m = new THREE.Matrix4(), sc = new THREE.Matrix4();
 window.draw = (f) => {
@@ -98,9 +136,22 @@ window.draw = (f) => {
     let mesh = pool[i];
     if (!mesh) {
       mesh = pool[i] = new THREE.Mesh(unit, new THREE.MeshLambertMaterial());
+      mesh.userData.lit = mesh.material;
+      mesh.userData.neon = new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false });
       mesh.castShadow = mesh.receiveShadow = true;
       mesh.matrixAutoUpdate = false;
       scene.add(mesh);
+    }
+    mesh.geometry = b.sh === 'ball' ? ball : unit;
+    const lit = !b.n && !b.add && (b.a ?? 1) >= 1;
+    mesh.material = lit ? mesh.userData.lit : mesh.userData.neon;
+    mesh.castShadow = lit;
+    if (!lit) {
+      const nm = mesh.userData.neon, blend = b.add ? THREE.AdditiveBlending : THREE.NormalBlending;
+      if (nm.blending !== blend) { nm.blending = blend; nm.needsUpdate = true; }
+      nm.opacity = b.a ?? 1;
+    } else {
+      mesh.material.emissive.set('#ffffff').multiplyScalar(b.e || 0);
     }
     const r = b.r, p = b.p;
     m.set(r[0], r[1], r[2], p[0], r[3], r[4], r[5], p[1], r[6], r[7], r[8], p[2], 0, 0, 0, 1);
@@ -176,7 +227,7 @@ window.draw = (f) => {
       [p.clone().add(side), p.clone().sub(side)].forEach((v, j) => {
         pos.set([v.x, v.y, v.z], (k * 2 + j) * 3);
         col.set([c.r, c.g, c.b, q.a[k]], (k * 2 + j) * 4);
-        uv.set([k / Math.max(1, n - 1), 1 - j], (k * 2 + j) * 2); // (Trail Stretch: the picture runs newest to oldest)
+        uv.set([q.u ? q.u[k] : k / Math.max(1, n - 1), 1 - j], (k * 2 + j) * 2); // (Trail Stretch: the picture runs newest to oldest)
       });
       if (k < n - 1) idx.push(k * 2, k * 2 + 1, k * 2 + 2, k * 2 + 1, k * 2 + 3, k * 2 + 2);
     }
@@ -191,6 +242,36 @@ window.draw = (f) => {
   });
   for (let i = rb.length; i < ribbonMeshes.length; i++) ribbonMeshes[i].visible = false;
   const [cx, cy, cz] = f.camera.pos, [lx, ly, lz] = f.camera.look;
+  if (f.env) { // a per-frame sky colour and daylight (Lighting.ClockTime changing)
+    scene.background.set(f.env.sky); scene.fog.color.set(f.env.sky);
+    hemi.intensity = 1.6 * f.env.dim; sun.intensity = 1.8 * f.env.dim;
+  }
+  camera.fov = f.fov || 70;
+  camera.updateProjectionMatrix();
+  // the colour grades, over everything (as Roblox's post effects)
+  let G = [[1, 0, 0, 0, 0], [0, 1, 0, 0, 0], [0, 0, 1, 0, 0], [0, 0, 0, 1, 0]];
+  for (const g of asList(f.grades)) G = mul(gradeMatrix(g), G);
+  document.getElementById('gradeM').setAttribute('values', G.map((r) => r.join(' ')).join(' '));
+  renderer.domElement.style.filter = 'url(#grade)';
+  // a full-screen ScreenGui frame (the impact frame)
+  const o = f.overlay;
+  overlay.style.display = o ? 'block' : 'none';
+  if (o) {
+    const ctx = overlay.getContext('2d');
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = o.bg; ctx.fillRect(0, 0, ${W}, ${H});
+    for (const l of asList(o.lines)) {
+      const a = l.a * Math.PI / 180, r = 1200 - l.len / 2;
+      const x = l.x ?? 1200 + Math.round(Math.sin(a) * r), y = l.y ?? 1200 - Math.round(Math.cos(a) * r); // (offsets in the square)
+      ctx.setTransform(1, 0, 0, 1, ${W} / 2 - 1200 + x, ${H} / 2 - 1200 + y);
+      ctx.rotate(a);
+      const gr = ctx.createLinearGradient(0, -l.len / 2, 0, l.len / 2); // (UIGradient Rotation 90: top to bottom)
+      const col = new THREE.Color(l.c);
+      for (const [pos, tr] of asList(o.fade)) gr.addColorStop(pos, 'rgba(' + [col.r, col.g, col.b].map((x) => Math.round(x * 255)).join(',') + ',' + (1 - tr) + ')');
+      ctx.fillStyle = gr;
+      ctx.fillRect(-l.w / 2, -l.len / 2, l.w, l.len);
+    }
+  }
   camera.position.set(cx, cy, cz);
   camera.lookAt(lx, ly, lz);
   sun.target.position.set(lx, 0, lz); // shadow box follows what the camera looks at

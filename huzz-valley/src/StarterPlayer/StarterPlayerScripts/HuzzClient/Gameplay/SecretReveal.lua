@@ -3,7 +3,8 @@
 	server sets the Round stage "Reveal" and stamps RevealAt on the big girl over the map (HuzzShowcase); this
 	builds the effects locally and drives her and the camera from one timeline (docs/vfx-guide.md 4.1, 6.3):
 	  build-up  a growing orb (neon core in an energy shell), sparks rushing in, four lights circling it faster
-	            and faster on trails, a pillar of light, the world dimmed and cooled, the camera pushing in
+	            and faster on trails, a pillar of light, night on this screen under a violet grade (Shared/SecretReveal
+	            .clock: set on the first frame's camera cut; the sun rises again with her), the camera pushing in
 	  impact    a hit-stop, then a star burst, flying sparks, a shock ring in the air and one on the ground; she
 	            appears as a white silhouette that melts into her colours; one soft brightness pulse (the only
 	            flash, kid-safe), a camera kick and shake
@@ -70,8 +71,9 @@ end
 function M.build(model: Model, base: CFrame)
 	local k = (Config.Showcase.Scale or 3) / 3
 	local spot = base.Position - Vector3.new(0, Config.Showcase.Height, 0) -- (her pivot when she stands on the floor)
-	local _, size = model:GetBoundingBox()
-	local ground = spot - Vector3.new(0, size.Y / 2, 0) -- the floor under her
+	local box, size = model:GetBoundingBox() -- (she's still at `base` here)
+	-- the floor under her: her box's bottom when she stands (her pivot is her root part, not her middle)
+	local ground = Vector3.new(spot.X, box.Position.Y - size.Y / 2 - Config.Showcase.Height, spot.Z)
 	local orbAt = ground + Vector3.new(0, Reveal.ORB_HEIGHT * k + size.Y * 0.5, 0) -- the orb is where her middle appears
 	local folder = Instance.new("Folder")
 	folder.Name = "HuzzSecretReveal"
@@ -80,13 +82,16 @@ function M.build(model: Model, base: CFrame)
 	-- the orb: a neon core inside an energy shell, sparks sucked in, four lights circling on trails
 	local core = part({ Name = "Core", Shape = Enum.PartType.Ball, Material = Enum.Material.Neon, Color = WHITE, Size = Vector3.one * 0.5, CFrame = CFrame.new(orbAt) }, folder)
 	local shell = part({ Name = "Shell", Shape = Enum.PartType.Ball, Material = Enum.Material.ForceField, Color = VIOLET, Size = Vector3.one * 0.6, CFrame = CFrame.new(orbAt) }, folder)
-	local rush = emitter(shell, {
+	-- (sparks start on a sphere round the orb and die as they reach its middle: on the small shell they shot
+	-- straight through it and out the far side)
+	local rushBall = part({ Name = "Rush", Shape = Enum.PartType.Ball, Transparency = 1, Size = Vector3.one * 12 * k, CFrame = CFrame.new(orbAt) }, folder)
+	local rush = emitter(rushBall, {
 		Picture = { "Spark" }, Color = seq(WHITE, CYAN, VIOLET), LightEmission = 1, Brightness = 2,
 		Orientation = Enum.ParticleOrientation.VelocityParallel, Shape = Enum.ParticleEmitterShape.Sphere,
 		ShapeInOut = Enum.ParticleEmitterShapeInOut.Inward, ShapeStyle = Enum.ParticleEmitterShapeStyle.Surface,
 		Size = nseq({ { 0, 0.5 }, { 1, 0.15 } }), Squash = nseq({ { 0, 1 }, { 1, 2.5 } }),
-		Transparency = nseq({ { 0, 0.2 }, { 0.8, 0 }, { 1, 1 } }), Lifetime = NumberRange.new(0.35, 0.45),
-		Speed = NumberRange.new(14, 20),
+		Transparency = nseq({ { 0, 1 }, { 0.2, 0.2 }, { 0.8, 0 }, { 1, 1 } }), Lifetime = NumberRange.new(0.3, 0.36),
+		Speed = NumberRange.new(16 * k, 19 * k),
 	})
 	local orbiters = {}
 	for i = 1, 4 do
@@ -111,7 +116,7 @@ function M.build(model: Model, base: CFrame)
 	local base0 = Instance.new("Attachment"); base0.WorldPosition = ground; base0.Parent = Workspace.Terrain
 	local top0 = Instance.new("Attachment"); top0.WorldPosition = ground + Vector3.new(0, 90, 0); top0.Parent = Workspace.Terrain
 	local pillar = {}
-	for _, def in { { WHITE, 2.2 * k, 1, "Glow", 0 }, { VIOLET, 6 * k, 0.6, "Glow", 0 }, { CYAN, 4 * k, 1, "SwirlStrip", -2 } } do
+	for _, def in { { WHITE, 2.2 * k, 1, "BeamGlow", 0 }, { VIOLET, 6 * k, 0.6, "BeamGlow", 0 }, { CYAN, 4 * k, 1, "SwirlStrip", -2 } } do
 		local b = Instance.new("Beam")
 		b.Attachment0, b.Attachment1 = base0, top0
 		b.Color = ColorSequence.new(def[1])
@@ -158,13 +163,13 @@ function M.build(model: Model, base: CFrame)
 	local crescents = {}
 	for _, side in { -1, 1 } do
 		local a0, a1 = anchor(), anchor()
-		table.insert(crescents, { side = side, a0 = a0, a1 = a1, glow = lightBeam(a0, a1, VIOLET, 0.7, "Glow", 0), core = lightBeam(a0, a1, WHITE, 1, "SwirlStrip", -3) })
+		table.insert(crescents, { side = side, a0 = a0, a1 = a1, glow = lightBeam(a0, a1, VIOLET, 0.7, "BeamGlow", 0), core = lightBeam(a0, a1, WHITE, 1, "SwirlStrip", -3) })
 	end
 	local SLASH = rgb(255, 70, 150)
 	local slashes = {}
 	for i, at in Reveal.SLASHES do
 		local a0, a1 = anchor(), anchor()
-		local sl = { at = at, i = i, a0 = a0, a1 = a1, glow = lightBeam(a0, a1, SLASH, 0.8, "Glow", 0), core = lightBeam(a0, a1, WHITE, 1, "Glow", 0) }
+		local sl = { at = at, i = i, a0 = a0, a1 = a1, glow = lightBeam(a0, a1, SLASH, 0.8, "BeamGlow", 0), core = lightBeam(a0, a1, WHITE, 1, "BeamGlow", 0) }
 		for _, b in { sl.glow, sl.core } do -- (pointed ends: a beam can only taper one way, so its ends fade out)
 			b.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.3, 0), NumberSequenceKeypoint.new(0.7, 0), NumberSequenceKeypoint.new(1, 1) })
 		end
@@ -173,9 +178,10 @@ function M.build(model: Model, base: CFrame)
 	for _, c in crescents do c.glow.Transparency = NumberSequence.new(0.25) end
 	local eyeAt = orbAt + Vector3.new(0, size.Y * 0.28, 0)
 	local eyeGap = math.max(size.X * 0.2, 1.6 * k)
+	local EYE_W = 3.2
 	local eyes = {}
 	for _, side in { -1, 1 } do
-		local eye = part({ Name = "Eye", Material = Enum.Material.Neon, Color = PINK, Size = Vector3.new(2.6 * k, 0.55 * k, 0.3 * k), Transparency = 1 }, folder)
+		local eye = part({ Name = "Eye", Material = Enum.Material.Neon, Color = PINK, Size = Vector3.new(EYE_W * k, 0.6 * k, 0.3 * k), Transparency = 1 }, folder)
 		local flare = part({ Name = "Flare", Material = Enum.Material.Neon, Color = rgb(255, 160, 225), Size = Vector3.one * 0.05, Transparency = 1 }, folder)
 		table.insert(eyes, { side = side, eye = eye, flare = flare })
 	end
@@ -242,16 +248,18 @@ function M.build(model: Model, base: CFrame)
 	local landRing = flatEmitter({ Picture = { "RingSoft" }, Color = seq(WHITE, PINK, VIOLET), LightEmission = 1, Brightness = 1.5,
 		Size = nseq({ { 0, 3 * k }, { 0.15, 11 * k }, { 0.45, 16 * k }, { 1, 18 * k } }), Transparency = nseq({ { 0, 0 }, { 0.6, 0.3 }, { 1, 1 } }),
 		Lifetime = NumberRange.new(0.5) })
+	-- one sigil from the build-up to the landing (a new one every 0.8 s drew two at once, turning against each other)
+	local sigilLife = Reveal.LAND + 0.3 - (Reveal.BUILD - 0.1)
 	local sigil = flatEmitter({ Picture = { "Sigil" }, Color = seq(WHITE, VIOLET), LightEmission = 1, Brightness = 1.3,
-		Size = nseq({ { 0, 13 * k }, { 1, 14 * k } }), Transparency = nseq({ { 0, 1 }, { 0.2, 0.3 }, { 0.8, 0.3 }, { 1, 1 } }),
-		Lifetime = NumberRange.new(1.6), RotSpeed = NumberRange.new(25, 30), Rotation = NumberRange.new(0, 360), LockedToPart = true })
+		Size = nseq({ { 0, 13 * k }, { 1, 15 * k } }), Transparency = nseq({ { 0, 1 }, { 0.12, 0.3 }, { 0.88, 0.3 }, { 1, 1 } }),
+		Lifetime = NumberRange.new(sigilLife), RotSpeed = NumberRange.new(28), Rotation = NumberRange.new(0, 360), LockedToPart = true })
 	local dust = emitter(floor, { Picture = { "Wisp" }, Color = seq(rgb(220, 210, 255), rgb(120, 110, 160)), LightEmission = 0,
 		Shape = Enum.ParticleEmitterShape.Disc, ShapeStyle = Enum.ParticleEmitterShapeStyle.Surface, ShapePartial = 1,
 		ShapeInOut = Enum.ParticleEmitterShapeInOut.Outward, Size = nseq({ { 0, 2 * k }, { 1, 5 * k } }),
 		Transparency = nseq({ { 0, 0.4 }, { 1, 1 } }), Lifetime = NumberRange.new(0.5, 0.8), Speed = NumberRange.new(14 * k, 22 * k), Drag = 4 })
 	local butterflies = emitter(floor, { Picture = { "Butterfly", "Loop", 14 }, Color = seq(rgb(160, 215, 255), rgb(110, 160, 255)),
 		LightEmission = 0.6, Brightness = 1.4, Shape = Enum.ParticleEmitterShape.Disc, ShapeStyle = Enum.ParticleEmitterShapeStyle.Surface,
-		Size = nseq({ { 0, 0 }, { 0.1, 1.1 * k }, { 0.85, 1.1 * k }, { 1, 0 } }), Transparency = nseq({ { 0, 0.1 }, { 1, 0.4 } }),
+		Size = nseq({ { 0, 0 }, { 0.1, 2.2 * k }, { 0.85, 2.2 * k }, { 1, 0 } }), Transparency = nseq({ { 0, 0.1 }, { 1, 0.4 } }),
 		Lifetime = NumberRange.new(2, 2.5), Speed = NumberRange.new(2 * k, 4 * k), Acceleration = Vector3.new(0, 1.5 * k, 0),
 		SpreadAngle = Vector2.new(60, 60), Rotation = NumberRange.new(-25, 25), RotSpeed = NumberRange.new(-20, 20), Drag = 0.5 })
 	floor.Size = Vector3.new(6 * k, 0.2, 6 * k)
@@ -267,6 +275,8 @@ function M.build(model: Model, base: CFrame)
 	local grade = Instance.new("ColorCorrectionEffect")
 	grade.Name = "HuzzSecretGrade"
 	grade.Parent = Lighting
+	-- and night on this screen until she rises (Shared/SecretReveal.clock), the game's own time after
+	local day = Lighting.ClockTime
 
 	local all = { rush, star, sparks, shock, groundRing, landRing, sigil, dust, shards, streaks, butterflies }
 	local fired = {}
@@ -285,10 +295,10 @@ function M.build(model: Model, base: CFrame)
 		shell.Transparency = if orbSize > 0 then 0.2 else 1
 		core.Size = Vector3.one * math.max(orbSize, 0.05) * k
 		shell.Size = Vector3.one * math.max(orbSize * 1.25, 0.05) * k
-		rush.Rate = if orbSize > 0 and not stop then 40 + 50 * (orbSize / 3.5) else 0
+		rush.Rate = if orbSize > 0 and not stop then 40 + 50 * (orbSize / Reveal.ORB_MAX) else 0
 		for _, o in orbiters do
 			local a = t * spin + o.phase
-			local r = (5 - 2.5 * math.min(1, orbSize / 3.5)) * k
+			local r = (5 - 2.5 * math.min(1, orbSize / Reveal.ORB_MAX)) * k
 			local off = CFrame.Angles(o.tilt, 0, 0):VectorToWorldSpace(Vector3.new(math.cos(a) * r, 0, math.sin(a) * r))
 			o.a0.WorldPosition = orbAt + off + Vector3.new(0, 0.18, 0)
 			o.a1.WorldPosition = orbAt + off - Vector3.new(0, 0.18, 0)
@@ -299,7 +309,7 @@ function M.build(model: Model, base: CFrame)
 		for _, p in pillar do p.beam.Width0, p.beam.Width1 = p.width * pw, p.width * pw * 0.7 end
 		if t >= Reveal.BUILD - 0.1 then
 			once("sigil", function()
-				sigil.Rate = if FxTexture.ready("Sigil") then 1.25 else 0
+				if FxTexture.ready("Sigil") then sigil:Emit(1) end
 				Sfx.play("secret_riser") -- (ends in silence right before the impact: the hit sounds louder)
 			end)
 		end
@@ -312,14 +322,14 @@ function M.build(model: Model, base: CFrame)
 		local tall = 46 * k * math.max(grow, 0.02)
 		for _, c in crescents do
 			local out = side * c.side
-			local foot = ground + out * 3.8 * k
+			local foot = ground + out * 4.6 * k
 			local lean = math.rad(12)
 			-- a beam bends towards its attachments' X axes: both lean outwards at the ends, so it bows outwards
 			c.a0.WorldCFrame = CFrame.fromMatrix(foot, up * math.cos(lean) + out * math.sin(lean), dir)
-			c.a1.WorldCFrame = CFrame.fromMatrix(foot + up * tall - side * 0.12 * tall, up * math.cos(lean) - out * math.sin(lean), dir)
+			c.a1.WorldCFrame = CFrame.fromMatrix(foot + up * tall - side * 0.04 * tall, up * math.cos(lean) - out * math.sin(lean), dir)
 			for _, b in { c.glow, c.core } do b.CurveSize0, b.CurveSize1 = tall * 0.3, tall * 0.3 end
-			c.glow.Width0, c.glow.Width1 = 6 * k * cw, 3 * k * cw
-			c.core.Width0, c.core.Width1 = 1.2 * k * cw, 0.6 * k * cw
+			c.glow.Width0, c.glow.Width1 = 8 * k * cw, 4 * k * cw
+			c.core.Width0, c.core.Width1 = 1.8 * k * cw, 0.9 * k * cw
 		end
 		local heights = { 2.5, -1.5, 4.2, -3.2 }
 		for _, sl in slashes do
@@ -328,15 +338,15 @@ function M.build(model: Model, base: CFrame)
 			local mid = orbAt + up * heights[sl.i] * k + side * math.max(0, t - sl.at) * 30 * k * flip
 			sl.a0.WorldPosition = mid - side * 24 * k + up * 4 * k * flip
 			sl.a1.WorldPosition = mid + side * 24 * k - up * 4 * k * flip
-			sl.glow.Width0, sl.glow.Width1 = 1.8 * k * v, 1.8 * k * v
-			sl.core.Width0, sl.core.Width1 = 0.4 * k * v, 0.4 * k * v
+			sl.glow.Width0, sl.glow.Width1 = 2.6 * k * v, 2.6 * k * v
+			sl.core.Width0, sl.core.Width1 = 0.5 * k * v, 0.5 * k * v
 		end
 		local ev = if t >= Reveal.EYES and t < Reveal.IMPACT then math.clamp((t - Reveal.EYES) / 0.25, 0, 1) else 0
 		for _, e in eyes do
 			local p = eyeAt + side * e.side * eyeGap
 			-- slanted slits (inner ends lower, a fierce look), opening from a line
 			e.eye.CFrame = CFrame.fromMatrix(p, side, up) * CFrame.Angles(0, 0, math.rad(-14 * e.side))
-			e.eye.Size = Vector3.new(2.6 * k, math.max(0.55 * k * ev, 0.05), 0.3 * k)
+			e.eye.Size = Vector3.new(EYE_W * k, math.max(0.6 * k * ev, 0.05), 0.3 * k)
 			e.eye.Transparency = 1 - ev
 			e.flare.CFrame = CFrame.fromMatrix(p, side, up)
 			e.flare.Size = Vector3.new(math.max(8 * k * ev, 0.05), 0.22 * k, 0.22 * k)
@@ -366,7 +376,6 @@ function M.build(model: Model, base: CFrame)
 				dust:Emit(14)
 				butterflies.Rate = if FxTexture.ready("Butterfly") then 4 else 0
 				Sfx.play("secret_land")
-				sigil.Rate = 0
 			end)
 			local x = math.clamp((t - Reveal.LAND) / 0.45, 0, 1)
 			dome.Size = Vector3.one * (2 + 12 * (1 - (1 - x) ^ 3)) * k
@@ -383,14 +392,17 @@ function M.build(model: Model, base: CFrame)
 			model:PivotTo(base * CFrame.new(0, -2000, 0))
 		end
 		-- the world's colour
-		local b, s, tint, pulse = Reveal.grade(t)
+		local b, s, tint, pulse, contrast = Reveal.grade(t)
 		grade.Brightness = b + (if calm then 0 else 0.12 * pulse)
 		grade.Saturation = s
-		grade.TintColor = WHITE:Lerp(rgb(205, 180, 255), tint)
+		grade.Contrast = contrast
+		grade.TintColor = WHITE:Lerp(rgb(200, 170, 255), tint)
+		Lighting.ClockTime = Reveal.clock(t, day)
 		return orbAt, h
 	end
 
 	local function cleanup()
+		Lighting.ClockTime = day
 		folder:Destroy()
 		grade:Destroy()
 		frameGui:Destroy()
@@ -400,7 +412,7 @@ function M.build(model: Model, base: CFrame)
 		top0:Destroy()
 		for _, p in pillar do p.beam:Destroy() end
 	end
-	return step, cleanup, ground, k
+	return step, cleanup, ground, k, size.Y / 2
 end
 
 function M.start()
@@ -413,7 +425,7 @@ function M.start()
 		if Workspace:GetServerTimeNow() - at > Reveal.RETURN then return end -- (joined late: she's already up there)
 		playing = true
 		model:SetAttribute("HuzzRevealing", true) -- (Gameplay/CarryAnimator leaves her to us meanwhile)
-		local ok, step, cleanup, ground, k = pcall(M.build, model, base)
+		local ok, step, cleanup, ground, k, mid = pcall(M.build, model, base)
 		if not ok then
 			warn("[Huzz] Secret reveal couldn't start: " .. tostring(step))
 			model:SetAttribute("HuzzRevealing", nil)
@@ -448,7 +460,7 @@ function M.start()
 			end
 			local okStep, err = pcall(function()
 				local _, h = step(t, dir)
-				local eye, look = Reveal.camera(math.min(t, Reveal.RETURN), ground + Vector3.new(0, 0.5, 0), dir, h or Config.Showcase.Height, k)
+				local eye, look = Reveal.camera(math.min(t, Reveal.RETURN), ground + Vector3.new(0, 0.5, 0), dir, h or Config.Showcase.Height, k, mid)
 				local cf = CFrame.lookAt(eye, look)
 				local fov = Reveal.fov(t, Motion.reduced)
 				if t > Reveal.RETURN then -- ease back to where your camera was

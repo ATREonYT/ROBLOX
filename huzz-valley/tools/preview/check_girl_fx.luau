@@ -204,6 +204,7 @@ do
 	m.PrimaryPart = m.HumanoidRootPart
 	local base = CFrame.new(0, 40, 0)
 	m:PivotTo(base)
+	game.Lighting.ClockTime = 14.2 -- (Lune's Lighting starts without one; the cutscene makes it night and back)
 	local okBuild, step, cleanup = pcall(Reveal.build, m, base)
 	check("secret reveal builds: " .. tostring(step), okBuild)
 	if okBuild then
@@ -228,8 +229,18 @@ do
 			end
 			return pulses == 1
 		end)())
+		check("night during the build-up", Timing.clock(1, 14.2) == Timing.NIGHT and Timing.clock(Timing.LENGTH, 14.2) == 14.2)
+		check("the sun comes back up evenly (no jump over dawn)", (function()
+			local last = Timing.clock(Timing.RISE, 14.2)
+			for t = Timing.RISE, Timing.RISE + Timing.BACK, 1 / 60 do
+				local c = Timing.clock(t, 14.2)
+				if c >= 5.3 and c <= 7.1 and last >= 5.3 and c - last > 0.06 then return false end
+				last = c
+			end
+			return true
+		end)())
 		cleanup()
-		check("secret reveal cleans up", workspace:FindFirstChild("HuzzSecretReveal") == nil and game.Lighting:FindFirstChild("HuzzSecretGrade") == nil)
+		check("secret reveal cleans up", workspace:FindFirstChild("HuzzSecretReveal") == nil and game.Lighting:FindFirstChild("HuzzSecretGrade") == nil and math.abs(game.Lighting.ClockTime - 14.2) < 1e-3)
 	end
 end
 

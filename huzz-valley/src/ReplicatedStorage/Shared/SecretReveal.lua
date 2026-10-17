@@ -4,7 +4,8 @@
 	game"). The timing and the camera as plain numbers (pure: no Roblox instances), so the game
 	(HuzzClient/Gameplay/SecretReveal builds the effects) and an offline video show the same.
 	After docs/vfx-guide.md 6.3: build-up (55-65% of the time), one impact, aftermath.
-	  0.0  wide shot of the middle of the map; the world dims and cools; a hum starts
+	  0.0  wide shot of the middle of the map: it's night (your screen only, set on the cut so nothing visibly
+	       changes) under a violet grade, the reference's dark purple sky, until she rises; a hum starts
 	  0.4  an orb of light grows over the spot, sparks rush into it, lights circle it faster and faster, a pillar
 	       of light rises; the camera pushes in
 	  1.2  two curved crescents of light rise either side; from 1.75 bright lines slash across between them
@@ -15,8 +16,9 @@
 	       brightness pulse right after (frame and pulse are one moment: the only flash, kid-safe); camera kicks out
 	  2.72 she drops to the ground ...
 	  3.1  ... and lands: a ring and a dome burst out, dust; the camera cuts low to her
-	  3.1  slow orbit round her while the world's colour comes back; blue butterflies drift up round her
-	  5.0  she floats up to her place over the map (where she stays all game); the camera tilts up after her
+	  3.1  slow orbit round her in the dark; blue butterflies drift up round her
+	  5.0  she floats up to her place over the map (where she stays all game); the camera tilts up after her and
+	       the sun comes back up (night to day over 1.6 s: a sunrise, no pop)
 	  7.0  the camera eases back to you (no hard cut, no black bars), and the game goes on
 	Reduced Motion: the same shots without shake, the kick, the impact frame or the brightness pulse.
 ]]
@@ -51,11 +53,12 @@ local function easeOut(x: number): number
 	return 1 - (1 - x) ^ 3
 end
 
--- The orb's size (studs, 0 = gone) and how fast the lights circle it (radians per second).
+SecretReveal.ORB_MAX = 2.7
+-- The orb's size (studs, 0 = gone; at most ORB_MAX) and how fast the lights circle it (radians per second).
 function SecretReveal.orb(t: number): (number, number)
 	if t < SecretReveal.BUILD or t >= SecretReveal.IMPACT then return 0, 0 end
 	local x = clamp01((t - SecretReveal.BUILD) / (SecretReveal.HOLD - SecretReveal.BUILD))
-	return 0.5 + 3 * easeIn(x), 2 + 7 * easeIn(x)
+	return 0.5 + 2.2 * easeIn(x), 2 + 7 * easeIn(x) -- (at most 2.7: a bigger glowing ball hid the eyes over it)
 end
 
 -- Her height over the landing spot (studs, before scaling), or nil while she isn't there yet.
@@ -69,16 +72,33 @@ function SecretReveal.height(t: number, top: number): number?
 	return top * smooth((t - SecretReveal.RISE) / (SecretReveal.RETURN - SecretReveal.RISE))
 end
 
--- The world's grade: brightness, saturation, tint amount (0..1) and the impact pulse (0..1).
-function SecretReveal.grade(t: number): (number, number, number, number)
-	local dim = if t < SecretReveal.IMPACT then smooth(t / 0.4) else 1 - smooth((t - SecretReveal.LAND) / 0.8)
-	if t > SecretReveal.LAND + 0.8 then dim = 0 end
+-- The time of day on your screen (Lighting.ClockTime): night from the first frame (a camera cut hides the switch)
+-- until she rises, then the sun comes back up to the game's own time `day`. A ColorCorrection can't make a sunny sky
+-- dark purple without dimming the light effects just as much (filmed: tools/preview/motion3d/secret_scene.luau).
+SecretReveal.NIGHT = 0 -- midnight
+SecretReveal.BACK = 1.6 -- seconds from RISE for the day (and the colour) to come back
+function SecretReveal.clock(t: number, day: number): number
+	if t < 0 or t >= SecretReveal.RISE + SecretReveal.BACK then return day end
+	if t < SecretReveal.RISE then return SecretReveal.NIGHT end
+	-- through the dark hours quickly, then most of the time on the dawn itself (5.2 to 7.2), so the screen brightens
+	-- evenly over about a second (a straight sweep crossed dawn in 0.1 s: a jump like a flash), then up to `day`
+	local x = (t - SecretReveal.RISE) / SecretReveal.BACK
+	local target = if day < 7.2 then day + 24 else day
+	if x < 0.1 then return SecretReveal.NIGHT + (5.2 - SecretReveal.NIGHT) * smooth(x / 0.1) end
+	if x < 0.85 then return 5.2 + 2 * (x - 0.1) / 0.75 end
+	return (7.2 + (target - 7.2) * smooth((x - 0.85) / 0.15)) % 24
+end
+
+-- The world's grade: brightness, saturation, tint amount (0..1), the impact pulse (0..1) and contrast.
+-- On from the start until she rises (the reference stays night all through), off over the sunrise.
+function SecretReveal.grade(t: number): (number, number, number, number, number)
+	local dim = if t < SecretReveal.RISE then smooth(t / 0.4) else 1 - smooth((t - SecretReveal.RISE) / SecretReveal.BACK)
 	local pulse = 0
 	if t >= SecretReveal.IMPACT and t < SecretReveal.IMPACT + 0.45 then
 		local x = (t - SecretReveal.IMPACT) / 0.45
 		pulse = if x < 0.11 then x / 0.11 else 1 - smooth((x - 0.11) / 0.89)
 	end
-	return -0.18 * dim, -0.35 * dim, dim, pulse
+	return -0.06 * dim, 0.1 * dim, dim, pulse, 0.12 * dim
 end
 
 -- Is the impact frame on screen? (one short hold right at the impact; never with Reduced Motion)
@@ -114,8 +134,10 @@ end
 
 -- The camera: eye and look-at, relative to the landing spot `at` (a Vector3), looking from `dir` (a flat unit
 -- Vector3 from the spot towards the viewer), with her current height `h` and scale `k` (1 = Config/Round's 3x).
+-- `mid` (studs, optional): half her height, so the build-up looks straight at the orb (it sits where her middle
+-- appears) and the eyes over it stay in frame.
 -- Before the return; Gameplay/SecretReveal blends back to the player's own camera after RETURN.
-function SecretReveal.camera(t: number, at: Vector3, dir: Vector3, h: number, k: number): (Vector3, Vector3)
+function SecretReveal.camera(t: number, at: Vector3, dir: Vector3, h: number, k: number, mid: number?): (Vector3, Vector3)
 	local up = Vector3.new(0, 1, 0)
 	local side = dir:Cross(up)
 	local orbH = SecretReveal.ORB_HEIGHT * k
@@ -123,7 +145,7 @@ function SecretReveal.camera(t: number, at: Vector3, dir: Vector3, h: number, k:
 		-- wide, then pushing in on the orb
 		local x = smooth((t - SecretReveal.BUILD) / (SecretReveal.HOLD - SecretReveal.BUILD))
 		local dist = (44 - 14 * x) * k
-		return at + dir * dist + up * (10 + 2 * x) * k + side * 4 * k, at + up * orbH
+		return at + dir * dist + up * (10 + 2 * x) * k + side * 4 * k, at + up * (orbH + (mid or 0))
 	elseif t < SecretReveal.LAND then
 		-- holding on the drop
 		return at + dir * 30 * k + up * 11 * k + side * 4 * k, at + up * (h + 4 * k)

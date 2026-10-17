@@ -307,8 +307,9 @@ Owner's own words are in quotes. Read only the section you need.
 - **Secret cutscene:** `Shared/SecretReveal` (timeline, pure) + `Gameplay/SecretReveal` (effects, camera); the server
   sets `RevealAt` and the `Reveal` stage. Test in Studio with `Config/Round.StudioTestRarity = "Secret"`.
   Oct 17 reference (`design/vfx/ref3`): twin light beams, crossing slashes, glowing eyes, a 0.09 s manga impact frame
-  (ScreenGui, skipped with Reduced Motion), shards/streaks/butterflies (wait for upload). Framing sketch:
-  `tools/preview/secret_sketch.py` (layout only; motion and glow need Studio).
+  (ScreenGui, skipped with Reduced Motion), shards/streaks/butterflies (wait for upload), night on your screen until
+  she rises (`SecretReveal.clock`, sunrise back). Film: `motion3d/secret_scene.luau` runs the real module on Lune
+  instances (`docs/previews/secret-cutscene.mp4`, `-slow`, sheet `secret-vs-ref3.jpg` via `tools/preview/secret_vs_ref.py`).
 - **Crates** (`Config/Crates`, `Shared/CrateRoll` with odds + pity) are plumbed but empty until the owner designs them.
 
 ## 12. Sounds

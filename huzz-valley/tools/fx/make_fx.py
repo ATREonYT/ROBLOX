@@ -642,6 +642,16 @@ def glow():
     img.putalpha(Image.fromarray(al, 'L'))
     img.save(os.path.join(OUT, 'glow.png'))
 
+# --- beam glow (256 x 64): soft across, the same all along (a Beam wraps it every TextureLength without beads, unlike the
+# round Glow). The Secret cutscene's light beams, slashes and pillar glow -------------------------------------------------------
+def beam_glow():
+    W, H = 256, 64
+    v = np.abs(np.arange(H) - (H - 1) / 2) / (H / 2)
+    al = (np.clip(1 - v, 0, 1) ** 2 * 255).round().astype(np.uint8)
+    img = Image.new('RGBA', (W, H), (255, 255, 255, 0))
+    img.putalpha(Image.fromarray(np.repeat(al[:, None], W, axis=1), 'L'))
+    img.save(os.path.join(OUT, 'beam-glow.png'))
+
 # --- butterfly (2x2 sheet, 256): seen from above, one wing beat (open, half, edge-on, half). Owner's Oct 17 VFX
 # reference (design/vfx/ref3): blue butterflies drift round the Secret girl after she lands ----------------------------------
 def butterfly_frame(i, n, C):
@@ -669,7 +679,7 @@ def butterfly_frame(i, n, C):
     return a
 
 
-crescent(); ring_hard(); ring_soft(); spark(); swirl(); swirl_strip(); streak(); sigil(); crown(); moon(); glow()
+crescent(); ring_hard(); ring_soft(); spark(); swirl(); swirl_strip(); streak(); sigil(); crown(); moon(); glow(); beam_glow()
 sheet('burst-star', 2, 256, 10, burst_frame)
 sheet('twinkle', 2, 128, 8, twinkle_frame)
 sheet('bolt', 2, 256, 10, bolt_frame)
