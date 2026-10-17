@@ -52,12 +52,16 @@ return {
 	-- from the first frame, held to 0.30 s, upright by ~0.40 s, running again by 0.5 s.
 	Dash = {
 		Length = 0.42, In = 0.05, Out = 0.12, -- seconds: total, blend in, blend out (full pose 0.05 to 0.30 s)
-		Crouch = 0.5, -- studs lower (HV's silhouette drops ~13%)
+		-- (critic, Oct 17: 0.5 / 20 / 6 / 34 read as a stiff tilt; HV's huss is a wide low crouch, torso fairly upright)
+		Crouch = 0.75, -- studs lower: a real crouch (was 0.5; 0.85 dropped the head 21%, past HV's measured ~13-20%)
 		SideShift = 0.3, -- hips shift this far the way you go
-		SideRoll = 20, -- hips tip into the move...
-		SideWaist = 6, -- ...and the chest a little more: 28 degrees in all
+		SideRoll = 12, -- hips tip into the move only a little (was 20)...
+		SideWaist = 14, -- ...the chest bends into it more (was 6): ~26 degrees in all, bent at the waist, not a tilt
 		SideHead = 20, -- the head stays nearly upright, looking ahead
-		SideSplay = 34, -- the outside leg kicks out
+		SideSplay = 55, -- the outside leg kicks out wide (was 34)
+		LeadHip = 45, -- the inside leg's thigh comes up (was 30)...
+		LeadSplay = 42, -- ...and out to the side too (was 30), so both legs spread wide like HV's
+		LeadKnee = -80, -- ...and its knee folds deep under you (was -52)
 		LungeLean = 38, -- (forward dash: unused since the huss went sideways only)
 		-- The white speed lines behind anyone who husses (Gameplay/Feel, seen by everyone near): HV shows 5-6 thin
 		-- horizontal lines trailing behind along the move, ~20-25% of the screen wide, for ~0.3 s. They ride with
@@ -70,5 +74,14 @@ return {
 			-- height over the root, how far in front (+) or behind, and each line's length scale
 			{ 1.4, 0.15, 0.8 }, { 0.8, -0.25, 1 }, { 0.2, 0.1, 0.7 }, { -0.4, -0.15, 0.95 }, { -1.0, 0.25, 0.75 }, { -1.7, -0.05, 0.6 },
 		},
+	},
+	-- The cast pose (owner: "make the usage of items smoother"; critic: powers had no body move at all): while a
+	-- power winds up (Config/Powers.Fx WindUp, 0.15 to 0.25 s) the body reaches both arms forward and up and leans
+	-- into it, then lets go as the effect bursts. Drawn by Shared/RunMotion on everyone (Gameplay/RunAnimator).
+	Cast = {
+		In = 0.06, Out = 0.14, -- seconds: blend in, blend out after the wind-up
+		ArmsUp = 60, -- degrees above straight ahead (forward and up: reads from the camera behind you)
+		ArmsOut = 12, -- degrees the arms open into a V
+		Lean = 10, -- degrees the body leans forward into the cast
 	},
 }

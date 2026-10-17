@@ -246,6 +246,7 @@ function Dash.try()
 	local at = Workspace:GetServerTimeNow()
 	c:SetAttribute("DashDir", dir) -- on this screen at once; the server sets the same for everyone
 	c:SetAttribute("DashAt", at)
+	c:SetAttribute("HuzzMyDashAt", at) -- (local only: the server's copy of DashAt arriving later is the same huss, RunMotion.dashAt)
 	Net.get("Dash"):FireServer(dir, at, facing) -- (the facing we're turning to: the server may not have it yet)
 	Sfx.play("dash")
 	if PUBLISHED_RUN then

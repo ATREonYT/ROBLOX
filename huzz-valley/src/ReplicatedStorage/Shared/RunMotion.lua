@@ -10,6 +10,7 @@
 	        too: Gameplay/RunAnimator), so everyone sees the same huss. (Forward and back poses stay for old saves
 	        of DashDir but the huss is sideways only.)
 	Walking pace keeps Roblox's own walk; the run blends in with speed.
+	Cast: while a power winds up, both arms reach forward and up and the body leans in (Config/Run.Cast).
 	pushSpeed: the huss's (and the lunge's) ground speed `age` seconds in, easing from Speed to EndSpeed.
 
 	Pure maths on R15 joints, so the offline preview runs this exact code; HuzzClient/Gameplay/
@@ -88,6 +89,20 @@ function RunMotion.pushSpeed(cfg, age)
 	return finish + (cfg.Speed - finish) * u * u
 end
 
+-- When a character's huss started (server time), or nil. Your own huss is stamped twice: at once on your screen
+-- (Gameplay/Dash also keeps that time in the local-only attribute HuzzMyDashAt), then by the server, which may move
+-- it up to ~0.15 s (more on a laggy link). A DashAt within 0.6 s of your own local stamp is that same huss, so the
+-- local time wins and the lean, the lines and the lean pause never start over.
+RunMotion.SAME_HUSS = 0.6
+function RunMotion.dashAt(character)
+	local at = character:GetAttribute("DashAt")
+	local mine = character:GetAttribute("HuzzMyDashAt")
+	if type(at) == "number" and type(mine) == "number" and abs(at - mine) < RunMotion.SAME_HUSS then
+		return mine
+	end
+	return if type(at) == "number" then at else nil
+end
+
 -- How far a push carries you (studs), for the checks and the simulation.
 function RunMotion.pushDistance(cfg)
 	local finish = cfg.EndSpeed or cfg.Speed
@@ -162,8 +177,8 @@ local function dashPose(J, dir, carrying)
 		poses[J.root] = CFrame.new(D.SideShift * side, -D.Crouch, 0) * CarryMath.inJoint(J.root, angles(-12, -5 * side, -D.SideRoll * side))
 		poses[J.waist] = CarryMath.inJoint(J.waist, angles(-8, 4 * side, -D.SideWaist * side))
 		poses[J.neck] = CarryMath.inJoint(J.neck, angles(12, 0, D.SideHead * side))
-		poses[leadHip] = CarryMath.inJoint(leadHip, angles(30, 0, 30 * side))
-		poses[leadKnee] = CarryMath.inJoint(leadKnee, angles(-52))
+		poses[leadHip] = CarryMath.inJoint(leadHip, angles(D.LeadHip or 30, 0, (D.LeadSplay or 30) * side))
+		poses[leadKnee] = CarryMath.inJoint(leadKnee, angles(D.LeadKnee or -52))
 		poses[leadAnkle] = CarryMath.inJoint(leadAnkle, angles(18, 0, -12 * side))
 		poses[trailHip] = CarryMath.inJoint(trailHip, angles(8, 0, -D.SideSplay * side))
 		poses[trailKnee] = CarryMath.inJoint(trailKnee, angles(-18))
@@ -206,6 +221,31 @@ local function dashPose(J, dir, carrying)
 	return poses
 end
 
+-- How much the cast pose owns the body, `age` seconds into a power's wind-up of `length` seconds.
+local function castWeight(age, length)
+	local K = Config.Cast
+	if not K or age < 0 or age > length + K.Out then
+		return 0
+	end
+	return smooth(age / K.In) * (1 - smooth((age - length) / K.Out))
+end
+RunMotion.castWeight = castWeight
+
+-- The cast pose: both arms forward and up (Config/Run.Cast), a slight bend at the elbows, the body leaning in.
+local function castPose(J)
+	local K = Config.Cast
+	local poses = {}
+	poses[J.root] = CarryMath.inJoint(J.root, angles(-K.Lean, 0, 0))
+	poses[J.waist] = CarryMath.inJoint(J.waist, angles(-3, 0, 0))
+	poses[J.neck] = CarryMath.inJoint(J.neck, angles(K.Lean, 0, 0)) -- (the head stays level, looking ahead)
+	local raise = 90 + K.ArmsUp
+	poses[J.rShoulder] = CarryMath.inJoint(J.rShoulder, angles(raise, 0, K.ArmsOut))
+	poses[J.lShoulder] = CarryMath.inJoint(J.lShoulder, angles(raise, 0, -K.ArmsOut))
+	poses[J.rElbow] = CarryMath.inJoint(J.rElbow, angles(14))
+	poses[J.lElbow] = CarryMath.inJoint(J.lElbow, angles(14))
+	return poses
+end
+
 local function isArm(J, motor)
 	return motor == J.rShoulder or motor == J.lShoulder or motor == J.rElbow or motor == J.lElbow
 end
@@ -214,15 +254,17 @@ end
 	speed: studs per second along the ground; grounded: false while in the air; carrying: she's overhead,
 	so the lean is gentler and the arms are left to the carry. dashAge: seconds since this character's
 	huss dash began (nil = none); dashDir: its direction in the body's frame (x right, z forward).
+	castAge, castLength: seconds since a power's wind-up began and how long it is (nil = none): the cast pose.
 ]]
-function RunMotion.step(rec, dt, speed, grounded, carrying, dashAge, dashDir)
+function RunMotion.step(rec, dt, speed, grounded, carrying, dashAge, dashDir, castAge, castLength)
 	local C = Config
 	local target = if grounded then clamp((speed - C.From) / (C.Full - C.From), 0, 1) else 0
 	local blend = 1 - math.exp(-dt * 10)
 	rec.weight += (target - rec.weight) * blend
 	rec.arms += ((if carrying then 0 else 1) - rec.arms) * blend
 	local dw = if dashAge and dashDir then dashWeight(dashAge) else 0
-	if rec.weight < 0.01 and dw < 0.01 then
+	local cw = if castAge and castLength then castWeight(castAge, castLength) else 0
+	if rec.weight < 0.01 and dw < 0.01 and cw < 0.01 then
 		if next(rec.written) then
 			RunMotion.release(rec)
 		end
@@ -232,6 +274,7 @@ function RunMotion.step(rec, dt, speed, grounded, carrying, dashAge, dashDir)
 	local J = rec.joints
 	local run = runPose(J, rec.phase, carrying)
 	local dash = if dw > 0.01 then dashPose(J, dashDir, carrying) else nil
+	local cast = if cw > 0.01 then castPose(J) else nil
 	for _, motor in J do
 		local pose, w = run[motor], rec.weight
 		if isArm(J, motor) then
@@ -242,6 +285,12 @@ function RunMotion.step(rec, dt, speed, grounded, carrying, dashAge, dashDir)
 			-- The dash on top of the run (or of the plain animation when standing).
 			pose = if pose and w > 0.01 then pose:Lerp(d, dw) else d
 			w = if w > 0.01 then w + (1 - w) * dw else dw
+		end
+		local c = cast and cast[motor]
+		if c and not (carrying and isArm(J, motor)) then -- (a carrier's arms stay on her)
+			-- The cast on top of everything: the arms reach, the body leans in.
+			pose = if pose and w > 0.01 then pose:Lerp(c, cw) else c
+			w = if w > 0.01 then w + (1 - w) * cw else cw
 		end
 		if pose and w > 0.01 then
 			write(rec, motor, pose, math.min(w, 1))

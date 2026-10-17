@@ -168,7 +168,7 @@ function M.start()
 			if root and camera and not character:GetAttribute("DownedAt") then
 				local v = root.AssemblyLinearVelocity
 				local speed = Vector3.new(v.X, 0, v.Z).Magnitude
-				local dashAt = character:GetAttribute("DashAt")
+				local dashAt = RunMotion.dashAt(character)
 				local dashing = type(dashAt) == "number" and now - dashAt < 0.35 -- (no quick-fire steps from the huss push)
 				if speed > 4 and not dashing and math.abs(v.Y) < 8 and (p == player or (camera.CFrame.Position - root.Position).Magnitude < STEP_NEAR) then
 					local t = (stepped[p] or 0) + speed * dt
@@ -181,8 +181,9 @@ function M.start()
 					stepped[p] = 0
 				end
 			end
-			-- the huss's speed lines, lobby too (your own huss sets DashAt twice: here, then from the server)
-			local hussAt = character and character:GetAttribute("DashAt")
+			-- the huss's speed lines, lobby too (your own huss sets DashAt twice: here, then from the server; dashAt
+			-- keeps your own local time for the second one)
+			local hussAt = character and RunMotion.dashAt(character)
 			local hussDir = character and character:GetAttribute("DashDir")
 			if root and camera and type(hussAt) == "number" and typeof(hussDir) == "Vector3" then
 				local last = lastLines[p]
@@ -210,7 +211,7 @@ function M.start()
 				else
 					d.travelled = 0
 				end
-				local dashAt = character:GetAttribute("DashAt")
+				local dashAt = RunMotion.dashAt(character)
 				if type(dashAt) == "number" and dashAt ~= d.lastDash then
 					d.lastDash = dashAt
 					if now - dashAt < 0.3 then
@@ -239,7 +240,7 @@ function M.start()
 			local h = character and character:FindFirstChildOfClass("Humanoid")
 			local cap = (h and h:GetAttribute("HuzzSpeed")) or (h and h.WalkSpeed) or 20
 			sprint = math.clamp((speed - Run.From) / math.max(cap - Run.From, 4), 0, 1) ^ 1.4
-			local dashAt = character and character:GetAttribute("DashAt")
+			local dashAt = character and RunMotion.dashAt(character)
 			if type(dashAt) == "number" and now - dashAt < Run.Dash.Length + 0.1 then
 				sprint = heldSprint -- (the huss's burst of speed changes nothing: the camera stays steady)
 			end

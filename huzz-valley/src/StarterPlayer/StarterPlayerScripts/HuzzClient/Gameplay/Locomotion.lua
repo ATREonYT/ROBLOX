@@ -24,6 +24,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Library = require(Shared.AnimationLibrary)
 local DASH_LENGTH = require(Shared.Config.Run).Dash.Length
 local Mix = require(Shared.LocomotionMix)
+local RunMotion = require(Shared.RunMotion)
 local Frame = require(script.Parent.Frame)
 
 local current -- the running controller (one character at a time: yours)
@@ -175,7 +176,7 @@ local function attach(character: Model)
 		-- the lean on top
 		if rootJoint and rootJoint.Parent then
 			local now = os.clock()
-			local dashAt = character:GetAttribute("DashAt")
+			local dashAt = RunMotion.dashAt(character)
 			local hussing = type(dashAt) == "number" and Workspace:GetServerTimeNow() - dashAt < DASH_LENGTH + 0.1
 			local quiet = if downed or hussing or actionPlaying(now) or mode ~= "ground" then 1 else 0
 			local look = root.CFrame.LookVector

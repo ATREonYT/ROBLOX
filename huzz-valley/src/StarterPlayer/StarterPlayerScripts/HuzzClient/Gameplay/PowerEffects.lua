@@ -16,8 +16,9 @@
 	                on runners as it goes out: PowerService waits the wind-up).
 	  ShieldPop:    a blocked stab: the bubble bursts in a pink ring with hearts.
 	  TrapSprung:   the trap snaps shut: a ring closes in and hearts pop.
+	During the wind-up the user strikes a cast pose (arms forward and up, a lean: Shared/RunMotion, on everyone).
 	Each power has its own sound on press (yours loud, others' from where they stand), and other players' powers
-	pop their name over them once (your own shows on your Q / E tile instead: nothing over your own character).
+	pop their name over them once, above their name tag (your own shows on your Q / E tile instead: nothing over your own character).
 	Every piece is plain neon parts (Gameplay/Burst), so it all looks right before any effect picture is uploaded.
 ]]
 local M = {}
@@ -237,19 +238,20 @@ function M.start()
 		-- the gather: a ring closing in round the catcher
 		Burst.ring(ground(), {
 			r0 = 4.5, r1 = 1.4, time = wind, ease = "in", width = 0.12, glow = 0.45, color = PINK, fade = 0.15,
-			alpha = 0.2, follow = ground,
+			alpha = 0.2, follow = ground, segs = 16,
 		})
 		task.delay(wind + flash, function()
 			if not root.Parent then return end
 			local at = ground()
 			Burst.ring(at, {
-				r0 = 1.4, r1 = radius, time = burst + fade, ease = "quart", width = 0.24, glow = 1.1, haze = 2.6, color = PINK,
-				fade = fade / (burst + fade) + 0.3, segs = 32,
+				-- (16 pieces a ring and no haze under it: it was ~200 neon parts moved one by one every frame)
+				r0 = 1.4, r1 = radius, time = burst + fade, ease = "quart", width = 0.24, glow = 1.1, color = PINK,
+				fade = fade / (burst + fade) + 0.3, segs = 16,
 			})
 			task.delay(0.07, function()
 				Burst.ring(at, {
 					r0 = 1, r1 = radius * 0.86, time = burst + fade, ease = "quart", width = 0.1, glow = 0.6,
-					color = PURPLE, fade = fade / (burst + fade) + 0.35, segs = 28, alpha = 0.3,
+					color = PURPLE, fade = fade / (burst + fade) + 0.35, segs = 16, alpha = 0.3,
 				})
 			end)
 			hearts(root.Position + UP, 6, "💞", 4)
@@ -272,10 +274,17 @@ function M.start()
 			end
 			if not (root and near(root.Position)) then return end
 			local wind, flash, burst, fade = timing(data.name)
+			-- the cast pose for the wind-up (Shared/RunMotion via Gameplay/RunAnimator; local attributes, this screen)
+			local body = root.Parent
+			if body then
+				body:SetAttribute("HuzzCastAt", Workspace:GetServerTimeNow())
+				body:SetAttribute("HuzzCastLen", wind + flash)
+			end
 			task.spawn(CAST[data.name], root, data, wind, flash, burst, fade)
 			if not mine then
+				-- (root +7: clear above their name tag, which ends ~root +6)
 				local def = Powers[data.name]
-				Burst.pop(root.Position + UP * 3.4, string.upper(def.Name), PINK, { height = 1.1, rise = 1.2, time = 1.1, onTop = false })
+				Burst.pop(root.Position + UP * 7, string.upper(def.Name), PINK, { height = 1.1, rise = 1.2, time = 1.1, onTop = false })
 			end
 			return
 		end

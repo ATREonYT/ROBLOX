@@ -4,7 +4,8 @@
 	DashAt/DashDir attributes, Gameplay/Dash). Off when the owner's run is published (Config/Animations.Run). When
 	only Studio's raw copy plays on your own character (Gameplay/Locomotion), your run is theirs but the huss is
 	still drawn here, so your huss is the same tuned move everyone else sees (Config/Run.Dash). A carrier keeps the
-	carry arms (CarryAnimator layers after this).
+	carry arms (CarryAnimator layers after this). A power's wind-up draws the cast pose here too (HuzzCastAt /
+	HuzzCastLen, set on this screen by Gameplay/PowerEffects), on everyone.
 ]]
 local M = {}
 
@@ -66,7 +67,7 @@ function M.start()
 				-- Knocked down: speed 0, so the sprint fades out under the fall instead of snapping off.
 				local speed = if character:GetAttribute("DownedAt") or dashOnly then 0 else Vector3.new(v.X, 0, v.Z).Magnitude
 				-- The huss dash: its age and its direction in the body's frame (x right, z forward).
-				local dashAt, dashDir = character:GetAttribute("DashAt"), character:GetAttribute("DashDir")
+				local dashAt, dashDir = RunMotion.dashAt(character), character:GetAttribute("DashDir")
 				local age, localDir = nil, nil
 				if type(dashAt) == "number" and typeof(dashDir) == "Vector3" then
 					age = now - dashAt
@@ -75,7 +76,10 @@ function M.start()
 					local d = root.CFrame:VectorToObjectSpace(dashDir)
 					localDir = Vector3.new(if d.X >= 0 then 1 else -1, 0, 0)
 				end
-				RunMotion.step(r.rec, dt, speed, math.abs(v.Y) < 10, carriers[p.UserId] == true, age, localDir)
+				-- a power's wind-up (Gameplay/PowerEffects stamps it on this screen): the cast pose
+				local castAt, castLen = character:GetAttribute("HuzzCastAt"), character:GetAttribute("HuzzCastLen")
+				local castAge = if type(castAt) == "number" and type(castLen) == "number" then now - castAt else nil
+				RunMotion.step(r.rec, dt, speed, math.abs(v.Y) < 10, carriers[p.UserId] == true, age, localDir, castAge, castLen)
 			end
 		end
 	end)

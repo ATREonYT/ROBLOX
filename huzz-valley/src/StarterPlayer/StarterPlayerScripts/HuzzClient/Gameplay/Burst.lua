@@ -90,6 +90,23 @@ local function piece(color: Color3, shape: Enum.PartType?): Part
 end
 Burst.piece = piece
 
+-- Moves many parts in one call (Workspace:BulkMoveTo: far cheaper than a CFrame write per part). Falls back to
+-- setting each CFrame where BulkMoveTo is missing (the offline harness) or fails.
+local bulkOk = true
+local function bulkMove(parts: { BasePart }, cfs: { CFrame })
+	if bulkOk then
+		local ok = pcall(function()
+			(Workspace :: any):BulkMoveTo(parts, cfs, Enum.BulkMoveMode.FireCFrameChanged)
+		end)
+		if ok then return end
+		bulkOk = false
+	end
+	for i, p in parts do
+		p.CFrame = cfs[i]
+	end
+end
+Burst.bulkMove = bulkMove
+
 --[[
 	A glowing ring in the XZ plane of `cf` (a flat CFrame lies on the floor; turn it to stand it up).
 	o: r0, r1 (radius from, to), time, ease ("quad" | "quart" | "back" | "in"), width (the white core, studs),
@@ -106,6 +123,7 @@ function Burst.ring(cf: CFrame, o: { [string]: any })
 		if o.haze then hazes[i] = piece(o.edge or Burst.PURPLE) end
 	end
 	local color, edge = o.color or Burst.PINK, o.edge or Burst.PURPLE
+	local moveParts, moveTo = {}, {} -- (every piece of this ring moves in one Workspace:BulkMoveTo a frame)
 	local width, glowW = o.width or 0.18, o.glow or 0.7
 	local fade = o.fade or 0.45
 	local height = o.height or 0.12
@@ -116,10 +134,14 @@ function Burst.ring(cf: CFrame, o: { [string]: any })
 		local f = if k > 1 - fade then (k - (1 - fade)) / fade else 0 -- 0 -> 1 over the fade
 		local coreColor = Burst.WHITE:Lerp(color, math.clamp(k * 1.6, 0, 1) * 0.7 + f * 0.3)
 		local glowColor = color:Lerp(edge, f)
+		local n = 0
 		for i = 1, segs do
 			local a = (i - 0.5) / segs * math.pi * 2
 			local seg = at * CFrame.Angles(0, -a, 0) * CFrame.new(r, 0, 0) -- X out from the centre, Z along the ring
-			cores[i].CFrame, glows[i].CFrame = seg, seg
+			n += 1
+			moveParts[n], moveTo[n] = cores[i], seg
+			n += 1
+			moveParts[n], moveTo[n] = glows[i], seg
 			cores[i].Size = Vector3.new(width, height, len)
 			glows[i].Size = Vector3.new(glowW, height * 0.6, len)
 			cores[i].Color, glows[i].Color = coreColor, glowColor
@@ -127,10 +149,13 @@ function Burst.ring(cf: CFrame, o: { [string]: any })
 			glows[i].Transparency = 0.55 + 0.45 * f
 			local h = hazes[i]
 			if h then
-				h.CFrame, h.Size = seg * CFrame.new(0, -height * 0.4, 0), Vector3.new(o.haze, height * 0.3, len)
+				n += 1
+				moveParts[n], moveTo[n] = h, seg * CFrame.new(0, -height * 0.4, 0)
+				h.Size = Vector3.new(o.haze, height * 0.3, len)
 				h.Transparency = 0.8 + 0.2 * f
 			end
 		end
+		bulkMove(moveParts, moveTo)
 	end
 	place(cf, 0)
 	Burst.run(o.time or 0.5, function(_, k)

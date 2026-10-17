@@ -78,6 +78,26 @@ for _, m in rig.motors do
 end
 check(released, "then every joint is handed back to the run")
 
+-- The cast pose (a power's wind-up, Config/Run.Cast): both hands come up in front of the shoulders, then let go.
+local function castAt(age)
+	for _, m in rig.motors do m.Transform = CFrame.identity end
+	RunMotion.step(rec, 1 / 60, 0, true, false, nil, nil, age, 0.25)
+	Rig.fk(rig)
+	local p = rig.parts
+	return p.RightHand.CFrame.Position, p.LeftHand.CFrame.Position, p.RightUpperArm.CFrame.Position, p.UpperTorso.CFrame.UpVector
+end
+local rh, lh, shoulder, torsoUp = castAt(0.2)
+check(rh.Y > shoulder.Y and lh.Y > shoulder.Y, "the cast raises both hands above the shoulders")
+check(rh.Z < shoulder.Z - 0.5 and lh.Z < shoulder.Z - 0.5, "the cast reaches forward (facing -Z)")
+local lean = deg(math.atan2(-torsoUp.Z, torsoUp.Y))
+check(lean > 5 and lean < 16, string.format("the cast leans ~10 degrees in (%.1f)", lean))
+castAt(0.25 + Run.Cast.Out + 0.05)
+local castReleased = true
+for _, m in rig.motors do
+	if m.Transform ~= CFrame.identity then castReleased = false end
+end
+check(castReleased, "after the wind-up the cast hands every joint back")
+
 -- Cinematic swings: round and over, never through.
 local line = CFrame.new(0, 0, 0) -- the runners' line: X along it, -Z the field
 local headY = 5.5
