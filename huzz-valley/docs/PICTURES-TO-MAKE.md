@@ -99,6 +99,23 @@ You upload these on the Creator Dashboard yourself. I don't need them, but they 
 
 ---
 
+## 8. Secret cutscene effect pictures (optional, 512 x 512 each, on a BLACK background)
+These replace our own drawn effects, which are the main reason the cutscene isn't one to one yet. Ask for "a
+glowing VFX texture on a pure black background, centred, soft edges, for a Roblox particle". Make them white or
+very light so the game can colour them (pink, violet, blue).
+
+| File name | What it shows |
+|---|---|
+| `beam-glow.png` | a soft vertical glow strip, bright in the middle, fading to the sides |
+| `beam-ladder.png` | a vertical energy beam made of stacked glowing segments, like a ladder |
+| `lightning.png` | a jagged electric lightning strip, going top to bottom |
+| `butterfly.png` | 4 frames of a glowing butterfly flapping, in a 2 x 2 grid (1024 x 1024) |
+| `crystal.png` | a sharp glowing crystal shard |
+| `star-flare.png` | a big four-point star flare with thin rays |
+| `rays.png` | light rays bursting out from the centre |
+| `nebula.png` | a soft swirling purple space cloud |
+| `bokeh.png` | a soft round glowing dot with a slightly brighter rim |
+
 ## What you DON'T need to make
 - **The dance pictures:** in Studio the cards show your own avatar doing each dance pose.
 - **The effects** (rings, sparks, beams, butterflies): they're already drawn and only need uploading. See
