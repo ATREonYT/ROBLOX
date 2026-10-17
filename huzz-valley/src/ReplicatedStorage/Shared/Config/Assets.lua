@@ -2,7 +2,7 @@
 -- Image IDs for the UI icons and pictures. Optional: while an ID is empty, the game draws the image itself from the
 -- pixels packed into Shared/Images (tools/icons/pack_images.py). Uploaded IDs load faster and use less memory.
 --
--- The easy way to fill them in: run tools/studio/upload-images.lua in Studio's Command Bar. It uploads every image
+-- The easy way to fill them in: run ServerStorage/HuzzStudioTools/UploadPictures (tools/studio/upload-images.lua) in Studio's Command Bar. It uploads every image
 -- and writes the IDs into Config/ImageIds (checked first). IDs typed below by hand also work.
 -- The PNGs are the owner's exact icon files from the UI kit (design/exact-pixel-icon-references), same pixels and
 -- size, with only the baked-in background made transparent (tools/icons/clear_background.py).

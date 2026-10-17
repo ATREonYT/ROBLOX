@@ -279,8 +279,9 @@ Owner's own words are in quotes. Read only the section you need.
   them). Built-in stand-ins meanwhile, never pitched above 1.1; silence beats a squeaky ping.
 
 ## 13. Studio-only truths
-- The cloud can't reach Roblox: uploads, real purchases and the final look are the owner's steps. Studio helpers
-  report on Output lines tagged `[Huzz]`, `[HuzzSfx]`, `[HuzzAnim]`.
+- The cloud can't reach Roblox: uploads, real purchases and the final look are the owner's steps. The upload and
+  sound helpers live in the place (`ServerStorage/HuzzStudioTools`, run with one `require(...)()` line); the
+  owner's click-by-click guide is `docs/STUDIO-STEPS.md`. Studio helpers report on Output lines tagged `[Huzz]`, `[HuzzSfx]`, `[HuzzAnim]`.
 - Not yet seen in Studio: the Practice Bot (its walk, run animation, knife), the Oct 17 UI shine/rays/spin and Juice bursts, the new lighting, stars in the playing zone, the move between lobbies after the vote (instant, no fade yet), the lunge feel, sprint feel, lobby repaint, knife positions, spin animation, dance
   pictures on real avatars, dance sync across two clients (needs published dances).
 - **Testing rounds:** alone, the Practice Bot catches. For real players, Studio Test tab > Clients and Servers,
