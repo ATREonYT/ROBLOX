@@ -1,4 +1,6 @@
--- The girl roller (after the map vote), owner's design: a small kit window at the top of the screen with a reel
+-- The girl roller (after the map vote), owner's design: a small kit window with a reel. It sits at the right edge
+-- under the settings button, small (about 15% of the screen wide), and slides in from the side: in the middle it
+-- covered a fifth of the screen and your own name tag (docs/feel-study.md gap 10). Inside, a reel
 -- that runs from top to bottom like a slot machine. Each row shows the girl's real model (a live picture of her
 -- copy in ReplicatedStorage.HuzzGirls), her name, her rarity and that rarity's real chance. It slows down and
 -- stops with this game's girl in the gold middle slot, which then lights up in her rarity colour.
@@ -31,7 +33,17 @@ local ROW = { H = 58, Gap = 6 }
 local PITCH = ROW.H + ROW.Gap
 local MID_Y = REEL.H / 2 - ROW.H / 2 -- top of the middle slot, in reel coordinates
 local GOLD = C.Accent -- (the middle slot: Huss Valley green)
-local SCREEN_TOP = 6
+local SIDE = 12 -- from the right edge
+local SIZE = 0.5 -- of a full window (was 0.62 at the top centre)
+-- Under the settings button: it sits in Roblox's top bar row when the bar is tall enough (as LobbyHud does),
+-- else at the top of the screen, so then the window starts below it.
+local function screenTop(): number
+	local ok, inset = pcall(function() return game:GetService("GuiService"):GetGuiInset() end)
+	local h = if ok and inset then inset.Y else 0
+	return if h >= 44 then 8 else 12 + math.ceil(44 * Scale.points(1)) + 8 -- (Scale.points(1): the top bar row's scale)
+end
+local function shown() return UDim2.new(1, -SIDE, 0, screenTop()) end
+local function hidden() return UDim2.new(1, W * 3, 0, screenTop()) end -- (off the right edge at any scale)
 local LOAD_ROWS = 2.6 -- rows this far from the middle get their model; further ones drop it
 
 local rarityColor = {}
@@ -159,9 +171,9 @@ function GirlRoll.build(parent: Instance)
 		Parent = parent, OnClose = function() GirlRoll.hide() end,
 	})
 	local holder, group = window.Holder, window.Group
-	holder.AnchorPoint = Vector2.new(0.5, 0)
-	holder.Position = UDim2.new(0.5, 0, 0, SCREEN_TOP)
-	Scale.bind(holder:FindFirstChild("FitScale") :: UIScale, function() return Scale.window(W, H) * 0.62 end) -- small, as asked
+	holder.AnchorPoint = Vector2.new(1, 0)
+	holder.Position = shown()
+	Scale.bind(holder:FindFirstChild("FitScale") :: UIScale, function() return Scale.window(W, H) * SIZE end) -- small, as asked
 
 	local panel = window.Body.Parent :: Instance
 	local reel = new("Frame", {
@@ -275,14 +287,14 @@ function GirlRoll.build(parent: Instance)
 		GirlRoll.render(Workspace:GetServerTimeNow())
 		local now = ModalManager.current()
 		holder.Visible, group.Visible = now == nil or ModalManager.isSide(now), true
-		holder.Position = UDim2.new(0.5, 0, 0, -2 * H - 20)
-		TweenService:Create(holder, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Position = UDim2.new(0.5, 0, 0, SCREEN_TOP) }):Play()
+		holder.Position = hidden()
+		TweenService:Create(holder, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Position = shown() }):Play()
 	end
 
 	function GirlRoll.hide()
 		if not holder.Visible then return end
 		current = nil
-		local t = TweenService:Create(holder, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Position = UDim2.new(0.5, 0, 0, -2 * H - 20) })
+		local t = TweenService:Create(holder, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Position = hidden() })
 		t.Completed:Connect(function()
 			if current == nil then
 				holder.Visible = false
