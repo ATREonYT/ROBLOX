@@ -1054,8 +1054,20 @@ while true do
 	end
 	local map = chooseMap()
 	if map and enough() then
-		-- The winning map replaces the one in front of the lobby, then the girl roller spins.
+		-- The winning map replaces the one in front of the lobby and everyone moves to the lobby beside it
+		-- (owner: "one per map"; after the load, so they face the new map), then the girl roller spins.
+		local moved = MapService.useLobbyFor(map)
 		MapService.load(map)
+		if moved then
+			local target = MapService.lobbySpawn()
+			for id, p in byId do
+				-- (the far island may not have streamed in on a phone yet: load it around them first)
+				task.spawn(function()
+					if target then pcall(function() p:RequestStreamAroundAsync(target, 2) end) end
+					place(id)
+				end)
+			end
+		end
 		State:SetAttribute("Map", map.display)
 		announce(`Map: {map.display}`, Color3.new(1, 1, 1), true)
 		rollGirl()

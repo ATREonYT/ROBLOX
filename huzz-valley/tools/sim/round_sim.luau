@@ -343,6 +343,20 @@ local function simulate(opts)
 	}
 	zones.Lobby = box(0, 300, 60, 60)
 	function MapService.init() end
+	-- One lobby per map (the owner's place): each map's lobby sits somewhere else, so moving everyone runs.
+	local lobbyOf = {}
+	for i, m in MapService.maps do
+		lobbyOf[m] = box(i * 400, 300, 60, 60)
+	end
+	function MapService.useLobbyFor(entry)
+		local lobby = lobbyOf[entry]
+		if not lobby or lobby == zones.Lobby then return false end
+		zones.Lobby = lobby
+		return true
+	end
+	function MapService.lobbySpawn()
+		return zones.Lobby.CFrame.Position
+	end
 	function MapService.byName(n)
 		for _, m in MapService.maps do
 			if m.name == n then

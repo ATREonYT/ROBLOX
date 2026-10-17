@@ -15,6 +15,10 @@
 
 	The lobby is a part named Lobby, else the SpawnBaseplate. With no zones at
 	all a plain test field is built in place so the game still runs.
+	Several lobbies (the owner built one beside each map: "one per map"): each
+	map belongs to the lobby nearest it and loads where it was built; after the
+	vote everyone moves to the winning map's lobby (useLobbyFor), and only that
+	lobby's SpawnLocation stays on.
 ]]
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -27,6 +31,7 @@ local MapService = {}
 MapService.zones = {} -- the loaded map's zones (filled in place, so callers can keep the table)
 MapService.maps = {} -- { name, box (stored container), fixed (test field: used where it is) }
 MapService.current = nil -- the loaded map's entry
+MapService.lobbies = {} -- { floor, spawn }: every lobby island; maps' entries point at theirs (entry.lobby)
 local loaded -- the copy in Workspace
 local marks, wall -- the current map's safe lines and sign, and the start-line wall before GO
 local gate -- the goal line's gate: only runners already safe bump into it (holdGoal)
@@ -134,6 +139,34 @@ local function displayName(name)
 	return Config.Map.Names[name] or (name:gsub("_?[Mm][Aa][Pp]$", ""):gsub("_", " "))
 end
 
+local function flat(v: Vector3): Vector3
+	return Vector3.new(v.X, 0, v.Z)
+end
+
+-- An invisible spawn on top of a lobby floor that has none.
+local function makeSpawn(floor: BasePart): SpawnLocation
+	local s = Instance.new("SpawnLocation")
+	s.Name = "HuzzLobbySpawn"
+	s.Anchored, s.CanCollide, s.Transparency, s.Neutral, s.Duration = true, false, 1, true, 0
+	s.Size = Vector3.new(12, 1, 12)
+	s.CFrame = CFrame.new(floor.CFrame.Position + Vector3.new(0, floor.Size.Y / 2 + 0.6, 0))
+	s.Parent = Workspace
+	return s
+end
+
+local activeLobby -- the MapService.lobbies record in use
+
+local function useLobby(rec)
+	activeLobby = rec
+	MapService.lobby = rec and rec.floor
+	MapService.zones.Lobby = MapService.lobby
+	if #MapService.lobbies > 1 then
+		for _, r in MapService.lobbies do
+			if r.spawn then r.spawn.Enabled = r == rec end
+		end
+	end
+end
+
 function MapService.init()
 	local C = Config.Map
 	local storage = ReplicatedStorage:FindFirstChild("HuzzMaps") or Instance.new("Folder")
@@ -169,39 +202,89 @@ function MapService.init()
 		table.insert(MapService.maps, { name = "Test Field", display = "Test Field", box = buildTestField(), fixed = true })
 	end
 
-	-- The lobby: a part named Lobby, else the SpawnBaseplate.
-	local lobby, base, spot
+	-- The lobbies: parts tagged HuzzLobby, else parts named Lobby, else the SpawnBaseplates (the owner has one
+	-- lobby island beside each map: "one per map").
+	local tagged, named, bases, spot = {}, {}, {}, nil
+	for _, t in CollectionService:GetTagged("HuzzLobby") do
+		local p = asPart(t)
+		if p and not table.find(tagged, p) then table.insert(tagged, p) end
+	end
 	for _, d in Workspace:GetDescendants() do
 		if d:IsA("BasePart") then
 			if key(d.Name) == key(C.Lobby) then
-				lobby = lobby or d
+				table.insert(named, d)
 			elseif key(d.Name) == "spawnbaseplate" then
-				base = base or d
+				table.insert(bases, d)
 			elseif key(d.Name) == "mapspot" then
 				spot = spot or d
 			end
 		end
 	end
-	MapService.lobby = asPart(CollectionService:GetTagged("HuzzLobby")[1]) or lobby or base
+	local floors = if #tagged > 0 then tagged elseif #named > 0 then named else bases
 	MapService.mapSpot = spot
+	MapService.lobbies = {}
+	for _, floor in floors do
+		table.insert(MapService.lobbies, { floor = floor })
+	end
 
-	-- Players must still spawn somewhere once the maps (and their SpawnLocations) are stored away.
-	local hasSpawn = false
-	for _, d in Workspace:GetDescendants() do
-		if d:IsA("SpawnLocation") and d.Enabled then
-			hasSpawn = true
+	-- Each map belongs to the lobby nearest where it was built.
+	for _, entry in MapService.maps do
+		local middle = select(3, zonesOf(entry.box, entry.name, true))
+		local best, bestDist = nil, math.huge
+		for _, rec in MapService.lobbies do
+			local d = middle and flat(rec.floor.CFrame.Position - middle.CFrame.Position).Magnitude or 0
+			if d < bestDist then best, bestDist = rec, d end
 		end
+		entry.lobby = best
 	end
-	if not hasSpawn and MapService.lobby then
-		local s = Instance.new("SpawnLocation")
-		s.Name = "HuzzLobbySpawn"
-		s.Anchored, s.CanCollide, s.Transparency, s.Neutral, s.Duration = true, false, 1, true, 0
-		s.Size = Vector3.new(12, 1, 12)
-		s.CFrame = CFrame.new(MapService.lobby.CFrame.Position + Vector3.new(0, MapService.lobby.Size.Y / 2 + 0.6, 0))
-		s.Parent = Workspace
+
+	if #MapService.lobbies > 1 then
+		-- Each lobby's own SpawnLocation (the one on it), made when it has none; only the lobby in use keeps
+		-- its spawn on, so new and respawning players land where everyone is.
+		for _, rec in MapService.lobbies do
+			local f = rec.floor
+			local reach = math.max(f.Size.X, f.Size.Z) / 2 + 30
+			local best, bestDist = nil, reach
+			for _, d in Workspace:GetDescendants() do
+				if d:IsA("SpawnLocation") then
+					local dist = flat(d.CFrame.Position - f.CFrame.Position).Magnitude
+					if dist < bestDist then best, bestDist = d, dist end
+				end
+			end
+			rec.spawn = best or makeSpawn(f)
+		end
+	elseif MapService.lobbies[1] then
+		-- One lobby: players must still spawn somewhere once the maps (and their SpawnLocations) are stored away.
+		local hasSpawn = false
+		for _, d in Workspace:GetDescendants() do
+			if d:IsA("SpawnLocation") and d.Enabled then
+				hasSpawn = true
+			end
+		end
+		local f = MapService.lobbies[1].floor
+		MapService.lobbies[1].spawn = if hasSpawn then Workspace:FindFirstChild("HuzzLobbySpawn") else makeSpawn(f)
 	end
-	MapService.zones.Lobby = MapService.lobby
+	useLobby(MapService.lobbies[1])
 	task.spawn(MapService.catchFalls)
+end
+
+--[[
+	The lobby beside this map becomes the one in use (owner: "one per map": after the vote everyone waits
+	in the lobby next to the winning map). True when it changed, so the caller moves everyone over.
+]]
+function MapService.useLobbyFor(entry): boolean
+	local rec = entry and entry.lobby
+	if not rec or rec.floor == MapService.lobby then return false end
+	useLobby(rec)
+	return true
+end
+
+-- Where players stand in the lobby in use: its spawn, else the top of its floor (or nil with no lobby).
+function MapService.lobbySpawn(): Vector3?
+	local spawn = activeLobby and activeLobby.spawn
+	if spawn and spawn.Parent then return spawn.CFrame.Position end
+	local lobby = MapService.lobby
+	return if lobby then lobby.CFrame.Position + Vector3.new(0, lobby.Size.Y / 2, 0) else nil
 end
 
 --[[
@@ -216,6 +299,7 @@ local function floorPart(box: Instance): BasePart?
 	local a, b, middle = zonesOf(box, "", true)
 	if not (a and b and middle) then return nil end
 	local pa, pb, y = a.CFrame.Position, b.CFrame.Position, middle.CFrame.Position.Y
+	local reach = y + middle.Size.Y / 2 + 2 -- floors up to just over the Middle box's top (Halloween's grass pokes out)
 	local run = Vector3.new(pb.X - pa.X, 0, pb.Z - pa.Z)
 	if run.Magnitude < 1 then return nil end
 	local side = run:Cross(Vector3.yAxis).Unit
@@ -231,7 +315,7 @@ local function floorPart(box: Instance): BasePart?
 			for _, p in parts do
 				local l = p.CFrame:PointToObjectSpace(pt)
 				local top = p.CFrame.Position.Y + p.Size.Y / 2
-				if math.abs(l.X) <= p.Size.X / 2 and math.abs(l.Z) <= p.Size.Z / 2 and top <= y + 2 and (not bestTop or top > bestTop) then
+				if math.abs(l.X) <= p.Size.X / 2 and math.abs(l.Z) <= p.Size.Z / 2 and top <= reach and (not bestTop or top > bestTop) then
 					best, bestTop = p, top
 				end
 			end
@@ -255,7 +339,9 @@ end
 function MapService.paintLobby(mapName: string)
 	local entry = MapService.byName(mapName)
 	local lobby = MapService.lobby
-	if not (entry and lobby) then return end
+	-- Only the lobby in use: a map with its own lobby is painted when it loads, once everyone has moved there
+	-- and can watch the fade.
+	if not (entry and lobby) or (entry.lobby and entry.lobby.floor ~= lobby) then return end
 	local floor = floorPart(entry.box)
 	if not floor then return end
 	lobby.Material = floor.Material
@@ -312,8 +398,7 @@ local function catchOne(player: Player)
 	end
 	local lobby = MapService.lobby
 	if not back and lobby and pos.Y < lobby.Position.Y - 60 then
-		local spawn = Workspace:FindFirstChild("HuzzLobbySpawn")
-		back = (if spawn and spawn:IsA("BasePart") then spawn.Position else lobby.Position + Vector3.new(0, lobby.Size.Y / 2, 0)) + Vector3.new(0, 4, 0)
+		back = MapService.lobbySpawn() + Vector3.new(0, 4, 0)
 	end
 	if back then
 		root.AssemblyLinearVelocity = Vector3.zero
@@ -428,11 +513,14 @@ local function openSide(box, middle, run, name)
 end
 MapService.openSide = openSide
 
--- The lowest bottom of the visible parts in a folder or model (zones and markers don't count).
-local function lowest(container)
+-- The lowest bottom of the visible parts in a folder or model (zones and markers don't count); with near, only
+-- the parts over or close to that part (one lobby island in a folder holding several).
+local function lowest(container, near: BasePart?)
 	local low = math.huge
+	local reach = near and math.max(near.Size.X, near.Size.Z) / 2 + 40
 	for _, d in container:GetDescendants() do
-		if d:IsA("BasePart") and d.Transparency < 1 then
+		if d:IsA("BasePart") and d.Transparency < 1
+			and not (near and reach and flat(d.CFrame.Position - near.CFrame.Position).Magnitude > reach) then
 			local k = key(d.Name)
 			if k ~= "zonea" and k ~= "zoneb" and k ~= "middle" and k ~= "bench" then
 				local cf, h = d.CFrame, d.Size / 2
@@ -444,9 +532,21 @@ local function lowest(container)
 	return low
 end
 
--- Where the map's middle goes: MapSpot if there is one, else just in front of the lobby, turned so its
--- open side (see openSide) faces the lobby. A map built floating higher than the lobby island's ground is
--- lowered to stand on it (owner: the basketball map floated); one built lower keeps its height.
+-- How far a map built floating higher than its lobby island's ground comes down to stand on it (owner: the
+-- basketball map floated); one built lower keeps its height.
+local function dropFor(model, lobby)
+	if not model then return 0 end
+	local island = if lobby.Parent and lobby.Parent ~= Workspace then lobby.Parent else lobby
+	local mapLow, groundLow = lowest(model), math.min(lowest(island, lobby), lobby.CFrame.Position.Y - lobby.Size.Y / 2)
+	if mapLow < math.huge and groundLow < math.huge and mapLow > groundLow then
+		return mapLow - groundLow
+	end
+	return 0
+end
+
+-- Where the map's middle goes: MapSpot if there is one; with a lobby beside every map (the owner built each
+-- lobby in front of its map, floors level) the map stays exactly where it was built; else just in front of the
+-- one lobby, turned so its open side (see openSide) faces the lobby, and lowered to its ground (dropFor).
 local function placement(middle, open, model)
 	local spot = MapService.mapSpot
 	if spot then
@@ -456,6 +556,9 @@ local function placement(middle, open, model)
 	local mid = middle.CFrame.Position
 	if not lobby then
 		return CFrame.lookAt(mid, mid + open) -- no lobby: the map stays where it was built
+	end
+	if #MapService.lobbies > 1 then
+		return CFrame.lookAt(mid, mid + open) -- built level with its own lobby: stays exactly as built
 	end
 	-- "In front": the side of the lobby that faces where the maps were built.
 	local away = Vector3.zero
@@ -480,15 +583,7 @@ local function placement(middle, open, model)
 	local midLocal = middle.CFrame:VectorToObjectSpace(open)
 	local mapHalf = math.abs(midLocal.X) * middle.Size.X / 2 + math.abs(midLocal.Z) * middle.Size.Z / 2
 	local centre = lobby.CFrame.Position + front * (lobbyHalf + Config.Map.Gap + mapHalf)
-	local drop = 0
-	if model then
-		local island = if lobby.Parent and lobby.Parent ~= Workspace then lobby.Parent else lobby
-		local mapLow, groundLow = lowest(model), math.min(lowest(island), lobby.CFrame.Position.Y - lobby.Size.Y / 2)
-		if mapLow < math.huge and groundLow < math.huge and mapLow > groundLow then
-			drop = mapLow - groundLow
-		end
-	end
-	centre = Vector3.new(centre.X, mid.Y - drop, centre.Z)
+	centre = Vector3.new(centre.X, mid.Y - dropFor(model, lobby), centre.Z)
 	return CFrame.lookAt(centre, centre - front) -- the open side looks back at the lobby
 end
 

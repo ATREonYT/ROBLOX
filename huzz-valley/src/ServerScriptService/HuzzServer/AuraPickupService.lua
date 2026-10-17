@@ -30,12 +30,9 @@ local function pickKind()
 	return Config.Kinds[1]
 end
 
--- The middle of the lobby: its spawn if there is one, else the lobby part.
+-- The middle of the lobby in use: its spawn if there is one, else the lobby part.
 local function centre(): Vector3?
-	local spawn = Workspace:FindFirstChild("HuzzLobbySpawn", true)
-	if spawn and spawn:IsA("BasePart") then return spawn.Position end
-	local lobby = MapService.lobby
-	return if lobby then lobby.Position else nil
+	return MapService.lobbySpawn()
 end
 
 local function spot(): Vector3?

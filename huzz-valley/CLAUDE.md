@@ -75,8 +75,8 @@ Owner's own words are in quotes. Read only the section you need.
   `UI/{Kit,Theme,Scale,Motion,ModalManager,State,DancePlayer,DancePose,Toast}`, `UI/Screens/*`, `Gameplay/*`.
 - `ServerStorage/HuzzAnimations.rbxm` (generated), `StarterGui/HuzzUI.rbxm` (generated: never edit by hand).
 - `design/`: kit pages, the owner's art zips, `anims/` (movement pack + 200 dances), `aura/`, `shop/`, references.
-- `places/HUSSANIME.rbxl` = the owner's own place (maps, girls, lobby) as of Oct 15; `HuzzValley-yours.rbxl` = it
-  with all our code and UI swapped in (what the owner tests).
+- `places/HUSSANIME.rbxl` = the owner's own place (maps, girls, 3 lobbies, 4 spin wheels) as of Oct 17 (their
+  `huss77.rbxl`); `HuzzValley-yours.rbxl` = it with all our code and UI swapped in (what the owner tests).
 
 ## 4. Checks, previews, builds (Lune 0.10.5 at `/root/bin/lune`; run before every commit)
 - `PATH=/root/bin:$PATH bash tools/check.sh`: compiles every script; specs (RoundRules, CarryMath, GirlMotion,
@@ -96,7 +96,9 @@ Owner's own words are in quotes. Read only the section you need.
 - Ad-hoc harness tests: `lune run harness.luau ../../src - "$(cat test.luau)" setup_ui.luau`. Fake a character
   with Motor6Ds to test posing; stub `AnimationLibrary.id` to force code paths.
 - Owner's place inspection with Lune (`deserializePlace`): maps are in `Workspace.Maps` (Base_Map, BasketBall_Map,
-  Halloween_Map; zone parts named case/space-insensitively), the lobby floor is `Maps.Spawn.SpawnBaseplate`.
+  Halloween_Map; zone parts named case/space-insensitively), the lobby floors are the 3 `Maps.Spawn.SpawnBaseplate`s.
+  `lune run huzz-valley/tools/check_maps.luau [place.rbxl]` (repo root) lists maps, lobby pairs and safe lines.
+  Lune can't read `.Position` on parts loaded from a place file: use `.CFrame.Position` in code it runs.
 
 ## 5. Code conventions (Luau)
 - **Files:** `.lua` under `src/` (Rojo: `X.server.lua` = Script, `X.client.lua` = LocalScript, plain `.lua` =
@@ -153,6 +155,12 @@ Owner's own words are in quotes. Read only the section you need.
 - **Field edges:** safe lines, start wall and goal gate are trimmed to the real floor (`MapService` `edge()`); the
   invisible walls (`boundary()`) stand at the floor's edge (a prop doesn't count as an edge); `catchFalls()` puts
   anyone below the field back on it (only within 8 studs of it) or far below the lobby back to its spawn.
+- **One lobby per map** (owner's pick, Oct 17): the owner built a lobby island in front of each map. Each map
+  belongs to its nearest lobby (`entry.lobby`); after the vote `MapService.useLobbyFor` switches the lobby and
+  RoundService moves everyone there after the load (streamed in first); only that lobby's SpawnLocation is on. With
+  several lobbies a map loads exactly where it was built (the owner built floors level with their lobby); with one
+  lobby, the old "in front of the lobby" placement. The paint fade runs when the map loads, once everyone is there.
+  The floor finder accepts tops up to 2 studs over the Middle box (Halloween's grass sits above it).
 - **Map look:** when a map wins the vote, `MapService.paintLobby` gives the lobby floor that map's floor colour,
   material and textures (the floor = the part found most under a 5x5 grid over the field; Halloween's orange is a
   Texture on its grass).
@@ -228,7 +236,7 @@ Owner's own words are in quotes. Read only the section you need.
 ## 13. Studio-only truths
 - The cloud can't reach Roblox: uploads, real purchases and the final look are the owner's steps. Studio helpers
   report on Output lines tagged `[Huzz]`, `[HuzzSfx]`, `[HuzzAnim]`.
-- Not yet seen in Studio: the lunge feel, sprint feel, lobby repaint, knife positions, spin animation, dance
+- Not yet seen in Studio: the move between lobbies after the vote (instant, no fade yet), the lunge feel, sprint feel, lobby repaint, knife positions, spin animation, dance
   pictures on real avatars, dance sync across two clients (needs published dances).
 - ProfileStore is in Mock mode in Studio (progress resets on Stop): on purpose.
 - Scan any place the owner sends for scam scripts (`GetObjects`, `require(<id>)`, `loadstring`, HTTP);
@@ -238,6 +246,8 @@ Owner's own words are in quotes. Read only the section you need.
 - Owner: Game Pass IDs (VIP 199, Dance Pack 149) and Developer Product IDs (Sunset Trail, Blossom Aura, coin
   packs, spins 1/10/100); upload sounds, pictures and animations; an export of their spin wheel model (match its
   colours); their 3D knife renders; power icons; a stab animation; crate contents; dance names; movement pack licence.
+- Owner's place notes (Oct 17): no Uncommon girls yet (the rarity is skipped until there are some); a plank path
+  near the Halloween lobby and a basketball hoop sit loose in Workspace (not in a map folder).
 - Us: whatever the owner's next round of fixes asks for first; then a match results screen, the Gift Picker, a HUD
   timer for the x2 Coins boost, more lore chapters.
 - Everything in sections 7 to 12 is the current version, open to change: tuning numbers (speeds, odds, prices,

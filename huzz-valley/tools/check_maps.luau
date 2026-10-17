@@ -1,8 +1,9 @@
--- lune run tools/check_maps.luau   (from the repo root): finds the maps in places/HuzzValley-yours.rbxl the way the game will.
+-- lune run huzz-valley/tools/check_maps.luau [place.rbxl]   (from the repo root): finds the maps and lobbies in
+-- places/HuzzValley-yours.rbxl (or the place given) the way the game will.
 local fs = require("@lune/fs")
 local luau = require("@lune/luau")
 local roblox = require("@lune/roblox")
-local place = roblox.deserializePlace(fs.readFile("huzz-valley/places/HuzzValley-yours.rbxl"))
+local place = roblox.deserializePlace(fs.readFile(require("@lune/process").args[1] or "huzz-valley/places/HuzzValley-yours.rbxl"))
 local ws = place:GetService("Workspace")
 local Config = luau.load(fs.readFile("huzz-valley/src/ReplicatedStorage/Shared/Config/Round.lua"), { environment = { Color3 = roblox.Color3, Vector3 = roblox.Vector3 } })()
 local fakeGame = {
@@ -16,7 +17,7 @@ local fakeGame = {
 local env = setmetatable({
 	game = fakeGame, workspace = ws, Instance = roblox.Instance, CFrame = roblox.CFrame, Vector3 = roblox.Vector3, Color3 = roblox.Color3,
 	Enum = roblox.Enum, UDim2 = roblox.UDim2, Font = roblox.Font, ColorSequence = roblox.ColorSequence, NumberSequence = roblox.NumberSequence, RaycastParams = { new = function() return {} end },
-	require = function() return Config end,
+	require = function() return Config end, task = { spawn = function() end },
 }, { __index = _G })
 env.game = { GetService = function(_, name) if name == "Workspace" then return ws end return fakeGame:GetService(name) end }
 local MapService = luau.load(fs.readFile("huzz-valley/src/ServerScriptService/HuzzServer/MapService.lua"), { environment = env })()
@@ -24,9 +25,20 @@ MapService.init()
 for _, m in MapService.maps do
 	print(string.format("map %-15s shown as %-12s stored in %s", m.name, m.display, m.box:GetFullName()))
 end
-print("lobby:", MapService.lobby and MapService.lobby:GetFullName())
+print("lobby:", MapService.lobby and MapService.lobby:GetFullName(), #MapService.lobbies, "lobbies")
 local spawn = place:GetService("Workspace"):FindFirstChild("HuzzLobbySpawn")
 print("lobby spawn made:", spawn ~= nil, spawn and spawn.CFrame.Position)
+-- One lobby per map: each map's lobby, and after the vote only that lobby's spawn is on.
+for _, m in MapService.maps do
+	MapService.useLobbyFor(m)
+	local on = {}
+	for i, rec in MapService.lobbies do
+		if rec.spawn and rec.spawn.Enabled then table.insert(on, i) end
+	end
+	local lp, sp = MapService.lobby.CFrame.Position, MapService.lobbySpawn()
+	print(string.format("  %-15s lobby at (%.0f, %.0f), spawn at (%.0f, %.0f), spawns on: %s", m.name, lp.X, lp.Z, sp.X, sp.Z, table.concat(on, ",")))
+	if #MapService.lobbies > 1 and #on ~= 1 then print("  PROBLEM: spawns on", #on) end
+end
 for i = 1, 4 do
 	local a, b = MapService.candidates()
 	print("vote " .. i .. ":", a.name, "vs", b.name, a ~= b and "" or "SAME MAP!")
