@@ -7,22 +7,50 @@
 	phones and tablets.
 	Roblox's own Shift-key mouse lock is switched off by the server (DevEnableMouseLock), so the two
 	never fight.
+	M.wouldLock() answers "will shift lock be on once the camera shots let go?" with the same test (Gameplay/Cinematic
+	and Gameplay/SecretReveal aim their hand-back over your shoulder only then).
 ]]
 local M = {}
 
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local PLAYING = { HeroRun = true, Countdown = true, Running = true, RoundOver = true }
+local OFFSET = Vector3.new(1.75, 0, 0) -- over the right shoulder, as Roblox's shift lock
+M.OFFSET = OFFSET
+local altHeld = false
+local round: Instance? = nil
+
+-- The one test for "shift lock on". ignoreCinematic: answer as if no camera shot were playing (for the hand-back).
+local function wants(ignoreCinematic: boolean?): boolean
+	if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
+		return false
+	end
+	local player = Players.LocalPlayer
+	local c = player.Character
+	local h = c and c:FindFirstChildOfClass("Humanoid")
+	local alive = h ~= nil and h.Health > 0 and h.RootPart ~= nil
+	local role = player:GetAttribute("HuzzRole")
+	local stage = if round then round:GetAttribute("Stage") or "" else ""
+	local inRound = (role == "Runner" or role == "Catcher") and PLAYING[stage] == true
+	return inRound and not altHeld and alive and player:GetAttribute("MenuOpen") ~= true
+		and player:GetAttribute("HuzzChoosing") ~= true
+		and (ignoreCinematic == true or player:GetAttribute("HuzzCinematic") ~= true)
+		and player:GetAttribute("HuzzWheel") ~= true -- (the G dance wheel needs the mouse)
+end
+
+function M.wouldLock(): boolean
+	local ok, on = pcall(wants, true)
+	return ok and on == true
+end
+
 function M.start()
-	local Players = game:GetService("Players")
 	local RunService = game:GetService("RunService")
-	local UserInputService = game:GetService("UserInputService")
 	local Workspace = game:GetService("Workspace")
 
 	local player = Players.LocalPlayer
-	local OFFSET = Vector3.new(1.75, 0, 0) -- over the right shoulder, as Roblox's shift lock
-	local altHeld = false
 	local active = false
 	local Net = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared").Net)
-	local round = Net.get("Round") :: RemoteEvent
-	local PLAYING = { HeroRun = true, Countdown = true, Running = true, RoundOver = true }
+	round = Net.get("Round") :: RemoteEvent
 
 	if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
 		return
@@ -73,15 +101,10 @@ function M.start()
 	end)
 
 	RunService:BindToRenderStep("HuzzShiftLock", Enum.RenderPriority.Camera.Value + 1, function()
-		local h, root = humanoidAndRoot()
-		local alive = h ~= nil and h.Health > 0 and root ~= nil
-		local role = player:GetAttribute("HuzzRole")
-		local inRound = (role == "Runner" or role == "Catcher") and PLAYING[round:GetAttribute("Stage") or ""] == true
-		local on = inRound and not altHeld and alive and player:GetAttribute("MenuOpen") ~= true
-			and player:GetAttribute("HuzzChoosing") ~= true and player:GetAttribute("HuzzCinematic") ~= true
-			and player:GetAttribute("HuzzWheel") ~= true -- (the G dance wheel needs the mouse)
+		local _, root = humanoidAndRoot()
+		local on = wants(false)
 		setActive(on)
-		if not on then
+		if not on or not root then
 			return
 		end
 		UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter

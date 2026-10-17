@@ -17,7 +17,8 @@
 	              lines, a butterfly swarm, a crackling flare, then the burst (rays, a pink cloud) and she rises
 	Flashes: soft pulses only at the impact, the swell and the burst (more than a second apart; kid-safe).
 	Reduced Motion (Settings): no shake, kicks, impact frame, pulses or crackle. No black bars (owner).
-	The hand-back (the last 0.5 s): a quick dip to black and a cut to your own camera under it, not a fly-back
+	The hand-back (the last 0.5 s): a quick dip to black and, once it is fully black, the camera goes back to Roblox
+	behind where you stand now (your old angle and distance); black holds 2 frames more, then lifts. Not a fly-back
 	(docs/feel-study.md gap 14: the old 0.3 s fly-back went through a wall and the sky). A dark dip, not a flash.
 	Pictures: Shared/FxTexture (our set once uploaded; until then beams are solid light and particles use Roblox's
 	built-in sparkle and smoke). Filmed offline: tools/preview/motion3d/secret_scene.luau.
@@ -830,6 +831,9 @@ function M.start()
 		RunService.RenderStepped:Wait() -- (Gameplay/Feel hands back its sprint widening first, so it isn't kept for good)
 		local startCF, startFov = camera.CFrame, camera.FieldOfView
 		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+		-- (your camera's distance from your character before the cutscene: the hand-back puts it back at that distance)
+		local startDist = if root then (startCF.Position - (root.Position + Vector3.new(0, 1.5, 0))).Magnitude else 12
+		if startDist < 2 or startDist > 60 then startDist = 12 end -- (first person or a far shot: Roblox's usual)
 		local from = if root then root.Position - ground else Vector3.new(0, 0, 1)
 		local dir = Vector3.new(from.X, 0, from.Z)
 		dir = if dir.Magnitude > 1 then dir.Unit else Vector3.new(0, 0, 1)
@@ -864,39 +868,84 @@ function M.start()
 		black.BorderSizePixel = 0
 		black.Parent = dip
 		dip.Parent = player:FindFirstChildOfClass("PlayerGui")
-		local DOWN = 0.2 -- seconds to black after RETURN; the cut happens under it, then it lifts until LENGTH
+		local DOWN = 0.2 -- seconds to black after RETURN; the camera is handed back under it, then it lifts
+		local LIFT = Reveal.LENGTH - Reveal.RETURN - DOWN -- (0.3 s)
+		local HOLD_FRAMES = 2 -- frames of full black after the hand-back, so Roblox's camera has settled before we lift
+		local done = false
+		local handed = false -- the camera is Roblox's again (from the first fully black frame)
+		local heldFrames = 0
+		local liftFrom: number? = nil
+		local function handBack()
+			if handed then return end
+			handed = true
+			-- Under full black: put the camera behind where you stand NOW (your own camera's angle and distance from
+			-- before the cutscene, over the shoulder only if shift lock will be on), give it back to Roblox and stop
+			-- writing it. Roblox's camera keeps that angle, so the black lifts on the view you'll play with.
+			pcall(function()
+				local c = player.Character
+				local r = c and c:FindFirstChild("HumanoidRootPart") :: BasePart?
+				if r then
+					local look = startCF.LookVector
+					local focus = r.Position + Vector3.new(0, 1.5, 0)
+					local okLock, ShiftLock = pcall(require, script.Parent.ShiftLock)
+					if okLock and ShiftLock.wouldLock() then
+						local flat = Vector3.new(look.X, 0, look.Z)
+						flat = if flat.Magnitude > 0.01 then flat.Unit else Vector3.zAxis
+						focus += Vector3.new(-flat.Z, 0, flat.X) * ShiftLock.OFFSET.X
+					end
+					local dist = math.clamp(startDist, player.CameraMinZoomDistance, player.CameraMaxZoomDistance)
+					camera.CFrame = CFrame.lookAt(focus - look * dist, focus)
+				end
+			end)
+			camera.FieldOfView = startFov
+			camera.CameraType = Enum.CameraType.Custom
+			player:SetAttribute("HuzzCinematic", false)
+		end
 		local function finish()
+			if done then return end
+			done = true
 			RunService:UnbindFromRenderStep("HuzzSecretReveal")
 			dip:Destroy()
 			pcall(cleanup)
 			model:SetAttribute("HuzzRevealing", nil)
-			camera.FieldOfView = startFov
-			camera.CameraType = Enum.CameraType.Custom
-			player:SetAttribute("HuzzCinematic", false)
+			handBack() -- (no-op when the dip already did it)
 			playing = false
 		end
 		RunService:BindToRenderStep("HuzzSecretReveal", Enum.RenderPriority.Camera.Value + 3, function()
+			if done then return end
 			local t = Workspace:GetServerTimeNow() - at
-			if t > Reveal.LENGTH or not model.Parent then
+			-- ends when the black has lifted; a safety stop if frames ran late
+			if not model.Parent or (liftFrom and t - liftFrom >= LIFT) or t > Reveal.LENGTH + 0.5 then
 				finish()
 				return
 			end
 			local okStep, err = pcall(function()
+				if t > Reveal.RETURN then -- dip to black, hand the camera back under it, hold, lift
+					local x = t - Reveal.RETURN
+					if x < DOWN then
+						black.BackgroundTransparency = 1 - (x / DOWN) ^ 2
+					else
+						black.BackgroundTransparency = 0
+						if not handed then
+							handBack()
+						elseif liftFrom then
+							local up = math.clamp((t - liftFrom) / LIFT, 0, 1)
+							black.BackgroundTransparency = up * up
+						else
+							heldFrames += 1
+							if heldFrames >= HOLD_FRAMES then liftFrom = t end
+						end
+					end
+				end
+				if handed then -- the camera is Roblox's: only the scene's effects keep going
+					step(t, dir, camera.CFrame)
+					return
+				end
 				local h = Reveal.height(t, Config.Showcase.Height)
 				local eye, look = Reveal.camera(math.min(t, Reveal.RETURN), ground + Vector3.new(0, 0.5, 0), dir, h or Config.Showcase.Height, k, mid)
 				eye = clear(eye, look)
 				local cf = CFrame.lookAt(eye, look)
 				local fov = Reveal.fov(t, Motion.reduced)
-				if t > Reveal.RETURN then -- dip to black, cut back to where your camera was under it, lift
-					local x = t - Reveal.RETURN
-					if x < DOWN then
-						black.BackgroundTransparency = 1 - (x / DOWN) ^ 2
-					else
-						cf, fov = startCF, startFov
-						local up = math.clamp((x - DOWN) / (Reveal.LENGTH - Reveal.RETURN - DOWN), 0, 1)
-						black.BackgroundTransparency = up * up
-					end
-				end
 				local shake = if Motion.reduced then 0 else Reveal.shake(t)
 				if shake > 0 then
 					local n = t * 12

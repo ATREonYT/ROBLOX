@@ -13,8 +13,9 @@
 	the runners (Shot.transition), then the shot holds; the eye is pulled in front of any wall or the floor it would go
 	behind (clear(), like Gameplay/SecretReveal's), so it never flies through the map, the runners or you.
 	The hand-back lands exactly where Roblox's camera will be (Shot.behind: 12 studs back, 14 degrees down, the
-	shift-lock offset included), with the zoom set to 12 for that moment, so nothing pops when it takes over. In a
-	round the zoom is capped at 22 (Shot.RoundMaxZoom); the lobby keeps the place's own limits (gap 5).
+	shift-lock offset only when Gameplay/ShiftLock will really turn on), with the zoom set to 12 for that moment,
+	so nothing pops when it takes over. In a round the zoom is capped at 22 (Shot.RoundMaxZoom); the lobby keeps the
+	place's own limits (gap 5).
 	No black bars (owner: "when the cutscenes happen, the top and bottom of your screen dont cut out"): the
 	shots use the whole screen. Players in the lobby keep their own camera.
 	Sets the local player attribute "HuzzCinematic" while it plays (ShiftLock lets go of the mouse).
@@ -39,7 +40,7 @@ function M.start()
 	local GOLD = Color3.fromRGB(255, 255, 255) -- (the pick glow: clean white, owner: no gold)
 
 	local Sfx = require(script.Parent.Sfx)
-	local UserInputService = game:GetService("UserInputService")
+	local ShiftLock = require(script.Parent.ShiftLock)
 
 	-- The zoom: the place's own limits in the lobby; capped in a round; pinned to RoundZoom for the hand-back.
 	local lobbyMin, lobbyMax = player.CameraMinZoomDistance, player.CameraMaxZoomDistance
@@ -170,8 +171,13 @@ function M.start()
 			zoomLimits()
 			return
 		end
-		-- Shift lock (desktop) will put the camera over your right shoulder: aim for that spot already.
-		local shoulder = if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then 0 else 1.75
+		-- Shift lock will put the camera over your right shoulder: aim for that spot, but only when it will really be
+		-- on (Gameplay/ShiftLock's own test: a round stage, no Alt, no window open, no dance wheel, not on touch).
+		-- Read every frame and eased, so pressing Alt mid-swing doesn't jump the camera.
+		local function shoulderGoal()
+			return if ShiftLock.wouldLock() then ShiftLock.OFFSET.X else 0
+		end
+		local shoulder = shoulderGoal()
 		local flat = Vector3.new(facing.X, 0, facing.Z).Unit
 		local right = Vector3.new(-flat.Z, 0, flat.X)
 		local startEye, startLook = current()
@@ -188,6 +194,10 @@ function M.start()
 			end
 			local a = (os.clock() - start) / Shot.HandBackTime
 			local r = rootOf(player)
+			if handed < 2 then
+				local goal = shoulderGoal()
+				shoulder = if a >= 1 then goal else shoulder + (goal - shoulder) * 0.35
+			end
 			if r and handed < 2 then -- (once Roblox's camera has it, never write over it)
 				local focus = r.Position + Vector3.new(0, Shot.FocusHeight, 0) + right * shoulder
 				local goalEye, goalLook = Shot.behind(facing, focus)
