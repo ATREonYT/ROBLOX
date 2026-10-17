@@ -81,7 +81,7 @@ Owner's own words are in quotes. Read only the section you need.
 
 ## 4. Checks, previews, builds (Lune 0.10.5 at `/root/bin/lune`; run before every commit)
 - `PATH=/root/bin:$PATH bash tools/check.sh`: compiles every script; specs (RoundRules, CarryMath, GirlMotion,
-  GirlMoves, GirlRoll, CrateRoll, SpinWheel); **the full-game simulation** (`tools/sim/round_sim.luau`: real server code, bots
+  GirlMoves, StabMotion, GirlRoll, CrateRoll, SpinWheel); **the full-game simulation** (`tools/sim/round_sim.luau`: real server code, bots
   that run, stab, lunge, rescue, use powers; 7 setups). Its stubs (e.g. `KnifeService`) must get any new function
   RoundService calls, or games stop with "attempt to call a nil value".
 - `PATH=/root/bin:$PATH bash tools/preview/check.sh`: UI checks on the saved UI, then built from nothing.
@@ -221,6 +221,12 @@ Owner's own words are in quotes. Read only the section you need.
   body surges with the step (a lock measured from the loop, which also sets each loop's 1x speed) and is lowered
   onto the stance foot. Scripted `GirlMotion` walk/idle only until the folder arrives. Spec `tests/GirlMoves.spec`,
   video `docs/previews/girl-pack-walk.mp4` (`motion3d/girl_pack_scene.luau`).
+- **The stab** (`Shared/StabMotion`, scripted until `Config/Animations.Stab` is uploaded; `Config/Round.Stab.Time`
+  0.42 s): coil 0.11 s (hand back by the ribs, shoulders turned away, free arm forward), thrust in 0.06 s (body
+  turns and leans into it, free arm snaps back), a 0.1 s held hit, follow-through. The knife arm is raised by the
+  run's hunch so it stabs level while sprinting; the head counter-turns to stay on the target. Written after the
+  animations (Frame order 30), so it sits over the run. Spec `tests/StabMotion.spec`, video `docs/previews/stab.mp4`
+  (`motion3d/stab_scene.luau`).
 - Dances: `UI/DancePlayer` (one at a time; walking stops it; **in step**: the `Dance` remote puts HuzzDance /
   HuzzDanceAt (server time) on your character, and starting the same dance within 30 studs of a dancer joins
   their beat). `Gameplay/CompanionDance` puts your dance on your R6 girl at your track's time.

@@ -42,7 +42,7 @@ function M.start()
 			if s then
 				StabMotion.release(s.rec)
 			end
-			s = { rec = StabMotion.new(rig), character = character }
+			s = { rec = StabMotion.new(rig, character:FindFirstChild("HumanoidRootPart")), character = character }
 			stabs[p] = s
 		end
 		StabMotion.play(s.rec, os.clock())

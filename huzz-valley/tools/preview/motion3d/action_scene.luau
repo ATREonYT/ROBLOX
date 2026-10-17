@@ -105,7 +105,7 @@ local centre, size = bounds(girl)
 local carryRig = CarryMath.rig(carrier)
 local carry = Rig.motor("HuzzCarryMotor", carrier.parts.UpperTorso, girl.root, CarryMath.holdC0(carryRig, size.Z), centre)
 local carryRec = CarryMotion.new({ motor = carry, rig = carryRig, root = carrier.root, girlMotors = girl.motors, start = -10, seed = 7 })
-local stab = StabMotion.new(CarryMath.rig(catcher))
+local stab = StabMotion.new(CarryMath.rig(catcher), catcher.root)
 carrier.root.CFrame = CFrame.new(Vector3.new(200, Rig.REST_HEIGHT, 0))
 
 -- Part two happens 200 studs away, so part one's actors stay out of shot.
