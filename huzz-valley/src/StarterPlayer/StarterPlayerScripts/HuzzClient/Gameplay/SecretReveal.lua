@@ -380,7 +380,7 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 		Lifetime = NumberRange.new(1.2, 1.8), Speed = NumberRange.new(8 * k, 18 * k), Drag = 2, SpreadAngle = Vector2.new(180, 180),
 		Rotation = NumberRange.new(0, 360), RotSpeed = NumberRange.new(-30, 30) })
 	local swarmBox = part({ Name = "SwarmBox", Transparency = 1, Size = Vector3.new(22 * k, 14 * k, 10 * k), CFrame = CFrame.new(orbAt) }, folder)
-	local swarm = emitter(swarmBox, { Picture = { "Butterfly", "Loop", 14 }, Color = seq(rgb(130, 180, 255), rgb(255, 110, 210)),
+	local swarm = emitter(swarmBox, { Picture = { "Butterfly", "Loop", 14 }, Color = seq(rgb(200, 130, 255), rgb(255, 110, 210)),
 		LightEmission = 0.5, Brightness = 1, Size = nseq({ { 0, 0 }, { 0.1, 2.4 * k }, { 0.8, 2.2 * k }, { 1, 0 } }),
 		Transparency = nseq({ { 0, 0 }, { 1, 0.3 } }), Lifetime = NumberRange.new(1.4, 2.4), Speed = NumberRange.new(6 * k, 14 * k),
 		Drag = 1.5, SpreadAngle = Vector2.new(180, 180), Rotation = NumberRange.new(-30, 30), RotSpeed = NumberRange.new(-40, 40) })

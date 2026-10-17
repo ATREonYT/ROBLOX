@@ -794,13 +794,14 @@ def butterfly_frame(i, n, C):
     return a
 
 
-crescent(); ring_hard(); ring_soft(); spark(); swirl(); swirl_strip(); streak(); sigil(); crown(); moon(); glow(); beam_glow()
-beam_ladder(); lightning(); nebula(); crystal(); bokeh(); star_flare(); rays()
+crescent(); ring_hard(); ring_soft(); spark(); swirl(); swirl_strip(); streak(); sigil(); crown(); moon(); glow()
+# (beam-glow, beam-ladder, lightning, nebula, crystal, bokeh, star-flare, rays and butterfly are the owner's art now:
+# tools/fx/cut_owner_sheet.py. Their old drawings stay below but are no longer saved)
 sheet('burst-star', 2, 256, 10, burst_frame)
 sheet('twinkle', 2, 128, 8, twinkle_frame)
 sheet('bolt', 2, 256, 10, bolt_frame)
 sheet('flame-sheet', 4, 256, 10, flame_frame)
 sheet('shock-sheet', 4, 256, 10, shock_frame)
 sheet('slash-sheet', 4, 256, 10, slash_frame)
-sheet('butterfly', 2, 256, 10, butterfly_frame)
+# sheet('butterfly', 2, 256, 10, butterfly_frame)  (owner's art: cut_owner_sheet.py)
 print('fx drawn:', sorted(os.listdir(OUT)))

@@ -450,7 +450,10 @@ local STILL_AT = { 0.5, 1.0, 1.6, 2.05, 2.47, 2.8, 3.0, 3.6, 4.95, 5.9, 6.75, 8.
 local total = math.floor((Reveal.LENGTH + PRE + POST) * FPS)
 player.Character = character
 M.start()
-task.wait() -- (lets the deferred play() run: it builds the effects and binds the camera)
+-- (lets the deferred play() run: it builds the effects and binds the camera; our model has no parts, so play()
+-- first waits its 2 s for them to stream in)
+local waitFrom = os.clock()
+repeat task.wait(0.05) until bound or os.clock() - waitFrom > 4
 assert(bound and frameGui, "the cutscene didn't start")
 
 for f = 0, total - 1 do

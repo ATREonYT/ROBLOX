@@ -304,6 +304,9 @@ Owner's own words are in quotes. Read only the section you need.
   Worn auras: `AuraLook.worn`; Crown Pose: `Shared/CrownPose` + `Gameplay/CrownPose` (cooldown); Midnight = tint + cape.
 - **Effect pictures** (`assets/fx`, `tools/fx/make_fx.py`, guide `docs/vfx-guide.md`) load through `Shared/FxTexture`
   from uploaded IDs; until the owner uploads, stand-ins show and shapes gated by `FxTexture.ready` stay hidden.
+  The cutscene's 9 (beam-glow, beam-ladder, lightning, butterfly, crystal, star-flare, rays, nebula, bokeh) are the
+  owner's own art since Oct 17: one sheet `design/vfx/owner-vfx-sheet-oct17.png` cut by `tools/fx/cut_owner_sheet.py`
+  (re-run it if he sends separate files; don't redraw them with make_fx.py).
 - **Secret cutscene:** `Shared/SecretReveal` (timeline, pure) + `Gameplay/SecretReveal` (effects, camera); the server
   sets `RevealAt` and the `Reveal` stage. Test in Studio with `Config/Round.StudioTestRarity = "Secret"`.
   14.5 s, shot by shot after the Oct 17 reference (`design/vfx/ref3`, beat sheet `docs/secret-beats.md`): a local night

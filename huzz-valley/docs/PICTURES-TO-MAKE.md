@@ -100,6 +100,9 @@ You upload these on the Creator Dashboard yourself. I don't need them, but they 
 ---
 
 ## 8. Secret cutscene effect pictures (optional, 512 x 512 each, on a BLACK background)
+**Got them (Oct 17), on one sheet:** they're cut out and in the game (`tools/fx/cut_owner_sheet.py`). Each one is only
+about 300 px on the sheet, so separate 512 px files would make them sharper. Send those if you can, with the same names.
+
 These replace our own drawn effects, which are the main reason the cutscene isn't one to one yet. Ask for "a
 glowing VFX texture on a pure black background, centred, soft edges, for a Roblox particle". Make them white or
 very light so the game can colour them (pink, violet, blue).
