@@ -7,9 +7,11 @@
 	  gravity and swing from her real motion (step bob, starts, stops,
 	  turns), plus her mood: Excited (just picked up), Struggle (stolen),
 	  Cheer (won) or Calm (kicks her feet and waves now and then).
-	idle(): standing as the prize. Shifts her weight, breathes, watches the
-	  nearest runner, waves, and bounces when someone is close.
-	walk(): walking or running (a girl following a catcher, your companion).
+	idle(): standing as the prize (when the owner's Idle can't be read). Shifts her weight, breathes,
+	  watches the nearest runner, waves, and bounces when someone is close.
+	walk(): walking or running (a girl following a catcher, your companion), when the owner's animations
+	  can't be read (Shared/GirlMoves plays those).
+	look(): the head turn toward the nearest player (idle uses it; so does Shared/GirlMoves).
 	cheer(): little hops on the ground, arms up (your companion when you're safe).
 
 	Joints are found by their Part1 name, so R6 and R15 both work. Poses are
@@ -239,19 +241,31 @@ function GirlMotion.idle(s, J, dt, t, ctx)
 	end
 
 	-- Head: watches the nearest runner, a little tilt
-	local neck = J.Neck
-	if neck and neck.Part0 then
-		local yaw, pitch = rad(12) * sin(t * 0.3), 0
-		if ctx.target and dist < I.LookDistance then
-			local head = neck.Part0.CFrame * neck.C0
-			local v = head:VectorToObjectSpace(ctx.target - head.Position)
-			v = neck.C0.Rotation:VectorToWorldSpace(v) -- back into the torso's frame
-			yaw = clamp(math.atan2(-v.X, -v.Z), rad(-65), rad(65))
-			pitch = clamp(math.atan2(v.Y, Vector3.new(v.X, 0, v.Z).Magnitude), rad(-30), rad(30))
-		end
-		local tilt = rad(2) * sin(t * 0.5) + rad(8) * wave - sway * 0.6
-		set(neck, CFrame.Angles(0, spring(s, "iy", yaw, dt, 2, 0.8), 0) * CFrame.Angles(spring(s, "ipt", pitch, dt, 2, 0.8), 0, tilt))
+	local look = GirlMotion.look(s, J, dt, t, ctx, rad(8) * wave - sway * 0.6)
+	if look then
+		set(J.Neck, look)
 	end
+end
+
+--[[ The head turn that watches ctx.target (the nearest player's head) when within Config.Idle.LookDistance,
+	else drifts slowly; springy. In the torso's space (as a Neck pose), or nil without a neck. tilt: extra roll.
+	idle() uses it, and so does the pack's idle (Shared/GirlMoves: the prize girl, a girl standing still). ]]
+function GirlMotion.look(s, J, dt, t, ctx, tilt: number?)
+	local neck = J.Neck
+	if not (neck and neck.Part0) then
+		return nil
+	end
+	local dist = ctx.distance or math.huge
+	local yaw, pitch = rad(12) * sin(t * 0.3), 0
+	if ctx.target and dist < Config.Idle.LookDistance then
+		local head = neck.Part0.CFrame * neck.C0
+		local v = head:VectorToObjectSpace(ctx.target - head.Position)
+		v = neck.C0.Rotation:VectorToWorldSpace(v) -- back into the torso's frame
+		yaw = clamp(math.atan2(-v.X, -v.Z), rad(-65), rad(65))
+		pitch = clamp(math.atan2(v.Y, Vector3.new(v.X, 0, v.Z).Magnitude), rad(-30), rad(30))
+	end
+	local roll = rad(2) * sin(t * 0.5) + (tilt or 0)
+	return CFrame.Angles(0, spring(s, "iy", yaw, dt, 2, 0.8), 0) * CFrame.Angles(spring(s, "ipt", pitch, dt, 2, 0.8), 0, roll)
 end
 
 --[[ Walking behind a catcher. ctx: speed (studs/s), stride (studs per two steps),

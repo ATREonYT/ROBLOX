@@ -58,6 +58,21 @@ return {
 		HopHeight = 0.55, -- her cheer hops, studs
 	},
 
+	-- The girls' walk, run and idle from the owner's movement pack (Shared/GirlMoves; owner: "get all the
+	-- animations right in the game"). Speeds are for a standard-size girl (5.25 studs tall) and scale with her size.
+	-- The speed each loop plays at 1x (feet planted) is measured from the animation itself (GirlMoves prints nothing;
+	-- tests/GirlMoves.spec shows it: about 3.6 studs/s for the Walk, 9 for the Run). The rate limits keep the legs
+	-- from blurring when she has to keep up with a fast catcher (30 studs/s): past them her feet slide a little.
+	Pack = {
+		SpeedResponse = 10, -- how fast the blend follows her speed (10 settles in ~0.45 s)
+		MoveFrom = 0.4, MoveFull = 2.5, -- studs/s: idle fades into the walk between these
+		RunFrom = 6, RunFull = 10, -- studs/s: the walk fades into the run between these
+		WalkRate = { 0.5, 1.6 }, -- the walk plays between half and 1.6x its own speed...
+		RunRate = { 0.6, 1.6 }, -- ...and the run too (a smaller girl may go a little quicker)
+		WalkPhase = 0.8, RunPhase = 0.245, -- where each loop has the right leg forward (as Config/Run.Loco)
+		Clip = 0.12, -- studs (standard size): how far the straight R6 leg swinging through may dip into the ground
+	},
+
 	-- Added on top of the carrier's walk animation (R15 Waist joint).
 	Carrier = {
 		Lean = 5, -- leaning back under her weight

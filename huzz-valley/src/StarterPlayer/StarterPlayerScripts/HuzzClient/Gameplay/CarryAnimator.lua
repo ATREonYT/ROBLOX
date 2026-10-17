@@ -7,6 +7,10 @@
 	  - the prize girl (tag "HuzzPrize"): her idle, watching the nearest player;
 	  - a girl following a catcher (tag "HuzzFollower", Shared/FollowMotion): she drops
 	    to the ground, then walks or runs behind him and stands when he stops.
+	The prize's idle and the follower's walk/run/idle are the owner's movement pack (Shared/GirlMoves:
+	ReplicatedStorage.HuzzGirlMoves, which Bootstrap fills in Studio and live), played by hand on her joints;
+	the built-in scripted ones (Shared/GirlMotion) only until that has arrived, or if it can't be read.
+	Uploaded girl animations (Config/Animations.GirlWalk) still win when set.
 	It writes Motor6D.Transform in PreSimulation, after Roblox's animations, so
 	walk, run and huss animations keep the legs. An upper-body animation ID in
 	Config/Animations.CarryArms replaces the scripted arms.
@@ -25,6 +29,7 @@ function M.start()
 	local CarryMotion = require(Shared.CarryMotion)
 	local GirlMotion = require(Shared.GirlMotion)
 	local FollowMotion = require(Shared.FollowMotion)
+	local GirlMoves = require(Shared.GirlMoves)
 	local RoundConfig = require(Shared.Config.Round)
 
 	local folder = Workspace:WaitForChild("HuzzCarried")
@@ -103,7 +108,10 @@ function M.start()
 	local function startPrize(model)
 		local root = model.PrimaryPart
 		if root then
-			prizes[model] = { state = GirlMotion.new(seedOf(model)), joints = GirlMotion.joints(motorsOf(model)), root = root }
+			-- her root above her feet (sets her size for the pack's speeds and hips)
+			local ok, cf, size = pcall(function() return model:GetBoundingBox() end)
+			local rootHeight = if ok then math.clamp(root.Position.Y - (cf.Position.Y - size.Y / 2), 1, 6) else 3
+			prizes[model] = { state = GirlMotion.new(seedOf(model)), joints = GirlMotion.joints(motorsOf(model)), root = root, rootHeight = rootHeight }
 		end
 	end
 
@@ -178,6 +186,7 @@ function M.start()
 			rootHeight = model:GetAttribute("RootHeight"),
 			seed = seedOf(model),
 			animated = tracks ~= nil,
+			moves = GirlMoves.find(os.clock()),
 		})
 		rec.leaderId = model:GetAttribute("Follow")
 		rec.tracks = tracks
@@ -240,6 +249,7 @@ function M.start()
 			if not model.Parent then
 				followers[model] = nil
 			elseif leaderRoot then
+				rec.moves = rec.moves or GirlMoves.find(os.clock()) -- (once the pack has arrived)
 				local head = leader.Character:FindFirstChild("Head")
 				FollowMotion.step(rec, dt, now, leaderRoot.CFrame, function(p)
 					return groundAt(p, leaderRoot.Position.Y)
@@ -260,7 +270,15 @@ function M.start()
 		for model, p in prizes do
 			if model.Parent then
 				local target, distance = nearestHead(p.root.Position)
-				GirlMotion.idle(p.state, p.joints, dt, now, { target = target, distance = distance })
+				local anims = GirlMoves.find(os.clock())
+				if anims then
+					-- the pack's Idle, her head turned toward the nearest player on top
+					p.pack = p.pack or GirlMoves.new(anims, p.rootHeight)
+					local look = GirlMotion.look(p.state, p.joints, dt, now, { target = target, distance = distance })
+					GirlMoves.idle(p.pack, p.joints, dt, look)
+				else
+					GirlMotion.idle(p.state, p.joints, dt, now, { target = target, distance = distance })
+				end
 			else
 				prizes[model] = nil
 			end

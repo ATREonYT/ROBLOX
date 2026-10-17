@@ -15,9 +15,14 @@
 	her small legs don't blur), and rec.cheer = true makes her hop and cheer
 	when she stands (beside you, at CheerOffset); rec.beside = true brings her to that spot too (dancing with
 	you: Gameplay/CompanionDance poses her on top).
+
+	Her legs and arms: the owner's movement pack (Idle / Walk / Run, Shared/GirlMoves) when rec.moves holds
+	them (the caller sets it from GirlMoves.find), blended by her speed, her head watching the catcher while
+	she stands; otherwise the built-in scripted walk (Shared/GirlMotion.walk). The cheer hops stay scripted.
 ]]
 local Carry = require(script.Parent.Config.Carry)
 local GirlMotion = require(script.Parent.GirlMotion)
+local GirlMoves = require(script.Parent.GirlMoves)
 
 local FollowMotion = {}
 local exp, atan2, pi = math.exp, math.atan2, math.pi
@@ -25,6 +30,7 @@ local exp, atan2, pi = math.exp, math.atan2, math.pi
 -- info: root (her anchored root part), motors (her Motor6Ds), from (start position of her root,
 -- or nil to start at her spot), rootHeight (root above her feet), seed,
 -- animated (true = her limbs come from uploaded animations, so only move and turn her),
+-- moves (optional: the pack's sampled Idle/Walk/Run from GirlMoves.find; can also be set on rec later),
 -- config (optional: settings in place of Config/Carry.Follow, as Config/GirlMotion.Companion)
 function FollowMotion.new(info)
 	return {
@@ -38,6 +44,7 @@ function FollowMotion.new(info)
 		yaw = nil,
 		rootHeight = info.rootHeight or 3,
 		animated = info.animated,
+		moves = info.moves,
 		speed = 0,
 	}
 end
@@ -127,6 +134,14 @@ function FollowMotion.step(rec, dt, t, leaderCF, groundAt, watch)
 		local stride = F.Stride
 		if F.MaxCadence then
 			stride = math.max(stride, speed / F.MaxCadence)
+		end
+		if rec.moves then
+			-- the owner's animations (Shared/GirlMoves), her head watching the leader while she stands
+			if not rec.pack or rec.pack.anims ~= rec.moves then
+				rec.pack = GirlMoves.new(rec.moves, rec.rootHeight)
+			end
+			GirlMoves.step(rec.pack, rec.joints, dt, speed, GirlMotion.look(rec.girl, rec.joints, dt, t, { target = watch, distance = distance }))
+			return
 		end
 		local run = if F.RunFrom then math.clamp((speed - F.RunFrom) / (F.RunTo - F.RunFrom), 0, 1) else nil
 		GirlMotion.walk(rec.girl, rec.joints, dt, t, { speed = speed, stride = stride, target = watch, distance = distance, run = run })

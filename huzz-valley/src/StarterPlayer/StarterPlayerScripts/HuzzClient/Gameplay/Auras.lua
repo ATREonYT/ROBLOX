@@ -4,7 +4,8 @@
 	  - Your equipped girl (the player's HuzzCompanion attribute, CompanionService) walks behind you on the
 	    ground as a small companion (owner: "walk behind you, not fly"): Shared/FollowMotion moves her (the
 	    same code as the girl who follows a catcher) with Config/GirlMotion.Companion, walking when you walk,
-	    running when you run, standing and looking round when you stop; her effects are Shared/AuraLook
+	    running when you run, standing and looking round when you stop (the owner's movement pack:
+	    Shared/GirlMoves); her effects are Shared/AuraLook
 	    "Companion". In a round she steps aside (the round's own girl is the prize) until you're safe across:
 	    then she appears beside you on the ground and hops and cheers. When you dance she steps beside you and
 	    dances too (Gameplay/CompanionDance). She never bumps anyone: her parts are in the "HuzzCompanion"
@@ -31,6 +32,7 @@ function M.start()
 	local Looks = require(Shared.Config.GirlLooks)
 	local Round = require(Shared.Config.Round)
 	local FollowMotion = require(Shared.FollowMotion)
+	local GirlMoves = require(Shared.GirlMoves)
 	local Companion = require(Shared.Config.GirlMotion).Companion
 	local AuraFX = require(script.Parent.AuraFX)
 	local CompanionDance = require(script.Parent.CompanionDance)
@@ -244,7 +246,7 @@ function M.start()
 		model.Parent = folder
 		local spec = AuraLook.build(lookOf(source:GetAttribute("Id"), rarity), rarity, "Companion")
 		spec.scale = COMPANION_HEIGHT / 5
-		local walk = FollowMotion.new({ root = root, motors = motors, rootHeight = rootHeight, seed = seed, config = Companion })
+		local walk = FollowMotion.new({ root = root, motors = motors, rootHeight = rootHeight, seed = seed, config = Companion, moves = GirlMoves.find(os.clock()) })
 		local c = { model = model, handle = AuraFX.attach(model, spec, { lite = lite }), size = newSize, walk = walk, ground = nil, leaderY = 0 }
 		-- The ground under her: one ray a frame for yours, every other frame for other players' companions.
 		function c.groundAt(at)
@@ -333,6 +335,7 @@ function M.start()
 			w.cheer = cheering and not dancing
 			w.beside = dancing -- (she steps up beside you to dance)
 			c.leaderY = root.Position.Y
+			w.moves = w.moves or GirlMoves.find(os.clock()) -- (the owner's walk/run/idle once they've arrived: Shared/GirlMoves)
 			local head = character:FindFirstChild("Head")
 			FollowMotion.step(w, dt, clock, root.CFrame, c.groundAt, head and head.Position)
 			CompanionDance.step(p, character, w.joints, dt, COMPANION_HEIGHT, w.speed < 6)

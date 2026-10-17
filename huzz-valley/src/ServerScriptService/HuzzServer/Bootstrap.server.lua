@@ -22,6 +22,25 @@ if game:GetService("RunService"):IsStudio() then
 	end
 end
 
+-- Everywhere (Studio AND the live game): the movement pack's Idle, Walk and Run (~180 KB) go to
+-- ReplicatedStorage.HuzzGirlMoves, so every screen can play them by hand on the anime girls (Shared/GirlMoves:
+-- the prize's idle, a girl following a catcher, your companion). No upload needed; the dances stay server-side.
+do
+	local raw = game:GetService("ServerStorage"):FindFirstChild("HuzzAnimations")
+	local RS = game:GetService("ReplicatedStorage")
+	if raw and not RS:FindFirstChild("HuzzGirlMoves") then
+		local folder = Instance.new("Folder")
+		folder.Name = "HuzzGirlMoves"
+		for _, name in { "Idle", "Walk", "Run" } do
+			local seq = raw:FindFirstChild(name)
+			if seq then
+				seq:Clone().Parent = folder
+			end
+		end
+		folder.Parent = RS
+	end
+end
+
 -- "HuzzCompanion": the anime girls who walk with you or the catcher (Gameplay/Auras puts their parts in it on each
 -- screen; owner: "make the little character not collide with the user"). A Humanoid turns collisions back on for
 -- some body parts, so CanCollide alone isn't enough: this group collides with nothing at all. Other services
