@@ -343,6 +343,8 @@ local function simulate(opts)
 	}
 	zones.Lobby = box(0, 300, 60, 60)
 	function MapService.init() end
+	local boundsOn = false
+	function MapService.setBounds(on) boundsOn = on end
 	-- One lobby per map (the owner's place): each map's lobby sits somewhere else, so moving everyone runs.
 	local lobbyOf = {}
 	for i, m in MapService.maps do

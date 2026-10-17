@@ -609,6 +609,7 @@ end
 
 -- Invisible walls round the field (ZoneA, Middle and ZoneB), so nobody jumps or falls off the map. They stand at
 -- the floor's real edge (inside the zone boxes when those overhang the floor).
+local boundsOn = false -- (MapService.setBounds)
 local function boundary(model, a, b, middle)
 	for _, zone in { a, b, middle } do -- (the floor checks look through the zone boxes)
 		if not table.find(zoneParts, zone) then table.insert(zoneParts, zone) end
@@ -677,13 +678,27 @@ local function boundary(model, a, b, middle)
 	} do
 		local p = Instance.new("Part")
 		p.Name = "Wall"
-		p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch, p.CastShadow = true, true, false, false, false
+		-- (solid only while a game runs: MapService.setBounds; between games anyone can walk in from the lobby)
+		p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch, p.CastShadow = true, boundsOn, false, false, false
 		p.Transparency = 1
 		p.Size = w[2]
 		p.CFrame = frame * w[1]
 		p.Parent = folder
 	end
 	folder.Parent = model
+end
+
+-- The invisible walls round the field stand only while a game runs: they keep the players in and everyone else out.
+-- Between games they're open, so people can walk from the lobby onto the map (owner: "on the side next to the lobby,
+-- there is an invisible block that doesn't allow you to walk through it").
+function MapService.setBounds(on: boolean)
+	boundsOn = on
+	local folder = loaded and loaded:FindFirstChild("HuzzBounds")
+	if folder then
+		for _, w in folder:GetChildren() do
+			if w:IsA("BasePart") then w.CanCollide = on end
+		end
+	end
 end
 
 -- Copies a map in front of the lobby (as it was built, its open side facing the lobby) and makes it

@@ -189,6 +189,12 @@ function M.start()
 	local flash = make("Frame", { Name = "Flash", Size = UDim2.fromScale(1, 1), BackgroundColor3 = RED, BackgroundTransparency = 1, ZIndex = 0, Parent = gui })
 
 	gui.Parent = player:WaitForChild("PlayerGui")
+	-- A full window (the Shop...) hides the round's words and banners until it closes (owner's screenshot: "Map:
+	-- Halloween" was written over the Shop).
+	local ModalManager = require(script.Parent.Parent.UI.ModalManager)
+	ModalManager.changed(function(now)
+		gui.Enabled = now == nil or ModalManager.isSide(now)
+	end)
 	local cam = Workspace.CurrentCamera
 	if cam then
 		cam:GetPropertyChangedSignal("ViewportSize"):Connect(refit)

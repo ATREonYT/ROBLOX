@@ -747,6 +747,7 @@ local function showShowcase()
 end
 
 local function runGame()
+	MapService.setBounds(true) -- (the field's invisible walls: only during a game)
 	table.clear(tally)
 	for _, p in Players:GetPlayers() do
 		p:SetAttribute("HuzzGameAura", 0) -- (AuraPickupService adds the stars collected this game)
@@ -776,6 +777,7 @@ local function runGame()
 end
 
 local function cleanUp()
+	MapService.setBounds(false)
 	PracticeBot.remove()
 	botPlayed = false
 	KnockdownService.upAll()

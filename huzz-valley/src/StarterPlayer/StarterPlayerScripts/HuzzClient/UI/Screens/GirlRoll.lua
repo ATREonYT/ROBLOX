@@ -18,6 +18,7 @@ local UI = script.Parent.Parent
 local Theme = require(UI.Theme)
 local Kit = require(UI.Kit)
 local Scale = require(UI.Scale)
+local ModalManager = require(UI.ModalManager)
 
 local C = Theme.Colors
 local new = Kit.new
@@ -272,7 +273,8 @@ function GirlRoll.build(parent: Instance)
 			rows[i] = row(track, i, girl, chances[girl.rarity])
 		end
 		GirlRoll.render(Workspace:GetServerTimeNow())
-		holder.Visible, group.Visible = true, true
+		local now = ModalManager.current()
+		holder.Visible, group.Visible = now == nil or ModalManager.isSide(now), true
 		holder.Position = UDim2.new(0.5, 0, 0, -2 * H - 20)
 		TweenService:Create(holder, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Position = UDim2.new(0.5, 0, 0, SCREEN_TOP) }):Play()
 	end
@@ -309,6 +311,11 @@ function GirlRoll.build(parent: Instance)
 	end)
 	RunService.RenderStepped:Connect(function()
 		if current then GirlRoll.render(Workspace:GetServerTimeNow()) end
+	end)
+	-- A window (the Shop...) covers the roller: it steps aside until the window closes (owner's screenshot: the roller
+	-- poked out over the Shop).
+	ModalManager.changed(function(now)
+		if current then holder.Visible = now == nil or ModalManager.isSide(now) end
 	end)
 	holder.Visible = false
 	task.defer(onRoll)
