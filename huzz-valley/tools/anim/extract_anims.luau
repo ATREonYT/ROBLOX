@@ -98,7 +98,7 @@ do
 		}
 		return {
 			-- a compact throw: ~38° into the way you go, low and still hunched forward
-			LowerTorso = CFrame.new(0.3 * side, -0.5, 0) * CFrame.Angles(rad(-12), rad(-5 * side), rad(-32 * side)),
+			LowerTorso = CFrame.new(0.3 * side, -0.5, 0) * CFrame.Angles(rad(-12), rad(-5 * side), rad(-22 * side)),
 			UpperTorso = CFrame.Angles(rad(-8), rad(4 * side), rad(-6 * side)),
 			Head = CFrame.Angles(rad(12), 0, rad(28 * side)), -- (head stays upright-ish, looking ahead)
 			-- the inside leg stays under you, bent, foot near the ground...

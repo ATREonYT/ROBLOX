@@ -152,7 +152,7 @@ Owner's own words are in quotes. Read only the section you need.
 - **Last runner** (`RoundRules.lastRunner`, `Speeds.LastRunner` 30): in a round that started with 2+ runners, the
   only one still out is called out once ("X is the last runner!") and runs as fast as the real catcher (the bot's
   speed when it catches; never under 28); with Rizz Rush capped at catcher + 4.
-- **Catching:** click stab (`Stab` remote) or a catcher's **lunge** (`Lunge` remote, `Config/Round.Lunge`: Speed 56,
+- **Catching:** click stab (`Stab` remote) or a catcher's **lunge** (`Lunge` remote, `Config/Round.Lunge`: eases 72 to 40 over 0.38 s,
   Up 18, HitRange 4.8 for 0.5 s, cooldown 3 s shared with the Space tile `DashReady`; stab mode only). Both go
   through `stabNear()`: shields, the safe start zone and a fresh rescue protect; a Heart Shield ends the lunge.
 - **Downed and revived:** a downed runner lies still (`KnockdownService`); a runner beside them for 1.2 s revives
@@ -172,7 +172,7 @@ Owner's own words are in quotes. Read only the section you need.
   with a fake body.
 - **Powers** (free each round, `Config/Powers`): runners Heart Shield + Rizz Rush; catchers Love Trap + Charm Wave.
 - **Speeds** (`Config/Round.Speeds`, raised twice: lobby 22, runner 28, catcher 30, holder 27). `Gameplay/Sprint`
-  eases out from a walk (9) to the cap (~95% after `Run.Ramp` 1.2 s). Run animation rate caps keep it calm.
+  sets off at 16 and reaches the cap in ~0.5 s (section 8). Run animation rate caps keep it calm.
 - **Safe gate:** invisible goal-line block in collision group `HuzzSafeWall`, colliding only with `HuzzSafe`
   (safe runners), plus `keepSafe()` every frame.
 - **Field edges:** safe lines, start wall and goal gate are trimmed to the real floor (`MapService` `edge()`); the
