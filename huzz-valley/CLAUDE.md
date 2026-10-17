@@ -172,7 +172,12 @@ Owner's own words are in quotes. Read only the section you need.
 
 ## 8. Feel and look
 - `Config/Look` → `HuzzServer/LookService` ("find the filters that make the game feel premium"): colour grade
-  (+saturation, +contrast), bloom, soft sun rays, light haze, lifted cool shadows, early-afternoon sun.
+  (+saturation, +contrast), bloom, soft sun rays, light haze, lifted cool shadows, early-afternoon sun. Oct 17:
+  less haze (Density 0.2, Haze 0.3, Glare 0) and more colour (Saturation 0.28, Contrast 0.14): the haze washed out
+  the colours ("looks still a bit bland and plain").
+- `Gameplay/Juice` (Oct 17): everyone sees a green ring + confetti when someone reaches safety, a red ring + sparks
+  on a catch, a rising green column on a rescue; a small camera shake for you (off with Reduced Motion). The first
+  runner safe each round gets "FIRST!" (RoundService `First` event after their Safe; RoundHud banner / small line).
 - `Gameplay/Feel`: the camera widens up to 11° at full sprint (lobby too), a dash kick, soft wind streaks drifting
   outward near top speed (never flashing), dust and steps in rounds, a `speed_wind` loop. Off with Reduced Motion.
 - The big showcase girl over the map glows softly (`AuraFX`: scale > 1.5 → small light, less LightEmission;
@@ -208,13 +213,21 @@ Owner's own words are in quotes. Read only the section you need.
 - Icons/art: the owner's files, used as drawn (`tools/icons/pack_images.py`, icons packed at 192 px).
 - Shop passes copy the owner's banners (`design/shop/pass-banners.png`): navy glass rows, coloured rim and button
   per pass (`Products` `Accent`, Kit styles `PassViolet` / `PassPink`).
+- **Living UI** (`UI/Effects`, owner: "more effects, like shining, spinning ... like in the game pass sections"):
+  `shine` (white streak every 4-5 s: pass rows, buy buttons, coin cards, the HUD Shop button), `rays` (our
+  `assets/art/light-rays.png` turning behind the Spin wheel, and green behind the HUD Spin button while a free spin
+  waits; its icon spins and FREE breathes). Parts are saved twins but invisible until the loop starts; Reduced
+  Motion stops all (`Effects.setCalm` from Main). Previews park streaks off the edge; `SHINE=0` freezes mid-sweep.
+  Colours kept as the kit (Huss Valley look): the owner left a palette switch optional.
 
 ## 11. Economy: coins, Aura, shop, wheel, quests
 - **Coins** buy looks in the Shop's ITEMS tab (`Config/CoinShop`: trails, name colours, knife skins). Items with
   `Unlock` (quest knives) or `NotForSale` (Spin Knife) are never sold.
 - **Aura stars** (owner's star art in `design/aura`, packed `AuraStar` + white `AuraStarWhite` for tinting):
-  float over the field while a map is loaded (lobby otherwise); **run through one to collect** (server checks
-  distance 10x a second). +1, White +3, Rainbow +10. The Aura "+" buttons explain where Aura comes from.
+  float only in the playing zone (map Middle, outside ZoneA/ZoneB: `MapService.playSpot`) while a map is loaded,
+  none between games; **run through one to collect** (server checks distance 10x a second). Owner (Oct 17): "different
+  colors give different amounts ... the ones that give more are rarer": Blue 1 (40%), Green 2 (25%), Purple 3 (16%),
+  Pink 5 (10%), White 10 (6%), Rainbow 25 (3%); rarer stars are bigger and brighter. The Aura "+" buttons explain it.
 - **Spin the Wheel** (`Config/SpinWheel`, `Shared/SpinRules`, `HuzzServer/SpinService`, `Screens/SpinWheel`): a
   real free spin every 15 min; packs of 1/10/100 for 48/340/1200 Robux (Developer Products, Id 0 until the owner
   creates them, granted only in ShopService's ProcessReceipt). Odds shown: 100 coins 28%, 250 coins 22%, 25 Aura
@@ -236,7 +249,7 @@ Owner's own words are in quotes. Read only the section you need.
 ## 13. Studio-only truths
 - The cloud can't reach Roblox: uploads, real purchases and the final look are the owner's steps. Studio helpers
   report on Output lines tagged `[Huzz]`, `[HuzzSfx]`, `[HuzzAnim]`.
-- Not yet seen in Studio: the move between lobbies after the vote (instant, no fade yet), the lunge feel, sprint feel, lobby repaint, knife positions, spin animation, dance
+- Not yet seen in Studio: the Oct 17 UI shine/rays/spin and Juice bursts, the new lighting, stars in the playing zone, the move between lobbies after the vote (instant, no fade yet), the lunge feel, sprint feel, lobby repaint, knife positions, spin animation, dance
   pictures on real avatars, dance sync across two clients (needs published dances).
 - ProfileStore is in Mock mode in Studio (progress resets on Stop): on purpose.
 - Scan any place the owner sends for scam scripts (`GetObjects`, `require(<id>)`, `loadstring`, HTTP);

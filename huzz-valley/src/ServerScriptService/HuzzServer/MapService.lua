@@ -364,7 +364,27 @@ function MapService.paintLobby(mapName: string)
 	end
 end
 
--- A random spot on the loaded map's field floor, at least inset studs inside its walls (Aura stars), or nil.
+-- A random spot on the floor of the loaded map's crossing area (the Middle, between the safe zones), at least
+-- inset studs inside it and inside the invisible walls (Aura stars), or nil. No walled field, no spot.
+function MapService.playSpot(inset: number): Vector3?
+	local middle, a, b = MapService.zones.Middle, MapService.zones.ZoneA, MapService.zones.ZoneB
+	if not (middle and field) then return nil end
+	local lo, hi = field.lo, field.hi
+	local half = middle.Size / 2
+	for _ = 1, 10 do
+		local x = (math.random() * 2 - 1) * math.max(half.X - inset, 0)
+		local z = (math.random() * 2 - 1) * math.max(half.Z - inset, 0)
+		local w = middle.CFrame:PointToWorldSpace(Vector3.new(x, 0, z))
+		local f = field.frame:PointToObjectSpace(w)
+		local inWalls = f.X > lo.X + inset and f.X < hi.X - inset and f.Z > lo.Z + inset and f.Z < hi.Z - inset
+		local inSafe = (a and MapService.inZone(a, w)) or (b and MapService.inZone(b, w))
+		local y = inWalls and not inSafe and MapService.ground(Vector3.new(w.X, middle.Position.Y, w.Z), middle.Position.Y + half.Y + 4)
+		if y and math.abs(y - field.floor) < 2 then return Vector3.new(w.X, y, w.Z) end
+	end
+	return nil
+end
+
+-- A random spot on the loaded map's field floor, at least inset studs inside its walls, or nil.
 function MapService.fieldSpot(inset: number): Vector3?
 	if not field then return nil end
 	local lo, hi = field.lo, field.hi

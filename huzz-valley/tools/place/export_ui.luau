@@ -19,6 +19,21 @@ task.wait(0.1)
 -- Visible to tick in Studio; the game hides both again when it starts.
 for _, w in player.PlayerGui.HuzzUI:GetChildren() do
 	local g = w:FindFirstChild("Group")
-	if g and g:IsA("CanvasGroup") then g.Visible = true end
+	if g and g:IsA("GuiObject") then g.Visible = true end
+end
+-- Moving effects (UI/Effects) are saved at rest: shine streaks hidden off the edge, rays hidden and unturned, so
+-- they never get in the way of clicking things in Studio. The game starts them again.
+for _, d in player.PlayerGui.HuzzUI:GetDescendants() do
+	if d.Name == "Shine" and d:IsA("Frame") then
+		d.Visible = false
+		local band = d:FindFirstChild("Band")
+		if band then band.Offset = Vector2.new(-1, 0) end
+	elseif d:IsA("ImageLabel") and d:GetAttribute("Art") == "LightRays" then
+		d.Visible, d.Rotation, d.ImageTransparency = false, 0, 1
+	elseif d.Name == "Icon" and d.Parent and d.Parent.Name == "Spin" and d:IsA("GuiObject") then
+		d.Rotation = 0 -- (the HUD wheel icon spins while a free spin waits)
+	elseif d.Name == "Breathe" and d:IsA("UIScale") then
+		d.Scale = 1
+	end
 end
 return nil

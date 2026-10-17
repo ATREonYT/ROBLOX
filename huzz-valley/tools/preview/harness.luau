@@ -445,10 +445,18 @@ local function stepTweens(dt)
 	clock.t += dt
 	for tw in table.clone(clock.active) do
 		local info = tw.TweenInfo
+		local loops = info.RepeatCount
+		local span = info.Time * (info.Reverses and 2 or 1)
 		local elapsed = clock.t - tw.start - info.DelayTime
+		if loops ~= 0 and elapsed > span then -- as in Roblox, each repeat waits DelayTime again
+			local cycle = span + info.DelayTime
+			local k = math.floor((clock.t - tw.start) / cycle)
+			if loops >= 0 then k = math.min(k, loops) end
+			elapsed = (clock.t - tw.start) - k * cycle - info.DelayTime
+			if elapsed < 0 then elapsed = 0 end
+			elapsed += k * span
+		end
 		if elapsed >= 0 then
-			local loops = info.RepeatCount
-			local span = info.Time * (info.Reverses and 2 or 1)
 			local done = loops >= 0 and elapsed >= span * (loops + 1)
 			local local_t = done and span or (elapsed % span)
 			local alpha = math.min(1, local_t / info.Time)

@@ -326,14 +326,22 @@ function handlers.Rescued(e)
 	addStat(e.by, "Rescues", 1)
 end
 
+local firstMatch, firstRoundNo -- the match table and round of the last FIRST across, so each round has one
 function handlers.Safe(e)
 	syncPlayer(e.id)
 	addStat(e.id, "Crossings", 1) -- (lore quest: cross safely)
+	local first = false
 	if State:GetAttribute("Stage") == "Running" then
 		announce(`{nameOf(e.id)} is safe`, GREEN)
+		if match and not (firstMatch == match and firstRoundNo == match.round) then
+			firstMatch, firstRoundNo, first = match, match.round, true
+		end
 	end
 	if byId[e.id] then
 		RoundNet:FireClient(byId[e.id], "Safe", {})
+	end
+	if first then -- first across this round, after SAFE! (Huss Valley flies their name in with FIRST)
+		RoundNet:FireAllClients("First", { id = e.id, name = nameOf(e.id) })
 	end
 end
 

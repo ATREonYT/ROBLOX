@@ -15,6 +15,7 @@ local Scale = require(UI.Scale)
 local Toast = require(UI.Toast)
 local ModalManager = require(UI.ModalManager)
 local Motion = require(UI.Motion)
+local Effects = require(UI.Effects)
 local MainMenu = require(script.Parent.MainMenu)
 
 local C = Theme.Colors
@@ -59,7 +60,8 @@ function LobbyHud.build(parent: Instance)
 	-- The side buttons span y 32-290; a 322-tall group puts them exactly in the middle of the left edge.
 	local left = group(root, "Left", Vector2.new(0, 0.5), UDim2.fromScale(0, 0.5), Vector2.new(100, 322))
 	squareButton(left, "Index", "CollectionBook", 32, function() MainMenu.go("Index") end)
-	squareButton(left, "Shop", "ShopCart", 98, function() MainMenu.go("Shop") end) -- (Tiers stays in the Menu; the Index filters by tier)
+	local shop = squareButton(left, "Shop", "ShopCart", 98, function() MainMenu.go("Shop") end)
+	Effects.shine(shop.Instance, { every = 4, corner = 5, z = 4 }) -- (a glint like the reference's shop button) -- (Tiers stays in the Menu; the Index filters by tier)
 	squareButton(left, "Dances", "DancesNote", 164, function() MainMenu.go("Dances") end)
 	local menu = squareButton(left, "Menu", "MainMenuLines", 233, function() ModalManager.toggle("Menu") end)
 	menu.Instance.Icon.Size = UDim2.fromOffset(30, 30) -- the lines icon reads bigger than the others
@@ -71,9 +73,18 @@ function LobbyHud.build(parent: Instance)
 	end
 	local freeTag = Kit.text({ Name = "FreeTag", Text = "FREE", FontFace = Theme.Fonts.Button, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Center, TextColor3 = C.DarkText, BackgroundTransparency = 0, BackgroundColor3 = C.SelectedTab, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(4, 4), Size = UDim2.fromOffset(38, 17), ZIndex = 3, Visible = false, Parent = spin.Instance })
 	Kit.attach(Kit.corner(4), freeTag)
+	-- While a free spin waits: green rays turn behind the button, the wheel icon spins and the FREE tag breathes.
+	-- (the rays sit beside the button, under it, so they glow round its edge instead of covering its face)
+	local spinIcon = spin.Instance:FindFirstChild("Icon") :: GuiObject
+	spin.Instance.ZIndex = 2
+	local at = spin.Instance.Position
+	local rays = Effects.rays(right, UDim2.fromOffset(at.X.Offset + 33, at.Y.Offset + 28), 104, { color = C.Accent, transparency = 0.3, seconds = 10, z = 1, name = "SpinRays" })
+	Effects.spin(spinIcon, 6, function() return freeTag.Visible end)
+	Effects.breathe(freeTag)
 	task.spawn(function()
 		while root.Parent do
 			freeTag.Visible = State.data.Loaded == true and SpinRules.available(State.data, workspace:GetServerTimeNow()) == 1
+			rays.Visible = freeTag.Visible
 			task.wait(1)
 		end
 	end)
@@ -94,7 +105,7 @@ function LobbyHud.build(parent: Instance)
 	if gemIcon and gemIcon:IsA("ImageLabel") then gemIcon.ImageColor3 = Color3.new(1, 1, 1) end
 	coins.plus.onClick(function() ModalManager.open("Shop", "Coins") end)
 	gems.plus.onClick(function() -- (Aura isn't sold: where it comes from, and the quests that give it)
-		Toast.show("Get Aura from the stars on the field, by winning games and from quests.")
+		Toast.show("Grab stars on the field in a game. Rarer colours give more! Wins and quests give Aura too.")
 		ModalManager.open("Progression", "Quests")
 	end)
 

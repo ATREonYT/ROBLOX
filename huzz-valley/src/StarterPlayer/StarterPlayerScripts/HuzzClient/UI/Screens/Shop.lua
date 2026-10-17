@@ -16,6 +16,7 @@ local State = require(UI.State)
 local Toast = require(UI.Toast)
 local ModalManager = require(UI.ModalManager)
 local Motion = require(UI.Motion)
+local Effects = require(UI.Effects)
 
 local C, T = Theme.Colors, Theme.Text
 local new = Kit.new
@@ -87,6 +88,7 @@ end
 local function buyButton(parent: Instance, p, props)
 	local b = Kit.button({ Name = "Buy", Parent = parent, Position = props.Position, Size = props.Size, AnchorPoint = props.AnchorPoint, TextSize = props.TextSize or T.Button, IconAfter = true, IconSize = props.IconSize or 22, Gap = 6, Corner = props.Corner })
 	local textSize = props.TextSize or T.Button
+	Effects.shine(b.Instance, { every = 4, delay = math.random() * 2, corner = props.Corner or Theme.Corner, z = 6 }) -- (a white glint every few seconds)
 	local badge = Kit.text({ Name = "RobuxBadge", Text = Format.RobuxMark, FontFace = Theme.Fonts.Number, TextSize = math.floor(textSize * (props.BadgeScale or 1.5)), TextColor3 = C.RobuxBadge, TextXAlignment = Enum.TextXAlignment.Center, AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), TextWrapped = false, LayoutOrder = 1, Parent = b.Instance:FindFirstChild("Content") })
 	local icon: ImageLabel? = nil
 	local function refresh()
@@ -157,6 +159,7 @@ local function buildPasses(body: Frame)
 		})
 		y += h + 10
 		art(row, p, Vector2.new(171, h))
+		Effects.shine(row, { every = 5, delay = (i - 1) * 1.2, corner = 4, strength = 0.28, z = 5 }) -- a slow streak across the whole banner
 		local title = Kit.name({ Name = "Name", Text = string.upper(p.Name), FontFace = Theme.Fonts.Heading, TextSize = if #p.Name > 6 then 20 else 27, TextWrapped = false, Position = UDim2.fromOffset(183, 9), Size = UDim2.fromOffset(140, 32), Parent = row }) -- (long names smaller, so DANCE PACK ends before the divider)
 		new("UIGradient", { Rotation = 90, Color = ColorSequence.new(Color3.new(1, 1, 1), accent:Lerp(Color3.new(1, 1, 1), 0.55)), Parent = title })
 		new("Frame", { Name = "Underline", Position = UDim2.fromOffset(184, 42), Size = UDim2.fromOffset(120, 2), BackgroundColor3 = accent, BorderSizePixel = 0, Parent = row }, {
@@ -234,6 +237,7 @@ local function buildCoins(body: Frame)
 			ColorSequenceKeypoint.new(1, C.CoinCard),
 		}) })
 		coinArt(c, p, d.W, COIN_ART_H)
+		Effects.shine(c, { every = 5, delay = (i - 1) * 0.9, corner = 4, strength = 0.28, z = 5 })
 		Kit.name({ Name = "Name", Text = p.Name, TextSize = 20, TextColor3 = C.CoinText, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(d.TextDX, 109), Size = UDim2.new(1, 0, 0, 26), Parent = c })
 		local blurb = Kit.text({ Name = "Blurb", Text = p.Blurb, TextSize = 13, TextColor3 = C.CoinBlurb, TextXAlignment = Enum.TextXAlignment.Center, TextYAlignment = Enum.TextYAlignment.Top, LineHeight = 1.05, Position = UDim2.fromOffset(d.TextDX, 138), Size = UDim2.new(1, 0, 0, 32), Parent = c })
 		local shadow = blurb:Clone() -- the reference's descriptions sit on the same soft drop as the names
@@ -325,7 +329,8 @@ end
 local BUILD = { Passes = buildPasses, Cosmetics = buildCosmetics, Items = buildItems, Coins = buildCoins }
 
 function Shop.build(parent: Instance)
-	local window = Kit.window({ Name = "Shop", Title = "SHOP", Icon = "ShopCart", Width = W, Height = H, TitleX = 63, TitleOffsetY = 3, TitleWidth = 101, StudsTo = 352, Parent = parent, OnClose = function() ModalManager.close() end })
+	-- Flat (no CanvasGroup): the shine streaks keep moving, and a CanvasGroup would redraw the whole Shop for each.
+	local window = Kit.window({ Name = "Shop", Flat = true, Title = "SHOP", Icon = "ShopCart", Width = W, Height = H, TitleX = 63, TitleOffsetY = 3, TitleWidth = 101, StudsTo = 352, Parent = parent, OnClose = function() ModalManager.close() end })
 	local panel, header = window.Panel, window.Header
 	local coins = Kit.pill({ Name = "Coins", Icon = "CurrencyCoin", Position = UDim2.fromOffset(357, 6), Width = 121, Parent = header })
 	local gems = Kit.pill({ Name = "Aura", Icon = "AuraStar", Position = UDim2.fromOffset(493, 6), Width = 108, Parent = header })

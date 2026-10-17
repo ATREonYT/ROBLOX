@@ -1,9 +1,10 @@
 --[[
-	Draws the lobby's Aura stars (HuzzServer/AuraPickupService, tag "HuzzAuraStar") on this screen with the
+	Draws the field's Aura stars (HuzzServer/AuraPickupService, tag "HuzzAuraStar") on this screen with the
 	owner's Aura star (design/aura): the purple one as drawn, the other colours from its all-white copy, tinted. A
 	soft halo behind it breathes, sparkles, a soft light and a glow on the floor; it bobs and sways gently. Rainbow
-	stars drift through the colours slowly (never a flash). Collecting one (run into it) pops it: a burst of sparkles, a sound
-	and "+1 Aura".
+	stars drift through the colours slowly (never a flash). Rarer stars (worth more) are bigger, sparkle more and glow
+	brighter, so you can tell them apart from far away. Collecting one (run into it) pops it: a burst of sparkles (bigger
+	for rarer ones), a sound and "+N Aura".
 	Only stars near the camera animate.
 ]]
 local M = {}
@@ -24,17 +25,19 @@ function M.start()
 	local Sfx = require(script.Parent.Sfx)
 
 	local NEAR = 140
-	local kinds = {}
-	for _, k in Config.Kinds do kinds[k.Name] = k end
+	local kinds, tierOf = {}, {}
+	for i, k in Config.Kinds do kinds[k.Name] = k; tierOf[k.Name] = i - 1 end -- 0 = most common
 	local looks = {} -- star part -> its pieces
 
 	local function build(star: BasePart)
 		if looks[star] then return end
 		local kind = kinds[star:GetAttribute("Kind") or ""] or Config.Kinds[1]
 		local color = kind.Color
+		local tier = tierOf[kind.Name] or 0
 		local gui = Instance.new("BillboardGui")
 		gui.Name = "AuraLook"
-		gui.Size = UDim2.fromScale(4.2, 4.2) -- (studs: grows and shrinks with distance, like a real object)
+		local size = 4.2 * (1 + tier * 0.14) -- rarer = bigger (studs: grows and shrinks with distance, like a real object)
+		gui.Size = UDim2.fromScale(size, size)
 		gui.LightInfluence = 0
 		gui.MaxDistance = NEAR
 		gui.Adornee = star
@@ -55,7 +58,7 @@ function M.start()
 		sparkles.Texture = AuraLook.TEXTURES.Star or "rbxasset://textures/particles/sparkles_main.dds"
 		sparkles.Color = ColorSequence.new(Color3.new(1, 1, 1), color)
 		sparkles.LightEmission = 0.8
-		sparkles.Rate = if kind.Value > 1 then 9 else 5
+		sparkles.Rate = 5 + tier * 3
 		sparkles.Lifetime = NumberRange.new(0.8, 1.5)
 		sparkles.Speed = NumberRange.new(0.6, 1.6)
 		sparkles.SpreadAngle = Vector2.new(180, 180)
@@ -64,8 +67,8 @@ function M.start()
 		sparkles.Parent = att
 		local light = Instance.new("PointLight")
 		light.Color = color
-		light.Brightness = 1.2
-		light.Range = 9
+		light.Brightness = 1.2 + tier * 0.25
+		light.Range = 9 + tier * 1.5
 		light.Shadows = false
 		light.Parent = star
 		-- a soft glow on the floor under it
@@ -76,7 +79,7 @@ function M.start()
 		floor.Material = Enum.Material.Neon
 		floor.Color = color
 		floor.Transparency = 0.82
-		floor.Size = Vector3.new(0.06, 3.4, 3.4)
+		floor.Size = Vector3.new(0.06, 3.4 + tier * 0.5, 3.4 + tier * 0.5)
 		floor.CFrame = CFrame.new(star.Position - Vector3.new(0, Config.Height - 0.05, 0)) * CFrame.Angles(0, 0, math.rad(90))
 		floor.Parent = star
 		looks[star] = { gui = gui, halo = halo, core = core, sparkles = sparkles, light = light, floor = floor, kind = kind, seed = math.random() * 10 }
@@ -138,10 +141,10 @@ function M.start()
 			e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.45), NumberSequenceKeypoint.new(1, 0) })
 			e.Parent = p
 			p.Parent = Workspace
-			e:Emit(24)
+			e:Emit(24 + (tierOf[k.Name] or 0) * 10)
 			task.delay(1.5, function() p:Destroy() end)
 		end
-		Sfx.play("aura_pickup", { pitch = if (data.value or 1) > 1 then 0.9 else 1 })
+		Sfx.play("aura_pickup", { pitch = if (data.value or 1) >= 5 then 0.85 elseif (data.value or 1) > 1 then 0.95 else 1 })
 		Toast.show(`+{data.value or 1} Aura`)
 	end)
 end

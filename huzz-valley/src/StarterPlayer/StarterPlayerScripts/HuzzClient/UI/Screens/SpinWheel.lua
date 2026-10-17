@@ -23,6 +23,7 @@ local Net = require(Shared.Net)
 local UI = script.Parent.Parent
 local Theme = require(UI.Theme)
 local Kit = require(UI.Kit)
+local Effects = require(UI.Effects)
 local Motion = require(UI.Motion)
 local State = require(UI.State)
 local Toast = require(UI.Toast)
@@ -152,6 +153,8 @@ function SpinWheel.build(parent: Instance)
 	local boostLine = words({ Name = "Boost", Text = "", TextSize = 18, TextColor3 = C.Accent, Position = UDim2.fromOffset(0, 54), Size = UDim2.fromOffset(800, 22), Visible = false, Parent = top }, 1.5)
 
 	-- The wheel.
+	-- soft light turning behind the wheel (a sibling under the title and the wheel, so it never covers either)
+	Effects.rays(group, UDim2.fromOffset(CX, CY), math.round(D * 1.75), { transparency = 0.45, seconds = 24, z = 0, name = "WheelRays" })
 	local wheel = new("Frame", { Name = "Wheel", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(CX, CY), Size = UDim2.fromOffset(D, D), BackgroundTransparency = 1, Parent = group })
 	new("UIScale", { Name = "Pop", Parent = wheel })
 	circle({ Name = "Shadow", Position = UDim2.new(0.5, 0, 0.5, 8), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.6, ZIndex = 1, Parent = wheel }, D + 30)

@@ -540,6 +540,14 @@ function M.start()
 			show(banner, "SAFE!", GREEN, 1.4, 72)
 			sayLine("Safe")
 			Sfx.play("safe")
+		elseif kind == "First" then
+			-- First across this round (Huss Valley: the name flies in big with FIRST over it)
+			if data.id == player.UserId then
+				show(banner, "FIRST!", GREEN, 1.8, 76) -- (comes right after SAFE! and takes its slot)
+				Sfx.play("reward")
+			else
+				show(small, `{data.name or "Someone"} is FIRST!`, GREEN, 2)
+			end
 		elseif kind == "Bonus" then
 			local text = `+{data.coins} coins` .. (if (data.aura or 0) > 0 then `  +{data.aura} Aura` else "")
 			if data.late then

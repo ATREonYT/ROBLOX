@@ -63,6 +63,7 @@ Assets.Art = {
 	Coins5000 = "",      -- assets/art/coins-5000.png
 	CrownPose = "",      -- assets/art/crown-pose.png
 	DancePack = "",      -- assets/art/dance-pack.png
+	LightRays = "",      -- assets/art/light-rays.png (made by us: soft rays that turn behind featured pictures)
 	MidnightOutfit = "", -- assets/art/midnight-outfit.png
 	SunsetTrail = "",    -- assets/art/sunset-trail.png
 	Vip = "",            -- assets/art/vip.png

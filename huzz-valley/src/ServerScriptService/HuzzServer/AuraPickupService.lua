@@ -1,6 +1,6 @@
 --[[
-	Aura stars (Config/AuraStars): keeps Count stars floating over the playing field while a map is loaded (else
-	round the lobby spawn). Run into one and it's collected: the server checks every player's distance to every
+	Aura stars (Config/AuraStars): keeps Count stars floating over the playing zone (the map's Middle) while a map
+	is loaded; none between games. Run into one and it's collected: the server checks every player's distance to every
 	star ten times a second (first one there wins) and pays (DataService). A collected star refills elsewhere after a
 	short wait; when the map changes, the stars move to the new field. The look (glow, sparkles, bobbing) is drawn on
 	every client (Gameplay/AuraStars, tag "HuzzAuraStar").
@@ -30,27 +30,11 @@ local function pickKind()
 	return Config.Kinds[1]
 end
 
--- The middle of the lobby in use: its spawn if there is one, else the lobby part.
-local function centre(): Vector3?
-	return MapService.lobbySpawn()
-end
-
+-- A spot over the playing zone, or nil between games (owner: "collected in the playing zone").
 local function spot(): Vector3?
-	if MapService.current then
-		local p = MapService.fieldSpot(6)
-		if p then return p + Vector3.new(0, Config.Height, 0) end
-	end
-	local c = centre()
-	if not c then return nil end
-	for _ = 1, 8 do
-		local a, r = rng:NextNumber() * math.pi * 2, Config.Radius * math.sqrt(rng:NextNumber())
-		local p = c + Vector3.new(math.cos(a) * r, 0, math.sin(a) * r)
-		local floor = MapService.ground(p, c.Y + 30)
-		if floor and math.abs(floor - c.Y) < 25 then
-			return Vector3.new(p.X, floor + Config.Height, p.Z)
-		end
-	end
-	return nil
+	if not MapService.current then return nil end
+	local p = MapService.playSpot(Config.Inset)
+	return if p then p + Vector3.new(0, Config.Height, 0) else nil
 end
 
 local spawnOne
@@ -71,7 +55,7 @@ end
 function spawnOne()
 	local at = spot()
 	if not at then
-		task.delay(5, spawnOne) -- (no lobby floor yet: try again soon)
+		task.delay(3, spawnOne) -- (no map loaded: try again soon)
 		return
 	end
 	local kind = pickKind()
@@ -97,7 +81,7 @@ local function watch()
 		for _, star in folder:GetChildren() do
 			if star:IsA("BasePart") then
 				if star:GetAttribute("Map") ~= mapName then
-					star:Destroy() -- (the map changed: this one belonged to the old field or the lobby)
+					star:Destroy() -- (the map changed: this one belonged to the old field)
 					task.defer(spawnOne)
 				else
 					for _, player in Players:GetPlayers() do
@@ -118,12 +102,6 @@ function AuraPickupService.start()
 	folder.Name = "HuzzAuraStars"
 	folder.Parent = Workspace
 	task.spawn(function()
-		-- wait for the lobby (MapService sets it up when the round script starts)
-		local waited = 0
-		while not centre() and waited < 60 do
-			task.wait(1)
-			waited += 1
-		end
 		for _ = 1, Config.Count do
 			spawnOne()
 			task.wait(0.2)

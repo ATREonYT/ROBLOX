@@ -54,7 +54,8 @@ function draw(n, parentEl, rect, k, parentAbs) {
       const cs = arr(m.grad.c), ts = arr(m.grad.tr || [[0, 0], [1, 0]]);
       const at = (seq, t, i) => { for (let j = 0; j < seq.length - 1; j++) { const a = seq[j], b = seq[j + 1]; if (t <= b[0]) { const f = b[0] > a[0] ? (t - a[0]) / (b[0] - a[0]) : 0; return a[i] + (b[i] - a[i]) * f; } } return seq[seq.length - 1][i]; };
       const pts = [...new Set([...cs.map(s => s[0]), ...ts.map(s => s[0])])].sort((x, y) => x - y);
-      const stops = pts.map(t => `${rgba([at(cs, t, 1) * n.bg[0], at(cs, t, 2) * n.bg[1], at(cs, t, 3) * n.bg[2]], 1 - (1 - n.bgT) * (1 - at(ts, t, 1)))} ${t * 100}%`).join(',');
+      const ox = (m.grad.off && m.grad.off[0]) || 0; // Offset slides the gradient along its axis (a shine sweep at rest sits off the edge)
+      const stops = pts.map(t => `${rgba([at(cs, t, 1) * n.bg[0], at(cs, t, 2) * n.bg[1], at(cs, t, 3) * n.bg[2]], 1 - (1 - n.bgT) * (1 - at(ts, t, 1)))} ${(t + ox) * 100}%`).join(',');
       el.style.background = `linear-gradient(${m.grad.rot + 90}deg, ${stops})`;
     } else el.style.background = rgba(n.bg, n.bgT);
   }
