@@ -58,9 +58,9 @@ Assets.Icons = {
 -- Product pictures, cropped unchanged from the kit's pages (design/pages 01, 07, 08). Import them the same way.
 Assets.Art = {
 	BlossomAura = "",    -- assets/art/blossom-aura.png
-	Coins2000 = "",      -- assets/art/coins-2000.png
-	Coins500 = "",       -- assets/art/coins-500.png
-	Coins5000 = "",      -- assets/art/coins-5000.png
+	CoinPack2000 = "",   -- assets/art/coin-pack-2000.png (cut from the Oct 17 mockup: placeholder until a sharp PNG)
+	CoinPack500 = "",    -- assets/art/coin-pack-500.png (same)
+	CoinPack5000 = "",   -- assets/art/coin-pack-5000.png (same)
 	CrownPose = "",      -- assets/art/crown-pose.png
 	DancePack = "",      -- assets/art/dance-pack.png
 	LightRays = "",      -- assets/art/light-rays.png (made by us: soft rays that turn behind featured pictures)

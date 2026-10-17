@@ -1,4 +1,5 @@
--- Shop (design/pages/01, 07, 08): Passes / Cosmetics / Coins tabs over one stationary window.
+-- Shop (design/pages/01, 07; ITEMS and COINS after the owner's Oct 17 mockup): Passes / Cosmetics / Items / Coins
+-- tabs over one stationary window.
 -- Buy buttons only open Roblox's purchase prompt; the server grants (ShopService). Each button shows exactly one
 -- state: Robux badge + price, "..." (prompt open) or OWNED (a cosmetic you own: WEAR / WEARING, tap to switch). Items that aren't on sale yet show their price like the
 -- reference but only say "coming soon" when tapped; they never open a purchase.
@@ -213,24 +214,20 @@ local function buildCosmetics(body: Frame)
 	end
 end
 
--- Coins: 3 tall cards (reference 08), measured card by card. The reference's cards differ slightly in width and
--- button inset, so each card keeps its own numbers. X is window-relative inside the coin body; the window is 3 px
--- narrower than the reference, taken out of the two gaps and the last card. The reference page is 9 px taller than
--- the window, so every vertical number is the reference's times 0.96 (card 225 -> 216 tall; the art crops 1-2 px).
-local COIN_BODY = { X = 15, Y = 91, H = H - 91 - 6 } -- the cards' rims sit 1 px inside this
-local COIN_CARDS = {
-	{ X = 16, W = 209, ButtonX = 9, ButtonW = 189, TextDX = 0 },
-	{ X = 237, W = 206, ButtonX = 8, ButtonW = 189, TextDX = 1 },
-	{ X = 455, W = 230, ButtonX = 13, ButtonW = 205, TextDX = 3 },
-}
-local COIN_H, COIN_ART_H = 216, 106
+-- COINS: 3 tall cards after the owner's Oct 17 mockup (design/ui-oct17, bottom left), measured there and scaled to
+-- the window (x 0.759): the title on top, the big picture (coin pile, bag, chest: Config/Products Art, cut from the
+-- mockup as placeholders) filling the card down to the price button. The prices are Robux, so the button keeps the
+-- Robux mark (the mockup's coin icon would tell kids they cost coins). Our header and tabs are the ITEMS tab's (7 px
+-- lower than the mockup's), so the cards start under them and use the room down to the window's bottom edge.
+local COIN_BODY = { X = 15, Y = 88, H = H - 88 - 8 } -- (window px; the cards and their rims sit inside this)
+local COIN = { X = { 21, 246, 472 }, Y = 4, W = 212, H = 216, ArtH = 162, ButtonX = 10, ButtonY = 163, ButtonH = 44,
+	Fill = Color3.fromHex("10143F"), FillBottom = Color3.fromHex("121644"), Rim = Color3.fromHex("5250AA"), Glow = Color3.fromHex("1A1114") }
 
--- The kit's art, top corners rounded to the card's inner radius and bottom corners square: one rounded copy, and a
+-- The picture, top corners rounded to the card's inner radius and bottom corners square: one rounded copy, and a
 -- square copy clipped to everything below the corners (ClipsDescendants clips square, so no background shows).
 local function coinArt(parent: Instance, p, w: number, h: number)
-	local r = 4
+	local r = 5
 	local panel = new("Frame", { Name = "Art", Size = UDim2.fromOffset(w, h), BackgroundTransparency = 1, Parent = parent })
-	backdrop(panel, r)
 	Kit.attach(Kit.corner(r), Kit.art(p.Art, { Name = "Picture", Size = UDim2.fromScale(1, 1), Parent = panel }))
 	local lower = new("Frame", { Name = "Lower", Position = UDim2.fromOffset(0, r), Size = UDim2.new(1, 0, 1, -r), BackgroundTransparency = 1, ClipsDescendants = true, Parent = panel })
 	Kit.art(p.Art, { Name = "Picture", Position = UDim2.fromOffset(0, -r), Size = UDim2.fromOffset(w, h), Parent = lower })
@@ -238,26 +235,19 @@ local function coinArt(parent: Instance, p, w: number, h: number)
 end
 
 local function buildCoins(body: Frame)
-	local artEnd = COIN_ART_H / COIN_H
 	for i, p in Products.Coins do
-		local d = COIN_CARDS[i]
-		local c = new("Frame", { Name = p.Key, Position = UDim2.fromOffset(d.X - COIN_BODY.X, 1), Size = UDim2.fromOffset(d.W, COIN_H), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = body }, { Kit.corner(4), Kit.stroke(C.CoinCardRim, 1) })
+		local c = new("Frame", { Name = p.Key, Position = UDim2.fromOffset(COIN.X[i] - COIN_BODY.X, COIN.Y), Size = UDim2.fromOffset(COIN.W, COIN.H), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = body }, { Kit.corner(6), Kit.stroke(COIN.Rim, 2) })
+		-- navy card; its dark warm top matches the picture's own glow, so the rounded corners never show a seam
 		new("UIGradient", { Rotation = 90, Parent = c, Color = ColorSequence.new({
-			ColorSequenceKeypoint.new(0, C.CoinCardShade), ColorSequenceKeypoint.new(artEnd, C.CoinCardShade),
-			ColorSequenceKeypoint.new(artEnd + 0.07, C.CoinCard), ColorSequenceKeypoint.new(0.85, C.CoinCardBottom),
-			ColorSequenceKeypoint.new(1, C.CoinCard),
+			ColorSequenceKeypoint.new(0, COIN.Glow), ColorSequenceKeypoint.new(0.7, COIN.Glow),
+			ColorSequenceKeypoint.new(0.76, COIN.Fill), ColorSequenceKeypoint.new(1, COIN.FillBottom),
 		}) })
-		coinArt(c, p, d.W, COIN_ART_H)
-		Effects.shine(c, { every = 5, delay = (i - 1) * 0.9, corner = 4, strength = 0.28, z = 5 })
-		Kit.name({ Name = "Name", Text = p.Name, TextSize = 20, TextColor3 = C.CoinText, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(d.TextDX, 109), Size = UDim2.new(1, 0, 0, 26), Parent = c })
-		local blurb = Kit.text({ Name = "Blurb", Text = p.Blurb, TextSize = 13, TextColor3 = C.CoinBlurb, TextXAlignment = Enum.TextXAlignment.Center, TextYAlignment = Enum.TextYAlignment.Top, LineHeight = 1.05, Position = UDim2.fromOffset(d.TextDX, 138), Size = UDim2.new(1, 0, 0, 32), Parent = c })
-		local shadow = blurb:Clone() -- the reference's descriptions sit on the same soft drop as the names
-		shadow.Name, shadow.TextColor3, shadow.TextTransparency, shadow.Position = "BlurbShadow", C.TextShadow, 0.5, blurb.Position + UDim2.fromOffset(0, 1)
-		shadow = Kit.attach(shadow, c)
-		blurb.ZIndex = 2
-		local b = buyButton(c, p, { Position = UDim2.fromOffset(d.ButtonX, 175), Size = UDim2.fromOffset(d.ButtonW, 35), TextSize = 20, Style = "CoinAction", Corner = 4 })
-		-- the reference's 1 px lighter bevel just inside the dark rim, all the way round
-		new("Frame", { Name = "Bevel", BackgroundTransparency = 1, Position = UDim2.fromOffset(1, 1), Size = UDim2.new(1, -2, 1, -2), ZIndex = b.Instance.ZIndex, Parent = b.Instance }, { Kit.corner(2), Kit.stroke(C.CoinBuyBevel, 1) })
+		coinArt(c, p, COIN.W, COIN.ArtH)
+		Effects.shine(c, { every = 5, delay = (i - 1) * 0.9, corner = 6, strength = 0.28, z = 5 })
+		-- the mockup's titles are heavy, with a dark outline over the glow
+		local title = Kit.name({ Name = "Name", Text = p.Name, FontFace = Theme.Fonts.Heading, TextSize = 21, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(0, 9), Size = UDim2.new(1, 0, 0, 26), ZIndex = 2, Parent = c })
+		new("UIStroke", { Name = "Outline", Color = C.TitleStroke, Thickness = 1.5, LineJoinMode = Enum.LineJoinMode.Round, Parent = title })
+		buyButton(c, p, { Position = UDim2.fromOffset(COIN.ButtonX, COIN.ButtonY), Size = UDim2.fromOffset(COIN.W - 2 * COIN.ButtonX, COIN.ButtonH), TextSize = 23, BadgeScale = 1.55, Style = "ItemBuy", Corner = 6 })
 	end
 end
 
@@ -414,7 +404,7 @@ function Shop.build(parent: Instance)
 		refreshButtons = {}
 		for _, ch in body:GetChildren() do if ch:IsA("GuiObject") then ch:Destroy() end end
 		body.CanvasPosition = Vector2.zero
-		if key == "Coins" then -- the coin cards follow reference 08's own margins
+		if key == "Coins" then -- the coin cards follow the mockup's own margins
 			body.Position, body.Size = UDim2.fromOffset(COIN_BODY.X - RIM, COIN_BODY.Y - RIM), UDim2.fromOffset(W - 2 * COIN_BODY.X + 2 * RIM, COIN_BODY.H + 2 * RIM)
 		else
 			body.Position, body.Size = UDim2.fromOffset(BODY_X - RIM, BODY_Y - RIM), UDim2.fromOffset(BODY_W + 6 + 2 * RIM, H - BODY_Y - 10 + 2 * RIM)

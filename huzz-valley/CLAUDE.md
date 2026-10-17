@@ -260,7 +260,9 @@ Owner's own words are in quotes. Read only the section you need.
 
 ## 11. Economy: coins, Aura, shop, wheel, quests
 - **Coins** buy looks in the Shop's ITEMS tab (`Config/CoinShop`: trails, name colours, knife skins). Items with
-  `Unlock` (quest knives) or `NotForSale` (Spin Knife) are never sold.
+  `Unlock` (quest knives) or `NotForSale` (Spin Knife) are never sold. The COINS tab sells coin packs for Robux
+  (cards after the Oct 17 mockup, `docs/previews/coins-vs-mockup.jpg`; art cut by `tools/icons/make_screen_art.py`,
+  placeholders until sharp PNGs); its buttons keep the Robux mark, never a coin icon.
 - **Aura stars** (owner's star art in `design/aura`, packed `AuraStar` + white `AuraStarWhite` for tinting):
   float only in the playing zone (map Middle, outside ZoneA/ZoneB: `MapService.playSpot`) while a map is loaded,
   none between games; **run through one to collect** (server checks distance 10x a second). Owner (Oct 17): "different
