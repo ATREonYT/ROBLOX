@@ -19,6 +19,13 @@ to Claude.
    It goes into your **Downloads** folder.
 5. Double-click **HuzzValley-yours.rbxl** in Downloads. It opens in Roblox Studio.
 
+**Working in your real game with Rojo instead?** That works too:
+1. Do steps 1 to 3 above (GitHub Desktop: HUZZ-VALLEY, Fetch, Pull).
+2. Start Rojo the way you normally do, then in Studio click **Plugins > Rojo > Connect**. The Rojo panel should
+   say it's connected.
+3. In **Explorer**, open **ServerStorage > HuzzStudioTools**. You should see **UploadPictures** and
+   **CollectSoundIds**. If they aren't there, Rojo isn't connected yet.
+
 **Don't press Play** for parts 1 and 2. They only work while you're editing.
 
 ---
@@ -122,7 +129,7 @@ When you're done testing, set `StudioTestRarity` back to `""`.
 ---
 
 ## If something goes wrong
-- **"ServerStorage.HuzzStudioTools is not a valid member"**: you're in an older game file. Download the newest one
-  (see "Before you start").
+- **"UploadPictures is not a valid member of Folder ServerStorage.HuzzStudioTools"**: the newest code isn't in
+  this place yet. Pull in GitHub Desktop and reconnect Rojo, or open the newest downloaded game file (see "Before you start").
 - **"Allow Mesh / Image APIs" or "EditableImage" in red**: do step 1a again and make sure you clicked **Save**.
 - **Anything else in red**: send Claude a screenshot.

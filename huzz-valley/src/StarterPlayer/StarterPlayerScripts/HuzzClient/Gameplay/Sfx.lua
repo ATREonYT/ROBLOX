@@ -33,25 +33,17 @@ local LEVEL = {
 -- Owner: "not some random high pitch sounds". So: never above pitch 1.1, soft clicks for the UI, and no stand-in
 -- where a built-in can only sound wrong (silence beats a squeaky ping). Only built-ins every client has.
 local PING = "rbxasset://sounds/electronicpingshort.wav"
-local SWOOSH = "rbxasset://sounds/swoosh.wav"
+-- (Roblox's swoosh.wav is refused in Studio: "Asset is not approved for the requester", so no swoosh stand-in.)
 local BUTTON = "rbxasset://sounds/button.wav"
 local CLICK = "rbxasset://sounds/clickfast.wav"
 local FALLBACK = {
 	ui_click = { BUTTON, 0.5, 1 },
 	ui_hover = { CLICK, 0.4, 0.9 },
-	ui_open = { SWOOSH, 0.35, 1.05 },
-	ui_close = { SWOOSH, 0.3, 0.85 },
 	countdown_tick = { PING, 0.6, 0.8 },
 	countdown_go = { PING, 0.8, 1.05 },
 	roulette_tick = { CLICK, 0.6, 0.95 },
 	spin_tick = { CLICK, 0.6, 0.85 },
 	pick_land = { PING, 0.7, 0.9 },
-	hero_chosen = { SWOOSH, 1, 0.9 },
-	chicken_chosen = { SWOOSH, 0.8, 1 },
-	dash = { SWOOSH, 0.8, 1.05 },
-	power_rush = { SWOOSH, 0.8, 0.95 },
-	lunge = { SWOOSH, 0.9, 0.8 },
-	stab = { SWOOSH, 0.5, 1.1 },
 	caught = { "rbxasset://sounds/uuhhh.mp3", 0.8, 1 },
 	knock_down = { "rbxasset://sounds/action_jump_land.mp3", 1, 0.9 },
 	trap_set = { CLICK, 0.7, 0.8 },
