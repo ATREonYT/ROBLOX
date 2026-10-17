@@ -810,6 +810,11 @@ function M.start()
 		if type(at) ~= "number" or typeof(base) ~= "CFrame" then return end
 		if Workspace:GetServerTimeNow() - at > Reveal.RETURN then return end -- (joined late: she's already up there)
 		playing = true
+		-- (a streaming place can hand us her model before her parts: wait for them, at most 2 s)
+		local waitUntil = os.clock() + 2
+		while not model:FindFirstChildWhichIsA("BasePart", true) and os.clock() < waitUntil do
+			task.wait(0.05)
+		end
 		model:SetAttribute("HuzzRevealing", true) -- (Gameplay/CarryAnimator leaves her to us meanwhile)
 		local ok, step, cleanup, ground, k, mid = pcall(M.build, model, base, at)
 		if not ok then

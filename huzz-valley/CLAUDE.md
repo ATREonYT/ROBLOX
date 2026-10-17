@@ -311,6 +311,10 @@ Owner's own words are in quotes. Read only the section you need.
   speed streaks, swarm, burst; ever-present motes/crystals/nebula. Film `motion3d/secret_scene.luau` (real module; its
   bloom and sky are imitations) → `docs/previews/secret-cutscene.mp4`, `-slow`, `secret-vs-ref3.jpg` (`secret_vs_ref.py`),
   `secret-vs-ref3.mp4` (`secret_vs_ref_video.sh`); flashes: `tools/preview/flash_check.py <film>`.
+  The Secret girls are **C.C. and Marin** (owner, Oct 17; `Config/GirlNames`). The owner's place streams (StreamingEnabled):
+  the showcase is `ModelStreamingMode` Persistent and RoundService streams the spot in around everyone (at most 3 s,
+  `ReplicationFocus` until the end) before `RevealAt`; his first Studio recording (old 7.5 s build) showed an empty
+  spot with no girl and no map because of this.
 - **Crates** (`Config/Crates`, `Shared/CrateRoll` with odds + pity) are plumbed but empty until the owner designs them.
 
 ## 12. Sounds

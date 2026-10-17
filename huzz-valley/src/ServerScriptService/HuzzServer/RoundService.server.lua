@@ -938,6 +938,29 @@ local function runGame()
 	-- A Secret girl arrives with a cutscene on every screen (HuzzClient/Gameplay/SecretReveal): she bursts out of an
 	-- orb of light, lands in the middle of the map and floats up to her place, then the game goes on.
 	if girl.rarity == "Secret" and showcase then
+		-- (the owner's place streams the world in around each player: the cutscene's spot over the map can be too
+		-- far from the lobby, so its floor and props were missing in Studio. Load them around everyone first, for
+		-- at most 3 s, and keep them loaded until the cutscene ends)
+		local spot = (showcase:GetAttribute("Base") :: CFrame?) or showcase:GetPivot()
+		local focus = showcase:FindFirstChild("Aura")
+		local waiting = 0
+		for _, p in Players:GetPlayers() do
+			pcall(function() p.ReplicationFocus = focus end)
+			waiting += 1
+			task.spawn(function()
+				pcall(function() p:RequestStreamAroundAsync(spot.Position - Vector3.new(0, Config.Showcase.Height, 0), 3) end)
+				waiting -= 1
+			end)
+		end
+		local deadline = os.clock() + 3
+		while waiting > 0 and os.clock() < deadline do
+			task.wait(0.1)
+		end
+		task.delay(SecretReveal.LENGTH, function()
+			for _, p in Players:GetPlayers() do
+				pcall(function() if p.ReplicationFocus == focus then p.ReplicationFocus = nil end end)
+			end
+		end)
 		showcase:SetAttribute("RevealAt", Workspace:GetServerTimeNow())
 		setStage("Reveal", SecretReveal.LENGTH)
 		announce("Something rare is coming...", Color3.fromRGB(190, 170, 255), true)

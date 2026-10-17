@@ -420,6 +420,9 @@ function GirlService.showcase(girl, at, parent)
 	end
 	model:SetAttribute("Base", model:GetPivot())
 	CollectionService:AddTag(model, "HuzzShowcase")
+	-- (the owner's place streams: without this a far-away player's game never gets her parts, and the Secret
+	-- cutscene filmed an empty spot. Persistent = every player always has her, whole)
+	pcall(function() (model :: any).ModelStreamingMode = Enum.ModelStreamingMode.Persistent end)
 	model.Parent = parent
 	return model
 end
