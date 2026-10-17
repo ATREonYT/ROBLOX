@@ -277,6 +277,43 @@ do
 			end
 		end
 		check("Lighting restored exactly after the cutscene", same)
+		-- at the end she's exactly where Gameplay/CarryAnimator floats her (no snap when it takes over)
+		local S = require(RS.Shared.Config.Round).Showcase
+		local function floatAt(now)
+			return base * CFrame.new(0, math.sin(now * 1.1) * S.Bob, 0) * CFrame.Angles(0, (now * S.Spin) % (2 * math.pi), 0)
+		end
+		local okEnd, endStep, endCleanup = pcall(Reveal.build, m, base, 1000)
+		if okEnd then
+			endStep(Timing.LENGTH, Vector3.new(0, 0, 1))
+			local d = m:GetPivot().Position - floatAt(1000 + Timing.LENGTH).Position
+			local lookOff = (m:GetPivot().LookVector - floatAt(1000 + Timing.LENGTH).LookVector).Magnitude
+			endCleanup()
+			check("she hands over to the float without a snap", d.Magnitude < 0.01 and lookOff < 0.01)
+		else
+			check("she hands over to the float without a snap: " .. tostring(endStep), false)
+		end
+	end
+	-- a Lighting without Atmosphere or Bloom: ours start from nothing (no sudden haze) and are removed after
+	do
+		for _, c in L:GetChildren() do c:Destroy() end
+		local okN, stepN, cleanupN = pcall(Reveal.build, m, base)
+		if okN then
+			stepN(0, Vector3.new(0, 0, 1))
+			local a0 = L:FindFirstChildOfClass("Atmosphere")
+			local b0 = L:FindFirstChildOfClass("BloomEffect")
+			local startsClear = a0 ~= nil and a0.Density == 0 and b0 ~= nil and b0.Intensity == 0
+			stepN(5, Vector3.new(0, 0, 1))
+			local on = a0.Density > 0.3
+			cleanupN()
+			check("a new Atmosphere and Bloom fade in from nothing and are removed", startsClear and on and #L:GetChildren() == 0)
+		else
+			check("secret reveal builds on a bare Lighting: " .. tostring(stepN), false)
+		end
+		-- a build that fails half way leaves nothing behind (no haze, no folder, no beams)
+		Reveal.failForTest = true
+		local okF = pcall(Reveal.build, m, base)
+		Reveal.failForTest = nil
+		check("a failed build cleans up after itself", not okF and #L:GetChildren() == 0 and workspace:FindFirstChild("HuzzSecretReveal") == nil and #workspace.Terrain:GetChildren() == 0)
 	end
 end
 

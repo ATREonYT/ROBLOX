@@ -107,7 +107,7 @@ end
 function SecretReveal.beam(t: number, at: number): (number, number)
 	if t < at then return 0, 0 end
 	local reach = easeOut((t - at) / 0.18)
-	local fade = 1 - smooth((t - SecretReveal.IMPACT - 0.15) / 0.5)
+	local fade = 1 - smooth((t - SecretReveal.IMPACT) / 0.2) -- (gone 0.2 s after the impact: dark by 3 s, like the reference)
 	return reach, math.min(1, (t - at) / 0.08) * fade
 end
 
@@ -155,11 +155,11 @@ function SecretReveal.pulse(t: number): number
 	return math.max(pop(t, SecretReveal.IMPACT, 0.05, 0.4), 0.7 * pop(t, SecretReveal.SWELL, 0.12, 0.45), pop(t, SecretReveal.BURST, 0.05, 0.5))
 end
 
--- The world's grade: brightness, saturation, tint amount (0..1), the pulse (0..1) and contrast. Gentle: the
--- reference's night is a deep navy, not a saturated blue, and its pinks and reds stay red.
+-- The world's grade: brightness, saturation, tint amount (0..1), the pulse (0..1) and contrast. At night the world
+-- goes dark and grey (the reference's ground is near-black navy, not green); the effects glow through it.
 function SecretReveal.grade(t: number): (number, number, number, number, number)
 	local dim = SecretReveal.night(t)
-	return -0.04 * dim, -0.08 * dim, 0.4 * dim, SecretReveal.pulse(t), 0.04 * dim
+	return -0.15 * dim, -0.3 * dim, 0.4 * dim, SecretReveal.pulse(t), 0.06 * dim
 end
 
 -- Is the impact frame on screen? (one short hold right at the impact; never with Reduced Motion)
@@ -236,8 +236,8 @@ function SecretReveal.camera(t: number, at: Vector3, dir: Vector3, h: number, k:
 		-- wide, low, a slow drift round her
 		return at + round(-16 + 10 * smooth(x / 2.35), 36 * k) + up * 3 * k, at + up * (m + 1 * k)
 	elseif name == "shoulder" then
-		-- close over her shoulder, looking past her (she faces you)
-		return at - dir * 6 * k + side * 4.5 * k + up * (face - 1 * k), at + dir * 40 * k + side * 2 * k + up * (m + 2 * k)
+		-- close over her shoulder, looking past her (she faces you); her shoulder fills one edge, not the picture
+		return at - dir * 8 * k + side * 6 * k + up * (face - 0.5 * k), at + dir * 40 * k + side * 2 * k + up * (m + 2 * k)
 	elseif name == "wide2" then
 		return at + round(28, (30 + 3 * x) * k) + up * 2.5 * k, at + up * (m + 2 * k)
 	elseif name == "streaks" then

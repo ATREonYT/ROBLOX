@@ -89,8 +89,9 @@ local function lerp(a, b, x)
 	return a:Lerp(b, x)
 end
 
--- Everything for one play of the cutscene; returns step(t, dir, cam?) and cleanup().
-function M.build(model: Model, base: CFrame)
+-- Everything for one play of the cutscene; returns step(t, dir, cam?) and cleanup(). `junk` collects every
+-- instance made, so a failed build can remove them all (M.build). Lighting's own values are only changed by step.
+local function build(model: Model, base: CFrame, revealAt: number, junk: { Instance })
 	local k = (Config.Showcase.Scale or 3) / 3
 	local spot = base.Position - Vector3.new(0, Config.Showcase.Height, 0) -- (her pivot when she stands on the floor)
 	local box, size = model:GetBoundingBox() -- (she's still at `base` here)
@@ -101,6 +102,7 @@ function M.build(model: Model, base: CFrame)
 	local folder = Instance.new("Folder")
 	folder.Name = "HuzzSecretReveal"
 	folder.Parent = Workspace
+	table.insert(junk, folder)
 	local up = Vector3.new(0, 1, 0)
 	local rnd = Random.new(11)
 
@@ -118,12 +120,15 @@ function M.build(model: Model, base: CFrame)
 		if not inst and cls ~= "SunRaysEffect" then
 			inst = Instance.new(cls)
 			inst.Name = "HuzzSecret" .. cls
+			-- (a new one starts from nothing and fades in with the night, and back out: no sudden haze)
+			if cls == "Atmosphere" then (inst :: any).Density, (inst :: any).Haze, (inst :: any).Glare = 0, 0, 0 end
+			if cls == "BloomEffect" then (inst :: any).Intensity = 0 end
 			table.insert(made, inst)
+			table.insert(junk, inst)
 		end
 		if inst then keep(inst, NIGHT_LOOK[cls]) end
 	end
 	local day = Lighting.ClockTime
-	for _, inst in made do inst.Parent = Lighting end
 
 	-- beams: solid light until our pictures are uploaded
 	local anchors, beams = {}, {}
@@ -131,6 +136,7 @@ function M.build(model: Model, base: CFrame)
 		local a = Instance.new("Attachment")
 		a.Parent = Workspace.Terrain
 		table.insert(anchors, a)
+		table.insert(junk, a)
 		return a
 	end
 	local function beam(a0, a1, color, light, texture, props)
@@ -147,6 +153,7 @@ function M.build(model: Model, base: CFrame)
 		for key, v in props or {} do b[key] = v end
 		b.Parent = Workspace.Terrain
 		table.insert(beams, b)
+		table.insert(junk, b)
 		return b
 	end
 	local ENDS = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.25, 0), NumberSequenceKeypoint.new(0.75, 0), NumberSequenceKeypoint.new(1, 1) })
@@ -198,6 +205,7 @@ function M.build(model: Model, base: CFrame)
 		tw.core = beam(a0, a1, CORE, 1, "BeamGlow")
 		tw.crackle = beam(a0, a1, WHITE, 1, "Lightning", { TextureLength = 10, TextureSpeed = 1.5, Segments = 30 })
 		tw.jit = { from = Vector2.zero, to = Vector2.zero, at = 0 }
+		tw.bent = { tw.haze, tw.glow, tw.core }
 		twins[i] = tw
 	end
 	-- the ladder blocks climbing beam A (the reference's 1.6 s), and its picture once uploaded
@@ -216,6 +224,7 @@ function M.build(model: Model, base: CFrame)
 		local sl = { at = at, i = i, kind = kind, a0 = a0, a1 = a1, glow = beam(a0, a1, col, 0.8, "BeamGlow", { Transparency = ENDS }), core = beam(a0, a1, WHITE, 1, "BeamGlow", { Transparency = ENDS }) }
 		table.insert(slashes, sl)
 	end
+	local heights = { 2.5, -1.5, 4.2, -3.2, 0.8 }
 	for i, at in Reveal.SLASHES do addSlash(at, "build", i) end
 	for i, at in Reveal.RED do addSlash(at, "red", i) end
 
@@ -276,7 +285,10 @@ function M.build(model: Model, base: CFrame)
 	local swings = {}
 	for i, at in Reveal.SWINGS do
 		local a0, a1 = anchor(), anchor()
-		table.insert(swings, { at = at, i = i, a0 = a0, a1 = a1, glow = beam(a0, a1, MAGENTA, 0.8, "BeamGlow", { Transparency = ENDS }), core = beam(a0, a1, CORE, 1, "BeamGlow", { Transparency = ENDS }) })
+		local sw = { at = at, i = i, a0 = a0, a1 = a1, glow = beam(a0, a1, MAGENTA, 0.8, "BeamGlow", { Transparency = ENDS }), core = beam(a0, a1, CORE, 1, "BeamGlow", { Transparency = ENDS }),
+			tilt = ({ 20, -25, 8 })[i], start = ({ -70, 110, 200 })[i], lift = ({ 1, 3, -1 })[i] }
+		sw.both = { sw.glow, sw.core }
+		table.insert(swings, sw)
 	end
 	local tendrils = {}
 	for i = 1, 5 do
@@ -320,7 +332,7 @@ function M.build(model: Model, base: CFrame)
 		fade.Parent = line
 		line.Parent = burstGui
 	end
-	frameGui.Parent = if player then player:WaitForChild("PlayerGui") else nil
+	table.insert(junk, frameGui)
 
 	-- the impact: emitters at the orb, at her middle (follows her) and on the ground
 	local blast = part({ Name = "Blast", Transparency = 1, Size = Vector3.one, CFrame = CFrame.new(orbAt) }, folder)
@@ -421,6 +433,35 @@ function M.build(model: Model, base: CFrame)
 			Rotation = NumberRange.new(0, 360), RotSpeed = NumberRange.new(-8, 8) }))
 	end
 
+	-- stand-in rings until the ring pictures are uploaded: a thin neon ring of short segments, growing and fading
+	local function newRing(color)
+		local bits = {}
+		for i = 1, 28 do bits[i] = part({ Name = "RingBit", Material = Enum.Material.Neon, Color = color, Size = Vector3.one * 0.05, Transparency = 1 }, folder) end
+		return bits
+	end
+	local function setRing(bits, centre, ax, ay, radius, thick, alpha)
+		local len = 2 * math.pi * radius / #bits * 1.1
+		for i, p in bits do
+			local a = (i - 0.5) / #bits * math.pi * 2
+			local out = ax * math.cos(a) + ay * math.sin(a)
+			p.CFrame = CFrame.fromMatrix(centre + out * radius, -ax * math.sin(a) + ay * math.cos(a), out)
+			p.Size = Vector3.new(math.max(len, 0.05), math.max(thick, 0.05), math.max(thick * 0.5, 0.05))
+			p.Transparency = if alpha > 0.01 then 1 - alpha else 1
+		end
+	end
+	local standIns = {}
+	if not FxTexture.ready("RingSoft") then
+		standIns.burst = newRing(rgb(255, 70, 110))
+		standIns.land = newRing(rgb(255, 150, 220))
+	end
+	if not FxTexture.ready("RingHard") then standIns.impact = newRing(rgb(200, 240, 255)) end
+	local function ringAt(bits, at, life, t, centre, ax, ay, r0, r1, thick)
+		if not bits then return end
+		local x = (t - at) / life
+		if x < 0 or x > 1 then setRing(bits, centre, ax, ay, r0, thick, 0); return end
+		setRing(bits, centre, ax, ay, r0 + (r1 - r0) * (1 - (1 - x) ^ 3), thick * (1 - 0.6 * x), 1 - x * x)
+	end
+
 	local dome = part({ Name = "Dome", Shape = Enum.PartType.Ball, Material = Enum.Material.ForceField, Color = PINK, Size = Vector3.one * 2, CFrame = CFrame.new(ground), Transparency = 1 }, folder)
 	local hiStroke = Instance.new("Highlight")
 	hiStroke.FillColor, hiStroke.OutlineColor = WHITE, WHITE
@@ -432,7 +473,7 @@ function M.build(model: Model, base: CFrame)
 	-- the grade (our own, on top of the game's look)
 	local grade = Instance.new("ColorCorrectionEffect")
 	grade.Name = "HuzzSecretGrade"
-	grade.Parent = Lighting
+	table.insert(junk, grade)
 
 	local all = { rush, hit.star, hit.sparks, hit.shards, hit.streaks, burst2.star, burst2.sparks, burst2.shards, burst2.streaks, spark0, shock, ringBurst,
 		cloud, swarm, groundRing, landRing, sigil, dust, smoke, motes, motesCyan, crystals, butterflies }
@@ -511,7 +552,7 @@ function M.build(model: Model, base: CFrame)
 			tw.a0.WorldCFrame = CFrame.fromMatrix(low, up * math.cos(lean) + out * math.sin(lean), dir)
 			tw.a1.WorldCFrame = CFrame.fromMatrix(top, up * math.cos(lean) - out * math.sin(lean), dir)
 			local curve = (top - low).Magnitude * 0.3
-			for _, b in { tw.haze, tw.glow, tw.core } do b.CurveSize0, b.CurveSize1 = curve, curve end
+			for _, b in tw.bent do b.CurveSize0, b.CurveSize1 = curve, curve end
 			setWidth(tw.haze, 26 * k * power, 18 * k * power)
 			setWidth(tw.glow, 11 * k * power, 8 * k * power)
 			setWidth(tw.core, 3 * k * power, 2.2 * k * power)
@@ -539,7 +580,6 @@ function M.build(model: Model, base: CFrame)
 		if ladderSkin then setWidth(ladderSkin, 10 * k * lv, 8 * k * lv); ladderSkin.CurveSize0, ladderSkin.CurveSize1 = A.haze.CurveSize0, A.haze.CurveSize1 end
 
 		-- slashes
-		local heights = { 2.5, -1.5, 4.2, -3.2, 0.8 }
 		for _, sl in slashes do
 			local v = Reveal.slash(t, sl.at)
 			local flip = if sl.i % 2 == 0 then -1 else 1
@@ -619,19 +659,19 @@ function M.build(model: Model, base: CFrame)
 		-- crescent swings round her
 		for _, sw in swings do
 			local v = Reveal.pop(t, sw.at, 0.06, 0.32)
-			local tilt = math.rad(({ 20, -25, 8 })[sw.i])
+			local tilt = math.rad(sw.tilt)
 			local axis = (up * math.cos(tilt) + dir * math.sin(tilt)).Unit
 			local u = (dir - axis * dir:Dot(axis)).Unit
 			local w = axis:Cross(u)
-			local th0 = math.rad(({ -70, 110, 200 })[sw.i]) + (t - sw.at) * 3
+			local th0 = math.rad(sw.start) + (t - sw.at) * 3
 			local th1 = th0 + math.rad(150)
 			local R = 8 * k
-			local c = herMid + up * (({ 1, 3, -1 })[sw.i]) * k
+			local c = herMid + up * sw.lift * k
 			local p0, p1 = c + (u * math.cos(th0) + w * math.sin(th0)) * R, c + (u * math.cos(th1) + w * math.sin(th1)) * R
 			local t0, t1 = -u * math.sin(th0) + w * math.cos(th0), -u * math.sin(th1) + w * math.cos(th1)
 			sw.a0.WorldCFrame = CFrame.fromMatrix(p0, t0, axis)
 			sw.a1.WorldCFrame = CFrame.fromMatrix(p1, t1, axis)
-			for _, b in { sw.glow, sw.core } do b.CurveSize0, b.CurveSize1 = R * 1.02, R * 1.02 end
+			for _, b in sw.both do b.CurveSize0, b.CurveSize1 = R * 1.02, R * 1.02 end
 			setWidth(sw.glow, 2.2 * k * v)
 			setWidth(sw.core, 0.5 * k * v)
 		end
@@ -653,6 +693,9 @@ function M.build(model: Model, base: CFrame)
 			setWidth(sl.b, sl.w * D * 0.05 * sv * 4, 0)
 		end
 
+		ringAt(standIns.impact, Reveal.IMPACT, 0.5, t, ground + up * 0.4, side, dir, 2 * k, 24 * k, 0.5 * k)
+		ringAt(standIns.land, Reveal.LAND, 0.5, t, ground + up * 0.4, side, dir, 3 * k, 16 * k, 0.45 * k)
+		ringAt(standIns.burst, Reveal.BURST, 0.6, t, herMid, camR, camU, 4 * k, 30 * k, 1 * k)
 		frameGui.Enabled = Reveal.impactFrame(t, calm)
 		-- the impact
 		if t >= Reveal.IMPACT then
@@ -695,9 +738,16 @@ function M.build(model: Model, base: CFrame)
 		end
 		-- her: hidden until the impact, then dropping, standing, rising (facing the camera, then turning slowly)
 		if h then
-			local yaw = math.max(0, t - Reveal.RISE) * (Config.Showcase.Spin or 0.35)
+			local S = Config.Showcase
+			local yaw = math.max(0, t - Reveal.RISE) * (S.Spin or 0.35)
 			local face = CFrame.lookAt(Vector3.zero, Vector3.new(dir.X, 0, dir.Z)).Rotation
-			model:PivotTo(CFrame.new(spot + Vector3.new(0, h * k, 0)) * face * CFrame.Angles(0, yaw, 0))
+			local pose = CFrame.new(spot + Vector3.new(0, h * k, 0)) * face * CFrame.Angles(0, yaw, 0)
+			if t > Reveal.RISE then -- (so there's no snap when Gameplay/CarryAnimator takes her back at the end)
+				local now = revealAt + t
+				local float = base * CFrame.new(0, math.sin(now * 1.1) * (S.Bob or 0), 0) * CFrame.Angles(0, (now * (S.Spin or 0)) % (2 * math.pi), 0)
+				pose = pose:Lerp(float, Reveal.smooth((t - Reveal.RISE) / (Reveal.LENGTH - Reveal.RISE)))
+			end
+			model:PivotTo(pose)
 		else
 			model:PivotTo(base * CFrame.new(0, -2000, 0))
 		end
@@ -723,6 +773,21 @@ function M.build(model: Model, base: CFrame)
 		for _, b in beams do b:Destroy() end
 		for _, a in anchors do a:Destroy() end
 	end
+	if M.failForTest then error("test: build failed on purpose") end
+	-- last of all, into Lighting and the screen (nothing there to undo if anything above failed)
+	frameGui.Parent = if player then player:WaitForChild("PlayerGui") else nil
+	for _, inst in made do inst.Parent = Lighting end
+	grade.Parent = Lighting
+	return step, cleanup, ground, k, mid
+end
+
+function M.build(model: Model, base: CFrame, revealAt: number?)
+	local junk = {}
+	local ok, step, cleanup, ground, k, mid = pcall(build, model, base, revealAt or 0, junk)
+	if not ok then
+		for i = #junk, 1, -1 do pcall(function() junk[i]:Destroy() end) end
+		error(step, 0)
+	end
 	return step, cleanup, ground, k, mid
 end
 
@@ -736,7 +801,7 @@ function M.start()
 		if Workspace:GetServerTimeNow() - at > Reveal.RETURN then return end -- (joined late: she's already up there)
 		playing = true
 		model:SetAttribute("HuzzRevealing", true) -- (Gameplay/CarryAnimator leaves her to us meanwhile)
-		local ok, step, cleanup, ground, k, mid = pcall(M.build, model, base)
+		local ok, step, cleanup, ground, k, mid = pcall(M.build, model, base, at)
 		if not ok then
 			warn("[Huzz] Secret reveal couldn't start: " .. tostring(step))
 			model:SetAttribute("HuzzRevealing", nil)
@@ -754,6 +819,21 @@ function M.start()
 		player:SetAttribute("HuzzCinematic", true)
 		camera.CameraType = Enum.CameraType.Scriptable
 		local noise = math.random() * 100
+		-- (the camera never sits behind a wall or prop: from her towards the camera, stop just in front of a hit)
+		local okRay, ray = pcall(function()
+			local p = RaycastParams.new()
+			p.FilterType = Enum.RaycastFilterType.Exclude
+			p.FilterDescendantsInstances = { model, Workspace:FindFirstChild("HuzzSecretReveal"), player.Character }
+			return p
+		end)
+		local function clear(eye: Vector3, look: Vector3): Vector3
+			if not okRay then return eye end
+			local v = eye - look
+			if v.Magnitude < 0.5 then return eye end
+			local okHit, hit = pcall(function() return Workspace:Raycast(look, v, ray) end)
+			if okHit and hit then return hit.Position - v.Unit * 1 end
+			return eye
+		end
 		local function finish()
 			RunService:UnbindFromRenderStep("HuzzSecretReveal")
 			pcall(cleanup)
@@ -772,6 +852,7 @@ function M.start()
 			local okStep, err = pcall(function()
 				local h = Reveal.height(t, Config.Showcase.Height)
 				local eye, look = Reveal.camera(math.min(t, Reveal.RETURN), ground + Vector3.new(0, 0.5, 0), dir, h or Config.Showcase.Height, k, mid)
+				eye = clear(eye, look)
 				local cf = CFrame.lookAt(eye, look)
 				local fov = Reveal.fov(t, Motion.reduced)
 				if t > Reveal.RETURN then -- ease back to where your camera was
