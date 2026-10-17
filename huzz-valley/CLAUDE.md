@@ -34,7 +34,8 @@ Owner's own words are in quotes. Read only the section you need.
   panels** (not stud strips). A second reference for polish: their video 9233ecef of another game (bright,
   saturated, crisp, glowing): aim for "a mix of this and Huss Valley".
 - **Text:** short and game-like, no dashes, no "AI" phrasing ("Messi is safe", "Got one!", "YOU'RE OUT").
-- **Controls:** **no jumping anywhere**. Space = the sideways huss (left/right only, lobby too); a **catcher's Space
+- **Controls:** **no jumping anywhere**. Space = the sideways huss (left/right only, lobby too; you turn to face the
+  camera first so A/D go left/right on screen: "it only goes one way" without shift lock); a **catcher's Space
   in a round is a lunge** that stabs whoever it reaches; hold W = walk building into a run; G = dance wheel;
   Q/E = powers (catcher Q = Love Trap = the traps); click = stab; shift lock in rounds (Alt frees the mouse).
 - **No girl toss** (removed). **Safe means safe:** once across you stay across. During a Hero run only the Hero and
@@ -178,6 +179,12 @@ Owner's own words are in quotes. Read only the section you need.
 - `Gameplay/Juice` (Oct 17): everyone sees a green ring + confetti when someone reaches safety, a red ring + sparks
   on a catch, a rising green column on a rescue; a small camera shake for you (off with Reduced Motion). The first
   runner safe each round gets "FIRST!" (RoundService `First` event after their Safe; RoundHud banner / small line).
+- Oct 17 round 2 ("more cinematic", "less ui", "cutscenes dont cut out"): Juice shakes harder (caught 0.7, catch
+  0.4, GO, own huss/lunge) and the screen edges glow red as a catcher comes within 40 studs (`HuzzDanger`, 1 Hz swell
+  close up); no letterbox bars in `Cinematic`; while running the prize card, the gear (not on touch: no Menu key)
+  and Roblox's player list step aside. Footsteps are ours (`Feel`, Sfx "step", lobby too; Roblox's "Running" muted;
+  stand-in thud until the owner uploads `step`). Button clicks: preloaded UI sounds, mouse clicks sound on press.
+  Girl names: owner keeps the look-alike spellings (Oct 17); fix only the ones they name.
 - `Gameplay/Feel`: the camera widens up to 11° at full sprint (lobby too), a dash kick, soft wind streaks drifting
   outward near top speed (never flashing), dust and steps in rounds, a `speed_wind` loop. Off with Reduced Motion.
 - The big showcase girl over the map glows softly (`AuraFX`: scale > 1.5 → small light, less LightEmission;

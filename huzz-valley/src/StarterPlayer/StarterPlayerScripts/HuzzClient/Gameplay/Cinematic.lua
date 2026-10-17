@@ -9,7 +9,8 @@
 	           Then it zooms in on their face and holds while they choose (Screens/HeroChoice).
 	  Chosen   a little push in on them while HERO / CHICKEN shows over their head (the name tag).
 	Then the camera glides back behind your own character and Roblox's camera takes over.
-	Black bars slide in top and bottom while it plays. Players in the lobby keep their own camera.
+	No black bars (owner: "when the cutscenes happen, the top and bottom of your screen dont cut out"): the
+	shots use the whole screen. Players in the lobby keep their own camera.
 	Sets the local player attribute "HuzzCinematic" while it plays (ShiftLock lets go of the mouse).
 ]]
 local M = {}
@@ -30,36 +31,6 @@ function M.start()
 
 	local SHOTS = { Lineup = true, Picking = true, Chosen = true }
 	local GOLD = Color3.fromRGB(255, 255, 255) -- (the pick glow: clean white, owner: no gold)
-
-	-- Letterbox bars.
-	local gui = Instance.new("ScreenGui")
-	gui.Name = "HuzzCinematic"
-	gui.IgnoreGuiInset = true
-	gui.ResetOnSpawn = false
-	gui.DisplayOrder = 3 -- under the round HUD, so its top message sits on the bar
-	local bars = {}
-	for i, anchor in { 0, 1 } do
-		local f = Instance.new("Frame")
-		f.Name = if i == 1 then "Top" else "Bottom"
-		f.AnchorPoint = Vector2.new(0, anchor)
-		f.Position = UDim2.fromScale(0, anchor)
-		f.Size = UDim2.fromScale(1, 0)
-		f.BackgroundColor3 = Color3.new(0, 0, 0)
-		f.BorderSizePixel = 0
-		f.Parent = gui
-		bars[i] = f
-	end
-	gui.Parent = player:WaitForChild("PlayerGui")
-	local barsOn = false
-	local function setBars(on)
-		if on == barsOn then
-			return
-		end
-		barsOn = on
-		for _, f in bars do
-			TweenService:Create(f, TweenInfo.new(0.45, Enum.EasingStyle.Quint), { Size = UDim2.fromScale(1, if on then 0.085 else 0) }):Play()
-		end
-	end
 
 	local Sfx = require(script.Parent.Sfx)
 
@@ -115,7 +86,6 @@ function M.start()
 		playing = false
 		highlight.Enabled = false
 		highlight.Adornee = nil
-		setBars(false)
 		-- Glide back behind our own character, then hand the camera back to Roblox.
 		local head, root = headOf(player), rootOf(player)
 		camera = Workspace.CurrentCamera
@@ -168,7 +138,6 @@ function M.start()
 			shotKey = nil
 			eye, look = current()
 			player:SetAttribute("HuzzCinematic", true)
-			setBars(true)
 		end
 		camera.CameraType = Enum.CameraType.Scriptable
 		local half = math.clamp((round:GetAttribute("LineLength") or 40) / 2, 8, 40)

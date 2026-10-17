@@ -358,9 +358,16 @@ function M.start()
 			camera.CFrame = CFrame.lookAt(at + look * 5 + Vector3.new(0, 0.4, 0), at)
 		end
 	end
+	-- The prize card shows before the run and between rounds, and steps aside while people run (owner: "make the
+	-- screen look less full when playing ... a bit too much ui and can overwhelm the player").
+	local RUNNING = { Running = true, HeroRun = true }
+	local function cardShown(): boolean
+		return (State:GetAttribute("GirlName") or "") ~= "" and not RUNNING[State:GetAttribute("Stage") or ""]
+	end
+	State:GetAttributeChangedSignal("Stage"):Connect(function() card.Visible = cardShown() end)
 	local function refreshCard()
 		local girl = State:GetAttribute("GirlName") or ""
-		card.Visible = girl ~= ""
+		card.Visible = cardShown()
 		local rarity = State:GetAttribute("GirlRarity") or ""
 		local color = rarityColor[rarity] or GOLD
 		portraitRim.Color, rarityChip.BackgroundColor3 = color, color

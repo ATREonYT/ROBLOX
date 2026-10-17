@@ -149,6 +149,23 @@ function Dash.try()
 		lunge(c, h, root)
 		return
 	end
+	-- Face the way the camera looks first, so the huss goes left or right on your screen (owner: "make the huss
+	-- better because it only goes one way": without shift lock you face the way you walk, so A and D both threw
+	-- you back toward the camera). The facing is held for the move, then Roblox turns you as usual again.
+	local cam = Workspace.CurrentCamera
+	local camLook = cam and Vector3.new(cam.CFrame.LookVector.X, 0, cam.CFrame.LookVector.Z)
+	if camLook and camLook.Magnitude > 0.1 then
+		root.CFrame = CFrame.lookAt(root.Position, root.Position + camLook.Unit)
+		if h.AutoRotate then
+			h.AutoRotate = false
+			task.delay(Config.Dash.Time + 0.05, function()
+				if h.Parent and not h.AutoRotate and player:GetAttribute("HuzzShiftLock") ~= true
+					and c:GetAttribute("DownedAt") == nil and player:GetAttribute("HuzzStatus") ~= "Downed" then
+					h.AutoRotate = true -- (a knockdown in the meantime keeps its own hold on turning)
+				end
+			end)
+		end
+	end
 	local side = Dash.side(root, h.MoveDirection)
 	local right = root.CFrame.RightVector
 	local dir = Vector3.new(right.X, 0, right.Z).Unit * side
@@ -157,7 +174,7 @@ function Dash.try()
 	local at = Workspace:GetServerTimeNow()
 	c:SetAttribute("DashDir", dir) -- on this screen at once; the server sets the same for everyone
 	c:SetAttribute("DashAt", at)
-	Net.get("Dash"):FireServer(dir, at)
+	Net.get("Dash"):FireServer(dir, at, root.CFrame.LookVector) -- (the facing we just turned to: the server may not have it yet)
 	Sfx.play("dash")
 	playMove(h, side)
 

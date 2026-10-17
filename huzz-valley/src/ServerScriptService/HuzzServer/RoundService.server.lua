@@ -889,7 +889,7 @@ end)
 -- direction into pure left or right of the character's facing (anything that isn't clearly sideways is refused),
 -- and set DashAt/DashDir on the character so every client plays the move, and DashReady (server time) for the
 -- cooldown tile.
-Net.get("Dash").OnServerEvent:Connect(function(player, dir, at)
+Net.get("Dash").OnServerEvent:Connect(function(player, dir, at, look)
 	local id = player.UserId
 	local c = player.Character
 	local stage = State:GetAttribute("Stage")
@@ -910,8 +910,17 @@ Net.get("Dash").OnServerEvent:Connect(function(player, dir, at)
 	if flat.Magnitude < 0.1 or not root then
 		return
 	end
-	-- sideways only: project onto the character's right; mostly forward/back (or a stale facing) is refused
-	local right = Vector3.new(root.CFrame.RightVector.X, 0, root.CFrame.RightVector.Z)
+	-- sideways only: project onto the character's right; mostly forward/back (or a stale facing) is refused. The
+	-- client turns to face its camera just before a huss and sends that facing, which we haven't seen yet: we take it
+	-- when it's within 110 degrees of the facing we have (a real turn, not a made-up direction).
+	local facing = root.CFrame.LookVector
+	if typeof(look) == "Vector3" and look == look then
+		local flatLook, flatFacing = Vector3.new(look.X, 0, look.Z), Vector3.new(facing.X, 0, facing.Z)
+		if flatLook.Magnitude > 0.1 and flatFacing.Magnitude > 0.1 and flatLook.Unit:Dot(flatFacing.Unit) > math.cos(math.rad(110)) then
+			facing = flatLook.Unit
+		end
+	end
+	local right = Vector3.new(-facing.Z, 0, facing.X) -- (the right of a flat facing)
 	if right.Magnitude < 0.1 then
 		return
 	end

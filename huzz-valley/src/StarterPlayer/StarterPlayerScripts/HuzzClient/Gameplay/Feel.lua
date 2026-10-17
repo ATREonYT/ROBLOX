@@ -7,8 +7,9 @@
 	    your speed, never flashing);
 	  - a dash draws a ring of thin speed lines round the screen edge for a quarter of a second (one per dash;
 	    the dash cooldown keeps it far under one flash a second);
-	  - every runner near you kicks up a little dust each step and a puff when they dash; your own steps make
-	    a quiet sound (Sfx "step").
+	  - every runner near you kicks up a little dust each step and a puff when they dash;
+	  - footsteps are our own sound (Sfx "step"), lobby too, for you and anyone near; Roblox's own running sound
+	    is muted (owner: "add a running sound, not the base sound running that roblox has").
 	The sprint feel works in the lobby too; the dust only in a round. Never while the intro camera has the view, and
 	off with the Reduced Motion setting (camera, lines and streaks; the dust stays).
 ]]
@@ -130,6 +131,31 @@ function M.start()
 	local camera = Workspace.CurrentCamera
 	local extra = 0 -- the FOV we've added (eased)
 	local myLastDash = nil
+	-- Roblox's default character sounds (RbxCharacterSounds) put a "Running" sound in every root part: keep it silent.
+	local function muteRunning(character: Model)
+		local function mute(s: Instance)
+			if s:IsA("Sound") and s.Name == "Running" then
+				s.Volume = 0
+				s:GetPropertyChangedSignal("Volume"):Connect(function()
+					if s.Volume ~= 0 then s.Volume = 0 end
+				end)
+			end
+		end
+		local root = character:WaitForChild("HumanoidRootPart", 10)
+		if not root then return end
+		for _, c in root:GetChildren() do mute(c) end
+		root.ChildAdded:Connect(mute)
+	end
+	local function watchSounds(p: Player)
+		p.CharacterAdded:Connect(function(c) task.spawn(muteRunning, c) end)
+		if p.Character then task.spawn(muteRunning, p.Character) end
+	end
+	Players.PlayerAdded:Connect(watchSounds)
+	for _, p in Players:GetPlayers() do watchSounds(p) end
+	local STEP_NEAR = 70 -- studs: other players' footsteps are heard this close to the camera
+	local stepped = {} -- Player -> studs since the last step
+	Players.PlayerRemoving:Connect(function(p) stepped[p] = nil end)
+
 	Frame.on(5, function(dt)
 		dt = math.clamp(dt, 1 / 240, 1 / 15)
 		local now = Workspace:GetServerTimeNow()
@@ -142,6 +168,23 @@ function M.start()
 		for _, p in Players:GetPlayers() do
 			local character = p.Character
 			local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
+			-- footsteps: one every half stride while moving on the ground; yours plain, others' from where they are
+			if root and camera and not character:GetAttribute("DownedAt") then
+				local v = root.AssemblyLinearVelocity
+				local speed = Vector3.new(v.X, 0, v.Z).Magnitude
+				local dashAt = character:GetAttribute("DashAt")
+				local dashing = type(dashAt) == "number" and now - dashAt < 0.35 -- (no quick-fire steps from the huss push)
+				if speed > 4 and not dashing and math.abs(v.Y) < 8 and (p == player or (camera.CFrame.Position - root.Position).Magnitude < STEP_NEAR) then
+					local t = (stepped[p] or 0) + speed * dt
+					if t >= Run.Stride / 2 then
+						t = 0
+						if p == player then Sfx.play("step") else Sfx.play("step", { at = root, volume = 0.8 }) end
+					end
+					stepped[p] = t
+				else
+					stepped[p] = 0
+				end
+			end
 			if root and inRound(p) and not character:GetAttribute("DownedAt") and camera
 				and (camera.CFrame.Position - root.Position).Magnitude < NEAR then
 				local d = dustFor(p, character, root)
@@ -153,9 +196,6 @@ function M.start()
 					if d.travelled >= Run.Stride / 2 then
 						d.travelled = 0
 						d.emitter:Emit(2)
-						if p == player then
-							Sfx.play("step")
-						end
 					end
 				else
 					d.travelled = 0

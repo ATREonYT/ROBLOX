@@ -7,6 +7,7 @@ local UserInputService = game:GetService("UserInputService")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Format = require(Shared.Format)
 local SpinRules = require(Shared.SpinRules)
+local Net = require(Shared.Net)
 local UI = script.Parent.Parent
 local Theme = require(UI.Theme)
 local Kit = require(UI.Kit)
@@ -164,18 +165,32 @@ function LobbyHud.build(parent: Instance)
 	for g in away do home[g] = g.Position end
 	-- A full window moves the whole HUD away; the Menu side panel only replaces the side buttons.
 	-- In a round the side buttons and the coin pills slide away too (owner: the in-game screen felt cluttered;
-	-- Huss Valley shows only the round), and slide back in the lobby. The gear stays.
+	-- Huss Valley shows only the round), and slide back in the lobby.
 	local player = game:GetService("Players").LocalPlayer
 	local current = nil
 	local function inRound()
 		local role = player:GetAttribute("HuzzRole")
 		return role == "Runner" or role == "Catcher"
 	end
+	-- While people actually run, the gear steps aside too, so only the round shows (owner: "a bit too much ui and can
+	-- overwhelm the player"). The Menu key still opens everything.
+	local roundNet = Net.get("Round")
+	local function running()
+		local stage = roundNet:GetAttribute("Stage")
+		-- (phones and tablets keep the gear: they have no Menu key)
+		return inRound() and (stage == "Running" or stage == "HeroRun") and not game:GetService("UserInputService").TouchEnabled
+	end
 	local function place()
 		local side = ModalManager.isSide(current)
 		local playing = inRound()
+		local busy = running()
+		pcall(function() -- (Roblox's player list steps aside too while running; there are no tools, so no backpack)
+			local StarterGui = game:GetService("StarterGui")
+			StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, not busy)
+			StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Backpack, false)
+		end)
 		for g, off in away do
-			local hide = (current ~= nil and (not side or g == left)) or (playing and (g == left or g == right or g == bottom))
+			local hide = (current ~= nil and (not side or g == left)) or (playing and (g == left or g == right or g == bottom)) or (busy and g == topRight)
 			Motion.tween(g, "hud", Theme.Motion.Hud, { Position = hide and home[g] + off or home[g] }, hide and Enum.EasingStyle.Quad or Enum.EasingStyle.Quint)
 		end
 	end
@@ -184,6 +199,8 @@ function LobbyHud.build(parent: Instance)
 		place()
 	end)
 	player:GetAttributeChangedSignal("HuzzRole"):Connect(place)
+	roundNet:GetAttributeChangedSignal("Stage"):Connect(place)
+	place()
 	return root
 end
 

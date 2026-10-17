@@ -312,8 +312,19 @@ function Kit.button(props: { [string]: any }): Button
 	end
 	local handlers = {}
 	function api.onClick(fn) table.insert(handlers, fn) end
+	-- A mouse click sounds on press, not on release (owner: "make the sound for buttons not delayed"). Touch, keys
+	-- and pads sound on Activated (a finger dragging to scroll must not click every button it starts on); the
+	-- sounds are loaded ahead (Sfx), so that is instant too.
+	local pressSounded = false
+	btn.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			pressSounded = true
+			Sfx.play(if enabled then "ui_click" else "ui_error")
+		end
+	end)
 	btn.Activated:Connect(function()
-		Sfx.play(if enabled then "ui_click" else "ui_error")
+		if not pressSounded then Sfx.play(if enabled then "ui_click" else "ui_error") end
+		pressSounded = false
 		if not enabled then return end
 		for _, fn in handlers do task.spawn(Report.run, "Button " .. btn.Name, fn) end
 	end)

@@ -4,9 +4,13 @@
 	  - someone reaches safety: a green ring spreads over the floor and confetti pops up from them;
 	  - someone gets caught: a red ring and a burst of red sparks where they fell;
 	  - someone is saved: a column of green sparkles rises from them.
-	On your own screen the camera gives a short, small shake when YOU are caught or YOU catch someone (0.25 s,
-	fading), and a softer one when you reach safety. Rings and bursts never flash the screen; the shake is off with
-	the Reduced Motion setting. RoundHud keeps the words (SAFE!, FIRST!, YOU'RE DOWN); this file only adds the world.
+	On your own screen the camera shakes (owner: "make the game more cinematic ... more screenshake"): hard when YOU
+	are caught, firm when YOU catch someone, a bump at GO, on your huss or lunge and when you reach safety, all
+	fading out fast. While you run, the screen edges glow red as a catcher closes in (owner: "a red glow if a catcher
+	is getting near"), stronger the closer they are, with a slow heartbeat swell (about once a second, never a
+	flash) when they're right on you. Rings and bursts never flash the screen; the shake and the swell are off with
+	the Reduced Motion setting (the glow stays: it tells you something). RoundHud keeps the words (SAFE!, FIRST!,
+	YOU'RE DOWN); this file only adds the world.
 ]]
 local M = {}
 
@@ -134,7 +138,7 @@ function M.start()
 			size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.45), NumberSequenceKeypoint.new(1, 0.3) }),
 			life = NumberRange.new(1, 1.6),
 		})
-		if id == player.UserId then shake(0.12, 0.2) end
+		if id == player.UserId then shake(0.25, 0.25) end
 	end
 
 	-- Everyone's crossing: watch each runner's status turn Safe.
@@ -160,9 +164,9 @@ function M.start()
 				burst(root.Position, { RED, Color3.new(1, 1, 1) }, 26, { speed = NumberRange.new(8, 16), spread = Vector2.new(70, 70) })
 			end
 			if data.runner == player.UserId then
-				shake(0.35, 0.25)
+				shake(0.7, 0.4)
 			elseif data.catcher == player.UserId then
-				shake(0.2, 0.18)
+				shake(0.4, 0.25)
 			end
 		elseif kind == "Rescued" then
 			local root = rootOf(data.runner)
@@ -174,6 +178,81 @@ function M.start()
 				})
 			end
 		end
+	end)
+
+	-- More shake: a bump at GO, and on your own huss and lunge.
+	local round = Net.get("Round")
+	round:GetAttributeChangedSignal("Stage"):Connect(function()
+		local role = player:GetAttribute("HuzzRole")
+		if round:GetAttribute("Stage") == "Running" and (role == "Runner" or role == "Catcher") then shake(0.3, 0.3) end
+	end)
+	local function watchMoves(c: Model)
+		local lastDash = 0
+		c:GetAttributeChangedSignal("DashAt"):Connect(function()
+			if os.clock() - lastDash < 0.5 then return end -- (our own copy, then the server's: one huss, one bump)
+			lastDash = os.clock()
+			shake(0.15, 0.18)
+		end)
+		c:GetAttributeChangedSignal("LungeAt"):Connect(function() shake(0.25, 0.22) end)
+	end
+	player.CharacterAdded:Connect(watchMoves)
+	if player.Character then watchMoves(player.Character) end
+
+	-- The red edge glow: four soft gradients round the screen, under the HUD.
+	local edgeGui = Instance.new("ScreenGui")
+	edgeGui.Name = "HuzzDanger"
+	edgeGui.IgnoreGuiInset = true
+	edgeGui.ResetOnSpawn = false
+	edgeGui.DisplayOrder = 1
+	local edges = {}
+	for _, e in {
+		{ "Top", UDim2.fromScale(0, 0), UDim2.fromScale(1, 0.24), 90 },
+		{ "Bottom", UDim2.fromScale(0, 0.76), UDim2.fromScale(1, 0.24), 270 },
+		{ "Left", UDim2.fromScale(0, 0), UDim2.fromScale(0.16, 1), 0 },
+		{ "Right", UDim2.fromScale(0.84, 0), UDim2.fromScale(0.16, 1), 180 },
+	} do
+		local f = Instance.new("Frame")
+		f.Name = e[1]
+		f.Position, f.Size = e[2], e[3]
+		f.BackgroundColor3 = Color3.fromRGB(255, 30, 50)
+		f.BackgroundTransparency = 1
+		f.BorderSizePixel = 0
+		f.Active = false
+		local g = Instance.new("UIGradient")
+		g.Rotation = e[4]
+		g.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.45, 0.6), NumberSequenceKeypoint.new(1, 1) })
+		g.Parent = f
+		f.Parent = edgeGui
+		table.insert(edges, f)
+	end
+	edgeGui.Parent = player:WaitForChild("PlayerGui")
+	local FAR, CLOSE = 40, 8 -- studs: the glow starts at FAR and is full at CLOSE
+	local glow = 0
+	RunService.Heartbeat:Connect(function(dt)
+		local want = 0
+		local stage = round:GetAttribute("Stage")
+		local me = rootOf(player.UserId)
+		local status = player:GetAttribute("HuzzStatus")
+		local moving = stage == "Running" or (stage == "HeroRun" and player:GetAttribute("HuzzHero") == true) -- (waiting runners can't be reached)
+		if me and player:GetAttribute("HuzzRole") == "Runner" and moving
+			and status ~= "Safe" and status ~= "Downed" then
+			local nearest = math.huge
+			for _, p in Players:GetPlayers() do
+				local pc = p.Character
+				if p ~= player and p:GetAttribute("HuzzRole") == "Catcher" and p:GetAttribute("HuzzFrozen") ~= true
+					and not (pc and pc:GetAttribute("DownedAt")) then
+					local r = rootOf(p.UserId)
+					if r then nearest = math.min(nearest, (r.Position - me.Position).Magnitude) end
+				end
+			end
+			want = math.clamp((FAR - nearest) / (FAR - CLOSE), 0, 1)
+		end
+		glow += (want - glow) * math.min(1, dt * 6) -- eased, so it never pops
+		local k = glow
+		if k > 0.6 and not calm() then
+			k *= 0.85 + 0.15 * math.sin(os.clock() * math.pi * 2) -- the heartbeat swell, once a second
+		end
+		for _, f in edges do f.BackgroundTransparency = 1 - k * 0.6 end
 	end)
 end
 

@@ -39,6 +39,7 @@ function M.start()
 			return
 		end
 		active = on
+		player:SetAttribute("HuzzShiftLock", on) -- (Gameplay/Dash reads it before handing the turning back)
 		local h = humanoidAndRoot()
 		if h then
 			h.AutoRotate = not on

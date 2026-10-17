@@ -22,7 +22,7 @@ local LEVEL = {
 	roulette_tick = { 0.3, 0.02 }, pick_land = { 0.55, 0 }, hero_chosen = { 0.6, 0 }, chicken_chosen = { 0.55, 0 },
 	dash = { 0.45, 0.05 }, stab = { 0.45, 0.05 }, caught = { 0.5, 0 }, rescue = { 0.55, 0 }, safe = { 0.55, 0 },
 	round_win = { 0.6, 0 }, round_lose = { 0.5, 0 },
-	step = { 0.12, 0.08 }, heart_shield = { 0.5, 0 }, power_rush = { 0.5, 0 },
+	step = { 0.3, 0.1 }, heart_shield = { 0.5, 0 }, power_rush = { 0.5, 0 },
 	spin_tick = { 0.3, 0.02 }, spin_win = { 0.55, 0 }, spin_big_win = { 0.65, 0 },
 	lunge = { 0.5, 0.04 }, trap_set = { 0.45, 0 }, trap_snap = { 0.55, 0 }, knock_down = { 0.55, 0 },
 	revive = { 0.55, 0 }, aura_pickup = { 0.5, 0.02 }, speed_wind = { 0.22, 0 },
@@ -54,6 +54,7 @@ local FALLBACK = {
 	caught = { "rbxasset://sounds/uuhhh.mp3", 0.8, 1 },
 	knock_down = { "rbxasset://sounds/action_jump_land.mp3", 1, 0.9 },
 	trap_set = { CLICK, 0.7, 0.8 },
+	step = { "rbxasset://sounds/action_jump_land.mp3", 0.8, 1.05 }, -- (a soft thud: not Roblox's running loop)
 	trap_snap = { "rbxasset://sounds/snap.mp3", 0.8, 1 },
 	safe = { PING, 0.7, 1 },
 	round_win = { PING, 0.8, 1 },
@@ -82,17 +83,67 @@ function Sfx.has(name: string): boolean
 	return type(id) == "string" and id ~= ""
 end
 
+local function source(name: string): (string?, number, number)
+	local level = LEVEL[name] or { 0.5, 0 }
+	local id = Ids[name]
+	if type(id) == "string" and id ~= "" then return id, level[1], 1 end
+	local f = FALLBACK[name]
+	if not f then return nil, 0, 1 end
+	return f[1], level[1] * f[2], f[3]
+end
+
+-- UI sounds are made once, loaded ahead and replayed, so a click sounds the moment you press (owner: "make the sound
+-- for buttons not delayed"; a new Sound per click had to load first). A few copies each, so fast clicks overlap.
+local UI = { ui_click = 3, ui_hover = 2, ui_open = 1, ui_close = 1, ui_error = 1 }
+local ready: { [string]: { Sound } } = {}
+local turn: { [string]: number } = {}
+local function readyCopies(name: string): { Sound }?
+	local list = ready[name]
+	if list and list[1] and list[1].Parent then return list end
+	local id, volume, pitch = source(name)
+	if not id then return nil end
+	list = {}
+	for i = 1, UI[name] do
+		local s = Instance.new("Sound")
+		s.Name = name .. i
+		s.SoundId = id
+		s.Volume = volume
+		s.PlaybackSpeed = pitch
+		s.SoundGroup = group()
+		s.Parent = home()
+		list[i] = s
+	end
+	ready[name] = list
+	return list
+end
+task.defer(function()
+	local all = {}
+	for name in UI do
+		for _, s in readyCopies(name) or {} do table.insert(all, s) end
+	end
+	pcall(function() game:GetService("ContentProvider"):PreloadAsync(all) end)
+end)
+
 -- opts: volume (multiplier), pitch (multiplier), at (a BasePart/Attachment: heard in the world from there).
 function Sfx.play(name: string, opts: { volume: number?, pitch: number?, at: Instance? }?)
 	local o = opts or {}
 	local level = LEVEL[name] or { 0.5, 0 }
-	local id, volume, pitch = Ids[name], level[1], 1
-	if not (type(id) == "string" and id ~= "") then
-		local f = FALLBACK[name]
-		if not f then
-			return nil
-		end
-		id, volume, pitch = f[1], volume * f[2], f[3]
+	if UI[name] and not o.at then
+		local list = readyCopies(name)
+		if not list then return nil end
+		turn[name] = (turn[name] or 0) % #list + 1
+		local s = list[turn[name]]
+		local id, volume, pitch = source(name)
+		s.SoundGroup = group()
+		s.Volume = volume * (o.volume or 1)
+		s.PlaybackSpeed = pitch * (o.pitch or 1) * (1 + (math.random() * 2 - 1) * level[2])
+		s.TimePosition = 0
+		s:Play()
+		return s
+	end
+	local id, volume, pitch = source(name)
+	if not id then
+		return nil
 	end
 	local s = Instance.new("Sound")
 	s.Name = name
