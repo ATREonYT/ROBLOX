@@ -11,8 +11,9 @@
 // added, Contrast, Saturation, TintColor multiplied, drawn over everything like Roblox's), overlay {bg, lines [{a (deg),
 // w, len, c, x, y (offsets)}], fade [[pos, transparency]...]} (a full-screen ScreenGui frame: lines in a 2400 px square centred on the
 // screen, each from the square's edge inwards, see Gameplay/SecretReveal's impact frame). Boxes may add sh ("ball"),
-// n (Neon: unlit), a (opacity), add (additive) and e (0-1: a white Highlight fill). Ribbons may add u (a texture
-// coordinate per point, wrapping: Beam TextureMode Wrap).
+// n (Neon: unlit), a (opacity), add (additive) and e (0-1: a white Highlight fill); sh "cyl" is a Roblox Cylinder
+// (round along its X axis). Ribbons may add u (a texture coordinate per point, wrapping: Beam TextureMode Wrap).
+// labels [{p, text, h (studs tall), c, o (outline colour), a (opacity)}]: BillboardGui text, camera-facing, Gotham-like.
 // Optional at the top: sky, ground (colours), grid (false to hide), dim (0-1: daylight strength, for evening scenes),
 // stills [frame numbers, 0-based]: with MOTION3D_KEEP=<dir> those frames are also kept there as still_<n>.png.
 import { createRequire } from 'module';
@@ -154,6 +155,27 @@ const sprites = [];
 const ribbonMeshes = [];
 const unit = new THREE.BoxGeometry(1, 1, 1);
 const ball = new THREE.SphereGeometry(0.5, 32, 16);
+const cyl = new THREE.CylinderGeometry(0.5, 0.5, 1, 40).rotateZ(Math.PI / 2); // (Roblox's Cylinder: round along X)
+const labelTex = {}, labelSprites = [];
+const textTexture = (q) => { // one canvas per text + colours, cached
+  const key = q.text + '|' + q.c + '|' + (q.o || '');
+  let t = labelTex[key];
+  if (!t) {
+    const cv = document.createElement('canvas'), px = 96;
+    const ctx = cv.getContext('2d');
+    ctx.font = '900 ' + px + 'px Montserrat, Arial Black, Helvetica, sans-serif';
+    const w = Math.ceil(ctx.measureText(q.text).width) + px * 0.5;
+    cv.width = w; cv.height = Math.ceil(px * 1.4);
+    ctx.font = '900 ' + px + 'px Montserrat, Arial Black, Helvetica, sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
+    if (q.o) { ctx.strokeStyle = q.o; ctx.lineWidth = px * 0.16; ctx.strokeText(q.text, w / 2, cv.height / 2); }
+    ctx.fillStyle = q.c; ctx.fillText(q.text, w / 2, cv.height / 2);
+    t = labelTex[key] = new THREE.CanvasTexture(cv);
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.userData = { aspect: w / cv.height };
+  }
+  return t;
+};
 const pool = [];
 const m = new THREE.Matrix4(), sc = new THREE.Matrix4();
 window.draw = (f) => {
@@ -167,7 +189,7 @@ window.draw = (f) => {
       mesh.matrixAutoUpdate = false;
       scene.add(mesh);
     }
-    mesh.geometry = b.sh === 'ball' ? ball : unit;
+    mesh.geometry = b.sh === 'ball' ? ball : b.sh === 'cyl' ? cyl : unit;
     const lit = !b.n && !b.add && (b.a ?? 1) >= 1;
     mesh.material = lit ? mesh.userData.lit : mesh.userData.neon;
     mesh.castShadow = lit;
@@ -234,6 +256,18 @@ window.draw = (f) => {
     l.position.set(q.p[0], q.p[1], q.p[2]); l.color.set(q.c); l.intensity = q.b * 30; l.distance = q.r; l.decay = 1;
   });
   caption.textContent = f.caption || '';
+  const lb = asList(f.labels);
+  lb.forEach((q, i) => {
+    let s = labelSprites[i];
+    if (!s) { s = labelSprites[i] = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthWrite: false, fog: false })); s.renderOrder = 5; scene.add(s); }
+    const t = textTexture(q);
+    if (s.material.map !== t) { s.material.map = t; s.material.needsUpdate = true; }
+    s.material.opacity = q.a ?? 1;
+    s.position.set(q.p[0], q.p[1], q.p[2]);
+    s.scale.set(q.h * 1.4 * t.userData.aspect, q.h * 1.4, 1);
+    s.visible = true;
+  });
+  for (let i = lb.length; i < labelSprites.length; i++) labelSprites[i].visible = false;
   const rb = asList(f.ribbons);
   rb.forEach((q, i) => {
     let mesh = ribbonMeshes[i];
