@@ -184,7 +184,8 @@ Owner's own words are in quotes. Read only the section you need.
   close up); no letterbox bars in `Cinematic`; while running the prize card, the gear (not on touch: no Menu key)
   and Roblox's player list step aside. Footsteps are ours (`Feel`, Sfx "step", lobby too; Roblox's "Running" muted;
   stand-in thud until the owner uploads `step`). Button clicks: preloaded UI sounds, mouse clicks sound on press.
-  Girl names: owner keeps the look-alike spellings (Oct 17); fix only the ones they name.
+  Girl names (`Config/GirlNames`): real character names now (owner, after asking about copyright: "make the names
+  normal again, don't use similar ones"); 10 unknown girls keep plain invented names until the owner names them.
 - `Gameplay/Feel`: the camera widens up to 11° at full sprint (lobby too), a dash kick, soft wind streaks drifting
   outward near top speed (never flashing), dust and steps in rounds, a `speed_wind` loop. Off with Reduced Motion.
 - The big showcase girl over the map glows softly (`AuraFX`: scale > 1.5 → small light, less LightEmission;
