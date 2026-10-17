@@ -12,6 +12,17 @@ Owner's own words are in quotes. Read only the section you need.
 > no longer true) in the same commit. Things marked as feeling right have mostly only been checked offline; expect
 > them to be reworked once the owner tries them in Studio.
 
+## 0. Start here (every session)
+- Branch `HUZZ-VALLEY`, run everything from `huzz-valley/`. A fresh cloud container has no Lune: install it once with
+  `mkdir -p /root/bin && cd /tmp && curl -sSLo lune.zip https://github.com/lune-org/lune/releases/download/v0.10.5/lune-0.10.5-linux-x86_64.zip && unzip -o lune.zip -d /root/bin && chmod +x /root/bin/lune && cd -`
+  (image tools need `python3 -m pip install pillow`).
+- The three commands (details in section 4), in this order before every commit:
+  1. `PATH=/root/bin:$PATH bash tools/check.sh` (compile + specs + full-game sim)
+  2. `PATH=/root/bin:$PATH bash tools/preview/check.sh` (UI checks)
+  3. `PATH=/root/bin:$PATH LUNE=/root/bin/lune sh tools/place/build_place.sh` (regenerates `HuzzUI.rbxm` + places)
+- Find code by grepping the header comments: every file opens with a plain-words comment saying what it does and
+  quoting the owner's ask, e.g. `grep -rln "free spin" src`.
+
 ## 1. Owner's standing calls (don't undo without asking)
 - **The loop is Huss Valley's** (their videos 32fe8d21 and 87565d66; frames in `docs/previews/hv-reference-*.jpg`).
   The girls are a prize layer on top; they never change the rules.
@@ -87,7 +98,44 @@ Owner's own words are in quotes. Read only the section you need.
 - Owner's place inspection with Lune (`deserializePlace`): maps are in `Workspace.Maps` (Base_Map, BasketBall_Map,
   Halloween_Map; zone parts named case/space-insensitively), the lobby floor is `Maps.Spawn.SpawnBaseplate`.
 
-## 5. The round (`Shared/RoundRules` + `RoundService`)
+## 5. Code conventions (Luau)
+- **Files:** `.lua` under `src/` (Rojo: `X.server.lua` = Script, `X.client.lua` = LocalScript, plain `.lua` =
+  ModuleScript); `.luau` for `tests/` and `tools/`. Tabs, `local function`, typed signatures
+  (`function DataService.update(player: Player, fn: (any) -> ())`). `--!strict` only where a file already has it.
+- **Header comment first:** what the file does in plain words, with the owner's words in quotes and the reason for
+  any odd choice. Keep it true when you change the file; this is how the next session finds things.
+- **Module shape:** `local X = {}` ... `return X`; services expose `X.start()`. Server: `Bootstrap.server.lua`
+  requires and starts services in order (add new ones there). Client: `Main.client.lua` builds each screen with
+  `require(Screens.<Name>).build(gui)` inside `Report.run` from its list; `StartGameplay.client.lua` does
+  `Gameplay/<Name>.start()` from its list. Add a new screen or gameplay part to the matching list.
+- **Tuning lives in `Shared/Config/*`** (numbers, odds, prices, IDs, text), with a comment for each owner-picked
+  value. Rules that can be tested live in `Shared/*` as pure functions with no Instances (then add a spec).
+- **Server is the authority:** clients send intents through `Shared/Net` remotes; the server validates, rate-limits
+  (per-player `last*` tables) and writes. Saved data only via `DataService.update(player, fn)`; new saved fields go
+  in `DataService.Template` (`Reconcile` fills them for old saves). UI verbs go through `ActionService` `VERBS`.
+- **Round state is attributes,** not extra remotes (section 7). Read them with `GetAttributeChangedSignal`.
+- **Generated, never hand-edit:** `Shared/Images/**` (`tools/icons/pack_images.py`), `StarterGui/HuzzUI.rbxm` and
+  `places/*.rbxl` (`build_place.sh`), `ServerStorage/HuzzAnimations.rbxm` (`tools/anim/extract_anims.luau`),
+  `Config/DancePoses` (`motion3d/dance_poses.luau`), `Config/ImageIds` (written by the owner's upload helper).
+- **Guard Studio-only APIs** with `pcall` so the Lune harness and Studio both run (list in section 10).
+
+## 6. Recipes (the usual changes)
+- **New remote:** add it to `SPEC` in `Shared/Net` and a line in the header table (it misses Stab, Power, Hero,
+  Dash, Lunge today: add them when you touch it); `Net.get(name)` on both sides; validate every argument on the
+  server; add a stub to `tools/sim/round_sim.luau` if RoundService uses it.
+- **New screen:** `UI/Screens/<Name>.lua` with `build(gui)`, built from `Kit` helpers, opened through
+  `ModalManager`; add it to Main's list; add a check in `tools/preview/` and a name in `shots.sh`; rebuild the place
+  so `HuzzUI.rbxm` has the new parts.
+- **New paid item:** a row in `Config/Products` (or `CoinShop` for coins) with `Id = 0` and `OnSale` false until the
+  owner sends the real ID; grant only in `ShopService`'s ProcessReceipt; add the ID to the README checklist.
+- **New image:** drop the owner's PNG in `assets/icons` or `assets/art`, run `python3 tools/icons/pack_images.py`,
+  use it with `Kit.icon(name)` / `Kit.art(name)`. Names are case-sensitive in Roblox.
+- **New sound:** add it to `tools/sfx/make_sfx.py`, regenerate, add the key to `Config/SoundIds` as "" and play it
+  with `Sfx.play`; the owner uploads it later.
+- **New quest stat or reward:** count it from a real server event with `ProgressService.addStat(player, stat, n)`; chapters in
+  `Config/Progression`.
+
+## 7. The round (`Shared/RoundRules` + `RoundService`)
 - Lobby: `VoteTime` 30 s, `IntermissionTime` 25 s ("a bit more, so people can buy things, not too long").
 - Stages: Waiting → Voting → Rolling (girl roller) → per round: Lineup → Picking (HERO/CHICKEN, 8 s) → Chosen →
   HeroRun → Countdown → Running → RoundOver; GameOver. Runners win with everyone across 3 rounds in a row.
@@ -114,7 +162,7 @@ Owner's own words are in quotes. Read only the section you need.
 - State lives in attributes (Round remote: Stage, EndsAt, Goal, Streak, PickId, HolderId, VoteWinner...; players:
   HuzzRole, HuzzStatus, DashReady, ProtectedUntil...; characters: DashAt/Dir, LungeAt, HuzzDance/At).
 
-## 6. Feel and look
+## 8. Feel and look
 - `Config/Look` → `HuzzServer/LookService` ("find the filters that make the game feel premium"): colour grade
   (+saturation, +contrast), bloom, soft sun rays, light haze, lifted cool shadows, early-afternoon sun.
 - `Gameplay/Feel`: the camera widens up to 11° at full sprint (lobby too), a dash kick, soft wind streaks drifting
@@ -124,7 +172,7 @@ Owner's own words are in quotes. Read only the section you need.
 - `Gameplay/Cinematic` (line-up camera), `Gameplay/RoundHud` (round plate, message line, banners, "Second chance!"),
   `Screens/HeroChoice` (60% size: "make the boxes smaller"), `Screens/NextMap` (your vote tucks into a NEXT MAP panel).
 
-## 7. Animations (the owner's files)
+## 9. Animations (the owner's files)
 - `tools/anim/extract_anims.luau` → `ServerStorage/HuzzAnimations.rbxm`: Idle, Walk, **Run = the pack's Sprint as
   it is** (big arm swings; `docs/previews/run-arms-vs-hv.jpg`), Jump, Fall, Climb, **DashLeft/DashRight** (built: a
   compact sideways lean), and 25 `Dance_<Id>` (our own names; the originals are other games' emotes).
@@ -140,7 +188,7 @@ Owner's own words are in quotes. Read only the section you need.
 - **Dance wheel** (`Screens/DanceWheel`, the owner's taunt-wheel reference): 8 see-through dark circles round a big
   centre circle; pictures built ahead while closed; opens with one smooth grow (no CanvasGroup, no stagger).
 
-## 8. UI rules (UI lives in StarterGui as real parts: owner's call)
+## 10. UI rules (UI lives in StarterGui as real parts: owner's call)
 - Build with `Kit.new` / helpers and `Parent`; saved parts are reused by name ("twins"), and the saved look wins.
 - Windows 701 x 320, one at a time (`ModalManager`). `Kit.button` adds shade, outline and stud texture.
 - **Never use CanvasGroup for animation** (it lagged). Fade with scale/position tweens instead.
@@ -153,7 +201,7 @@ Owner's own words are in quotes. Read only the section you need.
 - Shop passes copy the owner's banners (`design/shop/pass-banners.png`): navy glass rows, coloured rim and button
   per pass (`Products` `Accent`, Kit styles `PassViolet` / `PassPink`).
 
-## 9. Economy: coins, Aura, shop, wheel, quests
+## 11. Economy: coins, Aura, shop, wheel, quests
 - **Coins** buy looks in the Shop's ITEMS tab (`Config/CoinShop`: trails, name colours, knife skins). Items with
   `Unlock` (quest knives) or `NotForSale` (Spin Knife) are never sold.
 - **Aura stars** (owner's star art in `design/aura`, packed `AuraStar` + white `AuraStarWhite` for tinting):
@@ -170,14 +218,14 @@ Owner's own words are in quotes. Read only the section you need.
   events: Rounds, Crossings, AuraStars, Heroes, Rescues, Catches, HoldSeconds, Wins.
 - **Crates** (`Config/Crates`, `Shared/CrateRoll` with odds + pity) are plumbed but empty until the owner designs them.
 
-## 10. Sounds
+## 12. Sounds
 - 34 sounds made from scratch (`tools/sfx/make_sfx.py` → `assets/sfx/*.ogg`; all in a row in
   `docs/previews/sfx-preview.ogg`): warm, C major pentatonic, brightness under 2.5 kHz, even loudness.
 - `Gameplay/Sfx.play(name, {volume, pitch, at})`, `Sfx.loop("speed_wind")`. `Config/SoundIds` stays "" until the
   owner bulk-imports the files in Asset Manager and sends the IDs (`tools/studio/collect-sound-ids.lua` prints
   them). Built-in stand-ins meanwhile, never pitched above 1.1; silence beats a squeaky ping.
 
-## 11. Studio-only truths
+## 13. Studio-only truths
 - The cloud can't reach Roblox: uploads, real purchases and the final look are the owner's steps. Studio helpers
   report on Output lines tagged `[Huzz]`, `[HuzzSfx]`, `[HuzzAnim]`.
 - Not yet seen in Studio: the lunge feel, sprint feel, lobby repaint, knife positions, spin animation, dance
@@ -186,11 +234,11 @@ Owner's own words are in quotes. Read only the section you need.
 - Scan any place the owner sends for scam scripts (`GetObjects`, `require(<id>)`, `loadstring`, HTTP);
   `SafetyService` strips the known Basket Ball Hoop one.
 
-## 12. Open items (a running list; add to it as the owner reports more)
+## 14. Open items (a running list; add to it as the owner reports more)
 - Owner: Game Pass IDs (VIP 199, Dance Pack 149) and Developer Product IDs (Sunset Trail, Blossom Aura, coin
   packs, spins 1/10/100); upload sounds, pictures and animations; an export of their spin wheel model (match its
   colours); their 3D knife renders; power icons; a stab animation; crate contents; dance names; movement pack licence.
 - Us: whatever the owner's next round of fixes asks for first; then a match results screen, the Gift Picker, a HUD
   timer for the x2 Coins boost, more lore chapters.
-- Everything in sections 5 to 10 is the current version, open to change: tuning numbers (speeds, odds, prices,
+- Everything in sections 7 to 12 is the current version, open to change: tuning numbers (speeds, odds, prices,
   lunge, wheel prizes), looks and feel are first passes waiting for the owner's verdict in Studio.

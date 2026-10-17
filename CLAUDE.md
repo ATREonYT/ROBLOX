@@ -52,13 +52,17 @@ This file loads in every session, so keep it short. Each game folder has its own
 
 ## Repo mechanics
 - One folder per game, with a Rojo `default.project.json` mapping `src/` into Studio services. Setup for the owner is in `ROJO-SETUP.md`.
+- **Which game is where:**
+  - `huzz-valley/`: the current game (Huss Anime Girls), on branch `HUZZ-VALLEY`. Read `huzz-valley/CLAUDE.md` first.
+  - `hood/`: Hood (From the Block), an earlier game with the same layout (`src/`, unit tests in `ServerStorage/UnitTest`).
+  - `plus-one-speed/`, `snatch-a-brainrot/`, `steal-an-egg/`: small single-script prototypes. Leave them alone unless asked.
 - **Getting the owner's Studio work:** they paste `tools/export-for-claude.lua` into Studio's Command Bar and send the `ServerStorage > ClaudeExport > PartN` text.
 - In Studio, saves run in ProfileStore **Mock** mode, so progress resets on Stop. That is on purpose.
 - **Offline tools** (no Studio needed) live in `<game>/tools/preview`:
   - a Lune harness runs the server and client code in a fake DataModel;
   - the checks assert the rules;
   - the HTML renderer draws exported ScreenGuis next to the reference.
-  - Lune 0.10.5 comes from the lune-org GitHub releases. Playwright and Chromium are already installed in cloud sessions.
+  - Lune 0.10.5 comes from the lune-org GitHub releases (install line in the game's `CLAUDE.md`). Playwright and Chromium are already installed in cloud sessions.
 - **Roblox UI rules the preview won't show you:**
   - UDim offsets are whole numbers, so never use half pixels;
   - ClipsDescendants clips square and ignores UICorner, so round the image itself;
@@ -69,8 +73,8 @@ This file loads in every session, so keep it short. Each game folder has its own
 - **A clean offline run doesn't prove Studio works:** Lune's copy of the Roblox API is outdated. Start each UI part separately, so one failure can't stop the rest, and show errors on screen, so the owner can screenshot them.
 - **Animations from the owner's files** are raw KeyframeSequences: extract them with Lune into a `.rbxm`, play them
   in Studio with `KeyframeSequenceProvider` (temporary IDs, Studio only), preview them with
-  `tools/preview/motion3d/anim_scene.luau`, and give the owner a publish helper for the live game.
-- **Sounds:** make our own (`huzz-valley/tools/sfx/make_sfx.py`); the owner uploads them and sends back the IDs.
+  `<game>/tools/preview/motion3d/anim_scene.luau`, and give the owner a publish helper for the live game.
+- **Sounds:** make our own (`<game>/tools/sfx/make_sfx.py`); the owner uploads them and sends back the IDs.
 - **Cloud sessions can't reach Studio or Roblox's web APIs** (apis.roblox.com is blocked), so they can't upload images or check the real game.
   - Only the owner can confirm the final look and the real purchase prompts.
   - Anything that must run in Studio (uploads, helpers) ships as a Command Bar script or a "Save as Local Plugin" script. It reports in Output on lines starting with a tag, so the owner can screenshot the result.
