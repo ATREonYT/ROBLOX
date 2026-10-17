@@ -3,8 +3,9 @@
 	owner's Aura star (design/aura): the purple one as drawn, the other colours from its all-white copy, tinted. A
 	soft halo behind it breathes, sparkles, a soft light and a glow on the floor; it bobs and sways gently. Rainbow
 	stars drift through the colours slowly (never a flash). Rarer stars (worth more) are bigger, sparkle more and glow
-	brighter, so you can tell them apart from far away. Collecting one (run into it) pops it: a burst of sparkles (bigger
-	for rarer ones), a sound and "+N Aura".
+	brighter, so you can tell them apart from far away. Collecting one (run into it) pops it like Huss Valley's gems: a
+	"+N" in the star's colour jumps up where it was and fades, with a soft burst of sparkles (bigger for rarer ones) and
+	a sound. Everyone near sees the burst (so the field feels alive); only the collector gets the "+N" and the sound.
 	Only stars near the camera animate.
 ]]
 local M = {}
@@ -21,8 +22,9 @@ function M.start()
 	local AuraLook = require(Shared.AuraLook)
 	local UI = script.Parent.Parent.UI
 	local Kit = require(UI.Kit)
-	local Toast = require(UI.Toast)
 	local Sfx = require(script.Parent.Sfx)
+	local Burst = require(script.Parent.Burst)
+	local Players = game:GetService("Players")
 
 	local NEAR = 140
 	local kinds, tierOf = {}, {}
@@ -119,33 +121,33 @@ function M.start()
 		end
 	end)
 
-	-- Collected (yours): a burst where it was, a sound, "+N Aura".
+	-- Collected: a soft burst where it was (everyone near), and for the collector a "+N" in the star's colour that
+	-- jumps up and fades (Huss Valley's "+1" over a gem) and a sound. No toast at the top: the HUD's Aura counts up.
 	Net.get("Round").OnClientEvent:Connect(function(kind, data)
 		if kind ~= "AuraCollected" or type(data) ~= "table" then return end
+		local mine = data.id == nil or data.id == Players.LocalPlayer.UserId
 		local at = data.at
-		if typeof(at) == "Vector3" then
-			local k = kinds[data.kind or ""] or Config.Kinds[1]
-			local p = Instance.new("Part")
-			p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch, p.Transparency = true, false, false, false, 1
-			p.Size = Vector3.one
-			p.CFrame = CFrame.new(at)
-			local e = Instance.new("ParticleEmitter")
-			e.Texture = AuraLook.TEXTURES.Star or "rbxasset://textures/particles/sparkles_main.dds"
-			e.Color = ColorSequence.new(Color3.new(1, 1, 1), k.Color)
-			e.LightEmission = 0.9
-			e.Rate = 0
-			e.Lifetime = NumberRange.new(0.5, 0.9)
-			e.Speed = NumberRange.new(6, 12)
-			e.SpreadAngle = Vector2.new(180, 180)
-			e.Drag = 4
-			e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.45), NumberSequenceKeypoint.new(1, 0) })
-			e.Parent = p
-			p.Parent = Workspace
-			e:Emit(24 + (tierOf[k.Name] or 0) * 10)
-			task.delay(1.5, function() p:Destroy() end)
+		local k = kinds[data.kind or ""] or Config.Kinds[1]
+		local tier = tierOf[k.Name] or 0
+		local cam = Workspace.CurrentCamera
+		if typeof(at) == "Vector3" and (mine or (cam and (cam.CFrame.Position - at).Magnitude < NEAR)) then
+			local color = if k.Rainbow then Color3.fromHSV((os.clock() * 0.12) % 1, 0.55, 1) else k.Color
+			Burst.sparks(at, { color }, (if mine then 14 else 8) + tier * 5, {
+				texture = AuraLook.TEXTURES.Star, glow = 0.7, life = NumberRange.new(0.35, 0.6), speed = NumberRange.new(4, 8),
+				drag = 5, gravity = Vector3.new(0, 2, 0),
+				size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35 + tier * 0.04), NumberSequenceKeypoint.new(1, 0) }),
+			})
+			if mine then
+				-- (the White star's text keeps a coloured edge so it still reads against the sky)
+				Burst.pop(at + Vector3.new(0, 0.6, 0), `+{data.value or 1}`, color, {
+					height = 1.5 + tier * 0.18, rise = 2.6, time = 0.85,
+					outline = if k.Name == "White" or k.Rainbow then Color3.fromRGB(70, 40, 120) else nil,
+				})
+			end
 		end
-		Sfx.play("aura_pickup", { pitch = if (data.value or 1) >= 5 then 0.85 elseif (data.value or 1) > 1 then 0.95 else 1 })
-		Toast.show(`+{data.value or 1} Aura`)
+		if mine then
+			Sfx.play("aura_pickup", { pitch = if (data.value or 1) >= 5 then 0.85 elseif (data.value or 1) > 1 then 0.95 else 1 })
+		end
 	end)
 end
 

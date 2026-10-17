@@ -4,9 +4,12 @@
 -- press its key (gamepad L1 / R1) to use it. The server decides (HuzzServer/PowerService) and sends the result back
 -- as the player's PowerReady1/PowerReady2 attributes (server time the slot is ready; -1 = used up this round), which
 -- the cards count down. A Heart Shield that's on shows on its card until it runs out or pops.
+-- The tile reacts on press (owner: "make the usage of items smoother"): it squashes and springs back, and when the
+-- server says the power went off, its rim glows pink and the icon pops (in step with the cast: Gameplay/PowerEffects).
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 
@@ -74,7 +77,20 @@ local function card(parent: Instance, slot: number)
 		Size = UDim2.fromScale(1, 1), ZIndex = 4, Visible = false, Parent = b,
 	})
 	new("UIStroke", { Name = "Outline", Color = C.TextShadow, Thickness = 1.5, Parent = count })
-	return { button = b, rim = rim, press = press, icon = icon, name = name, key = keyText, cover = cover, count = count }
+	return { button = b, rim = rim, press = press, icon = icon, iconSize = icon.TextSize, name = name, key = keyText, cover = cover, count = count, glowUntil = 0 }
+end
+
+local SPRING = TweenInfo.new(0.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+-- Pressed: a quick squash that springs back past its size and settles.
+local function squash(c)
+	c.press.Scale = 0.88
+	TweenService:Create(c.press, SPRING, { Scale = 1 }):Play()
+end
+-- It went off (the server took it): the rim glows pink for a moment and the icon pops.
+local function fired(c)
+	c.glowUntil = os.clock() + 0.4
+	c.icon.TextSize = math.floor(c.iconSize * 1.3)
+	TweenService:Create(c.icon, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { TextSize = c.iconSize }):Play()
 end
 
 function PowerBar.build(parent: Instance)
@@ -102,16 +118,13 @@ function PowerBar.build(parent: Instance)
 	local function use(slot: number)
 		local list = powersNow()
 		if not list or not bar.Visible or player:GetAttribute("MenuOpen") then return end
-		local c = cards[slot]
-		c.press.Scale = 0.94
-		task.delay(0.08, function() c.press.Scale = 1 end)
+		squash(cards[slot])
 		remote:FireServer(slot)
 	end
 	for slot, c in cards do
 		c.button.Activated:Connect(function()
 			if slot == 3 then
-				c.press.Scale = 0.94
-				task.delay(0.08, function() c.press.Scale = 1 end)
+				squash(c)
 				Dash.try()
 			else
 				use(slot)
@@ -124,6 +137,16 @@ function PowerBar.build(parent: Instance)
 			if input.KeyCode == KEYS[slot] or input.KeyCode == PADS[slot] then use(slot) end
 		end
 	end)
+
+	-- The server took the power: its slot's ready time jumps ahead (or to -1, used up).
+	for slot = 1, 2 do
+		player:GetAttributeChangedSignal("PowerReady" .. slot):Connect(function()
+			local ready = player:GetAttribute("PowerReady" .. slot)
+			if bar.Visible and type(ready) == "number" and (ready < 0 or ready > Workspace:GetServerTimeNow() + 0.5) then
+				fired(cards[slot])
+			end
+		end)
+	end
 
 	-- Every frame: which powers, and how long until each is ready.
 	local shown = nil
@@ -167,7 +190,9 @@ function PowerBar.build(parent: Instance)
 			c.count.Visible = text ~= ""
 			c.count.Text = text
 			local isReady = frac <= 0 and not waiting
-			c.rim.Color = if shieldOn then PINK elseif isReady then C.Action else C.RowBorder
+			local glowing = os.clock() < c.glowUntil
+			c.rim.Color = if shieldOn or glowing then PINK elseif isReady then C.Action else C.RowBorder
+			c.rim.Thickness = if glowing then 3 else 2
 		end
 	end
 	RunService.RenderStepped:Connect(refresh)

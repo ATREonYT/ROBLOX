@@ -10,7 +10,8 @@
 	For the hotbar each player gets attributes: PowerReady1/PowerReady2 (server time the slot is
 	ready again; -1 = used up this round) and ShieldUntil. Effects other players should see are
 	parts and billboards made here (bubble, trail, traps, badges); one-off bursts go to every
-	client as a "Power" message on the Round remote.
+	client as a "Power" message on the Round remote (each use, a blocked stab, a sprung trap). Charm Wave's slow
+	lands Config/Powers.Fx.WindUp after the press, when its ring visibly goes out.
 ]]
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -248,7 +249,7 @@ function USE.LoveTrap(id, def)
 	heart.Parent = gui
 	model.Parent = folder("HuzzTraps")
 	table.insert(traps, { model = model, owner = id, at = at, untilT = now() + def.Lasts })
-	return true
+	return true, nil, { at = at }
 end
 
 function USE.CharmWave(id, def)
@@ -256,19 +257,26 @@ function USE.CharmWave(id, def)
 	if not root then
 		return false
 	end
+	-- The slow lands when the wave visibly goes out (Gameplay/PowerEffects: a wind-up, then the ring), not on the
+	-- press, so runners can see it coming. Measured from where the catcher is then.
 	local match = ctx.match()
-	local start = ctx.startZone()
-	for runnerId, status in match.status do
-		local r = status == "Active" and ctx.rootOf(runnerId)
-		if r and (r.Position - root.Position).Magnitude <= def.Radius and not (start and ctx.inZone(start, r.Position)) then
-			local s = stateOf(runnerId)
-			s.slow, s.slowUntil = def.Slow, now() + def.Time
-			badge(runnerId, "HuzzCharmed", "😍", Color3.new(1, 1, 1), def.Time)
-			ctx.sync(runnerId)
+	task.delay(Powers.Fx.WindUp, function()
+		local from = ctx.rootOf(id)
+		if not from or ctx.match() ~= match or match.over or not ctx.running() then
+			return
 		end
-	end
-	Net.get("Round"):FireAllClients("Power", { name = "CharmWave", id = id, at = root.Position, radius = def.Radius })
-	return true
+		local start = ctx.startZone()
+		for runnerId, status in match.status do
+			local r = status == "Active" and ctx.rootOf(runnerId)
+			if r and (r.Position - from.Position).Magnitude <= def.Radius and not (start and ctx.inZone(start, r.Position)) then
+				local s = stateOf(runnerId)
+				s.slow, s.slowUntil = def.Slow, now() + def.Time
+				badge(runnerId, "HuzzCharmed", "😍", Color3.new(1, 1, 1), def.Time)
+				ctx.sync(runnerId)
+			end
+		end
+	end)
+	return true, nil, { radius = def.Radius }
 end
 
 -- Which power is in a slot for this player now (by role).
@@ -296,10 +304,15 @@ local function use(player, slot)
 		return
 	end
 	local def = Powers[name]
-	local ok = USE[name](id, def)
+	local ok, _, extra = USE[name](id, def)
 	if ok then
 		setSlot(id, slot, if def.OncePerRound then -1 else t + def.Cooldown)
-		Net.get("Round"):FireAllClients("Power", { name = name, id = id })
+		-- (every client draws the cast: Gameplay/PowerEffects; at = the trap's spot, radius = the wave's reach)
+		local msg = { name = name, id = id }
+		for k, v in extra or {} do
+			msg[k] = v
+		end
+		Net.get("Round"):FireAllClients("Power", msg)
 	end
 end
 

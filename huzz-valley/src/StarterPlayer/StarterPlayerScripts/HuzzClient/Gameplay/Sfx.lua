@@ -51,6 +51,11 @@ local FALLBACK = {
 	trap_snap = { "rbxasset://sounds/snap.mp3", 0.8, 1 },
 	safe = { PING, 0.7, 1 },
 	round_win = { PING, 0.8, 1 },
+	-- the powers and the Aura stars (Oct 17 feel pass: "make the usage of items smoother"; a power with no sound
+	-- read as nothing happening): soft, low pings until ours are uploaded
+	heart_shield = { PING, 0.55, 0.85 },
+	power_rush = { "rbxasset://sounds/action_jump.mp3", 0.9, 1.05 },
+	aura_pickup = { PING, 0.45, 1.1 },
 }
 
 local function group(): SoundGroup?

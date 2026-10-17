@@ -3,7 +3,8 @@
 	is loaded; none between games. Run into one and it's collected: the server checks every player's distance to every
 	star ten times a second (first one there wins) and pays (DataService). A collected star refills elsewhere after a
 	short wait; when the map changes, the stars move to the new field. The look (glow, sparkles, bobbing) is drawn on
-	every client (Gameplay/AuraStars, tag "HuzzAuraStar").
+	every client (Gameplay/AuraStars, tag "HuzzAuraStar"); "AuraCollected" goes to every client (the collector's id in
+	it) so everyone sees the star pop and only the collector gets the "+N".
 ]]
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -48,7 +49,8 @@ local function collect(star: BasePart, player: Player)
 		d.Aura = (d.Aura or 0) + value
 		d.Stats.AuraStars = (d.Stats.AuraStars or 0) + 1 -- (lore quest: Star Catcher)
 	end)
-	Net.get("Round"):FireClient(player, "AuraCollected", { value = value, kind = kind, at = at })
+	-- (to everyone: the collector sees "+N", everyone near sees the star pop: Gameplay/AuraStars)
+	Net.get("Round"):FireAllClients("AuraCollected", { value = value, kind = kind, at = at, id = player.UserId })
 	player:SetAttribute("HuzzGameAura", (player:GetAttribute("HuzzGameAura") or 0) + value) -- (the results screen)
 	task.delay(rng:NextNumber(Config.Respawn[1], Config.Respawn[2]), spawnOne)
 end

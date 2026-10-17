@@ -1,17 +1,19 @@
 --[[
 	Reward bursts for the big moments, in the world (owner: "it looks still a bit bland and plain, i want it to feel
-	nice, play nice and give people enjoyment"; the write-up "making it feel great" picked this first). Everyone sees:
-	  - someone reaches safety: a green ring spreads over the floor and confetti pops up from them;
-	  - someone gets caught: a red ring and a burst of red sparks where they fell;
-	  - someone is saved: a column of green sparkles rises from them.
+	nice, play nice and give people enjoyment"; the write-up "making it feel great" picked this first). One world
+	effect per moment, next to the coloured message line (docs/feel-study.md gap 15: "they pile up"). Everyone sees:
+	  - someone reaches safety: confetti pops up from them;
+	  - someone gets caught: a quick burst of red sparks with a white core where they fell;
+	  - someone is saved: a ring of green light lifts off the floor round them, sparkles drifting up inside it;
+	  - the game is won: hearts and sparkles in the girl's rarity colour rise round the winner (she flies to them).
 	On your own screen the camera shakes (owner: "make the game more cinematic ... more screenshake"): hard when YOU
-	are caught, firm when YOU catch someone, a bump at GO, on your huss or lunge and when you reach safety, all
-	fading out fast. While you run, the screen edges glow red as a catcher closes in (owner: "a red glow if a catcher
-	is getting near"), stronger the closer they are, with a slow heartbeat swell (about once a second, never a
-	flash) when they're right on you. Rings and bursts never flash the screen; the shake and the swell are off with
-	the Reduced Motion setting (the glow stays: it tells you something). RoundHud keeps the words (SAFE!, FIRST!,
-	YOU'RE DOWN); this file only adds the world. Also: a huss leaves a short white streak behind whoever does it, and
-	getting caught drains the colour from your screen with a red tint for half a second (one per catch).
+	are caught, firm when YOU catch someone, a bump at GO, all fading out fast (none on a huss or lunge: Huss Valley has none). While you
+	run, the screen edges glow red as a catcher closes in (owner: "a red glow if a catcher is getting near"),
+	stronger the closer they are, with a slow heartbeat swell (about once a second, never a flash) when they're right
+	on you. Bursts never flash the screen; the shake and the swell are off with the Reduced Motion setting (the glow
+	stays: it tells you something). RoundHud keeps the words (SAFE!, FIRST!, YOU'RE DOWN); this file only adds the
+	world (the huss speed lines are Gameplay/Feel's). Getting caught also drains the colour from
+	your screen with a red tint for half a second (one per catch). Rings are real rings (Gameplay/Burst), not discs.
 ]]
 local M = {}
 
@@ -26,6 +28,7 @@ function M.start()
 	local Shared = ReplicatedStorage:WaitForChild("Shared")
 	local Net = require(Shared.Net)
 	local AuraLook = require(Shared.AuraLook)
+	local Round = require(Shared.Config.Round)
 	local State = require(script.Parent.Parent.UI.State)
 
 	local player = Players.LocalPlayer
@@ -50,11 +53,13 @@ function M.start()
 		return cam ~= nil and (cam.CFrame.Position - at).Magnitude < NEAR
 	end
 
+	local Burst = require(script.Parent.Burst)
+
 	-- The floor height under a spot (characters ignored), else 2.9 studs below it.
 	local function floorY(at: Vector3): number
 		local params = RaycastParams.new()
 		params.FilterType = Enum.RaycastFilterType.Exclude
-		local skip = {}
+		local skip = { Burst.home() }
 		for _, p in Players:GetPlayers() do
 			if p.Character then table.insert(skip, p.Character) end
 		end
@@ -63,52 +68,17 @@ function M.start()
 		return if hit then hit.Position.Y else at.Y - 2.9
 	end
 
-	-- A flat glowing ring on the floor that spreads out and fades over 0.6 s.
-	local function ring(at: Vector3, color: Color3, size: number)
-		local r = Instance.new("Part")
-		r.Name = "HuzzRing"
-		r.Shape = Enum.PartType.Cylinder
-		r.Anchored, r.CanCollide, r.CanQuery, r.CanTouch, r.CastShadow = true, false, false, false, false
-		r.Material = Enum.Material.Neon
-		r.Color = color
-		r.Transparency = 0.35
-		r.Size = Vector3.new(0.08, 2, 2)
-		r.CFrame = CFrame.new(at.X, floorY(at) + 0.06, at.Z) * CFrame.Angles(0, 0, math.rad(90))
-		r.Parent = Workspace
-		local info = TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-		TweenService:Create(r, info, { Size = Vector3.new(0.08, size, size), Transparency = 1 }):Play()
-		task.delay(0.7, function() r:Destroy() end)
-	end
-
-	-- A one-shot burst of particles at a spot.
+	-- A one-off burst of particles at a spot (Gameplay/Burst).
 	local function burst(at: Vector3, colors: { Color3 }, count: number, opts: { [string]: any }?)
-		local o = opts or {}
-		local holder = Instance.new("Part")
-		holder.Name = "HuzzBurst"
-		holder.Anchored, holder.CanCollide, holder.CanQuery, holder.CanTouch, holder.Transparency = true, false, false, false, 1
-		holder.Size = Vector3.one
-		holder.CFrame = CFrame.new(at)
-		holder.Parent = Workspace
-		for _, c in colors do
-			local e = Instance.new("ParticleEmitter")
-			e.Texture = o.texture or SPARK
-			e.Color = ColorSequence.new(c)
-			e.LightEmission = o.glow or 0.6
-			e.Rate = 0
-			e.Lifetime = o.life or NumberRange.new(0.7, 1.2)
-			e.Speed = o.speed or NumberRange.new(10, 18)
-			e.SpreadAngle = o.spread or Vector2.new(35, 35)
-			e.EmissionDirection = Enum.NormalId.Top
-			e.Acceleration = o.gravity or Vector3.new(0, -30, 0)
-			e.Drag = o.drag or 1.5
-			e.RotSpeed = NumberRange.new(-220, 220)
-			e.Rotation = NumberRange.new(0, 360)
-			e.Size = o.size or NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.5), NumberSequenceKeypoint.new(1, 0.15) })
-			e.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.8, 0.2), NumberSequenceKeypoint.new(1, 1) })
-			e.Parent = holder
-			e:Emit(math.max(1, math.floor(count / #colors)))
-		end
-		task.delay(2, function() holder:Destroy() end)
+		local o = table.clone(opts or {})
+		o.texture = o.texture or SPARK
+		o.life = o.life or NumberRange.new(0.7, 1.2)
+		o.speed = o.speed or NumberRange.new(10, 18)
+		o.spread = o.spread or Vector2.new(35, 35)
+		o.gravity = o.gravity or Vector3.new(0, -30, 0)
+		o.drag = o.drag or 1.5
+		o.size = o.size or NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.5), NumberSequenceKeypoint.new(1, 0.15) })
+		Burst.sparks(at, colors, count, o)
 	end
 
 	-- A short camera shake that fades out (strength in studs).
@@ -133,14 +103,12 @@ function M.start()
 	local function safeFx(id: number)
 		local root = rootOf(id)
 		if not (root and near(root.Position)) then return end
-		ring(root.Position, GREEN, 16)
 		burst(root.Position + Vector3.new(0, 1, 0), CONFETTI, 40, {
 			texture = "rbxasset://textures/particles/sparkles_main.dds",
 			speed = NumberRange.new(16, 26), spread = Vector2.new(30, 30), gravity = Vector3.new(0, -40, 0), glow = 0.3,
 			size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.45), NumberSequenceKeypoint.new(1, 0.3) }),
 			life = NumberRange.new(1, 1.6),
 		})
-		if id == player.UserId then shake(0.25, 0.25) end
 	end
 
 	-- Everyone's crossing: watch each runner's status turn Safe.
@@ -162,8 +130,10 @@ function M.start()
 		if kind == "Caught" then
 			local root = rootOf(data.runner)
 			if root and near(root.Position) then
-				ring(root.Position, RED, 12)
-				burst(root.Position, { RED, Color3.new(1, 1, 1) }, 26, { speed = NumberRange.new(8, 16), spread = Vector2.new(70, 70) })
+				burst(root.Position, { RED, RED, Color3.new(1, 1, 1) }, 30, {
+					speed = NumberRange.new(10, 20), spread = Vector2.new(80, 80), gravity = Vector3.new(0, -24, 0), drag = 3,
+					life = NumberRange.new(0.35, 0.6), glow = 0.8,
+				})
 			end
 			if data.runner == player.UserId then
 				shake(0.7, 0.4)
@@ -173,16 +143,37 @@ function M.start()
 		elseif kind == "Rescued" then
 			local root = rootOf(data.runner)
 			if root and near(root.Position) then
-				ring(root.Position, GREEN, 10)
-				burst(root.Position - Vector3.new(0, 2, 0), { GREEN, Color3.new(1, 1, 1) }, 30, {
+				-- one effect: a ring of green light lifts off the floor round them, sparkles drift up inside it
+				local base = Vector3.new(root.Position.X, floorY(root.Position) + 0.1, root.Position.Z)
+				Burst.ring(CFrame.new(base), {
+					r0 = 2.6, r1 = 2.2, time = 0.9, width = 0.16, glow = 0.6, color = GREEN, edge = GREEN, fade = 0.4,
+					follow = function(k) return CFrame.new(base + Vector3.new(0, 5 * Burst.ease(k), 0)) end,
+				})
+				burst(base, { GREEN, Color3.new(1, 1, 1) }, 24, {
 					speed = NumberRange.new(5, 9), spread = Vector2.new(12, 12), gravity = Vector3.new(0, 4, 0), drag = 0.5,
 					life = NumberRange.new(1, 1.5),
+				})
+			end
+		elseif kind == "Win" and type(data.winner) == "number" and not data.bot then
+			-- the reward moment: hearts and sparkles in her rarity colour rise round the winner as she flies to them
+			local root = rootOf(data.winner)
+			if root and near(root.Position) then
+				local color = GREEN
+				for _, r in Round.Rarities do
+					if r.Name == data.rarity then
+						color = if r.Name == "Secret" then Color3.fromRGB(200, 170, 255) else r.Color
+					end
+				end
+				burst(root.Position, { color, Burst.PINK, Color3.new(1, 1, 1) }, 36, {
+					speed = NumberRange.new(6, 11), spread = Vector2.new(25, 25), gravity = Vector3.new(0, 3, 0), drag = 0.8,
+					life = NumberRange.new(1.2, 1.8), glow = 0.7,
 				})
 			end
 		end
 	end)
 
-	-- More shake: a bump at GO, and on your own huss and lunge.
+	-- More shake: a bump at GO. (No shake or smear on a huss or lunge: Huss Valley has none; Gameplay/Feel draws
+	-- its thin speed lines.)
 	local round = Net.get("Round")
 	round:GetAttributeChangedSignal("Stage"):Connect(function()
 		local role = player:GetAttribute("HuzzRole")
@@ -201,55 +192,6 @@ function M.start()
 	Net.get("Round").OnClientEvent:Connect(function(kind, data)
 		if kind == "Caught" and type(data) == "table" and data.runner == player.UserId then hurt() end
 	end)
-
-	-- A huss leaves a short white streak behind the one doing it (everyone near sees it).
-	local function streak(c: Model)
-		local root = c:FindFirstChild("HumanoidRootPart")
-		if not (root and root:IsA("BasePart") and near(root.Position)) then return end
-		local a0, a1 = Instance.new("Attachment"), Instance.new("Attachment")
-		a0.Position, a1.Position = Vector3.new(0, 1.2, 0), Vector3.new(0, -1.6, 0)
-		a0.Parent, a1.Parent = root, root
-		local t = Instance.new("Trail")
-		t.Name = "HuzzHussTrail"
-		t.Attachment0, t.Attachment1 = a0, a1
-		t.Lifetime = 0.22
-		t.LightEmission = 0.5
-		t.Color = ColorSequence.new(Color3.new(1, 1, 1))
-		t.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 1) })
-		t.WidthScale = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(1, 0.2) })
-		t.FaceCamera = true
-		t.Parent = root
-		task.delay(0.3, function() t.Enabled = false end)
-		task.delay(0.6, function()
-			t:Destroy(); a0:Destroy(); a1:Destroy()
-		end)
-	end
-	local function watchStreaks(c: Model)
-		local last = 0 -- (your own huss sets DashAt twice: here, then from the server)
-		c:GetAttributeChangedSignal("DashAt"):Connect(function()
-			if os.clock() - last < 0.5 then return end
-			last = os.clock()
-			streak(c)
-		end)
-	end
-	local function watchPlayer(p: Player)
-		p.CharacterAdded:Connect(watchStreaks)
-		if p.Character then watchStreaks(p.Character) end
-	end
-	Players.PlayerAdded:Connect(watchPlayer)
-	for _, p in Players:GetPlayers() do watchPlayer(p) end
-
-	local function watchMoves(c: Model)
-		local lastDash = 0
-		c:GetAttributeChangedSignal("DashAt"):Connect(function()
-			if os.clock() - lastDash < 0.5 then return end -- (our own copy, then the server's: one huss, one bump)
-			lastDash = os.clock()
-			shake(0.15, 0.18)
-		end)
-		c:GetAttributeChangedSignal("LungeAt"):Connect(function() shake(0.25, 0.22) end)
-	end
-	player.CharacterAdded:Connect(watchMoves)
-	if player.Character then watchMoves(player.Character) end
 
 	-- The red edge glow: four soft gradients round the screen, under the HUD.
 	local edgeGui = Instance.new("ScreenGui")

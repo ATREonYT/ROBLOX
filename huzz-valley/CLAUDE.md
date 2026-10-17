@@ -199,17 +199,27 @@ Owner's own words are in quotes. Read only the section you need.
   HuzzRole, HuzzStatus, DashReady, ProtectedUntil...; characters: DashAt/Dir, LungeAt, HuzzDance/At).
 
 ## 8. Feel and look
-- `Config/Look` → `HuzzServer/LookService` ("find the filters that make the game feel premium"): colour grade
-  (+saturation, +contrast), bloom, soft sun rays, light haze, lifted cool shadows, early-afternoon sun. Oct 17:
-  less haze (Density 0.2, Haze 0.3, Glare 0) and more colour (Saturation 0.28, Contrast 0.14): the haze washed out
-  the colours ("looks still a bit bland and plain").
-- `Gameplay/Juice` (Oct 17): everyone sees a green ring + confetti when someone reaches safety, a red ring + sparks
-  on a catch, a rising green column on a rescue; a small camera shake for you (off with Reduced Motion). The first
-  runner safe each round gets "FIRST!" (RoundService `First` event after their Safe; RoundHud banner / small line).
+- `Config/Look` → `HuzzServer/LookService` ("find the filters that make the game feel premium"): colour grade,
+  bloom, soft sun rays, light haze (Density 0.2, Haze 0.3), lifted cool shadows, early-afternoon sun. Feel study
+  (`docs/feel-study.md` gap 3): the floor was blown out (brightness 0.76 to 0.87, 35 to 48% clipped vs HV 0.62 / 15%),
+  so Brightness 2.8 → 2.0, Exposure +0.15 → -0.1, grade Contrast 0.12, Saturation 0.35 (estimate:
+  `tools/preview/feel/look_estimate.py`, lobby ~0.64, round ~0.72). Map parts keep the owner's colours.
+- `Gameplay/Juice`: one world effect per moment beside the message line (study gap 15): confetti on safe, a quick red
+  spark burst on a catch, a green ring lifting off the floor on a rescue, hearts and sparkles in the girl's rarity
+  colour round the winner. Shakes only for being caught, catching and GO (none on a huss or lunge: HV has none). The
+  first runner safe each round gets "FIRST!" (RoundService `First` event; RoundHud).
+- **Powers** (`Gameplay/PowerEffects`, `Config/Powers.Fx`, the other game's ability timing): a glow builds (0.25 s;
+  Shield and Rush 0.15 s), one bright frame (`Gameplay/Burst.flashOk`: at most one a second per screen), the effect
+  0.35 s, a 0.15 s fade; white core → pink → purple. Shield: a bubble bursts out; Rush: a ring standing up behind you
+  and white speed lines; Trap: the glow drops and a ring slams round the trap; Charm Wave: a ring gathers, then two
+  rings run out (its slow lands when they do: PowerService waits `Fx.WindUp`). Each has a sound; others' powers pop
+  their name over them; your Q/E tile squashes on press and glows pink when the server takes it. All plain neon parts
+  (`Gameplay/Burst`: real rings of short pieces, glow orbs, world text), so nothing waits for an upload. Film:
+  `motion3d/power_scene.luau` → `docs/previews/powers.mp4`, `feel-powers-after.jpg` (`tools/preview/powers_vs_og.py`).
 - Oct 17 round 2 ("more cinematic", "less ui", "cutscenes dont cut out"): Juice shakes harder (caught 0.7, catch
-  0.4, GO, own huss/lunge) and the screen edges glow red as a catcher comes within 40 studs (`HuzzDanger`, 1 Hz swell
-  close up), getting caught tints your screen red for 0.7 s (`HuzzHit` ColorCorrection), and a huss leaves a short white
-  trail; no letterbox bars in `Cinematic`; while running the prize card, the gear (not on touch: no Menu key)
+  0.4, GO) and the screen edges glow red as a catcher comes within 40 studs (`HuzzDanger`, 1 Hz swell
+  close up), getting caught tints your screen red for 0.7 s (`HuzzHit` ColorCorrection) (the huss's white trail is gone:
+  `Feel` draws HV's thin speed lines); no letterbox bars in `Cinematic`; while running the prize card, the gear (not on touch: no Menu key)
   and Roblox's player list step aside. Footsteps are ours (`Feel`, Sfx "step", lobby too; Roblox's "Running" muted;
   stand-in thud until the owner uploads `step`). Button clicks: preloaded UI sounds, mouse clicks sound on press.
   Girl names (`Config/GirlNames`): real character names now (owner, after asking about copyright: "make the names
@@ -232,8 +242,14 @@ Owner's own words are in quotes. Read only the section you need.
     0.2 s dip to black and a cut under it (no fly-back).
   - Film: `HUSS_ONLY=1 sh video.sh ramp_scene.luau out.mp4`, sheet `motion3d/huss_sheet.py` →
     `docs/previews/feel-huss-after.jpg`. Not seen in Studio yet.
-- The big showcase girl over the map glows softly (`AuraFX`: scale > 1.5 → small light, less LightEmission;
-  "too much light shining down").
+- The big showcase girl over the map (`GirlService.showcase`, study gap 12: she read as a dark blob) stands on a small
+  stand with a glowing band in her rarity colour (never wider than her stance: "the rings hid her from below"; inside
+  her Aura box, so the cutscene's bounds don't change), a key light in front, a rim light behind, a soft glow up from
+  the stand (short ranges: "too much light shining down"), and her name big in her rarity colour over her head (a
+  pixel floor so it reads from the far end; stars white, no gold). Only her root is anchored: every client plays the
+  pack's Idle on her (`CarryAnimator`) and hides the stand and its lights during the Secret cutscene. Her aura glows
+  softly (`AuraFX`: scale > 1.5 → small light). Your companion steps in and out behind a puff of sparkles (`Auras`).
+  Smoke tests: `tools/preview/smoke_showcase.luau`, `smoke_feel_fx.luau` (harness).
 - `Gameplay/Cinematic` (line-up camera, above), `Gameplay/RoundHud` (round plate, message line, banners, "Second chance!"),
   `Screens/HeroChoice` (60% size: "make the boxes smaller"), `Screens/NextMap` (your vote tucks into a NEXT MAP panel).
 
@@ -309,6 +325,8 @@ Owner's own words are in quotes. Read only the section you need.
   none between games; **run through one to collect** (server checks distance 10x a second). Owner (Oct 17): "different
   colors give different amounts ... the ones that give more are rarer": Blue 1 (40%), Green 2 (25%), Purple 3 (16%),
   Pink 5 (10%), White 10 (6%), Rainbow 25 (3%); rarer stars are bigger and brighter. The Aura "+" buttons explain it.
+  Collecting one pops a "+N" in the star's colour where it was (HV's gems) with a soft burst everyone near sees
+  ("AuraCollected" goes to all clients with the collector's id); no toast.
 - **Spin the Wheel** (`Config/SpinWheel`, `Shared/SpinRules`, `HuzzServer/SpinService`, `Screens/SpinWheel`): a
   real free spin every 15 min; packs of 1/10/100 for 48/340/1200 Robux (Developer Products, Id 0 until the owner
   creates them, granted only in ShopService's ProcessReceipt). Odds shown: 100 coins 28%, 250 coins 22%, 25 Aura

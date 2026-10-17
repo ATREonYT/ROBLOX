@@ -15,6 +15,8 @@
 	    hands, dark wisps, crescent slashes), small for Common to Epic and growing with rarity ("Player").
 	  - The big girl over the map wears her aura at 3x ("Showcase", tag HuzzShowcase).
 	  - The round's girl, carried or following a catcher, glows with her "Companion" look.
+	  - Your girl never pops in or out: a soft puff of sparkles in her colours covers it when she steps in (the
+	    lobby, safe across) or steps aside (a round starts, you change girls).
 	Everyone's are drawn by every client (Gameplay/AuraFX), only near the camera; other players' are drawn
 	"lite" (half the particles, no light) so a full server stays smooth on phones.
 ]]
@@ -35,6 +37,7 @@ function M.start()
 	local GirlMoves = require(Shared.GirlMoves)
 	local Companion = require(Shared.Config.GirlMotion).Companion
 	local AuraFX = require(script.Parent.AuraFX)
+	local Burst = require(script.Parent.Burst)
 	local CompanionDance = require(script.Parent.CompanionDance)
 	CompanionDance.start()
 	local GROUP = "HuzzCompanion"
@@ -244,10 +247,12 @@ function M.start()
 			humanoid.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff
 		end
 		model.Parent = folder
-		local spec = AuraLook.build(lookOf(source:GetAttribute("Id"), rarity), rarity, "Companion")
+		local look = lookOf(source:GetAttribute("Id"), rarity)
+		local spec = AuraLook.build(look, rarity, "Companion")
 		spec.scale = COMPANION_HEIGHT / 5
 		local walk = FollowMotion.new({ root = root, motors = motors, rootHeight = rootHeight, seed = seed, config = Companion, moves = GirlMoves.find(os.clock()) })
 		local c = { model = model, handle = AuraFX.attach(model, spec, { lite = lite }), size = newSize, walk = walk, ground = nil, leaderY = 0 }
+		c.colors = { (look and look.Colors and look.Colors[1]) or Burst.PINK, Color3.new(1, 1, 1) } -- (the puff when she steps in or out)
 		-- The ground under her: one ray a frame for yours, every other frame for other players' companions.
 		function c.groundAt(at)
 			if lite and frameNo % 2 == 1 and c.ground then
@@ -309,6 +314,11 @@ function M.start()
 		local far = if root then distance(root.Position) else math.huge
 		local allowed = alive and source ~= nil and (not inRound or cheering)
 		if s.companion and (not allowed or s.key ~= key or far > 190) then
+			local m = s.companion.model
+			if far <= 120 and m.Parent then
+				Burst.sparks(m:GetPivot().Position, s.companion.colors, 16,
+					{ speed = NumberRange.new(3, 6), gravity = Vector3.new(0, 3, 0), drag = 3, life = NumberRange.new(0.4, 0.7) })
+			end
 			clearCompanion(s)
 		end
 		s.key = key
@@ -316,6 +326,7 @@ function M.start()
 			s.companion = makeCompanion(key, rarity, lite, p.UserId)
 			if s.companion then
 				s.companion.player = p
+				s.companion.puff = far <= 120 -- (after her first step, where she stands)
 			end
 		end
 		local c = s.companion
@@ -340,6 +351,11 @@ function M.start()
 			FollowMotion.step(w, dt, clock, root.CFrame, c.groundAt, head and head.Position)
 			CompanionDance.step(p, character, w.joints, dt, COMPANION_HEIGHT, w.speed < 6)
 			c.handle.step(dt)
+			if c.puff then
+				c.puff = nil
+				Burst.sparks(c.model:GetPivot().Position, c.colors, 16,
+					{ speed = NumberRange.new(3, 6), gravity = Vector3.new(0, 3, 0), drag = 3, life = NumberRange.new(0.4, 0.7) })
+			end
 		end
 	end
 

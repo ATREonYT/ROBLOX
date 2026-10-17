@@ -6,6 +6,20 @@ return {
 	Catcher = { "LoveTrap", "CharmWave" },
 	Keys = { "Q", "E" },
 
+	-- How every power looks when it's used (Gameplay/PowerEffects), timed like the other game's ability
+	-- (docs/feel-study.md section 6, its Soul Reaper slash): a glow builds (WindUp), one bright frame (Flash, never more
+	-- than one a second on a screen), the effect (Burst), then it fades to purple (Fade). Colours run from a white
+	-- core to pink to purple edges. Shield and Rush work the moment you press, so their wind-up is shorter; Charm
+	-- Wave's slow lands on the runners when its ring goes out (HuzzServer/PowerService waits WindUp).
+	Fx = {
+		WindUp = 0.25, Flash = 0.05, Burst = 0.35, Fade = 0.15,
+		Core = Color3.fromRGB(255, 255, 255), Glow = Color3.fromRGB(255, 140, 230), Edge = Color3.fromRGB(155, 77, 255),
+		HeartShield = { WindUp = 0.15, Sound = "heart_shield" },
+		RizzRush = { WindUp = 0.15, Sound = "power_rush" },
+		LoveTrap = { Sound = "trap_set" },
+		CharmWave = { Sound = "heart_shield", Pitch = 0.85 },
+	},
+
 	-- A pink bubble for a few seconds. It blocks the next stab: the catcher gets dizzy (slow, can't stab)
 	-- and you get a burst of speed to run off. Once per round.
 	HeartShield = {

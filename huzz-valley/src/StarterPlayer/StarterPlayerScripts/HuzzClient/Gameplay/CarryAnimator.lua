@@ -6,7 +6,10 @@
 	    raised arms and lean, her limbs and mood (model attributes Mood, MoodAt);
 	  - the prize girl (tag "HuzzPrize"): her idle, watching the nearest player;
 	  - a girl following a catcher (tag "HuzzFollower", Shared/FollowMotion): she drops
-	    to the ground, then walks or runs behind him and stands when he stops.
+	    to the ground, then walks or runs behind him and stands when he stops;
+	  - the big girl over the map (tag "HuzzShowcase"): she turns and floats slowly and plays the pack's Idle,
+	    so she reads as alive on her stand, not a statue. While the Secret cutscene plays her (HuzzRevealing) her
+	    stand and stand lights are hidden on this screen and her pose is left alone.
 	The prize's idle and the follower's walk/run/idle are the owner's movement pack (Shared/GirlMoves:
 	ReplicatedStorage.HuzzGirlMoves, which Bootstrap fills in Studio and live), played by hand on her joints;
 	the built-in scripted ones (Shared/GirlMotion) only until that has arrived, or if it can't be read.
@@ -36,6 +39,7 @@ function M.start()
 	local useArmAnimation = Animations.CarryArms ~= ""
 	local carries = {} -- model -> { rec, model, humanoid, armTrack }
 	local prizes = {} -- model -> { state, joints, root }
+	local showcases = {} -- model -> { state, joints, pack, rootHeight, stand = { parts }, lights = { lights } }
 	local followers = {} -- model -> FollowMotion record (+ leaderId)
 
 	local function motorsOf(model, except)
@@ -259,13 +263,46 @@ function M.start()
 				end
 			end
 		end
-		-- The big girl over the map turns slowly and floats up and down.
+		-- The big girl over the map turns slowly, floats up and down and breathes (the pack's Idle).
 		for _, model in CollectionService:GetTagged("HuzzShowcase") do
 			local base = model:GetAttribute("Base")
-			if typeof(base) == "CFrame" and model.Parent and not model:GetAttribute("HuzzRevealing") then -- (Gameplay/SecretReveal moves her while it plays)
+			local revealing = model:GetAttribute("HuzzRevealing") == true -- (Gameplay/SecretReveal moves her while it plays)
+			local sc = showcases[model]
+			if not sc and model.Parent and model.PrimaryPart then
+				local ok, cf, size = pcall(function() return model:GetBoundingBox() end)
+				local root = model.PrimaryPart
+				sc = {
+					state = GirlMotion.new(seedOf(model)), joints = GirlMotion.joints(motorsOf(model)), stand = {}, lights = {},
+					rootHeight = if ok then math.max(root.Position.Y - (cf.Position.Y - size.Y / 2) - 1, 1) else 3, -- (her Aura box reaches 1 stud under her feet)
+				}
+				for _, name in { "StandTop", "StandBand", "StandGlow", "KeyLight", "RimLight" } do
+					local part = model:FindFirstChild(name)
+					if part and part:IsA("BasePart") then
+						table.insert(sc.stand, part)
+						for _, l in part:GetChildren() do
+							if l:IsA("Light") then table.insert(sc.lights, l) end
+						end
+					end
+				end
+				showcases[model] = sc
+			end
+			if sc and sc.hidden ~= revealing then
+				sc.hidden = revealing
+				for _, part in sc.stand do part.LocalTransparencyModifier = if revealing then 1 else 0 end
+				for _, l in sc.lights do l.Enabled = not revealing end
+			end
+			if typeof(base) == "CFrame" and model.Parent and not revealing then
 				local S = RoundConfig.Showcase
 				model:PivotTo(base * CFrame.new(0, math.sin(now * 1.1) * S.Bob, 0) * CFrame.Angles(0, (now * S.Spin) % (2 * math.pi), 0))
+				local anims = sc and GirlMoves.find(os.clock())
+				if anims then
+					sc.pack = sc.pack or GirlMoves.new(anims, sc.rootHeight)
+					GirlMoves.idle(sc.pack, sc.joints, dt, GirlMotion.look(sc.state, sc.joints, dt, now, {}))
+				end
 			end
+		end
+		for model in showcases do
+			if not model:IsDescendantOf(game) then showcases[model] = nil end
 		end
 		for model, p in prizes do
 			if model.Parent then
