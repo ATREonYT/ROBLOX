@@ -3,7 +3,8 @@
 	no catcher (one player in the server, or the only catcher left), a plain blocky catcher named "Practice Bot"
 	(Config/Round.Bot) joins: it waits in the middle like a catcher, then chases the nearest runner it may tag and
 	stabs within Reach, with a short breather after each stab so a kid can get away (it is also a little slower than
-	a sprinting runner, so the huss and a straight run beat it). It is plainly a bot: its name tag says so, it is not a
+	a sprinting runner, so the huss and a straight run beat it). Round walls and props it follows a PathfindingService
+	path (worked out off the round's clock, so the round never waits for it). It is plainly a bot: its name tag says so, it is not a
 	player, it never wins a girl and is never paid; if it downs every runner, nobody wins that game.
 	RoundService drives it: spawn() at the line-up, setFrozen() with the catchers, step() while play is live,
 	remove() when a real catcher exists or the game ends. The body is Roblox's default blocky one
@@ -12,6 +13,7 @@
 	(PracticeBot.makeBody) to test the chase.
 ]]
 local CollectionService = game:GetService("CollectionService")
+local PathfindingService = game:GetService("PathfindingService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
@@ -28,6 +30,7 @@ local home = nil -- where it waits (the middle of the field)
 local frozen = true
 local goAt, pauseUntil, nextThink = 0, 0, 0
 local stuckAt, stuckPos, dodgeUntil, dodgeTo = 0, nil, 0, nil -- (walked into a wall: step round it for a moment)
+local route, routeAt, routing, nextRoute = nil, 1, false, 0 -- a path round walls (PathfindingService waypoints)
 local tracks = {} -- { run = AnimationTrack?, idle = AnimationTrack? }
 local warned = false
 
@@ -153,6 +156,41 @@ function PracticeBot.remove()
 	model, humanoid, root = nil, nil, nil
 	table.clear(tracks)
 	frozen = true
+	route = nil
+end
+
+-- True when nothing solid stands between the bot and `to` (people don't count): then it just runs straight there.
+local function clearLine(to: Vector3): boolean
+	local ok, hit = pcall(function()
+		local params = RaycastParams.new()
+		params.FilterType = Enum.RaycastFilterType.Exclude
+		local skip = { model }
+		for _, p in Players:GetPlayers() do
+			if p.Character then table.insert(skip, p.Character) end
+		end
+		params.FilterDescendantsInstances = skip
+		local from = root.Position
+		local hit = Workspace:Raycast(from, to - from, params)
+		return hit and hit.Instance.CanCollide and hit.Instance.Transparency < 1 -- (invisible walls are the field's edge)
+	end)
+	return not (ok and hit)
+end
+
+-- Works out a way round whatever is in the way, without holding up the round (ComputeAsync waits).
+local function findRoute(to: Vector3)
+	if routing then return end
+	routing = true
+	task.spawn(function()
+		local ok, waypoints = pcall(function()
+			local path = PathfindingService:CreatePath({ AgentRadius = 2, AgentHeight = 5, AgentCanJump = false })
+			path:ComputeAsync(root.Position, to)
+			return if path.Status == Enum.PathStatus.Success then path:GetWaypoints() else nil
+		end)
+		routing = false
+		if ok and waypoints and #waypoints > 1 and root then
+			route, routeAt = waypoints, 2
+		end
+	end)
 end
 
 -- One frame of play. targets = the runners it may chase (roots); stab(botRoot) tries a stab and says if it hit
@@ -202,7 +240,26 @@ function PracticeBot.step(targets: { BasePart }, stab: (BasePart) -> boolean, fa
 	end
 	if now < dodgeUntil and dodgeTo then
 		humanoid:MoveTo(dodgeTo)
-	elseif best then
+		return
+	end
+	-- Something solid between it and the runner: follow a path round it (refreshed every second).
+	local goal = if best then best.Position else if home then home.Position else nil
+	if goal and not clearLine(goal) then
+		if now >= nextRoute then
+			nextRoute = now + 1
+			findRoute(goal)
+		end
+		while route and route[routeAt] and Vector3.new(route[routeAt].Position.X - root.Position.X, 0, route[routeAt].Position.Z - root.Position.Z).Magnitude < 3 do
+			routeAt += 1
+		end
+		if route and route[routeAt] then
+			humanoid:MoveTo(route[routeAt].Position)
+			return
+		end
+	else
+		route = nil
+	end
+	if best then
 		-- aim a little ahead of where they're running (not too far: the huss should still fool it)
 		local v = best.AssemblyLinearVelocity
 		local lead = if typeof(v) == "Vector3" then Vector3.new(v.X, 0, v.Z) * math.min(B.Lead, bestD / 40) else Vector3.zero

@@ -102,6 +102,13 @@ function LobbyHud.build(parent: Instance)
 	local coins = Kit.pill({ Name = "Coins", Icon = "CurrencyCoin", Position = UDim2.fromOffset(23, 7), Width = 131, Height = 32, TextSize = 14, PlusStyle = "HudPlus", Split = true, Parent = bottom })
 	local gems = Kit.pill({ Name = "Aura", Icon = "AuraStar", -- (the owner's Aura star, as drawn)
 		 Position = UDim2.fromOffset(161, 7), Width = 131, Height = 32, TextSize = 14, PlusStyle = "HudPlus", Split = true, Parent = bottom })
+	-- While a Spin the Wheel "x2 Coins" lasts: a small green tag by the coin pill with the time left (counted down from
+	-- the saved end time of a boost the player really won; never shown otherwise).
+	local boost = new("Frame", {
+		Name = "Boost", Position = UDim2.fromOffset(23, if touch then 43 else -18), Size = UDim2.fromOffset(131, 22),
+		BackgroundColor3 = C.SelectedTab, BorderSizePixel = 0, Visible = false, Parent = bottom,
+	}, { Kit.corner(5), Kit.stroke(C.SelectedRim, 1.5) })
+	local boostText = Kit.text({ Name = "Label", Text = "x2 COINS", FontFace = Theme.Fonts.Number, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Center, TextWrapped = false, Size = UDim2.fromScale(1, 1), Parent = boost })
 	local gemIcon = gems.Instance:FindFirstChild("Icon")
 	if gemIcon and gemIcon:IsA("ImageLabel") then gemIcon.ImageColor3 = Color3.new(1, 1, 1) end
 	coins.plus.onClick(function() ModalManager.open("Shop", "Coins") end)
@@ -143,6 +150,9 @@ function LobbyHud.build(parent: Instance)
 			else
 				banner.Visible = false
 			end
+			local left = ((State.data.Boosts or {}).Coins or 0) - workspace:GetServerTimeNow()
+			boost.Visible = left > 0
+			if left > 0 then boostText.Text = "x2 COINS  " .. Format.clock(left) end
 			task.wait(0.25)
 		end
 	end)

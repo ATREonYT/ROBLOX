@@ -558,7 +558,7 @@ function M.start()
 		elseif kind == "Bonus" then
 			local text = `+{data.coins} coins` .. (if (data.aura or 0) > 0 then `  +{data.aura} Aura` else "")
 			if data.late then
-				task.delay(7.6, show, small, text, GOLD, 3) -- (after the win banners)
+				-- (the game's pay: the results screen shows it after the win banners; only the coin sound here)
 			else
 				show(small, text, WHITE, 2.4)
 			end

@@ -55,9 +55,14 @@ local protectedUntil = {} -- id -> os.clock() until which a just-rescued runner 
 local botPlayed = false -- the Practice Bot caught for this game (then it, not a player, wins if every runner is down)
 local botTagging = false -- true while the Practice Bot's stab is being applied (so the message names it)
 local botStep -- (set once stabNear exists, further down)
+local tally = {} -- id -> { Crossings = n, Catches = n, ... } this game only (the results screen at the end)
 
 -- Quest counters (Config/Progression) and the Index, saved through DataService.
 local function addStat(id, stat, amount)
+	if id then
+		tally[id] = tally[id] or {}
+		tally[id][stat] = (tally[id][stat] or 0) + amount
+	end
 	local p = byId[id]
 	if p then
 		DataService.update(p, function(d)
@@ -691,6 +696,14 @@ local function finishGame()
 				d.Aura = (d.Aura or 0) + aura
 			end)
 			RoundNet:FireClient(p, "Bonus", { coins = coins, aura = aura, late = true })
+			-- the results screen (Screens/Results): how your game went
+			local t = tally[id] or {}
+			RoundNet:FireClient(p, "Results", {
+				outcome = if botWon then "Bot" elseif won then "Win" else "Lose",
+				girl = girl.name, rarity = girl.rarity, gotGirl = winnerId == id,
+				crossed = t.Crossings or 0, catches = t.Catches or 0, rescues = t.Rescues or 0, heroes = t.Heroes or 0,
+				coins = coins, aura = aura,
+			})
 		end
 	end
 	if winner then
@@ -731,6 +744,7 @@ local function showShowcase()
 end
 
 local function runGame()
+	table.clear(tally)
 	showShowcase()
 	local ids = {}
 	for id in byId do

@@ -141,6 +141,13 @@ if cfg.ROLL then
 	for _ = 1, 20 do __stepTweens(0.05) end
 	Roll.render(workspace:GetServerTimeNow())
 end
+-- RESULTS="Win"|"Lose"|"Bot": the results window filled with a made-up game.
+if cfg.RESULTS then
+	require(game.StarterPlayer.StarterPlayerScripts.HuzzClient.UI.Screens.Results).fill({
+		outcome = cfg.RESULTS, girl = "Zero Two", rarity = "Mythic", gotGirl = cfg.RESULTS == "Win",
+		crossed = 3, catches = 0, rescues = 2, heroes = 1, coins = 50, aura = if cfg.RESULTS == "Win" then 3 else 0,
+	})
+end
 if cfg.SCREEN and cfg.SCREEN ~= "Hud" then
 	assert(MM.open(cfg.SCREEN, cfg.TAB), "no screen " .. tostring(cfg.SCREEN))
 end
