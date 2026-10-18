@@ -91,7 +91,7 @@ Owner's own words are in quotes. Read only the section you need.
   and sets Lighting.Technology = Future in the owner's place. Rebuild after every change.
 - UI pictures: `cd tools/preview && NODE_PATH=$(npm root -g) LUNE=/root/bin/lune HUZZ_FRESH=1 sh shots.sh <out> <name>`
   (names in `shots.sh`: dance-wheel, shop-passes, shop-items, quests, spin-wheel, round-hud, hero-choice...).
-  The preview draws Montserrat for Gotham, has no AutomaticSize, and ignores UITextSizeConstraint with TextScaled.
+  The preview draws Montserrat for Gotham, has no AutomaticSize (it does draw TextScaled with UITextSizeConstraint and TextTruncate).
 - 3D videos: `tools/preview/motion3d` (`sh video.sh <scene.luau> <out.mp4>`): `anim_scene.luau` plays any
   KeyframeSequence (`ANIM_FILE`, `ANIM_NAMES`, `ANIM_VIEW=back|side`); `dance_poses.luau` picks each dance's pose
   and writes `Config/DancePoses`; `aura_star_scene.luau`. Render.mjs loads `assets/fx` and two `assets/icons`.
