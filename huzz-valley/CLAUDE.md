@@ -457,6 +457,11 @@ Owner's own words are in quotes. Read only the section you need.
   speed streaks, swarm, burst; ever-present motes/crystals/nebula. Film `motion3d/secret_scene.luau` (real module; its
   bloom and sky are imitations) → `docs/previews/secret-cutscene.mp4`, `-slow`, `secret-vs-ref3.jpg` (`secret_vs_ref.py`),
   `secret-vs-ref3.mp4` (`secret_vs_ref_video.sh`); flashes: `tools/preview/flash_check.py <film>`.
+  Camera (owner Oct 18: "chopy", "not very logical"): one smooth move through `SecretReveal.KEYS` (monotone cubic,
+  always in front of her, follows the orb, her drop and her rise; a side swoop close to her face at 5.95, a push into
+  her face at 9.6), one cut (`CUTS`, 10.0 under the swell); FOV kicks ease (+8/+6), shake is a 4.5 Hz wobble
+  (`shakeAt`); walls pull the eye in at once, it eases back out. Check in `check_girl_fx.luau` (per-frame limits);
+  sheet `docs/previews/secret-camera.jpg` (`motion3d/secret_camera_sheet.py`). `secret-vs-ref3.*` predate this.
   The Secret girls are **C.C. and Marin** (owner, Oct 17; `Config/GirlNames`). The owner's place streams (StreamingEnabled):
   the showcase is `ModelStreamingMode` Persistent and RoundService streams the spot in around everyone (at most 3 s,
   `ReplicationFocus` until the end) before `RevealAt`; his first Studio recording (old 7.5 s build) showed an empty

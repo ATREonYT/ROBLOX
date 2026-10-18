@@ -17,6 +17,8 @@
 	              lines, a butterfly swarm, a crackling flare, then the burst (rays, a pink cloud) and she rises
 	Flashes: soft pulses only at the impact, the swell and the burst (more than a second apart; kid-safe).
 	Reduced Motion (Settings): no shake, kicks, impact frame, pulses or crackle. No black bars (owner).
+	The camera (owner, Oct 18: "a bit chopy still and the camera is still not very logical"): one smooth move from
+	Shared/SecretReveal.camera with a slow, small wobble (shakeAt); walls pull it in at once and let it ease back out.
 	The hand-back (the last 0.5 s): a quick dip to black and, once it is fully black, the camera goes back to Roblox
 	behind where you stand now (your old angle and distance); black holds 2 frames more, then lifts. Not a fly-back
 	(docs/feel-study.md gap 14: the old 0.3 s fly-back went through a wall and the sky). A dark dip, not a flash.
@@ -878,6 +880,7 @@ function M.start()
 		player:SetAttribute("HuzzCinematic", true)
 		camera.CameraType = Enum.CameraType.Scriptable
 		local noise = math.random() * 100
+		local reach, lastT = 1, nil :: number? -- (how much of the camera's distance from its look point is clear of walls)
 		-- (the camera never sits behind a wall or prop: from her towards the camera, stop just in front of a hit)
 		local okRay, ray = pcall(function()
 			local p = RaycastParams.new()
@@ -980,15 +983,25 @@ function M.start()
 					return
 				end
 				local h = Reveal.height(t, Config.Showcase.Height)
-				local eye, look = Reveal.camera(math.min(t, Reveal.RETURN), ground + Vector3.new(0, 0.5, 0), dir, h or Config.Showcase.Height, k, mid)
-				eye = clear(Vector3.new(eye.X, math.max(eye.Y, ground.Y + 1.5), eye.Z), look) -- (never under the floor)
+				local eye, look = Reveal.camera(math.min(t, Reveal.LENGTH), ground + Vector3.new(0, 0.5, 0), dir, h or Config.Showcase.Height, k, mid)
+				eye = Vector3.new(eye.X, math.max(eye.Y, ground.Y + 1.5), eye.Z) -- (never under the floor)
+				-- in front of walls: pulled in at once when something is in the way, eased back out once it's clear
+				-- (a wall flicking in and out of the ray made the camera jump back and forth)
+				local want = 1
+				local full = eye - look
+				if full.Magnitude > 0.5 then want = (clear(eye, look) - look).Magnitude / full.Magnitude end
+				local dt = math.clamp(t - (lastT or t), 0, 0.1)
+				for _, c in Reveal.CUTS do
+					if lastT and lastT < c and t >= c then reach = want end -- (a fresh start on the cut)
+				end
+				lastT = t
+				reach = if want < reach then want else reach + (want - reach) * math.min(1, dt * 5)
+				eye = look + full * reach
 				local cf = CFrame.lookAt(eye, look)
 				local fov = Reveal.fov(t, Motion.reduced)
-				local shake = if Motion.reduced then 0 else Reveal.shake(t)
-				if shake > 0 then
-					local n = t * 12
-					cf = cf * CFrame.Angles(math.noise(n, noise) * shake * 0.12, math.noise(noise, n) * shake * 0.12, math.noise(n, n + noise) * shake * 0.06)
-						+ Vector3.new(math.noise(n + 3, noise), math.noise(noise, n + 3), 0) * shake
+				if not Motion.reduced then -- (a slow, small wobble: Shared/SecretReveal.shakeAt)
+					local rx, ry, rz, px, py = Reveal.shakeAt(t, noise)
+					cf = cf * CFrame.new(px * k, py * k, 0) * CFrame.Angles(rx, ry, rz)
 				end
 				step(t, dir, cf)
 				camera.CFrame = cf

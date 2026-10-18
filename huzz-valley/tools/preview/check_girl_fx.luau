@@ -522,5 +522,63 @@ do
 	end
 end
 
+-- The Secret cutscene's camera is one smooth move (owner, Oct 18: "a bit chopy still and the camera is still not
+-- very logical"): sampled at 30 fps, outside the listed deliberate cuts the eye and the look point move at most 2.5
+-- studs a frame (at the 3x scale), the view turns at most 4 degrees and the field of view at most 2.5 degrees a
+-- frame, the eye's speed changes gently (no stop-start), it never goes behind her (she faces you) or under the
+-- floor, cuts are few and far apart, and the shake is a slow, small wobble.
+do
+	local T = require(RS.Shared.SecretReveal)
+	local dir, at, k, mid = Vector3.new(0, 0, 1), Vector3.zero, 1, 7.5
+	local FR = 1 / 30
+	local function crossesCut(t0, t1)
+		for _, c in T.CUTS do
+			if t0 < c and t1 >= c then return true end
+		end
+		return false
+	end
+	local worst = { eye = 0, look = 0, turn = 0, fov = 0, accel = 0, shake = 0 }
+	local behind, under, jumps = 0, 0, {}
+	local pe, pl, pd, pf, pv, prx
+	for i = 0, math.floor(T.LENGTH * 30) do
+		local t = i * FR
+		local e, l = T.camera(t, at, dir, T.height(t, 34) or 34, k, mid)
+		local f = T.fov(t, false)
+		local d = (l - e).Unit
+		if (e - at):Dot(dir) <= 1 then behind += 1 end
+		if e.Y < 1.5 then under += 1 end
+		local rx, ry = T.shakeAt(t, 17)
+		if pe and not crossesCut(t - FR, t) then
+			local step = {
+				eye = (e - pe).Magnitude, look = (l - pl).Magnitude, fov = math.abs(f - pf),
+				turn = math.deg(math.acos(math.clamp(d:Dot(pd), -1, 1))),
+				accel = if pv and not crossesCut(t - 2 * FR, t - FR) then ((e - pe) - pv).Magnitude else 0,
+				shake = math.deg(math.max(math.abs(rx - prx[1]), math.abs(ry - prx[2]))),
+			}
+			for key, v in step do
+				if v > worst[key] then worst[key] = v end
+			end
+			if step.eye > 2.5 or step.look > 2.5 or step.turn > 4 or step.fov > 2.5 or step.accel > 0.6 then
+				table.insert(jumps, string.format("%.2f", t))
+			end
+		end
+		pv = if pe then e - pe else nil
+		pe, pl, pd, pf, prx = e, l, d, f, { rx, ry }
+	end
+	local gaps = true
+	local last = 0
+	for _, c in T.CUTS do
+		if c - last < 2 then gaps = false end
+		last = c
+	end
+	print(string.format("  secret camera per frame: eye %.2f, look %.2f, turn %.2f deg, fov %.2f deg, speed change %.2f, shake %.2f deg",
+		worst.eye, worst.look, worst.turn, worst.fov, worst.accel, worst.shake))
+	check("secret camera glides (no jumps outside the listed cuts): " .. table.concat(jumps, " "), #jumps == 0)
+	check("secret camera stays in front of her and over the floor", behind == 0 and under == 0)
+	check("secret camera cuts are few and at least 2 s apart", #T.CUTS <= 2 and gaps and T.LENGTH - last >= 2)
+	check("secret camera shake is a slow, small wobble", worst.shake <= 0.75)
+	check("Reduced Motion: no field-of-view kick at the impact", math.abs(T.fov(T.IMPACT + 0.18, false) - T.fov(T.IMPACT + 0.18, true) - 8) < 0.01)
+end
+
 print(`fx smoke: {ok} ok, {failed} failed`)
 return ""
