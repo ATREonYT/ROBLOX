@@ -14,6 +14,7 @@ local GirlMotion = Env.load(SHARED .. "GirlMotion.lua")
 local FollowMotion = Env.load(SHARED .. "FollowMotion.lua")
 local Pack = Env.load(SHARED .. "Config/GirlMotion.lua").Pack
 local Sampler = Env.load(SHARED .. "KeyframeSampler.lua")
+local Mix = Env.load(SHARED .. "LocomotionMix.lua")
 
 local failed, passed = 0, 0
 local function check(ok, what)
@@ -116,7 +117,8 @@ for _, v in { std.RunAt, 14, 30 } do
 	check(w.Run > 0.95, `{v} studs/s is a run`)
 	check(sink < Pack.Clip * 1.5 + 0.01, string.format("running at %.1f: no foot dips more than a sliver into the ground (%.2f)", v, sink))
 	if v <= std.RunAt + 0.01 then
-		check(slide < 0.35, string.format("running at %.1f: the planted foot slides under 35%% (%.0f%%)", v, slide * 100))
+		-- (45%: the Run's surge is softened, Config.Pack.Surge.Run, so the body doesn't lurch every step; was 30%)
+		check(slide < 0.45, string.format("running at %.1f: the planted foot slides under 45%% (%.0f%%)", v, slide * 100))
 	end
 end
 
@@ -150,6 +152,31 @@ do
 	end, 6)
 	print(string.format("  biggest joint turn in 1/240 s: %.1f° (steady full run %.1f°)", ramp, steady))
 	check(ramp < steady * 1.15 + 1, "no pops from standing to running and back")
+	-- (the steady run itself: 8.1° before Oct 18, when a fast girl played the Run at up to 1.6x)
+	check(steady < 7, string.format("the full run itself swings no joint more than 7° in 1/240 s (%.1f°)", steady))
+end
+
+-- Owner Oct 18: "make the walking animation normal for the girls, right now its so choppy" (his clip: the small
+-- companion sprinting beside him, legs and body jumping frame to frame). The game's FollowMotion + GirlMoves on a
+-- 2.8-stud companion at 60 fps (tools/preview/motion3d/girl_smooth_measure.luau). Before the fix, at a sprint:
+-- 43.7°/frame joint turns, 24°/frame² jerks, a 0.78-stud body lurch, a planted foot hopping 0.43, 9 steps a second.
+do
+	_G.NO_MAIN = true
+	local Measure = require("../tools/preview/motion3d/girl_smooth_measure")
+	for _, v in { 8, 22, 28 } do
+		local r = Measure.run(v, { seconds = 5 })
+		print(string.format("  companion behind a leader at %d: turn %.1f°/frame, jerk %.1f°/frame², body lurch %.3f, planted foot %.3f", v, r.turn, r.jerk, r.bodyJerkZ, r.footJitter))
+		check(r.turn < 30, string.format("companion at %d: no joint jumps more than 30° a frame (%.1f)", v, r.turn))
+		check(r.jerk < 12, string.format("companion at %d: joints swing smoothly, no snaps (jerk %.1f°/frame²)", v, r.jerk))
+		check(r.bodyJerkZ < 0.15, string.format("companion at %d: her body doesn't lurch back and forth (%.3f)", v, r.bodyJerkZ))
+		check(r.bodyJerkY < 0.12, string.format("companion at %d: her body doesn't pop up and down (%.3f)", v, r.bodyJerkY))
+		check(r.footJitter < 0.2, string.format("companion at %d: a foot on the ground doesn't jitter (%.3f)", v, r.footJitter))
+		local mix = r.rec.pack.mix
+		local steps = Mix.stepsPerSecond(mix, { Walk = Measure.anims.Walk.length, Run = Measure.anims.Run.length })
+		check(steps <= Pack.MaxSteps + 0.05, string.format("companion at %d: at most %.1f steps a second (%.1f)", v, Pack.MaxSteps, steps))
+	end
+	local jumpy = Measure.run(22, { seconds = 5, jitter = 0.3 })
+	check(jumpy.jerk < 12 and jumpy.bodyJerkZ < 0.15, "companion: smooth even when the leader's position steps unevenly")
 end
 
 -- A small companion (half size) steps quicker but still plants her feet.

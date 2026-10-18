@@ -15,6 +15,10 @@
 	      plant: her body goes up or down so that foot touches the ground (the leg swinging through may brush it
 	        by a sliver, Config.Pack.Clip; in a run a little air is allowed between steps).
 	    Past the rate limits (keeping up with a fast catcher) the feet slide a little: calmer than blurred legs.
+	  - Smooth (owner Oct 18: "make the walking animation normal for the girls, right now its so choppy"): never
+	    more than Config.Pack.MaxSteps steps a second (the small companion had sprinted at 9), the lock rounded
+	    off and faded out as her feet slide (it had jolted her body half a stud every step). Measured by
+	    tools/preview/motion3d/girl_smooth_measure.luau, limits in tests/GirlMoves.spec.
 	  - look: an optional head turn on top (the prize girl watching the nearest player, a follower watching her
 	    catcher when she stands), faded in by how much she's standing.
 	Where the animations come from (GirlMoves.find): ReplicatedStorage.HuzzGirlMoves, which Bootstrap fills from
@@ -34,6 +38,7 @@ local R6_ROOT = 3 -- root above the feet on a standard 5.25-stud R6 body: sizes 
 local R6_LEG = 2 -- hip to sole on that body
 local DOWN = Vector3.new(0, -1, 0)
 local LOCK_SAMPLES = 64
+local LOCK_BLUR = 6 -- passes of a 1-2-1 blur over the lock (~ a 1/20-loop soft edge)
 
 GirlMoves.NAMES = { "Idle", "Walk", "Run" }
 
@@ -127,6 +132,18 @@ local function measureLock(anim)
 	for i = 0, n do
 		c[i] -= sum / n
 	end
+	-- Rounded off (a soft blur round the loop): raw, the surge turned from back to forward in a single sample when
+	-- the feet swapped, a jolt of the whole body every step (Oct 18 "the torso tips and pops").
+	for _ = 1, LOCK_BLUR do
+		local b = {}
+		for i = 0, n - 1 do
+			b[i] = (c[(i - 1) % n] + 2 * c[i] + c[(i + 1) % n]) / 4
+		end
+		for i = 0, n - 1 do
+			c[i] = b[i]
+		end
+		c[n] = c[0]
+	end
 	return { c = c, stride = stride }
 end
 
@@ -183,13 +200,19 @@ function GirlMoves.new(anims, rootHeight: number?)
 	local P = Config.Pack
 	local k = (rootHeight or R6_ROOT) / R6_ROOT
 	local quick = 1 / math.sqrt(math.clamp(k, 0.3, 2)) -- smaller legs step quicker (and bigger ones slower)
+	-- (never more than MaxSteps steps a second, whatever her size: a loop is two steps. Oct 18, "so choppy": a
+	-- half-size companion keeping up with a sprinting player played the Run at 2.2x = 9 steps a second, her legs
+	-- jumping ~44° from one frame to the next)
+	local function cap(rate, anim)
+		return math.min(rate * quick, P.MaxSteps * anim.length / 2)
+	end
 	local C = {
 		SpeedResponse = P.SpeedResponse,
 		MoveFrom = P.MoveFrom * k, MoveFull = P.MoveFull * k,
 		RunFrom = P.RunFrom * k, RunFull = P.RunFull * k,
 		-- 1x = the speed at which the planted foot stays put (its stride over the loop's length)
-		WalkAt = anims.locks.Walk.stride * k / anims.Walk.length, WalkRate = { P.WalkRate[1], P.WalkRate[2] * quick },
-		RunAt = anims.locks.Run.stride * k / anims.Run.length, RunRate = { P.RunRate[1], P.RunRate[2] * quick },
+		WalkAt = anims.locks.Walk.stride * k / anims.Walk.length, WalkRate = { P.WalkRate[1], cap(P.WalkRate[2], anims.Walk) },
+		RunAt = anims.locks.Run.stride * k / anims.Run.length, RunRate = { P.RunRate[1], cap(P.RunRate[2], anims.Run) },
 		WalkPhase = P.WalkPhase, RunPhase = P.RunPhase,
 		AirIn = 0.1, AirOut = 0.2, JumpHold = 0, ClimbAt = 1, -- (no jumping or climbing for the girls)
 	}
@@ -289,7 +312,13 @@ function GirlMoves.step(s, J, dt: number, speed: number, look: CFrame?)
 	footOverFoot(pose)
 	Retarget.apply(J, pose, 1, s.scale)
 	-- the lock: the animation's own surge within each step, so the planted foot stays put
-	local surge = w.Walk * lockAt(a.locks.Walk, mix.times.Walk / a.Walk.length) + w.Run * lockAt(a.locks.Run, mix.times.Run / a.Run.length)
+	local surge = w.Walk * lockAt(a.locks.Walk, mix.times.Walk / a.Walk.length) * Config.Pack.Surge.Walk
+		+ w.Run * lockAt(a.locks.Run, mix.times.Run / a.Run.length) * Config.Pack.Surge.Run
+	-- ...only as much as her feet keep up with the ground (Oct 18 "so choppy": past the step cap her feet slide
+	-- anyway, and the full surge lurched her whole body half a stud back and forth every step), and softened
+	-- (Config.Pack.Surge) even then
+	local plantedShare = math.clamp(Mix.footSpeed(s.mix) / math.max(speed, 0.5), 0, 1)
+	surge *= plantedShare * plantedShare
 	if J.Root then
 		shiftBody(J.Root, Vector3.new(0, 0, surge * s.k)) -- (+Z = back)
 	end

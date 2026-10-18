@@ -30,7 +30,7 @@ function CarryMath.joint(item)
 	})
 end
 
--- Arm and waist joints of an R15 or R6 character. sign is -1 for the right
+-- Arm, waist and right hip joints of an R15 or R6 character. sign is -1 for the right
 -- arm, +1 for the left, so mirrored angles share one formula.
 function CarryMath.rig(character)
 	local joint = CarryMath.joint
@@ -49,12 +49,14 @@ function CarryMath.rig(character)
 				wrist = hand and joint(hand:FindFirstChild(name .. "Wrist")),
 			}
 		end
+		local thigh = character:FindFirstChild("RightUpperLeg")
 		return {
 			kind = "R15",
 			torso = torso,
 			head = character:FindFirstChild("Head"),
 			waist = joint(torso:FindFirstChild("Waist")),
 			arms = { side("Right", -1), side("Left", 1) },
+			hip = joint(thigh and thigh:FindFirstChild("RightHip")), -- (his steps: CarryMotion)
 		}
 	end
 	torso = character:FindFirstChild("Torso")
@@ -62,7 +64,8 @@ function CarryMath.rig(character)
 		local function side(name, sign)
 			return { sign = sign, upper = character:FindFirstChild(name .. " Arm"), shoulder = joint(torso:FindFirstChild(name .. " Shoulder")) }
 		end
-		return { kind = "R6", torso = torso, head = character:FindFirstChild("Head"), arms = { side("Right", -1), side("Left", 1) } }
+		return { kind = "R6", torso = torso, head = character:FindFirstChild("Head"), arms = { side("Right", -1), side("Left", 1) },
+			hip = joint(torso:FindFirstChild("Right Hip")) }
 	end
 	return nil
 end

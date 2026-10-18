@@ -373,6 +373,14 @@ Owner's own words are in quotes. Read only the section you need.
   body surges with the step (a lock measured from the loop, which also sets each loop's 1x speed) and is lowered
   onto the stance foot. Scripted `GirlMotion` walk/idle only until the folder arrives. Spec `tests/GirlMoves.spec`,
   video `docs/previews/girl-pack-walk.mp4` (`motion3d/girl_pack_scene.luau`).
+  Oct 18 "so choppy": the small companion sprinted at 9 steps/s (legs jumping 44° a frame) and the lock jolted her
+  body every step. Now at most `Pack.MaxSteps` 4.8 steps/s, the lock rounded off and faded as her feet slide
+  (`Pack.Surge`): 23°/frame, no jolts (`motion3d/girl_smooth_measure.luau`; limits in the spec).
+- **Carried girls** (Oct 18 "not just be held straight up like that"; `GirlMotion.carried`, `Config/GirlMotion.Carried.Pose`):
+  she sits up in his raised hands (upper body up 24°, legs bent up 62° at the hips, R15 knees bent, arms half
+  hanging), dips and dangles on his real footfalls (`CarryMotion` reads his right hip), swings her feet, a small kick,
+  wave or look round now and then; calm (under 6° a frame). Spec `tests/GirlMotion.spec`. Before/after film
+  `docs/previews/girls-walk-carry.mp4` (`motion3d/girls_walk_carry_scene.luau`). Not seen in Studio yet.
 - **The stab** (`Shared/StabMotion`, scripted until `Config/Animations.Stab` is uploaded; `Config/Round.Stab.Time`
   0.40 s, Huss Valley's slash from `docs/knife-study.md`): no wind-up; the arm sweeps out to the right side, landing
   at ~0.07 s, held out (free arm pointing ahead) to 0.24 s, back by 0.40; trail on 0.02 to 0.45 of it. In a lunge

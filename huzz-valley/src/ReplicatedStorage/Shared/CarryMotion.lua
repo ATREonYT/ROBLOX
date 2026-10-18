@@ -1,7 +1,8 @@
 --[[
 	One carried girl, frame by frame: the pickup flight, the step bob and
 	inertia sway of the carry joint, the carrier's raised arms and lean, and
-	her own motion (GirlMotion.carried). Pure maths on joint tables, so the
+	her own motion (GirlMotion.carried: sitting up in his hands, dipping and
+	dangling on his real footfalls, read from his right hip). Pure maths on joint tables, so the
 	offline preview runs this exact code; HuzzClient/Gameplay/CarryAnimator
 	feeds it real Roblox parts.
 
@@ -171,9 +172,22 @@ function CarryMotion.step(rec, dt, now, mood, moodAge, hussAge, hussAnimated)
 		rec.phase += speed * dt * B.StepsPerStud
 	end
 	local amount = clamp(speed / 16, 0, 1.4)
+	-- His step, -1..1 (1 = right leg fully forward): read from his own right hip as his walk/run swings it, so
+	-- her dip and dangle land on his real footfalls whatever animation he plays (owner Oct 18: motion for the
+	-- carried girls); a counted guess from his speed if the hip can't be read.
 	local step = sin(rec.phase * math.pi)
+	local hip = rec.rig.hip
+	if hip and hip.C0 then
+		local r = hip.C0.Rotation
+		local d = (r * hip.Transform.Rotation * r:Inverse()):VectorToWorldSpace(Vector3.new(0, -1, 0))
+		local swing = -math.asin(clamp(d.Z, -1, 1))
+		rec.swingAmp = math.max(math.abs(swing), (rec.swingAmp or 0.3) * exp(-dt * 1.5), rad(10))
+		step = clamp(swing / rec.swingAmp, -1, 1)
+	end
+	rec.step, rec.amount = step, amount
 	local L = rec.lag
-	local hold = CFrame.new(L.X, L.Y + (math.abs(step) - 0.5) * B.Height * amount, L.Z)
+	-- (legs spread = his footfall = his body at its lowest: his hands give a little there)
+	local hold = CFrame.new(L.X, L.Y - (math.abs(step) - 0.5) * B.Height * amount, L.Z)
 		* CFrame.Angles(rad(S.Tilt * L.Z), rec.yaw, rad(-S.Tilt * L.X) + rad(B.Roll) * step * amount)
 
 	-- Pickup: she flies in upright from where she was, arcs, and settles into the hold.
@@ -223,7 +237,8 @@ function CarryMotion.step(rec, dt, now, mood, moodAge, hussAge, hussAnimated)
 		local gp = girlRoot.CFrame.Position
 		if rec.girlPrev and (gp - rec.girlPrev).Magnitude < 15 then
 			local v = (gp - rec.girlPrev) / dt
-			rec.girlAccel = rec.girlAccel:Lerp(clampLength((v - rec.girlVel) / dt, 250), 1 - exp(-dt * 20))
+			-- (smoothed: only his starts, stops and turns swing her limbs, never a frame's jitter)
+			rec.girlAccel = rec.girlAccel:Lerp(clampLength((v - rec.girlVel) / dt, 250), 1 - exp(-dt * 6))
 			rec.girlVel = v
 		end
 		rec.girlPrev = gp
@@ -233,6 +248,8 @@ function CarryMotion.step(rec, dt, now, mood, moodAge, hussAge, hussAnimated)
 		forward = look,
 		mood = mood,
 		moodAge = moodAge,
+		step = step * (1 - (hussFlex or 0)),
+		amount = if lift then 0 else amount,
 	})
 end
 

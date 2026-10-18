@@ -3,10 +3,10 @@
 	fresh each frame. Pure maths on joint tables, so the offline preview runs
 	this exact code (tools/preview/motion3d).
 
-	carried(): lying across the carrier's shoulders. Limbs hang toward
-	  gravity and swing from her real motion (step bob, starts, stops,
-	  turns), plus her mood: Excited (just picked up), Struggle (stolen),
-	  Cheer (won) or Calm (kicks her feet and waves now and then).
+	carried(): held up over the carrier's head, sitting up in his hands (upper body
+	  raised, legs bent up at the hips), arms half hanging; dips and dangles in time
+	  with his steps, swings her feet, kicks and looks round now and then, plus her
+	  mood: Excited (just picked up), Struggle (stolen), Cheer (won), all calm.
 	idle(): standing as the prize (when the owner's Idle can't be read). Shifts her weight, breathes,
 	  watches the nearest runner, waves, and bounces when someone is close.
 	walk(): walking or running (a girl following a catcher, your companion), when the owner's animations
@@ -84,7 +84,7 @@ local function envelope(age, length, fadeIn, fadeOut)
 end
 
 -- A recurring burst (a kick, a wave): its envelope now, rescheduled after it ends.
-local function burst(s, name, t, every, length)
+local function burst(s, name, t, every, length, fadeIn: number?, fadeOut: number?)
 	local b = s.bursts[name]
 	if not b then
 		b = { start = t + every[1] * 0.5 + random(s) * every[1] }
@@ -93,7 +93,7 @@ local function burst(s, name, t, every, length)
 	if t > b.start + length then
 		b.start = t + every[1] + (every[2] - every[1]) * random(s)
 	end
-	return envelope(t - b.start, length, 0.3, 0.4)
+	return envelope(t - b.start, length, fadeIn or 0.3, fadeOut or 0.4)
 end
 
 -- Pitch/roll that turn a limb hanging along -Y to point along d.
@@ -123,15 +123,27 @@ local function bendToward(g)
 	return math.atan2(-g.Z, -g.Y)
 end
 
---[[ ctx: accel (world, her own acceleration), forward (world, the carrier's facing),
-	mood ("Calm" | "Excited" | "Struggle" | "Cheer"), moodAge (seconds) ]]
+--[[ Carried overhead (owner Oct 18: "make the girls have some motion, not just be held straight up like that, and
+	make it for all of the girls"): not a stiff plank any more but sitting up in his hands, like being lifted up
+	high: her upper body raised (Pose.TorsoUp), her legs bent up at the hips (Pose.LegsUp; an R15 girl's shins
+	also hang from bent knees), arms relaxed and half hanging, head loose and looking where he goes. On top, calm
+	life: a small dip and dangle in time with his footsteps (ctx.step), her feet swinging slowly, a little kick
+	and a look round now and then, limbs swinging a little when he starts, stops or turns (Inertia). Moods add a
+	short happy flutter (Excited), a wriggle (Struggle) or waving (Cheer), all kept small.
+	ctx: accel (world, her own acceleration), forward (world, the carrier's facing), mood ("Calm" | "Excited" |
+	"Struggle" | "Cheer"), moodAge (seconds), step (-1..1, his step: CarryMotion's bob), amount (0-1.4: how hard he's
+	moving; 0 standing still) ]]
 function GirlMotion.carried(s, J, dt, t, ctx)
 	local C = Config.Carried
+	local P = C.Pose
 	local gWorld = Vector3.new(0, -C.Gravity, 0) - ctx.accel * C.Inertia
 	local mood, age = ctx.mood or "Calm", ctx.moodAge or 99
 	if not C.Moods then
-		mood = "Still"
+		mood = "Calm"
 	end
+	local step, amount = ctx.step or 0, clamp(ctx.amount or 0, 0, 1.4)
+	local still = 1 - clamp(amount, 0, 1) -- (her own slow swinging shows most while he stands)
+	local bounce = abs(step) * amount -- (each footfall)
 
 	-- How much of each overlay plays right now
 	local excited = if mood == "Excited" then envelope(age, C.Excited.Time, 0.15, 0.5) else 0
@@ -140,69 +152,84 @@ function GirlMotion.carried(s, J, dt, t, ctx)
 	if mood == "Struggle" then
 		struggle = math.max(envelope(age, C.Struggle.Time, 0.1, 0.5), if age > C.Struggle.Time then burst(s, "struggle", t, C.Struggle.Every, C.Struggle.Burst) else 0)
 	end
-	local calm = if mood == "Calm" or (mood == "Excited" and excited == 0) then 1 else 0 -- "Still" = none of these
-	local kick = math.max(excited, cheer * 0.6, calm * burst(s, "kick", t, C.Calm.Kick.Every, C.Calm.Kick.Time) * 0.8)
-	local waveOne = calm * burst(s, "wave", t, C.Calm.Wave.Every, C.Calm.Wave.Time)
-	local waveBoth = math.max(excited, cheer)
-	local kickSpeed = if struggle > 0 then 3.2 else 2.2
+	local calm = 1 - math.max(excited, cheer, struggle)
+	local kick = math.max(excited, cheer * 0.5, calm * burst(s, "kick", t, C.Calm.Kick.Every, C.Calm.Kick.Time))
+	local waveOne = calm * burst(s, "wave", t, C.Calm.Wave.Every, C.Calm.Wave.Time, 0.6, 0.7) -- (slow: calm)
+	local waveBoth = math.max(excited * 0.6, cheer)
+	local glance = calm * burst(s, "glance", t, C.Calm.Glance.Every, C.Calm.Glance.Time, 0.6, 0.7)
+	if glance > 0 and not s.glanceSide then
+		s.glanceSide = if random(s) < 0.5 then -1 else 1
+	elseif glance == 0 then
+		s.glanceSide = nil
+	end
+	local kickSpeed = if struggle > 0 then 2.6 else 1.8
+
+	-- Her body sits up (a turn of her torso), gives a little at each of his steps, breathes
+	local sit = rad(P.TorsoUp) + rad(P.StepGive) * bounce + rad(1.5) * sin(t * 1.6) + rad(6) * sin(t * 2 * pi * 2.1) * struggle
+	set(J.Root, CFrame.Angles(-spring(s, "sit", sit, dt, C.Spring.Legs, 0.8), 0, rad(8) * sin(t * 2 * pi * 1.3) * struggle))
+	-- (R15: a soft curve at the waist too)
+	set(J.Waist, CFrame.Angles(-rad(P.TorsoUp) * 0.3 + rad(1.5) * sin(t * 1.6), 0, rad(8) * sin(t * 2 * pi * 2.3) * struggle))
 
 	for side, sign in { L = -1, R = 1 } do
-		-- Arms: hang, wave at the sky, or flail
+		local other = if side == "L" then pi else 0
+		-- Arms: half hanging, swaying a little with his steps; waving at the sky; wriggling when struggling
 		local shoulder = J[side .. "Shoulder"]
 		if shoulder and shoulder.Part0 then
 			local p, r = hangToward(down(shoulder.Part0, gWorld), C.Arms)
+			p += rad(P.ArmSway) * step * amount * sign + rad(3) * sin(t * 0.9 + other) * still
+			r += sign * rad(P.ArmsOut)
 			local wave = math.max(waveBoth, if side == "R" then waveOne else 0)
-			local swing = sin(t * 2 * pi * 2.4 + (if side == "L" then pi else 0))
-			p += (rad(125) - p) * wave
-			r += (sign * rad(22 + 18 * swing) - r) * wave
+			local swing = sin(t * 2 * pi * 1.6 + other)
+			p += (rad(120) - p) * wave
+			r += (sign * rad(20 + 14 * swing) - r) * wave
 			if struggle > 0 then
-				local flail = sin(t * 2 * pi * 2.7 + (if side == "L" then 0 else 2))
-				p += (rad(40 + 70 * flail) - p) * struggle
-				r += (sign * rad(30 + 25 * sin(t * 2 * pi * 1.9 + sign)) - r) * struggle
+				local flail = sin(t * 2 * pi * 2.2 + (if side == "L" then 0 else 2))
+				p += (rad(35 + 30 * flail) - p) * struggle
+				r += (sign * rad(25 + 12 * sin(t * 2 * pi * 1.7 + sign)) - r) * struggle
 			end
 			set(shoulder, limb(spring(s, side .. "ap", p, dt, C.Spring.Arms, C.Spring.Damping), spring(s, side .. "ar", r, dt, C.Spring.Arms, C.Spring.Damping)))
 		end
 		local elbow = J[side .. "Elbow"]
 		if elbow and elbow.Part0 then
-			local bend = clamp(bendToward(down(elbow.Part0, gWorld)), 0, rad(130)) * C.Elbows + rad(10)
-			bend += (rad(35) - bend) * math.max(waveBoth, struggle)
+			local bend = clamp(bendToward(down(elbow.Part0, gWorld)), 0, rad(130)) * C.Elbows + rad(15)
+			bend += (rad(35) - bend) * math.max(waveBoth, if side == "R" then waveOne else 0, struggle)
 			set(elbow, CFrame.Angles(spring(s, side .. "e", bend, dt, C.Spring.Arms * 1.3, C.Spring.Damping), 0, 0))
 		end
 
-		-- Legs: droop, flutter kicks, hard kicks when struggling
+		-- Legs: bent up at the hips, a little apart, dangling with his steps and swinging slowly on their own;
+		-- a small flutter kick now and then
 		local hip = J[side .. "Hip"]
 		if hip and hip.Part0 then
-			local p, r = hangToward(down(hip.Part0, gWorld), C.Legs)
-			local phase = t * 2 * pi * kickSpeed + (if side == "L" then pi else 0)
-			p += sin(phase) * rad(22) * math.max(kick, struggle * 1.4)
-			r += sign * rad(4)
+			local phase = t * 2 * pi * kickSpeed + other
+			local p = rad(P.LegsUp) + rad(P.LegSway) * (step * sign * 0.6 + bounce * 0.4)
+				+ rad(P.Swing) * sin(t * 2 * pi * 0.45 + other) * (0.4 + 0.6 * still)
+				+ sin(phase) * rad(C.Calm.Kick.Size) * math.max(kick, struggle * 1.3)
+			local r = sign * rad(P.LegsApart)
 			set(hip, limb(spring(s, side .. "lp", p, dt, C.Spring.Legs, C.Spring.Damping), spring(s, side .. "lr", r, dt, C.Spring.Legs, C.Spring.Damping)))
 		end
 		local knee = J[side .. "Knee"]
 		if knee and knee.Part0 then
-			local phase = t * 2 * pi * kickSpeed + (if side == "L" then pi else 0)
-			local bend = clamp(bendToward(down(knee.Part0, gWorld)), rad(-120), 0) * C.Knees
-			bend -= (0.5 + 0.5 * sin(phase)) * rad(45) * math.max(kick, struggle)
+			local phase = t * 2 * pi * kickSpeed + other
+			local bend = -rad(P.Knees) - (0.5 + 0.5 * sin(phase)) * rad(30) * math.max(kick, struggle) - rad(4) * bounce
 			set(knee, CFrame.Angles(spring(s, side .. "k", bend, dt, C.Spring.Legs * 1.3, C.Spring.Damping), 0, 0))
 		end
 	end
 
-	-- Head: looks where you're going, glances around, shakes when struggling
+	-- Head: looks where you're going, loose (nods a little with each step), glances round now and then
 	local neck = J.Neck
 	if neck and neck.Part0 then
 		local v = neck.Part0.CFrame:VectorToObjectSpace(ctx.forward)
 		local yaw = clamp(math.atan2(-v.X, -v.Z), rad(-75), rad(75)) * C.LookAhead
+		yaw += rad(C.Calm.Glance.Angle) * (s.glanceSide or 0) * glance
 		if C.LookAround then
-			yaw += rad(20) * sin(t * 0.7) * sin(t * 0.31)
+			yaw += rad(12) * sin(t * 0.7) * sin(t * 0.31)
 		end
 		local pitch = clamp(math.atan2(v.Y, Vector3.new(v.X, 0, v.Z).Magnitude), rad(-40), rad(40)) * C.LookAhead
-		yaw += rad(30) * sin(t * 2 * pi * 4) * struggle
+		pitch += rad(P.HeadNod) * bounce
+		yaw += rad(18) * sin(t * 2 * pi * 2.5) * struggle
 		pitch += rad(12) * math.max(waveBoth, waveOne) -- lifts her head to wave
-		set(neck, CFrame.Angles(0, spring(s, "ny", yaw, dt, 2.5, 0.6), 0) * CFrame.Angles(spring(s, "np", pitch, dt, 2.5, 0.6), 0, 0))
+		set(neck, CFrame.Angles(0, spring(s, "ny", yaw, dt, 2.5, 0.8), 0) * CFrame.Angles(spring(s, "np", pitch, dt, 3, 0.8), 0, 0))
 	end
-
-	-- Upper body (R15): breathing, wriggling when struggling
-	set(J.Waist, CFrame.Angles(rad(1.5) * sin(t * 1.6), 0, rad(10) * sin(t * 2 * pi * 2.3) * struggle))
 end
 
 --[[ ctx: target (world position of the nearest runner's head, or nil), distance ]]

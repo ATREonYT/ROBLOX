@@ -20,8 +20,8 @@ return {
 	},
 
 	Bob = {
-		StepsPerStud = 0.15, -- footsteps per stud walked (match the walk animation)
-		Height = 0.06, -- kept small: the owner asked for no wiggle
+		StepsPerStud = 0.15, -- footsteps per stud walked (only when his hip can't be read: CarryMotion reads his steps)
+		Height = 0.1, -- his hands give this much at each footfall (small: was 0.06 "no wiggle"; Oct 18 he asked for motion)
 		Roll = 0, -- side-to-side rock per step
 		ElbowFlex = 3,
 	},

@@ -43,14 +43,49 @@ for _, kind in { "R6", "R15" } do
 
 	-- Lying face-up across shoulders (as CarryMath.holdRotation): gravity is toward her back (+Z).
 	rig.root.CFrame = CFrame.new(0, 10, 0) * CFrame.fromMatrix(Vector3.zero, Vector3.new(0, 0, 1), Vector3.new(-1, 0, 0), Vector3.new(0, -1, 0))
+	-- Owner Oct 18: "not just be held straight up like that" (she lay flat and stiff, a plank). Now: sitting up in
+	-- his hands (head end raised, legs bent up at the hips), arms relaxed, and moving, calmly, in time with his steps.
 	local s = GirlMotion.new(1)
-	for i = 1, 90 do
-		GirlMotion.carried(s, J, 1 / 30, 50 + i / 30, { accel = Vector3.zero, forward = Vector3.new(0, 0, -1), mood = "Calm", moodAge = 0 })
-		Rig.fk(rig)
+	local DT = 1 / 60
+	local function hold(seconds, t0, step)
+		local prev, turn, moved = {}, 0, 0
+		local first = {}
+		for i = 1, math.floor(seconds / DT) do
+			local t = t0 + i * DT
+			local st, amount = 0, 0
+			if step then
+				st, amount = math.sin(t * 2 * math.pi * 2.3), 1 -- (his steps: ~4.6 a second)
+			end
+			GirlMotion.carried(s, J, DT, t, { accel = Vector3.zero, forward = Vector3.new(0, 0, -1), mood = "Calm", moodAge = 99, step = st, amount = amount })
+			Rig.fk(rig)
+			for _, m in rig.motors do
+				if prev[m] and i > 60 then
+					local _, a = (prev[m]:Inverse() * m.Transform):ToAxisAngle()
+					turn = math.max(turn, math.abs(a))
+					local _, b = (first[m]:Inverse() * m.Transform):ToAxisAngle()
+					moved = math.max(moved, math.abs(b))
+				end
+				prev[m] = m.Transform
+				if i == 60 then first[m] = m.Transform end
+			end
+		end
+		return math.deg(turn), math.deg(moved)
 	end
+	local standTurn, standMoved = hold(12, 50, false)
+	local hips = rig.parts[if kind == "R6" then "Torso" else "LowerTorso"].CFrame * CFrame.new(0, -1, 0)
+	local head = rig.parts.Head.CFrame.Position
 	local arm = limbDir(rig, if kind == "R6" then "Left Arm" else "LeftUpperArm")
-	print(kind, "carried arm", arm)
-	check(arm.Y < -0.8, kind .. " carried arm hangs down")
+	local leg = limbDir(rig, if kind == "R6" then "Left Leg" else "LeftUpperLeg")
+	print(kind, "carried: head over hips by", head.Y - hips.Position.Y, "arm", arm, "leg", leg)
+	check(head.Y - hips.Position.Y > 0.5, kind .. " carried: she sits up (head end raised, not lying flat)")
+	check(leg.Y > 0.2, kind .. " carried: legs bent up at the hips (not straight out like a plank)")
+	check(arm.Y < -0.3, kind .. " carried: arms relaxed, half hanging")
+	print(string.format("  %s carried, standing: limbs move up to %.0f° over 11 s, at most %.1f° a frame", kind, standMoved, standTurn))
+	check(standMoved > 8, kind .. " carried: she moves while held (feet swing, looks round), not frozen")
+	check(standTurn < 6, kind .. " carried: calm, no joint turns more than 6° in a 60 fps frame")
+	local walkTurn, walkMoved = hold(4, 80, true)
+	print(string.format("  %s carried, walking: limbs move up to %.0f°, at most %.1f° a frame", kind, walkMoved, walkTurn))
+	check(walkMoved > 5 and walkTurn < 6, kind .. " carried: dangles with his steps, calmly")
 
 	-- Standing idle, no one near: arms hang by her sides, head up.
 	rig.root.CFrame = CFrame.new(0, 3, 0)
