@@ -13,7 +13,8 @@
 	A part named MapSpot (optional) sets exactly where the map's middle goes;
 	its front face points the way the open side should face.
 
-	The lobby is a part named Lobby, else the SpawnBaseplate. With no zones at
+	The lobby is a part named Lobby, else his new lobby's plaza in Workspace > StartingPoint (one copy in front of
+	each map, Shared/LobbyLayout), else the SpawnBaseplate. With no zones at
 	all a plain test field is built in place so the game still runs.
 	Several lobbies (the owner built one beside each map: "one per map"): each
 	map belongs to the lobby nearest it and loads where it was built; after the
@@ -26,6 +27,7 @@ local Workspace = game:GetService("Workspace")
 local PhysicsService = game:GetService("PhysicsService")
 
 local Config = require(ReplicatedStorage.Shared.Config.Round)
+local LobbyLayout = require(ReplicatedStorage.Shared.LobbyLayout)
 
 local MapService = {}
 MapService.zones = {} -- the loaded map's zones (filled in place, so callers can keep the table)
@@ -218,7 +220,7 @@ function MapService.init()
 	for _, item in Workspace:GetChildren() do
 		local box
 		local k = key(item.Name)
-		if k == key(C.Lobby) or k == "spawnbaseplate" or k == "mapspot" or select(2, pcall(CollectionService.HasTag, CollectionService, item, "HuzzLobby")) == true then
+		if k == key(C.Lobby) or k == "spawnbaseplate" or k == "mapspot" or k == key(LobbyLayout.FOLDER) or select(2, pcall(CollectionService.HasTag, CollectionService, item, "HuzzLobby")) == true then
 			box = nil -- (a lobby's own floor never moves into a map)
 		elseif item:IsA("BasePart") and not item:IsA("Terrain") and not item:IsA("SpawnLocation") then
 			box = restsOn(bounds(item))
@@ -255,25 +257,16 @@ function MapService.init()
 		table.insert(MapService.maps, { name = "Test Field", display = "Test Field", box = buildTestField(), fixed = true })
 	end
 
-	-- The lobbies: parts tagged HuzzLobby, else parts named Lobby, else the SpawnBaseplates (the owner has one
-	-- lobby island beside each map: "one per map").
-	local tagged, named, bases, spot = {}, {}, {}, nil
-	for _, t in CollectionService:GetTagged("HuzzLobby") do
-		local p = asPart(t)
-		if p and not table.find(tagged, p) then table.insert(tagged, p) end
-	end
+	-- The lobbies (Shared/LobbyLayout.floors): parts tagged HuzzLobby, else parts named Lobby, else the plaza of
+	-- each copy of his new lobby in Workspace > StartingPoint (owner Oct 18: "I made it the lobby for all of the
+	-- maps": one copy in front of each map), else the SpawnBaseplates (his old islands, now unused in Maps > Spawn).
+	local spot = nil
 	for _, d in Workspace:GetDescendants() do
-		if d:IsA("BasePart") then
-			if key(d.Name) == key(C.Lobby) then
-				table.insert(named, d)
-			elseif key(d.Name) == "spawnbaseplate" then
-				table.insert(bases, d)
-			elseif key(d.Name) == "mapspot" then
-				spot = spot or d
-			end
+		if d:IsA("BasePart") and key(d.Name) == "mapspot" then
+			spot = spot or d
 		end
 	end
-	local floors = if #tagged > 0 then tagged elseif #named > 0 then named else bases
+	local floors = LobbyLayout.floors(Workspace)
 	MapService.mapSpot = spot
 	MapService.lobbies = {}
 	for _, floor in floors do

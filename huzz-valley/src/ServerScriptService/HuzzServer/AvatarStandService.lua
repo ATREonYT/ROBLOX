@@ -4,11 +4,15 @@
 	exclusive knifes"). Each screen draws the stands itself (HuzzClient/Gameplay/AvatarStands); this makes sure there
 	are stands to draw and knives to hold:
 
-	1. Which blocks: anything named "AvatarStand..." or tagged "HuzzAvatarStand". If the place has none (his own place
-	   synced by Rojo: only our downloaded build renamed his blocks, so his game had no stands at all), his six plain
-	   grey blocks beside the big spin wheels are found by the same rule the place build uses
-	   (Shared/AvatarStandRules.findBlocks) and tagged here, with Pass = VIP / DancePack in turn. Nothing is renamed
-	   and nothing typed in Studio is overwritten.
+	1. Which stands: anything named "AvatarStand..." or tagged "HuzzAvatarStand" (the place build saves them in
+	   Workspace > HuzzAvatarStands, so he can drag them). If the place has none (his own place synced by Rojo):
+	   - his new lobby (owner Oct 18: "please add ... all of the gamepass things to the new lobby"): an invisible
+	     stand on each of the five small round pads at the front of every lobby copy (Shared/LobbyLayout.standSpots:
+	     the side with three pads is VIP, the two-pad side Dance Pack, one Game Pass knife each), made here in
+	     Workspace > HuzzAvatarStands;
+	   - else (his older places) his plain grey blocks beside the big spin wheels (Shared/AvatarStandRules.findBlocks),
+	     tagged here with Pass = VIP / DancePack in turn.
+	   Nothing of his is renamed and nothing typed in Studio is overwritten.
 	2. Which knife: each stand gets a "Knife" attribute (if it has none) = one of its pass's exclusive knives
 	   (Config/CoinShop Pass), in turn, so the six stands show different knives. A typed knife the pass doesn't give
 	   is replaced (with a warning in Output): a stand never shows something the pass doesn't give.
@@ -27,9 +31,11 @@ local CoinShop = require(Shared.Config.CoinShop)
 local Products = require(Shared.Config.Products)
 local Rules = require(Shared.AvatarStandRules)
 local KnifeService = require(script.Parent.KnifeService)
+local LobbyLayout = require(Shared.LobbyLayout)
 
 local AvatarStandService = {}
 local TAG = "HuzzAvatarStand"
+local api = { Instance = Instance, Vector3 = Vector3, CFrame = CFrame }
 local folder: Folder
 
 local function key(name: string): string
@@ -104,12 +110,37 @@ local function pickKnife(stand: Instance, turns: { [string]: number })
 	stand:SetAttribute("Knife", knife)
 end
 
+-- His new lobby's round pads: an invisible stand on each, with its pass and that pass's knife.
+local function onPads(): { Instance }
+	local out = {}
+	local holder
+	for _, floor in LobbyLayout.floors(Workspace) do
+		for _, spot in LobbyLayout.standSpots(api, Workspace, floor) do
+			if not holder then
+				holder = Instance.new("Folder")
+				holder.Name = "HuzzAvatarStands"
+				holder.Parent = Workspace
+			end
+			local stand = LobbyLayout.standPart(api, spot)
+			stand:SetAttribute("Knife", Rules.knife(spot.Pass, nil, CoinShop.Items, spot.Turn))
+			stand.Parent = holder
+			if not pcall(function() stand:AddTag(TAG) end) then pcall(function() CollectionService:AddTag(stand, TAG) end) end
+			table.insert(out, stand)
+		end
+	end
+	return out
+end
+
 function AvatarStandService.start()
 	folder = Instance.new("Folder")
 	folder.Name = "HuzzStandKnives"
 	folder.Parent = ReplicatedStorage
 	local stands = placed()
 	local how = "placed"
+	if #stands == 0 then
+		stands = onPads()
+		how = "on the new lobby's pads"
+	end
 	if #stands == 0 then
 		how = "found beside the spin wheels"
 		for _, b in found() do

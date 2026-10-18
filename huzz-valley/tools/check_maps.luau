@@ -6,6 +6,16 @@ local roblox = require("@lune/roblox")
 local place = roblox.deserializePlace(fs.readFile(require("@lune/process").args[1] or "huzz-valley/places/HuzzValley-yours.rbxl"))
 local ws = place:GetService("Workspace")
 local Config = luau.load(fs.readFile("huzz-valley/src/ReplicatedStorage/Shared/Config/Round.lua"), { environment = { Color3 = roblox.Color3, Vector3 = roblox.Vector3 } })()
+-- the game's lobby finder (Shared/LobbyLayout), given to MapService in place of the place's own (older) copy
+local LobbyLayout = require("./../src/ReplicatedStorage/Shared/LobbyLayout")
+do
+	local shared = place:GetService("ReplicatedStorage"):FindFirstChild("Shared")
+	if shared and not shared:FindFirstChild("LobbyLayout") then
+		local m = roblox.Instance.new("ModuleScript")
+		m.Name = "LobbyLayout"
+		m.Parent = shared
+	end
+end
 local fakeGame = {
 	GetService = function(_, name)
 		if name == "Workspace" then return ws end
@@ -17,7 +27,7 @@ local fakeGame = {
 local env = setmetatable({
 	game = fakeGame, workspace = ws, Instance = roblox.Instance, CFrame = roblox.CFrame, Vector3 = roblox.Vector3, Color3 = roblox.Color3,
 	Enum = roblox.Enum, UDim2 = roblox.UDim2, Font = roblox.Font, ColorSequence = roblox.ColorSequence, NumberSequence = roblox.NumberSequence, RaycastParams = { new = function() return {} end },
-	require = function() return Config end, task = { spawn = function() end },
+	require = function(m) if m and m.Name == "LobbyLayout" then return LobbyLayout end return Config end, task = { spawn = function() end },
 }, { __index = _G })
 env.game = { GetService = function(_, name) if name == "Workspace" then return ws end return fakeGame:GetService(name) end }
 local MapService = luau.load(fs.readFile("huzz-valley/src/ServerScriptService/HuzzServer/MapService.lua"), { environment = env })()

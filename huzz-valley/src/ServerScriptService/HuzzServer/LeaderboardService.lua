@@ -5,7 +5,8 @@
 	Where they stand: anything in Workspace named "Leaderboard" (a Model or a Part; also "Leaderboard 2" ...) or
 	tagged "HuzzLeaderboard". Its "Stat" attribute picks the board (Level, Wins, Catches, Rescues, Girls); boards
 	without one get the next stat in the list. The place build (tools/place/build_yours.luau) puts five round each
-	lobby so the owner can drag them; with none at all, the same five are made here round each lobby floor.
+	lobby so the owner can drag them; with none at all, the same five are made here round each lobby floor
+	(Shared/LobbyLayout: in his new lobby, three on his grey podiums by the plaza, two on the terrace steps behind it).
 	Every board gets the tag, so each screen (Gameplay/Leaderboards) finds it, draws it and turns it towards you.
 
 	Numbers: live game only, one OrderedDataStore per stat (saved from each player's profile every 90 s when it
@@ -26,6 +27,7 @@ local Config = require(Shared.Config.Leaderboards)
 local Progression = require(Shared.Config.Progression)
 local Rules = require(Shared.LeaderboardRules)
 local Look = require(Shared.LeaderboardLook)
+local LobbyLayout = require(Shared.LobbyLayout)
 local DataService = require(script.Parent.DataService)
 
 local LeaderboardService = {}
@@ -86,30 +88,14 @@ local function findBoards(): { Instance }
 	return found
 end
 
-local function lobbyFloors(): { BasePart }
-	local tagged, named, bases = {}, {}, {}
-	pcall(function()
-		for _, t in CollectionService:GetTagged("HuzzLobby") do
-			if t:IsA("BasePart") then table.insert(tagged, t) end
-		end
-	end)
-	for _, d in Workspace:GetDescendants() do
-		if d:IsA("BasePart") then
-			if key(d.Name) == "lobby" then table.insert(named, d)
-			elseif key(d.Name) == "spawnbaseplate" then table.insert(bases, d) end
-		end
-	end
-	return if #tagged > 0 then tagged elseif #named > 0 then named else bases
-end
-
--- No boards in the place: five round each lobby, on his podiums first (the same spots the place build uses).
+-- No boards in the place: five round each lobby (Shared/LobbyLayout: his grey podiums first, then the terrace steps
+-- either side behind the plaza, facing it; the same spots the place build saves).
 local function makeDefaults(): { Instance }
 	local made = {}
 	local holder = Instance.new("Folder")
 	holder.Name = "HuzzLeaderboards"
-	local podiums = Look.podiums(Workspace)
-	for _, floor in lobbyFloors() do
-		for i, spot in Look.layout(api, Rules, floor, podiums, #Config.Boards) do
+	for _, floor in LobbyLayout.floors(Workspace) do
+		for i, spot in LobbyLayout.boardSpots(api, Rules, Workspace, floor, #Config.Boards) do
 			local def = Config.Boards[i]
 			local ok, model = pcall(Look.model, api, def, spot.at, Config.Size, Config.Lift, Config.Subtitle, Config.Shown, spot.podium)
 			if ok and model then

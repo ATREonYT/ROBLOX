@@ -251,7 +251,9 @@ do
 end
 
 -- his own place (synced by Rojo, nothing renamed): the stands must still be found (the old code only knew blocks
--- named "AvatarStand", which only our place build made, so his game had none)
+-- named "AvatarStand", which only our place build made, so his game had none). Since his new lobby (Oct 18) the
+-- stands go on its round pads (tests/LobbyLayout.spec); this fallback for places without pads still finds his old
+-- islands' grey blocks (Maps > Spawn).
 if fs.isFile("places/HUSSANIME.rbxl") then
 	local place = roblox.deserializePlace(fs.readFile("places/HUSSANIME.rbxl"))
 	local ws = place:GetService("Workspace")

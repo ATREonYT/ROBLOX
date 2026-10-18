@@ -134,7 +134,7 @@ return {
 		LineupGap = 5, -- studs between runners standing on the line (a visible gap, as in the reference)
 		Middle = "Middle", -- where catchers spawn
 		Bench = "Bench", -- where caught runners wait out the round
-		Lobby = "Lobby", -- where everyone waits between games (optional; else the SpawnBaseplate)
+		Lobby = "Lobby", -- where everyone waits between games (optional; else the plaza of each copy of his new lobby in Workspace > StartingPoint, else the SpawnBaseplate: Shared/LobbyLayout)
 		MiddleSpawn = 20, -- catchers start within this many studs of the Middle's centre
 		Gap = 30, -- studs between the lobby island and the map copied in front of it
 		Names = {}, -- names shown in the vote, e.g. { Base_Map = "The Field" } (default: the folder name without "_Map")

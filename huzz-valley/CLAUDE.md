@@ -81,13 +81,16 @@ Owner's own words are in quotes. Read only the section you need.
   `UI/{Kit,Theme,Scale,Motion,ModalManager,State,DancePlayer,DancePose,Toast}`, `UI/Screens/*`, `Gameplay/*`.
 - `ServerStorage/HuzzAnimations.rbxm` (generated), `StarterGui/HuzzUI.rbxm` (generated: never edit by hand).
 - `design/`: kit pages, the owner's art zips, `anims/` (movement pack + 200 dances), `aura/`, `shop/`, references.
-- `places/HUSSANIME.rbxl` = the owner's own place (maps, girls, 3 lobbies, 4 spin wheels) as of Oct 17 (their
-  `huss77.rbxl`); `HuzzValley-yours.rbxl` = it with all our code and UI swapped in (what the owner tests).
+- `places/HUSSANIME.rbxl` = the owner's own place as of Oct 18 (maps, girls, his **new Halloween lobby** in
+  `Workspace > StartingPoint`, one copy in front of each map; his old lobby islands moved aside in `Maps > Spawn`);
+  `HuzzValley-yours.rbxl` = it with all our code and UI swapped in (what the owner tests). Top-down plan of the
+  lobby with our boards and stands: `docs/previews/new-lobby-layout.jpg` (`tools/world/lobby_dump.luau` +
+  `tools/world/lobby_plan.py`).
 
 ## 4. Checks, previews, builds (Lune 0.10.5 at `/root/bin/lune`; run before every commit)
 - `PATH=/root/bin:$PATH bash tools/check.sh`: compiles every script; specs (RoundRules, CarryMath, GirlMotion,
   GirlMoves, StabMotion, DownMotion, Movement, Locomotion, PlayerMoves, GirlRoll, CrateRoll, SpinWheel, Leaderboards,
-  Knives, KnifeWear, Sounds, SetupKnives); **the full-game simulation** (`tools/sim/round_sim.luau`: real server code, bots
+  Knives, KnifeWear, Sounds, SetupKnives, LobbyLayout); **the full-game simulation** (`tools/sim/round_sim.luau`: real server code, bots
   that run, stab, lunge, rescue, use powers; 7 setups). `lune run huzz-valley/tools/sim/round_sim.luau audit` (repo root) prints the
   loop numbers (stage times, waiting, win rates by player count, on the real map size) for `docs/loop-audit.md`. Its stubs (e.g. `KnifeService`) must get any new function
   RoundService calls, or games stop with "attempt to call a nil value".
@@ -104,7 +107,8 @@ Owner's own words are in quotes. Read only the section you need.
 - Ad-hoc harness tests: `lune run harness.luau ../../src - "$(cat test.luau)" setup_ui.luau`. Fake a character
   with Motor6Ds to test posing; stub `AnimationLibrary.id` to force code paths.
 - Owner's place inspection with Lune (`deserializePlace`): maps are in `Workspace.Maps` (Base_Map, BasketBall_Map,
-  Halloween_Map; zone parts named case/space-insensitively), the lobby floors are the 3 `Maps.Spawn.SpawnBaseplate`s.
+  Halloween_Map; zone parts named case/space-insensitively), the lobby floors are the plazas of the 3 copies of his
+  new lobby in `StartingPoint` (`Shared/LobbyLayout.floors`; the old `Maps.Spawn.SpawnBaseplate`s are no longer used).
   `lune run huzz-valley/tools/check_maps.luau [place.rbxl]` (repo root) lists maps, lobby pairs and safe lines.
   Lune can't read `.Position` on parts loaded from a place file: use `.CFrame.Position` in code it runs.
 
@@ -230,7 +234,12 @@ Owner's own words are in quotes. Read only the section you need.
   centred, owner Oct 18). Loose Workspace parts resting on a map's floor move into that map at start (his Halloween
   path floated over the sea with another map on; `check_maps.luau` counts them); `catchFalls()` puts
   anyone below the field back on it (only within 8 studs of it) or far below the lobby back to its spawn.
-- **One lobby per map** (owner's pick, Oct 17): the owner built a lobby island in front of each map. Each map
+- **One lobby per map** (owner's pick, Oct 17): the owner built a lobby island in front of each map. Oct 18 he
+  replaced them with one new Halloween lobby ("I made it the lobby for all of the maps"), pasted in front of each map
+  (`Workspace > StartingPoint`; the BasketBall and Halloween copies are pasted twice on top of each other). The game
+  finds each copy's plaza (`Shared/LobbyLayout.floors`: the biggest flat part per copy, 124 x 136, top 12.5; copies on
+  top of each other count once), so it's still one lobby per map, the new one everywhere; spawns are his
+  SpawnLocations on each plaza (in `Maps > Spawn`). His old islands stay where he moved them, unused. Each map
   belongs to its nearest lobby (`entry.lobby`); after the vote `MapService.useLobbyFor` switches the lobby and
   RoundService moves everyone there after the load (streamed in first); only that lobby's SpawnLocation is on. With
   several lobbies a map loads exactly where it was built (the owner built floors level with their lobby); with one
@@ -559,8 +568,11 @@ Owner's own words are in quotes. Read only the section you need.
   MOST GIRLS, MOST CATCHES, MOST RESCUES (`Config/Leaderboards`). Side by side `docs/previews/leaderboard-vs-ref.jpg`
   (`tools/preview/leaderboard_vs_ref.py`, applies the game's grade to our render). `HuzzServer/LeaderboardService`:
   boards = anything named `Leaderboard...` or tagged `HuzzLeaderboard` (attribute `Stat`), else it makes five per
-  lobby: on his three grey `Podium`s first, two along the back edge (`LeaderboardLook.layout`; the place build saves
-  the same ones in `Workspace > HuzzLeaderboards` so he can drag them). Numbers: live only, one OrderedDataStore per
+  lobby (`Shared/LobbyLayout.boardSpots`): in his new lobby HIGHEST LEVEL, MOST WINS, MOST GIRLS on his three grey
+  `Podium`s along the plaza's side (the side with three stand pads), MOST CATCHES and MOST RESCUES on the low terrace
+  ledge either side behind the plaza (clear of the house in the middle, the trees and pumpkins; facing the front, each
+  screen turns them to you); else along the floor's back edge. The place build saves the same ones in
+  `Workspace > HuzzLeaderboards` so he can drag them. Numbers: live only, one OrderedDataStore per
   stat (`HuzzValley_LB_v1_<Stat>`), saved every 90 s when changed and on leave, top 50 read every 60 s,
   budget-checked, all pcall; this server's players always mixed in live (Studio: only them). JSON in attributes on
   `ReplicatedStorage.HuzzLeaderboards`. `Gameplay/Leaderboards` copies the saved face into PlayerGui.
@@ -578,20 +590,28 @@ Owner's own words are in quotes. Read only the section you need.
   tagged `HuzzAvatarStand` into a copy of the viewer's own avatar doing the sword showcase below (no knife: running in
   place, the owner's Run when it plays, else `RunMotion`; R6 a simple swing) holding its pass's exclusive knife in the right hand, turning to you calmly
   (the boards' turn, up to 70°), a calm glow, a sign (tag pill, title, "EXCLUSIVE KNIFE: CELESTIAL SERAPH") and a
-  price button. **Why it didn't work in his game:** only our downloaded build renamed his blocks; in his own
-  Rojo-synced place nothing was named AvatarStand. Now `HuzzServer/AvatarStandService` finds his six grey blocks
-  beside the big spin wheels at game start (`AvatarStandRules.findBlocks`, also used by the place build), tags them,
-  sets `Pass` (VIP / DancePack in turn) and `Knife` (that pass's knives in turn), and puts a ready copy of each pass
+  price button. **Where:** in his new lobby (Oct 18: "add ... all of the gamepass things to the new lobby") an
+  invisible flat `AvatarStand` part on each of the five small round grey pads at the plaza's front
+  (`Shared/LobbyLayout.standSpots`; `Workspace > HuzzAvatarStands`, tagged, `StandOn` Top, facing into the plaza): the
+  three-pad side (by the podiums) is VIP with Celestial Seraph, Crimson Requiem, Hollow Eclipse, the two-pad side
+  Dance Pack with Dragon's Maw, Frostbound Oath; one Game Pass knife per stand, in every lobby copy.
+  `HuzzServer/AvatarStandService` makes them at game start when the place has no stands (his Rojo-synced place); the
+  place build saves the same ones. Places without pads: his grey blocks beside the big spin wheels
+  (`AvatarStandRules.findBlocks`; his old islands' blocks now stay plain blocks). It puts a ready copy of each pass
   knife in `ReplicatedStorage > HuzzStandKnives` (his model from `ServerStorage/HuzzKnives/<Key>`, else the tinted
   built-in knife). Tall blocks hide and you stand where they stood; flat ones are pedestals (`StandOn`). The button
   opens `PromptGamePassPurchase` only with a real Game Pass ID AND a `Config/Products` pass that's OnSale; otherwise
   "SOON" / "COMING SOON" (today both: VIP Id 0, DancePack not OnSale). No timers or LIMITED/ENDS IN copy.
-  **Owner how-to (Studio):** nothing to do for his six blocks: press Play. Optional, on a block: Properties >
-  Attributes > "+": `Pass` (String: `VIP` or `DancePack`), `Knife` (String: one of that pass's knives, e.g.
+  **Owner how-to (Studio):** nothing to do: press Play. To move them in the downloaded build: Explorer >
+  Workspace > HuzzAvatarStands > AvatarStand (invisible: click it in Explorer, then drag with Move), or change its
+  Attributes: `Pass` (String: `VIP` or `DancePack`), `Knife` (String: one of that pass's knives, e.g.
   `CrimsonRequiem`; another pass's knife is refused with a warning), `Title`, `Subtitle`, `Tag`, `Price`, `Color`,
-  `StandOn`. Real knife models: import `Gamepass_Knives.glb` and run SetupKnives (section 11, "Knives"). To sell:
+  `StandOn`. In his own Rojo place they're made fresh each Play; to keep his own spots there, copy the
+  `HuzzAvatarStands` and `HuzzLeaderboards` folders from the downloaded build into his Workspace (then the game uses
+  his). Real knife models: import `Gamepass_Knives.glb` and run SetupKnives (section 11, "Knives"). To sell:
   create the Game Pass on the Creator Dashboard, paste its ID into `Config/Products` (that pass's `Id`), `OnSale =
-  true`. Leaderboards: drag the boards in `Workspace > HuzzLeaderboards`; a board's `Stat` attribute picks what it ranks.
+  true`. Leaderboards: drag the boards in `Workspace > HuzzLeaderboards` (each is a Model: click it, Move); a board's
+  `Stat` attribute picks what it ranks.
 - **Stand sword showcase** (owner, Oct 18: "showcase the swords that the gamepass includes ... the swinging
   animation, make it look good though"): a stand with a knife no longer runs; `Shared/StandShowcase` (client only,
   only within NEAR 160) holds a guard (blade up, in front of the right shoulder, breathing and weight shift; R15 feet
@@ -635,7 +655,8 @@ Owner's own words are in quotes. Read only the section you need.
 - Not yet seen in Studio: the Practice Bot (its walk, run animation, knife), the Oct 17 UI shine/rays/spin and Juice bursts, the new lighting, stars in the playing zone, the move between lobbies after the vote (instant, no fade yet), the lunge feel, sprint feel, lobby repaint, knife positions, spin animation, dance
   pictures on real avatars, the owner's knives (meshes after his import, glow, sparkles, the leap and dive), dance sync across two clients (needs published dances), the lobby leaderboards (studs
   picture (Play only), the slab colour under his grade, Gotham's size, headshots, scrolling, the calm turn, the
-  pumpkin, candle and glow) and the avatar stands (finding his blocks, your copy, its run, the knife in its hand).
+  pumpkin, candle and glow) and the avatar stands (your copy, its run, the knife in its hand); the new lobby (the boards on the terrace ledges
+  turning without touching the slope behind, the copies on the pads, the move back after a game).
 - **Which code ran?** Studio shows "build <date> UTC" small in the bottom right (and `[Huzz] Build` in Output), from
   `Config/Build` written by `build_place.sh`. The owner's Oct 18 recordings showed the OLD cutscene and HUD although
   the download was new: Rojo connected to his out-of-date local copy puts old scripts back. Fix: GitHub Desktop >
@@ -666,6 +687,10 @@ Owner's own words are in quotes. Read only the section you need.
   `docs/previews/halloween-lobby-layout.png` (Huss Valley's Halloween lobby, 200 x 182 round his island; drawn by
   `tools/world/halloween_layout.py`, his real positions from `tools/world/measure_halloween_lobby.luau`). The night
   look needs `Config/Look` changed (game-wide); values are in the plan.
+- New lobby (Oct 18): his BasketBall and Halloween copies in `StartingPoint` are pasted twice (every part twice in
+  the same place; the game counts them once, but it doubles those parts); his old islands still float off to the side
+  in `Maps > Spawn` (unused; deleting them is safe: the game makes a spawn on each plaza if his SpawnLocations go too).
+  The terrace boards can brush the higher slope behind them when turned far to the side.
 - Pass knives: the Shop's pass rows don't list them yet; a refunded pass keeps them; six stands, five knives
   (the sixth repeats Dragon's Maw).
 - Us: whatever the owner's next round of fixes asks for first; then the Gift Picker, more lore chapters.

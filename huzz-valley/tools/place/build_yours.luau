@@ -81,10 +81,14 @@ do
 	end
 end
 
--- The lobby leaderboards (owner, Oct 18: "make the leaderboards just like in the video"): five round each lobby
--- floor (on his three grey podiums first, two along the back edge), saved in the place so the owner sees them and can drag them (Workspace > HuzzLeaderboards). Built by the
+-- The lobby leaderboards (owner, Oct 18: "make the leaderboards just like in the video", then with his new lobby:
+-- "please add all of these leaderboards ... to the new lobby"): five round each lobby floor (Shared/LobbyLayout: in
+-- his new lobby three on his grey podiums by the plaza, two on the terrace steps either side behind it, facing the
+-- plaza), saved in the place so the owner sees them and can drag them (Workspace > HuzzLeaderboards). Built by the
 -- game's own code (Shared/LeaderboardLook), so Studio shows the same board the game fills in. Skipped when the
 -- place already has boards (anything named "Leaderboard..." or with a "Stat" attribute): his spots win.
+local Layout = require("../../src/ReplicatedStorage/Shared/LobbyLayout")
+local layoutApi = { Instance = roblox.Instance, Vector3 = roblox.Vector3, CFrame = roblox.CFrame }
 do
 	local Look = require("../../src/ReplicatedStorage/Shared/LeaderboardLook")
 	local Rules = require("../../src/ReplicatedStorage/Shared/LeaderboardRules")
@@ -93,35 +97,40 @@ do
 		Vector3 = roblox.Vector3, CFrame = roblox.CFrame, Enum = roblox.Enum, Font = roblox.Font }
 	local ws = theirs:GetService("Workspace")
 	local function key(name) return (string.gsub(name, "[%s_%-]", "")):lower() end
-	local has, floors, named = false, {}, {}
+	local has = false
 	for _, d in ws:GetDescendants() do
 		if (d:IsA("Model") or d:IsA("BasePart")) and (string.sub(key(d.Name), 1, 11) == "leaderboard" or d:GetAttribute("Stat") ~= nil) then has = true end
-		if d:IsA("BasePart") and key(d.Name) == "spawnbaseplate" then table.insert(floors, d) end
-		if d:IsA("BasePart") and key(d.Name) == "lobby" then table.insert(named, d) end
 	end
-	if #named > 0 then floors = named end
+	local floors = Layout.floors(ws)
 	if has then
 		print("leaderboards: the place has its own, kept")
 	else
 		local holder = roblox.Instance.new("Folder")
 		holder.Name = "HuzzLeaderboards"
-		local count = 0
-		local podiums = Look.podiums(ws)
+		local count, where = 0, {}
 		for _, floor in floors do
-			for i, spot in Look.layout(api, Rules, floor, podiums, #Boards.Boards) do
+			local spots = Layout.boardSpots(api, Rules, ws, floor, #Boards.Boards)
+			local podium, steps = 0, 0
+			for i, spot in spots do
 				local model = Look.model(api, Boards.Boards[i], spot.at, Boards.Size, Boards.Lift, Boards.Subtitle, Boards.Shown, spot.podium)
 				pcall(function() model.ModelStreamingMode = roblox.Enum.ModelStreamingMode.Atomic end)
 				model.Parent = holder
 				count += 1
+				if spot.podium then podium += 1 else steps += 1 end
 			end
+			local c = floor.CFrame.Position
+			table.insert(where, string.format("(%d, %d): %d on podiums, %d on steps", math.round(c.X), math.round(c.Z), podium, steps))
 		end
 		holder.Parent = ws
-		print("leaderboards: " .. count .. " placed round " .. #floors .. " lobbies")
+		print("leaderboards: " .. count .. " placed round " .. #floors .. " lobbies; " .. table.concat(where, "; "))
 	end
 end
 
 -- Avatar stands (owner, Oct 18: "make the blocks i have in the lobby, next to the spin the wheel turn into my
--- character ... selling a gamepass", then "equipped with some exclusive knifes"): in this copy of his place, his plain
+-- character ... selling a gamepass", then "equipped with some exclusive knifes", then the new lobby: "add ... all of
+-- the gamepass things to the new lobby"): in his new lobby, an invisible stand on each of the five round pads at the
+-- front of every lobby copy (Workspace > HuzzAvatarStands, tagged; three-pad side VIP, two-pad side Dance Pack, one
+-- Game Pass knife each). In older places, his plain
 -- grey blocks beside each spin wheel (4 x 7.5 x 4.5, standing on the floor) become stands (renamed "AvatarStand",
 -- Pass = VIP and DancePack in turn: both show SOON until their Game Pass IDs are in Config/Products; Knife = that
 -- pass's exclusive knives in turn). The rule is Shared/AvatarStandRules.findBlocks; in his own Rojo-synced place
@@ -138,6 +147,25 @@ do
 		return luau.load(fs.readFile("huzz-valley/src/ReplicatedStorage/Shared/Config/CoinShop.lua"), { debugName = "CoinShop", environment = env })()
 	end)
 	local ws = theirs:GetService("Workspace")
+	-- his new lobby: an invisible stand on each round pad at the front of every lobby copy (Shared/LobbyLayout)
+	local onPads = {}
+	if okShop then
+		local holder
+		for _, floor in Layout.floors(ws) do
+			for _, spot in Layout.standSpots(layoutApi, ws, floor) do
+				holder = holder or roblox.Instance.new("Folder")
+				holder.Name = "HuzzAvatarStands"
+				local stand = Layout.standPart(layoutApi, spot)
+				local knife = Stand.knife(spot.Pass, nil, CoinShop.Items, spot.Turn)
+				stand:SetAttribute("Knife", knife)
+				pcall(function() stand:AddTag("HuzzAvatarStand") end)
+				stand.Parent = holder
+				local p = spot.at.Position
+				table.insert(onPads, string.format("%s (%s at %d, %d)", tostring(knife), spot.Pass, math.round(p.X), math.round(p.Z)))
+			end
+		end
+		if holder then holder.Parent = ws end
+	end
 	local wheels, parts = {}, {}
 	for _, d in ws:GetDescendants() do
 		local n = string.lower(d.Name)
@@ -159,6 +187,10 @@ do
 		end
 	end
 	local made, knives = 0, {}
+	if #onPads > 0 then
+		print("avatar stands: " .. #onPads .. " on the new lobby's pads; " .. table.concat(onPads, ", "))
+		wheels, parts = {}, {} -- (his old grey blocks beside the old islands' wheels stay plain blocks)
+	end
 	for _, b in Stand.findBlocks(wheels, parts) do
 		b.ref.Name = "AvatarStand"
 		b.ref:SetAttribute("Pass", b.Pass)
@@ -171,7 +203,9 @@ do
 		end
 		made += 1
 	end
-	print("avatar stands: " .. made .. " blocks beside " .. #wheels .. " spin wheels; knives " .. (if okShop then table.concat(knives, ", ") else "not set (" .. tostring(CoinShop) .. ")"))
+	if #onPads == 0 then
+		print("avatar stands: " .. made .. " blocks beside " .. #wheels .. " spin wheels; knives " .. (if okShop then table.concat(knives, ", ") else "not set (" .. tostring(CoinShop) .. ")"))
+	end
 end
 
 -- Future lighting (crisper light and shadows; Roblox drops to simpler lighting on weak devices by itself). Scripts
