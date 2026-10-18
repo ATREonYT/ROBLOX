@@ -575,8 +575,8 @@ Owner's own words are in quotes. Read only the section you need.
   character and have like animated running ... selling a gamepass", then "make the character things in the lobby
   work ... gamepasses shown with the character of the person playing, equipped with some exclusive knifes";
   reference `design/lobby-ref/stands-ref.jpg`): `Gameplay/AvatarStands` turns any Part/Model named `AvatarStand` or
-  tagged `HuzzAvatarStand` into a copy of the viewer's own avatar running in place (the owner's Run when it plays,
-  else `RunMotion`; R6 a simple swing) holding its pass's exclusive knife in the right hand, turning to you calmly
+  tagged `HuzzAvatarStand` into a copy of the viewer's own avatar doing the sword showcase below (no knife: running in
+  place, the owner's Run when it plays, else `RunMotion`; R6 a simple swing) holding its pass's exclusive knife in the right hand, turning to you calmly
   (the boards' turn, up to 70°), a calm glow, a sign (tag pill, title, "EXCLUSIVE KNIFE: CELESTIAL SERAPH") and a
   price button. **Why it didn't work in his game:** only our downloaded build renamed his blocks; in his own
   Rojo-synced place nothing was named AvatarStand. Now `HuzzServer/AvatarStandService` finds his six grey blocks
@@ -592,6 +592,17 @@ Owner's own words are in quotes. Read only the section you need.
   `StandOn`. Real knife models: import `Gamepass_Knives.glb` and run SetupKnives (section 11, "Knives"). To sell:
   create the Game Pass on the Creator Dashboard, paste its ID into `Config/Products` (that pass's `Id`), `OnSale =
   true`. Leaderboards: drag the boards in `Workspace > HuzzLeaderboards`; a board's `Stat` attribute picks what it ranks.
+- **Stand sword showcase** (owner, Oct 18: "showcase the swords that the gamepass includes ... the swinging
+  animation, make it look good though"): a stand with a knife no longer runs; `Shared/StandShowcase` (client only,
+  only within NEAR 160) holds a guard (blade up, in front of the right shoulder, breathing and weight shift; R15 feet
+  planted by leg IK) and every `CYCLE` 3.3 s plays one of three moves in turn: Combo (forehand sweep, backhand
+  return, wrist twirl), Flourish (overhead twirl, diagonal cut) and Rising (crouch, rising cut, twirl). Each stand
+  starts on its own move (its build number) at its own time (its spot). The twirl turns the knife in the fist via the
+  weld's C0 (`grip`); R6 has no elbow, so shoulder and grip share the bend (simpler, still reads). AvatarStands adds
+  a `StandSlash` Trail (TrailBase to TrailTip, skin colour, `TRAIL_LIFETIME` 0.18) that's on only in the cuts; the
+  steady rarity glow is the display knife's own. Knife-less stands keep the run. Spec `tests/StandShowcase.spec`
+  (blade in front of the torso at ready, a move every loop, no pops at 30/60 fps, back to ready, feet planted);
+  video `docs/previews/stand-showcase.mp4` (`tools/preview/motion3d/stand_scene.luau`, mock rigs, his meshes).
 
 ## 12. Sounds
 - **Button sounds** (owner Oct 18: "they sound glitchy, and dont feel too premium"): one press = one sound. Kit

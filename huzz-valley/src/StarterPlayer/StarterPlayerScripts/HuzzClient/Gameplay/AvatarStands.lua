@@ -17,9 +17,13 @@
 	  StandOn   "Floor" (the block turns into your character: it hides and you stand where it stood) or "Top"
 	            (you stand on top of it). Default: a tall block (like his 4 x 8 x 4 ones) turns into you, a flat
 	            one is a pedestal.
-	On each screen a copy of THAT player's own avatar stands there running in place with the game's run (the
+	On each screen a copy of THAT player's own avatar stands there. Holding a pass knife it shows the knife off
+	(owner, Oct 18: "for these make them showcase the swords that the gamepass includes. For example the swinging
+	animation, make it look good though"): Shared/StandShowcase, a ready guard with the blade up in front, and every
+	~3 s a combo, a flourish or a rising cut ending in a twirl, the slash trail during the cuts; each stand has its
+	own timing and order (seed from its spot). Without a knife it runs in place with the game's run (the
 	owner's run animation when it can play here, Shared/AnimationLibrary "Run"; otherwise Shared/RunMotion, the
-	scripted Huss Valley run, on R15; a simple swing on R6), slowly turning to face you like the leaderboards. A
+	scripted Huss Valley run, on R15; a simple swing on R6). It turns to face you like the leaderboards. A
 	calm glow under the feet (a soft disc, a small light, a few slow sparkles; owner: calmer effects). Above: the tag,
 	the title plate and the subtitle; at the waist the price button ("1,799 · VIEW"). No timers, no "limited",
 	no "ends in" (kid-safe, even though the reference has them).
@@ -45,6 +49,7 @@ function M.start()
 	local Rules = require(Shared.AvatarStandRules)
 	local LeaderRules = require(Shared.LeaderboardRules)
 	local RunMotion = require(Shared.RunMotion)
+	local StandShowcase = require(Shared.StandShowcase)
 	local Library = require(Shared.AnimationLibrary)
 	local Format = require(Shared.Format)
 	local UI = script.Parent.Parent.UI
@@ -55,7 +60,7 @@ function M.start()
 	local player = Players.LocalPlayer
 	local playerGui = player:WaitForChild("PlayerGui")
 	local TAG = "HuzzAvatarStand"
-	local NEAR = 160 -- copies further away than this stop moving
+	local NEAR = StandShowcase.NEAR -- copies further away than this stop moving
 	local SPEED = 26 -- the run's pace (studs a second: a runner's sprint)
 	local TURN_MAX, TURN_BEHIND = math.rad(70), math.rad(130) -- (it turns to you in real time, like the boards)
 
@@ -191,7 +196,22 @@ function M.start()
 		rec.phase = 0
 	end
 
+	-- The sword showcase (Shared/StandShowcase) on a copy holding a knife: the pose, the knife's turn in the fist
+	-- (twirls) and the trail during cuts.
+	local function stepShowcase(rec)
+		local pose = StandShowcase.step(rec.showcase, os.clock())
+		local weld = rec.knifeWeld
+		if weld and weld.Parent then
+			weld.C0 = CFrame.new(rec.gripAt) * CFrame.Angles(math.rad(pose.gripAngle), 0, 0) * rec.handTurn
+		end
+		if rec.trail and rec.trail.Enabled ~= pose.trail then rec.trail.Enabled = pose.trail end
+	end
+
 	local function stepRun(rec, dt: number)
+		if rec.showcase then
+			stepShowcase(rec)
+			return
+		end
 		if rec.track then return end
 		if rec.motion then
 			RunMotion.step(rec.motion, dt, SPEED, true, false)
@@ -233,7 +253,30 @@ function M.start()
 		weld.C1 = if own and own:IsA("Attachment") then own.CFrame else CFrame.identity
 		weld.Parent = handle
 		knife:SetAttribute("Knife", knifeKey)
+		-- the slash trail for the showcase's cuts (as KnifeService's, a little longer so the arc reads)
+		local base, tip = knife:FindFirstChild("TrailBase", true), knife:FindFirstChild("TrailTip", true)
+		local trail = nil
+		if base and tip and base:IsA("Attachment") and tip:IsA("Attachment") then
+			local skin = CoinShop.get(knifeKey)
+			local look = KnifeLook.fx(skin and skin.Rarity)
+			local colour = KnifeLook.colour(skin)
+			local tinted = look.trailTint and colour ~= nil
+			local T = KnifeLook.TRAIL
+			trail = Instance.new("Trail")
+			trail.Name = "StandSlash"
+			trail.Attachment0, trail.Attachment1 = base, tip
+			trail.Lifetime = StandShowcase.TRAIL_LIFETIME
+			trail.MinLength = 0
+			trail.FaceCamera = false
+			trail.LightEmission = if tinted then T.LightEmission else 0.3
+			trail.Color = if tinted then ColorSequence.new(colour :: Color3, Color3.new(1, 1, 1)) else ColorSequence.new(Color3.new(1, 1, 1))
+			local tr = if tinted then T.Tinted else T.Plain
+			trail.Transparency = NumberSequence.new(tr[1], tr[2])
+			trail.Enabled = false
+			trail.Parent = handle
+		end
 		knife.Parent = copy
+		rec.knifeWeld, rec.gripAt, rec.handTurn, rec.trail = weld, at, KnifeLook.handC0(at).Rotation, trail
 	end
 
 	local function knifeFor(rec)
@@ -402,12 +445,18 @@ function M.start()
 			end
 			rec.hidden = nil
 		end
-		rec.track, rec.motion, rec.r6 = nil, nil, nil
+		rec.track, rec.motion, rec.r6, rec.showcase = nil, nil, nil, nil
+		rec.knifeWeld, rec.trail = nil, nil
 	end
 
+	local standCount = 0
 	local function build(stand: Instance)
 		local rec = stands[stand] or { stand = stand }
 		stands[stand] = rec
+		if not rec.number then
+			standCount += 1
+			rec.number = standCount
+		end
 		clear(rec)
 		local copy = copyAvatar()
 		if not copy then return end
@@ -460,7 +509,14 @@ function M.start()
 		root.CFrame = CFrame.new(rec.at) * CFrame.Angles(0, rec.yaw, 0)
 		copy.Parent = holder
 		rec.copy, rec.root = copy, root
-		startRun(rec)
+		if knifeKey then
+			-- each stand its own timing (from where it stands) and first move (from its number: the 1st, 2nd and 3rd
+			-- stand start on different moves, so stands side by side never play the same move at once)
+			local spot = math.floor(math.abs(cf.Position.X) * 3 + math.abs(cf.Position.Z) * 7) % 331
+			local seed = spot * 3 + rec.number
+			rec.showcase = StandShowcase.new(copy, seed)
+		end
+		if not rec.showcase then startRun(rec) end
 		knifeFor(rec)
 		glow(rec, footY, cf.Position, math.min(size.X, size.Z))
 		signs(rec)
