@@ -6,18 +6,21 @@
 	    which wait for an uploaded picture:
 	      a light pool + crisp rings flat on the floor under her feet (a thin part with a SurfaceGui of round
 	      Frames and UIStrokes; it follows her feet, swells as she breathes, a highlight runs round the ring),
-	      a ring running out over the floor on each beat, flame tongues hugging her from behind (Beams drawn behind
-	      her body: ZOffset pushes them away from the camera, so they never cover her face), orbiting lights
-	      (small neon balls with Trails), trails on her feet and hands only while she moves, a halo (Secret);
+	      a ring running out over the floor on each beat, flame tongues wrapped round her (Beams twisting up from
+	      her feet and curling in over her; a small negative ZOffset lets them cross in front of her legs but slip
+	      behind her face, and white-hot inner ones sit behind her outline), orbiting lights (small neon balls with
+	      Trails, off while she walks), trails on her feet and hands only while she moves, a halo (Secret);
 	  - a PointLight, and crescent slashes (two Beams each: a bright core over a dark edge, bent into an arc
 	    with CurveSize, swept round and faded every frame by step()); the girls' slashes come on the beat.
-	Per frame nothing new is made: positions are set as Vector3s, sizes as numbers; the rest is built once.
+	Per frame nothing new is made: positions are set as Vector3s/CFrames, sizes as numbers, the slashes' fades
+	from NumberSequences made once; the rest is built once.
 	Her own parts are never touched, and our parts live in Workspace.HuzzAuraFX (not in her model, so her
 	bounding box, which GirlService and the Secret cutscene measure, doesn't change). While the Secret cutscene
 	flies her (her HuzzRevealing attribute) the floor layers hide.
-	AuraFX.attach(model, spec, opts) -> handle { step(dt), setEnabled(on), destroy() }. Not started on its own:
-	Gameplay/Auras uses it. opts.lite (other players' and the round's girls): fewer particles, flames and orbs, no
-	white cores, no light. opts.ground = false: no floor layers (the girl being carried).
+	AuraFX.attach(model, spec, opts) -> handle { step(dt), setEnabled(on), alive(), destroy() }. Not started on its
+	own: Gameplay/Auras uses it. opts.lite (other players' and the round's girls): fewer particles, flames and orbs,
+	no light. opts.ground = false (the girl being carried): nothing on or from the floor (no pool, no floor
+	particles, no puffs where her feet land, no foot trails).
 ]]
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
@@ -150,12 +153,18 @@ local function ring(parent, scale, color, transparency, thickness)
 end
 
 -- An attachment frame whose X axis points along d (a Beam bends along its attachments' X axes).
-local function xFrame(d)
+local function xFrame(d, at)
 	local side = Vector3.new(-d.Z, 0, d.X)
 	if side.Magnitude < 0.01 then
 		side = Vector3.new(0, 0, 1)
 	end
-	return CFrame.fromMatrix(Vector3.zero, d, side.Unit:Cross(d).Unit)
+	return CFrame.fromMatrix(at or Vector3.zero, d, side.Unit:Cross(d).Unit)
+end
+
+-- The slashes' see-through steps, made once (a NumberSequence each frame would make garbage every frame).
+local ALPHA_STEPS = {}
+for k = 0, 20 do
+	ALPHA_STEPS[k] = NumberSequence.new(k / 20)
 end
 
 -- How far below her root her feet are, and how far above it her head's top is (body parts only).
@@ -258,6 +267,8 @@ function AuraFX.attach(model, spec, opts)
 		-- Roblox's stand-in sparkle would lie under you as a big blob.
 		if (e.orient == "Flat" or e.texture == "Bolt") and not FxTexture.ready(e.texture) then skip = true end
 		local onGround = e.at == "Ground" and pool ~= nil
+		-- (carried, off the floor: nothing from the floor and no puffs where her feet land, rather than floating)
+		if (e.at == "Ground" and not pool) or (e.stride and not wantGround) then skip = true end
 		local part, offset = anchor(model, e.at, scale)
 		if (part or onGround) and not skip then
 			local p = Instance.new("ParticleEmitter")
@@ -330,19 +341,23 @@ function AuraFX.attach(model, spec, opts)
 	end
 	local lightBase = light and light.Brightness or 0
 
-	-- Flame tongues hugging her from behind: Beams from her feet to over her head, bent outward (AuraLook.flameAt).
+	-- Flame tongues wrapped round her (critic, Oct 18: "two thin pastel stalks" before): Beams from just outside her
+	-- feet, twisting round her as they rise and curling in over her shoulders and head, heights staggered, the whole
+	-- ring turning slowly (AuraLook.flameAt). The outer ones sit a little back, so they cross in front of her legs
+	-- and slip behind her face; the white-hot inner ones are drawn just behind her and glow round her outline.
 	local flames = {}
 	local F = if root then spec.flames else nil
 	if F then
 		local white, main, accent, deep = F.colors[1], F.colors[2], F.colors[3], F.colors[4] or F.colors[2]
 		local soft = FxTexture.ready("BeamGlow") -- (soft edges once the owner's beam picture is uploaded)
-		local outerAlpha = numberSeq({ { 0, 1 }, { 0.15, 0.4 }, { 0.5, 0.45 }, { 0.85, 0.7 }, { 1, 1 } })
-		local coreAlpha = numberSeq({ { 0, 1 }, { 0.15, 0.35 }, { 0.6, 0.5 }, { 1, 1 } })
+		local outerAlpha = numberSeq({ { 0, 1 }, { 0.1, 0.25 }, { 0.55, 0.3 }, { 0.85, 0.6 }, { 1, 1 } })
+		local coreAlpha = numberSeq({ { 0, 1 }, { 0.12, 0.1 }, { 0.6, 0.35 }, { 1, 1 } })
 		local function tongues(core)
 			local n = if core then F.core else F.count
-			if lite then n = if core then 0 else math.ceil(n / 2) end
+			-- (the walking girls keep most of it: beams cost no particles)
+			if lite then n = if core then math.max(1, n - 1) else math.ceil(n * 0.75) end
 			for i = 1, n do
-				local d0, d1 = AuraLook.flameDirs(F, i, core)
+				local d0, d1 = AuraLook.flameDirs(F, i, core, 0)
 				local a0, a1 = keep(Instance.new("Attachment")), keep(Instance.new("Attachment"))
 				a0.Name, a1.Name = "HuzzFlameA" .. i, "HuzzFlameB" .. i
 				a0.CFrame, a1.CFrame = xFrame(d0), xFrame(d1)
@@ -351,16 +366,17 @@ function AuraFX.attach(model, spec, opts)
 				b.Name = if core then "HuzzFlameCore" .. i else "HuzzFlame" .. i
 				b.Attachment0, b.Attachment1 = a0, a1
 				local tone = if i % 2 == 0 then accent else main
-				b.Color = if core then colorSeq({ { 0, WHITE }, { 1, white } })
-					else colorSeq({ { 0, tone:Lerp(WHITE, 0.25) }, { 0.55, tone }, { 1, tone:Lerp(deep, 0.45) } })
+				-- white-hot where it leaves the floor, her full colour, a deeper tip
+				b.Color = if core then colorSeq({ { 0, WHITE }, { 0.6, WHITE:Lerp(main, 0.35) }, { 1, white } })
+					else colorSeq({ { 0, WHITE:Lerp(tone, 0.45) }, { 0.3, tone }, { 1, tone:Lerp(deep, 0.35) } })
 				b.Transparency = if core then coreAlpha else outerAlpha
-				b.LightEmission = (if core then 1 else 0.35) * glow -- (her colour stays her colour in daylight)
+				b.LightEmission = (if core then 1 else 0.4) * glow -- (her colour stays her colour in daylight)
 				b.LightInfluence = 0
-				b.Brightness = 1.2
+				b.Brightness = if core then 1.6 else 1.3
 				b.FaceCamera = true
-				b.Segments = 14
-				-- behind her body from every side (pushed away from the camera past her far side)
-				b.ZOffset = -(F.radius * (F.behind or (if core then 1.2 else 1.5))) * scale
+				b.Segments = 16
+				-- the core behind her body; the outer ones only a little back (in front of her legs, behind her face)
+				b.ZOffset = -(F.radius * (if core then (F.behind or 1.3) else 0.35)) * scale
 				if soft then
 					b.Texture = FxTexture.get("BeamGlow")
 					b.TextureMode = Enum.TextureMode.Stretch
@@ -435,7 +451,7 @@ function AuraFX.attach(model, spec, opts)
 			t.Parent = part
 			table.insert(wakes, t)
 		end
-		if W.feet then
+		if W.feet and wantGround then -- (carried: her feet are off the floor)
 			for i, f in feet do
 				local bottom = -f.Size.Y / 2
 				wake(f, bottom + 0.05 * scale, bottom + 0.4 * scale, 0.35, "Foot" .. i)
@@ -566,6 +582,8 @@ function AuraFX.attach(model, spec, opts)
 		if nowMoving ~= moving then
 			moving = nowMoving
 			for _, t in wakes do t.Enabled = moving end
+			-- the orbs' trails stop while she walks (they'd stretch into a long ribbon at chest height)
+			for _, o in orbs do o.trail.Enabled = not moving end
 		end
 		-- the beat: anticipation, flare, ring out over the floor, sparkles (and a slash on Mythic up)
 		local energy, shockT, breathe = AuraLook.beatAt(B, clock + phase)
@@ -624,9 +642,9 @@ function AuraFX.attach(model, spec, opts)
 		end
 		if F then
 			for _, f in flames do
-				local p0, p1, c0, c1, w0, w1 = AuraLook.flameAt(F, f.i, f.core, clock, energy, phase)
-				f.a0.Position = Vector3.new(p0.X * scale, -drop + 0.08 * scale, p0.Z * scale)
-				f.a1.Position = Vector3.new(p1.X * scale, top + (p1.Y - 2.2) * scale, p1.Z * scale)
+				local p0, p1, c0, c1, w0, w1, d0, d1 = AuraLook.flameAt(F, f.i, f.core, clock, energy, phase)
+				f.a0.CFrame = xFrame(d0, Vector3.new(p0.X * scale, -drop + 0.08 * scale, p0.Z * scale))
+				f.a1.CFrame = xFrame(d1, Vector3.new(p1.X * scale, top + (p1.Y - 2.2) * scale, p1.Z * scale))
 				local beam = f.beam
 				beam.CurveSize0, beam.CurveSize1 = c0 * scale, c1 * scale
 				beam.Width0, beam.Width1 = w0 * scale, w1 * scale
@@ -667,7 +685,7 @@ function AuraFX.attach(model, spec, opts)
 						beam.Width0 = if b.half == 1 then 0 else w
 						beam.Width1 = if b.half == 1 then w else 0
 						local a = math.clamp(alpha + (if b.edge then 0.15 else 0), 0, 1)
-						beam.Transparency = NumberSequence.new(a)
+						beam.Transparency = ALPHA_STEPS[math.floor(a * 20 + 0.5)]
 						beam.Enabled = true
 					end
 				end
@@ -689,7 +707,7 @@ function AuraFX.attach(model, spec, opts)
 			light.Enabled = on
 		end
 		for _, o in orbs do
-			o.trail.Enabled = on
+			o.trail.Enabled = on and not moving
 			o.ball.Transparency = if on then 0 else 1
 		end
 		for _, f in flames do
@@ -717,6 +735,10 @@ function AuraFX.attach(model, spec, opts)
 				end
 			end
 		end
+	end
+	-- false once streaming took her parts away (the Model stays): Auras then rebuilds her effects when they're back
+	function handle.alive()
+		return body ~= nil and body.Parent ~= nil and (root == nil or root.Parent ~= nil)
 	end
 	function handle.destroy()
 		for _, inst in made do

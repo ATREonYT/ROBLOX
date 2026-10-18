@@ -109,7 +109,7 @@ function Sim.new(rig, spec, opts)
 	local sys = {
 		rig = rig, spec = spec, particles = {}, acc = {}, beats = {}, slashes = {}, clock = 0, nextSlash = 0,
 		seed = rng:NextInteger(1, 1e5), on = true, inherit = opts.inherit, AuraLook = opts.AuraLook, orbs = {},
-		strides = {}, wakes = {}, moving = false, speed = 0,
+		strides = {}, wakes = {}, moving = false, speed = 0, ground = opts.ground ~= false,
 	}
 	sys.drop, sys.top = measure(rig, scale)
 	sys.phase = rng:NextNumber() * (if spec.beat then spec.beat.every else 3)
@@ -133,7 +133,7 @@ function Sim.new(rig, spec, opts)
 		local function wake(name, life, w)
 			table.insert(sys.wakes, { part = name, life = life, w = w, pts = {} })
 		end
-		if spec.wake.feet then
+		if spec.wake.feet and sys.ground then -- (carried: no foot trails)
 			wake("LeftFoot", 0.35, 0.35 * scale)
 			wake("RightFoot", 0.35, 0.35 * scale)
 		end
@@ -213,7 +213,9 @@ function Sim.step(sys, dt)
 	end
 	if sys.on then
 		for i, e in spec.emitters do
-			if e.every then
+			if (e.at == "Ground" and not sys.poolRadius) or (e.stride and not sys.ground) then
+				-- (carried: nothing from the floor, as AuraFX)
+			elseif e.every then
 				if sys.clock >= sys.beats[i] then
 					sys.beats[i] = sys.clock + e.every
 					for _ = 1, e.count or 1 do spawn(sys, e, scale, rigVel) end
@@ -247,8 +249,13 @@ function Sim.step(sys, dt)
 			sys.seed += 1
 			table.insert(sys.slashes, { born = sys.clock, seed = sys.seed })
 		end
-		for _, o in sys.orbs do
-			table.insert(o.trail, 1, { p = orbPos(sys, o), t = sys.clock })
+		for _, o in sys.orbs do -- (the trail stops while she walks, as AuraFX; the ball stays)
+			if sys.moving then
+				o.pos = orbPos(sys, o)
+			else
+				o.pos = nil
+				table.insert(o.trail, 1, { p = orbPos(sys, o), t = sys.clock })
+			end
 		end
 		for _, w in sys.wakes do
 			if sys.moving then
@@ -392,18 +399,18 @@ function Sim.draw(sys, cam, sprites, ribbons, lights)
 	if F and on and sys.AuraLook then
 		local root = sys.rig.root.CFrame
 		local white, main, accent, deep = F.colors[1], F.colors[2], F.colors[3], F.colors[4] or F.colors[2]
-		local outerA = { { 0, 1 }, { 0.15, 0.4 }, { 0.5, 0.45 }, { 0.85, 0.7 }, { 1, 1 } }
-		local coreA = { { 0, 1 }, { 0.15, 0.35 }, { 0.6, 0.5 }, { 1, 1 } }
+		local outerA = { { 0, 1 }, { 0.1, 0.25 }, { 0.55, 0.3 }, { 0.85, 0.6 }, { 1, 1 } }
+		local coreA = { { 0, 1 }, { 0.12, 0.1 }, { 0.6, 0.35 }, { 1, 1 } }
+		local W = Color3.new(1, 1, 1)
 		for _, core in { false, true } do
 			local n = if core then F.core else F.count
 			for i = 1, n do
-				local d0, d1 = sys.AuraLook.flameDirs(F, i, core)
-				local p0, p1, c0, c1, w0, w1 = sys.AuraLook.flameAt(F, i, core, sys.clock, sys.energy, sys.phase)
+				local p0, p1, c0, c1, w0, w1, d0, d1 = sys.AuraLook.flameAt(F, i, core, sys.clock, sys.energy, sys.phase)
 				local A = root:PointToWorldSpace(Vector3.new(p0.X * scale, -sys.drop + 0.08 * scale, p0.Z * scale))
 				local Bp = root:PointToWorldSpace(Vector3.new(p1.X * scale, sys.top + (p1.Y - 2.2) * scale, p1.Z * scale))
 				local P1 = A + root:VectorToWorldSpace(d0) * c0 * scale
 				local P2 = Bp - root:VectorToWorldSpace(d1) * c1 * scale
-				local z = F.radius * (F.behind or (if core then 1.2 else 1.5)) * scale
+				local z = F.radius * (if core then (F.behind or 1.3) else 0.35) * scale
 				local tone = if i % 2 == 0 then accent else main
 				local pts, w, a, cs = {}, {}, {}, {}
 				for k = 0, 14 do
@@ -413,10 +420,11 @@ function Sim.draw(sys, cam, sprites, ribbons, lights)
 					table.insert(pts, v3(b))
 					table.insert(w, r3((w0 + (w1 - w0) * u) * scale))
 					table.insert(a, r3((1 - sample(if core then coreA else outerA, u)) * (if core then 1 else 0.9)))
-					local c = if core then Color3.new(1, 1, 1):Lerp(white, u) elseif u < 0.55 then tone:Lerp(Color3.new(1, 1, 1), 0.25):Lerp(tone, u / 0.55) else tone:Lerp(tone:Lerp(deep, 0.45), (u - 0.55) / 0.45)
+					local c = if core then (if u < 0.6 then W:Lerp(W:Lerp(main, 0.35), u / 0.6) else W:Lerp(main, 0.35):Lerp(white, (u - 0.6) / 0.4))
+						elseif u < 0.3 then W:Lerp(tone, 0.45):Lerp(tone, u / 0.3) else tone:Lerp(tone:Lerp(deep, 0.35), (u - 0.3) / 0.7)
 					table.insert(cs, hex(c))
 				end
-				table.insert(ribbons, { pts = pts, w = w, a = a, c = cs[1], cs = cs, add = core }) -- (LightEmission 1 core, 0.35 outer)
+				table.insert(ribbons, { pts = pts, w = w, a = a, c = cs[1], cs = cs, add = core }) -- (LightEmission 1 core, 0.4 outer)
 			end
 		end
 	end
@@ -426,8 +434,9 @@ function Sim.draw(sys, cam, sprites, ribbons, lights)
 		local s = (if O.ball then O.size else O.size * 0.25) * scale
 		for _, o in sys.orbs do
 			trailRibbon(ribbons, sys.clock, o.trail, O.trail or 0.35, s * 0.9, { Color3.new(1, 1, 1), o.colors[2], o.colors[3] }, 0.1)
-			if on and o.trail[1] then
-				local p = v3(o.trail[1].p)
+			local at = o.pos or (o.trail[1] and o.trail[1].p)
+			if on and at then
+				local p = v3(at)
 				table.insert(sprites, { p = p, s = r3(s * 3.2), c = hex(o.colors[2]), a = 0.55 * glow, t = "Glow", add = true })
 				table.insert(sprites, { p = p, s = r3(s), c = hex(o.colors[2]:Lerp(Color3.new(1, 1, 1), 0.55)), a = 1, t = "@disc", b = 1.3 })
 			end

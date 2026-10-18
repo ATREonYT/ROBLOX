@@ -444,8 +444,9 @@ end
 	  ground = { radius, colors = {white, main, deep}, accent, pool = {transparency per step, outside in} or nil,
 	             ring = transparency or nil, runner = true (a highlight running round the ring), inner = true (a
 	             thin second ring), breathe = 0-1 (how much it swells), spin = degrees a second }
-	  flames = { count, core (how many white inner tongues), radius, height, width, colors = {white, main, accent, deep},
-	             behind (how far back they sit, x radius; default 1.5) }
+	  flames = { count, core (how many white-hot inner tongues), radius, height, width, colors = {white, main, accent, deep},
+	             twist (radians each outer tongue wraps round her), spin (radians a second the ring turns),
+	             behind (how far back the core sits, x radius; default 1.3) }
 	  beat   = { every (seconds), pre (anticipation seconds), burst (sparkles on "Burst"), shock = true, slash = true }
 	  wake   = { feet = true, hands = true, colors = {white, main, deep} }  (trails while she moves)
 	  halo   = { radius, colors = {white, accent} }  (Secret: a thin ring over her head)
@@ -455,13 +456,13 @@ end
 local SECRET_ACCENT_A, SECRET_ACCENT_B = Color3.fromRGB(110, 235, 255), Color3.fromRGB(255, 120, 210)
 
 -- Her colour made strong enough to read over a bright sky or floor (pale colours on glowing layers wash out to
--- white in daylight): the channels pushed apart until the colour is at least ~60% saturated.
+-- white in daylight): the channels pushed apart until the colour is at least ~75% saturated.
 local function vivid(c)
 	local mx, mn = math.max(c.R, c.G, c.B), math.min(c.R, c.G, c.B)
-	if mx <= 0 or mx - mn >= 0.6 * mx then
+	if mx <= 0 or mx - mn >= 0.75 * mx then
 		return c
 	end
-	local f = math.min(4, 0.6 * mx / math.max(mx - mn, 0.02))
+	local f = math.min(5, 0.75 * mx / math.max(mx - mn, 0.02))
 	local function ch(x) return math.clamp(mx - (mx - x) * f, 0, 1) end
 	return Color3.new(ch(c.R), ch(c.G), ch(c.B))
 end
@@ -471,16 +472,16 @@ AuraLook.vivid = vivid
 -- r = floor radius, pool = its glow steps (transparency, outside in), ring, runner, inner, breathe, orbs,
 -- flames = { outer tongues, white inner tongues, height, width }, beat = seconds between beats, light = { brightness, range }.
 local LADDER = {
-	[1] = { r = 1.2, pool = { 0.9, 0.84 }, orbs = 0 },
-	[2] = { r = 1.3, pool = { 0.88, 0.82 }, ring = 0.62, orbs = 0 },
-	[3] = { r = 1.5, pool = { 0.9, 0.84, 0.76 }, ring = 0.45, runner = true, orbs = 0, light = { 0.3, 5 } },
-	[4] = { r = 1.6, pool = { 0.88, 0.82, 0.72 }, ring = 0.35, runner = true, breathe = 0.05, orbs = 1, light = { 0.45, 6 } },
-	[5] = { r = 1.9, pool = { 0.86, 0.78, 0.66 }, ring = 0.25, runner = true, inner = true, breathe = 0.07, orbs = 2,
-		flames = { 4, 2, 1.1, 1.1 }, beat = 3.6, light = { 0.8, 8 } },
-	[6] = { r = 2.1, pool = { 0.85, 0.76, 0.62 }, ring = 0.2, runner = true, inner = true, breathe = 0.08, orbs = 3,
-		flames = { 5, 3, 1.35, 1.2 }, beat = 3.0, light = { 1.0, 9 } },
-	[7] = { r = 2.3, pool = { 0.84, 0.74, 0.6 }, ring = 0.15, runner = true, inner = true, breathe = 0.09, orbs = 4,
-		flames = { 6, 3, 1.55, 1.25 }, beat = 2.6, light = { 1.2, 10 } },
+	[1] = { r = 1.2, pool = { 0.8, 0.7 }, orbs = 0 }, -- (critic, Oct 18: a visible but calm pool, was 0.9/0.84)
+	[2] = { r = 1.3, pool = { 0.78, 0.66 }, ring = 0.5, orbs = 0 },
+	[3] = { r = 1.5, pool = { 0.8, 0.72, 0.62 }, ring = 0.4, runner = true, orbs = 0, light = { 0.3, 5 } },
+	[4] = { r = 1.6, pool = { 0.78, 0.68, 0.58 }, ring = 0.32, runner = true, breathe = 0.05, orbs = 1, light = { 0.45, 6 } },
+	[5] = { r = 1.9, pool = { 0.78, 0.68, 0.55 }, ring = 0.25, runner = true, inner = true, breathe = 0.07, orbs = 2,
+		flames = { 5, 2, 1.2, 1.15 }, beat = 3.6, light = { 0.8, 8 } },
+	[6] = { r = 2.1, pool = { 0.76, 0.66, 0.52 }, ring = 0.2, runner = true, inner = true, breathe = 0.08, orbs = 3,
+		flames = { 6, 3, 1.4, 1.25 }, beat = 3.0, light = { 1.0, 9 } },
+	[7] = { r = 2.3, pool = { 0.74, 0.64, 0.5 }, ring = 0.15, runner = true, inner = true, breathe = 0.09, orbs = 4,
+		flames = { 7, 3, 1.6, 1.3 }, beat = 2.6, light = { 1.2, 10 } },
 }
 AuraLook.LADDER = LADDER
 
@@ -545,7 +546,8 @@ function AuraLook.girl(look, rarity, kind)
 	end
 	if L.flames then
 		local f = L.flames
-		out.flames = { count = f[1], core = f[2], radius = 1.0, height = f[3], width = f[4], colors = { white, vivid(main), vivid(accent), deep } }
+		out.flames = { count = f[1], core = f[2], radius = 1.0, height = f[3], width = f[4], twist = 1.1, spin = 0.5,
+			colors = { white, vivid(main), vivid(accent), deep } }
 		out.beat = { every = L.beat, pre = 0.35, burst = 4 + 2 * (rank - 4), shock = true, slash = rank >= 6 }
 		out.wake = { feet = true, hands = rank >= 6, colors = { WHITE, main, deep } }
 		-- sparkles that burst out on the beat
@@ -657,31 +659,47 @@ function AuraLook.beatAt(B, t)
 	return energy, shock, breathe
 end
 
--- Flame tongue i (outer ring, or the white inner ring when core): its fixed bend directions in her root's frame
--- (d0: leaving the floor, bulging out; d1: the tip curling in) and its angle round her.
-function AuraLook.flameDirs(F, i, core)
+-- Flame tongue i (outer ring, or the white-hot inner ring when core) at time t: its angle round her where it
+-- leaves the floor (a) and at its tip (b). The whole ring turns slowly (F.spin, radians a second); the outer
+-- tongues twist round her one way (F.twist) and the white inner ones a little the other way.
+local GOLD = 0.6180339887
+local function flameAngles(F, i, core, t)
 	local n = if core then F.core else F.count
-	local a = (i - 1) / n * math.pi * 2 + (if core then math.pi / n else 0.3)
+	local a = (i - 1) / n * math.pi * 2 + (if core then math.pi / n else 0.3) + (t or 0) * (F.spin or 0)
+	local twist = if core then -0.45 else (F.twist or 1.1)
+	return a, a + twist, twist
+end
+
+-- Its bend directions in her root's frame: d0 leaves the floor going up, round her (the way it twists) and a
+-- little out; d1 arrives at the tip going up and in, so the tip curls in over her.
+function AuraLook.flameDirs(F, i, core, t)
+	local a, b, twist = flameAngles(F, i, core, t)
 	local c, s = math.cos(a), math.sin(a)
-	return Vector3.new(c, 1.3, s).Unit, Vector3.new(-c, 1.4, -s).Unit, a
+	local side = if twist >= 0 then 1 else -1
+	local round = if core then 0.35 else 0.75
+	local d0 = Vector3.new(0.45 * c - round * side * s, 1.25, 0.45 * s + round * side * c).Unit
+	local d1 = Vector3.new(-math.cos(b), 0.9, -math.sin(b)).Unit
+	return d0, d1, a, b
 end
 
 -- Flame tongue i at time t (energy from beatAt): bottom and tip points (root frame, 5-stud body), the two curve
--- sizes and the two widths. It leaves the floor at her feet; the tip flickers above her head and sways.
+-- sizes, the two widths and the two bend directions. Each leaves the floor just outside her feet and wraps round
+-- her as it rises; heights are staggered (golden-ratio steps: some end at her shoulders, some over her head), the
+-- tip flickers and jumps on the beat. The core tongues hug her outline, white-hot, drawn just behind her.
 function AuraLook.flameAt(F, i, core, t, energy, seed)
-	local _, _, a = AuraLook.flameDirs(F, i, core)
-	local c, s = math.cos(a), math.sin(a)
+	local d0, d1, a, b = AuraLook.flameDirs(F, i, core, t)
 	local ph = (seed or 0) + i * 1.7 + (if core then 0.9 else 0)
-	-- (they leave the floor just outside her outline and bulge past it, so they frame her silhouette from behind)
-	local r0 = F.radius * (if core then 0.75 else 1.05)
-	local flick = 0.75 + 0.15 * math.sin(t * 3.1 + ph) + 0.1 * math.sin(t * 7.3 + ph * 2.3)
-	local h = F.height * (if core then 0.55 else 1) * flick * energy
-	local sway = 0.22 * math.sin(t * 1.7 + ph)
-	local p0 = Vector3.new(c * r0, -2.45, s * r0)
-	local p1 = Vector3.new(c * r0 * 0.25 - s * sway, 2.2 + h, s * r0 * 0.25 + c * sway)
-	local reach = F.radius * (if core then 1.1 else 1.7) * (0.85 + 0.15 * energy)
-	local width = F.width * (if core then 0.45 else 1) * (0.8 + 0.2 * energy)
-	return p0, p1, reach, F.radius * 0.9, width, 0.04
+	local stagger = (i * GOLD) % 1
+	local hm = if core then 0.9 + 0.1 * stagger else 0.62 + 0.38 * stagger
+	local flick = 0.85 + 0.1 * math.sin(t * 3.1 + ph) + 0.05 * math.sin(t * 7.3 + ph * 2.3)
+	local h = F.height * (if core then 0.55 else 1) * hm * flick * energy
+	local r0 = F.radius * (if core then 0.95 else 1.2)
+	local rt = F.radius * (if core then 0.35 else 1.25 - hm)
+	local p0 = Vector3.new(math.cos(a) * r0, -2.45, math.sin(a) * r0)
+	local p1 = Vector3.new(math.cos(b) * rt, -2.45 + 4.65 * hm + h, math.sin(b) * rt)
+	local reach = F.radius * (if core then 1.1 else 1.6) * (0.85 + 0.15 * energy)
+	local width = F.width * (if core then 0.6 else 0.75 + 0.25 * hm) * (0.8 + 0.2 * energy)
+	return p0, p1, reach, F.radius * (if core then 0.7 else 0.9), width, 0.04, d0, d1
 end
 
 -- Orbiting light i of n at time t: its offset from her body centre (5-stud body). Odd ones go one way, even

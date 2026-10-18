@@ -363,8 +363,10 @@ function M.start()
 	-- Girl models in the world: the showcase over the map, the round's girl carried or following.
 	local worldAuras = {} -- Model -> handle
 	local worldConns = {} -- Model -> its AncestryChanged connection
+	local worldKinds = {} -- Model -> { kind, carried } (to rebuild after streaming took her parts away)
+	local rewatchConns = {} -- Model -> DescendantAdded connection waiting for her parts to come back
 	local function watchModel(model, kind, carried)
-		if worldAuras[model] or not model:IsA("Model") then
+		if worldAuras[model] or not model:IsA("Model") or not model:IsDescendantOf(Workspace) then
 			return
 		end
 		local rarity = model:GetAttribute("Rarity")
@@ -383,13 +385,45 @@ function M.start()
 		if worldConns[model] then
 			worldConns[model]:Disconnect()
 		end
+		worldKinds[model] = { kind, carried }
 		worldConns[model] = model.AncestryChanged:Connect(function()
-			if not model:IsDescendantOf(Workspace) and worldAuras[model] then
-				worldAuras[model].destroy()
-				worldAuras[model] = nil
-				worldConns[model]:Disconnect()
-				worldConns[model] = nil
+			if not model:IsDescendantOf(Workspace) then
+				if worldAuras[model] then
+					worldAuras[model].destroy()
+					worldAuras[model] = nil
+				end
+				if rewatchConns[model] then
+					rewatchConns[model]:Disconnect()
+					rewatchConns[model] = nil
+				end
+				worldKinds[model] = nil
+				if worldConns[model] then
+					worldConns[model]:Disconnect()
+					worldConns[model] = nil
+				end
 			end
+		end)
+	end
+	-- Streaming took her parts away but kept the Model: drop the effects (no orbs or pool frozen in the air) and
+	-- build them again once a part of hers comes back.
+	local function lostParts(model)
+		worldAuras[model].destroy()
+		worldAuras[model] = nil
+		local k = worldKinds[model]
+		if not k or rewatchConns[model] then
+			return
+		end
+		rewatchConns[model] = model.DescendantAdded:Connect(function(child)
+			if not child:IsA("BasePart") then
+				return
+			end
+			rewatchConns[model]:Disconnect()
+			rewatchConns[model] = nil
+			task.delay(0.3, function() -- (the rest of her streams in with it)
+				if model:IsDescendantOf(Workspace) and worldKinds[model] then
+					watchModel(model, k[1], k[2])
+				end
+			end)
 		end)
 	end
 	local function showcaseAdded(model)
@@ -409,7 +443,11 @@ function M.start()
 			local f = Workspace:WaitForChild(name, 30)
 			if f then
 				f.ChildAdded:Connect(function(m)
-					task.delay(0.2, watchModel, m, "Companion", name == "HuzzCarried")
+					task.delay(0.2, function()
+						if m:IsDescendantOf(Workspace) then -- (she may have left again in that time)
+							watchModel(m, "Companion", name == "HuzzCarried")
+						end
+					end)
 				end)
 				for _, m in f:GetChildren() do
 					watchModel(m, "Companion", name == "HuzzCarried")
@@ -439,7 +477,9 @@ function M.start()
 			updatePlayer(p, stateOf(p), dt)
 		end
 		for model, handle in worldAuras do
-			if model.Parent then
+			if model.Parent and not handle.alive() then
+				lostParts(model)
+			elseif model.Parent then
 				local pivot = model:GetPivot().Position
 				handle.setEnabled(near(pivot) or model:HasTag("HuzzShowcase"))
 				handle.step(dt)

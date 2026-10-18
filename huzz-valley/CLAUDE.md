@@ -270,10 +270,14 @@ Owner's own words are in quotes. Read only the section you need.
   like the pro references (`design/vfx/vysvex-green-reference.mp4`, ref3, Soul Reaper): a light pool + crisp ring flat
   under her feet (SurfaceGui circles on a thin part in `Workspace.HuzzAuraFX`, outside her model; it follows her lower
   foot, swells as she breathes, a highlight runs round the ring; on the prize it lights her stand top; hidden while
-  carried or while `HuzzRevealing`), flame tongues hugging her from behind (Beams, ZOffset behind her body), orbiting
-  neon balls with Trails crossing in front of and behind her, trails on feet/hands only while she moves, puffs per
+  carried or while `HuzzRevealing`), flame tongues wrapped round her (critic: "two thin pastel stalks" before; Beams
+  twisting up from her feet, curling in over her, staggered heights, the ring turning slowly, saturated, a white-hot
+  inner ring behind her outline; outer ZOffset small, so they cross her legs but not her face), orbiting neon balls
+  with Trails (trails off while she walks), trails on feet/hands only while she moves, puffs per
   stride, streaks rising off the floor, and a beat (draw in 0.35 s, flare, a ring runs out, sparkles; Mythic up a
-  crescent slash) every 3.6/3.0/2.6 s. Ladder: Common = faint pool + 1 emitter; + ring (Uncommon); + runner, element,
+  crescent slash) every 3.6/3.0/2.6 s. Carried: nothing on or from the floor (no pool, floor particles, puffs or foot
+  trails). Streamed-out parts: Auras drops the effects and rebuilds them when she streams back.
+  Ladder: Common = calm pool + 1 emitter; + ring (Uncommon); + runner, element,
   puffs, glow (Rare); + 1 orb, breathing (Epic); + flames, beat, 2 orbs, foot trails (Legendary, 6 emitters); + slash,
   hand glints/trails, 3 orbs (Mythic, 7); + two tones, crystals, butterflies, halo, 4 orbs (Secret, 9; budget 12).
   The prize gets at least the Rare look. Only the particles wait for uploads; everything else shows today.

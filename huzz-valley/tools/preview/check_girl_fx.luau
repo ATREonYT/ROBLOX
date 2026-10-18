@@ -172,7 +172,7 @@ for _, look in looks do
 				check(`{tag} {rarity}: small floor glow`, spec.ground.radius <= 1.6)
 			end
 			if rank <= 2 and kind == "Companion" then
-				check(`{tag} {rarity}: no light, no orbs, faint`, spec.light == nil and spec.orbs == nil and spec.ground.pool[1] >= 0.88)
+				check(`{tag} {rarity}: no light, no orbs, a calm pool`, spec.light == nil and spec.orbs == nil and spec.ground.pool[1] >= 0.75)
 			end
 			if spec.beat then
 				check(`{tag} {rarity}: beats at least 2.4 s apart (kid-safe)`, spec.beat.every >= 2.4 and spec.beat.pre > 0)
@@ -194,10 +194,24 @@ do
 	local _, shockOff = AuraLook.beatAt(B, 5)
 	check(`the beat draws in, flares, settles ({before} {flare} {after})`, before < 0.95 and flare > 1.15 and math.abs(after - 1) < 0.08)
 	check("the floor ring runs out on the beat only", shockMid > 0 and shockMid < 1 and shockOff < 0)
-	-- the flame tongues leave the floor at her feet and reach over her head
-	local F = { count = 4, core = 2, radius = 1, height = 1, width = 1 }
-	local p0, p1, c0, _, w0, w1 = AuraLook.flameAt(F, 1, false, 0.5, 1, 0)
-	check("flames: from her feet to over her head, wide at the bottom", p0.Y < -2 and p1.Y > 2.2 and c0 > 0 and w0 > w1)
+	-- the flame tongues leave the floor at her feet, wrap round her and curl in; heights staggered
+	local F = { count = 6, core = 3, radius = 1, height = 1.4, width = 1, twist = 1.1, spin = 0.5 }
+	local tallest, lowest, wraps, curls, wide = -math.huge, math.huge, true, true, true
+	for i = 1, F.count do
+		local p0, p1, c0, _, w0, w1 = AuraLook.flameAt(F, i, false, 0.5, 1, 0)
+		tallest, lowest = math.max(tallest, p1.Y), math.min(lowest, p1.Y)
+		local a0, a1 = math.atan2(p0.Z, p0.X), math.atan2(p1.Z, p1.X)
+		local turn = (a1 - a0 + math.pi) % (2 * math.pi) - math.pi
+		if math.abs(turn - F.twist) > 0.05 then wraps = false end
+		if Vector3.new(p1.X, 0, p1.Z).Magnitude >= Vector3.new(p0.X, 0, p0.Z).Magnitude then curls = false end
+		if not (p0.Y < -2 and c0 > 0 and w0 > w1) then wide = false end
+	end
+	check(`flames: from her feet, wide at the bottom`, wide)
+	check(`flames: staggered, some over her head and some at her shoulders ({lowest} .. {tallest})`, tallest > 2.2 and lowest < 2 and lowest > 0.8)
+	check("flames: each wraps round her as it rises and curls in at the tip", wraps and curls)
+	local q0 = AuraLook.flameAt(F, 1, false, 0, 1, 0)
+	local q1 = AuraLook.flameAt(F, 1, false, 2, 1, 0)
+	check("flames: the ring turns slowly", (q0 - q1).Magnitude > 0.3)
 	-- orbiting lights pass in front of and behind her
 	local O = { radius = 1.5, speed = 2.2, tilt = 20, bob = 0.25, height = 0.2 }
 	local front, back = false, false
@@ -229,21 +243,26 @@ do
 	local fxf = workspace:FindFirstChild("HuzzAuraFX")
 	local pool = fxf and fxf:FindFirstChild("HuzzAuraPool")
 	check("Secret girl: a light pool on the floor", pool ~= nil)
-	local flames, behind = 0, true
+	local flames, outerOk, coreOk = 0, true, true
 	for _, d in m:GetDescendants() do
 		if d:IsA("Beam") and d.Name:find("HuzzFlame") then
 			flames += 1
-			if d.ZOffset >= 0 then behind = false end
+			if d.Name:find("Core") then
+				if d.ZOffset > -1 then coreOk = false end
+			elseif d.ZOffset >= 0 or d.ZOffset < -0.6 then
+				outerOk = false
+			end
 		end
 	end
-	check(`Secret girl: flame tongues ({flames}) drawn behind her`, flames == spec.flames.count + spec.flames.core and behind)
+	check(`Secret girl: flame tongues ({flames}) round her, a little back (in front of her legs, behind her face)`, flames == spec.flames.count + spec.flames.core and outerOk)
+	check("Secret girl: the white-hot inner tongues drawn behind her", coreOk)
 	local function count()
 		return #everything(m)
 	end
 	for _ = 1, 5 do handle.step(1 / 30) end
 	local before = count()
 	-- she walks 6 studs to the side
-	local wakeOn = false
+	local wakeOn, orbTrailOn = false, false
 	for i = 1, 60 do
 		for _, p in m:GetChildren() do
 			if p:IsA("BasePart") then p.CFrame = p.CFrame + Vector3.new(0.1, 0, 0) end
@@ -252,7 +271,13 @@ do
 		for _, d in m:GetDescendants() do
 			if d:IsA("Trail") and d.Name:find("HuzzWake") and d.Enabled then wakeOn = true end
 		end
+		if i > 30 then
+			for _, d in fxf:GetDescendants() do
+				if d:IsA("Trail") and d.Name:find("HuzzOrbTrail") and d.Enabled then orbTrailOn = true end
+			end
+		end
 	end
+	check("Secret girl: the orbs' trails stop while she walks (no long ribbon at chest height)", not orbTrailOn)
 	check("Secret girl: nothing new made per frame", count() == before)
 	check("Secret girl: trails on her feet while she walks", wakeOn)
 	local pp = pool.CFrame.Position
@@ -263,6 +288,11 @@ do
 		if d:IsA("Trail") and d.Name:find("HuzzWake") and d.Enabled then wakeOff = false end
 	end
 	check("the trails stop when she stops", wakeOff)
+	local orbBack = false
+	for _, d in fxf:GetDescendants() do
+		if d:IsA("Trail") and d.Name:find("HuzzOrbTrail") and d.Enabled then orbBack = true end
+	end
+	check("and the orbs' trails come back when she stands", orbBack)
 	m:SetAttribute("HuzzRevealing", true)
 	for _ = 1, 20 do handle.step(1 / 30) end
 	check("the floor layers hide while the Secret cutscene flies her", pool:FindFirstChildOfClass("SurfaceGui").Enabled == false)
@@ -273,8 +303,23 @@ do
 	check("the girl's floor layers clean up", #fxf:GetChildren() == 0)
 	local m2 = legRig()
 	local h2 = AuraFX.attach(m2, spec, { lite = true, ground = false })
-	check("the carried girl: no pool under her", #fxf:GetChildren() == #fxf:GetChildren() and fxf:FindFirstChild("HuzzAuraPool") == nil)
+	check("the carried girl: no pool under her", fxf:FindFirstChild("HuzzAuraPool") == nil)
+	local floaters = {}
+	for _, d in everything(m2) do
+		if (d:IsA("ParticleEmitter") and (d.Name == "Motes" or d.Name == "Steps" or d.Name == "Rising"))
+			or (d:IsA("Trail") and d.Name:find("HuzzWakeFoot")) then
+			table.insert(floaters, d.Name)
+		end
+	end
+	check(`the carried girl: nothing from the floor or her feet floating in the air ({table.concat(floaters, ",")})`, #floaters == 0)
 	h2.destroy()
+	-- streaming takes her parts away but keeps the model: the handle says so (Auras rebuilds her effects later)
+	local m3 = legRig()
+	local h3 = AuraFX.attach(m3, spec)
+	local aliveBefore = h3.alive()
+	m3.UpperTorso.Parent = nil
+	check("streamed-out parts: the effects know they lost her", aliveBefore and not h3.alive())
+	h3.destroy()
 end
 -- kid-safe: slashes fade in (never pop)
 local _, _, _, _, _, _, _, alpha0 = AuraLook.slash(AuraLook.build(looks[1], "Mythic", "Player").slashes, 1, 0, Vector3.zero, 1)
