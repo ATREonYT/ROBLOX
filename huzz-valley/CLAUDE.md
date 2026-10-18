@@ -419,6 +419,10 @@ Owner's own words are in quotes. Read only the section you need.
   checks in `tools/preview/check_oct17.luau`). Their pictures are mockup crops (placeholders): ask for sharp PNGs.
   His Secret cutscene reference (not sent yet). Not seen in Studio: Crown Pose, Midnight cape, worn auras, the
   cutscene, the Oct 17 screens.
+- Halloween lobby (Oct 18): the owner builds it himself from `docs/HALLOWEEN-LOBBY-PLAN.md` +
+  `docs/previews/halloween-lobby-layout.png` (Huss Valley's Halloween lobby, 200 x 182 round his island; drawn by
+  `tools/world/halloween_layout.py`, his real positions from `tools/world/measure_halloween_lobby.luau`). The night
+  look needs `Config/Look` changed (game-wide); values are in the plan.
 - Us: whatever the owner's next round of fixes asks for first; then the Gift Picker, more lore chapters.
 - Everything in sections 7 to 12 is the current version, open to change: tuning numbers (speeds, odds, prices,
   lunge, wheel prizes), looks and feel are first passes waiting for the owner's verdict in Studio.
