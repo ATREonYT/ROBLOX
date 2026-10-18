@@ -90,7 +90,7 @@ local function buildAudio(page: Frame)
 	local defs = {
 		{ "MasterVolume", "AudioSpeaker", "Master Volume", "Everything you hear in the game." },
 		{ "MusicVolume", "AudioMusic", "Music Volume", "The background songs." },
-		{ "EffectsVolume", "AudioWaveform", "Effects Volume", "Footsteps, catches, powers and cheers." },
+		{ "EffectsVolume", "AudioWaveform", "Effects Volume", "Steps, catches and powers." },
 		{ "InterfaceVolume", "ControlsMenu", "Button Sounds", "Clicks and menu sounds." },
 	}
 	for i, d in defs do

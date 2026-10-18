@@ -234,8 +234,8 @@ Owner's own words are in quotes. Read only the section you need.
   `Feel` draws HV's thin speed lines); no letterbox bars in `Cinematic`; while running the prize card, the gear (not on touch: no Menu key)
   and Roblox's player list step aside. Footsteps are ours (`Feel`, Sfx "step", lobby too; Roblox's "Running" muted;
   stand-in thud until the owner uploads `step`). Button clicks: preloaded UI sounds, mouse clicks sound on press.
-  Girl names (`Config/GirlNames`): real character names now (owner, after asking about copyright: "make the names
-  normal again, don't use similar ones"); 10 unknown girls keep plain invented names until the owner names them.
+  Girl names (`Config/GirlNames`): the owner's own list (Oct 18), matched by the code at the end of each model's name
+  (e.g. `_E2B52D` = Rem); Alya, Rize, Waguri, Yui and Miku Nakano had no code match and are best guesses (header).
 - **Movement and camera vs Huss Valley** (Oct 17, `docs/feel-study.md` gaps 4-9 and 14; spec `tests/Movement.spec`):
   - `Gameplay/Sprint`: you set off at `Run.StartSpeed` 16 and reach the cap in ~0.5 s (`Ramp`; was 9 over 1.2 s).
   - The huss (`Gameplay/Dash`): left/right along the **camera's** right; the body eases (0.08 s) to the nearer way
@@ -429,6 +429,15 @@ Owner's own words are in quotes. Read only the section you need.
 - `Gameplay/Sfx.play(name, {volume, pitch, at})`, `Sfx.loop("speed_wind")`. `Config/SoundIds` stays "" until the
   owner bulk-imports the files in Asset Manager and sends the IDs (`tools/studio/collect-sound-ids.lua` prints
   them). Built-in stand-ins meanwhile, never pitched above 1.1; silence beats a squeaky ping.
+
+- **Music** (`Gameplay/Music`, owner Oct 18: "randomly play in the background these audios in a volume that isnt too
+  loud"): the owner's songs in his place (SoundService > Music > Background_Music Bg1-9; Important_Song_Actions >
+  Winner_Music_Showcase), else IDs in `Config/Music` (empty: our built place has no songs until he sends the IDs).
+  Shuffled, no repeat, fades, `Config/Music.Volume` 0.3 through the Music group; the win song on the Round "Results"
+  event (background fades under it); the Secret cutscene quiets it. Bootstrap stops songs set to play by themselves.
+- **Settings > Audio** (owner: "many options"): a scrolling list of 6 rows: Master, Music, Effects, Button Sounds
+  (`InterfaceVolume`, the `Interface` group: Sfx sends `ui_*` there), Background Music ON/OFF + Next Song, Mute While
+  Unfocused.
 
 ## 13. Studio-only truths
 - The cloud can't reach Roblox: uploads, real purchases and the final look are the owner's steps. The upload and
