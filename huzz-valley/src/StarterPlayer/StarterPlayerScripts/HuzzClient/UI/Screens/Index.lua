@@ -130,17 +130,14 @@ local function visibleList(): { any }
 	return list
 end
 
--- A tier badge: coloured, white condensed caps. Never narrower/shorter than minW x h (AutomaticSize grows it to
--- fit longer names), anchored at its top-right corner.
-local function badge(parent: Instance, c, pos: UDim2, minW: number, h: number, textSize: number, z: number)
-	local b = Kit.text({
-		Name = "TierBadge", Text = badgeText(c), FontFace = F.Button, TextSize = textSize, TextColor3 = Color3.new(1, 1, 1),
-		TextXAlignment = Enum.TextXAlignment.Center, TextWrapped = false, BackgroundTransparency = 0, BackgroundColor3 = badgeColor(c),
-		AnchorPoint = Vector2.new(1, 0), Position = pos, Size = UDim2.fromOffset(minW, h), AutomaticSize = Enum.AutomaticSize.X, ZIndex = z, Parent = parent,
+-- A tier badge: coloured, white caps, as wide as its word (Kit.badge measures it) but never wider than maxW, so
+-- LEGENDARY / UNCOMMON never run past the card or the window (owner's screenshot: COMMON stuck out of the Index).
+-- Anchored at its top-right corner. textSize is the real size (Kit.badge doesn't narrow it).
+local function badge(parent: Instance, c, pos: UDim2, maxW: number, h: number, textSize: number, z: number)
+	return Kit.badge({
+		Name = "TierBadge", Text = badgeText(c), Color = badgeColor(c), Height = h, TextSize = textSize,
+		MinTextSize = math.max(8, textSize - 4), MaxWidth = maxW, AnchorPoint = Vector2.new(1, 0), Position = pos, ZIndex = z, Parent = parent,
 	})
-	Kit.attach(Kit.corner(3), b)
-	Kit.attach(Kit.pad(6, 6, 0, 0), b)
-	return b
 end
 
 -- The character picture with only its top corners rounded (one rounded copy plus a square copy clipped below the
@@ -170,8 +167,8 @@ local function picture(parent: Instance, c, isOwned: boolean, w: number, h: numb
 	end
 	local info = CARD_ART
 	local right = math.round(info.BadgeR * scale)
-	local minW = math.max(36, math.round((CW - info.BadgeR - info.BadgeX) * scale))
-	badge(holder, c, UDim2.new(1, -right, 0, 0), minW, math.round(info.BadgeH * scale), math.round(15 * scale), 3)
+	local maxW = w - right - math.round((info.Star.X + 30) * scale) -- (clear of the favourite star, top left)
+	badge(holder, c, UDim2.new(1, -right, 0, 0), maxW, math.round(info.BadgeH * scale), math.round(13 * scale), 3)
 	return holder, info
 end
 
@@ -222,6 +219,17 @@ local function card(parent: Instance, c, x: number, y: number): Card
 			else
 				statusText.Text = ""
 			end
+			-- The name fills the band left of the status, shrinking (16 to 13) and then cut with "..."; a name too long
+			-- for that keeps only the status tick (no word), so it can use the room (long names spilled over "Owned").
+			local word = isOwned and (isEq and "Equipped" or "Owned") or ""
+			statusText.Text = word
+			local function room(): number
+				local w = if statusIcon then 20 else 0
+				if statusText.Text ~= "" then w += 5 + math.ceil(Kit.textWidth(statusText.Text, statusText.FontFace, statusText.TextSize)) end
+				return CW - 9 - 8 - w - 6
+			end
+			if word ~= "" and Kit.textWidth(c.Name, name.FontFace, 13) + 1 > room() then statusText.Text = "" end
+			Kit.fitLine(name, room(), 16, 12)
 		end
 		shown.owned, shown.fav, shown.eq = isOwned, isFav, isEq
 		local sel = selected == c.Id
@@ -261,6 +269,7 @@ function Index.build(parent: Instance)
 	local search = new("Frame", { Name = "Search", Position = UDim2.fromOffset(302, 9), Size = UDim2.fromOffset(150, 30), BackgroundColor3 = COL.Field, BorderSizePixel = 0, ZIndex = 2, Parent = panel }, { Kit.corner(4), Kit.stroke(COL.FieldRim, 1) })
 	Kit.icon("Search", { Name = "Icon", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 9, 0.5, 0), Size = UDim2.fromOffset(15, 16), ZIndex = 2, Parent = search })
 	local placeholder = Kit.text({ Name = "Placeholder", Text = "Search characters...", FontFace = F.Label, TextSize = 12, TextColor3 = COL.Placeholder, Position = UDim2.fromOffset(31, 0), Size = UDim2.new(1, -36, 1, 0), TextWrapped = false, ZIndex = 2, Parent = search })
+	Kit.fitLine(placeholder, 114, 12, 10) -- (it ran a few px past the field)
 	local box: TextBox = new("TextBox", {
 		Name = "Box", Text = "", PlaceholderText = "", ClearTextOnFocus = false, BackgroundTransparency = 1, FontFace = F.Label, TextSize = 12,
 		TextColor3 = C.Text, TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = false, ClipsDescendants = true,
@@ -291,6 +300,9 @@ function Index.build(parent: Instance)
 	local nameLabel = Kit.name({ Name = "Name", Text = "", TextSize = 26, AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.fromOffset(0, 32), LayoutOrder = 1, ZIndex = 3 })
 	nameLabel = Kit.attach(nameLabel, nameRow)
 	local nameBadge: TextLabel? = nil
+	for _, old in nameRow:GetChildren() do -- (the badge used to sit in this row: drop a copy saved there)
+		if old.Name == "TierBadge" then old:Destroy() end
+	end
 	local statusRow = new("Frame", { Name = "StatusRow", Position = UDim2.fromOffset(565, 155), Size = UDim2.fromOffset(130, 25), BackgroundTransparency = 1, ZIndex = 3, Parent = panel },
 		{ Kit.list(Enum.FillDirection.Horizontal, 7, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Center) })
 	local statusIcon: ImageLabel? = nil
@@ -328,11 +340,24 @@ function Index.build(parent: Instance)
 				picture(frame, c, isOwned, math.round(CW * s), math.round(ART_H * s), s, { top = true, bottom = true })
 			end
 		end
+		-- The name gets the whole column (128 px): one line from 26 down to 19; a longer name takes two lines (19 to
+		-- 16) growing up from the row's foot; else one line down to 14, then "...". Her rarity badge sits on the
+		-- picture's top right corner, as on her card: the column is too narrow for name and badge side by side
+		-- (UNCOMMON alone is ~90 px at a readable size), which is how COMMON ended up past the window's edge.
 		nameLabel.Text = c.Name
+		local twoLines = false
+		if Kit.textWidth(c.Name, nameLabel.FontFace, 19) + 1 > 128 and string.find(c.Name, " ") then
+			twoLines = Kit.fitBlock(nameLabel, 128, 2, 19, 16) ~= nil
+		end
+		if not twoLines then Kit.fitLine(nameLabel, 128, 26, 14) end
+		local rowH = if twoLines then nameLabel.Size.Y.Offset else 32
+		nameLabel.Size = UDim2.fromOffset(nameLabel.Size.X.Offset, rowH)
+		nameRow.Position, nameRow.Size = UDim2.fromOffset(565, 149 - rowH), UDim2.fromOffset(128, rowH)
 		if nameBadge then nameBadge:Destroy() end
-		nameBadge = badge(nameRow, c, UDim2.new(), 47, 28, 18, 3)
-		;(nameBadge :: TextLabel).AnchorPoint = Vector2.zero
-		;(nameBadge :: TextLabel).LayoutOrder = 2
+		nameBadge = nil
+		if not previewArt:FindFirstChild("Framed") then -- (a card picture already wears its badge)
+			nameBadge = badge(previewArt, c, UDim2.new(1, -6, 0, 3), 112, 22, 15, 3)
+		end
 		if statusIcon then statusIcon:Destroy() end
 		statusIcon = Kit.icon(isOwned and "CheckEquipped" or "Lock", { Name = "Icon", Size = UDim2.fromOffset(isOwned and 25 or 20, isOwned and 25 or 23), LayoutOrder = 1, ZIndex = 3, Parent = statusRow })
 		statusText.Text = isEq and "Equipped" or isOwned and "Owned" or "Locked"

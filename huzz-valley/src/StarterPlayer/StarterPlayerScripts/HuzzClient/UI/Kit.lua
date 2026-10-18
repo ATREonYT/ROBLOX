@@ -126,6 +126,118 @@ function Kit.text(props: { [string]: any }): TextLabel
 	return new("TextLabel", p)
 end
 
+-- Text widths, so names and rarity badges are sized to fit their column (owner: "the rarities ... go out of the
+-- uis borders"). Roblox measures its own text (TextService; Gotham SSm is what the legacy Gotham fonts draw);
+-- where it can't (the offline preview), Montserrat Bold's advance widths stand in (1/1000 em, characters 32-126):
+-- the preview draws Montserrat for Gotham and it is a little wider, so what fits there fits in the game too.
+local ADVANCE = { 283, 289, 437, 720, 638, 877, 728, 230, 357, 358, 434, 599, 262, 386, 262, 392, 679, 392, 590, 592,
+	689, 595, 637, 620, 660, 637, 262, 262, 599, 599, 599, 588, 1035, 766, 765, 724, 826, 671, 639, 771, 808, 328, 541,
+	740, 604, 955, 808, 844, 732, 844, 735, 638, 618, 788, 746, 1163, 714, 676, 671, 368, 392, 368, 600, 500, 600, 617,
+	690, 591, 692, 631, 387, 700, 691, 301, 307, 655, 301, 1049, 691, 655, 690, 690, 431, 531, 435, 687, 598, 937, 595,
+	598, 543, 391, 309, 391, 599 }
+local okText, TextService = pcall(function() return game:GetService("TextService") end)
+local function weightOf(font: any): string
+	local ok, w = pcall(function() return font.Weight.Name end)
+	return if ok and type(w) == "string" then w else "Regular"
+end
+local LEGACY = { Heavy = "GothamBlack", Black = "GothamBlack", ExtraBold = "GothamBlack", Bold = "GothamBold", SemiBold = "GothamBold", Medium = "GothamMedium" }
+function Kit.textWidth(text: string, font: any, size: number): number
+	local weight = weightOf(font)
+	if okText and TextService then
+		local ok, v = pcall(function()
+			return TextService:GetTextSize(text, size, (Enum.Font :: any)[LEGACY[weight] or "Gotham"], Vector2.new(10000, 10000)).X
+		end)
+		if ok and type(v) == "number" and (v > 0 or text == "") then return v end
+	end
+	local k = if weight == "Heavy" or weight == "Black" or weight == "ExtraBold" then 1.04 elseif weight == "Bold" or weight == "SemiBold" then 1 else 0.97
+	local w = 0
+	for _, cp in utf8.codes(text) do w += ADVANCE[cp - 31] or 680 end
+	return w / 1000 * size * k
+end
+
+-- Fits a one-line label into maxW px: the biggest text size from size down to minSize whose words fit, else
+-- minSize and cut with "..." (TextTruncate, so Roblox never draws past the box either). Sets TextSize and the
+-- label's width (keepBox: leaves the box as it is, e.g. a centred label); returns the width it takes.
+function Kit.fitLine(label: TextLabel, maxW: number, size: number, minSize: number?, keepBox: boolean?): number
+	local s, lo = size, math.min(minSize or size, size)
+	local function width(at: number) return math.ceil(Kit.textWidth(label.Text, label.FontFace, at)) + 1 end
+	while s > lo and width(s) > maxW do s -= 1 end
+	local w = math.min(width(s), math.floor(maxW))
+	label.AutomaticSize = Enum.AutomaticSize.None
+	label.TextWrapped = false
+	label.TextTruncate = Enum.TextTruncate.AtEnd
+	label.TextSize = s
+	if not keepBox then label.Size = UDim2.new(0, w, label.Size.Y.Scale, label.Size.Y.Offset) end
+	local sh = label.Parent and label.Parent:FindFirstChild(label.Name .. "Shadow") -- (Kit.name's drop shadow)
+	if sh and sh:IsA("TextLabel") then
+		sh.AutomaticSize, sh.TextWrapped, sh.TextTruncate = Enum.AutomaticSize.None, false, Enum.TextTruncate.AtEnd
+		sh.TextSize, sh.Size = s, label.Size
+	end
+	return w
+end
+
+-- Fits a label on up to maxLines lines of maxW px (words wrap; a single word never breaks): the biggest size from
+-- size down to minSize that fits. Sets TextSize, TextWrapped and the label's size (lines x 1.15 x size tall) and
+-- returns the size and line count, or nil when even minSize doesn't fit (then nothing is changed).
+function Kit.fitBlock(label: TextLabel, maxW: number, maxLines: number, size: number, minSize: number): (number?, number?)
+	local words = string.split(label.Text, " ")
+	for s = size, minSize, -1 do
+		local lines, line = 1, ""
+		for _, word in words do
+			local try = if line == "" then word else line .. " " .. word
+			if Kit.textWidth(try, label.FontFace, s) + 1 <= maxW then
+				line = try
+			elseif line ~= "" and Kit.textWidth(word, label.FontFace, s) + 1 <= maxW then
+				lines, line = lines + 1, word
+			else
+				lines = maxLines + 1 -- (one word wider than the box)
+				break
+			end
+		end
+		if lines <= maxLines then
+			label.AutomaticSize = Enum.AutomaticSize.None
+			label.TextTruncate = Enum.TextTruncate.None
+			label.TextWrapped = true
+			label.TextSize = s
+			label.Size = UDim2.fromOffset(math.floor(maxW), lines * math.ceil(s * 1.15))
+			return s, lines
+		end
+	end
+	return nil, nil
+end
+
+-- A rarity or tier badge: a coloured chip with white caps, as wide as its word (measured) but never wider than
+-- MaxWidth: a long word drops to a smaller size first. Inside its box the word is TextScaled with its size as the
+-- cap, so even if Roblox's font runs wider than measured it shrinks instead of spilling out. props: Name, Text,
+-- Color, TextColor, Height, TextSize, MinTextSize, MaxWidth, Pad, Corner, Position, AnchorPoint, ZIndex,
+-- LayoutOrder, Parent. Returns the label (its Size is set).
+function Kit.badge(props: { [string]: any }): TextLabel
+	local h, pad = props.Height or 22, props.Pad or 6
+	local size, minSize = props.TextSize or 13, props.MinTextSize or 9
+	local maxW = props.MaxWidth or 200
+	local b = Kit.text({
+		Name = props.Name or "Badge", Text = props.Text or "", FontFace = props.FontFace or Theme.Fonts.Button,
+		TextColor3 = props.TextColor or Color3.new(1, 1, 1), TextXAlignment = Enum.TextXAlignment.Center, TextWrapped = false,
+		BackgroundTransparency = 0, BackgroundColor3 = props.Color or C.Slate, BorderSizePixel = 0,
+		AnchorPoint = props.AnchorPoint or Vector2.zero, Position = props.Position or UDim2.new(), ZIndex = props.ZIndex or 1,
+		LayoutOrder = props.LayoutOrder or 0, Parent = props.Parent,
+	})
+	while size > minSize and math.ceil(Kit.textWidth(b.Text, b.FontFace, size)) + 2 * pad + 1 > maxW do size -= 1 end
+	local w = math.min(math.ceil(Kit.textWidth(b.Text, b.FontFace, size)) + 2 * pad + 1, math.floor(maxW))
+	-- (set after making it: a part reused from StarterGui keeps its saved look otherwise)
+	b.AutomaticSize = Enum.AutomaticSize.None
+	b.Size = UDim2.fromOffset(w, h)
+	b.TextSize = size
+	b.TextScaled = true
+	b.TextTruncate = Enum.TextTruncate.None
+	local limit = b:FindFirstChildOfClass("UITextSizeConstraint") or new("UITextSizeConstraint", { Parent = b })
+	limit.MaxTextSize, limit.MinTextSize = size, math.min(minSize, size)
+	local pads = b:FindFirstChildOfClass("UIPadding") or Kit.attach(Kit.pad(pad, pad, 0, 0), b)
+	pads.PaddingLeft, pads.PaddingRight, pads.PaddingTop, pads.PaddingBottom = UDim.new(0, pad), UDim.new(0, pad), UDim.new(), UDim.new()
+	if not b:FindFirstChildOfClass("UICorner") then Kit.attach(Kit.corner(props.Corner or 3), b) end
+	return b
+end
+
 -- A soft dark copy one pixel under a label (the reference's names and headings sit on a slight drop shadow).
 local function shadowOf(label: TextLabel, color: Color3, transparency: number, dy: number)
 	local sh = label:Clone()
@@ -139,6 +251,11 @@ local function shadowOf(label: TextLabel, color: Color3, transparency: number, d
 	sh = Kit.attach(sh, label.Parent) :: TextLabel
 	label:GetPropertyChangedSignal("Text"):Connect(function() sh.Text = label.Text end)
 	label:GetPropertyChangedSignal("Visible"):Connect(function() sh.Visible = label.Visible end)
+	-- (a label fitted to its column, Kit.fitLine, changes size: the shadow follows)
+	for _, prop in { "TextSize", "Size", "TextTruncate", "AutomaticSize" } do
+		label:GetPropertyChangedSignal(prop):Connect(function() (sh :: any)[prop] = (label :: any)[prop] end)
+	end
+	label:GetPropertyChangedSignal("Position"):Connect(function() sh.Position = label.Position + UDim2.fromOffset(0, dy) end)
 	return sh
 end
 

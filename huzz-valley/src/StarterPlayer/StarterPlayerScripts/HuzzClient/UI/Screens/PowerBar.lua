@@ -51,7 +51,7 @@ local function card(parent: Instance, slot: number)
 	local press = new("UIScale", { Name = "Press", Parent = b })
 	local icon = Kit.text({
 		Name = "Icon", Text = "", TextSize = 28, FontFace = Theme.Fonts.Name, TextXAlignment = Enum.TextXAlignment.Center,
-		Position = UDim2.fromOffset(0, 4), Size = UDim2.new(1, 0, 0, 36), Parent = b,
+		Position = UDim2.fromOffset(0, 8), Size = UDim2.new(1, 0, 0, 34), Parent = b, -- (under the key pill: SPACE sat on the huss icon)
 	})
 	local name = Kit.text({
 		Name = "PowerName", Text = "", FontFace = Theme.Fonts.Tab, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Center,
@@ -165,6 +165,7 @@ function PowerBar.build(parent: Instance)
 			for slot, c in cards do
 				local def = if slot == 3 then HUSS else Powers[list[slot]]
 				c.icon.Text, c.name.Text = def.Icon, string.upper(def.Name)
+				Kit.fitLine(c.name, CARD.W - 6, 9, 7, true) -- (HEART SHIELD / CHARM WAVE were cut to "HEART SH...")
 			end
 		end
 		local now = Workspace:GetServerTimeNow()

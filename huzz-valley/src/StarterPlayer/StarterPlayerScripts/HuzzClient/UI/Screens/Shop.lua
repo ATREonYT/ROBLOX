@@ -173,6 +173,7 @@ local function buildPasses(body: Frame)
 		art(row, p, Vector2.new(171, h))
 		Effects.shine(row, { every = 5, delay = (i - 1) * 1.2, corner = 4, strength = 0.28, z = 5 }) -- a slow streak across the whole banner
 		local title = Kit.name({ Name = "Name", Text = string.upper(p.Name), FontFace = Theme.Fonts.Heading, TextSize = if #p.Name > 6 then 20 else 27, TextWrapped = false, Position = UDim2.fromOffset(183, 9), Size = UDim2.fromOffset(140, 32), Parent = row }) -- (long names smaller, so DANCE PACK ends before the divider)
+		Kit.fitLine(title, 140, if #p.Name > 6 then 20 else 27, 15, true) -- (DANCE PACK still ran 2 px over at 20)
 		new("UIGradient", { Rotation = 90, Color = ColorSequence.new(Color3.new(1, 1, 1), accent:Lerp(Color3.new(1, 1, 1), 0.55)), Parent = title })
 		new("Frame", { Name = "Underline", Position = UDim2.fromOffset(184, 42), Size = UDim2.fromOffset(120, 2), BackgroundColor3 = accent, BorderSizePixel = 0, Parent = row }, {
 			new("UIGradient", { Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(1, 1) }) }),
@@ -208,7 +209,7 @@ local function buildCosmetics(body: Frame)
 		local col, rowN = (i - 1) % 2, (i - 1) // 2
 		local c = card(body, p.Key, Vector2.new(-2 + col * (cw + 10), rowN * (ch + 8)), Vector2.new(cw, ch))
 		art(c, p, Vector2.new(160, ch))
-		Kit.name({ Name = "Name", Text = p.Name, TextSize = 17, Position = UDim2.fromOffset(170, 6), Size = UDim2.fromOffset(cw - 178, 22), Parent = c })
+		Kit.fitLine(Kit.name({ Name = "Name", Text = p.Name, TextSize = 17, Position = UDim2.fromOffset(170, 6), Size = UDim2.fromOffset(cw - 178, 22), Parent = c }), cw - 178, 17, 12, true)
 		Kit.text({ Name = "Blurb", Text = p.Blurb, TextSize = 14, LineHeight = 0.9, Position = UDim2.fromOffset(170, 31), Size = UDim2.fromOffset(cw - 178, 28), TextYAlignment = Enum.TextYAlignment.Top, Parent = c })
 		buyButton(c, p, { Position = UDim2.new(0, 170, 1, -8), AnchorPoint = Vector2.new(0, 1), Size = UDim2.fromOffset(cw - 178, 30), TextSize = 19, IconSize = 22 })
 	end
@@ -335,10 +336,10 @@ local function buildItems(body: Frame)
 			sw.Position, sw.Size, sw.BackgroundTransparency = UDim2.new(), UDim2.fromScale(1, 1), 1
 			new("UIScale", { Scale = 1.6, Parent = sw:FindFirstChild("Knife") or sw })
 		end
-		Kit.name({ Name = "Name", Text = item.Name, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(4, 7), Size = UDim2.fromOffset(ITEM.W - 8, 18), Parent = c })
+		Kit.fitLine(Kit.name({ Name = "Name", Text = item.Name, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(4, 7), Size = UDim2.fromOffset(ITEM.W - 8, 18), Parent = c }), ITEM.W - 8, 14, 10, true)
 		local slotText = CoinShop.SlotNames[item.Slot]
 		if item.Rarity then slotText = string.upper(item.Rarity) .. " · " .. slotText end
-		Kit.text({ Name = "Slot", Text = slotText, FontFace = Theme.Fonts.Label, TextSize = 11, TextColor3 = tint or ITEM.Slot, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(4, 25), Size = UDim2.fromOffset(ITEM.W - 8, 12), TextWrapped = false, Parent = c })
+		Kit.fitLine(Kit.text({ Name = "Slot", Text = slotText, FontFace = Theme.Fonts.Label, TextSize = 11, TextColor3 = tint or ITEM.Slot, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(4, 25), Size = UDim2.fromOffset(ITEM.W - 8, 12), TextWrapped = false, Parent = c }), ITEM.W - 8, 11, 8, true) -- (LEGENDARY · TITLE: the rarity must stay on the card)
 		local b = Kit.button({ Name = "Buy", Text = "", Icon = "CurrencyCoin", IconSize = 26, Gap = 8, TextSize = 20, FontFace = Theme.Fonts.Number, Style = "ItemBuy", Corner = 5, Position = UDim2.fromOffset(7, ITEM.H - 42), Size = UDim2.fromOffset(ITEM.W - 14, 36), Parent = c })
 		local icon = b.Instance:FindFirstChild("Icon", true) :: GuiObject?
 		local function refresh()

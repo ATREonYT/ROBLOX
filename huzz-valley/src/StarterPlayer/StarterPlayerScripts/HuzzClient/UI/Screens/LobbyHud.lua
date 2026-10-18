@@ -50,7 +50,10 @@ local function squareButton(parent: Instance, name: string, icon: string, y: num
 	new("UIGradient", { Rotation = 90, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, C.HudTop), ColorSequenceKeypoint.new(0.5, C.HudMid), ColorSequenceKeypoint.new(1, C.HudBottom) }), Parent = b.Instance })
 	-- icon centred in the space above the label
 	Kit.icon(icon, { Name = "Icon", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 22), Size = UDim2.fromOffset(36, 36), Parent = b.Instance })
-	Kit.text({ Name = "Label", Text = name, FontFace = Theme.Fonts.Label, TextSize = 13.5, TextXAlignment = Enum.TextXAlignment.Center, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -4), Size = UDim2.new(1, 0, 0, 14), Parent = b.Instance })
+	-- the label: Gotham Bold with the thin dark outline every Kit.button label has (it was Medium with none, the
+	-- only button label without it; owner's feedback: "a readable label")
+	local label = Kit.text({ Name = "Label", Text = name, FontFace = Theme.Fonts.Name, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Center, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -4), Size = UDim2.new(1, 0, 0, 14), Parent = b.Instance })
+	new("UIStroke", { Name = "Outline", Color = Kit.Styles.Hud.Rim, Thickness = 1, Transparency = 0.35, Parent = label })
 	b.onClick(onClick)
 	return b
 end
