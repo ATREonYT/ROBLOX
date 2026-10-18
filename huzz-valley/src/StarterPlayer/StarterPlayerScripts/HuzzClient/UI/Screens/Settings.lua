@@ -73,16 +73,29 @@ local function onOff(r: Frame, key: string, x: number, wOn: number, xOff: number
 	table.insert(syncers, function() seg.set(State.setting(key) == true) end)
 end
 
+-- Audio (owner, Oct 18: "make the setting page have like an audio page ... so they can have many options (turn down
+-- music, turn down sfx, master volume etc)"): six rows in a list that scrolls (the window keeps its size; the fifth
+-- row peeks out at the bottom so you can tell there's more). Volumes act at once (Main sets the sound groups).
+local AUDIO_ROWS = { 4, 62, 120, 178, 236, 294 }
 local function buildAudio(page: Frame)
-	local g = GEOM.Audio
+	local g = table.clone(GEOM.Audio)
+	g.Rows = AUDIO_ROWS
+	local top = GEOM.Audio.Rows[1] - 4
+	local list = new("ScrollingFrame", {
+		Name = "List", Position = UDim2.fromOffset(0, top), Size = UDim2.new(1, -2, 1, -top - 4), BackgroundTransparency = 1,
+		BorderSizePixel = 0, CanvasSize = UDim2.fromOffset(0, AUDIO_ROWS[#AUDIO_ROWS] + g.RowH + 6), ScrollBarThickness = 6,
+		ScrollBarImageColor3 = C.SubText, ScrollingDirection = Enum.ScrollingDirection.Y, ElasticBehavior = Enum.ElasticBehavior.Never,
+		Parent = page,
+	})
 	local defs = {
-		{ "MasterVolume", "AudioSpeaker", "Master Volume", "Overall game volume." },
-		{ "MusicVolume", "AudioMusic", "Music Volume", "Background music volume." },
-		{ "EffectsVolume", "AudioWaveform", "Effects Volume", "Sound effects volume." },
+		{ "MasterVolume", "AudioSpeaker", "Master Volume", "Everything you hear in the game." },
+		{ "MusicVolume", "AudioMusic", "Music Volume", "The background songs." },
+		{ "EffectsVolume", "AudioWaveform", "Effects Volume", "Footsteps, catches, powers and cheers." },
+		{ "InterfaceVolume", "ControlsMenu", "Button Sounds", "Clicks and menu sounds." },
 	}
 	for i, d in defs do
 		local key = d[1]
-		local r = row(page, g, i, d[2], d[3], d[4])
+		local r = row(list, g, i, d[2], d[3], d[4])
 		local pct = Kit.text({ Name = "Percent", Text = "", FontFace = Theme.Fonts.Number, TextSize = 16, TextXAlignment = Enum.TextXAlignment.Center, BackgroundTransparency = 0, BackgroundColor3 = C.PercentBox, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 591 - ROW_X, 0.5, 0), Size = UDim2.fromOffset(88, 34), Parent = r })
 		Kit.attach(Kit.corner(3), pct)
 		Kit.attach(Kit.stroke(C.KeyBoxRim, 1, 0.4), pct)
@@ -101,7 +114,15 @@ local function buildAudio(page: Frame)
 			pct.Text = v .. "%"
 		end)
 	end
-	local r = row(page, g, 4, "Monitor", "Mute While Unfocused", "Mute audio when the game window is not active.")
+	-- Background music on or off, and a button for the next song (Gameplay/Music)
+	local r = row(list, g, 5, "MusicBenefit", "Background Music", "Songs play in a random order.")
+	local skip = Kit.button({ Name = "NextSong", Text = "Next Song", Style = "Slate", TextSize = 15, Corner = 3, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 302 - ROW_X, 0.5, 0), Size = UDim2.fromOffset(120, 35), Parent = r })
+	skip.onClick(function()
+		local ok, Music = pcall(require, UI.Parent:WaitForChild("Gameplay"):WaitForChild("Music", 2))
+		if not (ok and Music and Music.skip()) then Toast.show("No songs to play yet.") end
+	end)
+	onOff(r, "MusicOn", 437, 118, 564, 116, 35, 18)
+	r = row(list, g, 6, "Monitor", "Mute While Unfocused", "Mute audio when the game window is not active.")
 	onOff(r, "MuteUnfocused", 437, 118, 564, 116, 35, 18)
 end
 

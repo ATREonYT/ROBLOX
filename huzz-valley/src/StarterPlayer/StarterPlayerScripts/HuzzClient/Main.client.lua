@@ -84,12 +84,14 @@ local function applyAudio()
 	local mute = State.setting("MuteUnfocused") and not focused
 	master.Volume = if mute then 0 else State.setting("MasterVolume") / 100
 	local music, effects = master:FindFirstChild("Music") :: SoundGroup?, master:FindFirstChild("Effects") :: SoundGroup?
+	local interface = master:FindFirstChild("Interface") :: SoundGroup?
 	if music then music.Volume = State.setting("MusicVolume") / 100 end
 	if effects then effects.Volume = State.setting("EffectsVolume") / 100 end
+	if interface then interface.Volume = State.setting("InterfaceVolume") / 100 end
 end
 UserInputService.WindowFocusReleased:Connect(function() focused = false; applyAudio() end)
 UserInputService.WindowFocused:Connect(function() focused = true; applyAudio() end)
-SoundService.ChildAdded:Connect(applyAudio)
+SoundService.DescendantAdded:Connect(function(d) if d:IsA("SoundGroup") then applyAudio() end end)
 
 State.changed(function()
 	Motion.reduced = State.setting("ReducedMotion") == true

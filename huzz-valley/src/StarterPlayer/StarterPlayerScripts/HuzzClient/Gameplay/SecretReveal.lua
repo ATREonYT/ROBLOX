@@ -833,6 +833,7 @@ function M.start()
 			task.wait(0.05)
 		end
 		model:SetAttribute("HuzzRevealing", true) -- (Gameplay/CarryAnimator leaves her to us meanwhile)
+		pcall(function() require(script.Parent.Music).quiet(Reveal.LENGTH) end) -- (the songs fade out under it)
 		local ok, step, cleanup, ground, k, mid = pcall(M.build, model, base, at)
 		if not ok then
 			warn("[Huzz] Secret reveal couldn't start: " .. tostring(step))

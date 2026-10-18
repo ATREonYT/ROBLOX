@@ -58,9 +58,10 @@ local FALLBACK = {
 	aura_pickup = { PING, 0.45, 1.1 },
 }
 
-local function group(): SoundGroup?
+-- Button and menu sounds go through the Interface group (Settings > Audio > Button Sounds), the rest through Effects.
+local function group(name: string?): SoundGroup?
 	local master = SoundService:FindFirstChild("Master")
-	local g = master and master:FindFirstChild("Effects")
+	local g = master and master:FindFirstChild(if name and string.sub(name, 1, 3) == "ui_" then "Interface" else "Effects")
 	return if g and g:IsA("SoundGroup") then g else nil
 end
 
@@ -107,7 +108,7 @@ local function readyCopies(name: string): { Sound }?
 		s.SoundId = id
 		s.Volume = volume
 		s.PlaybackSpeed = pitch
-		s.SoundGroup = group()
+		s.SoundGroup = group(name)
 		s.Parent = home()
 		list[i] = s
 	end
@@ -132,7 +133,7 @@ function Sfx.play(name: string, opts: { volume: number?, pitch: number?, at: Ins
 		turn[name] = (turn[name] or 0) % #list + 1
 		local s = list[turn[name]]
 		local id, volume, pitch = source(name)
-		s.SoundGroup = group()
+		s.SoundGroup = group(name)
 		s.Volume = volume * (o.volume or 1)
 		s.PlaybackSpeed = pitch * (o.pitch or 1) * (1 + (math.random() * 2 - 1) * level[2])
 		s.TimePosition = 0
@@ -148,7 +149,7 @@ function Sfx.play(name: string, opts: { volume: number?, pitch: number?, at: Ins
 	s.SoundId = id
 	s.Volume = volume * (o.volume or 1)
 	s.PlaybackSpeed = pitch * (o.pitch or 1) * (1 + (math.random() * 2 - 1) * level[2])
-	s.SoundGroup = group()
+	s.SoundGroup = group(name)
 	if o.at then
 		s.RollOffMaxDistance = 90
 		s.RollOffMinDistance = 8
@@ -182,7 +183,7 @@ function Sfx.loop(name: string, opts: { volume: number?, pitch: number?, at: Ins
 	s.Looped = true
 	s.Volume = level[1] * (o.volume or 1)
 	s.PlaybackSpeed = o.pitch or 1
-	s.SoundGroup = group()
+	s.SoundGroup = group(name)
 	if o.at then
 		s.RollOffMaxDistance = 90
 		s.RollOffMinDistance = 8

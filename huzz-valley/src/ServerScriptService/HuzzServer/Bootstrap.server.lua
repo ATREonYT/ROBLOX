@@ -6,10 +6,22 @@ local HuzzServer = script.Parent
 local master = SoundService:FindFirstChild("Master") or Instance.new("SoundGroup")
 master.Name = "Master"
 master.Parent = SoundService
-for _, name in { "Music", "Effects" } do
+for _, name in { "Music", "Effects", "Interface" } do
 	local g = master:FindFirstChild(name) or Instance.new("SoundGroup")
 	g.Name = name
 	g.Parent = master
+end
+-- The owner's songs (SoundService > Music > Background_Music, Important_Song_Actions) are played by each client
+-- (Gameplay/Music) through the Music group; stop any set to play by themselves, so nobody hears two songs at once.
+do
+	local songs = SoundService:FindFirstChild("Music")
+	if songs then
+		for _, s in songs:GetDescendants() do
+			if s:IsA("Sound") then
+				s.Playing = false
+			end
+		end
+	end
 end
 
 -- Studio only: the owner's raw animations go where clients can play them (Shared/AnimationLibrary). In the live

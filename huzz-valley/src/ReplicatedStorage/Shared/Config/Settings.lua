@@ -10,6 +10,8 @@ Settings.Defaults = {
 	MasterVolume = 80,
 	MusicVolume = 60,
 	EffectsVolume = 80,
+	InterfaceVolume = 80, -- button clicks and menu sounds
+	MusicOn = true, -- the background songs (Gameplay/Music)
 	MuteUnfocused = true,
 	-- Controls (KeyCode names)
 	MenuKey = "M",
@@ -36,7 +38,7 @@ local function isBool(v) return type(v) == "boolean" end
 local function isChoice(v) return type(v) == "string" and table.find(Settings.Choices, v) ~= nil end
 
 local VALID: { [string]: (any) -> boolean } = {
-	MasterVolume = isVolume, MusicVolume = isVolume, EffectsVolume = isVolume, MuteUnfocused = isBool,
+	MasterVolume = isVolume, MusicVolume = isVolume, EffectsVolume = isVolume, InterfaceVolume = isVolume, MusicOn = isBool, MuteUnfocused = isBool,
 	ShowKeyHints = isBool, InventoryVisibility = isChoice, InviteRequests = isChoice, CompanionEffects = isBool,
 	ReducedMotion = isBool, TutorialDone = isBool,
 	MenuKey = function(v)
