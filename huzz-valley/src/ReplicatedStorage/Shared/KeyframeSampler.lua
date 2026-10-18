@@ -2,7 +2,9 @@
 	Plays a Roblox KeyframeSequence by hand: the pose of every part at any time, as Roblox's Animator would (each
 	Pose's CFrame is its joint's Transform; between keyframes eased by the pose's EasingStyle). Pure, so the
 	offline preview (tools/preview/motion3d/kfs.luau) uses this same code, and the game uses it to put a dance on
-	a rig that can't play it directly (Shared/DanceRetarget: your companion girl is R6, the dances are R15).
+	a rig that can't play it directly (Shared/DanceRetarget: your companion girl is R6, the dances are R15), the
+	movement pack on the girls (Shared/GirlMoves) and on every other player (Gameplay/PlayerMoves: nothing to upload,
+	so everyone walks the same in Studio and live). Keyframes are found by binary search (cheap for many players).
 	  KeyframeSampler.load(keyframeSequence) -> anim { length, loop, tracks = { [partName] = {{t, cf, style, dir}} } }
 	  KeyframeSampler.sample(anim, t) -> { [partName] = CFrame }
 ]]
@@ -64,13 +66,17 @@ function KeyframeSampler.sample(anim, t)
 	end
 	local out = {}
 	for name, list in anim.tracks do
-		local a, b = list[1], list[#list]
-		for i = 1, #list - 1 do
-			if list[i].t <= t and list[i + 1].t >= t then
-				a, b = list[i], list[i + 1]
-				break
+		-- the first keyframe at or after t (a binary search: Gameplay/PlayerMoves samples every player each frame)
+		local lo, hi = 2, #list
+		while lo < hi do
+			local mid = (lo + hi) // 2
+			if list[mid].t >= t then
+				hi = mid
+			else
+				lo = mid + 1
 			end
 		end
+		local a, b = list[math.max(lo - 1, 1)], list[lo] or list[1]
 		if t <= list[1].t then
 			out[name] = list[1].cf
 		elseif t >= list[#list].t then

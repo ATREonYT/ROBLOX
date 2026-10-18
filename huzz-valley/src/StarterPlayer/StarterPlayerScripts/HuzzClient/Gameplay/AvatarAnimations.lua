@@ -4,8 +4,9 @@
 	  - When Idle, Walk and Run can all play: Gameplay/Locomotion plays them itself (Roblox's Animate switched
 	    off), cross-faded smoothly by your speed (owner: "make it more smooth just like in Huss Valley").
 	  - Otherwise whatever there is gets swapped into Roblox's Animate script.
-	The tracks replicate, so everyone sees them. With nothing to play (live game, not published yet) Roblox's
-	defaults stay and Gameplay/RunAnimator draws the scripted Huss Valley run instead.
+	Published tracks replicate, so everyone sees them. With nothing to play (live game, not published yet) Roblox's
+	Animate stays underneath and Gameplay/PlayerMoves draws the pack's Idle/Walk/Run over it by hand, on every
+	screen (yours too); Studio's temporary copies play only on your screen, so PlayerMoves draws you on the others.
 ]]
 local M = {}
 

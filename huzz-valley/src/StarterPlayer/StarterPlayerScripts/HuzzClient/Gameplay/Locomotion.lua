@@ -4,11 +4,14 @@
 	animations itself (Shared/AnimationLibrary: published, or raw in Studio), all at once on your Animator, their
 	weights and speeds set every frame by Shared/LocomotionMix:
 	  - cross-faded by your smoothed speed (no pops), the feet kept in step between walk and run;
-	  - played at a calm rate (the run never frantic, a little foot slide at full speed);
+	  - each loop played at the speed that keeps its feet planted (Config/Run.Loco, Oct 18: "make the walking
+	    animations way way better"), scaled to your avatar's size, the run capped at HV's ~4.6 steps a second;
 	  - jump / fall / climb fade in over them in the lobby;
 	  - a little lean into turns and into speeding up on top (Motor6D.Transform, Gameplay/Frame order 12: after
 	    Roblox's animations and the scripted run, before the carry, the stab and the knockdown).
-	Tracks on your own Animator replicate, so other players see the same. Dances and the stab are Action tracks: they
+	Published tracks replicate, so other players see the same. Studio's temporary copies play only on this screen:
+	there Gameplay/PlayerMoves draws your walk on everyone else's screen by hand (it skips you here while
+	Locomotion.drives(character) says this runs). Dances and the stab are Action tracks: they
 	play over all this (the lean holds still while they do); so does the huss (drawn by Gameplay/RunAnimator from
 	DashAt, Config/Run.Dash.Length), so its quick turn and push don't tip the body. AvatarAnimations starts this only when
 	the owner's Idle, Walk and Run can all play (otherwise Roblox's Animate stays, with their animations swapped in).
@@ -22,7 +25,8 @@ local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Library = require(Shared.AnimationLibrary)
-local DASH_LENGTH = require(Shared.Config.Run).Dash.Length
+local RunConfig = require(Shared.Config.Run)
+local DASH_LENGTH = RunConfig.Dash.Length
 local Mix = require(Shared.LocomotionMix)
 local RunMotion = require(Shared.RunMotion)
 local Frame = require(script.Parent.Frame)
@@ -82,7 +86,9 @@ local function attach(character: Model)
 	end
 	task.defer(stopOthers, animator, keep) -- (whatever Animate had started before it stopped)
 
-	local mix = Mix.new()
+	-- (a bigger avatar's legs take longer steps: every speed scales with its height)
+	local size = math.clamp((humanoid.HipHeight + root.Size.Y / 2) / RunConfig.Loco.RootHeight, 0.5, 2)
+	local mix = Mix.new(Mix.sized(RunConfig.Loco, size))
 	local sent = {} -- name -> { weight, speed } last sent (only real changes go out: they replicate)
 	for name, t in tracks do
 		local w = mix.weights[name] or 0
@@ -230,6 +236,11 @@ end
 -- True when this controller drives your walk and run (the owner's Idle, Walk and Run can all play here).
 function Locomotion.available(): boolean
 	return Library.has("Idle") and Library.has("Walk") and Library.has("Run")
+end
+
+-- True while this controller is playing the pack on this character (yours, its tracks loaded).
+function Locomotion.drives(character: Model?): boolean
+	return current ~= nil and character ~= nil and current.character == character and character.Parent ~= nil
 end
 
 return Locomotion

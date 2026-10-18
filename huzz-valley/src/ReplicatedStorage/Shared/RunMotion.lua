@@ -9,13 +9,15 @@
 	        every joint while it plays, over the scripted run or over the owner's pack run (your own character
 	        too: Gameplay/RunAnimator), so everyone sees the same huss. (Forward and back poses stay for old saves
 	        of DashDir but the huss is sideways only.)
-	Walking pace keeps Roblox's own walk; the run blends in with speed.
+	The scripted run is only a stand-in now: everyone walks and runs with the owner's pack (Gameplay/Locomotion,
+	Gameplay/PlayerMoves; owner, Oct 18: "player to player less choppy"), and RunAnimator calls step() with speed 0
+	on them, so only the huss and the cast are drawn here. The run shows only until the pack's folder arrives.
 	Cast: while a power winds up, both arms reach forward and up and the body leans in (Config/Run.Cast).
 	pushSpeed: the huss's (and the lunge's) ground speed `age` seconds in, easing from Speed to EndSpeed.
 
 	Pure maths on R15 joints, so the offline preview runs this exact code; HuzzClient/Gameplay/
-	RunAnimator feeds it every character. Written to Motor6D.Transform after Roblox's animations; the
-	carry, the stab and the knockdown are layered after it. An uploaded run in Config/Animations.Run
+	RunAnimator feeds it every character. Written to Motor6D.Transform after Roblox's animations and the hand-played
+	pack (Gameplay/Frame order 8, 10 here); the carry, the stab and the knockdown are layered after it. An uploaded run in Config/Animations.Run
 	replaces it.
 ]]
 local Config = require(script.Parent.Config.Run)

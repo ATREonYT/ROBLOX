@@ -1,11 +1,13 @@
 --[[
-	Plays the Huss Valley run and the huss dash (Shared/RunMotion) on every R15 character on this
-	client, so everyone sees everyone run and dash the same way (the dash from the character's
-	DashAt/DashDir attributes, Gameplay/Dash). Off when the owner's run is published (Config/Animations.Run). When
-	only Studio's raw copy plays on your own character (Gameplay/Locomotion), your run is theirs but the huss is
-	still drawn here, so your huss is the same tuned move everyone else sees (Config/Run.Dash). A carrier keeps the
-	carry arms (CarryAnimator layers after this). A power's wind-up draws the cast pose here too (HuzzCastAt /
-	HuzzCastLen, set on this screen by Gameplay/PowerEffects), on everyone.
+	Draws the huss dash and a power's cast pose (Shared/RunMotion) on every R15 character on this client, so
+	everyone sees everyone huss the same way (the dash from the character's DashAt/DashDir attributes,
+	Gameplay/Dash; the cast from HuzzCastAt / HuzzCastLen, set on this screen by Gameplay/PowerEffects). Off when the
+	owner's run is published (Config/Animations.Run).
+	The walk and run under it are the owner's pack: on your own character through your Animator
+	(Gameplay/Locomotion) and on everyone else through Gameplay/PlayerMoves (owner, Oct 18: "player to player less
+	choppy"), so here only the huss and the cast (RunMotion with speed 0: `dashOnly`). Only while the pack's folder
+	hasn't arrived (PlayerMoves.drives is false) does this still draw the old scripted Huss Valley run, driven by
+	the replicated velocity. A carrier keeps the carry arms (CarryAnimator layers after this).
 ]]
 local M = {}
 
@@ -15,19 +17,15 @@ function M.start()
 	local Workspace = game:GetService("Workspace")
 
 	local Shared = ReplicatedStorage:WaitForChild("Shared")
-	local Library = require(Shared.AnimationLibrary)
 	local Animations = require(Shared.Config.Animations)
 	local RunMotion = require(Shared.RunMotion)
 	local Frame = require(script.Parent.Frame)
+	local PlayerMoves = require(script.Parent.PlayerMoves)
+	local Locomotion = require(script.Parent.Locomotion)
 	-- The owner's run plays instead (Gameplay/Locomotion, the huss: Gameplay/Dash). Published: for everyone.
-	-- Only Studio's temporary copy: that ID works on this screen alone, so other players still get the scripted run.
 	if Animations.Run ~= "" then
 		return
 	end
-	if game:GetService("RunService"):IsStudio() then
-		ReplicatedStorage:WaitForChild("HuzzAnimations", 5) -- (Bootstrap copies the raw ones over in Studio)
-	end
-	local skipMine = Library.has("Run")
 
 	local carried = Workspace:WaitForChild("HuzzCarried")
 	local recs = {} -- Player -> { character, rec }
@@ -47,8 +45,9 @@ function M.start()
 			end
 		end
 		for _, p in Players:GetPlayers() do
-			local dashOnly = skipMine and p == Players.LocalPlayer -- (your run is the pack's: only the huss here)
 			local character = p.Character
+			-- the walk and run are the pack's (yours on your Animator, everyone's by hand): only the huss here
+			local dashOnly = PlayerMoves.drives(character) or Locomotion.drives(character)
 			local r = recs[p]
 			-- (Re)build when the character changes, its joints were replaced, or it wasn't complete yet.
 			if r and (r.character ~= character or not (r.rec and r.rec.joints.root.Parent)) then

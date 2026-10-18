@@ -1,14 +1,24 @@
 --[[
-	How your own walk and run blend (owner: "make it more smooth just like in Huss Valley"). Pure maths, so the
-	offline video (tools/preview/motion3d/ramp_scene.luau) runs this exact code; Gameplay/Locomotion feeds it
-	your character every frame and turns the answer into AnimationTrack weights and speeds.
+	How the walk and run blend, for your own character and everyone else's (owner: "make it more smooth just like in
+	Huss Valley"; Oct 18: "player to player less choppy" and "make the walking animations way way better"). Pure
+	maths, so the offline video (tools/preview/motion3d/remote_walk_scene.luau, ramp_scene.luau) and the spec
+	(tests/Locomotion.spec.luau) run this exact code. Gameplay/Locomotion feeds it your character (AnimationTrack
+	weights and speeds); Gameplay/PlayerMoves feeds it every other R15 character (the pack sampled by hand).
 
-	  - Idle, Walk and Run all play at once and cross-fade by your speed, smoothed by a critically damped spring
+	  - Idle, Walk and Run all play at once and cross-fade by speed, smoothed by a critically damped spring
 	    (no pops, ~0.35 s to settle). Their weights always add up to 1.
 	  - The feet stay in step through the cross-fade: one shared stride phase drives both loops, at a cadence
-	    blended between the walk's and the run's.
-	  - Calm playback: each loop is sped up or slowed down with your speed but kept inside Config/Run.Loco's
-	    rates (the run never goes past ~1.1x, so at full speed the feet slide a little, as in Huss Valley).
+	    blended between the walk's and the run's. The phase only ever moves forward by cadence x dt, so a jumpy
+	    speed can never make the feet pop.
+	  - Planted feet (Oct 18): WalkAt / RunAt in Config/Run.Loco are the speeds at which the pack's own loops keep
+	    the foot on the ground still (measured: tools/preview/motion3d/pack_measure.luau), and the walk hands over
+	    to the run between 6 and 11 studs/s, where both loops step at the same rate. Before, the walk was asked to
+	    cover 16 studs/s at 1.3x (the planted foot slid along at half the ground speed). The run's rate is capped at HV's ~4.6
+	    steps a second, so past ~16 studs/s the feet slide a little, as in Huss Valley.
+	  - sized(): the same numbers for a bigger or smaller avatar (longer legs take longer steps).
+	  - tracker()/track(): another player's speed from where their body is over time (a short window, holding
+	    through network stalls, ignoring teleports), never from their replicated velocity, which jumps.
+	  - pose(): the blended pose of the sampled loops (Gameplay/PlayerMoves).
 	  - Jump, Fall and Climb fade in over the ground loops when the Humanoid leaves the ground or climbs.
 	  - lean(): a small procedural touch on top: rolling into turns and pitching forward as you speed up
 	    (back a little as you stop), both critically damped.
@@ -58,6 +68,7 @@ end
 	climbSpeed  (climbing) studs/s up or down
 	lengths     { Walk = s, Run = s } the loops' lengths in seconds
 	jumped      true on the frame you jump (restarts the jump pose)
+	stride      (optional, default 1) scales the stride rate: in the air the legs slow down instead of running on
 	Fills s.weights, s.speeds and s.times. ]]
 function LocomotionMix.step(s, dt, input)
 	local C = s.C
@@ -71,7 +82,7 @@ function LocomotionMix.step(s, dt, input)
 	local runRate = clamp(v / C.RunAt, C.RunRate[1], C.RunRate[2])
 	local walkLen = (input.lengths and input.lengths.Walk) or 1
 	local runLen = (input.lengths and input.lengths.Run) or 0.5
-	local cadence = (walkRate / walkLen) * (1 - run) + (runRate / runLen) * run -- strides a second
+	local cadence = ((walkRate / walkLen) * (1 - run) + (runRate / runLen) * run) * (input.stride or 1) -- strides a second
 	s.phase = (s.phase + cadence * dt) % 1
 	s.speeds.Walk, s.speeds.Run = cadence * walkLen, cadence * runLen
 	s.times.Walk = ((s.phase + C.WalkPhase) % 1) * walkLen
@@ -127,6 +138,100 @@ end
 function LocomotionMix.leanCFrame(roll, pitch, footDrop)
 	local f = CFrame.new(0, -footDrop, 0)
 	return f * CFrame.Angles(pitch, 0, roll) * f:Inverse()
+end
+
+-- A copy of a Loco config for an avatar `k` times the standard size (legs k times as long: every speed scales).
+local SPEEDS = { "MoveFrom", "MoveFull", "RunFrom", "RunFull", "WalkAt", "RunAt" }
+function LocomotionMix.sized(config, k: number)
+	local c = table.clone(config)
+	for _, key in SPEEDS do
+		c[key] = config[key] * k
+	end
+	return c
+end
+
+-- How fast the planted foot moves back under the body (studs/s) as the loops play now (0 standing). With the body
+-- moving at the ground speed, the feet slide by the difference. (The walk at 1x moves its foot at C.WalkAt, the run
+-- at C.RunAt.)
+function LocomotionMix.footSpeed(s): number
+	local w = s.weights
+	local total = w.Walk + w.Run
+	if total < 1e-3 then
+		return 0
+	end
+	return (w.Walk * s.speeds.Walk * s.C.WalkAt + w.Run * s.speeds.Run * s.C.RunAt) / total
+end
+
+-- Steps a second as the loops play now (a stride is two steps). lengths: { Walk = s, Run = s }.
+function LocomotionMix.stepsPerSecond(s, lengths): number
+	local w = s.weights
+	local total = w.Walk + w.Run
+	if total < 1e-3 then
+		return 0
+	end
+	return 2 * (w.Walk * s.speeds.Walk / lengths.Walk + w.Run * s.speeds.Run / lengths.Run) / total
+end
+
+--[[ Another player's ground speed from where their body is, frame by frame (Config/Run.Track):
+	  - the distance covered over the last Window seconds, so a frame where the network didn't move them and the
+	    next where they jump twice as far average out;
+	  - a body that hasn't moved at all is a network stall for up to Hold seconds (the last speed is kept), then a
+	    real stop;
+	  - a jump faster than Teleport studs/s (respawn, the round moving everyone) starts the window over.
+	track(tr, now, pos) returns (ground speed, up speed), studs/s. Feed the ground speed to step(): its spring
+	smooths what's left. ]]
+function LocomotionMix.tracker(config)
+	return { C = config or Run.Track, list = {}, speed = 0, up = 0, last = nil }
+end
+
+function LocomotionMix.track(tr, now: number, pos: Vector3): (number, number)
+	local C, list = tr.C, tr.list
+	local last = tr.last
+	if last then
+		local dt = now - last.t
+		if dt <= 0 then
+			return tr.speed, tr.up
+		end
+		local dist = (pos - last.p).Magnitude
+		if dist > C.TeleportMin and dist / dt > C.Teleport then
+			table.clear(list) -- (a teleport: start over from here, keeping the speed we had)
+		elseif dist < 1e-3 and dt < C.Hold then
+			return tr.speed, tr.up -- (not moved since the last sample: most likely the network, wait for an update)
+		end
+	end
+	local sample = { t = now, p = pos }
+	tr.last = sample
+	table.insert(list, sample)
+	while #list > 2 and now - list[2].t >= C.Window do
+		table.remove(list, 1)
+	end
+	local first = list[1]
+	local span = now - first.t
+	if span >= C.MinSpan then
+		local d = pos - first.p
+		tr.speed = math.min(Vector3.new(d.X, 0, d.Z).Magnitude / span, C.MaxSpeed)
+		tr.up = d.Y / span
+	end
+	return tr.speed, tr.up
+end
+
+--[[ The blended pose { [partName] = CFrame }: Idle at idleT, Walk and Run at the shared phase's times, each loop
+	taking its share by weight (only the loops that show are sampled). sample = Shared/KeyframeSampler.sample. ]]
+function LocomotionMix.pose(s, anims, idleT: number, sample)
+	local w = s.weights
+	local out, total = {}, 0
+	for _, item in { { anims.Idle, idleT, w.Idle }, { anims.Walk, s.times.Walk, w.Walk }, { anims.Run, s.times.Run, w.Run } } do
+		local weight = item[3]
+		if weight > 1e-3 and item[1] then
+			total += weight
+			local f = weight / total -- (running blend: each loop takes its share of what's there so far)
+			for name, cf in sample(item[1], item[2]) do
+				local have = out[name]
+				out[name] = if have then have:Lerp(cf, f) else cf
+			end
+		end
+	end
+	return out
 end
 
 return LocomotionMix

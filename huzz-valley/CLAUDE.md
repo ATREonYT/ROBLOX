@@ -83,7 +83,7 @@ Owner's own words are in quotes. Read only the section you need.
 
 ## 4. Checks, previews, builds (Lune 0.10.5 at `/root/bin/lune`; run before every commit)
 - `PATH=/root/bin:$PATH bash tools/check.sh`: compiles every script; specs (RoundRules, CarryMath, GirlMotion,
-  GirlMoves, StabMotion, DownMotion, GirlRoll, CrateRoll, SpinWheel); **the full-game simulation** (`tools/sim/round_sim.luau`: real server code, bots
+  GirlMoves, StabMotion, DownMotion, Movement, Locomotion, PlayerMoves, GirlRoll, CrateRoll, SpinWheel); **the full-game simulation** (`tools/sim/round_sim.luau`: real server code, bots
   that run, stab, lunge, rescue, use powers; 7 setups). `lune run huzz-valley/tools/sim/round_sim.luau audit` (repo root) prints the
   loop numbers (stage times, waiting, win rates by player count, on the real map size) for `docs/loop-audit.md`. Its stubs (e.g. `KnifeService`) must get any new function
   RoundService calls, or games stop with "attempt to call a nil value".
@@ -337,9 +337,24 @@ Owner's own words are in quotes. Read only the section you need.
   compact sideways lean), and 25 `Dance_<Id>` (our own names; the originals are other games' emotes).
 - `Shared/AnimationLibrary.id`: published ID, else in Studio a temporary ID (KeyframeSequenceProvider), else "".
   Temporary IDs play only on the client that made them. The live game needs `tools/studio/publish-animations.lua`.
-- `Gameplay/Locomotion` blends Idle/Walk/Run by smoothed speed; walk fades into run as you hold W (`RunFrom` 13 to
-  `RunFull` 21). The pack Sprint at `RunAt` 25 is ~4.6 steps/s at runner speed, HV's rate; the scripted run and
-  footsteps match it (`Run.Stride` 12, was 9.5). Scripted arms out 10° (was 22).
+- **Everyone walks with the pack, Studio and live, nothing uploaded** (owner Oct 18: "player to player less choppy",
+  "make the walking animations way way better"): `Gameplay/Locomotion` plays Idle/Walk/Run on your own Animator when
+  it can (Studio); `Gameplay/PlayerMoves` (Frame order 8) samples the same three from `HuzzGirlMoves` by hand onto
+  every other R15 body's Motor6D.Transform (and yours in live), blended by `LocomotionMix`. Others' speed comes from
+  their body's position over a 0.25 s window (`LocomotionMix.track`, `Run.Track`: holds through 0.15 s network stalls,
+  ignores teleports), never their replicated velocity (that jumpy number made the old scripted legs stutter). Fades
+  out for a dance/Action track; downed = speed 0 under the knockdown; carriers' arms go to CarryAnimator. LOD:
+  re-sampled every frame within 70 studs, 30/s to 160, 15/s beyond or behind the camera. `RunAnimator` now draws only
+  the huss and cast on top (`dashOnly`); its scripted run shows only before the pack's folder arrives.
+- **Planted feet** (`Config/Run.Loco`, measured by `motion3d/pack_measure.luau`): the pack Walk keeps its foot still at
+  4.35 studs/s (`WalkAt` 4.3, was 8), the Run at 14 (`RunAt` 14, was 25); walk hands over to run at 6-11 studs/s (was
+  13-21, so the walk skated at half the ground speed at the 16 you set off at). Foot slide is under 5% up to 16
+  studs/s; the run is capped at 1.12x = 4.6 steps/s (HV's), so at 28 the feet slide ~44% like HV's quick steps. Speeds
+  scale with avatar size (`RootHeight` 3). Specs `tests/Locomotion.spec` (pure maths) and `tests/PlayerMoves.spec`
+  (the real Gameplay files on fake bodies). Film `docs/previews/remote-walk.mp4` (`motion3d/remote_walk_scene.luau`:
+  before/after over a jumpy network, then the set-off from behind); sheet `docs/previews/walk-vs-hv.jpg`
+  (`motion3d/walk_sheet.py`): full run ~0.1 s after W in both. Footstep sounds (`Feel`, `Run.Stride` 12) still step
+  by distance, so below ~28 they're slower than the feet. Not seen in Studio yet.
 - **The huss pose is `Shared/RunMotion`'s for everyone, you too** (`Gameplay/RunAnimator` draws only the huss on your
   own character when your run is the pack's): a wide low crouch (Oct 17 critic: "a stiff tilt"): Crouch 0.75 (head
   drops 19%), leaning ~28° mostly at the waist (`Run.Dash` SideRoll 12 + SideWaist 14), outside leg out 55°, inside

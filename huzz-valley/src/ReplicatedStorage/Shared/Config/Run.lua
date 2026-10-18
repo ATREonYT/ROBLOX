@@ -26,15 +26,27 @@ return {
 	ArmOut = 10, -- arms a little out: Huss Valley's swing front to back, not out to the sides (was 22)
 	Elbow = 95,
 
-	-- Your own walk and run when the owner's animations can play (Shared/LocomotionMix, Gameplay/Locomotion):
-	-- Idle, Walk and Run play together and cross-fade by your (smoothed) speed, their feet kept in step.
+	-- The owner's walk and run on every R15 character (Shared/LocomotionMix): your own through Gameplay/Locomotion
+	-- when the Animator can play the pack, everyone else (and you, in the live game) through Gameplay/PlayerMoves.
+	-- Idle, Walk and Run play together and cross-fade by the (smoothed) speed, their feet kept in step.
+	-- Owner, Oct 18: "make the walking animations way way better". Measured on the pack
+	-- (tools/preview/motion3d/pack_measure.luau, standard R15): the Walk's planted foot keeps still at 4.35 studs/s
+	-- (1 s loop, 2 steps a second), the Run's at 14 studs/s (0.483 s loop, 4.1 steps a second). The old numbers
+	-- played the walk at 1x at 8 studs/s and asked it to cover the 16 studs/s you set off at (the planted foot slid
+	-- along at half the ground speed: the "skating" walk), and blended walk into run between 13 and 21, so the slow walk
+	-- still showed while you ran.
 	Loco = {
-		SpeedResponse = 13, -- how fast the blend follows your speed (higher = snappier; 13 settles in ~0.35 s)
+		SpeedResponse = 13, -- how fast the blend follows the speed (higher = snappier; 13 settles in ~0.35 s)
 		MoveFrom = 0.4, MoveFull = 3, -- studs/s: idle fades into the walk between these
-		RunFrom = 13, RunFull = 21, -- studs/s: the walk fades into the run between these (you set off at 16, so the
-		-- walk still shows for the first moment and is a full run by the lobby's 22)
-		WalkAt = 8, WalkRate = { 0.75, 1.3 }, -- the walk plays at 1x at WalkAt studs/s, kept within these rates
-		RunAt = 25, RunRate = { 0.85, 1.15 }, -- the run too: calm, never frantic (a little foot slide, as HV)
+		RunFrom = 6, RunFull = 11, -- studs/s: the walk hands over to the run between these (was 13 to 21), where both
+		-- loops step at nearly the same rate (2.3 to 3.3 steps/s), so the swap never pops. You set off at 16:
+		-- a run at once, like HV
+		WalkAt = 4.3, WalkRate = { 0.5, 1.7 }, -- the walk plays at 1x at 4.3 studs/s (the pack's own: was 8), within
+		-- these rates: its feet stay planted from 2.2 to 7.3 studs/s (a slow thumbstick, slowing down)
+		RunAt = 14, RunRate = { 0.55, 1.12 }, -- the run too (was 25): planted feet up to ~16 studs/s, then held at
+		-- 1.12x = 4.6 steps a second (HV's ~4.6, never frantic), so at a runner's 28 the feet slide (~44%), like HV's quick steps
+		RootHeight = 3, -- studs from the ground to the root's middle on a standard R15 avatar (HipHeight 2 + half the
+		-- root): a taller avatar's speeds above scale up with it (longer legs, longer steps), a small one's down
 		WalkPhase = 0.8, RunPhase = 0.245, -- where each loop has the right leg forward (keeps the feet in step)
 		AirIn = 0.08, AirOut = 0.18, -- seconds: jump/fall/climb fade in and out
 		JumpHold = 0.32, -- seconds the jump pose plays before the fall takes over
@@ -45,6 +57,18 @@ return {
 		AccelLean = 0.12, -- degrees of forward pitch per stud/s² of speeding up...
 		MaxPitch = 5, MaxPitchBack = 3, -- ...up to these (leaning back a little when you stop)
 		LeanResponse = 9,
+	},
+	-- Other players (owner, Oct 18: "player to player less choppy"): their speed comes from where their body is over
+	-- time (Shared/LocomotionMix.track), not from their replicated velocity, which jumps between network updates and
+	-- made their legs stutter. Gameplay/PlayerMoves.
+	Track = {
+		Window = 0.25, -- seconds: speed = distance covered over this long (evens out network bursts)
+		MinSpan = 0.05, -- seconds of samples needed before a speed is read
+		Hold = 0.15, -- seconds a body that hasn't moved at all keeps its last speed (a network stall, not a stop)
+		Teleport = 120, TeleportMin = 6, -- a jump faster than this (studs/s) and longer than this (studs) is a teleport
+		MaxSpeed = 80, -- studs/s: never reads faster (the huss is 64, the lunge 72)
+		Fade = 0.2, -- seconds the pack fades in or out (a dance or an Action animation starting, a downed body)
+		Near = 70, Mid = 160, -- studs: sampled every frame this close, 30 times a second to Mid, 15 beyond or off screen
 	},
 
 	-- The huss pose (Shared/RunMotion, on every character including your own; Config/Round.Dash sets its push).
