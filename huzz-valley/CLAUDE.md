@@ -72,7 +72,7 @@ Owner's own words are in quotes. Read only the section you need.
 - `ServerScriptService/HuzzServer`: `RoundService.server` (the loop), `MapService`, `MapVoteService`, `GirlService`,
   `CarryService`, `KnockdownService`, `PowerService`, `KnifeService`, `NameTagService`, `CompanionService`,
   `CosmeticsService`, `AuraPickupService`, `PracticeBot`, `SpinService`, `LookService`, `ActionService` (UI verbs + Dance remote),
-  `ProgressService`, `ShopService` (the one ProcessReceipt), `DataService` (ProfileStore; writes only via
+  `ProgressService`, `LeaderboardService` (lobby boards), `ShopService` (the one ProcessReceipt), `DataService` (ProfileStore; writes only via
   `update()`; `onChanged` hook), `SafetyService`, `Bootstrap`.
 - `StarterPlayerScripts/HuzzClient`: `Main` (UI screens, each in `Report.run`), `StartGameplay` (Gameplay/*),
   `UI/{Kit,Theme,Scale,Motion,ModalManager,State,DancePlayer,DancePose,Toast}`, `UI/Screens/*`, `Gameplay/*`.
@@ -83,7 +83,7 @@ Owner's own words are in quotes. Read only the section you need.
 
 ## 4. Checks, previews, builds (Lune 0.10.5 at `/root/bin/lune`; run before every commit)
 - `PATH=/root/bin:$PATH bash tools/check.sh`: compiles every script; specs (RoundRules, CarryMath, GirlMotion,
-  GirlMoves, StabMotion, DownMotion, Movement, Locomotion, PlayerMoves, GirlRoll, CrateRoll, SpinWheel); **the full-game simulation** (`tools/sim/round_sim.luau`: real server code, bots
+  GirlMoves, StabMotion, DownMotion, Movement, Locomotion, PlayerMoves, GirlRoll, CrateRoll, SpinWheel, Leaderboards); **the full-game simulation** (`tools/sim/round_sim.luau`: real server code, bots
   that run, stab, lunge, rescue, use powers; 7 setups). `lune run huzz-valley/tools/sim/round_sim.luau audit` (repo root) prints the
   loop numbers (stage times, waiting, win rates by player count, on the real map size) for `docs/loop-audit.md`. Its stubs (e.g. `KnifeService`) must get any new function
   RoundService calls, or games stop with "attempt to call a nil value".
@@ -482,6 +482,38 @@ Owner's own words are in quotes. Read only the section you need.
   `ReplicationFocus` until the end) before `RevealAt`; his first Studio recording (old 7.5 s build) showed an empty
   spot with no girl and no map because of this.
 - **Crates** (`Config/Crates`, `Shared/CrateRoll` with odds + pity) are plumbed but empty until the owner designs them.
+- **Lobby leaderboards** (owner, Oct 18: "make the leaderboards just like in the video ... make them follow your
+  character"; reference `design/lobby-ref/lb_f1.jpg`, `lb_f2.jpg`): Huss Valley's boards one to one: 14 x 18 stud
+  mauve slabs (rendered 113, 70, 97, slightly see-through, Roblox studs), "HIGHEST LEVEL" etc. in Gotham Heavy 48,
+  "GLOBAL · ALL TIME · TOP 50", 12 rows of 50 (headshot, "#1 name" centred, value right: "LEVEL 402", "2611" + the
+  owner's trophy icon, "33.5K CATCHES"). Boards: HIGHEST LEVEL, MOST WINS, MOST GIRLS, MOST CATCHES, MOST RESCUES
+  (`Config/Leaderboards`). Measurements in `Shared/LeaderboardLook`'s header; side by side
+  `docs/previews/leaderboard-vs-ref.jpg` (`tools/preview/leaderboard_vs_ref.py`, the preview draws our stud picture
+  where the game has real studs). `HuzzServer/LeaderboardService`: boards = anything named `Leaderboard...` or tagged
+  `HuzzLeaderboard` (attribute `Stat`), else it makes five per lobby: on his three grey `Podium`s first, two along
+  the back edge (`LeaderboardLook.layout`; the place build saves the same ones in `Workspace > HuzzLeaderboards` so
+  he can drag them). Numbers: live only, one OrderedDataStore per stat (`HuzzValley_LB_v1_<Stat>`), saved every 90 s
+  when changed and on leave, top 50 read every 60 s, budget-checked, all pcall; this server's players always mixed in
+  live (Studio: only them). JSON in attributes on `ReplicatedStorage.HuzzLeaderboards`. `Gameplay/Leaderboards`
+  copies the saved face into PlayerGui (adorned, so the list scrolls) and turns each slab (yaw only, `TurnRate` 2.2)
+  to face your character; the base stays. Checks: `tests/Leaderboards.spec.luau`, `tools/preview/check_lobby_boards.luau`.
+- **Avatar stands** (owner, Oct 18: "make the blocks i have in the lobby, next to the spin the wheel turn into my
+  character and have like animated running ... selling a gamepass"; reference `design/lobby-ref/stands-ref.jpg`):
+  `Gameplay/AvatarStands` turns any Part/Model named `AvatarStand` or tagged `HuzzAvatarStand` into a copy of the
+  viewer's own avatar running in place (the owner's Run when it plays, else `RunMotion`; R6 a simple swing), turning
+  to face you, a calm glow (soft disc, small light, 2 sparkles a second), a sign (tag pill, title plate, subtitle) and
+  a price button ("1,799 · VIEW"). Tall blocks (his 4 x 7.5 x 4.5) hide and you stand where they stood; flat ones are
+  pedestals (`StandOn` = Floor/Top overrides). The button opens `PromptGamePassPurchase` only via
+  `Shared/AvatarStandRules`: a real Game Pass ID AND a `Config/Products` pass that's OnSale (the game grants it;
+  ShopService checks ownership with Roblox); otherwise "199 · SOON" / "COMING SOON" and a message. No timers or
+  LIMITED/ENDS IN copy (the reference has them; kid-safe). The place build marks his six grey blocks beside the spin
+  wheels (VIP and DancePack, both SOON until their IDs are in). Not filmed offline: only Studio shows the copy.
+  **Owner how-to (Studio):** 1. Click the block (or a model). 2. Properties > Name: `AvatarStand`. 3. Properties >
+  Attributes > "+": `Pass` (String) = `VIP` or `DancePack` (or the Game Pass ID number); optional `Title`, `Subtitle`,
+  `Tag` (String), `Price` (Number), `Color` (Color3), `StandOn` (String: Floor or Top). 4. Press Play: you see
+  yourself there, running. 5. To sell it for real: create the Game Pass on the Creator Dashboard, paste its ID into
+  `Config/Products` (that pass's `Id`) and make sure that pass gives its thing (`OnSale = true`). Leaderboards: drag
+  the boards in `Workspace > HuzzLeaderboards`; a board's `Stat` attribute picks what it ranks.
 
 ## 12. Sounds
 - `ui_click` remade Oct 18 (owner: "new clicking sound effect"): a bright bubbly pop on a small thump. Plays
@@ -506,7 +538,8 @@ Owner's own words are in quotes. Read only the section you need.
   sound helpers live in the place (`ServerStorage/HuzzStudioTools`, run with one `require(...)()` line); the
   owner's click-by-click guide is `docs/STUDIO-STEPS.md`. Studio helpers report on Output lines tagged `[Huzz]`, `[HuzzSfx]`, `[HuzzAnim]`.
 - Not yet seen in Studio: the Practice Bot (its walk, run animation, knife), the Oct 17 UI shine/rays/spin and Juice bursts, the new lighting, stars in the playing zone, the move between lobbies after the vote (instant, no fade yet), the lunge feel, sprint feel, lobby repaint, knife positions, spin animation, dance
-  pictures on real avatars, dance sync across two clients (needs published dances).
+  pictures on real avatars, dance sync across two clients (needs published dances), the lobby leaderboards (real
+  studs, colour under his light, headshots, scrolling, the turn) and the avatar stands (your copy, its run, the glow).
 - **Which code ran?** Studio shows "build <date> UTC" small in the bottom right (and `[Huzz] Build` in Output), from
   `Config/Build` written by `build_place.sh`. The owner's Oct 18 recordings showed the OLD cutscene and HUD although
   the download was new: Rojo connected to his out-of-date local copy puts old scripts back. Fix: GitHub Desktop >
