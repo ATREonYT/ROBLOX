@@ -930,7 +930,9 @@ local function showShowcase()
 	if not (girl and m) then
 		return
 	end
-	local floor = MapService.ground(m.Position, m.Position.Y + m.Size.Y / 2) or (m.Position.Y - m.Size.Y / 2)
+	-- (read from 6 studs over the Middle box: Halloween's grass top is above the box, and a ray started inside the
+	-- grass misses it, so she stood 8 studs low and the Secret cutscene showed her sunk in the floor)
+	local floor = MapService.ground(m.Position, m.Position.Y + m.Size.Y / 2 + 6) or (m.Position.Y - m.Size.Y / 2)
 	local ok, result = pcall(GirlService.showcase, girl, Vector3.new(m.Position.X, floor + Config.Showcase.Height, m.Position.Z), Workspace)
 	if ok then
 		showcase = result

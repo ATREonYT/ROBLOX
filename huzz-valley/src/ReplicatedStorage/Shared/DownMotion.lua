@@ -5,9 +5,13 @@
 	character's DownedAt / DownedFeet / DownedHeight attributes), and the
 	offline preview runs it as is.
 
-	The body pivots forward over the feet like a falling plank, lands with a
-	small bounce, and the limbs blend from whatever animation was playing into
-	a sprawl: arms out in front, legs a little apart, head turned to one side.
+	The body pivots forward over the feet like a falling plank and lands flat
+	on the floor (owner, Oct 18: "not have a swinging animations ... you go
+	like in and under the map, just make them lay on the floor and look like
+	their dead"). Every joint is ours while they lie there, the root, waist,
+	hands and feet too, so no animation keeps playing on a downed body (the
+	run's hip bob and crouch were what swung it and pushed it into the floor):
+	arms out in front, legs straight and a little apart, cheek on the floor.
 ]]
 local Config = require(script.Parent.Config.Round)
 local CarryMath = require(script.Parent.CarryMath)
@@ -39,39 +43,51 @@ function DownMotion.new(motors)
 	for _, m in motors do
 		table.insert(list, CarryMath.joint(m))
 	end
-	return { joints = GirlMotion.joints(list), written = {}, base = {} }
+	local joints = GirlMotion.joints(list)
+	local keyOf = {}
+	for key, m in joints do
+		keyOf[m] = key
+	end
+	return { joints = joints, all = list, keyOf = keyOf, written = {}, base = {} }
 end
 
 -- The sprawl, in each parent part's space (x right, y up, -z forward).
 local function sprawl(key)
-	local arms, legs = rad(Config.Knockdown.ArmsForward), rad(12)
+	-- (arms and legs turn only in the body's flat plane, which is the floor's plane when they lie face down, so no
+	-- hand or knee goes into the floor; the head turns a little and lifts its chin to clear it)
+	local arms, legs = rad(Config.Knockdown.ArmsOut), rad(12)
 	local P = {
-		LShoulder = CFrame.Angles(0, 0, -rad(25)) * CFrame.Angles(arms, 0, 0),
-		RShoulder = CFrame.Angles(0, 0, rad(25)) * CFrame.Angles(arms, 0, 0),
-		LElbow = CFrame.Angles(rad(25), 0, 0),
-		RElbow = CFrame.Angles(rad(25), 0, 0),
+		LShoulder = CFrame.Angles(0, 0, -arms),
+		RShoulder = CFrame.Angles(0, 0, arms),
 		LHip = CFrame.Angles(0, 0, -legs),
 		RHip = CFrame.Angles(0, 0, legs),
-		LKnee = CFrame.Angles(-rad(15), 0, 0),
-		RKnee = CFrame.Angles(-rad(20), 0, 0),
-		Neck = CFrame.Angles(0, rad(70), 0) * CFrame.Angles(rad(15), 0, 0), -- cheek on the floor
+		LKnee = CFrame.Angles(-rad(12), 0, 0), -- (heels lift off the floor, not into it)
+		RKnee = CFrame.Angles(-rad(18), 0, 0),
+		Neck = CFrame.Angles(rad(Config.Knockdown.ChinUp), 0, 0) * CFrame.Angles(0, rad(Config.Knockdown.HeadTurn), 0),
 	}
 	return P[key]
 end
 
--- Blends the limbs from the playing animation into the sprawl as they fall.
+-- Every joint's lying-down Transform: the sprawl where it has one, else straight (root, waist, hands, feet).
+local function target(rec, m)
+	local pose = sprawl(rec.keyOf[m])
+	if not pose then
+		return CFrame.identity
+	end
+	local r = m.C0.Rotation
+	return r:Inverse() * pose * r
+end
+DownMotion.target = target
+
+-- Blends every joint from the playing animation into the lying pose as they fall, then holds it.
 function DownMotion.step(rec, t)
 	local w = clamp(t / (fallTime() * 0.8), 0, 1)
-	for key, m in rec.joints do
-		local pose = sprawl(key)
-		if pose then
-			local current = m.Transform
-			local anim = if rec.written[m] == current then rec.base[m] else current
-			rec.base[m] = anim
-			local r = m.C0.Rotation
-			m.Transform = anim:Lerp(r:Inverse() * pose * r, w)
-			rec.written[m] = m.Transform
-		end
+	for _, m in rec.all do
+		local current = m.Transform
+		local anim = if rec.written[m] == current then rec.base[m] else current
+		rec.base[m] = anim
+		m.Transform = anim:Lerp(target(rec, m), w)
+		rec.written[m] = m.Transform
 	end
 end
 
@@ -90,19 +106,18 @@ function DownMotion.rise(rec, age, height)
 		m.Transform = target(anim)
 		rec.written[m] = m.Transform
 	end
-	for key, m in rec.joints do
-		local pose = sprawl(key)
-		if pose then
-			local r = m.C0.Rotation
-			own(m, function(anim) return anim:Lerp(r:Inverse() * pose * r, w) end)
+	local root = rec.joints.Root
+	for _, m in rec.all do
+		if m ~= root or not height then
+			local pose = target(rec, m)
+			own(m, function(anim) return anim:Lerp(pose, w) end)
 		end
 	end
-	local root = rec.joints.Root
 	if root and height then
 		-- in the root part's space: tipped forward about the feet, lifted by the torso's thickness
 		local tip = CFrame.new(0, -height, 0) * CFrame.Angles(-rad(90) * w, 0, 0) * CFrame.new(0, height, 0)
 		local pivot = CFrame.new(0, Config.Knockdown.Lift * w, 0) * tip
-		own(root, function(anim) return root.C0:Inverse() * pivot * root.C0 * anim end)
+		own(root, function(anim) return root.C0:Inverse() * pivot * root.C0 * anim:Lerp(CFrame.identity, w) end)
 	end
 	return w > 0
 end

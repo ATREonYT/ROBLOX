@@ -4,7 +4,7 @@
 	goes one way"). A / stick left = left, D / stick right = right; with no sideways input you go to the side you
 	last moved or hussed toward (right at first). Jumping is off, so Space is free.
 	Smooth like Huss Valley (owner: "make the hussing more smooth"; docs/feel-study.md gap 7): the push eases every
-	frame from Config/Round.Dash Speed to EndSpeed over Time (~0.30 s, ~9 studs, Shared/RunMotion.pushSpeed), keeping
+	frame from Config/Round.Dash Speed to EndSpeed over Time (~0.30 s, ~12 studs, Shared/RunMotion.pushSpeed), keeping
 	whatever run you had, then the run takes over. The body is never snapped round: it eases (0.08 s) to whichever
 	way along the camera's line is nearer (so at most a quarter turn, and none in shift lock), and the huss is a
 	lean to that side. The pose is Shared/RunMotion's (Gameplay/RunAnimator draws it on everyone, you too), unless

@@ -23,8 +23,8 @@ local deg = math.deg
 -- The huss push.
 local D = Round.Dash
 check(D.Time >= 0.28 and D.Time <= 0.32, "the huss pushes for ~0.30 s")
-check(RunMotion.pushSpeed(D, 0) == D.Speed and D.Speed >= 40 and D.Speed <= 55, "it starts with a burst (~45-50 studs/s)")
-check(D.EndSpeed >= 15 and D.EndSpeed <= 25, "and eases down to ~20 studs/s")
+check(RunMotion.pushSpeed(D, 0) == D.Speed and D.Speed >= 40 and D.Speed <= 70, "it starts with a burst (~50-65 studs/s)")
+check(D.EndSpeed >= 15 and D.EndSpeed <= 30, "and eases down to ~20-28 studs/s")
 local last, smooth = math.huge, true
 for i = 0, 29 do
 	local v = RunMotion.pushSpeed(D, i / 100)
@@ -34,7 +34,7 @@ end
 check(smooth, "the push speed only ever eases down, every frame (no flat push and cut)")
 check(RunMotion.pushSpeed(D, D.Time) == nil, "and it ends at Time")
 local dist = RunMotion.pushDistance(D)
-check(dist >= 8 and dist <= 11, string.format("the huss covers ~10 studs (%.1f)", dist))
+check(dist >= 11 and dist <= 13.5, string.format("the huss covers ~12 studs (owner: a bit further than 9, not too much) (%.1f)", dist))
 local L = Round.Lunge
 local reach = RunMotion.pushDistance(L)
 check(reach >= 17 and reach <= 21, string.format("the lunge keeps its old ~20 stud reach (%.1f)", reach))

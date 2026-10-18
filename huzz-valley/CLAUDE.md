@@ -43,6 +43,8 @@ Owner's own words are in quotes. Read only the section you need.
 - **Companions are only girls you win** (the kit's Aiko/Ren/Sora/Hina mock-ups were removed). The equipped girl
   walks behind you on the ground, doesn't collide with you, and dances when you dance. Effects tiny below Legendary.
 - **Knives:** everyone wears one on the back; catchers hold theirs in a round. The owner will send 3D knife renders.
+  Study of Huss Valley's knives (on the back at the belt, slash with no wind-up, catch = red fill, no sparks or shake)
+  and the plan for his models: `docs/knife-study.md`, sheets `docs/previews/knife-study-*.jpg` (`tools/preview/knife_sheets.py`).
 - **Aura** = Huss Valley's gems. **Coins** buy looks (the owner picked "Coin cosmetics shop").
 - **Never invent IDs** (assets, sounds, animations, passes, products): leave 0/"" and add a README checklist line.
 
@@ -160,7 +162,11 @@ Owner's own words are in quotes. Read only the section you need.
 - **Catching:** click stab (`Stab` remote) or a catcher's **lunge** (`Lunge` remote, `Config/Round.Lunge`: eases 72 to 40 over 0.38 s,
   Up 18, HitRange 4.8 for 0.5 s, cooldown 3 s shared with the Space tile `DashReady`; stab mode only). Both go
   through `stabNear()`: shields, the safe start zone and a fresh rescue protect; a Heart Shield ends the lunge.
-- **Downed and revived:** a downed runner lies still (`KnockdownService`); a runner beside them for 1.2 s revives
+- **Downed and revived:** a downed runner lies still (`KnockdownService`; owner Oct 18: "not have a swinging animations
+  ... make them lay on the floor and look like their dead"): `DownMotion` owns every joint (root, waist, hands, feet
+  straight; arms out flat 125°, chin up 40°, no bounce, Lift 0.6), so the run playing underneath can't swing the
+  body or push it into the floor. Spec: still and above the floor; picture `docs/previews/downed-still.jpg`
+  (`motion3d/down_scene.luau`). A runner beside them for 1.2 s revives
   them. **One second chance per game** (`RoundRules` `rescued`): caught again = `Caught.final` → "YOU'RE OUT", no
   rescue; joins the catchers at round end. Their tag says OUT (grey) instead of HELP!, so nobody runs over for nothing (a downed tag shows to 250 studs, HELP! / OUT
   big; other tags hide past 80);
@@ -182,7 +188,11 @@ Owner's own words are in quotes. Read only the section you need.
 - **Safe gate:** invisible goal-line block in collision group `HuzzSafeWall`, colliding only with `HuzzSafe`
   (safe runners), plus `keepSafe()` every frame.
 - **Field edges:** safe lines, start wall and goal gate are trimmed to the real floor (`MapService` `edge()`); the
-  invisible walls (`boundary()`) stand at the floor's edge (a prop doesn't count as an edge); `catchFalls()` puts
+  invisible walls (`boundary()`) stand at the floor's edge (a prop doesn't count as an edge). Across the run the
+  walls may go up to 40 studs past the zone boxes over the map's own level floor, and the loaded copy's zones are
+  then stretched to the floor (Halloween's zones sat 15 studs off its floor: a wall cut the field and the girl wasn't
+  centred, owner Oct 18). Loose Workspace parts resting on a map's floor move into that map at start (his Halloween
+  path floated over the sea with another map on; `check_maps.luau` counts them); `catchFalls()` puts
   anyone below the field back on it (only within 8 studs of it) or far below the lobby back to its spawn.
 - **One lobby per map** (owner's pick, Oct 17): the owner built a lobby island in front of each map. Each map
   belongs to its nearest lobby (`entry.lobby`); after the vote `MapService.useLobbyFor` switches the lobby and
@@ -240,7 +250,7 @@ Owner's own words are in quotes. Read only the section you need.
   - `Gameplay/Sprint`: you set off at `Run.StartSpeed` 16 and reach the cap in ~0.5 s (`Ramp`; was 9 over 1.2 s).
   - The huss (`Gameplay/Dash`): left/right along the **camera's** right; the body eases (0.08 s) to the nearer way
     along the camera's line (never a snap, at most a quarter turn; none in shift lock). The push eases every frame
-    from `Round.Dash` Speed 50 to EndSpeed 20 over 0.30 s (`RunMotion.pushSpeed`: 9 studs; was a flat 72 for 0.24 s).
+    from `Round.Dash` Speed 64 to EndSpeed 28 over 0.30 s (`RunMotion.pushSpeed`: 12 studs, owner Oct 18 "a bit further"; was 9).
     The server takes the sent facing within 150° (was 110°). The lunge eases the same way (72 to 40 over 0.38 s,
     19 studs, the old reach).
   - `Gameplay/Feel`: +2° FOV at full sprint (was 11°), held through a huss; no huss FOV kick, no screen-edge
@@ -432,7 +442,7 @@ Owner's own words are in quotes. Read only the section you need.
 
 - **Music** (`Gameplay/Music`, owner Oct 18: "randomly play in the background these audios in a volume that isnt too
   loud"): the owner's songs in his place (SoundService > Music > Background_Music Bg1-9; Important_Song_Actions >
-  Winner_Music_Showcase), else IDs in `Config/Music` (empty: our built place has no songs until he sends the IDs).
+  Winner_Music_Showcase), else the same songs by ID in `Config/Music` (Bg1-9 + winner, sent Oct 18).
   Shuffled, no repeat, fades, `Config/Music.Volume` 0.3 through the Music group; the win song on the Round "Results"
   event (background fades under it); the Secret cutscene quiets it. Bootstrap stops songs set to play by themselves.
 - **Settings > Audio** (owner: "many options"): a scrolling list of 6 rows: Master, Music, Effects, Button Sounds
@@ -460,7 +470,11 @@ Owner's own words are in quotes. Read only the section you need.
   packs, spins 1/10/100); upload sounds, pictures and animations; an export of their spin wheel model (match its
   colours); their 3D knife renders; power icons; a stab animation; crate contents; dance names; movement pack licence.
 - Owner's place notes (Oct 17): no Uncommon girls yet (the rarity is skipped until there are some); a plank path
-  near the Halloween lobby and a basketball hoop sit loose in Workspace (not in a map folder).
+  near the Halloween lobby and a basketball hoop sit loose in Workspace (the path's pieces on the field now move
+  into Halloween_Map at start; the pieces on the lobby stay).
+- Secret cutscene floor (Oct 18): the showcase floor is read from 6 studs over the Middle box (a ray started inside
+  Halloween's grass missed it: she stood 8 low, knee-deep in the cutscene, camera under the floor), and the client
+  re-reads the floor under her and keeps the camera 1.5 over it.
 - Owner (Oct 17): Shop ITEMS/COINS, DANCES and HOW TO PLAY (`Screens/HowToPlay`, was `Welcome`: first join +
   Menu) built from the `design/ui-oct17` mockups (`docs/previews/*-vs-mockup.jpg`, `tools/preview/side_by_side.py`,
   checks in `tools/preview/check_oct17.luau`). Their pictures are mockup crops (placeholders): ask for sharp PNGs.

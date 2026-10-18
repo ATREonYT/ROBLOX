@@ -180,6 +180,58 @@ function MapService.init()
 			table.insert(boxes, d.Parent)
 		end
 	end
+	-- Loose parts lying on a map's floor belong to that map (owner: "fix the trail being there whilst the map is
+	-- not even there": the path he laid across the Halloween field sits loose in Workspace, so with another map on
+	-- it floated over the sea). Each loose part (or loose model) resting on one of a map's parts moves into that
+	-- map before the maps are put away; the rest of the path, on the lobby island, stays where it is.
+	local function bounds(part: BasePart)
+		local cf, s = part.CFrame, part.Size
+		local function e(axis)
+			return math.abs(cf.RightVector[axis]) * s.X / 2 + math.abs(cf.UpVector[axis]) * s.Y / 2 + math.abs(cf.LookVector[axis]) * s.Z / 2
+		end
+		local p = cf.Position
+		return Vector3.new(p.X - e("X"), p.Y - e("Y"), p.Z - e("Z")), Vector3.new(p.X + e("X"), p.Y + e("Y"), p.Z + e("Z"))
+	end
+	local mapParts = {}
+	for _, box in boxes do
+		local list = {}
+		for _, d in box:GetDescendants() do
+			if d:IsA("BasePart") and d.CanCollide then
+				local lo, hi = bounds(d)
+				table.insert(list, { lo = lo, hi = hi })
+			end
+		end
+		mapParts[box] = list
+	end
+	local function restsOn(lo: Vector3, hi: Vector3)
+		local x, z = (lo.X + hi.X) / 2, (lo.Z + hi.Z) / 2
+		for box, list in mapParts do
+			for _, b in list do
+				if x >= b.lo.X and x <= b.hi.X and z >= b.lo.Z and z <= b.hi.Z and b.hi.Y >= lo.Y - 1.5 and b.hi.Y <= lo.Y + 0.5 then
+					return box
+				end
+			end
+		end
+		return nil
+	end
+	for _, item in Workspace:GetChildren() do
+		local box
+		local k = key(item.Name)
+		if k == key(C.Lobby) or k == "spawnbaseplate" or k == "mapspot" or select(2, pcall(CollectionService.HasTag, CollectionService, item, "HuzzLobby")) == true then
+			box = nil -- (a lobby's own floor never moves into a map)
+		elseif item:IsA("BasePart") and not item:IsA("Terrain") and not item:IsA("SpawnLocation") then
+			box = restsOn(bounds(item))
+		elseif item:IsA("Model") and not item:FindFirstChildOfClass("Humanoid") then
+			local ok, cf, size = pcall(function() return item:GetBoundingBox() end)
+			if ok and cf then
+				box = restsOn(cf.Position - size / 2, cf.Position + size / 2)
+			end
+		end
+		if box then
+			item.Parent = box
+		end
+	end
+
 	for _, box in boxes do
 		-- Named after its folder; a folder just called "Zones" takes its parent's name.
 		local named = if box.Name:lower():find("zone") and box.Parent ~= Workspace then box.Parent else box
@@ -628,19 +680,23 @@ local function boundary(model, a, b, middle)
 		end
 	end
 	local frame = CFrame.fromMatrix(mid, run, Vector3.yAxis, side) -- x = along the run, z = across (right-handed)
-	local floorY = MapService.ground(mid, mid.Y + middle.Size.Y) or (mid.Y + lo.Y)
+	local floorY = MapService.ground(mid, mid.Y + middle.Size.Y / 2 + 6) or (mid.Y + lo.Y)
 	local height = Config.Map.BoundsHeight
 	local y = floorY - mid.Y - 2 + height / 2
 	local folder = Instance.new("Folder")
 	folder.Name = "HuzzBounds"
 	-- The zone boxes can be bigger than the floor (owner: people fell off past the walls): bring each side in to
 	-- where the floor really ends, read along three lanes (the nearest edge wins, so no lane is left open).
-	local function floorAt(x, z)
+	local function floorAt(x, z, level)
 		local w = frame:PointToWorldSpace(Vector3.new(x, 0, z))
-		local gy = MapService.ground(Vector3.new(w.X, floorY, w.Z), floorY + 6)
+		local gy, on = MapService.ground(Vector3.new(w.X, floorY, w.Z), floorY + 6)
+		if level then -- (past the zone boxes only the map's own level floor counts: a fence, a lobby or ground beside it ends it)
+			return gy ~= nil and math.abs(gy - floorY) <= 1.5 and on ~= nil and on:IsDescendantOf(model)
+		end
 		return gy ~= nil and gy >= floorY - 1.5 -- (a prop or a raised pad is still floor: only a hole or a drop ends it)
 	end
-	local function reach(axis, dir, from, to, lanes)
+	-- limit: the zone boxes' own edge; reading may go past it (to) where the floor goes on level.
+	local function reach(axis, dir, from, to, lanes, limit)
 		local best = to
 		for _, lane in lanes do
 			local last, found = from, false
@@ -648,7 +704,8 @@ local function boundary(model, a, b, middle)
 			while (to - v) * dir > 0 do
 				local nextV = v + 2 * dir
 				if (to - nextV) * dir < 0 then nextV = to end
-				local ok = if axis == "x" then floorAt(nextV, lane) else floorAt(lane, nextV)
+				local level = (nextV - limit) * dir > 0
+				local ok = if axis == "x" then floorAt(nextV, lane, level) else floorAt(lane, nextV, level)
 				if not ok then break end
 				last, found, v = nextV, true, nextV
 			end
@@ -660,11 +717,25 @@ local function boundary(model, a, b, middle)
 		local cx, cz = (hi.X + lo.X) / 2, (hi.Z + lo.Z) / 2
 		local lanesZ = { cz, lo.Z + (hi.Z - lo.Z) * 0.2, lo.Z + (hi.Z - lo.Z) * 0.8 }
 		local lanesX = { cx, lo.X + (hi.X - lo.X) * 0.2, lo.X + (hi.X - lo.X) * 0.8 }
-		local nlo = Vector3.new(reach("x", -1, cx, lo.X, lanesZ), lo.Y, reach("z", -1, cz, lo.Z, lanesX))
-		local nhi = Vector3.new(reach("x", 1, cx, hi.X, lanesZ), hi.Y, reach("z", 1, cz, hi.Z, lanesX))
+		-- Across the run the floor may also go on past the zone boxes (owner, Halloween: "you cant go past the green
+		-- line ... its still part of the map": its zones sit 15 studs off the floor's middle). Read up to 40 studs
+		-- further, then fit the zones to the floor, so the walls, safe lines, lineup and the girl over the middle
+		-- all follow the real field.
+		local extra = 40
+		local nlo = Vector3.new(reach("x", -1, cx, lo.X, lanesZ, lo.X), lo.Y, reach("z", -1, cz, lo.Z - extra, lanesX, lo.Z))
+		local nhi = Vector3.new(reach("x", 1, cx, hi.X, lanesZ, hi.X), hi.Y, reach("z", 1, cz, hi.Z + extra, lanesX, hi.Z))
 		-- (only when the floor was read on both sides and leaves a real field)
 		if nhi.X - nlo.X > 20 and nhi.Z - nlo.Z > 10 then
 			lo, hi = nlo, nhi
+			for _, zone in { a, b, middle } do
+				local r, l = math.abs(zone.CFrame.RightVector:Dot(side)), math.abs(zone.CFrame.LookVector:Dot(side))
+				if math.max(r, l) > 0.99 then -- (a box turned to the run: stretch it across to the floor's edges)
+					local p = frame:PointToObjectSpace(zone.CFrame.Position)
+					local width = hi.Z - lo.Z
+					zone.Size = if r > l then Vector3.new(width, zone.Size.Y, zone.Size.Z) else Vector3.new(zone.Size.X, zone.Size.Y, width)
+					zone.CFrame = zone.CFrame.Rotation + frame:PointToWorldSpace(Vector3.new(p.X, p.Y, (lo.Z + hi.Z) / 2))
+				end
+			end
 		end
 	end
 	field = { frame = frame, lo = lo, hi = hi, floor = floorY }
@@ -776,7 +847,7 @@ function MapService.ground(position, from)
 	params.FilterDescendantsInstances = ignore
 	local top = from or (position.Y + 20)
 	local hit = Workspace:Raycast(Vector3.new(position.X, top, position.Z), Vector3.new(0, -(top - position.Y) - 60, 0), params)
-	return hit and hit.Position.Y
+	return hit and hit.Position.Y, hit and hit.Instance -- (and the part it landed on)
 end
 
 -- A random standing spot in the zone, on the floor under it, facing lookAt.

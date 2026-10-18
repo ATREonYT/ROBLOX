@@ -114,6 +114,29 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 	end
 	-- the floor under her: her feet when she stands (her pivot is her root part, not her middle)
 	local ground = Vector3.new(spot.X, lo - Config.Showcase.Height, spot.Z)
+	-- The real floor under her, read here too (owner: "the girl is under the map and it shows that in the
+	-- cutscene"): the server's floor was 8 studs low on Halloween. Her feet and the floor effects go on what the
+	-- ray hits, so she lands on the floor and the camera stays above it, whatever the server measured.
+	pcall(function()
+		local params = RaycastParams.new()
+		params.FilterType = Enum.RaycastFilterType.Exclude
+		local ignore = { model }
+		for _, name in { "HuzzSecretReveal", "HuzzAuraFX", "HuzzCarried", "HuzzFollowers" } do
+			local f = Workspace:FindFirstChild(name)
+			if f then table.insert(ignore, f) end
+		end
+		for _, p in Players:GetPlayers() do
+			if p.Character then table.insert(ignore, p.Character) end
+		end
+		params.FilterDescendantsInstances = ignore
+		params.RespectCanCollide = true -- (the map's zone boxes are see-through markers, not floor)
+		local hit = Workspace:Raycast(Vector3.new(spot.X, lo - 1, spot.Z), Vector3.new(0, -(Config.Showcase.Height + 20), 0), params)
+		if hit and math.abs(hit.Position.Y - ground.Y) < 16 then
+			local lift = hit.Position.Y - ground.Y
+			ground += Vector3.new(0, lift, 0)
+			spot += Vector3.new(0, lift, 0)
+		end
+	end)
 	local mid = (hi - lo) / 2
 	local orbAt = ground + Vector3.new(0, Reveal.ORB_HEIGHT * k + mid, 0) -- the orb is where her middle appears
 	local folder = Instance.new("Folder")
@@ -958,7 +981,7 @@ function M.start()
 				end
 				local h = Reveal.height(t, Config.Showcase.Height)
 				local eye, look = Reveal.camera(math.min(t, Reveal.RETURN), ground + Vector3.new(0, 0.5, 0), dir, h or Config.Showcase.Height, k, mid)
-				eye = clear(eye, look)
+				eye = clear(Vector3.new(eye.X, math.max(eye.Y, ground.Y + 1.5), eye.Z), look) -- (never under the floor)
 				local cf = CFrame.lookAt(eye, look)
 				local fov = Reveal.fov(t, Motion.reduced)
 				local shake = if Motion.reduced then 0 else Reveal.shake(t)

@@ -26,6 +26,45 @@ local lying = rig.parts.UpperTorso.CFrame
 local lyingHead = rig.parts.Head.CFrame.Position
 check(math.abs(lying.UpVector.Y) < 0.2, "lying flat")
 
+-- Owner, Oct 18: "not have a swinging animations ... you go like in and under the map, just make them lay on the
+-- floor and look like their dead". The run keeps playing under a downed body (hip bob, crouch, leg swing): every
+-- joint must be ours, so the body is perfectly still and nothing dips under the floor (feet at y = 0).
+do
+	local function lowest(r)
+		local y = math.huge
+		for _, b in Rig.boxes(r) do
+			local c, h = b.CFrame, b.Size / 2
+			local reach = math.abs(c.RightVector.Y) * h.X + math.abs(c.UpVector.Y) * h.Y + math.abs(c.LookVector.Y) * h.Z
+			y = math.min(y, c.Position.Y - reach)
+		end
+		return y
+	end
+	local r2 = Rig.r15("Q")
+	local rec2 = DownMotion.new(r2.motors)
+	local first, moved, low = nil, 0, math.huge
+	for f = 0, 40 do
+		local t = 1 + f / 30
+		for _, m in r2.motors do -- a swinging run pose this frame (what the Animator writes)
+			local a = math.sin(t * 9 + #m.Name) * 0.8
+			m.Transform = CFrame.new(0, -0.6 * math.abs(a), 0) * CFrame.Angles(a, a * 0.3, 0)
+		end
+		r2.root.CFrame = DownMotion.rootCFrame(feet, height, t)
+		DownMotion.step(rec2, t)
+		Rig.fk(r2)
+		local pos = {}
+		for name, part in r2.parts do pos[name] = part.CFrame.Position end
+		if first then
+			for name, p in pos do moved = math.max(moved, (p - first[name]).Magnitude) end
+		else
+			first = pos
+		end
+		low = math.min(low, lowest(r2))
+	end
+	print(string.format("  lying still: parts move %.3f studs over 1.3 s of a swinging run; lowest point %.2f (floor 0)", moved, low))
+	check(moved < 0.01, "a downed body lies perfectly still while the run animation keeps playing")
+	check(low > -0.08, "nothing of a downed body dips under the floor")
+end
+
 -- the server stands them up: root straight up at the feet; first frame of getting up
 rig.root.CFrame = feet * CFrame.new(0, height, 0)
 for _, m in rig.motors do m.Transform = CFrame.identity end -- (the animation's pose this frame)

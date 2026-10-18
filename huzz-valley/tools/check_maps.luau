@@ -115,3 +115,19 @@ for _, m in MapService.maps do
 	print(string.format("  %-15s faces the lobby with %s%s", m.name, if asBuilt then "the side that faced it as built" else "its other side (turned round)", note))
 end
 print(if problems == 0 then "map marks ok" else problems .. " problems")
+
+-- Loose parts on a map's floor go with that map (owner: the Halloween path floated over the sea with another map on).
+do
+	local loose, adopted = 0, {}
+	for _, c in ws:GetChildren() do
+		if c:IsA("BasePart") and c.Name == "Part" then loose += 1 end
+	end
+	for _, m in MapService.maps do
+		local n = 0
+		for _, c in m.box:GetChildren() do
+			if c:IsA("BasePart") and c.Name == "Part" and c.Size.Y < 0.1 then n += 1 end
+		end
+		table.insert(adopted, m.name .. " " .. n)
+	end
+	print("loose path parts left in Workspace (on the lobby):", loose, "| thin parts moved into maps:", table.concat(adopted, ", "))
+end

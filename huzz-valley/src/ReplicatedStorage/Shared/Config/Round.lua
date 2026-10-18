@@ -63,8 +63,9 @@ return {
 	-- The huss (owner's call): Space throws you left or right on your screen. Jumping is off. The push eases every
 	-- frame from Speed down to EndSpeed (studs/s) over Time seconds (Shared/RunMotion.pushSpeed), then the run takes
 	-- over: Huss Valley's ~0.30 s and ~10 studs (docs/feel-study.md gap 7; was a flat 72 for 0.24 s = 17 studs, a snap).
-	-- 0.30 x (20 + 30/3) = 9 studs, plus a little carry. Cooldown before the next.
-	Dash = { Speed = 50, EndSpeed = 20, Time = 0.30, Cooldown = 2.5 },
+	-- Owner, Oct 18: "make the dash go a bit further ... but not too much": 0.30 x (28 + 36/3) = 12 studs (was 50 to
+	-- 20 = 9), same 0.30 s, so the lean and lines keep their timing. Cooldown before the next.
+	Dash = { Speed = 64, EndSpeed = 28, Time = 0.30, Cooldown = 2.5 },
 	-- Catchers' Space (owner: "when they press space they jump and haul at the runner, and if they go into them,
 	-- they get stabbed"): a leap forward the way they face, a hard burst that eases off (Speed to EndSpeed over
 	-- Time: 0.38 x (40 + 32/3) = 19 studs, the old flat 56 x 0.36 reach). Any runner they reach during the leap
@@ -75,9 +76,11 @@ return {
 	-- (owner's call).
 	Knockdown = {
 		FallTime = 0.45, -- seconds from standing to flat
-		Bounce = 6, -- degrees of bounce when they hit the floor
-		Lift = 0.5, -- torso thickness: how far the body lies above the floor
-		ArmsForward = 160, -- arms out in front of the head (degrees from hanging)
+		Bounce = 0, -- degrees of bounce when they hit the floor (owner: no swinging; they land and lie still)
+		Lift = 0.6, -- torso thickness: how far the body lies above the floor (a hair over half, so nothing dips in)
+		ArmsOut = 125, -- arms out past the shoulders, flat on the floor (degrees from hanging)
+		HeadTurn = 20, -- head turned to one side (degrees)
+		ChinUp = 40, -- chin lifted off the floor (degrees)
 	},
 	StartZoneSafe = true, -- catchers can't tag runners still standing in their start zone
 
