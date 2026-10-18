@@ -73,3 +73,27 @@ is something we got wrong first and then fixed.
   - both sides win sometimes.
 - Keep camera shots as pure maths, so an offline video films exactly what the game does.
 - Get a fresh critic before showing anything, and judge motion on a 30 fps video.
+
+## 9. Measure the feel against the reference, number by number (Oct 17 feel study)
+- Film the reference and our game, then measure: steps per second, seconds to full speed, huss length and distance,
+  character height and horizon as a fraction of the screen, HUD text height, floor brightness and clipped pixels.
+  `huzz-valley/docs/feel-study.md` is the worked example; its scripts are in `huzz-valley/tools/preview/feel/`.
+- What made Huss Valley feel good, measured:
+  - **A calm camera:** locked behind you (character ~33% of screen height, horizon ~30% from the top), no zoom pulse
+    when sprinting, shot changes are one 0.2-0.3 s swing over heads, never through walls.
+  - **Instant movement:** full speed in ~0.5 s, ~4.6 steps a second, a huss of ~0.3 s and ~10 studs that slows down,
+    with a few white speed lines and no shake.
+  - **One coloured message line, nothing in the middle:** text ~3.5% of screen height, no panel, instant swap; big
+    centre words only for 3-2-1, GO, SAFE, OUT and the win, and never on top of your own character.
+  - **Mid-tone ground:** floor brightness ~0.6 with few clipped pixels. A blown-out floor reads as "bland", even
+    with more saturation.
+  - **Effects with timing:** wind-up, one bright frame, the effect, a fade. One effect per event, not a pile-up.
+- **The world sells the game:** a lobby that's a whole place (foreground, middle ground, background), no visible
+  void or platform edges, decorations clustered around attractions, scenery round the field's edge only.
+
+## 10. Make sure the owner is testing the newest code
+- A Studio recording that shows old behaviour usually means old code ran: Rojo connected to an out-of-date copy of
+  the repo puts the old scripts back over the downloaded place. Ask the owner to Pull in GitHub Desktop (right
+  branch) before connecting Rojo, or not to connect Rojo when testing a downloaded file.
+- Stamp every build: Huzz Valley shows "build <date>" small in the corner in Studio (`Config/Build`, written by
+  `build_place.sh`), so any recording tells you which code ran.

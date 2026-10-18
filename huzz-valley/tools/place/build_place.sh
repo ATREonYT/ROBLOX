@@ -5,6 +5,9 @@
 #   2. saves every script from src/, that StarterGui UI, and a simple baseplate and spawn into the place.
 # Needs Lune (LUNE=path).
 cd "$(dirname "$0")/../preview" || exit 1
+# 0. the build stamp (Shared/Config/Build): Studio shows it small in a corner, so we can tell from a recording whether
+# the newest code ran (Rojo connected to an old copy of the folder puts the old scripts back over the place)
+printf -- '-- Written by tools/place/build_place.sh: when this place file was built (shown small in Studio only).\nreturn { Stamp = "%s" }\n' "$(date -u '+%b %d %H:%M') UTC" > ../../src/ReplicatedStorage/Shared/Config/Build.lua
 mkdir -p ../../src/StarterGui
 HUZZ_FRESH=1 HUZZ_UI_OUT=../../src/StarterGui/HuzzUI.rbxm "${LUNE:-lune}" run harness.luau ../../src - "$(cat ../place/export_ui.luau)" setup_ui.luau | grep -E "saved UI|error|FAIL"
 HOOD_PLACE_OUT=../../places/HuzzValley.rbxl "${LUNE:-lune}" run harness.luau ../../src - "$(cat ../place/world.luau)"

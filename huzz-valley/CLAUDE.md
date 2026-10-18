@@ -398,6 +398,10 @@ Owner's own words are in quotes. Read only the section you need.
   owner's click-by-click guide is `docs/STUDIO-STEPS.md`. Studio helpers report on Output lines tagged `[Huzz]`, `[HuzzSfx]`, `[HuzzAnim]`.
 - Not yet seen in Studio: the Practice Bot (its walk, run animation, knife), the Oct 17 UI shine/rays/spin and Juice bursts, the new lighting, stars in the playing zone, the move between lobbies after the vote (instant, no fade yet), the lunge feel, sprint feel, lobby repaint, knife positions, spin animation, dance
   pictures on real avatars, dance sync across two clients (needs published dances).
+- **Which code ran?** Studio shows "build <date> UTC" small in the bottom right (and `[Huzz] Build` in Output), from
+  `Config/Build` written by `build_place.sh`. The owner's Oct 18 recordings showed the OLD cutscene and HUD although
+  the download was new: Rojo connected to his out-of-date local copy puts old scripts back. Fix: GitHub Desktop >
+  branch HUZZ-VALLEY > Fetch/Pull origin before connecting Rojo (or don't connect Rojo when testing the download).
 - **Testing rounds:** alone, the Practice Bot catches. For real players, Studio Test tab > Clients and Servers,
   2 or 3 players, and wait for the vote (about a minute).
 - ProfileStore is in Mock mode in Studio (progress resets on Stop): on purpose.

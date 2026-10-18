@@ -52,6 +52,30 @@ for _, name in { "LobbyHud", "MainMenu", "Shop", "Settings", "Index", "Tiers", "
 end
 Report.run("State", State.start)
 
+-- In Studio only: which build this is, small in the bottom right corner (and in Output), so a recording shows whether
+-- the newest code ran. An old date means Rojo or an old file put old scripts back: pull in GitHub Desktop first.
+Report.run("Build stamp", function()
+	if not game:GetService("RunService"):IsStudio() then return end
+	local build = game:GetService("ReplicatedStorage"):WaitForChild("Shared").Config:FindFirstChild("Build")
+	local stamp = if build then require(build).Stamp else "unknown"
+	print("[Huzz] Build " .. stamp)
+	local label = Instance.new("TextLabel")
+	label.Name = "HuzzBuildStamp"
+	label.BackgroundTransparency = 1
+	label.AnchorPoint = Vector2.new(1, 1)
+	label.Position = UDim2.new(1, -6, 1, -4)
+	label.Size = UDim2.fromOffset(220, 14)
+	label.TextXAlignment = Enum.TextXAlignment.Right
+	label.Font = Enum.Font.GothamMedium
+	label.TextSize = 11
+	label.TextColor3 = Color3.new(1, 1, 1)
+	label.TextTransparency = 0.35
+	label.TextStrokeTransparency = 0.6
+	label.Text = "build " .. stamp
+	label.ZIndex = 50
+	label.Parent = gui
+end)
+
 -- Audio: Master / Music / Effects sound groups (made by the server's Bootstrap).
 local focused = true
 local function applyAudio()
