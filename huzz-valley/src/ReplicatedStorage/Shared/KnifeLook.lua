@@ -40,6 +40,8 @@ KnifeLook.LADDER = {
 	Legendary = { sheen = 0.5, glow = { range = 4, brightness = 1 }, sparkles = 3, trailTint = true, back = true },
 	Mythic = { sheen = 0.5, glow = { range = 4, brightness = 1 }, sparkles = 3, trailTint = true, back = true, embers = 1.5 },
 }
+-- The Game Pass knives (Config/CoinShop Pass, rarity "Exclusive"): Mythic's calm effects, nothing louder.
+KnifeLook.LADDER.Exclusive = KnifeLook.LADDER.Mythic
 KnifeLook.MAX_SPARKLES = 4 -- a second (owner: "dont make it overly crazy")
 
 -- The effects for a skin's rarity (nil / unknown = the default knife: none).

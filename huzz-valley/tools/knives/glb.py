@@ -84,6 +84,20 @@ def material(js, i):
             'texture': tex['index'] if tex else None, 'metal': pbr.get('metallicFactor', 1), 'rough': pbr.get('roughnessFactor', 1)}
 
 
+def texture_colour(js, binc, tex):
+    """The average colour of a texture ('rrggbb'), or None. (The gamepass knives' materials carry their colour in a
+    small texture, not in the material's name like the 30 shop knives.)"""
+    if tex is None:
+        return None
+    import io
+    from PIL import Image
+    im = js['images'][js['textures'][tex]['source']]
+    bv = js['bufferViews'][im['bufferView']]
+    data = binc[bv.get('byteOffset', 0):bv.get('byteOffset', 0) + bv['byteLength']]
+    r, g, b = Image.open(io.BytesIO(data)).convert('RGB').resize((1, 1), Image.BOX).getpixel((0, 0))
+    return '%02x%02x%02x' % (r, g, b)
+
+
 def meshes(js, binc):
     """Every drawn primitive in world space: dicts with node name, material, positions (N,3), indices (M,3), uv."""
     out = []

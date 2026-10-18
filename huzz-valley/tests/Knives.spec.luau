@@ -1,5 +1,6 @@
 -- lune run tests/Knives.spec.luau   (from huzz-valley/)
--- The owner's 30 knives (Oct 18): all 30 in the coin shop's Knife slot with their own names and rarities, in rarity
+-- The owner's 30 knives (Oct 18): all 30 in the coin shop's Knife slot (and his 5 Game Pass knives, given only by
+-- their pass) with their own names and rarities, in rarity
 -- order, priced by rarity; the quest knives and the Spin Knife sit on fitting models and are never sold; every knife
 -- has its card picture (case-exact); the effects climb calmly with rarity; and a catcher's Space leap goes forward or
 -- sideways, never back. Where a worn knife sits: tests/KnifeWear.spec.luau.
@@ -20,14 +21,46 @@ local function check(name, cond)
 	if cond then passed += 1 else failed += 1; print("FAIL " .. name) end
 end
 
-local baked = serde.decode("json", fs.readFile(ROOT .. "tools/knives/knives.json"))
-local knives = {}
+local bakedAll = serde.decode("json", fs.readFile(ROOT .. "tools/knives/knives.json"))
+local baked, bakedPass = {}, {}
+for _, b in bakedAll do table.insert(if b.rarity == "Exclusive" then bakedPass else baked, b) end
+local knives, passKnives = {}, {}
 for _, item in CoinShop.Items do
-	if item.Slot == "Knife" then table.insert(knives, item) end
+	if item.Slot == "Knife" then table.insert(if item.Pass then passKnives else knives, item) end
 end
 table.sort(knives, function(a, b) return a.Order < b.Order end)
-check("30 knives in the Knife slot", #knives == 30)
+table.sort(passKnives, function(a, b) return a.Order < b.Order end)
+check("30 shop knives in the Knife slot", #knives == 30)
 check("30 knife models baked", #baked == 30)
+
+-- the 5 Game Pass knives (owner, Oct 18: "here are the gamepass knives"): his models, never sold for coins, given
+-- only by their pass, shown on the lobby stands
+check("5 Game Pass knives", #passKnives == 5 and #bakedPass == 5)
+local Products = Env.load(SHARED .. "Config/Products.lua")
+local perPass, packedArt = {}, {}
+for _, f in fs.readDir(ROOT .. "src/ReplicatedStorage/Shared/Images/Art") do packedArt[f] = true end
+for _, item in passKnives do
+	local b
+	for _, x in bakedPass do if x.key == item.Key then b = x end end
+	check(item.Key .. ": baked from his gamepass file", b ~= nil and b.name == item.Name and item.Model == "Gamepass_Knives/" .. b.node)
+	check(item.Key .. ": the gamepass file is there", fs.isFile(ROOT .. "design/knives/gamepass/Gamepass_Knives.glb"))
+	check(item.Key .. ": Exclusive", item.Rarity == "Exclusive" and KnifeLook.fx("Exclusive").embers ~= nil)
+	check(item.Key .. ": never sold for coins", item.NotForSale == true and item.Price == 0 and item.Unlock == nil)
+	local pass = Products.get(item.Pass)
+	check(item.Key .. ": its pass is a real Config/Products pass", pass ~= nil and pass.Kind == "Pass")
+	check(item.Key .. ": a glow colour", item.Glow ~= nil and b ~= nil and b.glow ~= nil)
+	check(item.Key .. ": length 2.4 to 3.3 studs", item.Studs and item.Studs >= 2.4 and item.Studs <= 3.3 and b ~= nil and item.Studs == b.studs)
+	local kebab = string.lower((string.gsub(item.Key, "(%l)(%u)", "%1-%2")))
+	check(item.Key .. ": card picture", item.Art ~= nil and fs.isFile(ROOT .. "assets/art/knife-" .. kebab .. ".png") and packedArt[item.Art .. ".lua"] == true)
+	perPass[item.Pass] = (perPass[item.Pass] or 0) + 1
+end
+check("both passes give knives (VIP 3, Dance Pack 2)", perPass.VIP == 3 and perPass.DancePack == 2)
+-- granted only for an owned pass, once
+local g = CoinShop.passGrants({}, { VIP = true })
+check("owning VIP gives its 3 knives", #g == 3)
+check("owning nothing gives nothing", #CoinShop.passGrants({}, {}) == 0)
+check("a pass you don't own gives nothing (DancePack false)", #CoinShop.passGrants({}, { DancePack = false }) == 0)
+check("already owned isn't given again", #CoinShop.passGrants({ CelestialSeraph = true, CrimsonRequiem = true, HollowEclipse = true }, { VIP = true }) == 0)
 
 local rank = {}
 for i, r in KnifeLook.ORDER do rank[r] = i end

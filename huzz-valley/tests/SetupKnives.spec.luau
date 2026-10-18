@@ -1,6 +1,6 @@
 -- lune run tests/SetupKnives.spec.luau   (from huzz-valley/)
 -- The owner's Studio knife setup (ServerStorage/HuzzStudioTools/SetupKnives = tools/knives/setup_knives.lua) on a
--- fake import of All_Knives.glb: Studio may turn and scale an import any way, so the parts here sit at the baked
+-- fake import of All_Knives.glb (and the 5 Game Pass knives of Gamepass_Knives.glb): Studio may turn and scale an import any way, so the parts here sit at the baked
 -- centres under a random turn, size and spot. Every knife must come out in ServerStorage/HuzzKnives/<key>: Handle +Y
 -- along the blade, X the blade's thin way, Grip / TrailBase / TrailTip in place, pommel to tip its length in studs,
 -- glowing parts Neon in their colour, every part welded to the Handle, and the import tidied away.
@@ -33,7 +33,10 @@ local lines = {}
 local env = { game = game, Instance = Instance, Vector3 = Vector3, CFrame = CFrame, Color3 = Color3, Enum = Enum,
 	print = function(s) table.insert(lines, s) end, warn = function(s) table.insert(lines, "WARN " .. tostring(s)) end }
 local run, KNIVES = luau.load(source, { debugName = "SetupKnives", environment = env })()
-check("30 knives baked in", #KNIVES == 30)
+check("35 knives baked in (30 shop + 5 Game Pass)", #KNIVES == 35)
+local exclusive = 0
+for _, k in KNIVES do if k.rarity == "Exclusive" then exclusive += 1 end end
+check("the 5 Game Pass knives are Exclusive", exclusive == 5)
 
 -- the fake import: Workspace > All_Knives > <knife node> > parts named like the .glb nodes
 local all = Instance.new("Model")
@@ -62,11 +65,11 @@ check("the setup runs (" .. tostring(count) .. ")", ok)
 if not ok then print(count) end
 local holder = ServerStorage:FindFirstChild("HuzzKnives")
 check("ServerStorage/HuzzKnives made", holder ~= nil)
-check("Done: 30 of 30", table.find(lines, "[HuzzKnife] Done: 30 of 30 knives are in ServerStorage > HuzzKnives.") ~= nil)
+check("Done: 35 of 35", table.find(lines, "[HuzzKnife] Done: 35 of 35 knives are in ServerStorage > HuzzKnives.") ~= nil)
 check("the import is tidied away", all.Parent == nil)
 local tagged = 0
 for _, l in lines do if string.sub(l, 1, 11) == "[HuzzKnife]" then tagged += 1 end end
-check("one [HuzzKnife] line per knife (+ the summary)", tagged >= 31)
+check("one [HuzzKnife] line per knife (+ the summary)", tagged >= 36)
 for _, l in lines do
 	if string.find(l, "WARN") or string.find(l, "roughly") or string.find(l, "didn't match") then print("  " .. l) end
 end
@@ -134,7 +137,7 @@ end
 lines = {}
 env.print = function(s) table.insert(lines, s) end
 local ok2 = pcall(run)
-check("a second run keeps all 30", ok2 and #holder:GetChildren() == 30)
+check("a second run keeps all 35", ok2 and #holder:GetChildren() == 35)
 
 print(`SetupKnives: {passed} ok, {failed} failed`)
 if failed > 0 then error("SetupKnives spec failed") end

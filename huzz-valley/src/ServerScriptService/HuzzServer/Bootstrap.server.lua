@@ -94,6 +94,10 @@ require(HuzzServer.AuraPickupService).start() -- Aura stars to collect in the lo
 require(HuzzServer.SpinService).start() -- Spin the Wheel: a free spin every 15 min, bought spins (Config/SpinWheel)
 require(HuzzServer.LookService).apply() -- the lighting look: colour grade, bloom, sun rays, haze (Config/Look)
 require(HuzzServer.LeaderboardService).start() -- the lobby leaderboards (Config/Leaderboards; each screen turns them to face you)
+do -- the lobby avatar stands: finds his grey blocks, readies the pass knives (a failure here never stops the game)
+	local ok, err = pcall(function() require(HuzzServer.AvatarStandService).start() end)
+	if not ok then warn("[Huzz] avatar stands: " .. tostring(err)) end
+end
 -- No jumping anywhere (owner): Space is the huss in the lobby too (RoundService keeps every Humanoid at 0).
 pcall(function()
 	game:GetService("StarterPlayer").CharacterJumpHeight = 0

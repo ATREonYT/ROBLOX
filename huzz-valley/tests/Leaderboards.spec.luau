@@ -1,6 +1,8 @@
 -- Lobby leaderboards and avatar stands: the value text like Huss Valley's boards ("LEVEL 402", "2611" + trophy,
 -- "231.1K COINS"), the order (biggest first, one row per player, cut to 50), each save's numbers, the default spots,
--- the slow turn, and the stand rule: a purchase opens only for a real Game Pass ID of a pass the game already grants
+-- the calm turn (limit, dead zone, critically damped ease), the face colour under the game's grade and the Halloween
+-- touches, and the stand rules: a purchase opens only for a real Game Pass ID of a pass the game already grants, a stand
+-- shows only a knife its pass gives, and his own place's grey blocks are found
 -- ("coming soon" otherwise).  lune run tests/Leaderboards.spec.luau   (from huzz-valley/)
 local fs = require("@lune/fs")
 local luau = require("@lune/luau")
@@ -88,17 +90,138 @@ local two = Rules.defaultSpots(100, 100, 2)
 check("two spots clear the hoop behind the spawn", math.abs(two[1].X) - Config.Size.X / 2 > 6.5 and math.abs(two[2].X) - Config.Size.X / 2 > 6.5)
 check("two spots inside the floor", math.abs(two[2].X) + Config.Size.X / 2 <= 50)
 
--- the turn
+-- the turn (owner, Oct 18: "make the leaderboards move smoothly, right now they move very weirdly")
 local yaw = Rules.yawTo(0, 0, 0, -10)
 check("facing -Z is yaw 0", math.abs(yaw) < 1e-9)
 check("facing +X", math.abs(Rules.yawTo(0, 0, 10, 0) - (-math.pi / 2)) < 1e-9)
 local cur = 0
-cur = Rules.turn(cur, 1, 1 / 30, Config.TurnRate)
-check("turns a little each frame (lag)", cur > 0 and cur < 0.2)
-for _ = 1, 300 do cur = Rules.turn(cur, 1, 1 / 30, Config.TurnRate) end
-check("catches up", math.abs(cur - 1) < 0.01)
-local wrap = Rules.turn(3.0, -3.0, 1 / 30, Config.TurnRate)
+cur = Rules.turn(cur, 1, 1 / 30, 2.2)
+check("the plain catch-up still eases", cur > 0 and cur < 0.2)
+local wrap = Rules.turn(3.0, -3.0, 1 / 30, 2.2)
 check("short way round", wrap > 3.0 or wrap < -3.1)
+
+local rad, deg = math.rad, math.deg
+local MAX, BEHIND, DZ = rad(Config.TurnMax), rad(Config.TurnBehind), rad(Config.DeadZone)
+check("a turn limit between 30 and 45 degrees (it never spins)", Config.TurnMax >= 30 and Config.TurnMax <= 45)
+check("a dead zone of a few degrees", Config.DeadZone >= 2 and Config.DeadZone <= 8)
+check("boards in the other lobbies stay still (range under 150)", Config.TurnRange <= 150)
+-- a board at the origin placed facing -Z (yaw 0)
+local function aimAt(x, z) return Rules.aim(0, 0, 0, x, z, MAX, BEHIND, Config.TurnRange) end
+check("you straight in front: faces you", math.abs(aimAt(0, -20)) < 1e-9)
+check("you 30 degrees to the side: follows", math.abs(deg(aimAt(-20 * math.sin(rad(30)), -20 * math.cos(rad(30)))) - 30) < 1e-6)
+check("you 80 degrees round: stops at the limit", math.abs(deg(aimAt(-20 * math.sin(rad(80)), -20 * math.cos(rad(80))))) <= Config.TurnMax + 1e-6)
+check("you level with its edge (90): still the limit, not edge-on", math.abs(deg(aimAt(-20, 0))) <= Config.TurnMax + 1e-6)
+check("you behind it: it looks home (old code spun 180)", math.abs(aimAt(3, 20)) < 1e-9)
+check("you far away: home", math.abs(aimAt(0, -(Config.TurnRange + 5))) < 1e-9)
+check("standing inside it: home (no divide by zero)", aimAt(0.2, 0.2) == 0)
+-- walking right past the front, close: the facing never jumps or goes past the limit
+do
+	local y, v, goal = 0, 0, 0
+	local sx, biggestStep, most = -30, 0, 0
+	local px = sx
+	for f = 1, 240 do -- 8 s at 30 fps, walking left to right 6 studs in front at 7.5 studs/s
+		local x = sx + f * 0.25
+		px = Rules.follow(px, x, 1 / 30, Config.Follow)
+		goal = Rules.settle(goal, Rules.aim(0, 0, 0, px, -6, MAX, BEHIND, Config.TurnRange), DZ)
+		local before = y
+		y, v = Rules.spring(y, v, goal, 1 / 30, Config.TurnOmega, rad(Config.TurnSpeed))
+		biggestStep = math.max(biggestStep, math.abs(Rules.wrap(y - before)))
+		most = math.max(most, math.abs(y))
+	end
+	check("walking past close by: never past the limit", deg(most) <= Config.TurnMax + 0.01)
+	check("walking past close by: at most TurnSpeed a second (no jerk)", deg(biggestStep) * 30 <= Config.TurnSpeed + 0.01)
+end
+-- small moves (a bob, a step) don't move it: the dead zone
+do
+	local goal = 0
+	for i = 1, 60 do
+		local wobble = math.sin(i) * 0.6 -- (side to side 0.6 studs, 20 studs away)
+		goal = Rules.settle(goal, Rules.aim(0, 0, 0, wobble, -20, MAX, BEHIND, Config.TurnRange), DZ)
+	end
+	check("a 0.6 stud wobble 20 studs away doesn't twitch it", goal == 0)
+	-- while it is still turning it follows exactly, so it never rests up to the dead zone short of you
+	check("still turning: follows exactly", Rules.settle(0, math.rad(2), DZ, true) == math.rad(2))
+	check("at rest: a small change is ignored", Rules.settle(0, math.rad(2), DZ, false) == 0)
+end
+-- the whole loop as the screen runs it (eased spot, settle, spring): ends facing you, not short
+do
+	local yaw, vel, goal, spot = 0, 0, 0, 0
+	local px = math.tan(math.rad(30)) * 20
+	for _ = 1, 300 do
+		spot = Rules.follow(spot, px, 1 / 30, Config.Follow)
+		local want = Rules.aim(0, 0, 0, spot, -20, MAX, BEHIND, Config.TurnRange)
+		goal = Rules.settle(goal, want, DZ, math.abs(vel) > math.rad(0.5))
+		yaw, vel = Rules.spring(yaw, vel, goal, 1 / 30, Config.TurnOmega, math.rad(Config.TurnSpeed))
+	end
+	local want = Rules.aim(0, 0, 0, px, -20, MAX, BEHIND, Config.TurnRange)
+	check(string.format("ends facing you, not stuck short (%.2f deg off)", deg(math.abs(Rules.wrap(yaw - want)))), deg(math.abs(Rules.wrap(yaw - want))) < 1)
+end
+-- the spring: eases in (no snap), settles, never overshoots from rest, the short way round
+do
+	local y, v = 0, 0
+	y, v = Rules.spring(y, v, rad(40), 1 / 60, Config.TurnOmega, rad(Config.TurnSpeed))
+	check("the first frame moves only a little (eases in)", deg(y) < 0.2)
+	local over = false
+	for _ = 1, 600 do
+		y, v = Rules.spring(y, v, rad(40), 1 / 60, Config.TurnOmega, rad(Config.TurnSpeed))
+		if y > rad(40) + 1e-6 then over = true end
+	end
+	check("settles on the goal", math.abs(deg(y) - 40) < 0.05)
+	check("never overshoots", not over)
+	local a = Rules.spring(3.1, 0, -3.1, 0.05, Config.TurnOmega, rad(Config.TurnSpeed))
+	check("short way round", a > 3.1 or a < -3.1)
+	local b = Rules.spring(0, 0, rad(40), 5, Config.TurnOmega, rad(Config.TurnSpeed))
+	check("a long hitch doesn't fling it", deg(b) <= Config.TurnSpeed * 0.1 + 1e-6)
+end
+
+-- the look: one muted grey-mauve slab like Huss Valley's (not magenta rows on a purple header), big outlined text
+do
+	local Look = require("../src/ReplicatedStorage/Shared/LeaderboardLook")
+	local lookSrc = fs.readFile("src/ReplicatedStorage/Shared/Config/Look.lua")
+	local cc = string.match(lookSrc, "ColorCorrection%s*=%s*(%b{})")
+	local sat = tonumber(string.match(cc, "Saturation%s*=%s*(%-?[%d%.]+)"))
+	local con = tonumber(string.match(cc, "Contrast%s*=%s*(%-?[%d%.]+)"))
+	local exp = tonumber(string.match(lookSrc, "ExposureCompensation%s*=%s*(%-?[%d%.]+)"))
+	local onScreen = Look.graded(Look.Colors.Face, sat, con, exp)
+	local far = 0
+	for i = 1, 3 do far = math.max(far, math.abs(onScreen[i] - Look.Colors.Target[i])) end
+	check(string.format("the face on screen (%d, %d, %d) is the reference's slab within 6 (Config/Look's grade undone)", onScreen[1], onScreen[2], onScreen[3]), far <= 6)
+	local old = Look.graded({ 122, 75, 95 }, sat, con, exp)
+	check("the old rows' colour would still go magenta (green under 60): the test can see the old problem", old[2] < 60)
+	local function chroma(c) return math.max(c[1], c[2], c[3]) - math.min(c[1], c[2], c[3]) end
+	check("muted, like the reference (colourfulness under 55 on screen)", chroma(onScreen) < 55)
+	check("the slab isn't see-through any more (the sky turned the header purple)", Look.SlabTransparency == 0)
+	-- built with the real Roblox types (Lune): the face paints its own backdrop, rows sit on it, text is outlined
+	local api = { Instance = roblox.Instance, UDim2 = roblox.UDim2, UDim = roblox.UDim, Color3 = roblox.Color3, Vector2 = roblox.Vector2,
+		Vector3 = roblox.Vector3, CFrame = roblox.CFrame, Enum = roblox.Enum, Font = roblox.Font }
+	local model = Look.model(api, Config.Boards[1], roblox.CFrame.new(0, 0, 0), Config.Size, Config.Lift, Config.Subtitle, Config.Shown, true)
+	local board = model:FindFirstChild("Board")
+	local face = board and board:FindFirstChild("LeaderboardFace")
+	local canvas = face and face:FindFirstChild("Canvas")
+	local back = canvas and canvas:FindFirstChild("Backdrop")
+	check("an opaque backdrop in the face colour under everything", back ~= nil and back.BackgroundTransparency == 0 and back.ZIndex == 0)
+	check("studs drawn on it, one a stud (50 px)", back ~= nil and back:FindFirstChild("Studs") ~= nil and back.Studs.TileSize == roblox.UDim2.fromOffset(50, 50))
+	check("the face is unlit (same colour in sun, shade or night)", face ~= nil and face.LightInfluence == 0)
+	local row1 = canvas and canvas.List:FindFirstChild("Row1")
+	check("rows nearly the slab's colour (no separate pink band)", row1 ~= nil and row1.BackgroundTransparency >= 0.15 and math.abs(row1.BackgroundColor3.G * 255 - Look.Colors.Face[2]) < 15)
+	check("names outlined", row1 ~= nil and row1.PlayerName:FindFirstChild("Outline") ~= nil)
+	check("title big like theirs (cap 33 of 900 / 0.64)", canvas ~= nil and canvas.Title.TextSize >= 50 and canvas.Title:FindFirstChild("Outline") ~= nil)
+	check("top names as big as theirs", row1 ~= nil and row1.PlayerName.Fit.MaxTextSize >= 50)
+	-- Halloween touches: welded to the slab (they turn with it), calm (no emitters, no scripts), lights small
+	local deco = board and board:FindFirstChild("Halloween")
+	check("pumpkin and candle on the slab", deco ~= nil and deco:FindFirstChild("Pumpkin") ~= nil and deco:FindFirstChild("Candle") ~= nil)
+	local welded, loose, calm = 0, 0, true
+	for _, d in (deco and deco:GetDescendants() or {}) do
+		if d:IsA("BasePart") then
+			if not d.Anchored and d:FindFirstChildOfClass("WeldConstraint") then welded += 1 else loose += 1 end
+		end
+		if d:IsA("ParticleEmitter") or d:IsA("Script") or d:IsA("LocalScript") then calm = false end
+		if d:IsA("PointLight") and (d.Brightness > 1 or d.Range > 10) then calm = false end
+	end
+	check("every Halloween piece welded to the slab, not anchored", welded > 0 and loose == 0)
+	check("Halloween stays calm (no particles, no scripts, soft lights)", calm)
+	check("a faint web in the corner", back ~= nil and back:FindFirstChild("Web") ~= nil and back.Web.ImageTransparency >= 0.3)
+end
 
 -- avatar stands: "Coming soon unless a real Id of a pass the game grants"
 local s = Stand.resolve({ Pass = "VIP" }, Products)
@@ -141,6 +264,66 @@ check("no timer or scarcity words", (function()
 	end
 	return true
 end)())
+
+-- the stands' knives (owner: "gamepasses shown with the character of the person playing, equipped with some exclusive
+-- knifes"): only a knife the stand's pass gives, in turn when none is typed
+do
+	local Env = require("../tools/preview/motion3d/env")
+	local CoinShop = Env.load("huzz-valley/src/ReplicatedStorage/Shared/Config/CoinShop.lua")
+	local k1 = Stand.knife("VIP", nil, CoinShop.Items, 1)
+	local k2 = Stand.knife("VIP", nil, CoinShop.Items, 2)
+	local k4 = Stand.knife("VIP", nil, CoinShop.Items, 4)
+	check("VIP stands show VIP knives in turn", k1 ~= nil and k2 ~= nil and k1 ~= k2 and CoinShop.get(k1).Pass == "VIP" and CoinShop.get(k2).Pass == "VIP")
+	eq("the turn wraps round", k4, k1)
+	eq("the strongest-looking first", k1, "CelestialSeraph")
+	local typed = Stand.knife("DancePack", "frostbound oath", CoinShop.Items, 1)
+	eq("a typed knife (any spelling) of that pass", typed, "FrostboundOath")
+	local refused, why = Stand.knife("DancePack", "CelestialSeraph", CoinShop.Items, 1)
+	check("a typed knife the pass doesn't give is refused (says why)", refused ~= "CelestialSeraph" and CoinShop.get(refused).Pass == "DancePack" and why ~= nil)
+	local coin, why2 = Stand.knife("VIP", "AbyssEclipse", CoinShop.Items, 1)
+	check("a coin knife never stands in for a pass's", coin ~= "AbyssEclipse" and why2 ~= nil)
+	eq("no pass: no knife", (Stand.knife(nil, "CelestialSeraph", CoinShop.Items, 1)), nil)
+	local withKnife = Stand.resolve({ Pass = "VIP" }, Products, CoinShop.get(k1))
+	eq("the sign names the knife", withKnife.Subtitle, "EXCLUSIVE KNIFE: CELESTIAL SERAPH")
+	eq("still SOON (no Game Pass ID yet)", withKnife.Status, "Soon")
+	check("a knife on the sign never opens a purchase by itself", not Stand.canPrompt(withKnife, false))
+end
+
+-- his own place (synced by Rojo, nothing renamed): the stands must still be found (the old code only knew blocks
+-- named "AvatarStand", which only our place build made, so his game had none)
+if fs.isFile("places/HUSSANIME.rbxl") then
+	local place = roblox.deserializePlace(fs.readFile("places/HUSSANIME.rbxl"))
+	local ws = place:GetService("Workspace")
+	local wheels, parts, named = {}, {}, 0
+	for _, d in ws:GetDescendants() do
+		local n = string.lower(d.Name)
+		if string.sub(string.gsub(n, "[%s_%-]", ""), 1, 11) == "avatarstand" then named += 1 end
+		if d:IsA("Model") and string.find(n, "spin") and string.find(n, "wheel") then
+			local lo, hi, sum, count = math.huge, -math.huge, roblox.Vector3.new(0, 0, 0), 0
+			for _, p in d:GetDescendants() do
+				if p:IsA("BasePart") then
+					local q = p.CFrame.Position
+					lo, hi, sum, count = math.min(lo, q.Y), math.max(hi, q.Y), sum + q, count + 1
+				end
+			end
+			if count > 0 and hi - lo > 5 then
+				local c = sum / count
+				table.insert(wheels, { X = c.X, Y = c.Y, Z = c.Z })
+			end
+		elseif d.ClassName == "Part" and d.Name == "Part" then
+			local q, sz = d.CFrame.Position, d.Size
+			table.insert(parts, { ref = d, Name = d.Name, Class = d.ClassName, X = q.X, Y = q.Y, Z = q.Z, SX = sz.X, SY = sz.Y, SZ = sz.Z })
+		end
+	end
+	eq("his place has no block named AvatarStand (why the stands didn't show)", named, 0)
+	local found = Stand.findBlocks(wheels, parts)
+	eq("his six grey blocks are found beside the 3 big spin wheels", #found, 6)
+	local vip, dance = 0, 0
+	for _, b in found do
+		if b.Pass == "VIP" then vip += 1 elseif b.Pass == "DancePack" then dance += 1 end
+	end
+	check("three VIP and three Dance Pack stands", vip == 3 and dance == 3)
+end
 
 print(string.format("Leaderboards spec: %d passed, %d failed", passed, failed))
 if failed > 0 then error("Leaderboards spec failed") end

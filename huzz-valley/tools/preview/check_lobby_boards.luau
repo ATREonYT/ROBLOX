@@ -1,8 +1,10 @@
 -- Check: the lobby leaderboards and avatar stands run end to end offline (HuzzServer/LeaderboardService,
 -- Gameplay/Leaderboards, Gameplay/AvatarStands). With no boards in the place, five are made round the lobby floor,
--- tagged, filled with this server's players (Studio: no DataStores), drawn on this screen and turned to face you;
--- a block named AvatarStand gets your copy, its sign, and a button that never opens a purchase for a pass that
--- isn't ready ("coming soon").
+-- tagged, filled with this server's players (Studio: no DataStores), drawn on this screen in one unlit slab colour
+-- (studs, web, Halloween pumpkin and candle) and turned calmly towards you (never past TurnMax, home when you're
+-- behind it, still for small wobbles). His plain grey block beside a spin wheel (named "Part", as in his own Rojo
+-- place where nothing renames it) is found and tagged by the server, gets your copy holding its pass's exclusive
+-- knife, its sign, and a button that never opens a purchase for a pass that isn't ready ("coming soon").
 -- From tools/preview: lune run harness.luau ../../src - "$(cat check_lobby_boards.luau)" setup_ui.luau
 local ok, fails = 0, 0
 local function check(name, cond)
@@ -21,12 +23,17 @@ floor.Size = Vector3.new(100, 13, 100)
 floor.CFrame = CFrame.new(-227, 13.1, -706)
 floor.Parent = workspace
 local block = Instance.new("Part")
-block.Name = "AvatarStand"
+block.Name = "Part" -- (his name for it: only our place build used to rename it, so his own game had no stands)
 block.Anchored = true
-block.Size = Vector3.new(4, 8, 4)
-block.CFrame = CFrame.new(-269, 23.6, -726)
-block:SetAttribute("Pass", "VIP")
+block.Size = Vector3.new(4, 7.5, 4.5)
+block.CFrame = CFrame.new(-269, 23.35, -726)
 block.Parent = workspace
+local wheel = Instance.new("Model") -- his big spin wheel beside it (14 studs tall)
+wheel.Name = "SpinWheel"
+for _, y in { 20, 34 } do
+	local w = Instance.new("Part"); w.Anchored = true; w.Size = Vector3.new(2, 2, 2); w.CFrame = CFrame.new(-269, y, -694); w.Parent = wheel
+end
+wheel.Parent = workspace
 
 -- (Lune has no HttpService JSON: the same thing through serde)
 __roblox.implementMethod("HttpService", "JSONEncode", function(_, v) return __serde.encode("json", v) end)
@@ -67,6 +74,7 @@ local function character()
 	local hum = Instance.new("Humanoid"); hum.Parent = c
 	local r = Instance.new("Part"); r.Name = "HumanoidRootPart"; r.Size = Vector3.new(2, 2, 1); r.CFrame = CFrame.new(-227, 23, -690); r.Parent = c
 	local h = Instance.new("Part"); h.Name = "Head"; h.Size = Vector3.new(2, 1, 1); h.CFrame = CFrame.new(-227, 25, -690); h.Parent = c
+	local hand = Instance.new("Part"); hand.Name = "RightHand"; hand.Size = Vector3.new(0.6, 0.6, 0.6); hand.CFrame = CFrame.new(-225.5, 22, -690); hand.Parent = c
 	c.Parent = workspace
 	return c
 end
@@ -105,20 +113,69 @@ check("wins trophy", winsRow:FindFirstChild("Trophy") ~= nil and winsRow.Trophy.
 check("wins number", winsRow.Value.Text == "0")
 check("title", me.PlayerGui.Leaderboard_Catches.Canvas.Title.Text == "MOST CATCHES")
 check("subtitle", me.PlayerGui.Leaderboard_Catches.Canvas.Subtitle.Text == "GLOBAL · ALL TIME · TOP 50")
+-- one slab colour: the face paints its own unlit backdrop (the header was the lit, see-through part before: purple)
+local canvas = levelGui.Canvas
+check("face backdrop, opaque, under everything", canvas:FindFirstChild("Backdrop") ~= nil and canvas.Backdrop.BackgroundTransparency == 0)
+check("studs on the face", canvas.Backdrop:FindFirstChild("Studs") ~= nil)
+check("a faint web in the corner", canvas.Backdrop:FindFirstChild("Web") ~= nil)
+check("slab not see-through", levelGui.Adornee.Transparency == 0)
+local deco = levelGui.Adornee:FindFirstChild("Halloween")
+check("pumpkin and candle on the slab", deco ~= nil and deco:FindFirstChild("Pumpkin") ~= nil and deco:FindFirstChild("Flame") ~= nil)
 
--- turning towards you (yaw only, a little behind)
+-- turning towards you, calmly (owner: "make the leaderboards move smoothly, right now they move very weirdly")
+local LB = require(RS.Shared.Config.Leaderboards)
 local board = levelGui.Adornee
-local before = board.CFrame
-for _ = 1, 3 do __fireOn(RunService, "RenderStepped", 1 / 30) end
+local home = board.CFrame
+local rootPart = me.Character.HumanoidRootPart
+local function frames(n) for _ = 1, n do __fireOn(RunService, "RenderStepped", 1 / 30) end end
+local function offHome() return math.deg(math.acos(math.clamp(board.CFrame.LookVector:Dot(home.LookVector), -1, 1))) end
+-- stand `deg` off its front, `dist` studs away
+local function standAt(deg, dist)
+	local a = math.rad(deg)
+	local side = home.RightVector * math.sin(a) + home.LookVector * math.cos(a)
+	local p = home.Position + side * dist
+	rootPart.CFrame = CFrame.new(p.X, 23, p.Z)
+end
+standAt(0, 20)
+frames(200)
+home = board.CFrame -- (settled facing straight out)
+standAt(30, 20)
+frames(1)
+local first = offHome()
+check(string.format("first frame: only a little (eases in, %.2f deg)", first), first < 0.5)
+frames(150)
+check(string.format("settles facing you (30 deg: %.1f)", offHome()), math.abs(offHome() - 30) < 2)
 local after = board.CFrame
-check("board turned", (after.LookVector - before.LookVector).Magnitude > 1e-4)
 check("stays upright", math.abs(after.LookVector.Y) < 1e-6 and math.abs(after.UpVector.Y - 1) < 1e-6)
-check("stays in place", (after.Position - before.Position).Magnitude < 1e-6)
-for _ = 1, 400 do __fireOn(RunService, "RenderStepped", 1 / 30) end
-local toMe = (me.Character.HumanoidRootPart.CFrame.Position - board.CFrame.Position) * Vector3.new(1, 0, 1)
-check("faces you in the end", board.CFrame.LookVector:Dot(toMe.Unit) > 0.99)
+check("turns about its own centre", (after.Position - home.Position).Magnitude < 1e-6)
+-- small wobbles don't twitch it
+local still = board.CFrame
+local wobbleMoved = false
+for i = 1, 60 do
+	local p = rootPart.CFrame.Position
+	rootPart.CFrame = CFrame.new(p + home.RightVector * (if i % 2 == 0 then 0.3 else -0.3))
+	frames(1)
+	if (board.CFrame.LookVector - still.LookVector).Magnitude > 1e-3 then wobbleMoved = true end
+end
+check("a 0.3 stud wobble doesn't twitch it (dead zone)", not wobbleMoved)
+-- level with its edge: it stops at the limit, never edge-on
+standAt(88, 20)
+local most = 0
+for _ = 1, 200 do frames(1); most = math.max(most, offHome()) end
+check(string.format("never past %d degrees (%.1f)", LB.TurnMax, most), most <= LB.TurnMax + 0.5)
+-- behind it: it goes home instead of spinning round
+standAt(170, 20)
+frames(300)
+check(string.format("behind it: back home (%.1f deg)", offHome()), offHome() < 1)
+standAt(0, 20)
+frames(60)
 
--- the avatar stand
+-- the avatar stand: his grey block found by the server, tagged, with a pass and that pass's knife
+check("his grey block is tagged as a stand", block:HasTag("HuzzAvatarStand"))
+check("its pass: VIP (nearest the wheel first)", block:GetAttribute("Pass") == "VIP")
+check("its knife: one VIP gives (" .. tostring(block:GetAttribute("Knife")) .. ")", block:GetAttribute("Knife") == "CelestialSeraph")
+local knives = RS:FindFirstChild("HuzzStandKnives")
+check("the pass knives are ready for the screens (5)", knives ~= nil and #knives:GetChildren() == 5)
 local copies = workspace:FindFirstChild("HuzzStandAvatars")
 local copy = copies and copies:FindFirstChild("StandAvatar")
 check("your copy stands there", copy ~= nil)
@@ -128,11 +185,19 @@ if copy then
 	check("copy where the block was", math.abs(root.CFrame.Position.X - -269) < 0.01 and math.abs(root.CFrame.Position.Z - -726) < 0.01)
 	check("feet on the floor (tall block turns into you)", root.CFrame.Position.Y > 19.6 and root.CFrame.Position.Y < 19.6 + 6)
 	check("no name tag on the copy", copy:FindFirstChildWhichIsA("BillboardGui", true) == nil)
+	local knife = copy:FindFirstChild("StandKnife")
+	check("your copy holds the exclusive knife", knife ~= nil and knife:GetAttribute("Knife") == "CelestialSeraph")
+	local weld = knife and knife:FindFirstChild("StandKnifeGrip", true)
+	check("welded to the right hand", weld ~= nil and weld.Part0 ~= nil and weld.Part0.Name == "RightHand")
+	local anchored = false
+	for _, d in (knife and knife:GetDescendants() or {}) do if d:IsA("BasePart") and d.Anchored then anchored = true end end
+	check("the knife moves with the hand (nothing anchored)", knife ~= nil and not anchored)
 end
 check("block hidden on this screen", block.LocalTransparencyModifier == 1)
 check("calm glow", copies and copies:FindFirstChild("StandGlow") ~= nil)
 local sign = me.PlayerGui:FindFirstChild("StandSign")
 check("sign", sign ~= nil and sign.Plate.Title.Text == "VIP")
+check("the sign names the knife", sign ~= nil and sign.Plate.Subtitle.Text == "EXCLUSIVE KNIFE: CELESTIAL SERAPH")
 check("tag", sign and sign.Tag.Text == "GAME PASS")
 local button = me.PlayerGui:FindFirstChild("StandButton")
 local text = button and button.View.Text or ""

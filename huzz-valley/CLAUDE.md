@@ -515,47 +515,69 @@ Owner's own words are in quotes. Read only the section you need.
   A model the wrong size is refused (plain knife + one `[HuzzKnife]` warning): 8 of his Oct 18 file came out of the
   setup ~12x too big and sideways, fixed offline by `tools/knives/repair_knives.luau`. Spec `tests/KnifeWear.spec`
   (all 30 on R15/R6, no clipping except the hanging hand on the hip hilt); picture `docs/previews/knife-on-back.jpg`
-  (`motion3d/knife_wear_scene.luau`). Hand by the model's `Grip`; effects `KnifeLook.LADDER`: Common none, Uncommon sheen, Rare soft light, Epic +3
+  (`motion3d/knife_wear_scene.luau`).
+  **Game Pass knives** (owner Oct 18, `design/knives/gamepass/Gamepass_Knives.glb`): 5 more, rarity **Exclusive**
+  (Mythic's calm effects, pink-white card), Order 131-135, `Pass` in `Config/CoinShop`, Price 0, never sold for coins
+  (BuyWithCoins says "That one comes with the <pass> Game Pass."). VIP: Celestial Seraph, Crimson Requiem, Hollow
+  Eclipse; Dance Pack: Dragon's Maw, Frostbound Oath. `ShopService` grants them only when Roblox says you own the
+  pass (`CoinShop.passGrants`), and wears one if your Knife slot is empty. Same pipeline (35 rows in `knives.json`,
+  cards with a GAME PASS label). A refunded pass doesn't take them back yet.
+  Hand by the model's `Grip`; effects `KnifeLook.LADDER`: Common none, Uncommon sheen, Rare soft light, Epic +3
   sparkles a second and a tinted slash trail, Legendary light Range 4 + glow on the back, Mythic + embers (stand-in
   particle textures until uploads). Pictures `docs/previews/knives-vs-hv.jpg`, `knife-leap.mp4`.
-  **Owner how-to (Studio, once):** 1. File > Import 3D > `huzz-valley/design/knives/Knives/All_Knives.glb`, Import.
+  **Owner how-to (Studio, once):** 1. File > Import 3D > `huzz-valley/design/knives/Knives/All_Knives.glb`, Import (and
+  `design/knives/gamepass/Gamepass_Knives.glb` the same way).
   2. View > Command Bar, paste `require(game.ServerStorage.HuzzStudioTools.SetupKnives)()` (or the whole of
-  `tools/knives/setup_knives.lua`), Enter. 3. Output says `[HuzzKnife] Done: 30 of 30 knives are in ServerStorage >
+  `tools/knives/setup_knives.lua`), Enter. 3. Output says `[HuzzKnife] Done: 35 of 35 knives are in ServerStorage >
   HuzzKnives.` (a warning names any it couldn't find). 4. File > Save. 5. Right-click ServerStorage > HuzzKnives >
-  Save to File, send `HuzzKnives.rbxm`; we put it in `assets/knives/` and `build_yours.luau` puts it in every build. Received Oct 18 (30 of 30).
+  Save to File, send `HuzzKnives.rbxm`; we put it in `assets/knives/` and `build_yours.luau` puts it in every build. Received Oct 18 (30 of 30; the 5 pass knives need steps 1-5 again).
 - **Crates** (`Config/Crates`, `Shared/CrateRoll` with odds + pity) are plumbed but empty until the owner designs them.
 - **Lobby leaderboards** (owner, Oct 18: "make the leaderboards just like in the video ... make them follow your
-  character"; reference `design/lobby-ref/lb_f1.jpg`, `lb_f2.jpg`): Huss Valley's boards one to one: 14 x 18 stud
-  mauve slabs (rendered 113, 70, 97, slightly see-through, Roblox studs), "HIGHEST LEVEL" etc. in Gotham Heavy 48,
-  "GLOBAL · ALL TIME · TOP 50", 12 rows of 50 (headshot, "#1 name" centred, value right: "LEVEL 402", "2611" + the
-  owner's trophy icon, "33.5K CATCHES"). Boards: HIGHEST LEVEL, MOST WINS, MOST GIRLS, MOST CATCHES, MOST RESCUES
-  (`Config/Leaderboards`). Measurements in `Shared/LeaderboardLook`'s header; side by side
-  `docs/previews/leaderboard-vs-ref.jpg` (`tools/preview/leaderboard_vs_ref.py`, the preview draws our stud picture
-  where the game has real studs). `HuzzServer/LeaderboardService`: boards = anything named `Leaderboard...` or tagged
-  `HuzzLeaderboard` (attribute `Stat`), else it makes five per lobby: on his three grey `Podium`s first, two along
-  the back edge (`LeaderboardLook.layout`; the place build saves the same ones in `Workspace > HuzzLeaderboards` so
-  he can drag them). Numbers: live only, one OrderedDataStore per stat (`HuzzValley_LB_v1_<Stat>`), saved every 90 s
-  when changed and on leave, top 50 read every 60 s, budget-checked, all pcall; this server's players always mixed in
-  live (Studio: only them). JSON in attributes on `ReplicatedStorage.HuzzLeaderboards`. `Gameplay/Leaderboards`
-  copies the saved face into PlayerGui (adorned, so the list scrolls) and turns each slab (yaw only, `TurnRate` 2.2)
-  to face your character; the base stays. Checks: `tests/Leaderboards.spec.luau`, `tools/preview/check_lobby_boards.luau`.
+  character", then "move smoothly, right now they move very weirdly ... look more like the reference ones but keep
+  some halloween mood"; reference `design/lobby-ref/lb_f1.jpg`, `lb_f2.jpg`): Huss Valley's boards: 14 x 18 stud
+  slabs in one muted grey-mauve (`LeaderboardLook.Colors.Face` 125,94,110, chosen so the game's colour grade shows it
+  at ~124,80,103; the reference measures 110-134, 71-86, 97-108). The face paints itself: an opaque unlit `Backdrop`
+  with our stud tile (`assets/icons/board-stud.png`, `tools/icons/make_board_studs.py`) and a faint corner web
+  (`board-web.png`); the slab part is solid (it was lit and see-through: sky showed through, the header read purple).
+  "HIGHEST LEVEL" etc. Gotham Heavy 52 with a dark outline, "GLOBAL · ALL TIME · TOP 50", 12 rows of 50 (headshot,
+  "#1 name" centred, value right: "LEVEL 402", "2611" + trophy, "33.5K CATCHES"), all text outlined. Halloween
+  (calm, nothing flashes): a small pumpkin with glowing eyes on the top corner, a candle on the other, a soft orange
+  glow at the base (`LeaderboardLook.decorate`: welded parts, soft PointLights). Boards: HIGHEST LEVEL, MOST WINS,
+  MOST GIRLS, MOST CATCHES, MOST RESCUES (`Config/Leaderboards`). Side by side `docs/previews/leaderboard-vs-ref.jpg`
+  (`tools/preview/leaderboard_vs_ref.py`, applies the game's grade to our render). `HuzzServer/LeaderboardService`:
+  boards = anything named `Leaderboard...` or tagged `HuzzLeaderboard` (attribute `Stat`), else it makes five per
+  lobby: on his three grey `Podium`s first, two along the back edge (`LeaderboardLook.layout`; the place build saves
+  the same ones in `Workspace > HuzzLeaderboards` so he can drag them). Numbers: live only, one OrderedDataStore per
+  stat (`HuzzValley_LB_v1_<Stat>`), saved every 90 s when changed and on leave, top 50 read every 60 s,
+  budget-checked, all pcall; this server's players always mixed in live (Studio: only them). JSON in attributes on
+  `ReplicatedStorage.HuzzLeaderboards`. `Gameplay/Leaderboards` copies the saved face into PlayerGui.
+  **The turn** (the "weird" movement was: aiming every frame at your exact position with no limit, so a board spun
+  right round, went edge-on, swept off its podium and twitched with every step, huss and bob; it also started with a
+  jerk): `Shared/LeaderboardRules` aim (at most `TurnMax` 40° from where it was placed; back home when you're more
+  than `TurnBehind` 100° round or past `TurnRange` 90 studs), settle (a `DeadZone` 4° once still), spring (critically
+  damped, `TurnOmega` 2.4, at most `TurnSpeed` 45°/s, never overshoots), towards an eased spot (`Follow` 0.4 s);
+  upright, about its own centre. Checks: `tests/Leaderboards.spec.luau`, `tools/preview/check_lobby_boards.luau`.
 - **Avatar stands** (owner, Oct 18: "make the blocks i have in the lobby, next to the spin the wheel turn into my
-  character and have like animated running ... selling a gamepass"; reference `design/lobby-ref/stands-ref.jpg`):
-  `Gameplay/AvatarStands` turns any Part/Model named `AvatarStand` or tagged `HuzzAvatarStand` into a copy of the
-  viewer's own avatar running in place (the owner's Run when it plays, else `RunMotion`; R6 a simple swing), turning
-  to face you, a calm glow (soft disc, small light, 2 sparkles a second), a sign (tag pill, title plate, subtitle) and
-  a price button ("1,799 · VIEW"). Tall blocks (his 4 x 7.5 x 4.5) hide and you stand where they stood; flat ones are
-  pedestals (`StandOn` = Floor/Top overrides). The button opens `PromptGamePassPurchase` only via
-  `Shared/AvatarStandRules`: a real Game Pass ID AND a `Config/Products` pass that's OnSale (the game grants it;
-  ShopService checks ownership with Roblox); otherwise "199 · SOON" / "COMING SOON" and a message. No timers or
-  LIMITED/ENDS IN copy (the reference has them; kid-safe). The place build marks his six grey blocks beside the spin
-  wheels (VIP and DancePack, both SOON until their IDs are in). Not filmed offline: only Studio shows the copy.
-  **Owner how-to (Studio):** 1. Click the block (or a model). 2. Properties > Name: `AvatarStand`. 3. Properties >
-  Attributes > "+": `Pass` (String) = `VIP` or `DancePack` (or the Game Pass ID number); optional `Title`, `Subtitle`,
-  `Tag` (String), `Price` (Number), `Color` (Color3), `StandOn` (String: Floor or Top). 4. Press Play: you see
-  yourself there, running. 5. To sell it for real: create the Game Pass on the Creator Dashboard, paste its ID into
-  `Config/Products` (that pass's `Id`) and make sure that pass gives its thing (`OnSale = true`). Leaderboards: drag
-  the boards in `Workspace > HuzzLeaderboards`; a board's `Stat` attribute picks what it ranks.
+  character and have like animated running ... selling a gamepass", then "make the character things in the lobby
+  work ... gamepasses shown with the character of the person playing, equipped with some exclusive knifes";
+  reference `design/lobby-ref/stands-ref.jpg`): `Gameplay/AvatarStands` turns any Part/Model named `AvatarStand` or
+  tagged `HuzzAvatarStand` into a copy of the viewer's own avatar running in place (the owner's Run when it plays,
+  else `RunMotion`; R6 a simple swing) holding its pass's exclusive knife in the right hand, turning to you calmly
+  (the boards' turn, up to 70°), a calm glow, a sign (tag pill, title, "EXCLUSIVE KNIFE: CELESTIAL SERAPH") and a
+  price button. **Why it didn't work in his game:** only our downloaded build renamed his blocks; in his own
+  Rojo-synced place nothing was named AvatarStand. Now `HuzzServer/AvatarStandService` finds his six grey blocks
+  beside the big spin wheels at game start (`AvatarStandRules.findBlocks`, also used by the place build), tags them,
+  sets `Pass` (VIP / DancePack in turn) and `Knife` (that pass's knives in turn), and puts a ready copy of each pass
+  knife in `ReplicatedStorage > HuzzStandKnives` (his model from `ServerStorage/HuzzKnives/<Key>`, else the tinted
+  built-in knife). Tall blocks hide and you stand where they stood; flat ones are pedestals (`StandOn`). The button
+  opens `PromptGamePassPurchase` only with a real Game Pass ID AND a `Config/Products` pass that's OnSale; otherwise
+  "SOON" / "COMING SOON" (today both: VIP Id 0, DancePack not OnSale). No timers or LIMITED/ENDS IN copy.
+  **Owner how-to (Studio):** nothing to do for his six blocks: press Play. Optional, on a block: Properties >
+  Attributes > "+": `Pass` (String: `VIP` or `DancePack`), `Knife` (String: one of that pass's knives, e.g.
+  `CrimsonRequiem`; another pass's knife is refused with a warning), `Title`, `Subtitle`, `Tag`, `Price`, `Color`,
+  `StandOn`. Real knife models: import `Gamepass_Knives.glb` and run SetupKnives (section 11, "Knives"). To sell:
+  create the Game Pass on the Creator Dashboard, paste its ID into `Config/Products` (that pass's `Id`), `OnSale =
+  true`. Leaderboards: drag the boards in `Workspace > HuzzLeaderboards`; a board's `Stat` attribute picks what it ranks.
 
 ## 12. Sounds
 - **Button sounds** (owner Oct 18: "they sound glitchy, and dont feel too premium"): one press = one sound. Kit
@@ -586,8 +608,9 @@ Owner's own words are in quotes. Read only the section you need.
   sound helpers live in the place (`ServerStorage/HuzzStudioTools`, run with one `require(...)()` line); the
   owner's click-by-click guide is `docs/STUDIO-STEPS.md`. Studio helpers report on Output lines tagged `[Huzz]`, `[HuzzSfx]`, `[HuzzAnim]`.
 - Not yet seen in Studio: the Practice Bot (its walk, run animation, knife), the Oct 17 UI shine/rays/spin and Juice bursts, the new lighting, stars in the playing zone, the move between lobbies after the vote (instant, no fade yet), the lunge feel, sprint feel, lobby repaint, knife positions, spin animation, dance
-  pictures on real avatars, the owner's knives (meshes after his import, glow, sparkles, the leap and dive), dance sync across two clients (needs published dances), the lobby leaderboards (real
-  studs, colour under his light, headshots, scrolling, the turn) and the avatar stands (your copy, its run, the glow).
+  pictures on real avatars, the owner's knives (meshes after his import, glow, sparkles, the leap and dive), dance sync across two clients (needs published dances), the lobby leaderboards (studs
+  picture (Play only), the slab colour under his grade, Gotham's size, headshots, scrolling, the calm turn, the
+  pumpkin, candle and glow) and the avatar stands (finding his blocks, your copy, its run, the knife in its hand).
 - **Which code ran?** Studio shows "build <date> UTC" small in the bottom right (and `[Huzz] Build` in Output), from
   `Config/Build` written by `build_place.sh`. The owner's Oct 18 recordings showed the OLD cutscene and HUD although
   the download was new: Rojo connected to his out-of-date local copy puts old scripts back. Fix: GitHub Desktop >
@@ -599,7 +622,8 @@ Owner's own words are in quotes. Read only the section you need.
   `SafetyService` strips the known Basket Ball Hoop one.
 
 ## 14. Open items (a running list; add to it as the owner reports more)
-- Owner: Game Pass IDs (VIP 199, Dance Pack 149) and Developer Product IDs (Sunset Trail, Blossom Aura, coin
+- Owner: Game Pass IDs (VIP 199, Dance Pack 149: the stands and pass knives wait for them); import
+  `Gamepass_Knives.glb` + rerun SetupKnives and Developer Product IDs (Sunset Trail, Blossom Aura, coin
   packs, spins 1/10/100); upload sounds, pictures and animations; an export of their spin wheel model (match its
   colours); run the knife setup and send `HuzzKnives.rbxm` (section 11, "Knives"); power icons; a stab animation; crate contents; dance names; movement pack licence.
 - Owner's place notes (Oct 17): no Uncommon girls yet (the rarity is skipped until there are some); a plank path
@@ -617,6 +641,8 @@ Owner's own words are in quotes. Read only the section you need.
   `docs/previews/halloween-lobby-layout.png` (Huss Valley's Halloween lobby, 200 x 182 round his island; drawn by
   `tools/world/halloween_layout.py`, his real positions from `tools/world/measure_halloween_lobby.luau`). The night
   look needs `Config/Look` changed (game-wide); values are in the plan.
+- Pass knives: the Shop's pass rows don't list them yet; a refunded pass keeps them; six stands, five knives
+  (the sixth repeats Dragon's Maw).
 - Us: whatever the owner's next round of fixes asks for first; then the Gift Picker, more lore chapters.
 - Everything in sections 7 to 12 is the current version, open to change: tuning numbers (speeds, odds, prices,
   lunge, wheel prizes), looks and feel are first passes waiting for the owner's verdict in Studio.

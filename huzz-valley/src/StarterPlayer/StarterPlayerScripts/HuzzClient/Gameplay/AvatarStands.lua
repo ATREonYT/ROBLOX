@@ -3,12 +3,17 @@
 	the wheel turn into my character and have like animated running or something along those lines, selling a
 	gamepass"; reference: Huss Valley's stands, clones of YOUR avatar with a sign and a price button).
 
-	Any Part or Model named "AvatarStand" (also "AvatarStand 2" ...) or tagged "HuzzAvatarStand" becomes one. Its
-	attributes, typed in Studio's Properties:
+	Any Part or Model named "AvatarStand" (also "AvatarStand 2" ...) or tagged "HuzzAvatarStand" becomes one. In his
+	own place (synced by Rojo, where nothing renamed his blocks) HuzzServer/AvatarStandService finds his six grey
+	blocks beside the spin wheels and tags them, so the stands work there too with no steps. Its attributes, typed in
+	Studio's Properties:
 	  Pass      a Game Pass key from Config/Products ("VIP", "DancePack") or a Game Pass ID number
 	  Title     the big words (default: the pass's name);  Subtitle: what it gives (default: its blurb)
 	  Tag       the little pill over the sign (default "GAME PASS");  Price: Robux to show (default: Products)
 	  Color     the glow and button colour (default: the pass's colour, else Huss Valley green)
+	  Knife     the exclusive knife in your copy's hand (owner: "equipped with some exclusive knifes"): a key of
+	            one of that pass's knives in Config/CoinShop (e.g. "CelestialSeraph"); unset, the server picks the
+	            pass's knives in turn. The model comes ready in ReplicatedStorage > HuzzStandKnives (AvatarStandService).
 	  StandOn   "Floor" (the block turns into your character: it hides and you stand where it stood) or "Top"
 	            (you stand on top of it). Default: a tall block (like his 4 x 8 x 4 ones) turns into you, a flat
 	            one is a pedestal.
@@ -34,6 +39,9 @@ function M.start()
 
 	local Shared = ReplicatedStorage:WaitForChild("Shared")
 	local Products = require(Shared.Config.Products)
+	local CoinShop = require(Shared.Config.CoinShop)
+	local KnifeLook = require(Shared.KnifeLook)
+	local LeaderConfig = require(Shared.Config.Leaderboards)
 	local Rules = require(Shared.AvatarStandRules)
 	local LeaderRules = require(Shared.LeaderboardRules)
 	local RunMotion = require(Shared.RunMotion)
@@ -49,7 +57,7 @@ function M.start()
 	local TAG = "HuzzAvatarStand"
 	local NEAR = 160 -- copies further away than this stop moving
 	local SPEED = 26 -- the run's pace (studs a second: a runner's sprint)
-	local TURN = 2.2
+	local TURN_MAX, TURN_BEHIND = math.rad(70), math.rad(130) -- (it turns to you calmly, like the boards, but further)
 
 	local holder = Instance.new("Folder")
 	holder.Name = "HuzzStandAvatars" -- (this screen only)
@@ -65,7 +73,9 @@ function M.start()
 	local function isStand(d: Instance): boolean
 		if not (d:IsA("BasePart") or d:IsA("Model")) then return false end
 		if string.sub(key(d.Name), 1, 11) == "avatarstand" then return true end
-		local ok, has = pcall(CollectionService.HasTag, CollectionService, d, TAG)
+		local ok, has = pcall(function() return d:HasTag(TAG) end)
+		if ok and has == true then return true end
+		ok, has = pcall(function() return CollectionService:HasTag(d, TAG) end)
 		return ok and has == true
 	end
 
@@ -193,6 +203,54 @@ function M.start()
 				m.Transform = CFrame.Angles(0, 0, sign * s)
 			end
 		end
+	end
+
+	-- The pass's exclusive knife in the copy's right hand (the hand's grip, the knife's own Grip attachment, as
+	-- HuzzServer/KnifeService holds a catcher's knife). The ready model comes from ReplicatedStorage.HuzzStandKnives.
+	local function mountKnife(rec, knifeKey: string, template: Instance)
+		local copy = rec.copy
+		if not copy or not copy.Parent then return end
+		local old = copy:FindFirstChild("StandKnife")
+		if old then old:Destroy() end
+		local hand = copy:FindFirstChild("RightHand") or copy:FindFirstChild("Right Arm")
+		if not (hand and hand:IsA("BasePart")) then return end
+		local knife = template:Clone()
+		knife.Name = "StandKnife"
+		local handle = knife:FindFirstChild("Handle", true)
+		if not (handle and handle:IsA("BasePart")) then knife:Destroy() return end
+		for _, d in knife:GetDescendants() do
+			if d:IsA("BasePart") then
+				d.Anchored, d.CanCollide, d.CanTouch, d.CanQuery, d.Massless = false, false, false, false, true
+			end
+		end
+		local grip = hand:FindFirstChild("RightGripAttachment")
+		local at = if grip and grip:IsA("Attachment") then grip.Position else Vector3.new(0, -hand.Size.Y / 2 + 0.1, 0)
+		local own = handle:FindFirstChild("Grip")
+		local weld = Instance.new("Weld")
+		weld.Name = "StandKnifeGrip"
+		weld.Part0, weld.Part1 = hand, handle
+		weld.C0 = KnifeLook.handC0(at)
+		weld.C1 = if own and own:IsA("Attachment") then own.CFrame else CFrame.identity
+		weld.Parent = handle
+		knife:SetAttribute("Knife", knifeKey)
+		knife.Parent = copy
+	end
+
+	local function knifeFor(rec)
+		local key = rec.knifeKey
+		if not key then return end
+		local folder = ReplicatedStorage:FindFirstChild("HuzzStandKnives")
+		local template = folder and folder:FindFirstChild(key)
+		if template then
+			pcall(mountKnife, rec, key, template)
+			return
+		end
+		local copy = rec.copy
+		task.spawn(function() -- (streamed in late: wait for it, then only if this copy is still the one shown)
+			local f = ReplicatedStorage:WaitForChild("HuzzStandKnives", 30)
+			local t = f and f:WaitForChild(key, 30)
+			if t and rec.copy == copy then pcall(mountKnife, rec, key, t) end
+		end)
 	end
 
 	-- The calm glow under the feet: a soft disc, a small light, a few slow sparkles.
@@ -354,6 +412,13 @@ function M.start()
 		local copy = copyAvatar()
 		if not copy then return end
 		rec.info = Rules.resolve(attrs(stand), Products)
+		local knifeKey, why = Rules.knife(rec.info.Key, stand:GetAttribute("Knife"), CoinShop.Items, 1)
+		if why and not rec.knifeWarned then
+			rec.knifeWarned = true
+			warn("[Huzz] Avatar stand " .. stand:GetFullName() .. ": " .. why)
+		end
+		rec.knifeKey = knifeKey
+		if knifeKey then rec.info = Rules.resolve(attrs(stand), Products, CoinShop.get(knifeKey)) end
 		rec.accent = accentOf(stand, rec.info)
 		if rec.info.Status == "Ready" and livePrice[rec.info.Id] == nil then
 			livePrice[rec.info.Id] = false
@@ -388,12 +453,15 @@ function M.start()
 		local root = copy:FindFirstChild("HumanoidRootPart") :: BasePart
 		root.Anchored = true
 		local look = cf.LookVector
-		rec.yaw = rec.yaw or LeaderRules.yawTo(0, 0, look.X, look.Z)
+		rec.home = LeaderRules.yawTo(0, 0, look.X, look.Z)
+		rec.yaw = rec.yaw or rec.home
+		rec.goal, rec.vel = rec.goal or rec.yaw, rec.vel or 0
 		rec.at = Vector3.new(cf.Position.X, footY + hipOffset(copy), cf.Position.Z)
 		root.CFrame = CFrame.new(rec.at) * CFrame.Angles(0, rec.yaw, 0)
 		copy.Parent = holder
 		rec.copy, rec.root = copy, root
 		startRun(rec)
+		knifeFor(rec)
 		glow(rec, footY, cf.Position, math.min(size.X, size.Z))
 		signs(rec)
 	end
@@ -413,6 +481,11 @@ function M.start()
 		if not stands[d] and isStand(d) then
 			stands[d] = { stand = d }
 			task.defer(tryBuild, d)
+			pcall(function()
+				d:GetAttributeChangedSignal("Knife"):Connect(function()
+					if stands[d] then task.defer(tryBuild, d) end
+				end)
+			end)
 		end
 	end
 
@@ -446,10 +519,12 @@ function M.start()
 				local dx, dz = at.X - rec.at.X, at.Z - rec.at.Z
 				local d2 = dx * dx + dz * dz
 				if d2 < NEAR * NEAR then
-					if d2 > 1 then
-						rec.yaw = LeaderRules.turn(rec.yaw, LeaderRules.yawTo(rec.at.X, rec.at.Z, at.X, at.Z), dt, TURN)
-						root.CFrame = CFrame.new(rec.at) * CFrame.Angles(0, rec.yaw, 0)
-					end
+					-- the same calm turn as the boards (Shared/LeaderboardRules): a limit, a dead zone, a gentle ease
+					local want = LeaderRules.aim(rec.home, rec.at.X, rec.at.Z, at.X, at.Z, TURN_MAX, TURN_BEHIND, NEAR)
+					rec.goal = LeaderRules.settle(rec.goal, want, math.rad(LeaderConfig.DeadZone), math.abs(rec.vel) > math.rad(0.5))
+					local before = rec.yaw
+					rec.yaw, rec.vel = LeaderRules.spring(rec.yaw, rec.vel, rec.goal, dt, LeaderConfig.TurnOmega, math.rad(90))
+					if rec.yaw ~= before then root.CFrame = CFrame.new(rec.at) * CFrame.Angles(0, rec.yaw, 0) end
 					stepRun(rec, dt)
 				end
 			end

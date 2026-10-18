@@ -66,6 +66,10 @@ end
 function VERBS.BuyWithCoins(player, key)
 	local item = type(key) == "string" and CoinShop.get(key)
 	if not item then return false, "Unknown item." end
+	if item.Pass then -- (the Game Pass knives: only the pass gives them, ShopService)
+		local pass = Products.get(item.Pass)
+		return false, `That one comes with the {if pass then pass.Name else item.Pass} Game Pass.`
+	end
 	if item.Unlock then return false, `Earn it: {item.Unlock}.` end -- (quest / wheel items aren't sold)
 	if item.NotForSale then return false, "That one comes from the Spin the Wheel." end
 	local ok, why = false, nil

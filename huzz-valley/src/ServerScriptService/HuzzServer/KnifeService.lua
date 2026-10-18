@@ -348,6 +348,23 @@ function KnifeService.give(character, skin)
 	model.Parent = character
 end
 
+-- A loose copy of a skin's knife with its in-hand effects, for showing off (the lobby avatar stands:
+-- HuzzServer/AvatarStandService puts it in ReplicatedStorage, each screen welds it into the stand copy's hand by
+-- its Handle's Grip attachment). Nothing anchored, nothing collides.
+function KnifeService.display(skin)
+	local model = template(skin)
+	local handle = model:FindFirstChild("Handle", true)
+	if not handle then
+		model:Destroy()
+		return nil
+	end
+	loose(model)
+	addFx(model, skin, "hand")
+	model:SetAttribute("Skin", skinOf(skin))
+	model.PrimaryPart = handle
+	return model
+end
+
 function KnifeService.take(character)
 	local knife = character and character:FindFirstChild(NAME)
 	if knife then

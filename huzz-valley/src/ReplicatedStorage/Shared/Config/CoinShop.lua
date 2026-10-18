@@ -19,9 +19,13 @@
 	  Title  words over your name in the lobby (HuzzServer/NameTagService); your role shows there during a game.
 	Pose and Outfit are the Robux cosmetics' slots (Crown Pose, Midnight Outfit in Config/Products).
 	Knives: the owner's 30 models (see the Knives block below), shown in rarity order after the rewards.
+	Pass: the Game Pass knives (owner, Oct 18: "im going to make them into gamepasses shown with the character of the
+	  person playing, equipped with some exclusive knifes", then "here are the gamepass knives"): Pass = the
+	  Config/Products pass that gives it. Never sold for coins (NotForSale), shown in ITEMS only once you own it, and
+	  given only by HuzzServer/ShopService when Roblox says you own that pass. The lobby stands show them in your hand.
 ]]
 export type Earn = { Rarity: string?, Stat: string?, Count: number?, Girls: number? }
-export type Item = { Key: string, Slot: "Trail" | "Tag" | "Knife" | "Aura" | "Title", Name: string, Price: number, Colors: { Color3 }, Rainbow: boolean?, Order: number, NotForSale: boolean?, Unlock: string?, Earn: Earn?, Rarity: string?, Art: string?, Model: string?, Studs: number?, Glow: Color3? }
+export type Item = { Key: string, Slot: "Trail" | "Tag" | "Knife" | "Aura" | "Title", Name: string, Price: number, Colors: { Color3 }, Rainbow: boolean?, Order: number, NotForSale: boolean?, Unlock: string?, Earn: Earn?, Rarity: string?, Art: string?, Model: string?, Studs: number?, Glow: Color3?, Pass: string? }
 
 local Products = require(script.Parent.Products)
 
@@ -97,6 +101,14 @@ CoinShop.Items = {
 	{ Key = "VoidFang", Slot = "Knife", Name = "Void Fang", Rarity = "Legendary", Price = 4000, Glow = hex("c04fff"), Model = "28_Legendary_Void_Fang", Studs = 3.07, Art = "KnifeVoidFang", Colors = { hex("0e0a16"), hex("d4a020") }, Order = 128 },
 	{ Key = "SpinKnife", Slot = "Knife", Name = "Celestial Edge", Rarity = "Legendary", Price = 0, NotForSale = true, Glow = hex("7fe8ff"), Model = "29_Legendary_Celestial_Edge", Studs = 3.21, Art = "KnifeSpinKnife", Colors = { hex("f8f8ff"), hex("d4a020") }, Order = 129 },
 	{ Key = "AbyssEclipse", Slot = "Knife", Name = "Abyss Eclipse", Rarity = "Mythic", Price = 8000, Glow = hex("ff2a3a"), Model = "30_Mythic_Abyss_Eclipse", Studs = 3.3, Art = "KnifeAbyssEclipse", Colors = { hex("08080c"), hex("d4a020") }, Order = 130 },
+	-- The 5 Game Pass knives (his design/knives/gamepass/Gamepass_Knives.glb, rarity "Exclusive": a tier above Mythic
+	-- with Mythic's calm effects, Shared/KnifeLook). VIP gives three, Dance Pack two; the lobby stands show them
+	-- (the strongest-looking, Celestial Seraph, first). Model = the file / node; baked like the 30 (tools/knives).
+	{ Key = "CelestialSeraph", Slot = "Knife", Name = "Celestial Seraph", Rarity = "Exclusive", Price = 0, NotForSale = true, Pass = "VIP", Glow = hex("3ac0ff"), Model = "Gamepass_Knives/Celestial_Seraph", Studs = 3.18, Art = "KnifeCelestialSeraph", Colors = { hex("d4dde4"), hex("e8b830") }, Order = 131 },
+	{ Key = "CrimsonRequiem", Slot = "Knife", Name = "Crimson Requiem", Rarity = "Exclusive", Price = 0, NotForSale = true, Pass = "VIP", Glow = hex("ff3344"), Model = "Gamepass_Knives/Crimson_Requiem", Studs = 3.3, Art = "KnifeCrimsonRequiem", Colors = { hex("783b47"), hex("a8141f") }, Order = 132 },
+	{ Key = "HollowEclipse", Slot = "Knife", Name = "Hollow Eclipse", Rarity = "Exclusive", Price = 0, NotForSale = true, Pass = "VIP", Glow = hex("e4ecff"), Model = "Gamepass_Knives/Hollow_Eclipse", Studs = 3.3, Art = "KnifeHollowEclipse", Colors = { hex("27272f"), hex("2c2c34") }, Order = 133 },
+	{ Key = "DragonsMaw", Slot = "Knife", Name = "Dragon's Maw", Rarity = "Exclusive", Price = 0, NotForSale = true, Pass = "DancePack", Glow = hex("ff7a1a"), Model = "Gamepass_Knives/Dragons_Maw", Studs = 3.17, Art = "KnifeDragonsMaw", Colors = { hex("2a110d"), hex("2a110d") }, Order = 134 },
+	{ Key = "FrostboundOath", Slot = "Knife", Name = "Frostbound Oath", Rarity = "Exclusive", Price = 0, NotForSale = true, Pass = "DancePack", Glow = hex("5ae6ff"), Model = "Gamepass_Knives/Frostbound_Oath", Studs = 3.21, Art = "KnifeFrostboundOath", Colors = { hex("aee6f9"), hex("d8dee8") }, Order = 135 },
 } :: { Item }
 
 local byKey: { [string]: Item } = {}
@@ -107,6 +119,26 @@ end
 
 function CoinShop.get(key: string): Item?
 	return byKey[key]
+end
+
+-- The items a Game Pass gives (Pass = its Config/Products key), in shop order.
+function CoinShop.passItems(passKey: string): { Item }
+	local out = {}
+	for _, item in CoinShop.Items do
+		if item.Pass == passKey then table.insert(out, item) end
+	end
+	table.sort(out, function(a, b) return a.Order < b.Order end)
+	return out
+end
+
+-- What to give a save for the passes it owns (owned: { [passKey] = true }, checked with Roblox by ShopService):
+-- the keys it doesn't have yet. Pure, so the spec checks it.
+function CoinShop.passGrants(cosmetics: { [string]: any }, owned: { [string]: boolean }): { string }
+	local out = {}
+	for _, item in CoinShop.Items do
+		if item.Pass and owned[item.Pass] == true and not cosmetics[item.Key] then table.insert(out, item.Key) end
+	end
+	return out
 end
 
 -- A ColorSequence through the item's colours (for trails, name gradients and previews).

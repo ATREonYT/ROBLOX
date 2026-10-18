@@ -2,10 +2,11 @@
 	[HuzzKnife] Studio helper: turns the owner's imported knives into the game's knife skins.
 	Owner's steps (also in huzz-valley/CLAUDE.md, "Knives"):
 	  1. In Studio: File (or the Home tab) > Import 3D, pick design/knives/Knives/All_Knives.glb, press Import.
-	     (Or pick the 30 single files: either works.)
+	     (Or pick the 30 single files: either works.) Then the same for the 5 Game Pass knives:
+	     design/knives/gamepass/Gamepass_Knives.glb.
 	  2. View > Command Bar. Paste this whole script (or, in the downloaded place, the one line
 	     require(game.ServerStorage.HuzzStudioTools.SetupKnives)() ) and press Enter.
-	  3. Output shows one [HuzzKnife] line per knife and "Done: 30 of 30". Take a screenshot if anything says "missing".
+	  3. Output shows one [HuzzKnife] line per knife and "Done: 35 of 35". Take a screenshot if anything says "missing".
 	  4. File > Save. Then right-click ServerStorage > HuzzKnives > Save to File, and send that file, so every new
 	     download has the knives too.
 	What it does for each knife: finds it by name, lines it up whatever way Studio imported it (from the parts' names
@@ -24,7 +25,7 @@ local Workspace = game:GetService("Workspace")
 --@@KNIVES@@
 
 local TAG = "[HuzzKnife]"
-local RARITY = { Common = 1, Uncommon = 2, Rare = 3, Epic = 4, Legendary = 5, Mythic = 6 }
+local RARITY = { Common = 1, Uncommon = 2, Rare = 3, Epic = 4, Legendary = 5, Mythic = 6, Exclusive = 7 }
 
 local function norm(s: string): string
 	s = string.lower(s):gsub("[^%w]", "")
@@ -300,7 +301,7 @@ local function run()
 	print(string.format("%s Done: %d of %d knives are in ServerStorage > HuzzKnives.", TAG, okCount, #KNIVES))
 	if #missing > 0 then
 		warn(string.format("%s missing (not imported yet?): %s", TAG, table.concat(missing, ", ")))
-		warn(TAG .. " Import design/knives/Knives/All_Knives.glb (File > Import 3D) and run this again.")
+		warn(TAG .. " Import design/knives/Knives/All_Knives.glb and design/knives/gamepass/Gamepass_Knives.glb (File > Import 3D) and run this again.")
 	else
 		print(TAG .. " Next: File > Save, then right-click ServerStorage > HuzzKnives > Save to File and send it.")
 	end

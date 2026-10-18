@@ -1,5 +1,6 @@
 -- Robux purchases. The client only opens Roblox's purchase prompt; everything is granted here.
---   Game passes: ownership is checked with Roblox on join and after each prompt closes (never trusted from the client).
+--   Game passes: ownership is checked with Roblox on join and after each prompt closes (never trusted from the client);
+--   an owned pass also gives its exclusive knives (Config/CoinShop Pass), here and nowhere else.
 --   Developer products: ProcessReceipt grants once per PurchaseId and answers PurchaseGranted only after the
 --   grant is saved, so a server crash can't lose a paid item or grant it twice.
 local MarketplaceService = game:GetService("MarketplaceService")
@@ -7,6 +8,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Products = require(ReplicatedStorage.Shared.Config.Products)
+local CoinShop = require(ReplicatedStorage.Shared.Config.CoinShop)
 local Net = require(ReplicatedStorage.Shared.Net)
 local DataService = require(script.Parent.DataService)
 
@@ -29,6 +31,23 @@ local function refreshPasses(player: Player, boughtId: number?)
 	if not player.Parent then return end -- (left while Roblox answered: don't bring their entry back)
 	player:SetAttribute("VIP", owned.VIP == true) -- read by the chat tag (client) and the name tag
 	DataService.setExtra(player, "Passes", owned)
+	-- the pass's exclusive knives (Config/CoinShop Pass): given once Roblox says you own the pass, worn if your knife
+	-- slot is empty (never over one you picked, nor a slot you emptied on purpose)
+	local profile = DataService.get(player)
+	local new = profile and profile.Data and CoinShop.passGrants(profile.Data.Cosmetics or {}, owned) or {}
+	if #new > 0 then
+		DataService.update(player, function(d)
+			d.Cosmetics = d.Cosmetics or {}
+			d.Wear = d.Wear or {}
+			for _, key in new do
+				local item = CoinShop.get(key)
+				if item and item.Pass and owned[item.Pass] then
+					d.Cosmetics[key] = true
+					if CoinShop.worn(d, item.Slot) == nil and d.Wear[item.Slot] ~= "" then d.Wear[item.Slot] = key end
+				end
+			end
+		end)
+	end
 	pcall(function() require(script.Parent.NameTagService).restyle(player) end)
 end
 

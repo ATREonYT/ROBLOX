@@ -121,12 +121,24 @@ do
 end
 
 -- Avatar stands (owner, Oct 18: "make the blocks i have in the lobby, next to the spin the wheel turn into my
--- character ... selling a gamepass"): in this copy of his place, his plain grey blocks beside each spin
--- wheel (4 x 7.5 x 4.5, standing on the floor) become stands (renamed "AvatarStand", Pass = VIP and DancePack: both show SOON until their Game Pass
--- IDs are in Config/Products). In his own newer place he does the same by hand (huzz-valley/CLAUDE.md).
+-- character ... selling a gamepass", then "equipped with some exclusive knifes"): in this copy of his place, his plain
+-- grey blocks beside each spin wheel (4 x 7.5 x 4.5, standing on the floor) become stands (renamed "AvatarStand",
+-- Pass = VIP and DancePack in turn: both show SOON until their Game Pass IDs are in Config/Products; Knife = that
+-- pass's exclusive knives in turn). The rule is Shared/AvatarStandRules.findBlocks; in his own Rojo-synced place
+-- HuzzServer/AvatarStandService runs the same rule at game start (nothing to do by hand there).
 do
+	local Stand = require("../../src/ReplicatedStorage/Shared/AvatarStandRules")
+	-- the pass knives from Config/CoinShop (it requires Config/Products: a stand-in with what it reads at load)
+	local luau = require("@lune/luau")
+	local okShop, CoinShop = pcall(function()
+		local env = setmetatable({
+			Color3 = roblox.Color3, ColorSequence = roblox.ColorSequence, ColorSequenceKeypoint = roblox.ColorSequenceKeypoint,
+			require = function() return { Cosmetics = {} } end, script = { Parent = { Products = true } },
+		}, { __index = _G })
+		return luau.load(fs.readFile("huzz-valley/src/ReplicatedStorage/Shared/Config/CoinShop.lua"), { debugName = "CoinShop", environment = env })()
+	end)
 	local ws = theirs:GetService("Workspace")
-	local wheels = {}
+	local wheels, parts = {}, {}
 	for _, d in ws:GetDescendants() do
 		local n = string.lower(d.Name)
 		if d:IsA("Model") and string.find(n, "spin") and string.find(n, "wheel") then
@@ -137,29 +149,29 @@ do
 					lo, hi, sum, count = math.min(lo, q.Y), math.max(hi, q.Y), sum + q, count + 1
 				end
 			end
-			if count > 0 and hi - lo > 5 then table.insert(wheels, sum / count) end -- (the big wheels, not the small 3-stud one)
+			if count > 0 and hi - lo > 5 then -- (the big wheels, not the small 3-stud one)
+				local c = sum / count
+				table.insert(wheels, { X = c.X, Y = c.Y, Z = c.Z })
+			end
+		elseif d.ClassName == "Part" and d.Name == "Part" then
+			local p, sz = d.CFrame.Position, d.Size
+			table.insert(parts, { ref = d, Name = d.Name, Class = d.ClassName, X = p.X, Y = p.Y, Z = p.Z, SX = sz.X, SY = sz.Y, SZ = sz.Z })
 		end
 	end
-	local made, passes = 0, { "VIP", "DancePack" }
-	for _, w in wheels do
-		local near = {}
-		for _, d in ws:GetDescendants() do
-			if d.ClassName == "Part" and d.Name == "Part" then
-				local s, p = d.Size, d.CFrame.Position
-				if s.X > 3 and s.X < 5.5 and s.Z > 3 and s.Z < 5.5 and s.Y > 6 and s.Y < 9 -- (his are 4 x 7.5 x 4.5)
-					and math.abs(p.X - w.X) < 12 and math.abs(p.Z - w.Z) < 45 then
-					table.insert(near, d)
-				end
+	local made, knives = 0, {}
+	for _, b in Stand.findBlocks(wheels, parts) do
+		b.ref.Name = "AvatarStand"
+		b.ref:SetAttribute("Pass", b.Pass)
+		if okShop then
+			local knife = Stand.knife(b.Pass, nil, CoinShop.Items, b.Turn)
+			if knife then
+				b.ref:SetAttribute("Knife", knife)
+				table.insert(knives, string.format("%s (%s at %d, %d)", knife, b.Pass, math.round(b.ref.CFrame.Position.X), math.round(b.ref.CFrame.Position.Z)))
 			end
 		end
-		table.sort(near, function(a, b) return a.CFrame.Position.Z < b.CFrame.Position.Z end)
-		for i, block in near do
-			block.Name = "AvatarStand"
-			block:SetAttribute("Pass", passes[(i - 1) % #passes + 1])
-			made += 1
-		end
+		made += 1
 	end
-	print("avatar stands: " .. made .. " blocks beside " .. #wheels .. " spin wheels")
+	print("avatar stands: " .. made .. " blocks beside " .. #wheels .. " spin wheels; knives " .. (if okShop then table.concat(knives, ", ") else "not set (" .. tostring(CoinShop) .. ")"))
 end
 
 -- Future lighting (crisper light and shadows; Roblox drops to simpler lighting on weak devices by itself). Scripts

@@ -1,8 +1,12 @@
 --[[
 	Draws the lobby leaderboards on this screen and turns them towards your character (owner, Oct 18: "make the
-	leaderboards just like in the video i sent you from the game, make them follow your character"). Like Huss
-	Valley's clip, each board slowly turns about its upright axis to face you, a little behind (smoothed:
-	Config/Leaderboards.TurnRate); only this screen's copy turns, nothing is sent, the stone base stays put.
+	leaderboards just like in the video i sent you from the game, make them follow your character", then "make the
+	leaderboards move smoothly, right now they move very weirdly"). Each board turns gently about its own upright
+	centre (never leans) towards a smoothed spot under you, at most Config/Leaderboards.TurnMax degrees from the way
+	it was placed, with a dead zone so small moves don't twitch it, eased by a critically damped spring (no
+	overshoot, capped speed); from behind or far away it eases back home (Shared/LeaderboardRules aim / settle /
+	spring, where the old problem is written down). Only this screen's copy turns, nothing is sent, the stone base
+	stays put; the Halloween pumpkin and candle are welded to the slab, so they turn with it.
 
 	The boards are HuzzServer/LeaderboardService's (tag "HuzzLeaderboard": a Model with a "Board" part, or the owner's
 	own Part). The face saved with the place (SurfaceGui "LeaderboardFace") is reused: it's copied into PlayerGui
@@ -25,6 +29,8 @@ function M.start()
 	local Rules = require(Shared.LeaderboardRules)
 	local Look = require(Shared.LeaderboardLook)
 	local Kit = require(script.Parent.Parent.UI.Kit)
+	local ImageLoader = require(script.Parent.Parent.UI.ImageLoader)
+	local Assets = require(Shared.Config.Assets)
 	local player = Players.LocalPlayer
 	local playerGui = player:WaitForChild("PlayerGui")
 	local data = ReplicatedStorage:WaitForChild("HuzzLeaderboards", 60)
@@ -92,11 +98,19 @@ function M.start()
 		gui.Parent = playerGui
 		local canvas = gui:FindFirstChild("Canvas")
 		if not canvas then gui:Destroy() return end
+		-- the face's own pictures (studs, web): drawn here from Shared/Images (the server can't), or the uploaded IDs
+		for _, d in canvas:GetDescendants() do
+			local name = d:IsA("ImageLabel") and d:GetAttribute("Icon")
+			if name == "BoardStud" or name == "BoardWeb" then
+				pcall(ImageLoader.apply, d, "Icons", name, Assets.icon(name))
+			end
+		end
 		local cf = part.CFrame
 		local look = cf.LookVector
+		local home = Rules.yawTo(0, 0, look.X, look.Z)
 		local rec = {
 			part = part, gui = gui, saved = saved, canvas = canvas, def = def, home = cf,
-			yaw = Rules.yawTo(0, 0, look.X, look.Z), centre = cf.Position,
+			homeYaw = home, yaw = home, vel = 0, goal = home, written = home, centre = cf.Position,
 		}
 		boards[item] = rec
 		refill(rec)
@@ -137,18 +151,29 @@ function M.start()
 		end)
 	end
 
-	-- the slow turn towards you (upright axis only)
+	-- the calm turn towards you (upright axis only, about the slab's own centre)
+	local rad = math.rad
+	local spot -- the eased spot under your character the boards look at
 	RunService.RenderStepped:Connect(function(dt)
 		local char = player.Character
 		local root = char and char:FindFirstChild("HumanoidRootPart")
-		if not root then return end
-		local at = root.CFrame.Position
+		local at = root and root.CFrame.Position
+		if at then
+			if not spot or (Vector3.new(at.X, 0, at.Z) - spot).Magnitude > 60 then
+				spot = Vector3.new(at.X, 0, at.Z) -- (a respawn or a move to another lobby: no long swing)
+			else
+				spot = Vector3.new(Rules.follow(spot.X, at.X, dt, Config.Follow), 0, Rules.follow(spot.Z, at.Z, dt, Config.Follow))
+			end
+		end
 		for _, rec in boards do
 			local c = rec.centre
-			local dx, dz = at.X - c.X, at.Z - c.Z
-			if dx * dx + dz * dz < Config.TurnRange * Config.TurnRange and dx * dx + dz * dz > 1 then
-				local target = Rules.yawTo(c.X, c.Z, at.X, at.Z)
-				rec.yaw = Rules.turn(rec.yaw, target, dt, Config.TurnRate)
+			local want = if spot then Rules.aim(rec.homeYaw, c.X, c.Z, spot.X, spot.Z, rad(Config.TurnMax), rad(Config.TurnBehind), Config.TurnRange) else rec.homeYaw
+			rec.goal = Rules.settle(rec.goal, want, rad(Config.DeadZone), math.abs(rec.vel) > rad(0.5))
+			if math.abs(Rules.wrap(rec.goal - rec.yaw)) > 1e-4 or math.abs(rec.vel) > 1e-4 then
+				rec.yaw, rec.vel = Rules.spring(rec.yaw, rec.vel, rec.goal, dt, Config.TurnOmega, rad(Config.TurnSpeed))
+			end
+			if math.abs(Rules.wrap(rec.yaw - rec.written)) > 1e-4 then -- (only touch the part when it really moved)
+				rec.written = rec.yaw
 				rec.part.CFrame = CFrame.new(c) * CFrame.Angles(0, rec.yaw, 0)
 			end
 		end

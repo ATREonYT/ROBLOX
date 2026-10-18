@@ -115,7 +115,62 @@ function LeaderboardRules.yawTo(fromX: number, fromZ: number, toX: number, toZ: 
 	return math.atan2(-(toX - fromX), -(toZ - fromZ))
 end
 
--- One frame of the slow turn: eases `current` towards `target` the short way round (a little lag, never a snap).
+--[[
+	The calm turn towards you (owner, Oct 18: "make the leaderboards move smoothly, right now they move very weirdly").
+	What was weird: each board aimed straight at your character every frame with no limit, so it swung round to follow
+	you wherever you went (edge-on as you walked past, all the way round if you went behind it, the 14-stud slab
+	sweeping off his narrow podiums), and every step, huss or bob of your body jerked its target (close up a small
+	side step meant a big swing), eased with a plain catch-up that starts fast. Now, per board:
+	  aim     where it would like to face: towards a smoothed spot under you, but at most MaxTurn from the way it was
+	          placed (its home facing); from behind or out of range it looks home;
+	  settle  a dead zone: the goal only moves once the new aim is DeadZone away, so small moves don't twitch it;
+	  spring  a critically damped ease to the goal (starts gently, no overshoot), capped at MaxSpeed degrees a second.
+	It turns about its own upright centre only (Gameplay/Leaderboards), so it never leans.
+]]
+local function wrap(a: number): number
+	return (a + math.pi) % (2 * math.pi) - math.pi
+end
+LeaderboardRules.wrap = wrap
+
+-- The yaw a board at (fromX, fromZ) placed facing `homeYaw` aims for with you at (toX, toZ): limits in radians/studs.
+function LeaderboardRules.aim(homeYaw: number, fromX: number, fromZ: number, toX: number, toZ: number, maxTurn: number, behind: number, range: number): number
+	local dx, dz = toX - fromX, toZ - fromZ
+	local d2 = dx * dx + dz * dz
+	if d2 < 1 or d2 > range * range then return homeYaw end
+	local off = wrap(LeaderboardRules.yawTo(fromX, fromZ, toX, toZ) - homeYaw)
+	if math.abs(off) > behind then return homeYaw end -- (you're behind it: it doesn't try to follow you round)
+	return wrap(homeYaw + math.clamp(off, -maxTurn, maxTurn))
+end
+
+-- The dead zone: keep `goal` unless `want` is more than `deadZone` away from it. While it is still turning
+-- (`moving`), it keeps following exactly, so it ends up facing you, not stuck up to `deadZone` short; once it is
+-- still, small wobbles (a step, a huss, the walk's bob) don't start it again.
+function LeaderboardRules.settle(goal: number, want: number, deadZone: number, moving: boolean?): number
+	if moving or math.abs(wrap(want - goal)) > deadZone then return want end
+	return goal
+end
+
+-- One frame of a critically damped spring from `yaw` (moving at `vel` rad/s) to `goal`: exact for any frame time,
+-- never overshoots from rest, and never faster than `maxSpeed` rad/s. Returns the new yaw and speed.
+function LeaderboardRules.spring(yaw: number, vel: number, goal: number, dt: number, omega: number, maxSpeed: number): (number, number)
+	dt = math.clamp(dt, 0, 0.1) -- (a long hitch doesn't fling it)
+	local x = wrap(yaw - goal)
+	local e = math.exp(-omega * dt)
+	local temp = (vel + omega * x) * dt
+	local nx = (x + temp) * e
+	local nv = (vel - omega * temp) * e
+	local step = math.clamp(nx - x, -maxSpeed * dt, maxSpeed * dt)
+	nv = math.clamp(nv, -maxSpeed, maxSpeed)
+	return wrap(yaw + step), nv
+end
+
+-- Eases a followed spot towards where you are (`tau` seconds to close most of the gap), so steps and husses
+-- don't jerk the boards.
+function LeaderboardRules.follow(at: number, to: number, dt: number, tau: number): number
+	return at + (to - at) * (1 - math.exp(-math.max(dt, 0) / tau))
+end
+
+-- One frame of a plain catch-up turn (kept for small things; the boards use aim/settle/spring above).
 function LeaderboardRules.turn(current: number, target: number, dt: number, rate: number): number
 	local d = (target - current + math.pi) % (2 * math.pi) - math.pi
 	local k = 1 - math.exp(-rate * math.max(dt, 0))

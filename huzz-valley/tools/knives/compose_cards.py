@@ -6,8 +6,10 @@
 # sparkles ... Mythic = the strongest glow, 7 sparkles and two wisps.
 # The card's frame, name, "KNIFE" and button are the game's UI (Screens/Shop), not part of the picture.
 # Writes assets/art/knife-<key>.png (384 px; tools/icons/pack_images.py packs them at 192 px for the game) and
-# docs/previews/knife-cards.jpg (all 30 as cards next to a crop of the mock-up).
+# docs/previews/knife-cards.jpg (all 35 as cards next to a crop of the mock-up).
 # Usage (from huzz-valley/): python3 -I tools/knives/compose_cards.py <raw render dir>
+#   ONLY=Exclusive (env) remakes only that rarity's pictures (the sheet reuses the other cards already in assets/art),
+#   so adding knives doesn't redraw the 30 shop cards.
 import json, math, os, random, re, sys
 from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
 
@@ -20,6 +22,7 @@ RARITY = {
     'Epic':      (0.62, 1.0, 5, 1, 0.36),
     'Legendary': (0.70, 1.1, 6, 2, 0.40),
     'Mythic':    (0.75, 1.1, 7, 2, 0.42),
+    'Exclusive': (0.80, 1.2, 7, 2, 0.44),  # the 5 Game Pass knives (never sold for coins)
 }
 NAVY = (9, 12, 34)
 
@@ -120,7 +123,7 @@ def sheet(cards, knives):
             pass
         return f
     name_f, slot_f, btn_f = font(14 * S, 'bold'), font(11 * S, 'semibold'), font(20 * S, 'black')
-    rare = {'Common': (190, 196, 210), 'Uncommon': (110, 220, 120), 'Rare': (90, 170, 255), 'Epic': (190, 110, 255), 'Legendary': (255, 190, 60), 'Mythic': (255, 84, 120)}
+    rare = {'Common': (190, 196, 210), 'Uncommon': (110, 220, 120), 'Rare': (90, 170, 255), 'Epic': (190, 110, 255), 'Legendary': (255, 190, 60), 'Mythic': (255, 84, 120), 'Exclusive': (255, 110, 230)}
     rows = math.ceil(len(cards) / COLS)
     grid_w, grid_h = COLS * W + (COLS - 1) * GAP, rows * H + (rows - 1) * GAP
     mock = Image.open('design/knives/knifepictures-mockup.png').convert('RGB')
@@ -145,7 +148,7 @@ def sheet(cards, knives):
         cd.text((W // 2, 16 * S), k['name'], font=name_f, fill=(255, 255, 255), anchor='mm', stroke_width=2 * S // 2, stroke_fill=(10, 14, 40))
         cd.text((W // 2, 31 * S), k['rarity'].upper() + ' · KNIFE', font=slot_f, fill=rare[k['rarity']], anchor='mm', stroke_width=1, stroke_fill=(10, 14, 40))
         cd.rounded_rectangle((7 * S, H - 42 * S, W - 7 * S, H - 6 * S), 5 * S, fill=(110, 82, 248))
-        label = 'EARN IT' if k.get('unlock') else 'SPIN' if k['key'] == 'SpinKnife' else '{:,}'.format(k['price'])
+        label = 'EARN IT' if k.get('unlock') else 'SPIN' if k['key'] == 'SpinKnife' else 'GAME PASS' if k['price'] is None else '{:,}'.format(k['price'])
         cd.text((W // 2, H - 24 * S), label, font=btn_f, fill=(255, 255, 255), anchor='mm')
         m2 = Image.new('L', (W, H), 0)
         ImageDraw.Draw(m2).rounded_rectangle((0, 0, W - 1, H - 1), 6 * S, fill=255)
@@ -159,12 +162,17 @@ def main(raw):
     knives = json.load(open('tools/knives/knives.json'))
     prices = {'Common': 200, 'Uncommon': 500, 'Rare': 1000, 'Epic': 2000, 'Legendary': 4000, 'Mythic': 8000}
     unlock = {'RookieKnife', 'HunterKnife', 'MoonlitKnife'}
+    only = os.environ.get('ONLY')
     cards = []
     for k in knives:
-        k['price'] = prices[k['rarity']]
+        k['price'] = prices.get(k['rarity'])  # (None: a Game Pass knife)
         k['unlock'] = k['key'] in unlock
+        path = 'assets/art/knife-%s.png' % kebab(k['key'])
+        if only and k['rarity'] != only:
+            cards.append(Image.open(path).convert('RGB'))
+            continue
         img = card(raw, k)
-        img.save('assets/art/knife-%s.png' % kebab(k['key']), optimize=True)
+        img.save(path, optimize=True)
         cards.append(img)
     print('cards -> assets/art/knife-*.png (%d)' % len(cards))
     sheet(cards, knives)
