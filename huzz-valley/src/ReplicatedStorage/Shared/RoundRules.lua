@@ -17,6 +17,8 @@
 	The girl (floats over the map until someone wins her over):
 	  - A Hero who survives the solo crossing gets her: she comes down onto their shoulders (from the sky,
 	    or from the catcher who stole her).
+	  - No Hero won her this round (Chicken, or the Hero failed) and she's still floating: the first runner
+	    across takes her ("First"), skipping anyone who chose Chicken this game.
 	  - A catcher who stabs her carrier steals her: she follows that catcher around.
 	  - When the game ends she goes home with the winning side: whoever on that side holds her; if
 	    nobody does, the runners' last successful Hero (else a random runner who made it), or the catcher
@@ -32,7 +34,7 @@
 	  {type="Picked", id}                     {type="Choice", id, hero}     {type="HeroResult", id, survived}
 	  {type="Safe", id}                       {type="Caught", id, by}       {type="Rescued", id, by}
 	  {type="Streak", count, goal}            {type="StreakLost", count}
-	  {type="GirlMoved", from, to, reason}    (reason: "Hero" | "Stolen" | "Dropped" | "Reassigned")
+	  {type="GirlMoved", from, to, reason}    (reason: "Hero" | "First" | "Stolen" | "Dropped" | "Reassigned")
 	  {type="Win", team, winner, reason}      (team "Runners" | "Catchers"; winner = who gets her, may be nil)
 ]]
 
@@ -243,6 +245,11 @@ function RoundRules.reachSafe(s, id)
 		s.lastHero = id
 		table.insert(events, { type = "HeroResult", id = id, survived = true })
 		moveGirl(s, id, "Hero", events) -- the reward: she comes down to the Hero
+	elseif s.holder == nil and s.hero == nil and s.choice ~= nil and not s.chickens[id] then
+		-- No Hero run won her (Chicken, or the Hero was caught or ran out of time): the first runner across takes
+		-- her (owner, Oct 18: "if you go chicken, still the first person to reach the safe zone gets the girl").
+		-- Whoever chose Chicken this game still can't (s.chickens): the next runner across gets her instead.
+		moveGirl(s, id, "First", events)
 	end
 	return events
 end

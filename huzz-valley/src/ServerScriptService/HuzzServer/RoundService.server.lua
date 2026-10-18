@@ -252,7 +252,7 @@ local function showcaseVisible(on)
 end
 
 -- How she reacts to her new carrier.
-local MOODS = { Hero = "Excited", Stolen = "Struggle", Reassigned = "Struggle" }
+local MOODS = { Hero = "Excited", First = "Excited", Stolen = "Struggle", Reassigned = "Struggle" }
 
 local function moveGirlTo(fromId, toId, reason)
 	local from = (fromId and CarryService.position(byId[fromId])) or (showcase and showcase:GetPivot().Position) or nil
@@ -284,6 +284,7 @@ function handlers.GirlMoved(e)
 	local to, g = nameOf(e.to), girl.name
 	local messages = {
 		Hero = { `{to} won {g} over! Keep her safe!`, GOLD },
+		First = { `{to} got there first and won {g} over! Keep her safe!`, GOLD },
 		Stolen = { `{to} stole {g}!`, RED },
 		Reassigned = { `{to} has {g} now`, RED },
 		Dropped = { `{g} floats back up!`, GOLD },

@@ -192,7 +192,11 @@ Owner's own words are in quotes. Read only the section you need.
   Chicken (not a timed-out random pick) and never went Hero this game can't be handed the girl at the end
   (`RoundRules` `chickens`, `brave`: one Hero run keeps the claim); if every
   runner left chose Chicken nobody wins her ("Nobody went HERO", Results "Chicken gets nothing. Go HERO to win
-  her!"). Asked him on a card whether he meant a bug instead.
+  her!").
+- **First across wins her when no Hero did** (owner Oct 18, later: "if you go chicken, still the first person to reach
+  the safe zone gets the girl, right now nobody does"): after Chicken, a caught Hero or a timed-out Hero, while she
+  still floats, the first runner across takes her (`RoundRules.reachSafe`, GirlMoved "First", "X got there first and
+  won <girl> over!"), skipping whoever chose Chicken. A catcher holding her keeps her.
 - **Downed and revived:** a downed runner lies still (`KnockdownService`; owner Oct 18: "not have a swinging animations
   ... make them lay on the floor and look like their dead"): `DownMotion` owns every joint (root, waist, hands, feet
   straight; arms out flat 125°, chin up 40°, no bounce, Lift 0.6), so the run playing underneath can't swing the
@@ -562,9 +566,10 @@ Owner's own words are in quotes. Read only the section you need.
   `ReplicatedStorage.HuzzLeaderboards`. `Gameplay/Leaderboards` copies the saved face into PlayerGui.
   **The turn** (the "weird" movement was: aiming every frame at your exact position with no limit, so a board spun
   right round, went edge-on, swept off its podium and twitched with every step, huss and bob; it also started with a
-  jerk): `Shared/LeaderboardRules` aim (at most `TurnMax` 40° from where it was placed; back home when you're more
-  than `TurnBehind` 100° round or past `TurnRange` 90 studs), settle (a `DeadZone` 4° once still), spring (critically
-  damped, `TurnOmega` 2.4, at most `TurnSpeed` 45°/s, never overshoots), towards an eased spot (`Follow` 0.4 s);
+  jerk). Then the calm version (dead zone, slow spring, eased spot) lagged: owner "make it follow me in real time, not
+  adjust after i move". Now: `Shared/LeaderboardRules` aim at your root every frame (at most `TurnMax` 75° from where
+  it was placed; home when you're more than `TurnBehind` 120° round or past `TurnRange` 90 studs), caught up by
+  `Rules.turn` at `TurnRate` 20 (~0.05 s behind; a swing home takes ~0.2 s, never a one-frame snap). No dead zone.
   upright, about its own centre. Checks: `tests/Leaderboards.spec.luau`, `tools/preview/check_lobby_boards.luau`.
 - **Avatar stands** (owner, Oct 18: "make the blocks i have in the lobby, next to the spin the wheel turn into my
   character and have like animated running ... selling a gamepass", then "make the character things in the lobby

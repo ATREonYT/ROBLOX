@@ -101,77 +101,38 @@ local wrap = Rules.turn(3.0, -3.0, 1 / 30, 2.2)
 check("short way round", wrap > 3.0 or wrap < -3.1)
 
 local rad, deg = math.rad, math.deg
-local MAX, BEHIND, DZ = rad(Config.TurnMax), rad(Config.TurnBehind), rad(Config.DeadZone)
-check("a turn limit between 30 and 45 degrees (it never spins)", Config.TurnMax >= 30 and Config.TurnMax <= 45)
-check("a dead zone of a few degrees", Config.DeadZone >= 2 and Config.DeadZone <= 8)
+local MAX, BEHIND = rad(Config.TurnMax), rad(Config.TurnBehind)
+check("a turn limit between 60 and 80 degrees (never edge-on, never spins)", Config.TurnMax >= 60 and Config.TurnMax <= 80)
 check("boards in the other lobbies stay still (range under 150)", Config.TurnRange <= 150)
+check("no dead zone or slow spring left (owner: follow me in real time)", Config.DeadZone == nil and Config.TurnOmega == nil and Config.Follow == nil)
 -- a board at the origin placed facing -Z (yaw 0)
 local function aimAt(x, z) return Rules.aim(0, 0, 0, x, z, MAX, BEHIND, Config.TurnRange) end
 check("you straight in front: faces you", math.abs(aimAt(0, -20)) < 1e-9)
 check("you 30 degrees to the side: follows", math.abs(deg(aimAt(-20 * math.sin(rad(30)), -20 * math.cos(rad(30)))) - 30) < 1e-6)
-check("you 80 degrees round: stops at the limit", math.abs(deg(aimAt(-20 * math.sin(rad(80)), -20 * math.cos(rad(80))))) <= Config.TurnMax + 1e-6)
-check("you level with its edge (90): still the limit, not edge-on", math.abs(deg(aimAt(-20, 0))) <= Config.TurnMax + 1e-6)
+check("you 60 degrees round: still follows", math.abs(deg(aimAt(-20 * math.sin(rad(60)), -20 * math.cos(rad(60)))) - 60) < 1e-6)
+check("you level with its edge (90): stops at the limit, not edge-on", math.abs(deg(aimAt(-20, 0))) <= Config.TurnMax + 1e-6)
 check("you behind it: it looks home (old code spun 180)", math.abs(aimAt(3, 20)) < 1e-9)
 check("you far away: home", math.abs(aimAt(0, -(Config.TurnRange + 5))) < 1e-9)
 check("standing inside it: home (no divide by zero)", aimAt(0.2, 0.2) == 0)
--- walking right past the front, close: the facing never jumps or goes past the limit
+-- walking past the front at a run: it keeps facing you as you go (the old one lagged up to seconds behind)
 do
-	local y, v, goal = 0, 0, 0
-	local sx, biggestStep, most = -30, 0, 0
-	local px = sx
-	for f = 1, 240 do -- 8 s at 30 fps, walking left to right 6 studs in front at 7.5 studs/s
-		local x = sx + f * 0.25
-		px = Rules.follow(px, x, 1 / 30, Config.Follow)
-		goal = Rules.settle(goal, Rules.aim(0, 0, 0, px, -6, MAX, BEHIND, Config.TurnRange), DZ)
-		local before = y
-		y, v = Rules.spring(y, v, goal, 1 / 30, Config.TurnOmega, rad(Config.TurnSpeed))
-		biggestStep = math.max(biggestStep, math.abs(Rules.wrap(y - before)))
+	local y, worst, most = 0, 0, 0
+	for f = 1, 240 do -- 4 s at 60 fps, running left to right 12 studs in front at 16 studs/s
+		local x = -32 + f * (16 / 60)
+		local want = Rules.aim(0, 0, 0, x, -12, MAX, BEHIND, Config.TurnRange)
+		y = Rules.turn(y, want, 1 / 60, Config.TurnRate)
+		if f > 10 then worst = math.max(worst, math.abs(Rules.wrap(y - want))) end
 		most = math.max(most, math.abs(y))
 	end
-	check("walking past close by: never past the limit", deg(most) <= Config.TurnMax + 0.01)
-	check("walking past close by: at most TurnSpeed a second (no jerk)", deg(biggestStep) * 30 <= Config.TurnSpeed + 0.01)
+	check(string.format("running past: never more than 5 degrees behind you (%.1f)", deg(worst)), deg(worst) < 5)
+	check("running past: never past the limit", deg(most) <= Config.TurnMax + 0.01)
 end
--- small moves (a bob, a step) don't move it: the dead zone
+-- a jump home (you walked behind it) is a quick swing, not a one-frame snap
 do
-	local goal = 0
-	for i = 1, 60 do
-		local wobble = math.sin(i) * 0.6 -- (side to side 0.6 studs, 20 studs away)
-		goal = Rules.settle(goal, Rules.aim(0, 0, 0, wobble, -20, MAX, BEHIND, Config.TurnRange), DZ)
-	end
-	check("a 0.6 stud wobble 20 studs away doesn't twitch it", goal == 0)
-	-- while it is still turning it follows exactly, so it never rests up to the dead zone short of you
-	check("still turning: follows exactly", Rules.settle(0, math.rad(2), DZ, true) == math.rad(2))
-	check("at rest: a small change is ignored", Rules.settle(0, math.rad(2), DZ, false) == 0)
-end
--- the whole loop as the screen runs it (eased spot, settle, spring): ends facing you, not short
-do
-	local yaw, vel, goal, spot = 0, 0, 0, 0
-	local px = math.tan(math.rad(30)) * 20
-	for _ = 1, 300 do
-		spot = Rules.follow(spot, px, 1 / 30, Config.Follow)
-		local want = Rules.aim(0, 0, 0, spot, -20, MAX, BEHIND, Config.TurnRange)
-		goal = Rules.settle(goal, want, DZ, math.abs(vel) > math.rad(0.5))
-		yaw, vel = Rules.spring(yaw, vel, goal, 1 / 30, Config.TurnOmega, math.rad(Config.TurnSpeed))
-	end
-	local want = Rules.aim(0, 0, 0, px, -20, MAX, BEHIND, Config.TurnRange)
-	check(string.format("ends facing you, not stuck short (%.2f deg off)", deg(math.abs(Rules.wrap(yaw - want)))), deg(math.abs(Rules.wrap(yaw - want))) < 1)
-end
--- the spring: eases in (no snap), settles, never overshoots from rest, the short way round
-do
-	local y, v = 0, 0
-	y, v = Rules.spring(y, v, rad(40), 1 / 60, Config.TurnOmega, rad(Config.TurnSpeed))
-	check("the first frame moves only a little (eases in)", deg(y) < 0.2)
-	local over = false
-	for _ = 1, 600 do
-		y, v = Rules.spring(y, v, rad(40), 1 / 60, Config.TurnOmega, rad(Config.TurnSpeed))
-		if y > rad(40) + 1e-6 then over = true end
-	end
-	check("settles on the goal", math.abs(deg(y) - 40) < 0.05)
-	check("never overshoots", not over)
-	local a = Rules.spring(3.1, 0, -3.1, 0.05, Config.TurnOmega, rad(Config.TurnSpeed))
-	check("short way round", a > 3.1 or a < -3.1)
-	local b = Rules.spring(0, 0, rad(40), 5, Config.TurnOmega, rad(Config.TurnSpeed))
-	check("a long hitch doesn't fling it", deg(b) <= Config.TurnSpeed * 0.1 + 1e-6)
+	local y = Rules.turn(rad(70), 0, 1 / 60, Config.TurnRate)
+	check("swinging home: not in one frame", deg(y) > 40)
+	for _ = 1, 30 do y = Rules.turn(y, 0, 1 / 60, Config.TurnRate) end
+	check("swinging home: done within half a second", deg(math.abs(y)) < 1)
 end
 
 -- the look: one muted grey-mauve slab like Huss Valley's (not magenta rows on a purple header), big outlined text

@@ -57,7 +57,7 @@ function M.start()
 	local TAG = "HuzzAvatarStand"
 	local NEAR = 160 -- copies further away than this stop moving
 	local SPEED = 26 -- the run's pace (studs a second: a runner's sprint)
-	local TURN_MAX, TURN_BEHIND = math.rad(70), math.rad(130) -- (it turns to you calmly, like the boards, but further)
+	local TURN_MAX, TURN_BEHIND = math.rad(70), math.rad(130) -- (it turns to you in real time, like the boards)
 
 	local holder = Instance.new("Folder")
 	holder.Name = "HuzzStandAvatars" -- (this screen only)
@@ -519,11 +519,10 @@ function M.start()
 				local dx, dz = at.X - rec.at.X, at.Z - rec.at.Z
 				local d2 = dx * dx + dz * dz
 				if d2 < NEAR * NEAR then
-					-- the same calm turn as the boards (Shared/LeaderboardRules): a limit, a dead zone, a gentle ease
+					-- the same real-time turn as the boards (Shared/LeaderboardRules aim + turn; owner: "follow me in real time")
 					local want = LeaderRules.aim(rec.home, rec.at.X, rec.at.Z, at.X, at.Z, TURN_MAX, TURN_BEHIND, NEAR)
-					rec.goal = LeaderRules.settle(rec.goal, want, math.rad(LeaderConfig.DeadZone), math.abs(rec.vel) > math.rad(0.5))
 					local before = rec.yaw
-					rec.yaw, rec.vel = LeaderRules.spring(rec.yaw, rec.vel, rec.goal, dt, LeaderConfig.TurnOmega, math.rad(90))
+					rec.yaw = LeaderRules.turn(rec.yaw, want, math.min(dt, 0.1), LeaderConfig.TurnRate)
 					if rec.yaw ~= before then root.CFrame = CFrame.new(rec.at) * CFrame.Angles(0, rec.yaw, 0) end
 					stepRun(rec, dt)
 				end

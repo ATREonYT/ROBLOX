@@ -126,6 +126,9 @@ end
 	  settle  a dead zone: the goal only moves once the new aim is DeadZone away, so small moves don't twitch it;
 	  spring  a critically damped ease to the goal (starts gently, no overshoot), capped at MaxSpeed degrees a second.
 	It turns about its own upright centre only (Gameplay/Leaderboards), so it never leans.
+	Then (owner, Oct 18: "make it follow me in real time, not adjust after i move") the dead zone, slow spring and
+	smoothed spot made it lag, so the boards now aim at you every frame and catch up with `turn` at TurnRate 20
+	(about 0.05 s behind); settle / spring / follow stay here but the boards no longer use them.
 ]]
 local function wrap(a: number): number
 	return (a + math.pi) % (2 * math.pi) - math.pi

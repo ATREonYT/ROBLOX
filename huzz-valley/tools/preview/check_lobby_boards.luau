@@ -1,7 +1,7 @@
 -- Check: the lobby leaderboards and avatar stands run end to end offline (HuzzServer/LeaderboardService,
 -- Gameplay/Leaderboards, Gameplay/AvatarStands). With no boards in the place, five are made round the lobby floor,
 -- tagged, filled with this server's players (Studio: no DataStores), drawn on this screen in one unlit slab colour
--- (studs, web, Halloween pumpkin and candle) and turned calmly towards you (never past TurnMax, home when you're
+-- (studs, web, Halloween pumpkin and candle) and turned towards you in real time (never past TurnMax, home when you're
 -- behind it, still for small wobbles). His plain grey block beside a spin wheel (named "Part", as in his own Rojo
 -- place where nothing renames it) is found and tagged by the server, gets your copy holding its pass's exclusive
 -- knife, its sign, and a button that never opens a purchase for a pass that isn't ready ("coming soon").
@@ -122,7 +122,7 @@ check("slab not see-through", levelGui.Adornee.Transparency == 0)
 local deco = levelGui.Adornee:FindFirstChild("Halloween")
 check("pumpkin and candle on the slab", deco ~= nil and deco:FindFirstChild("Pumpkin") ~= nil and deco:FindFirstChild("Flame") ~= nil)
 
--- turning towards you, calmly (owner: "make the leaderboards move smoothly, right now they move very weirdly")
+-- turning towards you in real time (owner: "make it follow me in real time, not adjust after i move")
 local LB = require(RS.Shared.Config.Leaderboards)
 local board = levelGui.Adornee
 local home = board.CFrame
@@ -142,22 +142,12 @@ home = board.CFrame -- (settled facing straight out)
 standAt(30, 20)
 frames(1)
 local first = offHome()
-check(string.format("first frame: only a little (eases in, %.2f deg)", first), first < 0.5)
-frames(150)
-check(string.format("settles facing you (30 deg: %.1f)", offHome()), math.abs(offHome() - 30) < 2)
+check(string.format("first frame: already turning towards you (%.1f deg)", first), first > 5)
+frames(15)
+check(string.format("faces you within half a second (30 deg: %.1f)", offHome()), math.abs(offHome() - 30) < 1)
 local after = board.CFrame
 check("stays upright", math.abs(after.LookVector.Y) < 1e-6 and math.abs(after.UpVector.Y - 1) < 1e-6)
 check("turns about its own centre", (after.Position - home.Position).Magnitude < 1e-6)
--- small wobbles don't twitch it
-local still = board.CFrame
-local wobbleMoved = false
-for i = 1, 60 do
-	local p = rootPart.CFrame.Position
-	rootPart.CFrame = CFrame.new(p + home.RightVector * (if i % 2 == 0 then 0.3 else -0.3))
-	frames(1)
-	if (board.CFrame.LookVector - still.LookVector).Magnitude > 1e-3 then wobbleMoved = true end
-end
-check("a 0.3 stud wobble doesn't twitch it (dead zone)", not wobbleMoved)
 -- level with its edge: it stops at the limit, never edge-on
 standAt(88, 20)
 local most = 0
@@ -165,7 +155,7 @@ for _ = 1, 200 do frames(1); most = math.max(most, offHome()) end
 check(string.format("never past %d degrees (%.1f)", LB.TurnMax, most), most <= LB.TurnMax + 0.5)
 -- behind it: it goes home instead of spinning round
 standAt(170, 20)
-frames(300)
+frames(60)
 check(string.format("behind it: back home (%.1f deg)", offHome()), offHome() < 1)
 standAt(0, 20)
 frames(60)

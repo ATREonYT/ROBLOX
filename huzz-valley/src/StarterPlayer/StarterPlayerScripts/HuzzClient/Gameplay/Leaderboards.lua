@@ -1,11 +1,11 @@
 --[[
 	Draws the lobby leaderboards on this screen and turns them towards your character (owner, Oct 18: "make the
 	leaderboards just like in the video i sent you from the game, make them follow your character", then "make the
-	leaderboards move smoothly, right now they move very weirdly"). Each board turns gently about its own upright
-	centre (never leans) towards a smoothed spot under you, at most Config/Leaderboards.TurnMax degrees from the way
-	it was placed, with a dead zone so small moves don't twitch it, eased by a critically damped spring (no
-	overshoot, capped speed); from behind or far away it eases back home (Shared/LeaderboardRules aim / settle /
-	spring, where the old problem is written down). Only this screen's copy turns, nothing is sent, the stone base
+	leaderboards move smoothly, right now they move very weirdly", then "make it follow me in real time, not adjust
+	after i move"). Each board turns about its own upright centre (never leans) to face you as you move, every
+	frame (Rules.turn at Config/Leaderboards.TurnRate: caught up in about 0.1 s, so a respawn or a jump home is a
+	quick swing, not a snap), at most TurnMax degrees from the way it was placed; from behind or far away it swings
+	back home (Shared/LeaderboardRules aim, where the old spinning problem is written down). Only this screen's copy turns, nothing is sent, the stone base
 	stays put; the Halloween pumpkin and candle are welded to the slab, so they turn with it.
 
 	The boards are HuzzServer/LeaderboardService's (tag "HuzzLeaderboard": a Model with a "Board" part, or the owner's
@@ -151,26 +151,17 @@ function M.start()
 		end)
 	end
 
-	-- the calm turn towards you (upright axis only, about the slab's own centre)
+	-- the turn towards you, in real time (upright axis only, about the slab's own centre)
 	local rad = math.rad
-	local spot -- the eased spot under your character the boards look at
 	RunService.RenderStepped:Connect(function(dt)
 		local char = player.Character
 		local root = char and char:FindFirstChild("HumanoidRootPart")
 		local at = root and root.CFrame.Position
-		if at then
-			if not spot or (Vector3.new(at.X, 0, at.Z) - spot).Magnitude > 60 then
-				spot = Vector3.new(at.X, 0, at.Z) -- (a respawn or a move to another lobby: no long swing)
-			else
-				spot = Vector3.new(Rules.follow(spot.X, at.X, dt, Config.Follow), 0, Rules.follow(spot.Z, at.Z, dt, Config.Follow))
-			end
-		end
 		for _, rec in boards do
 			local c = rec.centre
-			local want = if spot then Rules.aim(rec.homeYaw, c.X, c.Z, spot.X, spot.Z, rad(Config.TurnMax), rad(Config.TurnBehind), Config.TurnRange) else rec.homeYaw
-			rec.goal = Rules.settle(rec.goal, want, rad(Config.DeadZone), math.abs(rec.vel) > rad(0.5))
-			if math.abs(Rules.wrap(rec.goal - rec.yaw)) > 1e-4 or math.abs(rec.vel) > 1e-4 then
-				rec.yaw, rec.vel = Rules.spring(rec.yaw, rec.vel, rec.goal, dt, Config.TurnOmega, rad(Config.TurnSpeed))
+			local want = if at then Rules.aim(rec.homeYaw, c.X, c.Z, at.X, at.Z, rad(Config.TurnMax), rad(Config.TurnBehind), Config.TurnRange) else rec.homeYaw
+			if math.abs(Rules.wrap(want - rec.yaw)) > 1e-4 then
+				rec.yaw = Rules.turn(rec.yaw, want, math.min(dt, 0.1), Config.TurnRate)
 			end
 			if math.abs(Rules.wrap(rec.yaw - rec.written)) > 1e-4 then -- (only touch the part when it really moved)
 				rec.written = rec.yaw
