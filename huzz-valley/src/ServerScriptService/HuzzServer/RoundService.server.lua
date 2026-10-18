@@ -348,6 +348,7 @@ end
 
 function handlers.Rescued(e)
 	rescueTime[e.id] = nil
+	fellAt[e.id] = nil -- (up again: a reset later must not send them back to this spot)
 	protectedUntil[e.id] = os.clock() + Config.Rescue.Shield
 	if byId[e.id] then
 		byId[e.id]:SetAttribute("ProtectedUntil", Workspace:GetServerTimeNow() + Config.Rescue.Shield)
@@ -628,6 +629,7 @@ local function play(seconds, done, live, onFrame)
 end
 
 local function runRound()
+	table.clear(fellAt) -- (a new round: last round's fall spots don't count)
 	local events = Rules.startRound(match)
 	if match.over then
 		apply(events)
@@ -1262,6 +1264,10 @@ local function onCharacter(player, character)
 	end
 	humanoid.Died:Connect(function()
 		if match and match.status[id] == "Active" then
+			-- (health is already 0 here, so rootOf says nil: keep where they fell before tagging, so the new body
+			-- lies down there and nobody can rescue it from wherever it respawns)
+			local root = character:FindFirstChild("HumanoidRootPart")
+			if root and root:IsA("BasePart") then fellAt[id] = root.CFrame end
 			apply(Rules.tag(match, nil, id))
 		end
 	end)
@@ -1382,7 +1388,10 @@ local function rollGirl()
 	State:SetAttribute("RollData", "")
 end
 
-while true do
+-- One pass of the server's loop: wait for players, vote, play a game, clean up. Each pass runs protected, so an error
+-- anywhere in it (a map that fails to load, the girl roll) skips to the next pass instead of stopping the game
+-- for the rest of the server's life.
+local function onePass()
 	setStage("Waiting")
 	while not enough() do
 		task.wait(1)
@@ -1411,5 +1420,14 @@ while true do
 			warn("[Huzz] Game stopped by an error: " .. tostring(err))
 		end
 		cleanUp()
+	end
+end
+
+while true do
+	local ok, err = xpcall(onePass, debug.traceback)
+	if not ok then
+		warn("[Huzz] The game loop hit an error: " .. tostring(err))
+		pcall(cleanUp)
+		task.wait(1)
 	end
 end

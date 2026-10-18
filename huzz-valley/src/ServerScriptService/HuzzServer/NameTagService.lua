@@ -173,7 +173,9 @@ function NameTags.set(player, look, badge, rescue)
 	if data then
 		local level = Progression.level(data.XP or 0)
 		local wins = (data.Stats and data.Stats.Wins) or 0
-		gui.Sub.Text = `Lv. {level} · {wins} {if wins == 1 then "win" else "wins"}`
+		-- VIP (the Game Pass, checked with Roblox by ShopService) shows on the tag too: what the pass promises
+		local vip = if player:GetAttribute("VIP") then "VIP · " else ""
+		gui.Sub.Text = `{vip}Lv. {level} · {wins} {if wins == 1 then "win" else "wins"}`
 	end
 	gui.Badge.Visible = badge ~= nil
 	gui.Badge.Text = badge or ""

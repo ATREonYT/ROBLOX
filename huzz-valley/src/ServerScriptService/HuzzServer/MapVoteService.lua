@@ -65,14 +65,19 @@ function MapVoteService.run(nameA, nameB, seconds, stillGoing)
 end
 
 local remote = Net.get("Vote") :: RemoteEvent
+local lastVote: { [Player]: number } = {}
 remote.OnServerEvent:Connect(function(player, name)
+	-- (one change every 0.2 s, and the same vote again does nothing: each change is sent to every player)
+	if votes[player] == name or os.clock() - (lastVote[player] or 0) < 0.2 then return end
 	if open and type(name) == "string" and (name == choices[1] or name == choices[2]) then
+		lastVote[player] = os.clock()
 		votes[player] = name
 		player:SetAttribute("HuzzVote", name)
 		recount()
 	end
 end)
 Players.PlayerRemoving:Connect(function(player)
+	lastVote[player] = nil
 	if votes[player] then
 		votes[player] = nil
 		recount()

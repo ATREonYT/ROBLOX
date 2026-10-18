@@ -14,16 +14,22 @@ local ShopService = {}
 
 local RECEIPT_MEMORY = 100
 
-local function refreshPasses(player: Player)
+-- `boughtId`: a pass Roblox just told us this player bought (PromptGamePassPurchaseFinished comes from Roblox, not
+-- the client). Roblox's ownership check can still say "not owned" right after an in-game purchase, so it counts as
+-- owned straight away. A check that errors keeps what we knew before, instead of taking the pass away.
+local function refreshPasses(player: Player, boughtId: number?)
+	local before = DataService.getExtra(player, "Passes") or {}
 	local owned = {}
 	for _, p in Products.Passes do
 		if p.Id ~= 0 then
 			local ok, has = pcall(MarketplaceService.UserOwnsGamePassAsync, MarketplaceService, player.UserId, p.Id)
-			if ok and has then owned[p.Key] = true end
+			if (ok and has) or p.Id == boughtId or (not ok and before[p.Key]) then owned[p.Key] = true end
 		end
 	end
-	player:SetAttribute("VIP", owned.VIP == true) -- read by the chat tag (client) and anything VIP-only
+	if not player.Parent then return end -- (left while Roblox answered: don't bring their entry back)
+	player:SetAttribute("VIP", owned.VIP == true) -- read by the chat tag (client) and the name tag
 	DataService.setExtra(player, "Passes", owned)
+	pcall(function() require(script.Parent.NameTagService).restyle(player) end)
 end
 
 function ShopService.ownsPass(player: Player, key: string): boolean
@@ -84,8 +90,8 @@ end
 
 function ShopService.start()
 	MarketplaceService.ProcessReceipt = processReceipt
-	MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, _passId, purchased)
-		if purchased then refreshPasses(player) end
+	MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, passId, purchased)
+		if purchased then refreshPasses(player, passId) end
 	end)
 	local function onJoin(player: Player)
 		if DataService.waitFor(player, 15) then refreshPasses(player) end

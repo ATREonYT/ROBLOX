@@ -99,8 +99,9 @@ end
 -- Waits (up to `timeout` seconds) for the player's save to finish loading.
 function DataService.waitFor(player: Player, timeout: number?)
 	local deadline = os.clock() + (timeout or 10)
+	-- (polls: a save that never loads, say they left or were kicked, would otherwise wait on someone else's load)
 	while not profiles[player] and player.Parent and os.clock() < deadline do
-		loaded.Event:Wait()
+		task.wait(0.1)
 	end
 	return profiles[player]
 end
