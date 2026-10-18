@@ -37,12 +37,17 @@ local function tile(parent: Instance, i: number)
 		BackgroundColor3 = C.Panel, BackgroundTransparency = 0.2, BorderSizePixel = 0, Parent = parent,
 	}, { Kit.corner(8) })
 	Kit.studPattern(f, 0.25)
+	-- The owner's map picture behind the text (Config.Map.Pictures), darker on the left where the words sit.
+	local photo = Kit.art("MapBase", { Name = "Photo", Size = UDim2.fromScale(1, 1), Visible = false, Parent = f })
+	Kit.attach(Kit.corner(8), photo)
+	local veil = new("Frame", { Name = "Veil", Size = UDim2.fromScale(1, 1), BackgroundColor3 = C.Panel, BorderSizePixel = 0, Visible = false, Parent = f }, { Kit.corner(8) })
+	new("UIGradient", { Name = "Fade", Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.3), NumberSequenceKeypoint.new(0.55, 0.7), NumberSequenceKeypoint.new(1, 0.95) }), Parent = veil })
 	local rim = Kit.stroke(C.Frame, 2)
 	rim.Name = "Rim"
 	rim = Kit.attach(rim, f) :: UIStroke
-	local name = Kit.name({ Name = "MapName", Text = "", TextSize = 15, Position = UDim2.fromOffset(10, 6), Size = UDim2.new(1, -16, 0, 20), TextTruncate = Enum.TextTruncate.AtEnd, Parent = f })
-	local sub = Kit.text({ Name = "Status", Text = "", FontFace = F.Body, TextSize = 14, TextColor3 = C.SubText, Position = UDim2.fromOffset(10, 30), Size = UDim2.new(1, -16, 0, 18), TextWrapped = false, Parent = f })
-	return { frame = f, rim = rim, name = name, sub = sub }
+	local name = Kit.name({ Name = "MapName", Text = "", TextSize = 15, ZIndex = 2, Position = UDim2.fromOffset(10, 6), Size = UDim2.new(1, -16, 0, 20), TextTruncate = Enum.TextTruncate.AtEnd, Parent = f })
+	local sub = Kit.text({ Name = "Status", Text = "", FontFace = F.Body, TextSize = 14, TextColor3 = C.SubText, ZIndex = 2, Position = UDim2.fromOffset(10, 30), Size = UDim2.new(1, -16, 0, 18), TextWrapped = false, Parent = f })
+	return { frame = f, rim = rim, name = name, sub = sub, photo = photo, veil = veil }
 end
 
 function NextMap.build(parent: Instance)
@@ -83,6 +88,10 @@ function NextMap.build(parent: Instance)
 		for i, name in { a, b } do
 			local t = tiles[i]
 			t.name.Text = string.upper(displayName(name))
+			local pic = Config.Map.Pictures and Config.Map.Pictures[name]
+			t.photo.Visible = pic ~= nil
+			t.veil.Visible = pic ~= nil
+			if pic then Kit.setArt(t.photo, pic) end
 			local won = showResult and winner == name
 			local picked = voting and mine == name
 			if voting then

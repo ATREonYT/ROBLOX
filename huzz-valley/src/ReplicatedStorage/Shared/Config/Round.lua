@@ -138,6 +138,9 @@ return {
 		MiddleSpawn = 20, -- catchers start within this many studs of the Middle's centre
 		Gap = 30, -- studs between the lobby island and the map copied in front of it
 		Names = {}, -- names shown in the vote, e.g. { Base_Map = "The Field" } (default: the folder name without "_Map")
+		-- The picture on each map's vote card and NEXT MAP tile (Config/Assets.Art name; owner's pictures, Oct 18).
+		-- A map not listed here shows a live 3D view of itself instead.
+		Pictures = { Base_Map = "MapBase", Halloween_Map = "MapHalloween", BasketBall_Map = "MapBasketball" },
 		SafeLines = true, -- a white line where each zone meets the field, and SAFE ZONE over the goal's line
 		LineWidth = 0.8,
 		SignHeight = 9, -- the SAFE ZONE sign above the line (studs)

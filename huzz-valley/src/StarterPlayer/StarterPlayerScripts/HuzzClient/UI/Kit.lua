@@ -318,6 +318,15 @@ function Kit.art(name: string, props: { [string]: any }?): ImageLabel
 	return img
 end
 
+-- Swap the picture an art label shows (a map card whose map changes with each vote).
+function Kit.setArt(img: ImageLabel, name: string)
+	if img:GetAttribute("Art") == name then return end
+	img:SetAttribute("Art", name)
+	img:SetAttribute("PreviewFile", "assets/art/" .. kebab(name) .. ".png")
+	img.Image = Assets.art(name)
+	ImageLoader.apply(img, "Art", name, img.Image)
+end
+
 local function lighten(c: Color3, a: number) return c:Lerp(Color3.new(1, 1, 1), a) end
 local function darken(c: Color3, a: number) return c:Lerp(Color3.new(0, 0, 0), a) end
 -- A button look: fill (idle / hover / pressed), label colour, the 1 px lighter line along its top, and its rim.

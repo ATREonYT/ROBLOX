@@ -57,6 +57,9 @@ Assets.Icons = {
 
 -- Product pictures, cropped unchanged from the kit's pages (design/pages 01, 07, 08). Import them the same way.
 Assets.Art = {
+	MapBase = "",        -- assets/art/map-base.png (the owner's map pictures, Oct 18: the map vote cards and NEXT MAP tiles)
+	MapBasketball = "",  -- assets/art/map-basketball.png
+	MapHalloween = "",   -- assets/art/map-halloween.png
 	BlossomAura = "",    -- assets/art/blossom-aura.png
 	CoinPack2000 = "",   -- assets/art/coin-pack-2000.png (cut from the Oct 17 mockup: placeholder until a sharp PNG)
 	CoinPack500 = "",    -- assets/art/coin-pack-500.png (same)

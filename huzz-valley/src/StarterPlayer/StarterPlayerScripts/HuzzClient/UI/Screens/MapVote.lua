@@ -1,4 +1,4 @@
--- Choose a Map (design/pages/15): two map cards with a live view of each map, the vote count, and a VOTE button
+-- Choose a Map (design/pages/15): two map cards with the owner's picture of each map (else a live view of it), the vote count, and a VOTE button
 -- (your choice turns gold: YOUR VOTE, gold rim). The timer is the server's real vote deadline. It opens by itself
 -- when the server starts a vote (Round remote Stage = "Voting") and closes when the vote ends; closing it early
 -- keeps your vote. One vote per player; voting again moves it (MapVoteService on the server).
@@ -78,6 +78,9 @@ local function card(parent: Instance, i: number, onVote: () -> ())
 		Ambient = Color3.fromRGB(170, 170, 185), LightColor = Color3.fromRGB(255, 248, 235), LightDirection = Vector3.new(-1, -2, -0.6),
 		Parent = f,
 	}, { Kit.corner(7) })
+	-- The owner's picture of the map (Config.Map.Pictures) covers the live view when the map has one.
+	local photo = Kit.art("MapBase", { Name = "Photo", Size = UDim2.fromScale(1, 1), Visible = false, Parent = f })
+	Kit.attach(Kit.corner(7), photo)
 	local shade = new("Frame", { Name = "Shade", Size = UDim2.fromScale(1, 1), BackgroundColor3 = COL.Shade, BorderSizePixel = 0, ZIndex = 2, Parent = f }, { Kit.corner(7) })
 	new("UIGradient", {
 		Name = "Fade", Rotation = 90,
@@ -96,7 +99,7 @@ local function card(parent: Instance, i: number, onVote: () -> ())
 		Name = "Vote", Text = "VOTE", Style = "Action", TextSize = 20, ZIndex = 3,
 		Position = UDim2.fromOffset(CARD.BtnInset, CARD.BtnY), Size = UDim2.fromOffset(CARD.W - 2 * CARD.BtnInset, CARD.BtnH), Parent = f, OnClick = onVote,
 	})
-	return { frame = f, rim = rim, view = view, name = name, votes = votes, button = btn, shown = nil }
+	return { frame = f, rim = rim, view = view, photo = photo, name = name, votes = votes, button = btn, shown = nil }
 end
 
 function MapVote.build(parent: Instance)
@@ -150,7 +153,10 @@ function MapVote.build(parent: Instance)
 			c.rim.Thickness = if chosen then 3 else 2
 			if c.shown ~= n and n ~= "" then
 				c.shown = n
-				showMap(c.view, n)
+				local pic = Config.Map.Pictures and Config.Map.Pictures[n]
+				c.photo.Visible = pic ~= nil
+				c.view.Visible = pic == nil
+				if pic then Kit.setArt(c.photo, pic) else showMap(c.view, n) end
 			end
 		end
 	end
