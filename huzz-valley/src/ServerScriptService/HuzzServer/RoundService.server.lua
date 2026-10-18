@@ -1107,10 +1107,11 @@ local lastStab = {}
 -- little behind still counts). Shields, the safe start zone and a fresh rescue protect. True when someone was hit.
 -- only: the runner the catcher's screen hit (pinpoint, Gameplay/HitCheck): just that one is checked.
 local chaseClaim
-local function stabNear(id, me: BasePart, range: number, front: boolean, only: number?): boolean
+local function stabNear(id, me: BasePart, range: number, front: boolean, only: number?, along: Vector3?): boolean
 	local now = os.clock()
 	local start = zones[MapService.startFor(match.round)]
-	local look = me.CFrame.LookVector
+	local look = along or me.CFrame.LookVector -- (a leap: the way it goes, forward or sideways)
+	front = front or along ~= nil
 	local best, bestDistance = nil, range
 	for runnerId, status in match.status do
 		local root = (only == nil or runnerId == only) and status == "Active" and not frozen[runnerId]
@@ -1137,7 +1138,7 @@ end
 
 -- A hit the catcher's screen saw (Gameplay/HitCheck): that one runner is checked from here every frame until
 -- `untilClock`, the way the old lunge loop kept checking (a single check failed under normal lag).
-function chaseClaim(id, player, claim, range, front, untilClock, onHit)
+function chaseClaim(id, player, claim, range, front, untilClock, onHit, along)
 	task.spawn(function()
 		while true do
 			local me = rootOf(id)
@@ -1146,7 +1147,7 @@ function chaseClaim(id, player, claim, range, front, untilClock, onHit)
 				or frozen[id] or KnockdownService.isDown(player) or not PowerService.canStab(id) then
 				return
 			end
-			if stabNear(id, me, range, front, claim) then
+			if stabNear(id, me, range, front, claim, along) then
 				if onHit then onHit() end
 				return
 			end
@@ -1227,7 +1228,8 @@ end)
 local lastLunge = {}
 local lungeHit = {} -- id -> true once this lunge has caught someone (one runner per lunge)
 local lungeClaims = {} -- id -> true while this lunge lets the catcher's screen report the hit (it sent true)
-Net.get("Lunge").OnServerEvent:Connect(function(player, arg)
+local lungeDirs = {} -- id -> the way this lunge goes (flat unit Vector3; sideways leaps hit only to that side)
+Net.get("Lunge").OnServerEvent:Connect(function(player, arg, dir)
 	local id = player.UserId
 	local c = player.Character
 	-- a pinpoint hit from the catcher's screen during their leap (Gameplay/Dash + HitCheck)
@@ -1241,7 +1243,7 @@ Net.get("Lunge").OnServerEvent:Connect(function(player, arg)
 			chaseClaim(id, player, arg, Config.Lunge.HitRange + (Config.Stab.Slack or 3), false,
 				lastLunge[id] + Config.Lunge.HitWindow + 0.3, function()
 					lungeHit[id] = true
-				end)
+				end, lungeDirs[id])
 		end
 		return
 	end
@@ -1262,6 +1264,15 @@ Net.get("Lunge").OnServerEvent:Connect(function(player, arg)
 	lastLunge[id] = os.clock()
 	lungeHit[id] = nil
 	lungeClaims[id] = arg == true or nil -- (a lunge the server checks itself takes no claim: no second hit)
+	-- the leap's way (Gameplay/Dash + Shared/KnifeLeap: forward or sideways, never back); a bad value = facing
+	lungeDirs[id] = nil
+	local me0 = rootOf(id)
+	if typeof(dir) == "Vector3" and dir == dir and me0 then
+		local flat = Vector3.new(dir.X, 0, dir.Z)
+		if flat.Magnitude > 0.5 and flat.Unit:Dot(me0.CFrame.LookVector) > -0.3 then
+			lungeDirs[id] = flat.Unit
+		end
+	end
 	player:SetAttribute("DashReady", now + Config.Lunge.Cooldown)
 	c:SetAttribute("LungeAt", now) -- (every screen plays the leap)
 	RoundNet:FireAllClients("Stab", { id = id, lunge = true }) -- (the stab move, on the catcher's own screen too)
@@ -1280,7 +1291,7 @@ Net.get("Lunge").OnServerEvent:Connect(function(player, arg)
 			if lungeHit[id] then
 				return
 			end
-			if stabNear(id, me, Config.Lunge.HitRange, false) then
+			if stabNear(id, me, Config.Lunge.HitRange, false, nil, lungeDirs[id]) then
 				lungeHit[id] = true
 				return -- (one runner per lunge)
 			end

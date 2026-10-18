@@ -10,7 +10,7 @@
 	  Boost  x2 coins from games for Minutes (stacks: another one adds its minutes)
 	  Knife  the Spin Knife skin (Config/CoinShop "SpinKnife" = the owner's Celestial Edge model, only from here); already owned = Duplicate coins
 	Pity: after Pity.After - 1 spins in a row without a Legendary, the next spin is one (shown on the screen).
-	Earnings for scale (Config/Round.Pay): ~15 coins a game, 50 for a win; coin shop looks cost 300 to 2,500.
+	Earnings for scale (Config/Round.Pay): 25 coins a game, 50 more for a win; coin shop looks cost 200 to 8,000.
 ]]
 local SpinWheel = {}
 

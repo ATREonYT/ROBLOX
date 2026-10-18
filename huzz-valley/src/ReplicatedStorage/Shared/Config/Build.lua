@@ -1,2 +1,2 @@
 -- Written by tools/place/build_place.sh: when this place file was built (shown small in Studio only).
-return { Stamp = "Oct 18 15:43 UTC" }
+return { Stamp = "Oct 18 16:41 UTC" }

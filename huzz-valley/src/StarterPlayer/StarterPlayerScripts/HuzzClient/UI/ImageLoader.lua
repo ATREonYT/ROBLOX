@@ -78,10 +78,34 @@ function ImageLoader.content(kind: string, name: string): any
 	return ok and result or nil
 end
 
+-- Big pictures not drawn yet wait in a queue and are drawn one per frame (critic: opening the shop drew 29 knife
+-- pictures of 192 px in one frame, a stutter on phones).
+local queue: { { label: ImageLabel, kind: string, name: string } } = {}
+local pumping = false
+local function pump()
+	pumping = true
+	task.spawn(function()
+		while #queue > 0 do
+			local job = table.remove(queue, 1)
+			if job.label.Parent then
+				local content = ImageLoader.content(job.kind, job.name)
+				if content then job.label.ImageContent = content end
+			end
+			task.wait()
+		end
+		pumping = false
+	end)
+end
+
 -- Points an ImageLabel at the image: the uploaded ID if there is one, otherwise the built-in pixels.
 function ImageLoader.apply(label: ImageLabel, kind: string, name: string, uploadedId: string)
 	if uploadedId ~= "" then
 		label.Image = uploadedId
+		return
+	end
+	if kind == "Art" and cache[kind .. "/" .. name] == nil and string.sub(name, 1, 5) == "Knife" then
+		table.insert(queue, { label = label, kind = kind, name = name })
+		if not pumping then pump() end
 		return
 	end
 	local content = ImageLoader.content(kind, name)

@@ -67,17 +67,29 @@ end
 -- Where the knife's own frame (the .glb's units: +Y blade, X width, Z thickness) sits in Studio:
 -- returns s (studs per unit), R (CFrame rotation: columns = the knife's X, Y, Z), t (Vector3), matched pairs, error.
 local function lineUp(k, parts: { BasePart })
+	-- Several nodes can share a name (a blade and its glowing edge are both "blade_2"): each node takes the next
+	-- unused part of that name, in import order. If the importer merged them into one part, the later nodes reuse it
+	-- (and it keeps the first node's colour: setUp).
 	local byName = {}
 	for _, p in parts do
-		byName[p.Name] = byName[p.Name] or p
-		byName[string.lower(p.Name)] = byName[string.lower(p.Name)] or p
+		local key = string.lower(p.Name)
+		byName[key] = byName[key] or {}
+		table.insert(byName[key], p)
 	end
+	local used = {}
 	local A, B, P = {}, {}, {}
 	for _, n in k.nodes do
-		local p = byName[n[1]] or byName[string.lower(n[1])]
-		if p then
-			table.insert(A, Vector3.new(n[2], n[3], n[4]))
-			table.insert(B, p.CFrame.Position)
+		local key = string.lower(n[1])
+		local list = byName[key]
+		if list then
+			used[key] = (used[key] or 0) + 1
+			local p = list[used[key]]
+			if p then
+				table.insert(A, Vector3.new(n[2], n[3], n[4]))
+				table.insert(B, p.CFrame.Position)
+			else
+				p = list[#list]
+			end
 			table.insert(P, { part = p, node = n })
 		end
 	end
@@ -187,7 +199,7 @@ local function setUp(k, container: Instance, holder: Folder): string
 	handle.Transparency = 1
 	handle.Parent = model
 	local looks = {}
-	for _, pr in matched do looks[pr.part] = pr.node end
+	for _, pr in matched do looks[pr.part] = looks[pr.part] or pr.node end
 	for _, p in parts do
 		p.Parent = model
 		local n = looks[p]

@@ -27,7 +27,7 @@ end
 local game = Instance.new("DataModel")
 local Workspace, ServerStorage = game:GetService("Workspace"), game:GetService("ServerStorage")
 local source = fs.readFile(ROOT .. "src/ServerStorage/HuzzStudioTools/SetupKnives.lua")
-check("the shipped script and the Command Bar copy are the same code", (string.gsub(source, "return run%s*$", "run()")) == (string.gsub(fs.readFile(ROOT .. "tools/knives/setup_knives.lua"), "run%(%)%s*$", "run()")))
+check("the shipped script and the Command Bar copy are the same code", (string.gsub(source, "if script == nil then run%(%) end[^\n]*\nreturn run%s*$", "run()")) == (string.gsub(fs.readFile(ROOT .. "tools/knives/setup_knives.lua"), "run%(%)%s*$", "run()")))
 source = string.gsub(source, "return run%s*$", "return run, KNIVES")
 local lines = {}
 local env = { game = game, Instance = Instance, Vector3 = Vector3, CFrame = CFrame, Color3 = Color3, Enum = Enum,
@@ -98,14 +98,25 @@ for key, t in truth do
 			end
 			check(key .. ": scaled to its length", math.abs((hi - lo) - (bhi - blo) * per) < 0.02)
 		end
-		local neon, glows, welded, parts = 0, 0, 0, 0
+		local neon, glows, welded, parts, plainNeon = 0, 0, 0, 0, 0
+		-- (nodes can share a name: the blade and its glowing edge; each node is the next part of that name)
+		local seen = {}
 		for _, n in k.nodes do
-			local p = model:FindFirstChild(n[1])
+			seen[n[1]] = (seen[n[1]] or 0) + 1
+			local p, i = nil, 0
+			for _, c in model:GetChildren() do
+				if c.Name == n[1] then
+					i += 1
+					if i == seen[n[1]] then p = c end
+				end
+			end
 			if p then
 				parts += 1
 				if n[6] == 1 then
 					glows += 1
 					if p.Material == Enum.Material.Neon and p.Color:ToHex():lower() == n[5] then neon += 1 end
+				elseif p.Material == Enum.Material.Neon then
+					plainNeon += 1 -- (critic: a blade sharing its name with its glowing edge was painted the glow)
 				end
 				local w = p:FindFirstChildOfClass("WeldConstraint")
 				if w and w.Part0 == handle then welded += 1 end
@@ -113,6 +124,7 @@ for key, t in truth do
 		end
 		check(key .. ": every part kept", parts == #k.nodes)
 		check(key .. ": glowing parts Neon in their colour", neon == glows)
+		check(key .. ": the other parts aren't Neon", plainNeon == 0)
 		check(key .. ": every part welded to the Handle", welded == parts)
 		check(key .. ": attributes", model:GetAttribute("Rarity") == k.rarity and model:GetAttribute("Skin") == key)
 	end

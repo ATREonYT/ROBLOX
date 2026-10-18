@@ -218,9 +218,9 @@ local function lunge(c: Model, h: Humanoid, root: BasePart)
 	local L = Config.Lunge
 	local first = HitCheck.find(root, L.Reach, L.Width, dir)
 	if first == false then
-		lungeNet:FireServer() -- (this build can't check: the server finds who the leap reaches)
+		lungeNet:FireServer(nil, dir) -- (this build can't check: the server finds who the leap reaches, along dir)
 	else
-		lungeNet:FireServer(true) -- (true: this screen reports who the leap reaches, Gameplay/HitCheck)
+		lungeNet:FireServer(true, dir) -- (true: this screen reports who the leap reaches, Gameplay/HitCheck)
 		-- pinpoint: the first runner inside the leaping knife's reach on your screen during the hit window
 		task.spawn(function()
 			local found = first

@@ -96,7 +96,7 @@ def main():
     with open(os.path.join(HERE, 'setup_knives.lua'), 'w') as out:
         out.write(head + body.replace('--@@RUN@@', 'run()'))
     with open('src/ServerStorage/HuzzStudioTools/SetupKnives.lua', 'w') as out:
-        out.write(head + body.replace('--@@RUN@@', 'return run'))
+        out.write(head + body.replace('--@@RUN@@', 'if script == nil then run() end -- (pasted whole into the Command Bar)\nreturn run'))
     for s in summary:
         print('%2d %-10s %-18s %-14s len %.3f -> %.2f studs  glow %s  parts %d' % (s['num'], s['rarity'], s['name'], s['key'], s['length'], s['studs'], s['glow'], s['parts']))
 
