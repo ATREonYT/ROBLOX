@@ -9,10 +9,11 @@ Progression.XPPerLevel = 300 -- every level takes the same XP
 Progression.GameXP = { Played = 40, Won = 40, Hero = 25, Each = 5 } -- Each: per crossing, rescue and catch
 Progression.Beyond = { Coins = 100, Aura = 10 }
 
--- The XP one game gives. t = that game's tally (Crossings, Rescues, Catches, Heroes).
+-- The XP one game gives. t = that game's tally (Crossings, Rescues, Catches; HeroPaid = Hero runs made with someone
+-- else in the game, so playing alone against the Practice Bot can't farm it).
 function Progression.gameXP(won: boolean, t: { [string]: number }): number
 	local X = Progression.GameXP
-	return X.Played + (if won then X.Won else 0) + X.Hero * (t.Heroes or 0)
+	return X.Played + (if won then X.Won else 0) + X.Hero * (t.HeroPaid or 0)
 		+ X.Each * ((t.Crossings or 0) + (t.Rescues or 0) + (t.Catches or 0))
 end
 
@@ -100,9 +101,18 @@ end
 -- The chapter the quest screen shows: the furthest open one that still has a quest to claim, else the first one
 -- with a quest left (an earlier quest left for later, like "Rescue 5" played solo, comes back once the later
 -- chapters are done). #Chapters + 1 when every quest is claimed.
-function Progression.shownChapter(claimed: { [string]: boolean }): number
+-- With stats, a chapter holding a quest that's ready to claim comes first (an earlier quest finished later, e.g.
+-- "Rescue 5" done in a game with friends, never stays hidden).
+function Progression.shownChapter(claimed: { [string]: boolean }, stats: { [string]: number }?): number
 	local open = Progression.currentChapter(claimed)
 	if open > #Progression.Chapters then return open end
+	if stats then
+		for c = 1, open do
+			for _, q in Progression.Chapters[c].Quests do
+				if not claimed[q.Id] and (stats[q.Stat] or 0) >= q.Target then return c end
+			end
+		end
+	end
 	for c = open, 1, -1 do
 		for _, q in Progression.Chapters[c].Quests do
 			if not claimed[q.Id] then return c end

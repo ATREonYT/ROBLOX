@@ -117,7 +117,9 @@ function M.start()
 			if animator then
 				pcall(function()
 					for _, t in animator:GetPlayingAnimationTracks() do
-						if t.Priority == Enum.AnimationPriority.Action and t.WeightCurrent > 0.05 then
+						-- (the carry arms are an Action loop too, but the legs keep walking under them: CarryAnimator)
+						if t.Priority == Enum.AnimationPriority.Action and t.WeightCurrent > 0.05
+							and not (Animations.CarryArms ~= "" and t.Animation and t.Animation.AnimationId == Animations.CarryArms) then
 							rec.actionUntil = now + 0.3
 						end
 					end

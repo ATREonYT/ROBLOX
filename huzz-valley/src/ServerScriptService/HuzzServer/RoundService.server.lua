@@ -315,9 +315,9 @@ function handlers.HeroResult(e)
 		local p = byId[e.id]
 		-- (the bonus is for crossing alone while others watch: a solo player is picked every round, so alone
 		-- against the Practice Bot it paid ~10x a real game per minute; loop audit, Oct 18)
-		local others = 0
-		for id, role in match.roles do
-			if role == "Runner" and id ~= e.id then others += 1 end
+		local others = 0 -- (anyone else in the game: a catcher or another runner; alone, only the bot is there)
+		for id in match.roles do
+			if id ~= e.id then others += 1 end
 		end
 		if p and Config.HeroBonus > 0 and others > 0 then
 			DataService.update(p, function(d)
@@ -326,6 +326,7 @@ function handlers.HeroResult(e)
 			RoundNet:FireClient(p, "Bonus", { coins = Config.HeroBonus })
 			tally[e.id] = tally[e.id] or {}
 			tally[e.id].BonusCoins = (tally[e.id].BonusCoins or 0) + Config.HeroBonus -- (shown on the results screen)
+			tally[e.id].HeroPaid = (tally[e.id].HeroPaid or 0) + 1 -- (the XP for a Hero run counts only these)
 		end
 	end
 end
@@ -920,7 +921,7 @@ local function finishGame()
 		-- A catchers' win goes to the catchers who did the catching (the lead, or anyone with a catch). Runners caught
 		-- in earlier rounds are catchers too, and those caught in the last round survived longer than them, so
 		-- "every catcher wins" paid the wrong players (loop audit, Oct 18).
-		local caught = id == match.lead or (match.catches[id] or 0) > 0
+		local caught = id == match.lead or id == winnerId or (match.catches[id] or 0) > 0
 		local won = not botWon and ((match.team == "Runners" and role == "Runner") or (match.team == "Catchers" and role == "Catcher" and caught))
 		if won then
 			addStat(id, "Wins", 1)

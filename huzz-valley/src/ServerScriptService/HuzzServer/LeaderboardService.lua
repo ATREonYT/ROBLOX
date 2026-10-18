@@ -145,8 +145,10 @@ local function setUp()
 	print(string.format("[Huzz] Leaderboards: %d boards", #boards))
 end
 
+local failedAt = {} -- userId -> os.clock() of a failed name lookup (asked again after 10 minutes, not every minute)
 local function nameOf(userId: number): string
 	if names[userId] then return names[userId] end
+	if failedAt[userId] and os.clock() - failedAt[userId] < 600 then return "" end
 	local p = Players:GetPlayerByUserId(userId)
 	if p then
 		names[userId] = p.Name
@@ -157,6 +159,7 @@ local function nameOf(userId: number): string
 		names[userId] = n
 		return n
 	end
+	failedAt[userId] = os.clock()
 	return ""
 end
 

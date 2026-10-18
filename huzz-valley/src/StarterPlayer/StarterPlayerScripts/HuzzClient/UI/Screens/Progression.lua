@@ -261,7 +261,7 @@ local function buildQuests(page: Frame, refreshers: { () -> () })
 	local nextLine = Kit.text({ Name = "Next", Text = "", TextSize = 13, TextColor3 = C.SubText, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 12, 1, -6), Size = UDim2.new(1, -24, 0, 16), TextWrapped = false, Parent = lore })
 	local built, cardRefreshers = nil, {}
 	table.insert(refreshers, function()
-		local current = Progression.shownChapter(State.data.QuestsClaimed)
+		local current = Progression.shownChapter(State.data.QuestsClaimed, State.data.Stats)
 		local shown = math.min(current, #Progression.Chapters)
 		if built ~= shown then
 			built = shown

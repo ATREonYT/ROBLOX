@@ -61,7 +61,7 @@ function ProgressService.claimQuest(player: Player, id: any): (boolean, string?)
 	local ok, why = false, nil
 	DataService.update(player, function(data)
 		if data.QuestsClaimed[quest.Id] then why = "Already claimed."; return end
-		if quest.Chapter and Progression.currentChapter(data.QuestsClaimed) < quest.Chapter then why = "Finish the chapter before first."; return end
+		if quest.Chapter and Progression.currentChapter(data.QuestsClaimed) < quest.Chapter then why = "Claim a quest in the chapter before first."; return end
 		if (data.Stats[quest.Stat] or 0) < quest.Target then why = "Not finished yet."; return end
 		local r = quest.Reward
 		if r and r.Kind == "Coins" then data.Coins = (data.Coins or 0) + r.Amount

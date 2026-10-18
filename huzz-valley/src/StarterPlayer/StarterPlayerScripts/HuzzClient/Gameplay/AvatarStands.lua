@@ -101,6 +101,10 @@ function M.start()
 		local ok, copy = pcall(char.Clone, char)
 		pcall(function() char.Archivable = was end)
 		if not ok or not copy then return nil end
+		-- the game's own extras on your body don't belong on the statue (your knife, aura and girl effects)
+		for _, d in copy:GetDescendants() do
+			if d.Name:sub(1, 4) == "Huzz" and d.Parent then d:Destroy() end
+		end
 		for _, d in copy:GetDescendants() do
 			if d:IsA("BaseScript") or d:IsA("Sound") or d:IsA("BillboardGui") or d:IsA("SurfaceGui") or d:IsA("ParticleEmitter")
 				or d:IsA("Trail") or d:IsA("Beam") or d:IsA("Light") or d:IsA("Highlight") or d:IsA("ForceField")

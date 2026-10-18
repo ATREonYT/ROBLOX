@@ -50,13 +50,11 @@ function M.start()
 
 	local function facePart(item: Instance): BasePart?
 		if item:IsA("BasePart") then return item end
-		local named = item:FindFirstChild("Board")
+		local named = item:FindFirstChild("Board", true)
 		if named and named:IsA("BasePart") then return named end
-		local best, area = nil, 0
-		for _, d in item:GetDescendants() do
-			if d:IsA("BasePart") and d.Size.X * d.Size.Y > area then best, area = d, d.Size.X * d.Size.Y end
-		end
-		return best
+		-- (turning just its biggest part would leave the rest of a model behind: critic)
+		warn(`[Huzz] Leaderboard {item:GetFullName()}: name the part the board goes on "Board"`)
+		return nil
 	end
 
 	local function drop(item: Instance)
