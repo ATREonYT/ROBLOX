@@ -624,22 +624,48 @@ function Kit.slider(props: { [string]: any })
 		api.set((x - a) / s * 100)
 		if props.onChange then props.onChange(value) end
 	end
+	-- A finger only drags once it moves sideways (8 px), so swiping up a scrolling list over a slider scrolls the list
+	-- instead of changing the volume; a tap still sets it. The list stops scrolling while you drag.
+	local touchFrom: Vector3? = nil
+	local scroller: ScrollingFrame? = nil
+	local function hold(on: boolean)
+		scroller = scroller or track:FindFirstAncestorWhichIsA("ScrollingFrame")
+		if scroller then scroller.ScrollingEnabled = not on end
+	end
 	local function begin(input)
 		local t = input.UserInputType
-		if t == Enum.UserInputType.MouseButton1 or t == Enum.UserInputType.Touch then
+		if t == Enum.UserInputType.MouseButton1 then
 			dragging = true
 			fromX(input.Position.X)
+		elseif t == Enum.UserInputType.Touch then
+			touchFrom = input.Position
 		end
 	end
 	track.InputBegan:Connect(begin)
 	knob.InputBegan:Connect(begin)
 	UserInputService.InputChanged:Connect(function(input)
+		if touchFrom and input.UserInputType == Enum.UserInputType.Touch then
+			local d = input.Position - touchFrom
+			if math.abs(d.X) > 8 and math.abs(d.X) > math.abs(d.Y) then
+				touchFrom, dragging = nil, true
+				hold(true)
+			elseif math.abs(d.Y) > 8 then
+				touchFrom = nil -- (a swipe up or down: the list scrolls)
+			end
+		end
 		if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then fromX(input.Position.X) end
 	end)
 	UserInputService.InputEnded:Connect(function(input)
 		local t = input.UserInputType
+		if touchFrom and t == Enum.UserInputType.Touch then -- a tap
+			fromX(touchFrom.X)
+			touchFrom = nil
+			if props.onCommit then props.onCommit(value) end
+			return
+		end
 		if dragging and (t == Enum.UserInputType.MouseButton1 or t == Enum.UserInputType.Touch) then
 			dragging = false
+			hold(false)
 			if props.onCommit then props.onCommit(value) end
 		end
 	end)

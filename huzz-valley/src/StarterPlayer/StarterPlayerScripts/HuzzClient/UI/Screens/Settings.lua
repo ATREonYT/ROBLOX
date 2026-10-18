@@ -119,7 +119,9 @@ local function buildAudio(page: Frame)
 	local skip = Kit.button({ Name = "NextSong", Text = "Next Song", Style = "Slate", TextSize = 15, Corner = 3, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 302 - ROW_X, 0.5, 0), Size = UDim2.fromOffset(120, 35), Parent = r })
 	skip.onClick(function()
 		local ok, Music = pcall(require, UI.Parent:WaitForChild("Gameplay"):WaitForChild("Music", 2))
-		if not (ok and Music and Music.skip()) then Toast.show("No songs to play yet.") end
+		if not (ok and Music and Music.skip()) then
+			Toast.show(if State.setting("MusicOn") == false then "Turn Background Music on first." else "No song to skip right now.")
+		end
 	end)
 	onOff(r, "MusicOn", 437, 118, 564, 116, 35, 18)
 	r = row(list, g, 6, "Monitor", "Mute While Unfocused", "Mute audio when the game window is not active.")

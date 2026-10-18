@@ -14,7 +14,8 @@ local Music = {}
 
 local FADE_IN, FADE_OUT, GAP, WINNER_MAX = 2, 1.2, 1.5, 40
 
-local quietUntil = 0 -- the background stays faded out until then (the win song, the Secret cutscene)
+local quietUntil = 0 -- the background stays faded out until then (the Secret cutscene)
+local winnerPlaying = false -- and while the win song plays
 local skipAsked = false
 local holder: Folder? = nil
 
@@ -34,9 +35,12 @@ local function group(): SoundGroup?
 	return if g and g:IsA("SoundGroup") then g else nil
 end
 
+local okState, State = pcall(require, script.Parent.Parent:WaitForChild("UI"):WaitForChild("State"))
 local function enabled(): boolean
-	local ok, State = pcall(require, script.Parent.Parent:WaitForChild("UI"):WaitForChild("State"))
-	return not ok or State.setting("MusicOn") ~= false
+	return not okState or State.setting("MusicOn") ~= false
+end
+local function quiet(): boolean
+	return winnerPlaying or os.clock() < quietUntil
 end
 
 local function folder(name: string): Instance?
@@ -101,7 +105,8 @@ end
 local function loaded(s: Sound): boolean
 	local ok = pcall(function() return s.IsLoaded end)
 	if not ok then return true end -- (the offline preview's copy of the Roblox API)
-	local untilT = os.clock() + 8
+	-- (a slow phone can take a while to download a song: wait up to 30 s; one that never loads is skipped)
+	local untilT = os.clock() + 30
 	while not s.IsLoaded and os.clock() < untilT and s.Parent do task.wait(0.1) end
 	return s.IsLoaded
 end
@@ -113,7 +118,7 @@ end
 
 -- Next song now (Settings > Audio > Next Song). False when there's nothing to play.
 function Music.skip(): boolean
-	if #songs() == 0 then return false end
+	if #songs() == 0 or not enabled() or quiet() then return false end
 	skipAsked = true
 	return true
 end
@@ -126,8 +131,8 @@ end
 -- The win song over the end of a game; the background comes back once it ends.
 function Music.winner()
 	local song = winnerSong()
-	if not song or not enabled() then return end
-	Music.quiet(WINNER_MAX)
+	if not song or not enabled() or winnerPlaying then return end
+	winnerPlaying = true
 	task.spawn(function()
 		local s = make(song, "Winner")
 		task.wait(0.4) -- (let the background start fading first)
@@ -139,7 +144,7 @@ function Music.winner()
 			fade(s, 0, FADE_OUT)
 		end
 		s:Destroy()
-		quietUntil = math.min(quietUntil, os.clock())
+		winnerPlaying = false
 	end)
 end
 
@@ -147,15 +152,20 @@ function Music.start()
 	-- the win song when a game ends (Round remote "Results", sent to each player as the game finishes)
 	pcall(function()
 		local Net = require(Shared.Net)
-		Net.get("Round").OnClientEvent:Connect(function(kind)
-			if kind == "Results" then Music.winner() end
+		Net.get("Round").OnClientEvent:Connect(function(kind, data)
+			-- someone won (not the Practice Bot): the win song over the end of the game
+			if kind == "Results" and type(data) == "table" and data.outcome ~= "Bot" then Music.winner() end
 		end)
 	end)
 	task.spawn(function()
+		-- the volume sliders need the Music group (made by the server) and your saved settings (Music on or off)
+		pcall(function() SoundService:WaitForChild("Master", 10):WaitForChild("Music", 10) end)
+		local untilT = os.clock() + 10
+		while okState and not State.data.Loaded and os.clock() < untilT do task.wait(0.2) end
 		local bag, last = {}, nil
 		while true do
 			local list = songs()
-			if #list == 0 or not enabled() or os.clock() < quietUntil then
+			if #list == 0 or not enabled() or quiet() then
 				skipAsked = false
 				task.wait(1)
 				continue
@@ -177,17 +187,18 @@ function Music.start()
 			local s = make(song, "Song")
 			s:Play()
 			if loaded(s) then
-				local function interrupted() return skipAsked or not enabled() or os.clock() < quietUntil end
+				local function interrupted() return skipAsked or not enabled() or quiet() end
 				fade(s, song.volume, FADE_IN, interrupted)
 				while s.Parent and playing(s) do
 					if skipAsked or not enabled() then break end
-					if os.clock() < quietUntil then -- fade out, wait, carry on where it was
+					if not s.SoundGroup then s.SoundGroup = group() end
+					if quiet() then -- fade out, wait, carry on where it was
 						fade(s, 0, FADE_OUT)
 						s:Pause()
-						while os.clock() < quietUntil and enabled() do task.wait(0.25) end
+						while quiet() and enabled() do task.wait(0.25) end
 						if not enabled() then break end
 						s:Resume()
-						fade(s, song.volume, FADE_IN, function() return skipAsked or os.clock() < quietUntil end)
+						fade(s, song.volume, FADE_IN, function() return skipAsked or quiet() end)
 					end
 					task.wait(0.25)
 				end
