@@ -353,12 +353,15 @@ def sound(name, desc, loop=False):
 
 
 # ---------------- UI
-@sound("ui_click", "Soft wooden pop for button presses.")
+@sound("ui_click", "Bright bubbly pop for button presses (owner, Oct 18: \"new clicking sound effect\").")
 def ui_click():
-    d = 0.09
-    x = 0.8 * sine(glide(560, 380, d, 2.0), d) * env(d, 0.002, 0.018)
-    add(x, mallet("C5", d, decay=0.022), 0, 0.45)
-    return finish(x, d, lp=4500, fout=0.02)
+    # a quick upward bubble pop on a small rounded thump, with a soft tick on the front so it reads as a press
+    d = 0.085
+    x = 0.75 * sine(glide(620, 1180, d, 4.0), d) * env(d, 0.0015, 0.016)
+    add(x, sine(glide(240, 130, d, 1.6), d) * env(d, 0.002, 0.026), 0, 0.55)
+    add(x, woodtick(1500, 0.03, decay=0.006, seed=21), 0, 0.28)
+    add(x, mallet("G5", 0.06, decay=0.012), 0.004, 0.18)
+    return finish(x, d, lp=5200, fout=0.018)
 
 
 @sound("ui_hover", "Tiny, very soft marimba tap for hovering over buttons.")

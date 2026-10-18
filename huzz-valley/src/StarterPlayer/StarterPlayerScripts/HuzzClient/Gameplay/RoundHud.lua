@@ -787,7 +787,8 @@ function M.start()
 				elseif data.name then
 					setMessage(`{data.name} wins {data.girl}`, color)
 				else
-					setMessage(`Nobody wins {data.girl}`, WHITE)
+					-- (runners won but every one of them chose Chicken: RoundRules "Chicken gets nothing")
+					setMessage(if data.team == "Runners" and not data.bot then `Nobody went HERO. Nobody wins {data.girl}` else `Nobody wins {data.girl}`, WHITE)
 				end
 			end)
 		end

@@ -21,6 +21,9 @@
 	  - When the game ends she goes home with the winning side: whoever on that side holds her; if
 	    nobody does, the runners' last successful Hero (else a random runner who made it), or the lead
 	    catcher (else the catcher with the most catches).
+	  - Chicken gets nothing (owner, Oct 18: "you dont recieve the girl if you run chicken"): a runner who
+	    chose Chicken this game can't be handed her at the end (s.chickens). If every runner left chose
+	    Chicken, nobody wins her.
 
 	Runner status during a round: "Active" (still to cross) | "Safe" (across) | "Downed" (stabbed).
 	Every function returns a list of events:
@@ -71,13 +74,16 @@ local function girlWinner(s, team)
 		if s.lastHero and s.roles[s.lastHero] == "Runner" then
 			return s.lastHero
 		end
-		local made = {}
+		local made, brave = {}, {}
 		for _, id in idsWithRole(s, "Runner") do
-			if s.status[id] == "Safe" then
-				table.insert(made, id)
+			if not s.chickens[id] then
+				table.insert(brave, id)
+				if s.status[id] == "Safe" then
+					table.insert(made, id)
+				end
 			end
 		end
-		return pick(s, if #made > 0 then made else idsWithRole(s, "Runner"))
+		return pick(s, if #made > 0 then made else brave)
 	end
 	if s.lead and s.roles[s.lead] == "Catcher" then
 		return s.lead
@@ -118,6 +124,7 @@ function RoundRules.newGame(ids, catcherId, opts)
 		choice = nil, -- nil (not chosen yet) | "Hero" | "Chicken"
 		hero = nil, -- this round's Hero (while their solo crossing counts)
 		lastHero = nil, -- the latest Hero who made it across
+		chickens = {}, -- runners who chose Chicken this game (they can't be handed the girl at the end)
 		streak = 0, -- full crossings in a row
 		goal = opts.crossings or 3,
 		over = false,
@@ -202,11 +209,15 @@ function RoundRules.choose(s, id, isHero)
 	if s.over or s.picked ~= id or s.choice ~= nil or s.status[id] ~= "Active" then
 		return events
 	end
+	local answered = isHero ~= nil
 	if isHero == nil then
 		isHero = s.random(2) == 1
 	end
 	s.choice = if isHero then "Hero" else "Chicken"
 	s.hero = if isHero then id else nil
+	if not isHero and answered then -- (a random pick for a runner who didn't answer isn't their choice)
+		s.chickens[id] = true
+	end
 	table.insert(events, { type = "Choice", id = id, hero = isHero == true })
 	return events
 end

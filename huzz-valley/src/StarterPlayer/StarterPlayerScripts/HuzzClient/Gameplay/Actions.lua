@@ -1,7 +1,7 @@
 --[[
 	The catchers' move: STAB (while a round runs): left click, a gamepad's R2, or the STAB button.
-	It plays at once on your own screen and is checked by the server (RoundService), which tags the
-	nearest runner in reach. (The girl toss is gone: owner's call.)
+	It plays at once on your own screen; the runner inside your knife's reach on your screen (Gameplay/HitCheck,
+	"make hitboxes pinpoint") is sent to the server (RoundService), which checks it's possible and tags them. (The girl toss is gone: owner's call.)
 
 	Also plays everyone's stab (Shared/StabMotion, or Config/Animations.Stab when set), the Practice Bot's
 	too (RoundService sends "Stab" with bot = true), and lights the knife's slash trail. Buttons sit bottom right, above a phone's jump
@@ -23,6 +23,7 @@ function M.start()
 	local CarryMath = require(Shared.CarryMath)
 	local StabMotion = require(Shared.StabMotion)
 	local Sfx = require(script.Parent.Sfx)
+	local HitCheck = require(script.Parent.HitCheck)
 
 	local player = Players.LocalPlayer
 	local RoundNet = Net.get("Round") :: RemoteEvent
@@ -119,7 +120,35 @@ function M.start()
 			lastStab = os.clock()
 			playStab(player)
 			Sfx.play("stab")
-			StabNet:FireServer()
+			-- pinpoint (Gameplay/HitCheck): the runner inside your knife's reach on your screen, now or while the
+			-- blade comes round (0.1 s); false = a clean miss; nothing sent = this build can't check
+			local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+			if not root then
+				StabNet:FireServer()
+				return
+			end
+			local S = Config.Stab
+			local hit = HitCheck.find(root, S.Reach, S.Width)
+			if hit == false then
+				StabNet:FireServer()
+				return
+			end
+			if hit then
+				StabNet:FireServer(hit)
+				return
+			end
+			task.spawn(function()
+				local t0 = os.clock()
+				while os.clock() - t0 < 0.1 do
+					RunService.Heartbeat:Wait()
+					local found = root.Parent and HitCheck.find(root, S.Reach, S.Width)
+					if found then
+						StabNet:FireServer(found)
+						return
+					end
+				end
+				StabNet:FireServer(false)
+			end)
 		end
 	end
 	UserInputService.InputBegan:Connect(function(input, processed)

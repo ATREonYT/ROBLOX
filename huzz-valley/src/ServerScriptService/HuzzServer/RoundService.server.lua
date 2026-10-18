@@ -7,6 +7,7 @@
 	RoundOver. RoundRules decides everything; this script moves players, watches the zones, stabs and
 	rescues, and turns rule events into carries, messages, name tags and saves.
 ]]
+local CollectionService = game:GetService("CollectionService")
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -167,6 +168,8 @@ local function syncPlayer(id)
 	p:SetAttribute("HuzzFrozen", frozen[id] == true) -- on the line, waiting (no dash, no powers)
 	-- Safe runners stay across (owner's call): their parts bump into the goal's gate (MapService.holdGoal).
 	MapService.setSafe(p.Character, match ~= nil and not match.over and match.status[id] == "Safe")
+	-- catchers bump into both safe zones' walls (owner: "make catcher not be able to go into the safe zone")
+	MapService.setCatcher(p.Character, match ~= nil and not match.over and match.roles[id] == "Catcher")
 	local h = humanoidOf(id)
 	if h then
 		local still = KnockdownService.isDown(p) or PowerService.stuck(id) or frozen[id] == true
@@ -487,6 +490,27 @@ end
 -- push) goes back in. Every frame of the round, not only while running (a Hero safe after the solo run waits
 -- through the countdown too).
 local function keepSafe()
+	-- catchers who got past a zone's wall (a lunge into a corner, lag) go back out onto the field
+	for id, role in match.roles do
+		local root = role == "Catcher" and rootOf(id)
+		if root then
+			for _, zone in { zones.ZoneA, zones.ZoneB } do
+				local out = MapService.pushOut(zone, root.Position)
+				if out and (out - root.Position).Magnitude > 2 then
+					root.Parent:PivotTo(CFrame.new(out) * root.CFrame.Rotation)
+				end
+			end
+		end
+	end
+	local bot = botPlayed and PracticeBot.position()
+	if bot then
+		for _, zone in { zones.ZoneA, zones.ZoneB } do
+			local out = MapService.pushOut(zone, bot)
+			if out and (out - bot).Magnitude > 2 then
+				PracticeBot.place(CFrame.new(out))
+			end
+		end
+	end
 	local goal = goalName and zones[goalName]
 	if not goal then
 		return
@@ -670,6 +694,12 @@ local function runRound()
 	end
 	if Config.Bot.Enabled and not anyCatcher and #runners > 0 and zones.Middle then
 		botPlayed = PracticeBot.spawn(MapService.spot(zones.Middle, zones[startName].Position, Config.Map.MiddleSpawn))
+		if botPlayed then -- (the bot is a catcher too: the safe zones' walls stop it)
+			local ok, bots = pcall(CollectionService.GetTagged, CollectionService, "HuzzBot")
+			for _, m in if ok then bots else {} do
+				MapService.setCatcher(m, true)
+			end
+		end
 		if botPlayed and botChecked ~= match then -- (its first round this game)
 			botChecked = match
 			-- it adapts to the kids playing it: someone new in the game = it starts again at Config.Bot.Speed
@@ -895,7 +925,7 @@ local function finishGame()
 			local t = tally[id] or {}
 			RoundNet:FireClient(p, "Results", {
 				outcome = if botWon then "Bot" elseif won then "Win" else "Lose",
-				girl = girl.name, rarity = girl.rarity, gotGirl = winnerId == id,
+				girl = girl.name, rarity = girl.rarity, gotGirl = winnerId == id, girlTaken = winnerId ~= nil,
 				crossed = t.Crossings or 0, catches = t.Catches or 0, rescues = t.Rescues or 0, heroes = t.Heroes or 0,
 				-- everything this game paid: the game's pay, a Hero bonus, and Aura from stars on the field
 				coins = coins + (t.BonusCoins or 0), aura = aura + (p:GetAttribute("HuzzGameAura") or 0),
@@ -943,6 +973,7 @@ end
 
 local function runGame()
 	MapService.setBounds(true) -- (the field's invisible walls: only during a game)
+	MapService.holdCatchers(true) -- (and the safe zones' walls for catchers)
 	table.clear(tally)
 	for _, p in Players:GetPlayers() do
 		p:SetAttribute("HuzzGameAura", 0) -- (AuraPickupService adds the stars collected this game)
@@ -1015,6 +1046,7 @@ local function cleanUp()
 	end
 	MapService.holdStart(nil, false)
 	MapService.holdGoal(nil, false)
+	MapService.holdCatchers(false)
 	PowerService.clear()
 	MapService.showGoal(nil) -- the lines stay on the map, the SAFE ZONE sign goes out
 	match, girl = nil, nil
@@ -1041,13 +1073,15 @@ end
 local lastStab = {}
 -- Stab the nearest runner within range of the catcher (front only for the knife: runners lag on screen, so a
 -- little behind still counts). Shields, the safe start zone and a fresh rescue protect. True when someone was hit.
-local function stabNear(id, me: BasePart, range: number, front: boolean): boolean
+-- only: the runner the catcher's screen hit (pinpoint, Gameplay/HitCheck): just that one is checked.
+local function stabNear(id, me: BasePart, range: number, front: boolean, only: number?): boolean
 	local now = os.clock()
 	local start = zones[MapService.startFor(match.round)]
 	local look = me.CFrame.LookVector
 	local best, bestDistance = nil, range
 	for runnerId, status in match.status do
-		local root = status == "Active" and not frozen[runnerId] and (protectedUntil[runnerId] or 0) <= now and rootOf(runnerId)
+		local root = (only == nil or runnerId == only) and status == "Active" and not frozen[runnerId]
+			and (protectedUntil[runnerId] or 0) <= now and rootOf(runnerId)
 		if root then
 			local offset = root.Position - me.Position
 			local flat = Vector3.new(offset.X, 0, offset.Z)
@@ -1099,8 +1133,11 @@ function botStep()
 	end, fallY)
 end
 
-Net.get("Stab").OnServerEvent:Connect(function(player)
+Net.get("Stab").OnServerEvent:Connect(function(player, claim)
 	local id = player.UserId
+	if claim ~= nil and claim ~= false and type(claim) ~= "number" then
+		return
+	end
 	local stage = State:GetAttribute("Stage")
 	if not (match and not match.over and match.roles[id] == "Catcher" and (stage == "Running" or stage == "HeroRun") and not frozen[id]) then
 		return
@@ -1118,16 +1155,38 @@ Net.get("Stab").OnServerEvent:Connect(function(player)
 		return
 	end
 	RoundNet:FireAllClients("Stab", { id = id }) -- everyone else sees the stab
-	stabNear(id, me, Config.Stab.Range, true)
+	if type(claim) == "number" then
+		-- pinpoint: the runner the catcher's screen saw inside the knife's reach, if that's possible from here
+		stabNear(id, me, Config.Stab.Range + (Config.Stab.Slack or 3), false, claim)
+	elseif claim == nil then
+		stabNear(id, me, Config.Stab.Range, true) -- (a client that can't check)
+	end -- (false: a clean miss on the catcher's screen)
 end)
 
 -- The catcher's lunge (Config.Lunge): the client leaps at once (Gameplay/Dash) and tells us; we check it's allowed,
 -- set the Space cooldown, show the stab to everyone, and for HitWindow seconds stab the first runner within
 -- HitRange of the catcher (shields and the safe start zone still count).
 local lastLunge = {}
-Net.get("Lunge").OnServerEvent:Connect(function(player)
+local lungeHit = {} -- id -> true once this lunge has caught someone (one runner per lunge)
+Net.get("Lunge").OnServerEvent:Connect(function(player, arg)
 	local id = player.UserId
 	local c = player.Character
+	-- a pinpoint hit from the catcher's screen during their leap (Gameplay/Dash + HitCheck)
+	if type(arg) == "number" then
+		local me = rootOf(id)
+		local st = State:GetAttribute("Stage")
+		if me and match and not match.over and match.roles[id] == "Catcher" and (st == "Running" or st == "HeroRun")
+			and lastLunge[id] and os.clock() - lastLunge[id] <= Config.Lunge.HitWindow + 0.3 and not lungeHit[id]
+			and not frozen[id] and not KnockdownService.isDown(player) and PowerService.canStab(id) and Config.TagMode == "Stab" then
+			if stabNear(id, me, Config.Lunge.HitRange + (Config.Stab.Slack or 3), false, arg) then
+				lungeHit[id] = true
+			end
+		end
+		return
+	end
+	if arg ~= nil and arg ~= true then
+		return
+	end
 	local stage = State:GetAttribute("Stage")
 	if not (c and match and not match.over and match.roles[id] == "Catcher" and (stage == "Running" or stage == "HeroRun") and not frozen[id]) then
 		return
@@ -1140,11 +1199,12 @@ Net.get("Lunge").OnServerEvent:Connect(function(player)
 		return -- still cooling down
 	end
 	lastLunge[id] = os.clock()
+	lungeHit[id] = nil
 	player:SetAttribute("DashReady", now + Config.Lunge.Cooldown)
 	c:SetAttribute("LungeAt", now) -- (every screen plays the leap)
 	RoundNet:FireAllClients("Stab", { id = id, lunge = true }) -- (the stab move, on the catcher's own screen too)
-	if Config.TagMode ~= "Stab" then
-		return -- (touch mode: the leap is just a leap; touching tags as always)
+	if Config.TagMode ~= "Stab" or arg == true then
+		return -- (touch mode: the leap is just a leap; true: the catcher's screen reports the hit itself)
 	end
 	task.spawn(function()
 		local t0 = os.clock()

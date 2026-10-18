@@ -15,7 +15,7 @@ volume. `speed_wind` is a loop: play it with `Sfx.loop`.
 
 | File | Seconds | Preview at | What it is |
 |---|---|---|---|
-| `ui_click.ogg` | 0.09 | 0:00.3 | Soft wooden pop for button presses. |
+| `ui_click.ogg` | 0.09 | 0:00.3 | Bright bubbly pop for button presses (owner, Oct 18: "new clicking sound effect"). |
 | `ui_hover.ogg` | 0.06 | 0:00.8 | Tiny, very soft marimba tap for hovering over buttons. |
 | `ui_open.ogg` | 0.34 | 0:01.3 | Soft upward breath with two kalimba notes as a panel opens. |
 | `ui_close.ogg` | 0.28 | 0:02.1 | Soft downward breath with two falling kalimba notes as a panel closes. |
@@ -44,7 +44,7 @@ volume. `speed_wind` is a loop: play it with `Sfx.loop`.
 | `spin_big_win.ogg` | 1.75 | 0:28.1 | Big prize: thunk, rising run, full warm chord and a shower of soft sparkles. |
 | `lunge.ogg` | 0.42 | 0:30.3 | Heavier, deeper whoosh with a low push for the catcher's lunge. |
 | `trap_set.ogg` | 0.32 | 0:31.2 | Soft wooden click-clack as a trap is set down. |
-| `trap_snap.ogg` | 0.50 | 0:32.0 | Woody snap with a low thump and a springy wobble when a trap catches someone. |
+| `trap_snap.ogg` | 0.50 | 0:31.9 | Woody snap with a low thump and a springy wobble when a trap catches someone. |
 | `knock_down.ogg` | 0.65 | 0:32.9 | Cartoon fall: soft heavy thud, dust puff and a sliding-down tone. |
 | `revive.ogg` | 1.05 | 0:34.0 | Gentle rising swell into a warm chord and kalimba run when someone gets back up. |
 | `aura_pickup.ogg` | 0.80 | 0:35.5 | Satisfying thunk plus a bell and sparkle run for grabbing Aura. |

@@ -54,6 +54,12 @@ return {
 	TagMode = "Stab",
 	Stab = {
 		Range = 8.5, -- studs from the catcher's root to the runner's (a little generous: other players lag on screen)
+		-- Pinpoint (owner, Oct 18: "make hitboxes pinpoint"): the catcher's screen picks the runner whose body is in a
+		-- box in front of them, Reach studs from their middle to the knife's tip and Width across (Gameplay/HitCheck);
+		-- the server only checks that runner is within Range (+ Slack for lag) of where it sees the catcher.
+		Reach = 5.5,
+		Width = 4,
+		Slack = 3,
 		Cooldown = 0.6, -- seconds between stabs, hit or miss
 		Time = 0.42, -- how long the stab move lasts (coil 0.11 s, thrust 0.06 s, hit 0.1 s, follow-through: Shared/StabMotion)
 	},
@@ -70,7 +76,8 @@ return {
 	-- they get stabbed"): a leap forward the way they face, a hard burst that eases off (Speed to EndSpeed over
 	-- Time: 0.38 x (40 + 32/3) = 19 studs, the old flat 56 x 0.36 reach). Any runner they reach during the leap
 	-- (HitWindow seconds, within HitRange studs) is stabbed, the same as the knife. Shares the Space cooldown tile.
-	Lunge = { Speed = 72, EndSpeed = 40, Up = 18, Time = 0.38, Cooldown = 3, HitRange = 4.8, HitWindow = 0.5 },
+	-- Reach/Width: the leaping knife's box on the catcher's screen (pinpoint, as Stab).
+	Lunge = { Speed = 72, EndSpeed = 40, Up = 18, Time = 0.38, Cooldown = 3, HitRange = 4.8, HitWindow = 0.5, Reach = 4.5, Width = 4 },
 
 	-- A caught runner falls flat on their face and lies there until rescued or the next round
 	-- (owner's call).

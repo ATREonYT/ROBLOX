@@ -35,6 +35,7 @@ MapService.lobbies = {} -- { floor, spawn }: every lobby island; maps' entries p
 local loaded -- the copy in Workspace
 local marks, wall -- the current map's safe lines and sign, and the start-line wall before GO
 local gate -- the goal line's gate: only runners already safe bump into it (holdGoal)
+local catcherWalls -- both safe zones' walls that only catchers bump into (holdCatchers)
 local lastPicked
 local zoneParts = {} -- every zone part, so floor checks look through them
 local field -- the loaded map's walled field { frame, lo, hi, floor } (boundary), for putting fallers back
@@ -812,10 +813,10 @@ function MapService.load(entry)
 end
 
 function MapService.unload()
-	for _, item in { marks, wall, gate } do
+	for _, item in { marks, wall, gate, catcherWalls } do
 		item:Destroy()
 	end
-	marks, wall, gate = nil, nil, nil
+	marks, wall, gate, catcherWalls = nil, nil, nil, nil
 	field = nil
 	if loaded then
 		loaded:Destroy()
@@ -969,7 +970,7 @@ function MapService.showGoal(goalName)
 end
 
 --[[
-	Before GO: a see-through wall on the start line keeps runners in their zone (they can still
+	Before GO: an invisible wall on the start line keeps runners in their zone (they can still
 	walk around in it), and keepIn() puts back anyone who found a way round it.
 ]]
 function MapService.holdStart(startName, on)
@@ -991,24 +992,7 @@ function MapService.holdStart(startName, on)
 		Name = "Block", Size = Vector3.new(length + 2, h, 1), CFrame = base + Vector3.new(0, h / 2, 0),
 		CanCollide = true, Transparency = 1, Parent = wall,
 	})
-	-- What you see: a faint strip of blue glass with a glowing top edge and thin posts.
-	local glassH, blue = 5, Color3.fromRGB(120, 200, 255)
-	markPart({
-		Name = "Glass", Size = Vector3.new(length, glassH, 0.2), CFrame = base + Vector3.new(0, glassH / 2, 0),
-		Color = blue, Material = Enum.Material.Glass, Transparency = 0.82, Parent = wall,
-	})
-	markPart({
-		Name = "Edge", Size = Vector3.new(length, 0.18, 0.24), CFrame = base + Vector3.new(0, glassH, 0),
-		Color = blue, Material = Enum.Material.Neon, Transparency = 0.5, Parent = wall, -- (dimmer: it cut across chests, feel study gap 11)
-	})
-	local posts = math.max(2, math.floor(length / 16) + 1)
-	for i = 0, posts - 1 do
-		local x = -length / 2 + length * i / (posts - 1)
-		markPart({
-			Name = "Post", Size = Vector3.new(0.18, glassH, 0.24), CFrame = base * CFrame.new(x, glassH / 2, 0),
-			Color = blue, Material = Enum.Material.Neon, Transparency = 0.65, Parent = wall,
-		})
-	end
+	-- Nothing to see (owner, Oct 18: "get rid of laser wall"): the white safe line on the floor marks the start.
 	wall.Parent = loaded or Workspace
 end
 
@@ -1016,26 +1000,42 @@ end
 	The goal's gate (owner: once you're across you stay across, you can't wander back into the middle): a
 	thick invisible block on the goal line in the "HuzzSafeWall" collision group, which only collides with the
 	"HuzzSafe" group (the parts of runners who are Safe: MapService.setSafe). Runners still running pass straight
-	through it. What everyone sees is a very faint green glass strip with a glowing top: the finish line.
+	through it. It's invisible: the white line on the floor is the finish.
 ]]
 local SAFE, SAFE_WALL = "HuzzSafe", "HuzzSafeWall"
+-- Catchers keep out of both safe zones (owner, Oct 18: "make catcher not be able to go into the safe zone"): an
+-- invisible wall on each zone's edge in "HuzzCatcherWall", which only collides with "HuzzCatcher" (catchers' parts:
+-- MapService.setCatcher), so runners pass through it.
+local CATCHER, CATCHER_WALL = "HuzzCatcher", "HuzzCatcherWall"
 pcall(function()
 	PhysicsService:RegisterCollisionGroup(SAFE)
 	PhysicsService:RegisterCollisionGroup(SAFE_WALL)
+	PhysicsService:RegisterCollisionGroup(CATCHER)
+	PhysicsService:RegisterCollisionGroup(CATCHER_WALL)
 end)
 local function setUpGroups()
 	pcall(function()
 		for _, g in PhysicsService:GetRegisteredCollisionGroups() do
 			local name = g.name
-			if name ~= SAFE and name ~= SAFE_WALL then
-				-- a safe runner collides with everything a normal part does; the gate only with safe runners
-				PhysicsService:CollisionGroupSetCollidable(SAFE, name, PhysicsService:CollisionGroupsAreCollidable("Default", name))
+			if name ~= SAFE and name ~= SAFE_WALL and name ~= CATCHER and name ~= CATCHER_WALL then
+				-- safe runners and catchers collide with everything a normal part does; each wall only with its group
+				local normal = PhysicsService:CollisionGroupsAreCollidable("Default", name)
+				PhysicsService:CollisionGroupSetCollidable(SAFE, name, normal)
+				PhysicsService:CollisionGroupSetCollidable(CATCHER, name, normal)
 				PhysicsService:CollisionGroupSetCollidable(SAFE_WALL, name, false)
+				PhysicsService:CollisionGroupSetCollidable(CATCHER_WALL, name, false)
 			end
 		end
 		PhysicsService:CollisionGroupSetCollidable(SAFE, SAFE, true)
+		PhysicsService:CollisionGroupSetCollidable(CATCHER, CATCHER, true)
+		PhysicsService:CollisionGroupSetCollidable(SAFE, CATCHER, true)
 		PhysicsService:CollisionGroupSetCollidable(SAFE_WALL, SAFE_WALL, false)
 		PhysicsService:CollisionGroupSetCollidable(SAFE_WALL, SAFE, true)
+		PhysicsService:CollisionGroupSetCollidable(SAFE_WALL, CATCHER, false)
+		PhysicsService:CollisionGroupSetCollidable(CATCHER_WALL, CATCHER_WALL, false)
+		PhysicsService:CollisionGroupSetCollidable(CATCHER_WALL, SAFE_WALL, false)
+		PhysicsService:CollisionGroupSetCollidable(CATCHER_WALL, SAFE, false)
+		PhysicsService:CollisionGroupSetCollidable(CATCHER_WALL, CATCHER, true)
 	end)
 end
 
@@ -1060,17 +1060,66 @@ function MapService.holdGoal(goalName, on)
 		CanCollide = true, Transparency = 1, Parent = gate,
 	})
 	block.CollisionGroup = SAFE_WALL
-	local glassH, green = 4, Color3.fromRGB(110, 255, 150)
-	local face = CFrame.lookAt(centre, centre + out) + out * 0.3
-	markPart({
-		Name = "Glass", Size = Vector3.new(length, glassH, 0.15), CFrame = face + Vector3.new(0, glassH / 2, 0),
-		Color = green, Material = Enum.Material.Glass, Transparency = 0.9, Parent = gate,
-	})
-	markPart({
-		Name = "Edge", Size = Vector3.new(length, 0.14, 0.2), CFrame = face + Vector3.new(0, glassH, 0),
-		Color = green, Material = Enum.Material.Neon, Transparency = 0.45, Parent = gate,
-	})
+	-- Nothing to see (owner, Oct 18: "get rid of laser wall"): the white safe line on the floor is the finish.
 	gate.Parent = loaded or Workspace
+end
+
+-- The catchers' walls on both safe zones' edges, for the whole game (on = false takes them down).
+function MapService.holdCatchers(on)
+	if catcherWalls then
+		catcherWalls:Destroy()
+		catcherWalls = nil
+	end
+	local z = MapService.zones
+	if not (on and z.ZoneA and z.ZoneB and z.Middle) then
+		return
+	end
+	setUpGroups()
+	catcherWalls = Instance.new("Folder")
+	catcherWalls.Name = "HuzzCatcherWalls"
+	local h = Config.Map.WallHeight
+	for _, name in { "ZoneA", "ZoneB" } do
+		local centre, out, length = edge(z[name])
+		-- on the line, its zone side flush with the edge (a catcher's arm still reaches over it: stabs need the
+		-- runner out of the zone anyway)
+		local base = CFrame.lookAt(centre, centre + out) + out * 1
+		local block = markPart({
+			Name = "Block" .. name, Size = Vector3.new(length + 4, h, 2), CFrame = base + Vector3.new(0, h / 2 - 2, 0),
+			CanCollide = true, Transparency = 1, Parent = catcherWalls,
+		})
+		block.CollisionGroup = CATCHER_WALL
+	end
+	catcherWalls.Parent = loaded or Workspace
+end
+
+-- A point inside a safe zone pushed back out over its line onto the field (1.5 studs out), or nil if it's not in
+-- the zone: the fallback for a catcher who got past the wall (a lunge through a corner, lag).
+function MapService.pushOut(zone, position)
+	if not (zone and MapService.zones.Middle and MapService.inZone(zone, position)) then
+		return nil
+	end
+	local centre, out = edge(zone)
+	local d = (position - centre):Dot(out)
+	if d >= 0 then
+		return nil
+	end
+	return position + out * (1.5 - d)
+end
+
+-- Puts a catcher's parts in the catcher group (true) or back to Default (false); other groups are left alone.
+function MapService.setCatcher(character, on)
+	if not character then
+		return
+	end
+	for _, d in character:GetDescendants() do
+		if d:IsA("BasePart") then
+			if on and d.CollisionGroup == "Default" then
+				d.CollisionGroup = CATCHER
+			elseif not on and d.CollisionGroup == CATCHER then
+				d.CollisionGroup = "Default"
+			end
+		end
+	end
 end
 
 -- Puts a character's parts in the safe group (true) or back to Default (false). Parts in another group

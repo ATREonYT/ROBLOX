@@ -26,6 +26,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Net = require(Shared.Net)
 local Config = require(Shared.Config.Round)
 local Sfx = require(script.Parent.Sfx)
+local HitCheck = require(script.Parent.HitCheck)
 local Library = require(Shared.AnimationLibrary)
 local RunMotion = require(Shared.RunMotion)
 local PUBLISHED_RUN = require(Shared.Config.Animations).Run ~= "" -- (then Gameplay/RunAnimator is off: play the track)
@@ -210,7 +211,26 @@ local function lunge(c: Model, h: Humanoid, root: BasePart)
 	dir = Vector3.new(dir.X, 0, dir.Z)
 	if dir.Magnitude < 0.1 then return end
 	dir = dir.Unit
-	Net.get("Lunge"):FireServer()
+	local lungeNet = Net.get("Lunge") :: RemoteEvent
+	local L = Config.Lunge
+	local first = HitCheck.find(root, L.Reach, L.Width)
+	if first == false then
+		lungeNet:FireServer() -- (this build can't check: the server finds who the leap reaches)
+	else
+		lungeNet:FireServer(true) -- (true: this screen reports who the leap reaches, Gameplay/HitCheck)
+		-- pinpoint: the first runner inside the leaping knife's reach on your screen during the hit window
+		task.spawn(function()
+			local found = first
+			local t0 = os.clock()
+			while not found and os.clock() - t0 < L.HitWindow and root.Parent do
+				RunService.Heartbeat:Wait()
+				found = HitCheck.find(root, L.Reach, L.Width)
+			end
+			if type(found) == "number" then
+				lungeNet:FireServer(found)
+			end
+		end)
+	end
 	Sfx.play("lunge")
 	local v = root.AssemblyLinearVelocity
 	root.AssemblyLinearVelocity = Vector3.new(v.X, Config.Lunge.Up, v.Z) -- (the hop: jumping itself is off)

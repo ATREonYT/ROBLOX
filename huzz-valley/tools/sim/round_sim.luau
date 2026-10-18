@@ -345,6 +345,7 @@ local function simulate(opts)
 	end
 	local zones = {}
 	local loads, unloads, wallOn, goalShown, gateOn = 0, 0, nil, nil, nil
+	local catcherWallsOn = false
 	local MapService = {
 		zones = zones,
 		maps = { { name = "Base_Map", display = "Base" }, { name = "Halloween_Map", display = "Halloween" }, { name = "BasketBall_Map", display = "BasketBall" } },
@@ -442,6 +443,24 @@ local function simulate(opts)
 		gateOn = if on then name else nil
 	end
 	function MapService.setSafe() end
+	function MapService.setCatcher() end
+	function MapService.holdCatchers(on)
+		catcherWallsOn = on
+	end
+	-- As MapService.pushOut: a point inside a zone goes back over its middle-facing edge, 1.5 studs onto the field.
+	function MapService.pushOut(zone, position)
+		if not (zone and zones.Middle and MapService.inZone(zone, position)) then
+			return nil
+		end
+		local d = zones.Middle.CFrame.Position - zone.CFrame.Position
+		local out = Vector3.new(d.X, 0, d.Z).Unit
+		local centre = zone.CFrame.Position + out * (zone.Size.X / 2)
+		local k = (position - centre):Dot(out)
+		if k >= 0 then
+			return nil
+		end
+		return position + out * (1.5 - k)
+	end
 	-- As MapService.lineup: a row just behind the zone's edge that faces the middle, looking across.
 	function MapService.lineup(zoneName, count)
 		local zone, middle = zones[zoneName], zones.Middle

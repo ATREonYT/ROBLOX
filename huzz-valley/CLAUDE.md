@@ -162,6 +162,18 @@ Owner's own words are in quotes. Read only the section you need.
 - **Catching:** click stab (`Stab` remote) or a catcher's **lunge** (`Lunge` remote, `Config/Round.Lunge`: eases 72 to 40 over 0.38 s,
   Up 18, HitRange 4.8 for 0.5 s, cooldown 3 s shared with the Space tile `DashReady`; stab mode only). Both go
   through `stabNear()`: shields, the safe start zone and a fresh rescue protect; a Heart Shield ends the lunge.
+  **Pinpoint** (owner Oct 18: "make hitboxes pinpoint"): the catcher's own screen picks the runner whose body is
+  in a box in front of them (`Gameplay/HitCheck`; Stab Reach 5.5 x Width 4, Lunge 4.5 x 4) and sends that UserId
+  (false = a miss); the server only checks it's possible (Range/HitRange + Slack 3, one runner per lunge). A client
+  that sends nothing gets the old server search (the sim bots).
+- **Catchers stay out of both safe zones** (owner Oct 18): `MapService.holdCatchers` stands an invisible wall on
+  each zone's middle-facing edge for the whole game, group `HuzzCatcherWall`, colliding only with `HuzzCatcher`
+  (catchers' parts, `MapService.setCatcher` from `syncPlayer`; the bot too); `keepSafe()` pushes out any catcher
+  who got past (`MapService.pushOut`).
+- **Chicken gets nothing** (owner Oct 18: "you dont recieve the girl if you run chicken"): a runner who chose
+  Chicken (not a timed-out random pick) can't be handed the girl at the end (`RoundRules` `chickens`); if every
+  runner left chose Chicken nobody wins her ("Nobody went HERO", Results "Chicken gets nothing. Go HERO to win
+  her!"). Asked him on a card whether he meant a bug instead.
 - **Downed and revived:** a downed runner lies still (`KnockdownService`; owner Oct 18: "not have a swinging animations
   ... make them lay on the floor and look like their dead"): `DownMotion` owns every joint (root, waist, hands, feet
   straight; arms out flat 125°, chin up 40°, no bounce, Lift 0.6), so the run playing underneath can't swing the
@@ -186,7 +198,8 @@ Owner's own words are in quotes. Read only the section you need.
 - **Speeds** (`Config/Round.Speeds`, raised twice: lobby 22, runner 28, catcher 30, holder 27). `Gameplay/Sprint`
   sets off at 16 and reaches the cap in ~0.5 s (section 8). Run animation rate caps keep it calm.
 - **Safe gate:** invisible goal-line block in collision group `HuzzSafeWall`, colliding only with `HuzzSafe`
-  (safe runners), plus `keepSafe()` every frame.
+  (safe runners), plus `keepSafe()` every frame. The start wall and the goal gate have no visuals any more (owner
+  Oct 18: "get rid of laser wall"); the white lines on the floor mark start and finish.
 - **Field edges:** safe lines, start wall and goal gate are trimmed to the real floor (`MapService` `edge()`); the
   invisible walls (`boundary()`) stand at the floor's edge (a prop doesn't count as an edge). Across the run the
   walls may go up to 40 studs past the zone boxes over the map's own level floor, and the loaded copy's zones are
@@ -434,6 +447,8 @@ Owner's own words are in quotes. Read only the section you need.
 - **Crates** (`Config/Crates`, `Shared/CrateRoll` with odds + pity) are plumbed but empty until the owner designs them.
 
 ## 12. Sounds
+- `ui_click` remade Oct 18 (owner: "new clicking sound effect"): a bright bubbly pop on a small thump. Plays
+  only after he uploads `assets/sfx/ui_click.ogg` and sends the ID (Roblox's button.wav stands in).
 - 34 sounds made from scratch (`tools/sfx/make_sfx.py` → `assets/sfx/*.ogg`; all in a row in
   `docs/previews/sfx-preview.ogg`): warm, C major pentatonic, brightness under 2.5 kHz, even loudness.
 - `Gameplay/Sfx.play(name, {volume, pitch, at})`, `Sfx.loop("speed_wind")`. `Config/SoundIds` stays "" until the

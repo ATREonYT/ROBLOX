@@ -73,7 +73,8 @@ function Results.fill(data: { [string]: any })
 		line.Text = "Nobody gets her this time. Use the huss to dodge!"
 		line.TextColor3 = C.SubText
 	else
-		line.Text = if outcome == "Win" then `Your team won {girl}` else "So close! Try again next game"
+		line.Text = if outcome == "Win" and data.girlTaken == false then "Chicken gets nothing. Go HERO to win her!"
+			elseif outcome == "Win" then `Your team won {girl}` else "So close! Try again next game"
 		line.TextColor3 = C.SubText
 	end
 	for i, def in CARDS do
