@@ -12,7 +12,9 @@ local HitCheck = {}
 
 -- The closest active runner inside the box in front of root, as a UserId; nil if none; false if this Roblox build
 -- can't check (then the caller sends nothing and the server does its own check).
-function HitCheck.find(root: BasePart, reach: number, width: number): (number | boolean)?
+-- dir (optional): the way the box points (a catcher's leap goes forward or sideways: Shared/KnifeLeap); else the
+-- way root faces.
+function HitCheck.find(root: BasePart, reach: number, width: number, dir: Vector3?): (number | boolean)?
 	local me = Players.LocalPlayer
 	local bodies = {}
 	local now = Workspace:GetServerTimeNow()
@@ -32,7 +34,8 @@ function HitCheck.find(root: BasePart, reach: number, width: number): (number | 
 		params.FilterType = Enum.RaycastFilterType.Include
 		params.FilterDescendantsInstances = bodies
 		-- from the catcher's middle out to the knife's tip; body height (a runner mid-huss crouches, a lunge hops)
-		local flat = CFrame.lookAt(root.Position, root.Position + Vector3.new(root.CFrame.LookVector.X, 0, root.CFrame.LookVector.Z))
+		local way = dir or root.CFrame.LookVector
+		local flat = CFrame.lookAt(root.Position, root.Position + Vector3.new(way.X, 0, way.Z))
 		return Workspace:GetPartBoundsInBox(flat * CFrame.new(0, 0, -reach / 2), Vector3.new(width, 7, reach), params)
 	end)
 	if not ok or type(parts) ~= "table" then

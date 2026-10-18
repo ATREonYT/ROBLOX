@@ -20,6 +20,7 @@ ONLY="$*"
 shot shop-passes 01-shop-passes 1536 710 '{SCREEN="Shop", TAB="Passes", SCALE=2, PASSES="VIP"}'
 shot shop-cosmetics 07-shop-cosmetics 1536 730 '{SCREEN="Shop", TAB="Cosmetics", SCALE=2, OWN="MidnightOutfit"}'
 shot shop-items 07-shop-cosmetics 1536 730 '{SCREEN="Shop", TAB="Items", SCALE=2, OWN="MintTrail"}'
+shot shop-knives none 1536 730 '{SCREEN="Shop", TAB="Items", SCALE=2, OWN="SpinKnife,IceKnife", COINS=1500, SCROLL=890}' # (the owner's knives, Oct 18)
 shot shop-coins none 1536 730 '{SCREEN="Shop", TAB="Coins", SCALE=2}' # (vs the Oct 17 mockup: side_by_side.py coins)
 shot settings-social 06-settings-social 1536 640 '{SCREEN="Settings", TAB="Social", SCALE=2}'
 shot settings-audio 09-settings-audio 1536 636 '{SCREEN="Settings", TAB="Audio", SCALE=2}'

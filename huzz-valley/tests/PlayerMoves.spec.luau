@@ -187,8 +187,12 @@ theirs.character:SetAttribute("HuzzDance", "Test")
 frames(30, function() hip.Transform = CFrame.Angles(0.5, 0, 0) end) -- (the dance, as their Animator would write it)
 check(math.abs(hip.Transform:ToEulerAnglesXYZ() - 0.5) < 1e-3, "dancing: the pack lets the dance show")
 theirs.character:SetAttribute("HuzzDance", nil)
-frames(30)
-check(math.abs(hip.Transform:ToEulerAnglesXYZ() - 0.5) > 0.05, "after the dance the pack is back")
+frames(20)
+local mid = hip.Transform
+frames(10)
+-- (the pack's own hip pitch can sit near the dance's 0.5 by chance with a random idle phase, so check the pack is
+-- moving the hip again rather than comparing to 0.5)
+check(hip.Transform ~= mid and math.abs(hip.Transform:ToEulerAnglesXYZ() - 0.5) > 1e-3, "after the dance the pack is back")
 -- leaving: dropped
 theirs.character.Parent = nil
 other.Character = nil

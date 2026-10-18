@@ -1,19 +1,21 @@
 --[[
-	The catcher's stab (owner: "get all the animations right in the game"), scripted until a real one is uploaded
-	(Config/Animations.Stab). Anime timing, about 0.42 s (Config/Round.Stab.Time):
-	  0.00-0.11 s  anticipation: the knife hand coils back by the ribs, shoulders turn away, a little lean back,
-	               the free arm comes forward as a guard, eyes stay on the target;
-	  0.11-0.17 s  the thrust (two frames at 30 fps): the arm shoots straight out, the body turns into it and leans
-	               in, the free arm snaps back to the hip;
-	  0.17-0.27 s  the hit: a tiny overshoot settles and holds, so the stab reads;
-	  0.27-0.42 s  follow-through: eases back into the run.
-	Every segment has its own easing (out into the coil, in for the snap, smooth after), and the move blends in
-	within ~35 ms so it starts at once.
+	The catcher's slash (owner: "add the animations you learnt to make for the knifes"), scripted until a real one is
+	uploaded (Config/Animations.Stab). Huss Valley's, measured frame by frame (docs/knife-study.md section 3,
+	docs/previews/knife-study-slash.jpg): no wind-up, a sideways sweep, about 0.40 s (Config/Round.Stab.Time):
+	  0.00 s       carry: the knife low by the right hip (the run's own arm);
+	  0.00-0.07 s  the sweep: the arm swings straight out and across to the right, about level, the waist turning
+	               20 degrees into it, the free arm pointing ahead at the runner (the hit lands here, ~0.07 s);
+	  0.07-0.10 s  a small overshoot: the knife arm out to the side, a little back;
+	  0.10-0.24 s  held out (it reads);
+	  0.24-0.40 s  back to carry.
+	The lunge (Space, Gameplay/Dash) plays the same sweep at take-off and then a dive (DIVE: the body tips 35 degrees
+	into the leap, forward or sideways, for 0.15 s as it lands, up again by +0.25 s); Gameplay/Actions passes the
+	leap's direction each frame (from the body's speed, so every screen sees it the same).
 
-	Pure maths on joints (R15), so the offline preview runs this exact code (motion3d/stab_scene.luau);
-	HuzzClient/Gameplay/Actions feeds it real characters. Written to Motor6D.Transform after Roblox's animations
-	(Gameplay/Frame order 30), so it sits over the run like an Action track and the legs keep running. The knife is
-	welded to the right hand (KnifeService), so it stays in hand.
+	Pure maths on joints (R15), so the offline preview runs this exact code (motion3d/stab_scene.luau,
+	knife_scene.luau); HuzzClient/Gameplay/Actions feeds it real characters. Written to Motor6D.Transform after
+	Roblox's animations (Gameplay/Frame order 30), so it sits over the run like an Action track and the legs keep
+	running. The knife is welded to the right hand (KnifeService), so it stays in hand.
 ]]
 local Round = require(script.Parent.Config.Round)
 local CarryMath = require(script.Parent.CarryMath)
@@ -27,14 +29,14 @@ local rad = math.rad
 -- ease: how the segment arriving at that key moves ("out" = fast then settling, "in" = speeding up, "smooth").
 local KEYS = {
 	{ at = 0.00, shoulder = { 0, 0, 0 }, elbow = { 0, 0, 0 }, wrist = { 0, 0, 0 }, off = { 0, 0, 0 }, offElbow = { 0, 0, 0 }, waist = { 0, 0, 0 }, neck = { 0, 0, 0 } },
-	-- anticipation: coiled (right shoulder back = turned right, -y)
-	{ at = 0.26, ease = "out", shoulder = { -45, 0, 30 }, elbow = { 85, 0, 0 }, wrist = { 0, 0, 0 }, off = { 34, 0, 0 }, offElbow = { 62, 0, 0 }, waist = { 7, -24, 0 }, neck = { -3, 20, 0 } },
-	-- thrust: full reach (turned left into it, leaning in)
-	{ at = 0.405, ease = "in", shoulder = { 94, 0, -6 }, elbow = { -2, 0, 0 }, wrist = { -30, 0, 0 }, off = { -28, 0, 0 }, offElbow = { 96, 0, 0 }, waist = { -13, 28, 0 }, neck = { 6, -24, 0 } },
-	-- the hit: a small settle back from the overshoot, then held
-	{ at = 0.48, ease = "out", shoulder = { 88, 0, -6 }, elbow = { 6, 0, 0 }, wrist = { -24, 0, 0 }, off = { -24, 0, 0 }, offElbow = { 92, 0, 0 }, waist = { -10, 23, 0 }, neck = { 5, -20, 0 } },
-	{ at = 0.64, ease = "smooth", shoulder = { 84, 0, -5 }, elbow = { 10, 0, 0 }, wrist = { -22, 0, 0 }, off = { -20, 0, 0 }, offElbow = { 88, 0, 0 }, waist = { -9, 20, 0 }, neck = { 4, -18, 0 } },
-	-- follow-through: back to the run
+	-- the sweep's reach (~0.07 s): knife arm forward and out to the right, near level; waist turned into it
+	-- (right, -y), leaning in; free arm up pointing ahead; the head counter-turns to stay on the runner
+	{ at = 0.18, ease = "out", shoulder = { 0, 42, 62 }, elbow = { 14, 0, 0 }, wrist = { -12, 0, 0 }, off = { 80, 0, -6 }, offElbow = { 14, 0, 0 }, waist = { -6, -20, 0 }, neck = { 2, 17, 0 } },
+	-- a small overshoot: the arm carries on out to the side, a little back
+	{ at = 0.25, ease = "out", shoulder = { 0, 0, 80 }, elbow = { 8, 0, 0 }, wrist = { -16, 0, 0 }, off = { 84, 0, -6 }, offElbow = { 10, 0, 0 }, waist = { -6, -24, 0 }, neck = { 2, 20, 0 } },
+	-- held out, so it reads
+	{ at = 0.60, ease = "smooth", shoulder = { 0, 6, 76 }, elbow = { 10, 0, 0 }, wrist = { -12, 0, 0 }, off = { 80, 0, -5 }, offElbow = { 12, 0, 0 }, waist = { -5, -20, 0 }, neck = { 2, 17, 0 } },
+	-- back to carry
 	{ at = 1.00, ease = "smooth", shoulder = { 0, 0, 0 }, elbow = { 0, 0, 0 }, wrist = { 0, 0, 0 }, off = { 0, 0, 0 }, offElbow = { 0, 0, 0 }, waist = { 0, 0, 0 }, neck = { 0, 0, 0 } },
 }
 StabMotion.KEYS = KEYS
@@ -67,12 +69,12 @@ StabMotion.poseAt = at
 
 -- How much the move owns the joints (the rest is the running animation): in fast, out with the follow-through.
 local function weight(u)
-	if u < 0.08 then
-		return smooth(u / 0.08)
-	elseif u < 0.64 then
+	if u < 0.06 then
+		return smooth(u / 0.06)
+	elseif u < 0.6 then
 		return 1
 	end
-	return 1 - smooth(math.clamp((u - 0.64) / 0.36, 0, 1))
+	return 1 - smooth(math.clamp((u - 0.6) / 0.4, 0, 1))
 end
 StabMotion.weight = weight
 
@@ -103,18 +105,45 @@ local function hunch(rec)
 	return math.clamp(a, 0, rad(55))
 end
 
-function StabMotion.play(rec, now)
+-- The lunge's dive (seconds from the start): tips in from At to Full, holds to Hold, up again by Up.
+StabMotion.DIVE = { At = 0.24, Full = 0.32, Hold = 0.47, Up = 0.72, Angle = 35 }
+
+-- lunge: true for the Space leap (the sweep, then the dive).
+function StabMotion.play(rec, now, lunge: boolean?)
 	rec.start = now
+	rec.lunge = lunge == true
+	rec.diveDir = Vector3.new(0, 0, -1)
+end
+
+-- The leap's direction in the body's own space (x right, -z forward), flat; Gameplay/Actions sets it each frame.
+function StabMotion.setDive(rec, localDir: Vector3)
+	local d = Vector3.new(localDir.X, 0, localDir.Z)
+	if d.Magnitude > 0.2 then
+		rec.diveDir = d.Unit
+	end
+end
+
+-- How far into the dive (0..1) at t seconds since the start.
+function StabMotion.diveAt(t: number): number
+	local D = StabMotion.DIVE
+	if t <= D.At or t >= D.Up then
+		return 0
+	elseif t < D.Full then
+		return smooth((t - D.At) / (D.Full - D.At))
+	elseif t <= D.Hold then
+		return 1
+	end
+	return 1 - smooth((t - D.Hold) / (D.Up - D.Hold))
 end
 
 function StabMotion.progress(rec, now)
 	return (now - rec.start) / Round.Stab.Time
 end
 
--- The blade's trail shows while the knife is moving fast (the thrust and the hit).
+-- The blade's trail shows during the sweep and the start of the hold (docs/knife-study.md: 0.08 to 0.45).
 function StabMotion.trailOn(rec, now)
 	local u = StabMotion.progress(rec, now)
-	return u >= 0.26 and u <= 0.56
+	return u >= 0.02 and u <= 0.45
 end
 
 local function animated(rec, motor)
@@ -133,23 +162,33 @@ end
 -- animation plays it instead); the body, the free arm and the head always play.
 function StabMotion.step(rec, now, animatedArm)
 	local u = StabMotion.progress(rec, now)
-	if u < 0 or u > 1 then
+	local t = now - rec.start
+	local diving = rec.lunge and t >= 0 and t < StabMotion.DIVE.Up
+	if (u < 0 or u > 1) and not diving then
 		if next(rec.written) then
 			StabMotion.release(rec)
 		end
 		return false
 	end
-	local w = weight(u)
+	local w = if u >= 0 and u <= 1 then weight(u) else 0
+	local function pose(key) return if w > 0 then at(u, key) else CFrame.identity end
 	-- body and head first: added on top of the run (the legs and hips keep running)
 	local waist = rec.rig.waist
 	if waist then
-		write(rec, waist, animated(rec, waist) * CarryMath.inJoint(waist, CFrame.identity:Lerp(at(u, "waist"), w)))
+		local body = CFrame.identity:Lerp(pose("waist"), w)
+		local dive = if rec.lunge then StabMotion.diveAt(t) else 0
+		if dive > 0 then -- the dive: tipped into the leap (forward = pitch, sideways = roll)
+			local d, a = rec.diveDir, rad(StabMotion.DIVE.Angle) * dive
+			body = CFrame.Angles(d.Z * a, 0, -d.X * a) * body
+		end
+		write(rec, waist, animated(rec, waist) * CarryMath.inJoint(waist, body))
 	end
 	if rec.neck then
-		write(rec, rec.neck, animated(rec, rec.neck) * CarryMath.inJoint(rec.neck, CFrame.identity:Lerp(at(u, "neck"), w)))
+		write(rec, rec.neck, animated(rec, rec.neck) * CarryMath.inJoint(rec.neck, CFrame.identity:Lerp(pose("neck"), w)))
 	end
 	local level = CFrame.Angles(hunch(rec), 0, 0) -- (a hunched run tips the chest: keep the knife arm level)
 	local function arm(side, keys)
+		if w <= 0 then return end
 		for joint, key in keys do
 			local motor = side and side[joint]
 			if motor then

@@ -8,7 +8,7 @@
 	Odds list shows each one exactly). Kind:
 	  Coins  Amount coins          Aura  Amount Aura
 	  Boost  x2 coins from games for Minutes (stacks: another one adds its minutes)
-	  Knife  the Spin Knife skin (Config/CoinShop "SpinKnife", only from here); already owned = Duplicate coins
+	  Knife  the Spin Knife skin (Config/CoinShop "SpinKnife" = the owner's Celestial Edge model, only from here); already owned = Duplicate coins
 	Pity: after Pity.After - 1 spins in a row without a Legendary, the next spin is one (shown on the screen).
 	Earnings for scale (Config/Round.Pay): ~15 coins a game, 50 for a win; coin shop looks cost 300 to 2,500.
 ]]
@@ -24,7 +24,7 @@ local hex = Color3.fromHex
 SpinWheel.Colors = { Legendary = hex("FF4FAE"), A = hex("2F9BFF"), B = hex("7A4DFF") }
 
 SpinWheel.Items = {
-	{ Key = "SpinKnife", Kind = "Knife", Name = "Spin Knife", Big = "SPIN", Small = "KNIFE", Rarity = "Legendary", Weight = 1, Color = "Legendary" },
+	{ Key = "SpinKnife", Kind = "Knife", Name = "Celestial Edge", Big = "SPIN", Small = "KNIFE", Rarity = "Legendary", Weight = 1, Color = "Legendary" },
 	{ Key = "Coins100", Kind = "Coins", Amount = 100, Name = "100 Coins", Big = "100", Small = "COINS", Rarity = "Common", Weight = 28, Color = "A" },
 	{ Key = "Aura25", Kind = "Aura", Amount = 25, Name = "25 Aura", Big = "25", Small = "AURA", Rarity = "Uncommon", Weight = 16, Color = "B" },
 	{ Key = "Coins500", Kind = "Coins", Amount = 500, Name = "500 Coins", Big = "500", Small = "COINS", Rarity = "Rare", Weight = 10, Color = "A" },

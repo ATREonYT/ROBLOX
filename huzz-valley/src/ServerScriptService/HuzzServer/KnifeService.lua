@@ -2,18 +2,30 @@
 	Catchers hold a knife in their right hand (as in the reference); everyone else wears theirs on their back
 	(owner: "the catchers run with a knife, and everyone even the runners have a knife mounted on their backs").
 	Both use the knife skin you wear (Config/CoinShop, slot Knife). It's a model welded to the
-	hand, not a Tool, so there's nothing to equip or drop and no backpack. HuzzClient/Gameplay/Stab
+	hand, not a Tool, so there's nothing to equip or drop and no backpack. HuzzClient/Gameplay/Actions
 	plays the stab and lights the blade's trail.
 
-	The knife is built from parts here. To use your own, put a Model named "HuzzKnife" in
-	ServerStorage with a part named "Handle": the hand holds the Handle's centre, and the
-	Handle's top (+Y) is the way the blade points. Add Attachments "TrailBase" and "TrailTip"
-	along the blade for the slash trail.
+	The owner's own knives (Oct 18, 30 models in design/knives/Knives): once he has imported them and run the setup
+	(tools/knives/setup_knives.lua, also ServerStorage/HuzzStudioTools/SetupKnives), each skin is a Model in
+	ServerStorage/HuzzKnives/<skin key> with an invisible part "Handle" (+Y to the tip, X the blade's thin way) and
+	Attachments "Grip" (where the fist closes), "TrailBase" (guard) and "TrailTip" (tip). It's used as it is: already
+	at its length, its glowing parts already Neon. Until then (or for a skin with no model) the game draws its own
+	knife below, painted in the skin's colours (Config/CoinShop Colors, Neon guard in its Glow colour), so nothing
+	ever looks broken. A Model named "HuzzKnife" (in HuzzKnives, or ServerStorage as before) replaces the default.
+
+	Effects by rarity (owner: "make it fit it, and dont make it overly crazy"): Shared/KnifeLook. In hand always;
+	on the back only Legendary and Mythic. Built here once per knife (replicated), nothing runs every frame.
+	Where it sits: Shared/KnifeLook (hand: today's grip, offset by the model's Grip; back: across the belt like Huss
+	Valley's, docs/knife-study.md).
 ]]
 local ServerStorage = game:GetService("ServerStorage")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local KnifeLook = require(ReplicatedStorage.Shared.KnifeLook)
+local FxTexture = require(ReplicatedStorage.Shared.FxTexture)
 
 local KnifeService = {}
 local NAME = "HuzzKnife"
+local WHITE = Color3.new(1, 1, 1)
 
 local function part(class, props)
 	local p = Instance.new(class)
@@ -61,12 +73,125 @@ local function build()
 	return model
 end
 
-local function template()
-	local custom = ServerStorage:FindFirstChild(NAME)
-	if custom and custom:IsA("Model") and custom:FindFirstChild("Handle", true) then
-		return custom:Clone()
+-- The game's own knife in a skin's colours: blade in its blade colour, guard and pommel in its guard colour, and a
+-- glowing (Neon) guard when the skin's model has glowing parts.
+local function paint(model, skin)
+	local blade, accent = skin.Colors[1], skin.Colors[#skin.Colors]
+	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") then
+			if d.Name == "Blade" or d.Name == "Tip" then
+				d.Color = blade
+			elseif d.Name == "Guard" then
+				if skin.Glow then
+					d.Color, d.Material = skin.Glow, Enum.Material.Neon
+				else
+					d.Color = accent
+				end
+			elseif d.Name == "Pommel" then
+				d.Color = accent
+			end
+		end
 	end
-	return build()
+end
+
+-- The knife for a skin: the owner's model when it's been set up (true), else ours (false).
+local function template(skin)
+	local folder = ServerStorage:FindFirstChild("HuzzKnives")
+	local own = skin and folder and folder:FindFirstChild(skin.Key)
+	if own and own:IsA("Model") and own:FindFirstChild("Handle", true) then
+		return own:Clone(), true
+	end
+	local custom = (folder and folder:FindFirstChild(NAME)) or ServerStorage:FindFirstChild(NAME)
+	if custom and custom:IsA("Model") and custom:FindFirstChild("Handle", true) then
+		return custom:Clone(), true
+	end
+	local model = build()
+	if skin then paint(model, skin) end
+	return model, false
+end
+KnifeService.template = template
+
+-- The biggest blade part (effects sit on it): ours is "Blade", the owner's are "blade_<n>".
+local function bladeOf(model)
+	local best, size = nil, -1
+	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") and string.sub(string.lower(d.Name), 1, 5) == "blade" then
+			local v = d.Size.X * d.Size.Y * d.Size.Z
+			if v > size then best, size = d, v end
+		end
+	end
+	return best or model.PrimaryPart or model:FindFirstChild("Handle", true)
+end
+
+local function emitter(name, parent, colour, props)
+	local e = Instance.new("ParticleEmitter")
+	e.Name = name
+	e.LightEmission = 1
+	e.LightInfluence = 0
+	e.Color = ColorSequence.new(colour:Lerp(WHITE, 0.35), colour)
+	for k, v in props do
+		e[k] = v
+	end
+	e.Parent = parent
+	return e
+end
+
+-- The skin's effects (Shared/KnifeLook): where = "hand" or "back".
+local function addFx(model, skin, where)
+	local look = KnifeLook.fx(skin and skin.Rarity)
+	local colour = KnifeLook.colour(skin)
+	if not colour or (where == "back" and not look.back) then
+		return
+	end
+	local blade = bladeOf(model)
+	if not blade then return end
+	if look.sheen then -- a small glint on the blade now and then
+		local e = emitter("KnifeSheen", blade, colour:Lerp(WHITE, 0.6), {
+			Rate = look.sheen, Lifetime = NumberRange.new(0.3, 0.4), Speed = NumberRange.new(0), LockedToPart = true,
+			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.4, 0.35), NumberSequenceKeypoint.new(1, 0) }),
+			Transparency = NumberSequence.new(0.15), Rotation = NumberRange.new(0, 90), ZOffset = 0.3,
+		})
+		FxTexture.flipbook(e, "Twinkle", "Random")
+	end
+	if look.glow then -- a soft light round the blade (no shadows, never flashing)
+		local l = Instance.new("PointLight")
+		l.Name = "KnifeGlow"
+		l.Color, l.Range, l.Brightness, l.Shadows = colour, look.glow.range, look.glow.brightness, false
+		l.Parent = blade
+	end
+	if look.sparkles then -- a few small sparkles drifting off the blade
+		local e = emitter("KnifeSparkles", blade, colour, {
+			Rate = math.min(look.sparkles, KnifeLook.MAX_SPARKLES), Lifetime = NumberRange.new(0.5, 0.8), Speed = NumberRange.new(0.2, 0.6),
+			SpreadAngle = Vector2.new(180, 180), Drag = 2,
+			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.2, 0.16), NumberSequenceKeypoint.new(1, 0) }),
+			Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.1), NumberSequenceKeypoint.new(1, 0.6) }),
+		})
+		FxTexture.flipbook(e, "Twinkle", "Random")
+	end
+	if look.embers then -- Mythic: a few embers rising off the blade in its colour
+		local e = emitter("KnifeEmbers", blade, colour, {
+			Rate = look.embers, Lifetime = NumberRange.new(1, 1.4), Speed = NumberRange.new(0.1, 0.3),
+			SpreadAngle = Vector2.new(30, 30), Acceleration = Vector3.new(0, 1.2, 0), Drag = 1,
+			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.12), NumberSequenceKeypoint.new(1, 0) }),
+			Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(1, 1) }),
+			EmissionDirection = Enum.NormalId.Top,
+		})
+		e.Texture = FxTexture.get("Spark")
+	end
+end
+
+-- Where the hand / back holds the knife, in the Handle's space: its Grip attachment, else the Handle's centre.
+local function gripOf(handle)
+	local grip = handle:FindFirstChild("Grip")
+	return if grip and grip:IsA("Attachment") then grip.CFrame else CFrame.identity
+end
+
+local function loose(model)
+	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") then
+			d.Anchored, d.CanCollide, d.CanQuery, d.CanTouch, d.Massless = false, false, false, false, true
+		end
+	end
 end
 
 function KnifeService.has(character)
@@ -76,45 +201,31 @@ end
 local BACK = "HuzzBackKnife"
 local function skinOf(skin) return if skin then skin.Key else "" end
 
--- Your knife on your back, blade up over one shoulder, in your skin (replaced when the skin changes).
+-- Your knife on your back, across the belt (Huss Valley's), in your skin (replaced when the skin changes).
 function KnifeService.giveBack(character, skin)
 	if not character then return end
 	local old = character:FindFirstChild(BACK)
 	if old and old:GetAttribute("Skin") == skinOf(skin) then return end
 	if old then old:Destroy() end
-	local torso = character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso")
+	local torso = character:FindFirstChild("LowerTorso") or character:FindFirstChild("Torso")
 	if not (torso and torso:IsA("BasePart")) then return end
-	local model = template()
+	local model = template(skin)
 	model.Name = BACK
 	model:SetAttribute("Skin", skinOf(skin))
-	if skin and not ServerStorage:FindFirstChild(NAME) then
-		local a, b = skin.Colors[1], skin.Colors[#skin.Colors]
-		for _, d in model:GetDescendants() do
-			if d:IsA("BasePart") then
-				if d.Name == "Blade" or d.Name == "Tip" then
-					d.Color, d.Material, d.Reflectance = a, Enum.Material.Neon, 0
-				elseif d.Name == "Guard" or d.Name == "Pommel" then
-					d.Color = b
-				end
-			end
-		end
-	end
 	local handle = model:FindFirstChild("Handle", true)
+	if not handle then model:Destroy() return end
+	loose(model)
 	for _, d in model:GetDescendants() do
-		if d:IsA("BasePart") then
-			d.Anchored, d.CanCollide, d.CanQuery, d.CanTouch, d.Massless = false, false, false, false, true
-		end
+		if d:IsA("Trail") or d:IsA("ParticleEmitter") or d:IsA("Light") then d:Destroy() end
 	end
-	local weld = Instance.new("Weld")
-	weld.Name = "BackMount"
-	weld.Part0 = torso
-	weld.Part1 = handle
-	-- behind the torso (+Z is the back), handle low on one side, blade up over the other shoulder
-	weld.C0 = CFrame.new(0.15, -0.05, torso.Size.Z / 2 + 0.12) * CFrame.Angles(0, 0, math.rad(-35))
-	weld.Parent = handle
-	for _, d in model:GetDescendants() do
-		if d:IsA("Trail") then d:Destroy() end
-	end
+	addFx(model, skin, "back")
+	local mount = Instance.new("Weld")
+	mount.Name = "BackMount"
+	mount.Part0 = torso
+	mount.Part1 = handle
+	mount.C0 = KnifeLook.backC0(torso.Name, torso.Size)
+	mount.C1 = gripOf(handle)
+	mount.Parent = handle
 	model.Parent = character
 end
 
@@ -123,9 +234,9 @@ function KnifeService.takeBack(character)
 	if knife then knife:Destroy() end
 end
 
--- Into the right hand, blade pointing down and a little forward (it comes up level in the stab).
--- skin (optional): a Config/CoinShop Knife item: its blade, guard and pommel take its colours, the blade glows a
--- little, and the slash streak matches.
+-- Into the right hand, blade pointing down and a little forward (the slash sweeps it out).
+-- skin (optional): a Config/CoinShop Knife item: its model (or ours in its colours), its effects, and the slash
+-- trail in its colour (Epic and up) or a faint white smear.
 function KnifeService.give(character, skin)
 	if not character then
 		return
@@ -139,50 +250,39 @@ function KnifeService.give(character, skin)
 	if not hand then
 		return
 	end
-	local model = template()
+	local model = template(skin)
 	model.Name = NAME
 	model:SetAttribute("Skin", skinOf(skin)) -- (always: a custom knife with a skin isn't rebuilt every sync)
-	if skin and not ServerStorage:FindFirstChild(NAME) then
-		local a, b = skin.Colors[1], skin.Colors[#skin.Colors]
-		for _, d in model:GetDescendants() do
-			if d:IsA("BasePart") then
-				if d.Name == "Blade" or d.Name == "Tip" then
-					d.Color, d.Material, d.Reflectance = a, Enum.Material.Neon, 0
-					d.Transparency = 0.05
-				elseif d.Name == "Guard" or d.Name == "Pommel" then
-					d.Color = b
-				end
-			end
-		end
-		model:SetAttribute("Skin", skin.Key)
-	end
 	local handle = model:FindFirstChild("Handle", true)
-	for _, d in model:GetDescendants() do
-		if d:IsA("BasePart") then
-			d.Anchored, d.CanCollide, d.CanQuery, d.CanTouch, d.Massless = false, false, false, false, true
-		end
-	end
+	if not handle then model:Destroy() return end
+	loose(model)
+	addFx(model, skin, "hand")
 	local grip = hand:FindFirstChild("RightGripAttachment")
 	local at = if grip then grip.Position else Vector3.new(0, -hand.Size.Y / 2 + 0.1, 0)
 	local motor = Instance.new("Motor6D") -- a Motor6D (not a Weld) so it moves with the hand on every client at once
 	motor.Name = "KnifeGrip"
 	motor.Part0 = hand
 	motor.Part1 = handle
-	-- Handle +Y (the blade) -> the hand's down-and-forward: 150 degrees round the hand's X axis.
-	motor.C0 = CFrame.new(at) * CFrame.Angles(math.rad(-150), 0, 0)
-	motor.C1 = CFrame.identity
+	motor.C0 = KnifeLook.handC0(at) -- Handle +Y (the blade) -> the hand's down-and-forward
+	motor.C1 = gripOf(handle) -- (the fist on the model's Grip, not the Handle's centre)
 	motor.Parent = handle
-	-- The slash: a short white-to-pink streak behind the blade, switched on by each client during a stab.
+	-- The slash: a short smear round the blade, switched on by each client during a stab (Gameplay/Actions).
 	local base, tip = model:FindFirstChild("TrailBase", true), model:FindFirstChild("TrailTip", true)
 	if base and tip then
+		local T = KnifeLook.TRAIL
+		local look = KnifeLook.fx(skin and skin.Rarity)
+		local colour = KnifeLook.colour(skin)
+		local tinted = look.trailTint and colour ~= nil
 		local trail = Instance.new("Trail")
 		trail.Name = "SlashTrail"
 		trail.Attachment0, trail.Attachment1 = base, tip
-		trail.Lifetime = 0.16
+		trail.Lifetime = T.Lifetime
 		trail.MinLength = 0
-		trail.LightEmission = 0.6
-		trail.Color = if skin then ColorSequence.new(Color3.new(1, 1, 1), skin.Colors[#skin.Colors]) else ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(255, 120, 200))
-		trail.Transparency = NumberSequence.new(0.25, 1)
+		trail.FaceCamera = false
+		trail.LightEmission = if tinted then T.LightEmission else 0.3
+		trail.Color = if tinted then ColorSequence.new(colour :: Color3, WHITE) else ColorSequence.new(WHITE)
+		local tr = if tinted then T.Tinted else T.Plain
+		trail.Transparency = NumberSequence.new(tr[1], tr[2])
 		trail.Enabled = false
 		trail.Parent = handle
 	end

@@ -39,7 +39,7 @@ local function snap(out, cf, size, color, b)
 end
 
 -- Snapshots every box as it is now. Run Rig.fk first.
--- extra (optional): { sprites, ribbons, lights, caption, fov, grades, overlay, env, bloom, labels } as render.mjs describes.
+-- extra (optional): { sprites, ribbons, lights, caption, fov, grades, overlay, env, bloom, labels, meshes } as render.mjs describes.
 -- A rig's `look` table (Emit...) and a box's Shape/Neon/Alpha/Add/Emit/Hidden fields are passed on too.
 function Scene:frame(cameraPos, lookAt, extra)
 	local boxes = {}
@@ -62,15 +62,17 @@ function Scene:frame(cameraPos, lookAt, extra)
 		env = extra and extra.env or nil,
 		bloom = extra and extra.bloom or nil,
 		labels = extra and extra.labels or nil,
+		meshes = extra and extra.meshes or nil,
 	})
 end
 
 -- path defaults to $MOTION3D_DIR/frames.json (set by video.sh), else ./frames.json.
--- look (optional): { sky = "#hex", ground = "#hex", grid = false, dim = 0-1 (daylight), stills = { 0-based frame numbers } }
+-- look (optional): { sky = "#hex", ground = "#hex", grid = false, dim = 0-1 (daylight), stills = { 0-based frame numbers },
+--   meshFile = path of a triangle-mesh JSON (render.mjs: the owner's knives) }
 function Scene:save(path, fps, w, h, look)
 	path = path or ((process.env.MOTION3D_DIR or ".") .. "/frames.json")
 	look = look or {}
-	fs.writeFile(path, serde.encode("json", { fps = fps or 30, width = w or 1280, height = h or 720, frames = self.frames, sky = look.sky, ground = look.ground, grid = look.grid, dim = look.dim, stills = look.stills }))
+	fs.writeFile(path, serde.encode("json", { fps = fps or 30, width = w or 1280, height = h or 720, frames = self.frames, sky = look.sky, ground = look.ground, grid = look.grid, dim = look.dim, stills = look.stills, meshFile = look.meshFile }))
 	print(`frames: {#self.frames} -> {path}`)
 end
 

@@ -17,6 +17,8 @@
 // Sprite/ribbon t may also be a drawn shape: '@disc', '@ring<px>', '@runner<px>' (AuraFX's SurfaceGui circles).
 // Optional at the top: sky, ground (colours), grid (false to hide), dim (0-1: daylight strength, for evening scenes),
 // stills [frame numbers, 0-based]: with MOTION3D_KEEP=<dir> those frames are also kept there as still_<n>.png.
+// meshFile (top level): a JSON of triangle meshes by name (tools/knives/knife_meshes.py: the owner's knives); then
+// per frame meshes [{m (name), p, r (9), s (uniform scale)}] draws them (glow parts unlit, like Neon).
 import { createRequire } from 'module';
 import fs from 'fs';
 import os from 'os';
@@ -205,7 +207,37 @@ const textTexture = (q) => { // one canvas per text + colours, cached
 };
 const pool = [];
 const m = new THREE.Matrix4(), sc = new THREE.Matrix4();
+const meshLib = {}, meshPool = [];
+window.addMeshes = (lib) => {
+  for (const k in lib) {
+    meshLib[k] = lib[k].map((q) => {
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(q.pos, 3));
+      g.computeVertexNormals();
+      return { g, mat: q.glow ? new THREE.MeshBasicMaterial({ color: q.col }) : new THREE.MeshLambertMaterial({ color: q.col, flatShading: true }) };
+    });
+  }
+};
+const drawMeshes = (list) => {
+  list.forEach((q, i) => {
+    let e = meshPool[i];
+    if (!e || e.key !== q.m) {
+      if (e) scene.remove(e.group);
+      const grp = new THREE.Group();
+      grp.matrixAutoUpdate = false;
+      for (const part of meshLib[q.m] || []) { const mesh = new THREE.Mesh(part.g, part.mat); mesh.castShadow = true; grp.add(mesh); }
+      scene.add(grp);
+      e = meshPool[i] = { key: q.m, group: grp };
+    }
+    const r = q.r, p = q.p;
+    m.set(r[0], r[1], r[2], p[0], r[3], r[4], r[5], p[1], r[6], r[7], r[8], p[2], 0, 0, 0, 1);
+    e.group.matrix.multiplyMatrices(m, sc.makeScale(q.s, q.s, q.s));
+    e.group.visible = true;
+  });
+  for (let i = list.length; i < meshPool.length; i++) if (meshPool[i]) meshPool[i].group.visible = false;
+};
 window.draw = (f) => {
+  drawMeshes(Array.isArray(f.meshes) ? f.meshes : []);
   f.boxes.forEach((b, i) => {
     let mesh = pool[i];
     if (!mesh) {
@@ -417,6 +449,11 @@ await page.route('http://motion3d.local/**', (route) => {
 });
 await page.goto('http://motion3d.local/index.html');
 await page.waitForFunction(() => window.ready === true);
+if (data.meshFile) { // only the meshes the frames use
+  const all = JSON.parse(fs.readFileSync(data.meshFile, 'utf8')), used = {};
+  for (const f of data.frames) for (const q of (Array.isArray(f.meshes) ? f.meshes : [])) used[q.m] = all[q.m];
+  await page.evaluate((lib) => window.addMeshes(lib), used);
+}
 const keep = process.env.MOTION3D_KEEP;
 const stills = new Set(Array.isArray(data.stills) ? data.stills : []);
 if (keep) fs.mkdirSync(keep, { recursive: true });

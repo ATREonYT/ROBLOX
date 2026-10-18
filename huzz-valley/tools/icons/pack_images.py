@@ -12,6 +12,9 @@ OUT = 'src/ReplicatedStorage/Shared/Images'
 # to fit 192 px (smooth resampling): sharp there, while keeping the
 # game small. The full-size files in assets/ stay as they are.
 MAX_ICON = 192
+# The knife cards (assets/art/knife-*.png, renders of the owner's 30 knives by tools/knives/compose_cards.py, 384 px)
+# show at most about 160 points: packed at 192 px too, so 30 of them don't weigh down the game.
+KNIFE_ART = 'knife-'
 # Icons from the owner's sheet that no screen uses yet: kept in assets/, not packed into the game.
 UNUSED = {'arrow-next', 'play-tile', 'plus-tile', 'monitor-small', 'social-chat'}
 # Effect textures keep their real size (flipbook frames need every pixel; the owner's screen is Retina), capped at
@@ -38,7 +41,7 @@ for kind, src in (('Icons', 'assets/icons'), ('Art', 'assets/art'), ('Fx', 'asse
         if not name.endswith('.png') or name[:-4] in UNUSED:
             continue
         im = Image.open(os.path.join(src, name)).convert('RGBA')
-        if kind == 'Icons' and max(im.size) > MAX_ICON:
+        if (kind == 'Icons' or (kind == 'Art' and name.startswith(KNIFE_ART))) and max(im.size) > MAX_ICON:
             im.thumbnail((MAX_ICON, MAX_ICON), Image.LANCZOS)
         if kind == 'Fx':
             cap = 1024 if name[:-4] in FX_SHEETS else 512

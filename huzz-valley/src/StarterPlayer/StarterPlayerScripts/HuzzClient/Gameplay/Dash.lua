@@ -11,8 +11,12 @@
 	the owner publishes a run (Config/Animations.Run): then the DashLeft / DashRight animation plays here.
 	The server checks it (RoundService, "Dash": sideways only) and sets DashAt/DashDir on your character so everyone
 	sees it, and DashReady on you for the cooldown tile (Screens/PowerBar).
-	CATCHERS in a round lunge instead (owner: "when they press space they jump and haul at the runner"): a low leap
-	forward the way they face, a hard burst easing off (Config/Round.Lunge); the server stabs any runner they reach.
+	CATCHERS in a round lunge instead (owner: "when they press space they jump and haul at the runner"; Oct 18: "when you
+	press space to huss with the knife it leaps forward/sideways to catch the person"): a low leap the way you steer,
+	forward, or sideways while holding A / D (like the runners' huss), never backwards (Shared/KnifeLeap), a hard burst
+	easing off (Config/Round.Lunge, same speed and hop either way). The knife's hit box follows the leap (Gameplay/
+	HitCheck) and the server checks the catch is possible from where it sees you; the slash plays during the leap and
+	the body dives into it at the end (Shared/StabMotion, Gameplay/Actions).
 ]]
 local Dash = {}
 
@@ -29,6 +33,7 @@ local Sfx = require(script.Parent.Sfx)
 local HitCheck = require(script.Parent.HitCheck)
 local Library = require(Shared.AnimationLibrary)
 local RunMotion = require(Shared.RunMotion)
+local KnifeLeap = require(Shared.KnifeLeap)
 local PUBLISHED_RUN = require(Shared.Config.Animations).Run ~= "" -- (then Gameplay/RunAnimator is off: play the track)
 local TURN = 0.08 -- seconds the body takes to turn for a huss (eased, never a snap)
 local TRACK_SPEED = 0.9 -- the published DashLeft/Right (0.4 s) a little slower: its lean held to 0.30 s, like HV
@@ -204,16 +209,14 @@ function Dash.ready(): boolean
 		and os.clock() - lastLocal >= (if role == "Catcher" and playing then Config.Lunge.Cooldown else Config.Dash.Cooldown) - 0.1
 end
 
--- The catcher's lunge: a hop and a hard push forward (the way you're running, else the way you face).
+-- The catcher's lunge: a hop and a hard push the way you steer (forward, or sideways with A / D; never back).
 local function lunge(c: Model, h: Humanoid, root: BasePart)
+	local dir = KnifeLeap.direction(root.CFrame.LookVector, h.MoveDirection)
+	if not dir then return end
 	lastLocal = os.clock()
-	local dir = if h.MoveDirection.Magnitude > 0.2 then h.MoveDirection else root.CFrame.LookVector
-	dir = Vector3.new(dir.X, 0, dir.Z)
-	if dir.Magnitude < 0.1 then return end
-	dir = dir.Unit
 	local lungeNet = Net.get("Lunge") :: RemoteEvent
 	local L = Config.Lunge
-	local first = HitCheck.find(root, L.Reach, L.Width)
+	local first = HitCheck.find(root, L.Reach, L.Width, dir)
 	if first == false then
 		lungeNet:FireServer() -- (this build can't check: the server finds who the leap reaches)
 	else
@@ -224,7 +227,7 @@ local function lunge(c: Model, h: Humanoid, root: BasePart)
 			local t0 = os.clock()
 			while not found and os.clock() - t0 < L.HitWindow and root.Parent do
 				RunService.Heartbeat:Wait()
-				found = HitCheck.find(root, L.Reach, L.Width)
+				found = HitCheck.find(root, L.Reach, L.Width, dir)
 			end
 			if type(found) == "number" then
 				lungeNet:FireServer(found)

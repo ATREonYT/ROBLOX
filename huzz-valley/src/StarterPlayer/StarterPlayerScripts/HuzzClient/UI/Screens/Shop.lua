@@ -256,7 +256,7 @@ end
 -- skins and the girls' rewards. Picture cards after the owner's Oct 17 mockup (design/ui-oct17): four to a row, the
 -- name and slot on top, a big picture (Config/CoinShop Art; drawn here for items without one), and one button: the
 -- coin price (buy and wear it), WEAR (owned), or WEARING (tap to take it off). The server decides.
-local ITEM = { W = 161, H = 170, Gap = 8, ArtY = 39, ArtH = 89, Swatch = 64, Fill = Color3.fromHex("0B1C3E"), FillBottom = Color3.fromHex("0A1537"), Rim = Color3.fromHex("2B4E8C"), Slot = Color3.fromHex("AEB4F0") }
+local ITEM = { W = 161, H = 170, Gap = 8, ArtY = 39, ArtH = 89, KnifeArtH = 124, Swatch = 64, Fill = Color3.fromHex("0B1C3E"), FillBottom = Color3.fromHex("0A1537"), Rim = Color3.fromHex("2B4E8C"), Slot = Color3.fromHex("AEB4F0") }
 local rarityColor = {}
 for _, r in RoundConfig.Rarities do rarityColor[r.Name] = r.Color end
 rarityColor.Secret = Color3.fromRGB(150, 110, 255) -- (near-black in the roller; violet reads on the dark window)
@@ -314,12 +314,17 @@ local function buildItems(body: Frame)
 			local rim = c:FindFirstChildOfClass("UIStroke")
 			if rim then rim.Color, rim.Thickness = tint, 2 end
 		end
-		if tint or not item.Art then -- a soft glow from the top in the item's colour (pictures carry their own glow)
+		local knifeArt = item.Slot == "Knife" and item.Art ~= nil -- (the owner's knives: the picture fills the card)
+		if (tint or not item.Art) and not knifeArt then -- a soft glow from the top in the item's colour (pictures carry their own glow)
 			new("Frame", { Name = "Glow", Size = UDim2.new(1, 0, 0.75, 0), BackgroundColor3 = tint or item.Colors[1], BackgroundTransparency = if tint then 0.8 else 0.86, BorderSizePixel = 0, ZIndex = 0, Parent = c }, {
 				Kit.corner(6), new("UIGradient", { Rotation = 90, Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(1, 1) }) }),
 			})
 		end
-		if item.Art then
+		if knifeArt then
+			-- the owner's knife (a render of his model, tools/knives/compose_cards.py) behind the name and rarity, like
+			-- his mock-up (design/knives/knifepictures-mockup.png); the square picture is cropped a little top and bottom
+			Kit.attach(Kit.corner(5), Kit.art(item.Art :: string, { Name = "Picture", Position = UDim2.fromOffset(2, 2), Size = UDim2.fromOffset(ITEM.W - 4, ITEM.KnifeArtH), Parent = c }))
+		elseif item.Art then
 			Kit.art(item.Art, { Name = "Picture", Position = UDim2.fromOffset(2, ITEM.ArtY), Size = UDim2.fromOffset(ITEM.W - 4, ITEM.ArtH), Parent = c })
 		elseif item.Slot == "Title" then
 			-- the title itself, big, in its colours (as it shows over your name)

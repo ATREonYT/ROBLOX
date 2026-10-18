@@ -33,7 +33,8 @@ function M.start()
 	local stabs = {} -- Player | "bot" -> { rec, character, trail, track }
 
 	-- ago: how far into the move to start (the bot's stab arrives after its hit, so it starts near the thrust)
-	local function playStab(p, model: Model?, ago: number?)
+	-- lunge: the Space leap (the slash, then a dive into the leap's direction: Shared/StabMotion)
+	local function playStab(p, model: Model?, ago: number?, lunge: boolean?)
 		local character = model or (typeof(p) == "Instance" and (p :: Player).Character or nil)
 		local rig = character and CarryMath.rig(character)
 		if not (rig and rig.kind == "R15") then
@@ -47,7 +48,7 @@ function M.start()
 			s = { rec = StabMotion.new(rig, character:FindFirstChild("HumanoidRootPart")), character = character }
 			stabs[p] = s
 		end
-		StabMotion.play(s.rec, os.clock() - (ago or 0))
+		StabMotion.play(s.rec, os.clock() - (ago or 0), lunge)
 		if Animations.Stab ~= "" then
 			local humanoid = character:FindFirstChildOfClass("Humanoid")
 			local animator = humanoid and humanoid:FindFirstChildOfClass("Animator")
@@ -73,6 +74,11 @@ function M.start()
 			if not character.Parent or (typeof(p) == "Instance" and p.Parent == nil) then
 				stabs[p] = nil
 			else
+				local root = s.rec.root
+				if s.rec.lunge and root then -- the dive leans the way the body is flying (forward or sideways)
+					local v = root.CFrame:VectorToObjectSpace(root.AssemblyLinearVelocity)
+					if Vector3.new(v.X, 0, v.Z).Magnitude > 8 then StabMotion.setDive(s.rec, v) end
+				end
 				local playing = StabMotion.step(s.rec, now, Animations.Stab == "")
 				local knife = character:FindFirstChild("HuzzKnife")
 				local trail = knife and knife:FindFirstChild("SlashTrail", true)
@@ -93,7 +99,7 @@ function M.start()
 		elseif kind == "Stab" and (data.id ~= player.UserId or data.lunge) then
 			local p = Players:GetPlayerByUserId(data.id)
 			if p then
-				playStab(p)
+				playStab(p, nil, 0, data.lunge == true)
 			end
 		end
 	end)

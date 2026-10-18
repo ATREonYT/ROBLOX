@@ -135,7 +135,12 @@ local function prizeArt(parent: Instance, item: any, s: number, pos: UDim2, name
 		icon("CurrencyCoin", "Coin1", s * 0.8, s * 0.44, s * 0.46, 1)
 		icon("Stopwatch", "Clock", s * 0.48, s * 0.76, s * 0.74, 2)
 	elseif item.Kind == "Knife" then
-		knife(box, s)
+		local skin = CoinShop.get(item.Key)
+		if skin and skin.Art then -- the owner's knife (its Shop card picture: Celestial Edge), else the drawn one
+			Kit.attach(Kit.corner(math.round(s * 0.12)), Kit.art(skin.Art, { Name = "Knife", Size = UDim2.fromOffset(s, s), ZIndex = 2, Parent = box }))
+		else
+			knife(box, s)
+		end
 	end
 	return box
 end

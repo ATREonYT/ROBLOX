@@ -36,13 +36,15 @@ Owner's own words are in quotes. Read only the section you need.
 - **Text:** short and game-like, no dashes, no "AI" phrasing ("Messi is safe", "Got one!", "YOU'RE OUT").
 - **Controls:** **no jumping anywhere**. Space = the sideways huss (left/right only, lobby too; you turn to face the
   camera first so A/D go left/right on screen: "it only goes one way" without shift lock); a **catcher's Space
-  in a round is a lunge** that stabs whoever it reaches; hold W = walk building into a run; G = dance wheel;
+  in a round is a lunge** that catches whoever it reaches (forward, or sideways with A/D, never back: owner Oct 18
+  "leaps forward/sideways to catch the person"); hold W = walk building into a run; G = dance wheel;
   Q/E = powers (catcher Q = Love Trap = the traps); click = stab; shift lock in rounds (Alt frees the mouse).
 - **No girl toss** (removed). **Safe means safe:** once across you stay across. During a Hero run only the Hero and
   catchers move.
 - **Companions are only girls you win** (the kit's Aiko/Ren/Sora/Hina mock-ups were removed). The equipped girl
   walks behind you on the ground, doesn't collide with you, and dances when you dance. Effects tiny below Legendary.
-- **Knives:** everyone wears one on the back; catchers hold theirs in a round. The owner will send 3D knife renders.
+- **Knives:** everyone wears one on the back; catchers hold theirs in a round. The owner's own 30 knives (Oct 18,
+  `design/knives/`) are the skins (section 11, "Knives"): calm effects by rarity, "dont make it overly crazy".
   Study of Huss Valley's knives (on the back at the belt, slash with no wind-up, catch = red fill, no sparks or shake)
   and the plan for his models: `docs/knife-study.md`, sheets `docs/previews/knife-study-*.jpg` (`tools/preview/knife_sheets.py`).
 - **Aura** = Huss Valley's gems. **Coins** buy looks (the owner picked "Coin cosmetics shop").
@@ -83,7 +85,8 @@ Owner's own words are in quotes. Read only the section you need.
 
 ## 4. Checks, previews, builds (Lune 0.10.5 at `/root/bin/lune`; run before every commit)
 - `PATH=/root/bin:$PATH bash tools/check.sh`: compiles every script; specs (RoundRules, CarryMath, GirlMotion,
-  GirlMoves, StabMotion, DownMotion, Movement, Locomotion, PlayerMoves, GirlRoll, CrateRoll, SpinWheel, Leaderboards); **the full-game simulation** (`tools/sim/round_sim.luau`: real server code, bots
+  GirlMoves, StabMotion, DownMotion, Movement, Locomotion, PlayerMoves, GirlRoll, CrateRoll, SpinWheel, Leaderboards,
+  Knives, SetupKnives); **the full-game simulation** (`tools/sim/round_sim.luau`: real server code, bots
   that run, stab, lunge, rescue, use powers; 7 setups). `lune run huzz-valley/tools/sim/round_sim.luau audit` (repo root) prints the
   loop numbers (stage times, waiting, win rates by player count, on the real map size) for `docs/loop-audit.md`. Its stubs (e.g. `KnifeService`) must get any new function
   RoundService calls, or games stop with "attempt to call a nil value".
@@ -173,7 +176,8 @@ Owner's own words are in quotes. Read only the section you need.
   only one still out is called out once ("X is the last runner!") and runs as fast as the real catcher (the bot's
   speed when it catches; never under 28); with Rizz Rush capped at catcher + 4.
 - **Catching:** click stab (`Stab` remote) or a catcher's **lunge** (`Lunge` remote, `Config/Round.Lunge`: eases 72 to 40 over 0.38 s,
-  Up 18, HitRange 4.8 for 0.5 s, cooldown 3 s shared with the Space tile `DashReady`; stab mode only). Both go
+  the way you steer: `Shared/KnifeLeap.direction`, forward or sideways with A/D, never back; the hit box points along
+  the leap; the slash plays in it, then a dive into the leap; Up 18, HitRange 4.8 for 0.5 s, cooldown 3 s shared with the Space tile `DashReady`; stab mode only). Both go
   through `stabNear()`: shields, the safe start zone and a fresh rescue protect; a Heart Shield ends the lunge.
   **Pinpoint** (owner Oct 18: "make hitboxes pinpoint"): the catcher's own screen picks the runner whose body is
   in a box in front of them (`Gameplay/HitCheck`; Stab Reach 5.5 x Width 4, Lunge 4.5 x 4) and sends that UserId
@@ -370,9 +374,11 @@ Owner's own words are in quotes. Read only the section you need.
   onto the stance foot. Scripted `GirlMotion` walk/idle only until the folder arrives. Spec `tests/GirlMoves.spec`,
   video `docs/previews/girl-pack-walk.mp4` (`motion3d/girl_pack_scene.luau`).
 - **The stab** (`Shared/StabMotion`, scripted until `Config/Animations.Stab` is uploaded; `Config/Round.Stab.Time`
-  0.42 s): coil 0.11 s (hand back by the ribs, shoulders turned away, free arm forward), thrust in 0.06 s (body
-  turns and leans into it, free arm snaps back), a 0.1 s held hit, follow-through. The knife arm is raised by the
-  run's hunch so it stabs level while sprinting; the head counter-turns to stay on the target. Written after the
+  0.40 s, Huss Valley's slash from `docs/knife-study.md`): no wind-up; the arm sweeps out to the right side, landing
+  at ~0.07 s, held out (free arm pointing ahead) to 0.24 s, back by 0.40; trail on 0.02 to 0.45 of it. In a lunge
+  (`play(rec, now, true)`) a dive follows: the waist tips 35° into the leap's direction (`DIVE`, `setDive` from the
+  body's velocity in `Gameplay/Actions`), up by 0.72 s. The knife arm is raised by the
+  run's hunch so it slashes level while sprinting. Written after the
   animations (Frame order 30), so it sits over the run. Spec `tests/StabMotion.spec`, video `docs/previews/stab.mp4`
   (`motion3d/stab_scene.luau`). The Practice Bot's stab shows too: RoundService sends "Stab" `{ bot = true }` on a
   hit (and at most once a cooldown while it keeps trying); `Gameplay/Actions` plays it on the `HuzzBot` model.
@@ -481,6 +487,24 @@ Owner's own words are in quotes. Read only the section you need.
   the showcase is `ModelStreamingMode` Persistent and RoundService streams the spot in around everyone (at most 3 s,
   `ReplicationFocus` until the end) before `RevealAt`; his first Studio recording (old 7.5 s build) showed an empty
   spot with no girl and no map because of this.
+- **Knives** (owner, Oct 18: "add some vfx to the knifes, but make it fit it, and dont make it overly crazy"): his 30
+  `design/knives/Knives/*.glb` (+ `All_Knives.glb`) are the Knife slot in `Config/CoinShop` (Order 101-130, his names
+  and rarities; Common 200, Uncommon 500, Rare 1000, Epic 2000, Legendary 4000, Mythic 8000 coins). Old keys sit on
+  fitting models and keep their rules: RookieKnife = Training Kunai, HunterKnife = Hunter's Hook, MoonlitKnife =
+  Hollow Moon (quests), SpinKnife = Celestial Edge (wheel, never sold), IceKnife/CandyKnife/ShadowKnife = Ice Shard /
+  Sakura Blade / Shadow Cleaver. Baked facts (lengths 2.4-3.3 studs, glow colours, part names):
+  `tools/knives/bake_knives.py` → `tools/knives/knives.json` + the setup script. Card pictures from the real meshes:
+  `knife_meshes.py` → `render_cards.mjs` → `compose_cards.py` → `assets/art/knife-*.png` (packed 192 px; they show in
+  Play only, EditableImage); `docs/previews/knife-cards.jpg`. `KnifeService` takes `ServerStorage/HuzzKnives/<Key>`
+  when there, else the built-in knife tinted in the skin's colours. Mounts `Shared/KnifeLook` (back at the belt,
+  hand by the model's `Grip`); effects `KnifeLook.LADDER`: Common none, Uncommon sheen, Rare soft light, Epic +3
+  sparkles a second and a tinted slash trail, Legendary light Range 4 + glow on the back, Mythic + embers (stand-in
+  particle textures until uploads). Pictures `docs/previews/knives-vs-hv.jpg`, `knife-leap.mp4`.
+  **Owner how-to (Studio, once):** 1. File > Import 3D > `huzz-valley/design/knives/Knives/All_Knives.glb`, Import.
+  2. View > Command Bar, paste `require(game.ServerStorage.HuzzStudioTools.SetupKnives)()` (or the whole of
+  `tools/knives/setup_knives.lua`), Enter. 3. Output says `[HuzzKnife] Done: 30 of 30 knives are in ServerStorage >
+  HuzzKnives.` (a warning names any it couldn't find). 4. File > Save. 5. Right-click ServerStorage > HuzzKnives >
+  Save to File, send `HuzzKnives.rbxm`; we put it in `assets/knives/` and `build_yours.luau` puts it in every build.
 - **Crates** (`Config/Crates`, `Shared/CrateRoll` with odds + pity) are plumbed but empty until the owner designs them.
 - **Lobby leaderboards** (owner, Oct 18: "make the leaderboards just like in the video ... make them follow your
   character"; reference `design/lobby-ref/lb_f1.jpg`, `lb_f2.jpg`): Huss Valley's boards one to one: 14 x 18 stud
@@ -538,7 +562,7 @@ Owner's own words are in quotes. Read only the section you need.
   sound helpers live in the place (`ServerStorage/HuzzStudioTools`, run with one `require(...)()` line); the
   owner's click-by-click guide is `docs/STUDIO-STEPS.md`. Studio helpers report on Output lines tagged `[Huzz]`, `[HuzzSfx]`, `[HuzzAnim]`.
 - Not yet seen in Studio: the Practice Bot (its walk, run animation, knife), the Oct 17 UI shine/rays/spin and Juice bursts, the new lighting, stars in the playing zone, the move between lobbies after the vote (instant, no fade yet), the lunge feel, sprint feel, lobby repaint, knife positions, spin animation, dance
-  pictures on real avatars, dance sync across two clients (needs published dances), the lobby leaderboards (real
+  pictures on real avatars, the owner's knives (meshes after his import, glow, sparkles, the leap and dive), dance sync across two clients (needs published dances), the lobby leaderboards (real
   studs, colour under his light, headshots, scrolling, the turn) and the avatar stands (your copy, its run, the glow).
 - **Which code ran?** Studio shows "build <date> UTC" small in the bottom right (and `[Huzz] Build` in Output), from
   `Config/Build` written by `build_place.sh`. The owner's Oct 18 recordings showed the OLD cutscene and HUD although
@@ -553,7 +577,7 @@ Owner's own words are in quotes. Read only the section you need.
 ## 14. Open items (a running list; add to it as the owner reports more)
 - Owner: Game Pass IDs (VIP 199, Dance Pack 149) and Developer Product IDs (Sunset Trail, Blossom Aura, coin
   packs, spins 1/10/100); upload sounds, pictures and animations; an export of their spin wheel model (match its
-  colours); their 3D knife renders; power icons; a stab animation; crate contents; dance names; movement pack licence.
+  colours); run the knife setup and send `HuzzKnives.rbxm` (section 11, "Knives"); power icons; a stab animation; crate contents; dance names; movement pack licence.
 - Owner's place notes (Oct 17): no Uncommon girls yet (the rarity is skipped until there are some); a plank path
   near the Halloween lobby and a basketball hoop sit loose in Workspace (the path's pieces on the field now move
   into Halloween_Map at start; the pieces on the lobby stay).

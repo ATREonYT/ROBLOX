@@ -121,13 +121,16 @@ function Progression.shownChapter(claimed: { [string]: boolean }, stats: { [stri
 	return open
 end
 
--- What a quest gives, in words ("150 coins", "Rookie Knife").
+-- What a quest gives, in words ("150 coins", "Training Kunai").
 function Progression.rewardText(q): string
 	local r = q.Reward
 	if not r then return q.XP .. " XP" end
 	if r.Kind == "Coins" then return r.Amount .. " coins" end
 	if r.Kind == "Aura" then return r.Amount .. " Aura" end
-	if r.Kind == "Knife" then return (string.gsub(r.Id, "Knife$", " Knife")) end
+	if r.Kind == "Knife" then -- (the knife's own name: the quest knives are the owner's models now, Config/CoinShop)
+		local item = require(script.Parent.CoinShop).get(r.Id)
+		return if item then item.Name else (string.gsub(r.Id, "Knife$", " Knife"))
+	end
 	return ""
 end
 

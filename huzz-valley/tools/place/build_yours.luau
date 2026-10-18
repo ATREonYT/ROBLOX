@@ -52,6 +52,35 @@ for _, d in theirs:GetDescendants() do
 end
 print("scam scripts removed: " .. removed)
 
+-- The owner's knives (Oct 18): once he has run the knife setup in Studio and sent ServerStorage > HuzzKnives
+-- (right-click > Save to File) as huzz-valley/assets/knives/HuzzKnives.rbxm, every build carries them. Without that
+-- file, a HuzzKnives already in his place stays; with neither, KnifeService tints the built-in knife.
+do
+	local file = "huzz-valley/assets/knives/HuzzKnives.rbxm"
+	if fs.isFile(file) then
+		local storage = theirs:GetService("ServerStorage")
+		local holder
+		for _, inst in roblox.deserializeModel(fs.readFile(file)) do
+			if inst.Name == "HuzzKnives" then
+				holder = inst
+			else -- (saved as the knives themselves: put them in a folder)
+				holder = holder or roblox.Instance.new("Folder")
+				holder.Name = "HuzzKnives"
+				inst.Parent = holder
+			end
+		end
+		if holder then
+			local old = storage:FindFirstChild("HuzzKnives")
+			if old then old:Destroy() end
+			holder.Parent = storage
+			print("knives: " .. #holder:GetChildren() .. " from assets/knives/HuzzKnives.rbxm")
+		end
+	else
+		local has = theirs:GetService("ServerStorage"):FindFirstChild("HuzzKnives")
+		print("knives: " .. (if has then "the place's own HuzzKnives kept" else "none yet (built-in knife, tinted)"))
+	end
+end
+
 -- The lobby leaderboards (owner, Oct 18: "make the leaderboards just like in the video"): five round each lobby
 -- floor (on his three grey podiums first, two along the back edge), saved in the place so the owner sees them and can drag them (Workspace > HuzzLeaderboards). Built by the
 -- game's own code (Shared/LeaderboardLook), so Studio shows the same board the game fills in. Skipped when the

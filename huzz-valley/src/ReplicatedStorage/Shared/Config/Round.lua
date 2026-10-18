@@ -64,7 +64,7 @@ return {
 		Width = 4,
 		Slack = 3,
 		Cooldown = 0.6, -- seconds between stabs, hit or miss
-		Time = 0.42, -- how long the stab move lasts (coil 0.11 s, thrust 0.06 s, hit 0.1 s, follow-through: Shared/StabMotion)
+		Time = 0.40, -- the slash, Huss Valley's (docs/knife-study.md): no wind-up, the sweep lands ~0.07 s, held, back by 0.40 (Shared/StabMotion)
 	},
 	TagRange = 5.5, -- "Touch" only: studs between root parts
 

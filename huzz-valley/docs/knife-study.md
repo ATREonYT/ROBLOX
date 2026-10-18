@@ -138,3 +138,14 @@ only renders come, ask for the meshes; never redraw them. Renders go in `design/
 **Still unknown or Studio-only:** the exact slash direction (seen from one side only), whether the ribbon is a
 cosmetic, the knife's sound (the recording has no audio), and how the owner's meshes look at 2.8 studs under our
 lighting.
+
+## Done (Oct 18: the owner's 30 knives, `.glb`)
+- All 30 in the coin shop (`Config/CoinShop` Knife slot, his names and rarities, priced by rarity), with card
+  pictures rendered from the real models (`assets/art/knife-*.png` via `tools/knives/render_cards.mjs` +
+  `compose_cards.py`; sheet `docs/previews/knife-cards.jpg`). Studio setup script `tools/knives/setup_knives.lua`
+  (lengths 2.4 to 3.3 studs by each model's real length, not one 2.8).
+- Mounts, slash, lunge and the effects ladder as planned above (`Shared/KnifeLook`, `StabMotion`, `Shared/KnifeLeap`:
+  the leap goes forward or sideways, never back). Side by side `docs/previews/knives-vs-hv.jpg`
+  (`tools/knives/knives_vs_hv.py`), film `docs/previews/knife-leap.mp4` (`motion3d/knife_scene.luau`).
+- Not done: the red Highlight hit flash and the red outline while down (Juice's spark burst stays), the lunge ribbon.
+  In hand from the front our blades read thinner than HV's.
