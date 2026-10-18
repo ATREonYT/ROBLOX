@@ -19,7 +19,8 @@ roblox.implementProperty("MarketplaceService", "PromptProductPurchaseFinished", 
 roblox.implementMethod("MarketplaceService", "GetProductInfo", function() error("offline") end)
 local chatCallback
 roblox.implementProperty("TextChatService", "OnIncomingMessage", function() return chatCallback end, function(_, fn) chatCallback = fn end)
-roblox.implementMethod("Workspace", "GetServerTimeNow", function() return os.time() end)
+-- (a check can drive its own clock: _G.__serverClock = function() return t end)
+roblox.implementMethod("Workspace", "GetServerTimeNow", function() local f = _G.__serverClock; return if f then f() else os.time() end)
 roblox.implementMethod("DataModel", "BindToClose", function() end)
 _G.__isStudio = true
 -- Server and client share one DataModel here, so both sides answer true.

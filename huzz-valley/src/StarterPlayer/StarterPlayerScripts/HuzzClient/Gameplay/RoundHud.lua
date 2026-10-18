@@ -13,7 +13,10 @@
 	  - Centre words only for the big moments (3-2-1, GO!, SAFE!, YOU'RE DOWN / OUT, BACK UP!, the win), 27% from
 	    the top so they never print on your own character or name tag. Everything else is the message line.
 	  - 3-2-1-GO is drawn every frame from the server's EndsAt (no tweens to fight): each number pops in from 1.4x
-	    over 0.15 s, holds, then shrinks and fades before the next; GO! is bigger and green. One pop a second.
+	    over 0.15 s, holds, then shrinks and fades before the next; GO! is bigger and green, from the count's end
+	    (server time). One pop a second. Only the last 3 seconds count: after a CHICKEN pick (or no answer) the
+	    server adds a short lead while the camera swings back behind you, and nothing draws until the camera is
+	    back (owner: "the numbers just dont appear well"); HERO / CHICKEN words over heads step aside meanwhile.
 	Your own name tag (made by HuzzServer/NameTagService) is faded, as in Huss Valley, and hidden while the round's
 	camera shots play (HuzzCinematic / HuzzChoosing; a HERO / CHICKEN word over your head stays, alone) and from the
 	Hero run to the round's end (HeroRun, Countdown, Running, RoundOver: it sat where the centre words print).
@@ -340,7 +343,8 @@ function M.start()
 	local TIMED = { HeroRun = true, Running = true, Picking = true }
 	local LOBBY_MESSAGE_TIME = 5
 	M.extraHelp = nil -- (Gameplay/Onboarding can put a first-game tip here)
-	local lastCount, goAt0
+	local lastCount, goAt0, countEnd
+	local COUNT_FROM = Config.CountdownTime -- (3: a lead before it shows nothing)
 	local function refresh()
 		local stage = State:GetAttribute("Stage") or "Waiting"
 		local now = Workspace:GetServerTimeNow()
@@ -397,29 +401,33 @@ function M.start()
 			end
 		end
 
-		-- 3-2-1-GO
+		-- 3-2-1-GO. Straight after a camera shot (a CHICKEN pick, or no answer) the server's Countdown starts with a
+		-- short lead while the camera swings back behind you (RoundService); nothing shows in it, so 3, 2 and 1
+		-- each get a full second once the camera is back, and GO! lands on the server's start (the count's own
+		-- EndsAt, the same moment on every screen). Nothing is drawn while the round camera is still in its shot.
 		if stage == "Countdown" then
+			countEnd = State:GetAttribute("EndsAt") or now
 			local n = math.ceil(left)
-			if n >= 1 and n <= 9 then
+			if n >= 1 and n <= COUNT_FROM and player:GetAttribute("HuzzCinematic") ~= true then
 				local scale, transparency = numberAt(1 - (left - (n - 1)))
 				drawCount(tostring(n), WHITE, 104, scale, transparency)
 				if n ~= lastCount then
 					Sfx.play("countdown_tick", { pitch = 1 + (3 - math.min(n, 3)) * 0.06 })
 				end
+				lastCount = n
 			else
 				hideCount()
 			end
-			lastCount = n
 			goAt0 = nil
-		elseif lastCount and stage == "Running" then
-			lastCount = nil
-			goAt0 = os.clock()
+		elseif countEnd and stage == "Running" then
+			goAt0 = math.min(countEnd, now)
+			countEnd, lastCount = nil, nil
 			Sfx.play("countdown_go")
-		else
-			lastCount = nil
+		elseif stage ~= "Running" then
+			countEnd, lastCount = nil, nil
 		end
 		if goAt0 and stage ~= "Countdown" then
-			local t = os.clock() - goAt0
+			local t = now - goAt0
 			if t < 1.1 then
 				local scale, transparency = goAt(t)
 				drawCount("GO!", GREEN, 124, scale, transparency)
@@ -451,7 +459,31 @@ function M.start()
 			end
 		end
 	end
-	RunService.RenderStepped:Connect(function()
+	-- The big HERO / CHICKEN word over the picked runner's head has had its moment (the Chosen shot): it steps aside
+	-- for 3-2-1 and GO! (on the line it sat right behind the numbers), then comes back. Local only.
+	local quietWords: { [Instance]: boolean } = {} -- (a plain table: weak tables keyed by parts drop entries at random)
+	local function quietTagWords()
+		local quiet = State:GetAttribute("Stage") == "Countdown" or goAt0 ~= nil
+		if quiet then
+			for _, p in Players:GetPlayers() do
+				local h = p.Character and p.Character:FindFirstChild("Head")
+				local word = h and h:FindFirstChild("HuzzTag") and h.HuzzTag:FindFirstChild("Badge")
+				if word and word:IsA("GuiObject") and word.Visible then
+					word.Visible = false
+					quietWords[word] = true
+				end
+			end
+		elseif next(quietWords) then
+			for word in quietWords do
+				if word.Parent and word:IsA("TextLabel") then
+					word.Visible = word.Text ~= "" -- (as NameTagService shows it)
+				end
+			end
+			table.clear(quietWords)
+		end
+	end
+	local function tagStep()
+		quietTagWords()
 		local character = player.Character
 		local head = character and character:FindFirstChild("Head")
 		local tag = head and head:FindFirstChild("HuzzTag")
@@ -482,7 +514,9 @@ function M.start()
 			end
 		end
 		tag.Enabled = wordOnly or (not shot and clear)
-	end)
+	end
+	RunService.RenderStepped:Connect(tagStep)
+	M.tagStep = tagStep -- (the offline check calls it)
 
 	-- Prize card
 	local girls = ReplicatedStorage:FindFirstChild("HuzzGirls")

@@ -806,9 +806,16 @@ local function runRound()
 		return
 	end
 
-	-- 3, 2, 1, GO! Everyone runs.
-	setStage("Countdown", Config.CountdownTime)
-	play(Config.CountdownTime)
+	-- 3, 2, 1, GO! Everyone runs. Straight after a camera shot (CHICKEN, no answer, or no pick) every camera first
+	-- swings back behind its player (Gameplay/Cinematic: Shot.HandBackTime 0.3 s + the hand-over), so the count gets
+	-- a lead of CAMERA_BACK seconds in which the HUD draws nothing (owner: "fix the countdown when someone chooses
+	-- chicken, the numbers just dont appear well": 3 popped while the camera was still flying back). After a Hero
+	-- run the camera is already back: no lead.
+	local CAMERA_BACK = 0.6
+	local fromShot = State:GetAttribute("Stage") == "Chosen" or State:GetAttribute("Stage") == "Picking" or State:GetAttribute("Stage") == "Lineup"
+	local countTime = Config.CountdownTime + (if fromShot then CAMERA_BACK else 0)
+	setStage("Countdown", countTime)
+	play(countTime)
 	MapService.holdStart(startName, false)
 	table.clear(frozen)
 	PracticeBot.setFrozen(false)
