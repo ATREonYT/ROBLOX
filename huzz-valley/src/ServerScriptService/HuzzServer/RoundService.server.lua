@@ -18,6 +18,7 @@ local Workspace = game:GetService("Workspace")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared.Config.Round)
 local CoinShop = require(ReplicatedStorage.Shared.Config.CoinShop)
+local KnifeLook = require(Shared.KnifeLook)
 local Carry = require(Shared.Config.Carry)
 local Rules = require(Shared.RoundRules)
 local Net = require(Shared.Net)
@@ -183,11 +184,11 @@ local function syncPlayer(id)
 		h.JumpHeight = 0
 		h.JumpPower = 0
 	end
-	-- Catchers hold a knife (Config.TagMode "Stab"); everyone else wears theirs on their back.
+	-- Catchers hold a knife (Config.TagMode "Stab"); everyone else wears theirs (back, or the hip for katanas).
+	-- One knife per body: give/giveBack each remove the other (KnifeService).
 	local c = p.Character
 	local profile = DataService.get(p)
-	local wear = profile and profile.Data.Wear
-	local knifeSkin = wear and wear.Knife and CoinShop.get(wear.Knife) or nil
+	local knifeSkin = KnifeLook.pick(profile and profile.Data, CoinShop)
 	if c then
 		if match and not match.over and match.roles[id] == "Catcher" and Config.TagMode == "Stab" then
 			KnifeService.takeBack(c)
@@ -1439,6 +1440,12 @@ local function onPlayer(player)
 	end)
 	player.CharacterAdded:Connect(function(c)
 		onCharacter(player, c)
+	end)
+	-- the avatar's look can swap body parts after spawning: put the worn knife back on the new ones
+	pcall(function() -- (guarded: the offline harness's copy of the Roblox API has no CharacterAppearanceLoaded)
+		player.CharacterAppearanceLoaded:Connect(function()
+			if byId[player.UserId] then syncPlayer(player.UserId) end
+		end)
 	end)
 	if player.Character then
 		task.spawn(onCharacter, player, player.Character)

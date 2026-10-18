@@ -48,8 +48,8 @@ local function inHand(rig)
 	local hand = rig.parts.RightHand
 	return hand.CFrame * KnifeLook.handC0(Vector3.new(0, -hand.Size.Y / 2 + 0.1, 0)) -- (KnifeService.give, no Grip on the hand)
 end
-local function onBack(rig)
-	local torso = rig.parts.LowerTorso
+local function onBack(rig) -- (KnifeService.giveBack for a knife on the back; knife_wear_scene.luau measures each model)
+	local torso = rig.parts.UpperTorso
 	return torso.CFrame * KnifeLook.backC0(torso.Name, torso.Size)
 end
 local function glowLight(key, at)

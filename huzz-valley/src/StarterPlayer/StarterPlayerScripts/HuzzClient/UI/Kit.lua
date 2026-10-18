@@ -434,16 +434,20 @@ function Kit.button(props: { [string]: any }): Button
 	-- A mouse click sounds on press, not on release (owner: "make the sound for buttons not delayed"). Touch, keys
 	-- and pads sound on Activated (a finger dragging to scroll must not click every button it starts on); the
 	-- sounds are loaded ahead (Sfx), so that is instant too.
-	local pressSounded = false
-	btn.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
-			pressSounded = true
-			Sfx.play(if enabled then "ui_click" else "ui_error")
-		end
+	-- One press, one sound (owner, Oct 18: "they sound glitchy"): the press is MouseButton1Down, which only the button
+	-- on top gets (InputBegan can also fire on buttons under the mouse that sit behind an open window or another
+	-- button, so one click could sound two or three times at once, a little out of step); a press that didn't end in a click (dragged off) doesn't stop the next one from
+	-- sounding; and Sfx skips the same sound asked for again within 0.08 s.
+	local pressedAt = -math.huge
+	btn.MouseButton1Down:Connect(function()
+		local ok, last = pcall(function() return UserInputService:GetLastInputType() end)
+		if not (ok and last == Enum.UserInputType.MouseButton1) then return end -- (touch: on Activated)
+		pressedAt = os.clock()
+		Sfx.play(if enabled then "ui_click" else "ui_error")
 	end)
 	btn.Activated:Connect(function()
-		if not pressSounded then Sfx.play(if enabled then "ui_click" else "ui_error") end
-		pressSounded = false
+		if os.clock() - pressedAt > 2 then Sfx.play(if enabled then "ui_click" else "ui_error") end
+		pressedAt = -math.huge
 		if not enabled then return end
 		for _, fn in handlers do task.spawn(Report.run, "Button " .. btn.Name, fn) end
 	end)

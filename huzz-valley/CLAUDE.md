@@ -43,7 +43,8 @@ Owner's own words are in quotes. Read only the section you need.
   catchers move.
 - **Companions are only girls you win** (the kit's Aiko/Ren/Sora/Hina mock-ups were removed). The equipped girl
   walks behind you on the ground, doesn't collide with you, and dances when you dance. Effects tiny below Legendary.
-- **Knives:** everyone wears one on the back; catchers hold theirs in a round. The owner's own 30 knives (Oct 18,
+- **Knives:** everyone wears one (on the back; long slim blades at the hip, owner Oct 18 "for the katanas ... on the
+  side"); catchers hold theirs in a round. The owner's own 30 knives (Oct 18,
   `design/knives/`) are the skins (section 11, "Knives"): calm effects by rarity, "dont make it overly crazy".
   Study of Huss Valley's knives (on the back at the belt, slash with no wind-up, catch = red fill, no sparks or shake)
   and the plan for his models: `docs/knife-study.md`, sheets `docs/previews/knife-study-*.jpg` (`tools/preview/knife_sheets.py`).
@@ -86,7 +87,7 @@ Owner's own words are in quotes. Read only the section you need.
 ## 4. Checks, previews, builds (Lune 0.10.5 at `/root/bin/lune`; run before every commit)
 - `PATH=/root/bin:$PATH bash tools/check.sh`: compiles every script; specs (RoundRules, CarryMath, GirlMotion,
   GirlMoves, StabMotion, DownMotion, Movement, Locomotion, PlayerMoves, GirlRoll, CrateRoll, SpinWheel, Leaderboards,
-  Knives, SetupKnives); **the full-game simulation** (`tools/sim/round_sim.luau`: real server code, bots
+  Knives, KnifeWear, Sounds, SetupKnives); **the full-game simulation** (`tools/sim/round_sim.luau`: real server code, bots
   that run, stab, lunge, rescue, use powers; 7 setups). `lune run huzz-valley/tools/sim/round_sim.luau audit` (repo root) prints the
   loop numbers (stage times, waiting, win rates by player count, on the real map size) for `docs/loop-audit.md`. Its stubs (e.g. `KnifeService`) must get any new function
   RoundService calls, or games stop with "attempt to call a nil value".
@@ -504,8 +505,17 @@ Owner's own words are in quotes. Read only the section you need.
   `tools/knives/bake_knives.py` → `tools/knives/knives.json` + the setup script. Card pictures from the real meshes:
   `knife_meshes.py` → `render_cards.mjs` → `compose_cards.py` → `assets/art/knife-*.png` (packed 192 px; they show in
   Play only, EditableImage); `docs/previews/knife-cards.jpg`. `KnifeService` takes `ServerStorage/HuzzKnives/<Key>`
-  when there, else the built-in knife tinted in the skin's colours. Mounts `Shared/KnifeLook` (back at the belt,
-  hand by the model's `Grip`); effects `KnifeLook.LADDER`: Common none, Uncommon sheen, Rare soft light, Epic +3
+  when there, else the built-in knife tinted in the skin's colours. **Worn knife** (owner Oct 18: "be shown on the
+  back of the character"; the old belt mount was too low to notice): `KnifeLook.pick` = the shop's pick, else your
+  first owned knife, else the default knife; diagonal across the back (handle over the right shoulder), or at the
+  left hip like a sheathed sword for long slim blades (`KnifeLook.wearOf`: a `Wear` attribute/field "Back"/"Side",
+  else measured from the model: 3+ studs and blade 5.5x longer than wide; of the 30 only Celestial Edge; the Game
+  Pass katanas get sorted the same way). Server-built, one per body: `give` (hand) and `giveBack` (worn) each remove
+  the other; RoundService syncs on every change, spawn and avatar reload; a shop change swaps it at once (Bootstrap).
+  A model the wrong size is refused (plain knife + one `[HuzzKnife]` warning): 8 of his Oct 18 file came out of the
+  setup ~12x too big and sideways, fixed offline by `tools/knives/repair_knives.luau`. Spec `tests/KnifeWear.spec`
+  (all 30 on R15/R6, no clipping except the hanging hand on the hip hilt); picture `docs/previews/knife-on-back.jpg`
+  (`motion3d/knife_wear_scene.luau`). Hand by the model's `Grip`; effects `KnifeLook.LADDER`: Common none, Uncommon sheen, Rare soft light, Epic +3
   sparkles a second and a tinted slash trail, Legendary light Range 4 + glow on the back, Mythic + embers (stand-in
   particle textures until uploads). Pictures `docs/previews/knives-vs-hv.jpg`, `knife-leap.mp4`.
   **Owner how-to (Studio, once):** 1. File > Import 3D > `huzz-valley/design/knives/Knives/All_Knives.glb`, Import.
@@ -548,8 +558,14 @@ Owner's own words are in quotes. Read only the section you need.
   the boards in `Workspace > HuzzLeaderboards`; a board's `Stat` attribute picks what it ranks.
 
 ## 12. Sounds
-- `ui_click` remade Oct 18 (owner: "new clicking sound effect"): a bright bubbly pop on a small thump. Plays
-  only after he uploads `assets/sfx/ui_click.ogg` and sends the ID (Roblox's button.wav stands in).
+- **Button sounds** (owner Oct 18: "they sound glitchy, and dont feel too premium"): one press = one sound. Kit
+  buttons sound on `MouseButton1Down` (only the button on top gets it; `InputBegan` could also reach buttons behind
+  an open window, so one click could sound 2-3 times a little out of step), touch on `Activated`; `Sfx` skips the
+  same ui_* sound within `UI_GAP` (0.08 s for clicks), replays preloaded copies (never a cut-off), no pitch wobble,
+  through the Interface group. `ui_click`/`ui_hover`/`ui_open`/`ui_close` remade as one soft rounded "tock" family
+  (72 ms click, 2 ms fade-in, nothing above 3 kHz; `tock()` in make_sfx.py); listen `docs/previews/click-before-after.ogg`.
+  They play only after he uploads them and sends the IDs; until then Roblox's button.wav stands in at pitch 0.9,
+  quieter (open/close stay silent). Spec `tests/Sounds.spec`.
 - 34 sounds made from scratch (`tools/sfx/make_sfx.py` → `assets/sfx/*.ogg`; all in a row in
   `docs/previews/sfx-preview.ogg`): warm, C major pentatonic, brightness under 2.5 kHz, even loudness.
 - `Gameplay/Sfx.play(name, {volume, pitch, at})`, `Sfx.loop("speed_wind")`. `Config/SoundIds` stays "" until the

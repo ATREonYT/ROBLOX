@@ -1,9 +1,15 @@
 --[[
-	Catchers hold a knife in their right hand (as in the reference); everyone else wears theirs on their back
-	(owner: "the catchers run with a knife, and everyone even the runners have a knife mounted on their backs").
-	Both use the knife skin you wear (Config/CoinShop, slot Knife). It's a model welded to the
-	hand, not a Tool, so there's nothing to equip or drop and no backpack. HuzzClient/Gameplay/Actions
-	plays the stab and lights the blade's trail.
+	Catchers hold a knife in their right hand (as in the reference); everyone else wears theirs, always: lobby,
+	runner, waiting (owner: "the catchers run with a knife, and everyone even the runners have a knife mounted on
+	their backs"; Oct 18: "make the knifes please be equipped when you have them, like be shown on the back of the
+	character"; "or even for the katanas you can make it be on the side of the person"). Worn = diagonal across the
+	back, or at the left hip for long slim blades (Shared/KnifeLook.wearOf). It's the knife skin you wear
+	(Shared/KnifeLook.pick: the one picked in the shop, else your first owned knife, else the default knife).
+	ONE knife per body: KnifeService.give (hand) and giveBack (worn) each remove the other first, so drawing it moves
+	it from the back to the hand and the round's end puts it back. It's a model welded on by the server (everyone
+	sees it), not a Tool, so there's nothing to equip or drop and no backpack. HuzzClient/Gameplay/Actions plays the
+	stab and lights the blade's trail. RoundService.syncPlayer calls give/giveBack on every change and on spawn;
+	Bootstrap's DataService.onChanged swaps the skin the moment you pick another in the shop.
 
 	The owner's own knives (Oct 18, 30 models in design/knives/Knives): once he has imported them and run the setup
 	(tools/knives/setup_knives.lua, also ServerStorage/HuzzStudioTools/SetupKnives), each skin is a Model in
@@ -15,8 +21,10 @@
 
 	Effects by rarity (owner: "make it fit it, and dont make it overly crazy"): Shared/KnifeLook. In hand always;
 	on the back only Legendary and Mythic. Built here once per knife (replicated), nothing runs every frame.
-	Where it sits: Shared/KnifeLook (hand: today's grip, offset by the model's Grip; back: across the belt like Huss
-	Valley's, docs/knife-study.md).
+	Where it sits: Shared/KnifeLook (hand: today's grip, offset by the model's Grip; worn: backC0 / sideC0, also on
+	the model's Grip). A model in HuzzKnives whose size doesn't match its length (8 of the owner's Oct 18 file came
+	out of the setup about 10 times too big and lying sideways) is not used: that skin shows our own knife in its
+	colours instead, with one warning in Output, until the model is fixed.
 ]]
 local ServerStorage = game:GetService("ServerStorage")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -94,12 +102,39 @@ local function paint(model, skin)
 	end
 end
 
+-- A knife model's size (Shared/KnifeLook.shape): every part in its Handle's space.
+local function shapeOf(model)
+	local handle = model:FindFirstChild("Handle", true)
+	if not (handle and handle:IsA("BasePart")) then return nil end
+	local parts = {}
+	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") then
+			table.insert(parts, { name = d.Name, cf = handle.CFrame:ToObjectSpace(d.CFrame), size = d.Size })
+		end
+	end
+	return KnifeLook.shape(parts)
+end
+KnifeService.shapeOf = shapeOf
+
+-- True when a model is about its listed length (Studs attribute, else the shop's Studs) and shaped like a knife
+-- (Shared/KnifeLook.sane): a setup that went wrong can leave one 10 times too big and lying sideways.
+local warned = {}
+local function fits(model, skin)
+	return KnifeLook.sane(shapeOf(model), model:GetAttribute("Studs") or (skin and skin.Studs))
+end
+KnifeService.fits = fits
+
 -- The knife for a skin: the owner's model when it's been set up (true), else ours (false).
 local function template(skin)
 	local folder = ServerStorage:FindFirstChild("HuzzKnives")
 	local own = skin and folder and folder:FindFirstChild(skin.Key)
 	if own and own:IsA("Model") and own:FindFirstChild("Handle", true) then
-		return own:Clone(), true
+		if fits(own, skin) then
+			return own:Clone(), true
+		elseif not warned[skin.Key] then
+			warned[skin.Key] = true
+			warn(`[HuzzKnife] {skin.Key} in ServerStorage > HuzzKnives is the wrong size (run the knife setup again for it); showing the plain knife in its colours`)
+		end
 	end
 	local custom = (folder and folder:FindFirstChild(NAME)) or ServerStorage:FindFirstChild(NAME)
 	if custom and custom:IsA("Model") and custom:FindFirstChild("Handle", true) then
@@ -201,19 +236,42 @@ end
 local BACK = "HuzzBackKnife"
 local function skinOf(skin) return if skin then skin.Key else "" end
 
--- Your knife on your back, across the belt (Huss Valley's), in your skin (replaced when the skin changes).
+-- True while a worn / held knife is still fixed to this body (a body part swapped out by an avatar reload leaves its
+-- weld pointing at a part that's gone: then it's built again).
+local function attached(model, character, mountName)
+	local handle = model:FindFirstChild("Handle", true)
+	local mount = handle and handle:FindFirstChild(mountName)
+	local p0 = mount and (mount :: any).Part0
+	return p0 ~= nil and p0.Parent == character
+end
+
+-- Back or Side for this knife: set on the model or the shop item (Wear), else by its shape (Shared/KnifeLook).
+local function wearOf(model, skin, shape)
+	return KnifeLook.wearOf(model:GetAttribute("Wear") or (skin and skin.Wear), shape or shapeOf(model))
+end
+KnifeService.wearOf = wearOf
+
+-- Your knife worn on your body, in your skin: diagonal across the back, or at the left hip for long slim blades
+-- (replaced when the skin changes). Takes a knife out of your hand first: one knife per body.
 function KnifeService.giveBack(character, skin)
 	if not character then return end
 	local old = character:FindFirstChild(BACK)
-	if old and old:GetAttribute("Skin") == skinOf(skin) then return end
+	if old and old:GetAttribute("Skin") == skinOf(skin) and attached(old, character, "BackMount") then
+		KnifeService.take(character)
+		return
+	end
 	if old then old:Destroy() end
-	local torso = character:FindFirstChild("LowerTorso") or character:FindFirstChild("Torso")
-	if not (torso and torso:IsA("BasePart")) then return end
+	KnifeService.take(character)
+	local r6 = character:FindFirstChild("UpperTorso") == nil and character:FindFirstChild("Torso") ~= nil
 	local model = template(skin)
+	local shape = shapeOf(model)
+	local wear = wearOf(model, skin, shape)
+	local torso = character:FindFirstChild(KnifeLook.mountPart(wear, r6))
+	local handle = model:FindFirstChild("Handle", true)
+	if not (torso and torso:IsA("BasePart") and handle) then model:Destroy() return end
 	model.Name = BACK
 	model:SetAttribute("Skin", skinOf(skin))
-	local handle = model:FindFirstChild("Handle", true)
-	if not handle then model:Destroy() return end
+	model:SetAttribute("WornAt", wear)
 	loose(model)
 	for _, d in model:GetDescendants() do
 		if d:IsA("Trail") or d:IsA("ParticleEmitter") or d:IsA("Light") then d:Destroy() end
@@ -223,7 +281,7 @@ function KnifeService.giveBack(character, skin)
 	mount.Name = "BackMount"
 	mount.Part0 = torso
 	mount.Part1 = handle
-	mount.C0 = KnifeLook.backC0(torso.Name, torso.Size)
+	mount.C0 = KnifeLook.wornC0(wear, torso.Name, torso.Size, shape)
 	mount.C1 = gripOf(handle)
 	mount.Parent = handle
 	model.Parent = character
@@ -236,13 +294,14 @@ end
 
 -- Into the right hand, blade pointing down and a little forward (the slash sweeps it out).
 -- skin (optional): a Config/CoinShop Knife item: its model (or ours in its colours), its effects, and the slash
--- trail in its colour (Epic and up) or a faint white smear.
+-- trail in its colour (Epic and up) or a faint white smear. Takes the worn knife off first: one knife per body.
 function KnifeService.give(character, skin)
 	if not character then
 		return
 	end
+	KnifeService.takeBack(character)
 	local held = character:FindFirstChild(NAME)
-	if held and (held:GetAttribute("Skin") or "") == skinOf(skin) then
+	if held and (held:GetAttribute("Skin") or "") == skinOf(skin) and attached(held, character, "KnifeGrip") then
 		return
 	end
 	if held then held:Destroy() end

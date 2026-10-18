@@ -3,7 +3,14 @@
 	IDs come from Config/SoundIds (our own sounds, assets/sfx); until the owner uploads them, some play
 	Roblox's built-in stand-ins (FALLBACK, never pitched up) and the rest stay silent. Sfx.loop plays a loop. Each sound has its own level (LEVEL:
 	the quiet ones are mixed low on purpose) and a little pitch spread so repeats don't sound copy-pasted.
-	Everything goes through SoundService.Master.Effects, so the Settings volume slider applies.
+	Game sounds go through SoundService.Master.Effects, button sounds (ui_*) through Master.Interface, so the
+	Settings sliders apply.
+	Button sounds (owner, Oct 18: "the clicking sounds ... sound glitchy, and dont feel too premium"): each is made
+	once, loaded ahead and replayed (a small pool, so a quick second click never cuts the first one off mid-sound,
+	which clicks); never pitch-wobbled (the same press must sound the same every time); and one press sounds once:
+	a ui_* sound asked for again within UI_GAP of the last one is skipped (rapid taps don't pile up, and two
+	handlers answering the same press can't double it). The stand-in click is Roblox's button.wav played lower
+	(pitch 0.9) and quieter until the owner uploads ours.
 	Not started on its own: other parts require it.
 ]]
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -16,7 +23,7 @@ local Sfx = {}
 -- How loud each one plays (0-1) and how much its pitch may wander (+/-). Our files all have the same loudness,
 -- so this table is the mix: the quiet ones (hover, ticks, steps, wind) are low on purpose.
 local LEVEL = {
-	ui_click = { 0.35, 0.03 }, ui_hover = { 0.15, 0.03 }, ui_open = { 0.4, 0 }, ui_close = { 0.35, 0 }, ui_error = { 0.4, 0 },
+	ui_click = { 0.35, 0 }, ui_hover = { 0.12, 0 }, ui_open = { 0.3, 0 }, ui_close = { 0.26, 0 }, ui_error = { 0.4, 0 },
 	coin = { 0.45, 0.02 }, reward = { 0.55, 0 }, level_up = { 0.6, 0 },
 	countdown_tick = { 0.5, 0 }, countdown_go = { 0.6, 0 },
 	roulette_tick = { 0.3, 0.02 }, pick_land = { 0.55, 0 }, hero_chosen = { 0.6, 0 }, chicken_chosen = { 0.55, 0 },
@@ -37,7 +44,7 @@ local PING = "rbxasset://sounds/electronicpingshort.wav"
 local BUTTON = "rbxasset://sounds/button.wav"
 local CLICK = "rbxasset://sounds/clickfast.wav"
 local FALLBACK = {
-	ui_click = { BUTTON, 0.5, 1 },
+	ui_click = { BUTTON, 0.45, 0.9 }, -- (a little lower and softer than as shipped: rounder, less clicky)
 	ui_hover = { CLICK, 0.4, 0.9 },
 	countdown_tick = { PING, 0.6, 0.8 },
 	countdown_go = { PING, 0.8, 1.05 },
@@ -92,10 +99,25 @@ local function source(name: string): (string?, number, number)
 end
 
 -- UI sounds are made once, loaded ahead and replayed, so a click sounds the moment you press (owner: "make the sound
--- for buttons not delayed"; a new Sound per click had to load first). A few copies each, so fast clicks overlap.
-local UI = { ui_click = 3, ui_hover = 2, ui_open = 1, ui_close = 1, ui_error = 1 }
+-- for buttons not delayed"; a new Sound per click had to load first). A few copies each, so a fast second click
+-- starts a fresh copy instead of restarting one that's still sounding (a cut-off sound clicks).
+local UI = { ui_click = 3, ui_hover = 2, ui_open = 2, ui_close = 2, ui_error = 2 }
+-- One press = one sound: the same ui_* sound again within this many seconds is skipped (owner: "glitchy").
+local UI_GAP = { ui_click = 0.08, ui_hover = 0.06, ui_open = 0.15, ui_close = 0.15, ui_error = 0.15 }
+Sfx.UI_GAP = UI_GAP
 local ready: { [string]: { Sound } } = {}
 local turn: { [string]: number } = {}
+local lastAt: { [string]: number } = {}
+
+-- True when a ui_* sound may play now (and notes the time): false inside its UI_GAP. now: os.clock() by default.
+function Sfx.allow(name: string, now: number?): boolean
+	local gap = UI_GAP[name]
+	if not gap then return true end
+	local t = now or os.clock()
+	if lastAt[name] and t - lastAt[name] < gap then return false end
+	lastAt[name] = t
+	return true
+end
 local function readyCopies(name: string): { Sound }?
 	local list = ready[name]
 	if list and list[1] and list[1].Parent then return list end
@@ -130,6 +152,7 @@ function Sfx.play(name: string, opts: { volume: number?, pitch: number?, at: Ins
 	if UI[name] and not o.at then
 		local list = readyCopies(name)
 		if not list then return nil end
+		if not Sfx.allow(name) then return nil end
 		turn[name] = (turn[name] or 0) % #list + 1
 		local s = list[turn[name]]
 		local id, volume, pitch = source(name)

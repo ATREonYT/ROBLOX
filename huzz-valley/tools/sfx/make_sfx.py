@@ -353,40 +353,48 @@ def sound(name, desc, loop=False):
 
 
 # ---------------- UI
-@sound("ui_click", "Bright bubbly pop for button presses (owner, Oct 18: \"new clicking sound effect\").")
+def tock(f0, f1, dur, decay=0.014, sub=0.5, partial=0.1):
+    """Soft rounded 'tock' (the premium UI family, Oct 18): a round sine body that drops a little in pitch as it
+    sounds (a felt mallet on wood / a soft bubble pop), a low body underneath and a faint 2nd partial that is gone in
+    ~5 ms so the press reads clearly without any noise or tick. Clean 2 ms attack, nothing above ~3 kHz."""
+    x = sine(glide(f0, f1, dur, 3.0), dur) * env(dur, 0.002, decay)
+    if sub:
+        add(x, sine(glide(f0 * 0.32, f1 * 0.27, dur, 2.0), dur) * env(dur, 0.002, decay * 1.4), 0, sub)
+    if partial:
+        add(x, sine(glide(f0 * 2.01, f1 * 2.0, dur, 3.0), dur) * env(dur, 0.0015, 0.005), 0, partial)
+    return x
+
+
+@sound("ui_click", "Soft rounded 'tock' for button presses: short, clean, no harsh highs (owner, Oct 18: \"the clicking sounds ... sound glitchy, and dont feel too premium\").")
 def ui_click():
-    # a quick upward bubble pop on a small rounded thump, with a soft tick on the front so it reads as a press
-    d = 0.085
-    x = 0.75 * sine(glide(620, 1180, d, 4.0), d) * env(d, 0.0015, 0.016)
-    add(x, sine(glide(240, 130, d, 1.6), d) * env(d, 0.002, 0.026), 0, 0.55)
-    add(x, woodtick(1500, 0.03, decay=0.006, seed=21), 0, 0.28)
-    add(x, mallet("G5", 0.06, decay=0.012), 0.004, 0.18)
-    return finish(x, d, lp=5200, fout=0.018)
+    d = 0.075
+    x = tock(760, 560, d, decay=0.014, sub=0.5, partial=0.1)
+    return finish(x, d, lp=3000, drive=1.0, fout=0.022)
 
 
-@sound("ui_hover", "Tiny, very soft marimba tap for hovering over buttons.")
+@sound("ui_hover", "The click's little sister: a tiny, very soft higher tock for hovering over buttons.")
 def ui_hover():
-    d = 0.06
-    x = mallet("E5", d, decay=0.014, attack=0.003)
-    return finish(x, d, lp=3500, drive=1.0, fout=0.015)
+    d = 0.05
+    x = tock(940, 760, d, decay=0.008, sub=0.0, partial=0.06)
+    return finish(x, d, lp=2800, drive=1.0, fout=0.018)
 
 
-@sound("ui_open", "Soft upward breath with two kalimba notes as a panel opens.")
+@sound("ui_open", "Two soft tocks stepping up (C5 then G5) as a panel opens; same voice as the click.")
 def ui_open():
-    d = 0.34
-    x = 0.3 * whoosh(0.3, 450, 1500, peak=0.55, seed=11, lp=3200)
-    add(x, pluck("C5", 0.3, decay=0.1), 0.05, 0.6)
-    add(x, pluck("G5", 0.28, decay=0.1), 0.12, 0.5)
-    return finish(reverb(x, 0.12), d, lp=5000, fout=0.06)
+    d = 0.17
+    x = buf(d)
+    add(x, tock(hz("C5") * 1.12, hz("C5"), 0.08, decay=0.014, sub=0.35), 0.0, 0.75)
+    add(x, tock(hz("G5") * 1.12, hz("G5"), 0.1, decay=0.018, sub=0.3), 0.055, 0.9)
+    return finish(reverb(x, 0.06), d, lp=3000, drive=1.0, fout=0.05)
 
 
-@sound("ui_close", "Soft downward breath with two falling kalimba notes as a panel closes.")
+@sound("ui_close", "Two soft tocks stepping down (G5 then C5) as a panel closes; same voice as the click.")
 def ui_close():
-    d = 0.28
-    x = 0.3 * whoosh(0.24, 1300, 420, peak=0.35, seed=12, lp=3000)
-    add(x, pluck("G4", 0.24, decay=0.08), 0.03, 0.6)
-    add(x, pluck("C4", 0.24, decay=0.09), 0.10, 0.6)
-    return finish(reverb(x, 0.1), d, lp=4500, fout=0.06)
+    d = 0.16
+    x = buf(d)
+    add(x, tock(hz("G5") * 1.12, hz("G5"), 0.08, decay=0.012, sub=0.3), 0.0, 0.8)
+    add(x, tock(hz("C5") * 1.12, hz("C5"), 0.1, decay=0.016, sub=0.35), 0.05, 0.8)
+    return finish(reverb(x, 0.05), d, lp=2800, drive=1.0, fout=0.05)
 
 
 @sound("ui_error", "Gentle low two-note 'nuh-uh' for a blocked action.")

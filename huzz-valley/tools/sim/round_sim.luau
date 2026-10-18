@@ -626,7 +626,8 @@ local function simulate(opts)
 		SpinService = { boost = function() return 1 end }, -- (the Spin the Wheel's x2 Coins: none in the sim)
 		ProgressService = { gameXP = function(_, won, t) return 40 + (if won then 40 else 0), nil end },
 	}
-	local Shared = { Config = { Round = Config, Carry = Carry, Powers = Powers }, RoundRules = RoundRules, Net = Net, GirlRoll = GirlRoll, SecretReveal = SecretReveal }
+	local Shared = { Config = { Round = Config, Carry = Carry, Powers = Powers }, RoundRules = RoundRules, Net = Net, GirlRoll = GirlRoll, SecretReveal = SecretReveal,
+		KnifeLook = { pick = function() return nil end } } -- (which knife you wear: the default one in the sim)
 	local sharedNode = setmetatable({}, { __index = function(_, k)
 		return Shared[k]
 	end })

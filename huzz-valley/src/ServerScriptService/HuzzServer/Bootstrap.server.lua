@@ -106,12 +106,13 @@ DataService.onChanged = function(player)
 	CosmeticsService.refresh(player)
 	require(HuzzServer.NameTagService).restyle(player) -- (a new title or name colour shows in the lobby straight away)
 	CompanionService.refresh(player) -- (the equipped anime girl follows you: Gameplay/Auras)
-	-- a newly worn knife skin shows on your back straight away (a catcher's hand knife updates at the next sync)
+	-- a newly worn knife skin shows straight away: on your body, or in your hand while you're a catcher
 	local c = player.Character
-	local KnifeService = require(HuzzServer.KnifeService)
-	if c and not KnifeService.has(c) then
+	if c then
+		local KnifeService = require(HuzzServer.KnifeService)
+		local Shared = game:GetService("ReplicatedStorage").Shared
 		local profile = DataService.get(player)
-		local key = profile and profile.Data.Wear and profile.Data.Wear.Knife
-		KnifeService.giveBack(c, key and require(game:GetService("ReplicatedStorage").Shared.Config.CoinShop).get(key) or nil)
+		local skin = require(Shared.KnifeLook).pick(profile and profile.Data, require(Shared.Config.CoinShop))
+		if KnifeService.has(c) then KnifeService.give(c, skin) else KnifeService.giveBack(c, skin) end
 	end
 end

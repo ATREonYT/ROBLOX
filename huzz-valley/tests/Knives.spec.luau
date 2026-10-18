@@ -1,8 +1,8 @@
 -- lune run tests/Knives.spec.luau   (from huzz-valley/)
 -- The owner's 30 knives (Oct 18): all 30 in the coin shop's Knife slot with their own names and rarities, in rarity
 -- order, priced by rarity; the quest knives and the Spin Knife sit on fitting models and are never sold; every knife
--- has its card picture (case-exact); the effects climb calmly with rarity; the back mount matches Huss Valley's; and
--- a catcher's Space leap goes forward or sideways, never back.
+-- has its card picture (case-exact); the effects climb calmly with rarity; and a catcher's Space leap goes forward or
+-- sideways, never back. Where a worn knife sits: tests/KnifeWear.spec.luau.
 local fs = require("@lune/fs")
 local serde = require("@lune/serde")
 local roblox = require("@lune/roblox")
@@ -103,16 +103,7 @@ check("Legendary: light range about 4, glow on the back", KnifeLook.fx("Legendar
 check("Mythic: a few embers", KnifeLook.fx("Mythic").embers and KnifeLook.fx("Mythic").embers <= 2)
 check("trail short (about 0.1 s)", KnifeLook.TRAIL.Lifetime <= 0.15)
 
--- on the back: grip on the right hip, blade pointing left and a bit down, the flat facing back
-do
-	local c0 = KnifeLook.backC0("LowerTorso", Vector3.new(2, 0.4, 1))
-	local blade, thin = c0:VectorToWorldSpace(Vector3.new(0, 1, 0)), c0:VectorToWorldSpace(Vector3.new(1, 0, 0))
-	check("back: grip on the right hip, behind", c0.Position.X > 0.3 and c0.Position.Z > 0.5)
-	check("back: blade points left", blade.X < -0.9)
-	local down = math.deg(math.asin(-blade.Y))
-	check(string.format("back: blade 12 to 20 degrees down (%.0f)", down), down >= 12 and down <= 20)
-	check("back: the blade's thin side faces back (flat side out)", math.abs(thin.Z) > 0.95)
-end
+-- where a worn knife sits (back / side, R15 / R6, all 30 on real bodies): tests/KnifeWear.spec.luau
 
 -- the catcher's Space leap: the way you steer, never back
 do
