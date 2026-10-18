@@ -18,6 +18,16 @@ local function rig()
 	m.Parent = workspace
 	return m
 end
+-- her model's descendants plus our own parts (AuraFX keeps the floor pool, rings and orbiting lights in
+-- Workspace.HuzzAuraFX, outside her model)
+local function everything(m)
+	local list = m:GetDescendants()
+	local f = workspace:FindFirstChild("HuzzAuraFX")
+	if f then
+		for _, d in f:GetDescendants() do table.insert(list, d) end
+	end
+	return list
+end
 for _, kind in { "Player", "Companion", "Showcase" } do
 	for _, case in { { "CAC_R6_ixKatsu_358858", "Mythic" }, { "CAC_R6_GoodwinDakota422_AA2072", "Epic" }, { "nobody", "Secret" }, { "nobody", "Common" }, { "CAC_R6_GoodwinDakota422_AA2072", "Rare" } } do
 		local spec = AuraLook.build(AuraLook.lookFor(Looks, case[1], Color3.new(1, 0, 0)), case[2], kind)
@@ -28,12 +38,12 @@ for _, kind in { "Player", "Companion", "Showcase" } do
 			local okStep, err = pcall(function() for _ = 1, 60 do handle.step(1 / 30) end end)
 			check(kind .. " " .. case[2] .. " steps: " .. tostring(err), okStep)
 			local emitters = 0
-			for _, d in m:GetDescendants() do if d:IsA("ParticleEmitter") then emitters += 1 end end
+			for _, d in everything(m) do if d:IsA("ParticleEmitter") then emitters += 1 end end
 			check(kind .. " " .. case[2] .. " has emitters", emitters >= 1)
 			handle.setEnabled(false)
 			handle.destroy()
 			local left = 0
-			for _, d in m:GetDescendants() do if d.Name:find("HuzzAura") or d.Name:find("HuzzSlash") or d.Name:find("HuzzOrb") then left += 1 end end
+			for _, d in everything(m) do if d.Name:find("Huzz") then left += 1 end end
 			check(kind .. " cleans up", left == 0)
 		end
 	end
@@ -63,7 +73,7 @@ for _, key in { "BlossomAura", "AuraLegend", "AuraMythic", "AuraSecret" } do
 		local okStep, err = pcall(function() for _ = 1, 120 do handle.step(1 / 30) end end)
 		check(key .. " steps: " .. tostring(err), okStep)
 		local orbs, flat = 0, 0
-		for _, d in m:GetDescendants() do
+		for _, d in everything(m) do
 			if d:IsA("Trail") then orbs += 1 end
 			if d:IsA("ParticleEmitter") and d.Orientation == Enum.ParticleOrientation.VelocityPerpendicular then flat += 1 end
 		end
@@ -105,7 +115,7 @@ local function biggest(spec)
 	return s
 end
 for _, look in looks do
-	for _, kind in { "Player", "Companion" } do
+	for _, kind in { "Player" } do
 		local tag = `{kind} {look.Element}`
 		local last = -1
 		for rank, rarity in RARITIES do
@@ -135,6 +145,136 @@ for _, look in looks do
 	local myth = AuraLook.build(look, "Mythic", "Player")
 	check(`Player {look.Element} Mythic: the full look`, myth.slashes ~= nil and myth.slashes.rate >= 2 and has(myth, "Core") ~= nil)
 	check(`Showcase {look.Element}: slashes capped at 1 a second`, AuraLook.build(look, "Secret", "Showcase").slashes.rate <= 1)
+
+	-- The girls' own ladder (AuraLook.girl; owner: "effects tiny below Legendary"): each rarity adds a new layer,
+	-- inside a budget (Common at most 2 emitters, Secret at most 12), and the beat stays kid-safe.
+	for _, kind in { "Companion", "Showcase" } do
+		local tag = `{kind} {look.Element}`
+		local lastLayers, lastLive = -1, -1
+		for rank, rarity in RARITIES do
+			local spec = AuraLook.build(look, rarity, kind)
+			local b = AuraLook.budget(spec)
+			local layers = (spec.ground and 1 or 0) + (spec.ground and spec.ground.ring and 1 or 0)
+				+ (spec.ground and spec.ground.runner and 1 or 0) + (spec.orbs and 1 or 0) + (spec.flames and 1 or 0)
+				+ (spec.slashes and 1 or 0) + (spec.halo and 1 or 0) + (spec.ground and spec.ground.breathe > 0 and 1 or 0)
+			local floor = if kind == "Showcase" then 3 else 1 -- (the prize always gets at least the Rare look)
+			if rank > floor then
+				check(`{tag} {rarity}: a new layer over {RARITIES[rank - 1]} ({lastLayers} -> {layers})`, layers > lastLayers)
+				check(`{tag} {rarity}: no lighter than {RARITIES[rank - 1]} ({lastLive} -> {b.live})`, b.live >= lastLive)
+			end
+			lastLayers, lastLive = layers, b.live
+			check(`{tag} {rarity}: on the floor (a light pool)`, spec.ground ~= nil and spec.ground.pool ~= nil)
+			local r = spec.rank or rank -- (the look it gets)
+			check(`{tag} {rarity}: emitters in budget ({b.emitters})`, b.emitters <= (if r <= 2 then 2 elseif r <= 4 then 4 elseif r <= 6 then 8 else 12))
+			check(`{tag} {rarity}: particles alive in budget ({b.live})`, b.live <= (if r <= 2 then 5 else 75))
+			if rank < 5 and kind == "Companion" then
+				check(`{tag} {rarity}: tiny below Legendary (no flames, beat, slashes or wake)`, spec.flames == nil and spec.beat == nil and spec.slashes == nil and spec.wake == nil)
+				check(`{tag} {rarity}: small floor glow`, spec.ground.radius <= 1.6)
+			end
+			if rank <= 2 and kind == "Companion" then
+				check(`{tag} {rarity}: no light, no orbs, faint`, spec.light == nil and spec.orbs == nil and spec.ground.pool[1] >= 0.88)
+			end
+			if spec.beat then
+				check(`{tag} {rarity}: beats at least 2.4 s apart (kid-safe)`, spec.beat.every >= 2.4 and spec.beat.pre > 0)
+			end
+			if spec.slashes then
+				check(`{tag} {rarity}: slashes only on the beat`, spec.slashes.onBeat == true and spec.slashes.rate <= 1 / 2.4)
+			end
+		end
+	end
+end
+
+-- The beat: draws in before it flares (anticipation), the ring runs out once, and it settles back.
+do
+	local B = { every = 3, pre = 0.35 }
+	local before = AuraLook.beatAt(B, 2.95)
+	local flare = AuraLook.beatAt(B, 3.1)
+	local after = AuraLook.beatAt(B, 4.4)
+	local _, shockMid = AuraLook.beatAt(B, 3.4)
+	local _, shockOff = AuraLook.beatAt(B, 5)
+	check(`the beat draws in, flares, settles ({before} {flare} {after})`, before < 0.95 and flare > 1.15 and math.abs(after - 1) < 0.08)
+	check("the floor ring runs out on the beat only", shockMid > 0 and shockMid < 1 and shockOff < 0)
+	-- the flame tongues leave the floor at her feet and reach over her head
+	local F = { count = 4, core = 2, radius = 1, height = 1, width = 1 }
+	local p0, p1, c0, _, w0, w1 = AuraLook.flameAt(F, 1, false, 0.5, 1, 0)
+	check("flames: from her feet to over her head, wide at the bottom", p0.Y < -2 and p1.Y > 2.2 and c0 > 0 and w0 > w1)
+	-- orbiting lights pass in front of and behind her
+	local O = { radius = 1.5, speed = 2.2, tilt = 20, bob = 0.25, height = 0.2 }
+	local front, back = false, false
+	for t = 0, 3, 0.05 do
+		local v = AuraLook.orbitAt(O, 1, 2, t)
+		if v.Z > 1 then front = true end
+		if v.Z < -1 then back = true end
+	end
+	check("orbs go round in front of and behind her", front and back)
+end
+
+-- The girls' layers in the game (AuraFX): the floor pool follows her feet, flames sit behind her, trails come on
+-- only while she walks, nothing new is made per frame, the carried girl has no pool, the cutscene hides the floor.
+do
+	local function legRig()
+		local m = rig()
+		local leg = Instance.new("Part"); leg.Name = "Left Leg"; leg.Size = Vector3.new(1, 2, 1); leg.CFrame = CFrame.new(0, -2, 0); leg.Parent = m
+		local leg2 = Instance.new("Part"); leg2.Name = "Right Leg"; leg2.Size = Vector3.new(1, 2, 1); leg2.CFrame = CFrame.new(1, -2, 0); leg2.Parent = m
+		for _, n in { "HumanoidRootPart", "UpperTorso" } do m[n].CFrame = CFrame.new(0, 0, 0) end
+		m.Head.CFrame = CFrame.new(0, 1.5, 0)
+		m.RightHand.CFrame = CFrame.new(1.5, -1, 0)
+		m.LeftHand.CFrame = CFrame.new(-1.5, -1, 0)
+		return m
+	end
+	local look = AuraLook.lookFor(Looks, "CAC_R6_ixKatsu_358858", nil)
+	local m = legRig()
+	local spec = AuraLook.build(look, "Secret", "Companion")
+	local handle = AuraFX.attach(m, spec)
+	local fxf = workspace:FindFirstChild("HuzzAuraFX")
+	local pool = fxf and fxf:FindFirstChild("HuzzAuraPool")
+	check("Secret girl: a light pool on the floor", pool ~= nil)
+	local flames, behind = 0, true
+	for _, d in m:GetDescendants() do
+		if d:IsA("Beam") and d.Name:find("HuzzFlame") then
+			flames += 1
+			if d.ZOffset >= 0 then behind = false end
+		end
+	end
+	check(`Secret girl: flame tongues ({flames}) drawn behind her`, flames == spec.flames.count + spec.flames.core and behind)
+	local function count()
+		return #everything(m)
+	end
+	for _ = 1, 5 do handle.step(1 / 30) end
+	local before = count()
+	-- she walks 6 studs to the side
+	local wakeOn = false
+	for i = 1, 60 do
+		for _, p in m:GetChildren() do
+			if p:IsA("BasePart") then p.CFrame = p.CFrame + Vector3.new(0.1, 0, 0) end
+		end
+		handle.step(1 / 30)
+		for _, d in m:GetDescendants() do
+			if d:IsA("Trail") and d.Name:find("HuzzWake") and d.Enabled then wakeOn = true end
+		end
+	end
+	check("Secret girl: nothing new made per frame", count() == before)
+	check("Secret girl: trails on her feet while she walks", wakeOn)
+	local pp = pool.CFrame.Position
+	check(`the pool follows her feet ({pp})`, math.abs(pp.X - 6) < 0.3 and math.abs(pp.Y - (-3 + 0.04)) < 0.2)
+	for _ = 1, 30 do handle.step(1 / 30) end
+	local wakeOff = true
+	for _, d in m:GetDescendants() do
+		if d:IsA("Trail") and d.Name:find("HuzzWake") and d.Enabled then wakeOff = false end
+	end
+	check("the trails stop when she stops", wakeOff)
+	m:SetAttribute("HuzzRevealing", true)
+	for _ = 1, 20 do handle.step(1 / 30) end
+	check("the floor layers hide while the Secret cutscene flies her", pool:FindFirstChildOfClass("SurfaceGui").Enabled == false)
+	m:SetAttribute("HuzzRevealing", nil)
+	for _ = 1, 20 do handle.step(1 / 30) end
+	check("and come back after", pool:FindFirstChildOfClass("SurfaceGui").Enabled == true)
+	handle.destroy()
+	check("the girl's floor layers clean up", #fxf:GetChildren() == 0)
+	local m2 = legRig()
+	local h2 = AuraFX.attach(m2, spec, { lite = true, ground = false })
+	check("the carried girl: no pool under her", #fxf:GetChildren() == #fxf:GetChildren() and fxf:FindFirstChild("HuzzAuraPool") == nil)
+	h2.destroy()
 end
 -- kid-safe: slashes fade in (never pop)
 local _, _, _, _, _, _, _, alpha0 = AuraLook.slash(AuraLook.build(looks[1], "Mythic", "Player").slashes, 1, 0, Vector3.zero, 1)

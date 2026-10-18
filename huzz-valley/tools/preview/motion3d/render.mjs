@@ -14,6 +14,7 @@
 // n (Neon: unlit), a (opacity), add (additive) and e (0-1: a white Highlight fill); sh "cyl" is a Roblox Cylinder
 // (round along its X axis). Ribbons may add u (a texture coordinate per point, wrapping: Beam TextureMode Wrap).
 // labels [{p, text, h (studs tall), c, o (outline colour), a (opacity)}]: BillboardGui text, camera-facing, Gotham-like.
+// Sprite/ribbon t may also be a drawn shape: '@disc', '@ring<px>', '@runner<px>' (AuraFX's SurfaceGui circles).
 // Optional at the top: sky, ground (colours), grid (false to hide), dim (0-1: daylight strength, for evening scenes),
 // stills [frame numbers, 0-based]: with MOTION3D_KEEP=<dir> those frames are also kept there as still_<n>.png.
 import { createRequire } from 'module';
@@ -127,7 +128,33 @@ const addTex = (n, url) => {
 };
 for (const n of ${JSON.stringify(fs.readdirSync(path.join(here, '../../../assets/fx')).filter(f => f.endsWith('.png')).map(f => f.replace('.png', '')))}) addTex(n, './fx/' + n + '.png');
 for (const n of ['aura-star', 'aura-star-white']) addTex(n, './icons/' + n + '.png'); // (the lobby's Aura stars)
-const pick = (name) => tex[(name || 'glow').toLowerCase()] || tex.glow;
+// drawn shapes for the SurfaceGui circles AuraFX builds (no picture needed in the game): '@disc' (a round Frame),
+// '@ring<px>' (a UIStroke ring <px> wide on a 256 px canvas, outer edge at the canvas edge), '@runner<px>' (the same
+// ring under a UIGradient whose transparency runs 0 -> 0.55 -> 0.55 -> 0 across it: two bright ends)
+const drawn = (name) => {
+  const c = document.createElement('canvas'); c.width = c.height = 256;
+  const g = c.getContext('2d');
+  const m = /^@(disc|ring|runner)(\\d*)$/.exec(name);
+  if (!m) return null;
+  if (m[1] === 'disc') { g.fillStyle = '#fff'; g.beginPath(); g.arc(128, 128, 127, 0, Math.PI * 2); g.fill(); }
+  else {
+    const w = Math.max(1, Number(m[2] || 6));
+    if (m[1] === 'runner') {
+      const lg = g.createLinearGradient(0, 0, 256, 0);
+      lg.addColorStop(0, 'rgba(255,255,255,1)'); lg.addColorStop(0.35, 'rgba(255,255,255,0.45)');
+      lg.addColorStop(0.65, 'rgba(255,255,255,0.45)'); lg.addColorStop(1, 'rgba(255,255,255,1)');
+      g.strokeStyle = lg;
+    } else g.strokeStyle = '#fff';
+    g.lineWidth = w; g.beginPath(); g.arc(128, 128, 128 - w / 2 - 0.5, 0, Math.PI * 2); g.stroke();
+  }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+};
+const pick = (name) => {
+  const key = (name || 'glow').toLowerCase();
+  if (key[0] === '@' && !tex[key]) { const t = drawn(key); if (t) tex[key] = t; }
+  return tex[key] || tex.glow;
+};
 // one frame of a flipbook sheet (Roblox reads frames left to right, top to bottom)
 const frames = {};
 const frameOf = (name, g, f) => {
@@ -273,6 +300,7 @@ window.draw = (f) => {
     let mesh = ribbonMeshes[i];
     if (!mesh) {
       mesh = ribbonMeshes[i] = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, side: THREE.DoubleSide }));
+      mesh.frustumCulled = false; // (its bounding sphere is worked out once: a reused strip far from its first place got culled)
       scene.add(mesh);
     }
     const n = q.pts.length, pos = new Float32Array(n * 2 * 3), col = new Float32Array(n * 2 * 4), uv = new Float32Array(n * 2 * 2), idx = [];

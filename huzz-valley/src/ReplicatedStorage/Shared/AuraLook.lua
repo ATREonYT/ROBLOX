@@ -14,10 +14,16 @@
 	                                and slashes at a gentle 0.7 a second.
 	               Mythic/Secret    the full look: bigger flames, crescent slashes 2.2/2.8 a second; Secret adds
 	                                a smoky aura at your feet.
-	  Companion  on HER, the small companion walking behind you, the same ladder: motes (Common/Uncommon),
-	             + element and a little light (Rare), + soft hand flames (Epic), stars, element and full hand
-	             flames (Legendary up).
-	  Showcase   on the big her over the map: the full Player look at 3x, her element all round her, slashes.
+	  Companion  on HER (your girl walking behind you; the round's girl carried or following) and
+	  Showcase   the big her over the map (3x, at least the Rare look): AuraLook.girl (Oct 18 rebuild, see there):
+	               Common     a faint light pool on the floor and a few tiny motes;
+	               Uncommon   + a thin ring round the pool;
+	               Rare       + a highlight running round the ring, her element, puffs where her feet land, a glow;
+	               Epic       + one orbiting light, a slow breathing swell;
+	               Legendary  + flame tongues hugging her from behind, 2 orbits, a beat (draw in, flare, a ring runs
+	                            out, sparkles), streaks rising off the floor, trails at her feet when she moves;
+	               Mythic     + 3 orbits, a crescent slash on each beat, glints and trails on her hands;
+	               Secret     + two tones, 4 orbits, the owner's crystals and butterflies, a halo.
 	Elements: Flame (embers), Frost (snow), Sakura (petals and hearts), Night (heavy dark wisps), Holy (feathers
 	and gold stars), Storm (fast sparks), Nature (leaves), Water (bubbles); Sparkle = no look set.
 
@@ -151,16 +157,6 @@ local function elementField(look, rank, at, radiusSpeed, rateBase, k, soft)
 		})
 	end
 	return list
-end
-
-local function stars(look, rank, at, k)
-	return {
-		name = "Stars", at = at, texture = "Twinkle", flip = "Random",
-		colors = { { 0, WHITE }, { 1, look.Colors[1] } }, light = 1,
-		rate = (2.5 + rank) * k, life = { 0.8, 1.6 }, speed = { 0.6, 1.4 }, spread = 180,
-		size = { { 0, 0 }, { 0.3, 0.3 }, { 1, 0 } }, alpha = { { 0, 0 }, { 1, 1 } },
-		accel = { 0, 0.4, 0 }, drag = 2, rot = { 0, 360 }, spin = { -90, 90 },
-	}
 end
 
 -- Common and up: a few faint, tiny motes in her colours drifting up from the feet (almost nothing).
@@ -377,36 +373,8 @@ function AuraLook.build(look, rarity, kind)
 		elseif rank >= 5 then
 			out.light = { color = c1, brightness = 0.8 + 0.25 * (rank - 4), range = 8 + 2 * (rank - 4), at = "Body" }
 		end
-	elseif kind == "Companion" then
-		table.insert(out.emitters, motes(look, rank, "Feet", 1))
-		if rank >= 3 and rank <= 4 then
-			add(elementField(look, rank, "Body", 0.4, if rank == 3 then 3 else 4, 1, true))
-			if rank == 4 then
-				add(handFlames(look, rank, 0.7, true))
-			end
-			out.light = { color = c1, brightness = 0.3 + 0.15 * (rank - 3), range = 5, at = "Body" }
-		elseif rank >= 5 then
-			table.insert(out.emitters, stars(look, rank, "Body", 1))
-			add(elementField(look, rank, "Body", 0.5, 1.5, 1))
-			add(handFlames(look, rank, 0.6))
-			out.light = { color = c1, brightness = 0.6 + 0.15 * rank, range = 6 + rank, at = "Body" }
-			out.orbs = orbs(1, c1:Lerp(WHITE, 0.8), c1, look.Colors[2]) -- one small light circling her
-			out.orbs.radius, out.orbs.size = 1.2, 0.5
-		end
-	elseif kind == "Showcase" then
-		local r = math.max(rank, 5)
-		add(handFlames(look, r, 1))
-		add(darkWisps(look, r, 1))
-		add(elementField(look, r, "Body", 1.4, 6, 1.6))
-		table.insert(out.emitters, stars(look, r, "Body", 2))
-		out.slashes = slashes(look, r, 1)
-		if out.slashes then
-			out.slashes.rate = math.min(out.slashes.rate, 1) -- (everyone sees her: calm, kid-safe)
-		end
-		out.light = { color = c1, brightness = 2.5, range = 26, at = "Body" }
-		table.insert(out.emitters, sigil(c1, 6))
-		out.orbs = orbs(3, c1:Lerp(WHITE, 0.8), c1, look.Colors[2], 14)
-		out.scale = 3
+	elseif kind == "Companion" or kind == "Showcase" then
+		return AuraLook.girl(look, rarity, kind)
 	end
 	return out
 end
@@ -451,6 +419,281 @@ function AuraLook.slash(spec, seed, age, centre, scale)
 	local fadeIn = 0.2 / spec.life
 	local alpha = if t < fadeIn then 1 - t / fadeIn else ((t - fadeIn) / (1 - fadeIn)) ^ 2
 	return at(a0), at(am), at(a1), tangent(a0), tangent(am), tangent(a1), curve, alpha, spec.width * scale * (1 - 0.4 * t)
+end
+
+--[[
+	The girls' own effects (kind "Companion": your girl walking behind you, and the round's girl carried or
+	following; kind "Showcase": the big prize girl over the map), rebuilt Oct 18 after the owner: "they still look
+	strange and low quality ... they just float there". What the pro references do that we copy
+	(design/vfx/vysvex-green-reference.mp4, ref3, the other game's Soul Reaper stand):
+	  - anchored to her and to the ground, not loose sprites: a soft light pool and a crisp ring flat on the floor
+	    under her feet ("ground"), energy rising off that floor, puffs where her feet land, flame tongues hugging
+	    her outline from behind ("flames", drawn behind her body so they never cover her face), glints on her hands;
+	  - layers that move at different speeds: a slow breathing pulse, a highlight running round the ring, orbiting
+	    lights on tilted orbits that pass in front of and behind her, quick rising streaks;
+	  - rhythm with anticipation ("beat"): the flames draw in for a moment, then flare, a ring runs out across the
+	    floor and a few sparkles burst (Mythic and up: one crescent slash flicks round her on the beat, like the
+	    Soul Reaper stand's loop). Never closer than 2.4 s apart (kid-safe: far under 1 flash a second);
+	  - motion that reacts to her: trails at her feet (Legendary up) and hands (Mythic up) only while she moves;
+	  - a white core, her colour, a deep edge; few big shapes rather than many dots; and almost nothing on a
+	    Common (owner: "effects tiny below Legendary").
+	Only the particles need an uploaded picture (Roblox's stand-ins until the owner uploads assets/fx): the floor
+	pool and rings are SurfaceGui circles, the flames are Beams, the orbiting lights are small neon balls with
+	Trails, the wakes are Trails (Gameplay/AuraFX builds them).
+	Extra spec fields (sizes for a 5-stud body; AuraFX multiplies by spec.scale):
+	  ground = { radius, colors = {white, main, deep}, accent, pool = {transparency per step, outside in} or nil,
+	             ring = transparency or nil, runner = true (a highlight running round the ring), inner = true (a
+	             thin second ring), breathe = 0-1 (how much it swells), spin = degrees a second }
+	  flames = { count, core (how many white inner tongues), radius, height, width, colors = {white, main, accent, deep},
+	             behind (how far back they sit, x radius; default 1.5) }
+	  beat   = { every (seconds), pre (anticipation seconds), burst (sparkles on "Burst"), shock = true, slash = true }
+	  wake   = { feet = true, hands = true, colors = {white, main, deep} }  (trails while she moves)
+	  halo   = { radius, colors = {white, accent} }  (Secret: a thin ring over her head)
+	  emitters may say at = "Ground" (from the floor pool's area) and stride = studs (`count` puffs every
+	  `stride` studs she walks, instead of a rate).
+]]
+local SECRET_ACCENT_A, SECRET_ACCENT_B = Color3.fromRGB(110, 235, 255), Color3.fromRGB(255, 120, 210)
+
+-- Her colour made strong enough to read over a bright sky or floor (pale colours on glowing layers wash out to
+-- white in daylight): the channels pushed apart until the colour is at least ~60% saturated.
+local function vivid(c)
+	local mx, mn = math.max(c.R, c.G, c.B), math.min(c.R, c.G, c.B)
+	if mx <= 0 or mx - mn >= 0.6 * mx then
+		return c
+	end
+	local f = math.min(4, 0.6 * mx / math.max(mx - mn, 0.02))
+	local function ch(x) return math.clamp(mx - (mx - x) * f, 0, 1) end
+	return Color3.new(ch(c.R), ch(c.G), ch(c.B))
+end
+AuraLook.vivid = vivid
+
+-- The rarity ladder for the girls (index = rank). Each step adds a new layer, not just more of the same.
+-- r = floor radius, pool = its glow steps (transparency, outside in), ring, runner, inner, breathe, orbs,
+-- flames = { outer tongues, white inner tongues, height, width }, beat = seconds between beats, light = { brightness, range }.
+local LADDER = {
+	[1] = { r = 1.2, pool = { 0.9, 0.84 }, orbs = 0 },
+	[2] = { r = 1.3, pool = { 0.88, 0.82 }, ring = 0.62, orbs = 0 },
+	[3] = { r = 1.5, pool = { 0.9, 0.84, 0.76 }, ring = 0.45, runner = true, orbs = 0, light = { 0.3, 5 } },
+	[4] = { r = 1.6, pool = { 0.88, 0.82, 0.72 }, ring = 0.35, runner = true, breathe = 0.05, orbs = 1, light = { 0.45, 6 } },
+	[5] = { r = 1.9, pool = { 0.86, 0.78, 0.66 }, ring = 0.25, runner = true, inner = true, breathe = 0.07, orbs = 2,
+		flames = { 4, 2, 1.1, 1.1 }, beat = 3.6, light = { 0.8, 8 } },
+	[6] = { r = 2.1, pool = { 0.85, 0.76, 0.62 }, ring = 0.2, runner = true, inner = true, breathe = 0.08, orbs = 3,
+		flames = { 5, 3, 1.35, 1.2 }, beat = 3.0, light = { 1.0, 9 } },
+	[7] = { r = 2.3, pool = { 0.84, 0.74, 0.6 }, ring = 0.15, runner = true, inner = true, breathe = 0.09, orbs = 4,
+		flames = { 6, 3, 1.55, 1.25 }, beat = 2.6, light = { 1.2, 10 } },
+}
+AuraLook.LADDER = LADDER
+
+function AuraLook.girl(look, rarity, kind)
+	local rank = AuraLook.RANK[rarity or ""] or 1
+	if kind == "Showcase" then
+		rank = math.max(rank, 3) -- (the prize over the map always reads as a prize)
+	end
+	local L = LADDER[rank]
+	local e = ELEMENTS[look.Element] or ELEMENTS.Sparkle
+	local main, deep = look.Colors[1], look.Colors[2]:Lerp(BLACK, 0.25)
+	local white = main:Lerp(WHITE, 0.8)
+	local accent = main
+	if rank >= 7 then -- Secret: two tones (cyan or pink, whichever is further from her own colour)
+		local function dist(a, b) return math.abs(a.R - b.R) + math.abs(a.G - b.G) + math.abs(a.B - b.B) end
+		accent = if dist(main, SECRET_ACCENT_A) > dist(main, SECRET_ACCENT_B) then SECRET_ACCENT_A else SECRET_ACCENT_B
+	end
+	local out = { emitters = {}, scale = if kind == "Showcase" then 3 else 1, rank = rank }
+	local function add(x) table.insert(out.emitters, x) end
+
+	out.ground = {
+		radius = L.r, colors = { white, main, deep }, accent = accent, pool = L.pool, ring = L.ring, runner = L.runner,
+		inner = L.inner, breathe = L.breathe or 0, spin = 50 + 10 * rank,
+	}
+	-- Common and up: a few faint tiny motes drifting up off the floor (almost nothing)
+	add({
+		name = "Motes", at = "Ground", texture = "Twinkle", flip = "Random",
+		colors = { { 0, white }, { 1, main } }, light = 0.6,
+		rate = ({ 1.5, 2, 2.5, 2.5, 3, 3.5, 4 })[rank], life = { 1.2, 2 }, speed = { 0.3, 0.7 }, spread = 25,
+		size = { { 0, 0 }, { 0.25, if rank <= 2 then 0.22 else 0.28 }, { 1, 0 } },
+		alpha = { { 0, if rank <= 2 then 0.5 else 0.3 }, { 0.6, 0.45 }, { 1, 1 } },
+		accel = { 0, 0.8, 0 }, drag = 1.5, rot = { 0, 360 }, spin = { -60, 60 },
+	})
+	if rank >= 3 then
+		-- her element (petals, snow, embers...) drifting round her, a few at a time
+		for i, tex in e.textures do
+			add({
+				name = "Element" .. i, at = "Body", texture = tex,
+				colors = { { 0, main:Lerp(WHITE, 0.35) }, { 1, main } }, light = e.light,
+				rate = ({ 0, 0, 2, 2.5, 3.5, 4.5, 5 })[rank] / #e.textures, life = { 1.6, 2.6 },
+				speed = { e.speed[1] + 0.5, e.speed[2] + 0.5 }, spread = 180,
+				size = { { 0, 0 }, { 0.15, e.size * 0.7 }, { 0.85, e.size * 0.7 }, { 1, 0 } },
+				alpha = { { 0, 0.25 }, { 0.8, 0.4 }, { 1, 1 } },
+				accel = e.accel, drag = 1.2, rot = { 0, 360 }, spin = { -e.spin, e.spin },
+			})
+		end
+		-- a puff where her feet land as she walks (her element's picture)
+		add({
+			name = "Steps", at = "Ground", texture = e.textures[1], stride = 1.6, count = if rank >= 5 then 3 else 2,
+			colors = { { 0, white }, { 1, main } }, light = e.light,
+			rate = 0, life = { 0.5, 0.9 }, speed = { 0.8, 1.6 }, spread = 60,
+			size = { { 0, 0.15 }, { 0.2, e.size * 0.6 }, { 1, 0 } }, alpha = { { 0, 0.2 }, { 1, 1 } },
+			accel = { 0, -0.5, 0 }, drag = 3, rot = { 0, 360 }, spin = { -90, 90 },
+		})
+	end
+	if L.orbs > 0 then
+		out.orbs = {
+			count = L.orbs, radius = 1.5, speed = 2.2, bob = 0.25, height = 0.2, size = 0.3, trail = 0.45,
+			tilt = ({ 0, 0, 0, 0, 16, 24, 30 })[rank], colors = { WHITE, main, deep }, ball = true,
+		}
+		if rank >= 7 then out.orbs.colors2 = { WHITE, accent, deep } end
+	end
+	if L.flames then
+		local f = L.flames
+		out.flames = { count = f[1], core = f[2], radius = 1.0, height = f[3], width = f[4], colors = { white, vivid(main), vivid(accent), deep } }
+		out.beat = { every = L.beat, pre = 0.35, burst = 4 + 2 * (rank - 4), shock = true, slash = rank >= 6 }
+		out.wake = { feet = true, hands = rank >= 6, colors = { WHITE, main, deep } }
+		-- sparkles that burst out on the beat
+		add({
+			name = "Burst", at = "Body", texture = "Twinkle", flip = "Random", rate = 0,
+			colors = { { 0, WHITE }, { 1, main:Lerp(WHITE, 0.3) } }, light = 1,
+			life = { 0.5, 0.8 }, speed = { 3, 5 }, spread = 180,
+			size = { { 0, 0 }, { 0.15, 0.45, 0.1 }, { 1, 0 } }, alpha = { { 0, 0 }, { 1, 0.3 } },
+			accel = { 0, 0.5, 0 }, drag = 4, rot = { 0, 360 }, spin = { -60, 60 }, z = 0.5,
+		})
+		-- quick thin streaks rising off the floor round her (energy that moves)
+		add({
+			name = "Rising", at = "Ground", texture = "Spark", orient = "Streak",
+			colors = { { 0, WHITE }, { 0.4, main:Lerp(WHITE, 0.4) }, { 1, main } }, light = 1,
+			rate = ({ 0, 0, 0, 0, 3, 4.5, 6 })[rank], life = { 0.45, 0.75 }, speed = { 3.5, 5.5 }, spread = 8,
+			size = { { 0, 0 }, { 0.2, 0.3 }, { 1, 0 } }, alpha = { { 0, 0.1 }, { 0.7, 0.3 }, { 1, 1 } },
+			squash = { { 0, 1.5 }, { 1, 2.5 } }, accel = { 0, 2, 0 }, drag = 0.5, rot = { 0, 0 }, spin = { 0, 0 },
+		})
+	end
+	if rank >= 6 then
+		-- a soft glint held on each hand
+		for _, hand in { "RightHand", "LeftHand" } do
+			add({
+				name = "Glint" .. hand, at = hand, texture = "Glow", locked = true,
+				colors = { { 0, WHITE }, { 1, main } }, light = 1,
+				rate = 5, life = { 0.3, 0.5 }, speed = { 0, 0 }, spread = 0,
+				size = { { 0, 0.55, 0.1 }, { 1, 0.25 } }, alpha = { { 0, 0.35 }, { 1, 1 } },
+				accel = { 0, 0, 0 }, rot = { 0, 360 }, spin = { -30, 30 }, z = 0.3,
+			})
+		end
+	end
+	if rank >= 7 then
+		-- Secret: the owner's crystals and butterflies drifting round her, and a halo over her head
+		add({
+			name = "Crystals", at = "Body", texture = "Crystal",
+			colors = { { 0, WHITE }, { 1, accent } }, light = 1,
+			rate = 1.5, life = { 1.6, 2.4 }, speed = { 0.6, 1.2 }, spread = 180,
+			size = { { 0, 0 }, { 0.15, 0.4 }, { 0.85, 0.35 }, { 1, 0 } }, alpha = { { 0, 0.15 }, { 0.8, 0.3 }, { 1, 1 } },
+			accel = { 0, 0.6, 0 }, drag = 1.5, rot = { 0, 360 }, spin = { -40, 40 },
+		})
+		add({
+			name = "Butterflies", at = "Body", texture = "Butterfly", flip = "Loop", fps = 10,
+			colors = { { 0, accent:Lerp(WHITE, 0.3) }, { 1, main } }, light = 0.7,
+			rate = 0.8, life = { 2.2, 3 }, speed = { 0.8, 1.4 }, spread = 180,
+			size = { { 0, 0 }, { 0.1, 0.55 }, { 0.9, 0.5 }, { 1, 0 } }, alpha = { { 0, 0.1 }, { 0.8, 0.25 }, { 1, 1 } },
+			accel = { 0, 0.4, 0 }, drag = 1.2, rot = { -15, 15 }, spin = { -10, 10 },
+		})
+		out.halo = { radius = 0.55, colors = { WHITE, accent } }
+	end
+	if L.light then
+		out.light = { color = main, brightness = L.light[1], range = L.light[2], at = "Body" }
+	end
+	if kind == "Showcase" then
+		-- seen from the field 34 studs below: bolder tongues and bigger, wider orbiting lights; the flames sit closer
+		-- behind her (from below, pushing them far back hides them behind her body)
+		if out.flames then
+			out.flames.width *= 1.3
+			out.flames.behind = 1
+		end
+		if out.orbs then
+			out.orbs.size, out.orbs.radius = 0.42, 1.8
+		end
+	end
+	if out.beat and out.beat.slash then
+		out.slashes = { rate = 1 / out.beat.every, life = 0.45, radius = 2.4, span = 120, width = 0.55,
+			core = main:Lerp(WHITE, 0.4), edge = deep:Lerp(BLACK, 0.3), onBeat = true }
+	end
+	return out
+end
+
+-- How heavy a look is, for the budget (counted from the spec the way AuraFX builds it): emitters, particles
+-- alive at once (rate x lifetime; puffs counted at 10 studs a second of walking), beams, parts, trails.
+function AuraLook.budget(spec)
+	local live = 0
+	for _, e in spec.emitters do
+		local per = if e.stride then (e.count or 1) * 10 / e.stride elseif e.every then (e.count or 1) / e.every else e.rate
+		live += per * (e.life[1] + e.life[2]) / 2
+	end
+	if spec.beat then
+		live += spec.beat.burst * 0.65 / spec.beat.every
+	end
+	local orbs = spec.orbs and spec.orbs.count or 0
+	local parts = (spec.ground and 1 or 0) + (spec.beat and spec.beat.shock and 1 or 0) + (spec.halo and 1 or 0)
+		+ (if spec.orbs and spec.orbs.ball then orbs else 0)
+	local wake = spec.wake and ((spec.wake.feet and 2 or 0) + (spec.wake.hands and 2 or 0)) or 0
+	return {
+		emitters = #spec.emitters, live = live, parts = parts, trails = orbs + wake,
+		beams = (spec.flames and (spec.flames.count + spec.flames.core) or 0) + (spec.slashes and 4 * 2 or 0),
+	}
+end
+
+-- The beat (idle pulse with anticipation) at time t: energy (the flames' size: ~0.85 drawn in, ~1.3 on the
+-- flare), shock (0-1: the ring running out over the floor, else -1) and the breathing (-1..1, a 2.6 s swell).
+function AuraLook.beatAt(B, t)
+	local breathe = math.sin(t * 2 * math.pi / 2.6)
+	if not B then
+		return 1 + 0.04 * breathe, -1, breathe
+	end
+	local u = t % B.every
+	local energy = 1 + 0.05 * breathe
+	local shock = -1
+	if u > B.every - B.pre then
+		local s = (u - (B.every - B.pre)) / B.pre
+		energy -= 0.17 * s * s -- (draws in, faster at the end)
+	elseif u < 0.8 then
+		energy += 0.35 * math.exp(-u / 0.22) - 0.17 * math.max(0, 1 - u / 0.06) -- (snaps out, then settles)
+		shock = u / 0.8
+	end
+	return energy, shock, breathe
+end
+
+-- Flame tongue i (outer ring, or the white inner ring when core): its fixed bend directions in her root's frame
+-- (d0: leaving the floor, bulging out; d1: the tip curling in) and its angle round her.
+function AuraLook.flameDirs(F, i, core)
+	local n = if core then F.core else F.count
+	local a = (i - 1) / n * math.pi * 2 + (if core then math.pi / n else 0.3)
+	local c, s = math.cos(a), math.sin(a)
+	return Vector3.new(c, 1.3, s).Unit, Vector3.new(-c, 1.4, -s).Unit, a
+end
+
+-- Flame tongue i at time t (energy from beatAt): bottom and tip points (root frame, 5-stud body), the two curve
+-- sizes and the two widths. It leaves the floor at her feet; the tip flickers above her head and sways.
+function AuraLook.flameAt(F, i, core, t, energy, seed)
+	local _, _, a = AuraLook.flameDirs(F, i, core)
+	local c, s = math.cos(a), math.sin(a)
+	local ph = (seed or 0) + i * 1.7 + (if core then 0.9 else 0)
+	-- (they leave the floor just outside her outline and bulge past it, so they frame her silhouette from behind)
+	local r0 = F.radius * (if core then 0.75 else 1.05)
+	local flick = 0.75 + 0.15 * math.sin(t * 3.1 + ph) + 0.1 * math.sin(t * 7.3 + ph * 2.3)
+	local h = F.height * (if core then 0.55 else 1) * flick * energy
+	local sway = 0.22 * math.sin(t * 1.7 + ph)
+	local p0 = Vector3.new(c * r0, -2.45, s * r0)
+	local p1 = Vector3.new(c * r0 * 0.25 - s * sway, 2.2 + h, s * r0 * 0.25 + c * sway)
+	local reach = F.radius * (if core then 1.1 else 1.7) * (0.85 + 0.15 * energy)
+	local width = F.width * (if core then 0.45 else 1) * (0.8 + 0.2 * energy)
+	return p0, p1, reach, F.radius * 0.9, width, 0.04
+end
+
+-- Orbiting light i of n at time t: its offset from her body centre (5-stud body). Odd ones go one way, even
+-- ones the other, each on its own tilted orbit, so they cross in front of and behind her.
+function AuraLook.orbitAt(O, i, n, t)
+	local phase = (i - 1) / n * math.pi * 2
+	local a = t * O.speed * (if i % 2 == 0 then -0.8 else 1) + phase
+	local flat = Vector3.new(math.cos(a), 0, math.sin(a)) * O.radius
+	local tilt = math.rad(O.tilt or 0) * ((i % 2) * 2 - 1) * (1 + (i - 1) * 0.25)
+	local ct, st = math.cos(tilt), math.sin(tilt) -- (a turn about X)
+	local bob = (O.height or 0) + math.sin(t * 2 * math.pi * 0.6 + phase) * (O.bob or 0)
+	return Vector3.new(flat.X, flat.Y * ct - flat.Z * st + bob, flat.Y * st + flat.Z * ct)
 end
 
 return AuraLook

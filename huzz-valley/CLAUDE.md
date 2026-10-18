@@ -260,6 +260,21 @@ Owner's own words are in quotes. Read only the section you need.
   pack's Idle on her (`CarryAnimator`) and hides the stand and its lights during the Secret cutscene. Her aura glows
   softly (`AuraFX`: scale > 1.5 → small light). Your companion steps in and out behind a puff of sparkles (`Auras`).
   Smoke tests: `tools/preview/smoke_showcase.luau`, `smoke_feel_fx.luau` (harness).
+- **The girls' effects** (Oct 18, owner: "they still look strange and low quality ... they just float there";
+  `AuraLook.girl` → `Gameplay/AuraFX`, for your companion, the round's girl and the prize): anchored to her and the floor
+  like the pro references (`design/vfx/vysvex-green-reference.mp4`, ref3, Soul Reaper): a light pool + crisp ring flat
+  under her feet (SurfaceGui circles on a thin part in `Workspace.HuzzAuraFX`, outside her model; it follows her lower
+  foot, swells as she breathes, a highlight runs round the ring; on the prize it lights her stand top; hidden while
+  carried or while `HuzzRevealing`), flame tongues hugging her from behind (Beams, ZOffset behind her body), orbiting
+  neon balls with Trails crossing in front of and behind her, trails on feet/hands only while she moves, puffs per
+  stride, streaks rising off the floor, and a beat (draw in 0.35 s, flare, a ring runs out, sparkles; Mythic up a
+  crescent slash) every 3.6/3.0/2.6 s. Ladder: Common = faint pool + 1 emitter; + ring (Uncommon); + runner, element,
+  puffs, glow (Rare); + 1 orb, breathing (Epic); + flames, beat, 2 orbs, foot trails (Legendary, 6 emitters); + slash,
+  hand glints/trails, 3 orbs (Mythic, 7); + two tones, crystals, butterflies, halo, 4 orbs (Secret, 9; budget 12).
+  The prize gets at least the Rare look. Only the particles wait for uploads; everything else shows today.
+  Spec: `check_girl_fx.luau` (budget, ladder, beat, pool follows, no per-frame instances). Film
+  `motion3d/girl_vfx_scene.luau` → `docs/previews/girl-vfx.mp4`; sheet `tools/fx/girl_vfx_vs_ref.py` →
+  `girl-vfx-vs-ref.jpg`. Your own aura when she's equipped ("Player") and worn auras keep the older emitter look.
 - `Gameplay/Cinematic` (line-up camera, above), `Gameplay/RoundHud` (text-only top, coloured message line, big banners only for big moments; section 7/10),
   `Screens/HeroChoice` (60% size: "make the boxes smaller"), `Screens/NextMap` (your vote tucks into a NEXT MAP panel).
 
@@ -368,7 +383,9 @@ Owner's own words are in quotes. Read only the section you need.
   Girl Collector, Huss Hero, Guardian from stats. `RewardService.sync` grants them (never over a paid look).
   Worn auras: `AuraLook.worn`; Crown Pose: `Shared/CrownPose` + `Gameplay/CrownPose` (cooldown); Midnight = tint + cape.
 - **Effect pictures** (`assets/fx`, `tools/fx/make_fx.py`, guide `docs/vfx-guide.md`) load through `Shared/FxTexture`
-  from uploaded IDs; until the owner uploads, stand-ins show and shapes gated by `FxTexture.ready` stay hidden.
+  from uploaded IDs; until the owner uploads, stand-ins show and shapes gated by `FxTexture.ready` stay hidden
+  (nothing is uploaded yet: `Config/ImageIds` is empty, so every particle in Studio is Roblox's sparkle/fire/smoke;
+  the girls' pools, rings, flames, orbs and trails need no picture; their flames turn soft once `Fx/BeamGlow` is in).
   The cutscene's 9 (beam-glow, beam-ladder, lightning, butterfly, crystal, star-flare, rays, nebula, bokeh) are the
   owner's own art since Oct 17: one sheet `design/vfx/owner-vfx-sheet-oct17.png` cut by `tools/fx/cut_owner_sheet.py`
   (re-run it if he sends separate files; don't redraw them with make_fx.py).

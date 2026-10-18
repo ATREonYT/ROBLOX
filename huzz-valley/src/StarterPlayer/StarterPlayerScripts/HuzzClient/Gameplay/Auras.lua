@@ -14,7 +14,8 @@
 	  - Equip a girl and YOU get her aura, in the lobby and in rounds (the owner's reference: flames on your
 	    hands, dark wisps, crescent slashes), small for Common to Epic and growing with rarity ("Player").
 	  - The big girl over the map wears her aura at 3x ("Showcase", tag HuzzShowcase).
-	  - The round's girl, carried or following a catcher, glows with her "Companion" look.
+	  - The round's girl, carried or following a catcher, glows with her "Companion" look (no light pool on the
+	    floor under her while she's carried).
 	  - Your girl never pops in or out: a soft puff of sparkles in her colours covers it when she steps in (the
 	    lobby, safe across) or steps aside (a round starts, you change girls).
 	Everyone's are drawn by every client (Gameplay/AuraFX), only near the camera; other players' are drawn
@@ -362,7 +363,7 @@ function M.start()
 	-- Girl models in the world: the showcase over the map, the round's girl carried or following.
 	local worldAuras = {} -- Model -> handle
 	local worldConns = {} -- Model -> its AncestryChanged connection
-	local function watchModel(model, kind)
+	local function watchModel(model, kind, carried)
 		if worldAuras[model] or not model:IsA("Model") then
 			return
 		end
@@ -374,7 +375,8 @@ function M.start()
 		if kind == "Companion" then
 			spec.scale = 1 -- (full size: the round's girl)
 		end
-		worldAuras[model] = AuraFX.attach(model, spec, { lite = kind ~= "Showcase" })
+		-- (the girl being carried is off the floor: no light pool under her)
+		worldAuras[model] = AuraFX.attach(model, spec, { lite = kind ~= "Showcase", ground = not carried })
 		if kind == "Companion" then
 			ghostModel(model) -- (the round's girl, carried or following, never blocks anyone either)
 		end
@@ -407,10 +409,10 @@ function M.start()
 			local f = Workspace:WaitForChild(name, 30)
 			if f then
 				f.ChildAdded:Connect(function(m)
-					task.delay(0.2, watchModel, m, "Companion")
+					task.delay(0.2, watchModel, m, "Companion", name == "HuzzCarried")
 				end)
 				for _, m in f:GetChildren() do
-					watchModel(m, "Companion")
+					watchModel(m, "Companion", name == "HuzzCarried")
 				end
 			end
 		end)
