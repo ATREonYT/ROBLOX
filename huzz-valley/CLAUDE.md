@@ -145,6 +145,11 @@ Owner's own words are in quotes. Read only the section you need.
   HeroRun → Countdown → Running → RoundOver; GameOver. Runners win with everyone across 3 rounds in a row.
   Loop audit (Oct 17, `docs/loop-audit.md`): half of everyone's time was frozen, so Lineup 3 s, ChooseTime 6, ShowTime
   2, RoundEndPause 2.5, and one runner on the line skips the roulette (PickAt is set back so clients skip it too).
+- **Countdown after a camera shot** (CHICKEN or no answer: owner, "the numbers just dont appear well"): RoundService
+  adds `CAMERA_BACK` 0.6 s to a Countdown that follows Lineup/Picking/Chosen, so the camera's 0.3 s swing back ends
+  first; RoundHud draws only the last 3 s, never while `HuzzCinematic` is on, times GO! from the server's EndsAt, and
+  hides every HERO/CHICKEN tag word until GO! fades. Check: `tools/preview/check_countdown.luau`; strip
+  `docs/previews/chicken-countdown.jpg` (`countdown_strip.py`).
 - **Stalls** (`Config/Round.Hurry`, `RoundRules.stalling`): everyone still to cross standing in the start zone for 5 s
   → the clock drops to 6 s ("Hurry! Run or you're out"; `hurry()` moves EndsAt too). A Hero still in the start
   zone after 6 s loses the solo run ("X didn't go. Everyone runs!"; counting starts 1 s in, "Go now!" to the Hero at
@@ -334,6 +339,14 @@ Owner's own words are in quotes. Read only the section you need.
   tables by Instance; picture names are case-sensitive; guard APIs Lune lacks (`Sound.Ended`,
   `CharacterAppearanceLoaded`, `LoadAnimation`, `ViewportFrame.CurrentCamera` reads) with `pcall`.
 - Icons/art: the owner's files, used as drawn (`tools/icons/pack_images.py`, icons packed at 192 px).
+- **Text must fit its box** (owner: "the rarities ... go out of the uis borders"): never leave a name or chip on
+  AutomaticSize in a row with no width cap. `Kit.textWidth` (TextService, else a Montserrat estimate),
+  `Kit.fitLine(label, maxW, size, min, keepBox)` (shrink, then "..."), `Kit.fitBlock` (two lines), `Kit.badge`
+  (rarity chip, measured and capped). Set sizes after `Kit.new` (saved twins keep their saved look). The Index
+  preview gives the name the whole 128 px column and puts the rarity chip on the picture's top-right corner, like
+  the cards. Check: `tools/preview/overflow.sh` (in `check.sh`; `overflow.js` flags text past its box, window,
+  panel or the screen, and text on text, on every `shots.sh` screen plus the long-name shots `index-girls*`,
+  `tiers-girls`, `*-long`). The preview now draws TextScaled with its UITextSizeConstraint and TextTruncate.
 - Shop passes copy the owner's banners (`design/shop/pass-banners.png`): navy glass rows, coloured rim and button
   per pass (`Products` `Accent`, Kit styles `PassViolet` / `PassPink`).
 - **Living UI** (`UI/Effects`, owner: "more effects, like shining, spinning ... like in the game pass sections"):
@@ -349,8 +362,8 @@ Owner's own words are in quotes. Read only the section you need.
   ends y 62 = 8.6%; HV 8.8%), a help line only in the player's very first round. The prize card sits under the top bar. **`Theme.MessageColour`** (default
   true) colours the message words; false = always white (owner asked; earlier he wanted white everywhere). Big
   words at y 194 of 720 (27%); 3-2-1-GO drawn each frame from EndsAt (pop 1.4 to 1 in 0.15 s, fade by 0.94 s; GO!
-  green 124). Prize card hidden in Countdown/HeroRun/Running. Own name tag faded, hidden in camera shots
-  (`HuzzCinematic`/`HuzzChoosing`; a HERO/CHICKEN word stays) and from HeroRun through RoundOver (it sat where the
+  green 124; section 7 for the wait after a shot). Prize card hidden in Countdown/HeroRun/Running. Own name tag faded, hidden in camera shots
+  (`HuzzCinematic`/`HuzzChoosing`; a HERO/CHICKEN word stays, except during 3-2-1-GO) and from HeroRun through RoundOver (it sat where the
   centre words print). Outlines 0.55 see-through,
   no fill. Today's Girl roller (`Screens/GirlRoll`): right edge under the gear, 0.5 of a window. Check:
   `tools/preview/check_round_hud.luau`; shots `round-hud-runner`, `round-count`; picture `feel_ui_after.py`.

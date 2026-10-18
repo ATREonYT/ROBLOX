@@ -39,6 +39,29 @@ end
 for k, v in cfg.SETTINGS or {} do
 	DataService.update(player, function(d) d.Settings[k] = v end)
 end
+-- GIRLS=true: won girls with long names, one of each rarity (the overflow check: badges and names must fit);
+-- the first two are owned, the first equipped. SELECT=<id> picks one in the Index after it opens.
+-- GIRL="<name>" swaps the made-up prize / results girl for a long name.
+local TEST_GIRLS = {
+	{ "t_kurumi", "Kurumi Tokisaki", "Legendary" }, { "t_unc", "Uncommon Girl 10", "Uncommon" }, { "t_akane", "Akane", "Common" },
+	{ "t_mitsuri", "Mitsuri Kanroji", "Secret" }, { "t_miku", "Hatsune Miku", "Mythic" }, { "t_zero", "Zero Two", "Epic" }, { "t_rem", "Rem", "Rare" },
+}
+if cfg.GIRLS then
+	local RS = game:GetService("ReplicatedStorage")
+	local folder = RS:FindFirstChild("HuzzGirls") or Instance.new("Folder")
+	folder.Name = "HuzzGirls"
+	folder.Parent = RS
+	for i, g in TEST_GIRLS do
+		local m = Instance.new("Model"); m.Name = "TestGirl" .. i
+		local head = Instance.new("Part"); head.Name = "Head"; head.Parent = m
+		m:SetAttribute("Id", g[1]); m:SetAttribute("Name", g[2]); m:SetAttribute("Rarity", g[3]); m.Parent = folder
+	end
+	require(RS.Shared.Config.Characters).addGirls(folder)
+	DataService.update(player, function(d)
+		d.Characters.t_kurumi, d.Characters.t_unc = os.time(), os.time()
+		d.Equipped = "t_kurumi"
+	end)
+end
 -- VOTE="mapA,mapB,countA,countB,myVote": a map vote in progress (page 15)
 if cfg.VOTE then
 	local v = string.split(cfg.VOTE, ",")
@@ -105,7 +128,7 @@ if cfg.ROUNDHUD then
 	round:SetAttribute("Streak", 1)
 	round:SetAttribute("Crossings", 3)
 	round:SetAttribute("EndsAt", workspace:GetServerTimeNow() + 23.5)
-	round:SetAttribute("GirlName", "Sakura Hoshino")
+	round:SetAttribute("GirlName", cfg.GIRL or "Sakura Hoshino")
 	round:SetAttribute("GirlRarity", "Legendary")
 	player:SetAttribute("HuzzRole", if cfg.ROUNDHUD == "Catcher" then "Catcher" else "Runner")
 	player:SetAttribute("HuzzStatus", if cfg.ROUNDHUD == "Catcher" then "" else "Active")
@@ -135,9 +158,9 @@ if cfg.ROLL then
 	local cells = {}
 	for i = 1, 30 do
 		local r = rarities[(i * 7) % #rarities + 1]
-		cells[i] = { name = `{r} Girl {(i % 4) + 1}`, rarity = r }
+		cells[i] = { name = if cfg.GIRL then `{r} Girl {(i % 4) + 10}` else `{r} Girl {(i % 4) + 1}`, rarity = r }
 	end
-	cells[26] = { name = "Sakura Hoshino", rarity = "Epic" }
+	cells[26] = { name = cfg.GIRL or "Sakura Hoshino", rarity = "Epic" }
 	cells[27] = { name = "Mythic Girl 1", rarity = "Mythic" }
 	cells[25] = { name = "Secret Girl 1", rarity = "Secret" }
 	local odds = { { name = "Common", chance = 50 }, { name = "Uncommon", chance = 25 }, { name = "Rare", chance = 13 },
@@ -151,12 +174,19 @@ end
 -- RESULTS="Win"|"Lose"|"Bot": the results window filled with a made-up game.
 if cfg.RESULTS then
 	require(game.StarterPlayer.StarterPlayerScripts.HuzzClient.UI.Screens.Results).fill({
-		outcome = cfg.RESULTS, girl = "Zero Two", rarity = "Mythic", gotGirl = cfg.RESULTS == "Win",
+		outcome = cfg.RESULTS, girl = cfg.GIRL or "Zero Two", rarity = "Mythic", gotGirl = cfg.RESULTS == "Win",
 		crossed = 3, catches = 0, rescues = 2, heroes = 1, coins = 50, aura = if cfg.RESULTS == "Win" then 3 else 0,
 	})
 end
 if cfg.SCREEN and cfg.SCREEN ~= "Hud" then
 	assert(MM.open(cfg.SCREEN, cfg.TAB), "no screen " .. tostring(cfg.SCREEN))
+end
+if cfg.SELECT then
+	task.wait(0.2)
+	local cardButton = pg:WaitForChild("HuzzUI"):FindFirstChild(cfg.SELECT, true)
+	assert(cardButton, "no card " .. tostring(cfg.SELECT))
+	__fireOn(cardButton, "Activated")
+	task.wait(0.2)
 end
 for _ = 1, 40 do __stepTweens(0.05) end
 task.wait(0.6) -- staggered slide-ins start on real-time delays; let them start, then finish them

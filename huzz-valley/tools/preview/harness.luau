@@ -339,6 +339,7 @@ function exportUI(result, OUT)
 					xa = get(inst, "TextXAlignment", Enum.TextXAlignment.Center).Name, ya = get(inst, "TextYAlignment", Enum.TextYAlignment.Center).Name,
 					tT = get(inst, "TextTransparency", 0), sC = rgb(get(inst, "TextStrokeColor3", Color3.new(0, 0, 0))), sT = get(inst, "TextStrokeTransparency", 1),
 					lh = get(inst, "LineHeight", 1), font = fontOf(inst),
+					trunc = get(inst, "TextTruncate", Enum.TextTruncate.None).Name,
 				}
 			end
 			if inst:IsA("ImageLabel") or inst:IsA("ImageButton") then

@@ -1,11 +1,17 @@
 #!/bin/sh
 # Renders every built screen next to its reference page (2x). Usage: sh shots.sh <outDir> [name ...]
 # Needs Lune (LUNE=path) and Playwright (NODE_PATH pointing at a global node_modules that has it).
+# EXPORT_ONLY=1: only the JSON exports and <outDir>/manifest.txt, no pictures (overflow.sh checks them).
 cd "$(dirname "$0")" || exit 1
 OUT=$1; shift; mkdir -p "$OUT"
 REF=../../design/pages
 shot() { # name, reference page, width, height, options
 	[ -n "$ONLY" ] && case " $ONLY " in *" $1 "*) ;; *) return ;; esac
+	if [ -n "$EXPORT_ONLY" ]; then
+		sh run.sh "$OUT/$1.json" "$5" 2>&1 | grep -iE 'error|\[warn\]' | grep -v "icons can't be drawn" && echo "($1 had errors)"
+		echo "$1 $3 $4 $OUT/$1.json" >> "$OUT/manifest.txt"
+		return
+	fi
 	sh run.sh "$OUT/$1.json" "$5" 2>&1 | grep -iE 'error|\[warn\]' && echo "($1 had errors)"
 	case $2 in none) R= ;; */*) R=$2 ;; *) R=$REF/$2.png ;; esac # (a path: a reference outside design/pages; none: ours alone, for side_by_side.py)
 	node shoot.js "$OUT/$1.json" "$OUT/$1.png" "$3" "$4" "$R"
@@ -37,3 +43,13 @@ shot round-hud 13-lobby-hud 1536 694 '{SCREEN="Hud", SCALE=2, ROUNDHUD="Hero"}'
 shot round-hud-runner none 1536 694 '{SCREEN="Hud", SCALE=2, ROUNDHUD="Runner", MESSAGE="Messi reached safety!"}' # (feel-ui-after.jpg)
 shot round-count none 1536 694 '{SCREEN="Hud", SCALE=2, ROUNDHUD="Runner", COUNT=2.6}' # (3-2-1: "3" settled)
 shot spin-wheel ../../design/spin-wheel-reference.webp 1536 936 '{SCREEN="SpinWheel", SCALE=1.2, SPINS=25, FREEIN=887, PITY=28}'
+# Long names and every rarity (the overflow check; owner: "the rarities ... go out of the uis borders")
+shot index-girls none 1536 700 '{SCREEN="Index", SCALE=2, GIRLS=true, SELECT="t_kurumi"}'
+shot index-girls-uncommon none 1536 700 '{SCREEN="Index", SCALE=2, GIRLS=true, SELECT="t_unc"}'
+shot index-girls-common none 1536 700 '{SCREEN="Index", SCALE=2, GIRLS=true, SELECT="t_akane"}'
+shot index-girls-secret none 1536 700 '{SCREEN="Index", SCALE=2, GIRLS=true, SELECT="t_mitsuri"}'
+shot index-girls-scrolled none 1536 700 '{SCREEN="Index", SCALE=2, GIRLS=true, SELECT="t_zero", SCROLL=246}'
+shot tiers-girls none 1536 700 '{SCREEN="Tiers", SCALE=2, GIRLS=true}'
+shot girl-roll-long none 1536 656 '{SCREEN="Hud", SCALE=2, ROLL=6.5, GIRL="Kurumi Tokisaki"}'
+shot round-hud-long none 1536 694 '{SCREEN="Hud", SCALE=2, ROUNDHUD="Runner", GIRL="Kurumi Tokisaki", MESSAGE="Mitsuri Kanroji got Uncommon Girl 10 back up!"}'
+shot results-long none 1536 694 '{SCREEN="Results", SCALE=2, RESULTS="Win", GIRL="Kurumi Tokisaki"}'

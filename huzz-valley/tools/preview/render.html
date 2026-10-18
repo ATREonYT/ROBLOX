@@ -61,7 +61,9 @@ function draw(n, parentEl, rect, k, parentAbs) {
   }
   if (m.corner) el.style.borderRadius = Math.min(m.corner[0] * Math.min(rect.w, rect.h) + m.corner[1] * kk, Math.min(rect.w, rect.h) / 2) + 'px';
   if (n.rot) el.style.transform = `rotate(${n.rot}deg)`;
-  if (n.clip || n.c === 'ScrollingFrame' || n.c === 'CanvasGroup') el.style.overflow = 'hidden';
+  if (n.clip || n.c === 'ScrollingFrame' || n.c === 'CanvasGroup') { el.style.overflow = 'hidden'; el.dataset.clip = '1'; }
+  if (n.bgT < 1) el.dataset.bg = '1';
+  if (n.groupT !== undefined || n.bgT !== undefined) el.dataset.cls = n.c;
   if (n.groupT !== undefined) el.style.opacity = 1 - n.groupT;
   const strokeOnText = m.stroke && m.stroke.on && n.text && m.stroke.mode !== 'Border';
   if (m.stroke && m.stroke.on && !strokeOnText) el.style.boxShadow = `0 0 0 ${m.stroke.th * kk}px ${rgba(m.stroke.c, m.stroke.t)}`;
@@ -90,7 +92,18 @@ function draw(n, parentEl, rect, k, parentAbs) {
     const t = n.text, tx = document.createElement('div'); tx.className = 't';
     const f = fontOf(t.font), pad = m.pad;
     if (pad) { tx.style.paddingLeft = pad[0][1] * kk + 'px'; tx.style.paddingRight = pad[1][1] * kk + 'px'; }
-    tx.style.fontFamily = f.family; tx.style.fontWeight = f.weight; tx.style.fontSize = t.size * kk + 'px';
+    // TextScaled: Roblox ignores TextSize and draws the biggest size that fits the box (capped by a
+    // UITextSizeConstraint); TextTruncate AtEnd cuts a one-line text with "..." at the box's edge.
+    let px = t.size * kk;
+    if (t.scaled) {
+      const lim = m.textLimit || [1, 100], cw = rect.w - (pad ? (pad[0][1] + pad[1][1]) * kk : 0), plain = t.rich ? t.t.replace(/<[^>]+>/g, '') : t.t;
+      let lo = lim[0] * kk, hi = lim[1] * kk;
+      const fits = s => { const w = measure({ t: plain, font: t.font }, s); const lines = t.wrap ? Math.ceil(w / Math.max(cw, 1)) : 1; return (t.wrap || w <= cw) && lines * s <= rect.h + 0.5; };
+      if (fits(hi)) px = hi; else { for (let i = 0; i < 20; i++) { const mid = (lo + hi) / 2; if (fits(mid)) lo = mid; else hi = mid; } px = lo; }
+    }
+    tx.style.fontFamily = f.family; tx.style.fontWeight = f.weight; tx.style.fontSize = px + 'px';
+    el.dataset.text = '1'; el.dataset.fs = px; el.dataset.wrap = t.wrap ? '1' : ''; el.dataset.trunc = (t.trunc === 'AtEnd' || t.trunc === 'SplitWord') && !t.wrap ? '1' : '';
+    el.dataset.padL = pad ? pad[0][1] * kk : 0; el.dataset.padR = pad ? pad[1][1] * kk : 0; el.dataset.tT = t.tT;
     tx.style.lineHeight = (t.lh || 1) * 1.12; tx.style.color = rgba(t.color, t.tT);
     tx.style.whiteSpace = t.wrap ? 'pre-wrap' : 'pre';
     tx.style.justifyContent = { Left: 'flex-start', Center: 'center', Right: 'flex-end' }[t.xa];
@@ -105,6 +118,7 @@ function draw(n, parentEl, rect, k, parentAbs) {
       span.innerHTML = esc.replace(/&lt;font color="(#[0-9A-Fa-f]{6})"&gt;/g, '<span style="color:$1">').replace(/&lt;\/font&gt;/g, '</span>')
         .replace(/&lt;(\/?[bi])&gt;/g, '<$1>');
     } else span.textContent = t.t;
+    if (el.dataset.trunc) { span.style.cssText += ';display:block;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis'; }
     tx.appendChild(span); el.appendChild(tx);
     // A UIGradient on a see-through label tints its text (Roblox multiplies it with TextColor3).
     if (m.grad && m.grad.on && n.bgT >= 1) {
