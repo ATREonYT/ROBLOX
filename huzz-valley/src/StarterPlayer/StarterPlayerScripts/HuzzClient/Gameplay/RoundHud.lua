@@ -343,7 +343,7 @@ function M.start()
 	local TIMED = { HeroRun = true, Running = true, Picking = true }
 	local LOBBY_MESSAGE_TIME = 5
 	M.extraHelp = nil -- (Gameplay/Onboarding can put a first-game tip here)
-	local lastCount, goAt0, countEnd
+	local lastCount, goAt0, countEnd, popFrom
 	local COUNT_FROM = Config.CountdownTime -- (3: a lead before it shows nothing)
 	local function refresh()
 		local stage = State:GetAttribute("Stage") or "Waiting"
@@ -409,11 +409,19 @@ function M.start()
 			countEnd = State:GetAttribute("EndsAt") or now
 			local n = math.ceil(left)
 			if n >= 1 and n <= COUNT_FROM and player:GetAttribute("HuzzCinematic") ~= true then
-				local scale, transparency = numberAt(1 - (left - (n - 1)))
-				drawCount(tostring(n), WHITE, 104, scale, transparency)
 				if n ~= lastCount then
 					Sfx.play("countdown_tick", { pitch = 1 + (3 - math.min(n, 3)) * 0.06 })
+					popFrom = now
 				end
+				-- hold and fade follow the server's clock; the pop-in starts when this screen first draws the
+				-- number, so with lag (or a late camera) "3" still pops in fully instead of arriving half faded
+				local scale, transparency = numberAt(1 - (left - (n - 1)))
+				local phase, sincePop = 1 - (left - (n - 1)), now - (popFrom or now)
+				if sincePop < 0.15 and phase < 0.72 then -- (one first seen while fading just fades)
+					local popScale, popFade = numberAt(sincePop)
+					scale, transparency = popScale, math.max(popFade, transparency)
+				end
+				drawCount(tostring(n), WHITE, 104, scale, transparency)
 				lastCount = n
 			else
 				hideCount()

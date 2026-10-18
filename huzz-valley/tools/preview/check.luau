@@ -34,7 +34,7 @@ local State, MM = require(UI.State), require(UI.ModalManager)
 check("client got state", State.data.Loaded == true)
 if reusing then
 	local g = player.PlayerGui.HuzzUI
-	check("the StarterGui UI is reused, not doubled", #g:GetDescendants() == #savedUI:GetDescendants() + 2) -- + the error box and its padding
+	check("the StarterGui UI is reused, not doubled", #g:GetDescendants() == #savedUI:GetDescendants() + 2 + (if g:FindFirstChild("HuzzBuildStamp") then 1 else 0)) -- + the error box and its padding (+ the Studio build stamp)
 	check("a Studio edit to a saved part stays in the game", g.LobbyHud.Left.Index.Label.TextSize == 20)
 end
 

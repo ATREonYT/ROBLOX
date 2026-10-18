@@ -97,10 +97,24 @@ end
 local function build(model: Model, base: CFrame, revealAt: number, junk: { Instance })
 	local k = (Config.Showcase.Scale or 3) / 3
 	local spot = base.Position - Vector3.new(0, Config.Showcase.Height, 0) -- (her pivot when she stands on the floor)
-	local box, size = model:GetBoundingBox() -- (she's still at `base` here)
-	-- the floor under her: her box's bottom when she stands (her pivot is her root part, not her middle)
-	local ground = Vector3.new(spot.X, box.Position.Y - size.Y / 2 - Config.Showcase.Height, spot.Z)
-	local mid = size.Y / 2
+	-- Her body's own top and bottom (she's still at `base` here). Not GetBoundingBox: the showcase's Aura box
+	-- (1 stud bigger all round), stand and lamp holders would put the floor rings 1 stud under the floor.
+	local extra = { Aura = true, StandTop = true, StandBand = true, StandGlow = true, KeyLight = true, RimLight = true }
+	local lo, hi = math.huge, -math.huge
+	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") and not extra[d.Name] and d.Transparency < 1 then
+			local c, h = d.CFrame, d.Size / 2
+			local reach = math.abs(c.RightVector.Y) * h.X + math.abs(c.UpVector.Y) * h.Y + math.abs(c.LookVector.Y) * h.Z
+			lo, hi = math.min(lo, d.Position.Y - reach), math.max(hi, d.Position.Y + reach)
+		end
+	end
+	if lo == math.huge then
+		local box, size = model:GetBoundingBox()
+		lo, hi = box.Position.Y - size.Y / 2, box.Position.Y + size.Y / 2
+	end
+	-- the floor under her: her feet when she stands (her pivot is her root part, not her middle)
+	local ground = Vector3.new(spot.X, lo - Config.Showcase.Height, spot.Z)
+	local mid = (hi - lo) / 2
 	local orbAt = ground + Vector3.new(0, Reveal.ORB_HEIGHT * k + mid, 0) -- the orb is where her middle appears
 	local folder = Instance.new("Folder")
 	folder.Name = "HuzzSecretReveal"
@@ -242,7 +256,7 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 	-- the eyes: big glowing slits with a halo, a flare bar and one glint line through both
 	-- (two clearly separate slits, each a pink slit round a white-hot middle, a soft pink glow along it; the orb
 	-- melts away as they open, so nothing blurs them into one blob)
-	local eyeAt = orbAt + Vector3.new(0, size.Y * 0.12, 0)
+	local eyeAt = orbAt + Vector3.new(0, (hi - lo) * 0.12, 0)
 	local EYE_W = 8
 	local eyeGap = EYE_W * 0.5 + 0.9 -- (half the centre-to-centre distance, studs before scaling: a clear gap)
 	local eyes = {}
@@ -510,7 +524,7 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 		local stop = t >= Reveal.HOLD and t < Reveal.IMPACT
 		for _, e in all do e.TimeScale = if stop then 0.05 else 1 end
 		local h = Reveal.height(t, Config.Showcase.Height)
-		local herMid = spot + Vector3.new(0, (h or Reveal.ORB_HEIGHT) * k, 0) + (box.Position - base.Position)
+		local herMid = spot + Vector3.new(0, (h or Reveal.ORB_HEIGHT) * k, 0) + Vector3.new(0, (lo + hi) / 2 - base.Position.Y, 0)
 		heart.CFrame = CFrame.new(herMid)
 		swarmBox.CFrame = CFrame.lookAt(herMid + (camPos - herMid) * 0.3, camPos)
 
