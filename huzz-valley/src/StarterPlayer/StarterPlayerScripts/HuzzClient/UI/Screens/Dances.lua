@@ -432,6 +432,11 @@ function DancesScreen.build(parent: Instance)
 		return table.concat(parts, "|")
 	end
 	local shown, dirty, firstDone = signature(), false, false
+	-- (the cards picture your avatar: once it spawns or its look finishes loading, redraw them on the next open)
+	if player then
+		player.CharacterAdded:Connect(function() dirty = true end)
+		pcall(function() player.CharacterAppearanceLoaded:Connect(function() dirty = true end) end)
+	end
 	State.changed(function()
 		local now = signature()
 		if now == shown then return end

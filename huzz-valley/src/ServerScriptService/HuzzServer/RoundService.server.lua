@@ -1295,7 +1295,7 @@ local function onPlayer(player)
 	player:SetAttribute("HuzzRole", "Lobby")
 	player.DevEnableMouseLock = false -- our own shift lock (Gameplay/ShiftLock, Alt) replaces Roblox's Shift one
 	task.spawn(function()
-		DataService.waitFor(player, 20)
+		DataService.waitFor(player, 60)
 		syncPlayer(player.UserId) -- the name tag's level and wins once the save has loaded
 	end)
 	player.CharacterAdded:Connect(function(c)

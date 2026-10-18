@@ -35,7 +35,7 @@ end
 function CompanionService.start()
 	local function joined(player)
 		task.spawn(function()
-			DataService.waitFor(player, 20)
+			DataService.waitFor(player, 60)
 			CompanionService.refresh(player)
 		end)
 	end

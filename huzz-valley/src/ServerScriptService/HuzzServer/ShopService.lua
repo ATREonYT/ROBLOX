@@ -94,7 +94,7 @@ function ShopService.start()
 		if purchased then refreshPasses(player, passId) end
 	end)
 	local function onJoin(player: Player)
-		if DataService.waitFor(player, 15) then refreshPasses(player) end
+		if DataService.waitFor(player, 60) then refreshPasses(player) end
 	end
 	Players.PlayerAdded:Connect(onJoin)
 	for _, p in Players:GetPlayers() do task.spawn(onJoin, p) end

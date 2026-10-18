@@ -184,7 +184,7 @@ end
 
 function DataService.start()
 	(Net.get("GetState") :: RemoteFunction).OnServerInvoke = function(player)
-		DataService.waitFor(player, 15)
+		DataService.waitFor(player, 60)
 		return DataService.snapshot(player)
 	end
 	Players.PlayerAdded:Connect(onPlayerAdded)

@@ -257,7 +257,7 @@ function CosmeticsService.start()
 				end)
 			end
 		end)
-		if DataService.waitFor(player, 15) then apply(player) end
+		if DataService.waitFor(player, 60) then apply(player) end
 	end
 	Players.PlayerAdded:Connect(onJoin)
 	for _, p in Players:GetPlayers() do task.spawn(onJoin, p) end

@@ -62,7 +62,7 @@ function RewardService.start()
 	local Players = game:GetService("Players")
 	local function joined(player: Player)
 		task.spawn(function()
-			if DataService.waitFor(player, 20) then RewardService.sync(player) end
+			if DataService.waitFor(player, 60) then RewardService.sync(player) end
 		end)
 	end
 	Players.PlayerAdded:Connect(joined)
