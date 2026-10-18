@@ -135,7 +135,7 @@ function M.start()
 		local cam = Workspace.CurrentCamera
 		local size = cam and cam.ViewportSize or Vector2.new(1280, 720)
 		local preview = Workspace:GetAttribute("UIPreviewScale") -- (the offline preview: its pages are 768 wide)
-		fit.Scale = if type(preview) == "number" then preview * 768 / 1280 else math.clamp(math.min(size.X / 1280, size.Y / 720), 0.55, 1.6)
+		fit.Scale = if type(preview) == "number" then preview * 768 / 1280 else math.clamp(math.min(size.X / 1280, size.Y / 720), math.min(0.55, size.X / 1280), 1.6) -- (narrow phones: never wider than the screen)
 	end
 	refit()
 

@@ -31,7 +31,7 @@ local Products = {}
 
 Products.Passes = {
 	{
-		Key = "VIP", Kind = "Pass", Name = "VIP", Blurb = "VIP tag in chat\nand over your head.",
+		Key = "VIP", Kind = "Pass", Name = "VIP", Blurb = "VIP chat tag\nand name tag.",
 		Id = 0, Price = 199, OnSale = true, Icon = "VipCrown", Art = "Vip", Accent = Color3.fromHex("7C6CF2"), ButtonStyle = "PassViolet",
 		Benefits = { { Icon = "ChatBenefit", Text = "VIP Chat Tag" }, { Icon = "VipCrown", Text = "VIP Name Tag" } },
 	},

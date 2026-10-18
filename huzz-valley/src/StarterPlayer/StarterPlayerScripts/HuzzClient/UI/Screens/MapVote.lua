@@ -169,14 +169,30 @@ function MapVote.build(parent: Instance)
 	end)
 
 	-- Opens when a vote starts, closes when it ends.
+	-- (a kid in the Shop or watching the Spin Wheel isn't thrown out of it: the vote opens once that window shuts;
+	-- the NEXT MAP panel takes votes meanwhile)
+	local pending = false
 	local function onStage()
 		if round:GetAttribute("Stage") == "Voting" then
 			refresh()
-			ModalManager.open("MapVote")
-		elseif ModalManager.current() == "MapVote" then
-			ModalManager.close()
+			local open = ModalManager.current()
+			if open == nil or open == "MapVote" then
+				ModalManager.open("MapVote")
+			else
+				pending = true
+			end
+		else
+			pending = false
+			if ModalManager.current() == "MapVote" then ModalManager.close() end
 		end
 	end
+	ModalManager.changed(function()
+		if pending and ModalManager.current() == nil and round:GetAttribute("Stage") == "Voting" then
+			pending = false
+			refresh()
+			ModalManager.open("MapVote")
+		end
+	end)
 	round:GetAttributeChangedSignal("Stage"):Connect(onStage)
 
 	ModalManager.register("MapVote", {

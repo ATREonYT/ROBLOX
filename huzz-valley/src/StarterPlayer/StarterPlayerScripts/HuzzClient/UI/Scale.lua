@@ -47,6 +47,15 @@ function Scale.hud(h: number): number
 	return math.min(math.max(screen, 0.4) * HUD_K * HUD_SIZE, vp.Y / h)
 end
 
+-- Phones: buttons you must tap stay at least `min` (a 62 px tile at 0.78 is 48 points, about a fingertip), but never
+-- wider than the screen (`w` = the thing's width before scaling). Other devices keep `k`.
+function Scale.touchMin(k: number, min: number, w: number): number
+	if forced() then return k end
+	local UIS = game:GetService("UserInputService")
+	if not (UIS.TouchEnabled and not UIS.KeyboardEnabled) then return k end
+	return math.min(math.max(k, min), viewport().X * 0.92 / w)
+end
+
 -- For things sized in real screen points, like the top bar row that lines up with Roblox's own buttons.
 function Scale.points(v: number): number
 	return forced() or v

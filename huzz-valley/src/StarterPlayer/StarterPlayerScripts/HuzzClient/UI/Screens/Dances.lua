@@ -418,9 +418,28 @@ function DancesScreen.build(parent: Instance)
 		end
 		return nil
 	end
+	-- Rebuilding remakes every card (each with an avatar picture), so only when what the cards show changed (owned
+	-- and favourite dances, the Dance Pack), and only while the window is open (critic: every coin or star update, and
+	-- every move of a volume slider, rebuilt it).
+	local function signature(): string
+		local parts = { if State.owns("DancePack") then "P" else "" }
+		for _, set in { State.data.Dances or {}, State.data.FavDances or {} } do
+			local keys = {}
+			for k, v in set do if v then table.insert(keys, tostring(k)) end end
+			table.sort(keys)
+			table.insert(parts, table.concat(keys, ","))
+		end
+		return table.concat(parts, "|")
+	end
+	local shown, dirty, firstDone = signature(), false, false
 	State.changed(function()
+		local now = signature()
+		if now == shown then return end
+		shown = now
 		if not picked then selected = firstOwned() or selected end
-		rebuild(false)
+		-- (once when the save first arrives, so the cards are right before anyone opens it)
+		if window.Holder.Visible or not firstDone then rebuild(false) else dirty = true end
+		firstDone = true
 	end)
 
 	ModalManager.register("Dances", {
@@ -429,6 +448,10 @@ function DancesScreen.build(parent: Instance)
 			if type(arg) == "string" and tabs.buttons[arg] and tabs.selected() ~= arg then
 				tabs.select(arg)
 				tab = arg
+				dirty = true
+			end
+			if dirty then
+				dirty = false
 				rebuild(false)
 			end
 		end,

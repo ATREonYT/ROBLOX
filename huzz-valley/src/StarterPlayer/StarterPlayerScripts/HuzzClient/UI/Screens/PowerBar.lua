@@ -101,7 +101,7 @@ function PowerBar.build(parent: Instance)
 		Name = "PowerBar", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -10), Size = UDim2.fromOffset(W, CARD.H),
 		BackgroundTransparency = 1, Visible = false, Parent = parent,
 	})
-	Scale.bind(new("UIScale", { Name = "FitScale", Parent = bar }), function() return Scale.hud(PAGE_H) * 0.8 end) -- (smaller too: owner asked for smaller buttons)
+	Scale.bind(new("UIScale", { Name = "FitScale", Parent = bar }), function() return Scale.touchMin(Scale.hud(PAGE_H) * 0.8, 48 / CARD.W, W) end) -- (smaller too: owner asked for smaller buttons; on phones the HUSS tile is the only huss, so at least a fingertip)
 	local cards = { card(bar, 1), card(bar, 2), card(bar, 3) }
 	local Dash = require(script.Parent.Parent.Parent:WaitForChild("Gameplay"):WaitForChild("Dash"))
 	local HUSS = { Icon = "💨", Name = "Huss", Cooldown = RoundConfig.Dash.Cooldown }

@@ -24,6 +24,12 @@ if not gui and game:GetService("StarterGui"):FindFirstChild("HuzzUI") then gui =
 if not gui then
 	gui = Instance.new("ScreenGui")
 	gui.Name = "HuzzUI"
+	-- (built here because the saved one didn't arrive in time: if Roblox copies it in later, drop that dead copy)
+	pcall(function() -- (guarded: the offline preview's PlayerGui has no ChildAdded)
+		playerGui.ChildAdded:Connect(function(child)
+			if child.Name == "HuzzUI" and child ~= gui then child:Destroy() end
+		end)
+	end)
 end
 gui.ResetOnSpawn = false
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling

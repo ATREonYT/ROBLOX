@@ -77,6 +77,12 @@ end
 -- music, turn down sfx, master volume etc)"): six rows in a list that scrolls (the window keeps its size; the fifth
 -- row peeks out at the bottom so you can tell there's more). Volumes act at once (Main sets the sound groups).
 local AUDIO_ROWS = { 4, 62, 120, 178, 236, 294 }
+local GROUP_OF = { MasterVolume = "Master", MusicVolume = "Music", EffectsVolume = "Effects", InterfaceVolume = "Interface" }
+local function liveVolume(key: string, v: number)
+	local master = game:GetService("SoundService"):FindFirstChild("Master")
+	local g = master and (if key == "MasterVolume" then master else master:FindFirstChild(GROUP_OF[key]))
+	if g and g:IsA("SoundGroup") then g.Volume = v / 100 end
+end
 local function buildAudio(page: Frame)
 	local g = table.clone(GEOM.Audio)
 	g.Rows = AUDIO_ROWS
@@ -103,8 +109,10 @@ local function buildAudio(page: Frame)
 			Name = "Slider", Parent = r, Position = UDim2.new(0, 302 - ROW_X, 0.5, -7), Size = UDim2.fromOffset(267, 14),
 			onChange = function(v)
 				pct.Text = v .. "%"
-				State.data.Settings[key] = v -- apply now (Main listens); saved on release
-				State.apply({})
+				-- heard at once while dragging (just this sound group: telling every screen the state changed on
+				-- each move rebuilt whole windows); saved on release, and the saved value comes back to Main
+				State.data.Settings[key] = v
+				liveVolume(key, v)
 			end,
 			onCommit = function(v) save(key, v) end,
 		})
