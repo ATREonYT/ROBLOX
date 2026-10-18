@@ -352,7 +352,7 @@ function AuraFX.attach(model, spec, opts)
 		local soft = FxTexture.ready("BeamGlow") -- (soft edges once the owner's beam picture is uploaded)
 		-- (Rare/Epic's small tongues, F.soft: fainter and calmer)
 		local outerAlpha = if F.soft then numberSeq({ { 0, 1 }, { 0.12, 0.5 }, { 0.55, 0.55 }, { 0.85, 0.8 }, { 1, 1 } })
-			else numberSeq({ { 0, 1 }, { 0.1, 0.25 }, { 0.55, 0.3 }, { 0.85, 0.6 }, { 1, 1 } })
+			else numberSeq({ { 0, 1 }, { 0.1, 0.4 }, { 0.55, 0.45 }, { 0.85, 0.7 }, { 1, 1 } }) -- (calmer, Oct 18)
 		local coreAlpha = numberSeq({ { 0, 1 }, { 0.12, 0.1 }, { 0.6, 0.35 }, { 1, 1 } })
 		local function tongues(core)
 			local n = if core then F.core else F.count

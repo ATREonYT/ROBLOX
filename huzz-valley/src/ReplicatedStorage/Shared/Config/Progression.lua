@@ -4,6 +4,18 @@ local Progression = {}
 
 Progression.XPPerLevel = 300 -- every level takes the same XP
 
+-- XP for each game (loop audit, Oct 18: XP only came from quests, so everyone stopped at level 5 for good). About a
+-- level every 3 or 4 games. Past the reward track, each new level pays Beyond (granted straight away).
+Progression.GameXP = { Played = 40, Won = 40, Hero = 25, Each = 5 } -- Each: per crossing, rescue and catch
+Progression.Beyond = { Coins = 100, Aura = 10 }
+
+-- The XP one game gives. t = that game's tally (Crossings, Rescues, Catches, Heroes).
+function Progression.gameXP(won: boolean, t: { [string]: number }): number
+	local X = Progression.GameXP
+	return X.Played + (if won then X.Won else 0) + X.Hero * (t.Heroes or 0)
+		+ X.Each * ((t.Crossings or 0) + (t.Rescues or 0) + (t.Catches or 0))
+end
+
 -- Free reward track: reaching Level unlocks the reward; the player claims it.
 --   Kind: "Coins" | "Aura" | "Dance" | "Outfit"   (Outfit rewards stay unavailable until the outfit exists)
 Progression.Rewards = {
@@ -18,7 +30,9 @@ Progression.Rewards = {
 Progression.Bonus = {}
 
 -- Lore quests (owner: "add quests into the game for the lore. They give you rewards and help you progress").
--- The story of the valley in chapters; each chapter's quests open once the chapter before is claimed. Quests count
+-- The story of the valley in chapters; each chapter's quests open once one quest of the chapter before is claimed
+-- (loop audit: "Rescue 5" and "Catch 10" can't be done alone against the Practice Bot, so needing the whole chapter
+-- locked solo players out of chapter 4). Quests count
 -- real match events reported by gameplay (ProgressService.addStat) and never reset on a timer.
 --   Reward: Kind "Coins" / "Aura" (Amount) or "Knife" (Id = a Config/CoinShop quest knife), plus XP.
 Progression.Chapters = {
@@ -26,7 +40,7 @@ Progression.Chapters = {
 		Title = "Welcome to the Valley",
 		Lore = "Every night the anime girls drift down over Huzz Valley. Learn the field, and the field learns you.",
 		Quests = {
-			{ Id = "Q1Rounds", Name = "Play 3 rounds", Blurb = "Join the games in the valley.", Stat = "Rounds", Target = 3, XP = 100, Icon = "Players", Reward = { Kind = "Coins", Amount = 150 } },
+			{ Id = "Q1Rounds", Name = "Play 3 games", Blurb = "Join the games in the valley.", Stat = "Rounds", Target = 3, XP = 100, Icon = "Players", Reward = { Kind = "Coins", Amount = 150 } },
 			{ Id = "Q1Cross", Name = "Cross safely 5 times", Blurb = "Reach the other side.", Stat = "Crossings", Target = 5, XP = 100, Icon = "Sneaker", Reward = { Kind = "Aura", Amount = 25 } },
 		},
 	},
@@ -65,15 +79,36 @@ for c, chapter in Progression.Chapters do
 end
 Progression.Stats = { "Rounds", "Crossings", "AuraStars", "Heroes", "Rescues", "Catches", "HoldSeconds", "Wins", "Steals" }
 
--- The chapter you're on: the first with a quest not yet claimed (claimed = { [questId] = true }); #Chapters + 1
--- when the story is done.
+-- The furthest chapter that's open (claimed = { [questId] = true }): chapter 1, then each one whose chapter before
+-- has at least one claimed quest. #Chapters + 1 when every quest is claimed.
 function Progression.currentChapter(claimed: { [string]: boolean }): number
-	for c, chapter in Progression.Chapters do
-		for _, q in chapter.Quests do
+	local open = 1
+	for c = 1, #Progression.Chapters - 1 do
+		local any = false
+		for _, q in Progression.Chapters[c].Quests do
+			if claimed[q.Id] then any = true end
+		end
+		if not any then break end
+		open = c + 1
+	end
+	for _, q in Progression.Quests do
+		if not claimed[q.Id] then return open end
+	end
+	return #Progression.Chapters + 1
+end
+
+-- The chapter the quest screen shows: the furthest open one that still has a quest to claim, else the first one
+-- with a quest left (an earlier quest left for later, like "Rescue 5" played solo, comes back once the later
+-- chapters are done). #Chapters + 1 when every quest is claimed.
+function Progression.shownChapter(claimed: { [string]: boolean }): number
+	local open = Progression.currentChapter(claimed)
+	if open > #Progression.Chapters then return open end
+	for c = open, 1, -1 do
+		for _, q in Progression.Chapters[c].Quests do
 			if not claimed[q.Id] then return c end
 		end
 	end
-	return #Progression.Chapters + 1
+	return open
 end
 
 -- What a quest gives, in words ("150 coins", "Rookie Knife").

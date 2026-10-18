@@ -89,7 +89,10 @@ local function watch()
 				else
 					for _, player in Players:GetPlayers() do
 						local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-						if root and root:IsA("BasePart") and (root.Position - star.Position).Magnitude <= Config.Range then
+						-- in a game only runners pick stars up (they spawn in the middle, where catchers wait: catchers took
+						-- most of the Aura; loop audit, Oct 18)
+						local catcher = player:GetAttribute("HuzzRole") == "Catcher"
+						if root and root:IsA("BasePart") and not catcher and (root.Position - star.Position).Magnitude <= Config.Range then
 							pcall(collect, star, player) -- (one failed pickup can't stop the others)
 							break
 						end

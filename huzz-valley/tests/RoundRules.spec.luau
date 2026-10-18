@@ -286,6 +286,17 @@ test("Chicken gets nothing: alone, choosing Chicken means nobody wins her", func
 	eq(w.winner, nil)
 end)
 
+test("Chicken gets nothing, but one Hero run keeps the claim: Hero earlier, Chicken later still wins her", function()
+	local s = game(2, { crossings = 1 })
+	Rules.pickRunner(s)
+	Rules.choose(s, 2, true) -- an earlier round: went Hero
+	s.choice, s.hero, s.picked, s.lastHero = nil, nil, 2, nil
+	Rules.choose(s, 2, false) -- this round: Chicken
+	allSafe(s)
+	local w = has(Rules.endRound(s), "Win")
+	eq(w.winner, 2)
+end)
+
 test("a random pick for a runner who didn't answer isn't a Chicken choice", function()
 	local s = game(2, { crossings = 1, random = function(n) return math.min(n, 2) end }) -- (random 2 = Chicken)
 	Rules.pickRunner(s)

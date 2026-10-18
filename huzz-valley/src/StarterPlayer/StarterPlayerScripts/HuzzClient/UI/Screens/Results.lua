@@ -26,7 +26,7 @@ local DELAY = 8.2 -- seconds after the game ends: the win banners and "her name 
 local CARD = { X = { 25, 191, 357, 523 }, Y = 120, W = 152, H = 100 } -- (the panel starts under the header: y 0 is the window top)
 local CARDS = {
 	{ Key = "crossed", Icon = "Sneaker", Label = "CROSSED" },
-	{ Key = "catches", Icon = "TagFist", Label = "CAUGHT" },
+	{ Key = "catches", Icon = "TagFist", Label = "CATCHES" }, -- (was CAUGHT: read as "you got caught")
 	{ Key = "rescues", Icon = "Players", Label = "SAVED" },
 	{ Key = "heroes", Icon = "TierCrown", Label = "HERO RUNS" },
 }
@@ -57,7 +57,7 @@ local function earned(parent: Instance, name: string, icon: string, x: number)
 	return f
 end
 
-local window, title, line, cards, coins, aura
+local window, title, line, cards, coins, aura, xp
 
 -- Puts one game's numbers on the window (also used by the preview).
 function Results.fill(data: { [string]: any })
@@ -66,7 +66,10 @@ function Results.fill(data: { [string]: any })
 	title.Text = if outcome == "Win" then "YOU WIN!" elseif outcome == "Bot" then "THE BOT WINS" else "YOU LOST"
 	title.TextColor3 = if outcome == "Win" then C.Accent else RED
 	local girl = tostring(data.girl or "")
-	if data.gotGirl then
+	if data.gotGirl and tonumber(data.dupeCoins) then
+		line.Text = `You already have {girl}: +{math.floor(data.dupeCoins)} coins instead`
+		line.TextColor3 = rarityColor[data.rarity] or C.Text
+	elseif data.gotGirl then
 		line.Text = `{girl} is yours! Find her in your Index`
 		line.TextColor3 = rarityColor[data.rarity] or C.Text
 	elseif outcome == "Bot" then
@@ -74,7 +77,10 @@ function Results.fill(data: { [string]: any })
 		line.TextColor3 = C.SubText
 	else
 		line.Text = if outcome == "Win" and data.girlTaken == false then "Chicken gets nothing. Go HERO to win her!"
-			elseif outcome == "Win" then `Your team won {girl}` else "So close! Try again next game"
+			elseif outcome == "Win" and type(data.winnerName) == "string" then `{data.winnerName} takes {girl} home`
+			elseif outcome == "Win" then `Your team won {girl}`
+			elseif type(data.winnerName) == "string" then `{data.winnerName} won {girl}. Go HERO next game!`
+			else "So close! Try again next game"
 		line.TextColor3 = C.SubText
 	end
 	for i, def in CARDS do
@@ -83,6 +89,11 @@ function Results.fill(data: { [string]: any })
 	coins.Amount.Text = `+{math.floor(tonumber(data.coins) or 0)}`
 	aura.Amount.Text = `+{math.floor(tonumber(data.aura) or 0)}`
 	aura.Visible = (tonumber(data.aura) or 0) > 0
+	-- XP from this game (Config/Progression.GameXP), and the level you reached
+	local gained = math.floor(tonumber(data.xp) or 0)
+	xp.Amount.Text = if tonumber(data.level) then `LV {math.floor(data.level)}!` else `+{gained} XP`
+	Kit.fitLine(xp.Amount, 100, 28, 16, true)
+	xp.Visible = gained > 0
 end
 
 function Results.build(parent: Instance)
@@ -97,6 +108,7 @@ function Results.build(parent: Instance)
 	end
 	coins = earned(panel, "Coins", "CurrencyCoin", 25)
 	aura = earned(panel, "Aura", "AuraStar", 175)
+	xp = earned(panel, "XP", "XpBadge", 325)
 	local ok = Kit.button({ Name = "Nice", Text = "NICE!", TextSize = 22, Position = UDim2.fromOffset(W - 25 - 176, 240), Size = UDim2.fromOffset(176, 44), Parent = panel })
 	ok.onClick(function() ModalManager.close() end)
 

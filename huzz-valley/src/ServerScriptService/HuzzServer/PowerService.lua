@@ -338,21 +338,31 @@ function PowerService.newRound()
 	end
 end
 
-function PowerService.clear()
+-- keepPowers (after the Hero's solo run): traps and effects go, but everyone keeps their power cards and
+-- cooldowns. (Owner, Oct 18: "if you run out of time why dont you have any buttons after?": clearing the cards here
+-- hid the power bar for the whole run that follows a Hero run.)
+function PowerService.clear(keepPowers: boolean?)
 	for _, t in traps do
 		t.model:Destroy()
 	end
 	traps = {}
-	for id in state do
+	for id, s in state do
 		removeShield(id)
 		local p = ctx.playerOf(id)
 		if p then
-			p:SetAttribute("PowerReady1", nil)
-			p:SetAttribute("PowerReady2", nil)
+			if not keepPowers then
+				p:SetAttribute("PowerReady1", nil)
+				p:SetAttribute("PowerReady2", nil)
+			end
 			p:SetAttribute("DizzyUntil", nil)
 		end
+		if keepPowers then
+			state[id] = { ready = s.ready }
+		end
 	end
-	state = {}
+	if not keepPowers then
+		state = {}
+	end
 	lastSpeedCheck = {}
 end
 

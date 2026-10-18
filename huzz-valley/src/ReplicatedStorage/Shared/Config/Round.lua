@@ -21,13 +21,16 @@ return {
 	-- (no answer = a random pick). ShowTime: everyone sees what they chose.
 	-- (loop audit, Oct 17: half of everyone's time was spent standing still, so ChooseTime 8 -> 6, ShowTime 2.6 -> 2)
 	Pick = { Enabled = true, Roulette = 2.8, ChooseTime = 6, ShowTime = 2 },
-	HeroTime = 20, -- the Hero's solo crossing (everyone else waits on the line)
+	HeroTime = 30, -- the Hero's solo crossing (everyone else waits on the line; owner, Oct 18: longer, was 20)
 	HeroBonus = 25, -- coins for a Hero who makes it across (and the girl comes down to them)
 	-- End-of-game pay (owner: coins must be worth earning; the coin shop is Config/CoinShop). Aura is the rarer one:
 	-- crates cost it (Config/Crates), so it only comes from wins and the reward track.
-	Pay = { Played = 15, Won = 35, WonAura = 3 },
+	-- (loop audit, Oct 18: a real game paid ~340 coins an hour, less than the free wheel: 15/35 -> 25/50)
+	Pay = { Played = 25, Won = 50, WonAura = 3 },
+	-- Winning a girl you already own pays coins by her rarity instead (Results says so)
+	DupeCoins = { Common = 25, Uncommon = 50, Rare = 75, Epic = 150, Legendary = 400, Mythic = 700, Secret = 1500 },
 	CountdownTime = 3, -- 3, 2, 1, GO (everyone on the line)
-	RoundTime = 45, -- runners still out when it ends count as caught
+	RoundTime = 60, -- runners still out when it ends count as caught (owner, Oct 18: a bit longer, was 45)
 	RoundEndPause = 2.5, -- (was 3.5: pure waiting)
 	-- A stalled round (loop audit: an AFK runner made every round run the full clock): when every runner still to
 	-- cross has stood in the start zone (where nobody can stab them) for Wait seconds, the clock drops to Time
@@ -138,7 +141,7 @@ return {
 		SafeLines = true, -- a white line where each zone meets the field, and SAFE ZONE over the goal's line
 		LineWidth = 0.8,
 		SignHeight = 9, -- the SAFE ZONE sign above the line (studs)
-		WallHeight = 40, -- the start-line wall that holds runners until GO (invisible; a faint glass strip shows it)
+		WallHeight = 40, -- the start-line wall that holds runners until GO (invisible: the owner asked for no laser wall, Oct 18)
 		BoundsHeight = 60, -- invisible walls round the field so nobody jumps off the map (0 = none)
 		-- Maps go in as built, facing the lobby the way they faced it in Studio, except: FarSide names a
 		-- landmark that must end up away from the lobby; OpenSide = true picks the side with fewer fences and

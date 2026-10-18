@@ -13,6 +13,29 @@ function ProgressService.addStat(player: Player, stat: string, amount: number)
 	DataService.update(player, function(data) data.Stats[stat] = (data.Stats[stat] or 0) + amount end)
 end
 
+-- A finished game's XP (Progression.gameXP). Returns the XP and the new level if one was reached; each new level
+-- past the reward track pays Progression.Beyond at once.
+function ProgressService.gameXP(player: Player, won: boolean, tally: { [string]: number }): (number, number?)
+	local xp = Progression.gameXP(won, tally or {})
+	local newLevel = nil
+	DataService.update(player, function(data)
+		local before = Progression.level(data.XP or 0)
+		data.XP = (data.XP or 0) + xp
+		local after = Progression.level(data.XP)
+		if after > before then
+			newLevel = after
+			local last = Progression.Rewards[#Progression.Rewards].Level
+			for level = before + 1, after do
+				if level > last then
+					data.Coins = (data.Coins or 0) + Progression.Beyond.Coins
+					data.Aura = (data.Aura or 0) + Progression.Beyond.Aura
+				end
+			end
+		end
+	end)
+	return xp, newLevel
+end
+
 function ProgressService.claimReward(player: Player, level: any): (boolean, string?)
 	local reward = type(level) == "number" and Progression.reward(level)
 	if not reward then return false, "Unknown reward." end

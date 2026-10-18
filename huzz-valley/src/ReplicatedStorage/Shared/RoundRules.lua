@@ -19,11 +19,12 @@
 	    or from the catcher who stole her).
 	  - A catcher who stabs her carrier steals her: she follows that catcher around.
 	  - When the game ends she goes home with the winning side: whoever on that side holds her; if
-	    nobody does, the runners' last successful Hero (else a random runner who made it), or the lead
-	    catcher (else the catcher with the most catches).
+	    nobody does, the runners' last successful Hero (else a random runner who made it), or the catcher
+	    with the most catches (the lead catcher wins a tie).
 	  - Chicken gets nothing (owner, Oct 18: "you dont recieve the girl if you run chicken"): a runner who
-	    chose Chicken this game can't be handed her at the end (s.chickens). If every runner left chose
-	    Chicken, nobody wins her.
+	    chose Chicken this game and never went Hero can't be handed her at the end (s.chickens). Going
+	    Hero once is enough: a Hero who carried her home or was the last Hero keeps their claim even if they
+	    pick Chicken later. If every runner left only ever chose Chicken, nobody wins her.
 
 	Runner status during a round: "Active" (still to cross) | "Safe" (across) | "Downed" (stabbed).
 	Every function returns a list of events:
@@ -85,13 +86,11 @@ local function girlWinner(s, team)
 		end
 		return pick(s, if #made > 0 then made else brave)
 	end
-	if s.lead and s.roles[s.lead] == "Catcher" then
-		return s.lead
-	end
+	-- the catcher with the most catches; the lead catcher only breaks a tie (loop audit: the lead took her with 0)
 	local best, most = nil, -1
 	for _, id in idsWithRole(s, "Catcher") do
 		local n = s.catches[id] or 0
-		if n > most then
+		if n > most or (n == most and id == s.lead) then
 			best, most = id, n
 		end
 	end
@@ -124,7 +123,8 @@ function RoundRules.newGame(ids, catcherId, opts)
 		choice = nil, -- nil (not chosen yet) | "Hero" | "Chicken"
 		hero = nil, -- this round's Hero (while their solo crossing counts)
 		lastHero = nil, -- the latest Hero who made it across
-		chickens = {}, -- runners who chose Chicken this game (they can't be handed the girl at the end)
+		chickens = {}, -- runners who chose Chicken this game and never went Hero (they can't be handed the girl)
+		brave = {}, -- runners who went Hero this game
 		streak = 0, -- full crossings in a row
 		goal = opts.crossings or 3,
 		over = false,
@@ -215,7 +215,10 @@ function RoundRules.choose(s, id, isHero)
 	end
 	s.choice = if isHero then "Hero" else "Chicken"
 	s.hero = if isHero then id else nil
-	if not isHero and answered then -- (a random pick for a runner who didn't answer isn't their choice)
+	if isHero then
+		s.brave[id] = true
+		s.chickens[id] = nil -- (going Hero once wins back the right to her)
+	elseif answered and not s.brave[id] then -- (a random pick for a runner who didn't answer isn't their choice)
 		s.chickens[id] = true
 	end
 	table.insert(events, { type = "Choice", id = id, hero = isHero == true })

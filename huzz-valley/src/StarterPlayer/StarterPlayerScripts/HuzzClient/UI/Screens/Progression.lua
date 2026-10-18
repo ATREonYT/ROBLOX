@@ -261,7 +261,7 @@ local function buildQuests(page: Frame, refreshers: { () -> () })
 	local nextLine = Kit.text({ Name = "Next", Text = "", TextSize = 13, TextColor3 = C.SubText, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 12, 1, -6), Size = UDim2.new(1, -24, 0, 16), TextWrapped = false, Parent = lore })
 	local built, cardRefreshers = nil, {}
 	table.insert(refreshers, function()
-		local current = Progression.currentChapter(State.data.QuestsClaimed)
+		local current = Progression.shownChapter(State.data.QuestsClaimed)
 		local shown = math.min(current, #Progression.Chapters)
 		if built ~= shown then
 			built = shown
@@ -275,8 +275,8 @@ local function buildQuests(page: Frame, refreshers: { () -> () })
 		end
 		loreText.Text = Progression.Chapters[shown].Lore
 		nextLine.Text = if current > #Progression.Chapters then "The story so far is complete: more chapters are coming."
-			elseif shown < #Progression.Chapters then `Claim both quests to open chapter {shown + 1}: {Progression.Chapters[shown + 1].Title}.`
-			else "Claim both quests to finish the story."
+			elseif shown < #Progression.Chapters and Progression.currentChapter(State.data.QuestsClaimed) <= shown then `Claim a quest to open chapter {shown + 1}: {Progression.Chapters[shown + 1].Title}.`
+			else "Claim both quests to finish this chapter."
 		chapterNo.Text = string.format("%d / %d", shown, #Progression.Chapters)
 		for _, f in cardRefreshers do f() end
 	end)

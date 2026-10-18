@@ -552,7 +552,7 @@ local function simulate(opts)
 		return saves[p]
 	end
 	function DataService.get(p)
-		return nil
+		return saves[p] and { Data = saves[p] } -- (what RoundService reads: Characters for a repeat girl, Wear)
 	end
 	function DataService.update(p, fn)
 		saves[p] = saves[p] or { Stats = {}, Characters = {} }
@@ -624,6 +624,7 @@ local function simulate(opts)
 		KnockdownService = KnockdownService, MapVoteService = MapVoteService, KnifeService = KnifeService, SafetyService = SafetyService,
 		NameTagService = NameTagService,
 		SpinService = { boost = function() return 1 end }, -- (the Spin the Wheel's x2 Coins: none in the sim)
+		ProgressService = { gameXP = function(_, won, t) return 40 + (if won then 40 else 0), nil end },
 	}
 	local Shared = { Config = { Round = Config, Carry = Carry, Powers = Powers }, RoundRules = RoundRules, Net = Net, GirlRoll = GirlRoll, SecretReveal = SecretReveal }
 	local sharedNode = setmetatable({}, { __index = function(_, k)
@@ -935,6 +936,12 @@ local function simulate(opts)
 				problem(`catcher {p.Name} has no knife`)
 			elseif role ~= "Catcher" and c._knife then
 				problem(`{role} {p.Name} holds a knife`)
+			end
+			-- The power bar (Screens/PowerBar: shown only while PowerReady1 is set) is there for everyone still playing
+			-- in a run, also the run after a Hero's solo run (owner, Oct 18: "why dont you have any buttons after?").
+			if (st == "Running" or st == "HeroRun") and (role == "Runner" or role == "Catcher") and status ~= "Downed" and status ~= "Safe"
+				and p:GetAttribute("PowerReady1") == nil then
+				problem(`{role} {p.Name} has no power buttons during {st}`)
 			end
 			local tag = tags[p]
 			if status == "Downed" and not (tag and (tag.look == "Downed" or tag.look == "Out")) then

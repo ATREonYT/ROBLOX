@@ -206,22 +206,23 @@ local function pulseRing(main, every)
 		accel = { 0, 0, 0 }, rot = { 0, 360 }, spin = { 0, 0 },
 	}
 end
--- Cel flame tongues licking up round the body (colour, then a smaller white core in front of it).
+-- Cel flame tongues licking up round the body (colour, then a smaller white core in front of it). They move with
+-- the body (inherit 0.95; owner, Oct 18: at 0.4 a running player left a long glowing band of flames behind them).
 local function tongues(white, main, deep, rate)
 	return {
 		{
 			name = "Tongues", at = "Feet", offset = 0.4, texture = "FlameSheet", flip = "OneShot",
 			colors = { { 0, main:Lerp(WHITE, 0.2) }, { 0.45, main }, { 1, deep } }, light = 0.5,
 			rate = rate, life = { 0.6, 0.9 }, speed = { 2.5, 4 }, spread = 60,
-			size = { { 0, 0 }, { 0.15, 2.6 }, { 1, 0.9 } }, alpha = { { 0, 0.15 }, { 0.7, 0.3 }, { 1, 1 } },
-			accel = { 0, 4, 0 }, drag = 1, rot = { -10, 10 }, spin = { -10, 10 }, z = 1.3, inherit = 0.4,
+			size = { { 0, 0 }, { 0.15, 1.8 }, { 1, 0.6 } }, alpha = { { 0, 0.3 }, { 0.7, 0.45 }, { 1, 1 } },
+			accel = { 0, 4, 0 }, drag = 1, rot = { -10, 10 }, spin = { -10, 10 }, z = 1.3, inherit = 0.95,
 		},
 		{
 			name = "CoreTongues", at = "Feet", offset = 0.4, texture = "FlameSheet", flip = "OneShot",
 			colors = { { 0, white }, { 1, main:Lerp(WHITE, 0.5) } }, light = 1,
 			rate = rate * 0.6, life = { 0.5, 0.75 }, speed = { 2.5, 4 }, spread = 55,
-			size = { { 0, 0 }, { 0.15, 1.4 }, { 1, 0.45 } }, alpha = { { 0, 0.1 }, { 0.7, 0.25 }, { 1, 1 } },
-			accel = { 0, 4, 0 }, drag = 1, rot = { -10, 10 }, spin = { -10, 10 }, z = 1.6, inherit = 0.4,
+			size = { { 0, 0 }, { 0.15, 1 }, { 1, 0.3 } }, alpha = { { 0, 0.25 }, { 0.7, 0.4 }, { 1, 1 } },
+			accel = { 0, 4, 0 }, drag = 1, rot = { -10, 10 }, spin = { -10, 10 }, z = 1.6, inherit = 0.95,
 		},
 	}
 end
@@ -284,24 +285,24 @@ function AuraLook.worn(key: string)
 	elseif key == "AuraLegend" then
 		local white, main, deep = rgb(255, 245, 230), rgb(255, 140, 70), rgb(220, 60, 50) -- (sunfire, not gold: the owner)
 		add(sigil(main, 6.5))
-		for _, e in tongues(white, main, deep, 10) do add(e) end
+		for _, e in tongues(white, main, deep, 6) do add(e) end
 		add(twinkles(main, 5))
 		out.orbs = orbs(2, white, main, deep)
-		out.light = { color = main, brightness = 1.2, range = 10, at = "Body" }
+		out.light = { color = main, brightness = 0.6, range = 8, at = "Body" }
 	elseif key == "AuraMythic" then
 		local white, main, deep = rgb(255, 225, 235), rgb(255, 84, 120), rgb(150, 20, 70)
 		add(sigil(main, 7))
-		for _, e in tongues(white, main, deep, 14) do add(e) end
+		for _, e in tongues(white, main, deep, 8) do add(e) end
 		add(twinkles(main, 5))
 		add(pulseRing(main, 2.5))
 		out.orbs = orbs(3, white, main, deep, 12)
 		out.slashes = { rate = 0.8, life = 0.5, radius = 2.6, span = 110, width = 0.6, core = main:Lerp(WHITE, 0.3), edge = deep:Lerp(BLACK, 0.5) }
-		out.light = { color = main, brightness = 1.4, range = 11, at = "Body" }
+		out.light = { color = main, brightness = 0.7, range = 9, at = "Body" }
 	elseif key == "AuraSecret" then
 		local white, main, deep = rgb(235, 225, 255), rgb(150, 110, 255), rgb(60, 20, 120)
 		local cyan, pink = rgb(110, 235, 255), rgb(255, 120, 210)
 		add(sigil(main, 7.5))
-		for _, e in tongues(white, main, deep, 16) do add(e) end
+		for _, e in tongues(white, main, deep, 9) do add(e) end
 		add(twinkles(cyan, 6))
 		add(pulseRing(pink, 2.5))
 		add(halo(cyan))
@@ -314,7 +315,7 @@ function AuraLook.worn(key: string)
 		})
 		out.orbs = orbs(4, white, cyan, main, 20)
 		out.slashes = { rate = 1.2, life = 0.5, radius = 2.6, span = 110, width = 0.6, core = pink:Lerp(WHITE, 0.3), edge = deep }
-		out.light = { color = main, brightness = 1.6, range = 12, at = "Body" }
+		out.light = { color = main, brightness = 0.8, range = 10, at = "Body" }
 	else
 		return nil
 	end
@@ -471,6 +472,8 @@ end
 AuraLook.vivid = vivid
 
 -- The rarity ladder for the girls (index = rank). Each step adds a new layer, not just more of the same.
+-- (Owner, Oct 18: "a bit more lowkey for some": Legendary and up have fewer, shorter, fainter flames, softer light,
+-- fewer rising streaks and a slower beat than the first rebuild.)
 -- r = floor radius, pool = its glow steps (transparency, outside in), ring, runner, inner, breathe, orbs,
 -- flames = { outer tongues, white inner tongues, height, width, short (Rare/Epic: how far up her body they reach, so
 -- they end at her waist to chest; also thinner and softer) }, beat = seconds between beats, light = { brightness, range }.
@@ -480,13 +483,13 @@ local LADDER = {
 	[3] = { r = 1.5, pool = { 0.8, 0.72, 0.62 }, ring = 0.4, runner = true, orbs = 0, light = { 0.3, 5 },
 		flames = { 2, 0, 0.5, 0.5, 0.6 } },
 	[4] = { r = 1.6, pool = { 0.78, 0.68, 0.58 }, ring = 0.32, runner = true, breathe = 0.05, orbs = 1, light = { 0.45, 6 },
-		flames = { 3, 0, 0.6, 0.55, 0.6 } },
+		flames = { 3, 0, 0.6, 0.5, 0.6 } },
 	[5] = { r = 1.9, pool = { 0.78, 0.68, 0.55 }, ring = 0.25, runner = true, inner = true, breathe = 0.07, orbs = 2,
-		flames = { 5, 2, 1.2, 1.15 }, beat = 3.6, light = { 0.8, 8 } },
+		flames = { 4, 1, 0.95, 0.9 }, beat = 3.6, light = { 0.5, 7 } },
 	[6] = { r = 2.1, pool = { 0.76, 0.66, 0.52 }, ring = 0.2, runner = true, inner = true, breathe = 0.08, orbs = 3,
-		flames = { 6, 3, 1.4, 1.25 }, beat = 3.0, light = { 1.0, 9 } },
+		flames = { 5, 2, 1.1, 1.0 }, beat = 3.2, light = { 0.6, 8 } },
 	[7] = { r = 2.3, pool = { 0.74, 0.64, 0.5 }, ring = 0.15, runner = true, inner = true, breathe = 0.09, orbs = 4,
-		flames = { 7, 3, 1.6, 1.3 }, beat = 2.6, light = { 1.2, 10 } },
+		flames = { 6, 2, 1.25, 1.05 }, beat = 2.8, light = { 0.7, 9 } },
 }
 AuraLook.LADDER = LADDER
 
@@ -569,7 +572,7 @@ function AuraLook.girl(look, rarity, kind)
 		add({
 			name = "Rising", at = "Ground", texture = "Spark", orient = "Streak",
 			colors = { { 0, WHITE }, { 0.4, main:Lerp(WHITE, 0.4) }, { 1, main } }, light = 1,
-			rate = ({ 0, 0, 0, 0, 3, 4.5, 6 })[rank], life = { 0.45, 0.75 }, speed = { 3.5, 5.5 }, spread = 8,
+			rate = ({ 0, 0, 0, 0, 2, 3, 4 })[rank], life = { 0.45, 0.75 }, speed = { 3.5, 5.5 }, spread = 8,
 			size = { { 0, 0 }, { 0.2, 0.3 }, { 1, 0 } }, alpha = { { 0, 0.1 }, { 0.7, 0.3 }, { 1, 1 } },
 			squash = { { 0, 1.5 }, { 1, 2.5 } }, accel = { 0, 2, 0 }, drag = 0.5, rot = { 0, 0 }, spin = { 0, 0 },
 		})

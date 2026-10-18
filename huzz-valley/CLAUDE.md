@@ -147,6 +147,19 @@ Owner's own words are in quotes. Read only the section you need.
   HeroRun → Countdown → Running → RoundOver; GameOver. Runners win with everyone across 3 rounds in a row.
   Loop audit (Oct 17, `docs/loop-audit.md`): half of everyone's time was frozen, so Lineup 3 s, ChooseTime 6, ShowTime
   2, RoundEndPause 2.5, and one runner on the line skips the roulette (PickAt is set back so clients skip it too).
+  Owner Oct 18 ("make the round a bit longer, for example the hero round"): HeroTime 30 (was 20), RoundTime 60 (was 45).
+- **Power cards survive the Hero run** (owner Oct 18: "if you run out of time why dont you have any buttons
+  after?"): after a Hero run RoundService calls `PowerService.clear(true)` (traps and effects go, cards and
+  cooldowns stay); plain `clear()` had wiped PowerReady1/2, which hid the whole power bar (and the huss card) for
+  the run that followed. The sim checks every runner/catcher still playing has PowerReady1 in Running/HeroRun.
+- **Loop audit 2 (Oct 18, fixes in):** a catchers' win pays only catchers who caught someone (or the lead); the
+  girl goes to the catcher with the most catches (lead breaks ties); XP every game (`Config/Progression.GameXP`:
+  40 + 40 win + 25 a Hero run + 5 per crossing/rescue/catch; each level past the track pays `Beyond` 100 coins +
+  10 Aura); Hero bonus only with another runner in the game (solo farming paid ~10x); Pay 25/50; a repeat girl
+  pays `DupeCoins` by rarity; a chapter opens once ONE quest of the chapter before is claimed (solo players can't
+  rescue or catch; the screen shows `Progression.shownChapter`); only runners pick up stars in a game; Results:
+  CATCHES card, XP pill, "X takes her home"; Hero card "Make it: carry her +25", Chicken "Safe, but no girl".
+  Not done yet (need screens): a Crates tab so Aura has a use, a dot on Menu when a quest can be claimed.
 - **Countdown after a camera shot** (CHICKEN or no answer: owner, "the numbers just dont appear well"): RoundService
   adds `CAMERA_BACK` 0.6 s to a Countdown that follows Lineup/Picking/Chosen, so the camera's 0.3 s swing back ends
   first; RoundHud draws only the last 3 s, never while `HuzzCinematic` is on, times GO! from the server's EndsAt, and
@@ -171,7 +184,8 @@ Owner's own words are in quotes. Read only the section you need.
   (catchers' parts, `MapService.setCatcher` from `syncPlayer`; the bot too); `keepSafe()` pushes out any catcher
   who got past (`MapService.pushOut`).
 - **Chicken gets nothing** (owner Oct 18: "you dont recieve the girl if you run chicken"): a runner who chose
-  Chicken (not a timed-out random pick) can't be handed the girl at the end (`RoundRules` `chickens`); if every
+  Chicken (not a timed-out random pick) and never went Hero this game can't be handed the girl at the end
+  (`RoundRules` `chickens`, `brave`: one Hero run keeps the claim); if every
   runner left chose Chicken nobody wins her ("Nobody went HERO", Results "Chicken gets nothing. Go HERO to win
   her!"). Asked him on a card whether he meant a bug instead.
 - **Downed and revived:** a downed runner lies still (`KnockdownService`; owner Oct 18: "not have a swinging animations
@@ -221,7 +235,7 @@ Owner's own words are in quotes. Read only the section you need.
   runs (this game only: RoundService `tally`, filled by `addStat`) and the coins + Aura earned (Round remote
   "Results", per player; coins include a Hero bonus, Aura the stars collected: player attribute `HuzzGameAura`).
   Preview: `shots.sh <out> results`.
-- **Pay:** 15 coins a game, 35 for a win, +3 Aura on a win, Hero bonus 25; x2 while a wheel boost lasts.
+- **Pay:** 25 coins a game, 50 for a win, +3 Aura on a win, Hero bonus 25 (not alone); x2 while a wheel boost lasts.
 - **Girl odds** (`Config/Round.Rarities`, raised: "I'm only getting commons"): Common 28, Uncommon 24, Rare 20,
   Epic 14, Legendary 8, Mythic 4.5, Secret 1.5.
 - **News vs big moments** (feel study, Oct 17): RoundService `announce(text, color)` only writes the message line
@@ -306,6 +320,9 @@ Owner's own words are in quotes. Read only the section you need.
   6 emitters); + slash,
   hand glints/trails, 3 orbs (Mythic, 7); + two tones, crystals, butterflies, halo, 4 orbs (Secret, 9; budget 12).
   The prize gets at least the Rare look. Only the particles wait for uploads; everything else shows today.
+  Calmer (owner Oct 18, "a bit more lowkey for some"): Legendary 4+1 tongues, Mythic 5+2, Secret 6+2, shorter,
+  fainter (outer alpha 0.4), softer lights, fewer streaks. Worn auras: flame particles move with the body
+  (inherit 0.95; at 0.4 a running player trailed a long glowing band), smaller, half the rate, half the light.
   Spec: `check_girl_fx.luau` (budget, ladder, Rare/Epic tongues smaller and fewer than Legendary's, beat, pool follows,
   no per-frame instances). Tier row `motion3d/girl_tiers_scene.luau` + `tools/fx/girl_tiers_sheet.py` →
   `docs/previews/girl-vfx-tiers.jpg`. Film

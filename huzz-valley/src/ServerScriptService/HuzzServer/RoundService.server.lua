@@ -32,6 +32,7 @@ local PowerService = require(script.Parent.PowerService)
 local NameTags = require(script.Parent.NameTagService)
 local SecretReveal = require(ReplicatedStorage.Shared.SecretReveal)
 local PracticeBot = require(script.Parent.PracticeBot)
+local ProgressService = require(script.Parent.ProgressService)
 
 require(script.Parent.SafetyService).clean()
 MapService.init()
@@ -312,7 +313,13 @@ function handlers.HeroResult(e)
 		announce(`{nameOf(e.id)} made the Hero run!`, GREEN)
 		addStat(e.id, "Heroes", 1) -- (lore quest: Brave Heart)
 		local p = byId[e.id]
-		if p and Config.HeroBonus > 0 then
+		-- (the bonus is for crossing alone while others watch: a solo player is picked every round, so alone
+		-- against the Practice Bot it paid ~10x a real game per minute; loop audit, Oct 18)
+		local others = 0
+		for id, role in match.roles do
+			if role == "Runner" and id ~= e.id then others += 1 end
+		end
+		if p and Config.HeroBonus > 0 and others > 0 then
 			DataService.update(p, function(d)
 				d.Coins = (d.Coins or 0) + Config.HeroBonus
 			end)
@@ -507,7 +514,7 @@ local function keepSafe()
 		for _, zone in { zones.ZoneA, zones.ZoneB } do
 			local out = MapService.pushOut(zone, bot)
 			if out and (out - bot).Magnitude > 2 then
-				PracticeBot.place(CFrame.new(out))
+				PracticeBot.nudge(CFrame.new(out))
 			end
 		end
 	end
@@ -820,7 +827,7 @@ local function runRound()
 			place(hero) -- (timed out: back to the line)
 		end
 		MapService.holdStart(startName, true)
-		PowerService.clear() -- (traps laid during the Hero run don't stay for everyone's run)
+		PowerService.clear(true) -- (traps laid during the Hero run don't stay for everyone's run; the power cards do)
 		syncAll()
 		play(0.8)
 	end
@@ -898,9 +905,23 @@ local function finishGame()
 	end
 	local winnerId = if botWon then nil else match.winner
 	local winner = winnerId and byId[winnerId]
+	-- A girl you already own pays coins by her rarity instead (Config/Round.DupeCoins; loop audit: a repeat win
+	-- gave nothing at all)
+	local dupeCoins = nil
+	if winner then
+		local profile = DataService.get(winner)
+		local d = profile and profile.Data
+		if d and d.Characters and d.Characters[girl.id] then
+			dupeCoins = (Config.DupeCoins or {})[girl.rarity or ""] or 25
+		end
+	end
 	for id, role in match.roles do
-		addStat(id, "Rounds", 1) -- "Complete 3 matches"
-		local won = not botWon and ((match.team == "Runners" and role == "Runner") or (match.team == "Catchers" and role == "Catcher"))
+		addStat(id, "Rounds", 1) -- "Play 3 games"
+		-- A catchers' win goes to the catchers who did the catching (the lead, or anyone with a catch). Runners caught
+		-- in earlier rounds are catchers too, and those caught in the last round survived longer than them, so
+		-- "every catcher wins" paid the wrong players (loop audit, Oct 18).
+		local caught = id == match.lead or (match.catches[id] or 0) > 0
+		local won = not botWon and ((match.team == "Runners" and role == "Runner") or (match.team == "Catchers" and role == "Catcher" and caught))
 		if won then
 			addStat(id, "Wins", 1)
 			-- Crown Pose (a Robux cosmetic): winners who wear it strike it (HuzzClient/Gameplay/CrownPose)
@@ -923,9 +944,14 @@ local function finishGame()
 			RoundNet:FireClient(p, "Bonus", { coins = coins, aura = aura, late = true })
 			-- the results screen (Screens/Results): how your game went
 			local t = tally[id] or {}
+			-- XP for every game (it only came from quests, so everyone stopped at level 5): playing, winning, and each
+			-- thing you did (Config/Progression.GameXP); past the reward track each new level pays a little
+			local xp, levelUp = ProgressService.gameXP(p, won, t)
 			RoundNet:FireClient(p, "Results", {
 				outcome = if botWon then "Bot" elseif won then "Win" else "Lose",
 				girl = girl.name, rarity = girl.rarity, gotGirl = winnerId == id, girlTaken = winnerId ~= nil,
+				winnerName = if winner then winner.DisplayName else nil, xp = xp, level = levelUp,
+				dupeCoins = if winnerId == id then dupeCoins else nil,
 				crossed = t.Crossings or 0, catches = t.Catches or 0, rescues = t.Rescues or 0, heroes = t.Heroes or 0,
 				-- everything this game paid: the game's pay, a Hero bonus, and Aura from stars on the field
 				coins = coins + (t.BonusCoins or 0), aura = aura + (p:GetAttribute("HuzzGameAura") or 0),
@@ -936,11 +962,16 @@ local function finishGame()
 		-- Into the winner's collection: the Index shows every id in Characters.
 		DataService.update(winner, function(d)
 			d.Characters[girl.id] = d.Characters[girl.id] or os.time()
+			if dupeCoins then d.Coins = (d.Coins or 0) + dupeCoins end
 		end)
 		if match.holder ~= winnerId then
 			moveGirlTo(match.holder, winnerId, "Won")
 		end
 		CarryService.setMood(winner, "Cheer")
+	elseif match.holder then
+		-- nobody wins her (every runner went Chicken, or the bot won): she leaves whoever still has her, so she
+		-- doesn't follow a losing catcher through the game-over screen (critic)
+		moveGirlTo(match.holder, nil, "Dropped")
 	end
 	RoundNet:FireAllClients("Win", {
 		team = match.team, winner = winnerId, name = if botWon then nil else winner and winner.DisplayName, -- ("Nobody wins her")
@@ -1074,6 +1105,7 @@ local lastStab = {}
 -- Stab the nearest runner within range of the catcher (front only for the knife: runners lag on screen, so a
 -- little behind still counts). Shields, the safe start zone and a fresh rescue protect. True when someone was hit.
 -- only: the runner the catcher's screen hit (pinpoint, Gameplay/HitCheck): just that one is checked.
+local chaseClaim
 local function stabNear(id, me: BasePart, range: number, front: boolean, only: number?): boolean
 	local now = os.clock()
 	local start = zones[MapService.startFor(match.round)]
@@ -1100,6 +1132,29 @@ local function stabNear(id, me: BasePart, range: number, front: boolean, only: n
 		return true
 	end
 	return false
+end
+
+-- A hit the catcher's screen saw (Gameplay/HitCheck): that one runner is checked from here every frame until
+-- `untilClock`, the way the old lunge loop kept checking (a single check failed under normal lag).
+function chaseClaim(id, player, claim, range, front, untilClock, onHit)
+	task.spawn(function()
+		while true do
+			local me = rootOf(id)
+			local st = State:GetAttribute("Stage")
+			if not (me and match and not match.over and match.roles[id] == "Catcher" and (st == "Running" or st == "HeroRun"))
+				or frozen[id] or KnockdownService.isDown(player) or not PowerService.canStab(id) then
+				return
+			end
+			if stabNear(id, me, range, front, claim) then
+				if onHit then onHit() end
+				return
+			end
+			if os.clock() >= untilClock or match.status[claim] ~= "Active" then
+				return
+			end
+			task.wait(0.03)
+		end
+	end)
 end
 
 -- The Practice Bot's frame: it chases the runners a catcher could stab right now and stabs within its reach.
@@ -1156,8 +1211,10 @@ Net.get("Stab").OnServerEvent:Connect(function(player, claim)
 	end
 	RoundNet:FireAllClients("Stab", { id = id }) -- everyone else sees the stab
 	if type(claim) == "number" then
-		-- pinpoint: the runner the catcher's screen saw inside the knife's reach, if that's possible from here
-		stabNear(id, me, Config.Stab.Range + (Config.Stab.Slack or 3), false, claim)
+		-- pinpoint: the runner the catcher's screen saw inside the knife's reach, if that's possible from here.
+		-- Checked again for a moment (critic: a catcher a little behind on our side at full speed failed a single
+		-- check and the kid saw a clean hit do nothing); still in front only, so a cheat can't hit all round.
+		chaseClaim(id, player, claim, Config.Stab.Range + (Config.Stab.Slack or 3), true, os.clock() + 0.25)
 	elseif claim == nil then
 		stabNear(id, me, Config.Stab.Range, true) -- (a client that can't check)
 	end -- (false: a clean miss on the catcher's screen)
@@ -1168,6 +1225,7 @@ end)
 -- HitRange of the catcher (shields and the safe start zone still count).
 local lastLunge = {}
 local lungeHit = {} -- id -> true once this lunge has caught someone (one runner per lunge)
+local lungeClaims = {} -- id -> true while this lunge lets the catcher's screen report the hit (it sent true)
 Net.get("Lunge").OnServerEvent:Connect(function(player, arg)
 	local id = player.UserId
 	local c = player.Character
@@ -1176,11 +1234,13 @@ Net.get("Lunge").OnServerEvent:Connect(function(player, arg)
 		local me = rootOf(id)
 		local st = State:GetAttribute("Stage")
 		if me and match and not match.over and match.roles[id] == "Catcher" and (st == "Running" or st == "HeroRun")
-			and lastLunge[id] and os.clock() - lastLunge[id] <= Config.Lunge.HitWindow + 0.3 and not lungeHit[id]
+			and lungeClaims[id] and lastLunge[id] and os.clock() - lastLunge[id] <= Config.Lunge.HitWindow + 0.3 and not lungeHit[id]
 			and not frozen[id] and not KnockdownService.isDown(player) and PowerService.canStab(id) and Config.TagMode == "Stab" then
-			if stabNear(id, me, Config.Lunge.HitRange + (Config.Stab.Slack or 3), false, arg) then
-				lungeHit[id] = true
-			end
+			lungeClaims[id] = nil -- (one claim per lunge)
+			chaseClaim(id, player, arg, Config.Lunge.HitRange + (Config.Stab.Slack or 3), false,
+				lastLunge[id] + Config.Lunge.HitWindow + 0.3, function()
+					lungeHit[id] = true
+				end)
 		end
 		return
 	end
@@ -1200,6 +1260,7 @@ Net.get("Lunge").OnServerEvent:Connect(function(player, arg)
 	end
 	lastLunge[id] = os.clock()
 	lungeHit[id] = nil
+	lungeClaims[id] = arg == true or nil -- (a lunge the server checks itself takes no claim: no second hit)
 	player:SetAttribute("DashReady", now + Config.Lunge.Cooldown)
 	c:SetAttribute("LungeAt", now) -- (every screen plays the leap)
 	RoundNet:FireAllClients("Stab", { id = id, lunge = true }) -- (the stab move, on the catcher's own screen too)
@@ -1215,7 +1276,11 @@ Net.get("Lunge").OnServerEvent:Connect(function(player, arg)
 				or frozen[id] or KnockdownService.isDown(player) or not PowerService.canStab(id) then
 				return
 			end
+			if lungeHit[id] then
+				return
+			end
 			if stabNear(id, me, Config.Lunge.HitRange, false) then
+				lungeHit[id] = true
 				return -- (one runner per lunge)
 			end
 			task.wait(0.03)

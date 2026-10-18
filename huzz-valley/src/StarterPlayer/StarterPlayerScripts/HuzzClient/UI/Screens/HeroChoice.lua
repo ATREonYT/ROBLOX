@@ -127,9 +127,9 @@ function HeroChoice.build(parent: Instance)
 		fill.BackgroundColor3 = if left <= 3 then rgb(255, 110, 120) else C.Progress
 		secs.Text = tostring(math.ceil(left))
 		hero.line.Text = "Run first. Alone."
-		hero.line2.Text = if round:GetAttribute("HolderId") == player.UserId then `Make it: +{Config.HeroBonus} coins` else "Make it: you carry her"
+		hero.line2.Text = `Make it: carry her +{Config.HeroBonus}`
 		chicken.line.Text = "Run with the group"
-		chicken.line2.Text = "The safe call"
+		chicken.line2.Text = "Safe, but no girl"
 	end
 	RunService.RenderStepped:Connect(refresh)
 	HeroChoice.refresh = refresh -- (the offline preview calls it)

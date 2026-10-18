@@ -15,8 +15,12 @@ local HitCheck = {}
 function HitCheck.find(root: BasePart, reach: number, width: number): (number | boolean)?
 	local me = Players.LocalPlayer
 	local bodies = {}
+	local now = Workspace:GetServerTimeNow()
 	for _, p in Players:GetPlayers() do
-		if p ~= me and p.Character and p:GetAttribute("HuzzRole") == "Runner" and p:GetAttribute("HuzzStatus") == "Active" then
+		-- only runners the server would let the knife take: not waiting on the line (a Hero run's frozen runners)
+		-- and not just rescued (critic: the closest body was a frozen runner, so the real target beside them was missed)
+		if p ~= me and p.Character and p:GetAttribute("HuzzRole") == "Runner" and p:GetAttribute("HuzzStatus") == "Active"
+			and p:GetAttribute("HuzzFrozen") ~= true and (p:GetAttribute("ProtectedUntil") or 0) <= now then
 			table.insert(bodies, p.Character)
 		end
 	end

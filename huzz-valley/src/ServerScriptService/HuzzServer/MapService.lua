@@ -1103,7 +1103,7 @@ function MapService.pushOut(zone, position)
 	if d >= 0 then
 		return nil
 	end
-	return position + out * (1.5 - d)
+	return position + out * (4 - d) -- (clear of the catcher wall, 0 to 2 studs out, plus a body: critic)
 end
 
 -- Puts a catcher's parts in the catcher group (true) or back to Default (false); other groups are left alone.

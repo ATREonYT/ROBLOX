@@ -167,6 +167,12 @@ function PracticeBot.place(at: CFrame)
 	if PracticeBot.active() then model:PivotTo(at) end
 end
 
+-- Moves it without changing where it waits (pushed out of a safe zone: it keeps its post in the middle).
+function PracticeBot.nudge(at: CFrame)
+	route, nextRoute, routeAsk = nil, 0, routeAsk + 1
+	if PracticeBot.active() then model:PivotTo(at) end
+end
+
 -- Frozen with the catchers (line-up, the pick, the countdown); when it may go, it reacts a moment later.
 function PracticeBot.setFrozen(on: boolean)
 	if on == frozen then return end
