@@ -102,6 +102,10 @@ do -- the owner's admin panel (give any knife, spawn any girl; owner only, HuzzS
 	local ok, err = pcall(function() require(HuzzServer.AdminService).start() end)
 	if not ok then warn("[Huzz] admin panel: " .. tostring(err)) end
 end
+do -- his five lobby props on the round pads (Config/LobbyProps; each screen floats them and opens their menus)
+	local ok, err = pcall(function() require(HuzzServer.LobbyPropService).start() end)
+	if not ok then warn("[Huzz] lobby props: " .. tostring(err)) end
+end
 -- No jumping anywhere (owner): Space is the huss in the lobby too (RoundService keeps every Humanoid at 0).
 pcall(function()
 	game:GetService("StarterPlayer").CharacterJumpHeight = 0

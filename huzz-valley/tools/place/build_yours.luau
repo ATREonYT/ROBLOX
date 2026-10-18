@@ -128,9 +128,9 @@ end
 
 -- Avatar stands (owner, Oct 18: "make the blocks i have in the lobby, next to the spin the wheel turn into my
 -- character ... selling a gamepass", then "equipped with some exclusive knifes", then the new lobby: "add ... all of
--- the gamepass things to the new lobby"): in his new lobby, an invisible stand on each of the five round pads at the
--- front of every lobby copy (Workspace > HuzzAvatarStands, tagged; three-pad side VIP, two-pad side Dance Pack, one
--- Game Pass knife each). In older places, his plain
+-- the gamepass things to the new lobby"): in his new lobby, one invisible stand per round pad, in a row along the side
+-- of the plaza opposite his podiums, facing into it (the pads hold his props now: Oct 18; Workspace > HuzzAvatarStands,
+-- tagged; VIP three, Dance Pack two, one Game Pass knife each; Shared/LobbyLayout.standSpots). In older places, his plain
 -- grey blocks beside each spin wheel (4 x 7.5 x 4.5, standing on the floor) become stands (renamed "AvatarStand",
 -- Pass = VIP and DancePack in turn: both show SOON until their Game Pass IDs are in Config/Products; Knife = that
 -- pass's exclusive knives in turn). The rule is Shared/AvatarStandRules.findBlocks; in his own Rojo-synced place
@@ -147,7 +147,7 @@ do
 		return luau.load(fs.readFile("huzz-valley/src/ReplicatedStorage/Shared/Config/CoinShop.lua"), { debugName = "CoinShop", environment = env })()
 	end)
 	local ws = theirs:GetService("Workspace")
-	-- his new lobby: an invisible stand on each round pad at the front of every lobby copy (Shared/LobbyLayout)
+	-- his new lobby: a row of invisible stands along the plaza's side in every lobby copy (Shared/LobbyLayout)
 	local onPads, padStands = {}, {}
 	if okShop then
 		local holder
@@ -195,7 +195,7 @@ do
 	end
 	local made, knives = 0, {}
 	if #onPads > 0 then
-		print("avatar stands: " .. #onPads .. " on the new lobby's pads; " .. table.concat(onPads, ", "))
+		print("avatar stands: " .. #onPads .. " in a row along the new lobby's side; " .. table.concat(onPads, ", "))
 		wheels, parts = {}, {} -- (his old grey blocks beside the old islands' wheels stay plain blocks)
 	end
 	local blocks = Stand.findBlocks(wheels, parts)
@@ -216,6 +216,59 @@ do
 	end
 	if #onPads == 0 then
 		print("avatar stands: " .. made .. " blocks beside " .. #wheels .. " spin wheels; knives " .. (if okShop then table.concat(knives, ", ") else "not set (" .. tostring(CoinShop) .. ")"))
+	end
+end
+
+-- His five lobby props on the round pads (owner, Oct 18: "implementing these objects into the lobby on top of the
+-- already placed circles. Give it some VFX and make it look good just like in the pictures"): Workspace >
+-- HuzzLobbyProps, one LobbyProp per pad in every lobby copy (Config/LobbyProps, Shared/LobbyPropBuild), so he sees and
+-- can drag them in Studio. His real meshes once he sends ServerStorage > HuzzLobbyProps (the SetupLobbyProps helper,
+-- then Save to File) as huzz-valley/assets/props/HuzzLobbyProps.rbxm; until then the stand-in made of plain parts
+-- (HuzzServer/LobbyPropShapes). HuzzServer/LobbyPropService makes the same ones in his Rojo place at game start.
+do
+	local luau = require("@lune/luau")
+	local Build = require("../../src/ReplicatedStorage/Shared/LobbyPropBuild")
+	local Shapes = require("../../src/ServerScriptService/HuzzServer/LobbyPropShapes")
+	local okCfg, Props = pcall(function()
+		local env = setmetatable({ Color3 = roblox.Color3 }, { __index = _G })
+		return luau.load(fs.readFile("huzz-valley/src/ReplicatedStorage/Shared/Config/LobbyProps.lua"), { debugName = "LobbyProps", environment = env })()
+	end)
+	local storage = theirs:GetService("ServerStorage")
+	local file = "huzz-valley/assets/props/HuzzLobbyProps.rbxm"
+	if fs.isFile(file) then
+		for _, inst in roblox.deserializeModel(fs.readFile(file)) do
+			if inst.Name == "HuzzLobbyProps" then
+				local old = storage:FindFirstChild("HuzzLobbyProps")
+				if old then old:Destroy() end
+				inst.Parent = storage
+			end
+		end
+	end
+	local real = storage:FindFirstChild("HuzzLobbyProps")
+	local ws = theirs:GetService("Workspace")
+	local api = Build.api(roblox)
+	if okCfg then
+		local holder, made, standIns = nil, {}, 0
+		for _, floor in Layout.floors(ws) do
+			for _, spot in Layout.propSpots(layoutApi, ws, floor, Props.ThreePads, Props.TwoPads) do
+				local shape = Shapes[spot.Prop]
+				if shape and Props.Props[spot.Prop] then
+					holder = holder or roblox.Instance.new("Folder")
+					holder.Name = Props.Folder
+					local master = real and real:FindFirstChild(spot.Prop)
+					local lp = Build.make(api, spot, Props, shape, master and master:Clone(), "rbxasset://textures/particles/sparkles_main.dds")
+					pcall(function() lp:AddTag(Props.Tag) end)
+					lp.Parent = holder
+					if not master then standIns += 1 end
+					local p = spot.at.Position
+					table.insert(made, string.format("%s (%d, %d)", spot.Prop, math.round(p.X), math.round(p.Z)))
+				end
+			end
+		end
+		if holder then holder.Parent = ws end
+		print("lobby props: " .. #made .. " on the pads (" .. standIns .. " stand-ins); " .. table.concat(made, ", "))
+	else
+		print("lobby props: not made (" .. tostring(Props) .. ")")
 	end
 end
 

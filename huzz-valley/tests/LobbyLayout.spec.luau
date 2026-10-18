@@ -1,6 +1,8 @@
--- The lobby finder and where the boards and stands go (Shared/LobbyLayout), on the owner's own place
+-- The lobby finder and where the boards, stands and his props go (Shared/LobbyLayout), on the owner's own place
 -- (places/HUSSANIME.rbxl, his new Halloween lobby of Oct 18: "I made it the lobby for all of the maps, please add all
--- of these leaderboards, all of the gamepass things to the new lobby"), plus the pure rules on made-up numbers.
+-- of these leaderboards, all of the gamepass things to the new lobby"; then "implementing these objects into the lobby
+-- on top of the already placed circles": his props on the pads, the stands in a row along the side), plus the pure
+-- rules on made-up numbers.
 -- Run from huzz-valley/: lune run tests/LobbyLayout.spec.luau   (PRINT=1 lists every spot)
 local fs = require("@lune/fs")
 local process = require("@lune/process")
@@ -52,6 +54,48 @@ do
 	check("each pass's knives in turn", turns.VIP1 and turns.VIP2 and turns.VIP3 and turns.DancePack1 and turns.DancePack2 and not turns.VIP4)
 end
 
+-- pure: which prop on which pad (the side with three pads gets the three-list, each side from the middle outwards)
+do
+	local pads = {
+		{ Pass = "VIP", along = 41 }, { Pass = "VIP", along = 27 }, { Pass = "VIP", along = 34 },
+		{ Pass = "DancePack", along = -37 }, { Pass = "DancePack", along = -28 },
+	}
+	local got = {}
+	for _, s in Layout.pickProps(pads, { "Chest", "Coffin", "Cauldron" }, { "Shop", "Gift" }) do got[s.Prop] = s.pad.along end
+	check("props: one per pad", got.Chest and got.Coffin and got.Cauldron and got.Shop and got.Gift)
+	check("props: the first of each list nearest the middle", got.Chest == 27 and got.Coffin == 34 and got.Cauldron == 41 and got.Shop == -28 and got.Gift == -37)
+end
+
+-- pure: the stands' row along a side (clear of things on the floor, nothing tall hidden behind them)
+do
+	local function box(x, z, top, hx, hz)
+		return { X = x, Z = z, top = top, bottom = 12.5, hx = hx, hz = hz }
+	end
+	-- a plaza 136 (x) by 124 (z), centre 0,0, top 12.5; the front edge at z = -62; the stands' side is -x (edge -68)
+	local rows = {
+		box(-64, -10, 27, 7, 7), -- a tall wheel at the edge
+		box(-60, 20, 19, 5, 3.5), -- a grave on the line
+		box(-60, 30, 12.8, 3, 3), -- bones (low: fine)
+	}
+	local o = { cx = 0, cz = 0, top = 12.5, ix = 0, iz = 1, sx = -1, sz = 0, across = 68, depth = 62 }
+	local row = Layout.pickRow(o, rows, 5)
+	check("row: five spots", #row == 5)
+	local ok, spaced, behind = true, true, false
+	for i, r in row do
+		for _, b in rows do
+			if b.top > 13.5 and math.abs(r.x - b.X) < b.hx + 3 and math.abs(r.z - b.Z) < b.hz + 3 then ok = false end
+		end
+		if math.abs(r.z + 10) < 7 + 3 then behind = true end
+		if i > 1 and r.z - row[i - 1].z < 8 then spaced = false end
+		if r.z + 62 < Layout.ROW.FRONT then ok = false end
+	end
+	check("row: nothing in the way of a stand", ok)
+	check("row: none hides the tall wheel", not behind)
+	check("row: at least 8 studs apart, front to back", spaced)
+	check("row: facing into the plaza (+x)", row[1] and math.abs(row[1].yaw - Layout.yawTo(0, 0, 1, 0)) < 1e-6)
+	check("row: on the stands' side", row[1] and row[1].x < -40)
+end
+
 -- pure: terrace steps (behind the plaza, clear, one each side)
 do
 	local function box(x, z, top, hx, hz, bottom)
@@ -89,17 +133,68 @@ for _, floor in floors do
 	local name = string.format("lobby at (%d, %d)", math.round(c.X), math.round(c.Z))
 	check(name .. ": the 124 x 136 plaza, top 12.5", math.abs(top - 12.5) < 0.01 and math.abs(floor.Size.X * floor.Size.Z - 124 * 136) < 1)
 	local stands = Layout.standSpots(api, ws, floor)
+	local pads = Layout.pads(api, ws, floor)
+	local podiumSide = 0
+	local inward = floor.CFrame:VectorToWorldSpace(roblox.Vector3.new(pads[1].nx, 0, pads[1].nz))
+	local across = roblox.Vector3.new(-inward.Z, 0, inward.X) -- (the plaza's width, from one side to the other)
 	local vip, dance = 0, 0
-	for _, s in stands do
+	-- what stands on this plaza (for "nothing in the way")
+	local f = Layout.facts(floor)
+	local things = {}
+	for _, d in ws:GetDescendants() do
+		if d:IsA("BasePart") and not d:IsA("Terrain") and d ~= floor then
+			local q = d.CFrame.Position
+			if math.abs(q.X - c.X) < f.hx + 5 and math.abs(q.Z - c.Z) < f.hz + 5 then
+				local r = Layout.facts(d)
+				if r.top > top + 1 and r.bottom < top + 6 and r.hx < 30 and r.hz < 30 then table.insert(things, r) end
+			end
+		end
+	end
+	local boardsHere = Layout.boardSpots(api, Rules, ws, floor, 5)
+	for _, b in boardsHere do
+		if b.podium then podiumSide += (b.at.Position - c):Dot(across) end
+	end
+	for i, s in stands do
 		if s.Pass == "VIP" then vip += 1 else dance += 1 end
 		local p, l = s.at.Position, s.at.LookVector
 		local toCentre = (c - p) * roblox.Vector3.new(1, 0, 1)
 		if show then print(string.format("  %s stand %s %d at (%.1f, %.1f, %.1f)", name, s.Pass, s.Turn, p.X, p.Y, p.Z)) end
 		check(name .. ": stand faces into the plaza", l:Dot(toCentre.Unit) > 0.5)
-		check(name .. ": stand on its pad (just over the floor)", p.Y > top and p.Y < top + 2)
+		check(name .. ": stand on the floor", p.Y > top and p.Y < top + 1)
+		local offPads = true
+		for _, pad in pads do
+			if math.abs(pad.wx - p.X) < 6 and math.abs(pad.wz - p.Z) < 6 then offPads = false end
+		end
+		check(name .. ": stand off the pads (his props are there)", offPads)
+		local clear = true
+		for _, r in things do
+			if math.abs(r.X - p.X) < r.hx + 2.5 and math.abs(r.Z - p.Z) < r.hz + 2.5 then clear = false end
+		end
+		check(name .. ": nothing in the way of stand " .. i, clear)
+		local side = (p - c):Dot(across)
+		check(name .. ": stand " .. i .. " on the side opposite the podium boards", side * podiumSide < 0)
+		for j = 1, i - 1 do
+			check(name .. ": stands " .. j .. " and " .. i .. " apart", (stands[j].at.Position - p).Magnitude >= 8)
+		end
 	end
 	check(name .. ": five stands, 3 VIP + 2 Dance Pack (one per Game Pass knife)", #stands == 5 and vip == 3 and dance == 2)
-	local boards = Layout.boardSpots(api, Rules, ws, floor, 5)
+	local props = Layout.propSpots(api, ws, floor, { "Pumpkin_Patch_Chest", "Sweets_Treats_Coffin", "Witch_Brew_Cauldron" }, { "Shop_Stall", "Like_Reward_Gift" })
+	local used, byName = {}, {}
+	for _, s in props do
+		local p = s.at.Position
+		byName[s.Prop] = s
+		if show then print(string.format("  %s prop %s at (%.1f, %.1f, %.1f)", name, s.Prop, p.X, p.Y, p.Z)) end
+		used[s.pad] = true
+		check(name .. ": " .. s.Prop .. " on its pad's top", math.abs(p.Y - 13.3) < 0.3)
+		check(name .. ": " .. s.Prop .. " faces into the plaza", s.at.LookVector:Dot(((c - p) * roblox.Vector3.new(1, 0, 1)).Unit) > 0.3)
+	end
+	local n = 0
+	for _ in used do n += 1 end
+	check(name .. ": five props on five different pads", #props == 5 and n == 5)
+	local shop = byName.Shop_Stall
+	check(name .. ": the shop on the two-pad side (by the spawn and the stands)", shop ~= nil
+		and (shop.at.Position - c):Dot(across) * podiumSide < 0)
+	local boards = boardsHere
 	local onPodium, onStep = 0, 0
 	for i, b in boards do
 		local p, l = b.at.Position, b.at.LookVector

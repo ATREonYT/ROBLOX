@@ -1,6 +1,6 @@
 """Top-down plan of one lobby from tools/world/lobby_dump.luau's JSON: every part drawn from above in its own
 colour (lowest first, so the highest surface wins), the leaderboards as thick bars with their stat and the way they
-face, the avatar stands as rings with their knife, the spawn as a cross.
+face, the avatar stands as rings with their knife, his props on the pads with their titles, the spawn as a cross.
 
     python3 huzz-valley/tools/world/lobby_plan.py <dump.json> <out.jpg> [title]
 
@@ -58,7 +58,8 @@ def main():
     # labels
     small, big = font(18), font(22)
     colours = {'VIP': (255, 120, 230), 'DancePack': (120, 220, 255)}
-    stands = []
+    stands, props = [], []
+    data['labels'].sort(key=lambda L: (L['kind'] != 'prop', P(L['x'], L['z'])[0]))
     for L in data['labels']:
         x, y = P(L['x'], L['z'])
         if L['kind'] == 'board':
@@ -84,6 +85,14 @@ def main():
             n = str(len(stands))
             tw = d.textlength(n, font=small)
             d.text((x - tw / 2, y - 11), n, font=small, fill=(255, 255, 255))
+        elif L['kind'] == 'prop':
+            col = tuple(L.get('rgb', (255, 255, 255)))
+            props.append(L)
+            n = chr(ord('A') + len(props) - 1)
+            ty = y + 34
+            d.ellipse([x - 14, ty - 14, x + 14, ty + 14], fill=(20, 10, 18), outline=col, width=4)
+            tw = d.textlength(n, font=small)
+            d.text((x - tw / 2, ty - 11), n, font=small, fill=(255, 255, 255))
         elif L['kind'] == 'spawn':
             d.line([(x - 10, y - 10), (x + 10, y + 10)], fill=(255, 255, 255), width=4)
             d.line([(x - 10, y + 10), (x + 10, y - 10)], fill=(255, 255, 255), width=4)
@@ -93,18 +102,29 @@ def main():
         lines = []
         for i, L in enumerate(stands):
             name = ''.join((' ' + ch if ch.isupper() and j else ch) for j, ch in enumerate(L['text'])).replace('Dragons', "Dragon's")
-            lines.append((f"{i + 1}  {name}  ({'Dance Pack' if L.get('pass') == 'DancePack' else L.get('pass')})", colours.get(L.get('pass'), (255, 255, 255))))
+            pas = str(L.get('pass'))
+            pas = 'Dance Pack' if pas == 'DancePack' else (pas[:-len('KnifePass')] + ' Knife pass' if pas.endswith('KnifePass') else pas)
+            lines.append((f"{i + 1}  {name}  ({pas})", colours.get(L.get('pass'), (255, 255, 255))))
         bw = max(d.textlength(t, font=small) for t, _ in lines) + 24
         bx, by = W - bw - 16, H - 70 - 26 * len(lines) - 40
         d.rectangle([bx, by, bx + bw, by + 34 + 26 * len(lines)], fill=(20, 10, 18))
         d.text((bx + 12, by + 8), 'Avatar stands (Game Pass knife)', font=small, fill=(255, 255, 255))
         for i, (t, c) in enumerate(lines):
             d.text((bx + 12, by + 34 + 26 * i), t, font=small, fill=c)
+    # the props, listed (letters under the pads)
+    if props:
+        lines = [(f"{chr(ord('A') + i)}  {' '.join(L['text'].split())}", tuple(L.get('rgb', (255, 255, 255)))) for i, L in enumerate(props)]
+        bw = max(d.textlength(t, font=small) for t, _ in lines + [('Props on the pads', 0)]) + 24
+        bx, by = 16, H - 70 - 26 * len(lines) - 40
+        d.rectangle([bx, by, bx + bw, by + 34 + 26 * len(lines)], fill=(20, 10, 18))
+        d.text((bx + 12, by + 8), 'Props on the pads', font=small, fill=(255, 255, 255))
+        for i, (t, c) in enumerate(lines):
+            d.text((bx + 12, by + 34 + 26 * i), t, font=small, fill=c)
     # title and key
     d.rectangle([0, 0, W, 56], fill=(20, 14, 26))
     d.text((20, 14), title, font=font(26), fill=(255, 255, 255))
     d.rectangle([0, H - 60, W, H], fill=(20, 14, 26))
-    key = 'From above: front (stand pads) at the bottom, house at the top. Bars = leaderboards (white line = the way they face).'
+    key = 'From above: front (his props on the round pads) at the bottom, house at the top. Bars = leaderboards (white line = facing).'
     d.text((20, H - 44), key, font=font(18), fill=(230, 230, 230))
     img.save(out, quality=90)
     print('saved', out)

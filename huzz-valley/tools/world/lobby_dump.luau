@@ -1,5 +1,5 @@
 -- Dumps every part of one lobby (seen from above) to JSON for tools/world/lobby_plan.py, which draws the top-down
--- plan with the leaderboards and avatar stands labelled (docs/previews/new-lobby-layout.jpg).
+-- plan with the leaderboards, avatar stands and his props labelled (docs/previews/new-lobby-layout.jpg).
 -- Run from the repo root:
 --   lune run huzz-valley/tools/world/lobby_dump.luau <place.rbxl> <out.json> [centreX centreZ radius]
 -- Without a centre it uses the first lobby floor Shared/LobbyLayout finds.
@@ -27,6 +27,7 @@ local function kindOf(d)
 	while p and p ~= ws do
 		if p.Name == "HuzzLeaderboards" then return "board" end
 		if p.Name == "HuzzAvatarStands" then return "stand" end
+		if p.Name == "HuzzLobbyProps" then return "prop" end
 		if p.Name == "HauntedHouse" then return "house" end
 		if p.Name == "SpinWheel" then return "wheel" end
 		if p.Name == "Podium" then return "podium" end
@@ -63,7 +64,7 @@ for _, d in ws:GetDescendants() do
 	end
 end
 
--- labels: boards (Stat) and stands (Pass, Knife)
+-- labels: boards (Stat), stands (Pass, Knife) and his props on the pads (Title)
 local labels = {}
 for _, d in ws:GetDescendants() do
 	local p
@@ -79,6 +80,12 @@ for _, d in ws:GetDescendants() do
 		elseif d:GetAttribute("Knife") and d.Parent and d.Parent.Name == "HuzzAvatarStands" then
 			local look = d.CFrame.LookVector
 			table.insert(labels, { kind = "stand", x = p.X, z = p.Z, text = tostring(d:GetAttribute("Knife")), pass = tostring(d:GetAttribute("Pass")), lx = look.X, lz = look.Z })
+		elseif d.Name == "LobbyProp" and d:GetAttribute("Prop") then
+			local pad = d:FindFirstChild("Pad")
+			local q = pad and pad.CFrame.Position or p
+			local c = d:GetAttribute("Color")
+			table.insert(labels, { kind = "prop", x = q.X, z = q.Z, text = tostring(d:GetAttribute("Title")), prop = tostring(d:GetAttribute("Prop")),
+				rgb = c and { math.floor(c.R * 255), math.floor(c.G * 255), math.floor(c.B * 255) } or { 255, 255, 255 } })
 		elseif d:IsA("SpawnLocation") then
 			table.insert(labels, { kind = "spawn", x = p.X, z = p.Z, text = "spawn" })
 		end

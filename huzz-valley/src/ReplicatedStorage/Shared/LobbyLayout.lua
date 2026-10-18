@@ -11,15 +11,17 @@
 	no longer lobbies.
 
 	Used by the server at game start (MapService: the lobby floors; LeaderboardService: the boards; AvatarStandService:
-	the stands) and by the place build (tools/place/build_yours.luau saves the same boards and stands), so his own
+	the stands; LobbyPropService: the props on the pads) and by the place build (tools/place/build_yours.luau saves the same boards and stands), so his own
 	Rojo-synced place and the downloaded build agree. Only instance reads that Lune can do too (CFrame, Size, Name,
 	GetDescendants); anything new is built with the `api` table passed in (Roblox's or Lune's datatypes).
 
 	floors(root)          lobby floors: parts tagged HuzzLobby, else parts named Lobby, else the biggest flat part of
 	                      each lobby copy in the StartingPoint folder (copies on top of each other count once), else
 	                      the SpawnBaseplates (his older places).
-	pads(root, floor)     the round pads at the front: the avatar stands go on them (one per Game Pass knife: the side
-	                      with more pads is VIP, the other Dance Pack).
+	pads(root, floor)     the round pads at the front (three on one side, two on the other).
+	propSpots(...)        his five lobby props, one on each pad (Config/LobbyProps says which goes where).
+	standSpots(...)       the avatar stands: a row along the side of the plaza opposite his podiums, facing into it,
+	                      where nothing is in the way (as many per Game Pass as pads: VIP three, Dance Pack two).
 	boardSpots(...)       the leaderboards: his grey Podiums by the plaza first, then the lowest terrace step on each
 	                      side behind the plaza (clear of the house in the middle), facing the plaza; else along the
 	                      back edge of the floor.
@@ -44,7 +46,7 @@ local function ours(d): boolean
 	local p = d.Parent
 	while p do
 		local n = p.Name
-		if n == "HuzzLeaderboards" or n == "HuzzAvatarStands" or n == "HuzzStandAvatars" or n == "HuzzAuraFX" then return true end
+		if n == "HuzzLeaderboards" or n == "HuzzAvatarStands" or n == "HuzzStandAvatars" or n == "HuzzAuraFX" or n == "HuzzLobbyProps" then return true end
 		p = p.Parent
 	end
 	return false
@@ -184,10 +186,10 @@ function LobbyLayout.pickPads(hx: number, hz: number, top: number, rows: { any }
 	if #b > #a then vip, dance = b, a end
 	local out = {}
 	for i, r in vip do
-		table.insert(out, { ref = r.ref, x = r.x, z = r.z, wx = r.wx, wz = r.wz, top = r.top, Pass = "VIP", Turn = i, nx = nx, nz = nz })
+		table.insert(out, { ref = r.ref, x = r.x, z = r.z, wx = r.wx, wz = r.wz, top = r.top, Pass = "VIP", Turn = i, nx = nx, nz = nz, along = r.along })
 	end
 	for i, r in dance do
-		table.insert(out, { ref = r.ref, x = r.x, z = r.z, wx = r.wx, wz = r.wz, top = r.top, Pass = "DancePack", Turn = i, nx = nx, nz = nz })
+		table.insert(out, { ref = r.ref, x = r.x, z = r.z, wx = r.wx, wz = r.wz, top = r.top, Pass = "DancePack", Turn = i, nx = nx, nz = nz, along = r.along })
 	end
 	return out
 end
@@ -230,15 +232,210 @@ function LobbyLayout.pads(api, root, floor): { any }
 	return LobbyLayout.pickPads(floor.Size.X / 2, floor.Size.Z / 2, facts(floor).top, rows)
 end
 
--- The avatar stand spots: one on top of each pad, facing into the plaza. { at, Pass, Turn, pad }
-function LobbyLayout.standSpots(api, root, floor): { any }
+-- The top block of every "Podium" model under `root` (the highest one), copies on top of each other once.
+local function podiums(root): { BasePart }
 	local out = {}
-	for _, p in LobbyLayout.pads(api, root, floor) do
-		local inward = floor.CFrame:VectorToWorldSpace(api.Vector3.new(p.nx, 0, p.nz))
-		local yaw = yawTo(0, 0, inward.X, inward.Z)
-		local at = api.CFrame.new(p.wx, p.top + 0.2, p.wz) * api.CFrame.Angles(0, yaw, 0)
-		table.insert(out, { at = at, Pass = p.Pass, Turn = p.Turn, pad = p.ref })
+	for _, d in root:GetDescendants() do
+		if d:IsA("Model") and key(d.Name) == "podium" and not ours(d) then
+			local best, bestTop = nil, -math.huge
+			for _, p in d:GetDescendants() do
+				if p:IsA("BasePart") then
+					local t = facts(p).top
+					if t > bestTop then best, bestTop = p, t end
+				end
+			end
+			if best then
+				local dup = false
+				for _, o in out do
+					if (o.CFrame.Position - best.CFrame.Position).Magnitude < 1 then dup = true break end
+				end
+				if not dup then table.insert(out, best) end
+			end
+		end
 	end
+	return out
+end
+
+--[[
+	Pure: the props on the pads (owner, Oct 18: "implementing these objects into the lobby on top of the already placed
+	circles"). `pads` = pickPads rows; `three` / `two` = the prop names for the side with more pads and the side with
+	fewer, each from the pad nearest the middle of the plaza outwards. Returns { pad row, Prop, Rank }.
+]]
+function LobbyLayout.pickProps(pads: { any }, three: { string }, two: { string }): { any }
+	local sides = { VIP = {}, DancePack = {} }
+	for _, p in pads do
+		if sides[p.Pass] then table.insert(sides[p.Pass], p) end
+	end
+	local out = {}
+	for pass, names in { VIP = three, DancePack = two } do
+		local list = sides[pass]
+		table.sort(list, function(a, b) return math.abs(a.along or 0) < math.abs(b.along or 0) end)
+		for i, p in list do
+			if names[i] then table.insert(out, { pad = p, Prop = names[i], Rank = i }) end
+		end
+	end
+	table.sort(out, function(a, b) return a.Prop < b.Prop end)
+	return out
+end
+
+-- The props' spots on this floor: { at (CFrame on the pad's top, facing into the plaza), Prop, Rank, pad }.
+function LobbyLayout.propSpots(api, root, floor, three: { string }, two: { string }): { any }
+	local out = {}
+	for _, s in LobbyLayout.pickProps(LobbyLayout.pads(api, root, floor), three, two) do
+		local p = s.pad
+		local inward = floor.CFrame:VectorToWorldSpace(api.Vector3.new(p.nx, 0, p.nz))
+		local at = api.CFrame.new(p.wx, p.top, p.wz) * api.CFrame.Angles(0, yawTo(0, 0, inward.X, inward.Z), 0)
+		table.insert(out, { at = at, Prop = s.Prop, Rank = s.Rank, pad = p.ref })
+	end
+	return out
+end
+
+local ROW = {
+	R = 3.5, -- half the room one stand needs (its avatar, arms out), along and across
+	LOW = 1, -- anything taller than this over the floor where a stand would stand is in the way (not the carpet or bones)
+	TALL = 8, -- anything taller than this between a stand and the edge would be hidden behind it (the spin wheel, trees)
+	FRONT = 20, -- studs from the front edge at least (and 12 behind the pads: clear of his props on them)
+	BACK = 20,
+	INSETS = { 9, 24 }, -- studs in from the side edge, tried from the edge inwards (every half stud)
+	GAPS = { 10, 9, 8 }, -- studs between stands (their signs are 9 wide), the widest that fits
+}
+LobbyLayout.ROW = ROW
+
+--[[
+	Pure: a row of `count` avatar stands along one side of the plaza, facing into it (owner, Oct 18: the stands came off
+	the pads so his props could go there). `o` = { cx, cz (floor centre), top, ix, iz (inward: from the front edge to the
+	back), sx, sz (towards the stands' side edge), across, depth (the floor's half sizes along those), front (optional:
+	studs from the front edge where the row may start) }, `rows` =
+	facts() of the parts round the lobby. Spots stand on the floor where nothing is in the way (a grave, a lantern)
+	and nothing tall is hidden behind them (the spin wheel), from the front back; the line nearest the edge where all
+	fit, with the widest gap that fits. Returns { x, z, yaw, depth } front to back ({} when none fit).
+]]
+function LobbyLayout.pickRow(o, rows: { any }, count: number): { any }
+	local function frame(x, z)
+		local dx, dz = x - o.cx, z - o.cz
+		return dx * o.ix + dz * o.iz + o.depth, o.across - (dx * o.sx + dz * o.sz)
+	end
+	local near = {}
+	for _, r in rows do
+		if r.top > o.top + ROW.LOW and r.bottom < o.top + 12 then
+			local d, out = frame(r.X, r.Z)
+			local ed = math.abs(o.ix) * r.hx + math.abs(o.iz) * r.hz
+			local eo = math.abs(o.sx) * r.hx + math.abs(o.sz) * r.hz
+			if ed < 40 and eo < 40 and out + eo > -2 and out - eo < 40 then
+				table.insert(near, { d = d, out = out, ed = ed, eo = eo, tall = r.top > o.top + ROW.TALL })
+			end
+		end
+	end
+	local R = ROW.R
+	local function clear(inset, d)
+		for _, n in near do
+			if math.abs(n.d - d) <= n.ed + R then
+				if n.out + n.eo >= inset - R and n.out - n.eo <= inset + R then return false end
+				if n.tall and n.out + n.eo >= -1 and n.out - n.eo <= inset then return false end
+			end
+		end
+		return true
+	end
+	local yaw = yawTo(0, 0, -o.sx, -o.sz)
+	for _, gap in ROW.GAPS do
+		-- every line from the edge inwards; the tightest row wins (fewest holes where something's in the way), then the
+		-- line nearest the edge
+		local best, bestSpan, bestInset
+		for inset = ROW.INSETS[1], ROW.INSETS[2], 0.5 do
+			local got, last = {}, -math.huge
+			local d = o.front or ROW.FRONT
+			while d <= 2 * o.depth - ROW.BACK and #got < count do
+				if d - last >= gap and clear(inset, d) then
+					table.insert(got, d)
+					last = d
+				end
+				d += 0.5
+			end
+			if #got >= count then
+				local span = got[#got] - got[1]
+				if not best or span < bestSpan - 0.5 then best, bestSpan, bestInset = got, span, inset end
+			end
+		end
+		if best then
+			local out = {}
+			for _, dd in best do
+				local a, b = dd - o.depth, o.across - bestInset -- (inward and sideways from the centre)
+				table.insert(out, { x = o.cx + o.ix * a + o.sx * b, z = o.cz + o.iz * a + o.sz * b, yaw = yaw, depth = dd, inset = bestInset })
+			end
+			return out
+		end
+	end
+	return {}
+end
+
+--[[
+	The avatar stand spots: a row along the side of the plaza opposite his podiums (the boards are there), facing into
+	the plaza; as many stands per Game Pass as pads before (the side with more pads VIP, the other Dance Pack), so
+	every stand keeps its knife. Dance Pack nearest the front, then VIP. { at, Pass, Turn }
+]]
+function LobbyLayout.standSpots(api, root, floor): { any }
+	local pads = LobbyLayout.pads(api, root, floor)
+	if #pads == 0 then return {} end
+	local f = facts(floor)
+	local centre = floor.CFrame.Position
+	local inward = floor.CFrame:VectorToWorldSpace(api.Vector3.new(pads[1].nx, 0, pads[1].nz))
+	local ix, iz = inward.X, inward.Z
+	local rx, rz = -iz, ix -- (across the plaza)
+	-- the boards' side: his podiums (else the side with more pads); the stands go on the other side
+	local lean, vip = 0, 0
+	for _, p in podiums(root) do
+		local q = p.CFrame.Position
+		if math.abs(q.X - centre.X) <= f.hx + 10 and math.abs(q.Z - centre.Z) <= f.hz + 10 then
+			lean += (q.X - centre.X) * rx + (q.Z - centre.Z) * rz
+		end
+	end
+	local counts = { VIP = 0, DancePack = 0 }
+	for _, p in pads do
+		counts[p.Pass] += 1
+		if p.Pass == "VIP" then vip += (p.wx - centre.X) * rx + (p.wz - centre.Z) * rz end
+	end
+	if lean == 0 then lean = vip end
+	local sx, sz = rx, rz
+	if lean > 0 then sx, sz = -rx, -rz end
+	local o = {
+		cx = centre.X, cz = centre.Z, top = f.top, ix = ix, iz = iz, sx = sx, sz = sz,
+		across = math.abs(sx) * f.hx + math.abs(sz) * f.hz, depth = math.abs(ix) * f.hx + math.abs(iz) * f.hz,
+	}
+	local rows = {}
+	for _, d in root:GetDescendants() do
+		if d:IsA("BasePart") and not d:IsA("Terrain") and d ~= floor and not ours(d) then
+			local p = d.CFrame.Position
+			if math.abs(p.X - centre.X) <= f.hx + 30 and math.abs(p.Z - centre.Z) <= f.hz + 30 then
+				table.insert(rows, facts(d))
+			end
+		end
+	end
+	-- clear of the pads and the props on them: at least 12 studs behind the furthest pad from the front
+	local front = ROW.FRONT
+	for _, p in pads do
+		front = math.max(front, (p.wx - centre.X) * ix + (p.wz - centre.Z) * iz + o.depth + 12)
+	end
+	o.front = front
+	local count = counts.VIP + counts.DancePack
+	local spots = LobbyLayout.pickRow(o, rows, count)
+	if #spots < count then
+		-- nothing fits: evenly along that side anyway, 10 in from the edge
+		spots = {}
+		for i = 1, count do
+			local a, b = front + (i - 1) * 10 - o.depth, o.across - 10
+			table.insert(spots, { x = o.cx + ix * a + sx * b, z = o.cz + iz * a + sz * b, yaw = yawTo(0, 0, -sx, -sz) })
+		end
+	end
+	-- listed VIP first, then Dance Pack (as the pads were): AvatarStandRules.assign hands out the knife passes in
+	-- this order, so the VIP group keeps Hunter, Moonlit and Sunrise (his card order) and Dance Pack the other two
+	local out, dance = {}, {}
+	for i, s in spots do
+		local pass, turn = "DancePack", i
+		if i > counts.DancePack then pass, turn = "VIP", i - counts.DancePack end
+		local at = api.CFrame.new(s.x, f.top + 0.2, s.z) * api.CFrame.Angles(0, s.yaw, 0)
+		table.insert(if pass == "VIP" then out else dance, { at = at, Pass = pass, Turn = turn })
+	end
+	table.move(dance, 1, #dance, #out + 1, out)
 	return out
 end
 
@@ -346,30 +543,6 @@ function LobbyLayout.pickSteps(fx: number, fz: number, ftop: number, hx: number,
 		if not used[f] and far(f) then table.insert(out, f) used[f] = true end
 	end
 	table.sort(out, function(a, b) return a.side < b.side end)
-	return out
-end
-
--- The top block of every "Podium" model under `root` (the highest one), copies on top of each other once.
-local function podiums(root): { BasePart }
-	local out = {}
-	for _, d in root:GetDescendants() do
-		if d:IsA("Model") and key(d.Name) == "podium" and not ours(d) then
-			local best, bestTop = nil, -math.huge
-			for _, p in d:GetDescendants() do
-				if p:IsA("BasePart") then
-					local t = facts(p).top
-					if t > bestTop then best, bestTop = p, t end
-				end
-			end
-			if best then
-				local dup = false
-				for _, o in out do
-					if (o.CFrame.Position - best.CFrame.Position).Magnitude < 1 then dup = true break end
-				end
-				if not dup then table.insert(out, best) end
-			end
-		end
-	end
 	return out
 end
 

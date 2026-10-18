@@ -7,9 +7,9 @@
 	1. Which stands: anything named "AvatarStand..." or tagged "HuzzAvatarStand" (the place build saves them in
 	   Workspace > HuzzAvatarStands, so he can drag them). If the place has none (his own place synced by Rojo):
 	   - his new lobby (owner Oct 18: "please add ... all of the gamepass things to the new lobby"): an invisible
-	     stand on each of the five small round pads at the front of every lobby copy (Shared/LobbyLayout.standSpots:
-	     the side with three pads is VIP, the two-pad side Dance Pack, one Game Pass knife each), made here in
-	     Workspace > HuzzAvatarStands;
+	     stand per small round pad, in a row along the side of the plaza opposite his podiums, facing into it (the
+	     pads hold his lobby props now; Shared/LobbyLayout.standSpots: VIP three, Dance Pack two, one Game Pass knife
+	     each), made here in Workspace > HuzzAvatarStands;
 	   - else (his older places) his plain grey blocks beside the big spin wheels (Shared/AvatarStandRules.findBlocks),
 	     tagged here with Pass = VIP / DancePack in turn.
 	   Nothing of his is renamed and nothing typed in Studio is overwritten.
@@ -114,7 +114,7 @@ local function assignKnives(stands: { Instance })
 	end
 end
 
--- His new lobby's round pads: an invisible stand on each, with its pass and that pass's knife.
+-- His new lobby: an invisible stand per pad, in a row along the plaza's side, with its pass and that pass's knife.
 local function onPads(): { Instance }
 	local out = {}
 	local holder
@@ -142,7 +142,7 @@ function AvatarStandService.start()
 	local how = "placed"
 	if #stands == 0 then
 		stands = onPads()
-		how = "on the new lobby's pads"
+		how = "in a row along the new lobby's side"
 	end
 	if #stands == 0 then
 		how = "found beside the spin wheels"

@@ -10,27 +10,32 @@
 -- picture went flat ("bland"). Less sun and exposure bring it to mid-tone; the grade keeps the colour rich. The
 -- owner's map parts keep their own colours. Estimate (tools/preview/feel/look_estimate.py on his recording):
 -- lobby 0.76 -> ~0.64, round 0.87 -> ~0.72, saturation 0.56 to 0.61 -> ~0.61 to 0.65. Only Studio shows the real look.
+-- Oct 18 (owner: "brighter contrast ... not too much"): a little brighter, more contrast and colour; estimate on his
+-- recorded lobby: mean brightness 0.65 -> 0.70, contrast +8%, saturation +4%, nothing clipped. The maps share it.
 -- Gameplay/SecretReveal remembers whatever these are and puts them back after its night look.
 return {
 	Enabled = true,
 	Lighting = {
-		Brightness = 2.0, -- was 2.8 (blown out)
+		Brightness = 2.2, -- Oct 18 "brighter": was 2.0 (2.8 before that was blown out)
 		ClockTime = 14.2, -- early afternoon: high sun, short soft shadows
 		GeographicLatitude = 28,
-		Ambient = Color3.fromRGB(92, 96, 112), -- shadows lifted and a touch cool, never black
-		OutdoorAmbient = Color3.fromRGB(128, 130, 148), -- a touch lower with the sun, so shade still reads
+		Ambient = Color3.fromRGB(96, 100, 116), -- shadows lifted and a touch cool, never black (was 92, 96, 112)
+		OutdoorAmbient = Color3.fromRGB(132, 134, 152), -- a touch lower with the sun, so shade still reads (was 128, 130, 148)
 		ColorShift_Top = Color3.fromRGB(255, 250, 240), -- sunlit tops, barely warm (the warm cast pushed orange floors to white)
 		ColorShift_Bottom = Color3.fromRGB(0, 0, 0),
 		EnvironmentDiffuseScale = 0.6,
 		EnvironmentSpecularScale = 0.5,
 		ShadowSoftness = 0.35,
-		ExposureCompensation = -0.1, -- was +0.15
+		ExposureCompensation = -0.05, -- Oct 18: was -0.1 (+0.15 before that)
 		GlobalShadows = true,
 	},
 	-- Post-processing, as children of Lighting (made or updated by name)
 	-- (Oct 17, "it looks still a bit bland and plain": more colour and punch, like the owner's second reference game)
 	-- (feel study: Brightness 0.02 -> 0, Contrast 0.14 -> 0.12, Saturation 0.28 -> 0.35 once nothing clips)
-	ColorCorrection = { Brightness = 0, Contrast = 0.12, Saturation = 0.35, TintColor = Color3.fromRGB(255, 252, 247) },
+	-- (Oct 18, owner: "give the lobby that brighter contrast ... but not too much contrast so it looks normal to look
+	-- at": Contrast 0.12 -> 0.16, Saturation 0.35 -> 0.4; 0.18 / 0.42 with Brightness 2.3 clipped a third of the floor
+	-- in the estimate. docs/previews/lobby-look-before-after.jpg, tools/preview/feel/look_before_after.py)
+	ColorCorrection = { Brightness = 0, Contrast = 0.16, Saturation = 0.4, TintColor = Color3.fromRGB(255, 252, 247) },
 	Bloom = { Intensity = 0.55, Size = 22, Threshold = 1.5 }, -- neon and bright effects glow; plain parts don't
 	SunRays = { Intensity = 0.05, Spread = 0.55 },
 	-- Crisp to the horizon with a clear blue sky (was Density 0.26 / Haze 1.2, which greyed out everything far away)
