@@ -335,6 +335,8 @@ Owner's own words are in quotes. Read only the section you need.
   `girl-vfx-vs-ref.jpg`. Your own aura when she's equipped ("Player") and worn auras keep the older emitter look.
 - `Gameplay/Cinematic` (line-up camera, above), `Gameplay/RoundHud` (text-only top, coloured message line, big banners only for big moments; section 7/10),
   `Screens/HeroChoice` (60% size: "make the boxes smaller"), `Screens/NextMap` (your vote tucks into a NEXT MAP panel).
+  Map pictures (owner Oct 18): `Config/Round` `Map.Pictures` names the `Config/Assets.Art` picture per map folder
+  (Base/Halloween/BasketBall from `design/maps/`, packed 512 px, Play only until uploaded); a map not listed shows its live 3D view.
 
 ## 9. Animations (the owner's files)
 - `tools/anim/extract_anims.luau` → `ServerStorage/HuzzAnimations.rbxm`: Idle, Walk, **Run = the pack's Sprint as
@@ -513,7 +515,12 @@ Owner's own words are in quotes. Read only the section you need.
   Pass katanas get sorted the same way). Server-built, one per body: `give` (hand) and `giveBack` (worn) each remove
   the other; RoundService syncs on every change, spawn and avatar reload; a shop change swaps it at once (Bootstrap).
   A model the wrong size is refused (plain knife + one `[HuzzKnife]` warning): 8 of his Oct 18 file came out of the
-  setup ~12x too big and sideways, fixed offline by `tools/knives/repair_knives.luau`. Spec `tests/KnifeWear.spec`
+  setup ~12x too big and sideways, fixed offline by `tools/knives/repair_knives.luau`. Cause: Studio renames repeated
+  part names across an import (2nd knife's `blade_0` = `blade_02`, 5th's `blade_05`, its 2nd part `blade_052`), the
+  setup matched exact names only, and its box guess assumed upright while All_Knives.glb lies flat; renamed parts on
+  all 30 also missed their colour and Neon. SetupKnives now matches "name + digits", refits by position, guesses from
+  the box's long axis, and on a re-run repairs/recolours models already in HuzzKnives in place (`tests/SetupKnives.spec`:
+  Studio-style names, both glbs, his real broken 8 in `tests/fixtures/HuzzKnives-oct18-first-run.rbxm`). Spec `tests/KnifeWear.spec`
   (all 30 on R15/R6, no clipping except the hanging hand on the hip hilt); picture `docs/previews/knife-on-back.jpg`
   (`motion3d/knife_wear_scene.luau`).
   **Game Pass knives** (owner Oct 18, `design/knives/gamepass/Gamepass_Knives.glb`): 5 more, rarity **Exclusive**
@@ -530,7 +537,9 @@ Owner's own words are in quotes. Read only the section you need.
   2. View > Command Bar, paste `require(game.ServerStorage.HuzzStudioTools.SetupKnives)()` (or the whole of
   `tools/knives/setup_knives.lua`), Enter. 3. Output says `[HuzzKnife] Done: 35 of 35 knives are in ServerStorage >
   HuzzKnives.` (a warning names any it couldn't find). 4. File > Save. 5. Right-click ServerStorage > HuzzKnives >
-  Save to File, send `HuzzKnives.rbxm`; we put it in `assets/knives/` and `build_yours.luau` puts it in every build. Received Oct 18 (30 of 30; the 5 pass knives need steps 1-5 again).
+  Save to File, send `HuzzKnives.rbxm`; we put it in `assets/knives/` and `build_yours.luau` puts it in every build. Received Oct 18 (30 of 30; the 5 pass knives need steps 1-5 again). His place
+  still holds the broken 8 and uncoloured parts: importing Gamepass_Knives.glb and running step 2 once fixes them too
+  (Output: "repaired: it was the wrong size or way round" x8, "fixed colours and glow" for the rest).
 - **Crates** (`Config/Crates`, `Shared/CrateRoll` with odds + pity) are plumbed but empty until the owner designs them.
 - **Lobby leaderboards** (owner, Oct 18: "make the leaderboards just like in the video ... make them follow your
   character", then "move smoothly, right now they move very weirdly ... look more like the reference ones but keep
