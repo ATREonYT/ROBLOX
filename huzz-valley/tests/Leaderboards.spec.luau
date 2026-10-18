@@ -227,25 +227,37 @@ check("no timer or scarcity words", (function()
 end)())
 
 -- the stands' knives (owner: "gamepasses shown with the character of the person playing, equipped with some exclusive
--- knifes"): only a knife the stand's pass gives, in turn when none is typed
+-- knifes"; Oct 18: each knife is its own Game Pass): only the knife the stand's pass gives
 do
 	local Env = require("../tools/preview/motion3d/env")
 	local CoinShop = Env.load("huzz-valley/src/ReplicatedStorage/Shared/Config/CoinShop.lua")
-	local k1 = Stand.knife("VIP", nil, CoinShop.Items, 1)
-	local k2 = Stand.knife("VIP", nil, CoinShop.Items, 2)
-	local k4 = Stand.knife("VIP", nil, CoinShop.Items, 4)
-	check("VIP stands show VIP knives in turn", k1 ~= nil and k2 ~= nil and k1 ~= k2 and CoinShop.get(k1).Pass == "VIP" and CoinShop.get(k2).Pass == "VIP")
-	eq("the turn wraps round", k4, k1)
-	eq("the strongest-looking first", k1, "CelestialSeraph")
-	local typed = Stand.knife("DancePack", "frostbound oath", CoinShop.Items, 1)
+	local k1 = Stand.knife("HunterKnifePass", nil, CoinShop.Items, 1)
+	eq("the Hunter Knife pass shows Crimson Requiem", k1, "CrimsonRequiem")
+	eq("its only knife, whatever the turn", Stand.knife("HunterKnifePass", nil, CoinShop.Items, 3), "CrimsonRequiem")
+	local typed = Stand.knife("FrostKnifePass", "frostbound oath", CoinShop.Items, 1)
 	eq("a typed knife (any spelling) of that pass", typed, "FrostboundOath")
-	local refused, why = Stand.knife("DancePack", "CelestialSeraph", CoinShop.Items, 1)
-	check("a typed knife the pass doesn't give is refused (says why)", refused ~= "CelestialSeraph" and CoinShop.get(refused).Pass == "DancePack" and why ~= nil)
-	local coin, why2 = Stand.knife("VIP", "AbyssEclipse", CoinShop.Items, 1)
+	local refused, why = Stand.knife("FrostKnifePass", "CelestialSeraph", CoinShop.Items, 1)
+	check("a typed knife the pass doesn't give is refused (says why)", refused == "FrostboundOath" and why ~= nil)
+	local coin, why2 = Stand.knife("HunterKnifePass", "AbyssEclipse", CoinShop.Items, 1)
 	check("a coin knife never stands in for a pass's", coin ~= "AbyssEclipse" and why2 ~= nil)
 	eq("no pass: no knife", (Stand.knife(nil, "CelestialSeraph", CoinShop.Items, 1)), nil)
-	local withKnife = Stand.resolve({ Pass = "VIP" }, Products, CoinShop.get(k1))
-	eq("the sign names the knife", withKnife.Subtitle, "EXCLUSIVE KNIFE: CELESTIAL SERAPH")
+	eq("VIP gives no knife now", (Stand.knife("VIP", nil, CoinShop.Items, 1)), nil)
+	-- which pass each stand sells (Stand.assign): the five once each in his card order, then again
+	local picks = Stand.assign({ { Pass = "VIP" }, { Pass = "VIP" }, { Pass = "VIP" }, { Pass = "DancePack" }, { Pass = "DancePack" }, { Pass = "DancePack" } }, CoinShop.Items)
+	local order = {}
+	for i, p in picks do order[i] = p.Pass end
+	eq("six stands: the five in card order, then Hunter again", table.concat(order, ","), "HunterKnifePass,MoonlitKnifePass,SunriseKnifePass,InfernoKnifePass,FrostKnifePass,HunterKnifePass")
+	local allOwn = true
+	for _, p in picks do if CoinShop.get(p.Knife).Pass ~= p.Pass then allOwn = false end end
+	check("each stand holds its own pass's knife", allOwn)
+	picks = Stand.assign({ { Pass = "FrostKnifePass" }, { Knife = "dragon's maw" }, {} }, CoinShop.Items)
+	eq("a stand on a knife pass keeps it", picks[1].Pass, "FrostKnifePass")
+	eq("a typed knife picks its pass", picks[2].Pass, "InfernoKnifePass")
+	eq("the rest take a knife not shown yet", picks[3].Pass, "HunterKnifePass")
+	local withKnife = Stand.resolve({ Pass = "HunterKnifePass" }, Products, CoinShop.get(k1))
+	eq("the sign is the card's name", withKnife.Title, "HUNTER KNIFE")
+	eq("the sign names the knife", withKnife.Subtitle, "EXCLUSIVE KNIFE: CRIMSON REQUIEM")
+	eq("no price on it until he sets one (Price 0)", withKnife.Price, nil)
 	eq("still SOON (no Game Pass ID yet)", withKnife.Status, "Soon")
 	check("a knife on the sign never opens a purchase by itself", not Stand.canPrompt(withKnife, false))
 end

@@ -136,6 +136,10 @@ the icons itself. To make them work everywhere for good, upload them once (Plugi
    - New pictures can stay grey for a few minutes while Roblox checks them.
 2. **Create the Robux items** on the Creator Dashboard after you publish:
    1. **VIP** and **Dance Pack** are Game Passes (VIP gives the [VIP] chat tag).
+      The 5 knives are 5 more Game Passes, one each: **Hunter Knife** (Crimson Requiem), **Moonlit Knife** (Hollow
+      Eclipse), **Sunrise Knife** (Celestial Seraph), **Inferno Knife** (Dragon's Maw), **Frost Knife** (Frostbound
+      Oath). Their IDs go into `Products.lua` (`HunterKnifePass` ... `FrostKnifePass`, `Id = ...`); set the price on the
+      Dashboard. Until then BUY only says "coming soon".
    2. **Sunset Trail**, **Blossom Aura**, **Crown Pose**, **Midnight Outfit** and the three **coin packs** (500, 2,000
       and 5,000 coins) are Developer Products.
    3. Put each ID into `src/ReplicatedStorage/Shared/Config/Products.lua` (`Id = ...`). Until then their buttons say the item isn't on sale and never open a purchase.

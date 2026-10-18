@@ -16,6 +16,7 @@ local ProgressService = require(script.Parent.ProgressService)
 local ActionService = {}
 
 local MIN_INTERVAL = 0.15
+ActionService.MIN_INTERVAL = MIN_INTERVAL -- (the admin panel uses the same limit: AdminService)
 local last: { [Player]: number } = {}
 
 local VERBS: { [string]: (Player, ...any) -> (boolean, string?) } = {}

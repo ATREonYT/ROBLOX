@@ -162,8 +162,8 @@ frames(60)
 
 -- the avatar stand: his grey block found by the server, tagged, with a pass and that pass's knife
 check("his grey block is tagged as a stand", block:HasTag("HuzzAvatarStand"))
-check("its pass: VIP (nearest the wheel first)", block:GetAttribute("Pass") == "VIP")
-check("its knife: one VIP gives (" .. tostring(block:GetAttribute("Knife")) .. ")", block:GetAttribute("Knife") == "CelestialSeraph")
+check("its pass: the first knife Game Pass, Hunter Knife (owner Oct 18: one pass per knife)", block:GetAttribute("Pass") == "HunterKnifePass")
+check("its knife: the one that pass gives (" .. tostring(block:GetAttribute("Knife")) .. ")", block:GetAttribute("Knife") == "CrimsonRequiem")
 local knives = RS:FindFirstChild("HuzzStandKnives")
 check("the pass knives are ready for the screens (5)", knives ~= nil and #knives:GetChildren() == 5)
 local copies = workspace:FindFirstChild("HuzzStandAvatars")
@@ -176,7 +176,7 @@ if copy then
 	check("feet on the floor (tall block turns into you)", root.CFrame.Position.Y > 19.6 and root.CFrame.Position.Y < 19.6 + 6)
 	check("no name tag on the copy", copy:FindFirstChildWhichIsA("BillboardGui", true) == nil)
 	local knife = copy:FindFirstChild("StandKnife")
-	check("your copy holds the exclusive knife", knife ~= nil and knife:GetAttribute("Knife") == "CelestialSeraph")
+	check("your copy holds the exclusive knife", knife ~= nil and knife:GetAttribute("Knife") == "CrimsonRequiem")
 	local weld = knife and knife:FindFirstChild("StandKnifeGrip", true)
 	check("welded to the right hand", weld ~= nil and weld.Part0 ~= nil and weld.Part0.Name == "RightHand")
 	local anchored = false
@@ -186,12 +186,12 @@ end
 check("block hidden on this screen", block.LocalTransparencyModifier == 1)
 check("calm glow", copies and copies:FindFirstChild("StandGlow") ~= nil)
 local sign = me.PlayerGui:FindFirstChild("StandSign")
-check("sign", sign ~= nil and sign.Plate.Title.Text == "VIP")
-check("the sign names the knife", sign ~= nil and sign.Plate.Subtitle.Text == "EXCLUSIVE KNIFE: CELESTIAL SERAPH")
+check("sign", sign ~= nil and sign.Plate.Title.Text == "HUNTER KNIFE")
+check("the sign names the knife", sign ~= nil and sign.Plate.Subtitle.Text == "EXCLUSIVE KNIFE: CRIMSON REQUIEM")
 check("tag", sign and sign.Tag.Text == "GAME PASS")
 local button = me.PlayerGui:FindFirstChild("StandButton")
 local text = button and button.View.Text or ""
-check("button says soon (VIP has no ID yet): " .. text, string.find(text, "SOON", 1, true) ~= nil)
+check("button says soon (the pass has no ID yet): " .. text, string.find(text, "SOON", 1, true) ~= nil)
 for _, w in { "LIMITED", "ENDS" } do
 	check("no " .. w, not string.find(text .. (sign and sign.Tag.Text or ""), w, 1, true))
 end

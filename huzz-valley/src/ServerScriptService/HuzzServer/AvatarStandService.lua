@@ -13,9 +13,11 @@
 	   - else (his older places) his plain grey blocks beside the big spin wheels (Shared/AvatarStandRules.findBlocks),
 	     tagged here with Pass = VIP / DancePack in turn.
 	   Nothing of his is renamed and nothing typed in Studio is overwritten.
-	2. Which knife: each stand gets a "Knife" attribute (if it has none) = one of its pass's exclusive knives
-	   (Config/CoinShop Pass), in turn, so the six stands show different knives. A typed knife the pass doesn't give
-	   is replaced (with a warning in Output): a stand never shows something the pass doesn't give.
+	2. Which knife (owner, Oct 18: each Game Pass knife is now its own Game Pass): every stand shows one of the five
+	   knife passes (Shared/AvatarStandRules.assign): its "Pass" and "Knife" attributes are set to that pass and its
+	   knife, each knife once before any repeats (card order: Hunter, Moonlit, Sunrise, Inferno, Frost). A stand
+	   already on a knife pass keeps it; a typed Knife that's one of the five picks its pass; VIP / Dance Pack stands
+	   (those passes give no knife now) take the next knife.
 	3. The knife models: clients can't see ServerStorage, so a ready copy of each pass knife (his model from
 	   ServerStorage/HuzzKnives/<key> when he has set it up, else the game's own knife in its colours, with its
 	   rarity's calm effects: HuzzServer/KnifeService.display) goes in ReplicatedStorage > HuzzStandKnives.
@@ -100,14 +102,16 @@ local function publish(knifeKey: string)
 	end
 end
 
--- The knife a stand shows (its own if it's one its pass gives, else the pass's next one).
-local function pickKnife(stand: Instance, turns: { [string]: number })
-	local pass = passKeyOf(stand)
-	if not pass then return end
-	turns[pass] = (turns[pass] or 0) + 1
-	local knife, why = Rules.knife(pass, stand:GetAttribute("Knife"), CoinShop.Items, turns[pass])
-	if why then warn("[Huzz] Avatar stand " .. stand:GetFullName() .. ": " .. why) end
-	stand:SetAttribute("Knife", knife)
+-- Each stand's knife Game Pass and its knife (Shared/AvatarStandRules.assign: the five once each, then again).
+local function assignKnives(stands: { Instance })
+	local rows = {}
+	for i, stand in stands do
+		rows[i] = { Pass = passKeyOf(stand) or stand:GetAttribute("Pass"), Knife = stand:GetAttribute("Knife") }
+	end
+	for i, pick in Rules.assign(rows, CoinShop.Items) do
+		stands[i]:SetAttribute("Pass", pick.Pass)
+		stands[i]:SetAttribute("Knife", pick.Knife)
+	end
 end
 
 -- His new lobby's round pads: an invisible stand on each, with its pass and that pass's knife.
@@ -121,8 +125,7 @@ local function onPads(): { Instance }
 				holder.Name = "HuzzAvatarStands"
 				holder.Parent = Workspace
 			end
-			local stand = LobbyLayout.standPart(api, spot)
-			stand:SetAttribute("Knife", Rules.knife(spot.Pass, nil, CoinShop.Items, spot.Turn))
+			local stand = LobbyLayout.standPart(api, spot) -- (its pass and knife: assignKnives)
 			stand.Parent = holder
 			if not pcall(function() stand:AddTag(TAG) end) then pcall(function() CollectionService:AddTag(stand, TAG) end) end
 			table.insert(out, stand)
@@ -149,11 +152,8 @@ function AvatarStandService.start()
 			table.insert(stands, b.ref)
 		end
 	end
-	local turns = {}
-	for _, stand in stands do
-		local ok, err = pcall(pickKnife, stand, turns)
-		if not ok then warn("[Huzz] avatar stand: " .. tostring(err)) end
-	end
+	local ok, err = pcall(assignKnives, stands)
+	if not ok then warn("[Huzz] avatar stand knives: " .. tostring(err)) end
 	-- every pass knife is ready, so a stand changed while playing (or one added later) has its knife too
 	for _, item in CoinShop.Items do
 		if item.Pass then publish(item.Key) end

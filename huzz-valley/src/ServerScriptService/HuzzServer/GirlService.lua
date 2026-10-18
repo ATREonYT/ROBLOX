@@ -131,7 +131,24 @@ local rng = Random.new()
 local function rand()
 	return rng:NextNumber()
 end
+-- The owner's admin panel (HuzzServer/AdminService) can pick the next game's girl: the roll returns her once.
+local nextGirl = nil
+function GirlService.byId(id: string)
+	for _, g in GirlService.catalog do
+		if g.id == id then return g end
+	end
+	return nil
+end
+function GirlService.setNext(girl)
+	nextGirl = girl
+end
+
 function GirlService.roll()
+	if nextGirl then
+		local g = nextGirl
+		nextGirl = nil
+		return g
+	end
 	-- Studio test (Config/Round.StudioTestRarity, e.g. "Secret" to see her arrival cutscene): Studio only, never live.
 	local test = Config.StudioTestRarity
 	if type(test) == "string" and test ~= "" and game:GetService("RunService"):IsStudio() then

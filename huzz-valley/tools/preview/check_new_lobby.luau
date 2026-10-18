@@ -101,8 +101,9 @@ local vip, dance, knives = 0, 0, {}
 for _, s in stands do
 	check("stand tagged", s:HasTag("HuzzAvatarStand"))
 	check("stand invisible, walk-through", s.Transparency == 1 and s.CanCollide == false)
-	if s:GetAttribute("Pass") == "VIP" then vip += 1 elseif s:GetAttribute("Pass") == "DancePack" then dance += 1 end
 	knives[s:GetAttribute("Knife") or "?"] = true
+	local item = require(game.ReplicatedStorage.Shared.Config.CoinShop).get(s:GetAttribute("Knife") or "")
+	if item and item.Pass == s:GetAttribute("Pass") then vip += 1 end -- (each stand sells its own knife's Game Pass)
 	local p = s.CFrame.Position
 	local onPad = false
 	for _, x in { -90, -97, -104, -159, -168 } do
@@ -111,15 +112,16 @@ for _, s in stands do
 	check("on a pad", onPad)
 	check("faces into the plaza", s.CFrame.LookVector.Z > 0.9)
 end
-check("3 VIP and 2 Dance Pack", vip == 3 and dance == 2)
+check("each stand sells its knife's own Game Pass (owner Oct 18: one pass per knife)", vip == 5)
 local five = 0
 for _, k in { "CelestialSeraph", "CrimsonRequiem", "HollowEclipse", "DragonsMaw", "FrostboundOath" } do
 	if knives[k] then five += 1 end
 end
 check("each Game Pass knife once (" .. five .. ")", five == 5)
-check("the VIP side is the three-pad side", (function()
+check("the three-pad side shows Hunter, Moonlit and Sunrise (his card order)", (function()
+	local first = { HunterKnifePass = true, MoonlitKnifePass = true, SunriseKnifePass = true }
 	for _, s in stands do
-		if s:GetAttribute("Pass") == "VIP" and s.CFrame.Position.X < -131 then return false end
+		if (first[s:GetAttribute("Pass")] == true) ~= (s.CFrame.Position.X > -131) then return false end
 	end
 	return true
 end)())

@@ -148,7 +148,7 @@ do
 	end)
 	local ws = theirs:GetService("Workspace")
 	-- his new lobby: an invisible stand on each round pad at the front of every lobby copy (Shared/LobbyLayout)
-	local onPads = {}
+	local onPads, padStands = {}, {}
 	if okShop then
 		local holder
 		for _, floor in Layout.floors(ws) do
@@ -156,13 +156,20 @@ do
 				holder = holder or roblox.Instance.new("Folder")
 				holder.Name = "HuzzAvatarStands"
 				local stand = Layout.standPart(layoutApi, spot)
-				local knife = Stand.knife(spot.Pass, nil, CoinShop.Items, spot.Turn)
-				stand:SetAttribute("Knife", knife)
 				pcall(function() stand:AddTag("HuzzAvatarStand") end)
 				stand.Parent = holder
-				local p = spot.at.Position
-				table.insert(onPads, string.format("%s (%s at %d, %d)", tostring(knife), spot.Pass, math.round(p.X), math.round(p.Z)))
+				table.insert(padStands, stand)
 			end
+		end
+		-- each stand one knife Game Pass and its knife, the five once each (the game's own rule, AvatarStandService)
+		local rows = {}
+		for i, stand in padStands do rows[i] = { Pass = stand:GetAttribute("Pass") } end
+		for i, pick in Stand.assign(rows, CoinShop.Items) do
+			local stand = padStands[i]
+			stand:SetAttribute("Pass", pick.Pass)
+			stand:SetAttribute("Knife", pick.Knife)
+			local p = stand.CFrame.Position
+			table.insert(onPads, string.format("%s (%s at %d, %d)", pick.Knife, pick.Pass, math.round(p.X), math.round(p.Z)))
 		end
 		if holder then holder.Parent = ws end
 	end
@@ -191,17 +198,21 @@ do
 		print("avatar stands: " .. #onPads .. " on the new lobby's pads; " .. table.concat(onPads, ", "))
 		wheels, parts = {}, {} -- (his old grey blocks beside the old islands' wheels stay plain blocks)
 	end
-	for _, b in Stand.findBlocks(wheels, parts) do
+	local blocks = Stand.findBlocks(wheels, parts)
+	for _, b in blocks do
 		b.ref.Name = "AvatarStand"
 		b.ref:SetAttribute("Pass", b.Pass)
-		if okShop then
-			local knife = Stand.knife(b.Pass, nil, CoinShop.Items, b.Turn)
-			if knife then
-				b.ref:SetAttribute("Knife", knife)
-				table.insert(knives, string.format("%s (%s at %d, %d)", knife, b.Pass, math.round(b.ref.CFrame.Position.X), math.round(b.ref.CFrame.Position.Z)))
-			end
-		end
 		made += 1
+	end
+	if okShop then -- each block one knife Game Pass and its knife (Stand.assign, as on the pads)
+		local rows = {}
+		for i, b in blocks do rows[i] = { Pass = b.Pass } end
+		for i, pick in Stand.assign(rows, CoinShop.Items) do
+			local ref = blocks[i].ref
+			ref:SetAttribute("Pass", pick.Pass)
+			ref:SetAttribute("Knife", pick.Knife)
+			table.insert(knives, string.format("%s (%s at %d, %d)", pick.Knife, pick.Pass, math.round(ref.CFrame.Position.X), math.round(ref.CFrame.Position.Z)))
+		end
 	end
 	if #onPads == 0 then
 		print("avatar stands: " .. made .. " blocks beside " .. #wheels .. " spin wheels; knives " .. (if okShop then table.concat(knives, ", ") else "not set (" .. tostring(CoinShop) .. ")"))

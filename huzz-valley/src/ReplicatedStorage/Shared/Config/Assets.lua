@@ -68,6 +68,11 @@ Assets.Art = {
 	DancePack = "",      -- assets/art/dance-pack.png
 	LightRays = "",      -- assets/art/light-rays.png (made by us: soft rays that turn behind featured pictures)
 	MidnightOutfit = "", -- assets/art/midnight-outfit.png
+	PassKnifeFrost = "",   -- assets/art/pass-knife-frost.png (the knife Game Pass cards, cut from the owner's mockup
+	PassKnifeHunter = "",  -- assets/art/pass-knife-hunter.png  design/knives/Five_Elemental_Knife_Cards.png by
+	PassKnifeInferno = "", -- assets/art/pass-knife-inferno.png tools/icons/cut_pass_knife_cards.py; drawn in Play
+	PassKnifeMoonlit = "", -- assets/art/pass-knife-moonlit.png until uploaded)
+	PassKnifeSunrise = "", -- assets/art/pass-knife-sunrise.png
 	SunsetTrail = "",    -- assets/art/sunset-trail.png
 	Vip = "",            -- assets/art/vip.png
 }

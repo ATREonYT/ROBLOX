@@ -54,13 +54,20 @@ for _, item in passKnives do
 	check(item.Key .. ": card picture", item.Art ~= nil and fs.isFile(ROOT .. "assets/art/knife-" .. kebab .. ".png") and packedArt[item.Art .. ".lua"] == true)
 	perPass[item.Pass] = (perPass[item.Pass] or 0) + 1
 end
-check("both passes give knives (VIP 3, Dance Pack 2)", perPass.VIP == 3 and perPass.DancePack == 2)
+-- each knife is its own Game Pass (owner Oct 18: "these are going to be the gamepasses users can buy"), mapped to
+-- his card names: Hunter = Crimson Requiem, Moonlit = Hollow Eclipse, Sunrise = Celestial Seraph, Inferno = Dragon's
+-- Maw, Frost = Frostbound Oath; VIP and Dance Pack give no knife now
+local MAP = { HunterKnifePass = "CrimsonRequiem", MoonlitKnifePass = "HollowEclipse", SunriseKnifePass = "CelestialSeraph", InfernoKnifePass = "DragonsMaw", FrostKnifePass = "FrostboundOath" }
+for passKey, knife in MAP do
+	check(passKey .. " gives exactly " .. knife, perPass[passKey] == 1 and CoinShop.get(knife).Pass == passKey)
+end
+check("VIP and Dance Pack give no knife now", perPass.VIP == nil and perPass.DancePack == nil)
 -- granted only for an owned pass, once
-local g = CoinShop.passGrants({}, { VIP = true })
-check("owning VIP gives its 3 knives", #g == 3)
+local g = CoinShop.passGrants({}, { HunterKnifePass = true })
+check("owning Hunter Knife gives Crimson Requiem only", #g == 1 and g[1] == "CrimsonRequiem")
 check("owning nothing gives nothing", #CoinShop.passGrants({}, {}) == 0)
-check("a pass you don't own gives nothing (DancePack false)", #CoinShop.passGrants({}, { DancePack = false }) == 0)
-check("already owned isn't given again", #CoinShop.passGrants({ CelestialSeraph = true, CrimsonRequiem = true, HollowEclipse = true }, { VIP = true }) == 0)
+check("a pass you don't own gives nothing (FrostKnifePass false)", #CoinShop.passGrants({}, { FrostKnifePass = false }) == 0)
+check("already owned isn't given again", #CoinShop.passGrants({ CrimsonRequiem = true }, { HunterKnifePass = true }) == 0)
 
 local rank = {}
 for i, r in KnifeLook.ORDER do rank[r] = i end

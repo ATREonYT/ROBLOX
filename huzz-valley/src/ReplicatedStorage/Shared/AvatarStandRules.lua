@@ -1,8 +1,8 @@
 --[[
 	What a lobby avatar stand sells, pure (tests/Leaderboards.spec.luau checks it). Owner, Oct 18: "make the blocks i
 	have in the lobby, next to the spin the wheel turn into my character and have like animated running ...
-	selling a gamepass". The stand's "Pass" attribute (typed in Studio) is a Game Pass key from Config/Products
-	("VIP", "DancePack") or a Game Pass ID number.
+	selling a gamepass". The stand's "Pass" attribute is a Game Pass key from Config/Products or a Game Pass ID
+	number; since Oct 18 every stand sells one of the five knife Game Passes (assign, below).
 
 	The VIEW button opens Roblox's purchase only when BOTH are true (kid-safe: never sell something that gives
 	nothing yet):
@@ -83,7 +83,7 @@ function AvatarStandRules.resolve(attrs: { [string]: any }, products, knife: any
 	end
 	local tag = attrs.Tag
 	if type(tag) ~= "string" or tag == "" then tag = "GAME PASS" end
-	local price = tonumber(attrs.Price) or (product and product.Price) or nil
+	local price = tonumber(attrs.Price) or (product and (product.Price or 0) > 0 and product.Price) or nil -- (0 = not set yet)
 	return {
 		Status = status, Key = product and product.Key, Id = id, Title = string.upper(title), Subtitle = string.upper(subtitle),
 		Tag = string.upper(tag), Price = price, Why = why,
@@ -168,6 +168,46 @@ end
 -- May this stand open Roblox's purchase prompt?
 function AvatarStandRules.canPrompt(stand: Stand, owned: boolean): boolean
 	return stand.Status == "Ready" and stand.Id ~= 0 and not owned
+end
+
+--[[
+	Which knife Game Pass each stand shows (owner, Oct 18: the 5 Game Pass knives are each their own Game Pass, "these
+	are going to be the gamepasses users can buy"): every stand one of them, each knife once before any repeats, in card
+	order (Config/CoinShop Order: Hunter, Moonlit, Sunrise, Inferno, Frost). stands: { { Pass, Knife } } (their
+	attributes, in order); items: Config/CoinShop Items. Returns { { Pass, Knife } }, one per stand.
+	A stand already on a knife pass keeps it; a typed Knife that's one of the five picks that knife's pass; every other
+	stand (VIP, Dance Pack, nothing typed: those passes give no knife now) takes the knife shown the fewest times so far.
+]]
+function AvatarStandRules.assign(stands: { any }, items: { any }): { any }
+	local passes = {}
+	for _, item in items do
+		if item.Pass and item.Slot == "Knife" then table.insert(passes, item) end
+	end
+	table.sort(passes, function(a, b) return a.Order < b.Order end)
+	local out, shown = {}, {}
+	if #passes == 0 then return out end
+	local function norm(x: string): string return string.lower((string.gsub(x, "[%s_%-']", ""))) end
+	for i, s in stands do
+		for _, item in passes do
+			local typed = type(s.Knife) == "string" and s.Knife ~= "" and norm(s.Knife)
+			if s.Pass == item.Pass or (typed and (typed == norm(item.Key) or typed == norm(item.Name))) then
+				out[i] = { Pass = item.Pass, Knife = item.Key }
+				shown[item.Key] = (shown[item.Key] or 0) + 1
+				break
+			end
+		end
+	end
+	for i in stands do
+		if not out[i] then
+			local best = passes[1]
+			for _, item in passes do
+				if (shown[item.Key] or 0) < (shown[best.Key] or 0) then best = item end
+			end
+			shown[best.Key] = (shown[best.Key] or 0) + 1
+			out[i] = { Pass = best.Pass, Knife = best.Key }
+		end
+	end
+	return out
 end
 
 return AvatarStandRules

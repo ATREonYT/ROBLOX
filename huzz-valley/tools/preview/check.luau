@@ -94,6 +94,26 @@ task.wait(0.05)
 check("items without an ID or not on sale never prompt", #_G.__prompts == 0)
 MM.close()
 
+-- The knife Game Pass cards (owner Oct 18: "add the knifes into the ui for the gamepass menu"): five on PASSES, named
+-- as he wrote them, each with its picture, KNIFE and BUY; BUY says "coming soon" and never prompts without a pass ID.
+_G.__prompts = {}
+MM.open("Shop", "Passes")
+products = gui.Shop.Group.Panel.Products
+local cardNames = {}
+for _, key in { "HunterKnifePass", "MoonlitKnifePass", "SunriseKnifePass", "InfernoKnifePass", "FrostKnifePass" } do
+	local card = products:FindFirstChild(key)
+	check(key .. " card: picture, KNIFE, BUY", card ~= nil and card:FindFirstChild("Picture") ~= nil and card.Kind.Text == "KNIFE" and card.Buy.Content.Label.Text == "BUY")
+	if card then
+		table.insert(cardNames, card:FindFirstChild("Name").Text)
+		__fireOn(card.Buy, "Activated")
+	end
+end
+task.wait(0.05)
+check("the cards' names as he wrote them", table.concat(cardNames, ",") == "Hunter Knife,Moonlit Knife,Sunrise Knife,Inferno Knife,Frost Knife")
+check("knife cards never prompt without a Game Pass ID", #_G.__prompts == 0 and gui.Toast.Text:find("coming soon") ~= nil)
+check("the VIP and Dance Pack banners are still there", products:FindFirstChild("VIP") ~= nil and products:FindFirstChild("DancePack") ~= nil)
+MM.close()
+
 -- Companions, dances, rewards and quests (ActionService / ProgressService).
 local ProgressService = require(HS.ProgressService)
 local function act(...) local r, why = State.action(...); task.wait(0.2); return r, why end

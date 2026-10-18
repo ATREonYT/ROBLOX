@@ -25,6 +25,8 @@ export type Product = {
 	Giftable: boolean?,
 	Slot: string?, -- Cosmetics: where it's worn (Config/CoinShop.Slots); owners tap WEAR / WEARING in the Shop
 	Why: string?, -- OnSale = false: what is missing, for the owner's checklist
+	Knife: string?, -- knife Game Passes: the Config/CoinShop knife it gives (shown as a card in Shop > PASSES)
+	Card: any?, -- knife Game Passes: the card's colours
 }
 
 local Products = {}
@@ -41,6 +43,28 @@ Products.Passes = {
 		Benefits = { { Icon = "MusicBenefit", Text = "4 Exclusive Dances" }, { Icon = "GiftBenefit", Text = "Dance Themed Items" } },
 		Why = "needs the 4 dance animations",
 	},
+	-- The 5 knife Game Passes (owner, Oct 18: "please add the knifes into the ui for the gamepass menu, these are going
+	-- to be the gamepasses users can buy"): each gives one knife from Gamepass_Knives.glb (Config/CoinShop Pass = this
+	-- key; ShopService grants it only when Roblox says you own the pass). Cards after his mockup
+	-- design/knives/Five_Elemental_Knife_Cards.png (Shop > PASSES, top row), named as he wrote them. Card colours are
+	-- measured on the mockup: Glow = the name's glow and the element, Name = the name's fade at its foot, Sub = KNIFE.
+	-- Id = 0 until the owner makes each Game Pass on the Creator Dashboard and pastes its ID here (BUY only says
+	-- "coming soon" until then, never a purchase). Price 0 = not set yet: the live Robux price shows once there's an ID.
+	{ Key = "HunterKnifePass", Kind = "Pass", Name = "Hunter Knife", Blurb = "Exclusive knife:\nCrimson Requiem.", Knife = "CrimsonRequiem",
+		Id = 0, Price = 0, OnSale = true, Icon = "", Art = "PassKnifeHunter", Why = "needs its Game Pass ID",
+		Card = { Rim = Color3.fromHex("5F559E"), Glow = Color3.fromHex("FF2D6A"), Name = Color3.fromHex("FFC9DF"), Sub = Color3.fromHex("BC7FCA"), Top = Color3.fromHex("1F163D"), Bottom = Color3.fromHex("131335") } },
+	{ Key = "MoonlitKnifePass", Kind = "Pass", Name = "Moonlit Knife", Blurb = "Exclusive knife:\nHollow Eclipse.", Knife = "HollowEclipse",
+		Id = 0, Price = 0, OnSale = true, Icon = "", Art = "PassKnifeMoonlit", Why = "needs its Game Pass ID",
+		Card = { Rim = Color3.fromHex("5C56A6"), Glow = Color3.fromHex("9C7CFF"), Name = Color3.fromHex("E2DAFF"), Sub = Color3.fromHex("9A88E9"), Top = Color3.fromHex("1E1C4D"), Bottom = Color3.fromHex("131840") } },
+	{ Key = "SunriseKnifePass", Kind = "Pass", Name = "Sunrise Knife", Blurb = "Exclusive knife:\nCelestial Seraph.", Knife = "CelestialSeraph",
+		Id = 0, Price = 0, OnSale = true, Icon = "", Art = "PassKnifeSunrise", Why = "needs its Game Pass ID",
+		Card = { Rim = Color3.fromHex("6E699D"), Glow = Color3.fromHex("FFC85A"), Name = Color3.fromHex("FFEFB8"), Sub = Color3.fromHex("B0ABBB"), Top = Color3.fromHex("1D1E46"), Bottom = Color3.fromHex("12183D") } },
+	{ Key = "InfernoKnifePass", Kind = "Pass", Name = "Inferno Knife", Blurb = "Exclusive knife:\nDragon's Maw.", Knife = "DragonsMaw",
+		Id = 0, Price = 0, OnSale = true, Icon = "", Art = "PassKnifeInferno", Why = "needs its Game Pass ID",
+		Card = { Rim = Color3.fromHex("5E5499"), Glow = Color3.fromHex("FF5A2A"), Name = Color3.fromHex("FBB39F"), Sub = Color3.fromHex("BC82C6"), Top = Color3.fromHex("20173F"), Bottom = Color3.fromHex("12163A") } },
+	{ Key = "FrostKnifePass", Kind = "Pass", Name = "Frost Knife", Blurb = "Exclusive knife:\nFrostbound Oath.", Knife = "FrostboundOath",
+		Id = 0, Price = 0, OnSale = true, Icon = "", Art = "PassKnifeFrost", Why = "needs its Game Pass ID",
+		Card = { Rim = Color3.fromHex("4C54A8"), Glow = Color3.fromHex("4FB8FF"), Name = Color3.fromHex("C4F4FF"), Sub = Color3.fromHex("7BA9F3"), Top = Color3.fromHex("181D50"), Bottom = Color3.fromHex("0E1840") } },
 } :: { Product }
 
 Products.Cosmetics = {
@@ -90,6 +114,15 @@ end
 
 function Products.byPassId(id: number): Product?
 	return byId["pass:" .. id]
+end
+
+-- The knife Game Passes in card order (Hunter, Moonlit, Sunrise, Inferno, Frost).
+function Products.knifePasses(): { Product }
+	local out = {}
+	for _, p in Products.Passes do
+		if p.Knife then table.insert(out, p) end
+	end
+	return out
 end
 
 -- What the buy button should do, from the item's setup alone (ownership is checked separately).

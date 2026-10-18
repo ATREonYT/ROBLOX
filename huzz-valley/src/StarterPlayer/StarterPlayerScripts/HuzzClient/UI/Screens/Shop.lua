@@ -1,5 +1,7 @@
 -- Shop (design/pages/01, 07; ITEMS and COINS after the owner's Oct 17 mockup): Passes / Cosmetics / Items / Coins
--- tabs over one stationary window.
+-- tabs over one stationary window. PASSES opens on the 5 knife Game Pass cards (owner, Oct 18: "please add the knifes
+-- into the ui for the gamepass menu, these are going to be the gamepasses users can buy"; his mockup
+-- design/knives/Five_Elemental_Knife_Cards.png), with the VIP and Dance Pack banners under them.
 -- Buy buttons only open Roblox's purchase prompt; the server grants (ShopService). Each button shows exactly one
 -- state: Robux badge + price, "..." (prompt open) or OWNED (a cosmetic you own: WEAR / WEARING, tap to switch). Items that aren't on sale yet show their price like the
 -- reference but only say "coming soon" when tapped; they never open a purchase.
@@ -62,7 +64,7 @@ local function buy(p)
 		Toast.show(p.Name .. " is coming soon.") -- shown with its price, but never sold until it gives something
 		return
 	elseif status == "NoId" then
-		Toast.show("This item isn't on sale yet.")
+		Toast.show(p.Name .. " is coming soon.") -- (no ID yet: never a purchase prompt)
 		warn(string.format("[Shop] %s has no %s ID in Shared/Config/Products.lua", p.Key, p.Kind == "Pass" and "Game Pass" or "Developer Product"))
 		return
 	end
@@ -106,6 +108,7 @@ local function buyButton(parent: Instance, p, props)
 	local function refresh()
 		if not b.Instance.Parent then return end
 		local text, style, iconName, priced = buttonState(p)
+		if priced and props.Label then text = props.Label end -- (the knife cards say BUY, like his mockup)
 		badge.Visible = priced
 		b.setText(text)
 		b.setFont(if text:find("%d") then Theme.Fonts.Number else Theme.Fonts.Button) -- prices: Montserrat Bold
@@ -151,12 +154,45 @@ local function card(parent: Instance, name: string, pos: Vector2, size: Vector2)
 	return f
 end
 
+-- The knife Game Pass cards, one-to-one with his mockup (Five_Elemental_Knife_Cards.png, 2113 px: cards 403 x 715,
+-- 17 px apart), scaled by 0.2993 so a whole card fits the window's body (120 x 214): a dark purple panel with a thin
+-- lighter rim, the knife art with its element glow (his own art, cut by tools/icons/cut_pass_knife_cards.py), the
+-- name fading from white to the element's colour with a soft glow, KNIFE under it, and a violet BUY with the Robux mark.
+-- Colours measured on the mockup (Config/Products Card). BUY opens Roblox's prompt only once the pass has its ID.
+local KNIFE_CARD = { W = 120, H = 214, Gap = 6, Art = Vector2.new(118, 147), NameY = 149, NameH = 16, SubY = 165,
+	ButtonX = 5, ButtonY = 178, ButtonW = 110, ButtonH = 31 }
+local function buildKnifeCards(body: Frame): number
+	local K = KNIFE_CARD
+	local passes = Products.knifePasses()
+	local x0 = math.floor((BODY_W - (#passes * K.W + (#passes - 1) * K.Gap)) / 2)
+	for i, p in passes do
+		local look = p.Card
+		local c = new("Frame", { Name = p.Key, Position = UDim2.fromOffset(x0 + (i - 1) * (K.W + K.Gap), 1), Size = UDim2.fromOffset(K.W, K.H), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = body }, { Kit.corner(5), Kit.stroke(look.Rim, 1) })
+		new("UIGradient", { Rotation = 90, Parent = c, Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, look.Top), ColorSequenceKeypoint.new(0.69, look.Top), ColorSequenceKeypoint.new(1, look.Bottom),
+		}) })
+		Kit.attach(Kit.corner(4), Kit.art(p.Art, { Name = "Picture", Position = UDim2.fromOffset(1, 1), Size = UDim2.fromOffset(K.Art.X, K.Art.Y), Parent = c }))
+		local title = Kit.name({ Name = "Name", Text = p.Name, FontFace = Theme.Fonts.Heading, TextSize = 15, TextWrapped = false, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(4, K.NameY), Size = UDim2.fromOffset(K.W - 8, K.NameH), ZIndex = 2, Parent = c })
+		Kit.fitLine(title, K.W - 10, 15, 10, true)
+		new("UIGradient", { Rotation = 90, Color = ColorSequence.new(Color3.new(1, 1, 1), look.Name), Parent = title })
+		new("UIStroke", { Name = "Glow", Color = look.Glow, Thickness = 1.5, Transparency = 0.5, LineJoinMode = Enum.LineJoinMode.Round, Parent = title }) -- (the mockup's soft glow round the name)
+		Kit.text({ Name = "Kind", Text = "KNIFE", FontFace = Theme.Fonts.Button, TextSize = 9, TextColor3 = look.Sub, TextXAlignment = Enum.TextXAlignment.Center, TextWrapped = false, Position = UDim2.fromOffset(0, K.SubY), Size = UDim2.fromOffset(K.W, 10), Parent = c })
+		buyButton(c, p, { Position = UDim2.fromOffset(K.ButtonX, K.ButtonY), Size = UDim2.fromOffset(K.ButtonW, K.ButtonH), TextSize = 16, BadgeScale = 1.4, IconSize = 16, Style = "PassViolet", Corner = 4, Label = "BUY" })
+		Effects.shine(c, { every = 5, delay = (i - 1) * 0.7, corner = 5, strength = 0.22, z = 5 })
+	end
+	return if #passes > 0 then 1 + K.H + 12 else 0
+end
+
 -- Passes: broad rows, after the owner's pass banners (design/shop/pass-banners.png): deep see-through navy with a
 -- glowing rim in the pass's colour, the banner's character picture at the left, a big title with a soft colour
 -- fade and a short line under it, the blurb tinted, and the price button in the same colour.
 local function buildPasses(body: Frame)
-	local y = 0
-	for i, p in Products.Passes do
+	local y = buildKnifeCards(body)
+	local banners = {}
+	for _, p in Products.Passes do
+		if not p.Knife then table.insert(banners, p) end
+	end
+	for i, p in banners do
 		local h = i == 1 and 97 or 103 -- the reference's two rows differ slightly
 		local accent = p.Accent or C.Action
 		local row = card(body, p.Key, Vector2.new(0, y), Vector2.new(BODY_W, h))

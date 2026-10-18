@@ -98,6 +98,10 @@ do -- the lobby avatar stands: finds his grey blocks, readies the pass knives (a
 	local ok, err = pcall(function() require(HuzzServer.AvatarStandService).start() end)
 	if not ok then warn("[Huzz] avatar stands: " .. tostring(err)) end
 end
+do -- the owner's admin panel (give any knife, spawn any girl; owner only, HuzzServer/AdminService)
+	local ok, err = pcall(function() require(HuzzServer.AdminService).start() end)
+	if not ok then warn("[Huzz] admin panel: " .. tostring(err)) end
+end
 -- No jumping anywhere (owner): Space is the huss in the lobby too (RoundService keeps every Humanoid at 0).
 pcall(function()
 	game:GetService("StarterPlayer").CharacterJumpHeight = 0

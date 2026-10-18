@@ -90,7 +90,7 @@ Owner's own words are in quotes. Read only the section you need.
 ## 4. Checks, previews, builds (Lune 0.10.5 at `/root/bin/lune`; run before every commit)
 - `PATH=/root/bin:$PATH bash tools/check.sh`: compiles every script; specs (RoundRules, CarryMath, GirlMotion,
   GirlMoves, StabMotion, DownMotion, Movement, Locomotion, PlayerMoves, GirlRoll, CrateRoll, SpinWheel, Leaderboards,
-  Knives, KnifeWear, Sounds, SetupKnives, LobbyLayout); **the full-game simulation** (`tools/sim/round_sim.luau`: real server code, bots
+  Knives, KnifeWear, Sounds, SetupKnives, AdminRules, StandShowcase, LobbyLayout); **the full-game simulation** (`tools/sim/round_sim.luau`: real server code, bots
   that run, stab, lunge, rescue, use powers; 7 setups). `lune run huzz-valley/tools/sim/round_sim.luau audit` (repo root) prints the
   loop numbers (stage times, waiting, win rates by player count, on the real map size) for `docs/loop-audit.md`. Its stubs (e.g. `KnifeService`) must get any new function
   RoundService calls, or games stop with "attempt to call a nil value".
@@ -538,10 +538,18 @@ Owner's own words are in quotes. Read only the section you need.
   (`motion3d/knife_wear_scene.luau`).
   **Game Pass knives** (owner Oct 18, `design/knives/gamepass/Gamepass_Knives.glb`): 5 more, rarity **Exclusive**
   (Mythic's calm effects, pink-white card), Order 131-135, `Pass` in `Config/CoinShop`, Price 0, never sold for coins
-  (BuyWithCoins says "That one comes with the <pass> Game Pass."). VIP: Celestial Seraph, Crimson Requiem, Hollow
-  Eclipse; Dance Pack: Dragon's Maw, Frostbound Oath. `ShopService` grants them only when Roblox says you own the
-  pass (`CoinShop.passGrants`), and wears one if your Knife slot is empty. Same pipeline (35 rows in `knives.json`,
-  cards with a GAME PASS label). A refunded pass doesn't take them back yet.
+  (BuyWithCoins says "That one comes with the <pass> Game Pass."). **Each is its own Game Pass** (owner Oct 18: "these
+  are going to be the gamepasses users can buy"; `Config/Products` `Knife`/`Card`, his card names): Hunter Knife =
+  Crimson Requiem, Moonlit Knife = Hollow Eclipse, Sunrise Knife = Celestial Seraph, Inferno Knife = Dragon's Maw,
+  Frost Knife = Frostbound Oath (checked against the meshes: all five match). VIP and Dance Pack give no knife now.
+  `ShopService` grants them only when Roblox says you own the pass (`CoinShop.passGrants`), and wears one if your
+  Knife slot is empty. Same pipeline (35 rows in `knives.json`, cards with a GAME PASS label). A refunded pass doesn't
+  take them back yet. **Shop > PASSES** opens on 5 cards one-to-one with his mockup
+  (`design/knives/Five_Elemental_Knife_Cards.png`, scaled 0.2993 to 120 x 214 so a whole card fits; art cut by
+  `tools/icons/cut_pass_knife_cards.py` into `assets/art/pass-knife-*.png`, 240 px, Play only until uploaded), the VIP
+  and Dance Pack banners under them; BUY + Robux mark, "coming soon" and never a prompt while `Id = 0`, Price 0 = not
+  set (the live price shows once there's an ID). Side by side `docs/previews/knife-cards-vs-mockup.jpg`
+  (`shots.sh shop-knife-cards` + `side_by_side.py knife-cards`).
   Hand by the model's `Grip`; effects `KnifeLook.LADDER`: Common none, Uncommon sheen, Rare soft light, Epic +3
   sparkles a second and a tinted slash trail, Legendary light Range 4 + glow on the back, Mythic + embers (stand-in
   particle textures until uploads). Pictures `docs/previews/knives-vs-hv.jpg`, `knife-leap.mp4`.
@@ -593,8 +601,9 @@ Owner's own words are in quotes. Read only the section you need.
   price button. **Where:** in his new lobby (Oct 18: "add ... all of the gamepass things to the new lobby") an
   invisible flat `AvatarStand` part on each of the five small round grey pads at the plaza's front
   (`Shared/LobbyLayout.standSpots`; `Workspace > HuzzAvatarStands`, tagged, `StandOn` Top, facing into the plaza): the
-  three-pad side (by the podiums) is VIP with Celestial Seraph, Crimson Requiem, Hollow Eclipse, the two-pad side
-  Dance Pack with Dragon's Maw, Frostbound Oath; one Game Pass knife per stand, in every lobby copy.
+  three-pad side (by the podiums) sells Hunter, Moonlit and Sunrise Knife, the two-pad side Inferno and Frost Knife:
+  each stand one knife Game Pass and its knife, the five once each in every lobby copy (`AvatarStandRules.assign`,
+  used by AvatarStandService and the place build; a stand on VIP / Dance Pack is moved onto the next knife pass).
   `HuzzServer/AvatarStandService` makes them at game start when the place has no stands (his Rojo-synced place); the
   place build saves the same ones. Places without pads: his grey blocks beside the big spin wheels
   (`AvatarStandRules.findBlocks`; his old islands' blocks now stay plain blocks). It puts a ready copy of each pass
@@ -623,6 +632,15 @@ Owner's own words are in quotes. Read only the section you need.
   steady rarity glow is the display knife's own. Knife-less stands keep the run. Spec `tests/StandShowcase.spec`
   (blade in front of the torso at ready, a move every loop, no pops at 30/60 fps, back to ready, feet planted);
   video `docs/previews/stand-showcase.mp4` (`tools/preview/motion3d/stand_scene.luau`, mock rigs, his meshes).
+
+- **Admin panel** (owner, Oct 18: "give me a admin command panel or something so i can get any knife or any girl to
+  spawn when i want it to do so"): `Screens/Admin` + `HuzzServer/AdminService` + `Shared/AdminRules`. Only the game's
+  owner: Studio, else `player.UserId == game.CreatorId` (a game he owns) or rank 255 in the creator group (a group
+  game); no user IDs typed anywhere, the server checks every request (remote `Admin`, ActionService's 0.15 s limit).
+  Admins get a small ADMIN button bottom-left (Player attribute `HuzzAdmin`) opening KNIVES (GIVE: yours and worn) and
+  GIRLS (SPAWN: yours and your companion, behind you at once; NEXT GAME: `GirlService.setNext`, the next roll lands on
+  her, a Secret plays her cutscene). Spawning a girl loose mid-lobby doesn't fit the loop, so it's companion or next
+  game. Checks `tests/AdminRules.spec` (a non-admin is refused), `tools/preview/check_admin.luau` (the real server).
 
 ## 12. Sounds
 - **Button sounds** (owner Oct 18: "they sound glitchy, and dont feel too premium"): one press = one sound. Kit
@@ -668,7 +686,8 @@ Owner's own words are in quotes. Read only the section you need.
   `SafetyService` strips the known Basket Ball Hoop one.
 
 ## 14. Open items (a running list; add to it as the owner reports more)
-- Owner: Game Pass IDs (VIP 199, Dance Pack 149: the stands and pass knives wait for them); import
+- Owner: Game Pass IDs (VIP 199, Dance Pack 149, and the 5 knife passes, Price 0 until he sets them: the cards and
+  stands wait for them); import
   `Gamepass_Knives.glb` + rerun SetupKnives and Developer Product IDs (Sunset Trail, Blossom Aura, coin
   packs, spins 1/10/100); upload sounds, pictures and animations; an export of their spin wheel model (match its
   colours); run the knife setup and send `HuzzKnives.rbxm` (section 11, "Knives"); power icons; a stab animation; crate contents; dance names; movement pack licence.
@@ -691,8 +710,8 @@ Owner's own words are in quotes. Read only the section you need.
   the same place; the game counts them once, but it doubles those parts); his old islands still float off to the side
   in `Maps > Spawn` (unused; deleting them is safe: the game makes a spawn on each plaza if his SpawnLocations go too).
   The terrace boards can brush the higher slope behind them when turned far to the side.
-- Pass knives: the Shop's pass rows don't list them yet; a refunded pass keeps them; six stands, five knives
-  (the sixth repeats Dragon's Maw).
+- Pass knives: a refunded pass keeps them; six grey-block stands (older places), five knives (the sixth repeats
+  Hunter Knife). The card names use Gotham (the owner's font rule), wider than his mockup's rounded font.
 - Us: whatever the owner's next round of fixes asks for first; then the Gift Picker, more lore chapters.
 - Everything in sections 7 to 12 is the current version, open to change: tuning numbers (speeds, odds, prices,
   lunge, wheel prizes), looks and feel are first passes waiting for the owner's verdict in Studio.

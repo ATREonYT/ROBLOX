@@ -13,6 +13,8 @@
 --                                  HuzzDanceAt) so people who start the same dance nearby dance in step
 --   Spin           RemoteFunction  client -> server: (count) spin the wheel 1, 5 or 10 times -> ok, result or why
 --   SpinOpen       RemoteEvent     server -> client: open the Spin the Wheel screen (you used the wheel in the lobby)
+--   Admin          RemoteEvent     client -> server: (verb, key) the owner's admin panel (GiveKnife / SpawnGirl / NextGirl);
+--                                  server -> client: (ok, message, verb, key). Owner only, checked by AdminService
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -34,6 +36,7 @@ local SPEC = {
 	Lunge = "RemoteEvent",
 	Spin = "RemoteFunction",
 	SpinOpen = "RemoteEvent",
+	Admin = "RemoteEvent",
 }
 
 local folder: Folder

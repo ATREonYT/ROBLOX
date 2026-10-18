@@ -18,6 +18,7 @@ shot() { # name, reference page, width, height, options
 }
 ONLY="$*"
 shot shop-passes 01-shop-passes 1536 710 '{SCREEN="Shop", TAB="Passes", SCALE=2, PASSES="VIP"}'
+shot shop-knife-cards none 1536 730 '{SCREEN="Shop", TAB="Passes", SCALE=2}' # (vs his Five_Elemental_Knife_Cards.png: side_by_side.py knife-cards)
 shot shop-cosmetics 07-shop-cosmetics 1536 730 '{SCREEN="Shop", TAB="Cosmetics", SCALE=2, OWN="MidnightOutfit"}'
 shot shop-items 07-shop-cosmetics 1536 730 '{SCREEN="Shop", TAB="Items", SCALE=2, OWN="MintTrail"}'
 shot shop-knives none 1536 730 '{SCREEN="Shop", TAB="Items", SCALE=2, OWN="SpinKnife,IceKnife", COINS=1500, SCROLL=890}' # (the owner's knives, Oct 18)

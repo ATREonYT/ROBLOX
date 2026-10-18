@@ -1,7 +1,9 @@
 # One side-by-side picture for the owner: the mockup's window on top, our render of the same window under it, both
 # scaled to the same width (same framing: each crop is the window's outer edge).
 # Usage (from huzz-valley/): python3 tools/preview/side_by_side.py <screen> <our render.png> [out.jpg]
-#   screens: coins, dances, how-to-play. Our render comes from shots.sh (SCALE=2, the window centred in the shot).
+#   screens: coins, dances, how-to-play, knife-cards. Our render comes from shots.sh (SCALE=2, the window centred in
+#   the shot). knife-cards: the owner's five knife Game Pass cards (Oct 18) vs the card row of Shop > PASSES
+#   (shots.sh shop-passes), both cropped to the cards with the same margin.
 import sys
 from PIL import Image, ImageDraw, ImageFont
 
@@ -10,6 +12,8 @@ SCREENS = {
     'coins': ('design/ui-oct17/shop-items-coins-dances.png', (12, 398, 936, 812), 'docs/previews/coins-vs-mockup.jpg'),
     'dances': ('design/ui-oct17/shop-items-coins-dances.png', (960, 398, 1872, 812), 'docs/previews/dances-vs-mockup.jpg'),
     'how-to-play': ('design/ui-oct17/how-to-play.png', (12, 6, 1370, 898), 'docs/previews/how-to-play-vs-mockup.jpg'),
+    # the cards span x 16-2096, y 14-729 in his file; ours x 40-664, y 95-309 of the window (Shop.lua KNIFE_CARD)
+    'knife-cards': ('design/knives/Five_Elemental_Knife_Cards.png', (6, 4, 2106, 739), 'docs/previews/knife-cards-vs-mockup.jpg', (37, 92, 667, 312)),
 }
 WIDTH, LABEL = 1200, 44
 
@@ -33,11 +37,14 @@ def ours_box(im):
 
 def main():
     name, render = sys.argv[1], sys.argv[2]
-    mock_file, box, out = SCREENS[name]
+    mock_file, box, out = SCREENS[name][:3]
+    part = SCREENS[name][3] if len(SCREENS[name]) > 3 else None
     out = sys.argv[3] if len(sys.argv) > 3 else out
     mock = Image.open(mock_file).convert('RGB').crop(box)
     ours = Image.open(render).convert('RGB')
     ours = ours.crop(ours_box(ours))
+    if part:  # a part of the window, in window points (2x in the shot)
+        ours = ours.crop(tuple(2 * v for v in part))
     rows = []
     for label, im in (('Your mockup', mock), ('Ours (game screen)', ours)):
         im = im.resize((WIDTH, round(im.height * WIDTH / im.width)), Image.LANCZOS)
