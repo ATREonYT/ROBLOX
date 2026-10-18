@@ -277,11 +277,15 @@ Owner's own words are in quotes. Read only the section you need.
   stride, streaks rising off the floor, and a beat (draw in 0.35 s, flare, a ring runs out, sparkles; Mythic up a
   crescent slash) every 3.6/3.0/2.6 s. Carried: nothing on or from the floor (no pool, floor particles, puffs or foot
   trails). Streamed-out parts: Auras drops the effects and rebuilds them when she streams back.
-  Ladder: Common = calm pool + 1 emitter; + ring (Uncommon); + runner, element,
-  puffs, glow (Rare); + 1 orb, breathing (Epic); + flames, beat, 2 orbs, foot trails (Legendary, 6 emitters); + slash,
+  Ladder: Common = calm pool + 1 emitter; + ring (Uncommon); + runner, element, puffs, glow, 2 small calm tongues
+  (Rare; owner picked "Small flames": same wrap and turn, end at her waist to chest, thin, soft, no core, no beat);
+  + 1 orb, breathing, 3 small tongues (Epic); + big flames with a white-hot core, beat, 2 orbs, foot trails (Legendary,
+  6 emitters); + slash,
   hand glints/trails, 3 orbs (Mythic, 7); + two tones, crystals, butterflies, halo, 4 orbs (Secret, 9; budget 12).
   The prize gets at least the Rare look. Only the particles wait for uploads; everything else shows today.
-  Spec: `check_girl_fx.luau` (budget, ladder, beat, pool follows, no per-frame instances). Film
+  Spec: `check_girl_fx.luau` (budget, ladder, Rare/Epic tongues smaller and fewer than Legendary's, beat, pool follows,
+  no per-frame instances). Tier row `motion3d/girl_tiers_scene.luau` + `tools/fx/girl_tiers_sheet.py` →
+  `docs/previews/girl-vfx-tiers.jpg`. Film
   `motion3d/girl_vfx_scene.luau` → `docs/previews/girl-vfx.mp4`; sheet `tools/fx/girl_vfx_vs_ref.py` →
   `girl-vfx-vs-ref.jpg`. Your own aura when she's equipped ("Player") and worn auras keep the older emitter look.
 - `Gameplay/Cinematic` (line-up camera, above), `Gameplay/RoundHud` (text-only top, coloured message line, big banners only for big moments; section 7/10),

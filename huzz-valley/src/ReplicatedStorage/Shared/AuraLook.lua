@@ -18,10 +18,12 @@
 	  Showcase   the big her over the map (3x, at least the Rare look): AuraLook.girl (Oct 18 rebuild, see there):
 	               Common     a faint light pool on the floor and a few tiny motes;
 	               Uncommon   + a thin ring round the pool;
-	               Rare       + a highlight running round the ring, her element, puffs where her feet land, a glow;
-	               Epic       + one orbiting light, a slow breathing swell;
-	               Legendary  + flame tongues hugging her from behind, 2 orbits, a beat (draw in, flare, a ring runs
-	                            out, sparkles), streaks rising off the floor, trails at her feet when she moves;
+	               Rare       + a highlight running round the ring, her element, puffs where her feet land, a glow,
+	                            2 small calm flame tongues (owner picked "Small flames": waist to chest, thin, soft,
+	                            no white-hot core, no beat);
+	               Epic       + one orbiting light, a slow breathing swell, 3 small tongues;
+	               Legendary  + big flame tongues wrapped round her (over her head, a white-hot core), 2 orbits, a beat
+	                            (draw in, flare, a ring runs out, sparkles), streaks rising off the floor, foot trails;
 	               Mythic     + 3 orbits, a crescent slash on each beat, glints and trails on her hands;
 	               Secret     + two tones, 4 orbits, the owner's crystals and butterflies, a halo.
 	Elements: Flame (embers), Frost (snow), Sakura (petals and hearts), Night (heavy dark wisps), Holy (feathers
@@ -470,12 +472,15 @@ AuraLook.vivid = vivid
 
 -- The rarity ladder for the girls (index = rank). Each step adds a new layer, not just more of the same.
 -- r = floor radius, pool = its glow steps (transparency, outside in), ring, runner, inner, breathe, orbs,
--- flames = { outer tongues, white inner tongues, height, width }, beat = seconds between beats, light = { brightness, range }.
+-- flames = { outer tongues, white inner tongues, height, width, short (Rare/Epic: how far up her body they reach, so
+-- they end at her waist to chest; also thinner and softer) }, beat = seconds between beats, light = { brightness, range }.
 local LADDER = {
 	[1] = { r = 1.2, pool = { 0.8, 0.7 }, orbs = 0 }, -- (critic, Oct 18: a visible but calm pool, was 0.9/0.84)
 	[2] = { r = 1.3, pool = { 0.78, 0.66 }, ring = 0.5, orbs = 0 },
-	[3] = { r = 1.5, pool = { 0.8, 0.72, 0.62 }, ring = 0.4, runner = true, orbs = 0, light = { 0.3, 5 } },
-	[4] = { r = 1.6, pool = { 0.78, 0.68, 0.58 }, ring = 0.32, runner = true, breathe = 0.05, orbs = 1, light = { 0.45, 6 } },
+	[3] = { r = 1.5, pool = { 0.8, 0.72, 0.62 }, ring = 0.4, runner = true, orbs = 0, light = { 0.3, 5 },
+		flames = { 2, 0, 0.5, 0.5, 0.6 } },
+	[4] = { r = 1.6, pool = { 0.78, 0.68, 0.58 }, ring = 0.32, runner = true, breathe = 0.05, orbs = 1, light = { 0.45, 6 },
+		flames = { 3, 0, 0.6, 0.55, 0.6 } },
 	[5] = { r = 1.9, pool = { 0.78, 0.68, 0.55 }, ring = 0.25, runner = true, inner = true, breathe = 0.07, orbs = 2,
 		flames = { 5, 2, 1.2, 1.15 }, beat = 3.6, light = { 0.8, 8 } },
 	[6] = { r = 2.1, pool = { 0.76, 0.66, 0.52 }, ring = 0.2, runner = true, inner = true, breathe = 0.08, orbs = 3,
@@ -547,7 +552,9 @@ function AuraLook.girl(look, rarity, kind)
 	if L.flames then
 		local f = L.flames
 		out.flames = { count = f[1], core = f[2], radius = 1.0, height = f[3], width = f[4], twist = 1.1, spin = 0.5,
-			colors = { white, vivid(main), vivid(accent), deep } }
+			colors = { white, vivid(main), vivid(accent), deep }, short = f[5], soft = if f[5] then true else nil }
+	end
+	if L.beat then
 		out.beat = { every = L.beat, pre = 0.35, burst = 4 + 2 * (rank - 4), shock = true, slash = rank >= 6 }
 		out.wake = { feet = true, hands = rank >= 6, colors = { WHITE, main, deep } }
 		-- sparkles that burst out on the beat
@@ -686,6 +693,7 @@ end
 -- sizes, the two widths and the two bend directions. Each leaves the floor just outside her feet and wraps round
 -- her as it rises; heights are staggered (golden-ratio steps: some end at her shoulders, some over her head), the
 -- tip flickers and jumps on the beat. The core tongues hug her outline, white-hot, drawn just behind her.
+-- F.short (Rare/Epic): the same wrap and turn, but they end at her waist to chest, near her outline.
 function AuraLook.flameAt(F, i, core, t, energy, seed)
 	local d0, d1, a, b = AuraLook.flameDirs(F, i, core, t)
 	local ph = (seed or 0) + i * 1.7 + (if core then 0.9 else 0)
@@ -693,13 +701,14 @@ function AuraLook.flameAt(F, i, core, t, energy, seed)
 	local hm = if core then 0.9 + 0.1 * stagger else 0.62 + 0.38 * stagger
 	local flick = 0.85 + 0.1 * math.sin(t * 3.1 + ph) + 0.05 * math.sin(t * 7.3 + ph * 2.3)
 	local h = F.height * (if core then 0.55 else 1) * hm * flick * energy
+	local short = F.short or 1
 	local r0 = F.radius * (if core then 0.95 else 1.2)
-	local rt = F.radius * (if core then 0.35 else 1.25 - hm)
+	local rt = F.radius * (if core then 0.35 elseif F.short then 1.0 else 1.25 - hm)
 	local p0 = Vector3.new(math.cos(a) * r0, -2.45, math.sin(a) * r0)
-	local p1 = Vector3.new(math.cos(b) * rt, -2.45 + 4.65 * hm + h, math.sin(b) * rt)
-	local reach = F.radius * (if core then 1.1 else 1.6) * (0.85 + 0.15 * energy)
+	local p1 = Vector3.new(math.cos(b) * rt, -2.45 + 4.65 * hm * short + h, math.sin(b) * rt)
+	local reach = F.radius * (if core then 1.1 else 1.6) * (0.85 + 0.15 * energy) * math.max(0.6, short)
 	local width = F.width * (if core then 0.6 else 0.75 + 0.25 * hm) * (0.8 + 0.2 * energy)
-	return p0, p1, reach, F.radius * (if core then 0.7 else 0.9), width, 0.04, d0, d1
+	return p0, p1, reach, F.radius * (if core then 0.7 else 0.9) * short, width, 0.04, d0, d1
 end
 
 -- Orbiting light i of n at time t: its offset from her body centre (5-stud body). Odd ones go one way, even

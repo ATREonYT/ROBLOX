@@ -399,7 +399,8 @@ function Sim.draw(sys, cam, sprites, ribbons, lights)
 	if F and on and sys.AuraLook then
 		local root = sys.rig.root.CFrame
 		local white, main, accent, deep = F.colors[1], F.colors[2], F.colors[3], F.colors[4] or F.colors[2]
-		local outerA = { { 0, 1 }, { 0.1, 0.25 }, { 0.55, 0.3 }, { 0.85, 0.6 }, { 1, 1 } }
+		local outerA = if F.soft then { { 0, 1 }, { 0.12, 0.5 }, { 0.55, 0.55 }, { 0.85, 0.8 }, { 1, 1 } }
+			else { { 0, 1 }, { 0.1, 0.25 }, { 0.55, 0.3 }, { 0.85, 0.6 }, { 1, 1 } }
 		local coreA = { { 0, 1 }, { 0.12, 0.1 }, { 0.6, 0.35 }, { 1, 1 } }
 		local W = Color3.new(1, 1, 1)
 		for _, core in { false, true } do

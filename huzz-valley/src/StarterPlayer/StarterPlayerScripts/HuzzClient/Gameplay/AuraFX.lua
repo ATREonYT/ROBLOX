@@ -350,12 +350,14 @@ function AuraFX.attach(model, spec, opts)
 	if F then
 		local white, main, accent, deep = F.colors[1], F.colors[2], F.colors[3], F.colors[4] or F.colors[2]
 		local soft = FxTexture.ready("BeamGlow") -- (soft edges once the owner's beam picture is uploaded)
-		local outerAlpha = numberSeq({ { 0, 1 }, { 0.1, 0.25 }, { 0.55, 0.3 }, { 0.85, 0.6 }, { 1, 1 } })
+		-- (Rare/Epic's small tongues, F.soft: fainter and calmer)
+		local outerAlpha = if F.soft then numberSeq({ { 0, 1 }, { 0.12, 0.5 }, { 0.55, 0.55 }, { 0.85, 0.8 }, { 1, 1 } })
+			else numberSeq({ { 0, 1 }, { 0.1, 0.25 }, { 0.55, 0.3 }, { 0.85, 0.6 }, { 1, 1 } })
 		local coreAlpha = numberSeq({ { 0, 1 }, { 0.12, 0.1 }, { 0.6, 0.35 }, { 1, 1 } })
 		local function tongues(core)
 			local n = if core then F.core else F.count
 			-- (the walking girls keep most of it: beams cost no particles)
-			if lite then n = if core then math.max(1, n - 1) else math.ceil(n * 0.75) end
+			if lite and n > 0 then n = if core then math.max(1, n - 1) else math.ceil(n * 0.75) end
 			for i = 1, n do
 				local d0, d1 = AuraLook.flameDirs(F, i, core, 0)
 				local a0, a1 = keep(Instance.new("Attachment")), keep(Instance.new("Attachment"))
@@ -370,9 +372,9 @@ function AuraFX.attach(model, spec, opts)
 				b.Color = if core then colorSeq({ { 0, WHITE }, { 0.6, WHITE:Lerp(main, 0.35) }, { 1, white } })
 					else colorSeq({ { 0, WHITE:Lerp(tone, 0.45) }, { 0.3, tone }, { 1, tone:Lerp(deep, 0.35) } })
 				b.Transparency = if core then coreAlpha else outerAlpha
-				b.LightEmission = (if core then 1 else 0.4) * glow -- (her colour stays her colour in daylight)
+				b.LightEmission = (if core then 1 elseif F.soft then 0.3 else 0.4) * glow -- (her colour stays her colour in daylight)
 				b.LightInfluence = 0
-				b.Brightness = if core then 1.6 else 1.3
+				b.Brightness = if core then 1.6 elseif F.soft then 1 else 1.3
 				b.FaceCamera = true
 				b.Segments = 16
 				-- the core behind her body; the outer ones only a little back (in front of her legs, behind her face)

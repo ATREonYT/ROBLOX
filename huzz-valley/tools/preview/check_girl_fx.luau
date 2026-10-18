@@ -157,6 +157,7 @@ for _, look in looks do
 			local layers = (spec.ground and 1 or 0) + (spec.ground and spec.ground.ring and 1 or 0)
 				+ (spec.ground and spec.ground.runner and 1 or 0) + (spec.orbs and 1 or 0) + (spec.flames and 1 or 0)
 				+ (spec.slashes and 1 or 0) + (spec.halo and 1 or 0) + (spec.ground and spec.ground.breathe > 0 and 1 or 0)
+				+ (spec.beat and 1 or 0)
 			local floor = if kind == "Showcase" then 3 else 1 -- (the prize always gets at least the Rare look)
 			if rank > floor then
 				check(`{tag} {rarity}: a new layer over {RARITIES[rank - 1]} ({lastLayers} -> {layers})`, layers > lastLayers)
@@ -168,7 +169,26 @@ for _, look in looks do
 			check(`{tag} {rarity}: emitters in budget ({b.emitters})`, b.emitters <= (if r <= 2 then 2 elseif r <= 4 then 4 elseif r <= 6 then 8 else 12))
 			check(`{tag} {rarity}: particles alive in budget ({b.live})`, b.live <= (if r <= 2 then 5 else 75))
 			if rank < 5 and kind == "Companion" then
-				check(`{tag} {rarity}: tiny below Legendary (no flames, beat, slashes or wake)`, spec.flames == nil and spec.beat == nil and spec.slashes == nil and spec.wake == nil)
+				check(`{tag} {rarity}: tiny below Legendary (no beat, slashes or wake)`, spec.beat == nil and spec.slashes == nil and spec.wake == nil)
+				-- owner picked "Small flames": Rare and Epic get a few small calm tongues, clearly under Legendary's
+				local big = AuraLook.build(look, "Legendary", kind).flames
+				local F = spec.flames
+				if rank <= 2 then
+					check(`{tag} {rarity}: no flames`, F == nil)
+				else
+					local function tallest(G)
+						local top = -math.huge
+						for i = 1, G.count do
+							local _, p1 = AuraLook.flameAt(G, i, false, 0, 1, 0)
+							top = math.max(top, p1.Y)
+						end
+						return top
+					end
+					check(`{tag} {rarity}: small flames, fewer, thinner, no white-hot core`, F ~= nil and F.count < big.count
+						and F.core == 0 and F.width < big.width * 0.6 and F.soft == true)
+					local top = if F then tallest(F) else 99
+					check(`{tag} {rarity}: they end at her waist to chest ({top}), Legendary's over her head`, top < 1.2 and top > -0.6 and tallest(big) > 2.2)
+				end
 				check(`{tag} {rarity}: small floor glow`, spec.ground.radius <= 1.6)
 			end
 			if rank <= 2 and kind == "Companion" then
