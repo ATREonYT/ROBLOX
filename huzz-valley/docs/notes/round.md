@@ -55,12 +55,11 @@ The lobby side (one lobby per map, paint, his new lobby): [lobby.md](lobby.md). 
   next round". The hit, slide and getting up: [stab-lunge-catch.md](stab-lunge-catch.md).
 
 ## Who gets the girl
-- **Chicken gets nothing:** a runner who chose Chicken (not a timed-out random pick) and never went Hero this game
-  can't be handed the girl at the end (`RoundRules` `chickens`, `brave`: one Hero run keeps the claim); if every runner
-  left chose Chicken nobody wins her ("Nobody went HERO", Results "Chicken gets nothing. Go HERO to win her!").
+- **Chicken still wins her** (owner Oct 19: "make them get her"): choosing Chicken never takes the claim away. The
+  Hero's edge is getting her first, alone, plus the Hero bonus. `s.chickens` still records who chose Chicken.
 - **First across wins her when no Hero did:** after Chicken, a caught Hero or a timed-out Hero, while she still
   floats, the first runner across takes her (`RoundRules.reachSafe`, GirlMoved "First", "X got there first and won
-  <girl> over!"), skipping whoever chose Chicken. A catcher holding her keeps her.
+  <girl> over!"), the one who chose Chicken included. A catcher holding her keeps her.
 - A catchers' win: the girl goes to the catcher with the most catches (lead breaks ties).
 - **Girl odds** (`Config/Round.Rarities`): Common 28, Uncommon 24, Rare 20, Epic 14, Legendary 8, Mythic 4.5,
   Secret 1.5. The Secret girls are **C.C. and Marin** (owner, Oct 17; `Config/GirlNames`); their cutscene:
@@ -101,7 +100,7 @@ The lobby side (one lobby per map, paint, his new lobby): [lobby.md](lobby.md). 
   vote) a GAME OVER window: YOU WIN / YOU LOST / THE BOT WINS, who got the girl, cards for crossed / caught / saved /
   hero runs (this game only: RoundService `tally`, filled by `addStat`) and the coins + Aura earned (Round remote
   "Results", per player; coins include a Hero bonus, Aura the stars collected: player attribute `HuzzGameAura`).
-  Also a CATCHES card, XP pill, "X takes her home"; Hero card "Make it: carry her +25", Chicken "Safe, but no girl".
+  Also a CATCHES card, XP pill, "X takes her home"; Hero card "Make it: carry her +25", Chicken "First across wins her".
   Preview: `shots.sh <out> results`.
 - **Pay:** 25 coins a game, 50 for a win, +3 Aura on a win, Hero bonus 25 (only with another runner in the game);
   x2 while a wheel boost lasts. A catchers' win pays only catchers who caught someone (or the lead). A repeat girl
@@ -136,7 +135,9 @@ The lobby side (one lobby per map, paint, his new lobby): [lobby.md](lobby.md). 
 - **Pinpoint:** owner Oct 18: "make hitboxes pinpoint".
 - **Catcher walls:** owner Oct 18 asked that catchers stay out of both safe zones.
 - **Chicken:** owner Oct 18: "you dont recieve the girl if you run chicken". Later the same day: "if you go chicken,
-  still the first person to reach the safe zone gets the girl, right now nobody does".
+  still the first person to reach the safe zone gets the girl, right now nobody does". Oct 19 (alone, he chose
+  Chicken in round 1, crossed first and got nothing): "fix the users not getting the girl if they win on the chicken
+  round in the first round ... make them get her", so Chicken no longer blocks her at all.
 - **Downed pose:** owner Oct 18: "not have a swinging animations ... make them lay on the floor and look like their dead".
 - **Practice Bot:** owner picked "Yes, add bots" (Oct 17).
 - **Speeds** were raised twice before reaching today's numbers.

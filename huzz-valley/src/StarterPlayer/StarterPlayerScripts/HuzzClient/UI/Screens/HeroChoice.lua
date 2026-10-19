@@ -129,7 +129,7 @@ function HeroChoice.build(parent: Instance)
 		hero.line.Text = "Run first. Alone."
 		hero.line2.Text = `Make it: carry her +{Config.HeroBonus}`
 		chicken.line.Text = "Run with the group"
-		chicken.line2.Text = "Safe, but no girl"
+		chicken.line2.Text = "First across wins her"
 	end
 	RunService.RenderStepped:Connect(refresh)
 	HeroChoice.refresh = refresh -- (the offline preview calls it)

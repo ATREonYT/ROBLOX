@@ -18,15 +18,15 @@
 	  - A Hero who survives the solo crossing gets her: she comes down onto their shoulders (from the sky,
 	    or from the catcher who stole her).
 	  - No Hero won her this round (Chicken, or the Hero failed) and she's still floating: the first runner
-	    across takes her ("First"), skipping anyone who chose Chicken this game.
+	    across takes her ("First"), whoever chose Chicken included.
 	  - A catcher who stabs her carrier steals her: she follows that catcher around.
 	  - When the game ends she goes home with the winning side: whoever on that side holds her; if
 	    nobody does, the runners' last successful Hero (else a random runner who made it), or the catcher
 	    with the most catches (the lead catcher wins a tie).
-	  - Chicken gets nothing (owner, Oct 18: "you dont recieve the girl if you run chicken"): a runner who
-	    chose Chicken this game and never went Hero can't be handed her at the end (s.chickens). Going
-	    Hero once is enough: a Hero who carried her home or was the last Hero keeps their claim even if they
-	    pick Chicken later. If every runner left only ever chose Chicken, nobody wins her.
+	  - Chicken still wins her (owner, Oct 19: "fix the users not getting the girl if they win on the chicken
+	    round ... make them get her"; this replaces Oct 18's "you dont recieve the girl if you run chicken"):
+	    choosing Chicken never takes away the claim. The Hero's edge is getting her first, alone, plus the
+	    Hero bonus. s.chickens still records who chose Chicken (Results text), it no longer blocks her.
 
 	Runner status during a round: "Active" (still to cross) | "Safe" (across) | "Downed" (stabbed).
 	Every function returns a list of events:
@@ -77,16 +77,14 @@ local function girlWinner(s, team)
 		if s.lastHero and s.roles[s.lastHero] == "Runner" then
 			return s.lastHero
 		end
-		local made, brave = {}, {}
+		local made, all = {}, {}
 		for _, id in idsWithRole(s, "Runner") do
-			if not s.chickens[id] then
-				table.insert(brave, id)
-				if s.status[id] == "Safe" then
-					table.insert(made, id)
-				end
+			table.insert(all, id)
+			if s.status[id] == "Safe" then
+				table.insert(made, id)
 			end
 		end
-		return pick(s, if #made > 0 then made else brave)
+		return pick(s, if #made > 0 then made else all)
 	end
 	-- the catcher with the most catches; the lead catcher only breaks a tie (loop audit: the lead took her with 0)
 	local best, most = nil, -1
@@ -245,10 +243,10 @@ function RoundRules.reachSafe(s, id)
 		s.lastHero = id
 		table.insert(events, { type = "HeroResult", id = id, survived = true })
 		moveGirl(s, id, "Hero", events) -- the reward: she comes down to the Hero
-	elseif s.holder == nil and s.hero == nil and s.choice ~= nil and not s.chickens[id] then
+	elseif s.holder == nil and s.hero == nil and s.choice ~= nil then
 		-- No Hero run won her (Chicken, or the Hero was caught or ran out of time): the first runner across takes
-		-- her (owner, Oct 18: "if you go chicken, still the first person to reach the safe zone gets the girl").
-		-- Whoever chose Chicken this game still can't (s.chickens): the next runner across gets her instead.
+		-- her (owner, Oct 18: "if you go chicken, still the first person to reach the safe zone gets the girl"),
+		-- the one who chose Chicken too (owner, Oct 19: "make them get her").
 		moveGirl(s, id, "First", events)
 	end
 	return events
