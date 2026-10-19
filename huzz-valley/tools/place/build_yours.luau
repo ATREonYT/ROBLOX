@@ -89,6 +89,18 @@ end
 -- game's own code (Shared/LeaderboardLook), so Studio shows the same board the game fills in. Skipped when the
 -- place already has boards (anything named "Leaderboard..." or with a "Stat" attribute): his spots win.
 local Layout = require("../../src/ReplicatedStorage/Shared/LobbyLayout")
+
+-- One lobby (owner, Oct 19: "make one lobby"): the copy with nothing pasted twice stays (Shared/LobbyLayout.main, or
+-- the floor he ticks MainLobby on); the other copies go whole to ServerStorage > HuzzSpareLobbies, so Studio's edit
+-- view shows the lobby the game uses. HuzzServer/MapService does the same at game start (his own Rojo place), and
+-- every map then loads in front of this lobby. The spawn pad's rail is built at game start (Play only).
+do
+	local main, moved = Layout.putAwaySpares({ Instance = roblox.Instance }, theirs:GetService("Workspace"), theirs:GetService("ServerStorage"))
+	if main then
+		local c = main.CFrame.Position
+		print(string.format("one lobby: kept the copy at (%d, %d); %d of the other copies' parts and models put away", math.round(c.X), math.round(c.Z), moved))
+	end
+end
 local layoutApi = { Instance = roblox.Instance, Vector3 = roblox.Vector3, CFrame = roblox.CFrame }
 do
 	local Look = require("../../src/ReplicatedStorage/Shared/LeaderboardLook")
@@ -102,7 +114,7 @@ do
 	for _, d in ws:GetDescendants() do
 		if (d:IsA("Model") or d:IsA("BasePart")) and (string.sub(key(d.Name), 1, 11) == "leaderboard" or d:GetAttribute("Stat") ~= nil) then has = true end
 	end
-	local floors = Layout.floors(ws)
+	local floors = { Layout.main(ws) } -- (the one lobby: the other copies were put away above)
 	if has then
 		print("leaderboards: the place has its own, kept")
 	else
@@ -152,7 +164,7 @@ do
 	local onPads, padStands = {}, {}
 	if okShop then
 		local holder
-		for _, floor in Layout.floors(ws) do
+		for _, floor in { Layout.main(ws) } do
 			for _, spot in Layout.standSpots(layoutApi, ws, floor) do
 				holder = holder or roblox.Instance.new("Folder")
 				holder.Name = "HuzzAvatarStands"
@@ -250,7 +262,7 @@ do
 	local api = Build.api(roblox)
 	if okCfg then
 		local holder, made, standIns = nil, {}, 0
-		for _, floor in Layout.floors(ws) do
+		for _, floor in { Layout.main(ws) } do
 			for _, spot in Layout.propSpots(layoutApi, ws, floor, Props.ThreePads, Props.TwoPads) do
 				local shape = Shapes[spot.Prop]
 				if shape and Props.Props[spot.Prop] then

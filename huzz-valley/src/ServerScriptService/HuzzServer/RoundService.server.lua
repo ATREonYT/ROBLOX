@@ -241,13 +241,19 @@ local function place(id)
 	end
 	local role = match and match.roles[id]
 	local middle = if zones.Middle then zones.Middle.Position elseif zones.Lobby then zones.Lobby.Position else Vector3.zero
+	-- (every spot is open ground: MapService + Shared/SpawnSpots; the lobby's is its spawn pad)
 	if not role then
 		local zone = (match and zones.Bench) or zones.Lobby
-		if zone then
-			c:PivotTo(MapService.spot(zone, middle))
+		local at = if zone == zones.Bench then MapService.benchSpot(middle) else MapService.lobbySpot()
+		if at or zone then
+			c:PivotTo(at or MapService.spot(zone, middle))
 		end
 	elseif role == "Catcher" then
-		c:PivotTo(MapService.spot(zones.Middle, zones[MapService.startFor(match.round)].Position, Config.Map.MiddleSpawn))
+		local catchers = Rules.idsWithRole(match, "Catcher")
+		table.sort(catchers)
+		local startName = MapService.startFor(match.round)
+		c:PivotTo(MapService.middleSpot(table.find(catchers, id) or 1, startName)
+			or MapService.spot(zones.Middle, zones[startName].Position, Config.Map.MiddleSpawn))
 	elseif lineSpots[id] and match.status[id] == "Active" then
 		c:PivotTo(lineSpots[id])
 	end
@@ -719,7 +725,7 @@ local function runRound()
 		if role == "Catcher" then anyCatcher = true end
 	end
 	if Config.Bot.Enabled and not anyCatcher and #runners > 0 and zones.Middle then
-		botPlayed = PracticeBot.spawn(MapService.spot(zones.Middle, zones[startName].Position, Config.Map.MiddleSpawn))
+		botPlayed = PracticeBot.spawn(MapService.middleSpot(1, startName) or MapService.spot(zones.Middle, zones[startName].Position, Config.Map.MiddleSpawn))
 		if botPlayed then -- (the bot is a catcher too: the safe zones' walls stop it)
 			local ok, bots = pcall(CollectionService.GetTagged, CollectionService, "HuzzBot")
 			for _, m in if ok then bots else {} do
@@ -839,7 +845,7 @@ local function runRound()
 		end
 		PracticeBot.setFrozen(true)
 		if zones.Middle then
-			PracticeBot.place(MapService.spot(zones.Middle, zones[startName].Position, Config.Map.MiddleSpawn))
+			PracticeBot.place(MapService.middleSpot(1, startName) or MapService.spot(zones.Middle, zones[startName].Position, Config.Map.MiddleSpawn))
 		end
 		if match.status[hero] == "Active" then
 			frozen[hero] = true
@@ -981,6 +987,9 @@ local function finishGame()
 		-- Into the winner's collection: the Index shows every id in Characters.
 		DataService.update(winner, function(d)
 			d.Characters[girl.id] = d.Characters[girl.id] or os.time()
+			-- your first girl walks with you at once, so everyone sees her (owner, Oct 19: "make the girls be seen on
+			-- everyones screen"; before, a won girl waited in the Index until you equipped her)
+			if (d.Equipped or "") == "" then d.Equipped = girl.id end
 			if dupeCoins then d.Coins = (d.Coins or 0) + dupeCoins end
 		end)
 		if match.holder ~= winnerId then

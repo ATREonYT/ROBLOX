@@ -55,6 +55,14 @@ the Secret cutscene: [secret-cutscene.md](secret-cutscene.md). How top VFX are b
   `docs/previews/girl-vfx-tiers.jpg`. Film `motion3d/girl_vfx_scene.luau` → `docs/previews/girl-vfx.mp4`; sheet
   `tools/fx/girl_vfx_vs_ref.py` → `girl-vfx-vs-ref.jpg`.
 
+## The pickup's effects (`Gameplay/CarryAnimator` pickupFx, `Gameplay/Burst`)
+- Owner, Oct 19: "add the nice girl animations when they are picked up". Each screen near it (150 studs), once per
+  pickup and only while it is happening (not for someone who joins mid-carry): a small puff of 8 sparkles in her
+  rarity colour and white where she appears, then as she lands in his arms 14 sparkles round her and a soft ring at his
+  feet (1.2 to 5 studs over 0.55 s, fading over its second half), in her rarity colour (the Secret's near-black is a
+  pale glow instead, as on her showcase). No screen flash at all (kid-safe). The film draws them as sprites (a
+  stand-in for Roblox's particles): `docs/previews/girl-pickup.mp4`. The motion: [animations.md](animations.md).
+
 ## The showcase girl (`GirlService.showcase`)
 - The big showcase girl over the map stands on a small stand with a glowing band in her rarity colour (never wider
   than her stance; inside her Aura box, so the cutscene's bounds don't change), a key light low in front (-0.3 x her
@@ -76,7 +84,7 @@ the Secret cutscene: [secret-cutscene.md](secret-cutscene.md). How top VFX are b
   (re-run it if he sends separate files; don't redraw them with make_fx.py).
 
 ## Honest gaps
-- Not seen in Studio yet: the Juice bursts, the girls' effects with real uploads (every particle is a Roblox
+- Not seen in Studio yet: the pickup's puff, sparkles and ring; the Juice bursts, the girls' effects with real uploads (every particle is a Roblox
   stand-in until `Config/ImageIds` is filled).
 
 ## Why it is this way / history

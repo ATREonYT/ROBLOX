@@ -2,8 +2,10 @@
 	Runs the girl animations on this client. The motion itself lives in
 	Shared/CarryMotion and Shared/GirlMotion, which is the same code the offline
 	preview runs. This script feeds them real parts every frame:
-	  - every carried girl (Workspace.HuzzCarried): the pickup flight, the carrier's
-	    raised arms and lean, her limbs and mood (model attributes Mood, MoodAt);
+	  - every carried girl (Workspace.HuzzCarried): the pickup (owner, Oct 19: "add the nice girl animations when
+	    they are picked up": she appears in front of him in a soft puff in her rarity colour, rises turning once into
+	    his arms, and a soft ring at his feet and sparkles mark the catch: Config/Carry; no screen flash), the
+	    carrier's raised arms and lean, her limbs and mood (model attributes Mood, MoodAt);
 	  - the prize girl (tag "HuzzPrize"): her idle, watching the nearest player;
 	  - a girl following a catcher (tag "HuzzFollower", Shared/FollowMotion): she drops
 	    to the ground, then walks or runs behind him and stands when he stops;
@@ -35,6 +37,8 @@ function M.start()
 	local FollowMotion = require(Shared.FollowMotion)
 	local GirlMoves = require(Shared.GirlMoves)
 	local RoundConfig = require(Shared.Config.Round)
+	local Carry = require(Shared.Config.Carry)
+	local Burst = require(script.Parent.Burst)
 
 	local folder = Workspace:WaitForChild("HuzzCarried")
 	local useArmAnimation = Animations.CarryArms ~= ""
@@ -53,12 +57,83 @@ function M.start()
 		return list
 	end
 
+	-- Streaming: a model can reach this screen before its parts (GirlService sends the girls Persistent, so they come
+	-- whole, but never trust it: known pitfall). Wait until she has her root and her parts stop arriving, up to 5 s.
+	local function whenWhole(model)
+		local whole = model.PrimaryPart ~= nil
+		for _, d in model:GetDescendants() do
+			if d:IsA("Motor6D") and not (d.Part0 and d.Part1) then whole = false end
+		end
+		if whole then return true end -- (the usual case: no wait, so her pickup starts on time)
+		local count, still = -1, 0
+		for _ = 1, 50 do
+			if not model.Parent then return false end
+			local n = 0
+			for _, d in model:GetDescendants() do
+				if d:IsA("BasePart") then n += 1 end
+			end
+			if model.PrimaryPart and n > 0 and n == count then
+				still += 1
+				if still >= 2 then return true end
+			else
+				still = 0
+			end
+			count = n
+			task.wait(0.1)
+		end
+		return model.PrimaryPart ~= nil
+	end
+
 	local function seedOf(model)
 		local seed = 0
 		for i = 1, #model.Name do
 			seed = (seed * 31 + string.byte(model.Name, i)) % 1000003
 		end
 		return seed
+	end
+
+	-- Her rarity colour (the Secret's own is near black: a pale glow instead, as her showcase does).
+	local rarityColour = {}
+	for _, r in RoundConfig.Rarities do
+		rarityColour[r.Name] = r.Color
+	end
+	local function colourOf(model)
+		local rarity = model:GetAttribute("Rarity")
+		if rarity == "Secret" then
+			return Color3.fromRGB(235, 235, 255)
+		end
+		return rarityColour[rarity] or Burst.PINK
+	end
+
+	-- The pickup's soft effects, once each, only while it is happening (not for someone who joins mid-carry) and only
+	-- near this camera: a small puff where she appears, then a ring at his feet and sparkles round her as she lands.
+	local function pickupFx(c, now)
+		local rec = c.rec
+		local age = now - rec.start
+		local camera = Workspace.CurrentCamera
+		if age > Carry.PickupTime + 0.5 or (camera and (camera.CFrame.Position - rec.root.Position).Magnitude > 150) then
+			c.fxDone = true
+			return
+		end
+		local colour = colourOf(c.model)
+		if not c.puffed then
+			c.puffed = true
+			if age < 0.3 then
+				pcall(Burst.sparks, rec.from, { colour, Burst.WHITE }, 8,
+					{ speed = NumberRange.new(2, 5), gravity = Vector3.new(0, 3, 0), drag = 3, life = NumberRange.new(0.4, 0.7), glow = 0.4 })
+			end
+		end
+		if CarryMotion.progress(rec, now) >= 1 then
+			c.fxDone = true
+			local girlRoot = rec.motor.Part1
+			local at = if girlRoot then girlRoot.Position else rec.root.Position + Vector3.new(0, 4, 0)
+			pcall(Burst.sparks, at, { colour, Burst.WHITE }, 14,
+				{ speed = NumberRange.new(4, 8), gravity = Vector3.new(0, -4, 0), drag = 3, life = NumberRange.new(0.4, 0.8), glow = 0.4 })
+			local humanoid = c.humanoid
+			local down = if humanoid.HipHeight > 0.5 then humanoid.HipHeight + rec.root.Size.Y / 2 else 3
+			pcall(Burst.ring, CFrame.new(rec.root.Position - Vector3.new(0, down - 0.15, 0)),
+				{ r0 = 1.2, r1 = 5, time = 0.55, width = 0.14, glow = 0.5, color = colour, edge = colour, fade = 0.5 })
+		end
 	end
 
 	local function stopCarry(model)
@@ -75,6 +150,7 @@ function M.start()
 
 	local function startCarry(model)
 		local motor = model:WaitForChild("HuzzCarryMotor", 10)
+		if motor then whenWhole(model) end -- (her limbs' joints, read once below)
 		local torso = motor and motor.Part0
 		local character = torso and torso.Parent
 		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
@@ -111,6 +187,7 @@ function M.start()
 	end
 
 	local function startPrize(model)
+		if not whenWhole(model) or not model:HasTag("HuzzPrize") then return end
 		local root = model.PrimaryPart
 		if root then
 			-- her root above her feet (sets her size for the pack's speeds and hips)
@@ -179,6 +256,7 @@ function M.start()
 	end
 
 	local function startFollower(model)
+		if not whenWhole(model) or not model:HasTag("HuzzFollower") then return end
 		local root = model.PrimaryPart
 		if not root then
 			return
@@ -214,19 +292,19 @@ function M.start()
 	for _, model in folder:GetChildren() do
 		task.spawn(startCarry, model)
 	end
-	CollectionService:GetInstanceAddedSignal("HuzzPrize"):Connect(startPrize)
+	CollectionService:GetInstanceAddedSignal("HuzzPrize"):Connect(function(model) task.spawn(startPrize, model) end)
 	CollectionService:GetInstanceRemovedSignal("HuzzPrize"):Connect(function(model)
 		prizes[model] = nil
 	end)
 	for _, model in CollectionService:GetTagged("HuzzPrize") do
-		startPrize(model)
+		task.spawn(startPrize, model)
 	end
-	CollectionService:GetInstanceAddedSignal("HuzzFollower"):Connect(startFollower)
+	CollectionService:GetInstanceAddedSignal("HuzzFollower"):Connect(function(model) task.spawn(startFollower, model) end)
 	CollectionService:GetInstanceRemovedSignal("HuzzFollower"):Connect(function(model)
 		followers[model] = nil
 	end)
 	for _, model in CollectionService:GetTagged("HuzzFollower") do
-		startFollower(model)
+		task.spawn(startFollower, model)
 	end
 
 	require(script.Parent.Frame).on(20, function(dt)
@@ -239,6 +317,9 @@ function M.start()
 			else
 				local moodAt = model:GetAttribute("MoodAt") or rec.start
 				CarryMotion.step(rec, dt, now, model:GetAttribute("Mood"), now - moodAt, nil, false) -- (no toss: owner's call)
+				if not c.fxDone then
+					pickupFx(c, now)
+				end
 			end
 		end
 		if next(followers) then

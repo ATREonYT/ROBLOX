@@ -313,6 +313,11 @@ function GirlService.makeCopy(girl, parent)
 		humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
 		humanoid.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff
 	end
+	-- Every copy reaches every screen whole (owner, Oct 19: "make the girls be seen on everyones screen"). His place
+	-- streams: a plain Model reaches other players before its parts, part by part, so their screens started her
+	-- moves on a model with no root or limbs yet and she stood frozen or never showed. Persistent = sent whole, to
+	-- everyone, and never streamed out (there are only a few girls at a time: the carried one, followers, the prize).
+	pcall(function() (model :: any).ModelStreamingMode = Enum.ModelStreamingMode.Persistent end)
 	model.Parent = parent
 
 	local height = select(2, bodyBounds(model, root)).Y -- her body, not her hat

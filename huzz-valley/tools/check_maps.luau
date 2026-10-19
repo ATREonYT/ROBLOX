@@ -8,12 +8,15 @@ local ws = place:GetService("Workspace")
 local Config = luau.load(fs.readFile("huzz-valley/src/ReplicatedStorage/Shared/Config/Round.lua"), { environment = { Color3 = roblox.Color3, Vector3 = roblox.Vector3 } })()
 -- the game's lobby finder (Shared/LobbyLayout), given to MapService in place of the place's own (older) copy
 local LobbyLayout = require("./../src/ReplicatedStorage/Shared/LobbyLayout")
+local SpawnSpots = luau.load(fs.readFile("huzz-valley/src/ReplicatedStorage/Shared/SpawnSpots.lua"), { environment = { Vector3 = roblox.Vector3 } })()
 do
 	local shared = place:GetService("ReplicatedStorage"):FindFirstChild("Shared")
-	if shared and not shared:FindFirstChild("LobbyLayout") then
-		local m = roblox.Instance.new("ModuleScript")
-		m.Name = "LobbyLayout"
-		m.Parent = shared
+	for _, n in { "LobbyLayout", "SpawnSpots" } do
+		if shared and not shared:FindFirstChild(n) then
+			local m = roblox.Instance.new("ModuleScript")
+			m.Name = n
+			m.Parent = shared
+		end
 	end
 end
 local fakeGame = {
@@ -21,24 +24,27 @@ local fakeGame = {
 		if name == "Workspace" then return ws end
 		if name == "CollectionService" then return { GetTagged = function() return {} end } end
 		if name == "ReplicatedStorage" then return place:GetService("ReplicatedStorage") end
+		if name == "ServerStorage" then return place:GetService("ServerStorage") end
 		if name == "Players" then return { GetPlayers = function() return {} end } end
 	end,
 }
 local env = setmetatable({
 	game = fakeGame, workspace = ws, Instance = roblox.Instance, CFrame = roblox.CFrame, Vector3 = roblox.Vector3, Color3 = roblox.Color3,
 	Enum = roblox.Enum, UDim2 = roblox.UDim2, Font = roblox.Font, ColorSequence = roblox.ColorSequence, NumberSequence = roblox.NumberSequence, RaycastParams = { new = function() return {} end },
-	require = function(m) if m and m.Name == "LobbyLayout" then return LobbyLayout end return Config end, task = { spawn = function() end },
+	require = function(m) if m and m.Name == "LobbyLayout" then return LobbyLayout end if m and m.Name == "SpawnSpots" then return SpawnSpots end return Config end, task = { spawn = function() end },
 }, { __index = _G })
 env.game = { GetService = function(_, name) if name == "Workspace" then return ws end return fakeGame:GetService(name) end }
 local MapService = luau.load(fs.readFile("huzz-valley/src/ServerScriptService/HuzzServer/MapService.lua"), { environment = env })()
 MapService.init()
 for _, m in MapService.maps do
 	print(string.format("map %-15s shown as %-12s stored in %s", m.name, m.display, m.box:GetFullName()))
+	local b = m.builtBeside and m.builtBeside.Position
+	print(string.format("    built beside the lobby copy at %s", if b then string.format("(%d, %d)", math.round(b.X), math.round(b.Z)) else "none (PROBLEM: it loads by the old rule)"))
 end
 print("lobby:", MapService.lobby and MapService.lobby:GetFullName(), #MapService.lobbies, "lobbies")
 local spawn = place:GetService("Workspace"):FindFirstChild("HuzzLobbySpawn")
 print("lobby spawn made:", spawn ~= nil, spawn and spawn.CFrame.Position)
--- One lobby per map: each map's lobby, and after the vote only that lobby's spawn is on.
+-- One lobby (owner, Oct 19): every map's lobby is the same one, with one spawn on (tests/Spawns.spec.luau checks the spots).
 for _, m in MapService.maps do
 	MapService.useLobbyFor(m)
 	local on = {}
@@ -47,7 +53,7 @@ for _, m in MapService.maps do
 	end
 	local lp, sp = MapService.lobby.CFrame.Position, MapService.lobbySpawn()
 	print(string.format("  %-15s lobby at (%.0f, %.0f), spawn at (%.0f, %.0f), spawns on: %s", m.name, lp.X, lp.Z, sp.X, sp.Z, table.concat(on, ",")))
-	if #MapService.lobbies > 1 and #on ~= 1 then print("  PROBLEM: spawns on", #on) end
+	if #MapService.lobbies ~= 1 or #on ~= 1 then print("  PROBLEM: lobbies", #MapService.lobbies, "spawns on", #on) end
 end
 for i = 1, 4 do
 	local a, b = MapService.candidates()

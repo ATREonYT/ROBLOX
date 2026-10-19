@@ -428,6 +428,12 @@ local function simulate(opts)
 		local pos = zone.CFrame.Position + Vector3.new(x, -4 + 3.2, z)
 		return CFrame.new(pos)
 	end
+	-- (the open-ground spots: tests/Spawns.spec checks the real ones on his place; here the old random spots do)
+	function MapService.lobbySpot() return nil end
+	function MapService.benchSpot() return nil end
+	function MapService.middleSpot(index, startName)
+		return MapService.spot(zones.Middle, zones[startName] and zones[startName].Position, 20)
+	end
 	function MapService.goalFor(round)
 		return if round % 2 == 1 then "ZoneB" else "ZoneA"
 	end

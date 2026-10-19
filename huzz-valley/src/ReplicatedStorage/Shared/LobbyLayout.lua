@@ -46,7 +46,8 @@ local function ours(d): boolean
 	local p = d.Parent
 	while p do
 		local n = p.Name
-		if n == "HuzzLeaderboards" or n == "HuzzAvatarStands" or n == "HuzzStandAvatars" or n == "HuzzAuraFX" or n == "HuzzLobbyProps" then return true end
+		if n == "HuzzLeaderboards" or n == "HuzzAvatarStands" or n == "HuzzStandAvatars" or n == "HuzzAuraFX" or n == "HuzzLobbyProps"
+			or n == "HuzzSpawnPad" or n == "HuzzSpareLobbies" then return true end
 		p = p.Parent
 	end
 	return false
@@ -624,6 +625,233 @@ function LobbyLayout.boardSpots(api, rules, root, floor, count: number): { any }
 		end
 	end
 	return out
+end
+
+--[[
+	One lobby (owner, Oct 19: "make one lobby"). His lobby is pasted in front of each map; the game keeps ONE copy and
+	puts the others away (ServerStorage > HuzzSpareLobbies, every piece as it was, so nothing of his is lost).
+	main(root)            the copy kept: a floor with the attribute MainLobby = true if he marks one, else the copy
+	                      with the fewest parts pasted twice on top of each other (his Base copy: the BasketBall and
+	                      Halloween copies are doubled), then the first by position.
+	spareItems(root, floors, main)
+	                      what belongs to each other copy: every StartingPoint piece nearest it, plus loose pieces
+	                      (in Workspace or a plain folder in it, e.g. his SpawnLocations in Maps > Spawn) whose middle
+	                      lies inside the copy's area (COPY_AREA, in the plaza's own frame: the plaza, the house and
+	                      hills behind it, the sides). Never a map, a player, something of ours or a huge part (Ocean).
+	putAwaySpares(api, root, storage)
+	                      moves them to storage.HuzzSpareLobbies; returns the main floor and how many pieces moved.
+	spawnPad(api, root, floor)
+	                      where the lobby's spawn pad goes: open ground at the plaza's front, between his two groups of
+	                      round pads (the red carpet in his lobby): { centre (Vector3 on the floor), inward (Vector3,
+	                      into the plaza), across (Vector3) }. MapService checks it is really open (Shared/SpawnSpots).
+]]
+LobbyLayout.COPY_AREA = { x0 = -225, x1 = 75, z = 145 } -- studs, in the plaza's frame (his copies: x -207..57, z +-125)
+LobbyLayout.SPARE_FOLDER = "HuzzSpareLobbies"
+
+-- The middle of a piece (its parts' average position), or nil when it has none.
+local function middleOf(inst)
+	if inst:IsA("BasePart") then
+		local p = inst.CFrame.Position
+		return { X = p.X, Y = p.Y, Z = p.Z }
+	end
+	local sx, sy, sz, n = 0, 0, 0, 0
+	for _, d in inst:GetDescendants() do
+		if d:IsA("BasePart") then
+			local p = d.CFrame.Position
+			sx, sy, sz, n = sx + p.X, sy + p.Y, sz + p.Z, n + 1
+		end
+	end
+	if n == 0 then return nil end
+	return { X = sx / n, Y = sy / n, Z = sz / n }
+end
+
+-- Parts pasted twice: same name, place and size as another part of the same copy.
+local function doubled(parts: { BasePart }): number
+	local seen, count = {}, 0
+	for _, p in parts do
+		local q, s = p.CFrame.Position, p.Size
+		local k = string.format("%s|%.2f|%.2f|%.2f|%.2f|%.2f|%.2f", p.Name, q.X, q.Y, q.Z, s.X, s.Y, s.Z)
+		if seen[k] then count += 1 else seen[k] = true end
+	end
+	return count
+end
+
+local function nearestFloor(floors: { BasePart }, p): number
+	local best, bestD = 1, math.huge
+	for i, f in floors do
+		local q = f.CFrame.Position
+		local d = (p.X - q.X) ^ 2 + (p.Z - q.Z) ^ 2
+		if d < bestD then best, bestD = i, d end
+	end
+	return best
+end
+
+local function startingPoints(root): { Instance }
+	local out = {}
+	for _, d in root:GetDescendants() do
+		if (d:IsA("Folder") or d:IsA("Model")) and key(d.Name) == key(LobbyLayout.FOLDER) then table.insert(out, d) end
+	end
+	return out
+end
+
+function LobbyLayout.main(root): BasePart?
+	local floors = LobbyLayout.floors(root)
+	if #floors <= 1 then return floors[1] end
+	for _, f in floors do
+		if f:GetAttribute("MainLobby") == true then return f end
+	end
+	local partsOf = {}
+	for i in floors do partsOf[i] = {} end
+	for _, folder in startingPoints(root) do
+		for _, d in folder:GetDescendants() do
+			if d:IsA("BasePart") and not ours(d) then
+				table.insert(partsOf[nearestFloor(floors, d.CFrame.Position)], d)
+			end
+		end
+	end
+	local best, bestCount = floors[1], math.huge
+	for i, f in floors do
+		local n = doubled(partsOf[i])
+		if n < bestCount then best, bestCount = f, n end
+	end
+	return best
+end
+
+-- Inside this floor's copy area (its own frame)?
+local function inCopy(floor: BasePart, p): boolean
+	local cf = floor.CFrame
+	local o = cf.Position
+	local dx, dy, dz = p.X - o.X, p.Y - o.Y, p.Z - o.Z
+	local r, k = cf.RightVector, cf.LookVector
+	local l = { X = r.X * dx + r.Y * dy + r.Z * dz, Z = -(k.X * dx + k.Y * dy + k.Z * dz) }
+	-- (measured with the plaza's front along its +X, as all his copies are built)
+	local A = LobbyLayout.COPY_AREA
+	return l.X >= A.x0 and l.X <= A.x1 and math.abs(l.Z) <= A.z
+end
+
+function LobbyLayout.spareItems(root, floors: { BasePart }, main: BasePart): { { floor: BasePart, items: { Instance } } }
+	local out, byFloor = {}, {}
+	for i, f in floors do
+		if f ~= main then
+			byFloor[i] = { floor = f, items = {} }
+			table.insert(out, byFloor[i])
+		end
+	end
+	if #out == 0 then return out end
+	local mainIndex = table.find(floors, main)
+	-- his copies' own folder: each piece goes with the plaza it's nearest
+	local sps = startingPoints(root)
+	for _, folder in sps do
+		for _, c in folder:GetChildren() do
+			local p = not ours(c) and middleOf(c)
+			if p then
+				local i = nearestFloor(floors, p)
+				if i ~= mainIndex and byFloor[i] then table.insert(byFloor[i].items, c) end
+			end
+		end
+	end
+	-- loose pieces: Workspace's children and those of plain folders in it (not a map, not his copies' folder)
+	local function isMap(inst)
+		for _, d in inst:GetDescendants() do
+			if key(d.Name) == "zonea" then return true end
+		end
+		return false
+	end
+	local function consider(inst)
+		if table.find(sps, inst) or ours(inst) or string.sub(inst.Name, 1, 4) == "Huzz" then return end
+		if inst:IsA("Terrain") or inst:IsA("Camera") or inst:IsA("Player") then return end
+		if inst:IsA("Model") and inst:FindFirstChildOfClass("Humanoid") then return end
+		if inst:IsA("BasePart") and math.max(inst.Size.X, inst.Size.Z) > 600 then return end -- (his Ocean)
+		if not (inst:IsA("BasePart") or inst:IsA("Model")) then return end
+		local p = middleOf(inst)
+		if not p then return end
+		local i = nearestFloor(floors, p)
+		if i ~= mainIndex and byFloor[i] and inCopy(floors[i], p) and not isMap(inst) then
+			table.insert(byFloor[i].items, inst)
+		end
+	end
+	for _, c in root:GetChildren() do
+		if c:IsA("Folder") then
+			if not table.find(sps, c) and not isMap(c) or c.Name == "Maps" then
+				for _, cc in c:GetChildren() do
+					if cc:IsA("Folder") and not isMap(cc) then
+						for _, ccc in cc:GetChildren() do consider(ccc) end
+					else
+						consider(cc)
+					end
+				end
+			end
+		else
+			consider(c)
+		end
+	end
+	return out
+end
+
+function LobbyLayout.putAwaySpares(api, root, storage): (BasePart?, number)
+	local floors = LobbyLayout.floors(root)
+	local main = LobbyLayout.main(root)
+	if not main or #floors <= 1 then return main, 0 end
+	local holder = storage:FindFirstChild(LobbyLayout.SPARE_FOLDER) or api.Instance.new("Folder")
+	holder.Name = LobbyLayout.SPARE_FOLDER
+	holder.Parent = storage
+	local moved = 0
+	for _, copy in LobbyLayout.spareItems(root, floors, main) do
+		local c = copy.floor.CFrame.Position
+		local box = api.Instance.new("Folder")
+		box.Name = string.format("Lobby copy at (%d, %d)", math.round(c.X), math.round(c.Z))
+		box.Parent = holder
+		for _, item in copy.items do
+			pcall(function() item:SetAttribute("HuzzFrom", item.Parent and item.Parent:GetFullName() or "") end)
+			item.Parent = box
+			moved += 1
+		end
+	end
+	return main, moved
+end
+
+-- The plazas of the copies already put away (ServerStorage > HuzzSpareLobbies: the place build does it, so his
+-- download opens with one lobby): MapService still measures where each map stood from the copy it was built beside.
+function LobbyLayout.spareFloors(storage): { BasePart }
+	local holder = storage and storage:FindFirstChild(LobbyLayout.SPARE_FOLDER)
+	local out = {}
+	for _, copy in (if holder then holder:GetChildren() else {}) do
+		local rows = {}
+		for _, d in copy:GetDescendants() do -- (only his parts are put away: nothing of ours is in there)
+			if d:IsA("BasePart") and d.Size.X * d.Size.Z >= LobbyLayout.MIN_FLOOR_AREA then
+				table.insert(rows, facts(d))
+			end
+		end
+		for _, f in LobbyLayout.pickFloors(rows) do table.insert(out, f.ref) end
+	end
+	return out
+end
+
+function LobbyLayout.spawnPad(api, root, floor)
+	local Vector3 = api.Vector3
+	local f = facts(floor)
+	local pads = LobbyLayout.pads(api, root, floor)
+	local hx, hz = floor.Size.X / 2, floor.Size.Z / 2
+	local nx, nz = 0, -1 -- (no pads: the floor's -Z side counts as the front)
+	if pads[1] then nx, nz = pads[1].nx, pads[1].nz end
+	-- between the two groups of pads along the front (his red carpet), else the front edge's middle
+	local along = 0
+	local lo, hi = -math.huge, math.huge
+	for _, p in pads do
+		if p.along < 0 then lo = math.max(lo, p.along) else hi = math.min(hi, p.along) end
+	end
+	if lo > -math.huge and hi < math.huge then along = (lo + hi) / 2 end
+	local depth = (if nz ~= 0 then hz else hx) - 12 -- 12 studs in from the front edge
+	local x = if nz ~= 0 then along else -nx * depth
+	local z = if nz ~= 0 then -nz * depth else along
+	local centre = floor.CFrame:PointToWorldSpace(Vector3.new(x, 0, z))
+	local inward = floor.CFrame:VectorToWorldSpace(Vector3.new(nx, 0, nz))
+	inward = Vector3.new(inward.X, 0, inward.Z).Unit
+	return {
+		centre = Vector3.new(centre.X, f.top, centre.Z),
+		inward = inward,
+		across = Vector3.new(-inward.Z, 0, inward.X),
+	}
 end
 
 return LobbyLayout

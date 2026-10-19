@@ -98,9 +98,24 @@ The lobby side (one lobby per map, paint, his new lobby): [lobby.md](lobby.md). 
 
 ## Maps and the field (`MapService`)
 - In his place maps are in `Workspace.Maps` (Base_Map, BasketBall_Map, Halloween_Map; zone parts named
-  case/space-insensitively); the lobby floors are the plazas of the 3 copies of his new lobby in `StartingPoint`
-  (`Shared/LobbyLayout.floors`; the old `Maps.Spawn.SpawnBaseplate`s are no longer used). `check_maps.luau` lists
-  maps, lobby pairs and safe lines.
+  case/space-insensitively); the lobby is ONE of the 3 copies of his new lobby in `StartingPoint` (the others are
+  put away at start: [lobby.md](lobby.md); the old `Maps.Spawn.SpawnBaseplate`s are no longer used).
+  `check_maps.luau` lists maps, the lobby and safe lines.
+- **Where bodies go** (owner, Oct 19: "make them spawn not in the middle inside of objects and just make them spawn
+  on open ground"; "make catchers spawn in the middle"). Every spot is open ground (`Shared/SpawnSpots`, rules in
+  [lobby.md](lobby.md)):
+  - **Catchers** (`MapService.middleSpot(i, start)`, from `RoundService.place`): a row across the field on the line
+    halfway between the two safe lines (`fieldMiddle`, within 0.5 studs of his Middle box's centre on all three
+    maps), 5 studs apart, the first dead centre, extra rows 4 studs either side; inside the walls, outside both safe
+    zones, facing the runners' start zone. The Practice Bot takes spot 1. Before: a random spot up to 20 studs from
+    the Middle box (open, but scattered).
+  - **Runners on the line** (`MapService.lineup`): the planned shoulder-to-shoulder spot, moved up to 2 studs to
+    open ground (behind the line, in the zone, 3 from the others), else the next free place along the line or in
+    the rows behind.
+  - **Bench / lobby / respawn / rejoin:** `benchSpot` (open ground near a point on the bench), `lobbySpot` (the spawn
+    pad), his SpawnLocation on the pad.
+  - Spec `tests/Spawns.spec.luau` (his place, every map, 1 / 6 / 12 / 24 runners, 8 catchers); the sim stubs these
+    spots with the old random ones.
 - **Safe gate:** invisible goal-line block in collision group `HuzzSafeWall`, colliding only with `HuzzSafe` (safe
   runners), plus `keepSafe()` every frame. The start wall and the goal gate have no visuals; the white lines on the
   floor mark start and finish.
@@ -110,7 +125,7 @@ The lobby side (one lobby per map, paint, his new lobby): [lobby.md](lobby.md). 
   then stretched to the floor. Loose Workspace parts resting on a map's floor move into that map at start
   (`check_maps.luau` counts them); `catchFalls()` puts anyone below the field back on it (only within 8 studs of it)
   or far below the lobby back to its spawn.
-- Maps load per lobby and repaint the lobby floor: [lobby.md](lobby.md). Map pictures in the vote: [ui.md](ui.md).
+- Maps load in front of the one lobby and repaint its floor: [lobby.md](lobby.md). Map pictures in the vote: [ui.md](ui.md).
 
 ## After a game
 - **Results screen** (`Screens/Results`): after a game, once back in the lobby with nothing open (it waits out the map
@@ -137,7 +152,8 @@ The lobby side (one lobby per map, paint, his new lobby): [lobby.md](lobby.md). 
 ## Honest gaps
 - Not seen in Studio yet: the Practice Bot (its walk, run animation, knife), the touch with real lag (the server's
   look-back uses `GetNetworkPing`), how often the bot catches now (sim: 2 catches in 10 games, was 5 in 11: it must
-  really touch you, so it may need to be faster).
+  really touch you, so it may need to be faster); the catchers' row in the middle and the open-ground line-up
+  (checked offline on his place only).
 - His place (Oct 17): no Uncommon girls yet (the rarity is skipped until there are some); a plank path near the
   Halloween lobby and a basketball hoop sit loose in Workspace (the path's pieces on the field now move into
   Halloween_Map at start; the pieces on the lobby stay).

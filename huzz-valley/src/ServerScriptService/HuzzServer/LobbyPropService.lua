@@ -73,7 +73,7 @@ function LobbyPropService.start()
 	if not folder then
 		how = "made on the pads"
 		local made = 0
-		for _, floor in LobbyLayout.floors(Workspace) do
+		for _, floor in { LobbyLayout.main(Workspace) } do -- (the one lobby: MapService puts the other copies away)
 			for _, spot in LobbyLayout.propSpots(api, Workspace, floor, Config.ThreePads, Config.TwoPads) do
 				local shape = Shapes[spot.Prop]
 				if shape and Config.Props[spot.Prop] then

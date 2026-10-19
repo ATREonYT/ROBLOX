@@ -1,22 +1,45 @@
-# Lobby: lobbies per map, leaderboards, avatar stands, lobby props
+# Lobby: one lobby, spawn pad, leaderboards, avatar stands, lobby props
 
 Read before touching the lobbies, the boards, the avatar stands or the lobby props. The stand knives' moves and
 effects: [knives.md](knives.md). Top-down plan of the lobby with our boards, stands and his props:
 `docs/previews/new-lobby-layout.jpg` (`tools/world/lobby_dump.luau` + `tools/world/lobby_plan.py`). Owner's place
 inspection with Lune: core `CLAUDE.md` section 4.
 
-## One lobby per map (his new Halloween lobby everywhere)
-- His one new Halloween lobby is pasted in front of each map (`Workspace > StartingPoint`; the BasketBall and
-  Halloween copies are pasted twice on top of each other). The game finds each copy's plaza
-  (`Shared/LobbyLayout.floors`: the biggest flat part per copy, 124 x 136, top 12.5; copies on top of each other count
-  once), so it's still one lobby per map; spawns are his SpawnLocations on each plaza (in `Maps > Spawn`). His old
-  islands stay where he moved them, unused (deleting them is safe: the game makes a spawn on each plaza if his
-  SpawnLocations go too).
-- Each map belongs to its nearest lobby (`entry.lobby`); after the vote `MapService.useLobbyFor` switches the lobby
-  and RoundService moves everyone there after the load (streamed in first); only that lobby's SpawnLocation is on.
-  With several lobbies a map loads exactly where it was built (the owner built floors level with their lobby); with
-  one lobby, the old "in front of the lobby" placement. The paint fade runs when the map loads, once everyone is
-  there. The floor finder accepts tops up to 2 studs over the Middle box (Halloween's grass sits above it).
+## One lobby, and the spawn pad (owner, Oct 19: "make one lobby"; "fix the spawn point locations, and make barriers around the spawns")
+- His new Halloween lobby is pasted in front of each map (`Workspace > StartingPoint`; the BasketBall and Halloween
+  copies are pasted twice on top of each other). The game finds each copy's plaza (`Shared/LobbyLayout.floors`: the
+  biggest flat part per copy, 124 x 136, top 12.5; copies on top of each other count once) and keeps ONE:
+  `LobbyLayout.main` = a floor with the attribute `MainLobby = true` if he ticks one, else the copy with no parts
+  pasted twice (his Base copy, plaza at (-131, 49)). `LobbyLayout.putAwaySpares` moves the other copies whole (their
+  `StartingPoint` children, plus loose Workspace items and `Maps > Spawn` parts standing in that copy's area,
+  `COPY_AREA`) to `ServerStorage > HuzzSpareLobbies > "Lobby copy at (x, z)"` (attribute `HuzzFrom` = where each
+  came from). MapService does it at game start; the place build (`tools/place/build_yours.luau`) does it in the
+  download too, so Studio's edit view shows one lobby. Boards, avatar stands and props are made for the one lobby
+  only (`{ LobbyLayout.main(Workspace) }`).
+- Every map still belongs to the copy it was built beside (`entry.builtBeside`, nearest within 400 studs) and loads in
+  front of the one lobby exactly as it stood in front of that copy (`placement`: same distance, height and turn), so
+  nobody moves between lobbies (`entry.lobby` is the one lobby for every map; `MapService.useLobbyFor` stays and
+  always says "no change"); the paint fade runs when the map loads. A map built nowhere near a copy keeps the old
+  "in front of the lobby" placement, turned so its open side faces it. The floor finder accepts tops up to 2 studs over the Middle box (Halloween's grass sits above it).
+- **The spawn pad** (`MapService.spawnPad`, `LobbyLayout.spawnPad`): 20 x 18 studs of open ground on his red carpet
+  between the two groups of round pads at the plaza's front, facing into the lobby (the girls' display ahead, the
+  podium boards on one side, the stand row on the other). Checked open (nothing solid or visible in it, floor
+  everywhere within 0.8), else slid along the carpet / inwards up to 10 studs. His SpawnLocation (invisible) moves
+  onto it; `MapService.lobbySpot()` gives a free spot of its 30 (12 inside the rail, 4 apart; the rest beyond its open
+  side for a full server). Everyone in the lobby lands there: joining, respawning, after a game.
+- **Barriers:** `Workspace > HuzzSpawnPad`: a low wooden rail on three sides (posts 0.7 x 2.4, two rails at 1.0 and
+  2.05 studs, Wood in his display fence's brown 106, 57, 9; not solid), open towards the plaza, plus an invisible wall
+  7 studs tall along each rail (`Barrier1-3`: CanCollide on, CanQuery off, so it never stops a camera or a ray). Made
+  at game start (Play only); a place that has its own `HuzzSpawnPad` keeps it.
+- **Open ground everywhere** (`Shared/SpawnSpots`, pure): a spot is open when there is floor under the middle and all
+  four foot points within 0.8 studs (no edge, no hole), nothing solid or visible in a standing body's box (4 x 5.4 x
+  4), and nothing solid in the room round it (6 x 4.6 x 6). The game asks Roblox (`MapService.geometry`: a ray that
+  respects CanCollide, `GetPartBoundsInBox`), ignoring players, bots, girls, effects, zone markers and our walls;
+  Lune uses `tools/world/geometry.luau` (the same answers). The line-up and the catchers: [round.md](round.md).
+- Spec `tests/Spawns.spec.luau` runs the real MapService on his place (one lobby, the pad, the rail touching none of
+  his build, every map's placement, both start lines for 1 / 6 / 12 / 24, the catchers); also
+  `tests/LobbyLayout.spec`, check `tools/preview/check_new_lobby.luau`. Picture: `docs/previews/spawns-one-lobby.jpg`
+  (`SPAWN_DUMP=<json> lune run tests/Spawns.spec.luau`, then `python3 tools/world/spawn_plan.py <json> <out.jpg>`).
 - **Map look:** when a map wins the vote, `MapService.paintLobby` gives the lobby floor that map's floor colour,
   material and textures (the floor = the part found most under a 5x5 grid over the field; Halloween's orange is a
   Texture on its grass).
@@ -122,19 +145,27 @@ inspection with Lune: core `CLAUDE.md` section 4.
   LIKE THE GAME!, WITCH'S BREW and SWEETS & TREATS open nothing yet.
 
 ## Honest gaps
-- Not seen in Studio yet: the move between lobbies after the vote (instant, no fade yet), the lobby repaint; the
+- Not seen in Studio yet: the one lobby (the spare copies put away, each map in front of it), the spawn pad and its
+  rail (Play only: the rail is built at game start), the lobby repaint; the
   lobby leaderboards (studs picture (Play only), the slab colour under his grade, Gotham's size, headshots,
   scrolling, the calm turn, the pumpkin, candle and glow, the Oct 19 slate colour, the turn stopping before his
   slope); the avatar stands (your copy, its run, the knife in its hand); the new lobby (the boards on the terrace
   ledges turning without touching the slope behind, the stand row, the move back after a game); the lobby props
   (his meshes after the import, the bob, turn, glow and titles).
-- His place: the BasketBall and Halloween copies in `StartingPoint` are pasted twice (every part twice in the same
-  place; the game counts them once, but it doubles those parts); his old islands still float off to the side in
-  `Maps > Spawn` (unused). The podium boards are hard to read from the spawn: moving the spawn toward the podium side,
-  or the display, would fix it (his build, his call).
+- His place: the BasketBall and Halloween copies in `StartingPoint` are pasted twice (they are the two put away, so
+  this no longer costs anything in a game); his old islands still float off to the side in `Maps > Spawn` (unused);
+  29 thin loose planks near the Halloween map float 5 studs over the ground (left as he built them). The podium
+  boards are hard to read from the spawn pad too (his build, his call).
+- Before (measured on his place): 70 of 300 old lobby spots (random over the plaza) were inside his girls' display,
+  podiums or props; now every one of the 30 pad spots is open ground.
 
 ## Why it is this way / history
-- **One lobby per map** (owner's pick, Oct 17): he first built a lobby island in front of each map. Oct 18 he replaced
+- **One lobby** (owner, Oct 19: "make one lobby"; "fix the spawn point locations, and make barriers around the
+  spawns, and make them spawn not in the middle inside of objects and just make them spawn on open ground"): the
+  copies meant a move between lobbies after every vote, three sets of boards, stands and props, and spawns picked at
+  random over the plaza (23% landed inside something). The kept copy is the one with nothing pasted twice; each map
+  keeps its place, measured from the copy it was built beside. Earlier (Oct 17, his pick) it was one lobby per map:
+  he first built a lobby island in front of each map. Oct 18 he replaced
   them with one new Halloween lobby ("I made it the lobby for all of the maps"). Before that he planned it from
   `docs/HALLOWEEN-LOBBY-PLAN.md` + `docs/previews/halloween-lobby-layout.png` (Huss Valley's Halloween lobby, 200 x 182
   round his island; drawn by `tools/world/halloween_layout.py`, his real positions from

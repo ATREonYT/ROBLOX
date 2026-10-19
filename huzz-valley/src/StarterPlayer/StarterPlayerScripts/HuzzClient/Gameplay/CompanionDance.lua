@@ -4,9 +4,11 @@
 	    and stops when you do. The dance is read as a KeyframeSequence (in Studio: ReplicatedStorage.HuzzAnimations;
 	    live: KeyframeSequenceProvider with the published ID in Config/Dances) and put on her R6 body by
 	    Shared/DanceRetarget. If it can't be read, she does a cute built-in dance instead.
-	  - Other players': their dance track replicates to this screen, so when their avatar plays a looped Action
-	    track (a dance; the huss and the stab aren't looped) their girl dances too: the same dance at the same
-	    moment when this screen knows its ID, else the built-in dance.
+	  - Other players': their character's HuzzDance / HuzzDanceAt (the dance and its beat, set by the server) say
+	    which dance and where in it, so their girl dances on their beat on every screen (synced dancing, owner
+	    Oct 19: Gameplay/DanceSync shows the dancers themselves on the same beat). Before those arrive, a looped
+	    Action track playing on their avatar (a dance; the huss and the stab aren't looped) is read instead: the same
+	    dance at the same moment when this screen knows its ID, else the built-in dance.
 	Gameplay/Auras moves the girls and calls CompanionDance.step() after her walk pose each frame.
 ]]
 local CompanionDance = {}
@@ -96,6 +98,9 @@ local function scanOther(character: Model)
 	return nil
 end
 
+-- The dance as a sampled KeyframeSequence, for Gameplay/DanceSync too (nil while loading or when it can't be read).
+CompanionDance.anim = animFor
+
 function CompanionDance.start()
 	local ok, DancePlayer = pcall(function()
 		return require(script.Parent.Parent:WaitForChild("UI"):WaitForChild("DancePlayer"))
@@ -131,6 +136,14 @@ function CompanionDance.step(p: Player, character: Model?, J, dt: number, height
 	if p == Players.LocalPlayer then
 		id = mine.id
 		at = if id then ((mine.pos and mine.pos()) or (os.clock() - mine.at)) else nil -- (your track's time: in step)
+	elseif character and type(character:GetAttribute("HuzzDance")) == "string" and type(character:GetAttribute("HuzzDanceAt")) == "number" then
+		-- their dance and its beat: the same moment on every screen
+		id = character:GetAttribute("HuzzDance")
+		at = workspace:GetServerTimeNow() - character:GetAttribute("HuzzDanceAt")
+		local anim = animFor(id)
+		if anim and anim.length > 0 then
+			at %= anim.length
+		end
 	elseif character then
 		local now = os.clock()
 		if now - r.scanAt > 0.25 then

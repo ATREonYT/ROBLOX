@@ -16,10 +16,20 @@
 	The lobby is a part named Lobby, else his new lobby's plaza in Workspace > StartingPoint (one copy in front of
 	each map, Shared/LobbyLayout), else the SpawnBaseplate. With no zones at
 	all a plain test field is built in place so the game still runs.
-	Several lobbies (the owner built one beside each map: "one per map"): each
-	map belongs to the lobby nearest it and loads where it was built; after the
-	vote everyone moves to the winning map's lobby (useLobbyFor), and only that
-	lobby's SpawnLocation stays on.
+	One lobby (owner, Oct 19: "make one lobby"; he had pasted one copy in front of each map): the copy with nothing
+	pasted twice stays (LobbyLayout.main; a floor with the attribute MainLobby = true wins), the other copies go whole
+	to ServerStorage > HuzzSpareLobbies, and each map loads in front of the one lobby exactly where it stood in front
+	of its own copy (entry.builtBeside), so nobody ever moves between lobbies.
+
+	Where bodies go (owner, Oct 19: "make them spawn not in the middle inside of objects and just make them spawn on
+	open ground"; "make barriers around the spawns"; "make catchers spawn in the middle"): every spot is checked with
+	Shared/SpawnSpots (floor under the feet, nothing solid or visible in a standing body's box):
+	  - the lobby: a spawn pad on his red carpet between the front pads (spawnPad), with a low wooden rail on three
+	    sides and an invisible wall behind it that only stops players (Workspace > HuzzSpawnPad, built at start unless
+	    the place has one); his SpawnLocation moves onto it; lobbySpot() gives one of its 30 spots;
+	  - the start lines: lineup() nudges each spot to open ground behind the line;
+	  - catchers: middleSpot(i) = a row across the field's middle line, facing the runners.
+	tests/Spawns.spec.luau runs this file on his real place and checks every spot.
 ]]
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -28,12 +38,13 @@ local PhysicsService = game:GetService("PhysicsService")
 
 local Config = require(ReplicatedStorage.Shared.Config.Round)
 local LobbyLayout = require(ReplicatedStorage.Shared.LobbyLayout)
+local SpawnSpots = require(ReplicatedStorage.Shared.SpawnSpots)
 
 local MapService = {}
 MapService.zones = {} -- the loaded map's zones (filled in place, so callers can keep the table)
 MapService.maps = {} -- { name, box (stored container), fixed (test field: used where it is) }
 MapService.current = nil -- the loaded map's entry
-MapService.lobbies = {} -- { floor, spawn }: every lobby island; maps' entries point at theirs (entry.lobby)
+MapService.lobbies = {} -- { floor, spawn, pad }: the one lobby (kept a list so older callers still work)
 local loaded -- the copy in Workspace
 local marks, wall -- the current map's safe lines and sign, and the start-line wall before GO
 local gate -- the goal line's gate: only runners already safe bump into it (holdGoal)
@@ -41,6 +52,8 @@ local catcherWalls -- both safe zones' walls that only catchers bump into (holdC
 local lastPicked
 local zoneParts = {} -- every zone part, so floor checks look through them
 local field -- the loaded map's walled field { frame, lo, hi, floor } (boundary), for putting fallers back
+local middleSpots -- the loaded map's catcher spots (MapService.middleSpots), made once per map
+local edge -- (a zone's edge facing the middle: defined further down)
 
 local function asPart(item)
 	if item and item:IsA("BasePart") then
@@ -257,67 +270,63 @@ function MapService.init()
 		table.insert(MapService.maps, { name = "Test Field", display = "Test Field", box = buildTestField(), fixed = true })
 	end
 
-	-- The lobbies (Shared/LobbyLayout.floors): parts tagged HuzzLobby, else parts named Lobby, else the plaza of
-	-- each copy of his new lobby in Workspace > StartingPoint (owner Oct 18: "I made it the lobby for all of the
-	-- maps": one copy in front of each map), else the SpawnBaseplates (his old islands, now unused in Maps > Spawn).
+	-- The lobby (Shared/LobbyLayout): parts tagged HuzzLobby, else parts named Lobby, else the plaza of his new lobby
+	-- in Workspace > StartingPoint, else the SpawnBaseplates (his old islands, now unused in Maps > Spawn).
+	-- ONE lobby (owner, Oct 19: "make one lobby"): his lobby is pasted in front of each map; the copy with no parts
+	-- pasted twice is kept (LobbyLayout.main) and the others go to ServerStorage > HuzzSpareLobbies, untouched.
+	-- Each map then loads in front of the one lobby exactly where it stood in front of its own copy (placement).
 	local spot = nil
 	for _, d in Workspace:GetDescendants() do
 		if d:IsA("BasePart") and key(d.Name) == "mapspot" then
 			spot = spot or d
 		end
 	end
-	local floors = LobbyLayout.floors(Workspace)
 	MapService.mapSpot = spot
-	MapService.lobbies = {}
-	for _, floor in floors do
-		table.insert(MapService.lobbies, { floor = floor })
-	end
-
-	-- Each map belongs to the lobby nearest where it was built.
+	local floors = LobbyLayout.floors(Workspace)
+	local main = LobbyLayout.main(Workspace)
+	-- Each map remembers the copy it was built in front of (its nearest), so it keeps that place beside the lobby.
+	-- (copies the place build already put away count too: the download opens with one lobby in Workspace)
+	local copies = table.clone(floors)
+	for _, f in LobbyLayout.spareFloors(game:GetService("ServerStorage")) do table.insert(copies, f) end
 	for _, entry in MapService.maps do
 		local middle = select(3, zonesOf(entry.box, entry.name, true))
 		local best, bestDist = nil, math.huge
-		for _, rec in MapService.lobbies do
-			local d = middle and flat(rec.floor.CFrame.Position - middle.CFrame.Position).Magnitude or 0
-			if d < bestDist then best, bestDist = rec, d end
+		for _, f in copies do
+			local d = middle and flat(f.CFrame.Position - middle.CFrame.Position).Magnitude or 0
+			if d < bestDist then best, bestDist = f, d end
 		end
-		entry.lobby = best
+		-- (only a map built beside a copy, as his are, 160-170 studs off; one built anywhere else keeps the old rule)
+		entry.builtBeside = if best and bestDist < 400 then best.CFrame else nil
 	end
-
-	if #MapService.lobbies > 1 then
-		-- Each lobby's own SpawnLocation (the one on it), made when it has none; only the lobby in use keeps
-		-- its spawn on, so new and respawning players land where everyone is.
-		for _, rec in MapService.lobbies do
-			local f = rec.floor
-			local reach = math.max(f.Size.X, f.Size.Z) / 2 + 30
-			local best, bestDist = nil, reach
-			for _, d in Workspace:GetDescendants() do
-				if d:IsA("SpawnLocation") then
-					local dist = flat(d.CFrame.Position - f.CFrame.Position).Magnitude
-					if dist < bestDist then best, bestDist = d, dist end
-				end
-			end
-			rec.spawn = best or makeSpawn(f)
-		end
-	elseif MapService.lobbies[1] then
-		-- One lobby: players must still spawn somewhere once the maps (and their SpawnLocations) are stored away.
-		local hasSpawn = false
+	local okAway, err = pcall(LobbyLayout.putAwaySpares, { Instance = Instance, Vector3 = Vector3, CFrame = CFrame }, Workspace, game:GetService("ServerStorage"))
+	if not okAway then warn("[Huzz] Couldn't put the spare lobby copies away: " .. tostring(err)) end
+	MapService.lobbies = {}
+	if main then
+		table.insert(MapService.lobbies, { floor = main })
+	end
+	for _, entry in MapService.maps do
+		entry.lobby = MapService.lobbies[1]
+	end
+	-- The lobby's own SpawnLocation (the one on it, else one made), moved onto the spawn pad (MapService.spawnPad).
+	if main then
+		local rec = MapService.lobbies[1]
+		local reach = math.max(main.Size.X, main.Size.Z) / 2 + 30
+		local best, bestDist = nil, reach
 		for _, d in Workspace:GetDescendants() do
-			if d:IsA("SpawnLocation") and d.Enabled then
-				hasSpawn = true
+			if d:IsA("SpawnLocation") then
+				local dist = flat(d.CFrame.Position - main.CFrame.Position).Magnitude
+				if dist < bestDist then best, bestDist = d, dist end
 			end
 		end
-		local f = MapService.lobbies[1].floor
-		MapService.lobbies[1].spawn = if hasSpawn then Workspace:FindFirstChild("HuzzLobbySpawn") else makeSpawn(f)
+		rec.spawn = best or makeSpawn(main)
+		local okPad, padErr = pcall(MapService.spawnPad, rec)
+		if not okPad then warn("[Huzz] Spawn pad: " .. tostring(padErr)) end
 	end
 	useLobby(MapService.lobbies[1])
 	task.spawn(MapService.catchFalls)
 end
 
---[[
-	The lobby beside this map becomes the one in use (owner: "one per map": after the vote everyone waits
-	in the lobby next to the winning map). True when it changed, so the caller moves everyone over.
-]]
+-- One lobby: every map's lobby is the same one, so nobody ever moves between lobbies (kept so RoundService can ask).
 function MapService.useLobbyFor(entry): boolean
 	local rec = entry and entry.lobby
 	if not rec or rec.floor == MapService.lobby then return false end
@@ -325,12 +334,297 @@ function MapService.useLobbyFor(entry): boolean
 	return true
 end
 
--- Where players stand in the lobby in use: its spawn, else the top of its floor (or nil with no lobby).
+-- Where players stand in the lobby: the middle of its spawn pad, else its spawn, else the top of its floor.
 function MapService.lobbySpawn(): Vector3?
+	local pad = activeLobby and activeLobby.pad
+	if pad then return pad.centre + Vector3.new(0, SpawnSpots.RootHeight, 0) end
 	local spawn = activeLobby and activeLobby.spawn
 	if spawn and spawn.Parent then return spawn.CFrame.Position end
 	local lobby = MapService.lobby
 	return if lobby then lobby.CFrame.Position + Vector3.new(0, lobby.Size.Y / 2, 0) else nil
+end
+
+--[[
+	The world as Shared/SpawnSpots reads it in the game: a ray down for the floor (only things you can stand on), and
+	Roblox's box test (every part's bounding box, as the offline check does) for "is anything here". Never counted:
+	players, bots, girls, effects, zone markers, and our invisible walls (CanQuery off, or a collision group of
+	their own). tools/world/geometry.luau is the same thing for Lune.
+]]
+local ignoreCache, ignoreAt = nil, -math.huge
+local function ignoreList()
+	-- (one list for a whole burst of checks: a line-up asks thousands of times in the same moment)
+	if ignoreCache and os.clock() - ignoreAt < 0.25 then return ignoreCache end
+	local list = table.clone(zoneParts)
+	for _, ours in { marks, wall, gate, catcherWalls } do -- (the lines, the start wall and the safe zones' walls)
+		if ours then table.insert(list, ours) end
+	end
+	for _, name in { "HuzzCarried", "HuzzFollowers", "HuzzAuraFX", "HuzzCompanions" } do
+		local f = Workspace:FindFirstChild(name)
+		if f then table.insert(list, f) end
+	end
+	for _, p in game:GetService("Players"):GetPlayers() do
+		if p.Character then table.insert(list, p.Character) end
+	end
+	local ok, bots = pcall(CollectionService.GetTagged, CollectionService, "HuzzBot")
+	for _, m in if ok then bots else {} do table.insert(list, m) end
+	ignoreCache, ignoreAt = list, os.clock()
+	return list
+end
+MapService.geometry = {
+	floor = function(x: number, z: number, top: number, bottom: number): number?
+		local params = RaycastParams.new()
+		params.FilterType = Enum.RaycastFilterType.Exclude
+		params.FilterDescendantsInstances = ignoreList()
+		pcall(function() params.RespectCanCollide = true end)
+		local hit = Workspace:Raycast(Vector3.new(x, top, z), Vector3.new(0, bottom - top, 0), params)
+		return hit and hit.Position.Y
+	end,
+	blocked = function(centre: Vector3, size: Vector3, solidOnly: boolean): boolean
+		local params = OverlapParams.new()
+		params.FilterType = Enum.RaycastFilterType.Exclude
+		params.FilterDescendantsInstances = ignoreList()
+		for _, p in Workspace:GetPartBoundsInBox(CFrame.new(centre), size, params) do
+			if not p:IsA("Terrain") then
+				local solid = p.CanCollide and (p.CollisionGroup == "Default" or p.CollisionGroup == "")
+				if solid or (not solidOnly and p.Transparency < 0.9) then return true end
+			end
+		end
+		return false
+	end,
+}
+
+-- A root CFrame standing on a floor spot, facing `at` (level).
+local function facing(pos: Vector3, at: Vector3?): CFrame
+	local root = pos + Vector3.new(0, SpawnSpots.RootHeight, 0)
+	if at then
+		local flatAt = Vector3.new(at.X, root.Y, at.Z)
+		if (flatAt - root).Magnitude > 0.1 then return CFrame.lookAt(root, flatAt) end
+	end
+	return CFrame.new(root)
+end
+MapService.facing = facing
+
+--[[
+	The lobby's spawn pad (owner, Oct 19: "fix the spawn point locations, and make barriers around the spawns, and make
+	them spawn not in the middle inside of objects and just make them spawn on open ground"). Everyone who joins,
+	respawns or comes back from a game stands on it: open ground at the front of his plaza (the red carpet between
+	his two groups of round pads, LobbyLayout.spawnPad), facing into the lobby, the girls' display ahead of them,
+	the podium boards on one side and the Game Pass stands on the other.
+	  - The pad is PAD_WIDTH x PAD_DEPTH studs with nothing at all in it (checked here; moved along the carpet and a
+	    little inwards until it is, never onto his props); 12 spots in it, 4 apart (Shared/SpawnSpots: floor, body,
+	    room), and more open spots beyond its open side for a full server.
+	  - Barriers: a low wooden rail on three sides (his display fence's brown, as wood, 2.4 studs tall, posts about
+	    3.4 apart), open on the side facing into the plaza; an invisible wall 7 studs tall along each rail so nobody
+	    steps over it or is pushed off the plaza's front edge while a crowd spawns. It never blocks a camera or a ray
+	    (CanQuery off). Built when the game starts, so it shows in Play, not in Studio's edit view; a place that
+	    already has a Workspace > HuzzSpawnPad (e.g. one he copied out of a Play test and moved) keeps its own.
+	  - His SpawnLocation moves onto the pad, so Roblox drops new players there too.
+]]
+local PAD_WIDTH, PAD_DEPTH = 20, 18
+MapService.PAD_WIDTH, MapService.PAD_DEPTH = PAD_WIDTH, PAD_DEPTH
+function MapService.spawnPad(rec)
+	ignoreCache = nil -- (a fresh look at the world for this burst of checks)
+	local floor = rec.floor
+	local plan = LobbyLayout.spawnPad({ Instance = Instance, Vector3 = Vector3, CFrame = CFrame }, Workspace, floor)
+	local geo = MapService.geometry
+	local inward, across = plan.inward, plan.across
+	local top = plan.centre.Y
+	local function padOpen(c: Vector3): boolean
+		local box = Vector3.new(math.abs(across.X) * PAD_WIDTH + math.abs(inward.X) * PAD_DEPTH, 5.4,
+			math.abs(across.Z) * PAD_WIDTH + math.abs(inward.Z) * PAD_DEPTH)
+		if geo.blocked(c + Vector3.new(0, SpawnSpots.Lift + 2.7, 0), box, false) then return false end
+		for _, o in { { 0, 0 }, { -1, -1 }, { 1, -1 }, { -1, 1 }, { 1, 1 } } do
+			local p = c + across * (o[1] * PAD_WIDTH / 2) + inward * (o[2] * PAD_DEPTH / 2)
+			local y = geo.floor(p.X, p.Z, top + 3, top - 3)
+			if not y or math.abs(y - top) > SpawnSpots.MaxStep then return false end
+		end
+		return true
+	end
+	-- the planned spot, else along the carpet and a little inwards (never more than 10 studs)
+	local centre = nil
+	for _, d in { 0, 2, -2, 4, -4, 6, -6 } do
+		for _, k in { 0, 2, 4, 6, 8, 10 } do
+			local c = plan.centre + across * d + inward * k
+			if padOpen(c) then
+				centre = c
+				break
+			end
+		end
+		if centre then break end
+	end
+	local found = centre ~= nil
+	centre = centre or plan.centre
+	centre = Vector3.new(centre.X, geo.floor(centre.X, centre.Z, top + 3, top - 3) or top, centre.Z) -- (on his carpet)
+	local pad = { centre = centre, inward = inward, across = across, open = found }
+	rec.pad = pad
+	-- the rail (unless the place has its own)
+	local rail = Workspace:FindFirstChild("HuzzSpawnPad")
+	if not rail then
+		rail = MapService.buildRail(centre, inward, across, function(x, z) return geo.floor(x, z, top + 3, top - 3) end)
+		rail.Parent = Workspace
+	end
+	pad.rail = rail
+	-- his SpawnLocation onto the pad
+	if rec.spawn then
+		local at = centre + Vector3.new(0, 0.6, 0)
+		rec.spawn.CFrame = CFrame.lookAt(at, at + inward)
+	end
+	-- the spots: 3 across x 4 deep in the pad, then on beyond its open side
+	local wanted = {}
+	for row = 0, 9 do
+		for _, col in { 0, -1, 1 } do
+			local p = centre + inward * (-6 + row * 4) + across * (col * 4)
+			table.insert(wanted, { p.X, p.Z })
+		end
+	end
+	pad.spots = SpawnSpots.fill(geo, wanted, top, 30, 3.5, 2)
+	pad.lookAt = centre + inward * 40
+	return pad
+end
+
+-- The rail round the spawn pad (see spawnPad). floorAt(x, z) -> y? (optional): each post stands on what is under it.
+function MapService.buildRail(centre: Vector3, inward: Vector3, across: Vector3, floorAt: ((number, number) -> number?)?): Folder
+	local folder = Instance.new("Folder")
+	folder.Name = "HuzzSpawnPad"
+	local wood = Color3.fromRGB(106, 57, 9) -- (his display fence's colour)
+	-- x = across, z = towards the plaza's front edge (away from where people walk in)
+	local frame = CFrame.fromMatrix(centre, across, Vector3.yAxis, -inward)
+	local function piece(name, cf, size, visible)
+		local p = Instance.new("Part")
+		p.Name = name
+		p.Anchored, p.CastShadow, p.CanTouch = true, visible, false
+		p.TopSurface, p.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
+		p.Size = size
+		p.CFrame = cf
+		if visible then
+			p.Color, p.Material, p.CanCollide = wood, Enum.Material.Wood, false
+		else
+			p.Transparency, p.CanCollide, p.CanQuery = 1, true, false
+		end
+		p.Parent = folder
+		return p
+	end
+	local hw, hd = PAD_WIDTH / 2 + 0.4, PAD_DEPTH / 2 + 0.4
+	-- three sides: left, front (the plaza's edge), right; the side into the plaza stays open
+	local sides = {
+		{ Vector3.new(-hw, 0, -hd), Vector3.new(-hw, 0, hd) },
+		{ Vector3.new(-hw, 0, hd), Vector3.new(hw, 0, hd) },
+		{ Vector3.new(hw, 0, hd), Vector3.new(hw, 0, -hd) },
+	}
+	for i, s in sides do
+		local a, b = s[1], s[2]
+		local len = (b - a).Magnitude
+		local dir = (b - a).Unit
+		local posts = math.max(2, math.round(len / 3.4) + 1)
+		for k = 0, posts - 1 do
+			local q = a + dir * (len * k / (posts - 1))
+			local w = frame * q
+			local lift = if floorAt then (floorAt(w.X, w.Z) or centre.Y) - centre.Y else 0
+			piece("Post", frame * CFrame.new(q + Vector3.new(0, lift + 1.2, 0)), Vector3.new(0.7, 2.4, 0.7), true)
+		end
+		local mid = (a + b) / 2
+		local function along(y)
+			local m = mid + Vector3.new(0, y, 0)
+			return frame * CFrame.lookAt(m, m + dir)
+		end
+		piece("Rail", along(2.05), Vector3.new(0.35, 0.35, len), true)
+		piece("Rail", along(1.0), Vector3.new(0.25, 0.25, len), true)
+		piece("Barrier" .. i, along(3.5), Vector3.new(0.6, 7, len + 0.6), false)
+	end
+	return folder
+end
+
+-- A spot in the lobby for a player (the spawn pad's spots, a free one first), as a root CFrame facing the plaza.
+function MapService.lobbySpot(): CFrame?
+	local pad = activeLobby and activeLobby.pad
+	if not (pad and pad.spots and #pad.spots > 0) then return nil end
+	local taken = {}
+	for _, p in game:GetService("Players"):GetPlayers() do
+		local r = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+		if r and r:IsA("BasePart") then table.insert(taken, r.Position) end
+	end
+	local free = {}
+	for _, s in pad.spots do
+		local ok = true
+		for _, q in taken do
+			if (Vector3.new(q.X, 0, q.Z) - Vector3.new(s.X, 0, s.Z)).Magnitude < 2.5 then
+				ok = false
+				break
+			end
+		end
+		if ok then table.insert(free, s) end
+	end
+	local list = if #free > 0 then free else pad.spots
+	-- (the pad's own spots come first in the list: a random one of the first few, so a crowd fills it evenly)
+	local s = list[math.random(1, math.min(#list, 6))]
+	return facing(s, pad.lookAt)
+end
+
+-- The middle of the loaded field: halfway between the two safe lines, in the middle across; and the run's way.
+function MapService.fieldMiddle(): (Vector3?, Vector3?)
+	local a, b = MapService.zones.ZoneA, MapService.zones.ZoneB
+	if not (a and b and MapService.zones.Middle) then return nil, nil end
+	local ca, cb = edge(a), edge(b)
+	local mid = (ca + cb) / 2
+	local run = Vector3.new(cb.X - ca.X, 0, cb.Z - ca.Z)
+	return mid, if run.Magnitude > 0.1 then run.Unit else Vector3.zAxis
+end
+
+--[[
+	Catchers start in the middle (owner, Oct 19: "make catchers spawn in the middle"): a row across the field on the
+	line halfway between the safe lines, 5 studs apart, the first one dead centre, then rows 4 studs either side;
+	every spot open ground (Shared/SpawnSpots) inside the walls and outside both safe zones, facing the start line
+	the runners stand on. Worked out once per map (MapService.load clears it).
+]]
+function MapService.middleSpots(): { Vector3 }
+	if middleSpots then return middleSpots end
+	ignoreCache = nil
+	local mid, run = MapService.fieldMiddle()
+	if not (mid and run) then return {} end
+	local side = run:Cross(Vector3.yAxis).Unit
+	local wanted = {}
+	for _, row in { 0, -4, 4, -8, 8 } do
+		for _, k in { 0, 1, -1, 2, -2, 3, -3, 4, -4 } do
+			local p = mid + side * (k * 5) + run * row
+			table.insert(wanted, { p.X, p.Z })
+		end
+	end
+	local keep = function(x, z)
+		local p = Vector3.new(x, mid.Y + 1, z)
+		local a, b = MapService.zones.ZoneA, MapService.zones.ZoneB
+		if (a and MapService.inZone(a, p)) or (b and MapService.inZone(b, p)) then return false end
+		if field then
+			local l = field.frame:PointToObjectSpace(p)
+			if l.X < field.lo.X + 3 or l.X > field.hi.X - 3 or l.Z < field.lo.Z + 3 or l.Z > field.hi.Z - 3 then return false end
+		end
+		return true
+	end
+	middleSpots = SpawnSpots.fill(MapService.geometry, wanted, if field then field.floor else mid.Y, 24, 4, 2.5, keep)
+	return middleSpots
+end
+
+-- Catcher number `index`'s spot in the middle, facing the runners' start zone (startName).
+function MapService.middleSpot(index: number, startName: string?): CFrame?
+	local start = startName and MapService.zones[startName]
+	local look = start and start.CFrame.Position or nil
+	local list = MapService.middleSpots()
+	local s = list[((index - 1) % math.max(#list, 1)) + 1]
+	if not s then
+		local middle = MapService.zones.Middle
+		return middle and MapService.spot(middle, look, Config.Map.MiddleSpawn)
+	end
+	return facing(s, look)
+end
+
+-- A spot on the bench (or nil without one): open ground nearest a random point along its middle.
+function MapService.benchSpot(lookAt: Vector3?): CFrame?
+	local bench = MapService.zones.Bench
+	if not bench then return nil end
+	local top = bench.CFrame.Position + Vector3.new(0, bench.Size.Y / 2, 0)
+	local floorY = MapService.ground(top, top.Y + 2) or top.Y
+	local c = bench.CFrame:PointToWorldSpace(Vector3.new((math.random() * 2 - 1) * math.max(bench.Size.X / 2 - 3, 0) * 0.5, 0, 0))
+	local s = SpawnSpots.near(MapService.geometry, c.X, c.Z, floorY, 10, 1)
+	return if s then facing(s, lookAt) else MapService.spot(bench, lookAt)
 end
 
 --[[
@@ -620,10 +914,11 @@ local function dropFor(model, lobby)
 	return 0
 end
 
--- Where the map's middle goes: MapSpot if there is one; with a lobby beside every map (the owner built each
--- lobby in front of its map, floors level) the map stays exactly where it was built; else just in front of the
--- one lobby, turned so its open side (see openSide) faces the lobby, and lowered to its ground (dropFor).
-local function placement(middle, open, model)
+-- Where the map's middle goes: MapSpot if there is one; a map built in front of a copy of his lobby (each of his
+-- maps: floors level with it) goes in front of the one lobby exactly as it stood in front of that copy (same
+-- distance, height and turn: built beside the kept copy = right where it was built); else just in front of the
+-- lobby, turned so its open side (see openSide) faces it, and lowered to its ground (dropFor).
+local function placement(middle, open, model, entry)
 	local spot = MapService.mapSpot
 	if spot then
 		return spot.CFrame
@@ -633,8 +928,8 @@ local function placement(middle, open, model)
 	if not lobby then
 		return CFrame.lookAt(mid, mid + open) -- no lobby: the map stays where it was built
 	end
-	if #MapService.lobbies > 1 then
-		return CFrame.lookAt(mid, mid + open) -- built level with its own lobby: stays exactly as built
+	if entry and entry.builtBeside then
+		return lobby.CFrame * entry.builtBeside:Inverse() * CFrame.lookAt(mid, mid + open)
 	end
 	-- "In front": the side of the lobby that faces where the maps were built.
 	local away = Vector3.zero
@@ -795,7 +1090,7 @@ function MapService.load(entry)
 		local run = Vector3.new(b.CFrame.Position.X - a.CFrame.Position.X, 0, b.CFrame.Position.Z - a.CFrame.Position.Z).Unit
 		local open = openSide(model, middle, run, entry.name)
 		model.WorldPivot = CFrame.lookAt(mid, mid + open)
-		model:PivotTo(placement(middle, open, model))
+		model:PivotTo(placement(middle, open, model, entry))
 		for _, d in model:GetDescendants() do
 			if d:IsA("SpawnLocation") then
 				d.Enabled = false -- players respawn in the lobby, not on the map
@@ -821,6 +1116,7 @@ function MapService.unload()
 	end
 	marks, wall, gate, catcherWalls = nil, nil, nil, nil
 	field = nil
+	middleSpots = nil
 	if loaded then
 		loaded:Destroy()
 		loaded = nil
@@ -873,7 +1169,7 @@ end
 
 -- A zone's edge that faces the middle: its centre, the way out (toward the middle) and its length.
 -- Zones are boxes (they may be turned), so the edge is the box face most in line with the middle.
-local function edge(zone)
+function edge(zone)
 	local middle = MapService.zones.Middle
 	local zc = zone.CFrame
 	local d = zc:PointToObjectSpace(middle.CFrame.Position)
@@ -1146,6 +1442,9 @@ end
 	The line-up (Huss Valley): runners stand shoulder to shoulder just behind their safe line, facing
 	across. Returns the line's CFrame (on the floor at its middle, looking across the field), its length,
 	and `count` spots (CFrames for the root): one row centred on the middle, a second row behind if it's full.
+	Every spot is open ground (Shared/SpawnSpots: owner, Oct 19 "make them spawn on open ground"): one that lands in
+	a prop moves up to 2 studs (staying behind the line, in the zone, 3 studs from the others), else the runner takes
+	the next free place along the line or in the next row; only if the whole zone is full does a spot stay as planned.
 ]]
 function MapService.lineup(zoneName, count)
 	local zone = MapService.zones[zoneName]
@@ -1156,16 +1455,57 @@ function MapService.lineup(zoneName, count)
 	local line = CFrame.lookAt(centre, centre + out)
 	local gap = Config.Map.LineupGap or 4
 	local perRow = math.max(1, math.floor((length - 6) / gap) + 1)
-	local spots = {}
-	for i = 1, count do
+	local function planned(i, total)
 		local row = (i - 1) // perRow
-		local inRow = math.min(perRow, count - row * perRow)
+		local inRow = math.min(perRow, total - row * perRow)
 		local k = (i - 1) % perRow
 		local x = (k - (inRow - 1) / 2) * gap
-		local at = line * CFrame.new(x, 0, 2.5 + row * 4) -- (CFrame z points back, away from the field)
-		local floor = MapService.ground(at.Position, at.Position.Y + 6) or at.Position.Y
-		local pos = Vector3.new(at.Position.X, floor + 3.2, at.Position.Z)
-		spots[i] = CFrame.lookAt(pos, pos + out)
+		return line * CFrame.new(x, 0, 2.5 + row * 4) -- (CFrame z points back, away from the field)
+	end
+	ignoreCache = nil
+	local chosen = {}
+	local function fits(x, z)
+		local p = Vector3.new(x, centre.Y + 1, z)
+		if (p - centre):Dot(out) > -1 or not MapService.inZone(zone, p) then return false end
+		for _, c in chosen do
+			if (Vector3.new(c.X, 0, c.Z) - Vector3.new(x, 0, z)).Magnitude < 3 then return false end
+		end
+		return true
+	end
+	local spots = {}
+	local missing = {}
+	for i = 1, count do
+		local at = planned(i, count).Position
+		local hit = SpawnSpots.near(MapService.geometry, at.X, at.Z, centre.Y, 2, 0.5, fits)
+		if hit then
+			table.insert(chosen, hit)
+			spots[i] = hit
+		else
+			table.insert(missing, i)
+		end
+	end
+	-- the runners whose place was taken by a prop: the next free places (the rest of the row, then rows behind)
+	local extra = count
+	while #missing > 0 and extra < count + perRow * 4 do
+		extra += 1
+		local at = planned(extra, count + perRow * 4).Position
+		local hit = SpawnSpots.near(MapService.geometry, at.X, at.Z, centre.Y, 2, 0.5, fits)
+		if hit then
+			table.insert(chosen, hit)
+			spots[table.remove(missing, 1)] = hit
+		end
+	end
+	for i = 1, count do
+		local s = spots[i]
+		if s then
+			local pos = s + Vector3.new(0, SpawnSpots.RootHeight, 0)
+			spots[i] = CFrame.lookAt(pos, pos + out)
+		else -- (no open ground left in the zone: the planned spot, as before)
+			local at = planned(i, count)
+			local floor = MapService.ground(at.Position, at.Position.Y + 6) or at.Position.Y
+			local pos = Vector3.new(at.Position.X, floor + SpawnSpots.RootHeight, at.Position.Z)
+			spots[i] = CFrame.lookAt(pos, pos + out)
+		end
 	end
 	return line, length, spots
 end

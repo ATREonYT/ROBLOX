@@ -9,8 +9,16 @@ return {
 	Sink = 0.2, -- how far she sinks into the hands
 	HairRoom = 0.3, -- she never sits lower than the head top plus this
 
-	PickupTime = 0, -- 0 = she appears overhead at once (owner's call); e.g. 0.55 = she flies in from where she was
-	ArcHeight = 3.5,
+	-- The pickup (owner, Oct 19: "add the nice girl animations when they are picked up"; before, she appeared overhead
+	-- at once because flying in from the big girl over the map looked like a long jump across the field): she appears
+	-- standing in front of him in a soft puff in her colour, rises in a short arc while she turns once, settles into
+	-- his raised arms, and a soft ring and sparkles in her rarity colour mark the catch (Gameplay/CarryAnimator).
+	-- Stolen from someone close by, she starts from his head instead. No screen flash (kid-safe).
+	PickupTime = 0.85, -- seconds from the ground to his hands (0 = she appears overhead at once)
+	ArcHeight = 2.5, -- studs the arc rises above the straight path
+	PickupSpin = 1, -- turns she makes on the way up (slowing as she lands)
+	PickupNear = 10, -- she flies from where she was only when that is this close; else she starts in front of him
+	PickupFront = Vector3.new(0, -0.3, -3.2), -- where she starts then, from his root (standing on the ground in front)
 
 	Arms = {
 		Raise = 170, -- 180 = straight up

@@ -1,0 +1,264 @@
+--[[
+	Synced dancing (owner, Oct 19: "make synced dancing"). The rule, simply: every dance has a beat, the server time
+	it started (the character's HuzzDanceAt, set by the server from the Dance remote, UI/DancePlayer); anyone who
+	starts the same dance within 30 studs of a dancer takes that dancer's beat; and on EVERY screen each dancer is
+	shown at (server time now - their beat), so people doing the same dance move together everywhere, and their girls
+	dance with them (Gameplay/CompanionDance reads the same two attributes).
+	  - A dance track that reached this screen (your own, or another player's replicated one) is kept on its beat:
+	    nudged when it drifts more than 0.12 s (Roblox starts a replicated track whenever it arrives, and a published
+	    dance can take a moment to load, so without this two in-step dancers could look out of step on a third screen).
+	  - Another player's dance that can't play on this screen (Studio's stand-in animation IDs only play for the
+	    player who made them, and a published one may still be loading): drawn here by hand from the dance's
+	    KeyframeSequence (CompanionDance.anim: ReplicatedStorage.HuzzAnimations in Studio, KeyframeSequenceProvider
+	    live) on their R15 joints, so everyone sees everyone dance in Studio tests too.
+	  - Dance together: walk up to someone dancing (not in a round, not in a cutscene) and press F ("DANCE TOGETHER"):
+	    you start their dance on their beat. Only a dance you own: otherwise it says where to get it (nothing sold
+	    from here).
+	Gameplay/Frame order 9: after the walk pack (PlayerMoves 8, which steps aside while someone dances), before the
+	huss pose (RunAnimator 10) and the carry (20).
+]]
+local M = {}
+
+local PARTS = {
+	"LowerTorso", "UpperTorso", "Head",
+	"LeftUpperArm", "LeftLowerArm", "LeftHand", "RightUpperArm", "RightLowerArm", "RightHand",
+	"LeftUpperLeg", "LeftLowerLeg", "LeftFoot", "RightUpperLeg", "RightLowerLeg", "RightFoot",
+}
+local DRIFT = 0.12 -- seconds a track may drift off its beat before it's nudged back
+local FADE = 0.25 -- seconds a hand-drawn dance fades in and out
+local DRAW_RANGE = 120 -- studs from the camera: hand-drawn dances further away aren't drawn
+local PROMPT_NAME = "HuzzDanceTogether"
+
+-- Where a looped dance is at a server time, given its beat (pure: tests/DanceSync.spec.luau).
+function M.timeAt(now: number, beat: number, length: number): number
+	if length <= 0 then
+		return 0
+	end
+	return (now - beat) % length
+end
+
+-- How far a track's time is off its beat, wrapped round the loop (-length/2 .. length/2).
+function M.offBy(position: number, want: number, length: number): number
+	if length <= 0 then
+		return 0
+	end
+	return (position - want + length / 2) % length - length / 2
+end
+
+function M.start()
+	local Players = game:GetService("Players")
+	local ReplicatedStorage = game:GetService("ReplicatedStorage")
+	local Workspace = game:GetService("Workspace")
+
+	local Shared = ReplicatedStorage:WaitForChild("Shared")
+	local Dances = require(Shared.Config.Dances)
+	local Library = require(Shared.AnimationLibrary)
+	local Sampler = require(Shared.KeyframeSampler)
+	local CompanionDance = require(script.Parent.CompanionDance)
+	local Frame = require(script.Parent.Frame)
+	local UI = script.Parent.Parent:WaitForChild("UI")
+	local okPlayer, DancePlayer = pcall(function() return require(UI:WaitForChild("DancePlayer", 10)) end)
+	local okToast, Toast = pcall(function() return require(UI:WaitForChild("Toast", 10)) end)
+	local carryArms = Library.id("CarryArms")
+
+	local recs = {} -- character -> { motors, k, weight, written, base, track, scanAt, prompt }
+
+	local function danceOf(character: Model): (string?, number?)
+		local id, at = character:GetAttribute("HuzzDance"), character:GetAttribute("HuzzDanceAt")
+		if type(id) == "string" and type(at) == "number" and Dances.get(id) then
+			return id, at
+		end
+		return nil, nil
+	end
+
+	-- Their dance track on this screen, if one is really playing (a looped Action track with a length).
+	local function trackOf(character: Model): AnimationTrack?
+		local humanoid = character:FindFirstChildOfClass("Humanoid")
+		local animator = humanoid and humanoid:FindFirstChildOfClass("Animator")
+		if not animator then
+			return nil
+		end
+		local found = nil
+		pcall(function()
+			for _, t in animator:GetPlayingAnimationTracks() do
+				if t.Looped and t.Priority == Enum.AnimationPriority.Action and t.WeightTarget > 0.5 and t.Length > 0
+					and not (t.Animation and t.Animation.AnimationId == carryArms) then
+					found = t
+				end
+			end
+		end)
+		return found
+	end
+
+	local function motorsOf(character: Model)
+		local humanoid = character:FindFirstChildOfClass("Humanoid")
+		local root = character:FindFirstChild("HumanoidRootPart") :: BasePart?
+		if not (humanoid and root) or humanoid.RigType ~= Enum.HumanoidRigType.R15 then
+			return nil
+		end
+		local motors, count = {}, 0
+		for _, name in PARTS do
+			local part = character:FindFirstChild(name)
+			if part then
+				for _, j in part:GetChildren() do
+					if j:IsA("Motor6D") and j.Part1 == part then
+						motors[name] = j
+						count += 1
+						break
+					end
+				end
+			end
+		end
+		if count < #PARTS then
+			return nil -- (still streaming in: tried again next scan)
+		end
+		return motors, math.clamp((humanoid.HipHeight + root.Size.Y / 2) / 3, 0.5, 2)
+	end
+
+	local function release(rec)
+		for name, base in rec.base do
+			local m = rec.motors and rec.motors[name]
+			if m and m.Parent and rec.written[name] == m.Transform then
+				m.Transform = base
+			end
+		end
+		rec.written, rec.base = {}, {}
+	end
+
+	local function write(rec, pose, w)
+		for name, m in rec.motors do
+			local cf = pose[name]
+			if cf and m.Parent then
+				if name == "LowerTorso" then
+					cf = CFrame.new(cf.Position * rec.k) * cf.Rotation -- (the hips' bounce, to their size)
+				end
+				local current = m.Transform
+				local base = if rec.written[name] == current then rec.base[name] else current
+				rec.base[name] = base
+				m.Transform = if w >= 0.999 or not base then cf else base:Lerp(cf, w)
+				rec.written[name] = m.Transform -- read back: Roblox stores CFrames as float32
+			end
+		end
+	end
+
+	-- "Dance together": a prompt on another dancer, for you while you're free to dance.
+	local function canJoin(): boolean
+		local me = Players.LocalPlayer
+		local role = me:GetAttribute("HuzzRole")
+		if role == "Runner" or role == "Catcher" or me:GetAttribute("HuzzCinematic") == true or me:GetAttribute("HuzzChoosing") == true then
+			return false
+		end
+		return not (okPlayer and DancePlayer and DancePlayer.current() ~= nil)
+	end
+	local function setPrompt(rec, character: Model, id: string?)
+		local want = id ~= nil and canJoin()
+		local root = character:FindFirstChild("HumanoidRootPart")
+		if want and root then
+			local prompt = rec.prompt
+			if not (prompt and prompt.Parent == root) then
+				prompt = Instance.new("ProximityPrompt")
+				prompt.Name = PROMPT_NAME
+				prompt.ActionText = "DANCE TOGETHER"
+				prompt.KeyboardKeyCode = Enum.KeyCode.F
+				prompt.GamepadKeyCode = Enum.KeyCode.ButtonY
+				prompt.MaxActivationDistance = 12
+				prompt.RequiresLineOfSight = false
+				prompt.HoldDuration = 0
+				prompt.Triggered:Connect(function()
+					local dance = character:GetAttribute("HuzzDance")
+					if type(dance) ~= "string" or not canJoin() or not (okPlayer and DancePlayer) then
+						return
+					end
+					if not DancePlayer.owned(dance) then
+						if okToast and Toast then
+							local d = Dances.get(dance)
+							Toast.show(`Get {d and d.Name or "this dance"} in Dances to join in!`)
+						end
+						return
+					end
+					local ok, why = DancePlayer.play(dance) -- (on their beat: DancePlayer takes the nearest dancer's)
+					if not ok and okToast and Toast then
+						Toast.show(why or "That dance couldn't start.")
+					end
+				end)
+				prompt.Parent = root
+				rec.prompt = prompt
+			end
+			local d = Dances.get(id :: string)
+			prompt.ObjectText = d and d.Name or ""
+		elseif rec.prompt then
+			rec.prompt:Destroy()
+			rec.prompt = nil
+		end
+	end
+
+	Frame.on(9, function(dt)
+		dt = math.clamp(dt, 1 / 240, 1 / 15)
+		local now = Workspace:GetServerTimeNow()
+		local clock = os.clock()
+		local cam = Workspace.CurrentCamera
+		local camPos = cam and cam.CFrame.Position
+		local me = Players.LocalPlayer
+		local seen = {}
+		for _, p in Players:GetPlayers() do
+			local character = p.Character
+			if character and character.Parent then
+				seen[character] = true
+				local rec = recs[character]
+				if not rec then
+					rec = { weight = 0, written = {}, base = {}, scanAt = -math.huge }
+					recs[character] = rec
+				end
+				local id, beat = danceOf(character)
+				-- 4 times a second: the track, the joints, the prompt
+				if clock - rec.scanAt >= 0.25 then
+					rec.scanAt = clock
+					rec.track = if id then trackOf(character) else nil
+					if p ~= me and id and not rec.track and not rec.motors then
+						rec.motors, rec.k = motorsOf(character)
+					end
+					if p ~= me then
+						pcall(setPrompt, rec, character, id)
+					end
+				end
+				-- a track on screen: keep it on its beat
+				local track = rec.track
+				if id and beat and track then
+					pcall(function()
+						local length = track.Length
+						local want = M.timeAt(now, beat, length)
+						if math.abs(M.offBy(track.TimePosition, want, length)) > DRIFT then
+							track.TimePosition = want
+						end
+					end)
+				end
+				-- no track on this screen (another player's): draw it by hand
+				local root = character:FindFirstChild("HumanoidRootPart") :: BasePart?
+				local close = root ~= nil and (not camPos or (root.Position - camPos).Magnitude < DRAW_RANGE)
+				local draw = p ~= me and id ~= nil and track == nil and rec.motors ~= nil and close
+				local anim = draw and CompanionDance.anim(id :: string)
+				rec.weight = math.clamp(rec.weight + (if anim then dt else -dt) / FADE, 0, 1)
+				if anim then
+					rec.anim, rec.beat = anim, beat
+				end
+				if rec.weight > 0 and rec.anim and rec.motors then
+					local w = rec.weight * rec.weight * (3 - 2 * rec.weight)
+					pcall(write, rec, Sampler.sample(rec.anim, M.timeAt(now, rec.beat or now, rec.anim.length)), w)
+				elseif next(rec.written) then
+					release(rec)
+					rec.anim = nil
+				end
+			end
+		end
+		for character, rec in recs do
+			if not seen[character] then
+				if rec.prompt then
+					rec.prompt:Destroy()
+				end
+				recs[character] = nil -- (a plain table, cleared when the character goes: never a weak table)
+			end
+		end
+	end)
+end
+
+return M

@@ -76,11 +76,34 @@ has the general KeyframeSequence workflow; 3D video tools are in core `CLAUDE.md
   dips and dangles on his real footfalls (`CarryMotion` reads his right hip), swings her feet, a small kick, wave or
   look round now and then; calm (under 6° a frame). Spec `tests/GirlMotion.spec`. Before/after film
   `docs/previews/girls-walk-carry.mp4` (`motion3d/girls_walk_carry_scene.luau`). Not seen in Studio yet.
+- **The pickup** (`CarryMotion`, `Config/Carry` PickupTime 0.85, ArcHeight 2.5, PickupSpin 1): won from far away
+  (the big girl over the map; anything over `PickupNear` 10 studs) she appears standing on the ground 3.2 studs in
+  front of him, rises in a short arc turning once round herself (slowing), and only in the last 60% lies back into his
+  arms; taken off a head close by (a steal) she flies over from there, lying as she was. His arms ease up to meet her
+  (smoothstep, all the way by 62% of it). No jump at the start or the landing (spec). Effects:
+  [effects.md](effects.md). Spec `tests/GirlPickup.spec.luau`; film `docs/previews/girl-pickup.mp4`
+  (`motion3d/girl_pickup_scene.luau`, before/after lanes). Not seen in Studio yet.
+- **Seen on every screen** (owner, Oct 19: "make the girls be seen on everyones screen"): every girl the server
+  makes (carried, following a catcher, the prize) is `ModelStreamingMode` Persistent (his place streams: a plain
+  Model reaches other players before its parts), and `CarryAnimator` waits for her parts (`whenWhole`) before moving
+  her (the follower used to give up at once when her root hadn't arrived, and stood frozen where she was caught).
+  Your first girl is equipped when you win her (if you had none), so she walks behind you for everyone.
 
 ## Dances
 - `UI/DancePlayer` (one at a time; walking stops it; **in step**: the `Dance` remote puts HuzzDance / HuzzDanceAt
   (server time) on your character, and starting the same dance within 30 studs of a dancer joins their beat).
-  `Gameplay/CompanionDance` puts your dance on your R6 girl at your track's time. Dance music: [sounds.md](sounds.md).
+  `Gameplay/CompanionDance` puts your dance on your R6 girl at your track's time, and other players' girls on their
+  HuzzDance / HuzzDanceAt. Dance music: [sounds.md](sounds.md).
+- **Synced dancing** (owner, Oct 19: "make synced dancing"; `Gameplay/DanceSync`, Frame order 9). The rule: a dance's
+  beat is HuzzDanceAt; on every screen each dancer is shown at `(server now - beat) % length` (`DanceSync.timeAt`),
+  so dancers on one beat move as one everywhere. A track on screen (yours, or a replicated one) is nudged back when it
+  drifts over 0.12 s; another player's dance with no track on this screen (Studio's stand-in IDs only play for their
+  maker; a published one may still be loading) is drawn by hand from its KeyframeSequence on their R15 joints (the
+  15 parts PlayerMoves drives; fades 0.25 s; within 120 studs). **Dance together:** a prompt on another dancer (F /
+  gamepad Y, 12 studs, "DANCE TOGETHER", their dance's name) while you're free (no round, cutscene or choosing, not
+  dancing): starts their dance on their beat if you own it, else a toast says where to get it (never a purchase).
+  Spec `tests/GirlPickup.spec.luau` (timeAt / offBy); film `docs/previews/dance-sync.mp4`
+  (`motion3d/dance_sync_scene.luau`: three players start Floss at different times, not synced vs synced).
 - **Dance pictures** (`UI/DancePose`): your avatar posed by hand from the KeyframeSequence at the dance's best second,
   walking every joint (Motor6D, Weld, WeldConstraint, AnimationConstraint) and anchoring it. **No Animator, so no
   lag** (25 live animated viewports lagged). Used by the Dances cards and the wheel; note icon as fallback on the wheel.
@@ -93,8 +116,9 @@ has the general KeyframeSequence workflow; 3D video tools are in core `CLAUDE.md
   centre circle; pictures built ahead while closed; opens with one smooth grow (no CanvasGroup, no stagger).
 
 ## Honest gaps
-- Not seen in Studio yet: the pack walk for everyone, carried girls, dance pictures on real avatars, dance sync across
-  two clients (needs published dances).
+- Not seen in Studio yet: the pack walk for everyone, carried girls, the pickup and its effects, dance pictures on
+  real avatars, synced dancing across two clients (the hand-drawn dances for others in Studio, the nudges on
+  published tracks, the DANCE TOGETHER prompt; whether a replicated track takes the nudge smoothly is Studio-only).
 
 ## Why it is this way / history
 - **Walking** (owner Oct 18: "player to player less choppy", "make the walking animations way way better").
@@ -106,3 +130,9 @@ has the general KeyframeSequence workflow; 3D video tools are in core `CLAUDE.md
 - **Girls:** Oct 18 "so choppy": the small companion sprinted at 9 steps/s (legs jumping 44° a frame) and the lock
   jolted her body every step; hence `Pack.MaxSteps` and `Pack.Surge`.
 - **Carried girls** (Oct 18 "not just be held straight up like that").
+- **The pickup** (Oct 19 "add the nice girl animations when they are picked up"): PickupTime was 0 (she appeared
+  overhead at once) because the old flight came all the way from the big girl over the map; now a far pickup starts
+  on the ground in front of him, so it reads as him lifting her, not her flying across the field.
+- **Girls on every screen / synced dancing** (Oct 19): the streaming lesson again (core pitfall: never look a part up
+  once); and dances with Studio's stand-in IDs never showed on other screens, so the girls' and dancers' moves are now
+  driven from the two attributes every screen has.

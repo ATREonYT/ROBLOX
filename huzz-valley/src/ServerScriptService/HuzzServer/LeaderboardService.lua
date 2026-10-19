@@ -94,7 +94,7 @@ local function makeDefaults(): { Instance }
 	local made = {}
 	local holder = Instance.new("Folder")
 	holder.Name = "HuzzLeaderboards"
-	for _, floor in LobbyLayout.floors(Workspace) do
+	for _, floor in { LobbyLayout.main(Workspace) } do -- (the one lobby: MapService puts the other copies away)
 		for i, spot in LobbyLayout.boardSpots(api, Rules, Workspace, floor, #Config.Boards) do
 			local def = Config.Boards[i]
 			local ok, model = pcall(Look.model, api, def, spot.at, Config.Size, Config.Lift, Config.Subtitle, Config.Shown, spot.podium)

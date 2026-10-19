@@ -119,7 +119,7 @@ end
 local function onPads(): { Instance }
 	local out = {}
 	local holder
-	for _, floor in LobbyLayout.floors(Workspace) do
+	for _, floor in { LobbyLayout.main(Workspace) } do -- (the one lobby: MapService puts the other copies away)
 		for _, spot in LobbyLayout.standSpots(api, Workspace, floor) do
 			if not holder then
 				holder = Instance.new("Folder")

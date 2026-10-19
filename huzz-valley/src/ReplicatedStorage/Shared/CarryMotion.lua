@@ -74,13 +74,21 @@ end
 	girlMotors (her Motor6Ds), start (time the pickup began), from (world position she flies in from),
 	seed, useArmAnimation ]]
 function CarryMotion.new(info)
+	-- (from far away, e.g. the big girl over the map, she starts on the ground in front of him: Config/Carry)
+	local near = (info.root.CFrame * CFrame.new(Carry.PickupFront or Vector3.new(0, -0.3, -3.2))).Position
+	local from = info.from
+	local onGround = typeof(from) ~= "Vector3" or (from - info.root.CFrame.Position).Magnitude > (Carry.PickupNear or 10)
+	if onGround then
+		from = near
+	end
 	local rec = {
 		motor = info.motor,
 		rig = info.rig,
 		root = info.root,
 		c0rot = info.motor.C0.Rotation,
 		start = info.start,
-		from = info.from or (info.root.CFrame * CFrame.new(0, -2.2, -2.5)).Position,
+		from = from,
+		onGround = onGround, -- (she starts standing on the ground, else lying on the head she was taken from)
 		useArmAnimation = info.useArmAnimation,
 		joints = GirlMotion.joints(info.girlMotors or {}),
 		girl = GirlMotion.new(info.seed or 1),
@@ -91,6 +99,11 @@ function CarryMotion.new(info)
 		written = {}, base = {},
 	}
 	return rec
+end
+
+-- How far the pickup is, 0 (she's on the ground in front) to 1 (in his hands).
+function CarryMotion.progress(rec, now)
+	return if Carry.PickupTime > 0 then clamp((now - rec.start) / Carry.PickupTime, 0, 1) else 1
 end
 
 -- Gives the carrier's joints back to their animations.
@@ -192,13 +205,25 @@ function CarryMotion.step(rec, dt, now, mood, moodAge, hussAge, hussAnimated)
 	local hold = CFrame.new(L.X, L.Y - (math.abs(step) - 0.5) * B.Height * amount, L.Z)
 		* CFrame.Angles(rad(S.Tilt * L.Z), rec.yaw, rad(-S.Tilt * L.X) + rad(B.Roll) * step * amount)
 
-	-- Pickup: she flies in upright from where she was, arcs, and settles into the hold.
-	local p = if Carry.PickupTime > 0 then clamp((now - rec.start) / Carry.PickupTime, 0, 1) else 1
+	-- Pickup: from the ground she rises standing, twirling once round herself (slowing), and only near the top lies
+	-- back into his arms; taken off a head close by, she flies over in an arc, lying as she was.
+	local p = CarryMotion.progress(rec, now)
 	if p < 1 then
 		local frame = torso.CFrame * CFrame.new(motor.C0.Position)
-		local startCF = CFrame.new(frame:PointToObjectSpace(rec.from)) * rec.c0rot:Inverse()
+		local up = frame:VectorToObjectSpace(Vector3.yAxis)
 		local e = 1 - (1 - p) ^ 3
-		hold = startCF:Lerp(hold, e) + frame:VectorToObjectSpace(Vector3.yAxis) * Carry.ArcHeight * sin(math.pi * p)
+		local at = frame:PointToObjectSpace(rec.from):Lerp(hold.Position, e) + up * Carry.ArcHeight * sin(math.pi * p)
+		local rotation = hold.Rotation
+		if rec.onGround then
+			local k = clamp((p - 0.4) / 0.6, 0, 1)
+			local standing = rec.c0rot:Inverse() -- (upright, facing the way he faces)
+			rotation = standing:Lerp(hold.Rotation, k * k * (3 - 2 * k))
+			local turn = 2 * math.pi * (Carry.PickupSpin or 0) * (1 - p) ^ 2 -- (the turn left to make, easing out)
+			if turn ~= 0 then
+				rotation = CFrame.fromAxisAngle(up, turn) * rotation
+			end
+		end
+		hold = CFrame.new(at) * rotation
 	end
 	-- The huss: up she goes (straight up from his hands), twirling, and back down into them.
 	local lift, spin, hussFlex, give, hu = CarryMotion.huss(hussAge)
@@ -212,7 +237,8 @@ function CarryMotion.step(rec, dt, now, mood, moodAge, hussAge, hussAnimated)
 	-- During a huss the arms swing out to a double flex while she's in the air, then back up to catch.
 	hussFlex, give = hussFlex or 0, give or 0
 	if not rec.useArmAnimation then
-		local weight = clamp(p * 1.8, 0, 1) * (if hussAnimated then 1 - hussFlex else 1)
+		local reach = clamp(p * 1.6, 0, 1)
+		local weight = reach * reach * (3 - 2 * reach) * (if hussAnimated then 1 - hussFlex else 1) -- (arms ease up to meet her)
 		local flex = math.abs(step) * B.ElbowFlex * amount + give * 30
 		local pump = if lift then sin(hu * 2 * math.pi * 6.5) else 0
 		for _, arm in rec.rig.arms do

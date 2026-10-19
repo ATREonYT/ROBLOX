@@ -82,6 +82,9 @@ fine). Owner quotes go in the topic's "Why" part. Keep this core about 20 KB and
   - Posing Motor6D.Transform: on release, put the old pose back only on joints still holding exactly what you wrote,
     or a stale pose shows for one frame (Oct 19: a ~178° flip at the end of every huss and leap). Measure motion with
     `motion3d/move_smooth_measure.luau`, not stills ([animations.md](docs/notes/animations.md)).
+  - Spawns: never a random point on a floor (Oct 19: 23% of the old lobby spots were inside his props). Every
+    spot goes through `Shared/SpawnSpots` (floor under all four feet, nothing solid or visible in the body's box) and
+    `tests/Spawns.spec.luau` checks them on his real place.
   - Worktree agents can't run `bash tools/check.sh` (blocked): run each `lune run tests/X.spec.luau` and the sim on
     their own, and pass harness snippets as `@file` instead of `"$(cat file)"`.
 
@@ -100,7 +103,8 @@ fine). Owner quotes go in the topic's "Why" part. Keep this core about 20 KB and
 - `ServerStorage/HuzzAnimations.rbxm` (generated), `StarterGui/HuzzUI.rbxm` (generated: never edit by hand).
 - `design/`: kit pages, the owner's art zips, `anims/` (movement pack + 200 dances), `aura/`, `shop/`, references.
 - `places/HUSSANIME.rbxl` = the owner's own place as of Oct 18 (maps, girls, his **new Halloween lobby** in
-  `Workspace > StartingPoint`, one copy in front of each map; his old lobby islands moved aside in `Maps > Spawn`);
+  `Workspace > StartingPoint`, one copy in front of each map: the game keeps ONE and puts the others away, Oct 19;
+  his old lobby islands moved aside in `Maps > Spawn`);
   `HuzzValley-yours.rbxl` = it with all our code and UI swapped in (what the owner tests).
 
 ## 4. Checks, previews, builds (Lune 0.10.5 at `/root/bin/lune`; run before every commit)
@@ -218,7 +222,7 @@ fine). Owner quotes go in the topic's "Why" part. Keep this core about 20 KB and
 | The round | [round.md](docs/notes/round.md) | stages, times, catching rules, safe zones, Practice Bot, maps, pay, girl odds, Results |
 | Stab, lunge, catch | [stab-lunge-catch.md](docs/notes/stab-lunge-catch.md) | the stab and lunge motion, the catch's red fill and fall, getting up |
 | Knives | [knives.md](docs/notes/knives.md) | skins, worn knife, Game Pass knives and cards, SetupKnives, stand sword showcase |
-| Lobby, Lobby props | [lobby.md](docs/notes/lobby.md) | lobby per map, leaderboards, avatar stands, lobby props |
+| Lobby, Lobby props | [lobby.md](docs/notes/lobby.md) | the one lobby, spawn pad and open-ground spawns, leaderboards, avatar stands, lobby props |
 | Look and lighting | [look-and-lighting.md](docs/notes/look-and-lighting.md) | `Config/Look`, light, sky, lamp levels |
 | Effects | [effects.md](docs/notes/effects.md) | Juice, powers, the girls' VFX, the showcase girl, effect pictures |
 | Movement and camera | [movement-and-camera.md](docs/notes/movement-and-camera.md) | sprint, huss, FOV, round camera, shot changes |
