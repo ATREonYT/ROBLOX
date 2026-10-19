@@ -45,7 +45,7 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
   picked from his .glb's measured length (`tools/knives/wear_table.luau` prints each knife's measure next to the
   table): 3.0+ studs = **Back** (16: his swords, katanas, reapers, scythe, the 5 pass knives, Celestial Edge, Shadow
   Cleaver 3.08), shorter = **Side** (37: knives, daggers, tantos, kunai, cleavers, sickles, karambits, shurikens; Blood
-  Moon Tanto 2.98 is the longest). A knife with no row: the model's `Wear` attribute, else the same 3.0 rule.
+  Moon Tanto 2.98 is the longest). A knife with no row: the model's `Wear` attribute, else the same 3.0 rule (`KnifeLook.wearOf`).
   - **Back:** diagonal across the upper back like a sword in a back sheath, the handle end up over the right
     shoulder, the blade down to the left hip, `BACK_TILT` 40 degrees, flat side against the back, `GAP` 0.05 off it.
     A two-handed pole (`KnifeLook.twoHanded`: 3+ studs, gripped mid-pole: the reapers and the scythe) is turned
