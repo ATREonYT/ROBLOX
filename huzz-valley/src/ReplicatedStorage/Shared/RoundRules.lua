@@ -357,6 +357,24 @@ function RoundRules.stalling(s, inStart, only)
 	return any
 end
 
+-- An AFK catcher (Config/Round.AwayCatcher; Oct 19: one caught nobody and the game ran all MaxRounds): the catchers
+-- who have stood still for `after` seconds of running (idle: id -> seconds, kept by RoundService across rounds) and
+-- aren't sitting out yet (away: id -> true). Only catchers: an AFK runner is handled by the Hurry clock as before.
+-- Sorted, so the line names them in the same order everywhere.
+function RoundRules.awayCatchers(s, idle, after: number, away): { number }
+	local out = {}
+	if s.over then
+		return out
+	end
+	for _, id in idsWithRole(s, "Catcher") do
+		if (idle[id] or 0) >= after and not (away and away[id]) then
+			table.insert(out, id)
+		end
+	end
+	table.sort(out)
+	return out
+end
+
 -- How much faster everyone in the game runs in round `round` (owner, Oct 19: "speed goes up every round a very tiny
 -- bit"): 1 in round 1, then +perRound a round, never more than 1 + max. cfg = Config/Round.SpeedUp.
 function RoundRules.speedScale(round: number?, cfg): number

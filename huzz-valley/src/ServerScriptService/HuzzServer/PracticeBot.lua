@@ -1,6 +1,7 @@
 --[[
 	Practice Bot (owner picked "Yes, add bots": a round must work when you're alone). When a round has runners but
-	no catcher (one player in the server, or the only catcher left), a plain blocky catcher named "Practice Bot"
+	no catcher (one player in the server, or the only catcher left), or a catcher has gone AFK mid-round
+	(Config/Round.AwayCatcher, RoundService watchAwayCatchers), a plain blocky catcher named "Practice Bot"
 	(Config/Round.Bot) joins: it waits in the middle like a catcher, then chases the nearest runner it may tag and
 	stabs within Reach, with a short breather after each stab so a kid can get away (it is also a little slower than
 	a sprinting runner, so the huss and a straight run beat it). Round walls and props it follows a PathfindingService

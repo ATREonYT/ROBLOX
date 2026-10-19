@@ -65,6 +65,11 @@ local botChecked = nil -- the match whose players it last checked
 local botTagging = false -- true while the Practice Bot's stab is being applied (so the message names it)
 local botStabShownAt = -math.huge -- (os.clock) when clients were last told to play the bot's stab
 local botStep -- (set once stabNear exists, further down)
+local botStandIn = false -- the bot is in only for an AFK catcher (Config.AwayCatcher): it never "wins" then
+local idleFor = {} -- catcher id -> seconds of Running without moving (kept across rounds, this game only)
+local idleAt = {} -- catcher id -> where they stood when the count started
+local away = {} -- id -> true: an AFK catcher sitting out this round (the bot has his spot)
+local awaySaid = {} -- id -> true: "is away" said once this game
 local tally = {} -- id -> { Crossings = n, Catches = n, ... } this game only (the results screen at the end)
 local lastRunner = nil -- the only runner still out on the field while running (Speeds.LastRunner: a catch-up)
 
@@ -701,6 +706,77 @@ local function play(seconds, done, live, onFrame)
 	return os.clock() >= playUntil
 end
 
+-- The Practice Bot in the middle (the bot is a catcher too: the safe zones' walls stop it).
+local function spawnBot(startName): boolean
+	local ok = PracticeBot.spawn(MapService.middleSpot(1, startName) or MapService.spot(zones.Middle, zones[startName].Position, Config.Map.MiddleSpawn))
+	if ok then
+		local found, bots = pcall(CollectionService.GetTagged, CollectionService, "HuzzBot")
+		for _, m in if found then bots else {} do
+			MapService.setCatcher(m, true)
+		end
+	end
+	return ok
+end
+
+-- An AFK catcher (Config/Round.AwayCatcher, RoundRules.awayCatchers; our default while the owner decides, Oct 19:
+-- one caught nobody, so the game ran all 20 rounds, about 11 min). Every Running frame: a catcher who moved more
+-- than Move studs (or pressed a key) starts his count again; one who hasn't for After seconds sits out the rest of
+-- the round (held like on the line, so he can't catch) and the Practice Bot takes his spot. He keeps his role and
+-- his place in the game: next round he is back (and sits out again at GO if he still hasn't moved). Runners are
+-- never counted (an AFK runner is the Hurry clock's job, as before).
+local function watchAwayCatchers(dt, startName)
+	local A = Config.AwayCatcher
+	if not A or not match or match.over then
+		return
+	end
+	for id, role in match.roles do
+		local root = role == "Catcher" and rootOf(id)
+		local p = byId[id]
+		if root and p and not KnockdownService.isDown(p) and not PowerService.stuck(id) then
+			local h = humanoidOf(id)
+			local ok, dir = pcall(function() return h and h.MoveDirection end)
+			local pressing = ok and typeof(dir) == "Vector3" and dir.Magnitude > 0.1
+			local at = idleAt[id]
+			if pressing or not at or (Vector3.new(root.Position.X - at.X, 0, root.Position.Z - at.Z)).Magnitude > A.Move then
+				idleAt[id], idleFor[id] = root.Position, 0
+			elseif not away[id] then
+				idleFor[id] = (idleFor[id] or 0) + dt
+			end
+		end
+	end
+	local gone = Rules.awayCatchers(match, idleFor, A.After, away)
+	if #gone == 0 then
+		return
+	end
+	local names = {}
+	for _, id in gone do
+		away[id] = true
+		frozen[id] = true -- (sits out: no moving, stabbing or diving for the rest of this round)
+		syncPlayer(id)
+		if not awaySaid[id] then
+			awaySaid[id] = true
+			table.insert(names, nameOf(id))
+		end
+	end
+	if not PracticeBot.active() and Config.Bot.Enabled and zones.Middle and spawnBot(startName) then
+		botPlayed, botStandIn = true, true
+		PracticeBot.setFrozen(false)
+	end
+	if #names > 0 then
+		local who = table.concat(names, ", ")
+		announce(if PracticeBot.active() then `{who} {if #names > 1 then "are" else "is"} away, the {Config.Bot.Name} takes over` else `{who} {if #names > 1 then "are" else "is"} away`, WHITE)
+	end
+end
+
+-- At GO: where each catcher stands now is the new mark (the line-up moved him; that isn't him moving), the count
+-- he built up in earlier rounds stays.
+local function markIdle()
+	for id, role in if match then match.roles else {} do
+		local root = role == "Catcher" and rootOf(id)
+		if root then idleAt[id] = root.Position end
+	end
+end
+
 local function runRound()
 	table.clear(fellAt) -- (a new round: last round's fall spots don't count)
 	local events = Rules.startRound(match)
@@ -745,14 +821,10 @@ local function runRound()
 	for _, role in match.roles do
 		if role == "Catcher" then anyCatcher = true end
 	end
+	botStandIn = false
+	table.clear(away) -- (an AFK catcher gets his place back each round; he sits out again at GO if still idle)
 	if Config.Bot.Enabled and not anyCatcher and #runners > 0 and zones.Middle then
-		botPlayed = PracticeBot.spawn(MapService.middleSpot(1, startName) or MapService.spot(zones.Middle, zones[startName].Position, Config.Map.MiddleSpawn))
-		if botPlayed then -- (the bot is a catcher too: the safe zones' walls stop it)
-			local ok, bots = pcall(CollectionService.GetTagged, CollectionService, "HuzzBot")
-			for _, m in if ok then bots else {} do
-				MapService.setCatcher(m, true)
-			end
-		end
+		botPlayed = spawnBot(startName)
 		if botPlayed and botChecked ~= match then -- (its first round this game)
 			botChecked = match
 			-- it adapts to the kids playing it: someone new in the game = it starts again at Config.Bot.Speed
@@ -917,11 +989,13 @@ local function runRound()
 		end,
 	})
 	local roundRunners = #runnersWith("Active")
+	markIdle()
 	play(Config.RoundTime, function()
 		return Rules.isRoundOver(match)
 	end, true, function(dt)
 		if stalled then stalled(dt) end
 		watchLastRunner(roundRunners)
+		watchAwayCatchers(dt, startName)
 	end)
 	if lastRunner then
 		local id = lastRunner
@@ -943,13 +1017,22 @@ end
 local function finishGame()
 	PracticeBot.remove()
 	-- The Practice Bot downed everyone: it wins, so no player does (no girl, no winner's pay).
-	local botWon = botPlayed and match.team == "Catchers"
+	-- (standing in for an AFK catcher it never wins: the game's real catchers do, by the usual rules)
+	local botWon = botPlayed and not botStandIn and match.team == "Catchers"
 	-- It adapts to whoever plays it (Config.Bot.Step): slower after a win, faster after a loss (said when its next
-	-- game starts). Only when it was the catcher in the last round.
-	if botPlayed then
+	-- game starts). Only when it was the only catcher in the last round.
+	if botPlayed and not botStandIn then
 		botNews = PracticeBot.result(botWon)
 	end
+	-- An AFK catcher the bot stood in for (Config.AwayCatcher), with no catch of his own, wins nothing: not her, not
+	-- the winner's pay (the lead's spot or "most catches" would otherwise hand the bot's work to him)
+	local function satOut(id)
+		return awaySaid[id] == true and (match.catches[id] or 0) == 0
+	end
 	local winnerId = if botWon then nil else match.winner
+	if winnerId and match.team == "Catchers" and satOut(winnerId) then
+		winnerId = nil
+	end
 	local winner = winnerId and byId[winnerId]
 	-- A girl you already own pays coins by her rarity instead (Config/Round.DupeCoins; loop audit: a repeat win
 	-- gave nothing at all)
@@ -965,7 +1048,7 @@ local function finishGame()
 	-- in earlier rounds are catchers too, and those caught in the last round survived longer than them, so
 	-- "every catcher wins" paid the wrong players (loop audit, Oct 18).
 	local function wonGame(id, role)
-		local caught = id == match.lead or id == winnerId or (match.catches[id] or 0) > 0
+		local caught = not satOut(id) and (id == match.lead or id == winnerId or (match.catches[id] or 0) > 0)
 		return not botWon and ((match.team == "Runners" and role == "Runner") or (match.team == "Catchers" and role == "Catcher" and caught))
 	end
 	-- the winner page (Screens/Results, Shared/Standings): everyone's numbers for its MVP / Survival / Catches tabs
@@ -1117,6 +1200,10 @@ local function runGame()
 	end
 	local catcher = if #ids >= 2 then ids[math.random(#ids)] else nil
 	match = Rules.newGame(ids, catcher, { maxRounds = Config.MaxRounds, crossings = Config.Crossings })
+	table.clear(idleFor)
+	table.clear(idleAt)
+	table.clear(away)
+	table.clear(awaySaid)
 	State:SetAttribute("GirlName", girl.name)
 	State:SetAttribute("GirlRarity", girl.rarity)
 	State:SetAttribute("HolderId", 0)
@@ -1633,6 +1720,7 @@ Players.PlayerRemoving:Connect(function(player)
 		apply(Rules.removePlayer(match, player.UserId))
 	end
 	frozen[player.UserId] = nil
+	idleFor[player.UserId], idleAt[player.UserId], away[player.UserId], awaySaid[player.UserId] = nil, nil, nil, nil
 	rescueTime[player.UserId] = nil
 	protectedUntil[player.UserId] = nil
 	byId[player.UserId] = nil
