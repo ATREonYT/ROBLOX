@@ -54,6 +54,7 @@ This file loads in every session, so keep it short. Each game folder has its own
 - One folder per game, with a Rojo `default.project.json` mapping `src/` into Studio services. Setup for the owner is in `ROJO-SETUP.md`.
 - **Which game is where:**
   - `huzz-valley/`: the current game (Huss Anime Girls), on branch `HUZZ-VALLEY`. Read `huzz-valley/CLAUDE.md` first.
+    Its deep notes per system live in `huzz-valley/docs/notes/` (the core's index says which file to read).
   - `hood/`: Hood (From the Block), an earlier game with the same layout (`src/`, unit tests in `ServerStorage/UnitTest`).
   - `plus-one-speed/`, `snatch-a-brainrot/`, `steal-an-egg/`: small single-script prototypes. Leave them alone unless asked.
 - **Getting the owner's Studio work:** they paste `tools/export-for-claude.lua` into Studio's Command Bar and send the `ServerStorage > ClaudeExport > PartN` text.

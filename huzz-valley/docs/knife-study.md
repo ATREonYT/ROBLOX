@@ -147,7 +147,7 @@ lighting.
 - Mounts, slash, lunge and the effects ladder as planned above (`Shared/KnifeLook`, `StabMotion`, `Shared/KnifeLeap`:
   the leap goes forward or sideways, never back). Side by side `docs/previews/knives-vs-hv.jpg`
   (`tools/knives/knives_vs_hv.py`), film `docs/previews/knife-leap.mp4` (`motion3d/knife_scene.luau`).
-- Knife pass 2 (Oct 19, `CLAUDE.md` §9 "The lunge" / "The catch"): the red Highlight hit flash, the red outline while
+- Knife pass 2 (Oct 19, `docs/notes/stab-lunge-catch.md` "The lunge" / "The catch"): the red Highlight hit flash, the red outline while
   down and the lunge ribbon are in; Juice's red spark burst is replaced by a knife-colour cut line and 10 sparks; the
   lunge is a whole-body leap with the slash when the knife reaches someone (`docs/previews/catch-before-after.mp4`).
   Still one runner per lunge (gap 5: a rule change, ask the owner). In hand from the front our blades read thinner
