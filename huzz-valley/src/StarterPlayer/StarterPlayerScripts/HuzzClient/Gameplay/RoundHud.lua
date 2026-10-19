@@ -662,7 +662,11 @@ function M.start()
 	end)
 
 	-- Outlines (Huss Valley: thin, see-through, no fill): red round catchers, dark blue round runners still out,
-	-- yellow round the Hero, green round runners safe across the line. Downed runners lose theirs.
+	-- yellow round the Hero, green round runners safe across the line, red round runners lying down (HV keeps a red
+	-- outline on the caught; knife pass 2, was none).
+	-- The catch (Shared/KnifeLook.CATCH.Fill, HV's hit read): the caught runner's outline fills red for 2 frames, then
+	-- a red tint fading out by 0.42 s, on everyone's screen. The solid frames only when Gameplay/Burst.flashOk allows
+	-- (at most one flash a second on a screen); otherwise just the tint.
 	local OUTLINE_RED = Color3.fromRGB(235, 50, 60)
 	local OUTLINE_BLUE = Color3.fromRGB(35, 95, 225)
 	local OUTLINE_GREEN = Color3.fromRGB(60, 210, 110)
@@ -676,6 +680,7 @@ function M.start()
 			elseif r == "Runner" and st == "Safe" then OUTLINE_GREEN
 			elseif r == "Runner" and st == "Active" and p:GetAttribute("HuzzHero") then OUTLINE_YELLOW
 			elseif r == "Runner" and st == "Active" then OUTLINE_BLUE
+			elseif r == "Runner" and st == "Downed" then OUTLINE_RED
 			else nil
 		local h = highlights[p]
 		if not character or not color then
@@ -695,8 +700,38 @@ function M.start()
 			})
 			highlights[p] = h
 		end
-		h.OutlineColor, h.FillColor = color, color
+		h.OutlineColor = color
+		if not h:GetAttribute("HuzzHitAt") then h.FillColor = color end
 	end
+	local KnifeLook = require(Shared.KnifeLook)
+	local Burst = require(script.Parent.Burst)
+	local HIT_RED = Color3.fromRGB(255, 40, 40)
+	local fills = {} -- Player -> { at, solid }
+	local function hitFill(p)
+		refreshHighlight(p) -- (the outline may not exist yet if the status hasn't arrived)
+		local h = highlights[p]
+		if not h then return end
+		fills[p] = { at = os.clock(), solid = Burst.flashOk() }
+		h:SetAttribute("HuzzHitAt", os.clock())
+	end
+	RunService.RenderStepped:Connect(function()
+		local now = os.clock()
+		for p, f in fills do
+			local h = highlights[p]
+			local tr = KnifeLook.catchFill(now - f.at, f.solid)
+			if not (h and h.Parent) or tr >= 1 then
+				if h and h.Parent then
+					h.FillTransparency = 1
+					h:SetAttribute("HuzzHitAt", nil)
+					h.FillColor = h.OutlineColor
+				end
+				fills[p] = nil
+			else
+				h.FillColor = HIT_RED
+				h.FillTransparency = tr
+			end
+		end
+	end)
 	local function watch(p)
 		for _, attr in { "HuzzRole", "HuzzStatus", "HuzzHero" } do
 			p:GetAttributeChangedSignal(attr):Connect(function()
@@ -724,6 +759,8 @@ function M.start()
 		if kind == "Announce" then
 			setMessage(data.text, data.color)
 		elseif kind == "Caught" then
+			local caught = type(data.runner) == "number" and Players:GetPlayerByUserId(data.runner)
+			if caught then hitFill(caught) end
 			if data.runner == player.UserId then
 				sayLine(if data.final then "Out" else "Caught")
 				-- (the red screen tint is Gameplay/Juice's: one effect, not two)

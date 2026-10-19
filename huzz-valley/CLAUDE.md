@@ -183,7 +183,7 @@ Owner's own words are in quotes. Read only the section you need.
   speed when it catches; never under 28); with Rizz Rush capped at catcher + 4.
 - **Catching:** click stab (`Stab` remote) or a catcher's **lunge** (`Lunge` remote, `Config/Round.Lunge`: eases 72 to 40 over 0.38 s,
   the way you steer: `Shared/KnifeLeap.direction`, forward or sideways with A/D, never back; the hit box points along
-  the leap; the slash plays in it, then a dive into the leap; Up 18, HitRange 4.8 for 0.5 s, cooldown 3 s shared with the Space tile `DashReady`; stab mode only). Both go
+  the leap; a whole-body leap with the slash when the knife reaches someone (§9 "The lunge"); Up 24 (was 18: see §9), HitRange 4.8 for 0.5 s, cooldown 3 s shared with the Space tile `DashReady`; stab mode only). Both go
   through `stabNear()`: shields, the safe start zone and a fresh rescue protect; a Heart Shield ends the lunge.
   **Pinpoint** (owner Oct 18: "make hitboxes pinpoint"): the catcher's own screen picks the runner whose body is
   in a box in front of them (`Gameplay/HitCheck`; Stab Reach 5.5 x Width 4, Lunge 4.5 x 4) and sends that UserId
@@ -295,7 +295,8 @@ Owner's own words are in quotes. Read only the section you need.
   not a render). Light audit of his place: `tools/world/light_audit.luau`.
 - `Gameplay/Juice`: one world effect per moment beside the message line (study gap 15): confetti on safe, a quick red
   spark burst on a catch, a green ring lifting off the floor on a rescue, hearts and sparkles in the girl's rarity
-  colour round the winner. Shakes only for being caught, catching and GO (none on a huss or lunge: HV has none). The
+  colour round the winner (knife pass 2: the catch's burst is now a thin cut line and 10 sparks in the catcher's knife
+  colour; the red read is RoundHud's red fill, §9 "The catch"). Shakes only for being caught, catching and GO (none on a huss or lunge: HV has none). The
   first runner safe each round gets "FIRST!" (RoundService `First` event; RoundHud).
 - **Powers** (`Gameplay/PowerEffects`, `Config/Powers.Fx`, the other game's ability timing): a glow builds (0.25 s;
   Shield and Rush 0.15 s), one bright frame (`Gameplay/Burst.flashOk`: at most one a second per screen), the effect
@@ -424,10 +425,8 @@ Owner's own words are in quotes. Read only the section you need.
   `docs/previews/girls-walk-carry.mp4` (`motion3d/girls_walk_carry_scene.luau`). Not seen in Studio yet.
 - **The stab** (`Shared/StabMotion`, scripted until `Config/Animations.Stab` is uploaded; `Config/Round.Stab.Time`
   0.40 s, Huss Valley's slash from `docs/knife-study.md`): no wind-up; the arm sweeps out to the right side, landing
-  at ~0.07 s, held out (free arm pointing ahead) to 0.24 s, back by 0.40; trail on 0.02 to 0.45 of it. In a lunge
-  (`play(rec, now, true)`) a dive follows: the waist tips 35° into the leap's direction (`DIVE`, `setDive` from the
-  body's velocity in `Gameplay/Actions`), up by 0.72 s. The knife arm is raised by the
-  run's hunch so it slashes level while sprinting. Written after the
+  at ~0.07 s, held out (free arm pointing ahead) to 0.24 s, back by 0.40; trail on 0.02 to 0.45 of it. The knife arm
+  is raised by the run's hunch so it slashes level while sprinting. (The lunge is its own move now: below.) Written after the
   animations (Frame order 30), so it sits over the run. Spec `tests/StabMotion.spec`, video `docs/previews/stab.mp4`
   (`motion3d/stab_scene.luau`). The Practice Bot's stab shows too: RoundService sends "Stab" `{ bot = true }` on a
   hit (and at most once a cooldown while it keeps trying); `Gameplay/Actions` plays it on the `HuzzBot` model.
@@ -438,6 +437,57 @@ Owner's own words are in quotes. Read only the section you need.
   solid) and a pass knife throws half its element's burst (`KnifeBurst`). Before/after film
   `docs/previews/stab-before-after.mp4` + `.jpg` (`motion3d/stab_fx_scene.luau`, `STAB_OLD` = the old module copied
   next to the new one). Honest: the arm change is small; the arc reads faintly in the render.
+- **The lunge** (knife pass 2, Oct 19, owner: "give them a good vfx, make them have good animations, the leaping, the
+  killing ... take your time"; `Shared/StabMotion` `LEAP`, `play(rec, now, true)`). Why: before, the lunge was the click
+  slash at take-off with the legs still running, a 0.18 s hop and a 35° waist dive only after landing, so it read as a
+  stumble; and your own lunge waited for the server's echo (a round trip late). Now:
+  - **Your own lunge plays the moment you press Space** (`Gameplay/Dash` calls `Actions.lungeLocal` before its hit check;
+    the server's "Stab" echo within 0.8 s is ignored). Everyone else plays it from the server's "Stab" `{ lunge = true }`.
+  - **The whole body leaps** (it owns the root joint and the legs as well as the waist, head and arms, then hands them
+    back by `LEAP.Up` 0.72 s): no crouch first (the push is already moving at 72), the take-off pose blends in over
+    `In` 0.12 s (4 frames at 30 fps, so no pop); the body tips 18-22° into the leap about the hips, the lead knee drives
+    up (left leg forward; the side's own leg on an A/D leap), the back leg pushes off long behind and tucks in the air.
+  - **The knife leads**: the arm reaches ahead, the blade level and pointing forward (`REACH`), the free arm back.
+  - **The slash lands when the knife reaches someone**: `StabMotion.slash` from `Dash` (your screen's hit check) or from
+    the server's "Caught" (everyone else's, so it lines up with the runner's fall there); if it reaches no one, at
+    `SlashBy` 0.14 s. The sweep goes from the reach out to the right in 0.07 s, then the click slash's overshoot, hold
+    and return. The slash trail, `KnifeLook.ARC` crescent and the `KnifeBurst` start with the slash, not at take-off.
+  - **Landing**: at the hop's end (`StabMotion.air()` = 2 x Up / 196.2) the body drops into a low lunge, tipped ~34°
+    into the leap, lead foot ahead, back knee low; the hips come down by exactly what keeps the feet on the floor
+    (`lowestFoot`, from the joints' C0/C1, not the parts, which lag a frame). Held to `Out` 0.47 s.
+  - **Up 24, was 18** (`Config/Round.Lunge`): at 18 the body was off the floor 0.18 s (5 frames) and 0.8 studs high, too
+    short to show a take-off, a knife leading and a landing; HV's catcher is in the air ~0.4 s. 24 = 0.245 s, 1.5 studs.
+    The push (72 to 40 over 0.38 s, 19 studs) and the hit box are unchanged.
+  - **The leap's ribbon** (`KnifeLook.CATCH.Streak`, HV's lunge ribbon): a Trail between two points on the UpperTorso,
+    white into the knife's colour (its `SlashColor`, else steel white), 0.14 s long (~8 studs at the leap's speed), on
+    for the push only (`Gameplay/Actions`).
+  - Spec `tests/StabMotion.spec` (leans in, never back; knee ahead and back leg behind; knife ahead with the blade
+    forward; slash within 0.08 s of reaching someone, at SlashBy otherwise, before landing; lands tipped >28° with the
+    feet on the floor; sideways tips and leads with that leg; body parts turn at most 16°/frame at 60 fps and 30° at
+    30 fps; every joint handed back).
+- **The catch** (knife pass 2; HV's read from `docs/knife-study.md` section 4, players read "catch", never "kill"):
+  - **Red fill** on the caught runner (`Gameplay/RoundHud`, on their team Highlight, everyone's screen,
+    `KnifeLook.CATCH.Fill` / `catchFill`): FillTransparency 0.12 for 0.07 s (HV's 2 solid frames), up to 0.6 by 0.25 s,
+    gone by 0.42 s. The solid frames only through `Burst.flashOk` (one flash a second per screen), else the tint only.
+    Then a **red outline while they lie down** (refreshHighlight: Runner + Downed = red; they used to lose theirs).
+  - **Knife-colour touches** (`Gameplay/Juice`, one each per catch, calm): a thin cut line drawn on across the runner's
+    back in 0.06 s and gone by 0.26 s (a Beam on their UpperTorso, so it falls with them) and 10 sparks, both in the
+    catcher's knife colour. They replaced 30 red-and-white sparks (generic, and HV has none). Your own screen keeps
+    the red tint (`HuzzHit`) and the shakes (owner asked for shake).
+  - **The runner reacts, then falls with momentum** (`Shared/DownMotion`): the hit (`HIT`: in 0.1 s the back arches,
+    head back, arms fly up and out, knees buckle; at its fullest before the body has tipped 10°, gone by 0.34 s), and
+    the body slides on `Knockdown.Slide` 2.2 studs as it falls (fast, then settling; it used to stop dead from a sprint).
+    The server shortens the slide before a wall (`KnockdownService`: raycast ahead, the character's `DownedSlide`);
+    clients, the server's final placement, standing up and the rescue range all use it.
+  - Spec `tests/DownMotion.spec` (the hit at once, before the tip; slide fast at first and done by the landing; no
+    slide = the old fall; no part over 45°/frame at 30 fps).
+  - Film `docs/previews/catch-before-after.mp4` (30 fps: side view, the catcher's camera, the runner's camera; before
+    left, after right; full speed then 1/4 speed) and `catch-before-after.jpg`, from `motion3d/catch_scene.luau`
+    (`CATCH_OLD=1` loads `StabMotionOld`/`DownMotionOld`: copy the old modules next to the new ones to re-render the
+    before, then delete them; `CATCH_VIEW` = side / catcher / runner).
+  - Honest: not seen in Studio yet. The preview draws the red fill by recolouring the parts (Studio's Highlight fill is
+    an overlay) and draws particles additively, so bursts over the sky look whiter than in Roblox. The run animation
+    under the leap is the pack's, so the take-off blend in Studio starts from a mid-stride pose the spec doesn't test.
 - **Getting up** (`DownMotion.rise`, `Gameplay/Knockdown`): the server stands a revived player up at once; the
   client tips the body back down about the feet and eases it up over 0.4 s (no pop). Spec `tests/DownMotion.spec`.
 - Dances: `UI/DancePlayer` (one at a time; walking stops it; **in step**: the `Dance` remote puts HuzzDance /

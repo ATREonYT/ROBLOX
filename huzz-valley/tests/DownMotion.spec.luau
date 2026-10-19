@@ -65,6 +65,57 @@ do
 	check(low > -0.08, "nothing of a downed body dips under the floor")
 end
 
+-- Knife pass 2 (Oct 19, "the killing"): the catch lands first and the body carries on forward. In 0.05 s the arms
+-- fly up and out and the head snaps back (the flinch), at its fullest while the body has tipped under 10°; the root
+-- slides Slide studs forward, fast at first (so a sprinting runner doesn't stop dead), all of it by the landing; no
+-- frame jumps more than 30° at 30 fps; and a slide of 0 is the old fall exactly.
+do
+	local Round = Env.load("huzz-valley/src/ReplicatedStorage/Shared/Config/Round.lua")
+	local K = Round.Knockdown
+	local r3 = Rig.r15("H")
+	local rec3 = DownMotion.new(r3.motors)
+	local function at(t, slide)
+		for _, m in r3.motors do m.Transform = CFrame.identity end
+		r3.root.CFrame = DownMotion.rootCFrame(feet, height, t, slide)
+		DownMotion.step(rec3, t)
+		Rig.fk(r3)
+		local chest = r3.parts.UpperTorso.CFrame
+		return { hand = chest:PointToObjectSpace(r3.parts.LeftHand.CFrame.Position), head = r3.parts.Head.CFrame.LookVector,
+			chestUp = chest.UpVector, root = r3.root.CFrame.Position, parts = (function()
+				local t2 = {}
+				for n, p in r3.parts do t2[n] = p.CFrame end
+				return t2
+			end)() }
+	end
+	local stand = at(0, K.Slide)
+	local flinch = at(DownMotion.HIT.Hold, K.Slide)
+	print(string.format("  the hit (at HIT.Hold): left hand %.2f up, %.2f out; head up %.2f; body tipped %.0f°", flinch.hand.Y - stand.hand.Y, -flinch.hand.X + stand.hand.X, flinch.head.Y, math.deg(math.acos(flinch.chestUp.Y))))
+	check(flinch.hand.Y - stand.hand.Y > 0.8 and flinch.head.Y > 0.2, "the hit: the arms fly up and the head snaps back at once")
+	local rootTip = math.deg(math.acos(math.clamp(DownMotion.rootCFrame(feet, height, DownMotion.HIT.Hold, K.Slide).UpVector.Y, -1, 1)))
+	check(rootTip < 10, string.format("the flinch is at its fullest before the body tips (%.0f° at HIT.Hold)", rootTip))
+	check(DownMotion.hitAt(DownMotion.HIT.Out + 0.01) == 0, "and gone by HIT.Out")
+	check(K.Slide and K.Slide >= 1.5 and K.Slide <= 3, "the body slides on 1.5 to 3 studs (Knockdown.Slide)")
+	local early = DownMotion.slideAt(0.1, K.Slide)
+	check(early > K.Slide * 0.35, string.format("the slide is fast at first (%.2f of %.1f studs by 0.1 s)", early, K.Slide))
+	check(math.abs(DownMotion.slideAt(K.FallTime, K.Slide) - K.Slide) < 1e-6, "all of it by the landing")
+	local old = DownMotion.rootCFrame(feet, height, 0.3, nil)
+	local zero = DownMotion.rootCFrame(feet, height, 0.3, 0)
+	check((old.Position - zero.Position).Magnitude < 1e-6, "no slide (a wall ahead) is the old fall")
+	local worst, prev = 0, nil
+	for f = 0, 20 do
+		local q = at(f / 30, K.Slide)
+		if prev then
+			for n, cf in q.parts do
+				local _, ang = (prev[n].Rotation:Inverse() * cf.Rotation):ToAxisAngle()
+				worst = math.max(worst, math.deg(math.abs(ang)))
+			end
+		end
+		prev = q.parts
+	end
+	print(string.format("  the fall: at most %.0f° a frame at 30 fps", worst))
+	check(worst < 45, "no part jumps more than 45° in a frame at 30 fps (the flinch is a quick snap, never a pop)")
+end
+
 -- the server stands them up: root straight up at the feet; first frame of getting up
 rig.root.CFrame = feet * CFrame.new(0, height, 0)
 for _, m in rig.motors do m.Transform = CFrame.identity end -- (the animation's pose this frame)

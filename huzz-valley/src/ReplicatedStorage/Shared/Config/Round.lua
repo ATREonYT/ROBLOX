@@ -80,7 +80,10 @@ return {
 	-- Time: 0.38 x (40 + 32/3) = 19 studs, the old flat 56 x 0.36 reach). Any runner they reach during the leap
 	-- (HitWindow seconds, within HitRange studs) is stabbed, the same as the knife. Shares the Space cooldown tile.
 	-- Reach/Width: the leaping knife's box on the catcher's screen (pinpoint, as Stab).
-	Lunge = { Speed = 72, EndSpeed = 40, Up = 18, Time = 0.38, Cooldown = 3, HitRange = 4.8, HitWindow = 0.5, Reach = 4.5, Width = 4 },
+	-- Up: the hop (studs/s up). Oct 19 knife pass 2: 24, was 18. At 18 the body was off the floor for 0.18 s (5 frames)
+	-- and 0.8 studs high, too short to show a leap at all (Huss Valley's catcher is in the air ~0.4 s); 24 = 0.245 s and
+	-- 1.5 studs, long enough for the take-off, the knife leading and the landing (Shared/StabMotion LEAP). Distance unchanged.
+	Lunge = { Speed = 72, EndSpeed = 40, Up = 24, Time = 0.38, Cooldown = 3, HitRange = 4.8, HitWindow = 0.5, Reach = 4.5, Width = 4 },
 
 	-- A caught runner falls flat on their face and lies there until rescued or the next round
 	-- (owner's call).
@@ -91,6 +94,9 @@ return {
 		ArmsOut = 125, -- arms out past the shoulders, flat on the floor (degrees from hanging)
 		HeadTurn = 20, -- head turned to one side (degrees)
 		ChinUp = 40, -- chin lifted off the floor (degrees)
+		-- studs the body carries on forward as it falls (knife pass 2: it stopped dead from a sprint); shorter before
+		-- a wall (KnockdownService: DownedSlide)
+		Slide = 2.2,
 	},
 	StartZoneSafe = true, -- catchers can't tag runners still standing in their start zone
 

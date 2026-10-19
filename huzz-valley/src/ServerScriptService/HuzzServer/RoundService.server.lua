@@ -467,7 +467,9 @@ local function step(dt)
 			local c = p and p.Character
 			local feet = c and c:GetAttribute("DownedFeet")
 			local body = c and c:FindFirstChild("HumanoidRootPart")
-			local at = if typeof(feet) == "CFrame" then feet.Position elseif body then body.Position else nil
+			local slide = c and c:GetAttribute("DownedSlide") -- (the body slid on as it fell: KnockdownService)
+			local at = if typeof(feet) == "CFrame" then (feet * CFrame.new(0, 0, -(tonumber(slide) or 0))).Position
+				elseif body then body.Position else nil
 			local helper = nil
 			if at then
 				local start = zones[MapService.startFor(match.round)]

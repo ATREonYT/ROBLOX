@@ -51,6 +51,19 @@ function KnockdownService.down(player)
 	local yaw = select(2, root.CFrame:ToEulerAnglesYXZ())
 	local feet = CFrame.new(root.Position.X, groundY, root.Position.Z) * CFrame.Angles(0, yaw, 0)
 	local height = root.Position.Y - groundY
+	-- the body carries on forward as it falls (Config/Round.Knockdown.Slide; knife pass 2), shorter before a wall:
+	-- the lying body reaches about its height past the feet, so the slide stops that far short of anything ahead
+	local slide = Config.Knockdown.Slide or 0
+	if slide > 0 then
+		local ahead = Vector3.new(root.CFrame.LookVector.X, 0, root.CFrame.LookVector.Z)
+		if ahead.Magnitude > 0.1 then
+			local reach = height + 1.5
+			local wall = Workspace:Raycast(root.Position, ahead.Unit * (slide + reach), params)
+			if wall then slide = math.max(0, wall.Distance - reach) end
+		else
+			slide = 0
+		end
+	end
 
 	local entry = { character = character, root = root, groups = {} }
 	downed[player] = entry
@@ -65,11 +78,12 @@ function KnockdownService.down(player)
 	end
 	character:SetAttribute("DownedFeet", feet)
 	character:SetAttribute("DownedHeight", height)
+	character:SetAttribute("DownedSlide", slide)
 	character:SetAttribute("DownedAt", Workspace:GetServerTimeNow())
 	-- The server's copy lands flat too (clients play the fall in between).
 	task.delay(Config.Knockdown.FallTime, function()
 		if downed[player] == entry and root.Parent then
-			root.CFrame = DownMotion.rootCFrame(feet, height, 99)
+			root.CFrame = DownMotion.rootCFrame(feet, height, 99, slide)
 		end
 	end)
 end
@@ -82,7 +96,9 @@ function KnockdownService.up(player)
 	end
 	local character, root = entry.character, entry.root
 	local feet, height = character:GetAttribute("DownedFeet"), character:GetAttribute("DownedHeight")
+	local slide = character:GetAttribute("DownedSlide") or 0
 	character:SetAttribute("DownedAt", nil)
+	character:SetAttribute("DownedSlide", nil)
 	character:SetAttribute("DownedFeet", nil)
 	character:SetAttribute("DownedHeight", nil)
 	for part, group in entry.groups do
@@ -91,7 +107,7 @@ function KnockdownService.up(player)
 		end
 	end
 	if feet and height then
-		root.CFrame = feet * CFrame.new(0, height, 0)
+		root.CFrame = feet * CFrame.new(0, 0, -slide) * CFrame.new(0, height, 0) -- (up where they lie)
 	end
 	root.Anchored = false
 	local humanoid = character:FindFirstChildOfClass("Humanoid")

@@ -9,6 +9,11 @@
 	right of the catcher as the arm sweeps (Shared/KnifeLook.ARC, in the knife's SlashColor, gone in 0.2 s) and a
 	Game Pass knife throws a few of its element's petals, feathers, sparks or shards (its KnifeBurst). Buttons sit bottom right, above a phone's jump
 	button, and only show when the move is available.
+	Knife pass 2 (Oct 19, the lunge): your own lunge plays the moment you press Space (M.lungeLocal from Gameplay/Dash;
+	it used to wait for the server's echo, a network round trip late); the echo is ignored. A lunge's slash (and its
+	arc and burst) starts when the knife reaches someone (M.lungeHit from Dash on your screen; the server's Caught on
+	everyone else's), else LEAP.SlashBy into the leap (Shared/StabMotion). The leap draws a soft ribbon from the
+	body (Shared/KnifeLook.CATCH.Streak: white into the knife's colour, about 8 studs, on for the push only).
 ]]
 local M = {}
 
@@ -35,6 +40,39 @@ function M.start()
 
 	-- Everyone's stabs, keyed by Player, or "bot" for the Practice Bot (never by a character Instance in a weak table).
 	local stabs = {} -- Player | "bot" -> { rec, character, trail, track }
+	local localLungeAt = -math.huge -- (os.clock of your own lunge: the server's echo of it is ignored)
+
+	-- The leap's ribbon (KnifeLook.CATCH.Streak): one Trail per character, between two points on the UpperTorso.
+	local function streakOf(character)
+		local torso = character:FindFirstChild("UpperTorso")
+		if not (torso and torso:IsA("BasePart")) then return nil end
+		local trail = torso:FindFirstChild("HuzzLungeStreak")
+		if trail then return trail end
+		local St = KnifeLook.CATCH.Streak
+		local ok, made = pcall(function()
+			local a0 = Instance.new("Attachment")
+			a0.Name = "HuzzStreak0"
+			a0.Position = Vector3.new(0, St.Top, 0)
+			a0.Parent = torso
+			local a1 = Instance.new("Attachment")
+			a1.Name = "HuzzStreak1"
+			a1.Position = Vector3.new(0, St.Bottom, 0)
+			a1.Parent = torso
+			local t = Instance.new("Trail")
+			t.Name = "HuzzLungeStreak"
+			t.Attachment0, t.Attachment1 = a0, a1
+			t.Lifetime = St.Life
+			t.MinLength = 0
+			t.FaceCamera = false
+			t.LightEmission, t.LightInfluence = St.LightEmission, 0
+			t.Transparency = NumberSequence.new(St.Transparency[1], St.Transparency[2])
+			pcall(function() t.WidthScale = NumberSequence.new(1, 0.5) end)
+			t.Enabled = false
+			t.Parent = torso
+			return t
+		end)
+		return if ok then made else nil
+	end
 
 	-- The slash arc and the element's burst for one stab (Shared/KnifeLook.ARC): a Beam on two attachments on the root.
 	local function dropArc(s)
@@ -98,7 +136,21 @@ function M.start()
 			stabs[p] = s
 		end
 		StabMotion.play(s.rec, os.clock() - (ago or 0), lunge)
-		slashFx(s, character, ago)
+		s.fxDone = false
+		if not lunge then -- (a lunge's slash, arc and burst wait for the knife to reach someone: the Frame loop)
+			s.fxDone = true
+			slashFx(s, character, ago)
+		else
+			local knife = character:FindFirstChild("HuzzKnife")
+			local colour = knife and knife:GetAttribute("SlashColor")
+			colour = if typeof(colour) == "Color3" then colour else Color3.fromRGB(235, 240, 255)
+			local streak = streakOf(character)
+			if streak then
+				streak.Color = ColorSequence.new(Color3.new(1, 1, 1), colour)
+				streak.Enabled = true
+				s.streak, s.streakUntil = streak, os.clock() + Config.Lunge.Time
+			end
+		end
 		if Animations.Stab ~= "" then
 			local humanoid = character:FindFirstChildOfClass("Humanoid")
 			local animator = humanoid and humanoid:FindFirstChildOfClass("Animator")
@@ -131,6 +183,15 @@ function M.start()
 					if Vector3.new(v.X, 0, v.Z).Magnitude > 8 then StabMotion.setDive(s.rec, v) end
 				end
 				local playing = StabMotion.step(s.rec, now, Animations.Stab == "")
+				local slashAt = playing and s.rec.lunge and StabMotion.slashStart(s.rec, now)
+				if slashAt and not s.fxDone then
+					s.fxDone = true
+					slashFx(s, character, now - slashAt)
+				end
+				if s.streak and now >= s.streakUntil then
+					s.streak.Enabled = false
+					s.streak = nil
+				end
 				local knife = character:FindFirstChild("HuzzKnife")
 				local trail = knife and knife:FindFirstChild("SlashTrail", true)
 				if trail then
@@ -159,14 +220,30 @@ function M.start()
 			end
 		elseif kind == "Stab" and (data.id ~= player.UserId or data.lunge) then
 			local p = Players:GetPlayerByUserId(data.id)
-			if p then
+			local echo = data.id == player.UserId and os.clock() - localLungeAt < 0.8 -- (yours already played)
+			if p and not echo then
 				playStab(p, nil, 0, data.lunge == true)
 			end
+		elseif kind == "Caught" and type(data) == "table" and type(data.catcher) == "number" then
+			-- the leaping knife reached them: the catcher's slash starts now (on the catcher's own screen it already did)
+			local p = Players:GetPlayerByUserId(data.catcher)
+			local s = p and stabs[p]
+			if s then StabMotion.slash(s.rec, os.clock()) end
 		end
 	end)
 	Players.PlayerRemoving:Connect(function(p)
 		stabs[p] = nil
 	end)
+
+	-- Your own lunge, the moment you press Space (Gameplay/Dash), and the moment its knife reaches someone.
+	function M.lungeLocal()
+		localLungeAt = os.clock()
+		playStab(player, nil, 0, true)
+	end
+	function M.lungeHit()
+		local s = stabs[player]
+		if s then StabMotion.slash(s.rec, os.clock()) end
+	end
 
 	-- What you can do right now.
 	local lastStab = -math.huge

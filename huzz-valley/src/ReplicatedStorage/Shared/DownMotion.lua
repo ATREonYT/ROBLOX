@@ -12,6 +12,12 @@
 	hands and feet too, so no animation keeps playing on a downed body (the
 	run's hip bob and crouch were what swung it and pushed it into the floor):
 	arms out in front, legs straight and a little apart, cheek on the floor.
+
+	Knife pass 2 (Oct 19, owner: "make them have good animations ... the killing"): before, the runner stopped dead
+	from a full sprint and tipped over like a board. Now the catch lands first (HIT: in 0.1 s the back arches, the
+	head snaps back, the arms fly up and out, the knees buckle; at its fullest before the body tips, gone by 0.34 s), and the
+	body carries on forward as it falls (Config/Round.Knockdown.Slide studs, fast then settling; the server shortens
+	it before a wall: KnockdownService, the character's DownedSlide).
 ]]
 local Config = require(script.Parent.Config.Round)
 local CarryMath = require(script.Parent.CarryMath)
@@ -24,9 +30,16 @@ local function fallTime()
 	return Config.Knockdown.FallTime
 end
 
+-- How far the body has slid forward t seconds after the catch, of `slide` studs (fast at first, settling as it lands).
+function DownMotion.slideAt(t, slide)
+	local p = clamp(t / fallTime(), 0, 1)
+	return (slide or 0) * (1 - (1 - p) * (1 - p))
+end
+
 -- Root part CFrame t seconds after the catch. feet: CFrame at the feet on the ground
--- (facing the way they were), height: root above the feet when standing.
-function DownMotion.rootCFrame(feet, height, t)
+-- (facing the way they were), height: root above the feet when standing, slide: studs the body carries on
+-- forward as it falls (the character's DownedSlide; nil = none).
+function DownMotion.rootCFrame(feet, height, t, slide)
 	local p = clamp(t / fallTime(), 0, 1)
 	local angle = -rad(90) * p * p -- speeds up as it goes, like a real fall
 	if t > fallTime() then
@@ -34,7 +47,36 @@ function DownMotion.rootCFrame(feet, height, t)
 		angle += rad(Config.Knockdown.Bounce) * exp(-b * 9) * sin(b * 22) -- lands with a small bounce
 	end
 	local lift = Config.Knockdown.Lift * p -- torso thickness off the floor
-	return feet * CFrame.Angles(angle, 0, 0) * CFrame.new(0, height, 0) + Vector3.new(0, lift, 0)
+	return feet * CFrame.new(0, 0, -DownMotion.slideAt(t, slide)) * CFrame.Angles(angle, 0, 0) * CFrame.new(0, height, 0) + Vector3.new(0, lift, 0)
+end
+
+-- The hit: how much of the flinch shows at t (in by In, held to Hold, gone by Out), and its pose per joint.
+DownMotion.HIT = { In = 0.1, Hold = 0.14, Out = 0.34 }
+function DownMotion.hitAt(t)
+	local H = DownMotion.HIT
+	if t < 0 or t >= H.Out then
+		return 0
+	elseif t < H.In then
+		local x = t / H.In
+		return x * x * (3 - 2 * x)
+	elseif t <= H.Hold then
+		return 1
+	end
+	local x = (t - H.Hold) / (H.Out - H.Hold)
+	return 1 - x * x * (3 - 2 * x)
+end
+local function flinch(key)
+	local P = {
+		Waist = CFrame.Angles(rad(18), 0, 0), -- the back arches (hit from behind)
+		Neck = CFrame.Angles(rad(24), 0, 0), -- the head snaps back
+		LShoulder = CFrame.Angles(rad(48), 0, -rad(30)), -- the arms fly up and out
+		RShoulder = CFrame.Angles(rad(48), 0, rad(30)),
+		LElbow = CFrame.Angles(rad(20), 0, 0),
+		RElbow = CFrame.Angles(rad(20), 0, 0),
+		LKnee = CFrame.Angles(-rad(22), 0, 0), -- the knees buckle
+		RKnee = CFrame.Angles(-rad(30), 0, 0),
+	}
+	return P[key]
 end
 
 -- motors: the character's Motor6Ds (or AnimationConstraints).
@@ -79,14 +121,22 @@ local function target(rec, m)
 end
 DownMotion.target = target
 
--- Blends every joint from the playing animation into the lying pose as they fall, then holds it.
+-- Blends every joint from the playing animation into the lying pose as they fall, then holds it; the hit's
+-- flinch shows over the first 0.3 s.
 function DownMotion.step(rec, t)
 	local w = clamp(t / (fallTime() * 0.8), 0, 1)
+	local f = DownMotion.hitAt(t)
 	for _, m in rec.all do
 		local current = m.Transform
 		local anim = if rec.written[m] == current then rec.base[m] else current
 		rec.base[m] = anim
-		m.Transform = anim:Lerp(target(rec, m), w)
+		local pose = anim:Lerp(target(rec, m), w)
+		local hit = f > 0 and flinch(rec.keyOf[m])
+		if hit then
+			local r = m.C0.Rotation
+			pose = pose:Lerp(r:Inverse() * hit * r, f)
+		end
+		m.Transform = pose
 		rec.written[m] = m.Transform
 	end
 end

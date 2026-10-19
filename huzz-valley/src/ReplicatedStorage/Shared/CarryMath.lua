@@ -50,12 +50,27 @@ function CarryMath.rig(character)
 			}
 		end
 		local thigh = character:FindFirstChild("RightUpperLeg")
+		-- legs (the catcher's leap: Shared/StabMotion): hip, knee and ankle, and the parts' sizes for the landing crouch
+		local function leg(name)
+			local upper = character:FindFirstChild(name .. "UpperLeg")
+			local lower = character:FindFirstChild(name .. "LowerLeg")
+			local foot = character:FindFirstChild(name .. "Foot")
+			return {
+				upper = upper, lower = lower, foot = foot,
+				hip = upper and joint(upper:FindFirstChild(name .. "Hip")),
+				knee = lower and joint(lower:FindFirstChild(name .. "Knee")),
+				ankle = foot and joint(foot:FindFirstChild(name .. "Ankle")),
+			}
+		end
+		local pelvis = character:FindFirstChild("LowerTorso")
 		return {
 			kind = "R15",
 			torso = torso,
 			head = character:FindFirstChild("Head"),
 			waist = joint(torso:FindFirstChild("Waist")),
+			root = pelvis and joint(pelvis:FindFirstChild("Root")), -- (the whole body about the hips)
 			arms = { side("Right", -1), side("Left", 1) },
+			legs = { leg("Right"), leg("Left") },
 			hip = joint(thigh and thigh:FindFirstChild("RightHip")), -- (his steps: CarryMotion)
 		}
 	end

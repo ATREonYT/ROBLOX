@@ -5,6 +5,8 @@
 	blend from whatever animation was playing into the sprawl. When they get up
 	(revived, round over) the server stands them up at once; DownMotion.rise
 	eases the body up from the floor over 0.4 s instead of popping upright.
+	Knife pass 2: the catch lands first (DownMotion.HIT, a flinch) and the body carries on forward as it falls
+	(DownedSlide studs, from the server).
 ]]
 local M = {}
 
@@ -44,7 +46,7 @@ function M.start()
 				local feet, height = character:GetAttribute("DownedFeet"), character:GetAttribute("DownedHeight")
 				rec.height = height or rec.height
 				if feet and height then
-					root.CFrame = DownMotion.rootCFrame(feet, height, now - at)
+					root.CFrame = DownMotion.rootCFrame(feet, height, now - at, character:GetAttribute("DownedSlide"))
 				end
 				DownMotion.step(rec, now - at)
 			end

@@ -288,6 +288,37 @@ function KnifeLook.arcFade(age: number): number
 	return if u < 0.15 then 1 - 0.85 * (u / 0.15) else 0.15 + 0.85 * ((u - 0.15) / 0.85) ^ 1.5
 end
 
+--[[ The catch (knife pass 2, Oct 19, owner: "give them a good vfx ... the leaping, the killing"; players read
+	"catch"). Huss Valley's read (docs/knife-study.md section 4): the caught runner's whole body fills red for 2
+	frames, then a darker red tint for ~0.2 s, then a red outline while they lie down; no spark shower, no screen
+	flash. Gameplay/RoundHud draws the fill and the outline on its team Highlight (Fill: FillTransparency over time;
+	the solid frames only through Gameplay/Burst.flashOk, at most one a second; otherwise it starts at the tint).
+	Gameplay/Juice adds two small touches in the catcher's knife colour, one each per catch: a thin cut line across
+	the runner's back (Cut, a Beam on their torso, drawn on in its first quarter, gone in Life) and a few sparks
+	(Burst; it replaced 30 red sparks that read as a generic hit). Gameplay/Actions draws the leap's ribbon from the
+	catcher's body (Streak: a Trail between two points on the UpperTorso, Top and Bottom studs from its middle,
+	white into the knife colour, Life seconds long, so about 8 studs at the leap's speed: HV's ribbon is 6 to 8). ]]
+KnifeLook.CATCH = {
+	Fill = { Solid = 0.07, SolidTransparency = 0.12, Tint = 0.6, TintBy = 0.25, Gone = 0.42 },
+	Cut = { Life = 0.26, Length = 3.4, Width = 0.34 },
+	Burst = { Count = 10, Speed = { 6, 12 }, Life = { 0.25, 0.45 }, Size = 0.3 },
+	Streak = { Life = 0.14, Top = 0.45, Bottom = -0.5, Transparency = { 0.45, 1 }, LightEmission = 0.6 },
+}
+-- The red fill's FillTransparency `age` seconds after the catch (1 = none). solid = false: no solid frames (another
+-- flash showed in the last second), it starts at the tint.
+function KnifeLook.catchFill(age: number, solid: boolean?): number
+	local F = KnifeLook.CATCH.Fill
+	if age < 0 or age >= F.Gone then return 1 end
+	if solid ~= false and age < F.Solid then return F.SolidTransparency end
+	if age < F.TintBy then
+		if solid == false then return F.Tint end
+		local k = (age - F.Solid) / (F.TintBy - F.Solid)
+		return F.SolidTransparency + (F.Tint - F.SolidTransparency) * k
+	end
+	local k = (age - F.TintBy) / (F.Gone - F.TintBy)
+	return F.Tint + (1 - F.Tint) * k * k
+end
+
 -- The element of a knife (nil: none, the rarity ladder only).
 function KnifeLook.element(key: string?)
 	return key and KnifeLook.ELEMENTS[key] or nil

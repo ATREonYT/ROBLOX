@@ -3,7 +3,9 @@
 	nice, play nice and give people enjoyment"; the write-up "making it feel great" picked this first). One world
 	effect per moment, next to the coloured message line (docs/feel-study.md gap 15: "they pile up"). Everyone sees:
 	  - someone reaches safety: confetti pops up from them;
-	  - someone gets caught: a quick burst of red sparks with a white core where they fell;
+	  - someone gets caught: a thin cut line across their back and a few sparks, both in the catcher's knife colour
+	    (Shared/KnifeLook.CATCH; knife pass 2: was 30 red sparks, which read as a generic hit; the red read is
+	    RoundHud's red fill on the runner, Huss Valley's);
 	  - someone is saved: a ring of green light lifts off the floor round them, sparkles drifting up inside it;
 	  - the game is won: hearts and sparkles in the girl's rarity colour rise round the winner (she flies to them).
 	On your own screen the camera shakes (owner: "make the game more cinematic ... more screenshake"): firm when YOU
@@ -29,11 +31,12 @@ function M.start()
 	local Net = require(Shared.Net)
 	local AuraLook = require(Shared.AuraLook)
 	local Round = require(Shared.Config.Round)
+	local KnifeLook = require(Shared.KnifeLook)
 	local State = require(script.Parent.Parent.UI.State)
 
 	local player = Players.LocalPlayer
+	local cutFx -- (below: the catch's cut line and sparks)
 	local GREEN = Color3.fromRGB(91, 224, 122) -- (Huss Valley green, Theme.Colors.Accent)
-	local RED = Color3.fromRGB(255, 84, 96)
 	local CONFETTI = { Color3.fromRGB(91, 224, 122), Color3.fromRGB(90, 160, 255), Color3.fromRGB(255, 120, 210), Color3.fromRGB(175, 110, 255), Color3.fromRGB(255, 255, 255) }
 	local NEAR = 160 -- studs: bursts further from the camera than this are skipped
 	local SPARK = AuraLook.TEXTURES.Star or "rbxasset://textures/particles/sparkles_main.dds"
@@ -111,6 +114,71 @@ function M.start()
 		})
 	end
 
+	-- The catch, in the catcher's knife colour (Shared/KnifeLook.CATCH): a thin cut line drawn on across the runner's
+	-- back (a Beam on two attachments on their UpperTorso, so it falls with them) and a few sparks. One each per catch,
+	-- never a flash; the red fill is RoundHud's.
+	local function knifeColour(catcherId): Color3
+		local p = type(catcherId) == "number" and Players:GetPlayerByUserId(catcherId)
+		local c = p and p.Character
+		if not c then
+			local bot = CollectionService:GetTagged("HuzzBot")[1]
+			c = if bot and bot:IsA("Model") then bot else nil
+		end
+		local knife = c and c:FindFirstChild("HuzzKnife")
+		local colour = knife and knife:GetAttribute("SlashColor")
+		return if typeof(colour) == "Color3" then colour else Color3.fromRGB(235, 240, 255) -- (a plain knife: steel white)
+	end
+	cutFx = function(data)
+		local p = Players:GetPlayerByUserId(data.runner)
+		local c = p and p.Character
+		local torso = c and (c:FindFirstChild("UpperTorso") or c:FindFirstChild("Torso"))
+		if not (torso and torso:IsA("BasePart")) then return end
+		local C, colour = KnifeLook.CATCH, knifeColour(data.catcher)
+		burst(torso.Position, { colour, colour:Lerp(Color3.new(1, 1, 1), 0.5) }, C.Burst.Count, {
+			speed = NumberRange.new(C.Burst.Speed[1], C.Burst.Speed[2]), spread = Vector2.new(70, 70), gravity = Vector3.new(0, -8, 0),
+			drag = 5, life = NumberRange.new(C.Burst.Life[1], C.Burst.Life[2]), glow = 0.7,
+			size = NumberSequence.new({ NumberSequenceKeypoint.new(0, C.Burst.Size), NumberSequenceKeypoint.new(1, 0) }),
+		})
+		-- the cut: across the back from the left shoulder down to the right hip, just off the body
+		local half, back = C.Cut.Length / 2, torso.Size.Z / 2 + 0.08
+		local a0 = Instance.new("Attachment")
+		a0.Name = "HuzzCut0"
+		a0.Position = Vector3.new(-half, half * 0.45, back)
+		local a1 = Instance.new("Attachment")
+		a1.Name = "HuzzCut1"
+		a1.Position = Vector3.new(half, -half * 0.45, back)
+		local beam = Instance.new("Beam")
+		beam.Name = "HuzzCut"
+		beam.Attachment0, beam.Attachment1 = a0, a1
+		beam.FaceCamera = true
+		beam.Segments = 12
+		beam.LightEmission, beam.LightInfluence = 0.8, 0
+		beam.Width0, beam.Width1 = C.Cut.Width, C.Cut.Width * 0.3
+		beam.Color = ColorSequence.new(Color3.new(1, 1, 1), colour)
+		beam.Transparency = NumberSequence.new(1)
+		a0.Parent, a1.Parent, beam.Parent = torso, torso, torso
+		local start = os.clock()
+		local conn
+		conn = RunService.RenderStepped:Connect(function()
+			local k = (os.clock() - start) / C.Cut.Life
+			if k >= 1 or not beam.Parent then
+				conn:Disconnect()
+				beam:Destroy(); a0:Destroy(); a1:Destroy()
+				return
+			end
+			-- drawn on in the first quarter (the edge runs across), then fading and thinning
+			local drawn = math.clamp(k * 4, 0.02, 1)
+			local fade = if k < 0.25 then 0 else (k - 0.25) / 0.75
+			local seq = { NumberSequenceKeypoint.new(0, fade), NumberSequenceKeypoint.new(math.max(0.01, drawn * 0.98), fade) }
+			if drawn < 0.98 then
+				table.insert(seq, NumberSequenceKeypoint.new(math.min(0.999, drawn), 1))
+			end
+			table.insert(seq, NumberSequenceKeypoint.new(1, if drawn < 0.98 then 1 else fade))
+			beam.Transparency = NumberSequence.new(seq)
+			beam.Width0 = C.Cut.Width * (1 - 0.5 * fade)
+		end)
+	end
+
 	-- Everyone's crossing: watch each runner's status turn Safe.
 	local function watch(p: Player)
 		local last = p:GetAttribute("HuzzStatus")
@@ -130,10 +198,8 @@ function M.start()
 		if kind == "Caught" then
 			local root = rootOf(data.runner)
 			if root and near(root.Position) then
-				burst(root.Position, { RED, RED, Color3.new(1, 1, 1) }, 30, {
-					speed = NumberRange.new(10, 20), spread = Vector2.new(80, 80), gravity = Vector3.new(0, -24, 0), drag = 3,
-					life = NumberRange.new(0.35, 0.6), glow = 0.8,
-				})
+				local ok, err = pcall(cutFx, data)
+				if not ok then warn("[HuzzJuice] cut: " .. tostring(err)) end
 			end
 			if data.runner == player.UserId then
 				shake(0.4, 0.4) -- (was 0.7: with the red tint, the words and the fall it stacked up too much)

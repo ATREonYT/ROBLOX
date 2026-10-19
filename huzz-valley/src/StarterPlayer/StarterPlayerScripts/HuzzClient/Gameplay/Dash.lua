@@ -15,8 +15,9 @@
 	press space to huss with the knife it leaps forward/sideways to catch the person"): a low leap the way you steer,
 	forward, or sideways while holding A / D (like the runners' huss), never backwards (Shared/KnifeLeap), a hard burst
 	easing off (Config/Round.Lunge, same speed and hop either way). The knife's hit box follows the leap (Gameplay/
-	HitCheck) and the server checks the catch is possible from where it sees you; the slash plays during the leap and
-	the body dives into it at the end (Shared/StabMotion, Gameplay/Actions).
+	HitCheck) and the server checks the catch is possible from where it sees you. The whole body leaps (Shared/StabMotion
+	LEAP: the knife leading, the slash the moment it reaches someone, a low landing), on your screen at once
+	(Gameplay/Actions.lungeLocal; knife pass 2: it used to wait for the server's echo).
 ]]
 local Dash = {}
 
@@ -217,6 +218,8 @@ local function lunge(c: Model, h: Humanoid, root: BasePart)
 	local lungeNet = Net.get("Lunge") :: RemoteEvent
 	local L = Config.Lunge
 	local first = HitCheck.find(root, L.Reach, L.Width, dir)
+	local Actions = require(script.Parent.Actions)
+	if Actions.lungeLocal then Actions.lungeLocal() end -- (the leap's body and knife, now, not a round trip later)
 	if first == false then
 		lungeNet:FireServer(nil, dir) -- (this build can't check: the server finds who the leap reaches, along dir)
 	else
@@ -231,6 +234,7 @@ local function lunge(c: Model, h: Humanoid, root: BasePart)
 			end
 			if type(found) == "number" then
 				lungeNet:FireServer(found)
+				if Actions.lungeHit then Actions.lungeHit() end -- (the slash lands now on your screen)
 			end
 		end)
 	end
