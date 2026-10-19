@@ -228,6 +228,18 @@ function LeaderboardService.start()
 		end
 		task.spawn(function()
 			save(player.UserId)
+			-- (live: keep them on the boards until the next read brings the saved top 50, instead of vanishing for a
+			-- minute; Studio shows only who is here)
+			local rec = latest[player.UserId]
+			if live and rec then
+				for _, def in Config.Boards do
+					local v = rec.values[def.Stat]
+					if v and v > 0 then
+						saved[def.Stat] = saved[def.Stat] or {}
+						table.insert(saved[def.Stat], { u = player.UserId, n = rec.name, v = v })
+					end
+				end
+			end
 			latest[player.UserId] = nil
 			written[player.UserId] = nil
 		end)

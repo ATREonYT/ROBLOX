@@ -145,6 +145,57 @@ function LeaderboardRules.aim(homeYaw: number, fromX: number, fromZ: number, toX
 	return wrap(homeYaw + math.clamp(off, -maxTurn, maxTurn))
 end
 
+--[[
+	The boards' aim since Oct 19 (owner: "please check the leaderboards over again"): the same as `aim`, but with no
+	jumps anywhere, so a board never flicks back and forth while you stand still (`aim` jumps from the full turn to
+	home the moment you cross TurnBehind or TurnRange: standing on that line, the walk's bob or a huss made the board
+	swing 75 degrees one way and back every few frames). Here:
+	  * up to its limit it faces you; past the limit it holds the limit;
+	  * from TurnBehind round to straight behind it eases from the limit back to home (straight behind = home, from
+	    either side, so there's no jump there either);
+	  * from `range` to `range + fade` studs it eases home; within 1 stud of its centre it looks home, 1 to 3 studs
+	    it eases in (no turning on the spot when you walk through its middle);
+	  * `lo` and `hi` (radians, optional): how far it may turn each way (lo: towards -yaw, hi: towards +yaw), when his
+	    build is close behind it (Gameplay/Leaderboards measures them with `room`), never more than maxTurn.
+]]
+function LeaderboardRules.aimSmooth(homeYaw: number, fromX: number, fromZ: number, toX: number, toZ: number, maxTurn: number, behind: number, range: number, fade: number, lo: number?, hi: number?): number
+	local dx, dz = toX - fromX, toZ - fromZ
+	local d = math.sqrt(dx * dx + dz * dz)
+	local w = math.clamp((d - 1) / 2, 0, 1) * math.clamp((range + fade - d) / math.max(fade, 1e-6), 0, 1)
+	if w <= 0 then return homeYaw end
+	local off = wrap(LeaderboardRules.yawTo(fromX, fromZ, toX, toZ) - homeYaw)
+	local limit = if off < 0 then math.min(maxTurn, lo or maxTurn) else math.min(maxTurn, hi or maxTurn)
+	local a = math.abs(off)
+	local turn
+	if a <= behind then
+		turn = math.min(a, limit)
+	else
+		turn = limit * math.clamp((math.pi - a) / (math.pi - behind), 0, 1)
+	end
+	return wrap(homeYaw + (if off < 0 then -turn else turn) * w)
+end
+
+--[[
+	How far a board may turn each way before it would cut into something (his slope behind the terrace boards, a tree):
+	steps out from home in `step` radians up to maxTurn and stops before the first turn where `blocked(yaw)` says the
+	slab hits something. Returns lo, hi (radians, both >= 0). `blocked` is the caller's test (the game asks Roblox with
+	WorldRoot:GetPartsInPart; tools/world/board_sight.luau tests points against his parts).
+]]
+function LeaderboardRules.room(homeYaw: number, maxTurn: number, step: number, blocked: (number) -> boolean): (number, number)
+	local out = {}
+	for i, side in { -1, 1 } do
+		local free, a, hit = 0, math.min(step, maxTurn), false
+		while true do
+			if blocked(homeYaw + side * a) then hit = true break end
+			free = a
+			if a >= maxTurn then break end
+			a = math.min(a + step, maxTurn)
+		end
+		out[i] = if hit then free else maxTurn
+	end
+	return out[1], out[2]
+end
+
 -- The dead zone: keep `goal` unless `want` is more than `deadZone` away from it. While it is still turning
 -- (`moving`), it keeps following exactly, so it ends up facing you, not stuck up to `deadZone` short; once it is
 -- still, small wobbles (a step, a huss, the walk's bob) don't start it again.
@@ -173,11 +224,15 @@ function LeaderboardRules.follow(at: number, to: number, dt: number, tau: number
 	return at + (to - at) * (1 - math.exp(-math.max(dt, 0) / tau))
 end
 
--- One frame of a plain catch-up turn (kept for small things; the boards use aim/settle/spring above).
-function LeaderboardRules.turn(current: number, target: number, dt: number, rate: number): number
+-- One frame of the catch-up turn the boards use (and the avatar stands). `maxSpeed` (radians a second, optional):
+-- never faster than this, so a big jump of the target (you respawned, or walked behind it) is a quick swing over a
+-- few frames instead of half the way in one frame (Oct 19 film: 37 degrees in one frame at 30 fps after a respawn).
+function LeaderboardRules.turn(current: number, target: number, dt: number, rate: number, maxSpeed: number?): number
 	local d = (target - current + math.pi) % (2 * math.pi) - math.pi
 	local k = 1 - math.exp(-rate * math.max(dt, 0))
-	local nextYaw = current + d * k
+	local stepBy = d * k
+	if maxSpeed then stepBy = math.clamp(stepBy, -maxSpeed * dt, maxSpeed * dt) end
+	local nextYaw = current + stepBy
 	return (nextYaw + math.pi) % (2 * math.pi) - math.pi
 end
 

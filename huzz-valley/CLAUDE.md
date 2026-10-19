@@ -287,8 +287,8 @@ Owner's own words are in quotes. Read only the section you need.
   0.05, Saturation 0.4 -> 0.12 (orange floors went neon), Bloom 0.55/22/1.5 -> 0.4/24/1.6, SunRays 0.05 -> 0.03.
   Our lamps turned down so the glow stays on the object: lobby props 1.4/12 -> 0.5/7 (fainter pad pools), board
   pumpkin/candle/base 0.8/7, 0.5/5, 0.6/9 -> 0.4/5, 0.3/4, 0.3/6, aura stars 1.2+0.25t / 9+1.5t -> 0.6+0.15t / 6+t,
-  the showcase girl's key/rim/stand 2.2/1.1/1.4 -> 1.5/0.8/1.0. The board slab's Face became 117,81,100 so the new
-  grade still shows ~124,80,103. SecretReveal's night look also sets EnvironmentDiffuseScale 0.25 (put back after).
+  the showcase girl's key/rim/stand 2.2/1.1/1.4 -> 1.5/0.8/1.0. The board slab is now his daylight slate (section 11,
+  "Lobby leaderboards"). SecretReveal's night look also sets EnvironmentDiffuseScale 0.25 (put back after).
   Model (`tools/preview/light`: `render_light.mjs` three.js scene from `tools/world/scene_dump.luau`, calibrated so the
   Oct 17 look gives the measured 0.25; `calibrate.py`, `looks.json`, `light_compare.py`): cast shadow / sun 0.29 ->
   0.51 (reference 0.53), sunlit floors as bright or brighter. Picture `docs/previews/lighting-vs-ref.jpg` (a model,
@@ -606,34 +606,43 @@ Owner's own words are in quotes. Read only the section you need.
   (Output: "repaired: it was the wrong size or way round" x8, "fixed colours and glow" for the rest).
 - **Crates** (`Config/Crates`, `Shared/CrateRoll` with odds + pity) are plumbed but empty until the owner designs them.
 - **Lobby leaderboards** (owner, Oct 18: "make the leaderboards just like in the video ... make them follow your
-  character", then "move smoothly, right now they move very weirdly ... look more like the reference ones but keep
-  some halloween mood"; reference `design/lobby-ref/lb_f1.jpg`, `lb_f2.jpg`): Huss Valley's boards: 14 x 18 stud
-  slabs in one muted grey-mauve (`LeaderboardLook.Colors.Face` 117,81,100 since the Oct 19 grade, chosen so the game's colour grade shows it
-  at ~124,80,103; the reference measures 110-134, 71-86, 97-108). The face paints itself: an opaque unlit `Backdrop`
-  with our stud tile (`assets/icons/board-stud.png`, `tools/icons/make_board_studs.py`) and a faint corner web
-  (`board-web.png`); the slab part is solid (it was lit and see-through: sky showed through, the header read purple).
-  "HIGHEST LEVEL" etc. Gotham Heavy 52 with a dark outline, "GLOBAL · ALL TIME · TOP 50", 12 rows of 50 (headshot,
-  "#1 name" centred, value right: "LEVEL 402", "2611" + trophy, "33.5K CATCHES"), all text outlined. Halloween
-  (calm, nothing flashes): a small pumpkin with glowing eyes on the top corner, a candle on the other, a soft orange
-  glow at the base (`LeaderboardLook.decorate`: welded parts, soft PointLights). Boards: HIGHEST LEVEL, MOST WINS,
-  MOST GIRLS, MOST CATCHES, MOST RESCUES (`Config/Leaderboards`). Side by side `docs/previews/leaderboard-vs-ref.jpg`
-  (`tools/preview/leaderboard_vs_ref.py`, applies the game's grade to our render). `HuzzServer/LeaderboardService`:
-  boards = anything named `Leaderboard...` or tagged `HuzzLeaderboard` (attribute `Stat`), else it makes five per
-  lobby (`Shared/LobbyLayout.boardSpots`): in his new lobby HIGHEST LEVEL, MOST WINS, MOST GIRLS on his three grey
-  `Podium`s along the plaza's side (the side with three stand pads), MOST CATCHES and MOST RESCUES on the low terrace
-  ledge either side behind the plaza (clear of the house in the middle, the trees and pumpkins; facing the front, each
-  screen turns them to you); else along the floor's back edge. The place build saves the same ones in
-  `Workspace > HuzzLeaderboards` so he can drag them. Numbers: live only, one OrderedDataStore per
-  stat (`HuzzValley_LB_v1_<Stat>`), saved every 90 s when changed and on leave, top 50 read every 60 s,
-  budget-checked, all pcall; this server's players always mixed in live (Studio: only them). JSON in attributes on
-  `ReplicatedStorage.HuzzLeaderboards`. `Gameplay/Leaderboards` copies the saved face into PlayerGui.
-  **The turn** (the "weird" movement was: aiming every frame at your exact position with no limit, so a board spun
-  right round, went edge-on, swept off its podium and twitched with every step, huss and bob; it also started with a
-  jerk). Then the calm version (dead zone, slow spring, eased spot) lagged: owner "make it follow me in real time, not
-  adjust after i move". Now: `Shared/LeaderboardRules` aim at your root every frame (at most `TurnMax` 75° from where
-  it was placed; home when you're more than `TurnBehind` 120° round or past `TurnRange` 90 studs), caught up by
-  `Rules.turn` at `TurnRate` 20 (~0.05 s behind; a swing home takes ~0.2 s, never a one-frame snap). No dead zone.
-  upright, about its own centre. Checks: `tests/Leaderboards.spec.luau`, `tools/preview/check_lobby_boards.luau`.
+  character", "move smoothly", "look more like the reference ones but keep some halloween mood", "make it follow me in
+  real time, not adjust after i move"; Oct 19: "please check the leaderboards over again"). References: his clip
+  `design/lobby-ref/lb_f1.jpg`, `lb_f2.jpg` (night) and the HIGHEST LEVEL board up close in daylight in
+  `oct19-lighting-ref.png`.
+  - **Look** (`Shared/LeaderboardLook`, layout measured in its header): 14 x 18 stud slab, 700 x 900 face: title
+    Gotham Heavy 52, "GLOBAL · ALL TIME · TOP 50", 12 rows of 50 that scroll (headshot, "#1 name" centred, long names
+    shrink, value right: "LEVEL 402", "2611" + trophy, "33.5K CATCHES"), white text with a dark slate outline, studs
+    over the face (`assets/icons/board-stud.png`). **Slate blue-grey** since Oct 19: his daylight board measures
+    105,122,143 all over; the clip's mauve was the same board under his night lobby's purple light. `Colors.Face`
+    104,118,135 is that with the game's grade undone (the face is unlit; the spec checks it against Config/Look);
+    row bands the same colour, marked by their light and dark edges. Halloween, calm: a faint web in the corner, a
+    pumpkin and a candle welded on top, a soft orange glow at the base. Side by side, same spot and perspective:
+    `docs/previews/leaderboard-vs-ref.jpg` (`tools/preview/leaderboard_vs_ref.py`: our face through his board's
+    perspective, graded; slab 105,121,143 vs his 105,122,143).
+  - **Turn** (`Gameplay/Leaderboards`, `Shared/LeaderboardRules`, `Config/Leaderboards`): each screen turns its copy
+    about its own upright centre to face your root every frame (`TurnRate` 20, capped at `TurnSpeedMax` 300 deg/s so
+    a respawn is a quarter-second swing, not 37 degrees in one frame), at most `TurnMax` 75. `aimSmooth` has no jumps
+    (the old aim flicked 75 degrees at 120 round and at the range edge, so it flicked back and forth while you stood on
+    that line): past the limit it holds, from 120 round it eases home (straight behind = home), `TurnRange` 120 studs
+    then `TurnFade` 20 more. No body (respawning): it holds. **Never into his build**: `LeaderboardRules.room` with
+    `GetPartsInPart` every `TurnStep` 3 degrees finds how far each way it may turn (re-measured every 4 s nearby, as
+    parts stream in); his terrace slope stops MOST CATCHES at 51 one way and MOST RESCUES at 60 / 51.
+    Film `docs/previews/leaderboard-turn.mp4` (`motion3d/board_turn_scene.luau`: his lobby, the game's maths, walk,
+    run, two husses, round MOST CATCHES, respawn; biggest step 5 deg a frame at 60 fps, 10 at 30).
+  - **Where** (`HuzzServer/LeaderboardService`, `Shared/LobbyLayout.boardSpots`): anything named `Leaderboard...` or
+    tagged `HuzzLeaderboard` (attribute `Stat`), else five per lobby: HIGHEST LEVEL, MOST WINS, MOST GIRLS on his three
+    grey `Podium`s, MOST CATCHES and MOST RESCUES on the terrace ledge behind the plaza; the place build saves them in
+    `Workspace > HuzzLeaderboards`. Sight lines in all 3 copies: `tools/world/board_sight.luau` (distance, how much of
+    the face is hidden, letter height). From the front half of the plaza the podium boards read well (21-29 studs,
+    title 15-20 px on a 900 px window); from the spawn they are 85-90 studs away (title ~5 px, the same size as Huss
+    Valley's boards, so too small to read there) and his girls' display in the middle hides most of them.
+  - **Numbers**: live only, one OrderedDataStore per stat (`HuzzValley_LB_v1_<Stat>`), saved every 90 s when changed and
+    on leave, top 50 read every 60 s, budget-checked, every call in pcall (a failing store leaves just this server's
+    players); players here always mixed in live, and someone who leaves stays listed until the next read (Studio:
+    only who is here). JSON in attributes on `ReplicatedStorage.HuzzLeaderboards`.
+  - Checks: `tests/Leaderboards.spec.luau` (formats, order, colour, no jumps, room, 30/60 fps),
+    `tools/preview/check_lobby_boards.luau` (the real client: turning, limit, home, holding while respawning).
 - **Avatar stands** (owner, Oct 18: "make the blocks i have in the lobby, next to the spin the wheel turn into my
   character and have like animated running ... selling a gamepass", then "make the character things in the lobby
   work ... gamepasses shown with the character of the person playing, equipped with some exclusive knifes";
@@ -784,7 +793,7 @@ Owner's own words are in quotes. Read only the section you need.
 - Not yet seen in Studio: the Practice Bot (its walk, run animation, knife), the Oct 17 UI shine/rays/spin and Juice bursts, the new lighting, stars in the playing zone, the move between lobbies after the vote (instant, no fade yet), the lunge feel, sprint feel, lobby repaint, knife positions, spin animation, dance
   pictures on real avatars, the owner's knives (meshes after his import, glow, sparkles, the leap and dive), dance sync across two clients (needs published dances), the lobby leaderboards (studs
   picture (Play only), the slab colour under his grade, Gotham's size, headshots, scrolling, the calm turn, the
-  pumpkin, candle and glow) and the avatar stands (your copy, its run, the knife in its hand); the new lobby (the boards on the terrace ledges
+  pumpkin, candle and glow, the Oct 19 slate colour, the turn stopping before his slope) and the avatar stands (your copy, its run, the knife in its hand); the new lobby (the boards on the terrace ledges
   turning without touching the slope behind, the stand row, the move back after a game), the lobby props (his meshes
   after the import, the bob, turn, glow and titles) and the Oct 18 lighting tune; the Oct 19 even lighting (ShadowMap, strong sky fill, lamps turned down).
 - **Which code ran?** Studio shows "build <date> UTC" small in the bottom right (and `[Huzz] Build` in Output), from
@@ -821,7 +830,8 @@ Owner's own words are in quotes. Read only the section you need.
 - New lobby (Oct 18): his BasketBall and Halloween copies in `StartingPoint` are pasted twice (every part twice in
   the same place; the game counts them once, but it doubles those parts); his old islands still float off to the side
   in `Maps > Spawn` (unused; deleting them is safe: the game makes a spawn on each plaza if his SpawnLocations go too).
-  The terrace boards can brush the higher slope behind them when turned far to the side.
+  The podium boards are hard to read from the spawn (85-90 studs, behind his girls' display): moving the spawn
+  toward the podium side, or the display, would fix it (his build, his call).
 - Lobby props (Oct 18): stand-ins until he imports `Lobby_Props.glb` and sends `HuzzLobbyProps.rbxm`; the titles on the
   three-pad side sit close (pads 7 apart); LIKE THE GAME!, WITCH'S BREW and SWEETS & TREATS open nothing yet.
 - Knife showcase (Oct 19): not seen in Studio yet (the big stand knives, element particles with stand-in

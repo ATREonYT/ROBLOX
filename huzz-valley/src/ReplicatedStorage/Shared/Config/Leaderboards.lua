@@ -31,11 +31,16 @@ Leaderboards.PublishEvery = 15 -- seconds between sending the boards to everyone
 Leaderboards.StudioPublishEvery = 5
 
 -- Turning to face you in real time (owner, Oct 18: first "make the leaderboards move smoothly", then "make it follow
--- me in real time, not adjust after i move"; Shared/LeaderboardRules aim / turn). Each screen turns its own copy.
+-- me in real time, not adjust after i move"; Shared/LeaderboardRules aimSmooth / turn). Each screen turns its own copy,
+-- never into his build: it first measures how far each board can turn each way (LeaderboardRules.room).
 Leaderboards.TurnMax = 75 -- degrees either way from the way the board was placed, never more (never edge-on, never spins)
-Leaderboards.TurnBehind = 120 -- degrees off its front: further round (behind it) and it swings back home
+Leaderboards.TurnBehind = 120 -- degrees off its front: further round (behind it) it eases back, home when you're straight behind
 Leaderboards.TurnRate = 20 -- how fast it catches up with you (20 = 63% in 0.05 s: it moves as you move, no wait)
-Leaderboards.TurnRange = 90 -- studs: further away than this it eases back home (the other lobbies' boards stay still)
+Leaderboards.TurnSpeedMax = 300 -- degrees a second, never faster (running past at 6 studs is ~150, a huss close by ~300;
+-- a respawn's 75 degree swing takes a quarter second instead of jumping 37 degrees in one frame at 30 fps)
+Leaderboards.TurnRange = 120 -- studs: up to here it faces you (Oct 19: 90 left MOST CATCHES looking away from the spawn, 114 studs off)
+Leaderboards.TurnFade = 20 -- studs past TurnRange over which it eases home (no jump at the edge; the other lobbies are 600+ away)
+Leaderboards.TurnStep = 3 -- degrees: how finely each screen checks how far a board can turn before it cuts into his build
 
 -- The slab (studs). 14 x 18 measured from the clip: one Roblox stud per stud cell, 14 across and 18 down.
 Leaderboards.Size = { X = 14, Y = 18, Z = 0.6 }

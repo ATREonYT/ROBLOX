@@ -103,29 +103,89 @@ check("short way round", wrap > 3.0 or wrap < -3.1)
 local rad, deg = math.rad, math.deg
 local MAX, BEHIND = rad(Config.TurnMax), rad(Config.TurnBehind)
 check("a turn limit between 60 and 80 degrees (never edge-on, never spins)", Config.TurnMax >= 60 and Config.TurnMax <= 80)
-check("boards in the other lobbies stay still (range under 150)", Config.TurnRange <= 150)
+check("boards in the other lobbies stay still (range and its ease under 150; the lobbies are 600+ apart)", Config.TurnRange + (Config.TurnFade or 0) <= 150)
 check("no dead zone or slow spring left (owner: follow me in real time)", Config.DeadZone == nil and Config.TurnOmega == nil and Config.Follow == nil)
--- a board at the origin placed facing -Z (yaw 0)
-local function aimAt(x, z) return Rules.aim(0, 0, 0, x, z, MAX, BEHIND, Config.TurnRange) end
+-- a board at the origin placed facing -Z (yaw 0); the boards use aimSmooth (Oct 19: no jumps)
+local FADE = Config.TurnFade
+check("an ease-home band past the range (no jump at its edge)", type(FADE) == "number" and FADE >= 10)
+local function aimAt(x, z, lo, hi) return Rules.aimSmooth(0, 0, 0, x, z, MAX, BEHIND, Config.TurnRange, FADE, lo, hi) end
 check("you straight in front: faces you", math.abs(aimAt(0, -20)) < 1e-9)
 check("you 30 degrees to the side: follows", math.abs(deg(aimAt(-20 * math.sin(rad(30)), -20 * math.cos(rad(30)))) - 30) < 1e-6)
 check("you 60 degrees round: still follows", math.abs(deg(aimAt(-20 * math.sin(rad(60)), -20 * math.cos(rad(60)))) - 60) < 1e-6)
 check("you level with its edge (90): stops at the limit, not edge-on", math.abs(deg(aimAt(-20, 0))) <= Config.TurnMax + 1e-6)
-check("you behind it: it looks home (old code spun 180)", math.abs(aimAt(3, 20)) < 1e-9)
-check("you far away: home", math.abs(aimAt(0, -(Config.TurnRange + 5))) < 1e-9)
+check("you straight behind it: it looks home (old code spun 180)", math.abs(aimAt(0, 20)) < 1e-9)
+check("you far away: home", math.abs(aimAt(0, -(Config.TurnRange + FADE + 1))) < 1e-9)
 check("standing inside it: home (no divide by zero)", aimAt(0.2, 0.2) == 0)
--- walking past the front at a run: it keeps facing you as you go (the old one lagged up to seconds behind)
+check("the MOST CATCHES board turns to the spawn (114 studs off)", Config.TurnRange >= 114)
+-- no jumps: walking a slow circle round it 20 studs out, and walking away through the range's edge, the aim never
+-- moves more than a few degrees between two spots a tenth of a stud apart (the old aim jumped 75 at 120 degrees round
+-- and at the range's edge, so standing on those lines it flicked back and forth)
 do
-	local y, worst, most = 0, 0, 0
-	for f = 1, 240 do -- 4 s at 60 fps, running left to right 12 studs in front at 16 studs/s
-		local x = -32 + f * (16 / 60)
-		local want = Rules.aim(0, 0, 0, x, -12, MAX, BEHIND, Config.TurnRange)
+	local worst, prev = 0, nil
+	for i = 0, 7200 do
+		local a = rad(i * 0.05) -- (0.05 degrees = 0.017 studs a step at 20 studs)
+		local y = aimAt(-20 * math.sin(a), -20 * math.cos(a))
+		if prev then worst = math.max(worst, math.abs(Rules.wrap(y - prev))) end
+		prev = y
+	end
+	check(string.format("round it in a circle: no jumps (biggest step %.2f deg)", deg(worst)), deg(worst) < 0.5)
+	local old = 0
+	for i = 0, 7200 do
+		local a, b = rad(i * 0.05), rad((i + 1) * 0.05)
+		local y1 = Rules.aim(0, 0, 0, -20 * math.sin(a), -20 * math.cos(a), MAX, BEHIND, Config.TurnRange)
+		local y2 = Rules.aim(0, 0, 0, -20 * math.sin(b), -20 * math.cos(b), MAX, BEHIND, Config.TurnRange)
+		old = math.max(old, math.abs(Rules.wrap(y2 - y1)))
+	end
+	check(string.format("(the old aim did jump: %.0f deg)", deg(old)), deg(old) > 30)
+	worst, prev = 0, nil
+	for i = 0, 2000 do
+		local d = 60 + i * 0.05
+		local y = aimAt(-d * math.sin(rad(50)), -d * math.cos(rad(50)))
+		if prev then worst = math.max(worst, math.abs(Rules.wrap(y - prev))) end
+		prev = y
+	end
+	check(string.format("walking out of range: eases home, no jump (biggest step %.2f deg)", deg(worst)), deg(worst) < 0.5)
+end
+-- standing on the old flick line (120 degrees round) and bobbing a little: the board stays put
+do
+	local y, lo, hi = aimAt(-20 * math.sin(rad(120)), -20 * math.cos(rad(120))), math.huge, -math.huge
+	for f = 1, 300 do
+		local a = rad(120 + math.sin(f * 0.7) * 0.6)
+		local want = aimAt(-20 * math.sin(a), -20 * math.cos(a))
 		y = Rules.turn(y, want, 1 / 60, Config.TurnRate)
-		if f > 10 then worst = math.max(worst, math.abs(Rules.wrap(y - want))) end
+		if f > 30 then lo, hi = math.min(lo, y), math.max(hi, y) end
+	end
+	check(string.format("on the 120 degree line, bobbing: still (moves %.2f deg)", deg(hi - lo)), deg(hi - lo) < 1)
+end
+-- his build close behind it (the terrace boards): it turns only as far as it has room, each way
+do
+	local lo, hi = Rules.room(0, MAX, rad(3), function(yaw) return yaw < -rad(10) end)
+	check(string.format("room: stops before the slope on one side (%.0f deg)", deg(lo)), math.abs(deg(lo) - 9) < 1e-6)
+	check("room: the full turn on the free side", math.abs(hi - MAX) < 1e-9)
+	local y = aimAt(20 * math.sin(rad(40)), -20 * math.cos(rad(40)), lo, hi) -- you 40 degrees round on the slope side
+	check(string.format("with room 9 deg that way it turns 9, not 40 (%.1f)", deg(y)), math.abs(deg(y) + 9) < 1e-6)
+	local y2 = aimAt(-20 * math.sin(rad(40)), -20 * math.cos(rad(40)), lo, hi)
+	check("and the full 40 the other way", math.abs(deg(y2) - 40) < 1e-6)
+	local nlo, nhi = Rules.room(0, MAX, rad(3), function() return false end)
+	check("room: nothing near, the whole limit both ways", math.abs(nlo - MAX) < 1e-9 and math.abs(nhi - MAX) < 1e-9)
+end
+-- walking past the front at a run: it keeps facing you as you go (the old one lagged up to seconds behind), at 30 and 60 fps
+for _, fps in { 30, 60 } do
+	local y, worst, most, flips, lastStep = 0, 0, 0, 0, 0
+	for f = 1, 4 * fps do -- 4 s, running left to right 12 studs in front at 16 studs/s
+		local x = -32 + f * (16 / fps)
+		local want = aimAt(x, -12)
+		local before = y
+		y = Rules.turn(y, want, 1 / fps, Config.TurnRate)
+		local step = y - before
+		if f > fps / 2 and step * lastStep < 0 then flips += 1 end -- (after it has caught up with you at the start)
+		if step ~= 0 then lastStep = step end
+		if f > fps / 6 then worst = math.max(worst, math.abs(Rules.wrap(y - want))) end
 		most = math.max(most, math.abs(y))
 	end
-	check(string.format("running past: never more than 5 degrees behind you (%.1f)", deg(worst)), deg(worst) < 5)
-	check("running past: never past the limit", deg(most) <= Config.TurnMax + 0.01)
+	check(string.format("running past at %d fps: never more than 5 degrees behind you (%.1f)", fps, deg(worst)), deg(worst) < 5)
+	check(string.format("running past at %d fps: never past the limit", fps), deg(most) <= Config.TurnMax + 0.01)
+	check(string.format("running past at %d fps: turns one way only, no jitter (%d reversals)", fps, flips), flips == 0)
 end
 -- a jump home (you walked behind it) is a quick swing, not a one-frame snap
 do
@@ -135,7 +195,7 @@ do
 	check("swinging home: done within half a second", deg(math.abs(y)) < 1)
 end
 
--- the look: one muted grey-mauve slab like Huss Valley's (not magenta rows on a purple header), big outlined text
+-- the look: one muted slate slab like Huss Valley's in daylight (his Oct 19 screenshot; not magenta rows on a purple header), big outlined text
 do
 	local Look = require("../src/ReplicatedStorage/Shared/LeaderboardLook")
 	local lookSrc = fs.readFile("src/ReplicatedStorage/Shared/Config/Look.lua")

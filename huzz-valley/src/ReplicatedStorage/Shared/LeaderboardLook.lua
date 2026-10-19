@@ -13,8 +13,10 @@
 	            a thin scroll bar at the right edge; all text white with a soft dark outline
 	  studs     one stud every 50 px, a raised square 23 px across with a dark lower edge (assets/icons/board-stud.png,
 	            tools/icons/make_board_studs.py), over the whole face
-	  colour    on screen the clip's slab is a muted grey-mauve: 113, 71, 97 (MOST WINS) to 134, 86, 108 (HIGHEST
-	            LEVEL, nearer the light), so we aim at 124, 80, 103
+	  colour    slate blue-grey in daylight: his Oct 19 screenshot (design/lobby-ref/oct19-lighting-ref.png, the same
+	            HIGHEST LEVEL board up close in the sun) measures 105, 122, 143 everywhere on the face. The clip's
+	            grey-mauve (113, 71, 97 to 134, 86, 108) was the same board under his night lobby's purple light; our
+	            lobby is daytime since the Oct 19 lighting, so we aim at the daylight colour
 	Text sizes: Roblox draws Gotham smaller than the preview's Montserrat at the same TextSize (cap height 0.64 of the
 	size against 0.70: measured on the owner's Studio screenshot design/owner-tests/oct18-boards.png, rows 32 px
 	apart there = 0.49 of the canvas), so sizes are the reference's cap heights / 0.64 (title 52, names 52 / 46).
@@ -23,7 +25,8 @@
 	rows went magenta (119, 49, 82) under the game's colour grade (Config/Look: Saturation +0.35, Contrast +0.12,
 	Exposure -0.1, which also works on SurfaceGuis). Now one unlit Backdrop in Colors.Face covers the face (same
 	colour lit or in shade, day or night) with the studs drawn on it, and Colors.Face is the target with that grade
-	undone (117, 81, 100 -> about 124, 80, 103 on screen under the Oct 19 grade; was 125, 94, 110 under Oct 18's stronger one; tests/Leaderboards.spec.luau checks it against Config/Look).
+	undone (104, 118, 135 -> 105, 122, 143 on screen under the Oct 19 grade; tests/Leaderboards.spec.luau checks it
+	against Config/Look; until Oct 19 it was the night clip's mauve, 117, 81, 100).
 	Halloween (owner: "keep some halloween mood to it"), calm and still (nothing flashes): a faint spider web in the
 	face's top-right corner (assets/icons/board-web.png), a carved pumpkin with a warm light sitting on the slab's
 	top-right corner and a small candle on the top-left, and a soft orange glow under the slab. They are welded to the
@@ -38,17 +41,17 @@ local LeaderboardLook = {}
 LeaderboardLook.Canvas = { W = 700, H = 900 }
 LeaderboardLook.Row = { Top = 122, Pitch = 65, Height = 61, Left = 4, Width = 680, Avatar = 56 }
 LeaderboardLook.Colors = {
-	Target = { 124, 80, 103 }, -- what the face should look like on screen (the clip's slab, measured)
-	Face = { 117, 81, 100 }, -- what we set: the target with the game's colour grade undone (see the header)
-	Slab = { 117, 81, 100 }, -- the part itself (seen from behind and at the edges)
+	Target = { 105, 122, 143 }, -- what the face should look like on screen (his Oct 19 daylight screenshot, measured)
+	Face = { 104, 118, 135 }, -- what we set: the target with the game's colour grade undone (see the header)
+	Slab = { 104, 118, 135 }, -- the part itself (seen from behind and at the edges)
 	Base = { 99, 95, 98 }, -- the stone base (the owner's grey)
 	Text = { 255, 255, 255 },
-	Stroke = { 34, 16, 28 },
+	Stroke = { 22, 28, 40 }, -- the text outline: a dark slate (it was a dark mauve on the mauve slab)
 	Pumpkin = { 236, 120, 28 },
 	Glow = { 255, 150, 60 },
 }
 LeaderboardLook.Text = { Title = 52, Subtitle = 18, Name = 46, NameTop = 52, Value = 33, Trophy = 36 }
-LeaderboardLook.RowLift = 0.05 -- how much lighter a row band is than the slab (they read almost the same in the clip)
+LeaderboardLook.RowLift = 0 -- how much lighter a row band is than the slab (his Oct 19 screenshot: the same colour; the light and dark edges mark the rows)
 LeaderboardLook.SlabTransparency = 0 -- (it was 0.12: the sky showed through in daylight)
 local GOTHAM = "rbxasset://fonts/families/GothamSSm.json"
 

@@ -3,10 +3,13 @@
 	leaderboards just like in the video i sent you from the game, make them follow your character", then "make the
 	leaderboards move smoothly, right now they move very weirdly", then "make it follow me in real time, not adjust
 	after i move"). Each board turns about its own upright centre (never leans) to face you as you move, every
-	frame (Rules.turn at Config/Leaderboards.TurnRate: caught up in about 0.1 s, so a respawn or a jump home is a
-	quick swing, not a snap), at most TurnMax degrees from the way it was placed; from behind or far away it swings
-	back home (Shared/LeaderboardRules aim, where the old spinning problem is written down). Only this screen's copy turns, nothing is sent, the stone base
-	stays put; the Halloween pumpkin and candle are welded to the slab, so they turn with it.
+	frame (Rules.turn at Config/Leaderboards.TurnRate: caught up in about 0.05 s), at most TurnMax degrees from the
+	way it was placed. Oct 19 re-check: the aim has no jumps any more (Rules.aimSmooth: going round behind it or out
+	of range it eases home instead of flicking 75 degrees the moment you cross a line, which made it flick back and
+	forth while you stood on that line), it holds still while you have no body (respawning: it used to swing home and
+	back), and it never turns into his build (Rules.room: GetPartsInPart every TurnStep degrees; the terrace boards
+	swept into the slope behind them). Only this screen's copy turns, nothing is sent, the stone base stays put; the
+	Halloween pumpkin and candle are welded to the slab, so they turn with it.
 
 	The boards are HuzzServer/LeaderboardService's (tag "HuzzLeaderboard": a Model with a "Board" part, or the owner's
 	own Part). The face saved with the place (SurfaceGui "LeaderboardFace") is reused: it's copied into PlayerGui
@@ -109,7 +112,7 @@ function M.start()
 		local look = cf.LookVector
 		local home = Rules.yawTo(0, 0, look.X, look.Z)
 		local rec = {
-			part = part, gui = gui, saved = saved, canvas = canvas, def = def, home = cf,
+			item = item, part = part, gui = gui, saved = saved, canvas = canvas, def = def, home = cf,
 			homeYaw = home, yaw = home, vel = 0, goal = home, written = home, centre = cf.Position,
 		}
 		boards[item] = rec
@@ -151,17 +154,69 @@ function M.start()
 		end)
 	end
 
-	-- the turn towards you, in real time (upright axis only, about the slab's own centre)
+	-- How far each board may turn each way before it cuts into his build (Oct 19: the terrace boards swept into the
+	-- slope behind them): the slab's box, a hair smaller, tried every TurnStep degrees with GetPartsInPart, ignoring
+	-- the board itself, players and see-through parts. Measured again every few seconds while you're near (parts
+	-- stream in later than the board).
 	local rad = math.rad
+	local probe
+	local function blockedAt(rec, yaw: number): boolean
+		if not probe then
+			probe = Instance.new("Part")
+			probe.Name = "HuzzBoardProbe"
+			probe.Anchored, probe.CanCollide, probe.CanTouch, probe.CanQuery = true, false, false, false
+			probe.Transparency = 1
+			probe.Parent = workspace.CurrentCamera or workspace -- (this screen only, with the other local things)
+		end
+		local s = rec.part.Size
+		probe.Size = Vector3.new(math.max(s.X - 0.3, 0.1), math.max(s.Y - 0.3, 0.1), math.max(s.Z - 0.1, 0.05))
+		probe.CFrame = CFrame.new(rec.centre) * CFrame.Angles(0, yaw, 0)
+		local params = OverlapParams.new()
+		params.FilterType = Enum.RaycastFilterType.Exclude
+		local skip = { probe, rec.item }
+		for _, p in Players:GetPlayers() do
+			if p.Character then table.insert(skip, p.Character) end
+		end
+		params.FilterDescendantsInstances = skip
+		for _, hit in workspace:GetPartsInPart(probe, params) do
+			if hit.Transparency < 0.9 then return true end
+		end
+		return false
+	end
+	local function measureRoom(rec)
+		local ok, lo, hi = pcall(Rules.room, rec.homeYaw, rad(Config.TurnMax), rad(Config.TurnStep or 3), function(yaw)
+			return blockedAt(rec, yaw)
+		end)
+		if ok then
+			rec.lo, rec.hi = lo, hi
+		elseif not rec.lo then
+			rec.lo, rec.hi = rad(Config.TurnMax), rad(Config.TurnMax) -- (can't measure here: the plain limit)
+		end
+	end
+	task.spawn(function()
+		while true do
+			task.wait(4)
+			local char = player.Character
+			local root = char and char:FindFirstChild("HumanoidRootPart")
+			for _, rec in boards do
+				if not root or (root.Position - rec.centre).Magnitude < Config.TurnRange + 60 then measureRoom(rec) end
+			end
+		end
+	end)
+
+	-- the turn towards you, in real time (upright axis only, about the slab's own centre)
 	RunService.RenderStepped:Connect(function(dt)
 		local char = player.Character
 		local root = char and char:FindFirstChild("HumanoidRootPart")
 		local at = root and root.CFrame.Position
 		for _, rec in boards do
 			local c = rec.centre
-			local want = if at then Rules.aim(rec.homeYaw, c.X, c.Z, at.X, at.Z, rad(Config.TurnMax), rad(Config.TurnBehind), Config.TurnRange) else rec.homeYaw
+			if not rec.lo then measureRoom(rec) end
+			-- (no body for a moment, e.g. respawning: it holds where it is instead of swinging home and back)
+			local want = if at then Rules.aimSmooth(rec.homeYaw, c.X, c.Z, at.X, at.Z, rad(Config.TurnMax), rad(Config.TurnBehind),
+				Config.TurnRange, Config.TurnFade or 20, rec.lo, rec.hi) else rec.yaw
 			if math.abs(Rules.wrap(want - rec.yaw)) > 1e-4 then
-				rec.yaw = Rules.turn(rec.yaw, want, math.min(dt, 0.1), Config.TurnRate)
+				rec.yaw = Rules.turn(rec.yaw, want, math.min(dt, 0.1), Config.TurnRate, rad(Config.TurnSpeedMax or 300))
 			end
 			if math.abs(Rules.wrap(rec.yaw - rec.written)) > 1e-4 then -- (only touch the part when it really moved)
 				rec.written = rec.yaw

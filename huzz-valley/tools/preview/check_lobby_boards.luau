@@ -154,9 +154,17 @@ local most = 0
 for _ = 1, 200 do frames(1); most = math.max(most, offHome()) end
 check(string.format("never past %d degrees (%.1f)", LB.TurnMax, most), most <= LB.TurnMax + 0.5)
 -- behind it: it goes home instead of spinning round
-standAt(170, 20)
+standAt(180, 20)
 frames(60)
-check(string.format("behind it: back home (%.1f deg)", offHome()), offHome() < 1)
+check(string.format("straight behind it: back home (%.1f deg)", offHome()), offHome() < 1)
+-- respawning (no body for a moment): it holds where it is, no swing home and back
+standAt(40, 20)
+frames(60)
+local held = offHome()
+rootPart.Name = "Gone" -- (the harness can't clear Player.Character: a body with no root reads the same to the boards)
+frames(30)
+check(string.format("no body (respawning): it holds (%.1f -> %.1f deg)", held, offHome()), math.abs(offHome() - held) < 0.5)
+rootPart.Name = "HumanoidRootPart"
 standAt(0, 20)
 frames(60)
 

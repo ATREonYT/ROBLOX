@@ -24,6 +24,11 @@ local canvas = Look.canvas(api, slab, def, Config.Subtitle)
 local names = { "5_dmi", "TheMicrobloxGamer", "roblox_user_4802712065", "Jefferson6293", "hope_cakepop", "firhankhan", "noctyythegoat",
 	"XXXStk_FamilyXXX", "Sk_jesse24", "lvhhaz", "imnotgau", "yaboihame" }
 local values = { 2611, 2441, 2402, 2148, 1999, 1987, 1980, 1973, 1844, 1747, 1720, 1716 }
+if def.Stat == "Level" then -- (the HIGHEST LEVEL board in his Oct 19 screenshot and the clip)
+	names = { "yourfavfraud", "Dtgxhstsyd", "roblox_user_4802712065", "BRATAMAn1", "Just_better260", "admiringthenightsky",
+		"AHMET_GALATA", "BynXNator", "steeltenz", "BeamedY0U", "xM4zT3R808121x", "R0SEES" }
+	values = { 402, 377, 357, 349, 274, 270, 256, 254, 251, 242, 240, 239 }
+end
 local entries = {}
 for i, n in names do entries[i] = { u = i, n = n, v = values[i] } end
 Look.fill(api, canvas, def, entries, Config.Shown, Rules.format, nil)
