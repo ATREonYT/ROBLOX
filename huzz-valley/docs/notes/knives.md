@@ -38,15 +38,42 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
   the trail, calm).
 
 ## The worn knife
-- `KnifeLook.pick` = the shop's pick, else your first owned knife, else the default knife; diagonal across the back
-  (handle over the right shoulder), or at the left hip like a sheathed sword for long slim blades (`KnifeLook.wearOf`:
-  a `Wear` attribute/field "Back"/"Side", else measured from the model: 3+ studs and blade 5.5x longer than wide; of
-  the 30 only Celestial Edge; the Game Pass katanas get sorted the same way).
+- `KnifeLook.pick` = the shop's pick, else your first owned knife, else the default knife.
+- **Where, by knife** (owner, Oct 19: "make the knifes when equipped be worn either on the back of the character or on
+  the side. This is very important, and make the location based on what knife/sword it is"): the one table is
+  `Config/CoinShop`'s `Wear` field, "Back" or "Side" on every knife row; the owner can change any of them. First
+  picked from his .glb's measured length (`tools/knives/wear_table.luau` prints each knife's measure next to the
+  table): 3.0+ studs = **Back** (16: his swords, katanas, reapers, scythe, the 5 pass knives, Celestial Edge, Shadow
+  Cleaver 3.08), shorter = **Side** (37: knives, daggers, tantos, kunai, cleavers, sickles, karambits, shurikens; Blood
+  Moon Tanto 2.98 is the longest). A knife with no row: the model's `Wear` attribute, else the same 3.0 rule.
+  - **Back:** diagonal across the upper back like a sword in a back sheath, the handle end up over the right
+    shoulder, the blade down to the left hip, `BACK_TILT` 40 degrees, flat side against the back, `GAP` 0.05 off it.
+    A two-handed pole (`KnifeLook.twoHanded`: 3+ studs, gripped mid-pole: the reapers and the scythe) is turned
+    head up: the head over the right shoulder, the pole down-left, its middle a little right of the spine so it
+    clears the head, the hook out to the right.
+  - **Side:** the right hip at the belt (R15 LowerTorso, R6 Torso), blade down and `SIDE_TILT` 15 degrees back,
+    flat against the hip, just behind the hanging right arm (its forward reach measured from the real corners,
+    hanging bits too: `shape.front`), hung the way round that reaches forward least.
+  - Capes, wings, long hair (the avatar's own accessories): `KnifeLook.backClear` measures how far what hangs below
+    the shoulders reaches behind the back; the back knife goes that much further out, over it. More than
+    `CLEAR.Max` 0.9 (big wings): the knife goes to the hip instead (`wornAt`). `KnifeService.refit` runs again
+    when an accessory loads in later.
+  - Same rule on R15 and R6. The lobby stand copies hold their pass knife in the hand (the showcase) and carry no
+    worn knife, so there's nothing to place there.
 - Server-built, one per body: `give` (hand) and `giveBack` (worn) each remove the other; RoundService syncs on every
   change, spawn and avatar reload; a shop change swaps it at once (Bootstrap).
 - A model the wrong size is refused (plain knife + one `[HuzzKnife]` warning).
-- Spec `tests/KnifeWear.spec` (all 30 and the 5 pass stand-ins on R15/R6, no clipping except the hanging hand on the
-  hip hilt); picture `docs/previews/knife-on-back.jpg` (`motion3d/knife_wear_scene.luau`).
+- Spec `tests/KnifeWear.spec`: all 53 (his 30 models, the 23 pass and Halloween stand-ins) on R15 and R6 at rest:
+  nothing inside the head, torso, legs or arms, the flat against the body, within 0.35 studs of it (worst 0.34);
+  every row's Wear matches its measured length; the pole and hip directions; capes, hair and wings as boxes, and
+  through the real KnifeService. Picture `docs/previews/knife-on-back.jpg` (`motion3d/knife_wear_scene.luau` +
+  `motion3d/knife_wear_sheet.py`: three back, three hip, from behind and the front, next to a Huss Valley player's sword on
+  the back).
+- Gaps: checked at rest only: in a run the swinging right arm passes through a hip knife's hilt, and the legs and
+  arms of a real avatar (not blocky) aren't checked; from the front a hip knife is mostly behind the arm (its tip
+  shows under the hand); Huss Valley's sword sits nearly upright, ours slants 40 degrees (the diagonal was asked
+  for); accessories are measured by their boxes, so a big see-through box pushes the knife out more than needed;
+  nothing seen in Studio yet.
 
 ## In a catcher's hand
 - `KnifeLook.handC0(at, reach)`: Huss Valley's grip, blade 150 degrees round the hand (down and a little forward), for
@@ -251,7 +278,8 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
   pictures, three worn and three held (`KNIFE_SET=halloween` on `knife_glb_scene.luau`).
 - Gaps: no "HALLOWEEN" heading in the shop (they sit together by Order, after the pass knives); the reapers and the
   scythe are held like every knife (blade down at the side, the blade near the floor) and worn on the back/hip by
-  the same rule; a shuriken in the hand is small; the elements and stand showcase are the pass knives' only.
+  length (Oct 19 evening: the reapers and scythe on the back head up, the rest at the hip); a shuriken in the hand
+  is small; the elements and stand showcase are the pass knives' only.
 
 ## Honest gaps
 - Not seen in Studio yet: knife positions, the owner's knives (meshes after his import, glow, sparkles, the leap and
@@ -278,6 +306,9 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
 ## Why it is this way / history
 - **Skins** (owner, Oct 18: "add some vfx to the knifes, but make it fit it, and dont make it overly crazy").
 - **Worn on the back** (owner Oct 18: "be shown on the back of the character"; the old belt mount was too low to notice).
+- **Back or side by knife** (owner Oct 18: "for the katanas ... on the side" put long slim blades at the left hip;
+  Oct 19: "make the location based on what knife/sword it is", "This is very important"): now long blades go on the
+  back like a sheathed sword and short knives at the hip, one table row per knife so he can move any of them.
 - **The broken 8:** 8 of his Oct 18 file came out of the setup ~12x too big and sideways, fixed offline by
   `tools/knives/repair_knives.luau`. Cause: Studio renames repeated part names across an import (2nd knife's
   `blade_0` = `blade_02`, 5th's `blade_05`, its 2nd part `blade_052`), the setup matched exact names only, and its box

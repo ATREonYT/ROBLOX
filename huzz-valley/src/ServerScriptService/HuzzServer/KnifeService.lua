@@ -2,8 +2,10 @@
 	Catchers hold a knife in their right hand (as in the reference); everyone else wears theirs, always: lobby,
 	runner, waiting (owner: "the catchers run with a knife, and everyone even the runners have a knife mounted on
 	their backs"; Oct 18: "make the knifes please be equipped when you have them, like be shown on the back of the
-	character"; "or even for the katanas you can make it be on the side of the person"). Worn = diagonal across the
-	back, or at the left hip for long slim blades (Shared/KnifeLook.wearOf). It's the knife skin you wear
+	character"; "or even for the katanas you can make it be on the side of the person"). Oct 19: "make the knifes when equipped be worn either on the back of the character or on the side ... based on
+	what knife/sword it is". Worn = long blades diagonal across the back, short knives at the right hip, as the shop
+	table says (Config/CoinShop Wear, Shared/KnifeLook.wearOf); over a cape or long hair, at the hip under big wings
+	(refit when an accessory loads in later). It's the knife skin you wear
 	(Shared/KnifeLook.pick: the one picked in the shop, else your first owned knife, else the default knife).
 	ONE knife per body: KnifeService.give (hand) and giveBack (worn) each remove the other first, so drawing it moves
 	it from the back to the hand and the round's end puts it back. It's a model welded on by the server (everyone
@@ -485,32 +487,90 @@ local function attached(model, character, mountName)
 	return p0 ~= nil and p0.Parent == character
 end
 
--- Back or Side for this knife: set on the model or the shop item (Wear), else by its shape (Shared/KnifeLook).
+-- Back or Side for this knife: the shop table's Wear (Config/CoinShop, the owner's to change), else the model's Wear
+-- attribute, else by its length (Shared/KnifeLook.wearOf).
 local function wearOf(model, skin, shape)
-	return KnifeLook.wearOf(model:GetAttribute("Wear") or (skin and skin.Wear), shape or shapeOf(model))
+	return KnifeLook.wearOf(skin and skin.Wear, shape or shapeOf(model), model:GetAttribute("Wear"))
 end
 KnifeService.wearOf = wearOf
 
--- Your knife worn on your body, in your skin: diagonal across the back, or at the left hip for long slim blades
+local function isR6(character)
+	return character:FindFirstChild("UpperTorso") == nil and character:FindFirstChild("Torso") ~= nil
+end
+
+-- The avatar's own accessories (capes, wings, long hair) as boxes in a torso's space, for KnifeLook.backClear.
+local function accessoryBoxes(character, torso)
+	local out = {}
+	for _, a in character:GetChildren() do
+		local h = a:IsA("Accessory") and a:FindFirstChild("Handle")
+		if h and h:IsA("BasePart") then
+			table.insert(out, { cf = torso.CFrame:ToObjectSpace(h.CFrame), size = h.Size })
+		end
+	end
+	return out
+end
+
+-- Puts a worn knife where it goes on this body: its own place (the model's Wear0), over a cape or long hair on the
+-- back, or at the hip when big wings fill the back (Shared/KnifeLook.backClear / wornAt).
+local function fit(character, model, shape)
+	local handle = model:FindFirstChild("Handle", true)
+	local mount = handle and handle:FindFirstChild("BackMount")
+	local base = model:GetAttribute("Wear0")
+	if not (mount and base) then return end
+	local r6 = isR6(character)
+	local back = character:FindFirstChild(KnifeLook.mountPart("Back", r6))
+	local clear = if back and back:IsA("BasePart") then KnifeLook.backClear(accessoryBoxes(character, back), back.Size) else 0
+	local wear = KnifeLook.wornAt(base, clear)
+	local torso = character:FindFirstChild(KnifeLook.mountPart(wear, r6))
+	if not (torso and torso:IsA("BasePart")) then return end
+	model:SetAttribute("WornAt", wear)
+	model:SetAttribute("BackClear", clear)
+	mount.Part0 = torso
+	mount.C0 = KnifeLook.wornC0(wear, torso.Name, torso.Size, shape or shapeOf(model), clear)
+end
+
+-- Fits the worn knife again (an accessory loaded in or came off after the knife went on).
+function KnifeService.refit(character)
+	local model = character and character:FindFirstChild(BACK)
+	if model then fit(character, model) end
+end
+
+-- Once per body: an accessory added or removed later (avatars load in bit by bit) fits the knife again.
+local function watch(character)
+	if character:GetAttribute("HuzzKnifeWatch") then return end
+	character:SetAttribute("HuzzKnifeWatch", true)
+	local function changed(child)
+		if child:IsA("Accessory") then
+			task.defer(KnifeService.refit, character)
+		end
+	end
+	pcall(function() -- (the offline harness has no events)
+		character.ChildAdded:Connect(changed)
+		character.ChildRemoved:Connect(changed)
+	end)
+end
+
+-- Your knife worn on your body, in your skin: long blades diagonal across the back, short knives at the right hip
 -- (replaced when the skin changes). Takes a knife out of your hand first: one knife per body.
 function KnifeService.giveBack(character, skin)
 	if not character then return end
 	local old = character:FindFirstChild(BACK)
 	if old and old:GetAttribute("Skin") == skinOf(skin) and attached(old, character, "BackMount") then
 		KnifeService.take(character)
+		fit(character, old)
 		return
 	end
 	if old then old:Destroy() end
 	KnifeService.take(character)
-	local r6 = character:FindFirstChild("UpperTorso") == nil and character:FindFirstChild("Torso") ~= nil
 	local model = template(skin)
 	local shape = shapeOf(model)
 	local wear = wearOf(model, skin, shape)
-	local torso = character:FindFirstChild(KnifeLook.mountPart(wear, r6))
+	local torso = character:FindFirstChild(KnifeLook.mountPart(wear, isR6(character)))
 	local handle = model:FindFirstChild("Handle", true)
 	if not (torso and torso:IsA("BasePart") and handle) then model:Destroy() return end
 	model.Name = BACK
 	model:SetAttribute("Skin", skinOf(skin))
+	model:SetAttribute("Wear0", wear)
 	model:SetAttribute("WornAt", wear)
 	loose(model)
 	for _, d in model:GetDescendants() do
@@ -524,7 +584,9 @@ function KnifeService.giveBack(character, skin)
 	mount.C0 = KnifeLook.wornC0(wear, torso.Name, torso.Size, shape)
 	mount.C1 = gripOf(handle)
 	mount.Parent = handle
+	fit(character, model, shape)
 	model.Parent = character
+	watch(character)
 end
 
 function KnifeService.takeBack(character)

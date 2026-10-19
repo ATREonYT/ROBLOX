@@ -191,7 +191,7 @@ local function syncPlayer(id)
 		h.JumpHeight = 0
 		h.JumpPower = 0
 	end
-	-- Catchers hold a knife (Config.TagMode "Stab"); everyone else wears theirs (back, or the hip for katanas).
+	-- Catchers hold a knife (Config.TagMode "Stab"); everyone else wears theirs (on the back or the hip, per knife: Config/CoinShop Wear).
 	-- One knife per body: give/giveBack each remove the other (KnifeService).
 	local c = p.Character
 	local profile = DataService.get(p)

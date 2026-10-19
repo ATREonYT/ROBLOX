@@ -50,8 +50,9 @@ fine). Owner quotes go in the topic's "Why" part. Keep this core about 20 KB and
   catchers move.
 - **Companions are only girls you win** (the kit's Aiko/Ren/Sora/Hina mock-ups were removed). The equipped girl
   walks behind you on the ground, doesn't collide with you, and dances when you dance. Effects tiny below Legendary.
-- **Knives:** everyone wears one (on the back; long slim blades at the hip, owner Oct 18 "for the katanas ... on the
-  side"); catchers hold theirs in a round. The owner's own 30 knives (Oct 18, `design/knives/`) are the skins
+- **Knives:** everyone wears one, placed by knife (owner Oct 19 "worn either on the back of the character or on the
+  side ... based on what knife/sword it is"): long blades across the back, short knives at the right hip, per knife
+  in `Config/CoinShop` `Wear`; catchers hold theirs in a round. The owner's own 30 knives (Oct 18, `design/knives/`) are the skins
   ([knives.md](docs/notes/knives.md)): calm effects by rarity, "dont make it overly crazy". Huss Valley's knives (on
   the back at the belt, slash with no wind-up, catch = red fill, no sparks or shake): `docs/knife-study.md`.
 - **Aura** = Huss Valley's gems. **Coins** buy looks (the owner picked "Coin cosmetics shop").

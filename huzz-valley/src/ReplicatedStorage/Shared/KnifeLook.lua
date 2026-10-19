@@ -19,16 +19,17 @@
 	Particles use Roblox's stand-in pictures until the owner uploads ours (Shared/FxTexture).
 
 	Where it sits (owner, Oct 18: "make the knifes please be equipped when you have them, like be shown on the back of
-	the character"; then "or even for the katanas you can make it be on the side of the person"):
+	the character"; Oct 19: "make the knifes when equipped be worn either on the back of the character or on the side.
+	This is very important, and make the location based on what knife/sword it is"):
 	  in hand (a catcher in a round): the Grip attachment on the hand's grip, blade down and about 30 degrees forward;
-	  on the back (most knives): diagonal across the upper back like a sword, handle up over the right shoulder, the
-	    blade down to the left hip, flat side against the back, a little off the body so it never sinks in;
-	  at the side (long slim blades, katana style): on the left hip, handle forward by the waist, the blade sloping
-	    down and back like a sheathed sword, flat side out, edge up.
-	Which one (KnifeLook.wearOf): the model's "Wear" attribute or the shop item's Wear field ("Back" / "Side") when
-	set, else measured from the model itself (KnifeLook.shape): Side when it's at least SIDE.MinStuds long and its
-	blade at least SIDE.Slender times longer than wide. Of the owner's 30 only Celestial Edge (SpinKnife) is Side;
-	new models (the Game Pass knives) are sorted by the same rule, with no list to keep up.
+	  on the back (long blades: swords, katanas, his reapers and scythe): diagonal across the upper back like a sword
+	    in a back sheath, the handle end up over the right shoulder, the rest down to the left hip, flat side against
+	    the back, a little off the body (and over a cape or long hair) so it never sinks in;
+	  at the side (short knives and daggers): on the right hip at the belt, blade down, flat against the hip, just
+	    behind the hanging arm.
+	Which one (KnifeLook.wearOf): the shop table's Wear field (Config/CoinShop: every knife has one, "Back" or "Side",
+	picked from his .glb's measured length and shape; the owner can change any of them), else the model's "Wear"
+	attribute, else measured from the model itself (KnifeLook.shape): Back when BACK.MinStuds long.
 	The old belt mount (Huss Valley's, docs/knife-study.md) sat low and flat behind the hips: the owner didn't see it.
 ]]
 local KnifeLook = {}
@@ -98,16 +99,24 @@ KnifeLook.AURA = {
 	Twinkles = { texture = "Twinkle", rate = 2.5, life = { 0.9, 1.3 }, size = 0.7, whiten = 0.6 },
 }
 
--- Long slim blades go at the side (katana style), the rest on the back.
-KnifeLook.SIDE = { MinStuds = 3.0, Slender = 5.5 }
+-- Long blades go on the back, short knives at the hip (KnifeLook.wearOf, for a knife the shop table doesn't name):
+-- MinStuds or more pommel to tip = Back. His knives sit 1.2 to 3.4 studs in the game and 3.0 is where his swords
+-- start (measured, tools/knives/wear_table.luau: Blood Moon Tanto 2.98 is the longest dagger, Shadow Cleaver 3.08 the
+-- shortest long blade). PoleShare: a long knife with that share of its length or more below the grip is a
+-- two-handed pole (his reapers and scythe, gripped mid-pole), worn head up (KnifeLook.backC0).
+KnifeLook.BACK = { MinStuds = 3.0, PoleShare = 0.45 }
 local DANGLES = { "tassel", "chain", "cloth", "rope", "charm" } -- hanging bits: not part of pommel to tip
 
 -- A knife's size from its parts, each { name, cf (in the Handle's space: +Y to the tip, X thin, Z the blade's
 -- width), size }: length pommel to tip, the blade's length and width (parts named "...blade..."), how far it
 -- reaches either way along its thin side (xMin, xMax: a guard sticks out further than the blade) and its widest
--- (width, along Z). Pure.
+-- (width, along Z). front: how far it reaches forward when hung at the hip (KnifeLook.sideC0), each way round, from
+-- its real corners (a curved blade's widest bit and its pommel aren't at the same height). Pure.
 function KnifeLook.shape(parts: { { name: string, cf: CFrame, size: Vector3 } })
 	local lo, hi = math.huge, -math.huge
+	local tilt = math.rad(KnifeLook.SIDE_TILT)
+	local ts, tc = math.sin(tilt), math.cos(tilt)
+	local fPlus, fMinus = math.huge, math.huge
 	local blo, bhi, wlo, whi = math.huge, -math.huge, math.huge, -math.huge
 	local xlo, xhi, zlo, zhi = math.huge, -math.huge, math.huge, -math.huge
 	for _, p in parts do
@@ -115,6 +124,15 @@ function KnifeLook.shape(parts: { { name: string, cf: CFrame, size: Vector3 } })
 		local dangle = false
 		for _, d in DANGLES do
 			if string.find(n, d, 1, true) then dangle = true end
+		end
+		if n ~= "handle" then -- (front counts the hanging bits too: a kunai's ring and tassel hang by the hip)
+			local r, h = p.cf, p.size / 2
+			for _, k in { Vector3.new(1, 1, 1), Vector3.new(1, 1, -1), Vector3.new(1, -1, 1), Vector3.new(1, -1, -1) } do
+				for _, sgn in { 1, -1 } do
+					local q = r * (Vector3.new(h.X * k.X, h.Y * k.Y, h.Z * k.Z) * sgn)
+					fPlus, fMinus = math.min(fPlus, ts * q.Y - tc * q.Z), math.min(fMinus, ts * q.Y + tc * q.Z)
+				end
+			end
 		end
 		if not dangle and n ~= "handle" then
 			-- the part's box as seen along the Handle's axes
@@ -133,7 +151,8 @@ function KnifeLook.shape(parts: { { name: string, cf: CFrame, size: Vector3 } })
 		end
 	end
 	if hi < lo then return { length = 0, bladeLength = 0, bladeWidth = 0, xMin = 0, xMax = 0, width = 0 } end
-	local out = { length = hi - lo, bladeLength = 0, bladeWidth = 0, xMin = xlo, xMax = xhi, zMin = zlo, zMax = zhi, width = zhi - zlo }
+	local out = { length = hi - lo, bladeLength = 0, bladeWidth = 0, xMin = xlo, xMax = xhi, zMin = zlo, zMax = zhi, width = zhi - zlo,
+		yMin = lo, yMax = hi, front = { fPlus, fMinus } }
 	if bhi >= blo then out.bladeLength, out.bladeWidth = bhi - blo, whi - wlo end
 	return out
 end
@@ -151,12 +170,19 @@ function KnifeLook.sane(shape, studs: number?, wide: number?): boolean
 	return math.abs(shape.length - studs) <= 0.3 * studs
 end
 
--- "Back" or "Side": what's set (the model's Wear attribute, else the shop item's Wear), else by its shape.
-function KnifeLook.wearOf(set: string?, shape): string
+-- True for a two-handed pole: long, and gripped mid-pole (his reapers and scythe).
+function KnifeLook.twoHanded(shape): boolean
+	return shape ~= nil and shape.yMin ~= nil and shape.length >= KnifeLook.BACK.MinStuds
+		and -shape.yMin >= KnifeLook.BACK.PoleShare * shape.length
+end
+
+-- "Back" or "Side". set: the shop table's Wear (Config/CoinShop, one per knife: the owner's to change), else the
+-- model's Wear attribute; with neither, measured: long (BACK.MinStuds) = Back, else Side.
+function KnifeLook.wearOf(set: string?, shape, attr: string?): string
 	if set == "Back" or set == "Side" then return set end
-	if not shape or shape.bladeWidth <= 0 then return "Back" end
-	local slim = shape.bladeLength / shape.bladeWidth
-	return if shape.length >= KnifeLook.SIDE.MinStuds and slim >= KnifeLook.SIDE.Slender then "Side" else "Back"
+	if attr == "Back" or attr == "Side" then return attr end
+	if not shape or shape.length <= 0 then return "Back" end
+	return if shape.length >= KnifeLook.BACK.MinStuds then "Back" else "Side"
 end
 
 -- The body part each place hangs from: R15 UpperTorso (back) / LowerTorso (side), R6 Torso for both.
@@ -165,45 +191,87 @@ function KnifeLook.mountPart(wear: string, r6: boolean): string
 	return if wear == "Side" then "LowerTorso" else "UpperTorso"
 end
 
--- On the back, in the torso's space (+X right, +Y up, +Z the back): the grip high on the right shoulder blade, the
--- blade pointing down-left BACK_TILT degrees off straight down, its thin side facing back (flat against the back),
--- just off the back: GAP studs past the knife's thickest bit on that side (shape.xMin: a guard sticks out more than
--- the blade; 0.22 for a knife we can't measure). The handle (0.4 to 0.6 studs past the grip) ends over the right
--- shoulder, beside the head. Blocky R15 (UpperTorso 2 x 1.6 x 1) and R6 (Torso 2 x 2 x 1) with all of the owner's
--- knives: tests/KnifeWear.spec.luau checks no part goes into the head, torso, arms or legs, and none floats.
+-- Capes, wings and long hair (the avatar's own accessories): how far behind the back they reach, so a knife on the
+-- back goes over them, never through. boxes: each accessory's Handle { cf, size } in the back mount's torso space
+-- (+Z the back). Only what hangs down over the back counts (inside the torso's width, below the shoulder line: short
+-- hair and hats don't push it out). More than CLEAR.Max (big wings): the knife goes to the hip instead (KnifeLook.wornAt), where wings
+-- don't reach, rather than floating far off the back.
+KnifeLook.CLEAR = { Max = 0.9 }
+function KnifeLook.backClear(boxes: { { cf: CFrame, size: Vector3 } }?, torsoSize: Vector3): number
+	local most = 0
+	for _, b in boxes or {} do
+		local r, h = b.cf, b.size / 2
+		local ex = math.abs(r.RightVector.X) * h.X + math.abs(r.UpVector.X) * h.Y + math.abs(r.LookVector.X) * h.Z
+		local ey = math.abs(r.RightVector.Y) * h.X + math.abs(r.UpVector.Y) * h.Y + math.abs(r.LookVector.Y) * h.Z
+		local ez = math.abs(r.RightVector.Z) * h.X + math.abs(r.UpVector.Z) * h.Y + math.abs(r.LookVector.Z) * h.Z
+		local c = r.Position
+		local overX = c.X - ex < torsoSize.X / 2 and c.X + ex > -torsoSize.X / 2
+		local overY = c.Y - ey < torsoSize.Y / 2 - 0.1 and c.Y + ey > -torsoSize.Y / 2
+		if overX and overY then most = math.max(most, c.Z + ez - torsoSize.Z / 2) end -- (overY: hangs below the shoulders)
+	end
+	return most
+end
+-- Where the knife really goes: its own place, unless big wings fill the back (then the hip).
+function KnifeLook.wornAt(wear: string, clear: number?): string
+	if wear == "Back" and (clear or 0) > KnifeLook.CLEAR.Max then return "Side" end
+	return wear
+end
+
+-- On the back (long blades), in the torso's space (+X right, +Y up, +Z the back), like a sword in a back sheath:
+-- the grip high on the right shoulder blade, the handle end up over the right shoulder, the rest down to the left
+-- hip BACK_TILT degrees off straight down, its thin side facing back (flat against the back), just off the back:
+-- GAP studs past the knife's thickest bit on that side (shape.xMin: a guard sticks out more than the blade; 0.22 for
+-- a knife we can't measure), plus clear (a cape or long hair: KnifeLook.backClear). A sword's blade goes down-left;
+-- a two-handed pole (his reapers and scythe, gripped near the head) is turned round, so its head is the end up over
+-- the shoulder and the pole runs down-left. Blocky R15 (UpperTorso 2 x 1.6 x 1) and R6 (Torso 2 x 2 x 1) with all
+-- of the owner's knives: tests/KnifeWear.spec.luau checks no part goes into the head, torso, arms or legs, and none
+-- floats.
 KnifeLook.BACK_TILT = 40
 KnifeLook.GAP = 0.05
 local function off(shape, side: number, default: number): number
 	if not shape then return default end
 	return math.max(0.04, side) + KnifeLook.GAP
 end
-function KnifeLook.backC0(torsoName: string, torsoSize: Vector3, shape: any?): CFrame
+function KnifeLook.backC0(torsoName: string, torsoSize: Vector3, shape: any?, clear: number?): CFrame
 	local a = math.rad(KnifeLook.BACK_TILT)
-	local tip = Vector3.new(-math.sin(a), -math.cos(a), 0)
-	-- a blade wider on one side (a cleaver) keeps that side down-right, away from the head: knife +Z goes down-right,
-	-- so a knife that reaches further to -Z is turned round (its other flat faces out)
-	local flip = shape ~= nil and shape.zMin ~= nil and -shape.zMin > shape.zMax + 0.05
-	local out = if flip then off(shape, shape.xMax, 0.22) else off(shape, shape and -shape.xMin or 0, 0.22) -- (the side facing the back)
-	local at = Vector3.new(0.28 * torsoSize.X, torsoSize.Y / 2 - 0.25, torsoSize.Z / 2 + out)
-	return CFrame.fromMatrix(at, Vector3.new(0, 0, if flip then -1 else 1), tip)
+	local pole = KnifeLook.twoHanded(shape)
+	local tip = if pole then Vector3.new(math.sin(a), math.cos(a), 0) else Vector3.new(-math.sin(a), -math.cos(a), 0)
+	-- a blade wider on one side (a cleaver, a scythe's hook) keeps that side down-right, away from the head: knife +Z
+	-- goes down-right, so a knife that reaches further to -Z is turned round (its other flat faces out)
+	local wideNeg = shape ~= nil and shape.zMin ~= nil and -shape.zMin > shape.zMax + 0.05
+	local sx = (if wideNeg then -1 else 1) * (if pole then -1 else 1)
+	local out = if sx < 0 then off(shape, shape and shape.xMax or 0, 0.22) else off(shape, shape and -shape.xMin or 0, 0.22) -- (the side facing the back)
+	local at = Vector3.new(0.28 * torsoSize.X, torsoSize.Y / 2 - 0.25, torsoSize.Z / 2 + out + (clear or 0))
+	if pole then -- (the pole's middle on the back, a little right: the head over the right shoulder, the pole clear of the head)
+		at = Vector3.new(0.2, 0, at.Z) - tip * ((shape.yMin + shape.yMax) / 2)
+	end
+	return CFrame.fromMatrix(at, Vector3.new(0, 0, sx), tip)
 end
 
--- At the side (R15 LowerTorso, R6 Torso), like a sheathed sword: on the left hip just outside the leg, the grip in
--- front of the hip, the blade sloping SIDE_TILT degrees down toward the back, thin side out (flat side out), edge up.
-KnifeLook.SIDE_TILT = 28
+-- At the side (short knives and daggers; R15 LowerTorso, R6 Torso), like a dagger in a belt sheath: on the right
+-- hip at the belt, blade down and SIDE_TILT degrees back, flat side against the hip, just off it (GAP past its
+-- thickest bit). The hanging right arm covers the side of the hip, so the knife sits just behind it (its front edge
+-- GAP behind the arm's back face, the narrow side forward): seen from the side, from behind and in the run.
+KnifeLook.SIDE_TILT = 15
 function KnifeLook.sideC0(torsoName: string, torsoSize: Vector3, shape: any?): CFrame
 	local b = math.rad(KnifeLook.SIDE_TILT)
-	local tip = Vector3.new(0, -math.sin(b), math.cos(b))
-	local y = if torsoName == "Torso" then -torsoSize.Y / 2 - 0.25 else -0.45 -- (R6: one torso, so down to the hip)
-	local out = off(shape, shape and shape.xMax or 0, 0.3) -- (knife +X faces the leg)
-	local at = Vector3.new(-(torsoSize.X / 2 + out), y, -0.6)
-	return CFrame.fromMatrix(at, Vector3.new(-1, 0, 0), tip)
+	local s, c = math.sin(b), math.cos(b)
+	local tip = Vector3.new(0, -c, s)
+	-- how far forward of the grip it reaches (shape.front, both ways round: knife +X out = its +Z forward, or +X in =
+	-- its +Z back); it hangs the way that reaches forward least
+	local front = (shape and shape.front) or { -s * 0.5 - c * 0.25, -s * 0.5 - c * 0.25 }
+	local sx = if front[1] >= front[2] then 1 else -1
+	local out = if sx > 0 then off(shape, shape and -shape.xMin or 0, 0.12) else off(shape, shape and shape.xMax or 0, 0.12)
+	local y = if torsoName == "Torso" then -torsoSize.Y / 2 + 0.2 else -0.1 -- (R6: one torso, so down to the belt)
+	local at = Vector3.new(torsoSize.X / 2 + out, y, torsoSize.Z / 2 + KnifeLook.GAP - math.max(front[1], front[2]))
+	return CFrame.fromMatrix(at, Vector3.new(sx, 0, 0), tip)
 end
 
--- Where a worn knife's grip goes on its body part (shape: KnifeLook.shape of the model, optional).
-function KnifeLook.wornC0(wear: string, torsoName: string, torsoSize: Vector3, shape: any?): CFrame
+-- Where a worn knife's grip goes on its body part (shape: KnifeLook.shape of the model, optional; clear: how far
+-- capes and hair reach behind the back, KnifeLook.backClear).
+function KnifeLook.wornC0(wear: string, torsoName: string, torsoSize: Vector3, shape: any?, clear: number?): CFrame
 	if wear == "Side" then return KnifeLook.sideC0(torsoName, torsoSize, shape) end
-	return KnifeLook.backC0(torsoName, torsoSize, shape)
+	return KnifeLook.backC0(torsoName, torsoSize, shape, clear)
 end
 
 -- Which knife you wear (from the save): the one picked in the shop when you own it; never picked but you own knives:

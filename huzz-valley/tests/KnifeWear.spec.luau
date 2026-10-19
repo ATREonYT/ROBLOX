@@ -1,11 +1,16 @@
 -- lune run tests/KnifeWear.spec.luau   (from huzz-valley/)
 -- The knife you wear (owner, Oct 18: "make the knifes please be equipped when you have them, like be shown on the
--- back of the character"; "or even for the katanas you can make it be on the side of the person"):
+-- back of the character"; Oct 19: "make the knifes when equipped be worn either on the back of the character or on
+-- the side. This is very important, and make the location based on what knife/sword it is"):
 --   * which knife: the one picked in the shop, else the first one you own, else the default knife (KnifeLook.pick);
---   * where: diagonal across the back, or at the left hip for long slim blades; the owner's 30 real models
---     (assets/knives/HuzzKnives.rbxm) sorted by their own shape: only Celestial Edge (SpinKnife) at the side;
---   * every one of the 30 on a blocky R15 and R6 body in its rest pose: nothing goes into the head, torso, legs or
---     (on the back) the arms, and it sits close to the body (not floating);
+--   * where: the shop table (Config/CoinShop Wear, one per knife) says Back for long blades (3.0+ studs measured:
+--     swords, katanas, reapers, scythe) and Side for short knives, and every row agrees with the measured rule;
+--     long blades diagonal across the back like a sword in a back sheath (two-handed poles head up), short knives
+--     at the right hip, blade down;
+--   * every one of the 53 (his 30 models in assets/knives/HuzzKnives.rbxm, the 23 pass and Halloween stand-ins cut
+--     from his .glb) on a blocky R15 and R6 body in its rest pose: nothing goes into the head, torso, legs or arms,
+--     its flat lies against the body, and it sits close to it (not floating);
+--   * a cape or long hair on the back: the knife goes over it; big wings: a long blade goes to the hip instead;
 --   * the real HuzzServer/KnifeService on fake bodies: ONE knife per body, worn in the lobby, moved to the hand for a
 --     catcher and back after, a skin change swaps it at once, a body part swapped out gets the knife back, R6 works,
 --     and a model of the wrong size is never used (the plain knife in its colours instead);
@@ -57,27 +62,27 @@ local function partsOf(model)
 	end
 	return out
 end
-local good, broken, side = {}, {}, {}
+local good, broken = {}, {}
 for _, m in folder:GetChildren() do
 	local s = KnifeLook.shape(partsOf(m))
 	if KnifeLook.sane(s, m:GetAttribute("Studs"), m:GetAttribute("Wide")) then
 		good[m.Name] = m
-		if KnifeLook.wearOf(m:GetAttribute("Wear"), s) == "Side" then table.insert(side, m.Name) end
 	else
 		table.insert(broken, m.Name)
 	end
 end
 table.sort(broken)
-table.sort(side)
 print("  models the wrong size (shown as the plain knife until fixed): " .. (if #broken > 0 then table.concat(broken, ", ") else "none"))
 check("all 30 models are the right size (tools/knives/repair_knives.luau fixed 8 on Oct 18)", #folder:GetChildren() == 30 and #broken == 0)
-check("only Celestial Edge goes at the side (got " .. table.concat(side, ", ") .. ")", #side == 1 and side[1] == "SpinKnife")
-check("set Wear wins", KnifeLook.wearOf("Side", { length = 2, bladeLength = 1, bladeWidth = 1 }) == "Side"
-	and KnifeLook.wearOf("Back", { length = 4, bladeLength = 3, bladeWidth = 0.2 }) == "Back")
-check("a long slim katana (3.4 studs, 9 to 1) goes at the side", KnifeLook.wearOf(nil, { length = 3.4, bladeLength = 2.4, bladeWidth = 0.27 }) == "Side")
-check("a long wide cleaver stays on the back", KnifeLook.wearOf(nil, { length = 3.4, bladeLength = 2.2, bladeWidth = 0.7 }) == "Back")
-check("a short slim knife stays on the back", KnifeLook.wearOf(nil, { length = 2.6, bladeLength = 1.7, bladeWidth = 0.08 }) == "Back")
+check("the shop table wins", KnifeLook.wearOf("Side", { length = 3.4, bladeLength = 2.4, bladeWidth = 0.3 }, "Back") == "Side"
+	and KnifeLook.wearOf("Back", { length = 2, bladeLength = 1, bladeWidth = 1 }) == "Back")
+check("then the model's Wear attribute", KnifeLook.wearOf(nil, { length = 2, bladeLength = 1, bladeWidth = 1 }, "Back") == "Back")
+check("measured: a 3.4 stud katana goes on the back", KnifeLook.wearOf(nil, { length = 3.4, bladeLength = 2.4, bladeWidth = 0.27 }) == "Back")
+check("measured: a 2.6 stud dagger goes at the side", KnifeLook.wearOf(nil, { length = 2.6, bladeLength = 1.7, bladeWidth = 0.3 }) == "Side")
 check("no measure = back", KnifeLook.wearOf(nil, nil) == "Back")
+check("two-handed: a long pole gripped mid-pole, not a sword or a dagger",
+	KnifeLook.twoHanded({ length = 3.3, yMin = -1.65, yMax = 1.65 }) and not KnifeLook.twoHanded({ length = 3.3, yMin = -0.5, yMax = 2.8 })
+	and not KnifeLook.twoHanded({ length = 2.7, yMin = -1.3, yMax = 1.4 }))
 
 -- the mounts' directions
 for _, body in { { "UpperTorso", Vector3.new(2, 1.6, 1) }, { "Torso", Vector3.new(2, 2, 1) } } do
@@ -87,11 +92,15 @@ for _, body in { { "UpperTorso", Vector3.new(2, 1.6, 1) }, { "Torso", Vector3.ne
 	check(body[1] .. " back: blade points down and left, 30 to 50 degrees off straight down", tip.X < 0 and off >= 30 and off <= 50)
 	check(body[1] .. " back: the flat lies against the back", thin.Z > 0.95)
 	check(body[1] .. " back: grip on the right, behind the body, high", c0.Position.X > 0.3 and c0.Position.Z > body[2].Z / 2 + 0.1 and c0.Position.Y > 0)
+	local p = KnifeLook.backC0(body[1], body[2], { length = 3.3, yMin = -1.65, yMax = 1.65, xMin = -0.05, xMax = 0.05, zMin = -0.2, zMax = 0.8 })
+	check(body[1] .. " back, a two-handed pole: head up over the right shoulder, the pole down-left", p.UpVector.Y > 0.6 and p.UpVector.X > 0.5)
+	local hook = -p.LookVector -- (the knife's +Z, its wide side here)
+	check(body[1] .. " back, a two-handed pole: its hook (wide side) down-right, away from the head", hook.X > 0.5 and hook.Y < 0)
 	local s = KnifeLook.sideC0(body[1], body[2])
-	check(body[1] .. " side: grip on the left, outside the leg, in front", s.Position.X < -body[2].X / 2 - 0.2 and s.Position.Z < -0.3)
-	local down = math.deg(math.asin(-s.UpVector.Y))
-	check(body[1] .. " side: blade slopes down toward the back, 15 to 40 degrees", s.UpVector.Z > 0.7 and down >= 15 and down <= 40)
-	check(body[1] .. " side: the flat faces out", s.RightVector.X < -0.95)
+	check(body[1] .. " side: on the right hip, just off it, behind the hanging arm", s.Position.X > body[2].X / 2 and s.Position.X < body[2].X / 2 + 0.3 and s.Position.Z > body[2].Z / 2)
+	local back = math.deg(math.asin(s.UpVector.Z))
+	check(body[1] .. " side: blade down, 5 to 25 degrees back", s.UpVector.Y < -0.9 and back >= 5 and back <= 25)
+	check(body[1] .. " side: the flat lies against the hip", math.abs(s.RightVector.X) > 0.95)
 end
 check("mount parts: R15 back on UpperTorso, side on LowerTorso, R6 on Torso", KnifeLook.mountPart("Back", false) == "UpperTorso"
 	and KnifeLook.mountPart("Side", false) == "LowerTorso" and KnifeLook.mountPart("Side", true) == "Torso")
@@ -122,11 +131,12 @@ local function gap(box, p)
 	return d.Magnitude
 end
 local ARMS = { LeftUpperArm = true, LeftLowerArm = true, LeftHand = true, RightUpperArm = true, RightLowerArm = true, RightHand = true, ["Left Arm"] = true, ["Right Arm"] = true }
-local worst, armTouch = {}, {}
+local worst = {}
 local function wornCheck(kind, rig, r6, key, m)
 	do
 		local s = KnifeLook.shape(partsOf(m))
-		local wear = KnifeLook.wearOf(m:GetAttribute("Wear"), s)
+		local item = CoinShop.get(string.match(key, "^(%w+)"))
+		local wear = KnifeLook.wearOf(item and item.Wear, s, m:GetAttribute("Wear"))
 		local torso = rig.parts[KnifeLook.mountPart(wear, r6)]
 		local h = m:FindFirstChild("Handle")
 		local grip = h:FindFirstChild("Grip")
@@ -136,11 +146,14 @@ local function wornCheck(kind, rig, r6, key, m)
 			if p.name ~= "Handle" then
 				for _, pt in pointsOf(handleCF * p.cf, p.size) do
 					for name, part in rig.parts do
-						if not part.hidden and not (wear == "Side" and ARMS[name]) and inside(part, pt, 0.02) then hits[name] = true end
-						-- (at the side the hanging hand can touch the hilt: a known gap, counted, not failed)
-						if wear == "Side" and ARMS[name] and inside(part, pt, 0.02) then armTouch[`{kind} {key} {name}`] = true end
+						if not part.hidden and inside(part, pt, 0.02) then hits[name] = true end
 					end
 					near = math.min(near, gap(torso, pt))
+					if wear == "Side" then -- (at the hip it hangs beside the hip and the leg: close to the torso or the leg)
+						for _, name in { "UpperTorso", "RightUpperLeg", "RightLowerLeg", "Right Leg" } do
+							if rig.parts[name] then near = math.min(near, gap(rig.parts[name], pt)) end
+						end
+					end
 				end
 			end
 		end
@@ -148,6 +161,8 @@ local function wornCheck(kind, rig, r6, key, m)
 		for name in hits do table.insert(list, name) end
 		table.sort(list)
 		check(`{kind} {wear} {key}: clear of the body` .. (if #list > 0 then " (in " .. table.concat(list, ", ") .. ")" else ""), #list == 0)
+		local flat = torso.CFrame:VectorToObjectSpace(handleCF.RightVector) -- (the knife's thin way)
+		check(`{kind} {wear} {key}: its flat lies against the body`, math.abs(if wear == "Side" then flat.X else flat.Z) > 0.95)
 		check(`{kind} {wear} {key}: close to the body ({string.format("%.2f", near)} studs)`, near <= 0.35)
 		worst[kind] = math.max(worst[kind] or 0, near)
 	end
@@ -158,12 +173,6 @@ for _, kind in { "R15", "R6" } do
 	for key, m in good do wornCheck(kind, BODIES[kind], kind == "R6", key, m) end
 end
 
-do
-	local list = {}
-	for k in armTouch do table.insert(list, k) end
-	table.sort(list)
-	print("  at the hip, touching a hanging arm at rest: " .. (if #list > 0 then table.concat(list, ", ") else "none"))
-end
 
 -- the real KnifeService on fake bodies
 local game = Instance.new("DataModel")
@@ -225,7 +234,7 @@ do
 	KnifeService.giveBack(c, rusty) -- the lobby
 	local n, k = knives(c)
 	check("lobby: one knife, worn", n == 1 and k.Name == "HuzzBackKnife")
-	check("lobby: on the back, on the UpperTorso", k:GetAttribute("WornAt") == "Back" and mountOf(k).Part0.Name == "UpperTorso")
+	check("lobby: Rusty Shiv (a short knife) at the hip, on the LowerTorso", k:GetAttribute("WornAt") == "Side" and mountOf(k).Part0.Name == "LowerTorso")
 	check("lobby: the owner's model (not ours)", k:FindFirstChild("blade_0", true) ~= nil)
 	check("lobby: Common has no effects on the back", k:FindFirstChildWhichIsA("ParticleEmitter", true) == nil and k:FindFirstChildWhichIsA("PointLight", true) == nil)
 	local first = k
@@ -239,16 +248,16 @@ do
 	check("catcher: has() says so", KnifeService.has(c))
 	KnifeService.giveBack(c, rusty) -- the round ends
 	n, k = knives(c)
-	check("after: one knife, back on the back", n == 1 and k.Name == "HuzzBackKnife" and not KnifeService.has(c))
+	check("after: one knife, worn again", n == 1 and k.Name == "HuzzBackKnife" and not KnifeService.has(c))
 	KnifeService.giveBack(c, spin) -- picks Celestial Edge in the shop
 	n, k = knives(c)
 	check("skin change: one knife, the new one", n == 1 and k:GetAttribute("Skin") == "SpinKnife")
-	check("Celestial Edge: at the side, on the LowerTorso", k:GetAttribute("WornAt") == "Side" and mountOf(k).Part0.Name == "LowerTorso")
+	check("Celestial Edge (a long blade): on the back, on the UpperTorso", k:GetAttribute("WornAt") == "Back" and mountOf(k).Part0.Name == "UpperTorso")
 	check("Legendary: its glow stays on while worn", k:FindFirstChildWhichIsA("PointLight", true) ~= nil)
-	-- the avatar's look swaps the LowerTorso: the knife goes on the new one
-	c.LowerTorso:Destroy()
+	-- the avatar's look swaps the UpperTorso: the knife goes on the new one
+	c.UpperTorso:Destroy()
 	local lt = Instance.new("Part")
-	lt.Name, lt.Size, lt.Parent = "LowerTorso", Vector3.new(2, 0.4, 1), c
+	lt.Name, lt.Size, lt.Parent = "UpperTorso", Vector3.new(2, 1.6, 1), c
 	KnifeService.giveBack(c, spin)
 	n, k = knives(c)
 	check("new body part: the knife is put back on it", n == 1 and mountOf(k).Part0 == lt)
@@ -265,9 +274,9 @@ do
 	KnifeService.giveBack(c, CoinShop.get("AbyssEclipse"))
 	local n, k = knives(c)
 	check("R6: one knife on the Torso's back", n == 1 and k:GetAttribute("WornAt") == "Back" and mountOf(k).Part0.Name == "Torso")
-	KnifeService.giveBack(c, CoinShop.get("SpinKnife"))
+	KnifeService.giveBack(c, CoinShop.get("RustyShiv"))
 	n, k = knives(c)
-	check("R6: Celestial Edge at the side of the Torso", n == 1 and k:GetAttribute("WornAt") == "Side" and mountOf(k).Part0.Name == "Torso")
+	check("R6: Rusty Shiv at the hip of the Torso", n == 1 and k:GetAttribute("WornAt") == "Side" and mountOf(k).Part0.Name == "Torso")
 	KnifeService.give(c, nil)
 	n, k = knives(c)
 	check("R6: the default knife in the right arm", n == 1 and k.Name == "HuzzKnife" and mountOf(k).Part0.Name == "Right Arm")
@@ -303,11 +312,98 @@ do
 	end
 end
 
--- The 5 Game Pass stand-ins (Shared/KnifeShapes, what a pass owner wears until the owner imports his models) on both
--- bodies too (knife check, Oct 19: only his 30 were checked): clear of the body and close to it.
-for _, key in { "CrimsonRequiem", "HollowEclipse", "CelestialSeraph", "DragonsMaw", "FrostboundOath" } do
-	local m = KnifeService.template(CoinShop.get(key))
-	for _, kind in { "R15", "R6" } do wornCheck(kind, BODIES[kind], kind == "R6", key .. " (stand-in)", m) end
+-- The 5 Game Pass and 18 Halloween stand-ins (Shared/KnifeShapes, cut from his .glb: what you wear until the owner
+-- imports his models) on both bodies too: clear of the body and close to it.
+for _, item in CoinShop.Items do
+	if item.Slot == "Knife" and item.Model and string.find(item.Model, "/", 1, true) then
+		local m = KnifeService.template(item)
+		for _, kind in { "R15", "R6" } do wornCheck(kind, BODIES[kind], kind == "R6", item.Key .. " (stand-in)", m) end
+	end
+end
+
+-- The shop table (owner, Oct 19 "make the location based on what knife/sword it is"): every knife has a Wear, and it
+-- agrees with what his .glb measures (3.0+ studs = Back): his swords, katanas, reapers and scythe on the back, his
+-- knives, daggers, kunai, cleavers, sickles, karambits and shurikens at the hip.
+do
+	local wrong, backs, sides = {}, 0, 0
+	for _, item in CoinShop.Items do
+		if item.Slot == "Knife" then
+			local m = KnifeService.template(item)
+			local s = KnifeService.shapeOf(m)
+			if item.Wear == "Back" then backs += 1 elseif item.Wear == "Side" then sides += 1 end
+			if item.Wear ~= KnifeLook.wearOf(nil, s) then table.insert(wrong, string.format("%s %s %.2f", item.Key, tostring(item.Wear), s.length)) end
+		end
+	end
+	check(`every knife's Wear matches its measured length ({backs} back, {sides} side)` .. (if #wrong > 0 then ": " .. table.concat(wrong, ", ") else ""),
+		#wrong == 0 and backs + sides == 53)
+	for _, key in { "PumpkinKingKatana", "CovenKatana", "SugarRushKatana", "JacksReaper", "GrandWitchScythe", "CandyReaper", "SolarReaper",
+		"AbyssEclipse", "CrimsonRequiem", "CelestialSeraph" } do
+		check(key .. ": on the back", CoinShop.get(key).Wear == "Back")
+	end
+	for _, key in { "RustyShiv", "ScoutDagger", "BloodMoonTanto", "JadeKunai", "HexShuriken", "ThornKarambit", "HarvestSickle", "GumdropDagger" } do
+		check(key .. ": at the hip", CoinShop.get(key).Wear == "Side")
+	end
+	local pole = KnifeService.shapeOf(KnifeService.template(CoinShop.get("GrandWitchScythe")))
+	check("Grand Witch Scythe: two-handed (worn head up)", KnifeLook.twoHanded(pole))
+end
+
+-- A cape, long hair or wings on the back (the avatar's accessories): the knife goes over a cape and hair, never
+-- through; big wings send a long blade to the hip.
+do
+	local T = Vector3.new(2, 1.6, 1)
+	local cape = { cf = CFrame.new(0, -0.3, 0.6), size = Vector3.new(1.9, 2.6, 0.2) }
+	local hair = { cf = CFrame.new(0, 1.2, 0.35), size = Vector3.new(1.4, 1.6, 0.6) } -- (from the head down over the shoulders)
+	local hat = { cf = CFrame.new(0, 1.9, 0.1), size = Vector3.new(1.4, 0.6, 1.4) }
+	local wings = { cf = CFrame.new(0, 0.3, 1.1), size = Vector3.new(4, 3, 1.2) }
+	check("backClear: nothing = 0", KnifeLook.backClear({}, T) == 0)
+	check(string.format("backClear: a cape = how far it hangs off the back (%.2f)", KnifeLook.backClear({ cape }, T)), math.abs(KnifeLook.backClear({ cape }, T) - 0.2) < 1e-4)
+	check("backClear: long hair counts, a hat doesn't", KnifeLook.backClear({ hair }, T) > 0.1 and KnifeLook.backClear({ hat }, T) == 0)
+	check("wornAt: a cape keeps it on the back, wings send it to the hip", KnifeLook.wornAt("Back", 0.2) == "Back" and KnifeLook.wornAt("Back", KnifeLook.backClear({ wings }, T)) == "Side"
+		and KnifeLook.wornAt("Side", 2) == "Side")
+	local plain, over = KnifeLook.backC0("UpperTorso", T, nil), KnifeLook.backC0("UpperTorso", T, nil, 0.2)
+	check("over a cape: the same place, 0.2 further out", math.abs(over.Position.Z - plain.Position.Z - 0.2) < 1e-4 and math.abs(over.Position.Y - plain.Position.Y) < 1e-4)
+	-- the real KnifeService: a cape on the body pushes the worn sword out; added later, refit does it
+	local c = body(false)
+	local function accessory(box)
+		local a = Instance.new("Accessory")
+		local h = Instance.new("Part")
+		h.Name, h.Size = "Handle", box.size
+		h.CFrame = c.UpperTorso.CFrame * box.cf
+		h.Parent = a
+		a.Parent = c
+		return a
+	end
+	KnifeService.giveBack(c, CoinShop.get("AbyssEclipse"))
+	local _, k = knives(c)
+	local z0 = mountOf(k).C0.Position.Z
+	local a = accessory(cape)
+	KnifeService.refit(c)
+	check(string.format("KnifeService: a cape put on later pushes the sword out over it (%.2f -> %.2f)", z0, mountOf(k).C0.Position.Z),
+		math.abs(mountOf(k).C0.Position.Z - z0 - 0.2) < 1e-3 and k:GetAttribute("WornAt") == "Back")
+	a:Destroy()
+	accessory(wings)
+	KnifeService.refit(c)
+	check("KnifeService: with big wings the sword goes to the hip", k:GetAttribute("WornAt") == "Side" and mountOf(k).Part0.Name == "LowerTorso")
+	-- and at the hip, a long blade is still clear of the body (the wings case)
+	local m = KnifeService.template(CoinShop.get("AbyssEclipse"))
+	local s = KnifeService.shapeOf(m)
+	for _, kind in { "R15", "R6" } do
+		local rig = BODIES[kind]
+		local torso = rig.parts[KnifeLook.mountPart("Side", kind == "R6")]
+		local grip = m:FindFirstChild("Handle"):FindFirstChild("Grip")
+		local handleCF = torso.CFrame * KnifeLook.sideC0(torso.Name, torso.Size, s) * (if grip then grip.CFrame else CFrame.identity):Inverse()
+		local hit = false
+		for _, p in partsOf(m) do
+			if p.name ~= "Handle" then
+				for _, pt in pointsOf(handleCF * p.cf, p.size) do
+					for _, part in rig.parts do
+						if not part.hidden and inside(part, pt, 0.02) then hit = true end
+					end
+				end
+			end
+		end
+		check(kind .. " wings: the long blade at the hip is clear of the body", not hit)
+	end
 end
 
 -- In a catcher's hand (knife check, Oct 19): at the old fixed 150 degrees the 3+ stud knives dipped into the floor in

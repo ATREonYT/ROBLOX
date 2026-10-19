@@ -16,7 +16,7 @@
 	  in the air   flat out, legs long and toes pointed, the belly coming down to the floor as the hop ends;
 	  the slash    the moment the knife reaches the runner (slash(): the catcher's own screen when its hit check finds
 	               them, everyone else when the server's Caught arrives), or at SlashBy if it reaches no one: the arm
-	               sweeps from ahead out to the right in 0.07 s, then settles flat on the floor ahead;
+	               sweeps from ahead out to the right in 0.14 s (DIVE_KEYS), then settles flat on the floor ahead;
 	  landing      at the hop's end (Air: Config/Round.Lunge.Up) the body lands on its belly, flat (88 degrees), the
 	               hips lowered so the chest and legs lie on the floor; it slides with the push;
 	  stunned      lying there dazed until the stun ends (Config/Round.Lunge.StunAfter + Stun = Out), the head rolling
@@ -85,6 +85,53 @@ local function at(u, key, first, last)
 end
 StabMotion.poseAt = at
 
+-- A dive's slash (Oct 19 evening, a fresh critic: at 30 fps the click slash's 0.07 s sweep, started from the arms
+-- overhead, turned the knife hand 113° in one frame): the same sweep, held and settle, but from the reach overhead it
+-- lands at DIVE_SWEEP of the slash (0.14 s; the hand is still out to the right within 0.08 s of the hit) with a smooth ease, so
+-- no arm joint turns more in one frame than a leg does in the run (~65°). Angles as KEYS; the first and last poses
+-- are the dive's REACH and LIE.
+local DIVE_SWEEP = 0.35
+local DIVE_KEYS = {
+	{ at = 0 },
+	{ at = DIVE_SWEEP, ease = "smooth", from = 2 },
+	{ at = DIVE_SWEEP + 0.1, ease = "smooth", from = 3 },
+	{ at = 0.6, ease = "smooth", from = 4 },
+	{ at = 1.0, ease = "smooth" },
+}
+-- The dive's pose of one joint at u (0..1 of the slash) as { x, y, z } degrees, mixed number by number (so the
+-- arm blend below can mix it the same way): first = REACH, last = LIE.
+local function diveAt(u, key, first, last)
+	local function of(i)
+		if i == 1 then return first[key] end
+		if i == #DIVE_KEYS then return last[key] end
+		return KEYS[DIVE_KEYS[i].from][key]
+	end
+	for i = 1, #DIVE_KEYS - 1 do
+		local a, b = DIVE_KEYS[i], DIVE_KEYS[i + 1]
+		if u <= b.at then
+			local s = EASE[b.ease](math.clamp((u - a.at) / (b.at - a.at), 0, 1))
+			local p, q = of(i), of(i + 1)
+			return { p[1] + (q[1] - p[1]) * s, p[2] + (q[2] - p[2]) * s, p[3] + (q[3] - p[3]) * s }
+		end
+	end
+	return last[key]
+end
+StabMotion.diveAt = diveAt
+
+-- An arm joint in a dive: from the animation's own pose toward `deg` ({ x, y, z } degrees, the pose's XYZ angles)
+-- by w, angle by angle. Not CFrame:Lerp: the arms overhead (REACH 168°, LIE 158°) are close to 180° from the run's
+-- swing, and a Lerp there takes the shorter way round, which flips to the other way from one frame to the next as
+-- the run's arm swings (Oct 19: the right arm turned 100° in one frame while getting up from a dive, at 8.30 s in
+-- motion3d/move_smooth_measure.luau). Angle by angle the arm always goes the same way (forward and up).
+local function blendArm(motor, animatedT, deg, w)
+	local c0 = motor.C0.Rotation
+	local ax, ay, az = (c0 * animatedT.Rotation * c0:Inverse()):ToEulerAnglesXYZ()
+	local tx, ty, tz = rad(deg[1]), rad(deg[2]), rad(deg[3])
+	local r = CFrame.Angles(ax + (tx - ax) * w, ay + (ty - ay) * w, az + (tz - az) * w)
+	return CFrame.new(animatedT.Position * (1 - w)) * c0:Inverse() * r * c0
+end
+StabMotion.blendArm = blendArm
+
 -- How much the move owns the joints (the rest is the running animation): in fast, out with the follow-through.
 local function weight(u)
 	if u < 0.06 then
@@ -107,7 +154,7 @@ local STUN_END = (LUNGE.StunAfter or LUNGE.Time or 0.38) + (LUNGE.Stun or 0)
 StabMotion.LEAP = {
 	Gravity = 196.2,
 	In = 0.15, -- the take-off pose takes over from the run this fast (no crouch first; 4 frames at 30 fps, so no pop)
-	ArmIn = 0.06, -- the arms reach ahead this fast
+	ArmIn = 0.16, -- the arms reach ahead this fast, evenly (Oct 19 evening: 0.06 with an ease turned the hand 173° in one frame)
 	SlashBy = 0.14, -- the slash if the knife has reached no one sooner (lands 0.07 s later, before the landing)
 	Rise = 0.45, -- from the floor back to the run
 	Out = math.max(0.5, STUN_END), -- lying on the floor until here (the stun)
@@ -385,13 +432,16 @@ function StabMotion.step(rec, now, animatedArm)
 	end
 	-- the arms' clock: the reach (a lunge before its slash), then the slash from the reach pose
 	local w, first
+	-- (a dive's arms come in evenly over ArmIn and stay in through the slash: a slash that starts before the reach is
+	-- complete carries on from where the arms are, no jump)
+	local armIn = if rec.lunge then math.clamp(t / StabMotion.LEAP.ArmIn, 0, 1) else 0
 	if reaching then
-		w = smooth(math.clamp(t / StabMotion.LEAP.ArmIn, 0, 1))
+		w = armIn
 	elseif u >= 0 and u <= 1 then
 		w = weight(u)
 		if rec.lunge then
 			first = StabMotion.LEAP.REACH
-			w = 1 -- (already reaching, and settling into the arms lying ahead: no fade in or out)
+			w = armIn -- (already reaching, and settling into the arms lying ahead: no fade out)
 		end
 	elseif lying then
 		w = StabMotion.leapWeight(t) -- (back to the run's arms as the body gets up)
@@ -399,10 +449,15 @@ function StabMotion.step(rec, now, animatedArm)
 		w = 0
 	end
 	local last = if rec.lunge then StabMotion.LEAP.LIE else nil
+	-- a dive's pose as { x, y, z } degrees (its arms blend angle by angle: blendArm)
+	local function diveDeg(key)
+		if reaching then return StabMotion.LEAP.REACH[key] end
+		if lying then return StabMotion.LEAP.LIE[key] end
+		return diveAt(u, key, StabMotion.LEAP.REACH, StabMotion.LEAP.LIE)
+	end
 	local function pose(key)
 		if w <= 0 then return CFrame.identity end
-		if reaching then return angles(StabMotion.LEAP.REACH[key]) end
-		if lying then return angles(StabMotion.LEAP.LIE[key]) end
+		if rec.lunge then return angles(diveDeg(key)) end
 		return at(u, key, first, last)
 	end
 	-- the leap's body (root joint and legs) first, then the waist and head on top
@@ -428,7 +483,9 @@ function StabMotion.step(rec, now, animatedArm)
 		if w <= 0 then return end
 		for joint, key in keys do
 			local motor = side and side[joint]
-			if motor then
+			if motor and rec.lunge then
+				write(rec, motor, blendArm(motor, animated(rec, motor), diveDeg(key), w))
+			elseif motor then
 				local p = pose(key)
 				if key == "shoulder" then
 					p = level * p

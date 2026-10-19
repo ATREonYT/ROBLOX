@@ -55,10 +55,13 @@ the Secret cutscene: [secret-cutscene.md](secret-cutscene.md). How top VFX are b
   catcher or the Practice Bot inside `Far` 30 studs makes the screen's edges glow red (215, 24, 48), full at `Near` 8.
 - Calm and kid-safe: one soft swell per beat (0.12 s up, eases back), `Rate` 0.75 to 1 beat a second (never more than
   one swell a second), the steady glow `Base` 0.22 + `Pulse` 0.33 at full strength, only the outer `Edge` 0.2 of the
-  screen (0.12 at the sides); the level eases in and out, so a catcher appearing doesn't jump it.
+  screen (0.12 at the sides); the level eases in and out, so a catcher appearing doesn't jump it. The beat clock
+  (`Heartbeat.clock` / `tick`) never beats twice within `MinGap` 1 s and keeps counting while the glow is hidden (Oct
+  19 evening, a fresh critic: it used to reset under level 0.01, so a catcher at the edge of `Far` beat on every rise).
 - Built at runtime in PlayerGui (`HuzzHeartbeat`, DisplayOrder -1 under the HUD: a screen effect, nothing to edit in
   Studio). One heartbeat sound per beat, louder when closer ([sounds.md](sounds.md)).
-- Spec `tests/Heartbeat.spec` (level, rate ≤ 1/s, swells ≤ 1/s, never solid); film `docs/previews/heartbeat.mp4`
+- Spec `tests/Heartbeat.spec` (level, rate ≤ 1/s, swells ≤ 1/s, never solid, beats ≥ 1 s apart with the level
+  flickering at the hide line); film `docs/previews/heartbeat.mp4`
   (`tools/preview/heartbeat_film.luau` + `heartbeat_film.py`: the module's own maths, a catcher walking in and away).
 
 ## The girls' effects (`AuraLook.girl` → `Gameplay/AuraFX`)

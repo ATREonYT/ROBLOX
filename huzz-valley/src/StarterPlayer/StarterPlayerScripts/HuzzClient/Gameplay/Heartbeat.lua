@@ -8,7 +8,8 @@
 	or a full-screen colour; the middle of the screen stays clear. The sound (Sfx "heartbeat") plays once a beat,
 	louder the closer they are. Built here at runtime in PlayerGui (a screen effect, like the round's centre words in
 	Gameplay/RoundHud: nothing to edit in Studio), four edge frames with a red-to-clear gradient.
-	Heartbeat.level / Heartbeat.rate / Heartbeat.glow are pure maths (tests/Heartbeat.spec, the preview).
+	Heartbeat.level / rate / glow and the beat clock (clock / tick: never two beats within MinGap 1 s) are pure maths
+	(tests/Heartbeat.spec, the preview).
 ]]
 local Heartbeat = {}
 
@@ -44,6 +45,30 @@ function Heartbeat.glow(k: number, age: number): number
 		swell = math.exp(-(age - 0.12) / 0.18)
 	end
 	return k * (Heartbeat.Base + Heartbeat.Pulse * swell)
+end
+
+-- The beat clock (pure: tests/Heartbeat.spec runs it). Never two beats closer than MinGap seconds, whatever the
+-- level does. (Oct 19 evening, a fresh critic: the glow hid below 0.01 and the clock reset, so each time it rose back
+-- over 0.01 it beat at once: a catcher hovering at the edge of Far made beats faster than one a second.) The clock
+-- keeps counting while the glow is hidden, so coming back waits out the gap.
+Heartbeat.MinGap = 1
+function Heartbeat.clock()
+	return { since = math.huge, wait = 0, age = math.huge }
+end
+-- Advances the clock dt seconds at level k; true when a beat starts this frame (then c.age is 0: the glow's age).
+function Heartbeat.tick(c, dt: number, k: number): boolean
+	c.since += dt
+	c.age += dt
+	c.wait -= dt
+	if k < 0.01 then
+		return false
+	end
+	if c.wait <= 0 and c.since >= Heartbeat.MinGap then
+		c.since, c.age = 0, 0
+		c.wait = 1 / Heartbeat.rate(k)
+		return true
+	end
+	return false
 end
 
 function Heartbeat.start()
@@ -120,24 +145,21 @@ function Heartbeat.start()
 		return best
 	end
 
-	local k, beatAge, nextBeat = 0, 0, 0
+	local k = 0
+	local beat = Heartbeat.clock()
 	RunService.RenderStepped:Connect(function(dt)
 		local stage = round:GetAttribute("Stage")
 		local on = player:GetAttribute("HuzzRole") == "Runner" and player:GetAttribute("HuzzStatus") == "Active"
 			and (stage == "Running" or stage == "HeroRun") and player:GetAttribute("HuzzCinematic") ~= true
 		local target = if on then Heartbeat.level(nearest()) else 0
 		k += (target - k) * (1 - math.exp(-dt * 5)) -- (eases in and out: no jumps when a catcher appears)
+		local beats = Heartbeat.tick(beat, dt, k) -- (counts on while hidden: never two beats within MinGap)
 		if k < 0.01 then
 			gui.Enabled = false
-			beatAge, nextBeat = 0, 0
 			return
 		end
 		gui.Enabled = true
-		beatAge += dt
-		nextBeat -= dt
-		if nextBeat <= 0 then
-			beatAge = 0
-			nextBeat = 1 / Heartbeat.rate(k)
+		if beats then
 			Sfx.play("heartbeat", { volume = 0.35 + 0.65 * k })
 			if not Sfx.has("heartbeat") then
 				-- (the stand-in is one thump: the second, softer one makes the "lub-dub")
@@ -146,7 +168,7 @@ function Heartbeat.start()
 				end)
 			end
 		end
-		paint(Heartbeat.glow(k, beatAge))
+		paint(Heartbeat.glow(k, beat.age))
 	end)
 end
 

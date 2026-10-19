@@ -139,9 +139,10 @@ do
 	check(tipLaunch > 25, "the body tips into the dive from take-off")
 	check(launch.rfoot.Z > 1.0 and launch.lfoot.Z > 0.3, "the legs push off and stretch out behind")
 	-- both arms reach ahead, the knife leading, until it reaches someone
-	local flying = leapPose(0.1)
-	print(string.format("  in the air (0.10 s): hand ahead %.2f, up %.2f; free hand ahead %.2f; blade forward %.2f",
-		-flying.hand.Z, flying.hand.Y, -flying.offHand.Z, -flying.blade.Z))
+	local flyAt = math.min(L.ArmIn, L.SlashBy) - 0.01 -- (the reach takes ArmIn: Oct 19 evening, evenly, so no arm turns faster than a running leg)
+	local flying = leapPose(flyAt)
+	print(string.format("  in the air (%.2f s): hand ahead %.2f, up %.2f, side %.2f; free hand ahead %.2f; blade forward %.2f",
+		flyAt, -flying.hand.Z, flying.hand.Y, flying.hand.X, -flying.offHand.Z, -flying.blade.Z))
 	check(-flying.hand.Z > 1.2 and math.abs(flying.hand.X) < 1.2, "the knife hand leads, ahead of the chest")
 	check(-flying.offHand.Z > 1.0, "the free arm reaches ahead too (a dive, not a lunge)")
 	check(-flying.blade.Z > 0.6, "the blade points ahead (it leads the dive)")
@@ -219,6 +220,49 @@ do
 		if (m.Transform.Position - Vector3.new(0, 0.01, 0)).Magnitude > 1e-4 then clean = false end
 	end
 	check(clean, "after the dive, every joint (legs and root too) is the animation's again")
+	-- the arms over a running animation at 30 fps (Oct 19 evening, a fresh critic: the hand turned 173° in one frame
+	-- at take-off, 113° at the slash and 100° while getting up, a CFrame Lerp near 180° flipping the long way round):
+	-- with the run's arms swinging ±60° under it, no arm part turns more in a frame than a leg does in the run (~67°)
+	local function armWorst(hitAt, phase)
+		StabMotion.play(rec, 0, true)
+		local worst, where, prev = 0, "", nil
+		for f = 0, math.ceil((L.Up + 0.1) * 30) do
+			local t = f / 30
+			for _, m in rig.motors do m.Transform = CFrame.identity end
+			for _, m in rig.motors do -- (the run's arm swing, opposite arms)
+				if m.Name == "RightShoulder" or m.Name == "LeftShoulder" then
+					local s = if m.Name == "RightShoulder" then 1 else -1
+					m.Transform = CarryMath.inJoint(m, CFrame.Angles(math.rad(60 * s * math.sin(2 * math.pi * 1.4 * t + phase)), 0, 0))
+				end
+			end
+			if hitAt and t >= hitAt then StabMotion.slash(rec, hitAt) end
+			StabMotion.step(rec, t)
+			Rig.fk(rig)
+			local now = {}
+			for _, n in { "RightUpperArm", "RightLowerArm", "RightHand", "LeftUpperArm", "LeftLowerArm", "LeftHand" } do
+				now[n] = rig.root.CFrame.Rotation:Inverse() * rig.parts[n].CFrame.Rotation
+			end
+			if prev then
+				for n, cf in now do
+					local _, ang = (prev[n]:Inverse() * cf):ToAxisAngle()
+					local deg = math.deg(math.abs(ang)) % 360
+					deg = math.min(deg, 360 - deg)
+					if deg > worst then worst, where = deg, string.format("%s at %.2f s", n, t) end
+				end
+			end
+			prev = now
+		end
+		return worst, where
+	end
+	local armMost, armWhere = 0, ""
+	for _, hit in { false, 0.05 } do
+		for k = 0, 7 do
+			local w, at = armWorst(if hit then hit else nil, k * math.pi / 4)
+			if w > armMost then armMost, armWhere = w, at .. (if hit then " (hit at 0.05 s)" else "") end
+		end
+	end
+	print(string.format("  arms over the run at 30 fps: at most %.1f°/frame (%s)", armMost, armWhere))
+	check(armMost <= 68, "the dive's arms never turn more in a frame than a running leg (~67°)")
 end
 
 -- Afterwards every joint is the animation's again.

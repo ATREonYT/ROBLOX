@@ -1,11 +1,15 @@
--- The knife you wear (owner, Oct 18: "be shown on the back of the character"; "or even for the katanas you can
--- make it be on the side of the person"), placed exactly as HuzzServer/KnifeService places it: Shared/KnifeLook's
--- wearOf / wornC0 measured from the owner's real models (assets/knives/HuzzKnives.rbxm), drawn with his meshes.
--- One still from behind, three-quarter: a blocky R15 with a short Common (Rusty Shiv) on the back, a blocky R6 with
--- the long Mythic (Abyss Eclipse) on the back, and an R15 with Celestial Edge (the one long slim blade) at the hip.
+-- The knife you wear (owner, Oct 18: "be shown on the back of the character"; Oct 19: "make the knifes when equipped
+-- be worn either on the back of the character or on the side ... make the location based on what knife/sword it
+-- is"), placed exactly as HuzzServer/KnifeService places it: the shop table's Wear (Config/CoinShop) and
+-- Shared/KnifeLook's wornC0, measured from the owner's real models (his 30 in assets/knives/HuzzKnives.rbxm, the
+-- stand-ins cut from his pass and Halloween .glb: Shared/KnifeShapes), drawn with his meshes.
+-- Six bodies: three long blades on the back (R15 Abyss Eclipse, R6 Pumpkin King Katana, R15 Grand Witch Scythe: a
+-- two-handed pole, worn head up) and three short knives at the right hip (R15 Rusty Shiv, R6 Scout Dagger, R15 Blood
+-- Moon Tanto, the longest dagger). Two stills: from behind (still_0) and from the front, a little from their right where the hip knives hang (still_1).
 -- python3 -I tools/knives/knife_meshes.py /tmp/knives.json   (from huzz-valley/), then from the repo root:
 -- KNIFE_MESHES=/tmp/knives.json MOTION3D_KEEP=<dir> sh huzz-valley/tools/preview/motion3d/video.sh \
---   huzz-valley/tools/preview/motion3d/knife_wear_scene.luau /tmp/x.mp4   (the picture is <dir>/still_0.png)
+--   huzz-valley/tools/preview/motion3d/knife_wear_scene.luau /tmp/x.mp4
+-- then python3 -I huzz-valley/tools/preview/motion3d/knife_wear_sheet.py <dir> (docs/previews/knife-on-back.jpg).
 local fs = require("@lune/fs")
 local serde = require("@lune/serde")
 local process = require("@lune/process")
@@ -18,18 +22,27 @@ local Env = require("./env")
 local SHARED = "huzz-valley/src/ReplicatedStorage/Shared/"
 local Mix = Env.load(SHARED .. "LocomotionMix.lua")
 local KnifeLook = Env.load(SHARED .. "KnifeLook.lua")
+local CoinShop = Env.load(SHARED .. "Config/CoinShop.lua")
+local Stand = Env.load(SHARED .. "KnifeStandIns.lua")
 
 local MESHES = process.env.KNIFE_MESHES or error("set KNIFE_MESHES (python3 -I tools/knives/knife_meshes.py <file>)")
 local baked = {}
 for _, k in serde.decode("json", fs.readFile("huzz-valley/tools/knives/knives.json")) do baked[k.key] = k end
 local models = {}
 for _, m in roblox.deserializeModel(fs.readFile("huzz-valley/assets/knives/HuzzKnives.rbxm"))[1]:GetChildren() do models[m.Name] = m end
+-- the knife's measure as the game takes it: his model, else the stand-in cut from his .glb
 local function shapeOf(key)
-	local m = models[key]
-	local h = m:FindFirstChild("Handle")
 	local parts = {}
-	for _, d in m:GetDescendants() do
-		if d:IsA("BasePart") then table.insert(parts, { name = d.Name, cf = h.CFrame:ToObjectSpace(d.CFrame), size = d.Size }) end
+	local m = models[key]
+	if m then
+		local h = m:FindFirstChild("Handle")
+		for _, d in m:GetDescendants() do
+			if d:IsA("BasePart") then table.insert(parts, { name = d.Name, cf = h.CFrame:ToObjectSpace(d.CFrame), size = d.Size }) end
+		end
+	else
+		for _, r in Stand[key].parts do
+			table.insert(parts, { name = r[1], cf = CFrame.new(r[5], r[6], r[7]), size = Vector3.new(r[2], r[3], r[4]) })
+		end
 	end
 	return KnifeLook.shape(parts)
 end
@@ -50,19 +63,23 @@ local function knifeAt(key, handleCF)
 end
 
 local scene = Scene.new()
-for i = -4, 4 do
+for i = -6, 6 do
 	for j = -3, 3 do scene:addBox(CFrame.new(i * 4, 0.03, j * 4), Vector3.new(0.4, 0.06, 0.4), "#b9a06a") end
 end
 local SET = {
-	{ kind = "R15", key = "RustyShiv", x = -4.6, shirt = "#3a6fd8", pants = "#2b2f3a", label = "R15 · Rusty Shiv · Common" },
-	{ kind = "R6", key = "AbyssEclipse", x = 0, shirt = "#e0e0e6", pants = "#3b2a5a", label = "R6 · Abyss Eclipse · Mythic" },
-	{ kind = "R15", key = "SpinKnife", x = 4.8, turn = 75, shirt = "#3a7a3a", pants = "#20242c", label = "R15 · Celestial Edge · at the hip" },
+	{ kind = "R15", key = "AbyssEclipse", shirt = "#3a6fd8", pants = "#2b2f3a" },
+	{ kind = "R6", key = "PumpkinKingKatana", shirt = "#e0e0e6", pants = "#3b2a5a" },
+	{ kind = "R15", key = "GrandWitchScythe", shirt = "#7a3a8a", pants = "#20242c" },
+	{ kind = "R15", key = "RustyShiv", shirt = "#3a7a3a", pants = "#20242c" },
+	{ kind = "R6", key = "ScoutDagger", shirt = "#d86a3a", pants = "#2b2f3a" },
+	{ kind = "R15", key = "BloodMoonTanto", shirt = "#c8c8d0", pants = "#3a2a2a" },
 }
+local GAP = 3.9
 local meshes, lights, labels = {}, {}, {}
 for i, s in SET do
+	local x = (i - (#SET + 1) / 2) * GAP
 	local rig = scene:addRig(if s.kind == "R15" then Rig.r15("Body" .. i, { shirt = s.shirt, pants = s.pants }) else Rig.r6("Body" .. i, { shirt = s.shirt, pants = s.pants }))
-	-- (the hip one turns to face left, so its left side, where the sword hangs, faces the camera)
-	rig.root.CFrame = CFrame.new(s.x, if s.kind == "R15" then Rig.REST_HEIGHT else 3, 0) * CFrame.Angles(0, math.rad(s.turn or 0), 0)
+	rig.root.CFrame = CFrame.new(x, if s.kind == "R15" then Rig.REST_HEIGHT else 3, 0)
 	if s.kind == "R15" then
 		local mix = Mix.new()
 		Mix.step(mix, 1, { speed = 0, state = "ground", lengths = { Walk = 1, Run = 1 } })
@@ -70,7 +87,8 @@ for i, s in SET do
 	end
 	Rig.fk(rig)
 	local shape = shapeOf(s.key)
-	local wear = KnifeLook.wearOf(models[s.key]:GetAttribute("Wear"), shape)
+	local item = CoinShop.get(s.key)
+	local wear = KnifeLook.wearOf(item.Wear, shape)
 	local torso = rig.parts[KnifeLook.mountPart(wear, s.kind == "R6")]
 	local handleCF = torso.CFrame * KnifeLook.wornC0(wear, torso.Name, torso.Size, shape) -- (Grip = the Handle's centre)
 	local m, mid = knifeAt(s.key, handleCF)
@@ -79,9 +97,12 @@ for i, s in SET do
 	if fx.back and fx.glow and k.glow then -- (Legendary and up keep their glow while worn; render.mjs reads about twice Studio's)
 		table.insert(lights, { p = { mid.X, mid.Y, mid.Z }, c = "#" .. k.glow, b = fx.glow.brightness * 0.5, r = fx.glow.range })
 	end
-	table.insert(labels, s.label)
-	print(string.format("%s %s: %s on %s", s.kind, s.key, wear, torso.Name))
+	local where = if wear == "Back" then "BACK" else "HIP"
+	table.insert(labels, { p = { x, 7.05, 0 }, text = `{item.Name}`, h = 0.36, c = "#ffffff", o = "#000000" })
+	table.insert(labels, { p = { x, 6.6, 0 }, text = `{s.kind} · {where} · {string.format("%.2f", shape.length)} studs`, h = 0.28, c = if wear == "Back" then "#9fe3ff" else "#ffd27a", o = "#000000" })
+	print(string.format("%s %s: %s on %s (%.2f studs)", s.kind, s.key, wear, torso.Name, shape.length))
 end
-local caption = "Left to right: " .. table.concat(labels, "   |   ")
-scene:frame(Vector3.new(-3.2, 4.4, 12.5), Vector3.new(0.4, 2.4, 0), { meshes = meshes, lights = lights, caption = caption, fov = 46 })
-scene:save(nil, 30, 1600, 900, { stills = { 0 }, meshFile = MESHES })
+local look = { meshes = meshes, lights = lights, labels = labels, fov = 40 }
+scene:frame(Vector3.new(0, 4.4, 23), Vector3.new(0, 3.6, 0), look) -- from behind
+scene:frame(Vector3.new(9, 4.4, -21), Vector3.new(0, 3.6, 0), look) -- from the front, a little from their right (the hip knives' side)
+scene:save(nil, 30, 1800, 760, { stills = { 0, 1 }, meshFile = MESHES })

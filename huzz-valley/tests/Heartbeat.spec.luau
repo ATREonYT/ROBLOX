@@ -53,6 +53,32 @@ end
 check(swells <= 20, string.format("at most one swell a second (%d in 20 s)", swells))
 check(peak <= 0.6, string.format("the edge never goes solid (strongest %.2f)", peak))
 check(Heartbeat.glow(0, 0.1) == 0, "no glow at level 0")
+
+-- The beat clock: never two beats within a second, even when the level flickers around the hide line (a catcher
+-- hovering at the edge of Far; Oct 19 evening, a fresh critic: each rise back over 0.01 used to beat at once).
+local function beatGaps(levelAt)
+	local c = Heartbeat.clock()
+	local tt, lastBeat, minGap, n = 0, nil, math.huge, 0
+	while tt < 30 do
+		if Heartbeat.tick(c, dt, levelAt(tt)) then
+			n += 1
+			if lastBeat then minGap = math.min(minGap, tt - lastBeat) end
+			lastBeat = tt
+		end
+		tt += dt
+	end
+	return minGap, n
+end
+for _, period in { 0.1, 0.25, 0.4, 0.7, 1.3 } do
+	local gap, n = beatGaps(function(tt) return if (tt % period) < period / 2 then 0.02 else 0.005 end)
+	check(n > 0 and gap >= 1 - 1e-6, string.format("level flickering every %.2f s at the edge: beats at least 1 s apart (closest %.2f s, %d beats)", period, gap, n))
+end
+local gapFull, nFull = beatGaps(function() return 1 end)
+check(gapFull >= 1 - 1e-6 and nFull >= 28, string.format("full strength: one beat a second (%d in 30 s)", nFull))
+local gapRamp = beatGaps(function(tt) return (math.sin(tt * 3) + 1) / 2 end)
+check(gapRamp >= 1 - 1e-6, string.format("level swinging 0..1: beats at least 1 s apart (closest %.2f s)", gapRamp))
+local first = Heartbeat.clock()
+check(Heartbeat.tick(first, dt, 0.5), "the first beat comes at once when a catcher appears")
 check(Heartbeat.Edge <= 0.25, "the glow stays at the edges (the middle of the screen stays clear)")
 
 print(string.format("Heartbeat: %d ok, %d failed", passed, failed))

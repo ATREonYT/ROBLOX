@@ -30,11 +30,20 @@ Read before changing how the click stab, a catcher's dive (lunge) and its stun, 
 - **The whole body dives** (it owns the root joint and the legs as well as the head and arms; the waist stays straight
   so the chest never dips under the floor): no crouch first (the push is already moving at 72), the take-off blends in
   over `In` 0.15 s (no pop at 60 fps); the body tips about the hips 22° → 46° → 72° → 84° → 88° (flat), the legs push
-  off and stretch out behind, toes pointed; both arms reach ahead (`REACH`, superman), the knife leading.
+  off and stretch out behind, toes pointed; both arms reach ahead (`REACH`, superman), the knife leading, evenly
+  over `ArmIn` 0.16 s.
+- **The dive's arms blend angle by angle** (`StabMotion.blendArm`), not with `CFrame:Lerp`: REACH (168°) and LIE (158°)
+  are near 180° from the run's arm swing, and a Lerp there takes the shorter way round, which flips sides from one
+  frame to the next as the run's arm swings. Oct 19 evening (a fresh critic, `motion3d/move_smooth_measure.luau` at 30
+  fps): the right arm turned 100° in one frame at 8.30 s (getting up, leapWeight 0.20, before release at Up; it did
+  not turn back), the hand 173° at take-off (ArmIn was 0.06 with an ease) and 113° at the slash. Now the dive's worst
+  arm turn is 66° a frame (LeftUpperArm at take-off; the run's legs reach 67°), the get-up 11°. The click stab is
+  unchanged (its sweep is 100° in a frame, as Huss Valley's).
 - **The slash lands when the knife reaches someone**: `StabMotion.slash` from `Dash` (your screen's hit check) or from
   the server's "Caught" (everyone else's, so it lines up with the runner's fall there); if it reaches no one, at
-  `SlashBy` 0.14 s. The sweep goes from the reach out to the right in 0.07 s, then the arm settles flat on the floor
-  ahead (`LIE`). The slash trail, `KnifeLook.ARC` crescent and the `KnifeBurst` start with the slash, not at take-off.
+  `SlashBy` 0.14 s. The sweep goes from the reach out to the right (`DIVE_KEYS`: the click slash's poses on a slower
+  clock, the sweep at 0.14 s with a smooth ease; the hand is out to the right within 0.08 s), then the arm settles
+  flat on the floor ahead (`LIE`). The slash trail, `KnifeLook.ARC` crescent and the `KnifeBurst` start with the slash, not at take-off.
 - **Landing**: at the hop's end (`StabMotion.air()` = 2 x Up / 196.2) the body is down on its belly; the hips come down
   by exactly what keeps the lowest of the feet, legs, hips, chest and head on the floor (`lowestBody`, from the joints'
   C0/C1, not the parts, which lag a frame; `lowestFoot` for the feet alone). It slides with the push.
@@ -51,7 +60,8 @@ Read before changing how the click stab, a catcher's dive (lunge) and its stun, 
   for the push only (`Gameplay/Actions`).
 - Spec `tests/StabMotion.spec` (the dive: lying flat at 0.39 s, 1.2 s and just before Out, the lowest point within 0.15
   of the floor; the free arm reaching ahead; a sideways dive tips into its side; slash within 0.08 s of reaching
-  someone, at SlashBy otherwise; body parts turn at most 16°/frame at 60 fps (14.6 today) and 30° at 30 fps; every
+  someone, at SlashBy otherwise; body parts turn at most 16°/frame at 60 fps (14.6 today) and 30° at 30 fps; the
+  arms over a ±60° run swing at 30 fps, 8 phases, with and without a hit, at most 68° a frame (61.2 today); every
   joint handed back after Up). Films `docs/previews/dive-stun.mp4` (`motion3d/catch_scene.luau`, side view: the dive,
   the 2 s stun with the stars, getting up, then the catch at 1/4 speed); the older leap: `docs/previews/knife-leap.mp4`.
 
@@ -132,7 +142,9 @@ Read before changing how the click stab, a catcher's dive (lunge) and its stun, 
   model's numbers moved a little that day: Lune's `CFrame.lookAt` faces the wrong way along Z, so its catchers had
   faced away; it has its own helper now, like `round_sim.luau`.) Not seen with real ping yet (Studio's
   Clients and Servers has no lag unless Studio's Incoming Replication Lag setting is raised).
-- **Known gap**: one frame at the end of a dive's get-up (~2.8 s after take-off) the right arm turns ~100° and back
-  (`motion3d/move_smooth_measure.luau` at 8.30 s, there before Oct 19's feel change too); in `StabMotion`'s release.
+- **The get-up arm snap** (fixed Oct 19 evening): ~2.7 s after take-off, while getting up (leapWeight 0.20, before
+  the release at `Up`), the right arm turned 100° in one frame and stayed (`motion3d/move_smooth_measure.luau` at
+  8.30 s): a CFrame Lerp toward `LIE`, near 180° from the run's swing, flipping the long way round. Fixed by the
+  angle-by-angle arm blend (above).
 - **Catch**: the knife-colour cut line and 10 sparks replaced 30 red-and-white sparks (generic, and HV has none).
   Downed runners used to lose their outline. The runner used to stop dead from a sprint.
