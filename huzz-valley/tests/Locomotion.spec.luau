@@ -7,7 +7,8 @@
 --   - another player's speed read from jittery, bursty network positions stays smooth and right, a teleport
 --     doesn't spike it, a network stall doesn't drop it, a real stop does;
 --   - the stride phase never jumps or runs backwards, whatever the speed does;
---   - holding W (16 to 28 in ~0.5 s) never makes the blend jump; a bigger avatar takes longer steps.
+--   - holding W (16 to 28 in ~0.5 s) never makes the blend jump; a bigger avatar takes longer steps;
+--   - shift lock: A/D turn the hips toward the move while the head keeps facing ahead, S back-pedals, nothing snaps.
 local fs = require("@lune/fs")
 local roblox = require("@lune/roblox")
 local CFrame, Vector3 = roblox.CFrame, roblox.Vector3
@@ -215,6 +216,69 @@ do
 	check(runAt and runAt >= 0.06 and runAt <= 0.25, string.format("setting off: a full run after %.2f s (HV ~0.1 s)", runAt or -1))
 	check(idleAt and idleAt >= 0.1 and idleAt <= 0.5 and biggestStop < 0.4,
 		string.format("a sudden stop eases to the idle in %.2f s (biggest change in a frame %.2f)", idleAt or -1, biggestStop))
+end
+
+-- Shift lock (owner, Oct 19: "make it so when you shift lock the only thing that moves when you press w a s d (etc)
+-- is their body not their head"): the hips turn toward the move, the head keeps facing ahead, backwards is a
+-- back-pedal, and nothing snaps.
+do
+	local DT = 1 / 30
+	local body = Rig.r15("S")
+	local rootJ = body.parts.LowerTorso.joints.Root
+	local waist, neck = body.parts.UpperTorso.joints.Waist, body.parts.Head.joints.Neck
+	local function yawOf(cf)
+		local look = cf.LookVector
+		return math.deg(math.atan2(-look.X, -look.Z)) -- (+ = turned left, as Roblox's yaw)
+	end
+	local function drive(s, vel, on, quiet, seconds)
+		local biggest, turn, back = 0, 0, false
+		for _ = 1, math.floor(seconds / DT) do
+			local before = s.turn
+			Mix.step(s, DT, { speed = vel.Magnitude, state = "ground", lengths = lengths })
+			turn, back = Mix.strafe(s, DT, vel, on, quiet)
+			biggest = math.max(biggest, math.abs(math.deg(turn - before)))
+		end
+		-- (over the run's own pose at mid-stride: hunched forward, so a plain counter-turn would tip the head)
+		local pose = Sampler.sample(A.Run, A.Run.length * 0.3)
+		for _, m in body.motors do m.Transform = pose[m.Part1.Name] or CFrame.identity end
+		body.root.CFrame = CFrame.new(0, Rig.REST_HEIGHT, 0)
+		Rig.fk(body)
+		local head0, lower0, upper0 = body.parts.Head.CFrame, body.parts.LowerTorso.CFrame, body.parts.UpperTorso.CFrame
+		local hips, w, n = Mix.strafePose(s, turn, {
+			root = { C0 = rootJ.C0, C1 = rootJ.C1, T = rootJ.Transform },
+			waist = { C0 = waist.C0, C1 = waist.C1, T = waist.Transform },
+			neck = { C0 = neck.C0, C1 = neck.C1, T = neck.Transform },
+		})
+		rootJ.Transform, waist.Transform, neck.Transform = hips, w, n
+		body.root.CFrame = CFrame.new(0, Rig.REST_HEIGHT, 0)
+		Rig.fk(body)
+		local _, headOff = (head0.Rotation:Inverse() * body.parts.Head.CFrame.Rotation):ToAxisAngle()
+		return { hips = yawOf(lower0) - yawOf(body.parts.LowerTorso.CFrame), chest = yawOf(upper0) - yawOf(body.parts.UpperTorso.CFrame),
+			head = math.deg(math.abs(headOff)), back = back, biggest = biggest }
+	end
+	local S = L.Strafe
+	local s = Mix.new()
+	local right = drive(s, Vector3.new(28, 0, 0), true, 0, 0.6)
+	check(math.abs(right.hips - S.MaxTurn) < 3, string.format("D in shift lock: the hips turn right toward the move (%.0f degrees)", right.hips))
+	check(right.head < 1, string.format("the head keeps facing just where the run had it, no tip (%.2f degrees off)", right.head))
+	check(right.chest > 10 and right.chest < right.hips, string.format("the chest turns part way (%.0f)", right.chest))
+	check(right.biggest <= 25, string.format("no snap: at most %.0f degrees a frame at 30 fps", right.biggest))
+	local fwd = drive(Mix.new(), Vector3.new(0, 0, -28), true, 0, 0.6)
+	check(math.abs(fwd.hips) < 1 and not fwd.back, "W: the body faces ahead as before")
+	local free = drive(Mix.new(), Vector3.new(28, 0, 0), false, 0, 0.6)
+	check(math.abs(free.hips) < 1, "without shift lock nothing turns (Roblox already faces you the way you go)")
+	local hussing = drive(Mix.new(), Vector3.new(28, 0, 0), true, 1, 0.6)
+	check(math.abs(hussing.hips) < 1, "a huss, a leap, a dance or lying down keeps it out")
+	local s2 = Mix.new()
+	local back = drive(s2, Vector3.new(0, 0, 28), true, 0, 0.6)
+	local phase0 = s2.phase
+	Mix.step(s2, DT, { speed = 28, state = "ground", lengths = lengths })
+	local stepBack = ((s2.phase - phase0 + 0.5) % 1) - 0.5
+	check(back.back and math.abs(back.hips) < 1 and stepBack < 0, "S: a back-pedal (facing ahead, the run playing backwards)")
+	local backRight = drive(Mix.new(), Vector3.new(20, 0, 20), true, 0, 0.6)
+	check(backRight.back and backRight.hips < -30, string.format("back and right: the hips turn to the front left, pedalling back (%.0f)", backRight.hips))
+	local stop = drive(s, Vector3.zero, true, 0, 0.6)
+	check(math.abs(stop.hips) < 3 and stop.biggest <= 25, string.format("letting go turns the body back ahead smoothly (%.0f left, %.0f a frame at most)", stop.hips, stop.biggest))
 end
 
 print(`Locomotion: {passed} ok, {failed} failed`)

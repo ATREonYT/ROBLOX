@@ -33,6 +33,8 @@ local PowerService = require(script.Parent.PowerService)
 local NameTags = require(script.Parent.NameTagService)
 local SecretReveal = require(ReplicatedStorage.Shared.SecretReveal)
 local PracticeBot = require(script.Parent.PracticeBot)
+local HitHistory = require(script.Parent.HitHistory)
+local TouchHit = require(Shared.TouchHit)
 local ProgressService = require(script.Parent.ProgressService)
 
 require(script.Parent.SafetyService).clean()
@@ -118,22 +120,29 @@ local function announce(text, color)
 	RoundNet:FireAllClients("Announce", { text = text, color = color })
 end
 
+-- Everyone in the game runs a tiny bit faster each round (Config.SpeedUp, Rules.speedScale; the lobby never changes).
+local function roundScale(): number
+	return Rules.speedScale(match and match.round, Config.SpeedUp)
+end
+
 -- The fastest catcher this round: the Practice Bot's own speed when it's the catcher.
 local function catcherTop()
-	return if botPlayed and PracticeBot.active() then PracticeBot.speed() else Config.Speeds.Catcher
+	return (if botPlayed and PracticeBot.active() then PracticeBot.speed() else Config.Speeds.Catcher) * roundScale()
 end
 
 local function speedFor(id)
 	local role = match and match.roles[id]
 	if not role then
 		return Config.Speeds.Lobby or StarterPlayer.CharacterWalkSpeed
-	elseif lastRunner == id and Config.Speeds.LastRunner then
-		-- the catch-up: up to the real catcher's speed, never past it (and never slower than a runner)
-		return math.max(Config.Speeds.Runner, math.min(Config.Speeds.LastRunner, catcherTop()))
-	elseif match.holder == id then
-		return if role == "Catcher" then Config.Speeds.Thief else Config.Speeds.Holder
 	end
-	return Config.Speeds[role]
+	local scale = roundScale() -- (a tiny bit faster every round, runners and catchers alike)
+	if lastRunner == id and Config.Speeds.LastRunner then
+		-- the catch-up: up to the real catcher's speed, never past it (and never slower than a runner)
+		return math.max(Config.Speeds.Runner * scale, math.min(Config.Speeds.LastRunner * scale, catcherTop()))
+	elseif match.holder == id then
+		return (if role == "Catcher" then Config.Speeds.Thief else Config.Speeds.Holder) * scale
+	end
+	return Config.Speeds[role] * scale
 end
 
 local function tagLook(id)
@@ -675,6 +684,8 @@ local function runRound()
 	goalName = MapService.goalFor(match.round)
 	local startName = MapService.startFor(match.round)
 	State:SetAttribute("Round", match.round)
+	State:SetAttribute("SpeedUp", roundScale()) -- (1.06 = 6% faster than round 1: for the HUD's round line)
+	PracticeBot.setScale(roundScale())
 	State:SetAttribute("Goal", goalName)
 	State:SetAttribute("Streak", match.streak)
 	State:SetAttribute("RunnersLeft", #Rules.idsWithRole(match, "Runner"))
@@ -1110,25 +1121,60 @@ end
 -- Catchers stab (click / tap STAB). The client plays the move at once and tells us; we check the
 -- catcher may stab now and tag the nearest runner in reach in front of them.
 local lastStab = {}
--- Stab the nearest runner within range of the catcher (front only for the knife: runners lag on screen, so a
--- little behind still counts). Shields, the safe start zone and a fresh rescue protect. True when someone was hit.
+
+-- How far back the catcher's screen shows the runners (owner, Oct 19: "make the player to player touch WAY MORE
+-- accurate"): their one-way network trip plus Roblox's smoothing of other bodies, capped (Config.Touch).
+local function viewDelay(id): number
+	local T = Config.Touch
+	local p = id and byId[id]
+	local ping = 0
+	if p then
+		local ok, value = pcall(function() return p:GetNetworkPing() end)
+		ping = if ok and type(value) == "number" then value else 0
+	end
+	return math.clamp(ping / 2 + T.Smoothing, 0, T.MaxRewind)
+end
+
+-- Does the knife's box touch this runner's body, anywhere it was over the last `back` seconds (where the catcher's
+-- screen showed it)? Their limbs, torso and head only (Shared/TouchHit), placed where their root was then
+-- (HuzzServer/HitHistory); a body whose parts can't be read is a standard body's box.
+local function touchesRunner(boxCF: CFrame, boxSize: Vector3, root: BasePart, back: number): boolean
+	local character = root.Parent
+	local shape = character and TouchHit.shape(root.CFrame, character:GetChildren())
+		or TouchHit.standIn(CFrame.identity)
+	for _, at in HitHistory.between(root, os.clock() - back) do
+		if TouchHit.touches(boxCF, boxSize, at, shape, Config.Touch.Tolerance) then
+			return true
+		end
+	end
+	return false
+end
+
+-- Stab the nearest runner the knife's box touches (Shared/TouchHit: the box in front of the catcher, or along their
+-- leap, `knife` = Config Stab or Lunge Reach x Width, against the runner's own body where the catcher's screen showed
+-- it). Shields, the safe start zone and a fresh rescue protect. True when someone was hit.
 -- only: the runner the catcher's screen hit (pinpoint, Gameplay/HitCheck): just that one is checked.
+-- id nil = the Practice Bot: its knife is where the runner's screen showed the bot (Touch.Smoothing ago).
 local chaseClaim
-local function stabNear(id, me: BasePart, range: number, front: boolean, only: number?, along: Vector3?): boolean
+local function stabNear(id, me: BasePart, knife, only: number?, along: Vector3?): boolean
 	local now = os.clock()
 	local start = zones[MapService.startFor(match.round)]
-	local look = along or me.CFrame.LookVector -- (a leap: the way it goes, forward or sideways)
-	front = front or along ~= nil
-	local best, bestDistance = nil, range
+	local from = me.CFrame
+	local back = viewDelay(id)
+	if id == nil then
+		HitHistory.track(me)
+		from = HitHistory.at(me, now - Config.Touch.Smoothing)
+		back = 0
+	end
+	local boxCF, boxSize = TouchHit.reachBox(from, along, knife.Reach, knife.Width)
+	local best, bestDistance = nil, math.huge
 	for runnerId, status in match.status do
 		local root = (only == nil or runnerId == only) and status == "Active" and not frozen[runnerId]
 			and (protectedUntil[runnerId] or 0) <= now and rootOf(runnerId)
 		if root then
 			local offset = root.Position - me.Position
-			local flat = Vector3.new(offset.X, 0, offset.Z)
-			local inFront = not front or flat.Magnitude < 3.5 or look:Dot(flat.Unit) > -0.2
 			local safe = Config.StartZoneSafe and start and MapService.inZone(start, root.Position)
-			if offset.Magnitude <= bestDistance and math.abs(offset.Y) < 8 and inFront and not safe then
+			if offset.Magnitude < bestDistance and not safe and touchesRunner(boxCF, boxSize, root, back) then
 				best, bestDistance = runnerId, offset.Magnitude
 			end
 		end
@@ -1145,7 +1191,7 @@ end
 
 -- A hit the catcher's screen saw (Gameplay/HitCheck): that one runner is checked from here every frame until
 -- `untilClock`, the way the old lunge loop kept checking (a single check failed under normal lag).
-function chaseClaim(id, player, claim, range, front, untilClock, onHit, along)
+function chaseClaim(id, player, claim, knife, untilClock, onHit, along)
 	task.spawn(function()
 		while true do
 			local me = rootOf(id)
@@ -1154,7 +1200,7 @@ function chaseClaim(id, player, claim, range, front, untilClock, onHit, along)
 				or frozen[id] or KnockdownService.isDown(player) or not PowerService.canStab(id) then
 				return
 			end
-			if stabNear(id, me, range, front, claim, along) then
+			if stabNear(id, me, knife, claim, along) then
 				if onHit then onHit() end
 				return
 			end
@@ -1184,7 +1230,7 @@ function botStep()
 	local fallY = if m then m.Position.Y - m.Size.Y / 2 - 30 else nil
 	PracticeBot.step(targets, function(me)
 		botTagging = true
-		local ok, hit = pcall(stabNear, nil, me, Config.Bot.Reach, false)
+		local ok, hit = pcall(stabNear, nil, me, Config.Stab)
 		botTagging = false
 		-- everyone sees the bot's stab too (Gameplay/Actions plays it on the HuzzBot model): on a hit, and at
 		-- most once a stab cooldown while it keeps trying (a shield or the safe zone stopping it)
@@ -1223,15 +1269,16 @@ Net.get("Stab").OnServerEvent:Connect(function(player, claim)
 		-- pinpoint: the runner the catcher's screen saw inside the knife's reach, if that's possible from here.
 		-- Checked again for a moment (critic: a catcher a little behind on our side at full speed failed a single
 		-- check and the kid saw a clean hit do nothing); still in front only, so a cheat can't hit all round.
-		chaseClaim(id, player, claim, Config.Stab.Range + (Config.Stab.Slack or 3), true, os.clock() + 0.25)
+		chaseClaim(id, player, claim, Config.Stab, os.clock() + 0.25)
 	elseif claim == nil then
-		stabNear(id, me, Config.Stab.Range, true) -- (a client that can't check)
+		stabNear(id, me, Config.Stab) -- (a client that can't check)
 	end -- (false: a clean miss on the catcher's screen)
 end)
 
 -- The catcher's lunge (Config.Lunge): the client leaps at once (Gameplay/Dash) and tells us; we check it's allowed,
 -- set the Space cooldown, show the stab to everyone, and for HitWindow seconds stab the first runner within
--- HitRange of the catcher (shields and the safe start zone still count).
+-- the leap's knife box (Config.Lunge Reach x Width, along the leap; Shared/TouchHit on the runner's body) (shields and
+-- the safe start zone still count).
 local lastLunge = {}
 local lungeHit = {} -- id -> true once this lunge has caught someone (one runner per lunge)
 local lungeClaims = {} -- id -> true while this lunge lets the catcher's screen report the hit (it sent true)
@@ -1247,7 +1294,7 @@ Net.get("Lunge").OnServerEvent:Connect(function(player, arg, dir)
 			and lungeClaims[id] and lastLunge[id] and os.clock() - lastLunge[id] <= Config.Lunge.HitWindow + 0.3 and not lungeHit[id]
 			and not frozen[id] and not KnockdownService.isDown(player) and PowerService.canStab(id) and Config.TagMode == "Stab" then
 			lungeClaims[id] = nil -- (one claim per lunge)
-			chaseClaim(id, player, arg, Config.Lunge.HitRange + (Config.Stab.Slack or 3), false,
+			chaseClaim(id, player, arg, Config.Lunge,
 				lastLunge[id] + Config.Lunge.HitWindow + 0.3, function()
 					lungeHit[id] = true
 				end, lungeDirs[id])
@@ -1281,6 +1328,7 @@ Net.get("Lunge").OnServerEvent:Connect(function(player, arg, dir)
 		end
 	end
 	player:SetAttribute("DashReady", now + Config.Lunge.Cooldown)
+	player:SetAttribute("DashCooldown", Config.Lunge.Cooldown) -- (how long this wait is: the HUD's dash bar)
 	c:SetAttribute("LungeAt", now) -- (every screen plays the leap)
 	RoundNet:FireAllClients("Stab", { id = id, lunge = true }) -- (the stab move, on the catcher's own screen too)
 	if Config.TagMode ~= "Stab" or arg == true then
@@ -1298,7 +1346,7 @@ Net.get("Lunge").OnServerEvent:Connect(function(player, arg, dir)
 			if lungeHit[id] then
 				return
 			end
-			if stabNear(id, me, Config.Lunge.HitRange, false, nil, lungeDirs[id]) then
+			if stabNear(id, me, Config.Lunge, nil, lungeDirs[id]) then
 				lungeHit[id] = true
 				return -- (one runner per lunge)
 			end
@@ -1396,7 +1444,8 @@ Net.get("Dash").OnServerEvent:Connect(function(player, dir, at, look)
 		return -- still cooling down
 	end
 	local start = if type(at) == "number" and at == at then math.clamp(at, now - 0.15, now) else now
-	player:SetAttribute("DashReady", start + Config.Dash.Cooldown)
+	player:SetAttribute("DashReady", start + Config.Dash.Cooldown) -- (when the huss is ready again, server time)
+	player:SetAttribute("DashCooldown", Config.Dash.Cooldown) -- (how long this wait is: the HUD's dash bar fills over it)
 	c:SetAttribute("DashDir", flat.Unit)
 	c:SetAttribute("DashAt", start)
 end)

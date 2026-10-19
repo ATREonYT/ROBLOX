@@ -4,9 +4,13 @@
 	to the knife's tip (Config/Round Stab/Lunge Reach and Width). Gameplay/Actions and Gameplay/Dash send the runner
 	found (or false for a miss) and RoundService checks it's possible from where the server sees both of them; the old
 	"nearest runner within 8.5 studs, almost all round you" is only for a client that sends nothing.
+	Oct 19 (owner: "make the player to player touch WAY MORE accurate"): only the runner's own body counts (limbs,
+	torso, head: Shared/TouchHit.isBody), never their hats, hair, wings or worn knife, and the box is the knife's real
+	reach (Config/Round Stab 4.5 x 3.5). The server checks the same box against the runner where this screen showed them.
 ]]
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
+local TouchHit = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared").TouchHit)
 
 local HitCheck = {}
 
@@ -43,8 +47,9 @@ function HitCheck.find(root: BasePart, reach: number, width: number, dir: Vector
 	end
 	local best, bestD = nil, math.huge
 	for _, part in parts do
-		local model = part:FindFirstAncestorOfClass("Model")
-		local p = model and Players:GetPlayerFromCharacter(model)
+		-- the body itself, a direct child of the character (an accessory's Handle sits in its Accessory)
+		local model = part.Parent
+		local p = model and model:IsA("Model") and TouchHit.isBody(part.Name) and Players:GetPlayerFromCharacter(model)
 		if p then
 			local d = (part.Position - root.Position).Magnitude
 			if d < bestD then

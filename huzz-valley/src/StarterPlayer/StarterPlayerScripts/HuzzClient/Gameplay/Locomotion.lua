@@ -8,7 +8,11 @@
 	    animations way way better"), scaled to your avatar's size, the run capped at HV's ~4.6 steps a second;
 	  - jump / fall / climb fade in over them in the lobby;
 	  - a little lean into turns and into speeding up on top (Motor6D.Transform, Gameplay/Frame order 12: after
-	    Roblox's animations and the scripted run, before the carry, the stab and the knockdown).
+	    Roblox's animations and the scripted run, before the carry, the stab and the knockdown);
+	  - in shift lock, the hips and legs turn toward the way you move and the head keeps looking where you aim
+	    (Shared/LocomotionMix.strafe, owner Oct 19: "the only thing that moves when you press w a s d (etc) is their
+	    body not their head"); moving backwards plays the loops backwards. Your screen only: everyone else draws it
+	    from your body's movement (Gameplay/PlayerMoves).
 	Published tracks replicate, so other players see the same. Studio's temporary copies play only on this screen:
 	there Gameplay/PlayerMoves draws your walk on everyone else's screen by hand (it skips you here while
 	Locomotion.drives(character) says this runs). Dances and the stab are Action tracks: they
@@ -19,6 +23,7 @@
 local Locomotion = {}
 
 local Players = game:GetService("Players")
+local player = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Workspace = game:GetService("Workspace")
@@ -27,6 +32,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Library = require(Shared.AnimationLibrary)
 local RunConfig = require(Shared.Config.Run)
 local DASH_LENGTH = RunConfig.Dash.Length
+local LEAP_LENGTH = 0.85 -- seconds a catcher's leap owns the body (Shared/StabMotion LEAP.Up, plus a little)
 local Mix = require(Shared.LocomotionMix)
 local RunMotion = require(Shared.RunMotion)
 local Frame = require(script.Parent.Frame)
@@ -107,8 +113,29 @@ local function attach(character: Model)
 	local wasJumping = false
 	local quietUntil = 0
 	local lastScan = 0
-	local written, base = nil, nil
-	local rootJoint = (character:FindFirstChild("LowerTorso") and character.LowerTorso:FindFirstChild("Root")) :: Motor6D?
+	local written, base = {}, {} -- motor -> what we last wrote / the animation's pose under it (never stack)
+	local function jointOf(partName, jointName): Motor6D?
+		local part = character:FindFirstChild(partName)
+		local j = part and part:FindFirstChild(jointName)
+		return if j and j:IsA("Motor6D") then j else nil
+	end
+	local rootJoint = jointOf("LowerTorso", "Root")
+	local waistJoint, neckJoint = jointOf("UpperTorso", "Waist"), jointOf("Head", "Neck")
+	-- This frame's animated pose of a joint (or the last one, if nothing animated it since our write: never stack).
+	local function current(motor: Motor6D): CFrame
+		local pose = motor.Transform
+		if written[motor] and pose == written[motor] then
+			pose = base[motor]
+		end
+		base[motor] = pose
+		return pose
+	end
+	local function put(motor: Motor6D, cf: CFrame)
+		if motor.Transform ~= cf then
+			motor.Transform = cf
+		end
+		written[motor] = motor.Transform -- read back: Roblox stores CFrames as float32
+	end
 
 	-- Is an Action track (a dance, the dash, the stab) playing over us? Checked a few times a second.
 	local function actionPlaying(now)
@@ -156,6 +183,9 @@ local function attach(character: Model)
 				t:AdjustWeight(math.max(w, 0.001), 0.05)
 				last[1] = w
 			end
+			if mix.back and (name == "Walk" or name == "Run") then
+				sp = -sp -- (back-pedalling in shift lock: the loop plays backwards)
+			end
 			if math.abs(sp - last[2]) > 0.02 then
 				t:AdjustSpeed(sp)
 				last[2] = sp
@@ -184,21 +214,32 @@ local function attach(character: Model)
 			local now = os.clock()
 			local dashAt = RunMotion.dashAt(character)
 			local hussing = type(dashAt) == "number" and Workspace:GetServerTimeNow() - dashAt < DASH_LENGTH + 0.1
-			local quiet = if downed or hussing or actionPlaying(now) or mode ~= "ground" then 1 else 0
+			local lungeAt = character:GetAttribute("LungeAt")
+			local leaping = type(lungeAt) == "number" and Workspace:GetServerTimeNow() - lungeAt < LEAP_LENGTH
+			local quiet = if downed or hussing or leaping or actionPlaying(now) or mode ~= "ground" then 1 else 0
 			local look = root.CFrame.LookVector
 			local roll, pitch = Mix.lean(mix, dt, math.atan2(-look.X, -look.Z), quiet)
-			local pose = rootJoint.Transform
-			if written and pose == written then
-				pose = base -- (nothing animated the hips this frame: lean the last pose again, don't stack)
-			end
-			base = pose
+			local hipsPose = current(rootJoint)
 			if math.abs(roll) + math.abs(pitch) > 1e-4 then
 				-- turned about the ground under you (in the root part's space), then into the joint's own frame
 				local c0 = rootJoint.C0
-				local extra = c0:Inverse() * Mix.leanCFrame(roll, pitch, root.Size.Y / 2 + humanoid.HipHeight) * c0
-				rootJoint.Transform = extra * pose
+				hipsPose = c0:Inverse() * Mix.leanCFrame(roll, pitch, root.Size.Y / 2 + humanoid.HipHeight) * c0 * hipsPose
 			end
-			written = rootJoint.Transform
+			-- shift lock: hips toward the move, the head still looking where you aim (Shared/LocomotionMix.strafe)
+			local turn = Mix.strafe(mix, dt, root.CFrame:VectorToObjectSpace(v), player:GetAttribute("HuzzShiftLock") == true, quiet)
+			if waistJoint and neckJoint and waistJoint.Parent and neckJoint.Parent then
+				local waistPose, neckPose = current(waistJoint), current(neckJoint)
+				if math.abs(turn) > 1e-3 then
+					hipsPose, waistPose, neckPose = Mix.strafePose(mix, turn, {
+						root = { C0 = rootJoint.C0, C1 = rootJoint.C1, T = hipsPose },
+						waist = { C0 = waistJoint.C0, C1 = waistJoint.C1, T = waistPose },
+						neck = { C0 = neckJoint.C0, C1 = neckJoint.C1, T = neckPose },
+					})
+				end
+				put(waistJoint, waistPose)
+				put(neckJoint, neckPose)
+			end
+			put(rootJoint, hipsPose)
 		end
 	end
 

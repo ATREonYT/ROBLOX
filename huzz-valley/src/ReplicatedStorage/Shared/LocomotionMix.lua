@@ -22,6 +22,12 @@
 	  - Jump, Fall and Climb fade in over the ground loops when the Humanoid leaves the ground or climbs.
 	  - lean(): a small procedural touch on top: rolling into turns and pitching forward as you speed up
 	    (back a little as you stop), both critically damped.
+	  - strafe() / strafePose(): shift lock (owner, Oct 19: "make it so when you shift lock the only thing that moves
+	    when you press w a s d (etc) is their body not their head"). Shift lock holds the body to the camera, so A/D
+	    used to slide you sideways with the run playing straight ahead (and S moonwalked). Now the hips and legs turn
+	    toward the way you move (up to Config/Run.Loco.Strafe MaxTurn), the chest turns part way and the head turns
+	    back, so it keeps looking where you aim; moving backwards turns them toward the mirrored side and plays the
+	    loop backwards (a back-pedal). Springy, so starting, stopping and switching keys never snaps.
 ]]
 local Run = require(script.Parent.Config.Run)
 
@@ -59,6 +65,7 @@ function LocomotionMix.new(config)
 		speeds = { Idle = 1, Walk = 1, Run = 1, Jump = 1, Fall = 1, Climb = 1 },
 		times = { Walk = 0, Run = 0 }, -- where the walk and run loops should be (seconds), from the shared phase
 		roll = 0, rollV = 0, pitch = 0, pitchV = 0, yaw = nil,
+		turn = 0, turnV = 0, back = false, -- shift lock: the body's turn toward the move (radians) and back-pedalling
 	}
 end
 
@@ -83,7 +90,8 @@ function LocomotionMix.step(s, dt, input)
 	local walkLen = (input.lengths and input.lengths.Walk) or 1
 	local runLen = (input.lengths and input.lengths.Run) or 0.5
 	local cadence = ((walkRate / walkLen) * (1 - run) + (runRate / runLen) * run) * (input.stride or 1) -- strides a second
-	s.phase = (s.phase + cadence * dt) % 1
+	-- (back-pedalling in shift lock: the loops play backwards, LocomotionMix.strafe)
+	s.phase = (s.phase + cadence * dt * (if s.back then -1 else 1)) % 1
 	s.speeds.Walk, s.speeds.Run = cadence * walkLen, cadence * runLen
 	s.times.Walk = ((s.phase + C.WalkPhase) % 1) * walkLen
 	s.times.Run = ((s.phase + C.RunPhase) % 1) * runLen
@@ -140,6 +148,61 @@ function LocomotionMix.leanCFrame(roll, pitch, footDrop)
 	return f * CFrame.Angles(pitch, 0, roll) * f:Inverse()
 end
 
+local STRAFE = { MaxTurn = 70, BackFrom = 110, Response = 12, Chest = 0.4, MinSpeed = 2 }
+
+--[[ Shift lock's body turn, one frame. localVel: the body's ground velocity in its own space (x right, z back, as
+	CFrame:VectorToObjectSpace gives it); on: shift lock holds the body to the camera (otherwise Roblox turns the body
+	to the move and there is nothing to do); quiet (0..1): a huss, a leap, a dance or lying down fades it out.
+	Returns the hips' turn (radians, + = to the right) and whether the loops play backwards. Config/Run.Loco.Strafe:
+	MaxTurn (degrees) the most the hips turn; BackFrom (degrees off straight ahead) where moving turns into a
+	back-pedal; Response the spring's speed; MinSpeed (studs/s) below it the body faces ahead. ]]
+function LocomotionMix.strafe(s, dt, localVel: Vector3, on: boolean, quiet: number?): (number, boolean)
+	local C = s.C.Strafe or STRAFE
+	local flat = Vector3.new(localVel.X, 0, localVel.Z)
+	local speed = flat.Magnitude
+	local target = 0
+	local live = 1 - clamp(quiet or 0, 0, 1)
+	if on and live > 0 and speed > C.MinSpeed then
+		local a = math.atan2(flat.X, -flat.Z) -- (0 straight ahead, + to the right, +-pi straight back)
+		-- (a little stickiness either side of BackFrom, so a stick held near it doesn't flip every frame)
+		local backFrom = rad(C.BackFrom + (if s.back then -8 else 8))
+		s.back = math.abs(a) > backFrom
+		if s.back then
+			a -= pi * (if a > 0 then 1 else -1) -- (back and to the right = hips to the front left, legs pedalling back)
+		end
+		target = clamp(a, -rad(C.MaxTurn), rad(C.MaxTurn)) * smooth((speed - C.MinSpeed) / C.MinSpeed) * live
+	elseif s.speed < C.MinSpeed * 2 then
+		s.back = false -- (only once the legs have nearly stopped: flipping a fast loop round would jolt the legs)
+	end
+	s.turn, s.turnV = spring(s.turn, s.turnV, target, C.Response, dt)
+	return s.turn, s.back
+end
+
+--[[ Shift lock's strafe on the body's three top joints, worked out exactly from this frame's poses so the head ends
+	up facing just where the animation had it (a plain counter-turn at the neck tipped the head sideways while the run
+	hunches the body forward). J: { root, waist, neck } = each joint's { C0, C1, T } (T = its Transform this frame).
+	Returns the new Transforms: the hips turned `turn` about the root part's up, the chest turned Chest of that about
+	the same up, the head back where it was. Gameplay/Locomotion and Gameplay/PlayerMoves write them. ]]
+function LocomotionMix.strafePose(s, turn: number, J): (CFrame, CFrame, CFrame)
+	local C = s.C.Strafe or STRAFE
+	local chest = clamp(C.Chest, 0, 1)
+	local r, w, n = J.root, J.waist, J.neck
+	local function rot(cf: CFrame): CFrame
+		return cf.Rotation
+	end
+	-- (each part's turn in the root part's space, rotations only)
+	local lower0 = rot(r.C0) * rot(r.T) * rot(r.C1):Inverse()
+	local upper0 = lower0 * rot(w.C0) * rot(w.T) * rot(w.C1):Inverse()
+	local head0 = upper0 * rot(n.C0) * rot(n.T) * rot(n.C1):Inverse()
+	local hips = CFrame.Angles(0, -turn, 0)
+	local rootT = r.C0:Inverse() * hips * r.C0 * r.T
+	local lower1 = hips * lower0
+	local upper1 = CFrame.Angles(0, -turn * chest, 0) * upper0
+	local waistR = rot(w.C0):Inverse() * lower1:Inverse() * upper1 * rot(w.C1)
+	local neckR = rot(n.C0):Inverse() * upper1:Inverse() * head0 * rot(n.C1)
+	return rootT, CFrame.new(w.T.Position) * waistR, CFrame.new(n.T.Position) * neckR
+end
+
 -- A copy of a Loco config for an avatar `k` times the standard size (legs k times as long: every speed scales).
 local SPEEDS = { "MoveFrom", "MoveFull", "RunFrom", "RunFull", "WalkAt", "RunAt" }
 function LocomotionMix.sized(config, k: number)
@@ -179,9 +242,9 @@ end
 	    real stop;
 	  - a jump faster than Teleport studs/s (respawn, the round moving everyone) starts the window over.
 	track(tr, now, pos) returns (ground speed, up speed), studs/s. Feed the ground speed to step(): its spring
-	smooths what's left. ]]
+	smooths what's left. tr.vel is the ground velocity over the same window (which way they go, for strafe()). ]]
 function LocomotionMix.tracker(config)
-	return { C = config or Run.Track, list = {}, speed = 0, up = 0, last = nil }
+	return { C = config or Run.Track, list = {}, speed = 0, up = 0, last = nil, vel = Vector3.zero }
 end
 
 function LocomotionMix.track(tr, now: number, pos: Vector3): (number, number)
@@ -209,7 +272,9 @@ function LocomotionMix.track(tr, now: number, pos: Vector3): (number, number)
 	local span = now - first.t
 	if span >= C.MinSpan then
 		local d = pos - first.p
-		tr.speed = math.min(Vector3.new(d.X, 0, d.Z).Magnitude / span, C.MaxSpeed)
+		local flat = Vector3.new(d.X, 0, d.Z) / span
+		tr.speed = math.min(flat.Magnitude, C.MaxSpeed)
+		tr.vel = if flat.Magnitude > 1e-3 then flat.Unit * tr.speed else Vector3.zero
 		tr.up = d.Y / span
 	end
 	return tr.speed, tr.up

@@ -536,6 +536,17 @@ test("last runner: the only runner still out, else nil", function()
 	eq(Rules.lastRunner(s), nil, "nobody left")
 end)
 
+test("speed goes up a tiny bit every round, capped (owner Oct 19)", function()
+	local cfg = { PerRound = 0.02, Max = 0.20 }
+	eq(Rules.speedScale(1, cfg), 1, "round 1")
+	eq(Rules.speedScale(nil, cfg), 1, "no round (lobby)")
+	assert(math.abs(Rules.speedScale(2, cfg) - 1.02) < 1e-9, "round 2 is 2% faster")
+	assert(math.abs(Rules.speedScale(6, cfg) - 1.10) < 1e-9, "round 6 is 10% faster")
+	assert(math.abs(Rules.speedScale(11, cfg) - 1.20) < 1e-9, "round 11 hits the cap")
+	assert(math.abs(Rules.speedScale(20, cfg) - 1.20) < 1e-9, "never past +20%")
+	eq(Rules.speedScale(5, nil), 1, "no config: unchanged")
+end)
+
 print(`RoundRules: {passed} passed, {failed} failed`)
 if failed > 0 then
 	error("RoundRules tests failed")

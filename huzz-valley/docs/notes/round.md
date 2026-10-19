@@ -37,17 +37,27 @@ The lobby side (one lobby per map, paint, his new lobby): [lobby.md](lobby.md). 
   Their look: [effects.md](effects.md).
 - **Speeds** (`Config/Round.Speeds`): lobby 22, runner 28, catcher 30, holder 27. `Gameplay/Sprint` sets off at 16
   and reaches the cap in ~0.5 s ([movement-and-camera.md](movement-and-camera.md)). Run animation rate caps keep it calm.
+  **Each round is a tiny bit faster:** +2% per round after the first, capped at +20% (`Config/Round.SpeedUp`,
+  `RoundRules.speedScale`), for runners, catchers and the Practice Bot alike (`PracticeBot.setScale`), set on the
+  server; the lobby never changes. `State` attribute `SpeedUp` (1.06 = 6% faster) is there for the HUD.
 
 ## Catching
 - **Click stab** (`Stab` remote) or a catcher's **lunge** (`Lunge` remote, `Config/Round.Lunge`: eases 72 to 40 over
   0.38 s, the way you steer: `Shared/KnifeLeap.direction`, forward or sideways with A/D, never back; the hit box
-  points along the leap; a whole-body leap with the slash when the knife reaches someone; Up 24, HitRange 4.8 for
-  0.5 s, cooldown 3 s shared with the Space tile `DashReady`; stab mode only). Both go through `stabNear()`: shields,
+  points along the leap; a whole-body leap with the slash when the knife reaches someone; Up 24, hits for HitWindow
+  0.5 s (HitRange 4.8 is only the sim bot's "close enough to leap"), cooldown 3 s shared with the Space tile `DashReady`; stab mode only). Both go through `stabNear()`: shields,
   the safe start zone and a fresh rescue protect; a Heart Shield ends the lunge.
-- **Pinpoint:** the catcher's own screen picks the runner whose body is in a box in front of them (`Gameplay/HitCheck`;
-  Stab Reach 5.5 x Width 4, Lunge 4.5 x 4) and sends that UserId (false = a miss); the server only checks it's
-  possible (Range/HitRange + Slack 3, one runner per lunge). A client that sends nothing gets the old server search
-  (the sim bots).
+- **Touch is the real bodies** (`Shared/TouchHit`, one rule for the screen, the server and the spec): the knife's
+  reach is a box from the catcher's middle out along their facing (or their leap): Stab Reach 4.5 x Width 3.5, Lunge
+  4.5 x 4, 7 tall. It counts only if it overlaps one of the runner's own body parts (limbs, torso, head; never hats,
+  hair, wings or the worn knife), give or take `Touch.Tolerance` 0.4 studs (a separating-axis box test). Straight
+  ahead the knife reaches 4.4 studs past the catcher's chest.
+- The catcher's screen (`Gameplay/HitCheck`) picks the runner it touches and sends that UserId (false = a miss).
+  **The server checks the same touch, looking back for lag:** `HuzzServer/HitHistory` keeps every player's root for
+  0.6 s (`Touch.Keep`); a claim counts if the runner's body touched the box anywhere between now and
+  ping/2 + 0.1 s ago (`Touch.Smoothing`), never more than 0.3 s (`Touch.MaxRewind`). One runner per lunge. A client
+  that sends nothing gets the same test without a pick (the sim bots). The Practice Bot's knife is checked where it
+  was 0.1 s ago (what runners saw) against bodies now. Spec `tests/TouchHit.spec` (prints the numbers above).
 - **Catchers stay out of both safe zones:** `MapService.holdCatchers` stands an invisible wall on each zone's
   middle-facing edge for the whole game, group `HuzzCatcherWall`, colliding only with `HuzzCatcher` (catchers' parts,
   `MapService.setCatcher` from `syncPlayer`; the bot too); `keepSafe()` pushes out any catcher who got past
@@ -77,8 +87,8 @@ The lobby side (one lobby per map, paint, his new lobby): [lobby.md](lobby.md). 
 ## Practice Bot (`HuzzServer/PracticeBot`, `Config/Round.Bot`)
 - Any round with runners and no catcher (alone, or the only catcher left) gets a server NPC catcher named "Practice
   Bot" (default blocky body from `CreateHumanoidModelFromDescription`, grey with a red shirt, tag CATCHER / BOT, a knife).
-- Starts at Speed 24 and adapts (`Bot.Step` 2 slower after it wins a game, faster after it loses, 18 to 28; its Reach 5
-  scales with it; "is slower/faster this game" when its next game starts; back to 24 when the game's players change
+- Starts at Speed 24 and adapts (`Bot.Step` 2 slower after it wins a game, faster after it loses, 18 to 28, times
+  the round's speed-up; it stabs with the knife's box like a player (it used to hit anything within Reach 5 all round); "is slower/faster this game" when its next game starts; back to 24 when the game's players change
   or the server empties; only games where it caught the last round count), stabs through `stabNear(nil, ...)`,
   1.2 s breather after each stab.
 - If it downs everyone nobody wins ("THE BOT WINS", no girl, no winner's pay). With it, one player starts a game in
@@ -125,7 +135,9 @@ The lobby side (one lobby per map, paint, his new lobby): [lobby.md](lobby.md). 
   HuzzRole, HuzzStatus, DashReady, ProtectedUntil...; characters: DashAt/Dir, LungeAt, HuzzDance/At).
 
 ## Honest gaps
-- Not seen in Studio yet: the Practice Bot (its walk, run animation, knife).
+- Not seen in Studio yet: the Practice Bot (its walk, run animation, knife), the touch with real lag (the server's
+  look-back uses `GetNetworkPing`), how often the bot catches now (sim: 2 catches in 10 games, was 5 in 11: it must
+  really touch you, so it may need to be faster).
 - His place (Oct 17): no Uncommon girls yet (the rarity is skipped until there are some); a plank path near the
   Halloween lobby and a basketball hoop sit loose in Workspace (the path's pieces on the field now move into
   Halloween_Map at start; the pieces on the lobby stay).
@@ -139,7 +151,11 @@ The lobby side (one lobby per map, paint, his new lobby): [lobby.md](lobby.md). 
   wiped PowerReady1/2, which hid the whole power bar (and the huss card) for the run that followed.
 - **Countdown:** owner, "the numbers just dont appear well" after a CHICKEN or no answer.
 - **Lunge Up 24** (from 18): the body was off the floor too briefly to read; details in [stab-lunge-catch.md](stab-lunge-catch.md).
-- **Pinpoint:** owner Oct 18: "make hitboxes pinpoint".
+- **Pinpoint:** owner Oct 18: "make hitboxes pinpoint". Oct 19: "make the player to player touch WAY MORE accurate".
+  Measured: the screen box was 5.5 x 4 and counted accessories, the server took any claim within Range + Slack =
+  11.5 studs root to root, its fallback 8.5 studs at almost any angle, the bot 5 studs all round. Now everything is
+  the same body-touch test, with the look-back so a fair hit on a laggy screen still counts.
+- **Speed up:** owner Oct 19: "speed goes up every round a very tiny bit".
 - **Catcher walls:** owner Oct 18 asked that catchers stay out of both safe zones.
 - **Chicken:** owner Oct 18: "you dont recieve the girl if you run chicken". Later the same day: "if you go chicken,
   still the first person to reach the safe zone gets the girl, right now nobody does". Oct 19 (alone, he chose

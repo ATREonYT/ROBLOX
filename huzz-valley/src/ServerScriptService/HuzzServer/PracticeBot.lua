@@ -95,8 +95,18 @@ function PracticeBot.result(botWon: boolean): string?
 	return if speed < before then "slower" else "faster"
 end
 
+-- The round's speed-up (Config/Round.SpeedUp, owner Oct 19: "speed goes up every round a very tiny bit"): the bot
+-- runs that much faster too, like every catcher. RoundService sets it at each round's start.
+local scale = 1
+function PracticeBot.setScale(k: number)
+	scale = if type(k) == "number" and k > 0 then k else 1
+	if humanoid and humanoid.WalkSpeed > 0 then
+		humanoid.WalkSpeed = speed * scale
+	end
+end
+
 local function setSpeed(on: boolean)
-	if humanoid then humanoid.WalkSpeed = if on then speed else 0 end
+	if humanoid then humanoid.WalkSpeed = if on then speed * scale else 0 end
 	if not on and humanoid and root then humanoid:MoveTo(root.Position) end
 end
 

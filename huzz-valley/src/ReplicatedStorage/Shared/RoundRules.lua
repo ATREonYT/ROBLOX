@@ -342,6 +342,15 @@ function RoundRules.stalling(s, inStart, only)
 	return any
 end
 
+-- How much faster everyone in the game runs in round `round` (owner, Oct 19: "speed goes up every round a very tiny
+-- bit"): 1 in round 1, then +perRound a round, never more than 1 + max. cfg = Config/Round.SpeedUp.
+function RoundRules.speedScale(round: number?, cfg): number
+	if not cfg or type(round) ~= "number" or round <= 1 then
+		return 1
+	end
+	return 1 + math.min((round - 1) * (cfg.PerRound or 0), cfg.Max or 0)
+end
+
 -- The only runner still out on the field (nil when none or several): they get a catch-up (Config Speeds.LastRunner).
 function RoundRules.lastRunner(s)
 	if s.over then

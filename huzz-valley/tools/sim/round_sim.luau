@@ -338,6 +338,7 @@ local function simulate(opts)
 	local RoundRules = loadShared("ReplicatedStorage/Shared/RoundRules.lua")
 	local GirlRoll = loadShared("ReplicatedStorage/Shared/GirlRoll.lua")
 	local SecretReveal = loadShared("ReplicatedStorage/Shared/SecretReveal.lua")
+	local TouchHit = loadShared("ReplicatedStorage/Shared/TouchHit.lua")
 
 	-- Fake map: ZoneA on the left, ZoneB on the right, Middle between, the lobby far away.
 	local function box(x, z, sx, sz)
@@ -636,7 +637,7 @@ local function simulate(opts)
 		SpinService = { boost = function() return 1 end }, -- (the Spin the Wheel's x2 Coins: none in the sim)
 		ProgressService = { gameXP = function(_, won, t) return 40 + (if won then 40 else 0), nil end },
 	}
-	local Shared = { Config = { Round = Config, Carry = Carry, Powers = Powers }, RoundRules = RoundRules, Net = Net, GirlRoll = GirlRoll, SecretReveal = SecretReveal,
+	local Shared = { Config = { Round = Config, Carry = Carry, Powers = Powers }, RoundRules = RoundRules, Net = Net, GirlRoll = GirlRoll, SecretReveal = SecretReveal, TouchHit = TouchHit,
 		KnifeLook = { pick = function() return nil end } } -- (which knife you wear: the default one in the sim)
 	local sharedNode = setmetatable({}, { __index = function(_, k)
 		return Shared[k]
@@ -654,6 +655,8 @@ local function simulate(opts)
 		env.require = req
 		return luau.load(fs.readFile(SRC .. path), { environment = env, debugName = path })
 	end
+	-- where every body was over the last moment (catches are judged where the catcher's screen showed the runner)
+	modules.HitHistory = loadScript("ServerScriptService/HuzzServer/HitHistory.lua")()
 	PowerService = loadScript("ServerScriptService/HuzzServer/PowerService.lua")()
 	modules.PowerService = PowerService
 	-- The Practice Bot: the real module with a stand-in body that botFrame walks where it's told.
@@ -932,7 +935,9 @@ local function simulate(opts)
 				-- it adapts to the kids (Config.Bot Step), always between MinSpeed and MaxSpeed
 				stats.botSpeeds = stats.botSpeeds or {}
 				stats.botSpeeds[h.WalkSpeed] = true
-				if h.WalkSpeed < Config.Bot.MinSpeed or h.WalkSpeed > Config.Bot.MaxSpeed then
+				-- (times the round's speed-up, Config.SpeedUp: everyone in the game gets a tiny bit faster each round)
+				local up = 1 + ((Config.SpeedUp and Config.SpeedUp.Max) or 0)
+				if h.WalkSpeed < Config.Bot.MinSpeed - 1e-6 or h.WalkSpeed > Config.Bot.MaxSpeed * up + 1e-6 then
 					problem("the Practice Bot runs at " .. h.WalkSpeed)
 				end
 			end
@@ -941,7 +946,9 @@ local function simulate(opts)
 				local d = goal - root.Position
 				d = Vector3.new(d.X, 0, d.Z)
 				if d.Magnitude > 0.3 then
-					root.CFrame = CFrame.new(root.Position + d.Unit * math.min(d.Magnitude, h.WalkSpeed * dt))
+					-- (facing the way it walks, as Roblox's Humanoid turns it: its knife's reach is in front of it)
+					local to = root.Position + d.Unit * math.min(d.Magnitude, h.WalkSpeed * dt)
+					root.CFrame = lookAt(to, to + d.Unit)
 				end
 			elseif h.WalkSpeed > 0 and st ~= "Running" and st ~= "HeroRun" then
 				problem("the Practice Bot moves outside play (" .. tostring(st) .. ")")
@@ -1086,7 +1093,8 @@ local function simulate(opts)
 							if opts.chaos and clock > 60 then chaosLunge(p) end
 						end
 						end
-					elseif bd < Config.Stab.Range - 1 and clock - bot.lastStab > Config.Stab.Cooldown then
+					elseif bd < Config.Stab.Reach + 0.6 and clock - bot.lastStab > Config.Stab.Cooldown then
+						-- (within the knife's real reach of the body: Shared/TouchHit, Oct 19)
 						bot.lastStab = clock
 						root.CFrame = lookAt(root.Position, Vector3.new(target.X, root.Position.Y, target.Z))
 						remotes.Stab.OnServerEvent:Fire(p)
@@ -1357,7 +1365,7 @@ report("4 players, 20 minutes", s, p, {
 	-- the last two in one round, so this checks runners are being caught rather than catchers winning)
 	{ "runners get caught and join the catchers", function(x) return x.tags >= 5 and x.wins >= 3 end },
 })
-s, p = simulate({ players = 6, seconds = 1500, seed = 7, config = function(c) c.Stab.Range = 9 end })
+s, p = simulate({ players = 6, seconds = 1500, seed = 7, config = function(c) c.Stab.Reach = 5.5 end })
 report("6 players, 25 minutes", s, p, {
 	{ "games finish", function(x) return x.wins >= 3 end },
 	{ "the last runner is called out and runs faster", function(x) return x.lastAlone >= 1 and (x.lastBoosted or 0) > 0 end },

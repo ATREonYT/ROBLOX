@@ -62,26 +62,42 @@ return {
 		-- Pinpoint (owner, Oct 18: "make hitboxes pinpoint"): the catcher's screen picks the runner whose body is in a
 		-- box in front of them, Reach studs from their middle to the knife's tip and Width across (Gameplay/HitCheck);
 		-- the server only checks that runner is within Range (+ Slack for lag) of where it sees the catcher.
-		Reach = 5.5,
-		Width = 4,
-		Slack = 3,
+		-- Oct 19 (owner: "make the player to player touch WAY MORE accurate"): the box is the knife's real reach now,
+		-- arm plus blade (4.5 from the middle = 4 studs past the chest), and only the runner's body parts count
+		-- (Shared/TouchHit: no hats, hair or wings). Was 5.5 x 4 with accessories counted, and the server took any claim
+		-- within Range + Slack (11.5 studs) of the catcher.
+		Reach = 4.5,
+		Width = 3.5,
+		Slack = 3, -- (unused since Oct 19: the server checks the knife's box against the body, Touch below)
 		Cooldown = 0.6, -- seconds between stabs, hit or miss
 		Time = 0.40, -- the slash, Huss Valley's (docs/knife-study.md): no wind-up, the sweep lands ~0.07 s, held, back by 0.40 (Shared/StabMotion)
 	},
 	TagRange = 5.5, -- "Touch" only: studs between root parts
+	-- How the server judges a touch (Shared/TouchHit, HuzzServer/HitHistory, RoundService.stabNear): the knife's box
+	-- (Stab or Lunge Reach x Width) must overlap the runner's body parts, give or take Tolerance studs, where the
+	-- catcher's screen showed the runner: up to their one-way network lag plus Smoothing seconds back (Roblox shows
+	-- other bodies a little late), at most MaxRewind. The Practice Bot's knife is checked where the runner's screen
+	-- showed the bot (Smoothing seconds back). Keep: seconds of history kept.
+	Touch = { Tolerance = 0.4, Smoothing = 0.1, MaxRewind = 0.3, Keep = 0.6 },
 
 
 	-- The huss (owner's call): Space throws you left or right on your screen. Jumping is off. The push eases every
-	-- frame from Speed down to EndSpeed (studs/s) over Time seconds (Shared/RunMotion.pushSpeed), then the run takes
-	-- over: Huss Valley's ~0.30 s and ~10 studs (docs/feel-study.md gap 7; was a flat 72 for 0.24 s = 17 studs, a snap).
-	-- Owner, Oct 18: "make the dash go a bit further ... but not too much": 0.30 x (28 + 36/3) = 12 studs (was 50 to
-	-- 20 = 9), same 0.30 s, so the lean and lines keep their timing. Cooldown before the next.
-	Dash = { Speed = 64, EndSpeed = 28, Time = 0.30, Cooldown = 2.5 },
+	-- frame from Speed down to EndSpeed (studs/s) over Time seconds (Shared/RunMotion.pushSpeed, Ease = the curve's
+	-- power), then the run takes over. Owner, Oct 18: "make the dash go a bit further ... but not too much": ~12 studs
+	-- (was 9). Cooldown before the next.
+	-- Oct 19 (owner: "their huss is way quicker than ours, make it more smooth and quicker reset Huss (2 seconds)"):
+	-- Huss Valley's ground slides ~4x the run's speed for a moment, then drops sharply (docs/feel-study.md gap 7);
+	-- ours eased 64 to 28 over 0.30 s, so mid-huss it was barely faster than the run. Now a hard burst at 120 easing
+	-- out (Ease 3: cubic) to 16 over 0.28 s: about the same 12 studs (0.28 x (16 + 104/4)), 80% of it in the first
+	-- 0.15 s (was 0.22 s), and it ends at 16 sideways instead of 28, so the hand-back to the run is soft.
+	-- Cooldown 2 s (owner's number; was 2.5).
+	Dash = { Speed = 120, EndSpeed = 16, Time = 0.28, Ease = 3, Cooldown = 2 },
 	-- Catchers' Space (owner: "when they press space they jump and haul at the runner, and if they go into them,
 	-- they get stabbed"): a leap forward the way they face, a hard burst that eases off (Speed to EndSpeed over
 	-- Time: 0.38 x (40 + 32/3) = 19 studs, the old flat 56 x 0.36 reach). Any runner they reach during the leap
-	-- (HitWindow seconds, within HitRange studs) is stabbed, the same as the knife. Shares the Space cooldown tile.
-	-- Reach/Width: the leaping knife's box on the catcher's screen (pinpoint, as Stab).
+	-- (HitWindow seconds) is stabbed, the same as the knife. Shares the Space cooldown tile.
+	-- Reach/Width: the leaping knife's box along the leap; it must touch the runner's body (Shared/TouchHit, on the
+	-- screen and on the server, Oct 19). HitRange is only the simulation bot's "close enough to leap".
 	-- Up: the hop (studs/s up). Oct 19 knife pass 2: 24, was 18. At 18 the body was off the floor for 0.18 s (5 frames)
 	-- and 0.8 studs high, too short to show a leap at all (Huss Valley's catcher is in the air ~0.4 s); 24 = 0.245 s and
 	-- 1.5 studs, long enough for the take-off, the knife leading and the landing (Shared/StabMotion LEAP). Distance unchanged.
@@ -124,6 +140,10 @@ return {
 
 	-- Faster than Roblox's 16 (owner: "make the people run quicker", and again: "make the running quicker at max
 	-- speed"; was 20/24/26/23/26). Top speeds: Gameplay/Sprint builds up to them from a walk.
+	-- Owner, Oct 19: "speed goes up every round a very tiny bit" (Huss Valley's round banner says "Speed unchanged"
+	-- or what changed): every round after the first, runners' and catchers' top speeds (and the Practice Bot's) go up
+	-- PerRound, up to Max (Shared/RoundRules.speedScale, RoundService.speedFor). The lobby never changes.
+	SpeedUp = { PerRound = 0.02, Max = 0.20 },
 	Speeds = {
 		Lobby = 22, -- everyone not in a game
 		Runner = 28,

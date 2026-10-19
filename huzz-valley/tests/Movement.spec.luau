@@ -1,7 +1,9 @@
 -- lune run tests/Movement.spec.luau
 -- Movement and camera feel against Huss Valley's measured numbers (docs/feel-study.md gaps 4 to 9):
---   the huss push eases from a burst to a glide (~0.30 s, ~10 studs), the lunge keeps its reach, the huss pose leans
---   ~28 degrees into the move, drops, holds to 0.30 s and is upright by ~0.40 s; the run starts quick with HV's step
+--   the huss push is a hard burst (~4x the run, HV's) easing out to a soft hand-back (~0.28 s, ~12 studs, most of it in
+--   the first 0.15 s; owner Oct 19 "their huss is way quicker than ours", ready again after 2 s), the lunge keeps its
+--   reach, the huss pose leans ~28 degrees into the move over 3 frames (never most of it in one 30 fps frame), drops,
+--   holds through the push and is upright by ~0.40 s; the run starts quick with HV's step
 --   rate; the cinematic swings go round and over (never through a runner or straight down) and the hand-back frames
 --   you like HV (a third of the screen tall, the horizon ~30% from the top).
 local roblox = require("@lune/roblox")
@@ -22,11 +24,12 @@ local deg = math.deg
 
 -- The huss push.
 local D = Round.Dash
-check(D.Time >= 0.28 and D.Time <= 0.32, "the huss pushes for ~0.30 s")
-check(RunMotion.pushSpeed(D, 0) == D.Speed and D.Speed >= 40 and D.Speed <= 70, "it starts with a burst (~50-65 studs/s)")
-check(D.EndSpeed >= 15 and D.EndSpeed <= 30, "and eases down to ~20-28 studs/s")
+check(D.Time >= 0.24 and D.Time <= 0.32, "the huss pushes for ~0.25-0.3 s")
+check(RunMotion.pushSpeed(D, 0) == D.Speed and D.Speed >= 90 and D.Speed <= 140, "it starts with a hard burst, ~4x the run like HV (90-140 studs/s)")
+check(D.EndSpeed >= 10 and D.EndSpeed <= 20, "and eases down to 10-20 studs/s, so handing back to the run is soft")
+check(D.Cooldown == 2, "ready again after 2 seconds (owner's number)")
 local last, smooth = math.huge, true
-for i = 0, 29 do
+for i = 0, math.floor(D.Time * 100) - 1 do
 	local v = RunMotion.pushSpeed(D, i / 100)
 	if not v or v > last + 1e-6 then smooth = false end
 	last = v or last
@@ -35,6 +38,14 @@ check(smooth, "the push speed only ever eases down, every frame (no flat push an
 check(RunMotion.pushSpeed(D, D.Time) == nil, "and it ends at Time")
 local dist = RunMotion.pushDistance(D)
 check(dist >= 11 and dist <= 13.5, string.format("the huss covers ~12 studs (owner: a bit further than 9, not too much) (%.1f)", dist))
+local covered, at80 = 0, nil
+for i = 0, 600 do
+	local v = RunMotion.pushSpeed(D, i / 2000)
+	if not v then break end
+	covered += v / 2000
+	if not at80 and covered >= 0.8 * dist then at80 = i / 2000 end
+end
+check(at80 ~= nil and at80 <= 0.18, string.format("quick: 80%% of it is covered in the first 0.18 s (%.2f s; was 0.22)", at80 or -1))
 local L = Round.Lunge
 local reach = RunMotion.pushDistance(L)
 check(reach >= 17 and reach <= 21, string.format("the lunge keeps its old ~20 stud reach (%.1f)", reach))
@@ -65,10 +76,12 @@ check(leanR >= 24 and leanR <= 32, string.format("the huss leans ~28 degrees int
 check(-leanL >= 24 and -leanL <= 32, string.format("the same the other way (%.1f)", -leanL))
 local drop = (standHead - headR) / (standHead - 0)
 check(drop >= 0.08 and drop <= 0.2, string.format("the body drops ~13%% (%.0f%%)", drop * 100))
-local early = pose(0.05, 1)
-check(early >= leanR * 0.9, "it's leaning from the first frames (in by 0.05 s)")
-local held = pose(0.29, 1)
-check(held >= leanR * 0.9, "it holds the lean to 0.30 s")
+local frame1 = pose(1 / 30, 1)
+check(frame1 >= leanR * 0.1 and frame1 <= leanR * 0.55, string.format("smooth in: one 30 fps frame in it's part way, not most of it (%.1f)", frame1))
+local early = pose(0.1, 1)
+check(early >= leanR * 0.9, "and fully leaning by the third frame (in by 0.1 s)")
+local held = pose(0.24, 1)
+check(held >= leanR * 0.9, "it holds the lean through the push")
 local late = pose(0.41, 1)
 check(math.abs(late) <= leanR * 0.15, string.format("upright again by ~0.40 s (%.1f)", late))
 pose(0.6, 1)

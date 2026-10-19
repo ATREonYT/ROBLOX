@@ -36,7 +36,7 @@ def main():
                     "-vsync", "0", os.path.join(tmp, "f_%02d.png")], check=True)
     ours = Image.new("RGB", (W, title_h + 2 * row_h), (12, 12, 16))
     d = ImageDraw.Draw(ours)
-    d.text((8, 6), "Ours, same moments (Space on the 36.80 column): eased push 50 to 20 studs/s, lean 28, 6 lines",
+    d.text((8, 6), "Ours, same moments (Space on the 36.80 column): push 120 to 16 studs/s in 0.28 s, lean in 0.09 s, ready again at 2 s",
            fill="white", font=font(17))
     small = font(14)
     for i in range(TILES):

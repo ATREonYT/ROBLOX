@@ -48,6 +48,12 @@ Read before changing how the click stab, a catcher's lunge, the catch or getting
   30 fps; every joint handed back). Film `docs/previews/knife-leap.mp4`.
 
 ## The catch
+- **What counts as a catch** is the knife's box touching the runner's real body, checked the same way on the
+  catcher's screen and on the server with a look-back for lag (`Shared/TouchHit`, `HuzzServer/HitHistory`; numbers
+  in [round.md](round.md) "Catching"). The motion here doesn't change it: a slash or leap that looks like it reaches
+  someone but whose box doesn't touch their body is a miss.
+- **Releasing a pose** (StabMotion, DownMotion, CarryMotion): put back the pose underneath only on joints nobody else
+  wrote since, or the old pose shows for one frame ([animations.md](animations.md) "Layering").
 - **Red fill** on the caught runner (`Gameplay/RoundHud`, on their team Highlight, everyone's screen,
   `KnifeLook.CATCH.Fill` / `catchFill`): FillTransparency 0.12 for 0.07 s (HV's 2 solid frames), up to 0.6 by 0.25 s,
   gone by 0.42 s. The solid frames only through `Burst.flashOk` (one flash a second per screen), else the tint only.

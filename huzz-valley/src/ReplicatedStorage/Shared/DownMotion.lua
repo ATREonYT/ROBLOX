@@ -187,8 +187,10 @@ end
 
 -- Gives the joints back to the animations (when they get up).
 function DownMotion.release(rec)
+	-- (only a joint nothing animated since our last write: one an animation already posed this frame keeps that fresh pose;
+	-- writing the older `base` over it showed a stale pose for one frame, a pop at the end of the move)
 	for m, base in rec.base do
-		if m.Parent then
+		if m.Parent and m.Transform == rec.written[m] then
 			m.Transform = base
 		end
 	end

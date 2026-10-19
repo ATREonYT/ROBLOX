@@ -33,12 +33,29 @@ has the general KeyframeSequence workflow; 3D video tools are in core `CLAUDE.md
   Film `docs/previews/remote-walk.mp4` (`motion3d/remote_walk_scene.luau`: before/after over a jumpy network, then the
   set-off from behind); sheet `docs/previews/walk-vs-hv.jpg` (`motion3d/walk_sheet.py`): full run ~0.1 s after W in
   both. Footstep sounds: [movement-and-camera.md](movement-and-camera.md). Not seen in Studio yet.
+- **Shift lock strafe** (`LocomotionMix.strafe` + `strafePose`): hips and legs turn to the move, the head stays on the
+  aim, S back-pedals; [movement-and-camera.md](movement-and-camera.md). `strafePose` solves the neck exactly (the
+  head's turn is undone through the hunched run pose); a plain counter-turn on the neck tipped the head sideways.
+
+## Layering poses on Motor6D.Transform (every pose module; lesson of Oct 19)
+- Layers run in Frame order: 8 PlayerMoves, 10 RunAnimator (huss), 12 Locomotion (lean and strafe), 20 carry,
+  30 stab, 40 knockdown. Each keeps what it wrote (`written`) and the pose under it (`base`), and builds from `base`,
+  never from its own last write.
+- **Releasing:** put `base` back only on a joint whose Transform is still exactly what you wrote. If anything else
+  wrote it since (the pack's next frame), leave it: writing the old base back showed a stale pose for one frame, a
+  pop of up to ~178° at the end of every huss and leap (RunMotion, StabMotion, CarryMotion, DownMotion, PlayerMoves).
+- Measure smoothness, don't eyeball stills: `lune run huzz-valley/tools/preview/motion3d/move_smooth_measure.luau [fps]`
+  (repo root) runs the real layers through idle, W, huss, strafe, stab, leap, S and stop, and prints each moment's
+  biggest turn per frame and its "pop" (the change between one frame's motion and the next).
+  `MOVE_TRACE="Part,Part:from:to"` prints frames. Oct 19, 30 fps: huss pop 110° → 63° (the run itself is ~66°),
+  the end-of-leap flip gone. The click stab is still a fast sweep (~100° in a frame, as Huss Valley's slash).
 
 ## The huss pose (`Shared/RunMotion`, for everyone, you too)
 - `Gameplay/RunAnimator` draws only the huss on your own character when your run is the pack's: a wide low crouch:
   Crouch 0.75 (head drops 19%), leaning ~28° mostly at the waist (`Run.Dash` SideRoll 12 + SideWaist 14), outside leg
-  out 55°, inside thigh up 45° and out 42°, knee -80; held to 0.30 s, upright by ~0.42 s. Still narrower and higher
-  than HV's flat straddle (`docs/previews/feel-huss-after.jpg`).
+  out 55°, inside thigh up 45° and out 42°, knee -80. In over 0.09 s (half on the first frame), held while the push
+  lasts (0.28 s), upright by 0.40 s, the crouch easing out with the push (`Run.Dash` In/Out/Settle; the old 0.05 s
+  blend put 74% of it in one frame). Still narrower and higher than HV's flat straddle (`docs/previews/huss-oct19.jpg`).
 - Your own huss's server DashAt is ignored within 0.6 s of your local one (`RunMotion.dashAt`, local attribute
   HuzzMyDashAt), so a laggy echo never restarts the lean or lines.
 - The built DashLeft/DashRight (38° lean) plays only once the owner publishes a run (`Config/Animations.Run`);
@@ -84,6 +101,8 @@ has the general KeyframeSequence workflow; 3D video tools are in core `CLAUDE.md
 - **Planted feet:** `WalkAt` was 8 and `RunAt` 25, and walk handed over to run at 13-21 studs/s, so the walk skated at
   half the ground speed at the 16 you set off at.
 - **Huss pose:** an Oct 17 critic called the first one "a stiff tilt"; the first version of all was a cartwheel.
+- **Smoothness** (owner Oct 19: "make animations more smooth"): measured first; the pops were the one-frame huss
+  blend and the stale writes on release, not the pack.
 - **Girls:** Oct 18 "so choppy": the small companion sprinted at 9 steps/s (legs jumping 44° a frame) and the lock
   jolted her body every step; hence `Pack.MaxSteps` and `Pack.Surge`.
 - **Carried girls** (Oct 18 "not just be held straight up like that").

@@ -57,6 +57,12 @@ return {
 		AccelLean = 0.12, -- degrees of forward pitch per stud/s² of speeding up...
 		MaxPitch = 5, MaxPitchBack = 3, -- ...up to these (leaning back a little when you stop)
 		LeanResponse = 9,
+		-- Shift lock (owner, Oct 19: "when you shift lock the only thing that moves when you press w a s d (etc) is
+		-- their body not their head"): the hips and legs turn toward the way you move, up to MaxTurn degrees; the
+		-- chest ends Chest of that turn round, the head turns back so it keeps looking where you aim. Moving more than
+		-- BackFrom degrees off straight ahead is a back-pedal (hips toward the mirrored side, the loop backwards).
+		-- Response: the spring's speed (12 settles in ~0.3 s). Below MinSpeed studs/s the body faces ahead.
+		Strafe = { MaxTurn = 70, BackFrom = 110, Response = 12, Chest = 0.4, MinSpeed = 2 },
 	},
 	-- Other players (owner, Oct 18: "player to player less choppy"): their speed comes from where their body is over
 	-- time (Shared/LocomotionMix.track), not from their replicated velocity, which jumps between network updates and
@@ -65,8 +71,9 @@ return {
 		Window = 0.25, -- seconds: speed = distance covered over this long (evens out network bursts)
 		MinSpan = 0.05, -- seconds of samples needed before a speed is read
 		Hold = 0.15, -- seconds a body that hasn't moved at all keeps its last speed (a network stall, not a stop)
-		Teleport = 120, TeleportMin = 6, -- a jump faster than this (studs/s) and longer than this (studs) is a teleport
-		MaxSpeed = 80, -- studs/s: never reads faster (the huss is 64, the lunge 72)
+		Teleport = 160, TeleportMin = 6, -- a jump faster than this (studs/s) and longer than this (studs) is a teleport
+		-- (over the huss's 120 burst)
+		MaxSpeed = 80, -- studs/s: never reads faster (the huss bursts at 120 but averages ~45 over the window)
 		Fade = 0.2, -- seconds the pack fades in or out (a dance or an Action animation starting, a downed body)
 		Near = 70, Mid = 160, -- studs: sampled every frame this close, 30 times a second to Mid, 15 beyond or off screen
 	},
@@ -74,8 +81,13 @@ return {
 	-- The huss pose (Shared/RunMotion, on every character including your own; Config/Round.Dash sets its push).
 	-- Huss Valley frame by frame (docs/previews/feel-huss.jpg): crouched and leaning ~25-30 degrees into the move
 	-- from the first frame, held to 0.30 s, upright by ~0.40 s, running again by 0.5 s.
+	-- Oct 19 (owner: "make it more smooth"; tools/preview/motion3d/move_smooth_measure.luau): the pose came in over
+	-- 0.05 s, so at 30 fps 74% of it landed in one frame (a leg turned 83 degrees in that frame), then froze like a
+	-- statue for 0.25 s. Now it comes in over 3 frames (0.09 s, at most ~50% a frame), settles a little deeper
+	-- through the push (Settle) and eases out over 0.16 s.
 	Dash = {
-		Length = 0.42, In = 0.05, Out = 0.12, -- seconds: total, blend in, blend out (full pose 0.05 to 0.30 s)
+		Length = 0.40, In = 0.09, Out = 0.16, -- seconds: total, blend in, blend out (full pose 0.09 to 0.24 s)
+		Settle = 0.08, -- the pose starts this much shallower and settles to its full depth by the end of the push
 		-- (critic, Oct 17: 0.5 / 20 / 6 / 34 read as a stiff tilt; HV's huss is a wide low crouch, torso fairly upright)
 		Crouch = 0.75, -- studs lower: a real crouch (was 0.5; 0.85 dropped the head 21%, past HV's measured ~13-20%)
 		SideShift = 0.3, -- hips shift this far the way you go
@@ -91,7 +103,7 @@ return {
 		-- horizontal lines trailing behind along the move, ~20-25% of the screen wide, for ~0.3 s. They ride with
 		-- the body (not left on the ground), draw out in 0.06 s and hold their length.
 		Lines = {
-			Time = 0.3, -- seconds they show (fading out over the last 40%)
+			Time = 0.28, -- seconds they show (fading out over the last 40%): as long as the push (Config/Round.Dash)
 			Width = 0.09, -- studs
 			Length = 6.5, -- studs (x each line's own scale: 22-28% of the screen at the round camera's 12 studs)
 			Gap = 0.7, -- studs from the body's middle to where a line starts

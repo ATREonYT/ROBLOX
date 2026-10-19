@@ -5,7 +5,8 @@
 	        side to side and the shoulders twist against the hips; a bounce on every step.
 	  Huss: Huss Valley's compact sideways throw (docs/previews/feel-huss.jpg): crouched, hips shifted and the
 	        body leaning ~28 degrees into the move from the first frame, the outside leg kicked out, the inside
-	        one bent under you, fists kept in front; held to 0.30 s, upright by ~0.40 s (Config/Run.Dash). It owns
+	        one bent under you, fists kept in front; in over 0.09 s, held while the push lasts (0.28 s), upright by
+	        0.40 s and easing out of the crouch as the push dies (Config/Run.Dash, owner Oct 19 "way quicker"). It owns
 	        every joint while it plays, over the scripted run or over the owner's pack run (your own character
 	        too: Gameplay/RunAnimator), so everyone sees the same huss. (Forward and back poses stay for old saves
 	        of DashDir but the huss is sideways only.)
@@ -80,15 +81,16 @@ local function dashWeight(age)
 	return smooth(age / D.In) * (1 - smooth((age - (D.Length - D.Out)) / D.Out))
 end
 
--- The ground speed of a push (Config/Round.Dash or .Lunge: Speed, EndSpeed, Time) `age` seconds in, or nil once it's
--- over: a hard start easing out (quad) to EndSpeed, so the move bursts and then settles instead of a flat push and a cut.
+-- The ground speed of a push (Config/Round.Dash or .Lunge: Speed, EndSpeed, Time, Ease) `age` seconds in, or nil once
+-- it's over: a hard start easing out to EndSpeed (Ease 2 = quad, the lunge; 3 = cubic, the huss: a sharper burst that
+-- settles longer), so the move bursts and then settles instead of a flat push and a cut.
 function RunMotion.pushSpeed(cfg, age)
 	if age < 0 or age >= cfg.Time then
 		return nil
 	end
 	local u = 1 - age / cfg.Time
 	local finish = cfg.EndSpeed or cfg.Speed
-	return finish + (cfg.Speed - finish) * u * u
+	return finish + (cfg.Speed - finish) * u ^ (cfg.Ease or 2)
 end
 
 -- When a character's huss started (server time), or nil. Your own huss is stamped twice: at once on your screen
@@ -108,7 +110,7 @@ end
 -- How far a push carries you (studs), for the checks and the simulation.
 function RunMotion.pushDistance(cfg)
 	local finish = cfg.EndSpeed or cfg.Speed
-	return cfg.Time * (finish + (cfg.Speed - finish) / 3)
+	return cfg.Time * (finish + (cfg.Speed - finish) / ((cfg.Ease or 2) + 1))
 end
 
 -- The huss's speed lines (Config/Run.Dash.Lines), `age` seconds in: thin lines riding with the body, trailing
@@ -164,9 +166,11 @@ local function runPose(J, p, carrying)
 	return poses
 end
 
--- The dash pose. dir: the dash direction in the body's frame (x right, z forward).
-local function dashPose(J, dir, carrying)
+-- The dash pose. dir: the dash direction in the body's frame (x right, z forward). depth (0..1, default 1): how far
+-- into the pose (the huss settles deeper through its push: Config/Run.Dash.Settle).
+local function dashPose(J, dir, carrying, depth)
 	local D = Config.Dash
+	local k = depth or 1
 	local poses = {}
 	local side = if abs(dir.X) > abs(dir.Z) then (if dir.X > 0 then 1 else -1) else 0
 	if side ~= 0 then
@@ -176,13 +180,13 @@ local function dashPose(J, dir, carrying)
 		local right = side > 0
 		local leadHip, leadKnee, leadAnkle = if right then J.rHip else J.lHip, if right then J.rKnee else J.lKnee, if right then J.rAnkle else J.lAnkle
 		local trailHip, trailKnee, trailAnkle = if right then J.lHip else J.rHip, if right then J.lKnee else J.rKnee, if right then J.lAnkle else J.rAnkle
-		poses[J.root] = CFrame.new(D.SideShift * side, -D.Crouch, 0) * CarryMath.inJoint(J.root, angles(-12, -5 * side, -D.SideRoll * side))
-		poses[J.waist] = CarryMath.inJoint(J.waist, angles(-8, 4 * side, -D.SideWaist * side))
-		poses[J.neck] = CarryMath.inJoint(J.neck, angles(12, 0, D.SideHead * side))
-		poses[leadHip] = CarryMath.inJoint(leadHip, angles(D.LeadHip or 30, 0, (D.LeadSplay or 30) * side))
-		poses[leadKnee] = CarryMath.inJoint(leadKnee, angles(D.LeadKnee or -52))
+		poses[J.root] = CFrame.new(D.SideShift * side, -D.Crouch * k, 0) * CarryMath.inJoint(J.root, angles(-12, -5 * side, -D.SideRoll * k * side))
+		poses[J.waist] = CarryMath.inJoint(J.waist, angles(-8, 4 * side, -D.SideWaist * k * side))
+		poses[J.neck] = CarryMath.inJoint(J.neck, angles(12, 0, D.SideHead * k * side))
+		poses[leadHip] = CarryMath.inJoint(leadHip, angles((D.LeadHip or 30) * k, 0, (D.LeadSplay or 30) * k * side))
+		poses[leadKnee] = CarryMath.inJoint(leadKnee, angles((D.LeadKnee or -52) * k))
 		poses[leadAnkle] = CarryMath.inJoint(leadAnkle, angles(18, 0, -12 * side))
-		poses[trailHip] = CarryMath.inJoint(trailHip, angles(8, 0, -D.SideSplay * side))
+		poses[trailHip] = CarryMath.inJoint(trailHip, angles(8, 0, -D.SideSplay * k * side))
 		poses[trailKnee] = CarryMath.inJoint(trailKnee, angles(-18))
 		poses[trailAnkle] = CarryMath.inJoint(trailAnkle, angles(0, 0, 14 * side))
 		local holdR, holdL = angles(48, -18, -14), angles(48, 18, 14)
@@ -275,7 +279,13 @@ function RunMotion.step(rec, dt, speed, grounded, carrying, dashAge, dashDir, ca
 	rec.phase = (rec.phase + dt * speed / C.Stride * 2 * pi) % (2 * pi)
 	local J = rec.joints
 	local run = runPose(J, rec.phase, carrying)
-	local dash = if dw > 0.01 then dashPose(J, dashDir, carrying) else nil
+	local depth = nil
+	if dw > 0.01 and Config.Dash.Settle then
+		local D = Config.Dash
+		local hold = math.max(D.Length - D.Out - D.In, 1e-3)
+		depth = 1 - D.Settle * (1 - smooth((dashAge - D.In) / hold))
+	end
+	local dash = if dw > 0.01 then dashPose(J, dashDir, carrying, depth) else nil
 	local cast = if cw > 0.01 then castPose(J) else nil
 	for _, motor in J do
 		local pose, w = run[motor], rec.weight
@@ -300,9 +310,12 @@ function RunMotion.step(rec, dt, speed, grounded, carrying, dashAge, dashDir, ca
 	end
 end
 
+-- Hands the joints back. A joint something animated again this frame keeps that fresh pose; only one nothing has
+-- touched since our last write gets its own last animated pose back (writing `base` over a fresh pose showed the pose
+-- from a frame or more ago for one frame: a pop at the end of every huss, measured by move_smooth_measure.luau).
 function RunMotion.release(rec)
 	for motor, base in rec.base do
-		if motor.Parent then
+		if motor.Parent and motor.Transform == rec.written[motor] then
 			motor.Transform = base
 		end
 	end

@@ -21,6 +21,10 @@
 	    Roblox's own animation never peeks through).
 	  - Your own, in the live game only: the small lean into turns and into speeding up (LocomotionMix.lean), as
 	    Locomotion adds in Studio.
+	  - Shift lock in a round (owner, Oct 19: "the only thing that moves when you press w a s d (etc) is their body
+	    not their head"): a body moving another way than it faces gets its hips and legs turned toward the move and
+	    its head turned back to where it faces (LocomotionMix.strafe; backwards = a back-pedal), from the way its
+	    body goes (LocomotionMix.track's vel), so everyone sees it, yours too in the live game.
 	Off when the owner has published Idle, Walk and Run (Config/Animations): then the real tracks replicate.
 ]]
 local M = {}
@@ -58,6 +62,8 @@ function M.start()
 	local Frame = require(script.Parent.Frame)
 	local T = RunConfig.Track
 	local DASH_LENGTH = RunConfig.Dash.Length
+	local LEAP_LENGTH = 0.85 -- seconds a catcher's leap owns the body (Shared/StabMotion LEAP.Up, plus a little)
+	local PLAYING = { HeroRun = true, Countdown = true, Running = true, RoundOver = true } -- (shift lock's stages)
 
 	local tried = {} -- character -> when we last failed to build it (its body still loading)
 
@@ -102,7 +108,7 @@ function M.start()
 	local function release(rec)
 		for name, base in rec.base do
 			local m = rec.motors[name]
-			if m and m.Parent then
+			if m and m.Parent and m.Transform == rec.written[name] then -- (a joint posed again this frame keeps it)
 				m.Transform = base
 			end
 		end
@@ -132,13 +138,14 @@ function M.start()
 	local function write(rec, pose, w)
 		for name, m in rec.motors do
 			local cf = pose[name]
-			if cf then
-				if name == "LowerTorso" then
-					cf = CFrame.new(cf.Position * rec.k) * cf.Rotation -- (the hips' bob, to the avatar's size)
-					if rec.lean then
-						cf = rec.lean * cf
-					end
+			if cf and name == "LowerTorso" then
+				cf = CFrame.new(cf.Position * rec.k) * cf.Rotation -- (the hips' bob, to the avatar's size)
+				if rec.lean then
+					cf = rec.lean * cf
 				end
+			end
+			cf = (rec.turned and rec.turned[name]) or cf -- (shift lock's strafe: the final pose, lean and size in)
+			if cf then
 				local current = m.Transform
 				-- (nothing animated it since our last write: blend from the last real pose, don't stack)
 				local base = if rec.written[name] == current then rec.base[name] else current
@@ -149,7 +156,7 @@ function M.start()
 		end
 	end
 
-	local function step(rec, dt, now, anims, isMe, camCF)
+	local function step(rec, dt, now, anims, isMe, camCF, playing)
 		local character, root, humanoid = rec.character, rec.root, rec.humanoid
 		local pos = root.CFrame.Position
 		local speed, up
@@ -206,6 +213,31 @@ function M.start()
 					rec.lean = c0:Inverse() * Mix.leanCFrame(roll, pitch, root.Size.Y / 2 + humanoid.HipHeight) * c0
 				end
 			end
+			-- shift lock's strafe: yours from your shift lock, anyone else's in a round from the way their body goes
+			local dashAt = RunMotion.dashAt(character)
+			local lungeAt = character:GetAttribute("LungeAt")
+			local server = Workspace:GetServerTimeNow()
+			local busy = (type(dashAt) == "number" and server - dashAt < DASH_LENGTH + 0.1)
+				or (type(lungeAt) == "number" and server - lungeAt < LEAP_LENGTH)
+			local vel = if isMe then root.AssemblyLinearVelocity else rec.tracker.vel
+			local on = if isMe then Players.LocalPlayer:GetAttribute("HuzzShiftLock") == true else playing == true
+			local turn = Mix.strafe(rec.mix, sdt, root.CFrame:VectorToObjectSpace(vel), on,
+				if downed or busy or quiet or airborne then 1 else 0)
+			rec.turned = nil
+			local hipsM, waistM, neckM = rec.motors.LowerTorso, rec.motors.UpperTorso, rec.motors.Head
+			local lt, ut, hd = pose.LowerTorso, pose.UpperTorso, pose.Head
+			if math.abs(turn) > 1e-3 and hipsM and waistM and neckM and lt and ut and hd then
+				local hips = CFrame.new(lt.Position * rec.k) * lt.Rotation
+				if rec.lean then
+					hips = rec.lean * hips
+				end
+				local r, w, n = Mix.strafePose(rec.mix, turn, {
+					root = { C0 = hipsM.C0, C1 = hipsM.C1, T = hips },
+					waist = { C0 = waistM.C0, C1 = waistM.C1, T = ut },
+					neck = { C0 = neckM.C0, C1 = neckM.C1, T = hd },
+				})
+				rec.turned = { LowerTorso = r, UpperTorso = w, Head = n }
+			end
 			rec.pose = pose
 		end
 		if rec.weight > 0 then
@@ -226,7 +258,11 @@ function M.start()
 		local cam = Workspace.CurrentCamera
 		local camCF = cam and cam.CFrame
 		local seen = {}
-		local function visit(character: Model?, isMe: boolean)
+		local remotes = ReplicatedStorage:FindFirstChild("Remotes") -- (Shared/Net's folder; the Round remote holds Stage)
+		local round = remotes and remotes:FindFirstChild("Round")
+		local stage = round and round:GetAttribute("Stage")
+		local roundOn = PLAYING[stage] == true
+		local function visit(character: Model?, isMe: boolean, playing: boolean?)
 			if not character or character.Parent == nil or seen[character] then
 				return
 			end
@@ -244,11 +280,12 @@ function M.start()
 			end
 			if rec then
 				seen[character] = true
-				step(rec, dt, now, anims, isMe, camCF)
+				step(rec, dt, now, anims, isMe, camCF, playing)
 			end
 		end
 		for _, p in Players:GetPlayers() do
-			visit(p.Character, p == me)
+			local role = p:GetAttribute("HuzzRole")
+			visit(p.Character, p == me, roundOn and (role == "Runner" or role == "Catcher"))
 		end
 		for _, bot in CollectionService:GetTagged("HuzzBot") do
 			if bot:IsA("Model") then

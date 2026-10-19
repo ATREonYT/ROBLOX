@@ -120,9 +120,10 @@ local function body(name, at, rigType)
 	return { character = character, root = root, motors = motors, humanoid = humanoid }
 end
 
-local me = { Name = "Me", UserId = 1 }
-local other = { Name = "Other", UserId = 2 }
-local r6 = { Name = "Blocky", UserId = 3 }
+local function noAttr() return nil end
+local me = { Name = "Me", UserId = 1, GetAttribute = noAttr }
+local other = { Name = "Other", UserId = 2, GetAttribute = noAttr }
+local r6 = { Name = "Blocky", UserId = 3, GetAttribute = noAttr }
 Players.LocalPlayer = me
 players = { me, other, r6 }
 local mine, theirs, blocky = body("Me", Vector3.new(0, 3, 0)), body("Other", Vector3.new(10, 3, 0)), body("Blocky", Vector3.new(20, 3, 0), roblox.Enum.HumanoidRigType.R6)

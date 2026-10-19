@@ -79,6 +79,9 @@ fine). Owner quotes go in the topic's "Why" part. Keep this core about 20 KB and
     the lobby before roles are set).
   - The sim isn't deterministic (table order over Player keys): a scenario forces what it tests (edge cases makes
     every catcher lunge) instead of hoping a seed does it.
+  - Posing Motor6D.Transform: on release, put the old pose back only on joints still holding exactly what you wrote,
+    or a stale pose shows for one frame (Oct 19: a ~178° flip at the end of every huss and leap). Measure motion with
+    `motion3d/move_smooth_measure.luau`, not stills ([animations.md](docs/notes/animations.md)).
   - Worktree agents can't run `bash tools/check.sh` (blocked): run each `lune run tests/X.spec.luau` and the sim on
     their own, and pass harness snippets as `@file` instead of `"$(cat file)"`.
 
