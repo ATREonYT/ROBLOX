@@ -790,7 +790,8 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 		if t >= Reveal.BUILD then
 			once("sigil", function()
 				if FxTexture.ready("Sigil") then sigil:Emit(1) end
-				Sfx.beat("Build") -- (Config/SecretSounds: riser + magic bed)
+				-- (Config/SecretSounds: riser + magic bed; the riser is timed to top out on the burst)
+				Sfx.beat("Build", Reveal.IMPACT - Reveal.BUILD)
 			end)
 		end
 		if t >= Reveal.SPARK then once("spark", function() spark0:Emit(1) end) end
@@ -1090,6 +1091,8 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 		-- her name on screen (Shared/SecretReveal.name): pops in a touch big, the line draws out, fades by the cut
 		local nv = Reveal.name(t)
 		nameGui.Enabled = nv > 0
+		-- the sting (her musical "ta-da") with her name, clear of the burst's ring
+		if t >= Reveal.NAME then once("sting", function() Sfx.beat("Reveal") end) end
 		if nv > 0 then
 			local x = math.clamp((t - Reveal.NAME) / 0.25, 0, 1)
 			pop.Scale = 1.18 - 0.18 * (1 - (1 - x) ^ 3)
@@ -1127,7 +1130,6 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 				if FxTexture.ready("RingSoft") then landRing:Emit(1) end
 				dust:Emit(14)
 				smoke:Emit(16)
-				Sfx.beat("Reveal") -- (the sting as she lands and poses)
 			end)
 			local x = math.clamp((t - Reveal.LAND) / 0.45, 0, 1)
 			dome.Size = Vector3.one * (2 + 12 * (1 - (1 - x) ^ 3)) * k

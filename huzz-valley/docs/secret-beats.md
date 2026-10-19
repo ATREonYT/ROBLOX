@@ -22,12 +22,13 @@ from `RevealAt` (the server stamps it on the showcase after streaming her spot i
 
 ## The beats (time → event)
 
-Sound column: the cue the code plays today (`Sfx.play`); the other rows are suggestions for where a sound fits.
+Sound column: what plays today (`Sfx.beat` with the cues in `Config/SecretSounds`; picks and reasons:
+`docs/sound-picks.md`). The hit-stop's silence is only a suggestion: the riser runs up to the burst today.
 
 | Time (s) | Part | Event | Sound today |
 |---|---|---|---|
 | 0.00 | anticipation | Cut to her spot; night falls on your screen (0.15 s), motes and crystals drift, haze in the sky | |
-| 0.25 | anticipation | A small orb of light appears; sparks rush into it, four lights circle it | `secret_riser` |
+| 0.25 | anticipation | A small orb of light appears; sparks rush into it, four lights circle it | **Build**: `secret_riser` (started partway in so it tops out on the burst) + `secret_shimmer` bed |
 | 0.45 | anticipation | A little starburst on the orb | |
 | 0.55 / 0.68 / 0.80 | build | Three hair-thin light threads fall from the sky (few) | |
 | 0.95 | build | **Beam A strikes** (camera bump, sparks shower) | |
@@ -38,10 +39,10 @@ Sound column: the cue the code plays today (`Sfx.play`); the other rows are sugg
 | 2.50 | build | Two big glowing eyes open between the twins | |
 | 2.85 to 3.30 | converge | Every beam swings its foot into the eyes' point, pinching thin, the strands winding faster | |
 | 3.30 | hit-stop | Everything nearly freezes (0.12 s) | (silence) |
-| 3.42 | **BURST** | Manga frame (0.09 s), shockwave dome + ring on the floor + ring facing you, rays, sparkles; she appears in white | `secret_impact` |
-| 3.80 | land | She lands: ring, dust, smoke; the magic circle lights up under her | `secret_land` |
+| 3.42 | **BURST** | Manga frame (0.09 s), shockwave dome + ring on the floor + ring facing you, rays, sparkles; she appears in white | **Burst**: `secret_impact`, `secret_sparkle` 0.15 s later; riser cut |
+| 3.80 | land | She lands: ring, dust, smoke; the magic circle lights up under her | |
 | 4.00 / 4.30 / 4.60 | reveal | Crescent slashes swirl round her | |
-| 4.50 | reveal | **Her NAME** on screen (SECRET and 7 stars over it, a line draws out under it) and a star flare behind her head; the message line says "SECRET: name!" | |
+| 4.50 | reveal | **Her NAME** on screen (SECRET and 7 stars over it, a line draws out under it) and a star flare behind her head; the message line says "SECRET: name!" | **Reveal**: `secret_sting` |
 | 5.10 to 6.35 | reveal | Speed streaks rush past while the camera pushes into her face | |
 | 6.15 | reveal | Eye glint in the close-up | |
 | 6.30 | reveal | Name card gone | |
@@ -53,7 +54,7 @@ Sound column: the cue the code plays today (`Sfx.play`); the other rows are sugg
 | 8.30 to 9.50 | rise | The sun comes back up, the night haze fades | |
 | 9.50 | hand-back | Dip to black (0.2 s) | |
 | ~9.70 | hand-back | Under black: the camera goes back to you; black lifts (0.3 s) | |
-| 10.00 | end | The game goes on | |
+| 10.00 | end | The game goes on | **End**: bed, sparkle and sting fade out (1.2 / 1.0 / 2.0 s) |
 
 Flashes (kid-safe, at most one a second): soft brightness pulses only at 3.42, 6.40 (weaker) and 7.60, measured on
 the film with `tools/preview/flash_check.py`.

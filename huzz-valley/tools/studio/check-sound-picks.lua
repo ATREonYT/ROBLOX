@@ -4,8 +4,10 @@
 --
 -- How: open the place in Studio (Edit mode is fine), View > Command Bar, paste ALL of this file, press Enter.
 -- Turn your volume up a little: it plays each sound for up to 4 seconds, one after another.
--- Output prints, for every picked ID (Config/SoundIds, Config/Dances Tracks):
+-- Output prints, for every picked ID (Config/SoundIds, Config/Dances Tracks) and your own songs (Config/Music):
 --   [HuzzSfx] OK <slot> <id> <name> by <creator>        Roblox knows the asset (its name and who made it)
+--   [HuzzSfx] NOT LICENSED? <slot> ...                   a pick NOT uploaded by Monstercat, APMOfficial or
+--                                                        ProSoundEffects (a look-alike upload: tell Claude)
 --   [HuzzSfx] MISSING <slot> <id> <why>                  Roblox has no such asset, or wouldn't say
 --   [HuzzSfx] PLAYS <slot> <seconds> s                   it loaded and has sound (so it will play in your game)
 --   [HuzzSfx] WON'T PLAY <slot>                          it didn't load: private, removed, or not allowed here
@@ -13,7 +15,9 @@
 -- Audio rules (why something may not play): Roblox's own licensed library (Monstercat, APM Music, Pro Sound
 -- Effects, uploaded by Roblox's accounts) is public and plays in any game. Sounds YOU upload are private to you:
 -- they play in games you own (or your group's, if you upload them to the group or share them with it).
--- Untested here (needs Studio). Change PREVIEW to false to only check, without playing.
+-- Dance songs are played from a quarter of the way in (past the intro), so you hear the part people dance to.
+-- Your own songs (bg1-9, winner) are only checked, not played. Untested here (needs Studio).
+-- Change PREVIEW to false to only check, without playing.
 local PREVIEW = true
 local SECONDS = 4
 
@@ -28,16 +32,19 @@ local function config(name)
 	return if ok then m else nil
 end
 
+-- Roblox's licensed library is uploaded by these accounts; any other uploader on a pick is a look-alike
+local LICENSED = { Monstercat = true, APMOfficial = true, ProSoundEffects = true }
+
 local picks = {}
-local function add(slot, id, note)
-	if type(id) == "string" and id ~= "" then table.insert(picks, { slot = slot, id = id, note = note }) end
+local function add(slot, id, note, kind)
+	if type(id) == "string" and id ~= "" then table.insert(picks, { slot = slot, id = id, note = note, kind = kind }) end
 end
 local ids = config("SoundIds")
 if ids then
 	local names = {}
 	for name in ids do table.insert(names, name) end
 	table.sort(names)
-	for _, name in names do add(name, ids[name]) end
+	for _, name in names do add(name, ids[name], nil, "pick") end
 end
 local dances = config("Dances")
 if dances and dances.Tracks then
@@ -52,19 +59,26 @@ if dances and dances.Tracks then
 	for key in dances.Tracks do table.insert(keys, key) end
 	table.sort(keys)
 	for _, key in keys do
-		add("dance:" .. key, dances.Tracks[key].Id, "for " .. table.concat(users[key] or { "(no dance)" }, ", "))
+		add("dance:" .. key, dances.Tracks[key].Id, "for " .. table.concat(users[key] or { "(no dance)" }, ", "), "dance")
 	end
+end
+local music = config("Music")
+if music then
+	for i, id in music.Background or {} do add("bg" .. i, id, "your song (check only)", "own") end
+	add("winner", music.Winner, "your song (check only)", "own")
 end
 
 task.spawn(function()
-	local ok, missing, silent = 0, 0, 0
+	local ok, missing, silent, odd = 0, 0, 0, 0
 	print(string.format("[HuzzSfx] Checking %d picked sounds%s", #picks, if PREVIEW then " (each plays for a moment)" else ""))
 	for _, p in picks do
 		local number = tonumber(string.match(p.id, "%d+"))
 		local got, info = pcall(function() return MarketplaceService:GetProductInfo(number, Enum.InfoType.Asset) end)
 		if got and type(info) == "table" and info.Name then
 			local creator = info.Creator and info.Creator.Name or "?"
-			print(string.format("[HuzzSfx] OK %s %s %s by %s%s", p.slot, p.id, info.Name, creator,
+			local tag = if p.kind ~= "own" and not LICENSED[creator] then "NOT LICENSED?" else "OK"
+			if tag ~= "OK" then odd += 1 end
+			print(string.format("[HuzzSfx] %s %s %s %s by %s%s", tag, p.slot, p.id, info.Name, creator,
 				if info.AssetTypeId ~= 3 then "  (not an audio asset!)" else ""))
 			if p.note then print("[HuzzSfx]    " .. p.note) end
 		else
@@ -82,9 +96,18 @@ task.spawn(function()
 		if s.IsLoaded and s.TimeLength > 0 then
 			ok += 1
 			print(string.format("[HuzzSfx] PLAYS %s %.1f s", p.slot, s.TimeLength))
-			if PREVIEW then
-				pcall(function() SoundService:PlayLocalSound(s) end)
-				task.wait(math.min(SECONDS, s.TimeLength) + 0.3)
+			if PREVIEW and p.kind ~= "own" then
+				local from = if p.kind == "dance" then math.floor(s.TimeLength / 4) else 0
+				if from > 0 then print(string.format("[HuzzSfx]    playing from %d s", from)) end
+				if from > 0 then -- (Sound:Play from a point in; the plain preview below plays from the start)
+					pcall(function()
+						s.TimePosition = from
+						s:Play()
+					end)
+				else
+					pcall(function() SoundService:PlayLocalSound(s) end)
+				end
+				task.wait(math.min(SECONDS, s.TimeLength - from) + 0.3)
 				pcall(function() s:Stop() end)
 			end
 		else
@@ -93,5 +116,5 @@ task.spawn(function()
 		end
 		s:Destroy()
 	end
-	print(string.format("[HuzzSfx] Done: %d play, %d missing, %d won't play (of %d).", ok, missing, silent, #picks))
+	print(string.format("[HuzzSfx] Done: %d play, %d missing, %d won't play, %d not licensed? (of %d).", ok, missing, silent, odd, #picks))
 end)

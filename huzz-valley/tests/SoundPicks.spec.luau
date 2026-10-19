@@ -6,7 +6,9 @@
 --   * every dance has a song from Dances.Tracks, Dances.track falls back to nil (silence) for "" or unknown;
 --   * dance songs sit under the background music, and the background dips (never to silence);
 --   * the Secret cutscene's cues: known beats and slots, fades only at a later beat, the riser cut at the burst;
---   * Sfx.beat on fake Sounds: Build starts riser + bed, Burst fades the riser and plays the hit and the tail;
+--   * Sfx.beat on fake Sounds: Build starts riser + bed (the riser partway in, so its top lands on the burst), Burst
+--     fades the riser and plays the hit and the tail; the sting comes with her name;
+--   * the background dips far enough under a dance song that two songs don't clash;
 --   * DancePlayer starts and stops the dance song; Kenney's button files and licence are in assets/sfx.
 local fs = require("@lune/fs")
 local luau = require("@lune/luau")
@@ -71,6 +73,7 @@ check("Dances.track: a track with Id \"\" = nil (dances in silence)", Dances.tra
 Dances.Tracks.CrabRave.Id = saved
 check("dance songs are quieter than the background songs", Dances.MusicVolume > 0 and Dances.MusicVolume < MusicCfg.Volume)
 check("the background dips under a dance song but never goes silent", Dances.MusicDuck > 0.1 and Dances.MusicDuck < 1)
+check("the dip is deep enough that the dance song clearly wins (at least ~12 dB under it)", Dances.MusicDuck * MusicCfg.Volume <= Dances.MusicVolume / 4)
 check("dance song fades are gentle (0.2 to 2 s)", Dances.MusicFadeIn >= 0.2 and Dances.MusicFadeIn <= 2 and Dances.MusicFadeOut >= 0.2 and Dances.MusicFadeOut <= 2)
 
 -- 3. the Secret cutscene's cues
@@ -125,10 +128,15 @@ local env = {
 }
 local Sfx = load("src/StarterPlayer/StarterPlayerScripts/HuzzClient/Gameplay/Sfx.lua", env)
 check("Sfx.beat exists", type(Sfx.beat) == "function")
-Sfx.beat("Build")
+local riserCue
+for _, c in Secret.cues("Build") do if c.Slot == "secret_riser" then riserCue = c end end
+check("the riser has a Peak (where it tops out) to time it to the burst", riserCue ~= nil and type(riserCue.Peak) == "number")
+Sfx.beat("Build", 3.17)
 check("Build starts the riser and the magic bed", table.find(plays, "secret_riser") ~= nil and table.find(plays, "secret_shimmer") ~= nil)
 local riser
 for _, k in SoundService:FindFirstChild("HuzzSfx")._kids do if k.Name == "secret_riser" then riser = k end end
+check("the riser starts partway in so its top lands on the burst", riser ~= nil and riserCue ~= nil
+	and math.abs((riser.TimePosition or 0) - (riserCue.Peak - 3.17)) < 1e-6)
 plays = {}
 Sfx.beat("Burst")
 check("Burst plays the hit and the sparkle tail", table.find(plays, "secret_impact") ~= nil and table.find(plays, "secret_sparkle") ~= nil)
@@ -143,10 +151,19 @@ Sfx.beat("Nope") -- (an unknown beat does nothing, and doesn't error)
 local sfxSource = fs.readFile(ROOT .. "src/StarterPlayer/StarterPlayerScripts/HuzzClient/Gameplay/Sfx.lua")
 check("long secret sounds aren't cleared at 4 s", string.find(sfxSource, "secret_shimmer = 20", 1, true) ~= nil and string.find(sfxSource, "task.delay(LIFE[name] or 4", 1, true) ~= nil)
 
+local reveal = fs.readFile(ROOT .. "src/StarterPlayer/StarterPlayerScripts/HuzzClient/Gameplay/SecretReveal.lua")
+check("the cutscene tells Build how long until the burst", string.find(reveal, 'Sfx.beat("Build", Reveal.IMPACT - Reveal.BUILD)', 1, true) ~= nil)
+check("the sting comes with her name (Reveal at Reveal.NAME)", string.find(reveal, 'if t >= Reveal.NAME then once("sting", function() Sfx.beat("Reveal") end) end', 1, true) ~= nil)
+check("Sfx downloads every real ID ahead (the hit lands on time)", string.find(sfxSource, "PreloadAsync(all)", 1, true) ~= nil
+	and string.find(sfxSource, "if not UI[name] and type(id) == \"string\" and id ~= \"\" then table.insert(all, id) end", 1, true) ~= nil)
+
 -- 5. wiring and files
 local dp = fs.readFile(ROOT .. "src/StarterPlayer/StarterPlayerScripts/HuzzClient/UI/DancePlayer.lua")
 check("DancePlayer starts the dance song", string.find(dp, "Music.dance, id", 1, true) ~= nil)
 check("DancePlayer stops the dance song", string.find(dp, "Music.danceStop", 1, true) ~= nil)
+check("a dance whose animation stopped stops its song too", string.find(dp, "if ok and on == false then DancePlayer.stop() end", 1, true) ~= nil)
+local feel = fs.readFile(ROOT .. "src/StarterPlayer/StarterPlayerScripts/HuzzClient/Gameplay/Feel.lua")
+check("Roblox's own character sounds go through the Effects group (the sliders reach them)", string.find(feel, "s.SoundGroup = effects", 1, true) ~= nil)
 for _, f in { "ui_click", "ui_hover", "ui_open", "ui_close" } do
 	check("assets/sfx/" .. f .. ".ogg (Kenney, CC0) is there to upload", fs.isFile(ROOT .. "assets/sfx/" .. f .. ".ogg"))
 end

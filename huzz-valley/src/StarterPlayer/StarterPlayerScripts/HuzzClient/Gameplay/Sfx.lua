@@ -16,6 +16,8 @@
 	Interface Sounds (louder files than ours, so their levels are lower), and the Secret cutscene plays Roblox's
 	licensed library through Sfx.beat("Build" / "Burst" / "Reveal" / "End"), the cues in Config/SecretSounds: each
 	beat starts its sounds and fades out the ones that end there (a riser cut under the burst, the bed at the end).
+	Every sound with a real ID is downloaded ahead (preloaded) when the game starts: a sound heard for the first time
+	otherwise starts late while it downloads, and the Secret cutscene's hit must land on the burst, not after it.
 	Not started on its own: other parts require it.
 ]]
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -158,11 +160,16 @@ task.defer(function()
 	for name in UI do
 		for _, s in readyCopies(name) or {} do table.insert(all, s) end
 	end
+	-- and every other sound with a real ID (the Secret cutscene's, uploaded game sounds), by its content ID
+	for name, id in Ids do
+		if not UI[name] and type(id) == "string" and id ~= "" then table.insert(all, id) end
+	end
 	pcall(function() game:GetService("ContentProvider"):PreloadAsync(all) end)
 end)
 
--- opts: volume (multiplier), pitch (multiplier), at (a BasePart/Attachment: heard in the world from there).
-function Sfx.play(name: string, opts: { volume: number?, pitch: number?, at: Instance? }?)
+-- opts: volume (multiplier), pitch (multiplier), at (a BasePart/Attachment: heard in the world from there),
+-- from (seconds into the sound to start at: the Secret riser starts partway in so its top lands on the burst).
+function Sfx.play(name: string, opts: { volume: number?, pitch: number?, at: Instance?, from: number? }?)
 	local o = opts or {}
 	local level = LEVEL[name] or { 0.5, 0 }
 	if UI[name] and not o.at then
@@ -196,6 +203,17 @@ function Sfx.play(name: string, opts: { volume: number?, pitch: number?, at: Ins
 		s.RollOffMinDistance = 8
 	end
 	s.Parent = o.at or home()
+	local from = o.from
+	if from and from > 0 then
+		local t0 = os.clock()
+		pcall(function() s.TimePosition = from end)
+		-- (a sound that isn't loaded yet may drop the start point: set it again, plus the time it took, once loaded)
+		pcall(function()
+			if not s.IsLoaded then
+				s.Loaded:Once(function() s.TimePosition = from + (os.clock() - t0) end)
+			end
+		end)
+	end
 	s:Play()
 	pcall(function() -- (guarded: the offline preview's copy of the Roblox API has no Ended)
 		s.Ended:Once(function()
@@ -227,8 +245,10 @@ end
 
 -- The Secret cutscene's sounds by beat (Config/SecretSounds): Sfx.beat("Build"), "Burst", "Reveal", "End".
 -- Each beat first fades out the sounds that end there, then starts its own (after their Delay).
+-- nextIn = seconds until the next beat (the cutscene knows it): a cue with a Peak (the moment in its file where it
+-- tops out) starts that far in, or that much later, so its top lands exactly on the next beat (the riser on the burst).
 local live: { [string]: Sound } = {} -- the playing sound of each secret slot
-function Sfx.beat(beat: string)
+function Sfx.beat(beat: string, nextIn: number?)
 	if not okSecret or type(SecretSounds) ~= "table" then return end
 	for _, f in SecretSounds.fades(beat) do
 		local s = live[f.slot]
@@ -236,14 +256,20 @@ function Sfx.beat(beat: string)
 		if s and s.Parent then fadeOut(s, f.fade) end
 	end
 	for _, cue in SecretSounds.cues(beat) do
+		local from: number? = nil
 		local function start()
 			local old = live[cue.Slot]
 			if old and old.Parent then fadeOut(old, 0.1) end -- (a replay never doubles a sound)
 			-- (guarded: a sound that fails must never stop the cutscene that asked for it)
-			local ok, s = pcall(Sfx.play, cue.Slot)
+			local ok, s = pcall(Sfx.play, cue.Slot, { from = from })
 			live[cue.Slot] = if ok then s else nil
 		end
-		if cue.Delay and cue.Delay > 0 then task.delay(cue.Delay, start) else start() end
+		local wait = cue.Delay or 0
+		if cue.Peak and nextIn then
+			local lead = cue.Peak - nextIn
+			if lead > 0 then from = lead else wait += -lead end
+		end
+		if wait > 0 then task.delay(wait, start) else start() end
 	end
 end
 

@@ -171,10 +171,16 @@ function Music.dance(id: string)
 	if not track then return end
 	local s = make({ id = track.Id, volume = Dances.MusicVolume }, "Dance")
 	s.Looped = true
-	pcall(function() s.TimePosition = track.Start or 0 end)
 	danceSound, danceFor = s, id
 	duckWant = Dances.MusicDuck
+	local start = track.Start or 0
+	pcall(function() s.TimePosition = start end)
 	s:Play()
+	if start > 0 then -- (a song that hasn't downloaded yet can drop its start point: set it again once it has)
+		task.spawn(function()
+			if loaded(s) and danceSound == s and s.TimePosition < start then s.TimePosition = start end
+		end)
+	end
 	task.spawn(function()
 		fade(s, Dances.MusicVolume, Dances.MusicFadeIn, function() return danceSound ~= s end)
 	end)
@@ -274,7 +280,7 @@ function Music.start()
 			task.wait(0.05)
 			if danceSound and not enabled() then Music.danceStop() end
 			if duckNow ~= duckWant then
-				local step = 0.05 / 0.4 * (1 - (if okDances then Dances.MusicDuck else 0.35))
+				local step = 0.05 / 0.4 * (1 - (if okDances then Dances.MusicDuck else 0.15))
 				duckNow = if duckNow < duckWant then math.min(duckWant, duckNow + step) else math.max(duckWant, duckNow - step)
 				local s = bgNow
 				if s and s.Parent then apply(s) end

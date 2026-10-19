@@ -13,22 +13,32 @@ core `CLAUDE.md` section 6.
   uploads them, then they're private to him (a group game needs them uploaded to / shared with the group). Never pop
   songs, other games' sounds or random community uploads.
 - Cloud sessions can't open roblox.com (WebFetch/curl blocked): find IDs with WebSearch limited to `create.roblox.com`
-  (the result URLs carry the ID); GitHub clones work for CC0 packs.
+  (the result URLs carry the ID; ask it for the uploader and length, which it reads off the page); GitHub clones work
+  for CC0 packs. The Oct 19 audit re-checked every ID this way: `docs/sound-picks.md` section 7.
+- **Full-length songs only** for anything that loops (a 30 s library cut has an ending: "Funky People" 32 s was
+  swapped for "Big Deal" 2:06), and no song for more than 4 dances.
 - **Clicks:** Roblox's licensed UI files are many-takes-in-one or high beeps, so the family is Kenney's CC0 Interface
   Sounds picked by numbers (`tools/sfx/measure_sfx.py`: 30-150 ms, soft 2 ms front, centroid ~0.8-1.4 kHz, ~0% above
   4 kHz): click `drop_002`, hover `select_002`, open `maximize_009` (rises), close `minimize_009` (falls), in
-  `assets/sfx/ui_*.ogg` + `LICENSE-kenney.txt`; listen `docs/previews/ui-sounds-oct19.ogg`. IDs "" until he uploads.
-- **Secret cutscene:** keyed to beats, not seconds (`Config/SecretSounds`: Build = riser + glistening bed, Burst = magic
-  hit + pixie-dust tail and the riser cut under it, Reveal = APM's 8 s fantasy sting, End = fades);
-  `Gameplay/SecretReveal` calls `Sfx.beat(...)`. Pro Sound Effects + APM IDs in `Config/SoundIds`. Beat times:
+  `assets/sfx/ui_*.ogg` + `LICENSE-kenney.txt`, made by `tools/sfx/import_kenney.py` (averages stereo to mono: a plain
+  ffmpeg `-ac 1` mixes 3 dB hot, which made click and hover clip at +2 dBFS); listen `docs/previews/ui-sounds-oct19.ogg`.
+  IDs "" until he uploads.
+- **Secret cutscene:** keyed to beats, not seconds (`Config/SecretSounds`: Build 0.25 s = riser + glistening bed,
+  Burst 3.42 s = magic hit + pixie-dust tail and the riser cut under it, Reveal 4.50 s (her name) = APM's 8 s fantasy
+  sting, End = fades); `Gameplay/SecretReveal` calls `Sfx.beat(...)`, and `Sfx.beat("Build", time to the burst)` starts
+  the riser partway in so its top (`Peak`, a 5.2 s guess) lands on the burst. Every sound with an ID is preloaded at
+  start (a first play downloads first and starts late). Pro Sound Effects + APM IDs in `Config/SoundIds`. Beat times:
   `docs/secret-beats.md`.
 - **Dances:** 11 Monstercat/APM tracks for 25 dances by style (`Config/Dances` `Music` -> `Tracks`; Crab Rave for the
   meme dances, breakbeat for b-boy, electro swing for Swing/Flapper...); dance tempos measured by
   `motion3d/dance_tempo.luau` (reliable only where it says strength > 0.4). `Gameplay/Music.dance` plays it for you
-  only, looped, at 0.22 (background 0.3) and dips the background to 35%; `danceStop` fades it (DancePlayer calls both).
-  `Start` offsets are 0 until someone listens.
+  only, looped, at 0.22 (background 0.3) and dips the background to 15% (two songs at near the same level clash);
+  `danceStop` fades it (DancePlayer calls both, also when the dance animation stops some other way). `Start` offsets
+  are 0 until someone listens (set again once the song has downloaded).
 - **Owner verifies:** paste `tools/studio/check-sound-picks.lua` in the Command Bar: `[HuzzSfx] OK/MISSING`,
-  `PLAYS/WON'T PLAY` per ID, each played for 4 s. Levels are first guesses until he hears them.
+  `NOT LICENSED?` (a pick not uploaded by Monstercat/APMOfficial/ProSoundEffects), `PLAYS/WON'T PLAY` per ID, each
+  played for 4 s (dance songs from a quarter in), and his own songs in `Config/Music` checked. It can't judge the
+  cutscene's timing: that needs Play with `Config/Round.StudioTestRarity = "Secret"`. Levels are first guesses.
 
 ## Button sounds
 - One press = one sound. Kit buttons sound on `MouseButton1Down` (only the button on top gets it; `InputBegan` could
@@ -51,11 +61,16 @@ core `CLAUDE.md` section 6.
 - Shuffled, no repeat, fades, `Config/Music.Volume` 0.3 through the Music group; the win song on the Round "Results"
   event (background fades under it); the Secret cutscene quiets it. Bootstrap stops songs set to play by themselves.
 - **Settings > Audio:** a scrolling list of 6 rows: Master, Music, Effects, Button Sounds (`InterfaceVolume`, the
-  `Interface` group: Sfx sends `ui_*` there), Background Music ON/OFF + Next Song, Mute While Unfocused.
+  `Interface` group: Sfx sends `ui_*` there), Background Music ON/OFF + Next Song, Mute While Unfocused. Every sound
+  goes through a group under Master: songs and dance songs = Music, game and Secret sounds = Effects, buttons =
+  Interface, and Roblox's own character sounds (landing, falling...) are put in Effects by `Gameplay/Feel` (the running
+  one stays muted). His place has no other sounds (checked Oct 19: only the Bg1-9 and winner songs).
 
 ## Why it is this way / history
 - **Licensed sounds** (owner Oct 19: "don't create random sound by yourself, do a research of what sounds good and
   not, and then logically select the best sounds/songs").
+- **The audit** (owner Oct 19: "check the audios to make sure they are actually good"): IDs re-checked, clipping clicks
+  remade, riser and sting re-timed, preload, deeper dip, groove song swapped (`docs/sound-picks.md` section 7).
 - **Button sounds** (owner Oct 18: "they sound glitchy, and dont feel too premium").
 - **Music** (owner Oct 18: "randomly play in the background these audios in a volume that isnt too loud").
 - **Settings > Audio** (owner: "many options").

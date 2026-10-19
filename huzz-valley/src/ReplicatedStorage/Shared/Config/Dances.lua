@@ -39,8 +39,9 @@ Dances.Tracks = {
 		Source = "https://create.roblox.com/store/asset/1840007010" },
 	StayUpbeat = { Id = "rbxassetid://9044014229", Name = "Stay Upbeat B", By = "APM Music (Sonoton, THE NEW 80s)", Style = "uptempo 80s radio pop, 126 BPM",
 		Source = "https://create.roblox.com/store/asset/9044014229/Stay-Upbeat-B" },
-	FunkyPeople = { Id = "rbxassetid://1835417126", Name = "Funky People", By = "APM Music (Themes International)", Style = "funky pop groove",
-		Source = "https://create.roblox.com/store/asset/1835417126" },
+	-- (was "Funky People" 1835417126: only a 32 s cut, so a dance heard its ending and a restart every 32 s)
+	BigDeal = { Id = "rbxassetid://9039954904", Name = "Big Deal", By = "APM Music (Conroy, Sounds Funky - Pop Brass Background)", Style = "funky pop brass groove, 2:06",
+		Source = "https://create.roblox.com/store/asset/9039954904/Big-Deal" },
 	Downtown = { Id = "rbxassetid://1843479959", Name = "Downtown", By = "APM Music (HIP-HOP FUNK & GROOVE)", Style = "hip-hop funk groove",
 		Source = "https://create.roblox.com/store/asset/1843479959/Downtown" },
 	SwingWithMe = { Id = "rbxassetid://1838645022", Name = "Swing With Me (Electro Swing Mix)", By = "APM Music (Themes International)", Style = "electro swing",
@@ -52,23 +53,25 @@ Dances.Tracks = {
 } :: { [string]: Track }
 
 Dances.MusicVolume = 0.22 -- each dance song before the sliders (the background songs are 0.3: this stays under them)
-Dances.MusicDuck = 0.35 -- the background music drops to this share of its volume while you dance
+-- the background music drops to this share of its volume while you dance (0.15 = about 16 dB down: two songs in
+-- different keys and tempos at similar levels clash, so the dance song has to clearly win; was 0.35)
+Dances.MusicDuck = 0.15
 Dances.MusicFadeIn = 0.4 -- seconds
 Dances.MusicFadeOut = 0.8 -- seconds, when the dance stops
 
 Dances.List = {
 	{ Id = "Floss", Name = "Floss", AnimationId = "", Starter = true, Color = "Red", Blurb = "Swing your arms and hips like a pro!", Order = 1, Music = "CrabRave" },
-	{ Id = "CitrusGroove", Name = "Citrus Groove", AnimationId = "", Starter = true, Color = "Gold", Blurb = "A fresh and zesty groove to show off.", Order = 2, Music = "FunkyPeople" },
+	{ Id = "CitrusGroove", Name = "Citrus Groove", AnimationId = "", Starter = true, Color = "Gold", Blurb = "A fresh and zesty groove to show off.", Order = 2, Music = "BigDeal" },
 	{ Id = "HypeUp", Name = "Hype Up", AnimationId = "", Starter = true, Color = "Violet", Blurb = "Pump up the crowd before the run!", Order = 3, Music = "HypeHorns" },
 	{ Id = "ShockShuffle", Name = "Shock Shuffle", AnimationId = "", Starter = true, Color = "Blue", Blurb = "Quick feet that zap across the floor.", Order = 4, Music = "Moshi" },
-	{ Id = "ClassicGroove", Name = "Classic Groove", AnimationId = "", Starter = true, Color = "Pink", Blurb = "An old school groove that never gets old.", Order = 5, Music = "FunkyPeople" },
-	{ Id = "BoogieDown", Name = "Boogie Down", AnimationId = "", Starter = true, Color = "Blue", Blurb = "Get down and boogie all night!", Order = 6, Music = "FunkyPeople" },
+	{ Id = "ClassicGroove", Name = "Classic Groove", AnimationId = "", Starter = true, Color = "Pink", Blurb = "An old school groove that never gets old.", Order = 5, Music = "BigDeal" },
+	{ Id = "BoogieDown", Name = "Boogie Down", AnimationId = "", Starter = true, Color = "Blue", Blurb = "Get down and boogie all night!", Order = 6, Music = "BigDeal" },
 	{ Id = "SmoothMoves", Name = "Smooth Moves", AnimationId = "", Starter = true, Color = "Green", Blurb = "Glide around with silky smooth steps.", Order = 7, Music = "Ascension" },
 	{ Id = "SoFresh", Name = "So Fresh", AnimationId = "", Starter = true, Color = "Green", Blurb = "Show everyone how fresh you are.", Order = 8, Music = "Downtown" },
 	{ Id = "PopLock", Name = "Pop Lock", AnimationId = "", Starter = true, Color = "Red", Blurb = "Pop, freeze and lock to the beat.", Order = 9, Music = "Moshi" },
 	{ Id = "Robot", Name = "Robot", AnimationId = "", Color = "Blue", Blurb = "Beep boop! Move like a real robot.", Order = 10, Music = "Moshi" },
 	{ Id = "PhoneCall", Name = "Phone Call", AnimationId = "", Starter = true, Color = "Pink", Blurb = "Hello? The dance floor is calling!", Order = 11, Music = "Shiawase" },
-	{ Id = "RunningMan", Name = "Running Man", AnimationId = "", Starter = true, Color = "Gold", Blurb = "Run in place right on the beat.", Order = 12, Music = "CrabRave" },
+	{ Id = "RunningMan", Name = "Running Man", AnimationId = "", Starter = true, Color = "Gold", Blurb = "Run in place right on the beat.", Order = 12, Music = "StayUpbeat" },
 	{ Id = "CrazyFeet", Name = "Crazy Feet", AnimationId = "", Starter = true, Color = "Violet", Blurb = "Your feet go wild in every direction!", Order = 13, Music = "CrabRave" },
 	{ Id = "Breakdown", Name = "Breakdown", AnimationId = "", Starter = true, Color = "Gold", Blurb = "Drop it low and break it down!", Order = 14, Music = "Akim" },
 	{ Id = "SwingTime", Name = "Swing Time", AnimationId = "", Pack = true, Color = "Pink", Blurb = "Swing back in time with this classic.", Order = 15, Music = "SwingWithMe" },

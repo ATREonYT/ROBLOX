@@ -146,6 +146,13 @@ if player then
 		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 		if humanoid and humanoid.MoveDirection.Magnitude > 0.2 then
 			DancePlayer.stop()
+			return
+		end
+		-- the dance ended some other way (its animation stopped): stop its song too, never a song looping alone
+		local t = track
+		if t then
+			local ok, on = pcall(function() return t.IsPlaying end)
+			if ok and on == false then DancePlayer.stop() end
 		end
 	end)
 end

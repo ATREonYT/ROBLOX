@@ -6,8 +6,9 @@ sounds good and not, and then logically select the best sounds/songs possible fo
 
 So these three jobs use **real, licensed sounds**. Nothing here is synthesized by `tools/sfx/make_sfx.py` any more
 (it now skips `ui_click/hover/open/close` and `secret_*`). Every ID below was seen on the public page in its row. None
-was made up. Cloud sessions can't reach Roblox, so **none was played or checked by us**: the owner confirms them with
-`tools/studio/check-sound-picks.lua` (see "How the owner checks").
+was made up. Cloud sessions can't reach Roblox, so **none was played by us**: the owner confirms them by ear with
+`tools/studio/check-sound-picks.lua` (see "How the owner checks"). Section 7 is the Oct 19 audit (owner: "check the
+audios to make sure they are actually good"): every ID re-checked, what changed and why.
 
 ## 1. Where sounds may come from (licence)
 
@@ -71,7 +72,9 @@ Rejected, with numbers: Kenney's own `open_00x`/`close_00x` (centroid 7-12 kHz, 
 (76% above 4 kHz); `click_002/003/005` (10-14 ms, 0.4-1.7 ms attack: a dry tick that reads as a glitch);
 `maximize_001-005` (25-79% hiss); `tick_00x` (49-66% hiss). Our old synthesized "tock" is retired by the owner's rule.
 
-Files: `assets/sfx/ui_click.ogg` etc. (converted to mono OGG, sound unchanged), licence `assets/sfx/LICENSE-kenney.txt`.
+Files: `assets/sfx/ui_click.ogg` etc. (mono OGG, sound unchanged: made by `tools/sfx/import_kenney.py`, which averages
+the two channels; the first copies were mixed down 3 dB hot and clipped, see section 7), licence
+`assets/sfx/LICENSE-kenney.txt`.
 Listen: `docs/previews/ui-sounds-oct19.ogg` (click x3, hover x2, open, close, at in-game levels). In-game levels
 (`Gameplay/Sfx` LEVEL): click 0.28, hover 0.10, open 0.15, close 0.13 (Kenney files peak 2 dB hotter than ours, and
 open/close are ~6 dB louder on average than the click, so they sit lower). **The IDs stay "" until the owner uploads
@@ -91,14 +94,20 @@ keyed to a named beat in `Config/SecretSounds` and fitted to any length:
 
 | Beat | When (in the shot) | Sounds that start | Sounds that fade |
 |---|---|---|---|
-| **Build** | the orb appears, night falls | riser, magic bed | - |
+| **Build** | the orb appears, night falls | riser (partway in, timed to top out on the burst), magic bed | - |
 | **Burst** | the big impact, she appears | hit; sparkle tail 0.15 s later | riser (0.12 s: cut right under the hit) |
-| **Reveal** | she has landed and holds her pose | the fantasy sting | - |
+| **Reveal** | her name comes up on screen | the fantasy sting | - |
 | **End** | the camera hands back | nothing | bed (1.2 s), sparkle tail (1.0 s), sting (2.0 s) |
 
-`Gameplay/SecretReveal` calls `Sfx.beat("Build" | "Burst" | "Reveal" | "End")`. In today's 14.5 s cut that is
-Build 0.3 s (orb), Burst 2.75 s (impact), Reveal 3.15 s (landing), End at the hand-back; the second impact at 12.25 s
-still plays the hit alone. A riser that's longer than the build is simply cut under the burst, so it always "lands".
+`Gameplay/SecretReveal` calls `Sfx.beat("Build" | "Burst" | "Reveal" | "End")`. In today's 10 s cut
+(`docs/secret-beats.md`) that is Build 0.25 s (orb), Burst 3.42 s (impact), Reveal 4.50 s (her name on screen), End
+at the hand-back (~10 s); the last burst at 7.60 s plays the hit alone. The riser is 5.7 s but the build only 3.17 s,
+so the cutscene tells `Sfx.beat("Build", 3.17)` how long it has and the riser starts partway in (at `Peak` minus 3.17)
+so the top of its build lands on the burst; what's left is cut under the hit. `Peak` = 5.2 s is a first guess from the
+listing's name ("... Build, Disappear": it tops out, then a short vanish): tune it by ear. The sting comes with her
+name, not the landing: the hit (1.8 s, "heavy impact and tonal fade-out") has died down by then, so the melody is
+heard clean. Every sound with an ID is downloaded when the game starts (`Sfx` preloads them): heard for the first time
+otherwise, it would start late while it downloads, and the hit would land after the burst.
 
 | Slot | Sound | ID | Source | Why | Licence |
 |---|---|---|---|---|---|
@@ -133,42 +142,52 @@ couldn't listen, so the owner's ear decides (swap any slot by changing its ID in
 - Upbeat, never harsh: no dubstep drops (Pixel Terror's "Enigma"/"Collapse", "Cobra" skipped), no lyrics we can't vet.
 - Prefer the most recognisable kid-friendly track where one fits perfectly: **Crab Rave** for the Crab Dance.
 - One song serves a family of similar dances, so the set stays small (11 songs for 25 dances) and each song is a
-  clear "style".
+  clear "style", but no song serves more than 4 dances (Oct 19 audit: Crab Rave had 5 of the most used ones).
+- Long enough to loop: a 30 s library cut has its own ending, so a dance would hear "the end" and a restart every
+  30 s; full-length tracks only (that's why "Funky People", 32 s, was swapped for "Big Deal", 2:06).
 
 **How it plays** (`Gameplay/Music.dance`, called by `UI/DancePlayer`): when your dance starts, its song starts for you
 only, looped, fading in over 0.4 s at `Dances.MusicVolume` 0.22 (the background songs are 0.3), and the background dips
-to 35% (`Dances.MusicDuck`) over ~0.4 s. When the dance stops (walking, another dance, respawn) the song fades out over
+to 15% (`Dances.MusicDuck`, about 16 dB down) over ~0.4 s: two songs in different keys and tempos at similar levels
+clash, so the dance song has to clearly win (it was 35%, only ~6 dB under: muddy). When the dance stops (walking, another dance, respawn) the song fades out over
 0.8 s and the background comes back. A dance whose track Id is "" dances in silence and doesn't dip anything. Background
 Music OFF in Settings means no dance songs either. The Secret cutscene and the win song stop a dance song.
 `Start` (seconds into the song) is 0 for every track: once someone listens in Studio, set it to the moment the beat
-kicks in (long intros would otherwise fill a short dance).
+kicks in (long intros would otherwise fill a short dance). A dance whose animation stops some other way also stops its
+song (never a song looping on its own).
 
 | Track | ID | Source | Style | Dances | Why | Licence |
 |---|---|---|---|---|---|---|
-| Noisestorm - Crab Rave | `rbxassetid://5410086218` | [store page](https://create.roblox.com/store/asset/5410086218/Noisestorm-Crab-Rave) | electro house (Monstercat; a viral, kid-loved instrumental) | Crab Dance, Floss, Sprinkler, Running Man, Crazy Feet | the anthem of meme dances; Crab Dance + Crab Rave is the obvious match | Monstercat via Roblox |
-| Dion Timmer - Shiawase | `rbxassetid://5409360995` | [store page](https://create.roblox.com/store/asset/5409360995/Dion-Timmer-Shiawase) | kawaii future bass, 150 BPM ([Beatport](https://www.beatport.com/track/-/10624798)) | Phone Call, Bounce Bounce | cute, bouncy, anime-flavoured: fits an anime-girls game; Phone Call hints at ~152 | Monstercat via Roblox |
+| Noisestorm - Crab Rave | `rbxassetid://5410086218` | [store page](https://create.roblox.com/store/asset/5410086218/Noisestorm-Crab-Rave) | electro house (Monstercat; a viral, kid-loved instrumental, 2:41) | Crab Dance, Floss, Sprinkler, Crazy Feet | the anthem of meme dances; Crab Dance + Crab Rave is the obvious match | Monstercat via Roblox |
+| Dion Timmer - Shiawase | `rbxassetid://5409360995` | [store page](https://create.roblox.com/store/asset/5409360995/Dion-Timmer-Shiawase) | cute, light-hearted EDM with Japanese flavour, 150 BPM, 3:37 ([Beatport](https://www.beatport.com/track/-/10624798): "Dance / Pop") | Phone Call, Bounce Bounce | cute, bouncy, anime-flavoured: fits an anime-girls game; Phone Call hints at ~152 | Monstercat via Roblox |
 | Pegboard Nerds & Tokyo Machine - Moshi | `rbxassetid://7024340270` | [store page](https://create.roblox.com/store/asset/7024340270/Pegboard-Nerds-Tokyo-Machine-Moshi) | electro with Tokyo Machine's video-game synths, 3:34 | Robot, Pop Lock, Shock Shuffle | robotic, zappy electro for the robotic and popping dances | Monstercat via Roblox |
 | Vintage & Morelli - Ascension | `rbxassetid://7029070008` | [store page](https://create.roblox.com/store/asset/7029070008) | smooth progressive house | Smooth Moves, Free Flow | gliding, flowing steps get flowing, uplifting house | Monstercat via Roblox |
 | Hype Horns | `rbxassetid://1840007010` | [store page](https://create.roblox.com/store/asset/1840007010) | "sassy and funky contemporary horns, percussion, and slick synth beats" (Juice Music, NON STOP POP 2, 2:29) | Hype Up | horns = hype; "pump up the crowd" | APM Music via Roblox |
-| Stay Upbeat B | `rbxassetid://9044014229` | [store page](https://create.roblox.com/store/asset/9044014229/Stay-Upbeat-B) | uptempo 80s radio pop, 126 BPM (Sonoton, THE NEW 80s, 2:39) | Aerobics | 80s pop is the sound of aerobics | APM Music via Roblox |
-| Funky People | `rbxassetid://1835417126` | [store page](https://create.roblox.com/store/asset/1835417126) | funky pop (Themes International, 97 s) | Classic Groove, Boogie Down, Citrus Groove | the old-school / disco-ish groove family | APM Music via Roblox |
+| Stay Upbeat B | `rbxassetid://9044014229` | [store page](https://create.roblox.com/store/asset/9044014229/Stay-Upbeat-B) | uptempo 80s radio pop, 126 BPM (Sonoton, THE NEW 80s, 2:39) | Aerobics, Running Man | 80s pop is the sound of aerobics; the Running Man is a late-80s dance | APM Music via Roblox |
+| Big Deal | `rbxassetid://9039954904` | [store page](https://create.roblox.com/store/asset/9039954904/Big-Deal) | funk / soul pop brass (Conroy, "Sounds Funky - Pop Brass Background", 2:06) | Classic Groove, Boogie Down, Citrus Groove | the old-school / disco-ish groove family on a full-length funky brass track | APM Music via Roblox |
 | Downtown | `rbxassetid://1843479959` | [store page](https://create.roblox.com/store/asset/1843479959/Downtown) | hip-hop funk and groove (William Andrew Broad, 1:00) | So Fresh, Clean Groove | sharp, fresh hip-hop grooves (So Fresh measures ~95, a hip-hop tempo) | APM Music via Roblox |
-| Swing With Me (Electro Swing Mix) | `rbxassetid://1838645022` | [store page](https://create.roblox.com/store/asset/1838645022) | electro swing (Themes International, 97 s) | Swing Time, Flapper | swing and Charleston moves on a modern swing beat | APM Music via Roblox |
+| Swing With Me (Electro Swing Mix) | `rbxassetid://1838645022` | [store page](https://create.roblox.com/store/asset/1838645022) | electro swing (2:43; the listing names the album CRAZY SWING) | Swing Time, Flapper | swing and Charleston moves on a modern swing beat | APM Music via Roblox |
 | Akim | `rbxassetid://1843270078` | [store page](https://create.roblox.com/store/asset/1843270078) | breakbeat (Justement Music, 3:01) | Breakdown, Toprock, Freestyle | breaking was born on breakbeats | APM Music via Roblox |
-| Jumpstyle | `rbxassetid://1839246711` | [store page](https://create.roblox.com/store/asset/1839246711/Jumpstyle) | jumpstyle techno (1:52, 96% liked) | Squat Kick | a kick on every beat for the kicking dance (it measures ~150, jumpstyle's tempo) | APM Music via Roblox |
+| Jumpstyle | `rbxassetid://1839246711` | [store page](https://create.roblox.com/store/asset/1839246711/Jumpstyle) | jumpstyle techno (Kosinus, TEK DANCE, 1:52, 96% liked) | Squat Kick | a kick on every beat for the kicking dance (it measures ~150, jumpstyle's tempo) | APM Music via Roblox |
 
 Honest notes: tempos for Crab Rave and Moshi weren't on a page we could open (Crab Rave is commonly listed around
-125 BPM); the APM listings for Funky People, Downtown, Akim and Jumpstyle give a genre but no description; Jumpstyle is
+125 BPM); the APM listings for Big Deal, Downtown, Akim and Jumpstyle give a genre but no description; Jumpstyle is
 the hardest-hitting pick: if it's too much for kids, give Squat Kick `StayUpbeat` or `Shiawase` in `Config/Dances`.
+Dion Timmer is mostly a dubstep producer, and search summaries of the Shiawase listing disagree on its genre tag
+(electro house / drum & bass); Beatport calls it Dance / Pop and Monstercat's news "a light-hearted and dynamic tune":
+if its drop is too heavy for Phone Call and Bounce Bounce, swap those two to `StayUpbeat`. Downtown is only 1:00: if
+it's a cut with an ending, the loop restarts audibly every minute.
 The store pages showed "last updated October 2025" for the APM tracks we looked at (so still live), and the Monstercat
 pages are the official account's.
 
 ## 5. How the owner checks (Studio)
 
 1. Open the place in Studio. View > Command Bar. Paste all of `huzz-valley/tools/studio/check-sound-picks.lua`, Enter.
-2. Output, for each pick: `[HuzzSfx] OK <slot> <id> <name> by <creator>` (Roblox knows it), then `PLAYS <slot> <n> s`
-   (it loads, so it will play) or `WON'T PLAY` (private or removed). It plays each one for up to 4 s so you can judge
-   it. Last line: `[HuzzSfx] Done: N play, N missing, N won't play`. Screenshot and send.
+2. Output, for each pick: `[HuzzSfx] OK <slot> <id> <name> by <creator>` (Roblox knows it; `NOT LICENSED?` instead
+   when a pick isn't uploaded by Monstercat, APMOfficial or ProSoundEffects), then `PLAYS <slot> <n> s` (it loads, so it
+   will play) or `WON'T PLAY` (private or removed). It plays each one for up to 4 s so you can judge it (dance songs
+   from a quarter of the way in, past the intro). Your own songs (bg1-9, winner) are checked too, not played. Last
+   line: `[HuzzSfx] Done: N play, N missing, N won't play, N not licensed?`. Screenshot and send.
 3. Button sounds: Asset Manager > Bulk Import `huzz-valley/assets/sfx/ui_click.ogg`, `ui_hover.ogg`, `ui_open.ogg`,
    `ui_close.ogg`; drag them into Workspace; Command Bar `require(game.ServerStorage.HuzzStudioTools.CollectSoundIds)()`;
    send the `[HuzzSfx]` lines (it keeps the picked Secret IDs as they are).
@@ -177,8 +196,59 @@ pages are the official account's.
 
 ## 6. Still open
 
+- The riser's `Peak` (5.2 s) is a guess: in the cutscene, the riser should be at its loudest exactly on the burst.
+- The shimmer bed is a "constant high end shimmer" (kept at 0.18) and the sparkle tail has "wings flap" in it: the two
+  most likely to annoy (too bright, or a buzzing bug). If either does, set its ID to "" in `Config/SoundIds`.
+- Loudness between songs: Monstercat masters are usually much louder than APM library tracks, and nothing evens them
+  out yet (Roblox has no loudness matching); judge in Studio and lower a loud one with a per-song volume if needed.
+
 - Nothing here has been heard by us: the store descriptions and our measurements are the evidence. The owner's ear
   is the final check; any slot is one ID to swap.
 - `Start` offsets for the dance songs (skip long intros) need someone listening.
 - Button sounds wait for the owner's upload (4 files).
-- The new shorter cutscene: the coordinator aligns Build/Burst/Reveal/End to `docs/secret-beats.md` when merging.
+
+## 7. Audit, Oct 19 (owner: "check the audios to make sure they are actually good")
+
+**Every ID re-checked.** roblox.com can't be opened from the cloud (WebFetch: "getaddrinfo ENOTFOUND
+create.roblox.com"), so each ID was looked up with a web search limited to create.roblox.com; the search reads the
+store page and reports its title, uploader and length. All 17 picked IDs came back with the right title and a
+licensed uploader:
+
+| ID | Title on the store page | Uploader | Length | Our claim holds? |
+|---|---|---|---|---|
+| 9125626784 | Light Cone Suck Synth And Reverse Cymbal Bui (SFX) | @ProSoundEffects | 5.7 s (Energy) | yes |
+| 9125986205 | Sparkle Tone Constant High End Shimmer Spark (SFX) | @ProSoundEffects | 18.0 s (Energy) | yes ("Glistening" is a tag) |
+| 9116384799 | Magic Burst 2 (SFX) | @ProSoundEffects | 1.8 s: "heavy impact and tonal fade-out" | yes |
+| 9116397511 | Magic Insect Flying Pixie Dust Twinkles 4 (SFX) | @ProSoundEffects | 8.6 s (Swishes; tags: wings flap, mystical flutter) | yes |
+| 1840018171 | Through the Looking Glass (sting) | @APMOfficial | 8 s (Juice Music, FANTASIA) | yes |
+| 5410086218 | Noisestorm - Crab Rave | @Monstercat | 2:41 | yes |
+| 5409360995 | Dion Timmer - Shiawase | @Monstercat | 3:37 | yes (genre: see notes) |
+| 7024340270 | Pegboard Nerds & Tokyo Machine - Moshi | @Monstercat | 3:34 | yes |
+| 7029070008 | Vintage & Morelli - Ascension | @Monstercat | 3:29 | yes |
+| 1840007010 | Hype Horns | @APMOfficial | 2:29 | yes |
+| 9044014229 | Stay Upbeat B | @APMOfficial (Sonoton) | 2:39, 126 BPM | yes |
+| 9039954904 | Big Deal (new) | @APMOfficial (Conroy) | 2:06 | yes |
+| 1843479959 | Downtown | @APMOfficial | 1:00 | yes |
+| 1838645022 | Swing With Me (Electro Swing Mix) | @APMOfficial | 2:43 | title and uploader yes; our "97 s, Themes International" was wrong |
+| 1843270078 | Akim | @APMOfficial (Justement Music) | 3:01 | yes |
+| 1839246711 | Jumpstyle | @APMOfficial (Kosinus, TEK DANCE) | 1:52 | yes |
+| 1835417126 | Funky People (dropped) | @APMOfficial | 0:32 | no: we said 97 s; it's a 32 s cut |
+
+**Measured** (`tools/sfx/measure_sfx.py` and ffmpeg's loudness meter on every file in `assets/sfx`): the made game
+sounds sit within about 3 dB of each other (about -17 to -19 LUFS where long enough to measure), no clipping, no harsh
+highs (almost nothing above 4 kHz). Two real faults: `ui_click` and `ui_hover` peaked at **+2 dBFS and clipped**
+(13-15 samples over full scale): the stereo Kenney files had been mixed down to mono 3 dB too hot. Remade from Kenney's
+originals by `tools/sfx/import_kenney.py`: now -1.0 dBFS like the originals, which is also the level the click mix in
+`Gameplay/Sfx` was set for. `countdown_go`, `power_rush` and `revive` start with 50-70 ms of near-silence (soft fades in
+`make_sfx.py`; small, left).
+
+**Fixed in code:** the riser now tops out on the burst (it was cut at 3.2 s of its 5.7 s build, before its peak); the
+sting moved from the landing to her name; every sound with an ID is preloaded (a first play started late); the
+background dips to 15% under a dance song (was 35%); a dance that stops another way stops its song; Roblox's own
+character sounds (landing, falling, getting up...) now go through the Effects group, so Master, Effects and Mute While
+Unfocused reach them (they ignored every slider); a dance song's `Start` is set again once the song has downloaded.
+
+**Mix (first guesses, at the default sliders Master 80, Music 60, Effects 80, Buttons 80):** background songs 0.14,
+win song 0.19, a dance song 0.11 with the background under it at 0.02; game sounds about 0.2 to 0.4; Secret cutscene
+hit 0.35, sting 0.32, riser 0.29, sparkle 0.19, bed 0.12; clicks 0.18. Background music fades out for the whole
+cutscene. Everything plays on your own screen only (other players' steps and powers come from where they are).

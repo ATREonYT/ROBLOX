@@ -128,8 +128,16 @@ function M.start()
 	local lastLines = {} -- Player -> the DashAt we drew lines for
 	Players.PlayerRemoving:Connect(function(p) lastLines[p] = nil end)
 	-- Roblox's default character sounds (RbxCharacterSounds) put a "Running" sound in every root part: keep it silent.
+	-- The others it makes (landing, falling, getting up, splash...) go through the Effects group, so Settings > Audio
+	-- (Master, Effects, Mute While Unfocused) reaches them too; on their own they ignore every slider.
+	local SoundService = game:GetService("SoundService")
 	local function muteRunning(character: Model)
 		local function mute(s: Instance)
+			if s:IsA("Sound") and s.Name ~= "Running" and not s.SoundGroup then
+				local master = SoundService:FindFirstChild("Master")
+				local effects = master and master:FindFirstChild("Effects")
+				if effects and effects:IsA("SoundGroup") then s.SoundGroup = effects end
+			end
 			if s:IsA("Sound") and s.Name == "Running" then
 				s.Volume = 0
 				s:GetPropertyChangedSignal("Volume"):Connect(function()
