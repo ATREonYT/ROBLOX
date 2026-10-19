@@ -69,8 +69,8 @@ function M.start()
 		sparkles.Parent = att
 		local light = Instance.new("PointLight")
 		light.Color = color
-		light.Brightness = 1.2 + tier * 0.25
-		light.Range = 9 + tier * 1.5
+		light.Brightness = 0.6 + tier * 0.15 -- (Oct 19 "even" lighting: was 1.2 + 0.25 / 9 + 1.5, a pool round every star)
+		light.Range = 6 + tier
 		light.Shadows = false
 		light.Parent = star
 		-- a soft glow on the floor under it

@@ -23,7 +23,7 @@
 	rows went magenta (119, 49, 82) under the game's colour grade (Config/Look: Saturation +0.35, Contrast +0.12,
 	Exposure -0.1, which also works on SurfaceGuis). Now one unlit Backdrop in Colors.Face covers the face (same
 	colour lit or in shade, day or night) with the studs drawn on it, and Colors.Face is the target with that grade
-	undone (125, 94, 110 -> about 124, 80, 102 on screen; tests/Leaderboards.spec.luau checks it against Config/Look).
+	undone (117, 81, 100 -> about 124, 80, 103 on screen under the Oct 19 grade; was 125, 94, 110 under Oct 18's stronger one; tests/Leaderboards.spec.luau checks it against Config/Look).
 	Halloween (owner: "keep some halloween mood to it"), calm and still (nothing flashes): a faint spider web in the
 	face's top-right corner (assets/icons/board-web.png), a carved pumpkin with a warm light sitting on the slab's
 	top-right corner and a small candle on the top-left, and a soft orange glow under the slab. They are welded to the
@@ -39,8 +39,8 @@ LeaderboardLook.Canvas = { W = 700, H = 900 }
 LeaderboardLook.Row = { Top = 122, Pitch = 65, Height = 61, Left = 4, Width = 680, Avatar = 56 }
 LeaderboardLook.Colors = {
 	Target = { 124, 80, 103 }, -- what the face should look like on screen (the clip's slab, measured)
-	Face = { 125, 94, 110 }, -- what we set: the target with the game's colour grade undone (see the header)
-	Slab = { 125, 94, 110 }, -- the part itself (seen from behind and at the edges)
+	Face = { 117, 81, 100 }, -- what we set: the target with the game's colour grade undone (see the header)
+	Slab = { 117, 81, 100 }, -- the part itself (seen from behind and at the edges)
 	Base = { 99, 95, 98 }, -- the stone base (the owner's grey)
 	Text = { 255, 255, 255 },
 	Stroke = { 34, 16, 28 },
@@ -244,15 +244,15 @@ function LeaderboardLook.decorate(api, board)
 		piece({ Name = "Eye", Size = Vector3.new(0.24, 0.24, 0.12), Color = carve, Material = Enum.Material.Neon }, CFrame.new(px + side * 0.28, top + pr * 1.0, fz + 0.06) * CFrame.Angles(0, 0, math.rad(45)))
 	end
 	piece({ Name = "Mouth", Size = Vector3.new(0.62, 0.14, 0.12), Color = carve, Material = Enum.Material.Neon }, CFrame.new(px, top + pr * 0.6, fz + 0.1))
-	new(api, "PointLight", { Name = "PumpkinLight", Color = rgb(api, LeaderboardLook.Colors.Glow), Brightness = 0.8, Range = 7, Shadows = false }, pumpkin)
+	new(api, "PointLight", { Name = "PumpkinLight", Color = rgb(api, LeaderboardLook.Colors.Glow), Brightness = 0.4, Range = 5, Shadows = false }, pumpkin)
 	-- the candle: a short wax stick and a small steady flame
 	local cx = size.X / 2 - 0.7
 	piece({ Name = "Candle", Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.9, 0.36, 0.36), Color = api.Color3.fromRGB(240, 232, 214), Material = Enum.Material.SmoothPlastic }, CFrame.new(cx, top + 0.45, 0) * CFrame.Angles(0, 0, math.rad(90)))
 	local flame = piece({ Name = "Flame", Shape = Enum.PartType.Ball, Size = Vector3.new(0.26, 0.26, 0.26), Color = rgb(api, { 255, 186, 80 }), Material = Enum.Material.Neon }, CFrame.new(cx, top + 1.05, 0))
-	new(api, "PointLight", { Name = "CandleLight", Color = rgb(api, LeaderboardLook.Colors.Glow), Brightness = 0.5, Range = 5, Shadows = false }, flame)
+	new(api, "PointLight", { Name = "CandleLight", Color = rgb(api, LeaderboardLook.Colors.Glow), Brightness = 0.3, Range = 4, Shadows = false }, flame)
 	-- the soft orange glow at the base (lights the ground and the podium, not the face: the face is unlit)
 	local glowAt = new(api, "Attachment", { Name = "BaseGlow", Position = Vector3.new(0, -size.Y / 2 + 0.3, -1.2) }, board)
-	new(api, "PointLight", { Name = "BaseLight", Color = rgb(api, LeaderboardLook.Colors.Glow), Brightness = 0.6, Range = 9, Shadows = false }, glowAt)
+	new(api, "PointLight", { Name = "BaseLight", Color = rgb(api, LeaderboardLook.Colors.Glow), Brightness = 0.3, Range = 6, Shadows = false }, glowAt) -- (Oct 19: all three halved, no pools on the floor)
 	return holder
 end
 

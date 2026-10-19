@@ -1,43 +1,46 @@
 --!strict
--- The game's lighting "look" (owner: "find the filters that make the game feel more premium"; the reference is the
--- owner's video of another game: bright, saturated, crisp colours, glowing neon; then two Oct 16 videos, Huss Valley
--- and another game, both bright and crisp to the horizon).
--- HuzzServer/LookService applies it to Lighting when the server starts (Lighting replicates to everyone).
--- Lighting.Technology can't be set by a script: the place build sets it to Future (tools/place/build_yours.luau).
--- Set Enabled = false to keep whatever Lighting the place has.
--- Oct 17 feel study (docs/feel-study.md, gap 3): the floor was blown out (mean brightness 0.76 to 0.87, 35 to 48%
--- of pixels at the top of the range, vs Huss Valley 0.62 and 15%), so lit and shaded sides looked the same and the
--- picture went flat ("bland"). Less sun and exposure bring it to mid-tone; the grade keeps the colour rich. The
--- owner's map parts keep their own colours. Estimate (tools/preview/feel/look_estimate.py on his recording):
--- lobby 0.76 -> ~0.64, round 0.87 -> ~0.72, saturation 0.56 to 0.61 -> ~0.61 to 0.65. Only Studio shows the real look.
--- Oct 18 (owner: "brighter contrast ... not too much"): a little brighter, more contrast and colour; estimate on his
--- recorded lobby: mean brightness 0.65 -> 0.70, contrast +8%, saturation +4%, nothing clipped. The maps share it.
+-- The game's lighting "look". HuzzServer/LookService applies it to Lighting when the server starts (Lighting
+-- replicates to everyone). Set Enabled = false to keep whatever Lighting the place has.
+-- Lighting.Technology can't be set by a script: the place build sets it to ShadowMap (tools/place/build_yours.luau).
+--
+-- Oct 19 (owner: "make the lighting be one to one as the game, you see how the objects dont have light only around
+-- them, there is even, nice, cartoony lighting over the map"; reference design/lobby-ref/oct19-lighting-ref.png):
+-- the reference is lit evenly by the sky: shadows are light and a little blue, block sides barely darker than their
+-- tops, soft small shadows under avatars, colours rich but not neon, no pools of lamp light. Measured on his
+-- screenshot (tools/preview/feel/light_measure.py): a cast shadow keeps 53% of the sunlit floor's light, a block's
+-- shaded side 82% of its lit top. Ours (Oct 17 recording) kept 25%: a strong sun over a weak ambient, plus Future
+-- lighting, which gives every PointLight its own sharp pool and shadows. So:
+--   * ShadowMap instead of Future (sun shadows stay; lamps no longer paint pools or cast their own shadows),
+--   * a softer sun (Brightness 1.4) over a strong, near-white OutdoorAmbient (210) plus the sky's light at full
+--     (EnvironmentDiffuseScale 1: the blue-tinted shade of the reference), less shine (EnvironmentSpecularScale),
+--   * a higher sun (ClockTime 13) for short shadows, softer shadow edges,
+--   * a gentle grade (Contrast 0.05, Saturation 0.12: the Oct 18 0.16 / 0.4 made orange floors look neon).
+-- Model of the result (tools/preview/light: three.js, calibrated on the Oct 17 recording; not a Studio render):
+-- cast shadow 0.49 on a dark floor and 0.54 on a light one (Oct 18 look: 0.32 / 0.27), sunlit floors as bright as
+-- before or brighter. docs/previews/lighting-vs-ref.jpg. Only Studio shows the real thing.
+-- Earlier: Oct 17 feel study (floor blown out at Brightness 2.8 / Exposure +0.15), Oct 18 "brighter contrast"
+-- (2.2 / -0.05 / Contrast 0.16 / Saturation 0.4).
 -- Gameplay/SecretReveal remembers whatever these are and puts them back after its night look.
 return {
 	Enabled = true,
 	Lighting = {
-		Brightness = 2.2, -- Oct 18 "brighter": was 2.0 (2.8 before that was blown out)
-		ClockTime = 14.2, -- early afternoon: high sun, short soft shadows
-		GeographicLatitude = 28,
-		Ambient = Color3.fromRGB(96, 100, 116), -- shadows lifted and a touch cool, never black (was 92, 96, 112)
-		OutdoorAmbient = Color3.fromRGB(132, 134, 152), -- a touch lower with the sun, so shade still reads (was 128, 130, 148)
-		ColorShift_Top = Color3.fromRGB(255, 250, 240), -- sunlit tops, barely warm (the warm cast pushed orange floors to white)
+		Brightness = 1.4, -- the sun: softer, so the sky's light can match it (Oct 18: 2.2)
+		ClockTime = 13, -- a high sun: short, small shadows under players (was 14.2)
+		GeographicLatitude = 23, -- (was 28: the sun a little higher still)
+		Ambient = Color3.fromRGB(150, 150, 160), -- under roofs and in hollows: never dark (was 96, 100, 116)
+		OutdoorAmbient = Color3.fromRGB(210, 210, 218), -- the even, cartoony fill everywhere outdoors (was 132, 134, 152)
+		ColorShift_Top = Color3.fromRGB(255, 252, 245), -- sunlit tops, barely warm
 		ColorShift_Bottom = Color3.fromRGB(0, 0, 0),
-		EnvironmentDiffuseScale = 0.6,
-		EnvironmentSpecularScale = 0.5,
-		ShadowSoftness = 0.35,
-		ExposureCompensation = -0.05, -- Oct 18: was -0.1 (+0.15 before that)
-		GlobalShadows = true,
+		EnvironmentDiffuseScale = 1, -- the sky's own light in the shade: lighter, a touch blue (was 0.6)
+		EnvironmentSpecularScale = 0.2, -- matte, toy-like plastic, few shiny glints (was 0.5)
+		ShadowSoftness = 0.6, -- soft shadow edges (was 0.35)
+		ExposureCompensation = 0.05, -- (was -0.05)
+		GlobalShadows = true, -- shadows stay, just light
 	},
 	-- Post-processing, as children of Lighting (made or updated by name)
-	-- (Oct 17, "it looks still a bit bland and plain": more colour and punch, like the owner's second reference game)
-	-- (feel study: Brightness 0.02 -> 0, Contrast 0.14 -> 0.12, Saturation 0.28 -> 0.35 once nothing clips)
-	-- (Oct 18, owner: "give the lobby that brighter contrast ... but not too much contrast so it looks normal to look
-	-- at": Contrast 0.12 -> 0.16, Saturation 0.35 -> 0.4; 0.18 / 0.42 with Brightness 2.3 clipped a third of the floor
-	-- in the estimate. docs/previews/lobby-look-before-after.jpg, tools/preview/feel/look_before_after.py)
-	ColorCorrection = { Brightness = 0, Contrast = 0.16, Saturation = 0.4, TintColor = Color3.fromRGB(255, 252, 247) },
-	Bloom = { Intensity = 0.55, Size = 22, Threshold = 1.5 }, -- neon and bright effects glow; plain parts don't
-	SunRays = { Intensity = 0.05, Spread = 0.55 },
+	ColorCorrection = { Brightness = 0, Contrast = 0.05, Saturation = 0.12, TintColor = Color3.fromRGB(255, 254, 250) }, -- (Oct 18: 0.16 / 0.4)
+	Bloom = { Intensity = 0.4, Size = 24, Threshold = 1.6 }, -- neon and bright effects still glow; plain parts don't (was 0.55 / 22 / 1.5)
+	SunRays = { Intensity = 0.03, Spread = 0.5 },
 	-- Crisp to the horizon with a clear blue sky (was Density 0.26 / Haze 1.2, which greyed out everything far away)
 	Atmosphere = { Density = 0.2, Offset = 0.1, Color = Color3.fromRGB(199, 225, 255), Decay = Color3.fromRGB(106, 150, 220), Glare = 0, Haze = 0.3 },
 	DepthOfField = false, -- (off: the reference is crisp all the way to the horizon)

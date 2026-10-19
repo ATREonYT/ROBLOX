@@ -37,7 +37,7 @@ return {
 	LineHeight = 0.5, -- studs: the small line under a title
 	TitleAbove = 0.8, -- studs between the prop's highest bob and the title
 	TitleMaxDistance = 160,
-	Light = { Brightness = 1.4, Range = 12 }, -- the soft light under each prop (in its colour)
+	Light = { Brightness = 0.5, Range = 7 }, -- a faint light in its colour, kept on the prop and its pad (Oct 19 "even" lighting: 1.4 / 12 lit a pool on the floor)
 	Sparkles = { Rate = 5, Lifetime = 1.6, Size = 0.32 }, -- calm: a few at a time, rising slowly
 	Props = {
 		Shop_Stall = {

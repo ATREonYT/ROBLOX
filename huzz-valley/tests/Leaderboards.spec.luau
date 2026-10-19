@@ -147,8 +147,9 @@ do
 	local far = 0
 	for i = 1, 3 do far = math.max(far, math.abs(onScreen[i] - Look.Colors.Target[i])) end
 	check(string.format("the face on screen (%d, %d, %d) is the reference's slab within 6 (Config/Look's grade undone)", onScreen[1], onScreen[2], onScreen[3]), far <= 6)
-	local old = Look.graded({ 122, 75, 95 }, sat, con, exp)
-	check("the old rows' colour would still go magenta (green under 60): the test can see the old problem", old[2] < 60)
+	-- the old problem, under the grade it happened with (Oct 18: Saturation 0.4, Contrast 0.16, Exposure -0.05)
+	local old = Look.graded({ 122, 75, 95 }, 0.4, 0.16, -0.05)
+	check("the old rows' colour went magenta under the Oct 18 grade (green under 60): the test can see the old problem", old[2] < 60)
 	local function chroma(c) return math.max(c[1], c[2], c[3]) - math.min(c[1], c[2], c[3]) end
 	check("muted, like the reference (colourfulness under 55 on screen)", chroma(onScreen) < 55)
 	check("the slab isn't see-through any more (the sky turned the header purple)", Look.SlabTransparency == 0)

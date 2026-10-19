@@ -108,7 +108,7 @@ function LobbyPropBuild.make(api, spot, config, shape, real, texture: string)
 		Name = "GlowPool", Face = Enum.NormalId.Top, CanvasSize = api.Vector2.new(240, 240), LightInfluence = 0,
 		AlwaysOnTop = false, ResetOnSpawn = false,
 	}, pad)
-	for i, ring in { { 1.0, 0.82 }, { 0.72, 0.7 }, { 0.44, 0.58 } } do
+	for i, ring in { { 1.0, 0.86 }, { 0.72, 0.76 }, { 0.44, 0.66 } } do -- (fainter, Oct 19: no pools of light)
 		local c = make(api, "Frame", {
 			Name = "Glow" .. i, AnchorPoint = api.Vector2.new(0.5, 0.5), Position = api.UDim2.fromScale(0.5, 0.5),
 			Size = api.UDim2.fromScale(ring[1], ring[1]), BackgroundColor3 = glow, BackgroundTransparency = ring[2],

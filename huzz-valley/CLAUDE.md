@@ -97,7 +97,8 @@ Owner's own words are in quotes. Read only the section you need.
 - `PATH=/root/bin:$PATH bash tools/preview/check.sh`: UI checks on the saved UI, then built from nothing.
   It prints harness errors too ("snippet error"): a silent missing count means a check script crashed.
 - `PATH=/root/bin:$PATH LUNE=/root/bin/lune sh tools/place/build_place.sh`: regenerates `HuzzUI.rbxm`, both places,
-  and sets Lighting.Technology = Future in the owner's place. Rebuild after every change.
+  sets Lighting.Technology = ShadowMap in the owner's place and saves Config/Look's Lighting and effects into it
+  (so Studio's edit view shows the game's look too). Rebuild after every change.
 - UI pictures: `cd tools/preview && NODE_PATH=$(npm root -g) LUNE=/root/bin/lune HUZZ_FRESH=1 sh shots.sh <out> <name>`
   (names in `shots.sh`: dance-wheel, shop-passes, shop-items, quests, spin-wheel, round-hud, hero-choice...).
   The preview draws Montserrat for Gotham, has no AutomaticSize (it does draw TextScaled with UITextSizeConstraint and TextTruncate).
@@ -273,6 +274,25 @@ Owner's own words are in quotes. Read only the section you need.
   0.12 -> 0.16, Saturation 0.35 -> 0.4 (estimate on his lobby frame: brightness 0.65 -> 0.70, contrast +8%, nothing
   clipped; 2.3 / 0 / 0.18 / 0.42 clipped a third of the floor). Picture `docs/previews/lobby-look-before-after.jpg`
   (`tools/preview/feel/look_before_after.py`: a model of the grade, not a render).
+- **Even, cartoony light** (owner Oct 19: "make the lighting be one to one as the game, you see how the objects dont
+  have light only around them, there is even, nice, cartoony lighting over the map"; reference
+  `design/lobby-ref/oct19-lighting-ref.png`). Measured there (`tools/preview/feel/light_measure.py`, boxes
+  `boxes_ref_oct19.json`): a cast shadow keeps 0.53 of the sunlit floor, a block's shaded side 0.82 of its lit top,
+  shade a little blue (+53), sky 87,178,249. Ours (Oct 17 recording, `boxes_our_oct17.json`) kept 0.25: a strong sun
+  over a weak sky fill, plus **Future** lighting, which gives every PointLight its own pool and shadows. Now:
+  **Technology ShadowMap** (`build_yours.luau`; sun shadows stay, lamps light softly with no pools or shadows of
+  their own), Brightness 2.2 -> 1.4, ClockTime 14.2 -> 13, latitude 28 -> 23, Ambient 96,100,116 -> 150,150,160,
+  OutdoorAmbient 132,134,152 -> 210,210,218, EnvironmentDiffuseScale 0.6 -> 1 (the blue-ish shade),
+  EnvironmentSpecularScale 0.5 -> 0.2, ShadowSoftness 0.35 -> 0.6, Exposure -0.05 -> +0.05, grade Contrast 0.16 ->
+  0.05, Saturation 0.4 -> 0.12 (orange floors went neon), Bloom 0.55/22/1.5 -> 0.4/24/1.6, SunRays 0.05 -> 0.03.
+  Our lamps turned down so the glow stays on the object: lobby props 1.4/12 -> 0.5/7 (fainter pad pools), board
+  pumpkin/candle/base 0.8/7, 0.5/5, 0.6/9 -> 0.4/5, 0.3/4, 0.3/6, aura stars 1.2+0.25t / 9+1.5t -> 0.6+0.15t / 6+t,
+  the showcase girl's key/rim/stand 2.2/1.1/1.4 -> 1.5/0.8/1.0. The board slab's Face became 117,81,100 so the new
+  grade still shows ~124,80,103. SecretReveal's night look also sets EnvironmentDiffuseScale 0.25 (put back after).
+  Model (`tools/preview/light`: `render_light.mjs` three.js scene from `tools/world/scene_dump.luau`, calibrated so the
+  Oct 17 look gives the measured 0.25; `calibrate.py`, `looks.json`, `light_compare.py`): cast shadow / sun 0.29 ->
+  0.51 (reference 0.53), sunlit floors as bright or brighter. Picture `docs/previews/lighting-vs-ref.jpg` (a model,
+  not a render). Light audit of his place: `tools/world/light_audit.luau`.
 - `Gameplay/Juice`: one world effect per moment beside the message line (study gap 15): confetti on safe, a quick red
   spark burst on a catch, a green ring lifting off the floor on a rescue, hearts and sparkles in the girl's rarity
   colour round the winner. Shakes only for being caught, catching and GO (none on a huss or lunge: HV has none). The
@@ -318,7 +338,7 @@ Owner's own words are in quotes. Read only the section you need.
     `docs/previews/feel-huss-after.jpg`. Not seen in Studio yet.
 - The big showcase girl over the map (`GirlService.showcase`, study gap 12: she read as a dark blob) stands on a small
   stand with a glowing band in her rarity colour (never wider than her stance: "the rings hid her from below"; inside
-  her Aura box, so the cutscene's bounds don't change), a key light low in front (-0.3 x her height, Brightness 2.2: she
+  her Aura box, so the cutscene's bounds don't change), a key light low in front (-0.3 x her height, Brightness 1.5 since Oct 19, was 2.2: she
   read dark from the field), a rim light behind, a soft glow up from the stand (short ranges, nothing above her: "too
   much light shining down"), and her name big in her rarity colour over her head (1.8 studs x scale
   above it, so her head doesn't cut the line seen from below; a pixel floor so it reads from the far end; stars white). Only her root is anchored: every client plays the
@@ -570,7 +590,7 @@ Owner's own words are in quotes. Read only the section you need.
 - **Lobby leaderboards** (owner, Oct 18: "make the leaderboards just like in the video ... make them follow your
   character", then "move smoothly, right now they move very weirdly ... look more like the reference ones but keep
   some halloween mood"; reference `design/lobby-ref/lb_f1.jpg`, `lb_f2.jpg`): Huss Valley's boards: 14 x 18 stud
-  slabs in one muted grey-mauve (`LeaderboardLook.Colors.Face` 125,94,110, chosen so the game's colour grade shows it
+  slabs in one muted grey-mauve (`LeaderboardLook.Colors.Face` 117,81,100 since the Oct 19 grade, chosen so the game's colour grade shows it
   at ~124,80,103; the reference measures 110-134, 71-86, 97-108). The face paints itself: an opaque unlit `Backdrop`
   with our stud tile (`assets/icons/board-stud.png`, `tools/icons/make_board_studs.py`) and a faint corner web
   (`board-web.png`); the slab part is solid (it was lit and see-through: sky showed through, the header read purple).
@@ -705,7 +725,7 @@ Owner's own words are in quotes. Read only the section you need.
   picture (Play only), the slab colour under his grade, Gotham's size, headshots, scrolling, the calm turn, the
   pumpkin, candle and glow) and the avatar stands (your copy, its run, the knife in its hand); the new lobby (the boards on the terrace ledges
   turning without touching the slope behind, the stand row, the move back after a game), the lobby props (his meshes
-  after the import, the bob, turn, glow and titles) and the Oct 18 lighting tune.
+  after the import, the bob, turn, glow and titles) and the Oct 18 lighting tune; the Oct 19 even lighting (ShadowMap, strong sky fill, lamps turned down).
 - **Which code ran?** Studio shows "build <date> UTC" small in the bottom right (and `[Huzz] Build` in Output), from
   `Config/Build` written by `build_place.sh`. The owner's Oct 18 recordings showed the OLD cutscene and HUD although
   the download was new: Rojo connected to his out-of-date local copy puts old scripts back. Fix: GitHub Desktop >
@@ -745,6 +765,10 @@ Owner's own words are in quotes. Read only the section you need.
   three-pad side sit close (pads 7 apart); LIKE THE GAME!, WITCH'S BREW and SWEETS & TREATS open nothing yet.
 - Pass knives: a refunded pass keeps them; six grey-block stands (older places), five knives (the sixth repeats
   Hunter Knife). The card names use Gotham (the owner's font rule), wider than his mockup's rounded font.
+- Lighting (Oct 19): the avatar stands' disc light (0.9 / Range 9, `Gameplay/AvatarStands`) still lights a small
+  pool (stands were another task's files); his own 38 pumpkin PointLights (0.5 / 8) are unchanged (ShadowMap drops
+  their shadows); the floors keep his own colours and materials (the reference's grey stone tiles are map design,
+  not light). The cast-shadow numbers are a model, only Studio shows the real thing.
 - Us: whatever the owner's next round of fixes asks for first; then the Gift Picker, more lore chapters.
 - Everything in sections 7 to 12 is the current version, open to change: tuning numbers (speeds, odds, prices,
   lunge, wheel prizes), looks and feel are first passes waiting for the owner's verdict in Studio.

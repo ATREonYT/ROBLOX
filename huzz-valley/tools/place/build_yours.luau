@@ -272,10 +272,46 @@ do
 	end
 end
 
--- Future lighting (crisper light and shadows; Roblox drops to simpler lighting on weak devices by itself). Scripts
--- can't set Technology, so it's set here; the rest of the look is Config/Look (HuzzServer/LookService).
-local okTech, errTech = pcall(function() theirs:GetService("Lighting").Technology = roblox.Enum.Technology.Future end)
-print(if okTech then "lighting: Future" else "lighting: couldn't set Technology (" .. tostring(errTech) .. ")")
+-- ShadowMap lighting (owner Oct 19: "even, nice, cartoony lighting over the map", like the reference game): sharp sun
+-- shadows, but lamps light softly instead of Future's own pool and shadows round every PointLight (the "light only
+-- around them" look). Scripts can't set Technology, so it's set here; the rest is Config/Look (HuzzServer/LookService).
+local okTech, errTech = pcall(function() theirs:GetService("Lighting").Technology = roblox.Enum.Technology.ShadowMap end)
+print(if okTech then "lighting: ShadowMap" else "lighting: couldn't set Technology (" .. tostring(errTech) .. ")")
+-- the same Config/Look the game applies when it starts (HuzzServer/LookService), saved into the place too, so Studio
+-- shows the game's light while he builds, not only once he presses Play
+do
+	local luau = require("@lune/luau")
+	local okLook, Look = pcall(function()
+		local env = setmetatable({ Color3 = roblox.Color3 }, { __index = _G })
+		return luau.load(fs.readFile("huzz-valley/src/ReplicatedStorage/Shared/Config/Look.lua"), { debugName = "Look", environment = env })()
+	end)
+	local L = theirs:GetService("Lighting")
+	local set, skipped = 0, {}
+	local function apply(inst, props)
+		for k, v in props do
+			if pcall(function() inst[k] = v end) then set += 1 else table.insert(skipped, inst.ClassName .. "." .. k) end
+		end
+	end
+	local function effect(class, name)
+		local e = L:FindFirstChildOfClass(class)
+		if not e then
+			e = roblox.Instance.new(class)
+			e.Name = name
+			e.Parent = L
+		end
+		return e
+	end
+	if okLook and Look.Enabled then
+		apply(L, Look.Lighting)
+		apply(effect("ColorCorrectionEffect", "HuzzGrade"), Look.ColorCorrection)
+		apply(effect("BloomEffect", "HuzzBloom"), Look.Bloom)
+		apply(effect("SunRaysEffect", "HuzzSunRays"), Look.SunRays)
+		apply(effect("Atmosphere", "HuzzAtmosphere"), Look.Atmosphere)
+		print("lighting: Config/Look saved into the place (" .. set .. " values" .. (if #skipped > 0 then "; Lune can't write " .. table.concat(skipped, ", ") else "") .. ")")
+	else
+		print("lighting: Config/Look not saved (" .. tostring(Look) .. ")")
+	end
+end
 
 fs.writeFile(ROOT .. "HuzzValley-yours.rbxl", roblox.serializePlace(theirs))
 print("saved " .. ROOT .. "HuzzValley-yours.rbxl")

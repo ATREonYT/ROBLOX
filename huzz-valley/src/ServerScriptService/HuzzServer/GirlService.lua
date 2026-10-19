@@ -430,7 +430,7 @@ function GirlService.showcase(girl, at, parent)
 	-- a soft glow up from the stand onto her (you look up at her from the field)
 	local up = part("StandGlow", { Size = Vector3.new(0.2, 0.2, 0.2), Transparency = 1, CFrame = feet * CFrame.new(0, -0.05, 0) })
 	local spot = Instance.new("SpotLight")
-	spot.Face, spot.Angle, spot.Brightness, spot.Range = Enum.NormalId.Top, 70, 1.4, size.Y * 0.9
+	spot.Face, spot.Angle, spot.Brightness, spot.Range = Enum.NormalId.Top, 70, 1.0, size.Y * 0.9
 	spot.Color, spot.Shadows = color:Lerp(Color3.new(1, 1, 1), 0.55), false
 	spot.Parent = up
 	-- a key light in front of her and a rim light in her colour behind; they turn with her. The key light sits low
@@ -442,8 +442,9 @@ function GirlService.showcase(girl, at, parent)
 		light.Brightness, light.Range, light.Color, light.Shadows = brightness, range or size.Y * 0.75, tint, false
 		light.Parent = holder
 	end
-	lamp("KeyLight", CFrame.new(0, -size.Y * 0.3, -(size.Z / 2 + size.Y * 0.3)), 2.2, Color3.fromRGB(255, 244, 236), size.Y * 0.7)
-	lamp("RimLight", CFrame.new(0, size.Y * 0.2, size.Z / 2 + size.Y * 0.3), 1.1, color:Lerp(Color3.new(1, 1, 1), 0.3))
+	-- (Oct 19: softer, 1.5 / 0.8 / stand 1.0, was 2.2 / 1.1 / 1.4: the brighter sky light now fills her shade)
+	lamp("KeyLight", CFrame.new(0, -size.Y * 0.3, -(size.Z / 2 + size.Y * 0.3)), 1.5, Color3.fromRGB(255, 244, 236), size.Y * 0.7)
+	lamp("RimLight", CFrame.new(0, size.Y * 0.2, size.Z / 2 + size.Y * 0.3), 0.8, color:Lerp(Color3.new(1, 1, 1), 0.3))
 
 	-- Her rating over her head: stars by rarity (Common 1 ... Secret 7), her name, her rarity.
 	local order = 1

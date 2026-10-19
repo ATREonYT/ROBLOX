@@ -49,7 +49,8 @@ local SLASH, RED = rgb(255, 40, 95), rgb(255, 45, 100)
 
 -- The night look (Lighting, on this screen only), blended in by Shared/SecretReveal.night.
 local NIGHT_LOOK = {
-	Lighting = { Ambient = rgb(34, 28, 62), OutdoorAmbient = rgb(48, 40, 92), Brightness = 1.2 },
+	-- (EnvironmentDiffuseScale too: the day look's sky light at 1 would lift the night's shade to blue-grey)
+	Lighting = { Ambient = rgb(34, 28, 62), OutdoorAmbient = rgb(48, 40, 92), Brightness = 1.2, EnvironmentDiffuseScale = 0.25 },
 	Atmosphere = { Density = 0.42, Offset = 0.2, Color = rgb(70, 48, 140), Decay = rgb(24, 18, 70), Glare = 0, Haze = 2.4 },
 	BloomEffect = { Intensity = 1.3, Size = 40, Threshold = 0.9 },
 	SunRaysEffect = { Intensity = 0 },

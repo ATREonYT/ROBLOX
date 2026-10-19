@@ -411,8 +411,9 @@ do
 	m:PivotTo(base)
 	-- the game's own look on Lighting (LookService), to check the cutscene puts every value back exactly
 	local L = game.Lighting
-	L.ClockTime, L.Brightness = 14.2, 2.8 -- (Lune's Lighting starts without them)
-	L.Ambient, L.OutdoorAmbient = Color3.fromRGB(92, 96, 112), Color3.fromRGB(138, 140, 156)
+	L.ClockTime, L.Brightness = 13, 1.4 -- (Lune's Lighting starts without them; Config/Look, Oct 19)
+	L.Ambient, L.OutdoorAmbient = Color3.fromRGB(150, 150, 160), Color3.fromRGB(210, 210, 218)
+	pcall(function() L.EnvironmentDiffuseScale = 1 end)
 	for _, c in L:GetChildren() do c:Destroy() end
 	local atmo = Instance.new("Atmosphere")
 	atmo.Density, atmo.Offset, atmo.Haze, atmo.Glare = 0.2, 0.1, 0.3, 0
@@ -423,7 +424,10 @@ do
 	bloom.Parent = L
 	local function snapshot()
 		local out = {}
-		for _, key in { "ClockTime", "Brightness", "Ambient", "OutdoorAmbient" } do out["L." .. key] = L[key] end
+		for _, key in { "ClockTime", "Brightness", "Ambient", "OutdoorAmbient", "EnvironmentDiffuseScale" } do
+			local ok, v = pcall(function() return L[key] end)
+			out["L." .. key] = if ok then v else nil
+		end
 		for _, key in { "Density", "Offset", "Haze", "Glare", "Color", "Decay" } do out["A." .. key] = atmo[key] end
 		for _, key in { "Intensity", "Size", "Threshold" } do out["B." .. key] = bloom[key] end
 		out.children = #L:GetChildren()
