@@ -1,6 +1,6 @@
 -- lune run tests/SetupKnives.spec.luau   (from huzz-valley/)
 -- The owner's Studio knife setup (ServerStorage/HuzzStudioTools/SetupKnives = tools/knives/setup_knives.lua) on a
--- fake import of All_Knives.glb (and the 5 Game Pass knives of Gamepass_Knives.glb): Studio may turn and scale an import any way, so the parts here sit at the baked
+-- fake import of All_Knives.glb (and the 5 Game Pass knives of Gamepass_Knives.glb, the 18 of Halloween_Knives.glb): Studio may turn and scale an import any way, so the parts here sit at the baked
 -- centres under a random turn, size and spot. Every knife must come out in ServerStorage/HuzzKnives/<key>: Handle +Y
 -- along the blade, X the blade's thin way, Grip / TrailBase / TrailTip in place, pommel to tip its length in studs,
 -- glowing parts Neon in their colour (or his import's own glow kept: a SurfaceAppearance with an emissive mask), the
@@ -53,7 +53,10 @@ local env = { game = game, Instance = Instance, Vector3 = Vector3, CFrame = CFra
 	print = function(s) table.insert(lines, s) end, warn = function(s) table.insert(lines, "WARN " .. tostring(s)) end }
 source = string.gsub(source, "if script == nil then run%(%) end[^\n]*\n", "") -- (no Command Bar run at load: the test runs it)
 local run, KNIVES = luau.load(source, { debugName = "SetupKnives", environment = env })()
-check("35 knives baked in (30 shop + 5 Game Pass)", #KNIVES == 35)
+check("53 knives baked in (30 shop + 5 Game Pass + 18 Halloween)", #KNIVES == 53)
+local fromHalloween = 0
+for _, k in KNIVES do if string.sub(k.file, 1, 10) == "halloween/" then fromHalloween += 1 end end
+check("18 from his Halloween file", fromHalloween == 18)
 local exclusive = 0
 for _, k in KNIVES do if k.rarity == "Exclusive" then exclusive += 1 end end
 check("the 5 Game Pass knives are Exclusive", exclusive == 5)
@@ -85,11 +88,11 @@ check("the setup runs (" .. tostring(count) .. ")", ok)
 if not ok then print(count) end
 local holder = ServerStorage:FindFirstChild("HuzzKnives")
 check("ServerStorage/HuzzKnives made", holder ~= nil)
-check("Done: 35 of 35", table.find(lines, "[HuzzKnife] Done: 35 of 35 knives are in ServerStorage > HuzzKnives.") ~= nil)
+check("Done: 53 of 53", table.find(lines, "[HuzzKnife] Done: 53 of 53 knives are in ServerStorage > HuzzKnives.") ~= nil)
 check("the import is tidied away", all.Parent == nil)
 local tagged = 0
 for _, l in lines do if string.sub(l, 1, 11) == "[HuzzKnife]" then tagged += 1 end end
-check("one [HuzzKnife] line per knife (+ the summary)", tagged >= 36)
+check("one [HuzzKnife] line per knife (+ the summary)", tagged >= 54)
 for _, l in lines do
 	if string.find(l, "WARN") or string.find(l, "roughly") or string.find(l, "didn't match") then print("  " .. l) end
 end
@@ -157,7 +160,7 @@ end
 lines = {}
 env.print = function(s) table.insert(lines, s) end
 local ok2 = pcall(run)
-check("a second run keeps all 35", ok2 and #holder:GetChildren() == 35)
+check("a second run keeps all 53", ok2 and #holder:GetChildren() == 53)
 
 -- ---------------------------------------------------------------------------------------------------------------
 -- The owner's real Oct 18 run: 8 knives (BoneKnife, BoxCutter, CopperCleaver, EmberEdge, IceKnife, JadeKunai,
@@ -183,9 +186,9 @@ local fixture = roblox.deserializeModel(fs.readFile(ROOT .. "tests/fixtures/Huzz
 -- Studio's names, worked out the way the fixture shows them
 local studioNames = {} -- [key] = { part name per node }
 do
-	local counts = { shop = {}, pass = {} } -- (each import counts on its own: All_Knives.glb, Gamepass_Knives.glb)
+	local counts = { shop = {}, pass = {}, halloween = {} } -- (each import counts on its own: All_Knives.glb, Gamepass_Knives.glb, Halloween_Knives.glb)
 	for _, k in KNIVES do
-		local knivesWith = if k.rarity == "Exclusive" then counts.pass else counts.shop
+		local knivesWith = if k.rarity == "Exclusive" then counts.pass elseif string.sub(k.file, 1, 10) == "halloween/" then counts.halloween else counts.shop
 		local inKnife, list = {}, {}
 		for _, n in k.nodes do
 			local e = inKnife[n[1]]
@@ -267,12 +270,13 @@ local function painted(k, model)
 	return bad
 end
 
--- 1. fresh imports with Studio's names, All_Knives.glb laid flat (its node matrix) and Gamepass_Knives.glb upright
--- (its matrices are plain): every knife lines up by its parts (no box guess)
+-- 1. fresh imports with Studio's names, All_Knives.glb laid flat (its node matrix), Gamepass_Knives.glb and
+-- Halloween_Knives.glb upright (their matrices are plain): every knife lines up by its parts (no box guess; his
+-- shurikens, a star round one spot, by their blade part's own turn)
 do
 	local g, run2, out = load(source)
 	local roots, turns = {}, {}
-	for _, r in { { "All_Knives", CFrame.fromMatrix(Vector3.zero, Vector3.xAxis, -Vector3.zAxis, Vector3.yAxis) }, { "Gamepass_Knives", CFrame.identity } } do
+	for _, r in { { "All_Knives", CFrame.fromMatrix(Vector3.zero, Vector3.xAxis, -Vector3.zAxis, Vector3.yAxis) }, { "Gamepass_Knives", CFrame.identity }, { "Halloween_Knives", CFrame.identity } } do
 		local root = Instance.new("Model")
 		root.Name = r[1]
 		root.Parent = g:GetService("Workspace")
@@ -281,7 +285,7 @@ do
 	local made, turnOf = {}, {}
 	for i, k in KNIVES do
 		local s = 3.57
-		local file = if k.rarity == "Exclusive" then "Gamepass_Knives" else "All_Knives"
+		local file = if k.rarity == "Exclusive" then "Gamepass_Knives" elseif string.sub(k.file, 1, 10) == "halloween/" then "Halloween_Knives" else "All_Knives"
 		local flat = turns[file]
 		turnOf[k.key] = flat
 		local at = Vector3.new((i % 6) * 6 - 15, 0.07, math.floor((i - 1) / 6) * 3.57)
@@ -301,7 +305,7 @@ do
 	local ok3, err3 = pcall(run2)
 	check("laid-flat import with Studio's names: the setup runs", ok3)
 	if not ok3 then print(err3) end
-	check("Studio-style imports: Done: 35 of 35", table.find(out, "[HuzzKnife] Done: 35 of 35 knives are in ServerStorage > HuzzKnives.") ~= nil)
+	check("Studio-style imports: Done: 53 of 53", table.find(out, "[HuzzKnife] Done: 53 of 53 knives are in ServerStorage > HuzzKnives.") ~= nil)
 	for _, l in out do
 		if string.find(l, "didn't match") or string.find(l, "roughly") or string.find(l, "WRONG") or string.find(l, "WARN") then print("  " .. l) end
 	end
@@ -427,12 +431,12 @@ do
 		end
 	end
 	local ok5 = pcall(run4)
-	check("our file: runs, 30 of 35 (the 5 Game Pass knives aren't imported yet)", ok5 and table.find(out, "[HuzzKnife] Done: 30 of 35 knives are in ServerStorage > HuzzKnives.") ~= nil)
+	check("our file: runs, 30 of 53 (the 5 Game Pass and 18 Halloween knives aren't imported yet)", ok5 and table.find(out, "[HuzzKnife] Done: 30 of 53 knives are in ServerStorage > HuzzKnives.") ~= nil)
 	for _, l in out do
 		if string.find(l, "WRONG") or string.find(l, "couldn't") or string.find(l, "repaired") then print("  " .. l) end
 	end
 	for _, k in KNIVES do
-		if k.rarity == "Exclusive" then continue end
+		if string.find(k.file, "/", 1, true) then continue end -- (his files of several: not imported yet)
 		local m = holder4:FindFirstChild(k.key)
 		local h = m and m:FindFirstChild("Handle")
 		local moved, worst = 0, 0

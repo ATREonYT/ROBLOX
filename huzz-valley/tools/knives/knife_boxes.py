@@ -1,4 +1,4 @@
-# Writes tools/knives/knife_boxes.json: for every knife (the 30 and the 5 Game Pass ones), each .glb part's box in
+# Writes tools/knives/knife_boxes.json: for every knife (the 30, the 5 Game Pass and the 18 Halloween ones), each .glb part's box in
 # the game's Handle space, in studs: { node, lo: [x,y,z], hi: [x,y,z], col: "rrggbb", glow, metal, rough (the .glb's metallic
 # and roughness) }. Handle space = the
 # setup's frame (tools/knives/setup_knives.lua): X = the .glb's Z (the blade's thin way), Y = the .glb's Y minus the

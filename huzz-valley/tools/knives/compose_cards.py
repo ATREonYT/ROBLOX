@@ -6,10 +6,10 @@
 # sparkles ... Mythic = the strongest glow, 7 sparkles and two wisps.
 # The card's frame, name, "KNIFE" and button are the game's UI (Screens/Shop), not part of the picture.
 # Writes assets/art/knife-<key>.png (384 px; tools/icons/pack_images.py packs them at 192 px for the game) and
-# docs/previews/knife-cards.jpg (all 35 as cards next to a crop of the mock-up).
+# docs/previews/knife-cards.jpg (all 53 as cards next to a crop of the mock-up).
 # Usage (from huzz-valley/): python3 -I tools/knives/compose_cards.py <raw render dir>
-#   ONLY=Exclusive (env) remakes only that rarity's pictures (the sheet reuses the other cards already in assets/art),
-#   so adding knives doesn't redraw the 30 shop cards.
+#   ONLY=Exclusive (env) remakes only that rarity's pictures, ONLY=halloween only his Halloween file's (the sheet
+#   reuses the other cards already in assets/art), so adding knives doesn't redraw the 30 shop cards.
 import json, math, os, random, re, sys
 from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
 
@@ -133,7 +133,7 @@ def sheet(cards, knives):
     out = Image.new('RGB', (pad * 3 + grid_w + crop.width, pad * 2 + grid_h + 60), (14, 16, 30))
     d = ImageDraw.Draw(out)
     title = font(26, 'black')
-    d.text((pad, 18), 'OURS: his 30 real knives (renders of his .glb), as the ITEMS cards', font=title, fill=(255, 255, 255))
+    d.text((pad, 18), 'OURS: his %d real knives (renders of his .glb), as the ITEMS cards' % len(cards), font=title, fill=(255, 255, 255))
     d.text((pad * 2 + grid_w, 18), "HIS MOCK-UP (style only)", font=title, fill=(255, 255, 255))
     out.paste(crop, (pad * 2 + grid_w, pad + 40))
     for i, (k, img) in enumerate(zip(knives, cards)):
@@ -168,7 +168,7 @@ def main(raw):
         k['price'] = prices.get(k['rarity'])  # (None: a Game Pass knife)
         k['unlock'] = k['key'] in unlock
         path = 'assets/art/knife-%s.png' % kebab(k['key'])
-        if only and k['rarity'] != only:
+        if only and k['rarity'] != only and not k['file'].startswith(only + '/'):
             cards.append(Image.open(path).convert('RGB'))
             continue
         img = card(raw, k)

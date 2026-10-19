@@ -1,11 +1,14 @@
 --[[
-	The 5 Game Pass knives drawn as the owner's own model on this screen (owner, Oct 19: "use the glb file to get them
-	one to one, whenever you wear or use them"), until his import of design/knives/gamepass/Gamepass_Knives.glb is in
-	ServerStorage/HuzzKnives (then the server uses his model and nothing here runs).
+	The 5 Game Pass knives and his 18 Halloween knives drawn as the owner's own model on this screen (owner, Oct 19:
+	"use the glb file to get them one to one, whenever you wear or use them"; the Halloween ones "make it one to
+	one"), until his import of design/knives/gamepass/Gamepass_Knives.glb and design/knives/halloween/
+	Halloween_Knives.glb is in ServerStorage/HuzzKnives (then the server uses his model and nothing here runs).
 	- The server builds a pass knife from its plain-part stand-in (Shared/KnifeShapes: the right length, grip and
 	  trail points) and tags it "GlbKnife" (HuzzServer/KnifeService.template). On this screen each tagged knife in the
 	  Workspace (in a hand, on a back or hip, on a lobby stand) gets his model instead: every triangle and colour of
-	  his .glb (Shared/KnifeGlb, baked by tools/knives/bake_pass_meshes.py), one MeshPart per look, welded to the
+	  his .glb (baked by tools/knives/bake_pass_meshes.py into ServerStorage/HuzzKnifeGlb; this screen asks
+	  HuzzServer/KnifeGlbService for a knife's meshes the first time it shows one, so nobody downloads all 3.3 MB at
+	  join), one MeshPart per look, welded to the
 	  Handle, sized by the knife's Stretch (a stand's big copy); then the stand-in's parts are hidden on this screen.
 	  Each look is the Roblox material nearest his .glb's (its mat / refl, from Shared/KnifeLook.glbMaterial: Neon for
 	  his glowing parts, Metal for his metal, Plastic for matte grips). Nothing is laid over it (owner, Oct 19: "they
@@ -68,7 +71,8 @@ function M.unpack(g)
 	return verts, tris, mid, span
 end
 
--- The baked meshes of a knife (Shared/KnifeGlb/<key>_<n>), in order; {} when there are none.
+-- The baked meshes of a knife (<key>_<n> in a folder of modules, as tools/knives/bake_pass_meshes.py writes them), in
+-- order; {} when there are none. (The game asks the server instead: start's meshesFor.)
 function M.meshesOf(folder: Instance, key: string)
 	local list = {}
 	local n = 1
@@ -140,10 +144,34 @@ function M.start()
 			end)
 		end
 	end
-	local folder = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("KnifeGlb", 10)
-	if not folder then
-		report("Shared/KnifeGlb is missing: the plain stand-ins show", true)
-		return
+	local Net = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Net"))
+	local remote = Net.get("KnifeGlb") :: RemoteFunction
+	-- a knife's meshes from the server, once per knife on this screen (asked 1, 2, 3 ... until there are no more)
+	local fetched: { [string]: any } = {}
+	local function meshesFor(key: string)
+		while fetched[key] == false do task.wait(0.2) end -- (another knife of the same key is fetching it)
+		if fetched[key] then return fetched[key] end
+		fetched[key] = false
+		local list, n, tries = {}, 1, 0
+		while n <= 64 do
+			local ok, g = pcall(remote.InvokeServer, remote, key, n)
+			if not ok then
+				fetched[key] = nil
+				error("couldn't fetch the meshes: " .. tostring(g))
+			end
+			if g == false then -- (too many asks this minute: wait, then go on)
+				tries += 1
+				if tries > 30 then fetched[key] = nil error("the server kept saying wait") end
+				task.wait(3)
+			elseif type(g) == "table" then
+				table.insert(list, g)
+				n += 1
+			else
+				break
+			end
+		end
+		fetched[key] = list
+		return list
 	end
 
 	local made = {} -- [baked mesh] = its EditableMesh, made once (false: it failed)
@@ -185,7 +213,17 @@ function M.start()
 		busy[model] = true
 		task.spawn(function()
 			model:WaitForChild("Handle", 5) -- (a knife can arrive a part at a time)
-			local meshes = M.meshesOf(folder, key)
+			local okM, meshes = pcall(meshesFor, key)
+			if not okM then
+				report("failed (" .. tostring(meshes) .. "): the plain stand-ins show", true)
+				busy[model] = nil
+				return
+			end
+			if #meshes == 0 then
+				report("failed (the server has no meshes for " .. key .. ": ServerStorage/HuzzKnifeGlb missing?): the plain stand-ins show", true)
+				busy[model] = nil
+				return
+			end
 			local ok, result, why = pcall(M.dress, model, meshes, make)
 			if ok and result then
 				report("on (" .. #meshes .. " meshes for " .. key .. ")")

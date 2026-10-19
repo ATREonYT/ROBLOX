@@ -1,11 +1,12 @@
 --[[
-	Stand-in models for the five Game Pass knives, built from plain parts until the owner imports his own
-	(design/knives/gamepass/Gamepass_Knives.glb + the knife setup: section "Knives" of huzz-valley/CLAUDE.md), and
+	Stand-in models for the five Game Pass knives and his 18 Halloween knives, built from plain parts until the owner
+	imports his own (design/knives/gamepass/Gamepass_Knives.glb, design/knives/halloween/Halloween_Knives.glb + the knife
+	setup: docs/notes/knives.md, "Owner how-to"), and
 	wherever a screen can't draw his model (Gameplay/KnifeDress needs Roblox's EditableMesh: in the live game only
 	with Game Settings > Security > "Allow Mesh / Image APIs").
 	Owner, Oct 19, his Studio screenshot of the lobby stands: the first hand-made stand-ins (an orange blocky jagged
 	blade, a small cyan stub) were nothing like his model. Now each one is cut from his own .glb
-	(Shared/KnifeStandIns, baked by tools/knives/bake_stand_ins.py): thin slices across the knife, one block per
+	(Shared/KnifeStandIns, one module a knife in Shared/KnifeStandInParts, baked by tools/knives/bake_stand_ins.py): thin slices across the knife, one block per
 	stretch of each of his looks, so the outline follows his (the moon hole, the teeth, the spikes, the feathers), in
 	his colours and the Roblox material nearest his (Shared/KnifeLook.glbMaterial), at his real length.
 	Pure data (HuzzServer/KnifeService builds them; tests/KnifeShapes.spec checks each against its baked length).

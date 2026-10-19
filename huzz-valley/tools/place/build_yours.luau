@@ -18,6 +18,7 @@ local SWAP = {
 	{ "StarterGui", "HuzzUI" },
 	{ "ServerStorage", "HuzzStudioTools" },
 	{ "ServerStorage", "HuzzImages" }, -- (effect textures for the upload helper: tools/icons/pack_images.py)
+	{ "ServerStorage", "HuzzKnifeGlb" }, -- (his .glb knife meshes, sent to screens by HuzzServer/KnifeGlbService)
 }
 local function at(game, path)
 	local inst = game:GetService(path[1])

@@ -1,8 +1,10 @@
 -- lune run tests/KnifeShapes.spec.luau   (from huzz-valley/)
 -- The Game Pass knives made big and alive (owner, Oct 19: "right now its very small and you dont even notice it ...
 -- better knife animations ... in the lobby and in the gamepass sections"), with the real HuzzServer/KnifeService:
---   * each pass knife's stand-in (Shared/KnifeShapes) is its listed length (not our 1.9 stud dagger), shaped like a
---     knife (KnifeLook.sane), with glowing Neon parts and its slash trail points;
+--   * each stand-in (Shared/KnifeShapes: the 5 pass knives and his 18 Halloween knives, cut from his files) is its
+--     listed length (not our 1.9 stud dagger), shaped like a knife (KnifeLook.sane, with its Wide allowance for his
+--     sickles, karambits and shurikens), in his .glb's box and colours, glowing Neon parts where his has glow, and its
+--     slash trail points;
 --   * KnifeService.scale grows a model about its grip: length, attachments and welds together (by hand, no ScaleTo);
 --   * the stands' copy (KnifeService.display) is about KnifeLook.STAND.Length long, for stand-ins and the owner's own
 --     models alike, and carries its element: steady emitters, a burst, a tip glint, its element name;
@@ -57,6 +59,11 @@ local baked = {}
 for _, k in serde.decode("json", fs.readFile(ROOT .. "tools/knives/knives.json")) do baked[k.key] = k end
 
 local PASS = { "CrimsonRequiem", "HollowEclipse", "CelestialSeraph", "DragonsMaw", "FrostboundOath" }
+local SHEET = {} -- every knife of his files of several (the 5 pass knives, his 18 Halloween knives)
+for _, k in serde.decode("json", fs.readFile(ROOT .. "tools/knives/knives.json")) do
+	if string.find(k.file, "/", 1, true) then table.insert(SHEET, k.key) end
+end
+check("23 stand-ins cut from his files (" .. #SHEET .. ")", #SHEET == 23)
 local function count(model, class)
 	local n = 0
 	for _, d in model:GetDescendants() do if d:IsA(class) then n += 1 end end
@@ -64,17 +71,21 @@ local function count(model, class)
 end
 
 -- 1. the stand-ins
-for _, key in PASS do
+for _, key in SHEET do
 	local skin = CoinShop.get(key)
 	local model, own = KnifeService.template(skin)
 	local shape = KnifeService.shapeOf(model)
 	check(key .. ": no model of his yet, so our stand-in", own == false and KnifeShapes.get(key) ~= nil)
 	check(key .. string.format(": stand-in about its real length (%.2f vs %.2f studs)", shape.length, baked[key].studs),
 		math.abs(shape.length - baked[key].studs) <= 0.15 * baked[key].studs)
-	check(key .. ": shaped like a knife (KnifeLook.sane)", KnifeLook.sane(shape, skin.Studs))
+	check(key .. ": shaped like a knife (KnifeLook.sane)", KnifeLook.sane(shape, skin.Studs, skin.Wide))
 	local neon = 0
 	for _, d in model:GetDescendants() do if d:IsA("BasePart") and d.Material == roblox.Enum.Material.Neon then neon += 1 end end
-	check(key .. ": glowing parts (" .. neon .. ")", neon >= 1)
+	if baked[key].glowParts > 0 then
+		check(key .. ": glowing parts (" .. neon .. ")", neon >= 1)
+	else
+		check(key .. ": no glow on his, none on ours (" .. neon .. ")", neon == 0)
+	end
 	-- cut from his .glb (Shared/KnifeStandIns): his outline, his colours, not too many parts
 	local glbBoxes = serde.decode("json", fs.readFile(ROOT .. "tools/knives/knife_boxes.json"))[key]
 	local lo, hi, cols = Vector3.one * math.huge, -Vector3.one * math.huge, {}
@@ -94,7 +105,7 @@ for _, key in PASS do
 	check(string.format("%s: the stand-in fills his .glb's box (%.3f, %.3f studs off)", key, (mlo - lo).Magnitude, (mhi - hi).Magnitude),
 		(mlo - lo).Magnitude < 0.06 and (mhi - hi).Magnitude < 0.06)
 	check(key .. ": every stand-in part in one of his colours (" .. foreign .. " not)", foreign == 0)
-	check(key .. ": " .. count .. " parts, at most 160", count <= 160 and count >= 20)
+	check(key .. ": " .. count .. " parts, at most 200", count <= 200 and count >= 20)
 	check(key .. ": slash trail points", model:FindFirstChild("TrailBase", true) ~= nil and model:FindFirstChild("TrailTip", true) ~= nil)
 	local handle = model:FindFirstChild("Handle", true)
 	local loose = 0

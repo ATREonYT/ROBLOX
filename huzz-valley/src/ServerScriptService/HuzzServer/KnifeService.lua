@@ -237,7 +237,7 @@ KnifeService.shapeOf = shapeOf
 -- (Shared/KnifeLook.sane): a setup that went wrong can leave one 10 times too big and lying sideways.
 local warned = {}
 local function fits(model, skin)
-	return KnifeLook.sane(shapeOf(model), model:GetAttribute("Studs") or (skin and skin.Studs))
+	return KnifeLook.sane(shapeOf(model), model:GetAttribute("Studs") or (skin and skin.Studs), model:GetAttribute("Wide") or (skin and skin.Wide))
 end
 KnifeService.fits = fits
 
@@ -259,7 +259,7 @@ local function template(skin)
 	end
 	local recipe = skin and KnifeShapes.get(skin.Key)
 	if recipe then
-		-- each screen dresses it as the owner's own .glb model (Gameplay/KnifeDress, Shared/KnifeGlb); the plain
+		-- each screen dresses it as the owner's own .glb model (Gameplay/KnifeDress, ServerStorage/HuzzKnifeGlb); the plain
 		-- parts stay where that can't run
 		local model = buildRecipe(recipe)
 		model:SetAttribute("Glb", skin.Key)
@@ -272,11 +272,12 @@ local function template(skin)
 end
 KnifeService.template = template
 
--- The biggest blade part (effects sit on it): ours is "Blade", the owner's are "blade_<n>".
+-- The biggest blade part (effects sit on it): ours is "Blade", the owner's are "blade_<n>" (his Halloween reapers and
+-- most of the others glow: "glow_blade_<n>").
 local function bladeOf(model)
 	local best, size = nil, -1
 	for _, d in model:GetDescendants() do
-		if d:IsA("BasePart") and string.sub(string.lower(d.Name), 1, 5) == "blade" then
+		if d:IsA("BasePart") and string.find(string.lower(d.Name), "blade", 1, true) then
 			local v = d.Size.X * d.Size.Y * d.Size.Z
 			if v > size then best, size = d, v end
 		end

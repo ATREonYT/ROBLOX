@@ -60,7 +60,7 @@ end
 local good, broken, side = {}, {}, {}
 for _, m in folder:GetChildren() do
 	local s = KnifeLook.shape(partsOf(m))
-	if KnifeLook.sane(s, m:GetAttribute("Studs")) then
+	if KnifeLook.sane(s, m:GetAttribute("Studs"), m:GetAttribute("Wide")) then
 		good[m.Name] = m
 		if KnifeLook.wearOf(m:GetAttribute("Wear"), s) == "Side" then table.insert(side, m.Name) end
 	else
@@ -364,8 +364,10 @@ do
 	for _, m in folder:GetChildren() do
 		if m:IsA("Model") and m:FindFirstChild("Handle", true) then test(m.Name, m) end
 	end
-	for _, key in { "CrimsonRequiem", "HollowEclipse", "CelestialSeraph", "DragonsMaw", "FrostboundOath" } do
-		test(key .. " (stand-in)", (KnifeService.template(CoinShop.get(key))))
+	for _, item in CoinShop.Items do -- (the pass and Halloween knives, from his files of several: their stand-ins)
+		if item.Slot == "Knife" and item.Model and string.find(item.Model, "/", 1, true) then
+			test(item.Key .. " (stand-in)", (KnifeService.template(item)))
+		end
 	end
 	print(string.format("  in hand, lowest tip: %s %.2f studs over the floor", worstKey, worstY))
 	check("in hand: a short knife keeps Huss Valley's 150 degrees", KnifeLook.handAngle(2.07) == -150)

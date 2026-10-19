@@ -1,6 +1,7 @@
 -- lune run tests/Knives.spec.luau   (from huzz-valley/)
 -- The owner's 30 knives (Oct 18): all 30 in the coin shop's Knife slot (and his 5 Game Pass knives, given only by
--- their pass) with their own names and rarities, in rarity
+-- their pass; and his 18 Halloween knives, Oct 19: one group of three sets of 6, each set Common to Mythic in his
+-- order, on the same price ladder, never "limited") with their own names and rarities, in rarity
 -- order, priced by rarity; the quest knives and the Spin Knife sit on fitting models and are never sold; every knife
 -- has its card picture (case-exact); the effects climb calmly with rarity; and a catcher's Space leap goes forward or
 -- sideways, never back. Where a worn knife sits: tests/KnifeWear.spec.luau.
@@ -22,12 +23,17 @@ local function check(name, cond)
 end
 
 local bakedAll = serde.decode("json", fs.readFile(ROOT .. "tools/knives/knives.json"))
-local baked, bakedPass = {}, {}
-for _, b in bakedAll do table.insert(if b.rarity == "Exclusive" then bakedPass else baked, b) end
-local knives, passKnives = {}, {}
-for _, item in CoinShop.Items do
-	if item.Slot == "Knife" then table.insert(if item.Pass then passKnives else knives, item) end
+local baked, bakedPass, bakedHalloween = {}, {}, {}
+for _, b in bakedAll do
+	table.insert(if b.rarity == "Exclusive" then bakedPass elseif string.find(b.file, "halloween/", 1, true) then bakedHalloween else baked, b)
 end
+local knives, passKnives, halloween = {}, {}, {}
+for _, item in CoinShop.Items do
+	if item.Slot == "Knife" then
+		table.insert(if item.Pass then passKnives elseif item.Set then halloween else knives, item)
+	end
+end
+table.sort(halloween, function(a, b) return a.Order < b.Order end)
 table.sort(knives, function(a, b) return a.Order < b.Order end)
 table.sort(passKnives, function(a, b) return a.Order < b.Order end)
 check("30 shop knives in the Knife slot", #knives == 30)
@@ -120,6 +126,30 @@ check("the quest reward says the knife's name", Progression.rewardText({ XP = 1,
 local sold = 0
 for _, item in knives do if not item.Unlock and not item.NotForSale then sold += 1 end end
 check("26 knives for sale", sold == 26)
+
+-- his 18 Halloween knives (design/knives/halloween/Halloween_Knives.glb): coin knives like the 30, one group of three
+-- sets of 6 in his rows, each set Common to Mythic in his order, priced on the same ladder, sold all year
+check("18 Halloween knives in the Knife slot", #halloween == 18 and #bakedHalloween == 18)
+check("the Halloween file is there", fs.isFile(ROOT .. "design/knives/halloween/Halloween_Knives.glb"))
+local SETS = { "Pumpkin", "Witch", "Candy" }
+for i, item in halloween do
+	local b = bakedHalloween[i]
+	local set, at = SETS[(i - 1) // 6 + 1], (i - 1) % 6 + 1
+	check(item.Key .. ": baked from his Halloween file, his name", b ~= nil and b.key == item.Key and b.name == item.Name
+		and item.Model == "Halloween_Knives/" .. b.node)
+	check(item.Key .. ": in the " .. set .. " set, place " .. at, item.Set == set and b.set == set)
+	check(item.Key .. ": rarity climbs in its set", item.Rarity == KnifeLook.ORDER[at] and item.Rarity == b.rarity)
+	check(item.Key .. ": priced by rarity, for sale", item.Price == PRICE[item.Rarity] and not item.NotForSale and not item.Unlock and not item.Pass)
+	check(item.Key .. ": its own length (" .. tostring(item.Studs) .. " studs)", item.Studs == b.studs and item.Studs >= 1 and item.Studs <= 3.3)
+	check(item.Key .. ": Wide as baked", item.Wide == b.wide)
+	check(item.Key .. ": a glow colour when its model glows", (item.Glow ~= nil) == (b.glow ~= nil))
+	check(item.Key .. ": listed together, in his order", i == 1 or item.Order == halloween[i - 1].Order + 1)
+	local kebab = string.lower((string.gsub(item.Key, "(%l)(%u)", "%1-%2")))
+	check(item.Key .. ": card picture file", item.Art ~= nil and fs.isFile(ROOT .. "assets/art/knife-" .. kebab .. ".png"))
+	check(item.Key .. ": card picture packed with the exact name", item.Art ~= nil and packed[item.Art .. ".lua"] == true)
+	local words = string.lower(item.Name .. " " .. (item.Unlock or ""))
+	check(item.Key .. ": no timer or limited wording (kid-safe)", not string.find(words, "limited") and not string.find(words, "left"))
+end
 
 -- effects: calm, and each rarity has what the one below has
 check("Common: no effects", next(KnifeLook.fx("Common")) == nil and next(KnifeLook.fx(nil)) == nil)

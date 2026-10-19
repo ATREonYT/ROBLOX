@@ -1,4 +1,4 @@
-// Renders the owner's 30 knives (and his 5 Game Pass knives) (his .glb geometry and colours, from tools/knives/knife_meshes.py) for the shop
+// Renders the owner's 30 knives (and his 5 Game Pass knives, his 18 Halloween knives) (his .glb geometry and colours, from tools/knives/knife_meshes.py) for the shop
 // cards: each knife on a transparent square, diagonal (tip up-right) like his mock-up
 // (design/knives/knifepictures-mockup.png), flat side to the camera with a small turn so its shape reads.
 // Two pictures per knife: <key>.png (lit, glowing parts unlit like Roblox Neon) and <key>_glow.png (only the glowing
@@ -76,9 +76,9 @@ await page.route('http://cards.local/**', (route) => {
 await page.goto('http://cards.local/index.html');
 await page.waitForFunction(() => window.ready === true);
 const knives = JSON.parse(fs.readFileSync(path.join(here, 'knives.json'), 'utf8'));
-const only = process.env.ONLY; // (e.g. ONLY=Exclusive: just the Game Pass knives)
+const only = process.env.ONLY; // (e.g. ONLY=Exclusive: just the Game Pass knives; ONLY=halloween: his Halloween file's)
 for (const k of knives) {
-  if (only && k.rarity !== only) continue;
+  if (only && k.rarity !== only && !k.file.startsWith(only + '/')) continue;
   const parts = meshes[k.key];
   if (!parts) continue;
   const glow = k.glow ? '#' + k.glow : '#ffffff';

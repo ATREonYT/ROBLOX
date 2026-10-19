@@ -53,7 +53,7 @@ for _, model in folder:GetChildren() do
 	local k = byKey[model.Name]
 	if not (handle and k) then continue end
 	local parts = partsOf(model, handle)
-	if KnifeLook.sane(KnifeLook.shape(parts), model:GetAttribute("Studs")) then continue end
+	if KnifeLook.sane(KnifeLook.shape(parts), model:GetAttribute("Studs"), model:GetAttribute("Wide")) then continue end
 	-- the axis: where the part centres spread the most
 	local axis, spread = nil, -1
 	for _, a in AXES do
@@ -117,7 +117,7 @@ for _, model in folder:GetChildren() do
 		end
 	end
 	local after = KnifeLook.shape(partsOf(model, handle))
-	local ok = KnifeLook.sane(after, model:GetAttribute("Studs")) and worst < 0.05
+	local ok = KnifeLook.sane(after, model:GetAttribute("Studs"), model:GetAttribute("Wide")) and worst < 0.05
 	print(string.format("%-16s %s: scale x%.4f, length %.2f (wants %.2f), worst part off its .glb spot %.3f studs", model.Name,
 		if ok then "fixed" else "NOT FIXED", f, after.length, model:GetAttribute("Studs"), worst))
 	if ok then fixed += 1 else bad += 1 end

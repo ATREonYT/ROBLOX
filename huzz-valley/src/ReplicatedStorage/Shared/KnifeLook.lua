@@ -103,10 +103,13 @@ end
 
 -- True when a model is the knife it says it is: about its listed length (30%) along its blade, and much longer
 -- than it is wide or thick. A setup that went wrong can leave a knife 10 times too big and lying sideways
--- (8 of the owner's Oct 18 file): that must never end up on someone's back.
-function KnifeLook.sane(shape, studs: number?): boolean
+-- (8 of the owner's Oct 18 file): that must never end up on someone's back. wide: how wide this knife really is for
+-- its length (his sickles, karambits and shurikens, Halloween Oct 19: the Wide attribute or shop row, from
+-- tools/knives/bake_knives.py), so his own wide shapes still count as knives.
+function KnifeLook.sane(shape, studs: number?, wide: number?): boolean
 	if not shape or shape.length <= 0 then return false end
-	if math.max(shape.xMax - shape.xMin, shape.width) > 0.6 * shape.length then return false end
+	local most = if type(wide) == "number" then math.max(0.6, math.min(wide, 2) * 1.15) else 0.6
+	if math.max(shape.xMax - shape.xMin, shape.width) > most * shape.length then return false end
 	if type(studs) ~= "number" then return shape.length > 1 and shape.length < 6 end
 	return math.abs(shape.length - studs) <= 0.3 * studs
 end

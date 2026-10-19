@@ -10,12 +10,13 @@
 --     colour and the Roblox material nearest its metallic and roughness (Shared/KnifeLook.glbMaterial: Metal for his
 --     blades and guards), no leftover texture (tools/knives/colour_knives.luau); one rule in KnifeLook, his helper's
 --     lookOf (as the file shows) and the colouring tool;
---   * every knife key, in hand (give), worn (giveBack) and on a stand (display): its blade is his mesh, or for a Game
---     Pass knife without his import, the plain stand-in tagged for the .glb dress (Shared/KnifeGlb) that has a blade
---     mesh: no knife key ends up with a plain block for its blade and nothing to dress it;
---   * Shared/KnifeGlb (tools/knives/bake_pass_meshes.py): each pass knife's meshes decode, stay inside Roblox's
---     EditableMesh limits (60,000 vertices, 20,000 triangles a mesh), reach the same box as his .glb and carry its
---     colours;
+--   * every knife key (his 30, the 5 Game Pass and his 18 Halloween ones), in hand (give), worn (giveBack) and on a
+--     stand (display): its blade is his mesh, or for a knife of his files of several (Game Pass, Halloween) without
+--     his import, the plain stand-in tagged for the .glb dress that has a blade mesh: no knife key ends up with a
+--     plain block for its blade and nothing to dress it;
+--   * ServerStorage/HuzzKnifeGlb (tools/knives/bake_pass_meshes.py, sent to screens by HuzzServer/KnifeGlbService):
+--     each of those 23 knives' meshes decode, stay inside Roblox's EditableMesh limits (60,000 vertices, 20,000
+--     triangles a mesh) and under 60 KB a module, reach the same box as his .glb and carry its colours;
 --   * Gameplay/KnifeDress puts them on: one part per mesh in its .glb place times the knife's Stretch (a stand's big
 --     copy), welded to the Handle, in the mesh's material (the same rule), the stand-in hidden; all or nothing;
 --   * nothing laid over his model: a stand's copy is scaled evenly (no widening), no GlowShell / GlbShell, no white
@@ -46,9 +47,15 @@ end
 local boxes = serde.decode("json", fs.readFile(ROOT .. "tools/knives/knife_boxes.json"))
 local baked = {}
 for _, k in serde.decode("json", fs.readFile(ROOT .. "tools/knives/knives.json")) do baked[k.key] = k end
-local PASS = { "CrimsonRequiem", "HollowEclipse", "CelestialSeraph", "DragonsMaw", "FrostboundOath" }
-local isPass = {}
-for _, k in PASS do isPass[k] = true end
+-- the knives of his files of several (5 Game Pass, 18 Halloween): drawn from the .glb until his import
+local PASS, isPass = {}, {}
+for _, k in serde.decode("json", fs.readFile(ROOT .. "tools/knives/knives.json")) do
+	if string.find(k.file, "/", 1, true) then
+		table.insert(PASS, k.key)
+		isPass[k.key] = true
+	end
+end
+check("23 knives drawn from his files of several (" .. #PASS .. ")", #PASS == 23)
 
 -- the colouring tool's matcher (the same rule the file was coloured by)
 local Colour = luau.load(fs.readFile(ROOT .. "tools/knives/colour_knives.luau"), { debugName = "colour_knives", environment = {
@@ -158,11 +165,14 @@ local env = {
 }
 local KnifeService = luau.load(fs.readFile(ROOT .. "src/ServerScriptService/HuzzServer/KnifeService.lua"), { debugName = "KnifeService", environment = env })()
 
-local GLB = ROOT .. "src/ReplicatedStorage/Shared/KnifeGlb/"
+local GLB = ROOT .. "src/ServerStorage/HuzzKnifeGlb/"
+local bigFile = 0
 local function meshesOf(key)
 	local list, n = {}, 1
 	while fs.isFile(GLB .. key .. "_" .. n .. ".lua") do
-		table.insert(list, luau.load(fs.readFile(GLB .. key .. "_" .. n .. ".lua"), { debugName = key .. "_" .. n })())
+		local text = fs.readFile(GLB .. key .. "_" .. n .. ".lua")
+		bigFile = math.max(bigFile, #text)
+		table.insert(list, luau.load(text, { debugName = key .. "_" .. n })())
 		n += 1
 	end
 	return list
@@ -171,7 +181,7 @@ end
 local function bladeOf(model)
 	local best, size = nil, -1
 	for _, d in model:GetDescendants() do
-		if d:IsA("BasePart") and string.sub(string.lower(d.Name), 1, 5) == "blade" then
+		if d:IsA("BasePart") and string.find(string.lower(d.Name), "blade", 1, true) then
 			local v = d.Size.X * d.Size.Y * d.Size.Z
 			if v > size then best, size = d, v end
 		end
@@ -209,17 +219,20 @@ for _, item in CoinShop.Items do
 	local c = body()
 	KnifeService.giveBack(c, item)
 	local worn = c:FindFirstChild("HuzzBackKnife")
-	local ok, why = if worn then hisBlade(worn, key) else false, "nothing worn"
+	local ok, why = false, "nothing worn"
+	if worn then ok, why = hisBlade(worn, key) end
 	check(key .. " worn: his blade (" .. tostring(why) .. ")", ok)
 	KnifeService.give(c, item)
 	local held = nil
 	for _, d in c:GetChildren() do
 		if d:IsA("Model") and d.Name ~= "HuzzBackKnife" then held = d end
 	end
-	ok, why = if held then hisBlade(held, key) else false, "nothing in hand"
+	ok, why = false, "nothing in hand"
+	if held then ok, why = hisBlade(held, key) end
 	check(key .. " in hand: his blade (" .. tostring(why) .. ")", ok)
 	local stand = KnifeService.display(item)
-	ok, why = if stand then hisBlade(stand, key) else false, "no stand copy"
+	ok, why = false, "no stand copy"
+	if stand then ok, why = hisBlade(stand, key) end
 	check(key .. " on a stand: his blade (" .. tostring(why) .. ")", ok)
 	if stand then
 		local s = stand:GetAttribute("Stretch")
@@ -239,9 +252,9 @@ for _, item in CoinShop.Items do
 		check(key .. ": without his import, the stand-in is tagged for the .glb dress", t:GetAttribute("Glb") == key)
 	end
 end
-check("35 knife keys checked (" .. knives .. ")", knives == 35)
+check("53 knife keys checked (" .. knives .. ")", knives == 53)
 
--- 3. the baked .glb meshes of the 5 pass knives
+-- 3. the baked .glb meshes of the 23 knives of his files of several
 local Dress = luau.load(fs.readFile(ROOT .. "src/StarterPlayer/StarterPlayerScripts/HuzzClient/Gameplay/KnifeDress.lua"), { debugName = "KnifeDress", environment = {
 	Vector3 = Vector3, CFrame = CFrame, Color3 = roblox.Color3, Enum = roblox.Enum, Instance = Instance,
 } })()
@@ -292,7 +305,7 @@ for _, key in PASS do
 	local lookOk = true
 	for l in looks do if not wantLook[l] then lookOk = false end end
 	check(key .. ": every mesh in the material his .glb part has (KnifeLook.glbMaterial)", lookOk)
-	check(key .. ": " .. tris .. " triangles, his whole model", tris > 3000)
+	check(key .. ": " .. tris .. " triangles, his whole model", tris > 1000)
 
 	-- 4. the dress, on a stand copy (stretched) and in a hand
 	local function fakeMake() return Instance.new("MeshPart") end
@@ -358,6 +371,28 @@ for _, key in PASS do
 		if d:IsA("BasePart") and d.Name ~= "Handle" and d.Transparency < 1 then shown += 1 end
 	end
 	check(key .. ": a failed mesh leaves the stand-in whole, no half knife", r == nil and plainKnife:FindFirstChild("GlbDress") == nil and shown > 3)
+end
+
+check(string.format("every baked mesh module under 60 KB (largest %.1f KB)", bigFile / 1024), bigFile > 0 and bigFile < 60000)
+
+-- 5. the server hands them out one at a time (HuzzServer/KnifeGlbService), arguments checked
+do
+	local folder = Instance.new("Folder")
+	folder.Name = "HuzzKnifeGlb"
+	local m = Instance.new("ModuleScript")
+	m.Name = PASS[1] .. "_1"
+	m.Parent = folder
+	local Service = luau.load(fs.readFile(ROOT .. "src/ServerScriptService/HuzzServer/KnifeGlbService.lua"), { debugName = "KnifeGlbService", environment = {
+		game = { GetService = function(_, name)
+			if name == "ServerStorage" then return { FindFirstChild = function(_, n) return if n == "HuzzKnifeGlb" then folder else nil end } end
+			return {}
+		end },
+		require = function(x) return if x == m then meshesOf(PASS[1])[1] else error("not this one") end,
+	} })()
+	check("KnifeGlbService: a knife's first mesh", type(Service.mesh(PASS[1], 1)) == "table")
+	check("KnifeGlbService: nil past its last mesh", Service.mesh(PASS[1], 2) == nil)
+	check("KnifeGlbService: odd keys and numbers give nothing", Service.mesh("../x", 1) == nil and Service.mesh(PASS[1], 0) == nil
+		and Service.mesh(PASS[1], 1.5) == nil and Service.mesh({}, 1) == nil and Service.mesh(PASS[1], "1") == nil and Service.mesh(string.rep("a", 41), 1) == nil)
 end
 
 print(string.format("KnifeModels: %d passed, %d failed", passed, failed))

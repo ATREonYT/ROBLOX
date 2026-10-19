@@ -187,8 +187,9 @@ fine). Owner quotes go in the topic's "Why" part. Keep this core about 20 KB and
 - **Owner, in Studio:**
   - Game Pass IDs (VIP 199, Dance Pack 149, and the 5 knife passes, Price 0 until he sets them: the cards and
     stands wait for them).
-  - Import `Gamepass_Knives.glb` + rerun SetupKnives and send `HuzzKnives.rbxm` again: we have his 30 knives (Oct 18,
-    finished offline Oct 19) but not the 5 pass knives (until then each screen draws them from the .glb with
+  - Import `Gamepass_Knives.glb` and `Halloween_Knives.glb` + rerun SetupKnives and send `HuzzKnives.rbxm` again: we
+    have his 30 knives (Oct 18, finished offline Oct 19) but not the 5 pass or 18 Halloween knives (until then each
+    screen draws them from the .glb with
     EditableMesh: only with Game Settings > Security > "Allow Mesh / Image APIs", which needs his ID check; his Oct 19
     Play showed the plain stand-ins, so turn it on and send the `[HuzzKnife]` line or the red box);
     his own place still holds the broken 8 and his 30 without the Oct 19 materials ([knives.md](docs/notes/knives.md),

@@ -2,11 +2,12 @@
 	[HuzzKnife] Studio helper: turns the owner's imported knives into the game's knife skins.
 	Owner's steps (also in huzz-valley/docs/notes/knives.md, "Owner how-to: SetupKnives"):
 	  1. In Studio: File (or the Home tab) > Import 3D, pick design/knives/Knives/All_Knives.glb, press Import.
-	     (Or pick the 30 single files: either works.) Then the same for the 5 Game Pass knives:
-	     design/knives/gamepass/Gamepass_Knives.glb.
+	     (Or pick the 30 single files: either works.) Then the same for the 5 Game Pass knives,
+	     design/knives/gamepass/Gamepass_Knives.glb, and the 18 Halloween knives,
+	     design/knives/halloween/Halloween_Knives.glb.
 	  2. View > Command Bar. Paste this whole script (or, in the downloaded place, the one line
 	     require(game.ServerStorage.HuzzStudioTools.SetupKnives)() ) and press Enter.
-	  3. Output shows one [HuzzKnife] line per knife and "Done: 35 of 35". Take a screenshot if anything says "missing".
+	  3. Output shows one [HuzzKnife] line per knife and "Done: 53 of 53". Take a screenshot if anything says "missing".
 	  4. File > Save. Then right-click ServerStorage > HuzzKnives > Save to File, and send that file, so every new
 	     download has the knives too.
 	What it does for each knife: finds it by name, lines it up whatever way Studio imported it (from the parts' names
@@ -141,7 +142,7 @@ local function fit(k, matches)
 	local blade, vol = nil, -1
 	for _, pr in matches do
 		local sz = pr.part.Size
-		if string.sub(string.lower(pr.node[1]), 1, 6) == "blade_" and sz.X * sz.Y * sz.Z > vol then
+		if string.find(string.lower(pr.node[1]), "blade", 1, true) and sz.X * sz.Y * sz.Z > vol then -- (blade_0, glow_blade_0)
 			blade, vol = pr.part, sz.X * sz.Y * sz.Z
 		end
 	end
@@ -235,6 +236,37 @@ local function lineUp(k, parts: { BasePart })
 		if f2 and f2.err <= f.err then f, matches = f2, again end
 		return f.s, f.R, f.t, matches, f.err
 	end
+	-- 2b. Parts all near one spot along the blade (his shurikens: a star round its middle, nothing to show which way
+	-- its blade runs): each imported part keeps the .glb's turn, so the knife's frame is its blade part's own turn and
+	-- only the size is fitted, from how far apart the parts' centres are.
+	if #matches >= 2 then
+		local blade = nil
+		for _, pr in matches do
+			if string.find(string.lower(pr.node[1]), "blade", 1, true) then blade = pr.part break end
+		end
+		local R = (blade or matches[1].part).CFrame.Rotation
+		local A, B, ca, cb = {}, {}, Vector3.zero, Vector3.zero
+		for _, pr in matches do
+			local a = R:VectorToWorldSpace(Vector3.new(pr.node[2], pr.node[3], pr.node[4]))
+			table.insert(A, a)
+			table.insert(B, pr.part.CFrame.Position)
+			ca += a
+			cb += pr.part.CFrame.Position
+		end
+		ca, cb = ca / #A, cb / #B
+		local num, den = 0, 0
+		for i, a in A do
+			num += (a - ca):Dot(B[i] - cb)
+			den += (a - ca):Dot(a - ca)
+		end
+		if den > 1e-8 and num > 0 then
+			local s = num / den
+			local err = 0
+			for i, a in A do err += (((a - ca) * s + cb) - B[i]).Magnitude ^ 2 end
+			err = math.sqrt(err / #A) / (s * k.len)
+			if err < 0.05 then return s, R, cb - ca * s, matches, err end
+		end
+	end
 	-- 3. Fallback (too few names matched): the knife is the long way of the parts' box, its tip at the end its blade
 	-- parts are nearer, its thin way the box's thinnest side. (Never assume the import stands upright: Studio laid the
 	-- knives of All_Knives.glb flat.)
@@ -249,7 +281,7 @@ local function lineUp(k, parts: { BasePart })
 	local Y, Z = axes[1][1], axes[3][1]
 	local bladeAt, weight = Vector3.zero, 0
 	for _, p in parts do
-		if string.sub(string.lower(p.Name), 1, 5) == "blade" then
+		if string.find(string.lower(p.Name), "blade", 1, true) then
 			local v = p.Size.X * p.Size.Y * p.Size.Z
 			bladeAt += p.CFrame.Position * v
 			weight += v
@@ -403,6 +435,7 @@ local function setUp(k, container: Instance, holder: Folder): string
 	model:SetAttribute("KnifeName", k.name)
 	model:SetAttribute("Rarity", k.rarity)
 	model:SetAttribute("Studs", k.studs)
+	if k.wide then model:SetAttribute("Wide", k.wide) end -- (sickles, karambits, shurikens: wider than a knife, on purpose)
 	if k.glow then model:SetAttribute("Glow", Color3.fromHex(k.glow)) end
 	pcall(function() model:PivotTo(CFrame.new(0, 0, 0)) end) -- (tidy: all at the origin in ServerStorage)
 	local old = holder:FindFirstChild(k.key)
@@ -470,7 +503,7 @@ local function run()
 	print(string.format("%s Done: %d of %d knives are in ServerStorage > HuzzKnives.", TAG, okCount, #KNIVES))
 	if #missing > 0 then
 		warn(string.format("%s missing (not imported yet?): %s", TAG, table.concat(missing, ", ")))
-		warn(TAG .. " Import design/knives/Knives/All_Knives.glb and design/knives/gamepass/Gamepass_Knives.glb (File > Import 3D) and run this again.")
+		warn(TAG .. " Import design/knives/Knives/All_Knives.glb, design/knives/gamepass/Gamepass_Knives.glb and design/knives/halloween/Halloween_Knives.glb (File > Import 3D) and run this again.")
 	else
 		print(TAG .. " Next: File > Save, then right-click ServerStorage > HuzzKnives > Save to File and send it.")
 	end

@@ -1,5 +1,7 @@
-# Bakes the owner's 30 knife models (design/knives/Knives/NN_Rarity_Name.glb) and his 5 Game Pass knives (one file,
-# design/knives/gamepass/Gamepass_Knives.glb, one child node per knife; rarity "Exclusive") into:
+# Bakes the owner's 30 knife models (design/knives/Knives/NN_Rarity_Name.glb), his 5 Game Pass knives (one file,
+# design/knives/gamepass/Gamepass_Knives.glb, one child node per knife; rarity "Exclusive") and his 18 Halloween
+# knives (design/knives/halloween/Halloween_Knives.glb, laid out the same way: 3 rows of 6, the pumpkin grove, the
+# witches, the candy; coin-shop knives like the 30, each row rising Common to Mythic in his order) into:
 #   tools/knives/knives.json                          one line per knife: key, name, rarity, length, colours, glow
 #   tools/knives/setup_knives.lua                     the Studio Command Bar script (paste it whole)
 #   src/ServerStorage/HuzzStudioTools/SetupKnives.lua the same script, shipped in the place
@@ -15,6 +17,10 @@ import numpy as np
 
 SRC = 'design/knives/Knives'
 GAMEPASS = 'design/knives/gamepass/Gamepass_Knives.glb'  # (owner, Oct 18: "here are the gamepass knives")
+HALLOWEEN = 'design/knives/halloween/Halloween_Knives.glb'  # (owner, Oct 19: his Halloween knives, "make it one to one")
+RARITIES = ('Common', 'Uncommon', 'Rare', 'Epic', 'Legendary', 'Mythic')
+# His Halloween file's three rows (his order: dagger or shuriken first, the katana, reaper or scythe last), one set each
+HALLOWEEN_SETS = ('Pumpkin', 'Witch', 'Candy')
 HERE = 'tools/knives'
 # Keys kept from before the owner's models, so saves that own them keep them (Config/CoinShop):
 # the quest knives and the Spin Knife keep their unlock rules on the model that fits them best.
@@ -31,6 +37,7 @@ NAMES = {'Dragons_Maw': "Dragon's Maw"}  # (display names where the node name lo
 DANGLE = ('tassel', 'chain')  # hanging bits: not part of pommel-to-tip
 HANDLE = ('handle',)          # the grip itself (the fist closes on its middle)
 MIN_STUDS, MAX_STUDS = 2.4, 3.3  # pommel to tip in the game (Huss Valley's are 2.7 to 3.0)
+# (never blown up more than the 30's own shortest knife is: a Halloween shuriken a third of a dagger stays that small)
 
 
 def hexof(material_name, js=None, binc=None, material=None):
@@ -56,15 +63,33 @@ def knife_nodes(prims, js=None, binc=None, inv=None):
         nodes.append({'name': p['node'], 'c': [round(float(v), 4) for v in c], 'hex': hexof(mat, js, binc, p['material']), 'glow': mat.startswith('glow'),
                       'metal': round(float(p['material']['metal']), 2), 'rough': round(float(p['material']['rough']), 2), 'kind': p['node'].rsplit('_', 1)[0],
                       'ymin': float(pos[:, 1].min()), 'ymax': float(pos[:, 1].max()),
+                      'xmin': float(pos[:, 0].min()), 'xmax': float(pos[:, 0].max()),
+                      'zmin': float(pos[:, 2].min()), 'zmax': float(pos[:, 2].max()),
                       'area': float(np.ptp(pos, 0)[0] * np.ptp(pos, 0)[1])})
     return nodes
 
 
 def gamepass_knives():
     """(node name, mesh primitives, inverse of the knife node's world matrix, js, binc) per knife in the gamepass file."""
-    if not os.path.exists(GAMEPASS):
+    return file_knives(GAMEPASS)
+
+
+def halloween_knives():
+    """The same for his Halloween file (18 knives, 3 rows of 6)."""
+    return file_knives(HALLOWEEN)
+
+
+def sheet_knives():
+    """Every knife of his files that hold several (the Game Pass and the Halloween ones), in file order."""
+    return gamepass_knives() + halloween_knives()
+
+
+def file_knives(path):
+    """(node name, mesh primitives, inverse of the knife node's world matrix, js, binc) per knife in a file holding
+    several knives side by side (one child node of the root per knife)."""
+    if not os.path.exists(path):
         return []
-    js, binc = glb.load(GAMEPASS)
+    js, binc = glb.load(path)
     parent, world = {}, {}
     for i, n, m, depth, par in glb.walk(js):
         parent[i], world[i] = par, m
@@ -136,8 +161,31 @@ def main():
             k['glow'] = k['sheen'] = max(glows, key=vivid)
         k['studs'] = round(min(MAX_STUDS, max(MIN_STUDS, MIN_STUDS + (k['length'] - lo) / (hi - lo) * (MAX_STUDS - MIN_STUDS))), 2)
         knives.append(k)
+    # the Halloween knives: coin-shop knives like the 30, numbered after the pass knives; rarity by his row order
+    per_max = max(k['studs'] / k['length'] for k in knives[:30])
+    for i, (node_name, prims, inv, js, binc) in enumerate(halloween_knives()):
+        key = node_name.replace('_s_', 's_').replace('_', '')
+        k = describe(node_name, knife_nodes(prims, js, binc, inv), RARITIES[i % 6], 'halloween/Halloween_Knives', node_name, 36 + i, key)
+        k['set'] = HALLOWEEN_SETS[i // 6]
+        # pommel to the very top: his Cupcake Cleaver's cupcake and cherry stand above its blade's tip
+        top = max(n['ymax'] for n in k['nodes'] if not n['kind'].startswith(DANGLE))
+        if top > k['tip']:
+            k['tip'] = round(top, 4)
+            k['length'] = round(k['tip'] - k['bottom'], 4)
+        glows = [n['hex'] for n in k['nodes'] if n['glow']]
+        if glows:
+            k['glow'] = k['sheen'] = max(glows, key=vivid)
+        studs = min(MAX_STUDS, max(MIN_STUDS, MIN_STUDS + (k['length'] - lo) / (hi - lo) * (MAX_STUDS - MIN_STUDS)))
+        k['studs'] = round(min(studs, k['length'] * per_max), 2)
+        knives.append(k)
+    # how wide each knife is for its length (its widest way, as KnifeLook.shape measures it: the .glb's X and Z), for
+    # the ones wider than a knife usually is (sickles, karambits, shurikens: Shared/KnifeLook.sane allows them that)
+    for k in knives:
+        core = [n for n in k['nodes'] if not n['kind'].startswith(DANGLE)]
+        w = max(max(n['xmax'] for n in core) - min(n['xmin'] for n in core), max(n['zmax'] for n in core) - min(n['zmin'] for n in core))
+        k['wide'] = round(w / k['length'] + 0.005, 2) if w / k['length'] > 0.5 else None
 
-    summary = [{x: k[x] for x in ('num', 'file', 'node', 'key', 'name', 'rarity', 'length', 'studs', 'grip', 'tip', 'bottom', 'blade', 'accent', 'glow', 'sheen', 'parts', 'glowParts')} for k in knives]
+    summary = [{x: k.get(x) for x in ('num', 'file', 'node', 'key', 'name', 'rarity', 'set', 'length', 'studs', 'wide', 'grip', 'tip', 'bottom', 'blade', 'accent', 'glow', 'sheen', 'parts', 'glowParts')} for k in knives]
     with open(os.path.join(HERE, 'knives.json'), 'w') as out:
         out.write('[\n' + ',\n'.join(json.dumps(s) for s in summary) + '\n]\n')
 
@@ -145,9 +193,9 @@ def main():
     rows = []
     for k in knives:
         ns = ', '.join('{"%s",%g,%g,%g,"%s",%d,%g,%g}' % (n['name'], n['c'][0], n['c'][1], n['c'][2], n['hex'], 1 if n['glow'] else 0, n['metal'], n['rough']) for n in k['nodes'])
-        rows.append('\t{ key = "%s", node = "%s", file = "%s", name = "%s", rarity = "%s", len = %g, studs = %g, grip = %g, tip = %g, glow = %s,\n\t\tnodes = { %s } },'
-                    % (k['key'], k['node'], k['file'], k['name'].replace("'", "\\'"), k['rarity'], k['length'], k['studs'], k['grip'], k['tip'],
-                       '"%s"' % k['glow'] if k['glow'] else 'nil', ns))
+        rows.append('\t{ key = "%s", node = "%s", file = "%s", name = "%s", rarity = "%s", len = %g, studs = %g, wide = %s, grip = %g, tip = %g, glow = %s,\n\t\tnodes = { %s } },'
+                    % (k['key'], k['node'], k['file'], k['name'].replace("'", "\\'"), k['rarity'], k['length'], k['studs'], '%g' % k['wide'] if k.get('wide') else 'nil',
+                       k['grip'], k['tip'], '"%s"' % k['glow'] if k['glow'] else 'nil', ns))
     data = 'local KNIVES = {\n' + '\n'.join(rows) + '\n}'
     template = open(os.path.join(HERE, 'setup_knives.template.lua')).read()
     body = template.replace('--@@KNIVES@@', data)

@@ -5,7 +5,7 @@
 --     each MeshPart is drawn with the .glb part it was made from, where the part sits, in the part's own colour and
 --     material (a part still wearing the import's colour picture shows that colour, not glowing);
 --   * the Game Pass knives: old stand-in (OLD_SHAPES: the hand-made Shared/KnifeShapes, as boxes) | the stand-in now
---     (cut from his .glb, as boxes) | dressed by Gameplay/KnifeDress from Shared/KnifeGlb (each dressed MeshPart
+--     (cut from his .glb, as boxes) | dressed by Gameplay/KnifeDress from ServerStorage/HuzzKnifeGlb (each dressed MeshPart
 --     drawn with its baked mesh, decoded by KnifeDress itself, at its size).
 -- Materials, as close as a .glb viewer can get to Roblox's (only Studio is the judge): his .glb in its own metallic
 -- and roughness, mirroring a plain sky fully; ours by Roblox material: Neon unlit, Metal shiny, SmoothPlastic /
@@ -20,6 +20,9 @@
 --   huzz-valley/tools/preview/motion3d/knife_glb_scene.luau /tmp/x.mp4   (stills <dir>/still_0.png and still_1.png)
 -- The one picture: ffmpeg -i <dir>/still_0.png -i <dir>/still_1.png -filter_complex "vstack,scale=1280:-1" -q:v 3 \
 --   huzz-valley/docs/previews/knives-glb-vs-ours.jpg
+-- KNIFE_SET=halloween: his 18 Halloween knives instead (owner Oct 19: "make it one to one"), still 0 his .glb |
+-- stand-in | on screen for each, still 1 a few worn and held (no OLD_KNIVES / OLD_SHAPES needed); the picture
+-- docs/previews/halloween-knives.jpg adds their shop cards (docs/previews/knife-cards.jpg) between the two.
 -- (His imported knives' "before" colours are the file's: a part still wearing the import's colour picture is drawn in
 -- that picture's colour, not glowing; Studio is the judge of exactly how those looked.)
 local fs = require("@lune/fs")
@@ -37,6 +40,7 @@ local KnifeLook = Env.load(SHARED .. "KnifeLook.lua")
 local KnifeShapes = Env.load(SHARED .. "KnifeShapes.lua")
 local CoinShop = Env.load(SHARED .. "Config/CoinShop.lua")
 local OldShapes = process.env.OLD_SHAPES and Env.load(process.env.OLD_SHAPES) or nil
+local HALLOWEEN = process.env.KNIFE_SET == "halloween"
 local ENV_BEFORE = 0.2 -- (Config/Look's EnvironmentSpecularScale before Oct 19's knife pass)
 local ENV_NOW = Env.load(SHARED .. "Config/Look.lua").Lighting.EnvironmentSpecularScale
 -- a Roblox material as a shiny-or-dull look for render.mjs (pbr); sa: his SurfaceAppearance glow
@@ -75,7 +79,7 @@ local Dress = luau.load(fs.readFile("huzz-valley/src/StarterPlayer/StarterPlayer
 	environment = { Vector3 = Vector3, CFrame = CFrame, Color3 = roblox.Color3, Enum = roblox.Enum, Instance = Instance } })()
 
 local nowFolder = roblox.deserializeModel(fs.readFile("huzz-valley/assets/knives/HuzzKnives.rbxm"))[1]
-local oldFolder = roblox.deserializeModel(fs.readFile(process.env.OLD_KNIVES or error("set OLD_KNIVES")))[1]
+local oldFolder = if HALLOWEEN then nowFolder else roblox.deserializeModel(fs.readFile(process.env.OLD_KNIVES or error("set OLD_KNIVES")))[1]
 
 -- the real KnifeService, his knives in ServerStorage (as tests/KnifeModels.spec)
 local game = Instance.new("DataModel")
@@ -91,7 +95,7 @@ local KnifeService = luau.load(fs.readFile("huzz-valley/src/ServerScriptService/
 	ColorSequence = roblox.ColorSequence, ColorSequenceKeypoint = roblox.ColorSequenceKeypoint,
 } })()
 
-local GLB = "huzz-valley/src/ReplicatedStorage/Shared/KnifeGlb/"
+local GLB = "huzz-valley/src/ServerStorage/HuzzKnifeGlb/"
 local function bakedOf(key)
 	local list, n = {}, 1
 	while fs.isFile(GLB .. key .. "_" .. n .. ".lua") do
@@ -199,8 +203,10 @@ local function fakeMake(g)
 	p:SetAttribute("Mesh", g.id)
 	return p
 end
-local PASS = {}
-for _, key in { "CrimsonRequiem", "HollowEclipse", "CelestialSeraph", "DragonsMaw", "FrostboundOath" } do PASS[key] = true end
+local PASS = {} -- (the knives of his files of several: the 5 Game Pass and 18 Halloween knives)
+for key, k in baked do
+	if string.find(k.file, "/", 1, true) then PASS[key] = true end
+end
 -- the ways a knife shows: "glb" (nil model), "before", "standin" (pass knives: the plain stand-in now), "now"
 local function modelOf(key, how)
 	if PASS[key] then
@@ -234,13 +240,22 @@ end
 local SHEET = { "TwinFang", "VoidFang", "AbyssEclipse", "SpinKnife", "StormKunai", "CrimsonRequiem", "HollowEclipse", "CelestialSeraph", "DragonsMaw", "FrostboundOath" }
 local HOW = { "glb", "before", "now" }
 local HOW_PASS = { "glb", "before", "standin", "now" }
+local COLS, GAP, GROUP, ROW = 5, 1.2, 5.0, 5.2
+if HALLOWEEN then
+	SHEET = {}
+	for _, item in CoinShop.Items do
+		if item.Set then table.insert(SHEET, item.Key) end
+	end
+	table.sort(SHEET, function(a, b) return CoinShop.get(a).Order < CoinShop.get(b).Order end)
+	HOW_PASS = { "glb", "standin", "now" }
+	COLS, GROUP, ROW = 6, 5.0, 4.8
+end
 local NAMES = { glb = "glb", before = "before", standin = "stand-in", now = "now" }
 local meshes0, labels0 = {}, {}
-local COLS, GAP, GROUP, ROW = 5, 1.2, 5.0, 5.2
 for i, key in SHEET do
 	local row, col = (i - 1) // COLS, (i - 1) % COLS
 	local z0 = (col - (COLS - 1) / 2) * GROUP
-	local y0 = 7 - row * ROW
+	local y0 = (if HALLOWEEN then 16.6 else 7) - row * ROW
 	local hows = if PASS[key] then HOW_PASS else HOW
 	for j, how in hows do
 		-- broad side to the camera (+X looks at the knife's Z width): Handle +Y up, grip at y0
@@ -258,8 +273,9 @@ for i, key in SHEET do
 	table.insert(labels0, { p = { 0, y0 - 1.6, z0 }, text = baked[key].name, h = 0.4, c = "#ffe28a" })
 end
 show(1)
-scene:frame(Vector3.new(-28, 4.9, 0), Vector3.new(0, 4.9, 0), { meshes = meshes0, labels = labels0, fov = 30,
-	caption = "His .glb | before | now (pass knives: his .glb | old stand-in | new stand-in | his model on screen). Materials approximated: Studio is the judge" })
+scene:frame(if HALLOWEEN then Vector3.new(-36, 12.2, 0) else Vector3.new(-28, 4.9, 0), Vector3.new(0, if HALLOWEEN then 12.2 else 4.9, 0), { meshes = meshes0, labels = labels0, fov = 30,
+	caption = if HALLOWEEN then "His Halloween .glb | plain stand-in (cut from it) | his model on screen (KnifeDress). Materials approximated: Studio is the judge"
+		else "His .glb | before | now (pass knives: his .glb | old stand-in | new stand-in | his model on screen). Materials approximated: Studio is the judge" })
 
 -- Still 1: worn on the back (Dragon's Maw) and in the hand (Twin Fang), each glb | before | now
 local lib15 = Instance.new("Folder")
@@ -270,6 +286,12 @@ local SET = {
 	{ key = "DragonsMaw", how = "glb", where = "back" }, { key = "DragonsMaw", how = "standin", where = "back" }, { key = "DragonsMaw", how = "now", where = "back" },
 	{ key = "TwinFang", how = "glb", where = "hand" }, { key = "TwinFang", how = "before", where = "hand" }, { key = "TwinFang", how = "now", where = "hand" },
 }
+if HALLOWEEN then -- (on screen, his model as KnifeDress draws it)
+	SET = {
+		{ key = "JacksReaper", how = "now", where = "back" }, { key = "CovenKatana", how = "now", where = "back" }, { key = "CupcakeCleaver", how = "now", where = "back" },
+		{ key = "HexShuriken", how = "now", where = "hand" }, { key = "TaffyKarambit", how = "now", where = "hand" }, { key = "GrandWitchScythe", how = "now", where = "hand" },
+	}
+end
 for i, s in SET do
 	local rig = scene:addRig(Rig.r15("Body" .. i, { shirt = if s.where == "back" then "#e6e6ee" else "#3a6fd8", pants = "#2b2f3a" }))
 	local x = (i - 3.5) * 3.3 + (if s.where == "hand" then 1.4 else -1.4)
@@ -297,13 +319,17 @@ for i, s in SET do
 		for _, e in m do table.insert(meshes1, e) end
 		addPlain(2, plain)
 	end
-	table.insert(labels1, { p = { x, 6.3, 0 }, text = NAMES[s.how], h = 0.45, c = if s.how == "now" or s.how == "standin" then "#7dff9a" elseif s.how == "before" then "#ff9a8a" else "#ffffff" })
+	table.insert(labels1, { p = { x, 6.3, 0 }, text = if HALLOWEEN then baked[s.key].name else NAMES[s.how], h = if HALLOWEEN then 0.36 else 0.45,
+		c = if HALLOWEEN then "#ffe28a" elseif s.how == "now" or s.how == "standin" then "#7dff9a" elseif s.how == "before" then "#ff9a8a" else "#ffffff" })
 end
-table.insert(labels1, { p = { -6.3, 7.0, 0 }, text = "Dragon's Maw on the back", h = 0.5, c = "#ffe28a" })
-table.insert(labels1, { p = { 6.3, 7.0, 0 }, text = "Twin Fang in the hand", h = 0.5, c = "#ffe28a" })
+if not HALLOWEEN then
+	table.insert(labels1, { p = { -6.3, 7.0, 0 }, text = "Dragon's Maw on the back", h = 0.5, c = "#ffe28a" })
+	table.insert(labels1, { p = { 6.3, 7.0, 0 }, text = "Twin Fang in the hand", h = 0.5, c = "#ffe28a" })
+end
 show(2)
-scene:frame(Vector3.new(0, 4.4, 17), Vector3.new(0, 3.6, 0), { meshes = meshes1, labels = labels1, fov = 50,
-	caption = "Worn and held as HuzzServer/KnifeService places them: Dragon's Maw his .glb | stand-in | on screen; Twin Fang his .glb | before | now" })
+scene:frame(if HALLOWEEN then Vector3.new(0, 3.8, 13.5) else Vector3.new(0, 4.4, 17), Vector3.new(0, if HALLOWEEN then 3.2 else 3.6, 0), { meshes = meshes1, labels = labels1, fov = 50,
+	caption = if HALLOWEEN then "Worn (left three, from behind) and held (right three) as HuzzServer/KnifeService places them, his model on screen"
+		else "Worn and held as HuzzServer/KnifeService places them: Dragon's Maw his .glb | stand-in | on screen; Twin Fang his .glb | before | now" })
 
 local libPath = (process.env.MOTION3D_DIR or ".") .. "/knife_glb_meshes.json"
 fs.writeFile(libPath, serde.encode("json", lib))

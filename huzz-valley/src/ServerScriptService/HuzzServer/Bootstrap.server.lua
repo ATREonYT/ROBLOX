@@ -98,6 +98,10 @@ do -- the lobby avatar stands: finds his grey blocks, readies the pass knives (a
 	local ok, err = pcall(function() require(HuzzServer.AvatarStandService).start() end)
 	if not ok then warn("[Huzz] avatar stands: " .. tostring(err)) end
 end
+do -- his .glb knife meshes, sent to each screen only for the knives it shows (HuzzServer/KnifeGlbService)
+	local ok, err = pcall(function() require(HuzzServer.KnifeGlbService).start() end)
+	if not ok then warn("[Huzz] knife meshes: " .. tostring(err)) end
+end
 do -- the owner's admin panel (give any knife, spawn any girl; owner only, HuzzServer/AdminService)
 	local ok, err = pcall(function() require(HuzzServer.AdminService).start() end)
 	if not ok then warn("[Huzz] admin panel: " .. tostring(err)) end

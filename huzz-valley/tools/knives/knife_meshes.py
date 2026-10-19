@@ -1,5 +1,6 @@
-# Writes the owner's knife meshes (design/knives/Knives/*.glb and the 5 Game Pass knives in
-# design/knives/gamepass/Gamepass_Knives.glb, as they are) as plain triangles for the offline
+# Writes the owner's knife meshes (design/knives/Knives/*.glb, the 5 Game Pass knives in
+# design/knives/gamepass/Gamepass_Knives.glb and the 18 in design/knives/halloween/Halloween_Knives.glb, as they are)
+# as plain triangles for the offline
 # pictures: tools/knives/render_cards.mjs (shop cards) and tools/preview/motion3d/render.mjs (knives in hand / on the
 # back). Each knife: a list of parts { pos: [x,y,z,...] (triangles, the .glb's own units: +Y blade, X width,
 # Z thickness), col: "#rrggbb" (its single-colour texture), glow: true for glow_glow_* materials, metal }.
@@ -8,7 +9,7 @@ import json, os, re, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import glb
 import numpy as np
-from bake_knives import gamepass_knives
+from bake_knives import sheet_knives
 
 SRC = 'design/knives/Knives'
 
@@ -30,9 +31,10 @@ def main(out):
                           'glow': name.startswith('glow'), 'metal': round(float(p['material']['metal']), 2),
                           'rough': round(float(p['material']['rough']), 2), 'node': p['node']})
         result[keys[stem]] = parts
-    # the Game Pass knives: one file, each knife moved back to its own origin; colours from their little textures
-    gp = {k['node']: k['key'] for k in json.load(open('tools/knives/knives.json')) if k['rarity'] == 'Exclusive'}
-    for node_name, prims, inv, js, binc in gamepass_knives():
+    # the Game Pass and Halloween knives: files of several, each knife moved back to its own origin; colours from
+    # their little textures
+    gp = {k['node']: k['key'] for k in json.load(open('tools/knives/knives.json')) if '/' in k['file']}
+    for node_name, prims, inv, js, binc in sheet_knives():
         if node_name not in gp:
             continue
         parts = []

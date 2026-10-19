@@ -25,7 +25,7 @@
 	  given only by HuzzServer/ShopService when Roblox says you own that pass. The lobby stands show them in your hand.
 ]]
 export type Earn = { Rarity: string?, Stat: string?, Count: number?, Girls: number? }
-export type Item = { Key: string, Slot: "Trail" | "Tag" | "Knife" | "Aura" | "Title", Name: string, Price: number, Colors: { Color3 }, Rainbow: boolean?, Order: number, NotForSale: boolean?, Unlock: string?, Earn: Earn?, Rarity: string?, Art: string?, Model: string?, Studs: number?, Glow: Color3?, Pass: string? }
+export type Item = { Key: string, Slot: "Trail" | "Tag" | "Knife" | "Aura" | "Title", Name: string, Price: number, Colors: { Color3 }, Rainbow: boolean?, Order: number, NotForSale: boolean?, Unlock: string?, Earn: Earn?, Rarity: string?, Art: string?, Model: string?, Studs: number?, Wide: number?, Set: string?, Glow: Color3?, Pass: string? }
 
 local Products = require(script.Parent.Products)
 
@@ -111,6 +111,30 @@ CoinShop.Items = {
 	{ Key = "HollowEclipse", Slot = "Knife", Name = "Hollow Eclipse", Rarity = "Exclusive", Price = 0, NotForSale = true, Pass = "MoonlitKnifePass", Glow = hex("e4ecff"), Model = "Gamepass_Knives/Hollow_Eclipse", Studs = 3.3, Art = "KnifeHollowEclipse", Colors = { hex("27272f"), hex("2c2c34") }, Order = 132 },
 	{ Key = "DragonsMaw", Slot = "Knife", Name = "Dragon's Maw", Rarity = "Exclusive", Price = 0, NotForSale = true, Pass = "InfernoKnifePass", Glow = hex("ff7a1a"), Model = "Gamepass_Knives/Dragons_Maw", Studs = 3.17, Art = "KnifeDragonsMaw", Colors = { hex("2a110d"), hex("2a110d") }, Order = 134 },
 	{ Key = "FrostboundOath", Slot = "Knife", Name = "Frostbound Oath", Rarity = "Exclusive", Price = 0, NotForSale = true, Pass = "FrostKnifePass", Glow = hex("5ae6ff"), Model = "Gamepass_Knives/Frostbound_Oath", Studs = 3.21, Art = "KnifeFrostboundOath", Colors = { hex("aee6f9"), hex("d8dee8") }, Order = 135 },
+	-- His 18 Halloween knives (design/knives/halloween/Halloween_Knives.glb, owner Oct 19: "make it one to one"):
+	-- coin-shop knives like the 30, one group in three sets of 6 (Set: the pumpkin grove, the witches, the candy; his
+	-- rows), each set rising Common to Mythic in his order (dagger or shuriken first, the katana, reaper or scythe
+	-- last), on the same price ladder. Sold all year: no timers, no "limited" (kid-safe). Wide = how wide his sickles,
+	-- karambits and shurikens are for their length (Shared/KnifeLook.sane); Studs never blows a small one up past the
+	-- 30's own scale (tools/knives/bake_knives.py).
+	{ Key = "VineDagger", Slot = "Knife", Name = "Vine Dagger", Rarity = "Common", Price = 200, Set = "Pumpkin", Model = "Halloween_Knives/Vine_Dagger", Studs = 2.68, Art = "KnifeVineDagger", Colors = { hex("a5907b"), hex("664122") }, Order = 140 },
+	{ Key = "HarvestSickle", Slot = "Knife", Name = "Harvest Sickle", Rarity = "Uncommon", Price = 500, Set = "Pumpkin", Glow = hex("ffe0b0"), Model = "Halloween_Knives/Harvest_Sickle", Studs = 2.1, Wide = 0.96, Art = "KnifeHarvestSickle", Colors = { hex("b9a185"), hex("2e2a34") }, Order = 141 },
+	{ Key = "GourdCleaver", Slot = "Knife", Name = "Gourd Cleaver", Rarity = "Rare", Price = 1000, Set = "Pumpkin", Glow = hex("ffb030"), Model = "Halloween_Knives/Gourd_Cleaver", Studs = 2.7, Art = "KnifeGourdCleaver", Colors = { hex("f37a1f"), hex("f37a1f") }, Order = 142 },
+	{ Key = "ThornKarambit", Slot = "Knife", Name = "Thorn Karambit", Rarity = "Epic", Price = 2000, Set = "Pumpkin", Glow = hex("ff8a1e"), Model = "Halloween_Knives/Thorn_Karambit", Studs = 1.68, Wide = 0.77, Art = "KnifeThornKarambit", Colors = { hex("331f13"), hex("2a4a1a") }, Order = 143 },
+	{ Key = "PumpkinKingKatana", Slot = "Knife", Name = "Pumpkin King Katana", Rarity = "Legendary", Price = 4000, Set = "Pumpkin", Glow = hex("ff8a1e"), Model = "Halloween_Knives/Pumpkin_King_Katana", Studs = 3.27, Art = "KnifePumpkinKingKatana", Colors = { hex("824c1d"), hex("e86a14") }, Order = 144 },
+	{ Key = "JacksReaper", Slot = "Knife", Name = "Jack's Reaper", Rarity = "Mythic", Price = 8000, Set = "Pumpkin", Glow = hex("ff8a1e"), Model = "Halloween_Knives/Jack_s_Reaper", Studs = 3.3, Art = "KnifeJacksReaper", Colors = { hex("331f13"), hex("331f13") }, Order = 145 },
+	{ Key = "HexShuriken", Slot = "Knife", Name = "Hex Shuriken", Rarity = "Common", Price = 200, Set = "Witch", Model = "Halloween_Knives/Hex_Shuriken", Studs = 1.21, Wide = 1.01, Art = "KnifeHexShuriken", Colors = { hex("3c2157"), hex("3c2157") }, Order = 146 },
+	{ Key = "PotionDagger", Slot = "Knife", Name = "Potion Dagger", Rarity = "Uncommon", Price = 500, Set = "Witch", Glow = hex("8aff4a"), Model = "Halloween_Knives/Potion_Dagger", Studs = 2.65, Art = "KnifePotionDagger", Colors = { hex("3c2157"), hex("7a3cc8") }, Order = 147 },
+	{ Key = "ToadstoolSickle", Slot = "Knife", Name = "Toadstool Sickle", Rarity = "Rare", Price = 1000, Set = "Witch", Glow = hex("8aff4a"), Model = "Halloween_Knives/Toadstool_Sickle", Studs = 2.41, Wide = 0.8, Art = "KnifeToadstoolSickle", Colors = { hex("2f1649"), hex("7a3cc8") }, Order = 148 },
+	{ Key = "MoonlitCleaver", Slot = "Knife", Name = "Moonlit Cleaver", Rarity = "Epic", Price = 2000, Set = "Witch", Glow = hex("fff6c0"), Model = "Halloween_Knives/Moonlit_Cleaver", Studs = 2.78, Art = "KnifeMoonlitCleaver", Colors = { hex("2b1e5e"), hex("2b1e5e") }, Order = 149 },
+	{ Key = "CovenKatana", Slot = "Knife", Name = "Coven Katana", Rarity = "Legendary", Price = 4000, Set = "Witch", Glow = hex("c86aff"), Model = "Halloween_Knives/Coven_Katana", Studs = 3.27, Art = "KnifeCovenKatana", Colors = { hex("5f3b81"), hex("bcc2d0") }, Order = 150 },
+	{ Key = "GrandWitchScythe", Slot = "Knife", Name = "Grand Witch Scythe", Rarity = "Mythic", Price = 8000, Set = "Witch", Glow = hex("8aff4a"), Model = "Halloween_Knives/Grand_Witch_Scythe", Studs = 3.3, Art = "KnifeGrandWitchScythe", Colors = { hex("2f1649"), hex("2e2a34") }, Order = 151 },
+	{ Key = "GumdropDagger", Slot = "Knife", Name = "Gumdrop Dagger", Rarity = "Common", Price = 200, Set = "Candy", Glow = hex("ffcf3a"), Model = "Halloween_Knives/Gumdrop_Dagger", Studs = 2.61, Art = "KnifeGumdropDagger", Colors = { hex("ffb5d6"), hex("7ae8c0") }, Order = 152 },
+	{ Key = "PeppermintShuriken", Slot = "Knife", Name = "Peppermint Shuriken", Rarity = "Uncommon", Price = 500, Set = "Candy", Model = "Halloween_Knives/Peppermint_Shuriken", Studs = 1.15, Wide = 1.35, Art = "KnifePeppermintShuriken", Colors = { hex("f48d8f"), hex("f48d8f") }, Order = 153 },
+	{ Key = "TaffyKarambit", Slot = "Knife", Name = "Taffy Karambit", Rarity = "Rare", Price = 1000, Set = "Candy", Glow = hex("ffd0e8"), Model = "Halloween_Knives/Taffy_Karambit", Studs = 1.68, Wide = 0.76, Art = "KnifeTaffyKarambit", Colors = { hex("ddcecb"), hex("ff7ab0") }, Order = 154 },
+	{ Key = "CupcakeCleaver", Slot = "Knife", Name = "Cupcake Cleaver", Rarity = "Epic", Price = 2000, Set = "Candy", Glow = hex("fff6f0"), Model = "Halloween_Knives/Cupcake_Cleaver", Studs = 2.73, Art = "KnifeCupcakeCleaver", Colors = { hex("6a3a1e"), hex("6a3a1e") }, Order = 155 },
+	{ Key = "SugarRushKatana", Slot = "Knife", Name = "Sugar Rush Katana", Rarity = "Legendary", Price = 4000, Set = "Candy", Glow = hex("fff0ff"), Model = "Halloween_Knives/Sugar_Rush_Katana", Studs = 3.27, Art = "KnifeSugarRushKatana", Colors = { hex("d4d6d1"), hex("e8b070") }, Order = 156 },
+	{ Key = "CandyReaper", Slot = "Knife", Name = "Candy Reaper", Rarity = "Mythic", Price = 8000, Set = "Candy", Glow = hex("5ad8ff"), Model = "Halloween_Knives/Candy_Reaper", Studs = 3.3, Art = "KnifeCandyReaper", Colors = { hex("e4a843"), hex("e4a843") }, Order = 157 },
 } :: { Item }
 
 local byKey: { [string]: Item } = {}

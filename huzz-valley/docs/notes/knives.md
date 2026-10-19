@@ -12,7 +12,7 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
   MoonlitKnife = Hollow Moon (quests), SpinKnife = Celestial Edge (wheel, never sold), IceKnife/CandyKnife/ShadowKnife
   = Ice Shard / Sakura Blade / Shadow Cleaver.
 - Baked facts (lengths 2.4-3.3 studs, glow colours, part names): `tools/knives/bake_knives.py` →
-  `tools/knives/knives.json` + the setup script (35 rows with the pass knives).
+  `tools/knives/knives.json` + the setup script (53 rows with the pass and Halloween knives).
 - Card pictures from the real meshes: `knife_meshes.py` → `render_cards.mjs` → `compose_cards.py` →
   `assets/art/knife-*.png` (packed 192 px; they show in Play only, EditableImage); `docs/previews/knife-cards.jpg`.
 - `KnifeService` takes `ServerStorage/HuzzKnives/<Key>` when there, else the built-in knife tinted in the skin's colours.
@@ -77,19 +77,24 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
   and Sunrise, dots for Moonlit and Inferno, diamonds for Frost; plain frames, no upload), the white shine, and the
   card lifts to 104% under the mouse (`Effects.lift`). All saved twins, hidden until their loop runs, stopped by
   Reduced Motion. Still `docs/previews/knife-cards-alive.jpg` (the motes are small and calm; the pulse shows only in motion).
-- **Stand-ins until his import** (`Shared/KnifeShapes`, data `Shared/KnifeStandIns` baked by
-  `tools/knives/bake_stand_ins.py`): plain blocks cut from his own `Gamepass_Knives.glb` (owner's Oct 19 screenshot:
+- **Stand-ins until his import** (`Shared/KnifeShapes`, data `Shared/KnifeStandIns` = the list, one module a knife in
+  `Shared/KnifeStandInParts`, 4-13 KB each, baked by `tools/knives/bake_stand_ins.py`): plain blocks cut from his own
+  `Gamepass_Knives.glb` and `Halloween_Knives.glb` (owner's Oct 19 screenshot:
   the first hand-made ones, "an orange blocky jagged blade" and "a small cyan stub", were nothing like his model):
   his knife in 0.04 stud slices, one block per stretch of each of his looks (colour, glow, material), joined up the
-  blade while it barely changes, a smaller look a hair proud of a bigger one under it; 75 to 141 blocks a knife, his
+  blade while it barely changes, a smaller look a hair proud of a bigger one under it; 52 to 177 blocks a knife, his
   colours and `glbMaterial`, his length; the tassel blocks are named Tassel so pommel to tip stays his. Spec
-  `tests/KnifeShapes.spec` (lengths, his .glb's box within 0.06 studs, his colours only, at most 160 parts, scaler,
+  `tests/KnifeShapes.spec` (lengths, his .glb's box within 0.06 studs, his colours only, at most 200 parts, scaler,
   stand size, even scale and no shell, elements, budget, arc). They are the server's knife (length, grip, trail
   points, particles) and the fallback on any screen that can't draw his model; each screen dresses them as his .glb
   (next). The round 1 hand-made ones: `docs/previews/stand-knives-standins.jpg`.
-- **His .glb on every screen until his import** (`Gameplay/KnifeDress`, data `Shared/KnifeGlb/<Key>_<n>`): the
-  server tags a pass stand-in `GlbKnife` (attribute `Glb` = its key, `KnifeService.template`); each client builds his
-  `Gamepass_Knives.glb` as it is (every triangle, 4,312 to 19,156 a knife, 6 to 9 looks: one MeshPart per colour,
+- **His .glb on every screen until his import** (`Gameplay/KnifeDress`, data `ServerStorage/HuzzKnifeGlb/<Key>_<n>`,
+  handed out by `HuzzServer/KnifeGlbService`): the server tags a pass or Halloween stand-in `GlbKnife` (attribute
+  `Glb` = its key, `KnifeService.template`); the first time a screen shows a knife it asks the server for that knife's
+  meshes one at a time (remote `KnifeGlb`: `(key, n)` -> mesh, nil when no more, false = "ask again later" past 900
+  asks a minute; key and n checked), so nobody downloads all 3.3 MB of the 23 knives at join (Oct 19, with the
+  Halloween knives; before that the 5 lived in Shared/KnifeGlb and every player got them). Each client builds his
+  model as it is (every triangle, 1,662 to 19,156 a knife, 3 to 14 looks: one MeshPart per colour,
   glow and material, each in its `mat` / `refl` from `glbMaterial`) with `AssetService:CreateEditableMesh` (not
   FixedSize: that refuses AddVertex) + `CreateMeshPartAsync(Content.fromObject(mesh))`, welds it to the Handle sized
   by the model's `Stretch` (a stand's big copy, set by `KnifeService.scale`, even every way) and hides the stand-in's
@@ -100,8 +105,8 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
   **Oct 19, his Studio Play showed the plain stand-ins** on the stands (the dress didn't run or failed there): the
   likely cause is the "Allow Mesh / Image APIs" switch (Roblox fails EditableMesh by default in a published place);
   his `[HuzzKnife]` line will say. Until then the stand-ins themselves follow his outline (above).
-  Baked by `tools/knives/bake_pass_meshes.py` (16-bit steps across each mesh's box, base64; at most 6,000
-  triangles a file, all far under Studio's 200,000 characters a script). Hand, back, hip, stands, admin give and
+  Baked by `tools/knives/bake_pass_meshes.py` (16-bit steps across each mesh's box, base64; at most 1,500
+  triangles a file, every module under 60 KB: 263 files, the largest 49 KB). Hand, back, hip, stands, admin give and
   crate prizes all go through `KnifeService.template`, so all get it.
   **Where it works:** Studio Play (each screen). Live: Roblox only allows EditableMesh when the owner (13+, ID
   verified) turns on Game Settings > Security > "Allow Mesh / Image APIs" (the same switch the drawn icons already
@@ -112,18 +117,19 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
 
 ## Owner how-to: SetupKnives (Studio, once)
 1. File > Import 3D > `huzz-valley/design/knives/Knives/All_Knives.glb`, Import (and
-   `design/knives/gamepass/Gamepass_Knives.glb` the same way).
+   `design/knives/gamepass/Gamepass_Knives.glb` and `design/knives/halloween/Halloween_Knives.glb` the same way).
 2. View > Command Bar, paste `require(game.ServerStorage.HuzzStudioTools.SetupKnives)()` (or the whole of
    `tools/knives/setup_knives.lua`), Enter.
-3. Output says `[HuzzKnife] Done: 35 of 35 knives are in ServerStorage > HuzzKnives.` (a warning names any it
+3. Output says `[HuzzKnife] Done: 53 of 53 knives are in ServerStorage > HuzzKnives.` (a warning names any it
    couldn't find).
 4. File > Save.
 5. Right-click ServerStorage > HuzzKnives > Save to File, send `HuzzKnives.rbxm`; we put it in `assets/knives/` and
    `build_yours.luau` puts it in every build.
-- Received Oct 18 (30 of 30; the 5 pass knives need steps 1-5 again). His place still holds the broken 8 and
+- Received Oct 18 (30 of 30; the 5 pass knives and the 18 Halloween knives need steps 1-5 again). His place still holds the broken 8 and
   uncoloured parts: importing Gamepass_Knives.glb and running step 2 once fixes them too (Output: "repaired: it was
   the wrong size or way round" x8, "fixed colours and glow" for the rest).
-- SetupKnives matches "name + digits", refits by position, guesses from the box's long axis, and on a re-run
+- SetupKnives matches "name + digits", refits by position (his shurikens, a star round one spot, by their blade
+  part's own turn: the positions can't say which way is up), guesses from the box's long axis, and on a re-run
   repairs/recolours models already in HuzzKnives in place (`tests/SetupKnives.spec`: Studio-style names, both glbs,
   his real broken 8 in `tests/fixtures/HuzzKnives-oct18-first-run.rbxm`).
 - **Oct 19: his file fixed offline** (`tools/knives/colour_knives.luau --write`): runs his own SetupKnives on the
@@ -136,10 +142,11 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
   `knife_boxes.py`): worst 0.008 studs. `tools/knives/inspect_knives.luau` lists any file's knife parts.
 - **Spec `tests/KnifeModels.spec`** (in `check.sh`): one look rule (KnifeLook, colour_knives, his SetupKnives through
   the file); his 30 are all his meshes, on their .glb spots, in their .glb colour and material, his 84 glows kept,
-  attachments at the grip, guard and tip; every one of the 35 keys in hand, worn and on a stand has his mesh blade or
+  attachments at the grip, guard and tip; every one of the 53 keys in hand, worn and on a stand has his mesh blade or
   a stand-in tagged for the dress with a baked blade (a plain block blade fails it), an even stand scale and nothing
   laid over it (no GlowShell, no sheen); the baked meshes decode inside Roblox's limits with his colours, materials
-  and box; the dress places, sizes, colours and hides, all or nothing.
+  and box, each module under 60 KB; the dress places, sizes, colours and hides, all or nothing; KnifeGlbService hands
+  out one mesh and refuses odd keys and numbers.
 - Picture `docs/previews/knives-glb-vs-ours.jpg` (`tools/preview/motion3d/knife_glb_scene.luau`, drawn from the game's
   own parts, materials approximated in three.js: his .glb's own metallic/roughness vs Roblox Metal / SmoothPlastic /
   Plastic / Neon / his glow at Look's EnvironmentSpecularScale): 5 of his knives as his .glb | before | now, the 5
@@ -198,6 +205,29 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
   One picture: `docs/previews/knife-check-vs-ref.jpg` (reference at rest; before and after with his meshes and with the
   stand-ins; the long knife in hand; `tools/preview/knife_check_sheet.py`). Older still:
   `docs/previews/stand-knives-rest-vs-ref.jpg` (round 3).
+
+## Halloween knives (`design/knives/halloween/Halloween_Knives.glb`, Oct 19)
+- Owner: his 18 Halloween knives, "make it one to one". Coin-shop knives like his 30 (`Config/CoinShop` Order
+  140-157, `Set` = Pumpkin / Witch / Candy: his file's three rows of 6), each set rising Common to Mythic in his
+  order (dagger or shuriken first, the katana, reaper or scythe last) on the same price ladder (200 to 8,000). Sold
+  all year: no timer, no "limited". The admin GIVE list shows them (it lists every Knife-slot item).
+  | Pumpkin | Vine Dagger, Harvest Sickle, Gourd Cleaver, Thorn Karambit, Pumpkin King Katana, Jack's Reaper |
+  | Witch | Hex Shuriken, Potion Dagger, Toadstool Sickle, Moonlit Cleaver, Coven Katana, Grand Witch Scythe |
+  | Candy | Gumdrop Dagger, Peppermint Shuriken, Taffy Karambit, Cupcake Cleaver, Sugar Rush Katana, Candy Reaper |
+- Same pipeline as the pass knives: `bake_knives.py` (keys from his node names, `Jack_s_Reaper` = JacksReaper),
+  card pictures from his meshes (`ONLY=halloween` for `render_cards.mjs` / `compose_cards.py`), stand-ins cut from his
+  file, his model on screen via KnifeDress until his import, SetupKnives knows them (owner how-to step 1); its
+  summary went from `[HuzzKnife] Done: 35 of 35 knives are in ServerStorage > HuzzKnives.` to 53 of 53).
+- Sizes: the 30's length rule (2.4-3.3 studs), but never blown up more than his 30 are for their size (6.07 studs a
+  .glb unit): the shurikens stay about 1.2 studs, the karambits 1.7, as small next to a dagger as in his file.
+  Pommel to the very top (Cupcake Cleaver's cherry and Gourd Cleaver's stem stand above the blade's tip). His
+  sickles, karambits and shurikens are wider than a knife: `Wide` (width / length, baked) lets `KnifeLook.sane` accept
+  them (limit `max(0.6, Wide x 1.15)`); his import carries it as the model's `Wide` attribute.
+- Picture `docs/previews/halloween-knives.jpg`: each as his .glb | stand-in | his model on screen, their card
+  pictures, three worn and three held (`KNIFE_SET=halloween` on `knife_glb_scene.luau`).
+- Gaps: no "HALLOWEEN" heading in the shop (they sit together by Order, after the pass knives); the reapers and the
+  scythe are held like every knife (blade down at the side, the blade near the floor) and worn on the back/hip by
+  the same rule; a shuriken in the hand is small; the elements and stand showcase are the pass knives' only.
 
 ## Honest gaps
 - Not seen in Studio yet: knife positions, the owner's knives (meshes after his import, glow, sparkles, the leap and
