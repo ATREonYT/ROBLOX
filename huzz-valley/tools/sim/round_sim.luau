@@ -757,6 +757,7 @@ local function simulate(opts)
 				stats.hurries += 1
 			elseif e.kind == "Announce" and type(e.data.text) == "string" and e.data.text:find("caught her carrier") then
 				stats.girlCaught = (stats.girlCaught or 0) + 1 -- (Oct 19: the catcher keeps her until the next runner across)
+				if e.data.text:find("Next runner across") then stats.promisedAt = e.t end
 			elseif e.kind == "Announce" and type(e.data.text) == "string" and e.data.text:find("took .+ back") then
 				stats.reclaims = (stats.reclaims or 0) + 1
 			elseif e.kind == "Announce" and type(e.data.text) == "string" and e.data.text:find("last runner") then
@@ -764,6 +765,10 @@ local function simulate(opts)
 			elseif e.kind == "Win" then
 				stats.wins += 1
 				if e.data.team == "Runners" then stats.runnerWins += 1 elseif e.data.team == "Catchers" then stats.catcherWins += 1 end
+				-- (critic, Oct 19: never "next runner across" on the catch that ends the game)
+				if e.data.team == "Catchers" and stats.promisedAt and e.t - stats.promisedAt < 0.5 then
+					problem("the line promised the next runner across on the last catch")
+				end
 				if e.data.lastCatch then
 					stats.lastCatchWins = (stats.lastCatchWins or 0) + 1
 					if e.data.team ~= "Catchers" then problem("the runners won but the HUD says a catcher caught the last runner") end

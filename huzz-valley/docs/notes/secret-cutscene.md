@@ -21,8 +21,9 @@ beat's time and the comparison with his reference (`design/vfx/ref3`): `docs/sec
 - **Camera:** one smooth move through `SecretReveal.KEYS` (monotone cubic, always in front of her), one cut (`CUTS`
   6.4, under the swell); FOV kicks ease, shake is a 4.5 Hz wobble.
 - **Framing on every map** (`Shared/SecretReveal` "Framing on every map", planned once at the start on each screen):
-  the whole camera path is tried from 16 sides of her (a ray from her to the camera every 0.2 s, skipping see-through
-  parts and every character); the clearest side wins (your side breaks a tie, 6% weight); where that path still
+  the whole camera path is tried from 16 sides of her (a ray from her to the camera every 0.8 s, then every 0.2 s on
+  the 2 best sides: 326 rays on his maps, was 816 in one frame, which hitched phones; the same side on all 3 maps,
+  `NUMBERS=1` prints it; rays skip see-through parts and every character); the clearest side wins (your side breaks a tie, 6% weight); where that path still
   meets something the camera is pulled in ahead of time (`planReach`: never more than what is clear, changing at most
   `RATE` 0.5 of the distance a second, never across the cut) with a wider lens so she stays the same size
   (`wideFov`, at most 90 degrees). Nothing is decided by a ray frame by frame any more.

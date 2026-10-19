@@ -5,7 +5,7 @@
 	standing in for Roblox's rays (meshes as their boxes, no terrain):
 	  before: the shot looked from the lobby (where everyone stands), and a ray each frame snapped the camera in front of
 	          whatever was in the way (see-through zone boxes too), easing back out at 5 per second;
-	  after:  Gameplay/SecretReveal's plan: the clearest of 16 sides (Shared/SecretReveal.pickDirection), pulled in ahead
+	  after:  Gameplay/SecretReveal's plan: the clearest of 16 sides (Shared/SecretReveal: a coarse pass, then the finalists), pulled in ahead
 	          of time (planReach / reachAt) with a wider lens (wideFov).
 	Prints per map: the side picked, how far in the camera came and its biggest move in one frame (30 fps), before and
 	after. Then films, per map, the moment the old camera was pulled in furthest, before and after (2 frames a map)
@@ -108,15 +108,30 @@ for _, m in maps do
 		pe = e
 	end
 
-	-- after: the clearest side, planned once
-	local reaches = {}
+	-- after: the clearest side, planned once, as Gameplay/SecretReveal does it (every side coarse, the finalists fine)
+	local rays = 0
+	local function counted(eye, look) rays += 1 return reachOf(eye, look) end
+	local coarseTimes, coarse = T.sampleTimes(T.COARSE_STEP), {}
 	for i, d in dirs do
-		reaches[i] = {}
-		for j, t in times do reaches[i][j] = reachOf(eyeAt(t, d)) end
+		coarse[i] = {}
+		for j, t in coarseTimes do coarse[i][j] = counted(eyeAt(t, d)) end
 	end
-	local pick = T.pickDirection(dirs, reaches, prefer)
-	local dir = dirs[pick]
-	local plan = T.planReach(times, reaches[pick])
+	local finalDirs, fine, finalIdx = {}, {}, {}
+	for n, i in T.finalists(dirs, coarse, prefer) do
+		finalDirs[n], fine[n], finalIdx[n] = dirs[i], {}, i
+		for j, t in times do fine[n][j] = counted(eyeAt(t, dirs[i])) end
+	end
+	local best = T.pickDirection(finalDirs, fine, prefer)
+	local dir = finalDirs[best]
+	local plan = T.planReach(times, fine[best])
+	-- (the full pass on every side, as first shipped: the same side?)
+	local full = {}
+	for i, d in dirs do
+		full[i] = {}
+		for j, t in times do full[i][j] = reachOf(eyeAt(t, d)) end
+	end
+	print(string.format("%-15s planning rays %d (every side at every sample: %d); same side as that: %s",
+		m.name, rays, #dirs * #times, tostring(T.pickDirection(dirs, full, prefer) == finalIdx[best])))
 	local new = { low = 1, jump = 0, pulled = 0, fov = 0 }
 	pe = nil
 	for i = 0, math.floor(T.RETURN * 30) do

@@ -97,12 +97,15 @@ The lobby side (one lobby per map, paint, his new lobby): [lobby.md](lobby.md). 
   <girl> over!"), the one who chose Chicken included.
 - **A catcher who catches her carrier keeps her only until the next runner gets across** (owner Oct 19, rule
   "Reclaimed"): she walks behind him (on foot, as before: `CarryService.follow`), the line says "X caught her carrier!
-  Next runner across takes <girl> back!", and the next runner to reach the safe zone (any round) takes her ("X made
+  Next runner across takes <girl> back!" (only while someone can still get across: on the catch that ends the game it
+  says "X caught the last runner!", or just "X caught her carrier!" when the last runner standing wins), and the next runner to reach the safe zone (any round) takes her ("X made
   it across and took <girl> back!"). Runners already across don't. A Hero who makes it still takes her first.
 - **A catchers' win (nobody left):** she goes to the catcher who caught the LAST runner (owner Oct 19;
   `RoundRules` `lastCatchBy`; the HUD says "X caught the last runner and wins <girl>"). If the clock or a fall caught
   the last runner (or the last runner left), the catcher holding her keeps her, else the one with the most catches
   (lead breaks ties).
+- The quest stat "Steals" counts only a catcher taking her off her carrier ("Stolen"), not a hand-back, the last
+  runner's win or a reassign.
 - **Everyone caught turns into a catcher** (owner Oct 19) from the next round (not mid-round, so a round stays
   readable); a rescue in the same round keeps them a runner. The last runner standing still wins the game and her.
   The sim checks every caught runner is a catcher at the next line-up.

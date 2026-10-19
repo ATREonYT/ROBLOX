@@ -287,19 +287,34 @@ local handlers = {}
 
 function handlers.GirlMoved(e)
 	saveHold()
-	if e.from and e.to then
-		addStat(e.to, "Steals", 1) -- took her from someone
+	if e.reason == "Stolen" and e.from and e.to then
+		addStat(e.to, "Steals", 1) -- a catcher took her off her carrier (not a hand-back, a last runner or a reassign)
 	end
 	moveGirlTo(e.from, e.to, e.reason)
 	for _, id in { e.from, e.to } do
 		syncPlayer(id)
 	end
 	local to, g = nameOf(e.to), girl.name
+	-- Caught carrying her: only promise "next runner across" when someone can still get across (critic, Oct 19:
+	-- on the last catch the game ends that frame)
+	local stolen = `{to} caught her carrier! Next runner across takes {g} back!`
+	if e.reason == "Stolen" and match then
+		local active, safe = 0, 0
+		for id, role in match.roles do
+			if role == "Runner" and match.status[id] == "Active" then active += 1 end
+			if role == "Runner" and match.status[id] == "Safe" then safe += 1 end
+		end
+		if active == 0 and safe == 0 then
+			stolen = `{to} caught the last runner!` -- (the catchers win; the Win line names who gets her)
+		elseif active == 0 and safe == 1 and (match.startRunners or 0) >= 2 then
+			stolen = `{to} caught her carrier!` -- (the last runner standing wins her as the round ends)
+		end
+	end
 	local messages = {
 		Hero = { `{to} won {g} over! Keep her safe!`, GOLD },
 		First = { `{to} got there first and won {g} over! Keep her safe!`, GOLD },
 		Last = { `{to} is the last runner standing and wins {g}!`, GOLD },
-		Stolen = { `{to} caught her carrier! Next runner across takes {g} back!`, RED },
+		Stolen = { stolen, RED },
 		Reclaimed = { `{to} made it across and took {g} back!`, GOLD },
 		Reassigned = { `{to} has {g} now`, RED },
 		Dropped = { `{g} floats back up!`, GOLD },

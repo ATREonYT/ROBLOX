@@ -1285,20 +1285,27 @@ function M.start()
 			local eye, look = Reveal.camera(math.min(t, Reveal.LENGTH), ground + Vector3.new(0, 0.5, 0), d, h or Config.Showcase.Height, k, mid)
 			return Vector3.new(eye.X, math.max(eye.Y, ground.Y + 1.5), eye.Z), look -- (never under the floor)
 		end
-		local dirs, reaches = Reveal.directions(), {}
-		local okPlan = pcall(function()
+		-- every side on a coarse pass, then the best few on the full one (326 rays on his maps, was 816: no hitch on phones)
+		local dirs, coarseTimes = Reveal.directions(), Reveal.sampleTimes(Reveal.COARSE_STEP)
+		local dir, plan = prefer, nil
+		pcall(function()
+			local coarse = {}
 			for i, d in dirs do
-				reaches[i] = {}
-				for j, t in times do
-					reaches[i][j] = reachOf(eyeAt(t, d))
+				coarse[i] = {}
+				for j, t in coarseTimes do
+					coarse[i][j] = reachOf(eyeAt(t, d))
 				end
 			end
+			local finalDirs, fine = {}, {}
+			for n, i in Reveal.finalists(dirs, coarse, prefer) do
+				finalDirs[n], fine[n] = dirs[i], {}
+				for j, t in times do
+					fine[n][j] = reachOf(eyeAt(t, dirs[i]))
+				end
+			end
+			local best = Reveal.pickDirection(finalDirs, fine, prefer)
+			dir, plan = finalDirs[best], Reveal.planReach(times, fine[best])
 		end)
-		local dir, plan = prefer, nil
-		if okPlan then
-			local best = Reveal.pickDirection(dirs, reaches, prefer)
-			dir, plan = dirs[best], Reveal.planReach(times, reaches[best])
-		end
 		-- One steady clock: the server's time read once, then this screen's own clock (GetServerTimeNow is nudged
 		-- as it re-syncs, and those small jumps showed as stutters in the camera and her moves).
 		local clockStart, clockAt = os.clock(), Workspace:GetServerTimeNow() - at

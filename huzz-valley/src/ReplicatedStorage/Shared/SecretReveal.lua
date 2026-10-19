@@ -384,19 +384,36 @@ end
 	camera every SAMPLE_STEP s, see-through parts and characters ignored) and films from the clearest side (yours wins a
 	tie), with the camera pulled in ahead of time wherever that path still meets something (`planReach`: it starts
 	easing in before the wall comes, never inside it, at most RATE of the distance a second) and a wider lens while pulled in, so she stays the same size on
-	screen (`wideFov`). No ray decides anything frame by frame. ]]
+	screen (`wideFov`). No ray decides anything frame by frame. Cheap enough for a phone's one frame (critic, Oct 19:
+	16 x 51 rays hitched): every side is tried every COARSE_STEP s (16 x 13 rays), then only the FINALISTS best sides
+	every SAMPLE_STEP s (2 x 51), and the best of those is filmed (326 rays, was 816; the same side on his 3 maps). ]]
 SecretReveal.DIRECTIONS = 16
 SecretReveal.SAMPLE_STEP = 0.2
+SecretReveal.COARSE_STEP = 0.8
+SecretReveal.FINALISTS = 2
 SecretReveal.MAX_FOV = 90 -- the widest lens when pulled in (wider than this bends the picture)
 
--- The times the camera path is tried at (0 .. LENGTH).
-function SecretReveal.sampleTimes(): { number }
+-- The times the camera path is tried at (0 .. LENGTH), every `step` s (default SAMPLE_STEP).
+function SecretReveal.sampleTimes(step: number?): { number }
+	local every = step or SecretReveal.SAMPLE_STEP
 	local out = {}
-	local n = math.floor(SecretReveal.LENGTH / SecretReveal.SAMPLE_STEP + 0.5)
+	local n = math.floor(SecretReveal.LENGTH / every + 0.5)
 	for i = 0, n do
-		table.insert(out, i * SecretReveal.SAMPLE_STEP)
+		table.insert(out, i * every)
 	end
 	return out
+end
+
+-- The FINALISTS best sides on the coarse pass (indices into dirs, best first).
+function SecretReveal.finalists(dirs: { Vector3 }, reaches: { { number } }, prefer: Vector3?): { number }
+	local order = {}
+	for i in dirs do
+		table.insert(order, i)
+	end
+	table.sort(order, function(a, b)
+		return SecretReveal.score(reaches[a], dirs[a], prefer) > SecretReveal.score(reaches[b], dirs[b], prefer)
+	end)
+	return { table.unpack(order, 1, math.min(SecretReveal.FINALISTS, #order)) }
 end
 
 -- The flat directions tried, as unit Vector3s round her (the first is +Z).

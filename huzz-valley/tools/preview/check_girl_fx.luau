@@ -633,6 +633,16 @@ do
 	check("secret camera: your side when every side is clear", T.pickDirection(dirs, clearAll, mine) == 5)
 	blockedMine[5] = table.clone(blockedMine[1])
 	check("secret camera: a clear side beats your side with a wall in the way", T.pickDirection(dirs, blockedMine, mine) ~= 5)
+	-- the cheap plan (critic, Oct 19): the coarse pass keeps the full pass's winner among its finalists, in few rays
+	local coarseN = #T.sampleTimes(T.COARSE_STEP)
+	local coarseBlocked = {}
+	for i = 1, #dirs do
+		coarseBlocked[i] = {}
+		for j = 1, coarseN do coarseBlocked[i][j] = if (i == 1 or i == 5) and j >= 3 and j <= 5 then 0.2 else 1 end
+	end
+	local fin = T.finalists(dirs, coarseBlocked, mine)
+	check("secret camera: the finalists are the clear sides next to yours", #fin == T.FINALISTS and fin[1] ~= 5 and fin[1] ~= 1)
+	check("secret camera plans in a few hundred rays", #dirs * coarseN + T.FINALISTS * #times <= 340)
 	local wall = {}
 	for j, t in times do
 		wall[j] = if (t > 1.9 and t < 2.9) or (t > 6.9 and t < 7.3) then 0.35 else 1
