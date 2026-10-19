@@ -97,7 +97,7 @@ Owner's own words are in quotes. Read only the section you need.
 - `PATH=/root/bin:$PATH bash tools/preview/check.sh`: UI checks on the saved UI, then built from nothing.
   It prints harness errors too ("snippet error"): a silent missing count means a check script crashed.
 - `PATH=/root/bin:$PATH LUNE=/root/bin/lune sh tools/place/build_place.sh`: regenerates `HuzzUI.rbxm`, both places,
-  sets Lighting.Technology = ShadowMap in the owner's place and saves Config/Look's Lighting and effects into it
+  sets Lighting.Technology = ShadowMap in the owner's place and saves Config/Look's Lighting, effects, Sky and Terrain Clouds into it
   (so Studio's edit view shows the game's look too). Rebuild after every change.
 - UI pictures: `cd tools/preview && NODE_PATH=$(npm root -g) LUNE=/root/bin/lune HUZZ_FRESH=1 sh shots.sh <out> <name>`
   (names in `shots.sh`: dance-wheel, shop-passes, shop-items, quests, spin-wheel, round-hud, hero-choice...).
@@ -294,6 +294,14 @@ Owner's own words are in quotes. Read only the section you need.
   Oct 17 look gives the measured 0.25; `calibrate.py`, `looks.json`, `light_compare.py`): cast shadow / sun 0.29 ->
   0.51 (reference 0.53), sunlit floors as bright or brighter. Picture `docs/previews/lighting-vs-ref.jpg` (a model,
   not a render). Light audit of his place: `tools/world/light_audit.luau`.
+- **Sky** (owner Oct 19: "try making the skybox better for the better lighting experience"; same reference: saturated
+  blue overhead, big soft white clouds low down, a clean horizon). No uploads: Roblox's built-in sky stays (his place
+  sets no skybox IDs; no store skybox ID was found that we could verify), `Config/Look.Atmosphere` paints it bluer
+  (Color 178,214,255 at the horizon, Decay 85,165,245 above, Density 0.22, Offset 0.25, Haze 0.3), `Look.Sky` (sun
+  14, stars 3000; made in Lighting if missing) and `Look.Clouds` = real 3D Terrain Clouds (`Workspace.Terrain >
+  HuzzClouds`: Cover 0.4, Density 0.75, white). LookService applies them; the place build saves them. Model
+  `docs/previews/sky-vs-ref.jpg` (`tools/preview/light/sky_model.py`: a model, not a render; its skybox colours are
+  read off the reference, its clouds are flat blobs). A proper cartoon skybox would need 6 face pictures uploaded.
 - `Gameplay/Juice`: one world effect per moment beside the message line (study gap 15): confetti on safe, a quick red
   spark burst on a catch, a green ring lifting off the floor on a rescue, hearts and sparkles in the girl's rarity
   colour round the winner (knife pass 2: the catch's burst is now a thin cut line and 10 sparks in the catcher's knife
@@ -583,8 +591,8 @@ Owner's own words are in quotes. Read only the section you need.
   **10 s** since Oct 19 (owner: "more detailed, especially the beams ... make the duration of it logical"; was 14.5 s,
   which dragged and everyone waits through it): 3.4 s of beams building to the burst, ~4.2 s with her (lands, her
   NAME on screen 4.5 to 6.3, push into her face), ~1.9 s finale and rise, 0.5 s hand-back. Why, and every beat's
-  time (for sounds): `docs/secret-beats.md`. A local night look (Lighting/Atmosphere/Bloom/Sky/grade, put back
-  exactly; checked) until 8.3. **Beams** (`SecretReveal.PILLARS`, `LAYERS`): few (3 threads) → twins → a ring of 6 →
+  time (for sounds): `docs/secret-beats.md`. A local night look (Lighting/Atmosphere/Bloom/Sky/grade, the Terrain clouds thin and violet, the sun shrinks
+  away; put back exactly; checked) until 8.3. **Beams** (`SecretReveal.PILLARS`, `LAYERS`): few (3 threads) → twins → a ring of 6 →
   all converge into the eyes' point; each a stack of 5 plain Beams (haze to white-hot middle, reads with nothing
   uploaded), pulses climbing (Transparency rebuilt per frame), helix strands, a gliding white filament, sparks, floor
   pools. Also shockwaves (dome, floor ring, ring facing you), a magic circle under her, a violet rim, her name card
@@ -877,7 +885,7 @@ Owner's own words are in quotes. Read only the section you need.
   picture (Play only), the slab colour under his grade, Gotham's size, headshots, scrolling, the calm turn, the
   pumpkin, candle and glow, the Oct 19 slate colour, the turn stopping before his slope) and the avatar stands (your copy, its run, the knife in its hand); the new lobby (the boards on the terrace ledges
   turning without touching the slope behind, the stand row, the move back after a game), the lobby props (his meshes
-  after the import, the bob, turn, glow and titles) and the Oct 18 lighting tune; the Oct 19 even lighting (ShadowMap, strong sky fill, lamps turned down).
+  after the import, the bob, turn, glow and titles) and the Oct 18 lighting tune; the Oct 19 even lighting (ShadowMap, strong sky fill, lamps turned down); the Oct 19 sky (Terrain clouds, bluer Atmosphere).
 - **Which code ran?** Studio shows "build <date> UTC" small in the bottom right (and `[Huzz] Build` in Output), from
   `Config/Build` written by `build_place.sh`. The owner's Oct 18 recordings showed the OLD cutscene and HUD although
   the download was new: Rojo connected to his out-of-date local copy puts old scripts back. Fix: GitHub Desktop >

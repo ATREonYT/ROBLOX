@@ -1,6 +1,7 @@
 --[[
 	Applies Config/Look to Lighting when the server starts: the lighting settings, a colour grade, bloom, sun
-	rays and a light haze (the effects are found by name or made). Lighting replicates, so every player sees it.
+	rays, a light haze, the Sky's settings and Terrain Clouds (Oct 19 sky: real 3D clouds, no upload) (each is found
+	by class or made). Lighting and Terrain replicate, so every player sees it.
 	Effects the place already has are reused, not doubled; Config/Look.Enabled = false leaves Lighting alone.
 ]]
 local Lighting = game:GetService("Lighting")
@@ -31,6 +32,17 @@ function LookService.apply()
 	set(effect("BloomEffect", "HuzzBloom"), Look.Bloom)
 	set(effect("SunRaysEffect", "HuzzSunRays"), Look.SunRays)
 	set(effect("Atmosphere", "HuzzAtmosphere"), Look.Atmosphere)
+	if Look.Sky then set(effect("Sky", "HuzzSky"), Look.Sky) end
+	if Look.Clouds then
+		local terrain = workspace.Terrain
+		local clouds = terrain:FindFirstChildOfClass("Clouds")
+		if not clouds then
+			clouds = Instance.new("Clouds")
+			clouds.Name = "HuzzClouds"
+			clouds.Parent = terrain
+		end
+		set(clouds, Look.Clouds)
+	end
 	local dof = Lighting:FindFirstChildOfClass("DepthOfFieldEffect")
 	if dof and Look.DepthOfField == false then (dof :: DepthOfFieldEffect).Enabled = false end
 end

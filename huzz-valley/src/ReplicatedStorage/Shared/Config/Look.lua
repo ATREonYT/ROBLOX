@@ -20,6 +20,11 @@
 -- before or brighter. docs/previews/lighting-vs-ref.jpg. Only Studio shows the real thing.
 -- Earlier: Oct 17 feel study (floor blown out at Brightness 2.8 / Exposure +0.15), Oct 18 "brighter contrast"
 -- (2.2 / -0.05 / Contrast 0.16 / Saturation 0.4).
+-- Oct 19 sky (owner: "try making the skybox better for the better lighting experience"; same reference): a saturated
+-- cartoon blue overhead (about 87, 178, 249 on his screenshot), big soft white clouds low on the horizon, a clean
+-- bright horizon over the sea. No uploads needed: Roblox's own sky stays, the Atmosphere paints the blue and the
+-- bright horizon (Decay: the blue away from the sun; Color: the pale band at the horizon; little Haze so the sea's
+-- edge stays clean), and Terrain Clouds add real 3D white puffs. Model: docs/previews/sky-vs-ref.jpg.
 -- Gameplay/SecretReveal remembers whatever these are and puts them back after its night look.
 return {
 	Enabled = true,
@@ -41,7 +46,13 @@ return {
 	ColorCorrection = { Brightness = 0, Contrast = 0.05, Saturation = 0.12, TintColor = Color3.fromRGB(255, 254, 250) }, -- (Oct 18: 0.16 / 0.4)
 	Bloom = { Intensity = 0.4, Size = 24, Threshold = 1.6 }, -- neon and bright effects still glow; plain parts don't (was 0.55 / 22 / 1.5)
 	SunRays = { Intensity = 0.03, Spread = 0.5 },
-	-- Crisp to the horizon with a clear blue sky (was Density 0.26 / Haze 1.2, which greyed out everything far away)
-	Atmosphere = { Density = 0.2, Offset = 0.1, Color = Color3.fromRGB(199, 225, 255), Decay = Color3.fromRGB(106, 150, 220), Glare = 0, Haze = 0.3 },
+	-- Crisp to the horizon with a saturated cartoon blue sky (Oct 19 morning: Decay 106, 150, 220 / Offset 0.1 read
+	-- as a pale, greyish blue; before that Density 0.26 / Haze 1.2 greyed out everything far away)
+	Atmosphere = { Density = 0.22, Offset = 0.25, Color = Color3.fromRGB(178, 214, 255), Decay = Color3.fromRGB(85, 165, 245), Glare = 0, Haze = 0.3 },
+	-- The sky (made in Lighting if the place has none). No texture IDs: Roblox's built-in sky stays.
+	Sky = { CelestialBodiesShown = true, SunAngularSize = 14, MoonAngularSize = 11, StarCount = 3000 },
+	-- Real 3D cartoon clouds (a Clouds object in Workspace.Terrain): white and puffy, a few big ones, mostly blue sky
+	-- (Cover 0.5 in the model hid most of the blue; the reference is clear overhead with puffs low down)
+	Clouds = { Enabled = true, Cover = 0.4, Density = 0.75, Color = Color3.fromRGB(255, 255, 255) },
 	DepthOfField = false, -- (off: the reference is crisp all the way to the horizon)
 }

@@ -307,6 +307,21 @@ do
 		apply(effect("BloomEffect", "HuzzBloom"), Look.Bloom)
 		apply(effect("SunRaysEffect", "HuzzSunRays"), Look.SunRays)
 		apply(effect("Atmosphere", "HuzzAtmosphere"), Look.Atmosphere)
+		if Look.Sky then apply(effect("Sky", "HuzzSky"), Look.Sky) end
+		if Look.Clouds then
+			local terrain = theirs:GetService("Workspace"):FindFirstChildOfClass("Terrain")
+			if terrain then
+				local clouds = terrain:FindFirstChildOfClass("Clouds")
+				if not clouds then
+					clouds = roblox.Instance.new("Clouds")
+					clouds.Name = "HuzzClouds"
+					clouds.Parent = terrain
+				end
+				apply(clouds, Look.Clouds)
+			else
+				table.insert(skipped, "Clouds (no Terrain)")
+			end
+		end
 		print("lighting: Config/Look saved into the place (" .. set .. " values" .. (if #skipped > 0 then "; Lune can't write " .. table.concat(skipped, ", ") else "") .. ")")
 	else
 		print("lighting: Config/Look not saved (" .. tostring(Look) .. ")")

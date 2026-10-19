@@ -416,12 +416,20 @@ do
 	pcall(function() L.EnvironmentDiffuseScale = 1 end)
 	for _, c in L:GetChildren() do c:Destroy() end
 	local atmo = Instance.new("Atmosphere")
-	atmo.Density, atmo.Offset, atmo.Haze, atmo.Glare = 0.2, 0.1, 0.3, 0
-	atmo.Color, atmo.Decay = Color3.fromRGB(199, 225, 255), Color3.fromRGB(106, 150, 220)
+	atmo.Density, atmo.Offset, atmo.Haze, atmo.Glare = 0.2, 0.25, 0.5, 0.2
+	atmo.Color, atmo.Decay = Color3.fromRGB(214, 236, 255), Color3.fromRGB(70, 150, 245)
 	atmo.Parent = L
 	local bloom = Instance.new("BloomEffect")
 	bloom.Intensity, bloom.Size, bloom.Threshold = 0.55, 22, 1.5
 	bloom.Parent = L
+	-- the sky and the Terrain clouds (Config/Look, Oct 19 sky): the night swaps them and must put them back
+	local sky = Instance.new("Sky")
+	sky.StarCount, sky.SunAngularSize, sky.CelestialBodiesShown = 3000, 14, true
+	sky.Parent = L
+	for _, c in workspace.Terrain:GetChildren() do c:Destroy() end
+	local clouds = Instance.new("Clouds")
+	clouds.Cover, clouds.Density, clouds.Color = 0.5, 0.75, Color3.fromRGB(255, 255, 255)
+	clouds.Parent = workspace.Terrain
 	local function snapshot()
 		local out = {}
 		for _, key in { "ClockTime", "Brightness", "Ambient", "OutdoorAmbient", "EnvironmentDiffuseScale" } do
@@ -430,7 +438,10 @@ do
 		end
 		for _, key in { "Density", "Offset", "Haze", "Glare", "Color", "Decay" } do out["A." .. key] = atmo[key] end
 		for _, key in { "Intensity", "Size", "Threshold" } do out["B." .. key] = bloom[key] end
+		for _, key in { "StarCount", "SunAngularSize", "CelestialBodiesShown" } do out["S." .. key] = sky[key] end
+		for _, key in { "Cover", "Density", "Color" } do out["C." .. key] = clouds[key] end
 		out.children = #L:GetChildren()
+		out.terrain = #workspace.Terrain:GetChildren()
 		return out
 	end
 	local before = snapshot()
@@ -474,9 +485,11 @@ do
 		local during = L.ClockTime
 		step(5, Vector3.new(0, 0, 1))
 		local nightOn = L.ClockTime == Timing.NIGHT and atmo.Haze > 1 and bloom.Intensity > 1
+		local skyNight = sky.StarCount > 4000 and sky.SunAngularSize < 1 and clouds.Cover < 0.35 and clouds.Color.R < 0.5
 		cleanup()
-		check("secret reveal cleans up", workspace:FindFirstChild("HuzzSecretReveal") == nil and game.Lighting:FindFirstChild("HuzzSecretGrade") == nil and #workspace.Terrain:GetChildren() == 0)
+		check("secret reveal cleans up", workspace:FindFirstChild("HuzzSecretReveal") == nil and game.Lighting:FindFirstChild("HuzzSecretGrade") == nil and #workspace.Terrain:GetChildren() == 1 and clouds.Parent == workspace.Terrain)
 		check("the night look is on during the cutscene", nightOn and during ~= nil)
+		check("the night swaps the sky and the clouds (more stars, no sun, thin violet clouds)", skyNight)
 		local after = snapshot()
 		local same = true
 		for key, v in before do
@@ -502,9 +515,11 @@ do
 			check("she hands over to the float without a snap: " .. tostring(endStep), false)
 		end
 	end
-	-- a Lighting without Atmosphere or Bloom: ours start from nothing (no sudden haze) and are removed after
+	-- a Lighting without Atmosphere or Bloom (and no Terrain clouds): ours start from nothing (no sudden haze) and
+	-- are removed after; no clouds are made (a cloud layer can't fade in)
 	do
 		for _, c in L:GetChildren() do c:Destroy() end
+		clouds:Destroy()
 		local okN, stepN, cleanupN = pcall(Reveal.build, m, base)
 		if okN then
 			stepN(0, Vector3.new(0, 0, 1))
@@ -513,8 +528,10 @@ do
 			local startsClear = a0 ~= nil and a0.Density == 0 and b0 ~= nil and b0.Intensity == 0
 			stepN(5, Vector3.new(0, 0, 1))
 			local on = a0.Density > 0.3
+			local noClouds = workspace.Terrain:FindFirstChildOfClass("Clouds") == nil
 			cleanupN()
 			check("a new Atmosphere and Bloom fade in from nothing and are removed", startsClear and on and #L:GetChildren() == 0)
+			check("no clouds are made when the place has none", noClouds)
 		else
 			check("secret reveal builds on a bare Lighting: " .. tostring(stepN), false)
 		end

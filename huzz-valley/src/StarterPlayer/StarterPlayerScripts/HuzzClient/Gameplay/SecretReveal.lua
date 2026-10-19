@@ -69,7 +69,9 @@ local NIGHT_LOOK = {
 	Atmosphere = { Density = 0.42, Offset = 0.2, Color = rgb(70, 48, 140), Decay = rgb(24, 18, 70), Glare = 0, Haze = 2.4 },
 	BloomEffect = { Intensity = 1.3, Size = 40, Threshold = 0.9 },
 	SunRaysEffect = { Intensity = 0 },
-	Sky = { StarCount = 5000 },
+	Sky = { StarCount = 5000, SunAngularSize = 0 }, -- (the sun shrinks away: a night sky with the day's sun in it looks wrong)
+	-- Config/Look's Terrain clouds: thinner and dusky violet, then back to white puffs
+	Clouds = { Cover = 0.3, Density = 0.5, Color = rgb(96, 78, 160) },
 }
 
 local function seq(...)
@@ -205,6 +207,9 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 		end
 		if inst then keep(inst, NIGHT_LOOK[cls]) end
 	end
+	-- (clouds only if the place has them: a new cloud layer can't fade in from nothing)
+	local clouds = Workspace.Terrain:FindFirstChildOfClass("Clouds")
+	if clouds then keep(clouds, NIGHT_LOOK.Clouds) end
 	local day = Lighting.ClockTime
 
 	-- beams: solid light until our pictures are uploaded
