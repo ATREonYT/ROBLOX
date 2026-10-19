@@ -70,9 +70,23 @@ local SET = {
 	{ kind = "R15", key = "CelestialSeraph", x = 0, seed = 9, accent = "#3ac0ff", shirt = "#1d1f27", pants = "#16171c", title = "SUNRISE KNIFE" },
 	{ kind = "R6", key = "CrimsonRequiem", x = -10, seed = 14, accent = "#ff3344", shirt = "#1d1f27", pants = "#16171c", title = "HUNTER KNIFE" },
 }
+-- STAND_SET=pass2: the owner's Oct 19 18:40 screenshot (design/owner-oct19/1840-pass-stands.png): Frost on the left,
+-- Inferno on the right, his blocky R15 in a black suit, seen from the plaza a little above, same framing.
+-- STAND_LOOK=old: the green disc under the feet as it was (Huss Valley green, Neon at 0.6 see-through); new (default):
+-- the aura (Shared/KnifeLook.AURA: rising specks from round the feet, twinkles round the body, a light on the body).
+local PASS2 = process.env.STAND_SET == "pass2"
+local OLD_LOOK = process.env.STAND_LOOK == "old"
+if PASS2 then
+	SET = {
+		{ kind = "R15", key = "FrostboundOath", x = 4.6, seed = 21, accent = "#5be07a", shirt = "#1b1c22", pants = "#141418", title = "FROST KNIFE" },
+		{ kind = "R15", key = "DragonsMaw", x = -4.6, seed = 4, accent = "#5be07a", shirt = "#1b1c22", pants = "#141418", title = "INFERNO KNIFE" },
+	}
+end
+local AURA = KnifeLook.AURA
 for _, s in SET do
 	s.rig = scene:addRig(if s.kind == "R15" then Rig.r15(s.key, { shirt = s.shirt, pants = s.pants }) else Rig.r6(s.key, { shirt = s.shirt, pants = s.pants }))
-	s.rig.root.CFrame = CFrame.new(s.x, if s.kind == "R15" then Rig.REST_HEIGHT else 3, 0) * CFrame.Angles(0, math.atan(s.x / 20), 0) -- (turned to the viewer, as AvatarStands turns them)
+	s.rig.root.CFrame = CFrame.new(s.x, if s.kind == "R15" then Rig.REST_HEIGHT else 3, 0) * CFrame.Angles(0, math.atan(s.x / (if PASS2 then 15 else 20)), 0) -- (turned to the viewer, as AvatarStands turns them)
+	s.aura = { motes = {}, stars = {}, accM = 0.3, accS = 0.5 }
 	s.rec = Show.new(s.rig, s.seed, s.key)
 	s.k = baked[s.key]
 	s.el = KnifeLook.element(s.key)
@@ -167,7 +181,58 @@ for f = 0, SECONDS * FPS - 1 do
 		-- twice Studio's)
 		local mid = h * Vector3.new(0, (s.blade0 + s.tip) * 0.5, 0)
 		table.insert(lights, { p = { mid.X, mid.Y, mid.Z }, c = hex(s.el.light), b = 0.3, r = 4 })
-		table.insert(sprites, { p = { s.x, 0.08, 0 }, s = 4.5, c = s.accent, a = 0.5, t = "@disc", flat = true, add = true })
+		if OLD_LOOK then
+			table.insert(sprites, { p = { s.x, 0.08, 0 }, s = if PASS2 then 4.4 else 4.5, c = s.accent, a = 0.5, t = "@disc", flat = true, add = true })
+		else -- the aura, in the knife's element light (Gameplay/AvatarStands: rec.glow)
+			local col = s.el.light
+			local white = roblox.Color3.new(1, 1, 1)
+			local au = s.aura
+			local M, Tw = AURA.Motes, AURA.Twinkles
+			au.accM += M.rate * dt
+			while au.accM >= 1 do
+				au.accM -= 1
+				local ang = range(0, 2 * math.pi)
+				table.insert(au.motes, { p = Vector3.new(s.x + math.cos(ang) * AURA.Width / 2, 0.15, math.sin(ang) * AURA.Width / 2),
+					v = Vector3.new(0, range(M.speed[1], M.speed[2]), 0), age = 0, life = range(M.life[1], M.life[2]), rot = range(0, 360) })
+			end
+			au.accS += Tw.rate * dt
+			while au.accS >= 1 do
+				au.accS -= 1
+				local ang, rr = range(0, 2 * math.pi), math.sqrt(rnd()) * AURA.Width / 2
+				table.insert(au.stars, { p = Vector3.new(s.x + math.cos(ang) * rr, range(0, AURA.Height), math.sin(ang) * rr), age = 0,
+					life = range(Tw.life[1], Tw.life[2]), rot = range(0, 360), spin = range(-40, 40), f = math.floor(range(0, 3.99)) })
+			end
+			local function fade(a) return if a < 0.25 then 1 - 0.75 * a / 0.25 else 0.25 + 0.75 * (a - 0.25) / 0.75 end
+			local keepM = {}
+			for _, q in au.motes do
+				q.age += dt
+				if q.age < q.life then
+					q.v += Vector3.new(0, M.rise, 0) * dt
+					q.p += q.v * dt
+					local a = q.age / q.life
+					local size = M.size * (if a < 0.2 then a / 0.2 else (1 - a) / 0.8)
+					local c = col:Lerp(white, M.whiten):Lerp(col, a)
+					table.insert(sprites, { p = { q.p.X, q.p.Y, q.p.Z }, s = size * 1.3, c = hex(c), a = 1 - fade(a), t = "glow", r = q.rot, add = true })
+					table.insert(keepM, q)
+				end
+			end
+			au.motes = keepM
+			local keepS = {}
+			for _, q in au.stars do
+				q.age += dt
+				if q.age < q.life then
+					local a = q.age / q.life
+					q.rot += q.spin * dt
+					local size = Tw.size * (if a < 0.45 then a / 0.45 else (1 - a) / 0.55)
+					local c = col:Lerp(white, Tw.whiten):Lerp(col, a)
+					table.insert(sprites, { p = { q.p.X, q.p.Y, q.p.Z }, s = size * 1.3, c = hex(c), a = 1 - fade(a), t = "twinkle", g = 2, f = q.f, r = q.rot, add = true })
+					table.insert(keepS, q)
+				end
+			end
+			au.stars = keepS
+			local lp = s.rig.root.CFrame * Vector3.new(0, AURA.Light.Up, -AURA.Light.Front)
+			table.insert(lights, { p = { lp.X, lp.Y, lp.Z }, c = hex(col:Lerp(white, AURA.Light.Whiten)), b = AURA.Light.Brightness * 0.5, r = AURA.Light.Range })
+		end
 		-- element particles: steady emitters, the move's burst, the tip glint
 		for i, spec in s.el.emit do
 			s.acc[i] = (s.acc[i] or 0) + spec.rate * dt
@@ -231,8 +296,14 @@ for f = 0, SECONDS * FPS - 1 do
 		local head = s.rig.parts.Head.CFrame.Position
 		table.insert(labels, { p = { s.x, head.Y + 2.2, 0 }, text = s.title, h = 0.9, c = "#ffffff", o = "#1e1228" })
 	end
-	scene:frame(Vector3.new(0, 9, -20), Vector3.new(0, 3.2, 0), { meshes = meshes, lights = lights, sprites = sprites, ribbons = ribbons,
-		labels = labels, fov = 36 })
+	if PASS2 then
+		scene:frame(Vector3.new(0, 6.4, -16.5), Vector3.new(0, 3.1, 0), { meshes = meshes, lights = lights, sprites = sprites, ribbons = ribbons,
+			labels = labels, fov = 36 })
+	else
+		scene:frame(Vector3.new(0, 9, -20), Vector3.new(0, 3.2, 0), { meshes = meshes, lights = lights, sprites = sprites, ribbons = ribbons,
+			labels = labels, fov = 36 })
+	end
 end
 local keepDir = process.env.MOTION3D_KEEP
-scene:save(nil, FPS, W, H, { meshFile = MESHES, sky = "#8fc8f0", ground = "#b07c40", grid = false, stills = if keepDir then { 30, 75, 120, 165, 210, 255 } else nil })
+scene:save(nil, FPS, W, H, { meshFile = MESHES, sky = "#8fc8f0", ground = "#b07c40", grid = false,
+	stills = if keepDir then (if PASS2 then { 45, 150 } else { 30, 75, 120, 165, 210, 255 }) else nil })

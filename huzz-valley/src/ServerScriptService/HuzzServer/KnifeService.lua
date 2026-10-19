@@ -285,6 +285,38 @@ local function bladeOf(model)
 	return best or model.PrimaryPart or model:FindFirstChild("Handle", true)
 end
 
+-- Where the effects come off: the knife's biggest blade part, or, for a knife built of many blade blocks (the
+-- stand-ins, cut from his .glb in thin slices), an invisible KnifeFxArea over all of them (welded to the Handle), so
+-- a stand-in's fire, petals or sparkles leave the whole blade and not one slice of it (Oct 19 evening).
+local function fxPartOf(model)
+	local blade = bladeOf(model)
+	local handle = model:FindFirstChild("Handle", true)
+	if not (handle and handle:IsA("BasePart")) then return blade end
+	local old = model:FindFirstChild("KnifeFxArea", true)
+	if old then return old end
+	local lo, hi, n = nil, nil, 0
+	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") and string.find(string.lower(d.Name), "blade", 1, true) then
+			n += 1
+			local r = handle.CFrame:ToObjectSpace(d.CFrame)
+			local h = d.Size / 2
+			local e = Vector3.new(
+				math.abs(r.RightVector.X) * h.X + math.abs(r.UpVector.X) * h.Y + math.abs(r.LookVector.X) * h.Z,
+				math.abs(r.RightVector.Y) * h.X + math.abs(r.UpVector.Y) * h.Y + math.abs(r.LookVector.Y) * h.Z,
+				math.abs(r.RightVector.Z) * h.X + math.abs(r.UpVector.Z) * h.Y + math.abs(r.LookVector.Z) * h.Z)
+			local c = r.Position
+			lo = if lo then lo:Min(c - e) else c - e
+			hi = if hi then hi:Max(c + e) else c + e
+		end
+	end
+	if n < 3 or not lo then return blade end
+	local area = part("Part", { Name = "KnifeFxArea", Size = (hi - lo):Max(Vector3.one * 0.05), Transparency = 1 })
+	area.CFrame = handle.CFrame * CFrame.new((lo + hi) / 2)
+	area.Parent = handle.Parent
+	weld(handle, area)
+	return area
+end
+
 local function emitter(name, parent, colour, props)
 	local e = Instance.new("ParticleEmitter")
 	e.Name = name
@@ -351,7 +383,7 @@ local function addFx(model, skin, where)
 	if not colour or (where == "back" and not look.back) then
 		return
 	end
-	local blade = bladeOf(model)
+	local blade = fxPartOf(model)
 	if not blade then return end
 	if el then
 		addElement(model, blade, el, where)
@@ -394,6 +426,17 @@ local function addFx(model, skin, where)
 			EmissionDirection = Enum.NormalId.Top,
 		})
 		e.Texture = FxTexture.get("Spark")
+	end
+	-- Legendary and up, in hand: a star glint at the tip now and then (one about every `glint` seconds, grows and
+	-- fades over half a second: never a flash). A stand's element knife has its own (above).
+	local tipAt = model:FindFirstChild("TrailTip", true)
+	if look.glint and where == "hand" and tipAt and not model:FindFirstChild("KnifeTipGlint", true) then
+		local e = emitter("KnifeTipGlint", tipAt, colour:Lerp(WHITE, 0.7), {
+			Rate = 1 / look.glint, Lifetime = NumberRange.new(0.45, 0.55), Speed = NumberRange.new(0), LockedToPart = true,
+			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.4, 0.55), NumberSequenceKeypoint.new(1, 0) }),
+			Transparency = NumberSequence.new(0.15), Rotation = NumberRange.new(0, 45), RotSpeed = NumberRange.new(60), ZOffset = 0.3,
+		})
+		e.Texture = FxTexture.get("StarFlare")
 	end
 end
 
@@ -529,23 +572,21 @@ function KnifeService.give(character, skin)
 		local look = KnifeLook.fx(skin and skin.Rarity)
 		local colour = KnifeLook.colour(skin)
 		local el = KnifeLook.element(skin and skin.Key)
-		local tinted = look.trailTint and colour ~= nil
+		local tl = KnifeLook.trailLook(skin, el) -- (every skin's in its own colours; Common/Uncommon faint)
 		local trail = Instance.new("Trail")
 		trail.Name = "SlashTrail"
 		trail.Attachment0, trail.Attachment1 = base, tip
 		trail.Lifetime = if el then T.ElementLifetime else T.Lifetime
 		trail.MinLength = 0
 		trail.FaceCamera = false
-		trail.LightEmission = if tinted then T.LightEmission else 0.3
-		trail.Color = if el then ColorSequence.new(el.trail[1], el.trail[2])
-			elseif tinted then ColorSequence.new(colour :: Color3, WHITE) else ColorSequence.new(WHITE)
-		local tr = if tinted then T.Tinted else T.Plain
-		trail.Transparency = NumberSequence.new(tr[1], tr[2])
+		trail.LightEmission = tl.light
+		trail.Color = ColorSequence.new(tl.colours[1], tl.colours[2])
+		trail.Transparency = NumberSequence.new(tl.transparency[1], tl.transparency[2])
 		pcall(function() trail.WidthScale = NumberSequence.new(1, 0.35) end) -- (a crescent: full at the blade, thin at the end)
 		trail.Enabled = false
 		trail.Parent = handle
 		-- the catcher's slash arc (Gameplay/Actions) in this colour, Epic and up
-		if tinted then model:SetAttribute("SlashColor", if el then el.trail[1] else colour) end
+		if look.arc and (el or colour) then model:SetAttribute("SlashColor", if el then el.trail[1] else colour) end
 	end
 	model.Parent = character
 end

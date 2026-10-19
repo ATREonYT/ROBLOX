@@ -68,7 +68,7 @@ StandShowcase.TRAIL_LIFETIME = 0.2 -- the slash smear (KnifeLook.TRAIL is 0.12 f
 -- sign and the broad face out; tests/StandShowcase.spec).
 local READY = {
 	arm = { 5, -57, -23 }, elbow = 97, wrist = -4, grip = 13, twist = -52,
-	off = { 30, 16, -16 }, offElbow = 80,
+	off = { 8, 2, -14 }, offElbow = 24, -- (Oct 19 evening: the free arm loose at the side; it was raised in a fist, stiff)
 	waist = { -3, 12, 0 }, neck = { -3, -10, 0 }, drop = 0.14, spin = 0,
 }
 StandShowcase.READY = READY

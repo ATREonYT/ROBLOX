@@ -210,7 +210,19 @@ if copy then
 	check("the stand-in is cut from his .glb (a blade and his glowing parts, " .. glowing .. ")", blade ~= nil and glowing >= 5)
 end
 check("block hidden on this screen", block.LocalTransparencyModifier == 1)
-check("calm glow", copies and copies:FindFirstChild("StandGlow") ~= nil)
+-- the aura (owner, Oct 19 evening: "without that green circle on the bottom, and add some vfx"): no disc, no solid
+-- part under the feet; rising specks and twinkles in the knife's own colours (Hunter: red), a soft light on the body
+check("no disc under the feet (the green circle is gone)", copies and copies:FindFirstChild("StandGlow") == nil)
+local ring = copies and copies:FindFirstChild("StandAura")
+local body = copies and copies:FindFirstChild("StandAuraBody")
+check("the aura's holders are invisible", ring ~= nil and body ~= nil and ring.Transparency == 1 and body.Transparency == 1)
+local motes = ring and ring:FindFirstChild("AuraMotes")
+local stars = body and body:FindFirstChild("AuraTwinkles")
+local red = motes and motes.Color.Keypoints[#motes.Color.Keypoints].Value
+check("rising specks in the knife's colour (Hunter red)", red ~= nil and red.R > 0.9 and red.G < 0.35)
+check("calm: under 10 aura particles a second", motes ~= nil and stars ~= nil and motes.Rate + stars.Rate <= 10)
+local auraLight = copy and copy.HumanoidRootPart:FindFirstChild("StandAuraLight")
+check("a soft light on the character", auraLight ~= nil and auraLight:FindFirstChildOfClass("PointLight") ~= nil)
 local sign = me.PlayerGui:FindFirstChild("StandSign")
 check("sign", sign ~= nil and sign.Plate.Title.Text == "HUNTER KNIFE")
 check("the sign names the knife", sign ~= nil and sign.Plate.Subtitle.Text == "EXCLUSIVE KNIFE: CRIMSON REQUIEM")

@@ -28,8 +28,10 @@
 	slash, flicks, a raised spin); a move's burst throws a handful of its element out (KnifeBurst), once a move.
 	Without a knife it runs in place with the game's run (the
 	owner's run animation when it can play here, Shared/AnimationLibrary "Run"; otherwise Shared/RunMotion, the
-	scripted Huss Valley run, on R15; a simple swing on R6). It turns to face you like the leaderboards. A
-	calm glow under the feet (a soft disc, a small light, a few slow sparkles; owner: calmer effects). Above: the tag,
+	scripted Huss Valley run, on R15; a simple swing on R6). It turns to face you like the leaderboards. No disc under
+	the feet any more (owner, Oct 19 evening: "without that green circle on the bottom ... add some vfx, make the
+	characters more atrractive"): an aura in the knife's own colours (Shared/KnifeLook.AURA: specks rising from round
+	the feet, a few stars twinkling round the body, a soft light on the character). Above: the tag,
 	the title plate and the subtitle; at the waist the price button ("1,799 · VIEW"). No timers, no "limited",
 	no "ends in" (kid-safe, even though the reference has them).
 	Buying: only through Shared/AvatarStandRules (a real Game Pass ID AND a pass the game already grants);
@@ -50,6 +52,7 @@ function M.start()
 	local Products = require(Shared.Config.Products)
 	local CoinShop = require(Shared.Config.CoinShop)
 	local KnifeLook = require(Shared.KnifeLook)
+	local FxTexture = require(Shared.FxTexture)
 	local LeaderConfig = require(Shared.Config.Leaderboards)
 	local Rules = require(Shared.AvatarStandRules)
 	local LeaderRules = require(Shared.LeaderboardRules)
@@ -269,23 +272,16 @@ function M.start()
 		local tip = knife:FindFirstChild("TrailTip", true)
 		local trail = nil
 		if base and tip and base:IsA("Attachment") and tip:IsA("Attachment") then
-			local skin = CoinShop.get(knifeKey)
-			local look = KnifeLook.fx(skin and skin.Rarity)
-			local colour = KnifeLook.colour(skin)
-			local el = KnifeLook.element(knifeKey)
-			local tinted = look.trailTint and colour ~= nil
-			local T = KnifeLook.TRAIL
+			local tl = KnifeLook.trailLook(CoinShop.get(knifeKey), KnifeLook.element(knifeKey))
 			trail = Instance.new("Trail")
 			trail.Name = "StandSlash"
 			trail.Attachment0, trail.Attachment1 = base, tip
 			trail.Lifetime = StandShowcase.TRAIL_LIFETIME
 			trail.MinLength = 0
 			trail.FaceCamera = false
-			trail.LightEmission = if tinted then T.LightEmission else 0.3
-			trail.Color = if el then ColorSequence.new(el.trail[1], el.trail[2])
-				elseif tinted then ColorSequence.new(colour :: Color3, Color3.new(1, 1, 1)) else ColorSequence.new(Color3.new(1, 1, 1))
-			local tr = if tinted then T.Tinted else T.Plain
-			trail.Transparency = NumberSequence.new(tr[1], tr[2])
+			trail.LightEmission = tl.light
+			trail.Color = ColorSequence.new(tl.colours[1], tl.colours[2])
+			trail.Transparency = NumberSequence.new(tl.transparency[1], tl.transparency[2])
 			pcall(function() trail.WidthScale = NumberSequence.new(1, 0.3) end) -- (a crescent: full at the blade, thin at the end)
 			trail.Enabled = false
 			trail.Parent = handle
@@ -314,34 +310,67 @@ function M.start()
 		end)
 	end
 
-	-- The calm glow under the feet: a soft disc, a small light, a few slow sparkles.
-	local function glow(rec, floorY: number, centre: Vector3, width: number)
-		local d = math.clamp(width * 0.9, 3, 5)
-		local disc = Instance.new("Part")
-		disc.Name = "StandGlow"
-		disc.Shape = Enum.PartType.Cylinder
-		disc.Anchored, disc.CanCollide, disc.CanTouch, disc.CanQuery, disc.CastShadow = true, false, false, false, false
-		disc.Size = Vector3.new(0.12, d, d)
-		disc.CFrame = CFrame.new(centre.X, floorY + 0.07, centre.Z) * CFrame.Angles(0, 0, math.rad(90))
-		disc.Material = Enum.Material.Neon
-		disc.Color = rec.accent
-		disc.Transparency = 0.6
-		disc.Parent = holder
-		local light = Instance.new("PointLight")
-		light.Color, light.Brightness, light.Range, light.Shadows = rec.accent, 0.4, 6, false -- (Oct 19 lighting: soft, no pool on the floor)
-		light.Parent = disc
-		local sparkle = Instance.new("ParticleEmitter")
-		sparkle.Color = ColorSequence.new(rec.accent:Lerp(Color3.new(1, 1, 1), 0.5))
-		sparkle.LightEmission = 0.6
-		sparkle.Rate = 2
-		sparkle.Lifetime = NumberRange.new(2, 3)
-		sparkle.Speed = NumberRange.new(0.6, 1.2)
-		sparkle.SpreadAngle = Vector2.new(12, 12)
-		sparkle.Size = NumberSequence.new(0.18, 0.05)
-		sparkle.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.2, 0.35), NumberSequenceKeypoint.new(1, 1) })
-		sparkle.EmissionDirection = Enum.NormalId.Right -- (the disc lies on its side: its +X points up)
-		sparkle.Parent = disc
-		rec.disc = disc
+	-- The aura (Shared/KnifeLook.AURA; owner, Oct 19 evening: "make the gamepass characters look better without that
+	-- green circle on the bottom, and add some vfx, make the characters more atrractive so people buy the knifes"):
+	-- no disc under the feet. In the stand's colour (its knife's element, else the pass colour): soft specks rising
+	-- from a ring round the feet, a few stars twinkling round the body, a soft light in front of the chest. Two
+	-- invisible parts hold the emitters (round, so the copy's turning doesn't matter); the light rides on the copy.
+	local function aura(rec, floorY: number, centre: Vector3)
+		local A = KnifeLook.AURA
+		local colour = rec.glow
+		local white = Color3.new(1, 1, 1)
+		local function holderPart(name: string, size: Vector3, at: Vector3): Part
+			local p = Instance.new("Part")
+			p.Name = name
+			p.Anchored, p.CanCollide, p.CanTouch, p.CanQuery, p.CastShadow = true, false, false, false, false
+			p.Transparency = 1
+			p.Size = size
+			p.CFrame = CFrame.new(at)
+			p.Parent = holder
+			return p
+		end
+		local function emit(parent: BasePart, name: string, spec, shape: string)
+			local e = Instance.new("ParticleEmitter")
+			e.Name = name
+			e.Color = ColorSequence.new(colour:Lerp(white, spec.whiten), colour)
+			e.LightEmission, e.LightInfluence = 1, 0
+			e.Rate = spec.rate
+			e.Lifetime = NumberRange.new(spec.life[1], spec.life[2])
+			e.Rotation = NumberRange.new(0, 360)
+			e.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.25, 0.25), NumberSequenceKeypoint.new(1, 1) })
+			e.EmissionDirection = Enum.NormalId.Top
+			pcall(function()
+				e.Shape = Enum.ParticleEmitterShape.Cylinder
+				e.ShapeStyle = if shape == "ring" then Enum.ParticleEmitterShapeStyle.Surface else Enum.ParticleEmitterShapeStyle.Volume
+			end)
+			e.Parent = parent
+			return e
+		end
+		local ring = holderPart("StandAura", Vector3.new(A.Width, 0.2, A.Width), Vector3.new(centre.X, floorY + 0.15, centre.Z))
+		local M = A.Motes
+		local motes = emit(ring, "AuraMotes", M, "ring")
+		motes.Speed = NumberRange.new(M.speed[1], M.speed[2])
+		motes.Acceleration = Vector3.new(0, M.rise, 0)
+		motes.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.2, M.size), NumberSequenceKeypoint.new(1, 0) })
+		motes.Texture = FxTexture.get(M.texture)
+		local column = holderPart("StandAuraBody", Vector3.new(A.Width, A.Height, A.Width), Vector3.new(centre.X, floorY + A.Height / 2, centre.Z))
+		local T = A.Twinkles
+		local stars = emit(column, "AuraTwinkles", T, "body")
+		stars.Speed = NumberRange.new(0)
+		stars.RotSpeed = NumberRange.new(-40, 40)
+		stars.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.45, T.size), NumberSequenceKeypoint.new(1, 0) })
+		FxTexture.flipbook(stars, T.texture, "Random")
+		local root = rec.root
+		if root then
+			local at = Instance.new("Attachment")
+			at.Name = "StandAuraLight"
+			at.CFrame = CFrame.new(0, A.Light.Up, -A.Light.Front) -- (in front of the chest: it lights the character, not a pool on the floor)
+			at.Parent = root
+			local light = Instance.new("PointLight")
+			light.Color, light.Brightness, light.Range, light.Shadows = colour:Lerp(white, A.Light.Whiten), A.Light.Brightness, A.Light.Range, false
+			light.Parent = at
+		end
+		rec.aura = { ring, column }
 	end
 
 	-- The sign over the head and the price button at the waist (BillboardGuis in PlayerGui, so the button clicks).
@@ -454,9 +483,11 @@ function M.start()
 	end
 
 	local function clear(rec)
-		for _, k in { "copy", "disc", "sign", "buttonGui" } do
+		for _, k in { "copy", "sign", "buttonGui" } do
 			if rec[k] then rec[k]:Destroy() rec[k] = nil end
 		end
+		for _, p in rec.aura or {} do p:Destroy() end
+		rec.aura = nil
 		if rec.hidden then
 			for part, was in rec.hidden do
 				if part.Parent then part.LocalTransparencyModifier, part.CanCollide = was[1], was[2] end
@@ -536,7 +567,9 @@ function M.start()
 		end
 		if not rec.showcase then startRun(rec) end
 		knifeFor(rec)
-		glow(rec, footY, cf.Position, math.min(size.X, size.Z))
+		local el = knifeKey and KnifeLook.element(knifeKey)
+		rec.glow = if el then el.light else rec.accent -- (the aura in the knife's own colours)
+		aura(rec, footY, cf.Position)
 		signs(rec)
 	end
 

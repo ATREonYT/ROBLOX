@@ -86,7 +86,7 @@ inspection with Lune: core `CLAUDE.md` section 4.
 - Turns any Part/Model named `AvatarStand` or tagged `HuzzAvatarStand` into a copy of the viewer's own avatar doing
   the sword showcase ([knives.md](knives.md); no knife: running in place, the owner's Run when it plays, else
   `RunMotion`; R6 a simple swing) holding its pass's exclusive knife in the right hand, turning to you calmly (the
-  boards' turn, up to 70°), a calm glow, a sign (tag pill, title, "EXCLUSIVE KNIFE: CELESTIAL SERAPH") and a price
+  boards' turn, up to 70°), an aura in its knife's colours (no disc: [knives.md](knives.md)), a sign (tag pill, title, "EXCLUSIVE KNIFE: CELESTIAL SERAPH") and a price
   button. Reference `design/lobby-ref/stands-ref.jpg`.
 - **Where:** in his new lobby an invisible flat `AvatarStand` part each, in a row along the plaza's empty side,
   opposite the podium boards (`Shared/LobbyLayout.standSpots` + `pickRow`: a spot is clear when nothing over 1 stud
@@ -105,7 +105,7 @@ inspection with Lune: core `CLAUDE.md` section 4.
   knife). Tall blocks hide and you stand where they stood; flat ones are pedestals (`StandOn`).
 - **Buying:** the button opens `PromptGamePassPurchase` only with a real Game Pass ID AND a `Config/Products` pass
   that's OnSale; otherwise "SOON" / "COMING SOON" (today all of them: every knife pass has `Id = 0`). No timers or
-  LIMITED/ENDS IN copy. The stand disc light is 0.4 / Range 6.
+  LIMITED/ENDS IN copy.
 - **Owner how-to (Studio):** nothing to do: press Play. To move them in the downloaded build: Explorer > Workspace >
   HuzzAvatarStands > AvatarStand (invisible: click it in Explorer, then drag with Move), or change its Attributes:
   `Pass` (String: a Game Pass key from `Config/Products`, e.g. `HunterKnifePass`; `VIP` or `DancePack` is moved

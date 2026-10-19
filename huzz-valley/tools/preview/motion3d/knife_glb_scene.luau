@@ -79,7 +79,7 @@ local Dress = luau.load(fs.readFile("huzz-valley/src/StarterPlayer/StarterPlayer
 	environment = { Vector3 = Vector3, CFrame = CFrame, Color3 = roblox.Color3, Enum = roblox.Enum, Instance = Instance } })()
 
 local nowFolder = roblox.deserializeModel(fs.readFile("huzz-valley/assets/knives/HuzzKnives.rbxm"))[1]
-local oldFolder = if HALLOWEEN then nowFolder else roblox.deserializeModel(fs.readFile(process.env.OLD_KNIVES or error("set OLD_KNIVES")))[1]
+local oldFolder = if HALLOWEEN or process.env.KNIFE_SET == "detail" then nowFolder else roblox.deserializeModel(fs.readFile(process.env.OLD_KNIVES or error("set OLD_KNIVES")))[1]
 
 -- the real KnifeService, his knives in ServerStorage (as tests/KnifeModels.spec)
 local game = Instance.new("DataModel")
@@ -236,8 +236,136 @@ local function show(frame)
 	end
 end
 
+-- KNIFE_SET=detail (owner, Oct 19 evening: "make the knife models more detailed because there are alot of details
+-- missing"): his most detailed knives, his .glb next to what the game draws, close up (still 0), in the hand (still
+-- 1), worn (still 2) and the two pass knives big on a stand (still 3: KnifeService.display + the dress, in
+-- StandShowcase's ready hold). "now" = his model on screen (KnifeDress for the pass and Halloween knives, his import
+-- for the 30); docs/previews/knife-detail-vs-glb.jpg stacks the four stills.
+if process.env.KNIFE_SET == "detail" then
+	local Show = Env.load(SHARED .. "StandShowcase.lua")
+	local KEYS = { "CelestialSeraph", "HollowEclipse", "GrandWitchScythe", "AbyssEclipse" }
+	local framesBoxes = {}
+	scene:addBox(CFrame.new(0, -900, 0), Vector3.one * 0.1, "#000000") -- (a frame with no box at all saves `{}`, not a list)
+	local function only(frame)
+		for f, list in framesBoxes do
+			for _, b in list do b.Hidden = f ~= frame end
+		end
+	end
+	local function plainInto(frame, list)
+		framesBoxes[frame] = framesBoxes[frame] or {}
+		for _, b in list do
+			local box = scene:addBox(b.CFrame, b.Size, b.Color)
+			box.Neon, box.Shape, box.Hidden = b.Neon, b.Shape, true
+			table.insert(framesBoxes[frame], box)
+		end
+	end
+	local function glbScaled(key, handleCF, mult)
+		local e = glbAt(key, handleCF)
+		local k = baked[key]
+		e.s = k.studs / k.length * mult
+		local p, r = comps(handleCF * CFrame.new(0, -k.grip * e.s, 0) * TURN)
+		e.p, e.r = p, r
+		return e
+	end
+	-- still 0: close up, broad side on
+	local meshes, labels = {}, {}
+	for i, key in KEYS do
+		local z0 = (i - 2.5) * 3.4
+		for j, how in { "glb", "now" } do
+			local handleCF = CFrame.new(0, 6, z0 + (j - 1.5) * 1.35)
+			if how == "glb" then
+				table.insert(meshes, glbAt(key, handleCF))
+			else
+				local m, plain = draw(modelOf(key, "now"), key, handleCF, false)
+				for _, e in m do table.insert(meshes, e) end
+				plainInto(0, plain)
+			end
+			table.insert(labels, { p = { 0, 4.85, z0 + (j - 1.5) * 1.35 }, text = if how == "glb" then "his .glb" else "game", h = 0.26,
+				c = if how == "glb" then "#ffffff" else "#7dff9a" })
+		end
+		table.insert(labels, { p = { 0, 4.45, z0 }, text = baked[key].name, h = 0.34, c = "#ffe28a" })
+	end
+	only(0)
+	scene:frame(Vector3.new(-15.5, 6.9, 0), Vector3.new(0, 6.9, 0), { meshes = meshes, labels = labels, fov = 30,
+		caption = "Most detailed: his .glb | the game's (his model on screen). Materials approximated: Studio is the judge" })
+	-- stills 1-3: in the hand, worn, on a stand
+	local lib15 = Instance.new("Folder")
+	for _, inst in roblox.deserializeModel(fs.readFile("huzz-valley/src/ServerStorage/HuzzAnimations.rbxm")) do inst.Parent = lib15 end
+	local Idle = KFS.load(lib15:FindFirstChild("Idle", true))
+	local rigs = {}
+	local function shot(frame, where, keys, caption)
+		local list, lab = {}, {}
+		local n = #keys * 2
+		for i, key in keys do
+			for j, how in { "glb", "now" } do
+				local idx = (i - 1) * 2 + j
+				local rig = scene:addRig(Rig.r15("D" .. frame .. "_" .. idx, { shirt = if where == "back" then "#e6e6ee" else "#3a6fd8", pants = "#2b2f3a" }))
+				table.insert(rigs, rig)
+				local x = (idx - (n + 1) / 2) * (if where == "stand" then 4.2 else 3.0) + (if j == 1 then 0.25 else -0.25)
+				rig.root.CFrame = CFrame.new(x, Rig.REST_HEIGHT, 0) * CFrame.Angles(0, math.rad(if where == "back" then 0 elseif where == "stand" then 180 else 205), 0)
+				local mult = 1
+				local model, pose
+				if where == "stand" then
+					model = KnifeService.display(CoinShop.get(key))
+					assert(Dress.dress(model, bakedOf(key), fakeMake), "dress failed for " .. key)
+					local st = model:GetAttribute("Stretch")
+					mult = if typeof(st) == "Vector3" then st.X else (model:GetAttribute("Scale") or 1)
+					pose = Show.step(Show.new(rig, 3, key), 0.4)
+				else
+					KFS.apply(Idle, rig, 0.8, 1)
+					model = modelOf(key, "now")
+				end
+				Rig.fk(rig)
+				local handle = model:FindFirstChild("Handle", true)
+				local grip = handle:FindFirstChild("Grip")
+				local gripCF = if grip then grip.CFrame else CFrame.identity
+				local handleCF
+				if where == "back" then
+					local shape = KnifeService.shapeOf(model)
+					local wear = KnifeService.wearOf(model, CoinShop.get(key), shape)
+					local torso = rig.parts[KnifeLook.mountPart(wear, false)]
+					handleCF = torso.CFrame * KnifeLook.wornC0(wear, torso.Name, torso.Size, shape) * gripCF:Inverse()
+				elseif where == "stand" then
+					local hand = rig.parts.RightHand
+					local at = Vector3.new(0, -hand.Size.Y / 2 + 0.1, 0)
+					handleCF = hand.CFrame * CFrame.new(at) * Show.knifeTurn(pose, KnifeLook.handC0(at).Rotation) * gripCF:Inverse()
+				else
+					handleCF = rig.parts.RightHand.CFrame * KnifeLook.handC0(Vector3.new(0, -0.15, 0), KnifeService.reachOf(model, handle)) * gripCF:Inverse()
+				end
+				if how == "glb" then
+					table.insert(list, glbScaled(key, handleCF, mult))
+				else
+					local m, plain = draw(model, key, handleCF, false)
+					for _, e in m do table.insert(list, e) end
+					plainInto(frame, plain)
+				end
+				table.insert(lab, { p = { x, if where == "stand" then 7.4 else 6.1, 0 }, text = if how == "glb" then "his .glb" else "game", h = 0.4,
+					c = if how == "glb" then "#ffffff" else "#7dff9a" })
+			end
+			local mid = ((i - 1) * 2 + 1.5 - (n + 1) / 2) * (if where == "stand" then 4.2 else 3.0)
+			table.insert(lab, { p = { mid, if where == "stand" then 8.1 else 6.75, 0 }, text = baked[key].name, h = 0.45, c = "#ffe28a" })
+		end
+		only(frame)
+		return list, lab
+	end
+	-- (each still only draws its own rigs: the earlier stills' rigs move far away)
+	local function park() for _, r in rigs do r.root.CFrame = CFrame.new(0, -500, 0); Rig.fk(r) end end
+	local m1, l1 = shot(1, "hand", KEYS)
+	scene:frame(Vector3.new(0, 4.2, 15.5), Vector3.new(0, 3.4, 0), { meshes = m1, labels = l1, fov = 50, caption = "In the hand (catcher), as HuzzServer/KnifeService holds it" })
+	park()
+	local m2, l2 = shot(2, "back", KEYS)
+	scene:frame(Vector3.new(0, 4.4, 15.5), Vector3.new(0, 3.6, 0), { meshes = m2, labels = l2, fov = 50, caption = "Worn (from behind), as HuzzServer/KnifeService wears it" })
+	park()
+	local m3, l3 = shot(3, "stand", { "CelestialSeraph", "HollowEclipse" })
+	scene:frame(Vector3.new(0, 4.6, 17), Vector3.new(0, 4.2, 0), { meshes = m3, labels = l3, fov = 50, caption = "On a lobby stand, big (KnifeService.display), StandShowcase's ready hold" })
+	local libPath = (process.env.MOTION3D_DIR or ".") .. "/knife_glb_meshes.json"
+	fs.writeFile(libPath, serde.encode("json", lib))
+	scene:save(nil, 30, 1600, 900, { stills = { 0, 1, 2, 3 }, meshFile = libPath, sky = "#20202c", ground = "#3a3a46" })
+	process.exit(0)
+end
+
 -- Still 0: the sheet
-local SHEET = { "TwinFang", "VoidFang", "AbyssEclipse", "SpinKnife", "StormKunai", "CrimsonRequiem", "HollowEclipse", "CelestialSeraph", "DragonsMaw", "FrostboundOath" }
+local SHEET ={ "TwinFang", "VoidFang", "AbyssEclipse", "SpinKnife", "StormKunai", "CrimsonRequiem", "HollowEclipse", "CelestialSeraph", "DragonsMaw", "FrostboundOath" }
 local HOW = { "glb", "before", "now" }
 local HOW_PASS = { "glb", "before", "standin", "now" }
 local COLS, GAP, GROUP, ROW = 5, 1.2, 5.0, 5.2

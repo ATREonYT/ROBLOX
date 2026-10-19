@@ -201,7 +201,7 @@ fine). Owner quotes go in the topic's "Why" part. Keep this core about 20 KB and
     have his 30 knives (Oct 18, finished offline Oct 19) but not the 5 pass or 18 Halloween knives (until then each
     screen draws them from the .glb with
     EditableMesh: only with Game Settings > Security > "Allow Mesh / Image APIs", which needs his ID check; his Oct 19
-    Play showed the plain stand-ins, so turn it on and send the `[HuzzKnife]` line or the red box);
+    Play showed the plain stand-ins because Rojo never sent the meshes (fixed), so turn it on and send the `[HuzzKnife]` line);
     his own place still holds the broken 8 and his 30 without the Oct 19 materials ([knives.md](docs/notes/knives.md),
     "Owner how-to").
   - Import `Lobby_Props.glb`, run SetupLobbyProps, send `HuzzLobbyProps.rbxm` ([lobby.md](docs/notes/lobby.md)).

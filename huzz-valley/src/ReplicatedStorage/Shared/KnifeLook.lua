@@ -4,14 +4,18 @@
 	everyone sees the same and nothing runs every frame.
 
 	Effects climb with the rarity (Config/CoinShop Rarity), always in the knife's own glow colour (its glowing parts,
-	Config/CoinShop Glow), calm, with no flashes:
-	  Common     nothing: his model as it is;
-	  Uncommon   nothing either (it had a white sheen glint: gone Oct 19, it hid his model; his metal shines itself);
-	  Rare       a soft glow: a dim light round the blade;
-	  Epic       + a few small sparkles (3 a second, never more than 4) and the slash trail in its colour;
-	  Legendary  + a small light (Range 4) and its glow and sparkles stay on while it's on your back;
+	Config/CoinShop Glow, else its blade's colour), calm, with no flashes. Oct 19 evening, one step up (owner: "add
+	some vfx ... make the knifes more advanced"), still nothing laid over his model:
+	  Common     a soft slash trail in its own colour on a swing (faint: trailSoft);
+	  Uncommon   + a faint glow round the blade (it had a white sheen glint: gone Oct 19, it hid his model);
+	  Rare       a soft glow, the trail a little stronger, + a few sparkles (1.5 a second);
+	  Epic       + more sparkles (3 a second, never more than 4) and the slash arc in its colour (arc: SlashColor);
+	  Legendary  + a small light (Range 4), its glow and sparkles stay on while it's on your back, and a star glint
+	             at the tip now and then in hand (glint: one about every 3 s, grows and fades over half a second);
 	  Mythic     + a few embers drifting up off the blade.
 	Below Legendary, the knife on your back is just the model (its own Neon parts still glow); effects show in hand.
+	Particles come off the whole blade: a knife made of many blade blocks (the stand-ins) gets an invisible FxBlade
+	part over all of them (HuzzServer/KnifeService), so a stand-in's fire or petals don't all leave one slice.
 	Particles use Roblox's stand-in pictures until the owner uploads ours (Shared/FxTexture).
 
 	Where it sits (owner, Oct 18: "make the knifes please be equipped when you have them, like be shown on the back of
@@ -33,20 +37,22 @@ KnifeLook.ORDER = { "Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic" 
 
 -- Each rarity's effects (numbers are per second / studs). Every rarity has everything the one below it has.
 KnifeLook.LADDER = {
-	Common = {},
-	Uncommon = {},
-	Rare = { glow = { range = 2.5, brightness = 0.5 } },
-	Epic = { glow = { range = 2.5, brightness = 0.6 }, sparkles = 3, trailTint = true },
-	Legendary = { glow = { range = 4, brightness = 1 }, sparkles = 3, trailTint = true, back = true },
-	Mythic = { glow = { range = 4, brightness = 1 }, sparkles = 3, trailTint = true, back = true, embers = 1.5 },
+	Common = { trailTint = true, trailSoft = true },
+	Uncommon = { trailTint = true, trailSoft = true, glow = { range = 2, brightness = 0.35 } },
+	Rare = { glow = { range = 2.5, brightness = 0.5 }, sparkles = 1.5, trailTint = true },
+	Epic = { glow = { range = 2.5, brightness = 0.6 }, sparkles = 3, trailTint = true, arc = true },
+	Legendary = { glow = { range = 4, brightness = 1 }, sparkles = 3, trailTint = true, arc = true, back = true, glint = 3 },
+	Mythic = { glow = { range = 4, brightness = 1 }, sparkles = 3, trailTint = true, arc = true, back = true, glint = 3, embers = 1.5 },
 }
+-- The default knife (no skin): nothing, the plain white smear.
+KnifeLook.NONE = {}
 -- The Game Pass knives (Config/CoinShop Pass, rarity "Exclusive"): Mythic's calm effects, nothing louder.
 KnifeLook.LADDER.Exclusive = KnifeLook.LADDER.Mythic
 KnifeLook.MAX_SPARKLES = 4 -- a second (owner: "dont make it overly crazy")
 
 -- The effects for a skin's rarity (nil / unknown = the default knife: none).
 function KnifeLook.fx(rarity: string?)
-	return KnifeLook.LADDER[rarity or ""] or KnifeLook.LADDER.Common
+	return KnifeLook.LADDER[rarity or ""] or KnifeLook.NONE
 end
 
 -- The colour the knife's effects use: its glowing parts' colour, else its blade's.
@@ -59,7 +65,38 @@ end
 -- Epic and up: the knife's colour fading to white; below that, a faint white smear.
 -- A Game Pass knife's trail is in its element's colours and lasts a little longer (ElementLifetime), so its arc reads
 -- (owner, Oct 19: "better knife animations ... during gameplay").
-KnifeLook.TRAIL = { Lifetime = 0.12, ElementLifetime = 0.17, Tinted = { 0.2, 1 }, Plain = { 0.45, 1 }, LightEmission = 0.8 }
+-- Common and Uncommon (trailSoft, Oct 19 evening): its own colour, as faint as the old white one (Soft), less glow.
+KnifeLook.TRAIL = { Lifetime = 0.12, ElementLifetime = 0.17, Tinted = { 0.2, 1 }, Soft = { 0.45, 1 }, Plain = { 0.45, 1 },
+	LightEmission = 0.8, SoftLightEmission = 0.4 }
+-- The trail's colours, see-through (start, end) and LightEmission for a skin (nil skin = the default knife), as
+-- HuzzServer/KnifeService and Gameplay/AvatarStands build it: { colours = { a, b }, transparency = { a, b }, light }.
+function KnifeLook.trailLook(skin, el)
+	local T = KnifeLook.TRAIL
+	local look = KnifeLook.fx(skin and skin.Rarity)
+	local colour = KnifeLook.colour(skin)
+	local white = Color3.new(1, 1, 1)
+	if el then return { colours = { el.trail[1], el.trail[2] }, transparency = T.Tinted, light = T.LightEmission } end
+	if not (look.trailTint and colour) then return { colours = { white, white }, transparency = T.Plain, light = 0.3 } end
+	if look.trailSoft then -- (its colour, lifted a little so a dark blade's trail still reads)
+		return { colours = { colour:Lerp(white, 0.25), white }, transparency = T.Soft, light = T.SoftLightEmission }
+	end
+	return { colours = { colour, white }, transparency = T.Tinted, light = T.LightEmission }
+end
+
+-- The lobby stands' aura (owner, Oct 19 evening: "make the gamepass characters look better without that green circle
+-- on the bottom, and add some vfx, make the characters more atrractive so people buy the knifes"): no disc under the
+-- feet any more; in the stand's colour (its knife's element light, else the pass colour) a ring of soft specks rises
+-- from round the feet (Motes, from an invisible ring Width wide), a few stars twinkle round the body (Twinkles, in a
+-- column Width x Height), and a soft light sits in front of the chest (Light: Front studs out, Up over the root, its
+-- colour Whiten of the way to white, so faces stay their colour with a hint of it). Calm: under 10 particles a
+-- second, each fades in and out over a second or more, nothing flashes. Gameplay/AvatarStands builds it;
+-- tools/preview/motion3d/stand_knives_scene.luau draws it.
+KnifeLook.AURA = {
+	Width = 3.4, Height = 5.2,
+	Light = { Brightness = 0.7, Range = 7, Front = 2.2, Up = 0.9, Whiten = 0.45 },
+	Motes = { texture = "Glow", rate = 7, life = { 1.6, 2.4 }, speed = { 0.6, 1.1 }, size = 0.5, rise = 0.5, whiten = 0.35 },
+	Twinkles = { texture = "Twinkle", rate = 2.5, life = { 0.9, 1.3 }, size = 0.7, whiten = 0.6 },
+}
 
 -- Long slim blades go at the side (katana style), the rest on the back.
 KnifeLook.SIDE = { MinStuds = 3.0, Slender = 5.5 }

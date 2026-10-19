@@ -152,23 +152,33 @@ for i, item in halloween do
 end
 
 -- effects: calm, and each rarity has what the one below has
-check("Common: no effects", next(KnifeLook.fx("Common")) == nil and next(KnifeLook.fx(nil)) == nil)
-local keys = { "sheen", "glow", "sparkles", "trailTint", "back", "embers" }
+-- (Oct 19 evening, owner: "add some vfx ... make the knifes more advanced": one calm step up)
+check("the default knife: no effects", next(KnifeLook.fx(nil)) == nil)
+check("Common: only a faint trail in its own colour", KnifeLook.fx("Common").trailTint and KnifeLook.fx("Common").trailSoft
+	and not KnifeLook.fx("Common").glow and not KnifeLook.fx("Common").sparkles)
+local keys = { "sheen", "glow", "sparkles", "trailTint", "arc", "back", "glint", "embers" }
 for r = 2, #KnifeLook.ORDER do
 	local lower, this = KnifeLook.fx(KnifeLook.ORDER[r - 1]), KnifeLook.fx(KnifeLook.ORDER[r])
 	for _, k in keys do
 		check(KnifeLook.ORDER[r] .. " keeps " .. k, lower[k] == nil or this[k] ~= nil)
 	end
 end
-check("Uncommon: nothing on his model (the white sheen glint hid it, Oct 19)", next(KnifeLook.fx("Uncommon")) == nil)
+check("Uncommon: a faint glow, nothing laid over his model (the white sheen glint hid it, Oct 19)",
+	KnifeLook.fx("Uncommon").glow and KnifeLook.fx("Uncommon").glow.brightness <= 0.4 and not KnifeLook.fx("Uncommon").sparkles)
 for _, r in KnifeLook.ORDER do check(r .. ": no sheen glint", KnifeLook.fx(r).sheen == nil) end
-check("Rare: a soft glow, no sparkles", KnifeLook.fx("Rare").glow and not KnifeLook.fx("Rare").sparkles)
-check("Epic: sparkles and the tinted slash, not on the back", KnifeLook.fx("Epic").sparkles and KnifeLook.fx("Epic").trailTint and not KnifeLook.fx("Epic").back)
+check("Rare: a soft glow and a few sparkles (under 2 a second)", KnifeLook.fx("Rare").glow and KnifeLook.fx("Rare").sparkles and KnifeLook.fx("Rare").sparkles < 2)
+check("Epic: sparkles, the tinted slash and the arc, not on the back", KnifeLook.fx("Epic").sparkles and KnifeLook.fx("Epic").trailTint
+	and KnifeLook.fx("Epic").arc and not KnifeLook.fx("Epic").back)
+check("Epic: no tip glint (Legendary and up)", not KnifeLook.fx("Epic").glint)
 for _, r in KnifeLook.ORDER do
 	local f = KnifeLook.fx(r)
 	check(r .. ": at most 4 sparkles a second", (f.sparkles or 0) <= 4 and KnifeLook.MAX_SPARKLES <= 4)
 	check(r .. ": a small light", not f.glow or f.glow.range <= 4.5)
+	check(r .. ": a tip glint at most every 2 s (no flashes)", not f.glint or f.glint >= 2)
+	local tl = KnifeLook.trailLook({ Rarity = r, Glow = roblox.Color3.fromRGB(255, 0, 0) }, nil)
+	check(r .. ": the slash trail in its own colour", tl.colours[1].R > 0.9 and tl.colours[1].G < 0.5)
 end
+check("default knife: a faint white trail", KnifeLook.trailLook(nil, nil).colours[1] == roblox.Color3.new(1, 1, 1))
 check("Legendary: light range about 4, glow on the back", KnifeLook.fx("Legendary").glow.range == 4 and KnifeLook.fx("Legendary").back)
 check("Mythic: a few embers", KnifeLook.fx("Mythic").embers and KnifeLook.fx("Mythic").embers <= 2)
 check("trail short (about 0.1 s)", KnifeLook.TRAIL.Lifetime <= 0.15)

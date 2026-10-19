@@ -17,9 +17,9 @@
 	  screen (the server's copies don't reach players). In Studio this works in Play. In the live game Roblox only
 	  allows it when the owner (13+, ID-verified) turns on Game Settings > Security > "Allow Mesh / Image APIs".
 	  Anything that fails (no permission, a phone out of mesh memory, an older Roblox) leaves the stand-in showing: a
-	  knife is never half made (and the stand-in is cut from his .glb too: Shared/KnifeShapes). Output says once
-	  "[HuzzKnife] pass knives as his model: ..." either way; in Studio a failure also shows in the small red problem
-	  box on screen (UI/Report), so the owner can screenshot it (never in the live game: players don't need it).
+	  knife is never half made (and the stand-in is cut from his .glb too: Shared/KnifeShapes). Quietly: Output says
+	  once "[HuzzKnife] pass knives as his model: ..." either way (a warning when it failed), nothing on screen (Oct 19
+	  evening: the red pop-up was in the way).
 	- Each look's mesh is made once per screen and shared by every knife that shows it.
 ]]
 local M = {}
@@ -136,12 +136,11 @@ function M.start()
 	local function report(text, failed: boolean?)
 		if reported then return end
 		reported = true
-		print("[HuzzKnife] pass knives as his model: " .. text)
-		if failed and RunService:IsStudio() then -- (on screen too, once, for a screenshot)
-			pcall(function()
-				local Report = require(script.Parent.Parent:WaitForChild("UI"):WaitForChild("Report"))
-				Report.problem("Pass knives as his model", text .. " (Game Settings > Security > Allow Mesh / Image APIs)")
-			end)
+		-- one Output line, nothing on screen (Oct 19 evening: the red pop-up is gone; the stand-ins just show)
+		if failed then
+			warn("[HuzzKnife] pass knives as his model: " .. text .. (if RunService:IsStudio() then " (Game Settings > Security > Allow Mesh / Image APIs)" else ""))
+		else
+			print("[HuzzKnife] pass knives as his model: " .. text)
 		end
 	end
 	local Net = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Net"))
