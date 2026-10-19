@@ -164,9 +164,14 @@ while `Id = 0`).
   (`HalloweenShop.canPrompt`). A receipt that still arrives for an owned knife (a stale page, bought on another
   server first) gives **crate keys** for that knife's own crate worth its Robux price instead: price / key price,
   rounded (Legendary 149 / 25 = 6 keys, Mythic 249 / 25 = 10 keys). Keys, not Aura, because Aura is only earned,
-  never sold for Robux. Uses the configured prices, not Roblox's live ones.
+  never sold for Robux. Uses the configured prices, not Roblox's live ones. The player is told: "You already had
+  Candy Reaper, so you got 10 Sweets & Treats Crate keys instead." (ShopService sets the Player attribute
+  `HuzzShopNotice` = "<n>|<line>", the Halloween screen shows it as a toast; no new remote).
+- **A paid receipt is always granted,** even if the item was taken off sale while the purchase was on its way:
+  `OnSale` only stops new prompts (`canPrompt`); `HalloweenShop.grant` ignores it (second critic, Oct 19: it used to
+  answer "not processed yet" until Roblox gave up). The rest of the shop's products still check `OnSale` on receipts.
 - Checks: `tests/HalloweenShop.spec` (prices, Id 0, no prompt for an owned knife or without an ID, the receipt rules
-  and the refund keys), `tools/preview/check_halloween.luau` (stands open it, the backfill, odds add to 100, pity,
+  and the refund keys and their line, an off-sale receipt still granted), `tools/preview/check_halloween.luau` (stands open it, the backfill, odds add to 100, pity,
   both prices, not enough Aura, already owned, double tap, a knife not sold here, Id 0 never prompts, an ID prompts,
   the server refuses to prompt an owned knife, receipts once and after the save, an owned knife's receipt gives keys,
   a key used before Aura, OPEN plays the opening).
@@ -175,8 +180,8 @@ while `Id = 0`).
   four knives for coins (4,000 / 8,000), which is the cheaper way to get them, so Aura buyers pay more on purpose.
   The knife cards are pictures rendered from his own meshes (`assets/art/knife-*.png`), drawn by script until he
   uploads them; the knife you then hold is the server's plain stand-in, dressed as his .glb only where Studio allows
-  Mesh / Image APIs, until he imports `Halloween_Knives.glb` ([knives.md](knives.md)). Nothing tells the player that a
-  late receipt became keys (the USE KEY count just goes up).
+  Mesh / Image APIs, until he imports `Halloween_Knives.glb` ([knives.md](knives.md)). The "you got keys instead" line
+  only shows if the Halloween screen was built (it always is in the game; checked offline only).
 
 ## Admin panel (`Screens/Admin` + `HuzzServer/AdminService` + `Shared/AdminRules`)
 - Only the game's owner: Studio, else `player.UserId == game.CreatorId` (a game he owns) or rank 255 in the creator

@@ -82,8 +82,18 @@ local reaperEntry = Shop.knife("CandyReaper")
 check(`refund keys: Mythic {reaperEntry.Keys} (249 / 25 R$), Legendary {Shop.knife("CovenKatana").Keys} (149 / 25 R$)`, reaperEntry.Keys == 10 and Shop.knife("CovenKatana").Keys == 6)
 local okG, what = Shop.grant(fresh, reaper)
 check("receipt: the knife, worn", okG == true and what == "knife" and fresh.Cosmetics.CandyReaper == true and fresh.Wear.Knife == "CandyReaper")
-okG, what = Shop.grant(owner, reaper)
+local note
+okG, what, note = Shop.grant(owner, reaper)
 check(`receipt for a knife you own: {reaperEntry.Keys} Sweets keys instead, knife and worn knife untouched`, okG == true and what == "keys" and owner.CrateKeys.Sweets == 1 + reaperEntry.Keys and owner.Wear.Knife == "VineDagger")
+check(`... and the player is told which knife, how many keys, which crate ({note})`, note == "You already had Candy Reaper, so you got 10 Sweets & Treats Crate keys instead.")
+check("a normal knife receipt needs no extra line", select(3, Shop.grant({ Cosmetics = {}, Wear = {} }, reaper)) == nil)
+-- taken off sale after it was bought: no new prompts, but a paid receipt is still granted (never "not processed")
+local offKnife = table.clone(reaper); offKnife.OnSale = false
+local offKey = table.clone(key); offKey.OnSale = false
+check("off sale: no new prompt", (Shop.canPrompt({ Cosmetics = {} }, offKnife)) == false and (Shop.canPrompt({ Cosmetics = {} }, offKey)) == false)
+local late = { Cosmetics = {}, Wear = {} }
+check("off sale: a paid knife receipt is still granted", (Shop.grant(late, offKnife)) == true and late.Cosmetics.CandyReaper == true)
+check("off sale: a paid key receipt is still granted", (Shop.grant(late, offKey)) == true and late.CrateKeys.Sweets == 1)
 okG, what = Shop.grant(owner, key)
 check("receipt: a crate key adds one", okG == true and what == "key" and owner.CrateKeys.Sweets == 2 + reaperEntry.Keys)
 check("receipt: never another page's product", (Shop.grant(fresh, Products.get("Spins10"))) == false)

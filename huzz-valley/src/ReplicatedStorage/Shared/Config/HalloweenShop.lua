@@ -84,28 +84,31 @@ end
 
 -- What a paid receipt for this page's product gives (ShopService's ProcessReceipt, inside its save write). Returns
 -- false only for a product that isn't this page's (never granted). A crate key: +1 key. A knife: the knife, worn; one
--- you own already: its Keys of its own crate instead (never Robux for nothing). The second result says which.
-function HalloweenShop.grant(data: any, p: any): (boolean, string?)
-	if type(p) ~= "table" or not onPage(p) or not p.OnSale then return false, nil end
+-- you own already: its Keys of its own crate instead (never Robux for nothing). The second result says which; the
+-- third is the line to show the player when a knife became keys. Granted even if the item was taken off sale after
+-- it was bought (OnSale only stops new prompts: canPrompt): a purchase already paid for always gives something.
+function HalloweenShop.grant(data: any, p: any): (boolean, string?, string?)
+	if type(p) ~= "table" or not onPage(p) then return false, nil, nil end
 	data.CrateKeys = data.CrateKeys or {}
 	if p.Kind == "CrateKey" then
-		if not Crates.get(p.Crate or "") then return false, nil end
+		if not Crates.get(p.Crate or "") then return false, nil, nil end
 		data.CrateKeys[p.Crate] = (data.CrateKeys[p.Crate] or 0) + 1
-		return true, "key"
+		return true, "key", nil
 	elseif p.Kind == "Knife" then
 		local k = HalloweenShop.knife(p.Knife or "")
-		if not k then return false, nil end
+		if not k then return false, nil, nil end
 		data.Cosmetics = data.Cosmetics or {}
 		if data.Cosmetics[k.Key] then
 			data.CrateKeys[k.Crate] = (data.CrateKeys[k.Crate] or 0) + (k.Keys :: number)
-			return true, "keys"
+			local crate = Crates.get(k.Crate)
+			return true, "keys", `You already had {p.Name}, so you got {k.Keys} {crate and crate.Name or k.Crate} keys instead.`
 		end
 		data.Cosmetics[k.Key] = true
 		data.Wear = data.Wear or {}
 		data.Wear.Knife = k.Key
-		return true, "knife"
+		return true, "knife", nil
 	end
-	return false, nil
+	return false, nil, nil
 end
 
 return HalloweenShop

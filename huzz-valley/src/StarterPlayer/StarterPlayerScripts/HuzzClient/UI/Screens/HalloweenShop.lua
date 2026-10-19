@@ -9,7 +9,8 @@
 --           "BuyHalloweenKnife": the server checks the price and takes it) or Robux. OWNED once it's yours.
 -- Robux buttons show their price; while a product's Id is 0 (Config/Products.Halloween) tapping one only says it's
 -- coming soon, never a purchase prompt. With an ID the server opens the prompt (ShopService.promptHalloween: never
--- for a knife you own). Robux purchases are granted only by the server (ShopService, Config/HalloweenShop.grant).
+-- for a knife you own). Robux purchases are granted only by the server (ShopService, Config/HalloweenShop.grant);
+-- when a paid knife you already had became crate keys, the server's line (Player attribute HuzzShopNotice) shows here.
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
@@ -111,6 +112,14 @@ function HalloweenShopScreen.build(parent: Instance)
 			return
 		end
 		task.delay(90, function() pending[p.Key] = nil end) -- (never stuck if Roblox doesn't report back)
+	end
+	-- a paid knife you turned out to own already became crate keys: the server says so here ("<n>|<line>")
+	local me = Players.LocalPlayer
+	if me then
+		me:GetAttributeChangedSignal("HuzzShopNotice"):Connect(function()
+			local line = string.match(tostring(me:GetAttribute("HuzzShopNotice") or ""), "^%d+|(.+)$")
+			if line then Toast.show(line) end
+		end)
 	end
 	MarketplaceService.PromptProductPurchaseFinished:Connect(function(userId, id)
 		if Players.LocalPlayer and userId ~= Players.LocalPlayer.UserId then return end

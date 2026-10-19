@@ -159,6 +159,16 @@ check(`the server never prompts a knife you own ({whyR})`, okR == false and #_G.
 check("nor a product without its ID", (act("PromptHalloween", "SweetsCrateKey")) == false and #_G.__prompts == promptsBefore)
 local sweets0 = data.CrateKeys.Sweets or 0
 check("a receipt for a knife you own gives its crate's keys", receipt(555, "h3") == Enum.ProductPurchaseDecision.PurchaseGranted and data.CrateKeys.Sweets == sweets0 + HalloweenShop.knife("CandyReaper").Keys)
+check("... the server sets the line for the player", tostring(me:GetAttribute("HuzzShopNotice")):find("You already had Candy Reaper") ~= nil)
+__fireOn(me, "Attr_HuzzShopNotice") -- (the harness fires attribute signals only when asked)
+task.wait(0.2)
+check(`... and says so on screen ({gui.Toast.Text})`, gui.Toast.Text == "You already had Candy Reaper, so you got 10 Sweets & Treats Crate keys instead.")
+-- taken off sale while a purchase was on its way: the paid receipt is still granted (OnSale only stops new prompts)
+local reaperProduct = Products.get("HalloweenCandyReaper")
+reaperProduct.OnSale = false
+local sweets1 = data.CrateKeys.Sweets
+check("a paid receipt is granted after the item went off sale", receipt(555, "h4") == Enum.ProductPurchaseDecision.PurchaseGranted and data.CrateKeys.Sweets == sweets1 + HalloweenShop.knife("CandyReaper").Keys)
+reaperProduct.OnSale = true
 check("the receipts are in the saved data", table.find(profile.LastSavedData.Receipts, "h1") ~= nil and table.find(profile.LastSavedData.Receipts, "h2") ~= nil)
 task.wait(0.2)
 check(`the crate shows USE KEY ({cratesPage.SectionWitch.Witch.Open.Content.Label.Text})`, cratesPage.SectionWitch.Witch.Open.Content.Label.Text == "USE KEY (1)")

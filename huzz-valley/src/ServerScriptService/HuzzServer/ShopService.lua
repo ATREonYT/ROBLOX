@@ -17,6 +17,7 @@ local DataService = require(script.Parent.DataService)
 local ShopService = {}
 
 local RECEIPT_MEMORY = 100
+local noticeCount = 0 -- (HuzzShopNotice: a fresh number each time)
 
 -- `boughtId`: a pass Roblox just told us this player bought (PromptGamePassPurchaseFinished comes from Roblox, not
 -- the client). Roblox's ownership check can still say "not owned" right after an in-game purchase, so it counts as
@@ -58,8 +59,17 @@ function ShopService.ownsPass(player: Player, key: string): boolean
 	return passes ~= nil and passes[key] == true
 end
 
--- What a developer product gives. Returns false if the product is unknown or not on sale (never grant those).
-local function grant(data, product): boolean
+-- What a developer product gives. Returns false if the product is unknown or not on sale (never grant those), and
+-- for the Halloween shop a line to tell the player when a paid knife became keys.
+-- The Halloween shop's items are granted even when taken off sale since: OnSale only stops new prompts
+-- (HalloweenShop.canPrompt), and a purchase already paid for must always give something.
+local function grant(data, product): (boolean, string?)
+	if product.Kind == "CrateKey" or product.Kind == "Knife" then
+		-- the Halloween shop (Config/HalloweenShop.grant): a crate key; or the knife, worn; or, for a knife already
+		-- yours (a stale page, another server), its crate's keys worth its price, so Robux never buys nothing
+		local ok, _, note = HalloweenShop.grant(data, product)
+		return ok, note
+	end
 	if not product.OnSale then return false end
 	if product.Kind == "Coins" then
 		data.Coins += product.Amount or 0
@@ -71,10 +81,6 @@ local function grant(data, product): boolean
 	elseif product.Kind == "Spins" then -- Spin the Wheel spins (SpinService)
 		data.Spins = (data.Spins or 0) + (product.Amount or 0)
 		return true
-	elseif product.Kind == "CrateKey" or product.Kind == "Knife" then
-		-- the Halloween shop (Config/HalloweenShop.grant): a crate key; or the knife, worn; or, for a knife already
-		-- yours (a stale page, another server), its crate's keys worth its price, so Robux never buys nothing
-		return (HalloweenShop.grant(data, product))
 	end
 	return false
 end
@@ -106,15 +112,21 @@ local function processReceipt(info)
 	end
 	local receipts = profile.Data.Receipts
 	if not table.find(receipts, info.PurchaseId) then
-		local ok = false
+		local ok, note = false, nil
 		DataService.update(player, function(data)
-			ok = grant(data, product)
+			ok, note = grant(data, product)
 			if ok then
 				table.insert(data.Receipts, info.PurchaseId)
 				while #data.Receipts > RECEIPT_MEMORY do table.remove(data.Receipts, 1) end
 			end
 		end)
 		if not ok then return Enum.ProductPurchaseDecision.NotProcessedYet end
+		-- tell the player when a paid knife became keys (Screens/HalloweenShop shows it as a toast). A player
+		-- attribute, so no new remote: "<n>|<line>", n new each time so the same line twice still shows twice
+		if note then
+			noticeCount += 1
+			player:SetAttribute("HuzzShopNotice", `{noticeCount}|{note}`)
+		end
 	end
 	-- Only answer "granted" once the receipt is in a completed save.
 	local function saved() return table.find(profile.LastSavedData.Receipts or {}, info.PurchaseId) ~= nil end
