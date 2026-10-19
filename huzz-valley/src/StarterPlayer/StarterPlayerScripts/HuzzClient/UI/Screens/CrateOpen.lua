@@ -1,12 +1,19 @@
 -- Crate opening (owner, Oct 19: "Also create a good case opening animation"). Opened by Shop > CRATES > OPEN.
 -- The server decides everything first (ActionService "OpenCrate": takes the Aura once, rolls with the shown odds and
 -- the pity counter, gives the prize, and builds the reel from honest draws); this screen only animates to its answer:
---   1. the crate shakes harder and harder, its lid pops off with a ring and sparks (0.85 s);
---   2. a reel of item cards (their real pictures, rims in the rarity colour) opens and spins past the green centre
---      marker, fast at first and easing out for ~5 s to stop on the prize, a soft tick for each card passing;
---   3. the prize card lifts, the rest dim, then it zooms up in front with turning rays in its rarity colour, its name
---      and rarity in big Gotham Heavy Italic and "NEW!" or "Duplicate: +N coins". Rarer prizes get more: Rare rays,
---      Epic one soft flash, Legendary and up a spark burst and a second ring too.
+--   1. the crate rattles harder and harder (faster wooden ticks), its lid pops off with a ring and sparks (0.85 s);
+--   2. a reel of item cards (their real pictures, rims in the rarity colour) opens between two green light rails and
+--      spins past the centre marker, fast at first and easing out for ~4.6 s; light streaks run along the rails with
+--      its speed and each passing card ticks (a little higher as it slows). It runs a few pixels past its stop and
+--      settles back onto the SAME card (an honest settle: the marker never leaves the prize card, no fake near-miss),
+--      with a thunk; the marker takes the prize's rarity colour. Under the reel: the crate's odds by rarity and the
+--      pity line, so the odds stay in view while it spins;
+--   3. the prize card lifts, the rest dim, then it zooms up in front with a burst of light beams in its rarity colour,
+--      a soft glow round the card, its name and rarity in big Gotham Heavy Italic and "NEW!" or "Duplicate: +N coins"
+--      (the prize sound hits with the zoom). Rarer prizes get more: Common a short faint burst, Rare full beams, Epic
+--      white cores in the beams and one soft flash, Legendary and up a spark burst, a second ring and a small shake.
+-- Rarity colours are the Spin wheel's (CrateArt.color): Legendary is pink, never gold (owner: "no gold anywhere").
+-- The HUD's coin count waits for the prize (State.hold("Coins")), so a duplicate's coins don't give it away.
 -- Kid-safe: every card on the reel is a fair draw with the real odds (Shared/CrateRoll.strip), nothing is planted next
 -- to the stop; at most one flash a second; the odds and the pity counter are in the Shop and on this screen.
 -- Tap anywhere while it runs to skip to the prize. OPEN AGAIN opens another (same price), BACK returns to the Shop.
@@ -45,12 +52,20 @@ local START_CARD = 4 -- the card under the marker before the spin (three honest 
 -- the timeline (seconds from the server's answer)
 local T = {
 	ShakeEnd = 0.6, PopEnd = 0.85, ReelIn = 0.62, ReelInLen = 0.3,
-	Spin = 0.8, SpinLen = 5.2, LandLen = 0.5, RevealLen = 0.45,
+	Spin = 0.8, SpinLen = 4.6, SettleLen = 0.4, LandLen = 0.45, RevealLen = 0.45,
 }
-T.SpinEnd = T.Spin + T.SpinLen
+T.Stop = T.Spin + T.SpinLen -- furthest point (OVERSHOOT past the stop)
+T.SpinEnd = T.Stop + T.SettleLen -- settled on the prize
 T.Reveal = T.SpinEnd + T.LandLen
+local OVERSHOOT = 24 -- px the reel runs past its stop before settling back (always still on the prize card)
 local SPARKS = 16
 local RAYS_SPEED = 22 -- degrees a second
+local BEAMS = 14 -- light beams in the prize's burst
+local HALO = 8 -- soft glow layers round the prize card (many faint layers, so no visible steps)
+local TITLE_Y = { Spin = 140, Prize = 40 } -- the title sits just over the crate and reel, then rises for the prize
+local RAIL_Y = { REEL.Y - 18, REEL.Y + REEL.H + 18 }
+local STREAKS = 6 -- light streaks per rail
+local CHIPS = 6 -- odds by rarity under the reel (Common .. Mythic)
 
 local function clamp01(x: number): number return math.clamp(x, 0, 1) end
 local function easeOutBack(u: number): number
@@ -89,7 +104,7 @@ function CrateOpen.build(parent: Instance)
 	local openScale = new("UIScale", { Name = "OpenScale", Parent = group })
 
 	-- top: the crate's name and your Aura
-	local title = words({ Name = "Title", Text = "", TextSize = 44, Position = UDim2.fromOffset(240, 46), Size = UDim2.fromOffset(800, 52), ZIndex = 5, Parent = group }, 3)
+	local title = words({ Name = "Title", Text = "", TextSize = 44, Position = UDim2.fromOffset(240, TITLE_Y.Spin), Size = UDim2.fromOffset(800, 52), ZIndex = 5, Parent = group }, 3)
 	local auraBox = new("Frame", { Name = "Aura", Position = UDim2.fromOffset(1060, 26), Size = UDim2.fromOffset(190, 46), BackgroundColor3 = C.Pill, BackgroundTransparency = 0.15, BorderSizePixel = 0, ZIndex = 5, Parent = group }, { Kit.corner(23), Kit.stroke(C.Frame, 3) })
 	Kit.icon("AuraStar", { Name = "Icon", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 6, 0.5, 0), Size = UDim2.fromOffset(38, 38), ZIndex = 6, Parent = auraBox })
 	local auraText = words({ Name = "Amount", Text = "0", FontFace = F.Number, TextSize = 24, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(52, 0), Size = UDim2.fromOffset(130, 46), ZIndex = 6, Parent = auraBox }, 2)
@@ -117,18 +132,59 @@ function CrateOpen.build(parent: Instance)
 		local p = new("Frame", { Name = if i == 1 then "PointerTop" else "PointerBottom", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, y, if y == 0 then -10 else 10), Size = UDim2.fromOffset(26, 26), Rotation = 45, BackgroundColor3 = C.Accent, BorderSizePixel = 0, ZIndex = 11, Parent = reel }, { Kit.corner(4), Kit.stroke(C.Frame, 3) })
 		pointers[i] = p
 	end
-	local hint = words({ Name = "Hint", Text = "TAP TO SKIP", FontFace = F.Name, TextSize = 18, TextColor3 = C.SubText, Position = UDim2.fromOffset(440, REEL.Y + REEL.H + 26), Size = UDim2.fromOffset(400, 24), ZIndex = 5, Parent = group }, 1.5)
+	-- two green light rails frame the reel (fading at both ends), with streaks of light running along them at the
+	-- reel's speed; they glow brighter while it spins fast
+	local function fadeEnds(inner: number, edge: number): NumberSequence
+		return NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(edge, inner), NumberSequenceKeypoint.new(1 - edge, inner), NumberSequenceKeypoint.new(1, 1) })
+	end
+	local rails, streaks = {}, {}
+	for i, y in RAIL_Y do
+		local rail = new("Frame", { Name = if i == 1 then "RailTop" else "RailBottom", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(CX, y), Size = UDim2.fromOffset(1220, 4), BackgroundColor3 = C.Accent, BorderSizePixel = 0, Visible = false, ZIndex = 3, Parent = group }, { Kit.corner(2) })
+		new("UIGradient", { Transparency = fadeEnds(0, 0.18), Parent = rail })
+		local glow = new("Frame", { Name = "Glow", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(1, 0, 0, 20), BackgroundColor3 = C.Accent, BackgroundTransparency = 0.8, BorderSizePixel = 0, ZIndex = 2, Parent = rail }, { Kit.corner(10) })
+		new("UIGradient", { Transparency = fadeEnds(0, 0.25), Parent = glow })
+		rails[i] = rail
+		for k = 1, STREAKS do
+			local s = new("Frame", { Name = "Streak" .. k, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0, 0.5), Size = UDim2.fromOffset(110, 4), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 4, Parent = rail }, { Kit.corner(2) })
+			new("UIGradient", { Transparency = fadeEnds(0, 0.45), Parent = s })
+			table.insert(streaks, s)
+		end
+	end
+	local hint = words({ Name = "Hint", Text = "TAP TO SKIP", FontFace = F.Name, TextSize = 18, TextColor3 = C.SubText, Position = UDim2.fromOffset(440, 640), Size = UDim2.fromOffset(400, 24), ZIndex = 5, Parent = group }, 1.5)
+	-- under the reel while it spins: the odds by rarity (chips in their colours) and how far the pity counter is
+	local chipRow = new("Frame", { Name = "Odds", Position = UDim2.fromOffset(0, 536), Size = UDim2.fromOffset(W, 34), BackgroundTransparency = 1, Visible = false, ZIndex = 5, Parent = group })
+	local chips = {}
+	for i = 1, CHIPS do
+		local chip = new("Frame", { Name = "Chip" .. i, Size = UDim2.fromOffset(172, 34), BackgroundColor3 = C.Pill, BackgroundTransparency = 0.25, BorderSizePixel = 0, Visible = false, ZIndex = 5, Parent = chipRow }, { Kit.corner(17), new("UIStroke", { Name = "Rim", Color = Color3.new(1, 1, 1), Thickness = 2 }) })
+		new("Frame", { Name = "Dot", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 10, 0.5, 0), Size = UDim2.fromOffset(14, 14), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 6, Parent = chip }, { Kit.corner(7) })
+		words({ Name = "Label", Text = "", FontFace = F.Name, TextSize = 15, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(30, 0), Size = UDim2.fromOffset(136, 34), ZIndex = 6, Parent = chip }, 1.5)
+		chips[i] = chip
+	end
+	local pityNow = words({ Name = "PityNow", Text = "", FontFace = F.Name, TextSize = 17, TextColor3 = C.SubText, Position = UDim2.fromOffset(240, 584), Size = UDim2.fromOffset(800, 24), Visible = false, ZIndex = 5, Parent = group }, 1.5)
 
 	-- the prize, in front: turning rays and a glow in its rarity colour, the card, the big words
 	local flash = new("Frame", { Name = "Flash", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(3, 3), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1, BorderSizePixel = 0, Visible = false, ZIndex = 40, Parent = group })
 	local prize = new("Frame", { Name = "Prize", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(CX, 330), Size = UDim2.fromOffset(320, 344), BackgroundTransparency = 1, Visible = false, ZIndex = 20, Parent = group })
-	-- two layers of rays turning opposite ways (Rare and up), and a soft halo hugging the card (three rims, fading out)
-	local prizeRays = Kit.art("LightRays", { Name = "PrizeRays", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(1000, 1000), ScaleType = Enum.ScaleType.Stretch, ImageTransparency = 0, ZIndex = 17, Parent = prize })
-	local prizeRays2 = Kit.art("LightRays", { Name = "PrizeRaysInner", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(720, 720), Rotation = 30, ScaleType = Enum.ScaleType.Stretch, ImageTransparency = 0, ZIndex = 18, Parent = prize })
+	-- behind the card: soft rays (the kit's LightRays) and a burst of sharp light beams in its rarity colour, turning
+	-- slowly (long and short beams in turn, each fading out towards its tip; white cores for Epic and up), and a soft
+	-- glow hugging the card (HALO faint layers a few px apart, so it fades smoothly instead of in bands)
+	local prizeRays = Kit.art("LightRays", { Name = "PrizeRays", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(900, 900), ScaleType = Enum.ScaleType.Stretch, ImageTransparency = 0.35, ZIndex = 16, Parent = prize })
+	local burst = new("Frame", { Name = "Burst", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(980, 980), BackgroundTransparency = 1, ZIndex = 17, Parent = prize })
+	local burstScale = new("UIScale", { Name = "Grow", Parent = burst })
+	local beams, cores = {}, {}
+	for i = 1, BEAMS do
+		local long = i % 2 == 1
+		local seg = new("Frame", { Name = "Beam" .. i, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(1, 1), Rotation = (i - 1) * 360 / BEAMS, BackgroundTransparency = 1, ZIndex = 17, Parent = burst })
+		local beam = new("Frame", { Name = "Light", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(0, if long then 64 else 40, if long then 0.5 else 0.36, 0), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 17, Parent = seg }, { Kit.corner(if long then 32 else 20) })
+		new("UIGradient", { Rotation = 90, Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.45, 0.55), NumberSequenceKeypoint.new(1, 0.1) }), Parent = beam })
+		local core = new("Frame", { Name = "Core", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(0, if long then 16 else 10, if long then 0.46 else 0.32, 0), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 18, Parent = seg }, { Kit.corner(8) })
+		new("UIGradient", { Rotation = 90, Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.5, 0.6), NumberSequenceKeypoint.new(1, 0.15) }), Parent = core })
+		beams[i], cores[i] = beam, core
+	end
 	local halos = {}
-	for i, h in { { 10, 0.5 }, { 24, 0.74 }, { 44, 0.88 } } do
-		halos[i] = new("Frame", { Name = "Halo" .. i, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(320 + h[1], 344 + h[1]), BackgroundTransparency = h[2], BorderSizePixel = 0, ZIndex = 22 - i, Parent = prize }, { Kit.corner(14 + h[1] // 2) })
-		halos[i]:SetAttribute("Base", h[2])
+	for i = 1, HALO do
+		local grow = i * 7
+		halos[i] = new("Frame", { Name = "Halo" .. i, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(320 + grow, 344 + grow), BackgroundTransparency = 0.88, BorderSizePixel = 0, ZIndex = 21, Parent = prize }, { Kit.corner(14 + grow // 2) })
 	end
 	local prizeCard = new("Frame", { Name = "Card", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(320, 344), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 22, Parent = prize }, { Kit.corner(14), new("UIStroke", { Name = "Rim", Color = Color3.new(1, 1, 1), Thickness = 5 }) })
 	new("UIGradient", { Name = "Fill", Rotation = 90, Color = ColorSequence.new(Color3.fromHex("22306A"), Color3.fromHex("10183A")), Parent = prizeCard })
@@ -138,7 +194,7 @@ function CrateOpen.build(parent: Instance)
 	local prizeName = words({ Name = "PrizeName", Text = "", FontFace = F.Big, TextSize = 38, Position = UDim2.fromOffset(8, 224), Size = UDim2.fromOffset(304, 46), ZIndex = 24, Parent = prizeCard }, 3)
 	local prizeRarity = words({ Name = "Rarity", Text = "", FontFace = F.Big, TextSize = 26, Position = UDim2.fromOffset(8, 270), Size = UDim2.fromOffset(304, 32), ZIndex = 24, Parent = prizeCard }, 2.5)
 	local prizeFoot = new("Frame", { Name = "Foot", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -12), Size = UDim2.fromOffset(200, 8), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 24, Parent = prizeCard }, { Kit.corner(4) })
-	local status = words({ Name = "Status", Text = "", FontFace = F.Big, TextSize = 34, Position = UDim2.fromOffset(240, 510), Size = UDim2.fromOffset(800, 38), Visible = false, ZIndex = 25, Parent = group }, 2.5)
+	local status = words({ Name = "Status", Text = "", FontFace = F.Big, TextSize = 34, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(CX, 529), Size = UDim2.fromOffset(800, 38), Visible = false, ZIndex = 25, Parent = group }, 2.5)
 	local statusPop = new("UIScale", { Name = "Pop", Parent = status })
 	local sub = words({ Name = "Sub", Text = "", FontFace = F.Name, TextSize = 18, TextColor3 = C.SubText, Position = UDim2.fromOffset(240, 550), Size = UDim2.fromOffset(800, 24), Visible = false, ZIndex = 25, Parent = group }, 1.5)
 
@@ -186,21 +242,57 @@ function CrateOpen.build(parent: Instance)
 		local P = crateDef.Pity
 		local pity = (State.data.Pity or {})[crateDef.Id] or 0
 		local left = CrateRoll.left(crateDef, pity)
-		if not P or not left then pityLine.Text = ""; pityTrack.Visible = false; return end
+		if not P or not left then pityLine.Text = ""; pityNow.Text = ""; pityTrack.Visible = false; return end
 		pityTrack.Visible = true
 		pityLine.Text = if left <= 1 then `{P.Rarity} guaranteed on your next open!` else `{P.Rarity} guaranteed in {left} opens`
 		pityFill.Size = UDim2.fromScale(clamp01(pity / P.After), 1)
 		pityFill.BackgroundColor3 = CrateArt.color(P.Rarity)
+		pityNow.Text = pityLine.Text
 	end
 
+	-- the chips under the reel: each rarity in the crate with its total chance (the same numbers as the Shop's list)
+	local function setOdds()
+		local sum, order = {}, {}
+		for _, o in CrateRoll.odds(crateDef) do
+			local r = o.item.Rarity
+			if not sum[r] then sum[r] = 0; table.insert(order, r) end
+			sum[r] += o.chance
+		end
+		table.sort(order, function(a, b) return (CrateRoll.RANK[a] or 0) < (CrateRoll.RANK[b] or 0) end)
+		local n = math.min(#order, CHIPS)
+		local cw, gap = 172, 12
+		local x0 = math.round(CX - (n * cw + (n - 1) * gap) / 2)
+		for i, chip in chips do
+			local r = order[i]
+			chip.Visible = i <= n
+			if r and i <= n then
+				local col = CrateArt.color(r)
+				chip.Position = UDim2.fromOffset(x0 + (i - 1) * (cw + gap), 0)
+				local rim = chip:FindFirstChild("Rim") :: UIStroke
+				rim.Color = col
+				local dot = chip:FindFirstChild("Dot") :: Frame
+				dot.BackgroundColor3 = col
+				local label = chip:FindFirstChild("Label") :: TextLabel
+				label.Text = string.format("%s %g%%", string.upper(r), math.floor(sum[r] * 10 + 0.5) / 10)
+			end
+		end
+	end
+
+	-- x of the strip (window coords) at time t: from START_CARD under the marker it eases out for SpinLen to OVERSHOOT
+	-- px past the stop, then settles back onto it over SettleLen. landOffset is clamped so that both the furthest
+	-- point and the stop are on the prize card (the settle never shows a different card under the marker).
 	local function stripX(t: number): number
-		-- x of the strip (window coords) so that, at spin progress e, the marker sits over card START_CARD + travel
 		local centre = (REEL.W - 8) / 2
 		local from = centre - ((START_CARD - 1) * CARD.Pitch + CARD.W / 2)
 		if not result then return from end
 		local to = centre - ((result.at - 1) * CARD.Pitch + CARD.W / 2 + landOffset)
-		local u = clamp01((t - T.Spin) / T.SpinLen)
-		return from + (to - from) * easeOut(u, 4)
+		local over = if skipped or Motion.reduced then 0 else OVERSHOOT
+		if t < T.Stop then
+			local u = clamp01((t - T.Spin) / T.SpinLen)
+			return from + (to - over - from) * easeOut(u, 3) -- (cubic: the last cards still creep past; quartic sat nearly still for ~1.5 s)
+		end
+		local s = clamp01((t - T.Stop) / T.SettleLen)
+		return to - over * (1 - (1 - math.cos(s * math.pi)) / 2)
 	end
 
 	local function clearCards()
@@ -264,11 +356,14 @@ function CrateOpen.build(parent: Instance)
 		prizeFoot.BackgroundColor3 = col
 		local rim = prizeCard:FindFirstChild("Rim") :: UIStroke
 		rim.Color = col
+		-- more for rarer: Common/Uncommon a smaller, fainter burst; Rare full beams; Epic and up white cores too
 		prizeRays.ImageColor3 = col
-		prizeRays2.ImageColor3 = col:Lerp(Color3.new(1, 1, 1), 0.6)
-		prizeRays.Visible = rank() >= CrateRoll.RANK.Rare
-		prizeRays2.Visible = rank() >= CrateRoll.RANK.Epic
+		local r = rank()
+		for _, b in beams do b.BackgroundColor3 = col; b.BackgroundTransparency = if r >= CrateRoll.RANK.Rare then 0 else 0.35 end
+		for _, c in cores do c.Visible = r >= CrateRoll.RANK.Epic end
+		burst:SetAttribute("Size", if r >= CrateRoll.RANK.Rare then 1 else 0.72)
 		for _, h in halos do h.BackgroundColor3 = col end
+		markerGlow.BackgroundColor3 = col
 		if item.Kind == "Coins" then
 			status.Text, status.TextColor3 = `+{Format.commas(result.coins)} COINS`, C.Text
 			sub.Text = ""
@@ -284,16 +379,22 @@ function CrateOpen.build(parent: Instance)
 		title.Text = if rank() >= CrateRoll.RANK.Epic then string.upper(item.Rarity) .. "!" else "YOU GOT"
 		title.TextColor3 = if rank() >= CrateRoll.RANK.Epic then col else C.Text
 		prize.Visible = true
+		State.release("Coins") -- (the HUD may show the coins now)
 	end
 
 	-- Everything on screen at time t of the timeline (dt: since the last frame).
+	local railPhase = 0
 	local function render(t: number, dt: number)
 		local item = result and crateDef.Items[result.index]
-		-- 1. the crate: shakes harder, then the lid pops off and the box shrinks away
+		local calm = Motion.reduced
+		-- 0. the title sits just over the crate and reel, and rises to the top for the prize
+		local tu = clamp01((t - T.Reveal) / 0.3)
+		title.Position = UDim2.fromOffset(240, math.round(TITLE_Y.Spin + (TITLE_Y.Prize - TITLE_Y.Spin) * easeOut(tu, 3)))
+		-- 1. the crate: rattles harder (a wooden tick on each knock, closer and closer), then the lid pops off
 		local shake = clamp01(t / T.ShakeEnd)
 		if t < T.PopEnd then
 			crate.Visible, crateRays.Visible = true, true
-			local amp = if Motion.reduced then 0 else (2 + 8 * shake * shake)
+			local amp = if calm then 0 else (2 + 8 * shake * shake)
 			crate.Rotation = math.sin(t * 2 * math.pi * 8) * amp
 			if t < T.ShakeEnd then
 				cratePop.Scale = 1 + 0.07 * shake
@@ -315,10 +416,16 @@ function CrateOpen.build(parent: Instance)
 			crateRays.ImageTransparency = 0.72
 			crateRays.Rotation += dt * 20
 		end
+		for k, at in { 0.12, 0.26, 0.37, 0.45, 0.51, 0.56 } do
+			if t >= at and t < T.ShakeEnd and not fired["rattle" .. k] and not skipped then
+				fired["rattle" .. k] = true
+				Sfx.play("roulette_tick", { volume = 0.5 + 0.08 * k, pitch = 0.85 + 0.05 * k })
+			end
+		end
 		-- the pop: a ring and sparks from where the lid was
 		if t >= T.ShakeEnd and not fired.pop and not skipped then
 			fired.pop = true
-			Sfx.play("pick_land")
+			Sfx.play("countdown_go", { volume = 0.7 })
 		end
 		local pu = (t - T.ShakeEnd) / 0.5
 		if pu >= 0 and pu < 1 and not skipped then
@@ -329,25 +436,50 @@ function CrateOpen.build(parent: Instance)
 		elseif t >= T.ShakeEnd + 0.5 and t < T.Reveal then
 			hideFx()
 		end
-		-- 2. the reel opens out of the middle, spins and eases out onto the prize
+		-- 2. the reel opens out of the middle between its rails, spins, runs a little past and settles onto the prize
 		local ru = clamp01((t - T.ReelIn) / T.ReelInLen)
-		reel.Visible = ru > 0
-		reel.Size = UDim2.fromOffset(REEL.W, math.max(2, math.round(REEL.H * math.min(easeOutBack(ru), 1.04))))
-		strip.Position = UDim2.fromOffset(math.round(stripX(t)), CARD.Top - 4)
+		local cu = clamp01((t - T.Reveal) / 0.25) -- (folding away under the prize)
+		reel.Visible = ru > 0 and cu < 0.6 -- (gone before it is a thin line across the prize)
+		local open = if t < T.Reveal then math.min(easeOutBack(ru), 1.04) else 1 - easeOut(cu, 2)
+		reel.Size = UDim2.fromOffset(REEL.W, math.max(2, math.round(REEL.H * open)))
+		local x = stripX(t)
+		strip.Position = UDim2.fromOffset(math.round(x), CARD.Top - 4)
+		local speed = if t > T.Spin and t < T.Stop then math.abs(x - stripX(t - 1 / 60)) * 60 else 0 -- px a second
+		local fast = math.clamp(speed / 3000, 0, 1)
+		-- the rails slide apart with the reel, glow with its speed, and their streaks run with the cards
+		local railOpen = (REEL.H / 2 + 18) * open
+		for i, rail in rails do
+			rail.Visible = ru > 0 and cu < 0.6
+			rail.Position = UDim2.fromOffset(CX, math.round(REEL.Y + REEL.H / 2 + (if i == 1 then -railOpen else railOpen)))
+			rail.BackgroundTransparency = 0.25 - 0.25 * fast
+			local glow = rail:FindFirstChild("Glow") :: Frame
+			glow.BackgroundTransparency = 0.86 - 0.22 * fast
+		end
+		railPhase = (railPhase + speed * dt * 0.2) % 1220
+		for k, s in streaks do
+			local slot = (k - 1) % STREAKS
+			local sx = ((slot * 1220 / STREAKS) - railPhase + (if k > STREAKS then 100 else 0)) % 1220
+			s.Position = UDim2.new(0, math.round(sx), 0.5, 0)
+			s.BackgroundTransparency = 1 - 0.85 * fast
+			s.Visible = fast > 0.02 and not calm
+		end
 		hint.Visible = running and not skipped and t >= T.Spin and t < T.SpinEnd
-		-- a tick for each card that passes the marker (at full speed no more than ~22 a second)
+		-- the odds and the pity line under the reel while it spins (the bottom buttons take their place after)
+		chipRow.Visible = ru > 0 and t < T.Reveal
+		pityNow.Visible = chipRow.Visible and pityNow.Text ~= ""
+		-- a tick for each card that passes the marker (no more than ~22 a second), a little higher as it slows
 		local centre = (REEL.W - 8) / 2
-		local under = math.floor((centre - stripX(t)) / CARD.Pitch) + 1
+		local under = math.floor((centre - x) / CARD.Pitch) + 1
 		if under ~= lastTickCard then
 			lastTickCard = under
-			if t >= T.Spin and t <= T.SpinEnd and t - lastTickAt > 0.045 and not skipped then
+			if t >= T.Spin and t <= T.Stop and t - lastTickAt > 0.045 and not skipped then
 				lastTickAt = t
-				Sfx.play("spin_tick")
+				Sfx.play("spin_tick", { pitch = 1 + 0.18 * (1 - fast) })
 				for _, p in pointers do p.Rotation = 45 + 10 end
 			end
 		end
 		for _, p in pointers do p.Rotation = 45 + (p.Rotation - 45) * math.max(0, 1 - dt * 14) end
-		-- 3. it lands: the prize card lifts, the others dim, the marker glows
+		-- 3. settled: a thunk, the marker takes the prize's colour, the prize card lifts and the others dim
 		local lu = clamp01((t - T.SpinEnd) / 0.35)
 		for i, c in cards do
 			local shade = c:FindFirstChild("Shade") :: Frame?
@@ -362,32 +494,44 @@ function CrateOpen.build(parent: Instance)
 		markerGlow.BackgroundTransparency = 0.7 - 0.35 * lu
 		if t >= T.SpinEnd and not fired.land and item then
 			fired.land = true
-			if not skipped then Sfx.play(if rank() >= CrateRoll.RANK.Epic then "spin_big_win" else "spin_win") end
+			local col = CrateArt.color(item.Rarity)
+			markerGlow.BackgroundColor3 = col
+			for _, p in pointers do p.BackgroundColor3 = col end
+			if not skipped then Sfx.play("pick_land") end
 		end
-		-- 4. the prize in front
+		-- 4. the prize in front (its sound hits with the zoom)
 		if t >= T.Reveal and item then
 			if not fired.reveal then
 				fired.reveal = true
 				showPrize()
-				if skipped then Sfx.play(if rank() >= CrateRoll.RANK.Epic then "spin_big_win" else "spin_win") end
-				if result.new then Sfx.play("reward") end
+				Sfx.play(if rank() >= CrateRoll.RANK.Epic then "spin_big_win" else "spin_win")
 				-- one soft flash for Epic and up (never more than one a second, whoever asks)
-				if rank() >= CrateRoll.RANK.Epic and not skipped and not Motion.reduced and os.clock() - lastFlash >= 1 then
+				if rank() >= CrateRoll.RANK.Epic and not skipped and not calm and os.clock() - lastFlash >= 1 then
 					lastFlash = os.clock()
 					fired.flashAt = true
 					flash.Visible = true
 				end
 			end
+			if result.new and not fired.reward and t >= T.Reveal + 0.35 then
+				fired.reward = true
+				Sfx.play("reward")
+			end
 			local vu = clamp01((t - T.Reveal) / T.RevealLen)
-			prizePop.Scale = if Motion.reduced or skipped then 1 else 0.25 + 0.75 * easeOutBack(vu)
-			prizeRays.Rotation += dt * RAYS_SPEED
-			prizeRays2.Rotation -= dt * RAYS_SPEED * 1.5
+			prizePop.Scale = if calm or skipped then 1 else 0.25 + 0.75 * easeOutBack(vu)
+			-- Legendary and up: the card gives a small shake as it lands (0.3 s, a few px)
+			local ku = (t - T.Reveal - 0.12) / 0.3
+			if rank() >= CrateRoll.RANK.Legendary and not calm and not skipped and ku >= 0 and ku < 1 then
+				prize.Position = UDim2.fromOffset(CX + math.round(math.sin(ku * math.pi * 7) * 6 * (1 - ku)), 330)
+			else
+				prize.Position = UDim2.fromOffset(CX, 330)
+			end
+			-- the burst grows out from the card, then turns slowly; the soft rays turn the other way
+			local gu = clamp01((t - T.Reveal) / 0.6)
+			burstScale.Scale = ((burst:GetAttribute("Size") :: number?) or 1) * (if calm or skipped then 1 else 0.3 + 0.7 * easeOut(gu, 3))
+			burst.Rotation += dt * RAYS_SPEED * (1 + 3 * (1 - gu))
+			prizeRays.Rotation -= dt * RAYS_SPEED * 1.3
 			local breathe = 0.5 + 0.5 * math.sin((t - T.Reveal) * 2.4) -- (a slow swell, about every 2.6 s)
-			for _, h in halos do h.BackgroundTransparency = (h:GetAttribute("Base") :: number) - 0.08 * breathe end
-			-- the reel folds away under the prize (its cut-off cards read as clutter round the card)
-			local cu = clamp01((t - T.Reveal) / 0.25)
-			reel.Visible = cu < 1
-			reel.Size = UDim2.fromOffset(REEL.W, math.max(2, math.round(REEL.H * (1 - easeOut(cu, 2)))))
+			for _, h in halos do h.BackgroundTransparency = 0.9 - 0.035 * breathe end
 			if flash.Visible then
 				local fu = clamp01((t - T.Reveal) / 0.35)
 				flash.BackgroundTransparency = 0.55 + 0.45 * fu
@@ -395,7 +539,7 @@ function CrateOpen.build(parent: Instance)
 			end
 			-- Legendary and up: a spark burst in its colour and a second, bigger ring
 			local bu = (t - T.Reveal - 0.05) / 0.8
-			if rank() >= CrateRoll.RANK.Legendary and not skipped and not Motion.reduced and bu >= 0 and bu < 1 then
+			if rank() >= CrateRoll.RANK.Legendary and not skipped and not calm and bu >= 0 and bu < 1 then
 				local col = CrateArt.color(item.Rarity)
 				ring(1, CX, 330, 640, bu, col, 10)
 				ring(2, CX, 330, 440, clamp01(bu * 1.3), Color3.new(1, 1, 1), 6)
@@ -409,7 +553,7 @@ function CrateOpen.build(parent: Instance)
 			-- the words under it and the buttons
 			local su = clamp01((t - T.Reveal - 0.3) / 0.3)
 			status.Visible, sub.Visible = su > 0, su > 0 and sub.Text ~= ""
-			statusPop.Scale = if Motion.reduced or skipped then 1 else 0.5 + 0.5 * easeOutBack(su)
+			statusPop.Scale = if calm or skipped then 1 else 0.5 + 0.5 * easeOutBack(su)
 			local bu2 = clamp01((t - T.Reveal - 0.45) / 0.3)
 			bottom.Visible = bu2 > 0
 			bottom.Position = UDim2.fromOffset(240, 584 + math.round(40 * (1 - easeOut(bu2, 3))))
@@ -443,11 +587,18 @@ function CrateOpen.build(parent: Instance)
 		crate.Visible, crateRays.Visible, lid.Visible = true, true, true
 		crate.Rotation, cratePop.Scale, lid.Position, lid.Rotation = 0, 1, lidHome, 0
 		reel.Visible, prize.Visible, status.Visible, sub.Visible, bottom.Visible, hint.Visible = false, false, false, false, false, false
+		chipRow.Visible, pityNow.Visible = false, false
+		for _, rail in rails do rail.Visible = false end
+		markerGlow.BackgroundColor3 = C.Accent
+		for _, p in pointers do p.BackgroundColor3 = C.Accent end
+		prize.Position = UDim2.fromOffset(CX, 330)
 		hideFx()
 		title.Text, title.FontFace, title.TextColor3 = string.upper(crateDef.Name), F.Heading, C.Text
+		title.Position = UDim2.fromOffset(240, TITLE_Y.Spin)
 		again.setText(`OPEN AGAIN {crateDef.Price}`)
 		setAura()
 		setPity()
+		setOdds()
 	end
 
 	local function blocked(): boolean
@@ -467,16 +618,19 @@ function CrateOpen.build(parent: Instance)
 		end
 		resetScene()
 		busy = true
+		State.hold("Coins") -- (the HUD keeps showing the old coins until the prize shows: a duplicate's coins would spoil it)
 		local okCall, ok, answer = pcall(function() return (Net.get("Action") :: RemoteFunction):InvokeServer("OpenCrate", crateDef.Id) end)
 		if not okCall or not ok or type(answer) ~= "table" or type(answer.strip) ~= "table" or not crateDef.Items[answer.index] or answer.strip[answer.at] ~= answer.index then
 			busy = false
+			State.release("Coins")
 			Sfx.play("ui_error")
 			Toast.show(if okCall and type(answer) == "string" then answer else "Couldn't open it. Try again.")
 			task.defer(function() if ModalManager.current() == "CrateOpen" then ModalManager.open("Shop", "Crates") end end)
 			return
 		end
 		result = answer
-		landOffset = math.round((math.random() * 2 - 1) * CARD.W * 0.22) -- somewhere on the prize card, never its edge
+		-- somewhere on the prize card, never its edge, and room left for the settle's OVERSHOOT on the same card
+		landOffset = math.round(-CARD.W * 0.3 + math.random() * CARD.W * 0.42)
 		buildCards()
 		setAura()
 		running = true
@@ -517,6 +671,7 @@ function CrateOpen.build(parent: Instance)
 		stop()
 		running, busy = false, false
 		skip.Visible = false
+		State.release("Coins")
 	end
 
 	ModalManager.register("CrateOpen", {

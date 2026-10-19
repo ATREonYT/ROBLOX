@@ -53,6 +53,7 @@ DataService.update(me, function(d) d.Aura, d.Coins = 120, 1000 end)
 __runScript(game.StarterPlayer.StarterPlayerScripts.HuzzClient.Main)
 task.wait(0.3)
 local MM = require(game.StarterPlayer.StarterPlayerScripts.HuzzClient.UI.ModalManager)
+local State = require(game.StarterPlayer.StarterPlayerScripts.HuzzClient.UI.State)
 local gui = me.PlayerGui:FindFirstChild("HuzzUI")
 
 -- 2. Shop > CRATES: the crate, its price, every item's chance (adding to 100), the pity counter
@@ -80,6 +81,7 @@ local Action = RS.Remotes.Action
 local answers = {}
 local realInvoke = Action.InvokeServer
 local flashes, ticks = {}, 0
+local coinsBefore = State.shown("Coins")
 __fireOn(card.Open, "Activated")
 task.wait(0.3)
 check("OPEN goes to the opening screen", MM.current() == "CrateOpen")
@@ -95,9 +97,11 @@ local prizeCard = strip and strip:FindFirstChild("Card" .. Crates.Reel.At)
 local flash = screen and screen:FindFirstChild("Flash", true)
 local soundsBefore = #_G.__sounds
 local wasFlash, hintSeen = false, false
+local minX = math.huge
 local function frames(n)
 	for _ = 1, n do
 		__fireOn(RunService, "RenderStepped", 1 / 30)
+		if strip then minX = math.min(minX, strip.Position.X.Offset) end
 		if flash and flash.Visible and not wasFlash then table.insert(flashes, os.clock()) end
 		wasFlash = flash ~= nil and flash.Visible
 		if screen and screen:FindFirstChild("Hint", true).Visible then hintSeen = true end
@@ -106,6 +110,11 @@ end
 frames(40) -- 1.3 s: shake, pop, the reel opens and starts
 check("the crate popped and the reel is spinning", screen.Group.Crate.Visible == false and screen.Group.Reel.Visible == true)
 check("TAP TO SKIP shows while it spins", hintSeen)
+check("the odds by rarity show under the reel while it spins", screen.Group.Odds.Visible and screen.Group.Odds.Chip1.Visible and screen.Group.Odds.Chip1.Label.Text == "COMMON 50%")
+-- the HUD's coins wait for the prize (a duplicate's coins would give it away)
+DataService.update(me, function(d) d.Coins += 5 end)
+task.wait(0.1)
+check(`the HUD's coins are held while it spins ({State.shown("Coins")} = {coinsBefore})`, State.shown("Coins") == coinsBefore and (State.data.Coins or 0) ~= coinsBefore)
 frames(190) -- to 7.6 s: stops, lands, the prize shows, the buttons come back
 for _, s in table.move(_G.__sounds, soundsBefore + 1, #_G.__sounds, 1, {}) do if s[1] == "spin_tick" then ticks += 1 end end
 local prize = screen.Group.Prize
@@ -122,6 +131,11 @@ local reelX = strip.Position.X.Offset
 local centre = (1100 - 8) / 2
 local cardX = reelX + (Crates.Reel.At - 1) * 162
 check("the marker sits on the prize card", centre >= cardX + 10 and centre <= cardX + 140)
+-- the honest settle: it ran a little past its stop and came back, and at its furthest the marker was still on the prize
+local furthest = centre - (minX + (Crates.Reel.At - 1) * 162)
+check(`the reel ran past and settled back ({reelX - minX} px)`, reelX - minX >= 10 and reelX - minX <= 40)
+check(`at its furthest the marker was still on the prize card ({furthest})`, furthest >= 10 and furthest <= 140)
+check("the HUD shows the coins once the prize shows", State.shown("Coins") == State.data.Coins)
 if item and item.Kind ~= "Coins" then
 	local owned = if item.Kind == "Dance" then data.Dances else data.Cosmetics
 	check("the prize is yours", owned[item.Id] == true)

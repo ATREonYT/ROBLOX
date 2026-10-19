@@ -161,7 +161,7 @@ function LobbyHud.build(parent: Instance)
 	end)
 
 	local function sync(data)
-		coins.setAmount(Format.commas(data.Coins))
+		coins.setAmount(Format.commas(State.shown("Coins"))) -- (held during a crate opening until the prize shows)
 		gems.setAmount(Format.commas(data.Aura or 0))
 		local showHints = State.setting("ShowKeyHints") == true
 		hint.Visible = showHints

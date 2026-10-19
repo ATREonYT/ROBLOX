@@ -63,17 +63,30 @@ while `Id = 0`).
   OPEN 50 with the Aura star) and every item's exact chance in two columns. OPEN is refused in a round or the Secret
   cutscene ("Open crates in the lobby.") and with too little Aura.
 - **The opening** (`Screens/CrateOpen`, 1280 x 720 like the Spin wheel, one RenderStepped loop on its own clock, so
-  the film matches the game): crate shakes harder 0.6 s, lid pops off with a green ring and sparks; the reel opens and
-  spins 5.2 s (ease-out, quartic) under the green marker, `spin_tick` per card (max ~22/s), green light behind it;
-  lands (prize card lifts, others dim, `spin_win`, Epic+ `spin_big_win`); the prize zooms up with a rarity halo, rays
-  (Rare+, a second layer Epic+), one soft flash (Epic+, at most once a second), a spark burst and two rings
-  (Legendary+), its name and rarity in Gotham Heavy Italic, "NEW!" (+ `reward`) or "Duplicate: +N coins" or
-  "+N COINS"; then OPEN AGAIN / BACK and the pity line. Tap anywhere skips to the prize (no flash, no burst); Reduced
-  Motion goes straight there. Escape or the Secret cutscene starting closes it and a toast says what you got.
-- Uses only existing sounds (`pick_land`, `spin_tick`, `spin_win`, `spin_big_win`, `reward`) through `Sfx`, so the
-  Effects volume applies. The crate picture is drawn from UI parts (`UI/CrateArt.crate`): a stand-in until his art.
+  the film matches the game): the crate rattles harder for 0.6 s (six `roulette_tick` knocks, closer and closer), the
+  lid pops off (`countdown_go`) with a green ring and sparks; the reel opens between two green light rails (streaks run
+  along them at the reel's speed) and spins 4.6 s (ease-out, cubic, so the last cards still creep past) under the marker, `spin_tick` per card (max
+  ~22/s, a little higher pitched as it slows); it runs 24 px past its stop and settles back over 0.4 s onto the SAME
+  card (`landOffset` is kept on the left part of the card so the furthest point is on it too: an honest settle, never a
+  fake near-miss), with `pick_land`; the marker turns the prize's rarity colour, the prize card lifts, others dim.
+  Under the reel while it spins: the odds by rarity (chips) and the pity line. Then the prize zooms up with the prize
+  sound (`spin_win`, Epic+ `spin_big_win`; `reward` 0.35 s later if new): a burst of 14 light beams in its rarity
+  colour (smaller and fainter below Rare, white cores Epic+), soft kit rays, a smooth 8-layer glow, one soft flash
+  (Epic+, at most once a second), a spark burst, two rings and a small shake (Legendary+), its name and rarity in
+  Gotham Heavy Italic, "NEW!" or "Duplicate: +N coins" or "+N COINS"; then OPEN AGAIN / BACK and the pity line. Tap
+  anywhere skips to the prize (no settle, flash or burst); Reduced Motion goes straight there. Escape or the Secret
+  cutscene starting closes it and a toast says what you got.
+- **Colours:** rarity colours are the Spin wheel's (`Config/SpinWheel.RarityColors`, Legendary pink FF6FC0) on the
+  crate card, odds, reel and prize (owner: "no gold anywhere"). The girls and the Shop's ITEMS knives still use
+  `Config/Round.Rarities` (Legendary orange): the owner's call whether to change those.
+- **The HUD's coins wait for the prize:** `State.hold("Coins")` before the server call, released at the reveal (a
+  duplicate's coins or a coin prize would give the result away). Aura drops at once (the price you paid).
+- Uses only existing sounds (`roulette_tick`, `countdown_go`, `spin_tick`, `pick_land`, `spin_win`, `spin_big_win`,
+  `reward`) through `Sfx`, so the Effects volume applies. The crate picture is drawn from UI parts
+  (`UI/CrateArt.crate`): a stand-in until his art.
 - Checks: `tests/CrateRoll.spec` (odds, pity, `left`, dupes, honest strip, the live config),
   `tools/preview/check_crates.luau` (contents exist, Shop odds add to 100, Aura taken once, the reel stops on the
+  prize, the settle ran past and back while staying on the prize card, the odds chips, the HUD's coins held until the
   prize, ticks, flash limit, skip, OPEN AGAIN, pity, duplicates, blocked in rounds and the cutscene). Shots
   `shop-crates`, `crate-spin`, `crate-prize`; film `tools/preview/crate_film.sh` → `docs/previews/crate-open.mp4` and
   `crate-open.jpg`.
@@ -90,14 +103,16 @@ while `Id = 0`).
 ## Honest gaps
 - Not seen in Studio yet: stars in the playing zone, the spin animation, Crown Pose, Midnight cape, worn auras, the
   crate opening (its feel, the sounds' levels, the blur behind it).
-- Crates: contents, price and odds are Claude's first pick; the crate picture is drawn (stand-in); the HUD coin pill
-  can show a coin prize a moment before the reel stops (the save updates at once).
+- Crates: contents, price and odds are Claude's first pick; the crate picture is drawn (stand-in); the sounds are our
+  made stand-ins (no whoosh or riser of its own yet).
 
 ## Why it is this way / history
 - The owner picked "Coin cosmetics shop" for coins.
 - **Crates** (owner: "I will add them later"; Oct 19: "Also create a good case opening animation"). No crate mockup
   exists in `design/`, so the Shop card follows the COINS tab's tall cards and the opening screen the Spin wheel's
-  1280 x 720 layout.
+  1280 x 720 layout. Polish pass (owner, Oct 19: "also check the opening animations for the crates"), judged frame by
+  frame against the best Roblox openings: the honest settle, the rails and odds framing the reel, a sharper beam
+  burst, a smooth glow, the coins held, pink Legendary, sounds on the beats (rattle, pop, ticks, thunk, prize).
 - **Aura stars** (owner, Oct 17: "different colors give different amounts ... the ones that give more are rarer").
 - **Admin panel** (owner, Oct 18: "give me a admin command panel or something so i can get any knife or any girl to
   spawn when i want it to do so").

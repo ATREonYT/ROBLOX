@@ -20,6 +20,10 @@ OLD_REV = sys.argv[1] if len(sys.argv) > 1 else "9d46d7b"
 
 # Tokens left out on purpose (token -> why). Keep this short.
 DROPPED = {
+    "brave": "Chicken no longer blocks the girl (owner Oct 19, 'make them get her'): RoundRules lost its brave list",
+    "Safe, but no girl": "the Chicken card now says 'First across wins her' (owner Oct 19)",
+    "Nobody went HERO": "Chicken no longer blocks the girl, so this HUD line is gone (owner Oct 19)",
+    "Chicken gets nothing. Go HERO to win her!": "Chicken no longer blocks the girl (owner Oct 19)",
 }
 # Paths the notes name that only exist once the owner sends a file (path -> why).
 NOT_YET = {

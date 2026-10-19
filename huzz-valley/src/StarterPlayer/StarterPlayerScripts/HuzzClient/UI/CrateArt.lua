@@ -4,11 +4,12 @@
 -- art (then swap crate() for Kit.art). Its lid is its own part, so the opening can pop it off.
 -- Item cards use the game's real pictures: the coin shop's own art (Config/CoinShop Art: trails, name colours, the
 -- owner's knives), the dance's still (DanceStill<Id>) and the coin pack art for coins, with a rim and a foot bar in the
--- rarity's colour (Config/Round.Rarities, as the Shop's ITEMS cards).
+-- rarity's colour (the Spin wheel's rarity colours: see CrateArt.color).
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local CoinShop = require(Shared.Config.CoinShop)
 local Dances = require(Shared.Config.Dances)
 local RoundConfig = require(Shared.Config.Round)
+local SpinWheel = require(Shared.Config.SpinWheel)
 local Theme = require(script.Parent.Theme)
 local Kit = require(script.Parent.Kit)
 
@@ -18,9 +19,13 @@ local hex = Color3.fromHex
 
 local CrateArt = {}
 
+-- Rarity colours: the Spin wheel's (Config/SpinWheel.RarityColors), so both reward screens agree and Legendary is
+-- pink, not the girls' orange-gold (owner: "no gold anywhere", gold "looks so AI"). Mythic and Secret, which the
+-- wheel doesn't have, come from Config/Round (Secret as violet: near-black doesn't read on the dark window).
 local rarityColor: { [string]: Color3 } = {}
 for _, r in RoundConfig.Rarities do rarityColor[r.Name] = r.Color end
-rarityColor.Secret = Color3.fromRGB(150, 110, 255) -- (near-black in the roller; violet reads on the dark window)
+rarityColor.Secret = Color3.fromRGB(150, 110, 255)
+for name, c in SpinWheel.RarityColors do rarityColor[name] = c end
 
 function CrateArt.color(rarity: string): Color3
 	return rarityColor[rarity] or Color3.new(1, 1, 1)

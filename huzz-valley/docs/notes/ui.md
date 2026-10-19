@@ -57,6 +57,16 @@ in core `CLAUDE.md` section 1. Recipe for a new screen: core section 6. Preview 
   exactly as the game. Reel cards are made per open (not saved twins); everything else is a saved part.
 - Big flashes go through one guard (at most one a second); "tap to skip" is a full-screen see-through button that only
   shows while it runs. The harness doesn't fire attribute signals by itself: checks call `__fireOn(p, "Attr_<Name>")`.
+- **Don't spoil the prize:** the save updates the moment the server rolls, so a screen that animates to a result holds
+  the HUD's number until it shows: `State.hold("Coins")` before the call, `State.release("Coins")` at the reveal, on
+  failure and on close. Pills that show a held number read `State.shown(key)` (LobbyHud and Shop coin pills), never
+  `State.data` directly. Aura isn't held: the price is paid at OPEN and showing that at once is honest.
+- Rarity colours on reward screens: the Spin wheel's (`Config/SpinWheel.RarityColors`, Legendary pink FF6FC0) through
+  `CrateArt.color`. `Config/Round.Rarities` (Legendary orange 255,190,60) still colours the girls' screens and the
+  Shop's ITEMS knife rarities (to change only when the owner says).
+- Light beams without uploaded pictures: a rotated full-size frame per beam holding a bar anchored (0.5, 1) at the
+  centre with a UIGradient fading towards its tip (the preview draws frame gradients, not image gradients). A soft glow
+  is many faint layers a few px apart (8 x 0.88 see-through), not 2 or 3 strong ones (those read as bands).
 
 ## Other round screens
 - `Screens/HeroChoice` (60% size), `Screens/NextMap` (your vote tucks into a NEXT MAP panel).

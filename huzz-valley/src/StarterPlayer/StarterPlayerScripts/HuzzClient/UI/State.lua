@@ -32,6 +32,23 @@ function State.apply(snapshot: any)
 	emit()
 end
 
+-- A number the HUD shows, which a screen may hold at its old value for a moment (the crate opening holds Coins
+-- until its prize shows, so the coin pill doesn't give the prize away while the reel still spins).
+local held: { [string]: number } = {}
+function State.hold(key: string)
+	if held[key] == nil then held[key] = State.data[key] or 0 end
+end
+function State.release(key: string)
+	if held[key] == nil then return end
+	held[key] = nil
+	emit()
+end
+function State.shown(key: string): number
+	local h = held[key]
+	if h ~= nil then return h end
+	return State.data[key] or 0
+end
+
 function State.owns(key: string): boolean
 	return State.data.Passes[key] == true or State.data.Cosmetics[key] == true
 end

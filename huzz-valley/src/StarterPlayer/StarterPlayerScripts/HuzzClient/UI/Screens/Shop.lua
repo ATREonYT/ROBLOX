@@ -564,11 +564,11 @@ function Shop.build(parent: Instance)
 				Toast.show(`You unlocked {list}! Wear {if #names == 1 then "it" else "them"} from Shop > Items.`)
 			end
 		end
-		coins.setAmount(Format.commas(data.Coins))
+		coins.setAmount(Format.commas(State.shown("Coins")))
 		gems.setAmount(Format.commas(data.Aura or 0))
 		for _, f in refreshButtons do f() end
 	end)
-	coins.setAmount(Format.commas(State.data.Coins))
+	coins.setAmount(Format.commas(State.shown("Coins")))
 	gems.setAmount(Format.commas(State.data.Aura or 0))
 
 	MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, id) if player == Players.LocalPlayer then onPromptClosed(id, true) end end)
