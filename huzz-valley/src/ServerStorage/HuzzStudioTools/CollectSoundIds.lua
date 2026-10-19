@@ -6,9 +6,12 @@
 -- every sound name the game uses (the keys of Config/SoundIds), so new sounds are never missed
 -- Run it from Studio's Command Bar with this one line (it lives in the place, so nothing to copy from files):
 --   require(game.ServerStorage.HuzzStudioTools.CollectSoundIds)()
+-- A sound it doesn't find keeps the ID already in Config/SoundIds (the Secret cutscene's picks from Roblox's library,
+-- docs/sound-picks.md), so running this never blanks a picked ID.
 return function()
 	local NAMES = {}
-	for name in require(game:GetService("ReplicatedStorage").Shared.Config.SoundIds) do table.insert(NAMES, name) end
+	local current = require(game:GetService("ReplicatedStorage").Shared.Config.SoundIds)
+	for name in current do table.insert(NAMES, name) end
 	table.sort(NAMES)
 	local found = {}
 	for _, d in game:GetDescendants() do
@@ -24,8 +27,9 @@ return function()
 	local missing = {}
 	print("[HuzzSfx] return {")
 	for _, n in NAMES do
-		print(string.format('[HuzzSfx] \t%s = "%s",', n, found[n] or ""))
-		if not found[n] then table.insert(missing, n) end
+		local keep = if type(current[n]) == "string" then current[n] else ""
+		print(string.format('[HuzzSfx] \t%s = "%s",', n, found[n] or keep))
+		if not found[n] and keep == "" then table.insert(missing, n) end
 	end
 	print("[HuzzSfx] }")
 	print(if #missing == 0 then "[HuzzSfx] All " .. #NAMES .. " found." else "[HuzzSfx] Missing: " .. table.concat(missing, ", "))

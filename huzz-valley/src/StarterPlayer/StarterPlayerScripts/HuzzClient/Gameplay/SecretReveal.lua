@@ -785,7 +785,7 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 		if t >= Reveal.BUILD then
 			once("sigil", function()
 				if FxTexture.ready("Sigil") then sigil:Emit(1) end
-				Sfx.play("secret_riser")
+				Sfx.beat("Build") -- (Config/SecretSounds: riser + magic bed)
 			end)
 		end
 		if t >= Reveal.SPARK then once("spark", function() spark0:Emit(1) end) end
@@ -1108,7 +1108,7 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 				if FxTexture.ready("RingHard") then groundRing:Emit(1) end
 				if FxTexture.ready("Streak") then hit.streaks:Emit(30) end
 				hiStroke.FillTransparency, hiStroke.OutlineTransparency = 0, 0
-				Sfx.play("secret_impact")
+				Sfx.beat("Burst") -- (the hit + sparkle tail; cuts the riser)
 			end)
 			-- the white flash on her fades to a soft violet rim that stays while she's on the ground, gone as she rises
 			local x = math.clamp((t - Reveal.IMPACT - 0.1) / 0.35, 0, 1)
@@ -1122,7 +1122,7 @@ local function build(model: Model, base: CFrame, revealAt: number, junk: { Insta
 				if FxTexture.ready("RingSoft") then landRing:Emit(1) end
 				dust:Emit(14)
 				smoke:Emit(16)
-				Sfx.play("secret_land")
+				Sfx.beat("Reveal") -- (the sting as she lands and poses)
 			end)
 			local x = math.clamp((t - Reveal.LAND) / 0.45, 0, 1)
 			dome.Size = Vector3.one * (2 + 12 * (1 - (1 - x) ^ 3)) * k
@@ -1302,6 +1302,7 @@ function M.start()
 		local function finish()
 			if done then return end
 			done = true
+			Sfx.beat("End") -- (fades what still rings)
 			RunService:UnbindFromRenderStep("HuzzSecretReveal")
 			dip:Destroy()
 			pcall(cleanup)

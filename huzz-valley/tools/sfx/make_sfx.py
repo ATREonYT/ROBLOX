@@ -341,10 +341,18 @@ def finish(x, dur, lp=6000, drive=1.2, fout=0.02):
 # ================================================================== the sounds
 SOUNDS = {}
 LOOPS = set()
+# Retired (owner, Oct 19: "find good sounds that fit the secret animation, that fit the clicking better ... don't
+# create random sound by yourself, do a research"): the button sounds and the Secret cutscene sounds are no longer
+# made here. They are real, researched sounds now (docs/sound-picks.md): the buttons are Kenney's CC0 Interface
+# Sounds (assets/sfx/ui_*.ogg, copied in, never regenerated) and the Secret cutscene uses Roblox's licensed library
+# by ID (Config/SoundIds). Their old generators stay below for reference but write nothing.
+RETIRED = {"ui_click", "ui_hover", "ui_open", "ui_close", "secret_riser", "secret_impact", "secret_land"}
 
 
 def sound(name, desc, loop=False):
     def deco(fn):
+        if name in RETIRED:
+            return fn
         SOUNDS[name] = (fn, desc)
         if loop:
             LOOPS.add(name)
@@ -901,6 +909,9 @@ def write_readme(starts):
              "To use in Roblox: upload them (steps in the game's README), then the IDs go in",
              "`Shared/Config/SoundIds.lua`. The game plays them through `Gameplay/Sfx`, which sets each one's",
              "volume. `speed_wind` is a loop: play it with `Sfx.loop`.", "",
+             "Not made here (owner, Oct 19: real researched sounds, see `docs/sound-picks.md`): `ui_click`, `ui_hover`,",
+             "`ui_open`, `ui_close` are Kenney's CC0 Interface Sounds copied in as they are (`LICENSE-kenney.txt`), and",
+             "the Secret cutscene plays Roblox's licensed library by ID. This script never overwrites them.", "",
              "| File | Seconds | Preview at | What it is |", "|---|---|---|---|"]
     for name, (_, desc) in SOUNDS.items():
         p = os.path.join(OUT, name + ".ogg")

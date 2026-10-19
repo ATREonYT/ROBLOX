@@ -13,12 +13,19 @@ To use in Roblox: upload them (steps in the game's README), then the IDs go in
 `Shared/Config/SoundIds.lua`. The game plays them through `Gameplay/Sfx`, which sets each one's
 volume. `speed_wind` is a loop: play it with `Sfx.loop`.
 
+Not made here (owner, Oct 19: real researched sounds, see `docs/sound-picks.md`): `ui_click`, `ui_hover`,
+`ui_open`, `ui_close` are Kenney's CC0 Interface Sounds copied in as they are (`LICENSE-kenney.txt`), and
+the Secret cutscene plays Roblox's licensed library by ID. This script never overwrites them.
+
+| File | Seconds | Kenney file | What it is |
+|---|---|---|---|
+| `ui_click.ogg` | 0.08 | `drop_002` | Button press: a short soft round pop (2 ms attack, centre ~820 Hz, nothing above 4 kHz). |
+| `ui_hover.ogg` | 0.05 | `select_002` | Hover: a tiny lighter tick, same family, played very quietly. |
+| `ui_open.ogg` | 0.21 | `maximize_009` | A window opens: a short soft swell up. |
+| `ui_close.ogg` | 0.21 | `minimize_009` | A window closes: the same swell going down (its mirror). |
+
 | File | Seconds | Preview at | What it is |
 |---|---|---|---|
-| `ui_click.ogg` | 0.08 | 0:00.3 | Soft rounded 'tock' for button presses: short, clean, no harsh highs (owner, Oct 18: "the clicking sounds ... sound glitchy, and dont feel too premium"). |
-| `ui_hover.ogg` | 0.05 | 0:00.8 | The click's little sister: a tiny, very soft higher tock for hovering over buttons. |
-| `ui_open.ogg` | 0.17 | 0:01.3 | Two soft tocks stepping up (C5 then G5) as a panel opens; same voice as the click. |
-| `ui_close.ogg` | 0.16 | 0:01.9 | Two soft tocks stepping down (G5 then C5) as a panel closes; same voice as the click. |
 | `ui_error.ogg` | 0.34 | 0:02.5 | Gentle low two-note 'nuh-uh' for a blocked action. |
 | `coin.ogg` | 0.50 | 0:03.3 | Warm two-note coin chime (G5 then C6) on a soft kalimba body. |
 | `reward.ogg` | 1.00 | 0:04.3 | Rising kalimba arpeggio over a warm C major swell, with a soft sparkle. |
@@ -49,6 +56,3 @@ volume. `speed_wind` is a loop: play it with `Sfx.loop`.
 | `revive.ogg` | 1.05 | 0:33.7 | Gentle rising swell into a warm chord and kalimba run when someone gets back up. |
 | `aura_pickup.ogg` | 0.80 | 0:35.2 | Satisfying thunk plus a bell and sparkle run for grabbing Aura. |
 | `speed_wind.ogg` | 2.00 | 0:36.4 | Soft wind bed for running fast (2 s, loops seamlessly; play it with Sfx.loop). |
-| `secret_riser.ogg` | 2.30 | 0:40.9 | The Secret girl's build-up: a dark hum and an airy whoosh rising together for 2.3 s into silence. |
-| `secret_impact.ogg` | 2.20 | 0:43.6 | The Secret girl bursts out: a deep soft boom, a bright bell chord and sparkles (not harsh). |
-| `secret_land.ogg` | 1.20 | 0:46.3 | She lands: a soft heavy thump with a shimmering ring spreading out. |

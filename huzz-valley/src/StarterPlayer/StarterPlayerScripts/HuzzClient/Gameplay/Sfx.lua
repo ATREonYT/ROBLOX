@@ -11,19 +11,28 @@
 	a ui_* sound asked for again within UI_GAP of the last one is skipped (rapid taps don't pile up, and two
 	handlers answering the same press can't double it). The stand-in click is Roblox's button.wav played lower
 	(pitch 0.9) and quieter until the owner uploads ours.
+	Real, researched sounds (owner, Oct 19: "find good sounds that fit the secret animation, that fit the clicking
+	better ... don't create random sound by yourself"; docs/sound-picks.md): the button sounds are Kenney's CC0
+	Interface Sounds (louder files than ours, so their levels are lower), and the Secret cutscene plays Roblox's
+	licensed library through Sfx.beat("Build" / "Burst" / "Reveal" / "End"), the cues in Config/SecretSounds: each
+	beat starts its sounds and fades out the ones that end there (a riser cut under the burst, the bed at the end).
 	Not started on its own: other parts require it.
 ]]
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local SoundService = game:GetService("SoundService")
 
-local Ids = require(ReplicatedStorage:WaitForChild("Shared").Config.SoundIds)
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Ids = require(Shared.Config.SoundIds)
+local okSecret, SecretSounds = pcall(require, Shared.Config.SecretSounds)
 
 local Sfx = {}
 
 -- How loud each one plays (0-1) and how much its pitch may wander (+/-). Our files all have the same loudness,
 -- so this table is the mix: the quiet ones (hover, ticks, steps, wind) are low on purpose.
 local LEVEL = {
-	ui_click = { 0.35, 0 }, ui_hover = { 0.12, 0 }, ui_open = { 0.3, 0 }, ui_close = { 0.26, 0 }, ui_error = { 0.4, 0 },
+	-- (Kenney's files peak at -1 dB, ours at -3; open/close are ~6 dB louder on average than the click: measured with
+	-- tools/sfx/measure_sfx.py, so they sit lower to land at the same loudness)
+	ui_click = { 0.28, 0 }, ui_hover = { 0.1, 0 }, ui_open = { 0.15, 0 }, ui_close = { 0.13, 0 }, ui_error = { 0.4, 0 },
 	coin = { 0.45, 0.02 }, reward = { 0.55, 0 }, level_up = { 0.6, 0 },
 	countdown_tick = { 0.5, 0 }, countdown_go = { 0.6, 0 },
 	roulette_tick = { 0.3, 0.02 }, pick_land = { 0.55, 0 }, hero_chosen = { 0.6, 0 }, chicken_chosen = { 0.55, 0 },
@@ -33,8 +42,14 @@ local LEVEL = {
 	spin_tick = { 0.3, 0.02 }, spin_win = { 0.55, 0 }, spin_big_win = { 0.65, 0 },
 	lunge = { 0.5, 0.04 }, trap_set = { 0.45, 0 }, trap_snap = { 0.55, 0 }, knock_down = { 0.55, 0 },
 	revive = { 0.55, 0 }, aura_pickup = { 0.5, 0.02 }, speed_wind = { 0.22, 0 },
-	secret_riser = { 0.55, 0 }, secret_impact = { 0.65, 0 }, secret_land = { 0.55, 0 },
+	-- the Secret cutscene (Roblox's library: first guesses from the listings, tune after hearing them in Studio;
+	-- the bed and the tail stay well under the hit and the sting, nothing jumps out)
+	secret_riser = { 0.45, 0 }, secret_shimmer = { 0.18, 0 }, secret_impact = { 0.55, 0 },
+	secret_sparkle = { 0.3, 0 }, secret_sting = { 0.5, 0 }, secret_land = { 0.5, 0 },
 }
+
+-- Sounds longer than 4 s (a stuck sound is cleared after this many seconds, or 4).
+local LIFE = { secret_riser = 8, secret_shimmer = 20, secret_sparkle = 11, secret_sting = 11 }
 
 -- Roblox's own sounds standing in until ours are uploaded: { id, volume multiplier, pitch }.
 -- Owner: "not some random high pitch sounds". So: never above pitch 1.1, soft clicks for the UI, and no stand-in
@@ -130,7 +145,8 @@ local function readyCopies(name: string): { Sound }?
 		s.SoundId = id
 		s.Volume = volume
 		s.PlaybackSpeed = pitch
-		s.SoundGroup = group(name)
+		local g = group(name)
+		if g then s.SoundGroup = g end
 		s.Parent = home()
 		list[i] = s
 	end
@@ -156,7 +172,8 @@ function Sfx.play(name: string, opts: { volume: number?, pitch: number?, at: Ins
 		turn[name] = (turn[name] or 0) % #list + 1
 		local s = list[turn[name]]
 		local id, volume, pitch = source(name)
-		s.SoundGroup = group(name)
+		local g = group(name)
+		if g then s.SoundGroup = g end
 		s.Volume = volume * (o.volume or 1)
 		s.PlaybackSpeed = pitch * (o.pitch or 1) * (1 + (math.random() * 2 - 1) * level[2])
 		s.TimePosition = 0
@@ -172,7 +189,8 @@ function Sfx.play(name: string, opts: { volume: number?, pitch: number?, at: Ins
 	s.SoundId = id
 	s.Volume = volume * (o.volume or 1)
 	s.PlaybackSpeed = pitch * (o.pitch or 1) * (1 + (math.random() * 2 - 1) * level[2])
-	s.SoundGroup = group(name)
+	local g = group(name)
+	if g then s.SoundGroup = g end
 	if o.at then
 		s.RollOffMaxDistance = 90
 		s.RollOffMinDistance = 8
@@ -184,12 +202,49 @@ function Sfx.play(name: string, opts: { volume: number?, pitch: number?, at: Ins
 			s:Destroy()
 		end)
 	end)
-	task.delay(4, function() -- (in case Ended never fires: a sound that failed to load)
+	task.delay(LIFE[name] or 4, function() -- (in case Ended never fires: a sound that failed to load)
 		if s.Parent then
 			s:Destroy()
 		end
 	end)
 	return s
+end
+
+-- Fades a playing sound to silence over `time` seconds, then removes it.
+local function fadeOut(s: Sound, time: number)
+	task.spawn(function()
+		local from, t0 = s.Volume, os.clock()
+		while s.Parent do
+			local x = if time > 0 then math.min((os.clock() - t0) / time, 1) else 1
+			s.Volume = from * (1 - x)
+			if x >= 1 then break end
+			task.wait(0.03)
+		end
+		pcall(function() s:Stop() end)
+		s:Destroy()
+	end)
+end
+
+-- The Secret cutscene's sounds by beat (Config/SecretSounds): Sfx.beat("Build"), "Burst", "Reveal", "End".
+-- Each beat first fades out the sounds that end there, then starts its own (after their Delay).
+local live: { [string]: Sound } = {} -- the playing sound of each secret slot
+function Sfx.beat(beat: string)
+	if not okSecret or type(SecretSounds) ~= "table" then return end
+	for _, f in SecretSounds.fades(beat) do
+		local s = live[f.slot]
+		live[f.slot] = nil
+		if s and s.Parent then fadeOut(s, f.fade) end
+	end
+	for _, cue in SecretSounds.cues(beat) do
+		local function start()
+			local old = live[cue.Slot]
+			if old and old.Parent then fadeOut(old, 0.1) end -- (a replay never doubles a sound)
+			-- (guarded: a sound that fails must never stop the cutscene that asked for it)
+			local ok, s = pcall(Sfx.play, cue.Slot)
+			live[cue.Slot] = if ok then s else nil
+		end
+		if cue.Delay and cue.Delay > 0 then task.delay(cue.Delay, start) else start() end
+	end
 end
 
 -- A looping sound (speed_wind) that plays until you stop it: local s = Sfx.loop("speed_wind") ... s:Destroy().
@@ -206,7 +261,8 @@ function Sfx.loop(name: string, opts: { volume: number?, pitch: number?, at: Ins
 	s.Looped = true
 	s.Volume = level[1] * (o.volume or 1)
 	s.PlaybackSpeed = o.pitch or 1
-	s.SoundGroup = group(name)
+	local g = group(name)
+	if g then s.SoundGroup = g end
 	if o.at then
 		s.RollOffMaxDistance = 90
 		s.RollOffMinDistance = 8

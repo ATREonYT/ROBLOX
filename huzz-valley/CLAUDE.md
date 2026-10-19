@@ -90,7 +90,7 @@ Owner's own words are in quotes. Read only the section you need.
 ## 4. Checks, previews, builds (Lune 0.10.5 at `/root/bin/lune`; run before every commit)
 - `PATH=/root/bin:$PATH bash tools/check.sh`: compiles every script; specs (RoundRules, CarryMath, GirlMotion,
   GirlMoves, StabMotion, DownMotion, Movement, Locomotion, PlayerMoves, GirlRoll, CrateRoll, SpinWheel, Leaderboards,
-  Knives, KnifeWear, KnifeShapes, Sounds, SetupKnives, AdminRules, StandShowcase, LobbyLayout, SetupLobbyProps); **the full-game simulation** (`tools/sim/round_sim.luau`: real server code, bots
+  Knives, KnifeWear, KnifeShapes, Sounds, SoundPicks, SetupKnives, AdminRules, StandShowcase, LobbyLayout, SetupLobbyProps); **the full-game simulation** (`tools/sim/round_sim.luau`: real server code, bots
   that run, stab, lunge, rescue, use powers; 7 setups). `lune run huzz-valley/tools/sim/round_sim.luau audit` (repo root) prints the
   loop numbers (stage times, waiting, win rates by player count, on the real map size) for `docs/loop-audit.md`. Its stubs (e.g. `KnifeService`) must get any new function
   RoundService calls, or games stop with "attempt to call a nil value".
@@ -146,7 +146,8 @@ Owner's own words are in quotes. Read only the section you need.
 - **New image:** drop the owner's PNG in `assets/icons` or `assets/art`, run `python3 tools/icons/pack_images.py`,
   use it with `Kit.icon(name)` / `Kit.art(name)`. Names are case-sensitive in Roblox.
 - **New sound:** add it to `tools/sfx/make_sfx.py`, regenerate, add the key to `Config/SoundIds` as "" and play it
-  with `Sfx.play`; the owner uploads it later.
+  with `Sfx.play`; the owner uploads it later. Clicks, the Secret cutscene and dance music are never made here:
+  pick real licensed ones (section 12, `docs/sound-picks.md`).
 - **New quest stat or reward:** count it from a real server event with `ProgressService.addStat(player, stat, n)`; chapters in
   `Config/Progression`.
 
@@ -819,16 +820,41 @@ Owner's own words are in quotes. Read only the section you need.
   game. Checks `tests/AdminRules.spec` (a non-admin is refused), `tools/preview/check_admin.luau` (the real server).
 
 ## 12. Sounds
+- **Real, researched sounds for clicks, the Secret cutscene and the dances** (owner Oct 19: "don't create random
+  sound by yourself, do a research of what sounds good and not, and then logically select the best sounds/songs").
+  **Never synthesize these three again** (`make_sfx.py` skips them: `RETIRED`). Research, picks, sources and reasons:
+  `docs/sound-picks.md`; spec `tests/SoundPicks.spec` (every ID "" or rbxassetid with its store URL in the file and
+  the doc, never invented).
+  - **Safe sources, in order:** (1) Roblox's licensed library: uploads by **@Monstercat**, **@APMOfficial**,
+    **@ProSoundEffects** ("(SFX)" titles). Public, free in any experience, plays in Studio and live, nothing to upload.
+    Check the uploader: look-alike fan uploads exist. (2) CC0 packs (Kenney, freesound CC0, OpenGameArt CC0): the
+    owner uploads them, then they're private to him (a group game needs them uploaded to / shared with the group).
+    Never pop songs, other games' sounds or random community uploads.
+  - Cloud sessions can't open roblox.com (WebFetch/curl blocked): find IDs with WebSearch limited to
+    `create.roblox.com` (the result URLs carry the ID); GitHub clones work for CC0 packs.
+  - **Clicks:** Roblox's licensed UI files are many-takes-in-one or high beeps, so the family is Kenney's CC0 Interface
+    Sounds picked by numbers (`tools/sfx/measure_sfx.py`: 30-150 ms, soft 2 ms front, centroid ~0.8-1.4 kHz, ~0%
+    above 4 kHz): click `drop_002`, hover `select_002`, open `maximize_009` (rises), close `minimize_009` (falls), in
+    `assets/sfx/ui_*.ogg` + `LICENSE-kenney.txt`; listen `docs/previews/ui-sounds-oct19.ogg`. IDs "" until he uploads.
+  - **Secret cutscene:** keyed to beats, not seconds (`Config/SecretSounds`: Build = riser + glistening bed, Burst =
+    magic hit + pixie-dust tail and the riser cut under it, Reveal = APM's 8 s fantasy sting, End = fades);
+    `Gameplay/SecretReveal` calls `Sfx.beat(...)`. Pro Sound Effects + APM IDs in `Config/SoundIds`.
+  - **Dances:** 11 Monstercat/APM tracks for 25 dances by style (`Config/Dances` `Music` -> `Tracks`; Crab Rave for
+    the meme dances, breakbeat for b-boy, electro swing for Swing/Flapper...); dance tempos measured by
+    `motion3d/dance_tempo.luau` (reliable only where it says strength > 0.4). `Gameplay/Music.dance` plays it for you
+    only, looped, at 0.22 (background 0.3) and dips the background to 35%; `danceStop` fades it (DancePlayer calls
+    both). `Start` offsets are 0 until someone listens.
+  - **Owner verifies:** paste `tools/studio/check-sound-picks.lua` in the Command Bar: `[HuzzSfx] OK/MISSING`,
+    `PLAYS/WON'T PLAY` per ID, each played for 4 s. Levels are first guesses until he hears them.
 - **Button sounds** (owner Oct 18: "they sound glitchy, and dont feel too premium"): one press = one sound. Kit
   buttons sound on `MouseButton1Down` (only the button on top gets it; `InputBegan` could also reach buttons behind
   an open window, so one click could sound 2-3 times a little out of step), touch on `Activated`; `Sfx` skips the
   same ui_* sound within `UI_GAP` (0.08 s for clicks), replays preloaded copies (never a cut-off), no pitch wobble,
-  through the Interface group. `ui_click`/`ui_hover`/`ui_open`/`ui_close` remade as one soft rounded "tock" family
-  (72 ms click, 2 ms fade-in, nothing above 3 kHz; `tock()` in make_sfx.py); listen `docs/previews/click-before-after.ogg`.
-  They play only after he uploads them and sends the IDs; until then Roblox's button.wav stands in at pitch 0.9,
+  through the Interface group. Until he uploads the Kenney files Roblox's button.wav stands in at pitch 0.9,
   quieter (open/close stay silent). Spec `tests/Sounds.spec`.
-- 34 sounds made from scratch (`tools/sfx/make_sfx.py` → `assets/sfx/*.ogg`; all in a row in
-  `docs/previews/sfx-preview.ogg`): warm, C major pentatonic, brightness under 2.5 kHz, even loudness.
+- The other ~30 game sounds are still made from scratch (`tools/sfx/make_sfx.py` → `assets/sfx/*.ogg`; all in a row
+  in `docs/previews/sfx-preview.ogg`, which still has the old ui/secret ones): warm, C major pentatonic, brightness
+  under 2.5 kHz, even loudness.
 - `Gameplay/Sfx.play(name, {volume, pitch, at})`, `Sfx.loop("speed_wind")`. `Config/SoundIds` stays "" until the
   owner bulk-imports the files in Asset Manager and sends the IDs (`tools/studio/collect-sound-ids.lua` prints
   them). Built-in stand-ins meanwhile, never pitched above 1.1; silence beats a squeaky ping.

@@ -13,6 +13,9 @@ local AnimationLibrary = require(Shared.AnimationLibrary)
 local State = require(script.Parent.State)
 
 local Net = require(Shared.Net)
+-- each dance's song (owner, Oct 19: "find the sounds we can use for all of the dances"): Gameplay/Music plays it for
+-- you only while you dance (Config/Dances Music -> Tracks) and dips the background under it
+local okMusic, Music = pcall(function() return require(script.Parent.Parent:WaitForChild("Gameplay", 5):WaitForChild("Music", 5)) end)
 
 local DancePlayer = {}
 local SYNC_RANGE = 30 -- studs
@@ -80,6 +83,7 @@ function DancePlayer.stop()
 	local t = track
 	track, playing = nil, nil
 	if t then pcall(function() t:Stop(0.25) end) end
+	if okMusic and Music then pcall(Music.danceStop) end
 	pcall(function() (Net.get("Dance") :: RemoteEvent):FireServer(nil) end)
 	emit()
 end
@@ -102,6 +106,7 @@ function DancePlayer.play(id: string): (boolean, string?)
 	made.Priority = Enum.AnimationPriority.Action
 	made:Play(0.25)
 	track, playing, startedAt = made, id, os.clock()
+	if okMusic and Music then pcall(Music.dance, id) end
 	-- on the beat of anyone near already doing it, else from now
 	local now = workspace:GetServerTimeNow()
 	local beat = partnerStart(id) or now

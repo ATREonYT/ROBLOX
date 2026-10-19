@@ -4,11 +4,16 @@
 -- Music Volume, Background Music ON/OFF, Next Song). Winner_Music_Showcase plays over the end of every game: the
 -- background fades out under it and comes back after. The Secret cutscene fades it out too. Each player's client
 -- plays its own copy (a song set to play by itself in the place is stopped by the server's Bootstrap).
+-- Dance songs (owner, Oct 19: "find the sounds we can use for all of the dances"): Music.dance(id) plays that dance's
+-- song from Config/Dances (Monstercat / APM, Roblox's licensed library) for you only, looped, quieter than the
+-- background (Dances.MusicVolume), and dips the background to Dances.MusicDuck of its volume; Music.danceStop()
+-- fades it out and brings the background back. UI/DancePlayer calls both. No song = no dip.
 local SoundService = game:GetService("SoundService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared.Config.Music)
+local okDances, Dances = pcall(require, Shared.Config.Dances)
 
 local Music = {}
 
@@ -86,17 +91,32 @@ local function make(song: { id: string, volume: number }, name: string): Sound
 	s.SoundId = song.id
 	s.Volume = 0
 	s.Looped = false
-	s.SoundGroup = group()
+	local g = group()
+	if g then s.SoundGroup = g end
 	s.Parent = home()
 	return s
 end
 
+-- Each sound's own level (what the fades move). A background song plays at its level x duckNow, so a dance song
+-- can dip it without fighting its fades. (A plain table, cleared in gone(): never a weak table keyed by Instance.)
+local level: { [Sound]: number } = {}
+local duckWant, duckNow = 1, 1
+local bgNow: Sound? = nil -- the background song playing now
+local function apply(s: Sound)
+	s.Volume = (level[s] or 0) * (if s.Name == "Song" then duckNow else 1)
+end
+local function gone(s: Sound)
+	level[s] = nil
+	s:Destroy()
+end
+
 -- Moves a sound's volume to `to` over `time` seconds (stops early if `stop()` says so).
 local function fade(s: Sound, to: number, time: number, stop: (() -> boolean)?)
-	local from, t0 = s.Volume, os.clock()
+	local from, t0 = level[s] or s.Volume, os.clock()
 	while s.Parent do
 		local x = math.min((os.clock() - t0) / time, 1)
-		s.Volume = from + (to - from) * x
+		level[s] = from + (to - from) * x
+		apply(s)
 		if x >= 1 or (stop and stop()) then break end
 		task.wait(0.05)
 	end
@@ -123,9 +143,47 @@ function Music.skip(): boolean
 	return true
 end
 
--- Fades the background out for `seconds` (the Secret cutscene).
+-- The dance song playing now (only you hear it), and which dance it's for.
+local danceSound: Sound? = nil
+local danceFor: string? = nil
+
+-- Fades your dance song out and lets the background come back up.
+function Music.danceStop()
+	duckWant = 1
+	local s = danceSound
+	danceSound, danceFor = nil, nil
+	if s then
+		s.Name = "DanceFading"
+		task.spawn(function()
+			fade(s, 0, if okDances then Dances.MusicFadeOut else 0.8)
+			gone(s)
+		end)
+	end
+end
+
+-- Plays the song of this dance (Config/Dances Music -> Tracks), looped, and dips the background under it.
+-- Nothing when the dance has no song, its Id is "", or Background Music is off in Settings.
+function Music.dance(id: string)
+	if danceFor == id and danceSound and danceSound.Parent then return end
+	Music.danceStop()
+	if not okDances or not enabled() or winnerPlaying or os.clock() < quietUntil then return end
+	local track = Dances.track(id)
+	if not track then return end
+	local s = make({ id = track.Id, volume = Dances.MusicVolume }, "Dance")
+	s.Looped = true
+	pcall(function() s.TimePosition = track.Start or 0 end)
+	danceSound, danceFor = s, id
+	duckWant = Dances.MusicDuck
+	s:Play()
+	task.spawn(function()
+		fade(s, Dances.MusicVolume, Dances.MusicFadeIn, function() return danceSound ~= s end)
+	end)
+end
+
+-- Fades the background out for `seconds` (the Secret cutscene); a dance song stops too.
 function Music.quiet(seconds: number)
 	quietUntil = math.max(quietUntil, os.clock() + seconds)
+	Music.danceStop()
 end
 
 -- The win song over the end of a game; the background comes back once it ends.
@@ -133,6 +191,7 @@ function Music.winner()
 	local song = winnerSong()
 	if not song or not enabled() or winnerPlaying then return end
 	winnerPlaying = true
+	Music.danceStop()
 	task.spawn(function()
 		local s = make(song, "Winner")
 		task.wait(0.4) -- (let the background start fading first)
@@ -143,7 +202,7 @@ function Music.winner()
 			while s.Parent and playing(s) and os.clock() < untilT and enabled() do task.wait(0.25) end
 			fade(s, 0, FADE_OUT)
 		end
-		s:Destroy()
+		gone(s)
 		winnerPlaying = false
 	end)
 end
@@ -185,13 +244,14 @@ function Music.start()
 			last = song.id
 			skipAsked = false
 			local s = make(song, "Song")
+			bgNow = s
 			s:Play()
 			if loaded(s) then
 				local function interrupted() return skipAsked or not enabled() or quiet() end
 				fade(s, song.volume, FADE_IN, interrupted)
 				while s.Parent and playing(s) do
 					if skipAsked or not enabled() then break end
-					if not s.SoundGroup then s.SoundGroup = group() end
+					if not s.SoundGroup then local g = group(); if g then s.SoundGroup = g end end
 					if quiet() then -- fade out, wait, carry on where it was
 						fade(s, 0, FADE_OUT)
 						s:Pause()
@@ -204,8 +264,21 @@ function Music.start()
 				end
 				if playing(s) then fade(s, 0, if skipAsked then 0.4 else FADE_OUT) end
 			end
-			s:Destroy()
+			gone(s)
 			task.wait(if skipAsked then 0.2 else GAP)
+		end
+	end)
+	-- the dip under a dance song: eases over ~0.4 s each way; a dance song stops if Background Music is turned off
+	task.spawn(function()
+		while true do
+			task.wait(0.05)
+			if danceSound and not enabled() then Music.danceStop() end
+			if duckNow ~= duckWant then
+				local step = 0.05 / 0.4 * (1 - (if okDances then Dances.MusicDuck else 0.35))
+				duckNow = if duckNow < duckWant then math.min(duckWant, duckNow + step) else math.max(duckWant, duckNow - step)
+				local s = bgNow
+				if s and s.Parent then apply(s) end
+			end
 		end
 	end)
 	-- a song set to play by itself in the place: stop it here too, in case it started before the server could

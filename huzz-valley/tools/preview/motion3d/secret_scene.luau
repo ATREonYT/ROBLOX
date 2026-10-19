@@ -180,7 +180,7 @@ services.ReplicatedStorage = { WaitForChild = function(_, n) return if n == "Sha
 local Motion = { reduced = process.env.SECRET_CALM == "1" }
 local client = {
 	UI = { Motion = { __value = Motion } },
-	Gameplay = { Sfx = { __value = { play = function() end } } },
+	Gameplay = { Sfx = { __value = { play = function() end, beat = function() end } } },
 }
 client.UI.WaitForChild = function(self, n) return self[n] end
 client.WaitForChild = function(self, n) return self[n] end
