@@ -45,5 +45,58 @@ local item, nextPity = CrateRoll.roll(crate, 9, function() return 0 end)
 check("10th open is the top prize", item.Rarity == "Legendary" and nextPity == 0)
 item, nextPity = CrateRoll.roll(crate, 2, function() return 0 end)
 check("a common open counts up", item.Rarity == "Common" and nextPity == 3)
+
+-- opens left until the top prize is certain (shown as "Legendary guaranteed in N opens")
+check("left: fresh crate shows After", CrateRoll.left(crate, 0) == 10)
+check("left: 1 = the next open", CrateRoll.left(crate, 9) == 1)
+check("left: no pity, no counter", CrateRoll.left({ Items = crate.Items }, 3) == nil)
+-- duplicates pay coins back: one number, or one per rarity
+check("dupe coins: a number", CrateRoll.dupeCoins({ Duplicate = 120 }, crate.Items[2]) == 120)
+check("dupe coins: by rarity", CrateRoll.dupeCoins({ Duplicate = { Rare = 200 } }, crate.Items[2]) == 200)
+check("dupe coins: none", CrateRoll.dupeCoins({}, crate.Items[2]) == 0)
+check("indexOf finds the item", CrateRoll.indexOf(crate, crate.Items[3]) == 3)
+
+-- The reel (kid-safe: honest filler, nothing planted): the prize sits where the server says, and every other card is
+-- a plain draw with the shown odds (never pity: a reel near the guarantee still shows mostly Commons).
+local strip = CrateRoll.strip(crate, 3, 48, 40, rand)
+check("strip length", #strip == 48)
+check("strip: prize at its spot", strip[40] == 3)
+local tally, cards = { 0, 0, 0 }, 0
+for _ = 1, 400 do
+	local s = CrateRoll.strip(crate, 3, 48, 40, rand)
+	for i, v in s do
+		if i ~= 40 then tally[v] += 1; cards += 1 end
+	end
+end
+check("strip filler: commons about 70%", math.abs(tally[1] / cards - 0.70) < 0.02)
+check("strip filler: legendaries about 5%", math.abs(tally[3] / cards - 0.05) < 0.01)
+-- next to the stop is no likelier to be the top prize than anywhere else (no near-miss teasing)
+local beside, n = 0, 0
+for _ = 1, 3000 do
+	local s = CrateRoll.strip(crate, 1, 48, 40, rand)
+	for _, i in { 39, 41 } do
+		n += 1
+		if s[i] == 3 then beside += 1 end
+	end
+end
+check("strip: legendary beside the stop only at its real 5%", math.abs(beside / n - 0.05) < 0.012)
+
+-- The live Starter Crate: odds add to 100, every rarity is real, the guarantee is a real rarity in it, the reel
+-- fits the prize. (That every item exists in CoinShop / Dances is checked in tools/preview/check_crates.luau.)
+local Crates = require("../src/ReplicatedStorage/Shared/Config/Crates")
+for _, c in Crates.List do
+	local total, hasTop = 0, false
+	for _, it in c.Items do
+		total += it.Weight
+		check(c.Id .. ": " .. it.Name .. " has a real rarity", CrateRoll.RANK[it.Rarity] ~= nil)
+		check(c.Id .. ": " .. it.Name .. " has a kind", it.Kind == "Coins" or it.Kind == "Cosmetic" or it.Kind == "Dance")
+		if c.Pity and CrateRoll.RANK[it.Rarity] >= CrateRoll.RANK[c.Pity.Rarity] then hasTop = true end
+	end
+	check(c.Id .. ": weights add up", total > 0)
+	check(c.Id .. ": has a pity counter", c.Pity ~= nil and c.Pity.After > 0)
+	check(c.Id .. ": its guarantee can come out", hasTop)
+	check(c.Id .. ": price in Aura", c.Price > 0)
+end
+check("reel: prize card inside the reel", Crates.Reel.At < Crates.Reel.Length and Crates.Reel.At > 5)
 print(string.format("CrateRoll: %d passed, %d failed", passed, failed))
 if failed > 0 then error("CrateRoll spec failed") end

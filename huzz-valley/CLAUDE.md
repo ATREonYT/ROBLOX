@@ -192,10 +192,11 @@ fine). Owner quotes go in the topic's "Why" part. Keep this core about 20 KB and
   - Import `Lobby_Props.glb`, run SetupLobbyProps, send `HuzzLobbyProps.rbxm` ([lobby.md](docs/notes/lobby.md)).
   - Developer Product IDs (Sunset Trail, Blossom Aura, coin packs, spins 1/10/100).
   - Upload sounds, pictures and animations (`Config/SoundIds`, `Config/ImageIds`, `tools/studio/publish-animations.lua`).
-  - An export of their spin wheel model (match its colours); power icons; a stab animation; crate contents; dance
-    names; movement pack licence; sharp PNGs for the Oct 17 screens (today mockup crops, placeholders).
+  - An export of their spin wheel model (match its colours); power icons; a stab animation; his crate design
+    (contents, price, art: the Starter Crate is our first pick, [economy.md](docs/notes/economy.md)); dance names;
+    movement pack licence; sharp PNGs for the Oct 17 screens (today mockup crops, placeholders).
 - **Known gaps (ours):**
-  - Not done yet (need screens): a Crates tab so Aura has a use, a dot on Menu when a quest can be claimed.
+  - Not done yet (needs a screen): a dot on Menu when a quest can be claimed.
   - A refunded pass doesn't take its knives back yet.
   - LIKE THE GAME!, WITCH'S BREW and SWEETS & TREATS open nothing yet; titles on the three-pad side sit close.
   - The podium boards are hard to read from the spawn (his build, his call: [lobby.md](docs/notes/lobby.md)).

@@ -1,4 +1,4 @@
--- Shop (design/pages/01, 07; ITEMS and COINS after the owner's Oct 17 mockup): Passes / Cosmetics / Items / Coins
+-- Shop (design/pages/01, 07; ITEMS and COINS after the owner's Oct 17 mockup): Passes / Cosmetics / Items / Crates / Coins
 -- tabs over one stationary window. PASSES opens on the 5 knife Game Pass cards (owner, Oct 18: "please add the knifes
 -- into the ui for the gamepass menu, these are going to be the gamepasses users can buy"; his mockup
 -- design/knives/Five_Elemental_Knife_Cards.png), with the VIP and Dance Pack banners under them.
@@ -14,7 +14,10 @@ local CoinShop = require(Shared.Config.CoinShop)
 local RoundConfig = require(Shared.Config.Round)
 local Format = require(Shared.Format)
 local KnifeLook = require(Shared.KnifeLook)
+local Crates = require(Shared.Config.Crates)
+local CrateRoll = require(Shared.CrateRoll)
 local UI = script.Parent.Parent
+local CrateArt = require(UI.CrateArt)
 local Theme = require(UI.Theme)
 local Kit = require(UI.Kit)
 local State = require(UI.State)
@@ -430,7 +433,70 @@ local function buildItems(body: Frame)
 	end
 end
 
-local BUILD = { Passes = buildPasses, Cosmetics = buildCosmetics, Items = buildItems, Coins = buildCoins }
+-- CRATES (owner: "create a good case opening animation"; no mockup yet, so the COINS tab's tall card for the crate):
+-- the crate (drawn: CrateArt, a stand-in until his art), its pity counter ("GUARANTEED LEGENDARY in N opens", from the
+-- save) and OPEN with its Aura price; beside it every item's exact chance (kid-safe: never hidden odds), in two
+-- columns. OPEN goes to the opening screen (Screens/CrateOpen), which asks the server; not in a round or a cutscene.
+local CRATE = { W = 206, H = 212, OddsX = 216, RowW = 222, RowH = 29, RowGap = 1, ColGap = 8 }
+local function buildCrates(body: Frame)
+	for _, crate in Crates.List do
+		local c = new("Frame", { Name = crate.Id, Position = UDim2.fromOffset(0, 1), Size = UDim2.fromOffset(CRATE.W, CRATE.H), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = body }, { Kit.corner(6), Kit.stroke(COIN.Rim, 2) })
+		new("UIGradient", { Rotation = 90, Color = ColorSequence.new(Color3.fromHex("1B1850"), COIN.FillBottom), Parent = c })
+		Effects.rays(c, UDim2.fromOffset(CRATE.W // 2, 82), 160, { color = C.Accent, transparency = 0.7, seconds = 18, z = 1, name = "CrateRays" })
+		CrateArt.crate(c, 100, UDim2.fromOffset(CRATE.W // 2, 80), "CratePicture")
+		Effects.shine(c, { every = 5, corner = 6, strength = 0.25, z = 9 })
+		local title = Kit.name({ Name = "Name", Text = crate.Name, FontFace = Theme.Fonts.Heading, TextSize = 19, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(0, 7), Size = UDim2.new(1, 0, 0, 24), ZIndex = 3, Parent = c })
+		new("UIStroke", { Name = "Outline", Color = C.TitleStroke, Thickness = 1.5, LineJoinMode = Enum.LineJoinMode.Round, Parent = title })
+		local top = crate.Pity and crate.Pity.Rarity or ""
+		local pityHead = Kit.text({ Name = "PityLabel", Text = `GUARANTEED {string.upper(top)}`, FontFace = Theme.Fonts.Heading, TextSize = 11, TextColor3 = CrateArt.color(top), TextXAlignment = Enum.TextXAlignment.Center, TextWrapped = false, Position = UDim2.fromOffset(0, 131), Size = UDim2.new(1, 0, 0, 13), ZIndex = 3, Parent = c })
+		new("UIStroke", { Name = "Outline", Color = C.TitleStroke, Thickness = 1.2, Parent = pityHead })
+		local pityText = Kit.name({ Name = "Pity", Text = "", FontFace = Theme.Fonts.Name, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(0, 144), Size = UDim2.new(1, 0, 0, 16), ZIndex = 3, Parent = c })
+		local track = new("Frame", { Name = "PityTrack", Position = UDim2.fromOffset(14, 162), Size = UDim2.fromOffset(CRATE.W - 28, 6), BackgroundColor3 = C.TrackRim, BorderSizePixel = 0, ZIndex = 3, Parent = c }, { Kit.corner(3) })
+		local fill = new("Frame", { Name = "Fill", Size = UDim2.fromScale(0, 1), BackgroundColor3 = CrateArt.color(top), BorderSizePixel = 0, ZIndex = 3, Parent = track }, { Kit.corner(3) })
+		local b = Kit.button({ Name = "Open", Text = `OPEN {crate.Price}`, Icon = "AuraStar", IconAfter = true, IconSize = 24, Gap = 6, TextSize = 21, FontFace = Theme.Fonts.Heading, Style = "Selected", Corner = 6, Position = UDim2.fromOffset(9, 172), Size = UDim2.fromOffset(CRATE.W - 18, 34), ZIndex = 4, Parent = c })
+		local function refresh()
+			local pity = (State.data.Pity or {})[crate.Id] or 0
+			local left = CrateRoll.left(crate, pity)
+			pityText.Text = if left == nil then "" elseif left <= 1 then "on your next open!" else `in {left} opens`
+			fill.Size = UDim2.fromScale(if crate.Pity then math.clamp(pity / crate.Pity.After, 0, 1) else 0, 1)
+			b.setStyle(if (State.data.Aura or 0) >= crate.Price then "Selected" else "Disabled")
+		end
+		b.onClick(function()
+			local player = Players.LocalPlayer
+			local role = player:GetAttribute("HuzzRole")
+			if role == "Runner" or role == "Catcher" or player:GetAttribute("HuzzChoosing") == true or player:GetAttribute("HuzzCinematic") == true then
+				Toast.show("Open crates in the lobby.")
+				return
+			end
+			local have = State.data.Aura or 0
+			if have < crate.Price then
+				Toast.show(`You need {crate.Price - have} more Aura. Collect stars on the field!`)
+				return
+			end
+			ModalManager.open("CrateOpen", crate.Id)
+		end)
+		table.insert(refreshButtons, refresh)
+		refresh()
+
+		-- every item and its exact chance, rarest last, two columns
+		local odds = CrateRoll.odds(crate)
+		local rows = math.ceil(#odds / 2)
+		for i, o in odds do
+			local col, r = (i - 1) // rows, (i - 1) % rows
+			local it = o.item
+			local row = new("Frame", { Name = "Odds" .. i, Position = UDim2.fromOffset(CRATE.OddsX + col * (CRATE.RowW + CRATE.ColGap), 1 + r * (CRATE.RowH + CRATE.RowGap)), Size = UDim2.fromOffset(CRATE.RowW, CRATE.RowH), BackgroundColor3 = C.Row, BackgroundTransparency = Theme.Transparency.Row, BorderSizePixel = 0, Parent = body }, { Kit.corner(5) })
+			new("Frame", { Name = "RarityBar", Position = UDim2.fromOffset(0, 0), Size = UDim2.new(0, 4, 1, 0), BackgroundColor3 = CrateArt.color(it.Rarity), BorderSizePixel = 0, ZIndex = 2, Parent = row }, { Kit.corner(2) })
+			CrateArt.picture(row, it, 40, 25, 4, UDim2.fromOffset(8, 2), 2)
+			local nm = Kit.name({ Name = "Name", Text = it.Name, FontFace = Theme.Fonts.Name, TextSize = 13, Position = UDim2.fromOffset(54, 1), Size = UDim2.fromOffset(104, 15), ZIndex = 3, Parent = row })
+			Kit.fitLine(nm, 104, 13, 10, true)
+			local rr = Kit.text({ Name = "Rarity", Text = string.upper(it.Rarity), FontFace = Theme.Fonts.Heading, TextSize = 9, TextColor3 = CrateArt.color(it.Rarity), TextWrapped = false, Position = UDim2.fromOffset(54, 16), Size = UDim2.fromOffset(104, 11), ZIndex = 3, Parent = row })
+			new("UIStroke", { Name = "Outline", Color = C.TitleStroke, Thickness = 1, Parent = rr })
+			Kit.text({ Name = "Chance", Text = string.format("%g%%", math.floor(o.chance * 10 + 0.5) / 10), FontFace = Theme.Fonts.Number, TextSize = 15, TextXAlignment = Enum.TextXAlignment.Right, TextWrapped = false, Position = UDim2.fromOffset(158, 0), Size = UDim2.fromOffset(CRATE.RowW - 166, CRATE.RowH), ZIndex = 3, Parent = row })
+		end
+	end
+end
+
+local BUILD = { Passes = buildPasses, Cosmetics = buildCosmetics, Items = buildItems, Coins = buildCoins, Crates = buildCrates }
 
 function Shop.build(parent: Instance)
 	-- Flat (no CanvasGroup): the shine streaks keep moving, and a CanvasGroup would redraw the whole Shop for each.
@@ -467,10 +533,11 @@ function Shop.build(parent: Instance)
 		Motion.stagger(cards())
 	end
 	tabs = Kit.tabs(panel, {
-		{ Key = "Passes", Text = "PASSES", X = 16, Width = 150 },
-		{ Key = "Cosmetics", Text = "COSMETICS", X = 170, Width = 170 },
-		{ Key = "Items", Text = "ITEMS", X = 344, Width = 170 }, -- the coin shop
-		{ Key = "Coins", Text = "COINS", X = 518, Width = 169 },
+		{ Key = "Passes", Text = "PASSES", X = 16, Width = 131 },
+		{ Key = "Cosmetics", Text = "COSMETICS", X = 151, Width = 131 },
+		{ Key = "Items", Text = "ITEMS", X = 286, Width = 131 }, -- the coin shop
+		{ Key = "Crates", Text = "CRATES", X = 421, Width = 131 }, -- opened with Aura (five tabs now: the kit had four)
+		{ Key = "Coins", Text = "COINS", X = 556, Width = 131 },
 	}, 52, 30, show) -- y 52: the tab row's top in references 01, 07 and 08 (51 window-relative, plus its 1 px rim)
 
 	local function openTab(key: string)

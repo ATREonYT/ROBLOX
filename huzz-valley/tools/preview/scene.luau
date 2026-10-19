@@ -21,6 +21,8 @@ DataService.update(player, function(d)
 	d.Aura = tonumber(cfg.GEMS) or 320
 	for key in string.gmatch(cfg.OWN or "", "[^,]+") do d.Cosmetics[key] = true end
 end)
+-- CRATEPITY=n: opens since the Starter Crate's Legendary (29 = the next open is one).
+if cfg.CRATEPITY then DataService.update(player, function(d) d.Pity.Starter = tonumber(cfg.CRATEPITY) end) end
 -- SPINS=n, FREEIN=seconds to the free spin, PITY=spins since a Legendary, BOOST=seconds of x2 coins: the Spin the
 -- Wheel's saved state (SCREEN="SpinWheel").
 if cfg.SPINS then
@@ -187,6 +189,10 @@ if cfg.SELECT then
 	assert(cardButton, "no card " .. tostring(cfg.SELECT))
 	__fireOn(cardButton, "Activated")
 	task.wait(0.2)
+end
+-- CRATE_T=<seconds>: the crate opening (SCREEN="CrateOpen", TAB=crate id) that far into its timeline (frames of 1/30 s).
+if cfg.CRATE_T then
+	for _ = 1, math.round(tonumber(cfg.CRATE_T) * 30) do __fireOn(game:GetService("RunService"), "RenderStepped", 1 / 30) end
 end
 for _ = 1, 40 do __stepTweens(0.05) end
 task.wait(0.6) -- staggered slide-ins start on real-time delays; let them start, then finish them

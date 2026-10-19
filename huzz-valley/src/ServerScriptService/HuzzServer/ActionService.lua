@@ -114,8 +114,11 @@ function VERBS.Wear(player, slot, key)
 	return ok, why
 end
 
--- Crates (Config/Crates, Shared/CrateRoll): costs Aura, rolled here with the shown odds and the pity counter.
--- Returns true and what came out (its name), or false and why.
+-- Crates (Config/Crates, Shared/CrateRoll): costs Aura, rolled here with the shown odds and the pity counter, all in
+-- one save write (the Aura is taken once, whatever the client does). The client only animates to the answer:
+-- true and { crate, index (in crate.Items), name, rarity, new (first time you own it), coins (what was added: a coin
+-- prize or a duplicate's coins back), pity (opens since the top prize), left (opens until it's certain), strip (the
+-- reel: item numbers, honest draws), at (the prize's card on it) }, or false and why.
 local crateRandom = Random.new()
 function VERBS.OpenCrate(player, crateId)
 	local crate = type(crateId) == "string" and Crates.get(crateId)
@@ -126,17 +129,26 @@ function VERBS.OpenCrate(player, crateId)
 		data.Aura -= crate.Price
 		local item, pity = CrateRoll.roll(crate, data.Pity[crate.Id] or 0, function() return crateRandom:NextNumber() end)
 		data.Pity[crate.Id] = pity
+		local isNew, coins = false, 0
 		if item.Kind == "Coins" then
-			data.Coins += item.Amount or 0
+			coins = item.Amount or 0
 		elseif item.Kind == "Cosmetic" or item.Kind == "Dance" then
 			local owned = if item.Kind == "Cosmetic" then data.Cosmetics else data.Dances
-			if owned[item.Id] then
-				data.Coins += crate.Duplicate or 0 -- (a duplicate turns into coins)
+			if owned[item.Id] or (item.Kind == "Dance" and DataService.ownedDances(player)[item.Id]) then
+				coins = CrateRoll.dupeCoins(crate, item) -- (a duplicate turns into coins)
 			else
 				owned[item.Id] = true
+				isNew = true
 			end
 		end
-		ok, result = true, item.Name
+		data.Coins += coins
+		local index = CrateRoll.indexOf(crate, item) or 1
+		local R = Crates.Reel
+		ok, result = true, {
+			crate = crate.Id, index = index, name = item.Name, rarity = item.Rarity, new = isNew, coins = coins,
+			pity = pity, left = CrateRoll.left(crate, pity),
+			strip = CrateRoll.strip(crate, index, R.Length, R.At, function() return crateRandom:NextNumber() end), at = R.At,
+		}
 	end)
 	return ok, result
 end

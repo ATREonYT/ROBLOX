@@ -48,9 +48,35 @@ while `Id = 0`).
 - Worn auras: `AuraLook.worn` (their look: [effects.md](effects.md)); Crown Pose: `Shared/CrownPose` +
   `Gameplay/CrownPose` (cooldown); Midnight = tint + cape. Not seen in Studio yet: Crown Pose, Midnight cape, worn auras.
 
-## Crates
-- **Crates** (`Config/Crates`, `Shared/CrateRoll` with odds + pity) are plumbed but empty until the owner designs them.
-  Not done yet (needs a screen): a Crates tab so Aura has a use.
+## Crates (`Config/Crates`, `Shared/CrateRoll`, ActionService `OpenCrate`, Shop > CRATES, `Screens/CrateOpen`)
+- **One live crate, Claude's first pick** waiting on the owner's own crate design: the **Starter Crate**, 50 Aura, only
+  things that already exist: 150 / 400 coins, coin shop looks (Rusty Shiv, Box Cutter, Pink Name, Jade Kunai, Mint
+  Trail, Thunder Fang, Ocean Trail, Candy Trail, Storm Kunai, Void Fang, Galaxy Trail) and the Robot dance. Common 50%,
+  Uncommon 27%, Rare 15%, Epic 6%, Legendary 2% (Void Fang 1%, Galaxy Trail 1%); a Legendary at the latest on the
+  30th open. A look you own already pays coins back by rarity (50 / 100 / 200 / 400 / 1,000). No Dance Pack dances
+  (the pass sells them), no rewards, pass, quest or wheel prizes. Aura is only earned, never sold for Robux.
+- **The server decides first:** `OpenCrate` takes the Aura once, rolls with the shown odds and pity, gives the prize
+  and answers `{ index, name, rarity, new, coins, pity, left, strip, at }`. `strip` is the reel: 48 honest draws with
+  the shown odds (never pity, nothing planted next to the stop: `CrateRoll.strip`, spec checks the cards beside the
+  stop are Legendary only at the real rate), the prize on card 40.
+- **Shop > CRATES** (a 5th tab): the crate card (drawn crate, "GUARANTEED LEGENDARY in N opens" + bar from the save,
+  OPEN 50 with the Aura star) and every item's exact chance in two columns. OPEN is refused in a round or the Secret
+  cutscene ("Open crates in the lobby.") and with too little Aura.
+- **The opening** (`Screens/CrateOpen`, 1280 x 720 like the Spin wheel, one RenderStepped loop on its own clock, so
+  the film matches the game): crate shakes harder 0.6 s, lid pops off with a green ring and sparks; the reel opens and
+  spins 5.2 s (ease-out, quartic) under the green marker, `spin_tick` per card (max ~22/s), green light behind it;
+  lands (prize card lifts, others dim, `spin_win`, Epic+ `spin_big_win`); the prize zooms up with a rarity halo, rays
+  (Rare+, a second layer Epic+), one soft flash (Epic+, at most once a second), a spark burst and two rings
+  (Legendary+), its name and rarity in Gotham Heavy Italic, "NEW!" (+ `reward`) or "Duplicate: +N coins" or
+  "+N COINS"; then OPEN AGAIN / BACK and the pity line. Tap anywhere skips to the prize (no flash, no burst); Reduced
+  Motion goes straight there. Escape or the Secret cutscene starting closes it and a toast says what you got.
+- Uses only existing sounds (`pick_land`, `spin_tick`, `spin_win`, `spin_big_win`, `reward`) through `Sfx`, so the
+  Effects volume applies. The crate picture is drawn from UI parts (`UI/CrateArt.crate`): a stand-in until his art.
+- Checks: `tests/CrateRoll.spec` (odds, pity, `left`, dupes, honest strip, the live config),
+  `tools/preview/check_crates.luau` (contents exist, Shop odds add to 100, Aura taken once, the reel stops on the
+  prize, ticks, flash limit, skip, OPEN AGAIN, pity, duplicates, blocked in rounds and the cutscene). Shots
+  `shop-crates`, `crate-spin`, `crate-prize`; film `tools/preview/crate_film.sh` → `docs/previews/crate-open.mp4` and
+  `crate-open.jpg`.
 
 ## Admin panel (`Screens/Admin` + `HuzzServer/AdminService` + `Shared/AdminRules`)
 - Only the game's owner: Studio, else `player.UserId == game.CreatorId` (a game he owns) or rank 255 in the creator
@@ -62,10 +88,16 @@ while `Id = 0`).
 - Checks `tests/AdminRules.spec` (a non-admin is refused), `tools/preview/check_admin.luau` (the real server).
 
 ## Honest gaps
-- Not seen in Studio yet: stars in the playing zone, the spin animation, Crown Pose, Midnight cape, worn auras.
+- Not seen in Studio yet: stars in the playing zone, the spin animation, Crown Pose, Midnight cape, worn auras, the
+  crate opening (its feel, the sounds' levels, the blur behind it).
+- Crates: contents, price and odds are Claude's first pick; the crate picture is drawn (stand-in); the HUD coin pill
+  can show a coin prize a moment before the reel stops (the save updates at once).
 
 ## Why it is this way / history
 - The owner picked "Coin cosmetics shop" for coins.
+- **Crates** (owner: "I will add them later"; Oct 19: "Also create a good case opening animation"). No crate mockup
+  exists in `design/`, so the Shop card follows the COINS tab's tall cards and the opening screen the Spin wheel's
+  1280 x 720 layout.
 - **Aura stars** (owner, Oct 17: "different colors give different amounts ... the ones that give more are rarer").
 - **Admin panel** (owner, Oct 18: "give me a admin command panel or something so i can get any knife or any girl to
   spawn when i want it to do so").

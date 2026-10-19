@@ -50,6 +50,14 @@ in core `CLAUDE.md` section 1. Recipe for a new screen: core section 6. Preview 
 - Today's Girl roller (`Screens/GirlRoll`): right edge under the gear, 0.5 of a window.
 - Check: `tools/preview/check_round_hud.luau`; shots `round-hud-runner`, `round-count`; picture `feel_ui_after.py`.
 
+## Timed reward screens (Spin wheel, crate opening)
+- Laid out at 1280 x 720 (a `FitScale` holder like a window), plain frames, never a CanvasGroup.
+- `Screens/CrateOpen` drives every moving part from one RenderStepped loop and its own clock (`clock += dt`), never
+  `os.clock()` or `task.delay`, so the offline film (`crate_film.sh`, which fires RenderStepped at 1/30 s) plays
+  exactly as the game. Reel cards are made per open (not saved twins); everything else is a saved part.
+- Big flashes go through one guard (at most one a second); "tap to skip" is a full-screen see-through button that only
+  shows while it runs. The harness doesn't fire attribute signals by itself: checks call `__fireOn(p, "Attr_<Name>")`.
+
 ## Other round screens
 - `Screens/HeroChoice` (60% size), `Screens/NextMap` (your vote tucks into a NEXT MAP panel).
 - Map pictures: `Config/Round` `Map.Pictures` names the `Config/Assets.Art` picture per map folder
