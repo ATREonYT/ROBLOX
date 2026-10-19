@@ -8,7 +8,8 @@
 --   KNIVES  the Legendary and Mythic of each set as their pictures: buy one for Aura (ActionService
 --           "BuyHalloweenKnife": the server checks the price and takes it) or Robux. OWNED once it's yours.
 -- Robux buttons show their price; while a product's Id is 0 (Config/Products.Halloween) tapping one only says it's
--- coming soon, never a purchase prompt. Robux purchases are granted only by the server (ShopService).
+-- coming soon, never a purchase prompt. With an ID the server opens the prompt (ShopService.promptHalloween: never
+-- for a knife you own). Robux purchases are granted only by the server (ShopService, Config/HalloweenShop.grant).
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
@@ -102,10 +103,11 @@ function HalloweenShopScreen.build(parent: Instance)
 			return
 		end
 		pending[p.Key] = true
-		local ok = pcall(function() MarketplaceService:PromptProductPurchase(Players.LocalPlayer, p.Id) end)
+		-- the server opens Roblox's prompt, after checking it has its ID and the knife isn't yours already
+		local ok, why = State.action("PromptHalloween", p.Key)
 		if not ok then
 			pending[p.Key] = nil
-			Toast.show("The purchase couldn't open. Try again.")
+			Toast.show(why or "The purchase couldn't open. Try again.")
 			return
 		end
 		task.delay(90, function() pending[p.Key] = nil end) -- (never stuck if Roblox doesn't report back)

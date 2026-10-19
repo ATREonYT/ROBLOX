@@ -65,5 +65,28 @@ end
 local legend, mythic = Shop.knife("CovenKatana"), Shop.knife("GrandWitchScythe")
 check("a Mythic costs more than a Legendary", legend and mythic and mythic.Aura > legend.Aura)
 
+-- 3. Robux never buys nothing: no prompt for a knife you own (or without an ID, or not this page's); a receipt that
+-- still arrives for an owned knife gives its crate's keys worth its price (Keys: Aura is never sold for Robux)
+local reaper = table.clone(Products.get("HalloweenCandyReaper")); reaper.Id = 555 -- (as if the owner set its ID)
+local key = table.clone(Products.get("SweetsCrateKey")); key.Id = 444
+local fresh = { Cosmetics = {}, Wear = {} }
+local owner = { Cosmetics = { CandyReaper = true }, Wear = { Knife = "VineDagger" }, CrateKeys = { Sweets = 1 } }
+check("prompt: a knife you don't own, with its ID", (Shop.canPrompt(fresh, reaper)) == true)
+local okP, whyP = Shop.canPrompt(owner, reaper)
+check(`prompt: never for a knife you own ({whyP})`, okP == false and tostring(whyP):find("own") ~= nil)
+okP, whyP = Shop.canPrompt(fresh, Products.get("HalloweenCandyReaper"))
+check(`prompt: never without an ID ({whyP})`, okP == false and tostring(whyP):find("coming soon") ~= nil)
+check("prompt: never for another page's product", (Shop.canPrompt(fresh, Products.get("Spins10"))) == false and (Shop.canPrompt(fresh, nil)) == false)
+check("prompt: a crate key, even with keys already", (Shop.canPrompt(owner, key)) == true)
+local reaperEntry = Shop.knife("CandyReaper")
+check(`refund keys: Mythic {reaperEntry.Keys} (249 / 25 R$), Legendary {Shop.knife("CovenKatana").Keys} (149 / 25 R$)`, reaperEntry.Keys == 10 and Shop.knife("CovenKatana").Keys == 6)
+local okG, what = Shop.grant(fresh, reaper)
+check("receipt: the knife, worn", okG == true and what == "knife" and fresh.Cosmetics.CandyReaper == true and fresh.Wear.Knife == "CandyReaper")
+okG, what = Shop.grant(owner, reaper)
+check(`receipt for a knife you own: {reaperEntry.Keys} Sweets keys instead, knife and worn knife untouched`, okG == true and what == "keys" and owner.CrateKeys.Sweets == 1 + reaperEntry.Keys and owner.Wear.Knife == "VineDagger")
+okG, what = Shop.grant(owner, key)
+check("receipt: a crate key adds one", okG == true and what == "key" and owner.CrateKeys.Sweets == 2 + reaperEntry.Keys)
+check("receipt: never another page's product", (Shop.grant(fresh, Products.get("Spins10"))) == false)
+
 print(string.format("HalloweenShop: %d passed, %d failed", passed, failed))
 if failed > 0 then error("HalloweenShop spec failed") end

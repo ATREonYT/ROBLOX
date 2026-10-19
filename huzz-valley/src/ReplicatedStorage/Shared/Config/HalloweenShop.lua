@@ -13,6 +13,7 @@
 	and checks the numbers: Legendary 11,800 Aura, Mythic 23,600 Aura. Robux prices sit in Config/Products.Halloween.
 ]]
 local Crates = require(script.Parent.Crates)
+local Products = require(script.Parent.Products)
 local CrateRoll = require(script.Parent.Parent.CrateRoll)
 
 local HalloweenShop = {}
@@ -31,7 +32,7 @@ HalloweenShop.Knives = {
 	{ Key = "GrandWitchScythe", Crate = "Witch", Robux = "HalloweenGrandWitchScythe" },
 	{ Key = "SugarRushKatana", Crate = "Sweets", Robux = "HalloweenSugarRushKatana" },
 	{ Key = "CandyReaper", Crate = "Sweets", Robux = "HalloweenCandyReaper" },
-} :: { { Key: string, Crate: string, Robux: string, Aura: number?, Opens: number? } }
+} :: { { Key: string, Crate: string, Robux: string, Aura: number?, Opens: number?, Keys: number? } }
 
 -- Work out each knife's Aura price once, from its crate.
 for _, k in HalloweenShop.Knives do
@@ -46,11 +47,65 @@ for _, k in HalloweenShop.Knives do
 	k.Aura = math.round(HalloweenShop.Markup * (k.Opens :: number) * crate.Price / 100) * 100
 end
 
+-- A Robux knife bought by someone who owns it already (a stale page, or bought on another server first) gives crate
+-- keys for its own crate worth what it costs instead: its Robux price / the key's, rounded (149 R$ = 6 keys, 249 R$
+-- = 10). Keys, not Aura: Aura is only ever earned, never sold for Robux. So a purchase always gives something.
+for _, k in HalloweenShop.Knives do
+	local knifeProduct = Products.get(k.Robux)
+	local keyProduct = nil
+	for _, c in HalloweenShop.Crates do
+		if c.Crate == k.Crate then keyProduct = Products.get(c.Robux) end
+	end
+	assert(knifeProduct and keyProduct and keyProduct.Price > 0, `Halloween shop: {k.Key} needs its Robux knife and its crate's key`)
+	k.Keys = math.max(1, math.round(knifeProduct.Price / keyProduct.Price))
+end
+
 function HalloweenShop.knife(key: string)
 	for _, k in HalloweenShop.Knives do
 		if k.Key == key then return k end
 	end
 	return nil
+end
+
+local function onPage(p: any): boolean
+	for _, c in HalloweenShop.Crates do if c.Robux == p.Key then return true end end
+	for _, k in HalloweenShop.Knives do if k.Robux == p.Key then return true end end
+	return false
+end
+
+-- May the server open Roblox's purchase prompt for this Robux product? Only this page's products, only with a real
+-- ID (Id 0 = "coming soon"), and never a knife you own (ShopService.promptHalloween asks this before prompting).
+function HalloweenShop.canPrompt(data: any, p: any): (boolean, string?)
+	if type(p) ~= "table" or not onPage(p) then return false, "That isn't sold here." end
+	if Products.status(p) ~= "Ready" then return false, `{p.Name} for Robux is coming soon.` end
+	if p.Kind == "Knife" and data.Cosmetics and data.Cosmetics[p.Knife] then return false, "You own this already." end
+	return true
+end
+
+-- What a paid receipt for this page's product gives (ShopService's ProcessReceipt, inside its save write). Returns
+-- false only for a product that isn't this page's (never granted). A crate key: +1 key. A knife: the knife, worn; one
+-- you own already: its Keys of its own crate instead (never Robux for nothing). The second result says which.
+function HalloweenShop.grant(data: any, p: any): (boolean, string?)
+	if type(p) ~= "table" or not onPage(p) or not p.OnSale then return false, nil end
+	data.CrateKeys = data.CrateKeys or {}
+	if p.Kind == "CrateKey" then
+		if not Crates.get(p.Crate or "") then return false, nil end
+		data.CrateKeys[p.Crate] = (data.CrateKeys[p.Crate] or 0) + 1
+		return true, "key"
+	elseif p.Kind == "Knife" then
+		local k = HalloweenShop.knife(p.Knife or "")
+		if not k then return false, nil end
+		data.Cosmetics = data.Cosmetics or {}
+		if data.Cosmetics[k.Key] then
+			data.CrateKeys[k.Crate] = (data.CrateKeys[k.Crate] or 0) + (k.Keys :: number)
+			return true, "keys"
+		end
+		data.Cosmetics[k.Key] = true
+		data.Wear = data.Wear or {}
+		data.Wear.Knife = k.Key
+		return true, "knife"
+	end
+	return false, nil
 end
 
 return HalloweenShop

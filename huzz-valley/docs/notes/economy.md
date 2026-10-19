@@ -156,14 +156,27 @@ while `Id = 0`).
   Roblox price shows and Roblox's prompt opens.
 - **Server only:** `BuyHalloweenKnife` accepts only the page's knives, refuses an owned one ("You own this already.")
   and too little Aura ("You need N more Aura."), and takes the Aura and gives the knife (worn) in one save write, so a
-  double tap buys it once. Robux: `ShopService` grants `CrateKey` (+1 key) and `Knife` (owned, worn) once per
-  PurchaseId and answers "granted" only after the save.
-- Checks: `tests/HalloweenShop.spec` (prices, Id 0), `tools/preview/check_halloween.luau` (stands open it, the
-  backfill, odds add to 100, pity, both prices, not enough Aura, already owned, double tap, a knife not sold here, Id 0
-  never prompts, an ID prompts, receipts once and after the save, a key used before Aura, OPEN plays the opening).
+  double tap buys it once. Robux: `ShopService` grants once per PurchaseId and answers "granted" only after the save;
+  what a receipt gives is `HalloweenShop.grant` (a key: +1; a knife: owned and worn).
+- **Never Robux for nothing** (fresh critic, Oct 19: the knife receipt used to charge for a knife you already had):
+  the client never prompts; it asks the server (ActionService `PromptHalloween` -> `ShopService.promptHalloween`),
+  which opens Roblox's prompt only for this page's products with an ID and never for a knife you own
+  (`HalloweenShop.canPrompt`). A receipt that still arrives for an owned knife (a stale page, bought on another
+  server first) gives **crate keys** for that knife's own crate worth its Robux price instead: price / key price,
+  rounded (Legendary 149 / 25 = 6 keys, Mythic 249 / 25 = 10 keys). Keys, not Aura, because Aura is only earned,
+  never sold for Robux. Uses the configured prices, not Roblox's live ones.
+- Checks: `tests/HalloweenShop.spec` (prices, Id 0, no prompt for an owned knife or without an ID, the receipt rules
+  and the refund keys), `tools/preview/check_halloween.luau` (stands open it, the backfill, odds add to 100, pity,
+  both prices, not enough Aura, already owned, double tap, a knife not sold here, Id 0 never prompts, an ID prompts,
+  the server refuses to prompt an owned knife, receipts once and after the save, an owned knife's receipt gives keys,
+  a key used before Aura, OPEN plays the opening).
 - **Gaps:** not seen in Studio; the Robux IDs are 0 and the prices are ours; the crate is the drawn stand-in box, not
   his stand models; the header icon is the Shop cart (no pumpkin icon in his kit); his coin shop also sells these
   four knives for coins (4,000 / 8,000), which is the cheaper way to get them, so Aura buyers pay more on purpose.
+  The knife cards are pictures rendered from his own meshes (`assets/art/knife-*.png`), drawn by script until he
+  uploads them; the knife you then hold is the server's plain stand-in, dressed as his .glb only where Studio allows
+  Mesh / Image APIs, until he imports `Halloween_Knives.glb` ([knives.md](knives.md)). Nothing tells the player that a
+  late receipt became keys (the USE KEY count just goes up).
 
 ## Admin panel (`Screens/Admin` + `HuzzServer/AdminService` + `Shared/AdminRules`)
 - Only the game's owner: Studio, else `player.UserId == game.CreatorId` (a game he owns) or rank 255 in the creator

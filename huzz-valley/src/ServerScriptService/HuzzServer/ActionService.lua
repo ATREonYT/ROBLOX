@@ -191,6 +191,9 @@ function VERBS.BuyHalloweenKnife(player, key)
 	return ok, why
 end
 
+-- The Halloween shop's Robux buttons: the server decides whether Roblox's prompt opens (never for a knife you own).
+function VERBS.PromptHalloween(player, key) return require(script.Parent.ShopService).promptHalloween(player, key) end
+
 function VERBS.ClaimReward(player, level) return ProgressService.claimReward(player, level) end
 function VERBS.ClaimQuest(player, id) return ProgressService.claimQuest(player, id) end
 function VERBS.ClaimDaily(player, key) return ProgressService.claimDaily(player, key) end

@@ -1,4 +1,5 @@
--- Robux purchases. The client only opens Roblox's purchase prompt; everything is granted here.
+-- Robux purchases. The client only opens Roblox's purchase prompt (the Halloween shop's prompt is opened here, after
+-- checking: promptHalloween); everything is granted here.
 --   Game passes: ownership is checked with Roblox on join and after each prompt closes (never trusted from the client);
 --   an owned pass also gives its exclusive knives (Config/CoinShop Pass), here and nowhere else.
 --   Developer products: ProcessReceipt grants once per PurchaseId and answers PurchaseGranted only after the
@@ -9,7 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Products = require(ReplicatedStorage.Shared.Config.Products)
 local CoinShop = require(ReplicatedStorage.Shared.Config.CoinShop)
-local Crates = require(ReplicatedStorage.Shared.Config.Crates)
+local HalloweenShop = require(ReplicatedStorage.Shared.Config.HalloweenShop)
 local Net = require(ReplicatedStorage.Shared.Net)
 local DataService = require(script.Parent.DataService)
 
@@ -70,19 +71,27 @@ local function grant(data, product): boolean
 	elseif product.Kind == "Spins" then -- Spin the Wheel spins (SpinService)
 		data.Spins = (data.Spins or 0) + (product.Amount or 0)
 		return true
-	elseif product.Kind == "CrateKey" then -- the Halloween shop: one open of that crate (ActionService OpenCrate uses it)
-		if not Crates.get(product.Crate or "") then return false end
-		data.CrateKeys = data.CrateKeys or {}
-		data.CrateKeys[product.Crate] = (data.CrateKeys[product.Crate] or 0) + 1
-		return true
-	elseif product.Kind == "Knife" then -- the Halloween shop: that knife, worn straight away
-		local item = CoinShop.get(product.Knife or "")
-		if not item or item.Slot ~= "Knife" then return false end
-		data.Cosmetics[item.Key] = true -- (already owned: the page never offers it, so this only repeats a grant)
-		data.Wear[item.Slot] = item.Key
-		return true
+	elseif product.Kind == "CrateKey" or product.Kind == "Knife" then
+		-- the Halloween shop (Config/HalloweenShop.grant): a crate key; or the knife, worn; or, for a knife already
+		-- yours (a stale page, another server), its crate's keys worth its price, so Robux never buys nothing
+		return (HalloweenShop.grant(data, product))
 	end
 	return false
+end
+
+-- The Halloween shop's Robux buttons ask here (ActionService "PromptHalloween"), never prompt from the client: the
+-- server checks the product has its ID and that a knife isn't yours already (Config/HalloweenShop.canPrompt), then
+-- opens Roblox's prompt itself. A receipt that still arrives for an owned knife gives keys instead (grant above).
+function ShopService.promptHalloween(player: Player, key: any): (boolean, string?)
+	local product = type(key) == "string" and Products.get(key)
+	local profile = DataService.get(player)
+	if not product or not profile or not profile.Data then return false, "That isn't sold here." end
+	local ok, why = HalloweenShop.canPrompt(profile.Data, product)
+	if not ok then return false, why end
+	if not pcall(function() MarketplaceService:PromptProductPurchase(player, product.Id) end) then
+		return false, "The purchase couldn't open. Try again."
+	end
+	return true
 end
 
 local function processReceipt(info)

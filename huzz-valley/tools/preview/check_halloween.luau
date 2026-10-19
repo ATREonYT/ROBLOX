@@ -152,6 +152,13 @@ local function receipt(id, purchase) return MarketplaceService.ProcessReceipt({ 
 check("a key receipt is granted after the save", receipt(444, "h1") == Enum.ProductPurchaseDecision.PurchaseGranted and data.CrateKeys.Witch == 1)
 check("the same receipt never grants twice", receipt(444, "h1") == Enum.ProductPurchaseDecision.PurchaseGranted and data.CrateKeys.Witch == 1)
 check("a knife receipt gives the knife, worn", receipt(555, "h2") == Enum.ProductPurchaseDecision.PurchaseGranted and data.Cosmetics.CandyReaper == true and data.Wear.Knife == "CandyReaper")
+-- never Robux for nothing: the server won't prompt a knife you own; a late receipt for one gives keys instead
+local promptsBefore = #_G.__prompts
+local okR, whyR = act("PromptHalloween", "HalloweenCandyReaper")
+check(`the server never prompts a knife you own ({whyR})`, okR == false and #_G.__prompts == promptsBefore)
+check("nor a product without its ID", (act("PromptHalloween", "SweetsCrateKey")) == false and #_G.__prompts == promptsBefore)
+local sweets0 = data.CrateKeys.Sweets or 0
+check("a receipt for a knife you own gives its crate's keys", receipt(555, "h3") == Enum.ProductPurchaseDecision.PurchaseGranted and data.CrateKeys.Sweets == sweets0 + HalloweenShop.knife("CandyReaper").Keys)
 check("the receipts are in the saved data", table.find(profile.LastSavedData.Receipts, "h1") ~= nil and table.find(profile.LastSavedData.Receipts, "h2") ~= nil)
 task.wait(0.2)
 check(`the crate shows USE KEY ({cratesPage.SectionWitch.Witch.Open.Content.Label.Text})`, cratesPage.SectionWitch.Witch.Open.Content.Label.Text == "USE KEY (1)")
@@ -171,9 +178,10 @@ DataService.update(me, function(d) d.Aura = 500 end)
 task.wait(1.2)
 MM.open("HalloweenShop", "Crates")
 task.wait(0.2)
+local sweetsKeys = data.CrateKeys.Sweets or 0 -- (the keys from the owned knife's receipt above)
 __fireOn(cratesPage.SectionSweets.Sweets.Open, "Activated")
 task.wait(0.4)
-check(`OPEN plays the crate opening ({MM.current()})`, MM.current() == "CrateOpen" and data.Aura == 380)
+check(`OPEN plays the crate opening with a key ({MM.current()})`, MM.current() == "CrateOpen" and data.Aura == 500 and (data.CrateKeys.Sweets or 0) == sweetsKeys - 1)
 MM.close()
 
 print(string.format("halloween shop: %d ok, %d failed", ok, fails))
