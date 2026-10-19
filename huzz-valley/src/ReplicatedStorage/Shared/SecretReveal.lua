@@ -376,4 +376,122 @@ function SecretReveal.camera(t: number, at: Vector3, dir: Vector3, h: number, k:
 	return eye, look
 end
 
+--[[ Framing on every map (owner, Oct 19: "the secret girl animations in different maps, they are sometimes very off
+	with the camera angle"; "its still choppy sometimes"). The shot used to look from wherever YOU stood (the lobby,
+	often behind the map's walls, stands or trees) and a ray each frame snapped the camera in front of whatever was
+	in the way, so on a crowded map it jumped into her knees and back out, and other players walking past did it too.
+	Now, once at the start, each screen tries the whole camera path from DIRECTIONS sides of her (a ray from her to the
+	camera every SAMPLE_STEP s, see-through parts and characters ignored) and films from the clearest side (yours wins a
+	tie), with the camera pulled in ahead of time wherever that path still meets something (`planReach`: it starts
+	easing in before the wall comes, never inside it, at most RATE of the distance a second) and a wider lens while pulled in, so she stays the same size on
+	screen (`wideFov`). No ray decides anything frame by frame. ]]
+SecretReveal.DIRECTIONS = 16
+SecretReveal.SAMPLE_STEP = 0.2
+SecretReveal.MAX_FOV = 90 -- the widest lens when pulled in (wider than this bends the picture)
+
+-- The times the camera path is tried at (0 .. LENGTH).
+function SecretReveal.sampleTimes(): { number }
+	local out = {}
+	local n = math.floor(SecretReveal.LENGTH / SecretReveal.SAMPLE_STEP + 0.5)
+	for i = 0, n do
+		table.insert(out, i * SecretReveal.SAMPLE_STEP)
+	end
+	return out
+end
+
+-- The flat directions tried, as unit Vector3s round her (the first is +Z).
+function SecretReveal.directions(): { Vector3 }
+	local out = {}
+	for i = 0, SecretReveal.DIRECTIONS - 1 do
+		local a = 2 * math.pi * i / SecretReveal.DIRECTIONS
+		table.insert(out, Vector3.new(math.sin(a), 0, math.cos(a)))
+	end
+	return out
+end
+
+-- How good a side is: how clear its path is on average and at its worst, plus a small pull towards `prefer` (your
+-- side). reaches: 0..1 per sample (1 = the whole way clear).
+function SecretReveal.score(reaches: { number }, dir: Vector3, prefer: Vector3?): number
+	local sum, low = 0, 1
+	for _, r in reaches do
+		sum += r
+		low = math.min(low, r)
+	end
+	local mean = if #reaches > 0 then sum / #reaches else 1
+	local toward = if prefer then (dir:Dot(prefer) + 1) / 2 else 0
+	return 0.6 * mean + 0.4 * low + 0.06 * toward
+end
+
+-- The side to film from: the index into `dirs` with the best score.
+function SecretReveal.pickDirection(dirs: { Vector3 }, reaches: { { number } }, prefer: Vector3?): number
+	local best, bestScore = 1, -math.huge
+	for i, d in dirs do
+		local s = SecretReveal.score(reaches[i], d, prefer)
+		if s > bestScore + 1e-9 then
+			best, bestScore = i, s
+		end
+	end
+	return best
+end
+
+-- The reach to use at each sample (times and reaches as from sampleTimes): never more than what is clear there or at
+-- the samples either side (so it is clear between them too), and changing at most RATE of the distance a second, so
+-- it starts easing in well before something comes between the camera and her and eases back out after. Each shot
+-- on its own (a cut may start somewhere else). Only ever lowers a reach: the camera is never inside a wall.
+SecretReveal.RATE = 0.5
+function SecretReveal.planReach(times: { number }, reaches: { number }): { number }
+	local function shot(t: number): number
+		local n = 0
+		for _, c in SecretReveal.CUTS do
+			if t >= c then n += 1 end
+		end
+		return n
+	end
+	local n = #times
+	local out = {}
+	for i = 1, n do
+		local low = reaches[i]
+		for j = math.max(1, i - 1), math.min(n, i + 1) do
+			if shot(times[j]) == shot(times[i]) then low = math.min(low, reaches[j]) end
+		end
+		out[i] = math.clamp(low, 0.05, 1)
+	end
+	for i = n - 1, 1, -1 do -- (in ahead of time)
+		if shot(times[i]) == shot(times[i + 1]) then
+			out[i] = math.min(out[i], out[i + 1] + SecretReveal.RATE * (times[i + 1] - times[i]))
+		end
+	end
+	for i = 2, n do -- (out again slowly)
+		if shot(times[i]) == shot(times[i - 1]) then
+			out[i] = math.min(out[i], out[i - 1] + SecretReveal.RATE * (times[i] - times[i - 1]))
+		end
+	end
+	return out
+end
+
+-- The planned reach at time t: eased between samples (smoothstep), so the camera glides in and out; it may jump only
+-- on the cut.
+function SecretReveal.reachAt(times: { number }, plan: { number }, t: number): number
+	local n = #times
+	if n == 0 then return 1 end
+	if t <= times[1] then return plan[1] end
+	if t >= times[n] then return plan[n] end
+	local i = 1
+	while times[i + 1] < t do i += 1 end
+	local a, b = plan[i], plan[i + 1]
+	for _, c in SecretReveal.CUTS do
+		if times[i] < c and times[i + 1] >= c then -- (the cut lands between these two samples)
+			return if t < c then a else b
+		end
+	end
+	return a + (b - a) * smooth((t - times[i]) / (times[i + 1] - times[i]))
+end
+
+-- The lens when the camera is pulled in to `reach` of its distance: wider, so she stays the same size on screen.
+function SecretReveal.wideFov(fov: number, reach: number): number
+	if reach >= 0.999 then return fov end
+	local half = math.atan(math.tan(math.rad(fov) / 2) / math.max(reach, 0.05))
+	return math.min(math.deg(half) * 2, math.max(fov, SecretReveal.MAX_FOV))
+end
+
 return SecretReveal

@@ -23,10 +23,18 @@
 	    or from the catcher who stole her).
 	  - No Hero won her this round (Chicken, or the Hero failed) and she's still floating: the first runner
 	    across takes her ("First"), whoever chose Chicken included.
-	  - A catcher who stabs her carrier steals her: she follows that catcher around.
-	  - When the game ends she goes home with the winning side: whoever on that side holds her; if
-	    nobody does, the runners' last successful Hero (else a random runner who made it), or the catcher
-	    with the most catches (the lead catcher wins a tie).
+	  - A catcher who catches her carrier while runners are left keeps her (she follows him) only until the next
+	    runner makes it across: that runner takes her back ("Reclaimed"; owner, Oct 19: "if the catcher gets the
+	    girl and there are still runners left the catcher keeps the girl until the next runner makes it to the
+	    safe zone").
+	  - A catcher wins her only by catching the LAST runner (owner, Oct 19: "the girl will be recieved by the
+	    catcher only if at the end he catches the last runner"): when the catchers win (everyone caught), she goes
+	    to the catcher who made the final catch. If the clock caught the last runner, the catcher holding her keeps
+	    her, else the catcher with the most catches (the lead catcher wins a tie).
+	  - When the runners win she goes to the runner holding her; if nobody does, the runners' last successful
+	    Hero (else a random runner who made it). The last runner standing always wins her.
+	  - Everyone caught turns into a catcher (owner, Oct 19: "every person who got caught turns into a catcher"):
+	    from the next round, so a round stays readable; a rescue in the same round still saves them.
 	  - Chicken still wins her (owner, Oct 19: "fix the users not getting the girl if they win on the chicken
 	    round ... make them get her"; this replaces Oct 18's "you dont recieve the girl if you run chicken"):
 	    choosing Chicken never takes away the claim. The Hero's edge is getting her first, alone, plus the
@@ -38,7 +46,7 @@
 	  {type="Picked", id}                     {type="Choice", id, hero}     {type="HeroResult", id, survived}
 	  {type="Safe", id}                       {type="Caught", id, by}       {type="Rescued", id, by}
 	  {type="Streak", count, goal}            {type="StreakLost", count}
-	  {type="GirlMoved", from, to, reason}    (reason: "Hero" | "First" | "Stolen" | "Dropped" | "Reassigned")
+	  {type="GirlMoved", from, to, reason}    (reason: "Hero" | "First" | "Stolen" | "Reclaimed" | "Last" | "Dropped" | "Reassigned")
 	  {type="Win", team, winner, reason}      (team "Runners" | "Catchers"; winner = who gets her, may be nil)
 ]]
 
@@ -75,6 +83,9 @@ end
 -- Who takes her home when `team` wins.
 local function girlWinner(s, team)
 	local role = if team == "Runners" then "Runner" else "Catcher"
+	if team == "Catchers" and s.lastCatchBy and s.roles[s.lastCatchBy] == "Catcher" then
+		return s.lastCatchBy -- (he caught the last runner)
+	end
 	if s.holder and s.roles[s.holder] == role then
 		return s.holder
 	end
@@ -128,6 +139,7 @@ function RoundRules.newGame(ids, catcherId, opts)
 		choice = nil, -- nil (not chosen yet) | "Hero" | "Chicken"
 		hero = nil, -- this round's Hero (while their solo crossing counts)
 		lastHero = nil, -- the latest Hero who made it across
+		lastCatchBy = nil, -- who made the latest catch (nil: the clock): the catchers' winner gets her
 		chickens = {}, -- runners who chose Chicken this game and never went Hero (they can't be handed the girl)
 		brave = {}, -- runners who went Hero this game
 		streak = 0, -- full crossings in a row (the win only for a game that started with one runner)
@@ -252,6 +264,8 @@ function RoundRules.reachSafe(s, id)
 		s.lastHero = id
 		table.insert(events, { type = "HeroResult", id = id, survived = true })
 		moveGirl(s, id, "Hero", events) -- the reward: she comes down to the Hero
+	elseif s.holder ~= nil and s.roles[s.holder] == "Catcher" then
+		moveGirl(s, id, "Reclaimed", events) -- the next runner across takes her back from the catcher
 	elseif s.holder == nil and s.hero == nil and s.choice ~= nil then
 		-- No Hero run won her (Chicken, or the Hero was caught or ran out of time): the first runner across takes
 		-- her (owner, Oct 18: "if you go chicken, still the first person to reach the safe zone gets the girl"),
@@ -271,6 +285,7 @@ function RoundRules.tag(s, catcherId, runnerId)
 		return events
 	end
 	s.status[runnerId] = "Downed"
+	s.lastCatchBy = catcherId
 	if catcherId then
 		s.catches[catcherId] = (s.catches[catcherId] or 0) + 1
 	end
@@ -424,6 +439,9 @@ function RoundRules.removePlayer(s, id)
 		return events
 	end
 	local wasCatcher = s.roles[id] == "Catcher"
+	if s.roles[id] == "Runner" and s.status[id] == "Active" then
+		s.lastCatchBy = nil -- (a runner still out there left: nobody caught the last one)
+	end
 	s.roles[id] = nil
 	s.status[id] = nil
 	s.catches[id] = nil
@@ -435,6 +453,9 @@ function RoundRules.removePlayer(s, id)
 	end
 	if s.lastHero == id then
 		s.lastHero = nil
+	end
+	if s.lastCatchBy == id then
+		s.lastCatchBy = nil
 	end
 	if s.lead == id then
 		s.lead = nil

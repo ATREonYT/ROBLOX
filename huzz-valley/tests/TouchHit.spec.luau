@@ -102,7 +102,43 @@ local function anyTouch(list)
 end
 check(anyTouch({ pastRoot, nowRoot }), "a runner the catcher's screen showed in the box counts when the server looks back that far")
 check(not anyTouch({ nowRoot }), "but not from where they are now (no look back = no catch)")
-check(T.MaxRewind <= 0.3 and T.Smoothing <= 0.15 and T.Tolerance <= 0.5, "the look back is capped (0.3 s) and the give is small (half a stud)")
+check(T.MaxRewind <= 0.4 and T.Smoothing <= 0.15 and T.Tolerance <= 0.5, "the look back is capped (0.35 s) and the give is small (half a stud)")
+
+-- Pinpoint (owner, Oct 19: "make the player to player interactions pinpoint precise"): the server judges exactly what
+-- the catcher's screen showed (TouchHit.verify), checking only that both bodies were really there lately.
+do
+	local function path(from: Vector3, to: Vector3, n: number)
+		local out = {}
+		for i = 0, n do
+			local p = from:Lerp(to, i / n)
+			table.insert(out, CFrame.new(p.X, Rig.REST_HEIGHT, p.Z))
+		end
+		return out
+	end
+	-- the runner ran past in front of the catcher over the last moment; the catcher stood still
+	local runnerPath = path(Vector3.new(-6, 0, -3.5), Vector3.new(6, 0, -3.5), 12)
+	local catcherPath = { catcher, catcher }
+	local seenRoot, seenParts = body(Vector3.new(0.5, 0, -3.5))
+	local shapeNow = assert(TouchHit.shape(seenRoot, seenParts))
+	local ok, why = TouchHit.verify({ seen = seenRoot, mine = catcher }, runnerPath, catcherPath, shapeNow, S, nil, T)
+	check(ok, "a hit the screen showed, on the runner's real path: counts (" .. why .. ")")
+	local offRoot = CFrame.new(0.5, Rig.REST_HEIGHT, -1.2)
+	ok, why = TouchHit.verify({ seen = offRoot, mine = catcher }, runnerPath, catcherPath, shapeNow, S, nil, T)
+	check(not ok and why == "runner never there", "a runner 2.3 studs off anywhere they really were: no (" .. why .. ")")
+	ok, why = TouchHit.verify({ seen = seenRoot, mine = catcher * CFrame.new(0, 0, -3) }, runnerPath, catcherPath, shapeNow, S, nil, T)
+	check(not ok and why == "catcher never there", "a catcher claiming to stand 3 studs closer than they were: no (" .. why .. ")")
+	local farRoot = body(Vector3.new(0, 0, -9))
+	ok, why = TouchHit.verify({ seen = farRoot, mine = catcher }, path(Vector3.new(-6, 0, -9), Vector3.new(6, 0, -9), 12), catcherPath, shapeNow, S, nil, T)
+	check(not ok and why == "no touch", "a runner the knife can't reach on the screen either: no (" .. why .. ")")
+	ok, why = TouchHit.verify({ seen = "x", mine = catcher }, runnerPath, catcherPath, shapeNow, S, nil, T)
+	check(not ok and why == "bad claim", "rubbish from a client is refused")
+	local nan = 0 / 0
+	ok = TouchHit.verify({ seen = CFrame.new(nan, nan, nan), mine = catcher }, runnerPath, catcherPath, shapeNow, S, nil, T)
+	check(not ok, "and so is NaN")
+	check(math.abs(TouchHit.pathDistance(Vector3.new(0, Rig.REST_HEIGHT, -2), runnerPath) - 1.5) < 1e-4, "the distance to a path is to its nearest piece")
+	check(T.SeenSlack <= 2 and T.MineSlack <= 3 and T.MaxRewind <= 0.4,
+		"the give is small: 2 studs off the real path at most, 0.4 s back at most")
+end
 
 -- For the notes: how close bodies must be, then and now (straight ahead, studs between the two bodies' fronts).
 local gapNow = S.Reach + T.Tolerance - 0.5

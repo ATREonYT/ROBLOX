@@ -24,7 +24,11 @@
 	  - Shift lock in a round (owner, Oct 19: "the only thing that moves when you press w a s d (etc) is their body
 	    not their head"): a body moving another way than it faces gets its hips and legs turned toward the move and
 	    its head turned back to where it faces (LocomotionMix.strafe; backwards = a back-pedal), from the way its
-	    body goes (LocomotionMix.track's vel), so everyone sees it, yours too in the live game.
+	    body goes (LocomotionMix.track's vel), so everyone sees it, yours too in the live game. Yours without shift
+	    lock: the head looks where your camera looks (LocomotionMix.look; others' cameras aren't known here).
+	  - Setting off walks first and a stop from a run plays the quick plant (LocomotionMix SetOff / Stop, measured on
+	    Huss Valley's recording): the body tips back a little and the arms swing out, on everyone. Others' stops read
+	    ~0.15 s after their body stops (LocomotionMix.track: a body still for longer than a network stall has stopped).
 	Off when the owner has published Idle, Walk and Run (Config/Animations): then the real tracks replicate.
 ]]
 local M = {}
@@ -164,7 +168,8 @@ function M.start()
 			local v = root.AssemblyLinearVelocity
 			speed, up = Vector3.new(v.X, 0, v.Z).Magnitude, v.Y
 		else
-			speed, up = Mix.track(rec.tracker, now, pos)
+			local v = root.AssemblyLinearVelocity
+			speed, up = Mix.track(rec.tracker, now, pos, Vector3.new(v.X, 0, v.Z).Magnitude)
 		end
 		local downed = character:GetAttribute("DownedAt") ~= nil
 		if downed or root.Anchored or humanoid.Sit then
@@ -200,6 +205,18 @@ function M.start()
 			})
 			rec.idleT += sdt
 			local pose = Mix.pose(rec.mix, anims, rec.idleT, Sampler.sample)
+			-- the stop's plant: arms out as the feet come together (and below, the body tips back a little)
+			local plant = if downed or quiet or airborne then 0 else Mix.stopAmount(rec.mix)
+			if plant > 1e-4 then
+				if pose.RightUpperArm then pose.RightUpperArm = Mix.stopArm(rec.mix, plant, 1) * pose.RightUpperArm end
+				if pose.LeftUpperArm then pose.LeftUpperArm = Mix.stopArm(rec.mix, plant, -1) * pose.LeftUpperArm end
+			end
+			rec.lean = nil
+			if not isMe and plant > 1e-4 and pose.LowerTorso then
+				local c0 = rec.motors.LowerTorso.C0
+				local pitch = math.rad(rec.mix.C.Stop.Lean) * plant
+				rec.lean = c0:Inverse() * Mix.leanCFrame(0, pitch, root.Size.Y / 2 + humanoid.HipHeight) * c0
+			end
 			if isMe and pose.LowerTorso then
 				-- the lean into turns and into speeding up (as Locomotion adds on top in Studio)
 				local dashAt = RunMotion.dashAt(character)
@@ -221,12 +238,18 @@ function M.start()
 				or (type(lungeAt) == "number" and server - lungeAt < LEAP_LENGTH)
 			local vel = if isMe then root.AssemblyLinearVelocity else rec.tracker.vel
 			local on = if isMe then Players.LocalPlayer:GetAttribute("HuzzShiftLock") == true else playing == true
-			local turn = Mix.strafe(rec.mix, sdt, root.CFrame:VectorToObjectSpace(vel), on,
-				if downed or busy or quiet or airborne then 1 else 0)
+			local still = if downed or busy or quiet or airborne then 1 else 0
+			local turn = Mix.strafe(rec.mix, sdt, root.CFrame:VectorToObjectSpace(vel), on, still)
+			-- yours without shift lock: the head looks where your camera looks (LocomotionMix.look)
+			local look = 0
+			if isMe and camCF then
+				local l = root.CFrame:VectorToObjectSpace(camCF.LookVector)
+				look = Mix.look(rec.mix, sdt, math.atan2(l.X, -l.Z), not on, still)
+			end
 			rec.turned = nil
 			local hipsM, waistM, neckM = rec.motors.LowerTorso, rec.motors.UpperTorso, rec.motors.Head
 			local lt, ut, hd = pose.LowerTorso, pose.UpperTorso, pose.Head
-			if math.abs(turn) > 1e-3 and hipsM and waistM and neckM and lt and ut and hd then
+			if (math.abs(turn) > 1e-3 or math.abs(look) > 1e-3) and hipsM and waistM and neckM and lt and ut and hd then
 				local hips = CFrame.new(lt.Position * rec.k) * lt.Rotation
 				if rec.lean then
 					hips = rec.lean * hips
@@ -235,7 +258,7 @@ function M.start()
 					root = { C0 = hipsM.C0, C1 = hipsM.C1, T = hips },
 					waist = { C0 = waistM.C0, C1 = waistM.C1, T = ut },
 					neck = { C0 = neckM.C0, C1 = neckM.C1, T = hd },
-				})
+				}, look)
 				rec.turned = { LowerTorso = r, UpperTorso = w, Head = n }
 			end
 			rec.pose = pose

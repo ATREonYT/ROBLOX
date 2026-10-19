@@ -221,7 +221,7 @@ local function lunge(c: Model, h: Humanoid, root: BasePart)
 	lastLocal = os.clock()
 	local lungeNet = Net.get("Lunge") :: RemoteEvent
 	local L = Config.Lunge
-	local first = HitCheck.find(root, L.Reach, L.Width, dir)
+	local first, firstShown = HitCheck.find(root, L.Reach, L.Width, dir)
 	local Actions = require(script.Parent.Actions)
 	if Actions.lungeLocal then Actions.lungeLocal() end -- (the leap's body and knife, now, not a round trip later)
 	if first == false then
@@ -230,14 +230,14 @@ local function lunge(c: Model, h: Humanoid, root: BasePart)
 		lungeNet:FireServer(true, dir) -- (true: this screen reports who the leap reaches, Gameplay/HitCheck)
 		-- pinpoint: the first runner inside the leaping knife's reach on your screen during the hit window
 		task.spawn(function()
-			local found = first
+			local found, shown = first, firstShown
 			local t0 = os.clock()
 			while not found and os.clock() - t0 < L.HitWindow and root.Parent do
 				RunService.Heartbeat:Wait()
-				found = HitCheck.find(root, L.Reach, L.Width, dir)
+				found, shown = HitCheck.find(root, L.Reach, L.Width, dir)
 			end
 			if type(found) == "number" then
-				lungeNet:FireServer(found)
+				lungeNet:FireServer(found, shown) -- (who, and where this screen showed you both)
 				if Actions.lungeHit then Actions.lungeHit() end -- (the slash lands now on your screen)
 			end
 		end)

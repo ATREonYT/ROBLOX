@@ -265,7 +265,7 @@ local function showcaseVisible(on)
 end
 
 -- How she reacts to her new carrier.
-local MOODS = { Hero = "Excited", First = "Excited", Stolen = "Struggle", Reassigned = "Struggle" }
+local MOODS = { Hero = "Excited", First = "Excited", Stolen = "Struggle", Reclaimed = "Excited", Reassigned = "Struggle" }
 
 local function moveGirlTo(fromId, toId, reason)
 	local from = (fromId and CarryService.position(byId[fromId])) or (showcase and showcase:GetPivot().Position) or nil
@@ -299,7 +299,8 @@ function handlers.GirlMoved(e)
 		Hero = { `{to} won {g} over! Keep her safe!`, GOLD },
 		First = { `{to} got there first and won {g} over! Keep her safe!`, GOLD },
 		Last = { `{to} is the last runner standing and wins {g}!`, GOLD },
-		Stolen = { `{to} stole {g}!`, RED },
+		Stolen = { `{to} caught her carrier! Next runner across takes {g} back!`, RED },
+		Reclaimed = { `{to} made it across and took {g} back!`, GOLD },
 		Reassigned = { `{to} has {g} now`, RED },
 		Dropped = { `{g} floats back up!`, GOLD },
 	}
@@ -1020,6 +1021,8 @@ local function finishGame()
 	RoundNet:FireAllClients("Win", {
 		team = match.team, winner = winnerId, name = if botWon then nil else winner and winner.DisplayName, -- ("Nobody wins her")
 		girl = girl.name, rarity = girl.rarity, bot = botWon or nil,
+		-- a catcher wins her only by catching the last runner (owner, Oct 19): the HUD says so
+		lastCatch = (not botWon and match.team == "Catchers" and winnerId ~= nil and winnerId == match.lastCatchBy) or nil,
 	})
 	State:SetAttribute("HolderId", winnerId or 0)
 	State:SetAttribute("Winners", match.team or "")
@@ -1214,8 +1217,38 @@ local function stabNear(id, me: BasePart, knife, only: number?, along: Vector3?)
 	return false
 end
 
--- A hit the catcher's screen saw (Gameplay/HitCheck): that one runner is checked from here every frame until
--- `untilClock`, the way the old lunge loop kept checking (a single check failed under normal lag).
+-- A hit the catcher's screen saw, judged on exactly what that screen showed (owner, Oct 19: "make the player to
+-- player interactions pinpoint precise"): shown = { seen = the runner's root as drawn there, mine = the catcher's
+-- root }, from Gameplay/HitCheck. Shared/TouchHit.verify checks both lie on the paths we really have (HitHistory, at
+-- most Touch.MaxRewind back) and the knife's box from mine touches the runner's body at seen. Shields, the safe start
+-- zone and a fresh rescue protect as in stabNear. True when it holds (a hit, or a Shield took it).
+local function screenHit(id, me: BasePart, runnerId: number, shown, knife, along: Vector3?): boolean
+	local now = os.clock()
+	local root = match.status[runnerId] == "Active" and not frozen[runnerId]
+		and (protectedUntil[runnerId] or 0) <= now and rootOf(runnerId)
+	if not root then
+		return false
+	end
+	local start = zones[MapService.startFor(match.round)]
+	if Config.StartZoneSafe and start and MapService.inZone(start, root.Position) then
+		return false
+	end
+	local T = Config.Touch
+	local character = root.Parent
+	local shape = character and TouchHit.shape(root.CFrame, character:GetChildren()) or TouchHit.standIn(CFrame.identity)
+	if not TouchHit.verify(shown, HitHistory.between(root, now - T.MaxRewind), HitHistory.between(me, now - T.MaxRewind),
+		shape, knife, along, T) then
+		return false
+	end
+	if PowerService.blocks(id, runnerId) then
+		return true -- (a Shield took it: that ends the stab or the dive)
+	end
+	apply(Rules.tag(match, id, runnerId))
+	return true
+end
+
+-- A hit claimed without what the screen showed (an old client): that one runner is checked from here every frame
+-- until `untilClock`, the way the old lunge loop kept checking (a single check failed under normal lag).
 function chaseClaim(id, player, claim, knife, untilClock, onHit, along)
 	task.spawn(function()
 		while true do
@@ -1268,7 +1301,7 @@ function botStep()
 	end, fallY)
 end
 
-Net.get("Stab").OnServerEvent:Connect(function(player, claim)
+Net.get("Stab").OnServerEvent:Connect(function(player, claim, shown)
 	local id = player.UserId
 	if claim ~= nil and claim ~= false and type(claim) ~= "number" then
 		return
@@ -1294,7 +1327,11 @@ Net.get("Stab").OnServerEvent:Connect(function(player, claim)
 		-- pinpoint: the runner the catcher's screen saw inside the knife's reach, if that's possible from here.
 		-- Checked again for a moment (critic: a catcher a little behind on our side at full speed failed a single
 		-- check and the kid saw a clean hit do nothing); still in front only, so a cheat can't hit all round.
-		chaseClaim(id, player, claim, Config.Stab, os.clock() + 0.25)
+		if type(shown) == "table" then
+			screenHit(id, me, claim, shown, Config.Stab) -- (pinpoint: what the screen showed, Oct 19)
+		else
+			chaseClaim(id, player, claim, Config.Stab, os.clock() + 0.25)
+		end
 	elseif claim == nil then
 		stabNear(id, me, Config.Stab) -- (a client that can't check)
 	end -- (false: a clean miss on the catcher's screen)
@@ -1319,10 +1356,17 @@ Net.get("Lunge").OnServerEvent:Connect(function(player, arg, dir)
 			and lungeClaims[id] and lastLunge[id] and os.clock() - lastLunge[id] <= Config.Lunge.HitWindow + 0.3 and not lungeHit[id]
 			and not frozen[id] and not KnockdownService.isDown(player) and PowerService.canStab(id) and Config.TagMode == "Stab" then
 			lungeClaims[id] = nil -- (one claim per lunge)
-			chaseClaim(id, player, arg, Config.Lunge,
-				lastLunge[id] + Config.Lunge.HitWindow + 0.3, function()
+			if type(dir) == "table" then
+				-- (pinpoint, Oct 19: the second value is what the screen showed, not a direction)
+				if screenHit(id, me, arg, dir, Config.Lunge, lungeDirs[id]) then
 					lungeHit[id] = true
-				end, lungeDirs[id])
+				end
+			else
+				chaseClaim(id, player, arg, Config.Lunge,
+					lastLunge[id] + Config.Lunge.HitWindow + 0.3, function()
+						lungeHit[id] = true
+					end, lungeDirs[id])
+			end
 		end
 		return
 	end

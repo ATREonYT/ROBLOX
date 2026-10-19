@@ -482,6 +482,8 @@ local base = {
 	ColorSequenceKeypoint = roblox.ColorSequenceKeypoint, Random = Random, Font = roblox.Font, Rect = roblox.Rect, __fs = fs, __serde = serde, __exportUI = function(...) return exportUI(...) end, TweenInfo = TweenInfoLib, __stepTweens = stepTweens, __exportParts = function(...) return __exportPartsImpl(...) end, task = task, warn = function(...) print("[warn]", ...) end,
 }
 base.__fireOn = _G.__fireOn
+-- (a plain table: Workspace:Raycast is the snippet's to stand in for, e.g. check_companions.luau)
+base.RaycastParams = { new = function() return { FilterType = Enum.RaycastFilterType.Exclude, FilterDescendantsInstances = {}, RespectCanCollide = false } end }
 local cache, loading = {}, {}
 local function envFor(scriptInst)
 	local env = { script = scriptInst }

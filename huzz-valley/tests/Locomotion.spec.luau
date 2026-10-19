@@ -194,28 +194,55 @@ do
 	check(tr.speed < 0.5 and s2.weights.Idle > 0.9, "standing still for a second reads as a stop (idle)")
 end
 
--- Holding W from standing (Gameplay/Sprint: off at 16, 28 in ~0.5 s): a run within ~0.1 s like HV (stand to full
--- run pose in ~0.1 s on their 30 fps frames), never a one-frame snap; then a sudden stop eases back to the idle.
+-- Holding W from standing (Gameplay/Sprint: off at 16, 28 in ~0.5 s), measured against Huss Valley's recording
+-- (owner, Oct 19: "the slow walking into the running animation", "a quick but nice looking stopping animation"):
+-- HV takes short quick steps for ~0.15 s and has the full stride by ~0.35 s; its ground stops within a frame and the
+-- legs are at the idle ~0.15 s later, the arms swinging out as the feet plant.
 do
 	local s3 = Mix.new()
 	local speed, prev = 0, nil
-	local runAt, idleAt, biggestStop = nil, nil, 0
+	local walkAt, runAt, idleAt, biggestStop, biggestGo = nil, nil, nil, 0, 0
+	local plantPeak, plantPeakAt, plantGoneAt = 0, nil, nil
 	for i = 1, 150 do
 		local target = if i <= 90 then Round.Speeds.Runner else 0
 		if i == 1 then speed = Run.StartSpeed end
 		speed = if target == 0 then 0 else speed + (target - speed) * (1 - math.exp(-(1 / 60) / (Run.Ramp / 3)))
 		Mix.step(s3, 1 / 60, { speed = speed, state = "ground", lengths = lengths })
 		local w = s3.weights
+		if not walkAt and w.Walk > 0.5 then walkAt = i / 60 end
 		if not runAt and w.Run > 0.95 then runAt = i / 60 end
+		if prev then
+			local change = math.max(math.abs(w.Walk - prev.Walk), math.abs(w.Run - prev.Run), math.abs(w.Idle - prev.Idle))
+			if i > 90 then biggestStop = math.max(biggestStop, change) else biggestGo = math.max(biggestGo, change) end
+		end
 		if i > 90 then
-			if not idleAt and w.Idle > 0.95 then idleAt = (i - 90) / 60 end
-			biggestStop = math.max(biggestStop, math.abs(w.Walk - prev.Walk), math.abs(w.Run - prev.Run), math.abs(w.Idle - prev.Idle))
+			local t = (i - 90) / 60
+			if not idleAt and w.Idle > 0.95 then idleAt = t end
+			local p = Mix.stopAmount(s3)
+			if p > plantPeak then plantPeak, plantPeakAt = p, t end
+			if plantPeak > 0 and p < 0.01 and not plantGoneAt then plantGoneAt = t end
 		end
 		prev = table.clone(w)
 	end
-	check(runAt and runAt >= 0.06 and runAt <= 0.25, string.format("setting off: a full run after %.2f s (HV ~0.1 s)", runAt or -1))
-	check(idleAt and idleAt >= 0.1 and idleAt <= 0.5 and biggestStop < 0.4,
-		string.format("a sudden stop eases to the idle in %.2f s (biggest change in a frame %.2f)", idleAt or -1, biggestStop))
+	print(string.format("  set-off: walk at %.2f s, full run at %.2f s (HV ~0.15 / ~0.35); stop: idle at %.2f s (HV ~0.15), plant %.2f at %.2f s, gone by %.2f s; biggest change a frame %.2f going, %.2f stopping",
+		walkAt or -1, runAt or -1, idleAt or -1, plantPeak, plantPeakAt or -1, plantGoneAt or -1, biggestGo, biggestStop))
+	check(walkAt and walkAt <= 0.1, "setting off: the walk shows first (short quick steps, like HV)")
+	check(runAt and runAt >= 0.28 and runAt <= 0.45, string.format("and the full run comes in by HV's ~0.35 s (%.2f s)", runAt or -1))
+	check(biggestGo < 0.35, string.format("never a pop on the way (biggest change in a 60 fps frame %.2f)", biggestGo))
+	check(idleAt and idleAt >= 0.1 and idleAt <= 0.25 and biggestStop < 0.4,
+		string.format("a sudden stop: the legs at the idle in %.2f s (HV ~0.15), biggest change in a frame %.2f", idleAt or -1, biggestStop))
+	check(plantPeak > 0.85 and plantPeakAt <= 0.1 and plantGoneAt and plantGoneAt <= 0.36,
+		"and the plant (body back, arms out) is up within 0.1 s and gone by ~0.3 s")
+	-- a stop from a walk plays no plant; setting off again at once takes the plant away
+	local s4 = Mix.new()
+	for _ = 1, 60 do Mix.step(s4, 1 / 60, { speed = 4, state = "ground", lengths = lengths }) end
+	for _ = 1, 10 do Mix.step(s4, 1 / 60, { speed = 0, state = "ground", lengths = lengths }) end
+	check(Mix.stopAmount(s4) < 0.01, "stopping from a slow walk plays no plant")
+	local s5 = Mix.new()
+	for _ = 1, 90 do Mix.step(s5, 1 / 60, { speed = 28, state = "ground", lengths = lengths }) end
+	for _ = 1, 3 do Mix.step(s5, 1 / 60, { speed = 0, state = "ground", lengths = lengths }) end
+	for _ = 1, 8 do Mix.step(s5, 1 / 60, { speed = 20, state = "ground", lengths = lengths }) end
+	check(Mix.stopAmount(s5) < 0.15, "setting off again straight away takes the plant away (no arms out while running)")
 end
 
 -- Shift lock (owner, Oct 19: "make it so when you shift lock the only thing that moves when you press w a s d (etc)
@@ -279,6 +306,107 @@ do
 	check(backRight.back and backRight.hips < -30, string.format("back and right: the hips turn to the front left, pedalling back (%.0f)", backRight.hips))
 	local stop = drive(s, Vector3.zero, true, 0, 0.6)
 	check(math.abs(stop.hips) < 3 and stop.biggest <= 25, string.format("letting go turns the body back ahead smoothly (%.0f left, %.0f a frame at most)", stop.hips, stop.biggest))
+end
+
+-- Without shift lock (owner, Oct 19 18:16: "when he presses D, the body turns right, but the head and camera stays
+-- the same"): Roblox has turned the body to the move; the head turns back toward where the camera looks, within a
+-- neck's reach, never tipped, and comes to the front when the camera looks at your face.
+do
+	local DT = 1 / 30
+	local body = Rig.r15("H")
+	local rootJ = body.parts.LowerTorso.joints.Root
+	local waist, neck = body.parts.UpperTorso.joints.Waist, body.parts.Head.joints.Neck
+	local function yawOf(cf)
+		local look = cf.LookVector
+		return math.deg(math.atan2(-look.X, -look.Z))
+	end
+	local function headFor(aimDeg, on, seconds)
+		local s = Mix.new()
+		local biggest, look = 0, 0
+		for _ = 1, math.floor(seconds / DT) do
+			Mix.step(s, DT, { speed = 28, state = "ground", lengths = lengths })
+			local before = look
+			look = Mix.look(s, DT, math.rad(aimDeg), on, 0)
+			biggest = math.max(biggest, math.abs(math.deg(look - before)))
+		end
+		local pose = Sampler.sample(A.Run, A.Run.length * 0.3)
+		for _, m in body.motors do m.Transform = pose[m.Part1.Name] or CFrame.identity end
+		body.root.CFrame = CFrame.new(0, Rig.REST_HEIGHT, 0)
+		Rig.fk(body)
+		local head0, lower0 = body.parts.Head.CFrame, body.parts.LowerTorso.CFrame
+		local hips, w, n = Mix.strafePose(s, 0, {
+			root = { C0 = rootJ.C0, C1 = rootJ.C1, T = rootJ.Transform },
+			waist = { C0 = waist.C0, C1 = waist.C1, T = waist.Transform },
+			neck = { C0 = neck.C0, C1 = neck.C1, T = neck.Transform },
+		}, look)
+		rootJ.Transform, waist.Transform, neck.Transform = hips, w, n
+		Rig.fk(body)
+		-- the head turned exactly `look` about straight up from where the run had it (no tip)
+		local want = CFrame.Angles(0, -look, 0) * head0.Rotation
+		local _, tip = (want:Inverse() * body.parts.Head.CFrame.Rotation):ToAxisAngle()
+		return { head = yawOf(head0) - yawOf(body.parts.Head.CFrame), hips = yawOf(lower0) - yawOf(body.parts.LowerTorso.CFrame),
+			tip = math.deg(math.abs(tip)), biggest = biggest }
+	end
+	local Lk = L.Look
+	-- D without shift lock: the body faces right, the camera still looks ahead = 90 degrees to the body's left
+	local d = headFor(-90, true, 0.8)
+	check(math.abs(d.head + Lk.Max) < 3 and math.abs(d.hips) < 0.5 and d.tip < 1,
+		string.format("D without shift lock: the head turns %.0f degrees back toward the camera's way, the legs stay on the move (tip %.2f)", d.head, d.tip))
+	check(d.biggest <= 20, string.format("no snap: at most %.0f degrees a frame at 30 fps", d.biggest))
+	local ahead = headFor(0, true, 0.8)
+	check(math.abs(ahead.head) < 0.5, "running the way the camera looks: the head faces ahead")
+	local face = headFor(175, true, 0.8)
+	check(math.abs(face.head) < 1, "the camera looking at your face: the head faces where you run (a neck can't turn round)")
+	local locked = headFor(-90, false, 0.8)
+	check(math.abs(locked.head) < 0.5, "in shift lock the body already faces the camera: the look stays out")
+end
+
+-- Another player stopping: their legs follow ~0.15 s after their body stops (a still body past a network stall has
+-- stopped), not eased out over the whole 0.25 s window.
+do
+	local tr, s = Mix.tracker(Run.Track), Mix.new()
+	local t, x = 0, 0
+	for _ = 1, 60 do
+		t += 1 / 60
+		x += 28 / 60
+		Mix.step(s, 1 / 60, { speed = Mix.track(tr, t, Vector3.new(x, 0, 0)), state = "ground", lengths = lengths })
+	end
+	local zeroAt, idleAt = nil, nil
+	for i = 1, 40 do
+		t += 1 / 60
+		local v = Mix.track(tr, t, Vector3.new(x, 0, 0))
+		Mix.step(s, 1 / 60, { speed = v, state = "ground", lengths = lengths })
+		if not zeroAt and v < 0.01 then zeroAt = i / 60 end
+		if not idleAt and s.weights.Idle > 0.95 then idleAt = i / 60 end
+	end
+	print(string.format("  another player stops: read as stopped after %.2f s, legs at the idle after %.2f s", zeroAt or -1, idleAt or -1))
+	check(zeroAt and zeroAt <= Run.Track.Hold + 0.03 and idleAt and idleAt <= Run.Track.Hold + 0.2,
+		"another player's stop shows ~0.15 s after their body stops (was the whole window, ~0.4 s)")
+	-- with their replicated velocity at zero too, at once (the legs stop with the body, as HV's)
+	local tr2, s2 = Mix.tracker(Run.Track), Mix.new()
+	t, x = 0, 0
+	for _ = 1, 60 do
+		t += 1 / 60
+		x += 28 / 60
+		Mix.step(s2, 1 / 60, { speed = Mix.track(tr2, t, Vector3.new(x, 0, 0), 28), state = "ground", lengths = lengths })
+	end
+	local idle2 = nil
+	for i = 1, 40 do
+		t += 1 / 60
+		Mix.step(s2, 1 / 60, { speed = Mix.track(tr2, t, Vector3.new(x, 0, 0), 0), state = "ground", lengths = lengths })
+		if not idle2 and s2.weights.Idle > 0.95 then idle2 = i / 60 end
+	end
+	check(idle2 and idle2 <= 0.2, string.format("and with their velocity at zero, their legs are at the idle in %.2f s (HV ~0.15)", idle2 or -1))
+	-- a network stall (not moved, their velocity still saying they run) keeps the run
+	local tr3 = Mix.tracker(Run.Track)
+	t, x = 0, 0
+	for _ = 1, 30 do
+		t += 1 / 60
+		x += 28 / 60
+		Mix.track(tr3, t, Vector3.new(x, 0, 0), 28)
+	end
+	local held = Mix.track(tr3, t + 0.1, Vector3.new(x, 0, 0), 28)
+	check(held > 20, string.format("a 0.1 s stall with their velocity still running keeps the run (%.1f)", held))
 end
 
 print(`Locomotion: {passed} ok, {failed} failed`)

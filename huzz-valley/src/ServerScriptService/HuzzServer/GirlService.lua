@@ -9,6 +9,7 @@ local Config = require(ReplicatedStorage.Shared.Config.Round)
 local Carry = require(ReplicatedStorage.Shared.Config.Carry)
 local GirlNames = require(ReplicatedStorage.Shared.Config.GirlNames)
 local GirlRoll = require(ReplicatedStorage.Shared.GirlRoll)
+local GirlRig = require(ReplicatedStorage.Shared.GirlRig)
 local Characters = require(ReplicatedStorage.Shared.Config.Characters)
 
 local GirlService = {}
@@ -217,29 +218,11 @@ function GirlService.prepare(girl)
 	end
 end
 
--- Avatars on Roblox's newer joints use AnimationConstraints (some doubled up).
--- The copy gets one plain Motor6D per joint instead, which every part of the game animates.
+-- Avatars on Roblox's newer joints use AnimationConstraints (some doubled up): the copy gets one plain Motor6D per
+-- joint, and every accessory welded to the body part it sits on (C.C.'s hair turns with her head): Shared/GirlRig.
 local function useMotors(model)
-	local done = {}
-	for _, d in model:GetDescendants() do
-		if d.ClassName == "AnimationConstraint" then
-			local a0, a1 = d.Attachment0, d.Attachment1
-			local part0, part1 = a0 and a0.Parent, a1 and a1.Parent
-			if part0 and part1 and part0:IsA("BasePart") and part1:IsA("BasePart") and not done[part1] then
-				done[part1] = true
-				local motor = Instance.new("Motor6D")
-				motor.Name = d.Name
-				motor.Part0, motor.Part1 = part0, part1
-				motor.C0, motor.C1 = a0.CFrame, a1.CFrame
-				motor.Parent = part1
-			end
-		end
-	end
-	for _, d in model:GetDescendants() do
-		if d.ClassName == "AnimationConstraint" or d:IsA("BallSocketConstraint") or d:IsA("NoCollisionConstraint") then
-			d:Destroy()
-		end
-	end
+	GirlRig.toMotors(model)
+	GirlRig.joinAccessories(model)
 end
 
 -- Her body's box (head, torso, arms and legs: no hats, hair, wings or other accessories) in her root's

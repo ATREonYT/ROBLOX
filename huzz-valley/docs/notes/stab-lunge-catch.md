@@ -60,6 +60,19 @@ Read before changing how the click stab, a catcher's dive (lunge) and its stun, 
   catcher's screen and on the server with a look-back for lag (`Shared/TouchHit`, `HuzzServer/HitHistory`; numbers
   in [round.md](round.md) "Catching"). The motion here doesn't change it: a slash or leap that looks like it reaches
   someone but whose box doesn't touch their body is a miss.
+- **Pinpoint: what the catcher saw counts** (Oct 19; rule in [round.md](round.md) "Catching"): the screen sends
+  where it drew the runner and itself, the server checks both were really there in the last 0.35 s and takes the
+  touch as drawn. Network model `lune run huzz-valley/tools/sim/touch_lag.luau` (repo root; 30 Hz sends, one-way =
+  ping/2, others drawn 0.05 s late: a guess), fair hits that count, old rule vs now: both 50 ms 100/100%; both
+  100 ms 100/100; both 200 ms 62/100 (the old look-back missed by 2.2 studs); runner 60 ms, catcher 250 ms 51/100;
+  catcher 400 ms 16/0 (past MaxRewind, on purpose). The sim's bots send claims too ("screen claims").
+- **The gap nobody can close:** every screen shows the others where they were a moment ago (their send, the trip to
+  the server, the trip to you, plus Roblox's smoothing), so the catcher sees the runner 3 studs back at 50 ms ping
+  each, ~5 at 100 ms, ~8 at 200 ms (p95 up to 12.5: the runner turning). On the runner's own screen the knife can
+  therefore look short. Roblox gives no way to show every player in the same spot at the same time; the fair choice
+  is one screen's view, and we take the catcher's. Not
+  done: moving the caught body to where the knife touched (the runner would see a snap back) and drawing others
+  ahead of where they were (wrong places on every turn).
 - **Releasing a pose** (StabMotion, DownMotion, CarryMotion): put back the pose underneath only on joints nobody else
   wrote since, or the old pose shows for one frame ([animations.md](animations.md) "Layering").
 - **Red fill** on the caught runner (`Gameplay/RoundHud`, on their team Highlight, everyone's screen,
@@ -104,5 +117,12 @@ Read before changing how the click stab, a catcher's dive (lunge) and its stun, 
   `Stab.Cooldown`, was 0.6.
 - **Up 24, was 18**: at 18 the body was off the floor 0.18 s (5 frames) and 0.8 studs high, too short to show a
   take-off, a knife leading and a landing; HV's catcher is in the air ~0.4 s.
+- **Pinpoint, Oct 19** (owner: "make the player to player interactions pinpoint precise. For example make them
+  all be in the same spots on everyones screen because its like that in huss valley, so please make it pin point so
+  people dont die and start compalining"): before, the server re-tested the touch against its own history with a
+  guessed lag, so a fair hit on a 200 ms screen missed 38% of the time. Not seen with real ping yet (Studio's
+  Clients and Servers has no lag unless Studio's Incoming Replication Lag setting is raised).
+- **Known gap**: one frame at the end of a dive's get-up (~2.8 s after take-off) the right arm turns ~100° and back
+  (`motion3d/move_smooth_measure.luau` at 8.30 s, there before Oct 19's feel change too); in `StabMotion`'s release.
 - **Catch**: the knife-colour cut line and 10 sparks replaced 30 red-and-white sparks (generic, and HV has none).
   Downed runners used to lose their outline. The runner used to stop dead from a sprint.

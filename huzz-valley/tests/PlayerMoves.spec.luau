@@ -162,6 +162,7 @@ check(hip.Transform ~= CFrame.identity, "the idle poses their hips")
 -- running at ~20 studs/s with bursty network updates: their thigh swings through whole strides
 local seen, shown, hold, k = {}, theirs.root.CFrame, 0, 0
 local truePos = theirs.root.CFrame
+theirs.root.AssemblyLinearVelocity = Vector3.new(0, 0, -20) -- (a replicated runner says it runs, between updates too)
 frames(90, function()
 	k += 1
 	truePos = truePos * CFrame.new(0, 0, -20 / 60)

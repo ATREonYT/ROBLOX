@@ -12,7 +12,12 @@
 	  - in shift lock, the hips and legs turn toward the way you move and the head keeps looking where you aim
 	    (Shared/LocomotionMix.strafe, owner Oct 19: "the only thing that moves when you press w a s d (etc) is their
 	    body not their head"); moving backwards plays the loops backwards. Your screen only: everyone else draws it
-	    from your body's movement (Gameplay/PlayerMoves).
+	    from your body's movement (Gameplay/PlayerMoves);
+	  - without shift lock (the lobby, Alt held) Roblox turns your body to the move and the head turns back toward
+	    where the camera looks (LocomotionMix.look, owner Oct 19 18:16: "when he presses D, the body turns right, but
+	    the head and camera stays the same");
+	  - setting off walks first and a stop from a run plays a quick plant (LocomotionMix SetOff / Stop, measured on
+	    Huss Valley's recording): the arms swing out on the shoulders here.
 	Published tracks replicate, so other players see the same. Studio's temporary copies play only on this screen:
 	there Gameplay/PlayerMoves draws your walk on everyone else's screen by hand (it skips you here while
 	Locomotion.drives(character) says this runs). Dances and the stab are Action tracks: they
@@ -121,6 +126,7 @@ local function attach(character: Model)
 	end
 	local rootJoint = jointOf("LowerTorso", "Root")
 	local waistJoint, neckJoint = jointOf("UpperTorso", "Waist"), jointOf("Head", "Neck")
+	local rightArm, leftArm = jointOf("RightUpperArm", "RightShoulder"), jointOf("LeftUpperArm", "LeftShoulder")
 	-- This frame's animated pose of a joint (or the last one, if nothing animated it since our write: never stack).
 	local function current(motor: Motor6D): CFrame
 		local pose = motor.Transform
@@ -225,21 +231,38 @@ local function attach(character: Model)
 				local c0 = rootJoint.C0
 				hipsPose = c0:Inverse() * Mix.leanCFrame(roll, pitch, root.Size.Y / 2 + humanoid.HipHeight) * c0 * hipsPose
 			end
-			-- shift lock: hips toward the move, the head still looking where you aim (Shared/LocomotionMix.strafe)
-			local turn = Mix.strafe(mix, dt, root.CFrame:VectorToObjectSpace(v), player:GetAttribute("HuzzShiftLock") == true, quiet)
+			-- shift lock: hips toward the move, the head still looking where you aim (Shared/LocomotionMix.strafe);
+			-- without it: the body goes the way you move, the head looks where the camera looks (LocomotionMix.look)
+			local locked = player:GetAttribute("HuzzShiftLock") == true
+			local turn = Mix.strafe(mix, dt, root.CFrame:VectorToObjectSpace(v), locked, quiet)
+			local cam = Workspace.CurrentCamera
+			local aim = 0
+			if cam then
+				local l = root.CFrame:VectorToObjectSpace(cam.CFrame.LookVector)
+				aim = math.atan2(l.X, -l.Z) -- (0 = the camera looks the way you face, + = to your right)
+			end
+			local look = Mix.look(mix, dt, aim, not locked and cam ~= nil, quiet)
 			if waistJoint and neckJoint and waistJoint.Parent and neckJoint.Parent then
 				local waistPose, neckPose = current(waistJoint), current(neckJoint)
-				if math.abs(turn) > 1e-3 then
+				if math.abs(turn) > 1e-3 or math.abs(look) > 1e-3 then
 					hipsPose, waistPose, neckPose = Mix.strafePose(mix, turn, {
 						root = { C0 = rootJoint.C0, C1 = rootJoint.C1, T = hipsPose },
 						waist = { C0 = waistJoint.C0, C1 = waistJoint.C1, T = waistPose },
 						neck = { C0 = neckJoint.C0, C1 = neckJoint.C1, T = neckPose },
-					})
+					}, look)
 				end
 				put(waistJoint, waistPose)
 				put(neckJoint, neckPose)
 			end
 			put(rootJoint, hipsPose)
+			-- the stop's plant: the arms swing out as the feet come together (LocomotionMix.stopAmount)
+			local plant = if quiet > 0 then 0 else Mix.stopAmount(mix)
+			for side, arm in { [1] = rightArm, [-1] = leftArm } do
+				if arm and arm.Parent then
+					local pose = current(arm)
+					put(arm, if plant > 1e-4 then Mix.stopArm(mix, plant, side) * pose else pose)
+				end
+			end
 		end
 	end
 

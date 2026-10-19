@@ -21,7 +21,9 @@ has the general KeyframeSequence workflow; 3D video tools are in core `CLAUDE.md
   yours in live), blended by `LocomotionMix`.
 - Others' speed comes from their body's position over a 0.25 s window (`LocomotionMix.track`, `Run.Track`: holds
   through 0.15 s network stalls, ignores teleports), never their replicated velocity (that jumpy number made the old
-  scripted legs stutter). Fades out for a dance/Action track; downed = speed 0 under the knockdown; carriers' arms go
+  scripted legs stutter). The velocity is only a yes/no hint (Oct 19): when it says stopped and the body hasn't
+  moved, the legs stop at once (their stop shows 0.17-0.30 s after it happens, was ~0.4 s), and a stall while it
+  still says running keeps the run. Fades out for a dance/Action track; downed = speed 0 under the knockdown; carriers' arms go
   to CarryAnimator. LOD: re-sampled every frame within 70 studs, 30/s to 160, 15/s beyond or behind the camera.
   `RunAnimator` now draws only the huss and cast on top (`dashOnly`); its scripted run shows only before the pack's
   folder arrives.
@@ -31,10 +33,11 @@ has the general KeyframeSequence workflow; 3D video tools are in core `CLAUDE.md
   steps. Speeds scale with avatar size (`RootHeight` 3).
 - Specs `tests/Locomotion.spec` (pure maths) and `tests/PlayerMoves.spec` (the real Gameplay files on fake bodies).
   Film `docs/previews/remote-walk.mp4` (`motion3d/remote_walk_scene.luau`: before/after over a jumpy network, then the
-  set-off from behind); sheet `docs/previews/walk-vs-hv.jpg` (`motion3d/walk_sheet.py`): full run ~0.1 s after W in
-  both. Footstep sounds: [movement-and-camera.md](movement-and-camera.md). Not seen in Studio yet.
+  set-off from behind); sheet `docs/previews/walk-vs-hv.jpg` (`motion3d/walk_sheet.py`). Setting off and stopping (a short walk
+  into the run, the stop plant) and the head look: [movement-and-camera.md](movement-and-camera.md). Footstep sounds: [movement-and-camera.md](movement-and-camera.md). Not seen in Studio yet.
 - **Shift lock strafe** (`LocomotionMix.strafe` + `strafePose`): hips and legs turn to the move, the head stays on the
-  aim, S back-pedals; [movement-and-camera.md](movement-and-camera.md). `strafePose` solves the neck exactly (the
+  aim, S back-pedals; without shift lock `LocomotionMix.look` turns the head the other way (the body turned, the head
+  stays on the camera); [movement-and-camera.md](movement-and-camera.md). `strafePose` solves the neck exactly (the
   head's turn is undone through the hunched run pose); a plain counter-turn on the neck tipped the head sideways.
 
 ## Layering poses on Motor6D.Transform (every pose module; lesson of Oct 19)
@@ -70,6 +73,22 @@ has the general KeyframeSequence workflow; 3D video tools are in core `CLAUDE.md
   steps/s, the lock rounded off and faded as her feet slide (`Pack.Surge`): 23°/frame, no jolts
   (`motion3d/girl_smooth_measure.luau`; limits in the spec). Scripted `GirlMotion` walk/idle only until the folder arrives.
 - Spec `tests/GirlMoves.spec`, video `docs/previews/girl-pack-walk.mp4` (`motion3d/girl_pack_scene.luau`).
+
+## The girls' rigs (`Shared/GirlRig`: every copy that moves)
+- Every girl copy that moves (carried, follower, prize, big showcase: `GirlService.makeCopy`; your companion:
+  `Gameplay/Auras`) goes through `GirlRig.toMotors` (AnimationConstraints to one Motor6D per joint) and
+  `GirlRig.joinAccessories` (each hat, hair and face piece welded to the body part it sits on). His models are never
+  changed. Spec `tests/GirlRig.spec.luau` (all 35 of his girls: every accessory on a body part where it sat, a head
+  Motor6D, C.C.'s hair on her Head); film `docs/previews/cc-head-turn.mp4` (`motion3d/girl_rig_scene.luau`).
+- Lesson: **join accessories by what holds them, not by Welds alone.** C.C. (his only R15, the Secret) holds her hair,
+  face and hat with AccessoryRigidConstraints; the copies only followed Welds and Motor6Ds, saw her hair as loose and
+  welded it to her ROOT, so her head turned under hair that stayed still ("cc's head doesnt move"). The 34 R6 girls
+  use Welds to the Head; one loose piece on Rize (no attachment) now goes on the body part nearest to it.
+- **Everyone's girl on your screen** (`Gameplay/Auras`): each player is updated on their own (pcall); one player's girl
+  failing used to end the frame's loop, so every player after them had no girl on your screen. A girl that can't be
+  built is tried again every 5 s (not every frame) and the first error per player goes to Output tagged `[Huzz]`.
+  On the server each step after a save change (looks, title, companion) runs on its own too. Check
+  `tools/preview/check_companions.luau` (three players with his real girls; one broken girl doesn't hide the others).
 
 ## Carried girls (`GirlMotion.carried`, `Config/GirlMotion.Carried.Pose`)
 - She sits up in his raised hands (upper body up 24°, legs bent up 62° at the hips, R15 knees bent, arms half hanging),
@@ -116,6 +135,10 @@ has the general KeyframeSequence workflow; 3D video tools are in core `CLAUDE.md
   centre circle; pictures built ahead while closed; opens with one smooth grow (no CanvasGroup, no stagger).
 
 ## Honest gaps
+- The girls' rigs and everyone's girls (Oct 19 fixes) are checked offline only. Why other players' girls were missing
+  on HIS screen is not proven: the loop that one error stopped is a real way for it to happen, but Studio's Output
+  (`[Huzz] <name>'s girl on this screen: ...`) will say if a girl actually fails there. The R6 girls' moves are the
+  same as before (retargeted from the R15 pack); only the accessories changed.
 - Not seen in Studio yet: the pack walk for everyone, carried girls, the pickup and its effects, dance pictures on
   real avatars, synced dancing across two clients (the hand-drawn dances for others in Studio, the nudges on
   published tracks, the DANCE TOGETHER prompt; whether a replicated track takes the nudge smoothly is Studio-only).
@@ -133,6 +156,9 @@ has the general KeyframeSequence workflow; 3D video tools are in core `CLAUDE.md
 - **The pickup** (Oct 19 "add the nice girl animations when they are picked up"): PickupTime was 0 (she appeared
   overhead at once) because the old flight came all the way from the big girl over the map; now a far pickup starts
   on the ground in front of him, so it reads as him lifting her, not her flying across the field.
+- **Girls' rigs and everyone's girls** (owner, Oct 19: "please fix all of the girl characters when you equip them, for
+  example cc's head doesnt move, or in general it looks weird even in the animations, so please fix the girls";
+  "Also make the girls appear for everyone on everyones screen"): C.C.'s accessories on her root; the one-error loop.
 - **Girls on every screen / synced dancing** (Oct 19): the streaming lesson again (core pitfall: never look a part up
   once); and dances with Studio's stand-in IDs never showed on other screens, so the girls' and dancers' moves are now
   driven from the two attributes every screen has.

@@ -301,22 +301,25 @@ function M.start()
 				return
 			end
 			local S = Config.Stab
-			local hit = HitCheck.find(root, S.Reach, S.Width)
+			local hit, shown = HitCheck.find(root, S.Reach, S.Width)
 			if hit == false then
 				StabNet:FireServer()
 				return
 			end
 			if hit then
-				StabNet:FireServer(hit)
+				StabNet:FireServer(hit, shown) -- (who, and where this screen showed you both: the server judges that)
 				return
 			end
 			task.spawn(function()
 				local t0 = os.clock()
 				while os.clock() - t0 < 0.1 do
 					RunService.Heartbeat:Wait()
-					local found = root.Parent and HitCheck.find(root, S.Reach, S.Width)
+					local found, seenNow = nil, nil
+					if root.Parent then
+						found, seenNow = HitCheck.find(root, S.Reach, S.Width)
+					end
 					if found then
-						StabNet:FireServer(found)
+						StabNet:FireServer(found, seenNow)
 						return
 					end
 				end

@@ -8,6 +8,8 @@
 	  - the two boxes must overlap, give or take Config/Round.Touch.Tolerance (the separating-axis test).
 	The catcher's screen (Gameplay/HitCheck), the server (RoundService.stabNear, with HuzzServer/HitHistory for lag)
 	and the spec (tests/TouchHit.spec.luau) all use this one rule. Pure maths: no Instances are made here.
+	verify(): the server's check of a hit the catcher's screen saw, on exactly where that screen showed both bodies
+	(Oct 19 "pinpoint precise"; measured with tools/sim/touch_lag.luau).
 ]]
 local TouchHit = {}
 
@@ -103,6 +105,51 @@ function TouchHit.shape(rootCF: CFrame, parts: { any }): { { cf: CFrame, size: V
 		end
 	end
 	return if #out > 0 then out else nil
+end
+
+-- How far a point is from a path of CFrames (the closest point on the straight pieces between them), in studs.
+function TouchHit.pathDistance(p: Vector3, path: { CFrame }): number
+	local best = math.huge
+	for i = 1, #path do
+		local a = path[i].Position
+		local b = if i < #path then path[i + 1].Position else a
+		local ab = b - a
+		local len2 = ab:Dot(ab)
+		local k = if len2 > 1e-9 then math.clamp((p - a):Dot(ab) / len2, 0, 1) else 0
+		best = math.min(best, (a + ab * k - p).Magnitude)
+	end
+	return best
+end
+
+--[[ A hit the catcher's screen saw, checked by the server (owner, Oct 19: "make the player to player interactions
+	pinpoint precise ... so people dont die and start compalining"). What counts is exactly what that screen showed:
+	claim.seen = the runner's root as the catcher's screen drew it, claim.mine = the catcher's own root then. The
+	server only checks it was really possible:
+	  - seen lies on the runner's real path over the last T.MaxRewind seconds (runnerPath, from HuzzServer/HitHistory),
+	    within T.SeenSlack studs (a screen draws a body between the network's snapshots of that path);
+	  - mine lies on the catcher's own path within T.MineSlack;
+	  - the knife's box from mine (along `along`, else the way mine faces) touches the runner's body at seen.
+	So a lagging screen's fair hit counts, and nobody is caught where no screen ever showed them, nor where they were
+	more than MaxRewind seconds ago. Returns (ok, why) for the notes and the spec. ]]
+function TouchHit.verify(claim, runnerPath: { CFrame }, catcherPath: { CFrame }, shape, knife, along: Vector3?, T): (boolean, string)
+	if type(claim) ~= "table" or typeof(claim.seen) ~= "CFrame" or typeof(claim.mine) ~= "CFrame" then
+		return false, "bad claim"
+	end
+	local seen, mine = claim.seen, claim.mine
+	if seen.Position ~= seen.Position or mine.Position ~= mine.Position then
+		return false, "bad claim" -- (NaN)
+	end
+	if #runnerPath == 0 or TouchHit.pathDistance(seen.Position, runnerPath) > T.SeenSlack then
+		return false, "runner never there"
+	end
+	if #catcherPath == 0 or TouchHit.pathDistance(mine.Position, catcherPath) > T.MineSlack then
+		return false, "catcher never there"
+	end
+	local boxCF, boxSize = TouchHit.reachBox(mine, along, knife.Reach, knife.Width)
+	if not TouchHit.touches(boxCF, boxSize, seen, shape, T.Tolerance) then
+		return false, "no touch"
+	end
+	return true, "hit"
 end
 
 -- Does the reach box touch a body whose shape (TouchHit.shape, relative to its root) stands at rootCF?

@@ -25,8 +25,9 @@
 	              cloud) and she rises to her place (her name over her head comes back as she rises)
 	Flashes: soft pulses only at the burst, the swell and the last burst (more than a second apart; kid-safe).
 	Reduced Motion (Settings): no shake, kicks, impact frame, pulses or crackle. No black bars (owner).
-	The camera: one smooth move from Shared/SecretReveal.camera with a slow, small wobble (shakeAt); walls pull it in
-	at once and let it ease back out. The hand-back (the last 0.5 s): a quick dip to black and, once it is fully
+	The camera: one smooth move from Shared/SecretReveal.camera with a slow, small wobble (shakeAt), filmed from the
+	clearest side of her on this map and pulled in ahead of anything still in the way, planned once at the start
+	(Shared/SecretReveal "Framing on every map"), timed on this screen's own steady clock. The hand-back (the last 0.5 s): a quick dip to black and, once it is fully
 	black, the camera goes back to Roblox behind where you stand now (your old angle and distance); black holds 2
 	frames more, then lifts. A dark dip, not a flash.
 	Pictures: Shared/FxTexture (the owner's set once uploaded: the beams then scroll his beam-glow, ladder and
@@ -1239,26 +1240,70 @@ function M.start()
 		local startDist = if root then (startCF.Position - (root.Position + Vector3.new(0, 1.5, 0))).Magnitude else 12
 		if startDist < 2 or startDist > 60 then startDist = 12 end -- (first person or a far shot: Roblox's usual)
 		local from = if root then root.Position - ground else Vector3.new(0, 0, 1)
-		local dir = Vector3.new(from.X, 0, from.Z)
-		dir = if dir.Magnitude > 1 then dir.Unit else Vector3.new(0, 0, 1)
+		local prefer = Vector3.new(from.X, 0, from.Z)
+		prefer = if prefer.Magnitude > 1 then prefer.Unit else Vector3.new(0, 0, 1)
 		player:SetAttribute("HuzzCinematic", true)
 		camera.CameraType = Enum.CameraType.Scriptable
 		local noise = math.random() * 100
-		local reach, lastT = 1, nil :: number? -- (how much of the camera's distance from its look point is clear of walls)
-		-- (the camera never sits behind a wall or prop: from her towards the camera, stop just in front of a hit)
-		local okRay, ray = pcall(function()
-			local p = RaycastParams.new()
-			p.FilterType = Enum.RaycastFilterType.Exclude
-			p.FilterDescendantsInstances = { model, Workspace:FindFirstChild("HuzzSecretReveal"), player.Character }
-			return p
+		-- The shot, planned once (Shared/SecretReveal "Framing on every map"): the clearest side of her on this map,
+		-- and how far in the camera must come along the way. Rays from her to the camera skip see-through parts
+		-- (the map's zone boxes, invisible walls) and every character (players walking past made it jump).
+		local ignore: { Instance } = { model }
+		pcall(function()
+			for _, name in { "HuzzSecretReveal", "HuzzAuraFX", "HuzzCarried", "HuzzFollowers", "HuzzCompanions" } do
+				local f = Workspace:FindFirstChild(name)
+				if f then table.insert(ignore, f) end
+			end
+			for _, p in Players:GetPlayers() do
+				if p.Character then table.insert(ignore, p.Character) end
+			end
 		end)
-		local function clear(eye: Vector3, look: Vector3): Vector3
-			if not okRay then return eye end
+		local function reachOf(eye: Vector3, look: Vector3): number
 			local v = eye - look
-			if v.Magnitude < 0.5 then return eye end
-			local okHit, hit = pcall(function() return Workspace:Raycast(look, v, ray) end)
-			if okHit and hit then return hit.Position - v.Unit * 1 end
-			return eye
+			if v.Magnitude < 0.5 then return 1 end
+			local okHit, hit = pcall(function()
+				local params = RaycastParams.new()
+				params.FilterType = Enum.RaycastFilterType.Exclude
+				for _ = 1, 8 do
+					params.FilterDescendantsInstances = ignore
+					local r = Workspace:Raycast(look, v, params)
+					if not (r and r.Instance and r.Instance:IsA("BasePart") and r.Instance.Transparency >= 0.9) then
+						return r
+					end
+					table.insert(ignore, r.Instance) -- (a see-through part, like the map's Middle box: look past it)
+				end
+				return nil
+			end)
+			if okHit and hit then
+				return math.clamp(((hit.Position - look).Magnitude - 1) / v.Magnitude, 0.05, 1)
+			end
+			return 1
+		end
+		local times = Reveal.sampleTimes()
+		local function eyeAt(t: number, d: Vector3): (Vector3, Vector3)
+			local h = Reveal.height(t, Config.Showcase.Height)
+			local eye, look = Reveal.camera(math.min(t, Reveal.LENGTH), ground + Vector3.new(0, 0.5, 0), d, h or Config.Showcase.Height, k, mid)
+			return Vector3.new(eye.X, math.max(eye.Y, ground.Y + 1.5), eye.Z), look -- (never under the floor)
+		end
+		local dirs, reaches = Reveal.directions(), {}
+		local okPlan = pcall(function()
+			for i, d in dirs do
+				reaches[i] = {}
+				for j, t in times do
+					reaches[i][j] = reachOf(eyeAt(t, d))
+				end
+			end
+		end)
+		local dir, plan = prefer, nil
+		if okPlan then
+			local best = Reveal.pickDirection(dirs, reaches, prefer)
+			dir, plan = dirs[best], Reveal.planReach(times, reaches[best])
+		end
+		-- One steady clock: the server's time read once, then this screen's own clock (GetServerTimeNow is nudged
+		-- as it re-syncs, and those small jumps showed as stutters in the camera and her moves).
+		local clockStart, clockAt = os.clock(), Workspace:GetServerTimeNow() - at
+		local function now(): number
+			return clockAt + (os.clock() - clockStart)
 		end
 		-- the dip to black for the hand-back (a plain black frame over everything; ours alone)
 		local dip = Instance.new("ScreenGui")
@@ -1319,7 +1364,7 @@ function M.start()
 		end
 		RunService:BindToRenderStep("HuzzSecretReveal", Enum.RenderPriority.Camera.Value + 3, function()
 			if done then return end
-			local t = Workspace:GetServerTimeNow() - at
+			local t = now()
 			-- ends when the black has lifted; a safety stop if frames ran late
 			if not model.Parent or (liftFrom and t - liftFrom >= LIFT) or t > Reveal.LENGTH + 0.5 then
 				finish()
@@ -1347,23 +1392,13 @@ function M.start()
 					step(t, dir, camera.CFrame)
 					return
 				end
-				local h = Reveal.height(t, Config.Showcase.Height)
-				local eye, look = Reveal.camera(math.min(t, Reveal.LENGTH), ground + Vector3.new(0, 0.5, 0), dir, h or Config.Showcase.Height, k, mid)
-				eye = Vector3.new(eye.X, math.max(eye.Y, ground.Y + 1.5), eye.Z) -- (never under the floor)
-				-- in front of walls: pulled in at once when something is in the way, eased back out once it's clear
-				-- (a wall flicking in and out of the ray made the camera jump back and forth)
-				local want = 1
-				local full = eye - look
-				if full.Magnitude > 0.5 then want = (clear(eye, look) - look).Magnitude / full.Magnitude end
-				local dt = math.clamp(t - (lastT or t), 0, 0.1)
-				for _, c in Reveal.CUTS do
-					if lastT and lastT < c and t >= c then reach = want end -- (a fresh start on the cut)
-				end
-				lastT = t
-				reach = if want < reach then want else reach + (want - reach) * math.min(1, dt * 5)
-				eye = look + full * reach
+				local eye, look = eyeAt(t, dir)
+				-- pulled in ahead of anything in the way on this side (planned at the start), with a wider lens so
+				-- she stays the same size
+				local reach = if plan then Reveal.reachAt(times, plan, t) else 1
+				eye = look + (eye - look) * reach
 				local cf = CFrame.lookAt(eye, look)
-				local fov = Reveal.fov(t, Motion.reduced)
+				local fov = Reveal.wideFov(Reveal.fov(t, Motion.reduced), reach)
 				if not Motion.reduced then -- (a slow, small wobble: Shared/SecretReveal.shakeAt)
 					local rx, ry, rz, px, py = Reveal.shakeAt(t, noise)
 					cf = cf * CFrame.new(px * k, py * k, 0) * CFrame.Angles(rx, ry, rz)

@@ -120,9 +120,16 @@ local RewardService = require(HuzzServer.RewardService)
 RewardService.start() -- titles and looks from the girls you get (Config/CoinShop rewards)
 DataService.onChanged = function(player)
 	if #RewardService.sync(player) > 0 then return end -- (it changed the save: this runs again with the rewards)
-	CosmeticsService.refresh(player)
-	require(HuzzServer.NameTagService).restyle(player) -- (a new title or name colour shows in the lobby straight away)
-	CompanionService.refresh(player) -- (the equipped anime girl follows you: Gameplay/Auras)
+	-- each on its own: one failing (a look, a title) never stops the rest, so your girl always follows the save
+	-- (owner, Oct 19: "make the girls appear for everyone on everyones screen")
+	for _, step in {
+		function() CosmeticsService.refresh(player) end,
+		function() require(HuzzServer.NameTagService).restyle(player) end, -- (a new title or name colour shows at once)
+		function() CompanionService.refresh(player) end, -- (the equipped anime girl follows you: Gameplay/Auras)
+	} do
+		local ok, err = pcall(step)
+		if not ok then warn("[Huzz] after a save change: " .. tostring(err)) end
+	end
 	-- a newly worn knife skin shows straight away: on your body, or in your hand while you're a catcher
 	local c = player.Character
 	if c then

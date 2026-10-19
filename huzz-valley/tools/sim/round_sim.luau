@@ -727,10 +727,12 @@ local function simulate(opts)
 	end
 
 	-- Watch every message the server sends to clients.
+	local stillDown = {} -- runner id -> caught this round and not helped up (a catcher next round)
 	local function watchEvents()
 		for _, e in roundEvents do
 			if e.kind == "Caught" then
 				stats.tags += 1
+				if e.data.runner then stillDown[e.data.runner] = true end
 				if e.data.bot then stats.botTags = (stats.botTags or 0) + 1 end
 			elseif e.kind == "Stab" then
 				stats.stabs += 1
@@ -744,6 +746,7 @@ local function simulate(opts)
 				end
 			elseif e.kind == "Rescued" then
 				stats.rescues += 1
+				if e.data.runner then stillDown[e.data.runner] = nil end
 			elseif e.kind == "Announce" and type(e.data.text) == "string" and e.data.text:find("made the Hero run") then
 				stats.heroSurvived += 1
 			elseif e.kind == "Announce" and type(e.data.text) == "string" and e.data.text:find("ran out of time") then
@@ -752,11 +755,19 @@ local function simulate(opts)
 				stats.heroEarly += 1
 			elseif e.kind == "Announce" and type(e.data.text) == "string" and e.data.text:find("Hurry") then
 				stats.hurries += 1
+			elseif e.kind == "Announce" and type(e.data.text) == "string" and e.data.text:find("caught her carrier") then
+				stats.girlCaught = (stats.girlCaught or 0) + 1 -- (Oct 19: the catcher keeps her until the next runner across)
+			elseif e.kind == "Announce" and type(e.data.text) == "string" and e.data.text:find("took .+ back") then
+				stats.reclaims = (stats.reclaims or 0) + 1
 			elseif e.kind == "Announce" and type(e.data.text) == "string" and e.data.text:find("last runner") then
 				stats.lastAlone += 1
 			elseif e.kind == "Win" then
 				stats.wins += 1
 				if e.data.team == "Runners" then stats.runnerWins += 1 elseif e.data.team == "Catchers" then stats.catcherWins += 1 end
+				if e.data.lastCatch then
+					stats.lastCatchWins = (stats.lastCatchWins or 0) + 1
+					if e.data.team ~= "Catchers" then problem("the runners won but the HUD says a catcher caught the last runner") end
+				end
 				if e.data.bot then
 					stats.botWins = (stats.botWins or 0) + 1
 					if e.data.winner then problem("the Practice Bot won but a player got the girl") end
@@ -844,6 +855,18 @@ local function simulate(opts)
 			elseif st == "Lineup" then
 				stats.rounds += 1
 				gameRounds += 1
+				-- (owner, Oct 19: "every person who got caught turns into a catcher": from the next round)
+				if lastStage == "RoundOver" then
+					watchEvents()
+					for q in bots do
+						if stillDown[q.UserId] and q.Parent and q:GetAttribute("HuzzRole") ~= "Catcher" then
+							problem(`{q.Name} was caught last round but isn't a catcher now`)
+						elseif stillDown[q.UserId] then
+							stats.turned = (stats.turned or 0) + 1
+						end
+					end
+				end
+				table.clear(stillDown)
 			elseif lastStage == "GameOver" and gameStart then
 				table.insert(stats.gameLengths, clock - gameStart)
 				table.insert(stats.roundsPerGame, gameRounds)
@@ -1119,7 +1142,22 @@ local function simulate(opts)
 						-- (within the knife's real reach of the body: Shared/TouchHit, Oct 19)
 						bot.lastStab = clock
 						root.CFrame = lookAt(root.Position, Vector3.new(target.X, root.Position.Y, target.Z))
-						remotes.Stab.OnServerEvent:Fire(p)
+						if bot.seed < 0.25 then
+							-- a screen that reports what it showed (Gameplay/HitCheck, pinpoint Oct 19): the runner as drawn
+							-- ~0.1 s back; the server judges exactly that (Shared/TouchHit.verify against HitHistory)
+							local tr = bots[best] and bots[best].trail
+							local drawn = (tr and tr[math.max(1, #tr - 3)]) or best.Character.HumanoidRootPart.Position
+							local seenCF = CFrame.new(drawn)
+							local box, size = TouchHit.reachBox(root.CFrame, nil, Config.Stab.Reach, Config.Stab.Width)
+							if TouchHit.touches(box, size, seenCF, TouchHit.standIn(CFrame.identity), 0) then
+								stats.claims = (stats.claims or 0) + 1
+								remotes.Stab.OnServerEvent:Fire(p, best.UserId, { seen = seenCF, mine = root.CFrame })
+							else
+								remotes.Stab.OnServerEvent:Fire(p, false)
+							end
+						else
+							remotes.Stab.OnServerEvent:Fire(p)
+						end
 					end
 				end
 			end
@@ -1363,8 +1401,10 @@ local function report(name, stats, problems, expect)
 		table.insert(powerList, k .. "=" .. v)
 	end
 	table.sort(powerList)
-	print(string.format("%-34s games %d (runners %d, catchers %d), stabs %d, tags %d, rescues %d, picks %d (timed out %d), hero runs %d (made it %d), husses %d, lunges %d, powers: %s",
-		name, stats.games, stats.runnerWins, stats.catcherWins, stats.stabs, stats.tags, stats.rescues, stats.picks, stats.timeoutPicks, stats.heroes, stats.heroSurvived, stats.husses, stats.lunges or 0, table.concat(powerList, " ")))
+	print(string.format("%-34s games %d (runners %d, catchers %d), stabs %d, tags %d, rescues %d, picks %d (timed out %d), hero runs %d (made it %d), husses %d, lunges %d, screen claims %d, powers: %s",
+		name, stats.games, stats.runnerWins, stats.catcherWins, stats.stabs, stats.tags, stats.rescues, stats.picks, stats.timeoutPicks, stats.heroes, stats.heroSurvived, stats.husses, stats.lunges or 0, stats.claims or 0, table.concat(powerList, " ")))
+	print(string.format("   (girl: caught off her carrier %d, taken back %d, catchers won her by the last catch %d; caught runners turned catcher %d)",
+		stats.girlCaught or 0, stats.reclaims or 0, stats.lastCatchWins or 0, stats.turned or 0))
 	for _, check in expect or {} do
 		if not check[2](stats) then
 			table.insert(problems, "expected: " .. check[1])

@@ -65,11 +65,16 @@ The lobby side (one lobby per map, paint, his new lobby): [lobby.md](lobby.md). 
   4.5 x 4, 7 tall. It counts only if it overlaps one of the runner's own body parts (limbs, torso, head; never hats,
   hair, wings or the worn knife), give or take `Touch.Tolerance` 0.4 studs (a separating-axis box test). Straight
   ahead the knife reaches 4.4 studs past the catcher's chest.
-- The catcher's screen (`Gameplay/HitCheck`) picks the runner it touches and sends that UserId (false = a miss).
-  **The server checks the same touch, looking back for lag:** `HuzzServer/HitHistory` keeps every player's root for
-  0.6 s (`Touch.Keep`); a claim counts if the runner's body touched the box anywhere between now and
-  ping/2 + 0.1 s ago (`Touch.Smoothing`), never more than 0.3 s (`Touch.MaxRewind`). One runner per lunge. A client
-  that sends nothing gets the same test without a pick (the sim bots). The Practice Bot's knife is checked where it
+- The catcher's screen (`Gameplay/HitCheck`) picks the runner it touches and sends that UserId (false = a miss)
+  **and what it showed** at that moment: the runner's root as drawn (`seen`) and the catcher's own (`mine`).
+  **Pinpoint (Oct 19): the server judges exactly that** (`RoundService.screenHit`, `Shared/TouchHit.verify`):
+  `HuzzServer/HitHistory` keeps every player's root for 0.6 s (`Touch.Keep`); the claim counts if `seen` lies within
+  1.5 studs of the runner's real path (`Touch.SeenSlack`) and `mine` within 2.5 of the catcher's (`MineSlack`),
+  both over the last 0.35 s (`Touch.MaxRewind`), and the knife's box from `mine` touches the body at `seen`. One
+  runner per lunge. A client that sends no `seen`/`mine` (old clients, the sim's bots) gets the old look-back: the
+  body anywhere between now and ping/2 + 0.1 s ago (`Touch.Smoothing`), at most `MaxRewind`; a client that sends
+  nothing at all gets that test without a pick. Why and the measured gap: [stab-lunge-catch.md](stab-lunge-catch.md)
+  "Pinpoint". The Practice Bot's knife is checked where it
   was 0.1 s ago (what runners saw) against bodies now. Spec `tests/TouchHit.spec` (prints the numbers above).
 - **Catchers stay out of both safe zones:** `MapService.holdCatchers` stands an invisible wall on each zone's
   middle-facing edge for the whole game, group `HuzzCatcherWall`, colliding only with `HuzzCatcher` (catchers' parts,
@@ -89,8 +94,18 @@ The lobby side (one lobby per map, paint, his new lobby): [lobby.md](lobby.md). 
   Hero's edge is getting her first, alone, plus the Hero bonus. `s.chickens` still records who chose Chicken.
 - **First across wins her when no Hero did:** after Chicken, a caught Hero or a timed-out Hero, while she still
   floats, the first runner across takes her (`RoundRules.reachSafe`, GirlMoved "First", "X got there first and won
-  <girl> over!"), the one who chose Chicken included. A catcher holding her keeps her.
-- A catchers' win: the girl goes to the catcher with the most catches (lead breaks ties).
+  <girl> over!"), the one who chose Chicken included.
+- **A catcher who catches her carrier keeps her only until the next runner gets across** (owner Oct 19, rule
+  "Reclaimed"): she walks behind him (on foot, as before: `CarryService.follow`), the line says "X caught her carrier!
+  Next runner across takes <girl> back!", and the next runner to reach the safe zone (any round) takes her ("X made
+  it across and took <girl> back!"). Runners already across don't. A Hero who makes it still takes her first.
+- **A catchers' win (nobody left):** she goes to the catcher who caught the LAST runner (owner Oct 19;
+  `RoundRules` `lastCatchBy`; the HUD says "X caught the last runner and wins <girl>"). If the clock or a fall caught
+  the last runner (or the last runner left), the catcher holding her keeps her, else the one with the most catches
+  (lead breaks ties).
+- **Everyone caught turns into a catcher** (owner Oct 19) from the next round (not mid-round, so a round stays
+  readable); a rescue in the same round keeps them a runner. The last runner standing still wins the game and her.
+  The sim checks every caught runner is a catcher at the next line-up.
 - **Girl odds** (`Config/Round.Rarities`): Common 28, Uncommon 24, Rare 20, Epic 14, Legendary 8, Mythic 4.5,
   Secret 1.5. The Secret girls are **C.C. and Marin** (owner, Oct 17; `Config/GirlNames`); their cutscene:
   [secret-cutscene.md](secret-cutscene.md).
@@ -199,6 +214,11 @@ The lobby side (one lobby per map, paint, his new lobby): [lobby.md](lobby.md). 
 - **Field edges:** Halloween's zones sat 15 studs off its floor: a wall cut the field and the girl wasn't centred
   (owner Oct 18). His Halloween path floated over the sea with another map on, hence moving loose floor parts.
 - **Girl odds** were raised after "I'm only getting commons".
+- **The catcher's hold on her** (owner, Oct 19): "please make it so that if the catcher gets the girl and there are
+  still runners left the catcher keeps the girl until the next runner makes it to the safe zone. And the girl will be
+  recieved by the catcher only if at the end he catches the last runner." and "every person who got caught turns into
+  a catcher". Before, a catcher who caught her carrier kept her for good, and the catchers' girl went to the most
+  catches.
 - **Loop audit 2 (Oct 18, fixes in):** the catcher-only pay, the girl to the top catcher, XP every game, the Hero bonus
   only with another runner (solo farming paid ~10x), Pay 25/50, `DupeCoins`, the one-quest chapter rule and runners-only
   stars all came from it. Results got the CATCHES card and the XP pill then.

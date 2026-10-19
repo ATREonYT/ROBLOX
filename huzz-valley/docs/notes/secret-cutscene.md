@@ -20,6 +20,19 @@ beat's time and the comparison with his reference (`design/vfx/ref3`): `docs/sec
   showcase stand and its lights hide during it.
 - **Camera:** one smooth move through `SecretReveal.KEYS` (monotone cubic, always in front of her), one cut (`CUTS`
   6.4, under the swell); FOV kicks ease, shake is a 4.5 Hz wobble.
+- **Framing on every map** (`Shared/SecretReveal` "Framing on every map", planned once at the start on each screen):
+  the whole camera path is tried from 16 sides of her (a ray from her to the camera every 0.2 s, skipping see-through
+  parts and every character); the clearest side wins (your side breaks a tie, 6% weight); where that path still
+  meets something the camera is pulled in ahead of time (`planReach`: never more than what is clear, changing at most
+  `RATE` 0.5 of the distance a second, never across the cut) with a wider lens so she stays the same size
+  (`wideFov`, at most 90 degrees). Nothing is decided by a ray frame by frame any more.
+- **One steady clock:** the server time is read once at the start, then the screen's own clock runs the scene
+  (`GetServerTimeNow` is nudged as it re-syncs).
+- Lesson: **a camera ray must skip see-through parts.** Every map has an invisible `Middle` box (and the zones) with
+  CanQuery on; the old per-frame ray from her to the camera hit the Middle box's top whenever the camera went low, so
+  on Base and BasketBall it snapped into her body (to 5-11% of its distance, 28 studs in one frame on BasketBall) and
+  back out: the "very off" angle and the choppy jumps. Measured on his place with `motion3d/secret_maps_scene.luau`
+  (`NUMBERS=1` prints, per map, the side picked and how far in the camera came before and after).
 - **Streaming:** the owner's place streams (StreamingEnabled): the showcase is `ModelStreamingMode` Persistent and
   RoundService streams the spot in around everyone (at most 3 s, `ReplicationFocus` until the end) before `RevealAt`.
 - **Floor:** the showcase floor is read from 6 studs over the Middle box, and the client re-reads the floor under her
@@ -32,12 +45,21 @@ beat's time and the comparison with his reference (`design/vfx/ref3`): `docs/sec
   nothing uploaded) → `docs/previews/secret-cutscene.mp4`, `secret-cutscene-notex.mp4`, `secret-vs-ref3.jpg`
   (`secret_vs_ref.py`), `secret-vs-ref3.mp4` (`secret_vs_ref_video.sh`, the reference re-timed to our beats);
   flashes `tools/preview/flash_check.py <film>`.
-- Not seen in Studio yet.
+- Before | after per map: `docs/previews/secret-maps.jpg` (`motion3d/secret_maps_scene.luau` + `secret_maps_sheet.py`;
+  the map as boxes, a pink stand-in girl). Checks for the framing maths in `check_girl_fx.luau` (a clear side beats a
+  blocked one, the plan never sits in a wall, the camera still glides round a wall, her size holds).
+- Not seen in Studio yet. Only the line from her middle to the camera is checked, so a prop can still cross part of
+  her (Halloween at 5.2 s: a plank in front of her legs); meshes count as their boxes offline; terrain is untested
+  offline (none on his maps today).
 
 ## Why it is this way / history
 - **10 s since Oct 19** (owner: "more detailed, especially the beams ... make the duration of it logical"): it was
   14.5 s, which dragged, and everyone waits through it.
 - **Camera** (owner Oct 18: "chopy", "not very logical"): hence one smooth move and one cut.
+- **Framing per map** (owner Oct 19: "can you please fix the secret girl animations in different maps, they are
+  sometimes very off with the camera angle, it doesnt look good"; "can you please fix up and tune up the secret
+  animations, right now its still choppy sometimes"): the invisible Middle box stopping the camera ray, other players
+  walking through the ray, and the re-syncing server clock.
 - **Streaming:** his first Studio recording (old 7.5 s build) showed an empty spot with no girl and no map because
   the place streams.
 - **Floor** (Oct 18): a ray started inside Halloween's grass missed the floor: she stood 8 low, knee-deep in the

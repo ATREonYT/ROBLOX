@@ -77,6 +77,9 @@ fine). Owner quotes go in the topic's "Why" part. Keep this core about 20 KB and
   - Our invisible walls are CanQuery off, so rays miss them: anything that moves a body by a raycast also clamps to
     the field (`MapService.fieldLocal` + `DownMotion.fieldSlide`; the catch slide went through side walls).
   - A ray at waist height misses fences and kerbs: cast one near the floor too when a lying body moves.
+  - The maps' zone boxes (Middle, ZoneA/B) are invisible but CanQuery on: a camera ray must look past see-through
+    parts and characters (Oct 19: the Secret cutscene snapped into the girl on Base and BasketBall).
+  - Girl copies: join accessories by what holds them (C.C.'s are AccessoryRigidConstraints), via `Shared/GirlRig`.
   - A queue or loop in one task: pcall each job, or one error stops everything after it (ImageLoader's knife pictures).
   - World prompts that open menus: block them in rounds AND during `HuzzCinematic` (the Secret cutscene plays in
     the lobby before roles are set).

@@ -14,8 +14,25 @@ The huss pose and walk animations: [animations.md](animations.md).
 - **Speed up each round:** everyone (runners, catchers, the Practice Bot) is 2% faster per round after the first, up
   to +20% (`Round.SpeedUp`, `RoundRules.speedScale`, set on the server; `State` attribute `SpeedUp` for the HUD).
   The lobby never changes. [round.md](round.md).
+- **Setting off** (`Run.Loco.SetOff`, `LocomotionMix.step`): the legs move on the first frame; a short walk
+  (0.12 s) then blends into the run over 0.2 s: walk at 0.07 s, full run at 0.37 s. Huss Valley (their video
+  f1c7bb86, 30.73 s): legs move at once, short steps to ~0.15 s, full stride by ~0.35 s. The ground speed is
+  Roblox's (instant), only the legs build, so controls stay sharp.
+- **Stopping** (`Run.Loco.Stop`, `StopResponse` 30, `LocomotionMix.stopAmount` / `stopArm`): let go from a run and
+  the ground stops at once (as Roblox's and Huss Valley's: measured, within one 60 fps frame at 52.13 s); the legs
+  go straight from the run to the idle (never through the walk), idle at 0.15 s (HV ~0.15 s: the run pose holds
+  ~0.15 s, idle at 52.30); a small plant: the body tips back 4°, the arms go 13° out and 12° forward, full at 0.07 s,
+  gone by 0.32 s. Only from a full run; pressing again cancels it. Before: the legs ran on in place ~0.3 s.
+  Everyone else's stop: [animations.md](animations.md) (the velocity hint).
+- **The head stays on the camera** (`LocomotionMix.look`, `Run.Loco.Look`, `Gameplay/Locomotion` and `PlayerMoves`,
+  your own body): without shift lock, D turns the body right (Roblox's AutoRotate) while the head keeps looking
+  where the camera looks, up to 70° each way (`Look.Max`), fading out when the camera looks back past 110° (it
+  faces you: the head goes straight). Same exact neck solve as the strafe, the chest takes 40% of the turn. The
+  camera itself doesn't move with the body (Roblox's Classic camera). Others' heads can't follow their camera
+  (cameras aren't sent): only the shift-lock strafe shows on them.
 - **Shift lock strafe** (`Shared/LocomotionMix.strafe` / `strafePose`, in `Gameplay/Locomotion` for you and
-  `Gameplay/PlayerMoves` for everyone else): the hips and legs turn toward the way you move (up to 70°, `Run.Loco.Strafe`),
+  `Gameplay/PlayerMoves` for everyone else): the hips and legs turn toward the way you move (up to 90°: a full
+  side-on run on D, as HV's at 52.13 s; `Run.Loco.Strafe`),
   the chest turns 40% of that, and the neck is solved so the **head keeps facing ahead**. S back-pedals (the legs face
   forward and the walk/run plays backward: `AdjustSpeed` with a negative speed). Only in shift lock, only on the
   ground, never in a huss, leap, stab or while down. Before, the body was held to the camera, so A/D slid sideways
@@ -56,8 +73,17 @@ The huss pose and walk animations: [animations.md](animations.md).
   the scene reads its files from there), sheet `motion3d/huss_sheet.py` → `docs/previews/huss-oct19.jpg` (ours vs Huss
   Valley, same moments; `docs/previews/feel-huss-after.jpg` is the Oct 17 one). Shift lock:
   `motion3d/strafe_scene.luau` → `docs/previews/strafe-before-after.mp4`.
+- Setting off, stopping and the head look: `sh video.sh feel_scene.luau out.mp4` (before left, after right; W at
+  0.5 s, let go 2.0, D without shift lock 2.8, let go 4.3) → `docs/previews/feel-before-after.mp4`; sheet
+  `python3 motion3d/feel_sheet.py <hv.mp4> <ours.mp4> <out.jpg>` → `docs/previews/feel-vs-hv-oct19.jpg` (HV rows
+  from their video f1c7bb86). When HV's ground stops: `python3 motion3d/ground_flow.py <video> <start> <end>`
+  (how far the ground moves each frame; useless while their camera turns). Numbers: `tests/Locomotion.spec` prints
+  them (set-off, stop, plant, biggest weight change in a frame 0.30, others' stop).
 - Not seen in Studio yet: the sprint and lunge feel, the Oct 19 huss, the feet-first gate on the owner's floors, the
-  shift-lock back-pedal (negative AdjustSpeed), the AFK rejoin (live game only).
+  shift-lock back-pedal (negative AdjustSpeed), the AFK rejoin (live game only), the set-off, stop plant and head
+  look on a real camera, others' stops over a real network.
+- Still worse than HV: our idle holds the arms wider than theirs, so the stop lands in a different pose; the plant
+  is our own made-up motion on the pack's poses (HV's arms swing out on a stop, 40.73 s), not their animation.
 
 ## Why it is this way / history
 - All from the Oct 17 movement and camera study against Huss Valley. The sprint used to start at 9 and take 1.2 s;
@@ -69,5 +95,13 @@ The huss pose and walk animations: [animations.md](animations.md).
   by ~0.4 s). "speed goes up every round a very tiny bit"; "move when your legs touch the floor"; "make it so when
   you shift lock the only thing that moves when you press w a s d (etc) is their body not their head"; "make the
   players join back automatically after going afk and about to get kicked".
+- Oct 19, 18:16 (owner: "make the head not move for the user when he runs, for example when he presses D, the body
+  turns right, but the head and camera stays the same, and also add some velocity into the game, and add animations
+  for when you stop running, its a quick but nice looking stopping animation ... and then the slow walking into the
+  running animation"; "in general can you make the gameplay way way smoother just like huss valley"): the set-off,
+  the stop and the head look above. "Velocity" is in the legs, not the ground: a ground that slides on after you let
+  go would make the controls slippery (GAME-FEEL.md), and HV's ground stops at once too. The first stop film had a
+  bigger plant (7° back, 22° arms): the arms flapped and the head tipped back, so it is 4°/13°/12°. The strafe turn
+  went from 70° to 90°, because HV runs fully side-on.
 - Oct 17 round 2 (owner: "more cinematic", "less ui", "cutscenes dont cut out"): the huss's white trail went (`Feel`
   draws HV's thin speed lines), no letterbox bars, our own footsteps.

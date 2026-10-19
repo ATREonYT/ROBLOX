@@ -616,6 +616,57 @@ do
 		if order[i] <= order[i - 1] then inOrder = false end
 	end
 	check("secret beats are in order", inOrder and T.DAWN + T.BACK <= T.RETURN + 1e-6)
+
+	-- Framing on every map (owner, Oct 19: "very off with the camera angle", "still choppy sometimes"): the clearest
+	-- side wins over yours, yours wins a tie; the plan never puts the camera inside a wall; with a wall in the way
+	-- part of the time the camera still glides (same limits as above) and she stays the same size on screen.
+	local times, dirs = T.sampleTimes(), T.directions()
+	local clearAll, blockedMine = {}, {}
+	for i = 1, #dirs do
+		clearAll[i], blockedMine[i] = {}, {}
+		for j in times do
+			clearAll[i][j] = 1
+			blockedMine[i][j] = if i == 1 and j > 10 and j < 20 then 0.2 else 1
+		end
+	end
+	local mine = dirs[5]
+	check("secret camera: your side when every side is clear", T.pickDirection(dirs, clearAll, mine) == 5)
+	blockedMine[5] = table.clone(blockedMine[1])
+	check("secret camera: a clear side beats your side with a wall in the way", T.pickDirection(dirs, blockedMine, mine) ~= 5)
+	local wall = {}
+	for j, t in times do
+		wall[j] = if (t > 1.9 and t < 2.9) or (t > 6.9 and t < 7.3) then 0.35 else 1
+	end
+	local plan = T.planReach(times, wall)
+	local inside = 0
+	for j in times do
+		if plan[j] > wall[j] + 1e-9 or (j > 1 and plan[j] > wall[j - 1] + 1e-9 and plan[j - 1] < 1) then inside += 1 end
+	end
+	check("secret camera plan never sits inside the wall", inside == 0)
+	local pe, pf, bad, worstEye, worstFov, sizeOff = nil, nil, {}, 0, 0, 0
+	for i = 0, math.floor(T.LENGTH * 30) do
+		local t = i * FR
+		local e, l = T.camera(t, at, dir, T.height(t, 34) or 34, k, mid)
+		local r = T.reachAt(times, plan, t)
+		local f0 = T.fov(t, false)
+		e = l + (e - l) * r
+		local f = T.wideFov(f0, r)
+		-- her size on screen ~ 1 / (distance x tan(fov / 2)): the same as unpulled unless the lens hit MAX_FOV
+		if f < T.MAX_FOV - 0.01 then
+			local want = 1 / ((e - l).Magnitude / r * math.tan(math.rad(f0) / 2))
+			local got = 1 / ((e - l).Magnitude * math.tan(math.rad(f) / 2))
+			sizeOff = math.max(sizeOff, math.abs(got / want - 1))
+		end
+		if pe and not crossesCut(t - FR, t) then
+			local de, df = (e - pe).Magnitude, math.abs(f - pf)
+			worstEye, worstFov = math.max(worstEye, de), math.max(worstFov, df)
+			if de > 2.5 or df > 2.5 then table.insert(bad, string.format("%.2f", t)) end
+		end
+		pe, pf = e, f
+	end
+	print(string.format("  secret camera with walls in the way: eye %.2f studs, fov %.2f deg a frame; size off by %.1f%%", worstEye, worstFov, sizeOff * 100))
+	check("secret camera glides in and out round a wall: " .. table.concat(bad, " "), #bad == 0)
+	check("secret camera keeps her the same size when pulled in", sizeOff < 0.01)
 end
 
 print(`fx smoke: {ok} ok, {failed} failed`)

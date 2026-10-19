@@ -822,8 +822,10 @@ function M.start()
 			task.delay(3.4, function()
 				if data.winner == player.UserId then
 					show(banner, `{string.upper(data.girl)} IS YOURS`, color, 4, 60)
-					show(small, "Find her in your Index", WHITE, 4)
+					show(small, if data.lastCatch then "You caught the last runner!" else "Find her in your Index", WHITE, 4)
 					Sfx.play("reward")
+				elseif data.name and data.lastCatch then
+					setMessage(`{data.name} caught the last runner and wins {data.girl}`, color)
 				elseif data.name then
 					setMessage(`{data.name} wins {data.girl}`, color)
 				else

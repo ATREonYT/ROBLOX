@@ -7,6 +7,10 @@
 	Oct 19 (owner: "make the player to player touch WAY MORE accurate"): only the runner's own body counts (limbs,
 	torso, head: Shared/TouchHit.isBody), never their hats, hair, wings or worn knife, and the box is the knife's real
 	reach (Config/Round Stab 4.5 x 3.5). The server checks the same box against the runner where this screen showed them.
+	Oct 19, 18:16 (owner: "make the player to player interactions pinpoint precise ... so people dont die and start
+	compalining"): find() also returns what this screen showed at that moment, { seen = the runner's root as drawn
+	here, mine = your own root }; the server judges exactly that (Shared/TouchHit.verify), only checking both lie on
+	the real paths it has. So what the catcher saw is what counts, no more and no less.
 ]]
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
@@ -18,7 +22,7 @@ local HitCheck = {}
 -- can't check (then the caller sends nothing and the server does its own check).
 -- dir (optional): the way the box points (a catcher's leap goes forward or sideways: Shared/KnifeLeap); else the
 -- way root faces.
-function HitCheck.find(root: BasePart, reach: number, width: number, dir: Vector3?): (number | boolean)?
+function HitCheck.find(root: BasePart, reach: number, width: number, dir: Vector3?): ((number | boolean)?, any)
 	local me = Players.LocalPlayer
 	local bodies = {}
 	local now = Workspace:GetServerTimeNow()
@@ -45,17 +49,21 @@ function HitCheck.find(root: BasePart, reach: number, width: number, dir: Vector
 	if not ok or type(parts) ~= "table" then
 		return false
 	end
-	local best, bestD = nil, math.huge
+	local best, bestD, bestRoot = nil, math.huge, nil
 	for _, part in parts do
 		-- the body itself, a direct child of the character (an accessory's Handle sits in its Accessory)
 		local model = part.Parent
 		local p = model and model:IsA("Model") and TouchHit.isBody(part.Name) and Players:GetPlayerFromCharacter(model)
-		if p then
+		local theirRoot = p and model:FindFirstChild("HumanoidRootPart")
+		if p and theirRoot and theirRoot:IsA("BasePart") then
 			local d = (part.Position - root.Position).Magnitude
 			if d < bestD then
-				best, bestD = p.UserId, d
+				best, bestD, bestRoot = p.UserId, d, theirRoot
 			end
 		end
+	end
+	if best and bestRoot then
+		return best, { seen = bestRoot.CFrame, mine = root.CFrame } -- (exactly what this screen shows now)
 	end
 	return best
 end

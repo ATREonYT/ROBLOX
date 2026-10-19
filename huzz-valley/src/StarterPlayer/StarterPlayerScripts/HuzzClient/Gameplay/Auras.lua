@@ -37,6 +37,7 @@ function M.start()
 	local Round = require(Shared.Config.Round)
 	local FollowMotion = require(Shared.FollowMotion)
 	local GirlMoves = require(Shared.GirlMoves)
+	local GirlRig = require(Shared.GirlRig)
 	local Companion = require(Shared.Config.GirlMotion).Companion
 	local AuraFX = require(script.Parent.AuraFX)
 	local Burst = require(script.Parent.Burst)
@@ -165,27 +166,10 @@ function M.start()
 		end
 		local model = source:Clone()
 		model.Name = "Companion"
-		-- (the R15 Secret is built on AnimationConstraints: swap them for Motor6Ds, as GirlService does)
-		local done = {}
-		for _, d in model:GetDescendants() do
-			if d.ClassName == "AnimationConstraint" then
-				local a0, a1 = d.Attachment0, d.Attachment1
-				local part0, part1 = a0 and a0.Parent, a1 and a1.Parent
-				if part0 and part1 and part0:IsA("BasePart") and part1:IsA("BasePart") and not done[part1] then
-					done[part1] = true
-					local motor = Instance.new("Motor6D")
-					motor.Name = d.Name
-					motor.Part0, motor.Part1 = part0, part1
-					motor.C0, motor.C1 = a0.CFrame, a1.CFrame
-					motor.Parent = part1
-				end
-			end
-		end
-		for _, d in model:GetDescendants() do
-			if d.ClassName == "AnimationConstraint" or d:IsA("BallSocketConstraint") or d:IsA("NoCollisionConstraint") then
-				d:Destroy()
-			end
-		end
+		-- (the R15 Secret is built on AnimationConstraints: Motor6Ds instead, and her hair, face and hats welded to the
+		-- body part they sit on, or they stayed still on her root while her head turned: Shared/GirlRig)
+		GirlRig.toMotors(model)
+		GirlRig.joinAccessories(model)
 		local root = model:FindFirstChild("HumanoidRootPart") or model.PrimaryPart
 		if not (root and root:IsA("BasePart")) then
 			return nil
@@ -194,7 +178,7 @@ function M.start()
 		local _, size = model:GetBoundingBox()
 		model:ScaleTo(model:GetScale() * COMPANION_HEIGHT / math.max(bodyHeight(model) or size.Y, 1))
 		local _, newSize = model:GetBoundingBox()
-		local rootHeight = root.Position.Y - bodyBottom(model)
+		local rootHeight = root.CFrame.Position.Y - bodyBottom(model)
 		if rootHeight ~= rootHeight or rootHeight <= 0 or rootHeight > COMPANION_HEIGHT then
 			rootHeight = COMPANION_HEIGHT * 0.5
 		end
@@ -325,8 +309,22 @@ function M.start()
 			clearCompanion(s)
 		end
 		s.key = key .. "#" .. rarity
-		if allowed and not s.companion and far < 150 then
-			s.companion = makeCompanion(key, rarity, lite, p.UserId)
+		-- (a girl that can't be built here is tried again every 5 s, not every frame: a clone a frame lagged)
+		if allowed and not s.companion and far < 150 and not (s.failed == s.key and clock < (s.retryAt or 0)) then
+			local okMake, made = pcall(makeCompanion, key, rarity, lite, p.UserId)
+			if okMake then
+				s.companion = made
+			else
+				s.failed, s.retryAt = s.key, clock + 5
+				for _, m in folder:GetChildren() do -- (half-built: nobody holds her)
+					local held = false
+					for _, other in states do
+						if other.companion and other.companion.model == m then held = true end
+					end
+					if not held then m:Destroy() end
+				end
+				error(made, 0)
+			end
 			if s.companion then
 				s.companion.player = p
 				s.companion.puff = far <= 120 -- (after her first step, where she stands)
@@ -475,8 +473,16 @@ function M.start()
 			rayFilterAt = clock
 			refreshRayFilter()
 		end
+		-- Each player on their own (owner, Oct 19: "make the girls appear for everyone on everyones screen"): one
+		-- player's girl failing used to end this loop, so every player after them in the list had no girl on this
+		-- screen (yours could still show). The first error per player goes to Output once, tagged [Huzz].
 		for _, p in Players:GetPlayers() do
-			updatePlayer(p, stateOf(p), dt)
+			local s = stateOf(p)
+			local okStep, err = pcall(updatePlayer, p, s, dt)
+			if not okStep and s.reported ~= tostring(err) then
+				s.reported = tostring(err)
+				warn(`[Huzz] {p.Name}'s girl on this screen: {err}`)
+			end
 		end
 		for model, handle in worldAuras do
 			if model.Parent and not handle.alive() then

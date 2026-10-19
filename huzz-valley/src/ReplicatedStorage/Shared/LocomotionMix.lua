@@ -28,6 +28,18 @@
 	    toward the way you move (up to Config/Run.Loco.Strafe MaxTurn), the chest turns part way and the head turns
 	    back, so it keeps looking where you aim; moving backwards turns them toward the mirrored side and plays the
 	    loop backwards (a back-pedal). Springy, so starting, stopping and switching keys never snaps.
+	  - look(): without shift lock (Roblox turns the body to the move) the head keeps looking where the camera points,
+	    within a neck's reach (owner, Oct 19: "when he presses D, the body turns right, but the head and camera stays
+	    the same"); strafePose() takes that turn too, the chest following part way.
+	  - Setting off and stopping, measured on Huss Valley's recording (tools/preview/motion3d/ground_flow.py and 30 fps
+	    sheets; owner, Oct 19: "add animations for when you stop running, its a quick but nice looking stopping
+	    animation ... and then the slow walking into the running animation"):
+	      - from a standstill the legs walk first and hand over to the run by Config/Run.Loco.SetOff (HV: short quick
+	        steps for ~0.15 s, the full stride by ~0.35 s), whatever the speed;
+	      - slowing down follows the speed much faster than speeding up (StopResponse: HV's legs are at the idle
+	        ~0.15 s after the ground stops; ours ran on in place for ~0.3 s, the feet sliding), and a stop from a run
+	        plays a quick plant on top (stopAmount(): the body tips back a little and the arms swing out, gone in
+	        ~0.3 s; HV's 40.7 s frames), cancelled if you set off again.
 ]]
 local Run = require(script.Parent.Config.Run)
 
@@ -66,6 +78,9 @@ function LocomotionMix.new(config)
 		times = { Walk = 0, Run = 0 }, -- where the walk and run loops should be (seconds), from the shared phase
 		roll = 0, rollV = 0, pitch = 0, pitchV = 0, yaw = nil,
 		turn = 0, turnV = 0, back = false, -- shift lock: the body's turn toward the move (radians) and back-pedalling
+		look = 0, lookV = 0, -- the head's turn toward where the camera looks (radians, + = right)
+		goAge = 0, -- seconds since setting off from a standstill (the walk shows first)
+		stopAge = math.huge, stopK = 0, armed = false, -- the stop's plant: how long ago, how strong; armed = running
 	}
 end
 
@@ -79,12 +94,51 @@ end
 	Fills s.weights, s.speeds and s.times. ]]
 function LocomotionMix.step(s, dt, input)
 	local C = s.C
-	s.speed, s.accel = spring(s.speed, s.accel, input.speed, C.SpeedResponse, dt)
+	local before = s.speed
+	-- (slowing down follows quicker than speeding up: a stop is a stop, the legs don't run on in place)
+	local response = if input.speed < s.speed then (C.StopResponse or C.SpeedResponse) else C.SpeedResponse
+	s.speed, s.accel = spring(s.speed, s.accel, input.speed, response, dt)
 	local v = math.max(s.speed, 0)
 
-	-- ground: idle -> walk -> run
+	-- the stop's plant: armed while running, set off when the ground speed drops to a stand (Config/Run.Loco.Stop)
+	local St = C.Stop
+	s.stopAge += dt
+	if St then
+		if input.speed > C.RunFull and before > C.RunFull then
+			s.armed = true -- (running: the next stand-still is a stop)
+		end
+		if s.armed and input.speed < C.MoveFrom then
+			s.armed = false
+			s.stopAge = 0
+			s.stopK = smooth((before - C.RunFrom) / (C.RunAt - C.RunFrom))
+		elseif input.speed > C.MoveFull and s.stopAge < St.In + St.Out then
+			s.stopK = approach(s.stopK, 0, 0.04, dt) -- (off again at once: the plant gets out of the way)
+		end
+	end
+
+	-- ground: idle -> walk -> run (each eased over WeightTime, so a quick stop is quick but never a one-frame pop)
 	local moving = smooth((v - C.MoveFrom) / (C.MoveFull - C.MoveFrom))
 	local run = smooth((v - C.RunFrom) / (C.RunFull - C.RunFrom))
+	-- setting off from a standstill: the walk first, the run after SetOff (HV's short first steps)
+	if v < C.MoveFrom then
+		s.goAge = 0
+	else
+		s.goAge += dt
+	end
+	if C.SetOff then
+		run = math.min(run, smooth((s.goAge - C.SetOff.Walk) / C.SetOff.Blend))
+	end
+	-- a stop from a run goes straight from the run to the idle over Stop.Blend (HV: no walk in between)
+	local stopping = St ~= nil and s.stopK > 0 and s.stopAge < St.In + St.Out and input.speed < C.MoveFrom
+	if stopping then
+		moving, run = 0, s.running or run
+	end
+	if C.WeightTime then
+		local tau = if stopping then St.Blend else C.WeightTime
+		s.moving = approach(s.moving or moving, moving, tau, dt)
+		s.running = approach(s.running or run, run, tau, dt)
+		moving, run = s.moving, s.running
+	end
 	local walkRate = clamp(v / C.WalkAt, C.WalkRate[1], C.WalkRate[2])
 	local runRate = clamp(v / C.RunAt, C.RunRate[1], C.RunRate[2])
 	local walkLen = (input.lengths and input.lengths.Walk) or 1
@@ -138,7 +192,29 @@ function LocomotionMix.lean(s, dt, yaw, quiet)
 		* smooth(s.speed / C.MoveFull)
 	s.roll, s.rollV = spring(s.roll, s.rollV, rollTarget, C.LeanResponse, dt)
 	s.pitch, s.pitchV = spring(s.pitch, s.pitchV, pitchTarget, C.LeanResponse, dt)
-	return s.roll, s.pitch
+	-- (+ the stop's plant: the body tips back a little as the legs come together)
+	local plant = if C.Stop then rad(C.Stop.Lean) * LocomotionMix.stopAmount(s) * live else 0
+	return s.roll, s.pitch + plant
+end
+
+-- The stop's plant right now, 0 to 1 (Config/Run.Loco.Stop: up in In seconds, gone Out seconds later).
+function LocomotionMix.stopAmount(s): number
+	local St = s.C.Stop
+	if not St or s.stopAge >= St.In + St.Out or s.stopK <= 0 then
+		return 0
+	end
+	local t = s.stopAge
+	return s.stopK * smooth(t / St.In) * (1 - smooth((t - St.In) / St.Out))
+end
+
+-- The stop's arms: a turn for a shoulder's Transform (put in front of it: R * T), side = 1 right, -1 left. The arm
+-- swings out to the side and a little forward (HV: arms out as the feet plant).
+function LocomotionMix.stopArm(s, amount: number, side: number): CFrame
+	local St = s.C.Stop
+	if not St or amount <= 1e-4 then
+		return CFrame.identity
+	end
+	return CFrame.Angles(rad(St.ArmsForward) * amount, 0, side * rad(St.ArmsOut) * amount)
 end
 
 -- The lean as a turn about a point on the ground under the hips (so the feet stay put), in the hips' parent
@@ -148,7 +224,8 @@ function LocomotionMix.leanCFrame(roll, pitch, footDrop)
 	return f * CFrame.Angles(pitch, 0, roll) * f:Inverse()
 end
 
-local STRAFE = { MaxTurn = 70, BackFrom = 110, Response = 12, Chest = 0.4, MinSpeed = 2 }
+local STRAFE = { MaxTurn = 90, BackFrom = 110, Response = 12, Chest = 0.4, MinSpeed = 2 }
+local LOOK = { Max = 70, BackFrom = 110, Fade = 30, Response = 10 }
 
 --[[ Shift lock's body turn, one frame. localVel: the body's ground velocity in its own space (x right, z back, as
 	CFrame:VectorToObjectSpace gives it); on: shift lock holds the body to the camera (otherwise Roblox turns the body
@@ -178,14 +255,33 @@ function LocomotionMix.strafe(s, dt, localVel: Vector3, on: boolean, quiet: numb
 	return s.turn, s.back
 end
 
---[[ Shift lock's strafe on the body's three top joints, worked out exactly from this frame's poses so the head ends
-	up facing just where the animation had it (a plain counter-turn at the neck tipped the head sideways while the run
-	hunches the body forward). J: { root, waist, neck } = each joint's { C0, C1, T } (T = its Transform this frame).
-	Returns the new Transforms: the hips turned `turn` about the root part's up, the chest turned Chest of that about
-	the same up, the head back where it was. Gameplay/Locomotion and Gameplay/PlayerMoves write them. ]]
-function LocomotionMix.strafePose(s, turn: number, J): (CFrame, CFrame, CFrame)
+--[[ The head's turn toward where the camera looks, one frame (no shift lock: Roblox has turned the body to the move,
+	so pressing D turns the body right while the head keeps looking ahead with the camera). aim: the camera's look,
+	relative to the body (radians, + = to the body's right, as strafe()); on: false fades it out; quiet as strafe().
+	Up to Config/Run.Loco.Look Max degrees (a neck's reach); when the camera looks back past BackFrom (looking at
+	yourself) the head comes round to the front over Fade degrees instead of flipping. Returns the head's turn. ]]
+function LocomotionMix.look(s, dt, aim: number, on: boolean, quiet: number?): number
+	local C = s.C.Look or LOOK
+	local live = 1 - clamp(quiet or 0, 0, 1)
+	local target = 0
+	if on and live > 0 then
+		local off = math.deg(math.abs(aim))
+		target = clamp(aim, -rad(C.Max), rad(C.Max)) * (1 - smooth((off - C.BackFrom) / C.Fade)) * live
+	end
+	s.look, s.lookV = spring(s.look, s.lookV, target, C.Response, dt)
+	return s.look
+end
+
+--[[ The strafe and the look on the body's three top joints, worked out exactly from this frame's poses so the head
+	ends up facing just where the animation had it, turned only by `look` (a plain counter-turn at the neck tipped the
+	head sideways while the run hunches the body forward). J: { root, waist, neck } = each joint's { C0, C1, T }
+	(T = its Transform this frame). Returns the new Transforms: the hips turned `turn` about the root part's up, the
+	head turned `look` (default 0: facing where the body part faces), the chest Chest of the way from the head's turn
+	to the hips'. Gameplay/Locomotion and Gameplay/PlayerMoves write them. ]]
+function LocomotionMix.strafePose(s, turn: number, J, look: number?): (CFrame, CFrame, CFrame)
 	local C = s.C.Strafe or STRAFE
 	local chest = clamp(C.Chest, 0, 1)
+	local headTurn = look or 0
 	local r, w, n = J.root, J.waist, J.neck
 	local function rot(cf: CFrame): CFrame
 		return cf.Rotation
@@ -197,9 +293,10 @@ function LocomotionMix.strafePose(s, turn: number, J): (CFrame, CFrame, CFrame)
 	local hips = CFrame.Angles(0, -turn, 0)
 	local rootT = r.C0:Inverse() * hips * r.C0 * r.T
 	local lower1 = hips * lower0
-	local upper1 = CFrame.Angles(0, -turn * chest, 0) * upper0
+	local upper1 = CFrame.Angles(0, -(headTurn + (turn - headTurn) * chest), 0) * upper0
+	local head1 = CFrame.Angles(0, -headTurn, 0) * head0
 	local waistR = rot(w.C0):Inverse() * lower1:Inverse() * upper1 * rot(w.C1)
-	local neckR = rot(n.C0):Inverse() * upper1:Inverse() * head0 * rot(n.C1)
+	local neckR = rot(n.C0):Inverse() * upper1:Inverse() * head1 * rot(n.C1)
 	return rootT, CFrame.new(w.T.Position) * waistR, CFrame.new(n.T.Position) * neckR
 end
 
@@ -242,12 +339,14 @@ end
 	    real stop;
 	  - a jump faster than Teleport studs/s (respawn, the round moving everyone) starts the window over.
 	track(tr, now, pos) returns (ground speed, up speed), studs/s. Feed the ground speed to step(): its spring
-	smooths what's left. tr.vel is the ground velocity over the same window (which way they go, for strafe()). ]]
+	smooths what's left. tr.vel is the ground velocity over the same window (which way they go, for strafe()).
+	still (optional): their replicated ground speed. Too jumpy to read a speed from, but a body that hasn't moved AND
+	says it isn't moving has stopped, now (a network stall keeps its last velocity): their legs stop with them. ]]
 function LocomotionMix.tracker(config)
 	return { C = config or Run.Track, list = {}, speed = 0, up = 0, last = nil, vel = Vector3.zero }
 end
 
-function LocomotionMix.track(tr, now: number, pos: Vector3): (number, number)
+function LocomotionMix.track(tr, now: number, pos: Vector3, still: number?): (number, number)
 	local C, list = tr.C, tr.list
 	local last = tr.last
 	if last then
@@ -258,8 +357,16 @@ function LocomotionMix.track(tr, now: number, pos: Vector3): (number, number)
 		local dist = (pos - last.p).Magnitude
 		if dist > C.TeleportMin and dist / dt > C.Teleport then
 			table.clear(list) -- (a teleport: start over from here, keeping the speed we had)
-		elseif dist < 1e-3 and dt < C.Hold then
+		elseif dist < 1e-3 and dt < C.Hold and not (still and still < 1) then
 			return tr.speed, tr.up -- (not moved since the last sample: most likely the network, wait for an update)
+		elseif dist < 1e-3 then
+			-- still for longer than a stall: a real stop, now (not eased out over the window: their legs stop
+			-- ~0.15 s after the body does instead of running on in place for ~0.4 s)
+			table.clear(list)
+			tr.last = { t = now, p = pos }
+			table.insert(list, tr.last)
+			tr.speed, tr.up, tr.vel = 0, 0, Vector3.zero
+			return 0, 0
 		end
 	end
 	local sample = { t = now, p = pos }

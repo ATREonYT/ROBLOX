@@ -75,12 +75,16 @@ return {
 		Time = 0.40, -- the slash, Huss Valley's (docs/knife-study.md): no wind-up, the sweep lands ~0.07 s, held, back by 0.40 (Shared/StabMotion)
 	},
 	TagRange = 5.5, -- "Touch" only: studs between root parts
-	-- How the server judges a touch (Shared/TouchHit, HuzzServer/HitHistory, RoundService.stabNear): the knife's box
-	-- (Stab or Lunge Reach x Width) must overlap the runner's body parts, give or take Tolerance studs, where the
-	-- catcher's screen showed the runner: up to their one-way network lag plus Smoothing seconds back (Roblox shows
-	-- other bodies a little late), at most MaxRewind. The Practice Bot's knife is checked where the runner's screen
-	-- showed the bot (Smoothing seconds back). Keep: seconds of history kept.
-	Touch = { Tolerance = 0.4, Smoothing = 0.1, MaxRewind = 0.3, Keep = 0.6 },
+	-- How the server judges a touch (Shared/TouchHit, HuzzServer/HitHistory, RoundService): the knife's box (Stab or
+	-- Lunge Reach x Width) must overlap the runner's body parts, give or take Tolerance studs.
+	-- Pinpoint (owner Oct 19, RoundService.screenHit + TouchHit.verify): the catcher's screen sends where it showed the
+	-- runner (seen) and the catcher (mine); the server takes exactly that if seen lies within SeenSlack studs of the
+	-- runner's real path and mine within MineSlack of the catcher's, both over the last MaxRewind seconds (a screen
+	-- more than 0.35 s behind can't catch: the runner had moved on long ago on their own screen).
+	-- Old clients and the sim's bots without a claim: the look-back below, up to the catcher's one-way lag plus
+	-- Smoothing seconds back, at most MaxRewind. The Practice Bot's knife is checked where the runner's screen showed
+	-- the bot (Smoothing seconds back). Keep: seconds of history kept.
+	Touch = { Tolerance = 0.4, Smoothing = 0.1, MaxRewind = 0.35, SeenSlack = 1.5, MineSlack = 2.5, Keep = 0.6 },
 
 
 	-- The huss (owner's call): Space throws you left or right on your screen. Jumping is off. The push eases every

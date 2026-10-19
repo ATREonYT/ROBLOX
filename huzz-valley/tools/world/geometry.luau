@@ -3,6 +3,8 @@
 	place as its box, in 16-stud cells.
 	  floor(x, z, top, bottom) -> y?, part   a straight-down ray from top: the first solid (CanCollide) part's
 	                                          surface at or above bottom (the part's real turned box, like a ray)
+	  ray(origin, v, hidden) -> distance?, part  a ray along v (its length) against what you can see (the Secret
+	                                          cutscene's camera, tools/world/secret_framing.luau)
 	  blocked(centre, size, solidOnly) -> bool, part
 	                                          an upright box against each part's bounding box (as Roblox's
 	                                          GetPartBoundsInBox): solid = CanCollide in the Default group, else
@@ -45,7 +47,7 @@ function Geometry.new(list, opts)
 			local rec = {
 				part = p, x0 = x0, y0 = y0, z0 = z0, x1 = x1, y1 = y1, z1 = z1,
 				solid = p.CanCollide and (group == "Default" or group == ""), collide = p.CanCollide,
-				visible = p.Transparency < 0.9, cf = p.CFrame, half = p.Size / 2,
+				visible = p.Transparency < 0.9, cf = p.CFrame, half = p.Size / 2, query = p.CanQuery ~= false,
 			}
 			table.insert(parts, rec)
 			for i = math.floor(x0 / CELL), math.floor(x1 / CELL) do
@@ -101,6 +103,40 @@ function Geometry.new(list, opts)
 			if rec.collide and x >= rec.x0 and x <= rec.x1 and z >= rec.z0 and z <= rec.z1 and rec.y0 <= top and rec.y1 >= bottom then
 				local y = hitTop(rec, x, z, top)
 				if y and y >= bottom and y <= top and (not best or y > best) then best, bestPart = y, rec.part end
+			end
+		end
+		return best, bestPart
+	end
+
+	-- A ray from `origin` along `v` (its length is the reach) against every part you can see (Transparency < 0.9,
+	-- like Gameplay/SecretReveal's camera ray, which looks past see-through parts): the distance to the first hit,
+	-- or nil. A ray starting inside a part doesn't hit that part (as Roblox). hidden = true: see-through parts block
+	-- it too (as a plain Roblox ray: every part with CanQuery on).
+	function self.ray(origin, v, hidden)
+		local len = v.Magnitude
+		if len < 1e-6 then return nil end
+		local e = origin + v
+		local best, bestPart = nil, nil
+		for _, rec in around(math.min(origin.X, e.X), math.min(origin.Z, e.Z), math.max(origin.X, e.X), math.max(origin.Z, e.Z)) do
+			if rec.query and (rec.visible or hidden) and rec.y1 >= math.min(origin.Y, e.Y) and rec.y0 <= math.max(origin.Y, e.Y) then
+				local o = rec.cf:PointToObjectSpace(origin)
+				local d = rec.cf:VectorToObjectSpace(v / len)
+				local h = rec.half
+				local tmin, tmax, miss = -math.huge, math.huge, false
+				for _, ax in { "X", "Y", "Z" } do
+					local oa, da, ha = o[ax], d[ax], h[ax]
+					if math.abs(da) < 1e-9 then
+						if oa < -ha or oa > ha then miss = true break end
+					else
+						local t1, t2 = (-ha - oa) / da, (ha - oa) / da
+						if t1 > t2 then t1, t2 = t2, t1 end
+						tmin, tmax = math.max(tmin, t1), math.min(tmax, t2)
+						if tmin > tmax then miss = true break end
+					end
+				end
+				if not miss and tmin > 0 and tmin <= len and (not best or tmin < best) then
+					best, bestPart = tmin, rec.part
+				end
 			end
 		end
 		return best, bestPart

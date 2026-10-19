@@ -57,12 +57,34 @@ return {
 		AccelLean = 0.12, -- degrees of forward pitch per stud/s² of speeding up...
 		MaxPitch = 5, MaxPitchBack = 3, -- ...up to these (leaning back a little when you stop)
 		LeanResponse = 9,
+		-- Setting off and stopping, measured on Huss Valley's recording (Oct 19, owner: "add animations for when you
+		-- stop running, its a quick but nice looking stopping animation ... and then the slow walking into the running
+		-- animation"; tools/preview/motion3d/ground_flow.py and the 30 fps sheets in docs/previews/stop-start-vs-hv.jpg):
+		--   HV sets off with short quick steps for ~0.15 s and has the full stride by ~0.35 s: the legs walk for
+		--   SetOff.Walk seconds after a standstill, then hand over to the run over Blend (whatever the speed);
+		--   HV's ground stops within a frame and its legs are at the idle ~0.15 s later, arms swinging out as the feet
+		--   plant (40.7 s): slowing follows the speed at StopResponse (30: ~0.12 s to a stand, was the 13 of speeding
+		--   up: ~0.3 s of legs running on in place); a stop from a run goes straight from the run to the idle (no walk
+		--   in between: Stop.Blend, ~0.15 s like HV) with the plant on top (the body tips back Lean degrees, the arms
+		--   swing ArmsOut out and ArmsForward forward, up in In seconds, gone Out later).
+		StopResponse = 30,
+		WeightTime = 0.035, -- seconds: the idle / walk / run shares ease this much on top (a stop at 30 crosses the walk
+		-- in ~2 frames: without it the legs popped to the idle, 0.64 of the blend in one 60 fps frame)
+		SetOff = { Walk = 0.12, Blend = 0.2 },
+		Stop = { In = 0.05, Out = 0.25, Blend = 0.05, Lean = 4, ArmsOut = 13, ArmsForward = 12 }, -- (first film: 7 and 22 flapped the arms and tipped the head back)
+		-- The head without shift lock (owner, Oct 19: "make the head not move for the user when he runs, for example
+		-- when he presses D, the body turns right, but the head and camera stays the same"): Roblox turns the body to
+		-- the move; the head turns back toward where the camera looks, up to Max degrees (a neck's reach; HV's runner at
+		-- 52.1 s runs side-on with the head still to the front). Past BackFrom degrees (the camera looking at your face)
+		-- it comes round to the front over Fade degrees. Response: the spring (10 settles in ~0.35 s).
+		Look = { Max = 70, BackFrom = 110, Fade = 30, Response = 10 },
 		-- Shift lock (owner, Oct 19: "when you shift lock the only thing that moves when you press w a s d (etc) is
-		-- their body not their head"): the hips and legs turn toward the way you move, up to MaxTurn degrees; the
+		-- their body not their head"; 18:16 "when he presses D, the body turns right": MaxTurn 90, was 70, so D is a
+		-- full side-on run like HV's): the hips and legs turn toward the way you move, up to MaxTurn degrees; the
 		-- chest ends Chest of that turn round, the head turns back so it keeps looking where you aim. Moving more than
 		-- BackFrom degrees off straight ahead is a back-pedal (hips toward the mirrored side, the loop backwards).
 		-- Response: the spring's speed (12 settles in ~0.3 s). Below MinSpeed studs/s the body faces ahead.
-		Strafe = { MaxTurn = 70, BackFrom = 110, Response = 12, Chest = 0.4, MinSpeed = 2 },
+		Strafe = { MaxTurn = 90, BackFrom = 110, Response = 12, Chest = 0.4, MinSpeed = 2 },
 	},
 	-- Other players (owner, Oct 18: "player to player less choppy"): their speed comes from where their body is over
 	-- time (Shared/LocomotionMix.track), not from their replicated velocity, which jumps between network updates and
