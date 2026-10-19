@@ -36,6 +36,19 @@ function DownMotion.slideAt(t, slide)
 	return (slide or 0) * (1 - (1 - p) * (1 - p))
 end
 
+-- The longest slide (at most `want`) that keeps a body reaching `reach` past its feet inside the field's walls.
+-- The walls are invisible and can't be hit by a ray (CanQuery off), so KnockdownService asks this too (bug hunt,
+-- Oct 19: a runner caught beside a side wall slid through it and lay over the floor's edge, then stood up outside).
+-- In the field's own frame: x, z where they fall, dx, dz the flat unit way they slide, lo/hi the walls' box corners
+-- ({ X, Z }). Outside the box (not on the field) the walls don't apply: `want` comes back.
+function DownMotion.fieldSlide(x, z, dx, dz, want, reach, lo, hi)
+	if x < lo.X or x > hi.X or z < lo.Z or z > hi.Z then return want end
+	local room = math.huge
+	if dx > 1e-6 then room = math.min(room, (hi.X - x) / dx) elseif dx < -1e-6 then room = math.min(room, (lo.X - x) / dx) end
+	if dz > 1e-6 then room = math.min(room, (hi.Z - z) / dz) elseif dz < -1e-6 then room = math.min(room, (lo.Z - z) / dz) end
+	return clamp(room - reach, 0, want)
+end
+
 -- Root part CFrame t seconds after the catch. feet: CFrame at the feet on the ground
 -- (facing the way they were), height: root above the feet when standing, slide: studs the body carries on
 -- forward as it falls (the character's DownedSlide; nil = none).

@@ -444,6 +444,16 @@ function MapService.fieldSpot(inset: number): Vector3?
 	return nil
 end
 
+-- A point and a flat direction in the walled field's own frame (x along the run, z across) with the walls' inner box
+-- corners lo/hi, or nil when no map is loaded. KnockdownService stops a catch's slide short of the invisible walls
+-- (Shared/DownMotion.fieldSlide): they can't be hit by a ray (CanQuery off).
+function MapService.fieldLocal(position: Vector3, dir: Vector3)
+	if not field then return nil end
+	local l = field.frame:PointToObjectSpace(position)
+	local d = field.frame:VectorToObjectSpace(dir)
+	return l.X, l.Z, d.X, d.Z, field.lo, field.hi
+end
+
 local MARGIN = 8 -- studs past the walls that still count as the field (less than Config.Map.Gap to the lobby)
 
 local function catchOne(player: Player)

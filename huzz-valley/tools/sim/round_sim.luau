@@ -487,7 +487,17 @@ local function simulate(opts)
 	end
 	local GirlService = { catalog = catalog }
 	function GirlService.init() end
+	-- (as the real GirlService: the admin panel's NEXT GAME girl comes once, then the fair roll again)
+	local nextGirl = nil
+	function GirlService.setNext(girl)
+		nextGirl = girl
+	end
 	function GirlService.roll()
+		if nextGirl then
+			local g = nextGirl
+			nextGirl = nil
+			return g
+		end
 		return GirlRoll.pick(catalog, Config.Rarities, rand)
 	end
 	function GirlService.strip(w, n, at)
@@ -684,6 +694,24 @@ local function simulate(opts)
 		p.Parent = nil
 		bots[p] = nil
 	end
+	-- Edge cases (opts.chaos): a catcher's body is replaced mid-lunge (a reset), later a catcher leaves mid-lunge.
+	local function chaosLunge(p)
+		if not stats.respawnedMidLunge then
+			stats.respawnedMidLunge = true
+			local c = new("Model", { Name = p.Name })
+			local root = new("Part", { Name = "HumanoidRootPart", CFrame = CFrame.new(0, 3, 300) })
+			root.Parent = c
+			new("Part", { Name = "Head" }).Parent = c
+			local h = new("Humanoid", { Health = 100, WalkSpeed = 16, RootPart = root })
+			h.Died = Signal()
+			h.Parent = c
+			p.Character = c
+			p.CharacterAdded:Fire(c)
+		elseif not stats.leftMidLunge then
+			stats.leftMidLunge = true
+			task.defer(removePlayer, p)
+		end
+	end
 
 	-- Watch every message the server sends to clients.
 	local function watchEvents()
@@ -808,6 +836,16 @@ local function simulate(opts)
 				gameStart = nil
 			end
 			table.insert(stats.stages, st)
+			if st == "Reveal" then
+				stats.reveals = (stats.reveals or 0) + 1
+				if opts.chaos and not stats.leftInReveal then -- someone leaves while the Secret cutscene plays
+					for q in bots do
+						stats.leftInReveal = true
+						task.defer(removePlayer, q)
+						break
+					end
+				end
+			end
 			if lastStage and not (ALLOWED[lastStage] and ALLOWED[lastStage][st]) then
 				problem(`stage {lastStage} -> {st} is not allowed`)
 			end
@@ -1033,7 +1071,7 @@ local function simulate(opts)
 				end
 				if best then
 					target = seen(best)
-					if bot.seed > 0.5 and Config.TagMode == "Stab" then
+					if (bot.seed > 0.5 or opts.chaos) and Config.TagMode == "Stab" then -- (chaos: every catcher lunges)
 						-- half the catcher bots only lunge (Space), never the knife: the leap covers ground, so they
 						-- jump from about Speed x Time away (Gameplay/Dash moves the catcher; here the bot moves itself)
 						local L = Config.Lunge
@@ -1045,6 +1083,7 @@ local function simulate(opts)
 						remotes.Lunge.OnServerEvent:Fire(p)
 						if c:GetAttribute("LungeAt") ~= before then
 							bot.leapUntil, bot.leapDir, bot.leapSpeed = clock + L.Time, root.CFrame.LookVector, (L.EndSpeed or L.Speed) + (L.Speed - (L.EndSpeed or L.Speed)) / 3 -- (the eased push's mean speed)
+							if opts.chaos and clock > 60 then chaosLunge(p) end
 						end
 						end
 					elseif bd < Config.Stab.Range - 1 and clock - bot.lastStab > Config.Stab.Cooldown then
@@ -1158,6 +1197,10 @@ local function simulate(opts)
 	end
 	if opts.cheater then
 		addPlayer("cheat")
+	end
+	if opts.chaos then -- the admin panel's NEXT GAME on the Secret girl: before the first game, and again mid-game
+		GirlService.setNext(catalog[#catalog])
+		task.delay(150, function() GirlService.setNext(catalog[#catalog]) end)
 	end
 	task.spawn(loadScript("ServerScriptService/HuzzServer/RoundService.server.lua"))
 	task.spawn(function()
@@ -1348,6 +1391,14 @@ report("an AFK runner (never moves)", s, p, {
 	{ "Hero runs rarely run out of time: an AFK Hero loses it early", function(x) return x.heroTimeouts <= 1 end },
 })
 print(string.format("   (hurries %d, AFK Heroes cut short %d, last runner called %d, boosted frames %d)", s.hurries, s.heroEarly, s.lastAlone, s.lastBoosted or 0))
+s, p = simulate({ players = 7, seconds = 700, seed = 12, chaos = true })
+report("edge cases (bug hunt, Oct 19)", s, p, {
+	{ "games still finish", function(x) return x.wins >= 2 end },
+	{ "the admin's NEXT GAME Secret girl plays her cutscene, twice", function(x) return (x.reveals or 0) >= 2 end },
+	{ "a player left during the Secret cutscene", function(x) return x.leftInReveal == true end },
+	{ "a catcher's body was replaced mid-lunge", function(x) return x.respawnedMidLunge == true end },
+	{ "a catcher left mid-lunge", function(x) return x.leftMidLunge == true end },
+})
 s, p = simulate({ players = 4, seconds = 600, seed = 8, config = function(c) c.TagMode = "Touch" end })
 report("Touch mode (no stabbing)", s, p, { { "touch tags", function(x) return x.tags >= 3 and x.stabs == 0 end } })
 

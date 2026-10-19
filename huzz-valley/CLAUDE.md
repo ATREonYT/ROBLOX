@@ -66,6 +66,19 @@ Owner's own words are in quotes. Read only the section you need.
 - **Always run a fresh critic agent** on new code before reporting; it found real bugs every time (shield vs lunge,
   Dance Pack sync, fall net pulling lobby players, props shrinking walls, avatar joints).
 - Report honestly: what's still worse than the reference, what only Studio can show, what's a stand-in.
+- **Known pitfalls** (bug hunt, Oct 19; each one shipped once):
+  - Streaming: a Model arrives before its parts. Never look a child part up once at start; look again until found
+    (LobbyProps: FREE SPIN's line stayed blank in the other lobbies). Test it by parenting the part in late.
+  - Our invisible walls are CanQuery off, so rays miss them: anything that moves a body by a raycast also clamps to
+    the field (`MapService.fieldLocal` + `DownMotion.fieldSlide`; the catch slide went through side walls).
+  - A ray at waist height misses fences and kerbs: cast one near the floor too when a lying body moves.
+  - A queue or loop in one task: pcall each job, or one error stops everything after it (ImageLoader's knife pictures).
+  - World prompts that open menus: block them in rounds AND during `HuzzCinematic` (the Secret cutscene plays in
+    the lobby before roles are set).
+  - The sim isn't deterministic (table order over Player keys): a scenario forces what it tests (edge cases makes
+    every catcher lunge) instead of hoping a seed does it.
+  - Worktree agents can't run `bash tools/check.sh` (blocked): run each `lune run tests/X.spec.luau` and the sim on
+    their own, and pass harness snippets as `@file` instead of `"$(cat file)"`.
 
 ## 3. Where things are (`src/`, Rojo `default.project.json`)
 - `ReplicatedStorage/Shared`: pure, tested logic (`RoundRules`, `CrateRoll`, `SpinRules`, `GirlRoll`, `CarryMath`,
@@ -91,7 +104,8 @@ Owner's own words are in quotes. Read only the section you need.
 - `PATH=/root/bin:$PATH bash tools/check.sh`: compiles every script; specs (RoundRules, CarryMath, GirlMotion,
   GirlMoves, StabMotion, DownMotion, Movement, Locomotion, PlayerMoves, GirlRoll, CrateRoll, SpinWheel, Leaderboards,
   Knives, KnifeWear, KnifeShapes, Sounds, SoundPicks, SetupKnives, AdminRules, StandShowcase, LobbyLayout, SetupLobbyProps); **the full-game simulation** (`tools/sim/round_sim.luau`: real server code, bots
-  that run, stab, lunge, rescue, use powers; 7 setups). `lune run huzz-valley/tools/sim/round_sim.luau audit` (repo root) prints the
+  that run, stab, lunge, rescue, use powers; 10 setups, one of them "edge cases": leaving mid-lunge and mid-cutscene,
+  a reset mid-lunge, the admin's NEXT GAME Secret girl twice). `lune run huzz-valley/tools/sim/round_sim.luau audit` (repo root) prints the
   loop numbers (stage times, waiting, win rates by player count, on the real map size) for `docs/loop-audit.md`. Its stubs (e.g. `KnifeService`) must get any new function
   RoundService calls, or games stop with "attempt to call a nil value".
 - `PATH=/root/bin:$PATH bash tools/preview/check.sh`: UI checks on the saved UI, then built from nothing.
@@ -486,7 +500,8 @@ Owner's own words are in quotes. Read only the section you need.
   - **The runner reacts, then falls with momentum** (`Shared/DownMotion`): the hit (`HIT`: in 0.1 s the back arches,
     head back, arms fly up and out, knees buckle; at its fullest before the body has tipped 10°, gone by 0.34 s), and
     the body slides on `Knockdown.Slide` 2.2 studs as it falls (fast, then settling; it used to stop dead from a sprint).
-    The server shortens the slide before a wall (`KnockdownService`: raycast ahead, the character's `DownedSlide`);
+    The server shortens the slide before a wall (`KnockdownService`: rays ahead at the waist and near the floor, and
+    the field's invisible walls via `DownMotion.fieldSlide`; the character's `DownedSlide`);
     clients, the server's final placement, standing up and the rescue range all use it.
   - Spec `tests/DownMotion.spec` (the hit at once, before the tip; slide fast at first and done by the landing; no
     slide = the old fall; no part over 45°/frame at 30 fps).

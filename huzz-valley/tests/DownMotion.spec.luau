@@ -98,6 +98,15 @@ do
 	local early = DownMotion.slideAt(0.1, K.Slide)
 	check(early > K.Slide * 0.35, string.format("the slide is fast at first (%.2f of %.1f studs by 0.1 s)", early, K.Slide))
 	check(math.abs(DownMotion.slideAt(K.FallTime, K.Slide) - K.Slide) < 1e-6, "all of it by the landing")
+	-- the field's invisible walls (a ray can't hit them): the slide stops before the body reaches past one
+	local lo, hi = { X = -100, Z = -40 }, { X = 100, Z = 40 }
+	check(DownMotion.fieldSlide(0, 0, 1, 0, 2.2, 4.5, lo, hi) == 2.2, "mid field: the whole slide")
+	check(math.abs(DownMotion.fieldSlide(0, 34, 0, 1, 2.2, 4.5, lo, hi) - 1.5) < 1e-6, "6 studs from a side wall: 1.5 left before the body reaches it")
+	check(DownMotion.fieldSlide(0, 38, 0, 1, 2.2, 4.5, lo, hi) == 0, "right by a side wall: no slide into it")
+	check(DownMotion.fieldSlide(0, 38, 0, -1, 2.2, 4.5, lo, hi) == 2.2, "sliding away from the wall: the whole slide")
+	local diag = math.sqrt(0.5)
+	check(math.abs(DownMotion.fieldSlide(99, 0, diag, diag, 2.2, 1, lo, hi) - (1 / diag - 1)) < 1e-6, "slanting at an end wall: measured along the slide")
+	check(DownMotion.fieldSlide(0, 60, 0, 1, 2.2, 4.5, lo, hi) == 2.2, "off the field (the lobby): no field walls")
 	local old = DownMotion.rootCFrame(feet, height, 0.3, nil)
 	local zero = DownMotion.rootCFrame(feet, height, 0.3, 0)
 	check((old.Position - zero.Position).Magnitude < 1e-6, "no slide (a wall ahead) is the old fall")

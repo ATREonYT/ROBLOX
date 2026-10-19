@@ -58,8 +58,19 @@ function KnockdownService.down(player)
 		local ahead = Vector3.new(root.CFrame.LookVector.X, 0, root.CFrame.LookVector.Z)
 		if ahead.Magnitude > 0.1 then
 			local reach = height + 1.5
-			local wall = Workspace:Raycast(root.Position, ahead.Unit * (slide + reach), params)
-			if wall then slide = math.max(0, wall.Distance - reach) end
+			-- (at waist height, and a stud off the floor where the lying body is: a fence or kerb lower than the waist
+			-- stopped nothing and the body slid into it)
+			for _, from in { root.Position, Vector3.new(root.Position.X, groundY + 1, root.Position.Z) } do
+				local wall = Workspace:Raycast(from, ahead.Unit * (slide + reach), params)
+				if wall then slide = math.max(0, math.min(slide, wall.Distance - reach)) end
+			end
+			-- the field's own walls are invisible to rays (CanQuery off): without this a runner caught by a side wall
+			-- slid through it, lay over the floor's edge and stood up outside the field (bug hunt, Oct 19)
+			local okMap, MapService = pcall(require, script.Parent.MapService)
+			if okMap and type(MapService) == "table" and MapService.fieldLocal then
+				local x, z, dx, dz, lo, hi = MapService.fieldLocal(root.Position, ahead.Unit)
+				if x then slide = DownMotion.fieldSlide(x, z, dx, dz, slide, reach, lo, hi) end
+			end
 		else
 			slide = 0
 		end

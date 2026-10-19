@@ -87,10 +87,13 @@ local function pump()
 	task.spawn(function()
 		while #queue > 0 do
 			local job = table.remove(queue, 1)
-			if job.label.Parent then
-				local content = ImageLoader.content(job.kind, job.name)
-				if content then job.label.ImageContent = content end
-			end
+			-- (guarded: one picture that fails must not stop the queue, or every knife picture after it stays blank)
+			pcall(function()
+				if job.label.Parent then
+					local content = ImageLoader.content(job.kind, job.name)
+					if content then job.label.ImageContent = content end
+				end
+			end)
 			task.wait()
 		end
 		pumping = false

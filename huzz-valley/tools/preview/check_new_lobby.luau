@@ -205,11 +205,17 @@ local function character()
 end
 me.Character = character()
 local Gameplay = game.StarterPlayer.StarterPlayerScripts.HuzzClient.Gameplay
+-- (his place streams: a LobbyProp model can arrive before its Pad part. Here FREE SPIN's pad comes in late, and its
+-- countdown must still show: checked below)
+local lateProp = byName.Pumpkin_Patch_Chest
+local latePad = lateProp and lateProp:FindFirstChild("Pad")
+if latePad then latePad.Parent = nil end
 for _, name in { "Leaderboards", "AvatarStands", "LobbyProps" } do
 	local okS, err = pcall(function() require(Gameplay[name]).start() end)
 	check(name .. " starts: " .. tostring(err), okS)
 end
 task.wait(0.3)
+if latePad then latePad.Parent = lateProp end
 local copies = workspace:FindFirstChild("HuzzStandAvatars")
 local count, onTop = 0, 0
 for _, c in (copies and copies:GetChildren() or {}) do

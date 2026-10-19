@@ -8,6 +8,8 @@
 	- FREE SPIN's line counts down to your next free spin (Shared/SpinRules, your saved FreeSpinAt: a real timer).
 	- A prop with a menu (Opens: Shop, SpinWheel) opens it from its prompt (E) or a click, never during a round or
 	  the Hero pick (like the wheel in the lobby).
+	- His place streams: a prop's Pad (light, title, FREE SPIN line) can arrive after the prop, so it's looked up
+	  again until found (tools/preview/check_new_lobby.luau brings one in late).
 ]]
 local M = {}
 
@@ -32,6 +34,7 @@ function M.start()
 		if type(what) ~= "string" or not ModalManager.has(what) then return end
 		local role = player:GetAttribute("HuzzRole")
 		if role == "Runner" or role == "Catcher" or player:GetAttribute("HuzzChoosing") == true then return end
+		if player:GetAttribute("HuzzCinematic") == true then return end -- (the Secret cutscene plays in the lobby, before roles)
 		if ModalManager.current() == what then return end
 		ModalManager.open(what)
 	end
@@ -61,17 +64,29 @@ function M.start()
 		end
 	end
 
+	-- The pad's light and title line. Looked up again until found: his place streams, so the LobbyProp model can
+	-- arrive before its Pad part (the other lobbies' pads only stream in when you get near), and a one-time look-up
+	-- left FREE SPIN's countdown blank there for good (bug hunt, Oct 19).
+	local function fill(rec)
+		local pad = rec.lp:FindFirstChild("Pad")
+		if not (pad and pad:IsA("BasePart")) then return end
+		if not rec.placed then
+			local p = pad.CFrame.Position
+			rec.phase, rec.placed = (p.X * 0.37 + p.Z * 0.61) % 1, true
+		end
+		local light = pad:FindFirstChild("PropLight", true)
+		if light ~= rec.light then
+			rec.light, rec.base = light, if light and light:IsA("Light") then light.Brightness else 0
+		end
+		local title = pad:FindFirstChild("PropTitle")
+		rec.line = title and title:FindFirstChild("Line")
+	end
+
 	local function add(lp: Instance)
 		if props[lp] or not lp:IsA("Model") then return end
-		local pad = lp:FindFirstChild("Pad")
-		local light = pad and pad:FindFirstChild("PropLight", true)
-		local title = pad and pad:FindFirstChild("PropTitle")
-		local p = pad and pad.CFrame.Position or Vector3.zero
-		props[lp] = {
-			lp = lp, phase = (p.X * 0.37 + p.Z * 0.61) % 1,
-			light = light, base = light and light.Brightness or 0,
-			line = title and title:FindFirstChild("Line"),
-		}
+		local rec = { lp = lp, phase = 0, base = 0 }
+		props[lp] = rec
+		fill(rec)
 		hookClick(lp)
 		lp.DescendantAdded:Connect(function(d)
 			if d:IsA("ClickDetector") then task.defer(hookClick, lp) end
@@ -132,6 +147,7 @@ function M.start()
 		while true do
 			local now = Workspace:GetServerTimeNow()
 			for lp, rec in props do
+				if not (rec.line and rec.line.Parent and rec.light and rec.light.Parent) then fill(rec) end -- (streamed in late)
 				if rec.line and lp:GetAttribute("Line") == "FreeSpin" then
 					local text
 					if State.data and State.data.Loaded == true then
