@@ -5,20 +5,23 @@
 	- The server builds a pass knife from its plain-part stand-in (Shared/KnifeShapes: the right length, grip and
 	  trail points) and tags it "GlbKnife" (HuzzServer/KnifeService.template). On this screen each tagged knife in the
 	  Workspace (in a hand, on a back or hip, on a lobby stand) gets his model instead: every triangle and colour of
-	  his .glb (Shared/KnifeGlb, baked by tools/knives/bake_pass_meshes.py), one MeshPart per look (Neon for his glow
-	  parts), welded to the Handle, sized by the knife's Stretch (a stand's big copy); then the stand-in's parts are
-	  hidden on this screen. A stand's see-through glow shell is made again round his blade.
+	  his .glb (Shared/KnifeGlb, baked by tools/knives/bake_pass_meshes.py), one MeshPart per look, welded to the
+	  Handle, sized by the knife's Stretch (a stand's big copy); then the stand-in's parts are hidden on this screen.
+	  Each look is the Roblox material nearest his .glb's (its mat / refl, from Shared/KnifeLook.glbMaterial: Neon for
+	  his glowing parts, Metal for his metal, Plastic for matte grips). Nothing is laid over it (owner, Oct 19: "they
+	  dont look as good as in the glb file": the old see-through glow shell on the stands is gone).
 	- Roblox builds these meshes with EditableMesh (AssetService:CreateEditableMesh / CreateMeshPartAsync), on each
 	  screen (the server's copies don't reach players). In Studio this works in Play. In the live game Roblox only
 	  allows it when the owner (13+, ID-verified) turns on Game Settings > Security > "Allow Mesh / Image APIs".
 	  Anything that fails (no permission, a phone out of mesh memory, an older Roblox) leaves the stand-in showing: a
-	  knife is never half made. Output says once "[HuzzKnife] pass knives as his model: ..." either way.
+	  knife is never half made (and the stand-in is cut from his .glb too: Shared/KnifeShapes). Output says once
+	  "[HuzzKnife] pass knives as his model: ..." either way; in Studio a failure also shows in the small red problem
+	  box on screen (UI/Report), so the owner can screenshot it (never in the live game: players don't need it).
 	- Each look's mesh is made once per screen and shared by every knife that shows it.
 ]]
 local M = {}
 
 local TAG = "GlbKnife"
-local SHELL_GROW = Vector3.new(0.08, 0.04, 0.1) -- (as HuzzServer/KnifeService.display's GlowShell: thick, long, wide)
 
 -- base64 -> buffer
 local ALPHA = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
@@ -99,17 +102,13 @@ function M.dress(model: Instance, meshes, make)
 		part.Size = ((hi - lo) * stretch):Max(Vector3.one * 0.01)
 		part.CFrame = handle.CFrame * CFrame.new((lo + hi) / 2 * stretch)
 		part.Color = Color3.fromHex(g.col)
-		part.Material = if g.glow then Enum.Material.Neon else Enum.Material.SmoothPlastic
+		part.Material = (Enum.Material :: any)[g.mat or (if g.glow then "Neon" else "SmoothPlastic")]
+		part.Reflectance = g.refl or 0
 		part.Anchored, part.CanCollide, part.CanQuery, part.CanTouch, part.Massless, part.CastShadow = false, false, false, false, true, false
 		table.insert(made, part)
 	end
 	local folder = Instance.new("Folder")
 	folder.Name = "GlbDress"
-	-- the stand's glow shell, again round his blade (as KnifeService.display's, in its colour and see-through)
-	local shellColour, shellSee = nil, 0.4
-	for _, d in model:GetDescendants() do
-		if d:IsA("BasePart") and d.Name == "GlowShell" then shellColour, shellSee = d.Color, d.Transparency break end
-	end
 	for _, d in model:GetDescendants() do -- the stand-in hides, its grip (the Handle) too; its emitters, lights and trail points stay
 		if d:IsA("BasePart") then d.Transparency = 1 end
 	end
@@ -118,18 +117,6 @@ function M.dress(model: Instance, meshes, make)
 		local w = Instance.new("WeldConstraint")
 		w.Part0, w.Part1 = handle, p
 		w.Parent = p
-		if shellColour and p.Name == "GlbBlade" then
-			local s = p:Clone()
-			s:ClearAllChildren()
-			s.Name = "GlbShell"
-			s.Material, s.Color, s.Transparency = Enum.Material.Neon, shellColour, shellSee
-			s.Size = p.Size + SHELL_GROW
-			s.CFrame = p.CFrame
-			s.Parent = folder
-			local ws = Instance.new("WeldConstraint")
-			ws.Part0, ws.Part1 = handle, s
-			ws.Parent = s
-		end
 	end
 	folder.Parent = model
 	return folder
@@ -140,18 +127,28 @@ function M.start()
 	local CollectionService = game:GetService("CollectionService")
 	local ReplicatedStorage = game:GetService("ReplicatedStorage")
 	local Workspace = game:GetService("Workspace")
-	local folder = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("KnifeGlb", 10)
-	if not folder then return end
-
-	local made = {} -- [baked mesh] = its EditableMesh, made once (false: it failed)
+	local RunService = game:GetService("RunService")
 	local reported = false
-	local function report(text)
+	local function report(text, failed: boolean?)
 		if reported then return end
 		reported = true
 		print("[HuzzKnife] pass knives as his model: " .. text)
+		if failed and RunService:IsStudio() then -- (on screen too, once, for a screenshot)
+			pcall(function()
+				local Report = require(script.Parent.Parent:WaitForChild("UI"):WaitForChild("Report"))
+				Report.problem("Pass knives as his model", text .. " (Game Settings > Security > Allow Mesh / Image APIs)")
+			end)
+		end
 	end
+	local folder = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("KnifeGlb", 10)
+	if not folder then
+		report("Shared/KnifeGlb is missing: the plain stand-ins show", true)
+		return
+	end
+
+	local made = {} -- [baked mesh] = its EditableMesh, made once (false: it failed)
 	local function fail(err)
-		report("not available here (" .. tostring(err) .. "): the plain stand-ins show")
+		report("not available here (" .. tostring(err) .. "): the plain stand-ins show", true)
 	end
 	local function make(g)
 		local em = made[g]
@@ -197,9 +194,9 @@ function M.start()
 					if d:IsA("BasePart") and not d:IsDescendantOf(result) then d.Transparency = 1 end
 				end)
 			elseif not ok then
-				report("failed (" .. tostring(result) .. "): the plain stand-ins show")
+				report("failed (" .. tostring(result) .. "): the plain stand-ins show", true)
 			elseif why then
-				report("failed (" .. tostring(why) .. "): the plain stand-ins show")
+				report("failed (" .. tostring(why) .. "): the plain stand-ins show", true)
 			end
 			busy[model] = nil
 		end)

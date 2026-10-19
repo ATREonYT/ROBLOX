@@ -5,9 +5,9 @@
 
 	Effects climb with the rarity (Config/CoinShop Rarity), always in the knife's own glow colour (its glowing parts,
 	Config/CoinShop Glow), calm, with no flashes:
-	  Common     nothing: plain steel, like Huss Valley's default knife;
-	  Uncommon   a faint sheen: a small glint on the blade now and then;
-	  Rare       + a soft glow: a dim light round the blade;
+	  Common     nothing: his model as it is;
+	  Uncommon   nothing either (it had a white sheen glint: gone Oct 19, it hid his model; his metal shines itself);
+	  Rare       a soft glow: a dim light round the blade;
 	  Epic       + a few small sparkles (3 a second, never more than 4) and the slash trail in its colour;
 	  Legendary  + a small light (Range 4) and its glow and sparkles stay on while it's on your back;
 	  Mythic     + a few embers drifting up off the blade.
@@ -34,11 +34,11 @@ KnifeLook.ORDER = { "Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic" 
 -- Each rarity's effects (numbers are per second / studs). Every rarity has everything the one below it has.
 KnifeLook.LADDER = {
 	Common = {},
-	Uncommon = { sheen = 0.5 },
-	Rare = { sheen = 0.5, glow = { range = 2.5, brightness = 0.5 } },
-	Epic = { sheen = 0.5, glow = { range = 2.5, brightness = 0.6 }, sparkles = 3, trailTint = true },
-	Legendary = { sheen = 0.5, glow = { range = 4, brightness = 1 }, sparkles = 3, trailTint = true, back = true },
-	Mythic = { sheen = 0.5, glow = { range = 4, brightness = 1 }, sparkles = 3, trailTint = true, back = true, embers = 1.5 },
+	Uncommon = {},
+	Rare = { glow = { range = 2.5, brightness = 0.5 } },
+	Epic = { glow = { range = 2.5, brightness = 0.6 }, sparkles = 3, trailTint = true },
+	Legendary = { glow = { range = 4, brightness = 1 }, sparkles = 3, trailTint = true, back = true },
+	Mythic = { glow = { range = 4, brightness = 1 }, sparkles = 3, trailTint = true, back = true, embers = 1.5 },
 }
 -- The Game Pass knives (Config/CoinShop Pass, rarity "Exclusive"): Mythic's calm effects, nothing louder.
 KnifeLook.LADDER.Exclusive = KnifeLook.LADDER.Mythic
@@ -210,32 +210,37 @@ end
 -- The lobby stands show their knife BIG (owner, Oct 19: "right now its very small and you dont even notice it";
 -- his reference stands hold blades as long as an arm and a half): the display copy is scaled up to Length studs
 -- pommel to tip (the real pass models are 3.2 studs, our stand-in knife 1.9), never shrunk, at most MaxScale.
-KnifeLook.STAND = { Length = 4.4, MaxScale = 2.6, Width = 1.7, MaxWiden = 2, MaxThick = 2, Aspect = 3, Shell = 0.4 }
+-- Evenly: it keeps his model's shape. (Round 2 also widened the blade up to twice and laid a see-through Neon shell
+-- over it; the owner, Oct 19: "they dont look as good as in the glb file". Both gone.)
+KnifeLook.STAND = { Length = 4.4, MaxScale = 2.6 }
 function KnifeLook.standScale(length: number?): number
 	if type(length) ~= "number" or length <= 0 then return 1 end
 	return math.clamp(KnifeLook.STAND.Length / length, 1, KnifeLook.STAND.MaxScale)
 end
--- Round 2 (Oct 19, "in the reference the knife is the first thing you see"): a stand's knife is also made broader
--- than life, display only: its blade widened toward Width studs and thickened as much, so it reads from across the
--- plaza. But it keeps its own shape (knife check, Oct 19: at up to 4.5x every blade became a paddle about twice as long
--- as wide; the Sunrise longsword read as a white slab and the Hunter katana as a pink brick, nothing like his cards):
--- at most MaxWiden times his model's width, and never squatter than Aspect (blade length to width). So the katanas and
--- the longsword stay slim (about 4 to 5 to 1), the cleavers broad (3 to 1). Returns the widen factors (thickness along
--- the Handle's X, width along its Z) for a blade `bladeWidth` studs wide and `bladeLength` long after the length scale.
-function KnifeLook.standWiden(bladeWidth: number?, bladeLength: number?): (number, number)
-	local S = KnifeLook.STAND
-	if type(bladeWidth) ~= "number" or bladeWidth <= 0 then return 1, 1 end
-	local wide = math.clamp(S.Width / bladeWidth, 1, S.MaxWiden)
-	if type(bladeLength) == "number" and bladeLength > 0 then
-		wide = math.max(1, math.min(wide, bladeLength / S.Aspect / bladeWidth))
-	end
-	return math.min(wide, S.MaxThick), wide
+
+-- The Roblox material (its Enum.Material name) and Reflectance nearest a .glb part's look, from the .glb's own
+-- metallic and roughness (owner, Oct 19: "they dont look as good as in the glb file"; his blades and guards are
+-- metallic 0.6 to 0.9 and polished, roughness 0.2 to 0.3; his grips matte, metallic 0 and roughness 0.8):
+--   glowing (emissive)                 Neon (his own import's glow, a SurfaceAppearance, is kept where he has one)
+--   metallic 0.5 and up                Metal, with Reflectance 0.12 when polished (roughness 0.35 or less), else 0.04
+--   roughness 0.7 and up               Plastic (matte)
+--   anything else                      SmoothPlastic
+-- His Studio helper (HuzzStudioTools/SetupKnives lookOf) and the pass knives' builder (Gameplay/KnifeDress, through
+-- tools/knives/bake_pass_meshes.py) use the same rule; tests/KnifeModels.spec holds them together.
+KnifeLook.GLB_LOOK = { MetalFrom = 0.5, PolishedTo = 0.35, Polished = 0.12, Brushed = 0.04, MatteFrom = 0.7 }
+function KnifeLook.glbMaterial(metal: number?, rough: number?, glow: boolean?): (string, number)
+	local L = KnifeLook.GLB_LOOK
+	if glow then return "Neon", 0 end
+	local m, r = metal or 0, rough or 1
+	if m >= L.MetalFrom then return "Metal", if r <= L.PolishedTo then L.Polished else L.Brushed end
+	if r >= L.MatteFrom then return "Plastic", 0 end
+	return "SmoothPlastic", 0
 end
 
 --[[
 	Each Game Pass knife's own element (owner, Oct 19: "better knife animations ... in the lobby and in the gamepass
 	sections"; each one matches its card, design/knives/Five_Elemental_Knife_Cards.png). Replaces Mythic's plain
-	sparkles and embers on that knife; the sheen and glow stay. Calm: a few particles a second, nothing flashes.
+	sparkles and embers on that knife; the glow stays. Calm: a few particles a second, nothing flashes.
 	  emit      the steady emitters (on the blade; "tip" = at the tip): texture (Shared/FxTexture name), colours,
 	            rate (per second on a stand; half in hand), life, speed, size, accel (studs/s^2), spin (degrees/s),
 	            box (from the whole blade, not a point), lock (stay on the blade).

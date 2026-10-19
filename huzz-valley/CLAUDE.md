@@ -189,8 +189,10 @@ fine). Owner quotes go in the topic's "Why" part. Keep this core about 20 KB and
     stands wait for them).
   - Import `Gamepass_Knives.glb` + rerun SetupKnives and send `HuzzKnives.rbxm` again: we have his 30 knives (Oct 18,
     finished offline Oct 19) but not the 5 pass knives (until then each screen draws them from the .glb with
-    EditableMesh: live only with Game Settings > Security > "Allow Mesh / Image APIs", which needs his ID check);
-    his own place still holds the broken 8 ([knives.md](docs/notes/knives.md), "Owner how-to").
+    EditableMesh: only with Game Settings > Security > "Allow Mesh / Image APIs", which needs his ID check; his Oct 19
+    Play showed the plain stand-ins, so turn it on and send the `[HuzzKnife]` line or the red box);
+    his own place still holds the broken 8 and his 30 without the Oct 19 materials ([knives.md](docs/notes/knives.md),
+    "Owner how-to").
   - Import `Lobby_Props.glb`, run SetupLobbyProps, send `HuzzLobbyProps.rbxm` ([lobby.md](docs/notes/lobby.md)).
   - Developer Product IDs (Sunset Trail, Blossom Aura, coin packs, spins 1/10/100).
   - Upload sounds, pictures and animations (`Config/SoundIds`, `Config/ImageIds`, `tools/studio/publish-animations.lua`).

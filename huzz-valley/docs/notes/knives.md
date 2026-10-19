@@ -17,9 +17,19 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
   `assets/art/knife-*.png` (packed 192 px; they show in Play only, EditableImage); `docs/previews/knife-cards.jpg`.
 - `KnifeService` takes `ServerStorage/HuzzKnives/<Key>` when there, else the built-in knife tinted in the skin's colours.
   Hand by the model's `Grip`.
-- **Effects** `KnifeLook.LADDER`: Common none, Uncommon sheen, Rare soft light, Epic +3 sparkles a second and a tinted
-  slash trail, Legendary light Range 4 + glow on the back, Mythic + embers (stand-in particle textures until
-  uploads). Pictures `docs/previews/knives-vs-hv.jpg`, `knife-leap.mp4`.
+- **Effects** `KnifeLook.LADDER`: Common and Uncommon none (Uncommon's white sheen glint is gone: it hid his
+  model), Rare soft light, Epic +3 sparkles a second and a tinted slash trail, Legendary light Range 4 + glow on the
+  back, Mythic + embers (stand-in particle textures until uploads). Pictures `docs/previews/knives-vs-hv.jpg`,
+  `knife-leap.mp4`.
+- **His look, one to one** (`KnifeLook.glbMaterial`, the one rule for all of them): every part takes the Roblox
+  material nearest his .glb's metallic and roughness (his blades and guards metallic 0.6 to 0.9, roughness 0.2 to
+  0.3; grips metallic 0, roughness 0.8): glowing = Neon, metallic 0.5+ = Metal (Reflectance 0.12 when roughness is
+  0.35 or less, else 0.04), roughness 0.7+ = Plastic, else SmoothPlastic. His own import's glow stays where he has
+  it: 84 SurfaceAppearances (his colour picture + emissive mask, EmissiveStrength 0.9) on 15 knives, a softer real
+  glow than Neon; Neon only on glowing parts without one (78 parts). `Config/Look` EnvironmentSpecularScale went
+  0.2 to 0.4 so Metal mirrors the sky at all (0.2 was the Oct 19 matte lighting match: set it back if the plaza
+  looks glossy). Nothing is laid over his model: no widening, no glow shell, no sheen (only particles, light and
+  the trail, calm).
 
 ## The worn knife
 - `KnifeLook.pick` = the shop's pick, else your first owned knife, else the default knife; diagonal across the back
@@ -67,19 +77,29 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
   and Sunrise, dots for Moonlit and Inferno, diamonds for Frost; plain frames, no upload), the white shine, and the
   card lifts to 104% under the mouse (`Effects.lift`). All saved twins, hidden until their loop runs, stopped by
   Reduced Motion. Still `docs/previews/knife-cards-alive.jpg` (the motes are small and calm; the pulse shows only in motion).
-- **Stand-ins until his import** (`Shared/KnifeShapes`): each pass knife's card shape from plain parts at its real
-  length (katana, moon-hole cleaver, feather-guard longsword, jagged blade, crystal blade, glowing edges in Neon), so
-  his place doesn't show our 1.9 stud dagger for them; still `docs/previews/stand-knives-standins.jpg` (the round 1
-  picture, before the widening). Spec `tests/KnifeShapes.spec` (lengths, scaler, stand size, width and glow shell,
-  elements, budget, arc). They are the server's knife (length, grip, trail points, particles) and the last fallback
-  on screen; each screen dresses them as his .glb (next).
+- **Stand-ins until his import** (`Shared/KnifeShapes`, data `Shared/KnifeStandIns` baked by
+  `tools/knives/bake_stand_ins.py`): plain blocks cut from his own `Gamepass_Knives.glb` (owner's Oct 19 screenshot:
+  the first hand-made ones, "an orange blocky jagged blade" and "a small cyan stub", were nothing like his model):
+  his knife in 0.04 stud slices, one block per stretch of each of his looks (colour, glow, material), joined up the
+  blade while it barely changes, a smaller look a hair proud of a bigger one under it; 75 to 141 blocks a knife, his
+  colours and `glbMaterial`, his length; the tassel blocks are named Tassel so pommel to tip stays his. Spec
+  `tests/KnifeShapes.spec` (lengths, his .glb's box within 0.06 studs, his colours only, at most 160 parts, scaler,
+  stand size, even scale and no shell, elements, budget, arc). They are the server's knife (length, grip, trail
+  points, particles) and the fallback on any screen that can't draw his model; each screen dresses them as his .glb
+  (next). The round 1 hand-made ones: `docs/previews/stand-knives-standins.jpg`.
 - **His .glb on every screen until his import** (`Gameplay/KnifeDress`, data `Shared/KnifeGlb/<Key>_<n>`): the
   server tags a pass stand-in `GlbKnife` (attribute `Glb` = its key, `KnifeService.template`); each client builds his
-  `Gamepass_Knives.glb` as it is (every triangle, 4,312 to 19,156 a knife, 6 to 9 looks: one MeshPart per colour +
-  glow, Neon for his glow parts) with `AssetService:CreateEditableMesh` + `CreateMeshPartAsync`, welds it to the
-  Handle sized by the model's `Stretch` (a stand's big copy, set by `KnifeService.scale`), hides the stand-in's parts
-  (Transparency 1 on that screen; its particles, lights and trail stay) and remakes a stand's glow shell round his
-  blade. All or nothing per knife; one `[HuzzKnife] pass knives as his model: ...` line in Output says on or why not.
+  `Gamepass_Knives.glb` as it is (every triangle, 4,312 to 19,156 a knife, 6 to 9 looks: one MeshPart per colour,
+  glow and material, each in its `mat` / `refl` from `glbMaterial`) with `AssetService:CreateEditableMesh` (not
+  FixedSize: that refuses AddVertex) + `CreateMeshPartAsync(Content.fromObject(mesh))`, welds it to the Handle sized
+  by the model's `Stretch` (a stand's big copy, set by `KnifeService.scale`, even every way) and hides the stand-in's
+  parts (Transparency 1 on that screen; its particles, lights and trail stay). A stand's copy is a Clone of the
+  server's (tags and attributes come along) parented into the Workspace, which the client watches. All or nothing
+  per knife; one `[HuzzKnife] pass knives as his model: ...` line in Output says on or why not, and in Studio a
+  failure also shows once in the small red problem box on screen (`UI/Report`) for a screenshot.
+  **Oct 19, his Studio Play showed the plain stand-ins** on the stands (the dress didn't run or failed there): the
+  likely cause is the "Allow Mesh / Image APIs" switch (Roblox fails EditableMesh by default in a published place);
+  his `[HuzzKnife]` line will say. Until then the stand-ins themselves follow his outline (above).
   Baked by `tools/knives/bake_pass_meshes.py` (16-bit steps across each mesh's box, base64; at most 6,000
   triangles a file, all far under Studio's 200,000 characters a script). Hand, back, hip, stands, admin give and
   crate prizes all go through `KnifeService.template`, so all get it.
@@ -106,18 +126,25 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
 - SetupKnives matches "name + digits", refits by position, guesses from the box's long axis, and on a re-run
   repairs/recolours models already in HuzzKnives in place (`tests/SetupKnives.spec`: Studio-style names, both glbs,
   his real broken 8 in `tests/fixtures/HuzzKnives-oct18-first-run.rbxm`).
-- **Oct 19: his file fixed offline** (`tools/knives/colour_knives.luau --write`): runs his own SetupKnives on
-  `assets/knives/HuzzKnives.rbxm` exactly as his re-run would (379 parts of 30 knives took their .glb colour, Neon on
-  his glow parts; Crimson Tanto, Night Tanto and Twin Fang turned back a quarter, their flat had faced the wrong
-  way; Twin Fang's grip back on its Handle), drops the import's leftover colour pictures and checks every part
-  against `tools/knives/knife_boxes.json` (each .glb part's box in the Handle's space, `knife_boxes.py`): worst 0.008
-  studs. `tools/knives/inspect_knives.luau` lists any file's knife parts (class, mesh, colour, material).
-- **Spec `tests/KnifeModels.spec`** (in `check.sh`): his 30 are all his meshes, on their .glb spots, in their .glb
-  colours, attachments at the grip, guard and tip; every one of the 35 keys in hand, worn and on a stand has his mesh
-  blade or a stand-in tagged for the dress with a baked blade (a plain block blade fails it); the baked meshes decode
-  inside Roblox's limits with his colours and box; the dress places, sizes, hides and shells, all or nothing.
+- **Oct 19: his file fixed offline** (`tools/knives/colour_knives.luau --write`): runs his own SetupKnives on the
+  file as we received it (`assets/knives/HuzzKnives-received.rbxm`, the 8 already repaired) exactly as his re-run
+  would and writes `assets/knives/HuzzKnives.rbxm`: 585 parts of 30 knives take their .glb colour and material
+  (Metal on his metal), his 84 glowing SurfaceAppearances stay, Neon only on the 78 glowing parts without one;
+  Crimson Tanto, Night Tanto and Twin Fang turned back a quarter, their flat had faced the wrong way; Twin Fang's grip
+  back on its Handle. It drops the import's leftover colour pictures and checks every part against
+  `tools/knives/knife_boxes.json` (each .glb part's box, colour, glow, metallic and roughness in the Handle's space,
+  `knife_boxes.py`): worst 0.008 studs. `tools/knives/inspect_knives.luau` lists any file's knife parts.
+- **Spec `tests/KnifeModels.spec`** (in `check.sh`): one look rule (KnifeLook, colour_knives, his SetupKnives through
+  the file); his 30 are all his meshes, on their .glb spots, in their .glb colour and material, his 84 glows kept,
+  attachments at the grip, guard and tip; every one of the 35 keys in hand, worn and on a stand has his mesh blade or
+  a stand-in tagged for the dress with a baked blade (a plain block blade fails it), an even stand scale and nothing
+  laid over it (no GlowShell, no sheen); the baked meshes decode inside Roblox's limits with his colours, materials
+  and box; the dress places, sizes, colours and hides, all or nothing.
 - Picture `docs/previews/knives-glb-vs-ours.jpg` (`tools/preview/motion3d/knife_glb_scene.luau`, drawn from the game's
-  own parts): 9 knives as his .glb | before | now, then Dragon's Maw on the back and Twin Fang in the hand.
+  own parts, materials approximated in three.js: his .glb's own metallic/roughness vs Roblox Metal / SmoothPlastic /
+  Plastic / Neon / his glow at Look's EnvironmentSpecularScale): 5 of his knives as his .glb | before | now, the 5
+  pass knives as his .glb | old stand-in | new stand-in | dressed, then Dragon's Maw on the back and Twin Fang in the
+  hand.
 
 ## Stand sword showcase (`Shared/StandShowcase`, drawn by `Gameplay/AvatarStands`)
 - A stand with a knife doesn't run; client only, only within NEAR 160. It holds a guard (the hand low in front of the
@@ -129,13 +156,10 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
 - **Size:** `KnifeService.display` scales the stand copy to `KnifeLook.STAND.Length` 4.4 studs (his models are 3.2,
   the old stand-in dagger 1.9) with `KnifeService.scale` (by hand: sizes, offsets, attachments, welds, meshes,
   lights). The hand scaler runs everywhere (check_lobby_boards also checks the size).
-- **Broader than life, but its own shape:** display only, after the length scale `KnifeLook.standWiden` widens the
-  blade toward `STAND.Width` 1.7 studs, at most `MaxWiden` 2x his model and never squatter than `Aspect` 3 (blade
-  length to width), and thickens it as much (at most `MaxThick` 2x; `KnifeService.scale` takes a Vector3 in the
-  Handle's axes: X thickness, Y length, Z width). His meshes on a stand: Hunter katana 0.96 studs wide (3.3 to 1),
-  Sunrise longsword 0.66 (4.7 to 1), Frost 0.70, Inferno 0.95, the Moonlit cleaver 0.9. Then a `GlowShell` over every
-  part with "blade" in its name: Neon in the element's light colour, `STAND.Shell` 0.4 see-through, welded (a steady
-  glow, nothing flashes).
+- **His shape, only bigger:** the stand copy is scaled the same every way (`KnifeService.scale` still takes a
+  Vector3 in the Handle's axes). The round 2 widening (`KnifeLook.standWiden`, up to 2x) and the see-through Neon
+  `GlowShell` over the blade are gone (owner, Oct 19: "they dont look as good as in the glb file": both hid his
+  model).
 - **Trail:** a `StandSlash` Trail from `StandTrailBase` (45% up the blade, added by display) to TrailTip, on only in
   the cuts, `TRAIL_LIFETIME` 0.2 s in the element's colours (Sunrise gold, never white), tapered. The steady rarity
   glow is the display knife's own.
@@ -168,9 +192,9 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
   `KNIFE_MODE=standin` draws the plain-part stand-ins).
 - **Still worse than the reference** (after the knife check): the reference's cleaver hangs nearly straight down by
   the leg with a fire cloud round it, bigger than our flames (ours sticks out diagonally to the side, so its tip clears
-  the floor at 4.4 studs); the Sunrise blade renders as plain white under its gold shell (his card's silver and blue
+  the floor at 4.4 studs); the Sunrise blade renders as plain white (his card's silver and blue
   line don't show); in the Flick and Flourish the Sunrise blade still passes up through its sign for a moment; our
-  signs aren't in the render (only their words). The render has no bloom, so Studio's Neon shell will glow more.
+  signs aren't in the render (only their words).
   One picture: `docs/previews/knife-check-vs-ref.jpg` (reference at rest; before and after with his meshes and with the
   stand-ins; the long knife in hand; `tools/preview/knife_check_sheet.py`). Older still:
   `docs/previews/stand-knives-rest-vs-ref.jpg` (round 3).
@@ -180,9 +204,13 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
   dive), the knife showcase (the big stand knives, element particles with stand-in pictures, the spins, the card
   motes/pulse, the slash arc), the long blades' forward grip and its ease back in a stab. The 5 pass models still need
   his import (`Gamepass_Knives.glb` + SetupKnives) to be real everywhere; until then each screen dresses the stand-ins
-  as his .glb with EditableMesh (`Gameplay/KnifeDress`): never run in Studio yet (no Studio here), so the API calls,
-  the triangle facing (counter-clockwise assumed) and the look under Studio light are unproven; live only with the
-  "Allow Mesh / Image APIs" setting; otherwise the plain blocks show. The offline picture draws his imported knives'
+  as his .glb with EditableMesh (`Gameplay/KnifeDress`): his first Studio Play (Oct 19) showed the plain stand-ins,
+  so it didn't run or failed there (his `[HuzzKnife]` line / the red box will say why; most likely the "Allow Mesh /
+  Image APIs" switch); the triangle facing (counter-clockwise assumed) and the look under Studio light are unproven;
+  otherwise the stand-ins show, now cut from his .glb but still blocky (stepped edges on the curved katana, the
+  feather guard as grey blocks, Dragon's Maw more orange than his). How Metal, his SurfaceAppearance glow and the
+  0.4 specular really look only Studio shows (the offline picture approximates materials); the 5 pass knives' glow
+  is Neon (no SurfaceAppearance pictures of his for them until his import). The offline picture draws his imported knives'
   parts with the .glb part each came from (his uploaded meshes themselves only Studio shows). A refunded pass keeps its knives. The in-hand check uses the pack's Idle/Walk/Run on a blocky R15; a
   player's own avatar animations or a short R6 arm can still bring a long tip nearer the floor.
 
@@ -204,7 +232,8 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
   `design/lobby-ref/oct19-stands-ref.mp4`: PUMPKIN CLEAVER, VIP DAGGER, VOWBREAKER; we copied the motion and effects,
   never its sign words, LIMITED or ENDS IN timers). Round 1 made it 4.4 studs. An earlier `Model:ScaleTo` try broke 3
   lobby checks because the Lune harness has no ScaleTo, so the stand's mount failed; hence the hand scaler.
-- Round 2 ("in the reference the knife is the first thing you see"): the widening and glow shell, the Scrape move,
+- Round 2 ("in the reference the knife is the first thing you see"): the widening (toward `STAND.Width` 1.7 studs,
+  `MaxWiden` / `MaxThick` 2x) and glow shell (`STAND.Shell` 0.4 see-through; both removed Oct 19, below), the Scrape move,
   `TRAIL_LIFETIME` 0.2. Round 3: the face-out twist.
 - **Knife check, Oct 19** (owner: "Can you check the knifes over and over again to make sure it's the best it can
   be"): every blade on a stand had become a paddle about twice as long as wide (the widening went up to 4.5x), so the
@@ -220,3 +249,9 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
   his import; and his 30 were never finished by SetupKnives' colour step (most parts default grey plastic or the
   import's own picture, glow parts not glowing) with three turned a quarter so their flat faced the wrong way. Fixed
   as above: his file finished offline, the pass knives dressed as his .glb on each screen.
+- **"They dont look as good as in the glb file", Oct 19** (owner, of his 30 in Studio). Cause: our colour step had
+  removed his import's 84 glowing SurfaceAppearances (Neon went from 78 to 162 parts) and made every other part
+  SmoothPlastic, so his metal looked flat, under a 0.2 EnvironmentSpecularScale; the stand widening, the GlowShell and
+  the sheen glint covered his model too. Fixed as above (his glow back, materials from his .glb, specular 0.4,
+  nothing laid over it). The same day his Studio screenshot of the stands showed the pass knives' hand-made
+  stand-ins: now cut from his .glb, and a dress failure shows on screen in Studio.

@@ -9,7 +9,7 @@ saves these into the owner's place too (core `CLAUDE.md` section 4), so Studio's
   and materials (the reference's grey stone tiles are map design, not light).
 - **Technology ShadowMap** (`build_yours.luau`; sun shadows stay, lamps light softly with no pools or shadows of their
   own). Brightness 1.4, ClockTime 13, latitude 23, Ambient 150,150,160, OutdoorAmbient 210,210,218,
-  EnvironmentDiffuseScale 1 (the blue-ish shade), EnvironmentSpecularScale 0.2, ShadowSoftness 0.6, Exposure +0.05,
+  EnvironmentDiffuseScale 1 (the blue-ish shade), EnvironmentSpecularScale 0.4 (0.2 in the Oct 19 match; 0.4 the same day so the knives' Metal mirrors the sky, [knives.md](knives.md)), ShadowSoftness 0.6, Exposure +0.05,
   grade Contrast 0.05, Saturation 0.12, Bloom 0.4/24/1.6, SunRays 0.03.
 - **Our lamps are turned down so the glow stays on the object:** lobby props 0.5/7 (fainter pad pools), board
   pumpkin/candle/base 0.4/5, 0.3/4, 0.3/6, aura stars 0.6+0.15t / 6+t, the showcase girl's key/rim/stand 1.5/0.8/1.0,

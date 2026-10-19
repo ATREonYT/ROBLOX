@@ -6,9 +6,8 @@
 --   * KnifeService.scale grows a model about its grip: length, attachments and welds together (by hand, no ScaleTo);
 --   * the stands' copy (KnifeService.display) is about KnifeLook.STAND.Length long, for stand-ins and the owner's own
 --     models alike, and carries its element: steady emitters, a burst, a tip glint, its element name;
---   * broader than life on a stand (round 2), but still its own shape (knife check, Oct 19: the paddles are gone):
---     its blade wider than the stand-in at that length, never squatter than KnifeLook.STAND.Aspect, a see-through Neon
---     glow shell, the slash from mid-blade;
+--   * on a stand, its own shape only bigger (owner, Oct 19: "they dont look as good as in the glb file"): scaled the
+--     same every way (no widening), no glow shell laid over it, the slash from mid-blade;
 --   * steady: a stand's knife throws at most 32 particles a second (a hand about a third), a burst at most 20, the glint at
 --     most one a second; every picture name has a stand-in in Shared/FxTexture;
 --   * the slash arc fades in and out within its life and is never solid (KnifeLook.arcFade).
@@ -76,6 +75,26 @@ for _, key in PASS do
 	local neon = 0
 	for _, d in model:GetDescendants() do if d:IsA("BasePart") and d.Material == roblox.Enum.Material.Neon then neon += 1 end end
 	check(key .. ": glowing parts (" .. neon .. ")", neon >= 1)
+	-- cut from his .glb (Shared/KnifeStandIns): his outline, his colours, not too many parts
+	local glbBoxes = serde.decode("json", fs.readFile(ROOT .. "tools/knives/knife_boxes.json"))[key]
+	local lo, hi, cols = Vector3.one * math.huge, -Vector3.one * math.huge, {}
+	for _, n in glbBoxes do
+		lo, hi = lo:Min(Vector3.new(n.lo[1], n.lo[2], n.lo[3])), hi:Max(Vector3.new(n.hi[1], n.hi[2], n.hi[3]))
+		cols[n.col] = true
+	end
+	local mlo, mhi, count, foreign = Vector3.one * math.huge, -Vector3.one * math.huge, 0, 0
+	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") and d.Transparency < 1 then
+			count += 1
+			local c, h = d.CFrame.Position, d.Size / 2
+			mlo, mhi = mlo:Min(c - h), mhi:Max(c + h)
+			if not cols[d.Color:ToHex():lower()] then foreign += 1 end
+		end
+	end
+	check(string.format("%s: the stand-in fills his .glb's box (%.3f, %.3f studs off)", key, (mlo - lo).Magnitude, (mhi - hi).Magnitude),
+		(mlo - lo).Magnitude < 0.06 and (mhi - hi).Magnitude < 0.06)
+	check(key .. ": every stand-in part in one of his colours (" .. foreign .. " not)", foreign == 0)
+	check(key .. ": " .. count .. " parts, at most 160", count <= 160 and count >= 20)
 	check(key .. ": slash trail points", model:FindFirstChild("TrailBase", true) ~= nil and model:FindFirstChild("TrailTip", true) ~= nil)
 	local handle = model:FindFirstChild("Handle", true)
 	local loose = 0
@@ -120,22 +139,16 @@ for _, key in PASS do
 	local L = lengthOf(m)
 	check(key .. string.format(": the stand's knife is big (%.2f studs, target %.1f)", L, KnifeLook.STAND.Length), math.abs(L - KnifeLook.STAND.Length) < 0.25)
 	local sh = KnifeService.shapeOf(m)
-	local bw = if sh.bladeWidth > 0 then sh.bladeWidth else sh.width
 	local plain = KnifeService.template(CoinShop.get(key))
-	KnifeService.scale(plain, KnifeLook.standScale(KnifeService.shapeOf(plain).length))
 	local psh = KnifeService.shapeOf(plain)
-	local pw, squat = psh.bladeWidth, psh.bladeLength / psh.bladeWidth <= KnifeLook.STAND.Aspect -- (a cleaver already that broad stays as it is)
-	check(key .. string.format(": broader than life on a stand (blade %.2f studs wide, %.2f at that length)", bw, pw), (bw > pw * 1.15 or squat) and bw >= 0.6)
-	check(key .. string.format(": still its own shape, not a paddle (blade %.1f times longer than wide, at least %g)", sh.bladeLength / bw, KnifeLook.STAND.Aspect),
-		sh.bladeLength / bw >= math.min(KnifeLook.STAND.Aspect, psh.bladeLength / pw) - 0.05)
-	local shells, bad = 0, 0
+	local k = sh.length / psh.length
+	check(key .. string.format(": its own shape on a stand, only bigger (x%.2f long, x%.2f wide, x%.2f thick)", k, sh.width / psh.width, (sh.xMax - sh.xMin) / (psh.xMax - psh.xMin)),
+		math.abs(sh.width / psh.width - k) < 0.02 and math.abs((sh.xMax - sh.xMin) / (psh.xMax - psh.xMin) - k) < 0.02)
+	local shells = 0
 	for _, d in m:GetDescendants() do
-		if d:IsA("BasePart") and d.Name == "GlowShell" then
-			shells += 1
-			if d.Material ~= roblox.Enum.Material.Neon or d.Transparency < 0.3 then bad += 1 end
-		end
+		if d:IsA("BasePart") and d.Name == "GlowShell" then shells += 1 end
 	end
-	check(key .. string.format(": a see-through Neon glow over the blade (%d shell parts)", shells), shells > 0 and bad == 0)
+	check(key .. string.format(": nothing laid over the blade (%d glow shell parts)", shells), shells == 0)
 	check(key .. ": the slash starts halfway up the blade", m:FindFirstChild("StandTrailBase", true) ~= nil)
 	local el = KnifeLook.element(key)
 	check(key .. ": its element on the stand (" .. el.name .. ")", m:GetAttribute("Element") == el.name and m:FindFirstChild("KnifeBurst", true) ~= nil

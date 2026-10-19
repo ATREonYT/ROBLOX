@@ -1,5 +1,6 @@
 # Writes tools/knives/knife_boxes.json: for every knife (the 30 and the 5 Game Pass ones), each .glb part's box in
-# the game's Handle space, in studs: { node, lo: [x,y,z], hi: [x,y,z], col: "rrggbb", glow }. Handle space = the
+# the game's Handle space, in studs: { node, lo: [x,y,z], hi: [x,y,z], col: "rrggbb", glow, metal, rough (the .glb's metallic
+# and roughness) }. Handle space = the
 # setup's frame (tools/knives/setup_knives.lua): X = the .glb's Z (the blade's thin way), Y = the .glb's Y minus the
 # grip (to the tip), Z = minus the .glb's X; scaled so pommel to tip is the knife's Studs.
 # tests/KnifeModels.spec checks the owner's imported models (assets/knives/HuzzKnives.rbxm) part by part against it.
@@ -27,7 +28,7 @@ def main():
             hx = [z * per for z in zs]
             hy = [(y - k['grip']) * per for y in ys]
             hz = [-x * per for x in xs]
-            boxes.append({'node': p['node'], 'col': p['col'].lstrip('#'), 'glow': p['glow'],
+            boxes.append({'node': p['node'], 'col': p['col'].lstrip('#'), 'glow': p['glow'], 'metal': p['metal'], 'rough': p['rough'],
                           'lo': [round(min(a), 3) for a in (hx, hy, hz)], 'hi': [round(max(a), 3) for a in (hx, hy, hz)]})
         out[key] = boxes
     with open('tools/knives/knife_boxes.json', 'w') as fh:

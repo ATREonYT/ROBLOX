@@ -3,8 +3,8 @@
 -- (design/lobby-ref/oct19-stands-ref.mp4: three stands in a row seen from the plaza): Inferno Knife (Dragon's Maw,
 -- R6, the reference's PUMPKIN CLEAVER: low hold, spin slash, big arc), Sunrise Knife (Celestial Seraph, R15, its VIP
 -- DAGGER: guard, quick flicks) and Hunter Knife (Crimson Requiem, R6, its VOWBREAKER: raised spin, petal burst).
--- The game's own code: Shared/StandShowcase (each knife's STYLE), KnifeLook.standScale (the size) and standWiden (round
--- 2: the blade broader than life, with KnifeService.display's see-through Neon glow shell), KnifeLook.ELEMENTS
+-- The game's own code: Shared/StandShowcase (each knife's STYLE), KnifeLook.standScale (the size, the same every way:
+-- the round 2 widening and glow shell are gone, Oct 19 "they dont look as good as in the glb file"), KnifeLook.ELEMENTS
 -- (each knife's particles, simulated here like a ParticleEmitter: rate, life, speed, accel, drag, size, spin; the
 -- burst when a move fires one; the tip glint), the slash trail over StandShowcase.TRAIL_LIFETIME in the element's
 -- colours, the knife's light, the stand's glow disc and our sign words (not the reference's).
@@ -84,21 +84,13 @@ for _, s in SET do
 			if not string.find(p.name, "Tassel") then lo, hi = math.min(lo, p.at[2] - p.size[2] / 2), math.max(hi, p.at[2] + p.size[2] / 2) end
 		end
 		s.scale = KnifeLook.standScale(hi - lo)
-		-- (as KnifeService.display measures it: every part with "blade" in its name, after the length scale)
-		local zlo, zhi, ylo, yhi = math.huge, -math.huge, math.huge, -math.huge
-		for _, p in recipe.parts do
-			if string.find(string.lower(p.name), "blade", 1, true) then
-				zlo, zhi = math.min(zlo, p.at[3] - p.size[3] / 2), math.max(zhi, p.at[3] + p.size[3] / 2)
-				ylo, yhi = math.min(ylo, p.at[2] - p.size[2] / 2), math.max(yhi, p.at[2] + p.size[2] / 2)
-			end
-		end
-		local thick, wide = KnifeLook.standWiden((zhi - zlo) * s.scale, (yhi - ylo) * s.scale)
-		local fv = Vector3.new(thick, 1, wide)
+		local fv = Vector3.one
 		s.blade0 = recipe.trail[1] * s.scale
 		s.tip = recipe.trail[2] * s.scale
 		s.base = s.blade0 + (s.tip - s.blade0) * 0.45 -- (KnifeService's StandTrailBase)
 		s.boxes = {}
 		for _, p in recipe.parts do
+			if p.hidden then continue end
 			local rot = p.rot or { 0, 0, 0 }
 			local turn = CFrame.Angles(math.rad(rot[1]), math.rad(rot[2]), math.rad(rot[3]))
 			local grow = Vector3.new((turn.RightVector * fv).Magnitude, (turn.UpVector * fv).Magnitude, (turn.LookVector * fv).Magnitude)
@@ -113,20 +105,12 @@ for _, s in SET do
 			if p.mat == "Neon" then b.Neon = true end
 			if p.mat == "Glass" then b.Alpha = 0.85 end
 			table.insert(s.boxes, { box = b, off = off })
-			if string.find(string.lower(p.name), "blade", 1, true) then -- the glow shell (KnifeLook.STAND.Shell see-through)
-				local g = scene:addBox(CFrame.identity, size + Vector3.new(0.08, 0.04, 0.1), hex(s.el.light))
-				g.Neon, g.Alpha, g.Add = true, 1 - KnifeLook.STAND.Shell, true
-				table.insert(s.boxes, { box = g, off = off })
-			end
 		end
 	else
 		s.per = s.k.studs / s.k.length * KnifeLook.standScale(s.k.studs)
 		s.tip = (s.k.tip - s.k.grip) * s.per
 		local bb = bladeBox[s.key]
-		local thick, wide = KnifeLook.standWiden(bb and (bb.hi.X - bb.lo.X) * s.per, bb and (bb.hi.Y - bb.lo.Y) * s.per)
-		s.sv = { s.per * wide, s.per, s.per * thick } -- (the mesh's own axes: width, length, thickness)
-		local tw = if bb then (bb.hi.Z - bb.lo.Z) * s.per * thick else 0.1
-		s.shellS = { s.sv[1] * 1.08, s.per * 1.01, s.sv[3] * (1 + 0.1 / math.max(tw, 0.05)) }
+		s.sv = s.per
 		s.blade0 = if bb then (bb.lo.Y - s.k.grip) * s.per else 0
 		s.base = s.blade0 + (s.tip - s.blade0) * 0.45
 	end
@@ -178,7 +162,6 @@ for f = 0, SECONDS * FPS - 1 do
 			local c = { cf:GetComponents() }
 			local r = { c[4], c[5], c[6], c[7], c[8], c[9], c[10], c[11], c[12] }
 			table.insert(meshes, { m = s.key, p = { c[1], c[2], c[3] }, r = r, s = s.sv })
-			table.insert(meshes, { m = s.key, p = { c[1], c[2], c[3] }, r = r, s = s.shellS, shell = { c = hex(s.el.light), a = 1 - KnifeLook.STAND.Shell, only = "blade" } })
 		end
 		-- the knife's light (a stand's after the soft-lighting pass: range 4, brightness 0.6; render.mjs reads about
 		-- twice Studio's)

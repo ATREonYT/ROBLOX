@@ -37,7 +37,9 @@ return {
 		ColorShift_Top = Color3.fromRGB(255, 252, 245), -- sunlit tops, barely warm
 		ColorShift_Bottom = Color3.fromRGB(0, 0, 0),
 		EnvironmentDiffuseScale = 1, -- the sky's own light in the shade: lighter, a touch blue (was 0.6)
-		EnvironmentSpecularScale = 0.2, -- matte, toy-like plastic, few shiny glints (was 0.5)
+		EnvironmentSpecularScale = 0.4, -- the sky in shiny things: 0.4 so his knives' Metal (blades, guards: metallic in his .glb)
+			-- reflects (owner, Oct 19: "they dont look as good as in the glb file"); still under the old 0.5 so plastic stays
+			-- matte and toy-like (the Oct 19 lighting match had 0.2: set it back if the plaza looks too glossy)
 		ShadowSoftness = 0.6, -- soft shadow edges (was 0.35)
 		ExposureCompensation = 0.05, -- (was -0.05)
 		GlobalShadows = true, -- shadows stay, just light

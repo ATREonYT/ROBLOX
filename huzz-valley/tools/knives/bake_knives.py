@@ -4,7 +4,8 @@
 #   tools/knives/setup_knives.lua                     the Studio Command Bar script (paste it whole)
 #   src/ServerStorage/HuzzStudioTools/SetupKnives.lua the same script, shipped in the place
 #                                                     (run: require(game.ServerStorage.HuzzStudioTools.SetupKnives)())
-# The script's data: every mesh node's name, centre (in the knife's own units), colour and whether it glows, so it
+# The script's data: every mesh node's name, centre (in the knife's own units), colour, whether it glows, its
+# metallic and roughness, so it
 # can find each imported knife, line it up whatever way Studio imported it, and set glow parts to Neon.
 # Usage (from huzz-valley/): python3 -I tools/knives/bake_knives.py   (re-run when the .glb files change)
 import json, os, re, sys, collections
@@ -53,7 +54,7 @@ def knife_nodes(prims, js=None, binc=None, inv=None):
         c = (m @ np.r_[(lo + hi) / 2, 1])[:3]
         mat = p['material']['name']
         nodes.append({'name': p['node'], 'c': [round(float(v), 4) for v in c], 'hex': hexof(mat, js, binc, p['material']), 'glow': mat.startswith('glow'),
-                      'metal': round(float(p['material']['metal']), 2), 'kind': p['node'].rsplit('_', 1)[0],
+                      'metal': round(float(p['material']['metal']), 2), 'rough': round(float(p['material']['rough']), 2), 'kind': p['node'].rsplit('_', 1)[0],
                       'ymin': float(pos[:, 1].min()), 'ymax': float(pos[:, 1].max()),
                       'area': float(np.ptp(pos, 0)[0] * np.ptp(pos, 0)[1])})
     return nodes
@@ -143,7 +144,7 @@ def main():
     # The Studio script's data: compact Luau rows.
     rows = []
     for k in knives:
-        ns = ', '.join('{"%s",%g,%g,%g,"%s",%d}' % (n['name'], n['c'][0], n['c'][1], n['c'][2], n['hex'], 1 if n['glow'] else 0) for n in k['nodes'])
+        ns = ', '.join('{"%s",%g,%g,%g,"%s",%d,%g,%g}' % (n['name'], n['c'][0], n['c'][1], n['c'][2], n['hex'], 1 if n['glow'] else 0, n['metal'], n['rough']) for n in k['nodes'])
         rows.append('\t{ key = "%s", node = "%s", file = "%s", name = "%s", rarity = "%s", len = %g, studs = %g, grip = %g, tip = %g, glow = %s,\n\t\tnodes = { %s } },'
                     % (k['key'], k['node'], k['file'], k['name'].replace("'", "\\'"), k['rarity'], k['length'], k['studs'], k['grip'], k['tip'],
                        '"%s"' % k['glow'] if k['glow'] else 'nil', ns))

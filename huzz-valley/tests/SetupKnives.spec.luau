@@ -3,7 +3,9 @@
 -- fake import of All_Knives.glb (and the 5 Game Pass knives of Gamepass_Knives.glb): Studio may turn and scale an import any way, so the parts here sit at the baked
 -- centres under a random turn, size and spot. Every knife must come out in ServerStorage/HuzzKnives/<key>: Handle +Y
 -- along the blade, X the blade's thin way, Grip / TrailBase / TrailTip in place, pommel to tip its length in studs,
--- glowing parts Neon in their colour, every part welded to the Handle, and the import tidied away.
+-- glowing parts Neon in their colour (or his import's own glow kept: a SurfaceAppearance with an emissive mask), the
+-- rest in the Roblox material nearest the .glb's metallic and roughness (Shared/KnifeLook.glbMaterial: Metal for his
+-- metal), every part welded to the Handle, and the import tidied away.
 local fs = require("@lune/fs")
 local luau = require("@lune/luau")
 local roblox = require("@lune/roblox")
@@ -17,6 +19,22 @@ for _, class in { "BasePart", "Part", "MeshPart" } do -- (Lune doesn't ship Posi
 		end)
 	end)
 	if not ok then print("  (Position on " .. class .. ": " .. tostring(err) .. ")") end
+end
+
+local KnifeLook = require("../tools/preview/motion3d/env").load("huzz-valley/src/ReplicatedStorage/Shared/KnifeLook.lua")
+-- a node row's look by the game's one rule (n[6] glow, n[7] metallic, n[8] roughness)
+local function lookOf(n): (string, number)
+	return KnifeLook.glbMaterial(n[7], n[8], n[6] == 1)
+end
+local function looksRight(p, n): boolean
+	local mat, refl = lookOf(n)
+	return p.Color:ToHex():lower() == n[5] and p.Material.Name == mat and math.abs(p.Reflectance - refl) < 1e-3
+end
+-- his import's own glow: a SurfaceAppearance with an emissive mask
+local function hisGlow(p): boolean
+	local sa = p:FindFirstChildOfClass("SurfaceAppearance")
+	local ok, uri = pcall(function() return sa and sa.EmissiveMaskContent.Uri end)
+	return ok and type(uri) == "string" and uri ~= ""
 end
 
 local passed, failed = 0, 0
@@ -228,7 +246,8 @@ local function offNodes(k, model)
 	return off
 end
 
--- every part its baked colour, glowing ones Neon, the import's texture gone (a node its name can be)
+-- every part its baked colour and look (glowing ones Neon, or his own glow kept), the import's texture gone (a node
+-- its name can be)
 local function painted(k, model)
 	local bad = 0
 	for _, p in model:GetDescendants() do
@@ -238,8 +257,8 @@ local function painted(k, model)
 				local nn = string.lower(n[1])
 				if nm == nn or (string.sub(nm, 1, #nn) == nn and string.match(string.sub(nm, #nn + 1), "^%d+$")) then
 					any = true
-					if p.Color:ToHex():lower() == n[5] and (p.Material == Enum.Material.Neon) == (n[6] == 1)
-						and p:FindFirstChildOfClass("SurfaceAppearance") == nil then ok = true end
+					if n[6] == 1 and hisGlow(p) then ok = true end
+					if looksRight(p, n) and p:FindFirstChildOfClass("SurfaceAppearance") == nil then ok = true end
 				end
 			end
 			if any and not ok then bad += 1 end
@@ -298,7 +317,7 @@ do
 				local c = handle.CFrame:PointToObjectSpace(p.CFrame.Position)
 				-- (seen from the Handle: +Y the blade, +Z the .glb's X, X its -Z; a one-sided blade must face the right way)
 				if p.Parent == model and (c - Vector3.new(-n[4], n[3] - k.grip, n[2]) * per).Magnitude < 0.005 then good += 1 end
-				if p.Color:ToHex():lower() == n[5] and (p.Material == Enum.Material.Neon) == (n[6] == 1) then colours += 1 end
+				if looksRight(p, n) then colours += 1 end
 			end
 		end
 		local up, thin = turnOf[k.key]:VectorToWorldSpace(Vector3.yAxis), turnOf[k.key]:VectorToWorldSpace(Vector3.zAxis)
@@ -351,7 +370,7 @@ do
 	local byKey = {}
 	for _, k in KNIVES do byKey[k.key] = k end
 	for _, m in holder3:GetChildren() do
-		check(m.Name .. " (re-run on his place): every part painted, glow Neon", byKey[m.Name] ~= nil and painted(byKey[m.Name], m) == 0)
+		check(m.Name .. " (re-run on his place): every part painted, his glow kept or Neon, metal Metal", byKey[m.Name] ~= nil and painted(byKey[m.Name], m) == 0)
 	end
 	local fixed = roblox.deserializeModel(fs.readFile(ROOT .. "assets/knives/HuzzKnives.rbxm"))[1]
 	for _, key in { "BoneKnife", "BoxCutter", "CopperCleaver", "EmberEdge", "IceKnife", "JadeKunai", "KitchenCleaver", "ScoutDagger" } do
@@ -426,7 +445,7 @@ do
 				if p.Parent ~= m or far > 0.25 then moved += 1 end
 			end
 		end
-		check(k.key .. " (our file): every part painted, glow Neon", m ~= nil and painted(k, m) == 0)
+		check(k.key .. " (our file): every part painted, his glow kept or Neon, metal Metal", m ~= nil and painted(k, m) == 0)
 		-- (up to 0.25 studs: the first run fitted on the few parts whose names matched, the helper on all of them, so
 		-- it's now nearer the .glb, which the next check holds it to; TwinFang moved most, 0.2)
 		if worst > 0.05 then print(string.format("  %s (our file): moved up to %.3f studs", k.key, worst)) end

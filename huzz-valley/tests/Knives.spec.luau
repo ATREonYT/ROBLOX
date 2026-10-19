@@ -130,14 +130,14 @@ for r = 2, #KnifeLook.ORDER do
 		check(KnifeLook.ORDER[r] .. " keeps " .. k, lower[k] == nil or this[k] ~= nil)
 	end
 end
-check("Uncommon: a sheen only", KnifeLook.fx("Uncommon").sheen and not KnifeLook.fx("Uncommon").glow)
+check("Uncommon: nothing on his model (the white sheen glint hid it, Oct 19)", next(KnifeLook.fx("Uncommon")) == nil)
+for _, r in KnifeLook.ORDER do check(r .. ": no sheen glint", KnifeLook.fx(r).sheen == nil) end
 check("Rare: a soft glow, no sparkles", KnifeLook.fx("Rare").glow and not KnifeLook.fx("Rare").sparkles)
 check("Epic: sparkles and the tinted slash, not on the back", KnifeLook.fx("Epic").sparkles and KnifeLook.fx("Epic").trailTint and not KnifeLook.fx("Epic").back)
 for _, r in KnifeLook.ORDER do
 	local f = KnifeLook.fx(r)
 	check(r .. ": at most 4 sparkles a second", (f.sparkles or 0) <= 4 and KnifeLook.MAX_SPARKLES <= 4)
 	check(r .. ": a small light", not f.glow or f.glow.range <= 4.5)
-	check(r .. ": the sheen is a glint now and then (no flashing)", (f.sheen or 0) <= 1)
 end
 check("Legendary: light range about 4, glow on the back", KnifeLook.fx("Legendary").glow.range == 4 and KnifeLook.fx("Legendary").back)
 check("Mythic: a few embers", KnifeLook.fx("Mythic").embers and KnifeLook.fx("Mythic").embers <= 2)

@@ -11,7 +11,9 @@
 	     download has the knives too.
 	What it does for each knife: finds it by name, lines it up whatever way Studio imported it (from the parts' names
 	and centres baked from the .glb), colours every part from the model's own colours (the .glb's tiny textures are
-	single colours: the material names say which), sets the glowing parts (glow_glow_<colour>) to Neon, welds it all to
+	single colours: the material names say which), keeps his import's own glow (a SurfaceAppearance with an emissive
+	mask) and sets other glowing parts (glow_glow_<colour>) to Neon, metal parts to Metal (by the .glb's metallic and
+	roughness), welds it all to
 	an invisible Handle (+Y to the tip, X the blade's thin way), scales it to its length in studs (2.4 to 3.3 by its
 	real length; Huss Valley's are 2.7 to 3.0), adds the Attachments the game uses (Grip in the middle of the grip,
 	TrailBase at the guard, TrailTip at the tip) and moves it to ServerStorage > HuzzKnives > <its skin key>.
@@ -285,8 +287,29 @@ local function looksRight(k, model: Instance): boolean
 		and math.max(hi.X - lo.X, hi.Z - lo.Z) <= across + slack
 end
 
--- Has every part of a knife already in HuzzKnives got its colour and glow? (The first Oct 18 run missed every part
--- Studio had renamed, on all 30: they kept the import's texture, and glowing ones weren't Neon.)
+-- The look of a .glb part in Roblox's own materials (n: a node row; n[7] metallic, n[8] roughness, as the .glb has
+-- them): glowing (emissive) -> Neon; metal (metallic 0.5 and up) -> Metal, polished ones (roughness 0.35 or less) with
+-- a little Reflectance; matte (roughness 0.7 and up) -> Plastic; the rest SmoothPlastic. Shared/KnifeLook.glbMaterial
+-- is the same rule (tests/KnifeModels.spec holds them together).
+local function lookOf(n): (Enum.Material, number)
+	if n[6] == 1 then return Enum.Material.Neon, 0 end
+	local metal, rough = n[7] or 0, n[8] or 1
+	if metal >= 0.5 then return Enum.Material.Metal, if rough <= 0.35 then 0.12 else 0.04 end
+	if rough >= 0.7 then return Enum.Material.Plastic, 0 end
+	return Enum.Material.SmoothPlastic, 0
+end
+
+-- His own glow from his import: a SurfaceAppearance with an emissive mask (his uploaded pictures: a soft real glow,
+-- better than a Neon block). Kept on his glowing parts.
+local function hisGlow(p: Instance): boolean
+	local sa = p:FindFirstChildOfClass("SurfaceAppearance")
+	if not sa then return false end
+	local ok, uri = pcall(function() return (sa :: any).EmissiveMaskContent.Uri end)
+	return ok and type(uri) == "string" and uri ~= ""
+end
+
+-- Has every part of a knife already in HuzzKnives got its colour, material and glow? (The first Oct 18 run missed
+-- every part Studio had renamed, on all 30: they kept the import's texture, and glowing ones weren't Neon.)
 local function coloured(k, model: Instance): boolean
 	for _, p in partsOf(model) do
 		if p.Name ~= "Handle" then
@@ -294,8 +317,10 @@ local function coloured(k, model: Instance): boolean
 			local ok = #list == 0 -- (a part no node explains is left to the owner)
 			for _, i in list do
 				local n = k.nodes[i]
-				if p:FindFirstChildOfClass("SurfaceAppearance") == nil and p.Color:ToHex():lower() == n[5]
-					and (p.Material == Enum.Material.Neon) == (n[6] == 1) then
+				local mat = lookOf(n)
+				if n[6] == 1 and hisGlow(p) then
+					ok = true
+				elseif p:FindFirstChildOfClass("SurfaceAppearance") == nil and p.Color:ToHex():lower() == n[5] and p.Material == mat then
 					ok = true
 				end
 			end
@@ -327,12 +352,16 @@ local function setUp(k, container: Instance, holder: Folder): string
 		local n = looks[p]
 		if n then
 			if p:IsA("MeshPart") then pcall(function() p.TextureID = "" end) end
-			for _, d in p:GetChildren() do
-				if d:IsA("SurfaceAppearance") then d:Destroy() end
-			end
 			p.Color = Color3.fromHex(n[5])
-			p.Material = if n[6] == 1 then Enum.Material.Neon else Enum.Material.SmoothPlastic
-			p.Reflectance = 0
+			if n[6] == 1 and hisGlow(p) then
+				-- his import's own glow stays (its colour picture and emissive mask)
+				p.Material, p.Reflectance = Enum.Material.SmoothPlastic, 0
+			else
+				for _, d in p:GetChildren() do
+					if d:IsA("SurfaceAppearance") then d:Destroy() end
+				end
+				p.Material, p.Reflectance = lookOf(n)
+			end
 		end
 		for _, d in p:GetChildren() do
 			if d:IsA("JointInstance") or d:IsA("WeldConstraint") then d:Destroy() end

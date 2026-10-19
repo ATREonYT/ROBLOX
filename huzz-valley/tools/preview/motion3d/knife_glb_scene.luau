@@ -1,17 +1,22 @@
 -- Every knife as the owner's .glb (owner, Oct 19: "use the glb file to get them one to one, whenever you wear or
--- use them"): his .glb next to what the game showed before and what it shows now, drawn from the game's real
--- instances, not from the .glb:
+-- use them"; then "they dont look as good as in the glb file"): his .glb next to what the game showed before and
+-- what it shows now, drawn from the game's real instances, not from the .glb:
 --   * his imported knives (assets/knives/HuzzKnives.rbxm, before = the file as it was, OLD_KNIVES; now = the file):
 --     each MeshPart is drawn with the .glb part it was made from, where the part sits, in the part's own colour and
 --     material (a part still wearing the import's colour picture shows that colour, not glowing);
---   * the Game Pass knives: before = the plain-part stand-in (Shared/KnifeShapes, as boxes); now = the stand-in
---     dressed by Gameplay/KnifeDress from Shared/KnifeGlb (each dressed MeshPart drawn with its baked mesh, decoded
---     by KnifeDress itself, at its size; the stand's glow shell too).
--- Still 0: 8 knives, each as glb | before | now, broad side on. Still 1: on the back (Dragon's Maw) and in the hand
--- (Twin Fang), glb | before | now, placed as HuzzServer/KnifeService places them.
+--   * the Game Pass knives: old stand-in (OLD_SHAPES: the hand-made Shared/KnifeShapes, as boxes) | the stand-in now
+--     (cut from his .glb, as boxes) | dressed by Gameplay/KnifeDress from Shared/KnifeGlb (each dressed MeshPart
+--     drawn with its baked mesh, decoded by KnifeDress itself, at its size).
+-- Materials, as close as a .glb viewer can get to Roblox's (only Studio is the judge): his .glb in its own metallic
+-- and roughness, mirroring a plain sky fully; ours by Roblox material: Neon unlit, Metal shiny, SmoothPlastic /
+-- Plastic dull, his SurfaceAppearance glow as a soft self-glow, each mirroring the sky as much as Config/Look's
+-- EnvironmentSpecularScale lets it (before: 0.2; now: Look's).
+-- Still 0: the sheet, broad side on. Still 1: on the back (Dragon's Maw) and in the hand (Twin Fang), placed as
+-- HuzzServer/KnifeService places them.
 -- From huzz-valley/: python3 -I tools/knives/knife_meshes.py /tmp/knives.json;
---   git show HEAD:huzz-valley/assets/knives/HuzzKnives.rbxm > /tmp/old.rbxm; then from the repo root:
--- KNIFE_MESHES=/tmp/knives.json OLD_KNIVES=/tmp/old.rbxm MOTION3D_KEEP=<dir> sh huzz-valley/tools/preview/motion3d/video.sh \
+--   git show HEAD:huzz-valley/assets/knives/HuzzKnives.rbxm > /tmp/old.rbxm;
+--   git show HEAD:huzz-valley/src/ReplicatedStorage/Shared/KnifeShapes.lua > /tmp/old_shapes.lua; then from the repo root:
+-- KNIFE_MESHES=/tmp/knives.json OLD_KNIVES=/tmp/old.rbxm OLD_SHAPES=/tmp/old_shapes.lua MOTION3D_KEEP=<dir> sh huzz-valley/tools/preview/motion3d/video.sh \
 --   huzz-valley/tools/preview/motion3d/knife_glb_scene.luau /tmp/x.mp4   (stills <dir>/still_0.png and still_1.png)
 -- The one picture: ffmpeg -i <dir>/still_0.png -i <dir>/still_1.png -filter_complex "vstack,scale=1280:-1" -q:v 3 \
 --   huzz-valley/docs/previews/knives-glb-vs-ours.jpg
@@ -31,6 +36,19 @@ local SHARED = "huzz-valley/src/ReplicatedStorage/Shared/"
 local KnifeLook = Env.load(SHARED .. "KnifeLook.lua")
 local KnifeShapes = Env.load(SHARED .. "KnifeShapes.lua")
 local CoinShop = Env.load(SHARED .. "Config/CoinShop.lua")
+local OldShapes = process.env.OLD_SHAPES and Env.load(process.env.OLD_SHAPES) or nil
+local ENV_BEFORE = 0.2 -- (Config/Look's EnvironmentSpecularScale before Oct 19's knife pass)
+local ENV_NOW = Env.load(SHARED .. "Config/Look.lua").Lighting.EnvironmentSpecularScale
+-- a Roblox material as a shiny-or-dull look for render.mjs (pbr); sa: his SurfaceAppearance glow
+local function robloxPbr(mat: string, refl: number, env: number, sa: boolean?)
+	if sa then return { metal = 0, rough = 0.5, env = env, emis = 0.55 } end
+	if mat == "Metal" then return { metal = 0.75, rough = 0.4 - refl, env = env * (1 + refl * 4) } end
+	if mat == "Plastic" then return { metal = 0, rough = 0.8, env = env } end
+	return { metal = 0, rough = 0.45, env = env } -- SmoothPlastic
+end
+local function pbrKey(b)
+	return if b then string.format("%g/%g/%g/%g", b.metal, b.rough, b.env, b.emis or 0) else "-"
+end
 
 pcall(function() -- (Lune doesn't ship Attachment.Position)
 	roblox.implementProperty("Attachment", "Position", function(self) return self.CFrame.Position end, function(self, v)
@@ -87,12 +105,17 @@ end
 
 -- the mesh library render.mjs draws from: his .glb knives, single .glb parts in a given look, the baked dress meshes
 local lib = {}
-for key, parts in glbMeshes do lib["glb:" .. key] = parts end
-local function nodeMesh(key, i, col, glow)
-	local name = string.format("n:%s:%d:%s:%d", key, i, col, if glow then 1 else 0)
+for key, parts in glbMeshes do
+	for _, p in parts do
+		if not p.glow then p.pbr = { metal = p.metal or 0, rough = p.rough or 0.5, env = 1 } end -- (his .glb's own look)
+	end
+	lib["glb:" .. key] = parts
+end
+local function nodeMesh(key, i, col, glow, pbr)
+	local name = string.format("n:%s:%d:%s:%d:%s", key, i, col, if glow then 1 else 0, pbrKey(pbr))
 	if not lib[name] then
 		local p = glbMeshes[key][i]
-		lib[name] = { { pos = p.pos, col = "#" .. col, glow = glow, metal = p.metal, node = p.node } }
+		lib[name] = { { pos = p.pos, col = "#" .. col, glow = glow, metal = p.metal, node = p.node, pbr = if glow then nil else pbr } }
 	end
 	return name
 end
@@ -107,7 +130,8 @@ local function dressMesh(g)
 				table.insert(pos, v.X); table.insert(pos, v.Y); table.insert(pos, v.Z)
 			end
 		end
-		lib[name] = { { pos = pos, col = "#" .. g.col, glow = g.glow, metal = 0, node = if g.blade then "blade" else "part" } }
+		lib[name] = { { pos = pos, col = "#" .. g.col, glow = g.glow, metal = 0, node = if g.blade then "blade" else "part",
+			pbr = robloxPbr(g.mat or "SmoothPlastic", g.refl or 0, ENV_NOW) } }
 	end
 	return name
 end
@@ -156,9 +180,12 @@ local function draw(model, key, handleCF, before)
 			local col, glow = d.Color:ToHex():lower(), neon
 			local okT, tc = pcall(function() return tostring((d :: any).TextureContent) end)
 			if before and okT and string.find(tc, "rbxasset") then col = m.node.col end -- (its colour picture)
+			local sa = Colour.hisGlow(d)
+			if sa then col = m.node.col end -- (his SurfaceAppearance's colour picture: the .glb's colour)
+			local pbr = robloxPbr(d.Material.Name, d.Reflectance, if before then ENV_BEFORE else ENV_NOW, sa)
 			local cf = handleCF * CFrame.new(m.gap) * R * CFrame.new(0, -k.grip * per, 0) * TURN
 			local p, r = comps(cf)
-			table.insert(meshes, { m = nodeMesh(key, nodeIndex[key][m.node], col, glow), p = p, r = r, s = per })
+			table.insert(meshes, { m = nodeMesh(key, nodeIndex[key][m.node], col, glow, pbr), p = p, r = r, s = per })
 		else -- a plain part (the stand-in)
 			table.insert(plain, { CFrame = handleCF * handle.CFrame:ToObjectSpace(d.CFrame), Size = d.Size, Color = "#" .. d.Color:ToHex():lower(),
 				Neon = neon or nil, Shape = if d:IsA("Part") and d.Shape == roblox.Enum.PartType.Cylinder then "cyl" else nil })
@@ -174,9 +201,10 @@ local function fakeMake(g)
 end
 local PASS = {}
 for _, key in { "CrimsonRequiem", "HollowEclipse", "CelestialSeraph", "DragonsMaw", "FrostboundOath" } do PASS[key] = true end
--- the three ways a knife shows: "glb" (nil model), "before", "now"
+-- the ways a knife shows: "glb" (nil model), "before", "standin" (pass knives: the plain stand-in now), "now"
 local function modelOf(key, how)
 	if PASS[key] then
+		if how == "before" then return KnifeService.buildRecipe(assert(OldShapes, "set OLD_SHAPES").get(key)) end
 		local m = KnifeService.template(CoinShop.get(key))
 		if how == "now" then
 			local gs = bakedOf(key)
@@ -203,17 +231,21 @@ local function show(frame)
 end
 
 -- Still 0: the sheet
-local SHEET = { "TwinFang", "VoidFang", "AbyssEclipse", "SpinKnife", "CrimsonRequiem", "HollowEclipse", "CelestialSeraph", "DragonsMaw", "FrostboundOath" }
+local SHEET = { "TwinFang", "VoidFang", "AbyssEclipse", "SpinKnife", "StormKunai", "CrimsonRequiem", "HollowEclipse", "CelestialSeraph", "DragonsMaw", "FrostboundOath" }
 local HOW = { "glb", "before", "now" }
+local HOW_PASS = { "glb", "before", "standin", "now" }
+local NAMES = { glb = "glb", before = "before", standin = "stand-in", now = "now" }
 local meshes0, labels0 = {}, {}
-local COLS, GAP, GROUP, ROW = 5, 1.25, 5.0, 5.2
+local COLS, GAP, GROUP, ROW = 5, 1.2, 5.0, 5.2
 for i, key in SHEET do
 	local row, col = (i - 1) // COLS, (i - 1) % COLS
 	local z0 = (col - (COLS - 1) / 2) * GROUP
 	local y0 = 7 - row * ROW
-	for j, how in HOW do
+	local hows = if PASS[key] then HOW_PASS else HOW
+	for j, how in hows do
 		-- broad side to the camera (+X looks at the knife's Z width): Handle +Y up, grip at y0
-		local handleCF = CFrame.new(0, y0, z0 + (j - 2) * GAP) * CFrame.Angles(0, 0, 0)
+		local dz = (j - (#hows + 1) / 2) * GAP
+		local handleCF = CFrame.new(0, y0, z0 + dz) * CFrame.Angles(0, 0, 0)
 		if how == "glb" then
 			table.insert(meshes0, glbAt(key, handleCF))
 		else
@@ -221,13 +253,13 @@ for i, key in SHEET do
 			for _, e in m do table.insert(meshes0, e) end
 			addPlain(1, plain)
 		end
-		table.insert(labels0, { p = { 0, y0 - 1.15, z0 + (j - 2) * GAP }, text = how, h = 0.32, c = if how == "now" then "#7dff9a" elseif how == "before" then "#ff9a8a" else "#ffffff" })
+		table.insert(labels0, { p = { 0, y0 - 1.15, z0 + dz }, text = NAMES[how], h = 0.3, c = if how == "now" or how == "standin" then "#7dff9a" elseif how == "before" then "#ff9a8a" else "#ffffff" })
 	end
 	table.insert(labels0, { p = { 0, y0 - 1.6, z0 }, text = baked[key].name, h = 0.4, c = "#ffe28a" })
 end
 show(1)
-scene:frame(Vector3.new(-25, 4.9, 0), Vector3.new(0, 4.9, 0), { meshes = meshes0, labels = labels0, fov = 30,
-	caption = "Each knife: his .glb | what the game showed before | now (drawn from the game's own parts)" })
+scene:frame(Vector3.new(-28, 4.9, 0), Vector3.new(0, 4.9, 0), { meshes = meshes0, labels = labels0, fov = 30,
+	caption = "His .glb | before | now (pass knives: his .glb | old stand-in | new stand-in | his model on screen). Materials approximated: Studio is the judge" })
 
 -- Still 1: worn on the back (Dragon's Maw) and in the hand (Twin Fang), each glb | before | now
 local lib15 = Instance.new("Folder")
@@ -235,7 +267,7 @@ for _, inst in roblox.deserializeModel(fs.readFile("huzz-valley/src/ServerStorag
 local Idle = KFS.load(lib15:FindFirstChild("Idle", true))
 local meshes1, labels1 = {}, {}
 local SET = {
-	{ key = "DragonsMaw", how = "glb", where = "back" }, { key = "DragonsMaw", how = "before", where = "back" }, { key = "DragonsMaw", how = "now", where = "back" },
+	{ key = "DragonsMaw", how = "glb", where = "back" }, { key = "DragonsMaw", how = "standin", where = "back" }, { key = "DragonsMaw", how = "now", where = "back" },
 	{ key = "TwinFang", how = "glb", where = "hand" }, { key = "TwinFang", how = "before", where = "hand" }, { key = "TwinFang", how = "now", where = "hand" },
 }
 for i, s in SET do
@@ -265,13 +297,13 @@ for i, s in SET do
 		for _, e in m do table.insert(meshes1, e) end
 		addPlain(2, plain)
 	end
-	table.insert(labels1, { p = { x, 6.3, 0 }, text = s.how, h = 0.45, c = if s.how == "now" then "#7dff9a" elseif s.how == "before" then "#ff9a8a" else "#ffffff" })
+	table.insert(labels1, { p = { x, 6.3, 0 }, text = NAMES[s.how], h = 0.45, c = if s.how == "now" or s.how == "standin" then "#7dff9a" elseif s.how == "before" then "#ff9a8a" else "#ffffff" })
 end
 table.insert(labels1, { p = { -6.3, 7.0, 0 }, text = "Dragon's Maw on the back", h = 0.5, c = "#ffe28a" })
 table.insert(labels1, { p = { 6.3, 7.0, 0 }, text = "Twin Fang in the hand", h = 0.5, c = "#ffe28a" })
 show(2)
 scene:frame(Vector3.new(0, 4.4, 17), Vector3.new(0, 3.6, 0), { meshes = meshes1, labels = labels1, fov = 50,
-	caption = "Worn and held, placed as HuzzServer/KnifeService places them: his .glb | before | now" })
+	caption = "Worn and held as HuzzServer/KnifeService places them: Dragon's Maw his .glb | stand-in | on screen; Twin Fang his .glb | before | now" })
 
 local libPath = (process.env.MOTION3D_DIR or ".") .. "/knife_glb_meshes.json"
 fs.writeFile(libPath, serde.encode("json", lib))

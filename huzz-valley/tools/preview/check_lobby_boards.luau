@@ -203,7 +203,11 @@ if copy then
 	check("its element: red petals, a burst for the big moves, a glint at the tip", knife ~= nil and knife:GetAttribute("Element") == "Petals"
 		and knife:FindFirstChild("KnifeBurst", true) ~= nil and knife:FindFirstChild("KnifeTipGlint", true) ~= nil)
 	local blade = knife and knife:FindFirstChild("Blade", true)
-	check("the stand-in has its card's shape (a katana with a glowing edge)", blade ~= nil and knife:FindFirstChild("BladeEdge", true) ~= nil)
+	local glowing = 0
+	for _, d in (knife and knife:GetDescendants() or {}) do
+		if d:IsA("BasePart") and d.Material == Enum.Material.Neon and d.Transparency < 1 then glowing += 1 end
+	end
+	check("the stand-in is cut from his .glb (a blade and his glowing parts, " .. glowing .. ")", blade ~= nil and glowing >= 5)
 end
 check("block hidden on this screen", block.LocalTransparencyModifier == 1)
 check("calm glow", copies and copies:FindFirstChild("StandGlow") ~= nil)

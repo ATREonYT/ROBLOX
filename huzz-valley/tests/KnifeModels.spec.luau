@@ -4,8 +4,12 @@
 -- them" / "all of the knifes"):
 --   * his 30 imported models (assets/knives/HuzzKnives.rbxm): every part is one of his meshes (never a plain box),
 --     sits where its .glb part sits (Handle space, tools/knives/knife_boxes.json; as imported or half a turn round,
---     never a quarter: the blade's flat across the back and the fist), and has that part's colour, Neon exactly for
---     his glowing parts, no leftover texture (tools/knives/colour_knives.luau);
+--     never a quarter: the blade's flat across the back and the fist), and has that part's look (owner, Oct 19: "they
+--     dont look as good as in the glb file"): his import's own glow (84 SurfaceAppearances with an emissive mask, on
+--     15 knives) kept on his glowing parts, Neon only on glowing parts without one, every other part in its .glb
+--     colour and the Roblox material nearest its metallic and roughness (Shared/KnifeLook.glbMaterial: Metal for his
+--     blades and guards), no leftover texture (tools/knives/colour_knives.luau); one rule in KnifeLook, his helper's
+--     lookOf (as the file shows) and the colouring tool;
 --   * every knife key, in hand (give), worn (giveBack) and on a stand (display): its blade is his mesh, or for a Game
 --     Pass knife without his import, the plain stand-in tagged for the .glb dress (Shared/KnifeGlb) that has a blade
 --     mesh: no knife key ends up with a plain block for its blade and nothing to dress it;
@@ -13,7 +17,9 @@
 --     EditableMesh limits (60,000 vertices, 20,000 triangles a mesh), reach the same box as his .glb and carry its
 --     colours;
 --   * Gameplay/KnifeDress puts them on: one part per mesh in its .glb place times the knife's Stretch (a stand's big
---     copy), welded to the Handle, the stand-in hidden, a stand's glow shell round his blade; all or nothing.
+--     copy), welded to the Handle, in the mesh's material (the same rule), the stand-in hidden; all or nothing;
+--   * nothing laid over his model: a stand's copy is scaled evenly (no widening), no GlowShell / GlbShell, no white
+--     sheen glint on any knife.
 local fs = require("@lune/fs")
 local luau = require("@lune/luau")
 local serde = require("@lune/serde")
@@ -60,16 +66,44 @@ local function meshOf(p): string
 	return (if okId and id then id else "") .. (if okC and content then content else "")
 end
 
--- 1. his 30 models: meshes, places, colours
+-- 0. one look rule: KnifeLook.glbMaterial, the colouring tool's lookOf (and SetupKnives', which made the file: 1.)
+local same = true
+for _, glow in { false, true } do
+	for m = 0, 10 do
+		for r = 0, 10 do
+			local a, ar = KnifeLook.glbMaterial(m / 10, r / 10, glow)
+			local b, br = Colour.lookOf(glow, m / 10, r / 10)
+			if a ~= b or math.abs(ar - br) > 1e-6 then same = false end
+		end
+	end
+end
+check("KnifeLook.glbMaterial and colour_knives' lookOf are one rule", same)
+check("polished metal is Metal with a little Reflectance", select(1, KnifeLook.glbMaterial(0.8, 0.25)) == "Metal" and select(2, KnifeLook.glbMaterial(0.8, 0.25)) > 0)
+check("a matte grip is Plastic", KnifeLook.glbMaterial(0, 0.8) == "Plastic")
+check("a glowing part is Neon", KnifeLook.glbMaterial(0.15, 0.4, true) == "Neon")
+
+-- the SurfaceAppearances with an emissive mask in a file of knives
+local function hisGlows(f)
+	local n = 0
+	for _, d in f:GetDescendants() do
+		if d:IsA("BasePart") and Colour.hisGlow(d) then n += 1 end
+	end
+	return n
+end
+
+-- 1. his 30 models: meshes, places, colours, looks
 local folder = roblox.deserializeModel(fs.readFile(ROOT .. "assets/knives/HuzzKnives.rbxm"))[1]
-local his = 0
+local received = roblox.deserializeModel(fs.readFile(ROOT .. "assets/knives/HuzzKnives-received.rbxm"))[1]
+local kept, had = hisGlows(folder), hisGlows(received)
+check(string.format("his import's own glow kept: %d of the %d glowing SurfaceAppearances he had", kept, had), kept == had and had == 84)
+local his, metalParts = 0, 0
 for _, model in folder:GetChildren() do
 	local nodes = boxes[model.Name]
 	check(model.Name .. " is a knife key with its .glb parts", nodes ~= nil and CoinShop.get(model.Name) ~= nil)
 	if not nodes then continue end
 	his += 1
 	local handle = model:FindFirstChild("Handle")
-	local plain, mesh, wrongCol, wrongGlow, tex = 0, 0, 0, 0, 0
+	local plain, mesh, wrongCol, wrongLook, tex = 0, 0, 0, 0, 0
 	for _, p in model:GetDescendants() do
 		if p:IsA("BasePart") and p ~= handle then
 			if string.find(meshOf(p), "rbxassetid://%d+") then mesh += 1 else plain += 1 end
@@ -84,8 +118,16 @@ for _, model in folder:GetChildren() do
 	check(model.Name .. ": as imported or half a turn round, not a quarter (turn " .. turn .. ")", turn % 2 == 0)
 	check(string.format("%s: every part on its .glb spot (worst %.3f studs)", model.Name, worst), worst < 0.12)
 	for _, m in list do
-		if m.part.Color:ToHex():lower() ~= m.node.col then wrongCol += 1 end
-		if (m.part.Material == roblox.Enum.Material.Neon) ~= m.node.glow then wrongGlow += 1 end
+		local p, n = m.part, m.node
+		if n.glow and Colour.hisGlow(p) then
+			-- his own glow: his colour picture and emissive mask, under no Neon
+			if p.Material == roblox.Enum.Material.Neon then wrongLook += 1 end
+		else
+			local mat, refl = KnifeLook.glbMaterial(n.metal, n.rough, n.glow)
+			if p.Color:ToHex():lower() ~= n.col then wrongCol += 1 end
+			if p:FindFirstChildOfClass("SurfaceAppearance") or p.Material.Name ~= mat or math.abs(p.Reflectance - refl) > 1e-3 then wrongLook += 1 end
+			if mat == "Metal" then metalParts += 1 end
+		end
 	end
 	local k = baked[model.Name]
 	local per = k.studs / k.length
@@ -94,9 +136,10 @@ for _, model in folder:GetChildren() do
 		tip and base and grip and math.abs(tip.CFrame.Position.Y - (k.tip - k.grip) * per) < 0.05
 		and math.abs(base.CFrame.Position.Y - (0 - k.grip) * per) < 0.05 and grip.CFrame.Position.Magnitude < 0.01)
 	check(model.Name .. ": every part in its .glb colour (" .. wrongCol .. " not)", wrongCol == 0)
-	check(model.Name .. ": Neon exactly on his glowing parts (" .. wrongGlow .. " not)", wrongGlow == 0)
+	check(model.Name .. ": every part in its .glb look: his glow kept, else Neon / Metal / Plastic by the .glb (" .. wrongLook .. " not)", wrongLook == 0)
 end
 check("all 30 of his models are in the file (" .. his .. ")", his == 30)
+check("his metal parts are Metal (" .. metalParts .. ")", metalParts > 200)
 
 -- 2. the real KnifeService, every knife key, every way it shows
 local game = Instance.new("DataModel")
@@ -180,8 +223,17 @@ for _, item in CoinShop.Items do
 	check(key .. " on a stand: his blade (" .. tostring(why) .. ")", ok)
 	if stand then
 		local s = stand:GetAttribute("Stretch")
-		check(key .. " stand copy carries its Stretch (thick, long, wide)", typeof(s) == "Vector3" and s.Y > 1.2)
+		check(key .. " stand copy carries its Stretch, even every way (his shape, bigger)", typeof(s) == "Vector3" and s.Y > 1.2
+			and math.abs(s.X - s.Y) < 1e-3 and math.abs(s.Z - s.Y) < 1e-3)
 	end
+	local over = {}
+	for _, m in { worn, held, stand } do
+		local ok, list = pcall(function() return m:GetDescendants() end) -- (giving one knife takes the one before)
+		for _, d in if ok then list else {} do
+			if d.Name == "GlowShell" or d.Name == "KnifeSheen" then over[d.Name] = true end
+		end
+	end
+	check(key .. ": nothing laid over his model (no glow shell, no sheen glint)", next(over) == nil)
 	if isPass[key] then
 		local t = KnifeService.template(item)
 		check(key .. ": without his import, the stand-in is tagged for the .glb dress", t:GetAttribute("Glb") == key)
@@ -197,7 +249,7 @@ for _, key in PASS do
 	local meshes = meshesOf(key)
 	check(key .. ": baked .glb meshes", #meshes > 0)
 	local lo, hi = Vector3.one * math.huge, -Vector3.one * math.huge
-	local cols, tris, inLimits, inRange, boxOk = {}, 0, true, true, true
+	local cols, looks, tris, inLimits, inRange, boxOk = {}, {}, 0, true, true, true
 	for _, g in meshes do
 		check(key .. " mesh belongs to it", g.key == key)
 		inLimits = inLimits and g.nv <= 60000 and g.nt <= 20000
@@ -214,6 +266,7 @@ for _, key in PASS do
 		tris += #faces
 		lo, hi = lo:Min(glo), hi:Max(ghi)
 		cols[g.col .. (if g.glow then "*" else "")] = true
+		looks[g.col .. "/" .. tostring(g.mat) .. "/" .. tostring(g.refl)] = true
 	end
 	check(key .. ": every mesh within EditableMesh's limits", inLimits)
 	check(key .. ": every triangle names real vertices", inRange)
@@ -231,9 +284,17 @@ for _, key in PASS do
 	for c in want do if not cols[c] then same = false end end
 	for c in cols do if not want[c] then same = false end end
 	check(key .. ": the same colours and glow as his .glb", same)
+	local wantLook = {}
+	for _, n in boxes[key] do
+		local mat, refl = KnifeLook.glbMaterial(n.metal, n.rough, n.glow)
+		wantLook[n.col .. "/" .. mat .. "/" .. tostring(refl)] = true
+	end
+	local lookOk = true
+	for l in looks do if not wantLook[l] then lookOk = false end end
+	check(key .. ": every mesh in the material his .glb part has (KnifeLook.glbMaterial)", lookOk)
 	check(key .. ": " .. tris .. " triangles, his whole model", tris > 3000)
 
-	-- 4. the dress, on a stand copy (stretched, with a glow shell) and in a hand
+	-- 4. the dress, on a stand copy (stretched) and in a hand
 	local function fakeMake() return Instance.new("MeshPart") end
 	local stand = KnifeService.display(CoinShop.get(key))
 	local stretch = stand:GetAttribute("Stretch")
@@ -243,36 +304,27 @@ for _, key in PASS do
 		local handle = stand:FindFirstChild("Handle", true)
 		local parts, shells, placed = 0, 0, true
 		for _, p in dressed:GetChildren() do
-			if p.Name == "GlbShell" then
-				shells += 1
-				check(key .. " stand: the shell glows see-through", p.Material == roblox.Enum.Material.Neon and p.Transparency > 0.2 and p.Transparency < 1)
-			else
-				parts += 1
-			end
+			if p.Name == "GlbShell" then shells += 1 else parts += 1 end
 		end
 		for i, p in dressed:GetChildren() do
-			if p.Name ~= "GlbShell" then
-				local w = p:FindFirstChildOfClass("WeldConstraint")
-				placed = placed and w ~= nil and w.Part0 == handle
-			end
+			local w = p:FindFirstChildOfClass("WeldConstraint")
+			placed = placed and w ~= nil and w.Part0 == handle
 		end
 		-- each part's place and size: its .glb box times the stand's stretch
 		local fits = true
 		local list = {}
-		for _, p in dressed:GetChildren() do if p.Name ~= "GlbShell" then table.insert(list, p) end end
+		for _, p in dressed:GetChildren() do table.insert(list, p) end
 		for i, g in meshes do
 			local p = list[i]
 			local glo, ghi = Vector3.new(g.lo[1], g.lo[2], g.lo[3]), Vector3.new(g.hi[1], g.hi[2], g.hi[3])
 			local at = handle.CFrame:PointToObjectSpace(p.CFrame.Position)
 			local want = (glo + ghi) / 2 * stretch
 			fits = fits and (at - want).Magnitude < 1e-3 and (p.Size - ((ghi - glo) * stretch):Max(Vector3.one * 0.01)).Magnitude < 1e-3
-				and p.Color:ToHex():lower() == g.col and (p.Material == roblox.Enum.Material.Neon) == g.glow
+				and p.Color:ToHex():lower() == g.col and p.Material.Name == g.mat and math.abs(p.Reflectance - g.refl) < 1e-3
 		end
 		check(key .. " stand: one part per mesh (" .. parts .. "), welded to the Handle", parts == #meshes and placed)
-		check(key .. " stand: every part in its .glb place, size and colour, times the stretch", fits)
-		local blades = 0
-		for _, g in meshes do if g.blade then blades += 1 end end
-		check(key .. " stand: a glow shell round each blade mesh", shells == blades and blades > 0)
+		check(key .. " stand: every part in its .glb place, size, colour and material, times the stretch", fits)
+		check(key .. " stand: no shell laid over his blade", shells == 0)
 		local shown = 0
 		for _, d in stand:GetDescendants() do
 			if d:IsA("BasePart") and not d:IsDescendantOf(dressed) and d.Transparency < 1 then shown += 1 end

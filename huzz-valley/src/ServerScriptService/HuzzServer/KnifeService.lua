@@ -25,10 +25,11 @@
 	and a Game Pass knife carries its element (KnifeLook.ELEMENTS: petals, moon glints, feathers, fire, frost) in
 	place of Mythic's plain sparkles and embers, a burst emitter for big moments (KnifeBurst: the stands' spins, the
 	catcher's slash) and, on a stand, a star glint at the tip; its slash trail takes the element's colours.
-	Round 2 ("in the reference the knife is the first thing you see"): the stand copy's blade is also widened and
-	thickened (KnifeLook.standWiden, display only: at most twice, keeping its own shape), wears a see-through Neon
-	GlowShell, and its slash starts halfway up the blade (StandTrailBase). In hand a long blade is held more forward
-	(KnifeLook.handC0 with its reach) so its tip never goes into the floor.
+	Round 2 ("in the reference the knife is the first thing you see"): its slash starts halfway up the blade
+	(StandTrailBase). In hand a long blade is held more forward (KnifeLook.handC0 with its reach) so its tip never
+	goes into the floor. (The stand copy was also widened and wore a see-through Neon GlowShell, and every knife from
+	Uncommon up had a white sheen glint: all three hid his model, owner Oct 19: "they dont look as good as in the glb
+	file". Gone: every knife, worn, held or on a stand, is his model as it is, only scaled evenly.)
 
 	Effects by rarity (owner: "make it fit it, and dont make it overly crazy"): Shared/KnifeLook. In hand always;
 	on the back only Legendary and Mythic. Built here once per knife (replicated), nothing runs every frame.
@@ -93,10 +94,10 @@ local function build()
 	return model
 end
 
--- A Game Pass knife's stand-in from plain parts (Shared/KnifeShapes: its card's shape at its real length), used
--- until the owner's own model is in ServerStorage/HuzzKnives.
-local MATERIAL = { Metal = Enum.Material.Metal, Neon = Enum.Material.Neon, Plastic = Enum.Material.SmoothPlastic,
-	Glass = Enum.Material.Glass, Fabric = Enum.Material.Fabric }
+-- A Game Pass knife's stand-in from plain parts (Shared/KnifeShapes: cut from his .glb, at its real length), used
+-- until the owner's own model is in ServerStorage/HuzzKnives, and on screens that can't draw his model.
+local MATERIAL = { Metal = Enum.Material.Metal, Neon = Enum.Material.Neon, Plastic = Enum.Material.Plastic,
+	SmoothPlastic = Enum.Material.SmoothPlastic, Glass = Enum.Material.Glass, Fabric = Enum.Material.Fabric }
 local function buildRecipe(recipe)
 	local model = Instance.new("Model")
 	local handle
@@ -108,8 +109,9 @@ local function buildRecipe(recipe)
 			Material = MATERIAL[r.mat] or Enum.Material.SmoothPlastic,
 		})
 		if r.kind == "Cylinder" then p.Shape = Enum.PartType.Cylinder end
-		if r.mat == "Metal" then p.Reflectance = 0.12 end
+		p.Reflectance = r.refl or (if r.mat == "Metal" then 0.12 else 0)
 		if r.mat == "Glass" then p.Transparency = 0.12 end
+		if r.hidden then p.Transparency = 1 end
 		local rot = r.rot or { 0, 0, 0 }
 		p.CFrame = CFrame.new(r.at[1], r.at[2], r.at[3]) * CFrame.Angles(math.rad(rot[1]), math.rad(rot[2]), math.rad(rot[3]))
 		p.Parent = model
@@ -367,14 +369,6 @@ local function addFx(model, skin, where)
 			end
 		end
 	end
-	if look.sheen then -- a small glint on the blade now and then
-		local e = emitter("KnifeSheen", blade, colour:Lerp(WHITE, 0.6), {
-			Rate = look.sheen, Lifetime = NumberRange.new(0.3, 0.4), Speed = NumberRange.new(0), LockedToPart = true,
-			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.4, 0.35), NumberSequenceKeypoint.new(1, 0) }),
-			Transparency = NumberSequence.new(0.15), Rotation = NumberRange.new(0, 90), ZOffset = 0.3,
-		})
-		FxTexture.flipbook(e, "Twinkle", "Random")
-	end
 	if look.glow then -- a soft light round the blade (no shadows, never flashing)
 		local l = Instance.new("PointLight")
 		l.Name = "KnifeGlow"
@@ -558,7 +552,9 @@ end
 -- A loose copy of a skin's knife with its in-hand effects, for showing off (the lobby avatar stands:
 -- HuzzServer/AvatarStandService puts it in ReplicatedStorage, each screen welds it into the stand copy's hand by
 -- its Handle's Grip attachment). Nothing anchored, nothing collides.
--- Big: scaled up to KnifeLook.STAND.Length (owner, Oct 19: "right now its very small and you dont even notice it").
+-- Big: scaled up to KnifeLook.STAND.Length (owner, Oct 19: "right now its very small and you dont even notice it"),
+-- evenly, so it stays his model's shape (no widening, no glow shell over it: owner, Oct 19, "they dont look as good as
+-- in the glb file").
 function KnifeService.display(skin)
 	local model = template(skin)
 	local handle = model:FindFirstChild("Handle", true)
@@ -572,32 +568,6 @@ function KnifeService.display(skin)
 	end
 	local shape = shapeOf(model)
 	KnifeService.scale(model, KnifeLook.standScale(shape and shape.length))
-	-- broader than life (round 2: "in the reference the knife is the first thing you see"): the blade widened and
-	-- thickened about the grip, display only
-	local after = shapeOf(model)
-	local thick, wide = KnifeLook.standWiden(after and (if after.bladeWidth > 0 then after.bladeWidth else after.width),
-		after and (if after.bladeLength > 0 then after.bladeLength else after.length))
-	KnifeService.scale(model, Vector3.new(thick, 1, wide))
-	model:SetAttribute("Widen", wide)
-	-- a glowing Neon skin over the blade parts, so it reads at lobby distance under the soft grade (a steady glow)
-	local el = KnifeLook.element(skin and skin.Key)
-	local glow = if el then el.light else KnifeLook.colour(skin)
-	if glow then
-		for _, d in model:GetDescendants() do
-			if d:IsA("BasePart") and string.find(string.lower(d.Name), "blade", 1, true) then
-				local shell = d:Clone()
-				shell:ClearAllChildren()
-				shell.Name = "GlowShell"
-				shell.Material, shell.Color, shell.Transparency = Enum.Material.Neon, glow, KnifeLook.STAND.Shell
-				pcall(function() (shell :: any).TextureID = "" end)
-				shell.Size = d.Size + Vector3.new(0.08, 0.04, 0.1)
-				shell.CFrame = d.CFrame
-				shell.CastShadow = false
-				shell.Parent = d.Parent
-				weld(d, shell)
-			end
-		end
-	end
 	-- the stands' slash runs from halfway up the blade to the tip (a crescent, not a whole sheet)
 	local base, tip = model:FindFirstChild("TrailBase", true), model:FindFirstChild("TrailTip", true)
 	if base and tip and base:IsA("Attachment") and tip:IsA("Attachment") and tip.Parent and tip.Parent:IsA("BasePart") then

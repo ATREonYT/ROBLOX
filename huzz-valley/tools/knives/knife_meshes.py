@@ -27,7 +27,8 @@ def main(out):
             name = p['material']['name']
             m = re.search(r'([0-9a-fA-F]{6})$', name)
             parts.append({'pos': [round(float(v), 4) for v in tri.reshape(-1)], 'col': '#' + (m.group(1).lower() if m else 'cccccc'),
-                          'glow': name.startswith('glow'), 'metal': round(float(p['material']['metal']), 2), 'node': p['node']})
+                          'glow': name.startswith('glow'), 'metal': round(float(p['material']['metal']), 2),
+                          'rough': round(float(p['material']['rough']), 2), 'node': p['node']})
         result[keys[stem]] = parts
     # the Game Pass knives: one file, each knife moved back to its own origin; colours from their little textures
     gp = {k['node']: k['key'] for k in json.load(open('tools/knives/knives.json')) if k['rarity'] == 'Exclusive'}
@@ -41,7 +42,8 @@ def main(out):
             name = p['material']['name']
             col = glb.texture_colour(js, binc, p['material'].get('texture')) or 'cccccc'
             parts.append({'pos': [round(float(v), 4) for v in tri.reshape(-1)], 'col': '#' + col,
-                          'glow': name.startswith('glow'), 'metal': round(float(p['material']['metal']), 2), 'node': p['node']})
+                          'glow': name.startswith('glow'), 'metal': round(float(p['material']['metal']), 2),
+                          'rough': round(float(p['material']['rough']), 2), 'node': p['node']})
         result[gp[node_name]] = parts
     with open(out, 'w') as fh:
         json.dump(result, fh, separators=(',', ':'))

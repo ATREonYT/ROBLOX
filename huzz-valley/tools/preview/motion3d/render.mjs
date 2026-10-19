@@ -21,6 +21,9 @@
 // meshFile (top level): a JSON of triangle meshes by name (tools/knives/knife_meshes.py: the owner's knives); then
 // per frame meshes [{m (name), p, r (9), s (uniform scale, or [x, y, z] in the mesh's own axes), shell ({c, a, only}: drawn as a
 // see-through additive glow skin, only over the parts whose node name starts with `only` when given)}] draws them (glow parts unlit, like Neon).
+// A mesh part may add pbr {metal, rough, env (how much it mirrors the sky: a .glb viewer 1, Roblox's
+// EnvironmentSpecularScale), emis (0-1: a soft self-glow in its colour, a SurfaceAppearance emissive mask)}: then it is
+// drawn shiny (three.js standard material over a plain sky-over-ground reflection) instead of flat.
 import { createRequire } from 'module';
 import fs from 'fs';
 import os from 'os';
@@ -210,13 +213,37 @@ const textTexture = (q) => { // one canvas per text + colours, cached
 const pool = [];
 const m = new THREE.Matrix4(), sc = new THREE.Matrix4();
 const meshLib = {}, meshPool = [];
+let envTex = null;
+const envMap = () => { // a plain sky over a grey-brown ground, as a reflection (Roblox metal mirrors the sky)
+  if (envTex) return envTex;
+  const es = new THREE.Scene();
+  const geo = new THREE.SphereGeometry(50, 32, 16);
+  const pos = geo.attributes.position, cols = [];
+  const top = new THREE.Color('#9ec4ff'), mid = new THREE.Color('#f4f6ff'), low = new THREE.Color('#6a6058');
+  for (let i = 0; i < pos.count; i++) {
+    const y = pos.getY(i) / 50;
+    const c = y > 0 ? mid.clone().lerp(top, Math.min(1, y * 1.4)) : mid.clone().lerp(low, Math.min(1, -y * 4));
+    cols.push(c.r, c.g, c.b);
+  }
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
+  es.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide })));
+  envTex = new THREE.PMREMGenerator(renderer).fromScene(es, 0.02).texture;
+  return envTex;
+};
+const partMaterial = (q) => {
+  if (q.glow) return new THREE.MeshBasicMaterial({ color: q.col });
+  if (!q.pbr) return new THREE.MeshLambertMaterial({ color: q.col, flatShading: true });
+  const b = q.pbr;
+  return new THREE.MeshStandardMaterial({ color: q.col, metalness: b.metal, roughness: b.rough, flatShading: true,
+    envMap: envMap(), envMapIntensity: b.env ?? 1, emissive: q.col, emissiveIntensity: b.emis || 0 });
+};
 window.addMeshes = (lib) => {
   for (const k in lib) {
     meshLib[k] = lib[k].map((q) => {
       const g = new THREE.BufferGeometry();
       g.setAttribute('position', new THREE.Float32BufferAttribute(q.pos, 3));
       g.computeVertexNormals();
-      return { g, node: q.node || '', mat: q.glow ? new THREE.MeshBasicMaterial({ color: q.col }) : new THREE.MeshLambertMaterial({ color: q.col, flatShading: true }) };
+      return { g, node: q.node || '', mat: partMaterial(q) };
     });
   }
 };
