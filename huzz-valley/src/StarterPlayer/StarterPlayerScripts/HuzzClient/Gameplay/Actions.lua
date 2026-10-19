@@ -258,6 +258,19 @@ function M.start()
 		if s then StabMotion.slash(s.rec, os.clock()) end
 	end
 
+	-- Stunned after your dive (Config/Round.Lunge.Stun, HuzzServer/PowerService.stun): from your own press at once
+	-- (the server's StunnedFrom / StunnedUntil arrive a moment later and also count).
+	function M.stunned(): boolean
+		local L = Config.Lunge
+		local after = L.StunAfter or L.Time
+		local since = os.clock() - localLungeAt
+		if since >= after and since < after + (L.Stun or 0) then
+			return true
+		end
+		local t = Workspace:GetServerTimeNow()
+		return t >= (player:GetAttribute("StunnedFrom") or math.huge) and t < (player:GetAttribute("StunnedUntil") or 0)
+	end
+
 	-- What you can do right now.
 	local lastStab = -math.huge
 	local function busy()
@@ -270,11 +283,14 @@ function M.start()
 		return Config.TagMode == "Stab" and player:GetAttribute("HuzzRole") == "Catcher" and (stage == "Running" or stage == "HeroRun")
 			and player:GetAttribute("HuzzFrozen") ~= true
 			and c ~= nil and c:FindFirstChild("HuzzKnife") ~= nil and not busy()
-			and (player:GetAttribute("DizzyUntil") or 0) <= Workspace:GetServerTimeNow() -- a popped Heart Shield
+			and (player:GetAttribute("DizzyUntil") or 0) <= Workspace:GetServerTimeNow() -- a popped Shield
+			and not M.stunned()
 	end
 	local function stab()
 		if canStab() and os.clock() - lastStab >= Config.Stab.Cooldown then
 			lastStab = os.clock()
+			-- (the knife charges back up on your bar: Screens/PowerBar reads this, on your screen only)
+			player:SetAttribute("KnifeReady", Workspace:GetServerTimeNow() + Config.Stab.Cooldown)
 			playStab(player)
 			Sfx.play("stab")
 			-- pinpoint (Gameplay/HitCheck): the runner inside your knife's reach on your screen, now or while the

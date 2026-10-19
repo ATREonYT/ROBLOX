@@ -108,9 +108,12 @@ function M.start()
 			return
 		end
 		UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
-		-- Face where the camera looks (not while lying on the floor: the server holds the body still).
+		-- Face where the camera looks (not while lying on the floor: the server holds the body still; nor while
+		-- stunned on your belly after a dive, HuzzServer/PowerService.stun, or the body would spin on the floor).
 		local camera = Workspace.CurrentCamera
-		if camera and not root.Anchored then
+		local t = Workspace:GetServerTimeNow()
+		local stunned = t >= (player:GetAttribute("StunnedFrom") or math.huge) and t < (player:GetAttribute("StunnedUntil") or 0)
+		if camera and not root.Anchored and not stunned then
 			local look = camera.CFrame.LookVector
 			local flat = Vector3.new(look.X, 0, look.Z)
 			if flat.Magnitude > 0.01 then

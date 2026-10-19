@@ -239,7 +239,7 @@ local function findRoute(to: Vector3)
 end
 
 -- One frame of play. targets = the runners it may chase (roots); stab(botRoot) tries a stab and says if it hit
--- someone (or a Heart Shield took it). fallY: below this it has fallen off the field and goes back home.
+-- someone (or a Shield took it). fallY: below this it has fallen off the field and goes back home.
 function PracticeBot.step(targets: { BasePart }, stab: (BasePart) -> boolean, fallY: number?)
 	if not PracticeBot.active() then return end
 	local now = os.clock()

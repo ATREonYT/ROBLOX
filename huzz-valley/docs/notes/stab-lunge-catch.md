@@ -1,6 +1,6 @@
-# Stab, lunge and catch (motion and VFX)
+# Stab, dive (lunge) and catch (motion and VFX)
 
-Read before changing how the click stab, a catcher's lunge, the catch or getting up look. The rules behind them
+Read before changing how the click stab, a catcher's dive (lunge) and its stun, the catch or getting up look. The rules behind them
 (hit boxes, ranges, cooldowns, rescues): [round.md](round.md). Huss Valley's read, frame by frame:
 `docs/knife-study.md` (section 4 for the catch). Players read "catch", never "kill".
 
@@ -22,30 +22,38 @@ Read before changing how the click stab, a catcher's lunge, the catch or getting
   `docs/previews/stab-before-after.mp4` + `.jpg` (`motion3d/stab_fx_scene.luau`, `STAB_OLD` = the old module copied
   next to the new one). Honest: the arm change is small; the arc reads faintly in the render.
 
-## The lunge (`Shared/StabMotion` `LEAP`, `play(rec, now, true)`)
-- **Your own lunge plays the moment you press Space** (`Gameplay/Dash` calls `Actions.lungeLocal` before its hit
+## The dive (the code's lunge: `Shared/StabMotion` `LEAP`, `play(rec, now, true)`)
+- Owner Oct 19: "add a dive feature for the tagger and after they use it they are stunned for 2 seconds". It was a
+  leap that landed in a low lunge; now the catcher dives flat out, catches whoever it reaches, and lies stunned.
+- **Your own dive plays the moment you press Space** (`Gameplay/Dash` calls `Actions.lungeLocal` before its hit
   check; the server's "Stab" echo within 0.8 s is ignored). Everyone else plays it from the server's "Stab" `{ lunge = true }`.
-- **The whole body leaps** (it owns the root joint and the legs as well as the waist, head and arms, then hands them
-  back by `LEAP.Up` 0.72 s): no crouch first (the push is already moving at 72), the take-off pose blends in over
-  `In` 0.12 s (4 frames at 30 fps, so no pop); the body tips 18-22° into the leap about the hips, the lead knee drives
-  up (left leg forward; the side's own leg on an A/D leap), the back leg pushes off long behind and tucks in the air.
-- **The knife leads**: the arm reaches ahead, the blade level and pointing forward (`REACH`), the free arm back.
+- **The whole body dives** (it owns the root joint and the legs as well as the head and arms; the waist stays straight
+  so the chest never dips under the floor): no crouch first (the push is already moving at 72), the take-off blends in
+  over `In` 0.15 s (no pop at 60 fps); the body tips about the hips 22° → 46° → 72° → 84° → 88° (flat), the legs push
+  off and stretch out behind, toes pointed; both arms reach ahead (`REACH`, superman), the knife leading.
 - **The slash lands when the knife reaches someone**: `StabMotion.slash` from `Dash` (your screen's hit check) or from
   the server's "Caught" (everyone else's, so it lines up with the runner's fall there); if it reaches no one, at
-  `SlashBy` 0.14 s. The sweep goes from the reach out to the right in 0.07 s, then the click slash's overshoot, hold
-  and return. The slash trail, `KnifeLook.ARC` crescent and the `KnifeBurst` start with the slash, not at take-off.
-- **Landing**: at the hop's end (`StabMotion.air()` = 2 x Up / 196.2) the body drops into a low lunge, tipped ~34°
-  into the leap, lead foot ahead, back knee low; the hips come down by exactly what keeps the feet on the floor
-  (`lowestFoot`, from the joints' C0/C1, not the parts, which lag a frame). Held to `Out` 0.47 s.
+  `SlashBy` 0.14 s. The sweep goes from the reach out to the right in 0.07 s, then the arm settles flat on the floor
+  ahead (`LIE`). The slash trail, `KnifeLook.ARC` crescent and the `KnifeBurst` start with the slash, not at take-off.
+- **Landing**: at the hop's end (`StabMotion.air()` = 2 x Up / 196.2) the body is down on its belly; the hips come down
+  by exactly what keeps the lowest of the feet, legs, hips, chest and head on the floor (`lowestBody`, from the joints'
+  C0/C1, not the parts, which lag a frame; `lowestFoot` for the feet alone). It slides with the push.
+- **The stun**: from `Lunge.StunAfter` 0.38 s for `Lunge.Stun` 2 s (`PowerService.stun`): speed 0, no stab, no
+  abilities, the body doesn't turn to the camera (`Gameplay/ShiftLock`, `Dash` holds AutoRotate off). It lies dazed
+  (`Out` = StunAfter + Stun = 2.38 s), the head rolling slowly side to side (`Daze` 16° at 0.5 Hz), three cartoon stars
+  circling over the head (`Gameplay/PowerEffects`) and the server's 💫 STUNNED badge; the bar's STUNNED 💫 drains
+  ([ui.md](ui.md)). Then a push-up and stand, back to the run by `Up` = Out + `Rise` 0.45 s.
+- **A sideways dive** (A / D) does the same into its side.
 - **Height** (`Config/Round.Lunge` Up 24): 0.245 s in the air, 1.5 studs. The push (72 to 40 over 0.38 s, 19 studs)
   and the hit box are the round's ([round.md](round.md)).
 - **The leap's ribbon** (`KnifeLook.CATCH.Streak`, HV's lunge ribbon): a Trail between two points on the UpperTorso,
   white into the knife's colour (its `SlashColor`, else steel white), 0.14 s long (~8 studs at the leap's speed), on
   for the push only (`Gameplay/Actions`).
-- Spec `tests/StabMotion.spec` (leans in, never back; knee ahead and back leg behind; knife ahead with the blade
-  forward; slash within 0.08 s of reaching someone, at SlashBy otherwise, before landing; lands tipped >28° with the
-  feet on the floor; sideways tips and leads with that leg; body parts turn at most 16°/frame at 60 fps and 30° at
-  30 fps; every joint handed back). Film `docs/previews/knife-leap.mp4`.
+- Spec `tests/StabMotion.spec` (the dive: lying flat at 0.39 s, 1.2 s and just before Out, the lowest point within 0.15
+  of the floor; the free arm reaching ahead; a sideways dive tips into its side; slash within 0.08 s of reaching
+  someone, at SlashBy otherwise; body parts turn at most 16°/frame at 60 fps (14.6 today) and 30° at 30 fps; every
+  joint handed back after Up). Films `docs/previews/dive-stun.mp4` (`motion3d/catch_scene.luau`, side view: the dive,
+  the 2 s stun with the stars, getting up, then the catch at 1/4 speed); the older leap: `docs/previews/knife-leap.mp4`.
 
 ## The catch
 - **What counts as a catch** is the knife's box touching the runner's real body, checked the same way on the
@@ -88,6 +96,12 @@ Read before changing how the click stab, a catcher's lunge, the catch or getting
   killing ... take your time"). Before, the lunge was the click slash at take-off with the legs still running, a
   0.18 s hop and a 35° waist dive only after landing, so it read as a stumble; and your own lunge waited for the
   server's echo (a round trip late).
+- **The dive, Oct 19 batch 2** ("add a dive feature for the tagger and after they use it they are stunned for 2
+  seconds"): "The lunge" section became "The dive". The leap used to land in a low lunge, tipped ~34°, held to `Out`
+  0.47 s and handed back by `LEAP.Up` 0.72 s; now it lies flat for the stun. The waist stays straight in a dive
+  because its pitch put the chest under the floor during the slash; `In` went from 0.1 to 0.15 s (19.6°/frame at
+  take-off was over the 16° limit). The knife's 1 s charge ("one second charge time for knife only") is
+  `Stab.Cooldown`, was 0.6.
 - **Up 24, was 18**: at 18 the body was off the floor 0.18 s (5 frames) and 0.8 studs high, too short to show a
   take-off, a knife leading and a landing; HV's catcher is in the air ~0.4 s.
 - **Catch**: the knife-colour cut line and 10 sparks replaced 30 red-and-white sparks (generic, and HV has none).

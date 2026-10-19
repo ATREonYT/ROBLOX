@@ -69,7 +69,9 @@ return {
 		Reach = 4.5,
 		Width = 3.5,
 		Slack = 3, -- (unused since Oct 19: the server checks the knife's box against the body, Touch below)
-		Cooldown = 0.6, -- seconds between stabs, hit or miss
+		-- seconds between stabs, hit or miss (owner, Oct 19: "one second charge time for knife only"; was 0.6). The
+		-- knife charges back up on the catcher's bar (Screens/PowerBar: KNIFE CHARGING).
+		Cooldown = 1.0,
 		Time = 0.40, -- the slash, Huss Valley's (docs/knife-study.md): no wind-up, the sweep lands ~0.07 s, held, back by 0.40 (Shared/StabMotion)
 	},
 	TagRange = 5.5, -- "Touch" only: studs between root parts
@@ -101,7 +103,12 @@ return {
 	-- Up: the hop (studs/s up). Oct 19 knife pass 2: 24, was 18. At 18 the body was off the floor for 0.18 s (5 frames)
 	-- and 0.8 studs high, too short to show a leap at all (Huss Valley's catcher is in the air ~0.4 s); 24 = 0.245 s and
 	-- 1.5 studs, long enough for the take-off, the knife leading and the landing (Shared/StabMotion LEAP). Distance unchanged.
-	Lunge = { Speed = 72, EndSpeed = 40, Up = 24, Time = 0.38, Cooldown = 3, HitRange = 4.8, HitWindow = 0.5, Reach = 4.5, Width = 4 },
+	-- Oct 19 (owner: "add a dive feature for the tagger and after they use it they are stunned for 2 seconds"): the leap
+	-- is a dive now (Shared/StabMotion LEAP: flat out in the air, lands on the belly) and the catcher lies dazed for
+	-- Stun seconds from StunAfter (the landing): no moving, stabbing or powers (HuzzServer/PowerService.stun), shown on
+	-- the bar (STUNNED) and over the body (💫). Cooldown (from the press) still covers the dive and the stun.
+	Lunge = { Speed = 72, EndSpeed = 40, Up = 24, Time = 0.38, Cooldown = 3, HitRange = 4.8, HitWindow = 0.5, Reach = 4.5, Width = 4,
+		Stun = 2, StunAfter = 0.38 },
 
 	-- A caught runner falls flat on their face and lies there until rescued or the next round
 	-- (owner's call).

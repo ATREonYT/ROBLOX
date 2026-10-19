@@ -9,21 +9,20 @@
 	  0.10-0.24 s  held out (it reads);
 	  0.24-0.40 s  back to carry.
 
-	The lunge (Space, Gameplay/Dash; owner Oct 19: "give them a good vfx, make them have good animations, the
-	leaping, the killing"; docs/previews/catch-before-after.mp4). Before, the leap was the click slash with the legs
-	still running and a dive after it had landed, so it read as a stumble. Now the whole body leaps (LEAP):
-	  0.00-0.07 s  take-off: no crouch first (the push is already moving at 72), the body lines up into the leap
-	               (the whole body tips about the hips), the lead knee drives up, the back leg pushes off long behind;
-	               the knife arm reaches ahead, the blade level and leading, the free arm back for balance;
-	  in the air   the knife leads; the back leg tucks under;
+	The dive (Space, Gameplay/Dash; owner Oct 19: "add a dive feature for the tagger and after they use it they are
+	stunned for 2 seconds"; it was a leap that landed in a low lunge). The whole body dives (LEAP):
+	  0.00-0.08 s  take-off: no crouch first (the push is already moving at 72), the body tips about the hips into the
+	               dive, the legs push off and stretch out behind; both arms reach ahead (superman), the knife leading;
+	  in the air   flat out, legs long and toes pointed, the belly coming down to the floor as the hop ends;
 	  the slash    the moment the knife reaches the runner (slash(): the catcher's own screen when its hit check finds
 	               them, everyone else when the server's Caught arrives), or at SlashBy if it reaches no one: the arm
-	               sweeps from ahead out to the right in 0.07 s, the free arm swings forward, then the click slash's
-	               overshoot, hold and return;
-	  landing      at the hop's end (Air: Config/Round.Lunge.Up) the body drops into a low lunge, lead foot ahead, back
-	               knee low, the body tipped 34 degrees into the leap, the hips lowered so the feet stay on the floor;
-	               held to Out, back to the run by Up.
-	A sideways leap (A / D) does the same into its side: the side's leg leads, the body tips that way.
+	               sweeps from ahead out to the right in 0.07 s, then settles flat on the floor ahead;
+	  landing      at the hop's end (Air: Config/Round.Lunge.Up) the body lands on its belly, flat (88 degrees), the
+	               hips lowered so the chest and legs lie on the floor; it slides with the push;
+	  stunned      lying there dazed until the stun ends (Config/Round.Lunge.StunAfter + Stun = Out), the head rolling
+	               slowly side to side (the 💫 badge over it is the server's: HuzzServer/PowerService.stun);
+	  up           back to the run by Up (Rise seconds: a push-up and stand).
+	A sideways dive (A / D) does the same into its side.
 
 	Pure maths on joints (R15), so the offline preview runs this exact code (motion3d/catch_scene.luau,
 	stab_scene.luau, knife_scene.luau); HuzzClient/Gameplay/Actions feeds it real characters. Written to
@@ -70,17 +69,19 @@ local function angles(t)
 	return CFrame.Angles(rad(t[1]), rad(t[2]), rad(t[3]))
 end
 
--- The pose of one joint at u (0..1). first: replaces the first key's pose (a lunge's slash starts from the reach).
-local function at(u, key, first)
+-- The pose of one joint at u (0..1). first: replaces the first key's pose (a dive's slash starts from the reach);
+-- last: replaces the last (a dive's slash settles into the arms lying ahead, not back to the carry).
+local function at(u, key, first, last)
 	for i = 1, #KEYS - 1 do
 		local a, b = KEYS[i], KEYS[i + 1]
 		if u <= b.at then
 			local s = (EASE[b.ease] or smooth)(math.clamp((u - a.at) / (b.at - a.at), 0, 1))
 			local from = if i == 1 and first and first[key] then first[key] else a[key]
-			return angles(from):Lerp(angles(b[key]), s)
+			local to = if i + 1 == #KEYS and last and last[key] then last[key] else b[key]
+			return angles(from):Lerp(angles(to), s)
 		end
 	end
-	return CFrame.identity
+	return if last and last[key] then angles(last[key]) else CFrame.identity
 end
 StabMotion.poseAt = at
 
@@ -95,29 +96,34 @@ local function weight(u)
 end
 StabMotion.weight = weight
 
---[[ The leap (seconds from Space). Air: the hop's time in the air, 2 x Up / gravity (Config/Round.Lunge.Up 24:
-	0.245 s). KEYS: t in seconds ("air" adds Air x that), lean = the body tipped into the leap (degrees, about the
-	hips, the root joint), lead / trail = hip swing into the leap (+) or away (-), knee bend (-), ankle (+ toes up);
-	the lead leg is the left on a forward leap (opposite the knife arm), the side's own leg on a sideways one.
-	REACH: the knife arm's pose until the slash (ahead and level: the hand's blade points 30 degrees up from a
-	forward arm, so the wrist bends 28 down); OFF: the free arm back for balance. ]]
+--[[ The dive (seconds from Space). Air: the hop's time in the air, 2 x Up / gravity (Config/Round.Lunge.Up 24:
+	0.245 s). KEYS: t in seconds ("air" adds Air x that), lean = the body tipped into the dive (degrees, about the
+	hips, the root joint), lead / trail = hip swing into the dive (+) or away (-), knee bend (-), ankle (+ toes up);
+	the lead leg is the left on a forward dive (opposite the knife arm), the side's own leg on a sideways one.
+	REACH: both arms ahead until the slash (over the head, so on a flat body they point the way it dives); LIE: the
+	arms after the slash, flat on the floor ahead. Out: lying dazed until the dive's stun ends; Up: standing again. ]]
+local LUNGE = Round.Lunge or {}
+local STUN_END = (LUNGE.StunAfter or LUNGE.Time or 0.38) + (LUNGE.Stun or 0)
 StabMotion.LEAP = {
 	Gravity = 196.2,
-	In = 0.12, -- the take-off pose takes over from the run this fast (no crouch first; 4 frames at 30 fps, so no pop)
-	ArmIn = 0.05, -- the knife arm reaches ahead this fast
+	In = 0.15, -- the take-off pose takes over from the run this fast (no crouch first; 4 frames at 30 fps, so no pop)
+	ArmIn = 0.06, -- the arms reach ahead this fast
 	SlashBy = 0.14, -- the slash if the knife has reached no one sooner (lands 0.07 s later, before the landing)
-	Out = 0.47, -- held low until here
-	Up = 0.72, -- back to the run (a second leap needs the 3 s cooldown anyway)
+	Rise = 0.45, -- from the floor back to the run
+	Out = math.max(0.5, STUN_END), -- lying on the floor until here (the stun)
+	Up = math.max(0.5, STUN_END) + 0.45, -- back to the run
 	KEYS = {
-		{ t = 0.00, lean = 18, lead = { 60, -78, 12 }, trail = { -32, -18, -35 } }, -- take-off: knee drives, the back leg long
-		{ t = 0.10, lean = 19, lead = { 58, -74, 10 }, trail = { -30, -24, -32 } },
-		{ t = 0, air = 0.72, lean = 22, lead = { 50, -60, 4 }, trail = { -16, -62, -22 } }, -- in the air: the back leg tucks
-		{ t = 0, air = 1, lean = 26, lead = { 40, -52, 6 }, trail = { 6, -74, -10 } }, -- touch down
-		{ t = 0.08, air = 1, lean = 34, lead = { 70, -100, 20 }, trail = { -6, -104, -14 } }, -- low: the lunge landing
-		{ t = 0.47, lean = 30, lead = { 64, -92, 16 }, trail = { -4, -94, -12 } }, -- held
+		{ t = 0.00, lean = 22, lead = { 46, -60, 10 }, trail = { -30, -18, -30 } }, -- take-off: tipping in, pushing off
+		{ t = 0.08, lean = 46, lead = { 22, -30, -6 }, trail = { -22, -10, -24 } }, -- stretching out
+		{ t = 0, air = 0.7, lean = 72, lead = { 6, -10, -24 }, trail = { -6, -8, -28 } }, -- flat out: legs long, toes pointed
+		{ t = 0, air = 1, lean = 84, lead = { 2, -8, -28 }, trail = { -4, -8, -30 } }, -- belly down
+		{ t = 0.12, air = 1, lean = 88, lead = { 0, -12, -34 }, trail = { -2, -16, -34 } }, -- flat on the floor (the slide)
 	},
-	Neck = 0.55, -- the head lifts this much of the lean back, so the eyes stay on the runner
-	REACH = { shoulder = { 82, 0, -14 }, elbow = { 8, 0, 0 }, wrist = { -28, 0, 0 }, off = { -38, 0, -26 }, offElbow = { 24, 0, 0 },
+	Neck = 0.5, -- the head lifts this much of the lean back, so the eyes look ahead
+	Daze = { Turn = 16, Hz = 0.5 }, -- lying stunned: the head rolls side to side this far (degrees), this slowly
+	REACH = { shoulder = { 168, 0, -10 }, elbow = { 6, 0, 0 }, wrist = { -30, 0, 0 }, off = { 162, 0, 14 }, offElbow = { 10, 0, 0 },
+		waist = { 0, 0, 0 }, neck = { 0, 0, 0 } },
+	LIE = { shoulder = { 158, 0, -26 }, elbow = { 16, 0, 0 }, wrist = { -12, 0, 0 }, off = { 158, 0, 26 }, offElbow = { 16, 0, 0 },
 		waist = { 0, 0, 0 }, neck = { 0, 0, 0 } },
 }
 
@@ -271,6 +277,47 @@ local function lowestFoot(rig, rootT, legT)
 end
 StabMotion.lowestFoot = lowestFoot
 
+-- The lowest point of the whole body (feet, legs, hips, chest, head) below the root part's centre: a body on its
+-- belly lies on its chest and legs, not its feet.
+local function lowestBody(rig, rootT, legT)
+	local low = lowestFoot(rig, rootT, legT)
+	local rootJ = rig.root
+	local pelvis = rootJ.C0 * rootT * rootJ.C1:Inverse()
+	local function box(cf, size, k)
+		local h = size / 2 * (k or 1)
+		for _, x in { -1, 1 } do
+			for _, y in { -1, 1 } do
+				for _, z in { -1, 1 } do
+					low = math.min(low, (cf * Vector3.new(h.X * x, h.Y * y, h.Z * z)).Y)
+				end
+			end
+		end
+	end
+	local waist = rig.waist
+	local hips = waist and waist.Part0
+	if hips then
+		box(pelvis, hips.Size)
+	end
+	if waist and rig.torso then
+		local chest = pelvis * waist.C0 * waist.C1:Inverse()
+		box(chest, rig.torso.Size)
+		local neck = rig.head and CarryMath.joint(rig.head:FindFirstChild("Neck"))
+		if neck then
+			box(chest * neck.C0 * neck.C1:Inverse(), rig.head.Size, 0.8) -- (a round head: its box's corners stick out)
+		end
+	end
+	for i, leg in rig.legs do
+		local t = legT and legT[i]
+		if leg.hip and leg.knee and leg.upper and leg.lower then
+			local upper = pelvis * leg.hip.C0 * (t and t[1] or CFrame.identity) * leg.hip.C1:Inverse()
+			box(upper, leg.upper.Size, 0.9)
+			box(upper * leg.knee.C0 * (t and t[2] or CFrame.identity) * leg.knee.C1:Inverse(), leg.lower.Size, 0.9)
+		end
+	end
+	return low
+end
+StabMotion.lowestBody = lowestBody
+
 -- The lunge's body: the root joint (lean + the hips lowered on landing), both legs, the head lifting.
 local function leap(rec, t)
 	local rig = rec.rig
@@ -290,13 +337,14 @@ local function leap(rec, t)
 		local h, k, an = legPose(d, v)
 		legT[i] = { leg.hip and CarryMath.inJoint(leg.hip, h), leg.knee and CarryMath.inJoint(leg.knee, k), leg.ankle and CarryMath.inJoint(leg.ankle, an) }
 	end
-	-- the hips come down as the legs fold on landing, so the feet stay on the floor (none in the air)
+	-- the body comes down to the floor through the second half of the hop, and lies on it (chest and legs on the
+	-- floor, nothing under it)
 	local air = StabMotion.air()
-	local ground = smooth(math.clamp((t - (air - 0.03)) / 0.06, 0, 1))
+	local ground = smooth(math.clamp((t - air * 0.4) / (air * 0.6 + 0.04), 0, 1))
 	local drop = 0
 	if ground > 0 then
 		local rest = lowestFoot(rig, CFrame.identity, nil)
-		local posed = lowestFoot(rig, CarryMath.inJoint(rig.root, tip), legT)
+		local posed = lowestBody(rig, CarryMath.inJoint(rig.root, tip), legT)
 		drop = math.max(0, posed - rest) * ground
 	end
 	local c0 = rig.root.C0.Rotation
@@ -309,7 +357,15 @@ local function leap(rec, t)
 			end
 		end
 	end
-	return lw, CFrame.Angles(-d.Z * a * StabMotion.LEAP.Neck, 0, d.X * a * StabMotion.LEAP.Neck)
+	-- the head: lifted to look ahead, and once on the floor, rolling slowly side to side (dazed)
+	local L = StabMotion.LEAP
+	local landed = air + 0.12
+	local daze = 0
+	if t > landed then
+		local fadeIn = smooth(math.clamp((t - landed) / 0.4, 0, 1))
+		daze = math.rad(L.Daze.Turn) * math.sin((t - landed) * L.Daze.Hz * 2 * math.pi) * fadeIn
+	end
+	return lw, CFrame.Angles(-d.Z * a * L.Neck, daze, d.X * a * L.Neck)
 end
 
 -- Returns true while the move is playing. animatedArm = false skips the knife arm (an uploaded Stab
@@ -320,6 +376,7 @@ function StabMotion.step(rec, now, animatedArm)
 	local u = if slashAt then (now - slashAt) / Round.Stab.Time else -1
 	local leaping = rec.lunge and t >= 0 and t < StabMotion.LEAP.Up
 	local reaching = rec.lunge and t >= 0 and not slashAt
+	local lying = rec.lunge and leaping and slashAt ~= nil and u > 1 -- (after a dive's slash: arms flat ahead)
 	if (u < 0 or u > 1) and not leaping and not reaching then
 		if next(rec.written) then
 			StabMotion.release(rec)
@@ -334,15 +391,19 @@ function StabMotion.step(rec, now, animatedArm)
 		w = weight(u)
 		if rec.lunge then
 			first = StabMotion.LEAP.REACH
-			w = if u < 0.6 then 1 else w -- (already reaching: no fade in)
+			w = 1 -- (already reaching, and settling into the arms lying ahead: no fade in or out)
 		end
+	elseif lying then
+		w = StabMotion.leapWeight(t) -- (back to the run's arms as the body gets up)
 	else
 		w = 0
 	end
+	local last = if rec.lunge then StabMotion.LEAP.LIE else nil
 	local function pose(key)
 		if w <= 0 then return CFrame.identity end
 		if reaching then return angles(StabMotion.LEAP.REACH[key]) end
-		return at(u, key, first)
+		if lying then return angles(StabMotion.LEAP.LIE[key]) end
+		return at(u, key, first, last)
 	end
 	-- the leap's body (root joint and legs) first, then the waist and head on top
 	local neckLift
@@ -352,7 +413,8 @@ function StabMotion.step(rec, now, animatedArm)
 	end
 	local waist = rec.rig.waist
 	if waist then
-		local body = CFrame.identity:Lerp(pose("waist"), w)
+		-- (a dive keeps the chest in line with the hips: the slash's waist turn would tip a body lying flat into the floor)
+		local body = if rec.lunge then CFrame.identity else CFrame.identity:Lerp(pose("waist"), w)
 		write(rec, waist, animated(rec, waist) * CarryMath.inJoint(waist, body))
 	end
 	if rec.neck then
@@ -360,7 +422,8 @@ function StabMotion.step(rec, now, animatedArm)
 		if neckLift then head = CFrame.identity:Lerp(neckLift, StabMotion.leapWeight(t)) * head end
 		write(rec, rec.neck, animated(rec, rec.neck) * CarryMath.inJoint(rec.neck, head))
 	end
-	local level = CFrame.Angles(hunch(rec), 0, 0) -- (a hunched run tips the chest: keep the knife arm level)
+	-- (a hunched run tips the chest: keep the knife arm level; a dive tips the whole body itself, so not then)
+	local level = if rec.lunge then CFrame.identity else CFrame.Angles(hunch(rec), 0, 0)
 	local function arm(side, keys)
 		if w <= 0 then return end
 		for joint, key in keys do

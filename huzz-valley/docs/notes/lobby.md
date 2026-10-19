@@ -25,9 +25,10 @@ inspection with Lune: core `CLAUDE.md` section 4.
   between the two groups of round pads at the plaza's front, facing into the lobby (the girls' display ahead, the
   podium boards on one side, the stand row on the other). Checked open (nothing solid or visible in it, floor
   everywhere within 0.8), else slid along the carpet / inwards up to 10 studs. His SpawnLocation (invisible) moves
-  onto it; `MapService.lobbySpot()` gives a free spot of its 30 (12 inside the rail, 4 apart; the rest beyond its open
+  onto it; `MapService.lobbySpot()` gives a free spot of its 30 (12 inside the pad, 4 apart; the rest beyond its open
   side for a full server). Everyone in the lobby lands there: joining, respawning, after a game.
-- **Barriers:** `Workspace > HuzzSpawnPad`: a low wooden rail on three sides (posts 0.7 x 2.4, two rails at 1.0 and
+- **Barriers: OFF** (owner, Oct 19, with a screenshot: "please remove that barrier in the lobby"; `MapService.RAIL =
+  false`). When on, `Workspace > HuzzSpawnPad`: a low wooden rail on three sides (posts 0.7 x 2.4, two rails at 1.0 and
   2.05 studs, Wood in his display fence's brown 106, 57, 9; not solid), open towards the plaza, plus an invisible wall
   7 studs tall along each rail (`Barrier1-3`: CanCollide on, CanQuery off, so it never stops a camera or a ray). Made
   at game start (Play only); a place that has its own `HuzzSpawnPad` keeps it.
@@ -36,8 +37,7 @@ inspection with Lune: core `CLAUDE.md` section 4.
   4), and nothing solid in the room round it (6 x 4.6 x 6). The game asks Roblox (`MapService.geometry`: a ray that
   respects CanCollide, `GetPartBoundsInBox`), ignoring players, bots, girls, effects, zone markers and our walls;
   Lune uses `tools/world/geometry.luau` (the same answers). The line-up and the catchers: [round.md](round.md).
-- Spec `tests/Spawns.spec.luau` runs the real MapService on his place (one lobby, the pad, the rail touching none of
-  his build, every map's placement, both start lines for 1 / 6 / 12 / 24, the catchers); also
+- Spec `tests/Spawns.spec.luau` runs the real MapService on his place (one lobby, the pad, no rail, every map's placement, both start lines for 1 / 6 / 12 / 24, the catchers); also
   `tests/LobbyLayout.spec`, check `tools/preview/check_new_lobby.luau`. Picture: `docs/previews/spawns-one-lobby.jpg`
   (`SPAWN_DUMP=<json> lune run tests/Spawns.spec.luau`, then `python3 tools/world/spawn_plan.py <json> <out.jpg>`).
 - **Map look:** when a map wins the vote, `MapService.paintLobby` gives the lobby floor that map's floor colour,
@@ -145,8 +145,7 @@ inspection with Lune: core `CLAUDE.md` section 4.
   LIKE THE GAME!, WITCH'S BREW and SWEETS & TREATS open nothing yet.
 
 ## Honest gaps
-- Not seen in Studio yet: the one lobby (the spare copies put away, each map in front of it), the spawn pad and its
-  rail (Play only: the rail is built at game start), the lobby repaint; the
+- Not seen in Studio yet: the one lobby (the spare copies put away, each map in front of it), the spawn pad, the lobby repaint; the
   lobby leaderboards (studs picture (Play only), the slab colour under his grade, Gotham's size, headshots,
   scrolling, the calm turn, the pumpkin, candle and glow, the Oct 19 slate colour, the turn stopping before his
   slope); the avatar stands (your copy, its run, the knife in its hand); the new lobby (the boards on the terrace

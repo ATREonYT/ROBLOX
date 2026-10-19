@@ -2,8 +2,8 @@
 -- for the game feel nice"). Three numbered cards: 1 RUN ACROSS (green), 2 SAVE FRIENDS (blue), 3 BE THE HERO (pink),
 -- each with a short line (key words in the card's colour) and a picture cut from the mockup (placeholders until the
 -- owner sends sharp PNGs: tools/icons/make_screen_art.py). Along the bottom, the keys as they really are in our game
--- (huzz-valley/CLAUDE.md section 1): Space dash (a catcher's Space lunges), Q power (E the other one), click stab (catchers), Alt
--- frees the mouse. On a touch screen only the dash button and the power tiles show (the rest are keyboard only).
+-- (huzz-valley/CLAUDE.md section 1): Space dash (a catcher's Space dives), Q ability (E: Speed Boost while carrying her, or the catcher's second one), click stab (catchers), Alt
+-- frees the mouse. On a touch screen only the dash button and the ability cards show (the rest are keyboard only).
 -- It opens by itself the first time someone joins (once their save has loaded, in the lobby, nothing else open) and
 -- from the Menu's How to Play any time. Closing it saves the TutorialDone setting, so it never pops up again itself.
 -- The mockup's window is taller than ours (701 x 320, as every window), so the cards are shorter: each picture keeps
@@ -40,14 +40,14 @@ local CARDS = {
 local HIGHLIGHT = { hex("7CF28E"), hex("64AEFF"), hex("FF6FA2") }
 -- Our keys (keyboard). Cap = the key's label (nil: the mouse picture); Sub = a smaller second line.
 local KEYBOARD = {
-	{ Cap = "Space", CapW = 62, X = 10, Label = "Dash", Sub = "Catchers lunge", Divider = 180 },
-	{ Cap = "Q", CapW = 38, X = 192, Label = "Use Power", Divider = 336 },
+	{ Cap = "Space", CapW = 62, X = 10, Label = "Dash", Sub = "Catchers dive", Divider = 180 },
+	{ Cap = "Q", CapW = 38, X = 192, Label = "Ability", Divider = 336 },
 	{ Cap = nil, CapW = 22, X = 352, Label = "Click", Sub = "Stab (Catchers)", Divider = 500 },
 	{ Cap = "Alt", CapW = 48, X = 514, Label = "Free Mouse" },
 }
 -- On a touch screen the same parts are relabelled (the saved UI holds the keyboard row) and the keyboard-only
 -- keys hide.
-local TOUCH = { { Cap = "DASH", Label = "Button" }, { Cap = "Q E", Label = "Power tiles" } }
+local TOUCH = { { Cap = "DASH", Label = "Button" }, { Cap = "Q E", Label = "Ability cards" } }
 local COL = { Keys = hex("0E1A3F"), KeysRim = hex("233565"), Divider = hex("1E2E5E"), Cap = hex("13204A"), CapRim = hex("8FB0FF"), Sub = hex("A9B7E0"), Card = hex("0D1638") }
 
 local function richText(def, i: number): string

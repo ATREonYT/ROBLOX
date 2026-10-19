@@ -1,6 +1,9 @@
--- Shows problems on screen (a small red box, top left) as well as in Studio's Output, so the owner can screenshot
--- an error without opening the Output window. Report.run(name, fn) runs fn and reports any error under `name`.
+-- Reports problems in Studio's Output on lines starting [HuzzUI]. Report.run(name, fn) runs fn and reports any
+-- error under `name`. The red box on screen is kept but hidden (owner, Oct 19: "please remove the red pop up"):
+-- set SHOW_BOX to true to see problems on screen again while testing.
 local Report = {}
+
+local SHOW_BOX = false
 
 local box: TextLabel? = nil
 local lines: { string } = {}
@@ -8,7 +11,7 @@ local lines: { string } = {}
 local function refresh()
 	if not box then return end
 	box.Text = "UI problem - please send Claude a screenshot:\n" .. table.concat(lines, "\n")
-	box.Visible = #lines > 0
+	box.Visible = SHOW_BOX and #lines > 0
 end
 
 function Report.mount(parent: Instance)

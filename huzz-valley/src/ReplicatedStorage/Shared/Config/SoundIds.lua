@@ -49,6 +49,19 @@ return {
 	aura_pickup = "",
 	speed_wind = "", -- a loop: play it with Gameplay/Sfx.loop
 
+	-- Oct 19 heartbeat: a licensed pick only (the coordinator's brief, owner: "don't create random sound by yourself").
+	-- Roblox's library (Pro Sound Effects / APM) showed no heartbeat when searched from the cloud (only community
+	-- uploads, not safe: docs/notes/sounds.md), so it stays "" (Gameplay/Sfx plays a soft built-in thump) until one is
+	-- picked in Studio's Toolbox (Audio, creator ProSoundEffects or APMOfficial), with its store URL here and in
+	-- docs/sound-picks.md.
+	heartbeat = "", -- the red-edge pulse when a catcher is close (Gameplay/Heartbeat): one beat ("lub-dub") per play
+	-- Oct 19 abilities: made in the game's sound family like the other power sounds (tools/sfx/make_sfx.py ->
+	-- assets/sfx/<name>.ogg); "" until the owner uploads them.
+	trap_throw = "", -- the Bear Trap leaving the hand
+	invisible = "", -- turning invisible
+	glitch = "", -- the Glitchy blink
+	decoy = "", -- the Body Double splitting off
+
 	-- The Secret cutscene, keyed to its beats in Config/SecretSounds (Build, Burst, Reveal, End).
 	-- "Light Cone Suck Synth And Reverse Cymbal Build, Disappear" (Pro Sound Effects, 5.7 s, Energy): the build-up
 	-- https://create.roblox.com/store/asset/9125626784/Light-Cone-Suck-Synth-And-Reverse-Cymbal-Bui-SFX

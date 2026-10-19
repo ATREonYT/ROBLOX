@@ -669,6 +669,47 @@ def trap_set():
     return finish(reverb(x, 0.08), d, lp=4000, fout=0.06)
 
 
+# ---------------- Oct 19 abilities ("runner abilities (invisible, glitchy, body double"; the Bear Trap is thrown)
+@sound("trap_throw", "Quick wind-up swish and a springy rattle as the Bear Trap leaves the hand.")
+def trap_throw():
+    d = 0.42
+    x = 0.8 * whoosh(0.3, 500, 1400, peak=0.4, octaves=1.4, seed=95, lp=3200)
+    add(x, woodtick(700, 0.06, decay=0.012, seed=96), 0.02, 0.5)
+    add(x, boing(250, 330, 0.3, wobble=0.12, rate=19, decay=0.09), 0.06, 0.3)
+    return finish(reverb(x, 0.08), d, lp=4000, fout=0.08)
+
+
+@sound("invisible", "Soft airy shimmer gliding down and fading away as you turn see-through.")
+def invisible():
+    d = 0.75
+    x = 0.5 * whoosh(0.6, 1400, 500, peak=0.3, octaves=1.0, seed=97, lp=3000)
+    add(x, warm(glide(hz("G5"), hz("C5"), 0.55, 1.0), 0.55, attack=0.03, decay=0.22, hold=0.15, vib=0.004), 0.0, 0.45)
+    twinkle(x, ["E6", "C6", "G5"], 0.05, gap=0.07, level=0.12, decay=0.1)
+    return finish(reverb(x, 0.18), d, lp=4200, fout=0.3)
+
+
+@sound("glitch", "Three quick stuttered plucks that jump in pitch, then a soft landing tick (the Glitchy blink).")
+def glitch():
+    d = 0.36
+    x = buf(d)
+    for i, (n, g) in enumerate([("E5", 0.55), ("A4", 0.5), ("D5", 0.55)]):
+        add(x, mallet(n, 0.05, decay=0.012) * env(0.05, 0.002, 0.012), i * 0.035, g)
+    add(x, whoosh(0.12, 1600, 700, peak=0.3, octaves=0.8, seed=98, lp=3500), 0.0, 0.5)
+    add(x, woodtick(880, 0.07, decay=0.014, seed=99), 0.14, 0.45)
+    return finish(reverb(x, 0.06), d, lp=4200, fout=0.08)
+
+
+@sound("decoy", "Soft pop and two kalimba notes stepping apart as your Body Double splits off.")
+def decoy():
+    d = 0.6
+    x = buf(d)
+    add(x, sine(glide(260, 620, 0.06, 1.5), 0.06) * env(0.06, 0.003, 0.025), 0, 0.6)
+    add(x, pluck("G4", 0.45, decay=0.16), 0.04, 0.5)
+    add(x, pluck("D5", 0.45, decay=0.16), 0.11, 0.5)
+    add(x, whoosh(0.3, 700, 1100, peak=0.4, octaves=1.0, seed=100, lp=3000), 0.03, 0.35)
+    return finish(reverb(x, 0.12), d, lp=4500, fout=0.15)
+
+
 @sound("trap_snap", "Woody snap with a low thump and a springy wobble when a trap catches someone.")
 def trap_snap():
     d = 0.5

@@ -29,12 +29,21 @@ The lobby side (one lobby per map, paint, his new lobby): [lobby.md](lobby.md). 
   3 s). Not counted while trapped or on the line; a catcher or the bot within 10 studs of the zone buys 10 s.
 - **Last runner** (`RoundRules.lastRunner`, `Speeds.LastRunner` 30): in a round that started with 2+ runners, the
   only one still out is called out once ("X is the last runner!") and runs as fast as the real catcher (the bot's
-  speed when it catches; never under 28); with Rizz Rush capped at catcher + 4.
+  speed when it catches; never under 28); with a Speed Boost capped at catcher + 4.
 - **Power cards survive the Hero run:** after a Hero run RoundService calls `PowerService.clear(true)` (traps and
   effects go, cards and cooldowns stay). The sim checks every runner/catcher still playing has PowerReady1 in
   Running/HeroRun.
-- **Powers** (free each round, `Config/Powers`): runners Heart Shield + Rizz Rush; catchers Love Trap + Charm Wave.
-  Their look: [effects.md](effects.md).
+- **Abilities** (free each round, `Config/Powers`; simple names, owner Oct 19: "make simple lingo such as rizz rush,
+  just make it simple"; they were Heart Shield, Rizz Rush, Love Trap, Charm Wave):
+  - Runners: Q is one of **Shield / Invisible / Glitchy / Body Double**, picked at random each round by
+    `PowerService.newRound` (never the same as your last round; `RunnerPick`, slot name "Pick"; his picture c shows
+    one card). E is **Speed Boost**, which only works while you carry the girl (owner: "give the rush to a person only
+    having the girl": the server refuses it otherwise, the card only shows then; the sim flags a boost by anyone else).
+  - Catchers: Q **Bear Trap** (thrown Throw 10 studs ahead with a throw pose, flies Flight 0.6 s, lands on the floor
+    short of walls and field edges and never in the start zone, arms Arm 0.35 s later; MaxOut 2; snaps round the
+    runner's feet and holds Hold 1.6 s), E **Slow Wave**.
+  - Every ability is refused while stunned or stuck (`PowerService.use` checks `stuck`).
+  - Names, numbers and card text: `Config/Powers`. Their look: [effects.md](effects.md); the cards: [ui.md](ui.md).
 - **Speeds** (`Config/Round.Speeds`): lobby 22, runner 28, catcher 30, holder 27. `Gameplay/Sprint` sets off at 16
   and reaches the cap in ~0.5 s ([movement-and-camera.md](movement-and-camera.md)). Run animation rate caps keep it calm.
   **Each round is a tiny bit faster:** +2% per round after the first, capped at +20% (`Config/Round.SpeedUp`,
@@ -46,7 +55,11 @@ The lobby side (one lobby per map, paint, his new lobby): [lobby.md](lobby.md). 
   0.38 s, the way you steer: `Shared/KnifeLeap.direction`, forward or sideways with A/D, never back; the hit box
   points along the leap; a whole-body leap with the slash when the knife reaches someone; Up 24, hits for HitWindow
   0.5 s (HitRange 4.8 is only the sim bot's "close enough to leap"), cooldown 3 s shared with the Space tile `DashReady`; stab mode only). Both go through `stabNear()`: shields,
-  the safe start zone and a fresh rescue protect; a Heart Shield ends the lunge.
+  the safe start zone and a fresh rescue protect; a Shield ends the lunge. The players see it as the **dive**
+  (owner Oct 19: "add a dive feature for the tagger and after they use it they are stunned for 2 seconds"): after
+  `Lunge.StunAfter` 0.38 s the catcher is stunned for `Lunge.Stun` 2 s (`PowerService.stun`: speed 0, no stab, no
+  abilities; RoundService calls it right after setting LungeAt). The knife needs `Stab.Cooldown` 1 s between stabs
+  (owner: "one second charge time for knife only"; the bar shows KNIFE CHARGING).
 - **Touch is the real bodies** (`Shared/TouchHit`, one rule for the screen, the server and the spec): the knife's
   reach is a box from the catcher's middle out along their facing (or their leap): Stab Reach 4.5 x Width 3.5, Lunge
   4.5 x 4, 7 tall. It counts only if it overlaps one of the runner's own body parts (limbs, torso, head; never hats,

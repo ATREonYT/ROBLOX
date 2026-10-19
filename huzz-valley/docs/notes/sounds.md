@@ -51,6 +51,14 @@ core `CLAUDE.md` section 6.
 - The other ~30 game sounds are still made from scratch (`tools/sfx/make_sfx.py` → `assets/sfx/*.ogg`; all in a row in
   `docs/previews/sfx-preview.ogg`, which still has the old ui/secret ones): warm, C major pentatonic, brightness under
   2.5 kHz, even loudness. Footsteps (`step`): [movement-and-camera.md](movement-and-camera.md).
+- Oct 19 abilities, made the same way: `trap_throw` (a swish and a springy rattle), `invisible` (an airy shimmer
+  gliding down), `glitch` (three stuttered mallet notes and a tick), `decoy` (a pop and two kalimba notes stepping
+  apart). The Shield and Speed Boost keep `heart_shield` and `power_rush`.
+- **The heartbeat** (`Gameplay/Heartbeat`, one play per beat, louder when a catcher is closer): a licensed pick only,
+  not made here (the batch brief, after the owner's "don't create random sound by yourself"). Roblox's library showed
+  no Pro Sound Effects / APM heartbeat from the cloud (only community uploads), so `SoundIds.heartbeat` is "" and the
+  stand-in is Roblox's landing thud at pitch 0.55, played twice 0.2 s apart for a "lub-dub". Owner's step: pick one
+  in Studio's Toolbox (Audio, creator ProSoundEffects or APMOfficial) and send the ID.
 - `Gameplay/Sfx.play(name, {volume, pitch, at})`, `Sfx.loop("speed_wind")`. `Config/SoundIds` stays "" until the owner
   bulk-imports the files in Asset Manager and sends the IDs (`tools/studio/collect-sound-ids.lua` prints them).
   Built-in stand-ins meanwhile, never pitched above 1.1; silence beats a squeaky ping.

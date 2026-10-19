@@ -1,4 +1,4 @@
--- Smoke test: Gameplay/PowerEffects, Juice and AuraStars take every message they handle (4 powers, ShieldPop, TrapSprung,
+-- Smoke test: Gameplay/PowerEffects, Juice and AuraStars take every message they handle (all 7 powers, ShieldPop, TrapSprung,
 -- Caught, Rescued, Win, AuraCollected) and Gameplay/Burst cleans up after itself.
 -- From tools/preview: lune run harness.luau ../../src - @smoke_feel_fx.luau setup_ui.luau
 local ok, fails = 0, 0
@@ -29,7 +29,7 @@ local errors = {}
 local G = getfenv(1)
 pcall(function() __roblox.implementMethod("Workspace", "Raycast", function() return nil end) end)
 local function loadFixed(mod)
-	local src = mod.Source:gsub("(%w+)%.Position", function(n) if n ~= "root" and n ~= "b" and n ~= "sign" and n ~= "r" and n ~= "me" then return nil end return n .. ".CFrame.Position" end)
+	local src = mod.Source:gsub("(%w+)%.Position", function(n) if n ~= "root" and n ~= "b" and n ~= "sign" and n ~= "r" and n ~= "me" and n ~= "copyRoot" and n ~= "head" then return nil end return n .. ".CFrame.Position" end)
 	local env = setmetatable({ script = mod, require = require, Instance = Instance, Vector3 = Vector3, Vector2 = Vector2, CFrame = CFrame,
 		Color3 = Color3, Enum = Enum, UDim2 = UDim2, Font = Font, typeof = typeof, task = task, warn = warn, game = game, workspace = workspace,
 		NumberRange = NumberRange, NumberSequence = NumberSequence, NumberSequenceKeypoint = NumberSequenceKeypoint, ColorSequence = ColorSequence,
@@ -47,17 +47,40 @@ local function fire(kind, data)
 	local okF, err = pcall(function() Round:FireAllClients(kind, data) end)
 	check(kind .. " " .. tostring(data.name or "") .. ": " .. tostring(err), okF)
 end
-fire("Power", { name = "HeartShield", id = id })
-fire("Power", { name = "RizzRush", id = id })
-fire("Power", { name = "LoveTrap", id = id, at = Vector3.new(0, 0, 0) })
-fire("Power", { name = "CharmWave", id = id, radius = 16 })
+local ahead = Vector3.new(0, 0, -1)
+fire("Power", { name = "Shield", id = id })
+fire("Power", { name = "SpeedBoost", id = id })
+fire("Power", { name = "Invisible", id = id })
+fire("Power", { name = "Glitchy", id = id, at = Vector3.new(0, 3, 0), dir = ahead })
+fire("Power", { name = "BodyDouble", id = id, at = Vector3.new(0, 3, 0), dir = ahead, speed = 20, lasts = 1 })
+fire("Power", { name = "BearTrap", id = id, at = Vector3.new(0, 0, -10), dir = ahead, flight = 0.6 })
+fire("Power", { name = "SlowWave", id = id, radius = 16 })
 fire("Power", { name = "ShieldPop", id = id, by = 5, at = Vector3.new(0, 3, 0) })
-fire("Power", { name = "TrapSprung", id = id, by = 5, at = Vector3.new(0, 0, 0) })
+fire("Power", { name = "TrapSprung", id = id, by = 5, at = Vector3.new(0, 0, 0), yaw = 0, hold = 1 })
 fire("Caught", { runner = id, catcher = 5 })
 fire("Rescued", { runner = id, by = 5 })
 fire("Win", { winner = id, rarity = "Legendary", girl = "Mikasa" })
 fire("AuraCollected", { value = 5, kind = "Pink", at = Vector3.new(0, 3, -4), id = id })
 fire("AuraCollected", { value = 1, kind = "Blue", at = Vector3.new(0, 3, -4), id = 777 })
+-- a dive's stun: three stars circle over the head while it lasts, and go when it ends
+local head = Instance.new("Part")
+head.Name = "Head"
+head.CFrame = CFrame.new(0, 4.5, 0)
+head.Parent = myChar
+local function stars()
+	local n = 0
+	for _, d in (workspace:FindFirstChild("HuzzBursts") and workspace.HuzzBursts:GetChildren() or {}) do
+		if d.Name == "HuzzDazeStar" then n += 1 end
+	end
+	return n
+end
+myChar:SetAttribute("StunnedFrom", -1)
+myChar:SetAttribute("StunnedUntil", workspace:GetServerTimeNow() + 60.5) -- (a whole number this big overflows in Lune's attributes)
+__fireOn(RunService, "Heartbeat", 1 / 30)
+check("stunned: 3 stars over the head (" .. stars() .. ")", stars() == 3)
+myChar:SetAttribute("StunnedUntil", 0)
+__fireOn(RunService, "Heartbeat", 1 / 30)
+check("stun over: the stars go (" .. stars() .. ")", stars() == 0)
 -- run the effects to the end (the delays are real time in Lune: wait them out, stepping Heartbeat)
 local task = task
 local bursts = workspace:FindFirstChild("HuzzBursts")

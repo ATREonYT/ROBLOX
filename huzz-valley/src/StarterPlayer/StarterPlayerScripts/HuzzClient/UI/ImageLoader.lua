@@ -147,6 +147,8 @@ local GLYPH: { [string]: string } = {
 	Play = "▶", Players = "👥", QuestsClipboard = "📋", RewardsTrophy = "🏆", Search = "🔍", SettingsGear = "⚙",
 	ShirtBenefit = "👕", ShirtEquip = "👕", ShopCart = "🛒", Sneaker = "👟", SpinWheel = "🎡", Stop = "⏹",
 	Stopwatch = "⏱", TagFist = "✊", TierCrown = "👑", VipCrown = "👑", XpBadge = "⭐", ArrowNext = "▶",
+	AbilityShield = "🛡", AbilitySpeedBoost = "⚡", AbilityBearTrap = "🪤", AbilitySlowWave = "🌀", AbilityInvisible = "👻",
+	AbilityGlitchy = "📺", AbilityBodyDouble = "👥",
 }
 local ART_GLYPH = { -- (first match wins)
 	{ "Knife", "🔪" }, { "DanceStill", "💃" }, { "Dance", "💃" }, { "CoinPack", "🪙" }, { "RewardCoins", "🪙" },

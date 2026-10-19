@@ -73,7 +73,7 @@ Progression.Chapters = {
 		Lore = "Runners who fall can rise again, if a friend comes back for them. Catchers know it, and they hunt harder.",
 		Quests = {
 			{ Id = "Q3Rescue", Name = "Rescue 5 runners", Blurb = "Help downed runners up.", Stat = "Rescues", Target = 5, XP = 200, Icon = "TagFist", Reward = { Kind = "Aura", Amount = 60 } },
-			{ Id = "Q3Hunt", Name = "Catch 10 runners", Blurb = "As a catcher, stab or lunge.", Stat = "Catches", Target = 10, XP = 200, Icon = "TagFist", Reward = { Kind = "Knife", Id = "HunterKnife" } },
+			{ Id = "Q3Hunt", Name = "Catch 10 runners", Blurb = "As a catcher, stab or dive.", Stat = "Catches", Target = 10, XP = 200, Icon = "TagFist", Reward = { Kind = "Knife", Id = "HunterKnife" } },
 		},
 	},
 	{

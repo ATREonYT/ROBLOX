@@ -85,8 +85,8 @@ end
 local keyText = {}
 for _, d in hp.Keys:GetDescendants() do if d:IsA("TextLabel") then table.insert(keyText, d.Text) end end
 local allKeys = table.concat(keyText, " | ")
-check("keys: Space dashes (catchers lunge)", hp.Keys.Key1.Cap.Key.Text == "Space" and hp.Keys.Key1.Label.Text == "Dash" and hp.Keys.Key1.Sub.Text:lower():find("lunge") ~= nil)
-check("keys: Q uses a power", hp.Keys.Key2.Cap.Key.Text == "Q" and hp.Keys.Key2.Label.Text == "Use Power")
+check("keys: Space dashes (catchers dive)", hp.Keys.Key1.Cap.Key.Text == "Space" and hp.Keys.Key1.Label.Text == "Dash" and hp.Keys.Key1.Sub.Text:lower():find("dive") ~= nil)
+check("keys: Q uses your ability", hp.Keys.Key2.Cap.Key.Text == "Q" and hp.Keys.Key2.Label.Text == "Ability")
 check("keys: click stabs (catchers)", hp.Keys.Key3:FindFirstChild("Mouse") ~= nil and hp.Keys.Key3.Label.Text == "Click" and hp.Keys.Key3.Sub.Text == "Stab (Catchers)")
 check("keys: Alt frees the mouse", hp.Keys.Key4.Cap.Key.Text == "Alt" and hp.Keys.Key4.Label.Text == "Free Mouse")
 check("no jumping anywhere", not allKeys:lower():find("jump"))

@@ -93,7 +93,7 @@ if OLD then L.Up = 18 end -- (the hop before this pass)
 local SLIDE = if OLD then 0 else (Round.Knockdown.Slide or 0)
 local CATCHER_SPEED, RUNNER_SPEED = 30, 26
 local LUNGE_AT, HIT_DELAY = 0.9, 0.05 -- (the server's Caught arrives ~a frame or two later in Studio)
-local SLOW_FROM, SLOW_TO, REPLAY = 3.0, 6.6, 0.82 -- after the full-speed run, the catch again from REPLAY at 1/4 speed
+local SLOW_FROM, SLOW_TO, REPLAY = 4.6, 8.2, 0.82 -- after the full-speed run (the dive, the 2 s stun, getting up), the catch again from REPLAY at 1/4 speed
 local RED = Color3.fromRGB(255, 45, 45)
 local RX = 2.8 -- the runner, this far to the catcher's right (inside the leap's 4-stud box)
 
@@ -136,7 +136,11 @@ local function sim(h)
 		end
 	end
 	local push = s.leapAt and RunMotion.pushSpeed(L, c - s.leapAt)
-	local cv = if push then push else s.cspeed
+	-- the dive's stun (Oct 19: PowerService.stun, speed 0 from StunAfter for Stun seconds; StabMotion keeps the body
+	-- lying dazed, then it gets up)
+	local since = s.leapAt and (c - s.leapAt) or -1
+	s.stunned = (not OLD) and L.Stun ~= nil and since >= L.StunAfter and since < L.StunAfter + L.Stun
+	local cv = if push then push elseif s.stunned then 0 else s.cspeed
 	s.cz -= cv * h
 	s.vy -= 196.2 * h
 	s.cy = math.max(0, s.cy + s.vy * h)
@@ -246,6 +250,15 @@ local function frameFx()
 	local sprites, ribbons, meshes = {}, {}, {}
 	local mesh, tip, base = knifeAt(inHand(catcher))
 	table.insert(meshes, mesh)
+	-- stunned: three stars circling over the head (Gameplay/PowerEffects; drawn with the Aura star picture here)
+	if s.stunned then
+		local head = catcher.parts.Head.CFrame.Position
+		for i = 1, 3 do
+			local a = c * 2 * math.pi / 1.4 + (i - 1) * 2 * math.pi / 3
+			local p = head + Vector3.new(math.cos(a) * 1.1, 1.3 + 0.15 * math.sin(a * 2), math.sin(a) * 1.1)
+			table.insert(sprites, { p = { p.X, p.Y, p.Z }, s = 0.8, c = "#ffe25c", a = 1, t = "aura-star" })
+		end
+	end
 	local life = KnifeLook.TRAIL.ElementLifetime
 	local keep = {}
 	for _, e in s.history do if c - e.t <= life then table.insert(keep, e) end end
@@ -375,10 +388,10 @@ for f = 0, math.floor(TOTAL * FPS) - 1 do
 	local since = if s.leapAt then s.clock - s.leapAt else -1
 	local cap = (if OLD then "BEFORE  " else "AFTER  ") .. (if slow then "1/4 speed" else "full speed")
 		.. (if since >= 0 and since <= 1.2 then string.format("   leap %.2f s", since) else "")
-		.. (if s.hitAt and s.clock >= s.hitAt then "   caught" else "")
+		.. (if s.hitAt and s.clock >= s.hitAt then "   caught" else "") .. (if s.stunned then "   STUNNED" else "")
 	scene:frame(shakeAt, camLook, { sprites = sprites, ribbons = ribbons, meshes = meshes, caption = cap, fov = 70 })
 end
 local keepDir = process.env.MOTION3D_KEEP
 local stills = {}
-for _, tt in { 3.3, 3.55, 3.8, 4.05, 4.3, 4.6, 5.0, 5.6 } do table.insert(stills, math.floor(tt * FPS)) end
+for _, tt in { 1.1, 1.3, 2.0, 3.0, 3.5, 3.9, 4.4 } do table.insert(stills, math.floor(tt * FPS)) end
 scene:save(nil, FPS, 960, 540, { sky = "#8fc8f0", ground = "#b07c40", grid = false, meshFile = MESHES, stills = if keepDir then stills else nil })

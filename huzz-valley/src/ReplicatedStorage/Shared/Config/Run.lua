@@ -119,5 +119,10 @@ return {
 		ArmsUp = 60, -- degrees above straight ahead (forward and up: reads from the camera behind you)
 		ArmsOut = 12, -- degrees the arms open into a V
 		Lean = 10, -- degrees the body leans forward into the cast
+		-- The Bear Trap's throw (owner, Oct 19: "you throw the beartrap infront of you with a small animation"): the
+		-- free left arm (the right holds the knife) winds back over the first Back of the wind-up, then throws forward
+		-- and up; { wound back, thrown } in degrees: Arm = shoulder (+ forward), Out = arm out to the side, Elbow,
+		-- Turn = chest turn (+ left, away from the throw), Lean = body lean forward.
+		Throw = { Back = 0.45, Arm = { -55, 115 }, Out = { 18, 6 }, Elbow = { 40, 8 }, Turn = { 24, -18 }, Lean = { -2, 12 } },
 	},
 }

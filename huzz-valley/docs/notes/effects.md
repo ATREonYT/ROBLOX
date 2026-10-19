@@ -1,6 +1,6 @@
-# Effects: Juice moments, powers, the girls' VFX, the showcase girl, effect pictures
+# Effects: Juice moments, abilities, the heartbeat, the girls' VFX, the showcase girl, effect pictures
 
-Read before changing world effects for round moments, the four powers, the girls' auras, the big showcase girl or
+Read before changing world effects for round moments, the abilities, the heartbeat, the girls' auras, the big showcase girl or
 how effect pictures load. Knife effects: [knives.md](knives.md); the catch's red fill: [stab-lunge-catch.md](stab-lunge-catch.md);
 the Secret cutscene: [secret-cutscene.md](secret-cutscene.md). How top VFX are built by code: `docs/vfx-guide.md`.
 
@@ -14,20 +14,52 @@ the Secret cutscene: [secret-cutscene.md](secret-cutscene.md). How top VFX are b
   tints your screen red for 0.7 s (`HuzzHit` ColorCorrection). Reduced Motion turns the shake and swell off.
 - Smoke test: `smoke_feel_fx.luau` (harness).
 
-## Powers (`Gameplay/PowerEffects`, `Config/Powers.Fx`, the other game's ability timing)
-- A glow builds (0.25 s; Shield and Rush 0.15 s), one bright frame (`Gameplay/Burst.flashOk`: at most one a second per
-  screen), the effect 0.35 s, a 0.15 s fade; white core → pink → purple.
-- Shield: a bubble bursts out; Rush: a ring standing up behind you and white speed lines; Trap: the glow drops and a
-  ring slams round the trap; Charm Wave: a ring gathers, then two rings run out (its slow lands when they do:
-  PowerService waits `Fx.WindUp`). Charm Wave: 16 pieces a ring, no haze, every ring's pieces moved with one
-  `Workspace:BulkMoveTo` a frame (`Burst.bulkMove`).
-- Each has a sound; others' powers pop their name over them (root +7, clear of their name tag); during the wind-up the
-  caster strikes a cast pose (both arms forward and up 60°, a 10° lean: `Run.Cast`, drawn by `RunMotion` on everyone
-  via `RunAnimator`, local attributes HuzzCastAt/Len); your Q/E tile squashes on press and glows pink when the server
-  takes it.
+## Abilities (`Gameplay/PowerEffects`, `Config/Powers.Fx`, the other game's ability timing)
+- A glow builds (`Fx.WindUp` 0.25 s; Shield and Speed Boost 0.15 s, Invisible and Body Double 0.12, Glitchy 0.05),
+  one bright frame (`Gameplay/Burst.flashOk`: at most one a second per screen), the effect 0.35 s, a 0.15 s fade; each
+  ability glows in its own `Accent` (the colour on its card).
+- **Shield** (blue, once per round): a bubble bursts out; a blocked stab pops it in a blue ring.
+- **Speed Boost** (only while carrying her): a ring standing up behind you and white speed lines (the trail is the
+  server's).
+- **Invisible** (Lasts 4 s): a puff, then the body fades on every screen (`LocalTransparencyModifier`): others see it
+  at `Seen` 0.88 with a slow shimmer (`Shimmer` 0.8 Hz, a soft swell, never a blink: "so it's fair"), you see
+  yourself at `Self` 0.55; name tag and outline hide on other screens; still catchable.
+- **Glitchy**: your own screen pushes you `Distance` 9 studs in `Time` 0.14 s (a LinearVelocity, so walls stop it);
+  everyone sees two see-through ghosts (cyan and magenta) left behind sliding apart, and thin glitch slivers. No flicker.
+- **Body Double**: every screen clones the runner (scripts, sounds and constraints removed, the root anchored) and runs
+  the copy straight on with `RunMotion` legs, following the floor, for `Lasts` 3.5 s or until a wall, then it puffs.
+  Only a look, on each screen.
+- **Bear Trap** (owner Oct 19: "you throw the beartrap infront of you with a small animation"): the throw pose
+  (`Config/Run.Cast.Throw`: the free arm swings back with the chest turning away, then whips forward; character
+  attribute HuzzCastKind "Throw" from `Fx.BearTrap.Pose`), the trap (`Shared/BearTrap`, plain parts: two jaws of
+  teeth, springs, a plate, a faint danger disc) leaves the left hand at the end of the wind-up, tumbles once along an
+  arc (`Arc` 3.5 studs high), growing from 0.4 to full size, and lands where the server says, open, with a dust ring;
+  a ring and a click when it arms. Caught: it snaps shut round the runner's feet in 0.08 s, holds, fades.
+- **Slow Wave**: a ring gathers, then two rings run out (its slow lands when they do: PowerService waits
+  `Fx.WindUp`); 16 pieces a ring, no haze, every ring's pieces moved with one `Workspace:BulkMoveTo` a frame
+  (`Burst.bulkMove`).
+- **Dive stun**: three cartoon stars circle slowly over a stunned catcher's head on every screen (character
+  StunnedFrom / StunnedUntil), with the server's 💫 STUNNED badge; the body lies dazed ([stab-lunge-catch.md](stab-lunge-catch.md)).
+- Each has a sound; others' abilities pop their name over them (root +7, clear of their name tag); during the wind-up
+  the caster strikes a cast pose (both arms forward and up 60°, a 10° lean: `Run.Cast`, or the throw, drawn by
+  `RunMotion` on everyone via `RunAnimator`, local attributes HuzzCastAt/Len/Kind); your card squashes on press and its
+  rim glows in the ability's colour when the server takes it.
 - All plain neon parts (`Gameplay/Burst`: real rings of short pieces, glow orbs, world text), so nothing waits for an
-  upload. Film: `motion3d/power_scene.luau` → `docs/previews/powers.mp4`, `feel-powers-after.jpg`
-  (`tools/preview/powers_vs_og.py`).
+  upload. Film: `motion3d/power_scene.luau` → `docs/previews/powers.mp4` (each ability in turn, the trap thrown, landing
+  and snapping), sheet `docs/previews/abilities-sheet.jpg` (`tools/preview/powers_vs_og.py`, next to the other game's
+  ability); the dive and stun: `docs/previews/dive-stun.mp4`.
+
+## The heartbeat (`Gameplay/Heartbeat`)
+- Owner Oct 19: "add a heartbeat effect when someone gets closer" and "add a heartbeat sound when your screen turns
+  red from people getting closer". A runner still in the round (Running / HeroRun, not in a cutscene): the nearest
+  catcher or the Practice Bot inside `Far` 30 studs makes the screen's edges glow red (215, 24, 48), full at `Near` 8.
+- Calm and kid-safe: one soft swell per beat (0.12 s up, eases back), `Rate` 0.75 to 1 beat a second (never more than
+  one swell a second), the steady glow `Base` 0.22 + `Pulse` 0.33 at full strength, only the outer `Edge` 0.2 of the
+  screen (0.12 at the sides); the level eases in and out, so a catcher appearing doesn't jump it.
+- Built at runtime in PlayerGui (`HuzzHeartbeat`, DisplayOrder -1 under the HUD: a screen effect, nothing to edit in
+  Studio). One heartbeat sound per beat, louder when closer ([sounds.md](sounds.md)).
+- Spec `tests/Heartbeat.spec` (level, rate ≤ 1/s, swells ≤ 1/s, never solid); film `docs/previews/heartbeat.mp4`
+  (`tools/preview/heartbeat_film.luau` + `heartbeat_film.py`: the module's own maths, a catcher walking in and away).
 
 ## The girls' effects (`AuraLook.girl` → `Gameplay/AuraFX`)
 - For your companion, the round's girl and the prize; anchored to her and the floor like the pro references
@@ -88,6 +120,10 @@ the Secret cutscene: [secret-cutscene.md](secret-cutscene.md). How top VFX are b
   stand-in until `Config/ImageIds` is filled).
 
 ## Why it is this way / history
+- **Abilities** (Oct 19 batch: "make simple lingo", "runner abilities (invisible, glitchy, body double", "bear trap you
+  throw the beartrap infront of you with a small animation", "add a heartbeat effect when someone gets closer"). The
+  four Oct 17 powers were pink and heart-themed (their sheet: `feel-powers-after.jpg`); the new set takes one colour
+  each from its card so a glance tells them apart. Invisible stays faintly visible on purpose ("so it's fair").
 - **Juice** came from the feel study (gap 15). Oct 17 round 2 (owner: "more cinematic", "less ui", "cutscenes dont cut
   out") added harder shakes, the danger glow and the red hit tint. The caught shake came down from 0.7: with the red
   tint, the words and the fall it stacked up too much. Knife pass 2 swapped the catch's 30 red-and-white sparks for

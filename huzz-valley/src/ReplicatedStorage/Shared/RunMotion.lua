@@ -237,9 +237,31 @@ local function castWeight(age, length)
 end
 RunMotion.castWeight = castWeight
 
+-- The throw (kind "Throw": the Bear Trap, Config/Run.Cast.Throw): the free (left) arm swings back with the chest
+-- turning away, then whips forward and up as the chest turns into it; `p` = 0..1 through the wind-up, the trap
+-- leaving the hand at 1 (Gameplay/PowerEffects starts its flight then).
+local function throwPose(J, p)
+	local T = Config.Cast.Throw
+	local back = smooth(p / T.Back) -- (0..1: the wind back)
+	local fwd = 1 - (1 - clamp((p - T.Back) / (1 - T.Back), 0, 1)) ^ 3 -- (0..1: the throw, fast then settling)
+	local function mix(a, b, c)
+		return a + (b - a) * back + (c - b) * fwd
+	end
+	local poses = {}
+	poses[J.root] = CarryMath.inJoint(J.root, angles(-mix(0, T.Lean[1], T.Lean[2]), 0, 0))
+	poses[J.waist] = CarryMath.inJoint(J.waist, angles(0, mix(0, T.Turn[1], T.Turn[2]), 0))
+	poses[J.neck] = CarryMath.inJoint(J.neck, angles(mix(0, T.Lean[1], T.Lean[2]), -mix(0, T.Turn[1], T.Turn[2]) * 0.7, 0))
+	poses[J.lShoulder] = CarryMath.inJoint(J.lShoulder, angles(mix(0, T.Arm[1], T.Arm[2]), 0, -mix(0, T.Out[1], T.Out[2])))
+	poses[J.lElbow] = CarryMath.inJoint(J.lElbow, angles(mix(0, T.Elbow[1], T.Elbow[2])))
+	return poses
+end
+
 -- The cast pose: both arms forward and up (Config/Run.Cast), a slight bend at the elbows, the body leaning in.
-local function castPose(J)
+local function castPose(J, kind, p)
 	local K = Config.Cast
+	if kind == "Throw" and K.Throw then
+		return throwPose(J, p)
+	end
 	local poses = {}
 	poses[J.root] = CarryMath.inJoint(J.root, angles(-K.Lean, 0, 0))
 	poses[J.waist] = CarryMath.inJoint(J.waist, angles(-3, 0, 0))
@@ -260,9 +282,10 @@ end
 	speed: studs per second along the ground; grounded: false while in the air; carrying: she's overhead,
 	so the lean is gentler and the arms are left to the carry. dashAge: seconds since this character's
 	huss dash began (nil = none); dashDir: its direction in the body's frame (x right, z forward).
-	castAge, castLength: seconds since a power's wind-up began and how long it is (nil = none): the cast pose.
+	castAge, castLength: seconds since a power's wind-up began and how long it is (nil = none): the cast pose;
+	castKind: "Throw" for a throw (the Bear Trap), else both arms reach.
 ]]
-function RunMotion.step(rec, dt, speed, grounded, carrying, dashAge, dashDir, castAge, castLength)
+function RunMotion.step(rec, dt, speed, grounded, carrying, dashAge, dashDir, castAge, castLength, castKind)
 	local C = Config
 	local target = if grounded then clamp((speed - C.From) / (C.Full - C.From), 0, 1) else 0
 	local blend = 1 - math.exp(-dt * 10)
@@ -286,7 +309,7 @@ function RunMotion.step(rec, dt, speed, grounded, carrying, dashAge, dashDir, ca
 		depth = 1 - D.Settle * (1 - smooth((dashAge - D.In) / hold))
 	end
 	local dash = if dw > 0.01 then dashPose(J, dashDir, carrying, depth) else nil
-	local cast = if cw > 0.01 then castPose(J) else nil
+	local cast = if cw > 0.01 then castPose(J, castKind, clamp((castAge or 0) / math.max(castLength or 1, 0.05), 0, 1)) else nil
 	for _, motor in J do
 		local pose, w = run[motor], rec.weight
 		if isArm(J, motor) then

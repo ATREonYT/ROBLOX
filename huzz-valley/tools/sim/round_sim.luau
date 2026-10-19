@@ -310,7 +310,8 @@ local function simulate(opts)
 				local r = new("RemoteEvent", { Name = name })
 				r.OnServerEvent = Signal()
 				function r:FireAllClients(kind, data)
-					table.insert(roundEvents, { kind = kind, data = data, t = clock })
+					-- (holder: who carried the girl when it was sent; events are read later, after a catch may have moved her)
+					table.insert(roundEvents, { kind = kind, data = data, t = clock, holder = remotes.Round and remotes.Round:GetAttribute("HolderId") })
 				end
 				function r:FireClient(_, kind, data)
 					table.insert(roundEvents, { kind = kind, data = data, t = clock, one = true })
@@ -646,7 +647,8 @@ local function simulate(opts)
 			addStat = function(p, stat, n) DataService.update(p, function(d) d.Stats[stat] = (d.Stats[stat] or 0) + n end) end },
 	}
 	local Shared = { Config = { Round = Config, Carry = Carry, Powers = Powers }, RoundRules = RoundRules, Net = Net, GirlRoll = GirlRoll, SecretReveal = SecretReveal, TouchHit = TouchHit,
-		KnifeLook = { pick = function() return nil end } } -- (which knife you wear: the default one in the sim)
+		KnifeLook = { pick = function() return nil end }, -- (which knife you wear: the default one in the sim)
+		BearTrap = { build = function() return new("Model") end, pose = function() end, arm = function() end } } -- (the trap's parts: only a look)
 	local sharedNode = setmetatable({}, { __index = function(_, k)
 		return Shared[k]
 	end })
@@ -736,6 +738,10 @@ local function simulate(opts)
 				stats.powers[e.data.name] = (stats.powers[e.data.name] or 0) + 1
 				if e.data.name == "ShieldPop" then stats.blocks += 1 end
 				if e.data.name == "TrapSprung" then stats.sprung += 1 end
+				-- (owner Oct 19: "give the rush to a person only having the girl")
+				if e.data.name == "SpeedBoost" and e.holder ~= e.data.id then
+					problem(`Speed Boost went off for {e.data.id}, who isn't carrying the girl`)
+				end
 			elseif e.kind == "Rescued" then
 				stats.rescues += 1
 			elseif e.kind == "Announce" and type(e.data.text) == "string" and e.data.text:find("made the Hero run") then
@@ -1017,8 +1023,16 @@ local function simulate(opts)
 					problem(`{p.Name} runs at the last runner's speed with {others} others still out`)
 				end
 			end
+			-- (stuck = caught in a trap, or a catcher's 2 s stun after a dive; the stun starts mid-frame, so one
+			-- frame's grace before it counts)
 			if PowerService.stuck(p.UserId) and h.WalkSpeed ~= 0 then
-				problem(`{p.Name} is stuck in a trap but can still move`)
+				bot.movingStuck = bot.movingStuck or now
+				if now - bot.movingStuck > 0.1 then
+					problem(`{p.Name} is stuck (trap or dive stun{if PowerService.stunned(p.UserId) then ": stunned" else ""}) but can still move`)
+					bot.movingStuck = math.huge
+				end
+			else
+				bot.movingStuck = nil
 			end
 			-- Hero or Chicken: the picked bot answers after a moment (some let the timer run out).
 			if st == "Picking" and Round:GetAttribute("PickId") == p.UserId and bot.pickedRound ~= Round:GetAttribute("Round") then
@@ -1366,7 +1380,12 @@ local s, p = simulate({ players = 4, seconds = 1200, seed = 1 })
 report("4 players, 20 minutes", s, p, {
 	{ "several games finished", function(x) return x.wins >= 3 end },
 	{ "stabs tag runners", function(x) return x.tags >= 5 end },
-	{ "all four powers used", function(x) return x.powers.HeartShield and x.powers.RizzRush and x.powers.LoveTrap and x.powers.CharmWave end },
+	{ "every power used (each runner pick, Speed Boost, Bear Trap, Slow Wave)", function(x)
+		for _, name in { "Shield", "Invisible", "Glitchy", "BodyDouble", "SpeedBoost", "BearTrap", "SlowWave" } do
+			if not x.powers[name] then return false end
+		end
+		return true
+	end },
 	{ "every round has a pick", function(x) return x.picks >= 6 end },
 	{ "Hero runs happen and some make it", function(x) return x.heroes >= 2 and x.heroSurvived >= 1 end },
 	-- (last runner standing, Oct 19: with 3 runners a runner nearly always wins; catchers win only by catching

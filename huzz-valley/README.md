@@ -51,11 +51,16 @@ All of these work against a real save system. When you're happy with how they lo
    Legendary up ([video](docs/previews/girl-auras.mp4),
    [next to your reference](docs/previews/girl-auras-vs-reference.jpg)). In rounds she reacts to what you do.
    The girl over the map now wears her aura big, with nothing under her feet.
-7. **Powers** (free, fresh every round; Q and E, or tap the cards at the bottom of the screen):
-   - Runners: **Heart Shield** (a pink bubble that blocks one stab; the catcher gets dizzy and you get a burst
-     of speed; once per round) and **Rizz Rush** (a speed burst with a pink trail).
-   - Catchers: **Love Trap** (drop a heart trap; the first runner who steps on it is stuck for a moment) and
-     **Charm Wave** (a ring of hearts that slows runners near you).
+7. **Abilities** (free, fresh every round; Q and E, or tap the cards above the dash bar):
+   - Runners get one on Q, picked at random each round (never the same one twice in a row): **Shield** (a blue
+     bubble that blocks one stab; the catcher gets dizzy and you get a burst of speed; once per round),
+     **Invisible** (a few seconds see-through, with a faint shimmer so it stays fair), **Glitchy** (a short
+     glitch-blink forward) or **Body Double** (a copy of you that runs straight on). E is **Speed Boost**, only
+     while you carry the girl.
+   - Catchers: **Bear Trap** on Q (thrown a few steps ahead; the first runner who steps in it is stuck for a
+     moment) and **Slow Wave** on E (a ring that slows runners near you). Space is a **dive** that catches who it
+     reaches, then you lie stunned for 2 seconds. The knife takes 1 second to charge between stabs.
+   - When a catcher comes near, a runner's screen edges glow red with a heartbeat (calm: one beat a second at most).
    - Tune them in `Shared/Config/Powers.lua` (times, speeds, sizes, cooldowns).
 
 8. **Coins** buy looks in the Shop's **ITEMS** tab: trails, name colours and knife skins (catchers). You earn
@@ -160,15 +165,19 @@ the icons itself. To make them work everywhere for good, upload them once (Plugi
    into the Command Bar". Never paste it: it gives a stranger control of your game.
 5. **Name your girls** in `src/ReplicatedStorage/Shared/Config/GirlNames.lua` (their model names are the avatar
    owners' usernames, so the game shows "Common Girl 1" and so on until you do).
-6. **Icons for the 4 powers:** the cards show emoji (💖 ⚡ 💘 💞) until you send 4 see-through PNGs (256 px or
-   bigger) named heart-shield, rizz-rush, love-trap and charm-wave.
+6. **Icons for the 7 abilities:** the cards show our own 3D renders (`tools/icons/ability_icons.mjs`) until you send 7
+   see-through PNGs (256 px or bigger, like the ability card in your picture) named ability-shield,
+   ability-invisible, ability-glitchy, ability-body-double, ability-speed-boost, ability-bear-trap and
+   ability-slow-wave (they go in `huzz-valley/assets/icons`).
+   **Heartbeat sound:** pick a licensed one in Studio's Toolbox (Audio, by ProSoundEffects or APMOfficial) and send
+   its ID; until then a soft built-in thump plays.
 7. **Things that need assets before they can go on sale** show their price, but only say "coming soon" when tapped:
    - Dance Pack: its Game Pass ID (its 4 dances are in now: Swing Time, Bounce Bounce, Squat Kick, Toprock);
    - Crown Pose: a pose animation;
    - Midnight Outfit: the clothing;
    - coin packs: they turn on once coins can buy something.
 
-8. **Upload the 37 sound effects** (ours, in `huzz-valley/assets/sfx`. Hear them all first in
+8. **Upload the 38 sound effects** (ours, in `huzz-valley/assets/sfx`. Hear them all first in
    `huzz-valley/docs/previews/sfx-preview.ogg`. Until you upload, Studio plays a few soft Roblox sounds instead):
    1. In Studio: **View → Asset Manager → Bulk Import**, and pick every `.ogg` file in `huzz-valley/assets/sfx`.
    2. Drag them all from Asset Manager's Audio folder onto the 3D view, then in the Command Bar run

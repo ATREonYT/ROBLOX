@@ -227,7 +227,8 @@ HV only shows its ability as a card ("ONE HIT SHIELD · WAIT FOR ROUND").
     - Give her a rim light (PointLight Brightness 1.5, Range 8) and play the pack idle.
     - Move the Today's Girl window to the left side, 18% wide, so the middle stays clear.
 13. **Ability timing like the other game.**
-    - For each power (Heart Shield, Rizz Rush, Love Trap, Charm Wave): wind-up 0.15 to 0.25 s, one flash frame
+    - For each power (Heart Shield, Rizz Rush, Love Trap, Charm Wave; Oct 19 renamed Shield, Speed Boost, Bear Trap,
+      Slow Wave): wind-up 0.15 to 0.25 s, one flash frame
       (≤ 1 a second), main effect 0.3 to 0.4 s, fade 0.15 s.
     - Colour runs white core to theme colour to a darker edge, with Neon plus bloom.
     - The power's name pops once over the user (0.2 s Back).

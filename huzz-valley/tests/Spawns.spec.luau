@@ -6,7 +6,7 @@
 	with tools/world/geometry.luau standing in for Roblox's ray and box test, then checks each spot again:
 	  - one lobby: the copy with nothing pasted twice is kept, the other two are put away whole, nothing of theirs is
 	    left behind; each map loads in front of the one lobby exactly where it stood in front of its own copy;
-	  - the spawn pad: open, inside its rail, 30 spots, his SpawnLocation on it, the rail touching none of his build;
+	  - the spawn pad: open, 30 spots, his SpawnLocation on it, no rail (the owner removed it, Oct 19);
 	  - per map, both start lines for 1 / 6 / 12 / 24 runners and the catchers' spots: floor under the feet (no edge
 	    or hole), nothing solid or visible in a standing body's box, room to move, behind the line in the zone; the
 	    catchers on the field's middle line (a row across it), facing the runners.
@@ -300,30 +300,13 @@ for i, s in (pad and pad.spots or {}) do
 	if math.abs(a) < MapService.PAD_WIDTH / 2 and math.abs(d) < MapService.PAD_DEPTH / 2 then inPad += 1 end
 	if show then print(string.format("  lobby spot %d (%.1f, %.1f, %.1f)", i, s.X, s.Y, s.Z)) end
 end
-check("12 spots inside the rail (" .. inPad .. ")", inPad == 12)
+check("12 spots inside the pad (" .. inPad .. ")", inPad == 12)
 local sp = rec and rec.spawn
 check("his SpawnLocation is on the pad", sp and (Vector3.new(sp.CFrame.Position.X, 0, sp.CFrame.Position.Z)
 	- Vector3.new(pad.centre.X, 0, pad.centre.Z)).Magnitude < 0.1)
 local rail = ws:FindFirstChild("HuzzSpawnPad")
-local posts, barriers, touching = 0, 0, 0
-local his = Geometry.new(ws, { skip = function(p) return p.CanQuery == false or ours(p) or p:IsDescendantOf(rail) or zoneMarker(p) or not (p.CanCollide or p.Transparency < 0.9) end })
-for _, p in (rail and rail:GetChildren() or {}) do
-	if p.Name == "Post" then posts += 1 end
-	if string.sub(p.Name, 1, 7) == "Barrier" then
-		barriers += 1
-		check(p.Name .. ": invisible, solid, out of rays and cameras", p.Transparency == 1 and p.CanCollide and not p.CanQuery)
-	elseif p.Transparency < 1 then
-		local q = LobbyLayout.facts(p)
-		local hit = his.blocked(Vector3.new(q.X, (q.top + q.bottom) / 2 + 0.05, q.Z), Vector3.new(q.hx * 2, q.top - q.bottom - 0.2, q.hz * 2), false)
-		if hit then
-			touching += 1
-			if show then print("  rail touches", hit and his.blocked(Vector3.new(q.X, (q.top + q.bottom) / 2 + 0.05, q.Z), Vector3.new(q.hx * 2, q.top - q.bottom - 0.2, q.hz * 2), false)) end
-		end
-	end
-end
-check("rail: posts on three sides (" .. posts .. ")", posts >= 16)
-check("rail: three invisible barriers", barriers == 3)
-check("the rail touches nothing of his (" .. touching .. ")", touching == 0)
+-- (owner, Oct 19: "please remove that barrier in the lobby": no rail and no invisible walls round the pad)
+check("no rail or invisible walls round the pad (owner removed them)", rail == nil and MapService.RAIL == false)
 local opening = pad.centre + pad.inward * (MapService.PAD_DEPTH / 2 + 1)
 check("the side into the plaza is open", not world().blocked(opening + Vector3.new(0, 2.5, 0), Vector3.new(6, 4, 1), true))
 check("the pad faces into the lobby (towards its middle)", (main.CFrame.Position - pad.centre):Dot(pad.inward) > 0)

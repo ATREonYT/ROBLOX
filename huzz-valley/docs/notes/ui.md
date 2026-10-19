@@ -78,6 +78,37 @@ in core `CLAUDE.md` section 1. Recipe for a new screen: core section 6. Preview 
   centre with a UIGradient fading towards its tip (the preview draws frame gradients, not image gradients). A soft glow
   is many faint layers a few px apart (8 x 0.88 see-through), not 2 or 3 strong ones (those read as bands).
 
+## Ability cards and the dash bar (`Screens/PowerBar`, a saved twin in `HuzzUI.rbxm`)
+- Owner Oct 19: "abilities above a clean, nice dash bar which shows the reset", one-to-one with his pictures
+  `design/owner-oct19/pic-b-catcher-bar.png` (catcher) and `pic-c-runner-bar.png` (runner).
+- **Measured in his pixels** (his screenshots are crops of a 1920-wide screen: the bar is 886 px, 46% across), laid out
+  in those pixels (`P` in PowerBar) under one UIScale = `Scale.touchMin(Scale.hud(347) / 1.375, 0.6, 886)`, so at 1920
+  wide one of ours is one of his:
+  - bar 886 x 11 outline box (1 px black outline, a pill), 20 px over the screen's bottom; fill 884 x 9: green
+    78,248,97 → 58,187,73 when Space is ready, grey 216 → 162 filling back up while it charges ("shows the reset"),
+    amber while stunned or stuck;
+  - state over the left end (CATCH READY / DASH PAUSED...: Gotham Bold 17, caps 12 px tall, 10 px over the bar), help
+    line over the right end (Medium 17, DEDEDE, right end 3 px in), key line centred (PRESS SPACE TO CATCH / SPACE ·
+    DASH: Heavy 21, stroke 1.5; white for a catcher, DEDEDE for a runner, as in his two pictures); a catcher's
+    ATTACK at x 671 and the mouse (32 x 48 at x 772, y -68), greyed while the knife charges;
+  - cards 194 x 77 (192 x 75 + a 1 px rim, corner 8), bottom 116 px over the bar, 10 px apart, centred: fill 23,37,31
+    shading half-way to the ability's colour at the right, icon 72 x 72, "ABILITY" 9, title 13 (white when it can be
+    used, 180,181,181 otherwise), status 10 in the ability's colour at y 46, a 171 x 3 line at (10, 66) that fills as
+    it charges.
+- **Card text:** WAIT FOR ROUND (on the line), Q · LET'S GO!, READY IN Ns, ON · Ns (Shield, Invisible), USED THIS
+  ROUND (Shield), STUNNED / STUCK (the server refuses abilities then).
+- **Bar states:** catcher DIVE PAUSED, STUNNED 💫 (the 2 s stun draining), DIZZY 💫, KNIFE CHARGING (the 1 s knife
+  charge, `KnifeReady` set by `Gameplay/Actions`), DIVE RECHARGING, CATCH READY; runner DASH PAUSED / "Waiting for
+  movement", STUCK! / "Caught in a bear trap", DASH RECHARGING / "Ready in 1.0s", DASH READY.
+- **How many cards:** a runner has one (this round's Q ability, like picture c) plus Speed Boost on E only while
+  carrying the girl; a catcher has two (Bear Trap Q, Slow Wave E): picture b shows one, so the second card is ours.
+- Side by side: `docs/previews/ability-bar-vs-owner.png` (`tools/preview/side_by_side_bar.py`, which also prints each
+  text box's position in his pixels next to ours: within 1 to 3 px, the state 3 to 6 px wider: Gotham, his font looks
+  like Montserrat). Shots `power-bar`, `power-bar-catcher`, `power-bar-stunned`, `power-bar-carrying`,
+  `power-bar-cooldown` (the scene's clock is fixed: `_G.__serverClock`).
+- Icons: ours, rendered with three.js (`tools/icons/ability_icons.mjs` → `assets/icons/ability-*.png`, 384 px, packed);
+  drawn in Play only until uploaded; the emoji shows if a picture can't be drawn. His sharp PNGs will replace them.
+
 ## Other round screens
 - `Screens/HeroChoice` (60% size), `Screens/NextMap` (your vote tucks into a NEXT MAP panel).
 - Map pictures: `Config/Round` `Map.Pictures` names the `Config/Assets.Art` picture per map folder
@@ -106,7 +137,8 @@ in core `CLAUDE.md` section 1. Recipe for a new screen: core section 6. Preview 
 
 ## Honest gaps
 - Not seen in Studio yet: the Oct 17 UI shine/rays/spin, the Oct 17 screens, the winner page (real avatars), daily
-  quests, the HUD's INVITE / QUESTS / "+10% COINS", the Index PRESTIGE button, the picture stand-ins.
+  quests, the HUD's INVITE / QUESTS / "+10% COINS", the Index PRESTIGE button, the picture stand-ins, the ability cards and dash bar
+  (Oct 19: their icons draw in Play only until uploaded).
 
 ## Why it is this way / history
 - **Text fit** (owner: "the rarities ... go out of the uis borders").

@@ -1,7 +1,7 @@
 -- lune run tests/StabMotion.spec.luau
 -- The catcher's slash (Shared/StabMotion) on an R15 rig, as Huss Valley's (docs/knife-study.md): no wind-up, the
--- knife arm sweeps out to the right and lands in ~0.07 s, holds out to the side, is back by 0.40 s; the lunge is a
--- whole-body leap (below); every joint goes back to the animation after.
+-- knife arm sweeps out to the right and lands in ~0.07 s, holds out to the side, is back by 0.40 s; Space is a
+-- whole-body dive with a stun on the floor (below); every joint goes back to the animation after.
 local roblox = require("@lune/roblox")
 local CFrame, Vector3 = roblox.CFrame, roblox.Vector3
 local Env = require("../tools/preview/motion3d/env")
@@ -78,26 +78,32 @@ do
 	check(dir.Y > -0.45, "hunched run: the knife arm still sweeps out, not at the ground")
 end
 
--- The lunge (knife pass 2, Oct 19: "make them have good animations, the leaping, the killing"): the whole body
--- leaps. It leans into the leap from take-off (never back: no wind-up), the legs leave the run (lead knee up, back
--- leg long behind), the knife leads ahead and level until it reaches someone, then sweeps out to the right in
--- ~0.07 s; it lands low (tipped ~34° into the leap) with the feet on the floor, sideways leaps into their side,
--- smooth at 30 and 60 fps, and gives every joint back by LEAP.Up.
+-- The dive (owner, Oct 19: "add a dive feature for the tagger and after they use it they are stunned for 2 seconds";
+-- it was a leap landing in a low lunge). It tips into the dive from take-off (never back: no wind-up), the legs
+-- stretch out behind, both arms reach ahead with the knife leading until it reaches someone, then it sweeps out to
+-- the right in ~0.07 s; the body lands flat on its belly (chest and legs on the floor, nothing under it), lies there
+-- through the stun (Config/Round.Lunge StunAfter + Stun), gets up by LEAP.Up; sideways dives go into their side;
+-- smooth at 30 and 60 fps; every joint handed back after.
 do
 	local L = StabMotion.LEAP
 	local air = StabMotion.air()
-	print(string.format("  leap: %.3f s in the air (Lunge.Up %d)", air, Round.Lunge.Up))
-	check(air >= 0.22 and air <= 0.3, "the hop lasts long enough to show a leap (0.22 to 0.3 s)")
-	local function lowestFoot()
+	print(string.format("  dive: %.3f s in the air (Lunge.Up %d), lying until %.2f s, up by %.2f s", air, Round.Lunge.Up, L.Out, L.Up))
+	check(air >= 0.22 and air <= 0.3, "the hop lasts long enough to show a dive (0.22 to 0.3 s)")
+	local stunEnd = (Round.Lunge.StunAfter or Round.Lunge.Time) + (Round.Lunge.Stun or 0)
+	check(math.abs(L.Out - stunEnd) < 1e-6 and Round.Lunge.Stun == 2, "the body lies on the floor exactly as long as the 2 s stun")
+	check(L.Up - L.Out >= 0.3 and L.Up - L.Out <= 0.6, "and gets up in 0.3 to 0.6 s")
+	local function lowest(names)
 		local y = math.huge
-		for _, n in { "LeftFoot", "RightFoot" } do
+		for _, n in names do
 			local c, h = rig.parts[n].CFrame, rig.parts[n].Size / 2
 			local reach = math.abs(c.RightVector.Y) * h.X + math.abs(c.UpVector.Y) * h.Y + math.abs(c.LookVector.Y) * h.Z
 			y = math.min(y, c.Position.Y - reach)
 		end
 		return y
 	end
-	-- t seconds into a leap along dir (body space); hitAt: when the knife reached someone (nil = no one)
+	local FEET = { "LeftFoot", "RightFoot" }
+	local BODY = { "LeftFoot", "RightFoot", "LeftLowerLeg", "RightLowerLeg", "LeftUpperLeg", "RightUpperLeg", "LowerTorso", "UpperTorso" }
+	-- t seconds into a dive along dir (body space); hitAt: when the knife reached someone (nil = no one)
 	local function leapPose(t, dir, hitAt)
 		for _, m in rig.motors do m.Transform = CFrame.identity end
 		StabMotion.play(rec, 0, true)
@@ -113,30 +119,32 @@ do
 		local hand = rig.parts.RightHand.CFrame
 		local blade = (hand * CFrame.Angles(math.rad(-150), 0, 0)).UpVector -- (KnifeLook.handC0: the knife's way)
 		return {
-			hand = hand.Position - chest, blade = blade,
+			hand = hand.Position - chest, blade = blade, offHand = rig.parts.LeftHand.CFrame.Position - chest,
 			chestUp = rig.parts.UpperTorso.CFrame.UpVector, pelvisUp = rig.parts.LowerTorso.CFrame.UpVector,
-			low = lowestFoot(), lknee = rig.parts.LeftLowerLeg.CFrame.Position, rknee = rig.parts.RightLowerLeg.CFrame.Position,
+			low = lowest(FEET), body = lowest(BODY), chestY = chest.Y, hipsY = rig.parts.LowerTorso.CFrame.Position.Y,
 			lfoot = rig.parts.LeftFoot.CFrame.Position, rfoot = rig.parts.RightFoot.CFrame.Position,
 		}
 	end
-	local standLow = (function() for _, m in rig.motors do m.Transform = CFrame.identity end Rig.fk(rig) return lowestFoot() end)()
-	-- take-off: leaning in at once, never back
+	local standLow = (function() for _, m in rig.motors do m.Transform = CFrame.identity end Rig.fk(rig) return lowest(FEET) end)()
+	-- take-off: tipping in at once, never back
 	local backMost = 0
-	for i = 0, 30 do
-		local q = leapPose(L.Up * i / 30)
+	for i = 0, 60 do
+		local q = leapPose(L.Up * i / 60)
 		backMost = math.max(backMost, q.pelvisUp.Z)
 	end
-	check(backMost < 0.02, "no wind-up: the body never leans back during the leap")
+	check(backMost < 0.02, "no wind-up: the body never leans back during the dive")
 	local launch = leapPose(0.08)
 	local tipLaunch = math.deg(math.asin(math.clamp(-launch.pelvisUp.Z, -1, 1)))
-	print(string.format("  take-off (0.08 s): body tipped %.0f° in; knee ahead %.2f; back foot behind %.2f", tipLaunch, -(launch.lknee.Z), launch.rfoot.Z))
-	check(tipLaunch > 12, "the body lines up into the leap from take-off")
-	check(-launch.lknee.Z > 0.25 and launch.rfoot.Z > 1.2, "the legs leave the run: lead knee ahead, back leg long behind")
-	-- the knife leads, ahead and level, blade forward, until it reaches someone
+	print(string.format("  take-off (0.08 s): body tipped %.0f° in; feet behind %.2f / %.2f", tipLaunch, launch.lfoot.Z, launch.rfoot.Z))
+	check(tipLaunch > 25, "the body tips into the dive from take-off")
+	check(launch.rfoot.Z > 1.0 and launch.lfoot.Z > 0.3, "the legs push off and stretch out behind")
+	-- both arms reach ahead, the knife leading, until it reaches someone
 	local flying = leapPose(0.1)
-	print(string.format("  in the air (0.10 s): hand ahead %.2f, up %.2f; blade forward %.2f", -flying.hand.Z, flying.hand.Y, -flying.blade.Z))
+	print(string.format("  in the air (0.10 s): hand ahead %.2f, up %.2f; free hand ahead %.2f; blade forward %.2f",
+		-flying.hand.Z, flying.hand.Y, -flying.offHand.Z, -flying.blade.Z))
 	check(-flying.hand.Z > 1.2 and math.abs(flying.hand.X) < 1.2, "the knife hand leads, ahead of the chest")
-	check(-flying.blade.Z > 0.75, "the blade points ahead (it leads the leap)")
+	check(-flying.offHand.Z > 1.0, "the free arm reaches ahead too (a dive, not a lunge)")
+	check(-flying.blade.Z > 0.6, "the blade points ahead (it leads the dive)")
 	-- the slash the moment it reaches someone: out to the right within 0.08 s
 	local outAt
 	for i = 0, 60 do
@@ -149,25 +157,30 @@ do
 		StabMotion.play(rec, 0, true)
 		check(StabMotion.slashStart(rec, L.SlashBy - 0.01) == nil and StabMotion.slashStart(rec, L.SlashBy + 0.01) ~= nil,
 			"reaching no one, the slash comes at LEAP.SlashBy")
-		check(L.SlashBy + 0.07 < air, "and lands before the feet touch down")
+		check(L.SlashBy + 0.07 < air, "and lands before the body touches down")
 	end
-	-- landing low, feet on the floor
-	local land = leapPose(air + 0.12)
-	local tipLand = math.deg(math.acos(math.clamp(land.chestUp.Y, -1, 1)))
-	print(string.format("  landing (%.2f s): chest tipped %.0f°, lowest foot %.2f (standing %.2f)", air + 0.12, tipLand, land.low, standLow))
-	check(land.chestUp.Z < -0.4 and tipLand > 28, "lands low, tipped into the leap")
-	check(math.abs(land.low - standLow) < 0.12, "the hips come down on landing: the feet stay on the floor, not floating or under it")
+	-- flat on the belly: chest tipped near 90°, the body's lowest point on the floor (not floating, not under it)
+	for _, at in { air + 0.15, 1.2, L.Out - 0.05 } do
+		local land = leapPose(at)
+		local tip = math.deg(math.acos(math.clamp(land.chestUp.Y, -1, 1)))
+		print(string.format("  lying (%.2f s): chest tipped %.0f°, lowest point %.2f (floor %.2f), chest %.2f above it",
+			at, tip, land.body, standLow, land.chestY - standLow))
+		check(land.chestUp.Z < -0.8 and tip > 75 and tip < 100, string.format("at %.2f s the body lies flat on its belly", at))
+		check(math.abs(land.body - standLow) < 0.15, string.format("at %.2f s it lies on the floor, not floating or under it", at))
+		check(land.chestY - standLow < 1.2, string.format("at %.2f s the chest is down on the floor", at))
+	end
 	local midAir = leapPose(air * 0.6)
-	check(midAir.low > standLow - 0.05, "nothing goes under the floor in the air")
-	-- sideways (D): tips right, the right leg leads out to the side
-	local right = leapPose(air + 0.12, Vector3.new(1, 0, 0))
-	local rightLaunch = leapPose(0.08, Vector3.new(1, 0, 0))
-	print(string.format("  sideways: chest up x %.2f; right knee out %.2f", right.chestUp.X, rightLaunch.rknee.X))
-	check(right.chestUp.X > 0.4, "a sideways leap tips into its side")
-	check(rightLaunch.rknee.X > 1.0, "a sideways leap leads with that side's leg")
-	-- smooth: the body (hips, chest, legs) turns at most 16° a frame at 60 fps, and no frame pops at 30 fps
+	check(midAir.body > standLow - 0.05, "nothing goes under the floor in the air")
+	-- standing again after Up
+	local up = leapPose(L.Up + 0.02)
+	check(up.chestUp.Y > 0.99, "standing up again by LEAP.Up")
+	-- sideways (D): tips right
+	local right = leapPose(air + 0.15, Vector3.new(1, 0, 0))
+	print(string.format("  sideways: chest up x %.2f", right.chestUp.X))
+	check(right.chestUp.X > 0.6, "a sideways dive goes into its side")
+	-- smooth: the body (hips, chest, legs, head) turns at most 16° a frame at 60 fps, and no frame pops at 30 fps
 	local function frames(fps)
-		local worst, prev = 0, nil
+		local worst, prev, where = 0, nil, ""
 		for f = 0, math.ceil((L.Up + 0.05) * fps) do
 			leapPose(f / fps, nil, 0.06)
 			local now = {}
@@ -178,21 +191,24 @@ do
 				for n, cf in now do
 					local d = prev[n].Rotation:Inverse() * cf.Rotation
 					local _, ang = d:ToAxisAngle()
-					worst = math.max(worst, math.deg(math.abs(ang)))
+					if math.deg(math.abs(ang)) > worst then
+						worst, where = math.deg(math.abs(ang)), string.format("%s at %.2f s", n, f / fps)
+					end
 				end
 			end
 			prev = now
 		end
-		return worst
+		return worst, where
 	end
-	local w60, w30 = frames(60), frames(30)
-	print(string.format("  smoothness: body turns at most %.1f°/frame at 60 fps, %.1f° at 30 fps", w60, w30))
+	local w60, at60 = frames(60)
+	local w30, at30 = frames(30)
+	print(string.format("  smoothness: body turns at most %.1f°/frame at 60 fps (%s), %.1f° at 30 fps (%s)", w60, at60, w30, at30))
 	check(w60 < 16, "smooth at 60 fps (no body part turns more than 16° in a frame)")
 	check(w30 < 30, "smooth at 30 fps (no body part turns more than 30° in a frame)")
-	-- handed back after the leap
+	-- handed back after the dive
 	StabMotion.play(rec, 0, true)
 	StabMotion.slash(rec, 0.06)
-	for f = 0, 50 do
+	for f = 0, math.ceil((L.Up + 0.1) / 0.02) do
 		for _, m in rig.motors do m.Transform = CFrame.identity end
 		StabMotion.step(rec, f * 0.02)
 	end
@@ -202,7 +218,7 @@ do
 	for _, m in rig.motors do
 		if (m.Transform.Position - Vector3.new(0, 0.01, 0)).Magnitude > 1e-4 then clean = false end
 	end
-	check(clean, "after the leap, every joint (legs and root too) is the animation's again")
+	check(clean, "after the dive, every joint (legs and root too) is the animation's again")
 end
 
 -- Afterwards every joint is the animation's again.

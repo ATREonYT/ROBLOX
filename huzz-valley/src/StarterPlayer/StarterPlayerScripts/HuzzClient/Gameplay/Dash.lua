@@ -12,13 +12,15 @@
 	the owner publishes a run (Config/Animations.Run): then the DashLeft / DashRight animation plays here.
 	The server checks it (RoundService, "Dash": sideways only) and sets DashAt/DashDir on your character so everyone
 	sees it, and DashReady on you for the cooldown tile (Screens/PowerBar).
-	CATCHERS in a round lunge instead (owner: "when they press space they jump and haul at the runner"; Oct 18: "when you
-	press space to huss with the knife it leaps forward/sideways to catch the person"): a low leap the way you steer,
+	CATCHERS in a round dive instead (the code still calls it the lunge; owner: "when they press space they jump and haul
+	at the runner"; Oct 18: "when you press space to huss with the knife it leaps forward/sideways to catch the person";
+	Oct 19: "add a dive feature for the tagger and after they use it they are stunned for 2 seconds"): a low leap the way you steer,
 	forward, or sideways while holding A / D (like the runners' huss), never backwards (Shared/KnifeLeap), a hard burst
 	easing off (Config/Round.Lunge, same speed and hop either way). The knife's hit box follows the leap (Gameplay/
 	HitCheck) and the server checks the catch is possible from where it sees you. The whole body leaps (Shared/StabMotion
 	LEAP: the knife leading, the slash the moment it reaches someone, a low landing), on your screen at once
-	(Gameplay/Actions.lungeLocal; knife pass 2: it used to wait for the server's echo).
+	(Gameplay/Actions.lungeLocal; knife pass 2: it used to wait for the server's echo). Then the diver lies dazed for
+	Config/Round.Lunge.Stun seconds (PowerService.stun: speed 0, no stab, no powers; the body doesn't turn meanwhile).
 ]]
 local Dash = {}
 
@@ -244,6 +246,17 @@ local function lunge(c: Model, h: Humanoid, root: BasePart)
 	local v = root.AssemblyLinearVelocity
 	root.AssemblyLinearVelocity = Vector3.new(v.X, Config.Lunge.Up, v.Z) -- (the hop: jumping itself is off)
 	push(root, "HuzzLunge", dir, Vector3.zero, Config.Lunge) -- (a hard burst easing off, not a flat shove and a cut)
+	-- the dive ends on your belly, stunned (Config/Round.Lunge.Stun): the body keeps its heading until you're up, or
+	-- the keys would turn it round on the floor
+	local L = Config.Lunge
+	if player:GetAttribute("HuzzShiftLock") ~= true then
+		h.AutoRotate = false
+		task.delay((L.StunAfter or L.Time) + (L.Stun or 0), function()
+			if h.Parent and not h.AutoRotate and player:GetAttribute("HuzzShiftLock") ~= true and c:GetAttribute("DownedAt") == nil then
+				h.AutoRotate = true
+			end
+		end)
+	end
 end
 
 function Dash.try()

@@ -1,17 +1,22 @@
--- The four round powers in a row, then the prize girl on her stand, filmed offline by running the game's own
--- HuzzClient/Gameplay/PowerEffects (and Gameplay/Burst, unchanged) on real Lune instances: this file sends it the
--- server's "Power" messages, moves a runner (blue) and a catcher (red), makes what the server would make (the
--- shield bubble, the rush trail, the trap) and reads every part, light, trail and billboard back each frame.
---   0.5 s Heart Shield (runner)   1.8 s Rizz Rush (runner runs)   3.3 s Love Trap (catcher)   4.6 s Charm Wave (catcher)
---   6.4 s the prize girl over the map: first the old look (no stand, no lights, white name, gold stars), then the
---   new one (HuzzServer/GirlService.showcase: stand with a glowing band, key / rim / stand lights, her name big in
---   her rarity colour). The girl is a pink R6 stand-in at 3x (the stand's numbers are GirlService's, copied here).
--- The renderer lights everything evenly, so this shows shapes, colours and timing, not Roblox's light levels.
--- sh video.sh power_scene.luau out.mp4   (POWER_STILLS=1 with MOTION3D_KEEP=<dir> keeps a still of each power's peak)
+-- The round abilities (owner Oct 19: "make simple lingo ... just make it simple"; "runner abilities (invisible, glitchy,
+-- body double"; "bear trap you throw the beartrap infront of you with a small animation"; "give the rush to a person
+-- only having the girl"), filmed offline by running the game's own HuzzClient/Gameplay/PowerEffects and Burst on real
+-- Lune instances: this file sends it the server's "Power" messages, moves a runner (blue) and a catcher (red) with
+-- Shared/RunMotion (the run, and the throw pose from the HuzzCast* attributes PowerEffects sets), makes what the
+-- server would make (the shield bubble, the rush trail, the Bear Trap from Shared/BearTrap) and reads every part,
+-- light, trail and billboard back each frame. Each part is its own short shot (the film cuts between them):
+--    0.4 s Shield         2.2 s Invisible (4 s; drawn as the other players see it: faint, a slow shimmer)
+--    6.4 s Glitchy        8.0 s Body Double (the copy runs off into the distance and puffs)
+--   11.8 s Speed Boost (only while carrying the girl; she isn't drawn)
+--   13.2 s Bear Trap: thrown ahead with the throw pose, arcs, lands, arms; the runner runs into it and it snaps shut
+--   17.0 s Slow Wave
+-- The renderer lights everything evenly and draws wedges as boxes, so this shows shapes, colours and timing, not
+-- Roblox's light levels. Studio is the real check (the decoy is a real clone of the character there).
+-- sh video.sh power_scene.luau out.mp4   (MOTION3D_KEEP=<dir> keeps a still of each ability at its peak:
+-- tools/preview/powers_vs_og.py <dir> makes the sheet)
 local roblox = require("@lune/roblox")
 local fs = require("@lune/fs")
 local luau = require("@lune/luau")
-local process = require("@lune/process")
 local CFrame, Vector3, Color3, Instance = roblox.CFrame, roblox.Vector3, roblox.Color3, roblox.Instance
 local Rig = require("./rig")
 local Scene = require("./scene")
@@ -24,10 +29,10 @@ local SHARED = SRC .. "/ReplicatedStorage/Shared/"
 local GAMEPLAY = SRC .. "/StarterPlayer/StarterPlayerScripts/HuzzClient/Gameplay/"
 local scene = Scene.new()
 local FPS, DT = 30, 1 / 30
-local POWERS_END, SHOW_OLD, LENGTH = 6.2, 9.0, 12.4
+local LENGTH = 18.8
 
 -- ---------------------------------------------------------------------------------------------------------------
--- A small Roblox for the module: a DataModel, a camera, players, a fake clock for task.delay
+-- A small Roblox for the module: a DataModel, a camera, players, a fake clock for task.delay and os.clock
 local game = Instance.new("DataModel")
 local Workspace = game:GetService("Workspace")
 local camera = Instance.new("Camera")
@@ -35,8 +40,9 @@ camera.Parent = Workspace
 Workspace.CurrentCamera = camera
 local clock = 0
 roblox.implementMethod("Workspace", "GetServerTimeNow", function() return clock end)
+roblox.implementMethod("Workspace", "Raycast", function() return nil end) -- (a flat open field)
+roblox.implementMethod("ParticleEmitter", "Emit", function() end) -- (sparks: not drawn in this film)
 roblox.implementMethod("Instance", "WaitForChild", function(self, n) return self:FindFirstChild(n) end)
-local function signal() return { Connect = function() return { Disconnect = function() end } end } end
 
 local timers = {} -- { at, fn, args }
 local fakeTask = {
@@ -52,35 +58,65 @@ local function runTimers()
 	end
 	for _, t in due do t.fn(table.unpack(t.args, 1, t.args.n)) end
 end
+-- every Heartbeat connection (Burst's loop, the invisibility fades, a Body Double's run), with Disconnect
+local beats = {}
+local function connect(_, fn)
+	local c = { fn = fn }
+	c.Disconnect = function() c.off = true end
+	table.insert(beats, c)
+	return c
+end
 
-local function body(name, at)
+-- The characters: real Parts copied from the rigs every frame (PowerEffects ghosts and clones them, and fades them)
+local function rgb(s) return Color3.fromRGB(tonumber(s:sub(2, 3), 16), tonumber(s:sub(4, 5), 16), tonumber(s:sub(6, 7), 16)) end
+local function body(name, rig)
 	local character = Instance.new("Model")
 	character.Name = name
-	local root = Instance.new("Part")
-	root.Name = "HumanoidRootPart"
-	root.Size = Vector3.new(2, 2, 1)
-	root.CFrame = at
-	root.Position = at.Position
-	root.Parent = character
+	for n, p in rig.parts do
+		local part = Instance.new("Part")
+		part.Name = n
+		part.Size = p.Size
+		part.Color = rgb(p.Color)
+		part.Transparency = if p.hidden then 1 else 0
+		part.Parent = character
+	end
 	character.Parent = Workspace
-	return character, root
+	return character, character:FindFirstChild("HumanoidRootPart")
+end
+local function syncBody(character, rig)
+	for n, p in rig.parts do
+		local part = character:FindFirstChild(n)
+		if part then
+			part.CFrame = p.CFrame
+			part.Position = p.CFrame.Position -- (Lune keeps Position apart from CFrame)
+		end
+	end
+end
+local function named(rig)
+	rig.byName = {}
+	for _, m in rig.motors do rig.byName[m.Name] = m end
+	return rig
 end
 local RUNNER_ID, CATCHER_ID = 1, 2
-local runnerRig = scene:addRig(Rig.r15("Runner", { shirt = "#3d7be0", pants = "#262a36" }))
-local catcherRig = scene:addRig(Rig.r15("Catcher", { shirt = "#e0473d", pants = "#2a2026" }))
-local runnerStart = Vector3.new(-9, Rig.REST_HEIGHT, 0)
-local catcherAt = Vector3.new(8, Rig.REST_HEIGHT, -2)
-local runnerChar, runnerRoot = body("Runner", Rig.lookAt(runnerStart, runnerStart + Vector3.new(0, 0, -1)))
-local catcherChar, catcherRoot = body("Catcher", Rig.lookAt(catcherAt, catcherAt + Vector3.new(-1, 0, 0.3)))
+local RUNNER_LOOK = { shirt = "#3d7be0", pants = "#262a36" }
+local runnerRig = named(scene:addRig(Rig.r15("Runner", RUNNER_LOOK)))
+local catcherRig = named(scene:addRig(Rig.r15("Catcher", { shirt = "#e0473d", pants = "#2a2026" })))
+local decoyRig = named(Rig.r15("Decoy", RUNNER_LOOK)) -- (drawn while the Body Double runs)
+local runnerChar, runnerRoot = body("Runner", runnerRig)
+local catcherChar, catcherRoot = body("Catcher", catcherRig)
 local byId = {
 	[RUNNER_ID] = { UserId = RUNNER_ID, Character = runnerChar },
 	[CATCHER_ID] = { UserId = CATCHER_ID, Character = catcherChar },
 }
-local heartbeat
 local roundHandler
 local services = {
-	Players = { LocalPlayer = { UserId = 99 }, GetPlayerByUserId = function(_, id) return byId[id] end },
-	RunService = { Heartbeat = { Connect = function(_, fn) heartbeat = fn end } },
+	-- (the viewer is a third player: everything is drawn as the other players see it)
+	Players = {
+		LocalPlayer = { UserId = 99 },
+		GetPlayerByUserId = function(_, id) return byId[id] end,
+		GetPlayers = function() return { byId[RUNNER_ID], byId[CATCHER_ID] } end,
+	},
+	RunService = { Heartbeat = { Connect = connect } },
 	Workspace = Workspace,
 }
 local Net = { get = function() return { OnClientEvent = { Connect = function(_, fn) roundHandler = fn end } } end }
@@ -103,13 +139,19 @@ local env = {
 	game = { GetService = function(_, n) return services[n] or game:GetService(n) end },
 	require = req, typeof = typeof, task = fakeTask, math = math, table = table, string = string, warn = print,
 	print = print, pcall = pcall, type = type, tostring = tostring, tonumber = tonumber, pairs = pairs, ipairs = ipairs,
-	setmetatable = setmetatable, error = error, select = select, Instance = Instance, Font = roblox.Font,
+	setmetatable = setmetatable, error = error, select = select, next = next, Instance = Instance, Font = roblox.Font,
+	os = { clock = function() return clock end, time = os.time },
+	RaycastParams = { new = function() return {} end },
 	CFrame = setmetatable({ lookAt = lookAt }, { __index = roblox.CFrame }),
 }
 for _, k in { "Vector3", "Vector2", "Color3", "UDim", "UDim2", "Enum", "NumberRange", "NumberSequence", "ColorSequence", "NumberSequenceKeypoint", "ColorSequenceKeypoint" } do
 	env[k] = roblox[k]
 end
-local Shared = { Net = { __value = Net }, Config = { Powers = token(SHARED .. "Config/Powers.lua") } }
+local Shared = {
+	Net = { __value = Net },
+	Config = { Powers = token(SHARED .. "Config/Powers.lua") },
+	BearTrap = token(SHARED .. "BearTrap.lua"),
+}
 Shared.WaitForChild = function(self, n) return self[n] end
 services.ReplicatedStorage = { WaitForChild = function(_, n) return if n == "Shared" then Shared else nil end }
 local Gameplay = { Sfx = { __value = { play = function() end } }, Burst = token(GAMEPLAY .. "Burst.lua") }
@@ -122,13 +164,15 @@ function load(path)
 	return result
 end
 local Powers = load(SHARED .. "Config/Powers.lua")
+local BearTrap = load(SHARED .. "BearTrap.lua")
 local Look = Env.load("huzz-valley/src/ReplicatedStorage/Shared/Config/Look.lua")
-local Round = Env.load("huzz-valley/src/ReplicatedStorage/Shared/Config/Round.lua")
+local RunMotion = Env.load("huzz-valley/src/ReplicatedStorage/Shared/RunMotion.lua")
 load(GAMEPLAY .. "PowerEffects.lua").start()
 assert(roundHandler, "PowerEffects didn't listen to the Round remote")
+local FX = Powers.Fx
+local function wind(name) return (FX[name].WindUp or FX.WindUp) + FX.Flash end
 
 -- what the server makes (HuzzServer/PowerService), copied small
-local PINK = Color3.fromRGB(255, 110, 190)
 local function folder(name)
 	local f = Workspace:FindFirstChild(name)
 	if not f then
@@ -141,7 +185,7 @@ end
 local bubble
 local function serverShield()
 	bubble = Instance.new("Part")
-	bubble.Name, bubble.Shape, bubble.Size, bubble.Material, bubble.Color = "HuzzShield", roblox.Enum.PartType.Ball, Vector3.new(7, 7, 7), roblox.Enum.Material.ForceField, PINK
+	bubble.Name, bubble.Shape, bubble.Size, bubble.Material, bubble.Color = "HuzzShield", roblox.Enum.PartType.Ball, Vector3.new(7, 7, 7), roblox.Enum.Material.ForceField, Powers.Shield.Accent
 	bubble.CFrame = runnerRoot.CFrame
 	bubble.Position = runnerRoot.CFrame.Position
 	bubble.Parent = folder("HuzzShields")
@@ -153,61 +197,77 @@ local function serverTrail()
 	a0.Parent, a1.Parent = runnerRoot, runnerRoot
 	trail = Instance.new("Trail")
 	trail.Attachment0, trail.Attachment1, trail.Lifetime = a0, a1, 0.35
-	trail.Color = roblox.ColorSequence.new(PINK, Color3.new(1, 1, 1))
+	trail.Color = roblox.ColorSequence.new(Powers.SpeedBoost.Accent, Color3.new(1, 1, 1))
 	trail.Transparency = roblox.NumberSequence.new(0.35, 1)
-	trail.LightEmission = 0.5
 	trail.Parent = runnerRoot
 end
-local trapAt
-local function serverTrap()
-	trapAt = Vector3.new(catcherAt.X - 1, 0, catcherAt.Z + 0.5)
-	local model = Instance.new("Model")
-	model.Name = "LoveTrap"
-	local R = Powers.LoveTrap.Radius
-	local function piece(size, color, transparency, offset, neon)
-		local p = Instance.new("Part")
-		p.Shape, p.Size, p.Color, p.Transparency = roblox.Enum.PartType.Cylinder, size, color, transparency
-		p.Material = if neon then roblox.Enum.Material.Neon else roblox.Enum.Material.SmoothPlastic
-		p.CFrame = CFrame.new(trapAt + Vector3.new(0, offset, 0)) * CFrame.Angles(0, 0, math.rad(90))
-		p.Parent = model
-	end
-	piece(Vector3.new(0.2, R * 2, R * 2), Color3.fromRGB(120, 20, 70), 0.1, 0.1)
-	piece(Vector3.new(0.24, R * 2 - 0.8, R * 2 - 0.8), PINK, 0.25, 0.12, true)
-	local sign = Instance.new("Part")
-	sign.Name, sign.Transparency, sign.Size = "Sign", 1, Vector3.new(0.2, 0.2, 0.2)
-	sign.CFrame = CFrame.new(trapAt + Vector3.new(0, 1.2, 0))
-	sign.Position = sign.CFrame.Position
-	sign.Parent = model
-	local gui = Instance.new("BillboardGui")
-	gui.Size = roblox.UDim2.new(2.2, 0, 2.2, 0)
-	gui.Parent = sign
-	local heart = Instance.new("TextLabel")
-	heart.Text = "💘"
-	heart.Parent = gui
-	model.Parent = folder("HuzzTraps")
+-- the Bear Trap: lands Flight after the throw (the server inserts it then), arms Arm later, snaps on the runner
+local TRAP = Powers.BearTrap
+local CATCHER_AT = Vector3.new(8, 0, -2)
+local TRAP_DIR = Vector3.new(-1, 0, 0)
+local TRAP_AT = CATCHER_AT + TRAP_DIR * TRAP.Throw
+local trap -- { model, armAt }
+local function serverTrapThrow(t)
+	fakeTask.delay(TRAP.Flight, function()
+		local model = BearTrap.build(TRAP.Accent)
+		BearTrap.pose(model, CFrame.new(TRAP_AT) * CFrame.Angles(0, math.atan2(-TRAP_DIR.X, -TRAP_DIR.Z), 0), 0)
+		model.Parent = folder("HuzzTraps")
+		trap = { model = model, armAt = t + TRAP.Flight + TRAP.Arm }
+		fakeTask.delay(TRAP.Arm, function() BearTrap.arm(model, true) end)
+	end)
 end
 
-local EVENTS = {
-	{ 0.5, function() serverShield(); roundHandler("Power", { name = "HeartShield", id = RUNNER_ID }) end },
-	{ 1.8, function() serverTrail(); roundHandler("Power", { name = "RizzRush", id = RUNNER_ID }) end },
-	{ 3.3, function() serverTrap(); roundHandler("Power", { name = "LoveTrap", id = CATCHER_ID, at = trapAt }) end },
-	{ 4.6, function() roundHandler("Power", { name = "CharmWave", id = CATCHER_ID, radius = Powers.CharmWave.Radius }) end },
-}
-local STILL_AT = { 0.5 + 0.15 + 0.05 + 0.12, 1.8 + 0.15 + 0.05 + 0.15, 3.3 + 0.25 + 0.05 + 0.12, 4.6 + 0.25 + 0.05 + 0.2, 7.5, 11 }
-
 -- ---------------------------------------------------------------------------------------------------------------
--- The prize girl over the map (GirlService.showcase), as a stand-in
-local girl = Rig.r6("Prize", { shirt = "#7a4ad8", pants = "#3b2a6a", hair = "#ffd1ec", skin = "#ffe0ec" })
-Rig.scale(girl, 3)
-local RARITY = Round.Rarities[5] -- Legendary
-local order = 5
-local SHOW = Vector3.new(0, Round.Showcase.Height, -60)
-local girlHeight = 15 -- (her body box at 3x: 5 studs x 3)
-local size = Vector3.new(6, girlHeight, 3)
-local radius = math.clamp(size.Z * 0.6, 1.2, math.min(size.X * 0.42, size.Z / 2 + 0.9))
-local standTop = scene:addBox(CFrame.identity, Vector3.new(0.5, radius * 2, radius * 2), "#221a42")
-local standBand = scene:addBox(CFrame.identity, Vector3.new(0.18, radius * 2 + 0.24, radius * 2 + 0.24), hex(RARITY.Color))
-standTop.Shape, standBand.Shape, standBand.Neon = "cyl", "cyl", true
+-- The shots. The runner: where it stands, which way it faces, how fast it runs, per moment (the film cuts between
+-- shots, so a shot may start somewhere new).
+local Y = Rig.REST_HEIGHT
+local function at(x, z) return Vector3.new(x, 0, z) end
+local CAM = Vector3.new(0, 1, 1).Unit
+local SHOTS = {
+	{ from = 0, name = "Shield", runner = function() return at(-6, 2), Vector3.new(0, 0, 1), 0 end },
+	{ from = 1.9, name = "Invisible", runner = function(t)
+		local k = math.clamp(t - 2.6, 0, 3.6)
+		return at(-4 - 1.5 * k, 2), Vector3.new(-1, 0, 0), if t > 2.6 and t < 6.2 then 1.5 else 0
+	end },
+	{ from = 6.1, name = "Glitchy", runner = function(t)
+		local go = 6.4 + wind("Glitchy") - FX.Flash -- (the ghosts and the push start after WindUp)
+		local k = math.clamp((t - go) / Powers.Glitchy.Time, 0, 1)
+		return at(-10 + Powers.Glitchy.Distance * k, 2), Vector3.new(1, 0, 0), if k > 0 and k < 1 then Powers.Glitchy.Distance / Powers.Glitchy.Time else 0
+	end },
+	{ from = 7.8, name = "Body Double", runner = function(t)
+		local k = math.clamp(t - 8.5, 0, 3)
+		local dir = Vector3.new(0.6, 0, 1).Unit
+		return at(-1, 2) + dir * 3 * k, if t > 8.4 then dir else Vector3.new(0, 0, 1), if t > 8.5 then 3 else 0
+	end },
+	{ from = 11.6, name = "Speed Boost", runner = function(t)
+		-- (running at 16; the boost adds Boost after the wind-up)
+		local k = math.clamp(t - 11.8, 0, 1.2)
+		local w = wind("SpeedBoost")
+		local speed = if t > 11.8 + w then 16 + Powers.SpeedBoost.Boost elseif t > 11.8 then 16 else 0
+		return at(-12 + 16 * k + Powers.SpeedBoost.Boost * math.max(0, k - w), 5), Vector3.new(1, 0, 0), speed
+	end },
+	{ from = 13.0, name = "Bear Trap", runner = nil }, -- (moved below: it stops when the trap snaps)
+	{ from = 16.9, name = "Slow Wave", runner = nil },
+}
+local EVENTS = {
+	{ 0.4, function() serverShield(); roundHandler("Power", { name = "Shield", id = RUNNER_ID }) end },
+	{ 2.2, function()
+		runnerChar:SetAttribute("InvisibleUntil", clock + Powers.Invisible.Lasts)
+		roundHandler("Power", { name = "Invisible", id = RUNNER_ID, lasts = Powers.Invisible.Lasts })
+	end },
+	{ 6.4, function() roundHandler("Power", { name = "Glitchy", id = RUNNER_ID, at = runnerRoot.Position, dir = Vector3.new(1, 0, 0) }) end },
+	{ 8.0, function()
+		roundHandler("Power", { name = "BodyDouble", id = RUNNER_ID, at = runnerRoot.Position, dir = Vector3.new(-0.45, 0, -1).Unit, speed = 16, lasts = Powers.BodyDouble.Lasts })
+	end },
+	{ 11.8, function() serverTrail(); roundHandler("Power", { name = "SpeedBoost", id = RUNNER_ID }) end },
+	{ 13.2, function()
+		serverTrapThrow(13.2)
+		roundHandler("Power", { name = "BearTrap", id = CATCHER_ID, at = TRAP_AT, dir = TRAP_DIR, flight = TRAP.Flight })
+	end },
+	{ 17.0, function() roundHandler("Power", { name = "SlowWave", id = CATCHER_ID, radius = Powers.SlowWave.Radius }) end },
+}
+-- a still of each ability at its peak (MOTION3D_KEEP), for powers_vs_og.py
+local STILL_AT = { 0.4 + wind("Shield") + 0.12, 3.6, 6.4 + wind("Glitchy") + 0.06, 8.0 + wind("BodyDouble") + 0.9, 11.8 + wind("SpeedBoost") + 0.15, 13.2 + 0.45, 15.15, 17.0 + wind("SlowWave") + 0.2 }
 
 -- ---------------------------------------------------------------------------------------------------------------
 -- Reading the instances back
@@ -223,12 +283,15 @@ local function nsample(ns, t)
 	return k[#k].Value
 end
 local boxes = {}
+local function ltm(p)
+	local okL, v = pcall(function() return p.LocalTransparencyModifier end) -- (unset in Lune until written)
+	return if okL then v else 0
+end
 local function drawParts(container, sprites, lights)
 	local E = roblox.Enum
 	for _, p in container:GetDescendants() do
-		if p:IsA("BasePart") then
-			local okL, ltm = pcall(function() return p.LocalTransparencyModifier end) -- (unset in Lune until written)
-			local alpha = (1 - p.Transparency) * (1 - (if okL then ltm else 0))
+		if p:IsA("BasePart") and not p:FindFirstAncestor("HuzzBodyDouble") then
+			local alpha = (1 - p.Transparency) * (1 - ltm(p))
 			local box = boxes[p]
 			if not box then
 				box = scene:addBox(p.CFrame, p.Size, "#ffffff")
@@ -237,7 +300,9 @@ local function drawParts(container, sprites, lights)
 			box.Hidden = alpha < 0.01 or not p:IsDescendantOf(game)
 			if not box.Hidden then
 				box.CFrame, box.Size, box.Color = p.CFrame, p.Size, hex(p.Color)
-				box.Shape = if p.Shape == E.PartType.Ball then "ball" elseif p.Shape == E.PartType.Cylinder then "cyl" else nil
+				local okS, shape = pcall(function() return p.Shape end) -- (a WedgePart has none: drawn as a box)
+				shape = if okS then shape else nil
+				box.Shape = if shape == E.PartType.Ball then "ball" elseif shape == E.PartType.Cylinder then "cyl" else nil
 				if p.Material == E.Material.ForceField then
 					box.Add, box.Alpha, box.Neon = true, alpha * 0.3, true
 				elseif p.Material == E.Material.Neon then
@@ -256,21 +321,15 @@ local function drawParts(container, sprites, lights)
 		end
 	end
 end
-local HEARTS = { ["💖"] = true, ["💘"] = true, ["💞"] = true }
-local function drawLabels(container, labels, sprites)
+local function drawLabels(container, labels)
 	for _, g in container:GetDescendants() do
 		if g:IsA("BillboardGui") and g.Enabled then
 			local part = g.Parent
 			local text = g:FindFirstChildOfClass("TextLabel")
 			if part and part:IsA("BasePart") and text and text.TextTransparency < 0.99 then
-				local at = part.CFrame.Position + g.StudsOffsetWorldSpace
-				local a = 1 - text.TextTransparency
-				if HEARTS[text.Text] then
-					table.insert(sprites, { p = v3(at), s = r3(g.Size.Y.Scale), c = "#ff5aa8", a = r3(a), t = "heart" })
-				else
-					local stroke = text:FindFirstChildOfClass("UIStroke")
-					table.insert(labels, { p = v3(at), text = text.Text, h = r3(g.Size.Y.Scale * 0.8), c = hex(text.TextColor3), o = if stroke then hex(stroke.Color) else nil, a = r3(a) })
-				end
+				local p = part.CFrame.Position + g.StudsOffsetWorldSpace
+				local stroke = text:FindFirstChildOfClass("UIStroke")
+				table.insert(labels, { p = v3(p), text = text.Text, h = r3(g.Size.Y.Scale * 0.8), c = hex(text.TextColor3), o = if stroke then hex(stroke.Color) else nil, a = r3(1 - text.TextTransparency) })
 			end
 		end
 	end
@@ -290,7 +349,7 @@ local function drawTrail(tr, now, ribbons)
 		table.insert(w, r3((k.p0 - k.p1).Magnitude))
 		table.insert(a, r3(1 - nsample(tr.Transparency, s)))
 	end
-	table.insert(ribbons, { pts = pts, w = w, a = a, c = "#ff6ebe", add = true })
+	table.insert(ribbons, { pts = pts, w = w, a = a, c = hex(Powers.SpeedBoost.Accent), add = true })
 end
 
 -- ---------------------------------------------------------------------------------------------------------------
@@ -300,6 +359,11 @@ local bloom = { i = Look.Bloom.Intensity, size = Look.Bloom.Size, th = Look.Bloo
 local stills = {}
 local total = math.floor(LENGTH * FPS)
 local nextEvent = 1
+local runRec, catchRec, decoyRec = RunMotion.new(runnerRig), RunMotion.new(catcherRig), RunMotion.new(decoyRig)
+local decoyIn = false
+local snapped = nil -- the moment the trap caught the runner
+local trapRun = { from = at(-13, -2), go = 14.3, speed = 10 }
+local stuckAt = nil
 for f = 0, total - 1 do
 	local t = f * DT
 	clock = t
@@ -308,22 +372,68 @@ for f = 0, total - 1 do
 		nextEvent += 1
 	end
 	runTimers()
-	-- the runner turns to face the run and dashes across during the rush
-	local runFrom, runTo = 1.8, 3.1
-	local k = math.clamp((t - runFrom) / (runTo - runFrom), 0, 1)
-	local runnerPos = runnerStart + Vector3.new(12 * (1 - (1 - k) ^ 2), 0, 0)
-	local facing = if t >= runFrom - 0.2 then Vector3.new(1, 0, 0) else Vector3.new(0, 0, 1)
-	runnerRig.root.CFrame = Rig.lookAt(runnerPos, runnerPos + facing)
-	runnerRoot.CFrame = runnerRig.root.CFrame
-	runnerRoot.Position = runnerRoot.CFrame.Position -- (Lune keeps Position apart from CFrame)
-	catcherRig.root.CFrame = Rig.lookAt(catcherAt, catcherAt + Vector3.new(-1, 0, 0.3))
-	catcherRoot.CFrame = catcherRig.root.CFrame
-	catcherRoot.Position = catcherRoot.CFrame.Position
-	if bubble then bubble.CFrame = runnerRoot.CFrame; bubble.Position = runnerRoot.Position end
-	if bubble and t > 1.6 then bubble:Destroy(); bubble = nil end
+	-- this moment's shot
+	local shot = SHOTS[1]
+	for _, s in SHOTS do
+		if t >= s.from then shot = s end
+	end
+	local pos, facing, speed
+	if shot.runner then
+		pos, facing, speed = shot.runner(t)
+	elseif shot.name == "Bear Trap" then
+		-- the runner runs at the trap; it snaps when armed and they're inside Radius (PowerService.step's rule)
+		if stuckAt then
+			pos, speed = stuckAt, 0
+		else
+			pos = trapRun.from + Vector3.new(1, 0, 0) * trapRun.speed * math.max(0, t - trapRun.go)
+			speed = if t > trapRun.go then trapRun.speed else 0
+			local d = pos - TRAP_AT
+			if trap and t >= trap.armAt and Vector3.new(d.X, 0, d.Z).Magnitude <= TRAP.Radius then
+				stuckAt, snapped = pos, t
+				trap.model:Destroy()
+				roundHandler("Power", { name = "TrapSprung", id = RUNNER_ID, by = CATCHER_ID, at = pos, yaw = math.atan2(-TRAP_DIR.X, -TRAP_DIR.Z), hold = TRAP.Hold })
+			end
+		end
+		facing = Vector3.new(1, 0, 0)
+	else
+		pos, facing, speed = stuckAt or at(-5, -2), Vector3.new(1, 0, 0), 0
+	end
+	local castAt, castLen = runnerChar:GetAttribute("HuzzCastAt"), runnerChar:GetAttribute("HuzzCastLen")
+	runnerRig.root.CFrame = Rig.lookAt(pos + Vector3.new(0, Y, 0), pos + Vector3.new(0, Y, 0) + facing)
+	RunMotion.step(runRec, DT, speed, true, shot.name == "Speed Boost", nil, nil, castAt and (t - castAt), castLen, runnerChar:GetAttribute("HuzzCastKind"))
+	local cAt, cLen = catcherChar:GetAttribute("HuzzCastAt"), catcherChar:GetAttribute("HuzzCastLen")
+	catcherRig.root.CFrame = Rig.lookAt(CATCHER_AT + Vector3.new(0, Y, 0), CATCHER_AT + Vector3.new(0, Y, 0) + TRAP_DIR)
+	RunMotion.step(catchRec, DT, 0, true, false, nil, nil, cAt and (t - cAt), cLen, catcherChar:GetAttribute("HuzzCastKind"))
 	Rig.fk(runnerRig)
 	Rig.fk(catcherRig)
-	if heartbeat then heartbeat(DT) end
+	syncBody(runnerChar, runnerRig)
+	syncBody(catcherChar, catcherRig)
+	if bubble then bubble.CFrame = runnerRoot.CFrame; bubble.Position = runnerRoot.Position end
+	if bubble and t > 1.7 then bubble:Destroy(); bubble = nil end
+	if trail and t > 13.0 then trail:Destroy(); trail = nil end
+	-- the Body Double: PowerEffects moves its clone's root; the film draws a rig there, running
+	local home = Workspace:FindFirstChild("HuzzBursts")
+	local copy = home and home:FindFirstChild("HuzzBodyDouble")
+	local copyRoot = copy and copy:FindFirstChild("HumanoidRootPart")
+	if copyRoot then
+		copyRoot.Position = copyRoot.CFrame.Position
+		decoyRig.root.CFrame = copyRoot.CFrame
+		RunMotion.step(decoyRec, DT, 16, true, false)
+		Rig.fk(decoyRig)
+		decoyRig.look = { Alpha = 1 - ltm(copyRoot) }
+		if not decoyIn then scene:addRig(decoyRig); decoyIn = true end
+	elseif decoyIn then
+		for i, r in scene.rigs do
+			if r == decoyRig then table.remove(scene.rigs, i) break end
+		end
+		decoyIn = false
+	end
+	for _, c in beats do
+		if not c.off then c.fn(DT) end
+	end
+	-- invisibility: PowerEffects fades the character's parts (LocalTransparencyModifier); draw the rig at that
+	local fade = ltm(runnerChar:FindFirstChild("UpperTorso"))
+	runnerRig.look = if fade > 0.001 then { Alpha = 1 - fade } else nil
 
 	local sprites, ribbons, lights, labels = {}, {}, {}, {}
 	for _, b in boxes do b.Hidden = true end -- (a part the module destroyed isn't listed any more: hide its box)
@@ -331,68 +441,30 @@ for f = 0, total - 1 do
 		local c = Workspace:FindFirstChild(name)
 		if c then
 			drawParts(c, sprites, lights)
-			drawLabels(c, labels, sprites)
+			drawLabels(c, labels)
 		end
 	end
 	drawTrail(trail, t, ribbons)
 
-	-- the prize girl: hidden during the powers; then the old look, then the new one
-	local showing = t >= POWERS_END
-	local new = t >= SHOW_OLD
-	local base = CFrame.new(SHOW + Vector3.new(0, girlHeight / 2, 0))
-	local pose = base * CFrame.new(0, math.sin(t * 1.1) * Round.Showcase.Bob, 0) * CFrame.Angles(0, (t * Round.Showcase.Spin + 2.6) % (2 * math.pi), 0)
-	-- (her root sits 1/4 of her height under her middle in a stand-in R6 at 3x: put her feet on the stand)
-	girl.root.CFrame = pose * CFrame.new(0, -girlHeight / 2 + 9, 0)
-	Rig.fk(girl)
-	local feet = pose * CFrame.new(0, -girlHeight / 2, 0)
-	local flat = CFrame.Angles(0, 0, math.rad(90))
-	standTop.CFrame, standBand.CFrame = feet * CFrame.new(0, -0.27, 0) * flat, feet * CFrame.new(0, -0.3, 0) * flat
-	standTop.Hidden, standBand.Hidden = not new, not new
-	local girlIn = false
-	for _, r in scene.rigs do if r == girl then girlIn = true end end
-	if showing and not girlIn then scene:addRig(girl) end
-	if showing then
-		local nameAt = pose.Position + Vector3.new(0, girlHeight / 2 + 3 * 1.6, 0)
-		if new then
-			-- GirlService.showcase's title: name big in her rarity colour, rarity + stars in white under it. Its board
-			-- is 7.2 studs tall plus 44 px (the pixel floor), worked out here for the camera's distance
-			local dist = (nameAt - camera.CFrame.Position).Magnitude
-			local studsPerPx = 2 * dist * math.tan(math.rad(35)) / 720
-			local board = 3 * 2.4 + 44 * studsPerPx
-			nameAt = pose.Position + Vector3.new(0, girlHeight / 2 + 3 * 0.5 + board / 2, 0) -- (SizeOffset 0.5: its bottom over her head)
-			table.insert(labels, { p = v3(nameAt + Vector3.new(0, board * 0.18, 0)), text = string.upper("Mikasa"), h = r3(board * 0.62 * 0.75), c = hex(RARITY.Color), o = "#141228" })
-			table.insert(labels, { p = v3(nameAt - Vector3.new(0, board * 0.3, 0)), text = "LEGENDARY  " .. string.rep("★", order), h = r3(board * 0.32 * 0.75), c = "#ffffff", o = "#141228" })
-			table.insert(lights, { p = v3((feet * CFrame.new(0, 0.2, 0)).Position), c = hex(RARITY.Color:Lerp(Color3.new(1, 1, 1), 0.55)), b = 0.7, r = girlHeight * 0.9 })
-			table.insert(lights, { p = v3((pose * CFrame.new(0, 1.8, -(1.5 + 4.5))).Position), c = "#fff4ec", b = 0.65, r = girlHeight * 0.75 })
-			table.insert(lights, { p = v3((pose * CFrame.new(0, 3, 6)).Position), c = hex(RARITY.Color:Lerp(Color3.new(1, 1, 1), 0.3)), b = 0.55, r = girlHeight * 0.75 })
-			table.insert(sprites, { p = v3((feet * CFrame.new(0, -0.3, 0)).Position), s = r3(radius * 3.2), c = hex(RARITY.Color), a = 0.35, t = "Glow", add = true })
-		else
-			-- the old rating board: gold stars, white name, rarity in colour (smaller)
-			table.insert(labels, { p = v3(nameAt + Vector3.new(0, 1.6, 0)), text = string.rep("★", order) .. string.rep("☆", 7 - order), h = 1.2, c = "#ffd65c", o = "#141228" })
-			table.insert(labels, { p = v3(nameAt), text = "Mikasa", h = 1.9, c = "#ffffff", o = "#141228" })
-			table.insert(labels, { p = v3(nameAt - Vector3.new(0, 1.5, 0)), text = "LEGENDARY", h = 1.2, c = hex(RARITY.Color), o = "#141228" })
-		end
-	end
-
-	-- camera: wide on the powers, then from the field looking up at her (as in the owner's recording at 18 s)
-	local camPos, camLook, caption
-	if not showing then
-		camPos, camLook = Vector3.new(0, 7.5, 16.5), Vector3.new(0, 2.2, -1)
-		caption = string.format("%.2f s  powers", t)
-	else
-		local s = math.clamp((t - POWERS_END) / (LENGTH - POWERS_END), 0, 1)
-		camPos = Vector3.new(-8 + 10 * s, 6, -14 + 6 * s)
-		camLook = SHOW + Vector3.new(0, girlHeight * 0.55, 0)
-		caption = if new then "after: stand, lights, title" else "before: the old look"
+	-- camera: one wide view of the field; it follows the Body Double off into the distance
+	local camPos, camLook = Vector3.new(-2, 8, 17), Vector3.new(-2, 2.2, -1)
+	if shot.name == "Body Double" and copyRoot then
+		local d = copyRoot.CFrame.Position
+		camLook = Vector3.new(-2, 2.2, -1):Lerp(Vector3.new(d.X, 2.2, d.Z), 0.45)
+	elseif shot.name == "Bear Trap" or shot.name == "Slow Wave" then
+		camPos, camLook = Vector3.new(0, 8, 16), Vector3.new(0, 2, -2)
 	end
 	camera.CFrame = CFrame.new(camPos)
 	for _, s in STILL_AT do
 		if t >= s - DT / 2 and t < s + DT / 2 - 1e-6 then table.insert(stills, f) end
 	end
+	local caption = string.format("%.2f s  %s%s", t, string.upper(shot.name),
+		if shot.name == "Invisible" then "  (as others see you)" elseif snapped and t < snapped + TRAP.Hold then "  STUCK!" else "")
 	scene:frame(camPos, camLook, {
 		sprites = sprites, ribbons = ribbons, lights = lights, labels = labels, grades = grades, bloom = bloom, caption = caption,
 		fov = 70,
 	})
 end
+assert(snapped, "the runner never ran into the trap")
 scene:save(nil, FPS, 1280, 720, { sky = "#8cc4f2", ground = "#d7914a", grid = false, stills = stills })
-print("stills at frames " .. table.concat(stills, ","))
+print("stills at frames " .. table.concat(stills, ",") .. string.format("; trap snapped at %.2f s", snapped))

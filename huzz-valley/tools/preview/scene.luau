@@ -100,14 +100,34 @@ if cfg.NEXTMAP then
 	task.wait(0.1)
 	require(game.StarterPlayer.StarterPlayerScripts.HuzzClient.UI.Screens.NextMap).refresh()
 end
--- POWERS="Runner"|"Catcher": a round running, slot 1 used up, slot 2 ready.
+-- POWERS="Runner"|"Catcher": the ability cards and dash bar as in the owner's pictures (design/owner-oct19):
+-- Runner = pic c (this round's Shield, waiting on the line: WAIT FOR ROUND, DASH PAUSED); Catcher = pic b (Bear Trap
+-- and Slow Wave ready, CATCH READY). POWERSTATE="Stunned" (a catcher 1 s into a dive's stun), "Carrying" (a runner
+-- with the girl: Speed Boost's card too, dash recharging), "Cooldown" (Q charging, the knife charging).
 if cfg.POWERS then
 	local round = game.ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Round")
+	_G.__serverClock = function() return 1000 end -- (a still clock: the harness's own one jumps about)
+	local now = workspace:GetServerTimeNow()
+	local runner = cfg.POWERS == "Runner"
 	round:SetAttribute("Stage", "Running")
 	player:SetAttribute("HuzzRole", cfg.POWERS)
-	player:SetAttribute("HuzzStatus", if cfg.POWERS == "Runner" then "Active" else "")
-	player:SetAttribute("PowerReady1", -1) -- used up this round
+	player:SetAttribute("HuzzStatus", if runner then "Active" else "")
+	player:SetAttribute("PowerName1", if runner then (cfg.ABILITY or "Shield") else "BearTrap")
+	player:SetAttribute("PowerName2", if runner then "SpeedBoost" else "SlowWave")
+	player:SetAttribute("PowerReady1", 0)
 	player:SetAttribute("PowerReady2", 0)
+	player:SetAttribute("HuzzFrozen", runner and cfg.POWERSTATE == nil)
+	if cfg.POWERSTATE == "Stunned" then
+		player:SetAttribute("DashReady", now + 1.6)
+		player:SetAttribute("StunnedFrom", now - 1)
+		player:SetAttribute("StunnedUntil", now + 1)
+	elseif cfg.POWERSTATE == "Carrying" then
+		round:SetAttribute("HolderId", player.UserId)
+		player:SetAttribute("DashReady", now + 1)
+	elseif cfg.POWERSTATE == "Cooldown" then
+		player:SetAttribute("PowerReady1", now + 4)
+		player:SetAttribute("KnifeReady", now + 0.4)
+	end
 	require(game.StarterPlayer.StarterPlayerScripts.HuzzClient.UI.Screens.PowerBar).refresh()
 end
 -- HERO=true: the picked runner's Chicken or Hero choice (5 seconds left), with the power tiles under it.

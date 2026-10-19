@@ -44,6 +44,8 @@ local LEVEL = {
 	spin_tick = { 0.3, 0.02 }, spin_win = { 0.55, 0 }, spin_big_win = { 0.65, 0 },
 	lunge = { 0.5, 0.04 }, trap_set = { 0.45, 0 }, trap_snap = { 0.55, 0 }, knock_down = { 0.55, 0 },
 	revive = { 0.55, 0 }, aura_pickup = { 0.5, 0.02 }, speed_wind = { 0.22, 0 },
+	-- the Oct 19 powers and the heartbeat (Gameplay/Heartbeat sets its own volume by how close the catcher is)
+	trap_throw = { 0.45, 0 }, invisible = { 0.45, 0 }, glitch = { 0.45, 0 }, decoy = { 0.45, 0 }, heartbeat = { 0.5, 0 },
 	-- the Secret cutscene (Roblox's library: first guesses from the listings, tune after hearing them in Studio;
 	-- the bed and the tail stay well under the hit and the sting, nothing jumps out)
 	secret_riser = { 0.45, 0 }, secret_shimmer = { 0.18, 0 }, secret_impact = { 0.55, 0 },
@@ -80,6 +82,12 @@ local FALLBACK = {
 	heart_shield = { PING, 0.55, 0.85 },
 	power_rush = { "rbxasset://sounds/action_jump.mp3", 0.9, 1.05 },
 	aura_pickup = { PING, 0.45, 1.1 },
+	-- Oct 19: the heartbeat is a soft low thump (Roblox's landing thud played low), the new powers soft and low
+	heartbeat = { "rbxasset://sounds/action_jump_land.mp3", 1, 0.55 },
+	trap_throw = { "rbxasset://sounds/action_jump.mp3", 0.8, 0.85 },
+	invisible = { PING, 0.45, 0.7 },
+	glitch = { CLICK, 0.7, 0.75 },
+	decoy = { PING, 0.45, 0.8 },
 }
 
 -- Button and menu sounds go through the Interface group (Settings > Audio > Button Sounds), the rest through Effects.

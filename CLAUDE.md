@@ -71,7 +71,7 @@ This file loads in every session, so keep it short. Each game folder has its own
   - never key a weak table by Instance: entries vanish at random while the part still exists;
   - picture names are case-sensitive in Roblox, while the preview finds files regardless of case, so check names with a test;
   - Studio's editor only shows uploaded images (`rbxassetid`). Pixels drawn by scripts (EditableImage) appear only in Play, or through a Studio helper plugin.
-- **A clean offline run doesn't prove Studio works:** Lune's copy of the Roblox API is outdated. Start each UI part separately, so one failure can't stop the rest, and show errors on screen, so the owner can screenshot them.
+- **A clean offline run doesn't prove Studio works:** Lune's copy of the Roblox API is outdated. Start each UI part separately, so one failure can't stop the rest, and report errors in Output on tagged lines (no red box on screen: the owner asked, Oct 19).
 - **Animations from the owner's files** are raw KeyframeSequences: extract them with Lune into a `.rbxm`, play them
   in Studio with `KeyframeSequenceProvider` (temporary IDs, Studio only), preview them with
   `<game>/tools/preview/motion3d/anim_scene.luau`, and give the owner a publish helper for the live game.

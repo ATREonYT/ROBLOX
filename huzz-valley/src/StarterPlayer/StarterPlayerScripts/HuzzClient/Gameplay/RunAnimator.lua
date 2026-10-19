@@ -78,7 +78,8 @@ function M.start()
 				-- a power's wind-up (Gameplay/PowerEffects stamps it on this screen): the cast pose
 				local castAt, castLen = character:GetAttribute("HuzzCastAt"), character:GetAttribute("HuzzCastLen")
 				local castAge = if type(castAt) == "number" and type(castLen) == "number" then now - castAt else nil
-				RunMotion.step(r.rec, dt, speed, math.abs(v.Y) < 10, carriers[p.UserId] == true, age, localDir, castAge, castLen)
+				RunMotion.step(r.rec, dt, speed, math.abs(v.Y) < 10, carriers[p.UserId] == true, age, localDir, castAge, castLen,
+					character:GetAttribute("HuzzCastKind"))
 			end
 		end
 	end)

@@ -38,7 +38,11 @@ shot tiers 11-tier-index 1536 700 '{SCREEN="Tiers", SCALE=2}'
 shot quests 05-progression-quests 1536 700 '{SCREEN="Progression", TAB="Quests", SCALE=2}'
 shot map-vote 15-map-vote 1536 656 '{SCREEN="MapVote", SCALE=2, VOTE="Base_Map,Halloween_Map,3,5,Halloween_Map"}'
 shot girl-roll 15-map-vote 1536 656 '{SCREEN="Hud", SCALE=2, ROLL=6.5}'
-shot power-bar 13-lobby-hud 1536 694 '{SCREEN="Hud", SCALE=2, POWERS="Runner"}'
+shot power-bar none 1536 694 '{SCREEN="Hud", SCALE=2, POWERS="Runner"}' # (vs his pic c: tools/preview/side_by_side_bar.py)
+shot power-bar-catcher none 1536 694 '{SCREEN="Hud", SCALE=2, POWERS="Catcher"}' # (vs his pic b)
+shot power-bar-stunned none 1536 694 '{SCREEN="Hud", SCALE=2, POWERS="Catcher", POWERSTATE="Stunned"}'
+shot power-bar-carrying none 1536 694 '{SCREEN="Hud", SCALE=2, POWERS="Runner", POWERSTATE="Carrying", ABILITY="BodyDouble"}'
+shot power-bar-cooldown none 1536 694 '{SCREEN="Hud", SCALE=2, POWERS="Catcher", POWERSTATE="Cooldown"}'
 shot hero-choice 13-lobby-hud 1536 694 '{SCREEN="Hud", SCALE=2, HERO=true}'
 shot next-map 13-lobby-hud 1536 694 '{SCREEN="Hud", SCALE=2, NEXTMAP=true, VOTE="Base_Map,Halloween_Map,3,5,Halloween_Map"}'
 shot dance-wheel 13-lobby-hud 1536 694 '{SCREEN="Hud", SCALE=2, WHEEL=true}'

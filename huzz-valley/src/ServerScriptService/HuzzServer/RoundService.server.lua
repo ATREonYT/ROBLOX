@@ -184,7 +184,7 @@ local function syncPlayer(id)
 		local still = KnockdownService.isDown(p) or PowerService.stuck(id) or frozen[id] == true
 		h.WalkSpeed = if still then 0 else PowerService.speedOf(id, speedFor(id))
 		if lastRunner == id and not still then
-			h.WalkSpeed = math.min(h.WalkSpeed, catcherTop() + 4) -- (Rizz Rush on top of the catch-up: capped)
+			h.WalkSpeed = math.min(h.WalkSpeed, catcherTop() + 4) -- (a Speed Boost on top of the catch-up: capped)
 		end
 		h:SetAttribute("HuzzSpeed", h.WalkSpeed) -- the top speed: Gameplay/Sprint builds up to it from a walk
 		-- No jumping anywhere (owner: "remove the jumping from the lobby"): Space is the huss instead.
@@ -1206,7 +1206,7 @@ local function stabNear(id, me: BasePart, knife, only: number?, along: Vector3?)
 	end
 	if best then
 		if PowerService.blocks(id, best) then
-			return true -- (a Heart Shield took it: that ends the stab or the lunge)
+			return true -- (a Shield took it: that ends the stab or the dive)
 		end
 		apply(Rules.tag(match, id, best))
 		return true
@@ -1277,8 +1277,8 @@ Net.get("Stab").OnServerEvent:Connect(function(player, claim)
 	if not (match and not match.over and match.roles[id] == "Catcher" and (stage == "Running" or stage == "HeroRun") and not frozen[id]) then
 		return
 	end
-	if Config.TagMode ~= "Stab" or KnockdownService.isDown(player) or not PowerService.canStab(id) then
-		return -- (dizzy from a Heart Shield: no stabbing for a moment)
+	if Config.TagMode ~= "Stab" or KnockdownService.isDown(player) or not PowerService.canStab(id) or PowerService.stunned(id) then
+		return -- (dizzy from a Shield, or stunned after a dive: no stabbing for a moment)
 	end
 	local now = os.clock()
 	if lastStab[id] and now - lastStab[id] < Config.Stab.Cooldown * 0.8 then
@@ -1355,6 +1355,7 @@ Net.get("Lunge").OnServerEvent:Connect(function(player, arg, dir)
 	player:SetAttribute("DashReady", now + Config.Lunge.Cooldown)
 	player:SetAttribute("DashCooldown", Config.Lunge.Cooldown) -- (how long this wait is: the HUD's dash bar)
 	c:SetAttribute("LungeAt", now) -- (every screen plays the leap)
+	PowerService.stun(id, Config.Lunge.StunAfter or Config.Lunge.Time, Config.Lunge.Stun or 0) -- (the dive's 2 s on the floor)
 	RoundNet:FireAllClients("Stab", { id = id, lunge = true }) -- (the stab move, on the catcher's own screen too)
 	if Config.TagMode ~= "Stab" or arg == true then
 		return -- (touch mode: the leap is just a leap; true: the catcher's screen reports the hit itself)

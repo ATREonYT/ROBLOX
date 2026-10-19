@@ -31,6 +31,9 @@
       },
       "HuzzImages": {
         "$path": "src/ServerStorage/HuzzImages"
+      },
+      "HuzzKnifeGlb": {
+        "$path": "src/ServerStorage/HuzzKnifeGlb"
       }
     }
   }

@@ -413,7 +413,7 @@ MapService.facing = facing
 	  - The pad is PAD_WIDTH x PAD_DEPTH studs with nothing at all in it (checked here; moved along the carpet and a
 	    little inwards until it is, never onto his props); 12 spots in it, 4 apart (Shared/SpawnSpots: floor, body,
 	    room), and more open spots beyond its open side for a full server.
-	  - Barriers: a low wooden rail on three sides (his display fence's brown, as wood, 2.4 studs tall, posts about
+	  - Barriers (OFF since Oct 19, owner: "please remove that barrier in the lobby"; MapService.RAIL): a low wooden rail on three sides (his display fence's brown, as wood, 2.4 studs tall, posts about
 	    3.4 apart), open on the side facing into the plaza; an invisible wall 7 studs tall along each rail so nobody
 	    steps over it or is pushed off the plaza's front edge while a crowd spawns. It never blocks a camera or a ray
 	    (CanQuery off). Built when the game starts, so it shows in Play, not in Studio's edit view; a place that
@@ -421,6 +421,7 @@ MapService.facing = facing
 	  - His SpawnLocation moves onto the pad, so Roblox drops new players there too.
 ]]
 local PAD_WIDTH, PAD_DEPTH = 20, 18
+MapService.RAIL = false -- (the rail and its invisible walls: removed by the owner, Oct 19)
 MapService.PAD_WIDTH, MapService.PAD_DEPTH = PAD_WIDTH, PAD_DEPTH
 function MapService.spawnPad(rec)
 	ignoreCache = nil -- (a fresh look at the world for this burst of checks)
@@ -457,9 +458,10 @@ function MapService.spawnPad(rec)
 	centre = Vector3.new(centre.X, geo.floor(centre.X, centre.Z, top + 3, top - 3) or top, centre.Z) -- (on his carpet)
 	local pad = { centre = centre, inward = inward, across = across, open = found }
 	rec.pad = pad
-	-- the rail (unless the place has its own)
+	-- the rail (unless the place has its own). Off since the owner's Oct 19 screenshot: "please remove that barrier
+	-- in the lobby"; MapService.RAIL = true brings it back.
 	local rail = Workspace:FindFirstChild("HuzzSpawnPad")
-	if not rail then
+	if not rail and MapService.RAIL then
 		rail = MapService.buildRail(centre, inward, across, function(x, z) return geo.floor(x, z, top + 3, top - 3) end)
 		rail.Parent = Workspace
 	end
