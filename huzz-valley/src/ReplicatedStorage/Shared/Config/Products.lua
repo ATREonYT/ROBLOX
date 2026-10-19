@@ -80,12 +80,12 @@ Products.Coins = {
 	{ Key = "Coins5000", Kind = "Coins", Name = "5,000 Coins", Blurb = "Get 5,000 coins\nto spend in game.", Id = 0, Price = 299, Amount = 5000, OnSale = false, Icon = "CurrencyCoin", Art = "CoinPack5000", Why = "needs its Developer Product ID" },
 } :: { Product }
 
--- Spin the Wheel spins (Screens/SpinWheel's purple buttons; the owner's prices). Developer Products: create them on
+-- Spin the Wheel spins (Screens/SpinWheel's purple buttons; the owner's prices, halved Oct 19: "spin prices lower"). Developer Products: create them on
 -- the Creator Dashboard and put each ID here. While Id = 0 the button shows its price and only says "coming soon".
 Products.Spins = {
-	{ Key = "Spins1", Kind = "Spins", Name = "1 Spin", Blurb = "One more spin\non the wheel.", Id = 0, Price = 48, Amount = 1, OnSale = true, Icon = "SpinWheel", Art = "" },
-	{ Key = "Spins10", Kind = "Spins", Name = "10 Spins", Blurb = "Ten more spins\non the wheel.", Id = 0, Price = 340, Amount = 10, OnSale = true, Icon = "SpinWheel", Art = "" },
-	{ Key = "Spins100", Kind = "Spins", Name = "100 Spins", Blurb = "A hundred spins\non the wheel.", Id = 0, Price = 1200, Amount = 100, OnSale = true, Icon = "SpinWheel", Art = "" },
+	{ Key = "Spins1", Kind = "Spins", Name = "1 Spin", Blurb = "One more spin\non the wheel.", Id = 0, Price = 24, Amount = 1, OnSale = true, Icon = "SpinWheel", Art = "" },
+	{ Key = "Spins10", Kind = "Spins", Name = "10 Spins", Blurb = "Ten more spins\non the wheel.", Id = 0, Price = 170, Amount = 10, OnSale = true, Icon = "SpinWheel", Art = "" },
+	{ Key = "Spins100", Kind = "Spins", Name = "100 Spins", Blurb = "A hundred spins\non the wheel.", Id = 0, Price = 600, Amount = 100, OnSale = true, Icon = "SpinWheel", Art = "" },
 } :: { Product }
 
 Products.Tabs = { "Passes", "Cosmetics", "Items", "Coins" } -- (Items: the coin shop, Config/CoinShop)

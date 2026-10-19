@@ -128,12 +128,14 @@ The lobby side (one lobby per map, paint, his new lobby): [lobby.md](lobby.md). 
 - Maps load in front of the one lobby and repaint its floor: [lobby.md](lobby.md). Map pictures in the vote: [ui.md](ui.md).
 
 ## After a game
-- **Results screen** (`Screens/Results`): after a game, once back in the lobby with nothing open (it waits out the map
-  vote) a GAME OVER window: YOU WIN / YOU LOST / THE BOT WINS, who got the girl, cards for crossed / caught / saved /
-  hero runs (this game only: RoundService `tally`, filled by `addStat`) and the coins + Aura earned (Round remote
-  "Results", per player; coins include a Hero bonus, Aura the stars collected: player attribute `HuzzGameAura`).
-  Also a CATCHES card, XP pill, "X takes her home"; Hero card "Make it: carry her +25", Chicken "First across wins her".
-  Preview: `shots.sh <out> results`.
+- **Results = the winner page** (`Screens/Results`, owner Oct 19 "winner page", his picture a; layout in
+  [ui.md](ui.md)): after a game, once back in the lobby with nothing open (it waits out the map vote): RUNNERS WIN /
+  CATCHERS WIN / THE BOT WINS, MVP / Survival / Catches top 3 with avatars, your XP and its parts, coins + Aura
+  earned, your girl line ("X takes her home"), your level bar. The Round remote's "Results" (per player) carries `board` (everyone's
+  numbers this game: RoundService `tally`, filled by `addStat`), `team`, `xp`, `heroPaid`, coins (with a Hero bonus
+  and the friend +10%) and Aura (the stars collected: player attribute `HuzzGameAura`). Rankings: `Shared/Standings`.
+  Preview: `shots.sh <out> results results-catchers`. (Hero card "Make it: carry her +25" and Chicken "First across
+  wins her" are the HeroChoice cards.)
 - **Pay:** 25 coins a game, 50 for a win, +3 Aura on a win, Hero bonus 25 (only with another runner in the game);
   x2 while a wheel boost lasts. A catchers' win pays only catchers who caught someone (or the lead). A repeat girl
   pays `DupeCoins` by rarity.

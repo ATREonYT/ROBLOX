@@ -3,13 +3,14 @@
 -- HuzzAnimations.Dance_<Id>). Names are our own (most of the originals are other games' emote names).
 -- AnimationId = the published ID; "" plays the raw one in Studio (Shared/AnimationLibrary), and in the live game
 -- the dance says it isn't ready until it's published (tools/studio/publish-animations.lua).
---   Starter = owned by everyone. Pack = granted by the Dance Pack pass. Robot = from the reward track (level 3).
+--   Starter = owned by everyone. Pack = granted by the Dance Pack pass. Robot = from the reward track (level 3) or the
+--   Dance Crate. Crate = only from the Dance Crate (Config/Crates).
 --   Color = the card's glow (Dances.Colors, after the owner's Oct 17 mockup: Aerobics pink, Boogie Down blue, Bounce
 --   Bounce green, Breakdown gold, Floss red, Hype violet). Blurb = the one line under the big picture (short, no dashes).
 --   Music = the key of its song in Dances.Tracks (owner, Oct 19: "find the sounds we can use for all of the dances ...
 --   logically select the best sounds/songs possible"): only you hear it, quieter than the background music, which
 --   dips under it (Gameplay/Music.dance). Research and reasons: docs/sound-picks.md.
-export type Dance = { Id: string, Name: string, AnimationId: string, Art: string?, Starter: boolean?, Pack: boolean?, Color: string, Blurb: string, Order: number, Music: string? }
+export type Dance = { Id: string, Name: string, AnimationId: string, Art: string?, Starter: boolean?, Pack: boolean?, Crate: boolean?, Color: string, Blurb: string, Order: number, Music: string? }
 export type Track = { Id: string, Name: string, By: string, Style: string, Source: string, Start: number? }
 
 local Dances = {}
@@ -85,6 +86,14 @@ Dances.List = {
 	{ Id = "CrabDance", Name = "Crab Dance", AnimationId = "", Starter = true, Color = "Red", Blurb = "Scuttle side to side like a crab!", Order = 23, Music = "CrabRave" },
 	{ Id = "Toprock", Name = "Toprock", AnimationId = "", Pack = true, Color = "Gold", Blurb = "Rock your feet before the big moves.", Order = 24, Music = "Akim" },
 	{ Id = "Aerobics", Name = "Aerobics", AnimationId = "", Starter = true, Color = "Pink", Blurb = "Get active with this energetic dance!", Order = 25, Music = "StayUpbeat" },
+	-- Crate dances (owner, Oct 19: "dances, from crates"): only the Dance Crate gives them (Config/Crates).
+	{ Id = "BoogieBlast", Name = "Boogie Blast", AnimationId = "", Crate = true, Color = "Pink", Blurb = "Throw a party right where you stand!", Order = 26, Music = "BigDeal" },
+	{ Id = "HeadBanger", Name = "Head Banger", AnimationId = "", Crate = true, Color = "Red", Blurb = "Nod along hard to the beat.", Order = 27, Music = "Akim" },
+	{ Id = "TheTwist", Name = "The Twist", AnimationId = "", Crate = true, Color = "Blue", Blurb = "Twist and turn like it's the old days.", Order = 28, Music = "SwingWithMe" },
+	{ Id = "ZanyZig", Name = "Zany Zig", AnimationId = "", Crate = true, Color = "Green", Blurb = "Silly steps that zig and zag.", Order = 29, Music = "Shiawase" },
+	{ Id = "PowerMoves", Name = "Power Moves", AnimationId = "", Crate = true, Color = "Violet", Blurb = "Big strong moves for big wins.", Order = 30, Music = "HypeHorns" },
+	{ Id = "Showstopper", Name = "Showstopper", AnimationId = "", Crate = true, Color = "Gold", Blurb = "All eyes on you. Steal the show!", Order = 31, Music = "StayUpbeat" },
+	{ Id = "ZombieGroove", Name = "Zombie Groove", AnimationId = "", Crate = true, Color = "Green", Blurb = "Rise from the grave and dance!", Order = 32, Music = "Downtown" },
 } :: { Dance }
 
 local byId: { [string]: Dance } = {}

@@ -199,7 +199,7 @@ function M.start()
 			local char = player.Character
 			local root = char and char:FindFirstChild("HumanoidRootPart")
 			for _, rec in boards do
-				if not root or (root.Position - rec.centre).Magnitude < Config.TurnRange + 60 then measureRoom(rec) end
+				if not root or (root.CFrame.Position - rec.centre).Magnitude < Config.TurnRange + 60 then measureRoom(rec) end -- (CFrame: Lune can't read .Position on place parts)
 			end
 		end
 	end)

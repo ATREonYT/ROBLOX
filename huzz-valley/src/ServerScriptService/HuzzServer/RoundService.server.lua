@@ -76,9 +76,7 @@ local function addStat(id, stat, amount)
 	end
 	local p = byId[id]
 	if p then
-		DataService.update(p, function(d)
-			d.Stats[stat] = (d.Stats[stat] or 0) + amount
-		end)
+		ProgressService.addStat(p, stat, amount) -- (saved quest counters, and the daily quests count them too)
 	end
 end
 
@@ -940,13 +938,25 @@ local function finishGame()
 			dupeCoins = (Config.DupeCoins or {})[girl.rarity or ""] or 25
 		end
 	end
+	-- A catchers' win goes to the catchers who did the catching (the lead, or anyone with a catch). Runners caught
+	-- in earlier rounds are catchers too, and those caught in the last round survived longer than them, so
+	-- "every catcher wins" paid the wrong players (loop audit, Oct 18).
+	local function wonGame(id, role)
+		local caught = id == match.lead or id == winnerId or (match.catches[id] or 0) > 0
+		return not botWon and ((match.team == "Runners" and role == "Runner") or (match.team == "Catchers" and role == "Catcher" and caught))
+	end
+	-- the winner page (Screens/Results, Shared/Standings): everyone's numbers for its MVP / Survival / Catches tabs
+	local board = {}
+	for id, role in match.roles do
+		local p, t = byId[id], tally[id] or {}
+		if p then
+			table.insert(board, { user = p.UserId, name = p.DisplayName, crossed = t.Crossings or 0, catches = t.Catches or 0,
+				rescues = t.Rescues or 0, heroes = t.Heroes or 0, won = wonGame(id, role) })
+		end
+	end
 	for id, role in match.roles do
 		addStat(id, "Rounds", 1) -- "Play 3 games"
-		-- A catchers' win goes to the catchers who did the catching (the lead, or anyone with a catch). Runners caught
-		-- in earlier rounds are catchers too, and those caught in the last round survived longer than them, so
-		-- "every catcher wins" paid the wrong players (loop audit, Oct 18).
-		local caught = id == match.lead or id == winnerId or (match.catches[id] or 0) > 0
-		local won = not botWon and ((match.team == "Runners" and role == "Runner") or (match.team == "Catchers" and role == "Catcher" and caught))
+		local won = wonGame(id, role)
 		if won then
 			addStat(id, "Wins", 1)
 			-- Crown Pose (a Robux cosmetic): winners who wear it strike it (HuzzClient/Gameplay/CrownPose)
@@ -962,6 +972,7 @@ local function finishGame()
 		if p and pay then
 			local coins, aura = pay.Played + (if won then pay.Won else 0), if won then pay.WonAura else 0
 			coins *= require(script.Parent.SpinService).boost(p, "Coins") -- Spin the Wheel's "x2 Coins" while it lasts
+			coins = require(script.Parent.FriendService).coins(p, coins) -- +10% while a friend plays here (Config/Friends)
 			DataService.update(p, function(d)
 				d.Coins = (d.Coins or 0) + coins
 				d.Aura = (d.Aura or 0) + aura
@@ -977,6 +988,7 @@ local function finishGame()
 				girl = girl.name, rarity = girl.rarity, gotGirl = winnerId == id, girlTaken = winnerId ~= nil,
 				winnerName = if winner then winner.DisplayName else nil, xp = xp, level = levelUp,
 				dupeCoins = if winnerId == id then dupeCoins else nil,
+				team = match.team, bot = botWon or nil, board = board, heroPaid = t.HeroPaid or 0,
 				crossed = t.Crossings or 0, catches = t.Catches or 0, rescues = t.Rescues or 0, heroes = t.Heroes or 0,
 				-- everything this game paid: the game's pay, a Hero bonus, and Aura from stars on the field
 				coins = coins + (t.BonusCoins or 0), aura = aura + (p:GetAttribute("HuzzGameAura") or 0),
@@ -990,7 +1002,11 @@ local function finishGame()
 			-- your first girl walks with you at once, so everyone sees her (owner, Oct 19: "make the girls be seen on
 			-- everyones screen"; before, a won girl waited in the Index until you equipped her)
 			if (d.Equipped or "") == "" then d.Equipped = girl.id end
-			if dupeCoins then d.Coins = (d.Coins or 0) + dupeCoins end
+			if dupeCoins then
+				d.Coins = (d.Coins or 0) + dupeCoins
+				d.Dupes = d.Dupes or {}
+				d.Dupes[girl.id] = (d.Dupes[girl.id] or 0) + 1 -- (a spare copy for PRESTIGE: Shared/PrestigeRules)
+			end
 		end)
 		if match.holder ~= winnerId then
 			moveGirlTo(match.holder, winnerId, "Won")

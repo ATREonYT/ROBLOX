@@ -9,6 +9,7 @@ local Products = require(ReplicatedStorage.Shared.Config.Products)
 local CrownPose = require(ReplicatedStorage.Shared.CrownPose)
 local Crates = require(ReplicatedStorage.Shared.Config.Crates)
 local CrateRoll = require(ReplicatedStorage.Shared.CrateRoll)
+local PrestigeRules = require(ReplicatedStorage.Shared.PrestigeRules)
 local Net = require(ReplicatedStorage.Shared.Net)
 local DataService = require(script.Parent.DataService)
 local ProgressService = require(script.Parent.ProgressService)
@@ -30,6 +31,15 @@ function VERBS.Equip(player, id)
 		ok = true
 	end)
 	return ok, why
+end
+
+-- PRESTIGE in the Index (Shared/PrestigeRules): spends a spare copy of her, up to level 3
+function VERBS.Prestige(player, id)
+	local level, why = nil, nil
+	DataService.update(player, function(data)
+		level, why = PrestigeRules.apply(data, id)
+	end)
+	return level ~= nil, if level then level else why
 end
 
 function VERBS.Unequip(player)
@@ -155,6 +165,7 @@ end
 
 function VERBS.ClaimReward(player, level) return ProgressService.claimReward(player, level) end
 function VERBS.ClaimQuest(player, id) return ProgressService.claimQuest(player, id) end
+function VERBS.ClaimDaily(player, key) return ProgressService.claimDaily(player, key) end
 
 function ActionService.start()
 	(Net.get("Action") :: RemoteFunction).OnServerInvoke = function(player, verb, ...)

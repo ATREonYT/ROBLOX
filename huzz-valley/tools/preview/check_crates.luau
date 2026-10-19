@@ -61,12 +61,12 @@ MM.open("Shop", "Crates")
 task.wait(0.2)
 local shop = gui:FindFirstChild("Shop")
 local body = shop and shop:FindFirstChild("Products", true)
-local card = body and body:FindFirstChild("Starter")
+local card = body and body:FindFirstChild("Starter", true)
 check("Shop has a CRATES tab", shop ~= nil and shop:FindFirstChild("CratesTab", true) ~= nil)
 check("the crate card shows", card ~= nil)
 check("OPEN shows the Aura price", card ~= nil and card.Open:FindFirstChild("Label", true).Text == "OPEN " .. crate.Price)
 local rows, sum = 0, 0
-for _, ch in (body and body:GetChildren() or {}) do
+for _, ch in (body and body:FindFirstChild("SectionStarter") and body.SectionStarter:GetChildren() or {}) do
 	if string.match(ch.Name, "^Odds%d+$") then
 		rows += 1
 		sum += tonumber(string.match(ch.Chance.Text, "[%d%.]+")) or 0
@@ -75,6 +75,36 @@ end
 check(`every item's chance is listed ({rows} of {#crate.Items})`, rows == #crate.Items)
 check(`the chances add to 100 ({sum})`, math.abs(sum - 100) < 0.5)
 check("the pity counter shows", card ~= nil and card.Pity.Text == "in 30 opens" and card.PityLabel.Text == "GUARANTEED LEGENDARY")
+-- every crate (owner, Oct 19: "knifes, dances, from crates") has its own section with every item's chance, one under
+-- the other; the Knife Crate holds his coin shop knives, the Halloween Crate his 18 Halloween ones, no pass knives
+local lastBottom = -1
+for _, cr in Crates.List do
+	local sec = body and body:FindFirstChild("Section" .. cr.Id)
+	local n, total = 0, 0
+	for _, ch in (sec and sec:GetChildren() or {}) do
+		if string.match(ch.Name, "^Odds%d+$") then
+			n += 1
+			total += tonumber(string.match(ch.Chance.Text, "[%d%.]+")) or 0
+		end
+	end
+	check(`{cr.Id}: its section lists all {#cr.Items} chances ({n})`, sec ~= nil and n == #cr.Items)
+	check(`{cr.Id}: shown chances add to about 100 ({total})`, math.abs(total - 100) < 1.5)
+	check(`{cr.Id}: its section sits below the one before`, sec ~= nil and sec.Position.Y.Offset > lastBottom)
+	if sec then lastBottom = sec.Position.Y.Offset + sec.Size.Y.Offset end
+	for _, it in cr.Items do
+		local c = it.Kind == "Cosmetic" and CoinShop.get(it.Id)
+		if c then check(`{cr.Id}: {it.Id} is no pass knife`, c.Pass == nil) end
+	end
+end
+local knifeCrate, halloweenCrate, danceCrate = Crates.get("Knife"), Crates.get("Halloween"), Crates.get("Dance")
+check(`the Knife Crate holds his 26 sold knives ({knifeCrate and #knifeCrate.Items})`, knifeCrate ~= nil and #knifeCrate.Items == 26)
+check(`the Halloween Crate holds his 18 Halloween knives ({halloweenCrate and #halloweenCrate.Items})`, halloweenCrate ~= nil and #halloweenCrate.Items == 18)
+local danceOnly = 0
+for _, it in (danceCrate and danceCrate.Items or {}) do
+	local d = it.Kind == "Dance" and Dances.get(it.Id)
+	if d and d.Crate then danceOnly += 1 end
+end
+check(`the Dance Crate has its own dances ({danceOnly})`, danceOnly == 7)
 
 -- 3. OPEN: the screen opens, the server takes the Aura once and answers with the prize and an honest reel
 local Action = RS.Remotes.Action
@@ -188,7 +218,7 @@ MM.open("Shop", "Crates")
 task.wait(0.2)
 local auraBefore = data.Aura
 me:SetAttribute("HuzzCinematic", true)
-card = gui.Shop:FindFirstChild("Products", true):FindFirstChild("Starter")
+card = gui.Shop:FindFirstChild("Products", true):FindFirstChild("Starter", true)
 __fireOn(card.Open, "Activated")
 task.wait(0.3)
 check("no crate opens during the cutscene", MM.current() ~= "CrateOpen" and data.Aura == auraBefore)

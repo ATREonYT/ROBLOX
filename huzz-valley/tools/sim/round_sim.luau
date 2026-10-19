@@ -641,7 +641,9 @@ local function simulate(opts)
 		KnockdownService = KnockdownService, MapVoteService = MapVoteService, KnifeService = KnifeService, SafetyService = SafetyService,
 		NameTagService = NameTagService,
 		SpinService = { boost = function() return 1 end }, -- (the Spin the Wheel's x2 Coins: none in the sim)
-		ProgressService = { gameXP = function(_, won, t) return 40 + (if won then 40 else 0), nil end },
+		FriendService = { coins = function(_, n) return n end }, -- (no Roblox friends in the sim)
+		ProgressService = { gameXP = function(_, won, t) return 40 + (if won then 40 else 0), nil end,
+			addStat = function(p, stat, n) DataService.update(p, function(d) d.Stats[stat] = (d.Stats[stat] or 0) + n end) end },
 	}
 	local Shared = { Config = { Round = Config, Carry = Carry, Powers = Powers }, RoundRules = RoundRules, Net = Net, GirlRoll = GirlRoll, SecretReveal = SecretReveal, TouchHit = TouchHit,
 		KnifeLook = { pick = function() return nil end } } -- (which knife you wear: the default one in the sim)

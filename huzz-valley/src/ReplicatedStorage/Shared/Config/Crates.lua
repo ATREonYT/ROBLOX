@@ -12,12 +12,41 @@
 	          Config/Dances id) or "Coins" (Amount); Rarity (Config/Round.Rarities names) and Weight (chance share)
 	  Pity    { After = 30, Rarity = "Legendary" }: open 29 without a Legendary or better and the 30th one is one
 	  Duplicate  coins given back when you already own what came out: one number, or one per rarity
+	  Colors  the drawn box's colour, { top, bottom } hex (UI/CrateArt.paint); none = the kit purple
 	The opening screen (UI/Screens/CrateOpen) spins a reel of these items; Shop > CRATES lists every item's chance.
+	Owner, Oct 19: "knifes, dances, from crates". The Knife Crate and the Halloween Crate are filled from Config/CoinShop
+	(knivesFrom below), so a knife added or renamed there follows by itself; the Dance Crate holds the Robot and seven
+	crate-only dances from his 200-dance pack (Config/Dances, Crate = true: never free, never in the Dance Pack).
 ]]
 export type CrateItem = { Kind: "Cosmetic" | "Dance" | "Coins", Id: string?, Amount: number?, Name: string, Rarity: string, Weight: number }
-export type Crate = { Id: string, Name: string, Price: number, Items: { CrateItem }, Pity: { After: number, Rarity: string }?, Duplicate: (number | { [string]: number })? }
+export type Crate = { Id: string, Name: string, Price: number, Colors: { string }?, Items: { CrateItem }, Pity: { After: number, Rarity: string }?, Duplicate: (number | { [string]: number })? }
+
+local CoinShop = require(script.Parent.CoinShop)
 
 local Crates = {}
+
+-- Chance share per item by rarity (the crate's odds are these over their total, shown exactly in the Shop).
+local KNIFE_WEIGHT = { Common = 12, Uncommon = 10, Rare = 6, Epic = 4, Legendary = 2, Mythic = 1 }
+local HALLOWEEN_WEIGHT = { Common = 40, Uncommon = 24, Rare = 14, Epic = 6, Legendary = 2, Mythic = 1 }
+-- Coins back for a knife you own already (about a third of its coin shop price or less).
+local KNIFE_DUPLICATE = { Common = 60, Uncommon = 150, Rare = 300, Epic = 600, Legendary = 1200, Mythic = 2500 }
+
+-- The coin shop knives that `pick` accepts, in the shop's order, as crate items weighted by rarity. Never the Game
+-- Pass knives, the quest knives, the Spin Wheel's or any reward (they stay where they are earned).
+local function knivesFrom(pick: (any) -> boolean, weights: { [string]: number }): { CrateItem }
+	local list = {}
+	for _, it in CoinShop.Items do
+		if it.Slot == "Knife" and not it.Pass and not it.NotForSale and not it.Unlock and not it.Earn and it.Rarity and weights[it.Rarity] and pick(it) then
+			table.insert(list, it)
+		end
+	end
+	table.sort(list, function(a, b) return a.Order < b.Order end)
+	local items: { CrateItem } = {}
+	for _, it in list do
+		table.insert(items, { Kind = "Cosmetic", Id = it.Key, Name = it.Name, Rarity = it.Rarity :: string, Weight = weights[it.Rarity :: string] })
+	end
+	return items
+end
 
 Crates.List = {
 	-- CLAUDE'S FIRST PICK, waiting on the owner's own crate design (his to-do: "crate contents"). Only things that
@@ -45,6 +74,40 @@ Crates.List = {
 			{ Kind = "Cosmetic", Id = "StormKunai", Name = "Storm Kunai", Rarity = "Epic", Weight = 3 },
 			{ Kind = "Cosmetic", Id = "VoidFang", Name = "Void Fang", Rarity = "Legendary", Weight = 1 },
 			{ Kind = "Cosmetic", Id = "GalaxyTrail", Name = "Galaxy Trail", Rarity = "Legendary", Weight = 1 },
+		},
+	},
+	-- Owner, Oct 19: "knifes ... from crates". His 30 knives that the coin shop sells (26: not the three quest knives
+	-- or the Spin Wheel's Celestial Edge). Odds by rarity: Common 41.8%, Uncommon 29.9%, Rare 17.9%, Epic 8%,
+	-- Legendary 2%, Mythic 0.5%; a Legendary or the Mythic at the latest on the 40th open. 100 Aura.
+	{
+		Id = "Knife", Name = "Knife Crate", Price = 100, Colors = { "4FA8FF", "1F4FA8" },
+		Duplicate = KNIFE_DUPLICATE,
+		Pity = { After = 40, Rarity = "Legendary" },
+		Items = knivesFrom(function(it) return it.Set == nil end, KNIFE_WEIGHT),
+	},
+	-- His 18 Halloween knives (Pumpkin, Witch and Candy sets, Oct 19). Odds by rarity: Common 46%, Uncommon 27.6%,
+	-- Rare 16.1%, Epic 6.9%, Legendary 2.3%, Mythic 1.1%; a Legendary or a Mythic at the latest on the 40th. 120 Aura.
+	{
+		Id = "Halloween", Name = "Halloween Crate", Price = 120, Colors = { "FF7A1E", "A8360C" },
+		Duplicate = KNIFE_DUPLICATE,
+		Pity = { After = 40, Rarity = "Legendary" },
+		Items = knivesFrom(function(it) return it.Set ~= nil end, HALLOWEEN_WEIGHT),
+	},
+	-- Owner, Oct 19: "dances, from crates". The Robot plus seven dances only crates give (Config/Dances, Crate = true).
+	-- Odds: Common 50%, Uncommon 27%, Rare 15%, Epic 6%, Legendary 2%; the Legendary at the latest on the 30th. 80 Aura.
+	{
+		Id = "Dance", Name = "Dance Crate", Price = 80, Colors = { "FF6FC0", "A8307E" },
+		Duplicate = { Common = 50, Uncommon = 100, Rare = 200, Epic = 400, Legendary = 1000 },
+		Pity = { After = 30, Rarity = "Legendary" },
+		Items = {
+			{ Kind = "Dance", Id = "BoogieBlast", Name = "Boogie Blast", Rarity = "Common", Weight = 25 },
+			{ Kind = "Dance", Id = "HeadBanger", Name = "Head Banger", Rarity = "Common", Weight = 25 },
+			{ Kind = "Dance", Id = "TheTwist", Name = "The Twist", Rarity = "Uncommon", Weight = 13.5 },
+			{ Kind = "Dance", Id = "ZanyZig", Name = "Zany Zig", Rarity = "Uncommon", Weight = 13.5 },
+			{ Kind = "Dance", Id = "Robot", Name = "Robot", Rarity = "Rare", Weight = 7.5 },
+			{ Kind = "Dance", Id = "PowerMoves", Name = "Power Moves", Rarity = "Rare", Weight = 7.5 },
+			{ Kind = "Dance", Id = "Showstopper", Name = "Showstopper", Rarity = "Epic", Weight = 6 },
+			{ Kind = "Dance", Id = "ZombieGroove", Name = "Zombie Groove", Rarity = "Legendary", Weight = 2 },
 		},
 	},
 } :: { Crate }

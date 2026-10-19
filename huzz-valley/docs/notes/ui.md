@@ -14,6 +14,16 @@ in core `CLAUDE.md` section 1. Recipe for a new screen: core section 6. Preview 
   by Instance; picture names are case-sensitive; guard APIs Lune lacks (`Sound.Ended`, `CharacterAppearanceLoaded`,
   `LoadAnimation`, `ViewportFrame.CurrentCamera` reads) with `pcall`.
 - Icons/art: the owner's files, used as drawn (`tools/icons/pack_images.py`, icons packed at 192 px).
+- **Why pictures go missing in his Studio** (Oct 19, "make the icons appear for everything in the ui"):
+  `Config/ImageIds` is empty (nothing uploaded yet), so every picture is drawn by `ImageLoader` with EditableImage,
+  which needs Game Settings > Security > "Allow Mesh / Image APIs" on a published game; Studio's edit view shows
+  uploaded pictures only (ShowPictures plugin). One fix for him: STUDIO-STEPS Part 1 (top note there).
+  Until then: a picture that can't be drawn gets a stand-in (`ImageLoader.standIn`: an emoji per icon from `GLYPH`,
+  a TextLabel named NoPicture, removed the moment the picture shows or is uploaded; never saved into HuzzUI.rbxm),
+  and Studio Play shows one red note bottom left (`ImageLoader.studioNote`). Set icons with `Kit.setIcon` /
+  `Kit.setArt` (they clear the stand-in). A new icon needs a `GLYPH` entry (`check_pictures.luau` fails without).
+  The preview hides stand-ins unless STUDIO=1 (Studio's look). One real miss found: ArrowNext was never packed
+  (`pack_images.py` listed it as unused), so NEXT MAP's arrow was blank everywhere.
 
 ## Text must fit its box
 - Never leave a name or chip on AutomaticSize in a row with no width cap. `Kit.textWidth` (TextService, else a
@@ -73,7 +83,20 @@ in core `CLAUDE.md` section 1. Recipe for a new screen: core section 6. Preview 
 - Map pictures: `Config/Round` `Map.Pictures` names the `Config/Assets.Art` picture per map folder
   (Base/Halloween/BasketBall from `design/maps/`, packed 512 px, Play only until uploaded); a map not listed shows its
   live 3D view.
-- `Screens/Results`: [round.md](round.md). Admin: [economy.md](economy.md).
+- **Winner page** (`Screens/Results`, his picture a's top half one to one in our look; what it shows: [round.md](round.md)):
+  701 x 334, header 58 with the title centred (Gotham Heavy Italic 27), the tab's line under it in his pink-red, "Next
+  match · 12s" left (only with a real `NextRoundAt`). Tabs at y 64 (113 wide), cards measured off his picture at
+  0.649: #2 (38, 96, 191 x 130), #1 (241, 90, 219 x 142, green rim), #3 (472, 96). Avatars:
+  `Players:GetUserThumbnailAsync` (AvatarBust 180, pcall, cached per user) over a person icon; Studio's test players
+  have no avatar (negative ids), so they keep the icon. His orange/gold (#1 rim, numbers, bar) is our green. The
+  JOURNEY / PREMIUM half is left out (a paid season pass we don't have). `docs/previews/winner-vs-pic-a.jpg`.
+- **Daily quests** (`Screens/DailyQuests`, his picture d): 520 x 452, rows 488 x 88 at y 110 (gap 8); reward words in
+  the Spin wheel's purple with the reward's icon; IN PROGRESS (Slate) / CLAIM (green) / CLAIMED (dim).
+  `docs/previews/daily-quests-vs-pic-d.jpg`. Rules: [economy.md](economy.md).
+- **HUD right column:** INVITE (y 66), SPIN (132), QUESTS (198, green "!" while one is ready); centred-anchored
+  buttons keep their own Y when mirrored. "+10% COINS" (purple) over the coin pill with a friend in, stacked over
+  the green x2 tag when both show.
+- Admin: [economy.md](economy.md).
 
 ## Oct 17 screens
 - Shop ITEMS/COINS, DANCES and HOW TO PLAY (`Screens/HowToPlay`, was `Welcome`: first join + Menu) built from the
@@ -82,7 +105,8 @@ in core `CLAUDE.md` section 1. Recipe for a new screen: core section 6. Preview 
   Studio yet.
 
 ## Honest gaps
-- Not seen in Studio yet: the Oct 17 UI shine/rays/spin, the Oct 17 screens.
+- Not seen in Studio yet: the Oct 17 UI shine/rays/spin, the Oct 17 screens, the winner page (real avatars), daily
+  quests, the HUD's INVITE / QUESTS / "+10% COINS", the Index PRESTIGE button, the picture stand-ins.
 
 ## Why it is this way / history
 - **Text fit** (owner: "the rarities ... go out of the uis borders").

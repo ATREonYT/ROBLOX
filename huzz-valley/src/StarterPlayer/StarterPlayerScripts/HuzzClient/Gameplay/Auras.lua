@@ -32,6 +32,7 @@ function M.start()
 
 	local Shared = ReplicatedStorage:WaitForChild("Shared")
 	local AuraLook = require(Shared.AuraLook)
+	local PrestigeRules = require(Shared.PrestigeRules)
 	local Looks = require(Shared.Config.GirlLooks)
 	local Round = require(Shared.Config.Round)
 	local FollowMotion = require(Shared.FollowMotion)
@@ -281,7 +282,8 @@ function M.start()
 		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 		local root = humanoid and humanoid.RootPart
 		local key = p:GetAttribute("HuzzCompanion") or ""
-		local rarity = p:GetAttribute("HuzzCompanionRarity") or ""
+		-- (a prestiged girl shows a rarer tier's effects, one tier per level: Shared/PrestigeRules)
+		local rarity = PrestigeRules.effectRarity(p:GetAttribute("HuzzCompanionRarity") or "", p:GetAttribute("HuzzCompanionPrestige"))
 		local alive = root ~= nil and humanoid.Health > 0
 		local girls = ReplicatedStorage:FindFirstChild("HuzzGirls")
 		local source = girls and key ~= "" and girls:FindFirstChild(key)
@@ -291,7 +293,7 @@ function M.start()
 		local lite = p ~= Players.LocalPlayer
 		local worn = character and character:GetAttribute("HuzzAura")
 		local wantAura = alive and source ~= nil and (AuraLook.RANK[rarity] or 0) >= 1
-		local auraFor = if alive and type(worn) == "string" then "worn:" .. worn elseif wantAura then key else nil
+		local auraFor = if alive and type(worn) == "string" then "worn:" .. worn elseif wantAura then key .. "#" .. rarity else nil
 		if s.auraFor ~= auraFor or s.auraChar ~= character then
 			clearAura(s)
 			s.auraChar = character
@@ -314,7 +316,7 @@ function M.start()
 		-- made inside 150 studs, removed past 190 (no rebuilding over and over at the edge)
 		local far = if root then distance(root.Position) else math.huge
 		local allowed = alive and source ~= nil and (not inRound or cheering)
-		if s.companion and (not allowed or s.key ~= key or far > 190) then
+		if s.companion and (not allowed or s.key ~= key .. "#" .. rarity or far > 190) then
 			local m = s.companion.model
 			if far <= 120 and m.Parent then
 				Burst.sparks(m:GetPivot().Position, s.companion.colors, 16,
@@ -322,7 +324,7 @@ function M.start()
 			end
 			clearCompanion(s)
 		end
-		s.key = key
+		s.key = key .. "#" .. rarity
 		if allowed and not s.companion and far < 150 then
 			s.companion = makeCompanion(key, rarity, lite, p.UserId)
 			if s.companion then

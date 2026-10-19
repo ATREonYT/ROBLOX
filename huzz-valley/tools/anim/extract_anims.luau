@@ -3,7 +3,7 @@
 -- ReplicatedStorage so clients can play them, and in the live game nobody downloads it):
 --   design/anims/movement-pack.rbxl  (Skater Studios' "15+ R15 Movement Animations" pack, licence in the zip):
 --     Idle, Walk, Run (the pack's Sprint as it is: hunched, big arm swings, like Huss Valley), Jump, Fall, Climb
---   design/anims/200-dances.rbxl  (the owner's 200 dances): the 25 in DANCES below, renamed Dance_<Id>
+--   design/anims/200-dances.rbxl  (the owner's 200 dances): the 32 in DANCES below, renamed Dance_<Id>
 --   DashLeft, DashRight: made here (the huss is sideways only, like Huss Valley): a low hop-slide that way.
 -- In Studio the game plays them straight from these (KeyframeSequenceProvider, Shared/AnimationLibrary); for the
 -- live game the owner publishes them once (tools/studio/publish-animations.lua) and the IDs go in Config/Animations.
@@ -25,6 +25,9 @@ local DANCES = {
 	{ "Freestyle", "Freestylin" }, { "CleanGroove", "Clean Groove" }, { "BounceBounce", "New Billy Bounce" },
 	{ "Flapper", "Flapper" }, { "SquatKick", "[UPDATED!] Kazotsky Kick" }, { "Sprinkler", "Sprinkler" },
 	{ "CrabDance", "CrabRavedance" }, { "Toprock", "[NEW!]Heel Toe Toprock" }, { "Aerobics", "Mannrobics" },
+	-- the Dance Crate's own (owner, Oct 19: "dances, from crates")
+	{ "BoogieBlast", "Boogie Bomb" }, { "HeadBanger", "HeadBanger" }, { "TheTwist", "Twist" }, { "ZanyZig", "Zany" },
+	{ "PowerMoves", "Power Dance" }, { "Showstopper", "Showstopper" }, { "ZombieGroove", "Thriller" },
 }
 -- The game's name = the pack's name (from its "All Animations" folder), and the priority it plays at.
 local MOVES = {

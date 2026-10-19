@@ -17,6 +17,21 @@ function Progression.gameXP(won: boolean, t: { [string]: number }): number
 		+ X.Each * ((t.Crossings or 0) + (t.Rescues or 0) + (t.Catches or 0))
 end
 
+-- The same XP in parts for the winner page's "Crossings +15 · Catches +10 · Win +40" (Screens/Results); they add up
+-- to gameXP. Parts worth 0 are left out.
+function Progression.xpParts(won: boolean, t: { [string]: number }): { { Name: string, XP: number } }
+	local X = Progression.GameXP
+	local parts = {}
+	local function add(name, xp) if xp > 0 then table.insert(parts, { Name = name, XP = xp }) end end
+	add("Played", X.Played)
+	add("Crossings", X.Each * (t.Crossings or 0))
+	add("Catches", X.Each * (t.Catches or 0))
+	add("Saves", X.Each * (t.Rescues or 0))
+	add("Hero", X.Hero * (t.HeroPaid or 0))
+	add("Win", if won then X.Won else 0)
+	return parts
+end
+
 -- Free reward track: reaching Level unlocks the reward; the player claims it.
 --   Kind: "Coins" | "Aura" | "Dance" | "Outfit"   (Outfit rewards stay unavailable until the outfit exists)
 Progression.Rewards = {

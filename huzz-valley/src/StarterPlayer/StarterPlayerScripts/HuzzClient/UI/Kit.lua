@@ -324,7 +324,18 @@ function Kit.setArt(img: ImageLabel, name: string)
 	img:SetAttribute("Art", name)
 	img:SetAttribute("PreviewFile", "assets/art/" .. kebab(name) .. ".png")
 	img.Image = Assets.art(name)
+	ImageLoader.clearStandIn(img) -- (the old picture's stand-in glyph)
 	ImageLoader.apply(img, "Art", name, img.Image)
+end
+
+-- Swap the icon an icon label shows (a daily quest's reward: coin, Aura star or wheel).
+function Kit.setIcon(img: ImageLabel, name: string)
+	if img:GetAttribute("Icon") == name then return end
+	img:SetAttribute("Icon", name)
+	img:SetAttribute("PreviewFile", "assets/icons/" .. kebab(name) .. ".png")
+	img.Image = Assets.icon(name)
+	ImageLoader.clearStandIn(img)
+	ImageLoader.apply(img, "Icons", name, img.Image)
 end
 
 local function lighten(c: Color3, a: number) return c:Lerp(Color3.new(1, 1, 1), a) end

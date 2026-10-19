@@ -24,6 +24,9 @@ DataService.Template = {
 	Receipts = {}, -- recent developer-product PurchaseIds, so a receipt is never granted twice
 	Characters = {}, -- [id] = os.time() when acquired
 	Equipped = "", -- equipped companion id ("" = none)
+	Dupes = {}, -- [id] = spare copies of a girl won again (Shared/PrestigeRules; PRESTIGE spends them)
+	Prestige = {}, -- [id] = her prestige level 0..3 (cooler effects)
+	FriendReward = false, -- the friend knife (or its coins) was given (Shared/FriendRules)
 	FavChars = {}, -- [id] = true
 	Dances = {}, -- [id] = true (owned outright; the Dance Pack pass adds its dances on top)
 	FavDances = {}, -- [id] = true (saved favourites; ActionService FavoriteDance checks the id and caps the count)
@@ -31,6 +34,7 @@ DataService.Template = {
 	Claimed = {}, -- [tostring(level)] = true for claimed track rewards
 	Stats = {}, -- quest counters (Config/Progression.Stats): Rounds, Crossings, AuraStars, Heroes, Rescues, ...
 	QuestsClaimed = {}, -- [questId] = true
+	Daily = {}, -- today's daily quests and the 2-hour spin quest with their progress (Shared/DailyRules)
 	-- Spin the Wheel (SpinService, Shared/SpinRules)
 	Spins = 0, -- owned (bought) spins
 	FreeSpinAt = 0, -- os.time() when the next free spin is ready (0 = ready)
@@ -69,10 +73,17 @@ function DataService.snapshot(player: Player)
 		Claimed = table.clone(d.Claimed),
 		Stats = table.clone(d.Stats),
 		QuestsClaimed = table.clone(d.QuestsClaimed),
+		Daily = { Day = d.Daily and d.Daily.Day, Slot = d.Daily and d.Daily.Slot, Q = (function()
+			local q = {}
+			for k, e in (d.Daily and d.Daily.Q or {}) do q[k] = table.clone(e) end
+			return q
+		end)() },
 		Spins = d.Spins or 0,
 		FreeSpinAt = d.FreeSpinAt or 0,
 		SpinPity = d.SpinPity or 0,
 		Boosts = table.clone(d.Boosts or {}),
+		Dupes = table.clone(d.Dupes or {}),
+		Prestige = table.clone(d.Prestige or {}),
 	}
 end
 

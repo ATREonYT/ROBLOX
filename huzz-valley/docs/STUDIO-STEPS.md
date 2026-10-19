@@ -6,6 +6,14 @@ Roblox only shows pictures and sounds that you upload from your own account, so 
 Each part takes about 2 to 5 minutes. If you see **red text** in Output at any point, take a screenshot and send it
 to Claude.
 
+> **Icons or pictures missing? (emoji, a red note bottom left, or empty boxes in the menus)**
+> The game's pictures are not uploaded yet, so Roblox draws them itself, and it only may when one switch is on.
+> The one fix that makes them show everywhere: do **Part 1** below once (turn on the switch, run the uploader,
+> Cmd+S, send Claude the ImageIds text). Until then every icon shows a small emoji stand-in, so nothing is blank.
+> Why: Roblox shows only pictures uploaded from your account; the game draws the rest itself (EditableImage), which
+> needs **Game Settings > Security > Allow Mesh / Image APIs** on a published game. Studio's edit view shows
+> uploaded pictures only (the "Huzz Valley > Show Pictures" plugin button draws them while you edit).
+
 ---
 
 ## Before you start: get the newest version

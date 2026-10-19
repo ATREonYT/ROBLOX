@@ -20,6 +20,20 @@ DataService.update(player, function(d)
 	d.Coins = tonumber(cfg.COINS) or 12450
 	d.Aura = tonumber(cfg.GEMS) or 320
 	for key in string.gmatch(cfg.OWN or "", "[^,]+") do d.Cosmetics[key] = true end
+	d.XP = tonumber(cfg.XP) or d.XP -- (the winner page's level bar)
+	-- the daily quests window: the spin quest done (CLAIM), the first daily one half way
+	if cfg.SCREEN == "DailyQuests" then
+		local DailyRules = require(game.ReplicatedStorage.Shared.DailyRules)
+		local DailyQuests = require(game.ReplicatedStorage.Shared.Config.DailyQuests)
+		local now = workspace:GetServerTimeNow()
+		d.Daily = DailyRules.roll(nil, now)
+		local s, d1 = DailyQuests.get(d.Daily.Q.S.Id), DailyQuests.get(d.Daily.Q.D1.Id)
+		DailyRules.add(d.Daily, s.Stat, s.Target, now)
+		DailyRules.add(d.Daily, d1.Stat, math.max(1, d1.Target // 2), now)
+	end
+	-- DUPES="id=n,...", PRESTIGE="id=n,...": spare copies and prestige levels of girls (the Index's PRESTIGE)
+	for id, n in string.gmatch(cfg.DUPES or "", "([^,=]+)=(%d+)") do d.Dupes[id] = tonumber(n) end
+	for id, n in string.gmatch(cfg.PRESTIGE or "", "([^,=]+)=(%d+)") do d.Prestige[id] = tonumber(n) end
 end)
 -- CRATEPITY=n: opens since the Starter Crate's Legendary (29 = the next open is one).
 if cfg.CRATEPITY then DataService.update(player, function(d) d.Pity.Starter = tonumber(cfg.CRATEPITY) end) end
@@ -33,6 +47,7 @@ if cfg.SPINS then
 		d.Boosts = { Coins = os.time() + (tonumber(cfg.BOOST) or 0), Aura = 0 }
 	end)
 end
+if cfg.FRIEND then player:SetAttribute("HuzzFriendBoost", true) end -- (a friend in the server: "+10% COINS")
 if cfg.PASSES then
 	local owned = {}
 	for key in string.gmatch(cfg.PASSES, "[^,]+") do owned[key] = true end
@@ -178,7 +193,17 @@ if cfg.RESULTS then
 	require(game.StarterPlayer.StarterPlayerScripts.HuzzClient.UI.Screens.Results).fill({
 		outcome = cfg.RESULTS, girl = cfg.GIRL or "Zero Two", rarity = "Mythic", gotGirl = cfg.RESULTS == "Win",
 		crossed = 3, catches = 0, rescues = 2, heroes = 1, coins = 50, aura = if cfg.RESULTS == "Win" then 3 else 0,
+		-- the winner page (owner's picture a): everyone's numbers, the winning side, your XP
+		team = if cfg.RESULTS == "Win" then (cfg.TEAM or "Runners") else "Catchers", bot = cfg.RESULTS == "Bot" or nil,
+		xp = if cfg.RESULTS == "Win" then 105 else 65, heroPaid = 0, level = if cfg.RESULTS == "Win" then 4 else nil,
+		board = {
+			{ user = 1, name = "emyu", crossed = 2, catches = 3, rescues = 0, heroes = 0, won = true },
+			{ user = 2, name = "Enooo", crossed = 0, catches = 11, rescues = 1, heroes = 0, won = true },
+			{ user = 3, name = "Aloninja", crossed = 3, catches = 1, rescues = 2, heroes = 1, won = false },
+			{ user = 4, name = "tailsteam62", crossed = 4, catches = 1, rescues = 0, heroes = 0, won = false },
+		},
 	})
+	workspace:SetAttribute("NextRoundAt", workspace:GetServerTimeNow() + 12)
 end
 if cfg.SCREEN and cfg.SCREEN ~= "Hud" then
 	assert(MM.open(cfg.SCREEN, cfg.TAB), "no screen " .. tostring(cfg.SCREEN))

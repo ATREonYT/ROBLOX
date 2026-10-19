@@ -594,6 +594,7 @@ function CrateOpen.build(parent: Instance)
 		prize.Position = UDim2.fromOffset(CX, 330)
 		hideFx()
 		title.Text, title.FontFace, title.TextColor3 = string.upper(crateDef.Name), F.Heading, C.Text
+		CrateArt.paint(crate, crateDef) -- (each crate in its own colour)
 		title.Position = UDim2.fromOffset(240, TITLE_Y.Spin)
 		again.setText(`OPEN AGAIN {crateDef.Price}`)
 		setAura()

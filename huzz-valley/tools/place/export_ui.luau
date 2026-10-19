@@ -36,4 +36,11 @@ for _, d in player.PlayerGui.HuzzUI:GetDescendants() do
 		d.Scale = 1
 	end
 end
+-- The stand-in glyphs UI/ImageLoader puts on pictures it can't draw (no EditableImage in Lune) are never saved: in
+-- the game they are made again only where a picture really can't be drawn.
+local stand: { Instance } = {}
+for _, d in player.PlayerGui.HuzzUI:GetDescendants() do
+	if d:GetAttribute("NoPicture") then table.insert(stand, d) end
+end
+for _, d in stand do d:Destroy() end
 return nil

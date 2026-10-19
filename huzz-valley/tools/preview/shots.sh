@@ -43,7 +43,11 @@ shot hero-choice 13-lobby-hud 1536 694 '{SCREEN="Hud", SCALE=2, HERO=true}'
 shot next-map 13-lobby-hud 1536 694 '{SCREEN="Hud", SCALE=2, NEXTMAP=true, VOTE="Base_Map,Halloween_Map,3,5,Halloween_Map"}'
 shot dance-wheel 13-lobby-hud 1536 694 '{SCREEN="Hud", SCALE=2, WHEEL=true}'
 shot how-to-play none 1536 694 '{SCREEN="HowToPlay", SCALE=2}' # (vs the Oct 17 mockup: side_by_side.py how-to-play)
-shot results 13-lobby-hud 1536 694 '{SCREEN="Results", SCALE=2, RESULTS="Win"}'
+shot results none 1536 694 '{SCREEN="Results", SCALE=2, RESULTS="Win", XP=1073}' # (the winner page vs his picture a: side_by_side.py winner)
+shot results-catchers none 1536 694 '{SCREEN="Results", SCALE=2, RESULTS="Win", TEAM="Catchers", XP=1073}'
+shot daily-quests none 1536 980 '{SCREEN="DailyQuests", SCALE=2}' # (vs his picture d: side_by_side.py daily-quests)
+shot index-prestige none 1536 700 '{SCREEN="Index", SCALE=2, GIRLS=true, SELECT="t_kurumi", DUPES="t_kurumi=2", PRESTIGE="t_kurumi=1"}'
+shot lobby-hud-friend none 1536 694 '{SCREEN="Hud", SCALE=2, ROUND=17, FRIEND=true}' # (INVITE, SPIN, QUESTS; "+10% COINS" with a friend in)
 shot round-hud 13-lobby-hud 1536 694 '{SCREEN="Hud", SCALE=2, ROUNDHUD="Hero"}'
 shot round-hud-runner none 1536 694 '{SCREEN="Hud", SCALE=2, ROUNDHUD="Runner", MESSAGE="Messi reached safety!"}' # (feel-ui-after.jpg)
 shot round-count none 1536 694 '{SCREEN="Hud", SCALE=2, ROUNDHUD="Runner", COUNT=2.6}' # (3-2-1: "3" settled)

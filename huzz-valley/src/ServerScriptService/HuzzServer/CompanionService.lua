@@ -3,6 +3,7 @@
 	girls, the player carries two attributes every client reads (HuzzClient/Gameplay/Auras):
 	  HuzzCompanion        her key in ReplicatedStorage.HuzzGirls ("G7"), or "" for none
 	  HuzzCompanionRarity  her rarity (her effects grow with it; Rare and up also light up YOU)
+	  HuzzCompanionPrestige  her prestige level 0..3 (Shared/PrestigeRules: her effects use a rarer tier's look)
 	Refreshed whenever the save changes (DataService.onChanged) and once the girls are published.
 ]]
 local Players = game:GetService("Players")
@@ -30,6 +31,7 @@ function CompanionService.refresh(player)
 	local girl = profile and girlFor(profile.Data.Equipped)
 	player:SetAttribute("HuzzCompanion", if girl then girl.Name else "")
 	player:SetAttribute("HuzzCompanionRarity", if girl then girl:GetAttribute("Rarity") else "")
+	player:SetAttribute("HuzzCompanionPrestige", if girl then ((profile.Data.Prestige or {})[profile.Data.Equipped] or 0) else 0)
 end
 
 function CompanionService.start()

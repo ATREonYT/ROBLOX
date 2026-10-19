@@ -24,8 +24,9 @@ while `Id = 0`).
   ([look-and-lighting.md](look-and-lighting.md)).
 
 ## Spin the Wheel (`Config/SpinWheel`, `Shared/SpinRules`, `HuzzServer/SpinService`, `Screens/SpinWheel`)
-- A real free spin every 15 min; packs of 1/10/100 for 48/340/1200 Robux (Developer Products, Id 0 until the owner
-  creates them, granted only in ShopService's ProcessReceipt).
+- A real free spin every 15 min; packs of 1/10/100 for 24/170/600 Robux (halved Oct 19: `Config/Products` Price;
+  Developer Products, Id 0 until the owner creates them with these prices, granted only in ShopService's
+  ProcessReceipt). The daily spin quest gives a spin too (below).
 - Odds shown: 100 coins 28%, 250 coins 22%, 25 Aura 16%, x2 Coins 15 min 12%, 500 coins 10%, 60 Aura 7%, 1,000 coins
   4%, Spin Knife 1%; a Legendary is guaranteed by spin 40 (pity shown where the reference had a fake "daily discount").
 - While an x2 Coins boost lasts, a green "x2 COINS 12:33" tag sits over the HUD coin pill (`LobbyHud`, from the saved
@@ -38,6 +39,35 @@ while `Id = 0`).
   chapter before is claimed). Rewards: coins, Aura and three quest-only knives (Rookie, Hunter, Moonlit). Stats from
   real events: Rounds, Crossings, AuraStars, Heroes, Rescues, Catches, HoldSeconds, Wins (`ProgressService.addStat`).
 - Not done yet (need screens): a dot on Menu when a quest can be claimed.
+
+## Daily quests (`Config/DailyQuests`, `Shared/DailyRules`, ActionService `ClaimDaily`, `Screens/DailyQuests`)
+- His picture d in our look: QUESTS, "RESETS IN 9h 28m" (real: midnight UTC), the spin quest first ("NEW IN 1h 28m",
+  a new one every 2 hours, +1 SPIN), then two daily quests (coins or Aura). Easy targets (play 3, cross 5, 2 catches,
+  10 stars...). Opened from the QUESTS button under SPIN on the HUD, which wears a green "!" while one is ready.
+- Same picks for everyone, worked out from the day number (no saved schedule): the pool of 10 is shuffled into 5
+  pairs of different stats each 5 days, a new day never repeats yesterday's quests, and the pool comes round again
+  (recycled). The spin quest never counts the same thing as that day's two. Progress counts the same events as the
+  lore quests (`ProgressService.addStat` also feeds `DailyRules.add`; RoundService and the Aura stars wrote `Stats`
+  themselves until Oct 19, so every counter now goes through it, and the spec fails on a direct write), saved in
+  `Daily = { Day, Slot, Q }`.
+- The server checks a claim against the save and its own clock, once each. No Robux "Refresh" or "Auto Complete"
+  (his picture's buttons): paying to skip is left out (kid-safe). Spec `tests/DailyRules.spec`.
+
+## Friend rewards (`Config/Friends`, `Shared/FriendRules`, `HuzzServer/FriendService`)
+- While a Roblox friend plays in your server: +10% on every game's coin pay (RoundService, after the x2 boost) and a
+  purple "+10% COINS" tag by the HUD coins (player attribute `HuzzFriendBoost`).
+- When a friend joins a server you're in (what an invite does), you get the friend knife once per account (500 coins
+  if you own it already). **Placeholder knife:** his Sakura Blade (Rare) until he names one; a never-sold row of its
+  own waits for the knife files (`Config/CoinShop` was the knife work's). Toasts say both.
+- INVITE on the HUD (over SPIN) opens Roblox's own invite window (`SocialService`, guarded; Studio can't open it).
+  Spec `tests/FriendRules.spec`.
+
+## Prestige (`Shared/PrestigeRules`, ActionService `Prestige`, Screens/Index)
+- Winning a girl you already own still pays her duplicate coins (nothing taken away) and now also saves a spare copy
+  (`Dupes[id]`). PRESTIGE on her picture in the Index spends one and raises `Prestige[id]` to 1/3, 2/3, 3/3.
+- Cooler effects: her effects on her and on you use one rarer tier per level (Common 1 = Uncommon's look ... capped at
+  Mythic; Secret keeps its own). `CompanionService` puts `HuzzCompanionPrestige` on the player; `Gameplay/Auras`
+  rebuilds her look when it changes. Spec `tests/PrestigeRules.spec`.
 
 ## Cosmetics and rewards
 - **Cosmetic slots** (`CoinShop.Slots`: Trail, Tag, Knife, Aura, Title, Pose, Outfit; read with `CoinShop.worn(data,
@@ -55,6 +85,11 @@ while `Id = 0`).
   Uncommon 27%, Rare 15%, Epic 6%, Legendary 2% (Void Fang 1%, Galaxy Trail 1%); a Legendary at the latest on the
   30th open. A look you own already pays coins back by rarity (50 / 100 / 200 / 400 / 1,000). No Dance Pack dances
   (the pass sells them), no rewards, pass, quest or wheel prizes. Aura is only earned, never sold for Robux.
+- **More crates (Oct 19, owner: "knifes, dances, from crates"):** Knife Crate (100 Aura, his 30 knives that are for
+  sale, by rarity), Halloween Crate (120 Aura, his 18 Halloween knives) and Dance Crate (80 Aura, 7 crate-only dances
+  from his pack: Boogie Blast, Head Banger, The Twist, Zany Zig, Robot, Power Moves, Showstopper, Zombie Groove), each
+  with every chance shown and a pity (40 / 40 / 30 opens). Built from `Config/CoinShop` (`knivesFrom`), never the
+  pass, quest or wheel knives. Shop > CRATES stacks one section per crate, each painted its colours (`CrateArt.paint`).
 - **The server decides first:** `OpenCrate` takes the Aura once, rolls with the shown odds and pity, gives the prize
   and answers `{ index, name, rarity, new, coins, pity, left, strip, at }`. `strip` is the reel: 48 honest draws with
   the shown odds (never pity, nothing planted next to the stop: `CrateRoll.strip`, spec checks the cards beside the
@@ -103,6 +138,9 @@ while `Id = 0`).
 ## Honest gaps
 - Not seen in Studio yet: stars in the playing zone, the spin animation, Crown Pose, Midnight cape, worn auras, the
   crate opening (its feel, the sounds' levels, the blur behind it).
+- Not seen in Studio yet: daily quests, the winner page, friend rewards (need two real accounts), prestige effects.
+- The friend knife is a placeholder (Sakura Blade, also sold and in the Knife Crate); a Mythic girl's prestige only
+  shows as PRESTIGE N/3 (she already has the top look).
 - Crates: contents, price and odds are Claude's first pick; the crate picture is drawn (stand-in); the sounds are our
   made stand-ins (no whoosh or riser of its own yet).
 
@@ -113,6 +151,10 @@ while `Id = 0`).
   1280 x 720 layout. Polish pass (owner, Oct 19: "also check the opening animations for the crates"), judged frame by
   frame against the best Roblox openings: the honest settle, the rails and odds framing the reel, a sharper beam
   burst, a smooth glow, the coins held, pink Legendary, sounds on the beats (rattle, pop, ticks, thunk, prize).
+- **Oct 19 list:** "spin prices lower"; "knifes, dances, from crates"; "add easy quests as in this photo and make new
+  ones everyday then recycle them"; "make friend rewards, add a friend knife (for inviting them) and add a 10% coin
+  boost when a friend is in"; "if you get more than one of the same girl, make a button which makes them prestige
+  that gives them cooler vfx". Duplicates kept their coins so nobody loses anything; the copy is extra.
 - **Aura stars** (owner, Oct 17: "different colors give different amounts ... the ones that give more are rarer").
 - **Admin panel** (owner, Oct 18: "give me a admin command panel or something so i can get any knife or any girl to
   spawn when i want it to do so").

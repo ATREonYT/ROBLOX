@@ -66,6 +66,16 @@ function CrateArt.crate(parent: Instance, s: number, pos: UDim2, name: string?)
 	return holder, body, lid
 end
 
+-- Each crate's box colour (Config/Crates `Colors` = { top, bottom } hex; the Starter Crate keeps the kit purple), so the
+-- crates tell apart at a glance in the Shop and on the opening screen.
+function CrateArt.paint(holder: Instance, crate: any)
+	local body = holder:FindFirstChild("Body")
+	local shade = body and body:FindFirstChild("Shade")
+	if not (shade and shade:IsA("UIGradient")) then return end
+	local c = crate and crate.Colors
+	shade.Color = ColorSequence.new(hex(c and c[1] or "8C6BFF"), hex(c and c[2] or "4A2BC2"))
+end
+
 -- What an item looks like: { art, fit (picture fits instead of filling), tint (backdrop colour) }.
 local function look(item: any): (string?, boolean)
 	if item.Kind == "Coins" then

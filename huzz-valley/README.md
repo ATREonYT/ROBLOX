@@ -144,8 +144,8 @@ the icons itself. To make them work everywhere for good, upload them once (Plugi
       and 5,000 coins) are Developer Products.
    3. Put each ID into `src/ReplicatedStorage/Shared/Config/Products.lua` (`Id = ...`). Until then their buttons say the item isn't on sale and never open a purchase.
    4. Prices there are placeholders. Roblox's live price shows automatically once an ID is set.
-   5. **Spin the Wheel spins** are three Developer Products: **Buy 1 Spin (48 Robux)**, **Buy 10 Spins (340 Robux)**
-      and **Buy 100 Spins (1200 Robux)**. Put their IDs into `Products.lua` under `Products.Spins` (`Spins1`,
+   5. **Spin the Wheel spins** are three Developer Products: **Buy 1 Spin (24 Robux)**, **Buy 10 Spins (170 Robux)**
+      and **Buy 100 Spins (600 Robux)**. Put their IDs into `Products.lua` under `Products.Spins` (`Spins1`,
       `Spins10`, `Spins100`). Until then the purple buttons show the price and only say "coming soon".
    6. **Your spin wheel model:** name it with "Spin" and "Wheel" in the name (for example `Spin Wheel`), or tag it
       `HuzzSpinWheel`. The game adds "Spin the Wheel" (E) and a click to it by itself. Press Play, walk up to it and

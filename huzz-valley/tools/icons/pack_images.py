@@ -16,7 +16,7 @@ MAX_ICON = 192
 # show at most about 160 points: packed at 192 px too, so 30 of them don't weigh down the game.
 KNIFE_ART = 'knife-'
 # Icons from the owner's sheet that no screen uses yet: kept in assets/, not packed into the game.
-UNUSED = {'arrow-next', 'play-tile', 'plus-tile', 'monitor-small', 'social-chat'}
+UNUSED = {'play-tile', 'plus-tile', 'monitor-small', 'social-chat'}
 # Effect textures keep their real size (flipbook frames need every pixel; the owner's screen is Retina), capped at
 # 1024 for flipbook sheets (Shared/FxTexture.SHEETS) and 512 for single shapes.
 FX_OUT = 'src/ServerStorage/HuzzImages/Fx'

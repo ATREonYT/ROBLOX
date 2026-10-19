@@ -3,6 +3,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Progression = require(ReplicatedStorage.Shared.Config.Progression)
 local Dances = require(ReplicatedStorage.Shared.Config.Dances)
+local DailyRules = require(ReplicatedStorage.Shared.DailyRules)
 local DataService = require(script.Parent.DataService)
 
 local ProgressService = {}
@@ -10,7 +11,25 @@ local ProgressService = {}
 -- Gameplay calls this: ProgressService.addStat(player, "Steals", 1). Unknown stats are ignored.
 function ProgressService.addStat(player: Player, stat: string, amount: number)
 	if not table.find(Progression.Stats, stat) or type(amount) ~= "number" or amount <= 0 then return end
-	DataService.update(player, function(data) data.Stats[stat] = (data.Stats[stat] or 0) + amount end)
+	DataService.update(player, function(data)
+		data.Stats[stat] = (data.Stats[stat] or 0) + amount
+		data.Daily = DailyRules.add(data.Daily, stat, amount, os.time()) -- (the daily quests count the same events)
+	end)
+end
+
+-- A finished daily quest (Config/DailyQuests): once each, checked against the saved progress and the server's clock.
+function ProgressService.claimDaily(player: Player, key: any): (boolean, string?)
+	local ok, why = false, nil
+	DataService.update(player, function(data)
+		local reward
+		reward, why = DailyRules.claim(data.Daily, key, os.time())
+		if not reward then return end
+		if reward.Kind == "Coins" then data.Coins = (data.Coins or 0) + reward.Amount
+		elseif reward.Kind == "Aura" then data.Aura = (data.Aura or 0) + reward.Amount
+		elseif reward.Kind == "Spin" then data.Spins = (data.Spins or 0) + reward.Amount end
+		ok = true
+	end)
+	return ok, why
 end
 
 -- A finished game's XP (Progression.gameXP). Returns the XP and the new level if one was reached; each new level

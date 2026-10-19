@@ -43,6 +43,9 @@ function sized(n, pw, ph, k) {
 
 function draw(n, parentEl, rect, k, parentAbs) {
   if (n.vis === false) return;
+  // ImageLoader's stand-in glyph: Lune can't draw pictures but the preview can, so only STUDIO mode (what a Studio
+  // without "Allow Mesh / Image APIs" shows) draws it.
+  if (n.attrs && n.attrs.NoPicture && !window.STUDIO) return;
   const el = document.createElement('div'); el.className = 'n'; el.dataset.name = n.n;
   el.style.left = (rect.x - parentAbs.x) + 'px'; el.style.top = (rect.y - parentAbs.y) + 'px';
   el.style.width = rect.w + 'px'; el.style.height = rect.h + 'px';

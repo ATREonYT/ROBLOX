@@ -1,4 +1,7 @@
 -- Lobby HUD (design/pages/13): left column (Index, Shop, Dances, Menu; the owner swapped Tiers for Shop) centred on the left edge, coin and gem
+-- Right column (Oct 19): INVITE (Roblox's invite prompt; friend rewards, Config/Friends), SPIN, QUESTS (the daily
+-- quests, Screens/DailyQuests, with a green "!" while one can be claimed). A "+10% COINS" tag by the coin pill while a
+-- friend plays in your server (owner: "a 10% coin boost when a friend is in"; the server sets HuzzFriendBoost).
 -- balances bottom-left (in the top bar row on phones), settings in the top bar row at the right, and the next-round countdown top-centre. Hidden while a window is open.
 -- The countdown only shows when the round system sets Workspace attribute "NextRoundAt" (server time, seconds);
 -- there is no round system yet, so it stays hidden rather than showing a made-up timer.
@@ -7,6 +10,8 @@ local UserInputService = game:GetService("UserInputService")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Format = require(Shared.Format)
 local SpinRules = require(Shared.SpinRules)
+local DailyRules = require(Shared.DailyRules)
+local Friends = require(Shared.Config.Friends)
 local Net = require(Shared.Net)
 local UI = script.Parent.Parent
 local Theme = require(UI.Theme)
@@ -85,10 +90,41 @@ function LobbyHud.build(parent: Instance)
 	local rays = Effects.rays(right, UDim2.fromOffset(at.X.Offset + 33, at.Y.Offset + 28), 104, { color = C.Accent, transparency = 0.3, seconds = 10, z = 1, name = "SpinRays" })
 	Effects.spin(spinIcon, 6, function() return freeTag.Visible end)
 	Effects.breathe(freeTag)
+	-- QUESTS under SPIN (owner, Oct 19: "add easy quests as in this photo"), a green "!" while one can be claimed
+	local quests = squareButton(right, "Quests", "QuestsClipboard", 198, function() ModalManager.open("DailyQuests") end)
+	if not Kit.reused(quests.Instance) then quests.Instance.Position = UDim2.fromOffset(100 - 25 - 33, quests.Instance.Position.Y.Offset) end
+	local questTag = Kit.text({ Name = "ReadyTag", Text = "!", FontFace = Theme.Fonts.Button, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Center, TextColor3 = C.DarkText, BackgroundTransparency = 0, BackgroundColor3 = C.SelectedTab, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(4, 4), Size = UDim2.fromOffset(20, 20), ZIndex = 3, Visible = false, Parent = quests.Instance })
+	Kit.attach(Kit.corner(10), questTag)
+	-- INVITE over SPIN (owner, Oct 19: "make friend rewards, add a friend knife (for inviting them)"): Roblox's own
+	-- invite prompt (SocialService, guarded: it isn't there offline or on every device)
+	local invite = squareButton(right, "Invite", "Players", 66, function()
+		local SocialService = game:GetService("SocialService")
+		local me = game:GetService("Players").LocalPlayer
+		local ok, can = pcall(function() return SocialService:CanSendGameInviteAsync(me) end)
+		if ok and can then
+			pcall(function() SocialService:PromptGameInvite(me) end)
+			Toast.show(Friends.InviteHint)
+		else
+			Toast.show("Invites can't open here (Studio or this device). " .. Friends.InviteHint)
+		end
+	end)
+	-- the friend rewards say so when they happen (HuzzServer/FriendService sets these attributes)
+	do
+		local me = game:GetService("Players").LocalPlayer
+		me:GetAttributeChangedSignal("HuzzFriendBoost"):Connect(function()
+			if me:GetAttribute("HuzzFriendBoost") == true then Toast.show(Friends.BoostToast) end
+		end)
+		me:GetAttributeChangedSignal("HuzzFriendGift"):Connect(function()
+			local gift = me:GetAttribute("HuzzFriendGift")
+			if gift == "Knife" then Toast.show(Friends.KnifeToast) elseif gift == "Coins" then Toast.show(Friends.CoinsToast) end
+		end)
+	end
+	if not Kit.reused(invite.Instance) then invite.Instance.Position = UDim2.fromOffset(100 - 25 - 33, invite.Instance.Position.Y.Offset) end
 	task.spawn(function()
 		while root.Parent do
 			freeTag.Visible = State.data.Loaded == true and SpinRules.available(State.data, workspace:GetServerTimeNow()) == 1
 			rays.Visible = freeTag.Visible
+			questTag.Visible = State.data.Loaded == true and DailyRules.ready(State.data.Daily, workspace:GetServerTimeNow()) > 0
 			task.wait(1)
 		end
 	end)
@@ -112,6 +148,12 @@ function LobbyHud.build(parent: Instance)
 		BackgroundColor3 = C.SelectedTab, BorderSizePixel = 0, Visible = false, Parent = bottom,
 	}, { Kit.corner(5), Kit.stroke(C.SelectedRim, 1.5) })
 	local boostText = Kit.text({ Name = "Label", Text = "x2 COINS", FontFace = Theme.Fonts.Number, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Center, TextWrapped = false, Size = UDim2.fromScale(1, 1), Parent = boost })
+	-- While a friend plays in this server: "+10% COINS" (the server adds it to every coin payout; Config/Friends)
+	local friendTag = new("Frame", {
+		Name = "FriendBoost", Position = UDim2.fromOffset(23, if touch then 43 else -18), Size = UDim2.fromOffset(131, 22),
+		BackgroundColor3 = C.Banner, BorderSizePixel = 0, Visible = false, Parent = bottom,
+	}, { Kit.corner(5), Kit.stroke(C.BannerRim, 1.5) })
+	Kit.text({ Name = "Label", Text = Friends.BoostTag, FontFace = Theme.Fonts.Number, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Center, TextWrapped = false, Size = UDim2.fromScale(1, 1), Parent = friendTag })
 	local gemIcon = gems.Instance:FindFirstChild("Icon")
 	if gemIcon and gemIcon:IsA("ImageLabel") then gemIcon.ImageColor3 = Color3.new(1, 1, 1) end
 	coins.plus.onClick(function() ModalManager.open("Shop", "Coins") end)
@@ -156,6 +198,10 @@ function LobbyHud.build(parent: Instance)
 			local left = ((State.data.Boosts or {}).Coins or 0) - workspace:GetServerTimeNow()
 			boost.Visible = left > 0
 			if left > 0 then boostText.Text = "x2 COINS  " .. Format.clock(left) end
+			-- the friend tag stacks over the x2 tag when both show
+			friendTag.Visible = game:GetService("Players").LocalPlayer:GetAttribute("HuzzFriendBoost") == true
+			local step = if touch then 26 else -24
+			friendTag.Position = UDim2.fromOffset(23, (if touch then 43 else -18) + (if boost.Visible then step else 0))
 			task.wait(0.25)
 		end
 	end)

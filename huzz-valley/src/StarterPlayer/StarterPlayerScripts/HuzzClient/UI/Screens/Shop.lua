@@ -437,13 +437,20 @@ end
 -- the crate (drawn: CrateArt, a stand-in until his art), its pity counter ("GUARANTEED LEGENDARY in N opens", from the
 -- save) and OPEN with its Aura price; beside it every item's exact chance (kid-safe: never hidden odds), in two
 -- columns. OPEN goes to the opening screen (Screens/CrateOpen), which asks the server; not in a round or a cutscene.
-local CRATE = { W = 206, H = 212, OddsX = 216, RowW = 222, RowH = 29, RowGap = 1, ColGap = 8 }
+-- Several crates (owner, Oct 19: "knifes, dances, from crates"): one section each, stacked down the scrolling list
+-- (Section<Id>: the card on the left, its odds beside it), each box in its own colour (Config/Crates Colors).
+local CRATE = { W = 206, H = 212, OddsX = 216, RowW = 222, RowH = 29, RowGap = 1, ColGap = 8, SectionGap = 12 }
 local function buildCrates(body: Frame)
+	local y = 1
 	for _, crate in Crates.List do
-		local c = new("Frame", { Name = crate.Id, Position = UDim2.fromOffset(0, 1), Size = UDim2.fromOffset(CRATE.W, CRATE.H), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = body }, { Kit.corner(6), Kit.stroke(COIN.Rim, 2) })
+		local rowsNeeded = math.ceil(#crate.Items / 2)
+		local sectionH = math.max(CRATE.H, rowsNeeded * (CRATE.RowH + CRATE.RowGap) - CRATE.RowGap)
+		local section = new("Frame", { Name = "Section" .. crate.Id, Position = UDim2.fromOffset(0, y), Size = UDim2.fromOffset(CRATE.OddsX + 2 * CRATE.RowW + CRATE.ColGap, sectionH), BackgroundTransparency = 1, Parent = body })
+		y += sectionH + CRATE.SectionGap
+		local c = new("Frame", { Name = crate.Id, Position = UDim2.fromOffset(0, 0), Size = UDim2.fromOffset(CRATE.W, CRATE.H), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = section }, { Kit.corner(6), Kit.stroke(COIN.Rim, 2) })
 		new("UIGradient", { Rotation = 90, Color = ColorSequence.new(Color3.fromHex("1B1850"), COIN.FillBottom), Parent = c })
 		Effects.rays(c, UDim2.fromOffset(CRATE.W // 2, 82), 160, { color = C.Accent, transparency = 0.7, seconds = 18, z = 1, name = "CrateRays" })
-		CrateArt.crate(c, 100, UDim2.fromOffset(CRATE.W // 2, 80), "CratePicture")
+		CrateArt.paint(CrateArt.crate(c, 100, UDim2.fromOffset(CRATE.W // 2, 80), "CratePicture"), crate)
 		Effects.shine(c, { every = 5, corner = 6, strength = 0.25, z = 9 })
 		local title = Kit.name({ Name = "Name", Text = crate.Name, FontFace = Theme.Fonts.Heading, TextSize = 19, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(0, 7), Size = UDim2.new(1, 0, 0, 24), ZIndex = 3, Parent = c })
 		new("UIStroke", { Name = "Outline", Color = C.TitleStroke, Thickness = 1.5, LineJoinMode = Enum.LineJoinMode.Round, Parent = title })
@@ -484,7 +491,7 @@ local function buildCrates(body: Frame)
 		for i, o in odds do
 			local col, r = (i - 1) // rows, (i - 1) % rows
 			local it = o.item
-			local row = new("Frame", { Name = "Odds" .. i, Position = UDim2.fromOffset(CRATE.OddsX + col * (CRATE.RowW + CRATE.ColGap), 1 + r * (CRATE.RowH + CRATE.RowGap)), Size = UDim2.fromOffset(CRATE.RowW, CRATE.RowH), BackgroundColor3 = C.Row, BackgroundTransparency = Theme.Transparency.Row, BorderSizePixel = 0, Parent = body }, { Kit.corner(5) })
+			local row = new("Frame", { Name = "Odds" .. i, Position = UDim2.fromOffset(CRATE.OddsX + col * (CRATE.RowW + CRATE.ColGap), r * (CRATE.RowH + CRATE.RowGap)), Size = UDim2.fromOffset(CRATE.RowW, CRATE.RowH), BackgroundColor3 = C.Row, BackgroundTransparency = Theme.Transparency.Row, BorderSizePixel = 0, Parent = section }, { Kit.corner(5) })
 			new("Frame", { Name = "RarityBar", Position = UDim2.fromOffset(0, 0), Size = UDim2.new(0, 4, 1, 0), BackgroundColor3 = CrateArt.color(it.Rarity), BorderSizePixel = 0, ZIndex = 2, Parent = row }, { Kit.corner(2) })
 			CrateArt.picture(row, it, 40, 25, 4, UDim2.fromOffset(8, 2), 2)
 			local nm = Kit.name({ Name = "Name", Text = it.Name, FontFace = Theme.Fonts.Name, TextSize = 13, Position = UDim2.fromOffset(54, 1), Size = UDim2.fromOffset(104, 15), ZIndex = 3, Parent = row })
