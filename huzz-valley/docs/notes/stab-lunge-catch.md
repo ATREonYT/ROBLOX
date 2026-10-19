@@ -10,6 +10,9 @@ Read before changing how the click stab, a catcher's lunge, the catch or getting
   0.45 of it. The wrist snaps the blade flat into the sweep and the body leans in a little. The knife arm is raised
   by the run's hunch so it slashes level while sprinting. Written after the animations (Frame order 30), so it sits
   over the run.
+- A long blade (over 2.2 studs from grip to tip) is held more forward in hand so it clears the floor
+  ([knives.md](knives.md), "In a catcher's hand"); in the stab and the lunge `Gameplay/Actions` eases it back to the
+  usual 150 degrees (`KnifeLook.slashC0`), so the slash and the leap's level blade are the same for every knife.
 - A Game Pass knife's trail is in its element's colours, lasts 0.17 s (`KnifeLook.TRAIL.ElementLifetime`) and tapers;
   Epic and up draw a thin crescent round the front and right of the catcher (`KnifeLook.ARC`: a Beam on two root
   attachments, gone in 0.2 s, never solid) and a pass knife throws half its element's burst (`KnifeBurst`).

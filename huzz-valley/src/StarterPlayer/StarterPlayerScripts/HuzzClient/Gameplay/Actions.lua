@@ -14,6 +14,8 @@
 	arc and burst) starts when the knife reaches someone (M.lungeHit from Dash on your screen; the server's Caught on
 	everyone else's), else LEAP.SlashBy into the leap (Shared/StabMotion). The leap draws a soft ribbon from the
 	body (Shared/KnifeLook.CATCH.Streak: white into the knife's colour, about 8 studs, on for the push only).
+	Knife check (Oct 19): a long blade is held more forward in hand so its tip clears the floor (KnifeLook.handC0);
+	during a stab or a lunge it eases back to the usual angle (KnifeLook.slashC0) and returns after.
 ]]
 local M = {}
 
@@ -196,6 +198,17 @@ function M.start()
 				local trail = knife and knife:FindFirstChild("SlashTrail", true)
 				if trail then
 					trail.Enabled = playing and StabMotion.trailOn(s.rec, now)
+				end
+				-- a long blade is held more forward so it clears the floor (KnifeLook.handC0); in the slash it turns
+				-- back to the usual angle, so every knife cuts and leads the leap the same way (KnifeLook.slashC0)
+				local grip = knife and knife:FindFirstChild("KnifeGrip", true)
+				if grip and grip:IsA("Motor6D") then
+					if s.grip ~= grip then s.grip, s.held, s.gripK = grip, grip.C0, 0 end
+					local dt = math.clamp(now - (s.gripAt or now), 0, 0.1)
+					s.gripAt = now
+					local H = KnifeLook.HAND
+					s.gripK = if playing then math.min(1, s.gripK + dt / H.In) else math.max(0, s.gripK - dt / H.Out)
+					grip.C0 = KnifeLook.slashC0(s.held, s.gripK)
 				end
 				local arc = s.arc
 				if arc then -- the crescent: in fast, fading out, solid in the middle and thin at both ends

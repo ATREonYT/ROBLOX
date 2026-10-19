@@ -184,26 +184,51 @@ function KnifeLook.pick(data, shop)
 end
 
 -- In the right hand: the hand's grip point, the blade 150 degrees round the hand's X (down and forward).
-function KnifeLook.handC0(gripAt: Vector3): CFrame
-	return CFrame.new(gripAt) * CFrame.Angles(math.rad(-150), 0, 0)
+-- reach (optional): studs from the grip to the tip. A long blade is held more forward so its tip stays off the floor
+-- (knife check, Oct 19: at 150 the 3+ stud knives went up to 0.43 studs into the floor in a catcher's idle and walk,
+-- Crimson Requiem the worst): HAND.Angle up to HAND.Reach studs, then HAND.PerStud degrees more forward per stud,
+-- at most HAND.MinAngle (tests/KnifeWear.spec: every knife's tip 0.15+ over the floor, idle, walk and run).
+KnifeLook.HAND = { Angle = -150, Reach = 2.2, PerStud = 60, MinAngle = -118 }
+function KnifeLook.handAngle(reach: number?): number
+	local H = KnifeLook.HAND
+	if type(reach) ~= "number" or reach <= H.Reach then return H.Angle end
+	return math.min(H.Angle + (reach - H.Reach) * H.PerStud, H.MinAngle)
+end
+function KnifeLook.handC0(gripAt: Vector3, reach: number?): CFrame
+	return CFrame.new(gripAt) * CFrame.Angles(math.rad(KnifeLook.handAngle(reach)), 0, 0)
+end
+-- During a stab or a lunge the arm is up, so the floor is no worry: Gameplay/Actions turns a long blade back to Huss
+-- Valley's 150 degrees for the slash (the leap's blade stays level, not 30 degrees up), easing in over HAND.In and
+-- back over HAND.Out seconds. held: the grip's C0 as the server set it; k: 0 = held, 1 = the slash angle.
+KnifeLook.HAND.In, KnifeLook.HAND.Out = 0.05, 0.12
+function KnifeLook.slashC0(held: CFrame, k: number): CFrame
+	local x = held:ToEulerAnglesXYZ()
+	local a = x + (math.rad(KnifeLook.HAND.Angle) - x) * math.clamp(k, 0, 1)
+	return CFrame.new(held.Position) * CFrame.Angles(a, 0, 0)
 end
 
 -- The lobby stands show their knife BIG (owner, Oct 19: "right now its very small and you dont even notice it";
 -- his reference stands hold blades as long as an arm and a half): the display copy is scaled up to Length studs
 -- pommel to tip (the real pass models are 3.2 studs, our stand-in knife 1.9), never shrunk, at most MaxScale.
-KnifeLook.STAND = { Length = 4.4, MaxScale = 2.6, Width = 1.7, MaxWiden = 4.5, MaxThick = 2.6, Shell = 0.4 }
+KnifeLook.STAND = { Length = 4.4, MaxScale = 2.6, Width = 1.7, MaxWiden = 2, MaxThick = 2, Aspect = 3, Shell = 0.4 }
 function KnifeLook.standScale(length: number?): number
 	if type(length) ~= "number" or length <= 0 then return 1 end
 	return math.clamp(KnifeLook.STAND.Length / length, 1, KnifeLook.STAND.MaxScale)
 end
 -- Round 2 (Oct 19, "in the reference the knife is the first thing you see"): a stand's knife is also made broader
--- than life, display only: its blade widened to about Width studs (a katana about 4x, the big cleaver about 2x) and
--- thickened up to MaxThick, so it reads as a slab, not a stick, from across the plaza. Returns the widen factors
--- (thickness along the Handle's X, width along its Z) for a blade `bladeWidth` studs wide after the length scale.
-function KnifeLook.standWiden(bladeWidth: number?): (number, number)
+-- than life, display only: its blade widened toward Width studs and thickened as much, so it reads from across the
+-- plaza. But it keeps its own shape (knife check, Oct 19: at up to 4.5x every blade became a paddle about twice as long
+-- as wide; the Sunrise longsword read as a white slab and the Hunter katana as a pink brick, nothing like his cards):
+-- at most MaxWiden times his model's width, and never squatter than Aspect (blade length to width). So the katanas and
+-- the longsword stay slim (about 4 to 5 to 1), the cleavers broad (3 to 1). Returns the widen factors (thickness along
+-- the Handle's X, width along its Z) for a blade `bladeWidth` studs wide and `bladeLength` long after the length scale.
+function KnifeLook.standWiden(bladeWidth: number?, bladeLength: number?): (number, number)
 	local S = KnifeLook.STAND
 	if type(bladeWidth) ~= "number" or bladeWidth <= 0 then return 1, 1 end
 	local wide = math.clamp(S.Width / bladeWidth, 1, S.MaxWiden)
+	if type(bladeLength) == "number" and bladeLength > 0 then
+		wide = math.max(1, math.min(wide, bladeLength / S.Aspect / bladeWidth))
+	end
 	return math.min(wide, S.MaxThick), wide
 end
 

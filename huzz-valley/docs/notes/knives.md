@@ -29,8 +29,20 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
 - Server-built, one per body: `give` (hand) and `giveBack` (worn) each remove the other; RoundService syncs on every
   change, spawn and avatar reload; a shop change swaps it at once (Bootstrap).
 - A model the wrong size is refused (plain knife + one `[HuzzKnife]` warning).
-- Spec `tests/KnifeWear.spec` (all 30 on R15/R6, no clipping except the hanging hand on the hip hilt); picture
-  `docs/previews/knife-on-back.jpg` (`motion3d/knife_wear_scene.luau`).
+- Spec `tests/KnifeWear.spec` (all 30 and the 5 pass stand-ins on R15/R6, no clipping except the hanging hand on the
+  hip hilt); picture `docs/previews/knife-on-back.jpg` (`motion3d/knife_wear_scene.luau`).
+
+## In a catcher's hand
+- `KnifeLook.handC0(at, reach)`: Huss Valley's grip, blade 150 degrees round the hand (down and a little forward), for
+  knives reaching up to `HAND.Reach` 2.2 studs from the grip to the tip; a longer blade is held `HAND.PerStud` 60
+  degrees more forward per extra stud (at most `MinAngle` -118), so its tip stays off the floor in the idle, walk and
+  run. `KnifeService.reachOf` measures the reach (TrailTip, else the shape). At the old fixed 150 the 3+ stud knives
+  went into the floor (Crimson Requiem 0.43 studs under it in the walk).
+- In a stab or a lunge the arm is up, so `Gameplay/Actions` eases a long blade back to 150 (`KnifeLook.slashC0`, in
+  0.05 s, back in 0.12 s): every knife cuts and leads the leap the same way.
+- Spec `tests/KnifeWear.spec` (all 30 and the 5 stand-ins through the pack's Idle, Walk and Run: tip 0.15+ studs over
+  the floor; give() turns a long one; slashC0). Picture: the top right of `docs/previews/knife-check-vs-ref.jpg`
+  (`motion3d/hand_floor_scene.luau`).
 
 ## Game Pass knives (`design/knives/gamepass/Gamepass_Knives.glb`)
 - 5 more, rarity **Exclusive** (Mythic's calm effects, pink-white card), Order 131-135, `Pass` in `Config/CoinShop`,
@@ -40,6 +52,8 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
   Frostbound Oath (checked against the meshes: all five match). VIP and Dance Pack give no knife.
 - `ShopService` grants them only when Roblox says you own the pass (`CoinShop.passGrants`), and wears one if your
   Knife slot is empty. Same pipeline (cards with a GAME PASS label). A refunded pass doesn't take them back yet.
+  Once owned, a pass knife's card in the coin shop's items has an EXCLUSIVE rim and label in pink
+  (`Screens/Shop` `rarityColor.Exclusive`, as in the admin panel; it had no rarity colour before the knife check).
 - **Shop > PASSES** opens on 5 cards one-to-one with his mockup (`design/knives/Five_Elemental_Knife_Cards.png`,
   scaled 0.2993 to 120 x 214 so a whole card fits; art cut by `tools/icons/cut_pass_knife_cards.py` into
   `assets/art/pass-knife-*.png`, 240 px, Play only until uploaded), the VIP and Dance Pack banners under them;
@@ -77,19 +91,22 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
   his real broken 8 in `tests/fixtures/HuzzKnives-oct18-first-run.rbxm`).
 
 ## Stand sword showcase (`Shared/StandShowcase`, drawn by `Gameplay/AvatarStands`)
-- A stand with a knife doesn't run; client only, only within NEAR 160. It holds a guard (blade up, in front of the
-  right shoulder, breathing and weight shift; R15 feet planted by leg IK) and every `CYCLE` 3.3 s plays one of its
+- A stand with a knife doesn't run; client only, only within NEAR 160. It holds a guard (the hand low in front of the
+  right hip, the blade slanting up and out to the right, its tip under the sign; breathing and weight shift; R15 feet
+  planted by leg IK) and every `CYCLE` 3.3 s plays one of its
   moves in turn. Each stand starts on its own move (its build number) at its own time (its spot). The twirl turns the
   knife in the fist via the weld's C0 (`grip`); R6 has no elbow, so shoulder and grip share the bend (simpler, still
   reads). Knife-less stands keep the run.
 - **Size:** `KnifeService.display` scales the stand copy to `KnifeLook.STAND.Length` 4.4 studs (his models are 3.2,
   the old stand-in dagger 1.9) with `KnifeService.scale` (by hand: sizes, offsets, attachments, welds, meshes,
   lights). The hand scaler runs everywhere (check_lobby_boards also checks the size).
-- **Broader than life:** display only, after the length scale `KnifeLook.standWiden` widens the blade to about
-  `STAND.Width` 1.7 studs (at most `MaxWiden` 4.5x: his katanas ~3.5-4.5x, the big cleaver ~2x) and thickens it up to
-  `MaxThick` 2.6x (`KnifeService.scale` takes a Vector3 in the Handle's axes: X thickness, Y length, Z width), then
-  lays a `GlowShell` over every part with "blade" in its name: Neon in the element's light colour, `STAND.Shell` 0.4
-  see-through, welded (a steady glow, nothing flashes).
+- **Broader than life, but its own shape:** display only, after the length scale `KnifeLook.standWiden` widens the
+  blade toward `STAND.Width` 1.7 studs, at most `MaxWiden` 2x his model and never squatter than `Aspect` 3 (blade
+  length to width), and thickens it as much (at most `MaxThick` 2x; `KnifeService.scale` takes a Vector3 in the
+  Handle's axes: X thickness, Y length, Z width). His meshes on a stand: Hunter katana 0.96 studs wide (3.3 to 1),
+  Sunrise longsword 0.66 (4.7 to 1), Frost 0.70, Inferno 0.95, the Moonlit cleaver 0.9. Then a `GlowShell` over every
+  part with "blade" in its name: Neon in the element's light colour, `STAND.Shell` 0.4 see-through, welded (a steady
+  glow, nothing flashes).
 - **Trail:** a `StandSlash` Trail from `StandTrailBase` (45% up the blade, added by display) to TrailTip, on only in
   the cuts, `TRAIL_LIFETIME` 0.2 s in the element's colours (Sunrise gold, never white), tapered. The steady rarity
   glow is the display knife's own.
@@ -107,29 +124,35 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
   return, wrist twirl); Sunrise = Guard, Flick (two wrist flicks and a twirl), Flourish (overhead twirl, diagonal
   cut), Bloom; Frost = Guard, Whirl, Rising (crouch, rising cut, twirl), Flick. The Low hold hangs the big blade down
   and out to the right side, in front of the body.
-- **Face out at rest:** each hold has a `twist` (the knife's turn about its own blade, after the grip: Guard -70, Low
+- **Face out at rest:** each hold has a `twist` (the knife's turn about its own blade, after the grip: Guard -52, Low
   80, measured on R15 and R6), so at rest the blade's broad face looks out of the stand instead of its edge; in a move
   the twist eases back to 0 (the edge leads the cut) and returns with the hold (`StandShowcase.knifeTurn` builds the
   weld's turn for AvatarStands, the spec and the renders; the spec checks the width axis is across the view and the
   face looks out). A spin turns the whole body (`spin`; the feet turn with it). A move's `burst` throws the knife's
   KnifeBurst once (AvatarStands).
-- Spec `tests/StandShowcase.spec` (blade in front of the torso at ready, a move every loop, no pops at 30/60 fps, back
-  to ready, feet planted) runs every style on R15 and R6 at the big size. Video `docs/previews/stand-showcase.mp4`
+- Spec `tests/StandShowcase.spec` (at ready the blade slants up and out to the right in front of the torso, tip under
+  the sign; a move every loop, no pops at 30/60 fps, back to ready, feet planted) runs every style on R15 and R6 at the
+  big size. Video `docs/previews/stand-showcase.mp4`
   (`tools/preview/motion3d/stand_scene.luau`, mock rigs, his meshes). Side by side at 30 fps:
   `docs/previews/stand-knives-vs-ref.mp4` + still sheet `.jpg` (`tools/preview/stand_knives_vs_ref.sh` over
   `motion3d/stand_knives_scene.luau`: top his reference, bottom ours, same row and framing, his meshes;
   `KNIFE_MODE=standin` draws the plain-part stand-ins).
-- **Still worse than the reference** (after round 3): the reference's cleaver hangs nearly straight down by the leg
-  with a fire cloud round it, bigger than our flames (ours sticks out diagonally to the side, so its tip clears the
-  floor at 4.4 studs); the resting Sunrise blade stays in the frame but touches its sign; our signs aren't in the
-  render. Still `docs/previews/stand-knives-rest-vs-ref.jpg` (rest pose next to the reference). The render has no
-  bloom, so Studio's Neon shell will glow more.
+- **Still worse than the reference** (after the knife check): the reference's cleaver hangs nearly straight down by
+  the leg with a fire cloud round it, bigger than our flames (ours sticks out diagonally to the side, so its tip clears
+  the floor at 4.4 studs); the Sunrise blade renders as plain white under its gold shell (his card's silver and blue
+  line don't show); in the Flick and Flourish the Sunrise blade still passes up through its sign for a moment; our
+  signs aren't in the render (only their words). The render has no bloom, so Studio's Neon shell will glow more.
+  One picture: `docs/previews/knife-check-vs-ref.jpg` (reference at rest; before and after with his meshes and with the
+  stand-ins; the long knife in hand; `tools/preview/knife_check_sheet.py`). Older still:
+  `docs/previews/stand-knives-rest-vs-ref.jpg` (round 3).
 
 ## Honest gaps
 - Not seen in Studio yet: knife positions, the owner's knives (meshes after his import, glow, sparkles, the leap and
   dive), the knife showcase (the big stand knives, element particles with stand-in pictures, the spins, the card
-  motes/pulse, the slash arc). The 5 pass models still need his import (`Gamepass_Knives.glb` + SetupKnives); until
-  then the stand-ins show. A refunded pass keeps its knives.
+  motes/pulse, the slash arc), the long blades' forward grip and its ease back in a stab. The 5 pass models still need
+  his import (`Gamepass_Knives.glb` + SetupKnives); until then the stand-ins show (plain blocks: square tips, no
+  curves). A refunded pass keeps its knives. The in-hand check uses the pack's Idle/Walk/Run on a blocky R15; a
+  player's own avatar animations or a short R6 arm can still bring a long tip nearer the floor.
 
 ## Why it is this way / history
 - **Skins** (owner, Oct 18: "add some vfx to the knifes, but make it fit it, and dont make it overly crazy").
@@ -151,3 +174,10 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
   lobby checks because the Lune harness has no ScaleTo, so the stand's mount failed; hence the hand scaler.
 - Round 2 ("in the reference the knife is the first thing you see"): the widening and glow shell, the Scrape move,
   `TRAIL_LIFETIME` 0.2. Round 3: the face-out twist.
+- **Knife check, Oct 19** (owner: "Can you check the knifes over and over again to make sure it's the best it can
+  be"): every blade on a stand had become a paddle about twice as long as wide (the widening went up to 4.5x), so the
+  Sunrise longsword read as a white slab and the Hunter katana stand-in as a pink brick, unlike his cards: now at most
+  2x and never squatter than 3 to 1. The upright guard put the 4.4 stud blade 2.6 studs over the head, through the
+  sign, seen end-on: now it slants up and out to the side. Long knives went into the floor in a catcher's hand: now
+  held more forward (back to 150 in the cut). Also: the pass stand-ins worn on the body are checked, and an owned pass
+  knife's shop card has its EXCLUSIVE colour.

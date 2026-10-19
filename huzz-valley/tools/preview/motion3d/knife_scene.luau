@@ -44,9 +44,11 @@ local function knifeAt(key, handleCF)
 	return { m = key, p = { c[1], c[2], c[3] }, r = { c[4], c[5], c[6], c[7], c[8], c[9], c[10], c[11], c[12] }, s = per },
 		handleCF * Vector3.new(0, (k.tip - k.grip) * per, 0), handleCF * Vector3.new(0, (0 - k.grip) * per, 0)
 end
-local function inHand(rig)
+local function inHand(rig, key)
 	local hand = rig.parts.RightHand
-	return hand.CFrame * KnifeLook.handC0(Vector3.new(0, -hand.Size.Y / 2 + 0.1, 0)) -- (KnifeService.give, no Grip on the hand)
+	local k = baked[key]
+	local reach = (k.tip - k.grip) * k.studs / k.length -- (KnifeService.reachOf: a long blade is held more forward)
+	return hand.CFrame * KnifeLook.handC0(Vector3.new(0, -hand.Size.Y / 2 + 0.1, 0), reach) -- (KnifeService.give, no Grip on the hand)
 end
 local function onBack(rig) -- (KnifeService.giveBack for a knife on the back; knife_wear_scene.luau measures each model)
 	local torso = rig.parts.UpperTorso
@@ -130,12 +132,12 @@ if MODE == "stills" then
 			if l then table.insert(lights, l) end
 		end
 	end
-	for _, h in holdRigs do table.insert(meshes, (knifeAt(h.key, inHand(h.rig)))) end
+	for _, h in holdRigs do table.insert(meshes, (knifeAt(h.key, inHand(h.rig, h.key)))) end
 	scene:frame(Vector3.new(0, 3.2, 10.5), Vector3.new(0, 2.2, 0), { meshes = meshes, lights = lights, fov = 48 })
 	for i, h in holdRigs do
 		local at = h.rig.root.CFrame.Position
 		local hl = {}
-		local _, tip, base = knifeAt(h.key, inHand(h.rig))
+		local _, tip, base = knifeAt(h.key, inHand(h.rig, h.key))
 		local l = glowLight(h.key, base:Lerp(tip, 0.5))
 		if l then table.insert(hl, l) end
 		scene:frame(at + Vector3.new(-2.5, 4, -19), at + Vector3.new(0.9, 2.6, 0), { meshes = meshes, lights = hl, fov = 40 })
@@ -205,14 +207,14 @@ local function run(seconds, leaps, slowFrom, slowTo, captionFor)
 			StabMotion.step(stab, clock)
 			catcher.root.CFrame = CFrame.new(pos + Vector3.new(0, Rig.REST_HEIGHT + y, 0))
 			Rig.fk(catcher)
-			local _, tip = knifeAt(KEY, inHand(catcher))
+			local _, tip = knifeAt(KEY, inHand(catcher, KEY))
 			if leapAt and StabMotion.trailOn(stab, clock) then
 				table.insert(trail, { p = tip, at = clock })
 			end
 			while trail[1] and clock - trail[1].at > KnifeLook.TRAIL.Lifetime do table.remove(trail, 1) end
 		end
-		local meshes = { (knifeAt(KEY, inHand(catcher))) }
-		local _, tip, base = knifeAt(KEY, inHand(catcher))
+		local meshes = { (knifeAt(KEY, inHand(catcher, KEY))) }
+		local _, tip, base = knifeAt(KEY, inHand(catcher, KEY))
 		local ribbons = {}
 		if #trail >= 2 then
 			local pts, w, a = {}, {}, {}

@@ -6,8 +6,9 @@
 --   * KnifeService.scale grows a model about its grip: length, attachments and welds together (by hand, no ScaleTo);
 --   * the stands' copy (KnifeService.display) is about KnifeLook.STAND.Length long, for stand-ins and the owner's own
 --     models alike, and carries its element: steady emitters, a burst, a tip glint, its element name;
---   * broader than life on a stand (round 2): blade at least a stud wide, a see-through Neon glow shell, the slash
---     from mid-blade;
+--   * broader than life on a stand (round 2), but still its own shape (knife check, Oct 19: the paddles are gone):
+--     its blade wider than the stand-in at that length, never squatter than KnifeLook.STAND.Aspect, a see-through Neon
+--     glow shell, the slash from mid-blade;
 --   * steady: a stand's knife throws at most 32 particles a second (a hand about a third), a burst at most 20, the glint at
 --     most one a second; every picture name has a stand-in in Shared/FxTexture;
 --   * the slash arc fades in and out within its life and is never solid (KnifeLook.arcFade).
@@ -120,7 +121,13 @@ for _, key in PASS do
 	check(key .. string.format(": the stand's knife is big (%.2f studs, target %.1f)", L, KnifeLook.STAND.Length), math.abs(L - KnifeLook.STAND.Length) < 0.25)
 	local sh = KnifeService.shapeOf(m)
 	local bw = if sh.bladeWidth > 0 then sh.bladeWidth else sh.width
-	check(key .. string.format(": a slab, not a stick (blade %.2f studs wide, at least 1)", bw), bw >= 1)
+	local plain = KnifeService.template(CoinShop.get(key))
+	KnifeService.scale(plain, KnifeLook.standScale(KnifeService.shapeOf(plain).length))
+	local psh = KnifeService.shapeOf(plain)
+	local pw, squat = psh.bladeWidth, psh.bladeLength / psh.bladeWidth <= KnifeLook.STAND.Aspect -- (a cleaver already that broad stays as it is)
+	check(key .. string.format(": broader than life on a stand (blade %.2f studs wide, %.2f at that length)", bw, pw), (bw > pw * 1.15 or squat) and bw >= 0.6)
+	check(key .. string.format(": still its own shape, not a paddle (blade %.1f times longer than wide, at least %g)", sh.bladeLength / bw, KnifeLook.STAND.Aspect),
+		sh.bladeLength / bw >= math.min(KnifeLook.STAND.Aspect, psh.bladeLength / pw) - 0.05)
 	local shells, bad = 0, 0
 	for _, d in m:GetDescendants() do
 		if d:IsA("BasePart") and d.Name == "GlowShell" then

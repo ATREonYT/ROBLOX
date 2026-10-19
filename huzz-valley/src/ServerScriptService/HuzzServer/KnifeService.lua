@@ -26,8 +26,9 @@
 	place of Mythic's plain sparkles and embers, a burst emitter for big moments (KnifeBurst: the stands' spins, the
 	catcher's slash) and, on a stand, a star glint at the tip; its slash trail takes the element's colours.
 	Round 2 ("in the reference the knife is the first thing you see"): the stand copy's blade is also widened and
-	thickened (KnifeLook.standWiden, display only), wears a see-through Neon GlowShell, and its slash starts halfway
-	up the blade (StandTrailBase).
+	thickened (KnifeLook.standWiden, display only: at most twice, keeping its own shape), wears a see-through Neon
+	GlowShell, and its slash starts halfway up the blade (StandTrailBase). In hand a long blade is held more forward
+	(KnifeLook.handC0 with its reach) so its tip never goes into the floor.
 
 	Effects by rarity (owner: "make it fit it, and dont make it overly crazy"): Shared/KnifeLook. In hand always;
 	on the back only Legendary and Mythic. Built here once per knife (replicated), nothing runs every frame.
@@ -398,6 +399,21 @@ local function gripOf(handle)
 	return if grip and grip:IsA("Attachment") then grip.CFrame else CFrame.identity
 end
 
+-- Studs from the grip to the tip (KnifeLook.handC0 holds a long blade more forward, so it never sinks into the
+-- floor): the TrailTip attachment when there is one, else the far end of the measured shape.
+local function reachOf(model, handle)
+	local grip = gripOf(handle).Position
+	local tip = model:FindFirstChild("TrailTip", true)
+	local holder = tip and tip.Parent
+	if tip and tip:IsA("Attachment") and holder and holder:IsA("BasePart") then
+		local at = handle.CFrame:PointToObjectSpace(holder.CFrame * tip.CFrame.Position)
+		return at.Y - grip.Y
+	end
+	local shape = shapeOf(model)
+	return if shape then shape.length * 0.8 else nil
+end
+KnifeService.reachOf = reachOf
+
 local function loose(model)
 	for _, d in model:GetDescendants() do
 		if d:IsA("BasePart") then
@@ -499,7 +515,7 @@ function KnifeService.give(character, skin)
 	motor.Name = "KnifeGrip"
 	motor.Part0 = hand
 	motor.Part1 = handle
-	motor.C0 = KnifeLook.handC0(at) -- Handle +Y (the blade) -> the hand's down-and-forward
+	motor.C0 = KnifeLook.handC0(at, reachOf(model, handle)) -- Handle +Y (the blade) -> the hand's down-and-forward (more forward for a long blade)
 	motor.C1 = gripOf(handle) -- (the fist on the model's Grip, not the Handle's centre)
 	motor.Parent = handle
 	-- The slash: a short smear round the blade, switched on by each client during a stab (Gameplay/Actions).
@@ -550,7 +566,8 @@ function KnifeService.display(skin)
 	-- broader than life (round 2: "in the reference the knife is the first thing you see"): the blade widened and
 	-- thickened about the grip, display only
 	local after = shapeOf(model)
-	local thick, wide = KnifeLook.standWiden(after and (if after.bladeWidth > 0 then after.bladeWidth else after.width))
+	local thick, wide = KnifeLook.standWiden(after and (if after.bladeWidth > 0 then after.bladeWidth else after.width),
+		after and (if after.bladeLength > 0 then after.bladeLength else after.length))
 	KnifeService.scale(model, Vector3.new(thick, 1, wide))
 	model:SetAttribute("Widen", wide)
 	-- a glowing Neon skin over the blade parts, so it reads at lobby distance under the soft grade (a steady glow)

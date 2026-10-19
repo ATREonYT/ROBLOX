@@ -84,9 +84,15 @@ for _, s in SET do
 			if not string.find(p.name, "Tassel") then lo, hi = math.min(lo, p.at[2] - p.size[2] / 2), math.max(hi, p.at[2] + p.size[2] / 2) end
 		end
 		s.scale = KnifeLook.standScale(hi - lo)
-		local bw = 0
-		for _, p in recipe.parts do if p.name == "Blade" then bw = p.size[3] * s.scale end end
-		local thick, wide = KnifeLook.standWiden(bw)
+		-- (as KnifeService.display measures it: every part with "blade" in its name, after the length scale)
+		local zlo, zhi, ylo, yhi = math.huge, -math.huge, math.huge, -math.huge
+		for _, p in recipe.parts do
+			if string.find(string.lower(p.name), "blade", 1, true) then
+				zlo, zhi = math.min(zlo, p.at[3] - p.size[3] / 2), math.max(zhi, p.at[3] + p.size[3] / 2)
+				ylo, yhi = math.min(ylo, p.at[2] - p.size[2] / 2), math.max(yhi, p.at[2] + p.size[2] / 2)
+			end
+		end
+		local thick, wide = KnifeLook.standWiden((zhi - zlo) * s.scale, (yhi - ylo) * s.scale)
 		local fv = Vector3.new(thick, 1, wide)
 		s.blade0 = recipe.trail[1] * s.scale
 		s.tip = recipe.trail[2] * s.scale
@@ -117,7 +123,7 @@ for _, s in SET do
 		s.per = s.k.studs / s.k.length * KnifeLook.standScale(s.k.studs)
 		s.tip = (s.k.tip - s.k.grip) * s.per
 		local bb = bladeBox[s.key]
-		local thick, wide = KnifeLook.standWiden(bb and (bb.hi.X - bb.lo.X) * s.per)
+		local thick, wide = KnifeLook.standWiden(bb and (bb.hi.X - bb.lo.X) * s.per, bb and (bb.hi.Y - bb.lo.Y) * s.per)
 		s.sv = { s.per * wide, s.per, s.per * thick } -- (the mesh's own axes: width, length, thickness)
 		local tw = if bb then (bb.hi.Z - bb.lo.Z) * s.per * thick else 0.1
 		s.shellS = { s.sv[1] * 1.08, s.per * 1.01, s.sv[3] * (1 + 0.1 / math.max(tw, 0.05)) }

@@ -1,7 +1,8 @@
 -- lune run tests/StandShowcase.spec.luau   (from huzz-valley/)
 -- The lobby stands' sword showcase (Shared/StandShowcase; owner: "showcase the swords that the gamepass includes ...
 -- the swinging animation, make it look good though") on mock R15 and R6 copies holding a Game Pass knife (Hollow
--- Eclipse's baked size): in the ready guard the blade is up, in front of the body and clear of the face; a move
+-- Eclipse's baked size): in the ready guard the blade slants up and out to the right, in front of the body, clear
+-- of the face and under the sign (knife check, Oct 19: the upright guard went through the sign); a move
 -- plays every loop, the three take turns, stands with different seeds differ; the trail shows only in the cuts;
 -- every joint and the knife move smoothly frame to frame (no pops, no jumps where a move starts or ends); each move
 -- ends back in the guard; the R15 feet stay planted on the floor.
@@ -83,7 +84,11 @@ for _, kind in { "R15", "R6" } do
 	print(string.format("  %s ready (%s): grip %.2f %.2f %.2f  tip %.2f %.2f %.2f  torso front z %.2f  head %.2f %.2f",
 		tag, style.hold, r.grip.X, r.grip.Y, r.grip.Z, r.tip.X, r.tip.Y, r.tip.Z, front, r.head.X, r.head.Y))
 	if style.hold == "Guard" then
-		check(r.tip.Y - r.grip.Y > 0.8 * BLADE, tag .. " ready: the blade points up")
+		check(r.tip.Y - r.grip.Y > 0.55 * BLADE, tag .. " ready: the blade points up (slanting out to the right)")
+		check(r.tip.X - r.grip.X > 0.4 * BLADE, tag .. " ready: the blade slants out to the right side, not straight up")
+		-- knife check (Oct 19): the sign's bottom sits about 1.45 studs over the head's middle (AvatarStands: 3.1 up,
+		-- 3.3 tall); the old upright guard put the tip 2.6 studs over the head, through the sign
+		check(r.tip.Y < r.head.Y + 1.3, tag .. string.format(" ready: the tip stays under the sign (%.2f over the head)", r.tip.Y - r.head.Y))
 		check(r.mid.Z < front - 0.2 and r.tip.Z < front, tag .. " ready: the blade is in front of the body")
 		check(r.grip.Z < front, tag .. " ready: the knife hand is in front of the body")
 		check(math.abs(r.tip.X - r.head.X) > r.headSize.X / 2 + 0.15 or r.tip.Y > r.head.Y + r.headSize.Y / 2 + 0.3 and math.abs(r.tip.X - r.head.X) > 0.3,

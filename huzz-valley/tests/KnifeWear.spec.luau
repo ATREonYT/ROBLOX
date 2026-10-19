@@ -8,7 +8,9 @@
 --     (on the back) the arms, and it sits close to the body (not floating);
 --   * the real HuzzServer/KnifeService on fake bodies: ONE knife per body, worn in the lobby, moved to the hand for a
 --     catcher and back after, a skin change swaps it at once, a body part swapped out gets the knife back, R6 works,
---     and a model of the wrong size is never used (the plain knife in its colours instead).
+--     and a model of the wrong size is never used (the plain knife in its colours instead);
+--   * in a catcher's hand every knife's tip stays off the floor through the idle, walk and run (long blades are held
+--     more forward: KnifeLook.handC0's reach).
 local fs = require("@lune/fs")
 local luau = require("@lune/luau")
 local roblox = require("@lune/roblox")
@@ -121,10 +123,8 @@ local function gap(box, p)
 end
 local ARMS = { LeftUpperArm = true, LeftLowerArm = true, LeftHand = true, RightUpperArm = true, RightLowerArm = true, RightHand = true, ["Left Arm"] = true, ["Right Arm"] = true }
 local worst, armTouch = {}, {}
-for _, kind in { "R15", "R6" } do
-	local rig = if kind == "R15" then Rig.r15("Body") else Rig.r6("Body")
-	local r6 = kind == "R6"
-	for key, m in good do
+local function wornCheck(kind, rig, r6, key, m)
+	do
 		local s = KnifeLook.shape(partsOf(m))
 		local wear = KnifeLook.wearOf(m:GetAttribute("Wear"), s)
 		local torso = rig.parts[KnifeLook.mountPart(wear, r6)]
@@ -151,6 +151,11 @@ for _, kind in { "R15", "R6" } do
 		check(`{kind} {wear} {key}: close to the body ({string.format("%.2f", near)} studs)`, near <= 0.35)
 		worst[kind] = math.max(worst[kind] or 0, near)
 	end
+end
+local BODIES = {}
+for _, kind in { "R15", "R6" } do
+	BODIES[kind] = if kind == "R15" then Rig.r15("Body") else Rig.r6("Body")
+	for key, m in good do wornCheck(kind, BODIES[kind], kind == "R6", key, m) end
 end
 
 do
@@ -295,6 +300,90 @@ do
 		check(`{bad}: one warning in Output`, #warnings == 1 and string.find(warnings[1], bad, 1, true) ~= nil)
 		KnifeService.giveBack(Instance.new("Model"), CoinShop.get(bad))
 		check(`{bad}: warned only once`, #warnings == 1)
+	end
+end
+
+-- The 5 Game Pass stand-ins (Shared/KnifeShapes, what a pass owner wears until the owner imports his models) on both
+-- bodies too (knife check, Oct 19: only his 30 were checked): clear of the body and close to it.
+for _, key in { "CrimsonRequiem", "HollowEclipse", "CelestialSeraph", "DragonsMaw", "FrostboundOath" } do
+	local m = KnifeService.template(CoinShop.get(key))
+	for _, kind in { "R15", "R6" } do wornCheck(kind, BODIES[kind], kind == "R6", key .. " (stand-in)", m) end
+end
+
+-- In a catcher's hand (knife check, Oct 19): at the old fixed 150 degrees the 3+ stud knives dipped into the floor in
+-- the idle and the walk (Crimson Requiem up to 0.43 studs under it). KnifeLook.handC0 now holds a long blade more forward by
+-- its reach (KnifeService.reachOf): every one of his 30 models and the 5 pass stand-ins, on R15 through the pack's
+-- Idle, Walk and Run, keeps its tip 0.15+ studs over the floor; short knives keep Huss Valley's 150 degrees.
+do
+	local KFS = require("../tools/preview/motion3d/kfs")
+	local Mix = Env.load(SHARED .. "LocomotionMix.lua")
+	local lib = Instance.new("Folder")
+	for _, inst in roblox.deserializeModel(fs.readFile(ROOT .. "src/ServerStorage/HuzzAnimations.rbxm")) do inst.Parent = lib end
+	local A = {}
+	for _, name in { "Idle", "Walk", "Run" } do A[name] = KFS.load(lib:FindFirstChild(name, true)) end
+	local rig = Rig.r15("Hand")
+	rig.root.CFrame = CFrame.new(0, Rig.REST_HEIGHT, 0)
+	local floorY = 0
+	-- the hand through each gait, as CFrames to test each knife against
+	local hands = {}
+	for _, g in { { "Idle", 0 }, { "Walk", 10 }, { "Run", 26 } } do
+		local mix = Mix.new()
+		for _ = 1, 60 do Mix.step(mix, 1 / 30, { speed = g[2], state = "ground", lengths = { Walk = A.Walk.length, Run = A.Run.length } }) end
+		for i = 0, 40 do
+			local t = i * 0.05
+			for _, m in rig.motors do m.Transform = CFrame.identity end
+			local total = 0
+			for _, name in { "Idle", "Walk", "Run" } do
+				local w = mix.weights[name]
+				if w > 1e-4 then
+					total += w
+					KFS.apply(A[name], rig, t, w / total)
+				end
+			end
+			Rig.fk(rig)
+			table.insert(hands, { gait = g[1], cf = rig.parts.RightHand.CFrame })
+		end
+	end
+	local function lowestTip(reach)
+		local lo, gait = math.huge, ""
+		for _, h in hands do
+			local at = Vector3.new(0, -0.15, 0)
+			local y = (h.cf * KnifeLook.handC0(at, reach) * Vector3.new(0, reach, 0)).Y
+			if y < lo then lo, gait = y, h.gait end
+		end
+		return lo - floorY, gait
+	end
+	local worstKey, worstY = "", math.huge
+	local function test(key, model)
+		local handle = model:FindFirstChild("Handle", true)
+		local reach = KnifeService.reachOf(model, handle)
+		local y, gait = lowestTip(reach)
+		if y < worstY then worstKey, worstY = key, y end
+		check(string.format("in hand %s: the tip stays off the floor (%.2f over it at worst, %s; reach %.2f)", key, y, gait, reach), y >= 0.15)
+	end
+	for _, m in folder:GetChildren() do
+		if m:IsA("Model") and m:FindFirstChild("Handle", true) then test(m.Name, m) end
+	end
+	for _, key in { "CrimsonRequiem", "HollowEclipse", "CelestialSeraph", "DragonsMaw", "FrostboundOath" } do
+		test(key .. " (stand-in)", (KnifeService.template(CoinShop.get(key))))
+	end
+	print(string.format("  in hand, lowest tip: %s %.2f studs over the floor", worstKey, worstY))
+	check("in hand: a short knife keeps Huss Valley's 150 degrees", KnifeLook.handAngle(2.07) == -150)
+	-- the real give() uses it: a long pass knife's grip is turned forward, a short one isn't
+	local c = body(false)
+	KnifeService.give(c, CoinShop.get("CrimsonRequiem"))
+	local _, k = knives(c)
+	local grip = k and mountOf(k)
+	local x = if grip then select(1, grip.C0:ToEulerAnglesXYZ()) else 0
+	check(string.format("give: a long blade is held more forward (%.0f degrees, not -150)", math.deg(x)), grip ~= nil and math.deg(x) > -145)
+	-- in the slash it eases back to the usual angle (Gameplay/Actions) and returns to the hold after
+	if grip then
+		local held = grip.C0
+		local function deg(cf) return math.deg((cf:ToEulerAnglesXYZ())) end
+		check("slash: the long blade turns back to -150 for the cut", math.abs(deg(KnifeLook.slashC0(held, 1)) + 150) < 0.01)
+		check("slash: and back to its hold after", math.abs(deg(KnifeLook.slashC0(held, 0)) - math.deg(x)) < 0.01
+			and (KnifeLook.slashC0(held, 0).Position - held.Position).Magnitude < 1e-6)
+		check("slash: halfway is halfway", math.abs(deg(KnifeLook.slashC0(held, 0.5)) - (math.deg(x) - 150) / 2) < 0.01)
 	end
 end
 

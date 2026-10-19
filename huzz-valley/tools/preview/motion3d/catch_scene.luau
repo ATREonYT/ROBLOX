@@ -61,7 +61,8 @@ local function knifeAt(handleCF)
 end
 local function inHand(rig)
 	local hand = rig.parts.RightHand
-	return hand.CFrame * KnifeLook.handC0(Vector3.new(0, -hand.Size.Y / 2 + 0.1, 0))
+	local k = baked[KEY]
+	return hand.CFrame * KnifeLook.handC0(Vector3.new(0, -hand.Size.Y / 2 + 0.1, 0), (k.tip - k.grip) * k.studs / k.length) -- (KnifeService.reachOf)
 end
 local function pose(rig, mix, t)
 	for _, m in rig.motors do m.Transform = CFrame.identity end

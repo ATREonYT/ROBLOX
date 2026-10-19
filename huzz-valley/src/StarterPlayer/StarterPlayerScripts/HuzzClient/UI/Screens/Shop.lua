@@ -307,6 +307,7 @@ local ITEM = { W = 161, H = 170, Gap = 8, ArtY = 39, ArtH = 89, KnifeArtH = 124,
 local rarityColor = {}
 for _, r in RoundConfig.Rarities do rarityColor[r.Name] = r.Color end
 rarityColor.Secret = Color3.fromRGB(150, 110, 255) -- (near-black in the roller; violet reads on the dark window)
+rarityColor.Exclusive = Color3.fromRGB(255, 170, 230) -- the Game Pass knives, once owned (as in the admin panel; knife check, Oct 19: their card had no rarity colour)
 local function swatch(parent: Instance, item: CoinShop.Item)
 	local f = new("Frame", { Name = "Swatch", Position = UDim2.fromOffset(10, 14), Size = UDim2.fromOffset(ITEM.Swatch, ITEM.Swatch), BackgroundColor3 = C.Frame, BackgroundTransparency = 0.3, BorderSizePixel = 0, Parent = parent }, { Kit.corner(8) })
 	if item.Slot == "Trail" then

@@ -6,8 +6,9 @@
 
 	The loop (CYCLE seconds, every stand offset by its own seed so stands side by side never move together):
 	  ready      a confident guard: feet apart (right foot back), knees soft, chest turned a little so the knife
-	             side faces you, the knife hand in front of the right shoulder with the blade UP and a little forward,
-	             clear of the body and the face; weight shifting slowly side to side, breathing, the blade rocking.
+	             side faces you, the knife hand low in front of the right hip with the blade slanting up and out to the
+	             right (about 45 degrees), clear of the body, the face and the sign over the head; weight shifting
+	             slowly side to side, breathing, the blade rocking.
 	  a move     every loop one of three, in turn (ORDER, starting at the seed):
 	             Combo     wind up across the body, a forehand sweep out to the right (the catcher's slash,
 	                       Shared/StabMotion), a backhand return to the left, a twirl of the knife round the fist,
@@ -61,8 +62,12 @@ StandShowcase.TRAIL_LIFETIME = 0.2 -- the slash smear (KnifeLook.TRAIL is 0.12 f
 -- the reference the cleaver held low shows its full face"): at rest each hold turns the blade's broad face out of the
 -- stand, to whoever stands in front of it (measured on R15 and R6: the width axis was pointing at the viewer, so the
 -- blade showed its edge). In a move the twist goes back to 0 (the edge leads the cut) and returns with the hold.
+-- Knife check (Oct 19): the guard used to hold the blade straight up in front of the shoulder; at the stands' 4.4
+-- studs its tip rose 2.6 studs over the head, into the sign, and the camera saw it end-on as a glowing blob. Now it
+-- slants up and out to the right side (searched on R15 and R6 for that slant with the hand in front, the tip under the
+-- sign and the broad face out; tests/StandShowcase.spec).
 local READY = {
-	arm = { 32, -12, 20 }, elbow = 100, wrist = -4, grip = 0, twist = -70,
+	arm = { 5, -57, -23 }, elbow = 97, wrist = -4, grip = 13, twist = -52,
 	off = { 30, 16, -16 }, offElbow = 80,
 	waist = { -3, 12, 0 }, neck = { -3, -10, 0 }, drop = 0.14, spin = 0,
 }
