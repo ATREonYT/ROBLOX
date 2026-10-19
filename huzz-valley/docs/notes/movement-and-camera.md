@@ -24,12 +24,20 @@ The huss pose and walk animations: [animations.md](animations.md).
   ~0.15 s, idle at 52.30); a small plant: the body tips back 4°, the arms go 13° out and 12° forward, full at 0.07 s,
   gone by 0.32 s. Only from a full run; pressing again cancels it. Before: the legs ran on in place ~0.3 s.
   Everyone else's stop: [animations.md](animations.md) (the velocity hint).
-- **The head stays on the camera** (`LocomotionMix.look`, `Run.Loco.Look`, `Gameplay/Locomotion` and `PlayerMoves`,
-  your own body): without shift lock, D turns the body right (Roblox's AutoRotate) while the head keeps looking
-  where the camera looks, up to 70° each way (`Look.Max`), fading out when the camera looks back past 110° (it
-  faces you: the head goes straight). Same exact neck solve as the strafe, the chest takes 40% of the turn. The
-  camera itself doesn't move with the body (Roblox's Classic camera). Others' heads can't follow their camera
-  (cameras aren't sent): only the shift-lock strafe shows on them.
+- **The head follows the mouse** (`Gameplay/HeadAim`, `LocomotionMix.look`, `Run.Loco.Look`, `Gameplay/Locomotion`
+  and `PlayerMoves`): the head looks at the point under the cursor (a ray from the camera through the mouse, your
+  own body skipped; 300 studs along it at the sky), up to 70° each way (`Look.Max`) and 30° up / 35° down (`Up`,
+  `Down`), fading to straight when the point is behind you past 110°. Touch screens and gamepads have no cursor:
+  the camera's middle. Without shift lock D turns the body right (Roblox's AutoRotate) while the head stays on the
+  mouse; in shift lock the strafe keeps the turn and the head still tilts up and down. Same exact neck solve as the
+  strafe (tilt about the body's level, then the turn: no tip), the chest takes 40% of the turn. Spring 10 (~0.35 s
+  to settle, at most 12° a frame at 30 fps). The camera doesn't move with the body (Roblox's Classic camera).
+- **Everyone sees everyone's head** (`HeadAim.start`, remote `HeadLook`, `HuzzServer/HeadLookService`): your screen
+  sends the head's turn and tilt as drawn, whole degrees, 5 times a second at most and only when it moved 2°; the
+  server drops anything past 8 a second, NaN or text, clamps it to the neck's reach and puts it on your character
+  (`HuzzLook`, a Vector2); every other screen springs to it (`RemoteResponse` 8: smooth between the 5-a-second
+  values, ~0.2 s behind your own). Your own head never waits for the network. Specs: `tests/Locomotion.spec`
+  (tilt, limits, the service's checks), `tests/PlayerMoves.spec` (another player's head from `HuzzLook`).
 - **Shift lock strafe** (`Shared/LocomotionMix.strafe` / `strafePose`, in `Gameplay/Locomotion` for you and
   `Gameplay/PlayerMoves` for everyone else): the hips and legs turn toward the way you move (up to 90°: a full
   side-on run on D, as HV's at 52.13 s; `Run.Loco.Strafe`),
@@ -81,7 +89,8 @@ The huss pose and walk animations: [animations.md](animations.md).
   them (set-off, stop, plant, biggest weight change in a frame 0.30, others' stop).
 - Not seen in Studio yet: the sprint and lunge feel, the Oct 19 huss, the feet-first gate on the owner's floors, the
   shift-lock back-pedal (negative AdjustSpeed), the AFK rejoin (live game only), the set-off, stop plant and head
-  look on a real camera, others' stops over a real network.
+  look on a real camera, others' stops over a real network, the head on a real mouse (and whether 5 sends a
+  second look smooth enough on others in a full server).
 - Still worse than HV: our idle holds the arms wider than theirs, so the stop lands in a different pose; the plant
   is our own made-up motion on the pack's poses (HV's arms swing out on a stop, 40.73 s), not their animation.
 
@@ -95,6 +104,12 @@ The huss pose and walk animations: [animations.md](animations.md).
   by ~0.4 s). "speed goes up every round a very tiny bit"; "move when your legs touch the floor"; "make it so when
   you shift lock the only thing that moves when you press w a s d (etc) is their body not their head"; "make the
   players join back automatically after going afk and about to get kicked".
+- Oct 19, 19:48 (owner: "Also, please make the users head move but make it follow mouse movements so the head doesnt
+  just stay in one place, make it like the references of huss valley"): the head followed the camera's middle, and
+  others' heads didn't move at all. Huss Valley's one recording (f1c7bb86) can't time a head swing: its runner wears
+  a dark hood seen from behind, and where the cursor shows (48.25 to 50 s) it is ~5° off the middle, a turn too
+  small to see; the line-up heads (0 to 30 s) hold still for seconds. So the reach (70° / 30° up / 35° down) and the
+  speed (~0.35 s) are ours: a neck's reach, quick but never a snap.
 - Oct 19, 18:16 (owner: "make the head not move for the user when he runs, for example when he presses D, the body
   turns right, but the head and camera stays the same, and also add some velocity into the game, and add animations
   for when you stop running, its a quick but nice looking stopping animation ... and then the slow walking into the

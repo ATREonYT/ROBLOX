@@ -94,6 +94,7 @@ require(HuzzServer.AuraPickupService).start() -- Aura stars to collect in the lo
 require(HuzzServer.FriendService).start() -- friend rewards: +10% coins with a friend here, the friend knife (Config/Friends)
 require(HuzzServer.SpinService).start() -- Spin the Wheel: a free spin every 15 min, bought spins (Config/SpinWheel)
 require(HuzzServer.LookService).apply() -- the lighting look: colour grade, bloom, sun rays, haze (Config/Look)
+require(HuzzServer.HeadLookService).start() -- everyone's head follows their mouse on every screen (Config/Run.Loco.Look)
 require(HuzzServer.LeaderboardService).start() -- the lobby leaderboards (Config/Leaderboards; each screen turns them to face you)
 do -- the lobby avatar stands: finds his grey blocks, readies the pass knives (a failure here never stops the game)
 	local ok, err = pcall(function() require(HuzzServer.AvatarStandService).start() end)

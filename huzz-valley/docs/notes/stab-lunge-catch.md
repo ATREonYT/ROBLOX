@@ -61,14 +61,18 @@ Read before changing how the click stab, a catcher's dive (lunge) and its stun, 
   in [round.md](round.md) "Catching"). The motion here doesn't change it: a slash or leap that looks like it reaches
   someone but whose box doesn't touch their body is a miss.
 - **Pinpoint: what the catcher saw counts** (Oct 19; rule in [round.md](round.md) "Catching"): the screen sends
-  where it drew the runner and itself, the server checks both were really there in the last 0.35 s and takes the
-  touch as drawn. Network model `lune run huzz-valley/tools/sim/touch_lag.luau` (repo root; 30 Hz sends, one-way =
-  ping/2, others drawn 0.05 s late: a guess), fair hits that count, old rule vs now: both 50 ms 100/100%; both
-  100 ms 100/100; both 200 ms 62/100 (the old look-back missed by 2.2 studs); runner 60 ms, catcher 250 ms 51/100;
-  catcher 400 ms 16/0 (past MaxRewind, on purpose). The sim's bots send claims too ("screen claims").
+  where it drew the runner and itself, the server ties that to one moment of its own history and takes the touch as
+  drawn, with at most 1 stud more reach than an honest hit. Network model `lune run
+  huzz-valley/tools/sim/touch_lag.luau` (repo root; 30 Hz sends, one-way = ping/2, others drawn 0.05 s late: a
+  guess). Fair hits that count, the server's own test vs now (the claim, or that test when it fails): both 50 and
+  100 ms 100/100%; both 200 ms 70/100; runner 60 ms, catcher 250 ms 60/100; catcher 400 ms 38/38 (the claim is past
+  MaxRewind, the fallback still counts what it did); a catcher chasing at a dive's 72 studs/s, 50/100/200 ms: 100%.
+  Its cheat test (a catcher sending any claim he likes): an honest stab reaches 5.35 studs root to root; the first
+  pinpoint version let a cheat reach 9.9 and stab behind him; now 6.35, never behind. The sim's bots send claims
+  too ("screen claims").
 - **The gap nobody can close:** every screen shows the others where they were a moment ago (their send, the trip to
   the server, the trip to you, plus Roblox's smoothing), so the catcher sees the runner 3 studs back at 50 ms ping
-  each, ~5 at 100 ms, ~8 at 200 ms (p95 up to 12.5: the runner turning). On the runner's own screen the knife can
+  each, ~5 at 100 ms, ~7.5 at 200 ms (p95 up to 10: the runner turning or hussing). On the runner's own screen the knife can
   therefore look short. Roblox gives no way to show every player in the same spot at the same time; the fair choice
   is one screen's view, and we take the catcher's. Not
   done: moving the caught body to where the knife touched (the runner would see a snap back) and drawing others
@@ -120,7 +124,13 @@ Read before changing how the click stab, a catcher's dive (lunge) and its stun, 
 - **Pinpoint, Oct 19** (owner: "make the player to player interactions pinpoint precise. For example make them
   all be in the same spots on everyones screen because its like that in huss valley, so please make it pin point so
   people dont die and start compalining"): before, the server re-tested the touch against its own history with a
-  guessed lag, so a fair hit on a 200 ms screen missed 38% of the time. Not seen with real ping yet (Studio's
+  guessed lag, so a fair hit on a 200 ms screen missed 30% of the time. Same day, a critic's cheat test: the first
+  version took the claim's facing, turn and both positions as sent (stab behind you, 9.9 to 11.6 studs of reach),
+  had no fallback (a 400 ms catcher went from 38% to 0%) and took dive hits after the landing; and when the end of
+  a Hero run took a stun away (`PowerService.clear`), your own screen still held you stunned and unable to turn for up
+  to 2.4 s (`Actions.stunned`, `Dash`: both now let go when `StunnedUntil` goes). All fixed. (The
+  model's numbers moved a little that day: Lune's `CFrame.lookAt` faces the wrong way along Z, so its catchers had
+  faced away; it has its own helper now, like `round_sim.luau`.) Not seen with real ping yet (Studio's
   Clients and Servers has no lag unless Studio's Incoming Replication Lag setting is raised).
 - **Known gap**: one frame at the end of a dive's get-up (~2.8 s after take-off) the right arm turns ~100° and back
   (`motion3d/move_smooth_measure.luau` at 8.30 s, there before Oct 19's feel change too); in `StabMotion`'s release.

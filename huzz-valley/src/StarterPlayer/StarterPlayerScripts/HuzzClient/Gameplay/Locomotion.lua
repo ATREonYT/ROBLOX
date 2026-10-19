@@ -15,7 +15,9 @@
 	    from your body's movement (Gameplay/PlayerMoves);
 	  - without shift lock (the lobby, Alt held) Roblox turns your body to the move and the head turns back toward
 	    where the camera looks (LocomotionMix.look, owner Oct 19 18:16: "when he presses D, the body turns right, but
-	    the head and camera stays the same");
+	    the head and camera stays the same"); since Oct 19 19:48 toward the point under the mouse, up and down too,
+	    shift lock or not (Gameplay/HeadAim: "make it follow mouse movements so the head doesnt just stay in one
+	    place"), and HeadAim tells the others;
 	  - setting off walks first and a stop from a run plays a quick plant (LocomotionMix SetOff / Stop, measured on
 	    Huss Valley's recording): the arms swing out on the shoulders here.
 	Published tracks replicate, so other players see the same. Studio's temporary copies play only on this screen:
@@ -41,6 +43,7 @@ local LEAP_LENGTH = 0.85 -- seconds a catcher's leap owns the body (Shared/StabM
 local Mix = require(Shared.LocomotionMix)
 local RunMotion = require(Shared.RunMotion)
 local Frame = require(script.Parent.Frame)
+local HeadAim = require(script.Parent.HeadAim)
 
 local current -- the running controller (one character at a time: yours)
 
@@ -235,21 +238,19 @@ local function attach(character: Model)
 			-- without it: the body goes the way you move, the head looks where the camera looks (LocomotionMix.look)
 			local locked = player:GetAttribute("HuzzShiftLock") == true
 			local turn = Mix.strafe(mix, dt, root.CFrame:VectorToObjectSpace(v), locked, quiet)
+			-- (toward the point under the mouse: 0 = straight ahead of you, + = to your right / up; Gameplay/HeadAim)
 			local cam = Workspace.CurrentCamera
-			local aim = 0
-			if cam then
-				local l = root.CFrame:VectorToObjectSpace(cam.CFrame.LookVector)
-				aim = math.atan2(l.X, -l.Z) -- (0 = the camera looks the way you face, + = to your right)
-			end
-			local look = Mix.look(mix, dt, aim, not locked and cam ~= nil, quiet)
+			local aim, up = HeadAim.aim(root)
+			local look, tilt = Mix.look(mix, dt, aim, not locked and cam ~= nil, quiet, up)
+			HeadAim.report(look, tilt)
 			if waistJoint and neckJoint and waistJoint.Parent and neckJoint.Parent then
 				local waistPose, neckPose = current(waistJoint), current(neckJoint)
-				if math.abs(turn) > 1e-3 or math.abs(look) > 1e-3 then
+				if math.abs(turn) > 1e-3 or math.abs(look) > 1e-3 or math.abs(tilt) > 1e-3 then
 					hipsPose, waistPose, neckPose = Mix.strafePose(mix, turn, {
 						root = { C0 = rootJoint.C0, C1 = rootJoint.C1, T = hipsPose },
 						waist = { C0 = waistJoint.C0, C1 = waistJoint.C1, T = waistPose },
 						neck = { C0 = neckJoint.C0, C1 = neckJoint.C1, T = neckPose },
-					}, look)
+					}, look, tilt)
 				end
 				put(waistJoint, waistPose)
 				put(neckJoint, neckPose)

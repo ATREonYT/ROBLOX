@@ -121,35 +121,113 @@ function TouchHit.pathDistance(p: Vector3, path: { CFrame }): number
 	return best
 end
 
+-- How far back a catcher's screen shows the runners: the server's copy reaches them half a round trip late, is drawn
+-- a little later still (Roblox's smoothing), and their claim takes the other half back. `ping` is
+-- Player:GetNetworkPing() (taken as the round trip; + 0.05 s in case it is one way), capped at T.MaxRewind.
+function TouchHit.lookBack(ping: number, T): number
+	return math.clamp(ping + T.Smoothing + 0.05, 0, T.MaxRewind)
+end
+
 --[[ A hit the catcher's screen saw, checked by the server (owner, Oct 19: "make the player to player interactions
-	pinpoint precise ... so people dont die and start compalining"). What counts is exactly what that screen showed:
-	claim.seen = the runner's root as the catcher's screen drew it, claim.mine = the catcher's own root then. The
-	server only checks it was really possible:
-	  - seen lies on the runner's real path over the last T.MaxRewind seconds (runnerPath, from HuzzServer/HitHistory),
-	    within T.SeenSlack studs (a screen draws a body between the network's snapshots of that path);
-	  - mine lies on the catcher's own path within T.MineSlack;
-	  - the knife's box from mine (along `along`, else the way mine faces) touches the runner's body at seen.
-	So a lagging screen's fair hit counts, and nobody is caught where no screen ever showed them, nor where they were
-	more than MaxRewind seconds ago. Returns (ok, why) for the notes and the spec. ]]
-function TouchHit.verify(claim, runnerPath: { CFrame }, catcherPath: { CFrame }, shape, knife, along: Vector3?, T): (boolean, string)
+	pinpoint precise ... so people dont die and start compalining"). What counts is what that screen showed:
+	claim.seen = the runner's root as the catcher's screen drew it, claim.mine = the catcher's own root then. Every
+	number in the claim comes from a client, so the server ties it to its own history (a critic's cheat test, Oct 19:
+	the first version let a cheater stab behind him and reach 9 to 12 studs):
+	  - ONE moment for the runner: the point on the runner's server path (ctx.runner, { t, cf } samples) closest to
+	    seen, no further back than ctx.back seconds (the catcher's own round trip plus Roblox's smoothing, at most
+	    T.MaxRewind) and within T.SeenSlack studs. The runner's body is turned as the server had it then (seen's own
+	    turn is ignored);
+	  - the catcher is where they are now: mine within T.MineSlack of the catcher's last T.MineBack seconds on the
+	    server, or of where they will be T.Lead seconds on at their speed (a client is a packet ahead of the server:
+	    a dive moves 72 studs/s);
+	  - the knife points the way the server has the catcher facing (ctx.face), or along the leap (ctx.along); a
+	    claimed facing is used only within T.FaceSlack degrees of that;
+	  - the screen's touch: the knife's box from mine touches the runner's body at seen (T.Tolerance);
+	  - the cap: the same box from the server's own catcher (now, or T.Lead on) touches the runner's body where the
+	    server had it at that moment, give or take T.Tolerance + T.CapSlack. So no claim reaches further than an
+	    honest one by more than CapSlack studs.
+	ctx = { runner, catcher, now, back, shape, knife, along?, face?, vel? }. Returns (ok, why). ]]
+function TouchHit.verify(claim, ctx, T): (boolean, string)
 	if type(claim) ~= "table" or typeof(claim.seen) ~= "CFrame" or typeof(claim.mine) ~= "CFrame" then
 		return false, "bad claim"
 	end
-	local seen, mine = claim.seen, claim.mine
-	if seen.Position ~= seen.Position or mine.Position ~= mine.Position then
+	local seen, mine = claim.seen.Position, claim.mine.Position
+	if seen ~= seen or mine ~= mine or claim.mine.LookVector ~= claim.mine.LookVector then
 		return false, "bad claim" -- (NaN)
 	end
-	if #runnerPath == 0 or TouchHit.pathDistance(seen.Position, runnerPath) > T.SeenSlack then
+	local runner, catcher, now = ctx.runner, ctx.catcher, ctx.now
+	if #runner == 0 or #catcher == 0 then
+		return false, "no history"
+	end
+	-- the runner's one moment: the closest point to seen on their path over the last `back` seconds
+	local from = now - math.min(ctx.back, T.MaxRewind)
+	local best, at = math.huge, nil
+	for i = 1, #runner do
+		local a = runner[i]
+		local b = runner[i + 1] or a
+		if b.t >= from then
+			local ab = b.cf.Position - a.cf.Position
+			local len2 = ab:Dot(ab)
+			local k = if len2 > 1e-9 then math.clamp((seen - a.cf.Position):Dot(ab) / len2, 0, 1) else 0
+			if a.t + (b.t - a.t) * k < from then
+				k = math.clamp((from - a.t) / math.max(b.t - a.t, 1e-6), 0, 1)
+			end
+			local cf = a.cf:Lerp(b.cf, k)
+			local d = (cf.Position - seen).Magnitude
+			if d < best then
+				best, at = d, cf
+			end
+		end
+	end
+	if not at or best > T.SeenSlack then
 		return false, "runner never there"
 	end
-	if #catcherPath == 0 or TouchHit.pathDistance(mine.Position, catcherPath) > T.MineSlack then
+	-- the catcher now (the server's newest), and a packet on at their speed
+	local latest = catcher[#catcher].cf
+	local lead = latest + (ctx.vel or Vector3.zero) * T.Lead
+	local path = {}
+	for _, s in catcher do
+		if s.t >= now - T.MineBack then
+			table.insert(path, s.cf)
+		end
+	end
+	table.insert(path, latest)
+	table.insert(path, lead)
+	if TouchHit.pathDistance(mine, path) > T.MineSlack then
 		return false, "catcher never there"
 	end
-	local boxCF, boxSize = TouchHit.reachBox(mine, along, knife.Reach, knife.Width)
-	if not TouchHit.touches(boxCF, boxSize, seen, shape, T.Tolerance) then
+	-- which way the knife points: along the leap, or the claimed facing within FaceSlack of the server's
+	local dir = ctx.along
+	if not dir then
+		local face = ctx.face or latest.LookVector
+		local f = Vector3.new(face.X, 0, face.Z)
+		local c = Vector3.new(claim.mine.LookVector.X, 0, claim.mine.LookVector.Z)
+		if f.Magnitude < 1e-3 then
+			f = Vector3.new(0, 0, -1)
+		end
+		dir = f.Unit
+		if c.Magnitude > 1e-3 then
+			local a0, a1 = math.atan2(-f.X, -f.Z), math.atan2(-c.X, -c.Z)
+			local d = (a1 - a0 + math.pi) % (2 * math.pi) - math.pi
+			local lim = math.rad(T.FaceSlack)
+			local a = a0 + math.clamp(d, -lim, lim)
+			dir = Vector3.new(-math.sin(a), 0, -math.cos(a))
+		end
+	end
+	-- the screen's touch, with the runner turned as the server had them
+	local seenCF = CFrame.new(seen) * at.Rotation
+	local boxCF, boxSize = TouchHit.reachBox(CFrame.new(mine), dir, ctx.knife.Reach, ctx.knife.Width)
+	if not TouchHit.touches(boxCF, boxSize, seenCF, ctx.shape, T.Tolerance) then
 		return false, "no touch"
 	end
-	return true, "hit"
+	-- the cap: from the server's own catcher, to the runner where the server had them at that moment
+	for _, c in { latest, lead } do
+		local capCF, capSize = TouchHit.reachBox(CFrame.new(c.Position), dir, ctx.knife.Reach, ctx.knife.Width)
+		if TouchHit.touches(capCF, capSize, at, ctx.shape, T.Tolerance + T.CapSlack) then
+			return true, "hit"
+		end
+	end
+	return false, "too far"
 end
 
 -- Does the reach box touch a body whose shape (TouchHit.shape, relative to its root) stands at rootCF?

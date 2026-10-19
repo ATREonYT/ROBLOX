@@ -153,6 +153,7 @@ end
 -- Turn the body to face `facing` over TURN seconds (eased), then hold it there until `holdUntil` (os.clock) and
 -- give the turning back to Roblox. Shift lock already faces the camera: nothing to do then.
 local turning = 0
+local diveHold = 0 -- (counts dives: a dive's hold on turning lets go only if no newer one took over)
 local function easeTurn(c: Model, h: Humanoid, root: BasePart, facing: Vector3, holdUntil: number)
 	if player:GetAttribute("HuzzShiftLock") == true then
 		return
@@ -232,7 +233,9 @@ local function lunge(c: Model, h: Humanoid, root: BasePart)
 		task.spawn(function()
 			local found, shown = first, firstShown
 			local t0 = os.clock()
-			while not found and os.clock() - t0 < L.HitWindow and root.Parent do
+			-- (until the landing: lying stunned, nobody is caught; the server refuses those too)
+			local window = math.min(L.HitWindow, L.StunAfter or L.Time)
+			while not found and os.clock() - t0 < window and root.Parent do
 				RunService.Heartbeat:Wait()
 				found, shown = HitCheck.find(root, L.Reach, L.Width, dir)
 			end
@@ -251,9 +254,24 @@ local function lunge(c: Model, h: Humanoid, root: BasePart)
 	local L = Config.Lunge
 	if player:GetAttribute("HuzzShiftLock") ~= true then
 		h.AutoRotate = false
-		task.delay((L.StunAfter or L.Time) + (L.Stun or 0), function()
-			if h.Parent and not h.AutoRotate and player:GetAttribute("HuzzShiftLock") ~= true and c:GetAttribute("DownedAt") == nil then
+		diveHold += 1
+		local mine = diveHold
+		local function letGo()
+			if mine == diveHold and h.Parent and not h.AutoRotate and player:GetAttribute("HuzzShiftLock") ~= true
+				and c:GetAttribute("DownedAt") == nil then
 				h.AutoRotate = true
+			end
+			if mine == diveHold then diveHold += 1 end
+		end
+		task.delay((L.StunAfter or L.Time) + (L.Stun or 0), letGo)
+		-- (the server can take the stun away early: PowerService.clear at the end of a Hero run)
+		local conn
+		conn = player:GetAttributeChangedSignal("StunnedUntil"):Connect(function()
+			if mine ~= diveHold then
+				conn:Disconnect()
+			elseif player:GetAttribute("StunnedUntil") == nil then
+				conn:Disconnect()
+				letGo()
 			end
 		end)
 	end

@@ -1232,11 +1232,12 @@ local function stabNear(id, me: BasePart, knife, only: number?, along: Vector3?)
 	return false
 end
 
--- A hit the catcher's screen saw, judged on exactly what that screen showed (owner, Oct 19: "make the player to
--- player interactions pinpoint precise"): shown = { seen = the runner's root as drawn there, mine = the catcher's
--- root }, from Gameplay/HitCheck. Shared/TouchHit.verify checks both lie on the paths we really have (HitHistory, at
--- most Touch.MaxRewind back) and the knife's box from mine touches the runner's body at seen. Shields, the safe start
--- zone and a fresh rescue protect as in stabNear. True when it holds (a hit, or a Shield took it).
+-- A hit the catcher's screen saw, judged on what that screen showed (owner, Oct 19: "make the player to player
+-- interactions pinpoint precise"): shown = { seen = the runner's root as drawn there, mine = the catcher's root },
+-- from Gameplay/HitCheck. Shared/TouchHit.verify ties it to one moment of our own history (HitHistory), points the
+-- knife the way we have the catcher facing (or along their dive), and caps the reach at an honest one plus
+-- Touch.CapSlack. Shields, the safe start zone and a fresh rescue protect as in stabNear. True when it holds (a hit,
+-- or a Shield took it); false sends the caller to the server's own test (chaseClaim).
 local function screenHit(id, me: BasePart, runnerId: number, shown, knife, along: Vector3?): boolean
 	local now = os.clock()
 	local root = match.status[runnerId] == "Active" and not frozen[runnerId]
@@ -1251,8 +1252,16 @@ local function screenHit(id, me: BasePart, runnerId: number, shown, knife, along
 	local T = Config.Touch
 	local character = root.Parent
 	local shape = character and TouchHit.shape(root.CFrame, character:GetChildren()) or TouchHit.standIn(CFrame.identity)
-	if not TouchHit.verify(shown, HitHistory.between(root, now - T.MaxRewind), HitHistory.between(me, now - T.MaxRewind),
-		shape, knife, along, T) then
+	local p = byId[id]
+	local okPing, ping = pcall(function() return p and p:GetNetworkPing() end)
+	if not TouchHit.verify(shown, {
+		runner = HitHistory.samples(root, now - T.MaxRewind),
+		catcher = HitHistory.samples(me, now - T.MineBack),
+		now = now,
+		back = TouchHit.lookBack(if okPing and type(ping) == "number" then ping else 0, T),
+		shape = shape, knife = knife, along = along,
+		face = me.CFrame.LookVector, vel = me.AssemblyLinearVelocity,
+	}, T) then
 		return false
 	end
 	if PowerService.blocks(id, runnerId) then
@@ -1270,8 +1279,8 @@ function chaseClaim(id, player, claim, knife, untilClock, onHit, along)
 			local me = rootOf(id)
 			local st = State:GetAttribute("Stage")
 			if not (me and match and not match.over and match.roles[id] == "Catcher" and (st == "Running" or st == "HeroRun"))
-				or frozen[id] or KnockdownService.isDown(player) or not PowerService.canStab(id) then
-				return
+				or frozen[id] or KnockdownService.isDown(player) or not PowerService.canStab(id) or PowerService.stunned(id) then
+				return -- (a dive's hit can't land once the diver lies stunned)
 			end
 			if stabNear(id, me, knife, claim, along) then
 				if onHit then onHit() end
@@ -1342,9 +1351,8 @@ Net.get("Stab").OnServerEvent:Connect(function(player, claim, shown)
 		-- pinpoint: the runner the catcher's screen saw inside the knife's reach, if that's possible from here.
 		-- Checked again for a moment (critic: a catcher a little behind on our side at full speed failed a single
 		-- check and the kid saw a clean hit do nothing); still in front only, so a cheat can't hit all round.
-		if type(shown) == "table" then
-			screenHit(id, me, claim, shown, Config.Stab) -- (pinpoint: what the screen showed, Oct 19)
-		else
+		-- (pinpoint: what the screen showed, Oct 19; if that fails, or an old client sent none, our own test)
+		if not (type(shown) == "table" and screenHit(id, me, claim, shown, Config.Stab)) then
 			chaseClaim(id, player, claim, Config.Stab, os.clock() + 0.25)
 		end
 	elseif claim == nil then
@@ -1368,19 +1376,20 @@ Net.get("Lunge").OnServerEvent:Connect(function(player, arg, dir)
 		local me = rootOf(id)
 		local st = State:GetAttribute("Stage")
 		if me and match and not match.over and match.roles[id] == "Catcher" and (st == "Running" or st == "HeroRun")
-			and lungeClaims[id] and lastLunge[id] and os.clock() - lastLunge[id] <= Config.Lunge.HitWindow + 0.3 and not lungeHit[id]
+			-- (the claim's moment, from the press: arrival - lastLunge, the catcher's ping cancels out; after the
+			-- landing they lie stunned, so a hit then isn't fair: StunAfter + 0.1 s for the network's jitter)
+			and lungeClaims[id] and lastLunge[id] and os.clock() - lastLunge[id] <= math.min(Config.Lunge.HitWindow,
+				Config.Lunge.StunAfter or Config.Lunge.Time) + 0.1 and not lungeHit[id]
 			and not frozen[id] and not KnockdownService.isDown(player) and PowerService.canStab(id) and Config.TagMode == "Stab" then
 			lungeClaims[id] = nil -- (one claim per lunge)
-			if type(dir) == "table" then
-				-- (pinpoint, Oct 19: the second value is what the screen showed, not a direction)
-				if screenHit(id, me, arg, dir, Config.Lunge, lungeDirs[id]) then
-					lungeHit[id] = true
-				end
+			-- (pinpoint, Oct 19: the second value is what the screen showed, not a direction; if it fails, or an old
+			-- client sent none, our own test for a moment, never past the stun)
+			if type(dir) == "table" and screenHit(id, me, arg, dir, Config.Lunge, lungeDirs[id]) then
+				lungeHit[id] = true
 			else
-				chaseClaim(id, player, arg, Config.Lunge,
-					lastLunge[id] + Config.Lunge.HitWindow + 0.3, function()
-						lungeHit[id] = true
-					end, lungeDirs[id])
+				chaseClaim(id, player, arg, Config.Lunge, os.clock() + 0.25, function()
+					lungeHit[id] = true
+				end, lungeDirs[id])
 			end
 		end
 		return

@@ -359,6 +359,60 @@ do
 	check(math.abs(face.head) < 1, "the camera looking at your face: the head faces where you run (a neck can't turn round)")
 	local locked = headFor(-90, false, 0.8)
 	check(math.abs(locked.head) < 0.5, "in shift lock the body already faces the camera: the look stays out")
+
+	-- Oct 19 19:48 (owner: "make the users head move but make it follow mouse movements"): up and down too, a neck's
+	-- reach, shift lock or not, the turn and the tilt together without tipping the head over
+	local function tiltFor(aimDeg, upDeg, on)
+		local s = Mix.new()
+		local biggest, look, tilt = 0, 0, 0
+		for _ = 1, math.floor(0.8 / DT) do
+			Mix.step(s, DT, { speed = 0, state = "ground", lengths = lengths })
+			local before = tilt
+			look, tilt = Mix.look(s, DT, math.rad(aimDeg), on, 0, math.rad(upDeg))
+			biggest = math.max(biggest, math.abs(math.deg(tilt - before)))
+		end
+		local pose = Sampler.sample(A.Idle, 0)
+		for _, m in body.motors do m.Transform = pose[m.Part1.Name] or CFrame.identity end
+		body.root.CFrame = CFrame.new(0, Rig.REST_HEIGHT, 0)
+		Rig.fk(body)
+		local head0 = body.parts.Head.CFrame
+		local hips, w, n = Mix.strafePose(s, 0, {
+			root = { C0 = rootJ.C0, C1 = rootJ.C1, T = rootJ.Transform },
+			waist = { C0 = waist.C0, C1 = waist.C1, T = waist.Transform },
+			neck = { C0 = neck.C0, C1 = neck.C1, T = neck.Transform },
+		}, look, tilt)
+		rootJ.Transform, waist.Transform, neck.Transform = hips, w, n
+		Rig.fk(body)
+		local function elevation(cf) return math.deg(math.asin(math.clamp(cf.LookVector.Y, -1, 1))) end
+		local want = CFrame.Angles(0, -look, 0) * CFrame.Angles(tilt, 0, 0) * head0.Rotation
+		local _, err = (want:Inverse() * body.parts.Head.CFrame.Rotation):ToAxisAngle()
+		return { up = elevation(body.parts.Head.CFrame) - elevation(head0), side = yawOf(head0) - yawOf(body.parts.Head.CFrame),
+			tilt = math.deg(tilt), err = math.deg(math.abs(err)), biggest = biggest }
+	end
+	local up = tiltFor(0, 50, true)
+	check(math.abs(up.tilt - Lk.Up) < 1 and math.abs(up.up - Lk.Up) < 2 and up.err < 1,
+		string.format("the mouse high up: the head tilts up %.0f degrees, its neck's reach (%.0f wanted)", up.up, Lk.Up))
+	check(up.biggest <= 12, string.format("no snap: at most %.0f degrees a frame at 30 fps", up.biggest))
+	local down = tiltFor(0, -80, false)
+	check(math.abs(down.tilt + Lk.Down) < 1 and down.err < 1,
+		string.format("the mouse at your feet, shift lock: the head looks down %.0f degrees", -down.tilt))
+	local both = tiltFor(-40, 20, true)
+	check(math.abs(both.side + 40) < 2 and math.abs(both.tilt - 20) < 1 and both.err < 1,
+		string.format("left and up together: turned %.0f, tilted %.0f, no tip (%.2f)", both.side, both.tilt, both.err))
+	local behind = tiltFor(175, 40, true)
+	check(math.abs(behind.tilt) < 1, "the mouse behind you: the head comes back to the front, not up")
+
+	-- everyone sees it (HuzzServer/HeadLookService): what a screen sends is checked and limited
+	local Service = Env.load("huzz-valley/src/ServerScriptService/HuzzServer/HeadLookService.lua")
+	local t, u = Service.clean(500, -500)
+	check(t == Lk.Max and u == -Lk.Down, "a turn past a neck's reach is clamped")
+	check(Service.clean(0 / 0, 1) == nil and Service.clean("x", 1) == nil and Service.clean(1) == nil, "NaN, text and missing numbers are refused")
+	local fake, took = {}, 0
+	for i = 1, 60 do
+		if Service.allow(fake, i / 60) then took += 1 end -- (60 sends in one second)
+	end
+	check(took <= 10, string.format("a screen spamming 60 a second gets %d through (at most 8 a second, a burst of 2)", took))
+	check(Lk.SendRate <= 10 and Lk.SendStep >= 1, "screens send a few times a second, only when the head moved")
 end
 
 -- Another player stopping: their legs follow ~0.15 s after their body stops (a still body past a network stall has

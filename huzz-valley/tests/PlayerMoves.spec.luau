@@ -195,6 +195,32 @@ frames(10)
 -- (the pack's own hip pitch can sit near the dance's fixed 0.5 by chance with a random idle phase, so only check
 -- the pack is moving the hip again: a dance still holding it would leave it frozen)
 check(hip.Transform ~= mid, "after the dance the pack is back")
+-- their head follows their mouse (owner, Oct 19 19:48): their screen sends the turn, the server puts it on their
+-- character (HuzzLook, degrees), and here it springs to it (Gameplay/HeadAim, HuzzServer/HeadLookService)
+do
+	local neckM, waistM = theirs.motors.Neck, theirs.motors.Waist
+	local function angle(a: CFrame, b: CFrame): number
+		local _, t = (a:Inverse() * b):ToAxisAngle()
+		return math.deg(math.abs(t))
+	end
+	frames(30)
+	local neck0, waist0 = neckM.Transform, waistM.Transform
+	theirs.character:SetAttribute("HuzzLook", roblox.Vector2.new(-50, 15))
+	local biggest, last = 0, neckM.Transform
+	frames(45, function()
+		biggest = math.max(biggest, angle(last, neckM.Transform))
+		last = neckM.Transform
+	end)
+	check(angle(neck0, neckM.Transform) > 12 and angle(waist0, waistM.Transform) > 15,
+		string.format("their head and chest turn to where their mouse points (neck %.0f, chest %.0f degrees)",
+			angle(neck0, neckM.Transform), angle(waist0, waistM.Transform)))
+	check(biggest < 10, string.format("smoothly: at most %.1f degrees a frame at 60 fps", biggest))
+	print(string.format("  another player's head from their mouse (-50, +15 sent): neck %.0f, chest %.0f degrees, at most %.1f a frame",
+		angle(neck0, neckM.Transform), angle(waist0, waistM.Transform), biggest))
+	theirs.character:SetAttribute("HuzzLook", nil)
+	frames(60)
+	check(angle(neck0, neckM.Transform) < 6, "and back when it goes")
+end
 -- leaving: dropped
 theirs.character.Parent = nil
 other.Character = nil

@@ -66,6 +66,19 @@ function HitHistory.between(root: BasePart, from: number): { CFrame }
 	return out
 end
 
+-- The same as { t, cf } samples (os.clock times), the newest being now: for TouchHit.verify, which ties a screen's
+-- claim to one moment of this history.
+function HitHistory.samples(root: BasePart, from: number): { { t: number, cf: CFrame } }
+	local out = { { t = from, cf = HitHistory.at(root, from) } }
+	for _, s in samples[root] or {} do
+		if s.t > from then
+			table.insert(out, s)
+		end
+	end
+	table.insert(out, { t = os.clock(), cf = root.CFrame })
+	return out
+end
+
 RunService.Heartbeat:Connect(function()
 	local now = os.clock()
 	local seen = {}

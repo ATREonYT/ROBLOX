@@ -67,13 +67,21 @@ The lobby side (one lobby per map, paint, his new lobby): [lobby.md](lobby.md). 
   ahead the knife reaches 4.4 studs past the catcher's chest.
 - The catcher's screen (`Gameplay/HitCheck`) picks the runner it touches and sends that UserId (false = a miss)
   **and what it showed** at that moment: the runner's root as drawn (`seen`) and the catcher's own (`mine`).
-  **Pinpoint (Oct 19): the server judges exactly that** (`RoundService.screenHit`, `Shared/TouchHit.verify`):
-  `HuzzServer/HitHistory` keeps every player's root for 0.6 s (`Touch.Keep`); the claim counts if `seen` lies within
-  1.5 studs of the runner's real path (`Touch.SeenSlack`) and `mine` within 2.5 of the catcher's (`MineSlack`),
-  both over the last 0.35 s (`Touch.MaxRewind`), and the knife's box from `mine` touches the body at `seen`. One
-  runner per lunge. A client that sends no `seen`/`mine` (old clients, the sim's bots) gets the old look-back: the
-  body anywhere between now and ping/2 + 0.1 s ago (`Touch.Smoothing`), at most `MaxRewind`; a client that sends
-  nothing at all gets that test without a pick. Why and the measured gap: [stab-lunge-catch.md](stab-lunge-catch.md)
+  **Pinpoint (Oct 19): the server judges that** (`RoundService.screenHit`, `Shared/TouchHit.verify`), tied to its
+  own history (`HuzzServer/HitHistory`, every player's root for 0.6 s, `Touch.Keep`) so a cheat gains at most 1 stud:
+  - one moment: `seen` within 1.5 studs (`SeenSlack`) of the runner's path, no further back than the catcher's ping
+    + 0.15 s (`TouchHit.lookBack`, at most 0.35 s `MaxRewind`); the runner's turn is the server's, not the claim's;
+  - `mine` within 1.5 studs (`MineSlack`) of where the server has the catcher over the last 0.2 s (`MineBack`), or
+    0.06 s on at their speed (`Lead`: a diving screen is a packet ahead of the server);
+  - the knife points the way the server has the catcher facing (a claimed facing only within 35°, `FaceSlack`), or
+    along the dive; its box from `mine` touches the body at `seen`;
+  - the cap: the same box from the server's own catcher touches the runner where the server had them at that
+    moment, give or take 1 stud more (`CapSlack`).
+  A claim that fails falls back to the server's own test (below), so no fair hit counts less often than before.
+  One runner per lunge, and a dive's claim only up to its landing (`Lunge.StunAfter` + 0.1 s from the press; the
+  catcher then lies stunned). A client that sends no `seen`/`mine` (old clients, the sim's bots) gets the server's
+  own test: the body anywhere between now and ping/2 + 0.1 s ago (`Touch.Smoothing`), at most `MaxRewind`,
+  re-checked for 0.25 s; a client that sends nothing at all gets that test without a pick. Why and the measured gap: [stab-lunge-catch.md](stab-lunge-catch.md)
   "Pinpoint". The Practice Bot's knife is checked where it
   was 0.1 s ago (what runners saw) against bodies now. Spec `tests/TouchHit.spec` (prints the numbers above).
 - **Catchers stay out of both safe zones:** `MapService.holdCatchers` stands an invisible wall on each zone's

@@ -17,6 +17,8 @@
 --                                  server -> client: (ok, message, verb, key). Owner only, checked by AdminService
 --   KnifeGlb       RemoteFunction  client -> server: (key, n) -> the n-th baked .glb mesh of a knife, nil when none,
 --                                  false to ask again later (HuzzServer/KnifeGlbService, Gameplay/KnifeDress)
+--   HeadLook       RemoteEvent     client -> server: (turn, tilt) where your head looks, whole degrees, ~5 a second
+--                                  (Gameplay/HeadAim); HuzzServer/HeadLookService puts it on your character (HuzzLook)
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -40,6 +42,7 @@ local SPEC = {
 	SpinOpen = "RemoteEvent",
 	Admin = "RemoteEvent",
 	KnifeGlb = "RemoteFunction",
+	HeadLook = "RemoteEvent",
 }
 
 local folder: Folder

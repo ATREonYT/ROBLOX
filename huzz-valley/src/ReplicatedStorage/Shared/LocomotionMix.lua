@@ -79,6 +79,7 @@ function LocomotionMix.new(config)
 		roll = 0, rollV = 0, pitch = 0, pitchV = 0, yaw = nil,
 		turn = 0, turnV = 0, back = false, -- shift lock: the body's turn toward the move (radians) and back-pedalling
 		look = 0, lookV = 0, -- the head's turn toward where the camera looks (radians, + = right)
+		lookUp = 0, lookUpV = 0, -- and its tilt (radians, + = up)
 		goAge = 0, -- seconds since setting off from a standstill (the walk shows first)
 		stopAge = math.huge, stopK = 0, armed = false, -- the stop's plant: how long ago, how strong; armed = running
 	}
@@ -225,7 +226,7 @@ function LocomotionMix.leanCFrame(roll, pitch, footDrop)
 end
 
 local STRAFE = { MaxTurn = 90, BackFrom = 110, Response = 12, Chest = 0.4, MinSpeed = 2 }
-local LOOK = { Max = 70, BackFrom = 110, Fade = 30, Response = 10 }
+local LOOK = { Max = 70, BackFrom = 110, Fade = 30, Response = 10, Up = 30, Down = 35, RemoteResponse = 8 }
 
 --[[ Shift lock's body turn, one frame. localVel: the body's ground velocity in its own space (x right, z back, as
 	CFrame:VectorToObjectSpace gives it); on: shift lock holds the body to the camera (otherwise Roblox turns the body
@@ -257,28 +258,36 @@ end
 
 --[[ The head's turn toward where the camera looks, one frame (no shift lock: Roblox has turned the body to the move,
 	so pressing D turns the body right while the head keeps looking ahead with the camera). aim: the camera's look,
-	relative to the body (radians, + = to the body's right, as strafe()); on: false fades it out; quiet as strafe().
-	Up to Config/Run.Loco.Look Max degrees (a neck's reach); when the camera looks back past BackFrom (looking at
-	yourself) the head comes round to the front over Fade degrees instead of flipping. Returns the head's turn. ]]
-function LocomotionMix.look(s, dt, aim: number, on: boolean, quiet: number?): number
+	relative to the body (radians, + = to the body's right, as strafe()); on: false fades the turn out (shift lock: the
+	strafe keeps the head ahead); quiet as strafe(). Up to Config/Run.Loco.Look Max degrees (a neck's reach); when the
+	camera looks back past BackFrom (looking at yourself) the head comes round to the front over Fade degrees instead
+	of flipping. up (Oct 19 19:48, the head follows the mouse): how far above the body's level the aim is (radians,
+	+ = up), Look.Up / Down degrees at most, shift lock or not. remote: another player's head from the turn their
+	screen sent (Gameplay/HeadAim), springing with the softer RemoteResponse. Returns the head's (turn, tilt). ]]
+function LocomotionMix.look(s, dt, aim: number, on: boolean, quiet: number?, up: number?, remote: boolean?): (number, number)
 	local C = s.C.Look or LOOK
 	local live = 1 - clamp(quiet or 0, 0, 1)
-	local target = 0
-	if on and live > 0 then
-		local off = math.deg(math.abs(aim))
-		target = clamp(aim, -rad(C.Max), rad(C.Max)) * (1 - smooth((off - C.BackFrom) / C.Fade)) * live
+	local target, tilt = 0, 0
+	if live > 0 then
+		local fade = 1 - smooth((math.deg(math.abs(aim)) - C.BackFrom) / C.Fade)
+		if on then
+			target = clamp(aim, -rad(C.Max), rad(C.Max)) * fade * live
+		end
+		tilt = clamp(up or 0, -rad(C.Down or 35), rad(C.Up or 30)) * fade * live
 	end
-	s.look, s.lookV = spring(s.look, s.lookV, target, C.Response, dt)
-	return s.look
+	local k = if remote then (C.RemoteResponse or C.Response) else C.Response
+	s.look, s.lookV = spring(s.look, s.lookV, target, k, dt)
+	s.lookUp, s.lookUpV = spring(s.lookUp or 0, s.lookUpV or 0, tilt, k, dt)
+	return s.look, s.lookUp
 end
 
 --[[ The strafe and the look on the body's three top joints, worked out exactly from this frame's poses so the head
 	ends up facing just where the animation had it, turned only by `look` (a plain counter-turn at the neck tipped the
 	head sideways while the run hunches the body forward). J: { root, waist, neck } = each joint's { C0, C1, T }
 	(T = its Transform this frame). Returns the new Transforms: the hips turned `turn` about the root part's up, the
-	head turned `look` (default 0: facing where the body part faces), the chest Chest of the way from the head's turn
+	head turned `look` and tilted `up` (default 0: facing where the body part faces), the chest Chest of the way from the head's turn
 	to the hips'. Gameplay/Locomotion and Gameplay/PlayerMoves write them. ]]
-function LocomotionMix.strafePose(s, turn: number, J, look: number?): (CFrame, CFrame, CFrame)
+function LocomotionMix.strafePose(s, turn: number, J, look: number?, up: number?): (CFrame, CFrame, CFrame)
 	local C = s.C.Strafe or STRAFE
 	local chest = clamp(C.Chest, 0, 1)
 	local headTurn = look or 0
@@ -294,7 +303,8 @@ function LocomotionMix.strafePose(s, turn: number, J, look: number?): (CFrame, C
 	local rootT = r.C0:Inverse() * hips * r.C0 * r.T
 	local lower1 = hips * lower0
 	local upper1 = CFrame.Angles(0, -(headTurn + (turn - headTurn) * chest), 0) * upper0
-	local head1 = CFrame.Angles(0, -headTurn, 0) * head0
+	-- (the tilt about the body's level right, then the turn: the head looks `up` above level, `look` to the side)
+	local head1 = CFrame.Angles(0, -headTurn, 0) * CFrame.Angles(up or 0, 0, 0) * head0
 	local waistR = rot(w.C0):Inverse() * lower1:Inverse() * upper1 * rot(w.C1)
 	local neckR = rot(n.C0):Inverse() * upper1:Inverse() * head1 * rot(n.C1)
 	return rootT, CFrame.new(w.T.Position) * waistR, CFrame.new(n.T.Position) * neckR

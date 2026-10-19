@@ -77,7 +77,14 @@ return {
 		-- the move; the head turns back toward where the camera looks, up to Max degrees (a neck's reach; HV's runner at
 		-- 52.1 s runs side-on with the head still to the front). Past BackFrom degrees (the camera looking at your face)
 		-- it comes round to the front over Fade degrees. Response: the spring (10 settles in ~0.35 s).
-		Look = { Max = 70, BackFrom = 110, Fade = 30, Response = 10 },
+		-- Oct 19, 19:48 (owner: "make the users head move but make it follow mouse movements so the head doesnt just
+		-- stay in one place, make it like the references of huss valley"): the head looks at the point under the mouse
+		-- (Gameplay/HeadAim; the camera's middle on touch screens and gamepads), Up / Down degrees at most up and down
+		-- (a neck's reach). Everyone sees it: your screen sends your head's turn SendRate times a second when it moved
+		-- SendStep degrees or more (HuzzServer/HeadLookService checks and puts it on your character), and other screens
+		-- spring to it with RemoteResponse (softer: the values come 5 times a second).
+		Look = { Max = 70, BackFrom = 110, Fade = 30, Response = 10, Up = 30, Down = 35, SendRate = 5, SendStep = 2,
+			RemoteResponse = 8 },
 		-- Shift lock (owner, Oct 19: "when you shift lock the only thing that moves when you press w a s d (etc) is
 		-- their body not their head"; 18:16 "when he presses D, the body turns right": MaxTurn 90, was 70, so D is a
 		-- full side-on run like HV's): the hips and legs turn toward the way you move, up to MaxTurn degrees; the

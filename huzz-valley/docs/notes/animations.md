@@ -36,8 +36,8 @@ has the general KeyframeSequence workflow; 3D video tools are in core `CLAUDE.md
   set-off from behind); sheet `docs/previews/walk-vs-hv.jpg` (`motion3d/walk_sheet.py`). Setting off and stopping (a short walk
   into the run, the stop plant) and the head look: [movement-and-camera.md](movement-and-camera.md). Footstep sounds: [movement-and-camera.md](movement-and-camera.md). Not seen in Studio yet.
 - **Shift lock strafe** (`LocomotionMix.strafe` + `strafePose`): hips and legs turn to the move, the head stays on the
-  aim, S back-pedals; without shift lock `LocomotionMix.look` turns the head the other way (the body turned, the head
-  stays on the camera); [movement-and-camera.md](movement-and-camera.md). `strafePose` solves the neck exactly (the
+  aim, S back-pedals; `LocomotionMix.look` turns and tilts the head toward the mouse (`Gameplay/HeadAim`; the body
+  turned, the head stays on the mouse), on everyone's screen through `HuzzLook`; [movement-and-camera.md](movement-and-camera.md). `strafePose` solves the neck exactly (the
   head's turn is undone through the hunched run pose); a plain counter-turn on the neck tipped the head sideways.
 
 ## Layering poses on Motor6D.Transform (every pose module; lesson of Oct 19)

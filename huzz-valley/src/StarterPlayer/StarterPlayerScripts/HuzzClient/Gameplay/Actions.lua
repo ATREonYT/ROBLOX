@@ -259,12 +259,19 @@ function M.start()
 	end
 
 	-- Stunned after your dive (Config/Round.Lunge.Stun, HuzzServer/PowerService.stun): from your own press at once
-	-- (the server's StunnedFrom / StunnedUntil arrive a moment later and also count).
+	-- (the server's StunnedFrom / StunnedUntil arrive a moment later and also count). When the server takes the stun
+	-- away early (PowerService.clear at the end of a Hero run sets StunnedUntil to nil), your own press stops counting.
+	local stunClearedAt = -math.huge
+	player:GetAttributeChangedSignal("StunnedUntil"):Connect(function()
+		if player:GetAttribute("StunnedUntil") == nil then
+			stunClearedAt = os.clock()
+		end
+	end)
 	function M.stunned(): boolean
 		local L = Config.Lunge
 		local after = L.StunAfter or L.Time
 		local since = os.clock() - localLungeAt
-		if since >= after and since < after + (L.Stun or 0) then
+		if localLungeAt > stunClearedAt and since >= after and since < after + (L.Stun or 0) then
 			return true
 		end
 		local t = Workspace:GetServerTimeNow()

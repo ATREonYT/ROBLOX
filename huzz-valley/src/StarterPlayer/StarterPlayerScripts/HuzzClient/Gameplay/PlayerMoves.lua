@@ -24,8 +24,9 @@
 	  - Shift lock in a round (owner, Oct 19: "the only thing that moves when you press w a s d (etc) is their body
 	    not their head"): a body moving another way than it faces gets its hips and legs turned toward the move and
 	    its head turned back to where it faces (LocomotionMix.strafe; backwards = a back-pedal), from the way its
-	    body goes (LocomotionMix.track's vel), so everyone sees it, yours too in the live game. Yours without shift
-	    lock: the head looks where your camera looks (LocomotionMix.look; others' cameras aren't known here).
+	    body goes (LocomotionMix.track's vel), so everyone sees it, yours too in the live game. Heads (Oct 19 19:48,
+	    "make it follow mouse movements"): yours looks at the point under your mouse (Gameplay/HeadAim, live), the
+	    others' spring to the turn their screen sent (their character's HuzzLook, ~5 a second: HeadLookService).
 	  - Setting off walks first and a stop from a run plays the quick plant (LocomotionMix SetOff / Stop, measured on
 	    Huss Valley's recording): the body tips back a little and the arms swing out, on everyone. Others' stops read
 	    ~0.15 s after their body stops (LocomotionMix.track: a body still for longer than a network stall has stopped).
@@ -64,6 +65,7 @@ function M.start()
 	local RunMotion = require(Shared.RunMotion)
 	local Locomotion = require(script.Parent.Locomotion)
 	local Frame = require(script.Parent.Frame)
+	local HeadAim = require(script.Parent.HeadAim)
 	local T = RunConfig.Track
 	local DASH_LENGTH = RunConfig.Dash.Length
 	local LEAP_LENGTH = 0.85 -- seconds a catcher's leap owns the body (Shared/StabMotion LEAP.Up, plus a little)
@@ -240,16 +242,23 @@ function M.start()
 			local on = if isMe then Players.LocalPlayer:GetAttribute("HuzzShiftLock") == true else playing == true
 			local still = if downed or busy or quiet or airborne then 1 else 0
 			local turn = Mix.strafe(rec.mix, sdt, root.CFrame:VectorToObjectSpace(vel), on, still)
-			-- yours without shift lock: the head looks where your camera looks (LocomotionMix.look)
-			local look = 0
+			-- heads: yours toward the point under your mouse (Gameplay/HeadAim), the others' to what their screen sent
+			local look, tilt = 0, 0
 			if isMe and camCF then
-				local l = root.CFrame:VectorToObjectSpace(camCF.LookVector)
-				look = Mix.look(rec.mix, sdt, math.atan2(l.X, -l.Z), not on, still)
+				local aim, up = HeadAim.aim(root)
+				look, tilt = Mix.look(rec.mix, sdt, aim, not on, still, up)
+				HeadAim.report(look, tilt)
+			elseif not isMe then
+				local sent = character:GetAttribute("HuzzLook")
+				if typeof(sent) == "Vector2" or rec.mix.look ~= 0 or (rec.mix.lookUp or 0) ~= 0 then
+					local v = if typeof(sent) == "Vector2" then sent else Vector2.zero
+					look, tilt = Mix.look(rec.mix, sdt, math.rad(v.X), true, still, math.rad(v.Y), true)
+				end
 			end
 			rec.turned = nil
 			local hipsM, waistM, neckM = rec.motors.LowerTorso, rec.motors.UpperTorso, rec.motors.Head
 			local lt, ut, hd = pose.LowerTorso, pose.UpperTorso, pose.Head
-			if (math.abs(turn) > 1e-3 or math.abs(look) > 1e-3) and hipsM and waistM and neckM and lt and ut and hd then
+			if (math.abs(turn) > 1e-3 or math.abs(look) > 1e-3 or math.abs(tilt) > 1e-3) and hipsM and waistM and neckM and lt and ut and hd then
 				local hips = CFrame.new(lt.Position * rec.k) * lt.Rotation
 				if rec.lean then
 					hips = rec.lean * hips
@@ -258,7 +267,7 @@ function M.start()
 					root = { C0 = hipsM.C0, C1 = hipsM.C1, T = hips },
 					waist = { C0 = waistM.C0, C1 = waistM.C1, T = ut },
 					neck = { C0 = neckM.C0, C1 = neckM.C1, T = hd },
-				}, look)
+				}, look, tilt)
 				rec.turned = { LowerTorso = r, UpperTorso = w, Head = n }
 			end
 			rec.pose = pose

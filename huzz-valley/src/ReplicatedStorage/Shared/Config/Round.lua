@@ -78,13 +78,17 @@ return {
 	-- How the server judges a touch (Shared/TouchHit, HuzzServer/HitHistory, RoundService): the knife's box (Stab or
 	-- Lunge Reach x Width) must overlap the runner's body parts, give or take Tolerance studs.
 	-- Pinpoint (owner Oct 19, RoundService.screenHit + TouchHit.verify): the catcher's screen sends where it showed the
-	-- runner (seen) and the catcher (mine); the server takes exactly that if seen lies within SeenSlack studs of the
-	-- runner's real path and mine within MineSlack of the catcher's, both over the last MaxRewind seconds (a screen
-	-- more than 0.35 s behind can't catch: the runner had moved on long ago on their own screen).
-	-- Old clients and the sim's bots without a claim: the look-back below, up to the catcher's one-way lag plus
-	-- Smoothing seconds back, at most MaxRewind. The Practice Bot's knife is checked where the runner's screen showed
+	-- runner (seen) and the catcher (mine). The server ties seen to ONE moment of the runner's history (within
+	-- SeenSlack studs, no further back than the catcher's ping + Smoothing + 0.05 s, at most MaxRewind), takes the
+	-- runner's turn from its own history, wants mine within MineSlack of where it has the catcher over the last
+	-- MineBack seconds (or Lead seconds on at their speed: a diving screen is a packet ahead), points the knife the
+	-- server's way within FaceSlack degrees, and caps the reach at an honest one plus CapSlack studs (a critic's cheat
+	-- test: the first version reached 9.9 studs and stabbed behind; now 6.35, honest 5.35, never behind).
+	-- A claim that fails, an old client and the sim's bots without a claim: the look-back below, up to the catcher's
+	-- one-way lag plus Smoothing seconds back, at most MaxRewind. The Practice Bot's knife is checked where the runner's screen showed
 	-- the bot (Smoothing seconds back). Keep: seconds of history kept.
-	Touch = { Tolerance = 0.4, Smoothing = 0.1, MaxRewind = 0.35, SeenSlack = 1.5, MineSlack = 2.5, Keep = 0.6 },
+	Touch = { Tolerance = 0.4, Smoothing = 0.1, MaxRewind = 0.35, SeenSlack = 1.5, MineSlack = 1.5, MineBack = 0.2, Lead = 0.06,
+		FaceSlack = 35, CapSlack = 1, Keep = 0.6 },
 
 
 	-- The huss (owner's call): Space throws you left or right on your screen. Jumping is off. The push eases every

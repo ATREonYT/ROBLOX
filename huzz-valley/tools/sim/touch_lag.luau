@@ -9,10 +9,14 @@
 --     interpolation; ~0.05 s is a guess: Roblox doesn't publish it);
 --   - the server keeps 60 samples a second of where it has each body (HuzzServer/HitHistory).
 -- Then it compares the server rules on every hit the catcher's screen saw:
---   OLD (Oct 19 batch 1): the box from where the server has the catcher NOW, against the runner anywhere in the last
---       ping/2 + 0.1 s, re-checked for 0.25 s after the claim arrives;
---   NEW (Shared/TouchHit.verify): the box from where the catcher's screen had itself, against the runner where that
---       screen showed them, if both lie on the server's real paths (Config/Round.Touch).
+--   OLD (Oct 19 batch 1; still the fallback and what old clients get): the box from where the server has the catcher
+--       NOW, against the runner anywhere in the last ping/2 + 0.1 s, re-checked for 0.25 s after the claim arrives;
+--   claim (Shared/TouchHit.verify): the box from where the catcher's screen had itself, against the runner where
+--       that screen showed them, tied to one moment of the server's own history and capped (Config/Round.Touch);
+--   NOW (RoundService.screenHit): the claim, or the OLD test when the claim fails.
+-- Dive rows: the catcher chases at a dive's 72 studs/s the whole time, the knife along the dive (the worst case for
+-- "the catcher's screen is a packet ahead of the server").
+-- Then the cheat test: a catcher sending any claim he likes (how far can he reach? can he stab behind him?).
 -- And how far the runner really was, on their own screen, from where the catcher's screen showed them at the swing
 -- (the "I wasn't even near him" gap no rule can remove: it comes from the network).
 -- lune run huzz-valley/tools/sim/touch_lag.luau   (repo root)
@@ -23,6 +27,14 @@ local SHARED = "huzz-valley/src/ReplicatedStorage/Shared/"
 local TouchHit = Env.load(SHARED .. "TouchHit.lua")
 local Round = Env.load(SHARED .. "Config/Round.lua")
 local S, T = Round.Stab, Round.Touch
+-- Roblox's CFrame.lookAt, flat (Lune 0.10.5's faces the other way along Z: round_sim.luau has the same helper).
+local function lookAt(pos, target)
+	local d = Vector3.new(target.X - pos.X, 0, target.Z - pos.Z)
+	if d.Magnitude < 1e-4 then
+		return CFrame.new(pos)
+	end
+	return CFrame.new(pos) * CFrame.Angles(0, math.atan2(-d.X, -d.Z), 0)
+end
 
 local SEND, INTERP, SIM = 1 / 30, 0.05, 1 / 240
 
@@ -52,7 +64,7 @@ local function runnerPath(seconds)
 			v += right * (16 + (120 - 16) * (1 - u) ^ 3)
 		end
 		pos += v * SIM
-		table.insert(out, { t = t, cf = CFrame.lookAt(pos, pos + fwd) })
+		table.insert(out, { t = t, cf = lookAt(pos, pos + fwd) })
 		t += SIM
 	end
 	return out
@@ -63,24 +75,28 @@ local function trueAt(path, t)
 	return path[i].cf
 end
 
--- The packets a client sends of its own body: { sent, arrives (at the server), cf }.
+-- The packets a client sends of its own body: { sent, arrives (at the server), cf, vel }.
 local function packets(path, oneWay, seconds)
 	local out = {}
 	local t = 0
 	while t <= seconds do
-		table.insert(out, { sent = t, arrives = t + oneWay + rand() * 0.01, cf = trueAt(path, t) })
+		local a, b = trueAt(path, t - SIM), trueAt(path, t)
+		table.insert(out, { sent = t, arrives = t + oneWay + rand() * 0.01, cf = b, vel = (b.Position - a.Position) / SIM })
 		t += SEND
 	end
 	return out
 end
 
--- Where the server has a body at time t (the newest packet that has arrived).
-local function serverAt(pk, t)
-	local best = pk[1].cf
+-- The newest packet the server has at time t.
+local function serverPk(pk, t)
+	local best = pk[1]
 	for _, p in pk do
-		if p.arrives <= t then best = p.cf else break end
+		if p.arrives <= t then best = p else break end
 	end
 	return best
+end
+local function serverAt(pk, t)
+	return serverPk(pk, t).cf
 end
 
 -- Where another client's screen draws that body at time t: the server's copy reaches it `down` later, and it is drawn
@@ -99,7 +115,7 @@ local function drawnAt(pk, t, down)
 	return prev.cf
 end
 
--- The server's history (HitHistory): samples every 1/60 s of where it has the body, as { t, cf }.
+-- The server's history (HuzzServer/HitHistory): samples every 1/60 s of where it has the body, as { t, cf }.
 local function history(pk, seconds)
 	local out = {}
 	local t = 0
@@ -109,33 +125,55 @@ local function history(pk, seconds)
 	end
 	return out
 end
-local function between(hist, from, to)
+-- HitHistory.samples: the samples from `from` to `to`, and where the server has the body at `to`.
+local function samples(hist, pk, from, to)
 	local out = {}
 	for _, h in hist do
-		if h.t >= from and h.t <= to then table.insert(out, h.cf) end
+		if h.t >= from - 1 / 60 and h.t <= to then table.insert(out, h) end
 	end
+	table.insert(out, { t = to, cf = serverAt(pk, to) })
 	return out
 end
 
 local shape = TouchHit.standIn(CFrame.identity)
 
-local function scenario(name, runnerPing, catcherPing, n)
+-- OLD (the server's own test, still the fallback and what old clients get): the box from where the server has the
+-- catcher, against the runner anywhere in the last ping/2 + Smoothing, re-checked for 0.25 s after the claim arrives.
+local function serverTest(cPk, rHist, catcherPing, arrive, knife, along)
+	local back = math.clamp(catcherPing / 2 + T.Smoothing, 0, T.MaxRewind)
+	local at = arrive
+	while at <= arrive + 0.25 do
+		local cNow = serverAt(cPk, at)
+		local b, sz = TouchHit.reachBox(cNow, along, knife.Reach, knife.Width)
+		for _, h in rHist do
+			if h.t >= at - back and h.t <= at and TouchHit.touches(b, sz, h.cf, shape, T.Tolerance) then
+				return true, h.cf
+			end
+		end
+		at += 0.03
+	end
+	return false
+end
+
+-- speed: how fast the catcher chases (72 = a dive's speed the whole time, the worst case for "the catcher's screen
+-- is a packet ahead of the server"); knife: Config/Round Stab or Lunge (a lunge's box points along the dive).
+local function scenario(name, runnerPing, catcherPing, n, speed, knife)
 	local seconds = 40
-	local hits, oldOk, newOk, newWhy = 0, 0, 0, {}
+	local hits, oldOk, claimOk, newOk, newWhy = 0, 0, 0, 0, {}
 	local gaps, oldPlace = {}, {}
 	local trials = 0
 	while hits < n and trials < 400 do
 		trials += 1
 		local rPath = runnerPath(seconds)
 		local rPk = packets(rPath, runnerPing / 2, seconds)
-		-- the catcher chases where its screen shows the runner, 30 studs/s, facing them
+		-- the catcher chases where its screen shows the runner, facing them
 		local cPath, cpos = {}, trueAt(rPath, 0).Position + Vector3.new(8, 0, 8)
 		local t = 0
 		while t <= seconds do
 			local target = drawnAt(rPk, t, catcherPing / 2).Position
 			local d = Vector3.new(target.X - cpos.X, 0, target.Z - cpos.Z)
-			if d.Magnitude > 0.5 then cpos += d.Unit * math.min(30 * SIM, d.Magnitude - 0.5) end
-			table.insert(cPath, { t = t, cf = CFrame.lookAt(cpos, Vector3.new(target.X, cpos.Y, target.Z)) })
+			if d.Magnitude > 0.5 then cpos += d.Unit * math.min(speed * SIM, d.Magnitude - 0.5) end
+			table.insert(cPath, { t = t, cf = lookAt(cpos, target) })
 			t += SIM
 		end
 		local cPk = packets(cPath, catcherPing / 2, seconds)
@@ -147,32 +185,28 @@ local function scenario(name, runnerPing, catcherPing, n)
 			if t >= nextSwing then
 				local mine = trueAt(cPath, t)
 				local seen = drawnAt(rPk, t, catcherPing / 2)
-				local box, size = TouchHit.reachBox(mine, nil, S.Reach, S.Width)
+				local along = if knife == Round.Lunge then mine.LookVector else nil
+				local box, size = TouchHit.reachBox(mine, along, knife.Reach, knife.Width)
 				if TouchHit.touches(box, size, seen, shape, 0) then
 					hits += 1
 					nextSwing = t + 1
 					local arrive = t + catcherPing / 2 + rand() * 0.01
-					-- OLD: from the server's catcher now, the runner anywhere in the last ping/2 + 0.1, for 0.25 s
-					local back = math.clamp(catcherPing / 2 + 0.1, 0, 0.3)
-					local okOld, at = false, arrive
-					while at <= arrive + 0.25 and not okOld do
-						local cNow = serverAt(cPk, at)
-						local b, sz = TouchHit.reachBox(cNow, nil, S.Reach, S.Width)
-						for _, h in rHist do
-							if h.t >= at - back and h.t <= at and TouchHit.touches(b, sz, h.cf, shape, T.Tolerance) then
-								okOld = true
-								table.insert(oldPlace, (h.cf.Position - seen.Position).Magnitude)
-								break
-							end
-						end
-						at += 0.03
+					local okOld, place = serverTest(cPk, rHist, catcherPing, arrive, knife, along)
+					if okOld then
+						oldOk += 1
+						table.insert(oldPlace, (place.Position - seen.Position).Magnitude)
 					end
-					if okOld then oldOk += 1 end
-					-- NEW: exactly what the screen showed, if the server's paths agree
-					local ok, why = TouchHit.verify({ seen = seen, mine = mine },
-						between(rHist, arrive - T.MaxRewind, arrive), between(cHist, arrive - T.MaxRewind, arrive),
-						shape, S, nil, T)
-					if ok then newOk += 1 end
+					-- NOW (RoundService.screenHit): the screen's claim; if it fails, the server's own test
+					local back = TouchHit.lookBack(catcherPing, T)
+					local newest = serverPk(cPk, arrive)
+					local ok, why = TouchHit.verify({ seen = seen, mine = mine }, {
+						runner = samples(rHist, rPk, arrive - T.Keep, arrive),
+						catcher = samples(cHist, cPk, arrive - T.Keep, arrive),
+						now = arrive, back = back, shape = shape, knife = knife, along = along,
+						face = newest.cf.LookVector, vel = newest.vel,
+					}, T)
+					if ok then claimOk += 1 end
+					if ok or okOld then newOk += 1 end
 					newWhy[why] = (newWhy[why] or 0) + 1
 					-- the gap on the runner's own screen at the swing
 					local real = trueAt(rPath, t).Position
@@ -192,19 +226,71 @@ local function scenario(name, runnerPing, catcherPing, n)
 	local function p95(list) return list[math.max(1, math.floor(#list * 0.95))] or 0 end
 	local whys = {}
 	for k, v in newWhy do if k ~= "hit" then table.insert(whys, k .. " " .. v) end end
-	print(string.format("%-22s screen hits %3d | OLD counts %3d%% (where: %.1f studs off the screen's, p95 %.1f) | NEW counts %3d%%%s | runner's own screen: %.1f studs away (p95 %.1f)",
-		name, hits, math.floor(100 * oldOk / hits + 0.5), mean(oldPlace), p95(oldPlace), math.floor(100 * newOk / hits + 0.5),
-		if #whys > 0 then " (" .. table.concat(whys, ", ") .. ")" else "", mean(gaps), p95(gaps)))
-	return { old = oldOk / hits, new = newOk / hits, gap = mean(gaps), gap95 = p95(gaps) }
+	table.sort(whys)
+	local function pct(x) return math.floor(100 * x / hits + 0.5) end
+	print(string.format("%-28s hits %3d | OLD %3d%% (%.1f studs off, p95 %.1f) | claim %3d%%%s | NOW %3d%% | runner's screen %.1f studs (p95 %.1f)",
+		name, hits, pct(oldOk), mean(oldPlace), p95(oldPlace), pct(claimOk),
+		if #whys > 0 then " (" .. table.concat(whys, ", ") .. ")" else "", pct(newOk), mean(gaps), p95(gaps)))
+	return { old = oldOk / hits, claim = claimOk / hits, new = newOk / hits, gap = mean(gaps), gap95 = p95(gaps) }
 end
 
-print(string.format("touch lag model: packets %d/s, drawn %.2f s behind, server history 60/s; Touch: MaxRewind %.2f, SeenSlack %.1f, MineSlack %.1f, Tolerance %.1f",
-	math.floor(1 / SEND + 0.5), INTERP, T.MaxRewind, T.SeenSlack or -1, T.MineSlack or -1, T.Tolerance))
+-- A cheating catcher (the critic's test, Oct 19): standing still, the runner standing still straight ahead, he
+-- sends any claim he likes: himself moved up to 3 studs toward the runner, the runner moved up to 3 studs toward
+-- him, the runner turned side-on, his facing pointed at them. How far away can the runner be and still be caught?
+-- And can he stab someone behind him? `judge(claim, runnerSamples, catcherSamples, now, back)` is the rule.
+local function cheatReach(judge, knife)
+	local catcher = CFrame.new(0, 3, 0) -- facing -Z
+	local function caught(D, honest)
+		local runner = CFrame.new(0, 3, -D)
+		local rS, cS = { { t = 0, cf = runner }, { t = 1, cf = runner } }, { { t = 0, cf = catcher }, { t = 1, cf = catcher } }
+		if honest then
+			return judge({ seen = runner, mine = catcher }, rS, cS, 1, 0.15)
+		end
+		for s1 = 0, 3, 0.25 do
+			for s2 = 0, 3, 0.25 do
+				for _, turn in { 0, 90 } do
+					local seen = CFrame.new(0, 3, -D + s2) * CFrame.Angles(0, math.rad(turn), 0)
+					local mine = CFrame.new(0, 3, -s1)
+					if judge({ seen = seen, mine = mine }, rS, cS, 1, 0.15) then
+						return true
+					end
+				end
+			end
+		end
+		return false
+	end
+	local honest, cheat = 0, 0
+	for D = 3, 16, 0.05 do
+		if caught(D, true) then honest = D end
+		if caught(D, false) then cheat = D end
+	end
+	local behind = CFrame.new(0, 3, 3)
+	local back = judge({ seen = behind, mine = lookAt(catcher.Position, behind.Position) },
+		{ { t = 0, cf = behind }, { t = 1, cf = behind } }, { { t = 0, cf = catcher }, { t = 1, cf = catcher } }, 1, 0.15)
+	return honest, cheat, back
+end
+
+local function newJudge(knife)
+	return function(claim, rS, cS, now, back)
+		return (TouchHit.verify(claim, { runner = rS, catcher = cS, now = now, back = back, shape = shape, knife = knife,
+			face = cS[#cS].cf.LookVector, vel = Vector3.zero }, T))
+	end
+end
+
+print(string.format("touch lag model: packets %d/s, drawn %.2f s behind, server history 60/s; Touch: MaxRewind %.2f, SeenSlack %.1f, MineSlack %.1f, Lead %.2f, FaceSlack %d, CapSlack %.1f, Tolerance %.1f",
+	math.floor(1 / SEND + 0.5), INTERP, T.MaxRewind, T.SeenSlack, T.MineSlack, T.Lead, T.FaceSlack, T.CapSlack, T.Tolerance))
 local results = {}
 for _, sc in {
 	{ "both 50 ms", 0.05, 0.05 }, { "both 100 ms", 0.1, 0.1 }, { "both 200 ms", 0.2, 0.2 },
 	{ "runner 250, catcher 60", 0.25, 0.06 }, { "runner 60, catcher 250", 0.06, 0.25 }, { "catcher 400 ms", 0.08, 0.4 },
+	{ "dive at 72, both 50 ms", 0.05, 0.05, 72, Round.Lunge }, { "dive at 72, both 100 ms", 0.1, 0.1, 72, Round.Lunge },
+	{ "dive at 72, both 200 ms", 0.2, 0.2, 72, Round.Lunge },
 } do
-	results[sc[1]] = scenario(sc[1], sc[2], sc[3], 120)
+	results[sc[1]] = scenario(sc[1], sc[2], sc[3], 120, sc[4] or 30, sc[5] or S)
 end
+local honest, cheat, behind = cheatReach(newJudge(S), S)
+print(string.format("cheat test (stab): honest reach %.2f studs, a cheater's claim reaches %.2f (+%.2f); behind him: %s",
+	honest, cheat, cheat - honest, if behind then "CAUGHT" else "refused"))
+results.cheat = { honest = honest, cheat = cheat, behind = behind }
+results.cheatReach = cheatReach
 return results
