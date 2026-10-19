@@ -191,6 +191,8 @@ function KnifeService.scale(model, f: number | Vector3)
 	for _, c in constraints do pcall(function() c.Enabled = true end) end
 	local was = model:GetAttribute("Scale") or 1
 	model:SetAttribute("Scale", was * fv.Y)
+	local before = model:GetAttribute("Stretch") -- (every way: Gameplay/KnifeDress sizes a pass knife's .glb model by it)
+	model:SetAttribute("Stretch", (if typeof(before) == "Vector3" then before else Vector3.new(was, was, was)) * fv)
 	return model
 end
 
@@ -254,7 +256,14 @@ local function template(skin)
 		return custom:Clone(), true
 	end
 	local recipe = skin and KnifeShapes.get(skin.Key)
-	if recipe then return buildRecipe(recipe), false end
+	if recipe then
+		-- each screen dresses it as the owner's own .glb model (Gameplay/KnifeDress, Shared/KnifeGlb); the plain
+		-- parts stay where that can't run
+		local model = buildRecipe(recipe)
+		model:SetAttribute("Glb", skin.Key)
+		pcall(function() model:AddTag("GlbKnife") end)
+		return model, false
+	end
 	local model = build()
 	if skin then paint(model, skin) end
 	return model, false

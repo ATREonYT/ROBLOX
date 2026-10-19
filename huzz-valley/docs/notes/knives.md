@@ -71,7 +71,24 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
   length (katana, moon-hole cleaver, feather-guard longsword, jagged blade, crystal blade, glowing edges in Neon), so
   his place doesn't show our 1.9 stud dagger for them; still `docs/previews/stand-knives-standins.jpg` (the round 1
   picture, before the widening). Spec `tests/KnifeShapes.spec` (lengths, scaler, stand size, width and glow shell,
-  elements, budget, arc).
+  elements, budget, arc). They are the server's knife (length, grip, trail points, particles) and the last fallback
+  on screen; each screen dresses them as his .glb (next).
+- **His .glb on every screen until his import** (`Gameplay/KnifeDress`, data `Shared/KnifeGlb/<Key>_<n>`): the
+  server tags a pass stand-in `GlbKnife` (attribute `Glb` = its key, `KnifeService.template`); each client builds his
+  `Gamepass_Knives.glb` as it is (every triangle, 4,312 to 19,156 a knife, 6 to 9 looks: one MeshPart per colour +
+  glow, Neon for his glow parts) with `AssetService:CreateEditableMesh` + `CreateMeshPartAsync`, welds it to the
+  Handle sized by the model's `Stretch` (a stand's big copy, set by `KnifeService.scale`), hides the stand-in's parts
+  (Transparency 1 on that screen; its particles, lights and trail stay) and remakes a stand's glow shell round his
+  blade. All or nothing per knife; one `[HuzzKnife] pass knives as his model: ...` line in Output says on or why not.
+  Baked by `tools/knives/bake_pass_meshes.py` (16-bit steps across each mesh's box, base64; at most 6,000
+  triangles a file, all far under Studio's 200,000 characters a script). Hand, back, hip, stands, admin give and
+  crate prizes all go through `KnifeService.template`, so all get it.
+  **Where it works:** Studio Play (each screen). Live: Roblox only allows EditableMesh when the owner (13+, ID
+  verified) turns on Game Settings > Security > "Allow Mesh / Image APIs" (the same switch the drawn icons already
+  need, `UI/ImageLoader`); without that, or on a phone out of mesh
+  memory (Roblox's limits: 60,000 vertices and 20,000 triangles a mesh, a memory budget per device), the plain
+  stand-ins show. The lasting fix is still his import (SetupKnives below): real uploaded meshes, the same on every
+  device, and then nothing here runs.
 
 ## Owner how-to: SetupKnives (Studio, once)
 1. File > Import 3D > `huzz-valley/design/knives/Knives/All_Knives.glb`, Import (and
@@ -89,6 +106,18 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
 - SetupKnives matches "name + digits", refits by position, guesses from the box's long axis, and on a re-run
   repairs/recolours models already in HuzzKnives in place (`tests/SetupKnives.spec`: Studio-style names, both glbs,
   his real broken 8 in `tests/fixtures/HuzzKnives-oct18-first-run.rbxm`).
+- **Oct 19: his file fixed offline** (`tools/knives/colour_knives.luau --write`): runs his own SetupKnives on
+  `assets/knives/HuzzKnives.rbxm` exactly as his re-run would (379 parts of 30 knives took their .glb colour, Neon on
+  his glow parts; Crimson Tanto, Night Tanto and Twin Fang turned back a quarter, their flat had faced the wrong
+  way; Twin Fang's grip back on its Handle), drops the import's leftover colour pictures and checks every part
+  against `tools/knives/knife_boxes.json` (each .glb part's box in the Handle's space, `knife_boxes.py`): worst 0.008
+  studs. `tools/knives/inspect_knives.luau` lists any file's knife parts (class, mesh, colour, material).
+- **Spec `tests/KnifeModels.spec`** (in `check.sh`): his 30 are all his meshes, on their .glb spots, in their .glb
+  colours, attachments at the grip, guard and tip; every one of the 35 keys in hand, worn and on a stand has his mesh
+  blade or a stand-in tagged for the dress with a baked blade (a plain block blade fails it); the baked meshes decode
+  inside Roblox's limits with his colours and box; the dress places, sizes, hides and shells, all or nothing.
+- Picture `docs/previews/knives-glb-vs-ours.jpg` (`tools/preview/motion3d/knife_glb_scene.luau`, drawn from the game's
+  own parts): 9 knives as his .glb | before | now, then Dragon's Maw on the back and Twin Fang in the hand.
 
 ## Stand sword showcase (`Shared/StandShowcase`, drawn by `Gameplay/AvatarStands`)
 - A stand with a knife doesn't run; client only, only within NEAR 160. It holds a guard (the hand low in front of the
@@ -150,8 +179,11 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
 - Not seen in Studio yet: knife positions, the owner's knives (meshes after his import, glow, sparkles, the leap and
   dive), the knife showcase (the big stand knives, element particles with stand-in pictures, the spins, the card
   motes/pulse, the slash arc), the long blades' forward grip and its ease back in a stab. The 5 pass models still need
-  his import (`Gamepass_Knives.glb` + SetupKnives); until then the stand-ins show (plain blocks: square tips, no
-  curves). A refunded pass keeps its knives. The in-hand check uses the pack's Idle/Walk/Run on a blocky R15; a
+  his import (`Gamepass_Knives.glb` + SetupKnives) to be real everywhere; until then each screen dresses the stand-ins
+  as his .glb with EditableMesh (`Gameplay/KnifeDress`): never run in Studio yet (no Studio here), so the API calls,
+  the triangle facing (counter-clockwise assumed) and the look under Studio light are unproven; live only with the
+  "Allow Mesh / Image APIs" setting; otherwise the plain blocks show. The offline picture draws his imported knives'
+  parts with the .glb part each came from (his uploaded meshes themselves only Studio shows). A refunded pass keeps its knives. The in-hand check uses the pack's Idle/Walk/Run on a blocky R15; a
   player's own avatar animations or a short R6 arm can still bring a long tip nearer the floor.
 
 ## Why it is this way / history
@@ -181,3 +213,10 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
   sign, seen end-on: now it slants up and out to the side. Long knives went into the floor in a catcher's hand: now
   held more forward (back to 150 in the cut). Also: the pass stand-ins worn on the body are checked, and an owned pass
   knife's shop card has its EXCLUSIVE colour.
+- **"The knifes dont even have their shapes", Oct 19** (owner, after testing: "they all dont look good, please fix
+  them and use the glb file to get them one to one, whenever you wear or use them" / "all of the knifes"; his
+  screenshot: a dark plank on the back with smoky orange bits). Cause: a Game Pass knife (most likely Dragon's Maw:
+  the fire element's stand-in pictures are the smoke) worn as its plain-part stand-in, which is a box by design until
+  his import; and his 30 were never finished by SetupKnives' colour step (most parts default grey plastic or the
+  import's own picture, glow parts not glowing) with three turned a quarter so their flat faced the wrong way. Fixed
+  as above: his file finished offline, the pass knives dressed as his .glb on each screen.
