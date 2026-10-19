@@ -167,8 +167,8 @@ local copy = folder:Clone()
 copy.Parent = ServerStorage
 local warnings = {}
 local FxTexture = { get = function() return "" end, flipbook = function() end, ready = function() return false end }
-local shared = { KnifeLook = KnifeLook, FxTexture = FxTexture }
-local fakeRS = { Shared = { KnifeLook = "KnifeLook", FxTexture = "FxTexture" } }
+local shared = { KnifeLook = KnifeLook, FxTexture = FxTexture, KnifeShapes = Env.load(SHARED .. "KnifeShapes.lua") }
+local fakeRS = { Shared = { KnifeLook = "KnifeLook", FxTexture = "FxTexture", KnifeShapes = "KnifeShapes" } }
 local env = {
 	game = { GetService = function(_, name) return if name == "ServerStorage" then ServerStorage else fakeRS end },
 	require = function(x) return shared[x] or error("no module " .. tostring(x)) end,

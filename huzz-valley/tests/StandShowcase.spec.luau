@@ -5,6 +5,9 @@
 -- plays every loop, the three take turns, stands with different seeds differ; the trail shows only in the cuts;
 -- every joint and the knife move smoothly frame to frame (no pops, no jumps where a move starts or ends); each move
 -- ends back in the guard; the R15 feet stay planted on the floor.
+-- Oct 19: every knife's style (StandShowcase.STYLES: the guard or the low hold, its three moves) with the knife at the
+-- stands' big size (KnifeLook.STAND): the low hold keeps the blade down and forward, clear of the legs and off the
+-- floor; spins come round whole (the feet turn with the body and land where they stood); bursts only in moves.
 local fs = require("@lune/fs")
 local serde = require("@lune/serde")
 local roblox = require("@lune/roblox")
@@ -25,14 +28,14 @@ local knife
 for _, k in serde.decode("json", fs.readFile(ROOT .. "tools/knives/knives.json")) do
 	if k.key == "HollowEclipse" then knife = k end
 end
-local per = knife.studs / knife.length
+local per = knife.studs / knife.length * KnifeLook.standScale(knife.studs) -- (the stands' big knife)
 local BLADE = (knife.tip - knife.grip) * per -- grip to tip, studs
 local GUARD = (0 - knife.grip) * per -- grip to the guard (TrailBase)
 
-local function build(kind, seed)
+local function build(kind, seed, style)
 	local rig = if kind == "R15" then Rig.r15("S" .. seed) else Rig.r6("S" .. seed)
 	rig.root.CFrame = CFrame.new(0, if kind == "R15" then Rig.REST_HEIGHT else 3, 0) -- facing -Z, as a stand facing you
-	local rec = Show.new(rig, seed)
+	local rec = Show.new(rig, seed, style)
 	return rig, rec
 end
 
@@ -64,20 +67,33 @@ local function readyTime(seed)
 	return 0
 end
 
+local STYLES = { "Default", "DragonsMaw", "HollowEclipse", "CrimsonRequiem", "CelestialSeraph", "FrostboundOath" }
+for _, styleKey in STYLES do
+local style = Show.style(styleKey)
+local hold = Show.HOLDS[style.hold]
 for _, kind in { "R15", "R6" } do
-	local rig, rec = build(kind, 5)
-	check(rec ~= nil and rec.kind == kind, kind .. ": the rig is read")
-	-- 1. the ready guard shows the knife
+	local rig, rec = build(kind, 5, styleKey)
+	local tag = kind .. " " .. styleKey
+	check(rec ~= nil and rec.kind == kind, tag .. ": the rig is read")
+	-- 1. the hold shows the knife
 	local r = at(rig, rec, readyTime(5))
 	local front = r.torso.Z - r.torsoSize.Z / 2 -- (forward is -Z)
-	print(string.format("  %s ready: grip %.2f %.2f %.2f  tip %.2f %.2f %.2f  torso front z %.2f  head %.2f %.2f",
-		kind, r.grip.X, r.grip.Y, r.grip.Z, r.tip.X, r.tip.Y, r.tip.Z, front, r.head.X, r.head.Y))
-	check(r.tip.Y - r.grip.Y > 0.8 * BLADE, kind .. " ready: the blade points up")
-	check(r.mid.Z < front - 0.2 and r.tip.Z < front, kind .. " ready: the blade is in front of the body")
-	check(r.grip.Z < front, kind .. " ready: the knife hand is in front of the body")
-	check(math.abs(r.tip.X - r.head.X) > r.headSize.X / 2 + 0.15 or r.tip.Y > r.head.Y + r.headSize.Y / 2 + 0.3 and math.abs(r.tip.X - r.head.X) > 0.3,
-		kind .. " ready: the blade stays clear of the face")
-	check(r.grip.X > 0.3, kind .. " ready: the knife is on the right side, not across the body")
+	local floorY = -rig.root.CFrame.Position.Y
+	print(string.format("  %s ready (%s): grip %.2f %.2f %.2f  tip %.2f %.2f %.2f  torso front z %.2f  head %.2f %.2f",
+		tag, style.hold, r.grip.X, r.grip.Y, r.grip.Z, r.tip.X, r.tip.Y, r.tip.Z, front, r.head.X, r.head.Y))
+	if style.hold == "Guard" then
+		check(r.tip.Y - r.grip.Y > 0.8 * BLADE, tag .. " ready: the blade points up")
+		check(r.mid.Z < front - 0.2 and r.tip.Z < front, tag .. " ready: the blade is in front of the body")
+		check(r.grip.Z < front, tag .. " ready: the knife hand is in front of the body")
+		check(math.abs(r.tip.X - r.head.X) > r.headSize.X / 2 + 0.15 or r.tip.Y > r.head.Y + r.headSize.Y / 2 + 0.3 and math.abs(r.tip.X - r.head.X) > 0.3,
+			tag .. " ready: the blade stays clear of the face")
+	else
+		check(r.tip.Y < r.grip.Y - 0.25 * BLADE, tag .. " low hold: the blade points down")
+		check(r.tip.Z < front - 0.8, tag .. " low hold: the tip reaches forward")
+		check(r.tip.Y > floorY + 0.3, tag .. string.format(" low hold: the tip stays off the floor (%.2f over it)", r.tip.Y - floorY))
+		check(r.mid.X > 0.9 or r.mid.Z < front - 0.6, tag .. " low hold: the blade is clear of the legs")
+	end
+	check(r.grip.X > 0.3, tag .. " ready: the knife is on the right side, not across the body")
 
 	-- 2 + 3. a run over several loops at 30 and 60 fps
 	local function run(fps, seconds)
@@ -115,7 +131,7 @@ for _, kind in { "R15", "R6" } do
 			local lo, hi = f30[i - 1].t, f30[i].t
 			for _ = 1, 30 do -- (find the switch)
 				local mid = (lo + hi) / 2
-				if (Show.sample(5, mid).move ~= nil) == (f30[i - 1].p.pose.move ~= nil) then lo = mid else hi = mid end
+				if (Show.sample(5, mid, styleKey).move ~= nil) == (f30[i - 1].p.pose.move ~= nil) then lo = mid else hi = mid end
 			end
 			at(rig, rec, lo)
 			local before = {}
@@ -129,14 +145,14 @@ for _, kind in { "R15", "R6" } do
 	end
 	local j60, b60 = worst(f60)
 	print(string.format("  %s per frame at 30 fps: joints %.1f deg, knife %.1f deg, where a move starts/ends %.2f deg; at 60 fps %.1f / %.1f",
-		kind, j30, b30, e30, j60, b60))
-	check(j30 < 45, kind .. ": no joint jumps more than 45 degrees in a frame (30 fps)")
-	check(b30 < 65, kind .. ": the knife never turns more than 65 degrees in a frame (30 fps, twirls included)")
-	check(e30 < 0.5, kind .. ": no jump where a move starts or ends")
-	check(j60 < j30 * 0.65 and b60 < b30 * 0.65, kind .. ": twice the frame rate halves the steps (smooth, no pops)")
+		tag, j30, b30, e30, j60, b60))
+	check(j30 < 45, tag .. ": no joint jumps more than 45 degrees in a frame (30 fps)")
+	check(b30 < 65, tag .. ": the knife never turns more than 65 degrees in a frame (30 fps, twirls included)")
+	check(e30 < 0.5, tag .. ": no jump where a move starts or ends")
+	check(j60 < j30 * 0.65 and b60 < b30 * 0.65, tag .. ": twice the frame rate halves the steps (smooth, no pops)")
 
 	-- moves on a cycle: one per loop, all three, trail only in moves
-	local starts, names, trailOutside, trailFrames, lastMove = 0, {}, 0, 0, nil
+	local starts, names, trailOutside, trailFrames, lastMove, burstOutside = 0, {}, 0, 0, nil, 0
 	for _, fr in f30 do
 		local m = fr.p.pose.move
 		if m and m ~= lastMove then starts += 1; names[m] = true end
@@ -145,45 +161,50 @@ for _, kind in { "R15", "R6" } do
 			trailFrames += 1
 			if not m then trailOutside += 1 end
 		end
+		if fr.p.pose.burst and not m then burstOutside += 1 end
 	end
 	local loops = seconds / Show.CYCLE
-	check(starts >= math.floor(loops) - 1 and starts <= math.ceil(loops) + 1, kind .. ": a move every loop (" .. starts .. " in " .. seconds .. " s)")
-	check(names.Combo and names.Flourish and names.Rising, kind .. ": the three moves take turns")
-	check(trailFrames > 0 and trailOutside == 0, kind .. ": the trail shows in the cuts only")
+	check(starts >= math.floor(loops) - 1 and starts <= math.ceil(loops) + 1, tag .. ": a move every loop (" .. starts .. " in " .. seconds .. " s)")
+	check(names[style.moves[1]] and names[style.moves[2]] and names[style.moves[3]], tag .. ": its three moves take turns")
+	check(trailFrames > 0 and trailOutside == 0, tag .. ": the trail shows in the cuts only")
+	check(burstOutside == 0, tag .. ": bursts only in moves")
 	-- the swings are real swings: the tip travels far during a move
 	local reach = 0
 	for _, fr in f30 do
 		if fr.p.pose.move then reach = math.max(reach, (fr.p.tip - r.tip).Magnitude) end
 	end
-	check(reach > 2.5, kind .. string.format(": the moves swing the blade wide (%.1f studs)", reach))
+	check(reach > 2.5, tag .. string.format(": the moves swing the blade wide (%.1f studs)", reach))
 
-	-- 4. back to the guard after every move
+	-- 4. back to the hold after every move
 	local back = 0
-	for name, move in Show.MOVES do
+	for name, move in Show.compiled(style.hold) do
 		local final = move.keys[#move.keys]
 		for _, f in { "arm", "off", "waist", "neck" } do
-			for i = 1, 3 do back = math.max(back, math.abs(final[f][i] - Show.READY[f][i])) end
+			for i = 1, 3 do back = math.max(back, math.abs(final[f][i] - hold[f][i])) end
 		end
-		for _, f in { "elbow", "wrist", "offElbow", "drop" } do back = math.max(back, math.abs(final[f] - Show.READY[f])) end
-		back = math.max(back, math.abs((final.grip % 360) - Show.READY.grip))
+		for _, f in { "elbow", "wrist", "offElbow", "drop" } do back = math.max(back, math.abs(final[f] - hold[f])) end
+		back = math.max(back, math.abs((final.grip % 360) - (hold.grip % 360)), math.abs(final.spin % 360))
 	end
-	check(back < 1e-6, kind .. ": every move ends in the ready guard")
+	check(back < 1e-6, tag .. ": every move ends in its hold")
 
-	-- 5. the feet stay planted (R15)
+	-- 5. the feet stay planted (R15), except while the body spins round (then they turn with it and land where they stood)
 	if kind == "R15" then
 		local slide, low, high = 0, math.huge, -math.huge
 		local first = f30[1].p.feet
 		for _, fr in f30 do
-			for i = 1, 2 do
-				slide = math.max(slide, (fr.p.feet[i].Position - first[i].Position).Magnitude)
-				local bottom = fr.p.feet[i].Position.Y - 0.15
-				low, high = math.min(low, bottom), math.max(high, bottom)
+			if math.abs(fr.p.pose.spin) < 1e-3 then
+				for i = 1, 2 do
+					slide = math.max(slide, (fr.p.feet[i].Position - first[i].Position).Magnitude)
+					local bottom = fr.p.feet[i].Position.Y - 0.15
+					low, high = math.min(low, bottom), math.max(high, bottom)
+				end
 			end
 		end
-		print(string.format("  R15 feet: slide %.3f studs, soles %.3f to %.3f", slide, low, high))
-		check(slide < 0.08, "R15: the feet stay planted")
-		check(low > -0.08 and high < 0.08, "R15: the feet stay on the floor")
+		print(string.format("  %s feet: slide %.3f studs, soles %.3f to %.3f", tag, slide, low, high))
+		check(slide < 0.08, tag .. ": the feet stay planted")
+		check(low > -0.08 and high < 0.08, tag .. ": the feet stay on the floor")
 	end
+end
 end
 
 -- stands side by side don't move together

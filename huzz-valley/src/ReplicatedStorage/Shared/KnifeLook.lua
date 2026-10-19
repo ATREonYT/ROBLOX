@@ -57,7 +57,9 @@ end
 
 -- The slash: a short smear round the blade (Huss Valley: about one knife long, gone in about 0.1 s, no white arc).
 -- Epic and up: the knife's colour fading to white; below that, a faint white smear.
-KnifeLook.TRAIL = { Lifetime = 0.12, Tinted = { 0.2, 1 }, Plain = { 0.45, 1 }, LightEmission = 0.8 }
+-- A Game Pass knife's trail is in its element's colours and lasts a little longer (ElementLifetime), so its arc reads
+-- (owner, Oct 19: "better knife animations ... during gameplay").
+KnifeLook.TRAIL = { Lifetime = 0.12, ElementLifetime = 0.17, Tinted = { 0.2, 1 }, Plain = { 0.45, 1 }, LightEmission = 0.8 }
 
 -- Long slim blades go at the side (katana style), the rest on the back.
 KnifeLook.SIDE = { MinStuds = 3.0, Slender = 5.5 }
@@ -184,6 +186,119 @@ end
 -- In the right hand: the hand's grip point, the blade 150 degrees round the hand's X (down and forward).
 function KnifeLook.handC0(gripAt: Vector3): CFrame
 	return CFrame.new(gripAt) * CFrame.Angles(math.rad(-150), 0, 0)
+end
+
+-- The lobby stands show their knife BIG (owner, Oct 19: "right now its very small and you dont even notice it";
+-- his reference stands hold blades as long as an arm and a half): the display copy is scaled up to Length studs
+-- pommel to tip (the real pass models are 3.2 studs, our stand-in knife 1.9), never shrunk, at most MaxScale.
+KnifeLook.STAND = { Length = 4.4, MaxScale = 2.6, Width = 1.7, MaxWiden = 4.5, MaxThick = 2.6, Shell = 0.4 }
+function KnifeLook.standScale(length: number?): number
+	if type(length) ~= "number" or length <= 0 then return 1 end
+	return math.clamp(KnifeLook.STAND.Length / length, 1, KnifeLook.STAND.MaxScale)
+end
+-- Round 2 (Oct 19, "in the reference the knife is the first thing you see"): a stand's knife is also made broader
+-- than life, display only: its blade widened to about Width studs (a katana about 4x, the big cleaver about 2x) and
+-- thickened up to MaxThick, so it reads as a slab, not a stick, from across the plaza. Returns the widen factors
+-- (thickness along the Handle's X, width along its Z) for a blade `bladeWidth` studs wide after the length scale.
+function KnifeLook.standWiden(bladeWidth: number?): (number, number)
+	local S = KnifeLook.STAND
+	if type(bladeWidth) ~= "number" or bladeWidth <= 0 then return 1, 1 end
+	local wide = math.clamp(S.Width / bladeWidth, 1, S.MaxWiden)
+	return math.min(wide, S.MaxThick), wide
+end
+
+--[[
+	Each Game Pass knife's own element (owner, Oct 19: "better knife animations ... in the lobby and in the gamepass
+	sections"; each one matches its card, design/knives/Five_Elemental_Knife_Cards.png). Replaces Mythic's plain
+	sparkles and embers on that knife; the sheen and glow stay. Calm: a few particles a second, nothing flashes.
+	  emit      the steady emitters (on the blade; "tip" = at the tip): texture (Shared/FxTexture name), colours,
+	            rate (per second on a stand; half in hand), life, speed, size, accel (studs/s^2), spin (degrees/s),
+	            box (from the whole blade, not a point), lock (stay on the blade).
+	  burst     how many petals/feathers/sparks one big moment throws out (a stand's spin, a catcher's slash).
+	  trail     the slash trail's colours (start, end).
+	  light     the glow's colour.
+	Particles use Roblox's stand-in pictures (sparkles, fire) until the owner uploads ours (Shared/FxTexture).
+]]
+local function rgb(h: string): Color3
+	return Color3.fromRGB(tonumber(string.sub(h, 1, 2), 16), tonumber(string.sub(h, 3, 4), 16), tonumber(string.sub(h, 5, 6), 16))
+end
+KnifeLook.ELEMENTS = {
+	CrimsonRequiem = { -- Hunter Knife: red petals drifting off the blade
+		name = "Petals", light = rgb("ff3344"), trail = { rgb("ff3344"), rgb("ffc2cc") }, burst = 16,
+		emit = {
+			{ texture = "Petal", colours = { rgb("ff5a6e"), rgb("ff9fb0") }, rate = 10, life = { 1.8, 2.6 }, speed = { 0.4, 0.9 },
+				size = 0.55, accel = { 0, -0.6, 0 }, spin = 90, box = true },
+			{ texture = "Twinkle", colours = { rgb("ffd0da"), rgb("ff4a66") }, rate = 4, life = { 0.5, 0.8 }, speed = { 0.2, 0.4 },
+				size = 0.22, box = true },
+		},
+	},
+	HollowEclipse = { -- Moonlit Knife: pale moon glints and violet wisps
+		name = "Moon", light = rgb("c9b8ff"), trail = { rgb("b48cff"), rgb("f0ecff") }, burst = 12,
+		emit = {
+			{ texture = "Moon", colours = { rgb("f4f0ff"), rgb("d8c8ff") }, rate = 0.6, life = { 0.8, 1 }, speed = { 0, 0 },
+				size = 0.7, tip = true, lock = true, grow = true },
+			{ texture = "Wisp", colours = { rgb("a77bff"), rgb("6d4bd6") }, rate = 6, life = { 1.2, 1.8 }, speed = { 0.2, 0.5 },
+				size = 0.7, accel = { 0, 0.5, 0 }, spin = 30, box = true, faint = true },
+		},
+	},
+	CelestialSeraph = { -- Sunrise Knife: gold feathers floating down and warm light
+		name = "Feathers", light = rgb("ffd27a"), trail = { rgb("ffb52e"), rgb("ffd27a") }, burst = 12, -- (gold, never white: a flat sweep washed out)
+		emit = {
+			{ texture = "Feather", colours = { rgb("fff6e0"), rgb("ffd27a") }, rate = 4, life = { 2, 2.8 }, speed = { 0.3, 0.6 },
+				size = 0.5, accel = { 0, -0.4, 0 }, spin = 40, box = true },
+			{ texture = "Twinkle", colours = { rgb("fff0c0"), rgb("ffc24a") }, rate = 5, life = { 0.6, 0.9 }, speed = { 0.2, 0.4 },
+				size = 0.18, box = true },
+		},
+	},
+	DragonsMaw = { -- Inferno Knife: flames along the blade and embers rising
+		name = "Fire", light = rgb("ff7a1a"), trail = { rgb("ff6a10"), rgb("ffd040") }, burst = 18,
+		emit = {
+			{ texture = "Flame", colours = { rgb("ffb040"), rgb("ff4a10") }, rate = 24, life = { 0.5, 0.75 }, speed = { 0.6, 1.2 },
+				size = 1.3, accel = { 0, 2.5, 0 }, box = true, shrink = true },
+			{ texture = "Spark", colours = { rgb("ffd060"), rgb("ff6a10") }, rate = 6, life = { 0.9, 1.4 }, speed = { 0.4, 1 },
+				size = 0.12, accel = { 0, 2, 0 }, box = true },
+		},
+	},
+	FrostboundOath = { -- Frost Knife: ice shards and snowflakes in a cold mist
+		name = "Frost", light = rgb("5ae6ff"), trail = { rgb("5ae6ff"), rgb("e8fbff") }, burst = 14,
+		emit = {
+			{ texture = "Shard", colours = { rgb("d8f8ff"), rgb("5ae6ff") }, rate = 5, life = { 1, 1.5 }, speed = { 0.3, 0.7 },
+				size = 0.45, accel = { 0, -0.3, 0 }, spin = 60, box = true },
+			{ texture = "Snow", colours = { rgb("ffffff"), rgb("bff4ff") }, rate = 5, life = { 1.6, 2.2 }, speed = { 0.2, 0.4 },
+				size = 0.18, accel = { 0, -0.5, 0 }, spin = 20, box = true },
+			{ texture = "Wisp", colours = { rgb("bff4ff"), rgb("5ae6ff") }, rate = 3, life = { 1.4, 2 }, speed = { 0.1, 0.3 },
+				size = 0.9, accel = { 0, -0.2, 0 }, spin = 15, box = true, faint = true, standOnly = true },
+		},
+	},
+}
+-- The catcher's slash arc (Gameplay/Actions; owner, Oct 19: "better knife animations ... during gameplay"): a thin
+-- crescent in the knife's slash colour (Epic and up: KnifeService sets the knife's SlashColor) drawn round the front
+-- and right of the body as the arm sweeps out, a Beam on two attachments on the root (so it rides with a lunge):
+-- from in front (From, its curve leaving to the right) to the right side (To, arriving from the front). Shows At to
+-- At + Life seconds into the stab (the sweep lands at ~0.07 s), fading out; no flash, one per stab.
+KnifeLook.ARC = {
+	From = Vector3.new(0.6, 0.4, -3.4), To = Vector3.new(3.6, 1.1, 0.5), Curve = 2,
+	Width = { 0.15, 1 }, At = 0.03, Life = 0.2, LightEmission = 0.7,
+}
+-- How see-through the arc is at `age` seconds after it shows (0 = solid; 1 = gone), its middle the most solid.
+function KnifeLook.arcFade(age: number): number
+	local A = KnifeLook.ARC
+	if age < 0 or age > A.Life then return 1 end
+	local u = age / A.Life
+	return if u < 0.15 then 1 - 0.85 * (u / 0.15) else 0.15 + 0.85 * ((u - 0.15) / 0.85) ^ 1.5
+end
+
+-- The element of a knife (nil: none, the rarity ladder only).
+function KnifeLook.element(key: string?)
+	return key and KnifeLook.ELEMENTS[key] or nil
+end
+-- Particles a second for an element in a place: "stand" (the lobby showcase) or "hand" (half as many).
+-- Round 2: stronger and constant on a stand (the reference's fire and petal clouds); a hand keeps about a third,
+-- the back a sixth; `standOnly` emitters (Frost's mist) only on a stand.
+function KnifeLook.elementRate(spec, where: string): number
+	if where == "stand" then return spec.rate end
+	if spec.standOnly then return 0 end
+	return if where == "back" then spec.rate / 6 else spec.rate * 0.35
 end
 
 return KnifeLook

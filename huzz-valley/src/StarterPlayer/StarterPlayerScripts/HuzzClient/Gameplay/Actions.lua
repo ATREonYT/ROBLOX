@@ -4,7 +4,10 @@
 	"make hitboxes pinpoint") is sent to the server (RoundService), which checks it's possible and tags them. (The girl toss is gone: owner's call.)
 
 	Also plays everyone's stab (Shared/StabMotion, or Config/Animations.Stab when set), the Practice Bot's
-	too (RoundService sends "Stab" with bot = true), and lights the knife's slash trail. Buttons sit bottom right, above a phone's jump
+	too (RoundService sends "Stab" with bot = true), and lights the knife's slash trail. Oct 19 (owner: "better knife
+	animations, not only during gameplay"): an Epic or better knife also draws a thin crescent round the front and
+	right of the catcher as the arm sweeps (Shared/KnifeLook.ARC, in the knife's SlashColor, gone in 0.2 s) and a
+	Game Pass knife throws a few of its element's petals, feathers, sparks or shards (its KnifeBurst). Buttons sit bottom right, above a phone's jump
 	button, and only show when the move is available.
 ]]
 local M = {}
@@ -22,6 +25,7 @@ function M.start()
 	local Animations = require(Shared.Config.Animations)
 	local CarryMath = require(Shared.CarryMath)
 	local StabMotion = require(Shared.StabMotion)
+	local KnifeLook = require(Shared.KnifeLook)
 	local Sfx = require(script.Parent.Sfx)
 	local HitCheck = require(script.Parent.HitCheck)
 
@@ -31,6 +35,51 @@ function M.start()
 
 	-- Everyone's stabs, keyed by Player, or "bot" for the Practice Bot (never by a character Instance in a weak table).
 	local stabs = {} -- Player | "bot" -> { rec, character, trail, track }
+
+	-- The slash arc and the element's burst for one stab (Shared/KnifeLook.ARC): a Beam on two attachments on the root.
+	local function dropArc(s)
+		if s.arc then
+			for _, inst in s.arc.parts do pcall(inst.Destroy, inst) end
+			s.arc = nil
+		end
+	end
+	local function slashFx(s, character, ago)
+		dropArc(s)
+		local knife = character:FindFirstChild("HuzzKnife")
+		local root = character:FindFirstChild("HumanoidRootPart")
+		if not (knife and root) then return end
+		local burst = knife:FindFirstChild("KnifeBurst", true)
+		if burst and burst:IsA("ParticleEmitter") then
+			pcall(function() burst:Emit(math.ceil((knife:GetAttribute("Burst") or 10) * 0.5)) end)
+		end
+		local colour = knife:GetAttribute("SlashColor")
+		if typeof(colour) ~= "Color3" then return end
+		local A = KnifeLook.ARC
+		local ok = pcall(function()
+			local a0 = Instance.new("Attachment")
+			a0.Name = "HuzzArc0"
+			a0.CFrame = CFrame.new(A.From) -- (its +X, the way the curve leaves: to the right)
+			a0.Parent = root
+			local a1 = Instance.new("Attachment")
+			a1.Name = "HuzzArc1"
+			a1.CFrame = CFrame.fromMatrix(A.To, Vector3.new(0, 0, 1), Vector3.new(0, 1, 0)) -- (its +X backwards: it arrives from the front)
+			a1.Parent = root
+			local beam = Instance.new("Beam")
+			beam.Name = "HuzzSlashArc"
+			beam.Attachment0, beam.Attachment1 = a0, a1
+			beam.CurveSize0, beam.CurveSize1 = A.Curve, A.Curve
+			beam.Width0, beam.Width1 = A.Width[1], A.Width[2]
+			beam.Segments = 20
+			beam.FaceCamera = true
+			beam.LightEmission = A.LightEmission
+			beam.LightInfluence = 0
+			beam.Color = ColorSequence.new(colour, colour:Lerp(Color3.new(1, 1, 1), 0.6))
+			beam.Transparency = NumberSequence.new(1)
+			beam.Parent = root
+			s.arc = { parts = { beam, a0, a1 }, beam = beam, start = os.clock() - (ago or 0) + A.At }
+		end)
+		if not ok then dropArc(s) end
+	end
 
 	-- ago: how far into the move to start (the bot's stab arrives after its hit, so it starts near the thrust)
 	-- lunge: the Space leap (the slash, then a dive into the leap's direction: Shared/StabMotion)
@@ -49,6 +98,7 @@ function M.start()
 			stabs[p] = s
 		end
 		StabMotion.play(s.rec, os.clock() - (ago or 0), lunge)
+		slashFx(s, character, ago)
 		if Animations.Stab ~= "" then
 			local humanoid = character:FindFirstChildOfClass("Humanoid")
 			local animator = humanoid and humanoid:FindFirstChildOfClass("Animator")
@@ -72,6 +122,7 @@ function M.start()
 		for p, s in stabs do
 			local character = s.character
 			if not character.Parent or (typeof(p) == "Instance" and p.Parent == nil) then
+				dropArc(s)
 				stabs[p] = nil
 			else
 				local root = s.rec.root
@@ -84,6 +135,16 @@ function M.start()
 				local trail = knife and knife:FindFirstChild("SlashTrail", true)
 				if trail then
 					trail.Enabled = playing and StabMotion.trailOn(s.rec, now)
+				end
+				local arc = s.arc
+				if arc then -- the crescent: in fast, fading out, solid in the middle and thin at both ends
+					local fade = KnifeLook.arcFade(now - arc.start)
+					if now - arc.start > KnifeLook.ARC.Life then
+						dropArc(s)
+					elseif arc.beam.Parent then
+						arc.beam.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.5, fade),
+							NumberSequenceKeypoint.new(1, math.min(1, fade + 0.3)) })
+					end
 				end
 			end
 		end

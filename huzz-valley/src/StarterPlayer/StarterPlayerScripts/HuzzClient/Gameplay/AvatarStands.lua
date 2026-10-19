@@ -21,7 +21,12 @@
 	(owner, Oct 18: "for these make them showcase the swords that the gamepass includes. For example the swinging
 	animation, make it look good though"): Shared/StandShowcase, a ready guard with the blade up in front, and every
 	~3 s a combo, a flourish or a rising cut ending in a twirl, the slash trail during the cuts; each stand has its
-	own timing and order (seed from its spot). Without a knife it runs in place with the game's run (the
+	own timing and order (seed from its spot). Oct 19 (owner: "right now its very small and you dont even notice it";
+	"make the knife animations look like the ones i have attached in the video"): the knife is BIG (about 4.4 studs,
+	KnifeService.display scales it), carries its own element (petals, moon glints, feathers, fire, frost:
+	Shared/KnifeLook.ELEMENTS) and each knife has its own hold and moves (Shared/StandShowcase.STYLES: big arcs, a spin
+	slash, flicks, a raised spin); a move's burst throws a handful of its element out (KnifeBurst), once a move.
+	Without a knife it runs in place with the game's run (the
 	owner's run animation when it can play here, Shared/AnimationLibrary "Run"; otherwise Shared/RunMotion, the
 	scripted Huss Valley run, on R15; a simple swing on R6). It turns to face you like the leaderboards. A
 	calm glow under the feet (a soft disc, a small light, a few slow sparkles; owner: calmer effects). Above: the tag,
@@ -205,6 +210,12 @@ function M.start()
 			weld.C0 = CFrame.new(rec.gripAt) * CFrame.Angles(math.rad(pose.gripAngle), 0, 0) * rec.handTurn
 		end
 		if rec.trail and rec.trail.Enabled ~= pose.trail then rec.trail.Enabled = pose.trail end
+		-- the move's burst of the knife's element (once per burst; not on the first frame seen, mid-move)
+		local id = if pose.burst then pose.loop * 10 + pose.burst else nil
+		if id and id ~= rec.lastBurst and rec.lastBurst ~= nil and rec.burster and rec.burster.Parent then
+			pcall(function() rec.burster:Emit(rec.burstCount) end)
+		end
+		rec.lastBurst = id or rec.lastBurst or -1
 	end
 
 	local function stepRun(rec, dt: number)
@@ -254,12 +265,14 @@ function M.start()
 		weld.Parent = handle
 		knife:SetAttribute("Knife", knifeKey)
 		-- the slash trail for the showcase's cuts (as KnifeService's, a little longer so the arc reads)
-		local base, tip = knife:FindFirstChild("TrailBase", true), knife:FindFirstChild("TrailTip", true)
+		local base = knife:FindFirstChild("StandTrailBase", true) or knife:FindFirstChild("TrailBase", true) -- (halfway up the blade: a crescent, not a sheet)
+		local tip = knife:FindFirstChild("TrailTip", true)
 		local trail = nil
 		if base and tip and base:IsA("Attachment") and tip:IsA("Attachment") then
 			local skin = CoinShop.get(knifeKey)
 			local look = KnifeLook.fx(skin and skin.Rarity)
 			local colour = KnifeLook.colour(skin)
+			local el = KnifeLook.element(knifeKey)
 			local tinted = look.trailTint and colour ~= nil
 			local T = KnifeLook.TRAIL
 			trail = Instance.new("Trail")
@@ -269,14 +282,19 @@ function M.start()
 			trail.MinLength = 0
 			trail.FaceCamera = false
 			trail.LightEmission = if tinted then T.LightEmission else 0.3
-			trail.Color = if tinted then ColorSequence.new(colour :: Color3, Color3.new(1, 1, 1)) else ColorSequence.new(Color3.new(1, 1, 1))
+			trail.Color = if el then ColorSequence.new(el.trail[1], el.trail[2])
+				elseif tinted then ColorSequence.new(colour :: Color3, Color3.new(1, 1, 1)) else ColorSequence.new(Color3.new(1, 1, 1))
 			local tr = if tinted then T.Tinted else T.Plain
 			trail.Transparency = NumberSequence.new(tr[1], tr[2])
+			pcall(function() trail.WidthScale = NumberSequence.new(1, 0.3) end) -- (a crescent: full at the blade, thin at the end)
 			trail.Enabled = false
 			trail.Parent = handle
 		end
 		knife.Parent = copy
 		rec.knifeWeld, rec.gripAt, rec.handTurn, rec.trail = weld, at, KnifeLook.handC0(at).Rotation, trail
+		local burster = knife:FindFirstChild("KnifeBurst", true)
+		rec.burster = if burster and burster:IsA("ParticleEmitter") then burster else nil
+		rec.burstCount = knife:GetAttribute("Burst") or 12
 	end
 
 	local function knifeFor(rec)
@@ -310,7 +328,7 @@ function M.start()
 		disc.Transparency = 0.6
 		disc.Parent = holder
 		local light = Instance.new("PointLight")
-		light.Color, light.Brightness, light.Range, light.Shadows = rec.accent, 0.9, 9, false
+		light.Color, light.Brightness, light.Range, light.Shadows = rec.accent, 0.4, 6, false -- (Oct 19 lighting: soft, no pool on the floor)
 		light.Parent = disc
 		local sparkle = Instance.new("ParticleEmitter")
 		sparkle.Color = ColorSequence.new(rec.accent:Lerp(Color3.new(1, 1, 1), 0.5))
@@ -446,7 +464,7 @@ function M.start()
 			rec.hidden = nil
 		end
 		rec.track, rec.motion, rec.r6, rec.showcase = nil, nil, nil, nil
-		rec.knifeWeld, rec.trail = nil, nil
+		rec.knifeWeld, rec.trail, rec.burster, rec.lastBurst = nil, nil, nil, nil
 	end
 
 	local standCount = 0
@@ -514,7 +532,7 @@ function M.start()
 			-- stand start on different moves, so stands side by side never play the same move at once)
 			local spot = math.floor(math.abs(cf.Position.X) * 3 + math.abs(cf.Position.Z) * 7) % 331
 			local seed = spot * 3 + rec.number
-			rec.showcase = StandShowcase.new(copy, seed)
+			rec.showcase = StandShowcase.new(copy, seed, knifeKey)
 		end
 		if not rec.showcase then startRun(rec) end
 		knifeFor(rec)

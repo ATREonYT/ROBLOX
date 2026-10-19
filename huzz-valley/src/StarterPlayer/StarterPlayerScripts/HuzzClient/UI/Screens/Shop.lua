@@ -13,6 +13,7 @@ local Products = require(Shared.Config.Products)
 local CoinShop = require(Shared.Config.CoinShop)
 local RoundConfig = require(Shared.Config.Round)
 local Format = require(Shared.Format)
+local KnifeLook = require(Shared.KnifeLook)
 local UI = script.Parent.Parent
 local Theme = require(UI.Theme)
 local Kit = require(UI.Kit)
@@ -179,6 +180,16 @@ local function buildKnifeCards(body: Frame): number
 		Kit.text({ Name = "Kind", Text = "KNIFE", FontFace = Theme.Fonts.Button, TextSize = 9, TextColor3 = look.Sub, TextXAlignment = Enum.TextXAlignment.Center, TextWrapped = false, Position = UDim2.fromOffset(0, K.SubY), Size = UDim2.fromOffset(K.W, 10), Parent = c })
 		buyButton(c, p, { Position = UDim2.fromOffset(K.ButtonX, K.ButtonY), Size = UDim2.fromOffset(K.ButtonW, K.ButtonH), TextSize = 16, BadgeScale = 1.4, IconSize = 16, Style = "PassViolet", Corner = 4, Label = "BUY" })
 		Effects.shine(c, { every = 5, delay = (i - 1) * 0.7, corner = 5, strength = 0.22, z = 5 })
+		-- alive (owner, Oct 19: "better knife animations ... in the gamepass sections"): its element's colour glowing
+		-- softly over the knife, a few of its petals / sparks / embers / ice bits floating up, a small lift under the mouse
+		local el = KnifeLook.element(p.Knife)
+		if el then
+			local shape = if el.name == "Petals" or el.name == "Feathers" then "petal" elseif el.name == "Frost" then "diamond" else "dot"
+			Effects.pulse(c, { colour = el.light, position = UDim2.fromOffset(1, 1), size = UDim2.fromOffset(K.Art.X, K.Art.Y), corner = 4, z = 2 })
+			Effects.motes(c, { colour = el.emit[1].colours[1], shape = shape, count = 7,
+				area = Rect.new(8, 20, K.Art.X - 6, K.Art.Y - 4), z = 3, seed = i })
+		end
+		Effects.lift(c)
 	end
 	return if #passes > 0 then 1 + K.H + 12 else 0
 end

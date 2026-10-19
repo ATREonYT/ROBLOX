@@ -31,11 +31,13 @@ local KEYS = {
 	{ at = 0.00, shoulder = { 0, 0, 0 }, elbow = { 0, 0, 0 }, wrist = { 0, 0, 0 }, off = { 0, 0, 0 }, offElbow = { 0, 0, 0 }, waist = { 0, 0, 0 }, neck = { 0, 0, 0 } },
 	-- the sweep's reach (~0.07 s): knife arm forward and out to the right, near level; waist turned into it
 	-- (right, -y), leaning in; free arm up pointing ahead; the head counter-turns to stay on the runner
-	{ at = 0.18, ease = "out", shoulder = { 0, 42, 62 }, elbow = { 14, 0, 0 }, wrist = { -12, 0, 0 }, off = { 80, 0, -6 }, offElbow = { 14, 0, 0 }, waist = { -6, -20, 0 }, neck = { 2, 17, 0 } },
-	-- a small overshoot: the arm carries on out to the side, a little back
-	{ at = 0.25, ease = "out", shoulder = { 0, 0, 80 }, elbow = { 8, 0, 0 }, wrist = { -16, 0, 0 }, off = { 84, 0, -6 }, offElbow = { 10, 0, 0 }, waist = { -6, -24, 0 }, neck = { 2, 20, 0 } },
+	-- Oct 19 ("better knife animations ... during gameplay"): the wrist snaps the blade flat into the sweep (it cuts
+	-- level across instead of hanging down) and the body leans into it a little more; same timing, still no wind-up
+	{ at = 0.18, ease = "out", shoulder = { -2, 44, 64 }, elbow = { 14, 0, 0 }, wrist = { -24, 0, -20 }, off = { 80, 0, -6 }, offElbow = { 14, 0, 0 }, waist = { -10, -24, 0 }, neck = { 4, 21, 0 } },
+	-- a small overshoot: the arm carries on out to the side, a little back, the wrist following through
+	{ at = 0.25, ease = "out", shoulder = { 0, 0, 82 }, elbow = { 8, 0, 0 }, wrist = { -28, 0, -26 }, off = { 84, 0, -6 }, offElbow = { 10, 0, 0 }, waist = { -10, -28, 0 }, neck = { 4, 24, 0 } },
 	-- held out, so it reads
-	{ at = 0.60, ease = "smooth", shoulder = { 0, 6, 76 }, elbow = { 10, 0, 0 }, wrist = { -12, 0, 0 }, off = { 80, 0, -5 }, offElbow = { 12, 0, 0 }, waist = { -5, -20, 0 }, neck = { 2, 17, 0 } },
+	{ at = 0.60, ease = "smooth", shoulder = { 0, 6, 76 }, elbow = { 10, 0, 0 }, wrist = { -18, 0, -16 }, off = { 80, 0, -5 }, offElbow = { 12, 0, 0 }, waist = { -7, -24, 0 }, neck = { 3, 21, 0 } },
 	-- back to carry
 	{ at = 1.00, ease = "smooth", shoulder = { 0, 0, 0 }, elbow = { 0, 0, 0 }, wrist = { 0, 0, 0 }, off = { 0, 0, 0 }, offElbow = { 0, 0, 0 }, waist = { 0, 0, 0 }, neck = { 0, 0, 0 } },
 }

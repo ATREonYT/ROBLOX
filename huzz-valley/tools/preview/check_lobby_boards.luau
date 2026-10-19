@@ -182,6 +182,20 @@ if copy then
 	local anchored = false
 	for _, d in (knife and knife:GetDescendants() or {}) do if d:IsA("BasePart") and d.Anchored then anchored = true end end
 	check("the knife moves with the hand (nothing anchored)", knife ~= nil and not anchored)
+	-- big (owner Oct 19: "right now its very small and you dont even notice it"): pommel to tip about 4.4 studs
+	local handle = knife and knife:FindFirstChild("Handle", true)
+	local lo, hi = math.huge, -math.huge
+	for _, d in (knife and knife:GetDescendants() or {}) do
+		if d:IsA("BasePart") and d ~= handle and not string.find(d.Name, "Tassel") then
+			local y = handle.CFrame:PointToObjectSpace(d.CFrame.Position).Y
+			lo, hi = math.min(lo, y - d.Size.Y / 2), math.max(hi, y + d.Size.Y / 2)
+		end
+	end
+	check(string.format("the stand's knife is big (%.1f studs, was 1.9)", hi - lo), hi - lo > 4 and hi - lo < 5.2)
+	check("its element: red petals, a burst for the big moves, a glint at the tip", knife ~= nil and knife:GetAttribute("Element") == "Petals"
+		and knife:FindFirstChild("KnifeBurst", true) ~= nil and knife:FindFirstChild("KnifeTipGlint", true) ~= nil)
+	local blade = knife and knife:FindFirstChild("Blade", true)
+	check("the stand-in has its card's shape (a katana with a glowing edge)", blade ~= nil and knife:FindFirstChild("BladeEdge", true) ~= nil)
 end
 check("block hidden on this screen", block.LocalTransparencyModifier == 1)
 check("calm glow", copies and copies:FindFirstChild("StandGlow") ~= nil)

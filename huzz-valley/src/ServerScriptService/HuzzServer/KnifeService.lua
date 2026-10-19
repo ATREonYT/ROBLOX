@@ -18,6 +18,16 @@
 	at its length, its glowing parts already Neon. Until then (or for a skin with no model) the game draws its own
 	knife below, painted in the skin's colours (Config/CoinShop Colors, Neon guard in its Glow colour), so nothing
 	ever looks broken. A Model named "HuzzKnife" (in HuzzKnives, or ServerStorage as before) replaces the default.
+	The five Game Pass knives get a better stand-in (owner, Oct 19: "right now its very small and you dont even
+	notice it"): their card's shape from plain parts at their real length (Shared/KnifeShapes, buildRecipe).
+
+	Oct 19 too: the lobby stands' copy (display) is scaled up to KnifeLook.STAND.Length (scale: by hand, no ScaleTo)
+	and a Game Pass knife carries its element (KnifeLook.ELEMENTS: petals, moon glints, feathers, fire, frost) in
+	place of Mythic's plain sparkles and embers, a burst emitter for big moments (KnifeBurst: the stands' spins, the
+	catcher's slash) and, on a stand, a star glint at the tip; its slash trail takes the element's colours.
+	Round 2 ("in the reference the knife is the first thing you see"): the stand copy's blade is also widened and
+	thickened (KnifeLook.standWiden, display only), wears a see-through Neon GlowShell, and its slash starts halfway
+	up the blade (StandTrailBase).
 
 	Effects by rarity (owner: "make it fit it, and dont make it overly crazy"): Shared/KnifeLook. In hand always;
 	on the back only Legendary and Mythic. Built here once per knife (replicated), nothing runs every frame.
@@ -30,6 +40,7 @@ local ServerStorage = game:GetService("ServerStorage")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local KnifeLook = require(ReplicatedStorage.Shared.KnifeLook)
 local FxTexture = require(ReplicatedStorage.Shared.FxTexture)
+local KnifeShapes = require(ReplicatedStorage.Shared.KnifeShapes)
 
 local KnifeService = {}
 local NAME = "HuzzKnife"
@@ -78,6 +89,107 @@ local function build()
 	tip.Position = Vector3.new(0, 0.85, 0)
 	tip.Parent = blade
 	model.PrimaryPart = handle
+	return model
+end
+
+-- A Game Pass knife's stand-in from plain parts (Shared/KnifeShapes: its card's shape at its real length), used
+-- until the owner's own model is in ServerStorage/HuzzKnives.
+local MATERIAL = { Metal = Enum.Material.Metal, Neon = Enum.Material.Neon, Plastic = Enum.Material.SmoothPlastic,
+	Glass = Enum.Material.Glass, Fabric = Enum.Material.Fabric }
+local function buildRecipe(recipe)
+	local model = Instance.new("Model")
+	local handle
+	local made = {}
+	for _, r in recipe.parts do
+		local class = if r.kind == "Wedge" then "WedgePart" else "Part"
+		local p = part(class, {
+			Name = r.name, Size = Vector3.new(r.size[1], r.size[2], r.size[3]), Color = recipe.palette[r.paint] or WHITE,
+			Material = MATERIAL[r.mat] or Enum.Material.SmoothPlastic,
+		})
+		if r.kind == "Cylinder" then p.Shape = Enum.PartType.Cylinder end
+		if r.mat == "Metal" then p.Reflectance = 0.12 end
+		if r.mat == "Glass" then p.Transparency = 0.12 end
+		local rot = r.rot or { 0, 0, 0 }
+		p.CFrame = CFrame.new(r.at[1], r.at[2], r.at[3]) * CFrame.Angles(math.rad(rot[1]), math.rad(rot[2]), math.rad(rot[3]))
+		p.Parent = model
+		made[r.name] = p
+		if r.name == "Handle" then handle = p end
+	end
+	for _, p in made do
+		if p ~= handle then weld(handle, p) end
+	end
+	local blade = made.Blade or handle
+	local by = blade.CFrame.Position.Y
+	local base = Instance.new("Attachment")
+	base.Name = "TrailBase"
+	base.CFrame = CFrame.new(0, recipe.trail[1] - by, 0)
+	base.Parent = blade
+	local tip = Instance.new("Attachment")
+	tip.Name = "TrailTip"
+	tip.CFrame = CFrame.new(0, recipe.trail[2] - by, 0)
+	tip.Parent = blade
+	model.PrimaryPart = handle
+	return model
+end
+KnifeService.buildRecipe = buildRecipe
+
+-- Scales a knife model by f about its Handle (the lobby stands show their knife big: Shared/KnifeLook.STAND).
+-- By hand, not Model:ScaleTo: every part's size and its offset from the Handle, attachments, welds' C0/C1, meshes
+-- and lights. (An earlier try with ScaleTo lost the stand knife offline: the test harness has no ScaleTo, so the
+-- stand's mount failed and three lobby checks broke. This runs the same everywhere.)
+-- f: a number (the same every way), or a Vector3 of factors along the Handle's own axes (X thickness, Y length, Z
+-- width: the stands' broader-than-life blades). Each part keeps its turn; its size grows by how much its own axes
+-- stretch (exact for parts lined up with the Handle, close for tilted ones).
+function KnifeService.scale(model, f: number | Vector3)
+	local handle = model:FindFirstChild("Handle", true)
+	local fv = if typeof(f) == "Vector3" then f else Vector3.new(f, f, f)
+	if not (handle and handle:IsA("BasePart")) or (fv - Vector3.new(1, 1, 1)).Magnitude < 1e-3 then return model end
+	local h = handle.CFrame
+	local function stretch(rot: CFrame, v: Vector3): Vector3 -- a vector in a part's space, stretched in the Handle's
+		return rot:VectorToObjectSpace(rot:VectorToWorldSpace(v) * fv)
+	end
+	local function axes(rot: CFrame): Vector3 -- how much a part's own X, Y, Z grow
+		return Vector3.new((rot.RightVector * fv).Magnitude, (rot.UpVector * fv).Magnitude, (rot.LookVector * fv).Magnitude)
+	end
+	local rels = {}
+	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") then rels[d] = h:ToObjectSpace(d.CFrame).Rotation end
+	end
+	local constraints = {}
+	for _, d in model:GetDescendants() do
+		if d:IsA("WeldConstraint") then -- (re-enabled after: it keeps the new offsets; pcall: Lune has no Enabled)
+			local ok, on = pcall(function() return d.Enabled end)
+			if not ok or on then
+				pcall(function() d.Enabled = false end)
+				table.insert(constraints, d)
+			end
+		end
+	end
+	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") then
+			local rel = h:ToObjectSpace(d.CFrame)
+			d.Size = d.Size * axes(rel.Rotation)
+			d.CFrame = h * (CFrame.new(rel.Position * fv) * rel.Rotation)
+		elseif d:IsA("Attachment") then
+			local c = d.CFrame
+			local rot = d.Parent and rels[d.Parent] or CFrame.identity
+			d.CFrame = CFrame.new(stretch(rot, c.Position)) * c.Rotation
+		elseif d:IsA("JointInstance") then
+			local r0 = d.Part0 and rels[d.Part0] or CFrame.identity
+			local r1 = d.Part1 and rels[d.Part1] or CFrame.identity
+			d.C0 = CFrame.new(stretch(r0, d.C0.Position)) * d.C0.Rotation
+			d.C1 = CFrame.new(stretch(r1, d.C1.Position)) * d.C1.Rotation
+		elseif d:IsA("SpecialMesh") then
+			local a = d.Parent and rels[d.Parent] and axes(rels[d.Parent]) or fv
+			d.Scale = d.Scale * a
+			d.Offset = d.Offset * a
+		elseif d:IsA("PointLight") or d:IsA("SpotLight") then
+			d.Range = math.min(d.Range * fv.Y, 16)
+		end
+	end
+	for _, c in constraints do pcall(function() c.Enabled = true end) end
+	local was = model:GetAttribute("Scale") or 1
+	model:SetAttribute("Scale", was * fv.Y)
 	return model
 end
 
@@ -140,6 +252,8 @@ local function template(skin)
 	if custom and custom:IsA("Model") and custom:FindFirstChild("Handle", true) then
 		return custom:Clone(), true
 	end
+	local recipe = skin and KnifeShapes.get(skin.Key)
+	if recipe then return buildRecipe(recipe), false end
 	local model = build()
 	if skin then paint(model, skin) end
 	return model, false
@@ -171,15 +285,78 @@ local function emitter(name, parent, colour, props)
 	return e
 end
 
--- The skin's effects (Shared/KnifeLook): where = "hand" or "back".
+-- A Game Pass knife's element (Shared/KnifeLook.ELEMENTS): its steady emitters on the blade ("stand": the lobby's
+-- full rate; "hand": half; "back": a third) and a "KnifeBurst" emitter that throws a handful out on a big moment
+-- (a stand's spin, a catcher's slash: Emit only, Rate 0).
+local function addElement(model, blade, el, where)
+	local tipAt = model:FindFirstChild("TrailTip", true)
+	local scale = model:GetAttribute("Scale") or 1
+	for i, spec in el.emit do
+		if spec.standOnly and where ~= "stand" then continue end
+		local rate = KnifeLook.elementRate(spec, where)
+		local parent = if spec.tip and tipAt then tipAt else blade
+		local size = spec.size * (if where == "stand" then math.max(1, scale * 0.85) else 1)
+		local e = emitter("KnifeElement" .. i, parent, spec.colours[1], {
+			Rate = rate, Lifetime = NumberRange.new(spec.life[1], spec.life[2]), Speed = NumberRange.new(spec.speed[1], spec.speed[2]),
+			SpreadAngle = Vector2.new(180, 180), Drag = 1.5, LockedToPart = spec.lock == true,
+			Acceleration = if spec.accel then Vector3.new(spec.accel[1], spec.accel[2], spec.accel[3]) else Vector3.zero,
+			RotSpeed = NumberRange.new(-(spec.spin or 0), spec.spin or 0), Rotation = NumberRange.new(0, 360),
+			Size = if spec.grow then NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.35, size), NumberSequenceKeypoint.new(1, 0) })
+				elseif spec.shrink then NumberSequence.new(size, 0)
+				else NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.15, size), NumberSequenceKeypoint.new(1, size * 0.6) }),
+			Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.15, if spec.faint then 0.55 else 0.1),
+				NumberSequenceKeypoint.new(1, 1) }),
+		})
+		e.Color = ColorSequence.new(spec.colours[1], spec.colours[2])
+		if spec.box and parent == blade then
+			pcall(function() e.Shape = Enum.ParticleEmitterShape.Box; e.ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume end)
+		end
+		e.Texture = FxTexture.get(spec.texture)
+	end
+	if where ~= "back" then -- the burst: the first emitter's look, flung out fast, Emit only
+		local spec = el.emit[1]
+		local e = emitter("KnifeBurst", blade, spec.colours[1], {
+			Rate = 0, Lifetime = NumberRange.new(0.7, 1.2), Speed = NumberRange.new(4, 8), SpreadAngle = Vector2.new(180, 180), Drag = 4,
+			Acceleration = Vector3.new(0, -1, 0), RotSpeed = NumberRange.new(-180, 180), Rotation = NumberRange.new(0, 360),
+			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, spec.size * 1.2), NumberSequenceKeypoint.new(1, 0) }),
+			Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(1, 1) }),
+		})
+		e.Color = ColorSequence.new(spec.colours[1], spec.colours[2])
+		pcall(function() e.Shape = Enum.ParticleEmitterShape.Box; e.ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume end)
+		e.Texture = FxTexture.get(spec.texture)
+		model:SetAttribute("Burst", el.burst)
+	end
+	model:SetAttribute("Element", el.name)
+end
+
+-- The skin's effects (Shared/KnifeLook): where = "hand", "back" or "stand" (the lobby showcase: a hand's effects,
+-- the element at its full rate and a star glint at the tip now and then).
 local function addFx(model, skin, where)
 	local look = KnifeLook.fx(skin and skin.Rarity)
-	local colour = KnifeLook.colour(skin)
+	local el = KnifeLook.element(skin and skin.Key)
+	local colour = if el then el.light else KnifeLook.colour(skin)
 	if not colour or (where == "back" and not look.back) then
 		return
 	end
 	local blade = bladeOf(model)
 	if not blade then return end
+	if el then
+		addElement(model, blade, el, where)
+		look = table.clone(look)
+		look.sparkles, look.embers = nil, nil -- (the element replaces them: calm, not doubled)
+		if where == "stand" then
+			look.glow = { range = 4, brightness = 0.6 } -- (soft, kept on the knife: the Oct 19 lighting has no light pools; its Neon and particles carry it)
+			local tipAt = model:FindFirstChild("TrailTip", true)
+			if tipAt then -- the reference's star glint on the tip: one every 2 to 3 s, soft, never a flash
+				local e = emitter("KnifeTipGlint", tipAt, el.light:Lerp(WHITE, 0.7), {
+					Rate = 0.4, Lifetime = NumberRange.new(0.45, 0.55), Speed = NumberRange.new(0), LockedToPart = true,
+					Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.4, 1.1), NumberSequenceKeypoint.new(1, 0) }),
+					Transparency = NumberSequence.new(0.1), Rotation = NumberRange.new(0, 45), RotSpeed = NumberRange.new(60), ZOffset = 0.5,
+				})
+				e.Texture = FxTexture.get("StarFlare")
+			end
+		end
+	end
 	if look.sheen then -- a small glint on the blade now and then
 		local e = emitter("KnifeSheen", blade, colour:Lerp(WHITE, 0.6), {
 			Rate = look.sheen, Lifetime = NumberRange.new(0.3, 0.4), Speed = NumberRange.new(0), LockedToPart = true,
@@ -331,19 +508,24 @@ function KnifeService.give(character, skin)
 		local T = KnifeLook.TRAIL
 		local look = KnifeLook.fx(skin and skin.Rarity)
 		local colour = KnifeLook.colour(skin)
+		local el = KnifeLook.element(skin and skin.Key)
 		local tinted = look.trailTint and colour ~= nil
 		local trail = Instance.new("Trail")
 		trail.Name = "SlashTrail"
 		trail.Attachment0, trail.Attachment1 = base, tip
-		trail.Lifetime = T.Lifetime
+		trail.Lifetime = if el then T.ElementLifetime else T.Lifetime
 		trail.MinLength = 0
 		trail.FaceCamera = false
 		trail.LightEmission = if tinted then T.LightEmission else 0.3
-		trail.Color = if tinted then ColorSequence.new(colour :: Color3, WHITE) else ColorSequence.new(WHITE)
+		trail.Color = if el then ColorSequence.new(el.trail[1], el.trail[2])
+			elseif tinted then ColorSequence.new(colour :: Color3, WHITE) else ColorSequence.new(WHITE)
 		local tr = if tinted then T.Tinted else T.Plain
 		trail.Transparency = NumberSequence.new(tr[1], tr[2])
+		pcall(function() trail.WidthScale = NumberSequence.new(1, 0.35) end) -- (a crescent: full at the blade, thin at the end)
 		trail.Enabled = false
 		trail.Parent = handle
+		-- the catcher's slash arc (Gameplay/Actions) in this colour, Epic and up
+		if tinted then model:SetAttribute("SlashColor", if el then el.trail[1] else colour) end
 	end
 	model.Parent = character
 end
@@ -351,6 +533,7 @@ end
 -- A loose copy of a skin's knife with its in-hand effects, for showing off (the lobby avatar stands:
 -- HuzzServer/AvatarStandService puts it in ReplicatedStorage, each screen welds it into the stand copy's hand by
 -- its Handle's Grip attachment). Nothing anchored, nothing collides.
+-- Big: scaled up to KnifeLook.STAND.Length (owner, Oct 19: "right now its very small and you dont even notice it").
 function KnifeService.display(skin)
 	local model = template(skin)
 	local handle = model:FindFirstChild("Handle", true)
@@ -359,7 +542,47 @@ function KnifeService.display(skin)
 		return nil
 	end
 	loose(model)
-	addFx(model, skin, "hand")
+	for _, d in model:GetDescendants() do -- (a model that came with its own effects gets ours, sized for the stand)
+		if d:IsA("Trail") or d:IsA("ParticleEmitter") or d:IsA("Light") then d:Destroy() end
+	end
+	local shape = shapeOf(model)
+	KnifeService.scale(model, KnifeLook.standScale(shape and shape.length))
+	-- broader than life (round 2: "in the reference the knife is the first thing you see"): the blade widened and
+	-- thickened about the grip, display only
+	local after = shapeOf(model)
+	local thick, wide = KnifeLook.standWiden(after and (if after.bladeWidth > 0 then after.bladeWidth else after.width))
+	KnifeService.scale(model, Vector3.new(thick, 1, wide))
+	model:SetAttribute("Widen", wide)
+	-- a glowing Neon skin over the blade parts, so it reads at lobby distance under the soft grade (a steady glow)
+	local el = KnifeLook.element(skin and skin.Key)
+	local glow = if el then el.light else KnifeLook.colour(skin)
+	if glow then
+		for _, d in model:GetDescendants() do
+			if d:IsA("BasePart") and string.find(string.lower(d.Name), "blade", 1, true) then
+				local shell = d:Clone()
+				shell:ClearAllChildren()
+				shell.Name = "GlowShell"
+				shell.Material, shell.Color, shell.Transparency = Enum.Material.Neon, glow, KnifeLook.STAND.Shell
+				pcall(function() (shell :: any).TextureID = "" end)
+				shell.Size = d.Size + Vector3.new(0.08, 0.04, 0.1)
+				shell.CFrame = d.CFrame
+				shell.CastShadow = false
+				shell.Parent = d.Parent
+				weld(d, shell)
+			end
+		end
+	end
+	-- the stands' slash runs from halfway up the blade to the tip (a crescent, not a whole sheet)
+	local base, tip = model:FindFirstChild("TrailBase", true), model:FindFirstChild("TrailTip", true)
+	if base and tip and base:IsA("Attachment") and tip:IsA("Attachment") and tip.Parent and tip.Parent:IsA("BasePart") then
+		local bw = (base.Parent :: BasePart).CFrame * base.CFrame.Position
+		local tw = (tip.Parent :: BasePart).CFrame * tip.CFrame.Position
+		local mid = Instance.new("Attachment")
+		mid.Name = "StandTrailBase"
+		mid.CFrame = CFrame.new((tip.Parent :: BasePart).CFrame:PointToObjectSpace(bw:Lerp(tw, 0.45)))
+		mid.Parent = tip.Parent
+	end
+	addFx(model, skin, "stand")
 	model:SetAttribute("Skin", skinOf(skin))
 	model.PrimaryPart = handle
 	return model

@@ -137,4 +137,89 @@ function Effects.breathe(inst: GuiObject, opts: { scale: number?, seconds: numbe
 	return s
 end
 
+-- Little bits of a knife's element floating up over a card's picture (owner, Oct 19: "better knife animations ... in
+-- the gamepass sections"): `count` small shapes in `colour` (shape "petal": soft ovals, "diamond": sparkles or ice,
+-- "dot": embers or moon dust), each rising `rise` px over 2.6 to 3.8 s while it fades, staggered, again and again.
+-- Plain frames (no picture to upload), saved into StarterGui like the rest, hidden until the loop starts. `area`: the
+-- box they float in (offsets inside `target`). Calm: a few at a time, nothing flashes.
+function Effects.motes(target: GuiObject, opts: { colour: Color3, shape: string?, count: number?, area: Rect, rise: number?, z: number?, seed: number? })
+	local o = opts
+	local n = o.count or 6
+	local area = o.area
+	local seed = o.seed or 1
+	local made = {}
+	for i = 1, n do
+		-- the same spots every build (so the saved twins match): a little hash of i and the seed
+		local h = ((i * 7919 + seed * 104729) % 1000) / 1000
+		local h2 = ((i * 3571 + seed * 1299709) % 1000) / 1000
+		local shape = o.shape or "dot"
+		local w, hgt = 4, 4
+		if shape == "petal" then w, hgt = 8, 5 elseif shape == "diamond" then w, hgt = 6, 6 elseif h2 > 0.6 then w, hgt = 4, 4 else w, hgt = 5, 5 end
+		local x = math.floor(area.Min.X + h * (area.Width - w))
+		local y0 = math.floor(area.Max.Y - 8 - h2 * area.Height * 0.4)
+		local mote = new("Frame", {
+			Name = "Mote" .. i, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(x, y0), Size = UDim2.fromOffset(w, hgt),
+			BackgroundColor3 = o.colour, BackgroundTransparency = 1, BorderSizePixel = 0, Active = false, Visible = false,
+			Rotation = if shape == "diamond" then 45 elseif shape == "petal" then math.floor(h * 90) - 45 else 0,
+			ZIndex = o.z or (target.ZIndex + 1), Parent = target,
+		}, if shape == "diamond" then {} else { Kit.corner(4) })
+		local rise = o.rise or math.floor(area.Height * 0.55)
+		local seconds = 2.6 + h2 * 1.2
+		local drift = math.floor((h - 0.5) * 16)
+		local tween = TweenService:Create(mote, TweenInfo.new(seconds, Enum.EasingStyle.Sine, Enum.EasingDirection.Out, -1, false, 0.4 + h * 1.4), {
+			Position = UDim2.fromOffset(x + drift, y0 - rise), BackgroundTransparency = 1,
+			Rotation = mote.Rotation + (if shape == "petal" then 120 else 0),
+		})
+		local startRot = mote.Rotation
+		track(mote, tween, function()
+			tween:Cancel()
+			mote.Visible = false
+		end, function()
+			mote.Position, mote.Rotation, mote.BackgroundTransparency, mote.Visible = UDim2.fromOffset(x, y0), startRot, 0.15, true
+			task.delay(h2 * 2, function()
+				if not calm and mote.Parent then tween:Play() end
+			end)
+		end)
+		table.insert(made, mote)
+	end
+	return made
+end
+
+-- A soft glow in a knife's colour that slowly swells and settles over a card's picture (one breath about every 5 s,
+-- never brighter than 0.78 see-through: a glow, not a flash).
+function Effects.pulse(target: GuiObject, opts: { colour: Color3, size: UDim2?, position: UDim2?, corner: number?, z: number? })
+	local o = opts
+	local glow = new("Frame", {
+		Name = "Pulse", Position = o.position or UDim2.fromOffset(0, 0), Size = o.size or UDim2.fromScale(1, 1),
+		BackgroundColor3 = o.colour, BackgroundTransparency = 1, BorderSizePixel = 0, Active = false, Visible = false,
+		ZIndex = o.z or (target.ZIndex + 1), Parent = target,
+	}, {
+		Kit.corner(o.corner or 0),
+		new("UIGradient", { Name = "Soft", Rotation = 90, Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.35, 0.55), NumberSequenceKeypoint.new(0.7, 0.4), NumberSequenceKeypoint.new(1, 1),
+		}) }),
+	})
+	local tween = TweenService:Create(glow, TweenInfo.new(2.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), { BackgroundTransparency = 0.78 })
+	track(glow, tween, function()
+		tween:Cancel()
+		glow.BackgroundTransparency, glow.Visible = 1, false
+	end, function()
+		glow.BackgroundTransparency, glow.Visible = 1, true
+		tween:Play()
+	end)
+	return glow
+end
+
+-- A card lifts a little (to 104 %) while the mouse is over it, and settles back when it leaves.
+function Effects.lift(card: GuiObject, scale: number?)
+	local s = new("UIScale", { Name = "Lift", Scale = 1, Parent = card })
+	local up = TweenService:Create(s, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Scale = scale or 1.04 })
+	local down = TweenService:Create(s, TweenInfo.new(0.16, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Scale = 1 })
+	pcall(function()
+		card.MouseEnter:Connect(function() if not calm then up:Play() end end)
+		card.MouseLeave:Connect(function() down:Play() end)
+	end)
+	return s
+end
+
 return Effects

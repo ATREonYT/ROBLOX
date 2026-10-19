@@ -19,8 +19,9 @@
 	   already on a knife pass keeps it; a typed Knife that's one of the five picks its pass; VIP / Dance Pack stands
 	   (those passes give no knife now) take the next knife.
 	3. The knife models: clients can't see ServerStorage, so a ready copy of each pass knife (his model from
-	   ServerStorage/HuzzKnives/<key> when he has set it up, else the game's own knife in its colours, with its
-	   rarity's calm effects: HuzzServer/KnifeService.display) goes in ReplicatedStorage > HuzzStandKnives.
+	   ServerStorage/HuzzKnives/<key> when he has set it up, else its plain-part stand-in, Shared/KnifeShapes; made
+	   big, about 4.4 studs, with its element's particles: HuzzServer/KnifeService.display, owner Oct 19 "right now
+	   its very small and you dont even notice it") goes in ReplicatedStorage > HuzzStandKnives.
 	The VIEW button and buying stay on the client's rules (Shared/AvatarStandRules: SOON until a real Game Pass ID is
 	in Config/Products); the knives are given only by ShopService when Roblox says you own the pass.
 ]]

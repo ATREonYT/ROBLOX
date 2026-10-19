@@ -90,7 +90,7 @@ Owner's own words are in quotes. Read only the section you need.
 ## 4. Checks, previews, builds (Lune 0.10.5 at `/root/bin/lune`; run before every commit)
 - `PATH=/root/bin:$PATH bash tools/check.sh`: compiles every script; specs (RoundRules, CarryMath, GirlMotion,
   GirlMoves, StabMotion, DownMotion, Movement, Locomotion, PlayerMoves, GirlRoll, CrateRoll, SpinWheel, Leaderboards,
-  Knives, KnifeWear, Sounds, SetupKnives, AdminRules, StandShowcase, LobbyLayout, SetupLobbyProps); **the full-game simulation** (`tools/sim/round_sim.luau`: real server code, bots
+  Knives, KnifeWear, KnifeShapes, Sounds, SetupKnives, AdminRules, StandShowcase, LobbyLayout, SetupLobbyProps); **the full-game simulation** (`tools/sim/round_sim.luau`: real server code, bots
   that run, stab, lunge, rescue, use powers; 7 setups). `lune run huzz-valley/tools/sim/round_sim.luau audit` (repo root) prints the
   loop numbers (stage times, waiting, win rates by player count, on the real map size) for `docs/loop-audit.md`. Its stubs (e.g. `KnifeService`) must get any new function
   RoundService calls, or games stop with "attempt to call a nil value".
@@ -431,6 +431,13 @@ Owner's own words are in quotes. Read only the section you need.
   animations (Frame order 30), so it sits over the run. Spec `tests/StabMotion.spec`, video `docs/previews/stab.mp4`
   (`motion3d/stab_scene.luau`). The Practice Bot's stab shows too: RoundService sends "Stab" `{ bot = true }` on a
   hit (and at most once a cooldown while it keeps trying); `Gameplay/Actions` plays it on the `HuzzBot` model.
+  Oct 19 (owner: "better knife animations, not only during gameplay"): same timing and still no wind-up, but the
+  wrist snaps the blade flat into the sweep and the body leans in a little more; a Game Pass knife's trail is in its
+  element's colours, lasts 0.17 s (`KnifeLook.TRAIL.ElementLifetime`) and tapers; Epic and up draw a thin crescent
+  round the front and right of the catcher (`KnifeLook.ARC`: a Beam on two root attachments, gone in 0.2 s, never
+  solid) and a pass knife throws half its element's burst (`KnifeBurst`). Before/after film
+  `docs/previews/stab-before-after.mp4` + `.jpg` (`motion3d/stab_fx_scene.luau`, `STAB_OLD` = the old module copied
+  next to the new one). Honest: the arm change is small; the arc reads faintly in the render.
 - **Getting up** (`DownMotion.rise`, `Gameplay/Knockdown`): the server stands a revived player up at once; the
   client tips the body back down about the feet and eases it up over 0.4 s (no pop). Spec `tests/DownMotion.spec`.
 - Dances: `UI/DancePlayer` (one at a time; walking stops it; **in step**: the `Dance` remote puts HuzzDance /
@@ -575,6 +582,17 @@ Owner's own words are in quotes. Read only the section you need.
   and Dance Pack banners under them; BUY + Robux mark, "coming soon" and never a prompt while `Id = 0`, Price 0 = not
   set (the live price shows once there's an ID). Side by side `docs/previews/knife-cards-vs-mockup.jpg`
   (`shots.sh shop-knife-cards` + `side_by_side.py knife-cards`).
+  **The cards are alive** (owner Oct 19: "better knife animations ... in the gamepass sections"): animated card art,
+  not a 3D viewport (his pass models aren't in his place yet and the art already is the knife): each card's element
+  colour swells softly over the picture (`Effects.pulse`, about every 5 s, never under 0.78 see-through), 7 small
+  shapes of its element float up over it (`Effects.motes`: petals for Hunter and Sunrise, dots for Moonlit and
+  Inferno, diamonds for Frost; plain frames, no upload), the white shine, and the card lifts to 104% under the mouse
+  (`Effects.lift`). All saved twins, hidden until their loop runs, stopped by Reduced Motion. Still
+  `docs/previews/knife-cards-alive.jpg` (the motes are small and calm; the pulse shows only in motion).
+  **Stand-ins until his import** (`Shared/KnifeShapes`): each pass knife's card shape from plain parts at its real
+  length (katana, moon-hole cleaver, feather-guard longsword, jagged blade, crystal blade, glowing edges in Neon),
+  so his place no longer shows our 1.9 stud dagger for them; still `docs/previews/stand-knives-standins.jpg`.
+  Spec `tests/KnifeShapes.spec` (lengths, scaler, stand size, width and glow shell, elements, budget, arc).
   Hand by the model's `Grip`; effects `KnifeLook.LADDER`: Common none, Uncommon sheen, Rare soft light, Epic +3
   sparkles a second and a tinted slash trail, Legendary light Range 4 + glow on the back, Mythic + embers (stand-in
   particle textures until uploads). Pictures `docs/previews/knives-vs-hv.jpg`, `knife-leap.mp4`.
@@ -678,10 +696,49 @@ Owner's own words are in quotes. Read only the section you need.
   return, wrist twirl), Flourish (overhead twirl, diagonal cut) and Rising (crouch, rising cut, twirl). Each stand
   starts on its own move (its build number) at its own time (its spot). The twirl turns the knife in the fist via the
   weld's C0 (`grip`); R6 has no elbow, so shoulder and grip share the bend (simpler, still reads). AvatarStands adds
-  a `StandSlash` Trail (TrailBase to TrailTip, skin colour, `TRAIL_LIFETIME` 0.18) that's on only in the cuts; the
+  a `StandSlash` Trail (TrailBase to TrailTip, skin colour, `TRAIL_LIFETIME` 0.2 since Oct 19 round 2) that's on only in the cuts; the
   steady rarity glow is the display knife's own. Knife-less stands keep the run. Spec `tests/StandShowcase.spec`
   (blade in front of the torso at ready, a move every loop, no pops at 30/60 fps, back to ready, feet planted);
   video `docs/previews/stand-showcase.mp4` (`tools/preview/motion3d/stand_scene.luau`, mock rigs, his meshes).
+  **Oct 19, big and in his reference's style** (owner: "right now its very small and you dont even notice it ... make
+  the knife animations look like the ones i have attached in the video, but make the text different, not ui";
+  `design/lobby-ref/oct19-stands-ref.mp4`: PUMPKIN CLEAVER, VIP DAGGER, VOWBREAKER; we copied the motion and
+  effects, never its sign words, LIMITED or ENDS IN timers):
+  - **Size:** `KnifeService.display` scales the stand copy to `KnifeLook.STAND.Length` 4.4 studs (his models are
+    3.2, the old stand-in dagger 1.9) with `KnifeService.scale` (by hand: sizes, offsets, attachments, welds,
+    meshes, lights). An earlier `Model:ScaleTo` try broke 3 lobby checks because the Lune harness has no ScaleTo, so
+    the stand's mount failed; the hand scaler runs everywhere (check_lobby_boards now also checks the size).
+  - **Broader than life** (round 2, "in the reference the knife is the first thing you see"): display only, after
+    the length scale `KnifeLook.standWiden` widens the blade to about `STAND.Width` 1.7 studs (at most `MaxWiden`
+    4.5x: his katanas ~3.5-4.5x, the big cleaver ~2x) and thickens it up to `MaxThick` 2.6x (`KnifeService.scale`
+    takes a Vector3 in the Handle's axes: X thickness, Y length, Z width), then lays a `GlowShell` over every part
+    with "blade" in its name: Neon in the element's light colour, `STAND.Shell` 0.4 see-through, welded (a steady
+    glow, nothing flashes). The slash runs from `StandTrailBase` (45% up the blade, added by display) to the tip.
+  - **Elements** (`KnifeLook.ELEMENTS`, in place of Mythic's sparkles and embers; stand rate, about a third in hand,
+    a sixth on the back, `KnifeLook.elementRate`): Hunter red petals (10/s, 0.55) + twinkles, Moonlit moon glint at
+    the tip + violet wisps (6/s), Sunrise gold feathers + twinkles, Inferno flames along the blade (24/s, size 1.3)
+    + rising embers, Frost ice shards + snowflakes + a faint mist (stand only); on a stand also a soft light
+    (0.6, range 4: the Oct 19 lighting keeps glow on the object, so Neon and particles carry it; the stand disc
+    light is 0.4 / range 6) and a star glint at the tip about every 2.5 s. At most 32 particles a second per stand knife (Inferno 31), nothing
+    flashes. Until he uploads `assets/fx`, Studio shows Roblox's sparkle and fire pictures instead.
+  - **Moves:** each knife has a `STYLES` entry (hold + 3 moves): Inferno = Low hold, Whirl (a full-body spin into a
+    lunging slash), Scrape (round 2, the reference cleaver's ground sweep: a crouch with the blade back low on the
+    right, then one big arc low across the front), Cleave (overhead and one big arc down); Moonlit = Low, Cleave,
+    Scrape, Whirl; Hunter = Low,
+    Bloom (arm high, a spin, a burst of petals, an arm-out slash), Flick, Combo; Sunrise = Guard, Flick (two wrist
+    flicks and a twirl), Flourish, Bloom; Frost = Guard, Whirl, Rising, Flick. The Low hold keeps the big blade down
+    and forward past the right leg. A spin turns the whole body (`spin`; the feet turn with it). A move's `burst`
+    throws the knife's KnifeBurst once (AvatarStands). Trail 0.2 s in the element's colours (Sunrise gold, never
+    white), tapered, from mid-blade.
+  - Spec `tests/StandShowcase.spec` runs every style on R15 and R6 at the big size. Side by side at 30 fps:
+    `docs/previews/stand-knives-vs-ref.mp4` + still sheet `.jpg` (`tools/preview/stand_knives_vs_ref.sh` over
+    `motion3d/stand_knives_scene.luau`: top his reference, bottom ours, same row and framing, his meshes;
+    `KNIFE_MODE=standin` draws the plain-part stand-ins).
+  - Still worse than the reference (after round 2): in the held pose a blade is often seen edge-on, so at rest it
+    still reads as a bright stick (mid-move the flat shows as a wide slab); the reference's cleaver keeps its flat
+    to the viewer with a fire cloud round it, bigger than our flames; the Sunrise blade held high goes out of the top
+    of the frame; our signs aren't in the render. The render has no bloom, so Studio's Neon shell will glow more.
+    `stand-knives-standins.jpg` is still the round 1 picture (before the widening).
 
 - **Admin panel** (owner, Oct 18: "give me a admin command panel or something so i can get any knife or any girl to
   spawn when i want it to do so"): `Screens/Admin` + `HuzzServer/AdminService` + `Shared/AdminRules`. Only the game's
@@ -763,10 +820,12 @@ Owner's own words are in quotes. Read only the section you need.
   The terrace boards can brush the higher slope behind them when turned far to the side.
 - Lobby props (Oct 18): stand-ins until he imports `Lobby_Props.glb` and sends `HuzzLobbyProps.rbxm`; the titles on the
   three-pad side sit close (pads 7 apart); LIKE THE GAME!, WITCH'S BREW and SWEETS & TREATS open nothing yet.
+- Knife showcase (Oct 19): not seen in Studio yet (the big stand knives, element particles with stand-in
+  pictures, the spins, the card motes/pulse, the slash arc); the 5 pass models still need his import
+  (`Gamepass_Knives.glb` + SetupKnives), until then the stand-ins show.
 - Pass knives: a refunded pass keeps them; six grey-block stands (older places), five knives (the sixth repeats
   Hunter Knife). The card names use Gotham (the owner's font rule), wider than his mockup's rounded font.
-- Lighting (Oct 19): the avatar stands' disc light (0.9 / Range 9, `Gameplay/AvatarStands`) still lights a small
-  pool (stands were another task's files); his own 38 pumpkin PointLights (0.5 / 8) are unchanged (ShadowMap drops
+- Lighting (Oct 19): the avatar stands' disc light is 0.4 / Range 6 (`Gameplay/AvatarStands`); his own 38 pumpkin PointLights (0.5 / 8) are unchanged (ShadowMap drops
   their shadows); the floors keep his own colours and materials (the reference's grey stone tiles are map design,
   not light). The cast-shadow numbers are a model, only Studio shows the real thing.
 - Us: whatever the owner's next round of fixes asks for first; then the Gift Picker, more lore chapters.

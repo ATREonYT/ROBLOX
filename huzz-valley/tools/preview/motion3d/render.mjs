@@ -18,7 +18,8 @@
 // Optional at the top: sky, ground (colours), grid (false to hide), dim (0-1: daylight strength, for evening scenes),
 // stills [frame numbers, 0-based]: with MOTION3D_KEEP=<dir> those frames are also kept there as still_<n>.png.
 // meshFile (top level): a JSON of triangle meshes by name (tools/knives/knife_meshes.py: the owner's knives); then
-// per frame meshes [{m (name), p, r (9), s (uniform scale)}] draws them (glow parts unlit, like Neon).
+// per frame meshes [{m (name), p, r (9), s (uniform scale, or [x, y, z] in the mesh's own axes), shell ({c, a, only}: drawn as a
+// see-through additive glow skin, only over the parts whose node name starts with `only` when given)}] draws them (glow parts unlit, like Neon).
 import { createRequire } from 'module';
 import fs from 'fs';
 import os from 'os';
@@ -214,24 +215,28 @@ window.addMeshes = (lib) => {
       const g = new THREE.BufferGeometry();
       g.setAttribute('position', new THREE.Float32BufferAttribute(q.pos, 3));
       g.computeVertexNormals();
-      return { g, mat: q.glow ? new THREE.MeshBasicMaterial({ color: q.col }) : new THREE.MeshLambertMaterial({ color: q.col, flatShading: true }) };
+      return { g, node: q.node || '', mat: q.glow ? new THREE.MeshBasicMaterial({ color: q.col }) : new THREE.MeshLambertMaterial({ color: q.col, flatShading: true }) };
     });
   }
 };
 const drawMeshes = (list) => {
   list.forEach((q, i) => {
     let e = meshPool[i];
-    if (!e || e.key !== q.m) {
+    const key = q.m + (q.shell ? '|' + q.shell.c + '|' + q.shell.a + '|' + (q.shell.only || '') : '');
+    if (!e || e.key !== key) {
       if (e) scene.remove(e.group);
       const grp = new THREE.Group();
       grp.matrixAutoUpdate = false;
-      for (const part of meshLib[q.m] || []) { const mesh = new THREE.Mesh(part.g, part.mat); mesh.castShadow = true; grp.add(mesh); }
+      // shell {c, a}: the same mesh as a see-through glowing skin (a Neon glow shell round the blade)
+      const shellMat = q.shell ? new THREE.MeshBasicMaterial({ color: q.shell.c, transparent: true, opacity: q.shell.a, blending: THREE.AdditiveBlending, depthWrite: false }) : null;
+      for (const part of meshLib[q.m] || []) { if (shellMat && q.shell.only && !part.node.startsWith(q.shell.only)) continue; const mesh = new THREE.Mesh(part.g, shellMat || part.mat); mesh.castShadow = !shellMat; grp.add(mesh); }
       scene.add(grp);
-      e = meshPool[i] = { key: q.m, group: grp };
+      e = meshPool[i] = { key, group: grp };
     }
     const r = q.r, p = q.p;
     m.set(r[0], r[1], r[2], p[0], r[3], r[4], r[5], p[1], r[6], r[7], r[8], p[2], 0, 0, 0, 1);
-    e.group.matrix.multiplyMatrices(m, sc.makeScale(q.s, q.s, q.s));
+    const ss = Array.isArray(q.s) ? q.s : [q.s, q.s, q.s];
+    e.group.matrix.multiplyMatrices(m, sc.makeScale(ss[0], ss[1], ss[2]));
     e.group.visible = true;
   });
   for (let i = list.length; i < meshPool.length; i++) if (meshPool[i]) meshPool[i].group.visible = false;
