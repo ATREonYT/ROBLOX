@@ -726,18 +726,22 @@ Owner's own words are in quotes. Read only the section you need.
     right, then one big arc low across the front), Cleave (overhead and one big arc down); Moonlit = Low, Cleave,
     Scrape, Whirl; Hunter = Low,
     Bloom (arm high, a spin, a burst of petals, an arm-out slash), Flick, Combo; Sunrise = Guard, Flick (two wrist
-    flicks and a twirl), Flourish, Bloom; Frost = Guard, Whirl, Rising, Flick. The Low hold keeps the big blade down
-    and forward past the right leg. A spin turns the whole body (`spin`; the feet turn with it). A move's `burst`
+    flicks and a twirl), Flourish, Bloom; Frost = Guard, Whirl, Rising, Flick. The Low hold hangs the big blade down
+    and out to the right side, in front of the body. **Face out at rest** (round 3): each hold has a `twist` (the
+    knife's turn about its own blade, after the grip: Guard -70, Low 80, measured on R15 and R6), so at rest the
+    blade's broad face looks out of the stand instead of its edge; in a move the twist eases back to 0 (the edge
+    leads the cut) and returns with the hold (`StandShowcase.knifeTurn` builds the weld's turn for AvatarStands, the
+    spec and the renders; the spec checks the width axis is across the view and the face looks out). A spin turns the whole body (`spin`; the feet turn with it). A move's `burst`
     throws the knife's KnifeBurst once (AvatarStands). Trail 0.2 s in the element's colours (Sunrise gold, never
     white), tapered, from mid-blade.
   - Spec `tests/StandShowcase.spec` runs every style on R15 and R6 at the big size. Side by side at 30 fps:
     `docs/previews/stand-knives-vs-ref.mp4` + still sheet `.jpg` (`tools/preview/stand_knives_vs_ref.sh` over
     `motion3d/stand_knives_scene.luau`: top his reference, bottom ours, same row and framing, his meshes;
     `KNIFE_MODE=standin` draws the plain-part stand-ins).
-  - Still worse than the reference (after round 2): in the held pose a blade is often seen edge-on, so at rest it
-    still reads as a bright stick (mid-move the flat shows as a wide slab); the reference's cleaver keeps its flat
-    to the viewer with a fire cloud round it, bigger than our flames; the Sunrise blade held high goes out of the top
-    of the frame; our signs aren't in the render. The render has no bloom, so Studio's Neon shell will glow more.
+  - Still worse than the reference (after round 3): the reference's cleaver hangs nearly straight down by the leg
+    with a fire cloud round it, bigger than our flames (ours sticks out diagonally to the side, so its tip clears the
+    floor at 4.4 studs); the resting Sunrise blade now stays in the frame but touches its sign; our signs aren't in
+    the render. Still `docs/previews/stand-knives-rest-vs-ref.jpg` (rest pose next to the reference). The render has no bloom, so Studio's Neon shell will glow more.
     `stand-knives-standins.jpg` is still the round 1 picture (before the widening).
 
 - **Admin panel** (owner, Oct 18: "give me a admin command panel or something so i can get any knife or any girl to

@@ -47,7 +47,7 @@ end
 local function handleOf(s, pose)
 	local hand = s.rig.parts.RightHand or s.rig.parts["Right Arm"]
 	local gripAt = Vector3.new(0, -hand.Size.Y / 2 + 0.1, 0)
-	return hand.CFrame * CFrame.new(gripAt) * CFrame.Angles(math.rad(pose.gripAngle), 0, 0) * KnifeLook.handC0(gripAt).Rotation
+	return hand.CFrame * CFrame.new(gripAt) * Show.knifeTurn(pose, KnifeLook.handC0(gripAt).Rotation)
 end
 
 local FPS, SECONDS, SUB = 30, 10, 4

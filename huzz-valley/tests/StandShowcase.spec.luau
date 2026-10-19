@@ -8,6 +8,7 @@
 -- Oct 19: every knife's style (StandShowcase.STYLES: the guard or the low hold, its three moves) with the knife at the
 -- stands' big size (KnifeLook.STAND): the low hold keeps the blade down and forward, clear of the legs and off the
 -- floor; spins come round whole (the feet turn with the body and land where they stood); bursts only in moves.
+-- Round 3: at rest the blade's broad face looks out of the stand (not its edge).
 local fs = require("@lune/fs")
 local serde = require("@lune/serde")
 local roblox = require("@lune/roblox")
@@ -45,7 +46,7 @@ local function at(rig, rec, t)
 	Rig.fk(rig)
 	local hand = rig.parts.RightHand or rig.parts["Right Arm"]
 	local gripAt = Vector3.new(0, -hand.Size.Y / 2 + 0.1, 0)
-	local handle = hand.CFrame * CFrame.new(gripAt) * CFrame.Angles(math.rad(pose.gripAngle), 0, 0) * KnifeLook.handC0(gripAt).Rotation
+	local handle = hand.CFrame * CFrame.new(gripAt) * Show.knifeTurn(pose, KnifeLook.handC0(gripAt).Rotation)
 	local root = rig.root.CFrame
 	local function local_(p) return root:PointToObjectSpace(p) end
 	local torso = rig.parts.UpperTorso or rig.parts.Torso
@@ -89,11 +90,17 @@ for _, kind in { "R15", "R6" } do
 			tag .. " ready: the blade stays clear of the face")
 	else
 		check(r.tip.Y < r.grip.Y - 0.25 * BLADE, tag .. " low hold: the blade points down")
-		check(r.tip.Z < front - 0.8, tag .. " low hold: the tip reaches forward")
+		check(r.tip.Z < front - 0.4, tag .. " low hold: the tip is in front of the body (round 3: the blade hangs out to the side, face out)")
 		check(r.tip.Y > floorY + 0.3, tag .. string.format(" low hold: the tip stays off the floor (%.2f over it)", r.tip.Y - floorY))
 		check(r.mid.X > 0.9 or r.mid.Z < front - 0.6, tag .. " low hold: the blade is clear of the legs")
 	end
 	check(r.grip.X > 0.3, tag .. " ready: the knife is on the right side, not across the body")
+	-- round 3: at rest the blade shows its broad face to whoever stands in front (the Handle's Z is the blade's width,
+	-- X its thickness): the width axis roughly perpendicular to the stand's look, the face toward it
+	local look = rig.root.CFrame.LookVector
+	local widthDot, faceDot = math.abs(r.handle.LookVector:Dot(look)), math.abs(r.handle.RightVector:Dot(look))
+	check(widthDot < 0.35, tag .. string.format(" ready: the blade's width is across the view, not pointing at it (%.2f)", widthDot))
+	check(faceDot > 0.75, tag .. string.format(" ready: the broad face looks out of the stand (%.2f)", faceDot))
 
 	-- 2 + 3. a run over several loops at 30 and 60 fps
 	local function run(fps, seconds)

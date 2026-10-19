@@ -207,7 +207,7 @@ function M.start()
 		local pose = StandShowcase.step(rec.showcase, os.clock())
 		local weld = rec.knifeWeld
 		if weld and weld.Parent then
-			weld.C0 = CFrame.new(rec.gripAt) * CFrame.Angles(math.rad(pose.gripAngle), 0, 0) * rec.handTurn
+			weld.C0 = CFrame.new(rec.gripAt) * StandShowcase.knifeTurn(pose, rec.handTurn) -- (twirls, and the broad face out at rest)
 		end
 		if rec.trail and rec.trail.Enabled ~= pose.trail then rec.trail.Enabled = pose.trail end
 		-- the move's burst of the knife's element (once per burst; not on the first frame seen, mid-move)

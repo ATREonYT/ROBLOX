@@ -57,16 +57,20 @@ StandShowcase.TRAIL_LIFETIME = 0.2 -- the slash smear (KnifeLook.TRAIL is 0.12 f
 
 -- The ready guard. drop = how far the body sits down (studs: knees soft); grip = the knife's turn in the fist
 -- (0 = KnifeLook.handC0's own angle; -30 = straight out of the fist along the forearm, the cutting angle).
+-- twist = the knife's turn about its own blade (degrees about the Handle's Y, after the grip): round 3 (Oct 19, "in
+-- the reference the cleaver held low shows its full face"): at rest each hold turns the blade's broad face out of the
+-- stand, to whoever stands in front of it (measured on R15 and R6: the width axis was pointing at the viewer, so the
+-- blade showed its edge). In a move the twist goes back to 0 (the edge leads the cut) and returns with the hold.
 local READY = {
-	arm = { 32, -12, 20 }, elbow = 100, wrist = -4, grip = 0,
+	arm = { 32, -12, 20 }, elbow = 100, wrist = -4, grip = 0, twist = -70,
 	off = { 30, 16, -16 }, offElbow = 80,
 	waist = { -3, 12, 0 }, neck = { -3, -10, 0 }, drop = 0.14, spin = 0,
 }
 StandShowcase.READY = READY
--- The low hold (the reference's cleaver): the arm down and out to the right, the blade pointing down and forward
--- past the right leg, the free hand loose, knees bent a little more.
+-- The low hold (the reference's cleaver): the arm down and out to the right, the blade hanging down and out to the
+-- side (round 3: across the view, its broad face out of the stand), the free hand loose, knees bent a little more.
 local LOW = {
-	arm = { 16, -10, 24 }, elbow = 26, wrist = -6, grip = -8,
+	arm = { 14, -10, 54 }, elbow = 26, wrist = -6, grip = -38, twist = 80,
 	off = { 14, 10, -16 }, offElbow = 34,
 	waist = { -5, 16, 0 }, neck = { -3, -13, 0 }, drop = 0.2, spin = 0,
 }
@@ -223,7 +227,7 @@ local MOVES = {
 }
 StandShowcase.MOVES = MOVES
 
-local FIELDS = { "arm", "elbow", "wrist", "grip", "off", "offElbow", "waist", "neck", "drop", "spin" }
+local FIELDS = { "arm", "elbow", "wrist", "grip", "twist", "off", "offElbow", "waist", "neck", "drop", "spin" }
 -- Each move for a hold: every key filled from the one before (the first from the hold); a `ready` key (the last)
 -- is the hold itself, its grip plus whole twirls (grip -360 = one twirl ending where it began) and its spin.
 local compiled = {}
@@ -240,6 +244,7 @@ function StandShowcase.compiled(holdName: string)
 					if f == "grip" then key[f] = hold.grip + (src.grip or 0)
 					elseif f == "spin" then key[f] = src.spin or 0
 					else key[f] = hold[f] end
+				elseif f == "twist" then key[f] = src.twist or (if src.at == 0 then hold.twist else 0) -- (edge into the cut)
 				elseif src[f] ~= nil then key[f] = src[f]
 				else key[f] = prev[f] end
 			end
@@ -283,7 +288,7 @@ function StandShowcase.timing(seed: number, t: number, order: { string }?)
 end
 
 -- The pose at t seconds (pure numbers): the guard or a move, with the breathing and the weight shift on top.
--- Returns { arm, elbow, wrist, grip, off, offElbow, waist, neck, drop, spin, sway (studs, +x), bob (studs), move (name
+-- Returns { arm, elbow, wrist, grip, twist, off, offElbow, waist, neck, drop, spin, sway (studs, +x), bob (studs), move (name
 -- or nil), trail (bool), burst (which burst of the move has fired, or nil), loop }. styleKey: a knife key (STYLES).
 function StandShowcase.sample(seed: number, t: number, styleKey: string?)
 	local style = StandShowcase.style(styleKey)
@@ -467,6 +472,12 @@ function StandShowcase.gripOf(rec, pose): number
 		return pose.grip + pose.elbow * 0.4 + pose.wrist
 	end
 	return pose.grip
+end
+
+-- The knife's whole turn in the fist, after KnifeLook.handC0's rotation (AvatarStands' weld C0, the spec, the render):
+-- the grip about the hand's X, then the twist about the blade.
+function StandShowcase.knifeTurn(pose, handTurn: CFrame): CFrame
+	return CFrame.Angles(math.rad(pose.gripAngle or pose.grip), 0, 0) * handTurn * CFrame.Angles(0, math.rad(pose.twist or 0), 0)
 end
 
 -- One frame: the pose at t seconds onto the rig. Returns the pose (pose.trail: show the slash trail now).
