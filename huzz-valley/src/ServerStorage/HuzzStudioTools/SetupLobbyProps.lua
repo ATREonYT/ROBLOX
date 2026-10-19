@@ -2,7 +2,7 @@
 --[[
 	[HuzzProps] Studio helper: turns the owner's imported lobby props into the game's pad props (owner, Oct 18:
 	"implementing these objects into the lobby on top of the already placed circles").
-	Owner's steps (also in huzz-valley/CLAUDE.md, "Lobby props"):
+	Owner's steps (also in huzz-valley/docs/notes/lobby.md, "Lobby props"):
 	  1. In Studio: File (or the Home tab) > Import 3D, pick design/lobby/Lobby_Props.glb, press Import.
 	  2. View > Command Bar. Paste this whole script (or, in the downloaded place, the one line
 	     require(game.ServerStorage.HuzzStudioTools.SetupLobbyProps)() ) and press Enter.

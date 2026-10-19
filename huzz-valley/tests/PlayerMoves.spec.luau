@@ -190,9 +190,9 @@ theirs.character:SetAttribute("HuzzDance", nil)
 frames(20)
 local mid = hip.Transform
 frames(10)
--- (the pack's own hip pitch can sit near the dance's 0.5 by chance with a random idle phase, so check the pack is
--- moving the hip again rather than comparing to 0.5)
-check(hip.Transform ~= mid and math.abs(hip.Transform:ToEulerAnglesXYZ() - 0.5) > 1e-3, "after the dance the pack is back")
+-- (the pack's own hip pitch can sit near the dance's fixed 0.5 by chance with a random idle phase, so only check
+-- the pack is moving the hip again: a dance still holding it would leave it frozen)
+check(hip.Transform ~= mid, "after the dance the pack is back")
 -- leaving: dropped
 theirs.character.Parent = nil
 other.Character = nil

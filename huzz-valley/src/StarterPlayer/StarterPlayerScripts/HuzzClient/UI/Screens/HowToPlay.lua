@@ -2,7 +2,7 @@
 -- for the game feel nice"). Three numbered cards: 1 RUN ACROSS (green), 2 SAVE FRIENDS (blue), 3 BE THE HERO (pink),
 -- each with a short line (key words in the card's colour) and a picture cut from the mockup (placeholders until the
 -- owner sends sharp PNGs: tools/icons/make_screen_art.py). Along the bottom, the keys as they really are in our game
--- (CLAUDE.md section 1): Space dash (a catcher's Space lunges), Q power (E the other one), click stab (catchers), Alt
+-- (huzz-valley/CLAUDE.md section 1): Space dash (a catcher's Space lunges), Q power (E the other one), click stab (catchers), Alt
 -- frees the mouse. On a touch screen only the dash button and the power tiles show (the rest are keyboard only).
 -- It opens by itself the first time someone joins (once their save has loaded, in the lobby, nothing else open) and
 -- from the Menu's How to Play any time. Closing it saves the TutorialDone setting, so it never pops up again itself.
