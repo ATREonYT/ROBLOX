@@ -296,19 +296,24 @@ function handlers.GirlMoved(e)
 	end
 	local to, g = nameOf(e.to), girl.name
 	-- Caught carrying her: only promise "next runner across" when someone can still get across (critic, Oct 19:
-	-- on the last catch the game ends that frame)
-	local stolen = `{to} caught her carrier! Next runner across takes {g} back!`
-	if e.reason == "Stolen" and match then
-		local active, safe = 0, 0
-		for id, role in match.roles do
-			if role == "Runner" and match.status[id] == "Active" then active += 1 end
-			if role == "Runner" and match.status[id] == "Safe" then safe += 1 end
+	-- on the last catch the game ends that frame). Counted when the line goes out, not when she moves: two
+	-- catchers can catch the last two runners in the same frame, and the second catch comes after this event
+	-- (the sim caught it: "next runner across" on a game the catchers had just won).
+	local thisGame = match
+	local function stolen()
+		if thisGame then
+			local active, safe = 0, 0
+			for id, role in thisGame.roles do
+				if role == "Runner" and thisGame.status[id] == "Active" then active += 1 end
+				if role == "Runner" and thisGame.status[id] == "Safe" then safe += 1 end
+			end
+			if active == 0 and safe == 0 then
+				return `{to} caught the last runner!` -- (the catchers win; the Win line names who gets her)
+			elseif active == 0 and safe == 1 and (thisGame.startRunners or 0) >= 2 then
+				return `{to} caught her carrier!` -- (the last runner standing wins her as the round ends)
+			end
 		end
-		if active == 0 and safe == 0 then
-			stolen = `{to} caught the last runner!` -- (the catchers win; the Win line names who gets her)
-		elseif active == 0 and safe == 1 and (match.startRunners or 0) >= 2 then
-			stolen = `{to} caught her carrier!` -- (the last runner standing wins her as the round ends)
-		end
+		return `{to} caught her carrier! Next runner across takes {g} back!`
 	end
 	local messages = {
 		Hero = { `{to} won {g} over! Keep her safe!`, GOLD },
@@ -321,7 +326,9 @@ function handlers.GirlMoved(e)
 	}
 	local m = messages[e.reason]
 	if m then
-		task.delay(if e.reason == "Hero" then 1.4 else 0, announce, m[1], m[2], e.reason == "Hero")
+		task.delay(if e.reason == "Hero" then 1.4 else 0, function()
+			announce(if type(m[1]) == "function" then m[1]() else m[1], m[2], e.reason == "Hero")
+		end)
 	end
 end
 
@@ -1238,6 +1245,15 @@ end
 -- knife the way we have the catcher facing (or along their dive), and caps the reach at an honest one plus
 -- Touch.CapSlack. Shields, the safe start zone and a fresh rescue protect as in stabNear. True when it holds (a hit,
 -- or a Shield took it); false sends the caller to the server's own test (chaseClaim).
+-- A body's speed as its own screen reports it, flat and capped at the dive's speed (Config.Lunge.Speed).
+local function cappedSpeed(v: Vector3?): Vector3
+	if typeof(v) ~= "Vector3" then return Vector3.zero end -- (a body with no speed, e.g. in the sim)
+	local flat = Vector3.new(v.X, 0, v.Z)
+	local cap = Config.Lunge.Speed
+	if flat.Magnitude ~= flat.Magnitude then return Vector3.zero end -- (NaN)
+	return if flat.Magnitude > cap then flat.Unit * cap else flat
+end
+
 local function screenHit(id, me: BasePart, runnerId: number, shown, knife, along: Vector3?): boolean
 	local now = os.clock()
 	local root = match.status[runnerId] == "Active" and not frozen[runnerId]
@@ -1260,7 +1276,9 @@ local function screenHit(id, me: BasePart, runnerId: number, shown, knife, along
 		now = now,
 		back = TouchHit.lookBack(if okPing and type(ping) == "number" then ping else 0, T),
 		shape = shape, knife = knife, along = along,
-		face = me.CFrame.LookVector, vel = me.AssemblyLinearVelocity,
+		-- (the speed comes from the catcher's own screen: flat, and never faster than a dive, so a faked speed can't
+		-- stretch the reach; critic, Oct 19)
+		face = me.CFrame.LookVector, vel = cappedSpeed(me.AssemblyLinearVelocity),
 	}, T) then
 		return false
 	end

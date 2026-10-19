@@ -14,7 +14,12 @@ The lobby side (one lobby per map, paint, his new lobby): [lobby.md](lobby.md). 
   (`RoundRules` "LastStanding", GirlMoved "Last"). No runners left = catchers win. A game that started with one
   runner (practice with the bot, or 1 runner vs 1 catcher) still ends after `Crossings` 3 clean rounds in a row.
   `MaxRounds` 20 is only a safety net (the runners left win). HUD: "ROUND n · N RUNNERS LEFT". Loop audit: games
-  with 4-12 players last about 4-5 min, 6-9 rounds; a few hit the 20-round net.
+  with 4-12 players last about 4-5 min, 6-9 rounds; a few hit the 20-round net. **Known gap (Oct 19):** an AFK
+  player drawn as the only catcher catches nobody, so the game runs all 20 rounds (about 11 min, runners crossing
+  an empty field); nothing swaps him out yet (audit "6 + 1 AFK": 4 of 23 games hit the net; a traced run showed
+  the AFK catcher's game going all 20 rounds, and a lone real catcher against 5 runners sometimes taking 13-20).
+  The sim's "AFK runner" scenario lets its AFK bot play only when he is the only catcher, so it tests the AFK
+  runner, not this gap.
 - `lune run huzz-valley/tools/sim/round_sim.luau audit` prints stage times, waiting and win rates by player count,
   on the real map size.
 - Lineup 3 s, ChooseTime 6, ShowTime 2, RoundEndPause 2.5, HeroTime 30, RoundTime 60. One runner on the line skips
@@ -106,7 +111,8 @@ The lobby side (one lobby per map, paint, his new lobby): [lobby.md](lobby.md). 
 - **A catcher who catches her carrier keeps her only until the next runner gets across** (owner Oct 19, rule
   "Reclaimed"): she walks behind him (on foot, as before: `CarryService.follow`), the line says "X caught her carrier!
   Next runner across takes <girl> back!" (only while someone can still get across: on the catch that ends the game it
-  says "X caught the last runner!", or just "X caught her carrier!" when the last runner standing wins), and the next runner to reach the safe zone (any round) takes her ("X made
+  says "X caught the last runner!", or just "X caught her carrier!" when the last runner standing wins; counted when the
+  line goes out, so two catches in the same frame count both), and the next runner to reach the safe zone (any round) takes her ("X made
   it across and took <girl> back!"). Runners already across don't. A Hero who makes it still takes her first.
 - **A catchers' win (nobody left):** she goes to the catcher who caught the LAST runner (owner Oct 19;
   `RoundRules` `lastCatchBy`; the HUD says "X caught the last runner and wins <girl>"). If the clock or a fall caught
