@@ -12,8 +12,10 @@ return {
 	Roll = { Time = 7.5, SpinTime = 5.5, Cells = 30, Stop = 26 },
 	-- Huss Valley's loop, one to one (owner's call; Shared/RoundRules): runners line up on their safe line,
 	-- one random runner picks HERO (crosses alone first) or CHICKEN, then everyone runs. Stabbed runners
-	-- go down and can be rescued; anyone still down at the end joins the catchers. Runners win by getting
-	-- everyone across Crossings rounds in a row; catchers win when no runners are left.
+	-- go down and can be rescued; anyone still down at the end joins the catchers. Rounds go on until one
+	-- runner is left: they win the game and the girl (owner, Oct 19: "make the round not be capped at 3").
+	-- Catchers win when no runners are left. Crossings = clean rounds in a row that end a practice game
+	-- (one runner and the bot).
 	Crossings = 3,
 	LineupTime = 3, -- runners stand in a row on their line, facing across (the round's goal shows; was 3.5)
 	-- The pick (owner's call): the camera sweeps the line, a highlight hops between runners for Roulette
@@ -37,7 +39,7 @@ return {
 	-- seconds ("Hurry!"). A Hero who stays in the start zone for HeroWait seconds loses the solo run: everyone runs.
 	Hurry = { Wait = 5, Time = 6, HeroWait = 6 },
 	GameOverTime = 8,
-	MaxRounds = 12, -- safety net: catchers win
+	MaxRounds = 20, -- safety net only (runners who never get caught): the runners left win, she goes to her carrier
 	-- Rescue (as in Huss Valley): a runner still out on the field stands within Range studs of a downed
 	-- runner for Time seconds to get them back up.
 	-- Rescued runners can't be stabbed for Shield seconds (no camping the downed).

@@ -1353,7 +1353,9 @@ report("4 players, 20 minutes", s, p, {
 	{ "all four powers used", function(x) return x.powers.HeartShield and x.powers.RizzRush and x.powers.LoveTrap and x.powers.CharmWave end },
 	{ "every round has a pick", function(x) return x.picks >= 6 end },
 	{ "Hero runs happen and some make it", function(x) return x.heroes >= 2 and x.heroSurvived >= 1 end },
-	{ "catchers win some", function(x) return x.catcherWins >= 1 end },
+	-- (last runner standing, Oct 19: with 3 runners a runner nearly always wins; catchers win only by catching
+	-- the last two in one round, so this checks runners are being caught rather than catchers winning)
+	{ "runners get caught and join the catchers", function(x) return x.tags >= 5 and x.wins >= 3 end },
 })
 s, p = simulate({ players = 6, seconds = 1500, seed = 7, config = function(c) c.Stab.Range = 9 end })
 report("6 players, 25 minutes", s, p, {
@@ -1380,9 +1382,9 @@ s, p = simulate({ players = 4, seconds = 300, seed = 9 })
 report("4 players: no Practice Bot", s, p, { { "the bot stays out of games with a catcher", function(x) return (x.botMoves or 0) == 0 end } })
 s, p = simulate({ players = 4, cheater = true, seconds = 300, seed = 5 })
 report("a runner walks round the start wall", s, p, { { "games finish", function(x) return x.wins >= 1 end } })
-s, p = simulate({ players = 5, seconds = 500, seed = 6, leaveAt = 60, joinAt = 50 })
+s, p = simulate({ players = 5, seconds = 900, seed = 6, leaveAt = 60, joinAt = 50 })
 report("holder leaves, someone joins mid-game", s, p, { { "games still finish", function(x) return x.wins >= 2 end } })
-s, p = simulate({ players = 4, afk = 1, seconds = 600, seed = 2 })
+s, p = simulate({ players = 4, afk = 1, seconds = 1000, seed = 2 })
 report("an AFK runner (never moves)", s, p, {
 	{ "games finish", function(x) return x.wins >= 2 end },
 	{ "the clock drops when only the AFK runner is left (Hurry)", function(x) return x.hurries >= 1 end },
@@ -1391,7 +1393,7 @@ report("an AFK runner (never moves)", s, p, {
 	{ "Hero runs rarely run out of time: an AFK Hero loses it early", function(x) return x.heroTimeouts <= 1 end },
 })
 print(string.format("   (hurries %d, AFK Heroes cut short %d, last runner called %d, boosted frames %d)", s.hurries, s.heroEarly, s.lastAlone, s.lastBoosted or 0))
-s, p = simulate({ players = 7, seconds = 700, seed = 12, chaos = true })
+s, p = simulate({ players = 7, seconds = 1400, seed = 12, chaos = true }) -- (games run longer since last runner standing)
 report("edge cases (bug hunt, Oct 19)", s, p, {
 	{ "games still finish", function(x) return x.wins >= 2 end },
 	{ "the admin's NEXT GAME Secret girl plays her cutscene, twice", function(x) return (x.reveals or 0) >= 2 end },

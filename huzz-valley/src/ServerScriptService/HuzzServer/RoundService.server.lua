@@ -285,6 +285,7 @@ function handlers.GirlMoved(e)
 	local messages = {
 		Hero = { `{to} won {g} over! Keep her safe!`, GOLD },
 		First = { `{to} got there first and won {g} over! Keep her safe!`, GOLD },
+		Last = { `{to} is the last runner standing and wins {g}!`, GOLD },
 		Stolen = { `{to} stole {g}!`, RED },
 		Reassigned = { `{to} has {g} now`, RED },
 		Dropped = { `{g} floats back up!`, GOLD },
@@ -396,7 +397,7 @@ end
 
 function handlers.Streak(e)
 	State:SetAttribute("Streak", e.count)
-	if e.count < e.goal then
+	if (match.startRunners or 0) < 2 and e.count < e.goal then -- (only a practice game counts clean rounds)
 		announce(`Clean round! {e.count} of {e.goal} in a row`, GOLD)
 	end
 end
@@ -676,6 +677,8 @@ local function runRound()
 	State:SetAttribute("Round", match.round)
 	State:SetAttribute("Goal", goalName)
 	State:SetAttribute("Streak", match.streak)
+	State:SetAttribute("RunnersLeft", #Rules.idsWithRole(match, "Runner"))
+	State:SetAttribute("LastStanding", (match.startRunners or 0) >= 2)
 	State:SetAttribute("PickId", 0)
 	State:SetAttribute("PickChoice", "")
 	State:SetAttribute("HeroResult", "")

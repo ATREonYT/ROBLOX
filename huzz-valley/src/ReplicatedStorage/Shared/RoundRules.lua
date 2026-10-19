@@ -12,8 +12,12 @@
 	    (stand next to them). Anyone still down when the round ends joins the catchers.
 	  - One second chance per game (owner): a runner can be rescued once; caught again after that, nobody can
 	    help them up ("Caught" carries final = true) and they join the catchers when the round ends.
-	  - Runners win by getting EVERYONE across `crossings` (3) rounds in a row; a round where anyone
-	    ends up caught resets the streak. Catchers win when no runners are left (or after maxRounds).
+	  - Last runner standing (owner, Oct 19: "make the round not be capped at 3, but go on until there is one
+	    person left in the runners and he wins the game and wins the girl"): rounds go on, anyone caught joins
+	    the catchers, and when a round ends with exactly one runner left (of a game that started with 2+),
+	    that runner wins the game and the girl ("LastStanding"), wherever she was. Catchers win when no
+	    runners are left. A game that started with ONE runner (practice with the bot) still ends after
+	    `crossings` (3) clean rounds in a row. maxRounds is only a safety net: the runners left win then.
 	The girl (floats over the map until someone wins her over):
 	  - A Hero who survives the solo crossing gets her: she comes down onto their shoulders (from the sky,
 	    or from the catcher who stole her).
@@ -50,6 +54,7 @@ local function idsWithRole(s, role)
 	table.sort(list) -- deterministic for tests
 	return list
 end
+RoundRules.idsWithRole = idsWithRole
 
 local function pick(s, list)
 	if #list == 0 then
@@ -125,7 +130,8 @@ function RoundRules.newGame(ids, catcherId, opts)
 		lastHero = nil, -- the latest Hero who made it across
 		chickens = {}, -- runners who chose Chicken this game and never went Hero (they can't be handed the girl)
 		brave = {}, -- runners who went Hero this game
-		streak = 0, -- full crossings in a row
+		streak = 0, -- full crossings in a row (the win only for a game that started with one runner)
+		startRunners = nil, -- runners when round 1 started
 		goal = opts.crossings or 3,
 		over = false,
 		team = nil,
@@ -161,6 +167,9 @@ function RoundRules.startRound(s)
 	if #runners == 0 then
 		finish(s, "Catchers", "AllCaught", events)
 		return events
+	end
+	if s.round == 1 then
+		s.startRunners = #runners -- (2+ = last runner standing wins; 1 = practice, 3 clean rounds)
 	end
 	-- Every catcher left the server: a runner (not her carrier) takes over.
 	if #runners >= 2 and #idsWithRole(s, "Catcher") == 0 then
@@ -381,12 +390,21 @@ function RoundRules.endRound(s, timedOut)
 		table.insert(events, { type = "StreakLost", count = lost })
 		table.insert(events, { type = "JoinCatchers", ids = downed })
 	end
-	if s.streak >= s.goal then
-		finish(s, "Runners", "Crossed", events)
-	elseif safe == 0 then
+	if safe == 0 then
 		finish(s, "Catchers", "AllCaught", events)
+	elseif (s.startRunners or 0) >= 2 and safe == 1 then
+		local last = nil
+		for _, id in idsWithRole(s, "Runner") do
+			if s.status[id] == "Safe" then
+				last = id
+			end
+		end
+		moveGirl(s, last, "Last", events) -- the last runner standing wins her, wherever she was
+		finish(s, "Runners", "LastStanding", events)
+	elseif (s.startRunners or 0) < 2 and s.streak >= s.goal then
+		finish(s, "Runners", "Crossed", events)
 	elseif s.round >= s.maxRounds then
-		finish(s, "Catchers", "MaxRounds", events)
+		finish(s, "Runners", "MaxRounds", events)
 	end
 	return events
 end

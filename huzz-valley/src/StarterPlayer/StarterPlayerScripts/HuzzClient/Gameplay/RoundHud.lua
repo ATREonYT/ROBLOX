@@ -1,7 +1,7 @@
 --[[
 	The in-round screen, laid out like Huss Valley's top of screen (docs/feel-study.md gaps 1, 2, 10; owner: "make
 	it feel like the references ... more smooth"). Text only at the top, no panels:
-	  - "ROUND 2 · 1 OF 3 IN A ROW" small (green round, white streak), in Roblox's top-bar row (IgnoreGuiInset);
+	  - "ROUND 2 · 4 RUNNERS LEFT" small (a practice game with one runner: "1 OF 3 IN A ROW") (green round, white streak), in Roblox's top-bar row (IgnoreGuiInset);
 	  - under it THE MESSAGE LINE: the latest news, big (fits a box 40% of the screen wide, text 14 to 27),
 	    white with a dark outline, swapped instantly. Its words take the news colour (green safe / saved, red
 	    caught, white news, the girl's rarity colour) while Theme.MessageColour is true (the one switch; false =
@@ -361,7 +361,10 @@ function M.start()
 		if inGame then
 			local goal = State:GetAttribute("Crossings") or Config.Crossings
 			local streak = State:GetAttribute("Streak") or 0
-			roundLabel.Text = `ROUND {State:GetAttribute("Round") or 0}<font color="#FFFFFF">  ·  {streak} OF {goal} IN A ROW</font>`
+			local left = State:GetAttribute("RunnersLeft") or 0
+			roundLabel.Text = if State:GetAttribute("LastStanding")
+				then `ROUND {State:GetAttribute("Round") or 0}<font color="#FFFFFF">  ·  {left} RUNNERS LEFT</font>`
+				else `ROUND {State:GetAttribute("Round") or 0}<font color="#FFFFFF">  ·  {streak} OF {goal} IN A ROW</font>`
 			local myRole, myStatus = player:GetAttribute("HuzzRole"), player:GetAttribute("HuzzStatus")
 			local holding = State:GetAttribute("HolderId") == player.UserId
 			local word, line

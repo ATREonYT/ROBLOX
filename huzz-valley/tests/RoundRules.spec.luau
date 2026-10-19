@@ -275,28 +275,64 @@ test("runners still out at the timeout are caught", function()
 	eq(s.streak, 0)
 end)
 
-test("3 full crossings in a row: runners win; the Hero with her keeps her", function()
-	local s = game(3)
-	Rules.pickRunner(s)
-	Rules.choose(s, 2, true)
-	Rules.reachSafe(s, 2)
-	for _ = 1, 3 do
+test("no 3-round cap: clean rounds go on while 2+ runners are left", function()
+	local s = game(4)
+	for _ = 1, 5 do
 		allSafe(s)
-		local e = Rules.endRound(s)
-		if s.over then
-			local w = has(e, "Win")
-			eq(w.team, "Runners")
-			eq(w.winner, 2)
-			eq(w.reason, "Crossed")
-			return
-		end
+		Rules.endRound(s)
+		eq(s.over, false, "still going")
 		Rules.startRound(s)
 	end
-	error("runners should have won after 3")
+end)
+
+test("last runner standing wins the game and the girl, even from a catcher", function()
+	-- (owner, Oct 19: "go on until there is one person left in the runners and he wins the game and wins the girl")
+	local s = game(4)
+	s.holder = 1 -- a catcher has her (stolen earlier)
+	Rules.tag(s, 1, 2)
+	Rules.tag(s, 1, 3)
+	Rules.reachSafe(s, 4)
+	local e = Rules.endRound(s)
+	local w = has(e, "Win")
+	eq(w.team, "Runners")
+	eq(w.reason, "LastStanding")
+	eq(w.winner, 4)
+	eq(s.holder, 4)
+	eq(has(e, "GirlMoved").reason, "Last")
+end)
+
+test("last runner standing: one caught per round, the game ends when one is left", function()
+	local s = game(4) -- 1 catcher, 3 runners
+	Rules.tag(s, 1, 2)
+	allSafe(s)
+	Rules.endRound(s)
+	eq(s.over, false)
+	Rules.startRound(s)
+	eq(s.roles[2], "Catcher")
+	Rules.tag(s, 1, 3)
+	allSafe(s)
+	local w = has(Rules.endRound(s), "Win")
+	eq(w.winner, 4)
+	eq(w.reason, "LastStanding")
+end)
+
+test("practice (one runner): 3 clean rounds in a row still win", function()
+	local s = game(2)
+	for i = 1, 3 do
+		allSafe(s)
+		local e = Rules.endRound(s)
+		if i < 3 then
+			eq(s.over, false)
+			Rules.startRound(s)
+		else
+			eq(has(e, "Win").reason, "Crossed")
+			eq(has(e, "Win").winner, 2)
+		end
+	end
 end)
 
 test("runners win with nobody holding her: the last Hero, else a runner who made it", function()
-	local s = game(3, { crossings = 1 })
+	local s = game(2, { crossings = 1 })
 	allSafe(s)
 	local e = Rules.endRound(s)
 	local w = has(e, "Win")
@@ -325,8 +361,6 @@ test("Chicken still wins her: the one who chose Chicken and gets across first ta
 	Rules.choose(s, chicken, false)
 	Rules.reachSafe(s, chicken)
 	eq(s.holder, chicken)
-	allSafe(s)
-	eq(has(Rules.endRound(s), "Win").winner, chicken)
 end)
 
 test("Chicken still wins her: someone else across first takes her instead", function()
@@ -385,13 +419,12 @@ test("catchers win holding her: the thief keeps her", function()
 	eq(w.winner, 4)
 end)
 
-test("max rounds: catchers win", function()
-	local s = game(3, { maxRounds = 1 })
-	Rules.tag(s, 1, 2)
-	Rules.reachSafe(s, 3)
+test("max rounds (safety net): the runners left win", function()
+	local s = game(4, { maxRounds = 1 })
+	allSafe(s)
 	local e = Rules.endRound(s)
 	eq(has(e, "Win").reason, "MaxRounds")
-	eq(has(e, "Win").team, "Catchers")
+	eq(has(e, "Win").team, "Runners")
 end)
 
 test("no catchers left: a runner (not her carrier) takes over", function()

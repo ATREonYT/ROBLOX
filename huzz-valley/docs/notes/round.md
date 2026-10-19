@@ -7,7 +7,14 @@ The lobby side (one lobby per map, paint, his new lobby): [lobby.md](lobby.md). 
 ## Stages and times
 - Lobby: `VoteTime` 30 s, `IntermissionTime` 25 s ("a bit more, so people can buy things, not too long").
 - Stages: Waiting → Voting → Rolling (girl roller) → per round: Lineup → Picking (HERO/CHICKEN, 6 s) → Chosen →
-  HeroRun → Countdown → Running → RoundOver; GameOver. Runners win with everyone across 3 rounds in a row.
+  HeroRun → Countdown → Running → RoundOver; GameOver.
+- **Last runner standing** (owner Oct 19: "make the round not be capped at 3, but go on until there is one person left
+  in the runners and he wins the game and wins the girl"): rounds go on, caught runners join the catchers, and the
+  round that ends with one runner left (game started with 2+) makes them the winner and moves the girl to them
+  (`RoundRules` "LastStanding", GirlMoved "Last"). No runners left = catchers win. A game that started with one
+  runner (practice with the bot, or 1 runner vs 1 catcher) still ends after `Crossings` 3 clean rounds in a row.
+  `MaxRounds` 20 is only a safety net (the runners left win). HUD: "ROUND n · N RUNNERS LEFT". Loop audit: games
+  with 4-12 players last about 4-5 min, 6-9 rounds; a few hit the 20-round net.
 - `lune run huzz-valley/tools/sim/round_sim.luau audit` prints stage times, waiting and win rates by player count,
   on the real map size.
 - Lineup 3 s, ChooseTime 6, ShowTime 2, RoundEndPause 2.5, HeroTime 30, RoundTime 60. One runner on the line skips
