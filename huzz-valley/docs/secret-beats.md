@@ -1,40 +1,84 @@
-# Secret cutscene: beat sheet of the owner's reference
+# Secret cutscene: beat sheet
 
-Source: `design/vfx/ref3/vfx-reference-oct17.mp4` (Oct 17, the "castorice" effect, filmed in Studio). Only the
-first ~14 s are the effect; the rest is the TikTok end card. Frames pulled at 4 fps, cropped to Studio's 3D view
-(897 x 434 at x 8, y 88). Times are the reference's seconds. The right column is where our cutscene
-(`Shared/SecretReveal`, 14.5 s) puts the same beat. Our story differs in one way: there is no character at the
-start. The girl *arrives*: she appears at the impact, lands, poses, and at the end rises to her place over the map.
+The Secret girl's arrival (`Shared/SecretReveal` = timing and camera, `Gameplay/SecretReveal` = effects). Owner,
+Oct 19: "work on the secret animation a bit more, make it more detailed, especially the beams, and then the
+animation, make the duration of it logical". Since Oct 19 it is **10.0 s** (was 14.5 s). Times below are seconds
+from `RevealAt` (the server stamps it on the showcase after streaming her spot in). They are the numbers in
+`Shared/SecretReveal` (also listed there as `SecretReveal.BEATS`); change them there, then here.
 
-| Ref time | Camera | What's on screen | Colours | Ours |
-|---|---|---|---|---|
-| 0.0-0.4 | Close, behind the character's shoulder, low | Character from behind. Night: a dark navy sky with blue nebula clouds and stars, black ground | navy 10/14/40, nebula blue 40/60/160 | 0.0-0.75: wide shot of the spot. It turns to night (cut), with nebula haze, stars and drifting motes |
-| 0.5 | Same | A bright pink-white starburst at her hand: thin radial spikes and a lens glint | white core, pink 255/120/220 | 0.5: a small starburst at the orb |
-| 0.75-1.0 | Medium-wide, low, static | The first beam strikes down: a thick, slightly curved, leaning violet beam with a white core. Blue-white crystal shards fly | violet 160/60/255, core white-pink | 0.75: beam A strikes, shards fly |
-| 1.25 | Same | One beam with a jagged white lightning core; pink and cyan motes everywhere; a red slash starts | magenta 200/60/255, cyan motes 120/220/255 | 1.25: slashes start |
-| 1.5-1.75 | Same, a touch closer | The beam turns into a "ladder" of glowing blocks. Several long red-pink slashes cross the screen | hot pink 255/60/140 slashes | 1.4-1.95: ladder rungs climb beam A; 4 slashes |
-| 2.0 | Same | Twin beams, both leaning right, jagged white cores in wide violet haze. Purple smoke on the ground | violet haze, white cores | 1.9: beam B strikes (twin) |
-| 2.25-2.5 | Same | Two big glowing pink-red eye slits between the beams, a horizontal glint line through them, a soft halo | eyes 255/60/120, glint pink | 2.15-2.75: eyes, glint line, halo |
-| 2.75 | Same | IMPACT: a pink-red radial burst fills the screen (chromatic edges), big white four-point sparkles at the sides, light rays | pink-red 220/40/90, white | 2.75: impact frame (0.09 s), rays, four-point sparkles, she appears in white |
-| 3.0 | Same | A soft purple-white bloom haze washes over half the screen and fades | lilac 200/170/255 | 2.85-3.3: bloom haze; she drops and lands (3.15) |
-| 3.25-4.0 | Wide, low, static | Calm: the character on dark ground, a band of blue nebula over the horizon, star field | navy, blue | 3.3-5.65: wide low shot of her, purple ground smoke, motes |
-| 4.25-5.5 | Same, slight drift | She swings: short pink crescent slashes, purple smoke rolling on the ground, glowing motes | magenta slashes, purple smoke | 4.4, 4.9, 5.3: crescent slashes round her |
-| 5.75-6.0 | Very close, over the shoulder | Shoulder and hair fill the frame; streaks past | | 5.7-6.2: close low over-the-shoulder shot |
-| 6.25-6.75 | Wide, low | Shards and pink motes falling all over the frame; a bright star flare with rays at 6.75 | cyan and pink motes | 6.25-6.95: wide shot, drifting shards; star flare at 6.75 |
-| 7.0-9.25 | Medium, slow push | Speed streaks: dozens of long violet-pink lines rushing to one point by her, petals and motes flying | violet 170/80/255 to pink | 7.0-9.35: speed-streak push |
-| 9.5-9.75 | Close-up on her face | Face and hair, a pink eye glint, chromatic edges, a rainbow ring | | 9.4-9.95: close-up, eye glint |
-| 10.0 | | Almost white bloom for one beat | white-lilac | 10.0: a soft bloom swell (no white screen: kid-safe) |
-| 10.25-10.75 | Wide | Long red-pink streak lines sweep across diagonally | red-pink 255/50/120 | 10.1-10.95: red streak lines |
-| 11.0-11.25 | Close, among them | A swarm of blue-white and pink butterflies, purple haze | blue 160/200/255 | 11.0: butterfly swarm |
-| 11.5-12.0 | Medium | A pink star flare grows, with lightning tendrils round it | pink-white | 11.5-12.2: star flare and crackle at her |
-| 12.25 | Same | A big red-white burst with radial red rays (the second impact) | red 230/30/70, white | 12.25: the burst (rays, flare, a brightness pulse) |
-| 12.5-13.25 | Same | A pink explosion cloud with shards, butterflies and tendrils, fading | magenta 230/60/200 | 12.3-13.3: pink burst cloud; she rises from 12.4 |
-| 13.5-13.75 | Wide | Back to the calm night: blue nebula, stars, fading | navy, blue | 13.4-14.5: night clears and the sun comes up; 14.0-14.5 camera back to you |
+## Why 10 seconds
 
-Notes for matching:
-- Density: about 40-80 glowing motes and 10-20 shards are always on screen in the reference, plus nebula haze in
-  the sky. Ours keeps motes, shards, haze and a few butterflies going all through the night part.
-- Flashes: the reference flashes about 4 times in 14 s (0.5, 2.75, 10.0, 12.25), never twice within a second.
-  Ours keeps those beats as soft pulses at least a second apart (kid-safe: at most 1 a second), measured on the film.
-- What Roblox can't do like the reference: chromatic aberration, real volumetric beams, motion blur, a
-  full-screen white flash (not kid-safe anyway).
+- Everyone in the server watches it, between rounds, and nobody can skip it. Every second is a second the whole
+  lobby waits.
+- Roughly how long other reveals take (from memory of playing them, not measured): Roblox egg hatches and summons
+  3 to 6 s, the big gacha games' top-rarity reveals about 7 to 10 s before the character card (and those can be
+  skipped). The owner's reference video is about 14 s, but it is a showcase clip, not a reveal people wait through.
+- 14.5 s dragged: the old film had about 4 s between the landing and the speed streaks where almost nothing
+  happened on a dark screen.
+- Under about 9 s the beams lose their build (few, then many, then converging needs about 0.5 to 0.8 s a step) and
+  her name is up too briefly to read (kids read slowly: it stays up 1.8 s).
+- So: 3.4 s of build to the burst, about 4.2 s with her (landing, name, push into her face), about 1.9 s of finale
+  and her rise, and the 0.5 s hand-back.
+
+## The beats (time → event)
+
+Sound column: the cue the code plays today (`Sfx.play`); the other rows are suggestions for where a sound fits.
+
+| Time (s) | Part | Event | Sound today |
+|---|---|---|---|
+| 0.00 | anticipation | Cut to her spot; night falls on your screen (0.15 s), motes and crystals drift, haze in the sky | |
+| 0.25 | anticipation | A small orb of light appears; sparks rush into it, four lights circle it | `secret_riser` |
+| 0.45 | anticipation | A little starburst on the orb | |
+| 0.55 / 0.68 / 0.80 | build | Three hair-thin light threads fall from the sky (few) | |
+| 0.95 | build | **Beam A strikes** (camera bump, sparks shower) | |
+| 1.30 / 1.45 / 1.60 / 1.75 | build | Four red-pink slashes cross the screen | |
+| 1.35 to 2.05 | build | Glowing rungs climb beam A | |
+| 1.70 | build | **Beam B strikes**: twin beams | |
+| 2.10 to 2.50 | build | Six more beams strike in a ring, one every 0.08 s (many) | |
+| 2.50 | build | Two big glowing eyes open between the twins | |
+| 2.85 to 3.30 | converge | Every beam swings its foot into the eyes' point, pinching thin, the strands winding faster | |
+| 3.30 | hit-stop | Everything nearly freezes (0.12 s) | (silence) |
+| 3.42 | **BURST** | Manga frame (0.09 s), shockwave dome + ring on the floor + ring facing you, rays, sparkles; she appears in white | `secret_impact` |
+| 3.80 | land | She lands: ring, dust, smoke; the magic circle lights up under her | `secret_land` |
+| 4.00 / 4.30 / 4.60 | reveal | Crescent slashes swirl round her | |
+| 4.50 | reveal | **Her NAME** on screen (SECRET and 7 stars over it, a line draws out under it) and a star flare behind her head; the message line says "SECRET: name!" | |
+| 5.10 to 6.35 | reveal | Speed streaks rush past while the camera pushes into her face | |
+| 6.15 | reveal | Eye glint in the close-up | |
+| 6.30 | reveal | Name card gone | |
+| 6.40 | finale | **The one cut** (under a soft bloom swell) to wide; red streak lines sweep across (6.45 to 6.85) | |
+| 6.55 | finale | Butterfly swarm bursts out round her | |
+| 6.85 to 7.60 | finale | A pink star flare grows on her, crackling | |
+| 7.60 | **LAST BURST** | Rays, a ring facing you, a ring on the floor, pink cloud, shards | `secret_impact` |
+| 7.75 | rise | She floats up to her place over the map (her name over her head comes back at 8.05) | |
+| 8.30 to 9.50 | rise | The sun comes back up, the night haze fades | |
+| 9.50 | hand-back | Dip to black (0.2 s) | |
+| ~9.70 | hand-back | Under black: the camera goes back to you; black lifts (0.3 s) | |
+| 10.00 | end | The game goes on | |
+
+Flashes (kid-safe, at most one a second): soft brightness pulses only at 3.42, 6.40 (weaker) and 7.60, measured on
+the film with `tools/preview/flash_check.py`.
+
+## The beams (the owner's focus)
+
+`SecretReveal.PILLARS` lists all 11 (where, how tall, how wide, lean, bend, strands, filament, colour) and
+`SecretReveal.LAYERS` the five layers of each. Each beam is a stack of plain Beams (no pictures needed):
+
+- outer haze, glow, inner glow, core and a white-hot middle, each narrower and less see-through, so the flat strips
+  add up to a soft falloff; the outer three scroll the owner's beam-glow picture at different speeds once uploaded;
+- three bright pulses climbing the glow layers (their Transparency is rebuilt every frame), faster as they converge;
+- strands winding round the big ones (a helix of short curved Beams), dimmer where they pass behind;
+- a jagged white filament on the twins that re-bends every 0.11 s and glides there (a shimmer, never a strobe);
+- sparks shedding off, a pool of light on the floor, a spark shower where each strikes; the beams light the floor;
+- a slow width breath (5%), a lean to the right like the reference, and a bend.
+
+## Against the owner's reference (`design/vfx/ref3`, Oct 17)
+
+What we kept from it, compressed: the starburst, the striking beam, the ladder, the twin beams, the eyes, the
+impact frame, the calm wide shot, the crescents, the speed-streak push into the face, the swell, the red lines, the
+butterflies, the growing flare, the second burst, back to night. What we cut: its over-the-shoulder shot and its
+second star flare (5.7 to 7.0 s), which were the slowest part. What we added: her name, the magic circle, the
+shockwaves, the converging beams. Side by side: `docs/previews/secret-vs-ref3.jpg` (beat by beat) and
+`secret-vs-ref3.mp4` (the reference re-timed to our beats).
+
+What Roblox can't do like the reference: chromatic aberration, real volumetric beams, motion blur, a full-screen
+white flash (not kid-safe anyway).

@@ -10,7 +10,8 @@
 // env {sky (zenith), horizon, fog [near, far], amb (ambient colour), stars (0-1), dim} (sky colour and daylight strength for that frame), fov (degrees, default 70), grades [{b, c, s, tint}] (ColorCorrectionEffects in order: Brightness
 // added, Contrast, Saturation, TintColor multiplied, drawn over everything like Roblox's), overlay {bg, lines [{a (deg),
 // w, len, c, x, y (offsets)}], fade [[pos, transparency]...]} (a full-screen ScreenGui frame: lines in a 2400 px square centred on the
-// screen, each from the square's edge inwards, see Gameplay/SecretReveal's impact frame). Boxes may add sh ("ball"),
+// screen, each from the square's edge inwards, see Gameplay/SecretReveal's impact frame; bg optional; also rects, texts and dim:
+// ScreenGui frames and TextScaled text in 1280 x 720 pixels, and a black fade, drawn in the page). Boxes may add sh ("ball"),
 // n (Neon: unlit), a (opacity), add (additive) and e (0-1: a white Highlight fill); sh "cyl" is a Roblox Cylinder
 // (round along its X axis). Ribbons may add u (a texture coordinate per point, wrapping: Beam TextureMode Wrap).
 // labels [{p, text, h (studs tall), c, o (outline colour), a (opacity)}]: BillboardGui text, camera-facing, Gotham-like.
@@ -400,7 +401,8 @@ window.draw = (f) => {
   if (o) {
     const ctx = overlay.getContext('2d');
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.fillStyle = o.bg; ctx.fillRect(0, 0, ${W}, ${H});
+    ctx.clearRect(0, 0, ${W}, ${H});
+    if (o.bg) { ctx.fillStyle = o.bg; ctx.fillRect(0, 0, ${W}, ${H}); }
     for (const l of asList(o.lines)) {
       const a = l.a * Math.PI / 180, r = 1200 - l.len / 2;
       const x = l.x ?? 1200 + Math.round(Math.sin(a) * r), y = l.y ?? 1200 - Math.round(Math.cos(a) * r); // (offsets in the square)
@@ -412,6 +414,34 @@ window.draw = (f) => {
       ctx.fillStyle = gr;
       ctx.fillRect(-l.w / 2, -l.len / 2, l.w, l.len);
     }
+    // ScreenGui frames and text (1280 x 720 pixels, scaled to the page): rects {x, y, w, h, c, a, fade (a
+    // left-to-right UIGradient's [[pos, transparency]...])}, texts {text, x, y, w, h, c, a, o (UIStroke colour), ow
+    // (its thickness), max (UITextSizeConstraint), italic, weight} drawn like TextScaled (as big as fits the box)
+    const k = ${W} / 1280;
+    const rgba = (hexc, a) => { const c = new THREE.Color(hexc); return 'rgba(' + [c.r, c.g, c.b].map((x) => Math.round(x * 255)).join(',') + ',' + a + ')'; };
+    for (const r of asList(o.rects)) {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      if (r.fade) {
+        const gr = ctx.createLinearGradient(r.x * k, 0, (r.x + r.w) * k, 0);
+        for (const [pos, tr] of asList(r.fade)) gr.addColorStop(pos, rgba(r.c, r.a * (1 - tr)));
+        ctx.fillStyle = gr;
+      } else ctx.fillStyle = rgba(r.c, r.a);
+      ctx.fillRect(r.x * k, r.y * k, r.w * k, r.h * k);
+    }
+    for (const q of asList(o.texts)) {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      const style = (q.italic ? 'italic ' : '') + (q.weight >= 800 ? 900 : 700) + ' ';
+      let px = Math.min(q.h * 0.82, q.max || 999);
+      ctx.font = style + px + 'px Montserrat, Arial Black, Helvetica, sans-serif';
+      const wid = ctx.measureText(q.text).width;
+      if (wid > q.w * 0.98) { px *= q.w * 0.98 / wid; ctx.font = style + px + 'px Montserrat, Arial Black, Helvetica, sans-serif'; }
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
+      const x = (q.x + q.w / 2) * k, y = (q.y + q.h / 2) * k;
+      ctx.font = style + (px * k) + 'px Montserrat, Arial Black, Helvetica, sans-serif';
+      if (q.o) { ctx.strokeStyle = rgba(q.o, q.a); ctx.lineWidth = (q.ow || 2) * 2 * k; ctx.strokeText(q.text, x, y); }
+      ctx.fillStyle = rgba(q.c, q.a); ctx.fillText(q.text, x, y);
+    }
+    if (o.dim) { ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = 'rgba(0,0,0,' + o.dim + ')'; ctx.fillRect(0, 0, ${W}, ${H}); }
   }
   camera.position.set(cx, cy, cz);
   camera.lookAt(lx, ly, lz);

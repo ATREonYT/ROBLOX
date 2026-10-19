@@ -9,7 +9,8 @@
 	    to the ground, then walks or runs behind him and stands when he stops;
 	  - the big girl over the map (tag "HuzzShowcase"): she turns and floats slowly and plays the pack's Idle,
 	    so she reads as alive on her stand, not a statue. While the Secret cutscene plays her (HuzzRevealing) her
-	    stand and stand lights are hidden on this screen and her pose is left alone.
+	    stand and stand lights are hidden on this screen and where she is is left to the cutscene; her Idle keeps
+	    playing on her joints, so she breathes and looks round while her name is up (not a statue).
 	The prize's idle and the follower's walk/run/idle are the owner's movement pack (Shared/GirlMoves:
 	ReplicatedStorage.HuzzGirlMoves, which Bootstrap fills in Studio and live), played by hand on her joints;
 	the built-in scripted ones (Shared/GirlMotion) only until that has arrived, or if it can't be read.
@@ -291,9 +292,11 @@ function M.start()
 				for _, part in sc.stand do part.LocalTransparencyModifier = if revealing then 1 else 0 end
 				for _, l in sc.lights do l.Enabled = not revealing end
 			end
-			if typeof(base) == "CFrame" and model.Parent and not revealing then
+			if typeof(base) == "CFrame" and model.Parent then
 				local S = RoundConfig.Showcase
-				model:PivotTo(base * CFrame.new(0, math.sin(now * 1.1) * S.Bob, 0) * CFrame.Angles(0, (now * S.Spin) % (2 * math.pi), 0))
+				if not revealing then
+					model:PivotTo(base * CFrame.new(0, math.sin(now * 1.1) * S.Bob, 0) * CFrame.Angles(0, (now * S.Spin) % (2 * math.pi), 0))
+				end
 				local anims = sc and GirlMoves.find(os.clock())
 				if anims then
 					sc.pack = sc.pack or GirlMoves.new(anims, sc.rootHeight)

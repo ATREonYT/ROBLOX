@@ -579,16 +579,22 @@ Owner's own words are in quotes. Read only the section you need.
   (re-run it if he sends separate files; don't redraw them with make_fx.py).
 - **Secret cutscene:** `Shared/SecretReveal` (timeline, pure) + `Gameplay/SecretReveal` (effects, camera); the server
   sets `RevealAt` and the `Reveal` stage. Test in Studio with `Config/Round.StudioTestRarity = "Secret"`.
-  14.5 s, shot by shot after the Oct 17 reference (`design/vfx/ref3`, beat sheet `docs/secret-beats.md`): a local night
-  look (Lighting/Atmosphere/Bloom/Sky/grade, put back exactly; checked) until 13.4, layered beams, eyes, rays, flares,
-  speed streaks, swarm, burst; ever-present motes/crystals/nebula. Film `motion3d/secret_scene.luau` (real module; its
-  bloom and sky are imitations) → `docs/previews/secret-cutscene.mp4`, `-slow`, `secret-vs-ref3.jpg` (`secret_vs_ref.py`),
-  `secret-vs-ref3.mp4` (`secret_vs_ref_video.sh`); flashes: `tools/preview/flash_check.py <film>`.
+  **10 s** since Oct 19 (owner: "more detailed, especially the beams ... make the duration of it logical"; was 14.5 s,
+  which dragged and everyone waits through it): 3.4 s of beams building to the burst, ~4.2 s with her (lands, her
+  NAME on screen 4.5 to 6.3, push into her face), ~1.9 s finale and rise, 0.5 s hand-back. Why, and every beat's
+  time (for sounds): `docs/secret-beats.md`. A local night look (Lighting/Atmosphere/Bloom/Sky/grade, put back
+  exactly; checked) until 8.3. **Beams** (`SecretReveal.PILLARS`, `LAYERS`): few (3 threads) → twins → a ring of 6 →
+  all converge into the eyes' point; each a stack of 5 plain Beams (haze to white-hot middle, reads with nothing
+  uploaded), pulses climbing (Transparency rebuilt per frame), helix strands, a gliding white filament, sparks, floor
+  pools. Also shockwaves (dome, floor ring, ring facing you), a magic circle under her, a violet rim, her name card
+  (`HuzzSecretName` ScreenGui, from the showcase's `GirlName` attribute); CarryAnimator keeps her Idle playing.
   Camera (owner Oct 18: "chopy", "not very logical"): one smooth move through `SecretReveal.KEYS` (monotone cubic,
-  always in front of her, follows the orb, her drop and her rise; a side swoop close to her face at 5.95, a push into
-  her face at 9.6), one cut (`CUTS`, 10.0 under the swell); FOV kicks ease (+8/+6), shake is a 4.5 Hz wobble
-  (`shakeAt`); walls pull the eye in at once, it eases back out. Check in `check_girl_fx.luau` (per-frame limits);
-  sheet `docs/previews/secret-camera.jpg` (`motion3d/secret_camera_sheet.py`). `secret-vs-ref3.*` predate this.
+  always in front of her), one cut (`CUTS` 6.4, under the swell); FOV kicks ease, shake is a 4.5 Hz wobble.
+  Checks in `check_girl_fx.luau` (camera per frame, length 8-11 s, beams few → many, name readable, beat order).
+  Film `motion3d/secret_scene.luau` (real module; bloom and sky are imitations; `SECRET_NOTEX=1` = today's look with
+  nothing uploaded) → `docs/previews/secret-cutscene.mp4`, `secret-cutscene-notex.mp4`, `secret-vs-ref3.jpg`
+  (`secret_vs_ref.py`), `secret-vs-ref3.mp4` (`secret_vs_ref_video.sh`, the reference re-timed to our beats);
+  flashes `tools/preview/flash_check.py <film>`.
   The Secret girls are **C.C. and Marin** (owner, Oct 17; `Config/GirlNames`). The owner's place streams (StreamingEnabled):
   the showcase is `ModelStreamingMode` Persistent and RoundService streams the spot in around everyone (at most 3 s,
   `ReplicationFocus` until the end) before `RevealAt`; his first Studio recording (old 7.5 s build) showed an empty

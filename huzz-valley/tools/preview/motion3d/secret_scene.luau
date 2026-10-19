@@ -8,7 +8,8 @@
 -- effect picture were uploaded (FxTexture.ready = true). Bloom is faked with a soft glow on Neon parts.
 -- The girl is a pink R6 stand-in at the showcase's 3x size, placed by the server's maths (GirlService.showcase);
 -- "you" stand 80 studs away (the camera eases back to your own view at the end). ~1 s before and after.
--- sh video.sh secret_scene.luau out.mp4   (SECRET_STILLS=1 with MOTION3D_KEEP=<dir> keeps the contact-sheet beats)
+-- sh video.sh secret_scene.luau out.mp4   (MOTION3D_KEEP=<dir> keeps the contact-sheet beats; SECRET_NOTEX=1 films
+-- today's Studio look with nothing uploaded; her name card and the dip to black are drawn too)
 local roblox = require("@lune/roblox")
 local fs = require("@lune/fs")
 local luau = require("@lune/luau")
@@ -81,6 +82,7 @@ local S = Round.Showcase
 pivot = CFrame.new(Vector3.new(0, S.Height + bodySize.Y / 2, 0) - centreOff)
 model:SetAttribute("Base", pivot)
 model:SetAttribute("RevealAt", AT)
+model:SetAttribute("GirlName", "C.C.") -- (GirlService.showcase sets her name; C.C. is one of the two Secret girls)
 
 -- "you": 80 studs from the spot, your camera behind you looking at the middle of the map
 local DIR = Vector3.new(0.35, 0, 1).Unit
@@ -142,12 +144,13 @@ local env = {
 	print = print, pcall = pcall, type = type, tostring = tostring, tonumber = tonumber, pairs = pairs, ipairs = ipairs,
 	setmetatable = setmetatable, error = error, select = select, Random = Random,
 }
-local frameGui -- (the module parents its impact-frame ScreenGui to PlayerGui; a bare Player has none, so catch it here)
+local guis = {} -- (every ScreenGui the module makes, by name: the impact frame, her name card, the dip to black)
 env.Instance = { new = function(cls, ...)
 	local i = Instance.new(cls, ...)
-	if cls == "ScreenGui" then frameGui = i end
+	if cls == "ScreenGui" then table.insert(guis, i) end
 	return i
 end }
+env.Font = roblox.Font
 -- (Lune 0.10.5's CFrame.lookAt faces the opposite way: the game gets Roblox's maths, as Rig.lookAt)
 local function lookAt(eye, at, up)
 	up = up or Vector3.new(0, 1, 0)
@@ -160,10 +163,12 @@ env.CFrame = setmetatable({ lookAt = lookAt }, { __index = roblox.CFrame })
 for _, k in { "Vector3", "Vector2", "Color3", "UDim", "UDim2", "Enum", "NumberRange", "NumberSequence", "ColorSequence", "NumberSequenceKeypoint", "ColorSequenceKeypoint" } do
 	env[k] = roblox[k]
 end
--- every effect picture as if uploaded: "Fx/<Name>" -> "rbxfx://<Name>"
+-- every effect picture as if uploaded: "Fx/<Name>" -> "rbxfx://<Name>"; SECRET_NOTEX=1 films today's Studio look
+-- instead (nothing uploaded: beams are plain layers, particles Roblox's built-in sparkle, drawn as soft dots)
+local noTex = process.env.SECRET_NOTEX == "1"
 local ImageIds = setmetatable({}, { __index = function(_, key)
 	local n = string.match(key, "^Fx/(.+)$")
-	return if n then "rbxfx://" .. n else nil
+	return if n and not noTex then "rbxfx://" .. n else nil
 end })
 local SHARED = SRC .. "/ReplicatedStorage/Shared/"
 local Shared = {
@@ -280,7 +285,7 @@ local function drawTrail(tr, now, ribbons)
 		table.insert(a, r3(1 - nsample(tr.Transparency, s)))
 		table.insert(cs, hex(csample(tr.Color, s)))
 	end
-	table.insert(ribbons, { pts = pts, w = w, a = a, c = cs[1], cs = cs, add = tr.LightEmission >= 0.5, t = texName(tr.Texture) })
+	table.insert(ribbons, { pts = pts, w = w, a = a, c = cs[1], cs = cs, add = tr.LightEmission >= 0.5, t = texName(select(2, pcall(function() return tr.Texture end))) })
 end
 
 -- ParticleEmitters, simulated from their own properties
@@ -402,7 +407,7 @@ local function drawParts(folder, boxes, sprites)
 				boxes[p] = box
 			end
 			box.CFrame, box.Size, box.Color, box.Hidden = p.CFrame, p.Size, hex(p.Color), false
-			box.Shape = if ball then "ball" else nil
+			box.Shape = if ball then "ball" elseif p.Shape == E.PartType.Cylinder then "cyl" else nil
 			if p.Material == E.Material.ForceField then
 				box.Add, box.Alpha, box.Neon = true, alpha * 0.3, true
 			elseif p.Material == E.Material.Neon then
@@ -418,23 +423,85 @@ local function drawParts(folder, boxes, sprites)
 	end
 end
 
--- the impact frame (the ScreenGui the module builds), when it's on
-local function overlayOf(folderGui)
-	if not folderGui or not folderGui.Enabled then return nil end
-	local paper = folderGui:FindFirstChildOfClass("Frame")
-	local burst = paper:FindFirstChildOfClass("Frame")
-	local lines, fade = {}, nil
-	for _, l in burst:GetChildren() do
-		if l:IsA("Frame") then
-			table.insert(lines, { a = l.Rotation, w = l.Size.X.Offset, len = l.Size.Y.Offset, x = l.Position.X.Offset, y = l.Position.Y.Offset, c = hex(l.BackgroundColor3) })
-			if not fade then
-				local gr = l:FindFirstChildOfClass("UIGradient")
-				fade = {}
-				for _, k in gr.Transparency.Keypoints do table.insert(fade, { k.Time, k.Value }) end
+-- the module's ScreenGuis, drawn over the picture (not graded, like Roblox's): the impact frame, her name card (frames
+-- and text laid out from their scale sizes on the 1280 x 720 screen, a UIScale about the card's middle, TextScaled
+-- under its UITextSizeConstraint) and the dip to black
+local function guiNamed(name)
+	for _, g in guis do
+		local ok, n = pcall(function() return g.Name end) -- (destroyed after the cleanup)
+		if ok and n == name then return g end
+	end
+	return nil
+end
+local function overlayOf()
+	local out = { rects = {}, texts = {} }
+	local any = false
+	local frameGui = guiNamed("HuzzImpactFrame")
+	if frameGui and frameGui.Enabled then
+		local paper = frameGui:FindFirstChildOfClass("Frame")
+		local burst = paper:FindFirstChildOfClass("Frame")
+		local lines, fade = {}, nil
+		for _, l in burst:GetChildren() do
+			if l:IsA("Frame") then
+				table.insert(lines, { a = l.Rotation, w = l.Size.X.Offset, len = l.Size.Y.Offset, x = l.Position.X.Offset, y = l.Position.Y.Offset, c = hex(l.BackgroundColor3) })
+				if not fade then
+					local gr = l:FindFirstChildOfClass("UIGradient")
+					fade = {}
+					for _, k in gr.Transparency.Keypoints do table.insert(fade, { k.Time, k.Value }) end
+				end
+			end
+		end
+		out.bg, out.lines, out.fade = hex(paper.BackgroundColor3), lines, fade
+		any = true
+	end
+	local nameGui = guiNamed("HuzzSecretName")
+	if nameGui and nameGui.Enabled then
+		local card = nameGui:FindFirstChild("Card")
+		local SW, SH = 1280, 720
+		local cw, ch = card.Size.X.Scale * SW, card.Size.Y.Scale * SH
+		local cx, cy = card.Position.X.Scale * SW, card.Position.Y.Scale * SH
+		local pop = card:FindFirstChildOfClass("UIScale")
+		local sc = if pop then pop.Scale else 1
+		local function box(g)
+			local w = (g.Size.X.Scale * cw + g.Size.X.Offset) * sc
+			local h = (g.Size.Y.Scale * ch + g.Size.Y.Offset) * sc
+			local x = cx + (g.Position.X.Scale * cw - cw / 2) * sc
+			local y = cy + (g.Position.Y.Scale * ch - ch / 2) * sc
+			return x - g.AnchorPoint.X * w, y - g.AnchorPoint.Y * h, w, h
+		end
+		for _, g in card:GetChildren() do
+			if g:IsA("TextLabel") and g.TextTransparency < 0.99 then
+				local x, y, w, h = box(g)
+				local limit = g:FindFirstChildOfClass("UITextSizeConstraint")
+				local stroke = g:FindFirstChildOfClass("UIStroke")
+				local okF, italic = pcall(function() return g.FontFace.Style == roblox.Enum.FontStyle.Italic end)
+				local okW, weight = pcall(function() return g.FontFace.Weight.Value end)
+				table.insert(out.texts, { text = g.Text, x = r3(x), y = r3(y), w = r3(w), h = r3(h), c = hex(g.TextColor3), a = r3(1 - g.TextTransparency),
+					max = if limit then limit.MaxTextSize * sc else nil, o = if stroke then hex(stroke.Color) else nil,
+					ow = if stroke then stroke.Thickness * sc else nil, italic = okF and italic or nil, weight = if okW then weight else 700 })
+				any = true
+			elseif g:IsA("Frame") and g.BackgroundTransparency < 0.99 then
+				local x, y, w, h = box(g)
+				local gr = g:FindFirstChildOfClass("UIGradient")
+				local fade
+				if gr then
+					fade = {}
+					for _, k in gr.Transparency.Keypoints do table.insert(fade, { k.Time, k.Value }) end
+				end
+				table.insert(out.rects, { x = r3(x), y = r3(y), w = r3(w), h = r3(h), c = hex(g.BackgroundColor3), a = r3(1 - g.BackgroundTransparency), fade = fade })
+				any = true
 			end
 		end
 	end
-	return { bg = hex(paper.BackgroundColor3), lines = lines, fade = fade }
+	local dip = guiNamed("HuzzRevealDip")
+	if dip and dip.Parent then
+		local black = dip:FindFirstChildOfClass("Frame")
+		if black and black.BackgroundTransparency < 0.99 then
+			out.dim = r3(1 - black.BackgroundTransparency)
+			any = true
+		end
+	end
+	return if any then out else nil
 end
 
 -- ---------------------------------------------------------------------------------------------------------------
@@ -446,7 +513,7 @@ local baseGrade = { b = B.Brightness, c = B.Contrast, s = B.Saturation, tint = h
 local boxes = {}
 local stills = {}
 -- the contact-sheet beats (tools/preview/secret_vs_ref.py pairs them with the reference)
-local STILL_AT = { 0.5, 1.0, 1.6, 2.05, 2.47, 2.8, 3.0, 3.6, 4.95, 5.9, 6.75, 8.0, 9.65, 10.5, 11.1, 11.9, 12.3, 12.7, 13.6 }
+local STILL_AT = { 0.3, 0.7, 1.15, 1.6, 1.95, 2.45, 2.75, 3.1, 3.46, 3.6, 4.1, 4.75, 5.6, 6.2, 6.55, 7.2, 7.65, 7.95, 8.8 }
 local total = math.floor((Reveal.LENGTH + PRE + POST) * FPS)
 player.Character = character
 M.start()
@@ -454,7 +521,8 @@ M.start()
 -- first waits its 2 s for them to stream in)
 local waitFrom = os.clock()
 repeat task.wait(0.05) until bound or os.clock() - waitFrom > 4
-assert(bound and frameGui, "the cutscene didn't start")
+assert(bound and guiNamed("HuzzImpactFrame"), "the cutscene didn't start")
+local lastOverlayErr
 
 for f = 0, total - 1 do
 	local t = f * DT - PRE
@@ -490,16 +558,26 @@ for f = 0, total - 1 do
 	local grades = { baseGrade }
 	local cc = Lighting:FindFirstChild("HuzzSecretGrade") -- (Look's own grade is baseGrade)
 	if cc then table.insert(grades, { b = cc.Brightness, c = cc.Contrast, s = cc.Saturation, tint = hex(cc.TintColor) }) end
-	local okO, overlay = pcall(overlayOf, frameGui) -- (gone after the cleanup)
-	if not okO then overlay = nil end
+	local okO, overlay = pcall(overlayOf) -- (gone after the cleanup)
+	if not okO then
+		if f == 0 or overlay ~= lastOverlayErr then print("overlay error: " .. tostring(overlay)) end
+		lastOverlayErr = overlay
+		overlay = nil
+	end
 	if folder then
 		local orb = folder:FindFirstChild("Core")
 		if orb and orb.Transparency < 1 then
 			table.insert(lights, { p = v3(orb.CFrame.Position), c = "#d8c8ff", b = 0.6 + orb.Size.X * 0.2, r = 40 })
 		end
+		-- the module's PointLights (her key and rim lights, the beams' light on the floor), up to the renderer's 4
+		for _, d in folder:GetDescendants() do
+			if d:IsA("PointLight") and d.Enabled and d.Brightness > 0.01 and #lights < 4 then
+				table.insert(lights, { p = v3(d.Parent.CFrame.Position), c = hex(d.Color), b = r3(d.Brightness), r = r3(d.Range) })
+			end
+		end
 	end
 	for _, s in STILL_AT do
-		if t >= s - DT / 2 and t < s + DT / 2 - 1e-6 then table.insert(stills, f) end
+		if f == math.floor((s + PRE) * FPS + 0.5) then table.insert(stills, f) end -- (by frame number: float steps missed some)
 	end
 	-- the sky (an IMITATION of Roblox's: the day cycle from Lighting.ClockTime, dark navy at night and warm at dawn;
 	-- the Atmosphere's Color, Haze and Density tint the horizon and the sky and bring the fog in; Sky.StarCount

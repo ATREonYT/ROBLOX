@@ -5,7 +5,7 @@ import subprocess, sys, os, tempfile
 from PIL import Image, ImageDraw, ImageFont
 film, out = sys.argv[1], sys.argv[2]
 TIMES = [float(x) for x in (sys.argv[3].split(',') if len(sys.argv) > 3 else
-    '0.2,1.0,1.9,2.6,2.9,3.6,4.9,5.6,6.1,6.8,8.0,9.6,10.3,11.3,12.3,13.6'.split(','))]
+    '0.2,0.95,1.7,2.45,3.1,3.6,4.1,4.75,5.6,6.2,6.6,7.2,7.7,8.4,9.2,9.8'.split(','))]
 LABELS = dict(zip(TIMES, sys.argv[4].split('|'))) if len(sys.argv) > 4 else {}
 PRE = 1.0
 W, H = 384, 216

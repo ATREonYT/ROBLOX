@@ -1044,7 +1044,7 @@ local function runGame()
 		showcase:SetAttribute("RevealAt", Workspace:GetServerTimeNow())
 		setStage("Reveal", SecretReveal.LENGTH)
 		announce("Something rare is coming...", Color3.fromRGB(190, 170, 255))
-		task.delay(SecretReveal.LAND, announce, `SECRET: {girl.name}!`, Color3.fromRGB(150, 110, 255))
+		task.delay(SecretReveal.NAME, announce, `SECRET: {girl.name}!`, Color3.fromRGB(150, 110, 255)) -- (with her name card)
 		task.wait(SecretReveal.LENGTH)
 	end
 	local ids = {}

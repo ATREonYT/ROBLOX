@@ -582,6 +582,23 @@ do
 	check("secret camera cuts are few and at least 2 s apart", #T.CUTS <= 2 and gaps and T.LENGTH - last >= 2)
 	check("secret camera shake is a slow, small wobble", worst.shake <= 0.75)
 	check("Reduced Motion: no field-of-view kick at the impact", math.abs(T.fov(T.IMPACT + 0.18, false) - T.fov(T.IMPACT + 0.18, true) - 8) < 0.01)
+	-- Oct 19 ("make the duration of it logical", "especially the beams"): 8 to 11 s, the beams build few -> many ->
+	-- converge and are gone after the burst, her name stays up long enough to read, the order of the beats holds
+	check(`secret cutscene is 8 to 11 s ({T.LENGTH})`, T.LENGTH >= 8 and T.LENGTH <= 11 and T.RETURN == T.LENGTH - 0.5)
+	local few, twins, many, after = T.beamsLit(0.9), T.beamsLit(2.0), T.beamsLit(2.8), T.beamsLit(T.IMPACT + 0.2)
+	check(`secret beams build few -> many ({few}, {twins}, {many}, then {after})`, few >= 1 and few <= 3 and twins > few and many >= 9 and many > twins and after == 0)
+	check("secret beams converge before the burst", T.converge(T.CONVERGE) == 0 and T.converge(T.HOLD) == 1 and T.CONVERGE < T.HOLD and T.HOLD < T.IMPACT)
+	local nameUp = 0
+	for t = 0, T.LENGTH, 1 / 30 do
+		if T.name(t) > 0.9 then nameUp += 1 / 30 end
+	end
+	check(string.format("her name stays up long enough to read (%.1f s)", nameUp), nameUp >= 1.4 and T.NAME > T.LAND and T.NAME_OUT <= T.CUTS[1])
+	local order = { T.BUILD, T.BEAM_A, T.BEAM_B, T.CHOIR, T.EYES, T.CONVERGE, T.HOLD, T.IMPACT, T.LAND, T.NAME, T.SWELL, T.BURST, T.RISE, T.DAWN, T.RETURN, T.LENGTH }
+	local inOrder = true
+	for i = 2, #order do
+		if order[i] <= order[i - 1] then inOrder = false end
+	end
+	check("secret beats are in order", inOrder and T.DAWN + T.BACK <= T.RETURN + 1e-6)
 end
 
 print(`fx smoke: {ok} ok, {failed} failed`)

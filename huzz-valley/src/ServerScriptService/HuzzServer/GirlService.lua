@@ -485,6 +485,7 @@ function GirlService.showcase(girl, at, parent)
 	label(string.upper(rarity.Name) .. "  " .. string.rep("★", order), 0.64, 0.32, Color3.new(1, 1, 1), Enum.FontWeight.Bold)
 
 	model:SetAttribute("Base", model:GetPivot())
+	model:SetAttribute("GirlName", girl.name) -- (the Secret cutscene puts it on screen: Gameplay/SecretReveal)
 	CollectionService:AddTag(model, "HuzzShowcase")
 	-- (the owner's place streams: without this a far-away player's game never gets her parts, and the Secret
 	-- cutscene filmed an empty spot. Persistent = every player always has her, whole)
