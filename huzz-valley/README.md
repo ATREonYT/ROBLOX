@@ -152,7 +152,16 @@ the icons itself. To make them work everywhere for good, upload them once (Plugi
    5. **Spin the Wheel spins** are three Developer Products: **Buy 1 Spin (24 Robux)**, **Buy 10 Spins (170 Robux)**
       and **Buy 100 Spins (600 Robux)**. Put their IDs into `Products.lua` under `Products.Spins` (`Spins1`,
       `Spins10`, `Spins100`). Until then the purple buttons show the price and only say "coming soon".
-   6. **Your spin wheel model:** name it with "Spin" and "Wheel" in the name (for example `Spin Wheel`), or tag it
+   6. **The Halloween shop** (the WITCH'S BREW and SWEETS & TREATS stands) sells 6 Developer Products. Make each one
+      and put its ID into `Products.lua` under `Products.Halloween`:
+      **Witch's Brew Crate key** (`WitchCrateKey`, 25 Robux) and **Sweets & Treats Crate key** (`SweetsCrateKey`,
+      25 Robux): one open of that crate each;
+      **Coven Katana** (`HalloweenCovenKatana`, 149 Robux), **Grand Witch Scythe** (`HalloweenGrandWitchScythe`,
+      249 Robux), **Sugar Rush Katana** (`HalloweenSugarRushKatana`, 149 Robux) and **Candy Reaper**
+      (`HalloweenCandyReaper`, 249 Robux).
+      These prices are our pick; set your own on the Dashboard. Until an ID is in, the button shows the price and
+      only says "coming soon". The Aura prices (11,800 and 23,600) are already live.
+   7. **Your spin wheel model:** name it with "Spin" and "Wheel" in the name (for example `Spin Wheel`), or tag it
       `HuzzSpinWheel`. The game adds "Spin the Wheel" (E) and a click to it by itself. Press Play, walk up to it and
       press E: the Output shows `[Huzz] Spin the Wheel found: ...`.
 3. **Send me your girls and map**, so I can check every girl in the carry (size, how her limbs hang, rarity names)

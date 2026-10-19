@@ -12,7 +12,7 @@
 export type Benefit = { Icon: string, Text: string }
 export type Product = {
 	Key: string,
-	Kind: "Pass" | "Cosmetic" | "Coins" | "Spins",
+	Kind: "Pass" | "Cosmetic" | "Coins" | "Spins" | "CrateKey" | "Knife",
 	Name: string,
 	Blurb: string,
 	Id: number,
@@ -25,7 +25,8 @@ export type Product = {
 	Giftable: boolean?,
 	Slot: string?, -- Cosmetics: where it's worn (Config/CoinShop.Slots); owners tap WEAR / WEARING in the Shop
 	Why: string?, -- OnSale = false: what is missing, for the owner's checklist
-	Knife: string?, -- knife Game Passes: the Config/CoinShop knife it gives (shown as a card in Shop > PASSES)
+	Knife: string?, -- knife Game Passes and Halloween knives: the Config/CoinShop knife it gives
+	Crate: string?, -- Halloween crate keys: the Config/Crates crate it opens once
 	Card: any?, -- knife Game Passes: the card's colours
 }
 
@@ -88,11 +89,25 @@ Products.Spins = {
 	{ Key = "Spins100", Kind = "Spins", Name = "100 Spins", Blurb = "A hundred spins\non the wheel.", Id = 0, Price = 600, Amount = 100, OnSale = true, Icon = "SpinWheel", Art = "" },
 } :: { Product }
 
+-- The Halloween shop's Robux items (Config/HalloweenShop, Screens/HalloweenShop; owner, Oct 19: "buy the crates, or
+-- the best knifes for either aura or robux"). Developer Products: create each on the Creator Dashboard and put its ID
+-- here. While Id = 0 the button shows its price and only says "coming soon", never a purchase. Prices are Claude's pick.
+--   CrateKey  one free open of that crate (Config/Crates; saved as CrateKeys, used before Aura)
+--   Knife     that Config/CoinShop knife, worn straight away
+Products.Halloween = {
+	{ Key = "WitchCrateKey", Kind = "CrateKey", Crate = "Witch", Name = "Witch's Brew Crate", Blurb = "One open of the\nWitch's Brew Crate.", Id = 0, Price = 25, OnSale = true, Icon = "", Art = "", Why = "needs its Developer Product ID" },
+	{ Key = "SweetsCrateKey", Kind = "CrateKey", Crate = "Sweets", Name = "Sweets & Treats Crate", Blurb = "One open of the\nSweets & Treats Crate.", Id = 0, Price = 25, OnSale = true, Icon = "", Art = "", Why = "needs its Developer Product ID" },
+	{ Key = "HalloweenCovenKatana", Kind = "Knife", Knife = "CovenKatana", Name = "Coven Katana", Blurb = "Legendary knife.", Id = 0, Price = 149, OnSale = true, Icon = "", Art = "KnifeCovenKatana", Why = "needs its Developer Product ID" },
+	{ Key = "HalloweenGrandWitchScythe", Kind = "Knife", Knife = "GrandWitchScythe", Name = "Grand Witch Scythe", Blurb = "Mythic knife.", Id = 0, Price = 249, OnSale = true, Icon = "", Art = "KnifeGrandWitchScythe", Why = "needs its Developer Product ID" },
+	{ Key = "HalloweenSugarRushKatana", Kind = "Knife", Knife = "SugarRushKatana", Name = "Sugar Rush Katana", Blurb = "Legendary knife.", Id = 0, Price = 149, OnSale = true, Icon = "", Art = "KnifeSugarRushKatana", Why = "needs its Developer Product ID" },
+	{ Key = "HalloweenCandyReaper", Kind = "Knife", Knife = "CandyReaper", Name = "Candy Reaper", Blurb = "Mythic knife.", Id = 0, Price = 249, OnSale = true, Icon = "", Art = "KnifeCandyReaper", Why = "needs its Developer Product ID" },
+} :: { Product }
+
 Products.Tabs = { "Passes", "Cosmetics", "Items", "Coins" } -- (Items: the coin shop, Config/CoinShop)
 
 local byKey: { [string]: Product } = {}
 local byId: { [string]: Product } = {}
-for _, list in { Products.Passes, Products.Cosmetics, Products.Coins, Products.Spins } do
+for _, list in { Products.Passes, Products.Cosmetics, Products.Coins, Products.Spins, Products.Halloween } do
 	for _, p in list do
 		assert(not byKey[p.Key], "duplicate product key " .. p.Key)
 		byKey[p.Key] = p

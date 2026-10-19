@@ -13,13 +13,14 @@
 	  Pity    { After = 30, Rarity = "Legendary" }: open 29 without a Legendary or better and the 30th one is one
 	  Duplicate  coins given back when you already own what came out: one number, or one per rarity
 	  Colors  the drawn box's colour, { top, bottom } hex (UI/CrateArt.paint); none = the kit purple
+	  Home    the page that sells it when it isn't Shop > CRATES ("HalloweenShop": the two Halloween stands' page)
 	The opening screen (UI/Screens/CrateOpen) spins a reel of these items; Shop > CRATES lists every item's chance.
 	Owner, Oct 19: "knifes, dances, from crates". The Knife Crate and the Halloween Crate are filled from Config/CoinShop
 	(knivesFrom below), so a knife added or renamed there follows by itself; the Dance Crate holds the Robot and seven
 	crate-only dances from his 200-dance pack (Config/Dances, Crate = true: never free, never in the Dance Pack).
 ]]
 export type CrateItem = { Kind: "Cosmetic" | "Dance" | "Coins", Id: string?, Amount: number?, Name: string, Rarity: string, Weight: number }
-export type Crate = { Id: string, Name: string, Price: number, Colors: { string }?, Items: { CrateItem }, Pity: { After: number, Rarity: string }?, Duplicate: (number | { [string]: number })? }
+export type Crate = { Id: string, Name: string, Price: number, Colors: { string }?, Items: { CrateItem }, Pity: { After: number, Rarity: string }?, Duplicate: (number | { [string]: number })?, Home: string? }
 
 local CoinShop = require(script.Parent.CoinShop)
 
@@ -92,6 +93,23 @@ Crates.List = {
 		Duplicate = KNIFE_DUPLICATE,
 		Pity = { After = 40, Rarity = "Legendary" },
 		Items = knivesFrom(function(it) return it.Set ~= nil end, HALLOWEEN_WEIGHT),
+	},
+	-- Owner, Oct 19 17:41: "make a halloween shop when you press on one of the two crates. and then you can buy the
+	-- crates". His two lobby stands (WITCH'S BREW and SWEETS & TREATS) each sell their own set's crate on the Halloween
+	-- shop page (Home; Screens/HalloweenShop), not in Shop > CRATES: the 6 Witch knives and the 6 Candy knives, with
+	-- the Halloween Crate's odds by rarity (Common 46%, Uncommon 27.6%, Rare 16.1%, Epic 6.9%, Legendary 2.3%,
+	-- Mythic 1.1%), its pity (a Legendary or the Mythic at the latest on the 40th) and its price (120 Aura).
+	{
+		Id = "Witch", Name = "Witch's Brew Crate", Price = 120, Colors = { "B45CFF", "4E1E8C" }, Home = "HalloweenShop",
+		Duplicate = KNIFE_DUPLICATE,
+		Pity = { After = 40, Rarity = "Legendary" },
+		Items = knivesFrom(function(it) return it.Set == "Witch" end, HALLOWEEN_WEIGHT),
+	},
+	{
+		Id = "Sweets", Name = "Sweets & Treats Crate", Price = 120, Colors = { "FF80C4", "B0306E" }, Home = "HalloweenShop",
+		Duplicate = KNIFE_DUPLICATE,
+		Pity = { After = 40, Rarity = "Legendary" },
+		Items = knivesFrom(function(it) return it.Set == "Candy" end, HALLOWEEN_WEIGHT),
 	},
 	-- Owner, Oct 19: "dances, from crates". The Robot plus seven dances only crates give (Config/Dances, Crate = true).
 	-- Odds: Common 50%, Uncommon 27%, Rare 15%, Epic 6%, Legendary 2%; the Legendary at the latest on the 30th. 80 Aura.

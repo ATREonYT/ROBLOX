@@ -79,6 +79,10 @@ check("the pity counter shows", card ~= nil and card.Pity.Text == "in 30 opens" 
 -- the other; the Knife Crate holds his coin shop knives, the Halloween Crate his 18 Halloween ones, no pass knives
 local lastBottom = -1
 for _, cr in Crates.List do
+	if cr.Home then -- (the Halloween stands' crates live on their own page: tools/preview/check_halloween.luau)
+		check(`{cr.Id}: not in Shop > CRATES`, body ~= nil and body:FindFirstChild("Section" .. cr.Id) == nil)
+		continue
+	end
 	local sec = body and body:FindFirstChild("Section" .. cr.Id)
 	local n, total = 0, 0
 	for _, ch in (sec and sec:GetChildren() or {}) do

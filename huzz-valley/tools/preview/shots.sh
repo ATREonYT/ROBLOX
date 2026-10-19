@@ -24,6 +24,8 @@ shot shop-items 07-shop-cosmetics 1536 730 '{SCREEN="Shop", TAB="Items", SCALE=2
 shot shop-knives none 1536 730 '{SCREEN="Shop", TAB="Items", SCALE=2, OWN="SpinKnife,IceKnife", COINS=1500, SCROLL=890}' # (the owner's knives, Oct 18)
 shot shop-coins none 1536 730 '{SCREEN="Shop", TAB="Coins", SCALE=2}' # (vs the Oct 17 mockup: side_by_side.py coins)
 shot shop-crates none 1536 730 '{SCREEN="Shop", TAB="Crates", SCALE=2, CRATEPITY=7}' # (no mockup: crates are ours)
+shot halloween-crates none 1536 730 '{SCREEN="HalloweenShop", TAB="Crates", SCALE=2, GEMS=320}' # (the Halloween stands' page, Oct 19: vs shop-crates, side_by_side.py halloween)
+shot halloween-knives none 1536 730 '{SCREEN="HalloweenShop", TAB="Knives", SCALE=2, GEMS=12000, OWN="CandyReaper"}'
 shot crate-spin none 1536 864 '{SCREEN="CrateOpen", TAB="Starter", SCALE=1.2, CRATE_T=3.2}' # (the reel mid-spin)
 shot crate-prize none 1536 864 '{SCREEN="CrateOpen", TAB="Starter", SCALE=1.2, CRATEPITY=29, CRATE_T=8}' # (a Legendary: pity)
 shot settings-social 06-settings-social 1536 640 '{SCREEN="Settings", TAB="Social", SCALE=2}'

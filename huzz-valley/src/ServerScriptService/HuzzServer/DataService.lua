@@ -20,6 +20,7 @@ DataService.Template = {
 	Cosmetics = {}, -- [key] = true for bought cosmetics (Robux ones and Config/CoinShop items)
 	Wear = {}, -- [slot] = the worn coin-shop item (Trail, Tag, Knife); nil = none
 	Pity = {}, -- [crateId] = opens since that crate's top prize (Config/Crates; shown to the player)
+	CrateKeys = {}, -- [crateId] = crate keys bought with Robux (the Halloween shop); an open uses one before Aura
 	Settings = table.clone(Settings.Defaults),
 	Receipts = {}, -- recent developer-product PurchaseIds, so a receipt is never granted twice
 	Characters = {}, -- [id] = os.time() when acquired
@@ -61,6 +62,7 @@ function DataService.snapshot(player: Player)
 		Aura = d.Aura,
 		Wear = table.clone(d.Wear),
 		Pity = table.clone(d.Pity),
+		CrateKeys = table.clone(d.CrateKeys or {}),
 		Cosmetics = table.clone(d.Cosmetics),
 		Passes = table.clone(ex.Passes or {}),
 		Settings = table.clone(d.Settings),

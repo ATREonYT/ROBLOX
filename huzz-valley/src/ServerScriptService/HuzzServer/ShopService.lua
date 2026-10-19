@@ -9,6 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Products = require(ReplicatedStorage.Shared.Config.Products)
 local CoinShop = require(ReplicatedStorage.Shared.Config.CoinShop)
+local Crates = require(ReplicatedStorage.Shared.Config.Crates)
 local Net = require(ReplicatedStorage.Shared.Net)
 local DataService = require(script.Parent.DataService)
 
@@ -68,6 +69,17 @@ local function grant(data, product): boolean
 		return true
 	elseif product.Kind == "Spins" then -- Spin the Wheel spins (SpinService)
 		data.Spins = (data.Spins or 0) + (product.Amount or 0)
+		return true
+	elseif product.Kind == "CrateKey" then -- the Halloween shop: one open of that crate (ActionService OpenCrate uses it)
+		if not Crates.get(product.Crate or "") then return false end
+		data.CrateKeys = data.CrateKeys or {}
+		data.CrateKeys[product.Crate] = (data.CrateKeys[product.Crate] or 0) + 1
+		return true
+	elseif product.Kind == "Knife" then -- the Halloween shop: that knife, worn straight away
+		local item = CoinShop.get(product.Knife or "")
+		if not item or item.Slot ~= "Knife" then return false end
+		data.Cosmetics[item.Key] = true -- (already owned: the page never offers it, so this only repeats a grant)
+		data.Wear[item.Slot] = item.Key
 		return true
 	end
 	return false

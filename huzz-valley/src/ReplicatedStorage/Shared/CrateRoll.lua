@@ -74,6 +74,43 @@ function CrateRoll.dupeCoins(crate: any, item: any): number
 	return 0
 end
 
+-- How many opens it takes on average to get `item` (from a fresh pity count), counting the pity guarantee exactly:
+-- a chain over the pity counts s = 0 .. After-1, E[s] = 1 + reset * E[0] + onward * E[s+1], solved from the last
+-- count back (E[s] = a + b * E[0]). The Halloween shop prices its knives from this (Config/HalloweenShop).
+function CrateRoll.expectedOpens(crate: any, item: any): number
+	local P = crate.Pity
+	local top = if P then rank(P.Rarity) else math.huge
+	local function step(pity: number): (number, number) -- (chance of `item`, chance of another top prize)
+		local pool = crate.Items
+		if P and pity + 1 >= P.After then
+			local best = {}
+			for _, it in crate.Items do
+				if rank(it.Rarity) >= top then table.insert(best, it) end
+			end
+			if #best > 0 then pool = best end
+		end
+		local total, mine, reset = 0, 0, 0
+		for _, it in pool do
+			total += it.Weight
+			if it == item then mine += it.Weight elseif rank(it.Rarity) >= top then reset += it.Weight end
+		end
+		if total <= 0 then return 0, 0 end
+		return mine / total, reset / total
+	end
+	if not P then
+		local q = step(0)
+		return if q > 0 then 1 / q else math.huge
+	end
+	local a, b = 0, 0 -- E[s+1] = a + b * E[0]
+	for s = P.After - 1, 0, -1 do
+		local q, r = step(s)
+		local onward = 1 - q - r
+		if s == P.After - 1 then onward = 0 end -- (the last count always resets)
+		a, b = 1 + onward * a, r + onward * b
+	end
+	return if b < 1 then a / (1 - b) else math.huge
+end
+
 -- The reel: `length` item numbers, each an honest draw with the shown weights, and the prize (`winner`, an item
 -- number) at position `at`.
 function CrateRoll.strip(crate: any, winner: number, length: number, at: number, rand: () -> number): { number }

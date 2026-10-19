@@ -1,0 +1,69 @@
+-- The Halloween shop's prices (Config/HalloweenShop, Shared/CrateRoll.expectedOpens): the average number of opens is
+-- exact (checked against a long seeded run with the real pity), a direct knife costs 3x its crate's average, and every
+-- Robux item is a Developer Product with Id 0 until the owner makes it (never an invented ID).
+-- lune run tests/HalloweenShop.spec.luau   (from huzz-valley/)
+local CrateRoll = require("../src/ReplicatedStorage/Shared/CrateRoll")
+local Env = require("../tools/preview/motion3d/env")
+local Crates = Env.load("huzz-valley/src/ReplicatedStorage/Shared/Config/Crates.lua")
+local Shop = Env.load("huzz-valley/src/ReplicatedStorage/Shared/Config/HalloweenShop.lua")
+local Products = Env.load("huzz-valley/src/ReplicatedStorage/Shared/Config/Products.lua")
+local CoinShop = Env.load("huzz-valley/src/ReplicatedStorage/Shared/Config/CoinShop.lua")
+local passed, failed = 0, 0
+local function check(name, cond)
+	if cond then passed += 1 else failed += 1; print("FAIL " .. name) end
+end
+
+-- 1. expectedOpens: no pity = 1 / chance; a tiny crate worked by hand; a long seeded run agrees
+local flat = { Items = { { Rarity = "Common", Weight = 3 }, { Rarity = "Legendary", Weight = 1 } } }
+check("no pity: 1 / chance", math.abs(CrateRoll.expectedOpens(flat, flat.Items[2]) - 4) < 1e-9)
+local two = { Pity = { After = 2, Rarity = "Legendary" }, Items = { { Rarity = "Common", Weight = 1 }, { Rarity = "Legendary", Weight = 1 } } }
+-- (half the time on the 1st open, else certain on the 2nd: 1.5)
+check("pity 2, half chance: 1.5 opens", math.abs(CrateRoll.expectedOpens(two, two.Items[2]) - 1.5) < 1e-9)
+local state = 4242
+local function rand()
+	state = (state * 1103515245 + 12345) % 2147483648
+	return state / 2147483648
+end
+for _, id in { "Witch", "Sweets" } do
+	local crate = Crates.get(id)
+	check(`{id}: the crate exists, lives on the Halloween page`, crate ~= nil and crate.Home == "HalloweenShop")
+	check(`{id}: 6 knives, 120 Aura, pity 40`, crate ~= nil and #crate.Items == 6 and crate.Price == 120 and crate.Pity.After == 40)
+	local mythic
+	for _, it in crate.Items do if it.Rarity == "Mythic" then mythic = it end end
+	local pity, opens, got, n = 0, 0, 0, 0
+	while got < 4000 do
+		local item; item, pity = CrateRoll.roll(crate, pity, rand)
+		opens += 1
+		if item == mythic then got += 1; n += opens; opens = 0 end
+	end
+	-- (the chain starts fresh only after a top prize; a Mythic always is one, so each run between Mythics starts fresh)
+	local want = CrateRoll.expectedOpens(crate, mythic)
+	check(`{id}: the Mythic takes {string.format("%.1f", want)} opens on average (run: {string.format("%.1f", n / got)})`, math.abs(n / got - want) / want < 0.05)
+end
+
+-- 2. the knives: the Legendary and Mythic of each set, Aura price = 3x the crate's average, Robux products with Id 0
+print("Halloween shop prices (Aura = 3 x average opens x 120 Aura, to the nearest 100):")
+check("4 knives", #Shop.Knives == 4)
+for _, k in Shop.Knives do
+	local item = CoinShop.get(k.Key)
+	local crate = Crates.get(k.Crate)
+	check(`{k.Key}: a Halloween knife`, item ~= nil and item.Slot == "Knife" and item.Set ~= nil)
+	check(`{k.Key}: the top of its set`, item ~= nil and (item.Rarity == "Legendary" or item.Rarity == "Mythic"))
+	local avg = k.Opens * crate.Price
+	check(`{k.Key}: 3x its average cost`, math.abs(k.Aura - 3 * avg) <= 50)
+	local p = Products.get(k.Robux)
+	check(`{k.Key}: a Robux product`, p ~= nil and p.Kind == "Knife" and p.Knife == k.Key)
+	check(`{k.Key}: Id 0 (the owner makes it)`, p ~= nil and p.Id == 0 and Products.status(p) == "NoId")
+	print(string.format("  %-18s %-9s %5.1f opens = %5d Aura on average -> %6d Aura, %d R$", k.Key, item and item.Rarity or "?", k.Opens, math.round(avg), k.Aura, p and p.Price or 0))
+end
+for _, c in Shop.Crates do
+	local p = Products.get(c.Robux)
+	check(`{c.Crate}: a Robux crate key`, p ~= nil and p.Kind == "CrateKey" and p.Crate == c.Crate)
+	check(`{c.Crate}: key Id 0`, p ~= nil and p.Id == 0 and Products.status(p) == "NoId")
+	print(string.format("  %-18s crate      120 Aura an open, a key %d R$", c.Crate, p and p.Price or 0))
+end
+local legend, mythic = Shop.knife("CovenKatana"), Shop.knife("GrandWitchScythe")
+check("a Mythic costs more than a Legendary", legend and mythic and mythic.Aura > legend.Aura)
+
+print(string.format("HalloweenShop: %d passed, %d failed", passed, failed))
+if failed > 0 then error("HalloweenShop spec failed") end

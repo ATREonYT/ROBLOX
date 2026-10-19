@@ -125,8 +125,10 @@ inspection with Lune: core `CLAUDE.md` section 4.
   `ref-shop-like-reward.png`.
 - Two-pad side: SHOP (Shop_Stall, opens the Shop), LIKE THE GAME! (Like_Reward_Gift, decoration: Roblox can't tell a
   game who liked it, so no reward). Three-pad side: FREE SPIN (Pumpkin_Patch_Chest, opens Spin the Wheel; the line
-  under it counts down to your real free spin), WITCH'S BREW (cauldron) and SWEETS & TREATS (coffin), decoration (no
-  menu fits). A ProximityPrompt and a click open the menu (never in a round, never during `HuzzCinematic`).
+  under it counts down to your real free spin), WITCH'S BREW (cauldron) and SWEETS & TREATS (coffin), both open the
+  Halloween shop (owner, Oct 19 17:41: "make a halloween shop when you press on one of the two crates";
+  [economy.md](economy.md)). A stand saved in his place before that gets its prompt and click from
+  `LobbyPropService` (backfill, checked in `tools/preview/check_halloween.luau`). A ProximityPrompt and a click open the menu (never in a round, never during `HuzzCinematic`).
 - Each bobs 0.35 studs over 3.4 s and turns once in 18 s (client, within 200 studs), has a soft PointLight under it
   (0.5 / 7) that breathes over 4 s, a glow pool on the pad, 5 sparkles a second and a bold FredokaOne title (dark
   outline, white lift) in its colour. FREE SPIN's line looks its part up again until found (streaming).
@@ -142,7 +144,7 @@ inspection with Lune: core `CLAUDE.md` section 4.
   (Studio-style turn, size and names). To move one: drag its `LobbyProp` in `Workspace > HuzzLobbyProps`; `Scale`
   sets its size.
 - Open: stand-ins until he sends `HuzzLobbyProps.rbxm`; the titles on the three-pad side sit close (pads 7 apart);
-  LIKE THE GAME!, WITCH'S BREW and SWEETS & TREATS open nothing yet.
+  LIKE THE GAME! opens nothing (Roblox can't tell a game who liked it).
 
 ## Honest gaps
 - Not seen in Studio yet: the one lobby (the spare copies put away, each map in front of it), the spawn pad, the lobby repaint; the

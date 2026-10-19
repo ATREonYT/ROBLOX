@@ -15,8 +15,9 @@
 	                                       on that screen). The line under the title counts down to your next free spin.
 	  Like_Reward_Gift    "LIKE THE GAME!" decoration: Roblox can't tell a game who liked it, so there is no reward
 	                                       to claim (rename it LIKE REWARD only once a real reward exists).
-	  Witch_Brew_Cauldron "WITCH'S BREW"   decoration (no menu fits).
-	  Sweets_Treats_Coffin "SWEETS & TREATS" decoration (no menu fits).
+	  Witch_Brew_Cauldron "WITCH'S BREW"   opens the Halloween shop (owner, Oct 19 17:41: "make a halloween shop when
+	  Sweets_Treats_Coffin "SWEETS & TREATS" you press on one of the two crates"): their crates and the best Halloween
+	                                       knives, for Aura or Robux (Config/HalloweenShop, Screens/HalloweenShop).
 	Kid-safe: nothing flashes; the sparkles and the glow under each prop are steady (the glow breathes over 4 s).
 ]]
 return {
@@ -60,11 +61,13 @@ return {
 		},
 		Witch_Brew_Cauldron = {
 			Title = "WITCH'S\nBREW", Color = Color3.fromRGB(196, 120, 255), -- potion purple (two lines: one would run into its neighbours' titles)
+			Opens = "HalloweenShop", Action = "Halloween Shop",
 			Scale = 2.5,
 			Glow = Color3.fromRGB(200, 106, 255), -- his potion
 		},
 		Sweets_Treats_Coffin = {
 			Title = "SWEETS &\nTREATS", Color = Color3.fromRGB(255, 128, 196), -- candy pink
+			Opens = "HalloweenShop", Action = "Halloween Shop",
 			Scale = 2.3,
 			Glow = Color3.fromRGB(255, 160, 220), -- his sugar glow
 		},

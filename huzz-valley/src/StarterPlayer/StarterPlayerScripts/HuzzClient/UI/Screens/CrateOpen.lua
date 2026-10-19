@@ -1,4 +1,5 @@
--- Crate opening (owner, Oct 19: "Also create a good case opening animation"). Opened by Shop > CRATES > OPEN.
+-- Crate opening (owner, Oct 19: "Also create a good case opening animation"). Opened by Shop > CRATES > OPEN, or the
+-- Halloween shop's OPEN (its crates' Home; BACK returns there). A Robux crate key is used before Aura: USE KEY (n).
 -- The server decides everything first (ActionService "OpenCrate": takes the Aura once, rolls with the shown odds and
 -- the pity counter, gives the prize, and builds the reel from honest draws); this screen only animates to its answer:
 --   1. the crate rattles harder and harder (faster wooden ticks), its lid pops off with a ring and sparks (0.85 s);
@@ -579,6 +580,17 @@ function CrateOpen.build(parent: Instance)
 	end
 
 	-- the idle crate before the server answers (it wobbles a little)
+	-- crate keys bought with Robux (the Halloween shop): the server uses one before any Aura
+	local function keys(): number
+		return ((State.data.CrateKeys or {})[crateDef.Id]) or 0
+	end
+	local againIcon = again.Instance:FindFirstChild("Icon", true) :: GuiObject?
+	local function setAgain()
+		local n = keys()
+		again.setText(if n > 0 then `USE KEY ({n})` else `OPEN AGAIN {crateDef.Price}`)
+		if againIcon then againIcon.Visible = n <= 0 end
+	end
+
 	local function resetScene()
 		stop()
 		result = nil
@@ -596,7 +608,7 @@ function CrateOpen.build(parent: Instance)
 		title.Text, title.FontFace, title.TextColor3 = string.upper(crateDef.Name), F.Heading, C.Text
 		CrateArt.paint(crate, crateDef) -- (each crate in its own colour)
 		title.Position = UDim2.fromOffset(240, TITLE_Y.Spin)
-		again.setText(`OPEN AGAIN {crateDef.Price}`)
+		setAgain()
 		setAura()
 		setPity()
 		setOdds()
@@ -607,6 +619,10 @@ function CrateOpen.build(parent: Instance)
 		return role == "Runner" or role == "Catcher" or player:GetAttribute("HuzzChoosing") == true or player:GetAttribute("HuzzCinematic") == true
 	end
 
+	-- back to the page that sells this crate (Config/Crates Home: the Halloween stands' crates), else Shop > CRATES
+	local function goHome()
+		if crateDef.Home and ModalManager.has(crateDef.Home) then ModalManager.open(crateDef.Home, "Crates") else ModalManager.open("Shop", "Crates") end
+	end
 	local function start(crateId: any)
 		if busy then return end
 		local c = type(crateId) == "string" and Crates.get(crateId) or crateDef
@@ -626,7 +642,7 @@ function CrateOpen.build(parent: Instance)
 			State.release("Coins")
 			Sfx.play("ui_error")
 			Toast.show(if okCall and type(answer) == "string" then answer else "Couldn't open it. Try again.")
-			task.defer(function() if ModalManager.current() == "CrateOpen" then ModalManager.open("Shop", "Crates") end end)
+			task.defer(function() if ModalManager.current() == "CrateOpen" then goHome() end end)
 			return
 		end
 		result = answer
@@ -654,14 +670,14 @@ function CrateOpen.build(parent: Instance)
 	again.onClick(function()
 		if busy then return end
 		local have = State.data.Aura or 0
-		if have < crateDef.Price then
+		if keys() <= 0 and have < crateDef.Price then
 			Sfx.play("ui_error")
 			Toast.show(`You need {crateDef.Price - have} more Aura. Collect stars on the field!`)
 			return
 		end
 		start(crateDef.Id)
 	end)
-	back.onClick(function() ModalManager.open("Shop", "Crates") end)
+	back.onClick(goHome)
 
 	local function onClose()
 		-- closed mid-animation (Escape, the cutscene): the prize is yours already; say what it was
@@ -685,6 +701,7 @@ function CrateOpen.build(parent: Instance)
 		if holder.Visible then
 			setAura()
 			if not running then setPity() end
+			setAgain() -- (a crate key used or bought)
 		end
 	end)
 	-- the Secret cutscene starting while this is open closes it (the prize is kept)

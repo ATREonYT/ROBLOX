@@ -40,7 +40,32 @@ def ours_box(im, size=(701, 320)):
     return (x, y, x + w, y + h)
 
 
+def pages(out, pairs):
+    # Our own windows side by side, two to a row, each cropped to its 701 x 320 window and shown at the same size
+    # (python3 tools/preview/side_by_side.py pages <out.jpg> "<label>=<render.png>" ...; e.g. the Halloween shop next
+    # to Shop: shots.sh shop-crates shop-knives halloween-crates halloween-knives).
+    cell = WIDTH // 2
+    ims = []
+    for pair in pairs:
+        label, render = pair.split('=', 1)
+        im = Image.open(render).convert('RGB')
+        im = im.crop(ours_box(im)).resize((cell, round(640 * cell / 1402)), Image.LANCZOS)
+        ims.append((label, im))
+    rows = (len(ims) + 1) // 2
+    ch = LABEL + ims[0][1].height
+    sheet = Image.new('RGB', (WIDTH, rows * ch), (22, 22, 30))
+    d = ImageDraw.Draw(sheet)
+    for i, (label, im) in enumerate(ims):
+        x, y = (i % 2) * cell, (i // 2) * ch
+        d.text((x + 12, y + 8), label, fill=(255, 255, 255), font=font(24))
+        sheet.paste(im, (x, y + LABEL))
+    sheet.save(out, quality=88)
+    print('wrote', out, sheet.size)
+
+
 def main():
+    if sys.argv[1] == 'pages':
+        return pages(sys.argv[2], sys.argv[3:])
     name, render = sys.argv[1], sys.argv[2]
     mock_file, box, out = SCREENS[name][:3]
     part = SCREENS[name][3] if len(SCREENS[name]) > 3 else None

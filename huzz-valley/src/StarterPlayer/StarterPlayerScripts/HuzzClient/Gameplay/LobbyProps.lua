@@ -6,7 +6,7 @@
 	  each prop on its own beat. Only this screen moves it (the Root it's welded to), only within AnimateWithin studs.
 	- The soft light under it breathes gently (4 s; never a flash).
 	- FREE SPIN's line counts down to your next free spin (Shared/SpinRules, your saved FreeSpinAt: a real timer).
-	- A prop with a menu (Opens: Shop, SpinWheel) opens it from its prompt (E) or a click, never during a round or
+	- A prop with a menu (Opens: Shop, SpinWheel, HalloweenShop) opens it from its prompt (E) or a click, never during a round or
 	  the Hero pick (like the wheel in the lobby).
 	- His place streams: a prop's Pad (light, title, FREE SPIN line) can arrive after the prop, so it's looked up
 	  again until found (tools/preview/check_new_lobby.luau brings one in late).

@@ -214,7 +214,8 @@ fine). Owner quotes go in the topic's "Why" part. Keep this core about 20 KB and
   - Not done yet (needs a screen): a dot on Menu when a quest can be claimed.
   - The friend knife is a placeholder (his Sakura Blade) until he names one ([economy.md](docs/notes/economy.md)).
   - A refunded pass doesn't take its knives back yet.
-  - LIKE THE GAME!, WITCH'S BREW and SWEETS & TREATS open nothing yet; titles on the three-pad side sit close.
+  - LIKE THE GAME! opens nothing; titles on the three-pad side sit close. WITCH'S BREW and SWEETS & TREATS open the
+    Halloween shop; its 6 Robux items are Id 0 and their prices are our pick ([economy.md](docs/notes/economy.md)).
   - The podium boards are hard to read from the spawn (his build, his call: [lobby.md](docs/notes/lobby.md)).
 - **His place:** no Uncommon girls yet; loose plank path and hoop; lobby copies pasted twice; old islands unused
   ([round.md](docs/notes/round.md), [lobby.md](docs/notes/lobby.md)).

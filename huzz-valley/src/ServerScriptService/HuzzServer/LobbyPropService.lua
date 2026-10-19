@@ -67,6 +67,33 @@ local function swap(lp: Instance)
 	fresh:Destroy()
 end
 
+-- A prop saved before Config/LobbyProps gave it a menu (the Halloween stands, Oct 19: "make a halloween shop when you
+-- press on one of the two crates") gets that menu: the attributes, the pad's prompt and the click on the prop, exactly
+-- as LobbyPropBuild.make adds them. A menu he typed on the prop himself is kept.
+local function backfill(lp: Instance)
+	local cfg = Config.Props[lp:GetAttribute("Prop")]
+	if not cfg or not cfg.Opens then return end
+	if lp:GetAttribute("Opens") == nil then
+		lp:SetAttribute("Opens", cfg.Opens)
+		lp:SetAttribute("Action", cfg.Action)
+	end
+	local opens, action = lp:GetAttribute("Opens"), lp:GetAttribute("Action")
+	local pad = lp:FindFirstChild("Pad")
+	if pad and not pad:FindFirstChild("PropPrompt") then
+		local prompt = Instance.new("ProximityPrompt")
+		prompt.Name, prompt.ActionText, prompt.ObjectText, prompt.HoldDuration = "PropPrompt", action or "Open", "", 0
+		prompt.MaxActivationDistance, prompt.RequiresLineOfSight, prompt.KeyboardKeyCode = 12, false, Enum.KeyCode.E
+		prompt:SetAttribute("HuzzOpens", opens)
+		prompt.Parent = pad
+	end
+	local prop = lp:FindFirstChild("Prop")
+	if prop and not prop:FindFirstChild("PropClick") then
+		local click = Instance.new("ClickDetector")
+		click.Name, click.MaxActivationDistance = "PropClick", 40
+		click.Parent = prop
+	end
+end
+
 function LobbyPropService.start()
 	local folder = Workspace:FindFirstChild(Config.Folder)
 	local how = "placed"
@@ -96,8 +123,11 @@ function LobbyPropService.start()
 	local n, standIns = 0, 0
 	for _, lp in folder:GetChildren() do
 		if lp:IsA("Model") and lp:GetAttribute("Prop") then
+			local okB, errB = pcall(backfill, lp) -- (before the swap: it builds his model with these attributes)
+			if not okB then warn("[Huzz] lobby prop menu: " .. tostring(errB)) end
 			local ok, err = pcall(swap, lp)
 			if not ok then warn("[Huzz] lobby prop swap: " .. tostring(err)) end
+			pcall(backfill, lp) -- (the click on the swapped-in model)
 			tag(lp)
 			n += 1
 			local prop = lp:FindFirstChild("Prop")

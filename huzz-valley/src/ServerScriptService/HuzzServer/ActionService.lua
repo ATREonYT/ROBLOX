@@ -9,6 +9,7 @@ local Products = require(ReplicatedStorage.Shared.Config.Products)
 local CrownPose = require(ReplicatedStorage.Shared.CrownPose)
 local Crates = require(ReplicatedStorage.Shared.Config.Crates)
 local CrateRoll = require(ReplicatedStorage.Shared.CrateRoll)
+local HalloweenShop = require(ReplicatedStorage.Shared.Config.HalloweenShop)
 local PrestigeRules = require(ReplicatedStorage.Shared.PrestigeRules)
 local Net = require(ReplicatedStorage.Shared.Net)
 local DataService = require(script.Parent.DataService)
@@ -135,8 +136,16 @@ function VERBS.OpenCrate(player, crateId)
 	if not crate then return false, "Unknown crate." end
 	local ok, result = false, nil
 	DataService.update(player, function(data)
-		if (data.Aura or 0) < crate.Price then result = `You need {crate.Price - (data.Aura or 0)} more Aura.`; return end
-		data.Aura -= crate.Price
+		data.CrateKeys = data.CrateKeys or {}
+		local keys = data.CrateKeys[crate.Id] or 0
+		if keys > 0 then -- a crate key bought with Robux (the Halloween shop) opens it before any Aura is spent
+			data.CrateKeys[crate.Id] = if keys > 1 then keys - 1 else nil
+		elseif (data.Aura or 0) < crate.Price then
+			result = `You need {crate.Price - (data.Aura or 0)} more Aura.`
+			return
+		else
+			data.Aura -= crate.Price
+		end
 		local item, pity = CrateRoll.roll(crate, data.Pity[crate.Id] or 0, function() return crateRandom:NextNumber() end)
 		data.Pity[crate.Id] = pity
 		local isNew, coins = false, 0
@@ -161,6 +170,25 @@ function VERBS.OpenCrate(player, crateId)
 		}
 	end)
 	return ok, result
+end
+
+-- The Halloween shop (Config/HalloweenShop): one of its knives straight away for its Aura price. Only the knives on
+-- that page; the price, "already yours" and "not enough Aura" are all checked here, in the same save write that
+-- takes the Aura and gives the knife (so a double tap can only buy it once).
+function VERBS.BuyHalloweenKnife(player, key)
+	local entry = type(key) == "string" and HalloweenShop.knife(key)
+	local item = entry and CoinShop.get(entry.Key)
+	if not entry or not item or not entry.Aura then return false, "That knife isn't sold here." end
+	local ok, why = false, nil
+	DataService.update(player, function(data)
+		if data.Cosmetics[item.Key] then why = "You own this already."; return end
+		if (data.Aura or 0) < entry.Aura then why = `You need {entry.Aura - (data.Aura or 0)} more Aura.`; return end
+		data.Aura -= entry.Aura
+		data.Cosmetics[item.Key] = true
+		data.Wear[item.Slot] = item.Key
+		ok = true
+	end)
+	return ok, why
 end
 
 function VERBS.ClaimReward(player, level) return ProgressService.claimReward(player, level) end

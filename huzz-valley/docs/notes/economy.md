@@ -90,6 +90,7 @@ while `Id = 0`).
   from his pack: Boogie Blast, Head Banger, The Twist, Zany Zig, Robot, Power Moves, Showstopper, Zombie Groove), each
   with every chance shown and a pity (40 / 40 / 30 opens). Built from `Config/CoinShop` (`knivesFrom`), never the
   pass, quest or wheel knives. Shop > CRATES stacks one section per crate, each painted its colours (`CrateArt.paint`).
+  The two Halloween stands' crates (Witch's Brew, Sweets & Treats) live on the Halloween shop page instead (below).
 - **The server decides first:** `OpenCrate` takes the Aura once, rolls with the shown odds and pity, gives the prize
   and answers `{ index, name, rarity, new, coins, pity, left, strip, at }`. `strip` is the reel: 48 honest draws with
   the shown odds (never pity, nothing planted next to the stop: `CrateRoll.strip`, spec checks the cards beside the
@@ -125,6 +126,44 @@ while `Id = 0`).
   prize, ticks, flash limit, skip, OPEN AGAIN, pity, duplicates, blocked in rounds and the cutscene). Shots
   `shop-crates`, `crate-spin`, `crate-prize`; film `tools/preview/crate_film.sh` → `docs/previews/crate-open.mp4` and
   `crate-open.jpg`.
+
+## Halloween shop (`Config/HalloweenShop`, `Screens/HalloweenShop`, ActionService `BuyHalloweenKnife`)
+- **Owner, Oct 19 17:41:** "make a halloween shop when you press on one of the two crates. and then you can buy the
+  crates, or the best knifes for either aura or robux." His stands: `design/owner-oct19/1840-halloween-crates.png`.
+  WITCH'S BREW and SWEETS & TREATS (`Config/LobbyProps` `Opens = "HalloweenShop"`) open it from the prompt (E) or a
+  click. A stand saved in his place before it had a menu gets its prompt and click from `LobbyPropService` (backfill).
+- **The page:** the Shop's 701 x 320 window, header pumpkin orange (FFAA4C to D2560E), plum body (2A1646), tabs
+  CRATES / KNIVES. Side by side with our Shop: `docs/previews/halloween-shop-vs-shop.jpg` (shots `halloween-crates`,
+  `halloween-knives`; `side_by_side.py pages`).
+- **CRATES:** two set crates, one per stand (Claude's reading of "the two crates"): **Witch's Brew Crate** (his 6
+  Witch knives) and **Sweets & Treats Crate** (his 6 Candy knives). Same odds by rarity as the Halloween Crate
+  (Common 46%, Uncommon 27.6%, Rare 16.1%, Epic 6.9%, Legendary 2.3%, Mythic 1.1%), pity 40 (a Legendary or the
+  Mythic), 120 Aura an open. They have `Home = "HalloweenShop"`, so they are only on this page, not in Shop > CRATES
+  (the 18-knife Halloween Crate stays there). Every chance and the pity counter show on the page, like Shop > CRATES.
+  OPEN plays `Screens/CrateOpen`; its BACK returns to the page.
+- **Crate keys (Robux):** one key = one open of that crate. Saved as `CrateKeys[crateId]`; `OpenCrate` uses a key
+  before any Aura, in the same save write. The button then reads USE KEY (n). A key open counts toward pity as usual.
+- **KNIVES:** the Legendary and the Mythic of each set, as his pictures (Art): Coven Katana, Grand Witch Scythe, Sugar
+  Rush Katana, Candy Reaper. Each for Aura or Robux; OWNED once yours (the Robux button hides).
+- **Aura price of a knife** = 3 x what it costs on average to get it from its own crate, to the nearest 100.
+  `CrateRoll.expectedOpens` is exact with the pity (a chain over the pity counts, solved back from the 40th;
+  `tests/HalloweenShop.spec` checks it against a hand-worked case and a long seeded run):
+  - Legendary: 32.8 opens x 120 = 3,937 Aura on average, so **11,800 Aura**.
+  - Mythic: 65.6 opens x 120 = 7,875 Aura on average, so **23,600 Aura**.
+- **Robux prices (Claude's pick, the owner may change them):** crate key 25 R$ (a single spin is 24), Legendary knife
+  149 R$, Mythic knife 249 R$. All six are Developer Products in `Products.Halloween` with **Id = 0**: the button shows
+  the price, a tap only says "<name> for Robux is coming soon." and never opens a purchase. Once an ID is set the live
+  Roblox price shows and Roblox's prompt opens.
+- **Server only:** `BuyHalloweenKnife` accepts only the page's knives, refuses an owned one ("You own this already.")
+  and too little Aura ("You need N more Aura."), and takes the Aura and gives the knife (worn) in one save write, so a
+  double tap buys it once. Robux: `ShopService` grants `CrateKey` (+1 key) and `Knife` (owned, worn) once per
+  PurchaseId and answers "granted" only after the save.
+- Checks: `tests/HalloweenShop.spec` (prices, Id 0), `tools/preview/check_halloween.luau` (stands open it, the
+  backfill, odds add to 100, pity, both prices, not enough Aura, already owned, double tap, a knife not sold here, Id 0
+  never prompts, an ID prompts, receipts once and after the save, a key used before Aura, OPEN plays the opening).
+- **Gaps:** not seen in Studio; the Robux IDs are 0 and the prices are ours; the crate is the drawn stand-in box, not
+  his stand models; the header icon is the Shop cart (no pumpkin icon in his kit); his coin shop also sells these
+  four knives for coins (4,000 / 8,000), which is the cheaper way to get them, so Aura buyers pay more on purpose.
 
 ## Admin panel (`Screens/Admin` + `HuzzServer/AdminService` + `Shared/AdminRules`)
 - Only the game's owner: Studio, else `player.UserId == game.CreatorId` (a game he owns) or rank 255 in the creator

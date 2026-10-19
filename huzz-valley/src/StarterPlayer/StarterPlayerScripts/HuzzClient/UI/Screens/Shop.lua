@@ -443,6 +443,7 @@ local CRATE = { W = 206, H = 212, OddsX = 216, RowW = 222, RowH = 29, RowGap = 1
 local function buildCrates(body: Frame)
 	local y = 1
 	for _, crate in Crates.List do
+		if crate.Home then continue end -- (sold on its own page: the Halloween stands' crates, Screens/HalloweenShop)
 		local rowsNeeded = math.ceil(#crate.Items / 2)
 		local sectionH = math.max(CRATE.H, rowsNeeded * (CRATE.RowH + CRATE.RowGap) - CRATE.RowGap)
 		local section = new("Frame", { Name = "Section" .. crate.Id, Position = UDim2.fromOffset(0, y), Size = UDim2.fromOffset(CRATE.OddsX + 2 * CRATE.RowW + CRATE.ColGap, sectionH), BackgroundTransparency = 1, Parent = body })
