@@ -34,6 +34,9 @@
       },
       "HuzzKnifeGlb": {
         "$path": "src/ServerStorage/HuzzKnifeGlb"
+      },
+      "HuzzKnifeBackups": {
+        "$path": "src/ServerStorage/HuzzKnifeBackups"
       }
     }
   }

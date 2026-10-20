@@ -221,6 +221,33 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
   stand-ins show. The lasting fix is still his import (SetupKnives below): real uploaded meshes, the same on every
   device, and then nothing here runs.
 
+## In the live game (owner, Oct 20 15:13: "make it so that the knifes also appear inside of the actual roblox game")
+What can't show live, and what shows instead (nothing here needs a setting):
+- **His 30 imported knives** are his uploaded meshes (680 of them) on an invisible Handle: Studio draws a mesh from
+  its own copy right after his import, a live screen loads it from Roblox, and an upload Roblox hasn't finished or
+  approved loads nothing there (his Oct 20 Output said exactly that of some crate uploads: "being generated", asset
+  120038515596009 "not approved"). Such a knife was simply gone, with nothing in its place: the one path with no
+  fallback (every other knife already had one). Cause not proven from here (cloud sessions can't reach Roblox): only
+  the live game shows which meshes load.
+  Fix: every copy of his knife carries the plain cut of his own .glb, hidden (`ServerStorage/HuzzKnifeBackups/<Key>`,
+  baked by `tools/knives/bake_stand_ins.py backups`, the same cut as the pass and Halloween stand-ins: 30 knives,
+  40-199 parts, 399 KB, server only; `KnifeService.addBackup`, parts `KnifeBackup<n>` welded to his Handle, turned
+  half round where his import is: Solar Reaper). Each screen's `Gameplay/KnifeMeshCheck` loads his meshes
+  (`ContentProvider:PreloadAsync`) for every such knife in the Workspace and in the 3D knife on a card: one of his
+  meshes failing (or no answer in 8 s, until they load) hides his parts and shows the cut; a texture failing doesn't
+  count. One `[HuzzKnife] <key>: his mesh rbxassetid://... didn't load here` line in Output (F9 in the live game).
+  Test: `tools/preview/smoke_knife_backup.luau` (16 checks: all 30 carry their cut, hidden, welded, no trail points
+  of its own, same tip, bottom and width as his model, left out of the measured shape; the screen swaps both ways).
+- **The 5 pass and 18 Halloween knives** are drawn as his model with EditableMesh (`Gameplay/KnifeDress`) only where
+  Roblox allows it (live: Game Settings > Security > "Allow Mesh / Image APIs", which needs the owner 13+ and ID
+  verified); everywhere else their stand-in shows, cut from his .glb (as before: EditableMesh is only the extra).
+- **Knife pictures on cards** are drawn with EditableImage (the same setting); without it a card shows the knife's own
+  3D model (`UI/ImageLoader` fallback, remote KnifeView), which now carries the backup too.
+- **Folders only Rojo sends** (`HuzzKnifeGlb`, `HuzzKnifeBackups`) reach the published game only if they were in the
+  place when he published: the place build (`build_yours.luau`) puts both in; his own Rojo place has them while
+  Rojo is connected and keeps them once saved. `HuzzKnives` (his 30) is in the place build, not in Rojo.
+- Owner's steps: `docs/STUDIO-STEPS.md` Part 6.
+
 ## Knife effects: the Huss Valley study (Oct 20)
 Their skins, cropped to the knife: `docs/previews/knife-vfx-hv-reference.jpg` (`tools/preview/knife_vfx_reference.py`,
 their recording f1c7bb86, the only HV round recording in the uploads: 32fe8d21 and 87565d66 aren't there; af1237a7
@@ -379,6 +406,10 @@ in hand and on a stand), `docs/previews/knife-vfx-vs-hv.jpg` (MELON5MAN worn nex
   is small; the stand showcase is the pass knives' only.
 
 ## Honest gaps
+- Live knives (Oct 20 15:13): which of his 680 meshes load live, and whether the swap to the cut looks right on a
+  real screen, only the live game shows; checked offline with a stub for Roblox's loader. The cut is flat slabs
+  (his model is rounder) and leaves out Abyss Eclipse's thin hanging chain. No picture of the 30 cuts yet. Each copy
+  of his knife now carries up to 199 more hidden parts (about 20 knives on screen in a full game).
 - Knife effects (Oct 20): only seen offline, drawn with our look-alikes of Roblox's built-in particle pictures; how
   smoke_main and sparkles_main really read, the PointLight, the Neon glow ball under the bloom and the size of a
   mote only Studio shows. Third pass (crisp Neon ball motes, a solid gem ball): the film and the stands now read

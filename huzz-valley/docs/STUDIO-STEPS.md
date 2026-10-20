@@ -169,6 +169,23 @@ ones play as real Roblox animations (a little smoother and lighter), so do this 
 5. **File > Save**, then **File > Publish to Roblox**. The IDs are in **ReplicatedStorage > Shared > Config >
    AnimationIds**; if you use Rojo, send Claude that text so it goes in the repo too.
 
+## Part 6: knives in the real Roblox game (once, about 5 minutes)
+Since Oct 20 every knife shows in the real game with no setting: if one of your knife's 3D pieces can't load there,
+that screen shows a plain copy cut from your own model instead. These steps make the real ones show.
+1. Open the newest **HuzzValley-yours.rbxl** in Studio (see "Before you start"). It already has all 30 of your
+   knives with their colours fixed, plus the plain copies. (If you publish your own place with Rojo instead: connect
+   Rojo first, then in **Explorer** check that **ServerStorage** has **HuzzKnives**, **HuzzKnifeGlb** and
+   **HuzzKnifeBackups**.)
+2. Optional, for the Game Pass and Halloween knives to look exactly like your files and the pictures to draw:
+   **Home > Game Settings > Security**, turn on **Allow Mesh / Image APIs**, click **Save**. Roblox only allows this
+   after an ID check (13 or older). If it won't let you, skip it: those knives show their plain copies.
+3. **File > Publish to Roblox**.
+4. Play the real game (not Studio). Press **F9** (on a Mac: **Fn+F9**) to open the console and click **Client**.
+   Screenshot any line starting with `[HuzzKnife]` and send it to Claude.
+5. If a line says **his mesh rbxassetid://... didn't load here**: open **create.roblox.com > Creations >
+   Development Items > Meshes**, find that number, and screenshot what it says (for example "in review" or
+   "rejected"). A rejected one needs that knife imported again.
+
 ---
 
 ## Part 5: listen to the dance songs (about 7 minutes)

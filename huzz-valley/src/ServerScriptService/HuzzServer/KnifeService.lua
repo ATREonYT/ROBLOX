@@ -17,7 +17,8 @@
 	(tools/knives/setup_knives.lua, also ServerStorage/HuzzStudioTools/SetupKnives), each skin is a Model in
 	ServerStorage/HuzzKnives/<skin key> with an invisible part "Handle" (+Y to the tip, X the blade's thin way) and
 	Attachments "Grip" (where the fist closes), "TrailBase" (guard) and "TrailTip" (tip). It's used as it is: already
-	at its length, its glowing parts already Neon. Until then (or for a skin with no model) the game draws its own
+	at its length, its glowing parts already Neon, plus a hidden plain cut of it that a screen shows where his
+	uploaded meshes don't load (addBackup, Gameplay/KnifeMeshCheck: the live game, Oct 20 15:13). Until then (or for a skin with no model) the game draws its own
 	knife below, painted in the skin's colours (Config/CoinShop Colors, Neon guard in its Glow colour), so nothing
 	ever looks broken. A Model named "HuzzKnife" (in HuzzKnives, or ServerStorage as before) replaces the default.
 	The five Game Pass knives get a better stand-in (owner, Oct 19: "right now its very small and you dont even
@@ -230,7 +231,7 @@ local function shapeOf(model)
 	if not (handle and handle:IsA("BasePart")) then return nil end
 	local parts = {}
 	for _, d in model:GetDescendants() do
-		if d:IsA("BasePart") and not string.find(d.Name, "^KnifeFx") then -- (our effect boxes aren't the knife)
+		if d:IsA("BasePart") and not string.find(d.Name, "^KnifeFx") and not string.find(d.Name, "^KnifeBackup") then -- (our effect boxes and his hidden backup aren't the knife)
 			table.insert(parts, { name = d.Name, cf = handle.CFrame:ToObjectSpace(d.CFrame), size = d.Size })
 		end
 	end
@@ -246,13 +247,95 @@ local function fits(model, skin)
 end
 KnifeService.fits = fits
 
+-- His imported knife with its backup inside (owner, Oct 20 15:13: "make it so that the knifes also appear inside of
+-- the actual roblox game"). His knives are his uploaded meshes on an invisible Handle: Studio shows a mesh from
+-- its own copy right after his import, but a live screen has to load each one from Roblox, and an upload Roblox
+-- hasn't finished or approved loads nothing there (his Oct 20 Output said that of some crate uploads: "being
+-- generated", "not approved"), so the whole knife was gone with nothing in its place. So each copy carries the plain
+-- cut of his own .glb (ServerStorage/HuzzKnifeBackups, tools/knives/bake_stand_ins.py: the same cut as the pass and
+-- Halloween stand-ins), hidden (Transparency 1, each part's own in its "Shown" attribute), welded to his Handle in
+-- the Handle's space, parts named KnifeBackup<n> (not the knife: shapeOf, KnifeFx and the trail skip them). Some of
+-- his imports sit half a turn round about the Handle's length (Solar Reaper's blade curves the other way): the cut
+-- turns with them, whichever way its width lines up with his (worked out once a knife).
+-- Gameplay/KnifeMeshCheck shows it on a screen where any of his meshes doesn't load. Nothing when there's no backup.
+KnifeService.BACKUP = "KnifeBackup"
+local backups = {}
+local turned: { [string]: boolean } = {}
+-- How far a set of parts reaches across (the Handle's Z): lo, hi.
+local function across(parts, frame)
+	local lo, hi = math.huge, -math.huge
+	for _, p in parts do
+		local r = frame:ToObjectSpace(p.CFrame)
+		local h = p.Size / 2
+		local e = math.abs(r.RightVector.Z) * h.X + math.abs(r.UpVector.Z) * h.Y + math.abs(r.LookVector.Z) * h.Z
+		lo, hi = math.min(lo, r.Position.Z - e), math.max(hi, r.Position.Z + e)
+	end
+	return lo, hi
+end
+local function backupRecipe(key: string)
+	if backups[key] == nil then
+		backups[key] = false
+		local folder = ServerStorage:FindFirstChild("HuzzKnifeBackups")
+		local m = folder and folder:FindFirstChild(key)
+		if m then
+			local ok, baked = pcall(require, m)
+			if ok and type(baked) == "table" then backups[key] = KnifeShapes.fromBaked(baked) end
+		end
+	end
+	return backups[key] or nil
+end
+local function addBackup(model, skin)
+	local recipe = skin and backupRecipe(skin.Key)
+	local handle = model:FindFirstChild("Handle", true)
+	if not (recipe and handle and handle:IsA("BasePart")) or model:FindFirstChild(KnifeService.BACKUP) then return end
+	local cut = buildRecipe(recipe)
+	local cutHandle = cut.PrimaryPart
+	if turned[skin.Key] == nil then
+		local his, mine = {}, {}
+		for _, d in model:GetDescendants() do
+			if d:IsA("BasePart") and d ~= handle and d.Transparency < 1 then table.insert(his, d) end
+		end
+		for _, d in cut:GetDescendants() do
+			if d:IsA("BasePart") and d ~= cutHandle then table.insert(mine, d) end
+		end
+		local hlo, hhi = across(his, handle.CFrame)
+		local clo, chi = across(mine, cutHandle.CFrame)
+		turned[skin.Key] = #his > 0 and math.abs(hlo + chi) + math.abs(hhi + clo) < math.abs(hlo - clo) + math.abs(hhi - chi)
+	end
+	local turn = if turned[skin.Key] then CFrame.Angles(0, math.pi, 0) else CFrame.identity
+	local folder = Instance.new("Folder")
+	folder.Name = KnifeService.BACKUP
+	local n = 0
+	for _, p in cut:GetDescendants() do
+		if p:IsA("BasePart") and p ~= cutHandle then
+			n += 1
+			local at = turn * cutHandle.CFrame:ToObjectSpace(p.CFrame)
+			for _, c in p:GetChildren() do c:Destroy() end -- (its weld to the cut's Handle, the trail points)
+			p.Name = KnifeService.BACKUP .. n
+			p:SetAttribute("Shown", p.Transparency)
+			p.Transparency = 1
+			p.CFrame = handle.CFrame * at
+			local w = Instance.new("Weld")
+			w.Part0, w.Part1, w.C0 = handle, p, at
+			w.Parent = p
+			p.Parent = folder
+		end
+	end
+	cut:Destroy()
+	folder.Parent = model
+	model:SetAttribute("Backup", skin.Key)
+end
+KnifeService.addBackup = addBackup
+
 -- The knife for a skin: the owner's model when it's been set up (true), else ours (false).
 local function template(skin)
 	local folder = ServerStorage:FindFirstChild("HuzzKnives")
 	local own = skin and folder and folder:FindFirstChild(skin.Key)
 	if own and own:IsA("Model") and own:FindFirstChild("Handle", true) then
 		if fits(own, skin) then
-			return own:Clone(), true
+			local copy = own:Clone()
+			addBackup(copy, skin)
+			return copy, true
 		elseif not warned[skin.Key] then
 			warned[skin.Key] = true
 			warn(`[HuzzKnife] {skin.Key} in ServerStorage > HuzzKnives is the wrong size (run the knife setup again for it); showing the plain knife in its colours`)

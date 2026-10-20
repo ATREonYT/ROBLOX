@@ -16,6 +16,8 @@
 	Space: the Handle's (+Y to the tip, X the blade's thin way, Z its width), studs. Each part: name, kind (Block or
 	Wedge), size, at, rot (degrees about X, Y, Z; only X here), paint (a key of the knife's palette: his colour), mat (Enum.Material name), refl (Reflectance), hidden
 	(the tiny Handle at the grip's middle). trail: where the slash trail runs from and to (y).
+	fromBaked turns one baked module into a recipe (HuzzServer/KnifeService also uses it for his 30 knives' hidden
+	backups in ServerStorage/HuzzKnifeBackups, baked the same way: shown only where his uploaded meshes don't load).
 ]]
 local KnifeShapes = {}
 
@@ -23,8 +25,8 @@ local function hex(h: string): Color3
 	return Color3.fromRGB(tonumber(string.sub(h, 1, 2), 16), tonumber(string.sub(h, 3, 4), 16), tonumber(string.sub(h, 5, 6), 16))
 end
 
-KnifeShapes.RECIPES = {}
-for key, baked in require(script.Parent.KnifeStandIns) do
+-- One baked module ({ trail, parts = rows }, tools/knives/bake_stand_ins.py) as a recipe.
+function KnifeShapes.fromBaked(baked)
 	local palette, parts = {}, {}
 	for _, r in baked.parts do -- { name, size x, y, z, centre x, y, z, colour, material, Reflectance[, turn about X[, "W"]] }
 		local col = r[8]
@@ -33,7 +35,12 @@ for key, baked in require(script.Parent.KnifeStandIns) do
 			at = { r[5], r[6], r[7] }, rot = if r[11] then { r[11], 0, 0 } else nil, paint = col,
 			mat = r[9], refl = r[10], hidden = r[1] == "Handle" })
 	end
-	KnifeShapes.RECIPES[key] = { palette = palette, parts = parts, trail = baked.trail }
+	return { palette = palette, parts = parts, trail = baked.trail }
+end
+
+KnifeShapes.RECIPES = {}
+for key, baked in require(script.Parent.KnifeStandIns) do
+	KnifeShapes.RECIPES[key] = KnifeShapes.fromBaked(baked)
 end
 
 function KnifeShapes.get(key: string?)
