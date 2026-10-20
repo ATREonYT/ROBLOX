@@ -7,6 +7,9 @@
 	Published tracks replicate, so everyone sees them. With nothing to play (live game, not published yet) Roblox's
 	Animate stays underneath and Gameplay/PlayerMoves draws the pack's Idle/Walk/Run over it by hand, on every
 	screen (yours too); Studio's temporary copies play only on your screen, so PlayerMoves draws you on the others.
+	Whatever fails, your body is never stiff (owner Oct 20: "also the user animations isnt there"): Roblox's Animate
+	stays on unless Locomotion really plays the pack (it checks itself and lets go), and Output says which on one
+	`[HuzzAnim]` line.
 ]]
 local M = {}
 
@@ -19,10 +22,17 @@ function M.start()
 		ReplicatedStorage:WaitForChild("HuzzAnimations", 5) -- (Bootstrap copies the raw ones over in Studio)
 	end
 
-	local Locomotion = require(script.Parent.Locomotion)
-	if Locomotion.available() then
+	local okLoco, Locomotion = pcall(require, script.Parent.Locomotion)
+	if not okLoco then
+		warn("[HuzzAnim] the walk controller didn't load (" .. tostring(Locomotion) .. "): Roblox's own walk")
+	elseif Locomotion.available() then
 		Locomotion.start()
 		return
+	else
+		Locomotion.say((if game:GetService("RunService"):IsStudio()
+			then "the pack's Studio copies didn't become animations (ReplicatedStorage.HuzzAnimations missing, or KeyframeSequenceProvider refused them)"
+			else "the pack isn't published yet (Config/Animations)")
+			.. ": Roblox's own walk, the pack drawn on top by hand")
 	end
 
 	local SLOTS = {

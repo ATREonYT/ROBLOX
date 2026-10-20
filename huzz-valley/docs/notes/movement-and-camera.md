@@ -64,6 +64,18 @@ The huss pose and walk animations: [animations.md](animations.md).
 - **Footsteps are ours** (`Feel`, Sfx "step", lobby too; Roblox's "Running" muted; stand-in thud until the owner
   uploads `step`). They step by distance (`Run.Stride` 12), so below ~28 they're slower than the feet.
 
+## Map size: nothing scales the map (Oct 20)
+- Measured: the maps in the place file are his size (Base 752x329, BasketBall 317x167, Halloween 319x164), and no
+  script resizes a map. What can make a map *feel* smaller:
+  - **Speed:** Lobby 22, Runner 28, Catcher 30, Holder 27, LastRunner 30, Thief 30 studs/s (`Config/Round.Speeds`),
+    against Roblox's 16 (the place's `CharacterWalkSpeed`). They were 20/24/26/23/26 before his "run quicker" asks.
+    Plus 2% a round after the first, up to +20% (`Round.SpeedUp`): a runner can reach 33.6, a catcher 36.
+  - **Setting off:** 16 to ~95% of top speed in 0.5 s (`Run.StartSpeed`, `Ramp`), so you're at full speed at once.
+  - **Huss:** 12 studs in 0.28 s (Dash Speed 120 easing to 16).
+  - **Camera:** in rounds the zoom starts at 12 and is capped at 22 (`Shot.RoundZoom` / `RoundMaxZoom`); the lobby
+    keeps the place's limits (max 128). FOV only +2 degrees at full sprint (was 11).
+- To make a map feel bigger without touching it: lower the speeds or the speed-up in `Config/Round`.
+
 ## The round camera (`Gameplay/Cinematic` + `Shared/CinematicShot`)
 - The line-up camera. The hand-back lands where Roblox's camera will be (zoom 12, 14° down, the shift-lock offset only
   when `ShiftLock.wouldLock()`: same test as ShiftLock, so not with Alt held, a menu open or the dance wheel up; zoom

@@ -40,6 +40,25 @@ has the general KeyframeSequence workflow; 3D video tools are in core `CLAUDE.md
   turned, the head stays on the mouse), on everyone's screen through `HuzzLook`; [movement-and-camera.md](movement-and-camera.md). `strafePose` solves the neck exactly (the
   head's turn is undone through the hunched run pose); a plain counter-turn on the neck tipped the head sideways.
 
+## Your own moves: never a stiff body (Oct 20)
+- `Gameplay/Locomotion` checks itself: within 3 s (`LOAD_WAIT`) Idle, Walk and Run must have a length and a knee,
+  hip or elbow must really move (joints only the Animator writes). If not, if attaching throws, or if the frame step
+  fails 30 times in a row, it lets go (`ctl.fail`): our tracks stop, Roblox's `Animate` comes back on, and
+  `Gameplay/PlayerMoves` draws the pack by hand over it (`Locomotion.drives` turns false). If AvatarAnimations can't
+  load Locomotion at all, Roblox's own walk stays.
+- One `[HuzzAnim]` line in Output says which way it went (a print when fine, a warning when not):
+  - fine: `your moves: the pack's Idle, Walk and Run on your Animator, blended by your speed`
+  - `the pack's moves didn't play on your avatar in 3 s (Idle, Walk or Run never loaded)` or `(loaded, but the body
+    never moved)`, then `: Roblox's own walk is back on, the pack drawn on top by hand`
+  - `the pack's Studio copies didn't become animations (...)` / `the pack isn't published yet (Config/Animations)`
+  - `the pack's Idle, Walk or Run didn't load on your Animator`, `the walk controller failed (...)`,
+    `the walk blend failed 30 frames in a row (...)`, `... no Animate script to fall back on, the pack drawn by hand`
+  - `R6 avatar: Roblox's own walk (the pack is made for R15 bodies)`; `no Humanoid ...`; `no Animator or root part ...`
+- Spec `tests/AvatarAnims.spec` runs the real AvatarAnimations, Locomotion, PlayerMoves and Frame on a fake Studio
+  for 9 cases (works, never loads, never moves, no register, load throws, step fails, attach throws, no Animate, R6)
+  and checks the body moves in each and says one line (two for "step fails"). The old code ended stiff in "never
+  loads", "never moves" and "no Animate".
+
 ## Layering poses on Motor6D.Transform (every pose module; lesson of Oct 19)
 - Layers run in Frame order: 8 PlayerMoves, 10 RunAnimator (huss), 12 Locomotion (lean and strafe), 20 carry,
   30 stab, 40 knockdown. Each keeps what it wrote (`written`) and the pose under it (`base`), and builds from `base`,
@@ -135,6 +154,9 @@ has the general KeyframeSequence workflow; 3D video tools are in core `CLAUDE.md
   centre circle; pictures built ahead while closed; opens with one smooth grow (no CanvasGroup, no stagger).
 
 ## Honest gaps
+- Which way his Studio goes (the Oct 20 stiff body) only his `[HuzzAnim]` line shows. The likely cause: Studio's
+  KeyframeSequenceProvider copies load as tracks but never play, while Animate was off and PlayerMoves skipped your
+  own body; now that ends in Roblox's walk with the pack drawn on top within 3 s. Not seen in Studio yet.
 - The girls' rigs and everyone's girls (Oct 19 fixes) are checked offline only. Why other players' girls were missing
   on HIS screen is not proven: the loop that one error stopped is a real way for it to happen, but Studio's Output
   (`[Huzz] <name>'s girl on this screen: ...`) will say if a girl actually fails there. The R6 girls' moves are the
@@ -144,6 +166,9 @@ has the general KeyframeSequence workflow; 3D video tools are in core `CLAUDE.md
   published tracks, the DANCE TOGETHER prompt; whether a replicated track takes the nudge smoothly is Studio-only).
 
 ## Why it is this way / history
+- **Never a stiff body** (owner Oct 20: "also the user animations isnt there", screenshot
+  `design/owner-oct19/2010-floating-block.png`, his avatar standing in the rest pose in the lobby): Locomotion turned
+  Animate off and trusted tracks that loaded without an error; nothing noticed when they never played.
 - **Walking** (owner Oct 18: "player to player less choppy", "make the walking animations way way better").
 - **Planted feet:** `WalkAt` was 8 and `RunAt` 25, and walk handed over to run at 13-21 studs/s, so the walk skated at
   half the ground speed at the 16 you set off at.

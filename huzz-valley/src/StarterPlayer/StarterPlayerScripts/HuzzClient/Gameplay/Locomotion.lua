@@ -26,6 +26,13 @@
 	play over all this (the lean holds still while they do); so does the huss (drawn by Gameplay/RunAnimator from
 	DashAt, Config/Run.Dash.Length), so its quick turn and push don't tip the body. AvatarAnimations starts this only when
 	the owner's Idle, Walk and Run can all play (otherwise Roblox's Animate stays, with their animations swapped in).
+	Never a stiff body (owner Oct 20: "also the user animations isnt there", a screenshot standing in the rest pose):
+	a track can load without an error and still never play (a Studio copy that doesn't take), and with Animate off
+	that left the body frozen. So it checks itself: within LOAD_WAIT seconds Idle, Walk and Run must have a length
+	and the body must really move (knees, hips, elbows: joints only the Animator writes); if not, or when attaching
+	throws, or the frame step keeps failing, it lets go (ctl.fail): our tracks stop, Roblox's Animate comes back on,
+	and Gameplay/PlayerMoves draws the pack by hand over it (Locomotion.drives turns false). Each way says why on
+	one `[HuzzAnim]` line in Output.
 ]]
 local Locomotion = {}
 
@@ -46,6 +53,37 @@ local Frame = require(script.Parent.Frame)
 local HeadAim = require(script.Parent.HeadAim)
 
 local current -- the running controller (one character at a time: yours)
+local LOAD_WAIT = 3 -- seconds the pack's tracks get to load and move the body before Roblox's own walk takes over
+local STEP_FAILS = 30 -- frame steps in a row that may fail before the same
+local LIVE_JOINTS = { -- (joints only the Animator writes here: a pose on any of them = the tracks really play)
+	{ "RightUpperLeg", "RightHip" }, { "LeftUpperLeg", "LeftHip" }, { "RightLowerLeg", "RightKnee" },
+	{ "LeftLowerLeg", "LeftKnee" }, { "RightLowerArm", "RightElbow" }, { "LeftLowerArm", "LeftElbow" },
+}
+
+-- One line in Output saying how your own moves are played (and why, when it isn't the pack).
+local said = {}
+local function say(text: string, isProblem: boolean?)
+	if said[text] then
+		return
+	end
+	said[text] = true
+	if isProblem then
+		warn("[HuzzAnim] " .. text)
+	else
+		print("[HuzzAnim] " .. text)
+	end
+end
+Locomotion.say = say
+
+-- Roblox's own walk back on (Gameplay/PlayerMoves then draws the pack by hand over it). False: no Animate script.
+local function animateOn(character: Model): boolean
+	local animate = character:FindFirstChild("Animate")
+	if animate and animate:IsA("LocalScript") then
+		animate.Disabled = false
+		return true
+	end
+	return false
+end
 
 local STATE = {
 	[Enum.HumanoidStateType.Jumping] = "jump",
@@ -63,12 +101,20 @@ end
 
 local function attach(character: Model)
 	local humanoid = character:WaitForChild("Humanoid", 10) :: Humanoid?
-	if not humanoid or humanoid.RigType ~= Enum.HumanoidRigType.R15 then
+	if not humanoid then
+		say("no Humanoid on your character in 10 s: nothing to animate", true)
+		return
+	end
+	if humanoid.RigType ~= Enum.HumanoidRigType.R15 then
+		say("R6 avatar: Roblox's own walk (the pack is made for R15 bodies)")
 		return -- (the owner's animations are R15; an R6 avatar keeps Roblox's own)
 	end
 	local animator = humanoid:WaitForChild("Animator", 10) :: Animator?
 	local root = humanoid.RootPart or character:WaitForChild("HumanoidRootPart", 10)
 	if not (animator and root) or character.Parent == nil then
+		if character.Parent ~= nil then
+			say("no Animator or root part on your character in 10 s: Roblox's own walk", true)
+		end
 		return
 	end
 
@@ -96,6 +142,7 @@ local function attach(character: Model)
 	end
 	if not (tracks.Idle and tracks.Walk and tracks.Run) then
 		if animate and animate:IsA("LocalScript") then animate.Disabled = false end
+		say("the pack's Idle, Walk or Run didn't load on your Animator: Roblox's own walk, the pack drawn on top by hand", true)
 		return
 	end
 	task.defer(stopOthers, animator, keep) -- (whatever Animate had started before it stopped)
@@ -117,7 +164,16 @@ local function attach(character: Model)
 		return if len > 0 then len else nil
 	end
 
-	local ctl = { character = character }
+	local ctl = { character = character, failed = false, verified = false, bornAt = os.clock(), fails = 0 }
+	local liveJoints = {}
+	for _, pair in LIVE_JOINTS do
+		local part = character:FindFirstChild(pair[1])
+		local j = part and part:FindFirstChild(pair[2])
+		if j and j:IsA("Motor6D") then
+			table.insert(liveJoints, j)
+		end
+	end
+	local moved = false
 	local wasJumping = false
 	local quietUntil = 0
 	local lastScan = 0
@@ -161,9 +217,44 @@ local function attach(character: Model)
 		return now < quietUntil
 	end
 
-	function ctl.step(dt)
-		if character.Parent == nil or humanoid.Health <= 0 then
+	-- Let go: our tracks stop, Roblox's Animate comes back, Gameplay/PlayerMoves draws the pack over it.
+	function ctl.fail(why: string)
+		if ctl.failed then
 			return
+		end
+		ctl.failed = true
+		for _, t in tracks do
+			pcall(function() t:Stop(0.2) end)
+		end
+		local back = animateOn(character)
+		say(why .. (if back then ": Roblox's own walk is back on, the pack drawn on top by hand"
+			else ": no Animate script to fall back on, the pack drawn by hand"), true)
+	end
+
+	function ctl.step(dt)
+		if ctl.failed or character.Parent == nil or humanoid.Health <= 0 then
+			return
+		end
+		-- (do the tracks really play? a length each, and the Animator moving the body)
+		if not ctl.verified then
+			if not moved then
+				for _, j in liveJoints do
+					local _, angle = j.Transform:ToAxisAngle()
+					if math.abs(angle) > math.rad(0.5) then
+						moved = true
+						break
+					end
+				end
+			end
+			local loaded = tracks.Idle.Length > 0 and tracks.Walk.Length > 0 and tracks.Run.Length > 0
+			if loaded and moved then
+				ctl.verified = true
+				say("your moves: the pack's Idle, Walk and Run on your Animator, blended by your speed")
+			elseif os.clock() - ctl.bornAt > LOAD_WAIT then
+				ctl.fail(string.format("the pack's moves didn't play on your avatar in %d s (%s)", LOAD_WAIT,
+					if loaded then "loaded, but the body never moved" else "Idle, Walk or Run never loaded"))
+				return
+			end
 		end
 		local state = humanoid:GetState()
 		local mode = STATE[state] or "ground"
@@ -282,7 +373,12 @@ function Locomotion.start()
 			current.stop()
 			current = nil
 		end
-		local ctl = attach(character)
+		local ok, ctl = pcall(attach, character)
+		if not ok then
+			animateOn(character)
+			say("the walk controller failed (" .. tostring(ctl) .. "): Roblox's own walk, the pack drawn on top by hand", true)
+			return
+		end
 		if ctl and player.Character == character then
 			current = ctl
 		end
@@ -292,8 +388,13 @@ function Locomotion.start()
 		task.spawn(onCharacter, player.Character)
 	end
 	Frame.on(12, function(dt)
-		if current then
-			current.step(math.clamp(dt, 1 / 240, 1 / 15))
+		local ctl = current
+		if ctl and not ctl.failed then
+			local ok, err = pcall(ctl.step, math.clamp(dt, 1 / 240, 1 / 15))
+			ctl.fails = if ok then 0 else ctl.fails + 1
+			if ctl.fails >= STEP_FAILS then
+				ctl.fail("the walk blend failed " .. STEP_FAILS .. " frames in a row (" .. tostring(err) .. ")")
+			end
 		end
 	end)
 end
@@ -305,7 +406,8 @@ end
 
 -- True while this controller is playing the pack on this character (yours, its tracks loaded).
 function Locomotion.drives(character: Model?): boolean
-	return current ~= nil and character ~= nil and current.character == character and character.Parent ~= nil
+	return current ~= nil and not current.failed and character ~= nil and current.character == character
+		and character.Parent ~= nil
 end
 
 return Locomotion
