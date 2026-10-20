@@ -15,6 +15,9 @@ This file loads in every session, so keep it short. Each game folder has its own
 ## Game feel
 - Read `GAME-FEEL.md` before building a new game: copy the reference loop exactly, give each round a
   cinematic moment, use one message line, name tags, rescues, sharp controls and small UI.
+- Item effects (knives, pets, skins): read `VFX-ITEMS.md`. Study the reference skin frame by frame and tie each effect
+  to the skin (its accent colour, a motif from its name, placed at its gem or edge). Scale by tier, as visible as the
+  reference but no louder, and use only Roblox's built-in pictures.
 
 ## How we build
 1. **Golden slice first.** Build the smallest piece that proves the look and feel, get a yes, then roll it out. Full builds that miss waste days.
