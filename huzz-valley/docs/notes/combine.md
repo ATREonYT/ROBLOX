@@ -25,7 +25,8 @@ beside: [lobby.md](lobby.md).
 - Old saves: `CombineRules.migrate` on every load (DataService) gives each owned girl `Normal = 1 + Dupes[id]` once,
   drops junk grades and copies of girls no longer owned, and removes the old `Dupes` table.
 - She shows at her best grade (`CombineRules.best`): the Index card's badge and picture, the Index preview, your
-  companion (`CompanionService` sets `HuzzCompanionGrade`; `Gameplay/Auras` dresses her).
+  companion (`CompanionService` sets `HuzzCompanionGrade`; `Gameplay/Auras` dresses her), the Tiers page's picture.
+  Not in a round: the girl carried there is the round's prize, not your copy.
 - Prestige still spends a spare Normal copy (`PrestigeRules` uses `CombineRules.take`, never her last copy).
 
 ## Server (`HuzzServer/CombineService`, ActionService verb `Combine`)

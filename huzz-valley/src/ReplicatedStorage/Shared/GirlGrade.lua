@@ -1,7 +1,7 @@
 --[[
 	A girl in her Combine grade (owner, Oct 20 14:57: "then you make the girls in silver, gold, and diamond"). The
 	Combine machine (Shared/CombineRules) makes Silver, Gold and Diamond copies of a girl; this dresses any copy of
-	her model in that grade, wherever she shows: your companion (Gameplay/Auras), the Index and the Combine window's
+	her model in that grade, wherever she shows: your companion (Gameplay/Auras), the Index, the Tiers page and the Combine window's
 	pictures (UI/GirlPicture), the merge itself (Gameplay/CombineMachine).
 	  * Her hair and accessories (not her face: the Face accessories, or anything named face, eye, brow, lash,
 	    blush, mouth) take the grade's colour and material (Config/Combine.Grades: Silver and Gold metal, Diamond

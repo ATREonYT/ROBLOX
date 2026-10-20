@@ -5,6 +5,7 @@
 -- (the kit's "Collect more items to unlock higher tiers!" read as if it did).
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Characters = require(Shared.Config.Characters)
+local CombineRules = require(Shared.CombineRules)
 local UI = script.Parent.Parent
 local Theme = require(UI.Theme)
 local Kit = require(UI.Kit)
@@ -200,12 +201,15 @@ function Tiers.build(parent: Instance)
 		end
 		local artName = if pick then (PANEL_ART[pick.Id] or pick.Art or "CharLocked") else "CharLocked"
 		local girlKey = pick and pick.Model -- a won anime girl: her 3D model (UI/GirlPicture)
-		if (girlKey or artName) ~= shownArt then
-			shownArt = girlKey or artName
+		-- (in her Combine grade, as in the Index: Shared/CombineRules.best; a new grade draws her again)
+		local grade = if girlKey and pick then (CombineRules.best(State.data, pick.Id) or "Normal") else nil
+		local want = if girlKey then girlKey .. "#" .. tostring(grade) else artName
+		if want ~= shownArt then
+			shownArt = want
 			for _, ch in artHolder:GetChildren() do ch:Destroy() end
 		end
 		if girlKey then
-			if not artHolder:FindFirstChild("Model") then GirlPicture.draw(artHolder, girlKey, true, true) end
+			if not artHolder:FindFirstChild("Model") then GirlPicture.draw(artHolder, girlKey, true, true, grade) end
 		elseif artName == shownArt and not artHolder:FindFirstChild("Picture") then
 			-- left corners rounded, right edge square (a rounded copy plus a square copy clipped right of the corners)
 			local r = 3
