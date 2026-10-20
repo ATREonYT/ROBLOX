@@ -3,10 +3,12 @@
 -- loaded here (the harness builds the game from src/ only), so this puts a small crate shaped like his into
 -- ReplicatedStorage > HuzzCrates (a body, a lid, the light inside, his knives named like his) and checks that:
 --   * Shop > CRATES shows his own picture of the cards (no 3D crate there since Oct 20, 07:23);
---   * OPEN plays the 3D opening (no reel): the crate rocks, the lid swings up, the knife from the same set rises,
---     then its name and rarity, NEW!, the buttons; at most one flash a second; skip goes straight to the prize;
+--   * OPEN plays the 3D opening (no reel): the crate rocks, the top cracks a little and holds, then swings up, the
+--     knife from the same set rises, a few motes drift up, one glint; then its name and rarity fade in, NEW!, the
+--     buttons; skip goes straight to the prize;
+--   * premium, not "too ai" (owner, Oct 20 07:51): no rays, rings, sparks or flash in the 3D opening;
 --   * the body and the light inside never move, only the top swings;
---   * the reveal puts a light behind the knife.
+--   * a soft light stands behind the knife only when its blade is dark (Hollow Moon).
 -- From tools/preview: lune run harness.luau ../../src - @check_crate3d.luau setup_ui.luau
 local ok, fails = 0, 0
 local function check(name, cond)
@@ -20,6 +22,8 @@ local RunService = game:GetService("RunService")
 local Crates = require(RS.Shared.Config.Crates)
 local CoinShop = require(RS.Shared.Config.CoinShop)
 local CrateModels = require(RS.Shared.CrateModels)
+local CrateMotion = require(RS.Shared.CrateMotion)
+local T3 = CrateMotion.T
 local beast = Crates.get("Beast")
 local folder = Instance.new("Folder"); folder.Name = "Standard_Crates"
 local set = Instance.new("Model"); set.Name = beast.Model.Set; set.Parent = folder
@@ -89,6 +93,8 @@ local insideRel0 = oInside and rel(oInside)
 local lidRel0 = oLid and rel(oLid)
 local flash = screen:FindFirstChild("Flash", true)
 local flashes, wasFlash, maxRoll, knifeSeenEarly = {}, false, 0, false
+local rays = screen:FindFirstChild("CrateRays", true)
+local raysSeen, motesSeen, glintFrames, fxSeen = false, 0, 0, false
 local clock = 0
 local function frames(n)
 	for _ = 1, n do
@@ -100,7 +106,17 @@ local function frames(n)
 			local up = oBody.CFrame.UpVector
 			maxRoll = math.max(maxRoll, math.deg(math.acos(math.clamp(up.Y, -1, 1))))
 		end
-		if clock < 2.2 and knife and knife.Parent then
+		if rays.Visible then raysSeen = true end
+		for _, d in screen:GetDescendants() do
+			if (string.match(d.Name, "^Ring%d") or string.match(d.Name, "^Spark%d")) and d:IsA("GuiObject") and d.Visible then fxSeen = true end
+		end
+		local shown = 0
+		for _, d in (stage:FindFirstChild("Crate3D") or stage):GetChildren() do
+			if string.match(d.Name, "^Mote%d") and d.Transparency < 1 then shown += 1 end
+			if d.Name == "Glint" and d.Transparency < 1 then glintFrames += 1 end
+		end
+		motesSeen = math.max(motesSeen, shown)
+		if clock < T3.Rise - 0.05 and knife and knife.Parent then
 			for _, d in knife:GetDescendants() do if d:IsA("BasePart") and d.Transparency < 1 then knifeSeenEarly = true end end
 		end
 	end
@@ -109,12 +125,18 @@ frames(30) -- 1 s: building up
 check(string.format("it rocks while it builds up (%.1f deg)", maxRoll), maxRoll > 1 and maxRoll < 16)
 check("the odds by rarity show under it while it builds up", screen.Group.Odds.Visible and screen.Group.Odds.Chip1.Visible)
 check("still shut while it builds up", (rel(oLid) - lidRel0).Magnitude < 0.05)
-frames(36) -- 2.2 s: open
+frames(42) -- 2.4 s: cracked a little
+local lidCrack = rel(oLid)
+check(string.format("the top cracks open a little first (z %.2f -> %.2f)", lidRel0.Z, lidCrack.Z), (lidCrack - lidRel0).Magnitude > 0.005 and lidCrack.Z < lidRel0.Z + 0.3)
+frames(27) -- 3.3 s: open
 local lidNow = rel(oLid)
 check(string.format("the lid swings up and back as it opens (z %.2f -> %.2f)", lidRel0.Z, lidNow.Z), lidNow.Z > lidRel0.Z + 0.3)
 check("the light inside never moves", (rel(oInside) - insideRel0).Magnitude < 0.01)
 check("no knife before it opens", not knifeSeenEarly)
-frames(45) -- 3.7 s: the reveal
+frames(36) -- 4.5 s: the reveal (4.45 s)
+local nameNow = screen:FindFirstChild("KnifeName", true)
+check(string.format("its name fades in, not at once (%.2f)", nameNow.TextTransparency), nameNow.Visible and nameNow.TextTransparency > 0.3)
+frames(6) -- 4.7 s
 local seen = false
 for _, d in knife:GetDescendants() do if d:IsA("BasePart") and d.Transparency < 1 then seen = true end end
 check("the knife has risen out of it", seen)
@@ -122,11 +144,20 @@ local name = screen:FindFirstChild("KnifeName", true)
 check(`its name shows ({name and name.Text})`, name ~= nil and name.Visible and name.Text ~= "")
 check("its rarity shows", screen:FindFirstChild("KnifeRarity", true).Visible)
 local light = screen:FindFirstChild("KnifeLight", true)
-check("a soft light stands behind the knife", light ~= nil and light.Visible and light.ImageTransparency < 0.5)
+local prize
+for _, it in beast.Items do if it.Name == name.Text then prize = it end end
+local pc = prize and CoinShop.get(prize.Id)
+local isDark = CrateMotion.isDark(pc and pc.Colors and pc.Colors[1])
+check(`a soft light behind the knife only for a dark blade ({name.Text}: {isDark and "dark" or "not dark"})`, light ~= nil
+	and (if isDark then light.Visible and light.ImageTransparency < 0.6 and light.Size.Y.Offset > light.Size.X.Offset * 2 else not light.Visible))
+check(`a few motes drift up, never a burst (at most {motesSeen} at once)`, motesSeen >= 1 and motesSeen <= CrateMotion.Motes)
+check(`one glint along the blade ({glintFrames} frames)`, glintFrames >= 5 and glintFrames <= 20)
 frames(30)
+check("its name has faded in", nameNow.TextTransparency < 0.01)
 check("NEW! or the coins line shows", screen.Group.Status.Visible and screen.Group.Status.Text ~= "")
 check("OPEN AGAIN and BACK show", screen.Group.Bottom.Visible)
-check(`at most one flash a second ({#flashes})`, #flashes <= 1 or (flashes[2] - flashes[1]) >= 1)
+check(`no flash in the 3D opening ({#flashes})`, #flashes == 0)
+check("no rays, rings or sparks in the 3D opening", not raysSeen and not fxSeen)
 local item = beast.Items[1]
 check("the prize is yours", data.Cosmetics ~= nil and next(data.Cosmetics) ~= nil)
 

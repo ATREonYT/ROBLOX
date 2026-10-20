@@ -10,10 +10,17 @@
 	      Storm Vault and the Beast Chest stand open in his model, as on his mockup; the Dojo Chest is shut).
 	  handle.Viewport
 	  handle.knife(item)            his little knife for that Config/CoinShop item (from the same set) for the reveal
-	  handle.pose(t, calm, color)   the opening at time t (Shared/CrateMotion: shut, build-up, the top swings open, the
-	                                 light inside takes `color`, the knife rises spinning and stops facing you)
-	  handle.knifeAt()              where the knife stops, up from the frame's middle (0..0.5 of its height): the
-	                                 opening screen puts its light behind it there
+	  handle.pose(t, calm, color)   the opening at time t (Shared/CrateMotion: build-up, the top cracks and light in
+	                                 `color` spills out, it swings open, the knife rises slowly with one turn and
+	                                 hovers facing you, one glint runs along its blade, a few motes drift up, the camera
+	                                 eases in a touch). Premium = restraint (owner, 07:51: "feels too ai"): no rings,
+	                                 rays or discs; light (his glow parts, the light colour) and timing instead.
+	  handle.knifeScreen()          where the knife is in the frame now: its middle up from the frame's middle and its
+	                                 length (both 0..1 of the frame's height) and its lean (radians); the opening screen
+	                                 puts a dark knife's soft light behind its blade there
+	  Crate3D.RevealHook            nil, or fn(knife: Model, item): called once his knife is placed for the reveal.
+	                                 A hook for the knife's own effect (the knife VFX work: Rare and up); this file
+	                                 adds none itself
 	  handle.destroy()
 
 	How it opens: Shared/CrateMotion.split picks his lid (his .glb's own lid group: the Storm Vault's lid, the Beast
@@ -30,6 +37,7 @@ local CrateMotion = require(Shared.CrateMotion)
 local CoinShop = require(Shared.Config.CoinShop)
 
 local Crate3D = {}
+Crate3D.RevealHook = nil :: ((Model, any) -> ())? -- (see the header: the knife's own effect at the reveal)
 
 local function folder(): Instance?
 	return ReplicatedStorage:FindFirstChild(CrateModels.Folder)
@@ -114,6 +122,26 @@ function Crate3D.new(parent: Instance, crate: any, view: string, props: { [strin
 	aim(1)
 
 	local handle = { Viewport = vp }
+	local zoom = 1 -- (the camera's push-in times the build-up's grow, as last posed)
+	local baseAmbient = vp.Ambient
+	-- the motes (small soft beads in the rarity colour) and the one glint along the blade: plain parts, hidden until
+	-- the pose shows them (no shapes: Neon reads as light in a ViewportFrame)
+	local function bead(name: string): Part
+		local b = Instance.new("Part")
+		b.Name, b.Anchored, b.CanCollide, b.CanQuery, b.CanTouch = name, true, false, false, false
+		b.Material, b.Shape, b.CastShadow, b.Transparency = Enum.Material.Neon, Enum.PartType.Ball, false, 1
+		b.Size = Vector3.one * 0.1
+		b.Parent = vp
+		return b
+	end
+	local motes: { Part } = {}
+	for i = 1, CrateMotion.Motes do motes[i] = bead("Mote" .. i) end
+	local glint = bead("Glint")
+	glint.Shape, glint.Color = Enum.PartType.Block, Color3.new(1, 1, 1)
+	-- the light inside: a thin glowing layer just under his top, seen only through the gap as it cracks and inside once
+	-- open (a ViewportFrame has no lights of its own: Neon is how light shows)
+	local spill = bead("Spill")
+	spill.Shape = Enum.PartType.Block
 	-- angle: how far the top is open from shut (his model as built = `built`)
 	local function place(root: CFrame, angle: number)
 		local swing = hinge * CFrame.Angles(angle - built, 0, 0) * hinge:Inverse()
@@ -127,7 +155,7 @@ function Crate3D.new(parent: Instance, crate: any, view: string, props: { [strin
 	-- his little knife from the same set, made show size (about three quarters of the crate's height)
 	local knife: Model? = nil
 	local kParts, kOffsets, kSizes, kSeen = {}, {}, {}, {}
-	local kBase = 1
+	local kBase, kLen, kDeep = 1, 1, 0.1
 	function handle.knife(item: any)
 		if knife then knife:Destroy(); knife = nil end
 		kParts, kOffsets, kSizes, kSeen = {}, {}, {}, {}
@@ -137,6 +165,7 @@ function Crate3D.new(parent: Instance, crate: any, view: string, props: { [strin
 		strip(k)
 		local kc, ks = box(k)
 		kBase = (h * 0.78) / math.max(ks.Y, 0.05)
+		kLen, kDeep = ks.Y, ks.Z
 		for _, d in k:GetDescendants() do
 			if d:IsA("BasePart") then
 				table.insert(kParts, d)
@@ -148,6 +177,10 @@ function Crate3D.new(parent: Instance, crate: any, view: string, props: { [strin
 		end
 		k.Parent = vp
 		knife = k
+		if Crate3D.RevealHook then
+			local def = typeof(item) == "table" and item or CoinShop.get(item)
+			task.spawn(pcall, Crate3D.RevealHook, k, def) -- (its own effect, if the knife VFX work hooks in; never breaks the opening)
+		end
 		return true
 	end
 
@@ -162,13 +195,33 @@ function Crate3D.new(parent: Instance, crate: any, view: string, props: { [strin
 		end
 	end
 
+	local kNow = { up = 0, scale = 0, tilt = 0 }
 	function handle.pose(t: number, calm: boolean?, color: Color3?)
 		local s = CrateMotion.shake(t, calm)
 		local root = CFrame.new(0, s.lift * h, 0) * CFrame.Angles(s.tilt, 0, s.roll) * CFrame.new(0, h / 2, 0)
 		place(root, CrateMotion.lid(t))
-		aim(s.grow)
-		local _, mix = CrateMotion.glow(t)
+		zoom = s.grow * CrateMotion.push(t, calm)
+		aim(zoom)
+		local bright, mix = CrateMotion.glow(t)
 		tint(mix, color)
+		-- the light that spills out as it cracks: a touch of the rarity colour over everything (light, not a shape)
+		vp.Ambient = if color then baseAmbient:Lerp(color, 0.18 * mix * bright) else baseAmbient
+		spill.Transparency = if color then 1 - 0.8 * mix * bright else 1
+		if color then
+			spill.Color = color:Lerp(Color3.new(1, 1, 1), 0.35)
+			spill.Size = Vector3.new(size.X * 0.8, h * 0.02, size.Z * 0.7)
+			spill.CFrame = root * CFrame.new(0, hy - h * 0.025, 0)
+		end
+		local shown = if color then CrateMotion.motes(t, calm) else {}
+		for i, q in shown do
+			local b = motes[i]
+			b.Size = Vector3.one * (q.size * h)
+			b.Color = (color :: Color3):Lerp(Color3.new(1, 1, 1), 0.3)
+			b.CFrame = CFrame.new(q.x * size.X, q.y * h, q.z * size.Z)
+			b.Transparency = 1 - q.alpha
+		end
+		for i = #shown + 1, #motes do motes[i].Transparency = 1 end
+		glint.Transparency = 1
 		if knife then
 			local kp = CrateMotion.knife(t, calm)
 			local scale = kBase * kp.scale
@@ -179,11 +232,24 @@ function Crate3D.new(parent: Instance, crate: any, view: string, props: { [strin
 				p.CFrame = at * (CFrame.new(o.Position * scale) * o.Rotation)
 				p.Transparency = if kp.seen then kSeen[i] else 1
 			end
+			kNow = { up = kp.up, scale = kp.scale, tilt = kp.tilt * math.cos(kp.spin) } -- (its lean as seen: none side-on)
+			-- one glint: a thin streak of light sliding up the face of the blade (towards you) from the handle to the tip
+			local along, ga = CrateMotion.glint(t, calm)
+			if along and kp.seen then
+				local len = kLen * scale
+				glint.Size = Vector3.new(len * 0.02, len * 0.14, len * 0.01)
+				glint.CFrame = at * CFrame.new(0, (along - 0.5) * len * 0.9, -(kDeep * scale / 2 + len * 0.01))
+				glint.Transparency = 1 - 0.85 * ga
+			end
 		end
 	end
 
-	function handle.knifeAt(): number
-		return (h * 0.35) / (reach * 1.02) * 0.5 -- (its show spot is 0.35 h over the camera's aim; aim(): half the frame = 1.02 reach)
+	function handle.knifeScreen(): (number, number, number)
+		-- (aim(): half the frame's height = 1.02 reach / zoom at the crate's middle; the knife's middle is 0.35 h + 0.95
+		-- h * up over the bottom, the camera aims at 0.95 h)
+		local half = reach * 1.02 / zoom
+		local y = (h * (0.35 + 0.95 * kNow.up) - h * 0.95) / half * 0.5
+		return y, (h * 0.78 * kNow.scale) / half * 0.5, kNow.tilt
 	end
 
 	function handle.destroy()

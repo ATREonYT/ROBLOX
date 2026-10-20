@@ -15,18 +15,24 @@
 --      white cores in the beams and one soft flash, Legendary and up a spark burst, a second ring and a small shake.
 -- His three knife crates (owner, Oct 20: "make these crates for the opening of the normal knifes ... and make the opening
 -- animations look appropriate") open in 3D instead, with his own crate model (UI/Crate3D, Shared/CrateMotion: the same
--- maths the offline film uses), no reel:
---   1. his crate rocks and jumps harder and faster, a wooden knock on each jump, closer and closer (2.1 s);
---   2. its top (his lid, roof or jaw) swings open with a ring and sparks in the prize's rarity colour, his glowing
---      parts and the light behind it take that colour;
---   3. his own little knife from the same set rises out of it spinning, slows and stops facing you (1.1 s); then its
---      name and rarity, NEW! or the coins back, and the buttons; the knife keeps a slow turn and a gentle bob.
+-- maths the offline film uses), no reel. Owner, Oct 20 07:51: "make the opening animation of the crates feel more
+-- premium, right now it feels too ai ... remove [the circle around the knife] ... add s nice animation for the knife
+-- when it starts rising up": restraint and timing, light instead of shapes (no rays, rings, sparks, discs or flash):
+--   1. his crate rocks and jumps a little harder and faster, a wooden knock on each jump (2.1 s);
+--   2. its top (his lid, roof or jaw) cracks open a few degrees with a soft knock and light in the prize's rarity
+--      colour spills out of the gap (his glowing parts and the light take that colour); a short pause;
+--   3. it swings open with a soft overshoot; his own little knife from the same set rises out slowly (a strong
+--      ease-out, leaning a little, one slow turn), the camera easing in a touch, a few small motes drifting up from
+--      inside; it settles into a gentle hover facing you and one glint runs along its blade;
+--   4. its name and rarity fade in, then NEW! or the coins back, and the buttons (4.45 s in).
+--   A dark knife (Hollow Moon) gets a soft light behind its blade, shaped and leaned like the blade (KnifeLight).
 --   Without his model (not loaded yet) the plain crate and the reel play as below. The odds by rarity and the pity line
 --   show under the crate while it builds up.
 -- Rarity colours are the Spin wheel's (CrateArt.color): Legendary is pink, never gold (owner: "no gold anywhere").
 -- The HUD's coin count waits for the prize (State.hold("Coins")), so a duplicate's coins don't give it away.
 -- Kid-safe: every card on the reel is a fair draw with the real odds (Shared/CrateRoll.strip), nothing is planted next
--- to the stop; at most one flash a second; the odds and the pity counter are in the Shop and on this screen.
+-- to the stop; at most one flash a second (the 3D opening has none); the odds and the pity counter are in the Shop and
+-- on this screen.
 -- Tap anywhere while it runs to skip to the prize. OPEN AGAIN opens another (same price), BACK returns to the Shop.
 -- Not in a round or during the Secret cutscene (HuzzCinematic): it won't start, and closes if the cutscene begins.
 -- Laid out at 1280 x 720 like the Spin the Wheel screen; plain frames (no CanvasGroup). Every moving part is driven by
@@ -83,7 +89,6 @@ local CHIPS = 6 -- odds by rarity under the reel (Common .. Mythic)
 -- the 3D opening (his crates): its timeline (Shared/CrateMotion), where his crate stands, and where the words go
 local T3 = CrateMotion.T
 local STAGE = { Y = 280, W = 560, H = 400 } -- the crate's ViewportFrame, centred at (CX, Y)
-local LID_Y = 272 -- about where his crate's top is on screen (the ring and sparks as it opens)
 local WORDS3 = { Name = 478, Rarity = 514, Status = 556, Sub = 572, Bottom = 600 } -- under the crate, for the reveal
 
 local function clamp01(x: number): number return math.clamp(x, 0, 1) end
@@ -135,9 +140,9 @@ function CrateOpen.build(parent: Instance)
 	local cratePop = crate:FindFirstChild("Pop") :: UIScale
 	local lidHome = lid.Position
 	-- his 3D crate (UI/Crate3D builds its ViewportFrame in here at run time), and the knife's name and rarity under it
-	-- a soft light behind the knife as it rises (CrateMotion.backlight: nearly white for a black blade, so Hollow Moon
-	-- never reads as a thin dark sliver on the coloured light), moved behind the knife's show spot at run time
-	local backlight = Kit.art("DanceFxGlow", { Name = "KnifeLight", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(CX, 205), Size = UDim2.fromOffset(250, 250), ScaleType = Enum.ScaleType.Stretch, ImageTransparency = 1, Visible = false, ZIndex = 3, Parent = group })
+	-- a soft light right behind a dark knife's blade (CrateMotion.rimLight: only for a dark blade, so Hollow Moon never
+	-- reads as a thin dark sliver), stretched along the blade and leaned with it at run time (light, never a disc)
+	local backlight = Kit.art("DanceFxGlow", { Name = "KnifeLight", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(CX, 205), Size = UDim2.fromOffset(90, 300), ScaleType = Enum.ScaleType.Stretch, ImageTransparency = 1, Visible = false, ZIndex = 3, Parent = group })
 	local stage = new("Frame", { Name = "Stage3D", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(CX, STAGE.Y), Size = UDim2.fromOffset(STAGE.W, STAGE.H), BackgroundTransparency = 1, Visible = false, ZIndex = 4, Parent = group })
 	local knifeName = words({ Name = "KnifeName", Text = "", FontFace = F.Big, TextSize = 36, Position = UDim2.fromOffset(240, WORDS3.Name), Size = UDim2.fromOffset(800, 40), Visible = false, ZIndex = 25, Parent = group }, 3)
 	local knifeRarity = words({ Name = "KnifeRarity", Text = "", FontFace = F.Big, TextSize = 22, Position = UDim2.fromOffset(240, WORDS3.Rarity), Size = UDim2.fromOffset(800, 26), Visible = false, ZIndex = 25, Parent = group }, 2.5)
@@ -434,6 +439,13 @@ function CrateOpen.build(parent: Instance)
 		State.release("Coins") -- (the HUD may show the coins now)
 	end
 
+	-- A label's words and outline at u of their fade in (0 hidden .. 1 shown).
+	local function fade(l: TextLabel, u: number)
+		l.TextTransparency = 1 - easeOut(u, 2)
+		local o = l:FindFirstChild("Outline") :: UIStroke?
+		if o then o.Transparency = 1 - easeOut(u, 2) end
+	end
+
 	-- Everything on screen at time t of the 3D opening (his crate; see the header).
 	local function render3d(t: number, dt: number)
 		local item = result and crateDef.Items[result.index]
@@ -444,41 +456,36 @@ function CrateOpen.build(parent: Instance)
 		stage.Visible = true
 		title.Position = UDim2.fromOffset(240, TITLE_Y.Prize)
 		view3d.pose(t, calm, if item then col else nil)
-		-- the light behind it: green while it builds up, the prize's colour once it opens, brighter as it does
-		local bright, mix = CrateMotion.glow(t)
-		crateRays.Visible = true
-		crateRays.ImageColor3 = C.Accent:Lerp(col, mix)
-		crateRays.ImageTransparency = 0.8 - 0.4 * bright
-		crateRays.Rotation += dt * (if calm then 10 else 20 + 70 * bright)
-		if item then
-			local shop = CoinShop.get(item.Id)
-			local lift, lightA, pale = CrateMotion.backlight(t, shop and shop.Colors and shop.Colors[1])
-			backlight.Visible = lightA < 1
-			backlight.ImageColor3, backlight.ImageTransparency = col:Lerp(Color3.new(1, 1, 1), lift), lightA
-			crateRays.ImageColor3 = crateRays.ImageColor3:Lerp(Color3.new(1, 1, 1), pale)
-			backlight.Position = UDim2.fromOffset(CX, STAGE.Y - math.round(view3d.knifeAt() * STAGE.H))
-		else
-			backlight.Visible = false
+		-- no rays, rings, sparks or discs here (owner: "too ai"): the light is his crate's own glow (Crate3D)
+		crateRays.Visible = false
+		hideFx()
+		-- a dark knife: a soft light behind its blade, stretched along it and leaned with it
+		local shop = item and CoinShop.get(item.Id)
+		local rim = if item then CrateMotion.rimLight(t, shop and shop.Colors and shop.Colors[1]) else 0
+		backlight.Visible = rim > 0
+		if rim > 0 then
+			local y, len, lean = view3d.knifeScreen()
+			local long = math.max(math.round(len * STAGE.H * 1.25), 2)
+			backlight.Size = UDim2.fromOffset(math.max(math.round(long * 0.3), 2), long)
+			backlight.Position = UDim2.fromOffset(CX, STAGE.Y - math.round(y * STAGE.H))
+			backlight.Rotation = math.deg(lean)
+			backlight.ImageColor3 = col:Lerp(Color3.new(1, 1, 1), CrateMotion.RimWhite)
+			backlight.ImageTransparency = 1 - rim
 		end
-		-- a wooden knock on each jump, the pop as it opens, a thunk as the knife stops
+		-- a wooden knock on each jump, a soft low knock as it cracks, a softer pop as it opens, a thunk as the knife stops
 		for k, at in CrateMotion.Ticks do
 			if t >= at and t < T3.Build and not fired["knock" .. k] and not skipped then
 				fired["knock" .. k] = true
-				Sfx.play("roulette_tick", { volume = 0.45 + 0.05 * k, pitch = 0.85 + 0.04 * k })
+				Sfx.play("roulette_tick", { volume = 0.4 + 0.04 * k, pitch = 0.85 + 0.03 * k })
 			end
 		end
-		if t >= T3.Build and not fired.pop and not skipped then
+		if t >= T3.Crack and not fired.crack and not skipped then
+			fired.crack = true
+			Sfx.play("roulette_tick", { volume = 0.6, pitch = 0.6 })
+		end
+		if t >= T3.Open and not fired.pop and not skipped then
 			fired.pop = true
-			Sfx.play("countdown_go", { volume = 0.7 })
-		end
-		local pu = (t - T3.Build) / 0.6
-		if pu >= 0 and pu < 1 and not skipped and not calm and item then
-			ring(1, CX, LID_Y, 460, pu, col, 8)
-			for i = 1, 12 do
-				spark(i, CX, LID_Y, (i / 12) * math.pi * 2 + 0.3, 200 + (i % 3) * 30, pu, if i % 2 == 0 then col else Color3.new(1, 1, 1), 14)
-			end
-		elseif t >= T3.Build + 0.6 and t < T3.Reveal then
-			hideFx()
+			Sfx.play("countdown_go", { volume = 0.4, pitch = 0.9 })
 		end
 		if t >= T3.Rise + T3.RiseLen and not fired.land and item then
 			fired.land = true
@@ -493,28 +500,25 @@ function CrateOpen.build(parent: Instance)
 				fired.reveal = true
 				showPrize3d()
 				Sfx.play(if rank() >= CrateRoll.RANK.Epic then "spin_big_win" else "spin_win")
-				-- one soft flash for Epic and up (never more than one a second, whoever asks)
-				if rank() >= CrateRoll.RANK.Epic and not skipped and not calm and os.clock() - lastFlash >= 1 then
-					lastFlash = os.clock()
-					flash.Visible = true
-				end
 			end
-			if result.new and not fired.reward and t >= T3.Reveal + 0.35 then
+			if result.new and not fired.reward and t >= T3.Reveal + 0.5 then
 				fired.reward = true
 				Sfx.play("reward")
 			end
-			if flash.Visible then
-				local fu = clamp01((t - T3.Reveal) / 0.35)
-				flash.BackgroundTransparency = 0.55 + 0.45 * fu
-				if fu >= 1 then flash.Visible = false end
-			end
-			local nu = clamp01((t - T3.Reveal) / 0.3)
+			-- the words fade in (no flash, no pop): the title and name first, the rarity a beat later
+			local nu = if skipped then 1 else clamp01((t - T3.Reveal) / 0.45)
+			local ru = if skipped then 1 else clamp01((t - T3.Reveal - 0.12) / 0.45)
 			knifeName.Visible, knifeRarity.Visible = true, true
-			knifeName.Position = UDim2.fromOffset(240, WORDS3.Name + math.round(16 * (1 - easeOut(nu, 3))))
-			local su = clamp01((t - T3.Reveal - 0.3) / 0.3)
+			knifeName.Position = UDim2.fromOffset(240, WORDS3.Name + math.round(8 * (1 - easeOut(nu, 3))))
+			fade(knifeName, nu)
+			fade(title, nu)
+			fade(knifeRarity, ru)
+			local su = if skipped then 1 else clamp01((t - T3.Reveal - 0.4) / 0.4)
 			status.Visible, sub.Visible = su > 0, su > 0 and sub.Text ~= ""
-			statusPop.Scale = if calm or skipped then 1 else 0.5 + 0.5 * easeOutBack(su)
-			local bu2 = clamp01((t - T3.Reveal - 0.45) / 0.3)
+			statusPop.Scale = if calm or skipped then 1 else 0.92 + 0.08 * easeOut(su, 3)
+			fade(status, su)
+			fade(sub, su)
+			local bu2 = clamp01((t - T3.Reveal - 0.6) / 0.3)
 			bottom.Visible = bu2 > 0
 			bottom.Position = UDim2.fromOffset(240, WORDS3.Bottom + math.round(40 * (1 - easeOut(bu2, 3))))
 			if bu2 >= 1 and running then
@@ -755,6 +759,11 @@ function CrateOpen.build(parent: Instance)
 		-- his 3D crate when this crate has his model (else the plain crate and the reel)
 		if view3d then view3d.destroy(); view3d = nil end
 		knifeName.Visible, knifeRarity.Visible, stage.Visible = false, false, false
+		for _, l in { title, knifeName, knifeRarity, status, sub } do
+			l.TextTransparency = 0
+			local o = l:FindFirstChild("Outline") :: UIStroke?
+			if o then o.Transparency = 0 end
+		end
 		crateRays.ImageColor3 = C.Accent
 		local okView, v = pcall(function() return if crateDef.Model and Crate3D.available(crateDef) then Crate3D.new(stage, crateDef, "Open", { ZIndex = 4 }) else nil end)
 		if not okView then warn("[HuzzUI] CrateOpen: his crate couldn't be drawn:", v) end

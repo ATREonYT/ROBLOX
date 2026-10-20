@@ -140,19 +140,32 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
   until he uploads them (`Config/ImageIds`, README checklist); in Play the game draws them (`UI/ImageLoader`). The
   Starter and Dance crates keep their old cards below. Side by side: `docs/previews/crate-shop-vs-mockup.jpg`.
 - **The 3D opening** (`Screens/CrateOpen` with `UI/Crate3D`; timeline `Shared/CrateMotion` (T), one maths for the game
-  and the film): shut (a crate built open is shut first), it rocks and jumps harder and faster for 2.1 s with a
-  knock on each of 9 closer-and-closer jumps; the top swings open with a small overshoot (to 100 deg from shut) and a
-  ring and sparks in the prize's rarity colour, his glow parts and the light behind it turn that colour (if Roblox refuses the tint on his SurfaceAppearance, the
-  part's own colour takes it); his own
-  little knife from the same set rises out, spinning 3 turns and slowing, and stops facing you (1.1 s); at 3.35 s its
-  name and rarity, NEW! or the coins, the buttons; it keeps a slow sway and bob. A soft light fades in right behind the knife as it rises (`KnifeLight`,
-  `CrateMotion.backlight`): nearly white, and the big light behind everything turns pale too, for a dark knife (its
-  first `CoinShop` colour darker than 0.3, like Hollow Moon or Shadow Cleaver), so it never reads as a thin dark
-  sliver; the rarity colour lifted towards white for the rest. The lid swings on its back hinge (checked from the
-  side, `SIDE=1` on the film scene), it never lifts flat. No reel for these crates; the odds
-  chips and pity line show under it while it builds up; one soft flash for Epic and up, at most once a second; tap to
-  skip; reduced motion goes straight to the prize. Without his model loaded it plays the old crate and reel. Film:
-  `docs/previews/crate-open-3d.mp4` and `docs/previews/crate-open-3d-strip.jpg` (`tools/preview/motion3d/crate_open_scene.luau`).
+  and the film). Owner, Oct 20 07:51: "Can you please make the opening animation of the crates feel more premium,
+  right now it feels too ai, as now they have the circle around the knife when it opens, remove it, add s nice
+  animation for the knife when it starts rising up from the crater". So: restraint and timing, light instead of
+  shapes; the rays behind the crate, the ring and sparks, the round light behind the knife and the Epic flash are gone
+  from the 3D opening. No crate or case opening in his Huss Valley references (his uploads and `design/` were looked
+  through Oct 20), so the beats are ours:
+  - shut (a crate built open is shut first), it rocks and jumps a little harder and faster for 2.1 s, a knock on each
+    of 9 closer-and-closer jumps;
+  - 2.1 s: the top cracks open about 9 deg with a low knock and holds; light in the prize's rarity colour spills out of
+    the gap (a thin glowing layer just under his top, `Spill`; his glow parts and the viewport's ambient light take
+    the colour; if Roblox refuses the tint on his SurfaceAppearance, the part's own colour takes it);
+  - 2.6 s: it swings open with a soft overshoot (to 100 deg from shut, at most 10% past) and a soft pop;
+  - 2.75 s: his own little knife from the same set rises out slowly (1.6 s, a strong ease-out), leaning about 10 deg,
+    making one slow turn, and settles into a gentle hover facing you (a small bob and sway); the camera eases in 8%;
+    six small motes in the rarity colour drift up from inside, one at a time (never a burst);
+  - 4.2 s: one glint, a thin streak of light sliding up the face of the blade (`Glint`);
+  - 4.45 s: its name and the title fade in, the rarity a beat later, then NEW! or the coins, the buttons.
+  A dark knife (its first `CoinShop` colour darker than 0.3, like Hollow Moon or Shadow Cleaver) gets a soft light
+  right behind its blade, stretched along it and leaned with it (`KnifeLight`, `CrateMotion.rimLight`, the rarity
+  colour lifted towards white), so it never reads as a thin dark sliver; the rest get none. The lid swings on its back
+  hinge (checked from the side, `SIDE=1` on the film scene), it never lifts flat. No reel for these crates; the odds
+  chips and pity line show under it while it builds up; no flash at all; tap to skip; reduced motion: no shake,
+  motes or glint, and the knife is simply there. `Crate3D.RevealHook` (nil today) is where the knife's own effect
+  (the knife VFX work, Rare and up) can hook in when his knife is placed. Without his model loaded it plays the old
+  crate and reel. Film: `docs/previews/crate-open-3d.mp4`, `docs/previews/crate-open-3d-strip.jpg` and before/after
+  `docs/previews/crate-open-3d-before-after.jpg` (`tools/preview/motion3d/crate_open_scene.luau`).
 - **The server decides first:** `OpenCrate` takes the Aura once, rolls with the shown odds and pity, gives the prize
   and answers `{ index, name, rarity, new, coins, pity, left, strip, at }`. `strip` is the reel: 48 honest draws with
   the shown odds (never pity, nothing planted next to the stop: `CrateRoll.strip`, spec checks the cards beside the
@@ -265,7 +278,8 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
 - Crates: contents, price and odds are Claude's first pick; the Starter and Dance crate pictures are drawn
   (stand-in); the sounds are our made stand-ins (no whoosh or riser of its own yet).
 - His three knife crates: their real look (meshes, textures, glow) is only Studio's to judge: offline pictures draw his
-  parts as boxes. Not seen in Studio: the 3D opening, his picture cards in the Shop, whether `SurfaceAppearance.Color` takes the rarity
+  parts as boxes. Not seen in Studio: the 3D opening (the glint and motes are plain Neon parts: a ViewportFrame has no bloom, so
+  they may read flatter than in the film), his picture cards in the Shop, whether `SurfaceAppearance.Color` takes the rarity
   tint on his glow parts (pcall: nothing breaks if not). The crate keys' Robux IDs are 0 and the 25 R$ is ours. His
   picture's crates (the Shop cards) are a concept render; the opening shows his model as he built it (the Dojo roof,
   the crystals, the jaw), so the two look a little different. His cards are a mockup at 2172 px: sharp enough at

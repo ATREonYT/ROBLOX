@@ -194,16 +194,16 @@ for i = 2, #CrateMotion.Ticks do table.insert(gaps, CrateMotion.Ticks[i] - Crate
 local closer = true
 for i = 2, #gaps do if gaps[i] > gaps[i - 1] + 1e-6 then closer = false end end
 check("the knocks come closer and closer", closer and CrateMotion.Ticks[#CrateMotion.Ticks] < T.Build)
-check("shut until it opens", CrateMotion.lid(T.Build - 0.01) == 0)
+check("shut until it cracks", CrateMotion.lid(T.Crack - 0.01) == 0)
 local peak = 0
-for t = T.Build, T.Build + T.OpenLen, 0.02 do peak = math.max(peak, CrateMotion.lid(t)) end
+for t = T.Open, T.Open + T.OpenLen, 0.02 do peak = math.max(peak, CrateMotion.lid(t)) end
 check(string.format("it opens past its rest and settles (peak %.0f deg, rest %.0f deg)", math.deg(peak), math.deg(CrateMotion.lid(T.Reveal))),
 	peak > CrateMotion.lid(T.Reveal) and math.abs(CrateMotion.lid(T.Reveal) - CrateMotion.LidOpen) < 1e-6)
-check("still once open", CrateMotion.shake(T.Build + T.OpenLen + 0.01).roll == 0)
-check("no knife before it opens", not CrateMotion.knife(T.Rise - 0.01).seen and T.Rise > T.Build)
+check("still once open", CrateMotion.shake(T.Open + T.OpenLen + 0.01).roll == 0)
+check("no knife before it opens", not CrateMotion.knife(T.Rise - 0.01).seen and T.Rise > T.Open)
 local endK = CrateMotion.knife(T.Rise + T.RiseLen)
 check("the knife ends up at its show spot, full size", math.abs(endK.up - 1) < 1e-6 and math.abs(endK.scale - 1) < 1e-6)
-check("the knife ends facing you (whole turns)", math.abs(endK.spin - 2 * math.pi * CrateMotion.Spins) < 1e-6)
+check("the knife ends facing you (whole turns)", math.abs(endK.spin - 2 * math.pi * CrateMotion.Turns) < 1e-6)
 check("the reveal comes once the knife has risen", T.Reveal >= T.Rise + T.RiseLen - 0.05)
 local calmMoves = false
 for t = 0, T.Reveal, 0.05 do
@@ -212,8 +212,8 @@ for t = 0, T.Reveal, 0.05 do
 end
 check("reduced motion: the crate never shakes", not calmMoves)
 local a, b = CrateMotion.glow(0.1)
-local c2, d2 = CrateMotion.glow(T.Build + 0.3)
-check("the light inside takes the rarity colour as it opens", b == 0 and d2 > 0.999 and c2 > a)
+local c2, d2 = CrateMotion.glow(T.Crack + 0.3)
+check("the light inside takes the rarity colour as it cracks open", b == 0 and d2 > 0.999 and c2 > a)
 
 print(string.format("CrateModels: %d passed, %d failed", passed, failed))
 if failed > 0 then process.exit(1) end

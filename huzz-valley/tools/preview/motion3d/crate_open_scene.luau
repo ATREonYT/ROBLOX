@@ -5,9 +5,12 @@
 -- STAND-IN LOOK: his crate meshes can't be fetched offline (cloud), so each of his MeshParts is drawn as a box (or a
 -- ball for bells, gems, eyes...) of its real size and place, coloured by its name after his crate shop mockup. The
 -- motion and the framing are the game's; the look is only Studio's to judge.
--- One crate opening, 30 fps (CRATE=Beast, ITEM=<a Config/CoinShop key in it>, default its first Epic), the rarity
--- light behind it as the opening screen draws it; stills every few beats for a strip. SIDE=1 films it from the right
--- (to see the top swing on its hinge).
+-- One crate opening, 30 fps (CRATE=Beast, ITEM=<a Config/CoinShop key in it>, default its first Epic: Hollow Moon), as
+-- the game draws it since the owner's Oct 20 07:51 "feels too ai" (no rays, rings or disc): the crack and the light
+-- spilling in the rarity colour, the slow rise with one turn, the camera easing in, the few motes, the one glint, a dark
+-- knife's soft light behind its blade (UI KnifeLight), then its name and rarity fading in (drawn where the film has
+-- room, not at the screen's exact spot); stills every few beats for a strip. SIDE=1 films it from the right (to see
+-- the top swing on its hinge).
 -- From the repo root: KNIFE_MESHES=<knives.json> MOTION3D_KEEP=<dir> [SIDE=1] sh huzz-valley/tools/preview/motion3d/video.sh \
 --   huzz-valley/tools/preview/motion3d/crate_open_scene.luau <out.mp4>
 local fs = require("@lune/fs")
@@ -120,7 +123,7 @@ local function makeCrate(scene, crate, at)
 			end
 		end
 	end
-	local c = { parts = parts, swings = swings, hinge = hinge, size = size, h = size.Y, at = at, set = set }
+	local c = { parts = parts, swings = swings, hinge = hinge, hy = hy, size = size, h = size.Y, at = at, set = set }
 	function c.place(root, angle, mix, rarity)
 		local swing = hinge * CFrame.Angles(angle - built, 0, 0) * hinge:Inverse()
 		for i, p in parts do
@@ -168,6 +171,7 @@ for _, part in mesh or {} do
 end
 local mmid, mh = (mlo + mhi) / 2, math.max(mhi.Y - mlo.Y, 0.05)
 local kBase = (c.h * 0.78) / mh
+local kLen, kDeep = mh, math.max(mhi.Z - mlo.Z, 0.02)
 local knifeBoxes = {}
 if not mesh then -- (no mesh file: his little knife's parts as boxes)
 	local km = CrateModels.knife(c.set, CoinShop.get(item.Id))
@@ -180,23 +184,40 @@ if not mesh then -- (no mesh file: his little knife's parts as boxes)
 	end
 	local _, ks = box(km)
 	kBase = (c.h * 0.78) / ks.Y
+	kLen, kDeep = ks.Y, ks.Z
 end
+-- the motes and the one glint, as UI/Crate3D draws them (Neon parts)
+local moteBoxes = {}
+for i = 1, CrateMotion.Motes do
+	local b = scene:addBox(CFrame.new(), Vector3.new(0.1, 0.1, 0.1), "#ffffff")
+	b.Shape, b.Neon, b.Hidden = "ball", true, true
+	moteBoxes[i] = b
+end
+local glintBox = scene:addBox(CFrame.new(), Vector3.new(0.1, 0.1, 0.1), "#ffffff")
+glintBox.Neon, glintBox.Hidden = true, true
+local spillBox = scene:addBox(CFrame.new(), Vector3.new(c.size.X * 0.8, c.h * 0.02, c.size.Z * 0.7), lerpHex(rarity, "#ffffff", 0.35))
+spillBox.Neon = true
+local dark = CrateMotion.isDark(knifeColor)
 
 local T = CrateMotion.T
 local FPS = 30
 local t0, t1 = -0.3, T.Reveal + 1.6
 local stills, n = {}, 0
-local marks = { 0.3, 1.0, 1.7, 2.0, 2.25, 2.45, 2.7, 3.0, 3.35, 4.2 }
+local marks = { 1.0, 2.0, 2.3, 2.75, 3.0, 3.3, 3.7, 4.3, 4.6, 5.4 }
 for f = 0, math.floor((t1 - t0) * FPS) do
 	local t = t0 + f / FPS
 	local s = CrateMotion.shake(t)
 	local root = CFrame.new(0, s.lift * c.h, 0) * CFrame.Angles(s.tilt, 0, s.roll) * CFrame.new(0, c.h / 2, 0)
 	local bright, mix = CrateMotion.glow(math.max(t, 0))
 	c.place(root, CrateMotion.lid(t), mix, rarity)
+	-- the light inside, seen through the gap as it cracks (UI/Crate3D "Spill")
+	spillBox.Hidden = mix * bright <= 0
+	spillBox.Alpha = 0.8 * mix * bright
+	spillBox.CFrame = root * CFrame.new(0, c.hy - c.h * 0.025, 0)
 	local kp = CrateMotion.knife(t)
 	local scale = kBase * kp.scale
 	local at = CFrame.new(0, c.h * (0.35 + 0.95 * kp.up), -c.size.Z * 0.05) * CFrame.Angles(0, kp.spin, 0) * CFrame.Angles(0, 0, kp.tilt)
-	local extra = { fov = 30, meshes = {}, sprites = {} }
+	local extra = { fov = 30, meshes = {}, sprites = {}, overlay = { texts = {} } }
 	if kp.seen and mesh then
 		local cf = at * CFrame.new(-mmid * scale)
 		local x, y, z, r00, r01, r02, r10, r11, r12, r20, r21, r22 = cf:GetComponents()
@@ -207,19 +228,46 @@ for f = 0, math.floor((t1 - t0) * FPS) do
 		kb.box.Size = kb.size * scale
 		kb.box.CFrame = at * (CFrame.new(kb.off.Position * scale) * kb.off.Rotation)
 	end
-	-- the opening screen's light behind it (UI CrateRays: green while it builds up, the rarity colour once open), kept
-	-- inside the frame
-	local lift, lightA, pale = CrateMotion.backlight(t, knifeColor)
-	local glowCol = lerpHex(lerpHex("#5be07a", rarity, mix), "#ffffff", pale)
-	table.insert(extra.sprites, { p = { 0, c.h * 1.05, c.size.Z * 1.6 }, s = c.h * (1.15 + 0.35 * bright), c = glowCol, a = 0.12 + 0.24 * bright, t = "@disc", add = true })
-	-- and the soft light right behind the knife (UI KnifeLight, Shared/CrateMotion.backlight: nearly white for a black blade)
-	if lightA < 1 then
-		table.insert(extra.sprites, { p = { 0, c.h * 1.3, c.size.Z * 0.9 }, s = c.h * 1.6, c = lerpHex(rarity, "#ffffff", lift), a = 1 - lightA, t = "glow", add = true })
+	-- the motes: a few small soft beads in the rarity colour drifting up from inside (none in a burst)
+	local shown = CrateMotion.motes(math.max(t, 0))
+	for i, b in moteBoxes do
+		local q = shown[i]
+		b.Hidden = q == nil
+		if q then
+			b.Size = Vector3.new(1, 1, 1) * (q.size * c.h)
+			b.CFrame = CFrame.new(q.x * c.size.X, q.y * c.h, q.z * c.size.Z)
+			b.Color, b.Alpha = lerpHex(rarity, "#ffffff", 0.3), q.alpha
+		end
 	end
-	local phase = if t < T.Build then "builds up" elseif t < T.Rise then "opens" elseif t < T.Reveal then "the knife rises" else "reveal: " .. item.Name .. " (" .. item.Rarity .. ")"
+	-- the one glint: a thin streak of light sliding up the face of the blade as it settles
+	local along, ga = CrateMotion.glint(t)
+	glintBox.Hidden = not (along and kp.seen)
+	if along and kp.seen then
+		local len = kLen * scale
+		glintBox.Size = Vector3.new(len * 0.02, len * 0.14, len * 0.01)
+		glintBox.CFrame = at * CFrame.new(0, (along - 0.5) * len * 0.9, -(kDeep * scale / 2 + len * 0.01))
+		glintBox.Alpha = 0.85 * ga
+	end
+	-- a dark knife's soft light right behind its blade (UI KnifeLight: stretched along the blade, leaned with it)
+	local rim = CrateMotion.rimLight(t, knifeColor)
+	if rim > 0 and kp.seen then
+		local long = c.h * 0.78 * kp.scale * 1.25
+		local lp = at.Position + Vector3.new(0, 0, c.size.Z * 0.3)
+		table.insert(extra.sprites, { p = { lp.X, lp.Y, lp.Z }, s = long * math.sqrt(0.3), sq = 0.5 * math.log(1 / 0.3, 2), r = -math.deg(kp.tilt * math.cos(kp.spin)),
+			c = lerpHex(rarity, "#ffffff", CrateMotion.RimWhite), a = rim, t = "glow", add = true })
+	end
+	-- its name and rarity fade in after it settles (the screen's words: white with a dark outline, the rarity in its colour)
+	if t >= T.Reveal then
+		local function ease(u) u = math.clamp(u, 0, 1); return 1 - (1 - u) ^ 2 end
+		local nu, ru = ease((t - T.Reveal) / 0.45), ease((t - T.Reveal - 0.12) / 0.45)
+		table.insert(extra.overlay.texts, { text = item.Name, x = 240, y = 596 + math.round(8 * (1 - nu)), w = 800, h = 46, c = "#ffffff", a = nu, o = "#140d24", ow = 3, italic = true, weight = 900 })
+		table.insert(extra.overlay.texts, { text = string.upper(item.Rarity), x = 240, y = 646, w = 800, h = 28, c = rarity, a = ru, o = "#140d24", ow = 2.5, italic = true, weight = 900 })
+	end
+	local phase = if t < T.Crack then "builds up" elseif t < T.Open then "cracks: light spills out" elseif t < T.Rise then "opens"
+		elseif t < T.Reveal then "the knife rises" else "reveal: " .. item.Name .. " (" .. item.Rarity .. ")"
 	extra.caption = string.format("%s  t=%.2fs  %s  (his crate parts as stand-in boxes; his knife's .glb)", crate.Name, math.max(t, 0), phase)
 	local s2 = CrateMotion.shake(t)
-	local pos, look = aim(c, s2.grow)
+	local pos, look = aim(c, s2.grow * CrateMotion.push(t))
 	if process.env.SIDE then -- (SIDE=1: from the right, to see the top swing on its hinge rather than lift)
 		pos = look + Vector3.new((pos - look).Magnitude, c.h * 0.15, 0)
 	end
