@@ -9,6 +9,7 @@
 --   * premium, not "too ai" (owner, Oct 20 07:51): no rays, rings, sparks or flash in the 3D opening;
 --   * the body and the light inside never move, only the top swings;
 --   * a soft light stands behind the knife only when its blade is dark (Hollow Moon).
+--   * the lit layer under the top shows while it is cracked and is gone once it is open.
 -- From tools/preview: lune run harness.luau ../../src - @check_crate3d.luau setup_ui.luau
 local ok, fails = 0, 0
 local function check(name, cond)
@@ -100,13 +101,13 @@ local function frames(n)
 	for _ = 1, n do
 		__fireOn(RunService, "RenderStepped", 1 / 30)
 		clock += 1 / 30
-		if flash.Visible and not wasFlash then table.insert(flashes, clock) end
-		wasFlash = flash.Visible
+		if flash and flash.Visible and not wasFlash then table.insert(flashes, clock) end
+		wasFlash = flash ~= nil and flash.Visible
 		if oBody.Parent then
 			local up = oBody.CFrame.UpVector
 			maxRoll = math.max(maxRoll, math.deg(math.acos(math.clamp(up.Y, -1, 1))))
 		end
-		if rays.Visible then raysSeen = true end
+		if rays and rays.Visible then raysSeen = true end
 		for _, d in screen:GetDescendants() do
 			if (string.match(d.Name, "^Ring%d") or string.match(d.Name, "^Spark%d")) and d:IsA("GuiObject") and d.Visible then fxSeen = true end
 		end
@@ -132,6 +133,8 @@ frames(27) -- 3.3 s: open
 local lidNow = rel(oLid)
 check(string.format("the lid swings up and back as it opens (z %.2f -> %.2f)", lidRel0.Z, lidNow.Z), lidNow.Z > lidRel0.Z + 0.3)
 check("the light inside never moves", (rel(oInside) - insideRel0).Magnitude < 0.01)
+local spill = view:FindFirstChild("Spill")
+check("the lit layer under the top is gone once it is open (no flat slab)", spill ~= nil and spill.Transparency > 0.999)
 check("no knife before it opens", not knifeSeenEarly)
 frames(36) -- 4.5 s: the reveal (4.45 s)
 local nameNow = screen:FindFirstChild("KnifeName", true)
@@ -157,7 +160,7 @@ check("its name has faded in", nameNow.TextTransparency < 0.01)
 check("NEW! or the coins line shows", screen.Group.Status.Visible and screen.Group.Status.Text ~= "")
 check("OPEN AGAIN and BACK show", screen.Group.Bottom.Visible)
 check(`no flash in the 3D opening ({#flashes})`, #flashes == 0)
-check("no rays, rings or sparks in the 3D opening", not raysSeen and not fxSeen)
+check("no rays, rings or sparks in the 3D opening", not raysSeen and not fxSeen and flash == nil and rays == nil)
 local item = beast.Items[1]
 check("the prize is yours", data.Cosmetics ~= nil and next(data.Cosmetics) ~= nil)
 

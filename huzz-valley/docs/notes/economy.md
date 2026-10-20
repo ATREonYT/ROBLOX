@@ -149,9 +149,12 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
   - shut (a crate built open is shut first), it rocks and jumps a little harder and faster for 2.1 s, a knock on each
     of 9 closer-and-closer jumps;
   - 2.1 s: the top cracks open about 9 deg with a low knock and holds; light in the prize's rarity colour spills out of
-    the gap (a thin glowing layer just under his top, `Spill`; his glow parts and the viewport's ambient light take
-    the colour; if Roblox refuses the tint on his SurfaceAppearance, the part's own colour takes it);
-  - 2.6 s: it swings open with a soft overshoot (to 100 deg from shut, at most 10% past) and a soft pop;
+    the gap (a thin glowing layer just under his top, `Spill`, `CrateMotion.spill`; his glow parts and the viewport's
+    ambient light take the colour; if Roblox refuses the tint on his SurfaceAppearance, the part's own colour takes
+    it);
+  - 2.6 s: it swings open with a soft overshoot (to 100 deg from shut, at most 10% past) and a soft pop; the lit
+    layer fades out over 0.4 s as it opens, so it is the light only while the top is cracked and never a flat slab
+    inside the open crate (the lavender floor in the film after that is his own glow part, drawn as a stand-in box);
   - 2.75 s: his own little knife from the same set rises out slowly (1.6 s, a strong ease-out), leaning about 10 deg,
     making one slow turn, and settles into a gentle hover facing you (a small bob and sway); the camera eases in 8%;
     six small motes in the rarity colour drift up from inside, one at a time (never a burst);
@@ -175,17 +178,19 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
   cutscene ("Open crates in the lobby.") and with too little Aura.
 - **The opening** (`Screens/CrateOpen`, 1280 x 720 like the Spin wheel, one RenderStepped loop on its own clock, so
   the film matches the game): the crate rattles harder for 0.6 s (six `roulette_tick` knocks, closer and closer), the
-  lid pops off (`countdown_go`) with a green ring and sparks; the reel opens between two green light rails (streaks run
+  lid pops off (`countdown_go`, softer; no ring or sparks since Oct 20); the reel opens between two green light rails (streaks run
   along them at the reel's speed) and spins 4.6 s (ease-out, cubic, so the last cards still creep past) under the marker, `spin_tick` per card (max
   ~22/s, a little higher pitched as it slows); it runs 24 px past its stop and settles back over 0.4 s onto the SAME
   card (`landOffset` is kept on the left part of the card so the furthest point is on it too: an honest settle, never a
   fake near-miss), with `pick_land`; the marker turns the prize's rarity colour, the prize card lifts, others dim.
-  Under the reel while it spins: the odds by rarity (chips) and the pity line. Then the prize zooms up with the prize
-  sound (`spin_win`, Epic+ `spin_big_win`; `reward` 0.35 s later if new): a burst of 14 light beams in its rarity
-  colour (smaller and fainter below Rare, white cores Epic+), soft kit rays, a smooth 8-layer glow, one soft flash
-  (Epic+, at most once a second), a spark burst, two rings and a small shake (Legendary+), its name and rarity in
-  Gotham Heavy Italic, "NEW!" or "Duplicate: +N coins" or "+N COINS"; then OPEN AGAIN / BACK and the pity line. Tap
-  anywhere skips to the prize (no settle, flash or burst); Reduced Motion goes straight there. Escape or the Secret
+  Under the reel while it spins: the odds by rarity (chips) and the pity line. Then the prize card comes up gently
+  (90% to full size) with the prize sound (`spin_win`, Epic+ `spin_big_win`; `reward` 0.5 s later if new) and a
+  smooth 8-layer glow in its rarity colour that breathes slowly; its name fades in (Gotham Heavy Italic), the rarity a
+  beat later; one glint, a white band in a gradient on the card's rim (`Glint`), runs across it once; then "NEW!" or
+  "Duplicate: +N coins" or "+N COINS" fade in, then OPEN AGAIN / BACK and the pity line. Calm like the 3D opening
+  since the owner's Oct 20 07:51 "feels too ai" (so he never sees "the circle" on any path): no light rays behind the
+  crate or the reel, no beam burst, rings, sparks, flash or shake (a UI saved before then has them: the screen
+  destroys them at start). Tap anywhere skips to the prize (no settle); Reduced Motion goes straight there, no glint. Escape or the Secret
   cutscene starting closes it and a toast says what you got.
 - **Colours:** rarity colours are the Spin wheel's (`Config/SpinWheel.RarityColors`, Legendary pink FF6FC0) on the
   crate card, odds, reel and prize (owner: "no gold anywhere"). The girls and the Shop's ITEMS knives still use
@@ -290,8 +295,8 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
 - **Crates** (owner: "I will add them later"; Oct 19: "Also create a good case opening animation"). No crate mockup
   exists in `design/`, so the Shop card follows the COINS tab's tall cards and the opening screen the Spin wheel's
   1280 x 720 layout. Polish pass (owner, Oct 19: "also check the opening animations for the crates"), judged frame by
-  frame against the best Roblox openings: the honest settle, the rails and odds framing the reel, a sharper beam
-  burst, a smooth glow, the coins held, pink Legendary, sounds on the beats (rattle, pop, ticks, thunk, prize).
+  frame against the best Roblox openings: the honest settle, the rails and odds framing the reel, a smooth glow
+  (its beam burst went on Oct 20, "too ai"), the coins held, pink Legendary, sounds on the beats (rattle, pop, ticks, thunk, prize).
 - **Oct 19 list:** "spin prices lower"; "knifes, dances, from crates"; "add easy quests as in this photo and make new
   ones everyday then recycle them"; "make friend rewards, add a friend knife (for inviting them) and add a 10% coin
   boost when a friend is in"; "if you get more than one of the same girl, make a button which makes them prestige

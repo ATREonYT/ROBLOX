@@ -211,8 +211,8 @@ for f = 0, math.floor((t1 - t0) * FPS) do
 	local bright, mix = CrateMotion.glow(math.max(t, 0))
 	c.place(root, CrateMotion.lid(t), mix, rarity)
 	-- the light inside, seen through the gap as it cracks (UI/Crate3D "Spill")
-	spillBox.Hidden = mix * bright <= 0
-	spillBox.Alpha = 0.8 * mix * bright
+	spillBox.Hidden = CrateMotion.spill(t) <= 0
+	spillBox.Alpha = 0.8 * CrateMotion.spill(t)
 	spillBox.CFrame = root * CFrame.new(0, c.hy - c.h * 0.025, 0)
 	local kp = CrateMotion.knife(t)
 	local scale = kBase * kp.scale

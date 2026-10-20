@@ -1,7 +1,8 @@
 -- Check: crates end to end offline (Config/Crates, ActionService "OpenCrate", Shop > CRATES, Screens/CrateOpen; owner
 -- Oct 19: "create a good case opening animation"). The crate holds only things that exist; the Shop shows every item's
 -- chance and the pity counter; the server takes the Aura once, gives the prize and answers with it and an honest reel;
--- the screen animates to exactly that prize, ticks, flashes at most once a second, can be skipped, opens again, and
+-- the screen animates to exactly that prize, ticks, never flashes (no rays, beams, rings or sparks either: owner, Oct 20
+-- 07:51 "feels too ai"), fades the prize's name in and runs one glint round its rim, can be skipped, opens again, and
 -- won't open in a round or during the Secret cutscene. Pity and duplicates pay out as shown.
 -- From tools/preview: lune run harness.luau ../../src - "$(cat check_crates.luau)" setup_ui.luau
 local ok, fails = 0, 0
@@ -196,6 +197,7 @@ local prizeCard = strip and strip:FindFirstChild("Card" .. Crates.Reel.At)
 local flash = screen and screen:FindFirstChild("Flash", true)
 local soundsBefore = #_G.__sounds
 local wasFlash, hintSeen = false, false
+local glintMoves, glintMax = 0, -1
 local minX = math.huge
 local function frames(n)
 	for _ = 1, n do
@@ -204,6 +206,8 @@ local function frames(n)
 		if flash and flash.Visible and not wasFlash then table.insert(flashes, os.clock()) end
 		wasFlash = flash ~= nil and flash.Visible
 		if screen and screen:FindFirstChild("Hint", true).Visible then hintSeen = true end
+		local g = screen and screen:FindFirstChild("Glint", true)
+		if g and g:IsA("UIGradient") and g.Offset.X > -0.99 then glintMoves += 1; glintMax = math.max(glintMax, g.Offset.X) end
 	end
 end
 frames(40) -- 1.3 s: shake, pop, the reel opens and starts
@@ -214,7 +218,12 @@ check("the odds by rarity show under the reel while it spins", screen.Group.Odds
 DataService.update(me, function(d) d.Coins += 5 end)
 task.wait(0.1)
 check(`the HUD's coins are held while it spins ({State.shown("Coins")} = {coinsBefore})`, State.shown("Coins") == coinsBefore and (State.data.Coins or 0) ~= coinsBefore)
-frames(190) -- to 7.6 s: stops, lands, the prize shows, the buttons come back
+frames(153) -- to 6.43 s: the prize has just come up (6.25 s)
+local pname = screen.Group.Prize.Card.PrizeName
+check(string.format("the prize's name fades in, not at once (%.2f)", pname.TextTransparency), screen.Group.Prize.Visible and pname.TextTransparency > 0.3)
+frames(37) -- to 7.67 s: the buttons come back
+check("its name has faded in", pname.TextTransparency < 0.01 and pname.Outline.Transparency < 0.01)
+check(string.format("one glint runs round the prize card's rim (%d frames, to %.2f)", glintMoves, glintMax), glintMoves >= 10 and glintMoves <= 22 and glintMax > 0.8)
 for _, s in table.move(_G.__sounds, soundsBefore + 1, #_G.__sounds, 1, {}) do if s[1] == "spin_tick" then ticks += 1 end end
 local prize = screen.Group.Prize
 check("the prize shows", prize.Visible == true)
@@ -250,7 +259,12 @@ frames(2)
 check("a tap skips to the prize", screen.Group.Prize.Visible == true)
 frames(30)
 check("after a skip the buttons come back", screen.Group.Bottom.Visible == true)
-check(`at most one flash a second ({#flashes} flashes)`, #flashes <= 1 or (flashes[2] - flashes[1]) >= 1)
+check(`no flash ({#flashes} flashes)`, #flashes == 0)
+local shapes = {}
+for _, n in { "CrateRays", "Flash", "PrizeRays", "Burst", "Ring1", "Ring2", "Spark1" } do
+	if screen:FindFirstChild(n, true) then table.insert(shapes, n) end
+end
+check(`no rays, beams, rings, sparks or flash on the screen ({table.concat(shapes, ", ")})`, #shapes == 0)
 
 -- 5. not enough Aura: refused, nothing taken
 task.wait(0.2)

@@ -73,6 +73,8 @@ check("reduced motion: the knife is simply there", kc.seen and math.abs(kc.up - 
 local _, mixBefore = M.glow(T.Crack - 0.01)
 local _, mixAfter = M.glow(T.Crack + 0.3)
 check("the rarity colour spills out as it cracks", mixBefore == 0 and mixAfter > 0.99)
+check("the lit layer shows while it is cracked and is gone 0.4 s after it opens", M.spill(T.Crack - 0.01) == 0
+	and M.spill(T.Open - 0.01) > 0.99 and M.spill(T.Open + M.SpillFade) == 0 and M.spill(T.Reveal) == 0)
 local windows, was = 0, false
 for t = 0, T.Reveal + 10, 1 / 120 do
 	local _, a = M.glint(t)

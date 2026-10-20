@@ -131,6 +131,15 @@ function CrateMotion.glow(t: number): (number, number)
 	return 0.45 + 0.3 * smooth(s) + 0.25 * smooth(o), smooth(s)
 end
 
+-- The lit layer just under the top (0 = none .. 1): it is the moment's light only while the top is cracked; it
+-- fades out over SpillFade once the top swings open, so it never reads as a flat slab inside the open crate.
+CrateMotion.SpillFade = 0.4
+function CrateMotion.spill(t: number): number
+	local T = CrateMotion.T
+	if t < T.Crack then return 0 end
+	return smooth(clamp01((t - T.Crack) / 0.25)) * (1 - smooth(clamp01((t - T.Open) / CrateMotion.SpillFade)))
+end
+
 -- One small glint along the blade as the knife settles: where it is (0 = the bottom of the knife, 1 = its tip) and
 -- how bright (0..1), or nil when there is none. Only once, never in reduced motion.
 function CrateMotion.glint(t: number, calm: boolean?): (number?, number)

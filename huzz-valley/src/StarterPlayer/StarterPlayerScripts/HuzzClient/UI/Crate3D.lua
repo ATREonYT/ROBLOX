@@ -138,8 +138,8 @@ function Crate3D.new(parent: Instance, crate: any, view: string, props: { [strin
 	for i = 1, CrateMotion.Motes do motes[i] = bead("Mote" .. i) end
 	local glint = bead("Glint")
 	glint.Shape, glint.Color = Enum.PartType.Block, Color3.new(1, 1, 1)
-	-- the light inside: a thin glowing layer just under his top, seen only through the gap as it cracks and inside once
-	-- open (a ViewportFrame has no lights of its own: Neon is how light shows)
+	-- the light inside: a thin glowing layer just under his top, seen through the gap while it is cracked, fading out as
+	-- it swings open (CrateMotion.spill; a ViewportFrame has no lights of its own: Neon is how light shows)
 	local spill = bead("Spill")
 	spill.Shape = Enum.PartType.Block
 	-- angle: how far the top is open from shut (his model as built = `built`)
@@ -206,7 +206,7 @@ function Crate3D.new(parent: Instance, crate: any, view: string, props: { [strin
 		tint(mix, color)
 		-- the light that spills out as it cracks: a touch of the rarity colour over everything (light, not a shape)
 		vp.Ambient = if color then baseAmbient:Lerp(color, 0.18 * mix * bright) else baseAmbient
-		spill.Transparency = if color then 1 - 0.8 * mix * bright else 1
+		spill.Transparency = if color then 1 - 0.8 * CrateMotion.spill(t) else 1 -- (gone 0.4 s after it swings open)
 		if color then
 			spill.Color = color:Lerp(Color3.new(1, 1, 1), 0.35)
 			spill.Size = Vector3.new(size.X * 0.8, h * 0.02, size.Z * 0.7)
