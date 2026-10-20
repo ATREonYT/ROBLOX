@@ -307,6 +307,9 @@ local function simulate(opts)
 	-- Remotes
 	local remotes = {}
 	local roundEvents = {}
+	local pullRules -- (Shared/AbilityRules, loaded below: the emulated lasso pull asks it)
+	local placedAt = {} -- player -> clock their screen last moved them for the server (PlaceSelf also lets go of a pull)
+	local lassoPulls = {} -- player -> a lasso pull their screen is making ({ hitAt, t0, time, toward, dist, from?, to? })
 	local Net = {
 		get = function(name)
 			if not remotes[name] then
@@ -330,17 +333,13 @@ local function simulate(opts)
 						if stats.lassoHits % 4 == 0 then
 							stats.lassoSkipped = (stats.lassoSkipped or 0) + 1
 						else
-							task.delay(0.12 + (data.time or 0.3), function()
+							-- (their screen starts it a round trip later: botFrame then holds them on it, as the LinearVelocity
+							-- does, until it ends or stops holding)
+							local hitAt = clock
+							task.delay(0.12, function()
 								for _, q in Players:GetPlayers() do
-									local c = q.UserId == data.target and q.Character
-									local rt = c and c:FindFirstChild("HumanoidRootPart")
-									-- (the pull holds their velocity, so it ends dist on from where they were caught)
-									if rt and typeof(data.at) == "Vector3" then
-										local flat = Vector3.new(data.toward.X - data.at.X, 0, data.toward.Z - data.at.Z)
-										if flat.Magnitude > 0.5 then
-											local to = data.at + flat.Unit * math.min(data.dist, flat.Magnitude)
-											c:PivotTo(CFrame.new(Vector3.new(to.X, rt.Position.Y, to.Z)))
-										end
+									if q.UserId == data.target then
+										lassoPulls[q] = { hitAt = hitAt, t0 = clock, time = math.min(data.time or 0.3, 1), toward = data.toward, dist = data.dist }
 									end
 								end
 							end)
@@ -362,7 +361,10 @@ local function simulate(opts)
 	function Place:FireClient(p, character, cf)
 		stats.placeAsks = (stats.placeAsks or 0) + 1
 		task.delay(0.12, function()
-			if p.Character == character and character then character:PivotTo(cf) end
+			if p.Character == character and character then
+				character:PivotTo(cf)
+				placedAt[p] = clock
+			end
 		end)
 	end
 
@@ -386,6 +388,7 @@ local function simulate(opts)
 	local CombineRules = loadShared("ReplicatedStorage/Shared/CombineRules.lua") -- (the winner gets a copy of her)
 	-- bought abilities and loadouts (Oct 20): the real rules, reading the real Config/Powers
 	local AbilityRules = loadShared("ReplicatedStorage/Shared/AbilityRules.lua", { script = { Parent = { Config = { Powers = Powers } } }, require = function(m) return m end })
+	pullRules = AbilityRules
 
 	-- Fake map: ZoneA on the left, ZoneB on the right, Middle between, the lobby far away.
 	local function box(x, z, sx, sz)
@@ -1345,6 +1348,27 @@ local function simulate(opts)
 			bot.runFor = if moving then (bot.runFor or 0) + dt else 0
 			local built = math.min(bot.runFor, 1)
 			local speed = math.min(h.WalkSpeed, 16 + math.max(h.WalkSpeed - 16, 0) * (1 - (1 - built) ^ 2))
+			-- A lasso pull (Gameplay/PowerEffects pullMe): their own screen holds them on it (no steering) from where they
+			-- stood towards the catcher, dist over its time; it lets go the frame it stops holding (safe, caught, out, the
+			-- run over: AbilityRules.pullHolds) or the server moved them since (PlaceSelf lets go too).
+			local pull = lassoPulls[p]
+			if pull then
+				local holds = pullRules.pullHolds(p:GetAttribute("HuzzStatus"), st) and (placedAt[p] or -1) < pull.hitAt
+				if not holds or typeof(pull.toward) ~= "Vector3" then
+					lassoPulls[p] = nil
+				else
+					if not pull.from then
+						local flat = Vector3.new(pull.toward.X - root.Position.X, 0, pull.toward.Z - root.Position.Z)
+						pull.from = root.Position
+						pull.to = if flat.Magnitude > 0.5 then root.Position + flat.Unit * math.min(pull.dist, flat.Magnitude) else root.Position
+					end
+					local k = math.clamp((clock - pull.t0) / pull.time, 0, 1)
+					local at = pull.from:Lerp(pull.to, k)
+					root.CFrame = CFrame.new(Vector3.new(at.X, root.Position.Y, at.Z)) * root.CFrame.Rotation
+					if k >= 1 then lassoPulls[p] = nil end
+					moving = false
+				end
+			end
 			if moving and bot.leapUntil and clock < bot.leapUntil and (st == "Running" or st == "HeroRun") then
 				-- mid huss or mid lunge: the move carries them
 				local nextPos = root.Position + bot.leapDir * bot.leapSpeed * dt
@@ -1610,7 +1634,9 @@ report("1 player (Studio Play, Practice Bot)", s, p, {
 print(string.format("   (Practice Bot: %d catches, %d wins, solo runner %d wins)", s.botTags or 0, s.botWins or 0, s.runnerWins))
 s, p = simulate({ players = 4, seconds = 300, seed = 9 })
 report("4 players: no Practice Bot", s, p, { { "the bot stays out of games with a catcher", function(x) return (x.botMoves or 0) == 0 end } })
-s, p = simulate({ players = 4, cheater = true, seconds = 300, seed = 5 })
+-- (600 s: at 4 players runners often get across round after round, and 300 s failed "games finish" 5 times in 30
+-- even before the Oct 20 abilities; MaxRounds ends a game by ~500 s at worst)
+s, p = simulate({ players = 4, cheater = true, seconds = 600, seed = 5 })
 report("a runner walks round the start wall", s, p, { { "games finish", function(x) return x.wins >= 1 end } })
 s, p = simulate({ players = 5, seconds = 900, seed = 6, leaveAt = 60, joinAt = 50 })
 report("holder leaves, someone joins mid-game", s, p, { { "games still finish", function(x) return x.wins >= 2 end } })

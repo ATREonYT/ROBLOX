@@ -18,6 +18,9 @@
 	    for it instead of sending again, and go again as soon as it has arrived);
 	  - still (optional): asked again just before the owner is told and before the server's own move; false drops the
 	    move (the Lasso's fallback pull: never once the runner is safe or out);
+	  - lastMoveAt(player): os.clock() of the last move sent them, 0 if none (the Lasso's fallback pull is dropped when
+	    a move was sent just before the catch or since: it lands on their screen after the catch, PlaceSelf lets go of
+	    the pull for it, and that move wins);
 	  - a body whose root is anchored (lying caught, KnockdownService: the server owns it) is moved by the server.
 	His place streams with StreamingIntegrityMode PauseOutsideLoadedArea: a body moved where nothing has loaded yet
 	stands frozen until it has. So the spot is streamed in around the player first (RequestStreamAroundAsync, at most
@@ -35,6 +38,7 @@ local remote = Net.get("Place")
 local waiting = {} -- player -> { cf, token } (a plain table, cleared on leave)
 local token = 0
 local told = {}
+local movedAt = {} -- player -> os.clock() of the last move sent (a plain table, cleared on leave)
 
 local function rootOf(character)
 	local root = character and (character:FindFirstChild("HumanoidRootPart") or character.PrimaryPart)
@@ -65,12 +69,17 @@ function PlaceService.pending(player): boolean
 	return true
 end
 
+function PlaceService.lastMoveAt(player): number
+	return movedAt[player] or 0
+end
+
 function PlaceService.place(player, cf: CFrame, why: string?, still: (() -> boolean)?)
 	local character = player and player.Character
 	local root = rootOf(character)
 	if not (character and root) then
 		return
 	end
+	movedAt[player] = os.clock()
 	if root.Anchored then -- (the server owns an anchored body)
 		serverMove(character, cf)
 		return
@@ -125,6 +134,7 @@ end
 
 game:GetService("Players").PlayerRemoving:Connect(function(player)
 	waiting[player] = nil
+	movedAt[player] = nil
 end)
 
 return PlaceService

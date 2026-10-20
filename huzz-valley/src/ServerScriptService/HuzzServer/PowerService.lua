@@ -52,7 +52,8 @@ local traps = {} -- { model, owner, at (Vector3), armAt, untilT }
 local peels = {} -- { model, owner, at, armAt, untilT }
 local clouds = {} -- { owner, at, from, untilT, radius }
 local ropes = {} -- { owner, dir, t0, match }: lassos in flight
-local pulls = {} -- { runner, fromX, fromZ, towardX, towardZ, dist, checkAt, match }: lasso pulls the server checks
+local pulls = {} -- { runner, fromX, fromZ, towardX, towardZ, dist, checkAt, match, round }: lasso pulls the server checks
+local roundNo = 0 -- (+1 each clear(): a server pull still on its way when the round ends is dropped)
 local lastSpeedCheck = {} -- UserId -> true while an effect changes their speed ("stunned" while a dive's stun holds them)
 
 local function now()
@@ -614,6 +615,7 @@ function PowerService.clear(keepPowers: boolean?)
 		end
 	end
 	traps, peels, clouds, ropes, pulls = {}, {}, {}, {}, {}
+	roundNo += 1
 	for id, s in state do
 		removeShield(id)
 		local p = ctx.playerOf(id)
@@ -879,12 +881,13 @@ stepRopes = function(t, match)
 					badge(best, "HuzzLassoed", "YOINK!", def.Accent, def.PullTime + def.Hold)
 					ctx.sync(best)
 					-- their own screen pulls them (PowerEffects pullMe); the server checks it did (stepPulls)
+					local p = ctx.playerOf(best)
 					if dist > 0 then
-						local p = ctx.playerOf(best)
 						local ok, ping = pcall(function() return p and p:GetNetworkPing() end)
 						table.insert(pulls, {
 							runner = best, fromX = bestRoot.Position.X, fromZ = bestRoot.Position.Z, towardX = from.Position.X,
-							towardZ = from.Position.Z, dist = dist, match = match,
+							towardZ = from.Position.Z, dist = dist, match = match, round = roundNo,
+							hitClock = os.clock(),
 							checkAt = t + AbilityRules.pullCheckAfter(def.PullTime, if ok then ping else nil),
 						})
 					end
@@ -905,26 +908,37 @@ local function stepPulls(t, match)
 	for i = #pulls, 1, -1 do
 		local pull = pulls[i]
 		local r = ctx.rootOf(pull.runner)
-		-- (done the first frame they've come far enough: they may run back off once the pull ends)
-		if r and not pull.done and AbilityRules.pulled(pull.fromX, pull.fromZ, r.Position.X, r.Position.Z, pull.towardX, pull.towardZ, pull.dist) then
-			pull.done = true
+		-- (done the first frame they've come far enough from the furthest back they were: they may run back off once the
+		-- pull ends, or have hussed off before their screen heard of it)
+		if r and not pull.done then
+			local a = AbilityRules.pullProgress(pull.fromX, pull.fromZ, r.Position.X, r.Position.Z, pull.towardX, pull.towardZ)
+			pull.low = math.min(pull.low or 0, a)
+			if AbilityRules.pulled(pull.fromX, pull.fromZ, r.Position.X, r.Position.Z, pull.towardX, pull.towardZ, pull.dist, pull.low) then
+				pull.done = true
+			end
 		end
-		if pull.match ~= match or match.over or pull.done then
-			table.remove(pulls, i)
+		local runner = pull.runner
+		local function holds() -- (still in play, this same run)
+			return ctx.match() == match and not match.over and pull.round == roundNo
+				and AbilityRules.pullHolds(match.status[runner], Net.get("Round"):GetAttribute("Stage"))
+		end
+		-- a move the server sent them just before the catch (it may land after it: a round trip, at most 1 s) or since:
+		-- it lets go of the pull on their screen (PlaceSelf) and that move wins
+		local pl = ctx.playerOf(runner)
+		local overruled = PlaceService ~= nil and pl ~= nil and PlaceService.lastMoveAt(pl) >= pull.hitClock - 1
+		if pull.match ~= match or pull.done or overruled or not holds() then
+			table.remove(pulls, i) -- (got across, caught or out, moved by the server, or the run ended: never pulled after)
 		elseif t >= pull.checkAt then
 			table.remove(pulls, i)
-			local p = ctx.playerOf(pull.runner)
-			local fine = match.status[pull.runner] == "Active" and not (ctx.frozen and ctx.frozen(pull.runner)) and not (p and ctx.isDown(p))
+			local p = ctx.playerOf(runner)
+			local fine = not (ctx.frozen and ctx.frozen(runner)) and not (p and ctx.isDown(p))
 			if r and p and fine then
-				local x, z = AbilityRules.pullSpot(pull.fromX, pull.fromZ, pull.towardX, pull.towardZ, pull.dist)
+				local x, z = AbilityRules.pullSpot(r.Position.X, r.Position.Z, pull.towardX, pull.towardZ, pull.dist) -- (from where they are)
 				local start = ctx.startZone()
 				local spot = Vector3.new(x, r.Position.Y, z)
 				if PlaceService and not (start and ctx.inZone(start, spot)) then
 					PowerService.lassoFallbacks += 1
-					local runner = pull.runner
-					PlaceService.place(p, CFrame.new(spot) * r.CFrame.Rotation, "lasso", function() -- (still in play when it moves)
-						return ctx.match() == match and not match.over and match.status[runner] == "Active"
-					end)
+					PlaceService.place(p, CFrame.new(spot) * r.CFrame.Rotation, "lasso", holds) -- (still in play when it moves)
 				end
 			end
 		end

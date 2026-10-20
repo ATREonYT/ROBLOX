@@ -168,17 +168,25 @@ end
 
 -- The Lasso's pull is done by the runner's own screen (Gameplay/PowerEffects pullMe: their client moves their
 -- body). The server checks it once the pull and a round trip are over: they must have come at least PULL_MIN of the
--- pull's distance towards where the catcher stood. If not (a screen that skipped it), the server pulls them itself
--- (HuzzServer/PlaceService). Plain numbers on the floor plane (X, Z), so it's testable without a game.
+-- pull's distance towards where the catcher stood, counted from the furthest back they were seen since the catch
+-- (`low`: a huss that carried them off before their screen heard of the pull isn't held against them; sim Oct 20). If
+-- not (a screen that skipped it), the server pulls them itself (HuzzServer/PlaceService). Plain numbers on the floor
+-- plane (X, Z), so it's testable without a game.
 AbilityRules.PULL_MIN = 0.4 -- (not all of it: once the pull ends they may run back a little, slowed)
-function AbilityRules.pulled(fromX: number, fromZ: number, nowX: number, nowZ: number, towardX: number, towardZ: number, dist: number): boolean
+-- How far along the pull (towards the catcher) a spot is from where they were caught; 0 with no direction.
+function AbilityRules.pullProgress(fromX: number, fromZ: number, x: number, z: number, towardX: number, towardZ: number): number
 	local dx, dz = towardX - fromX, towardZ - fromZ
 	local len = math.sqrt(dx * dx + dz * dz)
-	if dist <= 0 or len < 1e-3 then return true end -- (nothing to pull)
-	local moved = ((nowX - fromX) * dx + (nowZ - fromZ) * dz) / len
-	return moved >= dist * AbilityRules.PULL_MIN
+	if len < 1e-3 then return 0 end
+	return ((x - fromX) * dx + (z - fromZ) * dz) / len
 end
--- Where the pull ends: dist towards the catcher from where they were caught.
+function AbilityRules.pulled(fromX: number, fromZ: number, nowX: number, nowZ: number, towardX: number, towardZ: number, dist: number, low: number?): boolean
+	local dx, dz = towardX - fromX, towardZ - fromZ
+	if dist <= 0 or math.sqrt(dx * dx + dz * dz) < 1e-3 then return true end -- (nothing to pull)
+	local moved = AbilityRules.pullProgress(fromX, fromZ, nowX, nowZ, towardX, towardZ)
+	return moved - math.min(low or 0, 0) >= dist * AbilityRules.PULL_MIN
+end
+-- Where the pull ends: dist towards the catcher from (fromX, fromZ) (the server's fallback: from where they are now).
 function AbilityRules.pullSpot(fromX: number, fromZ: number, towardX: number, towardZ: number, dist: number): (number, number)
 	local dx, dz = towardX - fromX, towardZ - fromZ
 	local len = math.sqrt(dx * dx + dz * dz)
@@ -190,6 +198,14 @@ end
 function AbilityRules.pullCheckAfter(pullTime: number, ping: number?): number
 	local rtt = if type(ping) == "number" then math.clamp(ping * 2, 0, 1) else 0.3
 	return pullTime + rtt + 0.15
+end
+-- Whether a lasso pull may move them right now: only a runner still in play (status "Active") while a run is on
+-- ("Running", or the Hero's "HeroRun"). A safe, caught, downed or out runner is never pulled, and a pull stops the
+-- moment the round ends (sim, Oct 20: a pull that landed after its runner got across dragged them back out of the
+-- safe zone). Both the runner's own screen (PowerEffects pullMe, every frame of the pull) and the server's fallback
+-- (PowerService stepPulls, PlaceService's `still`) ask this.
+function AbilityRules.pullHolds(status: any, stage: any): boolean
+	return status == "Active" and (stage == "Running" or stage == "HeroRun")
 end
 
 return AbilityRules

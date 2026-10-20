@@ -121,6 +121,8 @@ do
 	PS.place(p2, SPOT, "lasso", function() return true end)
 	task.wait(WAIT)
 	check("a still() that stays true moves as usual (server fallback for a silent screen)", PS.fallbacks == 1 and root2.Position == SPOT.Position)
+	check("lastMoveAt(player) says when a move was last sent (a lasso pull drops for a move sent round the catch)",
+		PS.lastMoveAt(p) > 0 and PS.lastMoveAt(p2) >= PS.lastMoveAt(p) and PS.lastMoveAt(player(body(HERE))) == 0)
 end
 
 -- Respawned while the move was on its way: the old body is left alone.

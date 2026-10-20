@@ -162,6 +162,8 @@ check("moved away from the catcher: not pulled", not A.pulled(0, 0, -5, 0, 20, 0
 check("moved sideways only: not pulled", not A.pulled(0, 0, 0, 6, 20, 0, 7))
 check("a pull of 0 (blocked or already close) needs nothing", A.pulled(0, 0, -9, 0, 20, 0, 0))
 check("works on any heading", A.pulled(0, 0, 3, 3, 10, 10, 7) and not A.pulled(0, 0, -3, -3, 10, 10, 7))
+check("hussed off before the pull began, then pulled from there: counts (furthest back seen, low)",
+	A.pulled(0, 0, -4, 0, 20, 0, 7, A.pullProgress(0, 0, -7, 0, 20, 0)) and not A.pulled(0, 0, -7, 0, 20, 0, 7, -7))
 local x, z = A.pullSpot(0, 0, 20, 0, 7)
 check("the server's pull ends dist toward the catcher", math.abs(x - 7) < 1e-6 and math.abs(z) < 1e-6)
 x, z = A.pullSpot(0, 0, 3, 4, 7)
@@ -171,6 +173,16 @@ check("no direction: stays put", x == 2 and z == 2)
 check("checked after the pull and a round trip", A.pullCheckAfter(L.PullTime, 0.1) > L.PullTime + 0.2 and A.pullCheckAfter(L.PullTime, nil) > L.PullTime)
 check("a slow connection waits at most 1 s more", A.pullCheckAfter(L.PullTime, 5) <= L.PullTime + 1.2)
 check("the pull is short enough to judge in a moment (PullTime)", L.PullTime <= 0.5 and L.Pull <= 10)
+check("a lasso pull moves only a runner still in play during a run", A.pullHolds("Active", "Running") and A.pullHolds("Active", "HeroRun"))
+check("never a safe, caught, downed or out runner (sim Oct 20: pulled back out of the safe zone)",
+	not A.pullHolds("Safe", "Running") and not A.pullHolds("Caught", "Running") and not A.pullHolds("Downed", "Running") and not A.pullHolds(nil, "Running"))
+check("and never once the round has ended", not A.pullHolds("Active", "RoundOver") and not A.pullHolds("Active", "Lineup") and not A.pullHolds("Active", nil))
+local effects = fs.readFile(Env.root .. "/huzz-valley/src/StarterPlayer/StarterPlayerScripts/HuzzClient/Gameplay/PowerEffects.lua")
+check("the runner's screen lets go of the pull the frame it stops holding", string.find(effects, "or not pullHolds(me) then", 1, true) ~= nil and string.find(effects, "root.Anchored or not pullHolds(me) then return end", 1, true) ~= nil)
+local powerSrc = fs.readFile(Env.root .. "/huzz-valley/src/ServerScriptService/HuzzServer/PowerService.lua")
+check("the server's fallback pull is dropped when it stops holding or the round ends", string.find(powerSrc, "pull.round == roundNo", 1, true) ~= nil
+	and string.find(powerSrc, "AbilityRules.pullHolds(match.status[runner]", 1, true) ~= nil and string.find(powerSrc, '"lasso", holds)', 1, true) ~= nil
+	and string.find(powerSrc, "PlaceService.lastMoveAt(pl) >= pull.hitClock - 1", 1, true) ~= nil) -- (and when the server moved them round the catch)
 
 -- the server uses these (not its own copies of the rules)
 check("PowerService checks every lasso pull and pulls skipped ones through PlaceService", string.find(fs.readFile(Env.root .. "/huzz-valley/src/ServerScriptService/HuzzServer/PowerService.lua"), "PlaceService.place(p, CFrame.new(spot)", 1, true) ~= nil)

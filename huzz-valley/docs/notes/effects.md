@@ -94,7 +94,12 @@ the Secret cutscene: [secret-cutscene.md](secret-cutscene.md). How top VFX are b
   a dust ring, "MISSED" and `power_end`, lies a moment, then reels in. The pull is a LinearVelocity on the runner's
   own body, by their own screen (as Glitchy), so walls stop it; the server checks it (`PowerService` stepPulls,
   `AbilityRules.pulled`: at least 40% of the pull towards the catcher within the pull plus a round trip) and if their
-  screen skipped it, pulls them itself through `PlaceService` (never once they're safe or out: its `still` check).
+  screen skipped it, pulls them itself through `PlaceService`. Neither side ever pulls a runner who is safe, caught or
+  out, or after the run ends (`AbilityRules.pullHolds`: the screen lets go that frame; the server drops the pull, also
+  when the round is cleared, or when it sent them a move just before the catch or since, which lets go of the pull on
+  their screen too, `PlaceService.lastMoveAt`; sim Oct 20: a late pull dragged a runner back out of the safe zone).
+  The check counts from the furthest back they were seen since the catch (a huss before their screen heard of it is
+  fine), and the server's own pull starts from where they are.
   Tell: the wind-up and the rope. Counter: huss sideways.
 - **Stun stars**: three cartoon stars circle slowly over the head of anyone stunned 1 s or more on every screen
   (character StunnedFrom / StunnedUntil), with the server's 💫 STUNNED badge. A dive's 0.4 s stun shows neither

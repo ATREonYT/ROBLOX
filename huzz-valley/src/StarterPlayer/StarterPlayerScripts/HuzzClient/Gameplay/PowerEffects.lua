@@ -80,6 +80,7 @@ function M.start()
 	local BearTrap = require(Shared.BearTrap)
 	local BananaPeel = require(Shared.BananaPeel)
 	local okRun, RunMotion = pcall(require, Shared.RunMotion)
+	local AbilityRules = require(Shared.AbilityRules)
 	local RoundNet = Net.get("Round") :: RemoteEvent
 	local FX = Powers.Fx
 	local WHITE, PINK, PURPLE = FX.Core, FX.Glow, FX.Edge
@@ -979,11 +980,15 @@ function M.start()
 		BananaPeel = true, SmokeBomb = true, Radar = true, Lasso = true }
 
 	-- The Lasso's pull on your own body (the server says how far, towards where, over how long): a LinearVelocity, so
-	-- walls still stop you (as the huss and Glitchy move you).
+	-- walls still stop you (as the huss and Glitchy move you). Only while you're still in play and the run is on
+	-- (AbilityRules.pullHolds): it lets go the frame you're safe, caught or out, or the round ends.
+	local function pullHolds(me): boolean
+		return AbilityRules.pullHolds(me:GetAttribute("HuzzStatus"), RoundNet:GetAttribute("Stage"))
+	end
 	local function pullMe(data)
 		local me = Players.LocalPlayer
 		local root = me.Character and me.Character:FindFirstChild("HumanoidRootPart")
-		if not (root and root:IsA("BasePart")) or root.Anchored then return end
+		if not (root and root:IsA("BasePart")) or root.Anchored or not pullHolds(me) then return end
 		local toward, dist, time = data.toward, data.dist, data.time
 		if typeof(toward) ~= "Vector3" or type(dist) ~= "number" or type(time) ~= "number" or dist <= 0 or time <= 0 then return end
 		local flat = Vector3.new(toward.X - root.Position.X, 0, toward.Z - root.Position.Z)
@@ -1002,9 +1007,14 @@ function M.start()
 		lv.MaxForce = 1e6
 		lv.PlaneVelocity = Vector2.new(v.X, v.Z)
 		lv.Parent = root
-		task.delay(math.min(time, 1), function()
-			lv:Destroy()
-			attachment:Destroy()
+		local stopAt = os.clock() + math.min(time, 1)
+		local conn
+		conn = RunService.Heartbeat:Connect(function()
+			if os.clock() >= stopAt or not lv.Parent or not pullHolds(me) then
+				conn:Disconnect()
+				lv:Destroy()
+				attachment:Destroy()
+			end
 		end)
 	end
 
