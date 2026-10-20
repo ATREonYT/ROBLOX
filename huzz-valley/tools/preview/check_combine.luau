@@ -7,7 +7,9 @@
 --   * the merge (server): 2 Normal -> 1 Silver saved, Combines counted, everyone told; refused far away, in a round,
 --     with one copy, at Diamond; the save is stored before the answer;
 --   * the machine on this screen (Gameplay/CombineMachine) finds his parts, idles, and plays a whole merge with her
---     copies in their grades, then cleans up (no copies left, his parts back in their homes when it stops).
+--     copies in their grades, then cleans up (no copies left, his parts back in their homes when it stops);
+--   * kid-safe: the burst's ball and light are one flash (none for a second merge within 1 s), a grade's glint is
+--     on a calm fixed timer; your merge lets go after Merge.Wait with no answer, and at once when a round starts.
 -- Run from tools/preview: lune run harness.luau ../../src - @check_combine.luau setup_ui.luau
 local RS = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
@@ -231,5 +233,73 @@ for _, fn in (function()
 end)() do pcall(fn) end
 frames(2)
 check("someone else's merge plays on the machine", CM.playing() and me:GetAttribute("HuzzCinematic") ~= true)
+
+-- 5. kid-safe: the burst's ball, its light and ring are one flash; a second merge within 1 s shows no flash
+local Burst = require(game.StarterPlayer.StarterPlayerScripts.HuzzClient.Gameplay.Burst)
+CM.skip()
+Burst.step(2) -- (a while since any flash)
+-- (watches the ball and its light for a few frames from just before the burst: did they ever show?)
+local function burstShows(): boolean
+	local seen = false
+	CM.play({ key = "GC1", from = "Silver", to = "Gold", mine = false, startAt = os.clock() - 1.98 })
+	local t7 = os.clock()
+	while os.clock() - t7 < 0.3 do
+		frames(1)
+		if fx.Burst.Transparency < 1 or fx.Burst:FindFirstChildOfClass("PointLight").Brightness > 0 then seen = true end
+		task.wait(0.01)
+	end
+	CM.skip()
+	return seen
+end
+local shows = burstShows()
+for _ = 1, 2 do -- (a busy machine can stall a frame past the 0.45 s burst: try again)
+	if shows then break end
+	Burst.step(2)
+	shows = burstShows()
+end
+check("the burst's ball and light show", shows)
+Burst.step(0.3)
+check("a second burst within 1 s: no ball, no light", not burstShows())
+
+-- 6. your merge lets go: after Merge.Wait with no answer ("slow"), and at once when a round starts
+local why = nil
+finished = false
+CM.play({ key = "GC1", from = "Normal", to = "Silver", mine = true, onDone = function(_, r) finished = true; why = r end })
+local t5 = os.clock()
+while os.clock() - t5 < 2 + require(RS.Shared.Config.Combine).Merge.Wait + 2 and not finished do task.wait(0.05); frames(1) end
+check("no answer: it lets go after Merge.Wait (Try again)", finished and why == "slow")
+local t6 = os.clock()
+while os.clock() - t6 < 2 and me:GetAttribute("HuzzCinematic") do task.wait(0.05); frames(1) end
+check("the camera comes back after a slow answer", me:GetAttribute("HuzzCinematic") == false)
+CM.answer(true, 1) -- (a late answer for an old merge lands nowhere)
+check("a late answer starts nothing", not CM.playing())
+finished, why = false, nil
+CM.play({ key = "GC1", from = "Normal", to = "Silver", mine = true, onDone = function(_, r) finished = true; why = r end })
+frames(5)
+me:SetAttribute("HuzzRole", "Runner")
+__fireOn(me, "Attr_HuzzRole") -- (the harness doesn't fire attribute signals by itself)
+task.wait(0.05)
+check("a round starting lets go at once", finished and why == "round" and me:GetAttribute("HuzzCinematic") == false and not CM.playing())
+me:SetAttribute("HuzzRole", nil)
+
+-- 7. a grade's glint: on a fixed timer, never two within 1.5 s (kid-safe, the knives' rule)
+local GirlGrade = require(RS.Shared.GirlGrade)
+local doll = folder.GC1:Clone()
+doll.Parent = workspace
+GirlGrade.apply(doll, "Diamond", { fx = true })
+local glintE = doll.HuzzGradeFx:FindFirstChild("Glint")
+check("the glint has no random rate", glintE and glintE.Rate == 0)
+check("a sheen in the grade's colour", doll.HuzzGradeFx:FindFirstChild("HuzzGradeSheen") ~= nil)
+local emits = {}
+local tt = os.clock()
+for i = 0, 600 do
+	local at = tt + i / 30
+	local fired = GirlGrade.stepGlints(at)
+	if fired and table.find(fired, glintE) then table.insert(emits, at) end
+end
+local closest = math.huge
+for i = 2, #emits do closest = math.min(closest, emits[i] - emits[i - 1]) end
+check(("glints on a calm timer (%d in 20 s, closest %.2f s)"):format(#emits, closest), #emits >= 5 and #emits <= 11 and closest >= 1.5)
+doll:Destroy()
 
 print(("checks: %d ok, %d failed"):format(ok, failed))

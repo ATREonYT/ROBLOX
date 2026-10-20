@@ -30,37 +30,46 @@ Combine.Sign = { Text = "COMBINE", Sub = "2 SAME GIRLS MAKE 1 BETTER", Width = 1
 
 -- The grades, lowest to highest. Badge = the window's and the cards' badge colour. On the girl (Shared/GirlGrade):
 --   Hair     her hair and accessories become this colour in Material (their picture is taken off so the colour
---            shows: the whole hairdo reads as silver / gold / crystal at a glance), with Reflectance and
---            Transparency (Diamond is see-through glass)
+--            shows: on his girls the grade is mostly the hair, so it must read at a glance next to Normal), with
+--            Reflectance and Transparency (Diamond is see-through glass). Silver and Gold are SmoothPlastic with a
+--            high Reflectance: Roblox's Metal material darkens a light colour towards grey, a polished one stays bright.
 --   Cloth    her clothes' pictures are tinted by this (Shirt / Pants Color3: a multiply, details kept)
---   Fx       the small effect around her (world copies only, never in a picture): glints (sparkles_main), motes
---            (smoke_main), one soft light. Sizes are for a 5-stud girl and scale with her. Rates per second.
+--   Sheen    a soft sheen and rim in the grade's colour over her (a Highlight; world copies only, never in a
+--            picture): Fill = the sheen's transparency (1 = none), Rim = the outline's. Roblox draws at most 31
+--            Highlights on a screen; past that one simply isn't drawn.
+--   Fx       the small effect around her (world copies only, never in a picture): a glint (sparkles_main) on a fixed
+--            timer, one every Glint.Every seconds (kid-safe: never two within 1.5 s, the knives' rule,
+--            Shared/KnifeMotes), soft motes (smoke_main, Rate per second), one soft light. Sizes are for a 5-stud
+--            girl and scale with her.
 -- Owner (UI): "no gold anywhere" was about the windows' tone. The Gold grade is his own ask, so it is gold, but only
 -- on the girl and her badge.
 Combine.Grades = {
 	Normal = { Name = "Normal", Badge = hex("8E9CC0") },
 	Silver = {
 		Name = "Silver", Badge = hex("D3DCEB"),
-		Hair = hex("D9E0EA"), Material = Enum.Material.Metal, Reflectance = 0.22, Transparency = 0,
-		Cloth = Color3.new(0.84, 0.88, 0.96),
-		Fx = { Glint = { Color = hex("FFFFFF"), Rate = 1.6, Size = 0.5 }, Motes = nil, Light = nil },
+		Hair = hex("E6EEF9"), Material = Enum.Material.SmoothPlastic, Reflectance = 0.38, Transparency = 0,
+		Cloth = Color3.new(0.8, 0.86, 0.98),
+		Sheen = { Color = hex("CFE0FF"), Fill = 0.86, Rim = 0.55 },
+		Fx = { Glint = { Color = hex("FFFFFF"), Every = 3, Size = 0.55 }, Motes = nil, Light = nil },
 	},
 	Gold = {
 		Name = "Gold", Badge = hex("FFD34D"),
-		Hair = hex("F2BE3A"), Material = Enum.Material.Metal, Reflectance = 0.18, Transparency = 0,
+		Hair = hex("FFC531"), Material = Enum.Material.SmoothPlastic, Reflectance = 0.3, Transparency = 0,
 		Cloth = Color3.new(1, 0.86, 0.5),
+		Sheen = { Color = hex("FFC94A"), Fill = 0.86, Rim = 0.5 },
 		Fx = {
-			Glint = { Color = hex("FFE07A"), Rate = 3, Size = 0.55 },
+			Glint = { Color = hex("FFE07A"), Every = 2.5, Size = 0.6 },
 			Motes = { Color = hex("FFC23A"), Rate = 2, Size = 0.3 },
 			Light = { Color = hex("FFC870"), Brightness = 0.6, Range = 6 },
 		},
 	},
 	Diamond = {
 		Name = "Diamond", Badge = hex("8FE6FF"),
-		Hair = hex("A6ECFF"), Material = Enum.Material.Glass, Reflectance = 0.3, Transparency = 0.18,
+		Hair = hex("BDF3FF"), Material = Enum.Material.Glass, Reflectance = 0.35, Transparency = 0.22,
 		Cloth = Color3.new(0.78, 0.93, 1),
+		Sheen = { Color = hex("9EEBFF"), Fill = 0.84, Rim = 0.45 },
 		Fx = {
-			Glint = { Color = hex("E6FBFF"), Rate = 4, Size = 0.7 },
+			Glint = { Color = hex("E6FBFF"), Every = 2, Size = 0.75 },
 			Motes = { Color = hex("8FE6FF"), Rate = 3, Size = 0.26 },
 			Light = { Color = hex("9EE7FF"), Brightness = 0.8, Range = 7 },
 		},
@@ -82,7 +91,7 @@ Combine.Idle = {
 	Glow = { Pulse = 0.22, Period = 3.2 },
 	Light = { Color = hex("E978FF"), Brightness = 1.1, Range = 16 },
 	Motes = { Color = hex("F3A6FF"), Rate = 4, Size = 0.35, Life = 3.2 },
-	Sparkles = { Color = hex("FFE6FF"), Rate = 1.5, Size = 0.45 },
+	Sparkles = { Color = hex("FFE6FF"), Every = 1.5, Size = 0.45 }, -- (one twinkle at a time on a fixed timer, the glints' rule)
 	Near = 160, -- studs: the loop runs only while the camera is this close
 }
 
@@ -94,6 +103,7 @@ Combine.Merge = {
 	ChargeGlow = 2.2, -- his glowing trim this many times brighter at the peak
 	Burst = { Size = 7, Time = 0.45 }, -- the one flash (kid-safe: one, never repeated)
 	Camera = { Back = 13, In = 10.5, Up = 1.4, Side = 0.12 },
+	Wait = 3, -- seconds your merge waits at the burst for the server's answer; then it lets go ("Try again")
 }
 
 -- Sounds (Config/SoundIds, made by tools/sfx/make_sfx.py; "" until the owner uploads them).

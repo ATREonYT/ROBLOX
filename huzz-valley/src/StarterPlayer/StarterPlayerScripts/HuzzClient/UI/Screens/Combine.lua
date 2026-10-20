@@ -250,14 +250,17 @@ function CombineScreen.build(parent: Instance)
 		refresh()
 		ModalManager.close()
 		local finished = false
-		local function done()
+		local gaveUp = nil -- (the machine let go before the server answered: "slow", "round", "moved")
+		local function done(reason: string?)
 			if finished then return end
 			finished = true
 			busy = false
+			gaveUp = reason
+			if reason == "slow" then Toast.show("The machine is busy. Try again.") end
 			task.delay(1.2, function()
 				hideReveal()
-				-- back to the window on her (unless something else opened meanwhile)
-				if ModalManager.current() == nil then
+				-- back to the window on her (unless something else opened meanwhile, or a round took you)
+				if ModalManager.current() == nil and reason ~= "round" and reason ~= "moved" then
 					picked, pickedGrade = id, nil
 					ModalManager.open("Combine", id)
 				end
@@ -266,7 +269,7 @@ function CombineScreen.build(parent: Instance)
 			skipHint.Visible = false
 			refresh()
 		end
-		local playing = CombineMachine.play({
+		local playing, playId = CombineMachine.play({
 			key = c.Model, from = grade, to = up, mine = true,
 			onReveal = function()
 				revealTitle.Text = title(c.Name, up) .. "!"
@@ -275,7 +278,7 @@ function CombineScreen.build(parent: Instance)
 				reveal.Visible = true
 				Motion.pop(reveal)
 			end,
-			onDone = function() done() end,
+			onDone = function(_, reason) done(reason) end,
 		})
 		if playing then
 			skip.Visible = true
@@ -283,8 +286,11 @@ function CombineScreen.build(parent: Instance)
 		end
 		task.spawn(function()
 			local ok, info = State.action("Combine", id, grade)
-			if playing then CombineMachine.answer(ok) end
-			if not ok then
+			if playing then CombineMachine.answer(ok, playId) end
+			if gaveUp then
+				-- (the machine let go first: the answer still counts, saved on the server)
+				if ok then Toast.show(title(c.Name, up) .. " is yours!") end
+			elseif not ok then
 				Toast.show(if type(info) == "string" then info else "Couldn't combine. Try again.")
 				if not playing then done() end
 			elseif not playing then

@@ -9,16 +9,19 @@
 	    * the fusion blade in the ring and the soul orb over the lotus float up and down, the blade sways
 	    * the floor ring's ticks turn round the altar; his spirit flames drift
 	    * his glowing trim breathes (SurfaceAppearance EmissiveStrength, where Roblox lets a script set it)
-	    * one soft light over the altar, soft motes rising round it, a few sparkles in the ring (Roblox's own
-	      particle pictures only)
+	    * one soft light over the altar, soft motes rising round it, one sparkle in the ring at a time on a fixed
+	      timer (Idle.Sparkles.Every; Roblox's own particle pictures only)
 	  The merge (Shared/CombineMotion: the timeline, about 4 s, one burst): two copies of the girl rise from his pads,
 	  circle each other in front of the ring while it spins up and the trim brightens and motes are pulled in, ONE
-	  burst (a ring of light and sparkles in the new grade's colour; Gameplay/Burst.flashOk keeps it to one a
-	  second), and she rises in her new grade (Shared/GirlGrade) and sinks into the altar. Sounds: Config/Combine.Sounds.
+	  burst (a glowing ball and its light, a ring of light and sparkles in the new grade's colour), and she rises in
+	  her new grade (Shared/GirlGrade) and sinks into the altar. Sounds: Config/Combine.Sounds.
+	  Kid-safe: the ball, its light and the ring are all one flash and ask Gameplay/Burst.flashOk once; when another
+	  flash on this screen was under 1 s ago (two merges close together) only the sparkles show.
 	  Yours (play / answer / skip, from UI/Screens/Combine) also takes the camera in front of the machine and holds
 	  your controls; it waits at the burst for the server's answer (the save is stored first) and plays on, or the
-	  copies go back down if it said no. Everyone else's merges (the Combine remote) play on the machine too, without
-	  the camera.
+	  copies go back down if it said no. It waits at most Merge.Wait seconds ("Try again"), and lets go at once when a
+	  round starts for you or the server moves your body (M.release). Everyone else's merges (the Combine remote)
+	  play on the machine too, without the camera.
 	His parts are found by name (the number at the end dropped) and looked for again when the model streams in.
 ]]
 local M = {}
@@ -33,6 +36,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared.Config.Combine)
 local CombineMotion = require(Shared.CombineMotion)
 local GirlGrade = require(Shared.GirlGrade)
+local KnifeMotes = require(Shared.KnifeMotes)
 local Net = require(Shared.Net)
 local Sfx = require(script.Parent.Sfx)
 local Burst = require(script.Parent.Burst)
@@ -178,7 +182,7 @@ local function buildFx(r)
 	})
 	local ringBox = fxPart("Ring", Vector3.new(5.6, 5.6, 0.6), r.ring.CFrame, folder)
 	local sparkles = emitter(ringBox, {
-		Name = "Sparkles", Texture = SPARKLE, Rate = I.Sparkles.Rate, Lifetime = NumberRange.new(0.7, 1.1), Speed = NumberRange.new(0, 0),
+		Name = "Sparkles", Texture = SPARKLE, Rate = 0, Lifetime = NumberRange.new(0.7, 1.1), Speed = NumberRange.new(0, 0),
 		Rotation = NumberRange.new(0, 360), RotSpeed = NumberRange.new(-90, 90), Color = ColorSequence.new(I.Sparkles.Color),
 		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.5, I.Sparkles.Size), NumberSequenceKeypoint.new(1, 0) }),
 		LightEmission = 0.5, Shape = Enum.ParticleEmitterShape.Box, ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume,
@@ -201,7 +205,8 @@ local function buildFx(r)
 	flashLight.Brightness, flashLight.Range, flashLight.Shadows = 0, 18, false
 	flashLight.Parent = ball
 	folder.Parent = Workspace
-	return { folder = folder, base = base, light = light, motes = motes, ringBox = ringBox, sparkles = sparkles, pull = pull, inward = inward, ball = ball, flashLight = flashLight }
+	return { folder = folder, base = base, light = light, motes = motes, ringBox = ringBox, sparkles = sparkles, pull = pull, inward = inward, ball = ball, flashLight = flashLight,
+		nextSparkle = KnifeMotes.firstGlint(os.clock(), I.Sparkles.Every, 0.4) }
 end
 
 local function clearFx()
@@ -286,10 +291,35 @@ local function setControls(on: boolean)
 	end)
 end
 
-local function finish(p, skipped: boolean)
+-- Hands the camera and your controls back. instant: no glide (a round starting, your body moved).
+local function letGo(from: CFrame?, back: CFrame?)
+	local camera = Workspace.CurrentCamera
+	local function done()
+		camera.CameraType = Enum.CameraType.Custom
+		player:SetAttribute("HuzzCinematic", false)
+		player:SetAttribute("HuzzCombining", false)
+		setControls(true)
+	end
+	if glide then glide:Disconnect(); glide = nil end
+	if not (from and back) then done() return end
+	local t0 = os.clock()
+	local conn
+	conn = RunService.RenderStepped:Connect(function()
+		local k = smooth((os.clock() - t0) / 0.45)
+		camera.CFrame = from:Lerp(back, k)
+		if k >= 1 then
+			conn:Disconnect()
+			glide = nil
+			done()
+		end
+	end)
+	glide = conn
+end
+
+local function finish(p, skipped: boolean, instant: boolean?)
 	if play ~= p then return end
 	play = nil
-	if skipped and p.answered and p.ok and not p.burstDone and p.onReveal then task.spawn(p.onReveal) end
+	if skipped and not instant and p.answered and p.ok and not p.burstDone and p.onReveal then task.spawn(p.onReveal) end
 	local fr = rig and frameOf(rig)
 	if p.result and p.result.model.Parent and fr and not skipped then
 		Burst.sparks(fr.altar, { Config.Grades[p.to] and Config.Grades[p.to].Badge or Burst.PINK, Color3.new(1, 1, 1) }, 14,
@@ -302,35 +332,31 @@ local function finish(p, skipped: boolean)
 		fx.flashLight.Brightness = 0
 	end
 	if p.mine then
-		local camera = Workspace.CurrentCamera
-		local from = camera.CFrame
-		local back = p.startCF
-		local t0 = os.clock()
-		-- glide back to where your camera was, then hand it back to Roblox
-		if glide then glide:Disconnect() end
-		local conn
-		conn = RunService.RenderStepped:Connect(function()
-			local k = smooth((os.clock() - t0) / 0.45)
-			camera.CFrame = from:Lerp(back, k)
-			if k >= 1 then
-				conn:Disconnect()
-				glide = nil
-				camera.CameraType = Enum.CameraType.Custom
-				player:SetAttribute("HuzzCinematic", false)
-				player:SetAttribute("HuzzCombining", false)
-				setControls(true)
-			end
-		end)
-		glide = conn
+		-- glide back to where your camera was, then hand it back to Roblox (at once when it must let go now)
+		if instant then letGo(nil, nil) else letGo(Workspace.CurrentCamera.CFrame, p.startCF) end
 	end
-	if p.onDone then task.spawn(p.onDone, skipped) end
+	if p.onDone then task.spawn(p.onDone, skipped, p.reason) end
+end
+
+-- Lets go of your own merge at once (a round starting for you, the server moving your body): the camera and your
+-- controls come back this frame. reason goes to onDone. Others' merges keep playing.
+function M.release(reason: string?)
+	local p = play
+	if p and p.mine then
+		p.reason = reason or "released"
+		finish(p, true, true)
+	elseif glide then
+		letGo(nil, nil)
+	end
 end
 
 -- Starts a merge on the machine. o = { key (her model in HuzzGirls), from, to (grades), mine (your own: the camera
 -- and the wait for the answer), startAt (os.clock() it began, for others' merges joining late), onReveal() (at the
--- burst), onDone(skipped) }.
--- Returns false when the machine isn't here.
-function M.play(o): boolean
+-- burst), onDone(skipped, reason) } (reason: nil, "slow" when the server took longer than Merge.Wait, or what
+-- M.release was given).
+-- Returns false when the machine isn't here, else true and this merge's id (for M.answer).
+local playCount = 0
+function M.play(o): (boolean, number?)
 	if not (rig and fx) then return false end
 	if play then
 		if not o.mine then return false end -- (someone else's merge never cuts yours)
@@ -362,14 +388,18 @@ function M.play(o): boolean
 		camera.CameraType = Enum.CameraType.Scriptable
 		setControls(false)
 	end
+	playCount += 1
+	p.id = playCount
 	play = p
-	return true
+	return true, p.id
 end
 
--- The server's answer to your merge: ok, or no (the copies go back down and it ends).
-function M.answer(ok: boolean)
+-- The server's answer to your merge: ok, or no (the copies go back down and it ends). id = what play returned: an
+-- answer that comes after its merge let go (too slow, a round) never lands on a newer one.
+function M.answer(ok: boolean, id: number?)
 	local p = play
-	if not (p and p.mine) then return end
+	if not (p and p.mine) or p.answered then return end
+	if id and p.id ~= id then return end
 	p.answered, p.ok = true, ok
 end
 
@@ -399,6 +429,9 @@ local function step(dt: number)
 			p.hold += t - (CombineMotion.MERGE_AT - 0.05)
 			t = CombineMotion.MERGE_AT - 0.05
 			p.spin += dt * 9
+			if p.hold > Config.Merge.Wait then -- (the server is slow: let go, the copies go back, "Try again")
+				p.answered, p.ok, p.reason = true, false, "slow"
+			end
 		end
 		if p.answered and not p.ok then
 			-- no: the two drift back down to the pads and it ends
@@ -470,29 +503,34 @@ local function step(dt: number)
 		local f = frameOf(r)
 		local centre = CombineMotion.centre(f)
 		fx.light.Brightness = I.Light.Brightness * (1 + 0.15 * math.sin(now * 2 * math.pi / I.Glow.Period) + 1.2 * glow)
-		fx.sparkles.Rate = I.Sparkles.Rate * (1 + 3 * glow)
+		-- one ring sparkle at a time on a fixed timer (kid-safe, as the knives' glints)
+		local twinkle
+		twinkle, fx.nextSparkle = KnifeMotes.glint(fx.nextSparkle, now, I.Sparkles.Every)
+		if twinkle then pcall(function() fx.sparkles:Emit(1) end) end
 		fx.inward.Rate = if state and state.inward then 40 else 0
 		fx.pull.CFrame = CFrame.new(centre)
 		fx.ball.CFrame = CFrame.new(centre)
-		if state and state.burst then
+		-- the burst's one-off part, once it is due (even when a slow frame skipped past the burst itself). The ball,
+		-- its light and the ring are ONE flash: Burst.flashOk is asked once for all three (kid-safe: at most one
+		-- flash a second on this screen, so a second merge right after shows only its sparkles).
+		if p and p.ok and not p.burstDone and t >= CombineMotion.MERGE_AT then
+			p.burstDone = true
+			p.flash = Burst.flashOk()
+			if p.onReveal then task.spawn(p.onReveal) end
+			local col = Config.Grades[p.to] and Config.Grades[p.to].Badge or Burst.PINK
+			if p.flash then
+				pcall(Burst.ring, CFrame.lookAt(centre, centre + f.front) * CFrame.Angles(math.pi / 2, 0, 0),
+					{ r0 = 0.6, r1 = 5, time = 0.55, ease = "quart", width = 0.16, glow = 0.6, color = col })
+			end
+			Burst.sparks(centre, { col, Color3.new(1, 1, 1) }, 36, { speed = NumberRange.new(7, 12), gravity = Vector3.new(0, -4, 0), drag = 4, life = NumberRange.new(0.5, 0.9) })
+		end
+		if state and state.burst and p and p.flash then
 			fx.ball.Size = Vector3.one * state.burst.size
 			fx.ball.Transparency = state.burst.transparency
 			fx.flashLight.Brightness = 6 * state.flash
 		else
 			fx.ball.Transparency = 1
 			fx.flashLight.Brightness = 0
-		end
-		-- the burst's one-off part, once it is due (even when a slow frame skipped past the burst itself)
-		if p and p.ok and not p.burstDone and t >= CombineMotion.MERGE_AT then
-			p.burstDone = true
-			if p.onReveal then task.spawn(p.onReveal) end
-			local col = Config.Grades[p.to] and Config.Grades[p.to].Badge or Burst.PINK
-			-- one ring of light out through his ring, and sparkles (one flash a second at most on this screen)
-			if Burst.flashOk() then
-				pcall(Burst.ring, CFrame.lookAt(centre, centre + f.front) * CFrame.Angles(math.pi / 2, 0, 0),
-					{ r0 = 0.6, r1 = 5, time = 0.55, ease = "quart", width = 0.16, glow = 0.6, color = col })
-			end
-			Burst.sparks(centre, { col, Color3.new(1, 1, 1) }, 36, { speed = NumberRange.new(7, 12), gravity = Vector3.new(0, -4, 0), drag = 4, life = NumberRange.new(0.5, 0.9) })
 		end
 	end
 	-- the girls and the camera
@@ -590,6 +628,25 @@ function M.start()
 			local on = rig ~= nil and (play ~= nil or near(rig))
 			if fx.folder.Parent ~= (if on then Workspace else nil) then fx.folder.Parent = if on then Workspace else nil end
 		end
+	end)
+	-- your own merge lets go at once when a round starts for you or the server moves your body
+	pcall(function()
+		player:GetAttributeChangedSignal("HuzzRole"):Connect(function()
+			local role = player:GetAttribute("HuzzRole")
+			if role == "Runner" or role == "Catcher" then M.release("round") end
+		end)
+	end)
+	pcall(function()
+		local round = Net.get("Round") :: RemoteEvent
+		round:GetAttributeChangedSignal("Stage"):Connect(function()
+			local stage = round:GetAttribute("Stage")
+			if stage == "Lineup" or stage == "Picking" then M.release("round") end
+		end)
+	end)
+	pcall(function()
+		(Net.get("Place") :: RemoteEvent).OnClientEvent:Connect(function(character)
+			if character == player.Character then M.release("moved") end
+		end)
 	end)
 	-- everyone else's merges, on the machine
 	local remote = Net.get("Combine") :: RemoteEvent

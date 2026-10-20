@@ -8,15 +8,54 @@
 	    clear glass); their picture is taken off so the colour shows, so the whole hairdo reads at a glance.
 	  * Her clothes keep their pictures, tinted by the grade (Shirt / Pants / ShirtGraphic Color3: a multiply).
 	  * Her skin and face stay as they are.
-	  * fx (world copies only, never in a picture): glints (Roblox's own sparkles_main), soft motes (smoke_main) and
-	    one soft light, in the grade's colour, on an invisible box over her body. Sized for her height. Built-in
-	    pictures only (VFX-ITEMS.md), no flashing: they twinkle at their rate and never blink together.
+	  * fx (world copies only, never in a picture): a soft sheen and rim in the grade's colour (a Highlight, Sheen),
+	    a glint (Roblox's own sparkles_main), soft motes (smoke_main) and one soft light, in the grade's colour, on
+	    an invisible box over her body. Sized for her height. Built-in pictures only (VFX-ITEMS.md). Kid-safe: the
+	    glint is on a fixed calm timer like the knives' (Shared/KnifeMotes.glint: one every Glint.Every seconds,
+	    never two within 1.5 s for one girl), not a random rate; one Heartbeat steps every girl's glint.
 	apply(model, grade, opts?) -> handle?   opts = { fx = true, lite = true (half the particles, no light) }
 	handle = { setEnabled(on), destroy() }. Normal (or an unknown grade) changes nothing and returns nil.
 ]]
 local Config = require(script.Parent.Config.Combine)
+local KnifeMotes = require(script.Parent.KnifeMotes)
 
 local GirlGrade = {}
+
+-- Every live girl's glint: { emitter, every, nextAt }. One Heartbeat steps them all (hooked on the first one).
+local glints = {}
+local hooked = false
+local seedCount = 0
+-- Steps every glint to time t; returns the emitters that glinted (nil when none), for the checks.
+function GirlGrade.stepGlints(t: number): { ParticleEmitter }?
+	local fired = nil
+	for i = #glints, 1, -1 do
+		local g = glints[i]
+		if not g.emitter.Parent then
+			table.remove(glints, i)
+		elseif g.on then
+			local now, nextAt = KnifeMotes.glint(g.nextAt, t, g.every)
+			g.nextAt = nextAt
+			if now then
+				pcall(function() g.emitter:Emit(1) end)
+				fired = fired or {}
+				table.insert(fired, g.emitter)
+			end
+		end
+	end
+	return fired
+end
+local function addGlint(e: ParticleEmitter, every: number)
+	seedCount += 1
+	local g = { emitter = e, every = every, on = true, nextAt = KnifeMotes.firstGlint(os.clock(), every, seedCount * 0.77) }
+	table.insert(glints, g)
+	if not hooked then
+		hooked = true
+		pcall(function()
+			game:GetService("RunService").Heartbeat:Connect(function() GirlGrade.stepGlints(os.clock()) end)
+		end)
+	end
+	return g
+end
 
 local SPARKLE = "rbxasset://textures/particles/sparkles_main.dds"
 local SMOKE = "rbxasset://textures/particles/smoke_main.dds"
@@ -65,6 +104,7 @@ function GirlGrade.fx(model: Model, grade: string, opts: any?)
 	local spec = look and look.Fx
 	local root = model:FindFirstChild("HumanoidRootPart") or model.PrimaryPart
 	if not (spec and root and root:IsA("BasePart")) then return nil end
+	if model:FindFirstChild("HuzzGradeFx") then model.HuzzGradeFx:Destroy() end -- (dressed again: one effect, one glint timer)
 	local lite = opts and opts.lite
 	local h = heightOf(model)
 	local k = h / 5
@@ -78,15 +118,17 @@ function GirlGrade.fx(model: Model, grade: string, opts: any?)
 	weld.Part0, weld.Part1 = root, box
 	weld.Parent = box
 	local emitters = {}
+	local glint = nil
 	local function emitter(kind, g)
 		local e = Instance.new("ParticleEmitter")
 		e.Name = kind
 		e.Shape = Enum.ParticleEmitterShape.Box
 		e.ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume
 		e.LightInfluence = 0
-		e.Rate = g.Rate * (if lite then 0.5 else 1)
+		e.Rate = if kind == "Glint" then 0 else g.Rate * (if lite then 0.5 else 1)
 		e.Color = ColorSequence.new(g.Color)
 		if kind == "Glint" then
+			glint = addGlint(e, g.Every * (if lite then 1.5 else 1))
 			e.Texture = SPARKLE
 			e.Lifetime = NumberRange.new(0.6, 1)
 			e.Speed = NumberRange.new(0, 0)
@@ -117,11 +159,25 @@ function GirlGrade.fx(model: Model, grade: string, opts: any?)
 		light.Color, light.Brightness, light.Range, light.Shadows = spec.Light.Color, spec.Light.Brightness, spec.Light.Range * math.max(k, 0.5), false
 		light.Parent = box
 	end
+	local sheen = nil
+	if look.Sheen then
+		pcall(function()
+			sheen = Instance.new("Highlight")
+			sheen.Name = "HuzzGradeSheen"
+			sheen.FillColor, sheen.FillTransparency = look.Sheen.Color, look.Sheen.Fill
+			sheen.OutlineColor, sheen.OutlineTransparency = look.Sheen.Color, look.Sheen.Rim
+			sheen.DepthMode = Enum.HighlightDepthMode.Occluded
+			sheen.Adornee = model
+			sheen.Parent = box
+		end)
+	end
 	box.Parent = model
 	local handle = {}
 	function handle.setEnabled(on: boolean)
 		for _, e in emitters do e.Enabled = on end
+		if glint then glint.on = on end
 		if light then light.Enabled = on end
+		if sheen then sheen.Enabled = on end
 	end
 	function handle.destroy()
 		box:Destroy()

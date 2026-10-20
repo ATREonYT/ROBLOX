@@ -261,6 +261,12 @@ local function rate(key, r, dt, fn)
 	acc[key] = (acc[key] or rng:NextNumber()) + r * dt
 	while acc[key] >= 1 do acc[key] -= 1; fn() end
 end
+-- one at a time on a fixed timer (the game's glints and ring sparkles: Shared/KnifeMotes.glint), first one offset
+local clockOf = {}
+local function every(key, period, dt, fn)
+	clockOf[key] = (clockOf[key] or rng:NextNumber() * period) + dt
+	if clockOf[key] >= period then clockOf[key] -= period; fn() end
+end
 local function stepParticles(dt)
 	for i = #live, 1, -1 do
 		local q = live[i]
@@ -285,7 +291,7 @@ local function machineEmitters(dt, glow, inward, centre)
 	rate("motes", I.Motes.Rate, dt, function()
 		emit(inBox(CFrame.new(top), Vector3.new(12, 0.2, 12)), UP * rnd(0.5, 1.1) + Vector3.new(rnd(-0.15, 0.15), 0, rnd(-0.15, 0.15)), rnd(I.Motes.Life * 0.8, I.Motes.Life), I.Motes.Size, hex(I.Motes.Color), "glow", UP * 0.25, 0.3)
 	end)
-	rate("sparkles", I.Sparkles.Rate * (1 + 3 * glow), dt, function()
+	every("sparkles", I.Sparkles.Every, dt, function()
 		emit(inBox(ring.cf, Vector3.new(5.6, 5.6, 0.6)), Vector3.zero, rnd(0.7, 1.1), I.Sparkles.Size, hex(I.Sparkles.Color), "twinkle")
 	end)
 	if inward then
@@ -310,6 +316,12 @@ local function girl(name, grade, height)
 		colors.hair = hex(g.Hair)
 		colors.shirt = tint(YUNO.shirt, g.Cloth)
 		colors.pants = tint(YUNO.pants, g.Cloth)
+		-- her sheen (a Highlight fill in the grade's colour) lies over all of her; its rim only shows in Studio
+		if g.Sheen then
+			for k, v in colors do
+				colors[k] = hex(Color3.fromHex(string.sub(v, 2)):Lerp(g.Sheen.Color, 1 - g.Sheen.Fill))
+			end
+		end
 	end
 	local rig = Rig.r6(name, colors)
 	-- (more hair than the scenes' usual box girl: a fringe and two long side locks, so the grade's hair reads face on,
@@ -337,7 +349,7 @@ local function gradeFx(key, rig, dt)
 	local boxCF = rig.root.CFrame + UP * (h * 0.1)
 	local boxSize = Vector3.new(1.6 * kk, h * 0.8, 1.2 * kk)
 	if spec.Glint then
-		rate(key .. "g", spec.Glint.Rate, dt, function()
+		every(key .. "g", spec.Glint.Every, dt, function()
 			emit(inBox(boxCF, boxSize), Vector3.zero, rnd(0.6, 1), spec.Glint.Size * kk, hex(spec.Glint.Color), "twinkle")
 		end)
 	end
@@ -384,10 +396,13 @@ local frontCam = function(dist, up, swing)
 end
 local now = 0
 local stills = {}
+-- COMBINE_PART=3 films only part 3 (the grades side by side), for a quick look at the grade colours
+local ONLY = require("@lune/process").env.COMBINE_PART
+local SKIP = ONLY == "3"
 
 -- 1. idle: from the lobby (sign readable), round to the front and in
 local IDLE = 5
-for f = 0, IDLE * FPS - 1 do
+for f = 0, (if SKIP then -1 else IDLE * FPS - 1) do
 	local t = f * DT
 	local fill = idle(now, DT, 1, 0)
 	machineEmitters(DT, 0, false, centre)
@@ -411,7 +426,7 @@ local burstDone, ringFx = false, nil
 local camFrom = frontCam(16, 4.5, 0.05)
 local LOOK0 = centre + UP * 1.5
 local LEN = Motion.LENGTH
-for f = 0, math.floor((LEN + 0.6) * FPS) - 1 do
+for f = 0, (if SKIP then -1 else math.floor((LEN + 0.6) * FPS) - 1) do
 	local t = f * DT
 	local st = Motion.at(math.min(t, LEN - 1e-3), F)
 	local ringMul = if t < LEN then st.ring else 1
@@ -481,7 +496,7 @@ end
 
 -- 3. her four grades side by side, by the machine
 local row = {}
-local spacing = 3.4
+local spacing = 4.6
 local base = altar.cf.Position + F.front * 15
 base = Vector3.new(base.X, 0, base.Z)
 for i, g in { "Normal", "Silver", "Gold", "Diamond" } do
@@ -504,8 +519,11 @@ for f = 0, 5 * FPS - 1 do
 	stepParticles(DT)
 	drawMachine(fill, false)
 	lightsMachine(0, now)
+	-- (a lobby lamp in front of them, a film stand-in: his lobby's own lamps light them in the game)
+	local lamp = base + F.front * 7 + UP * 6
+	table.insert(lights, { p = { lamp.X, lamp.Y, lamp.Z }, c = "#fff4e6", b = 1.6, r = 20 })
 	local u = smooth(t / 5)
-	local eye = base + F.front * (12.5 - 2 * u) + UP * (3.6 - 0.4 * u) + SIDE * (1.5 - 1.5 * u)
+	local eye = base + F.front * (16 - 2 * u) + UP * (3.6 - 0.4 * u) + SIDE * (1.5 - 1.5 * u)
 	if f == 75 then table.insert(stills, #scene.frames) end
 	flush(eye, base + UP * 2.6, { caption = "Yuno in her four grades: Normal, Silver, Gold, Diamond" })
 	now += DT

@@ -50,15 +50,19 @@ beside: [lobby.md](lobby.md).
   (26 s a turn) and its arcs and dots the other (15 s); the floor ring's ticks turn round the altar (34 s); the crystal
   blade and the soul orb float (0.18 studs, 2.6 s) and the blade sways; his spirit flames drift; his glowing trim
   breathes (SurfaceAppearance EmissiveStrength, if Roblox lets a script set it); one soft magenta light over the
-  altar, soft motes rising round it, sparkles in the ring. His parts are moved from where they stand relative to his
+  altar, soft motes rising round it, one sparkle in the ring every 1.5 s (a fixed timer, not a random rate). His parts are moved from where they stand relative to his
   base tier, so moving the whole model is fine.
 - The merge (`Shared/CombineMotion`, 4 s): two copies of her (2.6 studs, in their grade) appear on his pads with a
   puff, rise into the ring and circle faster and closer while the ring spins up (x6), the trim brightens (x2.2) and
-  motes are pulled in; ONE burst at 2.0 s in the new grade's colour (a glowing ball, a ring of light, sparkles; kid
-  safe: one flash, `Burst.flashOk`); she rises out of it turning once to face you, floats, and sinks into the altar.
+  motes are pulled in; ONE burst at 2.0 s in the new grade's colour (a glowing ball and its light, a ring of light,
+  sparkles). Kid-safe: ball, light and ring are one flash and ask `Burst.flashOk` once, so a second merge within 1 s
+  (two players close together) shows only its sparkles. She rises out of it turning once to face you, floats, and sinks into the altar.
   The crystal blade hides while the girls are in the ring.
 - Yours also takes the camera (in front of the machine, easing in) and holds your controls; it waits at the burst
-  for the server's answer and goes on, or the copies drift back to the pads if it said no. Tap anywhere to skip
+  for the server's answer and goes on, or the copies drift back to the pads if it said no. It waits at most 3 s
+  (`Merge.Wait`), then lets go with "The machine is busy. Try again." (a later yes still counts: "SILVER KURUMI is
+  yours!"), and lets go at once, with no glide, when a round starts for you (HuzzRole Runner or Catcher, Stage Lineup
+  or Picking) or the server moves your body (the Place remote): `CombineMachine.release`. Tap anywhere to skip
   (once the server said yes). Others' merges play on the machine for everyone near, without the camera.
 - Sounds (`Config/Combine.Sounds`): `combine_charge` at the start, `combine_merge` at the burst, `combine_reveal` just
   after; made by `tools/sfx/make_sfx.py`, `Config/SoundIds` "" until uploaded (until then the burst borrows the
@@ -71,14 +75,21 @@ beside: [lobby.md](lobby.md).
   "You need 2 Normal. You have 1.") and COMBINE (green, or grey). Pressing it closes the window, plays the merge,
   shows "GOLD YUNO!" big at the burst, then opens the window again on her.
 - Preview: `shots.sh combine`; check `tools/preview/check_combine.luau` (his real machine and a real girl: server
-  rules, the window, the machine's idle and a whole merge).
+  rules, the window, the machine's idle and a whole merge, the one-flash rule, the 3 s wait and the round letting go,
+  the calm glint timer).
 
 ## Grades on a girl (`Shared/GirlGrade`, `Config/Combine.Grades`)
 - Her hair and accessories (not her face) take the grade's colour and material, their picture taken off so the
-  colour reads: Silver D9E0EA metal, Gold F2BE3A metal, Diamond A6ECFF see-through glass. Her clothes keep their
-  pictures, tinted (Shirt/Pants Color3). Skin and face stay.
-- A small effect on world copies (companion, the merge), never in pictures: Silver a few white glints; Gold glints,
-  gold motes and a soft light; Diamond more glints, icy motes and a light. Roblox's own particle pictures only.
+  colour reads. On his girls the grade is mostly the hair, so it must read at a glance next to Normal (critic, Oct
+  20): Silver E6EEF9 bright cool polish, Gold FFC531 warm polish (both SmoothPlastic, Reflectance 0.38 / 0.3:
+  Roblox's Metal material darkened the light colours to grey), Diamond BDF3FF see-through glass. Her clothes keep
+  their pictures, tinted (Shirt/Pants Color3). Skin and face stay.
+- On world copies (companion, the merge), never in pictures: a soft sheen and rim in the grade's colour (a Highlight,
+  `Sheen`: fill 0.84 to 0.86 see-through, rim 0.45 to 0.55; Roblox draws at most 31 Highlights on a screen, past that
+  one isn't drawn), and a small effect: Silver a white glint; Gold glints, gold motes and a soft light; Diamond
+  glints, icy motes and a light. Roblox's own particle pictures only.
+- Glints are on a fixed calm timer like the knives' (`KnifeMotes.glint`): one every 3 s (Silver), 2.5 s (Gold), 2 s
+  (Diamond) per girl, never two within 1.5 s; one Heartbeat steps them all (`GirlGrade.stepGlints`).
 - Gold is his ask, so it is gold, but only on the girl and her badge (the windows stay without gold).
 
 ## Film and pictures
@@ -86,9 +97,13 @@ beside: [lobby.md](lobby.md).
   with the sign, a whole merge (2 Silver into 1 Gold) with your camera, then one girl in her four grades. His parts
   are drawn as simple shapes picked by their names (the meshes and their colour pictures only show in Studio; the
   colours are matched by eye to his screenshot); the girls are the scenes' box girl in Yuno's colours.
+- `docs/previews/combine-grades.mp4` (`COMBINE_PART=3` films only part 3): the four grades after the Oct 20 colour
+  pass, with a film-only lamp in front (his lobby lamps light them in the game; it overexposes the ground a little).
+  The film shows the sheen's fill as a colour mix; its rim, the polish and the glass only show in Studio.
 
 ## Honest gaps
-- Not seen in Studio yet: the whole thing. The real look of Metal and Glass hair on his girls; whether a script can
+- Not seen in Studio yet: the whole thing. The real look of the polished and glass hair and the sheen on his girls
+  (the lobby is at night: reflections may darken Silver; raise its colour or lower Reflectance if so); whether a script can
   set SurfaceAppearance EmissiveStrength (if not, the trim keeps its own glow and only our light breathes).
 - The round's carried girl (the prize) is not one of your copies, so she shows no grade.
 - Prestige and Combine both spend copies. Question for the owner: let Combine replace Prestige? (our pick: yes).
