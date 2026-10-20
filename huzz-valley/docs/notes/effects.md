@@ -137,7 +137,8 @@ the Secret cutscene: [secret-cutscene.md](secret-cutscene.md). How top VFX are b
   height, Brightness 1.5), a rim light behind, a soft glow up from the stand (short ranges, nothing above her), and her
   name big in her rarity colour over her head (1.8 studs x scale above it, so her head doesn't cut the line seen from
   below; a pixel floor so it reads from the far end; stars white).
-- Only her root is anchored: every client plays the pack's Idle on her (`CarryAnimator`) and hides the stand and its
+- Only her root is anchored: every client plays the pack's Idle on her with feet swinging, a wave and a kick on top
+  (`CarryAnimator`, `GirlMotion.showcase`, Oct 20: [animations.md](animations.md)) and hides the stand and its
   lights during the Secret cutscene. Her aura glows softly (`AuraFX`: scale > 1.5 → small light). Your companion
   steps in and out behind a puff of sparkles (`Auras`).
 - Smoke test: `tools/preview/smoke_showcase.luau` (harness).

@@ -39,6 +39,17 @@ return {
 		},
 	},
 
+	-- The big girl floating over the map (CarryAnimator, tag HuzzShowcase), on top of the pack's Idle. Owner Oct 20:
+	-- "it doesnt seem fixed" (his clip: she hung over the field side-on and read as stiff for 2 s: the Idle's breathing
+	-- and a 12° head drift are too small to see from the field). She watches the nearest player (any distance: she
+	-- looks down at the field), swings her feet slowly the whole time, and waves at the field and gives a happy kick
+	-- now and then, like a held girl.
+	Showcase = {
+		Wave = { Every = { 3.5, 6 }, Time = 3, Ease = 0.9, Wiggle = 12, Hz = 1.6 }, -- her right arm up, waving (calm)
+		Kick = { Every = { 2.5, 4.5 }, Time = 1.4, Size = 30 }, -- one foot kicks forward (degrees), the other a little
+		Swing = { Legs = 12, Arms = 6, Hz = 0.45 }, -- her feet swing slowly the whole time (she floats), arms a little
+	},
+
 	Idle = {
 		-- The owner asked for her to just stand normally: breathing, a slight weight shift,
 		-- and turning her head toward whoever comes near. Wave/Bounce add a livelier idle.

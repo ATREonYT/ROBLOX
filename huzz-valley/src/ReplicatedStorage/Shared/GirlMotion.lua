@@ -13,6 +13,7 @@
 	  can't be read (Shared/GirlMoves plays those).
 	look(): the head turn toward the nearest player (idle uses it; so does Shared/GirlMoves).
 	cheer(): little hops on the ground, arms up (your companion when you're safe).
+	showcase(): on top of the big girl's idle over the map: feet swinging, a wave and a happy kick now and then.
 
 	Joints are found by their Part1 name, so R6 and R15 both work. Poses are
 	written in the parent part's space (x right, y up, -z forward) and
@@ -350,6 +351,58 @@ function GirlMotion.cheer(s, J, dt, t, ctx)
 	end
 	set(J.Neck, CFrame.Angles(rad(10) * on, 0, rad(6) * pump * on))
 	return hop * on
+end
+
+-- Blends a joint from what it holds now toward a pose (parent part's space, as set()) by w (0-1).
+local function blendSet(m, cf, w)
+	if m and w > 0 then
+		local r = m.C0.Rotation
+		m.Transform = m.Transform:Lerp(r:Inverse() * cf * r, math.min(w, 1))
+	end
+end
+
+--[[ The big girl over the map, on top of whatever her joints already hold this frame (the pack's Idle, or idle()):
+	her feet swing slowly the whole time (she floats), and a wave at the field and a happy kick now and then
+	(Config.Showcase), so she reads as alive from the ground (owner
+	Oct 20: "it doesnt seem fixed"; the Idle alone moved her about 15° at most in 2 s, mostly her head). ]]
+-- Turns a joint a little more on top of what it holds now (cf in the parent part's space, about the joint).
+local function addSet(m, cf)
+	if m then
+		local r = m.C0.Rotation
+		m.Transform = r:Inverse() * cf * r * m.Transform
+	end
+end
+
+function GirlMotion.showcase(s, J, dt, t)
+	local C = Config.Showcase
+	-- floating: her feet swing slowly (one forward as the other goes back), her arms sway a little
+	local phase = t * 2 * pi * C.Swing.Hz
+	for side, sign in { L = 1, R = -1 } do
+		addSet(J[side .. "Hip"], limb(rad(C.Swing.Legs) * sin(phase) * sign, 0))
+		addSet(J[side .. "Shoulder"], limb(rad(C.Swing.Arms) * sin(phase + 0.8) * -sign, 0))
+	end
+	local W = C.Wave
+	local wave = burst(s, "scWave", t, W.Every, W.Time, W.Ease, W.Ease)
+	wave = wave * wave * (3 - 2 * wave) -- (eased in and out: calm, under 4° a frame)
+	local kick = burst(s, "scKick", t, C.Kick.Every, C.Kick.Time, 0.3, 0.35)
+	if wave > 0 then
+		local age = t - s.bursts.scWave.start
+		blendSet(J.RShoulder, limb(rad(10), rad(150) + rad(W.Wiggle) * sin(age * 2 * pi * W.Hz)), wave)
+		blendSet(J.RElbow, CFrame.Angles(rad(40), 0, 0), wave)
+	end
+	if kick > 0 then
+		if not s.kickSide then
+			s.kickSide = if random(s) < 0.5 then "L" else "R"
+		end
+		local age = t - s.bursts.scKick.start
+		local swingUp = sin(math.min(age / C.Kick.Time, 1) * pi) -- up and back down once
+		for side, amount in { L = if s.kickSide == "L" then 1 else 0.25, R = if s.kickSide == "R" then 1 else 0.25 } do
+			blendSet(J[side .. "Hip"], limb(rad(C.Kick.Size) * amount * swingUp, 0), kick)
+			blendSet(J[side .. "Knee"], CFrame.Angles(-rad(35) * amount * swingUp, 0, 0), kick)
+		end
+	else
+		s.kickSide = nil
+	end
 end
 
 return GirlMotion

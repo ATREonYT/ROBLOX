@@ -130,6 +130,24 @@ has the general KeyframeSequence workflow; 3D video tools are in core `CLAUDE.md
   look round every few seconds (owner Oct 20 "Please do so": every girl livelier, a kick and a glance every
   2.5-4.5 s, a wave every 5-8 s, 3.5 s of happy kicks after a pickup); calm (under 6° a frame). Spec `tests/GirlMotion.spec`. Before/after film
   `docs/previews/girls-walk-carry.mp4` (`motion3d/girls_walk_carry_scene.luau`). Not seen in Studio yet.
+- **Every girl, checked (Oct 20 recheck, owner: "check the animations for the girls ... it doesnt seem fixed"):** his
+  35 girls (`tools/girl_survey.luau`: 34 R6 with 6 Motor6Ds each, C.C. R15 with 30 AnimationConstraints; each a
+  Humanoid + Animator; no scripts, Animation objects or AnimationControllers of their own) all get every joint the
+  motion needs after `GirlRig`, and all move held (quietest 2 s: 22°), as the big girl (24°+) and with the scripted
+  idle (21°): spec `tests/GirlsAlive.spec.luau` runs the game's motion on each one's real joints. Nobody stays stiff
+  for a rig reason. Film `docs/previews/girls-alive.mp4` (`motion3d/girls_alive_scene.luau`: all 35 held in a grid,
+  then the round 1 prize Yui before/now from the field). Numbers: `motion3d/girl_alive_measure.luau`.
+
+## The big girl over the map (`CarryAnimator`, tag HuzzShowcase; `GirlMotion.showcase`, `Config/GirlMotion.Showcase`)
+- Floating over the field is our design (owner: "higher", `Config/Round.Showcase` Height 34, 3x, slow turn and bob).
+  Huss Valley has no girl prize, so nothing to match there.
+- His Oct 20 clip (round 1, Yui): she turned and bobbed as designed, her arm held in the Idle's pose (not a bind
+  pose), but read as a statue: the pack's Idle plus a slow 12° head drift moved her at most 15° in any 2 s, mostly her
+  head, small from the field; and if the pack hadn't reached the screen she had no fallback at all (a true statue).
+- Now: she watches the nearest player below her (any distance), her feet swing slowly the whole time (12°, 0.45 Hz),
+  she waves at the field every 3.5-6 s and gives a happy kick every 2.5-4.5 s (eased, under 5° a frame); without
+  the pack she plays the scripted idle under the same overlay. Each screen prints one Output line, `[Huzz] girls:
+  movement pack found` or `... not here yet, scripted idle`, so his Output shows which one ran. Not seen in Studio yet.
 - **The pickup** (`CarryMotion`, `Config/Carry` PickupTime 0.85, ArcHeight 2.5, PickupSpin 1): won from far away
   (the big girl over the map; anything over `PickupNear` 10 studs) she appears standing on the ground 3.2 studs in
   front of him, rises in a short arc turning once round herself (slowing), and only in the last 60% lies back into his

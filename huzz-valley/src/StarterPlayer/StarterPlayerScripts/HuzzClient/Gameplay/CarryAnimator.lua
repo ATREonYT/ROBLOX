@@ -9,8 +9,9 @@
 	  - the prize girl (tag "HuzzPrize"): her idle, watching the nearest player;
 	  - a girl following a catcher (tag "HuzzFollower", Shared/FollowMotion): she drops
 	    to the ground, then walks or runs behind him and stands when he stops;
-	  - the big girl over the map (tag "HuzzShowcase"): she turns and floats slowly and plays the pack's Idle,
-	    so she reads as alive on her stand, not a statue. While the Secret cutscene plays her (HuzzRevealing) her
+	  - the big girl over the map (tag "HuzzShowcase"): she turns and floats slowly and plays the pack's Idle (the
+	    scripted idle if the pack isn't here), watches the nearest player and waves and kicks now and then
+	    (GirlMotion.showcase; owner Oct 20 "it doesnt seem fixed": the Idle alone read as a statue from the field). While the Secret cutscene plays her (HuzzRevealing) her
 	    stand and stand lights are hidden on this screen and where she is is left to the cutscene; her Idle keeps
 	    playing on her joints, so she breathes and looks round while her name is up (not a statue).
 	The prize's idle and the follower's walk/run/idle are the owner's movement pack (Shared/GirlMoves:
@@ -40,7 +41,17 @@ function M.start()
 	local Carry = require(Shared.Config.Carry)
 	local Burst = require(script.Parent.Burst)
 
+	local GirlLook = require(Shared.Config.GirlMotion).Idle
 	local folder = Workspace:WaitForChild("HuzzCarried")
+	-- One Output line (owner's Studio): whether this screen plays the movement pack on the girls or the scripted moves.
+	local packState = nil
+	local function packSaid(found)
+		if packState == nil or (found and packState == false) then
+			packState = found
+			print(if found then "[Huzz] girls: movement pack found, the big girl plays its Idle"
+				else "[Huzz] girls: movement pack not here yet, scripted idle (ReplicatedStorage.HuzzGirlMoves)")
+		end
+	end
 	local useArmAnimation = Animations.CarryArms ~= ""
 	local carries = {} -- model -> { rec, model, humanoid, armTrack }
 	local prizes = {} -- model -> { state, joints, root }
@@ -378,10 +389,20 @@ function M.start()
 				if not revealing then
 					model:PivotTo(base * CFrame.new(0, math.sin(now * 1.1) * S.Bob, 0) * CFrame.Angles(0, (now * S.Spin) % (2 * math.pi), 0))
 				end
-				local anims = sc and GirlMoves.find(os.clock())
-				if anims then
-					sc.pack = sc.pack or GirlMoves.new(anims, sc.rootHeight)
-					GirlMoves.idle(sc.pack, sc.joints, dt, GirlMotion.look(sc.state, sc.joints, dt, now, {}))
+				if sc then
+					-- she watches the nearest player wherever they are on the field (looking down at them)
+					local target, distance = nearestHead(model:GetPivot().Position)
+					local ctx = { target = target, distance = if target then math.min(distance, GirlLook.LookDistance - 1) else nil }
+					local anims = GirlMoves.find(os.clock())
+					packSaid(anims ~= nil)
+					if anims then
+						sc.pack = sc.pack or GirlMoves.new(anims, sc.rootHeight)
+						GirlMoves.idle(sc.pack, sc.joints, dt, GirlMotion.look(sc.state, sc.joints, dt, now, ctx))
+					else
+						-- (the pack not here: the scripted idle, never a statue; she used to have no fallback at all)
+						GirlMotion.idle(sc.state, sc.joints, dt, now, ctx)
+					end
+					GirlMotion.showcase(sc.state, sc.joints, dt, now) -- a wave and a kick now and then (Config/GirlMotion.Showcase)
 				end
 			end
 		end
