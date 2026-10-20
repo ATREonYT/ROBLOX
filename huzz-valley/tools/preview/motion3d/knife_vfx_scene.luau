@@ -198,6 +198,13 @@ local function step(K, handleCF, dt, sprites, lights, emitAll)
 			while em.acc >= 1 do em.acc -= 1; spawn(em, nil, handleCF, 1) end
 		end
 		if emitAll and em.burst then spawn(em, nil, handleCF, emitAll) end
+		if e.Name == "KnifeFx_glint" then -- (Rate 0: one on its fixed timer, as Gameplay/KnifeFxRange emits it)
+			local every = K.model:GetAttribute("GlintEvery") or 2
+			em.nextGlint = em.nextGlint or KnifeMotes.firstGlint(K.clock, every, K.balls.seed or 0) - every
+			local now
+			now, em.nextGlint = KnifeMotes.glint(em.nextGlint, K.clock, every)
+			if now then spawn(em, nil, handleCF, 1) end
+		end
 		local keep = {}
 		local drag = 2 ^ (-e.Drag * dt)
 		for _, p in em.parts do

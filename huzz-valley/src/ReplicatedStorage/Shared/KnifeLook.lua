@@ -489,7 +489,9 @@ end
 	  motes  the HV staple: small soft dots (TEX.Smoke, small) moving as the theme does (embers rise, frost sinks,
 	         void is pulled in, petals drift);
 	  motif  the theme's own thing (flames on the edge, frost mist, a dark swirl, petals, red drips, sparks...);
-	  glint  a star on the gem (TEX.Sparkle, slow grow and fade, about one every 2 s: never a flash);
+	  glint  a star on the gem (TEX.Sparkle, slow grow and fade): Rate 0, one at a time on a fixed timer (every =
+	         GLINT_EVERY s, Gameplay/KnifeFxRange emits it), never twice within 1 s (a random Rate 0.5 gave gaps
+	         under 1 s more than half the time: the critic, Oct 20);
 	  orb    a soft glow held on the gem (TEX.Smoke, locked: the bloom round their gems; Epic and up);
 	  haze   a faint glow or mist round the blade.
 	TIER.glow: the gem glowing (KnifeFx "KnifeFxGlow"): a solid Neon ball in the gem's colour, the gem's own size,
@@ -535,7 +537,8 @@ local function mote(extra)
 	for k, v in extra do m[k] = v end
 	return m
 end
-local GLINT = { tex = "Sparkle", col = { "ffffff", "w" }, rate = 0.5, life = { 0.5, 0.6 }, speed = { 0, 0 }, size = 0.55, at = "gem", lock = true, grow = true, spin = 45 }
+VFX.GLINT_EVERY = 2 -- seconds between a knife's glints (fixed, not random; kid-safe: at least 1.5)
+local GLINT = { tex = "Sparkle", col = { "ffffff", "w" }, rate = 0, every = VFX.GLINT_EVERY, life = { 0.5, 0.6 }, speed = { 0, 0 }, size = 0.55, at = "gem", lock = true, grow = true, spin = 45 }
 VFX.ORB = { tex = "Smoke", col = { "w", "c" }, rate = 1.5, life = { 1, 1.4 }, speed = { 0, 0 }, size = 0.9, at = "gem", lock = true, alpha = 0.6, grow = true }
 VFX.THEMES = {
 	Fire = {
@@ -560,7 +563,7 @@ VFX.THEMES = {
 		motes = mote({ rate = 3, accel = { 0, 0.4, 0 } }), -- light motes rising, in the gem's colour (MELON5MAN's cyan)
 		motif = { tex = "Sparkle", col = { "ffffff", "c" }, rate = 1.5, life = { 1.2, 1.6 }, speed = { 0.2, 0.4 }, size = 0.3, at = "gem", accel = { 0, 0.6, 0 }, spin = 90, grow = true }, -- little stars rising off the halo
 		glint = GLINT,
-		haze = { tex = "Sparkle", col = { "ffffff", "w" }, rate = 0.4, life = { 0.5, 0.6 }, speed = { 0, 0 }, size = 0.45, at = "tip", lock = true, grow = true, spin = 45 }, -- a star at the tip
+		haze = { tex = "Smoke", col = { "c", "c" }, rate = 1, life = { 1.2, 1.6 }, speed = { 0, 0.05 }, size = 1, alpha = 0.16, lock = true, grow = true }, -- (the tip star went: two glints could land within 1 s)
 	},
 	Moon = {
 		motes = mote({ rate = 2.5, accel = { 0, 0.3, 0 } }),
@@ -583,8 +586,8 @@ VFX.THEMES = {
 	Storm = {
 		motes = mote({ rate = 2.5 }),
 		motif = { tex = "Smoke", col = { "w", "c" }, rate = 3, life = { 0.35, 0.55 }, speed = { 0.1, 0.3 }, size = 0.45, alpha = 0.6, lock = true, spin = 200 }, -- electric wisps round the middle (Mrsmagic's)
-		glint = { tex = "Sparkle", col = { "ffffff", "c" }, rate = 3, life = { 0.15, 0.25 }, speed = { 1.5, 2.5 }, size = 0.12, drag = 4 }, -- tiny sparks
-		haze = { tex = "Smoke", col = { "c", "c" }, rate = 1, life = { 1, 1.4 }, speed = { 0, 0.05 }, size = 1, alpha = 0.1, lock = true, grow = true },
+		glint = GLINT,
+		haze = { tex = "Sparkle", col = { "ffffff", "c" }, rate = 3, life = { 0.15, 0.25 }, speed = { 1.5, 2.5 }, size = 0.12, drag = 4 }, -- tiny sparks off the blade (specks, not a flash)
 	},
 	Venom = {
 		motes = mote({ accel = { 0, 0.9, 0 }, size = 0.26 }), -- bubbles rising
@@ -663,8 +666,8 @@ function KnifeLook.vfx(skin, where: string)
 	for _, role in roles do
 		local e = theme[role] or (role == "orb" and VFX.ORB) or nil
 		if not e then continue end
-		local rate = math.min(e.rate * share * (if role == "motes" and tier.balls then tier.moteShare or 1 else 1), VFX.MaxRate, VFX.MaxTotal - total)
-		if rate <= 0 then break end
+		local rate = if e.every then 0 else math.min(e.rate * share * (if role == "motes" and tier.balls then tier.moteShare or 1 else 1), VFX.MaxRate, VFX.MaxTotal - total)
+		if rate <= 0 and not e.every then break end
 		total += rate
 		local out = table.clone(e)
 		out.role = role
@@ -682,8 +685,11 @@ function KnifeLook.vfx(skin, where: string)
 		-- ball motes: how many, and how fast they rise (+) or sink (-) as the theme's motes do (studs a second)
 		balls = if tier.balls then tier.balls[where] or 0 else 0,
 		drift = math.clamp(((theme.motes and theme.motes.accel) or { 0, 0.4, 0 })[2] * 0.15, -0.25, 0.35),
-		light = if tier.light and where ~= "back" then { Color = colour, Brightness = tier.light.Brightness, Range = tier.light.Range } else nil,
-		burst = if where == "back" then 0 else tier.burst,
+		-- (in hand at half strength and out on the blade's far half: at the guard it washed the forearm in its colour)
+		light = if tier.light and where ~= "back" then { Color = colour, Brightness = tier.light.Brightness * (if where == "hand" then 0.5 else 1),
+			Range = tier.light.Range } else nil,
+		-- (only a slash in hand throws sparkles; the stands' moves and worn knives none: Huss Valley shows no spark showers)
+		burst = if where == "hand" then tier.burst else 0,
 		trail = if tierN >= 3 then KnifeLook.TRAIL.ElementLifetime else nil,
 	}
 end

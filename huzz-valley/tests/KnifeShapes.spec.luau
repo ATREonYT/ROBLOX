@@ -10,8 +10,8 @@
 --     models alike, and carries its element: steady emitters, a burst, a tip glint, its element name;
 --   * on a stand, its own shape only bigger (owner, Oct 19: "they dont look as good as in the glb file"): scaled the
 --     same every way (no widening), no glow shell laid over it, the slash from mid-blade;
---   * steady: a stand's knife throws at most 32 particles a second (a hand about a third), a burst at most 20, the glint at
---     most one a second; every picture name has a stand-in in Shared/FxTexture;
+--   * steady: a stand's knife throws at most 32 particles a second (a hand about a third), no burst on a stand (a hand's at most
+--     20), the glint on a fixed timer of 1.5 s or more; every picture name has a stand-in in Shared/FxTexture;
 --   * the slash arc fades in and out within its life and is never solid (KnifeLook.arcFade).
 local fs = require("@lune/fs")
 local luau = require("@lune/luau")
@@ -182,9 +182,12 @@ for _, key in PASS do
 			if not string.find(d.Texture, "^rbxasset://textures/particles/") then badTex += 1 end
 		end
 	end
+	if m:GetAttribute("FxGem") then
+		print(string.format("  %s: the gem glow on %s", key, tostring(m:GetAttribute("FxGem")))) -- (which part KnifeFx took for the gem)
+	end
 	check(key .. string.format(": on the stand its themed effects (%s), %.1f particles a second, %d light", tostring(m:GetAttribute("Fx")), rate, lights),
 		m:GetAttribute("Fx") ~= nil and rate > 0 and rate <= KnifeLook.VFX.MaxTotal and lights <= 1 and others == 0)
-	check(key .. ": only Roblox's built-in particle pictures (no white squares)", badTex == 0)
+	check(key .. ": only Roblox's built-in particle pictures (no white squares)", badTex == 0)	check(key .. ": no spark burst on the stand (only a slash in hand throws sparkles)", m:FindFirstChild("KnifeBurst", true) == nil and m:GetAttribute("Burst") == nil)
 end
 do -- one of the owner's own models (he'll import the pass ones the same way): scaled to the same length
 	local skin = CoinShop.get("VoidFang")

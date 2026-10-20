@@ -25,7 +25,8 @@
 	"make the knife animations look like the ones i have attached in the video"): the knife is BIG (about 4.4 studs,
 	KnifeService.display scales it), with its stand effects (Shared/KnifeFx: Rare and up, Oct 20), and each knife
 	has its own hold and moves (Shared/StandShowcase.STYLES: big arcs, a spin slash, flicks, a raised spin); a move's
-	burst throws the knife's KnifeBurst particles out (its Burst attribute: Epic and up).
+	burst would throw the knife's KnifeBurst particles out, but stand copies carry none (Shared/KnifeLook.vfx: only a
+	slash in hand throws sparkles; Huss Valley shows no spark showers).
 	Without a knife it runs in place with the game's run (the
 	owner's run animation when it can play here, Shared/AnimationLibrary "Run"; otherwise Shared/RunMotion, the
 	scripted Huss Valley run, on R15; a simple swing on R6). It turns to face you like the leaderboards. No disc under

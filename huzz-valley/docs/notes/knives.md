@@ -28,27 +28,40 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
     Uncommon plain (only the swing trail); Rare one or two faint particle motes; Epic 2 crisp ball motes (1 worn),
     the theme's motif, the gem glowing and 5 slash sparkles; Legendary, Mythic and the pass knives (Exclusive) 3
     crisp ball motes in the gem's colour (3 worn, 4 on a stand), the gem glowing, the motif readable worn, a glint on
-    the gem, a faint haze, one soft PointLight (1, range 6, no shadows) and the long trail (8 slash sparkles). The
+    the gem, a faint haze, one soft PointLight (range 6, no shadows; Brightness 1 on a stand, 0.5 in hand, on
+    `KnifeFxLightAt` a quarter of the blade out from its middle: at the guard it washed the forearm yellow or pink)
+    and the long trail (8 slash sparkles). The
     particle motes stay as a light extra (0.4 of their rate) beside the balls. In hand the full set, on a stand 1.2x
-    the rate, worn 0.8x with no light and no burst.
+    the rate with no burst, worn 0.8x with no light and no burst (only a slash in hand throws sparkles).
   - The gem glowing (`KnifeFxGlow`, made by `Shared/KnifeFx` on the server, never changing): a solid Neon ball in
-    the gem's colour, the gem's own size (0.1 to 0.35 studs), Transparency 0.08 (Epic 0.15), the PointLight and
+    the gem's colour, the whole gem's size and centre (0.1 to 0.35 studs; a gem cut into slices, like the stand-ins'
+    two-half Seraph gem, is taken as one: `gemCluster`, so the ball sits in the ring's middle, not on one half;
+    the model's `FxGem` attribute names the part, and KnifeModels / KnifeShapes specs print it per knife),
+    Transparency 0.08 (Epic 0.15), the PointLight and
     the game's bloom its soft halo, plus a locked `orb` smoke puff. (Third pass, coordinator: the see-through 0.35
     ball "reads as a pale see-through bubble around the guard, which the owner will call cheap or AI".)
   - Ball motes (`Gameplay/KnifeFxRange` + `Shared/KnifeMotes`, on each screen only, so the server never replicates
     moving parts): `KnifeFx` marks the model (tag `HuzzKnifeMotes`, attributes Motes, MoteColor, MoteSize = 5% of
-    the knife, MoteDrift = the theme's rise or sink, MoteSeed); each screen makes that many small Neon balls in
-    `Workspace > HuzzKnifeMotes` (no shadow, collide, query or touch; anchored) and moves them in one RenderStepped
-    loop: each floats 3.2 s on a soft loop off the blade's edges (never on the flat or inside it), fading in and
+    the knife but never past 0.2 studs (small dots, not orbs), MoteDrift = the theme's rise or sink, MoteSeed); each
+    screen makes that many small Neon balls in `Workspace > HuzzKnifeMotes` (no shadow, collide, query or touch;
+    anchored) and moves them in one RenderStepped loop (all with one `Workspace:BulkMoveTo`, each part on its own
+    if that fails; Transparency written only when it changes by more than 0.02): each floats 3.2 s on a soft loop off the blade's edges (never on the flat or inside it), fading in and
     out over 0.8 s (smoothstep, never a pop), staggered so 2 or 3 of 3 show at once. Four times a second the same
     module drops balls past 70 studs from the camera or on an Invisible player, switches worn knives' particles off
     past 70 studs and every knife's particles off while Invisible (the gem's glow is a part on the knife, so it
-    fades with the body). `tools/preview/smoke_knife_motes.luau` checks it in the harness.
+    fades with the body). The same loop times the glint (below). `tools/preview/smoke_knife_motes.luau` checks it in
+    the harness (the harness keeps its last 500 `ParticleEmitter:Emit` calls in `__emitted`).
+  - The glint (the star on the gem, top tier): Rate 0, one `Emit` every 2 s on a fixed timer per knife
+    (`KnifeLook.VFX.GLINT_EVERY`, the model's `GlintEvery`; `Shared/KnifeMotes.glint`, never closer than 1.5 s, a
+    knife made again waits a whole interval). The critic, Oct 20: at a random Rate 0.5 (plus Celestial's tip star)
+    about 59% of the gaps were under 1 s; the tip star is gone and Storm's tiny sparks are its haze, not a glint.
+    `tests/Knives.spec` checks no knife has any other locked star on its gem or tip, and runs the timer through
+    uneven frames, stalls and remakes.
   - The gem (`KnifeFx` gemOf): his `guard_gem`, else a `gem` (Solar Reaper's pommel), else his biggest Neon part that
     isn't the blade or one of his baked aura bits (`aura_ring`, `aura_shard`, `spark`, `rune`, `wing_glow`: Void
     Fang's floating shards are not a gem). No gem (Void Fang, Abyss Eclipse, Storm Kunai...): no glow ball, the orb
     puff sits at the guard; the ball motes still float. `Gameplay/KnifeDress` leaves `KnifeFx*` parts showing when it hides the stand-in.
-  - Limits: 16 particles a second per knife at most (6 per emitter), the glint 0.5 a second (no strobing), Roblox's
+  - Limits: 16 particles a second per knife at most (6 per emitter), the glint once every 2 s (no strobing), Roblox's
     built-in particle pictures only (rbxasset://textures/particles/...: sparkles_main, fire_main, smoke_main; never an id we
     haven't uploaded, which shows as a white square), one light at most. `tests/Knives.spec` checks every knife.
   - What stays from before (the trail and arc ladder, `KnifeLook.LADDER`): every skin's slash trail in its own
@@ -283,7 +296,10 @@ in hand and on a stand), `docs/previews/knife-vfx-vs-hv.jpg` (MELON5MAN worn nex
   model).
 - **Trail:** a `StandSlash` Trail from `StandTrailBase` (45% up the blade, added by display) to TrailTip, on only in
   the cuts, `TRAIL_LIFETIME` 0.2 s in the element's colours (Sunrise gold, never white), tapered. The copy carries
-  its stand effects (`KnifeFx` "stand", above); a move throws its `KnifeBurst`; its own Neon parts still glow.
+  its stand effects (`KnifeFx` "stand", above; no `KnifeBurst`, so a move throws no sparks); its own Neon parts
+  still glow. `tools/preview/check_lobby_boards` checks the stand knife by the owner's newer rule (07:43 "make them
+  better for more high end ones" over 03:01's "make them be normal" for the high-end knives): effects by tier, one
+  light at most, the glint on its timer, no spark bursts.
 - **Elements** (`KnifeLook.ELEMENTS`): their emitters off since Oct 20 ("just make them be normal"); each pass
   knife keeps its trail colours from it, and its effects now come from `KnifeLook.VFX` (Effects above). (They were: Hunter red petals + twinkles, Moonlit moon glint + violet
   wisps, Sunrise gold feathers, Inferno flames + embers, Frost shards + snowflakes + mist, a stand light and a tip
@@ -313,8 +329,8 @@ in hand and on a stand), `docs/previews/knife-vfx-vs-hv.jpg` (MELON5MAN worn nex
   80, measured on R15 and R6), so at rest the blade's broad face looks out of the stand instead of its edge; in a move
   the twist eases back to 0 (the edge leads the cut) and returns with the hold (`StandShowcase.knifeTurn` builds the
   weld's turn for AvatarStands, the spec and the renders; the spec checks the width axis is across the view and the
-  face looks out). A spin turns the whole body (`spin`; the feet turn with it). A move's `burst` throws the knife's
-  KnifeBurst once (AvatarStands).
+  face looks out). A spin turns the whole body (`spin`; the feet turn with it). A move's `burst` would throw the knife's
+  KnifeBurst once (AvatarStands), but stand copies carry none since this pass.
 - Spec `tests/StandShowcase.spec` (at ready the blade slants up and out to the right in front of the torso, tip under
   the sign; a move every loop, no pops at 30/60 fps, back to ready, feet planted) runs every style on R15 and R6 at the
   big size. Video `docs/previews/stand-showcase.mp4`
@@ -361,8 +377,9 @@ in hand and on a stand), `docs/previews/knife-vfx-vs-hv.jpg` (MELON5MAN worn nex
   mote only Studio shows. Third pass (crisp Neon ball motes, a solid gem ball): the film and the stands now read
   like Huss Valley's crisp coloured dots. In the worn side by side (`docs/previews/knife-vfx-vs-hv.jpg`) ours is
   still a step behind: the offline picture draws Neon flat with no bloom halo, so the Seraph's gem ball is a flat
-  cyan disc that sits a little off his small cyan gem (the stand-in's gem part, `Part151`, 0.22 studs, isn't
-  exactly where his gem shows) and only one ball lands in that crop at that moment (theirs two or three). Whether
+  cyan disc (now in the ring's middle: the stand-in's gem is two halves, `Part151` and `Part152`) and only one
+  ball lands in that crop at that moment (theirs two or three). The swing film `docs/previews/knife-vfx.mp4` was
+  made before the timed glint, the hand light's move and the 0.2 stud mote cap. Whether
   Roblox's bloom gives the ball and the motes their soft halo only Studio shows. The 3D crate reveal
   (`UI/Crate3D`) is a ViewportFrame, which draws no particles, so it shows no knife effects (its backlight already
   takes the colour).

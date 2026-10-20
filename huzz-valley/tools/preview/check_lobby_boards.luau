@@ -200,8 +200,28 @@ if copy then
 		end
 	end
 	check(string.format("the stand's knife is big (%.1f studs, was 1.9)", hi - lo), hi - lo > 4 and hi - lo < 5.2)
-	check("plain: no particles or lights on the knife (owner Oct 20: \"just make them be normal\")", knife ~= nil
-		and knife:FindFirstChildWhichIsA("ParticleEmitter", true) == nil and knife:FindFirstChildWhichIsA("Light", true) == nil)
+	-- its effects by tier (owner, Oct 20 07:43 "make them better for more high end ones", over 03:01's "just make
+	-- them be normal" for the high-end knives; the stands are where kids see them): this exclusive knife has its
+	-- themed effects, kid-safe: one light at most, its glint only on a fixed timer of 1.5 s or more (Rate 0, never two
+	-- within 1 s), no other star on it, and no spark bursts
+	local lights, stars, glintOk, bursts, rate = 0, 0, true, 0, 0
+	for _, d in (knife and knife:GetDescendants() or {}) do
+		if d:IsA("Light") then lights += 1 end
+		if d:IsA("Sparkles") or d:IsA("Fire") or d:IsA("Smoke") then bursts += 1 end
+		if d:IsA("ParticleEmitter") then
+			if d.Name == "KnifeBurst" then bursts += 1 end
+			if d.Name == "KnifeFx_glint" then
+				glintOk = glintOk and d.Rate == 0 and (tonumber(knife:GetAttribute("GlintEvery")) or 0) >= 1.5
+			elseif d.LockedToPart and string.find(d.Texture, "sparkles_main", 1, true) and d.Rate > 0 and d.Parent:IsA("Attachment") then
+				stars += 1
+			end
+			rate += d.Rate
+		end
+	end
+	check(string.format("its effects by tier (%s, %.1f particles a second), one light at most (%d)", tostring(knife and knife:GetAttribute("Fx")), rate, lights),
+		knife ~= nil and knife:GetAttribute("Fx") ~= nil and rate > 0 and rate <= 16 and lights <= 1)
+	check("kid-safe: the glint on a fixed timer of 1.5 s or more, no other star on the gem or tip", glintOk and stars == 0)
+	check("no spark bursts on the stand's knife", bursts == 0 and (knife == nil or knife:GetAttribute("Burst") == nil))
 	local blade = knife and knife:FindFirstChild("Blade", true)
 	local glowing = 0
 	for _, d in (knife and knife:GetDescendants() or {}) do

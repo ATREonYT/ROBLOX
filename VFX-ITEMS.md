@@ -60,24 +60,30 @@ Only use pictures that ship with Roblox, or none. An image id you haven't upload
   - A burst on use: Rate 0 and `Emit(n)` from the use code, n stored as an attribute on the item.
 - `Trail` with no Texture: a plain colour ribbon in the skin's two colours, Lifetime 0.2 to 0.35 s, on only in the swing.
 - `Beam` with no Texture for a slash arc; a `Highlight` only for a short outline moment.
-- `PointLight`: one per item at most, Brightness about 1, Range about 6, Shadows off, never blinking.
+- `PointLight`: one per item at most, Brightness about 1 (0.5 in a hand), Range about 6, Shadows off, never
+  blinking, on an Attachment out on the blade's far half: at the guard it tints the holder's forearm.
 - A glowing gem: a SOLID Ball Part on the gem (Material Neon, the gem's colour, Transparency about 0.1, the gem's own
-  size, welded to the gem, CanCollide / CanQuery / CanTouch off, Massless, CastShadow off), with the PointLight and
+  size and centre (a gem cut into slices is one gem: take the box over its same-colour glowing pieces), welded to the gem, CanCollide / CanQuery / CanTouch off, Massless, CastShadow off), with the PointLight and
   the game's BloomEffect as its soft halo, plus a locked smoke_main puff on the gem (Rate 1.5, Size 0.9). Not a big
   see-through ball round the hilt: that reads as a pale bubble, "cheap". It never changes, so it's kid-safe.
   Anything that hides the item's stand-in parts must leave it showing. No gem part, no ball.
-- Crisp motes (what soft particles can't do): 2 to 4 small Neon Ball Parts, about 5% of the item's length, in the
+- Crisp motes (what soft particles can't do): 2 to 4 small Neon Ball Parts, about 5% of the item's length (never
+  past 0.2 studs: bigger reads as orbs, not dots), in the
   gem's colour, Transparency 0.1 at full. Make them on each client only (server-made moving parts replicate every
   frame): the server just marks the item (a CollectionService tag + attributes: count, colour, size, drift, seed).
   One RenderStepped loop moves every marked item's balls with a pure path function (Huzz Valley:
   `huzz-valley/src/ReplicatedStorage/Shared/KnifeMotes.lua`): each floats a few seconds on a soft loop off the
   item's edges, never inside it, fading in and out over 0.8 s (smoothstep), staggered so 2 or 3 show at once,
-  then starts a new path. Anchored, no shadow, collide, query or touch, in one folder. Every quarter second, drop
+  then starts a new path. Anchored, no shadow, collide, query or touch, in one folder. Move them all with one
+  `Workspace:BulkMoveTo(parts, cframes, Enum.BulkMoveMode.FireCFrameChanged)` (in pcall, per part as a fallback) and
+  write Transparency only when it changes by more than 0.02. Every quarter second, drop
   the balls of items far from the camera (70 studs) or on an invisible player. Keep particle motes only as a light
   extra.
 
 ## 5. Kid-safe and performance limits
-- At most one flash a second; glints at 0.5 a second or slower; nothing strobes or blinks.
+- At most one flash a second; nothing strobes or blinks. Glints never on a random Rate (Rate 0.5 still gives gaps
+  under 1 s more than half the time): Rate 0 and one `Emit(1)` on a fixed timer of 1.5 s or more per item, and only
+  one star source per item.
 - About 16 particles a second per item at most, 6 per emitter; one light at most; nothing running every frame
   (build the emitters once on the server, they replicate).
 - Worn items: lighter, and switch them off past ~70 studs from the camera (one loop four times a second on the

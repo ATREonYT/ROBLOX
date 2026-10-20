@@ -226,7 +226,12 @@ roblox.implementProperty("BasePart", "TouchEnded", function(self) _G.__touchPart
 _G.__sounds = {}
 roblox.implementMethod("Sound", "Play", function(self) table.insert(_G.__sounds, { self.Name, os.clock() }) end)
 roblox.implementMethod("Sound", "Stop", function() end)
-roblox.implementMethod("ParticleEmitter", "Emit", function() end)
+-- (Emit draws nothing here; the last 500 calls are kept in __emitted = { { name, count, os.clock() } } for checks)
+_G.__emitted = {}
+roblox.implementMethod("ParticleEmitter", "Emit", function(self, n)
+	if #_G.__emitted >= 500 then table.remove(_G.__emitted, 1) end
+	table.insert(_G.__emitted, { self.Name, n, os.clock() })
+end)
 roblox.implementMethod("Humanoid", "EquipTool", function(self, tool) tool.Parent = self.Parent end)
 roblox.implementMethod("Humanoid", "UnequipTools", function(self)
 	local bp = game:GetService("Players").LocalPlayer:FindFirstChild("Backpack")
@@ -482,6 +487,7 @@ local base = {
 	ColorSequenceKeypoint = roblox.ColorSequenceKeypoint, Random = Random, Font = roblox.Font, Rect = roblox.Rect, __fs = fs, __serde = serde, __exportUI = function(...) return exportUI(...) end, TweenInfo = TweenInfoLib, __stepTweens = stepTweens, __exportParts = function(...) return __exportPartsImpl(...) end, task = task, warn = function(...) print("[warn]", ...) end,
 }
 base.__fireOn = _G.__fireOn
+base.__emitted = _G.__emitted -- (ParticleEmitter:Emit calls, newest last)
 -- (a plain table: Workspace:Raycast is the snippet's to stand in for, e.g. check_companions.luau)
 base.RaycastParams = { new = function() return { FilterType = Enum.RaycastFilterType.Exclude, FilterDescendantsInstances = {}, RespectCanCollide = false } end }
 local cache, loading = {}, {}

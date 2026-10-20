@@ -8,7 +8,10 @@
 	   Neon balls here, made on this screen only (moving parts made on the server would replicate every frame), all
 	   moved by one RenderStepped loop with Shared/KnifeMotes: soft paths off the blade's edges, fading in and out
 	   over 0.8 s, never a pop or a blink. CastShadow, CanCollide, CanQuery and CanTouch off, Massless, Anchored, in
-	   one folder ("HuzzKnifeMotes" in Workspace).
+	   one folder ("HuzzKnifeMotes" in Workspace). Moved together with Workspace:BulkMoveTo (each part on its own
+	   where that isn't there), Transparency written only when it changes by more than 0.02 (or reaches the ends).
+	   The same loop times each marked knife's glint (KnifeFx_glint, Rate 0, GlintEvery seconds): one Emit on a
+	   fixed timer (Shared/KnifeMotes.glint), never twice within 1.5 s.
 	2. Four times a second: knives more than RANGE studs from the camera lose their balls, a worn knife's particles
 	   (KnifeService "HuzzBackKnife") switch off past RANGE, and every knife's particles and balls switch off while
 	   its player is Invisible (character InvisibleUntil, as Gameplay/PowerEffects fades the body: they'd give them
@@ -47,11 +50,15 @@ function M.start()
 
 	local function make(model: Model, area: BasePart)
 		local n = math.clamp(math.floor(tonumber(model:GetAttribute("Motes")) or 0), 0, 4)
-		if n == 0 then return end
+		local glint = model:FindFirstChild("KnifeFx_glint", true)
+		local every = tonumber(model:GetAttribute("GlintEvery"))
+		if not (glint and glint:IsA("ParticleEmitter") and every) then glint = nil end
+		if n == 0 and not glint then return end
 		local colour = model:GetAttribute("MoteColor")
 		local size = tonumber(model:GetAttribute("MoteSize")) or 0.15
-		local rec = { area = area, balls = {}, n = n, size = size, drift = tonumber(model:GetAttribute("MoteDrift")) or 0,
-			seed = tonumber(model:GetAttribute("MoteSeed")) or 0 }
+		local seed = tonumber(model:GetAttribute("MoteSeed")) or 0
+		local rec = { area = area, balls = {}, shown = {}, n = n, size = size, drift = tonumber(model:GetAttribute("MoteDrift")) or 0,
+			seed = seed, glint = glint, every = every, nextGlint = if glint then KnifeMotes.firstGlint(os.clock(), every, seed) else nil }
 		for _ = 1, n do
 			local b = Instance.new("Part")
 			b.Name = "KnifeFxMote"
@@ -64,26 +71,46 @@ function M.start()
 			b.CFrame = area.CFrame
 			b.Parent = folder
 			table.insert(rec.balls, b)
+			table.insert(rec.shown, 1)
 		end
 		live[model] = rec
 	end
 
-	-- the balls, every frame
+	-- the balls and the glints, every frame
+	local bulk = true -- (Workspace:BulkMoveTo; off for good after one failure, e.g. offline)
 	RunService.RenderStepped:Connect(function()
 		local t = os.clock()
+		local parts, cframes = {}, {}
 		for model, rec in live do
 			local ok, err = pcall(function()
 				if not rec.area.Parent then drop(model) return end
 				local cf = rec.area.CFrame
 				for i, b in rec.balls do
 					local offset, rise, tr = KnifeMotes.at(i, rec.n, t, rec.seed, rec.area.Size, rec.size, rec.drift)
-					b.CFrame = CFrame.new(cf * offset + Vector3.new(0, rise, 0))
-					b.Transparency = tr
+					table.insert(parts, b)
+					table.insert(cframes, CFrame.new(cf * offset + Vector3.new(0, rise, 0)))
+					local was = rec.shown[i]
+					if math.abs(tr - was) > 0.02 or (tr >= 0.999 and was < 0.999) or (tr <= KnifeMotes.PEAK + 1e-3 and was > KnifeMotes.PEAK + 1e-3) then
+						b.Transparency = tr
+						rec.shown[i] = tr
+					end
+				end
+				if rec.glint then
+					local now, nextAt = KnifeMotes.glint(rec.nextGlint, t, rec.every)
+					rec.nextGlint = nextAt
+					if now then rec.glint:Emit(1) end
 				end
 			end)
 			if not ok then
 				warn("[Huzz] KnifeFxRange: " .. tostring(err))
 				drop(model)
+			end
+		end
+		if #parts > 0 then
+			local moved = bulk and pcall(function() Workspace:BulkMoveTo(parts, cframes, Enum.BulkMoveMode.FireCFrameChanged) end)
+			if not moved then
+				bulk = false
+				for i, b in parts do b.CFrame = cframes[i] end
 			end
 		end
 	end)

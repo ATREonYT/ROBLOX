@@ -1,6 +1,7 @@
 -- Smoke test: Gameplay/KnifeFxRange makes a marked knife's ball motes on this screen (Shared/KnifeFx's Motes
 -- attributes and "HuzzKnifeMotes" tag), moves and fades them every frame, keeps them harmless (no shadow, no
--- collide, no query, no touch), and takes them away while the knife's player is Invisible.
+-- collide, no query, no touch), glints the gem on a fixed timer (never twice within 1.5 s), and takes them away while
+-- the knife's player is Invisible.
 -- From tools/preview: lune run harness.luau ../../src - @smoke_knife_motes.luau setup_ui.luau
 local ok, fails = 0, 0
 local function check(name, cond)
@@ -27,6 +28,12 @@ knife:SetAttribute("MoteColor", Color3.fromRGB(58, 192, 255))
 knife:SetAttribute("MoteSize", 0.16)
 knife:SetAttribute("MoteDrift", 0.06)
 knife:SetAttribute("MoteSeed", 2.5)
+knife:SetAttribute("GlintEvery", 2)
+local glint = Instance.new("ParticleEmitter")
+glint.Name = "KnifeFx_glint"
+glint.Rate = 0
+glint.Parent = area
+
 knife:AddTag("HuzzKnifeMotes")
 knife.Parent = body
 body.Parent = workspace
@@ -60,16 +67,23 @@ check("the balls float by the blade", near)
 local before = balls[1] and balls[1].CFrame.Position
 frames(0.3)
 check("the balls move", balls[1] ~= nil and (balls[1].CFrame.Position - before).Magnitude > 1e-3)
+-- the glint: on its timer, never twice within 1.5 s
+frames(5.5)
+local glints = {}
+for _, e in __emitted do if e[1] == "KnifeFx_glint" then table.insert(glints, e[3]) end end
+local closest = 99
+for i = 2, #glints do closest = math.min(closest, glints[i] - glints[i - 1]) end
+check(string.format("the gem glints on its timer (%d in about 7 s, closest %.2f s apart)", #glints, closest), #glints >= 2 and #glints <= 4 and closest >= 1.5)
 -- Invisible: gone
 local okT, now = pcall(function() return workspace:GetServerTimeNow() end)
 body:SetAttribute("InvisibleUntil", (if okT then now else os.clock()) + 30)
-frames(0.6)
+frames(1.0)
 check(string.format("no balls while Invisible (%d)", #folder:GetChildren()), #folder:GetChildren() == 0)
 body:SetAttribute("InvisibleUntil", nil)
-frames(0.6)
+frames(1.0)
 check("back after Invisible", #folder:GetChildren() == 3)
 -- far away: gone
 area.CFrame = CFrame.new(0, 3, -200)
-frames(0.6)
+frames(1.0)
 check("no balls past 70 studs", #folder:GetChildren() == 0)
 print(string.format("knife motes smoke: %d ok, %d failed", ok, fails))

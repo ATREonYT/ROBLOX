@@ -13,18 +13,24 @@
 	                from the whole blade, never from one sliver);
 	  KnifeFxShell  (void only) a bigger invisible ball round the blade the motes are pulled in from;
 	  KnifeFxGem    an Attachment in the knife's gem (gemOf: his guard_gem, else a gem, else his biggest glowing part
-	                that isn't the blade or one of his baked aura bits), else at the guard (TrailBase): the glint and
-	                the orb come off the skin's gem, where Huss Valley's sparkle;
-	  KnifeFxGlow   (Epic and up, when the knife has a gem) a solid Neon ball on the gem, the gem's own size, in
+	                that isn't the blade or one of his baked aura bits), at the centre of the whole gem when it's cut
+	                in slices (gemCluster), else at the guard (TrailBase): the glint and the orb come off the skin's
+	                gem, where Huss Valley's sparkle; the model's FxGem attribute names the part it took;
+	  KnifeFxGlow   (Epic and up, when the knife has a gem) a solid Neon ball on the whole gem, its size, in
 	                the effect colour (Transparency 0.08 top tier, 0.15 Epic), never changing, the PointLight its
 	                bloom: his gem glows like Huss Valley's (no gem, no ball; KnifeDress leaves it showing);
 	  KnifeFx_<role> one ParticleEmitter per role (motes, motif, orb, glint, haze), Roblox's own built-in pictures only;
-	  KnifeBurst    Rate 0: Gameplay/Actions throws half of the model's Burst attribute on a slash, Gameplay/AvatarStands
-	                all of it on a stand's move (a few sparkles in its colour, no flash);
-	  KnifeFxLight  one soft PointLight (top tier, not worn), no shadows, never changing.
+	                the glint's Rate is 0: Gameplay/KnifeFxRange emits one every GlintEvery seconds (the model's
+	                attribute, KnifeLook.VFX.GLINT_EVERY), a fixed timer, never twice within 1 s;
+	  KnifeBurst    Rate 0, in hand only: Gameplay/Actions throws half of the model's Burst attribute on a slash (a few
+	                sparkles in its colour, no flash); a stand's or a worn knife has none (no spark showers);
+	  KnifeFxLight  one soft PointLight (top tier, not worn; half strength in hand), no shadows, never changing, on
+	                KnifeFxLightAt a quarter of the blade out from its middle (away from the hand: at the guard it
+	                washed the forearm in its colour).
 	Ball motes (Epic and up): not parts made here (moving parts would replicate every frame) but attributes on the
 	model, Motes (how many), MoteColor, MoteSize (about 5% of the knife), MoteDrift, MoteSeed, and the tag
-	"HuzzKnifeMotes"; each screen's Gameplay/KnifeFxRange makes and moves the balls (Shared/KnifeMotes).
+	"HuzzKnifeMotes" (also on a knife with a glint); each screen's Gameplay/KnifeFxRange makes and moves the balls
+	(Shared/KnifeMotes) and times the glints.
 	The model's Scale attribute (KnifeService.scale: a stand's copy) scales the particle sizes. Pure Instance.new: the
 	server builds it (everyone sees the same, nothing runs every frame) and the offline films build the same.
 ]]
@@ -102,6 +108,41 @@ local function gemOf(model: Model, area: BasePart): BasePart?
 	return best
 end
 
+-- His gem cut into slices (the stand-ins: the Seraph's cyan gem is two halves, Part151 and Part152): its centre and
+-- size are the box over every glowing slice of the same colour joined to the picked one (within a small gap), in the
+-- gem part's own space. One part on its own is just itself. (Oct 20 critic: the orb sat below and left of the
+-- Seraph's ring, on one half of the gem.)
+local function gemCluster(model: Model, gem: BasePart): (Vector3, number)
+	local list, seen = { gem }, { [gem] = true }
+	local gap = math.max(gem.Size.X, gem.Size.Y, gem.Size.Z) * 0.6 + 0.04
+	local i = 1
+	while i <= #list and #list < 40 do
+		local a = list[i]
+		for _, d in model:GetDescendants() do
+			if d:IsA("BasePart") and not seen[d] and d.Material == Enum.Material.Neon and d.Transparency < 1 and not isBlade(d)
+				and not string.find(d.Name, "^KnifeFx") and d.Color == gem.Color
+				and (d.CFrame.Position - a.CFrame.Position).Magnitude <= gap then
+				seen[d] = true
+				table.insert(list, d)
+			end
+		end
+		i += 1
+	end
+	local lo, hi = nil, nil
+	for _, d in list do
+		local r = gem.CFrame:ToObjectSpace(d.CFrame)
+		local h = d.Size / 2
+		local e = Vector3.new(
+			math.abs(r.RightVector.X) * h.X + math.abs(r.UpVector.X) * h.Y + math.abs(r.LookVector.X) * h.Z,
+			math.abs(r.RightVector.Y) * h.X + math.abs(r.UpVector.Y) * h.Y + math.abs(r.LookVector.Y) * h.Z,
+			math.abs(r.RightVector.Z) * h.X + math.abs(r.UpVector.Z) * h.Y + math.abs(r.LookVector.Z) * h.Z)
+		lo = if lo then lo:Min(r.Position - e) else r.Position - e
+		hi = if hi then hi:Max(r.Position + e) else r.Position + e
+	end
+	local ext = hi - lo
+	return (lo + hi) / 2, math.max(ext.X, ext.Y, ext.Z)
+end
+
 local function weldTo(handle: BasePart, part: BasePart, at: CFrame)
 	part.CFrame = handle.CFrame * at
 	local w = Instance.new("Weld")
@@ -114,7 +155,7 @@ function KnifeFx.clear(model: Model)
 	for _, d in model:GetDescendants() do
 		if string.find(d.Name, "^KnifeFx") or d.Name == "KnifeBurst" then d:Destroy() end
 	end
-	for _, name in { "Fx", "Burst", "Motes", "MoteColor", "MoteSize", "MoteDrift", "MoteSeed" } do
+	for _, name in { "Fx", "Burst", "Motes", "MoteColor", "MoteSize", "MoteDrift", "MoteSeed", "GlintEvery", "FxGem" } do
 		model:SetAttribute(name, nil)
 	end
 	pcall(function() model:RemoveTag(KnifeFx.TAG) end)
@@ -171,11 +212,15 @@ function KnifeFx.add(model: Model, skin, where: string): string?
 	-- the gem (else the guard, else the blade) and the tip
 	local gemAt: Instance = area
 	local gem = gemOf(model, area)
+	local gemMid, gemSize = Vector3.zero, 0
 	if gem then
+		gemMid, gemSize = gemCluster(model, gem)
 		local a = Instance.new("Attachment")
 		a.Name = "KnifeFxGem"
+		a.Position = gemMid -- (the whole gem's centre, not one slice's)
 		a.Parent = gem
 		gemAt = a
+		model:SetAttribute("FxGem", gem.Name) -- (which part it took: the specs log it)
 	else
 		local base = model:FindFirstChild("TrailBase", true)
 		if base and base:IsA("Attachment") then gemAt = base end
@@ -222,17 +267,16 @@ function KnifeFx.add(model: Model, skin, where: string): string?
 	if fx.glow and gem then
 		-- (his gem's own size, a solid glowing ball like MELON5MAN's; kept between 0.1 and 0.35 studs: at 1.15x the
 		-- Seraph's read as a flat disc over the guard)
-		local big = math.max(gem.Size.X, gem.Size.Y, gem.Size.Z)
-		local d = math.clamp(big, 0.1 * k, 0.35 * k)
+		local d = math.clamp(gemSize, 0.1 * k, 0.35 * k)
 		local g = invisiblePart("KnifeFxGlow", Vector3.new(d, d, d))
 		g.Shape = Enum.PartType.Ball
 		g.Material = Enum.Material.Neon
 		g.Color = fx.glow.Color
 		g.Transparency = fx.glow.Transparency
-		g.CFrame = gem.CFrame
+		g.CFrame = gem.CFrame * CFrame.new(gemMid)
 		local w = Instance.new("Weld")
 		w.Name = "KnifeFxWeld"
-		w.Part0, w.Part1 = gem, g
+		w.Part0, w.Part1, w.C0 = gem, g, CFrame.new(gemMid)
 		w.Parent = g
 		g.Parent = handle.Parent
 	end
@@ -240,15 +284,26 @@ function KnifeFx.add(model: Model, skin, where: string): string?
 		local l = Instance.new("PointLight")
 		l.Name = "KnifeFxLight"
 		l.Color, l.Brightness, l.Range, l.Shadows = fx.light.Color, fx.light.Brightness, fx.light.Range * math.sqrt(k), false
-		l.Parent = area
+		-- (on the blade's far half, away from the hand: at the guard it washed the forearm in its colour)
+		local la = Instance.new("Attachment")
+		la.Name = "KnifeFxLightAt"
+		la.Position = Vector3.new(0, size.Y * 0.25, 0)
+		la.Parent = area
+		l.Parent = la
 	end
+	local glintEvery = nil
+	for _, spec in fx.emit do
+		if spec.every then glintEvery = spec.every end
+	end
+	if glintEvery then model:SetAttribute("GlintEvery", glintEvery) end
+	if fx.balls > 0 or glintEvery then pcall(function() model:AddTag(KnifeFx.TAG) end) end
 	if fx.balls > 0 then
 		model:SetAttribute("Motes", fx.balls)
 		model:SetAttribute("MoteColor", fx.colour)
-		model:SetAttribute("MoteSize", math.clamp(size.Y * 0.075, 0.08, 0.5)) -- (the blade is about 2/3 of the knife: 5% of it)
+		-- (small glowing dots like Huss Valley's: 5% of the knife, never past 0.2 studs, the stands' copies scaled)
+		model:SetAttribute("MoteSize", math.clamp(size.Y * 0.075, 0.08 * k, 0.2 * k))
 		model:SetAttribute("MoteDrift", fx.drift * k)
 		model:SetAttribute("MoteSeed", (#(skin.Key or "") * 7.7 + size.Y * 3.1) % 10)
-		pcall(function() model:AddTag(KnifeFx.TAG) end)
 	end
 	model:SetAttribute("Fx", fx.theme)
 	return fx.theme

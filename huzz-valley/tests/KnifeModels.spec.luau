@@ -237,6 +237,9 @@ for _, item in CoinShop.Items do
 	ok, why = false, "no stand copy"
 	if stand then ok, why = hisBlade(stand, key) end
 	check(key .. " on a stand: his blade (" .. tostring(why) .. ")", ok)
+	if stand and stand:GetAttribute("FxGem") then
+		print(string.format("  %s: the gem glow on %s", key, tostring(stand:GetAttribute("FxGem")))) -- (which part KnifeFx took for the gem)
+	end
 	if stand then
 		local s = stand:GetAttribute("Stretch")
 		check(key .. " stand copy carries its Stretch, even every way (his shape, bigger)", typeof(s) == "Vector3" and s.Y > 1.2

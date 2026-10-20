@@ -10,6 +10,7 @@
 	  drift = studs a second up (+) or down (-) for the theme (embers rise, snow sinks).
 	  offset is in the blade box's own space (put it through KnifeFxArea.CFrame), rise is world studs up to add, and
 	  transparency is the ball's (PEAK at full, 1 at the ends of each path).
+	KnifeMotes.glint / firstGlint time each knife's glint (below).
 	Each ball floats on one soft path of CYCLE seconds off the blade's edges (never inside it), wobbling a little,
 	fading in over FADE seconds at the start and out over FADE at the end (smoothstep: never a pop or a blink), then
 	starts a new path somewhere else. The n balls are spread evenly over the cycle, so 2 to 4 show at any moment.
@@ -46,6 +47,22 @@ function KnifeMotes.at(i: number, n: number, t: number, seed: number, box: Vecto
 	local fade = math.clamp(math.min(age, L - age) / F, 0, 1)
 	fade = fade * fade * (3 - 2 * fade)
 	return offset, drift * age, 1 - (1 - KnifeMotes.PEAK) * fade
+end
+
+-- A knife's glint (the Sparkle on its gem, KnifeFx_glint, Rate 0): one at a time on a fixed timer, never closer
+-- than GLINT_MIN seconds whatever the frame rate (kid-safe; a random Rate gave gaps under 1 s more than half the time).
+-- KnifeMotes.glint(nextAt, t, every) -> (glint now?, the next time). firstGlint(t, every, seed): a new knife's first
+-- glint is a whole interval away (so dropping and remaking a knife can't glint twice close together), offset by seed.
+KnifeMotes.GLINT_MIN = 1.5
+function KnifeMotes.glint(nextAt: number, t: number, every: number): (boolean, number)
+	if t >= nextAt then
+		return true, t + math.max(every, KnifeMotes.GLINT_MIN)
+	end
+	return false, nextAt
+end
+function KnifeMotes.firstGlint(t: number, every: number, seed: number): number
+	local e = math.max(every, KnifeMotes.GLINT_MIN)
+	return t + e + (seed % e)
 end
 
 return KnifeMotes

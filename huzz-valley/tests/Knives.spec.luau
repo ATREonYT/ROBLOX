@@ -219,14 +219,21 @@ do
 					for _, e in (fx and fx.emit or {}) do
 						t += e.rate
 						if not string.find(e.tex, "^rbxasset://textures/particles/") then bad += 1 end
-						if e.role == "glint" and e.tex == V.TEX.Sparkle and e.lock then glint = math.max(glint, e.rate) end
+						-- (a glint: any locked star on the gem or tip. Only the timed one is allowed: Rate 0, a fixed timer of
+						-- 1.5 s or more; a random Rate can land two within 1 s)
+						if e.tex == V.TEX.Sparkle and e.lock and (e.at == "gem" or e.at == "tip") then
+							if not (e.role == "glint" and e.rate == 0 and (e.every or 0) >= 1.5) then glint += 1 end
+						end
 					end
 					return t, bad, glint
 				end
 				local h, badH, glint = total(hand)
+				local _, _, glintW = total(back)
+				local _, _, glintS = total(stand)
+				glint += glintW + glintS
 				local w, badW = total(back)
 				check(item.Key .. string.format(": in hand a few a second (%.1f), only built-in pictures", h), h > 0 and h <= V.MaxTotal and badH == 0 and badW == 0)
-				check(item.Key .. ": the gem's glint no more than one about every 2 s (kid-safe)", glint <= 0.6)
+				check(item.Key .. ": its glint only on a fixed timer of 1.5 s or more (kid-safe: never twice within 1 s)", glint == 0)
 				check(item.Key .. string.format(": worn lighter than in hand (%.1f), no light, no burst", w), w <= h and (back == nil or (back.light == nil and back.burst == 0)))
 				check(item.Key .. ": a light only from Legendary up", (hand.light ~= nil) == (tier >= 3))
 				check(item.Key .. ": Rare is one subtle touch", tier ~= 1 or #hand.emit == 1)
@@ -248,6 +255,26 @@ do
 					(hand.glow ~= nil) == (tier >= 2) and (hand.glow == nil or hand.glow.Transparency <= 0.2))
 			end
 		end
+	end
+	-- the glint timer (Shared/KnifeMotes.glint, as Gameplay/KnifeFxRange runs it every frame): uneven frames, a long
+	-- stall, and a knife dropped and made again (out of range and back) never glint twice within 1 s
+	do
+		local KM = Env.load(SHARED .. "KnifeMotes.lua")
+		local t, last, closest, count = 0, -99, 99, 0
+		local nextAt = KM.firstGlint(t, V.GLINT_EVERY, 3.3)
+		local step = 0
+		while t < 120 do
+			step += 1
+			t += if step % 97 == 0 then 2.7 elseif step % 3 == 0 then 1 / 20 else 1 / 144
+			if step % 500 == 0 then nextAt = KM.firstGlint(t, V.GLINT_EVERY, (step % 7) * 1.3) end -- (dropped and made again)
+			local now
+			now, nextAt = KM.glint(nextAt, t, V.GLINT_EVERY)
+			if now then
+				closest = math.min(closest, t - last)
+				last, count = t, count + 1
+			end
+		end
+		check(string.format("a knife's glints: %d in 120 s, never closer than %.2f s (kid-safe: 1 s at least)", count, closest), closest >= 1.5 and count >= 30)
 	end
 	-- the ball motes' paths (Shared/KnifeMotes, as Gameplay/KnifeFxRange moves them): soft fades, never a blink, never
 	-- inside the blade, 2 to 4 showing at once with 3 balls
