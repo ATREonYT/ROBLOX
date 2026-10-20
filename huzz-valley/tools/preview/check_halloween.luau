@@ -92,6 +92,13 @@ for _, entry in HalloweenShop.Crates do
 	check(`{entry.Crate}: OPEN for its Aura price`, card ~= nil and card.Open.Content.Label.Text == "OPEN " .. crate.Price)
 	check(`{entry.Crate}: a Robux key with its price`, card ~= nil and card.BuyKey.Content.Price.Text == tostring(Products.get(entry.Robux).Price) and card.BuyKey.Content.RobuxBadge.Text == Format.RobuxMark)
 	check(`{entry.Crate}: not in Shop > CRATES (its own page)`, crate.Home == "HalloweenShop")
+	-- (Oct 20 14:07: his crate pictures, Witch's Brew = Beast, Sweets & Treats = Dojo; his 3D crate if it can't draw)
+	local box = card and card:FindFirstChild("HisPicture")
+	local pic = box and box:FindFirstChild("Picture")
+	check(`{entry.Crate}: his {entry.Picture} crate picture`, pic ~= nil and pic:GetAttribute("Art") == "CrateCard" .. entry.Picture and box.ClipsDescendants)
+	local glyph = pic and pic:FindFirstChild("NoPicture")
+	check(`{entry.Crate}: no glyph, a stand-in instead`, (glyph == nil or not glyph.Visible) and (glyph == nil or (box:FindFirstChild("StandIn") ~= nil and box.StandIn.Visible)))
+	check(`{entry.Crate}: the old drawn chest is gone`, card ~= nil and card:FindFirstChild("CratePicture") == nil and card:FindFirstChild("CrateRays") == nil)
 end
 __fireOn(panel.KnivesTab, "Activated")
 task.wait(0.1)

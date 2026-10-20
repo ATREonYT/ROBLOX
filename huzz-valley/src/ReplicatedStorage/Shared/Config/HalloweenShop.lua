@@ -20,10 +20,14 @@ local HalloweenShop = {}
 
 HalloweenShop.Markup = 3 -- a direct knife costs about 3x what its crate costs on average (the coordinator's default)
 
--- The crates on the page, left to right (each matches a stand: Config/LobbyProps), with their Robux key product.
+-- The crates on the page, left to right (each matches a stand: Config/LobbyProps), with their Robux key product and
+-- the picture they show: one of his own crate pictures (owner, Oct 20 14:07: "make the halloween shop have the images
+-- of the crates from the ones i sent you before"), with that crate's 3D model when the picture can't be drawn.
+-- Witch's Brew = his Void Beast Chest (purple), Sweets & Treats = his Shinobi Dojo Chest (red, lanterns): Claude's
+-- default pick, the owner's to change.
 HalloweenShop.Crates = {
-	{ Crate = "Witch", Robux = "WitchCrateKey" },
-	{ Crate = "Sweets", Robux = "SweetsCrateKey" },
+	{ Crate = "Witch", Robux = "WitchCrateKey", Picture = "Beast" },
+	{ Crate = "Sweets", Robux = "SweetsCrateKey", Picture = "Dojo" },
 }
 
 -- The knives on the page (Config/CoinShop keys), with the crate their price comes from and their Robux product.

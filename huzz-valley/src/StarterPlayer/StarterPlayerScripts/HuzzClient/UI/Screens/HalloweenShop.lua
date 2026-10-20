@@ -2,7 +2,9 @@
 -- can buy the crates, or the best knifes for either aura or robux"). Opened by his two lobby stands, WITCH'S BREW and
 -- SWEETS & TREATS (Config/LobbyProps Opens; design/owner-oct19/1840-halloween-crates.png). The Shop's window (701 x
 -- 320, the same header, tabs and cards) in Halloween colours: a pumpkin-orange header over a dark purple body.
---   CRATES  the two stands' crates (Config/HalloweenShop.Crates): the crate in its colour, the top prize's pity counter,
+--   CRATES  the two stands' crates (Config/HalloweenShop.Crates): his own crate picture (owner, Oct 20 14:07: "make the
+--           halloween shop have the images of the crates from the ones i sent you before"; his card cut to the crate,
+--           UI/CrateArt.hisPicture, his 3D crate when it can't be drawn), the top prize's pity counter,
 --           OPEN for its Aura price (Screens/CrateOpen plays it; a Robux key, once bought, is used first: USE KEY),
 --           KEY for Robux, and every item's exact chance beside it.
 --   KNIVES  the Legendary and Mythic of each set as their pictures: buy one for Aura (ActionService
@@ -41,6 +43,12 @@ local HEADER = { { 0, Color3.fromHex("FFAA4C") }, { 0.45, Color3.fromHex("F57A1F
 local HEADER_TOP = Color3.fromHex("FFD6A0")
 local PANEL = Color3.fromHex("2A1646")
 local CARD = { Top = Color3.fromHex("2A1240"), Bottom = Color3.fromHex("170A2A"), Rim = Color3.fromHex("6A3A9C") }
+-- his crate pictures (Kit.art CrateCard*, his mockup's cards), cut to the crate above his BUY: { x, y, w, h, W, H } px
+local PICTURE = { W = 103, H = 80,
+	Beast = { Art = "CrateCardBeast", Crop = { 30, 25, 655, 510, 715, 702 } },
+	Dojo = { Art = "CrateCardDojo", Crop = { 30, 25, 657, 510, 717, 702 } },
+	Storm = { Art = "CrateCardStorm", Crop = { 30, 25, 642, 510, 702, 702 } },
+}
 local CRATE = { W = 132, OddsX = 138, RowW = 192, RowH = 34, RowGap = 2, SectionW = 330, Gap = 8 }
 local KNIFE = { W = 161, Gap = 8, ArtH = 110 }
 
@@ -85,7 +93,7 @@ function HalloweenShopScreen.build(parent: Instance)
 	local auraIcon = aura.Instance:FindFirstChild("Icon")
 	if auraIcon and auraIcon:IsA("ImageLabel") then auraIcon.ImageColor3 = Color3.new(1, 1, 1) end
 	Kit.studs(header, 612, 650, 16)
-	aura.plus.onClick(function() Toast.show("Get Aura from the stars on the field, by winning games and from quests.") end)
+	aura.plus.onClick(function() ModalManager.open("Shop", "Aura") end) -- (Shop > AURA, Oct 20 14:07)
 
 	local pages = {
 		Crates = new("Frame", { Name = "Crates", Position = UDim2.fromOffset(BODY.X, BODY.Y), Size = UDim2.fromOffset(BODY.W, BODY.H), BackgroundTransparency = 1, Parent = panel }),
@@ -137,8 +145,14 @@ function HalloweenShopScreen.build(parent: Instance)
 		local section = new("Frame", { Name = "Section" .. crate.Id, Position = UDim2.fromOffset(x, 0), Size = UDim2.fromOffset(CRATE.SectionW, BODY.H), BackgroundTransparency = 1, Parent = pages.Crates })
 		local tint = Color3.fromHex((crate.Colors or { "B45CFF" })[1])
 		local c = card(crate.Id, section, UDim2.fromOffset(0, 0), UDim2.fromOffset(CRATE.W, BODY.H), tint)
-		Effects.rays(c, UDim2.fromOffset(CRATE.W // 2, 66), 120, { color = tint, transparency = 0.72, seconds = 18, z = 1, name = "CrateRays" })
-		CrateArt.paint(CrateArt.crate(c, 76, UDim2.fromOffset(CRATE.W // 2, 66), "CratePicture"), crate)
+		-- his crate picture (the crate only, without his BUY: KEY and OPEN are below), never recoloured
+		local look = Crates.get(entry.Picture or "")
+		local pic = look and PICTURE[look.Id]
+		if pic then
+			CrateArt.hisPicture(c, pic.Art, { Name = "HisPicture", Position = UDim2.fromOffset((CRATE.W - PICTURE.W) // 2, 24), Size = UDim2.fromOffset(PICTURE.W, PICTURE.H), ZIndex = 2, Model = look, Crop = pic.Crop })
+		else
+			CrateArt.paint(CrateArt.crate(c, 76, UDim2.fromOffset(CRATE.W // 2, 66), "CratePicture"), crate)
+		end
 		-- (the stand's own words: WITCH'S BREW, SWEETS & TREATS)
 		local title = outlined({ Name = "Name", Text = (string.gsub(string.upper(crate.Name), " CRATE$", "")), FontFace = F.Heading, TextSize = 15, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(4, 6), Size = UDim2.new(1, -8, 0, 18), ZIndex = 3, Parent = c })
 		Kit.fitLine(title, CRATE.W - 8, 15, 10, true)

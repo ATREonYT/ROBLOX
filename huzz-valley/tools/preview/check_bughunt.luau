@@ -103,6 +103,16 @@ ShopService._processReceipt({ PlayerId = me.UserId, ProductId = 424242, Purchase
 check("the same receipt again grants nothing", data.Coins == coins0 + base.Amount)
 local unknown = ShopService._processReceipt({ PlayerId = me.UserId, ProductId = 777777, PurchaseId = "bughunt-2" })
 check("an unknown product is never answered granted", unknown == Enum.ProductPurchaseDecision.NotProcessedYet)
+-- (Oct 20 14:07: an Aura pack's receipt gives its Aura once, only after the save)
+local auraPack = table.clone(Products.get("Aura200"))
+auraPack.Id = 434343
+Products.byProductId = function(id) if id == 434343 then return auraPack end return realBy(id) end
+local auraBefore = data.Aura or 0
+local d2 = ShopService._processReceipt({ PlayerId = me.UserId, ProductId = 434343, PurchaseId = "bughunt-aura" })
+check(`an Aura pack's receipt is granted ({d2})`, d2 == Enum.ProductPurchaseDecision.PurchaseGranted and data.Aura == auraBefore + 200)
+check("... and saved", table.find(DataService.get(me).LastSavedData.Receipts or {}, "bughunt-aura") ~= nil)
+ShopService._processReceipt({ PlayerId = me.UserId, ProductId = 434343, PurchaseId = "bughunt-aura" })
+check("the same Aura receipt again grants nothing", data.Aura == auraBefore + 200)
 Products.byProductId = realBy
 
 -- 6. the crate window closed while the server answers

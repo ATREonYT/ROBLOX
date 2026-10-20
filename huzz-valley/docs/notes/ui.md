@@ -145,6 +145,10 @@ in core `CLAUDE.md` section 1. Recipe for a new screen: core section 6. Preview 
   `design/ui-oct17` mockups (`docs/previews/*-vs-mockup.jpg`, `tools/preview/side_by_side.py`, checks in
   `tools/preview/check_oct17.luau`). Their pictures are mockup crops (placeholders): ask for sharp PNGs. Not seen in
   Studio yet.
+- Shop tabs since Oct 20 14:07: PASSES, COSMETICS, ITEMS, CRATES, COINS, AURA, six of 106 px, 7 px apart, over the
+  kit's 16..687 row (even widths so the centred tabs sit on whole pixels). AURA reuses the COINS card layout
+  (`COIN`, `COIN_BODY`). His crate pictures (Shop > CRATES and the Halloween crates) never show ImageLoader's glyph:
+  `UI/CrateArt.hisPicture` puts his 3D crate in their place (economy.md).
 
 ## Honest gaps
 - Not seen in Studio yet: the Oct 17 UI shine/rays/spin, the Oct 17 screens, the winner page (real avatars), daily

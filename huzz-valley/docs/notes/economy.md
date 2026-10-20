@@ -13,6 +13,15 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
 - The COINS tab sells coin packs for Robux (cards after the Oct 17 mockup, `docs/previews/coins-vs-mockup.jpg`; art
   cut by `tools/icons/make_screen_art.py`, placeholders until sharp PNGs); its buttons keep the Robux mark, never a
   coin icon.
+- **The AURA tab (Oct 20 14:07, owner: "make a buy section for aura")** sits next to COINS and is laid out like it:
+  3 Developer Products in `Products.Aura` (`Aura200`, `Aura700`, `Aura1500`: 200 / 700 / 1,500 Aura for 49 / 149 /
+  299 R$, **Id = 0**, so each only says "coming soon", README checklist). Amounts are Claude's pick, matched to the
+  crate keys: a key is 25 R$ for one 100 Aura open, so 200 Aura for 49 R$ is two opens at the key's price and the
+  bigger packs are a little cheaper per open (the coordinator's 500 / 2,000 / 5,000 would have made Aura opens far
+  cheaper than keys). Granted only in ShopService's ProcessReceipt (`grant`, Kind "Aura": once per PurchaseId,
+  "granted" only after the save; `check_bughunt` section 5). The picture is his own Aura star (the kit's `AuraStar`,
+  one, two or three stars on a violet glow), no new art. Every Aura "+" opens this tab: the Shop header's, the top
+  bar's (`LobbyHud`, was a toast plus Quests) and the Halloween shop's.
 - Shop passes copy the owner's banners: [ui.md](ui.md). Shop > PASSES opens on the knife pass cards: [knives.md](knives.md).
 
 ## Aura stars
@@ -90,7 +99,8 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
   Trail, Thunder Fang, Ocean Trail, Candy Trail, Storm Kunai, Void Fang, Galaxy Trail) and the Robot dance. Common 50%,
   Uncommon 27%, Rare 15%, Epic 6%, Legendary 2% (Void Fang 1%, Galaxy Trail 1%); a Legendary at the latest on the
   30th open. A look you own already pays coins back by rarity (50 / 100 / 200 / 400 / 1,000). No Dance Pack dances
-  (the pass sells them), no rewards, pass, quest or wheel prizes. Aura is only earned, never sold for Robux.
+  (the pass sells them), no rewards, pass, quest or wheel prizes. Aura is earned, and since Oct 20 14:07 also sold
+  in the AURA tab (above).
 - **More crates (Oct 19, owner: "knifes, dances, from crates"):** Halloween Crate (120 Aura, his 18 Halloween knives)
   and Dance Crate (80 Aura, 7 crate-only dances from his pack: Boogie Blast, Head Banger, The Twist, Zany Zig, Robot,
   Power Moves, Showstopper, Zombie Groove), each with every chance shown and a pity (40 / 30 opens). The Halloween one
@@ -136,7 +146,12 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
   refuses too, and the receipt grants +1 key only on the server). Kept for kid safety on a slim line UNDER each card
   (never on his art), small and in his colours (BUY violet, his lilac, his card navy): **OPEN 100** with Aura (or
   "OPEN · N KEYS"), the pity line ("LEGENDARY IN 40") and an "i" that scrolls to that crate's full odds list under the
-  row. A card and its line fit the Shop's body, so they show without scrolling. In Studio's editor the cards stay blank
+  row. A card and its line fit the Shop's body, so they show without scrolling. **Never a cardboard box** (Oct 20
+  14:07: his Play showed ImageLoader's glyph on all three, and to him the crates looked missing): when his picture
+  can't be drawn, `CrateArt.hisPicture` hides the glyph and stands his real 3D crate (`HuzzCrates`, `Crate3D` view
+  "Card": the whole crate, turned a little as on his cards) on a card in his navy with his violet BUY bar where he
+  drew it; without his model yet, the drawn crate in his crate's colours. The stand-in is made at run time, tagged
+  NoPicture, never saved into StarterGui. In Studio's editor the cards stay blank
   until he uploads them (`Config/ImageIds`, README checklist); in Play the game draws them (`UI/ImageLoader`). The
   Starter and Dance crates keep their old cards below. Side by side: `docs/previews/crate-shop-vs-mockup.jpg`.
 - **The 3D opening** (`Screens/CrateOpen` with `UI/Crate3D`; timeline `Shared/CrateMotion` (T), one maths for the game
@@ -223,6 +238,10 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
   (Common 46%, Uncommon 27.6%, Rare 16.1%, Epic 6.9%, Legendary 2.3%, Mythic 1.1%), pity 40 (a Legendary or the
   Mythic), 120 Aura an open. They have `Home = "HalloweenShop"`, so they are only on this page, not in Shop > CRATES
   (the 18-knife Halloween Crate stays there). Every chance and the pity counter show on the page, like Shop > CRATES.
+  Their picture is his own crate card (Oct 20 14:07, "make the halloween shop have the images of the crates from the
+  ones i sent you before"), cut to the crate above his BUY, never recoloured: Witch's Brew = his Beast card (purple),
+  Sweets & Treats = his Dojo card (red, lanterns), Claude's pick (`Config/HalloweenShop.Crates[].Picture`). His 3D
+  crate stands in when it can't be drawn, as in Shop > CRATES.
   OPEN plays `Screens/CrateOpen`; its BACK returns to the page.
 - **Crate keys (Robux):** one key = one open of that crate. Saved as `CrateKeys[crateId]`; `OpenCrate` uses a key
   before any Aura, in the same save write. The button then reads USE KEY (n). A key open counts toward pity as usual.

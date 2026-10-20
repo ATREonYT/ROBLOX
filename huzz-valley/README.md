@@ -147,8 +147,9 @@ the icons itself. To make them work everywhere for good, upload them once (Plugi
       Eclipse), **Sunrise Knife** (Celestial Seraph), **Inferno Knife** (Dragon's Maw), **Frost Knife** (Frostbound
       Oath). Their IDs go into `Products.lua` (`HunterKnifePass` ... `FrostKnifePass`, `Id = ...`); set the price on the
       Dashboard. Until then BUY only says "coming soon".
-   2. **Sunset Trail**, **Blossom Aura**, **Crown Pose**, **Midnight Outfit** and the three **coin packs** (500, 2,000
-      and 5,000 coins) are Developer Products.
+   2. **Sunset Trail**, **Blossom Aura**, **Crown Pose**, **Midnight Outfit**, the three **coin packs** (500, 2,000
+      and 5,000 coins) and the three **Aura packs** (`Aura200`, `Aura700`, `Aura1500`: 200 / 700 / 1,500 Aura at
+      49 / 149 / 299 Robux, Shop > AURA) are Developer Products.
    3. Put each ID into `src/ReplicatedStorage/Shared/Config/Products.lua` (`Id = ...`). Until then their buttons say the item isn't on sale and never open a purchase.
    4. Prices there are placeholders. Roblox's live price shows automatically once an ID is set.
    5. **Spin the Wheel spins** are three Developer Products: **Buy 1 Spin (24 Robux)**, **Buy 10 Spins (170 Robux)**

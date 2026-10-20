@@ -211,7 +211,8 @@ fine). Owner quotes go in the topic's "Why" part. Keep this core about 20 KB and
     "Owner how-to").
   - Import `Lobby_Props.glb`, run SetupLobbyProps, send `HuzzLobbyProps.rbxm` ([lobby.md](docs/notes/lobby.md)).
   - Developer Product IDs (Sunset Trail, Blossom Aura, coin packs, spins 1/10/100 at 24/170/600 Robux since Oct 19;
-    the three knife crate keys `DojoCrateKey`, `StormCrateKey`, `BeastCrateKey`, 25 Robux our pick, Oct 20).
+    the three knife crate keys `DojoCrateKey`, `StormCrateKey`, `BeastCrateKey`, 25 Robux our pick, Oct 20; the three
+    Aura packs `Aura200`, `Aura700`, `Aura1500` at 49/149/299 Robux, our pick, Oct 20 14:07).
   - Crate meshes: his Output said some uploads were still "being generated" and asset 120038515596009 "not approved"
     (only `dojo_set > Plain_Tanto > handle_3`'s texture uses it): check them in Studio; a `.glb` of the crates would let
     the offline pictures show the real look.

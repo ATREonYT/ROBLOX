@@ -19,6 +19,9 @@ const path = require('path');
     }, ['file://' + path.resolve(ref), +W, +H]);
     await page.waitForTimeout(300);
   }
+  // (big pictures load after the layout: wait for them, or a card can come out blank)
+  await page.waitForLoadState('networkidle');
+  await page.waitForTimeout(400);
   await page.screenshot({ path: out, fullPage: true });
   await browser.close();
 })();

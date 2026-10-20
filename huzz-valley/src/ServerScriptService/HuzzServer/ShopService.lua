@@ -83,6 +83,9 @@ local function grant(data, product): (boolean, string?)
 	if product.Kind == "Coins" then
 		data.Coins += product.Amount or 0
 		return true
+	elseif product.Kind == "Aura" then -- Shop > AURA's packs (owner, Oct 20 14:07: "make a buy section for aura")
+		data.Aura = (data.Aura or 0) + (product.Amount or 0)
+		return true
 	elseif product.Kind == "Cosmetic" then
 		data.Cosmetics = data.Cosmetics or {}
 		data.Wear = data.Wear or {}

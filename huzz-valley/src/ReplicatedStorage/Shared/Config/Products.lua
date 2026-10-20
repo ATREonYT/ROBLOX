@@ -12,7 +12,7 @@
 export type Benefit = { Icon: string, Text: string }
 export type Product = {
 	Key: string,
-	Kind: "Pass" | "Cosmetic" | "Coins" | "Spins" | "CrateKey" | "Knife",
+	Kind: "Pass" | "Cosmetic" | "Coins" | "Aura" | "Spins" | "CrateKey" | "Knife",
 	Name: string,
 	Blurb: string,
 	Id: number,
@@ -21,7 +21,7 @@ export type Product = {
 	Icon: string,
 	Benefits: { Benefit }?,
 	Art: string,
-	Amount: number?, -- Coins packs: how many coins it gives; Spins packs: how many spins
+	Amount: number?, -- Coins packs: how many coins it gives; Aura packs: how much Aura; Spins packs: how many spins
 	Giftable: boolean?,
 	Slot: string?, -- Cosmetics: where it's worn (Config/CoinShop.Slots); owners tap WEAR / WEARING in the Shop
 	Why: string?, -- OnSale = false: what is missing, for the owner's checklist
@@ -81,6 +81,17 @@ Products.Coins = {
 	{ Key = "Coins5000", Kind = "Coins", Name = "5,000 Coins", Blurb = "Get 5,000 coins\nto spend in game.", Id = 0, Price = 299, Amount = 5000, OnSale = false, Icon = "CurrencyCoin", Art = "CoinPack5000", Why = "needs its Developer Product ID" },
 } :: { Product }
 
+-- Aura packs (Shop > AURA; owner, Oct 20 14:07: "make a buy section for aura"). Developer Products: create each on the
+-- Creator Dashboard at these prices and put its ID here; while Id = 0 the button shows its price and only says
+-- "coming soon", never a purchase. Granted only in ShopService's ProcessReceipt. Amounts are Claude's pick, matched to
+-- the crate keys (25 Robux = one 100 Aura open): 200 Aura for 49 is two opens at the key's price, the bigger packs a
+-- little cheaper per open (700 for 149, 1,500 for 299). The owner's to change.
+Products.Aura = {
+	{ Key = "Aura200", Kind = "Aura", Name = "200 Aura", Blurb = "Get 200 Aura\nfor crates.", Id = 0, Price = 49, Amount = 200, OnSale = true, Icon = "AuraStar", Art = "", Why = "needs its Developer Product ID" },
+	{ Key = "Aura700", Kind = "Aura", Name = "700 Aura", Blurb = "Get 700 Aura\nfor crates.", Id = 0, Price = 149, Amount = 700, OnSale = true, Icon = "AuraStar", Art = "", Why = "needs its Developer Product ID" },
+	{ Key = "Aura1500", Kind = "Aura", Name = "1,500 Aura", Blurb = "Get 1,500 Aura\nfor crates.", Id = 0, Price = 299, Amount = 1500, OnSale = true, Icon = "AuraStar", Art = "", Why = "needs its Developer Product ID" },
+} :: { Product }
+
 -- Spin the Wheel spins (Screens/SpinWheel's purple buttons; the owner's prices, halved Oct 19: "spin prices lower"). Developer Products: create them on
 -- the Creator Dashboard and put each ID here. While Id = 0 the button shows its price and only says "coming soon".
 Products.Spins = {
@@ -113,11 +124,11 @@ Products.Crates = {
 	{ Key = "BeastCrateKey", Kind = "CrateKey", Crate = "Beast", Name = "Void Beast Chest", Blurb = "One open of the\nVoid Beast Chest.", Id = 0, Price = 25, OnSale = true, Icon = "", Art = "", Why = "needs its Developer Product ID" },
 } :: { Product }
 
-Products.Tabs = { "Passes", "Cosmetics", "Items", "Coins" } -- (Items: the coin shop, Config/CoinShop)
+Products.Tabs = { "Passes", "Cosmetics", "Items", "Crates", "Coins", "Aura" } -- (Items: the coin shop, Config/CoinShop)
 
 local byKey: { [string]: Product } = {}
 local byId: { [string]: Product } = {}
-for _, list in { Products.Passes, Products.Cosmetics, Products.Coins, Products.Spins, Products.Halloween, Products.Crates } do
+for _, list in { Products.Passes, Products.Cosmetics, Products.Coins, Products.Aura, Products.Spins, Products.Halloween, Products.Crates } do
 	for _, p in list do
 		assert(not byKey[p.Key], "duplicate product key " .. p.Key)
 		byKey[p.Key] = p

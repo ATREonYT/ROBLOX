@@ -1,5 +1,6 @@
 -- Shop (design/pages/01, 07; ITEMS and COINS after the owner's Oct 17 mockup): Passes / Cosmetics / Items / Crates / Coins
--- tabs over one stationary window. PASSES opens on the 5 knife Game Pass cards (owner, Oct 18: "please add the knifes
+-- / Aura tabs over one stationary window (AURA: owner, Oct 20 14:07, "make a buy section for aura"; every Aura "+" opens
+-- it). PASSES opens on the 5 knife Game Pass cards (owner, Oct 18: "please add the knifes
 -- into the ui for the gamepass menu, these are going to be the gamepasses users can buy"; his mockup
 -- design/knives/Five_Elemental_Knife_Cards.png), with the VIP and Dance Pack banners under them.
 -- Buy buttons only open Roblox's purchase prompt; the server grants (ShopService). Each button shows exactly one
@@ -94,7 +95,7 @@ local function buy(p)
 end
 
 local function onPromptClosed(id: number, isPass: boolean)
-	for _, list in { Products.Passes, Products.Cosmetics, Products.Coins } do
+	for _, list in { Products.Passes, Products.Cosmetics, Products.Coins, Products.Aura } do
 		for _, p in list do
 			if p.Id == id and (p.Kind == "Pass") == isPass then pending[p.Key] = nil end
 		end
@@ -302,6 +303,38 @@ local function buildCoins(body: Frame)
 	end
 end
 
+-- AURA: 3 packs laid out like COINS (owner, Oct 20 14:07: "make a buy section for aura"; Config/Products.Aura,
+-- granted only by ShopService). The picture is his own Aura star (the kit's AuraStar, as drawn, never tinted) on a
+-- violet glow: one star, then two, then three for the bigger packs. While a pack's Id is 0 its button shows the price
+-- and only says "coming soon".
+local AURA_GLOW = { Top = Color3.fromHex("3A2A8C"), Mid = Color3.fromHex("1C1650") }
+local function auraArt(parent: Instance, i: number, w: number, h: number)
+	local panel = new("Frame", { Name = "Art", Size = UDim2.fromOffset(w, h), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = parent }, { Kit.corner(5) })
+	new("UIGradient", { Rotation = 90, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, AURA_GLOW.Mid), ColorSequenceKeypoint.new(0.55, AURA_GLOW.Top), ColorSequenceKeypoint.new(1, AURA_GLOW.Mid) }), Parent = panel })
+	-- (the stars: the big one in the middle, smaller ones beside it for the bigger packs)
+	local spots = ({ { { 0.5, 0.58, 92 } }, { { 0.42, 0.6, 86 }, { 0.72, 0.5, 52 } }, { { 0.5, 0.62, 86 }, { 0.22, 0.48, 50 }, { 0.78, 0.48, 50 } } })[i] or { { 0.5, 0.58, 92 } }
+	for k, sp in spots do
+		local star = Kit.icon("AuraStar", { Name = "Star" .. k, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(math.round(w * sp[1]), math.round(h * sp[2])), Size = UDim2.fromOffset(sp[3], sp[3]), ZIndex = if k == 1 then 3 else 2, Parent = panel })
+		if star:IsA("ImageLabel") then star.ImageColor3 = Color3.new(1, 1, 1) end -- (his star as drawn)
+	end
+	return panel
+end
+
+local function buildAura(body: Frame)
+	for i, p in Products.Aura do
+		local c = new("Frame", { Name = p.Key, Position = UDim2.fromOffset(COIN.X[i] - COIN_BODY.X, COIN.Y), Size = UDim2.fromOffset(COIN.W, COIN.H), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = body }, { Kit.corner(6), Kit.stroke(COIN.Rim, 2) })
+		new("UIGradient", { Rotation = 90, Parent = c, Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, AURA_GLOW.Mid), ColorSequenceKeypoint.new(0.7, AURA_GLOW.Mid),
+			ColorSequenceKeypoint.new(0.76, COIN.Fill), ColorSequenceKeypoint.new(1, COIN.FillBottom),
+		}) })
+		auraArt(c, i, COIN.W, COIN.ArtH)
+		Effects.shine(c, { every = 5, delay = (i - 1) * 0.9, corner = 6, strength = 0.28, z = 5 })
+		local title = Kit.name({ Name = "Name", Text = p.Name, FontFace = Theme.Fonts.Heading, TextSize = 21, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(0, 9), Size = UDim2.new(1, 0, 0, 26), ZIndex = 4, Parent = c })
+		new("UIStroke", { Name = "Outline", Color = C.TitleStroke, Thickness = 1.5, LineJoinMode = Enum.LineJoinMode.Round, Parent = title })
+		buyButton(c, p, { Position = UDim2.fromOffset(COIN.ButtonX, COIN.ButtonY), Size = UDim2.fromOffset(COIN.W - 2 * COIN.ButtonX, COIN.ButtonH), TextSize = 23, BadgeScale = 1.55, Style = "ItemBuy", Corner = 6 })
+	end
+end
+
 -- ITEMS: the coin shop (Config/CoinShop; owner: "make the coins usable"). Looks only: trails, name colours, knife
 -- skins and the girls' rewards. Picture cards after the owner's Oct 17 mockup (design/ui-oct17): four to a row, the
 -- name and slot on top, a big picture (Config/CoinShop Art; drawn here for items without one), and one button: the
@@ -442,7 +475,9 @@ end
 -- the products, so it only says "coming soon" and never opens a purchase). Kid-safe extras sit on a slim line UNDER
 -- each card, never on his art, small and in his colours: OPEN with Aura (or keys), the pity line ("LEGENDARY IN 40")
 -- and an "i" that scrolls to the crate's odds (never hidden odds). The opening itself still shows his 3D crate
--- (Screens/CrateOpen, UI/Crate3D).
+-- (Screens/CrateOpen, UI/Crate3D). When his picture can't be drawn (owner, Oct 20 14:07: Play showed three cardboard
+-- boxes, ImageLoader's glyph), his real 3D crate stands in on a card like his, with his BUY bar where he drew it
+-- (UI/CrateArt.hisPicture), so the tab always shows his crates.
 -- Below the cards, each crate's every item with its exact chance; then the crates without a model (Starter, Dance)
 -- as before: the crate card on the left (pity counter, OPEN with Aura), its odds beside it. OPEN goes to the opening
 -- screen (Screens/CrateOpen), which asks the server; not in a round or a cutscene.
@@ -535,7 +570,8 @@ end
 local function modelCard(body: Instance, crate, x: number, w: number, onOdds: () -> ())
 	local def = CARDS[crate.Id]
 	local card = new("Frame", { Name = "Card" .. crate.Id, Position = UDim2.fromOffset(x, 1), Size = UDim2.fromOffset(w, ROW.Total), BackgroundTransparency = 1, Parent = body })
-	Kit.art(def.Art, { Name = "Picture", Position = UDim2.fromOffset(0, 0), Size = UDim2.fromOffset(w, ROW.H), ScaleType = Enum.ScaleType.Stretch, ZIndex = 2, Parent = card })
+	-- his picture; if it can't be drawn, his 3D crate on a card like his (CrateArt.hisPicture), never a glyph
+	CrateArt.hisPicture(card, def.Art, { Name = "Picture", Position = UDim2.fromOffset(0, 0), Size = UDim2.fromOffset(w, ROW.H), ZIndex = 2, Model = crate, Card = { W = def.W, H = def.H, Buy = def.Buy } })
 	-- his BUY: an invisible button over the one he drew
 	local b = def.Buy
 	local buy = Kit.button({ Name = "Buy", Text = "", Position = UDim2.fromScale(b[1] / def.W, b[2] / def.H * ROW.H / ROW.Total), Size = UDim2.fromScale(b[3] / def.W, b[4] / def.H * ROW.H / ROW.Total), ZIndex = 3, Parent = card })
@@ -652,7 +688,7 @@ local function buildCrates(body: Frame)
 	end
 end
 
-local BUILD = { Passes = buildPasses, Cosmetics = buildCosmetics, Items = buildItems, Coins = buildCoins, Crates = buildCrates }
+local BUILD = { Passes = buildPasses, Cosmetics = buildCosmetics, Items = buildItems, Coins = buildCoins, Crates = buildCrates, Aura = buildAura }
 
 function Shop.build(parent: Instance)
 	-- Flat (no CanvasGroup): the shine streaks keep moving, and a CanvasGroup would redraw the whole Shop for each.
@@ -680,7 +716,7 @@ function Shop.build(parent: Instance)
 		refreshButtons = {}
 		for _, ch in body:GetChildren() do if ch:IsA("GuiObject") then ch:Destroy() end end
 		body.CanvasPosition = Vector2.zero
-		if key == "Coins" then -- the coin cards follow the mockup's own margins
+		if key == "Coins" or key == "Aura" then -- the coin (and Aura) cards follow the mockup's own margins
 			body.Position, body.Size = UDim2.fromOffset(COIN_BODY.X - RIM, COIN_BODY.Y - RIM), UDim2.fromOffset(W - 2 * COIN_BODY.X + 2 * RIM, COIN_BODY.H + 2 * RIM)
 		else
 			body.Position, body.Size = UDim2.fromOffset(BODY_X - RIM, BODY_Y - RIM), UDim2.fromOffset(BODY_W + 6 + 2 * RIM, H - BODY_Y - 10 + 2 * RIM)
@@ -689,18 +725,20 @@ function Shop.build(parent: Instance)
 		Motion.stagger(cards())
 	end
 	tabs = Kit.tabs(panel, {
-		{ Key = "Passes", Text = "PASSES", X = 16, Width = 131 },
-		{ Key = "Cosmetics", Text = "COSMETICS", X = 151, Width = 131 },
-		{ Key = "Items", Text = "ITEMS", X = 286, Width = 131 }, -- the coin shop
-		{ Key = "Crates", Text = "CRATES", X = 421, Width = 131 }, -- opened with Aura (five tabs now: the kit had four)
-		{ Key = "Coins", Text = "COINS", X = 556, Width = 131 },
+		-- six tabs now (the kit had four): 106 px each (even, so their centres sit on whole pixels), 7 px apart, over the same 16..687 row
+		{ Key = "Passes", Text = "PASSES", X = 16, Width = 106 },
+		{ Key = "Cosmetics", Text = "COSMETICS", X = 129, Width = 106 },
+		{ Key = "Items", Text = "ITEMS", X = 242, Width = 106 }, -- the coin shop
+		{ Key = "Crates", Text = "CRATES", X = 355, Width = 106 }, -- opened with Aura
+		{ Key = "Coins", Text = "COINS", X = 468, Width = 106 },
+		{ Key = "Aura", Text = "AURA", X = 581, Width = 106 }, -- Aura packs for Robux (Oct 20 14:07)
 	}, 52, 30, show) -- y 52: the tab row's top in references 01, 07 and 08 (51 window-relative, plus its 1 px rim)
 
 	local function openTab(key: string)
 		if tabs.selected() ~= key then tabs.select(key); show(key) end
 	end
 	coins.plus.onClick(function() openTab("Coins") end)
-	gems.plus.onClick(function() Toast.show("Get Aura from the stars on the field, by winning games and from quests.") end)
+	gems.plus.onClick(function() openTab("Aura") end)
 
 	-- A reward you've just earned (Config/CoinShop Earn): say so once, and where to find it.
 	local known: { [string]: boolean }? = nil
@@ -732,7 +770,7 @@ function Shop.build(parent: Instance)
 
 	-- Live Robux prices for items that are set up (the configured price shows until then).
 	task.spawn(function()
-		for _, list in { Products.Passes, Products.Cosmetics, Products.Coins } do
+		for _, list in { Products.Passes, Products.Cosmetics, Products.Coins, Products.Aura } do
 			for _, p in list do
 				if Products.status(p) == "Ready" then
 					local ok, info = pcall(MarketplaceService.GetProductInfo, MarketplaceService, p.Id, p.Kind == "Pass" and Enum.InfoType.GamePass or Enum.InfoType.Product)

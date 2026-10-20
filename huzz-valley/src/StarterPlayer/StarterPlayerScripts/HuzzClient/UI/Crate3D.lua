@@ -8,6 +8,9 @@
 	  Crate3D.new(parent, crate, view, props?) -> handle or nil (nil until his model is there: draw CrateArt instead)
 	      view "Open" = the opening (lower in the frame, room above for the knife). It starts as he built it (the
 	      Storm Vault and the Beast Chest stand open in his model, as on his mockup; the Dojo Chest is shut).
+	      view "Card" = his crate as he built it, filling the frame, turned a little as on his mockup: the stand-in
+	      for his crate pictures when they can't be drawn (UI/CrateArt.hisPicture; owner, Oct 20 14:07, his
+	      CRATES tab showed cardboard boxes).
 	  handle.Viewport
 	  handle.knife(item)            his little knife for that Config/CoinShop item (from the same set) for the reveal
 	  handle.pose(t, calm, color)   the opening at time t (Shared/CrateMotion: build-up, the top cracks and light in
@@ -114,6 +117,12 @@ function Crate3D.new(parent: Instance, crate: any, view: string, props: { [strin
 	local reach = math.max(size.X, size.Y, size.Z)
 	-- the camera: in front (-Z), a little above; the "Open" view keeps the crate low with room over it for the knife
 	local function aim(grow: number)
+		if view == "Card" then -- (the whole crate, centred, a three-quarter view like his pictures)
+			local d = (reach * 0.62) / math.tan(math.rad(15))
+			local look = Vector3.new(0, h * 0.5, 0)
+			cam.CFrame = CFrame.lookAt(look + CFrame.Angles(0, math.rad(-22), 0) * Vector3.new(0, math.sin(math.rad(16)) * d, -math.cos(math.rad(16)) * d), look)
+			return
+		end
 		local down = math.rad(14)
 		local look = Vector3.new(0, h * 0.95, 0)
 		local dist = (reach * 1.02) / math.tan(math.rad(15)) / grow

@@ -5,13 +5,19 @@
 -- Item cards use the game's real pictures: the coin shop's own art (Config/CoinShop Art: trails, name colours, the
 -- owner's knives), the dance's still (DanceStill<Id>) and the coin pack art for coins, with a rim and a foot bar in the
 -- rarity's colour (the Spin wheel's rarity colours: see CrateArt.color).
+-- CrateArt.hisPicture: the owner's own crate pictures (his crate shop mockup's cards, Kit.art CrateCard*) for Shop >
+-- CRATES and the Halloween shop, with his real 3D crate standing in whenever a picture can't be drawn (owner, Oct 20
+-- 14:07: his CRATES tab showed three cardboard boxes, ImageLoader's glyph, "please add the crates into the normal
+-- crate section"). Never a glyph there.
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local CoinShop = require(Shared.Config.CoinShop)
 local Dances = require(Shared.Config.Dances)
 local RoundConfig = require(Shared.Config.Round)
 local SpinWheel = require(Shared.Config.SpinWheel)
+local Format = require(Shared.Format)
 local Theme = require(script.Parent.Theme)
 local Kit = require(script.Parent.Kit)
+local Crate3D = require(script.Parent.Crate3D)
 
 local C, F = Theme.Colors, Theme.Fonts
 local new = Kit.new
@@ -123,6 +129,70 @@ function CrateArt.card(parent: Instance, item: any, w: number, h: number, name: 
 	local foot = new("Frame", { Name = "Foot", AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 3, 1, -3), Size = UDim2.new(1, -6, 0, 5), BackgroundColor3 = col, BorderSizePixel = 0, ZIndex = 4, Parent = card })
 	round(foot, 2)
 	return card
+end
+
+-- His crate picture (Kit.art `art`) in a box, and what stands in when it can't be drawn (ImageLoader puts its
+-- NoPicture glyph on a picture it couldn't draw: here that glyph is hidden and his real 3D crate takes the picture's
+-- place, in the same box: UI/Crate3D "Card"; without his model yet, the drawn crate in his crate's colours).
+-- opts:
+--   Name, Position, Size (px), ZIndex   the box
+--   Model   the Config/Crates crate whose 3D model stands in (Witch's Brew shows the Beast's, Sweets & Treats the Dojo's)
+--   Crop    { x, y, w, h, W, H }: show only that part of his W x H picture (the Halloween cards: his crate without
+--           his BUY), else the whole picture, stretched to the box
+--   Card    { W, H, Buy = { x, y, w, h } }: the stand-in also draws his card's panel and his BUY bar where he drew it
+--           (Shop > CRATES, whose invisible BUY button lies over that spot)
+-- The stand-in (and everything in it) carries the NoPicture attribute like ImageLoader's glyphs: made at run time,
+-- never saved into StarterGui, and the offline preview draws his picture instead. Returns the picture (ImageLabel).
+function CrateArt.hisPicture(parent: Instance, art: string, opts: { [string]: any }): ImageLabel
+	local z = opts.ZIndex or 2
+	local size: UDim2 = opts.Size
+	local w, h = size.X.Offset, size.Y.Offset
+	local box: GuiObject
+	local pic: ImageLabel
+	if opts.Crop then
+		local c = opts.Crop
+		box = new("Frame", { Name = opts.Name or "CratePicture", Position = opts.Position, Size = size, BackgroundTransparency = 1, ClipsDescendants = true, ZIndex = z, Parent = parent })
+		local sx, sy = w / c[3], h / c[4]
+		pic = Kit.art(art, { Name = "Picture", Position = UDim2.fromOffset(-math.round(c[1] * sx), -math.round(c[2] * sy)), Size = UDim2.fromOffset(math.round(c[5] * sx), math.round(c[6] * sy)), ScaleType = Enum.ScaleType.Stretch, ZIndex = z, Parent = box })
+	else
+		pic = Kit.art(art, { Name = opts.Name or "Picture", Position = opts.Position, Size = size, ScaleType = Enum.ScaleType.Stretch, ZIndex = z, Parent = parent })
+		box = pic
+	end
+	local standIn: Frame? = nil
+	local function build(): Frame
+		local f = new("Frame", { Name = "StandIn", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ZIndex = z, Parent = box })
+		local crateArea: GuiObject = f
+		if opts.Card then
+			-- his card: a navy panel with a light rim (as on his mockup), his BUY bar where he drew it
+			local card = opts.Card
+			local panel = new("Frame", { Name = "Panel", Position = UDim2.fromOffset(2, 2), Size = UDim2.new(1, -4, 1, -4), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = z, Parent = f }, { Kit.corner(8), Kit.stroke(hex("3D47A0"), 1.5) })
+			new("UIGradient", { Rotation = 90, Color = ColorSequence.new(hex("2C3680"), hex("1F2560")), Parent = panel })
+			local b = card.Buy
+			local bar = new("Frame", { Name = "BuyBar", Position = UDim2.fromScale(b[1] / card.W, b[2] / card.H), Size = UDim2.fromScale(b[3] / card.W, b[4] / card.H), BackgroundColor3 = hex("6A5CF6"), BorderSizePixel = 0, ZIndex = z + 1, Parent = f }, { Kit.corner(5), Kit.stroke(hex("A79FFF"), 1) })
+			local label = Kit.text({ Name = "Label", Text = Format.RobuxMark .. " BUY", FontFace = F.Heading, TextSize = math.max(10, math.floor(h * b[4] / card.H * 0.55)), TextXAlignment = Enum.TextXAlignment.Center, TextWrapped = false, Size = UDim2.fromScale(1, 1), ZIndex = z + 2, Parent = bar })
+			new("UIStroke", { Name = "Outline", Color = C.Ink, Thickness = 1.5, LineJoinMode = Enum.LineJoinMode.Round, Parent = label })
+			crateArea = new("Frame", { Name = "CrateArea", Position = UDim2.fromScale(0.04, 0.03), Size = UDim2.fromScale(0.92, b[2] / card.H - 0.05), BackgroundTransparency = 1, ZIndex = z + 1, Parent = f })
+		end
+		local ok, view = pcall(function() return if opts.Model and Crate3D.available(opts.Model) then Crate3D.new(crateArea, opts.Model, "Card", { ZIndex = z + 1 }) else nil end)
+		if not ok then warn("[HuzzUI] CrateArt: his 3D crate couldn't stand in for the picture:", view) end
+		if not (ok and view) then -- (his model isn't here yet: the drawn crate in his crate's colours)
+			local s = math.max(16, math.floor(math.min(w, h) * 0.8))
+			CrateArt.paint(CrateArt.crate(crateArea, s, UDim2.fromScale(0.5, 0.5), "DrawnCrate"), opts.Model)
+		end
+		f:SetAttribute("NoPicture", true)
+		for _, d in f:GetDescendants() do d:SetAttribute("NoPicture", true) end
+		return f
+	end
+	local function update()
+		local glyph = pic:FindFirstChild("NoPicture")
+		if glyph and glyph:IsA("GuiObject") then glyph.Visible = false end -- (never the cardboard box glyph here)
+		if glyph and not standIn then standIn = build() end
+		if standIn then standIn.Visible = glyph ~= nil end
+	end
+	pcall(function() pic.ChildAdded:Connect(function() task.defer(update) end) end) -- (the picture can fail later too)
+	pcall(function() pic.ChildRemoved:Connect(function() task.defer(update) end) end) -- (and show later: then his picture)
+	update()
+	return pic
 end
 
 return CrateArt

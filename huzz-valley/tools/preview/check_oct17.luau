@@ -127,6 +127,48 @@ for i, p in Products.Coins do
 end
 check("COINS: whole pixels only", wholePixels(products))
 check("tapping a coin pack grants nothing (only the server's receipt does)", profile.Data.Coins == 0)
+
+-- AURA (owner, Oct 20 14:07: "make a buy section for aura"): 3 packs like COINS, Id 0 only says "coming soon"
+local aura0 = profile.Data.Aura
+click(shop.AuraTab)
+task.wait(0.6) -- (let the slide-in finish)
+for _ = 1, 40 do __stepTweens(0.05) end
+local ax, _, aw = box(shop.AuraTab, shop)
+local cx = box(shop.CoinsTab, shop)
+check("the AURA tab sits next to COINS, inside the window", ax > cx and ax + aw <= 701 - 12)
+check("AURA: 3 packs", #Products.Aura == 3)
+for i, p in Products.Aura do
+	local c = products:FindFirstChild(p.Key)
+	check(p.Key .. " card shows", c ~= nil and c.Visible ~= false)
+	if c then
+		check(p.Key .. " title", c:FindFirstChild("Name") ~= nil and c:FindFirstChild("Name").Text == p.Name)
+		local star = c:FindFirstChild("Art") and c.Art:FindFirstChild("Star1")
+		check(p.Key .. " picture is his Aura star", star ~= nil and (star:GetAttribute("Icon") == "AuraStar" or star:GetAttribute("Art") == "AuraStar" or star.Name == "Star1"))
+		check(p.Key .. " price shows", c.Buy.Content.Label.Text == tostring(p.Price))
+		check(p.Key .. " has no ID yet (never invented)", p.Id == 0)
+		local x, y, w, h = box(c, shop)
+		check(p.Key .. " card sits inside the window", x >= 16 and y >= 85 and x + w <= 701 - 16 and y + h <= 320 - 8)
+		if not (x >= 16 and y >= 85 and x + w <= 701 - 16 and y + h <= 320 - 8) then print("  box", x, y, w, h) end
+		if i == 1 then
+			click(c.Buy)
+			check("an Aura pack without its ID only says coming soon, no purchase", toast():find("coming soon") ~= nil and #(_G.__prompts or {}) == prompts)
+		end
+	end
+end
+check("AURA: whole pixels only", wholePixels(products))
+check("tapping an Aura pack grants nothing (only the server's receipt does)", profile.Data.Aura == aura0)
+MM.close()
+task.wait(0.2)
+local hudPlus
+for _, d in gui:GetDescendants() do
+	if d.Name == "Plus" and d.Parent and d.Parent.Name == "Aura" and not d:IsDescendantOf(gui.Shop) and not (gui:FindFirstChild("HalloweenShop") and d:IsDescendantOf(gui.HalloweenShop)) then hudPlus = d; break end
+end
+check("the top bar has an Aura +", hudPlus ~= nil)
+if hudPlus then click(hudPlus) end
+check("the top bar's Aura + opens Shop > AURA", MM.current() == "Shop" and products:FindFirstChild("Aura200") ~= nil)
+open("Shop", "Coins")
+click(shop.Parent.Parent:FindFirstChild("Aura", true).Plus)
+check("the Shop's own Aura + opens AURA", products:FindFirstChild("Aura200") ~= nil)
 MM.close()
 task.wait(0.2)
 
