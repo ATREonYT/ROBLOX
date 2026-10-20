@@ -402,8 +402,8 @@ function CrateOpen.build(parent: Instance)
 		backlight.Visible = rim > 0
 		if rim > 0 then
 			local y, len, lean = view3d.knifeScreen()
-			local long = math.max(math.round(len * STAGE.H * 1.25), 2)
-			backlight.Size = UDim2.fromOffset(math.max(math.round(long * 0.3), 2), long)
+			local long = math.max(math.round(len * STAGE.H * 1.35), 2)
+			backlight.Size = UDim2.fromOffset(math.max(math.round(long * 0.42), 2), long) -- (wide enough to outline the blade)
 			backlight.Position = UDim2.fromOffset(CX, STAGE.Y - math.round(y * STAGE.H))
 			backlight.Rotation = math.deg(lean)
 			backlight.ImageColor3 = col:Lerp(Color3.new(1, 1, 1), CrateMotion.RimWhite)

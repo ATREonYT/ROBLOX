@@ -161,8 +161,11 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
   - 4.2 s: one glint, a thin streak of light sliding up the face of the blade (`Glint`);
   - 4.45 s: its name and the title fade in, the rarity a beat later, then NEW! or the coins, the buttons.
   A dark knife (its first `CoinShop` colour darker than 0.3, like Hollow Moon or Shadow Cleaver) gets a soft light
-  right behind its blade, stretched along it and leaned with it (`KnifeLight`, `CrateMotion.rimLight`, the rarity
-  colour lifted towards white), so it never reads as a thin dark sliver; the rest get none. The lid swings on its back
+  right behind its blade, stretched along it and leaned with it (`KnifeLight`, `CrateMotion.rimLight`: strength 0.92,
+  the rarity colour lifted 88% towards white, since the critic found 0.55/70% still left Hollow Moon a thin dark
+  sliver on navy), so its dark shape stands out on the light; the rest get none. As the knife rises and hovers the
+  whole crate view brightens a little (`CrateMotion.viewLift`: the ambient and light colour towards white, fully for a
+  dark blade, a third for the rest). His knife's own aura ring is part of his model and stays as he made it. The lid swings on its back
   hinge (checked from the side, `SIDE=1` on the film scene), it never lifts flat. No reel for these crates; the odds
   chips and pity line show under it while it builds up; no flash at all; tap to skip; reduced motion: no shake,
   motes or glint, and the knife is simply there. `Crate3D.RevealHook` (nil today) is where the knife's own effect

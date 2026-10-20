@@ -123,7 +123,7 @@ function Crate3D.new(parent: Instance, crate: any, view: string, props: { [strin
 
 	local handle = { Viewport = vp }
 	local zoom = 1 -- (the camera's push-in times the build-up's grow, as last posed)
-	local baseAmbient = vp.Ambient
+	local baseAmbient, baseLight = vp.Ambient, vp.LightColor
 	-- the motes (small soft beads in the rarity colour) and the one glint along the blade: plain parts, hidden until
 	-- the pose shows them (no shapes: Neon reads as light in a ViewportFrame)
 	local function bead(name: string): Part
@@ -156,6 +156,7 @@ function Crate3D.new(parent: Instance, crate: any, view: string, props: { [strin
 	local knife: Model? = nil
 	local kParts, kOffsets, kSizes, kSeen = {}, {}, {}, {}
 	local kBase, kLen, kDeep = 1, 1, 0.1
+	local kColor: Color3? = nil -- (his knife's main colour: a dark one gets more light)
 	function handle.knife(item: any)
 		if knife then knife:Destroy(); knife = nil end
 		kParts, kOffsets, kSizes, kSeen = {}, {}, {}, {}
@@ -166,6 +167,8 @@ function Crate3D.new(parent: Instance, crate: any, view: string, props: { [strin
 		local kc, ks = box(k)
 		kBase = (h * 0.78) / math.max(ks.Y, 0.05)
 		kLen, kDeep = ks.Y, ks.Z
+		local kd = typeof(item) == "table" and item or CoinShop.get(item)
+		kColor = kd and kd.Colors and kd.Colors[1]
 		for _, d in k:GetDescendants() do
 			if d:IsA("BasePart") then
 				table.insert(kParts, d)
@@ -205,7 +208,10 @@ function Crate3D.new(parent: Instance, crate: any, view: string, props: { [strin
 		local bright, mix = CrateMotion.glow(t)
 		tint(mix, color)
 		-- the light that spills out as it cracks: a touch of the rarity colour over everything (light, not a shape)
-		vp.Ambient = if color then baseAmbient:Lerp(color, 0.18 * mix * bright) else baseAmbient
+		-- and as the knife rises and hovers, the whole view a little brighter (more for a dark blade: CrateMotion.viewLift)
+		local lift = if knife then CrateMotion.viewLift(t, kColor) else 0
+		vp.Ambient = (if color then baseAmbient:Lerp(color, 0.18 * mix * bright) else baseAmbient):Lerp(Color3.new(1, 1, 1), 0.3 * lift)
+		vp.LightColor = baseLight:Lerp(Color3.new(1, 1, 1), 0.5 * lift)
 		spill.Transparency = if color then 1 - 0.8 * CrateMotion.spill(t) else 1 -- (gone 0.4 s after it swings open)
 		if color then
 			spill.Color = color:Lerp(Color3.new(1, 1, 1), 0.35)

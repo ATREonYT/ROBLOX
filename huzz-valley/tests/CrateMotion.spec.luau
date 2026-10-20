@@ -99,7 +99,10 @@ check("the camera eases in a touch as it rises", M.push(T.Rise) == 1 and M.push(
 -- 6. a dark knife gets a soft light behind its blade; the rest get none
 local dark, gold = Color3.fromHex("1a1a22"), Color3.fromHex("e8c040")
 check("a black blade (Hollow Moon) is dark, a gold one is not", M.isDark(dark) and not M.isDark(gold) and not M.isDark(nil))
-check("the light behind a dark blade fades in as it rises", M.rimLight(T.Rise - 0.1, dark) == 0 and M.rimLight(T.Reveal, dark) > 0.4 and M.rimLight(T.Reveal, gold) == 0)
+check("the light behind a dark blade fades in as it rises, strong and nearly white", M.rimLight(T.Rise - 0.1, dark) == 0 and M.rimLight(T.Reveal, dark) > 0.85
+	and M.rimLight(T.Reveal, dark) <= 1 and M.RimWhite >= 0.85 and M.rimLight(T.Reveal, gold) == 0)
+check("the view brightens a little as the knife hovers, more for a dark blade", M.viewLift(T.Rise, dark) == 0 and M.viewLift(T.Reveal, dark) > 0.99
+	and M.viewLift(T.Reveal, gold) > 0.2 and M.viewLift(T.Reveal, gold) < 0.5)
 
 print(string.format("CrateMotion: %d passed, %d failed", passed, failed))
 if failed > 0 then process.exit(1) end

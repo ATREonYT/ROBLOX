@@ -217,7 +217,8 @@ for f = 0, math.floor((t1 - t0) * FPS) do
 	local kp = CrateMotion.knife(t)
 	local scale = kBase * kp.scale
 	local at = CFrame.new(0, c.h * (0.35 + 0.95 * kp.up), -c.size.Z * 0.05) * CFrame.Angles(0, kp.spin, 0) * CFrame.Angles(0, 0, kp.tilt)
-	local extra = { fov = 30, meshes = {}, sprites = {}, overlay = { texts = {} } }
+	-- the view a little brighter as the knife hovers (UI/Crate3D: ambient and light towards white, CrateMotion.viewLift)
+	local extra = { fov = 30, meshes = {}, sprites = {}, overlay = { texts = {} }, env = { sky = "#141b40", dim = 1 + 0.3 * CrateMotion.viewLift(t, knifeColor) } }
 	if kp.seen and mesh then
 		local cf = at * CFrame.new(-mmid * scale)
 		local x, y, z, r00, r01, r02, r10, r11, r12, r20, r21, r22 = cf:GetComponents()
@@ -251,9 +252,9 @@ for f = 0, math.floor((t1 - t0) * FPS) do
 	-- a dark knife's soft light right behind its blade (UI KnifeLight: stretched along the blade, leaned with it)
 	local rim = CrateMotion.rimLight(t, knifeColor)
 	if rim > 0 and kp.seen then
-		local long = c.h * 0.78 * kp.scale * 1.25
+		local long = c.h * 0.78 * kp.scale * 1.35
 		local lp = at.Position + Vector3.new(0, 0, c.size.Z * 0.3)
-		table.insert(extra.sprites, { p = { lp.X, lp.Y, lp.Z }, s = long * math.sqrt(0.3), sq = 0.5 * math.log(1 / 0.3, 2), r = -math.deg(kp.tilt * math.cos(kp.spin)),
+		table.insert(extra.sprites, { p = { lp.X, lp.Y, lp.Z }, s = long * math.sqrt(0.42), sq = 0.5 * math.log(1 / 0.42, 2), r = -math.deg(kp.tilt * math.cos(kp.spin)),
 			c = lerpHex(rarity, "#ffffff", CrateMotion.RimWhite), a = rim, t = "glow", add = true })
 	end
 	-- its name and rarity fade in after it settles (the screen's words: white with a dark outline, the rarity in its colour)

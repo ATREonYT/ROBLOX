@@ -237,10 +237,19 @@ end
 
 -- The soft light right behind a dark knife's blade at time t (0 = none .. 1), shaped like the blade by the caller
 -- (never a disc), in its rarity colour lifted towards white (RimWhite). Fades in as the knife rises; 0 for the rest.
-CrateMotion.RimWhite = 0.7
+-- (critic, Oct 20: Hollow Moon still read as a thin dark sliver on navy at 0.55 and 0.7 white: now clearly lit)
+CrateMotion.RimWhite = 0.88
+CrateMotion.RimStrength = 0.92
 function CrateMotion.rimLight(t: number, knife: Color3?): number
 	if not CrateMotion.isDark(knife) then return 0 end
-	return 0.55 * easeOut(clamp01((t - CrateMotion.T.Rise) / (CrateMotion.T.RiseLen * 0.8)), 2)
+	return CrateMotion.RimStrength * easeOut(clamp01((t - CrateMotion.T.Rise) / (CrateMotion.T.RiseLen * 0.8)), 2)
+end
+
+-- How much brighter the whole crate view gets as the knife rises and hovers (0 .. 1 of a gentle lift towards white
+-- light): a little for every knife, fully for a dark one, so a black blade shows its shape. Nothing before it rises.
+function CrateMotion.viewLift(t: number, knife: Color3?): number
+	local u = clamp01((t - CrateMotion.T.Rise) / CrateMotion.T.RiseLen)
+	return smooth(u) * (if CrateMotion.isDark(knife) then 1 else 0.35)
 end
 
 return CrateMotion
