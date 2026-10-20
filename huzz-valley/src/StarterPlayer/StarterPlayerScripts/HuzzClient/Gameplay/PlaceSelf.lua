@@ -20,7 +20,7 @@ function M.apply(player, character, cf): boolean
 	-- (a huss, dive or halt still pushing would carry the body off the spot, and the server would send it back again)
 	pcall(function()
 		for _, c in root:GetChildren() do
-			if c.Name == "HuzzDash" or c.Name == "HuzzLunge" or c.Name == "HuzzHalt" then c:Destroy() end
+			if c.Name == "HuzzDash" or c.Name == "HuzzLunge" or c.Name == "HuzzHalt" or c.Name == "HuzzLasso" then c:Destroy() end
 		end
 	end)
 	for _, d in character:GetDescendants() do
