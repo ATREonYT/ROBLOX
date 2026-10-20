@@ -200,7 +200,8 @@ do
 end
 
 -- the knife effects (owner, Oct 20: "make the vfx for some swords way better ... better for more high end ones";
--- Huss Valley's restraint: a few motes in the gem's colour, the motif, a glint; Shared/KnifeLook.vfx)
+-- Huss Valley's restraint AND visibility: 2 to 4 clear motes in the gem's colour, the motif, a glowing gem, a glint;
+-- Shared/KnifeLook.vfx)
 do
 	local V = KnifeLook.VFX
 	local every = table.clone(knives)
@@ -229,9 +230,48 @@ do
 				check(item.Key .. string.format(": worn lighter than in hand (%.1f), no light, no burst", w), w <= h and (back == nil or (back.light == nil and back.burst == 0)))
 				check(item.Key .. ": a light only from Legendary up", (hand.light ~= nil) == (tier >= 3))
 				check(item.Key .. ": Rare is one subtle touch", tier ~= 1 or #hand.emit == 1)
+				-- how many motes are on show at once (rate x mean life), and how big
+				local shown, size, alpha = 0, 0, 0
+				for _, e in hand.emit do
+					if e.role == "motes" then shown, size, alpha = e.rate * (e.life[1] + e.life[2]) / 2, e.size, e.alpha end
+				end
+				if tier >= 3 then
+					check(item.Key .. string.format(": 2 to 4 crisp ball motes in hand (%d) and worn (%d), the particle motes a light extra (%.1f on show)",
+						hand.balls, back.balls, shown), hand.balls >= 2 and hand.balls <= 4 and back.balls >= 2 and back.balls <= 4 and shown <= 2.5)
+				elseif tier == 2 then
+					check(item.Key .. string.format(": Epic 1 or 2 ball motes (%d)", hand.balls), hand.balls >= 1 and hand.balls <= 2)
+				elseif tier == 1 then
+					check(item.Key .. string.format(": Rare one or two faint particle motes (%.1f on show), no balls", shown),
+						shown >= 0.5 and shown <= 2 and alpha <= 0.6 and hand.balls == 0)
+				end
+				check(item.Key .. ": the gem glows solid from Epic up (a Neon ball, not a see-through bubble), never changing",
+					(hand.glow ~= nil) == (tier >= 2) and (hand.glow == nil or hand.glow.Transparency <= 0.2))
 			end
 		end
 	end
+	-- the ball motes' paths (Shared/KnifeMotes, as Gameplay/KnifeFxRange moves them): soft fades, never a blink, never
+	-- inside the blade, 2 to 4 showing at once with 3 balls
+	local KnifeMotes = Env.load(SHARED .. "KnifeMotes.lua")
+	local box, size = Vector3.new(0.12, 2.2, 0.45), 0.16
+	local worstStep, inside, minShown, maxShown, peak = 0, 0, 99, 0, 1
+	local last = {}
+	for f = 0, 60 * 20 do
+		local t = f / 60
+		local shownNow = 0
+		for i = 1, 3 do
+			local offset, _, tr = KnifeMotes.at(i, 3, t, 2.5, box, size, 0.2)
+			if last[i] then worstStep = math.max(worstStep, math.abs(tr - last[i])) end
+			last[i] = tr
+			peak = math.min(peak, tr)
+			if tr < 0.6 then shownNow += 1 end
+			if math.abs(offset.Z) < box.Z / 2 + size * 0.5 and math.abs(offset.X) < box.X / 2 + size * 0.5 then inside += 1 end
+		end
+		minShown, maxShown = math.min(minShown, shownNow), math.max(maxShown, shownNow)
+	end
+	check(string.format("ball motes fade softly (at most %.3f a frame at 60 fps: a 0.5 s fade or slower)", worstStep), worstStep <= 1 / 30 + 1e-6)
+	check(string.format("ball motes reach full strength (transparency %.2f)", peak), peak <= 0.12)
+	check(string.format("ball motes never sit inside the blade (%d frames)", inside), inside == 0)
+	check(string.format("2 to 3 of 3 ball motes clearly showing at any moment (%d to %d)", minShown, maxShown), minShown >= 2 and maxShown <= 3)
 	for name, theme in V.THEMES do
 		check(name .. ": motes and a motif", theme.motes ~= nil and theme.motif ~= nil)
 	end

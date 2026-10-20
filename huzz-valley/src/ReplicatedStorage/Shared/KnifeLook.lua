@@ -11,9 +11,12 @@
 	and then, a little more on a swing. Common and Uncommon stay plain (03:01 that morning: "please just make them be
 	normal"), and nothing uses a picture we haven't uploaded (only Roblox's own built-in ones, VFX.TEX):
 	  Common, Uncommon  a soft slash trail in the knife's own colour on a swing (faint: trailSoft); nothing else;
-	  Rare              the trail a little stronger, and its motes (a subtle touch, moving as its theme does);
-	  Epic              + the catcher's slash arc in its colour (arc: SlashColor), its motif, a few sparkles a slash;
-	  Legendary, Mythic and the Game Pass knives: + the gem's glint, a faint haze, a soft light, a longer trail.
+	  Rare              the trail a little stronger, and one or two faint motes (moving as its theme does);
+	  Epic              + the catcher's slash arc in its colour (arc: SlashColor), 2 crisp ball motes, its motif,
+	                    the gem glowing, a few sparkles a slash;
+	  Legendary, Mythic and the Game Pass knives: the gem glowing (a solid Neon ball, the light its bloom), 3 crisp
+	                    ball motes drifting round the blade (4 on a stand), the motif readable worn, the gem's
+	                    glint, a soft light, a longer trail.
 	A Game Pass knife's trail and effect colour are its element's (ELEMENTS below: their old emit lists used our own
 	pictures, which aren't uploaded, so nothing builds them: VFX themes replace them).
 
@@ -476,13 +479,25 @@ end
 	What Huss Valley's skins do (their video f1c7bb86, docs/previews/knife-vfx-hv-reference.jpg): the gems glow, two or
 	three small round motes in the GEM's colour (not the blade's) drift slowly round the blade, a top skin adds its own
 	motif (Mrsmagic's blue electric wisps round the middle of a red blade), the gem sparkles now and then; the same
-	on the back as in the hand; a swing brightens it with a few sparkles. Small, slow, soft, never a cloud.
-	Here: each theme has up to four roles, all in the knife's effect colour unless a theme names its own:
+	on the back as in the hand; a swing brightens it with a few sparkles. Small, slow, soft, never a cloud. Measured
+	on MELON5MAN (f1c7bb86, 5.0 s): a mote is about 5% of the knife's length across and solid, the gem's orb with its
+	bloom about 15%; 2 to 4 motes show at once. Match that VISIBILITY too, not just the restraint (coordinator, Oct 20:
+	the first pass showed "almost nothing" next to theirs): on a 3.2-stud knife a mote is Size 0.32 (smoke_main is a
+	soft puff, its bright middle about half that) at full strength, and the gem gets a glow shell (KnifeFx) about
+	0.45 studs across.
+	Here: each theme has up to five roles, all in the knife's effect colour unless a theme names its own:
 	  motes  the HV staple: small soft dots (TEX.Smoke, small) moving as the theme does (embers rise, frost sinks,
 	         void is pulled in, petals drift);
 	  motif  the theme's own thing (flames on the edge, frost mist, a dark swirl, petals, red drips, sparks...);
 	  glint  a star on the gem (TEX.Sparkle, slow grow and fade, about one every 2 s: never a flash);
+	  orb    a soft glow held on the gem (TEX.Smoke, locked: the bloom round their gems; Epic and up);
 	  haze   a faint glow or mist round the blade.
+	TIER.glow: the gem glowing (KnifeFx "KnifeFxGlow"): a solid Neon ball in the gem's colour, the gem's own size,
+	Transparency 0.08 top tier, 0.15 Epic, never changing, the PointLight its soft bloom (a bigger see-through ball
+	read as a pale bubble round the hilt: coordinator, Oct 20, "cheap or AI").
+	TIER.balls: how many crisp Neon ball motes float round the blade (hand / back / stand), made and moved on each
+	screen by Gameplay/KnifeFxRange with Shared/KnifeMotes (MELON5MAN's 2 or 3 cyan balls); with them the particle
+	motes drop to moteShare of their rate (a light extra).
 	Where (at): "blade" anywhere over the blade (a box), "gem" the knife's biggest glowing part (else the guard),
 	"tip". Fields: tex, col (two colours over its life: "c" the effect colour, "w" it a third of the way to white, or a hex),
 	rate (a second, in hand at the top tier), life, speed, size (studs), accel, drag, spin (degrees a second), squash
@@ -499,100 +514,107 @@ VFX.TEX = {
 	Fire = "rbxasset://textures/particles/fire_main.dds",
 	Smoke = "rbxasset://textures/particles/smoke_main.dds",
 }
-VFX.MaxRate, VFX.MaxTotal = 6, 12
+VFX.MaxRate, VFX.MaxTotal = 6, 16
 VFX.TIER = { Common = 0, Uncommon = 0, Rare = 1, Epic = 2, Legendary = 3, Mythic = 3, Exclusive = 3 }
 VFX.TIERS = {
-	{ roles = { "motes" }, rate = 0.6, size = 0.9, light = nil, burst = 0, worn = { roles = { "motes" }, rate = 0.5 } }, -- Rare: a subtle touch
-	{ roles = { "motes", "motif" }, rate = 0.8, size = 1, light = nil, burst = 5, worn = { roles = { "motes" }, rate = 0.7 } }, -- Epic
-	{ roles = { "motes", "motif", "glint", "haze" }, rate = 1, size = 1, light = { Brightness = 0.6, Range = 5 }, burst = 8,
-		worn = { roles = { "motes", "motif", "glint" }, rate = 0.8 } }, -- Legendary, Mythic, Game Pass
+	{ roles = { "motes" }, rate = 0.35, size = 0.75, alpha = 0.55, light = nil, burst = 0, worn = { roles = { "motes" }, rate = 0.8 } }, -- Rare: one or two faint motes
+	{ roles = { "motes", "motif", "orb" }, rate = 0.75, size = 0.85, glow = { Transparency = 0.15 }, light = nil, burst = 5,
+		balls = { hand = 2, back = 1, stand = 2 }, moteShare = 0.4,
+		worn = { roles = { "motes", "orb" }, rate = 0.8 } }, -- Epic: noticeably there
+	{ roles = { "motes", "motif", "orb", "glint", "haze" }, rate = 1, size = 1, glow = { Transparency = 0.08 }, light = { Brightness = 1, Range = 6 }, burst = 8,
+		balls = { hand = 3, back = 3, stand = 4 }, moteShare = 0.4,
+		worn = { roles = { "motes", "motif", "orb", "glint" }, rate = 0.8 } }, -- Legendary, Mythic, Game Pass: Huss Valley's level
 }
 VFX.STAND = { rate = 1.2 } -- the lobby stands' copy (sizes follow the copy's own Scale)
-local MOTE = { tex = "Smoke", col = { "w", "c" }, life = { 1.2, 1.8 }, speed = { 0.2, 0.4 }, size = 0.2, alpha = 0.95, grow = true }
+-- (rate 2.5 x life 1.2 to 1.8 = 3 to 4 on show at the top tier; 0.9 at Rare)
+-- (the gem's own colour all its life and only a little light emission, so it stays cyan on a bright sky or grass
+-- instead of washing out to white: MELON5MAN's motes stay cyan)
+local MOTE = { tex = "Smoke", col = { "c", "c" }, rate = 2.5, life = { 1.2, 1.8 }, speed = { 0.15, 0.35 }, size = 0.32, alpha = 1, glow = 0.3, grow = true }
 local function mote(extra)
 	local m = table.clone(MOTE)
 	for k, v in extra do m[k] = v end
 	return m
 end
 local GLINT = { tex = "Sparkle", col = { "ffffff", "w" }, rate = 0.5, life = { 0.5, 0.6 }, speed = { 0, 0 }, size = 0.55, at = "gem", lock = true, grow = true, spin = 45 }
+VFX.ORB = { tex = "Smoke", col = { "w", "c" }, rate = 1.5, life = { 1, 1.4 }, speed = { 0, 0 }, size = 0.9, at = "gem", lock = true, alpha = 0.6, grow = true }
 VFX.THEMES = {
 	Fire = {
 		motes = mote({ col = { "ffd27a", "c" }, rate = 3, accel = { 0, 2.2, 0 }, life = { 0.9, 1.3 } }), -- embers rising off the edge
-		motif = { tex = "Fire", col = { "ffd060", "c" }, rate = 4, life = { 0.3, 0.45 }, speed = { 0.2, 0.5 }, size = 0.45, accel = { 0, 2.5, 0 }, alpha = 0.7, shrink = true }, -- small flames licking the edge
+		motif = { tex = "Fire", col = { "ff9a1e", "d42800" }, rate = 4, life = { 0.35, 0.5 }, speed = { 0.2, 0.4 }, size = 0.28, accel = { 0, 3, 0 }, alpha = 0.95, glow = 0.6, shrink = true }, -- small flames rising off the edge, orange to red
 		glint = GLINT,
 		haze = { tex = "Smoke", col = { "c", "c" }, rate = 1.5, life = { 0.9, 1.2 }, speed = { 0.2, 0.4 }, size = 0.9, accel = { 0, 1.2, 0 }, alpha = 0.1, grow = true }, -- heat haze
 	},
 	Ice = {
-		motes = mote({ col = { "ffffff", "c" }, rate = 3, accel = { 0, -0.5, 0 }, life = { 1.4, 2 } }), -- snow sinking
-		motif = { tex = "Smoke", col = { "w", "c" }, rate = 2.5, life = { 1.4, 2 }, speed = { 0.05, 0.2 }, size = 0.7, accel = { 0, -0.4, 0 }, drag = 1, alpha = 0.2, grow = true, spin = 20 }, -- frost mist sinking off the blade
+		motes = mote({ col = { "ffffff", "c" }, rate = 2.5, accel = { 0, -0.5, 0 }, life = { 1.4, 2 } }), -- snow sinking
+		motif = { tex = "Smoke", col = { "w", "c" }, rate = 2.5, life = { 1.4, 2 }, speed = { 0.05, 0.2 }, size = 0.7, accel = { 0, -0.4, 0 }, drag = 1, alpha = 0.4, grow = true, spin = 20 }, -- frost mist sinking off the blade
 		glint = GLINT, -- (a crystal glint)
-		haze = { tex = "Smoke", col = { "c", "c" }, rate = 1, life = { 1.2, 1.6 }, speed = { 0, 0.05 }, size = 1, alpha = 0.1, lock = true, grow = true },
+		haze = { tex = "Smoke", col = { "c", "c" }, rate = 1, life = { 1.2, 1.6 }, speed = { 0, 0.05 }, size = 1, alpha = 0.16, lock = true, grow = true },
 	},
 	Void = {
 		motes = mote({ rate = 3, inward = true, speed = { 0.5, 0.8 }, life = { 0.8, 1.1 } }), -- motes pulled in to the blade
-		motif = { tex = "Smoke", col = { "2a1040", "0a0612" }, rate = 2.5, life = { 1, 1.5 }, speed = { 0.1, 0.3 }, size = 0.7, alpha = 0.4, dark = true, spin = 120, grow = true }, -- a dark swirl
+		motif = { tex = "Smoke", col = { "2a1040", "0a0612" }, rate = 2.5, life = { 1, 1.5 }, speed = { 0.1, 0.3 }, size = 0.7, alpha = 0.55, dark = true, spin = 120, grow = true }, -- a dark swirl
 		glint = GLINT,
 		haze = { tex = "Smoke", col = { "c", "c" }, rate = 1, life = { 1.2, 1.6 }, speed = { 0, 0.05 }, size = 1.1, alpha = 0.12, lock = true, grow = true },
 	},
 	Celestial = {
 		motes = mote({ rate = 3, accel = { 0, 0.4, 0 } }), -- light motes rising, in the gem's colour (MELON5MAN's cyan)
-		motif = { tex = "Smoke", col = { "w", "c" }, rate = 1.2, life = { 1.2, 1.6 }, speed = { 0, 0 }, size = 1.1, at = "gem", lock = true, alpha = 0.3, grow = true }, -- the halo's glow round the gem
+		motif = { tex = "Sparkle", col = { "ffffff", "c" }, rate = 1.5, life = { 1.2, 1.6 }, speed = { 0.2, 0.4 }, size = 0.3, at = "gem", accel = { 0, 0.6, 0 }, spin = 90, grow = true }, -- little stars rising off the halo
 		glint = GLINT,
 		haze = { tex = "Sparkle", col = { "ffffff", "w" }, rate = 0.4, life = { 0.5, 0.6 }, speed = { 0, 0 }, size = 0.45, at = "tip", lock = true, grow = true, spin = 45 }, -- a star at the tip
 	},
 	Moon = {
 		motes = mote({ rate = 2.5, accel = { 0, 0.3, 0 } }),
-		motif = { tex = "Smoke", col = { "w", "c" }, rate = 2, life = { 1.2, 1.8 }, speed = { 0.1, 0.25 }, size = 0.6, accel = { 0, 0.3, 0 }, alpha = 0.22, grow = true, spin = 40 }, -- pale wisps
+		motif = { tex = "Smoke", col = { "w", "c" }, rate = 2, life = { 1.2, 1.8 }, speed = { 0.1, 0.25 }, size = 0.6, accel = { 0, 0.3, 0 }, alpha = 0.45, grow = true, spin = 40 }, -- pale wisps
 		glint = GLINT,
-		haze = { tex = "Smoke", col = { "c", "c" }, rate = 1, life = { 1.2, 1.6 }, speed = { 0, 0.05 }, size = 1, alpha = 0.1, lock = true, grow = true },
+		haze = { tex = "Smoke", col = { "c", "c" }, rate = 1, life = { 1.2, 1.6 }, speed = { 0, 0.05 }, size = 1, alpha = 0.16, lock = true, grow = true },
 	},
 	Blood = {
 		motes = mote({ col = { "ff8a94", "c" }, rate = 2, accel = { 0, 0.3, 0 } }),
-		motif = { tex = "Smoke", col = { "c", "8a0010" }, rate = 2, life = { 0.7, 1 }, speed = { 0, 0.05 }, size = 0.13, accel = { 0, -6, 0 }, squash = 1.2, alpha = 0.95, glow = 0.3 }, -- red drips off the edge
+		motif = { tex = "Smoke", col = { "c", "8a0010" }, rate = 2, life = { 0.7, 1 }, speed = { 0, 0.05 }, size = 0.18, accel = { 0, -6, 0 }, squash = 1.2, alpha = 1, glow = 0.5 }, -- red drips off the edge
 		glint = GLINT,
 		haze = { tex = "Smoke", col = { "c", "6a0010" }, rate = 1, life = { 1.2, 1.6 }, speed = { 0.05, 0.15 }, size = 0.9, alpha = 0.1, grow = true },
 	},
 	Sakura = {
 		motes = mote({ rate = 2 }),
-		motif = { tex = "Smoke", col = { "w", "c" }, rate = 2.5, life = { 2, 2.6 }, speed = { 0.2, 0.5 }, size = 0.24, accel = { 0, -0.4, 0 }, sideways = 0.6, spin = 120, squash = -0.6, alpha = 0.9, glow = 0.4 }, -- petals drifting off
+		motif = { tex = "Smoke", col = { "w", "c" }, rate = 2.5, life = { 2, 2.6 }, speed = { 0.2, 0.5 }, size = 0.3, accel = { 0, -0.4, 0 }, sideways = 0.6, spin = 120, squash = -0.6, alpha = 1, glow = 0.6 }, -- petals drifting off
 		glint = GLINT,
-		haze = { tex = "Smoke", col = { "c", "c" }, rate = 1, life = { 1.2, 1.6 }, speed = { 0, 0.05 }, size = 1, alpha = 0.1, lock = true, grow = true },
+		haze = { tex = "Smoke", col = { "c", "c" }, rate = 1, life = { 1.2, 1.6 }, speed = { 0, 0.05 }, size = 1, alpha = 0.16, lock = true, grow = true },
 	},
 	Storm = {
 		motes = mote({ rate = 2.5 }),
-		motif = { tex = "Smoke", col = { "w", "c" }, rate = 3, life = { 0.35, 0.55 }, speed = { 0.1, 0.3 }, size = 0.45, alpha = 0.35, lock = true, spin = 200 }, -- electric wisps round the middle (Mrsmagic's)
+		motif = { tex = "Smoke", col = { "w", "c" }, rate = 3, life = { 0.35, 0.55 }, speed = { 0.1, 0.3 }, size = 0.45, alpha = 0.6, lock = true, spin = 200 }, -- electric wisps round the middle (Mrsmagic's)
 		glint = { tex = "Sparkle", col = { "ffffff", "c" }, rate = 3, life = { 0.15, 0.25 }, speed = { 1.5, 2.5 }, size = 0.12, drag = 4 }, -- tiny sparks
 		haze = { tex = "Smoke", col = { "c", "c" }, rate = 1, life = { 1, 1.4 }, speed = { 0, 0.05 }, size = 1, alpha = 0.1, lock = true, grow = true },
 	},
 	Venom = {
-		motes = mote({ rate = 2.5, accel = { 0, 0.9, 0 }, size = 0.14 }), -- bubbles rising
-		motif = { tex = "Smoke", col = { "c", "c" }, rate = 1.5, life = { 0.7, 1 }, speed = { 0, 0.05 }, size = 0.12, accel = { 0, -5, 0 }, squash = 1.2, alpha = 0.9, glow = 0.5 }, -- drips
+		motes = mote({ accel = { 0, 0.9, 0 }, size = 0.26 }), -- bubbles rising
+		motif = { tex = "Smoke", col = { "c", "c" }, rate = 1.5, life = { 0.7, 1 }, speed = { 0, 0.05 }, size = 0.17, accel = { 0, -5, 0 }, squash = 1.2, alpha = 1, glow = 0.6 }, -- drips
 		glint = GLINT,
 		haze = { tex = "Smoke", col = { "c", "c" }, rate = 1, life = { 1.2, 1.6 }, speed = { 0, 0.05 }, size = 0.9, alpha = 0.1, grow = true },
 	},
 	Witch = {
 		motes = mote({ rate = 2.5, accel = { 0, 0.4, 0 } }),
-		motif = { tex = "Sparkle", col = { "w", "c" }, rate = 2.5, life = { 1.2, 1.6 }, speed = { 0.1, 0.3 }, size = 0.2, spin = 180, grow = true }, -- magic sparkles turning
+		motif = { tex = "Sparkle", col = { "w", "c" }, rate = 2.5, life = { 1.2, 1.6 }, speed = { 0.1, 0.3 }, size = 0.3, spin = 180, grow = true }, -- magic sparkles turning
 		glint = GLINT,
 		haze = { tex = "Smoke", col = { "c", "c" }, rate = 1.2, life = { 1.2, 1.6 }, speed = { 0.05, 0.15 }, size = 0.9, alpha = 0.14, spin = 60, grow = true },
 	},
 	Candy = {
 		motes = mote({ rate = 2.5, accel = { 0, -0.2, 0 } }),
-		motif = { tex = "Sparkle", col = { "ff9ec4", "ffd0e8" }, rate = 2.5, life = { 1, 1.5 }, speed = { 0.1, 0.3 }, size = 0.18, accel = { 0, -0.3, 0 }, spin = 90, grow = true }, -- sprinkles
+		motif = { tex = "Sparkle", col = { "ff9ec4", "ffd0e8" }, rate = 2.5, life = { 1, 1.5 }, speed = { 0.1, 0.3 }, size = 0.26, accel = { 0, -0.3, 0 }, spin = 90, grow = true }, -- sprinkles
 		glint = GLINT,
 		haze = { tex = "Smoke", col = { "fff0f8", "c" }, rate = 1, life = { 1.2, 1.6 }, speed = { 0, 0.05 }, size = 0.9, alpha = 0.1, grow = true },
 	},
 	Pumpkin = {
 		motes = mote({ col = { "ffd080", "c" }, rate = 3, accel = { 0, 2, 0 }, life = { 0.9, 1.3 } }), -- embers
-		motif = { tex = "Fire", col = { "ffb040", "c" }, rate = 3, life = { 0.3, 0.45 }, speed = { 0.2, 0.4 }, size = 0.4, accel = { 0, 2.5, 0 }, alpha = 0.65, shrink = true }, -- small jack-o'-lantern flames
+		motif = { tex = "Fire", col = { "ffa030", "d04000" }, rate = 3, life = { 0.35, 0.5 }, speed = { 0.2, 0.4 }, size = 0.26, accel = { 0, 3, 0 }, alpha = 0.95, glow = 0.6, shrink = true }, -- small jack-o'-lantern flames, orange to red
 		glint = GLINT,
 		haze = { tex = "Smoke", col = { "3a2a20", "1a1410" }, rate = 1, life = { 1.2, 1.6 }, speed = { 0.1, 0.3 }, size = 0.7, accel = { 0, 0.8, 0 }, alpha = 0.22, dark = true, grow = true },
 	},
 	Spirit = {
 		motes = mote({ rate = 2.5, accel = { 0, 0.4, 0 } }),
-		motif = { tex = "Smoke", col = { "w", "c" }, rate = 2, life = { 1.2, 1.6 }, speed = { 0.1, 0.25 }, size = 0.45, accel = { 0, 0.5, 0 }, alpha = 0.3, spin = 40, grow = true }, -- wisps
+		motif = { tex = "Smoke", col = { "w", "c" }, rate = 2, life = { 1.2, 1.6 }, speed = { 0.1, 0.25 }, size = 0.45, accel = { 0, 0.5, 0 }, alpha = 0.5, spin = 40, grow = true }, -- wisps
 		glint = GLINT,
-		haze = { tex = "Smoke", col = { "c", "c" }, rate = 1, life = { 1.2, 1.6 }, speed = { 0, 0.05 }, size = 1, alpha = 0.1, lock = true, grow = true },
+		haze = { tex = "Smoke", col = { "c", "c" }, rate = 1, life = { 1.2, 1.6 }, speed = { 0, 0.05 }, size = 1, alpha = 0.16, lock = true, grow = true },
 	},
 }
 -- Each knife (Rare and up) -> its theme, from its name and colours (Config/CoinShop; the pass knives' cards).
@@ -614,6 +636,7 @@ end
 -- A skin's effects at `where` ("hand", "stand" or "back"), worked out and capped; nil when it has none (Common,
 -- Uncommon, the default knife, a knife with no theme). Pure numbers:
 -- { theme, colour, emit = { { role, tex (an rbxasset), col = { a, b }, rate, life, speed, size, at, ... } },
+--   glow = { Color, Transparency }? (the gem's solid Neon glow), balls (ball motes), drift (their rise, studs a second),
 --   light = { Color, Brightness, Range }?, burst (sparkles a slash), trail (its slash trail's seconds, top tier) }
 function KnifeLook.vfx(skin, where: string)
 	local tierN = skin and VFX.TIER[skin.Rarity or ""] or 0
@@ -638,9 +661,9 @@ function KnifeLook.vfx(skin, where: string)
 	end
 	local emit, total = {}, 0
 	for _, role in roles do
-		local e = theme[role]
+		local e = theme[role] or (role == "orb" and VFX.ORB) or nil
 		if not e then continue end
-		local rate = math.min(e.rate * share, VFX.MaxRate, VFX.MaxTotal - total)
+		local rate = math.min(e.rate * share * (if role == "motes" and tier.balls then tier.moteShare or 1 else 1), VFX.MaxRate, VFX.MaxTotal - total)
 		if rate <= 0 then break end
 		total += rate
 		local out = table.clone(e)
@@ -649,11 +672,16 @@ function KnifeLook.vfx(skin, where: string)
 		out.col = { col(e.col[1]), col(e.col[2]) }
 		out.rate = rate
 		out.size = e.size * tier.size
+		out.alpha = (e.alpha or 0.9) * (tier.alpha or 1)
 		out.at = e.at or "blade"
 		table.insert(emit, out)
 	end
 	return {
 		theme = name, colour = colour, emit = emit,
+		glow = if tier.glow then { Color = colour, Transparency = tier.glow.Transparency } else nil,
+		-- ball motes: how many, and how fast they rise (+) or sink (-) as the theme's motes do (studs a second)
+		balls = if tier.balls then tier.balls[where] or 0 else 0,
+		drift = math.clamp(((theme.motes and theme.motes.accel) or { 0, 0.4, 0 })[2] * 0.15, -0.25, 0.35),
 		light = if tier.light and where ~= "back" then { Color = colour, Brightness = tier.light.Brightness, Range = tier.light.Range } else nil,
 		burst = if where == "back" then 0 else tier.burst,
 		trail = if tierN >= 3 then KnifeLook.TRAIL.ElementLifetime else nil,

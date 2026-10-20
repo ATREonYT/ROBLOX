@@ -12,18 +12,26 @@
 	                volume, the burst and the light sit on it (one box, so a knife cut into many wedges still emits
 	                from the whole blade, never from one sliver);
 	  KnifeFxShell  (void only) a bigger invisible ball round the blade the motes are pulled in from;
-	  KnifeFxGem    an Attachment in the knife's biggest glowing (Neon) part that isn't the blade, else at the guard
-	                (TrailBase): the glint and the halo come off the skin's gem, where Huss Valley's sparkle;
-	  KnifeFx_<role> one ParticleEmitter per role (motes, motif, glint, haze), Roblox's own built-in pictures only;
+	  KnifeFxGem    an Attachment in the knife's gem (gemOf: his guard_gem, else a gem, else his biggest glowing part
+	                that isn't the blade or one of his baked aura bits), else at the guard (TrailBase): the glint and
+	                the orb come off the skin's gem, where Huss Valley's sparkle;
+	  KnifeFxGlow   (Epic and up, when the knife has a gem) a solid Neon ball on the gem, the gem's own size, in
+	                the effect colour (Transparency 0.08 top tier, 0.15 Epic), never changing, the PointLight its
+	                bloom: his gem glows like Huss Valley's (no gem, no ball; KnifeDress leaves it showing);
+	  KnifeFx_<role> one ParticleEmitter per role (motes, motif, orb, glint, haze), Roblox's own built-in pictures only;
 	  KnifeBurst    Rate 0: Gameplay/Actions throws half of the model's Burst attribute on a slash, Gameplay/AvatarStands
 	                all of it on a stand's move (a few sparkles in its colour, no flash);
 	  KnifeFxLight  one soft PointLight (top tier, not worn), no shadows, never changing.
+	Ball motes (Epic and up): not parts made here (moving parts would replicate every frame) but attributes on the
+	model, Motes (how many), MoteColor, MoteSize (about 5% of the knife), MoteDrift, MoteSeed, and the tag
+	"HuzzKnifeMotes"; each screen's Gameplay/KnifeFxRange makes and moves the balls (Shared/KnifeMotes).
 	The model's Scale attribute (KnifeService.scale: a stand's copy) scales the particle sizes. Pure Instance.new: the
 	server builds it (everyone sees the same, nothing runs every frame) and the offline films build the same.
 ]]
 local KnifeLook = require(script.Parent.KnifeLook)
 
 local KnifeFx = {}
+KnifeFx.TAG = "HuzzKnifeMotes" -- (models whose ball motes each screen draws: Gameplay/KnifeFxRange)
 
 local function invisiblePart(name: string, size: Vector3): Part
 	local p = Instance.new("Part")
@@ -66,14 +74,29 @@ local function bladeBox(model: Model, handle: BasePart): (CFrame?, Vector3?)
 	return CFrame.new((lo + hi) / 2), (hi - lo):Max(Vector3.one * 0.05)
 end
 
--- The skin's gem: its biggest glowing part that isn't the blade itself (his gems, guards and cores are Neon).
+-- The skin's gem: his parts named "guard_gem" first, then any "gem" (the pommel's), then "core" / "orb" / "jewel",
+-- else his biggest glowing (Neon) part that isn't the blade or one of his own baked effect bits (aura_ring,
+-- aura_shard, spark, rune, wing_glow: VoidFang's floating shards are not a gem). nil when there is none.
+local NOT_GEM = { "aura", "spark", "rune", "ring", "shard", "wing", "glow" }
 local function gemOf(model: Model, area: BasePart): BasePart?
-	local best, size = nil, 0
+	local best, score = nil, -1
 	local limit = area.Size.X * area.Size.Y * area.Size.Z * 0.5
 	for _, d in model:GetDescendants() do
-		if d:IsA("BasePart") and d ~= area and d.Material == Enum.Material.Neon and d.Transparency < 1 and not isBlade(d) then
+		if d:IsA("BasePart") and d ~= area and d.Material == Enum.Material.Neon and d.Transparency < 1 and not isBlade(d)
+			and not string.find(d.Name, "^KnifeFx") then
+			local n = string.lower(d.Name)
 			local v = d.Size.X * d.Size.Y * d.Size.Z
-			if v > size and v < limit then best, size = d, v end
+			local rank = if string.find(n, "guard_gem", 1, true) then 3
+				elseif string.find(n, "gem", 1, true) then 2
+				elseif string.find(n, "core", 1, true) or string.find(n, "orb", 1, true) or string.find(n, "jewel", 1, true) then 1
+				else 0
+			if rank == 0 then
+				for _, w in NOT_GEM do
+					if string.find(n, w, 1, true) then rank = -1 break end
+				end
+			end
+			local sc = if rank >= 0 and v < limit then rank * 1000 + math.min(v, 999) else -1
+			if sc > score then best, score = d, sc end
 		end
 	end
 	return best
@@ -91,8 +114,10 @@ function KnifeFx.clear(model: Model)
 	for _, d in model:GetDescendants() do
 		if string.find(d.Name, "^KnifeFx") or d.Name == "KnifeBurst" then d:Destroy() end
 	end
-	model:SetAttribute("Fx", nil)
-	model:SetAttribute("Burst", nil)
+	for _, name in { "Fx", "Burst", "Motes", "MoteColor", "MoteSize", "MoteDrift", "MoteSeed" } do
+		model:SetAttribute(name, nil)
+	end
+	pcall(function() model:RemoveTag(KnifeFx.TAG) end)
 end
 
 local function seq(points: { { number } }): NumberSequence
@@ -194,11 +219,36 @@ function KnifeFx.add(model: Model, skin, where: string): string?
 		b.Parent = area
 		model:SetAttribute("Burst", fx.burst)
 	end
+	if fx.glow and gem then
+		-- (his gem's own size, a solid glowing ball like MELON5MAN's; kept between 0.1 and 0.35 studs: at 1.15x the
+		-- Seraph's read as a flat disc over the guard)
+		local big = math.max(gem.Size.X, gem.Size.Y, gem.Size.Z)
+		local d = math.clamp(big, 0.1 * k, 0.35 * k)
+		local g = invisiblePart("KnifeFxGlow", Vector3.new(d, d, d))
+		g.Shape = Enum.PartType.Ball
+		g.Material = Enum.Material.Neon
+		g.Color = fx.glow.Color
+		g.Transparency = fx.glow.Transparency
+		g.CFrame = gem.CFrame
+		local w = Instance.new("Weld")
+		w.Name = "KnifeFxWeld"
+		w.Part0, w.Part1 = gem, g
+		w.Parent = g
+		g.Parent = handle.Parent
+	end
 	if fx.light then
 		local l = Instance.new("PointLight")
 		l.Name = "KnifeFxLight"
 		l.Color, l.Brightness, l.Range, l.Shadows = fx.light.Color, fx.light.Brightness, fx.light.Range * math.sqrt(k), false
 		l.Parent = area
+	end
+	if fx.balls > 0 then
+		model:SetAttribute("Motes", fx.balls)
+		model:SetAttribute("MoteColor", fx.colour)
+		model:SetAttribute("MoteSize", math.clamp(size.Y * 0.075, 0.08, 0.5)) -- (the blade is about 2/3 of the knife: 5% of it)
+		model:SetAttribute("MoteDrift", fx.drift * k)
+		model:SetAttribute("MoteSeed", (#(skin.Key or "") * 7.7 + size.Y * 3.1) % 10)
+		pcall(function() model:AddTag(KnifeFx.TAG) end)
 	end
 	model:SetAttribute("Fx", fx.theme)
 	return fx.theme

@@ -3,7 +3,9 @@
 -- to the skin of the sword"), filmed from the game's own code: the real HuzzServer/KnifeService builds each knife
 -- (template / display) and Shared/KnifeFx puts its effects on, then this file runs every ParticleEmitter it made
 -- (rate, life, speed, Box / inward Sphere shapes, acceleration, drag, size and see-through over life, spin, squash,
--- locked or loose, attachments on the gem and tip) and draws them with his meshes.
+-- locked or loose, attachments on the gem and tip) and draws them with his meshes, the gem's Neon glow shell
+-- (KnifeFxGlow) as a Neon ball, and the ball motes each screen makes (Gameplay/KnifeFxRange: Shared/KnifeMotes from
+-- the knife's Motes attributes) as Neon balls, under the game's bloom (Config/Look.Bloom).
 -- Roblox's built-in pictures are drawn with ours that look like them (sparkles_main = assets/fx star-flare,
 -- fire_main = flame, smoke_main = glow): shapes and colours read right, the exact look is Studio's.
 --   MODE=sheet (default): 8 knives across the tiers, each in a body's hand (still 2i-2, about 3.5 studs away) and as
@@ -30,6 +32,9 @@ local ROOT = "huzz-valley/"
 local CoinShop = Env.load(SHARED .. "Config/CoinShop.lua")
 local KnifeLook = Env.load(SHARED .. "KnifeLook.lua")
 local Mix = Env.load(SHARED .. "LocomotionMix.lua")
+local Look = Env.load(SHARED .. "Config/Look.lua")
+local KnifeMotes = Env.load(SHARED .. "KnifeMotes.lua")
+local BLOOM = { i = Look.Bloom.Intensity, size = Look.Bloom.Size, th = Look.Bloom.Threshold } -- (the game's BloomEffect)
 
 local MODE = process.env.MODE or "sheet"
 local MESHES = process.env.KNIFE_MESHES or error("set KNIFE_MESHES (python3 -I tools/knives/knife_meshes.py <file>)")
@@ -97,6 +102,8 @@ local function sampleColour(seq, t)
 	return kp[#kp].Value
 end
 
+local scene = Scene.new()
+
 -- A knife with its effects, ready to simulate: every emitter's place in the Handle's space.
 local function knife(key, where)
 	local skin = CoinShop.get(key)
@@ -108,8 +115,13 @@ local function knife(key, where)
 		if inst:IsA("Attachment") then return h:ToObjectSpace(inst.Parent.CFrame) * inst.CFrame, nil end
 		return h:ToObjectSpace(inst.CFrame), inst.Size
 	end
-	local list, light = {}, nil
+	local list, light, glows = {}, nil, {}
 	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") and d.Name == "KnifeFxGlow" then
+			local box = scene:addBox(CFrame.new(), d.Size, hex(d.Color))
+			box.Shape, box.Neon, box.Alpha = "ball", true, 1 - d.Transparency
+			table.insert(glows, { cf = h:ToObjectSpace(d.CFrame), box = box })
+		end
 		if d:IsA("ParticleEmitter") then
 			local cf, size = localOf(d.Parent)
 			local shape = "point"
@@ -125,10 +137,23 @@ local function knife(key, where)
 			light = { cf = localOf(d.Parent), l = d }
 		end
 	end
+	local balls = {}
+	local area = model:FindFirstChild("KnifeFxArea", true)
+	local n = model:GetAttribute("Motes") or 0
+	if area and n > 0 then
+		local size = model:GetAttribute("MoteSize")
+		for i = 1, n do
+			local box = scene:addBox(CFrame.new(), Vector3.new(size, size, size), hex(model:GetAttribute("MoteColor")))
+			box.Shape, box.Neon, box.Alpha = "ball", true, 0
+			balls[i] = box
+		end
+		balls.areaCF, balls.areaSize, balls.size = h:ToObjectSpace(area.CFrame), area.Size, size
+		balls.drift, balls.seed = model:GetAttribute("MoteDrift") or 0, model:GetAttribute("MoteSeed") or 0
+	end
 	local tip = model:FindFirstChild("TrailTip", true)
 	local reach = KnifeService.reachOf(model, handle) or 2
 	local k = model:GetAttribute("Scale") or 1
-	return { key = key, skin = skin, model = model, emit = list, light = light, reach = reach, scale = k,
+	return { key = key, skin = skin, model = model, emit = list, light = light, glows = glows, balls = balls, clock = 0, reach = reach, scale = k,
 		trail = KnifeLook.trailLook(skin, KnifeLook.element(key)), history = {}, burst = model:GetAttribute("Burst") or 0,
 		tipLocal = if tip then (localOf(tip)).Position else Vector3.new(0, reach, 0) }
 end
@@ -201,13 +226,24 @@ local function step(K, handleCF, dt, sprites, lights, emitAll)
 		end
 		em.parts = keep
 	end
+	for _, g in K.glows do g.box.CFrame = handleCF * g.cf end
+	K.clock += dt
+	if #K.balls > 0 then
+		local areaCF = handleCF * K.balls.areaCF
+		for i = 1, #K.balls do
+			local box = K.balls[i]
+			local offset, rise, tr = KnifeMotes.at(i, #K.balls, K.clock, K.balls.seed, K.balls.areaSize, K.balls.size, K.balls.drift)
+			box.CFrame = CFrame.new(areaCF * offset + Vector3.new(0, rise, 0))
+			box.Alpha = 1 - tr
+			box.Hidden = tr > 0.99
+		end
+	end
 	if K.light then
 		local at = handleCF * K.light.cf.Position
 		table.insert(lights, { p = { at.X, at.Y, at.Z }, c = hex(K.light.l.Color), b = K.light.l.Brightness * 0.5, r = K.light.l.Range })
 	end
 end
 
-local scene = Scene.new()
 local FPS = 30
 local dt = 1 / FPS
 
@@ -270,7 +306,7 @@ if MODE == "film" then
 		end
 		if f >= 0 then
 			scene:frame(Vector3.new(0, 3.2, 7.5), Vector3.new(0, 2.4, 0), { meshes = meshes, sprites = sprites, ribbons = ribbons,
-				lights = lights, fov = 55, caption = string.format("%.2f s   Dragon's Maw (fire) | Frostbound Oath (ice) | Abyss Eclipse (void): in hand, a slash every 2 s", t) })
+				lights = lights, fov = 55, bloom = BLOOM, caption = string.format("%.2f s   Dragon's Maw (fire) | Frostbound Oath (ice) | Abyss Eclipse (void): in hand, a slash every 2 s", t) })
 		end
 	end
 	scene:save(nil, FPS, 1280, 720, { sky = "#1d2333", ground = "#2a2a36", grid = false, meshFile = MESHES, stills = { 20, 75, 130 } })
@@ -291,6 +327,9 @@ for i, key in KEYS do
 	Rig.fk(rig)
 	local hand = rig.parts.RightHand
 	local held = knife(key, "hand")
+	local gemPart = held.model:FindFirstChild("KnifeFxGem", true)
+	print(string.format("%s: gem %s (%.2f studs), glow %d, ball motes %d", key, if gemPart then gemPart.Parent.Name else "none (the guard)",
+		if gemPart then math.max(gemPart.Parent.Size.X, gemPart.Parent.Size.Y, gemPart.Parent.Size.Z) else 0, #held.glows, #held.balls))
 	local handleCF = hand.CFrame * KnifeLook.handC0(Vector3.new(0, -hand.Size.Y / 2 + 0.1, 0), held.reach)
 	local stand = knife(key, "stand")
 	local standCF = CFrame.new(x + 5, 3.4, 0) * CFrame.Angles(0, math.rad(90), 0) * CFrame.Angles(0, 0, math.rad(-20))
@@ -331,7 +370,7 @@ local function shoot(eye, at, caption, fov)
 	for _ = 1, 4 do tick({}, {}) end -- (a little time between stills)
 	local sprites, lights = {}, {}
 	tick(sprites, lights)
-	scene:frame(eye, at, { meshes = meshesNow(), sprites = sprites, lights = lights, fov = fov or 50, caption = caption })
+	scene:frame(eye, at, { meshes = meshesNow(), sprites = sprites, lights = lights, fov = fov or 50, bloom = BLOOM, caption = caption })
 	table.insert(stills, frameN)
 	frameN += 1
 end

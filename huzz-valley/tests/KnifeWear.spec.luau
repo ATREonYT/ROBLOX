@@ -258,8 +258,8 @@ do
 	check("Celestial Edge (a long blade): on the back, on the UpperTorso", k:GetAttribute("WornAt") == "Back" and mountOf(k).Part0.Name == "UpperTorso")
 	local wornRate = 0
 	for _, d in k:GetDescendants() do if d:IsA("ParticleEmitter") then wornRate += d.Rate end end
-	check(string.format("worn (Legendary): a light share of its effects (%.1f a second), no light, no burst", wornRate),
-		wornRate > 0 and wornRate <= 4 and k:FindFirstChildWhichIsA("Light", true) == nil and k:FindFirstChild("KnifeBurst", true) == nil)
+	check(string.format("worn (Legendary): its effects, a little lighter (%.1f a second), no light, no burst", wornRate),
+		wornRate > 0 and wornRate <= KnifeLook.VFX.MaxTotal and k:FindFirstChildWhichIsA("Light", true) == nil and k:FindFirstChild("KnifeBurst", true) == nil)
 	-- the avatar's look swaps the UpperTorso: the knife goes on the new one
 	c.UpperTorso:Destroy()
 	local lt = Instance.new("Part")

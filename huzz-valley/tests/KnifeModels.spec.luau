@@ -342,11 +342,16 @@ for _, key in PASS do
 		check(key .. " stand: one part per mesh (" .. parts .. "), welded to the Handle", parts == #meshes and placed)
 		check(key .. " stand: every part in its .glb place, size, colour and material, times the stretch", fits)
 		check(key .. " stand: no shell laid over his blade", shells == 0)
-		local shown = 0
+		local shown, glow = 0, nil
 		for _, d in stand:GetDescendants() do
-			if d:IsA("BasePart") and not d:IsDescendantOf(dressed) and d.Transparency < 1 then shown += 1 end
+			if d:IsA("BasePart") and string.find(d.Name, "^KnifeFx") then
+				if d.Name == "KnifeFxGlow" then glow = d end
+			elseif d:IsA("BasePart") and not d:IsDescendantOf(dressed) and d.Transparency < 1 then
+				shown += 1
+			end
 		end
 		check(key .. " stand: the stand-in's own parts hidden (" .. shown .. " showing)", shown == 0)
+		check(key .. " stand: the gem's glow (Shared/KnifeFx) still shows once dressed", glow == nil or glow.Transparency < 1)
 		check(key .. " stand: dressing twice adds nothing", Dress.dress(stand, meshes, fakeMake) == dressed and #stand:GetChildren() == #stand:GetChildren())
 	end
 	-- in a hand: no stretch, the .glb's own size

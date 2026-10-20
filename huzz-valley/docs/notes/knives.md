@@ -23,16 +23,37 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
   sword"). The numbers are `KnifeLook.VFX` + `KnifeLook.vfx(skin, where)`; `Shared/KnifeFx.add` builds them on the
   server (KnifeService: in hand, worn, on a stand), nothing runs every frame. The study and the per-skin table are
   in "Knife effects: the Huss Valley study" below; the method for any game's items is the repo's `VFX-ITEMS.md`.
-  - Tiers (the coordinator's default, kept): Common and Uncommon plain (only the swing trail); Rare a few motes in
-    the gem's colour; Epic + the theme's motif and 5 slash sparkles; Legendary, Mythic and the pass knives
-    (Exclusive) + a glint on the gem, a faint haze, one soft PointLight (0.6, range 5, no shadows) and the long
-    trail (8 slash sparkles). In hand the full set, on a stand 1.2x the rate, worn 0.5 to 0.8x with no light and no
-    burst (`HuzzClient/Gameplay/KnifeFxRange` switches worn ones off past 70 studs from the camera).
-  - Limits: 12 particles a second per knife at most (6 per emitter), the glint 0.6 a second (no strobing), Roblox's
+  - Tiers (the coordinator's default, kept; second pass the same day to Huss Valley's VISIBILITY, coordinator: our
+    first Celestial Seraph next to MELON5MAN "shows almost nothing", he'd read it as "no effects"): Common and
+    Uncommon plain (only the swing trail); Rare one or two faint particle motes; Epic 2 crisp ball motes (1 worn),
+    the theme's motif, the gem glowing and 5 slash sparkles; Legendary, Mythic and the pass knives (Exclusive) 3
+    crisp ball motes in the gem's colour (3 worn, 4 on a stand), the gem glowing, the motif readable worn, a glint on
+    the gem, a faint haze, one soft PointLight (1, range 6, no shadows) and the long trail (8 slash sparkles). The
+    particle motes stay as a light extra (0.4 of their rate) beside the balls. In hand the full set, on a stand 1.2x
+    the rate, worn 0.8x with no light and no burst.
+  - The gem glowing (`KnifeFxGlow`, made by `Shared/KnifeFx` on the server, never changing): a solid Neon ball in
+    the gem's colour, the gem's own size (0.1 to 0.35 studs), Transparency 0.08 (Epic 0.15), the PointLight and
+    the game's bloom its soft halo, plus a locked `orb` smoke puff. (Third pass, coordinator: the see-through 0.35
+    ball "reads as a pale see-through bubble around the guard, which the owner will call cheap or AI".)
+  - Ball motes (`Gameplay/KnifeFxRange` + `Shared/KnifeMotes`, on each screen only, so the server never replicates
+    moving parts): `KnifeFx` marks the model (tag `HuzzKnifeMotes`, attributes Motes, MoteColor, MoteSize = 5% of
+    the knife, MoteDrift = the theme's rise or sink, MoteSeed); each screen makes that many small Neon balls in
+    `Workspace > HuzzKnifeMotes` (no shadow, collide, query or touch; anchored) and moves them in one RenderStepped
+    loop: each floats 3.2 s on a soft loop off the blade's edges (never on the flat or inside it), fading in and
+    out over 0.8 s (smoothstep, never a pop), staggered so 2 or 3 of 3 show at once. Four times a second the same
+    module drops balls past 70 studs from the camera or on an Invisible player, switches worn knives' particles off
+    past 70 studs and every knife's particles off while Invisible (the gem's glow is a part on the knife, so it
+    fades with the body). `tools/preview/smoke_knife_motes.luau` checks it in the harness.
+  - The gem (`KnifeFx` gemOf): his `guard_gem`, else a `gem` (Solar Reaper's pommel), else his biggest Neon part that
+    isn't the blade or one of his baked aura bits (`aura_ring`, `aura_shard`, `spark`, `rune`, `wing_glow`: Void
+    Fang's floating shards are not a gem). No gem (Void Fang, Abyss Eclipse, Storm Kunai...): no glow ball, the orb
+    puff sits at the guard; the ball motes still float. `Gameplay/KnifeDress` leaves `KnifeFx*` parts showing when it hides the stand-in.
+  - Limits: 16 particles a second per knife at most (6 per emitter), the glint 0.5 a second (no strobing), Roblox's
     built-in particle pictures only (rbxasset://textures/particles/...: sparkles_main, fire_main, smoke_main; never an id we
     haven't uploaded, which shows as a white square), one light at most. `tests/Knives.spec` checks every knife.
-  - What stays from before: every skin's slash trail in its own colour (`KnifeLook.trailLook`, Common and Uncommon
-    faint), Epic and up the catcher's slash arc (`arc`). `KnifeService` plain still strips anything a model came
+  - What stays from before (the trail and arc ladder, `KnifeLook.LADDER`): every skin's slash trail in its own
+    colour (`KnifeLook.trailLook`, Common and Uncommon faint, `trailSoft`), Epic and up the catcher's slash arc
+    (`arc`); the effects ladder above is `KnifeLook.VFX.TIERS`. `KnifeService` plain still strips anything a model came
     with before ours go on (the Oct 20 03:01 call, "please fix the knifes finally, they are still missing pixels,
     and please just make them be normal": the missing pixels were the stand-in slices, so the effects come off one
     invisible box over the whole blade, `KnifeFxArea`, never a sliver). Old films: `docs/previews/knife-fx-ladder.mp4`,
@@ -193,8 +214,9 @@ is their Halloween lobby, no skins close up).
 | Danilo (pink skin), in hand | a soft pink glow ~1 stud round the blade and a few sparkles; brighter in the swing, a small sparkle cluster |
 What they don't do: no big arc on the knife, no spark shower, no flash, nothing far from the blade. The same
 effects show worn on the back. So ours: the colour is the skin's gem (`Glow`, else the pass element's light, else
-the blade), a handful of particles, each placed at the skin's detail (`KnifeFxGem` = the biggest Neon part that isn't
-the blade, else the guard; the tip; the blade's box).
+the blade), a handful of particles, each placed at the skin's detail (`KnifeFxGem` = his gem, else the guard; the
+tip; the blade's box). Measured on MELON5MAN at 5.0 s: a mote is about 5% of the knife's length across (15 px of a
+310 px knife), solid and saturated; the gem's orb with its bloom about 15% (45 px); 2 to 4 motes on show at once.
 Themes (`KnifeLook.VFX.THEMES`, picked per knife in `VFX.OF` from its name and colours): Fire (embers rising off the
 edge, small flames, heat haze: Ember Edge, Solar Reaper, Dragon's Maw), Ice (snow sinking, frost mist sinking: Frost
 Fang, Frostbound Oath), Void (motes pulled in from a shell round the blade, a dark swirl: Shadow Knife, Void Fang,
@@ -335,9 +357,13 @@ in hand and on a stand), `docs/previews/knife-vfx-vs-hv.jpg` (MELON5MAN worn nex
 
 ## Honest gaps
 - Knife effects (Oct 20): only seen offline, drawn with our look-alikes of Roblox's built-in particle pictures; how
-  smoke_main and sparkles_main really read, the PointLight and the size of a mote only Studio shows. Ours are
-  fainter than Huss Valley's, mostly because their gems are big Neon orbs with bloom and ours are his small gems
-  (worn, the Seraph shows a glint and one or two motes; theirs two or three clear cyan dots). The 3D crate reveal
+  smoke_main and sparkles_main really read, the PointLight, the Neon glow ball under the bloom and the size of a
+  mote only Studio shows. Third pass (crisp Neon ball motes, a solid gem ball): the film and the stands now read
+  like Huss Valley's crisp coloured dots. In the worn side by side (`docs/previews/knife-vfx-vs-hv.jpg`) ours is
+  still a step behind: the offline picture draws Neon flat with no bloom halo, so the Seraph's gem ball is a flat
+  cyan disc that sits a little off his small cyan gem (the stand-in's gem part, `Part151`, 0.22 studs, isn't
+  exactly where his gem shows) and only one ball lands in that crop at that moment (theirs two or three). Whether
+  Roblox's bloom gives the ball and the motes their soft halo only Studio shows. The 3D crate reveal
   (`UI/Crate3D`) is a ViewportFrame, which draws no particles, so it shows no knife effects (its backlight already
   takes the colour).
 - Not seen in Studio yet: knife positions, the owner's knives (meshes after his import, the leap and dive), the knife

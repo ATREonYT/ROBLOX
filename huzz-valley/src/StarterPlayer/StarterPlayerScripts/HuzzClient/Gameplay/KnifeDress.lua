@@ -119,7 +119,7 @@ function M.dress(model: Instance, meshes, make)
 	local folder = Instance.new("Folder")
 	folder.Name = "GlbDress"
 	for _, d in model:GetDescendants() do -- the stand-in hides, its grip (the Handle) too; its emitters, lights and trail points stay
-		if d:IsA("BasePart") then d.Transparency = 1 end
+		if d:IsA("BasePart") and not string.find(d.Name, "^KnifeFx") then d.Transparency = 1 end -- (Shared/KnifeFx's gem glow stays)
 	end
 	for i, p in made do -- (no waiting from here on: placed and welded against where the Handle is now)
 		local at = places[i]
@@ -236,7 +236,7 @@ function M.start()
 				report("on (" .. #meshes .. " meshes for " .. key .. ")")
 				-- a stand-in part that arrives after the dress hides too
 				model.DescendantAdded:Connect(function(d)
-					if d:IsA("BasePart") and not d:IsDescendantOf(result) then d.Transparency = 1 end
+					if d:IsA("BasePart") and not d:IsDescendantOf(result) and not string.find(d.Name, "^KnifeFx") then d.Transparency = 1 end
 				end)
 			elseif not ok then
 				report("failed (" .. tostring(result) .. "): the plain stand-ins show", true)
