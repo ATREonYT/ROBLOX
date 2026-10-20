@@ -53,6 +53,9 @@ local env = {
 	NumberRange = roblox.NumberRange, NumberSequence = roblox.NumberSequence, NumberSequenceKeypoint = roblox.NumberSequenceKeypoint,
 	ColorSequence = roblox.ColorSequence, ColorSequenceKeypoint = roblox.ColorSequenceKeypoint,
 }
+-- (Shared/KnifeFx, the knife effects: loaded with its KnifeLook)
+shared.KnifeFx = luau.load(fs.readFile(ROOT .. "src/ReplicatedStorage/Shared/KnifeFx.lua"), { debugName = "KnifeFx", environment = (function() local e = table.clone(env); e.script = { Parent = { KnifeLook = "KnifeLook" } }; return e end)() })()
+fakeRS.Shared.KnifeFx = "KnifeFx"
 local KnifeService = luau.load(fs.readFile(ROOT .. "src/ServerScriptService/HuzzServer/KnifeService.lua"), { debugName = "KnifeService", environment = env })()
 
 local baked = {}
@@ -168,12 +171,20 @@ for _, key in PASS do
 	end
 	check(key .. string.format(": nothing laid over the blade (%d glow shell parts)", shells), shells == 0)
 	check(key .. ": the slash starts halfway up the blade", m:FindFirstChild("StandTrailBase", true) ~= nil)
-	-- nothing on the knife (owner, Oct 20: "just make them be normal"): no particles, sparkles or lights at all
-	local extras = 0
+	-- its effects (owner, Oct 20: "make the vfx ... better for more high end ones", Huss Valley's restraint):
+	-- only ours (Shared/KnifeFx), only Roblox's built-in pictures, a few a second, one light at most
+	local others, lights, rate, badTex = 0, 0, 0, 0
 	for _, d in m:GetDescendants() do
-		if d:IsA("ParticleEmitter") or d:IsA("Light") or d:IsA("Sparkles") or d:IsA("Fire") or d:IsA("Smoke") then extras += 1 end
+		if d:IsA("Sparkles") or d:IsA("Fire") or d:IsA("Smoke") then others += 1 end
+		if d:IsA("Light") then lights += 1 end
+		if d:IsA("ParticleEmitter") then
+			if d.Name ~= "KnifeBurst" then rate += d.Rate end
+			if not string.find(d.Texture, "^rbxasset://textures/particles/") then badTex += 1 end
+		end
 	end
-	check(key .. string.format(": plain on the stand, nothing scattered round it (%d particle emitters or lights)", extras), extras == 0)
+	check(key .. string.format(": on the stand its themed effects (%s), %.1f particles a second, %d light", tostring(m:GetAttribute("Fx")), rate, lights),
+		m:GetAttribute("Fx") ~= nil and rate > 0 and rate <= KnifeLook.VFX.MaxTotal and lights <= 1 and others == 0)
+	check(key .. ": only Roblox's built-in particle pictures (no white squares)", badTex == 0)
 end
 do -- one of the owner's own models (he'll import the pass ones the same way): scaled to the same length
 	local skin = CoinShop.get("VoidFang")
@@ -192,7 +203,10 @@ do -- the hand: the same knife at its real size, half the element
 	local rate = 0
 	for _, d in held:GetDescendants() do if d:IsA("ParticleEmitter") and d.Name ~= "KnifeBurst" then rate += d.Rate end end
 	check(string.format("in hand: its real size (%.2f studs), not the stand's", lengthOf(held)), lengthOf(held) < 3.6)
-	check(string.format("in hand: no particles (%.1f a second)", rate), rate == 0 and held:FindFirstChildWhichIsA("Light", true) == nil)
+	local lights = 0
+	for _, d in held:GetDescendants() do if d:IsA("Light") then lights += 1 end end
+	check(string.format("in hand: its effects, a few a second (%.1f), one light at most", rate), rate > 0 and rate <= KnifeLook.VFX.MaxTotal and lights <= 1)
+	check("in hand: a burst for the slash (Actions throws half of Burst)", held:FindFirstChild("KnifeBurst", true) ~= nil and (held:GetAttribute("Burst") or 0) > 0)
 	check("in hand: the slash arc colour is set (Epic and up)", typeof(held:GetAttribute("SlashColor")) == "Color3")
 	local trail = held:FindFirstChild("SlashTrail", true)
 	check("in hand: the trail in the element's colours, a little longer", trail and math.abs(trail.Lifetime - KnifeLook.TRAIL.ElementLifetime) < 1e-4)

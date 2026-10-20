@@ -191,6 +191,9 @@ local env = {
 	NumberRange = roblox.NumberRange, NumberSequence = roblox.NumberSequence, NumberSequenceKeypoint = roblox.NumberSequenceKeypoint,
 	ColorSequence = roblox.ColorSequence, ColorSequenceKeypoint = roblox.ColorSequenceKeypoint,
 }
+-- (Shared/KnifeFx, the knife effects: loaded with its KnifeLook)
+shared.KnifeFx = luau.load(fs.readFile(ROOT .. "src/ReplicatedStorage/Shared/KnifeFx.lua"), { debugName = "KnifeFx", environment = (function() local e = table.clone(env); e.script = { Parent = { KnifeLook = "KnifeLook" } }; return e end)() })()
+fakeRS.Shared.KnifeFx = "KnifeFx"
 local KnifeService = luau.load(fs.readFile(ROOT .. "src/ServerScriptService/HuzzServer/KnifeService.lua"), { debugName = "KnifeService", environment = env })()
 
 local function body(r6)
@@ -253,7 +256,10 @@ do
 	n, k = knives(c)
 	check("skin change: one knife, the new one", n == 1 and k:GetAttribute("Skin") == "SpinKnife")
 	check("Celestial Edge (a long blade): on the back, on the UpperTorso", k:GetAttribute("WornAt") == "Back" and mountOf(k).Part0.Name == "UpperTorso")
-	check("worn: plain, no light or particles (owner Oct 20: \"just make them be normal\")", k:FindFirstChildWhichIsA("Light", true) == nil and k:FindFirstChildWhichIsA("ParticleEmitter", true) == nil)
+	local wornRate = 0
+	for _, d in k:GetDescendants() do if d:IsA("ParticleEmitter") then wornRate += d.Rate end end
+	check(string.format("worn (Legendary): a light share of its effects (%.1f a second), no light, no burst", wornRate),
+		wornRate > 0 and wornRate <= 4 and k:FindFirstChildWhichIsA("Light", true) == nil and k:FindFirstChild("KnifeBurst", true) == nil)
 	-- the avatar's look swaps the UpperTorso: the knife goes on the new one
 	c.UpperTorso:Destroy()
 	local lt = Instance.new("Part")

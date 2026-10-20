@@ -31,8 +31,12 @@
 	Uncommon up had a white sheen glint: all three hid his model, owner Oct 19: "they dont look as good as in the glb
 	file". Gone: every knife, worn, held or on a stand, is his model as it is, only scaled evenly.)
 
-	Effects by rarity (owner: "make it fit it, and dont make it overly crazy"): Shared/KnifeLook. In hand always;
-	on the back only Legendary and Mythic. Built here once per knife (replicated), nothing runs every frame.
+	Effects by rarity and theme (owner, Oct 20: "make the vfx for some swords way better and more detailed, make them
+	better for more high end ones" ... "check out the references provided from Huss valley"): Shared/KnifeLook.vfx's
+	numbers, built by Shared/KnifeFx once per knife (replicated), nothing runs every frame. Common and Uncommon stay
+	plain; Rare a few motes; Epic its motif too; Legendary, Mythic and the pass knives the full theme. In hand the
+	most, on a stand a little more, worn a lighter share (HuzzClient/Gameplay/KnifeFxRange switches worn ones off
+	for far-away players).
 	Where it sits: Shared/KnifeLook (hand: today's grip, offset by the model's Grip; worn: backC0 / sideC0, also on
 	the model's Grip). A model in HuzzKnives whose size doesn't match its length (8 of the owner's Oct 18 file came
 	out of the setup about 10 times too big and lying sideways) is not used: that skin shows our own knife in its
@@ -42,6 +46,7 @@ local ServerStorage = game:GetService("ServerStorage")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local KnifeLook = require(ReplicatedStorage.Shared.KnifeLook)
 local KnifeShapes = require(ReplicatedStorage.Shared.KnifeShapes)
+local KnifeFx = require(ReplicatedStorage.Shared.KnifeFx)
 
 local KnifeService = {}
 local NAME = "HuzzKnife"
@@ -224,7 +229,7 @@ local function shapeOf(model)
 	if not (handle and handle:IsA("BasePart")) then return nil end
 	local parts = {}
 	for _, d in model:GetDescendants() do
-		if d:IsA("BasePart") then
+		if d:IsA("BasePart") and not string.find(d.Name, "^KnifeFx") then -- (our effect boxes aren't the knife)
 			table.insert(parts, { name = d.Name, cf = handle.CFrame:ToObjectSpace(d.CFrame), size = d.Size })
 		end
 	end
@@ -271,10 +276,8 @@ local function template(skin)
 end
 KnifeService.template = template
 
--- No effects on the knife itself (owner, Oct 20: "please fix the knifes finally, they are still missing pixels, and
--- please just make them be normal"): his model as it is, nothing scattered round it. Only the slash trail (made in
--- give, plain colour, no picture) and the catcher's slash arc stay. Anything a model came with (particles, sparkles,
--- lights) is taken off.
+-- Anything a model came with (particles, sparkles, lights) is taken off (owner, Oct 20: "please fix the knifes
+-- finally, they are still missing pixels, and please just make them be normal"); ours go on after (Shared/KnifeFx).
 local function plain(model)
 	for _, d in model:GetDescendants() do
 		if d:IsA("ParticleEmitter") or d:IsA("Light") or d:IsA("Sparkles") or d:IsA("Fire") or d:IsA("Smoke") then d:Destroy() end
@@ -416,6 +419,7 @@ function KnifeService.giveBack(character, skin)
 		if d:IsA("Trail") or d:IsA("ParticleEmitter") or d:IsA("Light") then d:Destroy() end
 	end
 	plain(model)
+	KnifeFx.add(model, skin, "back")
 	local mount = Instance.new("Weld")
 	mount.Name = "BackMount"
 	mount.Part0 = torso
@@ -457,6 +461,7 @@ function KnifeService.give(character, skin)
 	if not handle then model:Destroy() return end
 	loose(model)
 	plain(model)
+	local fx = KnifeFx.add(model, skin, "hand")
 	local grip = hand:FindFirstChild("RightGripAttachment")
 	local at = if grip then grip.Position else Vector3.new(0, -hand.Size.Y / 2 + 0.1, 0)
 	local motor = Instance.new("Motor6D") -- a Motor6D (not a Weld) so it moves with the hand on every client at once
@@ -477,7 +482,7 @@ function KnifeService.give(character, skin)
 		local trail = Instance.new("Trail")
 		trail.Name = "SlashTrail"
 		trail.Attachment0, trail.Attachment1 = base, tip
-		trail.Lifetime = if el then T.ElementLifetime else T.Lifetime
+		trail.Lifetime = if el or (fx and KnifeLook.vfx(skin, "hand").trail) then T.ElementLifetime else T.Lifetime
 		trail.MinLength = 0
 		trail.FaceCamera = false
 		trail.LightEmission = tl.light
@@ -492,7 +497,7 @@ function KnifeService.give(character, skin)
 	model.Parent = character
 end
 
--- A loose copy of a skin's knife with its in-hand effects, for showing off (the lobby avatar stands:
+-- A loose copy of a skin's knife with its stand effects (KnifeFx "stand"), for showing off (the lobby avatar stands:
 -- HuzzServer/AvatarStandService puts it in ReplicatedStorage, each screen welds it into the stand copy's hand by
 -- its Handle's Grip attachment). Nothing anchored, nothing collides.
 -- Big: scaled up to KnifeLook.STAND.Length (owner, Oct 19: "right now its very small and you dont even notice it"),
@@ -522,6 +527,7 @@ function KnifeService.display(skin)
 		mid.Parent = tip.Parent
 	end
 	plain(model)
+	KnifeFx.add(model, skin, "stand")
 	model:SetAttribute("Skin", skinOf(skin))
 	model.PrimaryPart = handle
 	return model

@@ -23,9 +23,9 @@
 	~3 s a combo, a flourish or a rising cut ending in a twirl, the slash trail during the cuts; each stand has its
 	own timing and order (seed from its spot). Oct 19 (owner: "right now its very small and you dont even notice it";
 	"make the knife animations look like the ones i have attached in the video"): the knife is BIG (about 4.4 studs,
-	KnifeService.display scales it), plain since Oct 20 (no particles on it: "just make them be normal"), and each knife
+	KnifeService.display scales it), with its stand effects (Shared/KnifeFx: Rare and up, Oct 20), and each knife
 	has its own hold and moves (Shared/StandShowcase.STYLES: big arcs, a spin slash, flicks, a raised spin); a move's
-	burst would throw a handful of the knife's KnifeBurst particles out, and the knives carry none now.
+	burst throws the knife's KnifeBurst particles out (its Burst attribute: Epic and up).
 	Without a knife it runs in place with the game's run (the
 	owner's run animation when it can play here, Shared/AnimationLibrary "Run"; otherwise Shared/RunMotion, the
 	scripted Huss Valley run, on R15; a simple swing on R6). It turns to face you like the leaderboards. No disc under

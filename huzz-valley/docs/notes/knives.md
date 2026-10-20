@@ -17,17 +17,26 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
   `assets/art/knife-*.png` (packed 192 px; they show in Play only, EditableImage); `docs/previews/knife-cards.jpg`.
 - `KnifeService` takes `ServerStorage/HuzzKnives/<Key>` when there, else the built-in knife tinted in the skin's colours.
   Hand by the model's `Grip`.
-- **Effects: only the swing** (Oct 20, owner: "please fix the knifes finally, they are still missing pixels, and
-  please just make them be normal"): nothing on any knife, in hand, worn or on a stand: no particles, sparkles, star
-  glints, embers, element emitters (petals, feathers, fire, frost, moon glints, the KnifeBurst) or lights
-  (`KnifeService` plain: also strips any a model came with). What stays (`KnifeLook.LADDER`): every skin's slash trail
-  in its own colour on a swing (`KnifeLook.trailLook`, no picture; Common and Uncommon faint, `trailSoft`; the default
-  knife the faint white one; a pass knife's in its element's colours, `KnifeLook.ELEMENTS` trail), and Epic and up the
-  catcher's slash arc (`arc`: `SlashColor`, a plain Beam, gone in 0.2 s). (Oct 18 / 19 the ladder had lights,
-  sparkles, glints and embers, and the pass knives their elements: "add some vfx ... dont make it overly crazy";
-  they read as bits scattered round the blade. The ELEMENTS emit lists stay as data for the old films:
-  `docs/previews/knife-fx-ladder.mp4` + `.jpg`, `motion3d/knife_fx_scene.luau`, older `docs/previews/knives-vs-hv.jpg`,
-  `knife-leap.mp4`.)
+- **Effects: by tier and theme, from Huss Valley** (Oct 20 07:43, owner: "Can you make the vfx for some swords way
+  better and more detailed, make them better for more high end ones"; 07:47: "check out the references provided from
+  Huss valley, and then implement the vfx based on it. Make them fit and logically connected to the skin of the
+  sword"). The numbers are `KnifeLook.VFX` + `KnifeLook.vfx(skin, where)`; `Shared/KnifeFx.add` builds them on the
+  server (KnifeService: in hand, worn, on a stand), nothing runs every frame. The study and the per-skin table are
+  in "Knife effects: the Huss Valley study" below; the method for any game's items is the repo's `VFX-ITEMS.md`.
+  - Tiers (the coordinator's default, kept): Common and Uncommon plain (only the swing trail); Rare a few motes in
+    the gem's colour; Epic + the theme's motif and 5 slash sparkles; Legendary, Mythic and the pass knives
+    (Exclusive) + a glint on the gem, a faint haze, one soft PointLight (0.6, range 5, no shadows) and the long
+    trail (8 slash sparkles). In hand the full set, on a stand 1.2x the rate, worn 0.5 to 0.8x with no light and no
+    burst (`HuzzClient/Gameplay/KnifeFxRange` switches worn ones off past 70 studs from the camera).
+  - Limits: 12 particles a second per knife at most (6 per emitter), the glint 0.6 a second (no strobing), Roblox's
+    built-in particle pictures only (rbxasset://textures/particles/...: sparkles_main, fire_main, smoke_main; never an id we
+    haven't uploaded, which shows as a white square), one light at most. `tests/Knives.spec` checks every knife.
+  - What stays from before: every skin's slash trail in its own colour (`KnifeLook.trailLook`, Common and Uncommon
+    faint), Epic and up the catcher's slash arc (`arc`). `KnifeService` plain still strips anything a model came
+    with before ours go on (the Oct 20 03:01 call, "please fix the knifes finally, they are still missing pixels,
+    and please just make them be normal": the missing pixels were the stand-in slices, so the effects come off one
+    invisible box over the whole blade, `KnifeFxArea`, never a sliver). Old films: `docs/previews/knife-fx-ladder.mp4`,
+    `motion3d/knife_fx_scene.luau`, `docs/previews/knives-vs-hv.jpg`, `knife-leap.mp4`.
 - **His look, one to one** (`KnifeLook.glbMaterial`, the one rule for all of them): every part takes the Roblox
   material nearest his .glb's metallic and roughness (his blades and guards metallic 0.6 to 0.9, roughness 0.2 to
   0.3; grips metallic 0, roughness 0.8): glowing = Neon, metallic 0.5+ = Metal (Reflectance 0.12 when roughness is
@@ -171,6 +180,33 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
   stand-ins show. The lasting fix is still his import (SetupKnives below): real uploaded meshes, the same on every
   device, and then nothing here runs.
 
+## Knife effects: the Huss Valley study (Oct 20)
+Their skins, cropped to the knife: `docs/previews/knife-vfx-hv-reference.jpg` (`tools/preview/knife_vfx_reference.py`,
+their recording f1c7bb86, the only HV round recording in the uploads: 32fe8d21 and 87565d66 aren't there; af1237a7
+is their Halloween lobby, no skins close up).
+| Their skin | What it does |
+|---|---|
+| MELON5MAN (cyan blade, gold halo guard, cyan gem), worn | 2 or 3 round cyan motes (~0.15 to 0.2 studs) drifting slowly (~0.5 stud/s) round the blade, in the gem's colour; the gem is Neon with a bloom |
+| XxSanVetxX (cyan blades, cyan gems), worn | the same cyan motes, plus a small magenta glint near the edge |
+| cxsh (purple and gold, pink gem), worn | a sparkle star in the pink gem and a soft purple haze under the blade |
+| Mrsmagic (red and white wing blade, blue gem), worn | 2 or 3 soft blue electric wisps (~0.5 studs, a new shape each frame) round the blade's middle |
+| Danilo (pink skin), in hand | a soft pink glow ~1 stud round the blade and a few sparkles; brighter in the swing, a small sparkle cluster |
+What they don't do: no big arc on the knife, no spark shower, no flash, nothing far from the blade. The same
+effects show worn on the back. So ours: the colour is the skin's gem (`Glow`, else the pass element's light, else
+the blade), a handful of particles, each placed at the skin's detail (`KnifeFxGem` = the biggest Neon part that isn't
+the blade, else the guard; the tip; the blade's box).
+Themes (`KnifeLook.VFX.THEMES`, picked per knife in `VFX.OF` from its name and colours): Fire (embers rising off the
+edge, small flames, heat haze: Ember Edge, Solar Reaper, Dragon's Maw), Ice (snow sinking, frost mist sinking: Frost
+Fang, Frostbound Oath), Void (motes pulled in from a shell round the blade, a dark swirl: Shadow Knife, Void Fang,
+Abyss Eclipse), Celestial (light motes rising, the halo's glow at the gem, a star at the tip: Spin Knife, Celestial
+Seraph), Moon (pale wisps), Blood (red drips falling: Blood Moon Tanto), Sakura (petals drifting off sideways: Candy
+Knife, Crimson Requiem), Storm (Mrsmagic's wisps, tiny sparks: Thunder Fang, Storm Kunai), Venom, Witch, Candy,
+Pumpkin, Spirit (the Halloween knives).
+Pictures (offline, our look-alikes of Roblox's built-in pictures): `docs/previews/knife-vfx-sheet.jpg` (8 knives,
+in hand and on a stand), `docs/previews/knife-vfx-vs-hv.jpg` (MELON5MAN worn next to our Celestial Seraph worn),
+`docs/previews/knife-vfx.mp4` (Dragon's Maw, Frostbound Oath, Abyss Eclipse slashing, 30 fps). Made with
+`motion3d/knife_vfx_scene.luau` (the real KnifeService + KnifeFx, every emitter run) and `knife_vfx_sheet.py`.
+
 ## Owner how-to: SetupKnives (Studio, once)
 1. File > Import 3D > `huzz-valley/design/knives/Knives/All_Knives.glb`, Import (and
    `design/knives/gamepass/Gamepass_Knives.glb` and `design/knives/halloween/Halloween_Knives.glb` the same way).
@@ -224,10 +260,10 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
   `GlowShell` over the blade are gone (owner, Oct 19: "they dont look as good as in the glb file": both hid his
   model).
 - **Trail:** a `StandSlash` Trail from `StandTrailBase` (45% up the blade, added by display) to TrailTip, on only in
-  the cuts, `TRAIL_LIFETIME` 0.2 s in the element's colours (Sunrise gold, never white), tapered. No glow or
-  particles on the knife (Oct 20); its own Neon parts still glow.
-- **Elements** (`KnifeLook.ELEMENTS`): off since Oct 20 ("just make them be normal": see Effects above); each pass
-  knife keeps only its trail colours from it. (They were: Hunter red petals + twinkles, Moonlit moon glint + violet
+  the cuts, `TRAIL_LIFETIME` 0.2 s in the element's colours (Sunrise gold, never white), tapered. The copy carries
+  its stand effects (`KnifeFx` "stand", above); a move throws its `KnifeBurst`; its own Neon parts still glow.
+- **Elements** (`KnifeLook.ELEMENTS`): their emitters off since Oct 20 ("just make them be normal"); each pass
+  knife keeps its trail colours from it, and its effects now come from `KnifeLook.VFX` (Effects above). (They were: Hunter red petals + twinkles, Moonlit moon glint + violet
   wisps, Sunrise gold feathers, Inferno flames + embers, Frost shards + snowflakes + mist, a stand light and a tip
   glint; `KnifeLook.elementRate` stays for the old films.)
 - **The aura, no disc** (Oct 19 evening, owner: "make the gamepass characters look better without that green circle
@@ -298,6 +334,12 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
   is small; the stand showcase is the pass knives' only.
 
 ## Honest gaps
+- Knife effects (Oct 20): only seen offline, drawn with our look-alikes of Roblox's built-in particle pictures; how
+  smoke_main and sparkles_main really read, the PointLight and the size of a mote only Studio shows. Ours are
+  fainter than Huss Valley's, mostly because their gems are big Neon orbs with bloom and ours are his small gems
+  (worn, the Seraph shows a glint and one or two motes; theirs two or three clear cyan dots). The 3D crate reveal
+  (`UI/Crate3D`) is a ViewportFrame, which draws no particles, so it shows no knife effects (its backlight already
+  takes the colour).
 - Not seen in Studio yet: knife positions, the owner's knives (meshes after his import, the leap and dive), the knife
   showcase (the big stand knives, the spins, the card motes/pulse, the slash arc), the long blades' forward grip and
   its ease back in a stab. The 5 pass and 18 Halloween models still need his import (`Gamepass_Knives.glb`,

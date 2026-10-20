@@ -1,7 +1,8 @@
 # Effects: Juice moments, abilities, the heartbeat, the girls' VFX, the showcase girl, effect pictures
 
 Read before changing world effects for round moments, the abilities, the heartbeat, the girls' auras, the big showcase girl or
-how effect pictures load. Knife effects: [knives.md](knives.md); the catch's red fill: [stab-lunge-catch.md](stab-lunge-catch.md);
+how effect pictures load. Knife effects (by tier and theme, Huss Valley's restraint, `Shared/KnifeFx`, Oct 20):
+[knives.md](knives.md), "Knife effects: the Huss Valley study", and the repo's `VFX-ITEMS.md` for any item; the catch's red fill: [stab-lunge-catch.md](stab-lunge-catch.md);
 the Secret cutscene: [secret-cutscene.md](secret-cutscene.md). How top VFX are built by code: `docs/vfx-guide.md`.
 
 ## Juice (`Gameplay/Juice`)

@@ -199,5 +199,43 @@ do
 	check("looking down / tiny input: still flat forward", near(tilted, Vector3.new(0, 0, -1)))
 end
 
+-- the knife effects (owner, Oct 20: "make the vfx for some swords way better ... better for more high end ones";
+-- Huss Valley's restraint: a few motes in the gem's colour, the motif, a glint; Shared/KnifeLook.vfx)
+do
+	local V = KnifeLook.VFX
+	local every = table.clone(knives)
+	for _, list in { passKnives, halloween } do for _, it in list do table.insert(every, it) end end
+	for _, item in every do
+		local tier = V.TIER[item.Rarity or ""] or 0
+		local hand, back, stand = KnifeLook.vfx(item, "hand"), KnifeLook.vfx(item, "back"), KnifeLook.vfx(item, "stand")
+		if tier == 0 then
+			check(item.Key .. ": " .. tostring(item.Rarity) .. " stays plain (no effects anywhere)", hand == nil and back == nil and stand == nil)
+		else
+			check(item.Key .. ": a theme tied to its name (" .. tostring(V.OF[item.Key]) .. ")", hand ~= nil and V.THEMES[V.OF[item.Key]] ~= nil)
+			if hand then
+				local function total(fx)
+					local t, bad, glint = 0, 0, 0
+					for _, e in (fx and fx.emit or {}) do
+						t += e.rate
+						if not string.find(e.tex, "^rbxasset://textures/particles/") then bad += 1 end
+						if e.role == "glint" and e.tex == V.TEX.Sparkle and e.lock then glint = math.max(glint, e.rate) end
+					end
+					return t, bad, glint
+				end
+				local h, badH, glint = total(hand)
+				local w, badW = total(back)
+				check(item.Key .. string.format(": in hand a few a second (%.1f), only built-in pictures", h), h > 0 and h <= V.MaxTotal and badH == 0 and badW == 0)
+				check(item.Key .. ": the gem's glint no more than one about every 2 s (kid-safe)", glint <= 0.6)
+				check(item.Key .. string.format(": worn lighter than in hand (%.1f), no light, no burst", w), w <= h and (back == nil or (back.light == nil and back.burst == 0)))
+				check(item.Key .. ": a light only from Legendary up", (hand.light ~= nil) == (tier >= 3))
+				check(item.Key .. ": Rare is one subtle touch", tier ~= 1 or #hand.emit == 1)
+			end
+		end
+	end
+	for name, theme in V.THEMES do
+		check(name .. ": motes and a motif", theme.motes ~= nil and theme.motif ~= nil)
+	end
+end
+
 print(`Knives: {passed} ok, {failed} failed`)
 if failed > 0 then error("Knives spec failed") end

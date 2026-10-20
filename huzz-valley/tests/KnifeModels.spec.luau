@@ -163,6 +163,9 @@ local env = {
 	NumberRange = roblox.NumberRange, NumberSequence = roblox.NumberSequence, NumberSequenceKeypoint = roblox.NumberSequenceKeypoint,
 	ColorSequence = roblox.ColorSequence, ColorSequenceKeypoint = roblox.ColorSequenceKeypoint,
 }
+-- (Shared/KnifeFx, the knife effects: loaded with its KnifeLook)
+shared.KnifeFx = luau.load(fs.readFile(ROOT .. "src/ReplicatedStorage/Shared/KnifeFx.lua"), { debugName = "KnifeFx", environment = (function() local e = table.clone(env); e.script = { Parent = { KnifeLook = "KnifeLook" } }; return e end)() })()
+fakeRS.Shared.KnifeFx = "KnifeFx"
 local KnifeService = luau.load(fs.readFile(ROOT .. "src/ServerScriptService/HuzzServer/KnifeService.lua"), { debugName = "KnifeService", environment = env })()
 
 local GLB = ROOT .. "src/ServerStorage/HuzzKnifeGlb/"
