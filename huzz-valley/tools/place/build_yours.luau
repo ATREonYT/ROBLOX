@@ -105,10 +105,10 @@ end
 -- view shows the lobby the game uses. HuzzServer/MapService does the same at game start (his own Rojo place), and
 -- every map then loads in front of this lobby. The spawn pad's rail is built at game start (Play only).
 do
-	local main, moved = Layout.putAwaySpares({ Instance = roblox.Instance }, theirs:GetService("Workspace"), theirs:GetService("ServerStorage"))
+	local main, moved, kept = Layout.putAwaySpares({ Instance = roblox.Instance }, theirs:GetService("Workspace"), theirs:GetService("ServerStorage"))
 	if main then
 		local c = main.CFrame.Position
-		print(string.format("one lobby: kept the copy at (%d, %d); %d of the other copies' parts and models put away", math.round(c.X), math.round(c.Z), moved))
+		print(string.format("one lobby: kept the copy at (%d, %d); %d of the other copies' parts and models put away, %d of his lobby pieces (the Combine machine) moved over beside it", math.round(c.X), math.round(c.Z), moved, kept or 0))
 	end
 end
 local layoutApi = { Instance = roblox.Instance, Vector3 = roblox.Vector3, CFrame = roblox.CFrame }

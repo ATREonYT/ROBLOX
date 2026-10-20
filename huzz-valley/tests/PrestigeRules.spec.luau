@@ -8,7 +8,7 @@ local function check(name, cond)
 	if cond then passed += 1 else failed += 1; print("FAIL " .. name) end
 end
 
-local data = { Characters = { G1 = 1 }, Dupes = {}, Prestige = {} }
+local data = { Characters = { G1 = 1 }, Copies = { G1 = { Normal = 1 } }, Prestige = {} } -- (one copy: Shared/CombineRules)
 check("starts at 0", P.level(data, "G1") == 0 and P.copies(data, "G1") == 0)
 local ok, why = P.can(data, "G1")
 check("no copy: can't", not ok and why == "Win her again to prestige her.")
@@ -24,9 +24,16 @@ local lv, w = P.apply(data, "G1")
 check("never past 3", lv == nil and w == "She's at top prestige!" and P.level(data, "G1") == 3)
 check("spare copies kept at the top", P.copies(data, "G1") == 3)
 check("an old save (no tables) works", P.level({}, "G1") == 0 and P.copies({}, "G1") == 0)
-local old = { Characters = { G1 = 1 } }
-P.addCopy(old, "G1")
-check("an old save gets its first copy", P.apply(old, "G1") == 1 and old.Prestige.G1 == 1)
+local C = Env.load("huzz-valley/src/ReplicatedStorage/Shared/CombineRules.lua")
+local old = { Characters = { G1 = 1 }, Dupes = { G1 = 1 } } -- (an Oct 19 save: one girl and a spare copy)
+C.migrate(old)
+check("an old save's spare copy carries over", P.copies(old, "G1") == 1 and old.Dupes == nil)
+check("an old save prestiges", P.apply(old, "G1") == 1 and old.Prestige.G1 == 1 and C.count(old, "G1", "Normal") == 1)
+-- the combine machine shares the copies: prestige never takes her last one
+local mixed = { Characters = { G1 = 1 }, Copies = { G1 = { Normal = 1, Gold = 1 } } }
+check("a Normal next to a Gold is spare", P.copies(mixed, "G1") == 1)
+local lone = { Characters = { G1 = 1 }, Copies = { G1 = { Silver = 1 } } }
+check("no Normal copy: none spare", P.copies(lone, "G1") == 0 and (P.apply(lone, "G1")) == nil)
 
 -- cooler effects: one tier up per level, capped at Mythic, Secret stays Secret
 check("Common 0 = Common", P.effectRarity("Common", 0) == "Common")

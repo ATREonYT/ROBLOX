@@ -3,7 +3,7 @@
 local Gameplay = script.Parent:WaitForChild("Gameplay")
 local Report = require(script.Parent:WaitForChild("UI"):WaitForChild("Report"))
 
-for _, name in { "AvatarAnimations", "PlayerMoves", "Dash", "RunAnimator", "CarryAnimator", "DanceSync", "Knockdown", "RoundHud", "Actions", "PowerEffects", "Heartbeat", "Cinematic", "ShiftLock", "Auras", "Feel", "Sprint", "AuraStars", "Juice", "CrownPose", "SecretReveal", "Music", "Leaderboards", "AvatarStands", "LobbyProps", "KnifeDress", "KnifeMeshCheck", "KnifeFxRange", "KnifeGuard", "PlaceSelf", "AfkRejoin", "HeadAim" } do
+for _, name in { "AvatarAnimations", "PlayerMoves", "Dash", "RunAnimator", "CarryAnimator", "DanceSync", "Knockdown", "RoundHud", "Actions", "PowerEffects", "Heartbeat", "Cinematic", "ShiftLock", "Auras", "Feel", "Sprint", "AuraStars", "Juice", "CrownPose", "SecretReveal", "Music", "Leaderboards", "AvatarStands", "LobbyProps", "KnifeDress", "KnifeMeshCheck", "KnifeFxRange", "KnifeGuard", "PlaceSelf", "AfkRejoin", "HeadAim", "CombineMachine" } do
 	task.spawn(Report.run, name, function()
 		require(Gameplay:WaitForChild(name)).start()
 	end)

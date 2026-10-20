@@ -9,6 +9,8 @@
 -- PRESTIGE (owner, Oct 19: "if you get more than one of the same girl, make a button which makes them prestige that
 -- gives them cooler vfx"): a girl won again saves a spare copy; the green PRESTIGE button on her picture spends one
 -- and raises her to PRESTIGE 1/3, 2/3, 3/3 (shown top left of her picture). Rules: Shared/PrestigeRules.
+-- The Combine machine (Oct 20): a girl shows her best grade, in her picture (Shared/GirlGrade) and as a SILVER / GOLD /
+-- DIAMOND badge at the picture's bottom left (Shared/CombineRules.best; Config/Combine badge colours).
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Characters = require(Shared.Config.Characters)
@@ -22,6 +24,8 @@ local ModalManager = require(UI.ModalManager)
 local Motion = require(UI.Motion)
 local GirlPicture = require(UI.GirlPicture)
 local PrestigeRules = require(Shared.PrestigeRules)
+local CombineRules = require(Shared.CombineRules)
+local CombineConfig = require(Shared.Config.Combine)
 
 local C = Theme.Colors
 local F = Theme.Fonts
@@ -86,8 +90,9 @@ local function badgeText(c): string return if c.Rarity then string.upper(c.Rarit
 local function badgeColor(c): Color3 return if c.Rarity then (RARITY_COLOR[c.Rarity] or C.Slate) else tierColor(c.Tier) end
 
 -- A girl's picture: her still model in a ViewportFrame (UI/GirlPicture).
+local function gradeOf(c): string? return if c.Model and owned(c.Id) then CombineRules.best(State.data, c.Id) else nil end
 local function girlPicture(parent: Instance, c, isOwned: boolean, whole: boolean): ViewportFrame?
-	return GirlPicture.draw(parent, c.Model, isOwned, whole)
+	return GirlPicture.draw(parent, c.Model, isOwned, whole, if isOwned then gradeOf(c) else nil)
 end
 
 -- The filtered, sorted list for the current view (search is case-insensitive and plain text, not a pattern).
@@ -173,6 +178,14 @@ local function picture(parent: Instance, c, isOwned: boolean, w: number, h: numb
 	local right = math.round(info.BadgeR * scale)
 	local maxW = w - right - math.round((info.Star.X + 30) * scale) -- (clear of the favourite star, top left)
 	badge(holder, c, UDim2.new(1, -right, 0, 0), maxW, math.round(info.BadgeH * scale), math.round(13 * scale), 3)
+	local grade = if isOwned then gradeOf(c) else nil
+	if grade and CombineRules.label(grade) ~= "" then -- (the Combine machine's grade, bottom left)
+		Kit.badge({
+			Name = "GradeBadge", Text = CombineRules.label(grade), Color = CombineConfig.Grades[grade].Badge, TextColor = C.Frame,
+			Height = math.round(18 * scale), TextSize = math.round(12 * scale), MinTextSize = 8, MaxWidth = w - 8,
+			AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, math.round(4 * scale), 1, -math.round(4 * scale)), ZIndex = 3, Parent = holder,
+		})
+	end
 	return holder, info
 end
 
@@ -197,12 +210,14 @@ local function card(parent: Instance, c, x: number, y: number): Card
 	local statusText = Kit.text({ Name = "Text", Text = "", FontFace = F.Body, TextSize = 15, TextColor3 = COL.Status, AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.fromOffset(0, 20), TextWrapped = false, LayoutOrder = 2, Parent = status })
 	local favBtn = new("TextButton", { Name = "Favourite", Text = "", BackgroundTransparency = 1, Size = UDim2.fromOffset(32, 32), ZIndex = 6, Parent = btn })
 	local star: ImageLabel? = nil
-	local shown = { owned = nil :: boolean?, fav = nil :: boolean?, eq = nil :: boolean? }
+	local shown = { owned = nil :: boolean?, fav = nil :: boolean?, eq = nil :: boolean?, grade = nil :: string? }
 	local info
 
 	local function refresh()
 		local isOwned, isFav, isEq = owned(c.Id), favourite(c.Id), equipped(c.Id)
-		if isOwned ~= shown.owned then
+		local grade = gradeOf(c)
+		if isOwned ~= shown.owned or grade ~= shown.grade then
+			shown.grade = grade
 			for _, ch in body:GetChildren() do ch:Destroy() end
 			local _, i = picture(body, c, isOwned, CW, ART_H, 1, { top = true, bottom = false })
 			info = i
@@ -343,12 +358,16 @@ function Index.build(parent: Instance)
 			prestigeBtn.Instance.Visible = (PrestigeRules.can(State.data, c.Id))
 		end
 		-- picture: the whole character (or the locked silhouette); a character with no big picture shows its card
-		local key = c.Id .. (isOwned and "+" or "-")
+		local key = c.Id .. (isOwned and "+" or "-") .. (gradeOf(c) or "")
 		if key ~= shownPreview then
 			shownPreview = key
 			for _, ch in previewArt:GetChildren() do if ch:IsA("GuiObject") then ch:Destroy() end end
 			local full = if c.Model then nil elseif isOwned then FULL_ART[c.Id] else "CharLockedFull"
 			local girl = c.Model and new("Frame", { Name = "Girl", Size = UDim2.fromOffset(216, 238), BackgroundTransparency = 1, Parent = previewArt })
+			local grade = gradeOf(c)
+			if girl and grade and CombineRules.label(grade) ~= "" then -- (her Combine grade, bottom left of her picture)
+				Kit.badge({ Name = "GradeBadge", Text = CombineRules.label(grade), Color = CombineConfig.Grades[grade].Badge, TextColor = C.Frame, Height = 22, TextSize = 14, MinTextSize = 9, MaxWidth = 120, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 6, 1, -6), ZIndex = 3, Parent = girl })
+			end
 			if girl and girlPicture(girl, c, isOwned, true) then
 				-- her rarity glows up from the floor behind her
 				local glow = new("Frame", { Name = "Glow", ZIndex = 0, Size = UDim2.fromScale(1, 1), BackgroundColor3 = badgeColor(c), BorderSizePixel = 0, Parent = girl }, { Kit.corner(3) })

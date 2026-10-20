@@ -70,6 +70,7 @@ local env = {
 for _, k in { "CFrame", "Vector3", "Vector2", "Color3", "UDim", "UDim2", "Enum", "NumberRange", "NumberSequence", "ColorSequence", "Ray" } do
 	env[k] = roblox[k]
 end
+Env.globals = env -- (what every loaded module sees: a scene may swap one before loading, e.g. a fixed CFrame.lookAt)
 
 function load(file, scriptNode)
 	if cache[file] ~= nil then return cache[file] end

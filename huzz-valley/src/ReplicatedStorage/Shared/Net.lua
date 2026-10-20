@@ -24,6 +24,9 @@
 --                                  (Gameplay/HeadAim); HuzzServer/HeadLookService puts it on your character (HuzzLook)
 --   Place          RemoteEvent     server -> client: (character, CFrame) move your own body there (HuzzServer/PlaceService,
 --                                  Gameplay/PlaceSelf: the owner of a body moves it, so every screen agrees)
+--   Combine        RemoteEvent     server -> client: (userId, girlKey, fromGrade, toGrade, startAt) someone merged two
+--                                  girls at the Combine machine: every screen plays it there (Gameplay/CombineMachine).
+--                                  The merge itself is the Action "Combine" (HuzzServer/CombineService)
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -50,6 +53,7 @@ local SPEC = {
 	KnifeView = "RemoteFunction",
 	HeadLook = "RemoteEvent",
 	Place = "RemoteEvent",
+	Combine = "RemoteEvent",
 }
 
 local folder: Folder

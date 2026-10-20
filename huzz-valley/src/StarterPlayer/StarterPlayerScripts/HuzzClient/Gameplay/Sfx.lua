@@ -53,6 +53,8 @@ local LEVEL = {
 	-- the bed and the tail stay well under the hit and the sting, nothing jumps out)
 	secret_riser = { 0.45, 0 }, secret_shimmer = { 0.18, 0 }, secret_impact = { 0.55, 0 },
 	secret_sparkle = { 0.3, 0 }, secret_sting = { 0.5, 0 }, secret_land = { 0.5, 0 },
+	-- the Combine machine's merge (Gameplay/CombineMachine; others' merges play from the machine)
+	combine_charge = { 0.45, 0 }, combine_merge = { 0.55, 0 }, combine_reveal = { 0.5, 0 },
 }
 
 -- Sounds longer than 4 s (a stuck sound is cleared after this many seconds, or 4).
@@ -98,6 +100,10 @@ local FALLBACK = {
 	crate_open = { "rbxasset://sounds/action_jump_land.mp3", 1, 0.6 },
 	crate_reveal = { PING, 0.6, 0.9 },
 	crate_reveal_big = { PING, 0.7, 0.8 },
+	-- the Combine machine: the burst borrows the Secret cutscene's licensed "Magic Burst 2" (Config/SoundIds
+	-- secret_impact) and the reveal a soft low ping until ours are uploaded; the charge stays silent
+	combine_merge = { "rbxassetid://9116384799", 0.6, 1 },
+	combine_reveal = { PING, 0.4, 0.9 },
 }
 
 -- Button and menu sounds go through the Interface group (Settings > Audio > Button Sounds), the rest through Effects.

@@ -65,6 +65,10 @@ core `CLAUDE.md` section 6.
   rising whoosh), `crate_reveal` (a blade ring over a soft chord) and `crate_reveal_big` (Epic and up: a longer ring
   with a low thump under it). Stand-ins
   until uploaded: Roblox's landing thud, click and ping (`Sfx` FALLBACK); the rise plays nothing.
+- Oct 20 Combine machine, made the same way (owner: "make nice animations with vfx, gfx, sfx"), timed to
+  `Shared/CombineMotion`: `combine_charge` (2 s: a hum and swirl rising with a little harp climb), `combine_merge` (a
+  soft round boom and a bell chord), `combine_reveal` (a chime run and a warm chord). Stand-ins until uploaded: the
+  burst borrows the licensed `secret_impact`, the reveal a soft low ping ([combine.md](combine.md)).
 - **The heartbeat** (`Gameplay/Heartbeat`, one play per beat, louder when a catcher is closer): a licensed pick only,
   not made here (the batch brief, after the owner's "don't create random sound by yourself"). Roblox's library showed
   no Pro Sound Effects / APM heartbeat from the cloud (only community uploads), so `SoundIds.heartbeat` is "" and the

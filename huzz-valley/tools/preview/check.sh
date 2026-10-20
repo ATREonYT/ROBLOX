@@ -4,7 +4,7 @@
 # where the scripts build the whole UI themselves.
 cd "$(dirname "$0")" || exit 1
 LOG=$(mktemp)
-for f in check.luau check_index_tiers.luau check_dances_progression.luau check_girl_index.luau check_girl_fx.luau check_oct17.luau check_round_hud.luau check_countdown.luau check_lobby_boards.luau check_new_lobby.luau check_admin.luau check_crates.luau check_crate3d.luau check_pictures.luau check_oct19.luau check_halloween.luau check_companions.luau check_bughunt.luau smoke_picture_memory.luau smoke_live_dance.luau check_filters.luau smoke_knife_backup.luau; do
+for f in check.luau check_index_tiers.luau check_dances_progression.luau check_girl_index.luau check_girl_fx.luau check_oct17.luau check_round_hud.luau check_countdown.luau check_lobby_boards.luau check_new_lobby.luau check_admin.luau check_crates.luau check_crate3d.luau check_pictures.luau check_oct19.luau check_halloween.luau check_companions.luau check_bughunt.luau smoke_picture_memory.luau smoke_live_dance.luau check_filters.luau smoke_knife_backup.luau check_combine.luau; do
 	"${LUNE:-lune}" run harness.luau ../../src - "$(cat "$f")" setup_ui.luau | grep -E "FAIL|checks:|ok, [0-9]+ failed|snippet error" | tee -a "$LOG"
 done
 HUZZ_FRESH=1 "${LUNE:-lune}" run harness.luau ../../src - "$(cat check.luau)" setup_ui.luau | grep -E "FAIL|checks:" | sed 's/^checks:/built from nothing:/' | tee -a "$LOG"

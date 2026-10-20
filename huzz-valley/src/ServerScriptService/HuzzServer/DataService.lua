@@ -9,6 +9,7 @@ local Settings = require(game:GetService("ReplicatedStorage").Shared.Config.Sett
 local Net = require(game:GetService("ReplicatedStorage").Shared.Net)
 local Characters = require(game:GetService("ReplicatedStorage").Shared.Config.Characters)
 local Dances = require(game:GetService("ReplicatedStorage").Shared.Config.Dances)
+local CombineRules = require(game:GetService("ReplicatedStorage").Shared.CombineRules)
 
 local DataService = {}
 
@@ -25,7 +26,10 @@ DataService.Template = {
 	Receipts = {}, -- recent developer-product PurchaseIds, so a receipt is never granted twice
 	Characters = {}, -- [id] = os.time() when acquired
 	Equipped = "", -- equipped companion id ("" = none)
-	Dupes = {}, -- [id] = spare copies of a girl won again (Shared/PrestigeRules; PRESTIGE spends them)
+	Copies = {}, -- [id] = { Normal = n, Silver = n, Gold = n, Diamond = n }: her copies by grade (Shared/CombineRules;
+	-- the Combine machine merges two of a grade into one a grade up, PRESTIGE spends a spare Normal one). Old saves'
+	-- Dupes (spare copies) are moved in here on load (CombineRules.migrate).
+	Combines = 0, -- merges made (the Combine machine waits for the save holding this before showing the result)
 	Prestige = {}, -- [id] = her prestige level 0..3 (cooler effects)
 	FriendReward = false, -- the friend knife (or its coins) was given (Shared/FriendRules)
 	FavChars = {}, -- [id] = true
@@ -84,7 +88,11 @@ function DataService.snapshot(player: Player)
 		FreeSpinAt = d.FreeSpinAt or 0,
 		SpinPity = d.SpinPity or 0,
 		Boosts = table.clone(d.Boosts or {}),
-		Dupes = table.clone(d.Dupes or {}),
+		Copies = (function()
+			local c = {}
+			for id, byGrade in (d.Copies or {}) do c[id] = table.clone(byGrade) end
+			return c
+		end)(),
 		Prestige = table.clone(d.Prestige or {}),
 	}
 end
@@ -127,6 +135,24 @@ function DataService.update(player: Player, fn: (any) -> ())
 	push(player)
 	if DataService.onChanged then task.spawn(DataService.onChanged, player) end
 	return true
+end
+
+-- Saves now and waits (up to `timeout` seconds) until the stored save passes check(savedData): for answers that must
+-- only show once they're safe (the Combine machine's result). True when it did.
+function DataService.saveAndWait(player: Player, check: (any) -> boolean, timeout: number?): boolean
+	local profile = profiles[player]
+	if not profile then return false end
+	local function done()
+		local d = profile.LastSavedData
+		return type(d) == "table" and check(d) == true
+	end
+	if done() then return true end
+	pcall(function() profile:Save() end)
+	local deadline = os.clock() + (timeout or 10)
+	while not done() and profile:IsActive() and os.clock() < deadline do
+		task.wait(0.25) -- (polled, so the deadline holds even when no further save happens)
+	end
+	return done()
 end
 
 function DataService.setExtra(player: Player, key: string, value: any)
@@ -181,6 +207,9 @@ local function onPlayerAdded(player: Player)
 		if c.Starter and not profile.Data.Characters[c.Id] then profile.Data.Characters[c.Id] = os.time() end
 		if c.Starter and profile.Data.Equipped == "" then profile.Data.Equipped = c.Id end
 	end
+	-- Girls are copies by grade since the Combine machine (Oct 20): old saves' girls and spare copies carry over as
+	-- Normal copies (Shared/CombineRules.migrate; safe on every load).
+	CombineRules.migrate(profile.Data)
 	for _, d in Dances.List do
 		if d.Starter then profile.Data.Dances[d.Id] = true end
 	end

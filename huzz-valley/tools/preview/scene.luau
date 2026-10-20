@@ -32,7 +32,13 @@ DataService.update(player, function(d)
 		DailyRules.add(d.Daily, d1.Stat, math.max(1, d1.Target // 2), now)
 	end
 	-- DUPES="id=n,...", PRESTIGE="id=n,...": spare copies and prestige levels of girls (the Index's PRESTIGE)
-	for id, n in string.gmatch(cfg.DUPES or "", "([^,=]+)=(%d+)") do d.Dupes[id] = tonumber(n) end
+	for id, n in string.gmatch(cfg.DUPES or "", "([^,=]+)=(%d+)") do d.Copies[id] = { Normal = 1 + tonumber(n) } end
+	-- COPIES="id:Grade=n;...": her Combine copies by grade (the Combine window, the Index's grade badges)
+	for id, list in string.gmatch(cfg.COPIES or "", "([^:;]+):([^;]+)") do
+		d.Copies[id] = {}
+		d.Characters[id] = d.Characters[id] or os.time()
+		for g, n in string.gmatch(list, "(%a+)=(%d+)") do d.Copies[id][g] = tonumber(n) end
+	end
 	for id, n in string.gmatch(cfg.PRESTIGE or "", "([^,=]+)=(%d+)") do d.Prestige[id] = tonumber(n) end
 end)
 -- CRATEPITY=n: opens since the Starter Crate's Legendary (29 = the next open is one).

@@ -875,6 +875,42 @@ def secret_land():
     return finish(reverb(x, 0.22), d, lp=5000, fout=0.3)
 
 
+# ---------------- The Combine machine (owner, Oct 20 14:57: "make nice animations with vfx, gfx, sfx"). Timed to
+# Shared/CombineMotion: the charge plays from the start, the merge at the burst (2.0 s), the reveal just after.
+@sound("combine_charge", "Combine machine charging (2 s): a soft hum and airy swirl rising, with a little harp climbing to the burst.")
+def combine_charge():
+    d = 2.05
+    x = 0.4 * whoosh(d, 260, 2600, peak=0.95, octaves=1.0, seed=141, lp=4200)
+    hum = warm(glide(98, 196, d, 1.8), d, attack=0.3, decay=0.05, hold=d - 0.4, vib=0.006)
+    add(x, hum * (0.4 + 0.6 * tt(d) / d), 0, 0.45)
+    add(x, pad(["G3", "D4", "G4"], d, attack=1.2, decay=0.1, hold=0.5, detune=0.005), 0, 0.35)
+    for i, n in enumerate(["G4", "B4", "D5", "G5", "B5", "D6"]):
+        add(x, pluck(n, 0.35, decay=0.12, bright=0.5), 0.55 + i * 0.22, 0.18 + 0.03 * i)
+    return finish(reverb(x, 0.2), d, lp=6000, fout=0.03)
+
+
+@sound("combine_merge", "The two girls merge: a soft round boom with a bright bell chord (gentle, not harsh).")
+def combine_merge():
+    d = 1.3
+    x = thunk(150, 45, 0.5, decay=0.18)
+    add(x, 0.3 * whoosh(0.4, 2200, 400, peak=0.12, seed=142, lp=3800), 0, 1)
+    for n in ["G4", "B4", "D5", "G5"]:
+        add(x, ebell(n, 1.1, decay=0.45), 0.01, 0.26)
+    add(x, pad(["G3", "D4", "G4"], 1.1, attack=0.02, decay=0.6, hold=0.1), 0.0, 0.5)
+    return finish(reverb(x, 0.25, tail=0.4), d, lp=5500, drive=1.1, fout=0.35)
+
+
+@sound("combine_reveal", "Her new grade shows: a sparkly chime run up and a warm happy chord.")
+def combine_reveal():
+    d = 1.4
+    x = pad(["C4", "E4", "G4", "C5"], 1.2, attack=0.08, decay=0.6, hold=0.2)
+    x = 0.6 * x
+    for i, n in enumerate(["C6", "E6", "G6", "C7"]):
+        add(x, ebell(n, 0.6, decay=0.22), 0.05 + i * 0.07, 0.22)
+    twinkle(x, ["E7", "G6", "C7", "E7"], 0.4, gap=0.08, level=0.1)
+    return finish(reverb(x, 0.24, tail=0.4), d, lp=6500, fout=0.35)
+
+
 # ================================================================== output + checks
 def write_wav(path, x):
     pcm = np.clip(np.round(x * 32767), -32768, 32767).astype("<i2")

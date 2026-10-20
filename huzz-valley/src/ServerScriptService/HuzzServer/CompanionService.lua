@@ -4,12 +4,15 @@
 	  HuzzCompanion        her key in ReplicatedStorage.HuzzGirls ("G7"), or "" for none
 	  HuzzCompanionRarity  her rarity (her effects grow with it; Rare and up also light up YOU)
 	  HuzzCompanionPrestige  her prestige level 0..3 (Shared/PrestigeRules: her effects use a rarer tier's look)
+	  HuzzCompanionGrade     her best grade: Normal, Silver, Gold or Diamond (the Combine machine, Shared/CombineRules;
+	                         Shared/GirlGrade dresses her in it)
 	Refreshed whenever the save changes (DataService.onChanged) and once the girls are published.
 ]]
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local DataService = require(script.Parent.DataService)
+local CombineRules = require(ReplicatedStorage.Shared.CombineRules)
 
 local CompanionService = {}
 
@@ -32,6 +35,7 @@ function CompanionService.refresh(player)
 	player:SetAttribute("HuzzCompanion", if girl then girl.Name else "")
 	player:SetAttribute("HuzzCompanionRarity", if girl then girl:GetAttribute("Rarity") else "")
 	player:SetAttribute("HuzzCompanionPrestige", if girl then ((profile.Data.Prestige or {})[profile.Data.Equipped] or 0) else 0)
+	player:SetAttribute("HuzzCompanionGrade", if girl then (CombineRules.best(profile.Data, profile.Data.Equipped) or "Normal") else "Normal")
 end
 
 function CompanionService.start()

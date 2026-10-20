@@ -9,7 +9,7 @@
 	The "Admin" remote (client -> server: verb, key; server -> client: ok, message, verb, key), at most one request per
 	ActionService.MIN_INTERVAL (0.15 s) per player, like the UI's other actions:
 	  GiveKnife <knife key>   the knife goes into your knives and you wear it (saved, like a bought one)
-	  SpawnGirl <girl id>     she's added to your collection and becomes your companion: she appears behind you now
+	  SpawnGirl <girl id>     one more copy of her in your collection (twice = two to combine at the Combine machine), and she becomes your companion: she appears behind you now
 	  NextGirl  <girl id>     she's the next game's girl (GirlService.setNext: the roller stops on her)
 ]]
 local Players = game:GetService("Players")
@@ -18,6 +18,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local AdminRules = require(ReplicatedStorage.Shared.AdminRules)
 local CoinShop = require(ReplicatedStorage.Shared.Config.CoinShop)
+local CombineRules = require(ReplicatedStorage.Shared.CombineRules)
 local Net = require(ReplicatedStorage.Shared.Net)
 local DataService = require(script.Parent.DataService)
 local GirlService = require(script.Parent.GirlService)
@@ -60,8 +61,8 @@ function DO.SpawnGirl(player: Player, id: string): (boolean, string?)
 	local girl = GirlService.byId(id)
 	local done = false
 	DataService.update(player, function(d)
-		d.Characters = d.Characters or {}
-		d.Characters[id] = d.Characters[id] or os.time()
+		-- one more copy of her each time (so the owner can try the Combine machine: spawn her twice)
+		CombineRules.add(d, id, "Normal")
 		d.Equipped = id
 		done = true
 	end)

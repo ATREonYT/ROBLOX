@@ -118,6 +118,10 @@ do -- the owner's admin panel (give any knife, spawn any girl; owner only, HuzzS
 	local ok, err = pcall(function() require(HuzzServer.AdminService).start() end)
 	if not ok then warn("[Huzz] admin panel: " .. tostring(err)) end
 end
+do -- his Combine machine: its prompt and sign; the merge itself is ActionService "Combine" (HuzzServer/CombineService)
+	local ok, err = pcall(function() require(HuzzServer.CombineService).start() end)
+	if not ok then warn("[Huzz] combine machine: " .. tostring(err)) end
+end
 do -- his five lobby props on the round pads (Config/LobbyProps; each screen floats them and opens their menus)
 	local ok, err = pcall(function() require(HuzzServer.LobbyPropService).start() end)
 	if not ok then warn("[Huzz] lobby props: " .. tostring(err)) end

@@ -59,3 +59,6 @@ the Secret cutscene plays Roblox's licensed library by ID. This script never ove
 | `revive.ogg` | 1.05 | 0:42.9 | Gentle rising swell into a warm chord and kalimba run when someone gets back up. |
 | `aura_pickup.ogg` | 0.80 | 0:44.4 | Satisfying thunk plus a bell and sparkle run for grabbing Aura. |
 | `speed_wind.ogg` | 2.00 | 0:45.7 | Soft wind bed for running fast (2 s, loops seamlessly; play it with Sfx.loop). |
+| `combine_charge.ogg` | 2.05 | 0:50.1 | Combine machine charging (2 s): a soft hum and airy swirl rising, with a little harp climbing to the burst. |
+| `combine_merge.ogg` | 1.30 | 0:52.6 | The two girls merge: a soft round boom with a bright bell chord (gentle, not harsh). |
+| `combine_reveal.ogg` | 1.40 | 0:54.4 | Her new grade shows: a sparkly chime run up and a warm happy chord. |

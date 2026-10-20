@@ -16,6 +16,8 @@
 	  - The big girl over the map wears her aura at 3x ("Showcase", tag HuzzShowcase).
 	  - The round's girl, carried or following a catcher, glows with her "Companion" look (no light pool on the
 	    floor under her while she's carried).
+	  - Her Combine grade (the player's HuzzCompanionGrade: Silver, Gold, Diamond, CompanionService) dresses her in it
+	    with its small effect (Shared/GirlGrade); a new grade rebuilds her with the usual soft puff.
 	  - Your girl never pops in or out: a soft puff of sparkles in her colours covers it when she steps in (the
 	    lobby, safe across) or steps aside (a round starts, you change girls).
 	Everyone's are drawn by every client (Gameplay/AuraFX), only near the camera; other players' are drawn
@@ -33,6 +35,7 @@ function M.start()
 	local Shared = ReplicatedStorage:WaitForChild("Shared")
 	local AuraLook = require(Shared.AuraLook)
 	local PrestigeRules = require(Shared.PrestigeRules)
+	local GirlGrade = require(Shared.GirlGrade)
 	local Looks = require(Shared.Config.GirlLooks)
 	local Round = require(Shared.Config.Round)
 	local FollowMotion = require(Shared.FollowMotion)
@@ -158,7 +161,7 @@ function M.start()
 	--[[ A small copy of her that walks: her root part stays anchored (moved by Shared/FollowMotion), every
 		other part hangs off it on its joints, unanchored, so the Motor6D poses (Shared/GirlMotion) move her
 		legs and arms (as GirlService.makeCopy + CarryAnimator do for the girl who follows a catcher). ]]
-	local function makeCompanion(key, rarity, lite, seed)
+	local function makeCompanion(key, rarity, lite, seed, grade)
 		local girls = ReplicatedStorage:FindFirstChild("HuzzGirls")
 		local source = girls and girls:FindFirstChild(key)
 		if not (source and source:IsA("Model")) then
@@ -232,6 +235,7 @@ function M.start()
 			humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
 			humanoid.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff
 		end
+		pcall(GirlGrade.apply, model, grade, { fx = true, lite = lite }) -- (her Combine grade: Silver, Gold, Diamond)
 		model.Parent = folder
 		local look = lookOf(source:GetAttribute("Id"), rarity)
 		local spec = AuraLook.build(look, rarity, "Companion")
@@ -300,7 +304,9 @@ function M.start()
 		-- made inside 150 studs, removed past 190 (no rebuilding over and over at the edge)
 		local far = if root then distance(root.Position) else math.huge
 		local allowed = alive and source ~= nil and (not inRound or cheering)
-		if s.companion and (not allowed or s.key ~= key .. "#" .. rarity or far > 190) then
+		local grade = p:GetAttribute("HuzzCompanionGrade")
+		grade = if type(grade) == "string" then grade else "Normal"
+		if s.companion and (not allowed or s.key ~= key .. "#" .. rarity .. "#" .. grade or far > 190) then
 			local m = s.companion.model
 			if far <= 120 and m.Parent then
 				Burst.sparks(m:GetPivot().Position, s.companion.colors, 16,
@@ -308,10 +314,10 @@ function M.start()
 			end
 			clearCompanion(s)
 		end
-		s.key = key .. "#" .. rarity
+		s.key = key .. "#" .. rarity .. "#" .. grade
 		-- (a girl that can't be built here is tried again every 5 s, not every frame: a clone a frame lagged)
 		if allowed and not s.companion and far < 150 and not (s.failed == s.key and clock < (s.retryAt or 0)) then
-			local okMake, made = pcall(makeCompanion, key, rarity, lite, p.UserId)
+			local okMake, made = pcall(makeCompanion, key, rarity, lite, p.UserId, grade)
 			if okMake then
 				s.companion = made
 			else

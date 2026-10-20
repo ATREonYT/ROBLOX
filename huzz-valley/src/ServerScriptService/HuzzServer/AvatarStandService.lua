@@ -119,6 +119,8 @@ end
 local function onPads(): { Instance }
 	local out = {}
 	local holder
+	-- (his Combine machine comes over from a spare copy first, so the row steps round it: Shared/LobbyLayout.bringKept)
+	pcall(LobbyLayout.bringKept, api, Workspace)
 	for _, floor in { LobbyLayout.main(Workspace) } do -- (the one lobby: MapService puts the other copies away)
 		for _, spot in LobbyLayout.standSpots(api, Workspace, floor) do
 			if not holder then

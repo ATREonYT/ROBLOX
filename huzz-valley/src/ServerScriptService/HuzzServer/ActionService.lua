@@ -1,5 +1,5 @@
 -- Handles the player's actions from the UI (the "Action" remote): equip / favourite companions, favourite dances,
--- claim rewards and quests. Every action is checked here against the player's saved data. Also the Dance remote
+-- claim rewards and quests, combine two girls (the Combine machine). Every action is checked here against the player's saved data. Also the Dance remote
 -- (HuzzDance / HuzzDanceAt on your character), and shareDance: an unpublished dance's moves for every screen.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -42,6 +42,12 @@ function VERBS.Prestige(player, id)
 		level, why = PrestigeRules.apply(data, id)
 	end)
 	return level ~= nil, if level then level else why
+end
+
+-- The Combine machine (Shared/CombineRules): two of the same girl at the same grade make one a grade up. Every check
+-- (near the machine, not in a round, one at a time) and the save are in HuzzServer/CombineService.
+function VERBS.Combine(player, id, grade)
+	return require(script.Parent.CombineService).combine(player, id, grade)
 end
 
 function VERBS.Unequip(player)

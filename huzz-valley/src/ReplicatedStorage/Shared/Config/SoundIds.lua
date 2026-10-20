@@ -69,6 +69,11 @@ return {
 	invisible = "", -- turning invisible
 	glitch = "", -- the Glitchy blink
 	decoy = "", -- the Body Double splitting off
+	-- Oct 20 Combine machine (Gameplay/CombineMachine, timed to Shared/CombineMotion): made by tools/sfx/make_sfx.py
+	-- (assets/sfx/<name>.ogg); "" until the owner uploads them.
+	combine_charge = "", -- the machine charging while the two girls circle (2 s)
+	combine_merge = "", -- the burst as they become one
+	combine_reveal = "", -- her new grade showing
 
 	-- The Secret cutscene, keyed to its beats in Config/SecretSounds (Build, Burst, Reveal, End).
 	-- "Light Cone Suck Synth And Reverse Cymbal Build, Disappear" (Pro Sound Effects, 5.7 s, Energy): the build-up

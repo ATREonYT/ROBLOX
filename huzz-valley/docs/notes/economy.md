@@ -74,8 +74,10 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
   Spec `tests/FriendRules.spec`.
 
 ## Prestige (`Shared/PrestigeRules`, ActionService `Prestige`, Screens/Index)
-- Winning a girl you already own still pays her duplicate coins (nothing taken away) and now also saves a spare copy
-  (`Dupes[id]`). PRESTIGE on her picture in the Index spends one and raises `Prestige[id]` to 1/3, 2/3, 3/3.
+- Winning a girl you already own still pays her duplicate coins (nothing taken away) and also saves a copy: since the
+  Combine machine (Oct 20) every girl is copies by grade, `Copies[id]` ([combine.md](combine.md); old saves' `Dupes`
+  moved in). PRESTIGE on her picture in the Index spends a spare Normal copy (never her last) and raises
+  `Prestige[id]` to 1/3, 2/3, 3/3.
 - Cooler effects: her effects on her and on you use one rarer tier per level (Common 1 = Uncommon's look ... capped at
   Mythic; Secret keeps its own). `CompanionService` puts `HuzzCompanionPrestige` on the player; `Gameplay/Auras`
   rebuilds her look when it changes. Spec `tests/PrestigeRules.spec`.

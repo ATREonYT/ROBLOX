@@ -21,6 +21,7 @@ local CoinShop = require(ReplicatedStorage.Shared.Config.CoinShop)
 local KnifeLook = require(Shared.KnifeLook)
 local Carry = require(Shared.Config.Carry)
 local Rules = require(Shared.RoundRules)
+local CombineRules = require(Shared.CombineRules)
 local Net = require(Shared.Net)
 local MapService = require(script.Parent.MapService)
 local GirlService = require(script.Parent.GirlService)
@@ -1035,14 +1036,14 @@ local function finishGame()
 	if winner then
 		-- Into the winner's collection: the Index shows every id in Characters.
 		DataService.update(winner, function(d)
-			d.Characters[girl.id] = d.Characters[girl.id] or os.time()
+			-- a copy of her (Shared/CombineRules: a Normal copy; two of the same grade combine at the machine, and
+			-- PRESTIGE can spend a spare one)
+			CombineRules.add(d, girl.id, "Normal")
 			-- your first girl walks with you at once, so everyone sees her (owner, Oct 19: "make the girls be seen on
 			-- everyones screen"; before, a won girl waited in the Index until you equipped her)
 			if (d.Equipped or "") == "" then d.Equipped = girl.id end
 			if dupeCoins then
 				d.Coins = (d.Coins or 0) + dupeCoins
-				d.Dupes = d.Dupes or {}
-				d.Dupes[girl.id] = (d.Dupes[girl.id] or 0) + 1 -- (a spare copy for PRESTIGE: Shared/PrestigeRules)
 			end
 		end)
 		-- after the win she stands on the floor beside her winner, every girl, whoever wins (owner, Oct 20 15:13: "make

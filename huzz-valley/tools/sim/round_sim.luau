@@ -349,6 +349,7 @@ local function simulate(opts)
 	local GirlRoll = loadShared("ReplicatedStorage/Shared/GirlRoll.lua")
 	local SecretReveal = loadShared("ReplicatedStorage/Shared/SecretReveal.lua")
 	local TouchHit = loadShared("ReplicatedStorage/Shared/TouchHit.lua")
+	local CombineRules = loadShared("ReplicatedStorage/Shared/CombineRules.lua") -- (the winner gets a copy of her)
 
 	-- Fake map: ZoneA on the left, ZoneB on the right, Middle between, the lobby far away.
 	local function box(x, z, sx, sz)
@@ -655,7 +656,7 @@ local function simulate(opts)
 		ProgressService = { gameXP = function(_, won, t) return 40 + (if won then 40 else 0), nil end,
 			addStat = function(p, stat, n) DataService.update(p, function(d) d.Stats[stat] = (d.Stats[stat] or 0) + n end) end },
 	}
-	local Shared = { Config = { Round = Config, Carry = Carry, Powers = Powers }, RoundRules = RoundRules, Net = Net, GirlRoll = GirlRoll, SecretReveal = SecretReveal, TouchHit = TouchHit,
+	local Shared = { Config = { Round = Config, Carry = Carry, Powers = Powers }, RoundRules = RoundRules, Net = Net, GirlRoll = GirlRoll, SecretReveal = SecretReveal, TouchHit = TouchHit, CombineRules = CombineRules,
 		KnifeLook = { pick = function() return nil end }, -- (which knife you wear: the default one in the sim)
 		BearTrap = { build = function() return new("Model") end, pose = function() end, arm = function() end } } -- (the trap's parts: only a look)
 	local sharedNode = setmetatable({}, { __index = function(_, k)

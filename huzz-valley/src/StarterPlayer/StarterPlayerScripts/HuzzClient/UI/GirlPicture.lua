@@ -1,7 +1,10 @@
 -- An anime girl's picture: her still model (ReplicatedStorage.HuzzGirls, from GirlService.publish) in a
--- ViewportFrame. Used by the Index and the Tiers page. ViewportFrames don't draw inside a CanvasGroup, so the
+-- ViewportFrame. Used by the Index, the Tiers page and the Combine window. grade (optional): her Combine grade
+-- (Silver, Gold, Diamond: Shared/GirlGrade dresses the picture's copy; no effects in a picture). ViewportFrames don't draw inside a CanvasGroup, so the
 -- windows that use this are Flat (Kit.window).
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local GirlGrade = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("GirlGrade"))
 
 local GirlPicture = {}
 
@@ -13,7 +16,7 @@ end
 
 -- key: her model's name in HuzzGirls. whole = head to toe (a big preview), else head and shoulders (a card).
 -- Girls you don't own are drawn unlit, as a dark silhouette. Returns nil when her model isn't there.
-function GirlPicture.draw(parent: Instance, key: string?, isOwned: boolean, whole: boolean): ViewportFrame?
+function GirlPicture.draw(parent: Instance, key: string?, isOwned: boolean, whole: boolean, grade: string?): ViewportFrame?
 	local f = GirlPicture.folder()
 	local source = f and key and f:FindFirstChild(key)
 	if not (source and source:IsA("Model")) then return nil end
@@ -28,6 +31,7 @@ function GirlPicture.draw(parent: Instance, key: string?, isOwned: boolean, whol
 		vp.Ambient, vp.LightColor, vp.ImageColor3 = Color3.new(0, 0, 0), Color3.new(0, 0, 0), Color3.fromHex("0B1426")
 	end
 	local model = source:Clone()
+	if isOwned and grade then pcall(GirlGrade.apply, model, grade) end
 	model.Parent = vp
 	local cam = Instance.new("Camera")
 	cam.FieldOfView = 30

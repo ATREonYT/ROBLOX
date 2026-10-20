@@ -638,8 +638,13 @@ end
 	                      (in Workspace or a plain folder in it, e.g. his SpawnLocations in Maps > Spawn) whose middle
 	                      lies inside the copy's area (COPY_AREA, in the plaza's own frame: the plaza, the house and
 	                      hills behind it, the sides). Never a map, a player, something of ours or a huge part (Ocean).
+	                      A piece he means for the lobby itself (KEEP: his Combine machine, Oct 20, or anything with
+	                      the attribute HuzzKeep = true) isn't put away: it is listed in `keep` and moves into the
+	                      kept lobby, to the same place beside it (his machine stood beside the copy at (-230, -692),
+	                      so the game would otherwise have hidden it).
 	putAwaySpares(api, root, storage)
-	                      moves them to storage.HuzzSpareLobbies; returns the main floor and how many pieces moved.
+	                      moves them to storage.HuzzSpareLobbies and the KEEP pieces into the kept lobby; returns the
+	                      main floor, how many pieces moved away and how many came over.
 	spawnPad(api, root, floor)
 	                      where the lobby's spawn pad goes: open ground at the plaza's front, between his two groups of
 	                      round pads (the red carpet in his lobby): { centre (Vector3 on the floor), inward (Vector3,
@@ -647,6 +652,13 @@ end
 ]]
 LobbyLayout.COPY_AREA = { x0 = -225, x1 = 75, z = 145 } -- studs, in the plaza's frame (his copies: x -207..57, z +-125)
 LobbyLayout.SPARE_FOLDER = "HuzzSpareLobbies"
+LobbyLayout.KEEP = { Combine = true } -- (Workspace children by name: his Combine machine, Config/Combine.Folder)
+
+local function keeps(inst): boolean
+	if LobbyLayout.KEEP[inst.Name] then return true end
+	local ok, v = pcall(function() return inst:GetAttribute("HuzzKeep") end)
+	return ok and v == true
+end
 
 -- The middle of a piece (its parts' average position), or nil when it has none.
 local function middleOf(inst)
@@ -729,7 +741,7 @@ local function inCopy(floor: BasePart, p): boolean
 	return l.X >= A.x0 and l.X <= A.x1 and math.abs(l.Z) <= A.z
 end
 
-function LobbyLayout.spareItems(root, floors: { BasePart }, main: BasePart): { { floor: BasePart, items: { Instance } } }
+function LobbyLayout.spareItems(root, floors: { BasePart }, main: BasePart): { { floor: BasePart, items: { Instance }, keep: { Instance }? } }
 	local out, byFloor = {}, {}
 	for i, f in floors do
 		if f ~= main then
@@ -759,6 +771,15 @@ function LobbyLayout.spareItems(root, floors: { BasePart }, main: BasePart): { {
 	end
 	local function consider(inst)
 		if table.find(sps, inst) or ours(inst) or string.sub(inst.Name, 1, 4) == "Huzz" then return end
+		if keeps(inst) then -- (comes over to the kept lobby instead: putAwaySpares)
+			local p = middleOf(inst)
+			local i = p and nearestFloor(floors, p)
+			if i and i ~= mainIndex and byFloor[i] and inCopy(floors[i], p) then
+				byFloor[i].keep = byFloor[i].keep or {}
+				table.insert(byFloor[i].keep, inst)
+			end
+			return
+		end
 		if inst:IsA("Terrain") or inst:IsA("Camera") or inst:IsA("Player") then return end
 		if inst:IsA("Model") and inst:FindFirstChildOfClass("Humanoid") then return end
 		if inst:IsA("BasePart") and math.max(inst.Size.X, inst.Size.Z) > 600 then return end -- (his Ocean)
@@ -788,10 +809,40 @@ function LobbyLayout.spareItems(root, floors: { BasePart }, main: BasePart): { {
 	return out
 end
 
-function LobbyLayout.putAwaySpares(api, root, storage): (BasePart?, number)
+-- His pieces for the lobby itself (KEEP: the Combine machine) beside a spare copy move to the same place beside the
+-- kept lobby (every part by the same shift and turn; the model's pivot too where Roblox has one). Safe to call more
+-- than once (a moved piece is no longer by a spare copy): AvatarStandService calls it before it picks its row, so the
+-- stands step round the machine whichever server script runs first. Returns how many it moved.
+function LobbyLayout.bringKept(api, root): number
 	local floors = LobbyLayout.floors(root)
 	local main = LobbyLayout.main(root)
-	if not main or #floors <= 1 then return main, 0 end
+	if not main or #floors <= 1 then return 0 end
+	local kept = 0
+	for _, copy in LobbyLayout.spareItems(root, floors, main) do
+		local shift = main.CFrame * copy.floor.CFrame:Inverse()
+		for _, item in copy.keep or {} do
+			local parts = if item:IsA("BasePart") then { item } else {}
+			for _, d in item:GetDescendants() do
+				if d:IsA("BasePart") then table.insert(parts, d) end
+			end
+			for _, part in parts do part.CFrame = shift * part.CFrame end
+			local models = if item:IsA("Model") then { item } else {}
+			for _, d in item:GetDescendants() do
+				if d:IsA("Model") then table.insert(models, d) end
+			end
+			for _, m in models do pcall(function() m.WorldPivot = shift * m.WorldPivot end) end
+			pcall(function() item:SetAttribute("HuzzMovedFrom", copy.floor.CFrame.Position) end)
+			kept += 1
+		end
+	end
+	return kept
+end
+
+function LobbyLayout.putAwaySpares(api, root, storage): (BasePart?, number, number)
+	local floors = LobbyLayout.floors(root)
+	local main = LobbyLayout.main(root)
+	if not main or #floors <= 1 then return main, 0, 0 end
+	local kept = LobbyLayout.bringKept(api, root)
 	local holder = storage:FindFirstChild(LobbyLayout.SPARE_FOLDER) or api.Instance.new("Folder")
 	holder.Name = LobbyLayout.SPARE_FOLDER
 	holder.Parent = storage
@@ -807,7 +858,7 @@ function LobbyLayout.putAwaySpares(api, root, storage): (BasePart?, number)
 			moved += 1
 		end
 	end
-	return main, moved
+	return main, moved, kept
 end
 
 -- The plazas of the copies already put away (ServerStorage > HuzzSpareLobbies: the place build does it, so his

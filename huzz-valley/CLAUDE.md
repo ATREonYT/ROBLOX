@@ -227,6 +227,7 @@ fine). Owner quotes go in the topic's "Why" part. Keep this core about 20 KB and
     movement pack licence; sharp PNGs for the Oct 17 screens (today mockup crops, placeholders).
 - **Known gaps (ours):**
   - Not done yet (needs a screen): a dot on Menu when a quest can be claimed.
+  - Combine and Prestige both spend girl copies: ask him whether Combine replaces Prestige ([combine.md](docs/notes/combine.md)).
   - The friend knife is a placeholder (his Sakura Blade) until he names one ([economy.md](docs/notes/economy.md)).
   - A refunded pass doesn't take its knives back yet.
   - LIKE THE GAME! opens nothing; titles on the three-pad side sit close. WITCH'S BREW and SWEETS & TREATS open the
@@ -248,6 +249,7 @@ fine). Owner quotes go in the topic's "Why" part. Keep this core about 20 KB and
 | Movement and camera | [movement-and-camera.md](docs/notes/movement-and-camera.md) | sprint, huss, FOV, round camera, shot changes |
 | Animations and dances | [animations.md](docs/notes/animations.md) | the pack, walking, huss pose, girls' moves, carrying, dances |
 | Economy | [economy.md](docs/notes/economy.md) | coins, Aura stars, wheel, quests, cosmetics, crates, admin panel |
+| Combine machine | [combine.md](docs/notes/combine.md) | his machine's idle and merge, girl copies and grades (Silver, Gold, Diamond), the Combine window |
 | Secret cutscene | [secret-cutscene.md](docs/notes/secret-cutscene.md) | the Secret girl's 10 s reveal |
 | Sounds and music | [sounds.md](docs/notes/sounds.md) | licensed picks, button sounds, made sounds, music, audio settings |
 | UI | [ui.md](docs/notes/ui.md) | UI rules, text fit, living UI, round HUD, ability cards and dash bar, round screens |

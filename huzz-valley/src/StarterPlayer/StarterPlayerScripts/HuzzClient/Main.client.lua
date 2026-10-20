@@ -52,7 +52,7 @@ end)
 Report.mount(gui)
 Report.run("Window manager", ModalManager.mount, gui)
 Report.run("Toast", Toast.mount, gui)
-for _, name in { "LobbyHud", "MainMenu", "Shop", "Settings", "Index", "Tiers", "Dances", "Progression", "MapVote", "GirlRoll", "PowerBar", "HeroChoice", "HowToPlay", "DanceWheel", "NextMap", "SpinWheel", "CrateOpen", "DailyQuests", "Results", "Admin" } do
+for _, name in { "LobbyHud", "MainMenu", "Shop", "Settings", "Index", "Tiers", "Dances", "Progression", "MapVote", "GirlRoll", "PowerBar", "HeroChoice", "HowToPlay", "DanceWheel", "NextMap", "SpinWheel", "CrateOpen", "DailyQuests", "Results", "Admin", "Combine" } do
 	local module = Screens:FindFirstChild(name)
 	if module then Report.run(name, function() require(module).build(gui) end) end
 end
