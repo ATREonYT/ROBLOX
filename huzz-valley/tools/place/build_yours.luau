@@ -100,6 +100,29 @@ do
 	print("crates: " .. (if f then `his {#f:GetChildren()} crate sets in ReplicatedStorage > HuzzCrates` else "none in his place (the opening draws the plain crate)"))
 end
 
+-- His two knife imports (Workspace > "Gamepass knifes" and "Halloween knives": 735 of his meshes, loose, unanchored and
+-- solid, 90 to 130 studs under the lobby) only fell to the kill height and vanished in the first seconds of Play. The 53
+-- knives are set up from them offline (tools/knives/add_import_knives.luau, from HUSSANIME.rbxl), so the build keeps
+-- them out of the world: ServerStorage > HuzzKnifeImports, as they are.
+do
+	local ws, ss = theirs:GetService("Workspace"), theirs:GetService("ServerStorage")
+	local moved = {}
+	for _, name in { "Gamepass knifes", "Halloween knives" } do
+		local f = ws:FindFirstChild(name)
+		if f then
+			local holder = ss:FindFirstChild("HuzzKnifeImports")
+			if not holder then
+				holder = roblox.Instance.new("Folder")
+				holder.Name = "HuzzKnifeImports"
+				holder.Parent = ss
+			end
+			f.Parent = holder
+			table.insert(moved, name)
+		end
+	end
+	print("knife imports: " .. (if #moved > 0 then "moved to ServerStorage > HuzzKnifeImports: " .. table.concat(moved, ", ") else "none in Workspace"))
+end
+
 -- One lobby (owner, Oct 19: "make one lobby"): the copy with nothing pasted twice stays (Shared/LobbyLayout.main, or
 -- the floor he ticks MainLobby on); the other copies go whole to ServerStorage > HuzzSpareLobbies, so Studio's edit
 -- view shows the lobby the game uses. HuzzServer/MapService does the same at game start (his own Rojo place), and

@@ -215,9 +215,9 @@ fine). Owner quotes go in the topic's "Why" part. Keep this core about 20 KB and
   - Crate meshes: his Output said some uploads were still "being generated" and asset 120038515596009 "not approved"
     (only `dojo_set > Plain_Tanto > handle_3`'s texture uses it): check them in Studio; a `.glb` of the crates would let
     the offline pictures show the real look.
-  - The black block by his character: hidden on every screen since Oct 20 (`Gameplay/KnifeGuard`; cause not proven,
-    [knives.md](docs/notes/knives.md), "Honest gaps"). If Output shows a `[HuzzKnife] hid ...` line, send it; only if
-    a block still shows, run `tools/studio/find-floating-parts.lua` in Play (`docs/STUDIO-STEPS.md` Part 4).
+  - The black block by his character: the game removes it by itself since Oct 20 (`Gameplay/FollowGuard` hides any
+    part held to or following a body from outside it, `Gameplay/KnifeGuard` a stray knife piece; cause not proven,
+    [knives.md](docs/notes/knives.md), "Honest gaps"). He sends any `[HuzzBlock]` or `[HuzzKnife]` line from Output.
   - Upload sounds, pictures and animations (`Config/SoundIds`, `Config/ImageIds`; animations are optional since
     Oct 20 15:13, the live game draws dances by hand: `PublishAnimations`, `docs/STUDIO-STEPS.md` Part 5).
   - An export of their spin wheel model (match its colours); a Speed Boost picture and 256 px copies of his power

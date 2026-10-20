@@ -464,9 +464,20 @@ in hand and on a stand), `docs/previews/knife-vfx-vs-hv.jpg` (MELON5MAN worn nex
   avatar animations or a short R6 arm can still bring a long tip nearer the floor.
 - **The owner's "floating black block"** (Oct 19 evening `design/owner-oct19/2010-floating-block.png`; Oct 20 14:07
   "please remove that black thing that is attacthed to my character": `design/owner-oct20/1407-black-block-character.png`
-  is the same file byte for byte, `1407-black-block-ground.png` is new): the cause is still not proven, so since Oct 20
-  it is made impossible instead. Each screen's `Gameplay/KnifeGuard` hides a worn knife whose grip is more than
-  `KnifeLook.STRAY` (1.5) studs from where its weld holds it, or outside the body part it hangs from. It also hides a
+  is the same file byte for byte, `1407-black-block-ground.png` is new): the cause is still not proven, so **the game now
+  removes it by itself** and names it. Since Oct 20 (evening) each screen's `Gameplay/FollowGuard` checks every
+  player's character once a second: (a) a visible part held to the body (welds, motors, constraints, followed part by
+  part, since his avatar's limbs are each their own assembly) that is outside the character model; (b) a small part
+  (3 studs or less) outside any character that stays within 4 studs of the body while it walks 12 studs (for 2 s or
+  more). Each one is hidden on that screen (LocalTransparencyModifier, else Transparency) with one
+  `[HuzzBlock] hid <path>: <why>; <class>, size, colour, anchored, shadow; held by ...; in <ancestry>` line in
+  Output. Never touched: anything in a model with a Humanoid (bodies, girls, bots, stand copies), seats, anchored
+  parts, invisible parts, parts tagged `HuzzOnBody`, and our own things that ride along (`FollowGuard.ALLOW`: worn
+  and held knives, carried and follower girls, companions, the Shield bubble, knife motes, the crown, bursts and
+  ghosts, the Body Double, aura effects, stands). `tests/FollowGuard.spec` fakes both paths and all of these. His two
+  loose knife imports (`Workspace > Gamepass knifes / Halloween knives`) are moved into `ServerStorage >
+  HuzzKnifeImports` by the place build. Before FollowGuard (and still), each screen's `Gameplay/KnifeGuard` hides a
+  worn knife whose grip is more than `KnifeLook.STRAY` (1.5) studs from where its weld holds it, or outside the body part it hangs from. It also hides a
   piece that is 1.5 studs farther from the grip than it was made (the server's `Reach` attribute). It prints one
   `[HuzzKnife] hid ...` line naming the part, and the part shows again once it is back in place. Not "every part
   within 1 stud of the body": a sickle's or shuriken's blade rightly reaches 2.2 studs out, and a shuriken's grip sits
@@ -493,7 +504,7 @@ in hand and on a stand), `docs/previews/knife-vfx-vs-hv.jpg` (MELON5MAN worn nex
     first hat. Fixed: it reads a constraint's two Attachments, each line is tried on its own, and each line now says
     `shadow OFF` for the game's parts (`tests/FindFloating.spec`, which fails on the old finder). One run in Play
     (`docs/STUDIO-STEPS.md` Part 4) names the block, its size and what holds it (now the last resort: the
-    `[HuzzKnife] hid` line names it too).
+    `[HuzzBlock] hid` and `[HuzzKnife] hid` lines name it too).
   - Second pass (Oct 20) checked his place's knives part by part. A fresh Mock save wears our `build()` dagger, because
     his `HuzzKnives` has no `HuzzKnife`. His 30 models are 680 MeshParts with a Handle at Transparency 1 and no plain
     visible part, so a mesh that fails to load leaves nothing, not a box. When the EditableMesh dress fails on a pass
