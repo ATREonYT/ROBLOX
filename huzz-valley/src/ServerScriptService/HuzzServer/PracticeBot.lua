@@ -19,12 +19,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage:WaitForChild("Shared").Config.Round)
--- (the halt after a stab: Shared/Halt; the offline sim may not have these, then the bot just stops)
-local okRun, RunConfig = pcall(require, ReplicatedStorage.Shared.Config.Run)
-local okMotion, RunMotion = pcall(require, ReplicatedStorage.Shared.RunMotion)
-local okHalt, Halt = pcall(require, ReplicatedStorage.Shared.Halt)
-local canHalt = okRun and okMotion and okHalt and type(RunConfig) == "table" and type(RunMotion) == "table"
-	and type(Halt) == "table" and RunMotion.haltFrom ~= nil and Halt.start ~= nil
 local KnifeService = require(script.Parent.KnifeService)
 local NameTags = require(script.Parent.NameTagService)
 
@@ -275,18 +269,9 @@ function PracticeBot.step(targets: { BasePart }, stab: (BasePart) -> boolean, fa
 	if best and bestD <= B.Reach * speed / B.Speed then -- (its reach grows and shrinks with its speed)
 		if stab(root) then
 			pauseUntil = now + B.Pause -- (a breather after each stab: kids get a chance to run)
-			-- it stops from a full run like everyone does: a short halt along the way it ran (Shared/Halt; owner,
-			-- Oct 20 07:55: "they move a little forward as a sort of "hault" like in the game Huss valley")
-			local v = root.AssemblyLinearVelocity
-			local flat = if typeof(v) == "Vector3" then Vector3.new(v.X, 0, v.Z) else Vector3.zero
+			-- (no halt here, on purpose: it would slide the bot ~2 studs on toward the kid it just stabbed, during
+			-- the breather; critic, Oct 20. Shared/Halt is for players letting go of a full run.)
 			setSpeed(false)
-			if canHalt and RunMotion.haltFrom(flat.Magnitude, speed * scale, RunConfig.StartSpeed) then
-				local bot = root
-				pcall(Halt.start, bot, flat, flat.Magnitude, function()
-					return not frozen and root == bot and bot.Parent ~= nil and humanoid ~= nil
-						and humanoid.FloorMaterial ~= Enum.Material.Air
-				end)
-			end
 			return
 		end
 	end

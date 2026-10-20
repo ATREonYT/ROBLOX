@@ -15,7 +15,7 @@ return {
 	-- (f1c7bb86, 41.19 to 41.47 s, docs/notes/movement-and-camera.md): ~2.5 studs over its last ~0.28 s (Ease 3 put
 	-- 65% of it in the first 30 fps frame: a jolt, not a slide). Pressing any
 	-- direction, a huss, a dive, being downed or frozen, or leaving the floor ends it. Shared/Halt (the push),
-	-- Gameplay/Sprint (you), PracticeBot (the bot's stop after a stab); the legs plant at once (LocomotionMix input.halt).
+	-- Gameplay/Sprint (you; never the Practice Bot); the legs brace at once (LocomotionMix input.halt).
 	Halt = { From = 0.9, Time = 0.25, Ease = 2 },
 	From = 14, -- below this speed: Roblox's own walk
 	Full = 20, -- from this speed on: the full run (runners go 24)
@@ -87,7 +87,15 @@ return {
 			-- the halt (Config/Run.Halt, owner Oct 20): the same plant, but the steps slow to a stop over Settle seconds
 			-- and the legs come together over Blend while the ground slides (Blend 0.05 with the steps frozen at once
 			-- reversed a swinging arm in one 30 fps frame: move_smooth_measure pop 93 degrees)
-			Halt = { Settle = 0.12, Blend = 0.08 } },
+			-- Brace: the halt's held pose (critic, Oct 20: ours stood up by +0.73 s and read as a plain stop). HV's
+			-- f1c7bb86 frame by frame (41.0 to 41.6 s): from ~41.23 s the runner skids in a wide braced stance, one leg
+			-- forward, knees bent, the body a little low and leaning back, held to ~41.45 s, upright and feet together
+			-- by ~41.5 s. Up over In seconds while the body slides, held, then eased back to the idle over Out once it
+			-- stops (half that when you run on). Seen from HV's camera (in front, above) the hips also turn a little
+			-- side-on, the leading leg's hip forward, which is what shows the wide stance from the front. Drop in studs;
+			-- Lean, Turn (+ to the left), the hips and knees in degrees (+ thigh forward, - knee folding); the left leg leads.
+			Halt = { Settle = 0.12, Blend = 0.08,
+				Brace = { In = 0.08, Out = 0.16, Drop = 0.45, Lean = 9, Turn = -30, FrontHip = 40, FrontKnee = -45, BackHip = -25, BackKnee = -30 } } },
 		-- The head without shift lock (owner, Oct 19: "make the head not move for the user when he runs, for example
 		-- when he presses D, the body turns right, but the head and camera stays the same"): Roblox turns the body to
 		-- the move; the head turns back toward where the camera looks, up to Max degrees (a neck's reach; HV's runner at

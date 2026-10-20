@@ -151,6 +151,14 @@ function M.run(fps: number)
 		local roll, pitch = Mix.lean(mix, DT, 0, quiet)
 		local pose = rootJoint.Transform
 		rootJoint.Transform = rootJoint.C0:Inverse() * Mix.leanCFrame(roll, pitch, 1 + HIP) * rootJoint.C0 * pose
+		-- the halt's braced stance (Gameplay/Locomotion, Run.Loco.Stop.Halt.Brace)
+		local brace = if Mix.brace and quiet == 0 then Mix.brace(mix) else 0
+		if brace > 1e-4 then
+			for part, joint in { LowerTorso = "Root", RightUpperLeg = "RightHip", RightLowerLeg = "RightKnee", LeftUpperLeg = "LeftHip", LeftLowerLeg = "LeftKnee" } do
+				local j = rig.parts[part].joints[joint]
+				j.Transform = Mix.braceJoint(mix, brace, joint, j.C0) * j.Transform
+			end
+		end
 		if Mix.strafe then
 			local vel = lastDir * speed
 			local turn = Mix.strafe(mix, DT, vel, true, quiet)

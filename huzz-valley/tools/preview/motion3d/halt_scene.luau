@@ -1,9 +1,11 @@
 -- The run's 1 s build-up and the halt (owner, Oct 20 07:55: "Make acceleration 1 second long and after they randomly
 -- stop after fully running they move a little forward as a sort of "hault" like in the game Huss valley"), filmed the
--- way Huss Valley's recording shows its one full-speed stop (f1c7bb86, 41.2 s): in shift lock (rounds), from behind,
--- the runner strafing left across the screen (the hips turned to the move, LocomotionMix.strafe), the camera following. Two runners on the same keys: top BEFORE (the 0.5 s build, the ground
--- stops at once), bottom AFTER (Gameplay/Sprint: RunMotion.rampSpeed over 1 s; Shared/Halt: the body carries on
--- along the ground over Run.Halt.Time while the legs plant, LocomotionMix input.halt).
+-- way Huss Valley's recording shows its one full-speed stop (f1c7bb86, 40.3 to 41.6 s): the camera turned round in
+-- front of the runner and a little above (~20 degrees down, ~10 studs off), the runner coming toward it and a little
+-- to the left, facing the way it runs (critic, Oct 20: the first film was from behind, not the same framing). Two
+-- runners on the same keys: BEFORE (the 0.5 s build, the ground stops at once) and AFTER (Gameplay/Sprint:
+-- RunMotion.rampSpeed over 1 s; Shared/Halt: the body carries on along the ground over Run.Halt.Time while the legs
+-- plant and brace, LocomotionMix input.halt and Stop.Halt.Brace).
 -- Keys: W from 0.3 s, let go at 1.8 s.
 -- sh video.sh halt_scene.luau out.mp4   (repo root; HALT_ONLY=after films only the AFTER runner, for the side by side)
 local fs = require("@lune/fs")
@@ -29,15 +31,15 @@ end
 
 local only = process.env.HALT_ONLY
 local scene = Scene.new()
-for x = -80, 12, 2 do
-	for z = -14, 8, 2 do
+for x = -32, 14, 2 do
+	for z = -10, 52, 2 do
 		if (x + z) % 4 == 0 then
 			scene:addBox(CFrame.new(x, 0.03, z), Vector3.new(0.9, 0.06, 0.9), "#2f9a52")
 		end
 	end
 end
--- a white line across the run (HV's field line), to see the slide against
-scene:addBox(CFrame.new(-42, 0.04, -1), Vector3.new(0.5, 0.08, 30), "#ffffff")
+-- a white line slanting across the run near the stop (HV's field line), to see the slide against
+scene:addBox(CFrame.new(-8, 0.04, 33) * CFrame.Angles(0, 0.3, 0), Vector3.new(50, 0.08, 0.5), "#ffffff")
 
 local CAP, START = Round.Speeds.Runner, Run.StartSpeed
 local LANE = 9
@@ -53,8 +55,8 @@ local FPS, DT, SECONDS = 30, 1 / 30, 3.2
 local SUB = 4 -- physics steps a frame (the game runs at 60+)
 local GO, LET = 0.3, 1.8
 local HIP = Rig.REST_HEIGHT - 1
-local DIR = Vector3.new(-1, 0, -0.25).Unit -- (left and a little away: HV's runner at 41 s, strafing in shift lock)
-local YAW = 0 -- (shift lock: the body faces where the camera looks, -Z)
+local DIR = Vector3.new(-0.3, 0, 1).Unit -- (toward the camera and a little left: HV's runner at 40.3 to 41.2 s)
+local YAW = math.atan2(-DIR.X, -DIR.Z) -- (the body faces the way it runs)
 local track = {}
 for f = 0, SECONDS * FPS - 1 do
 	local t = f * DT
@@ -84,7 +86,7 @@ for f = 0, SECONDS * FPS - 1 do
 			r.pos += DIR * speed * dt
 		end
 		local halting = r.halt ~= nil and not r.halt.done
-		local turn = Mix.strafe(r.mix, DT, DIR * speed, true, 0)
+		local turn = Mix.strafe(r.mix, DT, DIR * speed, false, 0)
 		Mix.step(r.mix, DT, { speed = speed, state = "ground", lengths = { Walk = A.Walk.length, Run = A.Run.length }, halt = halting })
 		r.idleT += DT
 		local rig, mix = r.rig, r.mix
@@ -100,6 +102,14 @@ for f = 0, SECONDS * FPS - 1 do
 		local rootJ = rig.parts.LowerTorso.joints.Root
 		local roll, pitch = Mix.lean(mix, DT, YAW, 0)
 		rootJ.Transform = rootJ.C0:Inverse() * Mix.leanCFrame(roll, pitch, 1 + HIP) * rootJ.C0 * rootJ.Transform
+		-- the halt's braced stance (as Gameplay/Locomotion puts it on)
+		local brace = Mix.brace(mix)
+		if brace > 1e-4 then
+			for part, joint in { LowerTorso = "Root", RightUpperLeg = "RightHip", RightLowerLeg = "RightKnee", LeftUpperLeg = "LeftHip", LeftLowerLeg = "LeftKnee" } do
+				local j = rig.parts[part].joints[joint]
+				j.Transform = Mix.braceJoint(mix, brace, joint, j.C0) * j.Transform
+			end
+		end
 		if math.abs(turn) > 1e-3 then
 			local waist, neck = rig.parts.UpperTorso.joints.Waist, rig.parts.Head.joints.Neck
 			local a, b, c = Mix.strafePose(mix, turn, {
@@ -116,19 +126,20 @@ for f = 0, SECONDS * FPS - 1 do
 				j.Transform = Mix.stopArm(mix, plant, side) * j.Transform
 			end
 		end
-		rig.root.CFrame = CFrame.new(r.pos + Vector3.new(0, Rig.REST_HEIGHT, r.z)) * CFrame.Angles(0, YAW, 0)
+		rig.root.CFrame = CFrame.new(r.pos + Vector3.new(r.z, Rig.REST_HEIGHT, 0)) * CFrame.Angles(0, YAW, 0)
 		Rig.fk(rig)
 		if not only then
-			table.insert(labels, { p = { r.pos.X, 7.2, r.z }, text = if r.after then "AFTER" else "BEFORE", h = 0.9, c = "#ffffff", o = "#000000" })
+			table.insert(labels, { p = { r.pos.X + r.z, 7.2, r.pos.Z }, text = if r.after then "AFTER" else "BEFORE", h = 0.9, c = "#ffffff", o = "#000000" })
 		end
-		if r.after then table.insert(track, { t = t, x = -r.pos.X, speed = speed, halt = halting }) end
+		if r.after then table.insert(track, { t = t, x = r.pos:Dot(DIR), speed = speed, halt = halting }) end
 	end
-	-- the camera follows the AFTER runner, looking along the field (-Z) as HV's at 41 s: the runner goes left and away
+	-- the camera follows the AFTER runner from in front and a little above, as HV's at 41 s (it keeps its distance
+	-- while the runner comes toward it, so the runner stays put on screen and the ground flows under)
 	local focusPos = runners[#runners].pos
-	local focus = focusPos + Vector3.new(0, 2.6, if only then 0 else -LANE / 2)
-	local eye = focus + (if only then Vector3.new(0.5, 3.4, 10.5) else Vector3.new(3, 9, 24))
+	local focus = focusPos + Vector3.new(if only then 0 else -LANE / 2, 2.4, 0)
+	local eye = focus + (if only then Vector3.new(1, 4.4, 7.2) else Vector3.new(3, 9, 24))
 	local key = if t < GO then "idle" elseif held then "W (building up)" else "let go"
-	scene:frame(eye, focus + Vector3.new(-1.5, -0.6, 0), { labels = labels, caption = if only then nil else string.format("%.2f s  key: %s", t, key) })
+	scene:frame(eye, focus + Vector3.new(0.6, -0.9, 0), { labels = labels, caption = if only then nil else string.format("%.2f s  key: %s", t, key) })
 end
 -- where the AFTER runner went after letting go (studs past the let-go point, per frame)
 local at, prev = nil, 0

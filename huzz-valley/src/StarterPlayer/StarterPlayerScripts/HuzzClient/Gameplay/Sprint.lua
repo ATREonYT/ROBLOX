@@ -53,11 +53,14 @@ function M.start()
 	end
 	local function tryHalt(character: Model, h: Humanoid, cap: number)
 		local root = h.RootPart
-		if stopHalt or not root or not RunMotion.haltFrom(lastRun.Magnitude, cap, START) or busy(character, h, root) then
+		-- (never faster than your top speed: right after a huss, a dive or a shove the body is still moving faster,
+		-- and that slid 5 to 7 studs; critic, Oct 20)
+		local from = math.min(lastRun.Magnitude, cap)
+		if stopHalt or not root or not RunMotion.haltFrom(from, cap, START) or busy(character, h, root) then
 			return
 		end
 		character:SetAttribute("HuzzHalt", true)
-		stopHalt = Halt.start(root, lastRun, lastRun.Magnitude, function()
+		stopHalt = Halt.start(root, lastRun, from, function()
 			local top = h:GetAttribute("HuzzSpeed")
 			return h.Parent ~= nil and h.MoveDirection.Magnitude <= 0.1 and type(top) == "number" and top > START
 				and h.WalkSpeed > 0 and not busy(character, h, root)

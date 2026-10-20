@@ -179,6 +179,10 @@ local function attach(character: Model)
 	local rootJoint = jointOf("LowerTorso", "Root")
 	local waistJoint, neckJoint = jointOf("UpperTorso", "Waist"), jointOf("Head", "Neck")
 	local rightArm, leftArm = jointOf("RightUpperArm", "RightShoulder"), jointOf("LeftUpperArm", "LeftShoulder")
+	local braceLegs = { -- (the halt's braced stance: LocomotionMix.braceJoint)
+		RightHip = jointOf("RightUpperLeg", "RightHip"), RightKnee = jointOf("RightLowerLeg", "RightKnee"),
+		LeftHip = jointOf("LeftUpperLeg", "LeftHip"), LeftKnee = jointOf("LeftLowerLeg", "LeftKnee"),
+	}
 	-- This frame's animated pose of a joint (or the last one, if nothing animated it since our write: never stack).
 	local function current(motor: Motor6D): CFrame
 		local pose = motor.Transform
@@ -326,6 +330,11 @@ local function attach(character: Model)
 				local c0 = rootJoint.C0
 				hipsPose = c0:Inverse() * Mix.leanCFrame(roll, pitch, root.Size.Y / 2 + humanoid.HipHeight) * c0 * hipsPose
 			end
+			-- the halt's braced stance (hips low and back, one leg forward, knees bent: LocomotionMix.brace)
+			local brace = if quiet > 0 then 0 else Mix.brace(mix)
+			if brace > 1e-4 then
+				hipsPose = Mix.braceJoint(mix, brace, "Root", rootJoint.C0) * hipsPose
+			end
 			-- shift lock: hips toward the move, the head still looking where you aim (Shared/LocomotionMix.strafe);
 			-- without it: the body goes the way you move, the head looks where the camera looks (LocomotionMix.look)
 			local locked = player:GetAttribute("HuzzShiftLock") == true
@@ -354,6 +363,12 @@ local function attach(character: Model)
 				if arm and arm.Parent then
 					local pose = current(arm)
 					put(arm, if plant > 1e-4 then Mix.stopArm(mix, plant, side) * pose else pose)
+				end
+			end
+			for name, leg in braceLegs do
+				if leg.Parent then
+					local pose = current(leg)
+					put(leg, if brace > 1e-4 then Mix.braceJoint(mix, brace, name, leg.C0) * pose else pose)
 				end
 			end
 		end

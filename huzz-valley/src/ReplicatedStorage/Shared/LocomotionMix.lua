@@ -42,7 +42,8 @@
 	        ~0.3 s; HV's 40.7 s frames), cancelled if you set off again;
 	      - the halt (owner, Oct 20 07:55: "they move a little forward as a sort of "hault""; input.halt, Shared/Halt):
 	        the plant starts at once while the ground still slides, the steps slow to a stop and the legs come together
-	        (Config/Run.Loco.Stop.Halt), so the feet skid instead of running on.
+	        (Config/Run.Loco.Stop.Halt), so the feet skid instead of running on, in a braced stance held while it slides
+	        (brace() / braceJoint(): hips low and leaning back, the right leg forward, knees bent; HV f1c7bb86 41.23 s).
 ]]
 local Run = require(script.Parent.Config.Run)
 
@@ -157,6 +158,27 @@ function LocomotionMix.step(s, dt, input)
 		-- ground still slides, so the feet skid instead of running on; a sudden freeze reversed a swinging arm in one frame)
 		cadence *= math.max(0, 1 - s.stopAge / St.Halt.Settle)
 	end
+	-- the halt's braced stance (Stop.Halt.Brace): up while it slides, held, eased back once it ends
+	local B = St and St.Halt and St.Halt.Brace
+	if B then
+		if halting then
+			if not s.bracing then
+				s.bracing, s.braceAge, s.braceFrom = true, 0, s.brace or 0
+			end
+			s.braceAge += dt
+			s.brace = s.braceFrom + (1 - s.braceFrom) * smooth(s.braceAge / B.In)
+		elseif (s.brace or 0) > 0 then
+			if s.bracing then
+				s.bracing, s.braceAge, s.braceHeld = false, 0, s.brace
+			end
+			s.braceAge += dt
+			local out = if input.speed > C.MoveFull then B.Out * 0.5 else B.Out -- (running on: out of the way sooner)
+			s.brace = s.braceHeld * (1 - smooth(s.braceAge / out))
+			if s.brace < 1e-3 then
+				s.brace = 0
+			end
+		end
+	end
 	-- (back-pedalling in shift lock: the loops play backwards, LocomotionMix.strafe)
 	s.phase = (s.phase + cadence * dt * (if s.back then -1 else 1)) % 1
 	s.speeds.Walk, s.speeds.Run = cadence * walkLen, cadence * runLen
@@ -222,6 +244,38 @@ end
 
 -- The stop's arms: a turn for a shoulder's Transform (put in front of it: R * T), side = 1 right, -1 left. The arm
 -- swings out to the side and a little forward (HV: arms out as the feet plant).
+-- The halt's braced stance right now, 0 to 1 (Config/Run.Loco.Stop.Halt.Brace).
+function LocomotionMix.brace(s): number
+	return s.brace or 0
+end
+
+-- The brace on one joint, put in front of its Transform (Δ * T): joint = "Root" (the hips drop, turn side-on, lean back),
+-- "LeftHip" / "LeftKnee" (the leading leg: thigh forward, knee bent), "RightHip" / "RightKnee" (the trailing leg);
+-- c0 = that Motor6D's C0 (the turn is in the joint's own frame). Identity for any other joint or no brace.
+function LocomotionMix.braceJoint(s, amount: number, joint: string, c0: CFrame): CFrame
+	local St = s.C.Stop
+	local B = St and St.Halt and St.Halt.Brace
+	if not B or amount <= 1e-4 then
+		return CFrame.identity
+	end
+	local raw
+	if joint == "Root" then
+		raw = CFrame.new(0, -B.Drop * amount, 0) * CFrame.Angles(0, rad(B.Turn or 0) * amount, 0) * CFrame.Angles(rad(B.Lean) * amount, 0, 0)
+	elseif joint == "LeftHip" then
+		raw = CFrame.Angles(rad(B.FrontHip) * amount, 0, 0)
+	elseif joint == "LeftKnee" then
+		raw = CFrame.Angles(rad(B.FrontKnee) * amount, 0, 0)
+	elseif joint == "RightHip" then
+		raw = CFrame.Angles(rad(B.BackHip) * amount, 0, 0)
+	elseif joint == "RightKnee" then
+		raw = CFrame.Angles(rad(B.BackKnee) * amount, 0, 0)
+	else
+		return CFrame.identity
+	end
+	local r = c0.Rotation
+	return r:Inverse() * raw * r
+end
+
 function LocomotionMix.stopArm(s, amount: number, side: number): CFrame
 	local St = s.C.Stop
 	if not St or amount <= 1e-4 then

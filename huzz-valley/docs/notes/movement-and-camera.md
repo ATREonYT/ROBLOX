@@ -30,17 +30,23 @@ The huss pose and walk animations: [animations.md](animations.md).
   Everyone else's stop: [animations.md](animations.md) (the velocity hint). From 90% of your top speed or more a
   stop is a halt instead (below).
 - **The halt** (`Shared/Halt`, `Gameplay/Sprint`, `Run.Halt`, `RunMotion.haltFrom` / `haltPush`): let go of every key
-  at 90% of your top speed or more (`From`) and the body carries on, slowing from your speed to 0 over 0.25 s
+  at 90% of your top speed or more (`From`) and the body carries on, slowing from your speed (never more than your
+  top speed, so letting go just after a huss, a dive or a shove slides no further: ~2.6 studs) to 0 over 0.25 s
   (`Time`, `Ease` 2): ~2.3 studs at a runner's 28 (2.6 as the game samples it at 60 fps), 1.8 in the lobby, at most
   3 at the fastest catcher. A LinearVelocity in the ground plane moves the real body (as the huss does), so walls stop
   it, the server's `HitHistory` sees it and every screen sees the slide. The plant plays at once and the legs come
   together over 0.08 s while the steps slow to a stop over 0.12 s (`Loco.Stop.Halt`; LocomotionMix `input.halt`): a
-  skid, not a run. It ends at once on any key (turning round is never a halt: the new key takes over the next
+  skid, not a run. The legs also brace at once (`Loco.Stop.Halt.Brace`, LocomotionMix `brace` / `braceJoint`): up in
+  0.08 s, held while the body slides, eased back to the idle over 0.16 s once it stops: the hips drop 0.45 studs,
+  turn 30° side-on and lean back 9°, the left thigh forward 40° with the knee bent 45°, the right back 25° (HV's
+  f1c7bb86: a wide braced stance from 41.23 to 41.45 s, upright by ~41.5). It ends at once on any key (turning round is never a halt: the new key takes over the next
   frame), a huss or dive, being downed or frozen (`HuzzSpeed` at or under 16), sitting or leaving the floor.
   A lobby tap or a short dash never reaches 90%. Your screen marks it with the local attribute `HuzzHalt`; everyone
   else's halt shows from their Humanoid's `MoveDirection` going to zero while their body still slides at a run
-  (`Gameplay/PlayerMoves`, only once their MoveDirection has been seen moving). The Practice Bot halts too when it
-  stops after a stab (`PracticeBot`).
+  (`Gameplay/PlayerMoves`, only once their MoveDirection has been seen moving; never mid huss or dive, which on a
+  phone moves fast with no key held, nor in the air, from their tracked climb or their replicated vertical speed).
+  The Practice Bot never halts: it stops after a stab to give the kid a breather, and a halt slid it ~2.3 studs
+  toward them (critic, Oct 20).
 - **The head follows the mouse** (`Gameplay/HeadAim`, `LocomotionMix.look`, `Run.Loco.Look`, `Gameplay/Locomotion`
   and `PlayerMoves`): the head looks at the point under the cursor (a ray from the camera through the mouse, your
   own body skipped; 300 studs along it at the sky), up to 70° each way (`Look.Max`) and 30° up / 35° down (`Up`,
@@ -117,21 +123,25 @@ The huss pose and walk animations: [animations.md](animations.md).
   (how far the ground moves each frame; useless while their camera turns). Numbers: `tests/Locomotion.spec` prints
   them (set-off, stop, plant, biggest weight change in a frame 0.30, others' stop).
 - The build-up and the halt: `sh motion3d/halt_side.sh <hv f1c7bb86.mp4> out.mp4 out.jpg` (repo root) films
-  `halt_scene.luau` and puts it next to HV's one full-speed stop, same framing (shift lock, from behind, strafing
-  left), 30 fps → `docs/previews/halt-vs-hv.mp4` / `.jpg`. Specs: `tests/Halt.spec` (the real Sprint and Halt on a
-  fake body: 1 s build, ~2.6 studs, every way it ends, no halt from a tap), `tests/Movement.spec` (the numbers),
-  `tests/Locomotion.spec` (the skid), `tests/PlayerMoves.spec` (another player's halt). Smoothness:
-  `move_smooth_measure.luau` "let go: halt" (worst part turn in a frame at 30 fps 57°, pop 71° on the arms at the
-  worst phase; a running stride's own pops are 60-68°; the plain stop from the same run was 67°/48° at another phase).
+  `halt_scene.luau` and puts it next to HV's one full-speed stop, same framing (HV's camera at 40.3 to 41.6 s: turned
+  round in front of the runner, ~20° down, the runner coming toward it, facing the way it runs), 30 fps →
+  `docs/previews/halt-vs-hv.mp4` / `.jpg`. Specs: `tests/Halt.spec` (the real Sprint and Halt on a fake body: 1 s
+  build, ~2.6 studs, every way it ends, no halt from a tap, ≤ 2.8 studs after a 60 studs/s shove),
+  `tests/Movement.spec` (the numbers), `tests/Locomotion.spec` (the skid; the brace up by 0.08 s, held, gone 0.15 s
+  after the stop, at most 0.31 of it a frame), `tests/PlayerMoves.spec` (another player's halt: the thigh moves 6°
+  through the skid against 78° running on; none mid huss with no key, none falling). Smoothness:
+  `move_smooth_measure.luau` "let go: halt" (worst part turn in a frame at 30 fps 57°, pop 76° on the legs as the
+  brace comes in at the worst phase; a running stride's own turns are 66-68° and pops 60-68°).
 - Not seen in Studio yet: the 1 s build-up and the halt (whether Roblox's Humanoid lets the LinearVelocity carry the
   body as cleanly as offline, the halt against walls and other players, and whether other players' MoveDirection
   reaches every screen: if it doesn't, their halt slides with the legs stopping by speed instead), the sprint and lunge feel, the Oct 19 huss, the feet-first gate on the owner's floors, the
   shift-lock back-pedal (negative AdjustSpeed), the AFK rejoin (live game only), the set-off, stop plant and head
   look on a real camera, others' stops over a real network, the head on a real mouse (and whether 5 sends a
   second look smooth enough on others in a full server).
-- Still different from HV's halt: their legs keep running ~0.2 s while the ground slows (41.19 to 41.38 s) and come
-  together as it stops; ours plant at once (the brief: a skid). Their runner also turns to face the camera as he
-  stops; ours doesn't.
+- Still different from HV's halt: their legs keep running ~0.2 s while the ground slows (41.19 to 41.38 s); ours
+  plant and brace at once (the brief: a skid). Their braced stance is wider and lower than ours and their arms stay
+  forward (they hold a knife); our brace is a made-up pose on the pack's legs, not their animation. In the side by
+  side their runner fills more of the frame than ours (the crop of their 3020 px video against our 720 px camera).
 - Still worse than HV: our idle holds the arms wider than theirs, so the stop lands in a different pose; the plant
   is our own made-up motion on the pack's poses (HV's arms swing out on a stop, 40.73 s), not their animation.
 

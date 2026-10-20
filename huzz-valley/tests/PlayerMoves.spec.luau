@@ -226,7 +226,7 @@ end
 -- instead of running on. The same slide with the key still held (a control) keeps stepping.
 do
 	local RunMotion = Env.load("huzz-valley/src/ReplicatedStorage/Shared/RunMotion.lua")
-	local function slide(keyHeld)
+	local function slide(keyHeld, mode)
 		local pos = theirs.root.CFrame
 		theirs.humanoid.MoveDirection = Vector3.new(0, 0, -1)
 		theirs.root.AssemblyLinearVelocity = Vector3.new(0, 0, -28)
@@ -235,28 +235,49 @@ do
 			theirs.root.CFrame = pos
 		end)
 		if not keyHeld then theirs.humanoid.MoveDirection = Vector3.zero end
-		local cfg, t, lo, hi, n = RunMotion.haltPush(28), 0, math.huge, -math.huge, 0
+		if mode == "huss" then theirs.character:SetAttribute("DashAt", clock) end -- (a huss with no key held: a phone)
+		local cfg, t, n, seen, travel, last = RunMotion.haltPush(28), 0, 0, false, 0, nil
 		frames(24, function()
 			t += 1 / 60
 			local v = RunMotion.pushSpeed(cfg, t) or 0
-			theirs.root.AssemblyLinearVelocity = Vector3.new(0, 0, -v)
-			pos = pos * CFrame.new(0, 0, -v / 60)
+			if mode then v = 28 end -- (the huss or the fall keeps it moving fast, no key held)
+			local down = if mode == "fall" then -20 else 0
+			theirs.root.AssemblyLinearVelocity = Vector3.new(0, down, -v)
+			pos = pos * CFrame.new(0, down / 60, -v / 60)
 			theirs.root.CFrame = pos
+			seen = seen or PlayerMoves.halting(theirs.character)
 			n += 1
-			if n >= 6 then
-				local a = hip.Transform:ToEulerAnglesXYZ()
-				lo, hi = math.min(lo, a), math.max(hi, a)
+			if n >= 6 and v > 0.05 then
+				-- (from 0.1 s, while the ground still slides) the thigh's travel: running on swings it to and fro; the
+				-- halt holds it in the braced stance
+				local a = math.deg((hip.Transform:ToEulerAnglesXYZ()))
+				if last then
+					local d = a - last
+					travel += math.abs(d)
+				end
+				last = a
 			end
 		end)
 		theirs.humanoid.MoveDirection = Vector3.zero
 		theirs.root.AssemblyLinearVelocity = Vector3.zero
+		theirs.character:SetAttribute("DashAt", nil)
+		if mode == "fall" then
+			pos = pos * CFrame.new(0, 24 * 20 / 60, 0) -- (back up on the floor)
+			theirs.root.CFrame = pos
+		end
 		frames(60)
-		return math.deg(hi - lo)
+		return travel, seen
 	end
-	local halted = slide(false)
+	local halted, seenHalt = slide(false)
 	local held = slide(true)
-	print(string.format("  another player's halt: their thigh moves %.0f degrees through the skid (key still held: %.0f)", halted, held))
-	check(halted < held * 0.6, "their halt: the feet plant and skid (the thigh moves far less than running on)")
+	print(string.format("  another player's halt: their thigh travels %.0f degrees through the skid (key still held: %.0f)", halted, held))
+	check(seenHalt, "their key goes while they still slide at a run: this screen shows their halt")
+	check(halted < held * 0.5, "their halt: the feet plant and skid (the thigh travels far less than running on)")
+	-- never a halt mid huss with no key held (a phone), nor falling (critic, Oct 20)
+	local _, hussHalt = slide(false, "huss")
+	local _, fallHalt = slide(false, "fall")
+	check(not hussHalt, "a huss with no key held is no halt on other screens")
+	check(not fallHalt, "nor is a fall (moving fast through the air with no key)")
 end
 -- leaving: dropped
 theirs.character.Parent = nil

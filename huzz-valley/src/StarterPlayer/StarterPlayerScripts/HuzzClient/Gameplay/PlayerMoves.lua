@@ -31,7 +31,7 @@
 	    Huss Valley's recording): the body tips back a little and the arms swing out, on everyone. Others' stops read
 	    ~0.15 s after their body stops (LocomotionMix.track: a body still for longer than a network stall has stopped).
 	  - The halt (owner, Oct 20 07:55: "they move a little forward as a sort of "hault""): yours from Gameplay/Sprint's
-	    HuzzHalt, anyone else's (and the bot's) from their MoveDirection going to zero while the body still slides at
+	    HuzzHalt, anyone else's from their MoveDirection going to zero while the body still slides at
 	    a run: the plant at once and the feet skid (LocomotionMix input.halt).
 	Off when the owner has published Idle, Walk and Run (Config/Animations): then the real tracks replicate.
 ]]
@@ -42,6 +42,12 @@ local recs = {} -- character Model -> rec (a plain table, cleared when the chara
 -- True while this draws the character's walk (RunAnimator then draws only the huss and the cast pose on it).
 function M.drives(character: Model?): boolean
 	return character ~= nil and recs[character] ~= nil
+end
+
+-- True while this screen shows the character halting (the last frame's read; tests/PlayerMoves.spec).
+function M.halting(character: Model?): boolean
+	local rec = character and recs[character]
+	return rec ~= nil and rec.halt == true
 end
 
 local PARTS = {
@@ -72,6 +78,8 @@ function M.start()
 	local T = RunConfig.Track
 	local DASH_LENGTH = RunConfig.Dash.Length
 	local LEAP_LENGTH = 0.85 -- seconds a catcher's leap owns the body (Shared/StabMotion LEAP.Up, plus a little)
+	local BRACE_JOINTS = { LowerTorso = "Root", RightUpperLeg = "RightHip", RightLowerLeg = "RightKnee",
+		LeftUpperLeg = "LeftHip", LeftLowerLeg = "LeftKnee" } -- (part -> its joint, for LocomotionMix.braceJoint)
 	local PLAYING = { HeroRun = true, Countdown = true, Running = true, RoundOver = true } -- (shift lock's stages)
 
 	local tried = {} -- character -> when we last failed to build it (its body still loading)
@@ -180,7 +188,8 @@ function M.start()
 		if downed or root.Anchored or humanoid.Sit then
 			speed = 0
 		end
-		local airborne = math.abs(up) > 8
+		-- (their replicated velocity too: the tracked climb is averaged over a window, so it lags a fall or a knock by a few frames)
+		local airborne = math.abs(up) > 8 or math.abs(root.AssemblyLinearVelocity.Y) > 8
 		if isMe then
 			local state = humanoid:GetState()
 			airborne = state == Enum.HumanoidStateType.Freefall or state == Enum.HumanoidStateType.Jumping
@@ -201,12 +210,18 @@ function M.start()
 			end
 		end
 		-- The halt (owner, Oct 20 07:55: "they move a little forward as a sort of "hault""): yours from Gameplay/Sprint
-		-- (HuzzHalt); anyone else's (and the bot's) when their Humanoid says no key is held (MoveDirection) while the
+		-- (HuzzHalt); anyone else's when their Humanoid says no key is held (MoveDirection) while the
 		-- body still slides at a run. Only once their MoveDirection has been seen moving: if it never reaches this
-		-- screen, it never reads as a halt. The feet plant and skid (LocomotionMix input.halt).
+		-- screen, it never reads as a halt. The feet plant and skid (LocomotionMix input.halt). Never mid huss or dive
+		-- (a huss with no key held, on a phone) nor in the air (a fall, a knock): those move fast with no key too.
 		local halt = false
+		local hussAt, diveAt, nowServer = RunMotion.dashAt(character), character:GetAttribute("LungeAt"), Workspace:GetServerTimeNow()
+		local pushed = (type(hussAt) == "number" and nowServer - hussAt < DASH_LENGTH + 0.1)
+			or (type(diveAt) == "number" and nowServer - diveAt < LEAP_LENGTH)
 		if isMe then
 			halt = character:GetAttribute("HuzzHalt") == true
+		elseif pushed or airborne then
+			halt = false
 		elseif not downed then
 			local md = humanoid.MoveDirection
 			if typeof(md) == "Vector3" and md.Magnitude > 0.1 then
@@ -215,6 +230,7 @@ function M.start()
 				halt = true
 			end
 		end
+		rec.halt = halt
 		rec.acc += dt
 		if rec.pose == nil or rec.acc >= interval then
 			local sdt = math.min(rec.acc, 0.2)
@@ -231,6 +247,16 @@ function M.start()
 			if plant > 1e-4 then
 				if pose.RightUpperArm then pose.RightUpperArm = Mix.stopArm(rec.mix, plant, 1) * pose.RightUpperArm end
 				if pose.LeftUpperArm then pose.LeftUpperArm = Mix.stopArm(rec.mix, plant, -1) * pose.LeftUpperArm end
+			end
+			-- the halt's braced stance: hips low and back, one leg forward, knees bent (LocomotionMix.brace)
+			local brace = if downed or quiet or airborne then 0 else Mix.brace(rec.mix)
+			if brace > 1e-4 then
+				for part, joint in BRACE_JOINTS do
+					local m = rec.motors[part]
+					if pose[part] and m then
+						pose[part] = Mix.braceJoint(rec.mix, brace, joint, m.C0) * pose[part]
+					end
+				end
 			end
 			rec.lean = nil
 			if not isMe and plant > 1e-4 and pose.LowerTorso then

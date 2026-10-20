@@ -253,6 +253,7 @@ do
 	local cfg = RunMotion.haltPush(28)
 	local idleAt, idleSpeed, plantAt, plants, lastAge, slid, stepsSeen = nil, 0, nil, 0, math.huge, 0, 0
 	local phase0 = s6.phase
+	local braceUp, braceHeldMin, haltEnd, braceGone, braceJump, lastBrace = nil, 1, nil, nil, 0, 0
 	for i = 1, 40 do
 		local t = i / 60
 		local v = RunMotion.pushSpeed(cfg, t)
@@ -262,7 +263,21 @@ do
 		lastAge = s6.stopAge
 		if not plantAt and Mix.stopAmount(s6) > 0.85 then plantAt = t end
 		if not idleAt and s6.weights.Idle > 0.75 then idleAt, idleSpeed = t, v or 0 end
+		local b = Mix.brace(s6)
+		braceJump, lastBrace = math.max(braceJump, math.abs(b - lastBrace)), b
+		if not braceUp and b > 0.95 then braceUp = t end
+		if v and braceUp then braceHeldMin = math.min(braceHeldMin, b) end
+		if not v and not haltEnd then haltEnd = t end
+		if haltEnd and not braceGone and b <= 0 then braceGone = t - haltEnd end
 	end
+	print(string.format("  halt brace: up at %.2f s, held at %.2f or more while it slides, gone %.2f s after it stops; biggest step a frame %.2f",
+		braceUp or -1, braceHeldMin, braceGone or -1, braceJump))
+	-- (the critic, Oct 20: ours stood up by +0.73 s and read as a plain stop; HV's runner holds a braced lunge while
+	-- it skids, f1c7bb86 41.23 to 41.45 s, and is upright by ~41.5)
+	check(braceUp and braceUp <= 0.1, "a halt: the braced stance (one leg forward, low, leaning back) is up within 0.1 s")
+	check(braceHeldMin > 0.95, "and held while the body slides")
+	check(braceGone and braceGone <= 0.2, "and eased back to the idle within 0.2 s once the body stops")
+	check(braceJump < 0.35, "the brace comes and goes smoothly (no pop in one frame)")
 	print(string.format("  halt from 28: slides %.2f studs; plant up at %.2f s, legs mostly at the idle at %.2f s while still at %.1f studs/s; plants %d",
 		slid, plantAt or -1, idleAt or -1, idleSpeed, plants))
 	check(plantAt and plantAt <= 0.1, "a halt: the plant (body back, arms out) is up within 0.1 s")
@@ -274,6 +289,7 @@ do
 	for _ = 1, 4 do Mix.step(s7, 1 / 60, { speed = 24, state = "ground", lengths = lengths, halt = true }) end
 	for _ = 1, 10 do Mix.step(s7, 1 / 60, { speed = 22, state = "ground", lengths = lengths }) end
 	check(Mix.stopAmount(s7) < 0.15 and s7.weights.Run > 0.6, "pressing a key mid-halt: the plant goes and the run is back within ~0.15 s")
+	check(Mix.brace(s7) == 0, "and the braced stance is gone too")
 end
 
 -- Shift lock (owner, Oct 19: "make it so when you shift lock the only thing that moves when you press w a s d (etc)

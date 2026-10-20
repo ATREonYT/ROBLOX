@@ -5,7 +5,7 @@
 	a runner's 28). It moves the real body with a LinearVelocity in the ground plane, like the huss (Gameplay/Dash),
 	so walls stop it, gravity still pulls (off an edge it ends: it never pushes you along in the air), the server
 	sees where the body really is (HuzzServer/HitHistory, pinpoint hits) and every screen sees the same slide.
-	Used by Gameplay/Sprint (your own body, on your screen) and HuzzServer/PracticeBot (the bot's stop after a stab).
+	Used by Gameplay/Sprint (your own body, on your screen; the Practice Bot never halts: its stops are a stab breather).
 	The legs plant at once while it lasts (Shared/LocomotionMix, input.halt), so it reads as a skid, not a run.
 ]]
 local RunService = game:GetService("RunService")

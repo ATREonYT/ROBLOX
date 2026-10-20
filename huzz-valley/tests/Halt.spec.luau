@@ -120,12 +120,15 @@ local function haltPush()
 	return nil
 end
 local errors = 0
+local shove: Vector3? = nil -- (one frame moved by something else: a huss's tail, a dive, a shove)
 local function frame(move: Vector3?)
 	clock += DT
 	if move then humanoid.MoveDirection = move end
 	local lv = haltPush()
 	local v
-	if lv and lv.PlaneVelocity then
+	if shove then
+		v, shove = shove, nil
+	elseif lv and lv.PlaneVelocity then
 		v = Vector3.new(lv.PlaneVelocity.X, 0, lv.PlaneVelocity.Y)
 	else
 		v = humanoid.MoveDirection * humanoid.WalkSpeed
@@ -232,6 +235,17 @@ frames(20, W)
 frame(NONE)
 check(attrs.HuzzHalt == nil, "letting go in the air: no halt")
 humanoid.FloorMaterial = roblox.Enum.Material.Plastic
+-- 11. let go right after something shoved you faster than you run (a huss's tail, a dive, a push): the slide
+-- starts from your top speed, never the shove's (critic, Oct 20: it slid 5 to 7 studs)
+frames(20, NONE)
+frames(70, W)
+shove = Vector3.new(0, 0, -60)
+frame(W)
+from = root.Position
+frames(30, NONE)
+local shoved = (root.Position - from).Magnitude
+print(string.format("  halt right after a 60 studs/s shove: %.2f studs", shoved))
+check(shoved <= 2.8, string.format("a halt after a shove slides no further than from your top speed (%.2f)", shoved))
 -- 10. turning round (W, one empty frame, S): the halt is over the frame S comes, the body goes back the other way
 frames(20, NONE)
 frames(70, W)
