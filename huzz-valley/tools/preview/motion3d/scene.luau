@@ -63,16 +63,17 @@ function Scene:frame(cameraPos, lookAt, extra)
 		bloom = extra and extra.bloom or nil,
 		labels = extra and extra.labels or nil,
 		meshes = extra and extra.meshes or nil,
+		under = extra and extra.under or nil,
 	})
 end
 
 -- path defaults to $MOTION3D_DIR/frames.json (set by video.sh), else ./frames.json.
 -- look (optional): { sky = "#hex", ground = "#hex", grid = false, dim = 0-1 (daylight), stills = { 0-based frame numbers },
---   meshFile = path of a triangle-mesh JSON (render.mjs: the owner's knives) }
+--   meshFile = path of a triangle-mesh JSON (render.mjs: the owner's knives), underlay = true (frames behind the 3D: extra.under) }
 function Scene:save(path, fps, w, h, look)
 	path = path or ((process.env.MOTION3D_DIR or ".") .. "/frames.json")
 	look = look or {}
-	fs.writeFile(path, serde.encode("json", { fps = fps or 30, width = w or 1280, height = h or 720, frames = self.frames, sky = look.sky, ground = look.ground, grid = look.grid, dim = look.dim, stills = look.stills, meshFile = look.meshFile }))
+	fs.writeFile(path, serde.encode("json", { fps = fps or 30, width = w or 1280, height = h or 720, frames = self.frames, sky = look.sky, ground = look.ground, grid = look.grid, dim = look.dim, stills = look.stills, meshFile = look.meshFile, underlay = look.underlay }))
 	print(`frames: {#self.frames} -> {path}`)
 end
 

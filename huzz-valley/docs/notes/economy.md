@@ -154,38 +154,36 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
   Starter, Dance and Halloween crates follow in the same rows with the drawn crate. The old full-card row
   (`docs/previews/crate-shop-vs-mockup.jpg`) was before the Oct 20 14:31 one-page Shop.
 - **The 3D opening** (`Screens/CrateOpen` with `UI/Crate3D`; timeline `Shared/CrateMotion` (T), one maths for the game
-  and the film). Owner, Oct 20 07:51: "Can you please make the opening animation of the crates feel more premium,
-  right now it feels too ai, as now they have the circle around the knife when it opens, remove it, add s nice
-  animation for the knife when it starts rising up from the crater". So: restraint and timing, light instead of
-  shapes; the rays behind the crate, the ring and sparks, the round light behind the knife and the Epic flash are gone
-  from the 3D opening. No crate or case opening in his Huss Valley references (his uploads and `design/` were looked
-  through Oct 20), so the beats are ours:
-  - shut (a crate built open is shut first), it rocks and jumps a little harder and faster for 2.1 s, a knock on each
-    of 9 closer-and-closer jumps;
-  - 2.1 s: the top cracks open about 9 deg with a low knock and holds; light in the prize's rarity colour spills out of
-    the gap (a thin glowing layer just under his top, `Spill`, `CrateMotion.spill`; his glow parts and the viewport's
-    ambient light take the colour; if Roblox refuses the tint on his SurfaceAppearance, the part's own colour takes
-    it);
-  - 2.6 s: it swings open with a soft overshoot (to 100 deg from shut, at most 10% past) and a soft pop; the lit
-    layer fades out over 0.4 s as it opens, so it is the light only while the top is cracked and never a flat slab
-    inside the open crate (the lavender floor in the film after that is his own glow part, drawn as a stand-in box);
-  - 2.75 s: his own little knife from the same set rises out slowly (1.6 s, a strong ease-out), leaning about 10 deg,
-    making one slow turn, and settles into a gentle hover facing you (a small bob and sway); the camera eases in 8%;
-    six small motes in the rarity colour drift up from inside, one at a time (never a burst);
-  - 4.2 s: one glint, a thin streak of light sliding up the face of the blade (`Glint`);
-  - 4.45 s: its name and the title fade in, the rarity a beat later, then NEW! or the coins, the buttons.
-  A dark knife (its first `CoinShop` colour darker than 0.3, like Hollow Moon or Shadow Cleaver) gets a soft light
-  right behind its blade, stretched along it and leaned with it (`KnifeLight`, `CrateMotion.rimLight`: strength 0.92,
-  the rarity colour lifted 88% towards white, since the critic found 0.55/70% still left Hollow Moon a thin dark
-  sliver on navy), so its dark shape stands out on the light; the rest get none. As the knife rises and hovers the
-  whole crate view brightens a little (`CrateMotion.viewLift`: the ambient and light colour towards white, fully for a
-  dark blade, a third for the rest). His knife's own aura ring is part of his model and stays as he made it. The lid swings on its back
-  hinge (checked from the side, `SIDE=1` on the film scene), it never lifts flat. No reel for these crates; the odds
-  chips and pity line show under it while it builds up; no flash at all; tap to skip; reduced motion: no shake,
-  motes or glint, and the knife is simply there. `Crate3D.RevealHook` (nil today) is where the knife's own effect
-  (the knife VFX work, Rare and up) can hook in when his knife is placed. Without his model loaded it plays the old
-  crate and reel. Film: `docs/previews/crate-open-3d.mp4`, `docs/previews/crate-open-3d-strip.jpg` and before/after
-  `docs/previews/crate-open-3d-before-after.jpg` (`tools/preview/motion3d/crate_open_scene.luau`).
+  and the film). Owner, Oct 20 15:13: "please make the case opening animation way, way better, right now its so vague
+  and doesnt look good, remove so much glow from the crates, and then make it feel premium" (after 07:51's "too ai",
+  "the circle around the knife": see Why). No crate opening in his Huss Valley references, so the beats are ours,
+  built on weight, one clear moment and quiet everywhere else. A fixed shot on the crate (a slow 6% push-in, no wobble);
+  a calm dark navy backdrop (`Backdrop`, 0A0E22) over the whole screen:
+  - 0.3, 0.82, 1.3 s: three hops, each heavier (up, a tip to one side, a thud on landing `crate_thud`, a small bounce),
+    still between them; the odds chips and pity line under it;
+  - 1.8 s: the latch pops (`crate_latch`): the top cracks about 11 deg with a small jolt and a thin line of light in
+    the rarity colour shows in the gap (`Spill`, the ONE light from inside);
+  - 2.2 s: the lid is flung open (`crate_open`): a spring, fast, about 9% past open, back, still in 0.55 s; the crate
+    rocks back a touch; the light inside goes out; the backdrop takes the rarity colour as a soft pool behind the
+    knife (`Pool`, 16 ellipses, 0.6 s fade, quieter for Common to Rare: `CrateMotion.poolStrength`); the crate's
+    title fades away;
+  - 2.3 to 3.2 s: his knife from the same set comes out (`crate_rise`): up from inside, cut at the crate's front edge
+    until clear (`KnifeClip`), then towards you, growing to full size (1.3 crate heights), a three quarter turn that
+    ends on its profile, leaning into a diagonal, stopping sharp (3% past, back; `crate_reveal`, Epic+
+    `crate_reveal_big`); the crate falls into shadow (half dark) so the knife is the only bright thing. A thin light
+    rim outlines the blade (`Rim`: Neon copies of its big parts just behind it, wider for a dark blade like Hollow
+    Moon), a rim and never a glow; his knife's own aura parts (`aura_ring`, `aura_shard`) are hidden here ("remove
+    it"), his model is not changed;
+  - 3.25 s: its name lands with a short scale punch (1.3 to 1, 0.22 s), the rarity tag (a pill in the rarity colour)
+    0.1 s later, NEW! or the coins, then OPEN AGAIN and CLAIM. After that a tiny bob and sway.
+  His crate's own glow parts are turned down to 30% of his EmissiveStrength while it is on screen (`Crate3D.GlowKeep`;
+  his models in `HuzzCrates` are never changed or recoloured, the view holds a copy); no tint, motes, glint, rays, rings,
+  KnifeLight or flash. Tap to skip lands on the end card; reduced motion: no hops, no swing, the knife simply there.
+  `Crate3D.RevealHook` (nil today) is where the knife's own effect can hook in. Without his model loaded it plays the
+  old crate and reel. Sounds: made by `tools/sfx/make_sfx.py` (`assets/sfx/crate_*.ogg`), keys "" in
+  `Config/SoundIds` until he uploads them (Roblox stand-ins play meanwhile). Film: `docs/previews/crate-open-3d.mp4`
+  (Legendary), `docs/previews/crate-open-3d-strip.jpg`, and before vs now for a Common and a Legendary pull, same size:
+  `docs/previews/crate-open-3d-old-vs-new.mp4` / `.jpg` (`tools/preview/motion3d/crate_open_scene.luau`).
 - **The server decides first:** `OpenCrate` takes the Aura once, rolls with the shown odds and pity, gives the prize
   and answers `{ index, name, rarity, new, coins, pity, left, strip, at }`. `strip` is the reel: 48 honest draws with
   the shown odds (never pity, nothing planted next to the stop: `CrateRoll.strip`, spec checks the cards beside the
@@ -201,8 +199,8 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
   card (`landOffset` is kept on the left part of the card so the furthest point is on it too: an honest settle, never a
   fake near-miss), with `pick_land`; the marker turns the prize's rarity colour, the prize card lifts, others dim.
   Under the reel while it spins: the odds by rarity (chips) and the pity line. Then the prize card comes up gently
-  (90% to full size) with the prize sound (`spin_win`, Epic+ `spin_big_win`; `reward` 0.5 s later if new) and a
-  smooth 8-layer glow in its rarity colour that breathes slowly; its name fades in (Gotham Heavy Italic), the rarity a
+  (90% to full size) with the prize sound (`spin_win`, Epic+ `spin_big_win`; `reward` 0.5 s later if new), with no
+  glow round it (its 8 `Halo` layers stay hidden since Oct 20 15:13, "remove so much glow"); its name fades in (Gotham Heavy Italic), the rarity a
   beat later; one glint, a white band in a gradient on the card's rim (`Glint`), runs across it once; then "NEW!" or
   "Duplicate: +N coins" or "+N COINS" fade in, then OPEN AGAIN / BACK and the pity line. Calm like the 3D opening
   since the owner's Oct 20 07:51 "feels too ai" (so he never sees "the circle" on any path): no light rays behind the
@@ -306,9 +304,10 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
 - Crates: contents, price and odds are Claude's first pick; the Starter and Dance crate pictures are drawn
   (stand-in); the sounds are our made stand-ins (no whoosh or riser of its own yet).
 - His three knife crates: their real look (meshes, textures, glow) is only Studio's to judge: offline pictures draw his
-  parts as boxes. Not seen in Studio: the 3D opening (the glint and motes are plain Neon parts: a ViewportFrame has no bloom, so
-  they may read flatter than in the film), his picture cards in the Shop, whether `SurfaceAppearance.Color` takes the rarity
-  tint on his glow parts (pcall: nothing breaks if not). The crate keys' Robux IDs are 0 and the 25 R$ is ours. His
+  parts as boxes. Not seen in Studio: the 3D opening (the film draws his crate as boxes and darkens it by colour; only
+  Studio shows his real meshes, how far `GlowKeep` 0.3 turns his EmissiveStrength down (pcall: nothing breaks if Roblox
+  refuses), the knife's cut at the crate's edge in the ViewportFrame, the Neon rim's look, the backdrop on a phone screen,
+  and the new sounds' levels), his picture cards in the Shop. The crate keys' Robux IDs are 0 and the 25 R$ is ours. His
   picture's crates (the Shop cards) are a concept render; the opening shows his model as he built it (the Dojo roof,
   the crystals, the jaw), so the two look a little different. His cards are a mockup at 2172 px: sharp enough at
   448 px, but his BUY buttons are part of the picture, so they don't light up or press down like our buttons.
@@ -320,6 +319,17 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
   1280 x 720 layout. Polish pass (owner, Oct 19: "also check the opening animations for the crates"), judged frame by
   frame against the best Roblox openings: the honest settle, the rails and odds framing the reel, a smooth glow
   (its beam burst went on Oct 20, "too ai"), the coins held, pink Legendary, sounds on the beats (rattle, pop, ticks, thunk, prize).
+- **The 3D opening** went through two passes on Oct 20. 07:51: "Can you please make the opening animation of the crates
+  feel more premium, right now it feels too ai, as now they have the circle around the knife when it opens, remove
+  it, add s nice animation for the knife when it starts rising up from the crater" (the rays, ring, sparks, round
+  light and Epic flash went; we kept his knife's aura ring then, which was the circle he meant). 15:13: "please make
+  the case opening animation way, way better, right now its so vague and doesnt look good, remove so much glow from
+  the crates, and then make it feel premium". "Vague" read as no clear moment: nine small jumps, a slow 1.6 s rise,
+  a small knife over a bright glowing crate, tinted glow parts, motes and a glint. So: three heavy hops, a latch, a
+  flung lid, the knife big and sharp on a dark backdrop, one colour for the rarity, the name punching in, his aura
+  parts hidden and his crate's glow turned down to 30%. Critic pass on our own 10 fps sheets: the latch did not read
+  (7 deg, now 11 with a jolt and a brighter line), the crate was small in the frame (camera nearer), the crate's
+  title sat over the knife's tip (it now fades as the lid opens).
 - **Oct 19 list:** "spin prices lower"; "knifes, dances, from crates"; "add easy quests as in this photo and make new
   ones everyday then recycle them"; "make friend rewards, add a friend knife (for inviting them) and add a 10% coin
   boost when a friend is in"; "if you get more than one of the same girl, make a button which makes them prestige

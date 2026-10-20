@@ -60,6 +60,11 @@ core `CLAUDE.md` section 6.
 - Oct 19 abilities, made the same way: `trap_throw` (a swish and a springy rattle), `invisible` (an airy shimmer
   gliding down), `glitch` (three stuttered mallet notes and a tick), `decoy` (a pop and two kalimba notes stepping
   apart). The Shield and Speed Boost keep `heart_shield` and `power_rush`.
+- Oct 20 15:13, the 3D crate opening ([economy.md](economy.md)): `crate_thud` (a low thud with a wood tick, per hop),
+  `crate_latch` (two dry wood clicks), `crate_open` (a short whoosh into a heavy thump), `crate_rise` (a soft airy
+  rising whoosh), `crate_reveal` (a blade ring over a soft chord) and `crate_reveal_big` (Epic and up: a longer ring
+  with a low thump under it). Stand-ins
+  until uploaded: Roblox's landing thud, click and ping (`Sfx` FALLBACK); the rise plays nothing.
 - **The heartbeat** (`Gameplay/Heartbeat`, one play per beat, louder when a catcher is closer): a licensed pick only,
   not made here (the batch brief, after the owner's "don't create random sound by yourself"). Roblox's library showed
   no Pro Sound Effects / APM heartbeat from the cloud (only community uploads), so `SoundIds.heartbeat` is "" and the

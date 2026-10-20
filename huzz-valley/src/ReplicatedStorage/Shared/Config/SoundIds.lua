@@ -41,6 +41,14 @@ return {
 	spin_tick = "",
 	spin_win = "",
 	spin_big_win = "",
+	-- the 3D crate opening (owner, Oct 20 15:13: "make it feel premium"): assets/sfx/crate_*.ogg, made by
+	-- tools/sfx/make_sfx.py; "" until the owner uploads them (then Sfx plays Roblox's stand-in or nothing)
+	crate_thud = "", -- each of the three hops lands
+	crate_latch = "", -- the latch pops and the lid cracks
+	crate_open = "", -- the lid is flung open and hits its stop
+	crate_rise = "", -- the knife lifts out
+	crate_reveal = "", -- the knife stops in front of you (Common to Rare)
+	crate_reveal_big = "", -- the same, Epic and up
 	lunge = "",
 	trap_set = "",
 	trap_snap = "",

@@ -42,6 +42,9 @@ local LEVEL = {
 	round_win = { 0.6, 0 }, round_lose = { 0.5, 0 },
 	step = { 0.3, 0.1 }, heart_shield = { 0.5, 0 }, power_rush = { 0.5, 0 },
 	spin_tick = { 0.3, 0.02 }, spin_win = { 0.55, 0 }, spin_big_win = { 0.65, 0 },
+	-- the 3D crate opening (Oct 20 15:13): weight first, then the reveal ring
+	crate_thud = { 0.55, 0.02 }, crate_latch = { 0.45, 0 }, crate_open = { 0.6, 0 }, crate_rise = { 0.35, 0 },
+	crate_reveal = { 0.55, 0 }, crate_reveal_big = { 0.65, 0 },
 	lunge = { 0.5, 0.04 }, trap_set = { 0.45, 0 }, trap_snap = { 0.55, 0 }, knock_down = { 0.55, 0 },
 	revive = { 0.55, 0 }, aura_pickup = { 0.5, 0.02 }, speed_wind = { 0.22, 0 },
 	-- the Oct 19 powers and the heartbeat (Gameplay/Heartbeat sets its own volume by how close the catcher is)
@@ -88,6 +91,13 @@ local FALLBACK = {
 	invisible = { PING, 0.45, 0.7 },
 	glitch = { CLICK, 0.7, 0.75 },
 	decoy = { PING, 0.45, 0.8 },
+	-- the 3D crate opening (Oct 20 15:13): low thuds and a soft low ping until ours are uploaded (no stand-in for the
+	-- knife's rise: silence beats a wrong sound)
+	crate_thud = { "rbxasset://sounds/action_jump_land.mp3", 1, 0.7 },
+	crate_latch = { CLICK, 0.6, 0.8 },
+	crate_open = { "rbxasset://sounds/action_jump_land.mp3", 1, 0.6 },
+	crate_reveal = { PING, 0.6, 0.9 },
+	crate_reveal_big = { PING, 0.7, 0.8 },
 }
 
 -- Button and menu sounds go through the Interface group (Settings > Audio > Button Sounds), the rest through Effects.

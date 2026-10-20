@@ -6,8 +6,8 @@
 --   2. Shared/CrateMotion.split opens each crate sensibly (a top that swings, the body and the light inside stay, the
 --      hinge at the back of the body's top) and his knife models are there for the reveal;
 --   3. every knife in Config/CoinShop can be got through a crate, coins or Robux (a Game Pass or a product);
---   4. the opening's motion: it builds up, the top opens and stays open, the knife rises and ends facing you, nothing
---      moves when motion is reduced.
+--   4. the opening's motion on his crates: three hops, the lid open before the knife, the knife out by about 3.5 s
+--      facing you, his crates clear of the name on the screen, his knives' rings hidden, nothing moves when motion is reduced.
 -- lune run tests/CrateModels.spec.luau   (from huzz-valley/)
 local fs = require("@lune/fs")
 local process = require("@lune/process")
@@ -182,38 +182,51 @@ for _, it in CoinShop.Items do
 	end
 end
 
--- 4. the motion
+-- 4. the motion on his real crates and knives (the timing itself: tests/CrateMotion.spec)
 local T = CrateMotion.T
-local early, late = 0, 0
-for t = 0.05, 0.6, 0.05 do early = math.max(early, math.abs(CrateMotion.shake(t).roll)) end
-for t = 1.5, 2.05, 0.05 do late = math.max(late, math.abs(CrateMotion.shake(t).roll)) end
-check(string.format("it builds up: rocks harder near the end (%.1f deg -> %.1f deg)", math.deg(early), math.deg(late)), late > early * 2.5)
-check("it never rocks over 15 degrees", late < math.rad(15))
-local gaps = {}
-for i = 2, #CrateMotion.Ticks do table.insert(gaps, CrateMotion.Ticks[i] - CrateMotion.Ticks[i - 1]) end
-local closer = true
-for i = 2, #gaps do if gaps[i] > gaps[i - 1] + 1e-6 then closer = false end end
-check("the knocks come closer and closer", closer and CrateMotion.Ticks[#CrateMotion.Ticks] < T.Build)
-check("shut until it cracks", CrateMotion.lid(T.Crack - 0.01) == 0)
-local peak = 0
-for t = T.Open, T.Open + T.OpenLen, 0.02 do peak = math.max(peak, CrateMotion.lid(t)) end
-check(string.format("it opens past its rest and settles (peak %.0f deg, rest %.0f deg)", math.deg(peak), math.deg(CrateMotion.lid(T.Reveal))),
-	peak > CrateMotion.lid(T.Reveal) and math.abs(CrateMotion.lid(T.Reveal) - CrateMotion.LidOpen) < 1e-6)
-check("still once open", CrateMotion.shake(T.Open + T.OpenLen + 0.01).roll == 0)
-check("no knife before it opens", not CrateMotion.knife(T.Rise - 0.01).seen and T.Rise > T.Open)
+check("three hops before the latch, the lid open before the knife is out", #T.Hops == 3 and T.Hops[3] < T.Crack and T.Rise > T.Open)
+check("the knife is out in about 3 to 3.5 s", T.Rise + T.RiseLen >= 2.9 and T.Rise + T.RiseLen <= 3.5)
 local endK = CrateMotion.knife(T.Rise + T.RiseLen)
-check("the knife ends up at its show spot, full size", math.abs(endK.up - 1) < 1e-6 and math.abs(endK.scale - 1) < 1e-6)
-check("the knife ends facing you (whole turns)", math.abs(endK.spin - 2 * math.pi * CrateMotion.Turns) < 1e-6)
-check("the reveal comes once the knife has risen", T.Reveal >= T.Rise + T.RiseLen - 0.05)
+check("the knife ends at its show spot, full size, its profile facing you", math.abs(endK.up - 1) < 1e-6 and math.abs(endK.scale - 1) < 1e-6 and math.abs(endK.spin) < 1e-6)
 local calmMoves = false
 for t = 0, T.Reveal, 0.05 do
 	local s = CrateMotion.shake(t, true)
 	if s.roll ~= 0 or s.tilt ~= 0 or s.lift ~= 0 then calmMoves = true end
 end
-check("reduced motion: the crate never shakes", not calmMoves)
-local a, b = CrateMotion.glow(0.1)
-local c2, d2 = CrateMotion.glow(T.Crack + 0.3)
-check("the light inside takes the rarity colour as it cracks open", b == 0 and d2 > 0.999 and c2 > a)
+check("reduced motion: the crate never moves", not calmMoves)
+-- his crates on the screen: low enough for the name under them, the knife big over them (Shared/CrateMotion.camera)
+for _, c in knifeCrates do
+	local set = holder and holder:FindFirstChild(c.Model.Set)
+	local m = set and set:FindFirstChild(c.Model.Crate)
+	if m then
+		local lo, hi = math.huge, -math.huge
+		for _, d in m:GetDescendants() do
+			if d:IsA("BasePart") then
+				lo = math.min(lo, d.CFrame.Position.Y - d.Size.Y / 2)
+				hi = math.max(hi, d.CFrame.Position.Y + d.Size.Y / 2)
+			end
+		end
+		local h = hi - lo
+		local lookY, eyeY, eyeZ = CrateMotion.camera(h, CrateMotion.push(T.Reveal))
+		local _, bottom = CrateMotion.project(lookY, eyeY, eyeZ, 0, 0, 0, 16 / 9)
+		check(string.format("%s: the crate stands clear of the name under it (bottom at %.0f of 720 px)", c.Id, bottom * 720), bottom * 720 < 432)
+	end
+end
+-- his knives' aura ring and shards (owner, 07:51: "they have the circle around the knife when it opens, remove it")
+local rings, hidden = 0, 0
+for _, c in knifeCrates do
+	local set = holder and holder:FindFirstChild(c.Model.Set)
+	for _, it in c.Items do
+		local km = set and CrateModels.knife(set, CoinShop.get(it.Id))
+		for _, d in (km and km:GetDescendants() or {}) do
+			if d:IsA("BasePart") and string.find(string.lower(d.Name), "aura", 1, true) then -- (his aura_ring and aura_shard; pommel_ring and grip_ring are parts of the knife)
+				rings += 1
+				if CrateMotion.isAura(d.Name) then hidden += 1 end
+			end
+		end
+	end
+end
+check(string.format("every aura ring and shard round his knives is hidden in the opening (%d of %d)", hidden, rings), rings > 0 and hidden == rings)
 
 print(string.format("CrateModels: %d passed, %d failed", passed, failed))
 if failed > 0 then process.exit(1) end

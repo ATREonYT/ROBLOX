@@ -42,14 +42,20 @@ the Secret cutscene plays Roblox's licensed library by ID. This script never ove
 | `spin_tick.ogg` | 0.06 | 0:23.7 | Wooden peg click for the spin wheel (fine at 10+ per second). |
 | `spin_win.ogg` | 0.90 | 0:24.2 | Bright-but-warm kalimba arpeggio and bell for a spin prize. |
 | `spin_big_win.ogg` | 1.75 | 0:25.6 | Big prize: thunk, rising run, full warm chord and a shower of soft sparkles. |
-| `lunge.ogg` | 0.42 | 0:27.8 | Heavier, deeper whoosh with a low push for the catcher's lunge. |
-| `trap_set.ogg` | 0.32 | 0:28.6 | Soft wooden click-clack as a trap is set down. |
-| `trap_throw.ogg` | 0.42 | 0:29.4 | Quick wind-up swish and a springy rattle as the Bear Trap leaves the hand. |
-| `invisible.ogg` | 0.75 | 0:30.3 | Soft airy shimmer gliding down and fading away as you turn see-through. |
-| `glitch.ogg` | 0.36 | 0:31.5 | Three quick stuttered plucks that jump in pitch, then a soft landing tick (the Glitchy blink). |
-| `decoy.ogg` | 0.60 | 0:32.3 | Soft pop and two kalimba notes stepping apart as your Body Double splits off. |
-| `trap_snap.ogg` | 0.50 | 0:33.3 | Woody snap with a low thump and a springy wobble when a trap catches someone. |
-| `knock_down.ogg` | 0.65 | 0:34.3 | Cartoon fall: soft heavy thud, dust puff and a sliding-down tone. |
-| `revive.ogg` | 1.05 | 0:35.4 | Gentle rising swell into a warm chord and kalimba run when someone gets back up. |
-| `aura_pickup.ogg` | 0.80 | 0:36.9 | Satisfying thunk plus a bell and sparkle run for grabbing Aura. |
-| `speed_wind.ogg` | 2.00 | 0:38.1 | Soft wind bed for running fast (2 s, loops seamlessly; play it with Sfx.loop). |
+| `crate_thud.ogg` | 0.32 | 0:27.8 | Heavy crate hop landing: a low wooden thud with a muffled body (one per hop, three hops). |
+| `crate_latch.ogg` | 0.30 | 0:28.5 | The latch pops: a short metal clack with a tiny spring ring, as the lid cracks open. |
+| `crate_open.ogg` | 0.60 | 0:29.3 | The lid flung open: a short heavy swing and a solid thump as it hits its stop (no sparkle). |
+| `crate_rise.ogg` | 0.85 | 0:30.3 | The knife lifts out: a soft rising air swell, under a second, that leads into the reveal ring. |
+| `crate_reveal.ogg` | 1.10 | 0:31.6 | The knife stops in front of you: one clean blade ring and a short warm chord (Common to Rare). |
+| `crate_reveal_big.ogg` | 1.70 | 0:33.2 | Epic and up: the same blade ring, lower and fuller, on a held warm chord with a soft low hit. |
+| `lunge.ogg` | 0.42 | 0:35.3 | Heavier, deeper whoosh with a low push for the catcher's lunge. |
+| `trap_set.ogg` | 0.32 | 0:36.2 | Soft wooden click-clack as a trap is set down. |
+| `trap_throw.ogg` | 0.42 | 0:37.0 | Quick wind-up swish and a springy rattle as the Bear Trap leaves the hand. |
+| `invisible.ogg` | 0.75 | 0:37.8 | Soft airy shimmer gliding down and fading away as you turn see-through. |
+| `glitch.ogg` | 0.36 | 0:39.0 | Three quick stuttered plucks that jump in pitch, then a soft landing tick (the Glitchy blink). |
+| `decoy.ogg` | 0.60 | 0:39.8 | Soft pop and two kalimba notes stepping apart as your Body Double splits off. |
+| `trap_snap.ogg` | 0.50 | 0:40.9 | Woody snap with a low thump and a springy wobble when a trap catches someone. |
+| `knock_down.ogg` | 0.65 | 0:41.8 | Cartoon fall: soft heavy thud, dust puff and a sliding-down tone. |
+| `revive.ogg` | 1.05 | 0:42.9 | Gentle rising swell into a warm chord and kalimba run when someone gets back up. |
+| `aura_pickup.ogg` | 0.80 | 0:44.4 | Satisfying thunk plus a bell and sparkle run for grabbing Aura. |
+| `speed_wind.ogg` | 2.00 | 0:45.7 | Soft wind bed for running fast (2 s, loops seamlessly; play it with Sfx.loop). |

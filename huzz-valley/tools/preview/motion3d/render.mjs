@@ -20,7 +20,9 @@
 // stills [frame numbers, 0-based]: with MOTION3D_KEEP=<dir> those frames are also kept there as still_<n>.png.
 // meshFile (top level): a JSON of triangle meshes by name (tools/knives/knife_meshes.py: the owner's knives); then
 // per frame meshes [{m (name), p, r (9), s (uniform scale, or [x, y, z] in the mesh's own axes), shell ({c, a, only}: drawn as a
-// see-through additive glow skin, only over the parts whose node name starts with `only` when given)}] draws them (glow parts unlit, like Neon).
+// see-through additive glow skin, only over the parts whose node name starts with `only` when given), flat ({c, a}: the mesh in one unlit colour),
+// skip (leave out the parts whose node name starts with it)}] draws them (glow parts unlit, like Neon). Top level underlay: true + per frame
+// under {bg, rects [{x, y, w, h, c, a, round}]}: ScreenGui frames drawn BEHIND the 3D, which then has no sky, ground or fog.
 // A mesh part may add pbr {metal, rough, env (how much it mirrors the sky: a .glb viewer 1, Roblox's
 // EnvironmentSpecularScale), emis (0-1: a soft self-glow in its colour, a SurfaceAppearance emissive mask)}: then it is
 // drawn shiny (three.js standard material over a plain sky-over-ground reflection) instead of flat.
@@ -42,7 +44,8 @@ const W = data.width || 1280, H = data.height || 720, fps = data.fps || 30;
 // The page lives on a fake http origin so the ES module import works (file:// blocks modules).
 const PAGE = `<!doctype html><html><body style="margin:0;overflow:hidden"><script type="module">
 import * as THREE from './three.module.min.js';
-const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+const UNDER = ${data.underlay === true ? 'true' : 'false'};
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, alpha: UNDER });
 renderer.setSize(${W}, ${H});
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -50,6 +53,14 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 const stage = document.createElement('div');
 stage.style.cssText = 'position:fixed;left:0;top:0;width:${W}px;height:${H}px;isolation:isolate';
 document.body.appendChild(stage);
+// underlay (top level underlay: true): ScreenGui frames BEHIND the 3D (a ViewportFrame over a backdrop): per frame
+// under {bg, rects [{x, y, w, h, c, a, round (an ellipse: UICorner 1,0)}]} in 1280 x 720 pixels; then the 3D has no
+// sky, ground or fog of its own (a ViewportFrame's empty space is see-through)
+const underC = document.createElement('canvas');
+underC.width = ${W}; underC.height = ${H};
+underC.style.cssText = 'position:absolute;left:0;top:0';
+if (UNDER) stage.appendChild(underC);
+renderer.domElement.style.cssText = 'position:absolute;left:0;top:0';
 stage.appendChild(renderer.domElement);
 const bloomC = document.createElement('canvas');
 bloomC.width = ${W}; bloomC.height = ${H};
@@ -86,8 +97,8 @@ const mul = (A, B) => { // A after B (4x5 affine)
 };
 const scene = new THREE.Scene();
 const SKY = ${JSON.stringify(data.sky || '#9fd0f5')}, GROUND = ${JSON.stringify(data.ground || '#e3cf9c')};
-scene.background = new THREE.Color(SKY);
-scene.fog = new THREE.Fog(SKY, 80, 220);
+scene.background = UNDER ? null : new THREE.Color(SKY);
+scene.fog = UNDER ? null : new THREE.Fog(SKY, 80, 220);
 const camera = new THREE.PerspectiveCamera(70, ${W} / ${H}, 0.1, 500); // Roblox default FOV
 const DIM = ${data.dim ?? 1};
 const hemi = new THREE.HemisphereLight(DIM < 1 ? '#9fb0e0' : '#dff0ff', DIM < 1 ? '#40384a' : '#b89c70', 1.6 * DIM);
@@ -102,6 +113,7 @@ const ground = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000), new THREE.Mes
 ground.rotation.x = -Math.PI / 2;
 ground.receiveShadow = true;
 scene.add(ground);
+ground.visible = !UNDER;
 // a sky dome (zenith and horizon colours per frame: Atmosphere) and a star field (Sky.StarCount at night)
 const skyGeo = new THREE.SphereGeometry(450, 32, 16);
 const skyCol = new Float32Array(skyGeo.attributes.position.count * 3);
@@ -269,17 +281,24 @@ window.addMeshes = (lib) => {
 const drawMeshes = (list) => {
   list.forEach((q, i) => {
     let e = meshPool[i];
-    const key = q.m + (q.shell ? '|' + q.shell.c + '|' + q.shell.a + '|' + (q.shell.only || '') : '');
+    const key = q.m + (q.shell ? '|' + q.shell.c + '|' + q.shell.a + '|' + (q.shell.only || '') : '') + (q.flat ? '|flat' : '') + (q.skip ? '|skip:' + q.skip : '');
     if (!e || e.key !== key) {
       if (e) scene.remove(e.group);
       const grp = new THREE.Group();
       grp.matrixAutoUpdate = false;
       // shell {c, a}: the same mesh as a see-through glowing skin (a Neon glow shell round the blade)
       const shellMat = q.shell ? new THREE.MeshBasicMaterial({ color: q.shell.c, transparent: true, opacity: q.shell.a, blending: THREE.AdditiveBlending, depthWrite: false }) : null;
-      for (const part of meshLib[q.m] || []) { if (shellMat && q.shell.only && !part.node.startsWith(q.shell.only)) continue; const mesh = new THREE.Mesh(part.g, shellMat || part.mat); mesh.castShadow = !shellMat; grp.add(mesh); }
+      // flat {c, a}: the mesh in one unlit colour (a Neon copy: the crate opening's light rim behind the knife)
+      const flatMat = q.flat ? new THREE.MeshBasicMaterial({ color: q.flat.c, transparent: true, opacity: q.flat.a }) : null;
+      for (const part of meshLib[q.m] || []) {
+        if (shellMat && q.shell.only && !part.node.startsWith(q.shell.only)) continue;
+        if (q.skip && part.node.startsWith(q.skip)) continue; // skip: parts whose node name starts with it are left out
+        const mesh = new THREE.Mesh(part.g, shellMat || flatMat || part.mat); mesh.castShadow = !shellMat && !flatMat; grp.add(mesh);
+      }
       scene.add(grp);
-      e = meshPool[i] = { key, group: grp };
+      e = meshPool[i] = { key, group: grp, flatMat };
     }
+    if (e.flatMat) { e.flatMat.color.set(q.flat.c); e.flatMat.opacity = q.flat.a; }
     const r = q.r, p = q.p;
     m.set(r[0], r[1], r[2], p[0], r[3], r[4], r[5], p[1], r[6], r[7], r[8], p[2], 0, 0, 0, 1);
     const ss = Array.isArray(q.s) ? q.s : [q.s, q.s, q.s];
@@ -290,6 +309,18 @@ const drawMeshes = (list) => {
 };
 window.draw = (f) => {
   drawMeshes(Array.isArray(f.meshes) ? f.meshes : []);
+  if (UNDER) { // ScreenGui frames behind the 3D (see underC)
+    const ctx = underC.getContext('2d'), u = f.under || {}, k = ${W} / 1280;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, ${W}, ${H});
+    const col = (hexc, a) => { const c = new THREE.Color(hexc); return 'rgba(' + [c.r, c.g, c.b].map((x) => Math.round(x * 255)).join(',') + ',' + a + ')'; };
+    if (u.bg) { ctx.fillStyle = u.bg; ctx.fillRect(0, 0, ${W}, ${H}); }
+    for (const r of (Array.isArray(u.rects) ? u.rects : [])) {
+      ctx.fillStyle = col(r.c, r.a);
+      if (r.round) { ctx.beginPath(); ctx.ellipse((r.x + r.w / 2) * k, (r.y + r.h / 2) * k, r.w / 2 * k, r.h / 2 * k, 0, 0, 2 * Math.PI); ctx.fill(); }
+      else ctx.fillRect(r.x * k, r.y * k, r.w * k, r.h * k);
+    }
+  }
   f.boxes.forEach((b, i) => {
     let mesh = pool[i];
     if (!mesh) {
@@ -415,8 +446,8 @@ window.draw = (f) => {
   const [cx, cy, cz] = f.camera.pos, [lx, ly, lz] = f.camera.look;
   if (f.env) { // a per-frame sky colour and daylight (Lighting.ClockTime changing)
     const e = f.env;
-    scene.background.set(e.sky); scene.fog.color.set(e.horizon || e.sky);
-    if (e.fog) { scene.fog.near = e.fog[0]; scene.fog.far = e.fog[1]; }
+    if (!UNDER) { scene.background.set(e.sky); scene.fog.color.set(e.horizon || e.sky); }
+    if (e.fog && !UNDER) { scene.fog.near = e.fog[0]; scene.fog.far = e.fog[1]; }
     hemi.intensity = 1.6 * e.dim; sun.intensity = 1.8 * e.dim;
     if (e.amb) { hemi.color.set(e.amb); hemi.groundColor.set(e.amb).multiplyScalar(0.5); }
     if (e.horizon) { // zenith colour at the top of the dome, the horizon colour round its middle
@@ -472,7 +503,8 @@ window.draw = (f) => {
         for (const [pos, tr] of asList(r.fade)) gr.addColorStop(pos, rgba(r.c, r.a * (1 - tr)));
         ctx.fillStyle = gr;
       } else ctx.fillStyle = rgba(r.c, r.a);
-      ctx.fillRect(r.x * k, r.y * k, r.w * k, r.h * k);
+      if (r.rr) { ctx.beginPath(); ctx.roundRect(r.x * k, r.y * k, r.w * k, r.h * k, r.rr * k); ctx.fill(); if (r.s) { ctx.strokeStyle = rgba(r.s, r.a); ctx.lineWidth = (r.sw || 2) * k; ctx.stroke(); } } // (rr: UICorner radius; s, sw: a UIStroke)
+      else ctx.fillRect(r.x * k, r.y * k, r.w * k, r.h * k);
     }
     for (const q of asList(o.texts)) {
       ctx.setTransform(1, 0, 0, 1, 0, 0);

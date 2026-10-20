@@ -651,6 +651,73 @@ def spin_big_win():
     return finish(reverb(x, 0.2), d, lp=5000, fout=0.3)
 
 
+# ---------------- the 3D crate opening (owner, Oct 20 15:13: "make the case opening animation way, way better ...
+# make it feel premium"): weight first (low wooden thuds, a metal latch, a heavy lid), then one clean metallic ring
+# for the knife and a short warm chord. No sparkle showers: the knife is the moment.
+@sound("crate_thud", "Heavy crate hop landing: a low wooden thud with a muffled body (one per hop, three hops).")
+def crate_thud():
+    d = 0.32
+    x = thunk(120, 52, d, decay=0.085, seed=91)
+    add(x, woodtick(260, 0.12, decay=0.03, seed=92), 0.0, 0.35)
+    add(x, lowpass(sine(glide(70, 45, d, 2.0), d) * env(d, 0.002, 0.09), 400), 0.0, 0.6)
+    return finish(reverb(x, 0.05), d, lp=2400, fout=0.06)
+
+
+@sound("crate_latch", "The latch pops: a short metal clack with a tiny spring ring, as the lid cracks open.")
+def crate_latch():
+    d = 0.3
+    x = woodtick(1500, 0.06, decay=0.008, seed=93)
+    add(x, woodtick(2300, 0.05, decay=0.006, seed=94), 0.035, 0.6)
+    add(x, ebell("E6", 0.25, decay=0.06, index=1.6), 0.035, 0.18)
+    add(x, thunk(200, 120, 0.12, decay=0.03, seed=95), 0.0, 0.35)
+    return finish(reverb(x, 0.06), d, lp=6000, drive=1.0, fout=0.08)
+
+
+@sound("crate_open", "The lid flung open: a short heavy swing and a solid thump as it hits its stop (no sparkle).")
+def crate_open():
+    d = 0.6
+    x = 0.45 * whoosh(0.24, 260, 900, peak=0.7, octaves=1.2, seed=96, lp=2600)
+    add(x, thunk(150, 58, 0.34, decay=0.09, seed=97), 0.2, 0.95)
+    add(x, woodtick(320, 0.14, decay=0.035, seed=98), 0.2, 0.35)
+    add(x, lowpass(sine(glide(85, 50, 0.3, 2.0), 0.3) * env(0.3, 0.002, 0.1), 500), 0.2, 0.5)
+    return finish(reverb(x, 0.08), d, lp=3000, fout=0.12)
+
+
+@sound("crate_rise", "The knife lifts out: a soft rising air swell, under a second, that leads into the reveal ring.")
+def crate_rise():
+    d = 0.85
+    x = whoosh(0.85, 300, 1700, peak=0.82, octaves=1.0, seed=99, lp=3600)
+    return finish(x, d, lp=3800, fout=0.12)
+
+
+def blade_ring(at_freq, dur):
+    """A clean metallic blade ring ('shing'): a bright inharmonic bell over a short airy scrape."""
+    x = 0.35 * whoosh(0.09, 2500, 5200, peak=0.25, octaves=0.9, seed=101, lp=7000)
+    add(x, ebell(at_freq, dur, decay=dur * 0.45, index=2.2, attack=0.002), 0.03, 0.55)
+    add(x, ebell(hz(at_freq) * 1.5, dur * 0.8, decay=dur * 0.3, index=1.4, attack=0.002), 0.035, 0.25)
+    return x
+
+
+@sound("crate_reveal", "The knife stops in front of you: one clean blade ring and a short warm chord (Common to Rare).")
+def crate_reveal():
+    d = 1.1
+    x = blade_ring("A5", 0.9)
+    add(x, 0.4 * pad(["A3", "E4", "A4", "C#5"], 0.95, attack=0.02, decay=0.4, hold=0.1), 0.02, 1.0)
+    add(x, thunk(150, 70, 0.22, decay=0.05, seed=102), 0.0, 0.35)
+    return finish(reverb(x, 0.16), d, lp=6000, fout=0.25)
+
+
+@sound("crate_reveal_big", "Epic and up: the same blade ring, lower and fuller, on a held warm chord with a soft low hit.")
+def crate_reveal_big():
+    d = 1.7
+    x = blade_ring("E5", 1.3)
+    add(x, thunk(120, 50, 0.35, decay=0.1, seed=103), 0.0, 0.7)
+    add(x, 0.45 * pad(["E3", "B3", "E4", "G#4", "B4"], 1.5, attack=0.025, decay=0.6, hold=0.35), 0.02, 1.0)
+    for n in ["E4", "B4", "E5"]:
+        add(x, horn(n, 1.2, attack=0.03, decay=0.5, hold=0.25), 0.04, 0.22)
+    return finish(reverb(x, 0.2), d, lp=5500, fout=0.35)
+
+
 @sound("lunge", "Heavier, deeper whoosh with a low push for the catcher's lunge.")
 def lunge():
     d = 0.42
