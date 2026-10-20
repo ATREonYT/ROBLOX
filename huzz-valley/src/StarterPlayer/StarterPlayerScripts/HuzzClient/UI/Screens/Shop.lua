@@ -12,10 +12,17 @@
 -- headers 95 px, jump buttons 128 x 43 every 49 px (docs/notes/ui.md, "Shop").
 -- Sections, in this order: CRATES (his Dojo / Storm / Beast cards, the two Halloween stands' crates and the rest, with
 -- the pity line, OPEN for Aura or a key, KEY for Robux; then EVERY CHANCE: each crate's every item and its chance),
--- KNIVES (the coin knives by rarity, then the best Halloween knives for Aura or Robux), PASSES, AURA, COINS,
+-- KNIVES (the coin knives by rarity, then the best Halloween knives for Aura or Robux), ABILITIES, PASSES, AURA, COINS,
 -- COSMETICS. The Halloween stands, the Aura and Coin "+" buttons and the crate opening's BACK open this window at their
 -- section (ModalManager.open("Shop", <section or crate id>)). No gift buttons (we have no gifting), no codes (we have
 -- no codes system).
+-- FILTERS (owner, Oct 20 15:13: "add filters within the ui so people can find trails, titles, knifes easier"): under
+-- the KNIVES header a row of rarity chips (ALL, COMMON ... MYTHIC, in their rarity colours), OWNED / NOT OWNED and a
+-- search box; under the COSMETICS header type chips (ALL, TRAILS, TITLES, NAME COLOURS, AURAS), rarity chips and
+-- OWNED / NOT OWNED. A tap changes what shows at once; the grid closes up (no gaps); the choice stays for the session.
+-- (The Shop is also where you WEAR what you own: there is no separate inventory screen.)
+-- ABILITIES: a slot for the bought abilities, built by UI/AbilityCards (build(parent)) when that module exists; until
+-- then the section and its jump button stay hidden.
 -- Rules kept: Robux buttons only open Roblox's prompt, and only for a product with its ID (Id 0 = "coming soon",
 -- never a purchase); the server grants (ShopService, ActionService); every chance shows; pity shows; whole pixels.
 local MarketplaceService = game:GetService("MarketplaceService")
@@ -53,29 +60,33 @@ local INK = hex("101418") -- the video's dark outline round every word
 
 -- Window (px), measured on the video at 0.8 (see the header)
 local WIN = { W = 869, H = 550, Header = 77, Close = 73, TitleSize = 50 }
-local JUMP = { X = 877, W = 128, H = 43, Y = 83, Pitch = 49, TextSize = 27 }
+local JUMP = { X = 877, W = 128, H = 43, Y = 83, Pitch = 49, TextSize = 30 }
 local TOTAL_W = JUMP.X + JUMP.W -- the window and its jump column
 local PAD = 4 -- room round the cards inside the page, so their rims aren't clipped
 local BODY = { X = 30, Y = 85, W = 825, H = WIN.H - 85 - 10 }
 local CW = 795 -- the page's content width (the video's 994 x 0.8)
-local BIG = { W = 251, H = 338, Gap = 14, TitleY = 11, TitleH = 36, TitleSize = 32, PicY = 52, PicH = 152,
+local BIG = { W = 251, H = 338, Gap = 14, TitleY = 8, TitleH = 42, TitleSize = 37, PicY = 52, PicH = 152,
 	LineY = 207, LineH = 22, LineSize = 18, SmallY = 233, SmallH = 16, SmallSize = 13, ButtonX = 24, ButtonY = 262, ButtonH = 54, ButtonText = 28 }
-local SMALL = { W = 149, H = 224, Gap = 12, TitleY = 7, TitleH = 22, TitleSize = 17, PicY = 31, PicH = 120,
+local SMALL = { W = 149, H = 224, Gap = 12, TitleY = 5, TitleH = 25, TitleSize = 20, PicY = 31, PicH = 120,
 	LineY = 153, LineH = 15, LineSize = 12, ButtonX = 10, ButtonY = 174, ButtonH = 40 }
-local HEAD = { H = 95, TextSize = 53 } -- a section header: the gap between two rows of cards, the word in its middle
+local HEAD = { H = 95, TextSize = 58 } -- a section header: the gap between two rows of cards, the word in its middle
 local SUB = { H = 50, TextSize = 28 } -- a smaller header inside a section (a rarity, EVERY CHANCE)
 local BANNER = { H = 224 }
-local CARD_T = 0.12 -- the cards' see-through, as the video's
+local CARD_T = 0 -- the video's cards are solid
+local BODY_COLOUR = hex("264F31") -- the video's page between the cards (measured the same in every frame: solid)
+local BODY_T = 0.06
+local STUDS = 0.42 -- the video's price buttons: clearly studded (Kit's buttons are 0.22)
 
--- the video's two card colours: deep green (potions, money) and deep teal (passes, speed); a near-black rim
-local GREEN = { Top = hex("2C5C1F"), Bottom = hex("12321A"), Rim = hex("06120A") }
-local TEAL = { Top = hex("1B4A5E"), Bottom = hex("0F2C3A"), Rim = hex("040C12") }
+-- the video's two card colours, measured on its frames: saturated green (potions, money) and teal (passes, speed)
+local GREEN = { Top = hex("317019"), Bottom = hex("17441A"), Rim = hex("06120A") }
+local TEAL = { Top = hex("1D587A"), Bottom = hex("0F3448"), Rim = hex("040C12") }
 
 -- the sections, top to bottom, each with its jump button's colour (the video's EGGS orange, POTIONS purple, PASSES
 -- blue, CODES teal, MONEY green, SPEED blue) and its cards' colour
 local SECTIONS = {
 	{ Key = "Crates", Text = "CRATES", Fill = hex("CC5C17"), Top = hex("F38D4B"), Look = GREEN },
 	{ Key = "Knives", Text = "KNIVES", Fill = hex("8225D5"), Top = hex("BD79F2"), Look = TEAL },
+	{ Key = "Abilities", Text = "ABILITIES", Fill = hex("D7336F"), Top = hex("F682AE"), Look = TEAL }, -- (shown once UI/AbilityCards exists)
 	{ Key = "Passes", Text = "PASSES", Fill = hex("257AD9"), Top = hex("6FB2F5"), Look = TEAL },
 	{ Key = "Aura", Text = "AURA", Fill = hex("1EBABF"), Top = hex("7FE6E9"), Look = GREEN },
 	{ Key = "Coins", Text = "COINS", Fill = hex("43D416"), Top = hex("8CEB63"), Look = GREEN },
@@ -116,9 +127,32 @@ local function chunkyButton(b)
 	if label and label:IsA("TextLabel") then
 		label.FontFace = SHOP_FONT
 		local o = label:FindFirstChild("Outline")
-		if o and o:IsA("UIStroke") then o.Thickness, o.Transparency = 2, 0 end
+		if o and o:IsA("UIStroke") then o.Color, o.Thickness, o.Transparency, o.Enabled = INK, 2, 0, true end
 	end
+	local studs = b.Instance:FindFirstChild("StudPattern")
+	if studs and studs:IsA("ImageLabel") then studs.ImageTransparency = 1 - STUDS end
 	return b
+end
+
+-- FILTERS: what each filter row last picked, kept for the session (the Shop is built once per session)
+local FILTER = {
+	Knives = { Rarity = "All", Own = "All", Search = "" },
+	Cosmetics = { Type = "All", Rarity = "All", Own = "All", Search = "" },
+}
+local TYPES = { { Key = "Trail", Text = "TRAILS" }, { Key = "Title", Text = "TITLES" }, { Key = "Tag", Text = "NAME COLOURS" }, { Key = "Aura", Text = "AURAS" } }
+local TYPE_COLOUR = { All = hex("D6DEE6"), Trail = hex("1EBABF"), Title = hex("E25FA8"), Tag = hex("A45CF0"), Aura = hex("5AA8F5") }
+local OWN_COLOUR = { Owned = hex("43D416"), NotOwned = hex("F08A3C") }
+local CHIP = { H = 40, Gap = 8, Pad = 26, MinW = 64, TextSize = 19, RowGap = 8 } -- touch-sized chips
+-- a chip's two looks in its colour: dark with coloured words, or filled (and a white rim, set where it's picked)
+local function chipStyle(key: string, col: Color3): (string, string)
+	local off, on = "Chip" .. key, "ChipOn" .. key
+	if not Kit.Styles[off] then
+		local black = Color3.new(0, 0, 0)
+		local dark = col:Lerp(black, 0.66)
+		Kit.Styles[off] = { Idle = dark, Hover = dark:Lerp(WHITE, 0.08), Pressed = dark:Lerp(black, 0.15), Text = col:Lerp(WHITE, 0.4), Top = col:Lerp(black, 0.35), Rim = col:Lerp(black, 0.1) }
+		Kit.Styles[on] = { Idle = col, Hover = col:Lerp(WHITE, 0.1), Pressed = col:Lerp(black, 0.1), Text = WHITE, Top = col:Lerp(WHITE, 0.35), Rim = INK }
+	end
+	return off, on
 end
 
 -- One price button's look for a product right now: text, style, icon, and whether the Robux mark shows.
@@ -379,13 +413,13 @@ end
 
 function Shop.build(parent: Instance)
 	-- Flat (no CanvasGroup): the 3D crates that stand in for his pictures (ViewportFrames) must show.
-	local window = Kit.window({ Name = "Shop", Flat = true, Title = "Shop", Icon = "ShopCart", Width = TOTAL_W, Height = WIN.H, HeaderHeight = WIN.Header, TitleX = 24, TitleSize = WIN.TitleSize, TitleWidth = 120, StudsTo = 300, PanelColor = hex("0E2A16"), Parent = parent, OnClose = function() ModalManager.close() end })
+	local window = Kit.window({ Name = "Shop", Flat = true, Title = "Shop", Icon = "ShopCart", Width = TOTAL_W, Height = WIN.H, HeaderHeight = WIN.Header, TitleX = 24, TitleSize = WIN.TitleSize, TitleWidth = 120, StudsTo = 300, PanelColor = BODY_COLOUR, Parent = parent, OnClose = function() ModalManager.close() end })
 	local panel, header = window.Panel, window.Header
 	panel.Size = UDim2.fromOffset(WIN.W, WIN.H) -- (the jump column stands outside the window, as in the video)
-	-- the video's body: no studs, the world showing through a dark green
+	-- the video's body: no studs, its solid mid green (Oct 20 15:13: "brown" over the world before)
 	local fill = panel:FindFirstChild("Fill")
 	if fill and fill:IsA("Frame") then
-		fill.BackgroundTransparency = 0.42
+		fill.BackgroundColor3, fill.BackgroundTransparency = BODY_COLOUR, BODY_T
 		local studs = fill:FindFirstChild("StudPattern")
 		if studs and studs:IsA("GuiObject") then studs.Visible = false end
 	end
@@ -470,7 +504,7 @@ function Shop.build(parent: Instance)
 	local function bigCard(name: string, lk, title: string, w: number?): Frame
 		local cw = w or BIG.W
 		local c = card(name, cw, BIG.H, lk)
-		local t = chunky({ Name = "Title", Text = title, TextSize = BIG.TitleSize, Position = UDim2.fromOffset(8, BIG.TitleY), Size = UDim2.fromOffset(cw - 16, BIG.TitleH), ZIndex = 3, Parent = c }, 2.5)
+		local t = chunky({ Name = "Title", Text = title, TextSize = BIG.TitleSize, Position = UDim2.fromOffset(8, BIG.TitleY), Size = UDim2.fromOffset(cw - 16, BIG.TitleH), ZIndex = 3, Parent = c }, 3)
 		Kit.fitLine(t, cw - 16, BIG.TitleSize, 16, true)
 		return c
 	end
@@ -507,6 +541,134 @@ function Shop.build(parent: Instance)
 	local bySection = {}
 	for _, s in SECTIONS do bySection[s.Key] = s end
 	local cardsOf: { [string]: GuiObject } = {} -- crate id -> its card (the stands and BACK scroll to it)
+
+	-- FILTERS: every card a filter row can hide, with what it is (section, rarity, type, name, owned?)
+	type Entry = { card: GuiObject, sec: string, rarity: string?, slot: string?, name: string, owned: () -> boolean, base: () -> boolean }
+	local filterable: { Entry } = {}
+	local empties: { [string]: GuiObject } = {} -- section -> its "nothing matches" line
+	local chipsOf: { [string]: { [string]: { [string]: any } } } = {} -- "<section><row>" -> chip key -> chip
+	local function passes(e: Entry): boolean
+		local f = FILTER[e.sec]
+		if not f then return true end
+		if f.Rarity ~= "All" and e.rarity ~= f.Rarity then return false end
+		if f.Type and f.Type ~= "All" and e.slot ~= f.Type then return false end
+		if f.Own ~= "All" and (f.Own == "Owned") ~= e.owned() then return false end
+		local q = string.lower(string.match(f.Search or "", "^%s*(.-)%s*$") or "")
+		if q ~= "" and not string.find(string.lower(e.name), q, 1, true) then return false end
+		return true
+	end
+	-- shows and hides the cards (the page is placed again by the caller); true if anything changed
+	local function applyFilters(): boolean
+		local changed = false
+		local any: { [string]: boolean } = {}
+		for _, e in filterable do
+			local v = e.base() and passes(e)
+			if e.card.Visible ~= v then e.card.Visible = v; changed = true end
+			if v then any[e.sec] = true end
+		end
+		for sec, line in empties do
+			local v = not any[sec]
+			if line.Visible ~= v then line.Visible = v; changed = true end
+		end
+		return changed
+	end
+	local layoutRef: { fn: (() -> ())? } = {}
+	-- one chip row: left to right, sized to their words (smaller words if the row must, never past maxW)
+	local function chipRow(parent: GuiObject, name: string, defs: { any }, x0: number, y: number, maxW: number, onPick: (string) -> ())
+		local size = CHIP.TextSize
+		local function measure(sz: number): ({ number }, number)
+			local ws, total = {}, 0
+			for i, d in defs do
+				ws[i] = math.max(CHIP.MinW, math.ceil(Kit.textWidth(d.Text, SHOP_FONT, sz)) + CHIP.Pad)
+				total += ws[i] + (if i > 1 then CHIP.Gap else 0)
+			end
+			return ws, total
+		end
+		local ws, total = measure(size)
+		while total > maxW and size > 14 do size -= 1; ws, total = measure(size) end
+		if total > maxW then for i in ws do ws[i] = (maxW - (#defs - 1) * CHIP.Gap) // #defs end end
+		local chips = {}
+		local x = x0
+		for i, d in defs do
+			local off, on = chipStyle(name .. d.Key, d.Color)
+			local b = chunkyButton(Kit.button({ Name = name .. d.Key, Text = d.Text, Style = off, FontFace = SHOP_FONT, TextSize = size, Corner = 3, Size = UDim2.fromOffset(ws[i], CHIP.H), ZIndex = 3, Parent = parent }))
+			Kit.place(b.Instance, UDim2.fromOffset(x, y), UDim2.fromOffset(ws[i], CHIP.H)) -- (placed every time: a saved row may differ)
+			b.onClick(function() onPick(d.Key) end)
+			chips[d.Key] = { button = b, off = off, on = on }
+			x += ws[i] + CHIP.Gap
+		end
+		return chips, x - CHIP.Gap - x0
+	end
+	local function showChips(chips, picked: string)
+		for key, ch in chips do
+			local sel = key == picked
+			ch.button.setStyle(if sel then ch.on else ch.off)
+			chunkyButton(ch.button)
+			local rim = ch.button.Instance:FindFirstChild("Rim")
+			if rim and rim:IsA("UIStroke") then rim.Color, rim.Thickness = if sel then WHITE else Kit.Styles[ch.off].Rim, if sel then 3 else 1.5 end
+			ch.button.Instance:SetAttribute("Picked", sel)
+		end
+	end
+	local function refreshChips(sec: string)
+		local f = FILTER[sec]
+		for row, chips in chipsOf do
+			if string.sub(row, 1, #sec) == sec then
+				local what = string.sub(row, #sec + 1)
+				showChips(chips, if what == "Own" then f.Own else if what == "Type" then f.Type else f.Rarity)
+			end
+		end
+	end
+	local function pick(sec: string, what: string, key: string)
+		local f = FILTER[sec]
+		if what == "Own" then f.Own = if f.Own == key then "All" else key -- (OWNED / NOT OWNED: tap again for all)
+		else f[what] = key end
+		refreshChips(sec)
+		if applyFilters() and layoutRef.fn then layoutRef.fn() end
+	end
+	-- the rarities present among some cards, in order, as chips (ALL first)
+	local function rarityDefs(list: { any }, allText: string): { any }
+		local have = {}
+		for _, it in list do if it.Rarity then have[it.Rarity] = true end end
+		local defs = { { Key = "All", Text = allText, Color = TYPE_COLOUR.All } }
+		for _, r in RARITY_ORDER do
+			if have[r] and r ~= "Exclusive" then table.insert(defs, { Key = r, Text = string.upper(r), Color = rarityColor[r] or WHITE }) end
+		end
+		return defs
+	end
+	local OWN_DEFS = { { Key = "Owned", Text = "OWNED", Color = OWN_COLOUR.Owned }, { Key = "NotOwned", Text = "NOT OWNED", Color = OWN_COLOUR.NotOwned } }
+	-- the search box (a long list: knives)
+	local function searchBox(parent: GuiObject, sec: string, x: number, y: number, w: number, hint: string)
+		local f = new("Frame", { Name = "Search", Position = UDim2.fromOffset(x, y), Size = UDim2.fromOffset(w, CHIP.H), BackgroundColor3 = hex("0D2214"), BorderSizePixel = 0, ZIndex = 3, Parent = parent }, { Kit.corner(3), Kit.stroke(hex("7FA889"), 2) })
+		local icon = Kit.icon("Search", { Name = "Icon", Position = UDim2.fromOffset(12, 10), Size = UDim2.fromOffset(19, 20), ZIndex = 4, Parent = f })
+		if icon:IsA("ImageLabel") then icon.ImageColor3 = hex("C9DCCD") end
+		local ph = chunky({ Name = "Hint", Text = hint, TextSize = 18, TextColor3 = hex("9DB8A3"), TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(40, 0), Size = UDim2.fromOffset(w - 80, CHIP.H), ZIndex = 4, Parent = f }, 1)
+		Kit.fitLine(ph, w - 80, 18, 12, true)
+		local box: TextBox = new("TextBox", { Name = "Box", Text = FILTER[sec].Search or "", PlaceholderText = "", ClearTextOnFocus = false, BackgroundTransparency = 1, FontFace = SHOP_FONT, TextSize = 19, TextColor3 = WHITE, TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = false, ClipsDescendants = true, Position = UDim2.fromOffset(40, 0), Size = UDim2.fromOffset(w - 80, CHIP.H), ZIndex = 5, Parent = f })
+		local clear = chunkyButton(Kit.button({ Name = "Clear", Text = "X", Style = (chipStyle("Clear", TYPE_COLOUR.All)), FontFace = SHOP_FONT, TextSize = 18, Corner = 3, Size = UDim2.fromOffset(30, 30), ZIndex = 5, Parent = f }))
+		Kit.place(clear.Instance, UDim2.fromOffset(w - 36, 5), UDim2.fromOffset(30, 30))
+		local function show()
+			ph.Visible = box.Text == ""
+			clear.Instance.Visible = box.Text ~= ""
+		end
+		clear.onClick(function() box.Text = "" end)
+		box:GetPropertyChangedSignal("Text"):Connect(function()
+			if #box.Text > 24 then box.Text = string.sub(box.Text, 1, 24); return end
+			show()
+			if FILTER[sec].Search ~= box.Text then
+				FILTER[sec].Search = box.Text
+				if applyFilters() and layoutRef.fn then layoutRef.fn() end
+			end
+		end)
+		show()
+		return f
+	end
+	-- a section's "nothing matches" line (only while every card is filtered out)
+	local function emptyLine(sec: string, text: string): TextLabel
+		local l = chunky({ Name = "Nothing" .. sec, Text = text, TextSize = 22, TextColor3 = hex("DDE8DF"), Size = UDim2.fromOffset(CW, 60), Visible = false, ZIndex = 2, Parent = body }, 2)
+		Kit.fitLine(l, CW - 20, 22, 14, true)
+		empties[sec] = l
+		return l
+	end
 
 	-- FEATURED: his Void Beast Chest (a real crate we sell: no timer, no "one-time offer", nothing scarce)
 	local beast = Crates.get("Beast")
@@ -606,14 +768,14 @@ function Shop.build(parent: Instance)
 	mark("Knives")
 	block(head(bySection.Knives), HEAD.H)
 	local items: { [string]: { card: Frame, item: any } } = {}
-	local function itemCard(item, lk): Frame
+	local function itemCard(item, lk, sec: string): Frame
 		local c = card(item.Key, SMALL.W, SMALL.H, lk)
 		local tint = item.Rarity and rarityColor[item.Rarity]
 		if tint then
 			local rim = c:FindFirstChildOfClass("UIStroke")
 			if rim then rim.Color = tint:Lerp(Color3.new(0, 0, 0), 0.35) end
 		end
-		local t = chunky({ Name = "Title", Text = item.Name, TextSize = SMALL.TitleSize, Position = UDim2.fromOffset(5, SMALL.TitleY), Size = UDim2.fromOffset(SMALL.W - 10, SMALL.TitleH), ZIndex = 3, Parent = c }, 1.5)
+		local t = chunky({ Name = "Title", Text = item.Name, TextSize = SMALL.TitleSize, Position = UDim2.fromOffset(5, SMALL.TitleY), Size = UDim2.fromOffset(SMALL.W - 10, SMALL.TitleH), ZIndex = 3, Parent = c }, 2)
 		Kit.fitLine(t, SMALL.W - 10, SMALL.TitleSize, 10, true)
 		if item.Art then
 			Kit.art(item.Art :: string, { Name = "Picture", Position = UDim2.fromOffset(4, SMALL.PicY), Size = UDim2.fromOffset(SMALL.W - 8, SMALL.PicH), ScaleType = Enum.ScaleType.Fit, ZIndex = 2, Parent = c })
@@ -629,7 +791,6 @@ function Shop.build(parent: Instance)
 		local function refresh()
 			local owned = State.data.Cosmetics[item.Key] == true
 			local worn = CoinShop.worn(State.data, item.Slot) == item.Key
-			c.Visible = owned or not item.NotForSale -- (prizes such as the Spin Knife show once you own them)
 			if icon then icon.Visible = not owned and not item.Unlock end
 			if not owned and item.Unlock then
 				b.setText("EARN IT") -- (quest knives: never sold; the tap says where)
@@ -660,15 +821,32 @@ function Shop.build(parent: Instance)
 		table.insert(refreshButtons, refresh)
 		refresh()
 		items[item.Key] = { card = c, item = item }
+		table.insert(filterable, { card = c, sec = sec, rarity = item.Rarity, slot = item.Slot, name = item.Name,
+			owned = function() return State.data.Cosmetics ~= nil and State.data.Cosmetics[item.Key] == true end,
+			-- (prizes such as the Spin Knife show once you own them)
+			base = function() return (State.data.Cosmetics ~= nil and State.data.Cosmetics[item.Key] == true) or not item.NotForSale end })
 		return c
 	end
 	local sorted = {}
 	for _, item in CoinShop.Items do table.insert(sorted, item) end
 	table.sort(sorted, function(a, b) return a.Order < b.Order end)
+	-- the filter row: rarity chips; OWNED / NOT OWNED and the search box under them
+	do
+		local knives = {}
+		for _, item in sorted do if item.Slot == "Knife" then table.insert(knives, item) end end
+		local row = new("Frame", { Name = "KnivesFilters", Size = UDim2.fromOffset(CW, 2 * CHIP.H + CHIP.RowGap), BackgroundTransparency = 1, Parent = body })
+		chipsOf.KnivesRarity = chipRow(row, "KnivesRarity", rarityDefs(knives, "ALL"), 0, 0, CW, function(k) pick("Knives", "Rarity", k) end)
+		local ownChips, ownW = chipRow(row, "KnivesOwn", OWN_DEFS, 0, CHIP.H + CHIP.RowGap, 330, function(k) pick("Knives", "Own", k) end)
+		chipsOf.KnivesOwn = ownChips
+		local sx = ownW + 16
+		searchBox(row, "Knives", sx, CHIP.H + CHIP.RowGap, CW - sx, "Search knives")
+		refreshChips("Knives")
+		block(row, row.Size.Y.Offset, 0, 6)
+	end
 	for _, rarity in RARITY_ORDER do
 		local group = {}
 		for _, item in sorted do
-			if item.Slot == "Knife" and (item.Rarity or "Common") == rarity then table.insert(group, itemCard(item, TEAL)) end
+			if item.Slot == "Knife" and (item.Rarity or "Common") == rarity then table.insert(group, itemCard(item, TEAL, "Knives")) end
 		end
 		if #group > 0 then
 			block(subHead("Head" .. rarity, string.upper(rarity), rarityColor[rarity] or WHITE), SUB.H, 0, 0, group)
@@ -718,13 +896,45 @@ function Shop.build(parent: Instance)
 			chunkyButton(buyA)
 		end)
 		table.insert(hwCards, c)
+		table.insert(filterable, { card = c, sec = "Knives", rarity = item.Rarity, slot = "Knife", name = item.Name,
+			owned = function() return State.data.Cosmetics ~= nil and State.data.Cosmetics[item.Key] == true end,
+			base = function() return true end })
 	end
 	if #hwCards > 0 then
-		block(subHead("HeadHalloween", "HALLOWEEN KNIVES", hex("FF8A2A")), SUB.H)
+		block(subHead("HeadHalloween", "HALLOWEEN KNIVES", hex("FF8A2A")), SUB.H, 0, 0, hwCards)
 		local note = chunky({ Name = "Note", Text = "A knife here costs 3x its crate's average Aura.", TextSize = 15, TextColor3 = hex("E6D8C8"), Size = UDim2.fromOffset(CW, 20), ZIndex = 2, Parent = body }, 1.2)
-		block(note, 20, 0, 8)
+		block(note, 20, 0, 8, hwCards)
 		grid(hwCards, hwCols, hwW, BIG.H, hwGap, 6)
 	end
+	block(emptyLine("Knives", "No knives match. Tap ALL or clear the search."), 60, 0, 6)
+
+	-- ABILITIES ---------------------------------------------------------------------------------------------------------
+	-- Bought abilities (owner, Oct 20 15:13: "make the abilities be bought"), built by UI/AbilityCards: build(slot)
+	-- fills a 795 px wide frame and returns its height (or sizes the frame). Until that module exists, or if it
+	-- fails, the section and its jump button stay hidden (the page is placed without it).
+	mark("Abilities")
+	local abHead = head(bySection.Abilities)
+	local abSlot = new("Frame", { Name = "AbilitiesSlot", Size = UDim2.fromOffset(CW, 0), BackgroundTransparency = 1, Parent = body })
+	local abH = 0
+	local abModule = UI:FindFirstChild("AbilityCards")
+	if abModule and abModule:IsA("ModuleScript") then
+		local ok, res = pcall(function() return (require(abModule) :: any).build(abSlot) end)
+		if ok then
+			abH = if type(res) == "number" then res else abSlot.Size.Y.Offset
+			if abH <= 0 then
+				for _, ch in abSlot:GetChildren() do
+					if ch:IsA("GuiObject") then abH = math.max(abH, ch.Position.Y.Offset + ch.Size.Y.Offset) end
+				end
+			end
+		else
+			warn("[HuzzUI] Shop: ABILITIES couldn't be built:", res)
+		end
+	end
+	local hasAbilities = abH > 0
+	abHead.Visible, abSlot.Visible = hasAbilities, hasAbilities
+	abSlot.Size = UDim2.fromOffset(CW, math.max(0, math.round(abH)))
+	block(abHead, HEAD.H)
+	block(abSlot, abSlot.Size.Y.Offset, 0, 0)
 
 	-- PASSES ------------------------------------------------------------------------------------------------------------
 	mark("Passes")
@@ -803,6 +1013,21 @@ function Shop.build(parent: Instance)
 	-- COSMETICS ---------------------------------------------------------------------------------------------------------
 	mark("Cosmetics")
 	block(head(bySection.Cosmetics), HEAD.H)
+	-- the filter row: type chips; rarity chips with OWNED / NOT OWNED beside them
+	do
+		local lookItems = {}
+		for _, item in sorted do if item.Slot ~= "Knife" then table.insert(lookItems, item) end end
+		local row = new("Frame", { Name = "CosmeticsFilters", Size = UDim2.fromOffset(CW, 2 * CHIP.H + CHIP.RowGap), BackgroundTransparency = 1, Parent = body })
+		local typeDefs = { { Key = "All", Text = "ALL", Color = TYPE_COLOUR.All } }
+		for _, t in TYPES do table.insert(typeDefs, { Key = t.Key, Text = t.Text, Color = TYPE_COLOUR[t.Key] }) end
+		chipsOf.CosmeticsType = chipRow(row, "CosmeticsType", typeDefs, 0, 0, CW, function(k) pick("Cosmetics", "Type", k) end)
+		local y2 = CHIP.H + CHIP.RowGap
+		local ownChips, ownW = chipRow(row, "CosmeticsOwn", OWN_DEFS, 0, y2, 330, function(k) pick("Cosmetics", "Own", k) end)
+		chipsOf.CosmeticsOwn = ownChips
+		chipsOf.CosmeticsRarity = chipRow(row, "CosmeticsRarity", rarityDefs(lookItems, "ANY RARITY"), ownW + 16, y2, CW - ownW - 16, function(k) pick("Cosmetics", "Rarity", k) end)
+		refreshChips("Cosmetics")
+		block(row, row.Size.Y.Offset, 0, 10)
+	end
 	local cosCards = {}
 	for _, p in Products.Cosmetics do
 		local c = bigCard(p.Key, TEAL, p.Name)
@@ -811,18 +1036,23 @@ function Shop.build(parent: Instance)
 		lines(c, a, b2)
 		priceRow(c, p)
 		table.insert(cosCards, c)
+		table.insert(filterable, { card = c, sec = "Cosmetics", rarity = nil, slot = p.Slot, name = p.Name,
+			owned = function() return State.owns(p.Key) end, base = function() return true end })
 	end
 	grid(cosCards, 3, BIG.W, BIG.H, BIG.Gap, 10)
 	-- the looks you buy with coins (trails, name colours, titles, auras: the girls' rewards show their rarity)
 	local looks = {}
 	for _, item in sorted do
-		if item.Slot ~= "Knife" then table.insert(looks, itemCard(item, TEAL)) end
+		if item.Slot ~= "Knife" then table.insert(looks, itemCard(item, TEAL, "Cosmetics")) end
 	end
 	if #looks > 0 then
 		block(subHead("HeadLooks", "FOR COINS", bySection.Coins.Fill), SUB.H, 0, 0, looks)
 		grid(looks, 5, SMALL.W, SMALL.H, SMALL.Gap, 0)
 	end
+	block(emptyLine("Cosmetics", "Nothing matches. Tap ALL to see every look."), 60, 0, 0)
 
+	layoutRef.fn = layout
+	applyFilters()
 	layout()
 
 	-- The jump buttons: one per section, scrolling the page there; the one on screen wears a white rim.
@@ -857,10 +1087,21 @@ function Shop.build(parent: Instance)
 		task.defer(highlight)
 		if animate then task.delay(0.4, highlight) end
 	end
+	local slot = 0
 	for i, s in SECTIONS do
-		local b = chunkyButton(Kit.button({ Name = s.Key .. "Tab", Text = s.Text, Style = "Jump" .. s.Key, FontFace = SHOP_FONT, TextSize = JUMP.TextSize, Corner = 3, Position = UDim2.fromOffset(JUMP.X, JUMP.Y + (i - 1) * JUMP.Pitch), Size = UDim2.fromOffset(JUMP.W, JUMP.H), LayoutOrder = i, Parent = panel }))
+		local shows = s.Key ~= "Abilities" or hasAbilities
+		local b = chunkyButton(Kit.button({ Name = s.Key .. "Tab", Text = s.Text, Style = "Jump" .. s.Key, FontFace = SHOP_FONT, TextSize = JUMP.TextSize, Corner = 3, Size = UDim2.fromOffset(JUMP.W, JUMP.H), LayoutOrder = i, Parent = panel }))
+		b.Instance.Visible = shows
+		if shows then
+			Kit.place(b.Instance, UDim2.fromOffset(JUMP.X, JUMP.Y + slot * JUMP.Pitch), UDim2.fromOffset(JUMP.W, JUMP.H))
+			slot += 1
+		end
 		local label = b.Instance:FindFirstChild("Label", true)
-		if label and label:IsA("TextLabel") then Kit.fitLine(label, JUMP.W - 12, JUMP.TextSize, 16) end
+		if label and label:IsA("TextLabel") then
+			Kit.fitLine(label, JUMP.W - 12, JUMP.TextSize, 16)
+			local o = label:FindFirstChild("Outline")
+			if o and o:IsA("UIStroke") then o.Thickness = 2.5 end
+		end
 		b.onClick(function() scrollTo(s.Key, true) end)
 		jumps[s.Key] = b
 	end
@@ -871,7 +1112,6 @@ function Shop.build(parent: Instance)
 
 	-- A reward you've just earned (Config/CoinShop Earn): say so once, and where to find it.
 	local known: { [string]: boolean }? = nil
-	local shownCount = -1
 	State.changed(function(data)
 		if data.Loaded then
 			local first = known == nil
@@ -891,10 +1131,8 @@ function Shop.build(parent: Instance)
 		coins.setAmount(Format.commas(State.shown("Coins")))
 		gems.setAmount(Format.commas(data.Aura or 0))
 		for _, f in refreshButtons do f() end
-		-- (a prize you now own adds its card: place the page again)
-		local n = 0
-		for _, e in items do if e.card.Visible then n += 1 end end
-		if n ~= shownCount then shownCount = n; layout() end
+		-- (a prize you now own adds its card, a buy moves one past OWNED / NOT OWNED: place the page again)
+		if applyFilters() then layout() end
 	end)
 	coins.setAmount(Format.commas(State.shown("Coins")))
 	gems.setAmount(Format.commas(State.data.Aura or 0))

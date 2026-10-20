@@ -23,6 +23,8 @@ shot shop-top none 2560 1408 '{SCREEN="Shop", SCALE=2.5, GEMS=320}' # (vs his vi
 shot shop-crates none 2560 1408 '{SCREEN="Shop", TAB="Crates", SCALE=2.5, GEMS=320, CRATEPITY=7}'
 shot shop-halloween none 2560 1408 '{SCREEN="Shop", TAB="Witch", SCALE=2.5, GEMS=12000, OWN="CandyReaper"}' # (where WITCH'S BREW opens it)
 shot shop-knives none 2560 1408 '{SCREEN="Shop", TAB="Knives", SCALE=2.5, OWN="SpinKnife,IceKnife", COINS=1500}'
+shot shop-filter-knives none 2560 1408 '{SCREEN="Shop", TAB="Knives", SCALE=2.5, OWN="SpinKnife,IceKnife", COINS=1500, SELECT="KnivesRarityEpic"}' # (the filters, Oct 20 15:13: EPIC picked)
+shot shop-filter-cosmetics none 2560 1408 '{SCREEN="Shop", TAB="Cosmetics", SCALE=2.5, SELECT="CosmeticsTypeTrail"}' # (TRAILS picked)
 shot shop-passes none 2560 1408 '{SCREEN="Shop", TAB="Passes", SCALE=2.5, PASSES="VIP"}' # (vs his video at 2.5 s)
 shot shop-aura none 2560 1408 '{SCREEN="Shop", TAB="Aura", SCALE=2.5, GEMS=320}'
 shot shop-coins none 2560 1408 '{SCREEN="Shop", TAB="Coins", SCALE=2.5}' # (vs his video at 1.3 s)

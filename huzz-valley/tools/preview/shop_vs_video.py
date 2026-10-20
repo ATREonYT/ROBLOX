@@ -5,6 +5,7 @@
 #   cd tools/preview && NODE_PATH=$(npm root -g) LUNE=/root/bin/lune HUZZ_FRESH=1 \
 #     sh shots.sh <shots> shop-top shop-coins shop-passes shop-crates && cd ../..
 #   python3 tools/preview/shop_vs_video.py <shots> docs/previews/shop-oct20-1425-vs-video.jpg
+# Other rows: a third argument "<his second>:<our shot>,..." (e.g. "1.3:shop-filter-knives,4.5:shop-filter-cosmetics").
 import sys
 from PIL import Image, ImageDraw, ImageFont
 
@@ -30,9 +31,12 @@ def font(size):
 
 def main():
     shots, out = sys.argv[1], sys.argv[2]
-    sheet = Image.new('RGB', (2 * W + GAP, len(ROWS) * (H + LABEL)), (18, 18, 22))
+    rows = ROWS
+    if len(sys.argv) > 3:
+        rows = [(t, name, f'our {name}') for t, name in (r.split(':', 1) for r in sys.argv[3].split(','))]
+    sheet = Image.new('RGB', (2 * W + GAP, len(rows) * (H + LABEL)), (18, 18, 22))
     d = ImageDraw.Draw(sheet)
-    for i, (t, name, what) in enumerate(ROWS):
+    for i, (t, name, what) in enumerate(rows):
         y = i * (H + LABEL)
         his = Image.open(VIDEO.format(t)).convert('RGB').resize((W, H), Image.LANCZOS)
         ours = Image.open(f'{shots}/{name}.png').convert('RGB').resize((W, H), Image.LANCZOS)
