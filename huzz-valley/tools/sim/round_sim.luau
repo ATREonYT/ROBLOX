@@ -322,6 +322,15 @@ local function simulate(opts)
 		end,
 	}
 	local Round = Net.get("Round")
+	-- Moving a body (HuzzServer/PlaceService): each bot's own "screen" (Gameplay/PlaceSelf) moves it 0.12 s later, as a
+	-- client a round trip away would (a screen that never answers: tests/PlaceService.spec.luau).
+	local Place = Net.get("Place")
+	function Place:FireClient(p, character, cf)
+		stats.placeAsks = (stats.placeAsks or 0) + 1
+		task.delay(0.12, function()
+			if p.Character == character and character then character:PivotTo(cf) end
+		end)
+	end
 
 	-- Real shared modules
 	local function loadShared(path, extraEnv)
@@ -667,6 +676,7 @@ local function simulate(opts)
 	end
 	-- where every body was over the last moment (catches are judged where the catcher's screen showed the runner)
 	modules.HitHistory = loadScript("ServerScriptService/HuzzServer/HitHistory.lua")()
+	modules.PlaceService = loadScript("ServerScriptService/HuzzServer/PlaceService.lua")()
 	PowerService = loadScript("ServerScriptService/HuzzServer/PowerService.lua")()
 	modules.PowerService = PowerService
 	-- The Practice Bot: the real module with a stand-in body that botFrame walks where it's told.
@@ -913,6 +923,15 @@ local function simulate(opts)
 				gameStart = nil
 			end
 			table.insert(stats.stages, st)
+			if st == "GameOver" then -- the won girl stands on the floor beside her winner (owner, Oct 20 15:13)
+				local hid = Round:GetAttribute("HolderId") or 0
+				for q, m in carried do
+					if q.UserId == hid then
+						stats.wonGirls = (stats.wonGirls or 0) + 1
+						if not m:GetAttribute("Follow") then problem(`the won girl is carried, not on the floor, at GameOver ({q.Name})`) end
+					end
+				end
+			end
 			if st == "Reveal" then
 				stats.reveals = (stats.reveals or 0) + 1
 				if opts.chaos and not stats.leftInReveal then -- someone leaves while the Secret cutscene plays
@@ -1228,7 +1247,9 @@ local function simulate(opts)
 			local safeNow = p:GetAttribute("HuzzStatus") == "Safe" and (st == "Running" or st == "HeroRun")
 			if safeNow and goalName and zones[goalName] then
 				local out = MapService.keepIn(zones[goalName], root.Position)
-				if out and (out - root.Position).Magnitude > 4 then
+				-- (8 studs: the correction now goes through the runner's own screen, a round trip away (0.12 s here, at
+				-- up to ~30 studs a second); in the game the goal's gate stops them first, this is only for anyone round it)
+				if out and (out - root.Position).Magnitude > 8 then
 					stats.safeOutside += 1
 					problem(`{p.Name} got back out of the safe zone`)
 				end
@@ -1363,6 +1384,10 @@ local function simulate(opts)
 	if unloads > 0 then
 		problem(`the map was removed {unloads} times outside a swap (it should stay until the next vote)`)
 	end
+	stats.placeFallbacks = modules.PlaceService.fallbacks
+	if stats.placeFallbacks > 0 then
+		problem(`the server moved {stats.placeFallbacks} bodies itself although every screen answered (HuzzServer/PlaceService)`)
+	end
 	return stats, problems, joiner
 end
 
@@ -1450,8 +1475,9 @@ local function report(name, stats, problems, expect)
 	table.sort(powerList)
 	print(string.format("%-34s games %d (runners %d, catchers %d), stabs %d, tags %d, rescues %d, picks %d (timed out %d), hero runs %d (made it %d), husses %d, lunges %d, screen claims %d, powers: %s",
 		name, stats.games, stats.runnerWins, stats.catcherWins, stats.stabs, stats.tags, stats.rescues, stats.picks, stats.timeoutPicks, stats.heroes, stats.heroSurvived, stats.husses, stats.lunges or 0, stats.claims or 0, table.concat(powerList, " ")))
-	print(string.format("   (girl: caught off her carrier %d, taken back %d, catchers won her by the last catch %d; caught runners turned catcher %d)",
-		stats.girlCaught or 0, stats.reclaims or 0, stats.lastCatchWins or 0, stats.turned or 0))
+	print(string.format("   (girl: caught off her carrier %d, taken back %d, catchers won her by the last catch %d, on the floor beside her winner %d; caught runners turned catcher %d)",
+		stats.girlCaught or 0, stats.reclaims or 0, stats.lastCatchWins or 0, stats.wonGirls or 0, stats.turned or 0))
+	print(string.format("   (bodies moved by their own screen %d times; the server had to move one itself %d times)", stats.placeAsks or 0, stats.placeFallbacks or 0))
 	for _, check in expect or {} do
 		if not check[2](stats) then
 			table.insert(problems, "expected: " .. check[1])

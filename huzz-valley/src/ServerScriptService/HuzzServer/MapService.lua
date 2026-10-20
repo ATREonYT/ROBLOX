@@ -773,8 +773,15 @@ local function catchOne(player: Player)
 		back = MapService.lobbySpawn() + Vector3.new(0, 4, 0)
 	end
 	if back then
-		root.AssemblyLinearVelocity = Vector3.zero
-		character:PivotTo(CFrame.new(back) * root.CFrame.Rotation)
+		-- (their own screen moves them, HuzzServer/PlaceService; required here, not at the top: the offline map tools
+		-- load this file on its own)
+		local okP, PlaceService = pcall(require, script.Parent.PlaceService)
+		if okP and type(PlaceService) == "table" then
+			if not PlaceService.pending(player) then PlaceService.place(player, CFrame.new(back) * root.CFrame.Rotation, "fall net") end
+		else
+			root.AssemblyLinearVelocity = Vector3.zero
+			character:PivotTo(CFrame.new(back) * root.CFrame.Rotation)
+		end
 	end
 end
 

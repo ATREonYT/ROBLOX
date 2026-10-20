@@ -34,6 +34,7 @@ local NameTags = require(script.Parent.NameTagService)
 local SecretReveal = require(ReplicatedStorage.Shared.SecretReveal)
 local PracticeBot = require(script.Parent.PracticeBot)
 local HitHistory = require(script.Parent.HitHistory)
+local PlaceService = require(script.Parent.PlaceService) -- (a player's own screen moves their body: the owner moves it)
 local TouchHit = require(Shared.TouchHit)
 local ProgressService = require(script.Parent.ProgressService)
 
@@ -239,7 +240,9 @@ local function runnersWith(status)
 	return list
 end
 
--- Puts a player where their role belongs (lobby, middle, or their spot in the line-up).
+-- Puts a player where their role belongs (lobby, middle, or their spot in the line-up). Their own screen moves them
+-- (HuzzServer/PlaceService; the server only if it doesn't): a server PivotTo on a body the player's client simulates
+-- made it jump there, back and there again on the other screens (owner, Oct 20 15:13: "the peoples locations are off").
 local lineSpots = {}
 local function place(id)
 	local p = byId[id]
@@ -254,16 +257,16 @@ local function place(id)
 		local zone = (match and zones.Bench) or zones.Lobby
 		local at = if zone == zones.Bench then MapService.benchSpot(middle) else MapService.lobbySpot()
 		if at or zone then
-			c:PivotTo(at or MapService.spot(zone, middle))
+			PlaceService.place(p, at or MapService.spot(zone, middle), "lobby")
 		end
 	elseif role == "Catcher" then
 		local catchers = Rules.idsWithRole(match, "Catcher")
 		table.sort(catchers)
 		local startName = MapService.startFor(match.round)
-		c:PivotTo(MapService.middleSpot(table.find(catchers, id) or 1, startName)
-			or MapService.spot(zones.Middle, zones[startName].Position, Config.Map.MiddleSpawn))
+		PlaceService.place(p, MapService.middleSpot(table.find(catchers, id) or 1, startName)
+			or MapService.spot(zones.Middle, zones[startName].Position, Config.Map.MiddleSpawn), "middle")
 	elseif lineSpots[id] and match.status[id] == "Active" then
-		c:PivotTo(lineSpots[id])
+		PlaceService.place(p, lineSpots[id], "line")
 	end
 end
 
@@ -547,7 +550,8 @@ end
 
 -- Safe runners stay across (owner's call): the goal's gate stops them, and anyone who got round it (a dash, a
 -- push) goes back in. Every frame of the round, not only while running (a Hero safe after the solo run waits
--- through the countdown too).
+-- through the countdown too). Their own screen moves them (PlaceService), once: no new move while one is on its way
+-- (the server's copy of a moving body is a moment old, so a move every frame fought the player's own movement).
 local function keepSafe()
 	-- catchers who got past a zone's wall (a lunge into a corner, lag) go back out onto the field
 	for id, role in match.roles do
@@ -555,8 +559,8 @@ local function keepSafe()
 		if root then
 			for _, zone in { zones.ZoneA, zones.ZoneB } do
 				local out = MapService.pushOut(zone, root.Position)
-				if out and (out - root.Position).Magnitude > 2 then
-					root.Parent:PivotTo(CFrame.new(out) * root.CFrame.Rotation)
+				if out and (out - root.Position).Magnitude > 2 and not PlaceService.pending(byId[id]) then
+					PlaceService.place(byId[id], CFrame.new(out) * root.CFrame.Rotation, "out of a safe zone")
 				end
 			end
 		end
@@ -578,8 +582,8 @@ local function keepSafe()
 		local root = status == "Safe" and rootOf(id)
 		if root then
 			local back = MapService.keepIn(goal, root.Position)
-			if back and (back - root.Position).Magnitude > 2 then
-				root.Parent:PivotTo(CFrame.new(back) * root.CFrame.Rotation)
+			if back and (back - root.Position).Magnitude > 2 and not PlaceService.pending(byId[id]) then
+				PlaceService.place(byId[id], CFrame.new(back) * root.CFrame.Rotation, "back in the safe zone")
 			end
 		end
 	end
@@ -589,8 +593,8 @@ end
 local function keepOnLine()
 	for id in frozen do
 		local root = match.status[id] == "Active" and lineSpots[id] and rootOf(id)
-		if root and (root.Position - lineSpots[id].Position).Magnitude > 3 then
-			root.Parent:PivotTo(lineSpots[id])
+		if root and (root.Position - lineSpots[id].Position).Magnitude > 3 and not PlaceService.pending(byId[id]) then
+			PlaceService.place(byId[id], lineSpots[id], "back on the line")
 		end
 	end
 end
@@ -1041,8 +1045,19 @@ local function finishGame()
 				d.Dupes[girl.id] = (d.Dupes[girl.id] or 0) + 1 -- (a spare copy for PRESTIGE: Shared/PrestigeRules)
 			end
 		end)
-		if match.holder ~= winnerId then
-			moveGirlTo(match.holder, winnerId, "Won")
+		-- after the win she stands on the floor beside her winner, every girl, whoever wins (owner, Oct 20 15:13: "make
+		-- the girls always be on the floor after the game is won. make it for all of them"): a runner's girl stops
+		-- being carried and walks with him like a catcher's (CarryService.follow: each screen drops her to
+		-- the floor under her and keeps her feet on it, HuzzClient/Gameplay/CarryAnimator)
+		local held = CarryService.get(winner)
+		if match.holder ~= winnerId or not (held and held:GetAttribute("Follow")) then
+			local from = (match.holder and byId[match.holder] and CarryService.position(byId[match.holder]))
+				or (showcase and showcase:GetPivot().Position) or nil
+			if match.holder and byId[match.holder] then
+				CarryService.remove(byId[match.holder])
+			end
+			CarryService.follow(winner, girl, from)
+			showcaseVisible(false)
 		end
 		CarryService.setMood(winner, "Cheer")
 	elseif match.holder then
@@ -1594,7 +1609,7 @@ local function onCharacter(player, character)
 	task.defer(function()
 		place(id) -- the lobby, the middle or their spot on the line
 		if match and match.status[id] == "Downed" and fellAt[id] then
-			character:PivotTo(fellAt[id]) -- reset while down: lie down again where they fell
+			character:PivotTo(fellAt[id]) -- reset while down: lie down again where they fell (the server, at once: down() anchors it next)
 			KnockdownService.down(player)
 		end
 		if match and match.roles[id] then

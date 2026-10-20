@@ -123,6 +123,10 @@ return {
 	Lunge = { Speed = 72, EndSpeed = 40, Up = 24, Time = 0.38, Cooldown = 3, HitRange = 4.8, HitWindow = 0.5, Reach = 4.5, Width = 4,
 		Stun = 0.4, StunAfter = 0.38, Slide = 0.16 },
 
+	-- Moving a player's body (HuzzServer/PlaceService; owner, Oct 20 15:13: "make the DSYNC way, way better"): the
+	-- owner's own screen moves it; the server waits Grace seconds plus the player's round trip, and moves it itself
+	-- only if its copy isn't within Near studs by then. StreamWait: seconds at most to load the spot around them first.
+	Place = { Grace = 0.4, Near = 4, StreamWait = 1 },
 	-- A caught runner falls flat on their face and lies there until rescued or the next round
 	-- (owner's call).
 	Knockdown = {

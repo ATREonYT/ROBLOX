@@ -90,6 +90,39 @@ The huss pose and walk animations: [animations.md](animations.md).
 - **Footsteps are ours** (`Feel`, Sfx "step", lobby too; Roblox's "Running" muted; stand-in thud until the owner
   uploads `step`). They step by distance (`Run.Stride` 12), so below ~28 they're slower than the feet.
 
+## Same place on every screen (Oct 20)
+- Owner, Oct 20 15:13: "please make the DSYNC way, way better. right now on peoples screens it sometimes doesnt match
+  up and the peoples locations are off on eachothers screens".
+- **Cause found:** your client simulates your body and sends where it is; the server and every other screen
+  follow. The server set CFrames on those bodies itself (7 `PivotTo`s in RoundService: lobby, middle, line-up,
+  keep a catcher out of the safe zones, keep a safe runner in, keep a runner on the line; plus MapService's fall
+  net). The owner kept sending positions from before the move until the change reached it, so the others saw the
+  body jump there, back, and there again. The safe-zone and line checks ran every frame from the server's older
+  copy, so they kept fighting the player's own running.
+- **Fix:** the body's owner moves it. `HuzzServer/PlaceService` (`place`) asks that screen (Net `Place`;
+  `Gameplay/PlaceSelf` stops the body and moves it). The server watches for `Config/Round.Place` Grace 0.4 s plus the
+  round trip, and moves the body itself only if its copy never came within Near (4 studs). That happens once, with a
+  `[Huzz] Place:` line in Output. `pending()` stops the every-frame checks from sending again while a move is on its
+  way. The spot is streamed in first (`RequestStreamAroundAsync`): his place pauses bodies outside loaded areas.
+  An anchored body (lying caught, KnockdownService) is the server's, so the server still moves it at once.
+- **What doesn't move bodies:** the huss, halt, Glitchy and the dive push only your own root (LinearVelocity, `mine`).
+  The run, the leap and the dances move joints only, so they are drawn on each screen and never move the body. Hits
+  are judged with lag rewind (`HitHistory`, `TouchHit.verify`).
+- **Checked offline:**
+  - `tests/PlaceService.spec.luau`: the screen is asked and the server writes nothing; a screen that never answers
+    gets one fallback; someone who arrived and ran on is not pulled back; a respawned body is left alone; PlaceSelf
+    moves only your own unanchored body; no character `PivotTo` is left in RoundService but the reset while down.
+  - The sim: bots answer 0.12 s late and the server never had to move one itself (0 in all 10 setups).
+- **Only a live test shows it (Studio Test > Clients and Servers, 2 players):** watch the line-up, the GO, a
+  catcher pushed out of a safe zone, a runner across, a catch and a fall off the map on both windows side by side.
+  Bodies should land once, with no jump back. Send any `[Huzz] Place:` line.
+- **Gaps:**
+  - The catch still lies the runner down where the server last saw them (KnockdownService anchors there). On the
+    runner's own screen that is up to about one ping of running behind, so they snap back a little when caught.
+  - Every screen is behind by the network delay; nothing removes that.
+  - WalkSpeed is set by the server (the round speeds) and every frame by `Gameplay/Sprint`. This changes speed, not
+    where you are, and it was left as it is.
+
 ## Map size: nothing scales the map (Oct 20)
 - Measured: the maps in the place file are his size (Base 752x329, BasketBall 317x167, Halloween 319x164), and no
   script resizes a map. What can make a map *feel* smaller:

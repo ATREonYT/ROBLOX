@@ -22,6 +22,8 @@
 --                                  it can't draw; HuzzServer/KnifeGlbService)
 --   HeadLook       RemoteEvent     client -> server: (turn, tilt) where your head looks, whole degrees, ~5 a second
 --                                  (Gameplay/HeadAim); HuzzServer/HeadLookService puts it on your character (HuzzLook)
+--   Place          RemoteEvent     server -> client: (character, CFrame) move your own body there (HuzzServer/PlaceService,
+--                                  Gameplay/PlaceSelf: the owner of a body moves it, so every screen agrees)
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -47,6 +49,7 @@ local SPEC = {
 	KnifeGlb = "RemoteFunction",
 	KnifeView = "RemoteFunction",
 	HeadLook = "RemoteEvent",
+	Place = "RemoteEvent",
 }
 
 local folder: Folder

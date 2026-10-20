@@ -287,9 +287,13 @@ function M.start()
 		followers[model] = rec
 	end
 
-	-- Ground height under a point, ignoring every character and girl.
+	-- Ground height under a point, ignoring every character and girl, and anything you can't stand on: the maps'
+	-- zone boxes (ZoneA / ZoneB / Middle: invisible markers but CanQuery on) and see-through effects. Without
+	-- RespectCanCollide she stood on top of a zone box after the win (owner, Oct 20 15:13: "make the girls always be
+	-- on the floor after the game is won"; tests/GirlFloor.spec: up to several studs up on his maps).
 	local rayParams = RaycastParams.new()
 	rayParams.FilterType = Enum.RaycastFilterType.Exclude
+	rayParams.RespectCanCollide = true
 	local function groundAt(from, above)
 		local origin = Vector3.new(from.X, math.max(from.Y, above) + 6, from.Z)
 		local hit = Workspace:Raycast(origin, Vector3.new(0, -80, 0), rayParams)

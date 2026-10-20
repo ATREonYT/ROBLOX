@@ -125,6 +125,16 @@ The lobby side (one lobby per map, paint, his new lobby): [lobby.md](lobby.md). 
   `RoundRules` `lastCatchBy`; the HUD says "X caught the last runner and wins <girl>"). If the clock or a fall caught
   the last runner (or the last runner left), the catcher holding her keeps her, else the one with the most catches
   (lead breaks ties).
+- **After the win she stands on the floor beside her winner, every girl, whoever wins** (owner Oct 20 15:13: "make
+  the girls always be on the floor after the game is won. make it for all of them"). At the win a runner's girl
+  stops being carried and walks with him on foot (`CarryService.follow`), the same as a catcher's. The sim
+  checks this at every GameOver. Each screen keeps her feet on the ground under her (`Gameplay/CarryAnimator`
+  plus `Shared/FollowMotion`). Her ground ray now respects CanCollide, as the companion's already did.
+  - Why she floated: the ray only looked past characters and girls, so it landed on the maps' zone boxes (Zone A,
+    Zone B, Middle: invisible, but CanQuery on) and on non-solid props.
+  - `tests/GirlFloor.spec` measures this on his place: the old ray put her up to 8.2 studs over the floor at 88 of
+    the 225 spots in his 9 zone footprints. With the new ray every girl's feet end within 0.1 stud of the floor. The
+    server's root height matches every girl's real feet (his R6 girls and C.C.'s R15).
 - The quest stat "Steals" counts only a catcher taking her off her carrier ("Stolen"), not a hand-back, the last
   runner's win or a reassign.
 - **Everyone caught turns into a catcher** (owner Oct 19) from the next round (not mid-round, so a round stays
@@ -170,7 +180,9 @@ The lobby side (one lobby per map, paint, his new lobby): [lobby.md](lobby.md). 
     spots with the old random ones.
 - **Safe gate:** invisible goal-line block in collision group `HuzzSafeWall`, colliding only with `HuzzSafe` (safe
   runners), plus `keepSafe()` every frame. The start wall and the goal gate have no visuals; the white lines on the
-  floor mark start and finish.
+  floor mark start and finish. Every move of a player's body (lobby, middle, line-up, `keepSafe`, `keepOnLine`, the
+  fall net) asks that player's own screen to make it (`HuzzServer/PlaceService`, Oct 20 "the peoples locations are
+  off on eachothers screens": [movement-and-camera.md](movement-and-camera.md), "Same place on every screen").
 - **Field edges:** safe lines, start wall and goal gate are trimmed to the real floor (`MapService` `edge()`); the
   invisible walls (`boundary()`) stand at the floor's edge (a prop doesn't count as an edge). Across the run the
   walls may go up to 40 studs past the zone boxes over the map's own level floor, and the loaded copy's zones are
