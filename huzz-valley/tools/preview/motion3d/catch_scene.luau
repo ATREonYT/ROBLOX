@@ -9,6 +9,11 @@
 --   CATCH_OLD=1: the version before knife pass 2 (Oct 19): copy the old StabMotion.lua and DownMotion.lua (git show
 --     e6f5b68:<path>) to Shared/StabMotionOld.lua and DownMotionOld.lua first, and delete them after; the old effects
 --     (Juice's red spark shower, no red fill, no lunge streak), the old hop (Up 18) and no slide.
+--   CATCH_DIVE_OLD=1: the dive before Oct 20 15:13 (2 s lying dazed with stars, no belly slide): copy it first,
+--     git show ef3df24:huzz-valley/src/ReplicatedStorage/Shared/StabMotion.lua > Shared/StabMotionOld.lua with its
+--     STUN_END line set to 0.38 + 2 (it reads the stun from Config/Round), and delete it after. Film:
+--     docs/previews/dive-oct20.mp4 (owner: "right now its like a ragdoll, make it straight to the point");
+--     CATCH_DIVE_NEW=1 labels the new side NOW.
 --   CATCH_VIEW=catcher (default: the catcher's own follow camera, 12 back, 14 degrees down), runner (the caught
 --     runner's camera: the catcher leaps in past it) or side (a low side view: the body line of the leap and the fall).
 -- KNIFE_MESHES=<file> CATCH_VIEW=side sh video.sh catch_scene.luau out.mp4
@@ -23,10 +28,11 @@ local KFS = require("./kfs")
 local Env = require("./env")
 local SHARED = "huzz-valley/src/ReplicatedStorage/Shared/"
 local OLD = process.env.CATCH_OLD == "1"
+local DIVE_OLD = process.env.CATCH_DIVE_OLD == "1"
 local VIEW = process.env.CATCH_VIEW or "catcher"
 local Mix = Env.load(SHARED .. "LocomotionMix.lua")
 local CarryMath = Env.load(SHARED .. "CarryMath.lua")
-local StabMotion = Env.load(SHARED .. (if OLD then "StabMotionOld.lua" else "StabMotion.lua"))
+local StabMotion = Env.load(SHARED .. (if OLD or DIVE_OLD then "StabMotionOld.lua" else "StabMotion.lua"))
 local DownMotion = Env.load(SHARED .. (if OLD then "DownMotionOld.lua" else "DownMotion.lua"))
 local KnifeLook = Env.load(SHARED .. "KnifeLook.lua")
 local RunMotion = Env.load(SHARED .. "RunMotion.lua")
@@ -90,6 +96,7 @@ local stab = StabMotion.new(CarryMath.rig(catcher), catcher.root)
 local FPS, DT, SUB = 30, 1 / 30, 4
 local L = table.clone(Round.Lunge)
 if OLD then L.Up = 18 end -- (the hop before this pass)
+if DIVE_OLD then L.Stun, L.Slide = 2, 0 end -- (the dive before Oct 20 15:13: 2 s on the floor, a dead stop)
 local SLIDE = if OLD then 0 else (Round.Knockdown.Slide or 0)
 local CATCHER_SPEED, RUNNER_SPEED = 30, 26
 local LUNGE_AT, HIT_DELAY = 0.9, 0.05 -- (the server's Caught arrives ~a frame or two later in Studio)
@@ -135,7 +142,7 @@ local function sim(h)
 			s.burstPending = math.ceil(el.burst * 0.5)
 		end
 	end
-	local push = s.leapAt and RunMotion.pushSpeed(L, c - s.leapAt)
+	local push = s.leapAt and RunMotion.lungeSpeed(L, c - s.leapAt) -- (the push, then the belly slide: Gameplay/Dash)
 	-- the dive's stun (Oct 19: PowerService.stun, speed 0 from StunAfter for Stun seconds; StabMotion keeps the body
 	-- lying dazed, then it gets up)
 	local since = s.leapAt and (c - s.leapAt) or -1
@@ -251,7 +258,7 @@ local function frameFx()
 	local mesh, tip, base = knifeAt(inHand(catcher))
 	table.insert(meshes, mesh)
 	-- stunned: three stars circling over the head (Gameplay/PowerEffects; drawn with the Aura star picture here)
-	if s.stunned then
+	if s.stunned and L.Stun >= 1 then -- (none for a stun under 1 s, as Gameplay/PowerEffects)
 		local head = catcher.parts.Head.CFrame.Position
 		for i = 1, 3 do
 			local a = c * 2 * math.pi / 1.4 + (i - 1) * 2 * math.pi / 3
@@ -386,7 +393,7 @@ for f = 0, math.floor(TOTAL * FPS) - 1 do
 		shakeAt = camAt + Vector3.new(range(-1, 1), range(-1, 1), 0) * 0.4 * left
 	end
 	local since = if s.leapAt then s.clock - s.leapAt else -1
-	local cap = (if OLD then "BEFORE  " else "AFTER  ") .. (if slow then "1/4 speed" else "full speed")
+	local cap = (if OLD then "BEFORE  " elseif DIVE_OLD then "BEFORE (2 s down)  " elseif process.env.CATCH_DIVE_NEW then "NOW  " else "AFTER  ") .. (if slow then "1/4 speed" else "full speed")
 		.. (if since >= 0 and since <= 1.2 then string.format("   leap %.2f s", since) else "")
 		.. (if s.hitAt and s.clock >= s.hitAt then "   caught" else "") .. (if s.stunned then "   STUNNED" else "")
 	scene:frame(shakeAt, camLook, { sprites = sprites, ribbons = ribbons, meshes = meshes, caption = cap, fov = 70 })

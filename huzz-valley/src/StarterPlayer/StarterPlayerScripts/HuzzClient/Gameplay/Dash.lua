@@ -19,8 +19,9 @@
 	easing off (Config/Round.Lunge, same speed and hop either way). The knife's hit box follows the leap (Gameplay/
 	HitCheck) and the server checks the catch is possible from where it sees you. The whole body leaps (Shared/StabMotion
 	LEAP: the knife leading, the slash the moment it reaches someone, a low landing), on your screen at once
-	(Gameplay/Actions.lungeLocal; knife pass 2: it used to wait for the server's echo). Then the diver lies dazed for
-	Config/Round.Lunge.Stun seconds (PowerService.stun: speed 0, no stab, no powers; the body doesn't turn meanwhile).
+	(Gameplay/Actions.lungeLocal; knife pass 2: it used to wait for the server's echo). Then a short belly slide and a
+	pop up to the feet: Config/Round.Lunge.Stun seconds (0.4; PowerService.stun: speed 0, no stab, no powers; the body
+	doesn't turn meanwhile). Owner Oct 20 15:13: "make it straight to the point and without a long unconsiousness".
 ]]
 local Dash = {}
 
@@ -130,7 +131,7 @@ local function push(root: BasePart, name: string, dir: Vector3, carry: Vector3, 
 	lv.MaxForce = 1e6
 	local start = os.clock()
 	local function set(): boolean
-		local speed = RunMotion.pushSpeed(cfg, os.clock() - start)
+		local speed = (if cfg == Config.Lunge then RunMotion.lungeSpeed else RunMotion.pushSpeed)(cfg, os.clock() - start)
 		if not speed or not root.Parent then
 			return false
 		end
@@ -249,8 +250,8 @@ local function lunge(c: Model, h: Humanoid, root: BasePart)
 	local v = root.AssemblyLinearVelocity
 	root.AssemblyLinearVelocity = Vector3.new(v.X, Config.Lunge.Up, v.Z) -- (the hop: jumping itself is off)
 	push(root, "HuzzLunge", dir, Vector3.zero, Config.Lunge) -- (a hard burst easing off, not a flat shove and a cut)
-	-- the dive ends on your belly, stunned (Config/Round.Lunge.Stun): the body keeps its heading until you're up, or
-	-- the keys would turn it round on the floor
+	-- the dive ends with a belly slide and a quick pop up (Config/Round.Lunge.Stun): the body keeps its heading until
+	-- you're up, or the keys would turn it round on the floor
 	local L = Config.Lunge
 	if player:GetAttribute("HuzzShiftLock") ~= true then
 		h.AutoRotate = false

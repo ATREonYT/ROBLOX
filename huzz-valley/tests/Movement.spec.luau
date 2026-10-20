@@ -50,6 +50,27 @@ local L = Round.Lunge
 local reach = RunMotion.pushDistance(L)
 check(reach >= 17 and reach <= 21, string.format("the lunge keeps its old ~20 stud reach (%.1f)", reach))
 check(L.HitWindow >= L.Time, "the lunge can hit for the whole leap")
+-- The dive's end (owner Oct 20 15:13: "make it straight to the point and without a long unconsiousness"): after the
+-- push the belly slides on to a stop (RunMotion.lungeSpeed, no dead stop), and the stun is short.
+do
+	local tail, prev, jump, last = 0, nil, 0, nil
+	for i = 0, 2000 do
+		local age = i / 2000
+		local v = RunMotion.lungeSpeed(L, age)
+		if not v then last = age break end
+		if prev then jump = math.max(jump, math.abs(v - prev)) end
+		prev = v
+		if age >= L.Time then tail += v / 2000 end
+	end
+	print(string.format("  dive: push %.1f studs, then a belly slide of %.1f studs, stopped at %.2f s; stun %.1f s from %.2f s",
+		reach, tail, last or -1, L.Stun, L.StunAfter))
+	check(RunMotion.lungeSpeed(L, 0) == L.Speed and math.abs((RunMotion.lungeSpeed(L, L.Time) or -1) - L.EndSpeed) < 1e-6,
+		"the dive's push, then the slide goes on from where the push ends (no jump)")
+	check(jump < 1.5, "no jolt anywhere in the dive's speed (at most 1.5 studs/s a 2000th)")
+	check(tail >= 1.5 and tail <= 3 and last and last <= L.Time + L.Slide + 1e-3, "a short belly slide (1.5 to 3 studs) instead of a dead stop")
+	check(L.Stun <= 0.5 and L.StunAfter + L.Stun <= 0.8, "the stun is short: moving again within 0.8 s of the press (it was 2.38 s)")
+	check(L.Cooldown >= 2.5, "and Space still waits its cooldown (not spammable)")
+end
 
 -- The run start and step rate.
 check(Run.StartSpeed >= 14 and Run.StartSpeed <= 18 and Run.Ramp == 1, "the run starts at ~16 and is full after 1 s (owner, Oct 20: \"Make acceleration 1 second long\")")

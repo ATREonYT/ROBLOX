@@ -59,7 +59,7 @@ All of these work against a real save system. When you're happy with how they lo
      while you carry the girl.
    - Catchers: **Bear Trap** on Q (thrown a few steps ahead; the first runner who steps in it is stuck for a
      moment) and **Slow Wave** on E (a ring that slows runners near you). Space is a **dive** that catches who it
-     reaches, then you lie stunned for 2 seconds. The knife takes 1 second to charge between stabs.
+     reaches, then a quick belly slide and you pop straight back up (moving again 0.78 s after you pressed). The knife takes 1 second to charge between stabs.
    - When a catcher comes near, a runner's screen edges glow red with a heartbeat (calm: one beat a second at most).
    - Tune them in `Shared/Config/Powers.lua` (times, speeds, sizes, cooldowns).
 

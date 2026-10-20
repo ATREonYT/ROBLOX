@@ -1451,7 +1451,7 @@ Net.get("Lunge").OnServerEvent:Connect(function(player, arg, dir)
 	player:SetAttribute("DashReady", now + Config.Lunge.Cooldown)
 	player:SetAttribute("DashCooldown", Config.Lunge.Cooldown) -- (how long this wait is: the HUD's dash bar)
 	c:SetAttribute("LungeAt", now) -- (every screen plays the leap)
-	PowerService.stun(id, Config.Lunge.StunAfter or Config.Lunge.Time, Config.Lunge.Stun or 0) -- (the dive's 2 s on the floor)
+	PowerService.stun(id, Config.Lunge.StunAfter or Config.Lunge.Time, Config.Lunge.Stun or 0) -- (the dive's 0.4 s slide and pop up: Config/Round.Lunge)
 	RoundNet:FireAllClients("Stab", { id = id, lunge = true }) -- (the stab move, on the catcher's own screen too)
 	if Config.TagMode ~= "Stab" or arg == true then
 		return -- (touch mode: the leap is just a leap; true: the catcher's screen reports the hit itself)

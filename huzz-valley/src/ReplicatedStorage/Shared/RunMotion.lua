@@ -93,6 +93,21 @@ function RunMotion.pushSpeed(cfg, age)
 	return finish + (cfg.Speed - finish) * u ^ (cfg.Ease or 2)
 end
 
+-- A catcher's dive (Config/Round.Lunge): the push (pushSpeed), then the belly slide from EndSpeed to a stop over
+-- Slide seconds (Oct 20: it used to stop dead when the push ended), then nil.
+function RunMotion.lungeSpeed(cfg, age)
+	local v = RunMotion.pushSpeed(cfg, age)
+	if v or age < 0 then
+		return v
+	end
+	local slide = cfg.Slide or 0
+	local s = age - cfg.Time
+	if s >= slide then
+		return nil
+	end
+	return (cfg.EndSpeed or cfg.Speed) * (1 - s / slide) ^ 2
+end
+
 -- When a character's huss started (server time), or nil. Your own huss is stamped twice: at once on your screen
 -- (Gameplay/Dash also keeps that time in the local-only attribute HuzzMyDashAt), then by the server, which may move
 -- it up to ~0.15 s (more on a laggy link). A DashAt within 0.6 s of your own local stamp is that same huss, so the

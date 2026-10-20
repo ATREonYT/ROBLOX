@@ -68,8 +68,9 @@ The lobby side (one lobby per map, paint, his new lobby): [lobby.md](lobby.md). 
   0.5 s (HitRange 4.8 is only the sim bot's "close enough to leap"), cooldown 3 s shared with the Space tile `DashReady`; stab mode only). Both go through `stabNear()`: shields,
   the safe start zone and a fresh rescue protect; a Shield ends the lunge. The players see it as the **dive**
   (owner Oct 19: "add a dive feature for the tagger and after they use it they are stunned for 2 seconds"): after
-  `Lunge.StunAfter` 0.38 s the catcher is stunned for `Lunge.Stun` 2 s (`PowerService.stun`: speed 0, no stab, no
-  abilities; RoundService calls it right after setting LungeAt). The knife needs `Stab.Cooldown` 1 s between stabs
+  `Lunge.StunAfter` 0.38 s the catcher is stunned for `Lunge.Stun` 0.4 s (Oct 20 15:13, was 2 s: "without a long
+  unconsiousness"; `PowerService.stun`: speed 0, no stab, no abilities; RoundService calls it right after setting
+  LungeAt), so they move again 0.78 s after the press; the 3 s cooldown keeps the dive from being spammed. The knife needs `Stab.Cooldown` 1 s between stabs
   (owner: "one second charge time for knife only"; the bar shows KNIFE CHARGING).
 - **Touch is the real bodies** (`Shared/TouchHit`, one rule for the screen, the server and the spec): the knife's
   reach is a box from the catcher's middle out along their facing (or their leap): Stab Reach 4.5 x Width 3.5, Lunge

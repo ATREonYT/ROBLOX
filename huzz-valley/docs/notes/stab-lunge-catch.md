@@ -23,15 +23,17 @@ Read before changing how the click stab, a catcher's dive (lunge) and its stun, 
   next to the new one). Honest: the arm change is small; the arc reads faintly in the render.
 
 ## The dive (the code's lunge: `Shared/StabMotion` `LEAP`, `play(rec, now, true)`)
-- Owner Oct 19: "add a dive feature for the tagger and after they use it they are stunned for 2 seconds". It was a
-  leap that landed in a low lunge; now the catcher dives flat out, catches whoever it reaches, and lies stunned.
+- Owner Oct 19: "add a dive feature for the tagger"; Oct 20 15:13: "right now its like a ragdoll, make it straight
+  to the point and without a long unconsiousness, make it concrete". One clean move, 0.80 s from the press to
+  running again: a quick crouch, a straight dive along the ground, a belly landing and slide, a pop up to the feet.
 - **Your own dive plays the moment you press Space** (`Gameplay/Dash` calls `Actions.lungeLocal` before its hit
   check; the server's "Stab" echo within 0.8 s is ignored). Everyone else plays it from the server's "Stab" `{ lunge = true }`.
 - **The whole body dives** (it owns the root joint and the legs as well as the head and arms; the waist stays straight
-  so the chest never dips under the floor): no crouch first (the push is already moving at 72), the take-off blends in
-  over `In` 0.15 s (no pop at 60 fps); the body tips about the hips 22° → 46° → 72° → 84° → 88° (flat), the legs push
-  off and stretch out behind, toes pointed; both arms reach ahead (`REACH`, superman), the knife leading, evenly
-  over `ArmIn` 0.16 s.
+  so the chest never dips under the floor). `LEAP.KEYS`, seconds from Space: a quick crouch by 0.07 s (`In`; knees
+  bent, the hips down to the feet as the hop lifts off), the spring by 0.16 s (tipped 60°, the legs together and
+  straight behind, toes pointed), one straight line in the air (76° at 0.18 s), chest and legs touching down as the
+  hop ends (0.245 s, 84°), on the belly to `Out` 0.40 s (88°); both arms reach ahead (`REACH`, superman), the knife
+  leading, evenly over `ArmIn` 0.16 s.
 - **The dive's arms blend angle by angle** (`StabMotion.blendArm`), not with `CFrame:Lerp`: REACH (168°) and LIE (158°)
   are near 180° from the run's arm swing, and a Lerp there takes the shorter way round, which flips sides from one
   frame to the next as the run's arm swings. Oct 19 evening (a fresh critic, `motion3d/move_smooth_measure.luau` at 30
@@ -47,23 +49,35 @@ Read before changing how the click stab, a catcher's dive (lunge) and its stun, 
 - **Landing**: at the hop's end (`StabMotion.air()` = 2 x Up / 196.2) the body is down on its belly; the hips come down
   by exactly what keeps the lowest of the feet, legs, hips, chest and head on the floor (`lowestBody`, from the joints'
   C0/C1, not the parts, which lag a frame; `lowestFoot` for the feet alone). It slides with the push.
-- **The stun**: from `Lunge.StunAfter` 0.38 s for `Lunge.Stun` 2 s (`PowerService.stun`): speed 0, no stab, no
-  abilities, the body doesn't turn to the camera (`Gameplay/ShiftLock`, `Dash` holds AutoRotate off). It lies dazed
-  (`Out` = StunAfter + Stun = 2.38 s), the head rolling slowly side to side (`Daze` 16° at 0.5 Hz), three cartoon stars
-  circling over the head (`Gameplay/PowerEffects`) and the server's 💫 STUNNED badge; the bar's STUNNED 💫 drains
-  ([ui.md](ui.md)). Then a push-up and stand, back to the run by `Up` = Out + `Rise` 0.45 s.
+- **The slide and the pop up** (Oct 20 15:13): after the push the belly slides on from 40 studs/s to a stop over
+  `Lunge.Slide` 0.16 s (`RunMotion.lungeSpeed`, ~2.1 studs, fast then settling; it used to stop dead). From `Out`
+  0.40 s the hands come under the shoulders (`PUSH`, over 0.12 s) and the knees tuck under (0.54 s, chest 54° off the
+  floor), a quick crouch (0.67 s) and up, the run back over the last `Blend` 0.16 s (`Up` 0.80 s). The hips are lowered
+  every frame so the lowest part of the body touches the floor (`lowestBody`): crouching, landing, sliding and getting
+  up. No dazed head roll, no lying still (the spec checks the chest keeps moving after the slide).
+- **The stun**: from `Lunge.StunAfter` 0.38 s for `Lunge.Stun` 0.4 s (`PowerService.stun`): speed 0, no stab, no
+  abilities, the body doesn't turn to the camera (`Gameplay/ShiftLock`, `Dash` holds AutoRotate off); it ends at
+  0.78 s as the body stands. No stars and no 💫 badge for a stun this short (`PowerEffects` and `PowerService` show
+  them only from 1 s); the bar's STUNNED 💫 drains ([ui.md](ui.md)). `Lunge.Cooldown` 3 s from the press still keeps
+  it from being spammed. Huss Valley's catcher: leaps at 41.60 s, lands ~42.0, up by ~42.27 (`docs/knife-study.md`).
 - **A sideways dive** (A / D) does the same into its side.
 - **Height** (`Config/Round.Lunge` Up 24): 0.245 s in the air, 1.5 studs. The push (72 to 40 over 0.38 s, 19 studs)
   and the hit box are the round's ([round.md](round.md)).
 - **The leap's ribbon** (`KnifeLook.CATCH.Streak`, HV's lunge ribbon): a Trail between two points on the UpperTorso,
   white into the knife's colour (its `SlashColor`, else steel white), 0.14 s long (~8 studs at the leap's speed), on
   for the push only (`Gameplay/Actions`).
-- Spec `tests/StabMotion.spec` (the dive: lying flat at 0.39 s, 1.2 s and just before Out, the lowest point within 0.15
-  of the floor; the free arm reaching ahead; a sideways dive tips into its side; slash within 0.08 s of reaching
-  someone, at SlashBy otherwise; body parts turn at most 16°/frame at 60 fps (14.6 today) and 30° at 30 fps; the
-  arms over a ±60° run swing at 30 fps, 8 phases, with and without a hit, at most 68° a frame (61.2 today); every
-  joint handed back after Up). Films `docs/previews/dive-stun.mp4` (`motion3d/catch_scene.luau`, side view: the dive,
-  the 2 s stun with the stars, getting up, then the catch at 1/4 speed); the older leap: `docs/previews/knife-leap.mp4`.
+- Spec `tests/StabMotion.spec` (the dive: running again within 0.85 s, 0.4 to 0.7 s on the floor, the stun ending as
+  it stands, the cooldown kept; the crouch on the feet at 0.07 s; tipped 60° with the legs together behind at 0.16 s;
+  flat on the belly at 0.32 and 0.35 s, the lowest point within 0.15 of the floor; popping up at 0.54 s; never still
+  after the slide; the free arm reaching ahead; a sideways dive tips into its side; slash within 0.08 s of reaching
+  someone, at SlashBy otherwise; body parts turn at most 24°/frame at 60 fps (22.1 today) and 42° at 30 fps (40.2: the
+  crouch, spring and pop up are quick on purpose, under the run's own ~66°); the arms over a ±60° run swing at 30 fps
+  at most 68° a frame (65.4 today); every joint handed back after Up). `tests/Movement.spec`: the push, then the
+  slide with no jump in speed, 1.5 to 3 studs; the stun at most 0.5 s. `move_smooth_measure.luau` "Space: leap": worst
+  turn 75.5° (LeftUpperArm at take-off; was 66), pop 71° at the slash.
+- Film `docs/previews/dive-oct20.mp4` + `.jpg` (30 fps; before above, now below; the catcher's camera left, a
+  bystander's side view right; full speed then 1/4 speed): `motion3d/catch_scene.luau` with `CATCH_DIVE_OLD=1` for the
+  before. Older films: `docs/previews/dive-stun.mp4` (the 2 s stun), `docs/previews/knife-leap.mp4`.
 
 ## The catch
 - **What counts as a catch** is the knife's box touching the runner's real body, checked the same way on the
@@ -129,6 +143,10 @@ Read before changing how the click stab, a catcher's dive (lunge) and its stun, 
   because its pitch put the chest under the floor during the slash; `In` went from 0.1 to 0.15 s (19.6°/frame at
   take-off was over the 16° limit). The knife's 1 s charge ("one second charge time for knife only") is
   `Stab.Cooldown`, was 0.6.
+- **The dive, Oct 20 15:13** ("make it so that the leap for the catchers is way better and more smooth, right now its
+  like a ragdoll, make it straight to the point and without a long unconsiousness, make it concrete"): it lay flat
+  and dazed for 2 s (head rolling, stars, badge) and was up at 2.83 s, with no crouch first and a dead stop at the
+  push's end. Now a crouch, a straight dive, a belly slide and a pop up, running again at 0.80 s (stun 0.4 s).
 - **Up 24, was 18**: at 18 the body was off the floor 0.18 s (5 frames) and 0.8 studs high, too short to show a
   take-off, a knife leading and a landing; HV's catcher is in the air ~0.4 s.
 - **Pinpoint, Oct 19** (owner: "make the player to player interactions pinpoint precise. For example make them

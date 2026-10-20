@@ -41,7 +41,7 @@ fine). Owner quotes go in the topic's "Why" part. Keep this core about 20 KB and
 - **Controls:** **no jumping anywhere**. Space = the sideways huss (left/right only, lobby too; you turn to face the
   camera first so A/D go left/right on screen: "it only goes one way" without shift lock); a **catcher's Space
   in a round is a dive** (the code says lunge) that catches whoever it reaches (forward, or sideways with A/D, never
-  back: owner Oct 18 "leaps forward/sideways to catch the person"), then a 2 s stun (Oct 19); hold W = walk building
+  back: owner Oct 18 "leaps forward/sideways to catch the person"), then a short slide and pop up, 0.4 s stun (Oct 20 15:13, was 2 s); hold W = walk building
   into a run; G = dance wheel; Q = your ability, E = the second (simple names, Oct 19 "just make it simple": runner Q
   is one of Shield / Invisible / Glitchy / Body Double, random each round; E = Speed Boost only while carrying the
   girl; catcher Q = Bear Trap, thrown ahead, E = Slow Wave); click = stab (1 s knife charge); shift lock in rounds
@@ -238,7 +238,7 @@ fine). Owner quotes go in the topic's "Why" part. Keep this core about 20 KB and
 | Topic | File | Read it when you touch |
 |---|---|---|
 | The round | [round.md](docs/notes/round.md) | stages, times, catching rules, safe zones, Practice Bot, maps, pay, girl odds, Results |
-| Stab, dive, catch | [stab-lunge-catch.md](docs/notes/stab-lunge-catch.md) | the stab, the dive (lunge) and its 2 s stun, the catch's red fill and fall, getting up |
+| Stab, dive, catch | [stab-lunge-catch.md](docs/notes/stab-lunge-catch.md) | the stab, the dive (lunge) and its short stun, the catch's red fill and fall, getting up |
 | Knives | [knives.md](docs/notes/knives.md) | skins, worn knife, Game Pass knives and cards, SetupKnives, stand sword showcase |
 | Lobby, Lobby props | [lobby.md](docs/notes/lobby.md) | the one lobby, spawn pad and open-ground spawns, leaderboards, avatar stands, lobby props |
 | Look and lighting | [look-and-lighting.md](docs/notes/look-and-lighting.md) | `Config/Look`, light, sky, lamp levels |

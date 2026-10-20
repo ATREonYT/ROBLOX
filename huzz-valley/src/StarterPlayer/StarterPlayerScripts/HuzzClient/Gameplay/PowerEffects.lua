@@ -33,8 +33,9 @@
 	The ghosts and afterimages are Gameplay/Ghosts copies of the body: a hat keeps its mesh (no plain block).
 	  ShieldPop:   a blocked stab: the bubble bursts in a pink ring with hearts.
 	  TrapSprung:  as the Love Trap's: a ring closes in round the runner's feet and hearts pop.
-	  Dive stun:   (owner Oct 19: "after they use it they are stunned for 2 seconds") three cartoon stars circle slowly
-	               over a stunned catcher's head while they lie dazed (character StunnedFrom / StunnedUntil).
+	  Stun:        three cartoon stars circle slowly over the head of anyone stunned 1 s or more (character
+	               StunnedFrom / StunnedUntil). A dive's 0.4 s stun shows none (owner Oct 20 15:13: "without a long
+	               unconsiousness"; it was 2 s with stars).
 	During the wind-up the user strikes a cast pose (arms forward and up, or the throw: Shared/RunMotion, on everyone).
 	Each power has its own sound on press (yours loud, others' from where they stand), and other players' powers
 	pop their name over them once, above their name tag (your own shows on your card instead).
@@ -514,7 +515,7 @@ function M.start()
 			end
 		end
 	end
-	-- A dive's stun, on every screen: three little cartoon stars circling over the head while the catcher lies dazed
+	-- A stun of 1 s or more, on every screen: three little cartoon stars circling over the head (a dive's 0.4 s shows none)
 	-- (character StunnedFrom / StunnedUntil from HuzzServer/PowerService.stun). A slow steady turn, no blinking.
 	local dazed = {} -- Model -> { holders }
 	local STAR = Color3.fromRGB(255, 226, 92)
@@ -555,6 +556,7 @@ function M.start()
 			local head = c and c:FindFirstChild("Head")
 			local stunFrom, stunTo = c and c:GetAttribute("StunnedFrom"), c and c:GetAttribute("StunnedUntil")
 			if c and head and head:IsA("BasePart") and type(stunFrom) == "number" and type(stunTo) == "number"
+				and stunTo - stunFrom >= 1 -- (not a dive's 0.4 s pop up: Config/Round.Lunge.Stun, owner Oct 20 15:13)
 				and t >= stunFrom and t < stunTo and near(head.Position) then
 				dazed[c] = dazed[c] or starsOn(c)
 				local spin = t * 2 * math.pi / 1.4

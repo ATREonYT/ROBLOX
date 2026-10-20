@@ -81,17 +81,22 @@ end
 -- The dive (owner, Oct 19: "add a dive feature for the tagger and after they use it they are stunned for 2 seconds";
 -- it was a leap landing in a low lunge). It tips into the dive from take-off (never back: no wind-up), the legs
 -- stretch out behind, both arms reach ahead with the knife leading until it reaches someone, then it sweeps out to
--- the right in ~0.07 s; the body lands flat on its belly (chest and legs on the floor, nothing under it), lies there
--- through the stun (Config/Round.Lunge StunAfter + Stun), gets up by LEAP.Up; sideways dives go into their side;
--- smooth at 30 and 60 fps; every joint handed back after.
+-- the right in ~0.07 s; a quick crouch, then a straight dive; the body lands flat on its belly (chest and legs on the
+-- floor, nothing under it), slides, and pops straight back up by LEAP.Up as the short stun ends (owner Oct 20 15:13:
+-- "make it straight to the point and without a long unconsiousness"); sideways dives go into their side; smooth at
+-- 30 and 60 fps; every joint handed back after.
 do
 	local L = StabMotion.LEAP
 	local air = StabMotion.air()
-	print(string.format("  dive: %.3f s in the air (Lunge.Up %d), lying until %.2f s, up by %.2f s", air, Round.Lunge.Up, L.Out, L.Up))
-	check(air >= 0.22 and air <= 0.3, "the hop lasts long enough to show a dive (0.22 to 0.3 s)")
 	local stunEnd = (Round.Lunge.StunAfter or Round.Lunge.Time) + (Round.Lunge.Stun or 0)
-	check(math.abs(L.Out - stunEnd) < 1e-6 and Round.Lunge.Stun == 2, "the body lies on the floor exactly as long as the 2 s stun")
+	print(string.format("  dive: %.3f s in the air (Lunge.Up %d), sliding until %.2f s, up by %.2f s (stun ends %.2f s, %.2f s on the floor)",
+		air, Round.Lunge.Up, L.Out, L.Up, stunEnd, L.Up - air))
+	check(air >= 0.22 and air <= 0.3, "the hop lasts long enough to show a dive (0.22 to 0.3 s)")
+	check(L.Up <= 0.85, "running again within 0.85 s of the press (it was 2.83 s, 2 s of it lying dazed)")
+	check(L.Up - air >= 0.4 and L.Up - air <= 0.7, "on the floor 0.4 to 0.7 s: a slide and a pop up, not knocked out")
+	check(Round.Lunge.Stun <= 0.5 and math.abs(L.Up - stunEnd) <= 0.05, "the stun (no moving) ends as the body stands")
 	check(L.Up - L.Out >= 0.3 and L.Up - L.Out <= 0.6, "and gets up in 0.3 to 0.6 s")
+	check(Round.Lunge.Cooldown >= 2.5, "still not spammable: Space waits its cooldown")
 	local function lowest(names)
 		local y = math.huge
 		for _, n in names do
@@ -133,11 +138,15 @@ do
 		backMost = math.max(backMost, q.pelvisUp.Z)
 	end
 	check(backMost < 0.02, "no wind-up: the body never leans back during the dive")
-	local launch = leapPose(0.08)
+	local standHips = (function() for _, m in rig.motors do m.Transform = CFrame.identity end Rig.fk(rig) return rig.parts.LowerTorso.CFrame.Position.Y end)()
+	local crouch = leapPose(0.07)
+	print(string.format("  crouch (0.07 s): hips %.2f lower, feet on the floor %.2f", standHips - crouch.hipsY, crouch.low - standLow))
+	check(standHips - crouch.hipsY > 0.2 and math.abs(crouch.low - standLow) < 0.1, "a quick crouch first: knees bend and the hips come down to the feet (as the hop lifts off)")
+	local launch = leapPose(0.16)
 	local tipLaunch = math.deg(math.asin(math.clamp(-launch.pelvisUp.Z, -1, 1)))
-	print(string.format("  take-off (0.08 s): body tipped %.0f° in; feet behind %.2f / %.2f", tipLaunch, launch.lfoot.Z, launch.rfoot.Z))
-	check(tipLaunch > 25, "the body tips into the dive from take-off")
-	check(launch.rfoot.Z > 1.0 and launch.lfoot.Z > 0.3, "the legs push off and stretch out behind")
+	print(string.format("  the spring (0.16 s): body tipped %.0f° in; feet behind %.2f / %.2f", tipLaunch, launch.lfoot.Z, launch.rfoot.Z))
+	check(tipLaunch > 50, "then the body springs into the dive")
+	check(launch.rfoot.Z > 1.0 and launch.lfoot.Z > 1.0, "the legs push off and stretch out behind, together (one straight line)")
 	-- both arms reach ahead, the knife leading, until it reaches someone
 	local flyAt = math.min(L.ArmIn, L.SlashBy) - 0.01 -- (the reach takes ArmIn: Oct 19 evening, evenly, so no arm turns faster than a running leg)
 	local flying = leapPose(flyAt)
@@ -161,7 +170,7 @@ do
 		check(L.SlashBy + 0.07 < air, "and lands before the body touches down")
 	end
 	-- flat on the belly: chest tipped near 90°, the body's lowest point on the floor (not floating, not under it)
-	for _, at in { air + 0.15, 1.2, L.Out - 0.05 } do
+	for _, at in { air + 0.08, L.Out - 0.05 } do
 		local land = leapPose(at)
 		local tip = math.deg(math.acos(math.clamp(land.chestUp.Y, -1, 1)))
 		print(string.format("  lying (%.2f s): chest tipped %.0f°, lowest point %.2f (floor %.2f), chest %.2f above it",
@@ -172,6 +181,20 @@ do
 	end
 	local midAir = leapPose(air * 0.6)
 	check(midAir.body > standLow - 0.05, "nothing goes under the floor in the air")
+	-- the pop up: hands under the shoulders, knees under, never lying still, nothing under the floor
+	local pop = leapPose(L.Out + 0.14)
+	local popTip = math.deg(math.acos(math.clamp(pop.chestUp.Y, -1, 1)))
+	print(string.format("  pop up (%.2f s): chest tipped %.0f°, lowest point %.2f (floor %.2f)", L.Out + 0.14, popTip, pop.body, standLow))
+	check(popTip > 30 and popTip < 75, "popping up: the chest comes up off the floor at once")
+	check(math.abs(pop.body - standLow) < 0.2, "and the body stays on the floor while it does (not floating, not under it)")
+	local stillest = math.huge
+	for i = 0, 7 do
+		local a, b = leapPose(L.Out + i * 0.05), leapPose(L.Out + (i + 1) * 0.05)
+		local turn = math.deg(math.acos(math.clamp(a.chestUp:Dot(b.chestUp), -1, 1)))
+		stillest = math.min(stillest, turn)
+	end
+	print(string.format("  after the slide the chest keeps moving: at least %.1f° every 0.05 s", stillest))
+	check(stillest > 1, "no lying still after the slide (it was 2 s lying dazed)")
 	-- standing again after Up
 	local up = leapPose(L.Up + 0.02)
 	check(up.chestUp.Y > 0.99, "standing up again by LEAP.Up")
@@ -179,7 +202,9 @@ do
 	local right = leapPose(air + 0.15, Vector3.new(1, 0, 0))
 	print(string.format("  sideways: chest up x %.2f", right.chestUp.X))
 	check(right.chestUp.X > 0.6, "a sideways dive goes into its side")
-	-- smooth: the body (hips, chest, legs, head) turns at most 16° a frame at 60 fps, and no frame pops at 30 fps
+	-- smooth: the body (hips, chest, legs, head) turns at most 24° a frame at 60 fps and 42° at 30 fps: the crouch, the
+	-- spring and the pop up are quick on purpose (Oct 20: "make it concrete"), still well under the run's own legs
+	-- (~66° a frame at 30 fps, motion3d/move_smooth_measure.luau); the old slow dive was 14.6° / 30°
 	local function frames(fps)
 		local worst, prev, where = 0, nil, ""
 		for f = 0, math.ceil((L.Up + 0.05) * fps) do
@@ -204,8 +229,8 @@ do
 	local w60, at60 = frames(60)
 	local w30, at30 = frames(30)
 	print(string.format("  smoothness: body turns at most %.1f°/frame at 60 fps (%s), %.1f° at 30 fps (%s)", w60, at60, w30, at30))
-	check(w60 < 16, "smooth at 60 fps (no body part turns more than 16° in a frame)")
-	check(w30 < 30, "smooth at 30 fps (no body part turns more than 30° in a frame)")
+	check(w60 < 24, "smooth at 60 fps (no body part turns more than 24° in a frame)")
+	check(w30 < 42, "smooth at 30 fps (no body part turns more than 42° in a frame)")
 	-- handed back after the dive
 	StabMotion.play(rec, 0, true)
 	StabMotion.slash(rec, 0.06)

@@ -112,11 +112,16 @@ return {
 	-- and 0.8 studs high, too short to show a leap at all (Huss Valley's catcher is in the air ~0.4 s); 24 = 0.245 s and
 	-- 1.5 studs, long enough for the take-off, the knife leading and the landing (Shared/StabMotion LEAP). Distance unchanged.
 	-- Oct 19 (owner: "add a dive feature for the tagger and after they use it they are stunned for 2 seconds"): the leap
-	-- is a dive now (Shared/StabMotion LEAP: flat out in the air, lands on the belly) and the catcher lies dazed for
-	-- Stun seconds from StunAfter (the landing): no moving, stabbing or powers (HuzzServer/PowerService.stun), shown on
-	-- the bar (STUNNED) and over the body (💫). Cooldown (from the press) still covers the dive and the stun.
+	-- is a dive (Shared/StabMotion LEAP: a quick crouch, a straight dive, a belly landing, a pop up to the feet).
+	-- Oct 20 15:13 (owner: "right now its like a ragdoll, make it straight to the point and without a long
+	-- unconsiousness, make it concrete"): Stun 0.4, was 2. From StunAfter (the push's end) for Stun seconds: no moving,
+	-- stabbing or powers (HuzzServer/PowerService.stun), shown on the bar (STUNNED); no stars or 💫 badge for a stun
+	-- this short. Back on your feet and moving 0.78 s after the press (Huss Valley's catcher: up ~0.67 s after
+	-- the leap, docs/knife-study.md). Slide: after the push the belly slides on from EndSpeed to a stop over this many
+	-- seconds (RunMotion.lungeSpeed: ~2.1 studs, fast then settling) instead of stopping dead. Cooldown 3 s (from the
+	-- press) keeps it from being spammed.
 	Lunge = { Speed = 72, EndSpeed = 40, Up = 24, Time = 0.38, Cooldown = 3, HitRange = 4.8, HitWindow = 0.5, Reach = 4.5, Width = 4,
-		Stun = 2, StunAfter = 0.38 },
+		Stun = 0.4, StunAfter = 0.38, Slide = 0.16 },
 
 	-- A caught runner falls flat on their face and lies there until rescued or the next round
 	-- (owner's call).

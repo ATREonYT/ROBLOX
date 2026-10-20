@@ -9,20 +9,21 @@
 	  0.10-0.24 s  held out (it reads);
 	  0.24-0.40 s  back to carry.
 
-	The dive (Space, Gameplay/Dash; owner Oct 19: "add a dive feature for the tagger and after they use it they are
-	stunned for 2 seconds"; it was a leap that landed in a low lunge). The whole body dives (LEAP):
-	  0.00-0.08 s  take-off: no crouch first (the push is already moving at 72), the body tips about the hips into the
-	               dive, the legs push off and stretch out behind; both arms reach ahead (superman), the knife leading;
-	  in the air   flat out, legs long and toes pointed, the belly coming down to the floor as the hop ends;
+	The dive (Space, Gameplay/Dash; owner Oct 19: "add a dive feature for the tagger"; Oct 20 15:13: "right now its
+	like a ragdoll, make it straight to the point and without a long unconsiousness, make it concrete"). The whole
+	body dives (LEAP), one clean athletic move, 0.80 s from the press to running again (it was 2.83 s, 2 s of it lying
+	dazed):
+	  0.00-0.06 s  a quick crouch: knees bend, the hips drop, the body leans in (the push is already going);
+	  0.06-0.13 s  the spring: the body straightens into one line along the ground, legs together behind, toes pointed,
+	               both arms reaching ahead (superman), the knife leading;
+	  in the air   that straight line, tipping down to the floor as the hop ends (Air: Config/Round.Lunge.Up);
 	  the slash    the moment the knife reaches the runner (slash(): the catcher's own screen when its hit check finds
 	               them, everyone else when the server's Caught arrives), or at SlashBy if it reaches no one: the arm
-	               sweeps from ahead out to the right in 0.14 s (DIVE_KEYS), then settles flat on the floor ahead;
-	  landing      at the hop's end (Air: Config/Round.Lunge.Up) the body lands on its belly, flat (88 degrees), the
-	               hips lowered so the chest and legs lie on the floor; it slides with the push;
-	  stunned      lying there dazed until the stun ends (Config/Round.Lunge.StunAfter + Stun = Out), the head rolling
-	               slowly side to side (the 💫 badge over it is the server's: HuzzServer/PowerService.stun);
-	  up           back to the run by Up (Rise seconds: a push-up and stand).
-	A sideways dive (A / D) does the same into its side.
+	               sweeps from ahead out to the right in 0.14 s (DIVE_KEYS), then the arms lie ahead;
+	  landing      chest and legs on the floor, a short belly slide (Config/Round.Lunge.Slide, ~2 studs, done by 0.54 s);
+	  pop up       0.40-0.80 s: hands push under the shoulders, knees tuck under, a quick crouch and up, the run back
+	               over the last Blend seconds (Up). The stun (PowerService.stun, StunAfter + Stun = 0.78 s) ends as you stand.
+	A sideways dive (A / D) does the same into its side. No dazed head roll, no lying still.
 
 	Pure maths on joints (R15), so the offline preview runs this exact code (motion3d/catch_scene.luau,
 	stab_scene.luau, knife_scene.luau); HuzzClient/Gameplay/Actions feeds it real characters. Written to
@@ -148,29 +149,34 @@ StabMotion.weight = weight
 	hips, the root joint), lead / trail = hip swing into the dive (+) or away (-), knee bend (-), ankle (+ toes up);
 	the lead leg is the left on a forward dive (opposite the knife arm), the side's own leg on a sideways one.
 	REACH: both arms ahead until the slash (over the head, so on a flat body they point the way it dives); LIE: the
-	arms after the slash, flat on the floor ahead. Out: lying dazed until the dive's stun ends; Up: standing again. ]]
-local LUNGE = Round.Lunge or {}
-local STUN_END = (LUNGE.StunAfter or LUNGE.Time or 0.38) + (LUNGE.Stun or 0)
+	arms after the slash, ahead on the floor; PUSH: hands under the shoulders for the pop up (from Out over 0.12 s).
+	Out: the belly slide ends, the pop up starts; Up: on your feet, the run back over the last Blend seconds.
+	The hips are lowered so the lowest part of the body touches the floor while crouching, landing and getting up. ]]
 StabMotion.LEAP = {
 	Gravity = 196.2,
-	In = 0.15, -- the take-off pose takes over from the run this fast (no crouch first; 4 frames at 30 fps, so no pop)
+	In = 0.07, -- the crouch takes over from the run this fast
 	ArmIn = 0.16, -- the arms reach ahead this fast, evenly (Oct 19 evening: 0.06 with an ease turned the hand 173° in one frame)
 	SlashBy = 0.14, -- the slash if the knife has reached no one sooner (lands 0.07 s later, before the landing)
-	Rise = 0.45, -- from the floor back to the run
-	Out = math.max(0.5, STUN_END), -- lying on the floor until here (the stun)
-	Up = math.max(0.5, STUN_END) + 0.45, -- back to the run
+	Out = 0.40, -- the pop up starts (the belly slide, Config/Round.Lunge.Slide, eases out under it by 0.54)
+	Up = 0.80, -- on your feet, the run back (the stun ends at StunAfter + Stun = 0.78)
+	Blend = 0.16, -- the pop up's last part hands back to the run
 	KEYS = {
-		{ t = 0.00, lean = 22, lead = { 46, -60, 10 }, trail = { -30, -18, -30 } }, -- take-off: tipping in, pushing off
-		{ t = 0.08, lean = 46, lead = { 22, -30, -6 }, trail = { -22, -10, -24 } }, -- stretching out
-		{ t = 0, air = 0.7, lean = 72, lead = { 6, -10, -24 }, trail = { -6, -8, -28 } }, -- flat out: legs long, toes pointed
-		{ t = 0, air = 1, lean = 84, lead = { 2, -8, -28 }, trail = { -4, -8, -30 } }, -- belly down
-		{ t = 0.12, air = 1, lean = 88, lead = { 0, -12, -34 }, trail = { -2, -16, -34 } }, -- flat on the floor (the slide)
+		{ t = 0.00, lean = 6, lead = { 10, -20, 0 }, trail = { 6, -20, 0 } }, -- from the run
+		{ t = 0.07, lean = 22, lead = { 44, -66, 18 }, trail = { 24, -58, 14 } }, -- a quick crouch: knees bent, hips low
+		{ t = 0.16, lean = 60, lead = { 6, -8, -20 }, trail = { -14, -4, -26 } }, -- the spring: straight, legs behind
+		{ t = 0, air = 0.75, lean = 76, lead = { 2, -4, -28 }, trail = { -8, -4, -30 } }, -- one straight line, toes pointed
+		{ t = 0, air = 1, lean = 84, lead = { 0, -6, -30 }, trail = { -4, -8, -30 } }, -- chest and legs touch down
+		{ t = 0.40, lean = 88, lead = { 0, -10, -32 }, trail = { -2, -12, -32 } }, -- on the belly (Out: the pop up starts)
+		{ t = 0.54, lean = 54, lead = { 70, -100, 0 }, trail = { 54, -94, 0 } }, -- hands push, knees tuck under
+		{ t = 0.67, lean = 16, lead = { 48, -70, 12 }, trail = { 38, -62, 10 } }, -- a quick crouch, rising
+		{ t = 0.80, lean = 0, lead = { 0, 0, 0 }, trail = { 0, 0, 0 } }, -- standing (Up)
 	},
 	Neck = 0.5, -- the head lifts this much of the lean back, so the eyes look ahead
-	Daze = { Turn = 16, Hz = 0.5 }, -- lying stunned: the head rolls side to side this far (degrees), this slowly
 	REACH = { shoulder = { 168, 0, -10 }, elbow = { 6, 0, 0 }, wrist = { -30, 0, 0 }, off = { 162, 0, 14 }, offElbow = { 10, 0, 0 },
 		waist = { 0, 0, 0 }, neck = { 0, 0, 0 } },
 	LIE = { shoulder = { 158, 0, -26 }, elbow = { 16, 0, 0 }, wrist = { -12, 0, 0 }, off = { 158, 0, 26 }, offElbow = { 16, 0, 0 },
+		waist = { 0, 0, 0 }, neck = { 0, 0, 0 } },
+	PUSH = { shoulder = { 50, 0, -8 }, elbow = { 20, 0, 0 }, wrist = { -10, 0, 0 }, off = { 50, 0, 8 }, offElbow = { 20, 0, 0 },
 		waist = { 0, 0, 0 }, neck = { 0, 0, 0 } },
 }
 
@@ -198,17 +204,17 @@ function StabMotion.leapAt(t: number)
 	return mix(K[#K], K[#K], 0)
 end
 
--- How much the leap owns the body, legs and root joint at t (in fast, held, back to the run by Up).
+-- How much the leap owns the body, legs and root joint at t (in fast, held, back to the run over the last Blend).
 function StabMotion.leapWeight(t: number): number
 	local L = StabMotion.LEAP
 	if t < 0 or t >= L.Up then
 		return 0
 	elseif t < L.In then
 		return smooth(t / L.In)
-	elseif t <= L.Out then
+	elseif t <= L.Up - L.Blend then
 		return 1
 	end
-	return 1 - smooth((t - L.Out) / (L.Up - L.Out))
+	return 1 - smooth((t - (L.Up - L.Blend)) / L.Blend)
 end
 
 -- rig: CarryMath.rig(character); root: the HumanoidRootPart (to keep the thrust level while running hunched).
@@ -384,10 +390,10 @@ local function leap(rec, t)
 		local h, k, an = legPose(d, v)
 		legT[i] = { leg.hip and CarryMath.inJoint(leg.hip, h), leg.knee and CarryMath.inJoint(leg.knee, k), leg.ankle and CarryMath.inJoint(leg.ankle, an) }
 	end
-	-- the body comes down to the floor through the second half of the hop, and lies on it (chest and legs on the
-	-- floor, nothing under it)
+	-- on the floor while crouching (leaving it as the spring lifts the body), then down to the floor through the
+	-- second half of the hop, on it for the slide and the pop up (the lowest part of the body touching, nothing under)
 	local air = StabMotion.air()
-	local ground = smooth(math.clamp((t - air * 0.4) / (air * 0.6 + 0.04), 0, 1))
+	local ground = math.max(1 - smooth(math.clamp((t - 0.07) / 0.09, 0, 1)), smooth(math.clamp((t - air * 0.4) / (air * 0.6 + 0.04), 0, 1)))
 	local drop = 0
 	if ground > 0 then
 		local rest = lowestFoot(rig, CFrame.identity, nil)
@@ -404,15 +410,9 @@ local function leap(rec, t)
 			end
 		end
 	end
-	-- the head: lifted to look ahead, and once on the floor, rolling slowly side to side (dazed)
+	-- the head: lifted to look ahead (no dazed roll: the owner, Oct 20 15:13, "without a long unconsiousness")
 	local L = StabMotion.LEAP
-	local landed = air + 0.12
-	local daze = 0
-	if t > landed then
-		local fadeIn = smooth(math.clamp((t - landed) / 0.4, 0, 1))
-		daze = math.rad(L.Daze.Turn) * math.sin((t - landed) * L.Daze.Hz * 2 * math.pi) * fadeIn
-	end
-	return lw, CFrame.Angles(-d.Z * a * L.Neck, daze, d.X * a * L.Neck)
+	return lw, CFrame.Angles(-d.Z * a * L.Neck, 0, d.X * a * L.Neck)
 end
 
 -- Returns true while the move is playing. animatedArm = false skips the knife arm (an uploaded Stab
@@ -449,11 +449,22 @@ function StabMotion.step(rec, now, animatedArm)
 		w = 0
 	end
 	local last = if rec.lunge then StabMotion.LEAP.LIE else nil
-	-- a dive's pose as { x, y, z } degrees (its arms blend angle by angle: blendArm)
+	-- a dive's pose as { x, y, z } degrees (its arms blend angle by angle: blendArm). On the floor the arms lie
+	-- ahead, then from Out the hands come under the shoulders for the pop up (PUSH), also while a late slash settles.
+	local ground
+	if rec.lunge then
+		local L = StabMotion.LEAP
+		local g = smooth(math.clamp((t - L.Out) / 0.12, 0, 1))
+		ground = {}
+		for key, p in L.LIE do
+			local q = L.PUSH[key]
+			ground[key] = { p[1] + (q[1] - p[1]) * g, p[2] + (q[2] - p[2]) * g, p[3] + (q[3] - p[3]) * g }
+		end
+	end
 	local function diveDeg(key)
 		if reaching then return StabMotion.LEAP.REACH[key] end
-		if lying then return StabMotion.LEAP.LIE[key] end
-		return diveAt(u, key, StabMotion.LEAP.REACH, StabMotion.LEAP.LIE)
+		if lying then return ground[key] end
+		return diveAt(u, key, StabMotion.LEAP.REACH, ground)
 	end
 	local function pose(key)
 		if w <= 0 then return CFrame.identity end

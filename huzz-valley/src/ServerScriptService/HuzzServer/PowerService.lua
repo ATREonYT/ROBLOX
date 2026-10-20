@@ -535,7 +535,9 @@ function PowerService.stun(id, after: number, seconds: number)
 	task.delay(after, function()
 		if state[id] == s and s.stunUntil then
 			ctx.sync(id) -- (speed 0 now; step() gives it back when it ends)
-			badge(id, "HuzzStunned", "💫 STUNNED", Color3.fromRGB(255, 230, 120), math.max(0, s.stunUntil - now()))
+			if seconds >= 1 then -- (a dive's 0.4 s pop up is no "stunned" moment: owner Oct 20 15:13, no long unconsciousness)
+				badge(id, "HuzzStunned", "💫 STUNNED", Color3.fromRGB(255, 230, 120), math.max(0, s.stunUntil - now()))
+			end
 		end
 	end)
 end

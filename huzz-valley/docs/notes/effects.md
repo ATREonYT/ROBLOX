@@ -64,8 +64,9 @@ the Secret cutscene: [secret-cutscene.md](secret-cutscene.md). How top VFX are b
   under slowed runners in any version (ece0c68 to ed870f6: only the badge); the pink disc in the old film's Charm Wave
   still is the Love Trap dropped earlier at the catcher's feet; 16 pieces a ring, no haze, every ring's pieces moved with one
   `Workspace:BulkMoveTo` a frame (`Burst.bulkMove`).
-- **Dive stun**: three cartoon stars circle slowly over a stunned catcher's head on every screen (character
-  StunnedFrom / StunnedUntil), with the server's 💫 STUNNED badge; the body lies dazed ([stab-lunge-catch.md](stab-lunge-catch.md)).
+- **Stun stars**: three cartoon stars circle slowly over the head of anyone stunned 1 s or more on every screen
+  (character StunnedFrom / StunnedUntil), with the server's 💫 STUNNED badge. A dive's 0.4 s stun shows neither
+  (Oct 20 15:13: the dive pops straight back up, [stab-lunge-catch.md](stab-lunge-catch.md)).
 - Each has a sound; others' abilities pop their name over them (root +7, clear of their name tag); during the wind-up
   the caster strikes a cast pose (both arms forward and up 60°, a 10° lean: `Run.Cast`, or the throw, drawn by
   `RunMotion` on everyone via `RunAnimator`, local attributes HuzzCastAt/Len/Kind); your card squashes on press and its

@@ -125,7 +125,7 @@ in core `CLAUDE.md` section 1. Recipe for a new screen: core section 6. Preview 
     it charges.
 - **Card text:** WAIT FOR ROUND (on the line), Q · LET'S GO!, READY IN Ns, ON · Ns (Shield, Invisible), USED THIS
   ROUND (Shield), STUNNED / STUCK (the server refuses abilities then).
-- **Bar states:** catcher DIVE PAUSED, STUNNED 💫 (the 2 s stun draining), DIZZY 💫, KNIFE CHARGING (the 1 s knife
+- **Bar states:** catcher DIVE PAUSED, STUNNED 💫 (the dive's 0.4 s stun draining), DIZZY 💫, KNIFE CHARGING (the 1 s knife
   charge, `KnifeReady` set by `Gameplay/Actions`), DIVE RECHARGING, CATCH READY; runner DASH PAUSED / "Waiting for
   movement", STUCK! / "Caught in a bear trap", DASH RECHARGING / "Ready in 1.0s", DASH READY.
 - **How many cards:** a runner has one (this round's Q ability, like picture c) plus Speed Boost on E only while
