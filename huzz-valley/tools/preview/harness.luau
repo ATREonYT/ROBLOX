@@ -196,6 +196,10 @@ roblox.implementProperty("Folder", "ChildAdded", function(self) return instSigna
 roblox.implementProperty("Folder", "ChildRemoved", function(self) return instSignal(self, "ChildRemoved") end)
 roblox.implementProperty("ScreenGui", "ChildAdded", function(self) return instSignal(self, "ChildAdded") end)
 roblox.implementProperty("Frame", "ChildAdded", function(self) return instSignal(self, "ChildAdded") end)
+-- (ImageLabel too: UI/CrateArt.hisPicture swaps in his 3D crate when ImageLoader adds its glyph; the harness never
+-- fires these by itself, a check fires them with _G.__fireOn as Roblox would)
+roblox.implementProperty("ImageLabel", "ChildAdded", function(self) return instSignal(self, "ChildAdded") end)
+roblox.implementProperty("ImageLabel", "ChildRemoved", function(self) return instSignal(self, "ChildRemoved") end)
 roblox.implementProperty("UserInputService", "InputBegan", function(self) return instSignal(self, "InputBegan") end)
 roblox.implementProperty("UserInputService", "InputEnded", function(self) return instSignal(self, "InputEnded") end)
 roblox.implementProperty("GuiObject", "InputBegan", function(self) return instSignal(self, "InputBegan") end)

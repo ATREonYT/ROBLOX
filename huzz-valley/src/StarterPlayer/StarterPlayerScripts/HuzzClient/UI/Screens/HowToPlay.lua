@@ -145,7 +145,9 @@ function HowToPlay.build(parent: Instance)
 		if ModalManager.current() == nil and role ~= "Runner" and role ~= "Catcher" then
 			opened = true
 			task.delay(1.2, function()
-				if ModalManager.current() == nil then ModalManager.open("HowToPlay") else opened = false end
+				-- (look again: a round may have started in that 1.2 s, and the window must never open over it)
+				local now = player:GetAttribute("HuzzRole")
+				if ModalManager.current() == nil and now ~= "Runner" and now ~= "Catcher" then ModalManager.open("HowToPlay") else opened = false end
 			end)
 		end
 	end

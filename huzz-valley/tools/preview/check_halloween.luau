@@ -108,6 +108,10 @@ for _, entry in HalloweenShop.Crates do
 	local pic = box and box:FindFirstChild("Picture")
 	check(`{entry.Crate}: his {entry.Picture} crate picture`, pic ~= nil and pic:GetAttribute("Art") == "CrateCard" .. entry.Picture and box.ClipsDescendants)
 	local glyph = pic and pic:FindFirstChild("NoPicture")
+	if glyph then -- (Roblox fires ChildAdded when ImageLoader adds the glyph; the harness doesn't, so fire it here)
+		_G.__fireOn(pic, "ChildAdded", glyph)
+		task.wait()
+	end
 	check(`{entry.Crate}: no glyph, a stand-in instead`, (glyph == nil or not glyph.Visible) and (glyph == nil or (box:FindFirstChild("StandIn") ~= nil and box.StandIn.Visible)))
 	check(`{entry.Crate}: the old drawn chest is gone`, card ~= nil and card:FindFirstChild("CratePicture") == nil and card:FindFirstChild("CrateRays") == nil)
 end

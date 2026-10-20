@@ -53,6 +53,9 @@ if cfg.PASSES then
 	for key in string.gmatch(cfg.PASSES, "[^,]+") do owned[key] = true end
 	DataService.setExtra(player, "Passes", owned)
 end
+-- (the first-time HOW TO PLAY opens itself 1.2 s after the save loads: a shot is never a first visit, or it pops up
+-- over whatever the shot shows once the scene takes that long; SCREEN="HowToPlay" still opens it)
+DataService.update(player, function(d) d.Settings.TutorialDone = true end)
 for k, v in cfg.SETTINGS or {} do
 	DataService.update(player, function(d) d.Settings[k] = v end)
 end

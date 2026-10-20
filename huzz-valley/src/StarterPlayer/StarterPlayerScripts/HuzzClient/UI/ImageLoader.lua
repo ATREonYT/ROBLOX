@@ -218,8 +218,9 @@ local knifeView -- (below)
 -- Where a picture can't be drawn: a stand-in (a knife card asks for its 3D model too).
 local function fallback(label: ImageLabel, b)
 	local fine, err = pcall(function()
-		ImageLoader.standIn(label, b.kind, b.name)
-		knifeView(label, b)
+		-- (a knife card asks for its model first and shows the glyph only if that fails: no kitchen-knife emoji
+		-- flashing up while the copy arrives, owner Oct 20 14:07 "fix all of the placeholders for knifes")
+		if not knifeView(label, b) then ImageLoader.standIn(label, b.kind, b.name) end
 	end)
 	if not fine then warnOnce("fallback", "stand-in: " .. tostring(err)) end
 end
@@ -513,10 +514,11 @@ local function showView(label: ImageLabel, model: Instance)
 	vf.Parent = label
 end
 
-function knifeView(label: ImageLabel, b)
-	if b.kind ~= "Art" or b.viewing then return end
+function knifeView(label: ImageLabel, b): boolean
+	if b.kind ~= "Art" then return false end
+	if b.viewing then return true end
 	local item = itemFor(b.name)
-	if not item then return end
+	if not item then return false end
 	b.viewing = true
 	task.spawn(function()
 		pcall(function()
@@ -524,11 +526,16 @@ function knifeView(label: ImageLabel, b)
 			local model = views[key]
 			if not model then
 				views[key] = true
-				local Net = require(Shared:WaitForChild("Net"))
-				local ok = (Net.get("KnifeView") :: RemoteFunction):InvokeServer(key)
-				local player = Players.LocalPlayer
-				local folder = ok and player and player:WaitForChild("PlayerGui"):WaitForChild("HuzzKnifeViews", 5)
-				local got = folder and folder:WaitForChild(key, 5)
+				-- (pcall: if asking fails, the "asking" mark must go, or every card waiting below loops forever)
+				local fine, got = pcall(function()
+					local Net = require(Shared:WaitForChild("Net"))
+					local ok = (Net.get("KnifeView") :: RemoteFunction):InvokeServer(key)
+					local player = Players.LocalPlayer
+					local folder = ok and player and player:WaitForChild("PlayerGui"):WaitForChild("HuzzKnifeViews", 5)
+					return folder and folder:WaitForChild(key, 5)
+				end)
+				if not fine then warnOnce("knifeview", "knife card model: " .. tostring(got)) end
+				got = if fine then got else nil
 				views[key] = got or nil
 				model = got
 			end
@@ -541,6 +548,7 @@ function knifeView(label: ImageLabel, b)
 		if bound[label] == b and not b.shown and not label:FindFirstChild("NoPicture") then ImageLoader.standIn(label, b.kind, b.name) end
 		b.viewing = false
 	end)
+	return true
 end
 
 return ImageLoader
