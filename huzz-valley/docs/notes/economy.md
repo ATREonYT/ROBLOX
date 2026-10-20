@@ -125,20 +125,20 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
   group (`Node<n>` holding a "...lid..." part); the Dojo Chest has none, so its whole roof (everything over its body's
   top, not the floating sparkles and petals) swings (`Shared/CrateMotion` split). `Built` in `Config/Crates` is how
   far his model already stands open (measured from his lid: the front edge comes down onto the body; the spec checks).
-- **Shop > CRATES = his crate shop mockup** (Oct 20, 03:48: "Here are the ui mock ups",
-  `design/owner-oct20/0348-crate-shop-mockup.png`): his three crates as three cards in a row (the mockup's 695 x 679
-  card at 214 px wide: navy panel, lighter rim, faint square pattern at the top, his crate as he built it in a
-  ViewportFrame, a wide violet **BUY** with the Robux mark). Each card has the mockup's own sparkles at about his
-  spots: white 4-point stars on the Dojo, orange, cyan and yellow diamonds on the Storm, magenta diamonds (and two
-  small white stars) on the Beast (`SPARKLES` in `Screens/Shop`; white pictures tinted, `tools/icons/make_sparkles.py`).
-  His crate stands a little smaller than on the mockup so it stays above the OPEN line. If `HuzzCrates` reaches the
-  client after the Shop was built (a slow join), the card shows the plain crate and swaps in his the moment it arrives
-  (`Crate3D.whenReady`, listening, never waiting). BUY is a crate key Developer Product
-  (`Products.Crates`: `DojoCrateKey`, `StormCrateKey`, `BeastCrateKey`, 25 R$ our pick, **Id = 0**, so BUY only says
-  "coming soon"; `ShopService.promptCrateKey` refuses too, and the receipt grants +1 key only on the server). Not on
-  the mockup, kept for kid safety but as quiet as we could (small, see-through): **OPEN 100** with Aura (or "OPEN · N KEYS"), the pity line ("LEGENDARY IN 40") and an "i"
-  that scrolls to that crate's full odds list under the row. The Starter and Dance crates keep their old cards below.
-  Side by side: `docs/previews/crate-shop-vs-mockup.jpg` (his crates as stand-in boxes offline).
+- **Shop > CRATES = his crate shop picture itself** (Oct 20, 03:48 "Here are the ui mock ups", then 07:23 "Just put
+  the ui picture i sent you, no need to try recreate" / "For the crates"): `design/owner-oct20/0348-crate-shop-mockup.png`
+  cut down the middle of the gaps into its three cards at full size (`tools/crates/cut_mockup_cards.py` ->
+  `assets/art/crate-card-{dojo,storm,beast}.png`, packed at 448 px as `Art/CrateCardDojo`, `CrateCardStorm`,
+  `CrateCardBeast`; nothing redrawn or cleaned), shown side by side at their own proportions (193 px high, centred in
+  the row) so the row is his picture again: his crate renders, sparkles and BUY buttons as he drew them. An invisible
+  button lies over each of his BUY buttons: a crate key Developer Product (`Products.Crates`: `DojoCrateKey`,
+  `StormCrateKey`, `BeastCrateKey`, 25 R$ our pick, **Id = 0**, so it only says "coming soon"; `ShopService.promptCrateKey`
+  refuses too, and the receipt grants +1 key only on the server). Kept for kid safety on a slim line UNDER each card
+  (never on his art), small and in his colours (BUY violet, his lilac, his card navy): **OPEN 100** with Aura (or
+  "OPEN · N KEYS"), the pity line ("LEGENDARY IN 40") and an "i" that scrolls to that crate's full odds list under the
+  row. A card and its line fit the Shop's body, so they show without scrolling. In Studio's editor the cards stay blank
+  until he uploads them (`Config/ImageIds`, README checklist); in Play the game draws them (`UI/ImageLoader`). The
+  Starter and Dance crates keep their old cards below. Side by side: `docs/previews/crate-shop-vs-mockup.jpg`.
 - **The 3D opening** (`Screens/CrateOpen` with `UI/Crate3D`; timeline `Shared/CrateMotion` (T), one maths for the game
   and the film): shut (a crate built open is shut first), it rocks and jumps harder and faster for 2.1 s with a
   knock on each of 9 closer-and-closer jumps; the top swings open with a small overshoot (to 100 deg from shut) and a
@@ -265,9 +265,11 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
 - Crates: contents, price and odds are Claude's first pick; the Starter and Dance crate pictures are drawn
   (stand-in); the sounds are our made stand-ins (no whoosh or riser of its own yet).
 - His three knife crates: their real look (meshes, textures, glow) is only Studio's to judge: offline pictures draw his
-  parts as boxes. Not seen in Studio: the 3D opening, the cards, whether `SurfaceAppearance.Color` takes the rarity
+  parts as boxes. Not seen in Studio: the 3D opening, his picture cards in the Shop, whether `SurfaceAppearance.Color` takes the rarity
   tint on his glow parts (pcall: nothing breaks if not). The crate keys' Robux IDs are 0 and the 25 R$ is ours. His
-  mockup's crates are a concept render; ours is his model as he built it (the Dojo roof, the crystals, the jaw).
+  picture's crates (the Shop cards) are a concept render; the opening shows his model as he built it (the Dojo roof,
+  the crystals, the jaw), so the two look a little different. His cards are a mockup at 2172 px: sharp enough at
+  448 px, but his BUY buttons are part of the picture, so they don't light up or press down like our buttons.
 
 ## Why it is this way / history
 - The owner picked "Coin cosmetics shop" for coins.

@@ -2,19 +2,19 @@
 	The owner's own 3D knife crate in a ViewportFrame (owner, Oct 20: "make these crates for the opening of the normal
 	knifes ... and make the opening animations look appropriate"; his crate shop mockup the same night draws each
 	crate big on its card). His model as he built it (ReplicatedStorage > HuzzCrates, Shared/CrateModels), never
-	redrawn: Shop > CRATES shows it on each card, UI/Screens/CrateOpen plays the opening with it.
+	redrawn: UI/Screens/CrateOpen plays the opening with it (Shop > CRATES shows his own picture of the cards since
+	Oct 20, 07:23: "Just put the ui picture i sent you").
 
 	  Crate3D.new(parent, crate, view, props?) -> handle or nil (nil until his model is there: draw CrateArt instead)
-	      view "Card" = the shop card (a little from above, so an open crate shows its inside), "Open" = the opening
-	      (lower in the frame, room above for the knife). It starts as he built it (the Storm Vault and the Beast
-	      Chest stand open in his model, as on his mockup; the Dojo Chest is shut).
+	      view "Open" = the opening (lower in the frame, room above for the knife). It starts as he built it (the
+	      Storm Vault and the Beast Chest stand open in his model, as on his mockup; the Dojo Chest is shut).
 	  handle.Viewport
 	  handle.knife(item)            his little knife for that Config/CoinShop item (from the same set) for the reveal
 	  handle.pose(t, calm, color)   the opening at time t (Shared/CrateMotion: shut, build-up, the top swings open, the
 	                                 light inside takes `color`, the knife rises spinning and stops facing you)
-	  handle.knifeAt()               where the knife stops, up from the frame's middle (0..0.5 of its height): the
-                                 opening screen puts its light behind it there
-  handle.destroy()
+	  handle.knifeAt()              where the knife stops, up from the frame's middle (0..0.5 of its height): the
+	                                 opening screen puts its light behind it there
+	  handle.destroy()
 
 	How it opens: Shared/CrateMotion.split picks his lid (his .glb's own lid group: the Storm Vault's lid, the Beast
 	Chest's jaw with its teeth and horns; else everything over his body's top: the Dojo Chest's roof) and it swings on
@@ -39,36 +39,6 @@ end
 function Crate3D.available(crate: any): boolean
 	local m = CrateModels.crate(folder(), crate)
 	return m ~= nil and m:IsA("Model")
-end
-
--- Calls fn() once his model for this crate is there (straight away when it is). ReplicatedStorage > HuzzCrates can
--- reach a client after its screens were built (a slow join): this listens instead of waiting, so nothing blocks.
--- Returns a function that stops listening.
-function Crate3D.whenReady(crate: any, fn: () -> ()): () -> ()
-	local conns: { RBXScriptConnection } = {}
-	local done = false
-	local function stop()
-		done = true
-		for _, c in conns do c:Disconnect() end
-		table.clear(conns)
-	end
-	local function try()
-		if not done and Crate3D.available(crate) then stop(); task.defer(fn) end
-	end
-	-- (each listener in a pcall: the offline harness's fake services have no ChildAdded)
-	local function listen(signal: () -> RBXScriptSignal, fn: (Instance) -> ())
-		pcall(function() table.insert(conns, signal():Connect(fn)) end)
-	end
-	local function watch(f: Instance)
-		listen(function() return f.DescendantAdded end, try)
-	end
-	listen(function() return ReplicatedStorage.ChildAdded end, function(ch)
-		if ch.Name == CrateModels.Folder then watch(ch); try() end
-	end)
-	local f = folder()
-	if f then watch(f) end
-	try()
-	return stop
 end
 
 -- the box round a model's parts (world-aligned: his crates and knives are built square to the world)
@@ -136,9 +106,9 @@ function Crate3D.new(parent: Instance, crate: any, view: string, props: { [strin
 	local reach = math.max(size.X, size.Y, size.Z)
 	-- the camera: in front (-Z), a little above; the "Open" view keeps the crate low with room over it for the knife
 	local function aim(grow: number)
-		local down = if view == "Card" then math.rad(24) else math.rad(14)
-		local look = if view == "Card" then Vector3.new(0, h * 0.48, 0) else Vector3.new(0, h * 0.95, 0)
-		local dist = (reach * (if view == "Card" then 0.57 else 1.02)) / math.tan(math.rad(15)) / grow
+		local down = math.rad(14)
+		local look = Vector3.new(0, h * 0.95, 0)
+		local dist = (reach * 1.02) / math.tan(math.rad(15)) / grow
 		cam.CFrame = CFrame.lookAt(look + Vector3.new(0, math.sin(down) * dist, -math.cos(down) * dist), look)
 	end
 	aim(1)

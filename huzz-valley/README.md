@@ -139,6 +139,8 @@ the icons itself. To make them work everywhere for good, upload them once (Plugi
    - Until then the effects use Roblox's own soft sparkles, and the shapes that only look right as our pictures
      (rings, shards, streaks, butterflies, the Secret girl's beams' texture) stay hidden.
    - New pictures can stay grey for a few minutes while Roblox checks them.
+   - This includes your crate shop picture, cut into its three cards (`CrateCardDojo`, `CrateCardStorm`,
+     `CrateCardBeast`, Shop → CRATES): in Studio's editor they stay blank until uploaded; in Play the game draws them.
 2. **Create the Robux items** on the Creator Dashboard after you publish:
    1. **VIP** and **Dance Pack** are Game Passes (VIP gives the [VIP] chat tag).
       The 5 knives are 5 more Game Passes, one each: **Hunter Knife** (Crimson Requiem), **Moonlit Knife** (Hollow

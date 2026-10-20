@@ -2,12 +2,11 @@
 -- ... and make the opening animations look appropriate"; his crate shop mockup the same night). His models can't be
 -- loaded here (the harness builds the game from src/ only), so this puts a small crate shaped like his into
 -- ReplicatedStorage > HuzzCrates (a body, a lid, the light inside, his knives named like his) and checks that:
---   * Shop > CRATES draws it in a ViewportFrame on its card (UI/Crate3D), open for the Beast as on the mockup;
+--   * Shop > CRATES shows his own picture of the cards (no 3D crate there since Oct 20, 07:23);
 --   * OPEN plays the 3D opening (no reel): the crate rocks, the lid swings up, the knife from the same set rises,
 --     then its name and rarity, NEW!, the buttons; at most one flash a second; skip goes straight to the prize;
 --   * the body and the light inside never move, only the top swings;
---   * a crate whose model arrives after the Shop was built (a slow join) swaps its plain crate for his;
---   * each card has its own sparkles (the mockup's colours), and the reveal puts a light behind the knife.
+--   * the reveal puts a light behind the knife.
 -- From tools/preview: lune run harness.luau ../../src - @check_crate3d.luau setup_ui.luau
 local ok, fails = 0, 0
 local function check(name, cond)
@@ -62,39 +61,12 @@ task.wait(0.3)
 local MM = require(game.StarterPlayer.StarterPlayerScripts.HuzzClient.UI.ModalManager)
 local gui = me.PlayerGui:FindFirstChild("HuzzUI")
 
--- 1. the shop card draws his crate (open, as the mockup draws the Beast Chest)
+-- 1. the shop card is his picture (Oct 20, 07:23); OPEN on it plays the 3D opening
 MM.open("Shop", "Crates")
 task.wait(0.2)
 local body2 = gui.Shop:FindFirstChild("Products", true)
 local card = body2 and body2:FindFirstChild("CardBeast")
-local vp = card and card:FindFirstChild("Crate3D", true)
-check("the Beast card draws his crate in a ViewportFrame", vp ~= nil and vp:IsA("ViewportFrame") and vp:FindFirstChildOfClass("Camera") ~= nil)
-check("no plain crate on that card", card ~= nil and card:FindFirstChild("CratePicture", true) == nil)
-check("the crates without his model there draw the plain crate", body2:FindFirstChild("CardDojo") ~= nil and body2.CardDojo:FindFirstChild("CratePicture", true) ~= nil)
-check("it is built at run time only (never saved in StarterGui)", vp ~= nil and vp:GetAttribute("RuntimeOnly") == true)
-local copy = vp and vp:FindFirstChildOfClass("Model")
-local cLid = copy and copy:FindFirstChild("chest_lid", true)
-local cBody = copy and copy:FindFirstChild(beast.Model.Body, true)
-check("on the card it stands as he built it (the lid where he put it)", cLid ~= nil and cBody ~= nil and (cBody.CFrame:PointToObjectSpace(cLid.CFrame.Position) - Vector3.new(0, 0.8, 0)).Magnitude < 0.01)
-local function sparkles(c)
-	local out = {}
-	for _, d in c:GetDescendants() do if d:GetAttribute("Sparkle") then table.insert(out, d) end end
-	return out
-end
-local bs, ds = sparkles(card), sparkles(body2.CardDojo)
-check(`each card has its own sparkles (Beast {#bs}, Dojo {#ds})`, #bs == 7 and #ds == 3 and card:FindFirstChild("Sparkle1", true).ImageColor3 == Color3.fromHex("FF5CE8"))
-check("the Dojo's are white 4-point stars", ds[1]:GetAttribute("Icon") == "SparkleStar" and ds[1].ImageColor3 == Color3.new(1, 1, 1))
-
--- 1b. his Dojo Chest arrives late (after the Shop was built): its card swaps the plain crate for his
-local dojo = Crates.get("Dojo")
-local dSet = Instance.new("Model"); dSet.Name = dojo.Model.Set
-local dCrate = Instance.new("Model"); dCrate.Name = dojo.Model.Crate; dCrate.Parent = dSet
-part(dCrate, dojo.Model.Body, base + Vector3.new(0, 0.6, 0), Vector3.new(1.8, 1.2, 1.6))
-part(dCrate, "roof", base + Vector3.new(0, 1.4, 0), Vector3.new(2, 0.4, 1.8))
-dSet.Parent = RS.HuzzCrates
-__fireOn(RS.HuzzCrates, "DescendantAdded", dCrate)
-task.wait(0.1)
-check("a late Dojo Chest replaces the plain crate on its card", body2.CardDojo:FindFirstChild("Crate3D", true) ~= nil and body2.CardDojo:FindFirstChild("CratePicture", true) == nil)
+check("the Beast card is his picture, no 3D crate on it", card ~= nil and card:FindFirstChild("Picture") ~= nil and card:FindFirstChild("Crate3D", true) == nil)
 
 -- 2. OPEN: the 3D opening
 local screen = gui:FindFirstChild("CrateOpen")

@@ -137,7 +137,7 @@ end
 -- Stand-in glyphs for pictures that can't be drawn (see the header). Icons by name; art by its name's start.
 -- Decorations (rays, wedges, studs, glows) have none: without them the screen still reads.
 local GLYPH: { [string]: string } = {
-	AudioMusic = "🎵", AudioSpeaker = "🔊", AudioWaveform = "🎶", AuraStar = "✨", AuraStarWhite = "✨", SparkleDiamond = "✨", SparkleStar = "✨", ChatBenefit = "💬",
+	AudioMusic = "🎵", AudioSpeaker = "🔊", AudioWaveform = "🎶", AuraStar = "✨", AuraStarWhite = "✨", ChatBenefit = "💬",
 	CheckEquipped = "✅", CheckOwned = "✔", Close = "✖", CollectionBook = "📖", CompanionEffects = "✨", ControlsDash = "💨",
 	ControlsKeyboard = "⌨", ControlsMenu = "☰", CurrencyCoin = "🪙", CurrencyGem = "💎", CurrencyPlus = "➕", DancesNote = "🎵",
 	Envelope = "✉", FavouriteFilled = "⭐", FavouriteOutline = "☆", GiftAction = "🎁", GiftBenefit = "🎁",
@@ -151,7 +151,7 @@ local GLYPH: { [string]: string } = {
 local ART_GLYPH = { -- (first match wins)
 	{ "Knife", "🔪" }, { "DanceStill", "💃" }, { "Dance", "💃" }, { "CoinPack", "🪙" }, { "RewardCoins", "🪙" },
 	{ "RewardGems", "💎" }, { "Map", "🗺" }, { "HowToPlay", "❓" }, { "Pass", "🎟" }, { "Char", "👧" }, { "Bonus", "🎁" },
-	{ "TierCrown", "👑" }, { "Vip", "👑" }, { "CrownPose", "👑" }, { "Outfit", "👗" }, { "MidnightOutfit", "👗" },
+	{ "CrateCard", "📦" }, { "TierCrown", "👑" }, { "Vip", "👑" }, { "CrownPose", "👑" }, { "Outfit", "👗" }, { "MidnightOutfit", "👗" },
 	{ "ItemMint", "💫" }, { "Item", "💫" }, { "SunsetTrail", "💫" }, { "BlossomAura", "🌸" },
 }
 local DECOR = { LightRays = true, SpinWedge = true, DanceFxCore = true, DanceFxGlow = true, StudPattern = true, StudTile = true, BoardStud = true, BoardWeb = true }

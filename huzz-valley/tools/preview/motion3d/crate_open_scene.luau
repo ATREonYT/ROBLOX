@@ -5,11 +5,10 @@
 -- STAND-IN LOOK: his crate meshes can't be fetched offline (cloud), so each of his MeshParts is drawn as a box (or a
 -- ball for bells, gems, eyes...) of its real size and place, coloured by its name after his crate shop mockup. The
 -- motion and the framing are the game's; the look is only Studio's to judge.
---   MODE=film (default): one crate opening, 30 fps (CRATE=Beast, ITEM=<a Config/CoinShop key in it>, default its
---     first Epic), the rarity light behind it as the opening screen draws it; stills every few beats for a strip.
---   MODE=cards: the three crates as Shop > CRATES frames them (UI/Crate3D "Card": as he built them, the Storm Vault
---     and the Beast Chest open as on his mockup), one still each, 428 x 300 (twice the card's 214 x 150 picture), on the card's navy.
--- From the repo root: KNIFE_MESHES=<knives.json> MOTION3D_KEEP=<dir> [MODE=cards] sh huzz-valley/tools/preview/motion3d/video.sh \
+-- One crate opening, 30 fps (CRATE=Beast, ITEM=<a Config/CoinShop key in it>, default its first Epic), the rarity
+-- light behind it as the opening screen draws it; stills every few beats for a strip. SIDE=1 films it from the right
+-- (to see the top swing on its hinge).
+-- From the repo root: KNIFE_MESHES=<knives.json> MOTION3D_KEEP=<dir> [SIDE=1] sh huzz-valley/tools/preview/motion3d/video.sh \
 --   huzz-valley/tools/preview/motion3d/crate_open_scene.luau <out.mp4>
 local fs = require("@lune/fs")
 local process = require("@lune/process")
@@ -25,7 +24,6 @@ local SpinWheel = Env.load("huzz-valley/src/ReplicatedStorage/Shared/Config/Spin
 local Round = Env.load("huzz-valley/src/ReplicatedStorage/Shared/Config/Round.lua")
 local CrateModels = Env.load("huzz-valley/src/ReplicatedStorage/Shared/CrateModels.lua")
 
-local MODE = process.env.MODE or "film"
 local game = roblox.deserializePlace(fs.readFile(Env.root .. "/huzz-valley/places/HUSSANIME.rbxl"))
 local holder = game:GetService("Workspace").scrates.Standard_Crates
 local meshes = process.env.KNIFE_MESHES and serde.decode("json", fs.readFile(process.env.KNIFE_MESHES)) or {}
@@ -134,33 +132,16 @@ local function makeCrate(scene, crate, at)
 end
 
 -- the camera UI/Crate3D uses (FOV 30, in front, a little above)
-local function aim(c, view, grow)
+local function aim(c, grow)
 	local reach = math.max(c.size.X, c.size.Y, c.size.Z)
-	local down = if view == "Card" then math.rad(24) else math.rad(14)
-	local look = if view == "Card" then Vector3.new(0, c.h * 0.48, 0) else Vector3.new(0, c.h * 0.95, 0)
-	local dist = (reach * (if view == "Card" then 0.57 else 1.02)) / math.tan(math.rad(15)) / grow
+	local down = math.rad(14)
+	local look = Vector3.new(0, c.h * 0.95, 0)
+	local dist = (reach * 1.02) / math.tan(math.rad(15)) / grow
 	local pos = look + Vector3.new(0, math.sin(down) * dist, -math.cos(down) * dist)
 	return c.at * pos, c.at * look
 end
 
 local scene = Scene.new()
-if MODE == "cards" then
-	local ids = { "Dojo", "Storm", "Beast" }
-	local list = {}
-	for i, id in ids do
-		local crate = Crates.get(id)
-		local c = makeCrate(scene, crate, CFrame.new((i - 1) * 40, 0, 0))
-		c.place(CFrame.new(0, c.h / 2, 0), math.rad(crate.Model.Built or 0)) -- (as he built it)
-		list[i] = c
-	end
-	for i, c in list do
-		local pos, look = aim(c, "Card", 1)
-		scene:frame(pos, look, { fov = 30, caption = "" })
-		local _ = i
-	end
-	scene:save(nil, 30, 428, 300, { sky = "#1e2852", ground = "#1e2852", grid = false, stills = { 0, 1, 2 } })
-	return
-end
 
 -- the film
 local crate = Crates.get(process.env.CRATE or "Beast")
@@ -238,7 +219,7 @@ for f = 0, math.floor((t1 - t0) * FPS) do
 	local phase = if t < T.Build then "builds up" elseif t < T.Rise then "opens" elseif t < T.Reveal then "the knife rises" else "reveal: " .. item.Name .. " (" .. item.Rarity .. ")"
 	extra.caption = string.format("%s  t=%.2fs  %s  (his crate parts as stand-in boxes; his knife's .glb)", crate.Name, math.max(t, 0), phase)
 	local s2 = CrateMotion.shake(t)
-	local pos, look = aim(c, "Open", s2.grow)
+	local pos, look = aim(c, s2.grow)
 	if process.env.SIDE then -- (SIDE=1: from the right, to see the top swing on its hinge rather than lift)
 		pos = look + Vector3.new((pos - look).Magnitude, c.h * 0.15, 0)
 	end

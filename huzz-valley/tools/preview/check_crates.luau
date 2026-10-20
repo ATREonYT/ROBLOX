@@ -108,8 +108,9 @@ for i = 2, #spans do
 	check(`{spans[i][1]}: its section sits below {spans[i - 1][1]}'s`, spans[i][2] > spans[i - 1][3])
 end
 local halloweenCrate, danceCrate = Crates.get("Halloween"), Crates.get("Dance")
--- his three knife crates (Oct 20): ten of his knives each, all 30 between them, each its own card (his 3D crate when
--- his model is there, else the plain crate), a BUY (Id 0: "coming soon", never a prompt), OPEN with Aura, the pity line
+-- his three knife crates (Oct 20): ten of his knives each, all 30 between them, each its own card (his own picture,
+-- Oct 20 07:23 "Just put the ui picture i sent you"), an invisible BUY over his drawn one (Id 0: "coming soon", never
+-- a prompt), and under his picture (never on it) OPEN with Aura, the pity line and the odds "i"
 local inKnifeCrates, cardsSeen = {}, 0
 for _, id in { "Dojo", "Storm", "Beast" } do
 	local kc = Crates.get(id)
@@ -119,8 +120,20 @@ for _, id in { "Dojo", "Storm", "Beast" } do
 	check(`{id}: its card shows`, cardK ~= nil)
 	if cardK then
 		cardsSeen += 1
-		check(`{id}: its crate is drawn (his model or the plain crate)`, cardK:FindFirstChild("Crate3D", true) ~= nil or cardK:FindFirstChild("CratePicture", true) ~= nil)
-		check(`{id}: BUY with the Robux mark`, cardK:FindFirstChild("Buy") ~= nil and cardK.Buy:FindFirstChild("Label", true).Text == "BUY" and cardK.Buy:FindFirstChild("RobuxMark", true) ~= nil)
+		local pic = cardK:FindFirstChild("Picture")
+		check(`{id}: his own picture of the card`, pic ~= nil and pic:IsA("ImageLabel") and pic:GetAttribute("Art") == "CrateCard" .. id)
+		check(`{id}: his picture at its own proportions`, pic ~= nil and math.abs(pic.Size.X.Offset / pic.Size.Y.Offset - ({ Dojo = 717 / 702, Storm = 1, Beast = 715 / 702 })[id]) < 0.01)
+		check(`{id}: nothing of ours drawn on his picture`, cardK:FindFirstChild("Crate3D", true) == nil and cardK:FindFirstChild("CratePicture", true) == nil and cardK:FindFirstChild("Stage") == nil)
+		local buyK = cardK:FindFirstChild("Buy")
+		check(`{id}: an invisible BUY over his`, buyK ~= nil and buyK.BackgroundTransparency == 1 and buyK:GetAttribute("OverHisArt") == true)
+		if pic then
+			local under = true
+			for _, n in { "Open", "Pity", "Odds" } do
+				local e = cardK:FindFirstChild(n)
+				if not e or e.Position.Y.Offset < pic.Size.Y.Offset then under = false end
+			end
+			check(`{id}: OPEN, the pity line and the "i" sit under his picture`, under)
+		end
 		check(`{id}: OPEN with Aura shows its price`, cardK:FindFirstChild("Open") ~= nil and cardK.Open:FindFirstChild("Label", true).Text == "OPEN " .. kc.Price)
 		check(`{id}: the pity line shows`, cardK:FindFirstChild("Pity") ~= nil and cardK.Pity.Text == "LEGENDARY IN 40")
 		check(`{id}: the odds button`, cardK:FindFirstChild("Odds") ~= nil)

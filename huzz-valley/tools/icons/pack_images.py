@@ -15,6 +15,10 @@ MAX_ICON = 192
 # The knife cards (assets/art/knife-*.png, renders of the owner's 30 knives by tools/knives/compose_cards.py, 384 px)
 # show at most about 160 points: packed at 192 px too, so 30 of them don't weigh down the game.
 KNIFE_ART = 'knife-'
+# The owner's crate shop cards (assets/art/crate-card-*.png, cut at full size from his picture by
+# tools/crates/cut_mockup_cards.py) show about 220 points wide in Shop > CRATES: packed at 448 px (sharp on his Retina
+# screen) so the three don't weigh down the game.
+CRATE_CARD, MAX_CRATE_CARD = 'crate-card-', 448
 # Icons from the owner's sheet that no screen uses yet: kept in assets/, not packed into the game.
 UNUSED = {'play-tile', 'plus-tile', 'monitor-small', 'social-chat'}
 # Effect textures keep their real size (flipbook frames need every pixel; the owner's screen is Retina), capped at
@@ -43,6 +47,8 @@ for kind, src in (('Icons', 'assets/icons'), ('Art', 'assets/art'), ('Fx', 'asse
         im = Image.open(os.path.join(src, name)).convert('RGBA')
         if (kind == 'Icons' or (kind == 'Art' and name.startswith(KNIFE_ART))) and max(im.size) > MAX_ICON:
             im.thumbnail((MAX_ICON, MAX_ICON), Image.LANCZOS)
+        if kind == 'Art' and name.startswith(CRATE_CARD) and max(im.size) > MAX_CRATE_CARD:
+            im.thumbnail((MAX_CRATE_CARD, MAX_CRATE_CARD), Image.LANCZOS)
         if kind == 'Fx':
             cap = 1024 if name[:-4] in FX_SHEETS else 512
             if max(im.size) > cap:
