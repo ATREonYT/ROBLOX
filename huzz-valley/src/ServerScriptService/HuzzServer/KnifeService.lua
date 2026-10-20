@@ -38,7 +38,8 @@
 	most, on a stand a little more, worn a lighter share (HuzzClient/Gameplay/KnifeFxRange switches worn ones off
 	for far-away players).
 	Where it sits: Shared/KnifeLook (hand: today's grip, offset by the model's Grip; worn: backC0 / sideC0, also on
-	the model's Grip). A model in HuzzKnives whose size doesn't match its length (8 of the owner's Oct 18 file came
+	the model's Grip; its "Reach", how far its farthest piece is from the grip, lets each screen's
+	HuzzClient/Gameplay/KnifeGuard hide a worn knife or piece that ends up off the body). A model in HuzzKnives whose size doesn't match its length (8 of the owner's Oct 18 file came
 	out of the setup about 10 times too big and lying sideways) is not used: that skin shows our own knife in its
 	colours instead, with one warning in Output, until the model is fixed.
 ]]
@@ -420,6 +421,12 @@ function KnifeService.giveBack(character, skin)
 	end
 	plain(model)
 	KnifeFx.add(model, skin, "back")
+	-- how far its farthest piece is from its grip (each screen's Gameplay/KnifeGuard hides a piece that ends up farther)
+	local reach = 0
+	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") then reach = math.max(reach, (d.CFrame.Position - handle.CFrame.Position).Magnitude) end
+	end
+	model:SetAttribute("Reach", reach)
 	local mount = Instance.new("Weld")
 	mount.Name = "BackMount"
 	mount.Part0 = torso

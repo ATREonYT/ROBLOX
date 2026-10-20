@@ -275,6 +275,23 @@ function KnifeLook.wornC0(wear: string, torsoName: string, torsoSize: Vector3, s
 	return KnifeLook.backC0(torsoName, torsoSize, shape, clear)
 end
 
+-- A worn knife never floats off its body (owner, Oct 20: "please remove that black thing that is attacthed to my
+-- character in the game": a dark block about the default knife's grip size hung about 3 studs from him, at his shins,
+-- with no knife on his body, on his own Studio screen only, and nothing offline puts one there). Each screen
+-- (HuzzClient/Gameplay/KnifeGuard) hides a worn knife whose grip (its Handle) is more than STRAY studs from where its
+-- mount holds it, or more than STRAY studs outside the body part it hangs from; and a piece STRAY studs farther from
+-- the grip than it was made; and says so once in Output. A knife worn where it should be is never hidden:
+-- tests/KnifeWear.spec puts every knife on blocky, slim, big and wide R15 and R6 bodies (the farthest grip, a
+-- shuriken's pushed back off the hip, rightly sits 0.9 studs out: hence 1.5).
+KnifeLook.STRAY = 1.5
+-- How far a world point lies outside a box (cf, size; 0 inside).
+function KnifeLook.outside(cf: CFrame, size: Vector3, at: Vector3): number
+	local p = cf:PointToObjectSpace(at)
+	local h = size / 2
+	local d = Vector3.new(math.max(math.abs(p.X) - h.X, 0), math.max(math.abs(p.Y) - h.Y, 0), math.max(math.abs(p.Z) - h.Z, 0))
+	return d.Magnitude
+end
+
 -- Which knife you wear (from the save): the one picked in the shop when you own it; never picked but you own knives:
 -- the first you own in shop order; taken off, or none owned: nil = the default knife (owner's standing call:
 -- "everyone even the runners have a knife mounted on their backs"). shop = Config/CoinShop.

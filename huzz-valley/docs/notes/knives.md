@@ -112,6 +112,8 @@ themselves (where, signs, buying): [lobby.md](lobby.md). Huss Valley's knives an
 - Server-built, one per body: `give` (hand) and `giveBack` (worn) each remove the other; RoundService syncs on every
   change, spawn and avatar reload; a shop change swaps it at once (Bootstrap).
 - A model the wrong size is refused (plain knife + one `[HuzzKnife]` warning).
+- Never off the body: each screen's `Gameplay/KnifeGuard` hides a worn knife whose grip left its mount, or a piece
+  that left its grip (see "Honest gaps", the floating black block).
 - Spec `tests/KnifeWear.spec`: all 53 (his 30 models, the 23 pass and Halloween stand-ins) on R15 and R6 at rest:
   nothing inside the head, torso, legs or arms, the flat against the body, within 0.35 studs of it (worst 0.34);
   every row's Wear matches its measured length; the pole and hip directions; capes, hair and wings as boxes, and
@@ -406,8 +408,15 @@ in hand and on a stand), `docs/previews/knife-vfx-vs-hv.jpg` (MELON5MAN worn nex
   avatar animations or a short R6 arm can still bring a long tip nearer the floor.
 - **The owner's "floating black block"** (Oct 19 evening `design/owner-oct19/2010-floating-block.png`; Oct 20 14:07
   "please remove that black thing that is attacthed to my character": `design/owner-oct20/1407-black-block-character.png`
-  is the same file byte for byte, `1407-black-block-ground.png` is new): still not identified for certain, so nothing
-  was removed. What is measured:
+  is the same file byte for byte, `1407-black-block-ground.png` is new): the cause is still not proven, so since Oct 20
+  it is made impossible instead. Each screen's `Gameplay/KnifeGuard` hides a worn knife whose grip is more than
+  `KnifeLook.STRAY` (1.5) studs from where its weld holds it, or outside the body part it hangs from. It also hides a
+  piece that is 1.5 studs farther from the grip than it was made (the server's `Reach` attribute). It prints one
+  `[HuzzKnife] hid ...` line naming the part, and the part shows again once it is back in place. Not "every part
+  within 1 stud of the body": a sickle's or shuriken's blade rightly reaches 2.2 studs out, and a shuriken's grip sits
+  0.9 out. `tests/KnifeWear.spec` checks two things. No worn knife (53 plus the default) is hidden on blocky, slim,
+  big, wide (1.6 across) or R6 bodies. The default knife's grip moved to the block's spot hides the knife, and one
+  loose piece hides only that piece. What is measured:
   - A plain box, about 3:1, a visible top face, colour (21, 27, 54) lit, (10, 12, 29) in shade, bluer than his black
     hoodie (8, 11, 19) beside it.
   - In the ground picture it casts **no shadow** while his lantern next to it casts a long one: almost every part the
@@ -427,7 +436,14 @@ in hand and on a stand), `docs/previews/knife-vfx-vs-hv.jpg` (MELON5MAN worn nex
     every joint. His hair and hats are held by AccessoryRigidConstraints, which have no `Part0`, so it stopped at the
     first hat. Fixed: it reads a constraint's two Attachments, each line is tried on its own, and each line now says
     `shadow OFF` for the game's parts (`tests/FindFloating.spec`, which fails on the old finder). One run in Play
-    (`docs/STUDIO-STEPS.md` Part 4) names the block, its size and what holds it.
+    (`docs/STUDIO-STEPS.md` Part 4) names the block, its size and what holds it (now the last resort: the
+    `[HuzzKnife] hid` line names it too).
+  - Second pass (Oct 20) checked his place's knives part by part. A fresh Mock save wears our `build()` dagger, because
+    his `HuzzKnives` has no `HuzzKnife`. His 30 models are 680 MeshParts with a Handle at Transparency 1 and no plain
+    visible part, so a mesh that fails to load leaves nothing, not a box. When the EditableMesh dress fails on a pass
+    or Halloween knife, the whole plain stand-in shows, with its Handle hidden. Only the default dagger has a visible
+    plain grip. On odd bodies the grip sits off its torso by the same amount, because it is fixed by the C0 and doesn't
+    depend on size. So what moves it in his Studio is still unknown.
 - Oct 19 evening (aura): only offline so far. The aura uses Roblox's sparkle picture until he uploads `assets/fx`
   (Glow, Twinkle), so in Studio the rising specks are small 4-point sparkles, not soft dots; how bright the aura light
   reads under his lobby light only Studio shows. The long scythes and reapers are still held like a knife (blade low

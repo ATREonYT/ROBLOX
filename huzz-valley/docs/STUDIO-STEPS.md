@@ -136,9 +136,10 @@ When you're done testing, set `StudioTestRarity` back to `""`.
 
 ---
 
-## Part 4: name the floating black block (2 minutes)
-Your Oct 20 picture shows a little black block floating near your character. One picture can't tell us what it is;
-this does. (The first version stopped before printing anything on your avatar; this one is fixed.)
+## Part 4: only if the floating black block still shows (2 minutes)
+Since Oct 20 the game hides a knife piece that floats off your character. If Output shows a line starting with
+`[HuzzKnife] hid`, screenshot it and send it to Claude. Only if you still see a black block near your character, do
+these steps. (The first version stopped before printing anything on your avatar; this one is fixed.)
 1. In GitHub Desktop, click **Repository > Show in Finder**, open **huzz-valley > tools > studio**, and open
    **find-floating-parts.lua** with TextEdit. Press **Cmd+A**, then **Cmd+C**.
 2. In Studio, click **Play** and walk up to the block.

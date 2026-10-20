@@ -368,6 +368,109 @@ do
 	check("Grand Witch Scythe: two-handed (worn head up)", KnifeLook.twoHanded(pole))
 end
 
+-- The owner's Oct 20 "black thing attached to my character": a dark block the default knife's grip size, about 3
+-- studs off him at his shins. Every screen now hides a worn knife whose grip is more than KnifeLook.STRAY studs from
+-- where its weld holds it or outside the body part it hangs from, and a piece farther from its grip than it was made
+-- (HuzzClient/Gameplay/KnifeGuard). 1) No knife worn where it should be is ever hidden: all 53 and the default knife
+-- on blocky, slim (0.7), big (1.5) and wide (1.6 across, his avatar's build) R15 bodies and on R6.
+local function stretchRig(rig, k: Vector3)
+	for _, p in rig.parts do p.Size *= k end
+	for _, m in rig.motors do
+		m.C0 = CFrame.new(m.C0.Position * k) * m.C0.Rotation
+		m.C1 = CFrame.new(m.C1.Position * k) * m.C1.Rotation
+	end
+	Rig.fk(rig)
+	return rig
+end
+local guardBodies = {
+	{ "R15", Rig.r15("B"), false }, { "R15 slim", stretchRig(Rig.r15("B"), Vector3.one * 0.7), false },
+	{ "R15 big", stretchRig(Rig.r15("B"), Vector3.one * 1.5), false }, { "R15 wide", stretchRig(Rig.r15("B"), Vector3.new(1.6, 1, 1.3)), false },
+	{ "R6", Rig.r6("B"), true },
+}
+do
+	local all = {}
+	for key, m in good do table.insert(all, { key, m, CoinShop.get(key) }) end
+	for _, item in CoinShop.Items do
+		if item.Slot == "Knife" and item.Model and string.find(item.Model, "/", 1, true) then table.insert(all, { item.Key, KnifeService.template(item), item }) end
+	end
+	table.insert(all, { "the default knife", KnifeService.template(nil), nil })
+	for _, b in guardBodies do
+		local rig, r6 = b[2], b[3]
+		local worst, worstKey, hiddenAny = 0, "", {}
+		for _, k in all do
+			local m = k[2]
+			local s = KnifeLook.shape(partsOf(m))
+			local wear = KnifeLook.wearOf(k[3] and k[3].Wear, s, m:GetAttribute("Wear"))
+			local torso = rig.parts[KnifeLook.mountPart(wear, r6)]
+			local gripAt = (torso.CFrame * KnifeLook.wornC0(wear, torso.Name, torso.Size, s)).Position
+			local by = KnifeLook.outside(torso.CFrame, torso.Size, gripAt)
+			if by > worst then worst, worstKey = by, k[1] end
+			if by > KnifeLook.STRAY then hiddenAny[k[1]] = true end
+		end
+		local list = {}
+		for key in hiddenAny do table.insert(list, key) end
+		print(string.format("  guard, %s: farthest worn grip %.2f studs outside its body part (%s)", b[1], worst, worstKey))
+		check(string.format("guard, %s: no worn knife is hidden (%d knives)", b[1], #all) .. (if #list > 0 then ": " .. table.concat(list, ", ") else ""),
+			#list == 0 and #all == 54)
+	end
+end
+-- 2) The guard itself (HuzzClient/Gameplay/KnifeGuard.scan) on the real KnifeService's default knife, worn on a
+-- blocky R15: where it should be nothing is hidden; its grip moved where his picture shows the block (3 studs to his
+-- left, in front, at his shins, tilted 20 degrees): the knife is hidden; back in place, it shows again; one piece
+-- come loose from the grip: only that piece.
+do
+	local KnifeGuard = luau.load(fs.readFile(ROOT .. "src/StarterPlayer/StarterPlayerScripts/HuzzClient/Gameplay/KnifeGuard.lua"), {
+		debugName = "KnifeGuard",
+		environment = {
+			game = { GetService = function() return { WaitForChild = function(_, n) return { WaitForChild = function(_, m) return m end } end } end },
+			require = function(x) return shared[x] or error("no module " .. tostring(x)) end,
+			string = string, tostring = tostring, warn = function() end, pcall = pcall, table = table,
+		},
+	})()
+	local rig = Rig.r15("B")
+	local c = Instance.new("Model")
+	c.Name = "Owner"
+	for name, p in rig.parts do
+		local part = Instance.new("Part")
+		part.Name, part.Size, part.CFrame = name, p.Size, p.CFrame
+		part.Parent = c
+	end
+	KnifeService.giveBack(c, nil)
+	local k = c:FindFirstChild("HuzzBackKnife")
+	local h = k and k:FindFirstChild("Handle", true)
+	local m = h and h:FindFirstChild("BackMount")
+	if h and m then -- (Lune solves no welds: put each part where its weld holds it)
+		local was = h.CFrame
+		local now = m.Part0.CFrame * m.C0 * m.C1:Inverse()
+		for _, d in k:GetDescendants() do
+			if d:IsA("BasePart") then d.CFrame = now * was:ToObjectSpace(d.CFrame) end
+		end
+	end
+	local state = {}
+	local function hide(part, stray) state[part.Name] = stray end
+	KnifeGuard.scan(c, hide)
+	local shown, n = 0, 0
+	for _, v in state do n += 1; if not v then shown += 1 end end
+	check(string.format("guard: the default knife worn at the hip, all %d parts shown", n), n == 5 and shown == 5)
+	local home = h and h.CFrame
+	if h then h.CFrame = c.HumanoidRootPart.CFrame * CFrame.new(-3, -2.2, -1.5) * CFrame.Angles(0, 0, math.rad(20)) end
+	KnifeGuard.scan(c, hide)
+	check("guard: its grip where his block hangs: the knife is hidden", state.Handle == true and state.Blade == true and state.Tip == true)
+	if h then h.CFrame = home end
+	KnifeGuard.scan(c, hide)
+	check("guard: back on the body, it shows again", state.Handle == false and state.Blade == false)
+	-- a piece come loose from its grip (the grip still at the hip): only that piece
+	local blade = k and k:FindFirstChild("Blade", true)
+	local bladeHome = blade and blade.CFrame
+	if blade then blade.CFrame = c.HumanoidRootPart.CFrame * CFrame.new(-3, -2.2, -1.5) end
+	KnifeGuard.scan(c, hide)
+	check(string.format("guard: a piece 3 studs off its grip is hidden, nothing else (the knife reaches %.2f studs)", k and k:GetAttribute("Reach") or -1),
+		state.Blade == true and state.Handle == false and state.Tip == false and state.Guard == false)
+	if blade then blade.CFrame = bladeHome end
+	KnifeGuard.scan(c, hide)
+	check("guard: back in place, the piece shows again", state.Blade == false)
+end
+
 -- A cape, long hair or wings on the back (the avatar's accessories): the knife goes over a cape and hair, never
 -- through; big wings send a long blade to the hip.
 do
