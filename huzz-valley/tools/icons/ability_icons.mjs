@@ -2,6 +2,9 @@
 // owner's pictures b and c (design/owner-oct19: a purple bear trap with a light plate, a blue hex bubble), so every
 // card has a sharp picture until he sends his own. Our renders, not his art: the two in his pictures are 60 px crops
 // (blurry, CLAUDE.md rule 12); the rest had no picture at all.
+// Since Oct 20 20:34 the cards show HIS power pictures ("bring back the old pictures for the powers ... We want to
+// stand out": tools/icons/cut_power_tiles.py), so this only draws Speed Boost, the one his sheet doesn't have
+// (the other six renders stay in the code for reference; don't put them back in ICONS over his pictures).
 // Writes assets/icons/ability-<name>.png (384 x 384, transparent); then run tools/icons/pack_images.py.
 // Usage (from huzz-valley/): NODE_PATH=/opt/node22/lib/node_modules node tools/icons/ability_icons.mjs
 import { createRequire } from 'module';
@@ -14,7 +17,7 @@ const { chromium } = require('playwright');
 const here = path.dirname(fileURLToPath(import.meta.url));
 const OUT = path.join(here, '../../assets/icons');
 const SIZE = 384;
-const ICONS = ['bear-trap', 'shield', 'speed-boost', 'slow-wave', 'invisible', 'glitchy', 'body-double'];
+const ICONS = ['speed-boost'];
 
 const PAGE = `<!doctype html><html><body style="margin:0;background:transparent"><script type="module">
 import * as THREE from './three.module.min.js';

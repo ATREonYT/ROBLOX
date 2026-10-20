@@ -181,10 +181,11 @@ the icons itself. To make them work everywhere for good, upload them once (Plugi
    into the Command Bar". Never paste it: it gives a stranger control of your game.
 5. **Name your girls** in `src/ReplicatedStorage/Shared/Config/GirlNames.lua` (their model names are the avatar
    owners' usernames, so the game shows "Common Girl 1" and so on until you do).
-6. **Icons for the 7 abilities:** the cards show our own 3D renders (`tools/icons/ability_icons.mjs`) until you send 7
-   see-through PNGs (256 px or bigger, like the ability card in your picture) named ability-shield,
-   ability-invisible, ability-glitchy, ability-body-double, ability-speed-boost, ability-bear-trap and
-   ability-slow-wave (they go in `huzz-valley/assets/icons`).
+6. **Ability pictures:** the cards show YOUR 11 power pictures, cut from your Oct 20 sheet (about 170 px each, a
+   little soft on a Retina screen). For sharper ones, send each as a PNG of 256 px or bigger without the name, named
+   ability-random, ability-shield, ability-invisible, ability-glitchy, ability-body-double, ability-banana-peel,
+   ability-smoke-bomb, ability-bear-trap, ability-slow-wave, ability-radar, ability-lasso, plus ability-speed-boost
+   (not on your sheet: it still shows our own picture). They go in `huzz-valley/assets/icons`.
    **Heartbeat sound:** pick a licensed one in Studio's Toolbox (Audio, by ProSoundEffects or APMOfficial) and send
    its ID; until then a soft built-in thump plays.
 7. **Things that need assets before they can go on sale** show their price, but only say "coming soon" when tapped:

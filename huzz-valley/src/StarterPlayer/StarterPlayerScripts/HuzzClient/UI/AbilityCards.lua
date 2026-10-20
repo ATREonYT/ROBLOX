@@ -6,8 +6,9 @@
 	  local h = AbilityCards.build(slot) -- no opts: your loadout line, then RUNNERS and CATCHERS at the slot's width
 	  local cards = AbilityCards.build(parent, { side = "Runner", width = 600, y = 0 }) -- one side's grid
 	  -- cards.height: how tall the grid is; cards.refresh(): redraw from the save
-	Each card: the ability's picture (his card icon, or the glyph for the Oct 20 ones: no generated art), its name, what
-	it does, its cooldown in its colour, how to beat it, and a button:
+	Each card: the ability's picture (his own power pictures in their coloured tiles, owner Oct 20 20:34: "bring back the
+	old pictures for the powers", tools/icons/cut_power_tiles.py), its name, what it does, its cooldown in its colour,
+	how to beat it, and a button:
 	  not owned  BUY 600 (coins, ActionService "BuyAbility": the server checks and takes the coins; Toast says why not)
 	  runner     EQUIP / EQUIPPED (on Q; "EquipAbility", key Runner)
 	  catcher    Q and E (each glows green when that key holds it; picking the other key's one swaps them)
@@ -33,7 +34,8 @@ local AbilityCards = {}
 
 AbilityCards.CARD_H = 116
 AbilityCards.GAP = 8
-local RANDOM = { Name = "Random", Card = "RANDOM", Emoji = "🎲", Text = "A new one you own each round", Accent = C.Accent }
+local RANDOM = { Name = "Random", Card = "RANDOM", Icon = "AbilityRandom", Tile = Color3.fromRGB(17, 143, 124), Emoji = "🎲",
+	Text = "A new one you own each round", Accent = C.Accent }
 
 local function line(props: { [string]: any }, stroke: number?): TextLabel
 	props.TextWrapped = false
@@ -54,14 +56,17 @@ local function card(parent: Instance, name: string, x: number, y: number, w: num
 	local h = AbilityCards.CARD_H
 	local row = new("Frame", { Name = name, Position = UDim2.fromOffset(x, y), Size = UDim2.fromOffset(w, h), BackgroundColor3 = C.Row,
 		BackgroundTransparency = Theme.Transparency.Row, BorderSizePixel = 0, ZIndex = 2, Parent = parent }, { Kit.corner(7), Kit.stroke(C.RowBorder, 2) })
-	-- the picture on a soft disc in the ability's colour
-	local disc = new("Frame", { Name = "Disc", Position = UDim2.fromOffset(10, 10), Size = UDim2.fromOffset(60, 60), BackgroundColor3 = def.Accent,
-		BackgroundTransparency = 0.72, BorderSizePixel = 0, ZIndex = 3, Parent = row }, { Kit.corner(30) })
+	-- his picture in its coloured tile (owner, Oct 20 20:34: "bring back the old pictures for the powers ... We want to
+	-- stand out"): the picture rounded (UICorner on the image itself), rimmed in his tile's colour (Config/Powers Tile)
+	local rimColor = def.Tile or def.Accent
+	local tile = new("Frame", { Name = "Tile", Position = UDim2.fromOffset(10, 10), Size = UDim2.fromOffset(60, 60),
+		BackgroundColor3 = rimColor:Lerp(Color3.new(0, 0, 0), 0.6), BorderSizePixel = 0, ZIndex = 3, Parent = row }, { Kit.corner(8), Kit.stroke(rimColor, 2) })
 	if def.Icon then
-		Kit.icon(def.Icon, { Name = "Icon", Position = UDim2.fromOffset(2, 2), Size = UDim2.fromOffset(56, 56), ZIndex = 4, Parent = disc })
+		local icon = Kit.icon(def.Icon, { Name = "Icon", Size = UDim2.fromScale(1, 1), ZIndex = 4, Parent = tile })
+		Kit.attach(Kit.corner(8), icon)
 	else
 		Kit.text({ Name = "Glyph", Text = def.Emoji or "", TextSize = 34, TextXAlignment = Enum.TextXAlignment.Center, TextWrapped = false,
-			Size = UDim2.fromScale(1, 1), ZIndex = 4, Parent = disc })
+			Size = UDim2.fromScale(1, 1), ZIndex = 4, Parent = tile })
 	end
 	local textW = w - 84 - 10
 	local title = line({ Name = "AbilityName", Text = string.upper(def.Name), FontFace = F.Name, TextSize = 17, Position = UDim2.fromOffset(80, 8),

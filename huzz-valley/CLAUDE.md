@@ -223,7 +223,8 @@ fine). Owner quotes go in the topic's "Why" part. Keep this core about 20 KB and
     a block still shows, run `tools/studio/find-floating-parts.lua` in Play (`docs/STUDIO-STEPS.md` Part 4).
   - Upload sounds, pictures and animations (`Config/SoundIds`, `Config/ImageIds`; animations are optional since
     Oct 20 15:13, the live game draws dances by hand: `PublishAnimations`, `docs/STUDIO-STEPS.md` Part 5).
-  - An export of their spin wheel model (match its colours); power icons; a stab animation; his crate design
+  - An export of their spin wheel model (match its colours); a Speed Boost picture and 256 px copies of his power
+    pictures (today cut from his sheet, ~170 px: [ui.md](docs/notes/ui.md)); a stab animation; his crate design
     (contents, price, art: the Starter Crate is our first pick, [economy.md](docs/notes/economy.md)); dance names;
     movement pack licence; sharp PNGs for the Oct 17 screens (today mockup crops, placeholders).
 - **Known gaps (ours):**

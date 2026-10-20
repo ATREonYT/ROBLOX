@@ -18,8 +18,11 @@
 	huss's or the dive's ready time), ShieldUntil, DizzyUntil, StunnedFrom/StunnedUntil (a dive's stun); KnifeReady
 	is set on this screen by Gameplay/Actions (the knife's 1 s charge). Tap a card or press its key (gamepad L1 / R1)
 	to use it; on a phone the bar and its key line are the dash button. A card that comes back from its cooldown
-	chimes quietly (power_ready) and its rim glows a moment. The Oct 20 abilities have no picture yet: their card
-	shows the glyph (Config/Powers Emoji).
+	chimes quietly (power_ready) and its rim glows a moment. The picture is HIS power picture in its coloured tile
+	(owner, Oct 20 20:34: "bring back the old pictures for the powers. Right now this is a bare copy of huss valley. We
+	want to stand out": tools/icons/cut_power_tiles.py), rounded and rimmed in his tile's colour (Config/Powers Tile),
+	with ABILITY, the title, the state and the line beside it rather than over it; the glyph (Config/Powers Emoji)
+	only if a picture can't be drawn.
 ]]
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -108,23 +111,29 @@ local function card(parent: Instance, slot: number)
 	rimStroke.Name = "Rim" -- (named before attach, so the saved StarterGui copy is found and reused, not doubled)
 	local rim = Kit.attach(rimStroke, b) :: UIStroke
 	local press = new("UIScale", { Name = "Press", Parent = b })
+	-- his power picture in its tile: 65 x 65, rounded, a 2 px rim in his tile's colour (painted per power)
 	local icon = Kit.icon("AbilityShield", {
-		Name = "Icon", Position = UDim2.fromOffset(1, 1), Size = UDim2.fromOffset(72, 72), ZIndex = 2, Parent = b,
+		Name = "Icon", Position = UDim2.fromOffset(5, 5), Size = UDim2.fromOffset(65, 65), ZIndex = 2, BackgroundTransparency = 0,
+		BackgroundColor3 = CARD_FILL, Parent = b,
 	})
+	Kit.attach(Kit.corner(7), icon)
+	local tileRim = Kit.stroke(WHITE, 2)
+	tileRim.Name = "TileRim" -- (named before attach, so the saved copy is reused)
+	tileRim = Kit.attach(tileRim, icon) :: UIStroke
 	local emoji = label({ Name = "Emoji", Text = "", TextSize = 34, TextXAlignment = Enum.TextXAlignment.Center,
-		Position = UDim2.fromOffset(1, 1), Size = UDim2.fromOffset(72, 72), ZIndex = 2, Visible = false, Parent = b })
-	label({ Name = "Tag", Text = "ABILITY", TextSize = sizeFor(6), Position = UDim2.fromOffset(8, 9), Size = UDim2.fromOffset(60, 9),
+		Position = UDim2.fromOffset(5, 5), Size = UDim2.fromOffset(65, 65), ZIndex = 3, Visible = false, Parent = b })
+	label({ Name = "Tag", Text = "ABILITY", TextSize = sizeFor(6), Position = UDim2.fromOffset(79, 8), Size = UDim2.fromOffset(60, 9),
 		ZIndex = 3, Parent = b })
-	local title = label({ Name = "Title", Text = "", TextSize = sizeFor(9), Position = UDim2.fromOffset(69, 18), Size = UDim2.fromOffset(118, 14),
+	local title = label({ Name = "Title", Text = "", TextSize = sizeFor(9), Position = UDim2.fromOffset(78, 20), Size = UDim2.fromOffset(110, 14),
 		ZIndex = 3, TextTruncate = Enum.TextTruncate.AtEnd, Parent = b })
-	local status = label({ Name = "Status", Text = "", TextSize = sizeFor(7), Position = UDim2.fromOffset(70, 46), Size = UDim2.fromOffset(118, 12),
+	local status = label({ Name = "Status", Text = "", TextSize = sizeFor(7), Position = UDim2.fromOffset(79, 44), Size = UDim2.fromOffset(110, 12),
 		ZIndex = 3, TextTruncate = Enum.TextTruncate.AtEnd, Parent = b })
-	-- the line: 171 x 3 at x 10 (his: rel 11..182, y 67..69), filling as it charges
-	local track = new("Frame", { Name = "Track", Position = UDim2.fromOffset(10, 66), Size = UDim2.fromOffset(171, 3),
+	-- the line beside the picture: 104 x 3 (his card's line spans the card; the picture takes its left end now)
+	local track = new("Frame", { Name = "Track", Position = UDim2.fromOffset(79, 63), Size = UDim2.fromOffset(104, 3),
 		BackgroundColor3 = BLACK, BackgroundTransparency = 0.6, BorderSizePixel = 0, ZIndex = 3, Parent = b }, { Kit.corner(2) })
 	local line = new("Frame", { Name = "Line", Size = UDim2.fromScale(1, 1), BackgroundColor3 = WHITE, BorderSizePixel = 0,
 		ZIndex = 4, Parent = track }, { Kit.corner(2) })
-	return { button = b, shade = shade, rim = rim, press = press, icon = icon, emoji = emoji, title = title, status = status,
+	return { button = b, shade = shade, rim = rim, press = press, icon = icon, tileRim = tileRim, emoji = emoji, title = title, status = status,
 		line = line, glowUntil = 0, name = nil }
 end
 
@@ -270,7 +279,11 @@ function PowerBar.build(parent: Instance)
 			end)
 			c.emoji.Text = def.Emoji or ""
 			c.emoji.Visible = not ok
-			c.icon.Visible = ok
+			-- (the tile shows either way: his picture fills it, or the glyph sits on its colour)
+			local rimColor = def.Tile or def.Accent
+			c.tileRim.Color = rimColor
+			c.icon.BackgroundColor3 = rimColor:Lerp(BLACK, 0.6)
+			if not ok then c.icon.Image = "" end
 			c.line.BackgroundColor3 = def.Accent
 			c.status.TextColor3 = def.Accent
 		end

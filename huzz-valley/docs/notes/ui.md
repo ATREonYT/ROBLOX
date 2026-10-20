@@ -131,18 +131,25 @@ in core `CLAUDE.md` section 1. Recipe for a new screen: core section 6. Preview 
 - **How many cards:** a runner has one (this round's Q ability, like picture c: the one they bring, or Random) plus
   Speed Boost on E only while carrying the girl; a catcher has two (the two they bring; Bear Trap Q, Slow Wave E to
   start): picture b shows one, so the second card is ours. A card back from its cooldown chimes (`power_ready`) and
-  its rim glows a moment. The Oct 20 abilities have no picture yet: their card shows the glyph (`Config/Powers` Emoji).
+  its rim glows a moment. The picture is his own power picture in its tile (65 x 65, rounded, a 2 px rim in his tile's
+  colour, `Config/Powers` Tile), with ABILITY, the title, the state and the line beside it instead of over it (owner,
+  Oct 20 20:34: "bring back the old pictures for the powers. Right now this is a bare copy of huss valley. We want to
+  stand out"). Before and after: `docs/previews/power-bar-his-pictures.png` (shot `power-bar-banana` too).
 - **Shop > ABILITIES** (Oct 20; the Menu keeps its 7 rows: an 8th "Abilities" row pushed MENU off a 658 px screen,
-  critic): `UI/AbilityCards` in the Shop's slot: a "YOU BRING" line, then the cards (116 high, two columns: picture
-  or glyph on a disc in the ability's colour, name, STARTER / OWNED, what it does, "Beat it: ..." on up to two lines,
+  critic): `UI/AbilityCards` in the Shop's slot: a "YOU BRING" line, then the cards (116 high, two columns: his
+  picture in its rounded tile, rimmed in its colour, name, STARTER / OWNED, what it does, "Beat it: ..." on up to two lines,
   the cooldown in its colour, then a coin BUY button, EQUIP / EQUIPPED, or Q and E that glow green when that key holds
   it). Shot `shop-abilities`. Rules: [economy.md](economy.md).
 - Side by side: `docs/previews/ability-bar-vs-owner.png` (`tools/preview/side_by_side_bar.py`, which also prints each
   text box's position in his pixels next to ours: within 1 to 3 px, the state 3 to 6 px wider: Gotham, his font looks
   like Montserrat). Shots `power-bar`, `power-bar-catcher`, `power-bar-stunned`, `power-bar-carrying`,
   `power-bar-cooldown` (the scene's clock is fixed: `_G.__serverClock`).
-- Icons: ours, rendered with three.js (`tools/icons/ability_icons.mjs` → `assets/icons/ability-*.png`, 384 px, packed);
-  drawn in Play only until uploaded; the emoji shows if a picture can't be drawn. His sharp PNGs will replace them.
+- Icons: his 11 power pictures (Random and the 10 he drew, Oct 20 20:34), cut from his sheet
+  `design/owner-oct20/2034-ablt1-powers-and-crates.png` by `tools/icons/cut_power_tiles.py`: from inside each tile,
+  his name cut off (our cards print it), 164 to 171 px square, his art as it is. Under 192 px, so a little soft on his
+  Retina screen: 256 px PNGs from him would be sharper. Speed Boost isn't on his sheet: it keeps our three.js render
+  (`tools/icons/ability_icons.mjs`, now that one only) on a tile in its colour. Drawn in Play only until uploaded; the
+  emoji shows if a picture can't be drawn.
 
 ## Other round screens
 - `Screens/HeroChoice` (60% size), `Screens/NextMap` (your vote tucks into a NEXT MAP panel).

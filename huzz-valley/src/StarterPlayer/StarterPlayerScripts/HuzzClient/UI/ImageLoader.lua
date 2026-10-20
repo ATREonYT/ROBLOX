@@ -424,7 +424,8 @@ local GLYPH: { [string]: string } = {
 	ShirtBenefit = "👕", ShirtEquip = "👕", ShopCart = "🛒", Sneaker = "👟", SpinWheel = "🎡", Stop = "⏹",
 	Stopwatch = "⏱", TagFist = "✊", TierCrown = "👑", VipCrown = "👑", XpBadge = "⭐", ArrowNext = "▶",
 	AbilityShield = "🛡", AbilitySpeedBoost = "⚡", AbilityBearTrap = "🐻", AbilitySlowWave = "🌀", AbilityInvisible = "👻",
-	AbilityGlitchy = "📺", AbilityBodyDouble = "👥",
+	AbilityGlitchy = "📺", AbilityBodyDouble = "👥", AbilityRandom = "🎲", AbilityBananaPeel = "🍌", AbilitySmokeBomb = "💨",
+	AbilityRadar = "📡", AbilityLasso = "🤠",
 }
 local ART_GLYPH = { -- (first match wins)
 	{ "Knife", "🔪" }, { "DanceStill", "💃" }, { "Dance", "💃" }, { "CoinPack", "💰" }, { "RewardCoins", "💰" },

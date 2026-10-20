@@ -49,6 +49,7 @@ shot power-bar-catcher none 1536 694 '{SCREEN="Hud", SCALE=2, POWERS="Catcher"}'
 shot power-bar-stunned none 1536 694 '{SCREEN="Hud", SCALE=2, POWERS="Catcher", POWERSTATE="Stunned"}'
 shot power-bar-carrying none 1536 694 '{SCREEN="Hud", SCALE=2, POWERS="Runner", POWERSTATE="Carrying", ABILITY="BodyDouble"}'
 shot power-bar-cooldown none 1536 694 '{SCREEN="Hud", SCALE=2, POWERS="Catcher", POWERSTATE="Cooldown"}'
+shot power-bar-banana none 1536 694 '{SCREEN="Hud", SCALE=2, POWERS="Runner", POWERSTATE="Carrying", ABILITY="BananaPeel"}' # (his power pictures, Oct 20 20:34)
 shot hero-choice 13-lobby-hud 1536 694 '{SCREEN="Hud", SCALE=2, HERO=true}'
 shot next-map 13-lobby-hud 1536 694 '{SCREEN="Hud", SCALE=2, NEXTMAP=true, VOTE="Base_Map,Halloween_Map,3,5,Halloween_Map"}'
 shot dance-wheel 13-lobby-hud 1536 694 '{SCREEN="Hud", SCALE=2, WHEEL=true}'

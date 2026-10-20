@@ -23,7 +23,7 @@ task.wait(0.3)
 local UI = game.StarterPlayer.StarterPlayerScripts.HuzzClient.UI
 local ImageLoader = require(UI.ImageLoader)
 -- the fake: at most `budget` live pictures; past it, nothing (as Roblox's CreateEditableImage)
-local budget, live, made, refuse = 110, 0, 0, false -- (110 since Oct 20: the one-page Shop also holds the ability cards' pictures, and the harness has no layout, so its whole page counts as on screen)
+local budget, live, made, refuse = 116, 0, 0, false -- (116 since Oct 20 20:34: the one-page Shop also holds the ability cards' pictures, all 11 his now, and the harness has no layout, so its whole page counts as on screen)
 local images = {} -- [name] = the last fake image made for it
 ImageLoader.make = function(kind, name)
 	if refuse or live >= budget then error("out of picture memory (EditableImage budget)") end

@@ -33,11 +33,17 @@ for side, list in Powers.Shop do
 			check(name .. ": a round number", d.Price % 50 == 0)
 		end
 		if side == "Runner" then runners += 1 else catchers += 1 end
-		if d.Emoji and not d.Icon then newOnes += 1 end
+		if not d.Icon then newOnes += 1 end
+		-- (his power pictures, owner Oct 20 20:34: each has a packed picture and his tile's colour)
+		if d.Icon and name ~= "SpeedBoost" then
+			local file = "assets/icons/" .. d.Icon:gsub("^Ability", "ability"):gsub("(%l)(%u)", "%1-%2"):lower() .. ".png"
+			local ok = pcall(fs.readFile, Env.root .. "/huzz-valley/" .. file)
+			check(name .. ": his picture " .. file .. " and a Tile colour", ok and typeof(d.Tile) == "Color3")
+		end
 	end
 end
 check("6 runner and 4 catcher abilities", runners == 6 and catchers == 4)
-check("3 or 4 new ones (glyph cards)", newOnes >= 3 and newOnes <= 4)
+check("every ability shows a picture, none a bare glyph (owner Oct 20 20:34: his pictures)", newOnes == 0)
 check("Speed Boost is free and never in the shop", Powers.SpeedBoost.Free == true and not table.find(Powers.Shop.Runner, "SpeedBoost"))
 check("win pay is more than game pay (sanity)", win > game)
 

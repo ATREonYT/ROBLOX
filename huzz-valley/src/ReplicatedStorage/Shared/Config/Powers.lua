@@ -14,9 +14,11 @@
 -- 4,000): one ability is about the price of an Uncommon to Rare knife, a few evenings of play.
 -- The cards above the dash bar (Screens/PowerBar) show Card (the title), the key and the state in Accent, like his
 -- pictures b and c (design/owner-oct19). The server tells each player which power is in each slot (player
--- attributes PowerName1 / PowerName2, HuzzServer/PowerService). Icon: the card's picture (Shared/Images/Icons,
--- tools/icons/ability_icons.mjs); Emoji: the clean glyph shown when there is no picture (the Oct 20 abilities have
--- none: no generated art, they wait for his icons).
+-- attributes PowerName1 / PowerName2, HuzzServer/PowerService). Icon: the card's picture, his own power pictures
+-- (owner, Oct 20 20:34: "bring back the old pictures for the powers ... We want to stand out": cut from his sheet by
+-- tools/icons/cut_power_tiles.py; Speed Boost has none in his sheet, so it keeps our render, ability_icons.mjs);
+-- Tile: his tile's rim colour, drawn round the picture (UI/AbilityCards, Screens/PowerBar). Emoji: the glyph shown
+-- only if a picture can't be drawn.
 return {
 	-- What each slot holds: { Loadout = key } = the ability saved in that loadout key, a name = that power for everyone.
 	Runner = { { Loadout = "Runner" }, "SpeedBoost" },
@@ -62,7 +64,7 @@ return {
 	-- A pink bubble for a few seconds. It blocks the next stab: the catcher gets dizzy (slow, can't stab) and you get
 	-- a burst of speed to run off. Once per round. Lasts counts from when the bubble shows (after the wind-up).
 	Shield = {
-		Name = "Shield", Card = "ONE HIT SHIELD", Icon = "AbilityShield", Emoji = "🛡️", Text = "Blocks one stab",
+		Name = "Shield", Card = "ONE HIT SHIELD", Icon = "AbilityShield", Tile = Color3.fromRGB(32, 176, 245), Emoji = "🛡️", Text = "Blocks one stab",
 		Accent = Color3.fromRGB(110, 205, 255), Side = "Runner", Starter = true, Price = 0,
 		Counter = "Wait it out: it lasts 6 s",
 		OncePerRound = true, Lasts = 6, Dizzy = 1.5, DizzySlow = 0.5, Boost = 6, BoostTime = 1.5,
@@ -70,14 +72,14 @@ return {
 	-- Nearly see-through for a few seconds (still catchable). Others see a faint shimmer, so it stays fair; the name
 	-- tag hides. Seen = how see-through others see you (0..1), Self = how you see yourself.
 	Invisible = {
-		Name = "Invisible", Card = "INVISIBLE", Icon = "AbilityInvisible", Emoji = "👻", Text = "Fade out of sight",
+		Name = "Invisible", Card = "INVISIBLE", Icon = "AbilityInvisible", Tile = Color3.fromRGB(81, 74, 147), Emoji = "👻", Text = "Fade out of sight",
 		Accent = Color3.fromRGB(200, 184, 255), Side = "Runner", Price = 500,
 		Counter = "Look for the shimmer, or use Radar",
 		Cooldown = 16, Lasts = 4, Seen = 0.88, Self = 0.55, Shimmer = 0.8, -- (Shimmer: pulses a second, at most 1)
 	},
 	-- A short glitch-blink forward (Distance studs in Time seconds, the walls still stop you) with a glitch effect.
 	Glitchy = {
-		Name = "Glitchy", Card = "GLITCHY", Icon = "AbilityGlitchy", Emoji = "📺", Text = "Blink forward",
+		Name = "Glitchy", Card = "GLITCHY", Icon = "AbilityGlitchy", Tile = Color3.fromRGB(17, 99, 113), Emoji = "📺", Text = "Blink forward",
 		Accent = Color3.fromRGB(78, 240, 224), Side = "Runner", Price = 500,
 		Counter = "It only goes forward: wait for it",
 		Cooldown = 8, Distance = 9, Time = 0.14,
@@ -85,7 +87,7 @@ return {
 	-- A copy of you that runs straight on the way you face for Lasts seconds, then vanishes in a puff. It's only a
 	-- look (it can't be caught, and it can't carry the girl): a decoy.
 	BodyDouble = {
-		Name = "Body Double", Card = "BODY DOUBLE", Icon = "AbilityBodyDouble", Emoji = "👯", Text = "Send out a decoy",
+		Name = "Body Double", Card = "BODY DOUBLE", Icon = "AbilityBodyDouble", Tile = Color3.fromRGB(156, 95, 44), Emoji = "👯", Text = "Send out a decoy",
 		Accent = Color3.fromRGB(255, 176, 96), Side = "Runner", Price = 750,
 		Counter = "The copy glows pink and has no name",
 		Cooldown = 14, Lasts = 3.5,
@@ -96,7 +98,7 @@ return {
 	-- New Oct 20. Drop a banana peel behind you: the first catcher who steps on it slips (stuck and can't stab for
 	-- Slip seconds, stars over the head). Runners walk over it. One out at a time; it goes after Lasts.
 	BananaPeel = {
-		Name = "Banana Peel", Card = "BANANA PEEL", Emoji = "🍌", Text = "Catchers slip on it",
+		Name = "Banana Peel", Card = "BANANA PEEL", Icon = "AbilityBananaPeel", Tile = Color3.fromRGB(131, 106, 42), Emoji = "🍌", Text = "Catchers slip on it",
 		Accent = Color3.fromRGB(255, 226, 74), Side = "Runner", Price = 600,
 		Counter = "It's bright yellow: walk round it",
 		Cooldown = 12, Lasts = 15, Radius = 2.2, Slip = 1.4, Back = 2.5, Arm = 0.4, MaxOut = 1,
@@ -104,7 +106,7 @@ return {
 	-- New Oct 20. A big puff of smoke where you stand for Lasts seconds: you can't be seen inside it (name tags hide
 	-- on other screens), and catchers in it are slowed to Slow. It stays where it was dropped.
 	SmokeBomb = {
-		Name = "Smoke Bomb", Card = "SMOKE BOMB", Emoji = "💨", Text = "Hide in a smoke cloud",
+		Name = "Smoke Bomb", Card = "SMOKE BOMB", Icon = "AbilitySmokeBomb", Tile = Color3.fromRGB(54, 93, 137), Emoji = "💨", Text = "Hide in a smoke cloud",
 		Accent = Color3.fromRGB(196, 170, 255), Side = "Runner", Price = 900,
 		Counter = "Go round it, or use Radar",
 		Cooldown = 16, Lasts = 5, Radius = 8, Slow = 0.75,
@@ -120,7 +122,7 @@ return {
 	-- steps on an armed trap is stuck for Hold seconds. Everyone can see the traps. Never lands in the runners' start
 	-- zone or through a wall (shorter throws are tried first).
 	BearTrap = {
-		Name = "Bear Trap", Card = "BEAR TRAP", Icon = "AbilityBearTrap", Emoji = "🪤", Text = "Throw a trap ahead",
+		Name = "Bear Trap", Card = "BEAR TRAP", Icon = "AbilityBearTrap", Tile = Color3.fromRGB(75, 47, 147), Emoji = "🪤", Text = "Throw a trap ahead",
 		Accent = Color3.fromRGB(222, 112, 96), Side = "Catcher", Starter = true, Price = 0,
 		Counter = "It glows when armed: step round it",
 		Cooldown = 9, MaxOut = 2, Hold = 1.6, Lasts = 30, Radius = 3,
@@ -128,7 +130,7 @@ return {
 	},
 	-- A wave round you: runners it reaches slow down for a bit.
 	SlowWave = {
-		Name = "Slow Wave", Card = "SLOW WAVE", Icon = "AbilitySlowWave", Emoji = "🌀", Text = "Slow runners near you",
+		Name = "Slow Wave", Card = "SLOW WAVE", Icon = "AbilitySlowWave", Tile = Color3.fromRGB(117, 60, 227), Emoji = "🌀", Text = "Slow runners near you",
 		Accent = Color3.fromRGB(180, 140, 255), Side = "Catcher", Starter = true, Price = 0,
 		Counter = "Keep 16 studs away when it gathers",
 		Cooldown = 14, Radius = 16, Slow = 0.6, Time = 2.5,
@@ -136,7 +138,7 @@ return {
 	-- New Oct 20. A ping that sweeps out Range studs: every runner it reaches glows through walls for Lasts seconds
 	-- on every screen (shows Invisible runners and runners in smoke too). It only shows them.
 	Radar = {
-		Name = "Radar", Card = "RADAR", Emoji = "📡", Text = "Spot every runner near you",
+		Name = "Radar", Card = "RADAR", Icon = "AbilityRadar", Tile = Color3.fromRGB(125, 46, 80), Emoji = "📡", Text = "Spot every runner near you",
 		Accent = Color3.fromRGB(255, 120, 150), Side = "Catcher", Price = 750,
 		Counter = "It only shows you: keep running",
 		Cooldown = 18, Range = 70, Sweep = 0.9, Lasts = 4,
@@ -145,7 +147,7 @@ return {
 	-- across) is pulled Pull studs towards you over PullTime (never closer than MinGap), then slowed to Slow for Hold.
 	-- A Shield stops it. Never runners who are safe or still in their start zone.
 	Lasso = {
-		Name = "Lasso", Card = "LASSO", Emoji = "🤠", Text = "Pull a runner to you",
+		Name = "Lasso", Card = "LASSO", Icon = "AbilityLasso", Tile = Color3.fromRGB(130, 78, 29), Emoji = "🤠", Text = "Pull a runner to you",
 		Accent = Color3.fromRGB(240, 170, 90), Side = "Catcher", Price = 1000,
 		Counter = "Huss sideways when the rope flies",
 		Cooldown = 15, Range = 24, Speed = 70, Width = 3, Pull = 7, PullTime = 0.3, MinGap = 4, Hold = 0.6, Slow = 0.6,
