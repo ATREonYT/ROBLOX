@@ -193,6 +193,8 @@ end
 
 -- The Halloween shop's Robux buttons: the server decides whether Roblox's prompt opens (never for a knife you own).
 function VERBS.PromptHalloween(player, key) return require(script.Parent.ShopService).promptHalloween(player, key) end
+-- Shop > CRATES' BUY under his knife crates (ShopService.promptCrateKey: Id 0 = "coming soon", never a prompt)
+function VERBS.PromptCrateKey(player, key) return require(script.Parent.ShopService).promptCrateKey(player, key) end
 
 function VERBS.ClaimReward(player, level) return ProgressService.claimReward(player, level) end
 function VERBS.ClaimQuest(player, id) return ProgressService.claimQuest(player, id) end

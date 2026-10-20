@@ -34,7 +34,10 @@ for _, crate in Crates.List do
 		if it.Kind == "Cosmetic" then
 			local c = CoinShop.get(it.Id)
 			check(`{crate.Id}: {it.Id} is in the coin shop`, c ~= nil)
-			check(`{crate.Id}: {it.Id} is a normal look (not a reward, pass, quest or wheel prize)`, c ~= nil and not c.NotForSale and not c.Earn and not c.Pass and not c.Unlock)
+			-- (his three knife crates also hold the quest knives and the wheel's Celestial Edge: owner, Oct 20, "make all of
+			-- the knifes earned either through crates/bought/ or robux"; never a pass knife or a reward)
+			local extra = crate.Model ~= nil and c ~= nil and c.Slot == "Knife"
+			check(`{crate.Id}: {it.Id} is a normal look (not a reward, pass, quest or wheel prize)`, c ~= nil and not c.Earn and not c.Pass and (extra or (not c.NotForSale and not c.Unlock)))
 			check(`{crate.Id}: {it.Id} keeps its shop name`, c ~= nil and c.Name == it.Name)
 			check(`{crate.Id}: {it.Id} keeps its knife rarity`, c ~= nil and (c.Rarity == nil or c.Rarity == it.Rarity))
 		elseif it.Kind == "Dance" then
@@ -77,7 +80,7 @@ check(`the chances add to 100 ({sum})`, math.abs(sum - 100) < 0.5)
 check("the pity counter shows", card ~= nil and card.Pity.Text == "in 30 opens" and card.PityLabel.Text == "GUARANTEED LEGENDARY")
 -- every crate (owner, Oct 19: "knifes, dances, from crates") has its own section with every item's chance, one under
 -- the other; the Knife Crate holds his coin shop knives, the Halloween Crate his 18 Halloween ones, no pass knives
-local lastBottom = -1
+local spans = {}
 for _, cr in Crates.List do
 	if cr.Home then -- (the Halloween stands' crates live on their own page: tools/preview/check_halloween.luau)
 		check(`{cr.Id}: not in Shop > CRATES`, body ~= nil and body:FindFirstChild("Section" .. cr.Id) == nil)
@@ -93,15 +96,64 @@ for _, cr in Crates.List do
 	end
 	check(`{cr.Id}: its section lists all {#cr.Items} chances ({n})`, sec ~= nil and n == #cr.Items)
 	check(`{cr.Id}: shown chances add to about 100 ({total})`, math.abs(total - 100) < 1.5)
-	check(`{cr.Id}: its section sits below the one before`, sec ~= nil and sec.Position.Y.Offset > lastBottom)
-	if sec then lastBottom = sec.Position.Y.Offset + sec.Size.Y.Offset end
+	if sec then table.insert(spans, { cr.Id, sec.Position.Y.Offset, sec.Position.Y.Offset + sec.Size.Y.Offset }) end
 	for _, it in cr.Items do
 		local c = it.Kind == "Cosmetic" and CoinShop.get(it.Id)
 		if c then check(`{cr.Id}: {it.Id} is no pass knife`, c.Pass == nil) end
 	end
 end
-local knifeCrate, halloweenCrate, danceCrate = Crates.get("Knife"), Crates.get("Halloween"), Crates.get("Dance")
-check(`the Knife Crate holds his 26 sold knives ({knifeCrate and #knifeCrate.Items})`, knifeCrate ~= nil and #knifeCrate.Items == 26)
+-- the sections stand one under the other (his crates' odds first, under the cards), never overlapping
+table.sort(spans, function(x, y) return x[2] < y[2] end)
+for i = 2, #spans do
+	check(`{spans[i][1]}: its section sits below {spans[i - 1][1]}'s`, spans[i][2] > spans[i - 1][3])
+end
+local halloweenCrate, danceCrate = Crates.get("Halloween"), Crates.get("Dance")
+-- his three knife crates (Oct 20): ten of his knives each, all 30 between them, each its own card (his 3D crate when
+-- his model is there, else the plain crate), a BUY (Id 0: "coming soon", never a prompt), OPEN with Aura, the pity line
+local inKnifeCrates, cardsSeen = {}, 0
+for _, id in { "Dojo", "Storm", "Beast" } do
+	local kc = Crates.get(id)
+	check(`the {id} crate holds ten knives ({kc and #kc.Items})`, kc ~= nil and #kc.Items == 10)
+	for _, it in (kc and kc.Items or {}) do inKnifeCrates[it.Id] = true end
+	local cardK = body and body:FindFirstChild("Card" .. id)
+	check(`{id}: its card shows`, cardK ~= nil)
+	if cardK then
+		cardsSeen += 1
+		check(`{id}: its crate is drawn (his model or the plain crate)`, cardK:FindFirstChild("Crate3D", true) ~= nil or cardK:FindFirstChild("CratePicture", true) ~= nil)
+		check(`{id}: BUY with the Robux mark`, cardK:FindFirstChild("Buy") ~= nil and cardK.Buy:FindFirstChild("Label", true).Text == "BUY" and cardK.Buy:FindFirstChild("RobuxMark", true) ~= nil)
+		check(`{id}: OPEN with Aura shows its price`, cardK:FindFirstChild("Open") ~= nil and cardK.Open:FindFirstChild("Label", true).Text == "OPEN " .. kc.Price)
+		check(`{id}: the pity line shows`, cardK:FindFirstChild("Pity") ~= nil and cardK.Pity.Text == "LEGENDARY IN 40")
+		check(`{id}: the odds button`, cardK:FindFirstChild("Odds") ~= nil)
+	end
+end
+local nKnives = 0
+for _ in inKnifeCrates do nKnives += 1 end
+check(`his three crates hold all 30 of his knives ({nKnives})`, nKnives == 30)
+if body and body:FindFirstChild("CardDojo") and body:FindFirstChild("CardStorm") and body:FindFirstChild("CardBeast") then
+	local a, b2, c3 = body.CardDojo, body.CardStorm, body.CardBeast
+	check("the three cards stand in one row, left to right", a.Position.Y.Offset == b2.Position.Y.Offset and b2.Position.Y.Offset == c3.Position.Y.Offset and a.Position.X.Offset < b2.Position.X.Offset and b2.Position.X.Offset < c3.Position.X.Offset)
+	check("the cards fit the window side by side", c3.Position.X.Offset + c3.Size.X.Offset <= body.Size.X.Offset - 8)
+	-- BUY while its product has no ID: "coming soon", and never a purchase prompt
+	local toasts = {}
+	local Toast = require(game.StarterPlayer.StarterPlayerScripts.HuzzClient.UI.Toast)
+	local oldShow = Toast.show
+	Toast.show = function(t, ...) table.insert(toasts, t); return oldShow(t, ...) end
+	local prompts = 0
+	local MPS = game:GetService("MarketplaceService")
+	local oldPrompt = MPS.PromptProductPurchase
+	pcall(function() MPS.PromptProductPurchase = function() prompts += 1 end end)
+	__fireOn(a.Buy, "Activated")
+	task.wait(0.1)
+	Toast.show = oldShow
+	pcall(function() MPS.PromptProductPurchase = oldPrompt end)
+	check(`BUY with no product ID says coming soon ({toasts[1]})`, toasts[1] ~= nil and string.find(toasts[1], "coming soon") ~= nil)
+	check("BUY with no product ID opens no purchase", prompts == 0)
+	-- the server refuses too
+	local okP, whyP = require(HS.ShopService).promptCrateKey(me, "DojoCrateKey")
+	check(`the server won't prompt a crate key with no ID ({whyP})`, okP == false and string.find(whyP or "", "coming soon") ~= nil)
+	local okH = require(HS.ShopService).promptCrateKey(me, "WitchCrateKey")
+	check("the crate key prompt only takes Shop > CRATES' keys", okH == false)
+end
 check(`the Halloween Crate holds his 18 Halloween knives ({halloweenCrate and #halloweenCrate.Items})`, halloweenCrate ~= nil and #halloweenCrate.Items == 18)
 local danceOnly = 0
 for _, it in (danceCrate and danceCrate.Items or {}) do

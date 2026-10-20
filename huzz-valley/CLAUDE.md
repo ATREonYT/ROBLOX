@@ -109,7 +109,8 @@ fine). Owner quotes go in the topic's "Why" part. Keep this core about 20 KB and
   `UI/{Kit,Theme,Scale,Motion,ModalManager,State,DancePlayer,DancePose,Toast}`, `UI/Screens/*`, `Gameplay/*`.
 - `ServerStorage/HuzzAnimations.rbxm` (generated), `StarterGui/HuzzUI.rbxm` (generated: never edit by hand).
 - `design/`: kit pages, the owner's art zips, `anims/` (movement pack + 200 dances), `aura/`, `shop/`, references.
-- `places/HUSSANIME.rbxl` = the owner's own place as of Oct 18 (maps, girls, his **new Halloween lobby** in
+- `places/HUSSANIME.rbxl` = the owner's own place as of Oct 20 (his three 3D knife crates in `Workspace > scrates`,
+  moved to `ReplicatedStorage > HuzzCrates` by the build: [economy.md](docs/notes/economy.md)), maps, girls, his **new Halloween lobby** in
   `Workspace > StartingPoint`, one copy in front of each map: the game keeps ONE and puts the others away, Oct 19;
   his old lobby islands moved aside in `Maps > Spawn`);
   `HuzzValley-yours.rbxl` = it with all our code and UI swapped in (what the owner tests).
@@ -209,7 +210,11 @@ fine). Owner quotes go in the topic's "Why" part. Keep this core about 20 KB and
     his own place still holds the broken 8 and his 30 without the Oct 19 materials ([knives.md](docs/notes/knives.md),
     "Owner how-to").
   - Import `Lobby_Props.glb`, run SetupLobbyProps, send `HuzzLobbyProps.rbxm` ([lobby.md](docs/notes/lobby.md)).
-  - Developer Product IDs (Sunset Trail, Blossom Aura, coin packs, spins 1/10/100 at 24/170/600 Robux since Oct 19).
+  - Developer Product IDs (Sunset Trail, Blossom Aura, coin packs, spins 1/10/100 at 24/170/600 Robux since Oct 19;
+    the three knife crate keys `DojoCrateKey`, `StormCrateKey`, `BeastCrateKey`, 25 Robux our pick, Oct 20).
+  - Crate meshes: his Output said some uploads were still "being generated" and asset 120038515596009 "not approved"
+    (only `dojo_set > Plain_Tanto > handle_3`'s texture uses it): check them in Studio; a `.glb` of the crates would let
+    the offline pictures show the real look.
   - Upload sounds, pictures and animations (`Config/SoundIds`, `Config/ImageIds`, `tools/studio/publish-animations.lua`).
   - An export of their spin wheel model (match its colours); power icons; a stab animation; his crate design
     (contents, price, art: the Starter Crate is our first pick, [economy.md](docs/notes/economy.md)); dance names;

@@ -348,6 +348,7 @@ Kit.Styles = {
 	Action = { Idle = C.Action, Hover = C.ActionHover, Pressed = C.ActionPressed, Text = C.Text, Top = C.ActionTop, Rim = C.ActionRim },
 	CoinAction = { Idle = C.CoinBuy, Hover = lighten(C.CoinBuy, 0.10), Pressed = darken(C.CoinBuy, 0.10), Text = C.Text, Top = C.CoinBuyTop, Rim = C.CoinBuyRim }, -- coin cards (08)
 	ItemBuy = style(Color3.fromHex("6E52F8"), C.Text, Color3.fromHex("9C86FC"), Color3.fromHex("140A5C")), -- ITEMS cards (owner's Oct 17 mockup)
+	CrateBuy = style(Color3.fromHex("6A5CF6"), C.Text, Color3.fromHex("A79FFF"), Color3.fromHex("1C1562")), -- Shop > CRATES' BUY (owner's crate shop mockup, Oct 20)
 	DancePlay = style(Color3.fromHex("C24DFD"), C.Text, Color3.fromHex("FFACFF"), Color3.fromHex("3A0C74")), -- the Dances PLAY (Oct 17 mockup)
 	Disabled = { Idle = C.Disabled, Hover = C.Disabled, Pressed = C.Disabled, Text = C.Text, Top = C.DisabledTop, Rim = C.ActionRim },
 	Selected = style(C.SelectedTab, C.Text, C.SelectedTabTop, C.SelectedRim),

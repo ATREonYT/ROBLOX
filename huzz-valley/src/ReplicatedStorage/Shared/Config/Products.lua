@@ -26,7 +26,7 @@ export type Product = {
 	Slot: string?, -- Cosmetics: where it's worn (Config/CoinShop.Slots); owners tap WEAR / WEARING in the Shop
 	Why: string?, -- OnSale = false: what is missing, for the owner's checklist
 	Knife: string?, -- knife Game Passes and Halloween knives: the Config/CoinShop knife it gives
-	Crate: string?, -- Halloween crate keys: the Config/Crates crate it opens once
+	Crate: string?, -- crate keys (Halloween page and Shop > CRATES): the Config/Crates crate it opens once
 	Card: any?, -- knife Game Passes: the card's colours
 }
 
@@ -103,11 +103,21 @@ Products.Halloween = {
 	{ Key = "HalloweenCandyReaper", Kind = "Knife", Knife = "CandyReaper", Name = "Candy Reaper", Blurb = "Mythic knife.", Id = 0, Price = 249, OnSale = true, Icon = "", Art = "KnifeCandyReaper", Why = "needs its Developer Product ID" },
 } :: { Product }
 
+-- Shop > CRATES' BUY buttons (the owner's crate shop mockup, Oct 20: a violet BUY with the Robux mark under each of
+-- his three knife crates): one open of that crate (Config/Crates; saved as CrateKeys, used before Aura). Developer
+-- Products: while Id = 0 BUY only says "coming soon", never a purchase (ShopService.promptCrateKey checks it again).
+-- Prices are Claude's pick (the Halloween crate keys' 25).
+Products.Crates = {
+	{ Key = "DojoCrateKey", Kind = "CrateKey", Crate = "Dojo", Name = "Shinobi Dojo Chest", Blurb = "One open of the\nShinobi Dojo Chest.", Id = 0, Price = 25, OnSale = true, Icon = "", Art = "", Why = "needs its Developer Product ID" },
+	{ Key = "StormCrateKey", Kind = "CrateKey", Crate = "Storm", Name = "Elemental Storm Vault", Blurb = "One open of the\nElemental Storm Vault.", Id = 0, Price = 25, OnSale = true, Icon = "", Art = "", Why = "needs its Developer Product ID" },
+	{ Key = "BeastCrateKey", Kind = "CrateKey", Crate = "Beast", Name = "Void Beast Chest", Blurb = "One open of the\nVoid Beast Chest.", Id = 0, Price = 25, OnSale = true, Icon = "", Art = "", Why = "needs its Developer Product ID" },
+} :: { Product }
+
 Products.Tabs = { "Passes", "Cosmetics", "Items", "Coins" } -- (Items: the coin shop, Config/CoinShop)
 
 local byKey: { [string]: Product } = {}
 local byId: { [string]: Product } = {}
-for _, list in { Products.Passes, Products.Cosmetics, Products.Coins, Products.Spins, Products.Halloween } do
+for _, list in { Products.Passes, Products.Cosmetics, Products.Coins, Products.Spins, Products.Halloween, Products.Crates } do
 	for _, p in list do
 		assert(not byKey[p.Key], "duplicate product key " .. p.Key)
 		byKey[p.Key] = p
@@ -117,6 +127,12 @@ for _, list in { Products.Passes, Products.Cosmetics, Products.Coins, Products.S
 			byId[k] = p
 		end
 	end
+end
+
+-- Shop > CRATES' crate key product for a Config/Crates crate id (nil when it has none).
+function Products.crateKey(crateId: string): Product?
+	for _, p in Products.Crates do if p.Crate == crateId then return p end end
+	return nil
 end
 
 function Products.get(key: string): Product?

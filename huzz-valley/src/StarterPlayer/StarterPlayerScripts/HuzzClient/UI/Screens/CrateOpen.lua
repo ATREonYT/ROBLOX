@@ -13,6 +13,16 @@
 --      a soft glow round the card, its name and rarity in big Gotham Heavy Italic and "NEW!" or "Duplicate: +N coins"
 --      (the prize sound hits with the zoom). Rarer prizes get more: Common a short faint burst, Rare full beams, Epic
 --      white cores in the beams and one soft flash, Legendary and up a spark burst, a second ring and a small shake.
+-- His three knife crates (owner, Oct 20: "make these crates for the opening of the normal knifes ... and make the opening
+-- animations look appropriate") open in 3D instead, with his own crate model (UI/Crate3D, Shared/CrateMotion: the same
+-- maths the offline film uses), no reel:
+--   1. his crate rocks and jumps harder and faster, a wooden knock on each jump, closer and closer (2.1 s);
+--   2. its top (his lid, roof or jaw) swings open with a ring and sparks in the prize's rarity colour, his glowing
+--      parts and the light behind it take that colour;
+--   3. his own little knife from the same set rises out of it spinning, slows and stops facing you (1.1 s); then its
+--      name and rarity, NEW! or the coins back, and the buttons; the knife keeps a slow turn and a gentle bob.
+--   Without his model (not loaded yet) the plain crate and the reel play as below. The odds by rarity and the pity line
+--   show under the crate while it builds up.
 -- Rarity colours are the Spin wheel's (CrateArt.color): Legendary is pink, never gold (owner: "no gold anywhere").
 -- The HUD's coin count waits for the prize (State.hold("Coins")), so a duplicate's coins don't give it away.
 -- Kid-safe: every card on the reel is a fair draw with the real odds (Shared/CrateRoll.strip), nothing is planted next
@@ -37,6 +47,8 @@ local State = require(UI.State)
 local Toast = require(UI.Toast)
 local ModalManager = require(UI.ModalManager)
 local CrateArt = require(UI.CrateArt)
+local Crate3D = require(UI.Crate3D)
+local CrateMotion = require(Shared.CrateMotion)
 local Sfx = require(UI.Parent.Gameplay.Sfx)
 
 local C, F = Theme.Colors, Theme.Fonts
@@ -67,6 +79,11 @@ local TITLE_Y = { Spin = 140, Prize = 40 } -- the title sits just over the crate
 local RAIL_Y = { REEL.Y - 18, REEL.Y + REEL.H + 18 }
 local STREAKS = 6 -- light streaks per rail
 local CHIPS = 6 -- odds by rarity under the reel (Common .. Mythic)
+-- the 3D opening (his crates): its timeline (Shared/CrateMotion), where his crate stands, and where the words go
+local T3 = CrateMotion.T
+local STAGE = { Y = 280, W = 560, H = 400 } -- the crate's ViewportFrame, centred at (CX, Y)
+local LID_Y = 272 -- about where his crate's top is on screen (the ring and sparks as it opens)
+local WORDS3 = { Name = 478, Rarity = 514, Status = 556, Sub = 572, Bottom = 600 } -- under the crate, for the reveal
 
 local function clamp01(x: number): number return math.clamp(x, 0, 1) end
 local function easeOutBack(u: number): number
@@ -116,6 +133,10 @@ function CrateOpen.build(parent: Instance)
 	crate.ZIndex = 3
 	local cratePop = crate:FindFirstChild("Pop") :: UIScale
 	local lidHome = lid.Position
+	-- his 3D crate (UI/Crate3D builds its ViewportFrame in here at run time), and the knife's name and rarity under it
+	local stage = new("Frame", { Name = "Stage3D", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(CX, STAGE.Y), Size = UDim2.fromOffset(STAGE.W, STAGE.H), BackgroundTransparency = 1, Visible = false, ZIndex = 4, Parent = group })
+	local knifeName = words({ Name = "KnifeName", Text = "", FontFace = F.Big, TextSize = 36, Position = UDim2.fromOffset(240, WORDS3.Name), Size = UDim2.fromOffset(800, 40), Visible = false, ZIndex = 25, Parent = group }, 3)
+	local knifeRarity = words({ Name = "KnifeRarity", Text = "", FontFace = F.Big, TextSize = 22, Position = UDim2.fromOffset(240, WORDS3.Rarity), Size = UDim2.fromOffset(800, 26), Visible = false, ZIndex = 25, Parent = group }, 2.5)
 
 	-- the reel: a see-through kit panel, the cards inside a clipped window, soft fades at both ends, the marker
 	local reel = new("Frame", { Name = "Reel", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(REEL.X + REEL.W / 2, REEL.Y + REEL.H / 2), Size = UDim2.fromOffset(REEL.W, REEL.H), BackgroundColor3 = C.Panel, BackgroundTransparency = 0.12, BorderSizePixel = 0, ZIndex = 4, Parent = group }, { Kit.corner(10), new("UIStroke", { Name = "Frame", Color = C.Frame, Thickness = 4 }) })
@@ -234,6 +255,8 @@ function CrateOpen.build(parent: Instance)
 	local lastFlash = -10 -- os.clock() of the last flash (kid-safe: at most one a second)
 	local landOffset = 0
 	local conn: RBXScriptConnection? = nil
+	local view3d: any = nil -- his crate (UI/Crate3D) when this crate has his model, else nil: the plain crate and the reel
+	local function revealAt(): number return if view3d then T3.Reveal else T.Reveal end
 
 	local function setAura()
 		auraText.Text = Format.commas(State.data.Aura or 0)
@@ -383,9 +406,116 @@ function CrateOpen.build(parent: Instance)
 		State.release("Coins") -- (the HUD may show the coins now)
 	end
 
+	-- The prize under his 3D crate: the knife itself is the picture (it has risen out of the crate), so no card; its
+	-- name and rarity under it, the title says the moment ("EPIC!" in its colour, else "YOU GOT").
+	local function showPrize3d()
+		local item = crateDef.Items[result.index]
+		local col = CrateArt.color(item.Rarity)
+		knifeName.Text = item.Name
+		Kit.fitLine(knifeName, 780, 36, 22, true)
+		knifeRarity.Text, knifeRarity.TextColor3 = string.upper(item.Rarity), col
+		if item.Kind == "Coins" then
+			status.Text, status.TextColor3 = `+{Format.commas(result.coins)} COINS`, C.Text
+			sub.Text = ""
+		elseif result.new then
+			status.Text, status.TextColor3 = "NEW!", C.Accent
+			sub.Text = if item.Kind == "Dance" then "Find it in Dances" else "Wear it from Shop > Items"
+		else
+			status.Text, status.TextColor3 = `Duplicate: +{Format.commas(result.coins)} coins`, C.Text
+			sub.Text = "You already have this one"
+		end
+		title.FontFace = F.Big
+		title.Text = if rank() >= CrateRoll.RANK.Epic then string.upper(item.Rarity) .. "!" else "YOU GOT"
+		title.TextColor3 = if rank() >= CrateRoll.RANK.Epic then col else C.Text
+		State.release("Coins") -- (the HUD may show the coins now)
+	end
+
+	-- Everything on screen at time t of the 3D opening (his crate; see the header).
+	local function render3d(t: number, dt: number)
+		local item = result and crateDef.Items[result.index]
+		local calm = Motion.reduced
+		local col = if item then CrateArt.color(item.Rarity) else C.Accent
+		crate.Visible, reel.Visible = false, false
+		for _, rail in rails do rail.Visible = false end
+		stage.Visible = true
+		title.Position = UDim2.fromOffset(240, TITLE_Y.Prize)
+		view3d.pose(t, calm, if item then col else nil)
+		-- the light behind it: green while it builds up, the prize's colour once it opens, brighter as it does
+		local bright, mix = CrateMotion.glow(t)
+		crateRays.Visible = true
+		crateRays.ImageColor3 = C.Accent:Lerp(col, mix)
+		crateRays.ImageTransparency = 0.8 - 0.4 * bright
+		crateRays.Rotation += dt * (if calm then 10 else 20 + 70 * bright)
+		-- a wooden knock on each jump, the pop as it opens, a thunk as the knife stops
+		for k, at in CrateMotion.Ticks do
+			if t >= at and t < T3.Build and not fired["knock" .. k] and not skipped then
+				fired["knock" .. k] = true
+				Sfx.play("roulette_tick", { volume = 0.45 + 0.05 * k, pitch = 0.85 + 0.04 * k })
+			end
+		end
+		if t >= T3.Build and not fired.pop and not skipped then
+			fired.pop = true
+			Sfx.play("countdown_go", { volume = 0.7 })
+		end
+		local pu = (t - T3.Build) / 0.6
+		if pu >= 0 and pu < 1 and not skipped and not calm and item then
+			ring(1, CX, LID_Y, 460, pu, col, 8)
+			for i = 1, 12 do
+				spark(i, CX, LID_Y, (i / 12) * math.pi * 2 + 0.3, 200 + (i % 3) * 30, pu, if i % 2 == 0 then col else Color3.new(1, 1, 1), 14)
+			end
+		elseif t >= T3.Build + 0.6 and t < T3.Reveal then
+			hideFx()
+		end
+		if t >= T3.Rise + T3.RiseLen and not fired.land and item then
+			fired.land = true
+			if not skipped then Sfx.play("pick_land") end
+		end
+		hint.Visible = running and not skipped and t < T3.Reveal
+		chipRow.Visible = running and t < T3.Reveal
+		pityNow.Visible = chipRow.Visible and pityNow.Text ~= ""
+		-- the reveal: its name and rarity, NEW! or the coins back, the buttons
+		if t >= T3.Reveal and item then
+			if not fired.reveal then
+				fired.reveal = true
+				showPrize3d()
+				Sfx.play(if rank() >= CrateRoll.RANK.Epic then "spin_big_win" else "spin_win")
+				-- one soft flash for Epic and up (never more than one a second, whoever asks)
+				if rank() >= CrateRoll.RANK.Epic and not skipped and not calm and os.clock() - lastFlash >= 1 then
+					lastFlash = os.clock()
+					flash.Visible = true
+				end
+			end
+			if result.new and not fired.reward and t >= T3.Reveal + 0.35 then
+				fired.reward = true
+				Sfx.play("reward")
+			end
+			if flash.Visible then
+				local fu = clamp01((t - T3.Reveal) / 0.35)
+				flash.BackgroundTransparency = 0.55 + 0.45 * fu
+				if fu >= 1 then flash.Visible = false end
+			end
+			local nu = clamp01((t - T3.Reveal) / 0.3)
+			knifeName.Visible, knifeRarity.Visible = true, true
+			knifeName.Position = UDim2.fromOffset(240, WORDS3.Name + math.round(16 * (1 - easeOut(nu, 3))))
+			local su = clamp01((t - T3.Reveal - 0.3) / 0.3)
+			status.Visible, sub.Visible = su > 0, su > 0 and sub.Text ~= ""
+			statusPop.Scale = if calm or skipped then 1 else 0.5 + 0.5 * easeOutBack(su)
+			local bu2 = clamp01((t - T3.Reveal - 0.45) / 0.3)
+			bottom.Visible = bu2 > 0
+			bottom.Position = UDim2.fromOffset(240, WORDS3.Bottom + math.round(40 * (1 - easeOut(bu2, 3))))
+			if bu2 >= 1 and running then
+				running = false
+				busy = false
+				skip.Visible = false
+				setPity()
+			end
+		end
+	end
+
 	-- Everything on screen at time t of the timeline (dt: since the last frame).
 	local railPhase = 0
 	local function render(t: number, dt: number)
+		if view3d then render3d(t, dt) return end
 		local item = result and crateDef.Items[result.index]
 		local calm = Motion.reduced
 		-- 0. the title sits just over the crate and reel, and rises to the top for the prize
@@ -608,6 +738,23 @@ function CrateOpen.build(parent: Instance)
 		title.Text, title.FontFace, title.TextColor3 = string.upper(crateDef.Name), F.Heading, C.Text
 		CrateArt.paint(crate, crateDef) -- (each crate in its own colour)
 		title.Position = UDim2.fromOffset(240, TITLE_Y.Spin)
+		-- his 3D crate when this crate has his model (else the plain crate and the reel)
+		if view3d then view3d.destroy(); view3d = nil end
+		knifeName.Visible, knifeRarity.Visible, stage.Visible = false, false, false
+		crateRays.ImageColor3 = C.Accent
+		local okView, v = pcall(function() return if crateDef.Model and Crate3D.available(crateDef) then Crate3D.new(stage, crateDef, "Open", { ZIndex = 4 }) else nil end)
+		if not okView then warn("[HuzzUI] CrateOpen: his crate couldn't be drawn:", v) end
+		view3d = if okView then v else nil
+		if view3d then
+			crate.Visible, stage.Visible = false, true
+			title.Position = UDim2.fromOffset(240, TITLE_Y.Prize)
+			status.Position = UDim2.fromOffset(CX, WORDS3.Status)
+			sub.Position = UDim2.fromOffset(240, WORDS3.Sub)
+			view3d.pose(0, true, nil)
+		else
+			status.Position = UDim2.fromOffset(CX, 529)
+			sub.Position = UDim2.fromOffset(240, 550)
+		end
 		setAgain()
 		setAura()
 		setPity()
@@ -665,22 +812,26 @@ function CrateOpen.build(parent: Instance)
 		result = answer
 		-- somewhere on the prize card, never its edge, and room left for the settle's OVERSHOOT on the same card
 		landOffset = math.round(-CARD.W * 0.3 + math.random() * CARD.W * 0.42)
-		buildCards()
+		if view3d then
+			view3d.knife(crateDef.Items[answer.index].Id) -- (his little knife from the same set rises out of it)
+		else
+			buildCards()
+		end
 		setAura()
 		running = true
 		skip.Visible = true
 		if Motion.reduced then -- (no shaking or spinning: straight to the prize)
 			skipped = true
-			clock = T.Reveal
+			clock = revealAt()
 		end
 		render(clock, 0)
 		play()
 	end
 
 	skip.Activated:Connect(function()
-		if not running or clock >= T.Reveal then return end
+		if not running or clock >= revealAt() then return end
 		skipped = true
-		clock = T.Reveal
+		clock = revealAt()
 		hideFx()
 	end)
 

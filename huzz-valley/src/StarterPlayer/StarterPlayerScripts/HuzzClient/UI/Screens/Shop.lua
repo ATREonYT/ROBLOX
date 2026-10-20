@@ -18,6 +18,7 @@ local Crates = require(Shared.Config.Crates)
 local CrateRoll = require(Shared.CrateRoll)
 local UI = script.Parent.Parent
 local CrateArt = require(UI.CrateArt)
+local Crate3D = require(UI.Crate3D)
 local Theme = require(UI.Theme)
 local Kit = require(UI.Kit)
 local State = require(UI.State)
@@ -433,74 +434,219 @@ local function buildItems(body: Frame)
 	end
 end
 
--- CRATES (owner: "create a good case opening animation"; no mockup yet, so the COINS tab's tall card for the crate):
--- the crate (drawn: CrateArt, a stand-in until his art), its pity counter ("GUARANTEED LEGENDARY in N opens", from the
--- save) and OPEN with its Aura price; beside it every item's exact chance (kid-safe: never hidden odds), in two
--- columns. OPEN goes to the opening screen (Screens/CrateOpen), which asks the server; not in a round or a cutscene.
--- Several crates (owner, Oct 19: "knifes, dances, from crates"): one section each, stacked down the scrolling list
--- (Section<Id>: the card on the left, its odds beside it), each box in its own colour (Config/Crates Colors).
+-- CRATES (owner: "create a good case opening animation"; his crate shop mockup, Oct 20, 03:48: "Here are the ui mock
+-- ups", design/owner-oct20/0348-crate-shop-mockup.png). On top, his three knife crates as the mockup draws them: three
+-- cards in a row (rounded navy panels with a lighter rim and a faint square pattern at the top), each with his own 3D
+-- crate in a ViewportFrame (UI/Crate3D; as he built them: the Storm Vault and the Beast Chest open as on the mockup,
+-- the Dojo Chest shut), sparkle diamonds round it and a wide violet BUY with the Robux mark under it (Config/Products.Crates:
+-- Id 0 until the owner makes the products, so BUY only says "coming soon" and never opens a purchase). Not on the
+-- mockup, kept small: OPEN with Aura (the price, the old way to open) and the pity line, and an "i" that scrolls to
+-- the crate's odds (kid-safe: never hidden odds). Until his model is there (the harness, a slow join) the card draws
+-- the plain crate (CrateArt).
+-- Below the cards, each crate's every item with its exact chance; then the crates without a model (Starter, Dance)
+-- as before: the crate card on the left (pity counter, OPEN with Aura), its odds beside it. OPEN goes to the opening
+-- screen (Screens/CrateOpen), which asks the server; not in a round or a cutscene.
 local CRATE = { W = 206, H = 212, OddsX = 216, RowW = 222, RowH = 29, RowGap = 1, ColGap = 8, SectionGap = 12 }
+-- the mockup's card, scaled from 695 x 679 px to 214 px wide (its BUY: 19 px in, 553-670 px down: 6, 166-202 here)
+local CARD = { X = 4, W = 214, H = 209, Gap = 8, Corner = 9, ViewH = 150, BuyX = 6, BuyY = 166, BuyH = 36, LineY = 145, LineH = 17,
+	Fill = Color3.fromHex("1E2852"), Rim = Color3.fromHex("353F8C"), Buy = Color3.fromHex("6A5CF6"), BuyTop = Color3.fromHex("A79FFF"),
+	BuyRim = Color3.fromHex("1C1562") }
+-- the sparkle diamonds round each crate (the mockup's orange, cyan, yellow, pink and white): x, y, size, colour
+local SPARKLES = {
+	{ 0.14, 0.14, 11, "FF9A3C" }, { 0.84, 0.12, 12, "5FE3FF" }, { 0.08, 0.50, 8, "FFE15C" }, { 0.92, 0.42, 12, "FF6FC8" },
+	{ 0.82, 0.66, 7, "FFFFFF" }, { 0.20, 0.70, 6, "FFFFFF" },
+}
+
+local function canOpenHere(): boolean
+	local player = Players.LocalPlayer
+	local role = player:GetAttribute("HuzzRole")
+	if role == "Runner" or role == "Catcher" or player:GetAttribute("HuzzChoosing") == true or player:GetAttribute("HuzzCinematic") == true then
+		Toast.show("Open crates in the lobby.")
+		return false
+	end
+	return true
+end
+
+-- OPEN: a key (bought with Robux) first, else Aura
+local function openCrate(crate)
+	if not canOpenHere() then return end
+	local keys = (State.data.CrateKeys or {})[crate.Id] or 0
+	local have = State.data.Aura or 0
+	if keys <= 0 and have < crate.Price then
+		Toast.show(`You need {crate.Price - have} more Aura. Collect stars on the field!`)
+		return
+	end
+	ModalManager.open("CrateOpen", crate.Id)
+end
+
+-- every item of a crate and its exact chance, rarest last, in `cols` columns of `rowW` px from (x, y) in `parent`
+local function oddsRows(parent: Instance, crate, x: number, y: number, cols: number, rowW: number): number
+	local odds = CrateRoll.odds(crate)
+	local rows = math.ceil(#odds / cols)
+	for i, o in odds do
+		local col, r = (i - 1) // rows, (i - 1) % rows
+		local it = o.item
+		local row = new("Frame", { Name = "Odds" .. i, Position = UDim2.fromOffset(x + col * (rowW + CRATE.ColGap), y + r * (CRATE.RowH + CRATE.RowGap)), Size = UDim2.fromOffset(rowW, CRATE.RowH), BackgroundColor3 = C.Row, BackgroundTransparency = Theme.Transparency.Row, BorderSizePixel = 0, Parent = parent }, { Kit.corner(5) })
+		new("Frame", { Name = "RarityBar", Position = UDim2.fromOffset(0, 0), Size = UDim2.new(0, 4, 1, 0), BackgroundColor3 = CrateArt.color(it.Rarity), BorderSizePixel = 0, ZIndex = 2, Parent = row }, { Kit.corner(2) })
+		CrateArt.picture(row, it, 40, 25, 4, UDim2.fromOffset(8, 2), 2)
+		local nameW = rowW - 118
+		local nm = Kit.name({ Name = "Name", Text = it.Name, FontFace = Theme.Fonts.Name, TextSize = 13, Position = UDim2.fromOffset(54, 1), Size = UDim2.fromOffset(nameW, 15), ZIndex = 3, Parent = row })
+		Kit.fitLine(nm, nameW, 13, 10, true)
+		local rr = Kit.text({ Name = "Rarity", Text = string.upper(it.Rarity), FontFace = Theme.Fonts.Heading, TextSize = 9, TextColor3 = CrateArt.color(it.Rarity), TextWrapped = false, Position = UDim2.fromOffset(54, 16), Size = UDim2.fromOffset(nameW, 11), ZIndex = 3, Parent = row })
+		new("UIStroke", { Name = "Outline", Color = C.TitleStroke, Thickness = 1, Parent = rr })
+		Kit.text({ Name = "Chance", Text = string.format("%g%%", math.floor(o.chance * 10 + 0.5) / 10), FontFace = Theme.Fonts.Number, TextSize = 15, TextXAlignment = Enum.TextXAlignment.Right, TextWrapped = false, Position = UDim2.fromOffset(rowW - 62, 0), Size = UDim2.fromOffset(54, CRATE.RowH), ZIndex = 3, Parent = row })
+	end
+	return rows * (CRATE.RowH + CRATE.RowGap) - CRATE.RowGap
+end
+
+-- the pity line: "LEGENDARY IN 40" (or "LEGENDARY NEXT!"), from the save
+local function pityLine(crate): string
+	local left = CrateRoll.left(crate, (State.data.Pity or {})[crate.Id] or 0)
+	local top = string.upper(crate.Pity and crate.Pity.Rarity or "")
+	if left == nil then return "" end
+	return if left <= 1 then `{top} NEXT!` else `{top} IN {left}`
+end
+
+-- the BUY under each of his crates (Config/Products.Crates; while its Id is 0 it only says "coming soon")
+local function buyKey(crate)
+	local p = Products.crateKey(crate.Id)
+	if not p then Toast.show("Coming soon.") return end
+	if pending[p.Key] then return end
+	local status = Products.status(p)
+	if status ~= "Ready" then
+		Toast.show(`{p.Name} for Robux is coming soon.`)
+		if status == "NoId" then warn(`[Shop] {p.Key} has no Developer Product ID in Shared/Config/Products.lua`) end
+		return
+	end
+	pending[p.Key] = true
+	local ok, why = State.action("PromptCrateKey", p.Key) -- (the server checks it again and opens Roblox's prompt)
+	if not ok then
+		pending[p.Key] = nil
+		Toast.show(why or "The purchase couldn't open. Try again.")
+		return
+	end
+	task.delay(90, function() pending[p.Key] = nil end) -- (never stuck if Roblox doesn't report back)
+end
+
+-- One of the mockup's cards for a crate with his model.
+local function modelCard(body: Instance, crate, i: number, x: number, onOdds: () -> ())
+	local card = new("Frame", { Name = "Card" .. crate.Id, Position = UDim2.fromOffset(x, 1), Size = UDim2.fromOffset(CARD.W, CARD.H), BackgroundColor3 = CARD.Fill, BorderSizePixel = 0, Parent = body }, { Kit.corner(CARD.Corner), Kit.stroke(CARD.Rim, 2) })
+	-- the faint square pattern at the card's top, fading out by the middle
+	local pattern = Kit.studPattern(card, 0.16)
+	new("UIGradient", { Name = "Fade", Rotation = 90, Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.42, 0.75), NumberSequenceKeypoint.new(0.62, 1), NumberSequenceKeypoint.new(1, 1) }), Parent = pattern })
+	local stage = new("Frame", { Name = "Stage", Position = UDim2.fromOffset(0, 0), Size = UDim2.fromOffset(CARD.W, CARD.ViewH), BackgroundTransparency = 1, ZIndex = 2, Parent = card })
+	for n, s in SPARKLES do
+		local d = new("Frame", { Name = "Sparkle" .. n, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(s[1], 0, s[2], 0), Size = UDim2.fromOffset(s[3], s[3]), Rotation = 45, BackgroundColor3 = Color3.fromHex(s[4]), BorderSizePixel = 0, ZIndex = 2, Parent = stage }, { Kit.corner(1) })
+		d:SetAttribute("Sparkle", true)
+	end
+	-- his crate, as he built it (the plain crate until his model is there)
+	local view = Crate3D.new(stage, crate, "Card", { ZIndex = 3 }) -- (as he built it: the Storm Vault and Beast Chest open)
+	if not view then
+		CrateArt.paint(CrateArt.crate(stage, 108, UDim2.fromOffset(CARD.W // 2, 78), "CratePicture"), crate)
+	end
+	-- odds: the "i" in the top right corner scrolls down to every item's chance
+	local info = Kit.button({ Name = "Odds", Text = "i", Style = "Slate", FontFace = Theme.Fonts.Heading, TextSize = 13, Corner = 9, Position = UDim2.fromOffset(CARD.W - 25, 7), Size = UDim2.fromOffset(18, 18), ZIndex = 5, Parent = card })
+	info.onClick(onOdds)
+	-- the slim line over BUY: OPEN with Aura (or a key), and the pity counter
+	local open = Kit.button({ Name = "Open", Text = `OPEN {crate.Price}`, Icon = "AuraStar", IconAfter = true, IconSize = 13, Gap = 3, TextSize = 11, FontFace = Theme.Fonts.Heading, Style = "Selected", Corner = 5, Position = UDim2.fromOffset(CARD.BuyX, CARD.LineY), Size = UDim2.fromOffset(84, CARD.LineH), ZIndex = 5, Parent = card })
+	open.onClick(function() openCrate(crate) end)
+	local top = crate.Pity and crate.Pity.Rarity or ""
+	local pity = Kit.text({ Name = "Pity", Text = "", FontFace = Theme.Fonts.Heading, TextSize = 10, TextColor3 = CrateArt.color(top), TextXAlignment = Enum.TextXAlignment.Right, TextWrapped = false, Position = UDim2.fromOffset(CARD.BuyX + 88, CARD.LineY), Size = UDim2.fromOffset(CARD.W - 2 * CARD.BuyX - 88, CARD.LineH), ZIndex = 5, Parent = card })
+	new("UIStroke", { Name = "Outline", Color = C.TitleStroke, Thickness = 1.2, Parent = pity })
+	-- the mockup's BUY: wide, rounded, violet, the Robux mark and a white bold BUY
+	local buy = Kit.button({ Name = "Buy", Text = "BUY", Style = "CrateBuy", FontFace = Theme.Fonts.Heading, TextSize = 20, Gap = 6, Corner = 8, RimThickness = 2, Position = UDim2.fromOffset(CARD.BuyX, CARD.BuyY), Size = UDim2.fromOffset(CARD.W - 2 * CARD.BuyX, CARD.BuyH), ZIndex = 5, Parent = card })
+	local content = buy.Instance:FindFirstChild("Content")
+	if content then
+		-- (the mockup's mark: big, in the dark navy of the price buttons' Robux mark)
+		Kit.text({ Name = "RobuxMark", Text = Format.RobuxMark, FontFace = Theme.Fonts.Number, TextSize = 30, TextColor3 = C.RobuxBadge, TextXAlignment = Enum.TextXAlignment.Center, AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), TextWrapped = false, LayoutOrder = 1, ZIndex = 5, Parent = content })
+	end
+	local label = buy.Instance:FindFirstChild("Label", true)
+	local outline = label and label:FindFirstChild("Outline")
+	if outline and outline:IsA("UIStroke") then outline.Thickness, outline.Transparency = 1.5, 0 end
+	buy.onClick(function() buyKey(crate) end)
+	local function refresh()
+		local keys = (State.data.CrateKeys or {})[crate.Id] or 0
+		pity.Text = pityLine(crate)
+		open.setText(if keys > 0 then `OPEN · {keys} KEY{if keys > 1 then "S" else ""}` else `OPEN {crate.Price}`)
+		local icon = open.Instance:FindFirstChild("Icon", true)
+		if icon then (icon :: GuiObject).Visible = keys <= 0 end
+		open.setStyle(if keys > 0 or (State.data.Aura or 0) >= crate.Price then "Selected" else "Disabled")
+	end
+	table.insert(refreshButtons, refresh)
+	refresh()
+	return card
+end
+
+-- A crate without a model (the Starter and Dance crates): the plain crate card, the pity counter and OPEN, its odds
+-- in two columns beside it.
+local function plainSection(body: Instance, crate, y: number): number
+	local rowsNeeded = math.ceil(#crate.Items / 2)
+	local sectionH = math.max(CRATE.H, rowsNeeded * (CRATE.RowH + CRATE.RowGap) - CRATE.RowGap)
+	local section = new("Frame", { Name = "Section" .. crate.Id, Position = UDim2.fromOffset(0, y), Size = UDim2.fromOffset(CRATE.OddsX + 2 * CRATE.RowW + CRATE.ColGap, sectionH), BackgroundTransparency = 1, Parent = body })
+	local c = new("Frame", { Name = crate.Id, Position = UDim2.fromOffset(0, 0), Size = UDim2.fromOffset(CRATE.W, CRATE.H), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = section }, { Kit.corner(6), Kit.stroke(COIN.Rim, 2) })
+	new("UIGradient", { Rotation = 90, Color = ColorSequence.new(Color3.fromHex("1B1850"), COIN.FillBottom), Parent = c })
+	Effects.rays(c, UDim2.fromOffset(CRATE.W // 2, 82), 160, { color = C.Accent, transparency = 0.7, seconds = 18, z = 1, name = "CrateRays" })
+	CrateArt.paint(CrateArt.crate(c, 100, UDim2.fromOffset(CRATE.W // 2, 80), "CratePicture"), crate)
+	Effects.shine(c, { every = 5, corner = 6, strength = 0.25, z = 9 })
+	local title = Kit.name({ Name = "Name", Text = crate.Name, FontFace = Theme.Fonts.Heading, TextSize = 19, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(0, 7), Size = UDim2.new(1, 0, 0, 24), ZIndex = 3, Parent = c })
+	new("UIStroke", { Name = "Outline", Color = C.TitleStroke, Thickness = 1.5, LineJoinMode = Enum.LineJoinMode.Round, Parent = title })
+	local top = crate.Pity and crate.Pity.Rarity or ""
+	local pityHead = Kit.text({ Name = "PityLabel", Text = `GUARANTEED {string.upper(top)}`, FontFace = Theme.Fonts.Heading, TextSize = 11, TextColor3 = CrateArt.color(top), TextXAlignment = Enum.TextXAlignment.Center, TextWrapped = false, Position = UDim2.fromOffset(0, 131), Size = UDim2.new(1, 0, 0, 13), ZIndex = 3, Parent = c })
+	new("UIStroke", { Name = "Outline", Color = C.TitleStroke, Thickness = 1.2, Parent = pityHead })
+	local pityText = Kit.name({ Name = "Pity", Text = "", FontFace = Theme.Fonts.Name, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(0, 144), Size = UDim2.new(1, 0, 0, 16), ZIndex = 3, Parent = c })
+	local track = new("Frame", { Name = "PityTrack", Position = UDim2.fromOffset(14, 162), Size = UDim2.fromOffset(CRATE.W - 28, 6), BackgroundColor3 = C.TrackRim, BorderSizePixel = 0, ZIndex = 3, Parent = c }, { Kit.corner(3) })
+	local fill = new("Frame", { Name = "Fill", Size = UDim2.fromScale(0, 1), BackgroundColor3 = CrateArt.color(top), BorderSizePixel = 0, ZIndex = 3, Parent = track }, { Kit.corner(3) })
+	local b = Kit.button({ Name = "Open", Text = `OPEN {crate.Price}`, Icon = "AuraStar", IconAfter = true, IconSize = 24, Gap = 6, TextSize = 21, FontFace = Theme.Fonts.Heading, Style = "Selected", Corner = 6, Position = UDim2.fromOffset(9, 172), Size = UDim2.fromOffset(CRATE.W - 18, 34), ZIndex = 4, Parent = c })
+	local function refresh()
+		local pity = (State.data.Pity or {})[crate.Id] or 0
+		local left = CrateRoll.left(crate, pity)
+		pityText.Text = if left == nil then "" elseif left <= 1 then "on your next open!" else `in {left} opens`
+		fill.Size = UDim2.fromScale(if crate.Pity then math.clamp(pity / crate.Pity.After, 0, 1) else 0, 1)
+		b.setStyle(if (State.data.Aura or 0) >= crate.Price then "Selected" else "Disabled")
+	end
+	b.onClick(function() openCrate(crate) end)
+	table.insert(refreshButtons, refresh)
+	refresh()
+	oddsRows(section, crate, CRATE.OddsX, 0, 2, CRATE.RowW)
+	return sectionH
+end
+
 local function buildCrates(body: Frame)
-	local y = 1
+	local withModel, plain = {}, {}
 	for _, crate in Crates.List do
 		if crate.Home then continue end -- (sold on its own page: the Halloween stands' crates, Screens/HalloweenShop)
-		local rowsNeeded = math.ceil(#crate.Items / 2)
-		local sectionH = math.max(CRATE.H, rowsNeeded * (CRATE.RowH + CRATE.RowGap) - CRATE.RowGap)
-		local section = new("Frame", { Name = "Section" .. crate.Id, Position = UDim2.fromOffset(0, y), Size = UDim2.fromOffset(CRATE.OddsX + 2 * CRATE.RowW + CRATE.ColGap, sectionH), BackgroundTransparency = 1, Parent = body })
-		y += sectionH + CRATE.SectionGap
-		local c = new("Frame", { Name = crate.Id, Position = UDim2.fromOffset(0, 0), Size = UDim2.fromOffset(CRATE.W, CRATE.H), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = section }, { Kit.corner(6), Kit.stroke(COIN.Rim, 2) })
-		new("UIGradient", { Rotation = 90, Color = ColorSequence.new(Color3.fromHex("1B1850"), COIN.FillBottom), Parent = c })
-		Effects.rays(c, UDim2.fromOffset(CRATE.W // 2, 82), 160, { color = C.Accent, transparency = 0.7, seconds = 18, z = 1, name = "CrateRays" })
-		CrateArt.paint(CrateArt.crate(c, 100, UDim2.fromOffset(CRATE.W // 2, 80), "CratePicture"), crate)
-		Effects.shine(c, { every = 5, corner = 6, strength = 0.25, z = 9 })
-		local title = Kit.name({ Name = "Name", Text = crate.Name, FontFace = Theme.Fonts.Heading, TextSize = 19, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(0, 7), Size = UDim2.new(1, 0, 0, 24), ZIndex = 3, Parent = c })
-		new("UIStroke", { Name = "Outline", Color = C.TitleStroke, Thickness = 1.5, LineJoinMode = Enum.LineJoinMode.Round, Parent = title })
+		table.insert(if crate.Model then withModel else plain, crate)
+	end
+	-- his crates' cards, then each one's odds (the "i" scrolls there)
+	local y = 1
+	local oddsAt: { [string]: number } = {}
+	if #withModel > 0 then y = CARD.H + 1 + CRATE.SectionGap + 4 end
+	local rowW = (#withModel > 0) and (CARD.W * 3 + CARD.Gap * 2 - 2 * CRATE.ColGap) // 3 or CRATE.RowW
+	for _, crate in withModel do
+		local section = new("Frame", { Name = "Section" .. crate.Id, Position = UDim2.fromOffset(CARD.X, y), Size = UDim2.fromOffset(CARD.W * 3 + CARD.Gap * 2, 22), BackgroundTransparency = 1, Parent = body })
+		oddsAt[crate.Id] = y
+		local head = Kit.name({ Name = "Name", Text = string.upper(crate.Name), FontFace = Theme.Fonts.Heading, TextSize = 15, Position = UDim2.fromOffset(2, 0), Size = UDim2.fromOffset(330, 20), Parent = section })
+		new("UIStroke", { Name = "Outline", Color = C.TitleStroke, Thickness = 1.5, LineJoinMode = Enum.LineJoinMode.Round, Parent = head })
 		local top = crate.Pity and crate.Pity.Rarity or ""
-		local pityHead = Kit.text({ Name = "PityLabel", Text = `GUARANTEED {string.upper(top)}`, FontFace = Theme.Fonts.Heading, TextSize = 11, TextColor3 = CrateArt.color(top), TextXAlignment = Enum.TextXAlignment.Center, TextWrapped = false, Position = UDim2.fromOffset(0, 131), Size = UDim2.new(1, 0, 0, 13), ZIndex = 3, Parent = c })
+		local pityHead = Kit.text({ Name = "PityLabel", Text = "", FontFace = Theme.Fonts.Heading, TextSize = 11, TextColor3 = CrateArt.color(top), TextXAlignment = Enum.TextXAlignment.Right, TextWrapped = false, Position = UDim2.fromOffset(330, 3), Size = UDim2.fromOffset(CARD.W * 3 + CARD.Gap * 2 - 332, 16), Parent = section })
 		new("UIStroke", { Name = "Outline", Color = C.TitleStroke, Thickness = 1.2, Parent = pityHead })
-		local pityText = Kit.name({ Name = "Pity", Text = "", FontFace = Theme.Fonts.Name, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(0, 144), Size = UDim2.new(1, 0, 0, 16), ZIndex = 3, Parent = c })
-		local track = new("Frame", { Name = "PityTrack", Position = UDim2.fromOffset(14, 162), Size = UDim2.fromOffset(CRATE.W - 28, 6), BackgroundColor3 = C.TrackRim, BorderSizePixel = 0, ZIndex = 3, Parent = c }, { Kit.corner(3) })
-		local fill = new("Frame", { Name = "Fill", Size = UDim2.fromScale(0, 1), BackgroundColor3 = CrateArt.color(top), BorderSizePixel = 0, ZIndex = 3, Parent = track }, { Kit.corner(3) })
-		local b = Kit.button({ Name = "Open", Text = `OPEN {crate.Price}`, Icon = "AuraStar", IconAfter = true, IconSize = 24, Gap = 6, TextSize = 21, FontFace = Theme.Fonts.Heading, Style = "Selected", Corner = 6, Position = UDim2.fromOffset(9, 172), Size = UDim2.fromOffset(CRATE.W - 18, 34), ZIndex = 4, Parent = c })
 		local function refresh()
-			local pity = (State.data.Pity or {})[crate.Id] or 0
-			local left = CrateRoll.left(crate, pity)
-			pityText.Text = if left == nil then "" elseif left <= 1 then "on your next open!" else `in {left} opens`
-			fill.Size = UDim2.fromScale(if crate.Pity then math.clamp(pity / crate.Pity.After, 0, 1) else 0, 1)
-			b.setStyle(if (State.data.Aura or 0) >= crate.Price then "Selected" else "Disabled")
+			local left = CrateRoll.left(crate, (State.data.Pity or {})[crate.Id] or 0)
+			pityHead.Text = if left == nil then "" elseif left <= 1 then `GUARANTEED {string.upper(top)} ON YOUR NEXT OPEN` else `GUARANTEED {string.upper(top)} IN {left} OPENS`
 		end
-		b.onClick(function()
-			local player = Players.LocalPlayer
-			local role = player:GetAttribute("HuzzRole")
-			if role == "Runner" or role == "Catcher" or player:GetAttribute("HuzzChoosing") == true or player:GetAttribute("HuzzCinematic") == true then
-				Toast.show("Open crates in the lobby.")
-				return
-			end
-			local have = State.data.Aura or 0
-			if have < crate.Price then
-				Toast.show(`You need {crate.Price - have} more Aura. Collect stars on the field!`)
-				return
-			end
-			ModalManager.open("CrateOpen", crate.Id)
-		end)
 		table.insert(refreshButtons, refresh)
 		refresh()
-
-		-- every item and its exact chance, rarest last, two columns
-		local odds = CrateRoll.odds(crate)
-		local rows = math.ceil(#odds / 2)
-		for i, o in odds do
-			local col, r = (i - 1) // rows, (i - 1) % rows
-			local it = o.item
-			local row = new("Frame", { Name = "Odds" .. i, Position = UDim2.fromOffset(CRATE.OddsX + col * (CRATE.RowW + CRATE.ColGap), r * (CRATE.RowH + CRATE.RowGap)), Size = UDim2.fromOffset(CRATE.RowW, CRATE.RowH), BackgroundColor3 = C.Row, BackgroundTransparency = Theme.Transparency.Row, BorderSizePixel = 0, Parent = section }, { Kit.corner(5) })
-			new("Frame", { Name = "RarityBar", Position = UDim2.fromOffset(0, 0), Size = UDim2.new(0, 4, 1, 0), BackgroundColor3 = CrateArt.color(it.Rarity), BorderSizePixel = 0, ZIndex = 2, Parent = row }, { Kit.corner(2) })
-			CrateArt.picture(row, it, 40, 25, 4, UDim2.fromOffset(8, 2), 2)
-			local nm = Kit.name({ Name = "Name", Text = it.Name, FontFace = Theme.Fonts.Name, TextSize = 13, Position = UDim2.fromOffset(54, 1), Size = UDim2.fromOffset(104, 15), ZIndex = 3, Parent = row })
-			Kit.fitLine(nm, 104, 13, 10, true)
-			local rr = Kit.text({ Name = "Rarity", Text = string.upper(it.Rarity), FontFace = Theme.Fonts.Heading, TextSize = 9, TextColor3 = CrateArt.color(it.Rarity), TextWrapped = false, Position = UDim2.fromOffset(54, 16), Size = UDim2.fromOffset(104, 11), ZIndex = 3, Parent = row })
-			new("UIStroke", { Name = "Outline", Color = C.TitleStroke, Thickness = 1, Parent = rr })
-			Kit.text({ Name = "Chance", Text = string.format("%g%%", math.floor(o.chance * 10 + 0.5) / 10), FontFace = Theme.Fonts.Number, TextSize = 15, TextXAlignment = Enum.TextXAlignment.Right, TextWrapped = false, Position = UDim2.fromOffset(158, 0), Size = UDim2.fromOffset(CRATE.RowW - 166, CRATE.RowH), ZIndex = 3, Parent = row })
-		end
+		local h = oddsRows(section, crate, 0, 24, 3, rowW)
+		section.Size = UDim2.fromOffset(section.Size.X.Offset, 24 + h)
+		y += 24 + h + CRATE.SectionGap
+	end
+	for i, crate in withModel do
+		modelCard(body, crate, i, CARD.X + (i - 1) * (CARD.W + CARD.Gap), function()
+			body.CanvasPosition = Vector2.new(0, math.max(0, (oddsAt[crate.Id] or 0) - 2))
+		end)
+	end
+	for _, crate in plain do
+		y += plainSection(body, crate, y) + CRATE.SectionGap
 	end
 end
 

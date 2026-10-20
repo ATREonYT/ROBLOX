@@ -14,13 +14,22 @@
 	  Duplicate  coins given back when you already own what came out: one number, or one per rarity
 	  Colors  the drawn box's colour, { top, bottom } hex (UI/CrateArt.paint); none = the kit purple
 	  Home    the page that sells it when it isn't Shop > CRATES ("HalloweenShop": the two Halloween stands' page)
+	  Model   his 3D crate the opening shows (owner, Oct 20: "make these crates for the opening of the normal knifes"):
+	          Set = the set Model in his Workspace > scrates > Standard_Crates (published to ReplicatedStorage >
+	          HuzzCrates by Shared/CrateModels at game start and in the place build), Crate = the crate Model in it,
+	          Body = its main box part (what stays put while the rest opens: Shared/CrateMotion.split), Built = how
+	          far (degrees) his lid already stands open in his model (he built the Storm Vault and the Beast Chest
+	          open, as his mockup draws them; the opening shuts it first, the shop shows it as he built it).
+	          Without it (or before his model is there) the opening draws the plain crate and spins the reel.
 	The opening screen (UI/Screens/CrateOpen) spins a reel of these items; Shop > CRATES lists every item's chance.
-	Owner, Oct 19: "knifes, dances, from crates". The Knife Crate and the Halloween Crate are filled from Config/CoinShop
-	(knivesFrom below), so a knife added or renamed there follows by itself; the Dance Crate holds the Robot and seven
+	Owner, Oct 19: "knifes, dances, from crates". His three knife crates (Oct 20) hold the knives he put beside each in
+	his place (knivesNamed below: a spec checks the lists against his sets); the Halloween Crate is filled from
+	Config/CoinShop (knivesFrom below), so a knife added or renamed there follows by itself; the Dance Crate holds the Robot and seven
 	crate-only dances from his 200-dance pack (Config/Dances, Crate = true: never free, never in the Dance Pack).
 ]]
 export type CrateItem = { Kind: "Cosmetic" | "Dance" | "Coins", Id: string?, Amount: number?, Name: string, Rarity: string, Weight: number }
-export type Crate = { Id: string, Name: string, Price: number, Colors: { string }?, Items: { CrateItem }, Pity: { After: number, Rarity: string }?, Duplicate: (number | { [string]: number })?, Home: string? }
+export type CrateModel = { Set: string, Crate: string, Body: string, Built: number? }
+export type Crate = { Id: string, Name: string, Price: number, Colors: { string }?, Items: { CrateItem }, Pity: { After: number, Rarity: string }?, Duplicate: (number | { [string]: number })?, Home: string?, Model: CrateModel? }
 
 local CoinShop = require(script.Parent.CoinShop)
 
@@ -44,6 +53,19 @@ local function knivesFrom(pick: (any) -> boolean, weights: { [string]: number })
 	table.sort(list, function(a, b) return a.Order < b.Order end)
 	local items: { CrateItem } = {}
 	for _, it in list do
+		table.insert(items, { Kind = "Cosmetic", Id = it.Key, Name = it.Name, Rarity = it.Rarity :: string, Weight = weights[it.Rarity :: string] })
+	end
+	return items
+end
+
+-- Named coin shop knives (in this order) as crate items weighted by rarity: his own crate sets (Oct 20), which also
+-- hold the quest knives and the Spin Wheel's Celestial Edge (owner, Oct 20: "make all of the knifes earned either
+-- through crates/bought/ or robux"). Never a Game Pass knife.
+local function knivesNamed(keys: { string }, weights: { [string]: number }): { CrateItem }
+	local items: { CrateItem } = {}
+	for _, key in keys do
+		local it = CoinShop.get(key)
+		assert(it and it.Slot == "Knife" and not it.Pass and it.Rarity and weights[it.Rarity], "crate knife " .. key)
 		table.insert(items, { Kind = "Cosmetic", Id = it.Key, Name = it.Name, Rarity = it.Rarity :: string, Weight = weights[it.Rarity :: string] })
 	end
 	return items
@@ -77,14 +99,38 @@ Crates.List = {
 			{ Kind = "Cosmetic", Id = "GalaxyTrail", Name = "Galaxy Trail", Rarity = "Legendary", Weight = 1 },
 		},
 	},
-	-- Owner, Oct 19: "knifes ... from crates". His 30 knives that the coin shop sells (26: not the three quest knives
-	-- or the Spin Wheel's Celestial Edge). Odds by rarity: Common 41.8%, Uncommon 29.9%, Rare 17.9%, Epic 8%,
-	-- Legendary 2%, Mythic 0.5%; a Legendary or the Mythic at the latest on the 40th open. 100 Aura.
+	-- His three knife crates (owner, Oct 20, 03:33: "here is the new one with updated crates, make these crates for the
+	-- opening of the normal knifes"): each opens with his own 3D crate (Model) and holds the ten knives he laid out in
+	-- front of it in his place (Workspace > scrates > Standard_Crates > <set>), all 30 of his knives between them.
+	-- Odds by rarity, from KNIFE_WEIGHT over each crate's items (exact chances in Shop > CRATES):
+	--   Shinobi Dojo Chest:    Common 42.9%, Uncommon 35.7%, Rare 14.3%, Epic 4.8%, Legendary 2.4%
+	--   Elemental Storm Vault: Common 45%, Uncommon 25%, Rare 22.5%, Epic 5%, Legendary 2.5%
+	--   Void Beast Chest:      Common 36.9%, Uncommon 30.8%, Rare 9.2%, Epic 18.5%, Legendary 3.1%, Mythic 1.5%
+	-- A Legendary or better at the latest on the 40th open (each crate counts its own). 100 Aura each (the old Knife
+	-- Crate's price). Colours (the plain crate drawn in Shop > CRATES until his UI pictures come): his crates' own.
 	{
-		Id = "Knife", Name = "Knife Crate", Price = 100, Colors = { "4FA8FF", "1F4FA8" },
+		Id = "Dojo", Name = "Shinobi Dojo Chest", Price = 100, Colors = { "E0525E", "7A1E2C" },
+		Model = { Set = "dojo_set", Crate = "Shinobi_Dojo_Chest", Body = "chest_core" },
 		Duplicate = KNIFE_DUPLICATE,
 		Pity = { After = 40, Rarity = "Legendary" },
-		Items = knivesFrom(function(it) return it.Set == nil end, KNIFE_WEIGHT),
+		Items = knivesNamed({ "RookieKnife", "PlainTanto", "ScoutDagger", "JadeKunai", "CrimsonTanto", "NightTanto", "CandyKnife",
+			"SpiritKunai", "BloodMoonTanto", "SpinKnife" }, KNIFE_WEIGHT),
+	},
+	{
+		Id = "Storm", Name = "Elemental Storm Vault", Price = 100, Colors = { "4FA8FF", "1F4FA8" },
+		Model = { Set = "storm_set", Crate = "Elemental_Storm_Vault", Body = "vault_body", Built = 31 }, -- (his lid stands 31 deg open: its front edge 0.75 studs over the body, 1.17 from the hinge)
+		Duplicate = KNIFE_DUPLICATE,
+		Pity = { After = 40, Rarity = "Legendary" },
+		Items = knivesNamed({ "KitchenCleaver", "FieldKnife", "BoxCutter", "IceKnife", "CopperCleaver", "ThunderFang", "FrostFang",
+			"EmberEdge", "StormKunai", "SolarReaper" }, KNIFE_WEIGHT),
+	},
+	{
+		Id = "Beast", Name = "Void Beast Chest", Price = 100, Colors = { "A35CFF", "3E1A6E" },
+		Model = { Set = "beast_set", Crate = "Void_Beast_Chest", Body = "chest_body", Built = 15 }, -- (his jaw stands 15 deg open: shut, the upper teeth meet the lower ones)
+		Duplicate = KNIFE_DUPLICATE,
+		Pity = { After = 40, Rarity = "Legendary" },
+		Items = knivesNamed({ "RustyShiv", "BoneKnife", "SerratedFang", "HunterKnife", "VenomKris", "MoonlitKnife", "ShadowKnife",
+			"TwinFang", "VoidFang", "AbyssEclipse" }, KNIFE_WEIGHT),
 	},
 	-- His 18 Halloween knives (Pumpkin, Witch and Candy sets, Oct 19). Odds by rarity: Common 46%, Uncommon 27.6%,
 	-- Rare 16.1%, Epic 6.9%, Legendary 2.3%, Mythic 1.1%; a Legendary or a Mythic at the latest on the 40th. 120 Aura.

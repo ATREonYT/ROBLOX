@@ -1,5 +1,5 @@
--- Robux purchases. The client only opens Roblox's purchase prompt (the Halloween shop's prompt is opened here, after
--- checking: promptHalloween); everything is granted here.
+-- Robux purchases. The client only opens Roblox's purchase prompt (the Halloween shop's and Shop > CRATES' prompts are
+-- opened here, after checking: promptHalloween, promptCrateKey); everything is granted here.
 --   Game passes: ownership is checked with Roblox on join and after each prompt closes (never trusted from the client);
 --   an owned pass also gives its exclusive knives (Config/CoinShop Pass), here and nowhere else.
 --   Developer products: ProcessReceipt grants once per PurchaseId and answers PurchaseGranted only after the
@@ -11,6 +11,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Products = require(ReplicatedStorage.Shared.Config.Products)
 local CoinShop = require(ReplicatedStorage.Shared.Config.CoinShop)
 local HalloweenShop = require(ReplicatedStorage.Shared.Config.HalloweenShop)
+local Crates = require(ReplicatedStorage.Shared.Config.Crates)
 local Net = require(ReplicatedStorage.Shared.Net)
 local DataService = require(script.Parent.DataService)
 
@@ -66,6 +67,13 @@ end
 -- Oct 20: a coin pack or spins switched off after a kid paid used to wait unanswered forever). A product that gives
 -- nothing yet never has a prompt, so it can't arrive here.
 local function grant(data, product): (boolean, string?)
+	if product.Kind == "CrateKey" and Products.crateKey(product.Crate or "") == product then
+		-- Shop > CRATES' BUY (his three knife crates): one open of that crate, used before Aura (ActionService OpenCrate)
+		if not Crates.get(product.Crate) then return false end
+		data.CrateKeys = data.CrateKeys or {}
+		data.CrateKeys[product.Crate] = (data.CrateKeys[product.Crate] or 0) + 1
+		return true
+	end
 	if product.Kind == "CrateKey" or product.Kind == "Knife" then
 		-- the Halloween shop (Config/HalloweenShop.grant): a crate key; or the knife, worn; or, for a knife already
 		-- yours (a stale page, another server), its crate's keys worth its price, so Robux never buys nothing
@@ -97,6 +105,19 @@ function ShopService.promptHalloween(player: Player, key: any): (boolean, string
 	if not product or not profile or not profile.Data then return false, "That isn't sold here." end
 	local ok, why = HalloweenShop.canPrompt(profile.Data, product)
 	if not ok then return false, why end
+	if not pcall(function() MarketplaceService:PromptProductPurchase(player, product.Id) end) then
+		return false, "The purchase couldn't open. Try again."
+	end
+	return true
+end
+
+-- Shop > CRATES' BUY buttons ask here (ActionService "PromptCrateKey"), never prompt from the client: only his crates'
+-- key products (Config/Products.Crates), only with a real ID (Id 0 = "coming soon"), then Roblox's prompt.
+function ShopService.promptCrateKey(player: Player, key: any): (boolean, string?)
+	local product = type(key) == "string" and Products.get(key)
+	if not product or product.Kind ~= "CrateKey" or Products.crateKey(product.Crate or "") ~= product then return false, "That isn't sold here." end
+	if Products.status(product) ~= "Ready" then return false, `{product.Name} for Robux is coming soon.` end
+	if not DataService.get(player) then return false, "Your data is still loading." end
 	if not pcall(function() MarketplaceService:PromptProductPurchase(player, product.Id) end) then
 		return false, "The purchase couldn't open. Try again."
 	end

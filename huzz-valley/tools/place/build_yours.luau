@@ -90,6 +90,15 @@ end
 -- place already has boards (anything named "Leaderboard..." or with a "Stat" attribute): his spots win.
 local Layout = require("../../src/ReplicatedStorage/Shared/LobbyLayout")
 
+-- His 3D knife crates (owner, Oct 20: "make these crates for the opening of the normal knifes"): Workspace > scrates >
+-- Standard_Crates moves to ReplicatedStorage > HuzzCrates (Shared/CrateModels), before the spare lobby copy they
+-- stand on is put away, so Shop > CRATES and the opening clone them as he built them.
+do
+	local CrateModels = require("../../src/ReplicatedStorage/Shared/CrateModels")
+	local f = CrateModels.publish(theirs:GetService("Workspace"), theirs:GetService("ServerStorage"), theirs:GetService("ReplicatedStorage"))
+	print("crates: " .. (if f then `his {#f:GetChildren()} crate sets in ReplicatedStorage > HuzzCrates` else "none in his place (the opening draws the plain crate)"))
+end
+
 -- One lobby (owner, Oct 19: "make one lobby"): the copy with nothing pasted twice stays (Shared/LobbyLayout.main, or
 -- the floor he ticks MainLobby on); the other copies go whole to ServerStorage > HuzzSpareLobbies, so Studio's edit
 -- view shows the lobby the game uses. HuzzServer/MapService does the same at game start (his own Rojo place), and

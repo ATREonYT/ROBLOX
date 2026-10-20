@@ -161,7 +161,11 @@ the icons itself. To make them work everywhere for good, upload them once (Plugi
       (`HalloweenCandyReaper`, 249 Robux).
       These prices are our pick; set your own on the Dashboard. Until an ID is in, the button shows the price and
       only says "coming soon". The Aura prices (11,800 and 23,600) are already live.
-   7. **Your spin wheel model:** name it with "Spin" and "Wheel" in the name (for example `Spin Wheel`), or tag it
+   7. **Shop > CRATES' BUY buttons** (your three knife crates) sell one crate key each, 3 Developer Products: put their
+      IDs into `Products.lua` under `Products.Crates`: **Shinobi Dojo Chest key** (`DojoCrateKey`), **Elemental Storm
+      Vault key** (`StormCrateKey`) and **Void Beast Chest key** (`BeastCrateKey`), 25 Robux each (our pick). Until
+      an ID is in, BUY shows the price mark and only says "coming soon".
+   8. **Your spin wheel model:** name it with "Spin" and "Wheel" in the name (for example `Spin Wheel`), or tag it
       `HuzzSpinWheel`. The game adds "Spin the Wheel" (E) and a click to it by itself. Press Play, walk up to it and
       press E: the Output shows `[Huzz] Spin the Wheel found: ...`.
 3. **Send me your girls and map**, so I can check every girl in the carry (size, how her limbs hang, rarity names)

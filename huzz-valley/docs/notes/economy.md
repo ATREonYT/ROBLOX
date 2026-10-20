@@ -88,12 +88,54 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
   Uncommon 27%, Rare 15%, Epic 6%, Legendary 2% (Void Fang 1%, Galaxy Trail 1%); a Legendary at the latest on the
   30th open. A look you own already pays coins back by rarity (50 / 100 / 200 / 400 / 1,000). No Dance Pack dances
   (the pass sells them), no rewards, pass, quest or wheel prizes. Aura is only earned, never sold for Robux.
-- **More crates (Oct 19, owner: "knifes, dances, from crates"):** Knife Crate (100 Aura, his 30 knives that are for
-  sale, by rarity), Halloween Crate (120 Aura, his 18 Halloween knives) and Dance Crate (80 Aura, 7 crate-only dances
-  from his pack: Boogie Blast, Head Banger, The Twist, Zany Zig, Robot, Power Moves, Showstopper, Zombie Groove), each
-  with every chance shown and a pity (40 / 40 / 30 opens). Built from `Config/CoinShop` (`knivesFrom`), never the
-  pass, quest or wheel knives. Shop > CRATES stacks one section per crate, each painted its colours (`CrateArt.paint`).
-  The two Halloween stands' crates (Witch's Brew, Sweets & Treats) live on the Halloween shop page instead (below).
+- **More crates (Oct 19, owner: "knifes, dances, from crates"):** Halloween Crate (120 Aura, his 18 Halloween knives)
+  and Dance Crate (80 Aura, 7 crate-only dances from his pack: Boogie Blast, Head Banger, The Twist, Zany Zig, Robot,
+  Power Moves, Showstopper, Zombie Groove), each with every chance shown and a pity (40 / 30 opens). The Halloween one
+  is built from `Config/CoinShop` (`knivesFrom`), never the pass knives. The two Halloween stands' crates (Witch's
+  Brew, Sweets & Treats) live on the Halloween shop page instead (below).
+- **His three knife crates (Oct 20, 03:33: "here is the new one with updated crates, make these crates for the opening
+  of the normal knifes ... and make all of the knifes earned either through crates/bought/ or robux. and make the
+  opening animations look appropriate").** They replace the Oct 19 Knife Crate. In his place he built
+  `Workspace > scrates > Standard_Crates` with three sets: a crate and the ten little knives he laid out in front of
+  it, all 30 of his knives between them (`knivesNamed`; `tests/CrateModels.spec` checks each crate's items are exactly
+  the ten beside his crate, by his knife model names):
+
+  | Crate (`Config/Crates` id) | His set / model | Knives |
+  |---|---|---|
+  | Shinobi Dojo Chest (`Dojo`) | `dojo_set` / `Shinobi_Dojo_Chest` (built shut) | Training Kunai, Plain Tanto, Scout Dagger, Jade Kunai, Crimson Tanto, Night Tanto, Sakura Blade, Spirit Kunai, Blood Moon Tanto, Celestial Edge |
+  | Elemental Storm Vault (`Storm`) | `storm_set` / `Elemental_Storm_Vault` (built open 31 deg) | Kitchen Cleaver, Field Knife, Box Cutter, Ice Shard, Copper Cleaver, Thunder Fang, Frost Fang, Ember Edge, Storm Kunai, Solar Reaper |
+  | Void Beast Chest (`Beast`) | `beast_set` / `Void_Beast_Chest` (jaw built open 15 deg) | Rusty Shiv, Bone Knife, Serrated Fang, Hunter's Hook, Venom Kris, Hollow Moon, Shadow Knife, Twin Fang, Void Fang, Abyss Eclipse |
+
+  100 Aura each, a Legendary at the latest on the 40th open (each its own counter), odds by rarity from
+  `KNIFE_WEIGHT` (Dojo C 42.9 / U 35.7 / R 14.3 / E 4.8 / L 2.4%; Storm 45 / 25 / 22.5 / 5 / 2.5%; Beast 36.9 / 30.8 /
+  9.2 / 18.5 / 3.1% and Mythic 1.5%). They also hold the three quest knives (Training Kunai, Hunter's Hook, Hollow
+  Moon) and the wheel's Celestial Edge, which had no other way to get them besides the quest or the wheel. Every
+  knife now has a crate, coins, Aura or Robux way (the spec lists them).
+- **His models in the game** (`Shared/CrateModels`): the crates stand on a spare lobby copy (put away), so they are
+  not lobby props; his `Standard_Crates` moves to `ReplicatedStorage > HuzzCrates` in the place build
+  (`build_yours.luau`) and again at game start (`Bootstrap`, for his own Rojo place). `UI/Crate3D` clones one into a
+  ViewportFrame, never redrawn. His .glb groups say what moves: the Storm Vault's lid group and the Beast Chest's jaw
+  group (`Node<n>` holding a "...lid..." part); the Dojo Chest has none, so its whole roof (everything over its body's
+  top, not the floating sparkles and petals) swings (`Shared/CrateMotion` split). `Built` in `Config/Crates` is how
+  far his model already stands open (measured from his lid: the front edge comes down onto the body; the spec checks).
+- **Shop > CRATES = his crate shop mockup** (Oct 20, 03:48: "Here are the ui mock ups",
+  `design/owner-oct20/0348-crate-shop-mockup.png`): his three crates as three cards in a row (the mockup's 695 x 679
+  card at 214 px wide: navy panel, lighter rim, faint square pattern at the top, sparkle diamonds, his crate as he
+  built it in a ViewportFrame, a wide violet **BUY** with the Robux mark). BUY is a crate key Developer Product
+  (`Products.Crates`: `DojoCrateKey`, `StormCrateKey`, `BeastCrateKey`, 25 R$ our pick, **Id = 0**, so BUY only says
+  "coming soon"; `ShopService.promptCrateKey` refuses too, and the receipt grants +1 key only on the server). Not on
+  the mockup, kept small: **OPEN 100** with Aura (or "OPEN · N KEYS"), the pity line ("LEGENDARY IN 40") and an "i"
+  that scrolls to that crate's full odds list under the row. The Starter and Dance crates keep their old cards below.
+  Side by side: `docs/previews/crate-shop-vs-mockup.jpg` (his crates as stand-in boxes offline).
+- **The 3D opening** (`Screens/CrateOpen` with `UI/Crate3D`; timeline `Shared/CrateMotion` (T), one maths for the game
+  and the film): shut (a crate built open is shut first), it rocks and jumps harder and faster for 2.1 s with a
+  knock on each of 9 closer-and-closer jumps; the top swings open with a small overshoot (to 100 deg from shut) and a
+  ring and sparks in the prize's rarity colour, his glow parts and the light behind it turn that colour; his own
+  little knife from the same set rises out, spinning 3 turns and slowing, and stops facing you (1.1 s); at 3.35 s its
+  name and rarity, NEW! or the coins, the buttons; it keeps a slow sway and bob. No reel for these crates; the odds
+  chips and pity line show under it while it builds up; one soft flash for Epic and up, at most once a second; tap to
+  skip; reduced motion goes straight to the prize. Without his model loaded it plays the old crate and reel. Film:
+  `docs/previews/crate-open-3d.mp4` and `docs/previews/crate-open-3d-strip.jpg` (`tools/preview/motion3d/crate_open_scene.luau`).
 - **The server decides first:** `OpenCrate` takes the Aura once, rolls with the shown odds and pity, gives the prize
   and answers `{ index, name, rarity, new, coins, pity, left, strip, at }`. `strip` is the reel: 48 honest draws with
   the shown odds (never pity, nothing planted next to the stop: `CrateRoll.strip`, spec checks the cards beside the
@@ -203,8 +245,12 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
 - Not seen in Studio yet: daily quests, the winner page, friend rewards (need two real accounts), prestige effects.
 - The friend knife is a placeholder (Sakura Blade, also sold and in the Knife Crate); a Mythic girl's prestige only
   shows as PRESTIGE N/3 (she already has the top look).
-- Crates: contents, price and odds are Claude's first pick; the crate picture is drawn (stand-in); the sounds are our
-  made stand-ins (no whoosh or riser of its own yet).
+- Crates: contents, price and odds are Claude's first pick; the Starter and Dance crate pictures are drawn
+  (stand-in); the sounds are our made stand-ins (no whoosh or riser of its own yet).
+- His three knife crates: their real look (meshes, textures, glow) is only Studio's to judge: offline pictures draw his
+  parts as boxes. Not seen in Studio: the 3D opening, the cards, whether `SurfaceAppearance.Color` takes the rarity
+  tint on his glow parts (pcall: nothing breaks if not). The crate keys' Robux IDs are 0 and the 25 R$ is ours. His
+  mockup's crates are a concept render; ours is his model as he built it (the Dojo roof, the crystals, the jaw).
 
 ## Why it is this way / history
 - The owner picked "Coin cosmetics shop" for coins.

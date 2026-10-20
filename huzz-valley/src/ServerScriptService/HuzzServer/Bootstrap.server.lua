@@ -53,6 +53,16 @@ do
 	end
 end
 
+-- The owner's 3D knife crates (Workspace > scrates > Standard_Crates) go to ReplicatedStorage.HuzzCrates for Shop >
+-- CRATES and the crate opening (Shared/CrateModels). Before MapService puts his spare lobby copies away; the place
+-- build has usually done it already.
+do
+	local ok, err = pcall(function()
+		require(game:GetService("ReplicatedStorage").Shared.CrateModels).publish(workspace, game:GetService("ServerStorage"), game:GetService("ReplicatedStorage"))
+	end)
+	if not ok then warn("[Huzz] crate models:", err) end
+end
+
 -- "HuzzCompanion": the anime girls who walk with you or the catcher (Gameplay/Auras puts their parts in it on each
 -- screen; owner: "make the little character not collide with the user"). A Humanoid turns collisions back on for
 -- some body parts, so CanCollide alone isn't enough: this group collides with nothing at all. Other services
