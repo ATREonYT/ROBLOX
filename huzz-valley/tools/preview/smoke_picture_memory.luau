@@ -1,6 +1,6 @@
 -- Smoke test: every picture shows even when the screen's picture memory is small (owner, Oct 20 14:07: "please fix
 -- all of the placeholders for knifes, coins": in Play the first pictures drew, then the rest of the knife cards and
--- two coin packs stayed stand-ins). UI/ImageLoader's drawing is swapped for a fake with a budget of 100 pictures
+-- two coin packs stayed stand-ins). UI/ImageLoader's drawing is swapped for a fake with a budget of 110 pictures
 -- (all the screens together use more; Roblox's EditableImage memory: past it CreateEditableImage gives nothing). Checks: pictures draw only on screen;
 -- every knife card in ITEMS and every coin pack in COINS draws after other screens used the memory; a failure is
 -- tried again (never kept forever); a picture nobody sees is freed.
@@ -23,7 +23,7 @@ task.wait(0.3)
 local UI = game.StarterPlayer.StarterPlayerScripts.HuzzClient.UI
 local ImageLoader = require(UI.ImageLoader)
 -- the fake: at most `budget` live pictures; past it, nothing (as Roblox's CreateEditableImage)
-local budget, live, made, refuse = 100, 0, 0, false
+local budget, live, made, refuse = 110, 0, 0, false -- (110 since Oct 20: the one-page Shop also holds the ability cards' pictures, and the harness has no layout, so its whole page counts as on screen)
 local images = {} -- [name] = the last fake image made for it
 ImageLoader.make = function(kind, name)
 	if refuse or live >= budget then error("out of picture memory (EditableImage budget)") end

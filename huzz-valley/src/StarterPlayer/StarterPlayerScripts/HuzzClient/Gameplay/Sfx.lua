@@ -49,6 +49,11 @@ local LEVEL = {
 	revive = { 0.55, 0 }, aura_pickup = { 0.5, 0.02 }, speed_wind = { 0.22, 0 },
 	-- the Oct 19 powers and the heartbeat (Gameplay/Heartbeat sets its own volume by how close the catcher is)
 	trap_throw = { 0.45, 0 }, invisible = { 0.45, 0 }, glitch = { 0.45, 0 }, decoy = { 0.45, 0 }, heartbeat = { 0.5, 0 },
+	-- the Oct 20 abilities and the wind-up / end / ready sounds every ability shares (soft: the charge sits under the
+	-- ability's own sound, the end and ready ones are quieter still)
+	power_charge = { 0.32, 0.02 }, power_end = { 0.3, 0.03 }, power_ready = { 0.22, 0 },
+	banana_drop = { 0.45, 0.03 }, banana_slip = { 0.55, 0 }, smoke_bomb = { 0.45, 0 }, radar_ping = { 0.45, 0 },
+	lasso_throw = { 0.45, 0.03 }, lasso_hit = { 0.5, 0 },
 	-- the Secret cutscene (Roblox's library: first guesses from the listings, tune after hearing them in Studio;
 	-- the bed and the tail stay well under the hit and the sting, nothing jumps out)
 	secret_riser = { 0.45, 0 }, secret_shimmer = { 0.18, 0 }, secret_impact = { 0.55, 0 },
@@ -104,6 +109,14 @@ local FALLBACK = {
 	-- secret_impact) and the reveal a soft low ping until ours are uploaded; the charge stays silent
 	combine_merge = { "rbxassetid://9116384799", 0.6, 1 },
 	combine_reveal = { PING, 0.4, 0.9 },
+	-- Oct 20: soft, low stand-ins for the new abilities (the wind-up, end and ready sounds stay silent until ours are
+	-- uploaded: a stand-in under every press would be noise)
+	banana_drop = { CLICK, 0.6, 0.8 },
+	banana_slip = { "rbxasset://sounds/action_jump_land.mp3", 0.9, 1 },
+	smoke_bomb = { "rbxasset://sounds/action_jump.mp3", 0.7, 0.75 },
+	radar_ping = { PING, 0.45, 0.75 },
+	lasso_throw = { "rbxasset://sounds/action_jump.mp3", 0.7, 0.9 },
+	lasso_hit = { "rbxasset://sounds/snap.mp3", 0.6, 0.9 },
 }
 
 -- Button and menu sounds go through the Interface group (Settings > Audio > Button Sounds), the rest through Effects.

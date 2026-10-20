@@ -74,6 +74,17 @@ return {
 	combine_charge = "", -- the machine charging while the two girls circle (2 s)
 	combine_merge = "", -- the burst as they become one
 	combine_reveal = "", -- her new grade showing
+	-- Oct 20 abilities (owner: "make them well made, right now they are kind of quick and feel cheap"): made in the
+	-- same family by tools/sfx/make_sfx.py, "" until the owner uploads them
+	power_charge = "", -- every ability's wind-up: a short soft riser under the cast pose
+	power_end = "", -- an ability running out (Shield fizzles, Invisible shimmers back, a trap or peel folds away)
+	power_ready = "", -- your ability card is ready again (quiet)
+	banana_drop = "", -- the Banana Peel tossed behind you
+	banana_slip = "", -- a catcher slipping on it
+	smoke_bomb = "", -- the Smoke Bomb's puff
+	radar_ping = "", -- the Radar's sweep
+	lasso_throw = "", -- the Lasso leaving the hand
+	lasso_hit = "", -- the Lasso catching a runner (or bouncing off a Shield)
 
 	-- The Secret cutscene, keyed to its beats in Config/SecretSounds (Build, Burst, Reveal, End).
 	-- "Light Cone Suck Synth And Reverse Cymbal Build, Disappear" (Pro Sound Effects, 5.7 s, Energy): the build-up

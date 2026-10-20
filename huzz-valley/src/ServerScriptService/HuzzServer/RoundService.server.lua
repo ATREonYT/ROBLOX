@@ -1520,6 +1520,10 @@ PowerService.start({
 	ground = function(position)
 		return MapService.ground(position, position.Y + 2)
 	end,
+	-- the Practice Bot while it catches this round (a runner's Banana Peel trips it too), else nil
+	bot = function()
+		return if botPlayed and PracticeBot.active() then PracticeBot else nil
+	end,
 })
 
 -- Hero or Chicken: only the picked runner, while the pick is open (Shared/RoundRules.choose).

@@ -6,7 +6,8 @@
 --   * COSMETICS: type chips (ALL, TRAILS, TITLES, NAME COLOURS, AURAS), rarity chips, OWNED / NOT OWNED, over both the
 --     Robux looks and the coin looks;
 --   * touch-sized chips (40 px high), whole pixels, inside the page;
---   * ABILITIES: hidden (section and jump button) until UI/AbilityCards exists; with one, its section and jump show.
+--   * ABILITIES (UI/AbilityCards, Oct 20): its section shows both sides' cards (RUNNERS, CATCHERS) with its jump between
+--     KNIVES and PASSES; without that module the section and its jump hide and PASSES moves up.
 -- From tools/preview: lune run harness.luau ../../src - @check_filters.luau setup_ui.luau
 local Players = game:GetService("Players")
 local ok, failed = 0, 0
@@ -120,7 +121,7 @@ for i = 2, #cards do
 	elseif b.Position.Y.Offset ~= a.Position.Y.Offset + 236 then tidy = false end
 end
 check("the grid closes up: rows of 5, no gaps", tidy)
-check("ABILITIES / PASSES follow right after (no empty space)", body.HeadPasses.Position.Y.Offset < cards[#cards].Position.Y.Offset + 224 + 200)
+check("ABILITIES follows right after (no empty space)", body.HeadAbilities.Position.Y.Offset < cards[#cards].Position.Y.Offset + 224 + 200)
 
 -- OWNED on top: only your Epic knife
 click(row.KnivesOwnOwned)
@@ -210,26 +211,24 @@ end
 check("TITLES shows only titles", onlyTitles and not body.SunsetTrail.Visible)
 click(crow.CosmeticsTypeAll)
 
--- ABILITIES: none yet, so hidden; the page has no gap for it
-check("no ABILITIES jump button yet", not panel.AbilitiesTab.Visible and not body.HeadAbilities.Visible)
-check("PASSES' jump button moves up into its place", panel.PassesTab.Position.Y.Offset == panel.KnivesTab.Position.Y.Offset + 49)
--- with a builder (another part of the game makes UI/AbilityCards), a fresh Shop shows the section and its jump
-local m = Instance.new("ModuleScript"); m.Name = "AbilityCards"
-m.Source = [[local M = {}
-function M.build(parent)
-	local f = Instance.new("Frame"); f.Name = "AbilityCard"; f.Size = UDim2.fromOffset(251, 338); f.Parent = parent
-	return 338
-end
-return M]]
-m.Parent = UI
+-- ABILITIES: UI/AbilityCards builds both sides in its slot, its jump between KNIVES and PASSES
+check("the ABILITIES jump shows, between KNIVES and PASSES", panel.AbilitiesTab.Visible and body.HeadAbilities.Visible
+	and panel.AbilitiesTab.Position.Y.Offset == panel.KnivesTab.Position.Y.Offset + 49 and panel.PassesTab.Position.Y.Offset == panel.KnivesTab.Position.Y.Offset + 98)
+local abSlot = body:FindFirstChild("AbilitiesSlot")
+check("... its section holds the runner and the catcher cards", abSlot ~= nil and abSlot.Visible and abSlot:FindFirstChild("RunnerAbilities") ~= nil
+	and abSlot:FindFirstChild("CatcherAbilities") ~= nil and abSlot.RunnerAbilities:FindFirstChild("Lasso") == nil and abSlot.CatcherAbilities:FindFirstChild("Lasso") ~= nil)
+check("... sized to its cards, and PASSES comes after it", abSlot ~= nil and abSlot.Size.Y.Offset >= abSlot.CatcherAbilities.Position.Y.Offset + abSlot.CatcherAbilities.Size.Y.Offset
+	and body.HeadPasses.Position.Y.Offset >= abSlot.Position.Y.Offset + abSlot.Size.Y.Offset)
+-- without the builder, a fresh Shop hides the section and its jump, and PASSES moves up into its place
+local real = UI:FindFirstChild("AbilityCards")
+if real then real.Parent = nil end
 local sg = Instance.new("ScreenGui"); sg.Name = "Fresh"; sg.Parent = player.PlayerGui
 local okB, err = pcall(function() require(UI.Screens.Shop).build(sg) end)
-check("a Shop builds with AbilityCards: " .. tostring(err), okB)
+check("a Shop builds without AbilityCards: " .. tostring(err), okB)
 local fresh = sg:FindFirstChild("Shop")
 local fp = fresh and fresh.Group.Panel
-check("... its ABILITIES jump shows, between KNIVES and PASSES", fp ~= nil and fp.AbilitiesTab.Visible and fp.AbilitiesTab.Position.Y.Offset == fp.KnivesTab.Position.Y.Offset + 49 and fp.PassesTab.Position.Y.Offset == fp.KnivesTab.Position.Y.Offset + 98)
-local slot = fp and fp.Products:FindFirstChild("AbilitiesSlot")
-check("... and its section holds the cards", slot ~= nil and slot.Visible and slot.Size.Y.Offset == 338 and slot:FindFirstChild("AbilityCard") ~= nil and fp.Products.HeadAbilities.Visible)
-m:Destroy()
+check("... no ABILITIES jump or section", fp ~= nil and not fp.AbilitiesTab.Visible and not fp.Products.HeadAbilities.Visible)
+check("... PASSES' jump moves up into its place", fp ~= nil and fp.PassesTab.Position.Y.Offset == fp.KnivesTab.Position.Y.Offset + 49)
+if real then real.Parent = UI end
 
 print(string.format("filters: %d ok, %d failed", ok, failed))

@@ -786,6 +786,97 @@ def trap_snap():
     return finish(reverb(x, 0.1), d, lp=4000, fout=0.1)
 
 
+# ---------------- Oct 20 abilities (owner: "make them well made, right now they are kind of quick and feel cheap")
+@sound("power_charge", "Soft rising swell under every ability's wind-up (the cast pose), ending on a tiny tick.")
+def power_charge():
+    d = 0.42
+    x = 0.55 * whoosh(0.38, 300, 1500, peak=0.85, octaves=1.1, seed=120, lp=2800)
+    add(x, warm(glide(hz("C4"), hz("G4"), 0.36, 1.4), 0.36, attack=0.12, decay=0.25, hold=0.12), 0.0, 0.35)
+    add(x, woodtick(1200, 0.05, decay=0.01, seed=121), 0.34, 0.25)
+    return finish(reverb(x, 0.08), d, lp=3800, fout=0.05)
+
+
+@sound("power_end", "Gentle falling shimmer when an ability runs out (a shield fizzles, invisibility wears off).")
+def power_end():
+    d = 0.6
+    x = 0.4 * whoosh(0.45, 1300, 450, peak=0.3, octaves=1.0, seed=122, lp=3000)
+    add(x, warm(glide(hz("G5"), hz("D5"), 0.4, 1.0), 0.4, attack=0.01, decay=0.16), 0.0, 0.35)
+    twinkle(x, ["D6", "A5", "F5"], 0.04, gap=0.07, level=0.12, decay=0.09)
+    return finish(reverb(x, 0.14), d, lp=4200, fout=0.2)
+
+
+@sound("power_ready", "Two quiet kalimba notes when your ability card is ready again.")
+def power_ready():
+    d = 0.4
+    x = buf(d)
+    add(x, pluck("E5", 0.3, decay=0.12), 0.0, 0.5)
+    add(x, pluck("B5", 0.3, decay=0.12), 0.07, 0.45)
+    return finish(reverb(x, 0.1), d, lp=5000, fout=0.12)
+
+
+@sound("banana_drop", "A little swish and a soft squishy plop as the Banana Peel lands behind you.")
+def banana_drop():
+    d = 0.42
+    x = 0.6 * whoosh(0.16, 700, 1300, peak=0.4, octaves=1.0, seed=123, lp=3000)
+    add(x, thunk(320, 150, 0.16, decay=0.04, seed=124), 0.14, 0.7)
+    add(x, boing(420, 300, 0.2, wobble=0.18, rate=22, decay=0.06), 0.15, 0.3)
+    return finish(reverb(x, 0.08), d, lp=3500, fout=0.1)
+
+
+@sound("banana_slip", "Cartoon slip: a quick whee up and down, then a soft bump (a catcher on the peel).")
+def banana_slip():
+    d = 0.75
+    x = buf(d)
+    up = warm(glide(330, 880, 0.18, 1.5), 0.18, attack=0.005, decay=0.12, hold=0.06)
+    down = warm(glide(880, 220, 0.3, 0.8), 0.3, attack=0.005, decay=0.12, hold=0.1)
+    add(x, up, 0.0, 0.45)
+    add(x, down, 0.17, 0.45)
+    add(x, 0.5 * whoosh(0.4, 600, 1600, peak=0.35, octaves=1.0, seed=125, lp=3200), 0.0, 1.0)
+    add(x, thunk(170, 70, 0.25, decay=0.07, seed=126), 0.46, 0.8)
+    return finish(reverb(x, 0.1), d, lp=3200, fout=0.12)
+
+
+@sound("smoke_bomb", "A soft round poof and a slow airy hiss as the smoke cloud puffs out.")
+def smoke_bomb():
+    d = 0.95
+    rng = np.random.default_rng(127)
+    puff = norm(lowpass(rng.standard_normal(int(0.9 * SR)), 900)) * env(0.9, 0.006, 0.22)
+    x = 0.8 * puff
+    add(x, thunk(150, 60, 0.3, decay=0.08, seed=128), 0.0, 0.6)
+    add(x, 0.4 * whoosh(0.8, 1800, 700, peak=0.2, octaves=1.4, seed=129, lp=2600), 0.05, 1.0)
+    return finish(reverb(x, 0.16), d, lp=2400, fout=0.3)
+
+
+@sound("radar_ping", "A round sonar ping with a soft sweep (the Radar going out).")
+def radar_ping():
+    d = 1.0
+    x = buf(d)
+    add(x, ebell(hz("E6"), 0.9, decay=0.3, index=0.8), 0.0, 0.45)
+    add(x, ebell(hz("B5"), 0.8, decay=0.26, index=0.6), 0.02, 0.3)
+    add(x, 0.4 * whoosh(0.7, 500, 2200, peak=0.3, octaves=0.9, seed=130, lp=3500), 0.0, 1.0)
+    return finish(reverb(x, 0.2), d, lp=4800, fout=0.3)
+
+
+@sound("lasso_throw", "A whirling rope swish that speeds up and flies off (the Lasso thrown).")
+def lasso_throw():
+    d = 0.5
+    t = tt(0.42)
+    wob = 0.5 + 0.5 * np.sin(2 * np.pi * (8 * t + 10 * t * t))  # the whirl: swishes coming faster
+    x = buf(d)
+    add(x, whoosh(0.42, 500, 1600, peak=0.6, octaves=1.0, seed=131, lp=3200) * (0.35 + 0.65 * wob), 0.0, 0.8)
+    add(x, woodtick(760, 0.05, decay=0.012, seed=132), 0.38, 0.35)
+    return finish(reverb(x, 0.08), d, lp=3600, fout=0.1)
+
+
+@sound("lasso_hit", "The rope pulling tight: a woody snap and a springy tug.")
+def lasso_hit():
+    d = 0.45
+    x = woodtick(900, 0.08, decay=0.018, seed=133)
+    add(x, boing(220, 340, 0.3, wobble=0.14, rate=18, decay=0.09), 0.02, 0.45)
+    add(x, thunk(210, 110, 0.18, decay=0.05, seed=134), 0.0, 0.5)
+    return finish(reverb(x, 0.09), d, lp=3800, fout=0.1)
+
+
 @sound("knock_down", "Cartoon fall: soft heavy thud, dust puff and a sliding-down tone.")
 def knock_down():
     d = 0.65

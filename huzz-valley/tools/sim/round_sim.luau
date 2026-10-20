@@ -248,6 +248,9 @@ function Inst:GetBoundingBox()
 end
 
 ------------------------------------------------------------------ one simulated server
+-- every power that went off in the whole run, by name (Oct 20: each ability, old and new, must show up somewhere)
+local allPowers = {}
+
 local function simulate(opts)
 	clock, queue, errors = 0, {}, {}
 	math.randomseed(opts.seed or 1)
@@ -311,7 +314,15 @@ local function simulate(opts)
 				r.OnServerEvent = Signal()
 				function r:FireAllClients(kind, data)
 					-- (holder: who carried the girl when it was sent; events are read later, after a catch may have moved her)
-					table.insert(roundEvents, { kind = kind, data = data, t = clock, holder = remotes.Round and remotes.Round:GetAttribute("HolderId") })
+					local e = { kind = kind, data = data, t = clock, holder = remotes.Round and remotes.Round:GetAttribute("HolderId") }
+					-- (who a slip or a lasso hit, as they stood the moment it happened: role and status)
+					local who = type(data) == "table" and (if data.name == "PeelSlip" then data.id elseif data.name == "LassoHit" then data.target else nil)
+					if who then
+						for _, q in Players:GetPlayers() do
+							if q.UserId == who then e.role, e.status = q:GetAttribute("HuzzRole"), q:GetAttribute("HuzzStatus") end
+						end
+					end
+					table.insert(roundEvents, e)
 				end
 				function r:FireClient(_, kind, data)
 					table.insert(roundEvents, { kind = kind, data = data, t = clock, one = true })
@@ -350,6 +361,8 @@ local function simulate(opts)
 	local SecretReveal = loadShared("ReplicatedStorage/Shared/SecretReveal.lua")
 	local TouchHit = loadShared("ReplicatedStorage/Shared/TouchHit.lua")
 	local CombineRules = loadShared("ReplicatedStorage/Shared/CombineRules.lua") -- (the winner gets a copy of her)
+	-- bought abilities and loadouts (Oct 20): the real rules, reading the real Config/Powers
+	local AbilityRules = loadShared("ReplicatedStorage/Shared/AbilityRules.lua", { script = { Parent = { Config = { Powers = Powers } } }, require = function(m) return m end })
 
 	-- Fake map: ZoneA on the left, ZoneB on the right, Middle between, the lobby far away.
 	local function box(x, z, sx, sz)
@@ -575,16 +588,32 @@ local function simulate(opts)
 	function CarryService.setMood() end
 
 	local saves = {}
+	-- Every bot owns every ability (Oct 20: bought with coins) and brings a different loadout by its id, so every
+	-- ability, old and new, gets used: runners Random / Banana Peel / Smoke Bomb / Random, catchers Bear Trap + Slow
+	-- Wave, Radar + Lasso, Lasso + Bear Trap, Slow Wave + Radar.
+	local RUNNER_PICKS = { "Random", "BananaPeel", "SmokeBomb", "Random" }
+	local CATCHER_PICKS = { { "BearTrap", "SlowWave" }, { "Radar", "Lasso" }, { "Lasso", "BearTrap" }, { "SlowWave", "Radar" } }
+	local function seed(p)
+		if not saves[p] then
+			local owned = {}
+			for _, side in { "Runner", "Catcher" } do
+				for _, name in Powers.Shop[side] do owned[name] = true end
+			end
+			local k = (p.UserId % 4) + 1
+			saves[p] = { Stats = {}, Characters = {}, Abilities = owned,
+				Loadout = { Runner = RUNNER_PICKS[k], CatcherQ = CATCHER_PICKS[k][1], CatcherE = CATCHER_PICKS[k][2] } }
+		end
+		return saves[p]
+	end
 	local DataService = {}
 	function DataService.waitFor(p)
 		return saves[p]
 	end
 	function DataService.get(p)
-		return saves[p] and { Data = saves[p] } -- (what RoundService reads: Characters for a repeat girl, Wear)
+		return if p and p.UserId then { Data = seed(p) } else nil -- (what RoundService reads: Characters for a repeat girl, Wear; PowerService: the loadout)
 	end
 	function DataService.update(p, fn)
-		saves[p] = saves[p] or { Stats = {}, Characters = {} }
-		fn(saves[p])
+		fn(seed(p))
 	end
 	local downed = {}
 	local KnockdownService = {}
@@ -658,7 +687,9 @@ local function simulate(opts)
 	}
 	local Shared = { Config = { Round = Config, Carry = Carry, Powers = Powers }, RoundRules = RoundRules, Net = Net, GirlRoll = GirlRoll, SecretReveal = SecretReveal, TouchHit = TouchHit, CombineRules = CombineRules,
 		KnifeLook = { pick = function() return nil end }, -- (which knife you wear: the default one in the sim)
-		BearTrap = { build = function() return new("Model") end, pose = function() end, arm = function() end } } -- (the trap's parts: only a look)
+		AbilityRules = AbilityRules,
+		BearTrap = { build = function() return new("Model") end, pose = function() end, arm = function() end }, -- (the trap's parts: only a look)
+		BananaPeel = { build = function() return new("Model") end, pose = function() end, arm = function() end } } -- (the peel's parts: only a look)
 	local sharedNode = setmetatable({}, { __index = function(_, k)
 		return Shared[k]
 	end })
@@ -758,6 +789,17 @@ local function simulate(opts)
 				if e.data.name == "SpeedBoost" and e.holder ~= e.data.id then
 					problem(`Speed Boost went off for {e.data.id}, who isn't carrying the girl`)
 				end
+				-- (Oct 20 abilities: a peel only trips catchers; a lasso only pulls active runners, never safe ones)
+				if e.data.name == "PeelSlip" and e.role ~= "Catcher" then
+					problem(`a banana peel tripped {e.data.id}, who is {e.role}`)
+				end
+				if e.data.name == "LassoHit" and not (e.role == "Runner" and e.status == "Active") then
+					problem(`a lasso pulled {e.data.target}, a {e.role} who is {e.status}`)
+				end
+				if e.data.name == "LassoHit" and not e.data.blocked and (type(e.data.dist) ~= "number" or e.data.dist < 0 or e.data.dist > Powers.Lasso.Pull) then
+					problem(`a lasso pull of {e.data.dist} studs`)
+				end
+				allPowers[e.data.name] = (allPowers[e.data.name] or 0) + 1
 			elseif e.kind == "Rescued" then
 				stats.rescues += 1
 				if e.data.runner then stillDown[e.data.runner] = nil end
@@ -1494,11 +1536,15 @@ local s, p = simulate({ players = 4, seconds = 1200, seed = 1 })
 report("4 players, 20 minutes", s, p, {
 	{ "several games finished", function(x) return x.wins >= 3 end },
 	{ "stabs tag runners", function(x) return x.tags >= 5 end },
-	{ "every power used (each runner pick, Speed Boost, Bear Trap, Slow Wave)", function(x)
-		for _, name in { "Shield", "Invisible", "Glitchy", "BodyDouble", "SpeedBoost", "BearTrap", "SlowWave" } do
-			if not x.powers[name] then return false end
+	{ "powers of every kind used (4+ runner picks, Speed Boost, 3+ catcher abilities; the whole run checks each one)", function(x)
+		local runner, catcher = 0, 0
+		for _, name in { "Shield", "Invisible", "Glitchy", "BodyDouble", "BananaPeel", "SmokeBomb" } do
+			if x.powers[name] then runner += 1 end
 		end
-		return true
+		for _, name in { "BearTrap", "SlowWave", "Radar", "Lasso" } do
+			if x.powers[name] then catcher += 1 end
+		end
+		return runner >= 4 and catcher >= 3 and x.powers.SpeedBoost ~= nil
 	end },
 	{ "every round has a pick", function(x) return x.picks >= 6 end },
 	{ "Hero runs happen and some make it", function(x) return x.heroes >= 2 and x.heroSurvived >= 1 end },
@@ -1554,6 +1600,15 @@ report("edge cases (bug hunt, Oct 19)", s, p, {
 s, p = simulate({ players = 4, seconds = 600, seed = 8, config = function(c) c.TagMode = "Touch" end })
 report("Touch mode (no stabbing)", s, p, { { "touch tags", function(x) return x.tags >= 3 and x.stabs == 0 end } })
 
+-- Every ability, old and new, went off somewhere in the run (bots bring different loadouts, Oct 20).
+for _, name in { "Shield", "Invisible", "Glitchy", "BodyDouble", "BananaPeel", "SmokeBomb", "SpeedBoost", "BearTrap", "SlowWave", "Radar", "Lasso" } do
+	if not allPowers[name] then
+		print("   PROBLEM nobody used " .. name .. " in the whole run")
+		failed += 1
+	end
+end
+print(string.format("Oct 20 abilities over the run: BananaPeel %d (slips %d), SmokeBomb %d, Radar %d, Lasso %d (hits %d, misses %d)",
+	allPowers.BananaPeel or 0, allPowers.PeelSlip or 0, allPowers.SmokeBomb or 0, allPowers.Radar or 0, allPowers.Lasso or 0, allPowers.LassoHit or 0, allPowers.LassoMiss or 0))
 print(if failed == 0 then "simulation ok" else failed .. " problems")
 if failed > 0 then
 	error("simulation found problems")

@@ -1,5 +1,5 @@
 -- Handles the player's actions from the UI (the "Action" remote): equip / favourite companions, favourite dances,
--- claim rewards and quests, combine two girls (the Combine machine). Every action is checked here against the player's saved data. Also the Dance remote
+-- claim rewards and quests, combine two girls (the Combine machine), buy and pick round abilities (BuyAbility, EquipAbility). Every action is checked here against the player's saved data. Also the Dance remote
 -- (HuzzDance / HuzzDanceAt on your character), and shareDance: an unpublished dance's moves for every screen.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -12,6 +12,7 @@ local Crates = require(ReplicatedStorage.Shared.Config.Crates)
 local CrateRoll = require(ReplicatedStorage.Shared.CrateRoll)
 local HalloweenShop = require(ReplicatedStorage.Shared.Config.HalloweenShop)
 local PrestigeRules = require(ReplicatedStorage.Shared.PrestigeRules)
+local AbilityRules = require(ReplicatedStorage.Shared.AbilityRules)
 local Net = require(ReplicatedStorage.Shared.Net)
 local DataService = require(script.Parent.DataService)
 local ProgressService = require(script.Parent.ProgressService)
@@ -99,6 +100,29 @@ function VERBS.BuyWithCoins(player, key)
 		data.Cosmetics[key] = true
 		data.Wear[item.Slot] = key
 		ok = true
+	end)
+	return ok, why
+end
+
+-- Round abilities (owner, Oct 20 15:13: "make the abilities be bought"; Shared/AbilityRules): coins only, kept for
+-- good, checked and written here in one save write. The UI (UI/AbilityCards, Screens/Loadout) only asks.
+-- BuyAbility(name) -> true, or false and why. EquipAbility(key, name): key = "Runner" / "CatcherQ" / "CatcherE",
+-- name = an owned ability of that side (or "Random" for the runner); it plays from the next round
+-- (HuzzServer/PowerService reads the loadout when a round starts). Both pass the shared 0.15 s limit below.
+function VERBS.BuyAbility(player, name)
+	if type(name) ~= "string" or #name > 40 then return false, "Unknown ability." end
+	local ok, why = false, "Your save isn't ready yet."
+	DataService.update(player, function(data)
+		ok, why = AbilityRules.buy(data, name)
+	end)
+	return ok, why
+end
+
+function VERBS.EquipAbility(player, key, name)
+	if type(key) ~= "string" or type(name) ~= "string" or #key > 20 or #name > 40 then return false, "Unknown ability." end
+	local ok, why = false, "Your save isn't ready yet."
+	DataService.update(player, function(data)
+		ok, why = AbilityRules.equip(data, key, name)
 	end)
 	return ok, why
 end

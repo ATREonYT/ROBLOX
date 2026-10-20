@@ -24,9 +24,19 @@ the Secret cutscene: [secret-cutscene.md](secret-cutscene.md). How top VFX are b
   rules stay (Speed Boost only while carrying, the Bear Trap thrown). The cards keep their own `Accent` colours: before
   the renames (ed870f6) the cards had no colour per power at all (the kit's navy, pink only as the rim glow and the
   shield-on cover); the per-power colours came with his card pictures b and c (Oct 19), which the cards copy one to one.
-- A glow builds (`Fx.WindUp` 0.25 s; Shield and Speed Boost 0.15 s, Invisible and Body Double 0.12, Glitchy 0.05),
-  one bright frame (`Gameplay/Burst.flashOk`: at most one a second per screen), the effect 0.35 s, a 0.15 s fade to
-  purple.
+- **Four beats, every ability** (Oct 20, owner: "right now they are kind of quick and feel cheap ... make them well
+  made"): a wind-up you can read (`Fx.WindUp` 0.3 s by default: Speed Boost 0.18, Glitchy 0.1 to stay snappy, Banana
+  Peel 0.22, Bear Trap 0.32, Invisible 0.35, Radar 0.4, Slow Wave 0.45; from 0.2 s up a ring gathers in at the feet and
+  motes drift into the hand, with the quiet `power_charge` riser on the press), one bright frame (`Fx.Flash`;
+  `Gameplay/Burst.flashOk`: at most one a second per screen), the effect (`Fx.Burst` 0.6 s), a clean end (`Fx.Fade`
+  0.4 s: everything fades out or fizzles in a small ring with `power_end`, never just vanishes). The ability's own
+  sound plays when the wind-up ends, not on the press. The server waits the same wind-up before the effect works
+  (`HuzzServer/PowerService wind()`), so what you see is what happens, on every screen. Before Oct 20 the wind-up
+  was 0.05 to 0.25 s and the effect 0.35 s.
+- Improved Oct 20: Shield adds a second, slower ring and ends in a fizzle (ShieldEnd) instead of vanishing; Speed Boost
+  adds a ground ring; Glitchy gets a short wind-up orb and a landing ring; Body Double ends in a puff of motes; the
+  Invisible body fades back in with a small fizzle; the Bear Trap flies a touch slower (`Flight` 0.7) and fizzles when
+  it runs out (TrapGone).
 - **Shield** (was Heart Shield, once per round): the pink bubble bursts out with a ring and 💖 hearts; a blocked stab
   pops it in a pink ring with 💖 hearts.
 - **Speed Boost** (was Rizz Rush; only while carrying her): a pink ring standing up behind you and white speed lines
@@ -64,6 +74,22 @@ the Secret cutscene: [secret-cutscene.md](secret-cutscene.md). How top VFX are b
   under slowed runners in any version (ece0c68 to ed870f6: only the badge); the pink disc in the old film's Charm Wave
   still is the Love Trap dropped earlier at the catcher's feet; 16 pieces a ring, no haze, every ring's pieces moved with one
   `Workspace:BulkMoveTo` a frame (`Burst.bulkMove`).
+- **Banana Peel** (new Oct 20, runner, bought): tossed over the shoulder in a short arc and dropped `Back` 2.5 studs
+  behind you, a yellow ring and 🍌 when it lands; it arms after `Arm` 0.4 s (its ring brightens). The first catcher on it
+  slips: "🍌 SLIP!", three stars over the head (character SlipUntil), stuck and no stabbing for `Slip` 1.4 s (the
+  Practice Bot trips too). Gone after 15 s with a small fizzle (PeelGone). One out at a time (`MaxOut`). Tell: it's
+  big, yellow and glows. Counter: step round it.
+- **Smoke Bomb** (new Oct 20, runner, bought): thrown down at your feet; 13 soft lilac balls swell into a cloud
+  `Radius` 8 that breathes and thins out over `Lasts` 5 s. Inside it every runner's name tag and outline hide on
+  everyone's screen, and catchers move at `Slow` 0.75. Tell: a big cloud. Counter: wait at its edge.
+- **Radar** (new Oct 20, catcher, bought): a pink ring sweeps out to `Range` 70 in `Sweep` 0.9 s; each runner it reaches
+  glows through walls for `Lasts` 4 s (a Highlight, AlwaysOnTop, a slow swell, no blinking) with a small ring at their
+  feet and 📡. It only shows them. Counter: keep running.
+- **Lasso** (new Oct 20, catcher, bought): the throw pose, then a rope with a loop flies straight ahead (`Speed` 70, up
+  to `Range` 24). The first active runner it touches (never one in the start zone or frozen) is pulled `Pull` 7 studs
+  in over `PullTime` 0.3 s (never closer than `MinGap` 4) and slowed (`Slow` 0.6) for `Hold` 0.6 s, with "YOINK!"; a
+  Shield blocks it. The pull is a LinearVelocity on the runner's own body, by their own screen (as Glitchy), so walls
+  stop it. A miss reels back in. Tell: the wind-up and the rope. Counter: huss sideways.
 - **Stun stars**: three cartoon stars circle slowly over the head of anyone stunned 1 s or more on every screen
   (character StunnedFrom / StunnedUntil), with the server's 💫 STUNNED badge. A dive's 0.4 s stun shows neither
   (Oct 20 15:13: the dive pops straight back up, [stab-lunge-catch.md](stab-lunge-catch.md)).
@@ -72,8 +98,9 @@ the Secret cutscene: [secret-cutscene.md](secret-cutscene.md). How top VFX are b
   `RunMotion` on everyone via `RunAnimator`, local attributes HuzzCastAt/Len/Kind); your card squashes on press and its
   rim glows in the ability's colour when the server takes it.
 - All plain neon parts (`Gameplay/Burst`: real rings of short pieces, glow orbs, world text), so nothing waits for an
-  upload. Film: `motion3d/power_scene.luau` → `docs/previews/powers.mp4` (each ability in turn, the trap thrown, landing
-  and snapping). Old vs now: `docs/previews/powers-old-vs-now.jpg` (`tools/preview/powers_old_vs_now.py`: each power
+  upload. Film: `motion3d/power_scene.luau` → `docs/previews/abilities-oct20.mp4` (all 11 in turn from a bystander's
+  camera: the old ones improved, then Banana Peel with the slip, Smoke Bomb, Radar, Lasso with the pull; contact
+  sheet at 2 frames a second `docs/previews/abilities-oct20-sheet.jpg`). The Oct 19 film `docs/previews/powers.mp4`. Old vs now: `docs/previews/powers-old-vs-now.jpg` (`tools/preview/powers_old_vs_now.py`: each power
   before the renames, as the Oct 19 batch left it, and now; the old film is `power_scene.luau` at ed870f6 with
   POWER_STILLS=1). Older sheet `docs/previews/abilities-sheet.jpg` (`tools/preview/powers_vs_og.py`, next to the other
   game's ability); the dive and stun: `docs/previews/dive-stun.mp4`.
@@ -154,6 +181,10 @@ the Secret cutscene: [secret-cutscene.md](secret-cutscene.md). How top VFX are b
   (re-run it if he sends separate files; don't redraw them with make_fx.py).
 
 ## Honest gaps
+- Abilities (Oct 20): the four new ones have glyph cards (🍌 💨 📡 🤠) until the owner sends pictures; their sounds are
+  made here and wait for upload (`Config/SoundIds` ""; Roblox stand-ins meanwhile). The film draws Radar's pink glow
+  as white and has no particle sparks. A cheating client could skip its own Lasso pull (the same as Glitchy and the
+  huss). Smoke doesn't slow the Practice Bot.
 - Not seen in Studio yet: the pickup's puff, sparkles and ring; the Juice bursts, the girls' effects with real uploads (every particle is a Roblox
   stand-in until `Config/ImageIds` is filled).
 

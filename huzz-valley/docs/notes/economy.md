@@ -24,6 +24,28 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
   the top bar's (`LobbyHud`, was a toast plus Quests).
 - Shop passes copy the owner's banners: [ui.md](ui.md). Shop > PASSES opens on the knife pass cards: [knives.md](knives.md).
 
+## Abilities for coins (`Config/Powers`, `Shared/AbilityRules`, ActionService `BuyAbility` / `EquipAbility`, `Screens/Loadout`)
+- **Owner, Oct 20 15:13:** "Please then make the abilities be bought, add a few more abilities". Round abilities are
+  bought with **coins only** (never Robux) and kept for good (`Abilities` in the save); you pick what you bring in the
+  ABILITIES window (Menu > Abilities): the runner's Q (or **Random**: a new one you own each round, the old way) and the
+  catcher's Q and E (`Loadout` in the save; picking the other key's one swaps them). A change plays from the next
+  round (PowerService reads the loadout when a round starts). Speed Boost stays free (only while carrying the girl).
+- **Prices** (`Config/Powers` `Price`; 25 coins a game, 50 a win, so 20 to 40 games' pay, spec-checked between 8 and
+  40): Invisible 500, Glitchy 500, Banana Peel 600, Body Double 750, Radar 750, Smoke Bomb 900, Lasso 1,000.
+  Starters, free and owned by everyone: Shield (runner), Bear Trap and Slow Wave (catcher: two keys, so two).
+- **Old saves keep everything** (the fairer pick): a save from before Oct 20 (no `Abilities` field before Reconcile)
+  gets the four runner abilities it could already roll (Shield, Invisible, Glitchy, Body Double:
+  `Powers.Grandfathered`), so nobody loses anything; new players start with the three starters and buy the rest.
+  `AbilityRules.migrate`, called by DataService once on load.
+- **Server only:** `BuyAbility(name)` checks the name, the side, that it isn't owned and the coins, then takes the
+  coins and adds it inside one `DataService.update`; `EquipAbility(key, name)` checks the key (Runner / CatcherQ /
+  CatcherE), the side and that you own it. Both go through ActionService's shared rate limit. A save with a bad or
+  unowned pick falls back to the defaults (`AbilityRules.loadout`). Rules and prices: `tests/AbilityRules.spec`.
+- The cards are `UI/AbilityCards` (picture or glyph, what it does, its cooldown, "Beat it:", BUY / EQUIP / Q and E):
+  the Shop's ABILITIES section (between KNIVES and PASSES) is `AbilityCards.build(slot)`: both sides, titled RUNNERS
+  and CATCHERS, no RANDOM card (shot `shop-abilities`, `tools/preview/check_filters.luau`).
+  Pictures: `docs/previews/loadout.jpg` and `docs/previews/loadout-catcher.jpg` (shots.sh `loadout`, `loadout-catcher`).
+
 ## Aura stars
 - The owner's star art in `design/aura`, packed `AuraStar` + white `AuraStarWhite` for tinting.
 - Float only in the playing zone (map Middle, outside ZoneA/ZoneB: `MapService.playSpot`) while a map is loaded, none
@@ -298,6 +320,8 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
 - Checks `tests/AdminRules.spec` (a non-admin is refused), `tools/preview/check_admin.luau` (the real server).
 
 ## Honest gaps
+- Abilities: the prices are Claude's first pick; the four new ones show glyphs until the owner sends pictures. Not
+  seen in Studio yet.
 - Not seen in Studio yet: stars in the playing zone, the spin animation, Crown Pose, Midnight cape, worn auras, the
   crate opening (its feel, the sounds' levels, the blur behind it).
 - Not seen in Studio yet: daily quests, the winner page, friend rewards (need two real accounts), prestige effects.
@@ -315,6 +339,9 @@ after the save (`tools/preview/check_bughunt.luau` checks an off-sale coin pack'
   448 px, but his BUY buttons are part of the picture, so they don't light up or press down like our buttons.
 
 ## Why it is this way / history
+- **Abilities for coins** (Oct 20 15:13: "make the abilities be bought ... make them well made, right now they are
+  kind of quick and feel cheap"): coins, not Robux, so a kid can earn every one by playing (no pay-to-win); a starter
+  per key so nobody enters a round empty-handed; old players keep the four they already had.
 - The owner picked "Coin cosmetics shop" for coins.
 - **Crates** (owner: "I will add them later"; Oct 19: "Also create a good case opening animation"). No crate mockup
   exists in `design/`, so the Shop card follows the COINS tab's tall cards and the opening screen the Spin wheel's

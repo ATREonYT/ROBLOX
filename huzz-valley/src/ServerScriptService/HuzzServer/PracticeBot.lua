@@ -7,7 +7,7 @@
 	path (worked out off the round's clock, so the round never waits for it). It is plainly a bot: its name tag says so, it is not a
 	player, it never wins a girl and is never paid; if it downs every runner, nobody wins that game.
 	RoundService drives it: spawn() at the line-up, setFrozen() with the catchers, step() while play is live,
-	remove() when a real catcher exists or the game ends. The body is Roblox's default blocky one
+	remove() when a real catcher exists or the game ends. A runner's Banana Peel trips it too (trip(), PowerService). The body is Roblox's default blocky one
 	(Players:CreateHumanoidModelFromDescription), so no asset IDs; its run and idle play from the IDs inside that
 	body's own Animate script (that LocalScript can't run on a model nobody owns). The sim swaps in a fake body
 	(PracticeBot.makeBody) to test the chase.
@@ -112,6 +112,20 @@ end
 
 function PracticeBot.active(): boolean
 	return model ~= nil and root ~= nil and root.Parent ~= nil
+end
+
+-- A slip on a runner's Banana Peel (HuzzServer/PowerService, Oct 20): it stands still and can't stab for `seconds`;
+-- every screen circles stars over its head (model attribute SlipUntil, server time), as on a player who slips.
+function PracticeBot.trip(seconds: number)
+	if not PracticeBot.active() then return end
+	pauseUntil = math.max(pauseUntil, os.clock() + seconds)
+	setSpeed(false)
+	model:SetAttribute("SlipUntil", Workspace:GetServerTimeNow() + seconds)
+end
+
+-- Its body while it's in the round (for effects drawn on it), else nil.
+function PracticeBot.body(): Model?
+	return if PracticeBot.active() then model else nil
 end
 
 -- Brings the bot into the round at `at` (a CFrame in the middle). True when it's there.

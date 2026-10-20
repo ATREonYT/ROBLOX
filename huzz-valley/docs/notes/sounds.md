@@ -69,6 +69,12 @@ core `CLAUDE.md` section 6.
   `Shared/CombineMotion`: `combine_charge` (2 s: a hum and swirl rising with a little harp climb), `combine_merge` (a
   soft round boom and a bell chord), `combine_reveal` (a chime run and a warm chord). Stand-ins until uploaded: the
   burst borrows the licensed `secret_impact`, the reveal a soft low ping ([combine.md](combine.md)).
+- Oct 20 abilities ("make them well made"), made the same way: `power_charge` (a soft riser on every press, under the
+  wind-up), `power_end` (a small fizzle as an effect ends), `power_ready` (a quiet chime when a card's cooldown ends),
+  `banana_drop` and `banana_slip`, `smoke_bomb` (a soft puff and hiss), `radar_ping` (a sonar ping), `lasso_throw`
+  (a whirl and whip) and `lasso_hit` (a snap and tug). Each ability's own sound plays when its wind-up ends
+  (`Config/Powers.Fx` `Sound`), not on the press. Keys are "" in `Config/SoundIds` until the owner uploads them;
+  `Gameplay/Sfx` plays a soft Roblox stand-in meanwhile.
 - **The heartbeat** (`Gameplay/Heartbeat`, one play per beat, louder when a catcher is closer): a licensed pick only,
   not made here (the batch brief, after the owner's "don't create random sound by yourself"). Roblox's library showed
   no Pro Sound Effects / APM heartbeat from the cloud (only community uploads), so `SoundIds.heartbeat` is "" and the

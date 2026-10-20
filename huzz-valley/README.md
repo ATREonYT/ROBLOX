@@ -193,8 +193,9 @@ the icons itself. To make them work everywhere for good, upload them once (Plugi
    - Midnight Outfit: the clothing;
    - coin packs: they turn on once coins can buy something.
 
-8. **Upload the 41 sound effects** (the 3 newest are the Combine machine's: `combine_charge`, `combine_merge`,
-   `combine_reveal`) (ours, in `huzz-valley/assets/sfx`. Hear them all first in
+8. **Upload the 56 sound effects** (the newest are the Combine machine's: `combine_charge`, `combine_merge`,
+   `combine_reveal`, and the Oct 20 abilities' nine: `power_charge`, `power_end`, `power_ready`, `banana_drop`,
+   `banana_slip`, `smoke_bomb`, `radar_ping`, `lasso_throw`, `lasso_hit`) (ours, in `huzz-valley/assets/sfx`. Hear them all first in
    `huzz-valley/docs/previews/sfx-preview.ogg`. Until you upload, Studio plays a few soft Roblox sounds instead):
    1. In Studio: **View → Asset Manager → Bulk Import**, and pick every `.ogg` file in `huzz-valley/assets/sfx`.
    2. Drag them all from Asset Manager's Audio folder onto the 3D view, then in the Command Bar run

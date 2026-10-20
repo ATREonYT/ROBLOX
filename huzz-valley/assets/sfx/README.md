@@ -55,10 +55,19 @@ the Secret cutscene plays Roblox's licensed library by ID. This script never ove
 | `glitch.ogg` | 0.36 | 0:39.0 | Three quick stuttered plucks that jump in pitch, then a soft landing tick (the Glitchy blink). |
 | `decoy.ogg` | 0.60 | 0:39.8 | Soft pop and two kalimba notes stepping apart as your Body Double splits off. |
 | `trap_snap.ogg` | 0.50 | 0:40.9 | Woody snap with a low thump and a springy wobble when a trap catches someone. |
-| `knock_down.ogg` | 0.65 | 0:41.8 | Cartoon fall: soft heavy thud, dust puff and a sliding-down tone. |
-| `revive.ogg` | 1.05 | 0:42.9 | Gentle rising swell into a warm chord and kalimba run when someone gets back up. |
-| `aura_pickup.ogg` | 0.80 | 0:44.4 | Satisfying thunk plus a bell and sparkle run for grabbing Aura. |
-| `speed_wind.ogg` | 2.00 | 0:45.7 | Soft wind bed for running fast (2 s, loops seamlessly; play it with Sfx.loop). |
-| `combine_charge.ogg` | 2.05 | 0:50.1 | Combine machine charging (2 s): a soft hum and airy swirl rising, with a little harp climbing to the burst. |
-| `combine_merge.ogg` | 1.30 | 0:52.6 | The two girls merge: a soft round boom with a bright bell chord (gentle, not harsh). |
-| `combine_reveal.ogg` | 1.40 | 0:54.4 | Her new grade shows: a sparkly chime run up and a warm happy chord. |
+| `power_charge.ogg` | 0.42 | 0:41.8 | Soft rising swell under every ability's wind-up (the cast pose), ending on a tiny tick. |
+| `power_end.ogg` | 0.60 | 0:42.7 | Gentle falling shimmer when an ability runs out (a shield fizzles, invisibility wears off). |
+| `power_ready.ogg` | 0.40 | 0:43.7 | Two quiet kalimba notes when your ability card is ready again. |
+| `banana_drop.ogg` | 0.42 | 0:44.6 | A little swish and a soft squishy plop as the Banana Peel lands behind you. |
+| `banana_slip.ogg` | 0.75 | 0:45.4 | Cartoon slip: a quick whee up and down, then a soft bump (a catcher on the peel). |
+| `smoke_bomb.ogg` | 0.95 | 0:46.6 | A soft round poof and a slow airy hiss as the smoke cloud puffs out. |
+| `radar_ping.ogg` | 1.00 | 0:48.0 | A round sonar ping with a soft sweep (the Radar going out). |
+| `lasso_throw.ogg` | 0.50 | 0:49.5 | A whirling rope swish that speeds up and flies off (the Lasso thrown). |
+| `lasso_hit.ogg` | 0.45 | 0:50.4 | The rope pulling tight: a woody snap and a springy tug. |
+| `knock_down.ogg` | 0.65 | 0:51.3 | Cartoon fall: soft heavy thud, dust puff and a sliding-down tone. |
+| `revive.ogg` | 1.05 | 0:52.4 | Gentle rising swell into a warm chord and kalimba run when someone gets back up. |
+| `aura_pickup.ogg` | 0.80 | 0:53.9 | Satisfying thunk plus a bell and sparkle run for grabbing Aura. |
+| `speed_wind.ogg` | 2.00 | 0:55.2 | Soft wind bed for running fast (2 s, loops seamlessly; play it with Sfx.loop). |
+| `combine_charge.ogg` | 2.05 | 0:59.6 | Combine machine charging (2 s): a soft hum and airy swirl rising, with a little harp climbing to the burst. |
+| `combine_merge.ogg` | 1.30 | 1:02.1 | The two girls merge: a soft round boom with a bright bell chord (gentle, not harsh). |
+| `combine_reveal.ogg` | 1.40 | 1:03.9 | Her new grade shows: a sparkly chime run up and a warm happy chord. |

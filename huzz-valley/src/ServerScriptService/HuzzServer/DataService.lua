@@ -45,6 +45,8 @@ DataService.Template = {
 	FreeSpinAt = 0, -- os.time() when the next free spin is ready (0 = ready)
 	SpinPity = 0, -- spins since the last Legendary (shown: "Guaranteed Legendary in N spins")
 	Boosts = { Coins = 0, Aura = 0 }, -- [kind] = os.time() its x2 lasts until
+	Abilities = {}, -- [name] = true for round abilities bought with coins (Shared/AbilityRules; starters are always owned)
+	Loadout = {}, -- { Runner, CatcherQ, CatcherE }: the abilities you bring (Config/Powers.Loadout; AbilityRules.loadout)
 }
 
 local STORE_NAME = "HuzzValley_Player_v1"
@@ -94,6 +96,8 @@ function DataService.snapshot(player: Player)
 			return c
 		end)(),
 		Prestige = table.clone(d.Prestige or {}),
+		Abilities = table.clone(d.Abilities or {}),
+		Loadout = table.clone(d.Loadout or {}),
 	}
 end
 
@@ -174,7 +178,11 @@ local function onPlayerAdded(player: Player)
 		return
 	end
 	profile:AddUserId(player.UserId)
+	-- (a save made before abilities were bought has no Abilities table until Reconcile adds one: it keeps every
+	-- ability it could already roll, Shared/AbilityRules.migrate)
+	local hadAbilities = type(profile.Data.Abilities) == "table"
 	profile:Reconcile()
+	require(game:GetService("ReplicatedStorage").Shared.AbilityRules).migrate(profile.Data, hadAbilities)
 	-- Gems became Aura (owner's call): anything saved as gems carries over.
 	if type(profile.Data.Gems) == "number" then
 		profile.Data.Aura = (profile.Data.Aura or 0) + profile.Data.Gems

@@ -11,7 +11,8 @@ from PIL import Image, ImageDraw, ImageFont
 
 H = 300  # each tile's height
 NAMES = ['Shield', 'Invisible (as others see it)', 'Glitchy', 'Body Double', 'Speed Boost (carrying)',
-	'Bear Trap: the throw', 'Bear Trap: snapped', 'Slow Wave']
+	'Bear Trap: the throw', 'Bear Trap: snapped', 'Slow Wave', 'Banana Peel: dropped', 'Banana Peel: the slip',
+	'Smoke Bomb', 'Radar', 'Lasso: the pull']
 
 
 def font(size):

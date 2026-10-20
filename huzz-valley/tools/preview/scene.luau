@@ -40,6 +40,9 @@ DataService.update(player, function(d)
 		for g, n in string.gmatch(list, "(%a+)=(%d+)") do d.Copies[id][g] = tonumber(n) end
 	end
 	for id, n in string.gmatch(cfg.PRESTIGE or "", "([^,=]+)=(%d+)") do d.Prestige[id] = tonumber(n) end
+	-- ABILITIES="Invisible,Radar": bought round abilities; LOADOUT="Runner=Invisible,CatcherQ=Radar" (Screens/Loadout)
+	for key in string.gmatch(cfg.ABILITIES or "", "[^,]+") do d.Abilities[key] = true end
+	for k, v in string.gmatch(cfg.LOADOUT or "", "([^,=]+)=([^,]+)") do d.Loadout[k] = v end
 end)
 -- CRATEPITY=n: opens since the Starter Crate's Legendary (29 = the next open is one).
 if cfg.CRATEPITY then DataService.update(player, function(d) d.Pity.Starter = tonumber(cfg.CRATEPITY) end) end

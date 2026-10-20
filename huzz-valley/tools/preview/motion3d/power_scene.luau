@@ -5,13 +5,17 @@
 -- Shared/RunMotion (the run, and the throw pose from the HuzzCast* attributes PowerEffects sets), makes what the
 -- server would make (the shield bubble, the rush trail, the Bear Trap from Shared/BearTrap) and reads every part,
 -- light, trail and billboard back each frame. Each part is its own short shot (the film cuts between them):
---    0.4 s Shield         2.2 s Invisible (4 s; drawn as the other players see it: faint, a slow shimmer;
+--    0.4 s Shield         2.2 s Invisible (4 s; drawn as the other players see it: faint, a slow shimmer, and back;
 --                         POWER_ME=1 films it as the runner sees it, with the big bubble)
---    6.4 s Glitchy        8.0 s Body Double (the copy runs off into the distance and puffs)
---   11.8 s Speed Boost (only while carrying the girl; she isn't drawn)
---   13.2 s Bear Trap (the Love Trap's heart disc): thrown ahead with the throw pose, arcs, lands, arms; the runner runs
+--    7.2 s Glitchy        8.8 s Body Double (the copy runs off into the distance and puffs)
+--   12.6 s Speed Boost (only while carrying the girl; she isn't drawn)
+--   14.0 s Bear Trap (the Love Trap's heart disc): thrown ahead with the throw pose, arcs, lands, arms; the runner runs
 --          into it and it springs
---   17.0 s Slow Wave
+--   17.8 s Slow Wave
+--   Oct 20 ("make them well made"): 20.0 s Banana Peel (dropped behind, the chasing catcher slips: stars),
+--   23.2 s Smoke Bomb (the catcher walks in slowed and loses the runner), 29.4 s Radar (the runner glows where they
+--   stand; drawn white, pink in the game), 34.8 s Lasso (the rope catches the runner and pulls them in a little).
+--   The Shield's end (ShieldEnd) is shown at 1.7 s, 6 s early.
 -- The renderer lights everything evenly and draws wedges as boxes, so this shows shapes, colours and timing, not
 -- Roblox's light levels. Studio is the real check (the decoy is a real clone of the character there).
 -- sh video.sh power_scene.luau out.mp4   (MOTION3D_KEEP=<dir> keeps a still of each ability at its peak:
@@ -32,7 +36,7 @@ local SHARED = SRC .. "/ReplicatedStorage/Shared/"
 local GAMEPLAY = SRC .. "/StarterPlayer/StarterPlayerScripts/HuzzClient/Gameplay/"
 local scene = Scene.new()
 local FPS, DT = 30, 1 / 30
-local LENGTH = 18.8
+local LENGTH = 37.6
 
 -- ---------------------------------------------------------------------------------------------------------------
 -- A small Roblox for the module: a DataModel, a camera, players, a fake clock for task.delay and os.clock
@@ -155,10 +159,11 @@ local Shared = {
 	Net = { __value = Net },
 	Config = { Powers = token(SHARED .. "Config/Powers.lua") },
 	BearTrap = token(SHARED .. "BearTrap.lua"),
+	BananaPeel = token(SHARED .. "BananaPeel.lua"),
 }
 Shared.WaitForChild = function(self, n) return self[n] end
 services.ReplicatedStorage = { WaitForChild = function(_, n) return if n == "Shared" then Shared else nil end }
-local Gameplay = { Sfx = { __value = { play = function() end } }, Burst = token(GAMEPLAY .. "Burst.lua") }
+local Gameplay = { Sfx = { __value = { play = function() end } }, Burst = token(GAMEPLAY .. "Burst.lua"), Ghosts = token(GAMEPLAY .. "Ghosts.lua") }
 function load(path)
 	if loaded[path] then return loaded[path] end
 	local e = table.clone(env)
@@ -169,6 +174,7 @@ function load(path)
 end
 local Powers = load(SHARED .. "Config/Powers.lua")
 local BearTrap = load(SHARED .. "BearTrap.lua")
+local BananaPeel = load(SHARED .. "BananaPeel.lua")
 local Look = Env.load("huzz-valley/src/ReplicatedStorage/Shared/Config/Look.lua")
 local RunMotion = Env.load("huzz-valley/src/ReplicatedStorage/Shared/RunMotion.lua")
 load(GAMEPLAY .. "PowerEffects.lua").start()
@@ -221,6 +227,43 @@ local function serverTrapThrow(t)
 	end)
 end
 
+-- (Oct 20) the Banana Peel: lands behind the runner after the toss, arms Arm later; the first catcher on it slips
+local PEEL = Powers.BananaPeel
+local peel -- { model, at, armAt }
+local slipAt, slipUntil = nil, nil
+local function serverPeel(t)
+	local dir = Vector3.new(-1, 0, 0) -- (the runner runs off to -X)
+	local spot = runnerRoot.Position - dir * PEEL.Back
+	local land = FX.BananaPeel.WindUp + FX.Flash + 0.3 -- (HuzzServer/PowerService USE.BananaPeel)
+	local floorAt = Vector3.new(spot.X, 0, spot.Z)
+	peel = { at = floorAt, armAt = t + land + PEEL.Arm }
+	roundHandler("Power", { name = "BananaPeel", id = RUNNER_ID, at = floorAt, dir = dir, land = land })
+	fakeTask.delay(land, function()
+		local model = BananaPeel.build()
+		BananaPeel.pose(model, CFrame.new(floorAt) * CFrame.Angles(0, math.atan2(-dir.X, -dir.Z), 0))
+		BananaPeel.arm(model, false)
+		model.Parent = folder("HuzzTraps")
+		peel.model = model
+		fakeTask.delay(PEEL.Arm, function() BananaPeel.arm(model, true) end)
+	end)
+end
+-- (Oct 20) Radar: each runner in Range glows when the sweep reaches them
+local function serverRadar()
+	roundHandler("Power", { name = "Radar", id = CATCHER_ID, range = Powers.Radar.Range, sweep = Powers.Radar.Sweep })
+	local d = (runnerRoot.Position - catcherRoot.Position).Magnitude
+	fakeTask.delay(FX.Radar.WindUp + FX.Flash + Powers.Radar.Sweep * d / Powers.Radar.Range, function()
+		runnerChar:SetAttribute("SpottedUntil", clock + Powers.Radar.Lasts)
+	end)
+end
+-- (Oct 20) the Lasso: the rope leaves after the wind-up at Speed; the step below finds the runner
+local LASSO = Powers.Lasso
+local rope -- { t0 }
+local lassoAt, lassoDist = nil, 0
+local function serverLasso(t)
+	rope = { t0 = t + FX.Lasso.WindUp + FX.Flash }
+	roundHandler("Power", { name = "Lasso", id = CATCHER_ID, dir = TRAP_DIR, range = LASSO.Range, speed = LASSO.Speed })
+end
+
 -- ---------------------------------------------------------------------------------------------------------------
 -- The shots. The runner: where it stands, which way it faces, how fast it runs, per moment (the film cuts between
 -- shots, so a shot may start somewhere new).
@@ -230,48 +273,94 @@ local CAM = Vector3.new(0, 1, 1).Unit
 local SHOTS = {
 	{ from = 0, name = "Shield", runner = function() return at(-6, 2), Vector3.new(0, 0, 1), 0 end },
 	{ from = 1.9, name = "Invisible", runner = function(t)
-		local k = math.clamp(t - 2.6, 0, 3.6)
-		return at(-4 - 1.5 * k, 2), Vector3.new(-1, 0, 0), if t > 2.6 and t < 6.2 then 1.5 else 0
+		local k = math.clamp(t - 2.6, 0, 4.2)
+		return at(-4 - 1.5 * k, 2), Vector3.new(-1, 0, 0), if t > 2.6 and t < 6.8 then 1.5 else 0
 	end },
-	{ from = 6.1, name = "Glitchy", runner = function(t)
-		local go = 6.4 + wind("Glitchy") - FX.Flash -- (the ghosts and the push start after WindUp)
+	{ from = 6.9, name = "Glitchy", runner = function(t)
+		local go = 7.2 + wind("Glitchy") - FX.Flash -- (the ghosts and the push start after WindUp)
 		local k = math.clamp((t - go) / Powers.Glitchy.Time, 0, 1)
 		return at(-10 + Powers.Glitchy.Distance * k, 2), Vector3.new(1, 0, 0), if k > 0 and k < 1 then Powers.Glitchy.Distance / Powers.Glitchy.Time else 0
 	end },
-	{ from = 7.8, name = "Body Double", runner = function(t)
-		local k = math.clamp(t - 8.5, 0, 3)
+	{ from = 8.6, name = "Body Double", runner = function(t)
+		local k = math.clamp(t - 9.3, 0, 3)
 		local dir = Vector3.new(0.6, 0, 1).Unit
-		return at(-1, 2) + dir * 3 * k, if t > 8.4 then dir else Vector3.new(0, 0, 1), if t > 8.5 then 3 else 0
+		return at(-1, 2) + dir * 3 * k, if t > 9.2 then dir else Vector3.new(0, 0, 1), if t > 9.3 then 3 else 0
 	end },
-	{ from = 11.6, name = "Speed Boost", runner = function(t)
+	{ from = 12.4, name = "Speed Boost", runner = function(t)
 		-- (running at 16; the boost adds Boost after the wind-up)
-		local k = math.clamp(t - 11.8, 0, 1.2)
+		local k = math.clamp(t - 12.6, 0, 1.2)
 		local w = wind("SpeedBoost")
-		local speed = if t > 11.8 + w then 16 + Powers.SpeedBoost.Boost elseif t > 11.8 then 16 else 0
+		local speed = if t > 12.6 + w then 16 + Powers.SpeedBoost.Boost elseif t > 12.6 then 16 else 0
 		return at(-12 + 16 * k + Powers.SpeedBoost.Boost * math.max(0, k - w), 5), Vector3.new(1, 0, 0), speed
 	end },
-	{ from = 13.0, name = "Bear Trap", runner = nil }, -- (moved below: it stops when the trap snaps)
-	{ from = 16.9, name = "Slow Wave", runner = nil },
+	{ from = 13.8, name = "Bear Trap", runner = nil }, -- (moved below: it stops when the trap snaps)
+	{ from = 17.7, name = "Slow Wave", runner = nil },
+	-- (Oct 20) the runner drops a peel behind while running off; the catcher chasing slips on it
+	{ from = 19.8, name = "Banana Peel", runner = function(t)
+		local x = math.max(-7, 3 - 8 * math.max(0, t - 19.8))
+		return at(x, 0), Vector3.new(-1, 0, 0), if x > -7 then 8 else 0
+	end, catcher = function(t)
+		if slipAt then return slipAt, Vector3.new(-1, 0, 0), 0 end
+		local x = 12 - 10 * math.max(0, t - 20.5)
+		return at(x, 0), Vector3.new(-1, 0, 0), if t > 20.5 then 10 else 0
+	end },
+	-- the cloud hides the runner's name tag; the catcher walks in, slowed, and loses them as they slip away
+	{ from = 23.0, name = "Smoke Bomb", runner = function(t)
+		local x = math.max(-8, -1 - 3 * math.max(0, t - 25.6))
+		return at(x, 0), if t > 25.5 then Vector3.new(-1, 0, 0) else Vector3.new(0, 0, 1), if t > 25.6 and x > -8 then 3 else 0
+	end, catcher = function(t)
+		local tt = math.max(0, t - 23.9)
+		local x, speed = 12 - 8 * tt, 8
+		if x < 7 then x, speed = 7 - 8 * Powers.SmokeBomb.Slow * (tt - 5 / 8), 8 * Powers.SmokeBomb.Slow end
+		if x <= 1.5 then x, speed = 1.5, 0 end
+		return at(x, 0), Vector3.new(-1, 0, 0), if t > 23.9 then speed else 0
+	end },
+	-- the catcher pings; the runner glows where they stand (only shows them)
+	{ from = 29.2, name = "Radar", runner = function() return at(-6, 2), Vector3.new(0, 0, 1), 0 end },
+	-- the rope flies straight ahead, catches the runner and pulls them in a little; they run off again
+	{ from = 34.6, name = "Lasso", runner = function(t)
+		if not lassoAt then return at(-6, -2), Vector3.new(0, 0, 1), 0 end
+		local k = math.clamp((t - lassoAt) / LASSO.PullTime, 0, 1)
+		local x = -6 + lassoDist * (1 - (1 - k) ^ 3)
+		local free = lassoAt + LASSO.PullTime + LASSO.Hold
+		if t > free then return at(x - 12 * (t - free), -2), Vector3.new(-1, 0, 0), 12 end
+		return at(x, -2), Vector3.new(1, 0, 0), 0
+	end },
 }
 local EVENTS = {
 	{ 0.4, function() serverShield(); roundHandler("Power", { name = "Shield", id = RUNNER_ID }) end },
+	{ 1.7, function() -- (the film ends it early: 6 s in a game)
+		bubble:Destroy(); bubble = nil
+		roundHandler("Power", { name = "ShieldEnd", id = RUNNER_ID, at = runnerRoot.Position })
+	end },
 	{ 2.2, function()
-		runnerChar:SetAttribute("InvisibleUntil", clock + Powers.Invisible.Lasts)
+		local from = clock + FX.Invisible.WindUp -- (HuzzServer/PowerService: from the end of the wind-up)
+		runnerChar:SetAttribute("InvisibleFrom", from)
+		runnerChar:SetAttribute("InvisibleUntil", from + Powers.Invisible.Lasts)
 		roundHandler("Power", { name = "Invisible", id = RUNNER_ID, lasts = Powers.Invisible.Lasts })
 	end },
-	{ 6.4, function() roundHandler("Power", { name = "Glitchy", id = RUNNER_ID, at = runnerRoot.Position, dir = Vector3.new(1, 0, 0) }) end },
-	{ 8.0, function()
+	{ 7.2, function() roundHandler("Power", { name = "Glitchy", id = RUNNER_ID, at = runnerRoot.Position, dir = Vector3.new(1, 0, 0) }) end },
+	{ 8.8, function()
 		roundHandler("Power", { name = "BodyDouble", id = RUNNER_ID, at = runnerRoot.Position, dir = Vector3.new(-0.45, 0, -1).Unit, speed = 16, lasts = Powers.BodyDouble.Lasts })
 	end },
-	{ 11.8, function() serverTrail(); roundHandler("Power", { name = "SpeedBoost", id = RUNNER_ID }) end },
-	{ 13.2, function()
-		serverTrapThrow(13.2)
+	{ 12.6, function() serverTrail(); roundHandler("Power", { name = "SpeedBoost", id = RUNNER_ID }) end },
+	{ 14.0, function()
+		serverTrapThrow(14.0)
 		roundHandler("Power", { name = "BearTrap", id = CATCHER_ID, at = TRAP_AT, dir = TRAP_DIR, flight = TRAP.Flight })
 	end },
-	{ 17.0, function() roundHandler("Power", { name = "SlowWave", id = CATCHER_ID, radius = Powers.SlowWave.Radius }) end },
+	{ 17.8, function() roundHandler("Power", { name = "SlowWave", id = CATCHER_ID, radius = Powers.SlowWave.Radius }) end },
+	{ 19.8, function() catcherChar:SetAttribute("HuzzCastAt", nil); runnerChar:SetAttribute("SpottedUntil", nil) end },
+	{ 20.0, function() serverPeel(20.0) end },
+	{ 23.2, function()
+		roundHandler("Power", { name = "SmokeBomb", id = RUNNER_ID, at = Vector3.new(-1, 0, 0), radius = Powers.SmokeBomb.Radius, lasts = Powers.SmokeBomb.Lasts })
+	end },
+	{ 29.4, function() serverRadar() end },
+	{ 34.8, function() serverLasso(34.8) end },
 }
--- a still of each ability at its peak (MOTION3D_KEEP), for powers_vs_og.py
-local STILL_AT = { 0.4 + wind("Shield") + 0.12, 2.2 + wind("Invisible") + 0.15, 6.4 + wind("Glitchy") + 0.06, 8.0 + wind("BodyDouble") + 0.35, 11.8 + wind("SpeedBoost") + 0.15, 13.2 + TRAP.Flight + 0.12, 15.15, 17.0 + wind("SlowWave") + 0.2 } -- (Invisible as it starts to fade, the Body Double as it sets off, the trap as it lands)
+-- a still of each ability at its peak (MOTION3D_KEEP), for powers_vs_og.py (in its NAMES order)
+local STILL_AT = { 0.4 + wind("Shield") + 0.12, 2.2 + wind("Invisible") + 0.15, 7.2 + wind("Glitchy") + 0.06, 8.8 + wind("BodyDouble") + 0.35,
+	12.6 + wind("SpeedBoost") + 0.15, 14.0 + TRAP.Flight + 0.12, 15.95, 17.8 + wind("SlowWave") + 0.2,
+	20.0 + wind("BananaPeel") + 0.5, 21.4, 23.2 + wind("SmokeBomb") + 1.4, 30.3, 35.5 }
 
 -- ---------------------------------------------------------------------------------------------------------------
 -- Reading the instances back
@@ -366,7 +455,7 @@ local nextEvent = 1
 local runRec, catchRec, decoyRec = RunMotion.new(runnerRig), RunMotion.new(catcherRig), RunMotion.new(decoyRig)
 local decoyIn = false
 local snapped = nil -- the moment the trap caught the runner
-local trapRun = { from = at(-13, -2), go = 14.3, speed = 10 }
+local trapRun = { from = at(-13, -2), go = 15.1, speed = 10 }
 local stuckAt = nil
 for f = 0, total - 1 do
 	local t = f * DT
@@ -405,16 +494,39 @@ for f = 0, total - 1 do
 	local castAt, castLen = runnerChar:GetAttribute("HuzzCastAt"), runnerChar:GetAttribute("HuzzCastLen")
 	runnerRig.root.CFrame = Rig.lookAt(pos + Vector3.new(0, Y, 0), pos + Vector3.new(0, Y, 0) + facing)
 	RunMotion.step(runRec, DT, speed, true, shot.name == "Speed Boost", nil, nil, castAt and (t - castAt), castLen, runnerChar:GetAttribute("HuzzCastKind"))
+	local cPos, cFace, cSpeed = CATCHER_AT, TRAP_DIR, 0
+	if shot.catcher then cPos, cFace, cSpeed = shot.catcher(t) end
 	local cAt, cLen = catcherChar:GetAttribute("HuzzCastAt"), catcherChar:GetAttribute("HuzzCastLen")
-	catcherRig.root.CFrame = Rig.lookAt(CATCHER_AT + Vector3.new(0, Y, 0), CATCHER_AT + Vector3.new(0, Y, 0) + TRAP_DIR)
-	RunMotion.step(catchRec, DT, 0, true, false, nil, nil, cAt and (t - cAt), cLen, catcherChar:GetAttribute("HuzzCastKind"))
+	catcherRig.root.CFrame = Rig.lookAt(cPos + Vector3.new(0, Y, 0), cPos + Vector3.new(0, Y, 0) + cFace)
+	RunMotion.step(catchRec, DT, cSpeed, true, false, nil, nil, cAt and (t - cAt), cLen, catcherChar:GetAttribute("HuzzCastKind"))
 	Rig.fk(runnerRig)
 	Rig.fk(catcherRig)
 	syncBody(runnerChar, runnerRig)
 	syncBody(catcherChar, catcherRig)
 	if bubble then bubble.CFrame = runnerRoot.CFrame; bubble.Position = runnerRoot.Position end
-	if bubble and t > 1.7 then bubble:Destroy(); bubble = nil end
-	if trail and t > 13.0 then trail:Destroy(); trail = nil end
+	if trail and t > 13.8 then trail:Destroy(); trail = nil end
+	-- the peel: the first catcher on it once armed slips (PowerService stepPeels)
+	if peel and peel.model and not slipAt and t >= peel.armAt then
+		local d = catcherRoot.Position - peel.at
+		if Vector3.new(d.X, 0, d.Z).Magnitude <= PEEL.Radius then
+			slipAt, slipUntil = cPos, t + PEEL.Slip
+			catcherChar:SetAttribute("SlipUntil", slipUntil)
+			roundHandler("Power", { name = "PeelSlip", id = CATCHER_ID, by = RUNNER_ID, at = Vector3.new(cPos.X, 0, cPos.Z), slip = PEEL.Slip })
+			peel.model:Destroy()
+			peel = nil
+		end
+	end
+	-- the rope: its tip flies from the catcher at Speed and takes the first runner it reaches (PowerService stepRopes)
+	if rope and t >= rope.t0 then
+		local tip = LASSO.Speed * (t - rope.t0)
+		local along = (catcherRoot.Position - runnerRoot.Position).Magnitude
+		if along <= tip + 0.5 then
+			lassoAt, lassoDist = t, math.clamp(along - LASSO.MinGap, 0, LASSO.Pull)
+			roundHandler("Power", { name = "LassoHit", id = CATCHER_ID, target = RUNNER_ID, at = runnerRoot.Position, toward = catcherRoot.Position,
+				dist = lassoDist, time = LASSO.PullTime, blocked = false })
+			rope = nil
+		end
+	end
 	-- the Body Double: PowerEffects moves its clone's root; the film draws a rig there, running
 	local home = Workspace:FindFirstChild("HuzzBursts")
 	local copy = home and home:FindFirstChild("HuzzBodyDouble")
@@ -439,7 +551,8 @@ for f = 0, total - 1 do
 	end
 	-- invisibility: PowerEffects fades the character's parts (LocalTransparencyModifier); draw the rig at that
 	local fade = ltm(runnerChar:FindFirstChild("UpperTorso"))
-	runnerRig.look = if fade > 0.001 then { Alpha = 1 - fade } else nil
+	local spot = runnerChar:FindFirstChild("HuzzSpotted")
+	runnerRig.look = if spot then { Emit = 0.7 * (1 - spot.FillTransparency) } elseif fade > 0.001 then { Alpha = 1 - fade } else nil
 
 	local sprites, ribbons, lights, labels = {}, {}, {}, {}
 	for _, b in boxes do b.Hidden = true end -- (a part the module destroyed isn't listed any more: hide its box)
@@ -457,20 +570,30 @@ for f = 0, total - 1 do
 	if shot.name == "Body Double" and copyRoot then
 		local d = copyRoot.CFrame.Position
 		camLook = Vector3.new(-2, 2.2, -1):Lerp(Vector3.new(d.X, 2.2, d.Z), 0.45)
-	elseif shot.name == "Bear Trap" or shot.name == "Slow Wave" then
+	elseif shot.name == "Bear Trap" or shot.name == "Slow Wave" or shot.name == "Radar" or shot.name == "Lasso" then
 		camPos, camLook = Vector3.new(0, 8, 16), Vector3.new(0, 2, -2)
+	elseif shot.name == "Banana Peel" or shot.name == "Smoke Bomb" then
+		camPos, camLook = Vector3.new(2, 8, 17), Vector3.new(2, 2, -1)
 	end
 	camera.CFrame = CFrame.new(camPos)
 	for _, s in STILL_AT do
 		if t >= s - DT / 2 and t < s + DT / 2 - 1e-6 then table.insert(stills, f) end
 	end
 	local caption = string.format("%.2f s  %s%s", t, string.upper(shot.name),
-		if shot.name == "Invisible" then (if process.env.POWER_ME == "1" then "  (your own screen)" else "  (as others see you)") elseif snapped and t < snapped + TRAP.Hold then "  STUCK!" else "")
+		if shot.name == "Invisible" then (if process.env.POWER_ME == "1" then "  (your own screen)" else "  (as others see you)")
+		elseif shot.name == "Shield" and t >= 1.7 then "  (ends: 6 s later in a game)"
+		elseif shot.name == "Bear Trap" and snapped and t < snapped + TRAP.Hold then "  STUCK!"
+		elseif shot.name == "Banana Peel" and slipUntil and t < slipUntil then "  SLIP!"
+		elseif shot.name == "Radar" then "  (glow drawn white here; pink in the game)"
+		elseif shot.name == "Lasso" and lassoAt and t < lassoAt + LASSO.PullTime + LASSO.Hold then "  YOINK!"
+		else "")
 	scene:frame(camPos, camLook, {
 		sprites = sprites, ribbons = ribbons, lights = lights, labels = labels, grades = grades, bloom = bloom, caption = caption,
 		fov = 70,
 	})
 end
 assert(snapped, "the runner never ran into the trap")
+assert(slipAt, "the catcher never slipped on the peel")
+assert(lassoAt, "the lasso never caught the runner")
 scene:save(nil, FPS, 1280, 720, { sky = "#8cc4f2", ground = "#d7914a", grid = false, stills = stills })
 print("stills at frames " .. table.concat(stills, ",") .. string.format("; trap snapped at %.2f s", snapped))

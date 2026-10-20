@@ -12,12 +12,14 @@
 	  * The cards above it (194 x 77): ABILITY, the picture, the title, "<key> · LET'S GO!" or the state in the
 	    power's colour (Config/Powers Accent; STUNNED / STUCK while the server refuses powers), and a line that fills
 	    as it charges. A runner has one (this round's
-	    Q ability, his picture c) and, only while carrying the girl, Speed Boost on E; a catcher has Bear Trap (Q) and
-	    Slow Wave (E).
+	    Q ability, his picture c: the one they bring, Screens/Loadout) and, only while carrying the girl, Speed Boost on
+	    E; a catcher has the two they bring (Bear Trap and Slow Wave to start).
 	What it shows comes from the server: PowerName1/2 and PowerReady1/2 (HuzzServer/PowerService), DashReady (the
 	huss's or the dive's ready time), ShieldUntil, DizzyUntil, StunnedFrom/StunnedUntil (a dive's stun); KnifeReady
 	is set on this screen by Gameplay/Actions (the knife's 1 s charge). Tap a card or press its key (gamepad L1 / R1)
-	to use it; on a phone the bar and its key line are the dash button.
+	to use it; on a phone the bar and its key line are the dash button. A card that comes back from its cooldown
+	chimes quietly (power_ready) and its rim glows a moment. The Oct 20 abilities have no picture yet: their card
+	shows the glyph (Config/Powers Emoji).
 ]]
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -35,6 +37,7 @@ local Kit = require(UI.Kit)
 local Scale = require(UI.Scale)
 local ImageLoader = require(UI.ImageLoader)
 local Assets = require(Shared.Config.Assets)
+local okSfx, Sfx = pcall(function() return require(UI.Parent.Gameplay.Sfx) end)
 
 local new = Kit.new
 local rgb = Color3.fromRGB
@@ -287,8 +290,16 @@ function PowerBar.build(parent: Instance)
 			text, frac, live = "USED THIS ROUND", 0, false
 		elseif ready > now then
 			text, frac, live = string.format("READY IN %ds", math.ceil(ready - now)), 1 - (ready - now) / (def.Cooldown or 1), false
+			c.cooling = true
 		else
 			text, frac, live = key .. "  ·  LET'S GO!", 1, true
+			if c.cooling and ready > 0 and now - ready < 1 then
+				-- ready again after its cooldown (not a new round's fresh card): a quiet chime and the rim glows a
+				-- moment (Oct 20: "feel way better to play")
+				c.glowUntil = os.clock() + 0.35
+				if okSfx then Sfx.play("power_ready") end
+			end
+			c.cooling = false
 		end
 		c.status.Text = text
 		c.title.TextColor3 = if live then WHITE else GREY_TITLE
